@@ -12,6 +12,8 @@ var _fail_count := 0
 var _note_count := 0
 var _cap_dropped := {}   # fid -> true once its pop_cap was ever seen to fall
 var _last_cap := {}
+var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0 (G2 conservation check)
+const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
 
 
 func _init() -> void:
@@ -42,6 +44,12 @@ func _init() -> void:
 		print("SOAK FAILED to create match")
 		quit(2)
 		return
+	for fid in w.factions:
+		var f0: Dictionary = w.factions[fid]
+		_start_ledger[fid] = {"credits": int(f0.credits)}
+		for k in LEDGER:
+			if k != "credits":
+				_start_ledger[fid][k] = int(f0.stock.get(k, 0))
 	print("SOAK START seed=%d max_ticks=%d difficulty=%s" % [seed_value, max_ticks, difficulty])
 	var t0 := Time.get_ticks_msec()
 	var kills_seen := {}
@@ -87,6 +95,7 @@ func _fail(w: SimWorld, what: String) -> void:
 
 
 func _check_invariants(w: SimWorld) -> void:
+	_check_g2(w)
 	# 1. no negative balances
 	for fid in w.factions:
 		var f: Dictionary = w.factions[fid]
@@ -135,3 +144,39 @@ func _check_invariants(w: SimWorld) -> void:
 				print("INVARIANT NOTE t=%d pop %d > cap %d + in-flight %d f%d (cap fell earlier: buildings lost; tolerated)" % [w.tick, int(f.pop), int(f.pop_cap), in_flight, fid])
 			else:
 				_fail(w, "pop %d > cap %d + in-flight %d f%d" % [int(f.pop), int(f.pop_cap), in_flight, fid])
+
+
+## G2 invariants (Q2-qa): unit ammo/fuel in range, ledger conservation for all 5 keys, nobody in
+## water once the bridge is ruined, every officer group intact and single-owner.
+func _check_g2(w: SimWorld) -> void:
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit":
+			continue
+		var u: Dictionary = Content.unit(String(e.def))
+		if e.has("ammo") and (int(e.ammo) < 0 or int(e.ammo) > int(u.get("ammo_max", 0))):
+			_fail(w, "ammo %d out of 0..%d on unit %d (%s)" % [int(e.ammo), int(u.get("ammo_max", 0)), int(id), e.def])
+		if e.has("fuel") and (float(e.fuel) < 0.0 or float(e.fuel) > float(u.get("fuel_max", 0)) + 0.001):
+			_fail(w, "fuel %.2f out of 0..%d on unit %d (%s)" % [float(e.fuel), int(u.get("fuel_max", 0)), int(id), e.def])
+		if String(w.map.get("bridge_state", "")) == "ruined" and w.terrain_at(w.cell_of(e.pos)) == Terrain.WATER:
+			_fail(w, "unit %d (%s) in water after the bridge collapsed at %s" % [int(id), e.def, str(w.cell_of(e.pos))])
+	for fid in w.factions:
+		var f: Dictionary = w.factions[fid]
+		for k in LEDGER:
+			var sum := 0
+			for entry in f.journal:
+				sum += int(entry.get(k, 0))
+			var now := int(f.credits) if k == "credits" else int(f.stock.get(k, 0))
+			var was: int = int(_start_ledger.get(fid, {}).get(k, now))
+			if now - was != sum:
+				_fail(w, "ledger %s f%d: stock %d -> %d (%+d) but journal sums to %+d" % [k, fid, was, now, now - was, sum])
+	if w.sys_state.has("ops"):
+		for gid in w.sys_state.ops.groups:
+			var g: Dictionary = w.sys_state.ops.groups[gid]
+			var off = w.entities.get(int(g.officer))
+			if off == null or int(off.owner) != int(g.owner):
+				_fail(w, "officer group %s: officer %s missing or not owned by f%d" % [str(gid), str(g.officer), int(g.owner)])
+			for m in g.members:
+				var me = w.entities.get(int(m))
+				if me == null or int(me.owner) != int(g.owner):
+					_fail(w, "officer group %s: member %s missing or not owned by f%d" % [str(gid), str(m), int(g.owner)])

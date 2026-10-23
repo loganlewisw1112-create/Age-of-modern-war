@@ -1,15 +1,21 @@
 extends SceneTree
 ## Headless simulation benchmark (SIM time only; rendering is measured elsewhere).
-##   godot --headless --path game -s tools/bench.gd [-- --sizes=64,128,256,512 --ticks=600 --no-write]
+##   godot --headless --path game -s tools/bench.gd [-- --sizes=64,128,256,512 --ticks=600 --no-write --g2]
+## --g2 adds the G2 content to the same scenario: officers with secure_point missions, forest cover
+## patches between the fronts and logistics trucks behind each line; writes perf/BENCH_G2_<date>.md.
 ## For each N (total combat units, half per side) it builds a fresh match, clears the start units,
 ## places a mixed infantry/vehicle force per side on open ground west of the map centre, orders
 ## both to attack_move at each other, runs --ticks ticks and times every w.step().
 ## Writes perf/BENCH_<YYYY-MM-DD>.md and prints the table.
 
-const SYSTEM_FILES := ["economy", "construction", "production", "gather", "movement", "combat", "fog", "victory"]
+const Movement = preload("res://sim/systems/movement.gd")
+const Ops = preload("res://sim/systems/ops.gd")
+const SYSTEM_FILES := ["economy", "construction", "production", "gather", "movement", "combat", "fog", "victory",
+	"damage", "morale", "supply", "repair", "ops", "orders", "bridges"]
 const DEPTH := 18      # tiles per side along x
 const GAP := 10        # tiles between the two fronts
 const HEIGHT := 30     # tiles along y
+var g2 := false
 const MIX := [["mbt", 0.10], ["ifv", 0.15], ["at_gunner", 0.15], ["rifleman", 0.60]]
 
 
@@ -17,6 +23,7 @@ func _init() -> void:
 	var sizes := [64, 128, 256, 512]
 	var ticks := 600
 	var write := true
+	g2 = false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--sizes="):
 			sizes = []
@@ -26,6 +33,8 @@ func _init() -> void:
 			ticks = int(a.substr(8))
 		elif a == "--no-write":
 			write = false
+		elif a == "--g2":
+			g2 = true
 	var rows := []
 	for n in sizes:
 		rows.append(_run_one(int(n), ticks))
@@ -33,7 +42,7 @@ func _init() -> void:
 	print(report)
 	if write:
 		var date := Time.get_date_string_from_system()
-		var path := ProjectSettings.globalize_path("res://perf/BENCH_%s.md" % date)
+		var path := ProjectSettings.globalize_path("res://perf/BENCH_%s%s.md" % ["G2_" if g2 else "", date])
 		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 		var f := FileAccess.open(path, FileAccess.WRITE)
 		if f == null:
@@ -119,6 +128,8 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 		for e in w.units_of(fid):
 			w.destroy(int(e.id), "bench_clear")
 	var win := _find_window(w)
+	if g2:
+		_forest_patches(w, win)
 	var per_side := n_total / 2
 	var plan := []   # [def, count]
 	var assigned := 0
@@ -154,6 +165,9 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 				ids[side].append(id)
 				placed[side] += 1
 	var mid_y := float(win.y0) + HEIGHT * 0.5
+	var extras := {"officers": 0, "trucks": 0}
+	if g2:
+		extras = _g2_extras(w, win, ids, per_side, mid_y)
 	var tgt0 := Vector2(float(win.x0 + DEPTH + GAP + 2), mid_y)       # side 0 attacks toward side 1
 	var tgt1 := Vector2(float(win.x0 + DEPTH - 2), mid_y)
 	w.submit({"type": "attack_move", "issuer": 0, "unit_ids": ids[0], "target": tgt0})
@@ -179,8 +193,55 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 		"avg": sum / float(ticks), "p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1],
 		"survivors": [w.units_of(0).size(), w.units_of(1).size()],
 		"wall_ms": wall, "window": "x0=%d y0=%d open=%d/%d" % [win.x0, win.y0, win.score, (2 * DEPTH + GAP + 1) / 2 * (HEIGHT / 2)],
-		"stopped": w.match_state.ended,
+		"stopped": w.match_state.ended, "extras": extras,
 	}
+
+
+## Forest patches (2x2) in the gap between the fronts so infantry crossing it gets cover.
+func _forest_patches(w: SimWorld, win: Dictionary) -> void:
+	var t: PackedByteArray = w.map.terrain
+	var mw := int(w.map.w)
+	var x_from: int = win.x0 + DEPTH
+	for x in range(x_from, x_from + GAP, 5):
+		for y in range(win.y0 + 2, win.y0 + HEIGHT - 2, 6):
+			for dy in 2:
+				for dx in 2:
+					var c := Vector2i(x + dx, y + dy)
+					if _good_cell(w, c.x, c.y) and not win.blocked.has(c):
+						t[c.y * mw + c.x] = Terrain.FOREST
+	w.map.terrain = t
+	Movement.rebuild_nav(w)
+
+
+## One officer per 16 units per side (secure_point at the centre, 6 riflemen each) plus one
+## logistics truck per 32 units, parked behind each line.
+func _g2_extras(w: SimWorld, win: Dictionary, ids: Array, per_side: int, mid_y: float) -> Dictionary:
+	var n_off := maxi(1, per_side / 16)
+	var n_trk := maxi(1, per_side / 32)
+	var centre := Vector2(float(win.x0 + DEPTH + GAP / 2), mid_y)
+	var offs := 0
+	var trks := 0
+	for side in [0, 1]:
+		var riflemen := []
+		for id in ids[side]:
+			if w.entities.has(id) and w.entities[id].def == "rifleman":
+				riflemen.append(id)
+		for k in n_off:
+			var base := Vector2(w.entities[riflemen[0]].pos) if not riflemen.is_empty() else centre
+			var oid := w.spawn_unit("officer", side, Vector2(Movement.nearest_free_cell(w, w.cell_of(base) + Vector2i(0, k), "foot")) + Vector2(0.5, 0.5))
+			offs += 1
+			var members := riflemen.slice(k * 6, k * 6 + 6)
+			if members.is_empty():
+				continue
+			w.submit({"type": "assign_officer", "issuer": side, "officer_id": oid, "unit_ids": members})
+			w.submit({"type": "set_mission", "issuer": side, "officer_id": oid, "mission": "secure_point",
+				"target": centre + Vector2(0, float(k % 5) - 2.0), "radius": 6.0, "risk": "high", "tick": w.tick + 2})
+		for k in n_trk:
+			var x: int = (int(win.x0) + 1 + k) if side == 0 else (int(win.x0) + 2 * DEPTH + GAP - 2 - k)
+			var cell := Movement.nearest_free_cell(w, Vector2i(x, int(mid_y)), "vehicle")
+			w.spawn_unit("logistics_truck", side, Vector2(cell) + Vector2(0.5, 0.5))
+			trks += 1
+	return {"officers": offs, "trucks": trks}
 
 
 func _git(args: Array) -> String:
@@ -217,6 +278,8 @@ func _report(rows: Array, ticks: int) -> String:
 	lines.append("- RAM: %.1f GiB physical" % (float(mem.get("physical", 0)) / 1073741824.0))
 	lines.append("- OS: %s %s" % [OS.get_name(), OS.get_version()])
 	lines.append("- Godot: %s (%s build)" % [Engine.get_version_info().string, "debug/editor" if OS.is_debug_build() else "release"])
+	if g2:
+		lines.append("- Variant: **G2** (`--g2`): + one officer per 16 units per side running secure_point at the centre, 2x2 forest patches in the gap, one logistics truck per 32 units per side; ammo/fuel/suppression/morale/components all live. Compare with the G1 baseline 3.2 / 5.2 / 11.9 / 75.3 ms avg (64/128/256/512).")
 	lines.append("- Scenario: N units split evenly, mix 10%% MBT / 15%% IFV / 15%% AT gunner / 60%% rifleman, open ground west of centre, attack_move toward each other, %d ticks (%.0f s of game time), both sides non-AI, endless victory." % [ticks, ticks / 20.0])
 	lines.append("")
 	lines.append("| N (total) | placed (A/B) | entities start | avg ms/tick | p95 ms | max ms | survivors A/B after %d ticks | entities end | wall ms | headroom vs 50 ms budget (p95) |" % ticks)
@@ -227,7 +290,7 @@ func _report(rows: Array, ticks: int) -> String:
 			r.survivors[0], r.survivors[1], r.end_entities, r.wall_ms, 50.0 / maxf(r.p95, 0.001)])
 	lines.append("")
 	for r in rows:
-		lines.append("- N=%d window: %s" % [r.n, r.window])
+		lines.append("- N=%d window: %s%s" % [r.n, r.window, (", extras: %d officers, %d trucks" % [r.extras.officers, r.extras.trucks]) if g2 else ""])
 	lines.append("")
 	var sys := _system_status()
 	if sys.contains("STUB"):
