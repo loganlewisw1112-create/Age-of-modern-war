@@ -432,9 +432,9 @@ func _run() -> void:
 		for r in rifles:
 			sc += Vector2(r.pos)
 		sc /= float(rifles.size())
-		var goal := sc + (Vector2(48, 48) - sc).normalized() * 8.0
+		var goal := sc + (Vector2(48, 48) - sc).normalized() * 12.0
 		await _click(_to_screen(goal))
-		await _wait(1.0)
+		await _wait(0.2)  # fast units (Machine crawlers at 3x) can finish an 8-tile order within 1 s
 		var am := 0
 		for e in _own_units_in(inf_units):
 			if String(e.order.type) == "attack_move":
