@@ -1,0 +1,25 @@
+{
+  "agent": "B-mil", "gen": 1,
+  "done": [
+    "sim/systems/movement.gd: full impl. AStarGrid2D per class (foot/vehicle) in w.nav, ONLY_IF_NO_OBSTACLES diagonals, weight=1/speed_mult; footprint counts in w.nav.blocked; on_footprint_changed incremental + nudges units out; 4-connected component labels (lazy, comp_dirty) for reachability; order_path/is_passable/nearest_free_cell signatures unchanged; goal snap within 6 tiles; straight-line shortcut (_line_clear, <=14 tiles) skips A*; A* budget 40/tick, FIFO queue in w.sys_state.movement {queue,req_seq,budget_tick,budget_used} (saved), entity.path_req invalidates stale requests; steering with axis sliding, stuck counter -> arrive/repath; separation with packed arrays, per-owner hash (bucket 1.5, half neighbourhood); positions/facing quantized to 1/1024; formation slots (1.1 foot / 1.8 vehicle) sorted by (y,x,id); move/attack_move/stop/hold validate+apply.",
+    "sim/systems/combat.gd: nearest visible enemy (ring search over per-owner bucket grid, BUCKET 2, ties lower id), staggered scans (every 4 ticks, 32 when target in range), fast path skips reloading stationary shooters; stances idle/attack_move/attack(last-known pos then idle)/hold/move; engineers only return fire (documented); towers fire only if built; authoritative int e.cd_ticks with e.cooldown mirror; hp quantized to 1/1024; ShotFired + firing=3; attack validate 'Target not visible.'.",
+    "sim/systems/fog.gd: visible recomputed every 4 ticks via Image.blit_rect_mask circle stamps (R8 + LA8 mask), explored sticky, memory of enemy buildings with drop-on-seen-empty, is_visible/is_explored/entity_visible/visible_enemies.",
+    "sim/systems/victory.gd: SideEliminated/MatchEnded once each, endless never ends, is_hq cached.",
+    "tests/test_mil.gd: 13 tests (MIL-01 bridge group move, vehicles around forest, snap/unreachable, footprint nudge, dead units, armor table, hold vs idle, initial fog, AI-02 + explored + memory, HQ victory, endless, save mid-fight hash, perf 256)."
+  ],
+  "remaining": [
+    "1. Run: bash tests/run.sh --only=test_mil. Last run (call 52): RESULT pass=13 fail=0 but 5 SCRIPT ERRORs: 'Parse Error: Cannot infer the type of \"replace\" variable' + 'Failed to compile depended scripts' + test_mil.gd failed to load once. The 'replace' variable is NOT in any B-mil file; grep the tree (grep -rn 'replace :=' --include=*.gd) to find the owner and quote it in the report. If it is in a B-mil file, change to 'var replace: <Type> = ...'.",
+    "2. Save test now uses bytes_to_var(var_to_bytes(w.to_dict())) (same as test_core) because world.state_hash() now hashes var_to_bytes and str_to_var reorders dict keys (sorted), so a var_to_str round trip can never be byte-hash-equal. Confirm test_save_restore_mid_fight_hash_equal passes.",
+    "3. Armor test: tolerance already changed to per_mbt <= 0.05*per_inf + 0.002 (hp quantization 1/1024 per hit; table value is exactly 5%). Confirm it passes.",
+    "4. Perf: isolated profile (scratchpad prof2.gd, 256 units fighting, 100 ticks, machine loaded by other agents): movement ~4.0 ms (separation ~2.9 of it, before half-neighbourhood change), combat ~4.8 ms (before BUCKET 2 / SCAN_EVERY_ENGAGED 32 / inline fog), fog ~0.9 ms; started at movement 80 / combat 75 / fog 26. Target <=4 ms total NOT met yet. Get the real number from the perf test print ('PERF mil' line; run the godot command directly since run.sh filters prints). Next ideas: run separation only on units with a neighbour overlap candidate list cached every 2 ticks; skip combat for units whose owner has no visible enemy within sight (per-faction visible-enemy flag); reduce per-unit function calls in Movement.tick loop.",
+    "5. Full run: bash tests/run.sh, quote other agents' errors if any. Then final report."
+  ],
+  "files_touched": ["sim/systems/movement.gd", "sim/systems/combat.gd", "sim/systems/fog.gd", "sim/systems/victory.gd", "tests/test_mil.gd"],
+  "test_state": "test_mil 13/13 PASS in last run but 5 SCRIPT ERRORs (replace-variable parse error from a dependency, see step 1); full suite not run by B-mil.",
+  "gotchas": [
+    "var_to_str/str_to_var: lossy for 17-digit doubles (0.44999999999999996 -> 0.45) AND sorts dictionary keys; saved floats should be ints or dyadic (k/1024). F-infra save_system should use var_to_bytes/store_var for exact hash round trips.",
+    "Packed arrays read from dicts: always write back after modification.",
+    "Each godot run takes 1-6 min on this loaded machine; wrap in .plan/hb.sh.",
+    "Debug scripts in scratchpad: dbg_mil.gd (save diff), prof2.gd (per-system profile); run with \"$G\" --headless --path . -s <abs path>."
+  ]
+}

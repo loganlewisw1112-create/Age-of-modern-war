@@ -510,8 +510,9 @@ static func from_dict(d: Dictionary) -> SimWorld:
 
 
 ## Stable hash of the full authoritative state (determinism / save round-trip tests).
+## Uses var_to_bytes (exact doubles). var_to_str is lossy for 64-bit floats (found by F-infra).
 func state_hash() -> String:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
-	ctx.update(var_to_str(to_dict()).to_utf8_buffer())
+	ctx.update(var_to_bytes(to_dict()))
 	return ctx.finish().hex_encode()

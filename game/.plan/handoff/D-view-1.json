@@ -1,0 +1,39 @@
+{
+ "agent": "D-view",
+ "gen": 1,
+ "done": [
+  "presentation/match_view.gd: full CONTRACTS s7 MatchView API (world, player_fid, selection:Array[int], speed, paused, control_groups, signals selection_changed/world_events/placement_changed, issue, begin_build_placement, cancel_placement, center_camera_on, select_ids, world_to_screen/screen_to_world, get_hover_info, get_view_corners_world, placing_def, attack_move_armed, last_alert_pos, camera). 20 Hz accumulator (max 5 steps/frame, backlog dropped), interpolated unit render positions, input (click/marquee/shift/double-click select, smart right-click attack/gather/assist_build/move/set_rally, A attack-move, S stop, H hold, Ctrl+1-9/1-9 + double-tap jump, Space last alert, Esc, WASD/arrows/edge/middle-drag pan, wheel zoom 0.5-2.5 about cursor), build ghost placement (always submits build; stays in placement on error or shift). Debug args --spawn-test=N, --demo-script=start|zoomout|select|ghost|ghost_ok|combat, --fps-log, --no-vsync, --sim-paused.",
+  "presentation/view/: camera_rig.gd, terrain_layer.gd (16x16 chunk bake via Image.blend_rect, 36 chunks, 0.5-2 s), entity_layer.gd (y-sorted pooled sprites + decor, fog rules, memory ghosts, seen wrecks), fog_layer.gd (96x96 LA8 texture through iso transform, rebuilt only on change), fx_layer.gd (tracers, muzzle, explosions, smoke, command markers, cosmetic RNG, procedural fallbacks), overlay_layer.gd (rings under; hp/progress/queue bars, rally line, ghost with cost+reason tooltip, marquee over), view_util.gd (magenta-placeholder detection + procedural fallback terrain/unit/building sprites).",
+  "Viewed screenshots in .plan/shots/D-view/: 01_start.png, 0x_zoomout.png, 0x_select.png (marquee+rings+hp bars), 0x_ghost.png (red ghost + 'Blocked by another building.'), 04_ghost_ok.png (green ghost + cost), 05_spawn200_combat.png (camera missed the fight; units not in view).",
+  "FPS: default match 60 fps (vsync). spawn-test=200 windowed sim running 41-59 fps, sim 15-19 ms/tick is the limiter. Render-only (--sim-paused --no-vsync) 175-180 fps, view ~3.3 ms/frame. Headless sim profile posted as warn sim_perf (movement 36 ms/tick)."
+ ],
+ "remaining": [
+  "1. Verify the just-edited 'combat' demo (follows centroid of units >7 tiles from base every 0.5 s): run godot --path . -- --autoshot=<abs>/.plan/shots/D-view/05_spawn200_combat.png --autoshot-delay=12 --autostart --spawn-test=200 --demo-script=combat --fps-log ; view PNG; expect tracers/explosions visible. UNVERIFIED (no parse check run after edit).",
+  "2. Run bash tests/run.sh in the background (takes >110 s on this machine; a timeout 110 killed my run) and quote final lines. No test file loads presentation/ scripts, so presentation parse errors only show in a windowed/headless game run: godot --headless --path . --quit-after 200 -- --autostart --spawn-test=200 must print no SCRIPT ERROR.",
+  "E-hud request (2) NOT DONE: add to presentation/match_view.gd near cancel_placement(): func is_placing() -> bool: return placing_def != \"\"",
+  "E-hud request (1) already satisfied for presses: all left/right/middle presses and wheel are in _unhandled_input, so clicks on HUD panels never reach the world. Only mouse MOTION and button RELEASES are read in _input, on purpose, so that a drag that ends over a HUD panel still finishes. Keep it this way unless E sees a concrete bug; tell E.",
+  "E-hud request (3) already satisfied: WASD/arrow pan starts only from a key press in _unhandled_input (_pan_keys); Input.is_physical_key_pressed is used only to CLEAR a held key, never to start panning. A D press the HUD consumes therefore never pans. Verify in a windowed run: select engineers, press D, and confirm the camera does not move.",
+  "Windowed check with HUD present: godot --path . -- --autoshot=<abs>/.plan/shots/D-view/07_autostart_hud.png --autoshot-delay=5 --autostart ; view it (the earlier shots 01/0x/04 already show E's HUD present and working with the view).",
+  "3. Write final report (AGENT_RULES format)."
+ ],
+ "files_touched": [
+  "presentation/match_view.gd",
+  "presentation/view/camera_rig.gd",
+  "presentation/view/terrain_layer.gd",
+  "presentation/view/entity_layer.gd",
+  "presentation/view/fog_layer.gd",
+  "presentation/view/fx_layer.gd",
+  "presentation/view/overlay_layer.gd",
+  "presentation/view/view_util.gd"
+ ],
+ "test_state": "Full tests/run.sh NOT completed (killed by timeout 110). Headless game run before the combat-demo edit: no SCRIPT ERROR. Windowed runs (6 autoshots) printed no ERROR lines.",
+ "gotchas": [
+  "Use untyped 'var mv' in layers (typed Node2D blocks member access to MatchView fields).",
+  "Variant-returning dict/ternary expressions need explicit types (var x: bool = ...), ':=' fails.",
+  "WASD vs A/S: A/S act as attack-move/stop only when own units are selected; otherwise they pan.",
+  "Esc with nothing to cancel is left unhandled for E's pause menu.",
+  "Edge pan is disabled when --autoshot is present so screenshots do not drift.",
+  "ArtCatalog still returns magenta placeholders (C stopped); view_util fallbacks render instead and switch to real art automatically when non-placeholder textures appear (detection: <=16px solid magenta).",
+  "Map border shows as a faint line in unexplored area (linear-filtered fog quad edge); harmless."
+ ]
+}

@@ -1,0 +1,12 @@
+wave1 dispatched 2026-10-22
+A-econ  sonnet  600k/150  bounded spec, clear contract
+B-mil   opus    600k/150  pathing/steering/fog fairness need judgement
+C-art   opus    500k/130  visual judgement
+D-view  opus    600k/150  multi-file integration, rendering perf
+E-hud   sonnet  500k/130  bounded UI spec
+F-infra sonnet  500k/130  bounded infra spec
+task ids: A-econ=a8e0860edc5756bcf B-mil=acbd63e4bad5f1474 C-art=a079c86e8f4165e14 D-view=ad794b078f7f0188d E-hud=ad162135141fda19b F-infra=a92c61856bbc71969
+guard monitor: b8gbrwgyj
+C-art STOPPED (2nd STALE, 0 files written). successor C-art-2 opus 500k/130 - same brief + modular-write rule
+G-ai opus 600k/150 planning judgement, fairness (dispatched early while B finishes perf)
+task ids: C-art-2=adcc26ccf404d6814 G-ai=a08f3b4dfcc9442be

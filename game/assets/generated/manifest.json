@@ -1,0 +1,595 @@
+{
+  "buildings": {
+    "barracks": {
+      "pivot": [
+        102,
+        88
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/barracks_build_0.png",
+          "mask": "buildings/barracks_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/barracks_build_1.png",
+          "mask": "buildings/barracks_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/barracks_build_2.png",
+          "mask": "buildings/barracks_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/barracks_built.png",
+          "mask": "buildings/barracks_built_mask.png"
+        }
+      }
+    },
+    "depot": {
+      "pivot": [
+        70,
+        72
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/depot_build_0.png",
+          "mask": "buildings/depot_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/depot_build_1.png",
+          "mask": "buildings/depot_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/depot_build_2.png",
+          "mask": "buildings/depot_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/depot_built.png",
+          "mask": "buildings/depot_built_mask.png"
+        }
+      }
+    },
+    "generator": {
+      "pivot": [
+        70,
+        84
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/generator_build_0.png",
+          "mask": "buildings/generator_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/generator_build_1.png",
+          "mask": "buildings/generator_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/generator_build_2.png",
+          "mask": "buildings/generator_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/generator_built.png",
+          "mask": "buildings/generator_built_mask.png"
+        }
+      }
+    },
+    "guard_tower": {
+      "pivot": [
+        38,
+        80
+      ],
+      "size": 1,
+      "states": {
+        "build_0": {
+          "file": "buildings/guard_tower_build_0.png",
+          "mask": "buildings/guard_tower_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/guard_tower_build_1.png",
+          "mask": "buildings/guard_tower_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/guard_tower_build_2.png",
+          "mask": "buildings/guard_tower_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/guard_tower_built.png",
+          "mask": "buildings/guard_tower_built_mask.png"
+        }
+      }
+    },
+    "hq": {
+      "pivot": [
+        102,
+        120
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/hq_build_0.png",
+          "mask": "buildings/hq_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/hq_build_1.png",
+          "mask": "buildings/hq_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/hq_build_2.png",
+          "mask": "buildings/hq_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/hq_built.png",
+          "mask": "buildings/hq_built_mask.png"
+        }
+      }
+    },
+    "motor_pool": {
+      "pivot": [
+        102,
+        96
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/motor_pool_build_0.png",
+          "mask": "buildings/motor_pool_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/motor_pool_build_1.png",
+          "mask": "buildings/motor_pool_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/motor_pool_build_2.png",
+          "mask": "buildings/motor_pool_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/motor_pool_built.png",
+          "mask": "buildings/motor_pool_built_mask.png"
+        }
+      }
+    }
+  },
+  "decor": {
+    "rock": [
+      {
+        "file": "decor/rock_0.png",
+        "pivot": [
+          26,
+          23
+        ]
+      },
+      {
+        "file": "decor/rock_1.png",
+        "pivot": [
+          26,
+          23
+        ]
+      },
+      {
+        "file": "decor/rock_2.png",
+        "pivot": [
+          26,
+          23
+        ]
+      }
+    ],
+    "tree": [
+      {
+        "file": "decor/tree_0.png",
+        "pivot": [
+          17,
+          45
+        ]
+      },
+      {
+        "file": "decor/tree_1.png",
+        "pivot": [
+          17,
+          45
+        ]
+      },
+      {
+        "file": "decor/tree_2.png",
+        "pivot": [
+          17,
+          45
+        ]
+      },
+      {
+        "file": "decor/tree_3.png",
+        "pivot": [
+          17,
+          45
+        ]
+      },
+      {
+        "file": "decor/tree_4.png",
+        "pivot": [
+          17,
+          45
+        ]
+      }
+    ]
+  },
+  "effects": {
+    "explosion_large": {
+      "fh": 64,
+      "file": "fx/explosion_large.png",
+      "frames": 6,
+      "fw": 64
+    },
+    "explosion_small": {
+      "fh": 32,
+      "file": "fx/explosion_small.png",
+      "frames": 6,
+      "fw": 32
+    },
+    "muzzle": {
+      "fh": 16,
+      "file": "fx/muzzle.png",
+      "frames": 3,
+      "fw": 16
+    },
+    "smoke": {
+      "fh": 32,
+      "file": "fx/smoke.png",
+      "frames": 5,
+      "fw": 32
+    }
+  },
+  "files": {
+    "buildings/barracks_build_0.png": "52e761ef2e8da8879c40d13bf98f7a51",
+    "buildings/barracks_build_0_mask.png": "f32f8278a46e1250381d4498b865dac0",
+    "buildings/barracks_build_1.png": "cb69a0f148e2b1066ef2baecd674c2a4",
+    "buildings/barracks_build_1_mask.png": "f32f8278a46e1250381d4498b865dac0",
+    "buildings/barracks_build_2.png": "9b909274cbb7131e9e50ba7c1283928c",
+    "buildings/barracks_build_2_mask.png": "f32f8278a46e1250381d4498b865dac0",
+    "buildings/barracks_built.png": "43e6946f04ba42d949ce010d1b90162b",
+    "buildings/barracks_built_mask.png": "0cc3d5fd26f0c8cae2f53b568b32770d",
+    "buildings/depot_build_0.png": "8f5023cf0b1764bfb7667d652e3385b6",
+    "buildings/depot_build_0_mask.png": "e1f1e9a8ebf8b15f7e568a44e71fba07",
+    "buildings/depot_build_1.png": "d24863adceaff8e7f57147ea754c3af2",
+    "buildings/depot_build_1_mask.png": "e1f1e9a8ebf8b15f7e568a44e71fba07",
+    "buildings/depot_build_2.png": "b7fa17655d24b57b062c14e046ad29e2",
+    "buildings/depot_build_2_mask.png": "e1f1e9a8ebf8b15f7e568a44e71fba07",
+    "buildings/depot_built.png": "2d0e333a09fdac714a3e9f5a3092a40f",
+    "buildings/depot_built_mask.png": "916a0b987c3f9b30d1d4650aff4124aa",
+    "buildings/generator_build_0.png": "d9b02452a937fe83e311ebed1ab5ff9e",
+    "buildings/generator_build_0_mask.png": "79b6e7339b94f1575a0be6e86ea977e8",
+    "buildings/generator_build_1.png": "1db356f6f0834541466b26ba4f500975",
+    "buildings/generator_build_1_mask.png": "79b6e7339b94f1575a0be6e86ea977e8",
+    "buildings/generator_build_2.png": "03fdb6895187fceb5aa535622e80f90f",
+    "buildings/generator_build_2_mask.png": "79b6e7339b94f1575a0be6e86ea977e8",
+    "buildings/generator_built.png": "5fbb0a2c969224d87f37b53b7982e93a",
+    "buildings/generator_built_mask.png": "ce132dfbc0728bdfc6f8208081522116",
+    "buildings/guard_tower_build_0.png": "8ebb119c6f42254846ea9520e2f92fe4",
+    "buildings/guard_tower_build_0_mask.png": "3a064102d2fab801c42de8a665098f12",
+    "buildings/guard_tower_build_1.png": "738442444666566bf2a962f00529d0f0",
+    "buildings/guard_tower_build_1_mask.png": "3a064102d2fab801c42de8a665098f12",
+    "buildings/guard_tower_build_2.png": "37a960e61bcccb2d6c9d2afbfcc4eee1",
+    "buildings/guard_tower_build_2_mask.png": "3a064102d2fab801c42de8a665098f12",
+    "buildings/guard_tower_built.png": "ef322e1459e8f1b88951d5e4b1412c55",
+    "buildings/guard_tower_built_mask.png": "272534019cd51b5fd16ff093f8eb0500",
+    "buildings/hq_build_0.png": "828a2de0952b9bf0a45d7358503392e4",
+    "buildings/hq_build_0_mask.png": "b1c62d98fda68dc1e34a72087b1961f0",
+    "buildings/hq_build_1.png": "7f6fa72b7bdd5309a21bc37e56a4757f",
+    "buildings/hq_build_1_mask.png": "b1c62d98fda68dc1e34a72087b1961f0",
+    "buildings/hq_build_2.png": "510f971b4d4fbdeb1ff3b8c98c26fa4c",
+    "buildings/hq_build_2_mask.png": "b1c62d98fda68dc1e34a72087b1961f0",
+    "buildings/hq_built.png": "3f9f0bb44779b58e5ebda40af2d430aa",
+    "buildings/hq_built_mask.png": "92bc21fcb08b8859cb900c160a670771",
+    "buildings/motor_pool_build_0.png": "94b0af9176f98eeee23500a33b5f4fa0",
+    "buildings/motor_pool_build_0_mask.png": "2a4afc32291d577196730b066657c0c1",
+    "buildings/motor_pool_build_1.png": "5084c52b3fe3bab2712c65c166e314db",
+    "buildings/motor_pool_build_1_mask.png": "2a4afc32291d577196730b066657c0c1",
+    "buildings/motor_pool_build_2.png": "a7d3c0e65a5ae5a1ae3d2ff426761695",
+    "buildings/motor_pool_build_2_mask.png": "2a4afc32291d577196730b066657c0c1",
+    "buildings/motor_pool_built.png": "8fcf18b294a6407f8da5679286106185",
+    "buildings/motor_pool_built_mask.png": "e27b482656d398ab94b7ae2ac7a313ce",
+    "decor/rock_0.png": "7820d5e5b3c936df1e132905bcd5ace9",
+    "decor/rock_1.png": "68e1139f1bc164ea03da0a4da885505e",
+    "decor/rock_2.png": "a461dd4b63a80963204ad84b95191ec5",
+    "decor/tree_0.png": "b14ead7b7cfd060f3fa8808cffb54c9e",
+    "decor/tree_1.png": "a4e4fde6637e42d912a9d9738ef72dc8",
+    "decor/tree_2.png": "16d42d4e0519a421853869f0149e8043",
+    "decor/tree_3.png": "e61990c88c0e6b5b7eee9c75d51feadf",
+    "decor/tree_4.png": "a43edee33f1d606b83d36a24e0b790fd",
+    "fog/explored.png": "fdb78248d0675b2efc3d48cd7b1a4737",
+    "fog/unexplored.png": "c6027e6c58fbed51029568c703c0dd5c",
+    "fx/explosion_large.png": "122fd496b139116df34d07fc8f2e1e04",
+    "fx/explosion_small.png": "1652962a191339c1c972c05e904f0417",
+    "fx/muzzle.png": "ecce9ebca50c5fdad61267d84d72bd7c",
+    "fx/smoke.png": "4797e1d01b82d2369d46367988decd81",
+    "icons/at_gunner.png": "5f2cc6ad7f2380056d3eba6024989e26",
+    "icons/at_team.png": "8ebec29b00a6620409c2f29e16af2239",
+    "icons/barracks.png": "fef0ba635b8e951bf303eab6cac1047e",
+    "icons/depot.png": "d04bce5b681d17d5d669faaab5c72f69",
+    "icons/engineer.png": "1dea08ff4ef5c3a56226c3b2efb3e062",
+    "icons/generator.png": "990015407349dca50233676e470ce924",
+    "icons/guard_tower.png": "e745e6fd692b74e8d7e9d63f4206b5a9",
+    "icons/hq.png": "96bf0f13c3ceb28086d50cbcdde77035",
+    "icons/ifv.png": "33a4ef164362f3f76c985ff6486bcd90",
+    "icons/mbt.png": "85c0edbeacde5ab6b3a82c4e552884d0",
+    "icons/motor_pool.png": "76dd71be29cfc5ac3758e83f48634878",
+    "icons/ore.png": "4968ea2a78a007f859454751b541a74c",
+    "icons/recon.png": "d8e4cb2ebea040162251bd52b3525c66",
+    "icons/rifle_squad.png": "4d12e9af5f93b973a190b3251c92be63",
+    "icons/rifleman.png": "0fbc4832f8973f7f11ce82484e16f36c",
+    "icons/salvage.png": "db19152930bca8be553f56fee70ba0fb",
+    "resources/ore.png": "cacf0753445216b19f7f1c68964b9aa7",
+    "resources/salvage.png": "3a01381e80683ce4a6c9396526cac98f",
+    "terrain/bridge_0.png": "f116a60bcfdd043e2bba1b4837569d8a",
+    "terrain/dirt_0.png": "7f0250dd07b285abcf79ba43c179d89b",
+    "terrain/dirt_1.png": "041cba7884838edba098634bba0c5a37",
+    "terrain/dirt_2.png": "e0c6185e2b0f05b0e7dd4e6a5a4d5b46",
+    "terrain/ford_0.png": "bb4e02e8549f42da1023076e83f392ad",
+    "terrain/ford_1.png": "68ed6faf9ce5e7c69bc2b01a2c450ab7",
+    "terrain/forest_0.png": "32994f7bac03e719a59b1af98732eb31",
+    "terrain/forest_1.png": "2e7945d4b9a6c4b5a9e70b01d4354d0c",
+    "terrain/forest_2.png": "8b3079268609124c1e0a7a8df774787c",
+    "terrain/grass_0.png": "4315a569a30b2b442b1c8ddb4207904d",
+    "terrain/grass_1.png": "f25db5c38c763b84133afb16d1d31344",
+    "terrain/grass_2.png": "348c87885c625410a42ff7e6ac90a485",
+    "terrain/grass_3.png": "04f3d5d9c4ca072fb8a06ff6fe20563b",
+    "terrain/ridge_0.png": "76c36d93ba4ce056fb5fe8544f8fcbde",
+    "terrain/ridge_1.png": "91f6661a0d58f6d69480070a4900b915",
+    "terrain/ridge_2.png": "46de1fb6cde2fefc7b99ea3a737903d1",
+    "terrain/road_0.png": "336c313c11459c899442d61d998e0480",
+    "terrain/road_1.png": "2a432adb8a3e9db3b3c3e10aac0b5e20",
+    "terrain/water_0.png": "24122d5023ed2e021d867ba2836bcb76",
+    "terrain/water_1.png": "4767b3198a21b316fa5a109026903a36",
+    "terrain/water_2.png": "1c1d7f07f51384ea6734207052861c37",
+    "terrain/water_3.png": "36d93c8371276a5263cce044ef33f5d4",
+    "units/at_gunner.png": "609546228437047a599539f196cf5b37",
+    "units/at_gunner_mask.png": "fe55b483a454677d51f462169a121969",
+    "units/engineer.png": "54a4ad36a7cbbf1cf03e09ba94b5e370",
+    "units/engineer_mask.png": "3e06b9097573d01db8ec28fdb7dffafc",
+    "units/ifv.png": "7b89f49de10efade11d268997f306189",
+    "units/ifv_mask.png": "1d9e512a0c06704146c7c1fcc33f021d",
+    "units/mbt.png": "90c11d55b62dd6c6fef3e0fa2855aa2e",
+    "units/mbt_mask.png": "68adf2f3966462b23b3ec013c471c3e5",
+    "units/recon.png": "a866495a41edeb84525729829af111f8",
+    "units/recon_mask.png": "56ad097dd0ea1ef8edd8f1b849f6e504",
+    "units/rifleman.png": "5041b0347f9f6eecb359b3f2cc086d34",
+    "units/rifleman_mask.png": "f28c299a660b1340599eaa65ef9aad9c",
+    "wrecks/ifv_wreck.png": "43d61123fb7f6ba560881e28e53c1728",
+    "wrecks/mbt_wreck.png": "2f7021277be2d6fadfc05959cd6852f5",
+    "wrecks/rubble_1.png": "a7f7ebff98f5991e99735403caf38418",
+    "wrecks/rubble_2.png": "641fd17cc79917f1ba63c787fc2777f8",
+    "wrecks/rubble_3.png": "779c4558e012ae9d8d00989a777cd44b"
+  },
+  "fog": {
+    "explored": "fog/explored.png",
+    "unexplored": "fog/unexplored.png"
+  },
+  "icons": {
+    "at_gunner": "icons/at_gunner.png",
+    "at_team": "icons/at_team.png",
+    "barracks": "icons/barracks.png",
+    "depot": "icons/depot.png",
+    "engineer": "icons/engineer.png",
+    "generator": "icons/generator.png",
+    "guard_tower": "icons/guard_tower.png",
+    "hq": "icons/hq.png",
+    "ifv": "icons/ifv.png",
+    "mbt": "icons/mbt.png",
+    "motor_pool": "icons/motor_pool.png",
+    "ore": "icons/ore.png",
+    "recon": "icons/recon.png",
+    "rifle_squad": "icons/rifle_squad.png",
+    "rifleman": "icons/rifleman.png",
+    "salvage": "icons/salvage.png"
+  },
+  "infantry": {
+    "at_gunner": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/at_gunner.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/at_gunner_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "engineer": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/engineer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/engineer_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "recon": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/recon.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/recon_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "rifleman": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/rifleman.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/rifleman_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    }
+  },
+  "resources": {
+    "ore": {
+      "file": "resources/ore.png",
+      "pivot": [
+        28,
+        28
+      ]
+    },
+    "salvage": {
+      "file": "resources/salvage.png",
+      "pivot": [
+        28,
+        28
+      ]
+    }
+  },
+  "rubble": {
+    "1": {
+      "file": "wrecks/rubble_1.png",
+      "pivot": [
+        36,
+        38
+      ]
+    },
+    "2": {
+      "file": "wrecks/rubble_2.png",
+      "pivot": [
+        68,
+        54
+      ]
+    },
+    "3": {
+      "file": "wrecks/rubble_3.png",
+      "pivot": [
+        100,
+        70
+      ]
+    }
+  },
+  "terrain": {
+    "0": {
+      "name": "grass",
+      "variants": 4
+    },
+    "1": {
+      "name": "dirt",
+      "variants": 3
+    },
+    "2": {
+      "name": "road",
+      "variants": 2
+    },
+    "3": {
+      "name": "forest",
+      "variants": 3
+    },
+    "4": {
+      "name": "water",
+      "variants": 4
+    },
+    "5": {
+      "name": "bridge",
+      "variants": 1
+    },
+    "6": {
+      "name": "ford",
+      "variants": 2
+    },
+    "7": {
+      "name": "ridge",
+      "variants": 3
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "ifv": {
+      "facings": 8,
+      "fh": 46,
+      "file": "wrecks/ifv_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 60,
+      "pivot": [
+        30,
+        30
+      ]
+    },
+    "mbt": {
+      "facings": 8,
+      "fh": 50,
+      "file": "wrecks/mbt_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 70,
+      "pivot": [
+        35,
+        32
+      ]
+    }
+  },
+  "vehicles": {
+    "ifv": {
+      "facings": 8,
+      "fh": 46,
+      "file": "units/ifv.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 60,
+      "mask": "units/ifv_mask.png",
+      "pivot": [
+        30,
+        30
+      ]
+    },
+    "mbt": {
+      "facings": 8,
+      "fh": 50,
+      "file": "units/mbt.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 70,
+      "mask": "units/mbt_mask.png",
+      "pivot": [
+        35,
+        32
+      ]
+    }
+  },
+  "version": 1
+}

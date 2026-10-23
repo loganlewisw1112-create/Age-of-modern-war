@@ -17,10 +17,14 @@ func check_eq(a, b, msg: String) -> bool:
 	return true
 
 
-## A fresh default 2-side match (player fid 0 vs AI fid 1) with optional overrides.
-func make_world(overrides: Dictionary = {}) -> SimWorld:
+## A fresh default 2-side match (player fid 0 vs side fid 1) with optional overrides.
+## By default side 1 is NOT AI-controlled, so unit/system tests see only their own
+## commands. Pass live_ai=true (or set sides in overrides) to let the AI act.
+func make_world(overrides: Dictionary = {}, live_ai: bool = false) -> SimWorld:
 	var c := SimWorld.default_config()
 	c.merge(overrides, true)
+	if not live_ai and not overrides.has("sides"):
+		c.sides[1].ai = false
 	return SimWorld.new_match(c)
 
 
