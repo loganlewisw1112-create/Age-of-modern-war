@@ -16,7 +16,8 @@
       "ore": 0
     },
     "train_time": 8,
-    "hotkey": "E"
+    "hotkey": "E",
+    "faction": "human_a"
   },
   "rifle_squad": {
     "name": "Rifle Squad (4)",
@@ -33,7 +34,8 @@
       "ore": 0
     },
     "train_time": 15,
-    "hotkey": "R"
+    "hotkey": "R",
+    "faction": "human_a"
   },
   "at_team": {
     "name": "AT Team (2)",
@@ -48,7 +50,8 @@
       "ore": 0
     },
     "train_time": 18,
-    "hotkey": "T"
+    "hotkey": "T",
+    "faction": "human_a"
   },
   "recon": {
     "name": "Recon Scout",
@@ -62,7 +65,8 @@
       "ore": 0
     },
     "train_time": 8,
-    "hotkey": "C"
+    "hotkey": "C",
+    "faction": "human_a"
   },
   "ifv": {
     "name": "IFV",
@@ -76,7 +80,8 @@
       "ore": 100
     },
     "train_time": 25,
-    "hotkey": "I"
+    "hotkey": "I",
+    "faction": "human_a"
   },
   "mbt": {
     "name": "Main Battle Tank",
@@ -90,7 +95,8 @@
       "ore": 250
     },
     "train_time": 40,
-    "hotkey": "M"
+    "hotkey": "M",
+    "faction": "human_a"
   },
   "officer": {
     "name": "Officer",
@@ -104,7 +110,8 @@
       "ore": 0
     },
     "train_time": 12,
-    "hotkey": "O"
+    "hotkey": "O",
+    "faction": "human_a"
   },
   "logistics_truck": {
     "name": "Logistics Truck",
@@ -118,6 +125,254 @@
       "ore": 50
     },
     "train_time": 18,
-    "hotkey": "L"
+    "hotkey": "L",
+    "faction": "human_a"
+  },
+  "b_crew": {
+    "name": "Works Crew",
+    "spawns": [
+      "b_crew"
+    ],
+    "facility": "b_works",
+    "cost": {
+      "credits": 90,
+      "salvage": 10,
+      "ore": 0
+    },
+    "train_time": 9,
+    "hotkey": "E",
+    "faction": "human_b"
+  },
+  "b_militia_squad": {
+    "name": "Militia Squad (5)",
+    "spawns": [
+      "b_militia",
+      "b_militia",
+      "b_militia",
+      "b_militia",
+      "b_militia"
+    ],
+    "facility": "b_barracks",
+    "cost": {
+      "credits": 150,
+      "salvage": 70,
+      "ore": 0
+    },
+    "train_time": 14,
+    "hotkey": "R",
+    "faction": "human_b"
+  },
+  "b_heavy_squad": {
+    "name": "Heavy Rifle Squad (3)",
+    "spawns": [
+      "b_heavy_rifle",
+      "b_heavy_rifle",
+      "b_heavy_rifle"
+    ],
+    "facility": "b_barracks",
+    "cost": {
+      "credits": 260,
+      "salvage": 130,
+      "ore": 0
+    },
+    "train_time": 18,
+    "hotkey": "T",
+    "faction": "human_b"
+  },
+  "b_officer": {
+    "name": "Foreman Officer",
+    "spawns": [
+      "b_officer"
+    ],
+    "facility": "b_barracks",
+    "cost": {
+      "credits": 200,
+      "salvage": 60,
+      "ore": 0
+    },
+    "train_time": 12,
+    "hotkey": "O",
+    "faction": "human_b"
+  },
+  "b_carrier": {
+    "name": "Armored Carrier",
+    "spawns": [
+      "b_carrier"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 300,
+      "salvage": 170,
+      "ore": 80
+    },
+    "train_time": 24,
+    "hotkey": "I",
+    "faction": "human_b"
+  },
+  "b_rebuilt_mbt": {
+    "name": "Rebuilt Tank",
+    "spawns": [
+      "b_rebuilt_mbt"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 450,
+      "salvage": 260,
+      "ore": 220
+    },
+    "train_time": 42,
+    "hotkey": "M",
+    "faction": "human_b"
+  },
+  "b_artillery_truck": {
+    "name": "Artillery Truck",
+    "spawns": [
+      "b_artillery_truck"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 380,
+      "salvage": 160,
+      "ore": 150
+    },
+    "train_time": 32,
+    "hotkey": "A",
+    "faction": "human_b"
+  },
+  "b_recovery_truck": {
+    "name": "Recovery Truck",
+    "spawns": [
+      "b_recovery_truck"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 260,
+      "salvage": 140,
+      "ore": 40
+    },
+    "train_time": 20,
+    "hotkey": "L",
+    "faction": "human_b"
+  },
+  "m_hauler": {
+    "name": "Cargo Hauler",
+    "spawns": [
+      "m_hauler"
+    ],
+    "facility": "m_core",
+    "cost": {
+      "credits": 140,
+      "salvage": 20,
+      "ore": 0
+    },
+    "train_time": 9,
+    "hotkey": "E",
+    "faction": "machine"
+  },
+  "m_repair_bot": {
+    "name": "Repair Bot",
+    "spawns": [
+      "m_repair_bot"
+    ],
+    "facility": "m_core",
+    "cost": {
+      "credits": 120,
+      "salvage": 30,
+      "ore": 0
+    },
+    "train_time": 8,
+    "hotkey": "W",
+    "faction": "machine"
+  },
+  "m_scout_crawler": {
+    "name": "Scout Crawler",
+    "spawns": [
+      "m_scout_crawler"
+    ],
+    "facility": "m_assembler",
+    "cost": {
+      "credits": 120,
+      "salvage": 40,
+      "ore": 0
+    },
+    "train_time": 8,
+    "hotkey": "C",
+    "faction": "machine"
+  },
+  "m_drone_pair": {
+    "name": "Combat Drones (2)",
+    "spawns": [
+      "m_drone",
+      "m_drone"
+    ],
+    "facility": "m_assembler",
+    "cost": {
+      "credits": 260,
+      "salvage": 110,
+      "ore": 30
+    },
+    "train_time": 16,
+    "hotkey": "R",
+    "faction": "machine"
+  },
+  "m_coordinator": {
+    "name": "Coordinator Node",
+    "spawns": [
+      "m_coordinator"
+    ],
+    "facility": "m_assembler",
+    "cost": {
+      "credits": 260,
+      "salvage": 70,
+      "ore": 0
+    },
+    "train_time": 12,
+    "hotkey": "O",
+    "faction": "machine"
+  },
+  "m_walker": {
+    "name": "Heavy Walker",
+    "spawns": [
+      "m_walker"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 650,
+      "salvage": 180,
+      "ore": 230
+    },
+    "train_time": 40,
+    "hotkey": "M",
+    "faction": "machine"
+  },
+  "m_tracked": {
+    "name": "Tracked Platform",
+    "spawns": [
+      "m_tracked"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 450,
+      "salvage": 150,
+      "ore": 120
+    },
+    "train_time": 28,
+    "hotkey": "I",
+    "faction": "machine"
+  },
+  "m_artillery_node": {
+    "name": "Artillery Node",
+    "spawns": [
+      "m_artillery_node"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 420,
+      "salvage": 120,
+      "ore": 160
+    },
+    "train_time": 30,
+    "hotkey": "A",
+    "faction": "machine"
   }
 }

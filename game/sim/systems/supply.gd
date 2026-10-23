@@ -70,7 +70,7 @@ static func _sources(w: SimWorld) -> Dictionary:
 			continue
 		if e.kind == "building" and bool(e.built):
 			var d := Content.building(e.def)
-			if bool(d.get("is_hq", false)) or SUPPLY_BUILDINGS.has(String(e.def)):
+			if bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)):  # G3a: flag replaces SUPPLY_BUILDINGS
 				if not out.has(fid):
 					out[fid] = []
 				out[fid].append({"kind": "b", "cell": e.cell, "size": int(e.size)})

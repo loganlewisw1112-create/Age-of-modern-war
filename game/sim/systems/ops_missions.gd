@@ -124,7 +124,7 @@ static func _nearest_support(w: SimWorld, fid: int, p: Vector2, trucks: bool):
 			continue
 		var ok := false
 		if e.kind == "building":
-			ok = (e.def == "hq" or e.def == "depot") and bool(e.get("built", false))
+			ok = bool(Content.building(e.def).get("supply_point", false)) and bool(e.get("built", false))  # G3a flag
 		elif e.kind == "unit" and trucks:
 			ok = bool(Content.unit(e.def).get("is_supply", false))
 		if not ok:

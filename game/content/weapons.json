@@ -2,18 +2,166 @@
   "_meta": {
     "schema_version": 1,
     "status": "PROVISIONAL. damage per shot; range in tiles; cooldown in seconds; accuracy = base hit chance.",
-    "armor_mult": "damage multiplier by weapon class (row) against armor class (column)"
+    "armor_mult": "damage multiplier by weapon class (row) against armor class (column)",
+    "g3": "G3a: anti_air marks weapons that can engage air units; indirect/min_range/splash for artillery. PROVISIONAL."
   },
   "armor_mult": {
-    "small_arms": {"infantry": 1.0, "light": 0.25, "heavy": 0.05, "building": 0.15},
-    "at":         {"infantry": 0.35, "light": 1.2, "heavy": 1.0, "building": 0.8},
-    "autocannon": {"infantry": 1.0, "light": 0.8, "heavy": 0.2, "building": 0.5}
+    "small_arms": {
+      "infantry": 1.0,
+      "light": 0.25,
+      "heavy": 0.05,
+      "building": 0.15
+    },
+    "at": {
+      "infantry": 0.35,
+      "light": 1.2,
+      "heavy": 1.0,
+      "building": 0.8
+    },
+    "autocannon": {
+      "infantry": 1.0,
+      "light": 0.8,
+      "heavy": 0.2,
+      "building": 0.5
+    },
+    "artillery": {
+      "infantry": 1.0,
+      "light": 0.8,
+      "heavy": 0.45,
+      "building": 1.0
+    },
+    "energy": {
+      "infantry": 0.9,
+      "light": 0.9,
+      "heavy": 0.6,
+      "building": 0.5
+    }
   },
-  "pistol":      {"class": "small_arms", "damage": 4,   "range": 4, "cooldown": 1.0, "accuracy": 0.7},
-  "rifle":       {"class": "small_arms", "damage": 9,   "range": 6, "cooldown": 1.0, "accuracy": 0.75},
-  "carbine":     {"class": "small_arms", "damage": 6,   "range": 6, "cooldown": 0.8, "accuracy": 0.75},
-  "at_rocket":   {"class": "at",         "damage": 70,  "range": 7, "cooldown": 3.5, "accuracy": 0.7},
-  "autocannon":  {"class": "autocannon", "damage": 16,  "range": 7, "cooldown": 0.6, "accuracy": 0.7},
-  "tank_cannon": {"class": "at",         "damage": 110, "range": 8, "cooldown": 3.0, "accuracy": 0.8},
-  "hmg":         {"class": "small_arms", "damage": 10,  "range": 8, "cooldown": 0.4, "accuracy": 0.7}
+  "pistol": {
+    "class": "small_arms",
+    "damage": 4,
+    "range": 4,
+    "cooldown": 1.0,
+    "accuracy": 0.7,
+    "anti_air": true
+  },
+  "rifle": {
+    "class": "small_arms",
+    "damage": 9,
+    "range": 6,
+    "cooldown": 1.0,
+    "accuracy": 0.75,
+    "anti_air": true
+  },
+  "carbine": {
+    "class": "small_arms",
+    "damage": 6,
+    "range": 6,
+    "cooldown": 0.8,
+    "accuracy": 0.75,
+    "anti_air": true
+  },
+  "at_rocket": {
+    "class": "at",
+    "damage": 70,
+    "range": 7,
+    "cooldown": 3.5,
+    "accuracy": 0.7
+  },
+  "autocannon": {
+    "class": "autocannon",
+    "damage": 16,
+    "range": 7,
+    "cooldown": 0.6,
+    "accuracy": 0.7,
+    "anti_air": true
+  },
+  "tank_cannon": {
+    "class": "at",
+    "damage": 110,
+    "range": 8,
+    "cooldown": 3.0,
+    "accuracy": 0.8
+  },
+  "hmg": {
+    "class": "small_arms",
+    "damage": 10,
+    "range": 8,
+    "cooldown": 0.4,
+    "accuracy": 0.7,
+    "anti_air": true
+  },
+  "old_rifle": {
+    "class": "small_arms",
+    "damage": 7,
+    "range": 5.5,
+    "cooldown": 1.1,
+    "accuracy": 0.65
+  },
+  "lmg": {
+    "class": "small_arms",
+    "damage": 7,
+    "range": 6.5,
+    "cooldown": 0.45,
+    "accuracy": 0.65,
+    "anti_air": true
+  },
+  "old_cannon": {
+    "class": "at",
+    "damage": 95,
+    "range": 7.5,
+    "cooldown": 3.4,
+    "accuracy": 0.72
+  },
+  "howitzer": {
+    "class": "artillery",
+    "damage": 85,
+    "range": 16,
+    "min_range": 5,
+    "cooldown": 6.0,
+    "accuracy": 0.55,
+    "splash": 1.8,
+    "indirect": true
+  },
+  "laser_mg": {
+    "class": "energy",
+    "damage": 9,
+    "range": 7,
+    "cooldown": 0.5,
+    "accuracy": 0.8,
+    "anti_air": true
+  },
+  "drone_gun": {
+    "class": "small_arms",
+    "damage": 6,
+    "range": 5,
+    "cooldown": 0.5,
+    "accuracy": 0.75,
+    "anti_air": true
+  },
+  "rail": {
+    "class": "at",
+    "damage": 85,
+    "range": 8.5,
+    "cooldown": 3.0,
+    "accuracy": 0.85
+  },
+  "twin_ac": {
+    "class": "autocannon",
+    "damage": 14,
+    "range": 7,
+    "cooldown": 0.45,
+    "accuracy": 0.72,
+    "anti_air": true
+  },
+  "plasma_mortar": {
+    "class": "artillery",
+    "damage": 70,
+    "range": 14,
+    "min_range": 4,
+    "cooldown": 5.0,
+    "accuracy": 0.6,
+    "splash": 2.0,
+    "indirect": true
+  }
 }

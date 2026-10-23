@@ -132,7 +132,7 @@ static func _home_of(w: SimWorld, e: Dictionary):
 		var b: Dictionary = w.entities[id]
 		if b.kind != "building" or int(b.owner) != int(e.owner) or not bool(b.get("built", false)):
 			continue
-		if not HOME_DEFS.has(String(b.def)):
+		if not bool(Content.building(b.def).get("home", false)):  # G3a: flag replaces HOME_DEFS
 			continue
 		var bp: Vector2 = b.pos
 		var d := pos.distance_squared_to(bp)

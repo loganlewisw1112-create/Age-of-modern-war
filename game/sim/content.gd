@@ -3,7 +3,7 @@ extends RefCounted
 ## Read-only access to versioned content definitions in res://content/*.json.
 ## Whole-number JSON values are normalized to int so ledger math stays integral.
 
-const FILES := ["units", "production", "buildings", "weapons", "rules", "stages"]
+const FILES := ["units", "production", "buildings", "weapons", "rules", "stages", "factions"]
 
 static var _data: Dictionary = {}
 static var _loaded: bool = false
@@ -87,3 +87,35 @@ static func rules() -> Dictionary:
 
 static func stages() -> Array:
 	return table("stages").get("stages", [])
+
+
+## G3a: faction registry (content/factions.json).
+static func faction(id: String) -> Dictionary:
+	return table("factions").get(id, {})
+
+
+static func faction_ids() -> Array:
+	return ids("factions")
+
+
+## Def id this faction uses for a generic role ("" if the faction has none).
+## Building roles: hq power depot barracks factory refinery defense extra.
+## Production roles: builder gatherer infantry antitank recon light heavy artillery officer supply air.
+static func role(faction_id: String, role_name: String) -> String:
+	return String(faction(faction_id).get("roles", {}).get(role_name, ""))
+
+
+## Buildable building defs for a faction (content order).
+static func buildable_for(faction_id: String) -> Array:
+	var out := []
+	for id in ids("buildings"):
+		var d: Dictionary = building(id)
+		if String(d.get("faction", "")) == faction_id and bool(d.get("buildable", false)):
+			out.append(id)
+	return out
+
+
+## Economy profile multiplier (rules.economy_profiles[profile][key]); 1.0 when absent.
+static func econ(profile: String, key: String) -> float:
+	var p: Dictionary = rules().get("economy_profiles", {}).get(profile, {})
+	return float(p.get(key, 1.0))

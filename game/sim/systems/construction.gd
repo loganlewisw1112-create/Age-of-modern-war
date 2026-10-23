@@ -114,6 +114,8 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 	var nm := String(d.get("name", def_id))
 	if not bool(d.get("buildable", false)):
 		return "%s cannot be constructed." % nm
+	if w.factions.has(fid) and d.has("faction") and String(d.faction) != String(w.factions[fid].faction_def):
+		return "%s belongs to another faction." % nm
 	for req in d.get("requires", []):
 		var ok := false
 		for b in w.buildings_of(fid, String(req)):

@@ -8,7 +8,10 @@ extends RefCounted
 
 const W := 96
 const H := 96
-const SPAWNS := [Vector2i(14, 14), Vector2i(81, 81)]
+## G3a: 4 spawns. 0/1 are the original diagonal corners; 2/3 (one per bank) mirror each other.
+## (The other two corners lie on the river line x + y = 95, so they cannot host a base.)
+## 2-side matches use spawns 0 and 1 exactly as before.
+const SPAWNS := [Vector2i(14, 14), Vector2i(81, 81), Vector2i(50, 10), Vector2i(45, 85)]
 const RIVER_HALF_WIDTH := 1.6
 const FORD_U := 40          # fords where (x - y) == +-40 along the river
 const MAX_ATTEMPTS := 12
@@ -117,23 +120,27 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 	# --- resources: per-base (3 salvage + 2 ore) and contested near fords (1 salvage + 1 ore per side)
 	var resources := []
 	var taken := {}
-	var base: Vector2i = SPAWNS[0]
 	# 2026-10-23 (G2): salvage 1200->2000, ore 2500->3000; G2 sinks (repair, trucks, officers)
 	# starved long games (soak seeds 1/4 stalled with every pile mined out). PROVISIONAL.
 	var picks := [["salvage", 2000], ["salvage", 2000], ["salvage", 2000], ["ore", 3000], ["ore", 3000]]
 	var k := 0
 	var guard := 0
-	while k < picks.size() and guard < 400:
-		guard += 1
-		var ang := rng.randf_range(0.0, TAU)
-		var dist := rng.randf_range(6.0, 10.0)
-		var c := base + Vector2i(roundi(cos(ang) * dist), roundi(sin(ang) * dist))
-		if not _resource_ok(t, c, taken):
-			continue
-		if absi(c.x - c.y) <= 2:
-			continue
-		_add_resource(resources, taken, t, picks[k][0], picks[k][1], c)
-		k += 1
+	for base in [SPAWNS[0], SPAWNS[2]]:   # each base set is mirrored onto spawns 1 and 3
+		k = 0
+		guard = 0
+		while k < picks.size() and guard < 400:
+			guard += 1
+			var ang := rng.randf_range(0.0, TAU)
+			var dist := rng.randf_range(6.0, 10.0)
+			var c: Vector2i = base + Vector2i(roundi(cos(ang) * dist), roundi(sin(ang) * dist))
+			if c.x + c.y >= W - 6:
+				continue
+			if not _resource_ok(t, c, taken):
+				continue
+			if absi(c.x - c.y) <= 2:
+				continue
+			_add_resource(resources, taken, t, picks[k][0], picks[k][1], c)
+			k += 1
 	# contested: near the side-0 ford (u = -40 is x - y = -40 ... use the one in our half)
 	var contested := [["ore", 2000], ["salvage", 2000]]
 	k = 0
@@ -217,9 +224,10 @@ static func validate(m: Dictionary) -> String:
 					return "Spawn %s footprint not buildable at %s." % [s, s + Vector2i(dx, dy)]
 	for mc in ["foot", "vehicle"]:
 		var reach := _flood(t, m.spawns[0] + Vector2i(0, 3), mc)
-		var other: Vector2i = m.spawns[1] + Vector2i(0, 3)
-		if not reach.has(other):
-			return "No %s route between spawns %s and %s." % [mc, m.spawns[0], m.spawns[1]]
+		for si in range(1, m.spawns.size()):
+			var other: Vector2i = m.spawns[si] + Vector2i(0, 3)
+			if not reach.has(other):
+				return "No %s route between spawns %s and %s." % [mc, m.spawns[0], m.spawns[si]]
 		for r in m.resources:
 			var ok := false
 			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:

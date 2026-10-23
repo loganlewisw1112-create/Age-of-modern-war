@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "G3a faction registry. 'roles' map a generic role to this faction's def id so systems, AI and UI never hard-code names. Names are working concepts (DEC-14).",
+    "roles": "buildings: hq power depot barracks factory refinery defense extra; production items: builder gatherer infantry antitank recon light heavy artillery officer supply air"
+  },
+  "human_a": {
+    "name": "Modern Military Power",
+    "archetype": "Human A",
+    "kind": "human",
+    "blurb": "Combined arms, officers and modern armor.",
+    "roles": {
+      "hq": "hq",
+      "power": "generator",
+      "depot": "depot",
+      "barracks": "barracks",
+      "factory": "motor_pool",
+      "refinery": "refinery",
+      "defense": "guard_tower",
+      "extra": "",
+      "builder": "engineer",
+      "gatherer": "engineer",
+      "infantry": "rifle_squad",
+      "antitank": "at_team",
+      "recon": "recon",
+      "light": "ifv",
+      "heavy": "mbt",
+      "artillery": "",
+      "officer": "officer",
+      "supply": "logistics_truck",
+      "air": ""
+    },
+    "start_units": [
+      "engineer",
+      "engineer",
+      "engineer",
+      "engineer",
+      "engineer",
+      "recon"
+    ]
+  },
+  "human_b": {
+    "name": "Industrial Power",
+    "archetype": "Human B",
+    "kind": "human",
+    "blurb": "Durable industry, salvage economy, artillery and heavy armor.",
+    "roles": {
+      "hq": "b_works",
+      "power": "b_boiler",
+      "depot": "b_salvage_yard",
+      "barracks": "b_barracks",
+      "factory": "b_heavy_plant",
+      "refinery": "b_smelter",
+      "defense": "b_bunker",
+      "extra": "",
+      "builder": "b_crew",
+      "gatherer": "b_crew",
+      "infantry": "b_militia_squad",
+      "antitank": "b_heavy_squad",
+      "recon": "",
+      "light": "b_carrier",
+      "heavy": "b_rebuilt_mbt",
+      "artillery": "b_artillery_truck",
+      "officer": "b_officer",
+      "supply": "b_recovery_truck",
+      "air": ""
+    },
+    "start_units": [
+      "b_crew",
+      "b_crew",
+      "b_crew",
+      "b_crew",
+      "b_crew",
+      "b_militia"
+    ]
+  },
+  "machine": {
+    "name": "Autonomous Network",
+    "archetype": "Machine",
+    "kind": "machine",
+    "blurb": "Energy-bound fabrication, drones and walkers; no morale, no fuel stock.",
+    "roles": {
+      "hq": "m_core",
+      "power": "m_charging_hub",
+      "depot": "m_reprocessor",
+      "barracks": "m_assembler",
+      "factory": "m_crawler_works",
+      "refinery": "m_reprocessor",
+      "defense": "m_sentry",
+      "extra": "m_sensor_relay",
+      "builder": "m_repair_bot",
+      "gatherer": "m_hauler",
+      "infantry": "m_scout_crawler",
+      "antitank": "m_walker",
+      "recon": "m_scout_crawler",
+      "light": "m_tracked",
+      "heavy": "m_walker",
+      "artillery": "m_artillery_node",
+      "officer": "m_coordinator",
+      "supply": "",
+      "air": "m_drone_pair"
+    },
+    "start_units": [
+      "m_repair_bot",
+      "m_repair_bot",
+      "m_hauler",
+      "m_hauler",
+      "m_hauler",
+      "m_scout_crawler"
+    ]
+  }
+}

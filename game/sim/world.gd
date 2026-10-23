@@ -89,11 +89,14 @@ static func validate_config(c: Dictionary) -> String:
 	var sides: Array = c.get("sides", [])
 	if sides.size() < 2:
 		return "A match needs at least 2 sides."
-	if sides.size() > 2:
-		return "The G1 slice map (River Crossing) supports exactly 2 sides."
+	var max_sides := int(rules.get("max_sides", 4))
+	if sides.size() > max_sides:
+		return "River Crossing supports at most %d sides." % max_sides
+	var teams := {}
 	for s in sides:
-		if not rules.factions.has(s.get("faction", "")):
+		if Content.faction(String(s.get("faction", ""))).is_empty():
 			return "Unknown faction '%s'." % s.get("faction", "")
+		teams[int(s.get("team", sides.find(s)))] = true
 		var stage := int(s.get("stage", 8))
 		if stage < 1 or stage > 13:
 			return "Stage %d is not a valid stage ID (1-13)." % stage
@@ -105,8 +108,15 @@ static func validate_config(c: Dictionary) -> String:
 			return "Stage %d is not playable in this slice (only Stage 8)." % stage
 		if int(s.get("credits", 0)) < 0:
 			return "Starting credits cannot be negative."
+	if teams.size() < 2:
+		return "All sides are on the same team: there is nobody to fight."
 	if not rules.victory_types.has(c.get("victory", "")):
 		return "Unsupported victory condition '%s'." % c.get("victory", "")
+	var vr := Victory.validate_rules(c)
+	if vr != "":
+		return vr
+	if not rules.get("economy_profiles", {}).has(String(c.get("economy", "standard"))):
+		return "Unknown economy profile '%s'." % c.get("economy", "")
 	if not rules.ai_difficulties.has(c.get("ai_difficulty", "normal")):
 		return "Unknown AI difficulty '%s'." % c.get("ai_difficulty", "")
 	return ""
@@ -121,11 +131,14 @@ static func default_config() -> Dictionary:
 		"map": "river_crossing_s",
 		"victory": String(d.victory),
 		"ai_difficulty": String(d.ai_difficulty),
+		"economy": "standard",
 		"sides": [
-			{"faction": "human_a", "stage": 8, "credits": int(d.starting_credits), "ai": false, "name": "You"},
-			{"faction": "human_b", "stage": 8, "credits": int(d.starting_credits), "ai": true, "name": "Industrial AI"},
+			{"faction": "human_a", "stage": 8, "credits": int(d.starting_credits), "ai": false, "name": "You", "team": 0},
+			{"faction": "human_a", "stage": 8, "credits": int(d.starting_credits), "ai": true, "name": "Modern AI", "team": 1},
 		],
 	}
+	# NOTE: default_config stays Human A vs Human A (tests/autostart rely on it); the skirmish menu
+	# builds its own multi-faction configs.
 
 
 ## Creates a fully initialized match. Returns null and push_error on invalid config.
@@ -144,7 +157,9 @@ static func new_match(c: Dictionary) -> SimWorld:
 	var colors: Array = rules.team_colors
 	for i in c.sides.size():
 		var s: Dictionary = c.sides[i]
+		var spawns: Array = w.map.spawns
 		w.factions[i] = {
+			"team": int(s.get("team", i)),
 			"id": i,
 			"name": String(s.get("name", "Side %d" % i)),
 			"faction_def": String(s.faction),
@@ -159,7 +174,7 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"pop": 0,
 			"pop_cap": 0,
 			"alive": true,
-			"spawn": w.map.spawns[i],
+			"spawn": spawns[i % spawns.size()],
 			"journal": [],   # ledger audit: {tick, credits, salvage, ore, cause}
 			"stats": {"trained": 0, "built": 0, "lost": 0, "killed": 0},
 		}
@@ -179,9 +194,11 @@ static func new_match(c: Dictionary) -> SimWorld:
 
 
 func _place_start_package(fid: int) -> void:
-	var pkg: Dictionary = Content.rules().start_package
+	var fdef := String(factions[fid].faction_def)
+	var fd := Content.faction(fdef)
+	var pkg := {"units": fd.get("start_units", Content.rules().start_package.units)}
 	var spawn: Vector2i = factions[fid].spawn
-	var hq_def := "hq"
+	var hq_def := Content.role(fdef, "hq")
 	var size := int(Content.building(hq_def).size)
 	var origin := spawn - Vector2i(size / 2, size / 2)
 	var hq_id := spawn_building(hq_def, fid, origin, true)
@@ -508,8 +525,22 @@ func get_e(id: int):
 	return entities.get(id)
 
 
+## G3a: sides on the same team are allies.
 func is_enemy(a: int, b: int) -> bool:
-	return a != b and a != NEUTRAL and b != NEUTRAL
+	if a == b or a == NEUTRAL or b == NEUTRAL:
+		return false
+	if factions.has(a) and factions.has(b):
+		return int(factions[a].get("team", a)) != int(factions[b].get("team", b))
+	return true
+
+
+func is_ally(a: int, b: int) -> bool:
+	return a != NEUTRAL and b != NEUTRAL and not is_enemy(a, b)
+
+
+## Economy profile multiplier for this match (cfg.economy; rules.economy_profiles).
+func econ(key: String) -> float:
+	return Content.econ(String(cfg.get("economy", "standard")), key)
 
 
 func units_of(fid: int) -> Array:

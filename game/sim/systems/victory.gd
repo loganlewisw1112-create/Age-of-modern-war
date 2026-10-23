@@ -42,3 +42,10 @@ static func tick(w: SimWorld) -> void:
 		w.match_state.reason = "hq_elimination"
 		w.match_state.end_tick = w.tick
 		w.emit("MatchEnded", {"winner": winner, "reason": "hq_elimination"})
+
+
+## G3a STUB (owner: agent V3). Validate cfg victory rules (cfg.victory + cfg.victory_rules).
+## Returns "" or a human-readable reason (e.g. contradictory AND/OR sets). Stub accepts everything
+## that world.validate_config already accepted.
+static func validate_rules(c: Dictionary) -> String:
+	return ""

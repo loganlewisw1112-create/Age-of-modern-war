@@ -62,7 +62,7 @@ static func _refineries(w: SimWorld) -> void:
 	var ore_in := int(cfg.get("ore_in", 0))
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
-		if e.kind != "building" or e.def != "refinery":
+		if e.kind != "building" or not bool(Content.building(e.def).get("refines", false)):  # G3a: flag, any faction
 			continue
 		var fid := int(e.owner)
 		if not bool(e.built) or not w.factions.has(fid):

@@ -13,6 +13,8 @@ const MODULES := [
 	preload("res://tools/art/buildings.gd"),
 	preload("res://tools/art/props.gd"),
 	preload("res://tools/art/bridge.gd"),
+	preload("res://tools/art/faction_b.gd"),   # G3a Human B (Industrial) sprites + icons (ART3-B)
+	preload("res://tools/art/faction_m.gd"),   # G3a Machine (Autonomous Network) sprites + icons (ART3-M)
 	preload("res://tools/art/fx_ui.gd"),   # icons are made from earlier sprites
 	preload("res://tools/art/fx_g2.gd"),   # G2 effects/markers/command icons (extends fx_ui's maps)
 ]

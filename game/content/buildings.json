@@ -2,7 +2,8 @@
   "_meta": {
     "schema_version": 1,
     "status": "PROVISIONAL balance fixtures. size = square footprint in tiles. power > 0 produces, < 0 consumes. build_time in seconds for one engineer.",
-    "power_rule": "Buildings with requires_power stall production while the faction's power_use exceeds power_prod (reason LOW_POWER)."
+    "power_rule": "Buildings with requires_power stall production while the faction's power_use exceeds power_prod (reason LOW_POWER).",
+    "g3": "G3a: faction field; flags replace hard-coded defs: is_hq, deposit, supply_point (resupply), home (retreat target), refines (refinery cycle), recharge=R (free charge radius for energy units), scrap_magnet=R (Salvage Yard pulls scrap piles within R). PROVISIONAL."
   },
   "hq": {
     "name": "Headquarters",
@@ -24,7 +25,10 @@
       "salvage": 0,
       "ore": 0
     },
-    "build_time": 1
+    "build_time": 1,
+    "faction": "human_a",
+    "supply_point": true,
+    "home": true
   },
   "generator": {
     "name": "Generator Substation",
@@ -41,7 +45,8 @@
       "salvage": 100,
       "ore": 0
     },
-    "build_time": 20
+    "build_time": 20,
+    "faction": "human_a"
   },
   "depot": {
     "name": "Logistics Depot",
@@ -60,7 +65,10 @@
       "salvage": 80,
       "ore": 0
     },
-    "build_time": 15
+    "build_time": 15,
+    "faction": "human_a",
+    "supply_point": true,
+    "home": true
   },
   "barracks": {
     "name": "Barracks",
@@ -84,7 +92,8 @@
       "salvage": 150,
       "ore": 0
     },
-    "build_time": 25
+    "build_time": 25,
+    "faction": "human_a"
   },
   "motor_pool": {
     "name": "Motor Pool",
@@ -109,7 +118,8 @@
       "salvage": 200,
       "ore": 100
     },
-    "build_time": 35
+    "build_time": 35,
+    "faction": "human_a"
   },
   "guard_tower": {
     "name": "Guard Tower",
@@ -130,7 +140,8 @@
       "salvage": 100,
       "ore": 0
     },
-    "build_time": 15
+    "build_time": 15,
+    "faction": "human_a"
   },
   "refinery": {
     "name": "Refinery",
@@ -150,7 +161,9 @@
       "salvage": 200,
       "ore": 100
     },
-    "build_time": 30
+    "build_time": 30,
+    "faction": "human_a",
+    "refines": true
   },
   "bridge_span": {
     "name": "River Bridge",
@@ -162,5 +175,329 @@
     "neutral_structure": true,
     "repair_salvage": 300,
     "repair_time": 30
+  },
+  "b_works": {
+    "armor": "building",
+    "buildable": false,
+    "requires": [],
+    "name": "Works Command",
+    "faction": "human_b",
+    "size": 3,
+    "hp": 4200,
+    "sight": 10,
+    "power": 30,
+    "pop_cap": 20,
+    "deposit": true,
+    "is_hq": true,
+    "supply_point": true,
+    "home": true,
+    "produces": [
+      "b_crew"
+    ],
+    "requires_power": false,
+    "cost": {
+      "credits": 0,
+      "salvage": 0,
+      "ore": 0
+    },
+    "build_time": 1
+  },
+  "b_boiler": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Boiler Plant",
+    "faction": "human_b",
+    "size": 2,
+    "hp": 1300,
+    "sight": 5,
+    "power": 120,
+    "hotkey": "G",
+    "cost": {
+      "credits": 200,
+      "salvage": 140,
+      "ore": 0
+    },
+    "build_time": 24
+  },
+  "b_salvage_yard": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Salvage Yard",
+    "faction": "human_b",
+    "size": 2,
+    "hp": 1150,
+    "sight": 7,
+    "power": -5,
+    "pop_cap": 15,
+    "deposit": true,
+    "supply_point": true,
+    "home": true,
+    "hotkey": "D",
+    "scrap_magnet": 6,
+    "cost": {
+      "credits": 250,
+      "salvage": 60,
+      "ore": 0
+    },
+    "build_time": 18
+  },
+  "b_barracks": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Fortified Barracks",
+    "faction": "human_b",
+    "size": 3,
+    "hp": 2100,
+    "sight": 6,
+    "power": -15,
+    "hotkey": "B",
+    "produces": [
+      "b_militia_squad",
+      "b_heavy_squad",
+      "b_officer"
+    ],
+    "requires_power": true,
+    "cost": {
+      "credits": 250,
+      "salvage": 200,
+      "ore": 0
+    },
+    "build_time": 30
+  },
+  "b_heavy_plant": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "b_barracks"
+    ],
+    "name": "Heavy Vehicle Plant",
+    "faction": "human_b",
+    "size": 3,
+    "hp": 2600,
+    "sight": 6,
+    "power": -40,
+    "hotkey": "V",
+    "produces": [
+      "b_carrier",
+      "b_rebuilt_mbt",
+      "b_artillery_truck",
+      "b_recovery_truck"
+    ],
+    "requires_power": true,
+    "cost": {
+      "credits": 400,
+      "salvage": 260,
+      "ore": 120
+    },
+    "build_time": 40
+  },
+  "b_smelter": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "b_heavy_plant"
+    ],
+    "name": "Smelter",
+    "faction": "human_b",
+    "size": 3,
+    "hp": 1900,
+    "sight": 6,
+    "power": -30,
+    "hotkey": "N",
+    "refines": true,
+    "requires_power": true,
+    "cost": {
+      "credits": 350,
+      "salvage": 220,
+      "ore": 100
+    },
+    "build_time": 32
+  },
+  "b_bunker": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "b_barracks"
+    ],
+    "name": "Bunker",
+    "faction": "human_b",
+    "size": 2,
+    "hp": 1800,
+    "sight": 9,
+    "power": -5,
+    "hotkey": "T",
+    "weapon": "lmg",
+    "requires_power": false,
+    "cost": {
+      "credits": 220,
+      "salvage": 140,
+      "ore": 0
+    },
+    "build_time": 20
+  },
+  "m_core": {
+    "armor": "building",
+    "buildable": false,
+    "requires": [],
+    "name": "Core Controller",
+    "faction": "machine",
+    "size": 3,
+    "hp": 3600,
+    "sight": 11,
+    "power": 60,
+    "pop_cap": 25,
+    "deposit": true,
+    "is_hq": true,
+    "home": true,
+    "recharge": 8,
+    "produces": [
+      "m_hauler",
+      "m_repair_bot"
+    ],
+    "requires_power": false,
+    "cost": {
+      "credits": 0,
+      "salvage": 0,
+      "ore": 0
+    },
+    "build_time": 1
+  },
+  "m_charging_hub": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Charging Hub",
+    "faction": "machine",
+    "size": 2,
+    "hp": 900,
+    "sight": 6,
+    "power": 110,
+    "recharge": 9,
+    "hotkey": "G",
+    "cost": {
+      "credits": 300,
+      "salvage": 80,
+      "ore": 0
+    },
+    "build_time": 18
+  },
+  "m_reprocessor": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Materials Reprocessor",
+    "faction": "machine",
+    "size": 3,
+    "hp": 1500,
+    "sight": 6,
+    "power": -35,
+    "deposit": true,
+    "home": true,
+    "refines": true,
+    "pop_cap": 10,
+    "hotkey": "D",
+    "requires_power": true,
+    "cost": {
+      "credits": 350,
+      "salvage": 120,
+      "ore": 60
+    },
+    "build_time": 26
+  },
+  "m_assembler": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [],
+    "name": "Assembler Cell",
+    "faction": "machine",
+    "size": 3,
+    "hp": 1500,
+    "sight": 6,
+    "power": -30,
+    "hotkey": "B",
+    "produces": [
+      "m_scout_crawler",
+      "m_drone_pair",
+      "m_coordinator"
+    ],
+    "requires_power": true,
+    "cost": {
+      "credits": 400,
+      "salvage": 150,
+      "ore": 0
+    },
+    "build_time": 26
+  },
+  "m_crawler_works": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "m_assembler"
+    ],
+    "name": "Crawler Works",
+    "faction": "machine",
+    "size": 3,
+    "hp": 1900,
+    "sight": 6,
+    "power": -50,
+    "hotkey": "V",
+    "produces": [
+      "m_walker",
+      "m_tracked",
+      "m_artillery_node"
+    ],
+    "requires_power": true,
+    "cost": {
+      "credits": 600,
+      "salvage": 180,
+      "ore": 140
+    },
+    "build_time": 36
+  },
+  "m_sensor_relay": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "m_assembler"
+    ],
+    "name": "Sensor Relay",
+    "faction": "machine",
+    "size": 1,
+    "hp": 500,
+    "sight": 15,
+    "power": -10,
+    "recharge": 6,
+    "hotkey": "R",
+    "cost": {
+      "credits": 250,
+      "salvage": 60,
+      "ore": 0
+    },
+    "build_time": 12
+  },
+  "m_sentry": {
+    "armor": "building",
+    "buildable": true,
+    "requires": [
+      "m_assembler"
+    ],
+    "name": "Sentry Turret",
+    "faction": "machine",
+    "size": 1,
+    "hp": 750,
+    "sight": 9,
+    "power": -15,
+    "weapon": "laser_mg",
+    "hotkey": "T",
+    "requires_power": true,
+    "cost": {
+      "credits": 300,
+      "salvage": 90,
+      "ore": 0
+    },
+    "build_time": 15
   }
 }

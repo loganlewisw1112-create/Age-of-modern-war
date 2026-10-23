@@ -5,21 +5,8 @@
     "rebalance_2026_10_23": "Credits were the only binding constraint (stipend-only income; G-ai probe found materials piling up 3000+ and 30-min sieges). Shifted unit/building costs toward gathered salvage/ore and raised the stipend 3->6 cr/s so gathering drives the economy. Still PROVISIONAL fixtures.",
     "first_attack_tick": "Earliest tick an AI may launch an offensive (20 ticks/s): easy 10 min, normal 7 min, hard 5 min. PROVISIONAL. Added 2026-10-23 after the UI playtest showed a 3-minute HQ kill on a new player.",
     "g2": "G2 tactical fixtures (armor_facing, cover, components, suppression, morale, concealment, supply, refinery, repair, ops). PROVISIONAL, untuned.",
-    "wreck_salvage": "Destroyed vehicles/buildings drop a harvestable salvage pile (fraction of their salvage cost; HQ fixed). Added 2026-10-23: G2 soak seed 4 stalled when every map pile was exhausted. Spec basis: 'disabled vehicles may remain salvageable'. PROVISIONAL."
-  },
-  "factions": {
-    "human_a": {
-      "name": "Modern Military Power",
-      "archetype": "Human A",
-      "roster": "human_a",
-      "note": "Player faction for the slice."
-    },
-    "human_b": {
-      "name": "Industrial Power (test economy)",
-      "archetype": "Human B",
-      "roster": "human_a",
-      "note": "G1 micro-slice AI uses the Human A roster as a test economy (First Playable spec section 10). A distinct Human B roster is G3 scope."
-    }
+    "wreck_salvage": "Destroyed vehicles/buildings drop a harvestable salvage pile (fraction of their salvage cost; HQ fixed). Added 2026-10-23: G2 soak seed 4 stalled when every map pile was exhausted. Spec basis: 'disabled vehicles may remain salvageable'. PROVISIONAL.",
+    "g3": "G3a: factions moved to content/factions.json; max_sides 4; economy_profiles; territory sectors. PROVISIONAL."
   },
   "start_package": {
     "buildings": [
@@ -51,6 +38,9 @@
   "pop_cap_max": 120,
   "victory_types": [
     "hq_elimination",
+    "territory",
+    "hold_bridge",
+    "combined",
     "endless"
   ],
   "ai_difficulties": {
@@ -135,5 +125,34 @@
     "vehicle_frac": 0.5,
     "building_frac": 0.4,
     "hq_salvage": 300
+  },
+  "max_sides": 4,
+  "economy_profiles": {
+    "arcade": {
+      "name": "Arcade",
+      "gather_mult": 1.5,
+      "ammo_use_mult": 0.0,
+      "fuel_use_mult": 0.0,
+      "build_time_mult": 0.8
+    },
+    "standard": {
+      "name": "Standard",
+      "gather_mult": 1.0,
+      "ammo_use_mult": 1.0,
+      "fuel_use_mult": 1.0,
+      "build_time_mult": 1.0
+    },
+    "simulation": {
+      "name": "Simulation",
+      "gather_mult": 0.75,
+      "ammo_use_mult": 1.5,
+      "fuel_use_mult": 1.5,
+      "build_time_mult": 1.2
+    }
+  },
+  "territory": {
+    "sector_size": 12,
+    "default_percent": 60,
+    "capture_seconds": 10
   }
 }
