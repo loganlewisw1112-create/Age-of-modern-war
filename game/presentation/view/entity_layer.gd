@@ -5,6 +5,7 @@ extends Node2D
 ## resources once their cell is explored.
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const G3View = preload("res://presentation/view/g3_view.gd")
 
 var mv
 var _sprites: Dictionary = {}      # id -> Sprite2D (live entities and remembered ghosts)
@@ -108,6 +109,10 @@ func refresh() -> void:
 		if kind == "unit":
 			s.position = mv.world_to_screen(mv.render_pos(e))
 			_apply_art(s, e)
+			if G3View.is_air_entity(e):
+				# G3a: air units fly above their ground point (shadow drawn by g3_view.gd)
+				s.position.y -= G3View.air_lift(e, mv.anim_time())
+				s.z_index = 1
 		else:
 			s.position = mv.world_to_screen(e.pos)
 			if fresh or (int(id) + _frame) % 8 == 0:

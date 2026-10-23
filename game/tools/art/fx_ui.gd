@@ -29,7 +29,8 @@ static func build(out: Dictionary) -> void:
 						cv.img.set_pixel(x, y, Color(0.10, 0.12, 0.16, 0.55))
 		out.images["fog/%s.png" % kind] = cv.img
 	out.manifest["fog"] = {"unexplored": "fog/unexplored.png", "explored": "fog/explored.png"}
-	var icons := {}
+	# G3a (ORCH): keep icons faction modules (faction_b/faction_m) already added to the manifest.
+	var icons: Dictionary = out.manifest.get("icons", {})
 	for id in UNIT_ICONS:
 		icons[id] = _icon_unit(out, id, id, 0)
 	for id in SQUADS:

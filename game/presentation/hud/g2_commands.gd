@@ -50,6 +50,10 @@ func add_buttons(mode: String, ids: Array) -> void:
 	if mode == "engineer":
 		var rb = _btn("Repair", "salvage", "R", "repair", "Engineers repair an own damaged vehicle or building, or the ruined bridge.\nRight-click a damaged target does the same.")
 		rb.btn.pressed.connect(func(): _mv().g2.arm("repair", {"unit_ids": engineers}))
+		# G3a (ORCH): a mixed selection with builders still lets the officer take the combat units
+		if _officer >= 0 and not _others.is_empty():
+			var ab2 = _btn("Assign to officer", "%d units" % _others.size(), "", "assign", "Put the selected combat units under this officer's command (builders keep working).")
+			ab2.btn.pressed.connect(func(): hud._issue({"type": "assign_officer", "officer_id": _officer, "unit_ids": _others.duplicate()}))
 		return
 	if _officer >= 0 and _others.is_empty():
 		hud._card_title.text = "OFFICER  -  MISSION   (pick a mission, then click the target)"

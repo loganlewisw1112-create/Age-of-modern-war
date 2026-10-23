@@ -44,6 +44,13 @@ func setup(stats: Dictionary) -> void:
 			["Enemy kills", stats.get("killed", 0)]]:
 		g.add_child(HT.make_label(String(row[0]), HT.DIM))
 		g.add_child(HT.make_label(str(row[1]), HT.TEXT))
+	# G3a: team results (winner first): [{text, color}]
+	var teams: Array = stats.get("teams", [])
+	if not teams.is_empty():
+		v.add_child(HSeparator.new())
+		v.add_child(HT.make_label("TEAM RESULTS", HT.AMBER, 14))
+		for t in teams:
+			v.add_child(HT.make_label(String(t.get("text", "")), t.get("color", HT.TEXT), 14))
 	v.add_child(HSeparator.new())
 	var cont := Button.new()
 	cont.text = "Continue watching"

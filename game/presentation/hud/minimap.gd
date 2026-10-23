@@ -2,6 +2,7 @@ extends Control
 ## 192x192 minimap: terrain colours + fog + own/enemy dots + camera rectangle.
 ## Click or drag moves the camera via MatchView.center_camera_on. Read-only on the sim.
 
+const G3 = preload("res://presentation/hud/g3_faction.gd")
 const SIZE := 192
 const TERRAIN_COLORS := [
 	Color("5d7d3d"), # grass
@@ -116,6 +117,32 @@ func _to_world(m: Vector2) -> Vector2:
 	return Vector2(m.x / s.x, m.y / s.y)
 
 
+## Visible to the player or (G3a allied vision) to an ally: asks the MatchView when it can.
+func _seen(w: SimWorld, f: Dictionary, p: Vector2) -> bool:
+	if mv != null and mv.has_method("cell_visible"):
+		return bool(mv.cell_visible(w.cell_of(p)))
+	return _cell_visible(f, p)
+
+
+func _draw_territory(w: SimWorld) -> void:
+	var st: Dictionary = w.sys_state.territory
+	var owners: Array = st.get("owner", [])
+	var counted: Array = st.get("counted", [])
+	var size := int(st.get("size", 12))
+	var cols := int(st.get("cols", 1))
+	var sc := _cell_scale()
+	for i in owners.size():
+		if i >= counted.size() or not bool(counted[i]):
+			continue
+		var r := Rect2(Vector2((i % cols) * size, (i / cols) * size) * sc, Vector2(size, size) * sc)
+		var t := int(owners[i])
+		if t >= 0:
+			var fids: Array = G3.teams(w).get(t, [])
+			var c: Color = G3.side_color(w, int(fids[0])) if not fids.is_empty() else Color.GRAY
+			draw_rect(r, Color(c.r, c.g, c.b, 0.28))
+		draw_rect(r, Color(1, 1, 1, 0.10), false, 1.0)
+
+
 func _cell_visible(f: Dictionary, p: Vector2) -> bool:
 	var vis: PackedByteArray = f.get("visible", PackedByteArray())
 	var cx := floori(p.x)
@@ -145,6 +172,9 @@ func _draw() -> void:
 			if idx >= 0 and idx < exp.size() and exp[idx] != 0:
 				var col := Color("c9c9c9") if e.res == "salvage" else Color("d98a3d")
 				draw_rect(Rect2(_to_mini(e.pos) - Vector2(1, 1), Vector2(2, 2)), col)
+	# G3a: territory sectors tinted by owning team (only when the sim tracks territory).
+	if w.sys_state.has("territory"):
+		_draw_territory(w)
 	# Fog overlay.
 	if _fog_tex != null:
 		draw_texture_rect(_fog_tex, Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), false)
@@ -154,7 +184,7 @@ func _draw() -> void:
 		var m: Dictionary = mem[eid]
 		if w.entities.has(int(eid)) and _cell_visible(f, m.pos):
 			continue  # drawn live below
-		var ocol := Color(w.factions[int(m.owner)].color) if w.factions.has(int(m.owner)) else Color.RED
+		var ocol := G3.side_color(w, int(m.owner)) if w.factions.has(int(m.owner)) else Color.RED
 		draw_rect(Rect2(_to_mini(m.pos) - Vector2(2.5, 2.5), Vector2(5, 5)), ocol.darkened(0.25))
 	# Live entities.
 	for id in w.entities:
@@ -163,17 +193,23 @@ func _draw() -> void:
 			continue
 		var owner := int(e.owner)
 		var own := owner == pf
-		if not own and not _cell_visible(f, e.pos):
+		# G3a: allies always show in their own colour (white outline); enemies only where the
+		# player (or an ally, via mv.cell_visible) can see, outlined black.
+		var ally := G3.is_ally(w, pf, owner)
+		if not own and not ally and not _seen(w, f, e.pos):
 			continue
-		var col := Color(w.factions[owner].color) if w.factions.has(owner) else Color.WHITE
-		if not own:
-			col = Color(w.factions[owner].color).lightened(0.15) if w.factions.has(owner) else Color.RED
+		var col := G3.side_color(w, owner) if w.factions.has(owner) else Color.WHITE
+		if not own and not ally:
+			col = col.lightened(0.15) if w.factions.has(owner) else Color.RED
+		var edge := Color(1, 1, 1, 0.85) if ally else Color(0, 0, 0, 0.8)
 		if e.kind == "building":
 			var sz: float = float(e.size) * s.x
 			draw_rect(Rect2(_to_mini(e.pos) - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), col)
-			draw_rect(Rect2(_to_mini(e.pos) - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), Color(0, 0, 0, 0.8), false, 1.0)
+			draw_rect(Rect2(_to_mini(e.pos) - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), edge, false, 1.0)
 		else:
 			draw_rect(Rect2(_to_mini(e.pos) - Vector2(1.5, 1.5), Vector2(3, 3)), col)
+			if ally:
+				draw_rect(Rect2(_to_mini(e.pos) - Vector2(2, 2), Vector2(4, 4)), edge, false, 1.0)
 	# Camera rectangle.
 	var poly := _camera_poly()
 	if poly.size() == 4:

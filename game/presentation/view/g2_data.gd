@@ -3,6 +3,7 @@ extends RefCounted
 ## Everything here only READS sim state (CONTRACTS_G2 sections 1-4, 7). Fields may be absent on
 ## older entities or while the sim systems are still stubs, so every accessor defaults safely.
 
+const G3 = preload("res://presentation/hud/g3_faction.gd")
 const MISSIONS := ["secure_point", "hold_zone", "attack_area", "patrol_route"]
 const MISSION_NAMES := {"secure_point": "Secure point", "hold_zone": "Hold zone",
 	"attack_area": "Attack area", "patrol_route": "Patrol route"}
@@ -128,7 +129,7 @@ static func bridge(w: SimWorld) -> Dictionary:
 	_bridge_id = -1
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
-		if String(e.def) == "bridge_span" and (e.kind == "structure" or e.kind == "ruin"):
+		if G3.is_bridge(String(e.def)) and (e.kind == "structure" or e.kind == "ruin"):
 			_bridge_id = int(id)
 			return e
 	return {}
@@ -164,7 +165,7 @@ static func is_bridge_cell(w: SimWorld, c: Vector2i) -> bool:
 static func repairable(w: SimWorld, pf: int, t: Dictionary) -> bool:
 	if t.is_empty():
 		return false
-	if String(t.def) == "bridge_span":
+	if G3.is_bridge(String(t.def)):
 		return bridge_state(w) == "ruined" or float(t.hp) < float(t.max_hp)
 	if int(t.owner) != pf:
 		return false

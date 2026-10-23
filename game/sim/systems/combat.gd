@@ -17,6 +17,14 @@ extends RefCounted
 ## in range, without moving. An explicit `attack` order is still obeyed.
 ## Buildings with a weapon (guard_tower) fire only when built, within weapon range.
 ## Randomness (hit roll, miss dispersion of the tracer end point) uses w.rng only.
+## G3a (S3-sim, CONTRACTS_G3a section 3):
+##   AIR: only weapons with `anti_air` may target units whose def has `is_air` (search, kept
+##   targets, explicit attack orders and command validation all filter this).
+##   ARTILLERY (`indirect` weapons): engages any visible enemy within range and beyond min_range
+##   (search radius = max(sight, range)), ignores Damage.line_clear, and on firing applies splash to
+##   every ground unit/building within `splash` of the impact point (allies too) with linear falloff
+##   to 50% at the edge: one ShotFired {indirect:true} plus one Damage event per entity hit.
+##   An explicit attack on a target inside min_range backs the shooter away.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
@@ -54,6 +62,11 @@ static func stats(e: Dictionary) -> Dictionary:
 		"armor": String(d.get("armor", "infantry")),
 		"sight": float(d.get("sight", 0)),
 		"builder": bool(d.get("can_build", false)),
+		"aa": bool(wd.get("anti_air", false)),
+		"indirect": bool(wd.get("indirect", false)),
+		"min_range": float(wd.get("min_range", 0)),
+		"splash": float(wd.get("splash", 0)),
+		"is_air": bool(d.get("is_air", false)),
 	}
 	_stats[key] = s
 	return s
@@ -114,6 +127,7 @@ static func tick(w: SimWorld) -> void:
 			e.cd_ticks = cd
 			e.cooldown = float(cd) / SimWorld.TICK_RATE
 	w.cache["combat_grid"] = grid
+	w.cache["combat_blds"] = blds
 	for id in ids:
 		var e = w.entities.get(id)
 		if e == null:
@@ -124,7 +138,17 @@ static func tick(w: SimWorld) -> void:
 			_tower_tick(w, e, grid, blds)
 
 
-static func _valid_target(w: SimWorld, fid: int, tid: int):
+## True if a shooter with stats s may engage t at all (air targets need an anti_air weapon).
+static func can_target(s: Dictionary, t: Dictionary) -> bool:
+	return bool(s.aa) or t.kind != "unit" or not bool(stats(t).is_air)
+
+
+## Search radius for auto-acquisition: sight, or the full range for indirect fire.
+static func _search_r(s: Dictionary) -> float:
+	return maxf(float(s.sight), float(s.range)) if bool(s.indirect) else float(s.sight)
+
+
+static func _valid_target(w: SimWorld, fid: int, tid: int, s = null):
 	if tid < 0:
 		return null
 	var t = w.entities.get(tid)
@@ -133,6 +157,8 @@ static func _valid_target(w: SimWorld, fid: int, tid: int):
 	if t == null or (t.kind != "unit" and t.kind != "building") or not w.is_enemy(fid, int(t.owner)):
 		return null
 	if not Fog.entity_visible(w, fid, t):
+		return null
+	if s != null and not can_target(s, t):
 		return null
 	return t
 
@@ -146,6 +172,10 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 	var best = null
 	var best_d := INF
 	var best_id := 0
+	var s := stats(e)
+	var aa: bool = s.aa
+	var mr: float = s.min_range
+	var mr2 := mr * mr
 	var vis := PackedByteArray()
 	if w.fog.has(fid):
 		vis = w.fog[fid].visible
@@ -187,6 +217,8 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 								continue
 							if Fog.concealed(w, fid, c):
 								continue  # G2: infantry hidden in forest (A2)
+							if (not aa and bool(stats(c).is_air)) or d2 < mr2:
+								continue  # G3a: air needs anti_air; artillery min_range
 							best = c
 							best_d = d2
 							best_id = cid
@@ -198,7 +230,7 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 			continue
 		var d := dist_to(p, b)
 		var d2 := d * d
-		if d2 > r2:
+		if d2 > r2 or d2 < mr2:
 			continue
 		var bid := int(b.id)
 		if d2 > best_d or (d2 == best_d and bid > best_id):
@@ -219,10 +251,11 @@ static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:
 ## (every SCAN_EVERY ticks; every SCAN_EVERY_ENGAGED while the target is already in weapon range),
 ## or immediately when the tracked target just became invalid.
 static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, blds: Array):
-	var cur = _valid_target(w, int(e.owner), int(e.target))
+	var s := stats(e)
+	var cur = _valid_target(w, int(e.owner), int(e.target), s)
 	if cur != null:
 		var d := dist_to(e.pos, cur)
-		if d > radius:
+		if d > radius or d < float(s.min_range):
 			cur = null
 		elif d <= float(stats(e).range):
 			if not _scan_due(w, e, SCAN_EVERY_ENGAGED):
@@ -262,7 +295,7 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 		return
 	match ot:
 		"idle":
-			var t = _pick(w, e, s.sight, grid, blds)
+			var t = _pick(w, e, _search_r(s), grid, blds)
 			if t == null:
 				if int(e.target) >= 0:
 					e.target = -1
@@ -278,7 +311,7 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 			e.target = int(t.id)
 			_fire(w, e, s, t)
 		"attack_move":
-			var t = _pick(w, e, s.sight, grid, blds)
+			var t = _pick(w, e, _search_r(s), grid, blds)
 			if t != null:
 				e.order.engaged = true
 				_engage(w, e, s, t, true)
@@ -298,7 +331,7 @@ static func _return_fire(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 	var att := int(e.get("last_attacker", -1))
 	if att < 0 or w.tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
 		return
-	var t = _valid_target(w, int(e.owner), att)
+	var t = _valid_target(w, int(e.owner), att, s)
 	if t == null or dist_to(e.pos, t) > s.range:
 		return
 	_fire(w, e, s, t)
@@ -309,6 +342,11 @@ static func _attack_order(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 	var t = w.entities.get(tid)
 	if t == null:
 		e.order = {"type": "idle"}
+		e.target = -1
+		Movement.stop_path(e)
+		return
+	if not can_target(s, t):
+		e.order = {"type": "idle"}  # G3a: e.g. an AT team ordered onto a drone
 		e.target = -1
 		Movement.stop_path(e)
 		return
@@ -330,13 +368,21 @@ static func _attack_order(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, can_chase: bool) -> void:
 	e.target = int(t.id)
 	var d := dist_to(e.pos, t)
+	var mr: float = s.min_range
 	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
-	if d <= s.range and Damage.line_clear(w, e.pos, t.pos):
+	# G3a: indirect fire ignores the ridge check but needs d >= min_range.
+	if d <= s.range and d >= mr and (bool(s.indirect) or Damage.line_clear(w, e.pos, t.pos)):
 		if e.moving:
 			Movement.stop_path(e)
 		_fire(w, e, s, t)
 	elif can_chase:
 		var tp: Vector2 = t.pos
+		if d < mr:
+			# too close for indirect fire: back away along target -> shooter
+			var away: Vector2 = Vector2(e.pos) - tp
+			if away.length() < 0.01:
+				away = Vector2(1, 0)
+			tp = tp + away.normalized() * (mr + 1.0)
 		var last_goal: Vector2 = e.get("chase_goal", Vector2(-1000, -1000))
 		var need: bool = not e.moving or (w.tick - int(e.get("chase_tick", -100000)) >= CHASE_REPATH_TICKS and tp.distance_to(last_goal) > 1.0)
 		if need:
@@ -362,7 +408,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> v
 		return
 	if Status.can_fire(w, e) != "":
 		return
-	if not Damage.line_clear(w, e.pos, t.pos):
+	var indirect: bool = s.indirect
+	if not indirect and not Damage.line_clear(w, e.pos, t.pos):
+		return
+	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
 	var cd := maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
 	e.cd_ticks = cd
@@ -371,15 +420,62 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> v
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
 	if not hit:
-		to += Vector2(w.rng.randf_range(-0.6, 0.6), w.rng.randf_range(-0.6, 0.6))
+		var disp := 1.5 if indirect else 0.6
+		to += Vector2(w.rng.randf_range(-disp, disp), w.rng.randf_range(-disp, disp))
 	if e.kind == "unit":
 		e.firing = FIRING_HINT_TICKS
 		e.facing = snappedf((to - from).angle(), Q)
-	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to})
+	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to, "indirect": indirect})
 	if e.kind == "unit":
 		e.last_fired_tick = w.tick  # G2 (A2): firing reveals forest-concealed infantry for 60 ticks
 		Supply.on_shot(w, e)
+	if indirect:
+		_splash(w, e, s, to)
+		return
 	Damage.apply_hit(w, e, t, s, hit)  # G2 pipeline: armor facing, cover, components, suppression
+
+
+## G3a artillery impact: every ground unit and building within s.splash of `at` (any owner, the
+## shooter's allies included) takes damage x (1 - 0.5 * d / splash) through the G2 pipeline, in id
+## order. Nothing in the radius: near-miss suppression only.
+static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> void:
+	var rad: float = maxf(float(s.splash), 0.01)
+	var hits := {}   # id -> distance
+	var grid: Dictionary = w.cache.get("combat_grid", {})
+	var x0 := floori((at.x - rad) / BUCKET)
+	var x1 := floori((at.x + rad) / BUCKET)
+	var y0 := floori((at.y - rad) / BUCKET)
+	var y1 := floori((at.y + rad) / BUCKET)
+	for o in grid:
+		var g: Dictionary = grid[o]
+		for yy in range(y0, y1 + 1):
+			for xx in range(x0, x1 + 1):
+				var arr = g.get(xx + yy * GRID_STRIDE)
+				if arr == null:
+					continue
+				for c in arr:
+					if bool(stats(c).is_air):
+						continue
+					var d := at.distance_to(Vector2(c.pos))
+					if d <= rad:
+						hits[int(c.id)] = d
+	for b in w.cache.get("combat_blds", []):
+		var d := dist_to(at, b)
+		if d <= rad:
+			hits[int(b.id)] = d
+	if hits.is_empty():
+		var sup: Dictionary = Content.rules().get("suppression", {})
+		Damage.near_miss(w, int(e.owner), at, float(sup.get("per_near_miss", 8)))
+		return
+	var ids := hits.keys()
+	ids.sort()
+	for id in ids:
+		var v = w.entities.get(id)
+		if v == null:
+			continue
+		var s2 := s.duplicate()
+		s2.damage = float(s.damage) * (1.0 - 0.5 * float(hits[id]) / rad)
+		Damage.apply_hit(w, e, v, s2, true)
 
 
 # ================================================================ commands
@@ -402,11 +498,14 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		return "That is not a valid attack target."
 	if not Fog.entity_visible(w, fid, t):
 		return "Target not visible."
+	var armed := false
 	for id in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(id))
 		if e != null and stats(e).weapon != "":
-			return ""
-	return "Selected units have no weapons."
+			armed = true
+			if can_target(stats(e), t):
+				return ""
+	return "Selected units cannot engage aircraft." if armed else "Selected units have no weapons."
 
 
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
@@ -414,7 +513,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var t: Dictionary = w.entities[tid]
 	for id in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(id))
-		if e == null or stats(e).weapon == "":
+		if e == null or stats(e).weapon == "" or not can_target(stats(e), t):
 			continue
 		e.order = {"type": "attack", "target_id": tid, "last_pos": t.pos, "lost": false}
 		e.target = tid

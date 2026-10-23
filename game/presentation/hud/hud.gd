@@ -13,6 +13,8 @@ const ObjectivesScript = preload("res://presentation/hud/objectives.gd")
 const G2Inspector = preload("res://presentation/hud/g2_inspector.gd")
 const G2Commands = preload("res://presentation/hud/g2_commands.gd")
 const G2Alerts = preload("res://presentation/hud/g2_alerts.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
+const G3Score = preload("res://presentation/hud/g3_score.gd")
 
 const REFRESH_SECS := 0.2
 const ALERT_LIFE := 9.0
@@ -25,6 +27,7 @@ var objectives := ObjectivesScript.new()
 var g2_insp = G2Inspector.new()
 var g2_cmd = G2Commands.new()
 var g2_alerts = G2Alerts.new()
+var g3_score = G3Score.new()
 
 # Top bar
 var _credits: Label
@@ -198,10 +201,14 @@ func _build_ui() -> void:
 	ox.custom_minimum_size = Vector2(26, 22)
 	ox.pressed.connect(_on_objectives_dismiss)
 	oh.add_child(ox)
-	for it in ObjectivesScript.ITEMS:
+	objectives.update(_world(), _pf())
+	for it in objectives.items:
 		var l := HT.make_label("", HT.TEXT, 14)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # G3a: long role names must not widen the panel
 		ov.add_child(l)
 		_obj_labels.append(l)
+
+	g3_score.build(root, _obj_panel)
 
 	# ---- hover info
 	_hover_lbl = HT.make_label("", HT.TEXT, 14)
@@ -343,15 +350,16 @@ func _refresh() -> void:
 		(_btn_speed[i] as Button).set_pressed_no_signal(is_equal_approx(spd, float(i + 1)))
 	objectives.update(w, _pf())
 	_refresh_objectives()
+	g3_score.update(w, _pf())
 	_refresh_selection(w)
 	_refresh_hover()
 
 
 func _refresh_objectives() -> void:
 	_obj_panel.visible = not objectives.dismissed
-	_obj_title.text = "OBJECTIVES  %d/%d" % [objectives.count_done(), ObjectivesScript.ITEMS.size()]
-	for i in ObjectivesScript.ITEMS.size():
-		var it: Dictionary = ObjectivesScript.ITEMS[i]
+	_obj_title.text = "OBJECTIVES  %d/%d" % [objectives.count_done(), objectives.items.size()]
+	for i in mini(objectives.items.size(), _obj_labels.size()):
+		var it: Dictionary = objectives.items[i]
 		var ok: bool = objectives.is_done(String(it.id))
 		var l: Label = _obj_labels[i]
 		l.text = ("[x] " if ok else "[ ] ") + String(it.text)
@@ -419,7 +427,9 @@ func _refresh_selection(w: SimWorld) -> void:
 		_insp_icon.texture = null
 		_insp_name.text = "No selection"
 		_insp_hp.visible = false
-		_insp_info.text = "Click or drag to select. Engineers build; the HQ and Barracks train units."
+		var fac := G3.faction_def(w, _pf())
+		_insp_info.text = "Click or drag to select. %s units build; the %s and %s train units." % [
+			G3.role_name(fac, "builder", "Engineer"), G3.role_name(fac, "hq", "HQ"), G3.role_name(fac, "barracks", "Barracks")]
 		_set_card("none", [], w)
 		return
 	_insp_hp.visible = true
@@ -486,8 +496,8 @@ func _refresh_selection(w: SimWorld) -> void:
 
 func _status_text(st: String) -> String:
 	match st:
-		"LOW_POWER": return "low power (build a Generator Substation)"
-		"SUPPLY_CAP": return "supply cap reached (build a Logistics Depot)"
+		"LOW_POWER": return "low power (build a %s)" % G3.role_name(G3.faction_def(_world(), _pf()), "power", "power plant")
+		"SUPPLY_CAP": return "supply cap reached (build a %s)" % G3.role_name(G3.faction_def(_world(), _pf()), "depot", "depot")
 	return st.replace("_", " ").to_lower()
 
 
@@ -558,12 +568,12 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		ids.append(int(e.id))
 	if mode == "engineer":
 		_card_title.text = "BUILD   (click a structure, then click the map to place it; hotkeys in brackets)"
-		for bid in Content.ids("buildings"):
+		# G3a: the player's faction's buildable defs; hotkeys from data (G3.build_hotkey remaps a
+		# key that collides with an order button, e.g. F = Formation, R = Repair)
+		var used := {}
+		for bid in Content.buildable_for(G3.faction_def(_world(), _pf())):
 			var d: Dictionary = Content.building(String(bid))
-			if not bool(d.get("buildable", false)):
-				continue
-			# G2: F is Formation for combat units, so the Refinery uses N on the engineer card
-			var hk := "N" if String(bid) == "refinery" else String(d.get("hotkey", ""))
+			var hk := G3.build_hotkey(String(bid), used)
 			var btn := _card_button(String(d.name), HT.cost_text(d.cost), hk, String(bid))
 			btn.pressed.connect(_on_build_pressed.bind(String(bid)))
 			_card_buttons.append({"btn": btn, "kind": "build", "def": String(bid)})
@@ -591,6 +601,12 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		btn2.pressed.connect(_issue.bind({"type": "cancel_building", "building_id": int(b2.id)}))
 		_card_buttons.append({"btn": btn2, "kind": "plain"})
 	g2_cmd.compact(_card_grid)
+	# G3a: a 5-column card has 2 rows; smaller text keeps long names + 3-resource costs inside
+	# the bottom panel (Human B / Machine build cards).
+	if _card_grid.columns >= 5:
+		for c in _card_grid.get_children():
+			if c is Button:
+				c.add_theme_font_size_override("font_size", 12)
 
 
 func _on_train_pressed(bid: int, item: String) -> void:
@@ -861,6 +877,10 @@ func _on_events(events: Array) -> void:
 				if tgt != null and int(tgt.owner) == pf and (shooter == null or int(shooter.owner) != pf):
 					if not _throttled("attack", ATTACK_ALERT_TICKS, w):
 						_push_alert("Base under attack!" if tgt.kind == "building" else "Our units are under attack!", HT.RED, tgt.pos)
+				elif tgt != null and G3.is_ally(w, pf, int(tgt.owner)) and (shooter == null or not G3.is_ally(w, int(tgt.owner), int(shooter.owner))):
+					# G3a: an ally (same team) is being shot by a non-ally
+					if not _throttled("ally_attack:%d" % int(tgt.owner), ATTACK_ALERT_TICKS, w):
+						_push_alert("Ally under attack: %s" % String(w.factions[int(tgt.owner)].name), G3.side_color(w, int(tgt.owner)).lightened(0.3), tgt.pos)
 			"EntityDestroyed":
 				if int(ev.get("owner", -2)) == pf and String(ev.get("kind", "")) != "resource":
 					var ko := int(ev.get("killer_owner", -1))
@@ -869,9 +889,11 @@ func _on_events(events: Array) -> void:
 			"SideEliminated":
 				var fid := int(ev.get("faction", ev.get("fid", ev.get("owner", -1))))
 				var nm := String(w.factions[fid].name) if w.factions.has(fid) else "A side"
-				_push_alert("%s has been eliminated." % nm, HT.AMBER)
+				var rel := "Ally " if G3.is_ally(w, pf, fid) else ("" if fid == pf else "Enemy ")
+				_push_alert("%s%s has been eliminated." % [rel, nm], HT.RED if rel == "Ally " or fid == pf else HT.AMBER)
 			"MatchEnded":
-				_push_alert("Match ended.", HT.AMBER)
+				var wt := int(ev.get("winner_team", G3.team_of(w, int(ev.get("winner", -1)))))
+				_push_alert("Match ended: Team %d wins." % (wt + 1) if wt >= 0 else "Match ended.", HT.AMBER)
 			_:
 				g2_alerts.on_event(self, w, pf, ev)
 

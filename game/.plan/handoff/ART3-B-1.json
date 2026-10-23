@@ -1,0 +1,32 @@
+{
+  "agent": "ART3-B",
+  "gen": 1,
+  "done": [
+    "tools/art/faction_b.gd: build(out) = infantry + vehicles/wrecks + buildings + icons; merges into existing manifest maps (infantry, vehicles, vehicle_wrecks, buildings, icons).",
+    "tools/art/faction_b_inf.gd: b_crew, b_militia, b_heavy_rifle, b_officer; 24x26, pivot (12,21), frames idle/walk_a/walk_b/fire, 8 facings, masks.",
+    "tools/art/faction_b_veh.gd: b_rebuilt_mbt (84x54 pivot 42,34), b_carrier (62x46 pivot 31,30), frames idle/move/fire + wrecks; shared helpers rivets/patch/streaks/soot/scorch.",
+    "tools/art/faction_b_trk.gd: b_artillery_truck (68x58 pivot 34,40, elevated howitzer, fire flash), b_recovery_truck (68x62 pivot 34,44, wrecker boom); reuses truck.gd _wheels/_cab/_exhaust.",
+    "tools/art/faction_b_bld.gd + faction_b_bdress.gd: b_works, b_boiler, b_salvage_yard, b_barracks, b_heavy_plant, b_smelter, b_bunker in built + build_0..2 with masks (brick, corrugated iron, sooty stacks, boiler, blast furnace, scrap, sandbags, sawtooth roof).",
+    "Icons (fx_ui format, 32x32): 8 unit defs, b_militia_squad (5 pips), b_heavy_squad (3 pips), 7 buildings incl. b_works = 17.",
+    "tools/art/faction_b_contact.gd: in-memory contact sheet (no assets written, no gen lock needed). Output .plan/shots/ART3-B/contact.png and contact_zoom.png, both viewed and look right (warm rust/khaki identity vs Human A olive).",
+    "tests/test_art.gd: icon id list now uses the is_hq flag instead of def == hq; added test_faction_coverage (all factions: unit sheets 8 facings + frame set + size + mask, wrecks, building 4 states + footprint, icons for buildings and production) and test_human_b_identity (Human B role defs warmer r-g than Human A via Content.role)."
+  ],
+  "generator_state": "Ran full gen_art once at 23:03-23:05 under art.gen_lock (released, seq 332). It wrote 271 files BUT faction_m failed to compile (faction_m_units.gd:191 'Cannot infer the type of x'), so NO Machine assets are in that manifest, and fx_ui.gd clobbered the Human B icons map (PNG files exist under icons/, manifest.icons lacks the b_* ids). The shipped manifest is therefore incomplete; it must be regenerated after both fixes below.",
+  "remaining": [
+    "1. Wait for ORCH to apply the fx_ui.gd fix (ART3-M fact art.icons_clobber seq 284): line 32 `var icons := {}` -> `var icons: Dictionary = out.manifest.get(\"icons\", {})`. Without it every b_* icon check fails.",
+    "2. Wait until ART3-M's faction_m*.gd compile (check: godot --headless --path . -s tools/art/faction_m_contact.gd or just run gen_art and grep SCRIPT ERROR).",
+    "3. Check read.mjs --topic art.gen_lock / art.gen_unlock, post fact art.gen_lock {by}, run `$G --headless --path . -s tools/gen_art.gd` (~30 s), post art.gen_unlock.",
+    "4. bash tests/run.sh --only=test_art ; expected remaining failures only for Machine defs if ART3-M not landed; fix any b_* failure. Note test_human_b_identity thresholds (wb > wa + 0.02) are unverified - run and see the printed numbers; do not loosen to pass without saying so.",
+    "5. Full bash tests/run.sh inside .plan/hb.sh; quote final lines.",
+    "6. Final report; CHANGE_REQUESTS: the fx_ui.gd icons fix (if still not applied)."
+  ],
+  "files_touched": ["tools/art/faction_b.gd", "tools/art/faction_b_inf.gd", "tools/art/faction_b_veh.gd", "tools/art/faction_b_trk.gd", "tools/art/faction_b_bld.gd", "tools/art/faction_b_bdress.gd", "tools/art/faction_b_contact.gd", "tests/test_art.gd", "assets/generated/** (full regen, incomplete manifest as above)", ".plan/shots/ART3-B/contact.png", ".plan/shots/ART3-B/contact_zoom.png"],
+  "test_state": "test_art NOT run yet after edits. faction_b modules compile and render (contact script runs clean).",
+  "gen_lock": "released (seq 332)",
+  "gotchas": [
+    "gen_art.gd preloads faction_m.gd, so any ART3-M parse error breaks the full generator; my contact script avoids gen_art for that reason.",
+    "Array-loop variables are Variant: use `var by: float = ...`, not :=.",
+    "test_generator_deterministic compares every image with the shipped manifest md5s, so whichever art agent edits last must regenerate last.",
+    "Do not edit fx_ui.gd / gen_art.gd / art_catalog (not owned)."
+  ]
+}

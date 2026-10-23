@@ -20,6 +20,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var p := Content.production(item)
 			if p.is_empty():
 				return "Unknown production item '%s'." % item
+			if p.has("faction") and w.factions.has(fid) and String(p.faction) != String(w.factions[fid].faction_def):
+				return "%s belongs to another faction." % String(p.get("name", item))  # G3a defence in depth
 			var bd := Content.building(b.def)
 			if not bd.get("produces", []).has(item):
 				return "%s cannot produce %s." % [String(bd.get("name", b.def)), String(p.get("name", item))]

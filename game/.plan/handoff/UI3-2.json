@@ -1,0 +1,36 @@
+{
+  "agent": "UI3-2", "gen": 2, "calls_used": 51, "tokens_used_est": 345000,
+  "done": [
+    "Step 1: test_ui3 now 7/7 PASS (added test_article_and_end_info_without_winner + start-infantry check), test_hud 4/4 PASS (TESTS OK each).",
+    "Step 2: headless parse checks 0 SCRIPT/Parse/Compile errors for: menu (no args), --autostart, --autostart --autostart-factions=machine,human_b,human_a, territory variant, human_b engineers select. Only art_catalog 'Loaded resource as image file' WARNINGs (needs orchestrator --import).",
+    "Step 3: autoshots viewed with Read: .plan/shots/UI3/menu.png (fits 1600x900), buildcard.png -> buildcard2.png (after fixes), machine_hub.png (Core Controller recharge radius 8 drawn + label), territory.png (Territory 60% panel), end_win.png -> end_win2.png (team results), machine_eng2.png (Machine build card + faint recharge radius), demo_machine.png (--demo-script=g2_officer as Machine: Coordinator Node, Charge bar).",
+    "Fixes from the shots: objectives labels autowrap (panel no longer runs off-screen, x button visible); 'a/an' article (Objectives._a); infantry objective no longer ticks from start units (counts > faction start_units infantry); end screen team result says 'in play' when no winner (debug end) instead of 'defeated' for everyone; 5-column build card uses font 12 so the 2nd row fits; no-selection hint is role-based.",
+    "Step 4: G3.is_bridge(def) (buildings.json neutral_structure) replaces 'bridge_span' compares in g2_data.gd (2) and g2_input.gd (1); G3.role_unit(w,fid,roles) + g2_demo.gd _r() replace mbt/ifv/rifleman/officer/recon; main_menu HOW_TO_PLAY made faction-neutral.",
+    "Step 5 (partial): tools/ui_playtest.gd rewritten role-based (builders=can_build, gatherers=can_gather, power/barracks/hq/infantry/officer roles, hotkeys via G3.build_hotkey over Content.buildable_for, officer producer found by 'produces'), menu setup by real OptionButton clicks (_pick_option: open, click computed item rect in popup). main.gd passes --ui-playtest-faction. Human A default run: PLAYTEST RESULT pass=29 fail=0 (shots .plan/shots/UI3/pt_human_a/). Human B run: menu clicks all OK (slot0 human_b, slot2 AI machine, 3 sides), builders/power OK, then place_barracks_hotkey_B FAILED -> pass=12 fail=2 (shots .plan/shots/UI3/pt_human_b/)."
+  ],
+  "remaining": [
+    "1. Fix ui_playtest Human B barracks failure. Likely cause (NOT verified): salvage. Human B starts 300 salvage, b_boiler costs 140sv, b_barracks costs 200sv -> 160 < 200, so the placement click is refused. Fix in tools/ui_playtest.gd _run: move the gather block (select gatherers + right-click salvage pile) to BEFORE the barracks placement, and wait_until stock covers Content.building(bdef).cost (all resources) before pressing the hotkey. Then re-run human_a (must stay 29/29), human_b and machine.",
+    "2. Run: bash .plan/hb.sh UI3-x <calls> <est> 'pt' -- timeout 500 $G --path . -- --ui-playtest=<abs .plan/shots/UI3/pt_human_b> --ui-playtest-faction=human_b ; same for machine (pt_machine). grep PLAYTEST. Machine notes: builders=m_repair_bot x2, gatherers=m_hauler x3 (thresholds already use mini(4, count)); infantry m_scout_crawler item; officer m_coordinator; check costs (ore etc.) vs start stock the same way. View ui_03/ui_05/ui_07 shots with Read.",
+    "3. Full bash tests/run.sh inside .plan/hb.sh; quote test_art failures for new faction defs (ART3-owned).",
+    "4. Final report incl. change_requests below."
+  ],
+  "change_requests": [
+    "AI3 sim/ai/ai_util.gd: per-side difficulty String(w.cfg.sides[fid].get(\"ai_difficulty\", w.cfg.get(\"ai_difficulty\", \"normal\"))); the menu writes sides[i].ai_difficulty.",
+    "ORCH content/buildings.json (optional): refinery hotkey F collides with Formation; m_sensor_relay R collides with Repair. UI remaps automatically (G3.build_hotkey).",
+    "ART: new-faction icons/portraits missing (magenta squares on build card and inspector for b_*/m_*); Machine HQ is a placeholder box."
+  ],
+  "files_touched": [
+    "presentation/hud/objectives.gd", "presentation/hud/hud.gd", "presentation/hud/g3_score.gd", "presentation/hud/g3_faction.gd",
+    "presentation/view/g2_data.gd", "presentation/view/g2_input.gd", "presentation/view/g2_demo.gd",
+    "presentation/menu/main_menu.gd", "presentation/main.gd", "tools/ui_playtest.gd", "tests/test_ui3.gd",
+    "(UI3-1 list unchanged otherwise; original ui_playtest backup in UI3-2 scratchpad only)"
+  ],
+  "test_state": "test_ui3 7/7 TESTS OK, test_hud 4/4 TESTS OK, headless parse 0 script errors (5 variants), ui_playtest human_a 29/29, human_b 12/2 (barracks placement), machine not run, full suite not run.",
+  "gotchas": [
+    "ui_playtest _place returns false silently if the click is refused (no site_/hotkey_ log line means site + hotkey were fine -> suspect cost).",
+    "Popup item clicking in _pick_option uses the popup panel stylebox margins and equal item heights; it worked for Slot0Faction/Slot2Kind/Slot2Faction at UI scale 1.0.",
+    "Human B infantry item spawns 5 b_militia; Human B and Machine start with one infantry-role unit each.",
+    "Objectives._a is static and used by tests/test_ui3.gd.",
+    "All prior UI3-1 gotchas still apply (Territory.state creates state; spawns not units; objective ids kept for test_hud)."
+  ]
+}

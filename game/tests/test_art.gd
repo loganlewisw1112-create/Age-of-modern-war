@@ -98,7 +98,7 @@ func test_effects_and_icons() -> void:
 	check_eq(AC.effect_frames("nope").size(), 1, "unknown effect gives 1 placeholder frame")
 	var ids: Array = Content.ids("production") + Content.ids("units")
 	for def in Content.ids("buildings"):
-		if Content.building(def).get("buildable", false) or def == "hq":
+		if Content.building(def).get("buildable", false) or Content.building(def).get("is_hq", false):
 			ids.append(def)
 	ids += ["officer", "logistics_truck", "refinery", "repair", "patrol", "guard", "formation_line", "formation_wedge",
 		"formation_column", "mission_secure", "mission_hold", "mission_attack", "mission_patrol", "assign_officer"]
@@ -153,3 +153,91 @@ func test_generator_deterministic() -> void:
 	var again: Dictionary = GEN.generate([preload("res://tools/art/terrain.gd")])
 	for rel in again.images:
 		check_eq(GEN.md5(again.images[rel].save_png_to_buffer()), files.get(rel, ""), "terrain rerun " + rel)
+
+
+## G3a (ART3-B): every faction def has complete art: units 8 facings with the right frame set and a
+## sheet of the declared size, wrecks for wreck-leaving vehicles, buildings in 4 states, icons for
+## every production item and building (HQs included). Uses faction fields, never def names.
+func test_faction_coverage() -> void:
+	AC.load_all()
+	var man := AC.manifest()
+	for fid in Content.faction_ids():
+		for def in Content.ids("units"):
+			var u: Dictionary = Content.unit(def)
+			if String(u.get("faction", "")) != fid:
+				continue
+			var spec: Dictionary = man.get("infantry", {}).get(def, man.get("vehicles", {}).get(def, {}))
+			if not check(not spec.is_empty(), "%s: sprite sheet for unit %s" % [fid, def]):
+				continue
+			check_eq(int(spec.facings), 8, "8 facings for " + def)
+			var frames: Array = spec.frames
+			var want: Array = ["idle", "walk_a", "walk_b", "fire"] if String(u.get("move_class", "")) == "foot" else ["idle", "move", "fire"]
+			for fr in want:
+				check(frames.has(fr), "%s has frame %s" % [def, fr])
+			var img: Image = AC._image(String(spec.file))
+			if check(img != null, "sheet loads for " + def):
+				check_eq(img.get_size(), Vector2i(int(spec.fw) * frames.size(), int(spec.fh) * 8), "sheet size for " + def)
+			check(AC._image(String(spec.get("mask", ""))) != null, "team mask for " + def)
+			if u.get("leaves_wreck", false):
+				check(man.get("vehicle_wrecks", {}).has(def), "wreck sheet for " + def)
+		for def in Content.ids("buildings"):
+			var b: Dictionary = Content.building(def)
+			if String(b.get("faction", "")) != fid or b.get("neutral_structure", false):
+				continue
+			var entry: Dictionary = man.get("buildings", {}).get(def, {})
+			if not check(not entry.is_empty(), "%s: building art for %s" % [fid, def]):
+				continue
+			check_eq(int(entry.size), int(b.size), "art footprint matches content for " + def)
+			for st in ["built", "build_0", "build_1", "build_2"]:
+				var s: Dictionary = entry.states.get(st, {})
+				check(AC._image(String(s.get("file", ""))) != null, "%s state %s" % [def, st])
+			_real(AC.icon(def), "%s: icon for building %s" % [fid, def])
+		for id in Content.ids("production"):
+			if String(Content.production(id).get("faction", "")) == fid:
+				_real(AC.icon(id), "%s: icon for production item %s" % [fid, id])
+
+
+## Mean (r - g) of the opaque pixels of a sheet region: Human B's rust/khaki reads warmer than
+## Human A's olive drab at 1x.
+func _warmth(rel: String, region: Rect2i) -> float:
+	var img: Image = AC._image(rel)
+	if img == null:
+		return 0.0
+	if region.size == Vector2i.ZERO:
+		region = Rect2i(Vector2i.ZERO, img.get_size())
+	var sum := 0.0
+	var n := 0
+	for y in range(region.position.y, region.end.y):
+		for x in range(region.position.x, region.end.x):
+			var c := img.get_pixel(x, y)
+			if c.a > 0.9:
+				sum += c.r - c.g
+				n += 1
+	return sum / maxi(1, n)
+
+
+func test_human_b_identity() -> void:
+	AC.load_all()
+	var man := AC.manifest()
+	var pairs := []
+	for role in ["heavy", "light", "supply"]:
+		pairs.append([Content.role("human_a", role), Content.role("human_b", role)])
+	for p in pairs:
+		var a: Dictionary = man.get("vehicles", {}).get(p[0], {})
+		var b: Dictionary = man.get("vehicles", {}).get(p[1], {})
+		if not check(not a.is_empty() and not b.is_empty(), "vehicle specs %s / %s" % p):
+			continue
+		var wa := _warmth(String(a.file), Rect2i(0, int(a.fh), int(a.fw), int(a.fh)))
+		var wb := _warmth(String(b.file), Rect2i(0, int(b.fh), int(b.fw), int(b.fh)))
+		check(wb > wa + 0.02, "%s reads warmer than %s (%.3f vs %.3f)" % [p[1], p[0], wb, wa])
+	for role in ["hq", "barracks"]:
+		var a := String(Content.role("human_a", role))
+		var b := String(Content.role("human_b", role))
+		var wa := _warmth("buildings/%s_built.png" % a, Rect2i())
+		var wb := _warmth("buildings/%s_built.png" % b, Rect2i())
+		check(wb > wa + 0.02, "%s reads warmer than %s (%.3f vs %.3f)" % [b, a, wb, wa])
+	var start_a: String = Content.faction("human_a").start_units[5]
+	var start_b: String = Content.faction("human_b").start_units[5]
+	var ta: Texture2D = AC.entity_sprite({"kind": "unit", "def": start_a, "facing": 0.0}, Color("#4f7db0"), 0).texture
+	var tb: Texture2D = AC.entity_sprite({"kind": "unit", "def": start_b, "facing": 0.0}, Color("#4f7db0"), 0).texture
+	check(ta.get_image().get_data() != tb.get_image().get_data(), "%s differs from %s" % [start_b, start_a])

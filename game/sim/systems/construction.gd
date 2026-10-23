@@ -2,6 +2,8 @@ extends RefCounted
 ## Construction (owner: agent A / sim-econ). Placement rules, foundations, engineers constructing.
 ## Commands: build, assist_build, cancel_building. Contract: docs/CONTRACTS.md section 4.
 ## Also hosts small geometry helpers shared with gather.gd / production.gd.
+## G3a: builders are units with `can_build`; build time is scaled by w.econ("build_time_mult");
+## placement rejects another faction's buildings.
 
 const Movement = preload("res://sim/systems/movement.gd")
 
@@ -283,7 +285,7 @@ static func tick(w: SimWorld) -> void:
 			if e.moving:
 				stop_moving(e)
 			var bp := float(Content.unit(e.def).get("build_power", 1.0))
-			var bt := maxf(float(Content.building(b.def).get("build_time", 1)), 0.001)
+			var bt := maxf(float(Content.building(b.def).get("build_time", 1)) * w.econ("build_time_mult"), 0.001)  # G3a profile
 			var before := float(b.progress)
 			var after := minf(1.0, before + bp * SimWorld.DT / bt)
 			b.progress = after

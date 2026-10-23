@@ -3,6 +3,7 @@ extends RefCounted
 ## Contract: docs/CONTRACTS.md section 4. Power is a flow recomputed every tick from BUILT buildings.
 
 const STIPEND_INTERVAL_TICKS := 20
+const MAGNET_EVERY := 20         # G3a scrap magnet period (ticks): 1 salvage per pile per second
 
 
 static func tick(w: SimWorld) -> void:
@@ -48,6 +49,8 @@ static func tick(w: SimWorld) -> void:
 		if pay and f.alive and int(hqs[fid]) > 0 and rate > 0:
 			w.credit(fid, {"credits": rate * int(hqs[fid])}, "hq_stipend")
 	_refineries(w)
+	if w.tick > 0 and w.tick % MAGNET_EVERY == 0:
+		_scrap_magnets(w)
 
 
 ## G2 refinery (owner: agent B2, CONTRACTS_G2 section 3). While built and powered, every
@@ -82,3 +85,52 @@ static func _refineries(w: SimWorld) -> void:
 			e.refine_acc = acc
 		if String(e.status) != status:
 			e.status = status
+
+
+## G3a Salvage Yard (S3-sim, CONTRACTS_G3a section 3.4): every MAGNET_EVERY ticks each built
+## building with `scrap_magnet = R` pulls 1 salvage from every salvage pile whose position lies
+## within R tiles of its footprint. Conserving: the pile loses exactly what is credited
+## (w.credit cause "scrap_magnet"). Emptied piles are removed like a harvested-out deposit.
+static func _scrap_magnets(w: SimWorld) -> void:
+	var yards := []
+	for id in w.entities:
+		var b: Dictionary = w.entities[id]
+		if b.kind == "building" and bool(b.built) and w.factions.has(int(b.owner)):
+			var r := float(Content.building(b.def).get("scrap_magnet", 0))
+			if r > 0.0:
+				yards.append([b, r])
+	if yards.is_empty():
+		return
+	var piles := []
+	for id in w.entities:
+		var r: Dictionary = w.entities[id]
+		if r.kind == "resource" and String(r.res) == "salvage" and int(r.amount) > 0:
+			piles.append(r)
+	var gone := []
+	for y in yards:
+		var b: Dictionary = y[0]
+		var rad: float = y[1]
+		var fid := int(b.owner)
+		var got := 0
+		for r in piles:
+			if int(r.amount) <= 0:
+				continue
+			if _foot_dist(Vector2(r.pos), b.cell, int(b.size)) > rad:
+				continue
+			r.amount = int(r.amount) - 1
+			got += 1
+			if int(r.amount) <= 0:
+				gone.append(r)
+		if got > 0:
+			w.credit(fid, {"salvage": got}, "scrap_magnet")
+	for r in gone:
+		var rid := int(r.id)
+		var rpos: Vector2 = r.pos
+		w.destroy(rid, "depleted")
+		w.emit("ResourceDepleted", {"id": rid, "res": "salvage", "pos": rpos})
+
+
+static func _foot_dist(pos: Vector2, cell: Vector2i, size: int) -> float:
+	var dx := maxf(maxf(float(cell.x) - pos.x, pos.x - float(cell.x + size)), 0.0)
+	var dy := maxf(maxf(float(cell.y) - pos.y, pos.y - float(cell.y + size)), 0.0)
+	return Vector2(dx, dy).length()

@@ -26,6 +26,8 @@ const CameraRig = preload("res://presentation/view/camera_rig.gd")
 const G2Input = preload("res://presentation/view/g2_input.gd")
 const G2Overlay = preload("res://presentation/view/g2_overlay.gd")
 const G2Demo = preload("res://presentation/view/g2_demo.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
+const G3View = preload("res://presentation/view/g3_view.gd")
 
 signal selection_changed
 signal world_events(events: Array)
@@ -54,6 +56,8 @@ var overlay_layer: Node2D
 var g2 = G2Input.new()                   # G2 order modes (patrol/guard/repair/mission)
 var g2_ground: Node2D
 var g2_over: Node2D
+var g3_ground: Node2D                    # G3a: air shadows, recharge radii (under entities)
+var _ally_fids: Array = []               # G3a: allies of player_fid (allied vision)
 
 var _acc: float = 0.0
 var _alpha: float = 0.0
@@ -142,6 +146,11 @@ func _init_view() -> void:
 	g2_over.mode = "over"
 	g2_over.z_index = 5
 	add_child(g2_over)
+	g3_ground = G3View.new()
+	g3_ground.z_index = 1
+	add_child(g3_ground)
+	g3_ground.setup(self)
+	_ally_fids = G3.allies_of(world, player_fid)
 	camera = CameraRig.new()
 	add_child(camera)
 
@@ -197,6 +206,7 @@ func _process(delta: float) -> void:
 	overlay_layer.queue_redraw()
 	g2_ground.queue_redraw()
 	g2_over.queue_redraw()
+	g3_ground.queue_redraw()
 	_t_view += Time.get_ticks_usec() - tv
 	if _fps_log:
 		_fps_frames += 1
@@ -385,7 +395,15 @@ func cell_visible(c: Vector2i) -> bool:
 	var f := _fog_arrays()
 	if f.is_empty():
 		return true
-	return int(f.visible[c.y * int(world.map.w) + c.x]) == 1
+	var i := c.y * int(world.map.w) + c.x
+	if int(f.visible[i]) == 1:
+		return true
+	# G3a allied vision: a cell any ally sees is visible (V3's fog does the same for the sim).
+	for a in _ally_fids:
+		var af: Dictionary = world.fog.get(a, {})
+		if not af.is_empty() and int(af.visible[i]) == 1:
+			return true
+	return false
 
 
 func cell_explored(c: Vector2i) -> bool:
@@ -415,7 +433,7 @@ func entity_visible(e: Dictionary) -> bool:
 
 func team_color(fid: int) -> Color:
 	if world != null and world.factions.has(fid):
-		return Color.html(String(world.factions[fid].color))
+		return G3.side_color(world, fid)  # G3a: menu colour (cfg.sides[i].color) when set
 	return Color(0.85, 0.85, 0.8)
 
 
@@ -668,9 +686,11 @@ func smart_command(p: Vector2, shift: bool = false) -> void:
 			issue({"type": "attack", "unit_ids": units, "target_id": int(t.id)})
 			fx_layer.add_marker(t.pos, Color(1.0, 0.25, 0.2))
 			return
-		if t.kind == "resource" and not engineers.is_empty():
-			issue({"type": "gather", "unit_ids": engineers, "target_id": int(t.id)})
-			var rest := units.filter(func(x): return not engineers.has(x))
+		# G3a (ORCH): gather uses can_gather (Machine haulers gather but cannot build)
+		var gatherers := units.filter(func(x): return world.entities.has(x) and bool(Content.unit(world.entities[x].def).get("can_gather", false)))
+		if t.kind == "resource" and not gatherers.is_empty():
+			issue({"type": "gather", "unit_ids": gatherers, "target_id": int(t.id)})
+			var rest := units.filter(func(x): return not gatherers.has(x))
 			if not rest.is_empty():
 				issue({"type": "move", "unit_ids": rest, "target": p})
 			fx_layer.add_marker(t.pos, Color(1.0, 0.85, 0.3))
@@ -827,7 +847,6 @@ func marquee_rect():
 
 # ================================================================ debug: spawn test + demo scripts
 func _debug_spawn_test(n: int) -> void:
-	var defs := ["rifleman", "rifleman", "at_gunner", "recon", "ifv", "mbt"]
 	var fids: Array = world.factions.keys()
 	if fids.size() < 2:
 		return
@@ -835,6 +854,14 @@ func _debug_spawn_test(n: int) -> void:
 	for side in 2:
 		var fid: int = fids[side]
 		var other: int = fids[1 - side]
+		# G3a: each side spawns its own faction's combat roles (no def names)
+		var defs: Array = []
+		for role in ["infantry", "infantry", "antitank", "recon", "light", "heavy"]:
+			var units := G3.item_units(G3.role_def(world, fid, role))
+			if not units.is_empty():
+				defs.append(String(units[0]))
+		if defs.is_empty():
+			continue
 		var spawn := Vector2(world.factions[fid].spawn) + Vector2(0.5, 0.5)
 		var toward := (Vector2(world.factions[other].spawn) - spawn).normalized()
 		var base := spawn + toward * 9.0
@@ -891,7 +918,7 @@ func _run_demo(demo: String) -> void:
 		"ghost", "ghost_ok":
 			await get_tree().create_timer(0.5).timeout
 			select_ids(_engineer_ids())
-			begin_build_placement("barracks")
+			begin_build_placement(G3.role_def(world, player_fid, "barracks"))
 			demo_mouse_world = base + Vector2(6.5, 1.5) if demo == "ghost_ok" else base + Vector2(1.0, 0.5)
 		"combat":
 			# follow the centroid of units far from the player's base (the spawn-test fight)

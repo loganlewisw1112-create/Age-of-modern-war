@@ -12,6 +12,9 @@ extends RefCounted
 ## The bridge costs buildings.json bridge_span.repair_salvage in 10 equal chunks; progress
 ## e.repair_progress 0..1 over repair_time seconds for ONE engineer (several stack). At 1.0 it
 ## calls Bridges.on_repaired(w, e).
+## G3a (S3-sim): repairers are units with `can_build` OR `can_repair`. A `can_repair` unit without
+## `can_build` (b_recovery_truck) repairs vehicles only (units with components); builders such as
+## the Machine m_repair_bot repair everything, like an engineer.
 
 const Construction = preload("res://sim/systems/construction.gd")
 const Movement = preload("res://sim/systems/movement.gd")
@@ -105,11 +108,25 @@ static func _bridge_goal(w: SimWorld, e: Dictionary, t: Dictionary) -> Vector2:
 
 
 # ================================================================ command
+static func is_repairer(e: Dictionary) -> bool:
+	if e.kind != "unit":
+		return false
+	var d := Content.unit(e.def)
+	return bool(d.get("can_build", false)) or bool(d.get("can_repair", false))
+
+
+## True if repairer e may work on target t (vehicle-only repairers need a unit with components).
+static func can_repair_target(e: Dictionary, t: Dictionary) -> bool:
+	if bool(Content.unit(e.def).get("can_build", false)):
+		return true
+	return t.kind == "unit" and t.has("comp")
+
+
 static func _engineers(w: SimWorld, cmd: Dictionary) -> Array:
 	var out := []
 	for raw in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(raw))
-		if e != null and e.kind == "unit" and bool(Content.unit(e.def).get("can_build", false)):
+		if e != null and is_repairer(e):
 			out.append(int(raw))
 	return out
 
@@ -126,7 +143,12 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	if _is_bridge(t):
 		if not w.is_visible(fid, t.pos):
 			return "Target not visible."
-		return "" if _bridge_ruined(t) else "Nothing to repair."
+		if not _bridge_ruined(t):
+			return "Nothing to repair."
+		for id in engs:
+			if can_repair_target(w.entities[id], t):
+				return ""
+		return "Recovery vehicles can only repair vehicles."
 	if t.kind != "unit" and t.kind != "building":
 		return "Nothing to repair."
 	if int(t.owner) != fid:
@@ -135,14 +157,17 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		return "Nothing to repair."
 	if engs.size() == 1 and engs[0] == tid:
 		return "Nothing to repair."
-	return ""
+	for id in engs:
+		if id != tid and can_repair_target(w.entities[id], t):
+			return ""
+	return "Recovery vehicles can only repair vehicles."
 
 
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var tid := int(cmd.target_id)
 	var t: Dictionary = w.entities[tid]
 	for id in _engineers(w, cmd):
-		if id == tid:
+		if id == tid or not can_repair_target(w.entities[id], t):
 			continue
 		var e: Dictionary = w.entities[id]
 		e.order = {"type": "repair", "target_id": tid}
@@ -180,7 +205,7 @@ static func tick(w: SimWorld) -> void:
 			continue
 		var tid := int(e.order.get("target_id", -1))
 		var t = w.entities.get(tid)
-		if t == null or tid == int(id):
+		if t == null or tid == int(id) or not can_repair_target(e, t):
 			Construction.make_idle(e)
 			continue
 		var bridge := _is_bridge(t)

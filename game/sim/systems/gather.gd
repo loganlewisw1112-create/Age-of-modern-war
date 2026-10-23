@@ -3,6 +3,8 @@ extends RefCounted
 ## Commands: gather. Contract: docs/CONTRACTS.md section 4.
 ## Order shape: {type:"gather", resource_id, res, phase:"to_res"|"harvest"|"to_drop", drop_id}.
 ## Integer accounting: fractional progress lives in e.gather_acc, only whole units move to carry.
+## G3a: the harvest rate is scaled by w.econ("gather_mult"); validation uses the `can_gather` flag
+## (Machine: m_hauler gathers, m_repair_bot does not); deposits are any `deposit` building.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
@@ -160,7 +162,7 @@ static func _do_harvest(w: SimWorld, e: Dictionary) -> void:
 		_begin_drop(w, e)
 		return
 	var cap := int(d.get("carry_capacity", 10))
-	var acc := float(e.get("gather_acc", 0.0)) + float(d.get("gather_rate", 1.0)) * SimWorld.DT
+	var acc := float(e.get("gather_acc", 0.0)) + float(d.get("gather_rate", 1.0)) * w.econ("gather_mult") * SimWorld.DT  # G3a profile
 	var take := mini(mini(int(floor(acc)), cap - int(carry.amt)), int(r.amount))
 	if take > 0:
 		carry.res = String(r.res)

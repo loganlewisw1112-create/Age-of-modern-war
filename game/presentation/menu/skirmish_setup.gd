@@ -1,0 +1,223 @@
+extends VBoxContainer
+## G3a skirmish slots (owner: UI3). Contract: docs/CONTRACTS_G3a.md section 6.
+## 2-4 slots: slot 0 is the human player, slots 1-3 are AI or closed. Each open slot sets
+## faction (blurb shown under the row), team, colour, starting credits and AI difficulty.
+## Built in code; call build() once, then apply(cfg, stage) writes cfg.sides (+ cfg.economy is
+## set by the economy picker here as well). Emits `changed` on every edit.
+
+signal changed
+
+const HT = preload("res://presentation/hud/hud_theme.gd")
+const EXTRA_COLORS := ["#8a63b5", "#3a9fa5", "#c7c7bd", "#d07a9a"]
+const SLOT_COUNT := 4
+
+var slots: Array = []        # [{kind, faction, blurb, team, color, credits, diff, swatch}]
+var economy: OptionButton
+var faction_ids: Array = []
+var colors: Array = []        # html strings
+var diffs: Array = []
+var econs: Array = []
+
+
+func build() -> void:
+	add_theme_constant_override("separation", 4)
+	faction_ids = Content.faction_ids()
+	colors = []
+	for c in Content.rules().get("team_colors", []):
+		colors.append(String(c))
+	for c in EXTRA_COLORS:
+		if not colors.has(c):
+			colors.append(c)
+	diffs = []
+	for d in Content.rules().get("ai_difficulties", {}):
+		diffs.append(String(d))
+	econs = []
+	for e in Content.rules().get("economy_profiles", {}):
+		econs.append(String(e))
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 6)
+	add_child(head)
+	for h in [["", 22], ["Player", 92], ["Faction", 200], ["Team", 86], ["Colour", 96], ["Credits", 110], ["AI level", 92]]:
+		var l := HT.make_label(String(h[0]), HT.DIM, 13)
+		l.custom_minimum_size = Vector2(float(h[1]), 0)
+		head.add_child(l)
+	var start_cr := int(Content.rules().get("defaults", {}).get("starting_credits", 2500))
+	var def_diff := String(Content.rules().get("defaults", {}).get("ai_difficulty", "normal"))
+	for i in SLOT_COUNT:
+		slots.append(_make_slot(i, start_cr, def_diff))
+	var er := HBoxContainer.new()
+	er.add_theme_constant_override("separation", 8)
+	add_child(er)
+	er.add_child(HT.make_label("Economy", HT.DIM, 14))
+	economy = OptionButton.new()
+	economy.name = "EconomyOption"
+	var profiles: Dictionary = Content.rules().get("economy_profiles", {})
+	for e in econs:
+		economy.add_item(String(profiles[e].get("name", String(e).capitalize())))
+	economy.select(maxi(0, econs.find("standard")))
+	economy.item_selected.connect(_emit)
+	er.add_child(economy)
+	_refresh_rows()
+
+
+func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	box.add_child(row)
+	var sw := ColorRect.new()
+	sw.custom_minimum_size = Vector2(22, 22)
+	sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(sw)
+	var kind := OptionButton.new()
+	kind.name = "Slot%dKind" % i
+	kind.custom_minimum_size = Vector2(92, 0)
+	if i == 0:
+		kind.add_item("You")
+		kind.disabled = true
+	else:
+		kind.add_item("AI")
+		kind.add_item("Closed")
+		kind.select(0 if i == 1 else 1)
+	kind.item_selected.connect(_emit)
+	row.add_child(kind)
+	var fac := OptionButton.new()
+	fac.name = "Slot%dFaction" % i
+	fac.custom_minimum_size = Vector2(200, 0)
+	for fid in faction_ids:
+		var fd: Dictionary = Content.faction(String(fid))
+		fac.add_item("%s (%s)" % [String(fd.get("name", fid)), String(fd.get("archetype", ""))])
+	fac.select(maxi(0, faction_ids.find("human_a")))
+	fac.item_selected.connect(_emit)
+	row.add_child(fac)
+	var team := OptionButton.new()
+	team.name = "Slot%dTeam" % i
+	team.custom_minimum_size = Vector2(86, 0)
+	for t in SLOT_COUNT:
+		team.add_item("Team %d" % (t + 1))
+	team.select(i)
+	team.item_selected.connect(_emit)
+	row.add_child(team)
+	var col := OptionButton.new()
+	col.name = "Slot%dColor" % i
+	col.custom_minimum_size = Vector2(96, 0)
+	for c in colors:
+		col.add_icon_item(_swatch_tex(Color.html(String(c))), "")
+	col.select(i % colors.size())
+	col.item_selected.connect(_emit)
+	row.add_child(col)
+	var cr := SpinBox.new()
+	cr.name = "Slot%dCredits" % i
+	cr.custom_minimum_size = Vector2(110, 0)
+	cr.min_value = 0
+	cr.max_value = 50000
+	cr.step = 500
+	cr.value = start_cr
+	cr.value_changed.connect(_emit)
+	row.add_child(cr)
+	var diff := OptionButton.new()
+	diff.name = "Slot%dDiff" % i
+	diff.custom_minimum_size = Vector2(92, 0)
+	for d in diffs:
+		diff.add_item(String(d).capitalize())
+	diff.select(maxi(0, diffs.find(def_diff)))
+	diff.disabled = i == 0
+	diff.item_selected.connect(_emit)
+	row.add_child(diff)
+	var blurb := HT.make_label("", HT.DIM, 12)
+	blurb.custom_minimum_size = Vector2(0, 16)
+	box.add_child(blurb)
+	return {"kind": kind, "faction": fac, "team": team, "color": col, "credits": cr, "diff": diff,
+		"blurb": blurb, "swatch": sw, "row": row}
+
+
+func _swatch_tex(c: Color) -> Texture2D:
+	var img := Image.create(28, 14, false, Image.FORMAT_RGBA8)
+	img.fill(c)
+	return ImageTexture.create_from_image(img)
+
+
+func _emit(_v: Variant = null) -> void:
+	_refresh_rows()
+	changed.emit()
+
+
+func is_open(i: int) -> bool:
+	return i == 0 or int(slots[i].kind.selected) == 0
+
+
+func _refresh_rows() -> void:
+	for i in slots.size():
+		var s: Dictionary = slots[i]
+		var open := is_open(i)
+		for k in ["faction", "team", "color", "credits"]:
+			var c = s[k]
+			if c is OptionButton:
+				c.disabled = not open
+			elif c is SpinBox:
+				c.editable = open
+		(s.diff as OptionButton).disabled = i == 0 or not open
+		var fid: String = faction_ids[maxi(0, s.faction.selected)]
+		(s.swatch as ColorRect).color = Color.html(String(colors[maxi(0, s.color.selected)])) if open else Color(0.2, 0.2, 0.2)
+		(s.blurb as Label).text = ("      " + String(Content.faction(fid).get("blurb", ""))) if open else "      (closed)"
+		(s.row as Control).modulate = Color.WHITE if open else Color(1, 1, 1, 0.55)
+
+
+## Programmatic setup (used by the UI playtest only after real clicks, and by tests).
+func set_slot(i: int, open: bool, faction_id: String = "", team: int = -1) -> void:
+	var s: Dictionary = slots[i]
+	if i > 0:
+		s.kind.select(0 if open else 1)
+	if faction_id != "" and faction_ids.has(faction_id):
+		s.faction.select(faction_ids.find(faction_id))
+	if team >= 0:
+		s.team.select(team)
+	_refresh_rows()
+
+
+## Writes cfg.sides, cfg.economy and cfg.ai_difficulty (the first AI's level; per-side levels
+## also go into sides[i].ai_difficulty). Returns a UI-only reason ("" if fine) for things the sim
+## does not validate (duplicate colours).
+func apply(cfg: Dictionary, stage: int) -> String:
+	var sides: Array = []
+	var used := {}
+	var reason := ""
+	var first_ai_diff := ""
+	for i in slots.size():
+		if not is_open(i):
+			continue
+		var s: Dictionary = slots[i]
+		var fid: String = faction_ids[maxi(0, s.faction.selected)]
+		var col: String = colors[maxi(0, s.color.selected)]
+		if used.has(col) and reason == "":
+			reason = "Two sides use the same colour."
+		used[col] = true
+		var diff: String = diffs[maxi(0, s.diff.selected)] if not diffs.is_empty() else "normal"
+		var fname := String(Content.faction(fid).get("name", fid))
+		var side := {"faction": fid, "stage": stage, "credits": int(s.credits.value), "ai": i != 0,
+			"name": "You" if i == 0 else "%s AI (%d)" % [fname.get_slice(" ", 0), i + 1],
+			"team": int(s.team.selected), "color": col, "slot": i}
+		if i != 0:
+			side["ai_difficulty"] = diff
+			if first_ai_diff == "":
+				first_ai_diff = diff
+		sides.append(side)
+	cfg.sides = sides
+	if economy != null and economy.selected >= 0 and economy.selected < econs.size():
+		cfg.economy = econs[economy.selected]
+	if first_ai_diff != "":
+		cfg.ai_difficulty = first_ai_diff
+	return reason
+
+
+## "3 sides, 3 teams: You (Modern, T1) vs Industrial AI (T2) vs ..." for the summary line.
+func describe(cfg: Dictionary) -> String:
+	var teams := {}
+	var parts: Array = []
+	for s in cfg.get("sides", []):
+		teams[int(s.get("team", 0))] = true
+		var short := String(Content.faction(String(s.faction)).get("archetype", s.faction))
+		parts.append("%s [%s, T%d]" % [String(s.get("name", "?")), short, int(s.get("team", 0)) + 1])
+	return "%d sides, %d teams: %s" % [cfg.get("sides", []).size(), teams.size(), ", ".join(parts)]

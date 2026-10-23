@@ -14,8 +14,7 @@ func _unit_name(w: SimWorld, id: int, fallback: String = "Unit") -> String:
 	if e == null:
 		return fallback
 	var d: Dictionary = Content.unit(String(e.def)) if e.kind == "unit" else Content.building(String(e.def))
-	var n := String(d.get("name", e.def))
-	return "Tank" if String(e.def) == "mbt" else n
+	return String(d.get("name", e.def))
 
 
 func _pos(w: SimWorld, id: int) -> Variant:

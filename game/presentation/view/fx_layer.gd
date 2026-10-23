@@ -41,6 +41,9 @@ func on_shot(ev: Dictionary) -> void:
 		return
 	if _fx.size() >= MAX_FX:
 		return
+	if bool(ev.get("indirect", false)):
+		_add_shell(ev, from, to)
+		return
 	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
 	var jitter := Vector2(_rng.randf_range(-4, 4), _rng.randf_range(-3, 3))
 	var hit := bool(ev.get("hit", true))
@@ -51,6 +54,31 @@ func on_shot(ev: Dictionary) -> void:
 	_fx.append({"kind": "muzzle", "t": 0.0, "life": 0.07, "a": a, "b": a, "size": 6.0 if heavy else 3.0, "color": Color(1, 0.9, 0.5)})
 	if heavy and hit:
 		_fx.append({"kind": "explosion_small", "t": 0.0, "life": 0.35, "a": b, "b": b, "size": 8.0, "color": Color(1, 0.6, 0.2)})
+
+
+## G3a artillery: a shell flies a ballistic arc from the gun to the impact point, then an impact
+## blast sized by the weapon's splash radius (tiles) plus a short smoke puff.
+func _add_shell(ev: Dictionary, from: Vector2, to: Vector2) -> void:
+	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	var b: Vector2 = mv.world_to_screen(to)
+	var dist := from.distance_to(to)
+	var splash := float(Content.weapon(String(ev.get("weapon", ""))).get("splash", 1.0))
+	var energy := String(ev.get("weapon", "")).contains("plasma")
+	_fx.append({"kind": "shell", "t": 0.0, "life": clampf(0.35 + dist * 0.06, 0.5, 1.3), "a": a, "b": b,
+		"size": maxf(12.0, dist * 7.0), "color": Color(0.5, 0.95, 1.0) if energy else Color(1.0, 0.8, 0.45),
+		"splash": splash, "energy": energy})
+
+
+func _shell_landed(f: Dictionary) -> void:
+	var b: Vector2 = f.b
+	var r: float = 22.0 * float(f.get("splash", 1.0))
+	_fx.append({"kind": "blast", "t": 0.0, "life": 0.6, "a": b, "b": b, "size": r,
+		"color": Color(0.45, 0.9, 1.0) if bool(f.get("energy", false)) else Color(1.0, 0.6, 0.2)})
+	_fx.append({"kind": "explosion_large", "t": 0.0, "life": 0.7, "a": b + Vector2(0, -6), "b": b, "size": r * 0.8, "color": Color(1, 0.55, 0.15)})
+	for i in 3:
+		var off := Vector2(_rng.randf_range(-r * 0.4, r * 0.4), _rng.randf_range(-r * 0.2, r * 0.2))
+		_fx.append({"kind": "smoke", "t": -_rng.randf_range(0.0, 0.3), "life": 1.6 + _rng.randf(),
+			"a": b + off, "b": b + off + Vector2(_rng.randf_range(-8, 8), -30), "size": 5.0, "color": Color(0.28, 0.26, 0.24)})
 
 
 func on_destroyed(ev: Dictionary) -> void:
@@ -80,11 +108,16 @@ func tick(delta: float) -> void:
 	if _fx.is_empty():
 		return
 	var keep: Array = []
+	var landed: Array = []
 	for f in _fx:
 		f.t += delta
 		if f.t < f.life:
 			keep.append(f)
+		elif String(f.kind) == "shell":
+			landed.append(f)
 	_fx = keep
+	for f in landed:
+		_shell_landed(f)
 	queue_redraw()
 
 
@@ -112,9 +145,26 @@ func _draw() -> void:
 				var p: Vector2 = (f.a as Vector2).lerp(f.b, k)
 				if not _draw_frames("smoke", p, k, 1.0 - k):
 					draw_circle(p, f.size * (0.6 + k * 1.4), Color(col.r, col.g, col.b, 0.55 * (1.0 - k)))
+			"shell":
+				# parabola from a to b with apex height f.size; a bright head and a short trail
+				var head: Vector2 = _arc_point(f, k)
+				var tail: Vector2 = _arc_point(f, maxf(0.0, k - 0.08))
+				draw_line(tail, head, Color(col.r, col.g, col.b, 0.6), 2.0)
+				draw_circle(head, 2.5, Color(col.r, col.g, col.b, 1.0))
+			"blast":
+				var rr: float = f.size * (0.3 + k * 0.9)
+				_draw_iso_ring(f.a, rr, Color(col.r, col.g, col.b, 1.0 - k), 3.0)
+				draw_set_transform(f.a, 0.0, Vector2(1.0, 0.5))
+				draw_circle(Vector2.ZERO, rr * 0.8, Color(col.r, col.g, col.b, 0.25 * (1.0 - k)))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"marker":
 				var r2: float = f.size * (1.0 - k * 0.6)
 				_draw_iso_ring(f.a, r2, Color(col.r, col.g, col.b, 1.0 - k), 2.0)
+
+
+func _arc_point(f: Dictionary, k: float) -> Vector2:
+	var p: Vector2 = (f.a as Vector2).lerp(f.b, k)
+	return p + Vector2(0, -4.0 * float(f.size) * k * (1.0 - k))
 
 
 func _draw_frames(name: String, at: Vector2, k: float, alpha: float) -> bool:

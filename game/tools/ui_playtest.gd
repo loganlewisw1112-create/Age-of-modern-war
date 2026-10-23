@@ -1,17 +1,22 @@
 extends Node
 ## UI-01 playtest driven ONLY by synthetic input events pushed into the real viewport
-## (the same path as a mouse/keyboard): menu click -> select engineers -> build generator via
-## hotkey + world click -> build barracks -> select barracks -> click "Rifle Squad" button ->
-## select the squad -> attack-move toward the bridge.  Run:
-##   godot --path game -- --ui-playtest=C:/abs/shot_dir
+## (the same path as a mouse/keyboard): menu click -> select builders -> build the power role via
+## hotkey + world click -> build the barracks role -> select it -> click the infantry-role card
+## button -> officer flow -> select the squad -> attack-move toward the bridge.  Run:
+##   godot --path game -- --ui-playtest=C:/abs/shot_dir [--ui-playtest-faction=human_b|machine]
+## G3a (UI3): every def comes from content/factions.json roles and unit flags (can_build /
+## can_gather), never from Human A names. With --ui-playtest-faction the menu is set up by real
+## clicks on the OptionButtons (slot 0 faction, slot 2 opened as AI with a third faction).
 ## Prints "PLAYTEST <step> ok=<bool> <detail>" lines and "PLAYTEST RESULT pass=N fail=M".
 
 const Construction = preload("res://sim/systems/construction.gd")
 const MatchViewScript = preload("res://presentation/match_view.gd")
 const Ops = preload("res://sim/systems/ops.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
 
 var main: Node
 var shot_dir := ""
+var faction := ""     # --ui-playtest-faction ("" = leave the menu defaults: Human A vs Human A)
 var passed := 0
 var failed := 0
 
@@ -133,17 +138,71 @@ func _to_screen(p: Vector2) -> Vector2:
 	return mv.get_viewport().get_canvas_transform() * (mv.global_transform * MatchViewScript.world_to_screen(p))
 
 
+
 func _own_units(def_id: String) -> Array:
+	return _own_units_in([def_id])
+
+
+func _own_units_in(defs: Array) -> Array:
 	var out := []
 	for e in _w().units_of(0):
-		if e.def == def_id:
+		if defs.has(String(e.def)):
 			out.append(e)
 	return out
 
 
+# ------------------------------------------------------------ G3a role lookups
+func _fac() -> String:
+	return G3.faction_def(_w(), 0)
+
+
+func _role(r: String) -> String:
+	return Content.role(_fac(), r)
+
+
+## Own unit defs carrying a unit flag (can_build / can_gather), in first-seen order.
+func _defs_with(flag: String) -> Array:
+	var out := []
+	for e in _w().units_of(0):
+		var d := String(e.def)
+		if not out.has(d) and bool(Content.unit(d).get(flag, false)):
+			out.append(d)
+	return out
+
+
+func _hq() -> Dictionary:
+	var hs: Array = _w().buildings_of(0, _role("hq"))
+	return hs[0] if not hs.is_empty() else {}
+
+
+## The build hotkey the HUD shows for def (same remap order as hud.gd's build card).
+func _hotkey(def_id: String) -> String:
+	var used := {}
+	for b in Content.buildable_for(_fac()):
+		var hk := G3.build_hotkey(String(b), used)
+		if String(b) == def_id:
+			return hk
+	return ""
+
+
+func _built(def_id: String) -> bool:
+	var bs: Array = _w().buildings_of(0, def_id)
+	return bs.size() > 0 and bool(bs[0].built)
+
+
+## The first own building whose def produces item (officer may come from the HQ or barracks).
+func _producer_of(item: String) -> Dictionary:
+	for b in _w().buildings_of(0):
+		if bool(b.get("built", false)) and (Content.building(String(b.def)).get("produces", []) as Array).has(item):
+			return b
+	return {}
+
+
 func _site(def_id: String) -> Vector2i:
 	var w := _w()
-	var hq: Dictionary = w.buildings_of(0, "hq")[0]
+	var hq := _hq()
+	if hq.is_empty():
+		return Vector2i(-1, -1)
 	var c: Vector2i = hq.cell
 	for r in range(4, 12):
 		for dy in range(-r, r + 1):
@@ -160,28 +219,34 @@ func _site(def_id: String) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-func _select_engineers() -> int:
-	var engs := _own_units("engineer")
-	if engs.is_empty():
+## Click then double-click one unit of defs[0] (= select all of that type on screen); returns how
+## many selected units have a def in defs.
+func _select_units(defs: Array) -> int:
+	var us := _own_units_in(defs)
+	if us.is_empty():
 		return 0
-	# double-click one engineer = select all engineers on screen
-	await _click(_to_screen(engs[0].pos), MOUSE_BUTTON_LEFT)
-	await _click(_to_screen(engs[0].pos), MOUSE_BUTTON_LEFT, true)
+	await _click(_to_screen(us[0].pos), MOUSE_BUTTON_LEFT)
+	await _click(_to_screen(us[0].pos), MOUSE_BUTTON_LEFT, true)
 	await _wait(0.3)
 	var n := 0
 	for id in _mv().selection:
 		var e = _w().get_e(int(id))
-		if e != null and e.def == "engineer":
+		if e != null and defs.has(String(e.def)):
 			n += 1
 	return n
 
 
-func _place(def_id: String, hotkey: Key) -> bool:
+func _place(def_id: String) -> bool:
 	var o := _site(def_id)
 	if o.x < 0:
 		_log("site_" + def_id, false, "no legal on-screen site")
 		return false
-	await _key(hotkey)
+	var hk := _hotkey(def_id)
+	var code := OS.find_keycode_from_string(hk)
+	if hk == "" or code == KEY_NONE:
+		_log("hotkey_" + def_id, false, "no hotkey (%s)" % hk)
+		return false
+	await _key(code)
 	await _wait(0.3)
 	var size := int(Content.building(def_id).size)
 	var centre := Vector2(o) + Vector2(size, size) * 0.5
@@ -193,9 +258,86 @@ func _place(def_id: String, hotkey: Key) -> bool:
 	return _w().buildings_of(0, def_id).size() > 0
 
 
+# ------------------------------------------------------------ menu (G3a skirmish setup)
+## Real clicks: open the OptionButton, then click item idx inside its popup.
+func _pick_option(node_name: String, idx: int) -> bool:
+	var ob := get_tree().root.find_child(node_name, true, false) as OptionButton
+	if ob == null or idx < 0 or idx >= ob.item_count:
+		return false
+	if ob.selected == idx:
+		return true
+	await _click(ob.get_global_rect().get_center())
+	await _wait(0.4)
+	var pm := ob.get_popup()
+	if not pm.visible:
+		return false
+	var top := 0.0
+	var bottom := 0.0
+	var sb := pm.get_theme_stylebox("panel")
+	if sb != null:
+		top = sb.get_margin(SIDE_TOP)
+		bottom = sb.get_margin(SIDE_BOTTOM)
+	var h := (float(pm.size.y) - top - bottom) / float(pm.item_count)
+	var p := Vector2(pm.position) + Vector2(float(pm.size.x) * 0.5, top + (float(idx) + 0.5) * h)
+	await _click(p)
+	await _wait(0.3)
+	if pm.visible:
+		pm.hide()
+	return ob.selected == idx
+
+
+func _setup_menu() -> void:
+	var ids: Array = Content.faction_ids()
+	var mine := ids.find(faction)
+	_log("menu_faction_known", mine >= 0, faction)
+	if mine < 0:
+		return
+	var third := ""
+	for f in ids:
+		if String(f) != faction and String(f) != "human_a":
+			third = String(f)
+			break
+	if third == "":
+		third = "human_a"
+	_log("menu_slot0_faction_click", await _pick_option("Slot0Faction", mine), faction)
+	_log("menu_slot2_open_ai_click", await _pick_option("Slot2Kind", 0))
+	_log("menu_slot2_faction_click", await _pick_option("Slot2Faction", ids.find(third)), third)
+	await _wait(0.3)
+
+
 # ------------------------------------------------------------ the run
+## Select the gatherer units and right-click the nearest visible salvage pile (smart gather).
+func _gather_salvage(gatherers: Array, tag: String) -> void:
+	var n_gat := _own_units_in(gatherers).size()
+	var n := await _select_units(gatherers)
+	_log("select_gatherers_" + tag, n >= mini(4, n_gat) and n > 0, "selected=%d of %d" % [n, n_gat])
+	var pile = null
+	var best := 1e9
+	var hqp: Vector2 = _hq().pos
+	for e in _w().entities.values():
+		if e.kind == "resource" and e.res == "salvage" and _w().is_visible(0, e.pos):
+			var dd: float = e.pos.distance_to(hqp)
+			if dd < best:
+				best = dd
+				pile = e
+	_log("visible_salvage_pile_" + tag, pile != null)
+	if pile == null:
+		return
+	await _click(_to_screen(pile.pos), MOUSE_BUTTON_RIGHT)
+	await _wait(0.5)
+	var gathering := 0
+	for e in _own_units_in(gatherers):
+		if String(e.order.type) == "gather":
+			gathering += 1
+	_log("right_click_gather_" + tag, gathering >= mini(4, n_gat) and gathering > 0, "gathering=%d" % gathering)
+	if tag == "1":
+		await _shot("ui_035_gathering")
+
+
 func _run() -> void:
 	await _wait(1.5)
+	if faction != "":
+		await _setup_menu()
 	await _shot("ui_00_menu")
 	_log("menu_start_button", await _click_button("START MATCH"))
 	var started := await _wait_until(func(): return main.match_view != null and main.match_view.world != null, 10.0)
@@ -203,66 +345,64 @@ func _run() -> void:
 	if not started:
 		return _finish()
 	await _wait(1.5)
+	_log("player_faction", faction == "" or _fac() == faction, "faction=%s sides=%d" % [_fac(), _w().factions.size()])
 	await _shot("ui_01_start")
 
-	var n := await _select_engineers()
-	_log("select_engineers_doubleclick", n >= 4, "selected=%d" % n)
-	await _shot("ui_02_engineers_selected")
-	_log("place_generator_hotkey_G", await _place("generator", KEY_G))
-	_log("speed_3x_button", await _click_button("3x"))
-	var gen_ok := await _wait_until(func(): return _w().buildings_of(0, "generator").size() > 0 and _w().buildings_of(0, "generator")[0].built, 60.0)
-	_log("generator_completed", gen_ok)
+	var pdef := _role("power")
+	var bdef := _role("barracks")
+	var builders := _defs_with("can_build")
+	var gatherers := _defs_with("can_gather")
+	var inf_item := _role("infantry")
+	var inf_units := G3.item_units(inf_item)
+	print("PLAYTEST-DBG roles power=%s barracks=%s builders=%s gatherers=%s infantry=%s->%s" % [pdef, bdef, builders, gatherers, inf_item, inf_units])
+	var n_build := _own_units_in(builders).size()
+	var want_sel := mini(4, n_build)
 
-	n = await _select_engineers()
-	_log("reselect_engineers", n >= 4, "selected=%d" % n)
-	_log("place_barracks_hotkey_B", await _place("barracks", KEY_B))
-	var bar_ok := await _wait_until(func(): return _w().buildings_of(0, "barracks").size() > 0 and _w().buildings_of(0, "barracks")[0].built, 60.0)
-	_log("barracks_completed", bar_ok)
+	var n := await _select_units(builders)
+	_log("select_builders_doubleclick", n >= want_sel and n > 0, "selected=%d of %d" % [n, n_build])
+	await _shot("ui_02_engineers_selected")
+	_log("place_power_hotkey_" + _hotkey(pdef), await _place(pdef), pdef)
+	_log("speed_3x_button", await _click_button("3x"))
+	var gen_ok := await _wait_until(func(): return _built(pdef), 60.0)
+	_log("power_completed", gen_ok, pdef)
+
+	# economy first (ORCH 2026-10-23): Human B/Machine cannot afford power + barracks from the start stock
+	await _gather_salvage(gatherers, "1")
+	var bcost: Dictionary = Content.building(bdef).cost
+	var afford := await _wait_until(func(): return _w().can_afford(0, bcost) == "", 120.0)
+	_log("afford_barracks", afford, "%s cost=%s stock=%s cr=%d" % [bdef, str(bcost), str(_w().factions[0].stock), int(_w().factions[0].credits)])
+
+	n = await _select_units(builders)
+	_log("reselect_builders", n >= want_sel and n > 0, "selected=%d" % n)
+	_log("place_barracks_hotkey_" + _hotkey(bdef), await _place(bdef), bdef)
+	var bar_ok := await _wait_until(func(): return _built(bdef), 60.0)
+	_log("barracks_completed", bar_ok, bdef)
 	await _shot("ui_03_barracks_built")
 	if not bar_ok:
 		return _finish()
-
-	# economy: right-click a salvage pile with engineers selected (smart gather), wait for salvage
-	n = await _select_engineers()
-	var pile = null
-	var best := 1e9
-	var hqp: Vector2 = _w().buildings_of(0, "hq")[0].pos
-	for e in _w().entities.values():
-		if e.kind == "resource" and e.res == "salvage" and _w().is_visible(0, e.pos):
-			var dd: float = e.pos.distance_to(hqp)
-			if dd < best:
-				best = dd
-				pile = e
-	_log("visible_salvage_pile", pile != null)
-	if pile != null:
-		await _click(_to_screen(pile.pos), MOUSE_BUTTON_RIGHT)
-		await _wait(0.5)
-		var gathering := 0
-		for e in _own_units("engineer"):
-			if String(e.order.type) == "gather":
-				gathering += 1
-		_log("right_click_gather", gathering >= 4, "gathering=%d" % gathering)
-		await _shot("ui_035_gathering")
-	var need := int(Content.production("rifle_squad").cost.salvage)
+	# builders that also gather (Human A/B) were pulled off the pile to build: send them back
+	await _gather_salvage(gatherers, "2")
+	var need := int(Content.production(inf_item).cost.get("salvage", 0))
 	var sal_ok := await _wait_until(func(): return int(_w().factions[0].stock.salvage) >= need, 90.0)
 	_log("salvage_for_squad", sal_ok, "salvage=%d need=%d" % [int(_w().factions[0].stock.salvage), need])
 
-	var bar: Dictionary = _w().buildings_of(0, "barracks")[0]
+	var bar: Dictionary = _w().buildings_of(0, bdef)[0]
 	await _click(_to_screen(bar.pos))
 	await _wait(0.4)
 	_log("select_barracks_click", _mv().selection.has(int(bar.id)))
 	await _shot("ui_04_barracks_selected")
-	var riflemen_before := _own_units("rifleman").size()
-	_log("click_rifle_squad_button", await _click_button("Rifle Squad"))
+	var inf_before := _own_units_in(inf_units).size()
+	var inf_name := String(Content.production(inf_item).name)
+	_log("click_infantry_button", await _click_button(inf_name), inf_name)
 	await _wait(0.3)
 	_log("queue_has_item", _w().get_e(int(bar.id)) != null and _w().get_e(int(bar.id)).queue.size() > 0)
-	var sq_ok := await _wait_until(func(): return _own_units("rifleman").size() >= riflemen_before + 4, 60.0)
-	_log("rifle_squad_trained", sq_ok, "riflemen=%d" % _own_units("rifleman").size())
+	var sq_ok := await _wait_until(func(): return _own_units_in(inf_units).size() >= inf_before + inf_units.size(), 60.0)
+	_log("infantry_trained", sq_ok, "%s units=%d (before %d, +%d expected)" % [inf_item, _own_units_in(inf_units).size(), inf_before, inf_units.size()])
 	await _wait(1.0)
 	await _shot("ui_05_squad_trained")
 
-	await _officer_flow(bar)
-	var rifles := _own_units("rifleman")
+	await _officer_flow(inf_units)
+	var rifles := _own_units_in(inf_units)
 	if rifles.size() > 0:
 		_mv().speed = 0.0  # freeze the sim for the selection gesture (units are moving under the officer)
 		var cen := Vector2.ZERO
@@ -282,41 +422,54 @@ func _run() -> void:
 		var sel := 0
 		for id in _mv().selection:
 			var e = _w().get_e(int(id))
-			if e != null and e.def == "rifleman":
+			if e != null and inf_units.has(String(e.def)):
 				sel += 1
-		_log("select_squad_boxdrag", sel >= 4, "selected=%d" % sel)
+		var want := mini(4, rifles.size())
+		_log("select_squad_boxdrag", sel >= want, "selected=%d of %d" % [sel, rifles.size()])
 		await _key(KEY_A)
-		var goal := Vector2(42.5, 42.5)  # toward the central bridge
+		# ORCH: aim 8 tiles from the squad toward the map centre so the click stays on screen for every spawn
+		var sc := Vector2.ZERO
+		for r in rifles:
+			sc += Vector2(r.pos)
+		sc /= float(rifles.size())
+		var goal := sc + (Vector2(48, 48) - sc).normalized() * 8.0
 		await _click(_to_screen(goal))
 		await _wait(1.0)
 		var am := 0
-		for e in _own_units("rifleman"):
+		for e in _own_units_in(inf_units):
 			if String(e.order.type) == "attack_move":
 				am += 1
-		_log("attack_move_issued", am >= 4, "attack_move_units=%d" % am)
+		_log("attack_move_issued", am >= want, "attack_move_units=%d" % am)
 		await _wait(3.0)
 		await _shot("ui_06_attack_move")
 	_finish()
 
 
-## G2: train an officer, assign the squad to it, give a Secure point mission by map click,
-## and check that the officer's reports reach the group card. All via synthetic input.
-func _officer_flow(bar: Dictionary) -> void:
-	await _click(_to_screen(bar.pos))
+## G2: train the faction's officer-role unit, assign the infantry to it, give a Secure point
+## mission by map click, and check that the officer's reports reach the group card. Synthetic input.
+func _officer_flow(inf_units: Array) -> void:
+	var off_item := _role("officer")
+	var prod := _producer_of(off_item)
+	_log("g2_officer_producer", off_item != "" and not prod.is_empty(), "%s from %s" % [off_item, String(prod.get("def", "?"))])
+	if off_item == "" or prod.is_empty():
+		return
+	var off_units := G3.item_units(off_item)
+	await _click(_to_screen(prod.pos))
 	await _wait(0.3)
-	var need := int(Content.production("officer").cost.salvage)
+	var need := int(Content.production(off_item).cost.get("salvage", 0))
 	await _wait_until(func(): return int(_w().factions[0].stock.salvage) >= need, 60.0)
-	_log("g2_click_officer_button", await _click_button("Officer"))
-	var off_ok := await _wait_until(func(): return _own_units("officer").size() > 0, 60.0)
+	var off_name := String(Content.production(off_item).name)
+	_log("g2_click_officer_button", await _click_button(off_name), off_name)
+	var off_ok := await _wait_until(func(): return _own_units_in(off_units).size() > 0, 60.0)
 	_log("g2_officer_trained", off_ok)
 	if not off_ok:
 		return
 	await _wait(1.0)
-	var off: Dictionary = _own_units("officer")[0]
+	var off: Dictionary = _own_units_in(off_units)[0]
 	# wait until the officer has walked to the rally point near the squad, then box-select both
 	await _wait_until(func(): return not bool(_w().get_e(int(off.id)).get("moving", false)), 20.0)
 	var pts := [_to_screen(_w().get_e(int(off.id)).pos)]
-	for r in _own_units("rifleman"):
+	for r in _own_units_in(inf_units):
 		pts.append(_to_screen(r.pos))
 	var lo: Vector2 = pts[0]
 	var hi: Vector2 = pts[0]
@@ -331,11 +484,12 @@ func _officer_flow(bar: Dictionary) -> void:
 		if se != null:
 			kinds[se.def] = int(kinds.get(se.def, 0)) + 1
 	print("PLAYTEST-DBG selection ", kinds)
-	_log("g2_select_squad_plus_officer", _mv().selection.has(int(off.id)) and _mv().selection.size() >= 5, "selected=%d" % _mv().selection.size())
+	var want_m := mini(4, _own_units_in(inf_units).size())
+	_log("g2_select_squad_plus_officer", _mv().selection.has(int(off.id)) and _mv().selection.size() >= 1 + want_m, "selected=%d" % _mv().selection.size())
 	_log("g2_click_assign_button", await _click_button("Assign"))
 	await _wait(0.5)
 	var g: Dictionary = Ops.group_led_by(_w(), int(off.id))
-	_log("g2_group_formed", not g.is_empty() and (g.members as Array).size() >= 4, "members=%d" % (0 if g.is_empty() else (g.members as Array).size()))
+	_log("g2_group_formed", not g.is_empty() and (g.members as Array).size() >= want_m, "members=%d" % (0 if g.is_empty() else (g.members as Array).size()))
 	await _click(_to_screen(_w().get_e(int(off.id)).pos))
 	await _wait(0.3)
 	_log("g2_click_secure_point", await _click_button("Secure point"))

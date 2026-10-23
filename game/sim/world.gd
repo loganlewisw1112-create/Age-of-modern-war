@@ -163,7 +163,7 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"id": i,
 			"name": String(s.get("name", "Side %d" % i)),
 			"faction_def": String(s.faction),
-			"color": String(colors[i % colors.size()]),
+			"color": String(s.get("color", colors[i % colors.size()])),  # G3a: menu colour wins
 			"is_ai": bool(s.get("ai", false)),
 			"stage": int(s.get("stage", 8)),
 			"credits": int(s.get("credits", 0)),

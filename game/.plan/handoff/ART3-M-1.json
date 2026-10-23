@@ -1,0 +1,53 @@
+{
+  "agent": "ART3-M",
+  "gen": 1,
+  "reason": "guard budget.handoff_now at calls=42 (projected 360000 / cap 500000)",
+  "done": [
+    "Machine art modules written; all run clean in memory (headless contact run rc=0, zero SCRIPT ERROR / Parse Error, after the faction_m_units.gd:191 fix).",
+    "tools/art/faction_m.gd: entry point. Calls units, vehicles and buildings, then writes 16 icons into out.manifest.icons via get-or-create (ORCH has fixed fx_ui.gd to merge, fact art.icons_clobber_fixed).",
+    "faction_m_lib.gd: palette (graphite, off-white, cyan/teal emissive) and helpers (hex prism + shadow, legs, seams, joints, eye, team panel, hex plate, hologram box).",
+    "faction_m_units.gd + faction_m_walker.gd: m_repair_bot, m_scout_crawler, m_coordinator, m_walker in manifest.infantry (frames idle/walk_a/walk_b/fire, 8 facings, legged:true). The m_walker wreck is in manifest.vehicle_wrecks.",
+    "faction_m_veh.gd + faction_m_drone.gd: m_hauler, m_tracked, m_artillery_node (+ wrecks) and m_drone in manifest.vehicles (frames idle/move/fire). The drone has air fields and a separate shadow image.",
+    "faction_m_bld.gd + faction_m_bdress.gd: 7 buildings x built/build_0/build_1/build_2 + masks. Construction is shown as printed raw walls + a cyan hologram lattice + printer drones. A team beacon pylon replaces the flag.",
+    "tools/art/faction_m_contact.gd: SceneTree script. It builds terrain/units/vehicles/faction_m IN MEMORY only and does not preload gen_art.gd, so other agents' broken modules cannot block it. Output .plan/shots/ART3-M/contact.png was viewed and looks correct (scene, line-ups, buildings in 4 states, icons, drones lifted over their shadows). After that, only the 2x crop position was moved below the icons, and that version was not re-run.",
+    "tests/test_art_machine.gd written: unit facings/frames via ArtCatalog, walk alternation, team colour, cyan cue, cold wrecks, drone air fields + separate shadow + no baked shadow, buildings with 4 distinct states + team colour, 32x32 icons for every machine production/unit/building id, faction_m determinism + shipped md5 match. NOT YET RUN.",
+    "Board facts posted: art.air_fields, art.icons_clobber."
+  ],
+  "assets_inventory": {
+    "infantry": {"m_repair_bot": "30x30 pivot [15,23]", "m_scout_crawler": "32x28 pivot [16,21]", "m_coordinator": "28x40 pivot [14,33]", "m_walker": "70x70 pivot [35,52]"},
+    "vehicles": {"m_hauler": "62x46 pivot [31,30]", "m_tracked": "70x50 pivot [35,32]", "m_artillery_node": "64x56 pivot [32,38]", "m_drone": "38x30 pivot [19,22]"},
+    "vehicle_wrecks": ["m_walker", "m_hauler", "m_tracked", "m_artillery_node"],
+    "buildings_4_states": ["m_core", "m_charging_hub", "m_reprocessor", "m_assembler", "m_crawler_works", "m_sensor_relay", "m_sentry"],
+    "icons": ["m_hauler", "m_repair_bot", "m_scout_crawler", "m_drone", "m_walker", "m_tracked", "m_artillery_node", "m_coordinator", "m_drone_pair", "m_core", "m_charging_hub", "m_reprocessor", "m_assembler", "m_crawler_works", "m_sensor_relay", "m_sentry"],
+    "note": "All of these exist in memory only. Nothing has been written to assets/generated/ by ART3-M yet."
+  },
+  "air_manifest_fields": {
+    "where": "manifest.vehicles.m_drone",
+    "air": true, "altitude": 18, "bob": 2,
+    "shadow": {"file": "units/m_drone_shadow.png", "pivot": [15, 7]},
+    "rule": "The body is drawn resting on the pivot (the ground point). The renderer lifts the sprite by altitude (+ an optional sin bob) and draws the untinted shadow at the ground point (offset = -pivot) underneath it."
+  },
+  "gen_lock_state": "ART3-M never took art.gen_lock (last lock facts: ART3-B lock 23:03:42, unlock 23:05:13). Nothing to release.",
+  "remaining": [
+    "1. Check the lock by matching the topic field: grep -E '\"topic\":\"art.gen_(un)?lock\"' .plan/board.jsonl | tail -1 (my status texts mention gen_lock, so do not match free text). If the last entry is an unlock, post fact art.gen_lock {\"by\":\"ART3-M-2\"}.",
+    "2. Run the full generator in hb.sh: bash .plan/hb.sh <id> <calls> <est> \"full gen_art\" -- \"$G\" --headless --path . -s tools/gen_art.gd. It also compiles faction_b*.gd (ART3-B's files). If that aborts with their parse error, quote it and coordinate; do not edit their files. Post fact art.gen_unlock afterwards in every case.",
+    "3. bash tests/run.sh --only=test_art_machine, then fix failures in the faction_m* files or in the test. Thresholds: looks>=16 per unit, cyan>=2 per unit over 2 facings, cyan>=3 per building, image count>=80.",
+    "4. bash tests/run.sh --only=test_art. Machine defs must pass test_entities_every_def + icons. test_generator_deterministic needs the last full gen to include the current faction_m + faction_b code.",
+    "5. Optionally re-run tools/art/faction_m_contact.gd to refresh the sheet with the new crop layout, then Read it.",
+    "6. Run the full bash tests/run.sh in hb.sh and quote any test_art failures for Human B defs (ART3-B's).",
+    "7. Final report per AGENT_RULES, then post done."
+  ],
+  "files_touched": [
+    "tools/art/faction_m.gd", "tools/art/faction_m_lib.gd", "tools/art/faction_m_units.gd", "tools/art/faction_m_walker.gd",
+    "tools/art/faction_m_veh.gd", "tools/art/faction_m_drone.gd", "tools/art/faction_m_bld.gd", "tools/art/faction_m_bdress.gd",
+    "tools/art/faction_m_contact.gd", "tests/test_art_machine.gd", ".plan/shots/ART3-M/contact.png", ".plan/handoff/ART3-M-1.json"
+  ],
+  "test_state": "No test has been run. assets/generated/ has NOT been regenerated with the Machine module, so the Machine PNGs and manifest entries are absent until a full gen_art run. In-memory generation runs clean.",
+  "gotchas": [
+    "Never preload gen_art.gd from a debug script: it compiles every faction module, so another agent's parse error breaks yours.",
+    "Give Variant values explicit types (for-loop vars over untyped arrays, dict/array reads): var x: int = ...",
+    "Do not bake a shadow into the drone frames (the test checks for this).",
+    "Legged units live in manifest.infantry, because the catalog checks infantry first.",
+    "The guard projects 191k + 2.3k x calls, so handoff comes at about 69 calls on a 500k cap. Batch the work."
+  ]
+}

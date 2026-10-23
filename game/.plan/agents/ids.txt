@@ -22,3 +22,11 @@ E2-art-2 opus 500k/130 successor (handoff E2-art-1.json)
 E2-art-2 task id: a2600cfd95e2bd4ab
 G2 wave B: G2-ai opus 600k/150 planning+fairness; Q2-qa sonnet 500k/130 bounded test spec
 wave B task ids: G2-ai=a5a37df775b00a892 Q2-qa=afc6bc8b5ddd9a7f6
+G3a dispatched: S3-sim opus 600k (mechanics judgement); V3-victory opus 600k (rules+fog); AI3 opus 600k (planning); UI3 opus 600k (multi-file UI); ART3-B opus 500k (visual); ART3-M opus 500k (visual)
+G3a task ids: S3=ae8245eddd77b7adb V3=ab1397e1b112310b5 AI3=a2e5dd361f6312bd1 UI3=ac161c8acdc68e28b ART3-B=a0332fe8e220119e0 ART3-M=a96b84ba7e06a8c28 guard=bkcvirvp2
+UI3-2 opus 600k successor (handoff UI3-1.json)
+UI3-2 task id: a0f06f098c190b519
+ART3-B-2 sonnet 400k successor (handoff ART3-B-1.json; mostly mechanical regen+tests)
+ART3-B-2 task id: abd2433ca000fb78d
+AI3-2 opus 600k successor (handoff AI3-1.json)
+AI3-2 task id: a688534b8ec22c0c3

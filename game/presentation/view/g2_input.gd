@@ -4,6 +4,7 @@ extends RefCounted
 ## through mv.issue(cmd). Contract: CONTRACTS_G2 sections 3-5.
 
 const G2 = preload("res://presentation/view/g2_data.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
 
 var mv
 var mode := ""             # "" | patrol | guard | repair | mission
@@ -243,7 +244,7 @@ func _hover_hint(p: Vector2) -> String:
 	if not engineers.is_empty():
 		var rt := _repair_target(p, mv.entity_at(p, true))
 		if not rt.is_empty():
-			return "Right-click: repair" + (" the bridge" if String(rt.def) == "bridge_span" else "")
+			return "Right-click: repair" + (" the bridge" if G3.is_bridge(String(rt.def)) else "")
 	if on_bridge and engineers.size() < units.size() and G2.bridge_state(w) != "ruined":
 		return "River bridge: Shift+right-click to demolish"
 	return ""

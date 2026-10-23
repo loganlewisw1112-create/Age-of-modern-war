@@ -10,6 +10,14 @@ extends RefCounted
 ##   the economy profile). Its own fuel is refilled by an HQ/depot/other truck like any unit.
 ## - Empty stock: the unit gets whatever is left, faction.status_supply names the shortage and a
 ##   SupplyShortage event fires at most once per SHORTAGE_COOLDOWN ticks per resource.
+## G3a (S3-sim, CONTRACTS_G3a section 3):
+## - Economy profile: shots cost ammo_use_mult rounds (fractions carried in the integer
+##   accumulator e.ammo_acc, in 1/1000 rounds, never the rng); drain per tile x fuel_use_mult.
+## - ENERGY units (units.json energy:true, Machine): e.fuel is charge. It drains like fuel but never
+##   draws from the fuel stock; every RESUPPLY_EVERY ticks it refills for free by
+##   refill_per_second.fuel while within the `recharge` radius (footprint distance) of an own built
+##   building with `recharge`, and only while that faction's power_prod >= power_use. Their ammo
+##   still comes from the stock like any unit.
 
 const Construction = preload("res://sim/systems/construction.gd")
 
@@ -21,19 +29,34 @@ const SUPPLY_BUILDINGS := ["hq", "depot"]
 
 
 ## Called by combat._fire once per shot fired by a unit (consume 1 round).
-static func on_shot(_w: SimWorld, e: Dictionary) -> void:
-	if e.has("ammo"):
+static func on_shot(w: SimWorld, e: Dictionary) -> void:
+	if not e.has("ammo"):
+		return
+	var mult := w.econ("ammo_use_mult")
+	if mult == 1.0:
 		e.ammo = maxi(0, int(e.ammo) - 1)
+		return
+	var acc := int(e.get("ammo_acc", 0)) + int(round(maxf(mult, 0.0) * 1000.0))
+	var n := acc / 1000
+	e.ammo_acc = acc % 1000
+	if n > 0:
+		e.ammo = maxi(0, int(e.ammo) - n)
+
+
+static func is_energy(e: Dictionary) -> bool:
+	return e.kind == "unit" and bool(Content.unit(e.def).get("energy", false))
 
 
 static func tick(w: SimWorld) -> void:
 	_burn_fuel(w)
 	if w.tick % RESUPPLY_EVERY == 0:
 		_resupply(w)
+		_recharge(w)
 
 
 # ================================================================ fuel
 static func _burn_fuel(w: SimWorld) -> void:
+	var mult := maxf(w.econ("fuel_use_mult"), 0.0)
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "unit" or not e.has("fuel"):
@@ -46,7 +69,7 @@ static func _burn_fuel(w: SimWorld) -> void:
 		e.supply_prev_pos = pos
 		if dist <= 0.0 or dist > MAX_STEP_TILES:
 			continue
-		var per_tile := float(Content.unit(e.def).get("fuel_per_tile", 0.0))
+		var per_tile := float(Content.unit(e.def).get("fuel_per_tile", 0.0)) * mult
 		if per_tile <= 0.0:
 			continue
 		var burn: float = round(dist * per_tile * FUEL_QUANT) / FUEL_QUANT
@@ -111,7 +134,7 @@ static func _resupply(w: SimWorld) -> void:
 		var want_fuel := 0
 		if e.has("ammo"):
 			want_ammo = mini(maxi(0, int(ud.get("ammo_max", 0)) - int(e.ammo)), ammo_rate)
-		if e.has("fuel"):
+		if e.has("fuel") and not bool(ud.get("energy", false)):  # G3a: energy units recharge instead
 			var miss := float(ud.get("fuel_max", 0)) - float(e.fuel)
 			want_fuel = mini(maxi(0, int(ceil(miss))), fuel_rate)
 		if want_ammo <= 0 and want_fuel <= 0:
@@ -149,3 +172,45 @@ static func _draw(w: SimWorld, fid: int, res: String, want: int, flags: Dictiona
 		return 0
 	var ok := w.spend(fid, {res: n}, "resupply")
 	return n if ok else 0
+
+
+# ================================================================ G3a energy recharge
+## Free charge for energy units near an own built `recharge` building while power is OK.
+static func _recharge(w: SimWorld) -> void:
+	var rate := float((Content.rules().get("supply", {}).get("refill_per_second", {}) as Dictionary).get("fuel", 0))
+	if rate <= 0.0:
+		return
+	var hubs := {}   # fid -> [{cell, size, r}]
+	for id in w.entities:
+		var b: Dictionary = w.entities[id]
+		if b.kind != "building" or not bool(b.built):
+			continue
+		var r := float(Content.building(b.def).get("recharge", 0))
+		if r <= 0.0:
+			continue
+		var fid := int(b.owner)
+		if not hubs.has(fid):
+			hubs[fid] = []
+		hubs[fid].append({"cell": b.cell, "size": int(b.size), "r": r})
+	if hubs.is_empty():
+		return
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" or not e.has("fuel"):
+			continue
+		var fid := int(e.owner)
+		if not hubs.has(fid):
+			continue
+		var ud := Content.unit(e.def)
+		if not bool(ud.get("energy", false)):
+			continue
+		var fmax := float(ud.get("fuel_max", 0))
+		if float(e.fuel) >= fmax:
+			continue
+		var f: Dictionary = w.factions[fid]
+		if int(f.power_prod) < int(f.power_use):
+			continue
+		for h in hubs[fid]:
+			if Construction.footprint_dist(e.pos, h.cell, int(h.size)) <= float(h.r):
+				e.fuel = minf(fmax, float(e.fuel) + rate)
+				break

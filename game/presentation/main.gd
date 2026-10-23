@@ -4,6 +4,8 @@ extends Node
 ##
 ## Command line (after `--`):
 ##   --autostart [--autostart-seed=N]    skip the menu and start the default match
+##   --autostart-factions=human_b,machine[,human_a]   (G3a) one side per faction, side 0 = you
+##   --autostart-teams=0,1,1             (G3a) team per side;  --autostart-victory=territory
 ##   --player-ai                         (with --autostart) the AI plays side 0 too (demo)
 ##   --autoshot=ABS.png --autoshot-delay=4   save the viewport after N seconds, then quit (KEEP)
 ##   --debug-end=win|lose                force the end screen (debug)
@@ -18,6 +20,8 @@ const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
 const MainMenuScript = preload("res://presentation/menu/main_menu.gd")
 const PauseMenuScript = preload("res://presentation/menu/pause_menu.gd")
 const EndScreenScript = preload("res://presentation/menu/end_screen.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
+const G3Score = preload("res://presentation/hud/g3_score.gd")
 const SAVE_SYSTEM := "res://sim/save_system.gd"
 const QUICK_SAVE := "user://saves/quick.sav"
 
@@ -51,6 +55,7 @@ func _ready() -> void:
 		var cfg := SimWorld.default_config()
 		if _args.has("autostart-seed"):
 			cfg.seed = int(_args["autostart-seed"])
+		_apply_autostart_g3(cfg)
 		if _args.has("player-ai"):
 			# Debug/demo: the AI also plays the player's side (rendered AI-vs-AI match).
 			cfg.sides[0].ai = true
@@ -66,7 +71,30 @@ func _ready() -> void:
 		var pt = load("res://tools/ui_playtest.gd").new()
 		pt.main = self
 		pt.shot_dir = String(_args["ui-playtest"])
+		pt.faction = String(_args.get("ui-playtest-faction", ""))  # G3a: human_b | machine
 		add_child(pt)
+
+
+## G3a debug: --autostart-factions / --autostart-teams / --autostart-victory.
+func _apply_autostart_g3(cfg: Dictionary) -> void:
+	if _args.has("autostart-factions"):
+		var facs: PackedStringArray = String(_args["autostart-factions"]).split(",", false)
+		var proto: Dictionary = cfg.sides[0]
+		var sides: Array = []
+		for i in facs.size():
+			var s: Dictionary = proto.duplicate(true)
+			s.faction = facs[i]
+			s.ai = i != 0
+			s.team = i
+			s.name = "You" if i == 0 else "%s AI" % String(Content.faction(facs[i]).get("name", facs[i])).get_slice(" ", 0)
+			sides.append(s)
+		cfg.sides = sides
+	if _args.has("autostart-teams"):
+		var ts: PackedStringArray = String(_args["autostart-teams"]).split(",", false)
+		for i in mini(ts.size(), cfg.sides.size()):
+			cfg.sides[i].team = int(ts[i])
+	if _args.has("autostart-victory"):
+		cfg.victory = String(_args["autostart-victory"])
 
 
 func _parse_args() -> void:
@@ -248,7 +276,7 @@ func _process(delta: float) -> void:
 	var w := match_view.get("world") as SimWorld
 	if w != null and bool(w.match_state.get("ended", false)):
 		var pf := int(match_view.get("player_fid"))
-		_show_end(int(w.match_state.get("winner", -1)) == pf, w)
+		_show_end(bool(G3Score.end_info(w, pf).won), w)
 
 
 func _show_end(won: bool, w: SimWorld) -> void:
@@ -257,14 +285,15 @@ func _show_end(won: bool, w: SimWorld) -> void:
 		_end.queue_free()
 	var pf := int(match_view.get("player_fid"))
 	var st: Dictionary = w.factions[pf].stats if w.factions.has(pf) else {}
-	var reason := String(w.match_state.get("reason", ""))
+	var info: Dictionary = G3Score.end_info(w, pf)
 	_end = EndScreenScript.new()
 	_overlay_layer.root.add_child(_end)
 	_end.setup({
 		"won": won, "clock": HT.clock_text(w.tick),
 		"trained": int(st.get("trained", 0)), "built": int(st.get("built", 0)),
 		"lost": int(st.get("lost", 0)), "killed": int(st.get("killed", 0)),
-		"subtitle": "The enemy HQ has fallen." if won else "Your HQ has been destroyed." if reason == "hq_elimination" else "The match has ended.",
+		"subtitle": String(info.subtitle) if bool(w.match_state.get("ended", false)) else ("Debug end screen."),
+		"teams": info.teams,
 	})
 	_end.continue_requested.connect(_on_end_continue)
 	_end.menu_requested.connect(show_menu)
@@ -350,20 +379,23 @@ func _debug_select(what: String) -> void:
 	var w: SimWorld = match_view.world
 	var pf := int(match_view.get("player_fid"))
 	var ids: Array = []
+	# G3a: role-based (no def names): builders = can_build units, barracks/hq = faction roles
+	var hq_def := G3.role_def(w, pf, "hq")
 	if what == "engineers":
 		for u in w.units_of(pf):
-			if u.def == "engineer":
+			if bool(Content.unit(String(u.def)).get("can_build", false)):
 				ids.append(int(u.id))
-	elif what == "barracks" or what == "hq":
+	elif (what == "barracks" or what == "hq") and not w.buildings_of(pf, hq_def).is_empty():
+		var hq: Dictionary = w.buildings_of(pf, hq_def)[0]
 		if what == "barracks":
-			var hq: Dictionary = w.buildings_of(pf, "hq")[0]
 			var origin: Vector2i = hq.cell + Vector2i(6, -1)
-			var bid := w.spawn_building("barracks", pf, origin, true)
+			var bdef := G3.role_def(w, pf, "barracks")
+			var bid := w.spawn_building(bdef, pf, origin, true)
 			ids.append(bid)
-			for item in ["rifle_squad", "at_team", "recon"]:
-				match_view.issue({"type": "queue_unit", "building_id": bid, "item": item})
+			for item in Content.building(bdef).get("produces", []):
+				match_view.issue({"type": "queue_unit", "building_id": bid, "item": String(item)})
 		else:
-			ids.append(int(w.buildings_of(pf, "hq")[0].id))
+			ids.append(int(hq.id))
 	_select(ids)
 
 

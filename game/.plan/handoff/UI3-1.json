@@ -1,0 +1,45 @@
+{
+  "agent": "UI3", "gen": 1, "calls_used": 62, "tokens_used_est": 370000,
+  "done": [
+    "Skirmish setup (WRITTEN, headless-tested via tests/test_ui3.gd 5/6 PASS): presentation/menu/skirmish_setup.gd (4 slots: You/AI/Closed, faction+blurb, team, colour, credits, AI level; economy picker; apply(cfg, stage) writes cfg.sides incl. sides[i].color/ai_difficulty/slot, cfg.economy, cfg.ai_difficulty=first AI level; returns UI reason for duplicate colours; set_slot(i, open, faction, team) helper) and presentation/menu/victory_builder.gd (mode picker, percent/seconds spins, combined AND/OR + term checkboxes incl. Endless; apply(cfg); static describe(cfg)/term_text). main_menu.gd rewired: credits/difficulty/victory rows removed, setup+victory added, build_config uses them, summary shows economy/victory/sides + live validate_config reason. NOT yet viewed on screen (no autoshot).",
+    "presentation/hud/g3_faction.gd helpers: faction_def, role_def, role_name, item_units (production 'spawns'), side_color (cfg.sides[i].color override), team_of/is_ally/allies_of/teams, is_energy/is_air, fuel_word, recharge_radius, build_hotkey (RESERVED F Q S H A P R -> ALT N K J U Y X Z).",
+    "objectives.gd rewritten role-based (ids kept: generator/barracks/squad/enemy_hq/officer for tests/test_hud.gd compat; items instance var, configure(faction, victory); team-aware win). hud.gd uses objectives.items.",
+    "hud.gd: build card from Content.buildable_for(player faction) with G3.build_hotkey; LOW_POWER/SUPPLY_CAP text from roles; 'Ally under attack: <name>' alert; SideEliminated Ally/Enemy wording; MatchEnded team text; g3_score panel built under objectives and updated in _refresh.",
+    "presentation/hud/g3_score.gd: victory panel (title VictoryBuilder.describe, per-team rows: HQs left + Victory.progress(w,team).terms lines); static rows(w,pf) and end_info(w,pf) -> {won, subtitle, teams[{text,color}], winner_team}. test_score_rows_and_end_info PASS.",
+    "main.gd: end check uses G3Score.end_info(...).won (team-based); _show_end passes subtitle + teams; end_screen.gd renders TEAM RESULTS rows; --debug-select role-based; new debug flags --autostart-factions=a,b,c --autostart-teams=0,1,1 --autostart-victory=mode.",
+    "g2_inspector: fuel label 'Charge' for energy units. g2_alerts: removed 'mbt' special case.",
+    "minimap.gd: side_color everywhere; allies always drawn (white outline), enemies via mv.cell_visible (allied vision); territory sector tint only when w.sys_state has 'territory' (never creates it).",
+    "match_view.gd: team_color -> G3.side_color; cell_visible ORs allies' fog (allied vision); _debug_spawn_test + ghost demo role-based; adds g3_ground (presentation/view/g3_view.gd) under entities, redrawn each frame.",
+    "presentation/view/g3_view.gd: air shadows (manifest vehicles[def].shadow per ART3-M board fact seq 283, else ellipse) + recharge radius ellipse/label for a selected recharge building, faint radii while a Machine energy unit is selected; static air_lift(e,t)/is_air_entity. entity_layer.gd lifts air sprites by air_lift and z_index=1.",
+    "fx_layer.gd: ShotFired indirect:true -> 'shell' parabola arc, then 'blast' iso ring sized by weapon splash + explosion + smoke (cyan for plasma)."
+  ],
+  "remaining": [
+    "1. Wait until AI3's sim/ai/ai_army.gd exists (ai_controller.gd:16 preloads it; right now the WHOLE project fails to compile, so nothing presentation-side can be verified). Then: bash tests/run.sh --only=test_ui3 (expect 6/6; test_skirmish_three_factions_ffa_valid failed only at AiController.new_state) and --only=test_hud.",
+    "2. Headless parse checks: $G --headless --path . --quit-after 100 (menu), plus -- --autostart, plus -- --autostart --autostart-factions=machine,human_b,human_a; grep SCRIPT ERROR. My files are NOT confirmed parse-clean: the dependency failure masks them.",
+    "3. Autoshots to .plan/shots/UI3/ and view with Read: menu (no args; check 840px panel + slot rows fit 1600x900); --autostart --autostart-factions=human_b,machine,human_a --debug-select=engineers (build card); machine as side 0 with a charging hub selected (recharge radius); --autostart-victory=territory (victory panel); --debug-end=win (team results).",
+    "4. Section-6 items NOT done: g2_data.gd/g2_input.gd still compare def == 'bridge_span' (neutral structure; use a flag or leave with a note); g2_demo.gd uses officer/mbt/ifv/recon defs (demo only) -> G3.role_def(world, pf, 'officer'|'heavy'|'light'|'recon') + G3.item_units; main_menu HOW_TO_PLAY text still names Human A buildings (optional).",
+    "5. Extend tools/ui_playtest.gd: replace hard-coded engineer/generator/barracks/rifle_squad/rifleman/officer/hq with role lookups (builders = own can_build units; power/barracks/hq roles; infantry = G3.item_units(role infantry); officer role). Add --ui-playtest-faction=human_b|machine (main.gd passes _args['ui-playtest-faction'] to pt): in the menu set Slot0Faction to that faction and open Slot2Kind=AI with a third faction via real clicks on the OptionButtons (click button, then click the item in get_popup()), START MATCH, build power + barracks-role with hotkeys from G3.build_hotkey over Content.buildable_for, gather (Machine: m_hauler can_gather, m_repair_bot can_build), train the infantry-role item via its card button (production name), check units spawned.",
+    "6. Full bash tests/run.sh inside .plan/hb.sh; quote test_art failures for new faction defs (ART3-owned).",
+    "7. Final report incl. change_requests below."
+  ],
+  "change_requests": [
+    "ORCH sim/world.gd new_match: \"color\": String(s.get(\"color\", colors[i % colors.size()])) so the sim agrees with the menu colour (presentation already prefers cfg.sides[i].color via G3.side_color).",
+    "AI3 sim/ai/ai_util.gd:21: per-side difficulty String(w.cfg.sides[fid].get(\"ai_difficulty\", w.cfg.get(\"ai_difficulty\", \"normal\"))); the menu writes sides[i].ai_difficulty.",
+    "ORCH content/buildings.json (optional): refinery hotkey F collides with Formation; m_sensor_relay R collides with Repair. The UI remaps both automatically (G3.build_hotkey)."
+  ],
+  "files_touched": [
+    "presentation/menu/skirmish_setup.gd (new)", "presentation/menu/victory_builder.gd (new)", "presentation/menu/main_menu.gd", "presentation/menu/end_screen.gd",
+    "presentation/hud/g3_faction.gd (new)", "presentation/hud/g3_score.gd (new)", "presentation/hud/objectives.gd", "presentation/hud/hud.gd", "presentation/hud/g2_inspector.gd", "presentation/hud/g2_alerts.gd", "presentation/hud/minimap.gd",
+    "presentation/main.gd", "presentation/match_view.gd", "presentation/view/g3_view.gd (new)", "presentation/view/entity_layer.gd", "presentation/view/fx_layer.gd",
+    "tests/test_ui3.gd (new)"
+  ],
+  "test_state": "Project-wide compile currently broken by AI3: sim/ai/ai_controller.gd:16 preloads missing res://sim/ai/ai_army.gd. Even so, --only=test_ui3 ran: 5 PASS (hotkeys, objectives per faction, score rows/end_info, skirmish reasons, victory builder modes), 1 FAIL (three_factions_ffa: new_match fails at AiController.new_state, AI3's break); run.sh reports TESTS FAILED (script_errors=6, all from the ai_army.gd preload). No autoshots yet. Full suite not run.",
+  "gotchas": [
+    "Territory.state(w) CREATES w.sys_state.territory if missing: presentation must only read it when w.sys_state.has('territory') (minimap does). Victory.progress calls it only for territory terms.",
+    "Production defs list units under 'spawns' (not 'units').",
+    "Objective ids keep the G1 names because tests/test_hud.gd asserts is_done('generator') etc.; texts come from roles.",
+    "main_menu panel widened to 840px, left column 300px: verify fit at 1600x900 and UI scale 1.5.",
+    "GDScript uses tabs; in hud.gd _on_events the case bodies are 4 tabs deep.",
+    "Do not edit presentation/art/**; read air fields via ArtCatalog.manifest().vehicles[def] (altitude, bob, shadow{file,pivot})."
+  ]
+}

@@ -11,6 +11,7 @@ extends Node
 ##   g2_bridge_damaged / g2_bridge_ruined   bridge visuals, demolish hint / BridgeDestroyed path
 
 const G2 = preload("res://presentation/view/g2_data.gd")
+const G3 = preload("res://presentation/hud/g3_faction.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 
 var mv
@@ -39,6 +40,11 @@ func run(view, demo: String) -> void:
 	print("G2DEMO ", demo, " staged at tick ", w.tick)
 
 
+## G3a: demo unit defs come from the player's faction roles (no hard-coded Human A names).
+func _r(roles: Array) -> String:
+	return G3.role_unit(w, pf, roles)
+
+
 func _unit(def: String, off: Vector2, fields: Dictionary = {}) -> int:
 	var id := w.spawn_unit(def, pf, base + off)
 	var e: Dictionary = w.entities[id]
@@ -55,12 +61,12 @@ func _events(evs: Array) -> void:
 
 
 func _inspector(infantry: bool) -> void:
-	var tank := _unit("mbt", Vector2(5, 3.5), {"facing": 0.6, "comp": {"mobility": 0.0, "weapon": 35.0, "sensors": 100.0}, "ammo": 9, "fuel": 60.0})
+	var tank := _unit(_r(["heavy"]), Vector2(5, 3.5), {"facing": 0.6, "comp": {"mobility": 0.0, "weapon": 35.0, "sensors": 100.0}, "ammo": 9, "fuel": 60.0})
 	w.entities[tank].hp = w.entities[tank].max_hp * 0.55
-	_unit("ifv", Vector2(7.5, 2.5), {"facing": 2.2, "comp": {"mobility": 70.0, "weapon": 100.0, "sensors": 0.0}, "fuel": 0.0})
-	var pinned := _unit("rifleman", Vector2(4, 6.5), {"supp": 80.0, "pinned": true, "in_cover": true, "morale": 55.0})
-	var broken := _unit("rifleman", Vector2(5.5, 7), {"supp": 30.0, "broken": true, "morale": 12.0, "facing": 3.6})
-	_unit("rifleman", Vector2(3, 7.5), {"supp": 45.0, "ammo": 0, "in_cover": true})
+	_unit(_r(["light"]), Vector2(7.5, 2.5), {"facing": 2.2, "comp": {"mobility": 70.0, "weapon": 100.0, "sensors": 0.0}, "fuel": 0.0})
+	var pinned := _unit(_r(["infantry"]), Vector2(4, 6.5), {"supp": 80.0, "pinned": true, "in_cover": true, "morale": 55.0})
+	var broken := _unit(_r(["infantry"]), Vector2(5.5, 7), {"supp": 30.0, "broken": true, "morale": 12.0, "facing": 3.6})
+	_unit(_r(["infantry"]), Vector2(3, 7.5), {"supp": 45.0, "ammo": 0, "in_cover": true})
 	mv.speed = 0.0
 	w.spend(pf, {"ammo": maxi(0, int(w.factions[pf].stock.get("ammo", 0)) - 80)}, "debug_demo")
 	mv.select_ids([pinned if infantry else tank])
@@ -73,11 +79,11 @@ func _inspector(infantry: bool) -> void:
 
 
 func _squad(off: Vector2) -> Dictionary:
-	var off_id := _unit("officer", off)
+	var off_id := _unit(_r(["officer"]), off)
 	var members: Array = []
 	for i in 4:
-		members.append(_unit("rifleman", off + Vector2(1.0 + (i % 2) * 0.8, -1.0 + i * 0.7)))
-	members.append(_unit("mbt", off + Vector2(-1.2, 1.2)))
+		members.append(_unit(_r(["infantry"]), off + Vector2(1.0 + (i % 2) * 0.8, -1.0 + i * 0.7)))
+	members.append(_unit(_r(["heavy"]), off + Vector2(-1.2, 1.2)))
 	return {"officer": off_id, "members": members}
 
 
@@ -121,7 +127,7 @@ func _officer(kind: String) -> void:
 func _patrol() -> void:
 	var ids: Array = []
 	for i in 4:
-		ids.append(_unit("rifleman", Vector2(6 + (i % 2), 2 + i * 0.6)))
+		ids.append(_unit(_r(["infantry"]), Vector2(6 + (i % 2), 2 + i * 0.6)))
 	mv.select_ids(ids)
 	mv.g2.arm("patrol", {"unit_ids": ids})
 	mv.g2.points = [base + Vector2(10, 1), base + Vector2(11, 6)]
@@ -152,9 +158,9 @@ func _bridge(ruin: bool) -> void:
 	var toward: Vector2 = (base - bp).normalized()
 	var ids: Array = []
 	for i in 4:
-		var id := w.spawn_unit("rifleman", pf, bp + toward * (3.0 + i * 0.6) + Vector2(i * 0.4, -i * 0.3))
+		var id := w.spawn_unit(_r(["infantry"]), pf, bp + toward * (3.0 + i * 0.6) + Vector2(i * 0.4, -i * 0.3))
 		ids.append(id)
-	ids.append(w.spawn_unit("recon", pf, bp + toward * 2.5))
+	ids.append(w.spawn_unit(_r(["recon", "light"]), pf, bp + toward * 2.5))
 	mv.center_camera_on(bp)
 	mv.camera.set_zoom_level(1.3)
 	await get_tree().create_timer(1.2).timeout   # let fog reveal the crossing

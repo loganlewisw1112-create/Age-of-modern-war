@@ -144,7 +144,7 @@ func update(w: SimWorld, ents: Array) -> void:
 		ammo_lbl.add_theme_color_override("font_color", HT.RED if int(e.ammo) <= 0 else HT.TEXT)
 	if ff >= 0.0:
 		fuel_bar.value = ff
-		fuel_lbl.text = "Fuel %d/%d" % [int(e.fuel), int(Content.unit(e.def).get("fuel_max", 0))]
+		fuel_lbl.text = "%s %d/%d" % [("Charge" if bool(Content.unit(e.def).get("energy", false)) else "Fuel"), int(e.fuel), int(Content.unit(e.def).get("fuel_max", 0))]  # G3a: Machine energy
 		fuel_lbl.add_theme_color_override("font_color", HT.RED if float(e.fuel) <= 0.0 else HT.TEXT)
 	# component chips
 	var has_comp: bool = single and e.has("comp")

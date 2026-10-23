@@ -8,6 +8,9 @@ const Status = preload("res://sim/systems/status.gd")
 ##   foot: AStarGrid2D, vehicle: AStarGrid2D, comp: {mc: PackedInt32Array}, comp_dirty}.
 ## Saved: w.sys_state.movement = {queue: [{id, req, goal}], req_seq, budget_tick, budget_used}.
 ## Entity fields added lazily: path_req (int, -1 = none pending), stuck (int ticks).
+## G3a (S3-sim): move_class "air" (drones) has no AStarGrid: every in-bounds cell is passable,
+##   paths are one straight segment to the map-clamped goal, terrain never slows it, footprints
+##   never block it, and separation only pushes air units against other air units.
 
 const CLASSES := ["foot", "vehicle"]
 const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, FIFO)
@@ -24,6 +27,8 @@ const STUCK_REPATH_TICKS := 40
 const SLOT_FOOT := 1.1
 const SLOT_VEHICLE := 1.8
 const CENTER := Vector2(0.5, 0.5)
+const AIR := "air"
+const AIR_LAYER := 262144        # separation hash offset: air units only separate among themselves
 
 static var _udefs: Dictionary = {}
 static var _offsets: Array = []
@@ -152,7 +157,7 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 		var rect := Rect2i(origin, Vector2i(size, size))
 		for id in w.entities:
 			var e: Dictionary = w.entities[id]
-			if e.kind != "unit":
+			if e.kind != "unit" or move_class(e) == AIR:
 				continue
 			var cell := w.cell_of(e.pos)
 			if rect.has_point(cell):
@@ -212,6 +217,8 @@ static func _comp(w: SimWorld, mc: String) -> PackedInt32Array:
 static func is_passable(w: SimWorld, cell: Vector2i, mc: String) -> bool:
 	if not w.in_bounds(cell):
 		return false
+	if mc == AIR:
+		return true  # G3a: air ignores terrain and footprints
 	if _nav_ready(w) and w.nav.has(mc):
 		var g: AStarGrid2D = w.nav[mc]
 		return not g.is_point_solid(cell)
@@ -251,6 +258,10 @@ static func nearest_free_cell(w: SimWorld, cell: Vector2i, mc: String) -> Vector
 static func _resolve(w: SimWorld, e: Dictionary, goal: Vector2) -> Dictionary:
 	_ensure_nav(w)
 	var mc := move_class(e)
+	if mc == AIR:
+		var gp := Vector2(clampf(goal.x, 0.5, float(w.map.w) - 0.5), clampf(goal.y, 0.5, float(w.map.h) - 0.5))
+		var sc := w.cell_of(e.pos)
+		return {"ok": true, "start": sc, "cell": w.cell_of(gp), "pos": gp}
 	var mw := int(w.nav.w)
 	var start := w.cell_of(e.pos)
 	if not is_passable(w, start, mc):
@@ -308,7 +319,7 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	e.path_i = 0
 	e.moving = true
 	e.stuck = 0
-	if r.cell == r.start or _line_clear(w, move_class(e), e.pos, r.pos):
+	if r.cell == r.start or move_class(e) == AIR or _line_clear(w, move_class(e), e.pos, r.pos):
 		e.path = [r.pos]
 		e.path_req = -1
 		return true
@@ -395,7 +406,7 @@ static func _drain_queue(w: SimWorld) -> void:
 			if e.order.type == "move":
 				e.order = {"type": "idle"}
 			continue
-		if r.cell == r.start or _line_clear(w, move_class(e), e.pos, r.pos):
+		if r.cell == r.start or move_class(e) == AIR or _line_clear(w, move_class(e), e.pos, r.pos):
 			e.path = [r.pos]
 		else:
 			e.path = _compute(w, move_class(e), r.start, r.cell, r.pos)
@@ -419,7 +430,10 @@ static func tick(w: SimWorld) -> void:
 		var p: Vector2 = e.pos
 		var cell := Vector2i(floori(p.x), floori(p.y))
 		var g = grids.get(mc)
-		if g == null or not bounds.has_point(cell) or g.is_point_solid(cell):
+		if mc == AIR:
+			if not bounds.has_point(cell):
+				e.pos = Vector2(clampi(cell.x, 0, bounds.size.x - 1), clampi(cell.y, 0, bounds.size.y - 1)) + CENTER
+		elif g == null or not bounds.has_point(cell) or g.is_point_solid(cell):
 			# safety invariant: never leave a unit inside an impassable cell
 			e.pos = Vector2(nearest_free_cell(w, cell, mc)) + CENTER
 		if e.moving:
@@ -453,7 +467,8 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 	var u := udef(String(e.def))
 	var pos: Vector2 = e.pos
 	var start_pos := pos
-	var spd: float = float(u.speed) * Terrain.speed_mult(w.terrain_at(w.cell_of(pos)), mc) * SimWorld.DT * Status.move_mult(w, e)
+	var tmult := 1.0 if mc == AIR else Terrain.speed_mult(w.terrain_at(w.cell_of(pos)), mc)
+	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
 	if spd <= 0.0:
 		return  # immobile (mobility kill / no fuel): keep the path, do not move
 	var remaining := spd
@@ -542,7 +557,7 @@ static func _separate(w: SimWorld) -> void:
 		if e.kind != "unit":
 			continue
 		var p: Vector2 = e.pos
-		var ok := (int(e.owner) + 1) * 1048576
+		var ok := (int(e.owner) + 1) * 1048576 + (AIR_LAYER if move_class(e) == AIR else 0)
 		units.append(e)
 		pos.append(p)
 		rad.append(float(udef(e.def).radius))

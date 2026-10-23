@@ -1,0 +1,29 @@
+{
+  "agent": "S3-sim",
+  "gen": 1,
+  "done": {
+    "1_artillery": "DONE+TESTED. combat.gd: stats() gains aa/indirect/min_range/splash/is_air; indirect search radius max(sight,range); min_range excluded from search/kept targets/_fire; ignores line_clear; _splash() hits every ground unit+building within splash (allies too), falloff to 50% at edge, via Damage.apply_hit with scaled damage; ShotFired has indirect field; explicit attack inside min_range backs away. Tests: test_artillery_splash_hits_cluster_and_ally, test_artillery_respects_min_range.",
+    "2_air": "DONE+TESTED. movement.gd: AIR const; is_passable(air)=in_bounds; _resolve clamps goal; order_path/_drain_queue give a single straight segment; no terrain speed mult; no nudge out of footprints; separation key layer AIR_LAYER so air only separates among air. combat: only anti_air weapons target is_air (find_target, _valid_target, _attack_order, validate 'Selected units cannot engage aircraft.', apply skips). Tests: drone straight over water/forest, over HQ footprint, ground not pushed; only rifle shoots drone.",
+    "3_energy": "DONE+TESTED. supply.gd: energy units skip fuel resupply draw; _recharge every 20 ticks +refill_per_second.fuel free when within `recharge` footprint distance of own built recharge building and power_prod>=power_use. Test: test_machine_charge_refills_only_near_powered_hub (journal: no fuel resupply).",
+    "4_scrap_magnet": "DONE+TESTED. economy.gd _scrap_magnets every 20 ticks: 1 salvage per pile within R of footprint, credit cause scrap_magnet, empty piles destroyed + ResourceDepleted. Test: test_scrap_magnet_conserves.",
+    "5_can_repair": "DONE+TESTED. repair.gd: is_repairer (can_build or can_repair), can_repair_target (non-builders: units with comp only); reject 'Recovery vehicles can only repair vehicles.'; message 'Only engineers can repair.' kept (test_supply checks it). Test: test_recovery_truck_repairs_vehicles_only (+ m_repair_bot repairs core).",
+    "6_gather_build_split": "DONE+TESTED (already worked via flags; covered in test_each_faction_opening_via_roles: hauler gathers, hauler build rejected).",
+    "7_econ_profiles": "DONE+TESTED. gather_mult in gather.gd; ammo_use_mult in Supply.on_shot (integer accumulator e.ammo_acc in 1/1000, only when mult!=1); fuel_use_mult in _burn_fuel (fuel+charge); build_time_mult in construction.gd. Test: test_economy_profiles_change_gather_and_ammo (build/fuel mults not separately tested).",
+    "8_faction_checked_queue": "DONE+TESTED. production.gd validate: '<item> belongs to another faction.' Test: test_production_is_faction_checked.",
+    "9_tests": "DONE. tests/test_factions.gd 12/12 PASS. Machine never pinned covered (no morale field -> Damage.suppress no-op; status.gd unchanged)."
+  },
+  "remaining": [
+    "Optional: quiet-machine bench re-run: godot --headless --path . -s tools/bench.gd -- --sizes=256 --g2 --no-write (target <15 ms avg). Could not get a quiet run.",
+    "Optional: add tests for build_time_mult and fuel_use_mult (implemented, untested).",
+    "Re-run full bash tests/run.sh once art agents (test_art, test_art_machine) and AI3 (tests/test_ai.gd:494 parse error) land."
+  ],
+  "files_touched": ["sim/systems/combat.gd", "sim/systems/movement.gd", "sim/systems/supply.gd", "sim/systems/economy.gd", "sim/systems/repair.gd", "sim/systems/gather.gd", "sim/systems/construction.gd", "sim/systems/production.gd", "tests/test_factions.gd"],
+  "test_state": "--only=test_factions: RESULT pass=12 fail=0 (script errors in that run came from sim/ai/ai_econ.gd:162, AI3-owned, since fixed). test_mil 13/0, test_damage 10/0, test_supply 10/0, test_econ 15/0. Full run 2: RESULT pass=124 fail=8 files=16; all 8 fails are test_art::* (4) and test_art_machine::* (4) (placeholder art for new faction defs); 1 SCRIPT ERROR: Parse Error Invalid escape in string at res://tests/test_ai.gd:494 (AI3).",
+  "bench": "Machine heavily loaded (other agents' godot runs). bench --g2 --sizes=256 in tree: 22.5 ms avg. A/B copies in scratchpad, same load: mine 28.9 / 35.1 ms, HEAD versions of my files 40.6 / 26.7 ms; identical survivors 106/94 in all runs (human_a content behaviour unchanged). No regression attributable; quiet number NOT measured. G2 baseline 12.0 ms.",
+  "gotchas": [
+    "Fog recomputes every 4 ticks: a freshly spawned unit is not visible to attack validation until run_ticks(4).",
+    "Combat.stats() is cached per def in a static var; new fields aa/indirect/min_range/splash/is_air are there for AI/UI: use Combat.can_target(Combat.stats(shooter), target).",
+    "Artillery splash also hits own buildings/units (friendly fire by contract); kills by splash credit the shooter's owner stats.killed even for own units.",
+    "Recovery truck is also is_supply (supply point)."
+  ]
+}

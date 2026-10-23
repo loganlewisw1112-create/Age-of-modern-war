@@ -1,0 +1,40 @@
+{
+  "agent": "AI3", "gen": 1, "calls_used": 66, "tokens_used_est": 390000,
+  "done": [
+    "All sim/ai modules faction-agnostic: defs from Content.role / unit+building flags (ai_util helpers: fac, role, role_unit, uflag, bflag, is_hq_def, is_air, is_armored, is_artillery, is_energy, side_ids, spawn_of, enemy_side_ids, team_side_ids). ctx now has builders (can_build), gatherers (can_gather), engineers (union), air, arty.",
+    "Econ: role-based build order (power, barracks, depot-by-pop, factory, refinery, defense); Human B turtle = first bunker right after barracks, 3 bunkers fanned on the front arc; Machine second charging hub at base+front*9; Machine trains 2 repair bots + (cap-2) haulers.",
+    "Mil: per-faction production shares by category (infantry/antitank/vehicle/artillery/air), facility from production.facility; Human A keeps G2 numbers.",
+    "New sim/ai/ai_g3.gd: target side choice (team spawn centroid distance + 2/known defence, 8-tile hysteresis; allies converge), SideEliminated (public event, read in U.scan_events) -> retarget; victory terms parsed from cfg; objectives base|sector|bridge (Territory API for sectors, own clock for bridge hold); bridge mode forces route 0 and officer holds the span (ai_tactics crossing stage).",
+    "New sim/ai/ai_g3_units.gd: drone raids (is_air, RAID_MIN 4, flank approach, hunt visible workers, home on charge<35%/halved/age) and artillery kept 6 tiles behind the wave + shells the focused building.",
+    "Logistics: supply points by is_hq/supply_point flags; energy units low on charge go to a recharge building; truck = role supply; recovery truck (can_repair) repairs damaged vehicles within 9 tiles (repair.gd must accept can_repair - S3 task).",
+    "Tactics: flankers = AT-class weapon units; officer = role officer; Tac.retarget re-issues attack_area when objective moves >8 (g2.officer_tgt).",
+    "UI3 CR APPLIED: U.diff(w, fid) reads cfg.sides[fid].ai_difficulty, falls back to cfg.ai_difficulty; every caller passes fid.",
+    "tools/soak.gd + sim/ai/tools/ai_probe.gd take --sides/--factions/--teams/--victory/--percent/--seconds/--rules=and:a+b/--economy via new sim/ai/tools/match_cfg.gd; soak result line adds winner_team/winners and 'SOAK AI f<n>' probe lines.",
+    "tests/test_ai.gd: +6 G3a tests (FFA AI-01 per faction + QA-005, 2v2 alliances, retarget, victory objectives, no-hardcoded-defs scan, 3-faction determinism)."
+  ],
+  "test_state": "bash tests/run.sh --only=test_ai -> RESULT pass=12 fail=0 files=1 time_ms=404159 / TESTS OK (run at calls 64, BEFORE S3-sim/V3 'done'). Full bash tests/run.sh NOT run yet.",
+  "soaks": {
+    "ffa human_a,human_b,machine seed1 (36000 max)": "winner=0 end_tick=28050 hq_elimination, invariant fails=0 notes=4 (pre S3/V3 done)",
+    "2v2 human_a,human_b,machine,human_a teams 0,1,0,1 seed1": "winner_team=1 winners=[1,3] end_tick=19285, fails=0 notes=0",
+    "ffa seeds 2,3": "NOT RUN", "2v2 seed 2": "NOT RUN", "mirror human_a seeds 1-3": "NOT RUN since refactor",
+    "territory / hold_bridge / combined soaks": "NOT RUN (only unit test test_g3_victory_objectives)"
+  },
+  "remaining": [
+    "1. Watch board for S3-sim and V3-victory 'done'; then re-run everything below.",
+    "2. Soaks (2 in parallel per call, wrap in .plan/hb.sh, ~170 s wall each at 36000 ticks): G=<godot console>; \"$G\" --headless --path . -s tools/soak.gd -- --seed=N --max-ticks=36000 --factions=human_a,human_b,machine   for N=1,2,3 (each must end with a winner);  --factions=human_a,human_b,machine,human_a --teams=0,1,0,1 for N=1,2;  plain mirror (no flags) N=1,2,3. grep 'SCRIPT ERROR|INVARIANT FAIL|SOAK RESULT|SOAK AI'.",
+    "3. Smoke victory modes: soak --victory=territory --percent=60 and --victory=hold_bridge --seconds=300 (2-side, seed 1); check SOAK AI probe caps>0 / hold>0 and that the match ends with reason territory/hold_bridge. If waves never reach sectors, check OBJECTIVE_THR and grace in ai_army.gd.",
+    "4. If a FFA soak stalls without a winner: inspect 'SOAK AI' probe (tgt/out/retg) and the ai_probe log (sim/ai/tools/ai_probe.gd takes the same flags).",
+    "5. Full suite once: bash .plan/hb.sh AI3 <calls> <est> full -- bash tests/run.sh ; test_art failures for new faction defs belong to the art agents - quote them.",
+    "6. Final report per AGENT_RULES; post done."
+  ],
+  "files_touched": ["sim/ai/ai_util.gd", "sim/ai/ai_controller.gd", "sim/ai/ai_econ.gd", "sim/ai/ai_mil.gd", "sim/ai/ai_army.gd", "sim/ai/ai_tactics.gd", "sim/ai/ai_logistics.gd", "sim/ai/ai_g3.gd (new)", "sim/ai/ai_g3_units.gd (new)", "sim/ai/tools/match_cfg.gd (new)", "sim/ai/tools/ai_probe.gd", "tools/soak.gd", "tests/test_ai.gd"],
+  "change_requests": "none required. New scripts have no class_name (preload only). Note: ai_g3.gd preloads res://sim/systems/territory.gd (V3).",
+  "gotchas": [
+    "test_ai now takes ~404 s alone (FFA 112 s, 2v2 82 s); full suite will be longer - consider trimming G3_FFA_TICKS/G3_2V2_TICKS if the orchestrator objects.",
+    "GDScript: redeclaring a var in an inner block that shadows an outer one (e.g. `obj` in manage_army) is a parse error and breaks the WHOLE project (world.gd preloads the AI). Parse-check with a short ai_probe run after every edit.",
+    "Bash heredocs/python heredocs mangle backslashes; the regex in test_g3_no_hardcoded_defs uses [ \t] instead of \s for that reason.",
+    "Role names coincide with Human A def ids (barracks, depot, refinery, recon, officer, hq): the no-hardcoded scan exempts lines calling role()/role_unit() or *_ROLES; objective kind is 'base' (not 'hq'), terms key 'elim'.",
+    "Victory.progress is not used; bridge hold uses the AI's own clock (g3.hold_ticks).",
+    "Damage events used by the FFA test: fields shooter/target."
+  ]
+}
