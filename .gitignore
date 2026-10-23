@@ -8,3 +8,4 @@ RTS_Age_of_Modern_War_Claude_Handoff/reference/
 # Local scratch
 game/.plan/board.jsonl
 game/user_saves/
+build/

@@ -24,7 +24,8 @@ static func load_all() -> void:
 	if _loaded:
 		return
 	_loaded = true
-	var p := ProjectSettings.globalize_path(BASE + "manifest.json")
+	# res:// paths work both from source and inside an exported .pck (globalize_path does not).
+	var p := BASE + "manifest.json"
 	if FileAccess.file_exists(p):
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(p))
 		if parsed is Dictionary:
@@ -50,12 +51,20 @@ static func _image(rel: String) -> Image:
 	if _imgs.has(rel):
 		return _imgs[rel]
 	var img: Image = null
-	var p := ProjectSettings.globalize_path(BASE + rel)
+	var p := BASE + rel
 	if rel != "" and FileAccess.file_exists(p):
-		img = Image.load_from_file(p)
-		if img != null and img.is_empty():
-			img = null
-		if img != null and img.get_format() != Image.FORMAT_RGBA8:
+		img = Image.load_from_file(p)  # running from source: raw PNG
+	elif rel != "" and ResourceLoader.exists(p):
+		# exported build: only the imported (lossless) texture is packed, not the raw PNG
+		var tex = load(p)
+		if tex is Texture2D:
+			img = tex.get_image()
+	if img != null and img.is_empty():
+		img = null
+	if img != null:
+		if img.is_compressed():
+			img.decompress()
+		if img.get_format() != Image.FORMAT_RGBA8:
 			img.convert(Image.FORMAT_RGBA8)
 	_imgs[rel] = img
 	return img
