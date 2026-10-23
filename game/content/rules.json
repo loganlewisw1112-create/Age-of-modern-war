@@ -154,5 +154,9 @@
     "sector_size": 12,
     "default_percent": 60,
     "capture_seconds": 10
+  },
+  "hold_bridge": {
+    "default_seconds": 300,
+    "radius": 4
   }
 }
