@@ -118,29 +118,48 @@ static func scan_events(w: SimWorld, fid: int, st: Dictionary) -> void:
 			st.backoff.erase(k)
 
 
-## Resources this side may know about: neutral deposits on cells it has explored, plus the
-## deposits published in the initial map (map.resources, public knowledge) on OUR half of the map
-## (closer to our start than to the enemy start). Remaining amounts are only ever used to skip
-## exhausted deposits (an engineer standing there would see that too).
-static func known_resources(w: SimWorld, fid: int) -> Array:
+## Resources this side may know about (G2 fix of the G1 gap: no amounts of unexplored deposits):
+## - deposits on cells this side has explored, with their remaining amount (exhausted ones dropped:
+##   a crew standing there would see that), and
+## - the deposits published in the initial map on OUR half (`pub`, recorded at match start by
+##   public_deposits) whose cells are still unexplored, with amount -1 (unknown).
+## Entries are plain dicts {id, pos, res, amount}.
+static func known_resources(w: SimWorld, fid: int, pub: Array = []) -> Array:
 	var out := []
 	var ex: PackedByteArray = w.fog[fid].explored
 	var mw := int(w.map.w)
+	for id in w.entities:  # AI-FAIR: resource (neutral objects on explored cells only, checked below)
+		var r: Dictionary = w.entities[id]  # AI-FAIR: resource
+		if r.kind != "resource":
+			continue
+		var c := w.cell_of(r.pos)
+		if not w.in_bounds(c) or ex[c.y * mw + c.x] == 0:
+			continue
+		if int(r.amount) > 0:
+			out.append({"id": int(id), "pos": Vector2(r.pos), "res": String(r.res), "amount": int(r.amount)})
+	for p in pub:
+		var pc := w.cell_of(Vector2(p.pos))
+		if w.in_bounds(pc) and ex[pc.y * mw + pc.x] == 0:
+			out.append({"id": int(p.id), "pos": Vector2(p.pos), "res": String(p.res), "amount": -1})
+	return out
+
+
+## The initial map's published deposits on our half (closer to our start than to the enemy start),
+## mapped to their entity ids. Called once at match start, when the published list is the truth.
+static func public_deposits(w: SimWorld, fid: int) -> Array:
 	var mine := Vector2(w.factions[fid].spawn) + Vector2(0.5, 0.5)
 	var theirs := enemy_spawn(w, fid)
-	var public := {}
+	var half := {}
 	for pr in w.map.resources:
 		var pc: Vector2i = pr.cell
 		var pp := Vector2(pc) + Vector2(0.5, 0.5)
 		if pp.distance_to(mine) < pp.distance_to(theirs):
-			public[pc] = true
-	for id in w.entities:  # AI-FAIR: resource (neutral objects only, kind checked below)
+			half[pc] = true
+	var out := []
+	for id in w.entities:  # AI-FAIR: resource (match start: maps the public deposit list to ids)
 		var r: Dictionary = w.entities[id]  # AI-FAIR: resource
-		if r.kind != "resource" or int(r.amount) <= 0:
-			continue
-		var c := w.cell_of(r.pos)
-		if public.has(c) or (w.in_bounds(c) and ex[c.y * mw + c.x] == 1):
-			out.append(r)
+		if r.kind == "resource" and half.has(w.cell_of(r.pos)):
+			out.append({"id": int(id), "pos": Vector2(r.pos), "res": String(r.res)})
 	return out
 
 

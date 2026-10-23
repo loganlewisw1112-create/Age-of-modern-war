@@ -55,3 +55,27 @@ func _line(w: SimWorld, ms: int) -> void:
 			int(f.power_prod), int(f.power_use), int(f.pop), int(f.pop_cap), str(units), str(blds),
 			int(f.stats.killed), int(f.stats.lost), int(st.get("launches", 0)), int(st.get("amoves_enemy_half", 0)), int(st.get("rejects", 0)), int(st.get("cmds_issued", 0)),
 			String(st.get("next_build", "")), String(st.get("saving_for", "")), String(st.get("last_result", ""))])
+		# G2 funnel: supply stock, starving units, officer groups
+		var dry := 0
+		var low := 0
+		var nofuel := 0
+		var broken := 0
+		for e in w.units_of(fid):
+			var amax := int(Content.unit(e.def).get("ammo_max", 0))
+			if e.has("ammo") and amax > 0:
+				if int(e.ammo) <= 0:
+					dry += 1
+				elif float(e.ammo) < 0.3 * float(amax):
+					low += 1
+			if e.has("fuel") and float(e.fuel) <= 0.0:
+				nofuel += 1
+			if bool(e.get("broken", false)):
+				broken += 1
+		var groups := []
+		if w.sys_state.has("ops"):
+			for gid in w.sys_state.ops.groups:
+				var g: Dictionary = w.sys_state.ops.groups[gid]
+				if int(g.owner) == fid:
+					groups.append("%d:%s/%d/%s" % [int(gid), String(g.phase), (g.members as Array).size(), String((g.mission as Dictionary).get("type", "-"))])
+		print("    f%d G2 fuel=%d ammo=%d dry=%d low=%d nofuel=%d broken=%d groups=%s g2=%s bridge=%s" % [fid, int(f.stock.get("fuel", 0)),
+			int(f.stock.get("ammo", 0)), dry, low, nofuel, broken, str(groups), str(st.get("g2", {}).get("probe", "")), String(w.map.get("bridge_state", "?"))])

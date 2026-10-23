@@ -4,12 +4,15 @@ extends RefCounted
 ## (serializable). It acts only through w.submit() and reads only its own side, the public map,
 ## Content, w.visible_enemies(fid), w.memory[fid] and w.fog[fid] (convention: ai_util.gd).
 ## Modules: ai_econ.gd (build order, placement, gathering), ai_mil.gd (intel, production,
-## scouting), ai_army.gd (attack / regroup / defend).
+## scouting), ai_army.gd (attack / regroup / defend). G2: ai_logistics.gd (truck, resupply,
+## repair), ai_tactics.gd (officer-led waves, flanking, bridge); their state lives in st.g2.
 
 const U = preload("res://sim/ai/ai_util.gd")
 const Econ = preload("res://sim/ai/ai_econ.gd")
 const Mil = preload("res://sim/ai/ai_mil.gd")
 const Army = preload("res://sim/ai/ai_army.gd")
+const Logi = preload("res://sim/ai/ai_logistics.gd")
+const Tac = preload("res://sim/ai/ai_tactics.gd")
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
@@ -41,9 +44,18 @@ static func new_state(w: SimWorld, fid: int) -> Dictionary:
 		"want_scout": false, "patrol": [],
 	}
 	st.patrol = Mil.patrol_points(w, fid)
+	st.g2 = _new_g2(w, fid)
 	st.rally = _rally_point(w, fid)
 	U.log_line(st, w, "AI online (%s): attack at army pop %d" % [String(w.cfg.get("ai_difficulty", "normal")), thr])
 	return st
+
+
+## G2 state. pub_res: ids of the deposits published in the initial map on our half, recorded at
+## match start (public knowledge then), so later turns never probe unexplored deposits.
+static func _new_g2(w: SimWorld, fid: int) -> Dictionary:
+	var g2 := Logi.new_g2()
+	g2.pub_res = U.public_deposits(w, fid)
+	return g2
 
 
 static func _rally_point(w: SimWorld, fid: int) -> Vector2:
@@ -54,6 +66,8 @@ static func _rally_point(w: SimWorld, fid: int) -> Vector2:
 ## thinks every think_interval_ticks of the configured difficulty.
 static func think(w: SimWorld, fid: int) -> void:
 	var st: Dictionary = w.ai_state[fid]
+	if not st.has("g2"):
+		st.g2 = _new_g2(w, fid)  # pre-G2 save
 	U.scan_events(w, fid, st)
 	if w.tick < int(st.next_think_tick):
 		return
@@ -63,13 +77,26 @@ static func think(w: SimWorld, fid: int) -> void:
 	if ctx.hq != null:
 		st.rally = _rally_point(w, fid)
 	Mil.update_intel(w, fid, st, ctx)
+	Tac.manage_bridge(w, fid, st, ctx)
+	Logi.manage_repair(w, fid, st, ctx)
 	Econ.manage_construction(w, fid, st, ctx)
 	Econ.manage_gather(w, fid, st, ctx)
 	Econ.manage_engineers(w, fid, st, ctx)
 	Mil.manage_scout(w, fid, st, ctx)
+	var army_pop := 0
+	for e in ctx.army:
+		army_pop += U.pop_of(String(e.def))
+	Tac.manage_officer_training(w, fid, st, ctx, army_pop)
+	Logi.manage_truck_production(w, fid, st, ctx, army_pop)
 	Mil.manage_production(w, fid, st, ctx)
+	Logi.manage_resupply(w, fid, st, ctx)
 	Army.manage_army(w, fid, st, ctx)
+	Logi.manage_truck(w, fid, st, ctx)
 	_scores(w, fid, st, ctx)
+	var g2: Dictionary = st.g2
+	g2.probe = "stage=%s waves=%d wd=%d pull=%d refill=%d rep=%d flank=%d bridge=%s/%d" % [String(g2.stage),
+		int(g2.officer_waves), int(g2.withdrawals), int(g2.pullbacks), int(g2.refills), int(g2.repairs),
+		int(g2.flanks), "ruined" if bool(g2.bridge_ruined) else "ok", int(g2.bridge_repairs)]
 
 
 ## One snapshot of OWN units/buildings per think.
@@ -85,10 +112,22 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 				break
 	var engineers := []
 	var army := []
+	var officers := []
+	var trucks := []
+	var held := []  # own army units not commandable this think (broken, resupplying)
 	for e in units:
-		if String(e.def) == "engineer":
+		var def_id := String(e.def)
+		if def_id == "engineer":
 			engineers.append(e)
-		elif int(e.id) != int(st.scout_id):
+		elif def_id == "officer":
+			officers.append(e)
+		elif def_id == "logistics_truck":
+			trucks.append(e)
+		elif int(e.id) == int(st.scout_id):
+			continue
+		elif bool(e.get("broken", false)):
+			held.append(e)  # morale.gd retreats it; never order it back into the fight
+		else:
 			army.append(e)
 	var have := {}
 	var built := {}
@@ -115,7 +154,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 				queued_pop += U.pop_of(String(u))
 	return {"units": units, "buildings": buildings, "engineers": engineers, "army": army,
 		"have": have, "built": built, "unfinished": unfinished, "unfinished_total": unfinished_total,
-		"power_planned": power, "cap_planned": cap_planned, "queued_pop": queued_pop, "hq": hq, "busy": {}, "visible": []}
+		"power_planned": power, "cap_planned": cap_planned, "queued_pop": queued_pop, "hq": hq, "busy": {}, "visible": [],
+		"officers": officers, "trucks": trucks, "held": held}
 
 
 ## Utility scores shown in the inspector (0..1, higher = more pressing).

@@ -10,6 +10,8 @@ const PLACE_RADIUS := 13
 const PLACE_CHECKS := 50
 const SAFE_GATHER_DIST := 22.0
 const CREWS_PER_SITE := 2
+const AMMO_FLOOR := 400   # G2 faction stock floors (same values as ai_logistics.gd)
+const FUEL_FLOOR := 300
 
 
 ## The next building this side wants, or "". Power is counted for planned (unfinished) buildings too.
@@ -33,12 +35,24 @@ static func next_build(w: SimWorld, fid: int, ctx: Dictionary) -> String:
 		if spare < 40:
 			return "" if gen_pending else "generator"
 		return "motor_pool"
+	# G2: a refinery right after the motor pool keeps fuel/ammo stock up (ore -> fuel + ammo)
+	if int(have.get("refinery", 0)) == 0 and int(built.get("motor_pool", 0)) > 0:
+		if spare < 30:
+			return "" if gen_pending else "generator"
+		return "refinery"
 	if int(have.get("guard_tower", 0)) == 0 and int(built.get("motor_pool", 0)) > 0:
 		if spare < 10:
 			return "" if gen_pending else "generator"
 		return "guard_tower"
 	if spare < 0 and not gen_pending:
 		return "generator"
+	# a second refinery when ammo runs short and ore is piling up
+	var stock: Dictionary = f.stock
+	if int(have.get("refinery", 0)) == 1 and int(built.get("refinery", 0)) == 1 and int(have.get("guard_tower", 0)) > 0:
+		if int(stock.get("ammo", 0)) < AMMO_FLOOR and int(stock.get("ore", 0)) >= 1000:
+			if spare < 30:
+				return "" if gen_pending else "generator"
+			return "refinery"
 	return ""
 
 
@@ -119,7 +133,7 @@ static func find_origin(w: SimWorld, fid: int, st: Dictionary, def_id: String) -
 			for x in int(b.size):
 				occ[bc + Vector2i(x, y)] = true
 	var res_cells := {}
-	for r in U.known_resources(w, fid):
+	for r in U.known_resources(w, fid, st.g2.pub_res):
 		res_cells[w.cell_of(r.pos)] = true
 	var bad := {}
 	for o in st.bad_origins:
@@ -186,10 +200,15 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 			want_ore = int(round(float(n_eng) * 0.6))
 	elif ore < 150:
 		want_ore = 1
-	var known := U.known_resources(w, fid)
+	# G2: a working refinery eats 20 ore / 6 s; keep crews on ore while fuel/ammo stock is short
+	var stock_low := int(f.stock.get("ammo", 0)) < AMMO_FLOOR or int(f.stock.get("fuel", 0)) < FUEL_FLOOR
+	if int(ctx.built.get("refinery", 0)) > 0 and stock_low and ore < 1500:
+		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.5)))
+	var known := U.known_resources(w, fid, st.g2.pub_res)
 	var left := {"ore": 0, "salvage": 0}
 	for r in known:
-		left[String(r.res)] = int(left[String(r.res)]) + int(r.amount)
+		# unexplored public deposit: amount unknown, counts only as "something left"
+		left[String(r.res)] = int(left[String(r.res)]) + (int(r.amount) if int(r.amount) >= 0 else 1)
 	if int(left.salvage) <= 0:
 		want_ore = n_eng  # nothing left to salvage that we know of
 	elif int(left.ore) <= 0:

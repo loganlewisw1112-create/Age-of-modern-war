@@ -108,7 +108,7 @@ static func manage_scout(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 ## finite resource and an MBT is the most salvage-efficient way to crack towers and the HQ, while
 ## ore (vehicles) is plentiful. AT share rises when enemy vehicles are seen.
 static func _shares(st: Dictionary, has_mp: bool) -> Dictionary:
-	var vehicles_seen := int(st.enemy_vehicles_seen) >= 2
+	var vehicles_seen := int(st.enemy_vehicles_seen) >= 1  # G2: prefer AT/MBT once any enemy vehicle is seen
 	var heavy := vehicles_seen or bool(st.get("tower_seen", false))
 	if not has_mp:
 		return {"rifle": 0.45, "at": 0.55, "vehicle": 0.0} if heavy else {"rifle": 0.6, "at": 0.4, "vehicle": 0.0}
@@ -193,7 +193,7 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 			fac = motor
 			# MBT by default (towers/HQ); an IFV only when ore is short for a tank
 			var mbt_ore := int(Content.production("mbt").cost.get("ore", 0))
-			item = "mbt" if int(f.stock.ore) >= mbt_ore or int(st.enemy_vehicles_seen) >= 2 else "ifv"
+			item = "mbt" if int(f.stock.ore) >= mbt_ore or int(st.enemy_vehicles_seen) >= 1 else "ifv"
 		var p := Content.production(item)
 		var item_pop := 0
 		for u in p.spawns:

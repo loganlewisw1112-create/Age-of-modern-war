@@ -6,6 +6,7 @@ extends RefCounted
 
 const U = preload("res://sim/ai/ai_util.gd")
 const Mil = preload("res://sim/ai/ai_mil.gd")
+const Tac = preload("res://sim/ai/ai_tactics.gd")
 
 const DEFEND_RADIUS := 14.0
 const HIT_RADIUS := 16.0
@@ -83,7 +84,11 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	for e in army:
 		if st.attack_group.has(int(e.id)):
 			group.append(e)
-	st.attack_group = _ids(group)  # drop the dead
+	var keep := _ids(group)  # drop the dead; held (broken / resupplying) members stay in the wave
+	for e in ctx.held:
+		if st.attack_group.has(int(e.id)):
+			keep.append(int(e.id))
+	st.attack_group = keep
 	_momentum(w, fid, st)
 	if obj == "attack":
 		var committed := false
@@ -115,6 +120,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		if group.is_empty() or (not finishing and not all_in and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
 			st.failed_waves = int(st.failed_waves) + 1
 			_set_obj(w, st, "regroup", "attack group down to %d of %d; falling back" % [group.size(), int(st.launch_size)])
+			Tac.release(w, fid, st, ctx, "wave too weak, regrouping")
 			_move_all(w, fid, st, army, Vector2(st.rally), "regroup")
 			st.attack_group = []
 			return
@@ -124,10 +130,26 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		var serious := int(threat.pop) * 2 >= gpop or gpop < 6
 		if threat.active and not committed and serious and not all_in:
 			_set_obj(w, st, "defend", "base under threat at %s; pulling the army home" % str(threat.pos.round()))
+			Tac.release(w, fid, st, ctx, "base under threat")
 			_defend(w, fid, st, army, threat.pos)
 			return
-		_push(w, fid, st, ctx, group)
-		_reinforce(w, fid, st, army, group, all_in)
+		# G2: the officer drives the wave until it nears enemy buildings; a withdraw report regroups
+		var mode := Tac.manage_mission(w, fid, st, ctx, group)
+		if mode == "withdraw":
+			st.failed_waves = int(st.failed_waves) + 1
+			_set_obj(w, st, "regroup", "officer withdrew the wave; rebuilding")
+			st.attack_group = []
+			return
+		Tac.manage_flank(w, fid, st, ctx, group)
+		if mode == "push":
+			var flanking := Tac.flank_ids(st)
+			var push_group := []
+			for e in group:
+				if not flanking.has(int(e.id)):
+					push_group.append(e)
+			if not push_group.is_empty():
+				_push(w, fid, st, ctx, push_group)
+		_reinforce(w, fid, st, ctx, army, group, all_in)
 		return
 	if threat.active:
 		if obj != "defend":
@@ -149,7 +171,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	if (army_pop >= thr or exploit) and not army.is_empty():
 		if exploit and army_pop < thr:
 			U.log_line(st, w, "momentum %.1f: counter-attacking early" % float(st.momentum))
-		_launch(w, fid, st, army)
+		_launch(w, fid, st, ctx, army)
 		return
 	var idle_far := []
 	for e in army:
@@ -196,11 +218,12 @@ static func _amove(w: SimWorld, fid: int, st: Dictionary, units: Array, target: 
 	return ok
 
 
-static func _launch(w: SimWorld, fid: int, st: Dictionary, army: Array) -> void:
+static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array) -> void:
 	var tgt := Mil.attack_target(w, fid)
 	st.attack_target = tgt
-	# approach route (personality): direct, or via one of the two fords (public map crossings)
-	var route := int(st.route)
+	# approach route (personality): direct, or via one of the two fords (public map crossings);
+	# a bridge seen ruined moves route 0 to a ford (Tac.effective_route)
+	var route := Tac.effective_route(st)
 	var pts: Array = st.patrol
 	st.attack_via = Vector2(-1, -1)
 	if route == 1 and pts.size() >= 1:
@@ -211,7 +234,13 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, army: Array) -> void:
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
 	_set_obj(w, st, "attack", "army pop %d; attacking %s (wave %d)" % [_pop(army), str(tgt.round()), int(st.launches)])
-	_amove(w, fid, st, army, _waypoint(st, tgt), "push")
+	if Tac.officer(w, fid, st, ctx) != null:
+		# G2: march out, then the officer takes command and handles the crossing itself
+		st.attack_via = Vector2(-1, -1)
+		_amove(w, fid, st, army, tgt, "push")
+		Tac.take_command(w, fid, st, ctx, army)
+	else:
+		_amove(w, fid, st, army, _waypoint(st, tgt), "push")
 	st.army_mode = "push"
 
 
@@ -300,7 +329,7 @@ static func _any_idle(units: Array) -> bool:
 
 ## Units that joined after launch wait at the rally point and go out in small waves
 ## (a third of the threshold, at least 4 pop; any 3 pop when all-in).
-static func _reinforce(w: SimWorld, fid: int, st: Dictionary, army: Array, group: Array, all_in: bool) -> void:
+static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array, group: Array, all_in: bool) -> void:
 	var reserve := []
 	for e in army:
 		if not st.attack_group.has(int(e.id)):
@@ -316,3 +345,4 @@ static func _reinforce(w: SimWorld, fid: int, st: Dictionary, army: Array, group
 			st.attack_group.append(int(e.id))
 		st.launch_size = int(st.launch_size) + reserve.size()
 		U.log_line(st, w, "reinforcement wave of %d sent" % reserve.size())
+		Tac.add_members(w, fid, st, ctx, st.attack_group)

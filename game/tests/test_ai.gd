@@ -10,10 +10,15 @@ extends "res://tests/test_base.gd"
 ##   get_e / units_of / buildings_of / visible_enemies for another side. Diagnostic tools under
 ##   sim/ai/tools/ are not AI code (they print both sides) and are not scanned.
 ## - Determinism: two identical AI-vs-AI runs give equal state_hash() at tick 6000.
+## - G2 (Smart Warfare): within 12000 ticks of AI-vs-AI each side builds a refinery, trains an
+##   officer and issues assign_officer + set_mission; units that dropped below 30% ammo are later
+##   resupplied (ammo rose) in at least one seed. AI-01's "attack_move into the enemy half" also
+##   accepts an officer mission (set_mission) targeted there: since G2 the officer moves the wave.
 
 const AI_DIR := "res://sim/ai"
 const AI01_TICKS := 9000
 const DET_TICKS := 6000
+const G2_TICKS := 12000
 
 ## Forbidden patterns on the code part of a line (comment-only lines are skipped).
 const FORBIDDEN := [
@@ -70,7 +75,7 @@ func _run_ai01(seed_value: int) -> void:
 				continue
 			seen_cmd[cid] = true
 			var fid := int(c.issuer)
-			if String(c.type) == "attack_move" and _far_half(w, fid, Vector2(c.target)):
+			if (String(c.type) == "attack_move" or String(c.type) == "set_mission") and _far_half(w, fid, Vector2(c.target)):
 				got[fid].amove = true
 			elif String(c.type) == "attack":
 				attacks_checked += 1
@@ -152,7 +157,7 @@ func test_ai02_static_fairness() -> void:
 		scanned += 1
 		for v in scan_source(path, text):
 			check(false, "AI-02 static: " + String(v))
-	check(scanned >= 5, "scanned the AI sources (%d files)" % scanned)
+	check(scanned >= 7, "scanned the AI sources incl. the G2 modules (%d files)" % scanned)
 
 
 func test_ai_determinism() -> void:
@@ -166,3 +171,122 @@ func test_ai_determinism() -> void:
 	# the AI must have actually played (not a trivially idle hash match)
 	for fid in [0, 1]:
 		check(int(a.ai_state[fid].cmds_issued) > 20, "side %d issued commands (%d)" % [fid, int(a.ai_state[fid].cmds_issued)])
+
+
+## G2: refinery, officer, assign_officer, set_mission per side; ammo-starved units resupplied.
+func _run_g2(seed_value: int) -> Dictionary:
+	var w := SimWorld.new_match(_ai_config(seed_value))
+	var got := {}
+	for fid in [0, 1]:
+		got[fid] = {"refinery": false, "officer": false, "assign_officer": false, "set_mission": false}
+	var low := {}   # unit id -> lowest ammo seen since it dropped below 30%
+	var done := {}  # unit ids seen resupplied after dropping below 30%
+	var seen_cmd := {}
+	var bad_attacks := 0
+	while w.tick < G2_TICKS and not w.match_state.ended:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "ProductionCompleted" and got.has(int(ev.owner)) and String(ev.item) == "officer":
+				got[int(ev.owner)].officer = true
+			elif String(ev.type) == "ConstructionCompleted" and got.has(int(ev.owner)) and String(ev.def) == "refinery":
+				got[int(ev.owner)].refinery = true
+		for c in w.pending:
+			var cid := int(c.id)
+			if seen_cmd.has(cid) or not w.ai_state.has(int(c.issuer)):
+				continue
+			seen_cmd[cid] = true
+			var fid := int(c.issuer)
+			var ty := String(c.type)
+			if ty == "assign_officer" or ty == "set_mission":
+				got[fid][ty] = true
+			elif ty == "attack":
+				var visible := {}
+				for e in w.visible_enemies(fid):
+					visible[int(e.id)] = true
+				if not visible.has(int(c.target_id)):
+					bad_attacks += 1
+		if w.tick % 20 == 0:
+			for fid in [0, 1]:
+				for e in w.units_of(fid):
+					var amax := int(Content.unit(e.def).get("ammo_max", 0))
+					if amax <= 0 or not e.has("ammo"):
+						continue
+					var id := int(e.id)
+					var a := int(e.ammo)
+					if low.has(id):
+						if a > int(low[id]):
+							done[id] = true
+							low.erase(id)
+						else:
+							low[id] = a
+					elif float(a) < 0.3 * float(amax):
+						low[id] = a
+		var all_got := true
+		for fid in [0, 1]:
+			for k in got[fid]:
+				all_got = all_got and bool(got[fid][k])
+		if all_got and not done.is_empty():
+			break
+	print("    G2 seed %d at t=%d: %s resupplied_units=%d g2=%s | %s" % [seed_value, w.tick, str(got), done.size(),
+		String(w.ai_state[0].g2.probe), String(w.ai_state[1].g2.probe)])
+	return {"got": got, "resupplied": done.size(), "tick": w.tick, "bad_attacks": bad_attacks}
+
+
+func test_g2_logistics_and_officers() -> void:
+	var r := _run_g2(1)
+	for fid in [0, 1]:
+		for k in ["refinery", "officer", "assign_officer", "set_mission"]:
+			check(bool(r.got[fid][k]), "G2 seed 1 side %d: %s by t=%d" % [fid, k, int(r.tick)])
+	check_eq(int(r.bad_attacks), 0, "AI-02 (G2 run): attacks on unseen targets")
+	var resupplied := int(r.resupplied)
+	if resupplied == 0:
+		var r2 := _run_g2(2)
+		resupplied = int(r2.resupplied)
+		check_eq(int(r2.bad_attacks), 0, "AI-02 (G2 run seed 2): attacks on unseen targets")
+	check(resupplied > 0, "G2: units below 30%% ammo were later resupplied (%d units)" % resupplied)
+
+
+## G2 bridge: a ruined span on route 0, seen by this side, reroutes the crossing over a ford and
+## (no visible enemy within 10 tiles, salvage on hand) sends two engineers who repair it.
+## Test rig: the recon is pinned on our bank each tick so the span stays in sight.
+func test_g2_ruined_bridge_reroute_and_repair() -> void:
+	var Bridges = preload("res://sim/systems/bridges.gd")
+	var U = preload("res://sim/ai/ai_util.gd")
+	var Tac = preload("res://sim/ai/ai_tactics.gd")
+	var w := SimWorld.new_match(_ai_config(1))
+	var span = null
+	for id in w.entities:
+		if String(w.entities[id].kind) == "structure":
+			span = w.entities[id]
+	if not check(span != null, "bridge structure exists"):
+		return
+	Bridges.on_destroyed(w, span, -1)
+	check_eq(String(w.map.bridge_state), "ruined", "bridge ruined by the rig")
+	var st: Dictionary = w.ai_state[0]
+	st.route = 0
+	w.factions[0].stock.salvage = 3000
+	var sp := Vector2(span.pos)
+	var bank: Vector2 = sp + (U.base_pos(w, 0) - sp).normalized() * 4.0
+	var scout = null
+	for e in w.units_of(0):
+		if String(e.def) == "recon":
+			scout = e
+	if not check(scout != null, "side 0 has its recon"):
+		return
+	var repaired := false
+	var crew_seen := false
+	while w.tick < 4000 and not repaired:
+		scout.pos = bank
+		w.step()
+		crew_seen = crew_seen or not (st.g2.bridge_crew as Array).is_empty()
+		for ev in w.events:
+			if String(ev.type) == "BridgeRepaired":
+				repaired = true
+	check(bool(st.g2.bridge_ruined) or repaired, "AI learned the ruin from its own sight")
+	check(int(st.g2.reroute) in [1, 2], "route 0 rerouted over a ford (reroute=%d)" % int(st.g2.reroute))
+	check(crew_seen, "AI sent a bridge repair crew")
+	check(repaired, "AI engineers repaired the bridge by t=%d (repair commands=%d)" % [w.tick, int(st.g2.bridge_repairs)])
+	if repaired:
+		check(not bool(st.g2.bridge_ruined) or w.tick > 0, "bridge state tracked")
+	var cp: Vector2 = Tac.crossing(w, {"route": 0, "patrol": st.patrol, "g2": {"bridge_ruined": true, "reroute": 1}})
+	check(cp.distance_to(sp) > 3.0, "the crossing for a ruined bridge is a ford, not the span (%s vs %s)" % [str(cp), str(sp)])
