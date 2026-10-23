@@ -1,0 +1,25 @@
+{
+  "local_uploads": [
+    {
+      "name": "89848953-CBD7-41F9-9C0D-7D3AC3AD8414.jpeg",
+      "bytes": 449119,
+      "sha256": "32aea0476284891fbf98b3e74f8796e31c518d839907ab7dccc1d3360bdff427"
+    },
+    {
+      "name": "Game_Project_GDD_Architecture_Approved_Mockups.zip",
+      "bytes": 20255875,
+      "sha256": "b7e741d3fc9261ef1668b5c59758ed74e6c577d70de9150758d42bf6c4411c06"
+    },
+    {
+      "name": "RTS_Age_of_Modern_War_Four_Documents_v1.3(1).zip",
+      "bytes": 188795,
+      "sha256": "29a4e3bb798bbde44dbf4f343ab637e4793b795266b2d078facb19409cb85e03"
+    }
+  ],
+  "unavailable_project_sources": 1,
+  "original_archives": 2,
+  "extracted_documents": 6,
+  "approved_png_mockups": 6,
+  "additional_jpeg": 1,
+  "source_integrity": "original copies must match source SHA-256"
+}

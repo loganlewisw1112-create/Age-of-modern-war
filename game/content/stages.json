@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "Copied from handoff data/stage_registry_RECONSTRUCTED.json (a reconstruction, not recovered v1.3 data). Exactly 13 stable IDs. Only Stage 8 is playable in the G0+G1 slice; 7 and 9 are G3 targets. Advancement gates UNRESOLVED (CON-04)."
+  },
+  "stages": [
+    {
+      "id": 1,
+      "working_name": "Scattered Survivors",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 2,
+      "working_name": "Organized Camps",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 3,
+      "working_name": "Frontier Settlements",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 4,
+      "working_name": "Reclamation Townships",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 5,
+      "working_name": "Workshop Confederacies",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 6,
+      "working_name": "Industrial Revival",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 7,
+      "working_name": "Mechanized States",
+      "slice_target": true,
+      "playable_now": false
+    },
+    {
+      "id": 8,
+      "working_name": "Modern Nations",
+      "slice_target": true,
+      "playable_now": true
+    },
+    {
+      "id": 9,
+      "working_name": "Networked Powers",
+      "slice_target": true,
+      "playable_now": false
+    },
+    {
+      "id": 10,
+      "working_name": "Automated Technocracies",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 11,
+      "working_name": "Synthetic Civilizations",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 12,
+      "working_name": "Distributed Civilizations",
+      "slice_target": false,
+      "playable_now": false
+    },
+    {
+      "id": 13,
+      "working_name": "Apex Civilizations",
+      "slice_target": false,
+      "playable_now": false
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Godot
+game/.godot/
+game/export/
+*.translation
+# Large immutable handoff binaries (kept on disk, hashed in audit/SHA256SUMS.txt)
+RTS_Age_of_Modern_War_Claude_Handoff/originals/
+RTS_Age_of_Modern_War_Claude_Handoff/reference/
+# Local scratch
+game/.plan/board.jsonl
+game/user_saves/

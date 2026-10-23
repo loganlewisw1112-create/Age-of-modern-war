@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "PROVISIONAL balance fixtures. size = square footprint in tiles. power > 0 produces, < 0 consumes. build_time in seconds for one engineer.",
+    "power_rule": "Buildings with requires_power stall production while the faction's power_use exceeds power_prod (reason LOW_POWER)."
+  },
+  "hq": {
+    "name": "Headquarters", "size": 3, "hp": 3000, "armor": "building", "sight": 10,
+    "power": 30, "pop_cap": 20, "deposit": true, "buildable": false, "is_hq": true,
+    "produces": ["engineer"], "requires_power": false,
+    "cost": {"credits": 0, "salvage": 0, "ore": 0}, "build_time": 1
+  },
+  "generator": {
+    "name": "Generator Substation", "size": 2, "hp": 900, "armor": "building", "sight": 5,
+    "power": 100, "buildable": true, "requires": [], "hotkey": "G",
+    "cost": {"credits": 400, "salvage": 100, "ore": 0}, "build_time": 20
+  },
+  "depot": {
+    "name": "Logistics Depot", "size": 2, "hp": 800, "armor": "building", "sight": 6,
+    "power": 0, "pop_cap": 15, "deposit": true, "buildable": true, "requires": [], "hotkey": "D",
+    "cost": {"credits": 300, "salvage": 50, "ore": 0}, "build_time": 15
+  },
+  "barracks": {
+    "name": "Barracks", "size": 3, "hp": 1400, "armor": "building", "sight": 6,
+    "power": -20, "buildable": true, "requires": [], "hotkey": "B",
+    "produces": ["rifle_squad", "at_team", "recon"], "requires_power": true,
+    "cost": {"credits": 500, "salvage": 150, "ore": 0}, "build_time": 25
+  },
+  "motor_pool": {
+    "name": "Motor Pool", "size": 3, "hp": 1800, "armor": "building", "sight": 6,
+    "power": -40, "buildable": true, "requires": ["barracks"], "hotkey": "V",
+    "produces": ["ifv", "mbt"], "requires_power": true,
+    "cost": {"credits": 800, "salvage": 200, "ore": 100}, "build_time": 35
+  },
+  "guard_tower": {
+    "name": "Guard Tower", "size": 1, "hp": 700, "armor": "building", "sight": 9,
+    "power": -10, "buildable": true, "requires": ["barracks"], "hotkey": "T",
+    "weapon": "hmg", "requires_power": false,
+    "cost": {"credits": 350, "salvage": 80, "ore": 0}, "build_time": 15
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "PROVISIONAL. damage per shot; range in tiles; cooldown in seconds; accuracy = base hit chance.",
+    "armor_mult": "damage multiplier by weapon class (row) against armor class (column)"
+  },
+  "armor_mult": {
+    "small_arms": {"infantry": 1.0, "light": 0.25, "heavy": 0.05, "building": 0.15},
+    "at":         {"infantry": 0.35, "light": 1.2, "heavy": 1.0, "building": 0.8},
+    "autocannon": {"infantry": 1.0, "light": 0.8, "heavy": 0.2, "building": 0.5}
+  },
+  "pistol":      {"class": "small_arms", "damage": 4,   "range": 4, "cooldown": 1.0, "accuracy": 0.7},
+  "rifle":       {"class": "small_arms", "damage": 9,   "range": 6, "cooldown": 1.0, "accuracy": 0.75},
+  "carbine":     {"class": "small_arms", "damage": 6,   "range": 6, "cooldown": 0.8, "accuracy": 0.75},
+  "at_rocket":   {"class": "at",         "damage": 70,  "range": 7, "cooldown": 3.5, "accuracy": 0.7},
+  "autocannon":  {"class": "autocannon", "damage": 16,  "range": 7, "cooldown": 0.6, "accuracy": 0.7},
+  "tank_cannon": {"class": "at",         "damage": 110, "range": 8, "cooldown": 3.0, "accuracy": 0.8},
+  "hmg":         {"class": "small_arms", "damage": 10,  "range": 8, "cooldown": 0.4, "accuracy": 0.7}
+}

@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "Reconstructed from v1.3; not recovered implementation data",
+  "source": "Civilization_Bible_v1.3; Master_GDD_v1.3 section 5",
+  "advancement_rules": "UNRESOLVED: see CON-04; no operative numeric gates supplied",
+  "stages": [
+    {
+      "id": 1,
+      "working_name": "Scattered Survivors",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 2,
+      "working_name": "Organized Camps",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 3,
+      "working_name": "Frontier Settlements",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 4,
+      "working_name": "Reclamation Townships",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 5,
+      "working_name": "Workshop Confederacies",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 6,
+      "working_name": "Industrial Revival",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 7,
+      "working_name": "Mechanized States",
+      "slice_playable_target": true,
+      "implemented": false
+    },
+    {
+      "id": 8,
+      "working_name": "Modern Nations",
+      "slice_playable_target": true,
+      "implemented": false
+    },
+    {
+      "id": 9,
+      "working_name": "Networked Powers",
+      "slice_playable_target": true,
+      "implemented": false
+    },
+    {
+      "id": 10,
+      "working_name": "Automated Technocracies",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 11,
+      "working_name": "Synthetic Civilizations",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 12,
+      "working_name": "Distributed Civilizations",
+      "slice_playable_target": false,
+      "implemented": false
+    },
+    {
+      "id": 13,
+      "working_name": "Apex Civilizations",
+      "slice_playable_target": false,
+      "implemented": false
+    }
+  ]
+}

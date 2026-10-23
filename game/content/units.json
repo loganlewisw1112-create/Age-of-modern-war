@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "PROVISIONAL balance fixtures for the G0+G1 slice. Not user-approved numbers (DEC-14).",
+    "units": "hp in hit points; speed in tiles/second; sight and ranges in tiles; train_time in seconds"
+  },
+  "engineer": {
+    "name": "Work Crew", "role": "builder", "armor": "infantry", "move_class": "foot",
+    "hp": 60, "speed": 2.4, "sight": 7, "weapon": "pistol", "pop": 1,
+    "can_build": true, "can_gather": true, "carry_capacity": 10, "gather_rate": 2.0, "build_power": 1.0,
+    "radius": 0.3
+  },
+  "rifleman": {
+    "name": "Rifleman", "role": "infantry", "armor": "infantry", "move_class": "foot",
+    "hp": 100, "speed": 2.2, "sight": 8, "weapon": "rifle", "pop": 1, "radius": 0.3
+  },
+  "at_gunner": {
+    "name": "AT Gunner", "role": "specialist", "armor": "infantry", "move_class": "foot",
+    "hp": 90, "speed": 2.0, "sight": 8, "weapon": "at_rocket", "pop": 1, "radius": 0.3
+  },
+  "recon": {
+    "name": "Recon Scout", "role": "recon", "armor": "infantry", "move_class": "foot",
+    "hp": 70, "speed": 3.4, "sight": 12, "weapon": "carbine", "pop": 1, "radius": 0.3
+  },
+  "ifv": {
+    "name": "IFV", "role": "mobile_combat", "armor": "light", "move_class": "vehicle",
+    "hp": 450, "speed": 3.6, "sight": 9, "weapon": "autocannon", "pop": 3, "radius": 0.6,
+    "leaves_wreck": true
+  },
+  "mbt": {
+    "name": "Main Battle Tank", "role": "heavy", "armor": "heavy", "move_class": "vehicle",
+    "hp": 1000, "speed": 2.6, "sight": 9, "weapon": "tank_cannon", "pop": 4, "radius": 0.7,
+    "leaves_wreck": true
+  }
+}

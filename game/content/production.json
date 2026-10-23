@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "PROVISIONAL. A production item is what a queue builds; it spawns one or more unit defs (a squad).",
+    "cost": "credits come from the treasury; salvage/ore are physical stock. Cost is deducted ONCE at queue time; cancel refunds in full."
+  },
+  "engineer": {
+    "name": "Work Crew", "spawns": ["engineer"], "facility": "hq",
+    "cost": {"credits": 150, "salvage": 0, "ore": 0}, "train_time": 8, "hotkey": "E"
+  },
+  "rifle_squad": {
+    "name": "Rifle Squad (4)", "spawns": ["rifleman", "rifleman", "rifleman", "rifleman"], "facility": "barracks",
+    "cost": {"credits": 400, "salvage": 60, "ore": 0}, "train_time": 15, "hotkey": "R"
+  },
+  "at_team": {
+    "name": "AT Team (2)", "spawns": ["at_gunner", "at_gunner"], "facility": "barracks",
+    "cost": {"credits": 450, "salvage": 80, "ore": 0}, "train_time": 18, "hotkey": "T"
+  },
+  "recon": {
+    "name": "Recon Scout", "spawns": ["recon"], "facility": "barracks",
+    "cost": {"credits": 150, "salvage": 0, "ore": 0}, "train_time": 8, "hotkey": "C"
+  },
+  "ifv": {
+    "name": "IFV", "spawns": ["ifv"], "facility": "motor_pool",
+    "cost": {"credits": 700, "salvage": 120, "ore": 60}, "train_time": 25, "hotkey": "I"
+  },
+  "mbt": {
+    "name": "Main Battle Tank", "spawns": ["mbt"], "facility": "motor_pool",
+    "cost": {"credits": 1200, "salvage": 150, "ore": 200}, "train_time": 40, "hotkey": "M"
+  }
+}
