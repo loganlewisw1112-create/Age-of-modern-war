@@ -2,34 +2,147 @@
   "_meta": {
     "schema_version": 1,
     "status": "PROVISIONAL balance fixtures for the G0+G1 slice. Not user-approved numbers (DEC-14).",
-    "units": "hp in hit points; speed in tiles/second; sight and ranges in tiles; train_time in seconds"
+    "units": "hp in hit points; speed in tiles/second; sight and ranges in tiles; train_time in seconds",
+    "g2": "G2 fields: ammo_max (rounds), fuel_max/fuel_per_tile (vehicles), components (vehicle sub-systems 0..100), morale (infantry). PROVISIONAL."
   },
   "engineer": {
-    "name": "Work Crew", "role": "builder", "armor": "infantry", "move_class": "foot",
-    "hp": 60, "speed": 2.4, "sight": 7, "weapon": "pistol", "pop": 1,
-    "can_build": true, "can_gather": true, "carry_capacity": 10, "gather_rate": 2.0, "build_power": 1.0,
-    "radius": 0.3
+    "name": "Work Crew",
+    "role": "builder",
+    "armor": "infantry",
+    "move_class": "foot",
+    "hp": 60,
+    "speed": 2.4,
+    "sight": 7,
+    "weapon": "pistol",
+    "pop": 1,
+    "can_build": true,
+    "can_gather": true,
+    "carry_capacity": 10,
+    "gather_rate": 2.0,
+    "build_power": 1.0,
+    "radius": 0.3,
+    "ammo_max": 30,
+    "morale": 100
   },
   "rifleman": {
-    "name": "Rifleman", "role": "infantry", "armor": "infantry", "move_class": "foot",
-    "hp": 100, "speed": 2.2, "sight": 8, "weapon": "rifle", "pop": 1, "radius": 0.3
+    "name": "Rifleman",
+    "role": "infantry",
+    "armor": "infantry",
+    "move_class": "foot",
+    "hp": 100,
+    "speed": 2.2,
+    "sight": 8,
+    "weapon": "rifle",
+    "pop": 1,
+    "radius": 0.3,
+    "ammo_max": 60,
+    "morale": 100
   },
   "at_gunner": {
-    "name": "AT Gunner", "role": "specialist", "armor": "infantry", "move_class": "foot",
-    "hp": 90, "speed": 2.0, "sight": 8, "weapon": "at_rocket", "pop": 1, "radius": 0.3
+    "name": "AT Gunner",
+    "role": "specialist",
+    "armor": "infantry",
+    "move_class": "foot",
+    "hp": 90,
+    "speed": 2.0,
+    "sight": 8,
+    "weapon": "at_rocket",
+    "pop": 1,
+    "radius": 0.3,
+    "ammo_max": 12,
+    "morale": 100
   },
   "recon": {
-    "name": "Recon Scout", "role": "recon", "armor": "infantry", "move_class": "foot",
-    "hp": 70, "speed": 3.4, "sight": 12, "weapon": "carbine", "pop": 1, "radius": 0.3
+    "name": "Recon Scout",
+    "role": "recon",
+    "armor": "infantry",
+    "move_class": "foot",
+    "hp": 70,
+    "speed": 3.4,
+    "sight": 12,
+    "weapon": "carbine",
+    "pop": 1,
+    "radius": 0.3,
+    "ammo_max": 60,
+    "morale": 100
   },
   "ifv": {
-    "name": "IFV", "role": "mobile_combat", "armor": "light", "move_class": "vehicle",
-    "hp": 450, "speed": 3.6, "sight": 9, "weapon": "autocannon", "pop": 3, "radius": 0.6,
-    "leaves_wreck": true
+    "name": "IFV",
+    "role": "mobile_combat",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 450,
+    "speed": 3.6,
+    "sight": 9,
+    "weapon": "autocannon",
+    "pop": 3,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 180,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.0,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    }
   },
   "mbt": {
-    "name": "Main Battle Tank", "role": "heavy", "armor": "heavy", "move_class": "vehicle",
-    "hp": 1000, "speed": 2.6, "sight": 9, "weapon": "tank_cannon", "pop": 4, "radius": 0.7,
-    "leaves_wreck": true
+    "name": "Main Battle Tank",
+    "role": "heavy",
+    "armor": "heavy",
+    "move_class": "vehicle",
+    "hp": 1000,
+    "speed": 2.6,
+    "sight": 9,
+    "weapon": "tank_cannon",
+    "pop": 4,
+    "radius": 0.7,
+    "leaves_wreck": true,
+    "ammo_max": 40,
+    "fuel_max": 400,
+    "fuel_per_tile": 1.5,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    }
+  },
+  "officer": {
+    "name": "Officer",
+    "role": "command",
+    "armor": "infantry",
+    "move_class": "foot",
+    "hp": 90,
+    "speed": 2.4,
+    "sight": 10,
+    "weapon": "carbine",
+    "pop": 1,
+    "radius": 0.3,
+    "ammo_max": 40,
+    "morale": 100,
+    "is_officer": true
+  },
+  "logistics_truck": {
+    "name": "Logistics Truck",
+    "role": "logistics",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 300,
+    "speed": 3.2,
+    "sight": 7,
+    "weapon": "",
+    "pop": 2,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 0,
+    "fuel_max": 500,
+    "fuel_per_tile": 0.8,
+    "is_supply": true,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    }
   }
 }

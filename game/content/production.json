@@ -91,5 +91,33 @@
     },
     "train_time": 40,
     "hotkey": "M"
+  },
+  "officer": {
+    "name": "Officer",
+    "spawns": [
+      "officer"
+    ],
+    "facility": "barracks",
+    "cost": {
+      "credits": 250,
+      "salvage": 50,
+      "ore": 0
+    },
+    "train_time": 12,
+    "hotkey": "O"
+  },
+  "logistics_truck": {
+    "name": "Logistics Truck",
+    "spawns": [
+      "logistics_truck"
+    ],
+    "facility": "motor_pool",
+    "cost": {
+      "credits": 250,
+      "salvage": 120,
+      "ore": 50
+    },
+    "train_time": 18,
+    "hotkey": "L"
   }
 }

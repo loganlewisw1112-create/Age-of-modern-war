@@ -75,7 +75,8 @@
     "produces": [
       "rifle_squad",
       "at_team",
-      "recon"
+      "recon",
+      "officer"
     ],
     "requires_power": true,
     "cost": {
@@ -99,7 +100,8 @@
     "hotkey": "V",
     "produces": [
       "ifv",
-      "mbt"
+      "mbt",
+      "logistics_truck"
     ],
     "requires_power": true,
     "cost": {
@@ -129,5 +131,36 @@
       "ore": 0
     },
     "build_time": 15
+  },
+  "refinery": {
+    "name": "Refinery",
+    "size": 3,
+    "hp": 1500,
+    "armor": "building",
+    "sight": 6,
+    "power": -30,
+    "buildable": true,
+    "requires": [
+      "motor_pool"
+    ],
+    "hotkey": "F",
+    "requires_power": true,
+    "cost": {
+      "credits": 400,
+      "salvage": 200,
+      "ore": 100
+    },
+    "build_time": 30
+  },
+  "bridge_span": {
+    "name": "River Bridge",
+    "size": 0,
+    "hp": 2500,
+    "armor": "building",
+    "sight": 0,
+    "buildable": false,
+    "neutral_structure": true,
+    "repair_salvage": 300,
+    "repair_time": 30
   }
 }

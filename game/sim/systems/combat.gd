@@ -20,6 +20,9 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
+const Status = preload("res://sim/systems/status.gd")
+const Damage = preload("res://sim/systems/damage.gd")
+const Supply = preload("res://sim/systems/supply.gd")
 
 const BUCKET := 2.0
 const GRID_STRIDE := 1024
@@ -125,6 +128,8 @@ static func _valid_target(w: SimWorld, fid: int, tid: int):
 	if tid < 0:
 		return null
 	var t = w.entities.get(tid)
+	if t != null and t.kind == "structure":
+		return t if Fog.is_visible(w, fid, t.pos) else null  # explicit attack on the bridge only
 	if t == null or (t.kind != "unit" and t.kind != "building") or not w.is_enemy(fid, int(t.owner)):
 		return null
 	if not Fog.entity_visible(w, fid, t):
@@ -349,10 +354,14 @@ static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Arra
 static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> void:
 	if _cd(e) > 0:
 		return
+	if Status.can_fire(w, e) != "":
+		return
+	if not Damage.line_clear(w, e.pos, t.pos):
+		return
 	var cd := maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
-	var hit := w.rng.chance(s.accuracy)
+	var hit := w.rng.chance(float(s.accuracy) * Status.accuracy_mult(w, e))
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
 	if not hit:
@@ -361,14 +370,9 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> v
 		e.firing = FIRING_HINT_TICKS
 		e.facing = snappedf((to - from).angle(), Q)
 	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to})
-	if not hit:
-		return
-	t.hp = snappedf(float(t.hp) - shot_damage(e, t), Q)  # dyadic: survives var_to_str exactly
-	if t.kind == "unit":
-		t.last_attacker = int(e.id)
-		t.last_hit_tick = w.tick
-	if float(t.hp) <= 0.0:
-		w.destroy(int(t.id), "killed", int(e.owner))
+	if e.kind == "unit":
+		Supply.on_shot(w, e)
+	Damage.apply_hit(w, e, t, s, hit)  # G2 pipeline: armor facing, cover, components, suppression
 
 
 # ================================================================ commands
@@ -379,6 +383,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	var t = w.entities.get(int(cmd.get("target_id", -1)))
 	if t == null:
 		return "Target not visible."
+	if t.kind == "structure":
+		return "" if Fog.is_visible(w, fid, t.pos) else "Target not visible."
 	if t.kind != "unit" and t.kind != "building":
 		return "That is not a valid attack target."
 	if int(t.owner) == fid:

@@ -3,7 +3,7 @@ extends RefCounted
 ## Authoritative simulation state + fixed-step tick orchestrator + command bus.
 ## Pure logic: no Nodes, no rendering, no global RNG. See docs/CONTRACTS.md.
 
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2  # 2 = G2 (fuel/ammo ledger, unit tactical fields, bridge)
 const TICK_RATE := 20
 const DT := 1.0 / 20.0
 const EVENT_LOG_MAX := 300
@@ -18,10 +18,17 @@ const Combat = preload("res://sim/systems/combat.gd")
 const Fog = preload("res://sim/systems/fog.gd")
 const Victory = preload("res://sim/systems/victory.gd")
 const AiController = preload("res://sim/ai/ai_controller.gd")
+const Morale = preload("res://sim/systems/morale.gd")
+const Supply = preload("res://sim/systems/supply.gd")
+const Repair = preload("res://sim/systems/repair.gd")
+const Ops = preload("res://sim/systems/ops.gd")
+const Orders = preload("res://sim/systems/orders.gd")
+const Bridges = preload("res://sim/systems/bridges.gd")
 const MapGen = preload("res://sim/map_gen.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
-const SYSTEM_ORDER := [Economy, Construction, Production, Gather, Movement, Combat, Fog, Victory]
+## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
+const SYSTEM_ORDER := [Economy, Construction, Production, Gather, Repair, Ops, Orders, Movement, Combat, Morale, Supply, Bridges, Fog, Victory]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -37,7 +44,17 @@ const COMMANDS := {
 	"queue_unit": Production,
 	"cancel_unit": Production,
 	"set_rally": Production,
+	"repair": Repair,
+	"assign_officer": Ops,
+	"set_mission": Ops,
+	"cancel_mission": Ops,
+	"patrol": Orders,
+	"guard": Orders,
+	"set_formation": Orders,
 }
+
+## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
+const DIRECT_ORDERS := ["move", "attack_move", "attack", "stop", "hold", "patrol", "guard"]
 
 # ---------------------------------------------------------------- state
 var tick: int = 0
@@ -135,7 +152,8 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"is_ai": bool(s.get("ai", false)),
 			"stage": int(s.get("stage", 8)),
 			"credits": int(s.get("credits", 0)),
-			"stock": {"salvage": int(rules.start_package.stock.salvage), "ore": int(rules.start_package.stock.ore)},
+			"stock": {"salvage": int(rules.start_package.stock.salvage), "ore": int(rules.start_package.stock.ore),
+				"fuel": int(rules.start_package.stock.get("fuel", 0)), "ammo": int(rules.start_package.stock.get("ammo", 0))},
 			"power_prod": 0,
 			"power_use": 0,
 			"pop": 0,
@@ -149,6 +167,7 @@ static func new_match(c: Dictionary) -> SimWorld:
 		w.spawn_resource(String(r.res), int(r.amount), Vector2(r.cell) + Vector2(0.5, 0.5))
 	for fid in w.factions:
 		w._place_start_package(fid)
+	w._spawn_bridge()
 	Movement.rebuild_nav(w)
 	Fog.init_faction_fog(w)
 	for fid in w.factions:
@@ -249,6 +268,8 @@ func _apply_due_commands() -> void:
 			emit("CommandRejected", {"command_id": c.id, "type": c.type, "issuer": c.issuer, "reason": reason})
 			continue
 		COMMANDS[c.type].apply_command(self, c)
+		if DIRECT_ORDERS.has(String(c.type)):
+			Ops.on_direct_order(self, c)
 		emit("CommandApplied", {"command_id": c.id, "type": c.type, "issuer": c.issuer})
 
 
@@ -286,7 +307,7 @@ func emit(type: String, data: Dictionary = {}) -> void:
 
 
 # ================================================================ ledger (single source of truth for money/materials)
-const LEDGER_KEYS := ["credits", "salvage", "ore"]
+const LEDGER_KEYS := ["credits", "salvage", "ore", "fuel", "ammo"]
 
 ## Returns "" if faction can pay cost, else a reason like "Need 120 more salvage".
 func can_afford(fid: int, cost: Dictionary) -> String:
@@ -356,6 +377,19 @@ func spawn_unit(def_id: String, owner: int, pos: Vector2) -> int:
 		"carry": {"res": "", "amt": 0},
 		"squad": -1, "moving": false, "firing": 0,
 	}
+	# G2 tactical fields (CONTRACTS_G2): supply, morale/suppression, vehicle components
+	var e: Dictionary = entities[id]
+	if d.has("ammo_max"):
+		e.ammo = int(d.ammo_max)
+	if d.has("fuel_max"):
+		e.fuel = float(d.fuel_max)
+	if d.has("components"):
+		e.comp = (d.components as Dictionary).duplicate()
+	if d.has("morale"):
+		e.morale = float(d.morale)
+		e.supp = 0.0
+		e.pinned = false
+		e.broken = false
 	emit("EntitySpawned", {"id": id, "kind": "unit", "def": def_id, "owner": owner, "pos": pos})
 	return id
 
@@ -381,6 +415,22 @@ func spawn_building(def_id: String, owner: int, origin: Vector2i, complete: bool
 	return id
 
 
+## The neutral river bridge as one attackable structure covering map.bridge_cells.
+func _spawn_bridge() -> void:
+	var cells: Array = map.get("bridge_cells", [])
+	if cells.is_empty():
+		return
+	var sum := Vector2.ZERO
+	for c in cells:
+		sum += Vector2(c) + Vector2(0.5, 0.5)
+	var d := Content.building("bridge_span")
+	var id := _new_id()
+	entities[id] = {"id": id, "kind": "structure", "def": "bridge_span", "owner": NEUTRAL,
+		"pos": sum / float(cells.size()), "cells": cells.duplicate(), "state": "intact",
+		"hp": float(d.get("hp", 2500)), "max_hp": float(d.get("hp", 2500))}
+	map.bridge_state = "intact"
+
+
 func spawn_resource(res: String, amount: int, pos: Vector2) -> int:
 	var id := _new_id()
 	entities[id] = {"id": id, "kind": "resource", "def": res, "owner": NEUTRAL, "pos": pos,
@@ -389,9 +439,13 @@ func spawn_resource(res: String, amount: int, pos: Vector2) -> int:
 
 
 ## Removes an entity. Vehicles and buildings leave persistent wrecks.
+## Neutral structures (the bridge) are not erased: Bridges turns them into ruins.
 func destroy(id: int, cause: String, killer_owner: int = NEUTRAL) -> void:
 	var e = entities.get(id)
 	if e == null:
+		return
+	if e.kind == "structure":
+		Bridges.on_destroyed(self, e, killer_owner)
 		return
 	entities.erase(id)
 	emit("EntityDestroyed", {"id": id, "kind": e.kind, "def": e.def, "owner": e.owner,

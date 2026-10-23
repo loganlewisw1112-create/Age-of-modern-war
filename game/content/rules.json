@@ -3,7 +3,8 @@
     "schema_version": 1,
     "status": "PROVISIONAL match rules and faction fixtures for the G0+G1 slice.",
     "rebalance_2026_10_23": "Credits were the only binding constraint (stipend-only income; G-ai probe found materials piling up 3000+ and 30-min sieges). Shifted unit/building costs toward gathered salvage/ore and raised the stipend 3->6 cr/s so gathering drives the economy. Still PROVISIONAL fixtures.",
-    "first_attack_tick": "Earliest tick an AI may launch an offensive (20 ticks/s): easy 10 min, normal 7 min, hard 5 min. PROVISIONAL. Added 2026-10-23 after the UI playtest showed a 3-minute HQ kill on a new player."
+    "first_attack_tick": "Earliest tick an AI may launch an offensive (20 ticks/s): easy 10 min, normal 7 min, hard 5 min. PROVISIONAL. Added 2026-10-23 after the UI playtest showed a 3-minute HQ kill on a new player.",
+    "g2": "G2 tactical fixtures (armor_facing, cover, components, suppression, morale, concealment, supply, refinery, repair, ops). PROVISIONAL, untuned."
   },
   "factions": {
     "human_a": {
@@ -33,7 +34,9 @@
     ],
     "stock": {
       "salvage": 300,
-      "ore": 100
+      "ore": 100,
+      "fuel": 400,
+      "ammo": 600
     }
   },
   "defaults": {
@@ -74,5 +77,57 @@
     "#b5583a",
     "#6e9a4a",
     "#b59a3a"
-  ]
+  ],
+  "armor_facing": {
+    "front": 1.0,
+    "side": 1.35,
+    "rear": 1.7
+  },
+  "cover": {
+    "small_arms": 0.6,
+    "autocannon": 0.6,
+    "at": 0.85
+  },
+  "component_hit_chance": 0.35,
+  "component_damage_mult": 0.6,
+  "suppression": {
+    "per_hit": 18,
+    "per_near_miss": 8,
+    "decay_per_second": 12,
+    "pinned_at": 60
+  },
+  "morale": {
+    "per_squadmate_death": 15,
+    "pinned_drain_per_second": 3,
+    "recover_per_second": 4,
+    "break_at": 25,
+    "rally_at": 60
+  },
+  "concealment_range": 5,
+  "supply": {
+    "radius": 8,
+    "refill_per_second": {
+      "ammo": 6,
+      "fuel": 10
+    }
+  },
+  "refinery": {
+    "ore_in": 20,
+    "fuel_out": 15,
+    "ammo_out": 25,
+    "period_s": 6
+  },
+  "repair": {
+    "hp_per_second": 25,
+    "salvage_per_100hp": 20
+  },
+  "ops": {
+    "override_ticks": 200,
+    "risk_loss_bound": {
+      "low": 0.25,
+      "medium": 0.5,
+      "high": 0.75
+    },
+    "resupply_ammo_frac": 0.3
+  }
 }

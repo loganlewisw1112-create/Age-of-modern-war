@@ -1,4 +1,5 @@
 extends RefCounted
+const Status = preload("res://sim/systems/status.gd")
 ## Fog of war (owner: agent B / sim-mil). Per-faction visibility, explored cells, last-seen memory.
 ## Contract: docs/CONTRACTS.md section 5.
 ##   w.fog[fid] = {visible: PackedByteArray, explored: PackedByteArray}  (1 = yes, idx y*w+x)
@@ -88,7 +89,7 @@ static func recompute(w: SimWorld) -> void:
 			var e: Dictionary = w.entities[id]
 			if int(e.owner) != int(fid) or (e.kind != "unit" and e.kind != "building"):
 				continue
-			var s := sight_of(e)
+			var s := sight_of(e) * Status.sight_mult(w, e)
 			if s <= 0.0:
 				continue
 			var c := w.cell_of(e.pos)

@@ -1,4 +1,5 @@
 extends RefCounted
+const Status = preload("res://sim/systems/status.gd")
 ## Movement (owner: agent B / sim-mil). Nav grids (foot/vehicle), A* pathing with a per-tick
 ## budget and a deterministic, saved request queue, steering with separation, formations.
 ## Commands: move, attack_move, stop, hold. Contract: docs/CONTRACTS.md section 5.
@@ -452,7 +453,9 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 	var u := udef(String(e.def))
 	var pos: Vector2 = e.pos
 	var start_pos := pos
-	var spd: float = float(u.speed) * Terrain.speed_mult(w.terrain_at(w.cell_of(pos)), mc) * SimWorld.DT
+	var spd: float = float(u.speed) * Terrain.speed_mult(w.terrain_at(w.cell_of(pos)), mc) * SimWorld.DT * Status.move_mult(w, e)
+	if spd <= 0.0:
+		return  # immobile (mobility kill / no fuel): keep the path, do not move
 	var remaining := spd
 	var guard := 0
 	var blocked := false
@@ -699,4 +702,16 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			for e in units:
 				e.order = {"type": "hold"}
 				e.target = -1
+				stop_path(e)
+
+
+## G2 (ORCH hook): terrain cells changed (bridge destroyed/repaired). Rebuild nav from the map and
+## re-request every active path so nobody walks through a dead cell (QA-007).
+static func on_terrain_changed(w: SimWorld) -> void:
+	rebuild_nav(w)
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind == "unit" and bool(e.get("moving", false)) and not (e.path as Array).is_empty():
+			var goal: Vector2 = e.path[e.path.size() - 1]
+			if not order_path(w, e, goal):
 				stop_path(e)
