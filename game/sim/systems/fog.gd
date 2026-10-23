@@ -174,7 +174,7 @@ static func entity_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
 		if f == null:
 			return false
 		return _building_seen(w, e, f.visible, int(w.map.w))
-	return is_visible(w, fid, e.pos)
+	return is_visible(w, fid, e.pos) and not concealed(w, fid, e)
 
 
 ## Enemy units AND buildings on cells currently visible to fid (the only legal enemy query for AI).
@@ -185,3 +185,77 @@ static func visible_enemies(w: SimWorld, fid: int) -> Array:
 		if (e.kind == "unit" or e.kind == "building") and w.is_enemy(fid, int(e.owner)) and entity_visible(w, fid, e):
 			out.append(e)
 	return out
+
+
+# ================================================================ G2 concealment (agent A2)
+## CONTRACTS_G2 section 2: enemy infantry (units with `morale`) standing on FOREST is hidden from fid
+## unless some fid unit/building is within rules.concealment_range of it, or it fired in the last
+## REVEAL_TICKS ticks (e.last_fired_tick, set by combat._fire). Checked in the query, not the stamp.
+## Spotter positions are indexed once per tick, lazily, in w.cache (never saved: rebuilt per tick).
+const REVEAL_TICKS := 60
+const FOREST_CODE := 3   # Terrain.FOREST
+
+
+static func concealed(w: SimWorld, fid: int, e: Dictionary) -> bool:
+	if e.kind != "unit" or not e.has("morale") or int(e.owner) == fid:
+		return false
+	if w.tick - int(e.get("last_fired_tick", -9999)) < REVEAL_TICKS:
+		return false
+	var p: Vector2 = e.pos
+	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) != FOREST_CODE:
+		return false
+	return not _spotted(w, fid, p)
+
+
+## Is any fid unit or building within concealment_range of p?
+static func _spotted(w: SimWorld, fid: int, p: Vector2) -> bool:
+	var idx = w.cache.get("conceal_idx")
+	if idx == null or int(idx.tick) != w.tick:
+		idx = _build_conceal_idx(w)
+		w.cache["conceal_idx"] = idx
+	var r: float = idx.r
+	var f = idx.fids.get(fid)
+	if f == null:
+		return false
+	var r2 := r * r
+	var bx := floori(p.x / r)
+	var by := floori(p.y / r)
+	var units: Dictionary = f.units
+	for yy in range(by - 1, by + 2):
+		for xx in range(bx - 1, bx + 2):
+			var arr = units.get(xx + yy * 4096)
+			if arr == null:
+				continue
+			for q in arr:
+				if p.distance_squared_to(q) <= r2:
+					return true
+	for rect in f.blds:
+		var rr: Rect2 = rect
+		var c := Vector2(clampf(p.x, rr.position.x, rr.end.x), clampf(p.y, rr.position.y, rr.end.y))
+		if p.distance_squared_to(c) <= r2:
+			return true
+	return false
+
+
+static func _build_conceal_idx(w: SimWorld) -> Dictionary:
+	var r := maxf(float(Content.rules().get("concealment_range", 5)), 1.0)
+	var fids := {}
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" and e.kind != "building":
+			continue
+		var o := int(e.owner)
+		if not fids.has(o):
+			fids[o] = {"units": {}, "blds": []}
+		if e.kind == "unit":
+			var p: Vector2 = e.pos
+			var k := floori(p.x / r) + floori(p.y / r) * 4096
+			var u: Dictionary = fids[o].units
+			if u.has(k):
+				u[k].append(p)
+			else:
+				u[k] = [p]
+		else:
+			var c: Vector2i = e.cell
+			fids[o].blds.append(Rect2(Vector2(c), Vector2(float(e.size), float(e.size))))
+	return {"tick": w.tick, "r": r, "fids": fids}

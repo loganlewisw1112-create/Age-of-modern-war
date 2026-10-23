@@ -9,6 +9,9 @@ const CHUNK := 16
 var mv
 var bake_ms := 0
 var _tile_cache: Dictionary = {}   # "code_variant" -> Image (RGBA8)
+var _chunks: Dictionary = {}       # Vector2i chunk origin -> Sprite2D
+var _max_h := 32
+var rebakes := 0                   # chunks re-baked after terrain changes (G2 bridge)
 
 
 func setup(view: Node2D) -> void:
@@ -58,36 +61,61 @@ func _variant_for(code: int, x: int, y: int) -> int:
 func _bake() -> void:
 	var w := int(mv.world.map.w)
 	var h := int(mv.world.map.h)
-	var terrain: PackedByteArray = mv.world.map.terrain
 	# max tile image height (diamond + skirt) across codes in use
-	var max_h := 32
+	_max_h = 32
 	for code in 8:
 		for v in maxi(1, int(ArtCatalog.terrain_variants(code))):
-			max_h = maxi(max_h, _tile_image(code, v).get_height())
-	var img_w := CHUNK * 64
-	var img_h := (CHUNK - 1) * 32 + max_h
+			_max_h = maxi(_max_h, _tile_image(code, v).get_height())
 	for cy0 in range(0, h, CHUNK):
 		for cx0 in range(0, w, CHUNK):
-			var img := Image.create(img_w, img_h, false, Image.FORMAT_RGBA8)
-			img.fill(Color(0, 0, 0, 0))
-			var any := false
-			# back-to-front so skirts are overdrawn by nearer tiles
-			for s in range(0, 2 * CHUNK - 1):
-				for i in range(maxi(0, s - CHUNK + 1), mini(CHUNK, s + 1)):
-					var j := s - i
-					var x := cx0 + i
-					var y := cy0 + j
-					if x >= w or y >= h:
-						continue
-					var code := int(terrain[y * w + x])
-					var tile := _tile_image(code, _variant_for(code, x, y))
-					var dst := Vector2i(img_w / 2 + (i - j) * 32 - 32, (i + j) * 16)
-					img.blend_rect(tile, Rect2i(Vector2i.ZERO, tile.get_size()), dst)
-					any = true
-			if not any:
+			_bake_chunk(cx0, cy0)
+
+
+## G2: re-bake only the chunks containing `cells` (bridge destroyed/repaired changes the
+## terrain array). Cells may be Vector2i or Vector2.
+func rebake_cells(cells: Array) -> void:
+	var done := {}
+	for c in cells:
+		var cx0 := (int(c.x) / CHUNK) * CHUNK
+		var cy0 := (int(c.y) / CHUNK) * CHUNK
+		var key := Vector2i(cx0, cy0)
+		if done.has(key):
+			continue
+		done[key] = true
+		_bake_chunk(cx0, cy0)
+	rebakes += done.size()
+
+
+func _bake_chunk(cx0: int, cy0: int) -> void:
+	var w := int(mv.world.map.w)
+	var h := int(mv.world.map.h)
+	var terrain: PackedByteArray = mv.world.map.terrain
+	var img_w := CHUNK * 64
+	var img_h := (CHUNK - 1) * 32 + _max_h
+	var img := Image.create(img_w, img_h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var any := false
+	# back-to-front so skirts are overdrawn by nearer tiles
+	for s in range(0, 2 * CHUNK - 1):
+		for i in range(maxi(0, s - CHUNK + 1), mini(CHUNK, s + 1)):
+			var j := s - i
+			var x := cx0 + i
+			var y := cy0 + j
+			if x >= w or y >= h:
 				continue
-			var spr := Sprite2D.new()
-			spr.centered = false
-			spr.texture = ImageTexture.create_from_image(img)
-			spr.position = mv.world_to_screen(Vector2(cx0, cy0)) + Vector2(-img_w / 2, 0)
-			add_child(spr)
+			var code := int(terrain[y * w + x])
+			var tile := _tile_image(code, _variant_for(code, x, y))
+			var dst := Vector2i(img_w / 2 + (i - j) * 32 - 32, (i + j) * 16)
+			img.blend_rect(tile, Rect2i(Vector2i.ZERO, tile.get_size()), dst)
+			any = true
+	if not any:
+		return
+	var key := Vector2i(cx0, cy0)
+	var spr: Sprite2D = _chunks.get(key)
+	if spr == null:
+		spr = Sprite2D.new()
+		spr.centered = false
+		spr.position = mv.world_to_screen(Vector2(cx0, cy0)) + Vector2(-img_w / 2, 0)
+		add_child(spr)
+		_chunks[key] = spr
+	spr.texture = ImageTexture.create_from_image(img)

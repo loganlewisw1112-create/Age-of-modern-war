@@ -47,3 +47,38 @@ static func tick(w: SimWorld) -> void:
 		f.pop_cap = mini(int(pc[fid]), cap_max)
 		if pay and f.alive and int(hqs[fid]) > 0 and rate > 0:
 			w.credit(fid, {"credits": rate * int(hqs[fid])}, "hq_stipend")
+	_refineries(w)
+
+
+## G2 refinery (owner: agent B2, CONTRACTS_G2 section 3). While built and powered, every
+## rules.refinery.period_s it converts ore_in ore into fuel_out fuel + ammo_out ammo through the
+## ledger (spend then credit, cause "refinery"). Status: "" working, "LOW_POWER", "NO_ORE".
+## The cycle only advances while ore is on hand; e.refine_acc counts progress ticks.
+static func _refineries(w: SimWorld) -> void:
+	var cfg: Dictionary = Content.rules().get("refinery", {})
+	if cfg.is_empty():
+		return
+	var period := maxi(1, int(round(float(cfg.get("period_s", 6)) / SimWorld.DT)))
+	var ore_in := int(cfg.get("ore_in", 0))
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "building" or e.def != "refinery":
+			continue
+		var fid := int(e.owner)
+		if not bool(e.built) or not w.factions.has(fid):
+			continue
+		var f: Dictionary = w.factions[fid]
+		var status := ""
+		if int(f.power_use) > int(f.power_prod):
+			status = "LOW_POWER"
+		elif int(f.stock.get("ore", 0)) < ore_in:
+			status = "NO_ORE"
+		else:
+			var acc := int(e.get("refine_acc", 0)) + 1
+			if acc >= period:
+				acc = 0
+				if w.spend(fid, {"ore": ore_in}, "refinery"):
+					w.credit(fid, {"fuel": int(cfg.get("fuel_out", 0)), "ammo": int(cfg.get("ammo_out", 0))}, "refinery")
+			e.refine_acc = acc
+		if String(e.status) != status:
+			e.status = status

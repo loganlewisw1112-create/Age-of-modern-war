@@ -42,6 +42,11 @@ static func compose(path: String) -> void:
 			var c := code_at(x, y)
 			var t: Texture2D = AC.terrain_texture(c, (x * 7 + y * 13) % maxi(1, AC.terrain_variants(c)))
 			_put(scene, t, iso.call(Vector2(x, y)), Vector2(-32, 0))
+	for y in N:  # G2 bridge-span overlays on the bridge cells (cell-centre anchor)
+		for x in N:
+			if code_at(x, y) == 5:
+				var bo: Dictionary = AC.bridge_overlay("damaged" if x == 8 and y == 8 else "intact", Vector2i(x, y))
+				_put(scene, bo.texture, iso.call(Vector2(x + 0.5, y + 0.5)), bo.offset)
 	var items: Array = []  # [depth, tex, pos, offset]
 	for y in N:
 		for x in N:
@@ -74,6 +79,8 @@ static func compose(path: String) -> void:
 	ents.append({"kind": "unit", "def": "mbt", "owner": 0, "pos": Vector2(5.8, 9.4), "facing": 0.0})
 	ents.append({"kind": "unit", "def": "mbt", "owner": 1, "pos": Vector2(12.6, 10.4), "facing": -3 * PI / 4, "firing": 1})
 	ents.append({"kind": "unit", "def": "ifv", "owner": 1, "pos": Vector2(14.0, 12.0), "facing": PI})
+	ents.append({"kind": "unit", "def": "logistics_truck", "owner": 0, "pos": Vector2(5.6, 5.6), "facing": PI / 4, "moving": true})
+	ents.append({"kind": "unit", "def": "officer", "owner": 0, "pos": Vector2(8.2, 9.3), "facing": 0.8})
 	for e in ents:
 		var col: Color = TEAM_A if int(e.get("owner", e.get("from_owner", 0))) == 0 else TEAM_B
 		var d: Dictionary = AC.entity_sprite(e, col, 0.1 * k)
@@ -96,12 +103,14 @@ static func compose(path: String) -> void:
 	crop.resize(760, 340, Image.INTERPOLATE_NEAREST)
 	var lcrop := line.get_region(Rect2i(0, 0, 300, 170))
 	lcrop.resize(600, 340, Image.INTERPOLATE_NEAREST)
-	var out := Image.create(W + 300, scene.get_height() + line.get_height() + 344, false, Image.FORMAT_RGBA8)
+	var g2: Image = load("res://tools/art/contact_g2.gd").panel(W + 300)
+	var out := Image.create(W + 300, scene.get_height() + line.get_height() + 348 + g2.get_height(), false, Image.FORMAT_RGBA8)
 	out.fill(Color(0.06, 0.06, 0.06, 1))
 	out.blit_rect(scene, Rect2i(Vector2i.ZERO, scene.get_size()), Vector2i(0, 0))
 	out.blit_rect(line, Rect2i(Vector2i.ZERO, line.get_size()), Vector2i(0, scene.get_height()))
 	out.blit_rect(crop, Rect2i(Vector2i.ZERO, crop.get_size()), Vector2i(0, scene.get_height() + line.get_height() + 4))
 	out.blit_rect(lcrop, Rect2i(Vector2i.ZERO, lcrop.get_size()), Vector2i(764, scene.get_height() + line.get_height() + 4))
+	out.blit_rect(g2, Rect2i(Vector2i.ZERO, g2.get_size()), Vector2i(0, scene.get_height() + line.get_height() + 348))
 	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	out.save_png(path)
 

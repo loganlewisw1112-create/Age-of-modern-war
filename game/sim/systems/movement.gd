@@ -651,6 +651,33 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 	for e in units:
 		if move_class(e) == "vehicle":
 			sp = SLOT_VEHICLE
+	# G2 (agent C2): the first unit's e.formation ("line"|"wedge"|"column") shapes the group,
+	# oriented along centroid -> target. No formation keeps the G1 grid below.
+	var form := String(units[0].get("formation", ""))
+	if form == "line" or form == "wedge" or form == "column":
+		var cen := Vector2.ZERO
+		for e in units:
+			cen += e.pos
+		cen /= float(n)
+		var fwd := target - cen
+		fwd = fwd / fwd.length() if fwd.length() > 0.01 else Vector2(0, -1)
+		var side := Vector2(-fwd.y, fwd.x)
+		var slots := []
+		for k in n:
+			var p := target
+			match form:
+				"line":
+					p = target + side * (float(k) - float(n - 1) * 0.5) * sp
+				"column":
+					p = target - fwd * float(k) * sp
+				"wedge":
+					var rank := (k + 1) / 2
+					var sgn := -1.0 if k % 2 == 1 else 1.0
+					p = target - fwd * float(rank) * sp + side * sgn * float(rank) * sp
+			p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
+			p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
+			slots.append(p)
+		return slots
 	var cols := int(ceil(sqrt(float(n))))
 	var rows := int(ceil(float(n) / float(cols)))
 	var out := []

@@ -9,6 +9,10 @@ const HT = preload("res://presentation/hud/hud_theme.gd")
 const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
 const MinimapScript = preload("res://presentation/hud/minimap.gd")
 const ObjectivesScript = preload("res://presentation/hud/objectives.gd")
+# G2 (agent D2): inspector bars/chips/tags + group card, command buttons, alerts
+const G2Inspector = preload("res://presentation/hud/g2_inspector.gd")
+const G2Commands = preload("res://presentation/hud/g2_commands.gd")
+const G2Alerts = preload("res://presentation/hud/g2_alerts.gd")
 
 const REFRESH_SECS := 0.2
 const ALERT_LIFE := 9.0
@@ -18,11 +22,16 @@ const ATTACK_ALERT_TICKS := 20 * 10
 var mv: Node = null
 var layer: Node = null
 var objectives := ObjectivesScript.new()
+var g2_insp = G2Inspector.new()
+var g2_cmd = G2Commands.new()
+var g2_alerts = G2Alerts.new()
 
 # Top bar
 var _credits: Label
 var _salvage: Label
 var _ore: Label
+var _fuel: Label
+var _ammo: Label
 var _power: Label
 var _pop: Label
 var _stage: Label
@@ -117,6 +126,8 @@ func _build_ui() -> void:
 	_credits = _tb_label(hb, HT.AMBER)
 	_salvage = _tb_label(hb, Color("c9ccc4"))
 	_ore = _tb_label(hb, Color("e0944a"))
+	_fuel = _tb_label(hb, Color("d9c05a"))
+	_ammo = _tb_label(hb, Color("d08a4a"))
 	_power = _tb_label(hb, HT.YELLOW)
 	_pop = _tb_label(hb, HT.BLUE)
 	_stage = _tb_label(hb, HT.DIM)
@@ -247,6 +258,8 @@ func _build_ui() -> void:
 	_insp_counts.columns = 4
 	_insp_counts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	iv.add_child(_insp_counts)
+	g2_insp.build(iv, _insp_info, root)
+	g2_cmd.hud = self
 	# command card
 	var cv := VBoxContainer.new()
 	cv.custom_minimum_size = Vector2(580, 0)
@@ -306,6 +319,12 @@ func _refresh() -> void:
 	_credits.text = "Credits %d" % int(f.credits)
 	_salvage.text = "Salvage %d" % int(f.stock.get("salvage", 0))
 	_ore.text = "Ore %d" % int(f.stock.get("ore", 0))
+	var fuel := int(f.stock.get("fuel", 0))
+	var ammo := int(f.stock.get("ammo", 0))
+	_fuel.text = "Fuel %d%s" % [fuel, "  LOW" if fuel < 100 else ""]
+	_fuel.add_theme_color_override("font_color", HT.RED if fuel < 100 else Color("d9c05a"))
+	_ammo.text = "Ammo %d%s" % [ammo, "  LOW" if ammo < 100 else ""]
+	_ammo.add_theme_color_override("font_color", HT.RED if ammo < 100 else Color("d08a4a"))
 	var pp := int(f.power_prod)
 	var pu := int(f.power_use)
 	_power.text = "Power %d use / %d prod%s" % [pu, pp, "  LOW" if pu > pp else ""]
@@ -381,12 +400,17 @@ func _order_text(e: Dictionary) -> String:
 		"hold": return "Holding position"
 		"gather": return "Gathering (%s)" % String(o.get("phase", "")).replace("_", " ")
 		"build": return "Building"
+		"patrol": return "Patrolling"
+		"guard": return "Guarding"
+		"retreat": return "Retreating"
+		"repair": return "Repairing"
 	return String(o.get("type", "idle"))
 
 
 func _refresh_selection(w: SimWorld) -> void:
 	var ents := _sel_entities(w)
 	var pf := _pf()
+	g2_insp.update(w, ents)
 	_insp_counts.visible = false
 	for c in _insp_counts.get_children():
 		_insp_counts.remove_child(c)
@@ -538,14 +562,16 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			var d: Dictionary = Content.building(String(bid))
 			if not bool(d.get("buildable", false)):
 				continue
-			var btn := _card_button(String(d.name), HT.cost_text(d.cost), String(d.get("hotkey", "")), String(bid))
+			# G2: F is Formation for combat units, so the Refinery uses N on the engineer card
+			var hk := "N" if String(bid) == "refinery" else String(d.get("hotkey", ""))
+			var btn := _card_button(String(d.name), HT.cost_text(d.cost), hk, String(bid))
 			btn.pressed.connect(_on_build_pressed.bind(String(bid)))
 			_card_buttons.append({"btn": btn, "kind": "build", "def": String(bid)})
-			_register_hotkey(String(d.get("hotkey", "")), btn)
-		_add_unit_buttons(ids)
+			_register_hotkey(hk, btn)
+		_add_unit_buttons(ids, mode)
 	elif mode == "units":
 		_card_title.text = "ORDERS"
-		_add_unit_buttons(ids)
+		_add_unit_buttons(ids, mode)
 	elif mode == "building":
 		var b: Dictionary = ents[0]
 		var d: Dictionary = Content.building(b.def)
@@ -564,19 +590,21 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		var btn2 := _card_button("Cancel build", "refund", "", "")
 		btn2.pressed.connect(_issue.bind({"type": "cancel_building", "building_id": int(b2.id)}))
 		_card_buttons.append({"btn": btn2, "kind": "plain"})
+	g2_cmd.compact(_card_grid)
 
 
 func _on_train_pressed(bid: int, item: String) -> void:
 	_issue({"type": "queue_unit", "building_id": bid, "item": item})
 
 
-func _add_unit_buttons(ids: Array) -> void:
+func _add_unit_buttons(ids: Array, mode: String = "units") -> void:
 	var stop := _card_button("Stop", "", "S", "")
 	stop.pressed.connect(_issue.bind({"type": "stop", "unit_ids": ids.duplicate()}))
 	_card_buttons.append({"btn": stop, "kind": "plain"})
 	var hold := _card_button("Hold", "", "H", "")
 	hold.pressed.connect(_issue.bind({"type": "hold", "unit_ids": ids.duplicate()}))
 	_card_buttons.append({"btn": hold, "kind": "plain"})
+	g2_cmd.add_buttons(mode, ids)
 
 
 func _card_button(title: String, cost: String, hotkey: String, icon_id: String) -> Button:
@@ -632,10 +660,14 @@ func _update_card_state(mode: String, ents: Array, w: SimWorld) -> void:
 		if reason != "":
 			tip += "\nUnavailable: " + reason
 		btn.tooltip_text = tip
+	if mode == "engineer" or mode == "units":
+		g2_cmd.update_state(w)
 	if _hover_btn != null:
 		for rec in _card_buttons:
 			if rec.btn == _hover_btn and String(rec.get("reason", "")) != "":
 				hint = String(rec.reason)
+	if hint == "":
+		hint = g2_cmd.hint()
 	if hint == "" and mode == "building":
 		var st := String(ents[0].get("status", ""))
 		if st != "":
@@ -840,6 +872,8 @@ func _on_events(events: Array) -> void:
 				_push_alert("%s has been eliminated." % nm, HT.AMBER)
 			"MatchEnded":
 				_push_alert("Match ended.", HT.AMBER)
+			_:
+				g2_alerts.on_event(self, w, pf, ev)
 
 
 func _ev_pos(w: SimWorld, ev: Dictionary) -> Variant:

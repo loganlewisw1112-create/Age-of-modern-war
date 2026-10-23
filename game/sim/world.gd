@@ -449,7 +449,7 @@ func destroy(id: int, cause: String, killer_owner: int = NEUTRAL) -> void:
 		return
 	entities.erase(id)
 	emit("EntityDestroyed", {"id": id, "kind": e.kind, "def": e.def, "owner": e.owner,
-		"pos": e.pos, "cause": cause, "killer_owner": killer_owner})
+		"pos": e.pos, "cause": cause, "killer_owner": killer_owner, "squad": int(e.get("squad", -1))})
 	if e.kind == "building":
 		Movement.on_footprint_changed(self, e.cell, int(e.size), false)
 		_spawn_wreck(e)

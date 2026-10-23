@@ -7,6 +7,7 @@ const ITEMS := [
 	{"id": "barracks", "text": "Build a Barracks"},
 	{"id": "squad", "text": "Train a Rifle Squad"},
 	{"id": "enemy_hq", "text": "Find and destroy the enemy HQ"},
+	{"id": "officer", "text": "Assign an officer and give a mission"},
 ]
 
 var done: Dictionary = {}
@@ -60,9 +61,18 @@ func update(w: SimWorld, fid: int, events: Array = []) -> void:
 		elif t == "ProductionCompleted":
 			if _ev_owner(w, ev) == fid and String(ev.get("item", "")) == "rifle_squad":
 				done["squad"] = true
+		elif t == "OfficerReport":
+			# G2: any report from an own officer means a group got a mission
+			if _ev_owner(w, ev) == fid or _officer_owner(w, ev) == fid:
+				done["officer"] = true
 		elif t == "EntityDestroyed":
 			if String(ev.get("def", "")) == "hq" and int(ev.get("owner", -1)) != fid and int(ev.get("owner", -1)) != SimWorld.NEUTRAL:
 				done["enemy_hq"] = true
+
+
+static func _officer_owner(w: SimWorld, ev: Dictionary) -> int:
+	var e = w.entities.get(int(ev.get("officer", -1)))
+	return int(e.owner) if e != null else SimWorld.NEUTRAL
 
 
 static func _ev_owner(w: SimWorld, ev: Dictionary) -> int:

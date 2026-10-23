@@ -1,6 +1,24 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal
+## Active goal (G2, started 2026-10-23)
+
+```
+GOAL: G2 "Smart Warfare" slice + vehicle/building art detail pass
+For whom / what changes:  Owner plays the same River Crossing match with real tactics: cover, suppression,
+                          flanking armor, crippled vehicles, ammo/fuel logistics, officers running missions,
+                          a destructible/repairable bridge; the AI uses all of it.
+Outcome:                  Roadmap G2 deliverables working in the packaged .exe + more detailed vehicles/buildings.
+Done-when:                1. tests/run.sh TESTS OK incl. G2 acceptance (MIL-02, QA-007/008, supply conservation,
+                             officer multi-step mission + reports) and all G1 tests
+                          2. AI-vs-AI soak seeds 1-3 end with a winner; logs show AI resupply + broken-unit retreat
+                          3. Rebuilt packaged .exe passes an extended UI playtest (officer -> mission -> status shown)
+                          4. Perf report re-run with the 256-unit number published honestly
+Out of scope:             3 factions, 3 maps, Stage 7->9 (G3); naval/air; audio
+Stop-if / park-if:        G1 tests can't be kept green, or sim drops below ~128 units at 20 Hz
+```
+Contracts: `docs/CONTRACTS_G2.md`. Scaffold commit `d878ba1`.
+
+## Previous goal (G1, DONE 2026-10-23)
 
 ```
 GOAL: First playable slice (G0+G1 core loop)

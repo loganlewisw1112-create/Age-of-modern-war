@@ -161,6 +161,7 @@ func test_armor_table_rifle_vs_mbt() -> void:
 	var r2 := w.spawn_unit("rifleman", 0, Vector2(30.5, 18.5))
 	var inf := w.spawn_unit("rifleman", 1, Vector2(34.5, 18.5))
 	w.entities[mbt].cooldown = 1e9   # dummies never fire
+	w.entities[mbt].facing = PI      # G2 (A2): face the shooter (front arc x1.0) so only the armor table is measured
 	w.entities[inf].cooldown = 1e9
 	w.entities[inf].hp = 1e6
 	var hits := {r1: 0, r2: 0}

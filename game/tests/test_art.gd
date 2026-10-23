@@ -59,6 +59,8 @@ func test_entities_every_def() -> void:
 		if Content.unit(def).get("leaves_wreck", false):
 			_real(AC.entity_sprite({"kind": "wreck", "def": def, "facing": 1.0, "size": 1}, blue, 0).texture, "wreck " + def)
 	for def in Content.ids("buildings"):
+		if int(Content.building(def).get("size", 0)) <= 0 or Content.building(def).get("neutral_structure", false):
+			continue  # bridge_span: drawn per cell via bridge_overlay (see test_bridge_overlay)
 		var size := int(Content.building(def).size)
 		var built: Dictionary = AC.entity_sprite({"kind": "building", "def": def, "built": true, "progress": 1.0}, blue, 0)
 		if _real(built.texture, "building " + def):
@@ -83,16 +85,55 @@ func test_effects_and_icons() -> void:
 		check(fr.size() >= (2 if n == "muzzle" else 5), "frame count for " + n)
 		for t in fr:
 			_real(t, "effect " + n)
+	var g2_fx := {"disabled_smoke": 6, "pinned": 2, "cover": 1, "retreat": 2}
+	for n in g2_fx:
+		var g2: Array = AC.effect_frames(n)
+		check_eq(g2.size(), int(g2_fx[n]), "G2 frame count for " + n)
+		for t in g2:
+			_real(t, "G2 effect " + n)
+	var piv = AC.manifest().get("effects", {}).get("disabled_smoke", {}).get("pivot")
+	check(piv is Array and piv.size() == 2, "disabled_smoke carries a pivot")
+	var sm: Array = AC.effect_frames("disabled_smoke")
+	check(sm[0].get_image().get_data() != sm[3].get_image().get_data(), "disabled_smoke frames animate")
 	check_eq(AC.effect_frames("nope").size(), 1, "unknown effect gives 1 placeholder frame")
 	var ids: Array = Content.ids("production") + Content.ids("units")
 	for def in Content.ids("buildings"):
 		if Content.building(def).get("buildable", false) or def == "hq":
 			ids.append(def)
+	ids += ["officer", "logistics_truck", "refinery", "repair", "patrol", "guard", "formation_line", "formation_wedge",
+		"formation_column", "mission_secure", "mission_hold", "mission_attack", "mission_patrol", "assign_officer"]
+	var cmd_imgs := {}
+	for id in ["repair", "patrol", "guard", "formation_line", "formation_wedge", "formation_column",
+			"mission_secure", "mission_hold", "mission_attack", "mission_patrol", "assign_officer"]:
+		cmd_imgs[AC.icon(id).get_image().get_data()] = id
+	check_eq(cmd_imgs.size(), 11, "11 distinct command icons")
 	for id in ids:
 		var t: Texture2D = AC.icon(id)
 		if _real(t, "icon " + id):
 			check(t.get_width() == 32 and t.get_height() == 32, "icon 32x32 " + id)
 	check(AC.icon("nonexistent") == AC._ph(), "missing icon is the placeholder")
+
+
+func test_bridge_overlay() -> void:
+	AC.load_all()
+	var looks := {}
+	for state in ["intact", "damaged", "ruined"]:
+		for cell in [Vector2i(5, 4), Vector2i(4, 4), Vector2i(4, 5), Vector2i(9, 9), Vector2i(12, 11)]:
+			var d: Dictionary = AC.bridge_overlay(state, cell)
+			if _real(d.get("texture"), "bridge %s %s" % [state, cell]):
+				check_eq(d.offset, Vector2(-32, -40), "bridge overlay offset (cell-centre anchor) %s" % state)
+				check_eq(d.texture.get_width(), 64, "bridge overlay width")
+				looks[d.texture.get_image().get_data()] = true
+			check(AC.bridge_overlay(state, cell).texture == d.texture, "bridge overlay deterministic per cell")
+	check(looks.size() >= 9, "states x sides give distinct bridge overlays (%d)" % looks.size())
+	var a: Image = AC.bridge_overlay("intact", Vector2i(4, 4)).texture.get_image()
+	var r: Image = AC.bridge_overlay("ruined", Vector2i(4, 4)).texture.get_image()
+	check(a.get_data() != r.get_data(), "ruined differs from intact")
+	check(AC.bridge_overlay("bogus", Vector2i(1, 1)).texture == AC._ph(), "unknown bridge state -> placeholder")
+	var b: Dictionary = AC.manifest().get("bridge", {})
+	for st in b.get("states", {}):
+		for side in b.states[st]:
+			check_eq(b.states[st][side].size(), 3, "3 variants for bridge %s/%s" % [st, side])
 
 
 func test_generator_deterministic() -> void:

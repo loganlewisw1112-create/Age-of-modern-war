@@ -19,7 +19,7 @@ const GEAR := Color8(66, 62, 46)
 
 static func build(out: Dictionary) -> void:
 	var man := {}
-	for def in ["engineer", "rifleman", "at_gunner", "recon"]:
+	for def in ["engineer", "rifleman", "at_gunner", "recon", "officer"]:
 		var img := Image.create(FW * FRAMES.size(), FH * 8, false, Image.FORMAT_RGBA8)
 		var msk := Image.create(FW * FRAMES.size(), FH * 8, false, Image.FORMAT_RGBA8)
 		for k in 8:
@@ -76,12 +76,19 @@ static func soldier(cv, def: String, d: Vector2, f: int) -> void:
 		cv.rect(bpx, ty + 1, 4, 4 if not heavy else 5, GEAR)
 		if def == "engineer":
 			cv.line(bpx + 1, ty - 2, bpx + 1, ty + 1, Color8(110, 104, 94))  # shovel handle
+		elif def == "officer":
+			cv.rect(bpx, ty + 1, 4, 1, Color8(92, 90, 70))     # radio pack lid
+			cv.px(bpx + 2, ty + 3, Color8(150, 160, 120))      # dial
 	# torso with left-lit shading
 	for yy in range(ty, ty + 6):
 		for xx in range(tx, tx + tw):
 			var k := 1.12 if xx == tx else 0.82 if xx == tx + tw - 1 else 1.0
 			cv.px(xx, yy, P.mul(UNIFORM if def != "recon" else Color8(104, 100, 72), k))
 	cv.rect(tx, ty + 3, tw, 1, GEAR)  # webbing belt
+	if def == "officer":  # leather map case at the hip
+		var mcx := tx + tw if d.x >= 0 else tx - 2
+		cv.rect(mcx, ty + 3, 2, 3, Color8(128, 102, 66))
+		cv.px(mcx, ty + 3, Color8(156, 128, 86))
 	if not side:  # arms
 		cv.rect(tx - 1, ty + 1, 1, 3, P.mul(UNIFORM, 1.08))
 		cv.rect(tx + tw, ty + 1, 1, 3, P.mul(UNIFORM, 0.78))
@@ -103,6 +110,15 @@ static func soldier(cv, def: String, d: Vector2, f: int) -> void:
 			cv.rect(hx - 1, hy - 1, 5, 2, Color8(178, 150, 68))  # hard hat
 			cv.px(hx - 1, hy - 1, Color8(206, 180, 96))
 			cv.rect(hx - 2 if d.x < 0 else hx + 3, hy + 1, 1, 1, Color8(178, 150, 68))
+		"officer":
+			cv.rect(hx - 1, hy - 2, 5, 1, Color8(92, 96, 66))   # peaked cap crown
+			cv.px(hx - 1, hy - 2, Color8(116, 120, 84))
+			cv.team = true
+			cv.rect(hx - 1, hy - 1, 5, 1, Color(0.7, 0.7, 0.7))  # team cap band
+			cv.team = false
+			if not away:
+				var vx := hx + (2 if d.x > 0.3 else (-1 if d.x < -0.3 else 0))
+				cv.rect(vx, hy, 2 if absf(d.x) > 0.3 else 3, 1, Color8(36, 34, 28))  # visor
 		"recon":
 			cv.rect(hx - 1, hy - 1, 5, 1, Color8(88, 92, 62))   # boonie hat brim
 			cv.team = true
@@ -117,6 +133,14 @@ static func soldier(cv, def: String, d: Vector2, f: int) -> void:
 	if away:
 		_weapon(cv, def, d, f, cx, ty, false)
 	cv.outline(Color(0.09, 0.09, 0.07, 1))
+	if def == "officer":  # radio whip antenna: after the outline so it stays 1 px, only behind the figure
+		var abx := int(cx - d.x * 2.5) + (-2 if d.x >= 0 else 2)
+		var tipx := abx + (1 if d.x < 0 else -1)
+		for i in 11:
+			var x := abx + (tipx - abx) * i / 10
+			var y := ty + 1 - i
+			if cv.get_px(x, y).a < 0.5:
+				cv.px(x, y, Color8(44, 44, 40) if i < 10 else Color8(156, 156, 140))
 
 
 static func _weapon(cv, def: String, d: Vector2, f: int, cx: int, ty: int, front: bool) -> void:

@@ -129,7 +129,7 @@ static func _valid_target(w: SimWorld, fid: int, tid: int):
 		return null
 	var t = w.entities.get(tid)
 	if t != null and t.kind == "structure":
-		return t if Fog.is_visible(w, fid, t.pos) else null  # explicit attack on the bridge only
+		return t if String(t.get("state", "")) != "ruined" and Fog.is_visible(w, fid, t.pos) else null  # explicit attack on the bridge only (C2: a ruin is never a target)
 	if t == null or (t.kind != "unit" and t.kind != "building") or not w.is_enemy(fid, int(t.owner)):
 		return null
 	if not Fog.entity_visible(w, fid, t):
@@ -185,6 +185,8 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 							var vi := floori(cp.y) * mw + floori(cp.x)
 							if vi < 0 or vi >= nvis or vis[vi] != 1 or not w.entities.has(cid):
 								continue
+							if Fog.concealed(w, fid, c):
+								continue  # G2: infantry hidden in forest (A2)
 							best = c
 							best_d = d2
 							best_id = cid
@@ -233,6 +235,9 @@ static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 
 
 static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array) -> void:
+	if e.get("broken", false):
+		e.target = -1  # G2 (A2): broken units never acquire, chase or fire (morale.gd rallies them)
+		return
 	var tgt := int(e.target)
 	# fast paths (perf): a stationary shooter that is reloading at a live target has nothing to
 	# decide until its reload is nearly done; an untargeted idle/hold unit waits for its scan slot.
@@ -325,7 +330,8 @@ static func _attack_order(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, can_chase: bool) -> void:
 	e.target = int(t.id)
 	var d := dist_to(e.pos, t)
-	if d <= s.range:
+	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
+	if d <= s.range and Damage.line_clear(w, e.pos, t.pos):
 		if e.moving:
 			Movement.stop_path(e)
 		_fire(w, e, s, t)
@@ -371,6 +377,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> v
 		e.facing = snappedf((to - from).angle(), Q)
 	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to})
 	if e.kind == "unit":
+		e.last_fired_tick = w.tick  # G2 (A2): firing reveals forest-concealed infantry for 60 ticks
 		Supply.on_shot(w, e)
 	Damage.apply_hit(w, e, t, s, hit)  # G2 pipeline: armor facing, cover, components, suppression
 
@@ -384,6 +391,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	if t == null:
 		return "Target not visible."
 	if t.kind == "structure":
+		if String(t.get("state", "")) == "ruined":
+			return "The bridge is already destroyed."
 		return "" if Fog.is_visible(w, fid, t.pos) else "Target not visible."
 	if t.kind != "unit" and t.kind != "building":
 		return "That is not a valid attack target."

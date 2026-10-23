@@ -1,0 +1,36 @@
+{
+  "agent": "D2-view", "gen": 1,
+  "done": {
+    "1_inspector": "DONE+autoshot g2_inspector.png (MBT: ammo/fuel bars, MOB/WPN/SEN chips) and g2_infantry.png (PINNED, IN COVER tags). Group card (mission/phase/reason/progress/last 3 reports) DONE+autoshot g2_officer.png against REAL C2 ops (no staging needed).",
+    "2_overlays": "DONE+autoshot: pinned marker, suppression ticks, cover shield pip, disabled-vehicle smoke+fire loop (procedural over ArtCatalog 'smoke' frames; auto-uses 'disabled_smoke' if E2 adds it), retreat chevrons (g2_inspector.png); officer->target dashed line + flag + radius ring when selected (g2_officer.png).",
+    "3_topbar": "DONE+autoshot: Fuel/Ammo stock with LOW <100 (g2_inspector.png shows 'Ammo 80 LOW').",
+    "4_commands": "Buttons DONE+autoshot: Assign to officer (g2_assign.png), Mission panel secure/hold/attack/patrol + Risk cycle + Cancel (g2_officer.png), Patrol[Q] with waypoint preview (g2_patrol.png), Guard[G], Formation[F] (cycles via set_formation), Repair[R] + Refinery [N] on engineer card (g2_engineer.png, 5-col card), right-click smart repair hint (g2_engineer.png), bridge 'Shift+right-click to demolish' hint (g2_bridge_damaged.png). NOT click-tested with real input: mission target click, patrol Enter/right-click finish, guard click, shift+right-click attack on bridge, smart repair issue.",
+    "5_bridge": "DONE+autoshot: damaged overlay + HP bar (g2_bridge_damaged.png); ruined via REAL C2 bridges.on_destroyed path -> BridgeDestroyed -> terrain chunk rebake -> water + debris/pylon stubs (g2_bridge_ruined.png). BridgeRepaired rebake path coded, not shot.",
+    "6_alerts": "DONE+autoshot: ComponentDisabled 'Tank immobilized!', UnitBroken, SupplyShortage, RepairBlocked (g2_inspector.png, injected events); OfficerReport phase-change alerts (g2_officer.png, real events); BridgeDestroyed (g2_bridge_ruined.png). BridgeRepaired/OfficerKilled/UnitRallied coded, not shot.",
+    "7_objectives": "DONE+autoshot: 5th objective ticks from real OfficerReport (g2_officer.png shows [x])."
+  },
+  "remaining": [
+    "1. FPS: run `bash <scratch>/shot.sh`-style: \"$G\" --path . -- --autostart --spawn-test=200 --demo-script=combat --autoshot=.plan/shots/D2-view/g2_fps200.png --autoshot-delay=20 (wrap in .plan/hb.sh); grep 'FPS fps=' lines; compare with G1 41-59 (must not drop >10%). If slow, g2_overlay._draw_unit_status iterates all entities every frame (already culled to viewport + early has_status check).",
+    "2. Optional click-path test of order modes (mission target click / patrol finish / guard / shift+right-click bridge) e.g. via tools/ui_playtest.gd style synthetic events, or at least re-verify by reading g2_input.gd.",
+    "3. Full `bash tests/run.sh` inside hb.sh (3-6 min); quote final lines; test_art failures for new defs belong to E2.",
+    "4. Final report: CHANGE_REQUESTS none required; CONTRACT_DEVIATIONS: C2 keeps bridge kind 'structure' with state 'ruined' (contract says kind 'ruin'); D2 code handles both via g2_data.bridge_state()."
+  ],
+  "files_touched": [
+    "presentation/match_view.gd (G2 hooks: g2 input, g2_ground/g2_over layers, Bridge* rebake, smart_command(p, shift), demo dispatch)",
+    "presentation/view/terrain_layer.gd (per-chunk bake + rebake_cells)",
+    "presentation/view/g2_data.gd (new)", "presentation/view/g2_overlay.gd (new)", "presentation/view/g2_bridge_view.gd (new)",
+    "presentation/view/g2_input.gd (new)", "presentation/view/g2_demo.gd (new)",
+    "presentation/hud/hud.gd (fuel/ammo top bar, g2 inspector/commands/alerts hooks, refinery hotkey N, order texts)",
+    "presentation/hud/g2_inspector.gd (new)", "presentation/hud/g2_commands.gd (new)", "presentation/hud/g2_alerts.gd (new)",
+    "presentation/hud/objectives.gd (5th objective)"
+  ],
+  "demo_scripts": ["g2_inspector", "g2_infantry", "g2_officer", "g2_assign", "g2_patrol", "g2_engineer", "g2_bridge_damaged", "g2_bridge_ruined"],
+  "test_state": "Full tests/run.sh NOT run yet. Headless --autostart --quit-after 100 parse check run at handoff (see report). All 8 windowed autoshots ran with no SCRIPT ERROR in their logs.",
+  "gotchas": [
+    "Demos freeze the sim with mv.speed = 0.0 (not paused, avoids PAUSED banner) so A2/B2 ticks don't overwrite staged fields.",
+    "New files are referenced by preload only (no class_name) - no --import needed.",
+    "Autoshot helper: scratch shot.sh wraps hb.sh and filters the 'Loaded resource as image' warnings; use DELAY=5 for officer/bridge demos (they wait 1.2-1.5 s of sim).",
+    "hud._update_card_state overwrites tooltips each refresh; g2_commands.update_state runs right after that loop and re-applies its own reason/tooltip.",
+    "Officer/logistics_truck icons+sprites are magenta placeholders until E2 lands art."
+  ]
+}

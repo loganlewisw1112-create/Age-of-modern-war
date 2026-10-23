@@ -48,10 +48,11 @@ Movement multiplies speed by `move_mult`. Combat checks `can_fire` before firing
 - **New direct orders:** `patrol {unit_ids, points[]}` (loop, attack-moving between points), `guard {unit_ids, target_id}` (follow own unit/building, engage within sight), `set_formation {unit_ids, formation:"line"|"wedge"|"column"}` (stored per unit as `e.formation`; Movement.formation_slots reads it, and C2 owns that small edit).
 - **Bridge:** at match start the ORCH scaffold spawns one neutral `structure` entity `bridge_span` covering `map.bridge_cells` (hp from `buildings.json`).
   - It is attackable by an explicit `attack` from any side. It is not auto-targeted.
-  - At hp ≤0: bridge cells become `Terrain.WATER`, `map.bridge_state = "ruined"`, `Movement.on_terrain_changed(w)` runs, the entity becomes `kind:"ruin"`, and `BridgeDestroyed` is emitted. Units standing on the cells are nudged to the nearest free cell, or die if none exists within 3 tiles.
+  - At hp ≤0: bridge cells become `Terrain.WATER`, `map.bridge_state = "ruined"`, `Movement.on_terrain_changed(w)` runs, the entity KEEPS `kind:"structure"` with `state:"ruined"` and hp 0 (as built by C2), and `BridgeDestroyed` is emitted. Units standing on the cells are nudged to the nearest free cell, or die if none exists within 3 tiles.
   - Repair (B2's `repair` command on the ruin) restores the cells to BRIDGE and the entity to structure, then emits `BridgeRepaired`.
   - Paths re-route automatically. Pending paths through dead cells must be re-requested (QA-007).
-- C2 owns `sim/systems/ops.gd`, `sim/systems/orders.gd`, `sim/systems/bridges.gd`, the `formation_slots` edit in `movement.gd`, and `tests/test_ops.gd`.
+- UI/AI query helpers: `Ops.group_led_by(w, officer_id)` and `Ops.group_of(w, unit_id)` return the group dict or {}.
+- C2 owns `sim/systems/ops.gd`, `sim/systems/ops_missions.gd`, `sim/systems/orders.gd`, `sim/systems/bridges.gd`, the `formation_slots` edit in `movement.gd`, and `tests/test_ops.gd`.
 
 ## 5. Presentation (agent D2) and art (agent E2)
 - **D2 (view + HUD):** surface everything above.

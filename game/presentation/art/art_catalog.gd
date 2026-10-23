@@ -205,6 +205,25 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 	return {"texture": _ph(), "offset": Vector2(-8, -16), "flip_h": false}
 
 
+## Bridge-span overlay for ONE bridge cell (G2). state: "intact" | "damaged" | "ruined".
+## Draw at world_to_screen(cell + Vector2(0.5, 0.5)) + offset (anchor = cell centre, like decor()),
+## over the terrain bake and under entities. The outer cells of the |x - y| <= 1 road band carry the
+## railings (side from sign(cell.x - cell.y)); the variant is deterministic per cell.
+## Unknown state or missing art -> {texture: placeholder, offset: (-8, -16)}.
+static func bridge_overlay(state: String, cell: Vector2i) -> Dictionary:
+	load_all()
+	var b: Dictionary = _man.get("bridge", {})
+	var d := cell.x - cell.y
+	var side := "r" if d > 0 else ("l" if d < 0 else "c")
+	var st: Dictionary = b.get("states", {}).get(state, {})
+	var files: Array = st.get(side, [])
+	if files.is_empty():
+		return {"texture": _ph(), "offset": Vector2(-8, -16)}
+	var rel := String(files[_ihash(cell.x, cell.y, 41) % files.size()])
+	var piv: Array = b.get("pivot", [32, 40])
+	return {"texture": _texture(rel), "offset": Vector2(-float(piv[0]), -float(piv[1]))}
+
+
 static func _sheet_sprite(spec: Dictionary, col: Color, frame: int, row: int, tinted := true) -> Dictionary:
 	var mask := String(spec.get("mask", "")) if tinted else ""
 	var t := _frame(String(spec.file), mask, col, int(spec.fw), int(spec.fh), frame, row)
@@ -212,6 +231,8 @@ static func _sheet_sprite(spec: Dictionary, col: Color, frame: int, row: int, ti
 
 
 # ---------------------------------------------------------------- effects / UI
+## Effects: muzzle, explosion_small, explosion_large, smoke; G2: disabled_smoke (6-frame loop, pivot at
+## the base of the column), pinned (2-frame marker), cover (1-frame pip), retreat (2-frame chevron, +x).
 static func effect_frames(name: String) -> Array:
 	load_all()
 	if _fx.has(name):

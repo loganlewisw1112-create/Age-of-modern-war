@@ -22,6 +22,10 @@ const FogLayer = preload("res://presentation/view/fog_layer.gd")
 const FxLayer = preload("res://presentation/view/fx_layer.gd")
 const OverlayLayer = preload("res://presentation/view/overlay_layer.gd")
 const CameraRig = preload("res://presentation/view/camera_rig.gd")
+# G2 (agent D2): order modes, overlays, demo scripts
+const G2Input = preload("res://presentation/view/g2_input.gd")
+const G2Overlay = preload("res://presentation/view/g2_overlay.gd")
+const G2Demo = preload("res://presentation/view/g2_demo.gd")
 
 signal selection_changed
 signal world_events(events: Array)
@@ -47,6 +51,9 @@ var fog_layer: Node2D
 var fx_layer: Node2D
 var ring_layer: Node2D
 var overlay_layer: Node2D
+var g2 = G2Input.new()                   # G2 order modes (patrol/guard/repair/mission)
+var g2_ground: Node2D
+var g2_over: Node2D
 
 var _acc: float = 0.0
 var _alpha: float = 0.0
@@ -126,10 +133,19 @@ func _init_view() -> void:
 	overlay_layer.mode = "over"
 	overlay_layer.z_index = 5
 	add_child(overlay_layer)
+	g2.mv = self
+	g2_ground = G2Overlay.new()
+	g2_ground.mode = "ground"
+	g2_ground.z_index = 1
+	add_child(g2_ground)
+	g2_over = G2Overlay.new()
+	g2_over.mode = "over"
+	g2_over.z_index = 5
+	add_child(g2_over)
 	camera = CameraRig.new()
 	add_child(camera)
 
-	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer]:
+	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer, g2_ground, g2_over]:
 		layer.setup(self)
 	camera.setup(self)
 	_snapshot_positions()
@@ -179,6 +195,8 @@ func _process(delta: float) -> void:
 	fx_layer.tick(delta)
 	ring_layer.queue_redraw()
 	overlay_layer.queue_redraw()
+	g2_ground.queue_redraw()
+	g2_over.queue_redraw()
 	_t_view += Time.get_ticks_usec() - tv
 	if _fps_log:
 		_fps_frames += 1
@@ -237,6 +255,12 @@ func _on_step_events(evs: Array) -> void:
 				var t = world.entities.get(int(ev.get("target", -1)))
 				if t != null and int(t.owner) == player_fid:
 					last_alert_pos = t.pos
+			"BridgeDestroyed", "BridgeRepaired":
+				# G2: the terrain array changed under the bridge; re-bake those chunks
+				var cells: Array = ev.get("cells", world.map.get("bridge_cells", []))
+				terrain_layer.rebake_cells(cells)
+				if not cells.is_empty():
+					last_alert_pos = Vector2(cells[0].x, cells[0].y) + Vector2(0.5, 0.5)
 			"ConstructionCompleted", "ProductionCompleted":
 				var b = world.entities.get(int(ev.get("building_id", ev.get("id", -1))))
 				if b != null and int(b.owner) == player_fid:
@@ -526,6 +550,8 @@ func _on_left_press(mb: InputEventMouseButton) -> void:
 		attack_move_armed = false
 		_command_attack_move(p)
 		return
+	if g2.on_left(p, mb.shift_pressed):
+		return
 	if mb.double_click:
 		_select_same_def_on_screen(p, mb.shift_pressed)
 		_skip_click_release = true
@@ -615,11 +641,15 @@ func _on_right_press(mb: InputEventMouseButton) -> void:
 		attack_move_armed = false
 		return
 	var p := screen_to_world(_viewport_to_canvas(mb.position))
-	smart_command(p)
+	if g2.on_right(p, mb.shift_pressed):
+		return
+	smart_command(p, mb.shift_pressed)
 
 
 ## Smart right-click command at world point p for the current selection.
-func smart_command(p: Vector2) -> void:
+## G2: engineers repair own damaged targets / the ruined bridge; Shift+right-click on the bridge
+## with combat units demolishes it (plain right-click there only moves, with a hint).
+func smart_command(p: Vector2, shift: bool = false) -> void:
 	var units := _own_units_in_selection()
 	if units.is_empty():
 		# own production buildings selected: set rally
@@ -631,6 +661,8 @@ func smart_command(p: Vector2) -> void:
 		return
 	var t = entity_at(p, true)
 	var engineers := _own_engineers_in_selection()
+	if g2.smart(p, shift, t, units, engineers):
+		return
 	if t != null:
 		if t.kind in ["unit", "building"] and world.is_enemy(player_fid, int(t.owner)):
 			issue({"type": "attack", "unit_ids": units, "target_id": int(t.id)})
@@ -683,6 +715,8 @@ func _on_key(k: InputEventKey) -> bool:
 			control_groups[g] = _own_units_in_selection() if has_units else selection.duplicate()
 		else:
 			_recall_group(g, k.shift_pressed)
+		return true
+	if g2.on_key(kc):
 		return true
 	match kc:
 		KEY_ESCAPE:
@@ -874,7 +908,10 @@ func _run_demo(demo: String) -> void:
 					center_camera_on(c / n)
 				await get_tree().create_timer(0.5).timeout
 		_:
-			pass
+			if demo.begins_with("g2_"):
+				var d = G2Demo.new()
+				add_child(d)
+				d.run(self, demo)
 
 
 func _engineer_ids() -> Array:

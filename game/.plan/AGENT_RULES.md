@@ -38,3 +38,12 @@ CHANGE_REQUESTS: <exact edits you need in orchestrator-owned files>
 KNOWN_GAPS: <what is not done or not verified>
 ```
 Never claim anything you did not run. "Not verified" is an acceptable answer, but an unverified claim is not. Do not add any GENESIS/postflight offer to your report.
+
+## G2 additions (binding)
+- Read `docs/CONTRACTS_G2.md` as well as `docs/CONTRACTS.md`.
+- **Never write more than ~250 lines in one tool call.** Split big files into modules, and post a status BEFORE every large write. In G1, an agent that stayed silent for 20 minutes writing one giant file was stopped with nothing saved.
+- Post a status every 5 tool calls OR every 4 minutes, whichever comes first. Wrap every godot run expected to take more than 60 s in `.plan/hb.sh`.
+- Report `tokens_used_est` as about 60000 + 5000 x calls_used (self-estimates ran high in G1).
+- `tests/run.sh` takes 3-6 minutes now. While iterating, use `--only=<file>`, and run the full suite once at the end (in hb.sh).
+- `make_world()` in tests gives an inert side 1. Use `make_world({}, true)` for a live AI.
+- Godot GDScript gotchas: a bare `randf()` inside a class resolves to the GLOBAL RNG, so use `w.rng`. `var x := dict.field` cannot infer a type. Never use var_to_str for state.

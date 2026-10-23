@@ -1,7 +1,7 @@
 extends SceneTree
 ## Procedural pixel-art generator (agent C-art). Deterministic: re-running reproduces byte-identical files.
 ##   godot --headless --path . -s tools/gen_art.gd                 # write res://assets/generated/
-##   godot --headless --path . -s tools/gen_art.gd -- --contact     # also compose .plan/shots/C-art-2/contact.png
+##   godot --headless --path . -s tools/gen_art.gd -- --contact     # also compose .plan/shots/E2-art/contact.png
 ##   godot --headless --path . -s tools/gen_art.gd -- --only-contact
 ## Modules live in tools/art/; each exposes static build(out) adding to out.images / out.manifest.
 
@@ -12,7 +12,9 @@ const MODULES := [
 	preload("res://tools/art/vehicles.gd"),
 	preload("res://tools/art/buildings.gd"),
 	preload("res://tools/art/props.gd"),
-	preload("res://tools/art/fx_ui.gd"),   # last: icons are made from earlier sprites
+	preload("res://tools/art/bridge.gd"),
+	preload("res://tools/art/fx_ui.gd"),   # icons are made from earlier sprites
+	preload("res://tools/art/fx_g2.gd"),   # G2 effects/markers/command icons (extends fx_ui's maps)
 ]
 
 
@@ -25,7 +27,7 @@ func _init() -> void:
 		print("GEN_ART wrote %d files in %d ms" % [n, Time.get_ticks_msec() - t0])
 	if args.has("--contact") or args.has("--only-contact"):
 		var C = load("res://tools/art/contact.gd")
-		var path := ProjectSettings.globalize_path("res://.plan/shots/C-art-2/contact.png")
+		var path := ProjectSettings.globalize_path("res://.plan/shots/E2-art/contact.png")
 		C.compose(path)
 		print("GEN_ART contact sheet: " + path)
 	quit(0)

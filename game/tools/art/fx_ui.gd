@@ -4,9 +4,10 @@ extends RefCounted
 const P = preload("res://tools/art/pix.gd")
 
 const ICON_TEAM := Color(0.36, 0.52, 0.74)
-const UNIT_ICONS := ["engineer", "rifleman", "at_gunner", "recon", "ifv", "mbt"]
+const UNIT_ICONS := ["engineer", "rifleman", "at_gunner", "recon", "ifv", "mbt", "officer", "logistics_truck"]
+const VEHICLES := ["ifv", "mbt", "logistics_truck"]
 const SQUADS := {"rifle_squad": ["rifleman", 4], "at_team": ["at_gunner", 2]}
-const BUILDINGS := ["hq", "generator", "depot", "barracks", "motor_pool", "guard_tower"]
+const BUILDINGS := ["hq", "generator", "depot", "barracks", "motor_pool", "guard_tower", "refinery"]
 
 
 static func build(out: Dictionary) -> void:
@@ -124,10 +125,10 @@ static func _icon_unit(out: Dictionary, id: String, def: String, count: int) -> 
 	var msk: Image = out.images["units/%s_mask.png" % def]
 	var tinted := tint(src, msk, ICON_TEAM)
 	var im := _panel()
-	var fw := src.get_width() / (4 if def not in ["ifv", "mbt"] else 3)
+	var fw := src.get_width() / (4 if def not in VEHICLES else 3)
 	var fh := src.get_height() / 8
 	var frame := tinted.get_region(Rect2i(0, 0, fw, fh))
-	if def in ["ifv", "mbt"]:
+	if def in VEHICLES:
 		_fit(im, frame, 28)
 	else:
 		var crop := frame.get_region(Rect2i(4, 3, 16, 16))
