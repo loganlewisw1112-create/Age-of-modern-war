@@ -61,6 +61,12 @@ func _ready() -> void:
 		show_menu()
 	_setup_debug()
 	_setup_autoshot()
+	if _args.has("ui-playtest"):
+		# UI-01 playtest: synthetic input events through the real viewport (tools/ui_playtest.gd).
+		var pt = load("res://tools/ui_playtest.gd").new()
+		pt.main = self
+		pt.shot_dir = String(_args["ui-playtest"])
+		add_child(pt)
 
 
 func _parse_args() -> void:

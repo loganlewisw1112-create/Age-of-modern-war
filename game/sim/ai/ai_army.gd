@@ -141,6 +141,10 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		_move_all(w, fid, st, army, Vector2(st.rally), "rally")
 		return
 	# build_up / regroup: launch at the threshold, or early to exploit a won fight (momentum)
+	# Difficulty grace period: no offensive before first_attack_tick (defence still runs above).
+	# Found by the UI playtest: without it the AI razed a new player's HQ at 02:57.
+	if w.tick < int(U.diff(w).get("first_attack_tick", 0)):
+		return
 	var exploit := float(st.momentum) >= 4.0 and army_pop * 2 >= thr
 	if (army_pop >= thr or exploit) and not army.is_empty():
 		if exploit and army_pop < thr:

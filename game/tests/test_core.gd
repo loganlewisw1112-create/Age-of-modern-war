@@ -92,3 +92,11 @@ func test_unique_entity_ids() -> void:
 		check(not seen.has(id), "duplicate id %d" % id)
 		seen[id] = true
 		check_eq(int(w.entities[id].id), int(id), "entity id field matches key")
+
+
+func test_no_stale_events_after_match_end() -> void:
+	var w := make_world()
+	w.match_state.ended = true
+	w.events = [{"type": "MatchEnded", "tick": w.tick}]
+	w.step()
+	check_eq(w.events.size(), 0, "events cleared once the match has ended")

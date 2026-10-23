@@ -177,6 +177,7 @@ func _place_start_package(fid: int) -> void:
 # ================================================================ tick
 func step() -> void:
 	if match_state.ended:
+		events = []  # never re-broadcast the final tick's events after the match ends
 		return
 	tick += 1
 	events = []

@@ -2,7 +2,8 @@
   "_meta": {
     "schema_version": 1,
     "status": "PROVISIONAL match rules and faction fixtures for the G0+G1 slice.",
-    "rebalance_2026_10_23": "Credits were the only binding constraint (stipend-only income; G-ai probe found materials piling up 3000+ and 30-min sieges). Shifted unit/building costs toward gathered salvage/ore and raised the stipend 3->6 cr/s so gathering drives the economy. Still PROVISIONAL fixtures."
+    "rebalance_2026_10_23": "Credits were the only binding constraint (stipend-only income; G-ai probe found materials piling up 3000+ and 30-min sieges). Shifted unit/building costs toward gathered salvage/ore and raised the stipend 3->6 cr/s so gathering drives the economy. Still PROVISIONAL fixtures.",
+    "first_attack_tick": "Earliest tick an AI may launch an offensive (20 ticks/s): easy 10 min, normal 7 min, hard 5 min. PROVISIONAL. Added 2026-10-23 after the UI playtest showed a 3-minute HQ kill on a new player."
   },
   "factions": {
     "human_a": {
@@ -52,17 +53,20 @@
     "easy": {
       "think_interval_ticks": 40,
       "attack_army_pop": 16,
-      "max_engineers": 6
+      "max_engineers": 6,
+      "first_attack_tick": 12000
     },
     "normal": {
       "think_interval_ticks": 20,
       "attack_army_pop": 12,
-      "max_engineers": 8
+      "max_engineers": 8,
+      "first_attack_tick": 8400
     },
     "hard": {
       "think_interval_ticks": 10,
       "attack_army_pop": 10,
-      "max_engineers": 10
+      "max_engineers": 10,
+      "first_attack_tick": 6000
     }
   },
   "team_colors": [
