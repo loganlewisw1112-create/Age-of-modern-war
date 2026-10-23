@@ -1,37 +1,74 @@
 {
   "_meta": {
     "schema_version": 1,
-    "status": "PROVISIONAL match rules and faction fixtures for the G0+G1 slice."
+    "status": "PROVISIONAL match rules and faction fixtures for the G0+G1 slice.",
+    "rebalance_2026_10_23": "Credits were the only binding constraint (stipend-only income; G-ai probe found materials piling up 3000+ and 30-min sieges). Shifted unit/building costs toward gathered salvage/ore and raised the stipend 3->6 cr/s so gathering drives the economy. Still PROVISIONAL fixtures."
   },
   "factions": {
     "human_a": {
-      "name": "Modern Military Power", "archetype": "Human A", "roster": "human_a",
+      "name": "Modern Military Power",
+      "archetype": "Human A",
+      "roster": "human_a",
       "note": "Player faction for the slice."
     },
     "human_b": {
-      "name": "Industrial Power (test economy)", "archetype": "Human B", "roster": "human_a",
+      "name": "Industrial Power (test economy)",
+      "archetype": "Human B",
+      "roster": "human_a",
       "note": "G1 micro-slice AI uses the Human A roster as a test economy (First Playable spec section 10). A distinct Human B roster is G3 scope."
     }
   },
   "start_package": {
-    "buildings": ["hq"],
-    "units": ["engineer", "engineer", "engineer", "engineer", "engineer", "recon"],
-    "stock": {"salvage": 300, "ore": 100}
+    "buildings": [
+      "hq"
+    ],
+    "units": [
+      "engineer",
+      "engineer",
+      "engineer",
+      "engineer",
+      "engineer",
+      "recon"
+    ],
+    "stock": {
+      "salvage": 300,
+      "ore": 100
+    }
   },
   "defaults": {
-    "starting_credits": 5000,
+    "starting_credits": 2500,
     "stage": 8,
     "victory": "hq_elimination",
     "ai_difficulty": "normal",
     "seed": 1337
   },
-  "hq_stipend_credits_per_second": 3,
+  "hq_stipend_credits_per_second": 6,
   "pop_cap_max": 120,
-  "victory_types": ["hq_elimination", "endless"],
+  "victory_types": [
+    "hq_elimination",
+    "endless"
+  ],
   "ai_difficulties": {
-    "easy":   {"think_interval_ticks": 40, "attack_army_pop": 16, "max_engineers": 6},
-    "normal": {"think_interval_ticks": 20, "attack_army_pop": 12, "max_engineers": 8},
-    "hard":   {"think_interval_ticks": 10, "attack_army_pop": 10, "max_engineers": 10}
+    "easy": {
+      "think_interval_ticks": 40,
+      "attack_army_pop": 16,
+      "max_engineers": 6
+    },
+    "normal": {
+      "think_interval_ticks": 20,
+      "attack_army_pop": 12,
+      "max_engineers": 8
+    },
+    "hard": {
+      "think_interval_ticks": 10,
+      "attack_army_pop": 10,
+      "max_engineers": 10
+    }
   },
-  "team_colors": ["#4f7db0", "#b5583a", "#6e9a4a", "#b59a3a"]
+  "team_colors": [
+    "#4f7db0",
+    "#b5583a",
+    "#6e9a4a",
+    "#b59a3a"
+  ]
 }

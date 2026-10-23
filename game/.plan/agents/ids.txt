@@ -10,3 +10,4 @@ guard monitor: b8gbrwgyj
 C-art STOPPED (2nd STALE, 0 files written). successor C-art-2 opus 500k/130 - same brief + modular-write rule
 G-ai opus 600k/150 planning judgement, fairness (dispatched early while B finishes perf)
 task ids: C-art-2=adcc26ccf404d6814 G-ai=a08f3b4dfcc9442be
+G-ai-2 opus 600k/150 successor of G-ai (handoff G-ai-1.json) + content rebalance

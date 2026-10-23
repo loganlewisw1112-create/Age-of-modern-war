@@ -77,7 +77,8 @@ func test_power_pop_and_stipend() -> void:
 	check_eq(int(f.pop_cap), 20, "HQ pop cap")
 	var c0 := int(f.credits)
 	w.run_ticks(40)
-	check_eq(int(f.credits), c0 + 6, "HQ stipend 3/s for 2 seconds")
+	var stip := int(Content.rules().hq_stipend_credits_per_second)
+	check_eq(int(f.credits), c0 + stip * 2, "HQ stipend per second for 2 seconds")
 	# unfinished buildings contribute nothing
 	var o := _site(w, 0, "generator")
 	w.spawn_building("generator", 0, o, false)
@@ -94,7 +95,8 @@ func test_econ01_double_spend_impossible() -> void:
 	var w := make_world()
 	var f: Dictionary = w.factions[0]
 	var hq := _hq(w)
-	check(w.spend(0, {"credits": int(f.credits) - 150}, "test_setup"), "setup spend")
+	var eng_cr := int(Content.production("engineer").cost.credits)
+	check(w.spend(0, {"credits": int(f.credits) - eng_cr}, "test_setup"), "setup spend")
 	for i in 2:
 		var r := w.submit({"type": "queue_unit", "issuer": 0, "building_id": hq.id, "item": "engineer"})
 		check(r.ok, "submit")
@@ -290,8 +292,10 @@ func test_cancel_unit_exact_refund() -> void:
 	do_cmd(w, 0, {"type": "queue_unit", "building_id": bid, "item": "rifle_squad"})
 	do_cmd(w, 0, {"type": "queue_unit", "building_id": bid, "item": "at_team"})
 	var mid := _balance(f)
-	check_eq(int(before.credits) - int(mid.credits), 850, "both items paid at queue time")
-	check_eq(int(before.salvage) - int(mid.salvage), 140, "salvage paid at queue time")
+	var c_rs: Dictionary = Content.production("rifle_squad").cost
+	var c_at: Dictionary = Content.production("at_team").cost
+	check_eq(int(before.credits) - int(mid.credits), int(c_rs.credits) + int(c_at.credits), "both items paid at queue time")
+	check_eq(int(before.salvage) - int(mid.salvage), int(c_rs.salvage) + int(c_at.salvage), "salvage paid at queue time")
 	var evs := do_cmd(w, 0, {"type": "cancel_unit", "building_id": bid, "index": 1})
 	check_eq(rejected_reason(evs), "", "cancel accepted")
 	evs = do_cmd(w, 0, {"type": "cancel_unit", "building_id": bid, "index": 0})
@@ -342,8 +346,9 @@ func test_cancel_building_refund_rule() -> void:
 	var before := _balance(f)
 	do_cmd(w, 0, {"type": "build", "unit_ids": eng, "def": "generator", "origin": site})
 	var after := _balance(f)
-	check_eq(int(before.credits) - int(after.credits), 400, "full cost spent at placement")
-	check_eq(int(before.salvage) - int(after.salvage), 100, "salvage spent at placement")
+	var c_gen: Dictionary = Content.building("generator").cost
+	check_eq(int(before.credits) - int(after.credits), int(c_gen.credits), "full cost spent at placement")
+	check_eq(int(before.salvage) - int(after.salvage), int(c_gen.salvage), "salvage spent at placement")
 	var gen: Dictionary = w.buildings_of(0, "generator")[0]
 	var gid := int(gen.id)
 	var evs := do_cmd(w, 0, {"type": "cancel_building", "building_id": gid})
@@ -364,8 +369,8 @@ func test_cancel_building_refund_rule() -> void:
 	var mid := _balance(f)
 	do_cmd(w, 0, {"type": "cancel_building", "building_id": int(gen2.id)})
 	var fin := _balance(f)
-	check_eq(int(fin.credits) - int(mid.credits), 200, "progress >= 5% refunds 50% credits")
-	check_eq(int(fin.salvage) - int(mid.salvage), 50, "progress >= 5% refunds 50% salvage")
+	check_eq(int(fin.credits) - int(mid.credits), int(c_gen.credits) / 2, "progress >= 5% refunds 50% credits")
+	check_eq(int(fin.salvage) - int(mid.salvage), int(c_gen.salvage) / 2, "progress >= 5% refunds 50% salvage")
 	# a completed building cannot be cancelled
 	var done := _build_ready(w, 0, "depot")
 	evs = do_cmd(w, 0, {"type": "cancel_building", "building_id": done})

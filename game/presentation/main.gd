@@ -4,6 +4,7 @@ extends Node
 ##
 ## Command line (after `--`):
 ##   --autostart [--autostart-seed=N]    skip the menu and start the default match
+##   --player-ai                         (with --autostart) the AI plays side 0 too (demo)
 ##   --autoshot=ABS.png --autoshot-delay=4   save the viewport after N seconds, then quit (KEEP)
 ##   --debug-end=win|lose                force the end screen (debug)
 ##   --debug-select=engineers|barracks|hq   select entities / add a barracks (debug)
@@ -50,7 +51,12 @@ func _ready() -> void:
 		var cfg := SimWorld.default_config()
 		if _args.has("autostart-seed"):
 			cfg.seed = int(_args["autostart-seed"])
+		if _args.has("player-ai"):
+			# Debug/demo: the AI also plays the player's side (rendered AI-vs-AI match).
+			cfg.sides[0].ai = true
 		start_match(cfg)
+		if _args.has("speed") and match_view != null:
+			match_view.speed = clampf(float(_args["speed"]), 0.25, 12.0)  # demo/debug only
 	else:
 		show_menu()
 	_setup_debug()

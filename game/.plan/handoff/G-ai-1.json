@@ -1,0 +1,35 @@
+{
+  "agent": "G-ai", "gen": 1,
+  "done": [
+    "sim/ai/ai_controller.gd: new_state/think (signatures kept). think scans own-command events every tick (U.scan_events), thinks every think_interval_ticks, builds an own-only ctx, then Mil.update_intel, Econ.manage_construction/gather/engineers, Mil.manage_scout/production, Army.manage_army, _scores. All state in w.ai_state[fid]; inspector fields objective,strategy_scores,last_command,last_result,next_think_tick,known_contacts,log(20) present.",
+    "sim/ai/ai_util.gd: fairness convention doc + helpers (submit with per-key backoff after rejection, scan_events, own(), known_resources (explored cells only), enemy_spawn from map.spawns, personal() hash without rng). Every line touching w.entities / w.events carries an 'AI-FAIR:' tag.",
+    "sim/ai/ai_econ.gd: build order generator>barracks>depot(planned cap)>generator if power short>motor_pool>guard_tower; ring placement search with _quick_ok prefilter + Construction.placement_error; 2 crews per site; ore/salvage gather balance; engineers only for replacement (<5) or material shortage.",
+    "sim/ai/ai_mil.gd: intel (visible_enemies + memory only), attack_target (memory HQ > memory bldg > public spawn), patrol points from ford/bridge cells, scout to enemy spawn then patrol, production mix by category shares (adapts to enemy vehicles / tower seen -> MBT), rally set once per building, recon requeue <=2.",
+    "sim/ai/ai_army.gd: build_up -> attack -> regroup(<40% of launch, unless finishing/locally winning) | defend (enemy units within 14 of HQ or hit within 16 in last 60 ticks; pull home unless committed). Priority: units near army (attack_move) > guard_tower > production > other > HQ (attack cmd on visible target only). Momentum counter-attack, failed-wave escalation (+2/wave cap +4), route personality (seed+fid)%3 = bridge / ford A / ford B via-point.",
+    "sim/ai/tools/ai_probe.gd: diagnostic AI-vs-AI probe (--seed --ticks --every) printing per-side funnel lines and AI logs."
+  ],
+  "probe_results_latest_v3": {
+    "seed1": "NO WINNER at 36000 (stall)",
+    "seed2": "winner=1 at tick 5891",
+    "seed3": "winner=0 at tick 32623",
+    "earlier_v1": "seed1 winner0@13561, seed2 none, seed3 winner0@28911 (before escalation/route changes)"
+  },
+  "stall_funnel_diagnosis": "Economy, production and attack launch all work (both sides launch waves, focus guard_tower/barracks/hq). Stall step = siege: credits only come from the 3 cr/s HQ stipend (~180/min, ~10.4k total per 30 min), so a 14-pop wave costs ~8 min to rebuild; equal waves die to guard tower (HMG 17.5 dps vs infantry) + home army and retreat at <40%. Seed 1 v3: f1 wave 1 was pulled home at t=2761 by the defend rule while en route (the other side's wave hit its base) -> base race never resolves. Salvage/ore pile up unused (3000+), credits are the only binding constraint.",
+  "remaining": [
+    "1. Tuning (sim/ai only) to make seed 1 decisive without breaking 2/3. Candidates: (a) when attacking and the threat at home is smaller than our group, do NOT pull the army home (only pull if threat pop >= ~50% of group pop or a building is under fire and group is far); (b) drop failed-wave escalation (it delays waves); (c) keep reinforcing the attack group continuously instead of waiting for half-threshold waves while committed. Re-run: bash .plan/hb.sh G-ai-2 <calls> <est> probe -- bash -c 'for s in 1 2 3; do $G --headless --path . -s sim/ai/tools/ai_probe.gd -- --seed=$s --ticks=36000 --every=2400 > $S/p$s.txt 2>&1 & done; wait' (~90 s for all 3 in parallel; ~2.5 ms/tick).",
+    "2. Write tests/test_ai.gd (not started): AI-01 both sides AI, seeds 2 seeds, step up to 9000 ticks (break early when both satisfied): barracks built (buildings_of(fid,'barracks') built), squad trained (ProductionCompleted event with item rifle_squad/at_team and building owned by fid), attack_move toward enemy half (scan w.pending after each step for issuer==fid type attack_move with target on the far side of map centre; ai_state.amoves_enemy_half also counts it). AI-02: in the same loop, for every pending 'attack' cmd by an AI issuer (dedupe by id) assert target_id is in w.visible_enemies(issuer) at that moment; plus static check: read res://sim/ai/*.gd (and tools/), skip comment-only lines, fail on regexes \\bfactions\\b(?!\\[fid\\]), \\bfog\\b(?!\\[fid\\]), \\bmemory\\b(?!\\[fid\\]), 1\\s*-\\s*fid, shooter, get_e\\(, and any line containing 'entities' or 'w.events' without 'AI-FAIR'. CHECK: comments in ai_util.gd header mention 'factions / fog / memory' and 'shooter' -> they are comment lines (start with ##) so skipped; the inline code comment in ai_mil.gd 'tower_seen' line is fine. Determinism: two AI-vs-AI runs equal state_hash at 6000 ticks (test_determinism already has AI-vs-AI save/continue + same-seed tests over its TICKS).",
+    "3. Soak: for s in 1 2 3: $G --headless --path . -s tools/soak.gd -- --seed=$s --max-ticks=36000 --difficulty=normal ; paste the 'SOAK RESULT' lines (run 3 in parallel inside hb.sh).",
+    "4. bash tests/run.sh --only=test_ai then full bash tests/run.sh (both via hb.sh; full run is long because test_determinism now runs the real AI).",
+    "5. Final report per AGENT_RULES.md; CHANGE_REQUESTS candidates: content balance note that credits come only from the stipend (consider a credits trickle from salvage delivery or higher stipend) - suggestion only."
+  ],
+  "files_touched": ["sim/ai/ai_controller.gd", "sim/ai/ai_util.gd", "sim/ai/ai_econ.gd", "sim/ai/ai_mil.gd", "sim/ai/ai_army.gd", "sim/ai/tools/ai_probe.gd"],
+  "test_state": "NOT RUN: tests/test_ai.gd does not exist yet; tests/run.sh not run with the new AI (test_determinism AI-vs-AI and test_save ai_state round-trip will now exercise it). The probe runs for 36000 ticks on 3 seeds with zero SCRIPT ERRORs.",
+  "gotchas": [
+    "GDScript: 'var x := a.size() < 5 and ...' on Variant fails to infer -> use explicit ': bool'.",
+    "f.pop_cap lags one tick after ConstructionCompleted (Economy runs before Construction) -> econ uses ctx.cap_planned (incl. unfinished) to avoid double depots.",
+    "Commands apply next tick; CommandRejected arrives in w.events during the next step before think -> scan_events runs every tick before the throttle.",
+    "Do not use w.rng in the AI (perturbs combat); personality uses hash([seed,fid,salt]).",
+    "Each godot run ~2.5 ms/tick AI-vs-AI; a 36000-tick probe takes 80-95 s; run seeds in parallel.",
+    "Scratch outputs live in C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/db91159d-f488-44a1-9b4e-0e72e30b8f1b/scratchpad/p{1,2,3}.txt (latest v3 probe logs)."
+  ]
+}
