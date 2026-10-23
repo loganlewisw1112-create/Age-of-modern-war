@@ -157,8 +157,12 @@ static func manage_mission(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionar
 		U.log_line(st, w, "officer lost; taking direct control of the wave")
 		return "push"
 	var phase := String(g.phase)
+	# Only a withdrawal/failure that happened AFTER this wave was assigned counts: the group keeps
+	# its last phase/result across waves, and reading a stale "withdraw" made seed 5 loop
+	# (89 instant withdrawals). ORCH fix 2026-10-23.
+	var fresh := int(g.get("phase_tick", 0)) > int(g2.get("stage_tick", 0))
 	var failed := (g.mission as Dictionary).is_empty() and String(g.result) == "failed"
-	if phase == "withdraw" or (stage != "assign" and failed):
+	if fresh and (phase == "withdraw" or (stage != "assign" and failed)):
 		g2.stage = ""
 		g2.withdrawals = int(g2.withdrawals) + 1
 		U.log_line(st, w, "officer reports withdrawal (%s); regrouping" % String(g.reason))

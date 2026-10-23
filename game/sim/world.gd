@@ -203,6 +203,7 @@ func step() -> void:
 	_apply_due_commands()
 	for sys in SYSTEM_ORDER:
 		sys.tick(self)
+	Ops.prune(self)  # end-of-tick: groups never reference units that died this tick
 	for fid in ai_state:
 		if factions[fid].alive:
 			AiController.think(self, fid)
@@ -467,6 +468,33 @@ func _spawn_wreck(e: Dictionary) -> void:
 	entities[id] = {"id": id, "kind": "wreck", "def": e.def, "owner": NEUTRAL, "pos": e.pos,
 		"hp": 1.0, "max_hp": 1.0, "from_owner": e.owner, "size": int(e.get("size", 1)),
 		"facing": float(e.get("facing", 0.0)), "tick": tick}
+	_spawn_scrap(e)
+
+
+## G2: wrecks leave a harvestable salvage pile (rules.wreck_salvage) so long games don't starve.
+## Ordinary neutral `resource` entity: gathering, fog-limited AI knowledge and rendering all apply.
+func _spawn_scrap(e: Dictionary) -> void:
+	var ws: Dictionary = Content.rules().get("wreck_salvage", {})
+	if ws.is_empty():
+		return
+	var amount := 0
+	if e.kind == "unit":
+		amount = int(floor(float(Content.production(e.def).get("cost", {}).get("salvage", 0)) * float(ws.get("vehicle_frac", 0.0))))
+	elif e.kind == "building":
+		if not bool(e.get("built", false)):
+			return  # foundations/cancelled sites leave no scrap (no refund+scrap exploit)
+		var d := Content.building(e.def)
+		if bool(d.get("is_hq", false)):
+			amount = int(ws.get("hq_salvage", 0))
+		else:
+			amount = int(floor(float(d.get("cost", {}).get("salvage", 0)) * float(ws.get("building_frac", 0.0))))
+	if amount <= 0:
+		return
+	var p: Vector2 = e.pos
+	var c := cell_of(p + Vector2(0.7, 0.4))
+	if not in_bounds(c) or not Terrain.passable(terrain_at(c), "foot"):
+		c = cell_of(p)
+	spawn_resource("salvage", amount, Vector2(c) + Vector2(0.5, 0.5))
 
 
 func _new_id() -> int:

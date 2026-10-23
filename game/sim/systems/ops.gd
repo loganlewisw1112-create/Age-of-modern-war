@@ -199,6 +199,20 @@ static func report(w: SimWorld, g: Dictionary) -> void:
 static func tick(w: SimWorld) -> void:
 	if not w.sys_state.has("ops"):
 		return
+	prune(w)
+	var st: Dictionary = w.sys_state.ops
+	for gid in st.groups:
+		var g: Dictionary = st.groups[gid]
+		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0:
+			Missions.evaluate(w, g)
+
+
+## Drop dead members (counting mission losses) and dissolve groups whose officer died.
+## Runs in tick() AND at the end of every world step (ORCH), so no group ever outlives its
+## officer past the tick it died in (found by the G2 soak invariant, seed 4).
+static func prune(w: SimWorld) -> void:
+	if not w.sys_state.has("ops"):
+		return
 	var st: Dictionary = w.sys_state.ops
 	var dead := []
 	for gid in st.groups:
@@ -216,8 +230,6 @@ static func tick(w: SimWorld) -> void:
 				g.losses = int(g.losses) + 1
 		if alive.size() != (g.members as Array).size():
 			g.members = alive
-		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0:
-			Missions.evaluate(w, g)
 	for gid in dead:
 		_dissolve(w, st, gid)
 

@@ -118,7 +118,9 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 	var resources := []
 	var taken := {}
 	var base: Vector2i = SPAWNS[0]
-	var picks := [["salvage", 1200], ["salvage", 1200], ["salvage", 1200], ["ore", 2500], ["ore", 2500]]
+	# 2026-10-23 (G2): salvage 1200->2000, ore 2500->3000; G2 sinks (repair, trucks, officers)
+	# starved long games (soak seeds 1/4 stalled with every pile mined out). PROVISIONAL.
+	var picks := [["salvage", 2000], ["salvage", 2000], ["salvage", 2000], ["ore", 3000], ["ore", 3000]]
 	var k := 0
 	var guard := 0
 	while k < picks.size() and guard < 400:
@@ -133,7 +135,7 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 		_add_resource(resources, taken, t, picks[k][0], picks[k][1], c)
 		k += 1
 	# contested: near the side-0 ford (u = -40 is x - y = -40 ... use the one in our half)
-	var contested := [["ore", 2000], ["salvage", 1000]]
+	var contested := [["ore", 2000], ["salvage", 2000]]
 	k = 0
 	guard = 0
 	var ford_anchor := Vector2i(28, 68) if (28 + 68) < W - 1 else Vector2i(27, 67)
