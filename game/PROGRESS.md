@@ -18,6 +18,39 @@ Stop-if / park-if:        G1 tests can't be kept green, or sim drops below ~128 
 ```
 Contracts: `docs/CONTRACTS_G2.md`. Scaffold commit `d878ba1`.
 
+## G2 Done-when evidence (2026-10-23)
+1. **Tests:** `bash tests/run.sh` gives `RESULT pass=100 fail=0 files=12` / `TESTS OK`, run by ORCH after the last sim change.
+   - New: test_damage (10), test_supply (10), test_ops (10), test_g2_scenarios (7: MIL-02/QA-008, QA-007 + supply,
+     officer resupply, morale + officer death, 3000-tick conservation brawl, save@1500, determinism), plus test_ai G2 (+2).
+2. **AI-vs-AI soak** (normal, `tools/soak.gd`, final code): seeds 1-3 end in HQ elimination.
+   - seed1 winner=1 @28749, seed2 winner=1 @23426, seed3 winner=0 @15646.
+   - 8-seed sweep: 7 decisive, 4/3 side split. **Seed 4 reaches max_ticks (stalemate), a known gap.**
+   - 0 INVARIANT FAIL (incl. G2 invariants).
+   - Probe logs show the AI training officers and trucks, resupplying (pull/refill counts), repairing and flanking.
+3. **UI playtest:** `tools/ui_playtest.gd` now drives input through `Input.parse_input_event`.
+   - Covers the G1 flow plus G2: train officer, box-select squad + officer, Assign button, Secure point button + map click, mission in progress, 3 reports.
+   - Result: `PLAYTEST RESULT pass=26 fail=0` from source, and twice from the packaged build
+     (`build/RTS_Age_of_Modern_War_G2/`, zip `build/RTS_Age_of_Modern_War_G2_2026-10-23.zip`).
+   - Shot: `.plan/shots/orch/ui/ui_07_officer_mission.png`.
+4. **Perf:** `perf/PERF_REPORT_G2_2026-10-23.md` (quiet machine).
+   - G2 battle sim: 1.5 / 4.6 / 12.0 / 29.1 ms avg at 64 / 128 / 256 / 512; p95 at 512 is 42 ms < 50.
+   - **Sim cap ≥512, up from ~256.**
+   - Window fps: 53-60 / 45-53 / 21-24 at ~105 / ~210 / ~440 units.
+
+Integration fixes found by verification:
+- groups outlived dead officers for one tick;
+- the AI looped on a stale withdraw (89x);
+- long games starved of salvage, so wrecks now drop scrap and map salvage was raised;
+- cancelled foundations dropped scrap;
+- synthetic-input harness (box-drag) rebuilt on Input.parse_input_event.
+
+Known gaps:
+- the hard-AI defensive bridge demolition is not built;
+- seed 4 stalemate;
+- 1000+ units are unmeasured;
+- fps at ~440 units is choppy (the sim is on the main thread);
+- the owner has not hand-played G2 yet.
+
 ## Previous goal (G1, DONE 2026-10-23)
 
 ```

@@ -1,4 +1,4 @@
-# RTS: Age of Modern War: first playable slice (G0+G1)
+# RTS: Age of Modern War: playable slice (G0+G1+G2)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
@@ -48,10 +48,24 @@ Useful flags (append to the launcher):
 ```bash
 bash game/tests/run.sh
 ```
-This runs 60 headless tests: ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and AI fairness. Other checks:
+This runs 100 headless tests: ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and AI fairness. Other checks:
 - `game/tools/soak.gd`: AI vs AI to a winner.
 - `game/tools/bench.gd`: sim performance.
 - `game/tools/ui_playtest.gd`: a menu → build → train → attack-move flow driven by synthetic input.
+
+## G2 "Smart Warfare" (2026-10-23)
+- **Supply:** ammo and fuel with resupply near the HQ, depots and supply trucks; the refinery converts ore into fuel and ammo.
+- **Combat:**
+  - directional armor (flank the tanks);
+  - infantry cover, suppression/pinning, and morale break/retreat/rally;
+  - vehicle component damage (mobility/weapon/sensors);
+  - ridges block line of fire, and infantry hide in forest.
+- **Engineer repair.** Wrecks leave scrap you can harvest.
+- **Officers** command groups on delegated missions (secure / hold / attack / patrol) and report their phase and reasons. Also patrol, guard and formations.
+- **The river bridge** can be demolished (Shift+right-click) and rebuilt; traffic reroutes over the fords.
+- **The AI** uses all of the above.
+- More detailed vehicle and building art.
+- Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G2_2026-10-23.md`. Packaged build: `build/RTS_Age_of_Modern_War_G2/`.
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop. Evidence is in `PROGRESS.md`.

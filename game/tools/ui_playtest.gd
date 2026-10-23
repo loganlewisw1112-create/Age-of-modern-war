@@ -8,6 +8,7 @@ extends Node
 
 const Construction = preload("res://sim/systems/construction.gd")
 const MatchViewScript = preload("res://presentation/match_view.gd")
+const Ops = preload("res://sim/systems/ops.gd")
 
 var main: Node
 var shot_dir := ""
@@ -48,8 +49,12 @@ func _shot(name: String) -> void:
 
 
 # ------------------------------------------------------------ input injection
+## Input.parse_input_event updates the Input singleton (button/key held state) exactly like real
+## hardware, then dispatches to the viewport. (push_input skipped the singleton, so the view's
+## "button released?" safety check cancelled synthetic drags.)
 func _push(ev: InputEvent) -> void:
-	get_viewport().push_input(ev)
+	Input.parse_input_event(ev)
+	Input.flush_buffered_events()
 
 
 func _move(p: Vector2) -> void:
@@ -60,8 +65,9 @@ func _move(p: Vector2) -> void:
 	await get_tree().process_frame
 
 
-func _button(p: Vector2, idx: int, pressed: bool, dbl: bool = false) -> void:
+func _button(p: Vector2, idx: int, pressed: bool, dbl: bool = false, shift: bool = false) -> void:
 	var b := InputEventMouseButton.new()
+	b.shift_pressed = shift
 	b.position = p
 	b.global_position = p
 	b.button_index = idx
@@ -71,10 +77,10 @@ func _button(p: Vector2, idx: int, pressed: bool, dbl: bool = false) -> void:
 	await get_tree().process_frame
 
 
-func _click(p: Vector2, idx: int = MOUSE_BUTTON_LEFT, dbl: bool = false) -> void:
+func _click(p: Vector2, idx: int = MOUSE_BUTTON_LEFT, dbl: bool = false, shift: bool = false) -> void:
 	await _move(p)
-	await _button(p, idx, true, dbl)
-	await _button(p, idx, false)
+	await _button(p, idx, true, dbl, shift)
+	await _button(p, idx, false, false, shift)
 
 
 func _drag(a: Vector2, b: Vector2) -> void:
@@ -255,17 +261,30 @@ func _run() -> void:
 	await _wait(1.0)
 	await _shot("ui_05_squad_trained")
 
+	await _officer_flow(bar)
 	var rifles := _own_units("rifleman")
 	if rifles.size() > 0:
-		await _click(_to_screen(rifles[0].pos))
-		await _click(_to_screen(rifles[0].pos), MOUSE_BUTTON_LEFT, true)
+		_mv().speed = 0.0  # freeze the sim for the selection gesture (units are moving under the officer)
+		var cen := Vector2.ZERO
+		for r in rifles:
+			cen += Vector2(r.pos)
+		_mv().center_camera_on(cen / float(rifles.size()))  # what a player does: scroll to the squad
+		await _wait(0.3)
+		var lo2 := _to_screen(rifles[0].pos)
+		var hi2 := lo2
+		for r in rifles:
+			var q := _to_screen(r.pos)
+			lo2 = Vector2(minf(lo2.x, q.x), minf(lo2.y, q.y))
+			hi2 = Vector2(maxf(hi2.x, q.x), maxf(hi2.y, q.y))
+		await _drag(lo2 - Vector2(20, 28), hi2 + Vector2(20, 14))
+		_mv().speed = 3.0
 		await _wait(0.3)
 		var sel := 0
 		for id in _mv().selection:
 			var e = _w().get_e(int(id))
 			if e != null and e.def == "rifleman":
 				sel += 1
-		_log("select_squad_doubleclick", sel >= 4, "selected=%d" % sel)
+		_log("select_squad_boxdrag", sel >= 4, "selected=%d" % sel)
 		await _key(KEY_A)
 		var goal := Vector2(42.5, 42.5)  # toward the central bridge
 		await _click(_to_screen(goal))
@@ -278,6 +297,60 @@ func _run() -> void:
 		await _wait(3.0)
 		await _shot("ui_06_attack_move")
 	_finish()
+
+
+## G2: train an officer, assign the squad to it, give a Secure point mission by map click,
+## and check that the officer's reports reach the group card. All via synthetic input.
+func _officer_flow(bar: Dictionary) -> void:
+	await _click(_to_screen(bar.pos))
+	await _wait(0.3)
+	var need := int(Content.production("officer").cost.salvage)
+	await _wait_until(func(): return int(_w().factions[0].stock.salvage) >= need, 60.0)
+	_log("g2_click_officer_button", await _click_button("Officer"))
+	var off_ok := await _wait_until(func(): return _own_units("officer").size() > 0, 60.0)
+	_log("g2_officer_trained", off_ok)
+	if not off_ok:
+		return
+	await _wait(1.0)
+	var off: Dictionary = _own_units("officer")[0]
+	# wait until the officer has walked to the rally point near the squad, then box-select both
+	await _wait_until(func(): return not bool(_w().get_e(int(off.id)).get("moving", false)), 20.0)
+	var pts := [_to_screen(_w().get_e(int(off.id)).pos)]
+	for r in _own_units("rifleman"):
+		pts.append(_to_screen(r.pos))
+	var lo: Vector2 = pts[0]
+	var hi: Vector2 = pts[0]
+	for q in pts:
+		lo = Vector2(minf(lo.x, q.x), minf(lo.y, q.y))
+		hi = Vector2(maxf(hi.x, q.x), maxf(hi.y, q.y))
+	await _drag(lo - Vector2(24, 30), hi + Vector2(24, 18))
+	await _wait(0.3)
+	var kinds := {}
+	for id in _mv().selection:
+		var se = _w().get_e(int(id))
+		if se != null:
+			kinds[se.def] = int(kinds.get(se.def, 0)) + 1
+	print("PLAYTEST-DBG selection ", kinds)
+	_log("g2_select_squad_plus_officer", _mv().selection.has(int(off.id)) and _mv().selection.size() >= 5, "selected=%d" % _mv().selection.size())
+	_log("g2_click_assign_button", await _click_button("Assign"))
+	await _wait(0.5)
+	var g: Dictionary = Ops.group_led_by(_w(), int(off.id))
+	_log("g2_group_formed", not g.is_empty() and (g.members as Array).size() >= 4, "members=%d" % (0 if g.is_empty() else (g.members as Array).size()))
+	await _click(_to_screen(_w().get_e(int(off.id)).pos))
+	await _wait(0.3)
+	_log("g2_click_secure_point", await _click_button("Secure point"))
+	await _wait(0.3)
+	var goal := Vector2(40.5, 40.5)  # toward the bridge
+	await _click(_to_screen(goal))
+	await _wait(1.0)
+	g = Ops.group_led_by(_w(), int(off.id))
+	var mtype := "" if g.is_empty() else String((g.mission as Dictionary).get("type", ""))
+	_log("g2_mission_set_by_map_click", mtype == "secure_point", "mission=%s phase=%s" % [mtype, "" if g.is_empty() else String(g.phase)])
+	var rep_ok := await _wait_until(func(): return not Ops.group_led_by(_w(), int(off.id)).is_empty() and (Ops.group_led_by(_w(), int(off.id)).history as Array).size() >= 3, 30.0)
+	_log("g2_officer_reports", rep_ok, "reports=%d" % (0 if g.is_empty() else (Ops.group_led_by(_w(), int(off.id)).history as Array).size()))
+	await _click(_to_screen(_w().get_e(int(off.id)).pos))
+	await _wait(1.5)
+	await _shot("ui_07_officer_mission")
 
 
 func _finish() -> void:
