@@ -5,6 +5,7 @@
 #   bash tests/run.sh [--only=test_econ] [--import]
 cd "$(dirname "$0")/.."
 G="${GODOT:-/c/Users/logan/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe}"
+if [ ! -f .godot/global_script_class_cache.cfg ]; then "$G" --headless --path . --import >/dev/null 2>&1; fi  # fresh checkout
 ARGS=()
 for a in "$@"; do
   if [ "$a" = "--import" ]; then "$G" --headless --path . --import >/dev/null 2>&1; else ARGS+=("$a"); fi

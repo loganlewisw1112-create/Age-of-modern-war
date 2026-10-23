@@ -29,12 +29,12 @@ You play **Human A (Modern Military Power) at Stage 8** against one autonomous A
 - Save and load: F5 / F9, or the pause menu.
 
 ## Run it
-```bash
-"/c/Users/logan/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64.exe" --path game
-```
-(Install Godot with `winget install GodotEngine.GodotEngine --version 4.7.2` if needed. Run from the repository root.)
+- **Windows:** double-click `game/run.bat`.
+- **Git Bash:** `bash game/run.sh`.
 
-Useful flags (after `--`):
+The first launch imports the project once (a few seconds). Needs Godot 4.7.2: `winget install GodotEngine.GodotEngine --version 4.7.2`, or set `GODOT` to your Godot exe.
+
+Useful flags (append to the launcher):
 
 | Flag | What it does |
 |---|---|
