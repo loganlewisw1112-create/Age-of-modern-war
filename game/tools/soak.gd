@@ -11,6 +11,8 @@ extends SceneTree
 ## G3b (AI4): --map=<id> --stages=7,8,9 --advancement=<rules>. Prints
 ##   "AI f<id> advanced to stage N at tick T" on every StageAdvanced of an AI side, and per-side
 ##   AI think time (SOAK AI_MS: avg/max ms per think tick) from timing AiController.think here.
+## AI4-4: every summary also prints "SOAK AIST f<id> ..." (objective, all-in, wave size, held,
+##   stock ammo/fuel); --ailog prints the AI's army log lines ("AILOG f<id> [t=..] ...").
 
 const SUMMARY_EVERY := 1200
 const INVARIANT_EVERY := 600
@@ -19,6 +21,9 @@ var _fail_count := 0
 var _note_count := 0
 var _cap_dropped := {}   # fid -> true once its pop_cap was ever seen to fall
 var _last_cap := {}
+var _ailog := false
+var _last_log_t := {}     # fid -> tick of the last AI log line printed (--ailog)
+const AILOG_KEYS := ["objective", "attack", "wave", "all-in", "focus", "reinforce", "withdrew", "crossed", "decisive", "eliminat"]
 var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0 (G2 conservation check)
 const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
 const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
@@ -36,6 +41,8 @@ func _init() -> void:
 			max_ticks = int(a.substr(12))
 		elif a.begins_with("--difficulty="):
 			difficulty = a.substr(13)
+		elif a == "--ailog":
+			_ailog = true
 	var c := MatchCfg.from_args(OS.get_cmdline_user_args(), seed_value)
 	c.ai_difficulty = difficulty
 	var reason := SimWorld.validate_config(c)
@@ -84,6 +91,8 @@ func _init() -> void:
 			if _last_cap.has(fid) and cap < int(_last_cap[fid]):
 				_cap_dropped[fid] = true
 			_last_cap[fid] = cap
+		if _ailog and w.tick % 60 == 0:
+			_print_ailog(w)
 		if w.tick % INVARIANT_EVERY == 0:
 			_check_invariants(w)
 		if w.tick % SUMMARY_EVERY == 0:
@@ -132,6 +141,34 @@ func _summary(w: SimWorld, wall_ms: int) -> void:
 			fid, String(f.faction_def), int(f.get("team", fid)), int(f.get("stage", 8)), int(f.credits), int(f.stock.salvage), int(f.stock.ore), str(units), nb,
 			int(f.pop), int(f.pop_cap), int(f.stats.killed), int(f.stats.lost), str(f.alive)])
 	print("SOAK t=%d wall_ms=%d ents=%d %s" % [w.tick, wall_ms, w.entities.size(), " ".join(parts)])
+	for fid in w.ai_state:
+		if not w.factions[fid].alive:
+			continue
+		var st: Dictionary = w.ai_state[fid]
+		var fs: Dictionary = w.factions[fid].stock
+		print("SOAK AIST t=%d f%d obj=%s all_in=%s decisive=%s ag=%d launches=%d held=%d ammo=%d fuel=%d tgt=%s" % [w.tick, fid,
+			String(st.get("objective", "")), str(st.get("all_in", false)), str(st.get("decisive", false)),
+			(st.get("attack_group", []) as Array).size(), int(st.get("launches", 0)),
+			(st.get("g2", {}).get("resupply", {}) as Dictionary).size(), int(fs.get("ammo", 0)), int(fs.get("fuel", 0)),
+			str(Vector2(st.get("attack_target", Vector2.ZERO)).round())])
+
+
+func _print_ailog(w: SimWorld) -> void:
+	for fid in w.ai_state:
+		var lg: Array = w.ai_state[fid].get("log", [])
+		var last := int(_last_log_t.get(fid, -1))
+		for line in lg:
+			var s := String(line)
+			var t := int(s.substr(3, s.find("]") - 3))
+			if t <= last:
+				continue
+			for k in AILOG_KEYS:
+				if s.contains(k):
+					print("AILOG f%d %s" % [fid, s])
+					break
+		if not lg.is_empty():
+			var s2 := String(lg[lg.size() - 1])
+			_last_log_t[fid] = int(s2.substr(3, s2.find("]") - 3))
 
 
 func _fail(w: SimWorld, what: String) -> void:

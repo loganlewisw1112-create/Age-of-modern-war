@@ -254,7 +254,10 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		var fac = free[String(p.facility)]
 		if int(f.pop) + int(ctx.queued_pop) + _pop_of_item(item) > int(f.pop_cap):
 			return  # supply capped: the depot rule in ai_econ handles it
-		var affordable := w.can_afford(fid, p.cost) == "" and int(f.credits) - int(p.cost.credits) >= reserve + int(hold.get("credits", 0)) 			and int(f.stock.salvage) - int(p.cost.get("salvage", 0)) >= int(hold.get("salvage", 0)) 			and int(f.stock.ore) - int(p.cost.get("ore", 0)) >= int(hold.get("ore", 0))
+		# AI4-4: the stage bank binds only the resources this item spends (same rule as
+		# U._bank_ok). The old all-resource check blocked every unit while the bank was short of
+		# ore: valley soak3 s2 Human B sat on 11900 cr at 31/65 pop waiting for 800 ore.
+		var affordable := w.can_afford(fid, p.cost) == "" and int(f.credits) - int(p.cost.credits) >= reserve + int(hold.get("credits", 0)) 			and (int(p.cost.get("salvage", 0)) <= 0 or int(f.stock.salvage) - int(p.cost.get("salvage", 0)) >= int(hold.get("salvage", 0))) 			and (int(p.cost.get("ore", 0)) <= 0 or int(f.stock.ore) - int(p.cost.get("ore", 0)) >= int(hold.get("ore", 0)))
 		if affordable:
 			U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(fac.id), "item": item}, "queue:%d" % int(fac.id))
 			return

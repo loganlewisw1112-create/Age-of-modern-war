@@ -679,3 +679,49 @@ func test_g3b_big_map_ai_vs_ai_no_errors() -> void:
 		check(int(st.rejects) * 4 < int(st.cmds_issued), "big map: side %d rejects %d < 25%% of %d" % [fid, int(st.rejects), int(st.cmds_issued)])
 		check(w.buildings_of(fid).size() >= 3, "big map: side %d built up (%d buildings)" % [fid, w.buildings_of(fid).size()])
 	print("    G3b big map t=%d: %s" % [w.tick, " | ".join(lines)])
+
+
+## AI4-4: the stage bank binds only the resources an item spends (Human B hoarded 11900 cr in the
+## valley soak, waiting on 800 ore it could not get), and the decisive-wave trigger: own pop near
+## the hard cap, or an army MASS_MULT x the launch threshold.
+func test_g3b_bank_per_resource_and_decisive_trigger() -> void:
+	var Mil = preload("res://sim/ai/ai_mil.gd")
+	var Army = preload("res://sim/ai/ai_army.gd")
+	var Ctl = preload("res://sim/ai/ai_controller.gd")
+	var c := SimWorld.default_config()
+	c.seed = 4
+	c.ai_difficulty = "normal"
+	c.sides[0].ai = true
+	c.sides[1].ai = false
+	var w := SimWorld.new_match(c)
+	if not check(w != null and w.ai_state.has(0), "fixture match with an AI side 0"):
+		return
+	var f: Dictionary = w.factions[0]
+	var st: Dictionary = w.ai_state[0]
+	var bar := AiU.role(w, 0, "barracks")
+	var o := _g3b_free_site(w, Vector2i(f.spawn), int(Content.building(bar).size))
+	if not check(bar != "" and o.x >= 0, "a legal barracks site"):
+		return
+	w.spawn_building(bar, 0, o, true)
+	w.credit(0, {"credits": 20000, "salvage": 3000}, "test_fixture")
+	f.stock.ore = 0
+	st.g4.reserve = {"credits": 6000, "ore": 800}
+	var ctx: Dictionary = Ctl._context(w, 0, st)
+	var before := w.pending.size()
+	Mil.manage_production(w, 0, st, ctx)
+	var queued := []
+	for i in range(before, w.pending.size()):
+		var cmd: Dictionary = w.pending[i]
+		if String(cmd.type) == "queue_unit" and int(cmd.issuer) == 0:
+			queued.append(String(cmd.item))
+	print("    G3b bank fixture: queued=%s reserve=%s" % [str(queued), str(st.g4.reserve)])
+	check(not queued.is_empty(), "an ore-free unit is queued while the bank is short of ore (%s)" % str(queued))
+	for item in queued:
+		check_eq(int(Content.production(item).cost.get("ore", 0)), 0, "queued %s spends no banked ore" % item)
+	var thr := int(st.attack_pop)
+	var cap_max := int(Content.rules().pop_cap_max)
+	f.pop = 10
+	check(not Army.massed(w, 0, st, ctx, thr), "army at the threshold, pop far from the cap: not massed")
+	check(Army.massed(w, 0, st, ctx, Army.MASS_MULT * maxi(6, thr)), "army at MASS_MULT x threshold: massed")
+	f.pop = cap_max
+	check(Army.massed(w, 0, st, ctx, thr), "own pop at the hard cap with a launch-size army: massed")

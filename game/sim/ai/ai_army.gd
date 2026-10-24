@@ -21,6 +21,20 @@ const OBJECTIVE_THR := 0.6
 ## After this tick (18 sim-minutes), or once our known salvage is gone, the side goes all-in:
 ## smaller launch threshold, no regrouping, continuous reinforcement. Waiting gains nothing then.
 const ALL_IN_TICK := 21600
+## AI4-4 decisive commit (big-map stalemates between two capped sides): an army that cannot grow
+## (own pop >= MASS_FRAC of the hard pop cap) or is MASS_MULT x the launch threshold goes out as ONE
+## wave: reinforcements gather into blocks, and near a visible enemy HQ with no tower in reach and
+## a 2:1 local edge the whole wave focuses the HQ instead of chasing the spawn stream.
+const MASS_FRAC := 0.9
+const MASS_MULT := 2
+const HQ_FOCUS := 18.0
+## No ammo in stock and at least this share of the army dry: hold the wave at the rally.
+const DRY_HOLD := 0.5
+## Big maps (U.map_scale > BIG_MAP): the launch threshold scales with the map (up to BIG_THR_MAX x),
+## and all-in no longer means a perpetual 3-pop trickle: a beaten wave regroups and the next one
+## launches at full size (valley soak v2 s2: wave 3 of pop 9 fed by 4-6 unit trickles for 30k ticks).
+const BIG_MAP := 1.2
+const BIG_THR_MAX := 2.5
 
 
 static func _ids(units: Array) -> Array:
@@ -66,6 +80,26 @@ static func _threat(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> D
 	return {"active": false, "pos": Vector2.ZERO, "pop": 0}
 
 
+## Own pop near the hard cap (the army cannot grow any more), or an army far past the threshold.
+static func massed(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_pop: int) -> bool:
+	var f: Dictionary = w.factions[fid]
+	var cap_max := int(Content.rules().pop_cap_max)
+	if int(f.pop) + int(ctx.get("queued_pop", 0)) >= int(float(cap_max) * MASS_FRAC) and army_pop >= int(st.attack_pop):
+		return true
+	return army_pop >= MASS_MULT * maxi(6, int(st.attack_pop))
+
+
+## The faction has no ammo to hand out and most of the army is dry: a wave now only feeds the enemy.
+static func _ammo_starved(w: SimWorld, fid: int, army: Array) -> bool:
+	if int(w.factions[fid].stock.get("ammo", 0)) >= 20 or army.is_empty():
+		return false
+	var dry := 0
+	for e in army:
+		if e.has("ammo") and float(U.ud(String(e.def)).amax) > 0.0 and float(e.ammo) <= 0.0:
+			dry += 1
+	return float(dry) >= DRY_HOLD * float(army.size())
+
+
 static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var army: Array = ctx.army
 	var army_pop := _pop(army) + _pop(ctx.arty)  # artillery follows the wave (ai_g3_units.gd)
@@ -76,10 +110,14 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		U.log_line(st, w, "going all-in (%s)" % ("salvage exhausted" if sal_out else "late game"))
 	var all_in := bool(st.get("all_in", false))
 	var thr := int(st.attack_pop)
+	var big_map := U.map_scale(w) > BIG_MAP
+	if big_map:
+		thr = int(round(float(thr) * minf(BIG_THR_MAX, U.map_scale(w))))
+	var trickle := all_in and not big_map  # small maps: all-in reinforces continuously, never regroups
 	var obj_mode := float(st.g3.terms.territory) > 0.0 or int(st.g3.terms.bridge) > 0
 	if obj_mode:
 		thr = maxi(6, int(round(float(thr) * OBJECTIVE_THR)))
-	if all_in:
+	if trickle:
 		thr = maxi(6, thr / 2)
 	var threat := _threat(w, fid, st, ctx)
 	if threat.active:
@@ -124,7 +162,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 					tower_near = true
 			if not tower_near and _pop(group) >= 4 and _pop(group) * 2 >= foe_pop * 3:
 				finishing = true
-		if group.is_empty() or (not finishing and not all_in and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
+		if group.is_empty() or (not finishing and not trickle and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
 			st.failed_waves = int(st.failed_waves) + 1
 			_set_obj(w, st, "regroup", "attack group down to %d of %d; falling back" % [group.size(), int(st.launch_size)])
 			Tac.release(w, fid, st, ctx, "wave too weak, regrouping")
@@ -161,7 +199,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 					push_group.append(e)
 			if not push_group.is_empty():
 				_push(w, fid, st, ctx, push_group)
-		_reinforce(w, fid, st, ctx, army, group, all_in)
+		_reinforce(w, fid, st, ctx, army, group, trickle, thr / 2 if big_map else 0)
 		return
 	if threat.active:
 		if obj != "defend":
@@ -184,6 +222,12 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		return
 	var exploit := float(st.momentum) >= 4.0 and army_pop * 2 >= thr
 	if (army_pop >= thr or exploit) and not army.is_empty():
+		if _ammo_starved(w, fid, army):
+			if not bool(st.get("dry_hold", false)):
+				st.dry_hold = true
+				U.log_line(st, w, "holding the wave at the rally: no ammo in stock, most of the army dry")
+			return
+		st.dry_hold = false
 		if exploit and army_pop < thr:
 			U.log_line(st, w, "momentum %.1f: counter-attacking early" % float(st.momentum))
 		_launch(w, fid, st, ctx, army)
@@ -208,6 +252,8 @@ static func _momentum(w: SimWorld, fid: int, st: Dictionary) -> void:
 
 static func _set_obj(w: SimWorld, st: Dictionary, obj: String, why: String) -> void:
 	if String(st.objective) != obj:
+		if obj != "attack":
+			st.decisive = false
 		st.objective = obj
 		st.army_mode = ""
 		st.focus_id = -1
@@ -251,6 +297,9 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army
 	st.launch_size = army.size()
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
+	st.decisive = massed(w, fid, st, ctx, _pop(army) + _pop(ctx.arty))
+	if bool(st.decisive):
+		U.log_line(st, w, "decisive wave: %d units (pop %d of %d) commit together" % [army.size(), int(w.factions[fid].pop), int(w.factions[fid].pop_cap)])
 	_set_obj(w, st, "attack", "army pop %d; attacking %s (wave %d)" % [_pop(army), str(tgt.round()), int(st.launches)])
 	if Tac.officer(w, fid, st, ctx) != null and String(obj.kind) != "sector":
 		# G2: march out, then the officer takes command and handles the crossing itself
@@ -282,6 +331,8 @@ static func _defend(w: SimWorld, fid: int, st: Dictionary, army: Array, pos: Vec
 ## Main attack logic for the launched group.
 static func _push(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group: Array) -> void:
 	var c := _centroid(group)
+	if bool(st.get("decisive", false)) and _focus_hq(w, fid, st, ctx, group, c):
+		return
 	var near_unit = null
 	var near_d := INF
 	var bld = null
@@ -347,6 +398,33 @@ static func _push(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group:
 		st.focus_id = -1
 
 
+## Decisive wave at a visible enemy HQ: no armed building in reach and a 2:1 local edge -> the
+## whole wave fires on the HQ (hq_elimination ends the match) instead of chasing fresh spawns.
+static func _focus_hq(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group: Array, c: Vector2) -> bool:
+	var hq = null
+	var hq_d := INF
+	var foe_pop := 0
+	for e in ctx.visible:
+		var d := Vector2(e.pos).distance_to(c)
+		if e.kind == "unit":
+			if d <= 14.0:
+				foe_pop += U.pop_of(String(e.def))
+		elif _armed(e):
+			if d <= 11.0:
+				return false
+		elif U.is_hq_def(String(e.def)) and d <= HQ_FOCUS and d < hq_d and not (st.g3.eliminated as Array).has(int(e.owner)):
+			hq = e
+			hq_d = d
+	if hq == null or _pop(group) < 2 * foe_pop:
+		return false
+	if int(st.focus_id) != int(hq.id) or _any_idle(group):
+		if U.submit(w, fid, st, {"type": "attack", "unit_ids": _ids(group), "target_id": int(hq.id)}, "focus"):
+			st.focus_id = int(hq.id)
+			st.army_mode = "focus"
+			U.log_line(st, w, "decisive wave: focus fire on the enemy HQ at %s" % str(Vector2(hq.pos).round()))
+	return true
+
+
 static func _any_idle(units: Array) -> bool:
 	for e in units:
 		if String(e.order.type) == "idle" and not e.moving:
@@ -356,13 +434,20 @@ static func _any_idle(units: Array) -> bool:
 
 ## Units that joined after launch wait at the rally point and go out in small waves
 ## (a third of the threshold, at least 4 pop; any 3 pop when all-in).
-static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array, group: Array, all_in: bool) -> void:
+static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array, group: Array, all_in: bool, need_min: int = 0) -> void:
 	var reserve := []
 	var ag := U.ag_set(st, ctx)
 	for e in army:
 		if not ag.has(int(e.id)):
 			reserve.append(e)
-	var need := 3 if all_in else maxi(4, int(st.attack_pop) / 3)
+	var need := maxi(need_min, 3 if all_in else maxi(4, int(st.attack_pop) / 3))  # big maps: blocks of half a wave
+	# AI4-4: a decisive wave is fed in blocks, not a 3-pop trickle across a big map; at the hard
+	# cap the reserve only grows as the wave loses units, so blocks of 6 pop go
+	var f: Dictionary = w.factions[fid]
+	if int(f.pop) >= int(float(int(Content.rules().pop_cap_max)) * MASS_FRAC):
+		need = mini(need, 6)
+	elif bool(st.get("decisive", false)):
+		need = maxi(need, maxi(6, int(st.attack_pop) / 3))
 	if reserve.is_empty() or _pop(reserve) < need:
 		return
 	var tgt := Vector2(st.attack_target)
