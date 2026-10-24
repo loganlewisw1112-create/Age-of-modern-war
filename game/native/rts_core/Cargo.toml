@@ -1,6 +1,6 @@
 [package]
 name = "rts_core"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 publish = false
 description = "Native sim core for RTS: Age of Modern War (spatial hash, nav, steering). CONTRACTS_G3b section 5."
@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # GDExtension is forward compatible: built against the 4.7 API, loads in Godot 4.7.x.
-godot = { version = "=0.5.5", default-features = false, features = ["api-4-7"] }
+godot = { version = "=0.5.5", default-features = false, features = ["api-4-7", "experimental-threads"] }
 
 [profile.release]
 opt-level = 3

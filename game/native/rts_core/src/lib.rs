@@ -2,11 +2,12 @@
 //!
 //! Hard rules (CONTRACTS_G3b section 0): every loop runs in ascending input-index order (callers
 //! pass entities in ascending id order), no hash-map iteration order is ever observable, no
-//! threads, no wall-clock time, no RNG. Floats are plain IEEE f32/f64 (no fast-math).
+//! threads inside a call (built with gdext experimental-threads so a SimWorld may step on a worker,
+//! CONTRACTS_G4 s3), no wall-clock time, no RNG. Floats are plain IEEE f32/f64 (no fast-math).
 //!
 //! Classes (all RefCounted, Packed-array API only):
 //!   RtsGrid  - uniform spatial hash: rebuild / query_radius / nearest_enemy_batch
-//!   RtsNav   - per-move-class passability + weights, A*, connected components, flow fields
+//!   RtsNav   - per-move-class (+ per-team gate) passability + weights, A*, components, flow fields
 //!   RtsSteer - batch movement tick (path advance + separation) against an RtsNav grid
 //!   RtsFog   - stateless fog circle stamping (fog.gd, PERF4-2 CR 890)
 //!   RtsCombat - stateless line-of-fire (damage.gd line_clear) + batch helpers for combat.gd

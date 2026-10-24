@@ -1,17 +1,30 @@
-//! RtsNav: grid navigation for the ground move classes (0 = foot, 1 = vehicle; 2 = air is
-//! "every in-bounds cell"). Cell weight = 1 / terrain speed_mult, 0 = solid (impassable terrain
-//! or a building footprint). Mirrors movement.gd's AStarGrid2D setup: 8-neighbour, diagonal only
-//! if both orthogonal cells are open, step cost (1 or sqrt2) x weight of the cell entered,
-//! octile heuristic (scaled by the minimum weight so it stays admissible on roads).
-//! Flow fields: one reverse Dijkstra integration field per (goal, class), LRU cached, invalidated
-//! by any passability change (version counter).
+//! RtsNav: grid navigation per move class. Cell weight = 1 / terrain speed_mult, 0 = solid
+//! (impassable terrain, a building footprint, or a cell the class's `allow` mask forbids).
+//! Mirrors movement.gd's AStarGrid2D setup: 8-neighbour, diagonal only if both orthogonal cells
+//! are open, step cost (1 or sqrt2) x weight of the cell entered, octile heuristic (scaled by the
+//! minimum weight so it stays admissible on roads).
+//!
+//! G4 (CONTRACTS_G4 section 3, NAT): classes 0 foot, 1 vehicle, 2 air, 3 amphibious,
+//! 4 naval_small, 5 naval, 6 air_low, 7 air_high. Air classes (2, 6, 7) pass every in-bounds
+//! cell. Ground classes other than foot/vehicle are added lazily (add_class) with their LUT and
+//! an optional per-cell allow mask (naval: the >= 3-wide channel mask).
+//! Every "mc" argument is a class KEY: class | ((team + 1) << 4); team bits 0 = no team. Gate
+//! cells (set_gate) are solid for every key except the owner team's while unlocked; a gate
+//! overrides the building footprint under it. Caches (components, flow fields) are keyed by the
+//! normalised key: the team bits are dropped while no gate exists, so nothing changes for G3 maps.
 
 use godot::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 pub(crate) const SQRT2: f32 = std::f32::consts::SQRT_2;
+pub(crate) const NCLS: usize = 8;
 
 pub const DIRS: [(i32, i32); 8] = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)];
+
+#[inline]
+pub fn is_air(c: usize) -> bool {
+    c == 2 || c == 6 || c == 7
+}
 
 #[derive(Copy, Clone)]
 pub(crate) struct Node {
@@ -40,7 +53,7 @@ impl Ord for Node {
 pub(crate) struct Flow {
     pub(crate) handle: i64,
     pub(crate) goal: usize,
-    pub(crate) mc: usize,
+    pub(crate) mc: usize, // normalised key
     pub(crate) version: i64,
     pub(crate) cost: Vec<f32>,
 }
@@ -52,11 +65,13 @@ pub struct RtsNav {
     pub(crate) h: i32,
     pub(crate) terrain: Vec<u8>,
     pub(crate) blocked: Vec<u8>,
-    pub(crate) lut: [Vec<f32>; 2],
-    pub(crate) weight: [Vec<f32>; 2],
-    pub(crate) min_w: [f32; 2],
-    pub(crate) comp: [Vec<i32>; 2],
-    pub(crate) comp_ok: [bool; 2],
+    pub(crate) gate: Vec<u8>, // 0 none, else (owner team + 1) | 0x80 when locked
+    pub(crate) gate_n: usize,
+    pub(crate) lut: Vec<Vec<f32>>,
+    pub(crate) allow: Vec<Vec<u8>>,
+    pub(crate) weight: Vec<Vec<f32>>,
+    pub(crate) min_w: Vec<f32>,
+    pub(crate) comp: Vec<Option<Vec<i32>>>,
     pub(crate) version: i64,
     pub(crate) g: Vec<f32>,
     pub(crate) parent: Vec<i32>,
@@ -72,12 +87,41 @@ impl RtsNav {
     pub fn in_bounds(&self, x: i32, y: i32) -> bool {
         x >= 0 && y >= 0 && x < self.w && y < self.h
     }
+    /// Key with the team bits dropped while no gate exists (and always for air).
     #[inline]
-    pub fn passable(&self, mc: usize, x: i32, y: i32) -> bool {
-        if !self.in_bounds(x, y) {
+    pub fn norm(&self, k: usize) -> usize {
+        let c = k & 15;
+        if is_air(c) || self.gate_n == 0 { c } else { k & 255 }
+    }
+    #[inline]
+    pub fn passable_i(&self, k: usize, i: usize) -> bool {
+        let c = k & 15;
+        if is_air(c) {
+            return true;
+        }
+        let ok = match self.weight.get(c) {
+            Some(wv) => wv.get(i).copied().unwrap_or(0.0) > 0.0,
+            None => false,
+        };
+        if !ok {
             return false;
         }
-        mc >= 2 || self.weight[mc][(y * self.w + x) as usize] > 0.0
+        let g = self.gate.get(i).copied().unwrap_or(0);
+        if g == 0 {
+            return true;
+        }
+        let t1 = (k >> 4) & 15;
+        g & 0x80 == 0 && t1 != 0 && (g & 15) as usize == t1
+    }
+    #[inline]
+    pub fn passable(&self, k: usize, x: i32, y: i32) -> bool {
+        self.in_bounds(x, y) && self.passable_i(k, (y * self.w + x) as usize)
+    }
+    /// Entry weight of cell i for key k (1 for air).
+    #[inline]
+    pub(crate) fn wt(&self, k: usize, i: usize) -> f32 {
+        let c = k & 15;
+        if is_air(c) { 1.0 } else { self.weight[c][i] }
     }
     pub fn dims(&self) -> (i32, i32) {
         (self.w, self.h)
@@ -117,28 +161,47 @@ impl RtsNav {
         }
         from
     }
+    pub(crate) fn has_class_i(&self, c: usize) -> bool {
+        is_air(c) || self.weight.get(c).map_or(false, |v| v.len() == (self.w * self.h) as usize && !v.is_empty())
+    }
+    fn cell_weight(&self, c: usize, i: usize) -> f32 {
+        let sm = if self.lut[c].len() == 256 { self.lut[c][self.terrain[i] as usize] } else { 0.0 };
+        let allow = self.allow[c].is_empty() || self.allow[c].get(i).copied().unwrap_or(0) != 0;
+        let blk = self.blocked[i] > 0 && self.gate.get(i).copied().unwrap_or(0) == 0;
+        if blk || sm <= 0.0 || !allow { 0.0 } else { 1.0 / sm }
+    }
     pub(crate) fn recompute_cell(&mut self, i: usize) {
-        for mc in 0..2 {
-            let sm = if self.lut[mc].len() == 256 { self.lut[mc][self.terrain[i] as usize] } else { 0.0 };
-            self.weight[mc][i] = if self.blocked[i] > 0 || sm <= 0.0 { 0.0 } else { 1.0 / sm };
+        for c in 0..NCLS {
+            if !is_air(c) && self.weight[c].len() > i {
+                let v = self.cell_weight(c, i);
+                self.weight[c][i] = v;
+            }
         }
     }
     pub(crate) fn changed(&mut self) {
         self.version += 1;
-        self.comp_ok = [false, false];
+        for s in self.comp.iter_mut() {
+            *s = None;
+        }
         self.flows.clear();
     }
-    pub(crate) fn recompute_all(&mut self) {
+    /// (Re)computes every cell of class c (allocated), and its minimum weight.
+    pub(crate) fn compute_class(&mut self, c: usize) {
         let n = (self.w * self.h) as usize;
-        self.weight = [vec![0.0; n], vec![0.0; n]];
-        for i in 0..n {
-            self.recompute_cell(i);
+        let mut v = vec![0.0f32; n];
+        for (i, x) in v.iter_mut().enumerate() {
+            *x = self.cell_weight(c, i);
         }
-        for mc in 0..2 {
-            let m = self.weight[mc].iter().cloned().filter(|&x| x > 0.0).fold(f32::INFINITY, f32::min);
-            self.min_w[mc] = if m.is_finite() { m.min(1.0) } else { 1.0 };
-        }
-        self.changed();
+        let m = v.iter().cloned().filter(|&x| x > 0.0).fold(f32::INFINITY, f32::min);
+        self.min_w[c] = if m.is_finite() { m.min(1.0) } else { 1.0 };
+        self.weight[c] = v;
+    }
+    pub(crate) fn reset_tables(&mut self) {
+        self.lut = vec![Vec::new(); NCLS];
+        self.allow = vec![Vec::new(); NCLS];
+        self.weight = vec![Vec::new(); NCLS];
+        self.min_w = vec![1.0; NCLS];
+        self.comp = vec![None; 256];
     }
     #[inline]
     pub(crate) fn diag_ok(&self, mc: usize, x: i32, y: i32, dx: i32, dy: i32) -> bool {
@@ -151,7 +214,7 @@ impl RtsNav {
         let dy = ((a / w) as i32 - (b / w) as i32).abs() as f32;
         let f = SQRT2 - 1.0;
         let o = if dx < dy { f * dx + dy } else { f * dy + dx };
-        o * self.min_w[mc]
+        o * self.min_w.get(mc & 15).copied().unwrap_or(1.0)
     }
     pub(crate) fn next_gen(&mut self) -> u32 {
         let n = (self.w * self.h) as usize;
@@ -170,80 +233,10 @@ impl RtsNav {
         }
         self.gen
     }
-    pub(crate) fn astar(&mut self, mc: usize, s: usize, t: usize) -> Option<Vec<usize>> {
-        let gen = self.next_gen();
-        let w = self.w;
-        let mut heap = BinaryHeap::new();
-        let mut seq = 0u32;
-        self.g[s] = 0.0;
-        self.stamp[s] = gen;
-        self.parent[s] = -1;
-        heap.push(Node { f: self.heur(mc, s, t), seq, idx: s as u32 });
-        let mut found = false;
-        while let Some(Node { idx, .. }) = heap.pop() {
-            let u = idx as usize;
-            if self.closed[u] == gen {
-                continue;
-            }
-            self.closed[u] = gen;
-            if u == t {
-                found = true;
-                break;
-            }
-            let (ux, uy) = ((u as i32) % w, (u as i32) / w);
-            for (k, &(dx, dy)) in DIRS.iter().enumerate() {
-                let (vx, vy) = (ux + dx, uy + dy);
-                if !self.passable(mc, vx, vy) || !self.diag_ok(mc, ux, uy, dx, dy) {
-                    continue;
-                }
-                let v = (vy * w + vx) as usize;
-                if self.closed[v] == gen {
-                    continue;
-                }
-                let step = if k < 4 { 1.0 } else { SQRT2 };
-                let ng = self.g[u] + step * self.weight[mc][v];
-                if self.stamp[v] != gen || ng < self.g[v] {
-                    self.stamp[v] = gen;
-                    self.g[v] = ng;
-                    self.parent[v] = u as i32;
-                    seq += 1;
-                    heap.push(Node { f: ng + self.heur(mc, v, t), seq, idx: v as u32 });
-                }
-            }
-        }
-        if !found {
-            return None;
-        }
-        let mut cells = vec![t];
-        let mut c = t;
-        while self.parent[c] >= 0 && c != s {
-            c = self.parent[c] as usize;
-            cells.push(c);
-        }
-        cells.reverse();
-        Some(cells)
-    }
-    /// Cells (start first) -> waypoints at cell centres, start dropped, collinear runs merged
-    /// (movement.gd _compute rule).
-    pub(crate) fn simplify(&self, cells: &[usize]) -> PackedVector2Array {
-        let w = self.w as usize;
-        let xy = |c: usize| ((c % w) as i32, (c / w) as i32);
-        let n = cells.len();
-        let mut out: Vec<Vector2> = Vec::new();
-        for i in 1..n {
-            if i < n - 1 {
-                let (a, b, c) = (xy(cells[i - 1]), xy(cells[i]), xy(cells[i + 1]));
-                if b.0 - a.0 == c.0 - b.0 && b.1 - a.1 == c.1 - b.1 {
-                    continue;
-                }
-            }
-            let (x, y) = xy(cells[i]);
-            out.push(Vector2::new(x as f32 + 0.5, y as f32 + 0.5));
-        }
-        PackedVector2Array::from(out.as_slice())
-    }
 }
 
-// GDScript API lives in nav_api.rs (child module so #[godot_api] sees the derive macros).
+// A*, simplify, components and flow fields: nav_search.rs. GDScript API: nav_api.rs.
+#[path = "nav_search.rs"]
+mod search;
 #[path = "nav_api.rs"]
 mod api;

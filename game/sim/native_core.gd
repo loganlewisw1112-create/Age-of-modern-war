@@ -16,7 +16,9 @@ extends RefCounted
 ## Arrays are parallel, in ascending entity-id order. nearest: a different team, centre within
 ## range + target radius, (flags & need) != 0 when need != 0; ties break on the lower id.
 
-const MC := {"foot": 0, "vehicle": 1, "air": 2}
+## Native class indices (CONTRACTS_G4 section 3). Air classes (2, 6, 7) pass every in-bounds cell.
+const MC := {"foot": 0, "vehicle": 1, "air": 2, "amphibious": 3, "naval_small": 4, "naval": 5,
+	"air_low": 6, "air_high": 7}
 
 static var force_off := false
 static var _checked := false
@@ -56,6 +58,17 @@ static func version() -> String:
 
 static func mc_index(mc: String) -> int:
 	return int(MC.get(mc, 0))
+
+
+## G4 class key for RtsNav / RtsSteer calls: class index | ((team + 1) << 4) (team -1 = none:
+## gate cells are solid). RtsNav drops the team bits while no gate exists.
+static func mc_key(mc: String, team: int = -1) -> int:
+	return int(MC.get(mc, 0)) | (clampi(team + 1, 0, 15) << 4)
+
+
+## True when the loaded DLL has the G4 nav API (add_class / set_gate).
+static func has_g4_nav() -> bool:
+	return available() and ClassDB.class_has_method("RtsNav", "add_class") and ClassDB.class_has_method("RtsNav", "set_gate")
 
 
 static func new_nav():

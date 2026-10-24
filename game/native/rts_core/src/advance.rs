@@ -68,13 +68,13 @@ pub fn advance_one(nav: &RtsNav, mc: usize, pos0: Vector2, spd_base: f32, k: i32
         out.flags = OUT_REPATH;
         return out;
     }
-    let tmult = if mc >= 2 {
+    let tmult = if crate::nav::is_air(mc & 15) {
         1.0
     } else {
         let (cx, cy) = (pos0.x.floor() as i32, pos0.y.floor() as i32);
         if nav.in_bounds(cx, cy) {
             let code = nav.terrain[(cy * nav.w + cx) as usize] as usize;
-            nav.lut[mc].get(code).copied().unwrap_or(0.0)
+            nav.lut[mc & 15].get(code).copied().unwrap_or(0.0)
         } else {
             0.0
         }

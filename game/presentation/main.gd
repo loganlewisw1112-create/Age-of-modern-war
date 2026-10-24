@@ -27,7 +27,7 @@ const PauseMenuScript = preload("res://presentation/menu/pause_menu.gd")
 const EndScreenScript = preload("res://presentation/menu/end_screen.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
-const EditorScript = preload("res://presentation/editor/editor_scene.gd")
+const MapEditorScene = preload("res://presentation/editor/editor_scene.gd")
 const SAVE_SYSTEM := "res://sim/save_system.gd"
 const QUICK_SAVE := "user://saves/quick.sav"
 
@@ -178,7 +178,7 @@ func open_editor() -> void:
 	_menu_layer.visible = false
 	if _editor != null:
 		_editor.queue_free()
-	_editor = EditorScript.new()
+	_editor = MapEditorScene.new()
 	_editor.ui_scale = _ui_scale
 	add_child(_editor)
 	_editor.exit_requested.connect(_close_editor)

@@ -1,6 +1,6 @@
 //! RtsCombat: stateless line-of-fire helpers for combat.gd / damage.gd (G3b N1-core-3).
 //! line_clear() is an exact port of damage.gd `line_clear` (Amanatides-Woo supercover walk; at an
-//! exact cell corner both side cells are tested; any RIDGE or off-map cell blocks). GDScript math
+//! exact cell corner both side cells are tested; any RIDGE, BUILDING or CLIFF cell (G4) or off-map cell blocks). GDScript math
 //! is reproduced bit for bit: `to - from` is a Vector2 (f32) subtraction, everything after is f64.
 //! line_clear_batch() runs many pairs in one call (input order, no state).
 
@@ -12,7 +12,7 @@ fn blocks(terr: &[u8], mw: i32, mh: i32, x: i32, y: i32, ridge: u8) -> bool {
         return true;
     }
     let i = (y * mw + x) as usize;
-    i >= terr.len() || terr[i] == ridge
+    i >= terr.len() || terr[i] == ridge || terr[i] == 8 || terr[i] == 12 // G4: RIDGE, BUILDING, CLIFF block LOS
 }
 
 pub fn line_clear_core(terr: &[u8], mw: i32, mh: i32, ridge: u8, from: Vector2, to: Vector2) -> bool {

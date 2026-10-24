@@ -5,7 +5,8 @@ extends RefCounted
 ##           quantized to 1/1024. Emits Damage. Then (if the target survives) a component roll for
 ##           AT/autocannon hits on vehicles and suppression for infantry.
 ##     miss: near-miss suppression on enemy infantry within NEAR_MISS_R of the intended target.
-##   line_clear(w, from, to)  supercover grid walk; any RIDGE cell (or off-map cell) blocks.
+##   line_clear(w, from, to)  supercover grid walk; any RIDGE, CLIFF or BUILDING terrain cell (G4,
+##     Terrain.blocks_los; owner NAT) or off-map cell blocks.
 ## RNG: only w.rng, in a fixed order per hit: [component chance] -> [component pick if chance hit].
 ## Infantry = units that carry a `morale` field (units.json `morale`); vehicles carry `comp`.
 ## Combat deaths are queued in w.cache.morale_deaths (with squad) for morale.gd, which consumes
@@ -23,6 +24,8 @@ const FRONT_HALF := PI / 4.0          # front arc +-45 deg
 const REAR_HALF := PI / 4.0           # rear arc +-45 deg around the back
 const FOREST := 3                     # Terrain.FOREST (kept local: cheap, no global lookup)
 const RIDGE := 7                      # Terrain.RIDGE
+const BUILDING_T := 8                 # Terrain.BUILDING (G4, NAT: blocks LOS)
+const CLIFF := 12                     # Terrain.CLIFF (G4, NAT: blocks LOS)
 
 
 static func armor_of(t: Dictionary) -> String:
@@ -185,12 +188,13 @@ static func _note_death(w: SimWorld, t: Dictionary) -> void:
 static func _blocks(terr: PackedByteArray, mw: int, mh: int, c: Vector2i) -> bool:
 	if c.x < 0 or c.y < 0 or c.x >= mw or c.y >= mh:
 		return true
-	return terr[c.y * mw + c.x] == RIDGE
+	var t := terr[c.y * mw + c.x]
+	return t == RIDGE or t == CLIFF or t == BUILDING_T  # == Terrain.blocks_los (kept local: hot path)
 
 
-## False if the line of fire from -> to crosses a RIDGE cell. Supercover grid walk (Amanatides-Woo;
+## False if the line of fire from -> to crosses a RIDGE / CLIFF / BUILDING terrain cell. Supercover grid walk (Amanatides-Woo;
 ## when the segment passes exactly through a cell corner, both side cells are tested).
-## Buildings do not block in G2.
+## Building entities do not block (G2); BUILDING terrain decor does (G4).
 static func line_clear(w: SimWorld, from: Vector2, to: Vector2) -> bool:
 	var terr: PackedByteArray = w.map.terrain
 	var mw := int(w.map.w)
