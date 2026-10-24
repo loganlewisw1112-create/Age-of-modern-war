@@ -75,7 +75,9 @@ static func next_build(w: SimWorld, fid: int, ctx: Dictionary) -> String:
 	# a second refinery when ammo runs short and ore is piling up
 	var stock: Dictionary = f.stock
 	if refinery != "" and int(have.get(refinery, 0)) == 1 and int(built.get(refinery, 0)) == 1 and int(have.get(defense, 0)) > 0:
-		if int(stock.get("ammo", 0)) < AMMO_FLOOR and int(stock.get("ore", 0)) >= 1000:
+		# AI5: 400 ore (was 1000): with ore held back for ammo (ai_mil) a saturated smelter shows as
+		# ore piling up long before 1000
+		if int(stock.get("ammo", 0)) < AMMO_FLOOR and int(stock.get("ore", 0)) >= 400:
 			if spare < _draw(refinery):
 				return "" if gen_pending else power
 			return refinery
@@ -250,6 +252,10 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	var stock_low := int(f.stock.get("ammo", 0)) < AMMO_FLOOR or int(f.stock.get("fuel", 0)) < FUEL_FLOOR
 	if int(ctx.built.get(U.role(w, fid, "refinery"), 0)) > 0 and stock_low and ore < 1500:
 		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.5)))
+	# AI5: the stock is dry and salvage piles up: ore is the only ammo source, so most crews mine it
+	# (heartland a1 s2: Human B ammo 0 for 70k ticks with 5115 salvage idle)
+	if int(ctx.built.get(U.role(w, fid, "refinery"), 0)) > 0 and int(f.stock.get("ammo", 0)) < AMMO_FLOOR and sal >= 800:
+		want_ore = maxi(want_ore, n_eng - 1)
 	# G3b: the stage bank holds ore (8->9 research + advance) while the refinery eats 20 ore / 6 s:
 	# put most crews on ore until the bank's ore is on hand (salvage piles up unused late game)
 	var hold_ore := int(st.get("g4", {}).get("reserve", {}).get("ore", 0))
@@ -327,6 +333,7 @@ const BUILDERS_SPLIT := 2
 
 
 const CREW_CAP_ARMY := 30
+const CREW_IDLE_CR := 2500
 
 
 ## AI4-3: the difficulty's crew cap, raised while a big army is starved of materials and credits
@@ -334,12 +341,17 @@ const CREW_CAP_ARMY := 30
 static func crew_cap(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> int:
 	var base := int(U.diff(w, fid).max_engineers)
 	# only once the army is out and big (the opening keeps its credits for the first waves)
-	if int(st.get("launches", 0)) < 1 or int(ctx.get("army_n", 0)) < CREW_CAP_ARMY:
-		return base
 	var f: Dictionary = w.factions[fid]
+	# AI5: credits piling up (CREW_IDLE_CR) while materials starve also counts once the army is out
+	# (heartland v3 s1: Human B 3700 cr idle, salvage 51, ore 16, army 22 < 30 -> 8 crews only)
+	var idle_cr := int(f.credits) >= CREW_IDLE_CR
+	if int(st.get("launches", 0)) < 1 or (int(ctx.get("army_n", 0)) < CREW_CAP_ARMY and not idle_cr):
+		return base
 	var starved := int(f.stock.salvage) < 300 or int(f.stock.ore) < 150 or int(f.stock.get("ammo", 0)) < AMMO_FLOOR
 	if not starved or int(f.credits) < 1000:
 		return base
+	if int(ctx.get("army_n", 0)) < CREW_CAP_ARMY:
+		return mini(base * 2, base + 4)
 	return mini(base * 3, base + maxi(2, int(ctx.get("army_n", 0)) / 8))
 
 

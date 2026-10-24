@@ -12,6 +12,17 @@ const URGENT_ROLES := ["power", "barracks", "depot", "factory", "comms"]  # G3b:
 ## Production categories (G2 "rifle"/"at" are the infantry/antitank roles; "vehicle" = light|heavy).
 ## G3b: Stage 9 roles precision / ew / anti_air (ai_stage.stage_shares).
 const CATS := ["antitank", "infantry", "vehicle", "artillery", "air", "precision", "ew", "anti_air"]
+## AI5: ammo-aware production. A big army whose faction ammo stock is below AMMO_FLOOR stops
+## buying small-arms units (damage per round < AMMO_DPR): every round comes from refined ore, and a
+## cannon/howitzer round does ~13x the damage of a rifle round (old_cannon 95 vs old_rifle 7).
+## a1 soaks: Human B dry (ammo 0) at 52-120 pop on river s1, heartland s2 and valley s1, its
+## militia/LMG squads emptying the smelter's output faster than ore arrived.
+const AMMO_FLOOR := 400
+const AMMO_ARMY := 30
+const AMMO_DPR := 30.0
+static var _dpr_cache: Dictionary = {}  # item -> min damage per round of its armed spawns (content fact)
+## AI5: EW units carry no weapon; more than this many only dilute the army (and spend ore).
+const EW_MAX := 2
 
 
 ## Updates known_contacts from legal sources only (visible_enemies + own memory).
@@ -175,6 +186,21 @@ static func _item_for(w: SimWorld, fid: int, st: Dictionary, cat: String) -> Str
 	return hv if ore >= hv_ore or int(st.enemy_vehicles_seen) >= 1 else lt
 
 
+## Lowest damage per round among the item's spawns that use ammo (INF when none does).
+static func item_dpr(item: String) -> float:
+	if _dpr_cache.has(item):
+		return float(_dpr_cache[item])
+	var best := INF
+	for u in Content.production(item).get("spawns", []):
+		var ud: Dictionary = Content.unit(String(u))
+		if int(ud.get("ammo_max", 0)) <= 0 or String(ud.get("weapon", "")) == "":
+			continue
+		var wd: Dictionary = Content.weapon(String(ud.weapon))
+		best = minf(best, float(wd.get("damage", 0.0)))
+	_dpr_cache[item] = best
+	return best
+
+
 static func _pop_of_item(item: String) -> int:
 	var p := 0
 	for u in Content.production(item).get("spawns", []):
@@ -246,11 +272,22 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		if String(st.saving_for) != "" and String(st.saving_for) == U.role(w, fid, r):
 			reserve = int(Content.building(String(st.saving_for)).cost.credits)
 	var defending := String(st.objective) == "defend"
+	var ammo_tight := int(f.stock.get("ammo", 0)) < AMMO_FLOOR and int(ctx.get("army_n", 0)) >= AMMO_ARMY
+	var ew_n: int = (ctx.get("ew", []) as Array).size()
+	for b in ctx.buildings:
+		for q in b.queue:
+			for u in Content.production(String(q.item)).get("spawns", []):
+				if String(cmap.get(String(u), "")) == "ew":
+					ew_n += 1
 	# G3b: research / advancement savings (ai_stage sets them only while a defensive core stands)
 	var hold: Dictionary = {} if defending else Stage.reserve(st)
 	for i in order.size():
 		var item := String(order[i][2])
 		var p := Content.production(item)
+		if String(order[i][1]) == "ew" and ew_n >= EW_MAX:
+			continue
+		if ammo_tight and not defending and item_dpr(item) < AMMO_DPR:
+			continue  # AI5: no more small-arms ammo sinks while the stock is dry
 		var fac = free[String(p.facility)]
 		if int(f.pop) + int(ctx.queued_pop) + _pop_of_item(item) > int(f.pop_cap):
 			return  # supply capped: the depot rule in ai_econ handles it

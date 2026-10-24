@@ -725,3 +725,47 @@ func test_g3b_bank_per_resource_and_decisive_trigger() -> void:
 	check(Army.massed(w, 0, st, ctx, Army.MASS_MULT * maxi(6, thr)), "army at MASS_MULT x threshold: massed")
 	f.pop = cap_max
 	check(Army.massed(w, 0, st, ctx, thr), "own pop at the hard cap with a launch-size army: massed")
+
+## AI5: a big army with faction ammo below the floor buys no small-arms units (damage per round
+## < AMMO_DPR); with ammo in stock the same fixture buys normally.
+func test_g3b_ammo_tight_skips_small_arms() -> void:
+	var Mil = preload("res://sim/ai/ai_mil.gd")
+	var Ctl = preload("res://sim/ai/ai_controller.gd")
+	var c := SimWorld.default_config()
+	c.seed = 5
+	c.ai_difficulty = "normal"
+	c.sides[0].ai = true
+	c.sides[1].ai = false
+	var w := SimWorld.new_match(c)
+	if not check(w != null and w.ai_state.has(0), "fixture match with an AI side 0"):
+		return
+	var f: Dictionary = w.factions[0]
+	var st: Dictionary = w.ai_state[0]
+	var spawn := Vector2i(f.spawn)
+	for role in ["barracks", "factory"]:
+		var d := AiU.role(w, 0, role)
+		var o := _g3b_free_site(w, spawn + (Vector2i(6, 0) if role == "factory" else Vector2i.ZERO), int(Content.building(d).size))
+		if not check(d != "" and o.x >= 0, "a legal %s site" % role):
+			return
+		w.spawn_building(d, 0, o, true)
+	w.credit(0, {"credits": 20000, "salvage": 3000, "ore": 3000}, "test_fixture")
+	st.g4.reserve = {}
+	st.enemy_vehicles_seen = 0
+	check(Mil.item_dpr(AiU.role(w, 0, "infantry")) < Mil.AMMO_DPR, "the infantry item is small arms")
+	for ammo in [0, 600]:
+		f.stock.ammo = ammo
+		var ctx: Dictionary = Ctl._context(w, 0, st)
+		ctx.army_n = Mil.AMMO_ARMY
+		var before := w.pending.size()
+		Mil.manage_production(w, 0, st, ctx)
+		var queued := []
+		for i2 in range(before, w.pending.size()):
+			var cmd: Dictionary = w.pending[i2]
+			if String(cmd.type) == "queue_unit" and int(cmd.issuer) == 0:
+				queued.append(String(cmd.item))
+		w.pending.clear()
+		print("    AI5 ammo fixture ammo=%d: queued=%s" % [ammo, str(queued)])
+		check(not queued.is_empty(), "something is queued (ammo=%d)" % ammo)
+		if ammo == 0:
+			for item in queued:
+				check(Mil.item_dpr(item) >= Mil.AMMO_DPR, "ammo tight: %s is not small arms" % item)

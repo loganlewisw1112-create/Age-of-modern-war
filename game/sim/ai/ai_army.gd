@@ -138,6 +138,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	if obj == "attack":
 		var committed := false
 		var finishing := false
+		var foe_pop := 0
 		if not group.is_empty():
 			var c := _centroid(group)
 			committed = c.distance_to(Vector2(st.attack_target)) <= COMMIT_DIST
@@ -152,7 +153,6 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 			committed = committed or hq_near
 			finishing = hq_near and not foes_near
 			# winning locally (no tower in reach, clearly outnumbering what we see): keep pushing
-			var foe_pop := 0
 			var tower_near := false
 			for e in ctx.visible:
 				var d2 := Vector2(e.pos).distance_to(c)
@@ -162,7 +162,11 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 					tower_near = true
 			if not tower_near and _pop(group) >= 4 and _pop(group) * 2 >= foe_pop * 3:
 				finishing = true
-		if group.is_empty() or (not finishing and not trickle and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
+		# AI5: a decisive wave committed at the target holds there (reinforcements arrive in blocks)
+		# while it still matches the local enemy pop; walking back across a big map only to relaunch
+		# gave heartland v3 s1 27 launches and valley v3 s2 70-97 regroups at "down to 9 of 25".
+		var hold_on := bool(st.get("decisive", false)) and committed and _pop(group) >= maxi(4, foe_pop)
+		if group.is_empty() or (not finishing and not trickle and not hold_on and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
 			st.failed_waves = int(st.failed_waves) + 1
 			_set_obj(w, st, "regroup", "attack group down to %d of %d; falling back" % [group.size(), int(st.launch_size)])
 			Tac.release(w, fid, st, ctx, "wave too weak, regrouping")
