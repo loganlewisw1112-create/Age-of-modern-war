@@ -56,6 +56,18 @@ static func version() -> String:
 	return _version
 
 
+## G4 (THREAD CR): true when the loaded DLL is built with gdext experimental-threads (rts_core >= 0.2.2),
+## so a SimWorld may step on a worker thread. False when native is unavailable (GDScript path is thread-safe).
+static func threads_safe() -> bool:
+	if not available():
+		return true
+	var parts := version().split(".")
+	if parts.size() < 3:
+		return false
+	var v := int(parts[0]) * 10000 + int(parts[1]) * 100 + int(parts[2])
+	return v >= 202
+
+
 static func mc_index(mc: String) -> int:
 	return int(MC.get(mc, 0))
 
