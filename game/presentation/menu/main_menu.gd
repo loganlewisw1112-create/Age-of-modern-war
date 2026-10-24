@@ -93,7 +93,7 @@ func _build() -> void:
 	row.add_child(left)
 	left.add_child(HT.make_label("RTS", HT.OLIVE, 22))
 	left.add_child(HT.make_label("AGE OF\nMODERN WAR", HT.AMBER, 46))
-	left.add_child(HT.make_label("Three maps, Stages 7-9, up to 8 sides", HT.DIM, 14))
+	left.add_child(HT.make_label("Three maps, Stages 7-9, up to 4 sides", HT.DIM, 14))
 	left.add_child(_spacer(18))
 	var start := _menu_button("Start Skirmish", left)
 	start.pressed.connect(_on_start)
