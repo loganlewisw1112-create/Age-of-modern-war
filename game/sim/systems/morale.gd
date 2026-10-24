@@ -67,10 +67,30 @@ static func tick(w: SimWorld) -> void:
 	# phase-dependent morale scenarios (test_g2_scenarios s4), so it was not kept.
 	var idx := Tiers.lists(w)
 	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
+	# PERF4-4: _step_unit inlined for the FULL loop (the same steps in the same order, no call per
+	# unit; steady-state units, the vast majority, return after the cover write).
+	var mw: int = ctx[1]
+	var terr: PackedByteArray = ctx[2]
+	var nterr := terr.size()
 	for e: Dictionary in (idx.full if tiers_on else idx.kinds.get("unit", [])):
 		if not e.has("morale") or not ents.has(int(e.id)):
 			continue
-		_step_unit(w, e, p, ctx)
+		var pos: Vector2 = e.pos
+		var cx := floori(pos.x)
+		var cy := floori(pos.y)
+		var cov := false
+		if cx >= 0 and cy >= 0 and cx < mw and cy * mw + cx < nterr and terr[cy * mw + cx] == FOREST:
+			cov = true
+		else:
+			if ctx[0] == null:
+				ctx[0] = _cover_index(w)
+			cov = _near_cover(ctx[0], pos)
+		e.in_cover = cov
+		if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false):
+			var mm = _mmax.get(e.def)
+			if float(e.morale) >= (float(mm) if mm != null else max_morale(e.def)):
+				continue
+		_update_unit(w, e, p)
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("mor.full", t0)
 	if not tiers_on:

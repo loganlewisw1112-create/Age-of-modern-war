@@ -240,3 +240,66 @@ func test_native_fog_matches_gdscript_fog() -> void:
 			same = false
 	check(same, "visible + explored byte-identical native vs Image path")
 	check_eq(hs[0], hs[1], "state hash equal with native fog on/off")
+
+
+## PERF4-4: RtsCombat.line_clear (combat.gd LOS with the native core live) answers exactly as
+## Damage.line_clear: random segments (quarter-tile coordinates hit exact cell corners, some
+## leave the map) over the map with extra ridge cells, then a fight whose state hash must be
+## equal with Combat.native_los on/off.
+func test_native_los_matches_gdscript_los() -> void:
+	const CombatS = preload("res://sim/systems/combat.gd")
+	const DamageS = preload("res://sim/systems/damage.gd")
+	var lc = NativeCore.new_combat(null)
+	if lc == null:
+		check(true, "native RtsCombat not available: GDScript path only (skipped)")
+		return
+	var w := _clean(5)
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var keep: PackedByteArray = w.map.terrain
+	var terr := keep.duplicate()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	for i in terr.size() / 12:
+		terr[rng.randi_range(0, terr.size() - 1)] = DamageS.RIDGE
+	w.map.terrain = terr
+	var bad := 0
+	var blocked := 0
+	for i in 4000:
+		var a := Vector2(float(rng.randi_range(-8, mw * 4 + 8)) * 0.25, float(rng.randi_range(-8, mh * 4 + 8)) * 0.25)
+		var span := 4.0 if i % 2 == 0 else 24.0
+		var b := a + Vector2(rng.randf_range(-span, span), rng.randf_range(-span, span))
+		if i % 5 == 0:
+			b = a + Vector2(float(rng.randi_range(-40, 40)) * 0.25, float(rng.randi_range(-40, 40)) * 0.25)
+		var g := DamageS.line_clear(w, a, b)
+		if not g:
+			blocked += 1
+		if bool(lc.line_clear(mw, mh, terr, DamageS.RIDGE, a, b)) != g:
+			bad += 1
+	w.map.terrain = keep
+	check_eq(bad, 0, "native line_clear == Damage.line_clear on 4000 segments")
+	check(blocked > 400 and blocked < 3600, "segments mix clear and blocked (%d blocked)" % blocked)
+	var hs := []
+	var shots := []
+	for on in [true, false]:
+		CombatS.native_los = on
+		var w2 := _clean(9)
+		var a := []
+		var b := []
+		for i in 12:
+			a.append(_place(w2, "ifv" if i % 4 == 3 else "rifleman", 0, Vector2(38 + (i % 4) * 2, 38 + (i / 4) * 2)))
+			b.append(_place(w2, "ifv" if i % 4 == 3 else "rifleman", 1, Vector2(58 - (i % 4) * 2, 58 - (i / 4) * 2)))
+		w2.submit({"type": "attack_move", "issuer": 0, "unit_ids": a, "target": Vector2(48.5, 48.5)})
+		w2.submit({"type": "attack_move", "issuer": 1, "unit_ids": b, "target": Vector2(48.5, 48.5)})
+		var n := 0
+		for t in 160:
+			w2.step()
+			for ev in w2.events:
+				if String(ev.type) == "ShotFired":
+					n += 1
+		hs.append(w2.state_hash())
+		shots.append(n)
+	CombatS.native_los = true
+	check(int(shots[0]) > 0, "the fight fired shots (%d)" % int(shots[0]))
+	check_eq(shots[0], shots[1], "same shot count with native LOS on/off")
+	check_eq(hs[0], hs[1], "state hash equal with native LOS on/off")
