@@ -2388,7 +2388,55 @@
       }
     ]
   },
+  "editor_icons": {
+    "bridge": "icons/ed_bridge.png",
+    "brush": "icons/ed_brush.png",
+    "eraser": "icons/ed_eraser.png",
+    "fill": "icons/ed_fill.png",
+    "lake": "icons/ed_lake.png",
+    "line": "icons/ed_line.png",
+    "player_start": "icons/ed_player_start.png",
+    "rect": "icons/ed_rect.png",
+    "redo": "icons/ed_redo.png",
+    "region": "icons/ed_region.png",
+    "resource": "icons/ed_resource.png",
+    "river": "icons/ed_river.png",
+    "rock": "icons/ed_rock.png",
+    "sym_four_way": "icons/ed_sym_four_way.png",
+    "sym_mirror_diag": "icons/ed_sym_mirror_diag.png",
+    "sym_mirror_x": "icons/ed_sym_mirror_x.png",
+    "sym_mirror_y": "icons/ed_sym_mirror_y.png",
+    "sym_off": "icons/ed_sym_off.png",
+    "sym_rotate_180": "icons/ed_sym_rotate_180.png",
+    "test_play": "icons/ed_test_play.png",
+    "tree": "icons/ed_tree.png",
+    "trigger": "icons/ed_trigger.png",
+    "undo": "icons/ed_undo.png",
+    "validate": "icons/ed_validate.png"
+  },
   "effects": {
+    "burnt_ground": {
+      "fh": 32,
+      "file": "fx/burnt_ground.png",
+      "frames": 3,
+      "fw": 64,
+      "pivot": [
+        32,
+        16
+      ],
+      "variants": 3
+    },
+    "charge": {
+      "fh": 12,
+      "file": "fx/charge.png",
+      "frames": 2,
+      "fw": 12,
+      "mask": "fx/charge_mask.png",
+      "pivot": [
+        6,
+        9
+      ]
+    },
     "cover": {
       "fh": 12,
       "file": "fx/cover.png",
@@ -2416,6 +2464,47 @@
       "file": "fx/explosion_small.png",
       "frames": 6,
       "fw": 32
+    },
+    "fire_forest": {
+      "fh": 56,
+      "file": "fx/fire_forest.png",
+      "frames": 3,
+      "fw": 64,
+      "pivot": [
+        32,
+        44
+      ]
+    },
+    "flame_jet": {
+      "fh": 16,
+      "file": "fx/flame_jet.png",
+      "frames": 4,
+      "fw": 48,
+      "pivot": [
+        2,
+        8
+      ]
+    },
+    "mine": {
+      "fh": 8,
+      "file": "fx/mine.png",
+      "frames": 2,
+      "fw": 12,
+      "mask": "fx/mine_mask.png",
+      "pivot": [
+        6,
+        5
+      ]
+    },
+    "mine_detected": {
+      "fh": 12,
+      "file": "fx/mine_detected.png",
+      "frames": 2,
+      "fw": 16,
+      "pivot": [
+        8,
+        7
+      ]
     },
     "muzzle": {
       "fh": 16,
@@ -3426,18 +3515,30 @@
     "decor/tree_4.png": "a43edee33f1d606b83d36a24e0b790fd",
     "fog/explored.png": "fdb78248d0675b2efc3d48cd7b1a4737",
     "fog/unexplored.png": "c6027e6c58fbed51029568c703c0dd5c",
+    "fx/burnt_ground.png": "8d2b4cbb412def4889f5e852716794fc",
+    "fx/charge.png": "e5dcccc7c1ff032726653b19ca5e18ef",
+    "fx/charge_mask.png": "590580c53f0c264aa7f7eb24257b176f",
     "fx/cover.png": "7969a395e77e92ccf59800b250d55388",
     "fx/disabled_smoke.png": "4b89cdfede5b583576109c64848ca641",
     "fx/explosion_large.png": "122fd496b139116df34d07fc8f2e1e04",
     "fx/explosion_small.png": "1652962a191339c1c972c05e904f0417",
+    "fx/fire_forest.png": "1c13e64c6fabf3e83f71f64646a912e8",
+    "fx/flame_jet.png": "e1e5d230b74bb2ce7ba63d1ca1e4da75",
+    "fx/mine.png": "894b85d43816cdca2cc77832f722f6c9",
+    "fx/mine_detected.png": "a38cb43ad22dc20c64433ccd963e5362",
+    "fx/mine_mask.png": "f0df218e45b00312350bcf737217b3c5",
     "fx/muzzle.png": "ecce9ebca50c5fdad61267d84d72bd7c",
     "fx/pinned.png": "972b4c5745d32e293c0f65a989a5108f",
     "fx/retreat.png": "b83bef5c559eb9d44783aef5621e0545",
     "fx/smoke.png": "4797e1d01b82d2369d46367988decd81",
+    "icons/a_apc.png": "58a18fc6a53214864f25c2e2bfc0cb57",
+    "icons/a_combat_engineer.png": "e4e77d2463d1d84826031117dc40ec6b",
     "icons/a_ew_truck.png": "0fe01e1d5c214370c3052d96379cca19",
     "icons/a_gate.png": "cbaf47f5f695a402983f4363acbf04bc",
     "icons/a_guided_arty.png": "5ec3e01e8e0ee96a3209d114efdc914e",
+    "icons/a_mortar.png": "8355855d21e09ac9cd2d29eb784ca285",
     "icons/a_old_tank.png": "bbb6d90e4b16a158136539a4074102b8",
+    "icons/a_sniper.png": "4f170c13fcb3cc7b6884fdd1f5c5aa58",
     "icons/a_uav.png": "064d6ca50548bf2bccca667ffb65c8b9",
     "icons/a_wall.png": "e5cdc6a100cf2624bb139687178e92f8",
     "icons/a_wall_tower.png": "c4d2d23dbd7e2bdd5fad7a92f5f2c336",
@@ -3452,8 +3553,10 @@
     "icons/b_crew.png": "80b989cfbfae5ecba804b2c719ec4706",
     "icons/b_drafting_office.png": "bf9f222371afbfa5ad8204dc0847d8da",
     "icons/b_field_gun.png": "790aaaeafb359e377df498cf8058ebac",
+    "icons/b_flamer.png": "89caeca3a08bd71f55f202224a261c8d",
     "icons/b_gate.png": "7a3f50e01b915665f9c3df0e949720b1",
     "icons/b_guided_battery.png": "e80551d2f1ab9ec2f3132fa5c80837c9",
+    "icons/b_halftrack.png": "44c0b766584978c1c64a882c15b82a64",
     "icons/b_heavy_plant.png": "7ac7fca384537b2fc4a83d49b4187139",
     "icons/b_heavy_rifle.png": "6015aacbd9877f8abe114949d6e6b6ab",
     "icons/b_heavy_squad.png": "cfcb9f1d1ceaf433507b495373a4dd43",
@@ -3464,7 +3567,9 @@
     "icons/b_radar_aa.png": "5a4d3fb02a5f7c65ae0d4b15562bea2a",
     "icons/b_rebuilt_mbt.png": "437758cff29b5786f0b7dc42060e697e",
     "icons/b_recovery_truck.png": "669f9d3083ca2414cedad213fcb7febe",
+    "icons/b_rocket_truck.png": "6cf9fd08204ce0943e332dffd490d2cf",
     "icons/b_salvage_yard.png": "9da2f4ebdda91476abd40ba14bb70d88",
+    "icons/b_scrap_mech.png": "18216b3843679d180e89fa41ec9fee9a",
     "icons/b_signal_mast.png": "2e89aa2f46a71a842ef3bc8a2c5e5815",
     "icons/b_smelter.png": "2626aeb76485d77b9da805c38cfe5f75",
     "icons/b_wall.png": "809c1476d788390f55f1134d0f59ecd8",
@@ -3473,6 +3578,30 @@
     "icons/barracks.png": "dc528fd309094b0d74eaf8daf680e428",
     "icons/comms_tower.png": "85797b228b3dc0a64442a45aaf442c7b",
     "icons/depot.png": "87833ca88ab2b9eb9bbe56abb08fcd46",
+    "icons/ed_bridge.png": "dfa873616eb6a490a3034d79c71d0dc9",
+    "icons/ed_brush.png": "d2ecec4b9ace3529472334769648c754",
+    "icons/ed_eraser.png": "11285468fd3f0fc322bbb40904d4fcc2",
+    "icons/ed_fill.png": "b7cfd3b3552917f689fd961e159261d2",
+    "icons/ed_lake.png": "a1cb14dc8b177c6ca3b147a35d897c73",
+    "icons/ed_line.png": "461708bf19903e7008d9ba2cc25c2f38",
+    "icons/ed_player_start.png": "6b8ca8e3e98e8597ea865876a158b568",
+    "icons/ed_rect.png": "612ffc861082c453edefd949bf099a46",
+    "icons/ed_redo.png": "d0c88bac2059dba9d2920cfb4ca745ac",
+    "icons/ed_region.png": "74d3fa4039c2cb0199819f2079c72a4d",
+    "icons/ed_resource.png": "45af6d6900563cd2cba58d2ddf46793f",
+    "icons/ed_river.png": "7c4c2da1dc927ed86ec16e32fbf503b1",
+    "icons/ed_rock.png": "67ce507a1e050a5f0566bcd0bba98f52",
+    "icons/ed_sym_four_way.png": "3ab3783cc92dd2e0c89c01620036297f",
+    "icons/ed_sym_mirror_diag.png": "2cb2b3f9c8a803c152003ef81c32e455",
+    "icons/ed_sym_mirror_x.png": "0661699150077565b1ea0c6df389127e",
+    "icons/ed_sym_mirror_y.png": "2f94fc9f24030b55dfbe121d60389935",
+    "icons/ed_sym_off.png": "2918d40c31a392d04c828cdb5bb63605",
+    "icons/ed_sym_rotate_180.png": "cb7d311cde4b3bb1b699bd8f66360996",
+    "icons/ed_test_play.png": "7d0b1134e03d03886e4a8710600a2c65",
+    "icons/ed_tree.png": "944aab20b622d3292e191af00be5ff96",
+    "icons/ed_trigger.png": "85d668f467d6459239859f7f90cd524b",
+    "icons/ed_undo.png": "0e6519324545a333d1d1faa88b5dac68",
+    "icons/ed_validate.png": "37aabc36f3ad4f45ad1487618ac7a253",
     "icons/engineer.png": "1dea08ff4ef5c3a56226c3b2efb3e062",
     "icons/formation_column.png": "b179dc62f48be3b38c0d3ad89f59f074",
     "icons/formation_line.png": "bb68a4faca8ec0ee7c1dc4b3d781196c",
@@ -3659,12 +3788,20 @@
     "terrain/water_1.png": "4767b3198a21b316fa5a109026903a36",
     "terrain/water_2.png": "1c1d7f07f51384ea6734207052861c37",
     "terrain/water_3.png": "36d93c8371276a5263cce044ef33f5d4",
+    "units/a_apc.png": "a81a5c1ce378f55d7f65c2ffa6095211",
+    "units/a_apc_mask.png": "97dae8610891b07a4d721bc1cccaec31",
+    "units/a_combat_engineer.png": "7316b91db967c8cf2f3954757580b8d0",
+    "units/a_combat_engineer_mask.png": "57555ce84d8c6db4fd45154dbe592640",
     "units/a_ew_truck.png": "1fe7d229371cc5c25f909a2e9722f347",
     "units/a_ew_truck_mask.png": "6019fecd227f3baf5a20bae307ecdb5a",
     "units/a_guided_arty.png": "0413339675ca6c80c925ac27c261c1be",
     "units/a_guided_arty_mask.png": "3dacaa64537e928f9711ad8eecfbe5ab",
+    "units/a_mortar.png": "d97b879dc49ae51206b15df7f18f0fc8",
+    "units/a_mortar_mask.png": "5fe11ba246d8137344512c3c1bcc63d5",
     "units/a_old_tank.png": "f6b8d076d3fb2a6b85dee8e60df87176",
     "units/a_old_tank_mask.png": "17b73f946b951a05914476620a07474d",
+    "units/a_sniper.png": "a9d4d1e99c57f6eb61e9b94d96e56412",
+    "units/a_sniper_mask.png": "17996976a79fcee3227f770d2d0b4ddb",
     "units/a_uav.png": "963a2ef074f7db4b4a04ea4634ce03c8",
     "units/a_uav_mask.png": "9a004266355051fc1cdb531853268208",
     "units/a_uav_shadow.png": "a477353662a442725c7f34bf8632a2c6",
@@ -3678,8 +3815,12 @@
     "units/b_crew_mask.png": "c71d42e83d0059008bb93fd4827fade6",
     "units/b_field_gun.png": "b5dab2dc5a797e5c79e9575b3c698bc0",
     "units/b_field_gun_mask.png": "5516f6e9b97781a180eb58ea62c15da0",
+    "units/b_flamer.png": "3be32681fc43cead67cd61486999fcf0",
+    "units/b_flamer_mask.png": "3fdc618a7cac073d4d056e453b6a95bf",
     "units/b_guided_battery.png": "ee418ac8a1d8781bbf452febd8856b9b",
     "units/b_guided_battery_mask.png": "214fb77d37061a9750e3ffc8c88bff6e",
+    "units/b_halftrack.png": "8e0fed17a1c877e9247ea59920c6e5dd",
+    "units/b_halftrack_mask.png": "97b94a296a596b6020d4023736f5d0fa",
     "units/b_heavy_rifle.png": "9949e8bec57d0ec5227598ea84a8d793",
     "units/b_heavy_rifle_mask.png": "7f562f1696274d8c62686f757146d71a",
     "units/b_jammer_truck.png": "b04090fd3f7b40acbe49fdb367eed5b1",
@@ -3694,6 +3835,10 @@
     "units/b_rebuilt_mbt_mask.png": "d9001037bc17ae7c48c2bee250cf1ffb",
     "units/b_recovery_truck.png": "d3efdb14f7d0437ff8223dec67e8015b",
     "units/b_recovery_truck_mask.png": "435551e876c949f1dc09b01f7e6393c3",
+    "units/b_rocket_truck.png": "b0ac8506bb212c4d94a948d8222bf93b",
+    "units/b_rocket_truck_mask.png": "30c0c36c5d5355baac1e105b99b97add",
+    "units/b_scrap_mech.png": "d5bd5bda0def1629dda19e4ee4c882e1",
+    "units/b_scrap_mech_mask.png": "b4c89816f57dd5eed7daf1afa6a351c6",
     "units/engineer.png": "54a4ad36a7cbbf1cf03e09ba94b5e370",
     "units/engineer_mask.png": "3e06b9097573d01db8ec28fdb7dffafc",
     "units/ifv.png": "2e2889868750b66f1b28f88d92384b45",
@@ -3734,6 +3879,7 @@
     "units/recon_mask.png": "56ad097dd0ea1ef8edd8f1b849f6e504",
     "units/rifleman.png": "5041b0347f9f6eecb359b3f2cc086d34",
     "units/rifleman_mask.png": "f28c299a660b1340599eaa65ef9aad9c",
+    "wrecks/a_apc_wreck.png": "6644012ed5c521250f0ad4b850443183",
     "wrecks/a_ew_truck_wreck.png": "4676fae2eefd8c0e8d25046cf6155131",
     "wrecks/a_guided_arty_wreck.png": "fb9ed726cffcadfb4f02f15ba2b806f8",
     "wrecks/a_old_tank_wreck.png": "875b0d06be5a847039d8e41e70c20677",
@@ -3741,10 +3887,13 @@
     "wrecks/b_carrier_wreck.png": "dca8e1b9e908f82cfe81fcbe83f6c904",
     "wrecks/b_field_gun_wreck.png": "324adadaa8027c59fab3e5e237aa85ce",
     "wrecks/b_guided_battery_wreck.png": "43adbd787b74531c530590ac13e66111",
+    "wrecks/b_halftrack_wreck.png": "5c8c52b753e1f61f2af625d64beabc2b",
     "wrecks/b_jammer_truck_wreck.png": "79f9a46aa6390aa2cb9cf56b74d7ea57",
     "wrecks/b_radar_aa_wreck.png": "a6812adccce9cbbd61b7da8741506791",
     "wrecks/b_rebuilt_mbt_wreck.png": "af633693ec685be147f1fb946985fe33",
     "wrecks/b_recovery_truck_wreck.png": "c7a473ca9066fe273a8896c23b253473",
+    "wrecks/b_rocket_truck_wreck.png": "8283bc5a5f3b516133198504d379f380",
+    "wrecks/b_scrap_mech_wreck.png": "1ba628620aa9876e2b72e5f1235e1b85",
     "wrecks/ifv_wreck.png": "c59ef24255a1bc2036c69f53640335e3",
     "wrecks/logistics_truck_wreck.png": "b2d58ac7c27b18bf849f52ceac6e4af8",
     "wrecks/m_artillery_node_wreck.png": "734b466e9df9e4b32149a35e7ebfa20a",
@@ -3784,10 +3933,14 @@
     "states": "conn_<m> | conn_<m>_damaged | conn_<m>_open (gates) | build_0..2 | built=conn_0 | damaged=conn_0_damaged"
   },
   "icons": {
+    "a_apc": "icons/a_apc.png",
+    "a_combat_engineer": "icons/a_combat_engineer.png",
     "a_ew_truck": "icons/a_ew_truck.png",
     "a_gate": "icons/a_gate.png",
     "a_guided_arty": "icons/a_guided_arty.png",
+    "a_mortar": "icons/a_mortar.png",
     "a_old_tank": "icons/a_old_tank.png",
+    "a_sniper": "icons/a_sniper.png",
     "a_uav": "icons/a_uav.png",
     "a_wall": "icons/a_wall.png",
     "a_wall_tower": "icons/a_wall_tower.png",
@@ -3802,8 +3955,10 @@
     "b_crew": "icons/b_crew.png",
     "b_drafting_office": "icons/b_drafting_office.png",
     "b_field_gun": "icons/b_field_gun.png",
+    "b_flamer": "icons/b_flamer.png",
     "b_gate": "icons/b_gate.png",
     "b_guided_battery": "icons/b_guided_battery.png",
+    "b_halftrack": "icons/b_halftrack.png",
     "b_heavy_plant": "icons/b_heavy_plant.png",
     "b_heavy_rifle": "icons/b_heavy_rifle.png",
     "b_heavy_squad": "icons/b_heavy_squad.png",
@@ -3814,7 +3969,9 @@
     "b_radar_aa": "icons/b_radar_aa.png",
     "b_rebuilt_mbt": "icons/b_rebuilt_mbt.png",
     "b_recovery_truck": "icons/b_recovery_truck.png",
+    "b_rocket_truck": "icons/b_rocket_truck.png",
     "b_salvage_yard": "icons/b_salvage_yard.png",
+    "b_scrap_mech": "icons/b_scrap_mech.png",
     "b_signal_mast": "icons/b_signal_mast.png",
     "b_smelter": "icons/b_smelter.png",
     "b_wall": "icons/b_wall.png",
@@ -3823,6 +3980,30 @@
     "barracks": "icons/barracks.png",
     "comms_tower": "icons/comms_tower.png",
     "depot": "icons/depot.png",
+    "ed_bridge": "icons/ed_bridge.png",
+    "ed_brush": "icons/ed_brush.png",
+    "ed_eraser": "icons/ed_eraser.png",
+    "ed_fill": "icons/ed_fill.png",
+    "ed_lake": "icons/ed_lake.png",
+    "ed_line": "icons/ed_line.png",
+    "ed_player_start": "icons/ed_player_start.png",
+    "ed_rect": "icons/ed_rect.png",
+    "ed_redo": "icons/ed_redo.png",
+    "ed_region": "icons/ed_region.png",
+    "ed_resource": "icons/ed_resource.png",
+    "ed_river": "icons/ed_river.png",
+    "ed_rock": "icons/ed_rock.png",
+    "ed_sym_four_way": "icons/ed_sym_four_way.png",
+    "ed_sym_mirror_diag": "icons/ed_sym_mirror_diag.png",
+    "ed_sym_mirror_x": "icons/ed_sym_mirror_x.png",
+    "ed_sym_mirror_y": "icons/ed_sym_mirror_y.png",
+    "ed_sym_off": "icons/ed_sym_off.png",
+    "ed_sym_rotate_180": "icons/ed_sym_rotate_180.png",
+    "ed_test_play": "icons/ed_test_play.png",
+    "ed_tree": "icons/ed_tree.png",
+    "ed_trigger": "icons/ed_trigger.png",
+    "ed_undo": "icons/ed_undo.png",
+    "ed_validate": "icons/ed_validate.png",
     "engineer": "icons/engineer.png",
     "formation_column": "icons/formation_column.png",
     "formation_line": "icons/formation_line.png",
@@ -3875,6 +4056,59 @@
     "salvage": "icons/salvage.png"
   },
   "infantry": {
+    "a_combat_engineer": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/a_combat_engineer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "work"
+      ],
+      "fw": 24,
+      "mask": "units/a_combat_engineer_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "a_mortar": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/a_mortar.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed"
+      ],
+      "fw": 24,
+      "mask": "units/a_mortar_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "a_sniper": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/a_sniper.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/a_sniper_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
     "at_gunner": {
       "facings": 8,
       "fh": 26,
@@ -3904,6 +4138,23 @@
       ],
       "fw": 24,
       "mask": "units/b_crew_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "b_flamer": {
+      "facings": 8,
+      "fh": 26,
+      "file": "units/b_flamer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 24,
+      "mask": "units/b_flamer_mask.png",
       "pivot": [
         12,
         21
@@ -4118,6 +4369,16 @@
         21
       ]
     }
+  },
+  "lod_class": {
+    "a_apc": "vehicle_light",
+    "a_combat_engineer": "infantry",
+    "a_mortar": "infantry",
+    "a_sniper": "infantry",
+    "b_flamer": "infantry",
+    "b_halftrack": "vehicle_light",
+    "b_rocket_truck": "artillery",
+    "b_scrap_mech": "vehicle_heavy"
   },
   "lod_icons": {
     "*": {
@@ -4588,6 +4849,19 @@
     32
   ],
   "vehicle_wrecks": {
+    "a_apc": {
+      "facings": 8,
+      "fh": 48,
+      "file": "wrecks/a_apc_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        31
+      ]
+    },
     "a_ew_truck": {
       "facings": 8,
       "fh": 66,
@@ -4679,6 +4953,19 @@
         40
       ]
     },
+    "b_halftrack": {
+      "facings": 8,
+      "fh": 52,
+      "file": "wrecks/b_halftrack_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        35
+      ]
+    },
     "b_jammer_truck": {
       "facings": 8,
       "fh": 64,
@@ -4729,6 +5016,32 @@
       "pivot": [
         34,
         44
+      ]
+    },
+    "b_rocket_truck": {
+      "facings": 8,
+      "fh": 58,
+      "file": "wrecks/b_rocket_truck_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 68,
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "b_scrap_mech": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/b_scrap_mech_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        50
       ]
     },
     "ifv": {
@@ -4863,6 +5176,23 @@
     }
   },
   "vehicles": {
+    "a_apc": {
+      "facings": 8,
+      "fh": 48,
+      "file": "units/a_apc.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "unload"
+      ],
+      "fw": 64,
+      "mask": "units/a_apc_mask.png",
+      "pivot": [
+        32,
+        31
+      ]
+    },
     "a_ew_truck": {
       "facings": 8,
       "fh": 66,
@@ -5001,6 +5331,23 @@
         40
       ]
     },
+    "b_halftrack": {
+      "facings": 8,
+      "fh": 52,
+      "file": "units/b_halftrack.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "unload"
+      ],
+      "fw": 66,
+      "mask": "units/b_halftrack_mask.png",
+      "pivot": [
+        33,
+        35
+      ]
+    },
     "b_jammer_truck": {
       "facings": 8,
       "fh": 64,
@@ -5063,6 +5410,41 @@
       "pivot": [
         34,
         44
+      ]
+    },
+    "b_rocket_truck": {
+      "facings": 8,
+      "fh": 58,
+      "file": "units/b_rocket_truck.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 68,
+      "mask": "units/b_rocket_truck_mask.png",
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "b_scrap_mech": {
+      "facings": 8,
+      "fh": 64,
+      "file": "units/b_scrap_mech.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "move"
+      ],
+      "fw": 64,
+      "legged": true,
+      "mask": "units/b_scrap_mech_mask.png",
+      "pivot": [
+        32,
+        50
       ]
     },
     "ifv": {
