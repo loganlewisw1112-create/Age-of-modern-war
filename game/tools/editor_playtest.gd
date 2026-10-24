@@ -238,7 +238,7 @@ func _cell_vp(c: Vector2i) -> Vector2:
 func _on_map(p: Vector2) -> bool:
 	var vs := root.get_visible_rect().size
 	var s: float = _ed().ui_scale
-	return p.x > 310.0 * s and p.x < vs.x - 272.0 * s and p.y > 56.0 * s and p.y < vs.y - 38.0 * s
+	return p.x > 344.0 * s and p.x < vs.x - 272.0 * s and p.y > 56.0 * s and p.y < vs.y - 38.0 * s
 
 
 ## Click the minimap so the camera centres on cell c.
@@ -318,8 +318,13 @@ func _run() -> void:
 	await _wait(1.0)
 	var ed = _ed()
 	# --- new 128 map + name
-	await _press("New", root, true)
 	var mp = ed.tab_panel("map")
+	# under load the first terrain bake can take >10 s: retry New until the Map tab is showing
+	for attempt in 3:
+		await _press("New", root, true)
+		if await _wait_until(func(): return mp.is_visible_in_tree() and _find_button(mp, "128", true) != null, 8.0):
+			break
+		print("PLAYTEST-DBG map tab not showing after New (attempt %d)" % attempt)
 	await _press("128", mp, true)
 	await _press("Create blank map", mp)
 	await _click(_center(mp._name))

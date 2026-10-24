@@ -13,6 +13,7 @@ const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
 const CameraRig = preload("res://presentation/view/camera_rig.gd")
 const Overlay = preload("res://presentation/editor/editor_overlay.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 const TILE_W := 64
 const TILE_H := 32
 
@@ -20,6 +21,8 @@ signal hover_changed(cell: Vector2i)
 
 var doc                      # editor_doc.gd
 var world: SimWorld
+var _world: SimWorld         # mv interface (THREAD G4): entity_layer reads mv._world / mv.snap
+var snap: Dictionary = {}
 var camera: Camera2D
 var terrain_layer: Node2D
 var entity_layer: Node2D = null
@@ -39,6 +42,8 @@ var _down := false
 var _pan_from = null
 var _decor_dirty := false
 var _last_cell := Vector2i(-99, -99)
+var _mouse_vp := Vector2.ZERO
+var _mouse_known := false
 
 
 func setup(d) -> void:
@@ -59,6 +64,7 @@ func setup(d) -> void:
 func rebuild() -> void:
 	world = SimWorld.new()
 	world.map = doc.map
+	_world = world
 	_sync_world()
 	for n in [terrain_layer, entity_layer]:
 		if n != null:
@@ -108,8 +114,15 @@ func _sync_world() -> void:
 			"spawn": Vector2i(p.get("start", Vector2i.ZERO))}
 	for r in doc.map.get("resources", []):
 		world.spawn_resource(String(r.res), int(r.amount), Vector2(r.cell) + Vector2(0.5, 0.5))
-	if not layers_on.units:
-		return
+	if layers_on.units:
+		_sync_placed()
+	world.events.clear()
+	# the editor world never steps: build the render snapshot here (entity_layer draws only from it)
+	RenderSnap.build(world)
+	snap = RenderSnap.latest(world)
+
+
+func _sync_placed() -> void:
 	for e in doc.scenario.get("entities", []):
 		var owner := int(e.get("owner_slot", 0))
 		var def := String(e.get("def", ""))
@@ -128,7 +141,6 @@ func _sync_world() -> void:
 			var pos: Vector2 = Vector2(e.pos) if e.has("pos") else Vector2(Vector2i(e.get("cell", Vector2i.ZERO))) + Vector2(0.5, 0.5)
 			var uid := world.spawn_unit(def, owner, pos)
 			world.entities[uid].facing = float(e.get("facing", 0.0))
-	world.events.clear()
 
 
 ## Call after a stroke / undo / redo: re-bake decor (trees, rocks) if terrain changed.
@@ -182,6 +194,18 @@ func cell_explored(_c: Vector2i) -> bool:
 	return true
 
 
+func world_readable() -> bool:
+	return true
+
+
+func sim_busy() -> bool:
+	return false
+
+
+func fog_of(_fid: int) -> Dictionary:
+	return {}
+
+
 func entity_visible(_e: Dictionary) -> bool:
 	return true
 
@@ -190,9 +214,19 @@ func center_camera_on(world_pos: Vector2) -> void:
 	camera.center_on(world_to_screen(world_pos))
 
 
+## The cell under the pointer. Uses the last mouse EVENT position (viewport coords), not the OS
+## cursor: Viewport.get_mouse_position() reads the hardware cursor, so synthetic events (playtest,
+## demo) would otherwise paint wherever the real cursor sits.
 func mouse_cell() -> Vector2i:
-	var p := screen_to_world(get_global_mouse_position())
+	var vp: Vector2 = _mouse_vp if _mouse_known else get_viewport().get_mouse_position()
+	var p := screen_to_world(get_canvas_transform().affine_inverse() * vp)
 	return Vector2i(floori(p.x), floori(p.y))
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouse:
+		_mouse_vp = (event as InputEventMouse).position
+		_mouse_known = true
 
 
 ## Viewport position -> map cell (used by the demo/playtest scripts).

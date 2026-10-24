@@ -42,7 +42,8 @@ START HERE (the OBJECTIVES panel names your faction's buildings)
 var _seed: LineEdit
 var setup: VBoxContainer       # skirmish_setup.gd (slots, economy)
 var victory: VBoxContainer     # victory_builder.gd
-var map_opt: OptionButton      # G3b map picker
+var map_opt: OptionButton      # G3b map picker (hidden once the G4e map browser drives it)
+var _map_lbl: Label = null
 var adv_opt: OptionButton      # G3b advancement rules
 var _map_rows: Array = []
 var _adv_ids: Array = []
@@ -136,7 +137,8 @@ func _build() -> void:
 	grid.add_theme_constant_override("v_separation", 10)
 	pv.add_child(grid)
 
-	grid.add_child(HT.make_label("Map", HT.DIM))
+	_map_lbl = HT.make_label("Map", HT.DIM)
+	grid.add_child(_map_lbl)
 	map_opt = OptionButton.new()
 	map_opt.name = "MapOption"
 	map_opt.custom_minimum_size = Vector2(460, 0)
@@ -290,6 +292,8 @@ func build_config() -> Dictionary:
 		ui_reason = "%s is not available yet." % String(m.name)
 	if victory != null:
 		victory.apply(cfg)
+	if setup != null and setup.has_method("finalize"):
+		setup.finalize(cfg)   # G4e: a custom map file's victory / players override the form
 	var err := SimWorld.validate_config(cfg)
 	if err == "":
 		err = ui_reason
@@ -308,6 +312,12 @@ func _validate() -> bool:
 	var cfg: Dictionary = r.cfg
 	var prof: Dictionary = Content.rules().get("economy_profiles", {}).get(String(cfg.get("economy", "standard")), {})
 	var m := selected_map()
+	if setup != null and setup.get("browser") != null:
+		# G4e: a custom map picked in the browser names the summary (the MapOption row stays: it is
+		# synced with the browser's built-in rows and the stages UI playtest drives it)
+		if setup.has_method("is_custom") and setup.is_custom():
+			var cur: Dictionary = setup.browser.current
+			m = {"name": String(cur.get("name", "Custom map")), "w": int(cur.get("w", 0)), "h": int(cur.get("h", 0))}
 	var stages: Array = []
 	for sd in cfg.sides:
 		stages.append(str(int(sd.get("stage", 8))))

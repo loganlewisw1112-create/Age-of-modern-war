@@ -276,6 +276,7 @@ func open_pause() -> void:
 	if hud != null:
 		hud.suppress_banner = true
 	_pause = PauseMenuScript.new()
+	_pause.editor_test = _editor_test and _editor != null
 	_overlay_layer.root.add_child(_pause)
 	_pause.set_save_system_available(_save_system() != null)
 	_pause.set_scale_index(_ui_scale)

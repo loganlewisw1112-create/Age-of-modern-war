@@ -108,7 +108,8 @@ func _make_row(s: int) -> Dictionary:
 	r.diff = _opt(l3, dn, "ED2P%dDiff" % s, _changed.bind(s, "diff"))
 	r.start_btn = W.button(l3, "Set start", arm_start.bind(s), "Then click the map")
 	r.start_btn.name = "ED2P%dStart" % s
-	var l4 := HFlowContainer.new()
+	var l4 := GridContainer.new()   # label + spin pairs stay together (a flow row split them)
+	l4.columns = 4
 	box.add_child(l4)
 	r.stock = {}
 	for k in STOCK_KEYS:

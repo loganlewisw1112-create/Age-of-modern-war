@@ -5,7 +5,7 @@ extends RefCounted
 const HT = preload("res://presentation/hud/hud_theme.gd")
 const W = preload("res://presentation/editor/editor_widgets.gd")
 const Symmetry = preload("res://presentation/editor/symmetry.gd")
-const LEFT_W := 300.0
+const LEFT_W := 334.0   # widest tab (Players) needs ~331 px: a fixed width stops the map edge jumping
 const RIGHT_W := 262.0
 const TOP_H := 46.0
 const BOTTOM_H := 28.0
@@ -166,6 +166,13 @@ func _on_file(path: String) -> void:
 		ed.save_to(path)
 	else:
 		ed.open_path(path)
+
+
+## New / open / generate: the last Validate result belongs to the old map.
+func reset_issues() -> void:
+	for c in issues_box.get_children():
+		c.queue_free()
+	W.note(issues_box, "Press Validate to check the map.")
 
 
 func show_issues(issues: Array) -> void:

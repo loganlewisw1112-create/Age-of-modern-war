@@ -14,6 +14,7 @@ var _save_btn: Button
 var _load_btn: Button
 var _scale_opt: OptionButton
 var _save_ok: bool = false
+var editor_test := false   # set by main.gd before add_child: an editor test play -> "Back to editor"
 
 
 func _ready() -> void:
@@ -49,7 +50,7 @@ func _ready() -> void:
 		_scale_opt.add_item(s)
 	_scale_opt.item_selected.connect(_on_scale)
 	sc.add_child(_scale_opt)
-	var quit := _btn("Quit to main menu", v)
+	var quit := _btn("Back to editor" if editor_test else "Quit to main menu", v)
 	quit.pressed.connect(func(): menu_requested.emit())
 	_status = HT.make_label("", HT.YELLOW, 14)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

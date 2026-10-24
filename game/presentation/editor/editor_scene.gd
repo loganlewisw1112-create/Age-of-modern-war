@@ -114,6 +114,8 @@ func select_tab(id: String) -> void:
 	p.visible = true
 	(tabs[id].button as Button).button_pressed = true
 	view.tool = p
+	# clear the previous tab's properties; tabs that show their own set them in tab_activated
+	set_properties(String((tabs[id].button as Button).text), [])
 	if p.has_method("tab_activated"):
 		p.tab_activated()
 	view.preview.queue_redraw()
@@ -245,6 +247,7 @@ func _on_doc_changed(cells: Array, kind: String) -> void:
 	if kind == "all" and cells.is_empty():
 		minimap.rebuild()
 		_p.sync_symmetry()
+		_p.reset_issues()
 	else:
 		minimap.on_cells_changed(cells)
 	_refresh_buttons()

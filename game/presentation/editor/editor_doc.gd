@@ -75,7 +75,7 @@ func set_doc(m: Dictionary, scen: Dictionary, file_path: String = "") -> void:
 		if not scenario.has(k):
 			scenario[k] = []
 	if not scenario.has("victory"):
-		scenario["victory"] = {"victory": "hq"}
+		scenario["victory"] = {"victory": "hq_elimination"}
 	_reset(file_path)
 
 
@@ -87,7 +87,7 @@ static func default_scenario(w: int, h: int) -> Dictionary:
 			{"slot": 0, "faction": "human_a", "team": 0, "color": "", "stage": 8, "credits": 2000, "stock": {}, "ai": false, "difficulty": "normal", "start": a},
 			{"slot": 1, "faction": "human_b", "team": 1, "color": "", "stage": 8, "credits": 2000, "stock": {}, "ai": true, "difficulty": "normal", "start": b},
 		],
-		"entities": [], "victory": {"victory": "hq"}, "regions": [], "triggers": [], "start_packages": true}
+		"entities": [], "victory": {"victory": "hq_elimination"}, "regions": [], "triggers": [], "start_packages": true}
 
 
 ## Map dict for MapIO.save: spawns follow the players' start cells, regions mirrored into scenario.

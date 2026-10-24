@@ -5,6 +5,7 @@ extends Node
 ## editor_view.scripted_stroke), saves one PNG per tab, a 256x256 fps sample, then quits.
 
 const Brushes = preload("res://presentation/editor/brushes.gd")
+const MapIO = preload("res://sim/map_io.gd")
 
 var editor
 var shot_dir := ""
@@ -134,17 +135,32 @@ func _run() -> void:
 	var issues: Array = editor.action_validate()
 	print("EDITOR_DEMO validate issues=%d undo_depth=%d decor=%d resources=%d bridges=%d" % [issues.size(),
 		editor.doc.undo_depth(), editor.doc.map.decor.size(), editor.doc.map.resources.size(), editor.doc.map.bridges.size()])
+	print("EDITOR_DEMO issue codes=%s" % str(issues.map(func(i): return String(i.get("code", "")))))
 	_view(Vector2(40, 60), 0.45)
 	await _shot("06_overlay_validate.png")
 	var err: String = editor.save_to("user://maps/ed1_demo.rtsmap")
 	print("EDITOR_DEMO save err='%s'" % err)
+	_roundtrip("user://maps/ed1_demo.rtsmap")
 	v.layers_on["grid"] = false
 	v.layers_on["pass"] = ""
+	# ---- ED2 tabs (layout check): units, players, victory & triggers, regions
+	_view(Vector2(40, 60), 0.8)
+	var shot_i := 8
+	for t in ["units", "players", "victory", "regions"]:
+		if editor.tab_panel(t) == null:
+			continue
+		editor.select_tab(t)
+		await _wait(4)
+		var tb: Control = editor._p.tool_box
+		print("EDITOR_DEMO tab %s left_edge=%.0f tool_box_min_w=%.0f" % [t, tb.get_global_rect().end.x, tb.get_combined_minimum_size().x])
+		await _shot("%02d_%s_tab.png" % [shot_i, t])
+		shot_i += 1
 	# ---- 256x256 fps sample while panning
 	editor.select_tab("map")
 	mp.new_size = 256
 	mp.create_new()
 	editor.doc.symmetry = "four_way"
+	editor._p.sync_symmetry()
 	editor.select_tab("terrain")
 	tp.code = Brushes.FOREST
 	tp.bsize = 15
@@ -155,14 +171,20 @@ func _run() -> void:
 	tp.strength = 100
 	_view(Vector2(128, 128), 0.3)
 	await _wait(30)
+	# per-frame wall time while panning (Engine.get_frames_per_second() averages the last second,
+	# which still contains the stroke work above; vsync caps the result at the display rate)
 	var samples: Array = []
-	for i in 180:
-		v.camera.pan_screen(Vector2(6, 3))
+	var t_last := Time.get_ticks_usec()
+	for i in 240:
+		v.camera.pan_screen(Vector2(6, 3) * (1.0 if (i / 60) % 2 == 0 else -1.0))   # stay over the map
 		await get_tree().process_frame
-		if i % 10 == 9:
-			samples.append(Engine.get_frames_per_second())
+		var t_now := Time.get_ticks_usec()
+		samples.append(1000000.0 / maxf(1.0, float(t_now - t_last)))
+		t_last = t_now
 	samples.sort()
-	print("EDITOR_FPS_256 min=%.0f median=%.0f max=%.0f" % [samples[0], samples[samples.size() / 2], samples[samples.size() - 1]])
+	var n := samples.size()
+	print("EDITOR_FPS_256 min=%.0f p5=%.0f median=%.0f max=%.0f frames=%d" % [samples[0], samples[n / 20],
+		samples[n / 2], samples[n - 1], n])
 	await _shot("07_map256.png")
 	get_tree().quit()
 
@@ -177,3 +199,35 @@ func _bridge_somewhere(wp) -> bool:
 					wp.tool_begin(Vector2i(x, y1))
 					return (m.bridges as Array).size() > 0
 	return false
+
+
+## MapIO save -> read -> editor open round trip: the reopened document must equal what was saved.
+func _roundtrip(path: String) -> void:
+	var m0: Dictionary = editor.doc.map_for_save()
+	var s0: Dictionary = editor.doc.scenario_for_save()
+	var r: Dictionary = MapIO.read(path)
+	if r.has("error"):
+		print("EDITOR_DEMO roundtrip ok=false read error=%s" % String(r.error))
+		return
+	var m1: Dictionary = r.map
+	var s1: Dictionary = r.get("scenario", {})
+	var bad: Array = []
+	if int(m1.w) != int(m0.w) or int(m1.h) != int(m0.h):
+		bad.append("size")
+	if PackedByteArray(m1.terrain) != PackedByteArray(m0.terrain):
+		bad.append("terrain")
+	for k in ["decor", "resources", "bridges"]:
+		if (m1.get(k, []) as Array).size() != (m0.get(k, []) as Array).size():
+			bad.append(k)
+	for k in ["players", "entities", "regions", "triggers"]:
+		if (s1.get(k, []) as Array).size() != (s0.get(k, []) as Array).size():
+			bad.append(k)
+	if String(s1.get("name", "")) != String(s0.get("name", "")):
+		bad.append("name")
+	var oerr: String = editor.open_path(path)
+	if oerr != "" or PackedByteArray(editor.doc.map.terrain) != PackedByteArray(m0.terrain):
+		bad.append("open_path")
+	print("EDITOR_DEMO roundtrip ok=%s cells=%d decor=%d resources=%d bridges=%d players=%d mismatches=%s" % [
+		bad.is_empty(), PackedByteArray(m1.terrain).size(), (m1.get("decor", []) as Array).size(),
+		(m1.get("resources", []) as Array).size(), (m1.get("bridges", []) as Array).size(),
+		(s1.get("players", []) as Array).size(), str(bad)])
