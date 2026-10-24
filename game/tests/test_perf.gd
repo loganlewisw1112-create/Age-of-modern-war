@@ -303,3 +303,183 @@ func test_native_los_matches_gdscript_los() -> void:
 	check(int(shots[0]) > 0, "the fight fired shots (%d)" % int(shots[0]))
 	check_eq(shots[0], shots[1], "same shot count with native LOS on/off")
 	check_eq(hs[0], hs[1], "state hash equal with native LOS on/off")
+
+
+# ================================================================ PERF10K equivalence
+const Territory = preload("res://sim/systems/territory.gd")
+const Subsets = preload("res://sim/systems/unit_subsets.gd")
+const Transport = preload("res://sim/systems/transport.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
+
+
+## One fight with mid-run orders (move / stop / re-order), a save round trip and a flood of
+## queued repaths; held = Movement.held_state. Returns [state hash, verify mismatches].
+func _held_run(held: bool) -> Array:
+	Movement.held_state = held
+	Movement.held_verify = held
+	Movement.verify_bad = 0
+	var w := _clean(11)
+	var ab := _armies(w, 14, 14)
+	var a: Array = ab[0]
+	var b: Array = ab[1]
+	for t in 260:
+		if t == 30:
+			w.submit({"type": "move", "issuer": 0, "unit_ids": a.slice(0, 5), "target": Vector2(20.5, 70.5)})
+		if t == 31:
+			w.submit({"type": "stop", "issuer": 0, "unit_ids": a.slice(0, 2)})
+		if t == 45:
+			w.submit({"type": "move", "issuer": 0, "unit_ids": a.slice(0, 2), "target": Vector2(20.5, 70.5)})
+			w.submit({"type": "move", "issuer": 1, "unit_ids": b, "target": Vector2(60.5, 30.5)})
+		if t == 46:
+			w.submit({"type": "attack_move", "issuer": 1, "unit_ids": b, "target": Vector2(48.5, 48.5)})
+		if t == 90:
+			w = SimWorld.from_dict(bytes_to_var(var_to_bytes(w.to_dict())))
+			w.ai_state = {}
+		w.step()
+	var bad := Movement.verify_bad
+	Movement.held_state = true
+	Movement.held_verify = false
+	return [w.state_hash(), bad]
+
+
+## PERF10K task 2/5: native-held mover state gives the same world as the per-tick dict gather.
+func test_held_mover_state_matches_dict_gather() -> void:
+	if not NativeCore.available():
+		print("  native core not available: held state not used, nothing to compare")
+		check(true, "skipped (no native core)")
+		return
+	var on := _held_run(true)
+	var off := _held_run(false)
+	check_eq(int(on[1]), 0, "every held mirror equals its dict every tick (held_verify)")
+	check_eq(on[0], off[0], "state hash equal with held mover state on / off")
+
+
+## G3b reference for Territory.presence(): one sector_of() + faction lookup per entity.
+func _presence_ref(w: SimWorld) -> Array:
+	var st := Territory.state(w)
+	var out := {}
+	for e in SimIndex.of(w, "unit") + SimIndex.of(w, "building"):
+		if not SimIndex.alive(w, e):
+			continue
+		var fid := int(e.owner)
+		if not w.factions.has(fid) or not bool(w.factions[fid].alive):
+			continue
+		var s := Territory.sector_of(w, e.pos)
+		if s < 0:
+			continue
+		var team := int(w.factions[fid].get("team", fid))
+		var cur = out.get(s)
+		if cur == null:
+			out[s] = team
+		elif int(cur) != team:
+			out[s] = -2
+	var arr := []
+	for s in int(st.cols) * int(st.rows):
+		arr.append(int(out.get(s, Territory.NONE)))
+	return arr
+
+
+func test_territory_presence_matches_reference() -> void:
+	var w := _clean(4)
+	_armies(w, 12, 12)
+	w.run_ticks(120)
+	# off-map and edge positions, a dead side's unit, a destroyed one still in the index
+	var ids := []
+	for i in 6:
+		ids.append(_place(w, "rifleman", i % 2, Vector2(10 + i * 9, 40)))
+	w.entities[ids[0]].pos = Vector2(-0.5, 3.0)
+	w.entities[ids[1]].pos = Vector2(float(w.map.w), 3.0)
+	w.entities[ids[2]].pos = Vector2(float(w.map.w) - 0.01, float(w.map.h) - 0.01)
+	w.entities[ids[3]].pos = Vector2(0.0, 0.0)
+	w.destroy(int(ids[4]), "test")
+	check_eq(Array(Territory.presence(w)), _presence_ref(w), "presence == G3b scan (both sides alive)")
+	w.factions[1].alive = false
+	check_eq(Array(Territory.presence(w)), _presence_ref(w), "presence == G3b scan (side 1 dead)")
+	w.factions[1].alive = true
+
+
+## Tiers: the packed bucket grid gives the same lists and tiers as the dictionary buckets.
+func test_tier_grid_matches_dict_recompute() -> void:
+	var w := _clean(6)
+	_armies(w, 16, 16)
+	var checked := 0
+	for t in 200:
+		w.step()
+		if t % 40 != 39:
+			continue
+		var idx := SimIndex.get_index(w)
+		var units: Array = idx.kinds.get("unit", [])
+		var lists := []
+		for pass_i in 2:
+			var full := []
+			var rslot := []
+			for j in Tiers.SCAN_STRIDE:
+				rslot.append([])
+			var newly := []
+			if pass_i == 0:
+				check(Tiers._recompute_grid(w, idx, units, full, rslot, newly), "grid path used (all on map)")
+			else:
+				Tiers._recompute_dict(w, idx, units, full, rslot, newly)
+				check_eq(newly.size(), 0, "dict path changes no tier the grid path set")
+			var ids := []
+			for e in full:
+				ids.append(int(e.id))
+			ids.append(-1)
+			for r in rslot:
+				for e in r:
+					ids.append(int(e.id))
+				ids.append(-1)
+			lists.append(ids)
+		check_eq(lists[0], lists[1], "same FULL / REDUCED slot lists (tick %d)" % w.tick)
+		checked += 1
+	check(checked == 5, "compared 5 recomputes")
+
+
+## Orch pending item (UNITS): a unit loaded into a transport and unloaded again is still in its
+## unit subsets, also when the subset cache survives the round trip (no invalidation).
+func test_subsets_keep_unit_through_cargo() -> void:
+	var w := make_world()
+	w.ai_state = {}
+	var hq: Dictionary = {}
+	for bb in w.buildings_of(0):
+		if bool(Content.building(String(bb.def)).get("is_hq", false)):
+			hq = bb
+	var c0 := Movement.nearest_free_cell(w, (hq.cell as Vector2i) + Vector2i(0, 6), "vehicle")
+	var p := Vector2(c0) + Vector2(0.5, 0.5)
+	var cid := w.spawn_unit("a_apc", 0, p)
+	var eng := [w.spawn_unit("engineer", 0, p + Vector2(1.2, 0.0)), w.spawn_unit("engineer", 0, p + Vector2(1.6, 0.8))]
+	w.step()
+	var has_all := func(which: int) -> bool:
+		var got := []
+		for e in Subsets.units(w, which):
+			got.append(int(e.id))
+		return got.has(eng[0]) and got.has(eng[1])
+	check(has_all.call(Subsets.GATHERER) and has_all.call(Subsets.BUILDER), "engineers listed before loading")
+	var c: Dictionary = w.entities[cid]
+	w.submit({"type": "load", "issuer": 0, "carrier": cid, "unit_ids": eng})
+	for i in 300:
+		w.step()
+		Subsets.units(w, Subsets.GATHERER)   # read while aboard (the old code dropped them here)
+		if (c.get("cargo", []) as Array).size() == 2:
+			break
+	check_eq((c.get("cargo", []) as Array).size(), 2, "both engineers aboard")
+	check(not has_all.call(Subsets.GATHERER), "not listed while aboard")
+	Transport.unload(w, c, eng, c.pos, "unload")
+	check(w.entities.has(eng[0]) and w.entities.has(eng[1]), "both unloaded")
+	check(has_all.call(Subsets.GATHERER) and has_all.call(Subsets.BUILDER) and has_all.call(Subsets.REPAIRER), "listed again after unloading")
+	w.step()
+	check(has_all.call(Subsets.GATHERER), "still listed a tick later")
+	# the same round trip with the cache kept (an id leaves and returns without invalidation)
+	var last := int(eng[1])
+	var tail := {}
+	for id in w.entities.keys():
+		if int(id) >= last:
+			tail[int(id)] = w.entities[id]
+	for id in tail:
+		w.entities.erase(id)
+	Subsets.units(w, Subsets.GATHERER)
+	var keys := tail.keys()
+	keys.sort()
+	for id in keys:
+		w.entities[id] = tail[id]
+	check(has_all.call(Subsets.GATHERER), "listed after leaving and returning with the cache kept")

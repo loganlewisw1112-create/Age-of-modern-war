@@ -3,6 +3,9 @@ extends SceneTree
 ##   godot --headless --path . -s tools/scale_bench.gd -- --map=river_crossing_s --units=1000
 ##       [--sizes=500,1000,2000] [--factions=a,b,m] [--ticks=600] [--native=on|off|both]
 ##       [--breakdown]   (also time each system; runs a bench-local copy of SimWorld.step)
+##       [--scenario=mixed|fight]  fight (PERF10K): every unit starts FIGHT_GAP tiles from the map
+##       centre on its own side and attack-moves to it, so the armies meet within ~150 ticks
+##       (mostly FULL tier). mixed (default) = the G3b scenario below.
 ## Places N units across the sides near their spawns (mixed roles: infantry, antitank, heavy,
 ## recon, artillery when the faction has them). Half of each side attack-moves to the map centre
 ## (fighting), the other half marches back and forth between two points on its own half
@@ -18,6 +21,8 @@ const ROLES := ["infantry", "infantry", "infantry", "antitank", "infantry", "hea
 
 var breakdown := false
 var series := false   # --series: per-tick time series + per-system breakdown on spike ticks (implies --breakdown)
+var scenario := "mixed"
+const FIGHT_GAP := 26.0  # --scenario=fight: start distance from the centre (tiles)
 
 
 func _init() -> void:
@@ -44,6 +49,8 @@ func _init() -> void:
 		elif a.begins_with("--native="):
 			var v := a.substr(9)
 			modes = [true] if v == "on" else ([false] if v == "off" else [true, false])
+		elif a.begins_with("--scenario="):
+			scenario = a.substr(11)
 		elif a.begins_with("--tiers="):
 			Tiers.force_off = a.substr(8) == "off"
 		elif a.begins_with("--held-paths="):
@@ -66,14 +73,20 @@ func _init() -> void:
 	print("")
 	print("SCALE BENCH map=%s factions=%s ticks=%d native_available=%s (%s) tiers=%s cpu=%s" % [map_id, ",".join(facs), ticks,
 		str(NativeCore.available()), NativeCore.version(), "off" if Tiers.force_off else "on", OS.get_processor_name()])
-	print("  move_stride=%s held_paths=%s" % [str(Tiers.move_stride), str(Movement.held_paths)])
-	print("| units placed | path | avg ms | p95 ms | max ms | units at end | reduced at end | setup s |")
-	print("|---|---|---|---|---|---|---|---|")
+	print("  scenario=%s move_stride=%s held_paths=%s held_state=%s" % [scenario, str(Tiers.move_stride), str(Movement.held_paths), _mv_flag("held_state")])
+	print("| units placed | path | avg ms | p95 ms | max ms | units at end | reduced at end | max full | setup s | hash |")
+	print("|---|---|---|---|---|---|---|---|---|---|")
 	for r in rows:
-		print("| %d | %s | %.1f | %.1f | %.1f | %d | %d | %.1f |" % [r.placed, r.path, r.avg, r.p95, r.max, r.end_units, r.reduced, r.setup_s])
+		print("| %d | %s | %.1f | %.1f | %.1f | %d | %d | %d | %.1f | %s |" % [r.placed, r.path, r.avg, r.p95, r.max, r.end_units, r.reduced, r.max_full, r.setup_s, String(r.hash).substr(0, 16)])
 		if breakdown:
 			print("|   | systems (avg ms) | %s | | | | |" % r.sys)
 	quit(0)
+
+
+## A Movement static var by name ("null" when this tree's movement.gd has none: A/B against older trees).
+func _mv_flag(name: String) -> String:
+	var m: Script = Movement
+	return str(m.get(name))
 
 
 func _config(map_id: String, facs: Array) -> Dictionary:
@@ -124,6 +137,9 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 		var fdef := String(w.factions[fid].faction_def)
 		var spawn: Vector2i = w.factions[fid].spawn
 		var start := spawn + Vector2i(signi(int(centre.x) - spawn.x), signi(int(centre.y) - spawn.y)) * 6
+		if scenario == "fight":
+			var dc := (Vector2(spawn) - centre).normalized()
+			start = Vector2i(centre + dc * FIGHT_GAP)
 		var defs := []
 		for k in per_side:
 			var d := _unit_def(fdef, ROLES[k % ROLES.size()])
@@ -147,7 +163,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 				continue
 			var cell: Vector2i = arr.pop_front()
 			var id := w.spawn_unit(d, fid, Vector2(cell) + Vector2(0.5, 0.5))
-			(fight[fid] if k % 2 == 0 else march[fid]).append(id)
+			(fight[fid] if k % 2 == 0 or scenario == "fight" else march[fid]).append(id)
 			k += 1
 			placed += 1
 	var legs := {}
@@ -161,7 +177,10 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	var times := PackedFloat64Array()
 	var sys_ms := {}
 	var per_tick := []   # --series: one {system: ms} per tick
+	var max_full := 0
 	for i in ticks:
+		if i % 50 == 49:
+			max_full = maxi(max_full, int(Tiers.counts(w).get("full", 0)))
 		if i % 150 == 0:
 			for fid in w.factions:
 				var ids: Array = march[fid].filter(func(x): return w.entities.has(x))
@@ -210,7 +229,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 		sys_parts.append("%s %.1f" % [k, float(sys_ms[k]) / float(ticks)])
 	var row := {"placed": placed, "path": NativeCore.path_name(w), "avg": sum / float(ticks),
 		"p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1], "end_units": end_units, "reduced": reduced,
-		"setup_s": setup_s, "sys": ", ".join(sys_parts)}
+		"setup_s": setup_s, "sys": ", ".join(sys_parts), "max_full": max_full, "hash": w.state_hash(), "tick": w.tick}
 	print("row: ", row)
 	return row
 

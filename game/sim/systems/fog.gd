@@ -380,6 +380,9 @@ const FOREST_CODE := 3   # Terrain.FOREST
 static func concealed(w: SimWorld, fid: int, e: Dictionary) -> bool:
 	if e.kind != "unit" or not e.has("morale") or int(e.owner) == fid or w.is_ally(fid, int(e.owner)):
 		return false
+	if bool(e.get("hid", false)):  # G4b UNITS sniper conceal_still (CONTRACTS_G4 8): hidden beyond 3 tiles
+		var f = w.factions.get(fid)
+		return not (e.get("spot", []) as Array).has(int(f.get("team", fid)) if f != null else fid)
 	if w.tick - int(e.get("last_fired_tick", -9999)) < REVEAL_TICKS:
 		return false
 	var p: Vector2 = e.pos

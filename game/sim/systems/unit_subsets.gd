@@ -82,22 +82,27 @@ static func _state(w: SimWorld) -> Dictionary:
 
 ## Live units of one subset, ascending id. The returned array is fresh (safe to iterate while
 ## the world changes); callers that destroy or spawn mid-loop still re-check w.entities.has().
+## PERF10K (cargo fix): an id missing from w.entities is skipped, not dropped at once: a unit
+## loaded into a transport leaves w.entities and comes back with the same id, and must still be
+## listed then (same rule as sim_index.gd). Missing ids are dropped only when they pass 1/4 of
+## the list; st.known is then reset to the live count, so a unit that returns after that is
+## seen by the size check in _state() and triggers a full rebuild.
 static func units(w: SimWorld, which: int) -> Array:
 	var st := _state(w)
 	var ids: Array = st.lists[which]
+	var ents: Dictionary = w.entities
 	var out := []
-	var dead := false
 	for id in ids:
-		var e = w.entities.get(id)
-		if e == null:
-			dead = true
-			continue
-		out.append(e)
-	if dead:
+		var e = ents.get(id)
+		if e != null:
+			out.append(e)
+	var gone := ids.size() - out.size()
+	if gone > 0 and gone * 4 > ids.size():
 		var keep := []
 		for e in out:
 			keep.append(int(e.id))
 		st.lists[which] = keep
+		st.known = ents.size()
 	return out
 
 

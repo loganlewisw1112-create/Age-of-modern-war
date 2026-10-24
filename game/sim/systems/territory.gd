@@ -15,6 +15,7 @@ extends RefCounted
 const EVERY := 20
 const PHASE := 7
 const COUNT_MIN_FRAC := 0.3
+const NONE := -1000000   # recompute(): no team seen in the sector yet
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
 
@@ -73,30 +74,15 @@ static func tick(w: SimWorld) -> void:
 static func recompute(w: SimWorld) -> void:
 	var st := state(w)
 	var n: int = int(st.cols) * int(st.rows)
-	var present := {}   # sector -> team, or -2 when contested by two or more teams
-	# PERF5: units then buildings from the index. The result per sector (one team, or -2 when two
-	# or more teams are present) does not depend on visiting order, so this matches the old scan.
-	for e in SimIndex.of(w, "unit") + SimIndex.of(w, "building"):
-		if not SimIndex.alive(w, e):
-			continue
-		var fid := int(e.owner)
-		if not w.factions.has(fid) or not bool(w.factions[fid].alive):
-			continue
-		var s := sector_of(w, e.pos)
-		if s < 0:
-			continue
-		var team := int(w.factions[fid].get("team", fid))
-		var cur = present.get(s)
-		if cur == null:
-			present[s] = team
-		elif int(cur) != team:
-			present[s] = -2
+	var present := presence(w)
 	var cap := capture_ticks()
 	var owner: Array = st.owner
 	var cand: Array = st.cand
 	var held: Array = st.held
 	for s in n:
-		var t := int(present.get(s, -1))
+		var t := present[s]
+		if t == NONE:
+			t = -1
 		if t < 0:
 			cand[s] = -1
 			held[s] = 0
@@ -110,6 +96,50 @@ static func recompute(w: SimWorld) -> void:
 			var prev := int(owner[s])
 			owner[s] = t
 			w.emit("SectorCaptured", {"sector": s, "team": t, "prev_team": prev, "counted": bool(st.counted[s])})
+
+
+## Per sector: the one team (alive sides only) with units or buildings in it, -2 when two or
+## more teams are, NONE when nobody is. Public for tests (tests/test_perf.gd checks it against
+## the G3b per-entity sector_of() scan).
+static func presence(w: SimWorld) -> PackedInt32Array:
+	var st := state(w)
+	var n: int = int(st.cols) * int(st.rows)
+	# PERF5: units then buildings from the index. The result per sector (one team, or -2 when two
+	# or more teams are present) does not depend on visiting order, so this matches the old scan.
+	# PERF10K: one inline pass (no sector_of() / state() call per entity), owner -> team resolved
+	# once per side, sector results in a packed array (NONE = nobody seen yet). Same results.
+	var size := int(st.size)
+	var cols := int(st.cols)
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var tmap := {}   # owner id -> team, alive sides only
+	for fid in w.factions:
+		if bool(w.factions[fid].alive):
+			tmap[int(fid)] = int(w.factions[fid].get("team", fid))
+	var present := PackedInt32Array()
+	present.resize(n)
+	present.fill(NONE)
+	var ents: Dictionary = w.entities
+	for kind in ["unit", "building"]:
+		for e in SimIndex.of(w, kind):
+			if not ents.has(int(e.id)):
+				continue
+			var tv = tmap.get(int(e.owner))
+			if tv == null:
+				continue
+			var p: Vector2 = e.pos
+			var cx := floori(p.x)
+			var cy := floori(p.y)
+			if cx < 0 or cy < 0 or cx >= mw or cy >= mh:
+				continue
+			var s := (cy / size) * cols + (cx / size)
+			var team: int = tv
+			var cur := present[s]
+			if cur == NONE:
+				present[s] = team
+			elif cur != team:
+				present[s] = -2
+	return present
 
 
 # ---------------------------------------------------------------- queries (HUD / AI / victory)

@@ -66,6 +66,10 @@ static var _lut_speed: Dictionary = {}   # mc -> Array[float] speed_mult per ter
 static var profile := false             # tools/scale_bench.gd --breakdown: per-phase usec in prof
 static var prof: Dictionary = {}
 static var held_paths := false         # N1-core-4: native-held paths (RtsSteer.set_path / advance_held); bit-identical, but no measured gather gain at 2k rc_s (7.6 vs 7.5 ms), so off
+## PERF10K: held mover state (see _tick_held). Bit-identical to _tick_native; on by default.
+static var held_state := true
+static var held_verify := false          # tests: compare every mirror with its dict each tick
+static var verify_bad := 0               # mismatches found by held_verify (diagnostics, never saved)
 static var owed_paid := 0               # stride catch-up advances paid (diagnostics only, never saved)
 static var _group_flow: Dictionary = {}  # mc -> {"h": flow handle, "goal": Vector2i}; set only inside apply_command
 
@@ -735,7 +739,16 @@ static func tick(w: SimWorld) -> void:
 		t0 = _pt("drain", t0)
 	var steer = w.nav.get("steer")
 	if steer != null and steer.has_method("advance_separate"):
-		_tick_native(w, t0)
+		if held_state and not Tiers.move_stride and steer.has_method("advance_held"):
+			if w.nav.get("mv_mode") != "held":
+				w.nav.erase("held")  # mode switch (tests / bench): full resync from the dicts
+				w.nav["mv_mode"] = "held"
+			_tick_held(w, t0)
+		else:
+			if w.nav.get("mv_mode") != "native":
+				w.nav.erase("path_refs")
+				w.nav["mv_mode"] = "native"
+			_tick_native(w, t0)
 		return
 	var solid: Dictionary = w.nav.solid
 	var mw := int(w.nav.w)
@@ -1001,6 +1014,230 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 				e.order = {"type": "idle"}
 	if profile:
 		_pt("apply", t0)
+
+
+## PERF10K held mover state (native path, Tiers.move_stride off). Per entity id, runtime only, in
+## w.nav.held (same lifetime as RtsSteer; a load or nav rebuild starts empty and re-reads the dicts):
+## the path lives in RtsSteer (set_path) and path size / path_i / stuck / moving / path_req >= 0 in
+## packed mirrors. A unit's mirrors are re-read from its dict only when e.path is a different Array
+## than the one last synced. Every writer of moving / path / path_i / stuck / path_req (order_path,
+## stop_path, _drain_queue, Construction.stop_moving, spawns, loads) assigns a new e.path Array with
+## them, and nothing mutates a path in place, so a mover costs a few packed reads instead of six
+## dict reads and a waypoint copy. Outcomes go back to the dicts exactly as _tick_native writes
+## them (stuck only when it changes, or when the key is missing / not an int), so dict state, saves
+## and state_hash() are identical (tests/test_perf.gd: A/B hash + held_verify mirror check).
+static func _held(w: SimWorld) -> Dictionary:
+	var h = w.nav.get("held")
+	if h == null:
+		h = {"ref": [], "pi": PackedInt32Array(), "st": PackedInt32Array(), "ps": PackedInt32Array(), "mv": PackedByteArray()}
+		w.nav["held"] = h
+	return h
+
+
+static func _tick_held(w: SimWorld, t0: int) -> void:
+	var sols := [w.nav.solid.foot, w.nav.solid.vehicle, null, null, null, null, null, null]
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var tabs := _tabs(w)
+	var trad: PackedFloat32Array = tabs.rad
+	var tkey: PackedInt32Array = tabs.key
+	var tmc: PackedByteArray = tabs.mc
+	var tsp: PackedFloat32Array = tabs.spd
+	var tn := trad.size()
+	var grown := false
+	var h := _held(w)
+	var ref: Array = h.ref
+	var hpi: PackedInt32Array = h.pi
+	var hst: PackedInt32Array = h.st
+	var hps: PackedInt32Array = h.ps
+	var hmv: PackedByteArray = h.mv
+	var hn := ref.size()
+	var hgrown := false
+	var ents: Dictionary = w.entities
+	var all: Array = SimIndex.of(w, "unit")
+	var na := all.size()
+	var units := []
+	units.resize(na)
+	var pos := PackedVector2Array()
+	pos.resize(na)
+	var ids := PackedInt32Array()
+	ids.resize(na)
+	var mov := PackedByteArray()
+	mov.resize(na)
+	var movers := []
+	movers.resize(na)
+	var mid := PackedInt32Array()
+	mid.resize(na)
+	var mvi := PackedInt32Array()
+	mvi.resize(na * 4)
+	var spd := PackedFloat32Array()
+	spd.resize(na)
+	var steer = w.nav.steer
+	var n := 0
+	var nm := 0
+	var tick := w.tick
+	for e: Dictionary in all:
+		var id: int = e.id
+		if not ents.has(id):
+			continue
+		if id >= tn or trad[id] <= 0.0:
+			if id >= tn:
+				tn = maxi(id + 1, tn * 2 + 64)
+				trad.resize(tn)
+				tkey.resize(tn)
+				tmc.resize(tn)
+				tsp.resize(tn)
+			var u := udef(String(e.def))
+			trad[id] = maxf(float(u.radius), 0.001)
+			tkey[id] = (int(e.owner) + 1) * 1048576 + _layer(u.mc)
+			_ensure_class(w, u.mc)
+			tmc[id] = _key(u.mc, team_of(w, e))
+			tsp[id] = float(u.speed) * SimWorld.DT
+			grown = true
+		if id >= hn:
+			hn = maxi(id + 1, hn * 2 + 64)
+			ref.resize(hn)
+			hpi.resize(hn)
+			hst.resize(hn)
+			hps.resize(hn)
+			hmv.resize(hn)
+			hgrown = true
+		var mi := tmc[id] & 15
+		var p: Vector2 = e.pos
+		var cx := floori(p.x)
+		var cy := floori(p.y)
+		var bad := cx < 0 or cy < 0 or cx >= mw or cy >= mh
+		if not bad and mi != 2 and mi < 6:
+			var sb = sols[mi]
+			if sb == null:
+				sb = _solid_of(w, udef(String(e.def)).mc)
+				sols[mi] = sb
+			bad = sb[cy * mw + cx] != 0 and not is_passable(w, Vector2i(cx, cy), udef(String(e.def)).mc, team_of(w, e))
+		if bad:
+			_rescue(w, e, udef(String(e.def)).mc, w.nav.solid, mw, Rect2i(0, 0, mw, mh), _qteam(w, e))
+			p = e.pos
+		var path: Array = e.path
+		if not is_same(path, ref[id]):
+			# changed since the last sync (new order, arrival, queue served, load): re-read the dict
+			ref[id] = path
+			steer.set_path(id, PackedVector2Array(path))
+			hps[id] = path.size()
+			hpi[id] = int(e.path_i)
+			var sv = e.get("stuck")
+			hst[id] = 0 if sv == null else int(sv)
+			hmv[id] = (1 if e.moving else 0) | (2 if int(e.get("path_req", -1)) >= 0 else 0) \
+					| (4 if e.has("mv_owed") else 0) | (0 if typeof(sv) == TYPE_INT else 8)
+		var mflag := 0
+		var hm := hmv[id]
+		if hm & 1:
+			var ps := hps[id]
+			if ps == 0:
+				if hm & 2 == 0:
+					_arrive(e)  # moving without a path and nothing pending
+				else:
+					mflag = 1  # waiting for a queued path
+			elif hpi[id] >= ps:
+				_arrive(e)
+			else:
+				mflag = 1
+				var k := 1
+				if hm & 4:
+					k = _take_owed(e, tick)  # a debt from a stride run (old save): pay it as before
+					hmv[id] = hm & ~4
+				var b4 := nm * 4
+				mvi[b4] = n
+				mvi[b4 + 1] = k
+				mvi[b4 + 2] = hpi[id]
+				mvi[b4 + 3] = hst[id]
+				# == tsp * Status.move_mult(w, e) for a unit, inlined (parity: tests/test_perf.gd)
+				var mm := 1.0
+				var c = e.get("comp")
+				var f = e.get("fuel")
+				if c != null and float(c.get("mobility", 100)) <= 0.0:
+					mm = 0.0
+				elif f != null and float(f) <= 0.0:
+					mm = 0.0
+				elif bool(e.get("broken", false)):
+					mm = 1.2
+				elif bool(e.get("pinned", false)):
+					mm = 0.5
+				spd[nm] = tsp[id] * mm
+				movers[nm] = e
+				mid[nm] = id
+				nm += 1
+		units[n] = e
+		pos[n] = p
+		ids[n] = id
+		mov[n] = mflag
+		n += 1
+	pos.resize(n)
+	ids.resize(n)
+	mov.resize(n)
+	mvi.resize(nm * 4)
+	spd.resize(nm)
+	if grown:
+		tabs.rad = trad
+		tabs.key = tkey
+		tabs.mc = tmc
+		tabs.spd = tsp
+	if hgrown:
+		h.pi = hpi
+		h.st = hst
+		h.ps = hps
+		h.mv = hmv
+	if held_verify:
+		_verify_held(w, h)
+	if profile:
+		t0 = _pt("gather", t0)
+	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
+	var out: PackedVector2Array = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
+	if profile:
+		t0 = _pt("native_step", t0)
+	for i in steer.last_changed():
+		units[i].pos = out[i]
+	w.cache["unit_snap"] = {"tick": w.tick, "ids": ids, "pos": out, "complete": true}
+	var res: PackedFloat32Array = steer.last_adv()
+	for m in nm:
+		var e: Dictionary = movers[m]
+		var id := mid[m]
+		var b := m * 4
+		var fl := int(res[b + 3])
+		if fl & 4:
+			e.facing = float(res[b + 1])
+		var dpi := int(res[b])
+		if dpi != 0:
+			var npi := hpi[id] + dpi
+			hpi[id] = npi
+			e.path_i = npi
+		var ns := int(res[b + 2])
+		if ns != hst[id] or hmv[id] & 8:
+			hst[id] = ns
+			hmv[id] = hmv[id] & ~8
+			e.stuck = ns
+		var oc := fl & 3
+		if oc == 1:
+			_arrive(e)
+		elif oc == 2 and _repath_ok(w):
+			var path: Array = e.path
+			if not order_path(w, e, path[path.size() - 1]) and e.order.type == "move":
+				e.order = {"type": "idle"}
+	if profile:
+		_pt("apply", t0)
+
+
+## held_verify (tests): every live unit's mirrors must equal its dict (else verify_bad grows).
+static func _verify_held(w: SimWorld, h: Dictionary) -> void:
+	for e in SimIndex.of(w, "unit"):
+		var id := int(e.id)
+		if not w.entities.has(id) or id >= (h.ref as Array).size():
+			continue
+		var path: Array = e.path
+		var ok: bool = is_same(path, h.ref[id]) and int(h.ps[id]) == path.size() and int(h.pi[id]) == int(e.path_i) \
+				and int(h.st[id]) == int(e.get("stuck", 0)) and (int(h.mv[id]) & 1) == (1 if e.moving else 0) \
+				and ((int(h.mv[id]) & 2) != 0) == (int(e.get("path_req", -1)) >= 0)
+		if not ok:
+			verify_bad += 1
+			push_error("Movement held mirror mismatch: unit %d" % id)
 
 
 ## Runtime-only per-entity tables for the native tick, indexed by entity id (kind, def and owner

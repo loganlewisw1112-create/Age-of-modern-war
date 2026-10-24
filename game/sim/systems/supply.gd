@@ -98,13 +98,33 @@ static func _due(w: SimWorld) -> Array:
 				out.append(e)
 		return out
 	var idx := Tiers.lists(w)
-	for e in idx.full:
-		if (tick + int(e.id)) % RESUPPLY_EVERY == 0 and ents.has(int(e.id)):
+	# PERF10K: the FULL list split once per tier period into RESUPPLY_EVERY buckets by id (same
+	# relative order), so a tick walks only the units due now instead of every FULL unit.
+	# (tick + id) % RESUPPLY_EVERY == 0  <=>  id % RESUPPLY_EVERY == posmod(-tick, RESUPPLY_EVERY).
+	for e in _full_buckets(idx)[posmod(-tick, RESUPPLY_EVERY)]:
+		if ents.has(int(e.id)):
 			out.append(e)
 	for e in Tiers.due_reduced(w, Tiers.STRIDE):   # RESUPPLY_EVERY is a multiple of STRIDE
 		if (tick + int(e.id)) % RESUPPLY_EVERY == 0 and ents.has(int(e.id)) and int(e.get("tier", 0)) == Tiers.REDUCED:
 			out.append(e)
 	return out
+
+
+## Runtime cache in the tier index (never saved): idx.full in RESUPPLY_EVERY id buckets. Rebuilt
+## when idx.full is a new Array or changed size (Tiers.promote / SimIndex only append to it, and
+## Tiers.lists() re-sorts it only after such an append).
+static func _full_buckets(idx: Dictionary) -> Array:
+	var full: Array = idx.full
+	var bk = idx.get("sup_bk")
+	if bk != null and is_same(bk.src, full) and int(bk.n) == full.size():
+		return bk.b
+	var b := []
+	for j in RESUPPLY_EVERY:
+		b.append([])
+	for e in full:
+		(b[int(e.id) % RESUPPLY_EVERY] as Array).append(e)
+	idx["sup_bk"] = {"src": full, "n": full.size(), "b": b}
+	return b
 
 
 static func _serve_due(w: SimWorld) -> void:
@@ -158,30 +178,36 @@ static func _serve_due(w: SimWorld) -> void:
 static func _burn_fuel(w: SimWorld) -> void:
 	var mult := maxf(w.econ("fuel_use_mult"), 0.0)
 	var tiers_on := Tiers.enabled(w)
-	var cand: Array
+	var cands: Array
 	if tiers_on:
 		var idx := Tiers.lists(w)
-		cand = idx.full + Tiers.due_reduced(w, Tiers.STRIDE)   # FULL every tick, REDUCED on stride
+		cands = [idx.full, Tiers.due_reduced(w, Tiers.STRIDE)]   # FULL every tick, REDUCED on stride
 	else:
-		cand = SimIndex.of(w, "unit")
-	for e: Dictionary in cand:
-		if not e.has("fuel") or not w.entities.has(int(e.id)):
-			continue
-		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED and (w.tick + int(e.id)) % Tiers.STRIDE != 0:
-			continue
-		var pos: Vector2 = e.pos
-		if not e.has("supply_prev_pos"):
+		cands = [SimIndex.of(w, "unit")]
+	var ents: Dictionary = w.entities
+	var tick := w.tick
+	for cand: Array in cands:   # PERF10K: the two lists in turn (was one concatenated copy)
+		for e: Dictionary in cand:
+			if not e.has("fuel") or not ents.has(int(e.id)):
+				continue
+			if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED and (tick + int(e.id)) % Tiers.STRIDE != 0:
+				continue
+			var pos: Vector2 = e.pos
+			var prev = e.get("supply_prev_pos")
+			if prev == null:
+				e.supply_prev_pos = pos
+				continue
+			if pos == prev:
+				continue   # dist 0: the old code rewrote the same value and skipped
+			var dist: float = (pos - Vector2(prev)).length()
 			e.supply_prev_pos = pos
-			continue
-		var dist: float = (pos - Vector2(e.supply_prev_pos)).length()
-		e.supply_prev_pos = pos
-		if dist <= 0.0 or dist > MAX_STEP_TILES:
-			continue
-		var per_tile := float(_u(String(e.def)).fpt) * mult
-		if per_tile <= 0.0:
-			continue
-		var burn: float = round(dist * per_tile * FUEL_QUANT) / FUEL_QUANT
-		e.fuel = maxf(0.0, float(e.fuel) - burn)
+			if dist <= 0.0 or dist > MAX_STEP_TILES:
+				continue
+			var per_tile := float(_u(String(e.def)).fpt) * mult
+			if per_tile <= 0.0:
+				continue
+			var burn: float = round(dist * per_tile * FUEL_QUANT) / FUEL_QUANT
+			e.fuel = maxf(0.0, float(e.fuel) - burn)
 
 
 # ================================================================ resupply

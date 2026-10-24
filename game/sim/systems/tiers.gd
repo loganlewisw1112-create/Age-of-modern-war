@@ -111,6 +111,18 @@ static func begin_tick(w: SimWorld) -> void:
 				e.erase("tier")
 		full.append_array(units)
 		return
+	if not _recompute_grid(w, idx, units, full, rslot, newly):
+		_recompute_dict(w, idx, units, full, rslot, newly)
+	if SimIndex.profiling:
+		SimIndex.pt("tiers.recompute", t0)
+
+
+
+
+## The G3b recompute with dictionary buckets (any position, also off the map). _recompute_grid
+## gives the same tiers and lists whenever every entity lies inside the map.
+static func _recompute_dict(w: SimWorld, idx: Dictionary, units: Array, full: Array, rslot: Array, newly: Array) -> void:
+	var ents: Dictionary = w.entities
 	var bs := bucket_size()
 	var team := {}       # owner -> team bit
 	for fid in w.factions:
@@ -173,8 +185,82 @@ static func begin_tick(w: SimWorld) -> void:
 			if e.has("tier"):
 				e.erase("tier")
 			full.append(e)
-	if SimIndex.profiling:
-		SimIndex.pt("tiers.recompute", t0)
+
+
+## PERF10K: same decisions as _recompute_dict with a padded packed bucket grid (no dictionary per
+## bucket, the 3x3 neighbourhood OR computed once per bucket) and fewer dict reads per unit (the
+## REDUCED checks run only for units with no enemy team nearby, in the same order). Returns false,
+## having changed nothing, when an entity lies outside the map (the caller then uses the dict path).
+static func _recompute_grid(w: SimWorld, idx: Dictionary, units: Array, full: Array, rslot: Array, newly: Array) -> bool:
+	var ents: Dictionary = w.entities
+	var bs := bucket_size()
+	var gw := ceili(float(w.map.w) / bs) + 2   # one empty bucket of padding on every side
+	var gh := ceili(float(w.map.h) / bs) + 2
+	var fw := float(w.map.w)
+	var fh := float(w.map.h)
+	var team := {}
+	for fid in w.factions:
+		team[int(fid)] = 1 << posmod(int(w.factions[fid].get("team", fid)), 30)
+	var occ := PackedInt32Array()
+	occ.resize(gw * gh)
+	for b in idx.kinds.get("building", []):
+		var bit = team.get(int(b.owner))
+		if bit == null or not ents.has(int(b.id)):
+			continue
+		var o: Vector2i = b.cell
+		var c := Vector2(o) + Vector2(float(b.size), float(b.size)) * 0.5
+		if c.x < 0.0 or c.y < 0.0 or c.x >= fw or c.y >= fh:
+			return false
+		var k := (floori(c.y / bs) + 1) * gw + floori(c.x / bs) + 1
+		occ[k] = occ[k] | int(bit)
+	var nu := units.size()
+	var ukey := PackedInt32Array()
+	ukey.resize(nu)
+	var ubit := PackedInt32Array()
+	ubit.resize(nu)
+	for i in nu:
+		var e: Dictionary = units[i]
+		if not ents.has(int(e.id)):
+			ubit[i] = -1
+			continue
+		var bit = team.get(e.owner)
+		if bit == null:
+			ubit[i] = 0
+			continue
+		var p: Vector2 = e.pos
+		if p.x < 0.0 or p.y < 0.0 or p.x >= fw or p.y >= fh:
+			return false
+		var k := (floori(p.y / bs) + 1) * gw + floori(p.x / bs) + 1
+		ukey[i] = k
+		var ib: int = bit
+		ubit[i] = ib
+		occ[k] = occ[k] | ib
+	var near := PackedInt32Array()
+	near.resize(gw * gh)
+	for y in range(1, gh - 1):
+		for x in range(1, gw - 1):
+			var k := y * gw + x
+			near[k] = occ[k - gw - 1] | occ[k - gw] | occ[k - gw + 1] | occ[k - 1] | occ[k] | occ[k + 1] 					| occ[k + gw - 1] | occ[k + gw] | occ[k + gw + 1]
+	var fmult := maxf(w.econ("fuel_use_mult"), 0.0)
+	var tick := w.tick
+	for i in nu:
+		var ib := ubit[i]
+		if ib < 0:
+			continue
+		var e: Dictionary = units[i]
+		var t := FULL
+		if ib != 0 and (near[ukey[i]] & ~ib) == 0 and tick - int(e.get("last_hit_tick", -100000)) > HIT_FULL_TICKS 				and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult):
+			t = REDUCED
+		if t == REDUCED:
+			if int(e.get("tier", 0)) != REDUCED:
+				e.tier = REDUCED
+				newly.append(e)
+			rslot[int(e.id) % SCAN_STRIDE].append(e)
+		else:
+			if e.has("tier"):
+				e.erase("tier")
+			full.append(e)
+	return true
 
 
 ## Fuel-starved units stay FULL (orch fix 2026-10-24): a REDUCED vehicle moves STRIDE ticks at
