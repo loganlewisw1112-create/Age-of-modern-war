@@ -1,0 +1,107 @@
+//! RtsCombat: stateless line-of-fire helpers for combat.gd / damage.gd (G3b N1-core-3).
+//! line_clear() is an exact port of damage.gd `line_clear` (Amanatides-Woo supercover walk; at an
+//! exact cell corner both side cells are tested; any RIDGE or off-map cell blocks). GDScript math
+//! is reproduced bit for bit: `to - from` is a Vector2 (f32) subtraction, everything after is f64.
+//! line_clear_batch() runs many pairs in one call (input order, no state).
+
+use godot::prelude::*;
+
+#[inline]
+fn blocks(terr: &[u8], mw: i32, mh: i32, x: i32, y: i32, ridge: u8) -> bool {
+    if x < 0 || y < 0 || x >= mw || y >= mh {
+        return true;
+    }
+    let i = (y * mw + x) as usize;
+    i >= terr.len() || terr[i] == ridge
+}
+
+pub fn line_clear_core(terr: &[u8], mw: i32, mh: i32, ridge: u8, from: Vector2, to: Vector2) -> bool {
+    let (mut cx, mut cy) = ((from.x as f64).floor() as i32, (from.y as f64).floor() as i32);
+    let (ex, ey) = ((to.x as f64).floor() as i32, (to.y as f64).floor() as i32);
+    if blocks(terr, mw, mh, cx, cy, ridge) {
+        return false;
+    }
+    let d = to - from; // f32, as in GDScript
+    let (dx, dy) = (d.x as f64, d.y as f64);
+    let sx = if dx > 0.0 { 1 } else { -1 };
+    let sy = if dy > 0.0 { 1 } else { -1 };
+    let tdx = if dx == 0.0 { f64::INFINITY } else { (1.0 / dx).abs() };
+    let tdy = if dy == 0.0 { f64::INFINITY } else { (1.0 / dy).abs() };
+    let mut tmx = f64::INFINITY;
+    if dx > 0.0 {
+        tmx = ((cx + 1) as f64 - from.x as f64) * tdx;
+    } else if dx < 0.0 {
+        tmx = (from.x as f64 - cx as f64) * tdx;
+    }
+    let mut tmy = f64::INFINITY;
+    if dy > 0.0 {
+        tmy = ((cy + 1) as f64 - from.y as f64) * tdy;
+    } else if dy < 0.0 {
+        tmy = (from.y as f64 - cy as f64) * tdy;
+    }
+    let mut n = (ex - cx).abs() + (ey - cy).abs();
+    while n > 0 {
+        if (tmx - tmy).abs() < 1e-9 {
+            if blocks(terr, mw, mh, cx + sx, cy, ridge) || blocks(terr, mw, mh, cx, cy + sy, ridge) {
+                return false;
+            }
+            cx += sx;
+            cy += sy;
+            tmx += tdx;
+            tmy += tdy;
+            n -= 2;
+        } else if tmx < tmy {
+            cx += sx;
+            tmx += tdx;
+            n -= 1;
+        } else {
+            cy += sy;
+            tmy += tdy;
+            n -= 1;
+        }
+        if blocks(terr, mw, mh, cx, cy, ridge) {
+            return false;
+        }
+    }
+    true
+}
+
+#[derive(GodotClass)]
+#[class(base = RefCounted, init)]
+pub struct RtsCombat {}
+
+#[godot_api]
+impl RtsCombat {
+    /// Exact damage.gd line_clear: false if the segment crosses a `ridge` cell or leaves the map.
+    /// terrain = w.map.terrain (map_w * map_h codes). Passing the PackedByteArray costs no copy.
+    #[func]
+    fn line_clear(&self, map_w: i32, map_h: i32, terrain: PackedByteArray, ridge: i32, from: Vector2, to: Vector2) -> bool {
+        line_clear_core(terrain.as_slice(), map_w, map_h, ridge as u8, from, to)
+    }
+
+    /// line_clear for every pair i (from[i] -> to[i]); returns 1 clear / 0 blocked per pair.
+    #[func]
+    fn line_clear_batch(&self, map_w: i32, map_h: i32, terrain: PackedByteArray, ridge: i32,
+                        from: PackedVector2Array, to: PackedVector2Array) -> PackedByteArray {
+        let t = terrain.as_slice();
+        let (f, g) = (from.as_slice(), to.as_slice());
+        let n = f.len().min(g.len());
+        let mut out = vec![0u8; n];
+        for i in 0..n {
+            out[i] = line_clear_core(t, map_w, map_h, ridge as u8, f[i], g[i]) as u8;
+        }
+        PackedByteArray::from(out.as_slice())
+    }
+
+    /// Cooldown/firing-hint step for many shooters in one call (combat.gd tick prep): per i,
+    /// cd[i] = max(cd[i] - dec, 0) and firing[i] = max(firing[i] - dec, 0). Returns cd then firing
+    /// concatenated (2n ints) so a caller writes back only the entries that changed.
+    #[func]
+    fn countdown(&self, cd: PackedInt32Array, firing: PackedInt32Array, dec: i32) -> PackedInt32Array {
+        let (c, f) = (cd.as_slice(), firing.as_slice());
+        let mut out = Vec::with_capacity(c.len() + f.len());
+        out.extend(c.iter().map(|&v| (v - dec).max(0)));
+        out.extend(f.iter().map(|&v| (v - dec).max(0)));
+        PackedInt32Array::from(out.as_slice())
+    }
+}

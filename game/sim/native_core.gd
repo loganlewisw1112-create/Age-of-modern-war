@@ -66,6 +66,33 @@ static func new_steer():
 	return ClassDB.instantiate("RtsSteer") if available() else null
 
 
+## RtsFog (stateless circle stamping for fog.gd, PERF4-2 CR 890) when native is live for w
+## (w == null: when available and not forced off), else null (caller keeps its GDScript path).
+## API: stamp(map_w, map_h, cells: PackedInt32Array, sights: PackedFloat64Array,
+##      explored: PackedByteArray) -> PackedByteArray vis (0/1); explored_out() -> explored | vis.
+## Needs the rts_core 0.2 DLL: null on an older DLL too.
+static func new_fog(w = null):
+	if _live(w) and ClassDB.class_exists("RtsFog"):
+		return ClassDB.instantiate("RtsFog")
+	return null
+
+
+## RtsCombat (stateless line-of-fire helpers, exact port of Damage.line_clear) or null, as new_fog.
+## API: line_clear(map_w, map_h, terrain: PackedByteArray, ridge, from, to) -> bool;
+##      line_clear_batch(map_w, map_h, terrain, ridge, from: PackedVector2Array,
+##          to: PackedVector2Array) -> PackedByteArray (1 clear / 0 blocked per pair);
+##      countdown(cd: PackedInt32Array, firing: PackedInt32Array, dec) -> PackedInt32Array
+##          (max(v - dec, 0) for cd then firing, 2n ints).
+static func new_combat(w = null):
+	if _live(w) and ClassDB.class_exists("RtsCombat"):
+		return ClassDB.instantiate("RtsCombat")
+	return null
+
+
+static func _live(w) -> bool:
+	return (w == null and available() and not force_off) or (w != null and enabled(w))
+
+
 ## RtsGrid when native is live for w (or w == null and native is available), else GridFallback.
 static func make_grid(w = null):
 	if (w == null and available() and not force_off) or (w != null and enabled(w)):

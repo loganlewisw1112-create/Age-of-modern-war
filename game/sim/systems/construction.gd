@@ -24,14 +24,29 @@ static func footprint_dist(pos: Vector2, cell: Vector2i, size: int) -> float:
 
 
 static func building_at_cell(w: SimWorld, cell: Vector2i) -> bool:
+	return _occupancy(w).has(cell)
+
+
+## G3b N1-core-3: footprint cell -> true for every live building, rebuilt lazily whenever the tick,
+## next_id or entity count changed (so any spawn, placement or destroy since the last build
+## invalidates it). Same answer as scanning every building per query (approach_goal asks 12-20
+## ring cells per re-path, production per spawn), at one footprint pass per tick. Runtime cache.
+static func _occupancy(w: SimWorld) -> Dictionary:
+	var key := [w.tick, int(w.next_id), w.entities.size()]
+	var c = w.cache.get("bld_occ")
+	if c != null and c.key == key:
+		return c.occ
+	var occ := {}
 	for b in SimIndex.of(w, "building"):
 		if not SimIndex.alive(w, b):
 			continue
 		var bc: Vector2i = b.cell
 		var s := int(b.size)
-		if cell.x >= bc.x and cell.x < bc.x + s and cell.y >= bc.y and cell.y < bc.y + s:
-			return true
-	return false
+		for y in range(bc.y, bc.y + s):
+			for x in range(bc.x, bc.x + s):
+				occ[Vector2i(x, y)] = true
+	w.cache["bld_occ"] = {"key": key, "occ": occ}
+	return occ
 
 
 ## Cells forming the square ring `margin` cells outside the footprint (row-major order).

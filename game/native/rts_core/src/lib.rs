@@ -8,10 +8,14 @@
 //!   RtsGrid  - uniform spatial hash: rebuild / query_radius / nearest_enemy_batch
 //!   RtsNav   - per-move-class passability + weights, A*, connected components, flow fields
 //!   RtsSteer - batch movement tick (path advance + separation) against an RtsNav grid
+//!   RtsFog   - stateless fog circle stamping (fog.gd, PERF4-2 CR 890)
+//!   RtsCombat - stateless line-of-fire (damage.gd line_clear) + batch helpers for combat.gd
 
 use godot::prelude::*;
 
 mod advance;
+mod combat;
+mod fog;
 mod grid;
 mod nav;
 mod steer;

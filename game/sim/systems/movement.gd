@@ -681,6 +681,8 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	var nm := 0
 	var reduced := Tiers.REDUCED
 	var stride := Tiers.STRIDE
+	var use_stride := Tiers.move_stride  # PERF4-2 CR 908: same gate as Tiers.move_k (fallback path)
+	var skipped := 0
 	var n := 0
 	var tick := w.tick
 	for e: Dictionary in all:
@@ -688,8 +690,9 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		# PERF4 fidelity tier: a REDUCED unit (no enemy anywhere near) is advanced AND separated
 		# only on its stride tick (k = STRIDE); on the other ticks it is left out of the batch.
 		var k := 1
-		if int(e.get("tier", 0)) == reduced:
+		if use_stride and int(e.get("tier", 0)) == reduced:
 			if (tick + id) % stride != 0:
+				skipped += 1
 				continue
 			k = stride
 		if not w.entities.has(id):
@@ -772,6 +775,11 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		t0 = _pt("native_step", t0)
 	for i in steer.last_changed():
 		units[i].pos = out[i]
+	# N1-core-3: end-of-movement unit snapshot for other systems (runtime cache, never saved).
+	# ids ascending, pos = every listed unit's position after this tick's movement (nothing moves
+	# later in a tick). complete = no unit was left out (no REDUCED stride skip). Units destroyed
+	# later this tick stay listed (check w.entities), units spawned after movement are absent.
+	w.cache["unit_snap"] = {"tick": w.tick, "ids": ids, "pos": out, "complete": skipped == 0}
 	var res: PackedFloat32Array = steer.last_adv()
 	for m in nm:
 		var e: Dictionary = movers[m]

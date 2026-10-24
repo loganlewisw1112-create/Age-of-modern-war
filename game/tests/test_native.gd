@@ -255,6 +255,8 @@ func test_reduced_tier_stride_parity() -> void:
 	# PERF4 fidelity tiers: REDUCED units advance every STRIDE ticks with a STRIDE x step. Both
 	# paths must still reach the goal through the gap without ever standing in a blocked cell.
 	var goal := Vector2(72.5, 22.5)
+	var was := Tiers.move_stride
+	Tiers.move_stride = true  # exercise the stride path even while PERF4 keeps it off by default
 	for on in _modes():
 		var w := _arena_world(on)
 		var ids := _spawn_group(w, 20, 6)
@@ -276,4 +278,128 @@ func test_reduced_tier_stride_parity() -> void:
 			print("  note: [%s] no REDUCED-tier samples (tiers off or enemy near); stride path not exercised" % tag)
 		check_eq(far, 0, "[%s] every unit reached the goal area (reduced samples %d)" % [tag, reduced_seen])
 		check(bad.is_empty(), "[%s] no unit ever stood in a blocked cell %s" % [tag, str(bad.slice(0, 4))])
+	Tiers.move_stride = was
 	_set_native(true)
+
+
+## RtsCombat.line_clear / line_clear_batch == Damage.line_clear on random segments (ridge wall,
+## off-map ends, exact cell corners and axis-aligned runs included).
+func test_native_los_parity() -> void:
+	_set_native(true)
+	var nc = NativeCore.new_combat()
+	if nc == null:
+		print("  note: RtsCombat not in this DLL: los parity skipped")
+		return
+	var w := _arena_world(true)
+	var Damage = load("res://sim/systems/damage.gd")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var fr := PackedVector2Array()
+	var to := PackedVector2Array()
+	for i in 3000:
+		var a := Vector2(rng.randf_range(5.0, 90.0), rng.randf_range(0.0, 45.0))
+		var b := a + Vector2(rng.randf_range(-14.0, 14.0), rng.randf_range(-14.0, 14.0))
+		if i % 5 == 0:
+			a = a.floor()          # exact corners
+			b = b.floor()
+		elif i % 7 == 0:
+			b.y = a.y              # horizontal run
+		elif i % 11 == 0:
+			b = a + Vector2(3.0, 3.0)  # exact diagonal
+		fr.append(a)
+		to.append(b)
+	var batch: PackedByteArray = nc.line_clear_batch(mw, mh, w.map.terrain, Terrain.RIDGE, fr, to)
+	var bad := []
+	var blocked := 0
+	for i in fr.size():
+		var ref: bool = Damage.line_clear(w, fr[i], to[i])
+		if not ref:
+			blocked += 1
+		if bool(nc.line_clear(mw, mh, w.map.terrain, Terrain.RIDGE, fr[i], to[i])) != ref or (batch[i] == 1) != ref:
+			bad.append([fr[i], to[i], ref])
+	check(blocked > 100 and blocked < 2900, "segments include both blocked and clear (%d blocked)" % blocked)
+	check(bad.is_empty(), "native line_clear == Damage.line_clear on 3000 segments %s" % str(bad.slice(0, 3)))
+	var cdv: PackedInt32Array = nc.countdown(PackedInt32Array([5, 0, 2]), PackedInt32Array([1, 3, 0]), 2)
+	check_eq(Array(cdv), [3, 0, 0, 0, 1, 0], "countdown: max(v - dec, 0) for cd then firing")
+
+
+## RtsFog.stamp == the fog.gd rule (r = floor(sight), dx^2 + dy^2 <= sight^2, clipped to the map);
+## explored_out == explored OR visible.
+func test_native_fog_stamp_parity() -> void:
+	_set_native(true)
+	var nf = NativeCore.new_fog()
+	if nf == null:
+		print("  note: RtsFog not in this DLL: fog parity skipped")
+		return
+	var mw := 37
+	var mh := 23
+	var cells := PackedInt32Array([0, 5 * mw + 6, 22 * mw + 36, 11 * mw + 18, 11 * mw + 18, 3 * mw + 30])
+	var sights := PackedFloat64Array([3.0, 4.5, 2.25, 6.0, 1.0, 7.75])
+	var explored := PackedByteArray()
+	explored.resize(mw * mh)
+	explored.fill(0)
+	for i in range(0, mw * mh, 13):
+		explored[i] = 1
+	var ref := PackedByteArray()
+	ref.resize(mw * mh)
+	ref.fill(0)
+	for k in cells.size():
+		var cx := cells[k] % mw
+		var cy := cells[k] / mw
+		var sg: float = sights[k]
+		var r := int(floor(sg))
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var x := cx + dx
+				var y := cy + dy
+				if float(dx * dx + dy * dy) <= sg * sg and x >= 0 and y >= 0 and x < mw and y < mh:
+					ref[y * mw + x] = 1
+	var vis: PackedByteArray = nf.stamp(mw, mh, cells, sights, explored)
+	check(vis == ref, "RtsFog.stamp == fog.gd stamp rule (%d visible cells)" % Array(ref).count(1))
+	var ex: PackedByteArray = nf.explored_out()
+	var exr := explored.duplicate()
+	for i in exr.size():
+		if ref[i] == 1:
+			exr[i] = 1
+	check(ex == exr, "explored_out == explored OR visible")
+
+
+## Construction.building_at_cell (now a cached footprint occupancy, N1-core-3) == a scan of every
+## live building, before and after a destroy and a new placement inside the same tick.
+func test_building_occupancy_cache_matches_scan() -> void:
+	var Construction = load("res://sim/systems/construction.gd")
+	var w := make_world()
+	var bdef := ""
+	for b in w.buildings_of(0):
+		bdef = String(b.def)
+	var scan := func(c: Vector2i) -> bool:
+		for id in w.entities:
+			var b: Dictionary = w.entities[id]
+			if b.kind == "building":
+				var bc: Vector2i = b.cell
+				var s := int(b.size)
+				if c.x >= bc.x and c.x < bc.x + s and c.y >= bc.y and c.y < bc.y + s:
+					return true
+		return false
+	var cmp := func(tag: String) -> void:
+		var bad := []
+		for y in int(w.map.h):
+			for x in int(w.map.w):
+				var c := Vector2i(x, y)
+				if bool(Construction.building_at_cell(w, c)) != bool(scan.call(c)):
+					bad.append(c)
+		check(bad.is_empty(), "%s: cached occupancy == full scan %s" % [tag, str(bad.slice(0, 3))])
+	cmp.call("start")
+	var first := -1
+	for b in w.buildings_of(0):
+		first = int(b.id)
+		break
+	if first >= 0:
+		var cell: Vector2i = w.entities[first].cell
+		w.destroy(first, "test")
+		cmp.call("after destroy")
+		if bdef != "":
+			w.spawn_building(bdef, 0, cell, true)
+			cmp.call("after placement")

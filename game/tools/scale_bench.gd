@@ -12,10 +12,12 @@ extends SceneTree
 const Movement = preload("res://sim/systems/movement.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
 const FACTIONS := {"a": "human_a", "b": "human_b", "m": "machine"}
 const ROLES := ["infantry", "infantry", "infantry", "antitank", "infantry", "heavy", "recon", "antitank", "infantry", "artillery"]
 
 var breakdown := false
+var series := false   # --series: per-tick time series + per-system breakdown on spike ticks (implies --breakdown)
 
 
 func _init() -> void:
@@ -44,9 +46,11 @@ func _init() -> void:
 			modes = [true] if v == "on" else ([false] if v == "off" else [true, false])
 		elif a.begins_with("--tiers="):
 			Tiers.force_off = a.substr(8) == "off"
-		elif a == "--breakdown":
+		elif a == "--breakdown" or a == "--series":
 			breakdown = true
+			series = series or a == "--series"
 			Movement.profile = true
+			SimIndex.profiling = true
 	if not NativeCore.available():
 		modes = [false]
 	var rows := []
@@ -151,6 +155,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	var setup_s := float(Time.get_ticks_usec() - t_setup) / 1e6
 	var times := PackedFloat64Array()
 	var sys_ms := {}
+	var per_tick := []   # --series: one {system: ms} per tick
 	for i in ticks:
 		if i % 150 == 0:
 			for fid in w.factions:
@@ -158,7 +163,19 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 				if not ids.is_empty():
 					w.submit({"type": "move", "issuer": fid, "unit_ids": ids, "target": legs[fid][(i / 150) % 2]})
 		var t0 := Time.get_ticks_usec()
-		if breakdown:
+		if series:
+			var one := {}
+			Movement.prof = {}
+			_step_timed(w, one)
+			for k in Movement.prof:
+				one["mv." + String(k)] = float(Movement.prof[k]) / 1000.0
+				sys_ms["mv." + String(k)] = float(sys_ms.get("mv." + String(k), 0.0)) + one["mv." + String(k)]
+			for k in one:
+				if not String(k).begins_with("mv."):
+					sys_ms[k] = float(sys_ms.get(k, 0.0)) + float(one[k])
+			one["tick"] = w.tick
+			per_tick.append(one)
+		elif breakdown:
 			_step_timed(w, sys_ms)
 		else:
 			w.step()
@@ -176,7 +193,11 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 		var e: Dictionary = w.entities[id]
 		if e.kind == "unit" and int(e.get("tier", 0)) == Tiers.REDUCED:
 			reduced += 1
+	if series:
+		_print_series(times, per_tick, sorted[int(float(ticks) * 0.95)])
 	var sys_parts := []
+	if series:
+		Movement.prof = {}
 	for k in Movement.prof:
 		sys_parts.append("mv.%s %.1f" % [k, float(Movement.prof[k]) / 1000.0 / float(ticks)])
 	Movement.prof = {}
@@ -225,3 +246,57 @@ func _step_timed(w: SimWorld, acc: Dictionary) -> void:
 		w.event_log.append(ev)
 	if w.event_log.size() > SimWorld.EVENT_LOG_MAX:
 		w.event_log = w.event_log.slice(w.event_log.size() - SimWorld.EVENT_LOG_MAX)
+
+
+## --series report: total ms by tick phase (tick % 8), the 12 slowest ticks with every system over
+## 1 ms, and per-system averages on spike ticks (>= p95) vs the rest. SimIndex sub-phase totals too.
+func _print_series(times: PackedFloat64Array, per_tick: Array, p95: float) -> void:
+	var ph_sum := []
+	var ph_n := []
+	for j in 8:
+		ph_sum.append(0.0)
+		ph_n.append(0)
+	for i in times.size():
+		var j := int(per_tick[i].tick) % 8
+		ph_sum[j] += times[i]
+		ph_n[j] += 1
+	var ph := []
+	for j in 8:
+		ph.append("%d:%.1f" % [j, ph_sum[j] / maxf(1.0, float(ph_n[j]))])
+	print("SERIES tick%%8 avg ms: ", " ".join(ph))
+	var order := range(times.size())
+	order.sort_custom(func(a, b): return times[a] > times[b])
+	for r in mini(12, order.size()):
+		var i: int = order[r]
+		var parts := []
+		for k in per_tick[i]:
+			if k != "tick" and float(per_tick[i][k]) >= 1.0:
+				parts.append("%s %.1f" % [k, float(per_tick[i][k])])
+		print("SPIKE tick=%d (%%8=%d) total %.1f ms: %s" % [int(per_tick[i].tick), int(per_tick[i].tick) % 8, times[i], ", ".join(parts)])
+	var hi := {}
+	var lo := {}
+	var nh := 0
+	var nl := 0
+	for i in times.size():
+		var dst: Dictionary = hi if times[i] >= p95 else lo
+		if times[i] >= p95:
+			nh += 1
+		else:
+			nl += 1
+		for k in per_tick[i]:
+			if k != "tick":
+				dst[k] = float(dst.get(k, 0.0)) + float(per_tick[i][k])
+	var diff := []
+	for k in hi:
+		diff.append([k, float(hi[k]) / maxf(1.0, nh) - float(lo.get(k, 0.0)) / maxf(1.0, nl), float(hi[k]) / maxf(1.0, nh)])
+	diff.sort_custom(func(a, b): return a[1] > b[1])
+	var dp := []
+	for d in diff.slice(0, 12):
+		dp.append("%s %.1f (+%.1f)" % [d[0], d[2], d[1]])
+	print("SPIKE-vs-rest (avg on >=p95 ticks, +excess over other ticks): ", ", ".join(dp))
+	var sp := []
+	for k in SimIndex.prof:
+		var a: Array = SimIndex.prof[k]
+		sp.append("%s %.2fms x%d" % [k, float(a[0]) / 1000.0 / maxf(1.0, float(a[1])), int(a[1])])
+	print("SUBPHASES (avg per call): ", ", ".join(sp))
+	SimIndex.prof = {}
