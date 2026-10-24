@@ -72,6 +72,27 @@ static func _merge_fragments() -> void:
 						t[id] = frag[key][id]
 			else:
 				push_error("Content: fragment %s has unknown table '%s'" % [fn, k])
+	_link_fragment_production()
+
+
+## G4 (UI4B CR): a fragment production entry names its producer with "facility". Add the id to that
+## building's `produces` list when absent, so new units can be queued (ids sorted: deterministic).
+static func _link_fragment_production() -> void:
+	var prods: Dictionary = _data.get("production", {})
+	var blds: Dictionary = _data.get("buildings", {})
+	var pids: Array = prods.keys()
+	pids.sort()
+	for pid in pids:
+		var p = prods[pid]
+		if typeof(p) != TYPE_DICTIONARY or not p.has("facility"):
+			continue
+		var b = blds.get(String(p.facility))
+		if typeof(b) != TYPE_DICTIONARY:
+			continue
+		if not b.has("produces"):
+			b["produces"] = []
+		if not (b.produces as Array).has(pid):
+			b.produces.append(pid)
 
 
 static func _merge_armor(add: Dictionary, fn: String) -> void:
