@@ -64,7 +64,8 @@ static func stats(e: Dictionary) -> Dictionary:
 		"builder": bool(d.get("can_build", false)),
 		"aa": bool(wd.get("anti_air", false)),
 		"indirect": bool(wd.get("indirect", false)),
-		"min_range": float(wd.get("min_range", 0)),
+		"min_range": 0.0 if bool(wd.get("guided", false)) else float(wd.get("min_range", 0)),  # G3b STG4: guided
+		"guided": bool(wd.get("guided", false)),  # G3b STG4: indirect, no friendly splash, no scatter
 		"splash": float(wd.get("splash", 0)),
 		"is_air": bool(d.get("is_air", false)),
 	}
@@ -413,13 +414,19 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> v
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
+	# --- G3b STG4 EW hook: jammed shooters deal Status.damage_mult x damage (s is a shared cache: copy)
+	var dm := Status.damage_mult(w, e)
+	if dm != 1.0:
+		s = s.duplicate()
+		s.damage = float(s.damage) * dm
+	# --- end G3b STG4 hook
 	var cd := maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
 	var hit := w.rng.chance(float(s.accuracy) * Status.accuracy_mult(w, e))
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
-	if not hit:
+	if not hit and not bool(s.get("guided", false)):  # G3b STG4: guided fire never scatters
 		var disp := 1.5 if indirect else 0.6
 		to += Vector2(w.rng.randf_range(-disp, disp), w.rng.randf_range(-disp, disp))
 	if e.kind == "unit":
@@ -456,10 +463,14 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 				for c in arr:
 					if bool(stats(c).is_air):
 						continue
+					if bool(s.get("guided", false)) and w.is_ally(int(e.owner), int(c.owner)):
+						continue  # G3b STG4: guided splash spares friendlies
 					var d := at.distance_to(Vector2(c.pos))
 					if d <= rad:
 						hits[int(c.id)] = d
 	for b in w.cache.get("combat_blds", []):
+		if bool(s.get("guided", false)) and w.is_ally(int(e.owner), int(b.owner)):
+			continue  # G3b STG4: guided splash spares friendlies
 		var d := dist_to(at, b)
 		if d <= rad:
 			hits[int(b.id)] = d

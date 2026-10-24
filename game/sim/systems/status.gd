@@ -3,6 +3,18 @@ extends RefCounted
 ## entity fields they inspect. Contract: docs/CONTRACTS_G2.md section 1.
 ## Fields read: e.comp {mobility, weapon, sensors}, e.fuel, e.ammo, e.pinned, e.broken, e.supp.
 ## Units spawned before G2 fields existed simply lack them and count as healthy.
+## G3b (owner: STG4, CONTRACTS_G3b 3.3): EW jamming. A unit with `ew_radius: R` marks enemy units
+## within R as jammed (e.jammed_until = tick + JAM_TICKS) every JAM_EVERY ticks (driven from
+## Progression.tick). A jammed unit deals damage_mult() x damage and sees sight_mult() x sight:
+## JAM_MULT, or the best `jam_mult` of a researched project (electronic_resilience: 0.85).
+
+const PData = preload("res://sim/systems/progression_data.gd")
+
+const JAM_EVERY := 10
+const JAM_TICKS := 20
+const JAM_MULT := 0.7
+
+static var _ew_radius: Dictionary = {}   # unit def -> ew_radius (cache; content is read-only)
 
 
 static func is_vehicle(e: Dictionary) -> bool:
@@ -49,6 +61,62 @@ static func accuracy_mult(w: SimWorld, e: Dictionary) -> float:
 
 
 static func sight_mult(w: SimWorld, e: Dictionary) -> float:
+	var m := 1.0
 	if e.has("comp") and float(e.comp.get("sensors", 100)) <= 0.0:
-		return 0.5
-	return 1.0
+		m = 0.5
+	if is_jammed(w, e):
+		m *= jam_mult(w, int(e.owner))
+	return m
+
+
+# ================================================================ G3b EW
+static func is_jammed(w: SimWorld, e: Dictionary) -> bool:
+	return int(e.get("jammed_until", -1)) > w.tick
+
+
+## Damage multiplier for shots fired by e (combat reads this).
+static func damage_mult(w: SimWorld, e: Dictionary) -> float:
+	return jam_mult(w, int(e.owner)) if is_jammed(w, e) else 1.0
+
+
+## Jammed-effect multiplier for side fid: JAM_MULT, improved by researched projects with `jam_mult`.
+static func jam_mult(w: SimWorld, fid: int) -> float:
+	var m := JAM_MULT
+	if w.factions.has(fid):
+		for rid in w.factions[fid].research.done:
+			var p := PData.project(String(rid))
+			if p.has("jam_mult"):
+				m = maxf(m, float(p.jam_mult))
+	return m
+
+
+static func ew_radius(def_id: String) -> float:
+	if not _ew_radius.has(def_id):
+		_ew_radius[def_id] = float(Content.unit(def_id).get("ew_radius", 0))
+	return float(_ew_radius[def_id])
+
+
+## Every JAM_EVERY ticks: each living EW unit jams enemy units within its ew_radius for JAM_TICKS.
+static func ew_tick(w: SimWorld) -> void:
+	if w.tick % JAM_EVERY != 0:
+		return
+	var jammers := []
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind == "unit":
+			var r := ew_radius(String(e.def))
+			if r > 0.0:
+				jammers.append([int(e.owner), Vector2(e.pos), r * r])
+	if jammers.is_empty():
+		return
+	var until := w.tick + JAM_TICKS
+	for id in w.entities:
+		var t: Dictionary = w.entities[id]
+		if t.kind != "unit":
+			continue
+		var tp: Vector2 = t.pos
+		var town := int(t.owner)
+		for j in jammers:
+			if w.is_enemy(int(j[0]), town) and tp.distance_squared_to(j[1]) <= float(j[2]):
+				t.jammed_until = until
+				break

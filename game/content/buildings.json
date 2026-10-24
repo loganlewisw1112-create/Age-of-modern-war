@@ -3,7 +3,8 @@
     "schema_version": 1,
     "status": "PROVISIONAL balance fixtures. size = square footprint in tiles. power > 0 produces, < 0 consumes. build_time in seconds for one engineer.",
     "power_rule": "Buildings with requires_power stall production while the faction's power_use exceeds power_prod (reason LOW_POWER).",
-    "g3": "G3a: faction field; flags replace hard-coded defs: is_hq, deposit, supply_point (resupply), home (retreat target), refines (refinery cycle), recharge=R (free charge radius for energy units), scrap_magnet=R (Salvage Yard pulls scrap piles within R). PROVISIONAL."
+    "g3": "G3a: faction field; flags replace hard-coded defs: is_hq, deposit, supply_point (resupply), home (retreat target), refines (refinery cycle), recharge=R (free charge radius for energy units), scrap_magnet=R (Salvage Yard pulls scrap piles within R). PROVISIONAL.",
+    "g3b": "G3b: research=true buildings host research projects (content/research.json); comms=true buildings count toward the 8->9 gate. stage_min/stage_max/requires_research as for units. PROVISIONAL."
   },
   "hq": {
     "name": "Headquarters",
@@ -110,7 +111,11 @@
     "produces": [
       "ifv",
       "mbt",
-      "logistics_truck"
+      "logistics_truck",
+      "a_old_tank",
+      "a_uav",
+      "a_ew_truck",
+      "a_guided_arty"
     ],
     "requires_power": true,
     "cost": {
@@ -284,7 +289,11 @@
       "b_carrier",
       "b_rebuilt_mbt",
       "b_artillery_truck",
-      "b_recovery_truck"
+      "b_recovery_truck",
+      "b_field_gun",
+      "b_radar_aa",
+      "b_jammer_truck",
+      "b_guided_battery"
     ],
     "requires_power": true,
     "cost": {
@@ -421,7 +430,8 @@
     "produces": [
       "m_scout_crawler",
       "m_drone_pair",
-      "m_coordinator"
+      "m_coordinator",
+      "m_swarm"
     ],
     "requires_power": true,
     "cost": {
@@ -447,7 +457,10 @@
     "produces": [
       "m_walker",
       "m_tracked",
-      "m_artillery_node"
+      "m_artillery_node",
+      "m_siege_crawler",
+      "m_ew_node",
+      "m_lancer"
     ],
     "requires_power": true,
     "cost": {
@@ -476,7 +489,8 @@
       "salvage": 60,
       "ore": 0
     },
-    "build_time": 12
+    "build_time": 12,
+    "comms": true
   },
   "m_sentry": {
     "armor": "building",
@@ -499,5 +513,115 @@
       "ore": 0
     },
     "build_time": 15
+  },
+  "research_station": {
+    "name": "Research Station",
+    "size": 2,
+    "hp": 1000,
+    "armor": "building",
+    "sight": 6,
+    "power": -25,
+    "buildable": true,
+    "requires": [
+      "barracks"
+    ],
+    "hotkey": "R",
+    "cost": {
+      "credits": 300,
+      "salvage": 120,
+      "ore": 0
+    },
+    "build_time": 25,
+    "faction": "human_a",
+    "research": true,
+    "stage_min": 7
+  },
+  "comms_tower": {
+    "name": "Comms Tower",
+    "size": 1,
+    "hp": 700,
+    "armor": "building",
+    "sight": 12,
+    "power": -20,
+    "buildable": true,
+    "requires": [
+      "research_station"
+    ],
+    "hotkey": "C",
+    "cost": {
+      "credits": 350,
+      "salvage": 100,
+      "ore": 50
+    },
+    "build_time": 20,
+    "faction": "human_a",
+    "comms": true,
+    "stage_min": 8
+  },
+  "b_drafting_office": {
+    "name": "Drafting Office",
+    "size": 2,
+    "hp": 1300,
+    "armor": "building",
+    "sight": 6,
+    "power": -20,
+    "buildable": true,
+    "requires": [
+      "b_barracks"
+    ],
+    "hotkey": "R",
+    "cost": {
+      "credits": 260,
+      "salvage": 160,
+      "ore": 0
+    },
+    "build_time": 28,
+    "faction": "human_b",
+    "research": true,
+    "stage_min": 7
+  },
+  "b_signal_mast": {
+    "name": "Signal Mast",
+    "size": 1,
+    "hp": 900,
+    "armor": "building",
+    "sight": 11,
+    "power": -15,
+    "buildable": true,
+    "requires": [
+      "b_drafting_office"
+    ],
+    "hotkey": "C",
+    "cost": {
+      "credits": 300,
+      "salvage": 140,
+      "ore": 50
+    },
+    "build_time": 22,
+    "faction": "human_b",
+    "comms": true,
+    "stage_min": 8
+  },
+  "m_compute_node": {
+    "name": "Compute Node",
+    "size": 2,
+    "hp": 900,
+    "armor": "building",
+    "sight": 7,
+    "power": -30,
+    "buildable": true,
+    "requires": [
+      "m_assembler"
+    ],
+    "hotkey": "C",
+    "cost": {
+      "credits": 320,
+      "salvage": 100,
+      "ore": 40
+    },
+    "build_time": 24,
+    "faction": "machine",
+    "research": true,
+    "stage_min": 7
   }
 }

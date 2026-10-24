@@ -46,6 +46,8 @@ static func tick(w: SimWorld) -> void:
 		f.power_use = int(pu[fid])
 		f.pop = int(pop[fid])
 		f.pop_cap = mini(int(pc[fid]), cap_max)
+		# G3b gate counter (STG4): consecutive ticks with power_prod >= power_use; any shortfall resets
+		f.stats.power_ok_ticks = int(f.stats.get("power_ok_ticks", 0)) + 1 if int(f.power_prod) >= int(f.power_use) else 0
 		if pay and f.alive and int(hqs[fid]) > 0 and rate > 0:
 			w.credit(fid, {"credits": rate * int(hqs[fid])}, "hq_stipend")
 	_refineries(w)
@@ -81,6 +83,7 @@ static func _refineries(w: SimWorld) -> void:
 			if acc >= period:
 				acc = 0
 				if w.spend(fid, {"ore": ore_in}, "refinery"):
+					f.stats.ore_refined = int(f.stats.get("ore_refined", 0)) + ore_in  # G3b gate counter (STG4)
 					w.credit(fid, {"fuel": int(cfg.get("fuel_out", 0)), "ammo": int(cfg.get("ammo_out", 0))}, "refinery")
 			e.refine_acc = acc
 		if String(e.status) != status:

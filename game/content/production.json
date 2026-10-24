@@ -2,7 +2,8 @@
   "_meta": {
     "schema_version": 1,
     "status": "PROVISIONAL. A production item is what a queue builds; it spawns one or more unit defs (a squad).",
-    "cost": "credits come from the treasury; salvage/ore are physical stock. Cost is deducted ONCE at queue time; cancel refunds in full."
+    "cost": "credits come from the treasury; salvage/ore are physical stock. Cost is deducted ONCE at queue time; cancel refunds in full.",
+    "g3b": "G3b: stage_min (default 7) / stage_max gate a def by the side's stage; requires_research lists project ids; ew_radius R jams enemy units within R (CONTRACTS_G3b 3.3). PROVISIONAL."
   },
   "engineer": {
     "name": "Work Crew",
@@ -96,7 +97,8 @@
     },
     "train_time": 40,
     "hotkey": "M",
-    "faction": "human_a"
+    "faction": "human_a",
+    "stage_min": 8
   },
   "officer": {
     "name": "Officer",
@@ -177,7 +179,8 @@
     },
     "train_time": 18,
     "hotkey": "T",
-    "faction": "human_b"
+    "faction": "human_b",
+    "stage_min": 8
   },
   "b_officer": {
     "name": "Foreman Officer",
@@ -237,7 +240,8 @@
     },
     "train_time": 32,
     "hotkey": "A",
-    "faction": "human_b"
+    "faction": "human_b",
+    "stage_min": 8
   },
   "b_recovery_truck": {
     "name": "Recovery Truck",
@@ -343,7 +347,8 @@
     },
     "train_time": 40,
     "hotkey": "M",
-    "faction": "machine"
+    "faction": "machine",
+    "stage_min": 8
   },
   "m_tracked": {
     "name": "Tracked Platform",
@@ -373,6 +378,196 @@
     },
     "train_time": 30,
     "hotkey": "A",
+    "faction": "machine",
+    "stage_min": 8
+  },
+  "a_old_tank": {
+    "name": "Cold-War Tank",
+    "spawns": [
+      "a_old_tank"
+    ],
+    "facility": "motor_pool",
+    "cost": {
+      "credits": 480,
+      "salvage": 180,
+      "ore": 200
+    },
+    "train_time": 36,
+    "hotkey": "K",
+    "faction": "human_a"
+  },
+  "a_uav": {
+    "name": "Recon-Strike UAV",
+    "spawns": [
+      "a_uav"
+    ],
+    "facility": "motor_pool",
+    "cost": {
+      "credits": 450,
+      "salvage": 120,
+      "ore": 120
+    },
+    "train_time": 28,
+    "hotkey": "U",
+    "faction": "human_a",
+    "stage_min": 9
+  },
+  "a_ew_truck": {
+    "name": "EW Truck",
+    "spawns": [
+      "a_ew_truck"
+    ],
+    "facility": "motor_pool",
+    "cost": {
+      "credits": 400,
+      "salvage": 140,
+      "ore": 80
+    },
+    "train_time": 24,
+    "hotkey": "J",
+    "faction": "human_a",
+    "stage_min": 9
+  },
+  "a_guided_arty": {
+    "name": "Guided Artillery",
+    "spawns": [
+      "a_guided_arty"
+    ],
+    "facility": "motor_pool",
+    "cost": {
+      "credits": 560,
+      "salvage": 160,
+      "ore": 200
+    },
+    "train_time": 34,
+    "hotkey": "Q",
+    "faction": "human_a",
+    "stage_min": 9
+  },
+  "b_field_gun": {
+    "name": "Towed Field Gun",
+    "spawns": [
+      "b_field_gun"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 300,
+      "salvage": 140,
+      "ore": 100
+    },
+    "train_time": 26,
+    "hotkey": "F",
+    "faction": "human_b"
+  },
+  "b_radar_aa": {
+    "name": "Radar AA Truck",
+    "spawns": [
+      "b_radar_aa"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 380,
+      "salvage": 180,
+      "ore": 100
+    },
+    "train_time": 26,
+    "hotkey": "Z",
+    "faction": "human_b",
+    "stage_min": 9
+  },
+  "b_jammer_truck": {
+    "name": "Jammer Truck",
+    "spawns": [
+      "b_jammer_truck"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 360,
+      "salvage": 170,
+      "ore": 80
+    },
+    "train_time": 24,
+    "hotkey": "J",
+    "faction": "human_b",
+    "stage_min": 9
+  },
+  "b_guided_battery": {
+    "name": "Guided Rocket Battery",
+    "spawns": [
+      "b_guided_battery"
+    ],
+    "facility": "b_heavy_plant",
+    "cost": {
+      "credits": 520,
+      "salvage": 200,
+      "ore": 200
+    },
+    "train_time": 34,
+    "hotkey": "Q",
+    "faction": "human_b",
+    "stage_min": 9
+  },
+  "m_siege_crawler": {
+    "name": "Siege Crawler",
+    "spawns": [
+      "m_siege_crawler"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 560,
+      "salvage": 180,
+      "ore": 200
+    },
+    "train_time": 38,
+    "hotkey": "K",
     "faction": "machine"
+  },
+  "m_swarm": {
+    "name": "Drone Swarm",
+    "spawns": [
+      "m_swarm"
+    ],
+    "facility": "m_assembler",
+    "cost": {
+      "credits": 380,
+      "salvage": 130,
+      "ore": 60
+    },
+    "train_time": 20,
+    "hotkey": "Y",
+    "faction": "machine",
+    "stage_min": 9
+  },
+  "m_ew_node": {
+    "name": "EW Node",
+    "spawns": [
+      "m_ew_node"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 420,
+      "salvage": 140,
+      "ore": 80
+    },
+    "train_time": 24,
+    "hotkey": "J",
+    "faction": "machine",
+    "stage_min": 9
+  },
+  "m_lancer": {
+    "name": "Lancer",
+    "spawns": [
+      "m_lancer"
+    ],
+    "facility": "m_crawler_works",
+    "cost": {
+      "credits": 700,
+      "salvage": 200,
+      "ore": 240
+    },
+    "train_time": 40,
+    "hotkey": "Q",
+    "faction": "machine",
+    "stage_min": 9
   }
 }

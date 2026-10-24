@@ -6,6 +6,7 @@ extends RefCounted
 ## placement rejects another faction's buildings.
 
 const Movement = preload("res://sim/systems/movement.gd")
+const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 
 const MAX_BUILD_RANGE := 20.0
 const BUILD_REACH := 1.0   # engineer must be within this distance of the footprint edge
@@ -118,6 +119,9 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 		return "%s cannot be constructed." % nm
 	if w.factions.has(fid) and d.has("faction") and String(d.faction) != String(w.factions[fid].faction_def):
 		return "%s belongs to another faction." % nm
+	var gate := PData.unavailable_reason(w, fid, d)  # G3b: "Requires Stage 8" / "Requires research: X"
+	if gate != "":
+		return "%s: %s." % [nm, gate]
 	for req in d.get("requires", []):
 		var ok := false
 		for b in w.buildings_of(fid, String(req)):

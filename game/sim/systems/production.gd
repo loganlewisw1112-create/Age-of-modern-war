@@ -5,6 +5,7 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
+const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 
 const QUEUE_MAX := 5
 
@@ -25,6 +26,9 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var bd := Content.building(b.def)
 			if not bd.get("produces", []).has(item):
 				return "%s cannot produce %s." % [String(bd.get("name", b.def)), String(p.get("name", item))]
+			var gate := PData.production_reason(w, fid, item)  # G3b: "Requires Stage 8" / "Requires research: X"
+			if gate != "":
+				return "%s: %s." % [String(p.get("name", item)), gate]
 			if b.queue.size() >= QUEUE_MAX:
 				return "The production queue is full (%d)." % QUEUE_MAX
 			return w.can_afford(fid, p.cost)
@@ -127,6 +131,11 @@ static func _complete(w: SimWorld, b: Dictionary, item: String, p: Dictionary, i
 		ids.append(uid)
 		f.stats.trained += 1
 	f.pop = int(f.pop) + item_pop     # Economy recomputes next tick; keeps same-tick completions honest
+	# G3b gate counters (CONTRACTS_G3b 3.2): officers, and line units = the faction's infantry/antitank role
+	if item == PData.role(w, fid, "officer"):
+		f.stats.officers_trained = int(f.stats.get("officers_trained", 0)) + ids.size()
+	elif item == PData.role(w, fid, "infantry") or item == PData.role(w, fid, "antitank"):
+		f.stats.line_trained = int(f.stats.get("line_trained", 0)) + ids.size()
 	w.emit("ProductionCompleted", {"building_id": int(b.id), "item": item, "unit_ids": ids, "owner": fid})
 
 

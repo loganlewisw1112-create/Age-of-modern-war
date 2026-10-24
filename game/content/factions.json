@@ -2,7 +2,8 @@
   "_meta": {
     "schema_version": 1,
     "status": "G3a faction registry. 'roles' map a generic role to this faction's def id so systems, AI and UI never hard-code names. Names are working concepts (DEC-14).",
-    "roles": "buildings: hq power depot barracks factory refinery defense extra; production items: builder gatherer infantry antitank recon light heavy artillery officer supply air"
+    "roles": "buildings: hq power depot barracks factory refinery defense extra; production items: builder gatherer infantry antitank recon light heavy artillery officer supply air",
+    "stage_roles": "G3b: stage_roles {stage: {role: def}} override roles at that stage (Content.role). Extra roles: research, comms (buildings); ew, precision, anti_air (production)."
   },
   "human_a": {
     "name": "Modern Military Power",
@@ -28,7 +29,12 @@
       "artillery": "",
       "officer": "officer",
       "supply": "logistics_truck",
-      "air": ""
+      "air": "",
+      "research": "research_station",
+      "comms": "comms_tower",
+      "ew": "",
+      "precision": "",
+      "anti_air": ""
     },
     "start_units": [
       "engineer",
@@ -37,7 +43,18 @@
       "engineer",
       "engineer",
       "recon"
-    ]
+    ],
+    "stage_roles": {
+      "7": {
+        "heavy": "a_old_tank",
+        "artillery": ""
+      },
+      "9": {
+        "air": "a_uav",
+        "ew": "a_ew_truck",
+        "precision": "a_guided_arty"
+      }
+    }
   },
   "human_b": {
     "name": "Industrial Power",
@@ -63,7 +80,12 @@
       "artillery": "b_artillery_truck",
       "officer": "b_officer",
       "supply": "b_recovery_truck",
-      "air": ""
+      "air": "",
+      "research": "b_drafting_office",
+      "comms": "b_signal_mast",
+      "ew": "",
+      "precision": "",
+      "anti_air": ""
     },
     "start_units": [
       "b_crew",
@@ -72,7 +94,20 @@
       "b_crew",
       "b_crew",
       "b_militia"
-    ]
+    ],
+    "stage_roles": {
+      "7": {
+        "heavy": "b_rebuilt_mbt",
+        "artillery": "b_field_gun",
+        "antitank": ""
+      },
+      "9": {
+        "air": "",
+        "ew": "b_jammer_truck",
+        "precision": "b_guided_battery",
+        "anti_air": "b_radar_aa"
+      }
+    }
   },
   "machine": {
     "name": "Autonomous Network",
@@ -98,7 +133,12 @@
       "artillery": "m_artillery_node",
       "officer": "m_coordinator",
       "supply": "",
-      "air": "m_drone_pair"
+      "air": "m_drone_pair",
+      "research": "m_compute_node",
+      "comms": "m_sensor_relay",
+      "ew": "",
+      "precision": "",
+      "anti_air": ""
     },
     "start_units": [
       "m_repair_bot",
@@ -107,6 +147,18 @@
       "m_hauler",
       "m_hauler",
       "m_scout_crawler"
-    ]
+    ],
+    "stage_roles": {
+      "7": {
+        "heavy": "m_siege_crawler",
+        "artillery": "",
+        "antitank": "m_siege_crawler"
+      },
+      "9": {
+        "air": "m_swarm",
+        "ew": "m_ew_node",
+        "precision": "m_lancer"
+      }
+    }
   }
 }

@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "schema_version": 1,
+    "status": "G3b research projects (CONTRACTS_G3b 3.1). Fixture costs: 7->8 projects 800 credits / 45 s; 8->9 projects 1,200 credits + 200 ore / 60 s. PROVISIONAL.",
+    "jam_mult": "optional: once researched, this side's jammed units fire/see at jam_mult instead of the base 0.7x (status.gd)."
+  },
+  "integrated_manufacturing": {
+    "name": "Integrated Manufacturing",
+    "names": {
+      "human_b": "Assembly Lines",
+      "machine": "Fabrication Mesh"
+    },
+    "cost": {
+      "credits": 800
+    },
+    "time": 45,
+    "stage_min": 7,
+    "for_stage": 8
+  },
+  "combined_arms": {
+    "name": "Combined Arms",
+    "names": {
+      "human_b": "Mass Doctrine",
+      "machine": "Task Allocation"
+    },
+    "cost": {
+      "credits": 800
+    },
+    "time": 45,
+    "stage_min": 7,
+    "for_stage": 8
+  },
+  "digital_networks": {
+    "name": "Digital Networks",
+    "names": {
+      "human_b": "Signal Grid",
+      "machine": "Mesh Protocols"
+    },
+    "cost": {
+      "credits": 1200,
+      "ore": 200
+    },
+    "time": 60,
+    "stage_min": 8,
+    "for_stage": 9
+  },
+  "target_fusion": {
+    "name": "Target Fusion",
+    "names": {
+      "human_b": "Fire Direction Centre",
+      "machine": "Sensor Fusion"
+    },
+    "cost": {
+      "credits": 1200,
+      "ore": 200
+    },
+    "time": 60,
+    "stage_min": 8,
+    "for_stage": 9
+  },
+  "electronic_resilience": {
+    "name": "Electronic Resilience",
+    "names": {
+      "human_b": "Hardened Circuits",
+      "machine": "Redundant Cores"
+    },
+    "cost": {
+      "credits": 1200,
+      "ore": 200
+    },
+    "time": 60,
+    "stage_min": 8,
+    "for_stage": 9,
+    "jam_mult": 0.85
+  }
+}

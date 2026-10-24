@@ -4,7 +4,8 @@
     "status": "PROVISIONAL balance fixtures for the G0+G1 slice. Not user-approved numbers (DEC-14).",
     "units": "hp in hit points; speed in tiles/second; sight and ranges in tiles; train_time in seconds",
     "g2": "G2 fields: ammo_max (rounds), fuel_max/fuel_per_tile (vehicles), components (vehicle sub-systems 0..100), morale (infantry). PROVISIONAL.",
-    "g3": "G3a: faction field; energy=true units (Machine) recharge 'fuel' (charge) for free near recharge buildings while power holds and have NO morale (immune to suppression); is_air units fly (move_class air) and can only be hit by anti_air weapons; can_repair lets non-engineers repair. PROVISIONAL."
+    "g3": "G3a: faction field; energy=true units (Machine) recharge 'fuel' (charge) for free near recharge buildings while power holds and have NO morale (immune to suppression); is_air units fly (move_class air) and can only be hit by anti_air weapons; can_repair lets non-engineers repair. PROVISIONAL.",
+    "g3b": "G3b: stage_min (default 7) / stage_max gate a def by the side's stage; requires_research lists project ids; ew_radius R jams enemy units within R (CONTRACTS_G3b 3.3). PROVISIONAL."
   },
   "engineer": {
     "name": "Work Crew",
@@ -113,7 +114,8 @@
       "weapon": 100,
       "sensors": 100
     },
-    "faction": "human_a"
+    "faction": "human_a",
+    "stage_min": 8
   },
   "officer": {
     "name": "Officer",
@@ -202,7 +204,8 @@
     "sight": 8,
     "weapon": "lmg",
     "pop": 1,
-    "ammo_max": 120
+    "ammo_max": 120,
+    "stage_min": 8
   },
   "b_officer": {
     "armor": "infantry",
@@ -284,7 +287,8 @@
     "radius": 0.6,
     "ammo_max": 24,
     "fuel_max": 300,
-    "fuel_per_tile": 1.0
+    "fuel_per_tile": 1.0,
+    "stage_min": 8
   },
   "b_recovery_truck": {
     "move_class": "vehicle",
@@ -406,7 +410,8 @@
     },
     "fuel_max": 360,
     "fuel_per_tile": 1.4,
-    "ammo_max": 40
+    "ammo_max": 40,
+    "stage_min": 8
   },
   "m_tracked": {
     "armor": "heavy",
@@ -452,7 +457,8 @@
     },
     "fuel_max": 200,
     "fuel_per_tile": 1.5,
-    "ammo_max": 30
+    "ammo_max": 30,
+    "stage_min": 8
   },
   "m_coordinator": {
     "armor": "light",
@@ -471,5 +477,269 @@
     "fuel_max": 240,
     "fuel_per_tile": 0.6,
     "ammo_max": 60
+  },
+  "a_old_tank": {
+    "name": "Cold-War Tank",
+    "role": "heavy",
+    "armor": "heavy",
+    "move_class": "vehicle",
+    "hp": 820,
+    "speed": 2.4,
+    "sight": 8,
+    "weapon": "old_cannon",
+    "pop": 4,
+    "radius": 0.7,
+    "leaves_wreck": true,
+    "ammo_max": 36,
+    "fuel_max": 380,
+    "fuel_per_tile": 1.6,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_a"
+  },
+  "a_uav": {
+    "name": "Recon-Strike UAV",
+    "role": "air",
+    "armor": "light",
+    "move_class": "air",
+    "hp": 160,
+    "speed": 5.0,
+    "sight": 13,
+    "weapon": "uav_missile",
+    "pop": 2,
+    "radius": 0.4,
+    "is_air": true,
+    "ammo_max": 8,
+    "fuel_max": 240,
+    "fuel_per_tile": 1.0,
+    "faction": "human_a",
+    "stage_min": 9
+  },
+  "a_ew_truck": {
+    "name": "EW Truck",
+    "role": "ew",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 300,
+    "speed": 3.0,
+    "sight": 10,
+    "pop": 2,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.0,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_a",
+    "ew_radius": 7,
+    "stage_min": 9
+  },
+  "a_guided_arty": {
+    "name": "Guided Artillery",
+    "role": "precision",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 300,
+    "speed": 2.6,
+    "sight": 7,
+    "weapon": "guided_shell",
+    "pop": 3,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 20,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.1,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_a",
+    "stage_min": 9
+  },
+  "b_field_gun": {
+    "name": "Towed Field Gun",
+    "role": "artillery",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 260,
+    "speed": 2.0,
+    "sight": 7,
+    "weapon": "field_gun",
+    "pop": 3,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 30,
+    "fuel_max": 240,
+    "fuel_per_tile": 1.0,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_b"
+  },
+  "b_radar_aa": {
+    "name": "Radar AA Truck",
+    "role": "anti_air",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 320,
+    "speed": 2.8,
+    "sight": 12,
+    "weapon": "radar_flak",
+    "pop": 3,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 160,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.0,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_b",
+    "stage_min": 9
+  },
+  "b_jammer_truck": {
+    "name": "Jammer Truck",
+    "role": "ew",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 340,
+    "speed": 2.7,
+    "sight": 9,
+    "pop": 2,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.0,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_b",
+    "ew_radius": 8,
+    "stage_min": 9
+  },
+  "b_guided_battery": {
+    "name": "Guided Rocket Battery",
+    "role": "precision",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 320,
+    "speed": 2.5,
+    "sight": 7,
+    "weapon": "guided_rocket",
+    "pop": 3,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "ammo_max": 18,
+    "fuel_max": 300,
+    "fuel_per_tile": 1.1,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "human_b",
+    "stage_min": 9
+  },
+  "m_siege_crawler": {
+    "name": "Siege Crawler",
+    "role": "heavy",
+    "armor": "heavy",
+    "move_class": "vehicle",
+    "hp": 900,
+    "speed": 1.8,
+    "sight": 8,
+    "weapon": "siege_driver",
+    "pop": 4,
+    "radius": 0.7,
+    "leaves_wreck": true,
+    "ammo_max": 36,
+    "fuel_max": 320,
+    "fuel_per_tile": 1.5,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "machine",
+    "energy": true
+  },
+  "m_swarm": {
+    "name": "Drone Swarm",
+    "role": "air",
+    "armor": "light",
+    "move_class": "air",
+    "hp": 200,
+    "speed": 5.2,
+    "sight": 10,
+    "weapon": "swarm_gun",
+    "pop": 2,
+    "radius": 0.45,
+    "is_air": true,
+    "energy": true,
+    "ammo_max": 120,
+    "fuel_max": 200,
+    "fuel_per_tile": 1.0,
+    "faction": "machine",
+    "stage_min": 9
+  },
+  "m_ew_node": {
+    "name": "EW Node",
+    "role": "ew",
+    "armor": "light",
+    "move_class": "vehicle",
+    "hp": 360,
+    "speed": 2.2,
+    "sight": 10,
+    "pop": 2,
+    "radius": 0.6,
+    "leaves_wreck": true,
+    "fuel_max": 260,
+    "fuel_per_tile": 1.2,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "machine",
+    "energy": true,
+    "ew_radius": 8,
+    "stage_min": 9
+  },
+  "m_lancer": {
+    "name": "Lancer",
+    "role": "precision",
+    "armor": "heavy",
+    "move_class": "foot",
+    "hp": 700,
+    "speed": 2.2,
+    "sight": 11,
+    "weapon": "lancer_rail",
+    "pop": 4,
+    "radius": 0.65,
+    "leaves_wreck": true,
+    "ammo_max": 30,
+    "fuel_max": 340,
+    "fuel_per_tile": 1.4,
+    "components": {
+      "mobility": 100,
+      "weapon": 100,
+      "sensors": 100
+    },
+    "faction": "machine",
+    "energy": true,
+    "stage_min": 9
   }
 }
