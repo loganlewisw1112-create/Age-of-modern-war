@@ -24,8 +24,16 @@ const Territory = preload("res://sim/systems/territory.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const MapGen = preload("res://sim/map_gen.gd")
 
-const MODES := ["hq_elimination", "territory", "hold_bridge", "combined", "endless"]
-const TERM_TYPES := ["hq_elimination", "territory", "hold_bridge"]
+## G4 (MAPIO, CONTRACTS_G4 section 5): scenario presets, combinable with AND/OR like the others.
+## survive{seconds, slot?}: the team is alive when the clock reaches `seconds`.
+## destroy_target{tag, slot?}: every placed entity carrying `tag` is gone (teams owning one never win by it).
+## reach_stage{stage, slot?}: a side of the team is at `stage` or later.
+## hold_point{region, seconds, slot?}: only this team's units stand in the region for `seconds` in a row
+##   (sampled with the bridge; state w.sys_state.victory.points, created only when used).
+## slot (optional, a map-file player slot) restricts which team can satisfy the term.
+const SCENARIO_TERMS := ["survive", "destroy_target", "reach_stage", "hold_point"]
+const MODES := ["hq_elimination", "territory", "hold_bridge", "combined", "endless", "survive", "destroy_target", "reach_stage", "hold_point"]
+const TERM_TYPES := ["hq_elimination", "territory", "hold_bridge", "survive", "destroy_target", "reach_stage", "hold_point"]
 const BRIDGE_RADIUS := 4.0
 const BRIDGE_EVERY := 20
 const DEFAULT_SECONDS := 300
@@ -58,6 +66,7 @@ static func tick(w: SimWorld) -> void:
 	Territory.tick(w)
 	if w.tick % BRIDGE_EVERY == 7:  # G3b perf: off the shared tick%20==0 spike
 		_bridge_sample(w)
+		_points_sample(w)
 	var mode := String(w.cfg.get("victory", "hq_elimination"))
 	if mode == "endless":
 		return
@@ -90,21 +99,64 @@ static func _eliminate(w: SimWorld) -> void:
 	for e in SimIndex.of(w, "building"):
 		if _is_hq(String(e.def)) and SimIndex.alive(w, e):
 			has_hq[int(e.owner)] = true
+	var hqless: Array = _vstate(w).get("hqless", [])
+	if not hqless.is_empty():
+		for e in SimIndex.of(w, "unit"):
+			if SimIndex.alive(w, e):
+				has_hq[int(e.owner)] = true if hqless.has(int(e.owner)) else has_hq.get(int(e.owner), false)
+		for e in SimIndex.of(w, "building"):
+			if hqless.has(int(e.owner)) and SimIndex.alive(w, e):
+				has_hq[int(e.owner)] = true
 	var changed := false
 	for fid in w.factions:
 		var f: Dictionary = w.factions[fid]
-		if f.alive and not has_hq.has(int(fid)):
+		if f.alive and not bool(has_hq.get(int(fid), false)):
 			f.alive = false
 			changed = true
 			w.emit("SideEliminated", {"faction": int(fid), "team": team_of(w, int(fid))})
-	if not changed:
-		return
+	if changed:
+		_teams_out(w)
+
+
+static func _teams_out(w: SimWorld) -> void:
 	var vs := _vstate(w)
 	var out: Array = vs.out_teams
 	for team in all_teams(w):
 		if not team_alive(w, int(team)) and not out.has(int(team)):
 			out.append(int(team))
 			w.emit("TeamEliminated", {"team": int(team)})
+
+
+## G4 scenario sides placed without an HQ (map file, start_packages false): they are out when
+## they have no units and no buildings left instead. Called by MapIO.place_entities.
+static func note_hqless(w: SimWorld) -> void:
+	var has := {}
+	for e in w.entities.values():
+		if e.kind == "building" and _is_hq(String(e.def)):
+			has[int(e.owner)] = true
+	var lst := []
+	for fid in w.factions:
+		if not has.has(int(fid)):
+			lst.append(int(fid))
+	lst.sort()
+	if not lst.is_empty():
+		_vstate(w)["hqless"] = lst
+
+
+## G4 triggers: lose{slot}.
+static func eliminate_side(w: SimWorld, fid: int) -> void:
+	if not w.factions.has(fid) or not bool(w.factions[fid].alive):
+		return
+	w.factions[fid].alive = false
+	w.emit("SideEliminated", {"faction": fid, "team": team_of(w, fid)})
+	_teams_out(w)
+
+
+## G4 triggers: win{slot}. Ends the match for that side's team (reason "trigger").
+static func force_win(w: SimWorld, fid: int) -> void:
+	if w.match_state.get("ended", false) or not w.factions.has(fid):
+		return
+	_end(w, team_of(w, fid), "trigger", ["trigger"])
 
 
 static func _end(w: SimWorld, team: int, reason: String, terms: Array) -> void:
@@ -184,6 +236,9 @@ static func rules_of(c: Dictionary) -> Dictionary:
 				t.percent = p.percent
 			if mode == "hold_bridge" and p.has("seconds"):
 				t.seconds = p.seconds
+			if SCENARIO_TERMS.has(mode):
+				t.merge(p)
+				t.type = mode
 		raw = [t]
 	var terms := []
 	for t in raw:
@@ -199,6 +254,17 @@ static func _norm_term(t: Dictionary) -> Dictionary:
 		out.percent = float(t.get("percent", Content.rules().get("territory", {}).get("default_percent", 60)))
 	elif ty == "hold_bridge":
 		out.seconds = int(t.get("seconds", Content.rules().get("hold_bridge", {}).get("default_seconds", DEFAULT_SECONDS)))
+	elif SCENARIO_TERMS.has(ty):
+		if ty == "survive" or ty == "hold_point":
+			out.seconds = int(t.get("seconds", DEFAULT_SECONDS))
+		if ty == "destroy_target":
+			out.tag = String(t.get("tag", ""))
+		if ty == "reach_stage":
+			out.stage = int(t.get("stage", 9))
+		if ty == "hold_point":
+			out.region = String(t.get("region", ""))
+		if t.has("slot"):
+			out.slot = int(t.slot)
 	return out
 
 
@@ -225,7 +291,113 @@ static func term_satisfied(w: SimWorld, team: int, t: Dictionary) -> bool:
 		"hold_bridge":
 			var vs := _vstate(w)
 			return int(vs.bridge_holder) == team and int(vs.bridge_secs) >= int(t.get("seconds", DEFAULT_SECONDS))
+		"survive", "destroy_target", "reach_stage", "hold_point":
+			return _scenario_term(w, team, t)
 	return false
+
+
+## Team allowed by the optional term slot (map-file player slot -> side via cfg.sides).
+static func _slot_ok(w: SimWorld, team: int, t: Dictionary) -> bool:
+	if not t.has("slot"):
+		return true
+	var sides: Array = w.cfg.get("sides", [])
+	for i in sides.size():
+		if int(sides[i].get("slot", i)) == int(t.slot):
+			return team_of(w, i) == team
+	return false
+
+
+static func _scenario_term(w: SimWorld, team: int, t: Dictionary) -> bool:
+	if not team_alive(w, team) or not _slot_ok(w, team, t):
+		return false
+	match String(t.type):
+		"survive":
+			return w.tick >= int(t.get("seconds", DEFAULT_SECONDS)) * SimWorld.TICK_RATE
+		"destroy_target":
+			var tg: Dictionary = w.sys_state.get("triggers", {}).get("tags", {}).get(String(t.get("tag", "")), {})
+			if tg.is_empty():
+				return false
+			for fid in tg.get("owners", []):
+				if team_of(w, int(fid)) == team:
+					return false
+			for id in tg.get("ids", []):
+				if _tag_alive(w, int(id)):
+					return false
+			return true
+		"reach_stage":
+			for fid in w.factions:
+				if team_of(w, int(fid)) == team and bool(w.factions[fid].alive) and int(w.factions[fid].stage) >= int(t.get("stage", 9)):
+					return true
+			return false
+		"hold_point":
+			var ps: Dictionary = _vstate(w).get("points", {}).get(String(t.get("region", "")), {})
+			return int(ps.get("holder", -1)) == team and int(ps.get("secs", 0)) >= int(t.get("seconds", DEFAULT_SECONDS))
+	return false
+
+
+## A tagged entity still exists (in the world, or carried as cargo inside a carrier's dict).
+## The cargo scan reads the authoritative carrier dicts, not w.cache.cargo_of (rebuilt lazily after load).
+static func _tag_alive(w: SimWorld, id: int) -> bool:
+	if w.entities.has(id):
+		var e: Dictionary = w.entities[id]
+		return e.kind != "structure" or String(e.get("state", "intact")) == "intact"
+	for c in SimIndex.of(w, "unit"):
+		if c.has("cargo") and SimIndex.alive(w, c):
+			for u in c.cargo:
+				if int(u.id) == id:
+					return true
+	return false
+
+
+## Region rect by id from w.map.regions (cached).
+static func region_rect(w: SimWorld, rid: String):
+	var rc = w.cache.get("victory_regions")
+	if rc == null:
+		rc = {}
+		for r in w.map.get("regions", []):
+			rc[String(r.id)] = r.rect if typeof(r.rect) == TYPE_RECT2I else Rect2i(int(r.rect[0]), int(r.rect[1]), int(r.rect[2]), int(r.rect[3]))
+		w.cache["victory_regions"] = rc
+	return rc.get(rid)
+
+
+## hold_point sampling (same cadence and rules as the bridge).
+static func _points_sample(w: SimWorld) -> void:
+	var rules := rules_of_world(w)
+	var done := {}
+	for t in rules.terms:
+		if String(t.type) != "hold_point" or done.has(String(t.region)):
+			continue
+		done[String(t.region)] = true
+		var vs := _vstate(w)
+		if not vs.has("points"):
+			vs["points"] = {}
+		var rid := String(t.region)
+		if not vs.points.has(rid):
+			vs.points[rid] = {"holder": -1, "secs": 0}
+		var ps: Dictionary = vs.points[rid]
+		var rect = region_rect(w, rid)
+		var holder := -1
+		if rect != null:
+			for e in SimIndex.of(w, "unit"):
+				var fid := int(e.owner)
+				if not w.factions.has(fid) or not bool(w.factions[fid].alive) or not SimIndex.alive(w, e):
+					continue
+				if not (rect as Rect2i).has_point(w.cell_of(e.pos)):
+					continue
+				var tm := team_of(w, fid)
+				if holder == -1:
+					holder = tm
+				elif holder != tm:
+					holder = -2
+					break
+		if holder < 0:
+			ps.holder = -1
+			ps.secs = 0
+		elif int(ps.holder) != holder:
+			ps.holder = holder
+			ps.secs = 0
+		else:
+			ps.secs = int(ps.secs) + BRIDGE_EVERY / SimWorld.TICK_RATE
 
 
 # ================================================================ hold the bridge
@@ -319,6 +491,31 @@ static func progress(w: SimWorld, team: int) -> Dictionary:
 					"holder": int(vs.bridge_holder), "contested": not mine and int(vs.bridge_holder) != -1,
 					"bridge_state": String(b.get("state", "intact")) if b != null else "none",
 					"label": "Hold the bridge for %d s (%d s held)" % [int(t.seconds), int(vs.bridge_secs) if mine else 0]})
+			"survive":
+				var secs := w.tick / SimWorld.TICK_RATE
+				row.merge({"value": secs, "target": int(t.seconds),
+					"label": "Survive for %d s (%d s left)" % [int(t.seconds), maxi(0, int(t.seconds) - secs)]})
+			"destroy_target":
+				var tg: Dictionary = w.sys_state.get("triggers", {}).get("tags", {}).get(String(t.tag), {})
+				var left := 0
+				for id in tg.get("ids", []):
+					if _tag_alive(w, int(id)):
+						left += 1
+				row.merge({"value": left, "target": 0, "tag": String(t.tag),
+					"label": "Destroy the target '%s' (%d left)" % [String(t.tag), left]})
+			"reach_stage":
+				var best := 0
+				for fid in w.factions:
+					if team_of(w, int(fid)) == team:
+						best = maxi(best, int(w.factions[fid].stage))
+				row.merge({"value": best, "target": int(t.stage),
+					"label": "Reach Stage %d (Stage %d now)" % [int(t.stage), best]})
+			"hold_point":
+				var ps: Dictionary = _vstate(w).get("points", {}).get(String(t.region), {})
+				var mine2 := int(ps.get("holder", -1)) == team
+				row.merge({"value": int(ps.get("secs", 0)) if mine2 else 0, "target": int(t.seconds), "region": String(t.region),
+					"holder": int(ps.get("holder", -1)), "contested": not mine2 and int(ps.get("holder", -1)) != -1,
+					"label": "Hold %s for %d s (%d s held)" % [String(t.region), int(t.seconds), int(ps.get("secs", 0)) if mine2 else 0]})
 		out.terms.append(row)
 	return out
 
@@ -366,13 +563,16 @@ static func validate_rules(c: Dictionary, map: Dictionary = {}) -> String:
 			return "Endless cannot be combined with other victory terms."
 		if not TERM_TYPES.has(ty):
 			return "Unknown victory term '%s'." % ty
-		if seen.has(ty):
+		if seen.has(ty) and not SCENARIO_TERMS.has(ty):
 			return "Duplicate victory term '%s'." % ty
 		seen[ty] = true
 		if ty == "territory" and t.has("percent"):
 			var p = t.percent
 			if not (typeof(p) == TYPE_INT or typeof(p) == TYPE_FLOAT) or float(p) < PERCENT_MIN or float(p) > PERCENT_MAX:
 				return "Territory percent must be between %d and %d (got %s)." % [int(PERCENT_MIN), int(PERCENT_MAX), str(p)]
+		var sm := _scenario_param_error(ty, t)
+		if sm != "":
+			return sm
 		if ty == "hold_bridge":
 			needs_bridge = true
 			if t.has("seconds"):
@@ -384,9 +584,32 @@ static func validate_rules(c: Dictionary, map: Dictionary = {}) -> String:
 	return ""
 
 
+static func _num_in(v, lo: float, hi: float) -> bool:
+	return (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and float(v) >= lo and float(v) <= hi
+
+
+static func _scenario_param_error(ty: String, t: Dictionary) -> String:
+	if not SCENARIO_TERMS.has(ty):
+		return ""
+	if (ty == "survive" or ty == "hold_point") and t.has("seconds") and not _num_in(t.seconds, 1, 36000):
+		return "%s time must be between 1 and 36000 seconds (got %s)." % [ty, str(t.seconds)]
+	if ty == "destroy_target" and String(t.get("tag", "")) == "":
+		return "destroy_target needs a tag."
+	if ty == "reach_stage" and not _num_in(t.get("stage", 9), 1, 13):
+		return "reach_stage stage must be 1-13 (got %s)." % str(t.get("stage"))
+	if ty == "hold_point" and String(t.get("region", "")) == "":
+		return "hold_point needs a region."
+	if t.has("slot") and not _num_in(t.slot, 0, 15):
+		return "Victory term slot must be 0-15 (got %s)." % str(t.slot)
+	return ""
+
+
 static func _map_has_bridge(c: Dictionary, map: Dictionary) -> bool:
 	if not map.is_empty():
 		return not (map.get("bridge_cells", []) as Array).is_empty()
+	if c.has("map_file"):   # G4: read the file's bridge list (no MapIO preload: it preloads us)
+		var j = JSON.parse_string(FileAccess.get_file_as_string(String(c.map_file))) if FileAccess.file_exists(String(c.map_file)) else null
+		return typeof(j) == TYPE_DICTIONARY and typeof(j.get("bridges")) == TYPE_ARRAY and not (j.bridges as Array).is_empty()
 	var key := "%s:%d" % [String(c.get("map", "river_crossing_s")), int(c.get("seed", 1))]
 	if not _bridge_maps.has(key):
 		var m := MapGen.generate(int(c.get("seed", 1)), String(c.get("map", "river_crossing_s")))

@@ -304,3 +304,24 @@ static func _flood(t: PackedByteArray, start: Vector2i, mc: String) -> Dictionar
 				seen[n] = true
 				q.append(n)
 	return seen
+
+
+## G4 (owner MAPIO, CONTRACTS_G4 section 5): exports a built-in map as a .rtsmap file with one
+## player per spawn (slot i = spawn i, own team, human_a, AI for slots > 0) and the default
+## scenario (start packages, HQ elimination). Generator output is untouched. Returns "" or an error.
+## MapIO is loaded at call time (map_io -> victory -> map_gen preload cycle otherwise).
+static func to_file(seed_value: int, map_id: String, path: String) -> String:
+	if not has_map(map_id):
+		return "Unknown map '%s'." % map_id
+	var m := generate(seed_value, map_id)
+	var d: Dictionary = Content.rules().get("defaults", {})
+	var players := []
+	for i in (m.spawns as Array).size():
+		players.append({"slot": i, "faction": "human_a", "team": i, "stage": int(d.get("stage", 8)),
+			"credits": int(d.get("starting_credits", 2500)), "ai": i > 0,
+			"difficulty": String(d.get("ai_difficulty", "normal")), "start": m.spawns[i]})
+	var sc := {"name": String(m.get("name", map_id)), "author": "built-in",
+		"description": "Built-in map %s exported with seed %d." % [map_id, seed_value],
+		"players": players, "entities": [], "victory": {"victory": "hq_elimination"},
+		"regions": [], "triggers": [], "start_packages": true}
+	return load("res://sim/map_io.gd").save(path, m, sc)
