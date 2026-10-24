@@ -609,6 +609,8 @@ func _on_step_events(evs: Array) -> void:
 				var tc: Array = ev.get("cells", [])
 				if not tc.is_empty():
 					terrain_layer.rebake_cells(tc)
+					if String(ev.get("cause", "")) == "fire":
+						entity_layer.on_burnt(tc, int(world.map.w))  # UI4B-3: burnt_ground, tree gone
 			"BridgeDestroyed", "BridgeRepaired":
 				# G2: the terrain array changed under the bridge; re-bake those chunks
 				var cells: Array = ev.get("cells", world.map.get("bridge_cells", []))

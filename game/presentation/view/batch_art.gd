@@ -36,7 +36,8 @@ func _unit_spec(def: String) -> Dictionary:
 			"pivot": Vector2(float(spec.pivot[0]), float(spec.pivot[1])), "n": frames.size(),
 			"fire": frames.find("fire"), "walk": frames.has("walk_a"),
 			"wa": frames.find("walk_a"), "wb": frames.find("walk_b"), "mv": frames.find("move"),
-			"dep": frames.find("deployed")}  # G4b: mortar set-up frame (-1 = none yet)
+			"dep": frames.find("deployed"),  # G4b: mortar set-up frame (-1 = none yet)
+			"work": frames.find("work"), "unl": frames.find("unload")}  # G4b (UI4B-3): engineer / carrier ramp
 	_uspec[def] = s
 	return s
 
@@ -64,11 +65,12 @@ func _fallback(e: Dictionary, team: Color) -> void:
 	out_off = d.get("offset", Vector2.ZERO)
 
 
-## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed] (page -2 = fallback).
+## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed, work, unload]
+## (page -2 = fallback; frame index -1 = the sheet has no such column).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
 	var s := _unit_spec(def)
-	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1]
+	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1]
 	if not s.is_empty():
 		var key: String = s.file + "|" + ck
 		var pg := atlas.page_of(key)
@@ -88,6 +90,8 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[10] = int(s.wb)
 			c[11] = int(s.mv)
 			c[13] = int(s.get("dep", -1))
+			c[14] = int(s.get("work", -1))
+			c[15] = int(s.get("unl", -1))
 	_ec[int(e.id)] = c
 	return c
 
@@ -103,14 +107,18 @@ func resolve_unit(e: Dictionary, team: Color, ck: String, anim_t: float) -> void
 	var fi := 0
 	if int(e.get("firing", 0)) > 0:
 		fi = int(c[7])
+	elif bool(e.get("deployed", false)) and int(c[13]) >= 0:
+		fi = int(c[13])
+	elif ArtCatalog.is_working(e) and int(c[14]) >= 0:
+		fi = int(c[14])
+	elif ArtCatalog.is_unloading(e) and int(c[15]) >= 0:
+		fi = int(c[15])
 	elif bool(e.get("moving", false)):
 		var ph := int(floor(anim_t * 6.0 + int(e.id) * 0.37))
 		if bool(c[8]):
 			fi = int(c[9]) if ph % 2 == 0 else int(c[10])
 		else:
 			fi = int(c[11]) if ph % 2 == 0 else 0
-	elif bool(e.get("deployed", false)) and int(c[13]) >= 0:
-		fi = int(c[13])
 	fi = maxi(0, fi)
 	var row := posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8)
 	var fw: int = c[4]
@@ -220,3 +228,37 @@ static func _gate_open(e: Dictionary) -> bool:
 
 static func _damaged(e: Dictionary) -> bool:
 	return float(e.get("hp", 1.0)) < 0.5  # snapshot statics carry hp as a fraction
+
+
+# ---------------------------------------------------------------- G4b effects (UI4B-3)
+var _fxc: Dictionary = {}  # "name|ck" -> [page, origin, fw, fh, off, n] ([] = no art)
+
+
+## Frame `frame` (wrapped) of manifest effect `name`, team-tinted through effects[name].mask when
+## it has one (same rule as unit sheets; untinted otherwise). Sets out_*; false when no art.
+func resolve_fx(name: String, team: Color, ck: String, frame: int) -> bool:
+	var key := name + "|" + ck
+	var c = _fxc.get(key)
+	if c == null:
+		c = []
+		var spec: Dictionary = ArtCatalog.manifest().get("effects", {}).get(name, {})
+		if not spec.is_empty():
+			var file := String(spec.file)
+			var mask := String(spec.get("mask", ""))
+			var img: Image = ArtCatalog._sheet(file, mask, team) if mask != "" else ArtCatalog._image(file)
+			var fw := int(spec.fw)
+			var n := int(spec.get("frames", 1))
+			if img != null and img.get_width() >= fw * n:
+				var akey := file + ("|" + ck if mask != "" else "")
+				var pg := atlas.add(akey, img)
+				if pg >= 0:
+					var piv: Array = spec.get("pivot", [fw / 2, int(spec.fh) / 2])
+					c = [pg, atlas.rect_of(akey).position, fw, int(spec.fh), Vector2(-float(piv[0]), -float(piv[1])), n]
+		_fxc[key] = c
+	if (c as Array).is_empty():
+		out_page = -1
+		return false
+	out_page = c[0]
+	out_src = Rect2((c[1] as Vector2) + Vector2(posmod(frame, int(c[5])) * int(c[2]), 0), Vector2(c[2], c[3]))
+	out_off = c[4]
+	return true

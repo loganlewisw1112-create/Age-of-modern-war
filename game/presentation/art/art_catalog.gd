@@ -173,6 +173,12 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 				var fi := 0
 				if int(e.get("firing", 0)) > 0:
 					fi = frames.find("fire")
+				elif bool(e.get("deployed", false)) and frames.has("deployed"):
+					fi = frames.find("deployed")  # G4b: mortar set up (ART-U-3 CR seq 1935)
+				elif is_working(e) and frames.has("work"):
+					fi = frames.find("work")      # G4b: engineer laying a mine / planting a charge
+				elif is_unloading(e) and frames.has("unload"):
+					fi = frames.find("unload")    # G4b: APC / halftrack ramp down
 				elif bool(e.get("moving", false)):
 					var ph := int(floor(anim_time * 6.0 + int(e.get("id", 0)) * 0.37))
 					if frames.has("walk_a"):
@@ -203,6 +209,30 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 			if not rb.is_empty():
 				return {"texture": _texture(String(rb.file)), "offset": Vector2(-float(rb.pivot[0]), -float(rb.pivot[1])), "flip_h": false}
 	return {"texture": _ph(), "offset": Vector2(-8, -16), "flip_h": false}
+
+
+## G4b (UI4B-3): engineer at work. Accepts a live unit dict (order lay_mine / plant_charge with
+## order.t > 0) or a render proxy carrying `working`.
+static func is_working(e: Dictionary) -> bool:
+	if bool(e.get("working", false)):
+		return true
+	var o = e.get("order")
+	if not (o is Dictionary):
+		return false
+	var ot = o.get("type")
+	return (ot == "lay_mine" or ot == "plant_charge") and int(o.get("t", 0)) > 0
+
+
+## G4b (UI4B-3): carrier unloading. A render proxy carries `unloading` (snapshot FLAG_UNLOAD);
+## a live dict counts while it still has cargo and is within 4 tiles of its unload_order target.
+static func is_unloading(e: Dictionary) -> bool:
+	if bool(e.get("unloading", false)):
+		return true
+	var uo = e.get("unload_order")
+	if not (uo is Dictionary) or (e.get("cargo", []) as Array).is_empty():
+		return false
+	var tg = uo.get("target")
+	return tg is Vector2 and e.get("pos") is Vector2 and (e.pos as Vector2).distance_to(tg) <= 4.0
 
 
 ## Bridge-span overlay for ONE bridge cell (G2). state: "intact" | "damaged" | "ruined".

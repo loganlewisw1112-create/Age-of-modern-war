@@ -962,12 +962,57 @@ func _g4b_mine() -> void:
 	_log("g4b_click_lay_mine", await _click_button("Lay mine"))
 	await _wait(0.3)
 	await _click(_to_screen(Vector2(cell) + Vector2(0.5, 0.5)))
+	# UI4B-3: while laying (order.t > 0) the snapshot carries FLAG_WORK -> sheet column "work"
+	var eid := int(e.id)
+	var working := await _wait_until(func(): return _g4b_snap_flag(eid, RenderSnapScript.FLAG_WORK), 30.0)
+	_log("g4b_snap_flag_work", working)
+	if working:
+		await _shot("ui_g4b_07a_engineer_work")
 	var laid := await _wait_until(func(): return _own_mines() > 0, 30.0)
 	_log("g4b_mine_laid", laid, "mines=%d" % _own_mines())
 	await _wait(0.8)
 	_log("g4b_alert_mine_laid", _g4b_alert("Mine laid"))
 	_log("g4b_mine_marker_drawn", _mv().g4b_over.mines_drawn > 0, "markers=%d" % _mv().g4b_over.mines_drawn)
+	_log("g4b_mine_fx_drawn", _mv().entity_layer.g4b_fx_drawn > 0, "fx=%d" % _mv().entity_layer.g4b_fx_drawn)
 	await _shot("ui_g4b_07_mine")
+	await _g4b_fire(Vector2i(Vector2(_w().get_e(eid).pos).floor()) if _w().entities.has(eid) else cell, eid)
+
+
+## UI4B-3: harness-ignited forest cell near the engineer -> fire_forest loop (snap.fires), then
+## after burn-out (TerrainChanged cause fire) a burnt_ground variant with the tree removed.
+func _g4b_fire(c0: Vector2i, eid: int) -> void:
+	var cell := Vector2i(-1, -1)
+	var best := 1e9
+	var seen := false
+	for dy in range(-40, 41):
+		for dx in range(-40, 41):
+			var q := c0 + Vector2i(dx, dy)
+			if not _w().in_bounds(q) or _w().terrain_at(q) != G4bMech.FOREST:
+				continue
+			var v: bool = _mv().cell_visible(q)
+			var d := float(dx * dx + dy * dy) - (1e6 if v else 0.0)  # a visible cell wins
+			if d < best:
+				best = d
+				cell = q
+				seen = v
+	_log("g4b_forest_cell_found", cell.x >= 0, str(cell))
+	if cell.x < 0:
+		return
+	if not seen and _w().entities.has(eid):
+		# walk the engineer up to the wood so the fire is on a visible cell
+		_mv().issue({"type": "move", "unit_ids": [eid], "target": Vector2(cell) + Vector2(0.5, 2.5)})
+		seen = await _wait_until(func(): return _mv().cell_visible(cell), 60.0)
+	_log("g4b_forest_cell_visible", seen, str(cell))
+	_mv().center_camera_on(Vector2(cell) + Vector2(0.5, 0.5))
+	_log("g4b_ignite", G4bMech.ignite(_w(), cell, 0), str(cell))
+	var lit := await _wait_until(func(): return (_mv().snap.get("fires", PackedInt32Array()) as PackedInt32Array).size() > 0 and _mv().entity_layer.fires_drawn > 0, 5.0)
+	_log("g4b_fire_drawn", lit, "fires=%d drawn=%d" % [(_mv().snap.get("fires", PackedInt32Array()) as PackedInt32Array).size(), _mv().entity_layer.fires_drawn])
+	await _wait(0.6)
+	await _shot("ui_g4b_08_forest_fire")
+	var bt := await _wait_until(func(): return _mv().entity_layer.burnt_drawn > 0, 30.0)
+	_log("g4b_burnt_drawn", bt, "burnt=%d cells=%d" % [_mv().entity_layer.burnt_drawn, _mv().entity_layer.burnt.size()])
+	await _wait(0.5)
+	await _shot("ui_g4b_09_burnt")
 
 
 func _own_mines() -> int:

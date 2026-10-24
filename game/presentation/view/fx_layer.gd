@@ -15,12 +15,14 @@ var _fx: Array = []    # {kind, t, life, a:Vector2 screen, b:Vector2 screen, siz
 var _frames: Dictionary = {}  # effect name -> Array of textures ([] if placeholder)
 var lod := 0                  # 0 close, 1 mid, 2 far (entity_layer.lod)
 var drawn := 0
+var flames := 0               # G4b (UI4B-3): flame_jet effects started (playtest / debug)
+var _flame_w: Dictionary = {} # weapon id -> bool (weapon class "flame")
 
 
 func setup(view) -> void:
 	mv = view
 	_rng.seed = 12345
-	for n in ["muzzle", "explosion_small", "explosion_large", "smoke"]:
+	for n in ["muzzle", "explosion_small", "explosion_large", "smoke", "flame_jet"]:
 		var arr: Array = ArtCatalog.effect_frames(n)
 		var ok: Array = []
 		for t in arr:
@@ -49,6 +51,9 @@ func on_shot(ev: Dictionary) -> void:
 	if bool(ev.get("indirect", false)):
 		_add_shell(ev, from, to)
 		return
+	if _is_flame(String(ev.get("weapon", ""))):
+		_add_flame(ev)
+		return
 	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
 	var jitter := Vector2(_rng.randf_range(-4, 4), _rng.randf_range(-3, 3))
 	var hit := bool(ev.get("hit", true))
@@ -63,6 +68,25 @@ func on_shot(ev: Dictionary) -> void:
 	_fx.append({"kind": "muzzle", "t": 0.0, "life": 0.07, "a": a, "b": a, "size": 6.0 if heavy else 3.0, "color": Color(1, 0.9, 0.5)})
 	if heavy and hit:
 		_fx.append({"kind": "explosion_small", "t": 0.0, "life": 0.35, "a": b, "b": b, "size": 8.0, "color": Color(1, 0.6, 0.2)})
+
+
+func _is_flame(wid: String) -> bool:
+	var v = _flame_w.get(wid)
+	if v == null:
+		v = String(Content.weapon(wid).get("class", "")) == "flame"
+		_flame_w[wid] = v
+	return v
+
+
+## G4b (UI4B-3, ART-U-3 CR seq 1937): flamer fire draws flame_jet (4 frames, pivot at the nozzle,
+## pointing screen +x) from the muzzle, rotated toward the target and stretched to reach it.
+func _add_flame(ev: Dictionary) -> void:
+	if lod >= 2:
+		return
+	var a: Vector2 = mv.world_to_screen(ev.get("from", Vector2.ZERO)) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	var b: Vector2 = mv.world_to_screen(ev.get("to", Vector2.ZERO)) + Vector2(0, -8.0)
+	_fx.append({"kind": "flame", "t": 0.0, "life": 0.4, "a": a, "b": b, "size": 1.0, "color": Color(1.0, 0.6, 0.2)})
+	flames += 1
 
 
 ## G3a artillery: a shell flies a ballistic arc from the gun to the impact point, then an impact
@@ -185,9 +209,25 @@ func _draw_body() -> void:
 				draw_set_transform(f.a, 0.0, Vector2(1.0, 0.5))
 				draw_circle(Vector2.ZERO, rr * 0.8, Color(col.r, col.g, col.b, 0.25 * (1.0 - k)))
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			"flame":
+				_draw_flame(f, k)
 			"marker":
 				var r2: float = f.size * (1.0 - k * 0.6)
 				_draw_iso_ring(f.a, r2, Color(col.r, col.g, col.b, 1.0 - k), 2.0)
+
+
+func _draw_flame(f: Dictionary, k: float) -> void:
+	var a: Vector2 = f.a
+	var d: Vector2 = (f.b as Vector2) - a
+	var arr: Array = _frames.get("flame_jet", [])
+	if arr.is_empty():
+		draw_line(a, a + d * clampf(k * 2.0, 0.2, 1.0), Color(1.0, 0.55, 0.15, 1.0 - k), 4.0)
+		return
+	var tx: Texture2D = arr[clampi(int(k * arr.size()), 0, arr.size() - 1)]
+	var sx := clampf(d.length() / maxf(1.0, tx.get_width() - 2.0), 0.4, 2.5)
+	draw_set_transform(a, d.angle(), Vector2(sx, 1.0))
+	draw_texture(tx, Vector2(-2, -8), Color(1, 1, 1, 1.0 - k * 0.4))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _arc_point(f: Dictionary, k: float) -> Vector2:

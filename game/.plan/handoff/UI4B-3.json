@@ -1,0 +1,29 @@
+{
+  "agent": "UI4B-3",
+  "gen": 3,
+  "reason": "guard NUDGE: projection 490k of 600k (82%) at ~48 calls; orchestrator ordered handoff",
+  "done": [
+    "render_snap: FLAG_WORK = 1<<16 (engineer order lay_mine/plant_charge with order.t > 0), FLAG_UNLOAD = 1<<17 (carrier: cargo count dropped vs the previous snapshot -> shown UNLOAD_SHOW=30 ticks via w.cache.snap_unload, or within UNLOAD_NEAR=4 tiles of its unload_order target with cargo). DEF_G4B def bit now also covers can_mine/can_charge; carrier work moved into _carrier_flags (only DEF_CARRIER defs pay). snap.fires = sorted PackedInt32Array of burning cell indices from w.sys_state.g4b.fires.",
+    "batch_art: unit cache indices c[14]=work, c[15]=unload; resolve_unit picks fire > deployed > work > unload > moving; new resolve_fx(name, team, ck, frame) returns manifest.effects regions (mask-tinted via ArtCatalog._sheet when the effect has a mask).",
+    "art_catalog: entity_sprite frame picks deployed/work/unload (ART-U-3 CR seq 1935); static is_working(e) / is_unloading(e) accept live dicts or render proxies (working/unloading keys).",
+    "entity_layer: hot path one POSE_MASK test (deployed/work/unload, -1 column falls back to walk/idle); proxy carries deployed/working/unloading; mines/charges drawn from effects mine/charge (owner tint, 2-frame blink at 2 Hz), enemy detected mine = mine_detected untinted, still gated by g4b_static_visible; _push_fire draws fire_forest loop on visible burning cells (y+2 over the tree) and burnt_ground variant (_ihash % 3) flat on explored burnt cells; decor items now stride 5 with cell index so burnt cells drop their tree. Counters fires_drawn / burnt_drawn / g4b_fx_drawn.",
+    "match_view: TerrainChanged cause fire -> entity_layer.on_burnt(cells, map_w).",
+    "fx_layer: ShotFired with weapon class flame -> 'flame' fx (0.4 s) drawing flame_jet frames from the muzzle, rotated toward the target, x-scaled to reach it (skipped at far LOD); counter flames.",
+    "tools/ui_playtest.gd g4b flow: g4b_snap_flag_work (+shot ui_g4b_07a_engineer_work), g4b_mine_fx_drawn, _g4b_fire: forest cell within 40 (visible preferred, else engineer walks there), g4b_forest_cell_visible, g4b_ignite (harness G4bMech.ignite), g4b_fire_drawn (+shot ui_g4b_08_forest_fire), g4b_burnt_drawn (+shot ui_g4b_09_burnt).",
+    "Headless probe .plan/shots/UI4B-3/g4b_fx_probe.gd: 26 checks PASS (work/unload flags incl. expiry, fires, batch+catalog frame picks for mortar deployed=4, engineer work=4, apc unload=3, apc move=1, all 6 fx regions)."
+  ],
+  "remaining": [
+    "Full suite NOT run: bash .plan/hb.sh <id> <calls> <tok> 'full suite' -- bash tests/run.sh, quote the last lines.",
+    "flame_jet not seen in a windowed shot (g4b playtest flow is human_a, no flamer). Optional: a human_b flamer shot.",
+    "Unload ramp frame not seen in a shot (probe-verified only). Optional: view .plan/shots/UI4B/pt_g4b_u3c/ui_g4b_05_unloaded.png crop near the APC.",
+    "Burnt cells are presentation-only (TerrainChanged events): after a save/load they show plain dirt. A sim-side burnt set would need a CR to UNITS (g4b_mech)."
+  ],
+  "files_touched": ["sim/render_snap.gd", "presentation/view/batch_art.gd", "presentation/art/art_catalog.gd", "presentation/view/entity_layer.gd", "presentation/view/fx_layer.gd", "presentation/match_view.gd", "tools/ui_playtest.gd", ".plan/shots/UI4B-3/* (probe, crop.gd, pt_g4b.sh, logs, shots, zoom crops)"],
+  "test_state": "pt5.sh u3c (final code): h 33/0, hb 37/0, m 37/0, s 53/0, g4b 68/0 (61 + 7 new checks); logs .plan/shots/UI4B/pt_{h,hb,m,s,g4b}_u3c.log. g4b alone u3b 68/0 (.plan/shots/UI4B-3/pt_g4b_u3b.log). Full-tree --quit-after 60 compile: no SCRIPT ERROR. --check-only clean on all 7 edited scripts. Probe PASS. Full suite: NOT run.",
+  "gotchas": [
+    "Flag bits: 1..32 used, 64/128 still free, 8..15 cargo count, 1<<16 WORK, 1<<17 UNLOAD.",
+    "Transport.unload is instantaneous, so the unload frame relies on the cargo-count drop between snapshots (w.cache.snap_unload, never saved) plus the unload_order approach window.",
+    "Decor arrays are stride 5 now (DSTRIDE); any new pusher into _decor/_flat must append a cell index (-1 for POI).",
+    "Mortar deployed shot: the mortar faced away in u3b, so the tube is hard to read at that zoom; the pick itself is probe-verified."
+  ]
+}

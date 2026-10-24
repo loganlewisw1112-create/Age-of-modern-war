@@ -14,6 +14,7 @@ extends RefCounted
 ##   events Array (this tick's events), factions {fid: {scalar fields + stock copy}},
 ##   detail {id: deep copy} for w.snap_request ids, fog {fid: {visible, explored}},
 ##   hid_spot {id: [team ids]} for concealed (FLAG_HID) units only (G4b, UI4B),
+##   fires PackedInt32Array (burning cell indices y*map_w+x, ascending; G4b g4b_mech fire, UI4B-3),
 ##   memory {fid: shallow copy of w.memory[fid]}, ended, winner, entity_count, build_us.
 
 const FLAG_MOVING := 1
@@ -22,9 +23,13 @@ const FLAG_AIR := 4
 const FLAG_DETAIL := 8      # id is in w.snap_request (selected / hovered): detail dict present
 const FLAG_HID := 16        # G4b (UI4B): sniper concealed (e.hid); spotting teams in snap.hid_spot[id]
 const FLAG_DEPLOYED := 32   # G4b (UI4B): mortar set up (e.deployed)
-const CARGO_SHIFT := 8
+const CARGO_SHIFT := 8      # bits 8..15: cargo count (carriers)
+const FLAG_WORK := 1 << 16    # G4b (UI4B-3): engineer laying a mine / planting a charge (order.t > 0)
+const FLAG_UNLOAD := 1 << 17  # G4b (UI4B-3): carrier at its drop point or unloaded in the last UNLOAD_SHOW ticks
+const UNLOAD_SHOW := 30       # ticks the carrier ramp frame stays after cargo left (1.5 s at 20 tps)
+const UNLOAD_NEAR := 4.0      # carrier within this of its unload_order target shows the ramp (tiles)
 const DEF_CARRIER := 1 << 30  # def table only: the def has cargo_slots
-const DEF_G4B := 1 << 29      # def table only: conceal_still or setup_ticks (hid / deployed fields)
+const DEF_G4B := 1 << 29      # def table only: conceal_still / setup_ticks / can_mine / can_charge
 const DETAIL_MAX := 64      # detail copies per snapshot (a 500-unit marquee must not cost 5 ms)
 # statics: fields copied when present (scalars / Vector2 / Vector2i only)
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
@@ -67,6 +72,7 @@ static func build(w) -> void:
 	var statics: Dictionary = {}
 	var detail: Dictionary = {}
 	var hid_spot: Dictionary = {}  # G4b: concealed unit id -> copy of e.spot (team ids that see it)
+	var unl: Dictionary = cache.get("snap_unload", {})  # carrier id -> tick its cargo count last dropped
 	var last_def := ""
 	var last_di := -1
 	for e: Dictionary in w.entities.values():
@@ -84,7 +90,7 @@ static func build(w) -> void:
 					var ud: Dictionary = Content.unit(dname)
 					if int(ud.get("cargo_slots", 0)) > 0:
 						dfl |= DEF_CARRIER
-					if ud.get("conceal_still", false) or int(ud.get("setup_ticks", 0)) > 0:
+					if ud.get("conceal_still", false) or int(ud.get("setup_ticks", 0)) > 0 							or ud.get("can_mine", false) or ud.get("can_charge", false):
 						dfl |= DEF_G4B
 					def_fl.append(dfl)
 				di = dv
@@ -114,10 +120,12 @@ static func build(w) -> void:
 					hid_spot[id] = (sp_v as Array).duplicate() if sp_v is Array else []
 				if e.get("deployed", false):
 					fl |= FLAG_DEPLOYED
+				var od = e.get("order")
+				var ot = od.get("type") if od is Dictionary else null
+				if (ot == "lay_mine" or ot == "plant_charge") and int(od.get("t", 0)) > 0:
+					fl |= FLAG_WORK
 			if dfl2 & DEF_CARRIER:
-				var cg = e.get("cargo")
-				if cg != null:
-					fl |= mini((cg as Array).size(), 255) << CARGO_SHIFT
+				fl |= _carrier_flags(e, id, int(w.tick), old, unl)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
@@ -138,13 +146,14 @@ static func build(w) -> void:
 	ids.resize(n); pos.resize(n); prev.resize(n); facing.resize(n)
 	defi.resize(n); owner.resize(n); hp.resize(n); flags.resize(n)
 	cache["snap_def_fl"] = def_fl
+	cache["snap_unload"] = unl
 	cache["snap_defs"] = defs
 	cache["snap_def_idx"] = def_idx
 	var snap := {
 		"tick": int(w.tick), "map_w": int(w.map.get("w", 0)), "map_h": int(w.map.get("h", 0)),
 		"n": n, "ids": ids, "pos": pos, "prev": prev, "facing": facing, "def": defi,
 		"defs": defs, "owner": owner, "hp": hp, "flags": flags,
-		"statics": statics, "detail": detail, "hid_spot": hid_spot, "events": w.events,
+		"statics": statics, "detail": detail, "hid_spot": hid_spot, "events": w.events, "fires": _fires(w),
 		"factions": _factions(w), "fog": _fog(w), "memory": _memory(w),
 		"ended": bool(w.match_state.get("ended", false)), "winner": int(w.match_state.get("winner", -1)),
 		"entity_count": int(w.entities.size()),
@@ -177,6 +186,46 @@ static func request(w, ids: Array) -> void:
 		w.set("snap_request", ids)
 	else:
 		w.cache["snap_request"] = ids
+
+
+## Cargo count bits + FLAG_UNLOAD for a carrier (only carriers pay for this).
+static func _carrier_flags(e: Dictionary, id: int, tick: int, old: Dictionary, unl: Dictionary) -> int:
+	var fl := 0
+	var cnt := 0
+	var cg = e.get("cargo")
+	if cg != null:
+		cnt = mini((cg as Array).size(), 255)
+		fl = cnt << CARGO_SHIFT
+	var o_ids: PackedInt32Array = old.get("ids", PackedInt32Array())
+	var k := o_ids.bsearch(id)
+	if k < o_ids.size() and o_ids[k] == id:
+		var o_fl: PackedInt32Array = old.flags
+		if ((o_fl[k] >> CARGO_SHIFT) & 0xFF) > cnt:
+			unl[id] = tick
+	var ut = unl.get(id)
+	if ut != null:
+		if tick - int(ut) < UNLOAD_SHOW:
+			return fl | FLAG_UNLOAD
+		unl.erase(id)
+	var uo = e.get("unload_order")
+	if uo is Dictionary and cnt > 0:
+		var tg = uo.get("target")
+		if tg is Vector2 and (e.pos as Vector2).distance_to(tg) <= UNLOAD_NEAR:
+			fl |= FLAG_UNLOAD
+	return fl
+
+
+## Burning cells (G4b fire), ascending; empty when nothing burns.
+static func _fires(w) -> PackedInt32Array:
+	var out := PackedInt32Array()
+	var g = w.sys_state.get("g4b")
+	if g is Dictionary:
+		var f = g.get("fires")
+		if f is Dictionary and not (f as Dictionary).is_empty():
+			for k in f:
+				out.append(int(k))
+			out.sort()
+	return out
 
 
 static func _is_air(def_id: String) -> bool:

@@ -22,6 +22,8 @@ const Y_OFF := 65536
 const LAYER_MUL := 17592186044416 # 2^44
 const GHOST_MOD := Color(0.75, 0.75, 0.8)
 const FACING_INV := 1.0 / (PI / 4.0)  # = 1 / ArtCatalog.FACING_STEP
+const POSE_MASK := RenderSnap.FLAG_DEPLOYED | RenderSnap.FLAG_WORK | RenderSnap.FLAG_UNLOAD
+const DSTRIDE := 5                    # decor item: [pos, page, src, off, cell index (-1 = POI)]
 
 var mv
 var art = BatchArt.new()
@@ -59,6 +61,13 @@ var vis_bld: Array = []                    # visible (non-ghost) building dicts
 var _air_def: Dictionary = {}              # def -> bool (G3.is_air cache)
 var _far_key: Array = []                   # far LOD: last rebuild key (tick, view, fog, n)
 var skipped := 0                           # far-LOD frames that reused the last draw list
+# G4b (UI4B-3): burnt-out forest cells (TerrainChanged cause "fire"): cell index -> true. Their
+# tree decor is skipped and a burnt_ground variant (cell hash) is drawn flat. Presentation-only:
+# the sim keeps no burnt set, so a loaded save shows plain dirt there (KNOWN GAP).
+var burnt: Dictionary = {}
+var fires_drawn := 0                       # last frame's counts (playtest / debug)
+var burnt_drawn := 0
+var g4b_fx_drawn := 0                      # mines + charges drawn from effect art
 
 
 func setup(view) -> void:
@@ -91,7 +100,7 @@ func _build_decor() -> void:
 				_decor[ck] = []
 				_decor_rect[ck] = Rect2(p + off, src.size)
 			var arr: Array = _decor[ck]
-			arr.append_array([p, pg, src, off])
+			arr.append_array([p, pg, src, off, y * w + x])
 			_decor_rect[ck] = (_decor_rect[ck] as Rect2).merge(Rect2(p + off, src.size))
 			decor_count += 1
 	_build_poi_decor()
@@ -127,7 +136,7 @@ func _build_poi_decor() -> void:
 				if not bk.has(ck):
 					bk[ck] = []
 					rk[ck] = r
-				(bk[ck] as Array).append_array([p, art.out_page, art.out_src, art.out_off])
+				(bk[ck] as Array).append_array([p, art.out_page, art.out_src, art.out_off, -1])
 				rk[ck] = (rk[ck] as Rect2).merge(r)
 				decor_count += 1
 				poi_count += 1
@@ -229,21 +238,25 @@ func refresh() -> void:
 	var ec: Dictionary = art._ec
 	var n_u: int = int(sn.n)
 	_n = 0
+	g4b_fx_drawn = 0
 	_reserve(n_u + statics.size() + decor_count + mem.size() + 16)
 	# decor (static, bucketed by chunk)
 	var t_sub := Time.get_ticks_usec()
+	var any_burnt := not burnt.is_empty()
 	for ck in _decor:
 		if not vr.intersects(_decor_rect[ck]):
 			continue
 		var arr: Array = _decor[ck]
-		for k in range(0, arr.size(), 4):
+		for k in range(0, arr.size(), DSTRIDE):
+			if any_burnt and burnt.has(arr[k + 4]):
+				continue  # G4b: the tree on this cell burnt down
 			var p: Vector2 = arr[k]
 			_push(0, p.y, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2), (arr[k + 2] as Rect2).size, Color.WHITE)
 	for ck in _flat:
 		if not vr.intersects(_flat_rect[ck]):
 			continue
 		var arr: Array = _flat[ck]
-		for k in range(0, arr.size(), 4):
+		for k in range(0, arr.size(), DSTRIDE):
 			var p: Vector2 = arr[k]
 			# y = -Y_OFF: sort key 0 -> under every unit, building and standing decor
 			_push(0, -Y_OFF, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2), (arr[k + 2] as Rect2).size, Color.WHITE)
@@ -319,14 +332,19 @@ func refresh() -> void:
 		var fi := 0
 		if fl & RenderSnap.FLAG_FIRING:
 			fi = c[7]
-		elif fl & RenderSnap.FLAG_DEPLOYED and c[13] >= 0:
-			fi = c[13]  # G4b: mortar set-up frame (manifest frames "deployed", ART-U)
-		elif fl & RenderSnap.FLAG_MOVING:
-			var ph := int(t * 6.0 + id * 0.37)
-			if c[8]:
-				fi = c[9] if ph % 2 == 0 else c[10]
-			else:
-				fi = c[11] if ph % 2 == 0 else 0
+		else:
+			# G4b poses (ART-U-3): mortar "deployed", engineer "work", carrier "unload"; -1 = no column
+			var pz := -1
+			if fl & POSE_MASK:
+				pz = c[13] if fl & RenderSnap.FLAG_DEPLOYED else (c[14] if fl & RenderSnap.FLAG_WORK else c[15])
+			if pz >= 0:
+				fi = pz
+			elif fl & RenderSnap.FLAG_MOVING:
+				var ph := int(t * 6.0 + id * 0.37)
+				if c[8]:
+					fi = c[9] if ph % 2 == 0 else c[10]
+				else:
+					fi = c[11] if ph % 2 == 0 else 0
 		if fi < 0:
 			fi = 0
 		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
@@ -380,12 +398,22 @@ func refresh() -> void:
 				# G4b: hidden from enemies unless detected (mines) or planted on our side's target (charges)
 				if not g4b_static_visible(e, statics, pf, my_team, mv._ally_fids):
 					continue
+				# ART-U-3 effects: own/allied mine + every charge tinted by the owner (mask), 2-frame
+				# blink; an enemy mine we only see because it was detected uses mine_detected (untinted)
+				var nm := kind
+				if kind == "mine" and ow != pf and not mv._ally_fids.has(ow):
+					nm = "mine_detected"
+				if art.resolve_fx(nm, _team.get(ow, neutral), String(_ck.get(ow, "x")), int(t * 2.0 + id * 0.31)):
+					_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
+					g4b_fx_drawn += 1
+					continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
 			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, mod)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
+	_push_fire(sn, vr, mw, vis, ally_vis, t, neutral)
 	_push_ghosts(statics, mem, vr, neutral)
 	art.atlas.flush()
 	_sorted = _keys.slice(0, _n)
@@ -398,7 +426,55 @@ func refresh() -> void:
 ## Minimal unit dict for the art cache / fallback sprite (built only on a cache miss).
 func _proxy(id: int, dname: String, ow: int, facing: float, fl: int) -> Dictionary:
 	return {"id": id, "kind": "unit", "def": dname, "owner": ow, "facing": facing,
-		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0}
+		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0,
+		"deployed": (fl & RenderSnap.FLAG_DEPLOYED) != 0, "working": (fl & RenderSnap.FLAG_WORK) != 0,
+		"unloading": (fl & RenderSnap.FLAG_UNLOAD) != 0}
+
+
+## G4b (UI4B-3): match_view calls this for TerrainChanged{cause:"fire"} (burnt-out forest -> DIRT).
+func on_burnt(cells: Array, mw: int) -> void:
+	for c in cells:
+		var v := Vector2i(c)
+		burnt[v.y * mw + v.x] = true
+	_far_key = []
+
+
+## G4b (UI4B-3): burnt_ground variants (flat, under everything) on burnt cells we have explored,
+## and the fire_forest loop on burning cells (snap.fires) we or an ally can see right now.
+func _push_fire(sn: Dictionary, vr: Rect2, mw: int, vis: PackedByteArray, ally_vis: Array, t: float, neutral: Color) -> void:
+	fires_drawn = 0
+	burnt_drawn = 0
+	if mw <= 0:
+		return
+	for k in burnt:
+		var ci: int = k
+		var x := ci % mw
+		var y := ci / mw
+		var sp := Vector2((x - y) * 32.0, (x + y + 1) * 16.0)  # cell centre
+		if not vr.has_point(sp) or not mv.cell_explored(Vector2i(x, y)):
+			continue
+		if art.resolve_fx("burnt_ground", neutral, "-", ArtCatalog._ihash(x, y, 53) % 3):
+			_push(0, -Y_OFF, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
+			burnt_drawn += 1
+	var fires: PackedInt32Array = sn.get("fires", PackedInt32Array())
+	for ci in fires:
+		var x := ci % mw
+		var y := ci / mw
+		var sp := Vector2((x - y) * 32.0, (x + y + 1) * 16.0)
+		if not vr.has_point(sp):
+			continue
+		if not vis.is_empty() and ci < vis.size() and vis[ci] == 0:
+			var seen := false
+			for av in ally_vis:
+				if ci < (av as PackedByteArray).size() and (av as PackedByteArray)[ci] == 1:
+					seen = true
+					break
+			if not seen:
+				continue
+		if art.resolve_fx("fire_forest", neutral, "-", int(t * 8.0) + ArtCatalog._ihash(x, y, 59) % 3):
+			# y + 2: in front of this cell's tree, still behind units further south
+			_push(0, sp.y + 2.0, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
+			fires_drawn += 1
 
 
 ## G4b mine / charge visibility for the local side (entity layer + g4b_overlay share it):
