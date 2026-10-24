@@ -13,6 +13,7 @@ extends RefCounted
 ## Recomputed every EVERY ticks (from Victory.tick). Emits SectorCaptured {sector, team, prev_team}.
 
 const EVERY := 20
+const PHASE := 7
 const COUNT_MIN_FRAC := 0.3
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
@@ -62,7 +63,8 @@ static func state(w: SimWorld) -> Dictionary:
 
 
 static func tick(w: SimWorld) -> void:
-	if w.tick % EVERY != 0:
+	# G3b perf (PERF4-3 CR): phase 7 so this never stacks with morale/fog/tier/supply jobs on tick%20==0.
+	if w.tick % EVERY != PHASE:
 		return
 	recompute(w)
 

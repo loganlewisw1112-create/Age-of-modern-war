@@ -56,7 +56,7 @@ static func tick(w: SimWorld) -> void:
 		return
 	_eliminate(w)
 	Territory.tick(w)
-	if w.tick % BRIDGE_EVERY == 0:
+	if w.tick % BRIDGE_EVERY == 7:  # G3b perf: off the shared tick%20==0 spike
 		_bridge_sample(w)
 	var mode := String(w.cfg.get("victory", "hq_elimination"))
 	if mode == "endless":
