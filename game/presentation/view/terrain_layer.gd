@@ -263,11 +263,32 @@ func _load_biomes() -> void:
 
 
 func _biome_arr() -> PackedByteArray:
-	var m = mv.world.map
-	var b = m.get("biome") if m is Dictionary else null
+	var s := _busy_snap()
+	var b = s.get("biome") if not s.is_empty() else null
+	if s.is_empty():
+		var m = mv.world.map
+		b = m.get("biome") if m is Dictionary else null
 	if b is PackedByteArray and b.size() == _w * _h:
 		return b
 	return PackedByteArray()
+
+
+## G4 THREAD: while a sim step is in flight, read the terrain/biome refs from the last render
+## snapshot (copy-on-write, same data as of the last join) instead of mv.world, which would join
+## the step and stall the frame. Idle (or editor / probe views without a sim): read the map.
+func _busy_snap() -> Dictionary:
+	if mv.has_method("sim_busy") and mv.sim_busy():
+		var s = mv.get("snap")
+		if s is Dictionary and s.get("terrain") is PackedByteArray and (s.terrain as PackedByteArray).size() == _w * _h:
+			return s
+	return {}
+
+
+func _terrain() -> PackedByteArray:
+	var s := _busy_snap()
+	if not s.is_empty():
+		return s.terrain
+	return mv.world.map.terrain
 
 
 func _any_biome(b: PackedByteArray) -> bool:
@@ -376,6 +397,7 @@ func _order(spr: Sprite2D, key: Vector2i) -> void:
 ## brushes (terrain or map.biome edits) and fire (FOREST -> DIRT).
 func rebake_cells(cells: Array) -> void:
 	var biome := _biome_arr()
+	var terrain := _terrain()
 	if not _biomes_loaded and _any_biome(biome):
 		_load_biomes()
 	var done := {}
@@ -385,7 +407,7 @@ func rebake_cells(cells: Array) -> void:
 		if cx < 0 or cy < 0 or cx >= _w or cy >= _h:
 			continue
 		if lazy and _base_img != null:
-			_base_cell(cx, cy, biome)
+			_base_cell(cx, cy, biome, terrain)
 		for k in 9:
 			var nx := cx + k % 3 - 1
 			var ny := cy + k / 3 - 1
@@ -396,7 +418,7 @@ func rebake_cells(cells: Array) -> void:
 	keys.sort()
 	for key in keys:
 		if not lazy or _chunks.has(key):
-			_install(key, _bake_image(key.x, key.y, mv.world.map.terrain, biome))
+			_install(key, _bake_image(key.x, key.y, terrain, biome))
 	if lazy and _base_tex != null:
 		_base_tex.update(_base_img)
 	rebakes += keys.size()
@@ -404,16 +426,17 @@ func rebake_cells(cells: Array) -> void:
 
 func _build_base() -> void:
 	var biome := _biome_arr()
+	var terrain := _terrain()
 	_base_img = Image.create(_w, _h, false, Image.FORMAT_RGBA8)
 	for y in _h:
 		for x in _w:
-			_base_cell(x, y, biome)
+			_base_cell(x, y, biome, terrain)
 	_base_tex = ImageTexture.create_from_image(_base_img)
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 
-func _base_cell(x: int, y: int, biome: PackedByteArray = PackedByteArray()) -> void:
-	var code := mini(int(mv.world.map.terrain[y * _w + x]), MAX_CODE - 1)
+func _base_cell(x: int, y: int, biome: PackedByteArray, terrain: PackedByteArray) -> void:
+	var code := mini(int(terrain[y * _w + x]), MAX_CODE - 1)
 	var b := mini(int(biome[y * _w + x]), 3) if biome.size() == _w * _h else 0
 	var c = _avg.get(code * 4 + b)
 	if c == null:
@@ -463,7 +486,7 @@ func tick() -> void:
 	for key in want:
 		if _pending.size() >= MAX_PENDING:
 			break
-		_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, mv.world.map.terrain, biome), false, "terrain chunk")
+		_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, _terrain(), biome), false, "terrain chunk")
 	if _chunks.size() > CHUNK_CAP:
 		_evict()
 

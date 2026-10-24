@@ -10,6 +10,7 @@ extends Node2D
 ##                         start | zoomout | select | ghost | ghost_ok | combat
 ##   --fps-log             print FPS once per second (also on with --spawn-test)
 ##   --no-vsync            disable vsync (for perf headroom measurement)
+##   --cam-cell=X,Y        centre the camera on map cell X,Y at start (debug screenshots)
 ##   --sim-paused          start with the sim paused (render-only perf measurement)
 ##   --sim-thread=off|on|force  G4 (THREAD): step the sim on a WorkerThreadPool task (default on
 ##                         when safe: native off, or a threads-enabled native DLL); off = inline
@@ -128,6 +129,7 @@ var _fps_quit := 0.0                     # --fps-quit=S: print FPS_SUMMARY and q
 var _fps_total_t := 0.0
 var map_arg := ""                        # --map=<id>
 var zoom_arg := 0.0                      # --zoom=<f>
+var cam_cell_arg := Vector2(-1, -1)      # --cam-cell=x,y: centre the camera on a map cell (debug shots)
 var _prof := false                       # --prof: per-node frame profile (PROF line per second)
 var _prof_hide: Array = []               # --prof-hide=a,b: ablation (hud, g2, g3, ring, over, fx, fog, ent)
 var _prof_last_us := 0
@@ -174,6 +176,10 @@ func _init_view() -> void:
 			_prof_hide = a.substr(12).split(",")
 		elif a.begins_with("--sim-thread="):
 			_sim_thread_arg = a.substr(13)
+		elif a.begins_with("--cam-cell="):
+			var xy := a.substr(11).split(",")
+			if xy.size() == 2:
+				cam_cell_arg = Vector2(float(xy[0]), float(xy[1]))
 	if spawn_test > 0:
 		_fps_log = true
 	# G3b (R4) perf flag: --map=<id> regenerates the fresh world on that map (debug/perf runs)
@@ -240,6 +246,8 @@ func _init_view() -> void:
 		# perf flag: bypasses the camera's zoom clamp so far LOD can be measured
 		camera.zoom = Vector2(zoom_arg, zoom_arg)
 		camera.tick(0.0)
+	if cam_cell_arg.x >= 0.0:
+		center_camera_on(cam_cell_arg + Vector2(0.5, 0.5))
 	_setup_sim_runner()
 	if demo != "":
 		_run_demo(demo)
@@ -265,7 +273,7 @@ func _setup_sim_runner() -> void:
 
 
 ## Threaded unless --sim-thread=off, or the native core is live without thread support
-## (gdext aborts when its objects are touched off the main thread; NAT ships threads_safe()).
+## (gdext aborts when its objects are touched off the main thread; NativeCore.threads_safe()).
 func _thread_ok() -> bool:
 	if _sim_thread_arg == "off":
 		_sim_thread_why = "flag"
@@ -276,17 +284,7 @@ func _thread_ok() -> bool:
 	var ns := _native_state()
 	if ns == "on":
 		var nc = load("res://sim/native_core.gd")
-		var safe := false
-		if nc.has_method("threads_safe"):
-			safe = bool(nc.threads_safe())
-		else:
-			# NAT (fact nat.threads_ready): rts_core >= 0.2.2 is built with experimental-threads
-			var re := RegEx.create_from_string("(\\d+)\\.(\\d+)\\.(\\d+)")
-			var m := re.search(String(nc.version()))
-			if m != null:
-				var v := int(m.get_string(1)) * 10000 + int(m.get_string(2)) * 100 + int(m.get_string(3))
-				safe = v >= 202
-		if not safe:
+		if not bool(nc.threads_safe()):
 			_sim_thread_why = "native_not_thread_safe"
 			return false
 	_sim_thread_why = "ok"
