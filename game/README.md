@@ -1,12 +1,12 @@
-# RTS: Age of Modern War: playable slice (G0+G1+G2+G3a)
+# RTS: Age of Modern War: playable slice (G0+G1+G2+G3)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
-You pick one of **three factions** (Human A, Human B, Machine) at Stage 8 and fight up to three autonomous AIs, free-for-all or in teams, on the **River Crossing** map: a river valley with one bridge, two fords, forests and ridges.
+You pick one of **three factions** (Human A, Human B, Machine), start each side at **Stage 7, 8 or 9**, and fight up to three autonomous AIs, free-for-all or in teams, on one of **three maps**: River Crossing (96×96), Industrial Heartland (160×160) or Valley Conquest (256×256). Battles can involve thousands of units.
 
 ## What you can do in this build
 - Start a skirmish from the menu (see G3a below for factions, teams and victory modes): seed, per-side credits and AI difficulty, economy profile.
-  - All 13 stages are listed. Only Stage 8 is playable in this slice.
+  - All 13 stages are listed. Stages 7, 8 and 9 are playable; research and advance mid-match (see G3b below).
 - **Economy:**
   - Engineers gather salvage and ore and deliver them to the HQ or a depot.
   - Credits come from the treasury plus an HQ stipend.
@@ -41,6 +41,8 @@ Useful flags (append to the launcher):
 | `--autostart` | Skip the menu |
 | `--autostart-seed=N` | Set the match seed |
 | `--autostart-factions=human_a,human_b,machine` | Skip the menu with these sides (you are the first) |
+| `--autostart-map=<id>` / `--autostart-stages=7,8,9` | Map (`river_crossing_s`, `industrial_heartland_m`, `valley_conquest_l`) and start stage per side |
+| `--spawn-test=N --fps-log` | Spawn N extra fighting units and log fps (perf runs) |
 | `--player-ai --speed=8` | Watch AI vs AI |
 | `--ui-playtest=<dir>` | Scripted UI playtest |
 | `--autoshot=<png> --autoshot-delay=N` | Save a screenshot after N seconds |
@@ -49,9 +51,10 @@ Useful flags (append to the launcher):
 ```bash
 bash game/tests/run.sh
 ```
-This runs 144 headless tests: ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and AI fairness. Other checks:
+This runs 200 headless tests (22 files): ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and fairness, stages and research, maps, native-core parity and fidelity-tier parity. Other checks:
 - `game/tools/soak.gd`: AI vs AI to a winner.
-- `game/tools/bench.gd`: sim performance.
+- `game/tools/bench.gd` and `game/tools/scale_bench.gd`: sim performance (`scale_bench` covers 1k–10k units on any map, native on/off).
+- `bash game/tools/build_native.sh`: rebuilds the Rust native core (`game/native/rts_core` → `game/bin/rts_core.dll`; needs Rust). The built DLL is committed, so you only need this if you change the Rust code.
 - `game/tools/ui_playtest.gd`: a menu → build → train → attack-move flow driven by synthetic input.
 
 ## G2 "Smart Warfare" (2026-10-23)
@@ -82,18 +85,40 @@ This runs 144 headless tests: ledger conservation, command validation, placement
 - **The AI** plays every faction, picks targets among several enemies and cooperates with allies.
 - Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G3a_2026-10-23.md`. Packaged build: `build/RTS_Age_of_Modern_War_G3a/` (see its `PLAY_ME.txt`).
 
+## G3b + Scale "Big Armies" (2026-10-24)
+- **Two new maps:**
+  - Industrial Heartland (160×160): factories, rail siding, refinery site, ruined plant, two bridges plus fords, 6 spawn sites.
+  - Valley Conquest (256×256): river branches, central dam, airfields, foothills, 8 spawn sites.
+  - Both are generated from a seed, deterministic, and validated for fair, reachable spawns.
+- **Stage 7 → 8 → 9:**
+  - Each side picks its start stage.
+  - Stage 7 has an older roster: Cold-War Tank, Towed Field Gun, Siege Crawler.
+  - Stage 9 adds drones, electronic warfare and precision fire for each faction (12 new units and 5 new buildings, all with art).
+  - **Research** at a research building.
+  - **Advance** by clicking once the stage panel's gates are met (owner-approved gates; see `docs/CONTRACTS_G3b.md` §3.2).
+  - Advancing never spawns free gear.
+- **EW jamming and guided weapons.**
+- **Refinery:** now refines only while fuel or ammo is below its cap, so ore can be saved.
+- **Scale:**
+  - a **native core in Rust** (`game/native/rts_core`, loaded as a GDExtension) for movement, pathfinding, flow fields, spatial queries, fog and line of sight;
+  - **fidelity tiers** (units far from any enemy update less often, with identical fight outcomes);
+  - shared entity indexes;
+  - a batched renderer with culling and zoomed-out unit icons.
+- **The AI** researches, advances, uses Stage 9 units, routes over several crossings, commits decisive waves on big maps, and stays under 1 ms per tick per side at 5,000 units.
+- Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G3b_2026-10-24.md`. Packaged build: `build/RTS_Age_of_Modern_War_G3b/`. Keep `rts_core.dll` next to the exe.
+
 ## Status (honest)
-- **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish. Evidence is in `PROGRESS.md`.
-- **Measured performance:** 512 fighting units within the 20 Hz sim budget on this PC (p95 43 ms of 50).
-  - On screen, 3-side fights drop to 10–21 fps at 250+ units; this is a known gap.
-  - See `perf/PERF_REPORT_G3a_2026-10-23.md`.
+- **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages. Evidence is in `PROGRESS.md`.
+- **Measured performance (this PC, quiet):**
+  - **Sim:** 2,000 fighting units average 29.5 ms per tick (p95 38.3), within the 20 Hz budget. That's about 4–5x faster than G3a.
+  - **10,000 units on Valley Conquest:** 86.7 ms per tick (p95 124), over budget, so the game runs at about half speed.
+  - **On screen:** rendering alone holds 71 fps at 2,000 units and 171 fps at 10,000 zoomed out. While the sim runs on the main thread, frame rate drops to about 22 fps with 2,000 fighting. See `perf/PERF_REPORT_G3b_2026-10-24.md`.
 - **Not in this slice:**
-  - more maps;
-  - Stage 7→8→9 progression;
-  - naval units and aircraft beyond Machine drones;
+  - naval units and aircraft beyond drones;
   - walls and gates;
+  - Stages 1–6 and 10–13;
   - audio.
-  These are gates G3b–G6 in the roadmap.
+  These are gates G4–G6 in the roadmap.
 - **Visual direction** for later gates: `docs/vision/` (owner mockups; reference only, not scope).
 - All costs and stats are **provisional balance fixtures** (`game/content/*.json`), not approved numbers.
-- Design sources: `RTS_Age_of_Modern_War_Claude_Handoff/` (immutable). Engineering contracts: `game/docs/CONTRACTS.md`, `CONTRACTS_G2.md`, `CONTRACTS_G3a.md`.
+- Design sources: `RTS_Age_of_Modern_War_Claude_Handoff/` (immutable). Engineering contracts: `game/docs/CONTRACTS.md`, `CONTRACTS_G2.md`, `CONTRACTS_G3a.md`, `CONTRACTS_G3b.md`.
