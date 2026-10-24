@@ -71,6 +71,11 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	var R: Dictionary = Content.rules()
 	var sup: Dictionary = R.get("suppression", {})
 	if not hit:
+		if SimIndex.profiling:
+			var tnm := Time.get_ticks_usec()
+			near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)))
+			SimIndex.pt("dmg.near_miss", tnm)
+			return
 		near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)))
 		return
 	var cls := String(s.get("cls", ""))
@@ -87,6 +92,9 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 				dmg *= float((R.get("cover", {}) as Dictionary).get(cls, 1.0))
 	dmg = snappedf(dmg, Q)
 	target.hp = snappedf(float(target.hp) - dmg, Q)
+	var cev = w.cache.get("cmb_ev")   # SIM10K: Combat.tick wakes skipped shooters hit / aiming at this
+	if cev != null:
+		cev[int(target.id)] = true
 	if target.kind == "unit":
 		target.last_attacker = int(shooter.id)
 		target.last_hit_tick = w.tick
@@ -94,6 +102,11 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 		"hit_side": side, "in_cover": cover})
 	if float(target.hp) <= 0.0:
 		_note_death(w, target)
+		if SimIndex.profiling:
+			var tde := Time.get_ticks_usec()
+			w.destroy(int(target.id), "killed", int(shooter.owner))
+			SimIndex.pt("dmg.death", tde)
+			return
 		w.destroy(int(target.id), "killed", int(shooter.owner))
 		return
 	if target.kind != "unit":

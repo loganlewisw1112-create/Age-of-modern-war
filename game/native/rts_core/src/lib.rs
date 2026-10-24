@@ -16,6 +16,7 @@ use godot::prelude::*;
 
 mod advance;
 mod combat;
+mod combat_prep;
 mod fog;
 mod grid;
 mod nav;

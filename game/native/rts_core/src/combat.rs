@@ -104,4 +104,23 @@ impl RtsCombat {
         out.extend(f.iter().map(|&v| (v - dec).max(0)));
         PackedInt32Array::from(out.as_slice())
     }
+
+    /// SIM10K (rts_core 0.3.1): combat.gd tick prep for the FULL unit list in ONE call. Reads each
+    /// unit Dictionary (id, pos, firing, cd_ticks/cooldown, target, broken, moving, order.type,
+    /// last_hit_tick, order.engaged), applies the same firing / cooldown countdown writes as the
+    /// GDScript prep (same Variant types: int firing, int cd_ticks, float cooldown = cd / trf), and
+    /// returns the per-tick RtsGrid inputs, the scan-slot pre-batch and the act list.
+    /// Per-id tables (combat.gd cmb_tabs, owner/def never change): tf (team flags, 0 = unfilled) and
+    /// dx (def index) into d_range / d_search (f32, as PackedFloat32Array.append stores them) and
+    /// d_flags (1 anti_air, 2 armed, 4 builder).
+    /// Returns [need_ids] alone (no writes done) when some live unit has tf == 0; else
+    /// [nids, npos, nteam, nflags, nidx, scan_src, scan_r, scan_need, scan_ids, act_idx, act_code, act_tg]
+    /// where the act list holds every live unit (input order) whose skip code is not 1
+    /// (codes: 0 call _unit_tick, 2 no-op unless its target act_tg is hit, 3 no-op unless it is hit).
+    #[func]
+    fn prep_units(&self, units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt32Array, dx: PackedInt32Array,
+                  d_range: PackedFloat32Array, d_search: PackedFloat32Array, d_flags: PackedInt32Array,
+                  next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
+        crate::combat_prep::prep_units(units, ents, tick, tf, dx, d_range, d_search, d_flags, next_id, trf, scan_every, ret_fire)
+    }
 }

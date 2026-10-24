@@ -52,6 +52,11 @@ static var _no_search := false   # REDUCED pass: searches return null (Tiers con
 ## of Damage.line_clear). false forces the GDScript walk (parity test / bench); outcomes are identical.
 static var native_los := true
 static var prof_units := false   # bench: time each _unit_tick by order type (adds overhead)
+## SIM10K: act_skip = do not call _unit_tick when its result is a no-op by construction (prep skip
+## codes + null-search skip); native_prep = run the prep loop as RtsCombat.prep_units (needs
+## act_skip and rts_core >= 0.3.1). Both exact (tests/test_perf_systems.gd); false = PERF10K-2 path.
+static var act_skip := true
+static var native_prep := true
 
 
 ## Cached combat stats for an entity def.
@@ -139,6 +144,8 @@ static func tick(w: SimWorld) -> void:
 	var grid := {}   # owner -> {bucket key -> [unit dicts]} (GDScript search, splash, Damage.near_miss)
 	var blds := []
 	var act := []    # FULL units that act this tick, ascending id
+	var askip := PackedByteArray()   # SIM10K: per act entry, 0 = call _unit_tick, else a no-op class
+	var atg := PackedInt32Array()    # SIM10K: per act entry, its target id at prep
 	var nids := PackedInt32Array()
 	var npos := PackedVector2Array()
 	var nteam := PackedInt32Array()
@@ -173,67 +180,149 @@ static func tick(w: SimWorld) -> void:
 		if tf.size() < nidx.size():
 			tf.resize(nidx.size())
 			tabs.tf = tf
-	var nn := 0   # RtsGrid entries written (arrays pre-sized, trimmed after the loop)
-	if native:
-		nids.resize(units.size())
-		npos.resize(units.size())
-		nteam.resize(units.size())
-		nflags.resize(units.size())
+	# SIM10K: with rts_core >= 0.3.1 the whole prep loop below (grid inputs, scan pre-batch, firing /
+	# cooldown countdown writes, act-skip codes) runs as one RtsCombat.prep_units call (exact port;
+	# the GDScript loop stays the fallback and the hash oracle).
 	var trf := float(SimWorld.TICK_RATE)
-	for e: Dictionary in units:
-		var id: int = e.id
-		if not ents.has(id):
-			continue
-		var p: Vector2 = e.pos
-		if need_grid:
-			var o: int = e.owner
-			var g = grid.get(o)
-			if g == null:
-				g = {}
-				grid[o] = g
-			var key := floori(p.x / BUCKET) + floori(p.y / BUCKET) * GRID_STRIDE
-			var cell = g.get(key)
-			if cell == null:
-				g[key] = [e]
-			else:
-				cell.append(e)
+	var np_done := false
+	var nores := PackedByteArray()   # SIM10K: per id, 1 = this tick's search is null by construction
+	if native and not need_grid and native_prep and act_skip:
+		var cobj = _combat_obj(w)
+		if cobj != null and cobj.has_method("prep_units"):
+			var tabs: Dictionary = w.cache["cmb_tabs"]
+			if not tabs.has("dx"):
+				tabs["dx"] = PackedInt32Array()
+				tabs["dmap"] = {}
+				tabs["dr"] = PackedFloat32Array()
+				tabs["ds"] = PackedFloat32Array()
+				tabs["df"] = PackedInt32Array()
+			var dxa: PackedInt32Array = tabs.dx
+			if dxa.size() < tf.size():
+				dxa.resize(tf.size())
+				tabs.dx = dxa
+			if SimIndex.profiling:
+				t0 = SimIndex.pt("cmb.pre_np", t0)
+			var r: Array = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			if SimIndex.profiling:
+				t0 = SimIndex.pt("cmb.np", t0)
+			if r.size() == 1:
+				for nid in r[0]:
+					var ne: Dictionary = ents[nid]
+					if tf[nid] == 0:
+						tf[nid] = _tf_of(ne, teams)
+					dxa[nid] = _dx_of(ne, tabs)
+				r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			if r.size() == 12:
+				nids = r[0]
+				npos = r[1]
+				nteam = r[2]
+				nflags = r[3]
+				nidx = r[4]
+				scan_src = r[5]
+				scan_r = r[6]
+				scan_need = r[7]
+				scan_ids = r[8]
+				var aix: PackedInt32Array = r[9]
+				askip = r[10]
+				atg = r[11]
+				for k in aix:
+					act.append(units[k])
+				np_done = true
+				if SimIndex.profiling:
+					var nz := 0
+					for c in askip:
+						if c == 0:
+							nz += 1
+					SimIndex.prof["n.act_listed"] = [aix.size() * 1000, 1]
+					SimIndex.prof["n.act_code0"] = [nz * 1000, 1]
+					t0 = SimIndex.pt("cmb.np_unpack", t0)
+	if not np_done:
+		var nn := 0   # RtsGrid entries written (arrays pre-sized, trimmed after the loop)
 		if native:
-			var tfv := tf[id]
-			if tfv == 0:
-				tfv = _tf_of(e, teams)
-				tf[id] = tfv
-			if tfv > 0:
-				var si := nn
-				nn += 1
-				nidx[id] = si
-				nids[si] = id
-				npos[si] = p
-				nteam[si] = (tfv >> 3) - 1
-				nflags[si] = tfv & 3
-				if tfv & 4 and (tick + id) % SCAN_EVERY == 0:
-					var ot = e.order.get("type", "idle")
-					if ot == "idle" or ot == "attack_move" or ot == "hold":
-						var sv = _stats.get(e.def)
-						var s: Dictionary = sv if sv != null else stats(e)
-						scan_src.append(si)
-						scan_r.append(float(s.range) if ot == "hold" else _search_r(s))
-						scan_need.append(0 if s.aa else 1)
-						scan_ids.append(id)
-		var fr := int(e.firing)
-		if fr > 0:
-			e.firing = fr - 1
-		var cdv = e.get("cd_ticks")
-		var cd: int = int(cdv) if cdv != null else _cd(e)
-		if cd > 0:
-			cd -= 1
-			e.cd_ticks = cd
-			e.cooldown = float(cd) / trf
-		act.append(e)
-	if native:
-		nids.resize(nn)
-		npos.resize(nn)
-		nteam.resize(nn)
-		nflags.resize(nn)
+			nids.resize(units.size())
+			npos.resize(units.size())
+			nteam.resize(units.size())
+			nflags.resize(units.size())
+		for e: Dictionary in units:
+			var id: int = e.id
+			if not ents.has(id):
+				continue
+			var p: Vector2 = e.pos
+			if need_grid:
+				var o: int = e.owner
+				var g = grid.get(o)
+				if g == null:
+					g = {}
+					grid[o] = g
+				var key := floori(p.x / BUCKET) + floori(p.y / BUCKET) * GRID_STRIDE
+				var cell = g.get(key)
+				if cell == null:
+					g[key] = [e]
+				else:
+					cell.append(e)
+			if native:
+				var tfv := tf[id]
+				if tfv == 0:
+					tfv = _tf_of(e, teams)
+					tf[id] = tfv
+				if tfv > 0:
+					var si := nn
+					nn += 1
+					nidx[id] = si
+					nids[si] = id
+					npos[si] = p
+					nteam[si] = (tfv >> 3) - 1
+					nflags[si] = tfv & 3
+					if tfv & 4 and (tick + id) % SCAN_EVERY == 0:
+						var ot = e.order.get("type", "idle")
+						if ot == "idle" or ot == "attack_move" or ot == "hold":
+							var sv = _stats.get(e.def)
+							var s: Dictionary = sv if sv != null else stats(e)
+							scan_src.append(si)
+							scan_r.append(float(s.range) if ot == "hold" else _search_r(s))
+							scan_need.append(0 if s.aa else 1)
+							scan_ids.append(id)
+			var fr := int(e.firing)
+			if fr > 0:
+				e.firing = fr - 1
+			var cdv = e.get("cd_ticks")
+			var cd: int = int(cdv) if cdv != null else _cd(e)
+			if cd > 0:
+				cd -= 1
+				e.cd_ticks = cd
+				e.cooldown = float(cd) / trf
+			act.append(e)
+			# SIM10K: act-phase skip code, computed from the values _unit_tick would read (see _act_skip)
+			var tg := int(e.target)
+			var code := 0
+			if e.get("broken", false):
+				code = 1 if tg < 0 else 0   # broken: _unit_tick only writes target = -1
+			elif tg >= 0:
+				if not e.moving and cd > 1 and ents.has(tg):
+					code = 2                 # reloading at a live target: no-op unless the target is hit
+			else:
+				var mv: bool = e.moving
+				var slot := (tick + id) % SCAN_EVERY == 0
+				var ot = e.order.get("type", "idle")
+				if not mv and not slot and (ot == "idle" or ot == "hold"):
+					code = 1
+				else:
+					var sv2 = _stats.get(e.def)
+					var s2: Dictionary = sv2 if sv2 != null else stats(e)
+					if s2.weapon == "":
+						code = 1
+					elif ot != "attack" and ot != "idle" and ot != "hold" and ot != "attack_move":
+						if tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
+							code = 3         # move/other order, not hit recently: no-op unless hit this tick
+					elif ot == "attack_move" and mv and not s2.builder and not slot and not e.order.get("engaged", false):
+						code = 1
+			askip.append(code if act_skip else 0)
+			atg.append(tg)
+		if native:
+			nids.resize(nn)
+			npos.resize(nn)
+			nteam.resize(nn)
+			nflags.resize(nn)
 	var red := []    # REDUCED units on their stride tick
 	if tiers_on:
 		var dec := Tiers.SCAN_STRIDE
@@ -279,6 +368,34 @@ static func tick(w: SimWorld) -> void:
 			var res: PackedInt32Array = ng.nearest_enemy_batch(scan_src, scan_r, scan_need)
 			for i in scan_ids.size():
 				pre[scan_ids[i]] = Vector2(float(res[i]), scan_r[i])
+			if np_done:
+				# SIM10K: a scan-slot shooter with no RtsGrid candidate (res -1) and no building of ANY
+				# owner within its scan radius gets null from _find (the unit search is skipped on -1;
+				# positions, fog and the building list are fixed for the tick; deaths only remove).
+				var brs := PackedFloat32Array()
+				for b in blds:
+					var o: Vector2i = b.cell
+					var bsz := float(b.size)
+					brs.append_array(PackedFloat32Array([float(o.x), float(o.y), float(o.x) + bsz, float(o.y) + bsz]))
+				nores.resize(nidx.size())
+				var nb := brs.size()
+				for i in scan_ids.size():
+					if res[i] != -1:
+						continue
+					var sp: Vector2 = npos[scan_src[i]]
+					var rr := float(scan_r[i]) + 0.01
+					rr *= rr
+					var near := false
+					var j := 0
+					while j < nb:
+						var dx := sp.x - clampf(sp.x, brs[j], brs[j + 2])
+						var dy := sp.y - clampf(sp.y, brs[j + 1], brs[j + 3])
+						if dx * dx + dy * dy <= rr:
+							near = true
+							break
+						j += 4
+					if not near:
+						nores[scan_ids[i]] = 1
 		var lc = null
 		if native_los:
 			lc = w.cache.get("combat_lc")
@@ -293,33 +410,48 @@ static func tick(w: SimWorld) -> void:
 		w.cache.erase("combat_ng")
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("cmb.ngrid", t0)
-	# act in ascending id order, FULL units and buildings interleaved as in w.entities
+	# act in ascending id order, FULL units and buildings interleaved as in w.entities.
+	# SIM10K: a unit whose prep skip code says _unit_tick is a no-op is not called. The only state an
+	# earlier actor can change that those exits read is a hit (last_hit_tick) or the death of the
+	# tracked target, both of which go through Damage.apply_hit, which records the hit entity id in
+	# w.cache.cmb_ev: code 2 (reloading at target) wakes when its target is in it, code 3 (move/other
+	# order, return fire only) wakes when it is itself in it; code 1 exits read nothing others write.
+	var ev := {}
+	w.cache["cmb_ev"] = ev
+	var use_nr := not nores.is_empty()
 	var bi := 0
-	for e in act:
-		while bi < blds.size() and int(blds[bi].id) < int(e.id):
+	for i in act.size():
+		var e: Dictionary = act[i]
+		var eid: int = e.id
+		while bi < blds.size() and int(blds[bi].id) < eid:
 			_bld_act(w, blds[bi], grid, blds)
 			bi += 1
-		var eid: int = e.id
 		if not ents.has(eid):
 			continue  # destroyed earlier this tick: dead entities never act
-		# PERF4-4: the two commonest _unit_tick exits inlined (exactly its PERF4-2 fast paths for an
-		# armed non-builder that tracks nothing and is moving: an attack-move off its scan slot, or a
-		# move/other order not hit within RETURN_FIRE_TICKS): no call.
-		if native and tf[eid] > 0 and tf[eid] & 4 and int(e.target) == -1 and e.moving:
-			var ot0 = e.order.get("type", "idle")
-			if ot0 == "attack_move":
-				if (tick + eid) % SCAN_EVERY != 0 and not e.order.get("engaged", false):
-					continue
-			elif ot0 != "attack" and ot0 != "idle" and ot0 != "hold" 					and tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
+		var sk := askip[i]
+		if sk != 0:
+			if sk == 1 or ev.is_empty():
 				continue
-		if true:
-			if prof_units and SimIndex.profiling:
-				var lab := "u." + String(e.order.get("type", "idle")) + (".t" if int(e.target) >= 0 else "") + (".mv" if e.moving else "")
-				var tu := Time.get_ticks_usec()
-				_unit_tick(w, e, grid, blds)
-				SimIndex.pt(lab, tu)
-			else:
-				_unit_tick(w, e, grid, blds)
+			if sk == 2 and not ev.has(atg[i]):
+				continue
+			if sk == 3 and not ev.has(eid):
+				continue
+		elif use_nr and nores[eid] == 1 and atg[i] < 0:
+			# SIM10K: untargeted scan-slot shooter whose search is null by construction (see above):
+			# _unit_tick is then a no-op for idle / hold, and for an attack-move that is moving and
+			# not engaged (it only rewrites target = -1). Anything else still calls.
+			var ot2 = e.order.get("type", "idle")
+			if ot2 == "idle" or ot2 == "hold":
+				continue
+			if ot2 == "attack_move" and e.moving and not e.order.get("engaged", false):
+				continue
+		if prof_units and SimIndex.profiling:
+			var lab := "u." + String(e.order.get("type", "idle")) + (".t" if int(e.target) >= 0 else "") + (".mv" if e.moving else "")
+			var tu := Time.get_ticks_usec()
+			_unit_tick(w, e, grid, blds)
+			SimIndex.pt(lab, tu)
+		else:
+			_unit_tick(w, e, grid, blds)
 	while bi < blds.size():
 		_bld_act(w, blds[bi], grid, blds)
 		bi += 1
@@ -349,6 +481,7 @@ static func tick(w: SimWorld) -> void:
 					continue
 		_unit_tick(w, e, grid, blds)
 	_no_search = false
+	w.cache.erase("cmb_ev")
 	if SimIndex.profiling:
 		SimIndex.pt("cmb.reduced", t0)
 
@@ -361,6 +494,37 @@ static func _tf_of(e: Dictionary, teams: Dictionary) -> int:
 		return -1
 	var s0 := stats(e)
 	return ((int(tv) + 1) << 3) | (4 if s0.weapon != "" and not s0.builder else 0) | (2 if s0.is_air else 1)
+
+
+## SIM10K: this world's RtsCombat (cached in w.cache.combat_lc; false = DLL without it) or null.
+static func _combat_obj(w: SimWorld):
+	var lc = w.cache.get("combat_lc")
+	if lc == null:
+		lc = NativeCore.new_combat(w)
+		w.cache["combat_lc"] = lc if lc != null else false
+	return lc if lc is Object else null
+
+
+## SIM10K: def-table index of e for RtsCombat.prep_units (cmb_tabs: dmap def -> index; dr range,
+## ds search radius, df flags 1 anti_air | 2 armed | 4 builder).
+static func _dx_of(e: Dictionary, tabs: Dictionary) -> int:
+	var dm: Dictionary = tabs.dmap
+	var di = dm.get(e.def)
+	if di != null:
+		return int(di)
+	var s := stats(e)
+	var n: int = dm.size()
+	dm[e.def] = n
+	var dr: PackedFloat32Array = tabs.dr
+	var ds: PackedFloat32Array = tabs.ds
+	var df: PackedInt32Array = tabs.df
+	dr.append(float(s.range))
+	ds.append(_search_r(s))
+	df.append((1 if s.aa else 0) | (2 if s.weapon != "" else 0) | (4 if s.builder else 0))
+	tabs.dr = dr
+	tabs.ds = ds
+	tabs.df = df
+	return n
 
 
 static var _dmg_ng := -1
@@ -814,7 +978,10 @@ static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, ca
 		if need:
 			e.chase_tick = w.tick
 			e.chase_goal = tp
+			var tcp := Time.get_ticks_usec() if SimIndex.profiling else 0
 			Movement.order_path(w, e, tp)
+			if SimIndex.profiling:
+				SimIndex.pt("eng.chase_path", tcp)
 
 
 static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Array) -> void:
@@ -841,6 +1008,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
+	var tfr := Time.get_ticks_usec() if SimIndex.profiling else 0   # SIM10K sub-timer: fire resolution
 	# --- G3b STG4 EW hook: jammed shooters deal Status.damage_mult x damage (s is a shared cache: copy)
 	var dm := Status.damage_mult(w, e)
 	if dm != 1.0:
@@ -878,8 +1046,12 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if e.kind == "unit":
 		e.last_fired_tick = w.tick  # G2 (A2): firing reveals forest-concealed infantry for 60 ticks
 		Supply.on_shot(w, e)
+	if SimIndex.profiling:
+		tfr = SimIndex.pt("fire.resolve", tfr)
 	if indirect:
 		_splash(w, e, s, to)
+		if SimIndex.profiling:
+			SimIndex.pt("fire.splash", tfr)
 		return
 	if SimIndex.profiling:
 		var tdm := Time.get_ticks_usec()

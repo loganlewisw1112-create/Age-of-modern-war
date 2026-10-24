@@ -22,6 +22,7 @@ const ROLES := ["infantry", "infantry", "infantry", "antitank", "infantry", "hea
 var breakdown := false
 var series := false   # --series: per-tick time series + per-system breakdown on spike ticks (implies --breakdown)
 var scenario := "mixed"
+var sys_only := false
 const FIGHT_GAP := 26.0  # --scenario=fight: start distance from the centre (tiles)
 
 
@@ -57,11 +58,15 @@ func _init() -> void:
 			Movement.held_paths = a.substr(13) != "off"
 		elif a.begins_with("--move-stride="):
 			Tiers.move_stride = a.substr(14) == "on"
+		elif a == "--sys-only":
+			sys_only = true   # SIM10K: per-system timers without the SimIndex sub-phase timers (no inflation)
 		elif a == "--breakdown" or a == "--series":
 			breakdown = true
 			series = series or a == "--series"
 			Movement.profile = true
 			SimIndex.profiling = true
+	if sys_only:
+		SimIndex.profiling = false
 	if not NativeCore.available():
 		modes = [false]
 	var rows := []
@@ -225,6 +230,18 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	for k in Movement.prof:
 		sys_parts.append("mv.%s %.1f" % [k, float(Movement.prof[k]) / 1000.0 / float(ticks)])
 	Movement.prof = {}
+	if breakdown and not series and not SimIndex.prof.is_empty():
+		# SIM10K: sub-phase totals per tick (ms/tick) and calls per tick, biggest first
+		var sub := []
+		for k in SimIndex.prof:
+			var a: Array = SimIndex.prof[k]
+			sub.append([String(k), float(a[0]) / 1000.0 / float(ticks), float(a[1]) / float(ticks)])
+		sub.sort_custom(func(x, y): return x[1] > y[1])
+		var sp := []
+		for q in sub:
+			sp.append("%s %.2f (x%.0f)" % [q[0], q[1], q[2]])
+		print("SUBPHASES (ms/tick, calls/tick): ", ", ".join(sp))
+		SimIndex.prof = {}
 	for k in sys_ms:
 		sys_parts.append("%s %.1f" % [k, float(sys_ms[k]) / float(ticks)])
 	var row := {"placed": placed, "path": NativeCore.path_name(w), "avg": sum / float(ticks),

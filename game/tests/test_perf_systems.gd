@@ -114,3 +114,68 @@ func test_live_ai_determinism_and_restore() -> void:
 	w1.run_ticks(301)
 	w3.run_ticks(301)
 	check_eq(w3.state_hash(), w1.state_hash(), "hash equal 301 ticks after a restore (caches rebuilt)")
+
+
+# ================================================================ SIM10K combat paths
+const Combat = preload("res://sim/systems/combat.gd")
+const NativeCoreT = preload("res://sim/native_core.gd")
+
+
+## One mixed fight (attack-move, hold, move-through-fire = return-fire path, stop, a save round
+## trip) under the given combat paths. Returns the state hash every 10 ticks plus the final one.
+func _cmb_run(native_on: bool, prep: bool, skip: bool) -> Array:
+	NativeCoreT.force_off = not native_on
+	Combat.native_prep = prep
+	Combat.act_skip = skip
+	var w := make_world({"seed": 21, "victory": "endless"})
+	w.ai_state = {}
+	for id in w.entities.keys():
+		if String(w.entities[id].kind) == "unit":
+			w.destroy(int(id), "test_clear")
+	var a := []
+	var b := []
+	for i in 24:
+		a.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 0, Vector2(30 + (i % 6) * 2, 30 + (i / 6) * 2)))
+		b.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 1, Vector2(66 - (i % 6) * 2, 66 - (i / 6) * 2)))
+	var mid := Vector2(48.5, 48.5)
+	w.submit({"type": "attack_move", "issuer": 0, "unit_ids": a.slice(4), "target": mid})
+	w.submit({"type": "attack_move", "issuer": 1, "unit_ids": b.slice(6), "target": mid})
+	w.submit({"type": "hold", "issuer": 0, "unit_ids": a.slice(0, 4)})
+	var hs := []
+	for t in 300:
+		if t == 40:
+			w.submit({"type": "move", "issuer": 1, "unit_ids": b.slice(0, 6), "target": Vector2(40.5, 44.5)})
+		if t == 120:
+			w.submit({"type": "stop", "issuer": 0, "unit_ids": a.slice(4, 8)})
+		if t == 150:
+			w = SimWorld.from_dict(bytes_to_var(var_to_bytes(w.to_dict())))
+			w.ai_state = {}
+		w.step()
+		if t % 10 == 9:
+			hs.append(w.state_hash())
+	NativeCoreT.force_off = false
+	Combat.native_prep = true
+	Combat.act_skip = true
+	return [hs, w.state_hash(), w.units_of(0).size() + w.units_of(1).size()]
+
+
+## SIM10K: the act-phase skip (prep skip codes, Damage wake on hits/deaths, null-search skip) and
+## the native RtsCombat.prep_units batch give the same world, tick for tick, as the PERF10K-2 path
+## (every unit calls _unit_tick, GDScript prep), with the native core on and in the fallback.
+func test_combat_skip_and_native_prep_match_reference() -> void:
+	var ref := _cmb_run(true, false, false)
+	check(int(ref[2]) < 48, "the fight kills units (%d of 48 left), so death wakes are exercised" % int(ref[2]))
+	var skip := _cmb_run(true, false, true)
+	check_eq(skip[0], ref[0], "native core: act-skip (GDScript prep) == reference, every 10 ticks")
+	if NativeCoreT.available() and ClassDB.class_exists("RtsCombat") and ClassDB.class_has_method("RtsCombat", "prep_units"):
+		var np := _cmb_run(true, true, true)
+		check_eq(np[0], ref[0], "native core: RtsCombat.prep_units + act-skip == reference, every 10 ticks")
+	else:
+		print("  rts_core without RtsCombat.prep_units (< 0.3.1): native prep not compared")
+	var fref := _cmb_run(false, false, false)
+	var fskip := _cmb_run(false, true, true)
+	check_eq(fskip[0], fref[0], "fallback: act-skip == reference, every 10 ticks")
+	# native vs fallback is NOT compared here: HEAD's native steering already gives a different world
+	# from the GDScript movement in this fight (also at HEAD, before SIM10K); each path is checked
+	# against its own reference above.
+	print("  final hash native %s / fallback %s" % [String(ref[1]).substr(0, 16), String(fref[1]).substr(0, 16)])
