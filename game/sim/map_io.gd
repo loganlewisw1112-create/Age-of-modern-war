@@ -396,6 +396,11 @@ static func load_map(w: SimWorld, c: Dictionary) -> String:
 				return "Side slot %d has no player start in '%s'." % [int(s.slot), m.name]
 			ids.append(by_slot[int(s.slot)])
 		m.spawn_sets[str(sides.size())] = ids
+	if not bool(c.get("scenario_rules", true)):
+		# ORCH (ED2 CR 3): "skirmish rules only" = the file's land only. Start packages on,
+		# no scenario triggers; place_entities then skips stock and placed entities.
+		m.start_packages = true
+		m.triggers = []
 	w.map = m
 	w.cache["mapio_scenario"] = r.scenario
 	return ""
@@ -409,6 +414,9 @@ static func place_entities(w: SimWorld, c: Dictionary) -> void:
 	if sc == null:
 		var r := read(String(c.get("map_file", "")))
 		sc = r.get("scenario", {})
+	if not bool(c.get("scenario_rules", true)):
+		Triggers.init_state(w, {})   # skirmish rules only: no stock, entities or triggers from the file
+		return
 	var sm := slot_map(c)
 	var sides: Array = c.get("sides", [])
 	for i in sides.size():

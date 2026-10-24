@@ -114,13 +114,22 @@ static func validate_config(c: Dictionary) -> String:
 	var sides: Array = c.get("sides", [])
 	if sides.size() < 2:
 		return "A match needs at least 2 sides."
-	var map_id := String(c.get("map", "river_crossing_s"))
-	if not MapGen.has_map(map_id):
-		return "Unknown map '%s'." % map_id
-	var mdef: Dictionary = MapGen.defs().get(map_id, {})
-	var max_sides := mini(int(rules.get("max_sides", 4)), int(mdef.get("max_sides", 4)))
-	if sides.size() > max_sides:
-		return "%s supports at most %d sides." % [String(mdef.get("name", map_id)), max_sides]
+	if c.has("map_file"):
+		# G4 (MAPIO CR): a file map limits sides by its own player starts
+		var fr: Dictionary = MapIO.read(String(c.map_file))
+		if fr.has("error"):
+			return "Map file: %s" % fr.error
+		var fmax := mini(int(rules.get("max_sides", 4)), (fr.map.get("spawns", []) as Array).size())
+		if sides.size() > fmax:
+			return "%s supports at most %d sides." % [String(fr.map.get("name", "This map")), fmax]
+	else:
+		var map_id := String(c.get("map", "river_crossing_s"))
+		if not MapGen.has_map(map_id):
+			return "Unknown map '%s'." % map_id
+		var mdef: Dictionary = MapGen.defs().get(map_id, {})
+		var max_sides := mini(int(rules.get("max_sides", 4)), int(mdef.get("max_sides", 4)))
+		if sides.size() > max_sides:
+			return "%s supports at most %d sides." % [String(mdef.get("name", map_id)), max_sides]
 	var teams := {}
 	for s in sides:
 		if Content.faction(String(s.get("faction", ""))).is_empty():
