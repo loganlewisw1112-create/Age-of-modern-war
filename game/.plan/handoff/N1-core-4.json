@@ -1,0 +1,27 @@
+{
+ "agent": "N1-core-4",
+ "gen": 4,
+ "reason": "call projection near 70% (64 of 170 calls at 60k + 5k/call against the 700k cap); work items done or measured",
+ "done": [
+  "Stride parity (all in movement.gd + rts_core 0.2.1/0.2.2): (1) off-stride REDUCED units stay in the native separation batch (mov flag, no advance); (2) an advance runs 1 + owed exact one-tick steps (Rust advance_k, GDScript _advance -> _advance_step), owed = e.mv_owed (first skipped tick, saved, cleared by stop_path); (3) stride_off(w,e): REDUCED units advance on tick % STRIDE == 0, the same phase for every unit (movement no longer calls Tiers.move_k).",
+  "Evidence (.plan/shots/N1-core-4/fightcmp4_final.txt, move_stride forced true): seeds 9/11/13/17 give identical survivors to FULL-only on both paths; 16 seeds give native 9/16 identical, gdscript 13/16 with one winner flip (seed 3). Without stride the same 16 seeds are 16/16 identical. ORCH decision: Tiers.move_stride stays false (CONTRACTS_G3b s0). CR to PERF4-3 posted (board seq 1333), now superseded by that decision.",
+  "Repath cap: REPATH_PER_TICK = 8 stuck/blocked repaths started per tick on both paths (_repath_ok, runtime counter in w.cache.mv_repath keyed by tick); deferred units keep their stuck count and retry next tick. test_mil queue test unaffected (PATH_BUDGET unchanged).",
+  "Native-held paths: RtsSteer.set_path(id, path) + advance_held(... mvi [idx,k,path_i,stuck] ...), GDScript pushes a path only when e.path is a different Array (is_same against w.nav.path_refs). Bit-identical hashes vs the copy path (heldab.txt, 6/6 SAME), but no measured gain at 2k rc_s (mv.gather 7.6 vs 7.5 ms), so Movement.held_paths defaults to false.",
+  "scale_bench: --move-stride=on|off and --held-paths=on|off flags; header line prints both."
+ ],
+ "remaining": [
+  "1. Movement gather cost with stride off is ~3.7-3.8 us/unit of GDScript (2k rc_s 7.6 ms, 10k valley 37.1 ms). Micro-bench (.plan/shots/N1-core-4/micro.gd, us/unit): Status.move_mult 0.8-1.1 (inline 0.55), path copy 0.4, id/has/pos/moving 0.27, 2 dict writes 0.13. No single part dominates; the real lever is native-held POSITIONS + moving flags with change-driven sync (e.pos writers outside movement: bridges.gd rescue, spawns, tests) so idle units are not touched per tick. Not started.",
+  "2. move_mult caching: not done. move_mult reads comp.mobility, fuel, broken, pinned, which other systems change on arbitrary ticks, so a per-tier-recompute cache would change outcomes (CONTRACTS_G3b s0). An inlined copy saves ~0.4 us/mover but duplicates STG4's status.gd logic; needs a parity test if done.",
+  "3. Valley 10k mid-run spikes: victory 40-108 ms (not N1 files) and mv.gather 84-91 ms on ticks 220/227 (cause not found; maybe the 150-tick re-order burst in scale_bench)."
+ ],
+ "files_touched": [
+  "native/rts_core/src/advance.rs (advance_k)", "native/rts_core/src/steer.rs (advance_k call, run(), set_path, advance_held)", "native/rts_core/Cargo.toml (0.2.2)",
+  "bin/rts_core.dll (0.2.2)", "sim/systems/movement.gd", "tools/scale_bench.gd"
+ ],
+ "test_state": "--only (stride off): test_native 12/12, test_mil 13/13, test_core 9/9, test_g2_scenarios 7/7, test_perf 7/7, test_supply 10/10, test_determinism 5/5, test_save 6/6. With move_stride forced on (.plan/shots/N1-core-4/run_tests_stride.gd): test_perf, test_supply, test_native, test_mil, test_save, test_determinism, test_g2_scenarios all green. Full suite: see the final report.",
+ "gotchas": [
+  "Tiers.move_stride is a static var: probes can toggle it per world.step() to run two worlds in lockstep (.plan/shots/N1-core-4/lockstep.gd).",
+  "Fight survivor counts are chaotic: tiny position changes flip 10v8 fights, so measure parity over many seeds, not 4.",
+  "gdext: plain (non-#[func]) helper methods can live inside the #[godot_api] impl block."
+ ]
+}

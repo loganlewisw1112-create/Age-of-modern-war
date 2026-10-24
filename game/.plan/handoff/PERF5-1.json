@@ -1,0 +1,39 @@
+{
+  "agent": "PERF5",
+  "gen": 1,
+  "reason": "budget.handoff_now directive (guard seq 883, projected 420000 / cap 600000, calls 54)",
+  "done": [
+    "New helper sim/systems/unit_subsets.gd (preload, no class_name): per-def-flag unit id lists (BUILDER can_build, GATHERER can_gather, REPAIRER can_build|can_repair, EW ew_radius>0, SUPPLY is_supply), ascending id, incremental by next_id like sim_index.gd, cache w.cache.unit_subsets.",
+    "construction.gd: building_at_cell + placement_error building/resource loops -> SimIndex; tick walks Subsets BUILDER only.",
+    "production.gd: tick walks SimIndex 'building' (duplicate of the list, alive check).",
+    "gather.gd: _nearest_drop -> SimIndex building, _target_resource -> SimIndex resource, tick -> Subsets GATHERER.",
+    "repair.gd: tick and bridge-complete idle loop -> Subsets REPAIRER.",
+    "orders.gd: patrol/guard id set in w.cache.orders_pg (built from unit index when missing, grown by apply_command via _track, pruned in tick), ascending id; tick walks only that set.",
+    "victory.gd: _eliminate, bridge_entity, _bridge_sample, progress -> SimIndex. territory.gd recompute -> SimIndex unit + building (order-independent result).",
+    "status.gd ew_tick: jammers from Subsets EW, targets from SimIndex unit. damage.gd near_miss fallback -> SimIndex unit. bridges.gd tick/on_destroyed -> SimIndex unit. ops_missions.gd _nearest_support -> SimIndex building + Subsets SUPPLY with lowest-id tie-break (same as old single scan).",
+    "tests/test_perf_systems.gd (3 tests): subsets vs reference full scan through spawns/deaths/index rebuild/restore; patrol-guard set; live-AI determinism + restore. --only: pass=3 fail=0 TESTS OK.",
+    "--only green: test_perf_systems 3/3, test_econ 15/15, test_ops 10/10, test_victory 13/13, test_mil 13/13, test_damage 10/10, test_save 6/6, test_determinism 5/5.",
+    "test_supply: 9/10, test_vehicle_burns_fuel_stops_at_zero_and_resupply_restarts_it fails (drove 4.61; resupply refuels the tank) IDENTICALLY in tree copy A2 with PERF5 originals restored -> pre-existing, not PERF5 (supply/movement owners).",
+    "HASH A/B (soak seed 1337, --max-ticks=3000, AI vs AI, same moment tree copies): A2 (PERF5 originals) = 598ce284ea2fdff2305df5c166fd1ca96d3563a06311263ecf3ee5e586951538, B (PERF5 changes) = 598ce284ea2fdff2305df5c166fd1ca96d3563a06311263ecf3ee5e586951538 -> IDENTICAL. (Earlier copy A, taken at start with older other-agent code: a9b4711a..., not comparable.)",
+    "CHANGE_REQUEST posted (board seq 872): world.gd units_of/buildings_of -> SimIndex loops."
+  ],
+  "remaining": [
+    "1. Collect bench A/B: ab.sh is still running in background at handoff time and writes C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/db91159d-f488-44a1-9b4e-0e72e30b8f1b/scratchpad/ab_out.txt (lines 'A2 b2k:', 'B b2k:', 'A2 b10k:', 'B b10k:' with the systems breakdown, plus LOAD lines = CPU load %). Raw outputs: same dir A2_b2k.txt, B_b2k.txt, A2_b10k.txt, B_b10k.txt. If missing/killed, rerun: bash .plan/hb.sh <id> <calls> <est> 'ab' -- bash <scratchpad>/ab.sh (it recopies the live tree into A2/B, restores originals from <scratchpad>/orig into A2).",
+    "2. Build the before/after per-system table (construction, production, gather, repair, orders, victory) at 2k river_crossing_s and 10k valley_conquest_l, stating CPU load (machine was at 100% load from other agents during the run).",
+    "3. Run the full suite once in hb.sh: bash .plan/hb.sh <id> <calls> <est> 'full suite' -- bash tests/run.sh ; expect test_supply's pre-existing failure (quote it).",
+    "4. Post done and final report. Report CONTRACT_DEVIATION: new file sim/systems/unit_subsets.gd (not in the owned list, no class_name, preload only)."
+  ],
+  "files_touched": [
+    "sim/systems/unit_subsets.gd (new)",
+    "sim/systems/construction.gd", "sim/systems/production.gd", "sim/systems/gather.gd", "sim/systems/repair.gd",
+    "sim/systems/orders.gd", "sim/systems/victory.gd", "sim/systems/territory.gd", "sim/systems/status.gd",
+    "sim/systems/damage.gd", "sim/systems/bridges.gd", "sim/systems/ops_missions.gd",
+    "tests/test_perf_systems.gd (new)"
+  ],
+  "test_state": "--only green for 8 files listed; test_supply 1 pre-existing failure; full suite NOT yet run.",
+  "gotchas": [
+    "SimIndex 'known' heuristic cannot detect a hand-inserted entity after destroys (size < known); no code does that (all ids from _new_id), so the test was dropped, not the helper changed.",
+    "ops.gd needed no change (no full scans). world.gd untouched (change request only).",
+    "Originals of the 12 owned systems are saved at <scratchpad>/orig/ for A/B."
+  ]
+}

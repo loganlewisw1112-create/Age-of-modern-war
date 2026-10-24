@@ -1,0 +1,33 @@
+{
+ "agent": "N1-core-3",
+ "gen": 3,
+ "reason": "token projection near 70% of 700k cap (est 60k + 5k/call) at ~60 calls",
+ "done": [
+  "Spike analysis: tools/scale_bench.gd --series (per-tick per-system ms, tick%8 phase table, 12 slowest ticks with every system >= 1 ms, spike-vs-rest excess, SimIndex sub-phase averages). 2k rc_s: tick%8==0 +33 ms, tick%4==0 +20 ms; combat is the largest and most variable (+25 ms on >=p95 ticks), fog every 4 ticks 10-16 ms (gather 6.7 + 2x blit 3.4), Tiers recompute + idx rebuild every 8 ticks 7.7 ms, Territory.recompute every 20 ticks 15-17 ms (MAP4 file). Posted to PERF4-3 (perf.spikes) and orch (perf.spike_territory).",
+  "CR 908 (PERF4-2): movement native gather honours Tiers.move_stride (REDUCED units skipped only when move_stride is true) -> test_supply fuel test green again.",
+  "rts_core 0.2.0 DLL (installed by build_native.sh --swap): RtsFog.stamp/explored_out (CR 890 API exactly) and RtsCombat.line_clear / line_clear_batch (exact Damage.line_clear port) / countdown. Facade NativeCore.new_fog(w) / new_combat(w) (null when native off or older DLL).",
+  "movement.gd publishes w.cache.unit_snap = {tick, ids, pos, complete} after every native tick (packed post-movement positions for other systems).",
+  "construction.gd building_at_cell: cached footprint occupancy keyed on [tick, next_id, entity count] (was a scan of every building per ring cell per re-path; production uses it per spawn too).",
+  "tests/test_native.gd: +test_native_los_parity, +test_native_fog_stamp_parity, +test_building_occupancy_cache_matches_scan; stride parity test forces Tiers.move_stride=true while it runs (12 tests).",
+  "Packaged load re-proven with the new DLL: NATIVE rts_core loaded (rts_core 0.2.0)."
+ ],
+ "remaining": [
+  "1. PERF4-3 adopts RtsFog in fog.gd and RtsCombat.line_clear_batch (LOS pre-pass for shooter/current-target pairs) in combat.gd; answer API questions on the board.",
+  "2. Movement stride bias (Tiers.move_stride stays false): find why the REDUCED stride path biases fights (PERF4 fightcmp.gd: side 0 loses its edge). Suspect: on non-stride ticks REDUCED units are left out of the separation batch, so FULL units pass through them; fix by keeping every unit in the batch with mov=0 for skipped REDUCED units (positions only) and re-run .plan/shots/PERF4/fightcmp.gd + fightcmp2.gd.",
+  "3. mv.gather is ~13 ms at 2k (about 6.5 us per unit of GDScript dict reads incl. Status.move_mult ~2 us); next lever is native-held paths (push on order_path/stop_path, per tick only path_i) or native-held positions.",
+  "4. mv.apply spikes (up to 25 ms) are repath bursts: up to PATH_BUDGET 40 A* per tick from stuck repaths; lowering the budget changes the test_mil queue test.",
+  "5. 2k p95 < 50 ms total is NOT met (rc_s 2k native avg 67.8 / p95 110.3 at CPU 73-100%); combat (PERF4-3) is the largest system.",
+  "6. Valley: with CR 908 (move_stride false) REDUCED units are gathered every tick: valley 10k mv.gather 58 ms (was 23.9 with the stride skip). Fixing the stride bias (item 2) and flipping Tiers.move_stride=true gets that back."
+ ],
+ "files_touched": [
+  "native/rts_core/src/fog.rs (new)", "native/rts_core/src/combat.rs (new)", "native/rts_core/src/lib.rs", "native/rts_core/Cargo.toml (0.2.0)",
+  "bin/rts_core.dll", "sim/native_core.gd", "sim/systems/movement.gd", "sim/systems/construction.gd",
+  "tools/scale_bench.gd", "tests/test_native.gd"
+ ],
+ "test_state": "--only runs green: test_native 12/12, test_econ 15/15, test_mil 13/13, test_core 9/9, test_g2_scenarios 7/7, test_supply 10/10, test_perf 5/5, test_determinism 5/5, test_save 6/6. Full shared-tree suite (bash tests/run.sh): RESULT pass=196 fail=0 files=22 time_ms=685584, TESTS OK.",
+ "gotchas": [
+  "Never instantiate tools/scale_bench.gd (extends SceneTree) from a probe: .new() runs its whole _init bench.",
+  "Timings on this PC swing 5-15x with other agents' godot runs (line_clear 8 vs 143 us/call in two runs); always report CPU load and godot process count with a number.",
+  "bin/rts_core.prev*.dll are renamed old DLLs still mapped by running godots; never commit them."
+ ]
+}

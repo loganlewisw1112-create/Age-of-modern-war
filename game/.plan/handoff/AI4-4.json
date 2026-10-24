@@ -1,0 +1,33 @@
+{
+  "agent": "AI4-4", "gen": 4, "status": "recycled at the 70% projection self-check (call 67: 60k+5k*67=395k +90k >= 490k)",
+  "done": [
+    "ai_mil.manage_production: the stage bank binds only the resources the item spends (same rule as U._bank_ok). Old all-resource check blocked every unit while the bank was short of ore (valley soak3 s2 Human B: 11900 cr idle at 31/65 pop waiting for 800 ore).",
+    "ai_army: decisive commit. massed(w,fid,st,ctx,army_pop) = own pop+queued >= 0.9*pop_cap_max with army_pop>=attack_pop, or army_pop >= 2*max(6,attack_pop). Latched at _launch into st.decisive (cleared when objective leaves attack). Decisive waves: reinforcements in blocks (need>=max(6,attack_pop/3); at the hard cap need<=6); _focus_hq: visible enemy HQ within 18, no armed building within 11, group pop >= 2x local foe pop -> whole wave 'attack' on the HQ.",
+    "ai_army: dry-ammo hold: launch skipped while faction ammo<20 and >=50% of the army is dry (st.dry_hold, logged once).",
+    "ai_army big maps (U.map_scale>1.2): launch thr = attack_pop * min(2.5, map_scale); all-in halving + no-regroup + 3-pop trickle now only on small maps (var trickle); big-map reinforcements need >= thr/2. --ailog showed valley v2 s2 Human A wave 3 (pop 9) fed by 4-6 unit trickles for 30k ticks.",
+    "tools/soak.gd: SOAK AIST line per alive AI each summary (objective, all_in, decisive, wave size, held, stock ammo/fuel, target); --ailog prints army log lines as AILOG f<id>.",
+    "tests/test_ai.gd: test_g3b_bank_per_resource_and_decisive_trigger (ore-free unit queued with an 800-ore bank and 0 ore; massed() thresholds)."
+  ],
+  "evidence": [
+    "test_ai on final code: RESULT pass=16 fail=0 files=1 time_ms=605020 / TESTS OK (.plan/shots/AI4-4/test_ai_v3.txt)",
+    "v1 (bank fix only): river s1 winner=0 end_tick=54604 hq_elimination; river s2 f0->8 at 36681, f0->9 at 92501, winner=0 end_tick=119597 hq_elimination; heartland s1 f0->9 at 48701 none; heartland s2 f0->9 at 45541 none; valley s1 f1->8 at 28881, f1->9 at 83881 none; valley s2 f1->8 at 35141, f1->9 at 100541 none",
+    "v2 (decisive, before big-map thr; river only completed, big maps killed): river s1 winner=0 end_tick=54604 hash=1fca6dca...; river s2 f0->8 36681, f0->9 92501, winner=0 end_tick=119597 hash=a3b6679f...",
+    "v3 (FINAL code, big maps only): heartland s1 none (hash 1e09b729...); heartland s2 none (5a72b92a...); valley s1 f1->8 32581, f1->9 89401, winner=0 end_tick=103073 hq_elimination (4160984e...); valley s2 f1->8 34201, f1->9 106601, none (f95fbe21...). Files .plan/shots/AI4-4/v3_*.txt",
+    "River soaks NOT re-run on the final big-map change (map_scale<=1.2 on river so the changed paths are inactive there, but unverified)."
+  ],
+  "remaining": [
+    "1. heartland s2 (v3): Human B at 116/120 pop, decisive wave ag=55 + held=44, faction ammo 0, 37/93 dry, Human A down to 3 pop but HQ alive. Ammo starvation: B ore 69, spent ore on 7 b_jammer_truck + vehicles. Fix idea: in ai_mil.manage_production, while stock ammo < AMMO_FLOOR, skip items costing ore unless ore - cost >= 2 refinery cycles (40) or the category is antitank vs seen armour; cap EW (jammer) count (ai_stage stage_shares 'ew').",
+    "2. valley s2 / heartland s1: decisive waves regroup at 'down to 9 of 25' at the enemy base, 70-97 regroups. Idea: a decisive wave that is committed (within COMMIT_DIST of target / HQ visible) does not regroup unless group pop < local foe pop; also include held units that refilled within RESUPPLY_TIMEOUT.",
+    "3. Re-run all 6 soaks on final code in background (bash .plan/shots/AI4-4/soaks.sh <tag>; MAPS=... EXTRA=--ailog env supported): river s1/s2 must stay winners.",
+    "4. Full suite once at the end in .plan/hb.sh (not run by AI4-4)."
+  ],
+  "files_touched": ["sim/ai/ai_mil.gd", "sim/ai/ai_army.gd", "tools/soak.gd", "tests/test_ai.gd"],
+  "test_state": "test_ai --only 16/16 TESTS OK on final code. Full suite NOT run by AI4-4.",
+  "gotchas": [
+    "The Edit tool rewrites CRLF files as LF; harmless (.gitattributes eol=lf, git diff stays small). Python edits in this session preserved CRLF.",
+    "Budget: 60k+5k/call estimate hits the 70% projection at ~67 calls; soaks take ~20-25 min wall each batch, so plan at most 2 soak batches per agent.",
+    "Godot loads scripts at start: editing AI files while soaks run is safe; kill only your own runs by filtering command line on --ailog.",
+    "attack_pop (normal) is ~11-15, so massed (2x) is true for most mid/late waves."
+  ],
+  "change_requests": []
+}

@@ -1,0 +1,30 @@
+{
+  "done": [
+    "presentation/hud/g3b_data.gd (new): maps.json/research.json readers (Content.table fallback to direct JSON), map picker rows, playable stages, advancement ids, lock_reason/production_lock ('Requires Stage N', 'Requires research: X')",
+    "presentation/menu/skirmish_setup.gd: per-slot Stage OptionButton 'Slot<i>Stage' (stages.json playable_now), set_stage(), slot_stage(), describe() shows Stage per side",
+    "presentation/menu/main_menu.gd: 'MapOption' map picker (size, w x h, max sides; maps missing from maps.json disabled), 'AdvancementOption' (Free/Standard/Simulation), global stage dropdown removed, max_sides check, summary shows map + advancement + 'Stages 7/8/9'",
+    "presentation/main.gd: --autostart-map (alias --map), --autostart-stages=7,8,9 (adds AI sides if needed), --autostart-advancement; pt.stages_flow from --ui-playtest-stages",
+    "presentation/hud/g3b_stage.gd (new): StagePanel (left, y=196): stage name, gate checklist from Progression.gate_report ([x]/[ ] have/need), AdvanceStageButton (enabled only when all gates ok AND preview_command advance_stage == ''), transition countdown + bar, research status + bar, StageToast on StageAdvanced, alerts on ResearchCompleted",
+    "presentation/hud/hud.gd: wires g3b_stage; research card on research buildings (buttons 'Research_<pid>' send {type:research, project, building_id}; 'ResearchCancel' sends {type:research, cancel:true}); build/train buttons disabled with stage/research lock reasons",
+    "presentation/view/camera_rig.gd: map-scaled zoom_min (0.5@96, 0.3@160, ~0.19@256), edge_pan_speed() (900*sqrt(span/96))",
+    "presentation/hud/minimap.gd: LA8 fog rebuilt in 4 row chunks, full redraw throttled to ~6 Hz when >1500 entities, camera rect on per-frame child overlay",
+    "tools/ui_playtest.gd: --ui-playtest-stages flow (_setup_stages_menu + _stages_flow); map-centre goal instead of hard-coded (48,48); officer mission goal map-relative when map.w != 96"
+  ],
+  "remaining": [
+    "1. Re-run the 3 existing faction playtests and confirm 37/37 each: $G --path . -- --ui-playtest=<dir> ; same with --ui-playtest-faction=human_b and =machine (wrap in .plan/hb.sh). NOT RUN after UI4 edits.",
+    "2. Run full suite once: bash .plan/hb.sh <id> ... -- bash tests/run.sh ; paste final lines. NOT RUN.",
+    "3. View .plan/shots/UI4/pt_stages/ui_g3b_research_card*.png and ui_g3b_stage_panel*.png for layout (stage panel vs alerts overlap, research card fit in 5-col grid). Not viewed.",
+    "4. Windowed check of camera/minimap on valley_conquest_l: $G --path . -- --autostart --autostart-map=valley_conquest_l --autoshot=<abs>.png --autoshot-delay=5",
+    "5. R4 change_request (posted seq ~501): match_view edge pan should use camera.edge_pan_speed(). Check whether R4 applied it.",
+    "6. Optional: swap G3bData.lock_reason for Progression.unavailable_reason(w, fid, d) (STG4 single source) in hud._build_reason / train state."
+  ],
+  "files_touched": ["presentation/hud/g3b_data.gd", "presentation/hud/g3b_stage.gd", "presentation/hud/hud.gd", "presentation/hud/minimap.gd", "presentation/menu/skirmish_setup.gd", "presentation/menu/main_menu.gd", "presentation/main.gd", "presentation/view/camera_rig.gd", "tools/ui_playtest.gd"],
+  "test_state": "bash tests/run.sh --only=test_ui3 -> pass=7 fail=0 TESTS OK; --only=test_hud -> pass=4 fail=0 TESTS OK (both before the playtest/stages edits). --ui-playtest-stages windowed run: 'PLAYTEST RESULT pass=53 fail=0' on industrial_heartland_m, stages [7,8,9], research_station built, integrated_manufacturing started by click, gates=6 rows=6, advance disabled. Log: .plan/shots/UI4/pt_stages.log. Existing 3 faction playtests and the full suite NOT run.",
+  "gotchas": [
+    "Any in-progress STG4/MAP4 parse error (progression.gd, sim/maps/*.gd) breaks main.gd compile, so the windowed game/playtest fails; just rerun once they fix it.",
+    "maps.json lists max_sides 4 for every map (4 slots in setup).",
+    "Research progress is a 0..1 fraction (progression.gd); cancel is a full refund and loses progress.",
+    "Research building hotkey remapped by G3.build_hotkey (research_station got K, not R).",
+    "UI4 owns no test file; presentation tests (test_ui3/test_hud) are UI3-era files."
+  ]
+}

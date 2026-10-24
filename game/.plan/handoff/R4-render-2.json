@@ -1,0 +1,58 @@
+{
+  "agent": "R4-render-2",
+  "gen": 2,
+  "reason": "budget.handoff directive from coordinator (projected 420k of 600k) at ~55 tool calls",
+  "done": [
+    "PRIORITY FIX: presentation/view/fog_layer.gd shader used TEXTURE inside a helper function (SHADER ERROR, black map). Now samples a declared uniform vis_tex (set via set_shader_parameter). Verified: .plan/shots/R4-render/fogfix_start.png (HQ visible, soft fog edge, unexplored black), no SHADER/SCRIPT errors in log. Board fact fog_shader.fixed posted (seq 617).",
+    "Per-node profiler: view_util.gd gains static prof_on/prof/prof_add(); every owned _draw is wrapped (_draw -> _draw_body) in entity_layer, overlay_layer, fx_layer, fog_layer, g2_overlay, g3_view. match_view flags: --prof prints 'PROF frame= sim= measured= other= d_*= p_*=' (ms per frame) each second; --prof-hide=g2,g3,ring,over,fx,fog,ent,terrain,hud (ablation) and --prof-hide=hud/<script.gd> (hides HUD sub-nodes by script, prints PROF_HIDE <path>).",
+    "First profile (2000 units, sim paused, river_crossing_s, native=on, CPU 100% / 12 godot procs): 19.2 fps avg; d_g2_over 9-11 ms, d_g3 9.5-11 ms, d_ov_over 4-5 ms, p_ent 9-10 ms, other 12-15 ms.",
+    "entity_layer.gd now publishes per-frame visible lists: vis_units (unit dicts on screen passing fog rules), vis_sp (interpolated ground screen pos), vis_air (indices of air units, per-def cache), vis_bld (visible non-ghost buildings). Unit hot path: owner read directly, _push inlined after _reserve(), far LOD skips interpolation. Far LOD (zoom < 0.45) reuses the last draw list and skips queue_redraw when [tick, canvas transform, viewport size, fog rebuilds, entity count, memory size] is unchanged (counter: skipped).",
+    "g3_view.gd: air shadows drawn from entity_layer.vis_air/vis_sp; recharge radii loop only when a hub or energy unit is selected (uses w.buildings_of(pf)). _draw_shadow(e, p) signature changed.",
+    "g2_overlay.gd: unit status markers iterate entity_layer.vis_units only; status bits cached per sim tick (_status_bits: 1 smoke, 2 pinned, 4 supp, 8 cover, 16 broken); radius cache; far LOD drops per-unit status markers.",
+    "overlay_layer.gd: _draw_bars iterates vis_units/vis_bld with a selection set (was every entity x selection.has); radius cache; far LOD draws unit bars for the selection only.",
+    "match_view.gd: entity_at() cheap world-space reject (|dx|+|dy| > 6 tiles) before entity_visible/Content lookups: this was the dominant HUD cost (HUD hover calls get_hover_info at 5 Hz; full scan of 10k units). UI4 CR applied: edge/keyboard pan uses camera.edge_pan_speed() when available. Sim catch-up stops once SIM_FRAME_BUDGET_US (34 ms) of sim was spent this frame (always >= 1 step): 2000-unit fight frames went from 400-530 ms to 120-180 ms; same step sequence, so outcomes unchanged. Spawn test ring cap scales with n (40 + per/50) so --spawn-test=10000 really places 5000+5000 (prints SPAWN_TEST side X placed N).",
+    "Board: change_request to UI4-2 for minimap.gd (posted); fact perf.sim_bound to N1-core/PERF4 (posted)."
+  ],
+  "fps_numbers": {
+    "2000_paused_normal_before_this_gen": "FPS_SUMMARY avg 19.2 min 17.1 max 22.5 (CPU 100%, 12 godot procs, native=on, river_crossing_s 96x96, 1600x900 windowed, --no-vsync)",
+    "2000_paused_normal_after_overlay_rewire": "avg 59.5 min 51.7 max 74.9; PROF frame 16-19 ms: p_ent 7.4-8.4, d_g2_over 3.1-3.8, d_ov_over 1.1-1.25, other 3.7-4.8 (CPU 20%, 8 procs, native=on)",
+    "2000_paused_normal_HUD_hidden": "avg 86.1 min 70.7 max 96.9; frame 10.3-10.9 ms (same load) -> HUD ~6 ms/frame at 2000 (measured BEFORE the entity_at fix; not re-measured since)",
+    "2000_paused_normal_after_g2_status_cache": "avg 77.4 min 70.7 max 87.2; frame 12.9-14.2 ms: p_ent 7.4-8.2, d_g2_over 0.6, d_ov_over 1.0-1.2 (CPU 49%, 6 procs, native=on)",
+    "2000_paused_mid_zoom_0.6": "avg 59.7 min 46.1 max 77.7; frame 15.4-18.6 ms, p_ent 8.5-9.8, drawn 1305 (CPU 49%, 6 procs, native=on)",
+    "10000_paused_far_zoom_0.3_valley_conquest_l_before_fixes": "7609 units placed (old ring cap): avg 43.8 min 29.3; d_ov_over 4.4-4.5, d_g2_over 3.2-3.4, other 13-15 ms (CPU 49%)",
+    "10000_paused_far_with_HUD_before_entity_at_fix": "10012 units: avg 30.6 min 20.1 max 51.7 (CPU 74%, 4 procs); HUD hidden: avg 121.2 min 94.9",
+    "10000_paused_far_FINAL": "avg 171.4 min 153.7 max 190.5, frame 5.9-6.3 ms, drawn 6411, p_ent 0.03 (list reused), draw_calls 49 (CPU 23%, 6 procs, native=on). Minimap hidden: avg 449.7 -> minimap ~3.5 ms/frame (CR to UI4-2).",
+    "2000_fight_sim_running_before_budget": "avg 7.5 fps, frames 330-530 ms, sim 300-470 ms/frame (3-4 steps/frame) (CPU 29%, 12 procs, native=on)",
+    "2000_fight_sim_running_after_budget": "avg 8.3 min 7.5 max 9.2, frames 123-177 ms of which sim 96-144 ms (one step ~100-140 ms), render ~11-13 ms, other 14-20 ms (snapshot + events + HUD) (CPU 15%, 6 procs, native=on). SIM-BOUND: game runs at ~8 ticks/s.",
+    "500_fight_sim_running": "avg 117.3 min 65.7 max 147.6, sim ~3-4 ms/frame (~20-28 ms/tick), frame 7-8 ms (CPU 15%, 6 procs, native=on)",
+    "note": "proc_ms (Performance.TIME_PROCESS) does not match per-frame time (e.g. 52 ms at 430 fps); use PROF frame/measured instead."
+  },
+  "remaining": [
+    "1. The shared tree is CURRENTLY BROKEN by another agent: 'Parse Error: Identifier \"MapGen\" not declared in the current scope' at res://sim/ai/ai_util.gd:356 (AI4, from MAP4's spawn_of CR), cascading to ai_controller.gd/world.gd/construction.gd. The after_far autoshot hit this (141 script errors), so after_far.png is invalid. Wait for AI4/orch to fix (or test in a scratch copy) before any further runs.",
+    "2. Parity: .plan/shots/R4-render/before_normal.png (pre-R4 commit 7f3f604, scratch copy at <scratchpad>/before/game with r4proj's .godot import cache) and after_normal.png / after_mid.png were taken (rc=0, 0 errors) but NOT YET VIEWED. View them with Read and compare team colours, facings, walk anim, selection rings, HP bars, wrecks, ghosts, fog edges, decor y-sort, air lift + shadows. Re-take after_far once the tree compiles: <scratchpad>/shots.sh (edit to run only the far line).",
+    "3. Run tests: bash tests/run.sh --only=<relevant> (test_ui_*/playtest-related if any) then the full suite inside .plan/hb.sh. NOT RUN by R4-render-2. No test references entity_layer/overlay internals (predecessor grep); g3_view._draw_shadow signature changed (only g3_view calls it; grep to confirm).",
+    "4. Re-measure 2000 paused normal with HUD (post entity_at fix) to give UI4-2 an updated HUD number: perf.sh n2k_final 60 --spawn-test=2000 --sim-paused --no-vsync --fps-log --fps-quit=12 --prof and the same with --prof-hide=hud. Use --prof-hide=hud/minimap.gd etc. to name other HUD costs.",
+    "5. Optional (not started): native draw-list builder proposal to N1-core. p_ent is 7-10 ms at 2000 units with ~1100-1300 on screen (GDScript per-entity loop) -- about half of a 60 fps frame. Post to N1 via board only if the owner still needs 60 fps at 2000 on screen once the sim is fast; the current 60 fps blocker is the sim (~100-140 ms per world.step at 2000 fighting).",
+    "6. Brief step 6 (world.step on a worker thread with a snapshot) NOT started. Evaluated: HUD, minimap, entity layer and input all read live world dicts, so it needs a full render snapshot; and a 110 ms tick would still run the game at ~0.45x speed. Recommend sim-side work (N1/PERF4) first.",
+    "7. Industrial_heartland_m / valley lazy terrain while panning (no hitches, chunks <= 56) and bridge rebake on lazy maps: not verified.",
+    "8. Final: full suite TESTS OK in hb.sh, post done, final report."
+  ],
+  "files_touched": [
+    "presentation/match_view.gd",
+    "presentation/view/entity_layer.gd",
+    "presentation/view/fog_layer.gd",
+    "presentation/view/fx_layer.gd (prof wrapper only)",
+    "presentation/view/overlay_layer.gd",
+    "presentation/view/g2_overlay.gd",
+    "presentation/view/g3_view.gd",
+    "presentation/view/view_util.gd (prof helpers)"
+  ],
+  "test_state": "NOT RUN (tests/run.sh never executed by R4-render-2). Windowed runs of the shared tree loaded with 0 SCRIPT/SHADER errors up to the parity shots; the last run (after_far) failed on AI4's ai_util.gd:356 MapGen parse error, not an R4 file.",
+  "gotchas": [
+    "perf helper: <scratchpad>/perf.sh <label> <timeout_s> <args...>; logs <scratchpad>/perf_<label>.log; grep '^PROF' and '^FPS ' / FPS_SUMMARY. Machine load: powershell (Get-CimInstance Win32_Processor).LoadPercentage + count of Godot processes; state it with every number.",
+    "Overlays now depend on entity_layer.vis_* lists being rebuilt in MatchView._process before the draws; at far LOD the lists persist between rebuilds (positions un-interpolated, consistent with the icons).",
+    "g2_overlay status bits are cached per world.tick: anything that changes pinned/supp/cover/broken/comp outside world.step() would show one tick late.",
+    "Editing these files with python: use r'''...''' strings (a backslash line continuation in g2_overlay broke a non-raw replace). Files are LF.",
+    "HEAD moved to 61e41bf (orch commits); 7f3f604 is the last commit with the old Sprite2D renderer."
+  ]
+}

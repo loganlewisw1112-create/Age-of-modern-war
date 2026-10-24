@@ -1,0 +1,59 @@
+{
+  "agent": "R4-render",
+  "gen": 1,
+  "reason": "budget.handoff_now from coordinator (projected 450k of 600k) at ~50 tool calls",
+  "done": [
+    "Baseline measured with the OLD Sprite2D renderer (machine loaded by 5 other agents; --spawn-test=N --sim-paused --no-vsync --fps-log, 1600x900, native n/a): 1000 units 18-28 fps (~22 typical), view ~20 ms/frame; 2000 units 7.7-9.0 fps, view ~48 ms/frame plus ~70 ms outside view. Old terrain bake 36 chunks 647-739 ms.",
+    "presentation/view/batch_atlas.gd (NEW): dynamic 2048x2048 RGBA8 atlas pages, shelf packer, add(key,img), page_of/rect_of, flush() uploads dirty pages once per frame.",
+    "presentation/view/batch_art.gd (NEW): entity -> atlas region resolver. Same frame choice as ArtCatalog.entity_sprite (fire / walk_a+walk_b / move, facing row, ph = floor(t*6 + id*0.37)). Units use the team-tinted SHEET from ArtCatalog._sheet; buildings/resources/wrecks/rubble go through resolve_static (cached by def|colour|state); missing art falls back to ViewUtil.fallback_sprite. The per-id cache _ec is read directly by entity_layer (unit cache = [def, owner, page, origin, fw, fh, -pivot, fire, walk, wa, wb, mv, is_air]; page -2 means fallback).",
+    "presentation/view/lod_icons.gd (NEW): far-zoom icons per class (infantry/vehicle/air), tinted by modulate. Reads optional manifest block lod_icons {<faction_def or *>: {<class>: {file, pivot}}} (format posted to ART4 on the board, seq 509). Until then it draws a procedural dot (air = diamond).",
+    "presentation/view/entity_layer.gd (REWRITTEN): one CanvasItem. Decor is bucketed into 16x16-cell chunks with screen bounds. Each frame: view-rect cull (MARGIN 220), inline interpolation from mv._prev_pos/_alpha, fog rules unchanged (enemy units only on visible cells incl. ally vision; enemy buildings while visible, else remembered greyed; wrecks once seen; resources once explored; ghosts of destroyed remembered buildings). Y-sort via PackedInt64Array keys (layer*2^44 + (y+65536)*2^22 + idx) with native sort(); layer 1 = air (lifted by G3View.air_lift), layer 2 = far icons. LOD: zoom < 0.8 -> lod 1 (mid), < 0.45 -> lod 2 (far icons). Public: lod, drawn, decor_count, setup, refresh, on_destroyed.",
+    "presentation/view/terrain_layer.gd (REWRITTEN): maps with <= 64 chunks (96x96 = 36) are baked eagerly, with identical output to before. Larger maps are lazy: a low-res base (1 texel per cell, iso transform, linear filter) plus chunks near the view baked on WorkerThreadPool (max 3 pending, results via mutex), LRU eviction past 56 chunks, and the base only at zoom < 0.45. Tile images are prefilled on the main thread for codes 0..15 (MAX_CODE). Chunk sprites are forced to TEXTURE_FILTER_NEAREST. New tick() is called each frame. rebake_cells kept (also updates the base on lazy maps).",
+    "presentation/view/fog_layer.gd (REWRITTEN): the visible/explored byte arrays upload straight into two L8 textures (Image.set_data, no per-cell loop). A canvas shader does manual bilinear between cell centres of alpha (visible 0, explored 120/255, unexplored 1), matching the old LA8+linear look. It re-uploads only when an array changes.",
+    "presentation/view/fx_layer.gd: var lod (set by MatchView), view culling in _draw, lod>=1 drops muzzle/explosion_small/small smoke (not created in on_shot either), lod 2 also drops tracers; var drawn.",
+    "presentation/view/overlay_layer.gd: _draw_bars culls to the camera view.",
+    "presentation/match_view.gd: new flags --map=<id> (regenerates the fresh world with cfg.map when tick==0 and the map differs, printing 'MAP --map=... WxH'), --zoom=<f> (sets camera.zoom directly, bypassing the clamp), --fps-quit=S (prints FPS_SUMMARY avg/min/p10/max, skipping the first 3 samples, then quits). The FPS line gains ent_ms, proc_ms, draw_calls, zoom, lod, drawn, native (on/off/na via sim/native_core.gd available()), map. Spawn-test now centres the camera on the player's units (_center_on_spawn_test). terrain_layer.tick() and fx_layer.lod = entity_layer.lod are called in _process.",
+    "NEW renderer measured (scratch copy of HEAD + my files, same flags; machine still loaded): 1000 units ~27-33 fps, view ~9 ms/frame, drawn=623; 2000 units FPS_SUMMARY avg 15.4 (min 14.6, max 17.4), ent_ms 10-12.6 ms/frame, draw_calls=50 (batching works), drawn=1123, native=na. With UI4's g2_ground/g2_over/g3_ground overlays hidden (hack copy only): 2000 units avg 20.4 fps, so those overlays cost ~15-20 ms/frame at 2000 units. The remaining ~30+ ms/frame is outside R4 files (HUD/minimap/g3_score each iterate all entities per frame; proc_ms 73-102)."
+  ],
+  "remaining": [
+    "1. Check the shared tree compiles. When R4 stopped, the full tree had OTHER agents' parse errors: res://sim/maps/map_check.gd failing to preload from sim/map_gen.gd:26 (MAP4), and sim/systems/progression.gd:191 'Cannot infer the type of is_active' (STG4). Until those are fixed, test in a scratch copy: git archive HEAD game | tar -x -C <scratch>; copy the 9 R4 files in; run godot --headless --path <scratch>/game --import (scratch only, never the shared tree).",
+    "2. Run bash tests/run.sh --only=<relevant> and then the full suite in .plan/hb.sh. R4 has NOT run tests at all yet. No test references entity_layer/terrain_layer/fog_layer internals (grep checked), but tools/ui_playtest.gd and HUD use match_view's public API, which is unchanged.",
+    "3. Visual parity: take before/after autoshots at normal zoom into .plan/shots/R4-render/, e.g. --autoshot=<abs>.png --autoshot-delay=4 --autostart, with --demo-script=combat and --spawn-test=200. Compare: team colours, facings, walk anim, selection rings, HP bars, wrecks, ghosts greyed, fog edges, decor trees y-sorted with units, air units lifted above shadows. Also screenshot zoom 0.6 (mid) and --zoom=0.3 (far icons). None of this has been verified visually yet.",
+    "4. Further CPU work in entity_layer.refresh (ent_ms ~10-12 ms at 2000 units with ~1000 on screen): the unit hot path is already inlined. Next candidates: (a) skip G3View.air_lift unless c[12]; already done; (b) iterate only units in the view: if N1's RtsGrid/native facade exposes a query, use it, otherwise keep a coarse per-chunk id bucket refreshed each sim tick; (c) at far LOD rebuild the icon list only once per sim tick (canvas items keep their commands, so skip queue_redraw between ticks).",
+    "5. Post CHANGE_REQUESTs to UI4 (board + report): presentation/view/g2_overlay.gd _draw_unit_status and g3_view.gd _draw iterate all w.entities every frame. Cull by the camera view first (e.g. check has_point on a cheap screen pos before any Content lookup), or reuse entity_layer's per-frame visible list. minimap.gd already throttles redraws for big worlds; check hud.gd/_process and g3_score.gd (iterates entities) for per-frame full scans. Also camera_rig.gd ZOOM_MIN 0.5 needs lowering (e.g. 0.2-0.3 on m/l maps) so players can reach far LOD (< 0.45); the --zoom flag bypasses it for perf runs.",
+    "6. When MAP4 lands content/maps.json + industrial_heartland_m / valley_conquest_l: run --map=valley_conquest_l (256x256) to verify lazy terrain (TERRAIN 'lazy base +' line, no frame hitches while panning, chunk count <= 56) and fog. Then do 10,000 units at --zoom=0.3 with --sim-paused, and with the sim running once N1's native movement lands. Fill the fps tables (60+ fps target with 2,000 on screen; 30+ fps zoomed out with 10,000) and say native on/off for each.",
+    "7. Step 6 of the brief (world.step() on a worker thread with a snapshot) has not been started. Measure with N1's native first.",
+    "8. A G2 bridge rebake on lazy maps re-bakes only chunks that are already resident; check the base-texture update path once a big map has a bridge.",
+    "9. Final: full suite TESTS OK in hb.sh, post done, write the report with raw outputs."
+  ],
+  "files_touched": [
+    "presentation/match_view.gd",
+    "presentation/view/entity_layer.gd",
+    "presentation/view/terrain_layer.gd",
+    "presentation/view/fog_layer.gd",
+    "presentation/view/fx_layer.gd",
+    "presentation/view/overlay_layer.gd",
+    "presentation/view/batch_atlas.gd (new)",
+    "presentation/view/batch_art.gd (new)",
+    "presentation/view/lod_icons.gd (new)"
+  ],
+  "test_state": "NOT RUN. tests/run.sh has not been executed against these changes. The windowed perf runs in the scratch copy loaded with no SCRIPT ERROR / Parse Error lines from R4 files (grep of the logs for b2000/a2000/new1000/new2000). The shared tree fails to compile because of other agents' in-progress files (see remaining step 1). New .gd files have no class_name, so no --import is needed. They will need .uid files generated by the orchestrator's import.",
+  "fps_numbers": {
+    "old_1000_sim_paused": "18-28 fps (typical ~22), view_ms_per_s 442-496 (~20 ms/frame)",
+    "old_2000_sim_paused": "7.7-9.0 fps steady, view_ms_per_s 403-441 (~48 ms/frame)",
+    "new_1000_sim_paused": "27.0-32.9 fps, view_ms_per_s 261-282, drawn 623",
+    "new_2000_sim_paused_after_inlining": "FPS_SUMMARY avg 15.4 min 14.6 max 17.4; ent_ms 10.0-12.6; draw_calls 50; proc_ms 73.7-95.8; drawn 1123",
+    "new_2000_with_ui4_g2_g3_overlays_hidden (pre-inlining)": "avg 20.4 min 18.6 max 21.8",
+    "conditions": "Windowed 1600x900, --no-vsync, sim paused, native=na, 96x96 river_crossing_s, Radeon 760M, 5 other agents running at the same time (numbers are noisy and probably low)"
+  },
+  "gotchas": [
+    "Never run the shared tree's godot --import. Use a scratch copy for testing while other agents' files don't compile.",
+    "perf helper script: <scratchpad>/perf.sh <label> <timeout_s> <args...> with PROJ=<project dir>. Logs go to <scratchpad>/perf_<label>.log. Grep FPS_SUMMARY / '^FPS ' only: the logs carry many harmless 'Loaded resource as image file' warnings.",
+    "draw_texture_rect_region with atlas pages batches: 50 draw calls at 2000 units. The remaining cost is GDScript per-entity work and other nodes' _draw/_process, not GPU.",
+    "Terrain layer's own texture_filter is set LINEAR for the base on lazy maps, so chunk Sprite2Ds explicitly set NEAREST. Keep that if editing.",
+    "entity_layer reads mv._alpha, mv._prev_pos and mv._ally_fids directly (match_view internals, same owner).",
+    "batch_art calls ArtCatalog._sheet/_image (underscore statics in presentation/art/art_catalog.gd, not R4-owned). If ArtCatalog changes those names, batch_art breaks.",
+    "Units' e.firing / e.moving / e.facing are accessed directly (always present in world.spawn_unit dicts).",
+    "board post.mjs rejects data with bare JSON arrays inside nested values that aren't valid JSON. Quote carefully."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "agent": "ART4", "gen": 1, "calls_used": 35, "tokens_used_est": 300000,
+  "done": [
+    "tools/art/g3b_lib.gd: generic sheet builder G.sheet(out,def,spec,draw_callable,legged,wreck), G.air (air/altitude/bob/shadow fields like m_drone), G.shadow_blobs, G.icon_unit/icon_building (fx_ui 32x32 look, accent ''/'b'/'m'), shapes dish/pulse/whip/lattice/flash",
+    "tools/art/g3b_human_a.gd: a_old_tank, a_guided_arty, a_ew_truck, a_uav (air, no wreck) - contact sheet viewed OK",
+    "tools/art/g3b_human_b.gd: b_field_gun, b_radar_aa, b_jammer_truck, b_guided_battery - contact sheet viewed OK (field-gun crew are tiny blobs; acceptable, could be improved)",
+    "tools/art/g3b_machine.gd: m_siege_crawler, m_swarm (air, no wreck), m_ew_node, m_lancer (foot -> infantry section, LFRAMES, legged:true, wreck) - contact sheet viewed OK; wrecks drawn cold (no cyan)",
+    "tools/art/g3b.gd: entry module; builds HA/HB/MA and icons for all 12 unit ids (production ids == unit ids per STG4 stg4.data_ready). BUILDING_ICONS is empty until buildings exist",
+    "tools/art/g3b_contact.gd: QA tool (extends SceneTree, NOT a gen_art module): godot --headless --path . -s tools/art/g3b_contact.gd -> .plan/shots/ART4/units_{human_a,human_b,machine}.png, buildings.png, decor.png, icons_lod.png. Runs in ~3 s.",
+    "Board: art.g3b_units fact (move_class assumptions) - matches STG4's content/units.json exactly (checked). MAP4 accepted decor ids (seq 493). R4 gave lod_icons format (seq 509)."
+  ],
+  "remaining": [
+    "1. tools/art/g3b_bld.gd: 5 buildings, states built/build_0/build_1/build_2 (+_mask), manifest.buildings[def] = {size, pivot, states} exactly like buildings.gd build(); canvas w=size*64+12, o=(w/2, top+size*16), h=o.y+size*16+6. Sizes from content: research_station 2 (human_a), comms_tower 1 (human_a), b_drafting_office 2 (human_b), b_signal_mast 1 (human_b), m_compute_node 2 (machine). Easiest: copy the draw() skeleton of buildings.gd (A), faction_b_bld.gd (B, uses R=faction_b_bdress dress(cv,o,def,role,p,r,col), _girders, BLD._scaffold) and faction_m_bld.gd (M, BD=faction_m_bdress; hologram lattice for raw states) but with your own parts lists; generic roles 'main'/'brick'/'shed'/'hall' get dressed. Add dish (G.dish) on research_station, lattice masts (G.lattice) + whips on comms_tower / b_signal_mast. Machine buildings need >=3 cyan pixels when built (test_art_machine) and 3 distinct construction looks; team mask must change the look (flag/team panels).",
+    "2. In g3b.gd: preload g3b_bld (and decor/lod), call build, set BUILDING_ICONS = {research_station:'', comms_tower:'', b_drafting_office:'b', b_signal_mast:'b', m_compute_node:'m'}.",
+    "3. tools/art/g3b_decor.gd: manifest.poi_decor[id] = {file:'decor/poi_<id>.png', pivot:[x,y] footprint-centre ground point, footprint:[w,h], flat:bool}. Ids agreed with MAP4 (seq 493): rail_ew, rail_ns, rail_x (1x1 flat), factory_block (3x3), refinery_tanks (2x2), ruined_plant (3x3), dam_ew (1x1), tunnel_portal (2x2, opening faces +y), airfield_tarmac + airfield_tarmac_mark (1x1 flat), hangar (3x2), plus town_house (2x2) MAP4 asked for. MAP4 placement: w.map.decor=[{id, cell top-left}]. Do NOT touch the existing manifest.decor (rock/tree lists). Post fact art.poi_decor_ready to MAP4+UI4/R4 with the manifest shape.",
+    "4. tools/art/g3b_lod.gd per R4 (seq 509): manifest key 'lod_icons' = {'*': {infantry|vehicle|air|building: {file:'icons/lod_<class>.png', pivot:[cx,cy]}}}; white/greyscale ~12-16 px glyphs with a dark 1px outline (R4 tints via modulate); brief also asks for light/heavy vehicle + artillery classes and a dot - add them as extra classes (vehicle_light, vehicle_heavy, artillery, dot) but keep the 4 R4 keys. g3b_contact._icons() currently reads manifest 'lod'.icons - update it to lod_icons['*'].",
+    "5. Append preload('res://tools/art/g3b.gd') at the END of MODULES in tools/gen_art.gd (append only; after fx_g2). g3b.gd only get-or-creates sections, so order after fx_ui is safe (fx_ui merges icons since ORCH fix seq 337).",
+    "6. Post fact art.gen_lock {by}, run: godot --headless --path . -s tools/gen_art.gd ; then art.gen_unlock. NOTE: regenerating rewrites all files; existing test_art/test_art_machine determinism tests compare shipped md5s to regenerated output, which is fine since earlier modules are deterministic.",
+    "7. tests/test_art_g3b.gd (extends res://tests/test_base.gd, see test_art_machine.gd for helpers): every unit/building whose id is in the G3b lists (use Content fields: stage_min 9 or the stg4 list via faction + manifest presence; avoid hard-coding where possible) has manifest entry, files exist, sheet size == fw*frames x fh*8, icons 32x32, air units have shadow fields, poi_decor files exist with sane sizes, lod_icons has the 4 classes, g3b module regenerates byte-identically and matches shipped md5s.",
+    "8. bash tests/run.sh --only=test_art_g3b, --only=test_art, --only=test_art_machine; then full suite inside .plan/hb.sh. Contact sheets via g3b_contact.gd, view with Read. Post done."
+  ],
+  "files_touched": ["tools/art/g3b_lib.gd", "tools/art/g3b_human_a.gd", "tools/art/g3b_human_b.gd", "tools/art/g3b_machine.gd", "tools/art/g3b.gd", "tools/art/g3b_contact.gd", ".plan/shots/ART4/*.png"],
+  "test_state": "No tests written or run yet. gen_art.gd MODULES not yet edited; assets/generated not regenerated, so the game currently has NO art for the 12 new units (test_art test_faction_coverage / test_art_machine will fail on the new defs until step 5-6 run). The g3b modules compile and render (contact tool ran clean).",
+  "gotchas": [
+    "Legged frame indices: idle 0, walk_a 1, walk_b 2, fire 3 (WK._rail flashes on f==3). Vehicle: idle 0, move 1, fire 2.",
+    "Air units: G.sheet(..., legged=false, wreck=false) then G.air(); test requires the second-to-last pixel row of the frame to be empty (no baked shadow) - keep bodies above pivot+fh-3.",
+    "Machine wrecks must have zero cyan: pass wreck/dead flags to L.seam/L.eye/L.hex_plate.",
+    "Lambdas with multi-line bodies inside call parentheses work (used in g3b_human_b._truck).",
+    "Board is .plan/board.jsonl; ART4 holds no art.gen_lock."
+  ]
+}

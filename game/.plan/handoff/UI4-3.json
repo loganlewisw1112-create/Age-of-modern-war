@@ -1,0 +1,27 @@
+{
+  "done": [
+    "Compiled HUD throttle edits from UI4-2: bash tests/run.sh --only=test_hud -> 'RESULT pass=4 fail=0 ... TESTS OK'; --only=test_ui3 -> 'RESULT pass=7 fail=0 ... TESTS OK'",
+    "Playtests after throttles + R4 fog fix (board fact fog_shader.fixed seq 617; no SHADER ERROR in my logs): human 'PLAYTEST RESULT pass=33 fail=0' (.plan/shots/UI4/pt_h3.log); human_b 'pass=37 fail=0' (pt_hb3.log); machine 'pass=33 fail=4' (pt_m3.log, pt_m4.log); stages 'pass=50 fail=3' (pt_st3.log)",
+    "ROOT CAUSE machine failures FOUND (pt_m4.log line ~1168): box-drag selects {m_repair_bot:1, m_scout_crawler:2, m_coordinator:1} -> engineer-mode card = Machine build list + Repair + 'Assign to officer' = 3 rows of 5; the Assign button rect is P(886,881.6) S(138,74) on a 900 px window, so its centre (y 918) is OFF SCREEN; click hovers nothing, no command issued. The 3 later failures cascade from that.",
+    "FIX WRITTEN, NOT YET RUN: presentation/hud/hud.gd _rebuild_card, right after the 'columns >= 5' font block: when rows >= 3 every card Button gets custom_minimum_size (138, floor((150-4*(rows-1))/rows)) = 47 px, font 11, icon_max_width 20.",
+    "Stages flow 3 failures: g3b_slot2_stage9_click (OptionButton popup item click for idx 2 missed; slot1 stage8 'passes' only because 8 is the default so no click happens) -> g3b_summary_shows_stages and g3b_match_stages cascade. Tried a hover-scan (pm.get_focused_item does not follow synthetic mouse motion; it also broke Slot2Kind) and REVERTED it. _pick_option now = original computed click + a 'PLAYTEST-DBG pick_option_miss ...' print with click point, popup pos/size and margins when selection does not change."
+  ],
+  "remaining": [
+    "1. Re-run machine + stages playtests in parallel (hb-wrapped, ~5 min): see the bash -c '... & ... & wait' pattern; logs to .plan/shots/UI4/pt_m5.log, pt_st5.log. Expect machine 37/0 if the card fit works (check 'PLAYTEST-DBG assign_btn ... rect=' now ends above y 900 and after_assign hovered is a Button).",
+    "2. Stages: read the pick_option_miss line for Slot2Stage. Compare click y with pm_pos.y..pm_pos.y+pm_size.y. Likely the popup position/size or that the click right after Slot0Stage closed is swallowed; try await _wait(0.4) before opening each OptionButton, or a retry (re-open + click) when ob.selected != idx. Target 53/0.",
+    "3. Then remove the two assign debug prints in _officer_flow (tools/ui_playtest.gd, 'PLAYTEST-DBG assign_btn' / 'after_assign') or keep them; harmless.",
+    "4. Re-run human (33/0) and human_b (37/0) once more since hud.gd changed (card fit only applies at >=3 rows).",
+    "5. View .plan/shots/UI4/pt_st3/ui_g3b_stage_panel.png and ui_g3b_research_card.png, and the machine engineer card shot (ui_02_engineers_selected.png in the new machine run) to confirm 3-row card readability.",
+    "6. Big-map camera check: $G --path . -- --autostart --autostart-map=valley_conquest_l --autoshot=<abs>.png --autoshot-delay=5; R4-render-2 said it is applying the edge_pan_speed CR in match_view (board seq 618).",
+    "7. CHANGE REQUEST from R4-render-2 (board seq 645) for presentation/hud/minimap.gd: at 10k units the minimap _draw loops all entities twice (hiding it: 5.9 ms -> 2.3 ms/frame). Rebuild unit dots only when w.tick changes; paint into an Image (W x H, set_pixel) + ImageTexture, one draw_texture; fog-filter enemy units via the fog byte array directly. Same visuals/behaviour. Not started.",
+    "8. Final: bash .plan/hb.sh <id> <calls> <est> full -- bash tests/run.sh ; paste last lines."
+  ],
+  "files_touched": ["presentation/hud/hud.gd (3-row card fit)", "tools/ui_playtest.gd (assign debug prints in _officer_flow; pick_option_miss debug print)", "UI4-2's objectives.gd, g3_score.gd, g3b_stage.gd, minimap.gd throttles (now verified compiling)"],
+  "test_state": "test_hud 4/0 OK, test_ui3 7/0 OK; human 33/0, human_b 37/0 (before hud.gd card-fit edit); machine 33/4 and stages 50/3 before the fix. hud.gd card-fit edit and pick_option revert not run yet. Full suite not run.",
+  "gotchas": [
+    "OptionButton default stage is 8, so the slot1 stage8 check never clicks; only slot0 (idx 0) and slot2 (idx 2) exercise the popup click.",
+    "PopupMenu.get_focused_item() does not track synthetic InputEventMouseMotion here; do not rely on hover-scan.",
+    "Button text in the card has a newline, so PLAYTEST-DBG lines with button text span 2 log lines (grep -A1).",
+    "Budget formula in AGENT_RULES triggers handoff at ~33 calls for a 450k cap (est 60k+5k/call +90k >= 315k)."
+  ]
+}

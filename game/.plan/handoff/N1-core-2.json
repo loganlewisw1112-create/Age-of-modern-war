@@ -1,0 +1,36 @@
+{
+ "agent": "N1-core-2",
+ "gen": 2,
+ "reason": "token projection near 70% of 700k cap at ~62 calls (est 60k + 5k/call)",
+ "done": [
+  "native/rts_core/src/advance.rs: per-unit path advance (port of movement.gd _advance incl. PERF4 k stride: k x step, 0.5-tile segment cap, guard 4k, stuck +-k, arrive/repath decisions, waypoint window k+2)",
+  "RtsSteer.advance_separate(nav,pos,ids,moving,rad_tab,key_tab,mc_tab,mvi,spd,wp,fin,params) -> positions; last_adv() stride 4 [dpi,facing,stuck,flags]; last_changed() indices. Fused advance + separation, one native call per tick. separate() kept.",
+  "movement.gd native tick (_tick_native): units from SimIndex.of(w,'unit'), static per-id tables in w.cache.mv_tabs (rad/key/mc/speed*DT), pre-sized arrays with index writes, REDUCED units skipped entirely on non-stride ticks; GDScript applies arrive/repath via order_path. Old-DLL compatible (has_method guard -> separate-only path).",
+  "PERF4 CR seq 714 applied in both paths (fallback _advance(w,e,mc,k)).",
+  "Queued group requests carry fx,fy (group flow goal cell, saved ints) and are served off the LRU flow field in _drain_queue (A* only if flow fails). valley 10k mv.drain 25.3 -> 6.5 ms.",
+  "tools/build_native.sh: --stage / --swap (rename live DLL to bin/rts_core.prev*.dll, move new in, retry 60 s). tools/scale_bench.gd: --tiers=on|off, reduced count column.",
+  "tests/test_native.gd: +test_native_batch_tick_in_use, +test_reduced_tier_stride_parity (9 tests)."
+ ],
+ "remaining": [
+  "0. Full shared-tree suite: pass=187 fail=1 + 1 script error. FAIL test_supply::test_vehicle_burns_fuel_stops_at_zero_and_resupply_restarts_it ('drove 4.61', limit < 4.6; 'resupply refuels the tank'). Supply.gd/test_supply.gd are unchanged vs HEAD, so the likely cause is the PERF4 CR 714 stride (a lone REDUCED vehicle moves 4 ticks' worth before move_mult sees fuel 0; overshoot ~0.6 tile). NOT verified with --tiers off. Candidate fixes: movement keeps k=1 for units with e.fuel <= stride burn, or Supply/Tiers keep fuel-burning units FULL when fuel is low (PERF4 call). Script error: tests/test_perf.gd:180 'Construction' not declared (PERF4/PERF5 file, not N1).",
+  "1. Gather is now the movement floor: ~2.4 us/unit of GDScript dict access (valley 10k: mv.gather 23.9 ms). Next lever: per-id tier/id caches aligned to the SimIndex array refreshed on Tiers recompute ticks (needs a promotion hook from PERF4 so an attack-ordered/hit unit is not skipped up to 3 ticks).",
+  "2. Serve PERF4/PERF5 change_requests for batched native helpers (RtsGrid.nearest_enemy_batch exists: per-source ranges + need_flags masks).",
+  "3. Whole-tick 2k p95 < 50 ms is NOT met: other systems (combat, economy, construction, repair, gather, fog, victory) each make per-entity GDScript passes; movement is ~15 ms of ~70-75 ms at 2k rc_s."
+ ],
+ "files_touched": [
+  "native/rts_core/src/advance.rs (new)",
+  "native/rts_core/src/steer.rs",
+  "native/rts_core/src/lib.rs",
+  "bin/rts_core.dll",
+  "sim/systems/movement.gd",
+  "tools/build_native.sh",
+  "tools/scale_bench.gd",
+  "tests/test_native.gd"
+ ],
+ "test_state": "sandbox: test_native 9/9, test_mil 13/13, test_core 9/9, test_determinism 5/5, test_g2_scenarios 7/7 (earlier rev). Shared-tree full suite: RESULT pass=187 fail=1 files=22, TESTS FAILED (rc=1 script_errors=1): test_supply fuel overshoot (see remaining 0) + test_perf.gd parse error (not N1).",
+ "gotchas": [
+  "Typed loop `for e: Dictionary in all` + index writes into pre-sized packed arrays is ~2.5x cheaper than append (micro-bench).",
+  "bin/rts_core.prev*.dll are renamed old DLLs still mapped by a running godot; never commit them.",
+  "Renaming a native #[func] keeps old movement.gd working only via has_method guards; change name when changing a signature."
+ ]
+}

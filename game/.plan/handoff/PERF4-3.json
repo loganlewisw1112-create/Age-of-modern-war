@@ -1,0 +1,40 @@
+{
+  "agent": "PERF4-3",
+  "gen": 3,
+  "done": [
+    "Orch directive (refinery.fuel_burn, AI4-3 seq 1009): economy.gd refinery cap is per product. A cycle credits only outputs below rules.refinery.stock_cap and spends ore in proportion (fuel share ore_in/2, ammo share ore_in - ore_in/2); STOCK_FULL only when both >= cap; NO_ORE checks the proportional need; ore_refined = ore actually spent. tests/test_perf.gd::test_refinery_idles_at_stock_cap extended (fuel-only cycle: half ore, fuel only, no ammo; both-short cycle: full ore_in, ammo credited). tests/test_supply.gd (NOT an owned file, done on the orch directive to keep it green): refinery test now drops fuel/ammo below the cap before its cycle (start ammo sits exactly at the cap).",
+    "fog.gd visible_enemies: walks only ENEMY owners' units (SimIndex per-owner lists), skips REDUCED, then buildings, sorted by id (same list/order as the full scan). valley_conquest_l 5312 units, loaded CPU: 1.47/1.88 ms per uncached call vs 23.3/33.9 ms full scan, same=true (.plan/shots/PERF4-3/visbench.txt, script .plan/shots/PERF4-3/vb.gd). PERF4-2's per-(tick,fid) cache only covers repeat calls inside one tick; the walk cut is what fixes one call per think.",
+    "Periodic jobs de-stacked: Fog team phases moved to tick%4==1 (ordinal 0) and tick%4==3 (ordinal 1); Tiers recompute + index work to tick%8==6 (Tiers.PHASE); Morale stays on tick%4==0 (test-sensitive). No two of these share a tick any more (before: morale + fog team 0 + tiers all on tick%4==0/tick%8==0).",
+    "SimIndex: per-owner unit lists idx.uown (SimIndex.units_by_owner(w)), maintained on rebuild and on append. Fog gather walks only in-phase owners' units.",
+    "Tiers.begin_tick: full SimIndex.rebuild only when destroyed entries exceed 1/8 of the lists; the recompute loops skip destroyed units/buildings, so lists and tiers equal a rebuild (save-exact). tiers.idx_rebuild went from ~2.4-4.5 ms per recompute at 2k to ~0.",
+    "damage.gd: const NEAR_MISS_NG := true; near_miss reads w.cache.combat_ng (native query_radius(r+0.05) then the exact GDScript distance test), so Combat skips its GDScript unit grid with native live (PERF5 item applied).",
+    "combat.gd: id -> RtsGrid index is a PackedInt32Array (resize next_id+1, fill -1) instead of a Dictionary insert per unit; _find reads it.",
+    "RtsFog adopted (orch directive, rts_core 0.2.0): fog.gd recompute uses NativeCore.new_fog(w).stamp/explored_out per team when live, Image-blit path kept as fallback (Fog.native_off forces it). tests/test_perf.gd::test_native_fog_matches_gdscript_fog: visible+explored byte-identical and state hash equal native vs fallback (120-tick fight). fog.blit sub-phase 1.74 -> 0.34 ms/tick at 2k (both loaded, .plan/shots/PERF4-3/a2.txt vs after_fog.txt)."
+  ],
+  "remaining": [
+    "Done-when #3 NOT met and NOT re-measurable tonight: every bench ran at 84-100% CPU with 4-22 other godot processes (LOAD lines in .plan/shots/PERF4-3/*.txt). Re-bench on a quiet machine: bash .plan/shots/PERF4-2/bench.sh <out> --map=river_crossing_s --sizes=2000 --ticks=300 --native=both --breakdown ; and --map=valley_conquest_l --sizes=10000 --ticks=200 --native=on --breakdown.",
+    "Orch directive NOT done (budget): per-tick LOS pre-pass in combat.gd with NativeCore.new_combat(w).line_clear_batch(map_w, map_h, terrain, ridge, from, to) (positions fixed during Combat.tick): collect (shooter,target) pairs that reach _engage/_fire this tick, or call line_clear per pair natively in _engage/_fire with Damage.line_clear as fallback; add a parity test (hash equal native/off). Also RtsCombat.countdown could replace the cd/firing decrement loop in prep. w.cache.unit_snap (packed post-movement positions) can feed the RtsGrid rebuild arrays.",
+    "Combat prep still ~4.5-5 us per FULL unit (cmb.prep 9.2 ms at 2k under load): next candidates are the cd_ticks/cooldown mirror writes and the per-unit native array appends (cache team/flags per unit across the 8-tick tier period).",
+    "Morale update spike (mor.full ~9 ms per update tick at 2k, loaded) is alone on tick%4==0 now but not reduced; per-unit stagger breaks test_g2_scenarios s4.",
+    "Tier recompute decision/occupancy loops (~6 ms per recompute at 2k, ~21 ms at 10k loaded) are not spread across id slots: a save-exact spread needs the occupancy snapshot in w.sys_state plus a bigger closing margin (~15 ticks); not attempted."
+  ],
+  "files_touched": [
+    "sim/systems/economy.gd",
+    "sim/systems/fog.gd",
+    "sim/systems/tiers.gd",
+    "sim/systems/sim_index.gd",
+    "sim/systems/combat.gd",
+    "sim/systems/damage.gd",
+    "sim/systems/morale.gd (profiling labels only)",
+    "tests/test_perf.gd",
+    "tests/test_supply.gd (orch directive, precondition only)",
+    ".plan/shots/PERF4-3/*"
+  ],
+  "test_state": "Full suite (before the RtsFog edit): RESULT pass=197 fail=0 files=22, TESTS OK (.plan/shots/PERF4-3/full_suite.txt). After RtsFog: --only test_perf 6/6, test_mil, test_g2_scenarios, test_determinism, test_save, test_damage, test_native, test_stages all TESTS OK (.plan/shots/PERF4-3/t4.txt); full suite NOT re-run after RtsFog.",
+  "gotchas": [
+    "Tiers.PHASE = 6: the first tier recompute is now at tick 6 (units FULL before that).",
+    "SimIndex lists now keep destroyed entries for longer (until 1/8 dead): every consumer must skip with w.entities.has (all owned ones do).",
+    "test_factions AT-search check reads w.cache.combat_grid, which is {} with native live now (check still passes: it accepts null).",
+    "Benches are meaningless under the current machine load; compare per-system sub-phases, not totals."
+  ]
+}

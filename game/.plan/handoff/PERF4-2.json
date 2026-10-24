@@ -1,0 +1,38 @@
+{
+  "agent": "PERF4-2",
+  "gen": 2,
+  "done": [
+    "Orch fixes: refinery stock cap (economy.gd + rules.json refinery.stock_cap 600; STOCK_FULL status; ore_refined only real consumption; tests/test_perf.gd::test_refinery_idles_at_stock_cap). Fuel overshoot: tiers.gd _fuel_low keeps units FULL when fuel could run out within 8+4 ticks (test_supply 10/10). test_perf Construction preload added. Board facts refinery.cap_fixed + supply.fuel_low_full posted.",
+    "Profiler: SimIndex.profiling/prof/pt() + sub-phase hooks in combat/fog/economy/tiers (off by default). Harness .plan/shots/PERF4-2/pb.gd + bench.sh (per-system avg/p95/max + sub-phases).",
+    "tiers.gd: recompute builds idx.full (FULL list), idx.rslot[8] (REDUCED by id%8), idx.newly; Tiers.lists(w) (rebuilds from saved e.tier after load), Tiers.due_reduced(w, stride), Tiers.promote(e, w) appends to the FULL list; sim_index.gd appends spawned units to idx.full.",
+    "combat.gd: iterates FULL list only; REDUCED due units act after FULL with _no_search (search result null by the contact bound); one batched nearest_enemy_batch per tick for scan-slot units; exact fast paths (move/other orders without recent hit; marching attack_move off scan slot); per-tick enemy-building cache in _find; LOS not re-checked in _fire after _engage; towers use native query_radius exact scan; GDScript grid skipped when damage.gd declares NEAR_MISS_NG (CR to PERF5 pending).",
+    "economy.gd: pop carried forward exactly via EntityDestroyed events + new ids, consistency-checked against w.entities.size(), full recount fallback (eco.pop 4.8 -> 0.07 ms at 2k, 24 -> 0.5 ms at 10k).",
+    "fog.gd: LA8 visible + ONE masked blit for explored (byte-identical, .plan/shots/PERF4-2/fogcmp.gd mismatches=0, ~35-45% faster); tight gather; team-phase split (ordinal 0 on tick%4==0, ordinal 1 on tick%4==2); visible_enemies uses FULL list + buildings and a per-(tick,fid,count,next_id) cache returning copies (AI4-3 request).",
+    "supply.gd: resupply/recharge staggered by id ((tick+id)%20==0) with starved flags accumulated in sys_state.supply.starved and status published on tick%20==0; trucks via PERF5 Subsets.SUPPLY; fuel burn via tier lists.",
+    "morale.gd: tier lists (FULL list + REDUCED rslot parity slots); update phase unchanged (per-unit stagger broke test_g2_scenarios s4 and was reverted).",
+    "Fight parity: with N1's move_stride gate applied, tiers == FULL-only counts on 4/4 seeds native and gdscript (.plan/shots/PERF4-2/fightcmp3_b.txt)."
+  ],
+  "remaining": [
+    "Targets NOT met. Re-bench first (fog phase split + latest combat changes are NOT benched): bash .plan/hb.sh <id> ... -- bash .plan/shots/PERF4-2/bench.sh .plan/shots/PERF4-2/after3.txt --map=river_crossing_s --sizes=2000 --ticks=300 --native=both --breakdown ; and --map=valley_conquest_l --sizes=10000 --ticks=200 --native=on --breakdown (use >=200 ticks: the first 8 ticks have every unit FULL before the first tier recompute and dominate p95 at 100 ticks).",
+    "Combat prep still ~5 us/FULL unit (micro.gd: grid 1.5 us, stats 1.5 us, cd/firing 1.5 us). When PERF5 applies the near_miss CR (const NEAR_MISS_NG in damage.gd) the grid is skipped automatically; verify with test_damage/test_mil.",
+    "Fog: native RtsFog.stamp CR posted to N1-core-2 then N1-core-3 (see board); when it lands, use it in recompute (cells + sights packed arrays, no dedupe dict), keep the Image path as fallback, verify with fogcmp.gd.",
+    "Tier recompute at 10k ~44 ms every 8 ticks + idx rebuild ~11 ms: spread or go native (RtsGrid.nearest_enemy_batch with range=bucket_size, buildings with footprint radius).",
+    "Morale update spike (~10 ms at 2k every 4 ticks): per-unit stagger is test-sensitive (s4); try caching in_cover per cell instead.",
+    "Tiers.move_stride stays false (N1-core-3 owns the bias fix); re-run fightcmp3.gd after any change and only then flip it.",
+    "Final full suite (bash tests/run.sh in hb.sh) NOT run by PERF4-2."
+  ],
+  "files_touched": ["sim/systems/tiers.gd", "sim/systems/sim_index.gd", "sim/systems/combat.gd", "sim/systems/economy.gd", "sim/systems/fog.gd", "sim/systems/supply.gd", "sim/systems/morale.gd", "tests/test_perf.gd", "content/rules.json (refinery.stock_cap only, per orch directive)", ".plan/shots/PERF4-2/*"],
+  "test_state": "--only, after the last edit (.plan/shots/PERF4-2/t4.txt): test_mil 13/13, test_damage 10/10, test_ops 10/10, test_victory 13/13, test_stages 13/13, test_save 6/6, test_econ 15/15, test_perf 5/5, test_determinism 5/5, test_g2_scenarios 7/7, test_supply 10/10. Full suite not run.",
+  "bench": {
+    "baseline (call 11, CPU 52-66%, 6-8 godot procs)": "2k rc_s native 59.4/101.6 ms avg/p95, gdscript 128.2/196.3; 10k valley native 170.4/427.4 (100 ticks)",
+    "after1 (call 53, CPU 51-73%)": "2k native 51.3/89.6, gdscript 102.2/143.9; 10k valley native 125.6/316.4 (100 ticks)",
+    "after2 (call 66, CPU 56-62%, 300 ticks)": "2k native 55.0/93.3 (fight actually engages in 300 ticks: combat 26.9 avg / 46.5 p95)"
+  },
+  "gotchas": [
+    "Tiers lists may hold dead units and (rslot) promoted ones: always check w.entities.has and e.tier.",
+    "Combat._no_search is a static flag set only during the REDUCED loop.",
+    "Economy pop cache relies on every entity removal going through w.destroy (else the size check forces a recount, still exact).",
+    "Supply status_supply now summarises the previous 20-tick window (sys_state.supply.starved, saved).",
+    "Machine was loaded (50-73% CPU, 2-8 other godot procs) for every bench: noisy."
+  ]
+}

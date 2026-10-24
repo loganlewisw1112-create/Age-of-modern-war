@@ -1,0 +1,34 @@
+{
+  "agent": "AI4-3", "gen": 3, "status": "recycled at the 70% projection self-check (call 66, est 60k+5k*66=390k +90k >= 490k)",
+  "done": [
+    "ai_util._bank_ok: a purchase respects the stage bank only in the resources it spends (old check blocked EVERY unit while the bank was short of ore: river soak v2 Human B hoarded 7150 cr, valley 10560 cr). Worker floor: st.worker_hold (set each think in ai_controller from ctx.gatherers < U.WORKER_FLOOR=3) holds one gatherer's price from every other purchase; the gatherer itself bypasses the bank (heartland soak1: Machine lost all haulers with 13 salvage < hauler 20 = permanent stall, HQ alive -> no winner).",
+    "ai_stage.manage: no bank when the bank needs ore and gather_plan.ore_left <= 0 (plan ' no-ore'). A timed bank release (24000 ticks) was tried and REMOVED (heartland soak2: Human A released 6200 cr + 597 ore 200 ore short of 8->9 and never advanced).",
+    "ai_econ.crew_cap(w,fid,st,ctx): crew cap raised to min(3x, base + max(2, army_n/8)) while starved (salvage<300 or ore<150 or ammo<AMMO_FLOOR) with credits>=1000, ONLY after st.launches>=1 and army_n>=CREW_CAP_ARMY=30 (ungated version regressed test_g3_ffa_three_factions).",
+    "ai_controller: think pacing load = max(own units, vis_n, w.entities.size()) (AI-FAIR count only; save/load stable). Fog.visible_enemies walks every entity (~44 ms/call at 5300 units); CR posted to PERF4-2."
+  ],
+  "evidence": [
+    "ai_bench valley_conquest_l, 300 enemy, 400 ticks, native=true, final pacing code: f0 units=2006 avg_ms=0.681, 3006 -> 0.963, 5006 -> 0.730; f1 (306 own) 0.691 / 0.973 / 0.357 (.plan/shots/AI4-3/bench2_*.txt). Before pacing: f1 1.466 / 2.050 / 3.022 (bench_*.txt).",
+    "soak1 (bank per-resource + no-ore only): river 7,8,9: AI f0 advanced to stage 8 at tick 43601; SOAK RESULT winner=0 end_tick=45097 reason=hq_elimination hash=8cec3afdc1f68de0ec2baf29985e86fef403d91184e815a0f95b0561142d0e99 winner_team=0 winners=[0]. heartland 8,9,7: AI f0 advanced to stage 9 at tick 53701; SOAK RESULT winner=none end_tick=120000 reason=max_ticks hash=7b5d3e9744df5b9012878c1ea8a115080ab56eaca7a8b5fe82c7887521794c4c. valley 9,7,8: AI f1 advanced to stage 8 at tick 34881; AI f1 advanced to stage 9 at tick 97941; SOAK RESULT winner=none end_tick=120000 reason=max_ticks hash=bea7e69b722327f1ffba5eccacd9c8517d6ffb040e5eb325112d44ace1928da3",
+    "soak2 (+worker floor, ungated crew_cap, timed release): river: AI f0 advanced to stage 8 at tick 30041; SOAK RESULT winner=1 end_tick=62264 reason=hq_elimination hash=89e0dd598745e93ce5b1ccc6534625527a2a76e3c39aaf18d895eb6637535912 winner_team=1 winners=[1]. heartland: no advance; SOAK RESULT winner=none end_tick=120000 hash=160faf3c0d44c04b0d3a5d107098f7ff032af870b0684c7edcfbf67df1289ee8. valley: AI f1 advanced to stage 8 at tick 25301; SOAK RESULT winner=none end_tick=120000 hash=52ee17fb0a2cbaa281d6fd5a820449f8afb01f4476518c4349f76f0d7a139b54",
+    "soak3 (timed release removed, crew_cap still UNGATED = not final code), files .plan/shots/AI4-3/soak3_*: river s1: AI f0 advanced to stage 8 at tick 31101; AI f0 advanced to stage 9 at tick 93981; SOAK RESULT winner=none end_tick=120000 reason=max_ticks hash=96790606376876fd5792bf0c82d0da203a0c678768bfbccf6c9ce9f1c47e9fa3. heartland s1: f0 -> 9 at 50041; heartland s2: f0 -> 9 at 48281; valley s1: f1 -> 8 at 35641; valley s2: f1 -> 8 at 27801 (big-map soak3 runs still RUNNING at handoff; read their SOAK RESULT lines).",
+    "Diagnosis of big-map draws (SOAK t= lines): after the Machine is eliminated (~48-64k ticks) the two Human sides stalemate. Heartland soak2 Human B sits at 115-120/120 pop of militia/heavy rifles with faction ammo 0 and ore ~2-38 (pull=3385 resupply pull-backs), its waves die on Human A's MBTs/towers (B lost 376, A lost 169); Human A banks 6000 cr + 800 ore for 8->9 with ~35 pop. Ore -> ammo is the bottleneck: the refinery keeps burning 20 ore/6 s while fuel < stock_cap even with ammo 9072 (fact refinery.fuel_burn posted)."
+  ],
+  "test_state": "bash tests/run.sh --only=test_ai on FINAL code: RESULT pass=15 fail=0 files=1 time_ms=250069 / TESTS OK (.plan/shots/AI4-3/test_ai_3.txt). Full suite ran on the PREVIOUS code (ungated crew_cap): RESULT pass=194 fail=1 files=22 time_ms=803143, TESTS FAILED (rc=1 script_errors=2); the fail was test_g3_ffa_three_factions (fixed since, see --only run); the 2 script errors are test_native.gd:332 'Nonexistent function new_fog' and :289 'new_combat' (N1-core-2 in progress, not AI files). Full suite NOT re-run on final code.",
+  "remaining": [
+    "1. Read the final SOAK RESULT lines of the still-running soak3 big-map runs (.plan/shots/AI4-3/soak3_{industrial_heartland_m,valley_conquest_l}_s{1,2}.txt); note they ran with the ungated crew_cap.",
+    "2. Re-run the 3 required soaks on FINAL code, in .plan/hb.sh, background, parallel: godot --headless --path . -s tools/soak.gd -- --seed=1 --max-ticks=120000 --sides=3 --factions=human_a,human_b,machine --stages=7,8,9 --map=river_crossing_s ; --map=industrial_heartland_m --stages=8,9,7 ; --map=valley_conquest_l --stages=9,7,8 (also seed 2). Report every SOAK RESULT + 'advanced to stage' line.",
+    "3. Big-map decisiveness (2-human stalemate after the Machine dies): ideas NOT tried: at >=90% pop cap launch the whole army as one wave instead of all_in trickle reinforcement (ai_army _reinforce need=3 when all_in); prefer vehicles/AT over militia when the enemy shows armour at pop cap; when faction ammo stock is 0 hold the wave at the rally instead of attacking. Or escalate the refinery fuel-burn rule to the orchestrator (fact refinery.fuel_burn).",
+    "4. bash tests/run.sh --only=test_ai after each change; full suite once at the end inside hb.sh."
+  ],
+  "files_touched": ["sim/ai/ai_util.gd", "sim/ai/ai_stage.gd", "sim/ai/ai_econ.gd", "sim/ai/ai_controller.gd"],
+  "gotchas": [
+    "All AI4-1/AI4-2 gotchas hold (CRLF in ai_controller/ai_econ/ai_tactics/ai_util/test_ai; AI-FAIR comment on w.entities lines; caches that change decisions live in st).",
+    "Do not pace thinks by SimIndex.of(...).size(): between rebuilds it can hold dead entries, so the count differs across save/load -> determinism risk. w.entities.size() is state.",
+    "8->9 costs 3 x (1200 cr + 200 ore) + 6000 cr + 800 ore = 9600 cr + 1400 ore; credits only from the 6 cr/s stipend (~27 game min of stipend).",
+    "Soak wall time with 5-6 parallel godot runs: ~120000 ticks in ~20-25 min."
+  ],
+  "change_requests": [
+    "PERF4-2 / fog.gd: visible_enemies is O(all entities) per call (~44 ms at 5300 units); a per-tick per-fid cache or bucketed query (board fact change_request).",
+    "PERF4-2 / economy.gd: refinery idles only when BOTH fuel and ammo >= stock_cap, so fuel demand burns ore while ammo sits at 9000+ (board fact refinery.fuel_burn)."
+  ]
+}

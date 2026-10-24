@@ -1,0 +1,30 @@
+{
+  "agent": "PERF4",
+  "gen": 1,
+  "done": [
+    "sim/systems/sim_index.gd (new): shared per-tick entity index by kind (one pass, rebuilt every Tiers.RECOMPUTE_EVERY ticks, spawned ids appended, callers skip dead with w.entities.has)",
+    "sim/systems/tiers.gd (new): FULL/REDUCED tiers stored on e.tier (saved), recomputed every 8 ticks at tick start by Economy from a 3x3 bucket contact map (bucket = contact radius 18 + footprint + closing margin = 29 tiles); hit/attack-order/new units FULL; Tiers.force_off, w.tiers_enabled, move_k, counts",
+    "combat.gd: SimIndex units, REDUCED units act every 8 ticks (cooldown catch-up), native RtsGrid nearest_enemy_batch + verify, exact query_radius fallback, native splash query, attack order promotes",
+    "economy.gd: calls Tiers.begin_tick first, index-based power/pop/refinery/magnets, per-def pop cache",
+    "supply.gd: index loops + per-def cache; REDUCED fuel burn on stride",
+    "morale.gd: index loops; REDUCED every 2nd update with 2x dt; squad index for squadmate deaths",
+    "fog.gd: one indexed pass for all teams, per-def sight caches, memory over buildings only, visible_enemies via index (id order kept)",
+    "tests/test_perf.gd: 4 tests green"
+  ],
+  "remaining": [
+    "Targets NOT met: 2000 FULL p95 114.5 ms (target <50), 10k valley p95 571.7 ms. Bench: .plan/shots/PERF4/after_final.txt vs baseline.txt",
+    "Movement stride bias: Tiers.move_stride=false by default. With it true (N1 RtsSteer k path) side 0 loses its edge in 4/4 seeds; repro .plan/shots/PERF4/fightcmp.gd / fightcmp2.gd. When N1 fixes it: set true, re-run both scripts + bash tests/run.sh --only=test_perf",
+    "Other systems' full passes (~92 ms at 10k): CR posted to orch (SimIndex.of adoption) for construction/production/gather/repair/orders/victory/status.ew_tick/damage.near_miss",
+    "Fog at 10k: ~105 ms per recompute (every 4 ticks), half of it blits (2 per unique source cell). Next: stamp vis only, merge explored with one LA8 masked blit; or a native RtsFog stamp (CR to N1)",
+    "Tier recompute at 10k ~30 ms every 8 ticks (spike). Next: compute contact with RtsGrid.nearest_enemy_batch(range=bucket) in one native call, or spread over 8 id slots",
+    "Economy pop: still a units pass every tick (~1 us/unit)"
+  ],
+  "files_touched": ["sim/systems/tiers.gd", "sim/systems/sim_index.gd", "sim/systems/combat.gd", "sim/systems/economy.gd", "sim/systems/supply.gd", "sim/systems/morale.gd", "sim/systems/fog.gd", "tests/test_perf.gd", ".plan/shots/PERF4/*"],
+  "test_state": "test_perf 4/4, test_mil 13/13, test_supply 10/10, test_damage 10/10, test_g2_scenarios 7/7, test_determinism 5/5, test_save 6/6, test_econ 15/15 (--only). Full suite: see .plan/shots/PERF4/full_suite.txt",
+  "gotchas": [
+    "new classes are preload-only (no class_name): Tiers, SimIndex",
+    "Tiers.force_off and Tiers.move_stride are process-wide statics: reset them in tests",
+    "REDUCED units are left out of Combat's per-tick grids on non-stride ticks (safe only because the contact bucket covers every search/splash radius); if a weapon range above 18 is added, contact_radius() picks it up automatically",
+    "machine was loaded (20-91% CPU, 0-8 other godot procs) during every bench: numbers are noisy"
+  ]
+}

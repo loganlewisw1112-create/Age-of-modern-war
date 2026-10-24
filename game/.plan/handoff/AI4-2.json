@@ -1,0 +1,33 @@
+{
+  "agent": "AI4-2", "gen": 2, "status": "recycled at the 70% projection self-check (call 66, est 60k+5k*66=390k +90k >= 490k)",
+  "done": [
+    "Regression fix: ai_mil URGENT_ROLES back to power/barracks/depot/factory + comms (refinery/research removed); ai_stage.plan_open(): the stage plan (lab/comms/power headroom) opens only after st.launches>=1 or at first_attack_tick+1200 (RESEARCH_BY_TICK when no grace). test_ai 15/15 green.",
+    "Gate cache: ai_stage.gates_of() caches Progression.gate_report in st.g4 (gates/gates_tick/gates_stamp, serialized -> save/load safe) for 100 ticks; refreshed at once on stage/advancing/active-research/done-count change.",
+    "Think cost: AiController.think -> think_with(w,fid,prof) (ai_bench passes itself as prof with mark(fid,phase); bench no longer mirrors think). Stagger at >=600 load: even thinks econ modules, odd thinks military. think_mult(load): x1 <2000, x2 at 2000, x3 at 3500, max x4; load = max(own units, enemies visible last think = st.vis_n set in Mil.update_intel). _context: one pass over w.entities (AI-FAIR, owner==fid), inline _cls cache, army_pop/army_n in ctx (scores reuse). U.ud(def) per-def cache (pop/veh/air/armored/arty/energy/amax/fmax) behind pop_of/is_*; resupply/intel use one ud() per unit. U.ag_set(st,ctx): O(1) attack_group membership (army, reinforce, artillery, truck).",
+    "Econ.manage_gather: while st.g4.reserve has ore and ore < hold+200, want_ore >= 75% of crews."
+  ],
+  "evidence": [
+    "ai_bench valley_conquest_l, 300 enemy, 400 ticks, native=true (BEFORE vis_n): f0 units=2006 avg_ms=1.005; f0 units=3006 avg_ms=1.410; f0 units=5006 avg_ms=1.307 (.plan/shots/AI4-2/bench_{2000,3000,5000}_c.txt). Same runs f1 (306 own, sees 2-5k enemies): 1.949 / 2.720 / 4.236 ms -> the vis_n load term was added after; NOT re-measured.",
+    "soak v1 (pre ore tweak) river_crossing_s 7,8,9: AI f0 advanced to stage 8 at tick 26801; SOAK RESULT winner=0 end_tick=44756 reason=hq_elimination hash=a0294dfab2498ed55eca48004603223b95910097fefa1c5864deb2f47ca5f54f winner_team=0 winners=[0]",
+    "soak v1 industrial_heartland_m 8,9,7 (108000): AI f2 advanced to stage 8 at tick 88101; SOAK RESULT winner=none end_tick=108000 reason=max_ticks hash=9bd9327b3a598982124743808a88fe3a6afc2a2c250b89cdefbf977406fe416b; f0 (s8) gates 4/5 res=3 only cost missing (saving 6000 credits + 800 ore): ore stuck ~10-100 while credits reached 7500+.",
+    "soak v1 valley_conquest_l 9,7,8 (108000): AI f1 advanced to stage 8 at tick 36981; SOAK RESULT winner=none end_tick=108000 reason=max_ticks hash=17b07d4875a65bd0e1c1f217b8aa31a0244b1b94b950befd7b4d621492c0996b",
+    "soak v2 (ore tweak, before vis_n) river 7,8,9: AI f0 advanced to stage 8 at tick 26901; SOAK RESULT winner=none end_tick=108000 reason=max_ticks hash=ee77c97430ff4ffda496bc1b742a2c225ed62fa8248aee257c3ef21363789c01; f1 human_b gates 4/5 (only cost).",
+    "soak2 heartland/valley at 180000 ticks were still RUNNING at handoff: .plan/shots/AI4-2/soak2_industrial_heartland_m.txt (t=52800: f0 s8 cr=8940 ore=11 -> ore still the blocker), soak2_valley_conquest_l.txt (AI f1 advanced to stage 8 at tick 33581)."
+  ],
+  "test_state": "bash tests/run.sh --only=test_ai on the final code: RESULT pass=15 fail=0 files=1 time_ms=470890 / TESTS OK (.plan/shots/AI4-2/test_ai_3.txt). Full suite NOT run.",
+  "remaining": [
+    "1. 8->9 is blocked by ORE, not credits: the refinery (rules.refinery 20 ore / 6 s, no off switch) eats ore as fast as crews bring it; 8->9 needs 3x200 research ore + 800 advance ore. Read the soak2 files first. Fix ideas (sim/ai only): count ore income vs refinery use; when the bank holds ore and fuel/ammo stock is above floors, send ALL gatherers to ore and stop building/rebuilding a 2nd refinery; check st.gather_plan.ore_left (deposits may be exhausted on our zone -> allow expansion deposits: U.zone_deposits / _send_gather allow_other). Verify with: godot --headless --path . -s sim/ai/tools/stage_probe.gd -- --sides=2 --factions=human_a,human_b --stages=8,8 --map=valley_conquest_l --max-ticks=60000 --every=10000",
+    "2. No winner on big maps within 108000 ticks (and river v2 also drew). Look at the final SOAK t= lines (alive, pop, kills) to see whether waves die or stall; consider all_in timing (ai_army ALL_IN_TICK) scaled by U.map_scale. Re-run the 3 soaks (each in .plan/hb.sh, background): godot --headless --path . -s tools/soak.gd -- --seed=1 --max-ticks=180000 --sides=3 --factions=human_a,human_b,machine --stages=7,8,9 --map=river_crossing_s ; --map=industrial_heartland_m --stages=8,9,7 ; --map=valley_conquest_l --stages=9,7,8. Report every SOAK RESULT + 'advanced to stage' line.",
+    "3. Re-measure ai_bench with vis_n load: for n in 2000 3000 5000: godot --headless --path . -s sim/ai/tools/ai_bench.gd -- --units=$n --enemy=300 --ticks=400 --profile (f0 must stay <2 ms; f1 should now drop too).",
+    "4. bash tests/run.sh --only=test_ai after every AI change; full suite once at the end inside hb.sh."
+  ],
+  "files_touched": ["sim/ai/ai_controller.gd", "sim/ai/ai_stage.gd", "sim/ai/ai_util.gd", "sim/ai/ai_mil.gd", "sim/ai/ai_econ.gd", "sim/ai/ai_army.gd", "sim/ai/ai_logistics.gd", "sim/ai/ai_g3_units.gd", "sim/ai/tools/ai_bench.gd"],
+  "gotchas": [
+    "All AI4-1 gotchas still hold (MapGenS preload, w.factions only [fid], no preload cycles ai_util<-ai_stage).",
+    "Several sim/ai files are CRLF (ai_controller, ai_econ, ai_tactics, ai_util, test_ai); exact-match edits must use CRLF.",
+    "Lines touching w.entities need an 'AI-FAIR:' comment on the same line (fairness scan in test_ai).",
+    "Any cache that can change decisions must live in st (serialized), not a static var, or save/load determinism breaks. Static caches are OK only for pure content facts (U.ud, _cls_cache).",
+    "Bench timings are noisy: other agents run suites on the same machine."
+  ],
+  "change_requests": []
+}

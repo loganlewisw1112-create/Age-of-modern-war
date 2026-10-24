@@ -1,0 +1,25 @@
+{
+  "agent": "N1-core", "gen": 1, "reason": "token projection reached 70% of 700k cap at ~65 calls",
+  "done": [
+    "native/rts_core crate (godot 0.5.5, api-4-7): RtsGrid (setup/rebuild/set_flags/query_radius/nearest_enemy_batch), RtsNav (setup/apply_footprint/is_solid/solid_bytes/components/find_path A*/line_clear/flow/flow_dir/flow_cost/flow_path, LRU 24, version-invalidated), RtsSteer.separate, RtsCoreInfo.version",
+    "bin/rts_core.dll (release, built by tools/build_native.sh) + bin/rts_core.gdextension",
+    "packaged load PROVEN: export-pack + renamed 4.7.2 console exe + rts_core.dll NEXT TO THE EXE -> 'NATIVE rts_core loaded (rts_core 0.1.0)'. export-pack does not copy the DLL.",
+    "sim/native_core.gd facade: available()/enabled(w)/path_name/force_off/make_grid (RtsGrid or GDScript GridFallback with identical API)",
+    "movement.gd: w.nav.solid byte arrays (both paths); native path uses RtsNav A*/components/line_clear, group orders (>=6 units per class) read paths off one shared flow field, RtsSteer separation; fallback = G1 AStarGrid2D code. Public API unchanged. Intermediate waypoint tolerance WP_TOL 0.45 (both paths) fixes corner jams. Budget/queue unchanged (40/tick) so test_mil queue test holds.",
+    "tests/test_native.gd 7 tests; tools/scale_bench.gd (--sizes/--units/--map/--factions/--ticks/--native/--breakdown)"
+  ],
+  "remaining": [
+    "1. Port the per-unit path advance loop to native (biggest remaining movement cost: ~13.7 ms of 14.8 ms movement at 1000 units). Design: RtsSteer.advance(nav, pos, mc, spd(base*Status.move_mult*DT), flat waypoints path[pi..pi+3], counts, is_final) -> new pos (qpos), pi delta, facing, flags(blocked, next-cell-solid). Keep stuck/arrive/repath logic in GDScript.",
+    "2. PERF4: wire combat target acquisition to NativeCore.make_grid(w) (combat is now the largest system: ~14-18 ms at 1000 units).",
+    "3. 2000-unit p95 < 50 ms NOT met (native p95 203 ms at 2000 in scale_bench, 300 ticks). Needs 1 + 2 + fidelity tiers.",
+    "4. Run scale_bench on valley_conquest_l once MAP4's map lands (only river_crossing_s run)."
+  ],
+  "files_touched": ["native/rts_core/**", "bin/rts_core.dll", "bin/rts_core.gdextension", "tools/build_native.sh", "sim/native_core.gd", "sim/systems/movement.gd", "tests/test_native.gd", "tools/scale_bench.gd", ".godot/extension_list.cfg (hand-written, orchestrator since re-imported)"],
+  "test_state": "sandbox (HEAD + N1 files), native on: test_native 7/7, test_mil 13/13, test_core 9/9, test_g2_scenarios 7/7. Full shared-tree suite: see final report.",
+  "gotchas": [
+    "#[godot_api] must live in the struct's module: nav_api.rs is a child module of nav.rs via #[path].",
+    "Python edits on Windows: open(..., newline='') or the file becomes CRLF.",
+    "Content.role returns production ids (e.g. rifle_squad); map to units via production.spawns[0].",
+    "NativeCore.force_off is process-wide static; tests must restore it (test_native does)."
+  ]
+}

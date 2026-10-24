@@ -1,0 +1,24 @@
+{
+  "done": [
+    "Re-ran faction playtests (windowed, hb-wrapped): human default 'PLAYTEST RESULT pass=33 fail=0' (33 is the full count for the human flow; 34 PLAYTEST lines incl. RESULT); human_b 'pass=37 fail=0'; machine 'pass=33 fail=4' TWICE (pt_m, pt_m2). Logs: .plan/shots/UI4/pt_h.log pt_hb.log pt_m.log pt_m2.log",
+    "Machine failures: g2_group_formed (members=0), g2_mission_set_by_map_click, g2_officer_reports, attack_move_issued. g2_click_assign_button returned ok=true (button found/clicked) but no group formed. Selection was {m_repair_bot:1, m_scout_crawler:2, m_coordinator:1} (engineer mode card: Assign button comes from g2_commands.gd engineer branch). Cause NOT found. Screenshot ui_07_officer_mission.png shows the MAP VIEW BLACK (units drawn as tiny green bars) because fog_layer.gd shader fails: 'SHADER ERROR: Unknown identifier TEXTURE' at fog_layer.gd:56 (R4's in-progress file, edited 22:53). Same shader error appears in all 3 runs, so rendering is currently degraded for every flow; machine flow is probably most sensitive (box-drag/selection by screen position)",
+    "HUD perf throttles written (NOT compiled/run yet): objectives.gd (single-pass scan replacing buildings_of+units_of, rate-limited to 4 Hz when entities>400; was running on every _on_events batch), g3_score.gd (rows() at most 2 Hz when entities>400), g3b_stage.gd (Progression.gate_report cached up to 250 ms when entities>400 and stage unchanged), minimap.gd (BIG_WORLD_ENTITIES 1500->400, so full redraw drops to ~6 Hz above 400 entities). hud.gd _refresh was already gated at REFRESH_SECS=0.2 (5 Hz); _update_alerts per-frame has no entity scan",
+    "MAP4 has landed: content/maps.json lists river_crossing_s, industrial_heartland_m, valley_conquest_l"
+  ],
+  "remaining": [
+    "1. Compile/verify the 4 HUD edits: bash tests/run.sh --only=test_hud ; --only=test_ui3 (expect pass=4 / pass=7 TESTS OK). Fix any parse error (e.g. variable declared after first 'var done' in objectives.gd, last_report in g3b_stage.gd).",
+    "2. Re-run machine playtest after R4 fixes fog_layer shader: $G --path . -- --ui-playtest=<abs dir> --ui-playtest-faction=machine (wrap in .plan/hb.sh). If still 33/4, debug the Assign click: post-click log hud._issue / world CommandRejected events for assign_officer in ui_playtest._officer_flow (tools/ui_playtest.gd ~line 496-499); check whether the Assign button is disabled by preview_command or hit-test misses (engineer-mode card, 5-col compact grid). ui_playtest is mine to fix.",
+    "3. Re-run human (33/0) and human_b (37/0) after throttle edits, then --ui-playtest-stages (previous 53/0).",
+    "4. View .plan/shots/UI4/pt_stages/ui_g3b_stage_panel.png and ui_g3b_research_card.png (NOT viewed yet; ui_07 shows stage panel at left y=196 fits fine, does not collide with objectives/victory panels at 1600x900).",
+    "5. Windowed camera/minimap check on valley_conquest_l: $G --path . -- --autostart --autostart-map=valley_conquest_l --autoshot=<abs>.png --autoshot-delay=5 (NOT run). Check whether R4 applied camera.edge_pan_speed() in match_view.gd (NOT checked).",
+    "6. Optional before/after HUD perf: --spawn-test=2000 --sim-paused --no-vsync --fps-log (NOT measured; no numbers claimed).",
+    "7. Final: bash .plan/hb.sh UI4-2 <calls> <est> full -- bash tests/run.sh once; paste last lines; quote any failure in files not owned."
+  ],
+  "files_touched": ["presentation/hud/objectives.gd", "presentation/hud/g3_score.gd", "presentation/hud/g3b_stage.gd", "presentation/hud/minimap.gd", "(earlier UI4-1 files unchanged this generation)"],
+  "test_state": "Playtests: human 33/0, human_b 37/0, machine 33/4 (x2), all before throttle edits. Throttle edits not compiled. test_hud/test_ui3/full suite not run by UI4-2.",
+  "gotchas": [
+    "fog_layer.gd (R4) shader error 'Unknown identifier TEXTURE' blacks out the map view in every windowed run until R4 fixes it; judge machine-flow failures only after that is fixed.",
+    "Human flow total is 33 checks, not 37; only human_b/machine flows have the extra checks (the 37 target applies to human_b).",
+    "Throttles are real-time (Time.get_ticks_msec) and only kick in above 400 entities, so small test worlds keep immediate behaviour."
+  ]
+}
