@@ -1,0 +1,42 @@
+{
+  "_meta": "G4b UNITS (CONTRACTS_G4 section 8): 8 new human units + weapons + production + roles. Mechanics in sim/systems/g4b_mech.gd and combat.gd hooks. Cargo fields on a_apc/b_halftrack per CONTRACTS_G4 section 7 (TRANS). Unit fields: conceal_still (sniper), setup_ticks (mortar deploy), detects_mines/can_mine/can_charge (combat engineer), front_armor_mult + crush_damage per tick (scrap mech). Weapon fields: ignore_cover, ignite (flamer), cover_mult (sniper vs covered infantry), salvo + salvo_gap seconds (rocket truck). g4_mine_blast / g4_charge are the mine and demolition-charge payloads. PROVISIONAL numbers.",
+  "units": {
+    "a_apc": {"name": "APC", "role": "transport", "armor": "light", "move_class": "vehicle", "hp": 520, "speed": 3.8, "sight": 8, "weapon": "lmg", "pop": 3, "radius": 0.6, "leaves_wreck": true, "ammo_max": 300, "fuel_max": 350, "fuel_per_tile": 1.0, "components": {"mobility": 100, "weapon": 100, "sensors": 100}, "cargo_slots": 10, "cargo_accepts": ["foot"], "faction": "human_a"},
+    "a_sniper": {"name": "Sniper", "role": "sniper", "armor": "infantry", "move_class": "foot", "hp": 70, "speed": 2.2, "sight": 11, "weapon": "sniper_rifle", "pop": 1, "radius": 0.3, "ammo_max": 30, "morale": 100, "conceal_still": true, "faction": "human_a", "stage_min": 8},
+    "a_mortar": {"name": "Mortar Team", "role": "mortar", "armor": "infantry", "move_class": "foot", "hp": 90, "speed": 1.9, "sight": 8, "weapon": "mortar", "pop": 1, "radius": 0.3, "ammo_max": 30, "morale": 100, "setup_ticks": 40, "faction": "human_a"},
+    "a_combat_engineer": {"name": "Combat Engineer", "role": "engineer", "armor": "infantry", "move_class": "foot", "hp": 90, "speed": 2.3, "sight": 8, "weapon": "carbine", "pop": 1, "radius": 0.3, "ammo_max": 40, "morale": 100, "can_build": true, "build_power": 1.2, "detects_mines": true, "can_mine": true, "can_charge": true, "faction": "human_a", "stage_min": 8},
+    "b_flamer": {"name": "Flamethrower", "role": "flamer", "armor": "infantry", "move_class": "foot", "hp": 110, "speed": 2.0, "sight": 7, "weapon": "flamethrower", "pop": 1, "radius": 0.3, "ammo_max": 40, "morale": 100, "faction": "human_b"},
+    "b_halftrack": {"name": "Halftrack", "role": "transport", "armor": "light", "move_class": "vehicle", "hp": 560, "speed": 3.4, "sight": 8, "weapon": "hmg", "pop": 3, "radius": 0.6, "leaves_wreck": true, "ammo_max": 300, "fuel_max": 340, "fuel_per_tile": 1.1, "components": {"mobility": 100, "weapon": 100, "sensors": 100}, "cargo_slots": 8, "cargo_accepts": ["foot"], "faction": "human_b"},
+    "b_scrap_mech": {"name": "Scrap Mech", "role": "heavy", "armor": "heavy", "move_class": "vehicle", "hp": 1500, "speed": 1.5, "sight": 8, "weapon": "scrap_cannon", "pop": 5, "radius": 0.8, "leaves_wreck": true, "ammo_max": 40, "fuel_max": 400, "fuel_per_tile": 2.0, "components": {"mobility": 100, "weapon": 100, "sensors": 100}, "front_armor_mult": 1.5, "crush_damage": 3, "faction": "human_b", "stage_min": 8},
+    "b_rocket_truck": {"name": "Rocket Truck", "role": "artillery", "armor": "light", "move_class": "vehicle", "hp": 300, "speed": 2.8, "sight": 7, "weapon": "rocket_salvo", "pop": 3, "radius": 0.6, "leaves_wreck": true, "ammo_max": 36, "fuel_max": 300, "fuel_per_tile": 1.0, "components": {"mobility": 100, "weapon": 100, "sensors": 100}, "faction": "human_b", "stage_min": 8}
+  },
+  "weapons": {
+    "sniper_rifle": {"class": "sniper", "damage": 55, "range": 11, "cooldown": 4.0, "accuracy": 0.85, "cover_mult": 0.8},
+    "mortar": {"class": "artillery", "damage": 38, "range": 12, "min_range": 3, "cooldown": 4.0, "accuracy": 0.6, "splash": 1.3, "indirect": true},
+    "flamethrower": {"class": "flame", "damage": 14, "range": 3.5, "cooldown": 0.5, "accuracy": 0.9, "ignore_cover": true, "ignite": true},
+    "scrap_cannon": {"class": "at", "damage": 85, "range": 7, "cooldown": 4.0, "accuracy": 0.7},
+    "rocket_salvo": {"class": "artillery", "damage": 42, "range": 18, "min_range": 5, "cooldown": 22.0, "accuracy": 0.45, "splash": 1.5, "indirect": true, "salvo": 6, "salvo_gap": 0.3},
+    "g4_mine_blast": {"class": "artillery", "damage": 110, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.0},
+    "g4_charge": {"class": "demolition", "damage": 1300, "range": 0, "cooldown": 1, "accuracy": 1.0}
+  },
+  "armor_mult": {
+    "sniper": {"infantry": 1.0, "light": 0.08, "heavy": 0.02, "building": 0.03, "fortification": 0.01},
+    "flame": {"infantry": 1.25, "light": 0.4, "heavy": 0.12, "building": 0.5, "fortification": 0.1},
+    "crush": {"infantry": 1.0, "light": 0.0, "heavy": 0.0, "building": 0.0, "fortification": 0.0}
+  },
+  "production": {
+    "a_apc": {"name": "APC", "spawns": ["a_apc"], "facility": "motor_pool", "cost": {"credits": 280, "salvage": 120, "ore": 60}, "train_time": 22, "hotkey": "P", "faction": "human_a"},
+    "a_sniper": {"name": "Sniper", "spawns": ["a_sniper"], "facility": "barracks", "cost": {"credits": 180, "salvage": 40, "ore": 0}, "train_time": 14, "hotkey": "S", "faction": "human_a", "stage_min": 8},
+    "a_mortar": {"name": "Mortar Team", "spawns": ["a_mortar"], "facility": "barracks", "cost": {"credits": 200, "salvage": 60, "ore": 20}, "train_time": 16, "hotkey": "N", "faction": "human_a"},
+    "a_combat_engineer": {"name": "Combat Engineer", "spawns": ["a_combat_engineer"], "facility": "barracks", "cost": {"credits": 150, "salvage": 40, "ore": 0}, "train_time": 12, "hotkey": "G", "faction": "human_a", "stage_min": 8},
+    "b_flamer": {"name": "Flamethrower", "spawns": ["b_flamer"], "facility": "b_barracks", "cost": {"credits": 140, "salvage": 50, "ore": 0}, "train_time": 12, "hotkey": "F", "faction": "human_b"},
+    "b_halftrack": {"name": "Halftrack", "spawns": ["b_halftrack"], "facility": "b_heavy_plant", "cost": {"credits": 240, "salvage": 140, "ore": 50}, "train_time": 20, "hotkey": "H", "faction": "human_b"},
+    "b_scrap_mech": {"name": "Scrap Mech", "spawns": ["b_scrap_mech"], "facility": "b_heavy_plant", "cost": {"credits": 650, "salvage": 320, "ore": 200}, "train_time": 45, "hotkey": "S", "faction": "human_b", "stage_min": 8},
+    "b_rocket_truck": {"name": "Rocket Truck", "spawns": ["b_rocket_truck"], "facility": "b_heavy_plant", "cost": {"credits": 420, "salvage": 180, "ore": 160}, "train_time": 34, "hotkey": "K", "faction": "human_b", "stage_min": 8}
+  },
+  "faction_roles": {
+    "human_a": {"sniper": "a_sniper", "mortar": "a_mortar", "engineer_combat": "a_combat_engineer", "flamer": "", "transport": "a_apc"},
+    "human_b": {"sniper": "", "mortar": "", "engineer_combat": "", "flamer": "b_flamer", "transport": "b_halftrack"},
+    "machine": {"sniper": "", "mortar": "", "engineer_combat": "", "flamer": "", "transport": ""}
+  }
+}

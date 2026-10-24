@@ -34,6 +34,8 @@ const Supply = preload("res://sim/systems/supply.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")
+const G4bMech = preload("res://sim/systems/g4b_mech.gd")  # G4b UNITS: concealment, ignite
 
 const BUCKET := 2.0
 const GRID_STRIDE := 1024
@@ -76,6 +78,14 @@ static func stats(e: Dictionary) -> Dictionary:
 		"guided": bool(wd.get("guided", false)),  # G3b STG4: indirect, no friendly splash, no scatter
 		"splash": float(wd.get("splash", 0)),
 		"is_air": bool(d.get("is_air", false)),
+		# G4b UNITS (CONTRACTS_G4 section 8): mortar set-up, flamer, sniper cover, salvo, mech front armor
+		"setup": int(d.get("setup_ticks", 0)),
+		"ignite": bool(wd.get("ignite", false)),
+		"ignore_cover": bool(wd.get("ignore_cover", false)),
+		"cover_mult": float(wd.get("cover_mult", 1.0)),
+		"salvo": int(wd.get("salvo", 1)),
+		"salvo_gap": float(wd.get("salvo_gap", 0.25)),
+		"front_mult": float(d.get("front_armor_mult", 1.0)),
 	}
 	_stats[key] = s
 	return s
@@ -382,6 +392,29 @@ static func _bld_act(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Array) 
 		_tower_tick(w, b, grid, blds)
 
 
+## Fog.entity_visible plus the G4b sniper conceal_still rule (G4bMech.hidden_from).
+static func _seen(w: SimWorld, fid: int, t: Dictionary) -> bool:
+	return Fog.entity_visible(w, fid, t) and not (t.has("hid") and G4bMech.hidden_from(w, fid, t))
+
+
+## G4b UNITS: target-side damage factor for a direct hit / splash victim: scrap-mech front armor
+## (front_armor_mult divides front hits), foot infantry cover on HILL (Terrain.cover_mult, NAT) and the
+## weapon's cover_mult vs infantry in cover. ignore_cover weapons (flamer) skip both cover terms.
+static func _g4_mult(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> float:
+	if t.kind != "unit":
+		return 1.0
+	var ts := stats(t)
+	var m := 1.0
+	if float(ts.front_mult) != 1.0 and Damage.hit_side(e.pos, t) == "front":
+		m /= float(ts.front_mult)
+	if t.has("morale") and not bool(s.get("ignore_cover", false)):
+		var p: Vector2 = t.pos
+		m *= Terrain.cover_mult(w.terrain_at(Vector2i(floori(p.x), floori(p.y))), "foot")
+		if float(s.get("cover_mult", 1.0)) != 1.0 and Damage.in_cover(w, t):
+			m *= float(s.cover_mult)
+	return m
+
+
 ## True if a shooter with stats s may engage t at all (air targets need an anti_air weapon).
 static func can_target(s: Dictionary, t: Dictionary) -> bool:
 	return bool(s.aa) or t.kind != "unit" or not bool(stats(t).is_air)
@@ -400,7 +433,7 @@ static func _valid_target(w: SimWorld, fid: int, tid: int, s = null):
 		return t if String(t.get("state", "")) != "ruined" and Fog.is_visible(w, fid, t.pos) else null  # explicit attack on the bridge only (C2: a ruin is never a target)
 	if t == null or (t.kind != "unit" and t.kind != "building") or not w.is_enemy(fid, int(t.owner)):
 		return null
-	if not Fog.entity_visible(w, fid, t):
+	if not _seen(w, fid, t):
 		return null
 	if s != null and not can_target(s, t):
 		return null
@@ -459,7 +492,7 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 							var vi := floori(cp.y) * mw + floori(cp.x)
 							if vi < 0 or vi >= nvis or vis[vi] != 1 or not w.entities.has(cid):
 								continue
-							if Fog.concealed(w, fid, c):
+							if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
 								continue  # G2: infantry hidden in forest (A2)
 							if (not aa and bool(stats(c).is_air)) or d2 < mr2:
 								continue  # G3a: air needs anti_air; artillery min_range
@@ -556,7 +589,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					if vi < 0 or vi >= nvis or vis[vi] != 1:
 						continue
 					var c3 = ents.get(cid)
-					if c3 == null or Fog.concealed(w, fid, c3) or (not aa and bool(stats(c3).is_air)):
+					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or (not aa and bool(stats(c3).is_air)):
 						continue
 					best = c3
 					best_d = dd
@@ -618,7 +651,7 @@ static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float,
 	var vi := floori(cp.y) * mw + floori(cp.x)
 	if vi < 0 or vi >= vis.size() or vis[vi] != 1 or not w.entities.has(int(c.id)):
 		return false
-	if Fog.concealed(w, fid, c):
+	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
 		return false
 	return aa or not bool(stats(c).is_air)
 
@@ -743,7 +776,7 @@ static func _attack_order(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 		e.target = -1
 		Movement.stop_path(e)
 		return
-	if Fog.entity_visible(w, int(e.owner), t):
+	if _seen(w, int(e.owner), t):
 		e.order.last_pos = t.pos
 		e.order.lost = false
 		_engage(w, e, s, t, true)
@@ -764,7 +797,7 @@ static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, ca
 	var mr: float = s.min_range
 	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
 	# G3a: indirect fire ignores the ridge check but needs d >= min_range.
-	if d <= s.range and d >= mr and (bool(s.indirect) or _los(w, e.pos, t.pos)):
+	if d <= s.range and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not Fortify.fire_blocked(w, e, t))):
 		if e.moving:
 			Movement.stop_path(e)
 		_fire(w, e, s, t, true)  # line of fire just checked (positions unchanged since)
@@ -801,8 +834,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		return
 	if Status.can_fire(w, e) != "":
 		return
+	if int(s.get("setup", 0)) > 0 and (not bool(e.get("deployed", false)) or bool(e.get("moving", false))):
+		return  # G4b UNITS: mortar fires only deployed (G4bMech set-up)
 	var indirect: bool = s.indirect
-	if not indirect and not los_ok and not _los(w, e.pos, t.pos):
+	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t)):
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
@@ -812,7 +847,20 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		s = s.duplicate()
 		s.damage = float(s.damage) * dm
 	# --- end G3b STG4 hook
+	if not indirect:
+		var gm := _g4_mult(w, e, s, t)
+		if gm != 1.0:
+			s = s.duplicate()
+			s.damage = float(s.damage) * gm
 	var cd := maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
+	if int(s.get("salvo", 1)) > 1:   # G4b UNITS: rocket salvo, salvo_gap between rockets, then reload
+		var left := int(e.get("salvo_left", 0))
+		if left <= 0:
+			left = int(s.salvo)
+		left -= 1
+		e.salvo_left = left
+		if left > 0:
+			cd = maxi(roundi(float(s.salvo_gap) * SimWorld.TICK_RATE), 1)
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
 	var hit := w.rng.chance(float(s.accuracy) * Status.accuracy_mult(w, e))
@@ -825,6 +873,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		e.firing = FIRING_HINT_TICKS
 		e.facing = snappedf((to - from).angle(), Q)
 	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to, "indirect": indirect})
+	if bool(s.get("ignite", false)):
+		G4bMech.ignite(w, w.cell_of(to), int(e.owner))  # G4b UNITS: flame landing on FOREST starts a fire
 	if e.kind == "unit":
 		e.last_fired_tick = w.tick  # G2 (A2): firing reveals forest-concealed infantry for 60 ticks
 		Supply.on_shot(w, e)
@@ -891,7 +941,7 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 		if v == null:
 			continue
 		var s2 := s.duplicate()
-		s2.damage = float(s.damage) * (1.0 - 0.5 * float(hits[id]) / rad)
+		s2.damage = float(s.damage) * (1.0 - 0.5 * float(hits[id]) / rad) * _g4_mult(w, e, s, v)
 		Damage.apply_hit(w, e, v, s2, true)
 
 
@@ -913,7 +963,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		return "Cannot attack your own forces."
 	if not w.is_enemy(fid, int(t.owner)):
 		return "That is not a valid attack target."
-	if not Fog.entity_visible(w, fid, t):
+	if not _seen(w, fid, t):
 		return "Target not visible."
 	var armed := false
 	for id in cmd.get("unit_ids", []):
