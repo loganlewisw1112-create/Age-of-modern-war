@@ -5,6 +5,7 @@ extends "res://tests/test_base.gd"
 
 const Movement = preload("res://sim/systems/movement.gd")
 const NativeCore = preload("res://sim/native_core.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
 const C := Vector2(0.5, 0.5)
 
 
@@ -232,3 +233,47 @@ func test_grid_query_and_nearest_enemy_micro() -> void:
 			if results[1][2][k] != results[0][2][k]:
 				diff += 1
 		check(diff <= 1, "native nearest_enemy_batch == fallback (%d diffs; f32 ties may differ)" % diff)
+
+
+func test_native_batch_tick_in_use() -> void:
+	# N1-core-2: the native path runs the whole movement tick in RtsSteer.advance_separate
+	if not NativeCore.available():
+		return
+	var w := _arena_world(true)
+	check(w.nav.steer.has_method("advance_separate"), "DLL exposes RtsSteer.advance_separate (batch advance)")
+	var ids := _spawn_group(w, 12, 4)
+	do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": Vector2(30.5, 30.5)})
+	Movement.profile = true
+	Movement.prof = {}
+	w.run_ticks(10)
+	Movement.profile = false
+	check(Movement.prof.has("native_step"), "movement tick went through the native batch (%s)" % str(Movement.prof.keys()))
+	Movement.prof = {}
+
+
+func test_reduced_tier_stride_parity() -> void:
+	# PERF4 fidelity tiers: REDUCED units advance every STRIDE ticks with a STRIDE x step. Both
+	# paths must still reach the goal through the gap without ever standing in a blocked cell.
+	var goal := Vector2(72.5, 22.5)
+	for on in _modes():
+		var w := _arena_world(on)
+		var ids := _spawn_group(w, 20, 6)
+		do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal})
+		var bad := []
+		var reduced_seen := 0
+		for k in 40:
+			w.run_ticks(20)
+			bad.append_array(_bad_cells(w))
+			for id in ids:
+				if int(w.entities[id].get("tier", 0)) == Tiers.REDUCED:
+					reduced_seen += 1
+		var far := 0
+		for id in ids:
+			if (w.entities[id].pos as Vector2).distance_to(goal) > 9.0:
+				far += 1
+		var tag := "native" if on else "gdscript"
+		if reduced_seen == 0:
+			print("  note: [%s] no REDUCED-tier samples (tiers off or enemy near); stride path not exercised" % tag)
+		check_eq(far, 0, "[%s] every unit reached the goal area (reduced samples %d)" % [tag, reduced_seen])
+		check(bad.is_empty(), "[%s] no unit ever stood in a blocked cell %s" % [tag, str(bad.slice(0, 4))])
+	_set_native(true)

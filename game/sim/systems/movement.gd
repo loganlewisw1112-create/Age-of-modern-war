@@ -1,13 +1,16 @@
 extends RefCounted
 const Status = preload("res://sim/systems/status.gd")
 const NativeCore = preload("res://sim/native_core.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
 ## Movement (owner: agent B / sim-mil). Nav grids (foot/vehicle), A* pathing with a per-tick
 ## budget and a deterministic, saved request queue, steering with separation, formations.
 ## Commands: move, attack_move, stop, hold. Contract: docs/CONTRACTS.md section 5.
 ##
 ## Runtime-only (never saved, rebuilt by rebuild_nav): w.nav = {w, h, blocked (footprint counts),
 ##   foot: AStarGrid2D, vehicle: AStarGrid2D, comp: {mc: PackedInt32Array}, comp_dirty}.
-## Saved: w.sys_state.movement = {queue: [{id, req, goal}], req_seq, budget_tick, budget_used}.
+## Saved: w.sys_state.movement = {queue: [{id, req, goal, [fx, fy]}], req_seq, budget_tick, budget_used}
+##   (fx, fy = the group flow goal cell of a queued group request, native path only; ints).
 ## Entity fields added lazily: path_req (int, -1 = none pending), stuck (int ticks).
 ## G3a (S3-sim): move_class "air" (drones) has no AStarGrid: every in-bounds cell is passable,
 ##   paths are one straight segment to the map-clamped goal, terrain never slows it, footprints
@@ -18,6 +21,12 @@ const NativeCore = preload("res://sim/native_core.gd")
 ##   G1 AStarGrid2D path is used unchanged. Group orders (>= FLOW_MIN units) on the native path
 ##   share one flow field per move class and each unit's waypoints are read off it (no A*).
 ##   Paths stay plain waypoint lists in e.path, so saves and the queue are path-agnostic.
+## G3b (N1-core-2): native tick = one RtsSteer.advance_separate call (path advance of every moving unit +
+##   separation of every unit); GDScript gathers inputs and applies arrive / repath outcomes.
+##   PERF4 fidelity tiers: Tiers.move_k(w, e) = 1 FULL, STRIDE on a REDUCED unit's stride tick
+##   (k x step, segments <= SEG_MAX, guard 4k, stuck +-k), 0 otherwise (no advance). On the native
+##   path a REDUCED unit is also separated only on its stride tick (it is far from every enemy, and
+##   skipping it is what makes 10k units affordable); the GDScript fallback separates every unit.
 
 const CLASSES := ["foot", "vehicle"]
 const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, FIFO)
@@ -39,6 +48,7 @@ const AIR_LAYER := 262144        # separation hash offset: air units only separa
 const NATIVE_PATH_BUDGET := PATH_BUDGET  # same queue semantics on both paths (saved queue, tests)
 const WP_TOL := 0.45             # intermediate waypoint reached within this many tiles
 const FLOW_MIN := 6              # group orders this big share a flow field (native path)
+const SEG_MAX := 0.5             # longest single collision-checked step (PERF4 stride steps)
 
 static var _lut_speed: Dictionary = {}   # mc -> Array[float] speed_mult per terrain code (0 = impassable)
 static var profile := false             # tools/scale_bench.gd --breakdown: per-phase usec in prof
@@ -395,14 +405,19 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	if st.queue.is_empty() and _take_budget(w):
 		var fp := []
 		if _group_flow.has(move_class(e)):
-			fp = _flow_path(w, move_class(e), r.start, r.cell, r.pos)
+			fp = _flow_path(w, move_class(e), int(_group_flow[move_class(e)].h), r.start, r.cell, r.pos)
 		e.path = fp if not fp.is_empty() else _compute(w, move_class(e), r.start, r.cell, r.pos)
 		e.path_req = -1
 	else:
 		st.req_seq = int(st.req_seq) + 1
 		e.path = []
 		e.path_req = int(st.req_seq)
-		st.queue.append({"id": int(e.id), "req": int(st.req_seq), "goal": r.pos})
+		var qe := {"id": int(e.id), "req": int(st.req_seq), "goal": r.pos}
+		if _group_flow.has(move_class(e)):
+			var fg: Vector2i = _group_flow[move_class(e)].goal
+			qe["fx"] = fg.x  # N1-core-2: served later off the same group flow field (no A*)
+			qe["fy"] = fg.y
+		st.queue.append(qe)
 	return true
 
 
@@ -462,12 +477,11 @@ static func _line_clear(w: SimWorld, mc: String, a: Vector2, b: Vector2) -> bool
 ## Native group path: descend the shared flow field from start toward the group goal, cut over to
 ## a straight run to this unit's slot at the first waypoint with a clear line, else A* the rest.
 ## Returns [] when the flow cannot serve this unit (caller falls back to the normal A* path).
-static func _flow_path(w: SimWorld, mc: String, start: Vector2i, dest: Vector2i, dest_pos: Vector2) -> Array:
-	var gf: Dictionary = _group_flow[mc]
+static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: Vector2i, dest_pos: Vector2) -> Array:
 	var native = _native(w)
-	if native == null:
+	if native == null or h < 0:
 		return []
-	var pts: PackedVector2Array = native.flow_path(int(gf.h), start)
+	var pts: PackedVector2Array = native.flow_path(h, start)
 	if pts.is_empty():
 		return []
 	var out := []
@@ -529,10 +543,18 @@ static func _drain_queue(w: SimWorld) -> void:
 			if e.order.type == "move":
 				e.order = {"type": "idle"}
 			continue
-		if r.cell == r.start or move_class(e) == AIR or _line_clear(w, move_class(e), e.pos, r.pos):
+		var mc := move_class(e)
+		if r.cell == r.start or mc == AIR or _line_clear(w, mc, e.pos, r.pos):
 			e.path = [r.pos]
 		else:
-			e.path = _compute(w, move_class(e), r.start, r.cell, r.pos)
+			var fp := []
+			var native = _native(w)
+			if native != null and req.has("fx"):
+				# group request: descend the group's flow field (LRU cached; rebuilt identically
+				# from nav state after a load), A* only if the flow cannot serve it
+				var h: int = native.flow(Vector2i(int(req.fx), int(req.fy)), NativeCore.mc_index(mc))
+				fp = _flow_path(w, mc, h, r.start, r.cell, r.pos)
+			e.path = fp if not fp.is_empty() else _compute(w, mc, r.start, r.cell, r.pos)
 		e.path_i = 0
 		e.path_req = -1
 	st.queue = q.slice(i)
@@ -552,11 +574,34 @@ static func tick(w: SimWorld) -> void:
 	_drain_queue(w)
 	if profile:
 		t0 = _pt("drain", t0)
+	var steer = w.nav.get("steer")
+	if steer != null and steer.has_method("advance_separate"):
+		_tick_native(w, t0)
+		return
 	var solid := {"foot": w.nav.solid.foot, "vehicle": w.nav.solid.vehicle}
 	var mw := int(w.nav.w)
 	var bounds := Rect2i(0, 0, mw, int(w.nav.h))
-	var steer = w.nav.get("steer")
-	# native separation inputs, gathered in the same pass (each unit only moves itself above)
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit":
+			continue
+		var mc: String = udef(String(e.def)).mc
+		_rescue(w, e, mc, solid, mw, bounds)
+		if e.moving:
+			var k := Tiers.move_k(w, e)  # PERF4: 1 FULL, STRIDE on a REDUCED stride tick, else 0
+			if k > 0:
+				_advance(w, e, mc, k)
+	if profile:
+		t0 = _pt("advance_loop", t0)
+	if steer != null:
+		_separate_native_only(w, steer)  # older DLL without advance_separate(): separation only
+	else:
+		_separate(w)
+	if profile:
+		_pt("separate", t0)
+
+
+static func _separate_native_only(w: SimWorld, steer) -> void:
 	var units := []
 	var pos := PackedVector2Array()
 	var rad := PackedFloat32Array()
@@ -569,41 +614,194 @@ static func tick(w: SimWorld) -> void:
 		if e.kind != "unit":
 			continue
 		var u := udef(String(e.def))
-		var mc: String = u.mc
-		var p: Vector2 = e.pos
-		var cell := Vector2i(floori(p.x), floori(p.y))
-		if mc == AIR:
-			if not bounds.has_point(cell):
-				e.pos = Vector2(clampi(cell.x, 0, bounds.size.x - 1), clampi(cell.y, 0, bounds.size.y - 1)) + CENTER
-		else:
-			var sb = solid.get(mc)
-			if sb == null or not bounds.has_point(cell) or sb[cell.y * mw + cell.x] != 0:
-				# safety invariant: never leave a unit inside an impassable cell
-				e.pos = Vector2(nearest_free_cell(w, cell, mc)) + CENTER
-		if e.moving:
-			_advance(w, e, mc)
-		if steer != null:
-			units.append(e)
-			pos.append(e.pos)
-			rad.append(float(u.radius))
-			mov.append(1 if e.moving else 0)
-			keys.append((int(e.owner) + 1) * 1048576 + (AIR_LAYER if mc == AIR else 0))
-			ids.append(int(e.id))
-			mcs.append(NativeCore.mc_index(mc))
-	if profile:
-		t0 = _pt("advance_loop", t0)
-	if steer == null:
-		_separate(w)
-		if profile:
-			_pt("separate", t0)
-		return
+		units.append(e)
+		pos.append(e.pos)
+		rad.append(float(u.radius))
+		mov.append(1 if e.moving else 0)
+		keys.append((int(e.owner) + 1) * 1048576 + (AIR_LAYER if u.mc == AIR else 0))
+		ids.append(int(e.id))
+		mcs.append(NativeCore.mc_index(u.mc))
 	var out: PackedVector2Array = steer.separate(w.nav.native, pos, rad, mov, keys, ids, mcs,
 		PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q]))
 	for i in out.size():
 		if out[i] != pos[i]:
 			units[i].pos = out[i]
+
+
+## Safety invariant: never leave a unit inside an impassable cell (or off the map).
+static func _rescue(w: SimWorld, e: Dictionary, mc: String, solid: Dictionary, mw: int, bounds: Rect2i) -> void:
+	var p: Vector2 = e.pos
+	var cell := Vector2i(floori(p.x), floori(p.y))
+	if mc == AIR:
+		if not bounds.has_point(cell):
+			e.pos = Vector2(clampi(cell.x, 0, bounds.size.x - 1), clampi(cell.y, 0, bounds.size.y - 1)) + CENTER
+	else:
+		var sb = solid.get(mc)
+		if sb == null or not bounds.has_point(cell) or sb[cell.y * mw + cell.x] != 0:
+			e.pos = Vector2(nearest_free_cell(w, cell, mc)) + CENTER
+
+
+## Native path (G3b N1-core-2): one RtsSteer.advance_separate call advances every moving unit
+## along its path and separates every unit; GDScript only gathers inputs (units from the shared
+## SimIndex, static per-entity data from id-indexed tables in w.cache) and applies outcomes.
+static func _tick_native(w: SimWorld, t0: int) -> void:
+	var sf: PackedByteArray = w.nav.solid.foot
+	var sv: PackedByteArray = w.nav.solid.vehicle
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var tabs := _tabs(w)
+	var trad: PackedFloat32Array = tabs.rad
+	var tkey: PackedInt32Array = tabs.key
+	var tmc: PackedByteArray = tabs.mc
+	var tsp: PackedFloat32Array = tabs.spd
+	var tn := trad.size()
+	var grown := false
+	var all: Array = SimIndex.of(w, "unit")
+	var na := all.size()
+	# pre-sized arrays + index writes (about 2.5x cheaper than append in GDScript), trimmed below
+	var units := []
+	units.resize(na)
+	var pos := PackedVector2Array()
+	pos.resize(na)
+	var ids := PackedInt32Array()
+	ids.resize(na)
+	var mov := PackedByteArray()
+	mov.resize(na)
+	var movers := []
+	movers.resize(na)
+	var mvi := PackedInt32Array()
+	mvi.resize(na * 6)
+	var spd := PackedFloat32Array()
+	spd.resize(na)
+	var fin := PackedVector2Array()
+	fin.resize(na)
+	var wp := PackedVector2Array()
+	wp.resize(na * 3)
+	var wn := 0
+	var nm := 0
+	var reduced := Tiers.REDUCED
+	var stride := Tiers.STRIDE
+	var n := 0
+	var tick := w.tick
+	for e: Dictionary in all:
+		var id: int = e.id
+		# PERF4 fidelity tier: a REDUCED unit (no enemy anywhere near) is advanced AND separated
+		# only on its stride tick (k = STRIDE); on the other ticks it is left out of the batch.
+		var k := 1
+		if int(e.get("tier", 0)) == reduced:
+			if (tick + id) % stride != 0:
+				continue
+			k = stride
+		if not w.entities.has(id):
+			continue
+		if id >= tn or trad[id] <= 0.0:
+			if id >= tn:
+				tn = maxi(id + 1, tn * 2 + 64)
+				trad.resize(tn)
+				tkey.resize(tn)
+				tmc.resize(tn)
+				tsp.resize(tn)
+			var u := udef(String(e.def))
+			trad[id] = maxf(float(u.radius), 0.001)
+			tkey[id] = (int(e.owner) + 1) * 1048576 + (AIR_LAYER if u.mc == AIR else 0)
+			tmc[id] = NativeCore.mc_index(u.mc)
+			tsp[id] = float(u.speed) * SimWorld.DT
+			grown = true
+		var mi := tmc[id]
+		var p: Vector2 = e.pos
+		var cx := floori(p.x)
+		var cy := floori(p.y)
+		if cx < 0 or cy < 0 or cx >= mw or cy >= mh or (mi == 0 and sf[cy * mw + cx] != 0) or (mi == 1 and sv[cy * mw + cx] != 0):
+			_rescue(w, e, udef(String(e.def)).mc, {"foot": sf, "vehicle": sv}, mw, Rect2i(0, 0, mw, mh))
+			p = e.pos
+		var mflag := 0
+		if e.moving:
+			var path: Array = e.path
+			var pi := int(e.path_i)
+			var ps := path.size()
+			if ps == 0:
+				if int(e.get("path_req", -1)) < 0:
+					_arrive(e)  # moving without a path and nothing pending
+				else:
+					mflag = 1  # waiting for a queued path
+			elif pi >= ps:
+				_arrive(e)
+			else:
+				mflag = 1
+				if k > 0:  # k = inline Tiers.move_k(w, e) (the k == 0 case was skipped above)
+					var nw := mini(ps - pi, k + 2)  # waypoints a k x step can use (window end stops it)
+					if wn + nw > wp.size():
+						wp.resize(wp.size() * 2 + nw)
+					var b6 := nm * 6
+					mvi[b6] = n
+					mvi[b6 + 1] = k
+					mvi[b6 + 2] = ps - pi
+					mvi[b6 + 3] = wn
+					mvi[b6 + 4] = nw
+					mvi[b6 + 5] = int(e.get("stuck", 0))
+					for j in nw:
+						wp[wn + j] = path[pi + j]
+					wn += nw
+					fin[nm] = path[ps - 1]
+					spd[nm] = tsp[id] * Status.move_mult(w, e)
+					movers[nm] = e
+					nm += 1
+		units[n] = e
+		pos[n] = p
+		ids[n] = id
+		mov[n] = mflag
+		n += 1
+	pos.resize(n)
+	ids.resize(n)
+	mov.resize(n)
+	mvi.resize(nm * 6)
+	spd.resize(nm)
+	fin.resize(nm)
+	wp.resize(wn)
+	if grown:
+		tabs.rad = trad
+		tabs.key = tkey
+		tabs.mc = tmc
+		tabs.spd = tsp
 	if profile:
-		_pt("separate", t0)
+		t0 = _pt("gather", t0)
+	var steer = w.nav.steer
+	var out: PackedVector2Array = steer.advance_separate(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd,
+		wp, fin, PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS]))
+	if profile:
+		t0 = _pt("native_step", t0)
+	for i in steer.last_changed():
+		units[i].pos = out[i]
+	var res: PackedFloat32Array = steer.last_adv()
+	for m in nm:
+		var e: Dictionary = movers[m]
+		var b := m * 4
+		var fl := int(res[b + 3])
+		if fl & 4:
+			e.facing = float(res[b + 1])
+		var dpi := int(res[b])
+		if dpi != 0:
+			e.path_i = int(e.path_i) + dpi
+		e.stuck = int(res[b + 2])
+		var oc := fl & 3
+		if oc == 1:
+			_arrive(e)
+		elif oc == 2:
+			var path: Array = e.path
+			if not order_path(w, e, path[path.size() - 1]) and e.order.type == "move":
+				e.order = {"type": "idle"}
+	if profile:
+		_pt("apply", t0)
+
+
+## Runtime-only per-entity tables for the native tick, indexed by entity id (kind, def and owner
+## never change after spawn). rad 0 = not filled yet. Never saved; rebuilt lazily after a load.
+static func _tabs(w: SimWorld) -> Dictionary:
+	var t = w.cache.get("mv_tabs")
+	if t == null:
+		t = {"rad": PackedFloat32Array(), "key": PackedInt32Array(), "mc": PackedByteArray(), "spd": PackedFloat32Array()}
+		w.cache["mv_tabs"] = t
+	return t
 
 
 static func _arrive(e: Dictionary) -> void:
@@ -612,7 +810,7 @@ static func _arrive(e: Dictionary) -> void:
 		e.order = {"type": "idle"}
 
 
-static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
+static func _advance(w: SimWorld, e: Dictionary, mc: String, k := 1) -> void:
 	var path: Array = e.path
 	if path.is_empty():
 		if int(e.get("path_req", -1)) < 0:
@@ -633,13 +831,13 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 	var pos: Vector2 = e.pos
 	var start_pos := pos
 	var tmult := 1.0 if mc == AIR else float(_lut(mc)[w.terrain_at(w.cell_of(pos))])
-	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
+	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e) * float(k)
 	if spd <= 0.0:
 		return  # immobile (mobility kill / no fuel): keep the path, do not move
 	var remaining := spd
 	var guard := 0
 	var blocked := false
-	while remaining > 0.0001 and pi < path.size() and guard < 4:
+	while remaining > 0.0001 and pi < path.size() and guard < 4 * k:
 		guard += 1
 		var wp: Vector2 = path[pi]
 		var d := wp - pos
@@ -649,18 +847,19 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 		if pi < path.size() - 1 and dist <= WP_TOL:
 			pi += 1  # G3b: intermediate waypoints count as reached within WP_TOL (no corner jams)
 			continue
-		var want := wp if dist <= remaining else pos + d / dist * remaining
+		var stp := minf(remaining, SEG_MAX)  # PERF4 stride: segments <= SEG_MAX keep collision exact
+		var want := wp if dist <= stp else pos + d / dist * stp
 		var got := _try_move(w, mc, pos, want)
 		if got != want:
 			blocked = true
 			pos = got
 			break
 		pos = want
-		if dist <= remaining:
+		if dist <= stp:
 			remaining -= dist
 			pi += 1
 		else:
-			remaining = 0.0
+			remaining -= stp
 	e.pos = _qpos(w, pos)
 	e.path_i = pi
 	if pi >= path.size():
@@ -668,9 +867,9 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 		return
 	var moved := pos.distance_to(start_pos)
 	if moved < spd * 0.25 or blocked:
-		e.stuck = int(e.get("stuck", 0)) + 1
+		e.stuck = int(e.get("stuck", 0)) + k
 	else:
-		e.stuck = maxi(int(e.get("stuck", 0)) - 1, 0)
+		e.stuck = maxi(int(e.get("stuck", 0)) - k, 0)
 	var st_ticks := int(e.stuck)
 	var final_pos: Vector2 = path[path.size() - 1]
 	var to_final := pos.distance_to(final_pos)

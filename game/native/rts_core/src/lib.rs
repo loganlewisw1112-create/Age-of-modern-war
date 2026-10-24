@@ -7,10 +7,11 @@
 //! Classes (all RefCounted, Packed-array API only):
 //!   RtsGrid  - uniform spatial hash: rebuild / query_radius / nearest_enemy_batch
 //!   RtsNav   - per-move-class passability + weights, A*, connected components, flow fields
-//!   RtsSteer - batch separation step against an RtsNav passability grid
+//!   RtsSteer - batch movement tick (path advance + separation) against an RtsNav grid
 
 use godot::prelude::*;
 
+mod advance;
 mod grid;
 mod nav;
 mod steer;

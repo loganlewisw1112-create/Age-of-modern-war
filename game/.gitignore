@@ -1,0 +1,3 @@
+
+# renamed in-use native DLLs left by tools/build_native.sh --swap
+bin/rts_core.prev*.dll

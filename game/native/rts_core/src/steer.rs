@@ -2,7 +2,10 @@
 //! Units overlap-test only against units with the same key (owner layer, air layer) in a
 //! half neighbourhood of buckets, so each pair is visited once, in ascending index order.
 //! Pushes are clamped, bounded to the map and slid against the RtsNav passability grid.
+//! advance_separate(): the whole movement tick in one call (G3b N1-core-2): batch path advance for the
+//! moving units (advance.rs), then separation over every unit, in ascending index order.
 
+use crate::advance::{advance_one, qpos, AdvParams, OUT_ARRIVE};
 use crate::nav::RtsNav;
 use godot::prelude::*;
 use std::collections::HashMap;
@@ -14,12 +17,12 @@ const HALF_NB: [(i32, i32); 5] = [(0, 0), (1, 0), (-1, 1), (0, 1), (1, 1)];
 pub struct RtsSteer {
     last_pairs: i32,
     last_moved: i32,
+    last_adv: Vec<f32>,
+    last_changed: Vec<i32>,
 }
 
-fn qpos(p: Vector2, q: f32) -> Vector2 {
-    let s = Vector2::new((p.x / q + 0.5).floor() * q, (p.y / q + 0.5).floor() * q);
-    if s.x.floor() == p.x.floor() && s.y.floor() == p.y.floor() { s } else { p }
-}
+/// Mover record stride in advance_separate()'s `mvi`: [unit index, k, rem, wp offset, wp count, stuck].
+const MVI: usize = 6;
 
 #[godot_api]
 impl RtsSteer {
@@ -30,13 +33,106 @@ impl RtsSteer {
     fn separate(&mut self, nav: Gd<RtsNav>, pos: PackedVector2Array, rad: PackedFloat32Array,
                 moving: PackedByteArray, keys: PackedInt32Array, ids: PackedInt32Array,
                 mcs: PackedByteArray, params: PackedFloat32Array) -> PackedVector2Array {
-        let p = pos.as_slice();
-        let n = p.len().min(rad.len()).min(moving.len()).min(keys.len()).min(ids.len()).min(mcs.len());
-        let (r, mv, ky, id, mc) = (rad.as_slice(), moving.as_slice(), keys.as_slice(), ids.as_slice(), mcs.as_slice());
+        let nav = nav.bind();
+        let out = self.separate_core(&nav, pos.as_slice(), rad.as_slice(), moving.as_slice(), keys.as_slice(),
+                                     ids.as_slice(), mcs.as_slice(), params.as_slice());
+        PackedVector2Array::from(out.as_slice())
+    }
+
+    /// One movement tick for the native path. Per unit i (ascending entity id): pos[i], ids[i],
+    /// moving[i] (1 = has or awaits a path). Static per-entity data comes from tables indexed by
+    /// entity id: rad_tab, key_tab (separation layer), mc_tab (0 foot, 1 vehicle, 2 air).
+    /// Per mover m: mvi[m*6..] = [unit index, k (PERF4 stride mult, >= 1), rem = path.size() -
+    /// path_i, offset into wp, waypoint count (min(rem, 4k)), stuck]; spd[m] = speed * DT *
+    /// move_mult (terrain applied here); fin[m] = the path's final waypoint. params = [sep
+    /// strength, max push, bucket, q, wp_tol, seg_max, stuck_repath]. Returns every unit's new
+    /// position; per-mover results via last_adv(), indices whose position changed via last_changed().
+    #[func]
+    #[allow(clippy::too_many_arguments)]
+    fn advance_separate(&mut self, nav: Gd<RtsNav>, pos: PackedVector2Array, ids: PackedInt32Array, moving: PackedByteArray,
+            rad_tab: PackedFloat32Array, key_tab: PackedInt32Array, mc_tab: PackedByteArray,
+            mvi: PackedInt32Array, spd: PackedFloat32Array, wp: PackedVector2Array, fin: PackedVector2Array,
+            params: PackedFloat32Array) -> PackedVector2Array {
+        let nav = nav.bind();
         let pr = params.as_slice();
         let get = |i: usize, d: f32| if i < pr.len() { pr[i] } else { d };
+        let ap = AdvParams { q: get(3, 1.0 / 1024.0), wp_tol: get(4, 0.45), seg_max: get(5, 0.5),
+                             stuck_repath: get(6, 40.0) as i32 };
+        let p0 = pos.as_slice();
+        let id = ids.as_slice();
+        let n = p0.len().min(id.len()).min(moving.len());
+        let (rt, kt, mt) = (rad_tab.as_slice(), key_tab.as_slice(), mc_tab.as_slice());
+        let mut r = Vec::with_capacity(n);
+        let mut ky = Vec::with_capacity(n);
+        let mut mc = Vec::with_capacity(n);
+        for (i, &eid) in id[..n].iter().enumerate() {
+            let e = eid.max(0) as usize;
+            r.push(rt.get(e).copied().unwrap_or(0.3));
+            // unknown ids get a unique negative layer: they never separate against anything
+            ky.push(kt.get(e).copied().unwrap_or(-1 - i as i32));
+            mc.push(mt.get(e).copied().unwrap_or(0));
+        }
+        let mut p: Vec<Vector2> = p0[..n].to_vec();
+        let mut mv: Vec<u8> = moving.as_slice()[..n].to_vec();
+        let (mi, sp, wps, fs) = (mvi.as_slice(), spd.as_slice(), wp.as_slice(), fin.as_slice());
+        let nm = (mi.len() / MVI).min(sp.len()).min(fs.len());
+        let mut res = vec![0.0f32; nm * 4];
+        for m in 0..nm {
+            let rr = &mi[m * MVI..m * MVI + MVI];
+            let ui = rr[0] as usize;
+            if ui >= n {
+                continue;
+            }
+            let a = (rr[3].max(0) as usize).min(wps.len());
+            let b = (a + rr[4].max(0) as usize).min(wps.len());
+            let o = advance_one(&nav, mc[ui] as usize, p[ui], sp[m], rr[1], &wps[a..b], rr[2], fs[m], rr[5], &ap);
+            p[ui] = o.pos;
+            if o.flags & 3 == OUT_ARRIVE {
+                mv[ui] = 0;
+            }
+            res[m * 4] = o.dpi as f32;
+            res[m * 4 + 1] = o.facing;
+            res[m * 4 + 2] = o.stuck as f32;
+            res[m * 4 + 3] = o.flags as f32;
+        }
+        self.last_adv = res;
+        let out = self.separate_core(&nav, &p, &r, &mv, &ky, id, &mc, pr);
+        self.last_changed = (0..n).filter(|&i| out[i] != p0[i]).map(|i| i as i32).collect();
+        PackedVector2Array::from(out.as_slice())
+    }
+
+    /// Unit indices (ascending) whose position the last advance_separate() changed.
+    #[func]
+    fn last_changed(&self) -> PackedInt32Array {
+        PackedInt32Array::from(self.last_changed.as_slice())
+    }
+
+    /// Per-mover results of the last advance_separate(), stride 4: [path_i delta, facing, stuck, flags]
+    /// with flags & 3 = 0 none / 1 arrive / 2 repath and flags & 4 = facing was set.
+    #[func]
+    fn last_adv(&self) -> PackedFloat32Array {
+        PackedFloat32Array::from(self.last_adv.as_slice())
+    }
+
+    /// Overlapping pairs found by the last separate() call.
+    #[func]
+    fn last_pairs(&self) -> i32 {
+        self.last_pairs
+    }
+
+    #[func]
+    fn last_moved(&self) -> i32 {
+        self.last_moved
+    }
+}
+
+impl RtsSteer {
+    #[allow(clippy::too_many_arguments)]
+    fn separate_core(&mut self, nav: &RtsNav, p: &[Vector2], r: &[f32], mv: &[u8], ky: &[i32], id: &[i32],
+                     mc: &[u8], pr: &[f32]) -> Vec<Vector2> {
+        let n = p.len().min(r.len()).min(mv.len()).min(ky.len()).min(id.len()).min(mc.len());
+        let get = |i: usize, d: f32| if i < pr.len() { pr[i] } else { d };
         let (strength, max_push, bucket, q) = (get(0, 0.5), get(1, 0.15), get(2, 1.5), get(3, 1.0 / 1024.0));
-        let nav = nav.bind();
         let (mw, mh) = nav.dims();
         // stable bucket order: (key, by, bx), then index
         let bxy: Vec<(i32, i32)> = (0..n).map(|i| ((p[i].x / bucket).floor() as i32, (p[i].y / bucket).floor() as i32)).collect();
@@ -116,17 +212,6 @@ impl RtsSteer {
             }
         }
         self.last_moved = moved;
-        PackedVector2Array::from(out.as_slice())
-    }
-
-    /// Overlapping pairs found by the last separate() call.
-    #[func]
-    fn last_pairs(&self) -> i32 {
-        self.last_pairs
-    }
-
-    #[func]
-    fn last_moved(&self) -> i32 {
-        self.last_moved
+        out
     }
 }

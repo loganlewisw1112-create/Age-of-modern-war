@@ -11,6 +11,7 @@ extends SceneTree
 
 const Movement = preload("res://sim/systems/movement.gd")
 const NativeCore = preload("res://sim/native_core.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
 const FACTIONS := {"a": "human_a", "b": "human_b", "m": "machine"}
 const ROLES := ["infantry", "infantry", "infantry", "antitank", "infantry", "heavy", "recon", "antitank", "infantry", "artillery"]
 
@@ -41,6 +42,8 @@ func _init() -> void:
 		elif a.begins_with("--native="):
 			var v := a.substr(9)
 			modes = [true] if v == "on" else ([false] if v == "off" else [true, false])
+		elif a.begins_with("--tiers="):
+			Tiers.force_off = a.substr(8) == "off"
 		elif a == "--breakdown":
 			breakdown = true
 			Movement.profile = true
@@ -53,12 +56,12 @@ func _init() -> void:
 			rows.append(_run(map_id, int(n), facs, ticks))
 	NativeCore.force_off = false
 	print("")
-	print("SCALE BENCH map=%s factions=%s ticks=%d native_available=%s (%s) cpu=%s" % [map_id, ",".join(facs), ticks,
-		str(NativeCore.available()), NativeCore.version(), OS.get_processor_name()])
-	print("| units placed | path | avg ms | p95 ms | max ms | units at end | setup s |")
-	print("|---|---|---|---|---|---|---|")
+	print("SCALE BENCH map=%s factions=%s ticks=%d native_available=%s (%s) tiers=%s cpu=%s" % [map_id, ",".join(facs), ticks,
+		str(NativeCore.available()), NativeCore.version(), "off" if Tiers.force_off else "on", OS.get_processor_name()])
+	print("| units placed | path | avg ms | p95 ms | max ms | units at end | reduced at end | setup s |")
+	print("|---|---|---|---|---|---|---|---|")
 	for r in rows:
-		print("| %d | %s | %.1f | %.1f | %.1f | %d | %.1f |" % [r.placed, r.path, r.avg, r.p95, r.max, r.end_units, r.setup_s])
+		print("| %d | %s | %.1f | %.1f | %.1f | %d | %d | %.1f |" % [r.placed, r.path, r.avg, r.p95, r.max, r.end_units, r.reduced, r.setup_s])
 		if breakdown:
 			print("|   | systems (avg ms) | %s | | | | |" % r.sys)
 	quit(0)
@@ -168,6 +171,11 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	var end_units := 0
 	for fid in w.factions:
 		end_units += w.units_of(fid).size()
+	var reduced := 0
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind == "unit" and int(e.get("tier", 0)) == Tiers.REDUCED:
+			reduced += 1
 	var sys_parts := []
 	for k in Movement.prof:
 		sys_parts.append("mv.%s %.1f" % [k, float(Movement.prof[k]) / 1000.0 / float(ticks)])
@@ -175,7 +183,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	for k in sys_ms:
 		sys_parts.append("%s %.1f" % [k, float(sys_ms[k]) / float(ticks)])
 	var row := {"placed": placed, "path": NativeCore.path_name(w), "avg": sum / float(ticks),
-		"p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1], "end_units": end_units,
+		"p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1], "end_units": end_units, "reduced": reduced,
 		"setup_s": setup_s, "sys": ", ".join(sys_parts)}
 	print("row: ", row)
 	return row
