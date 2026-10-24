@@ -1,6 +1,6 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core)
+## Active goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core) — PARTIAL, see evidence
 
 ```
 GOAL: G3b + Scale "Big Armies"
@@ -21,6 +21,39 @@ Out of scope:             naval, aircraft beyond drones, walls/gates, Stages 1-6
 Stop-if:                  native DLL won't load in the packaged exe; determinism breaks; existing tests can't stay green
 ```
 Contracts: `docs/CONTRACTS_G3b.md`.
+
+## G3b + Scale Done-when evidence (2026-10-24, overnight)
+Orchestration: 6-agent waves; about 30 builder agents including successors. Every budget audit was OK.
+
+1. **Tests: MET.** `bash tests/run.sh` on the final sim code gives `RESULT pass=200 fail=0 files=22` / `TESTS OK` (`.plan/shots/ORCH-final/full_suite.txt`). New suites:
+   - test_stages 13: MATCH-01, QA-002, QA-014, each gate refused/passed, cost charged once, no spawn on advance, research pause/resume, save mid-research/transition, EW;
+   - test_maps 11; test_native 12; test_perf 7; test_perf_systems 3; test_art_g3b 5;
+   - test_ai 17, including stage-7 gating, research/advance, big map, per-resource bank, ammo-tight production.
+2. **AI soaks on the 3 maps: MET for winners, with a caveat on advancement.** Final code, `.plan/shots/ORCH-final/soak_*.txt`; hashes reproduce AI4-5's batch exactly; 0 invariant failures.
+   - river_crossing_s: s1 winner=0 @30428; s2 7->8 @41641, winner=0 @105813.
+   - industrial_heartland_m: s1 8->9 @49541, winner=0 @81944; s2 draw @120000.
+   - valley_conquest_l: s1 7->8 @28881, winner=1 @65897; s2 7->8 @37281, 8->9 @118541, draw.
+   - **Caveat:** both 7->8 and 8->9 appear in the logs, but on the final code no single soak shows 7->8, 8->9 AND a winner. Earlier code did: river s2 in AI4-4 v1/v2; valley s1 in AI4-4 v3. Two of the six final soaks draw.
+3. **Scale on this PC: PARTIAL** (`perf/PERF_REPORT_G3b_2026-10-24.md`, quiet machine).
+   - **MET:** 2,000 FULL fighting units, native: avg 29.5 / p95 38.3 ms per tick, under the 50 ms budget. G3a was about 140 ms.
+   - **NOT MET:** 10,000 units on valley_conquest_l: avg 86.7 / p95 124.1 ms, so the game runs at about half speed.
+   - **NOT MET:** windowed 60+ fps with 2,000 fighting. Measured 22 avg, because `world.step()` runs on the main thread. Rendering alone is 71 fps at 2,000 paused.
+   - **NOT MET:** windowed 30+ fps zoomed out with 10,000 on valley while the sim runs. Measured 7.5, sim-bound. Rendering alone is 171 fps.
+4. **Packaged build + playtests: MET.** `build/RTS_Age_of_Modern_War_G3b/` (zip `build/RTS_Age_of_Modern_War_G3b_2026-10-24.zip`): export-pack + renamed 4.7.2 exes + `rts_core.dll` beside the exe. The pack excludes docs/ and native/ sources.
+   - Run from a clean folder outside the repo: `NATIVE rts_core loaded (rts_core 0.2.2)`.
+   - `PLAYTEST RESULT` human_a 37/0, human_b 37/0, machine 37/0, and stages 53/0 on Industrial Heartland: stages 7/8/9 picked by clicks, research building built, project started by click, gate panel shown.
+   - After a one-line menu text fix the build was repackaged; the stages playtest was re-run, 53/0.
+   - README and perf report updated to match.
+
+**Parked, with the exact next step (sim off the main thread):** R5-thread found two blockers:
+- gdext aborts when native objects are touched from a worker thread. It needs `godot` features `["api-4-7","experimental-threads"]` in `native/rts_core/Cargo.toml` plus a DLL rebuild.
+- A deep copy of `w.entities` costs about 22 ms at 2k, so the render side needs a compact per-tick render snapshot (`w.cache.unit_snap` is a start), not a world copy.
+
+Then step the world on a WorkerThreadPool task between frames, with HUD reads only while no step is in flight. A worker-thread step with native off was hash-equal to a main-thread step, so determinism is not at risk.
+
+**Owner decisions pending:**
+- **REDUCED movement stride:** it saves about 34 ms per tick at 10k, but it is not outcome-exact (16 seeds: one winner flip). It is OFF because of CONTRACTS_G3b §0.
+- **Stage cost pacing:** credits come only from the 6/s HQ stipend, so the 8->9 bank (9,600 credits + 1,400 ore including research) takes about 27 game minutes.
 
 ## Previous goal (G3a, DONE 2026-10-23)
 

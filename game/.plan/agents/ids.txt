@@ -30,3 +30,10 @@ ART3-B-2 sonnet 400k successor (handoff ART3-B-1.json; mostly mechanical regen+t
 ART3-B-2 task id: abd2433ca000fb78d
 AI3-2 opus 600k successor (handoff AI3-1.json)
 AI3-2 task id: a688534b8ec22c0c3
+--- G3b+Scale wave 1 (2026-10-23 night)
+N1-core opus 700k task af7055a14584621ea
+R4-render opus 600k task abdc662b2d78e77cc
+MAP4 opus 600k task a85876723a4a9072f
+STG4 opus 700k task aa87786755141ec87
+UI4 opus 500k task a1a7d94aaecc4976a
+ART4 opus 500k task aff8e715ae633acd0
