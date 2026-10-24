@@ -136,6 +136,31 @@
         }
       }
     },
+    "b_drafting_office": {
+      "pivot": [
+        70,
+        92
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_drafting_office_build_0.png",
+          "mask": "buildings/b_drafting_office_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_drafting_office_build_1.png",
+          "mask": "buildings/b_drafting_office_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_drafting_office_build_2.png",
+          "mask": "buildings/b_drafting_office_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_drafting_office_built.png",
+          "mask": "buildings/b_drafting_office_built_mask.png"
+        }
+      }
+    },
     "b_heavy_plant": {
       "pivot": [
         102,
@@ -183,6 +208,31 @@
         "built": {
           "file": "buildings/b_salvage_yard_built.png",
           "mask": "buildings/b_salvage_yard_built_mask.png"
+        }
+      }
+    },
+    "b_signal_mast": {
+      "pivot": [
+        38,
+        112
+      ],
+      "size": 1,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_signal_mast_build_0.png",
+          "mask": "buildings/b_signal_mast_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_signal_mast_build_1.png",
+          "mask": "buildings/b_signal_mast_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_signal_mast_build_2.png",
+          "mask": "buildings/b_signal_mast_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_signal_mast_built.png",
+          "mask": "buildings/b_signal_mast_built_mask.png"
         }
       }
     },
@@ -258,6 +308,31 @@
         "built": {
           "file": "buildings/barracks_built.png",
           "mask": "buildings/barracks_built_mask.png"
+        }
+      }
+    },
+    "comms_tower": {
+      "pivot": [
+        38,
+        112
+      ],
+      "size": 1,
+      "states": {
+        "build_0": {
+          "file": "buildings/comms_tower_build_0.png",
+          "mask": "buildings/comms_tower_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/comms_tower_build_1.png",
+          "mask": "buildings/comms_tower_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/comms_tower_build_2.png",
+          "mask": "buildings/comms_tower_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/comms_tower_built.png",
+          "mask": "buildings/comms_tower_built_mask.png"
         }
       }
     },
@@ -408,6 +483,31 @@
         "built": {
           "file": "buildings/m_charging_hub_built.png",
           "mask": "buildings/m_charging_hub_built_mask.png"
+        }
+      }
+    },
+    "m_compute_node": {
+      "pivot": [
+        70,
+        90
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_compute_node_build_0.png",
+          "mask": "buildings/m_compute_node_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_compute_node_build_1.png",
+          "mask": "buildings/m_compute_node_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_compute_node_build_2.png",
+          "mask": "buildings/m_compute_node_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_compute_node_built.png",
+          "mask": "buildings/m_compute_node_built_mask.png"
         }
       }
     },
@@ -585,6 +685,31 @@
           "mask": "buildings/refinery_built_mask.png"
         }
       }
+    },
+    "research_station": {
+      "pivot": [
+        70,
+        96
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/research_station_build_0.png",
+          "mask": "buildings/research_station_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/research_station_build_1.png",
+          "mask": "buildings/research_station_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/research_station_build_2.png",
+          "mask": "buildings/research_station_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/research_station_built.png",
+          "mask": "buildings/research_station_built_mask.png"
+        }
+      }
     }
   },
   "decor": {
@@ -755,6 +880,14 @@
     "buildings/b_bunker_build_2_mask.png": "2188f07a7bb08a842807cbd19e662038",
     "buildings/b_bunker_built.png": "1e57f3aa5c6b835d1e41a915fd0a415b",
     "buildings/b_bunker_built_mask.png": "62e92e175cdbe8c14d115eba3c4c2d2a",
+    "buildings/b_drafting_office_build_0.png": "4920f7267795431640305bed06692bce",
+    "buildings/b_drafting_office_build_0_mask.png": "e433e6a02a2a4e37a048c1536b6b1719",
+    "buildings/b_drafting_office_build_1.png": "98355ec73044cac4e8f030ca237ceeee",
+    "buildings/b_drafting_office_build_1_mask.png": "e433e6a02a2a4e37a048c1536b6b1719",
+    "buildings/b_drafting_office_build_2.png": "aaae48ac6ef9054b269c5133082d7ed4",
+    "buildings/b_drafting_office_build_2_mask.png": "e433e6a02a2a4e37a048c1536b6b1719",
+    "buildings/b_drafting_office_built.png": "1e9da144349302c5acbfc998f9614e94",
+    "buildings/b_drafting_office_built_mask.png": "00cd42b731cdb656b0195edd3f6e3644",
     "buildings/b_heavy_plant_build_0.png": "f01527774eb2f29755a07620b3070f9d",
     "buildings/b_heavy_plant_build_0_mask.png": "28e8e675e619d847baf04ed8cc6d90d8",
     "buildings/b_heavy_plant_build_1.png": "f7167afbb939ee4d7e2dedb4e377ac5b",
@@ -771,6 +904,14 @@
     "buildings/b_salvage_yard_build_2_mask.png": "e433e6a02a2a4e37a048c1536b6b1719",
     "buildings/b_salvage_yard_built.png": "31f9a0d8840f89f1ac968813798edeef",
     "buildings/b_salvage_yard_built_mask.png": "87f8a00091b0ed808c9a27440c4da529",
+    "buildings/b_signal_mast_build_0.png": "2d287c0a53571fa0711e1bd8a205c11b",
+    "buildings/b_signal_mast_build_0_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/b_signal_mast_build_1.png": "1fd319995167d268ae5a55f39b77795d",
+    "buildings/b_signal_mast_build_1_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/b_signal_mast_build_2.png": "9659170a677701a753e5c468b6cc85ae",
+    "buildings/b_signal_mast_build_2_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/b_signal_mast_built.png": "2c5c230e2bc65f6135c1fb0debda367a",
+    "buildings/b_signal_mast_built_mask.png": "877643fce67d8420d46aa771c4a52651",
     "buildings/b_smelter_build_0.png": "7da62009c85fd8e82322fe897eafecc5",
     "buildings/b_smelter_build_0_mask.png": "180104d70be1bab465d6751b037b0460",
     "buildings/b_smelter_build_1.png": "a2c3f3d6325dbfccf69b1330e8e80da4",
@@ -795,6 +936,14 @@
     "buildings/barracks_build_2_mask.png": "f32f8278a46e1250381d4498b865dac0",
     "buildings/barracks_built.png": "791170e0c82d44c80acc91d964bbc5c1",
     "buildings/barracks_built_mask.png": "0cc3d5fd26f0c8cae2f53b568b32770d",
+    "buildings/comms_tower_build_0.png": "4ae32da913eca65469cc9e8a95a59375",
+    "buildings/comms_tower_build_0_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/comms_tower_build_1.png": "f4eb4450fb5eaed4fb874231c178c55d",
+    "buildings/comms_tower_build_1_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/comms_tower_build_2.png": "214abac6d3d2e2809d0b56341b56e270",
+    "buildings/comms_tower_build_2_mask.png": "0876542718d7a689750f0400ddfef7b8",
+    "buildings/comms_tower_built.png": "3bb1bf44e8b64638d8fb60530e9ba75e",
+    "buildings/comms_tower_built_mask.png": "b03a6ee9000c638faded754f63ebd755",
     "buildings/depot_build_0.png": "8f5023cf0b1764bfb7667d652e3385b6",
     "buildings/depot_build_0_mask.png": "e1f1e9a8ebf8b15f7e568a44e71fba07",
     "buildings/depot_build_1.png": "995a0ebbda40d39157de50fd4e109ac7",
@@ -843,6 +992,14 @@
     "buildings/m_charging_hub_build_2_mask.png": "b0432bcbdc24b6a21062d332cc4f64f7",
     "buildings/m_charging_hub_built.png": "33143ab75309681ce83759c99eb624bd",
     "buildings/m_charging_hub_built_mask.png": "bb0f950d66613b250b443c856990f125",
+    "buildings/m_compute_node_build_0.png": "26ad993e3bb30fbd2b09c85a6a88a70e",
+    "buildings/m_compute_node_build_0_mask.png": "55c0bebc4915066554e5edbbc7271771",
+    "buildings/m_compute_node_build_1.png": "ca3f9692b75a88f2be287b12417ff4a6",
+    "buildings/m_compute_node_build_1_mask.png": "55c0bebc4915066554e5edbbc7271771",
+    "buildings/m_compute_node_build_2.png": "e05de1559f8614f92f39b674497c6958",
+    "buildings/m_compute_node_build_2_mask.png": "55c0bebc4915066554e5edbbc7271771",
+    "buildings/m_compute_node_built.png": "60ac3a06dbb1e473ac50c469feeeb171",
+    "buildings/m_compute_node_built_mask.png": "9f1fbecf1ea82831271ade3c9887a8eb",
     "buildings/m_core_build_0.png": "3e02bf45880c55a35f2956cb8d450544",
     "buildings/m_core_build_0_mask.png": "73090a236d3978b833030cfa0c8e5a05",
     "buildings/m_core_build_1.png": "0f4bb6416e0bca9102dceacb7660c44f",
@@ -899,6 +1056,26 @@
     "buildings/refinery_build_2_mask.png": "006944a9212f308476bcb62172404168",
     "buildings/refinery_built.png": "c519126f56fbfab41e6dd26bf920ec87",
     "buildings/refinery_built_mask.png": "1bb2a8ef2401353d47f6396528d019a0",
+    "buildings/research_station_build_0.png": "0b65f8764e80531b824d02a62cf26505",
+    "buildings/research_station_build_0_mask.png": "506834cca661144ed1b94540159685ad",
+    "buildings/research_station_build_1.png": "e9374a0b0d1a49d5c573aaf0cf5ffc52",
+    "buildings/research_station_build_1_mask.png": "506834cca661144ed1b94540159685ad",
+    "buildings/research_station_build_2.png": "a5bff72a5850497ad00b3080d8f7bcd1",
+    "buildings/research_station_build_2_mask.png": "506834cca661144ed1b94540159685ad",
+    "buildings/research_station_built.png": "5d0364dee193bad2fb9e1e03b8c2c6f0",
+    "buildings/research_station_built_mask.png": "217855f38f71c28a798c75374dc4bfb7",
+    "decor/poi_airfield_tarmac.png": "cd8f22235c780c392dd1332fb5988a19",
+    "decor/poi_airfield_tarmac_mark.png": "93330bfa0e8fc2edf4f80fa092f38dec",
+    "decor/poi_dam_ew.png": "4e1bc70f71e9a7da325a696a0e314501",
+    "decor/poi_factory_block.png": "bb8f61b9ad6c902641dc312230647d96",
+    "decor/poi_hangar.png": "78105d24fb41a19f8a42f1caec7766ae",
+    "decor/poi_rail_ew.png": "9ed431378cddc3e8e7ac2afcbdf0111f",
+    "decor/poi_rail_ns.png": "bc8f098010524f9aae7b87612f596291",
+    "decor/poi_rail_x.png": "c8a019661a69f1f8cafad89dbbe59aba",
+    "decor/poi_refinery_tanks.png": "257b93b138b5569291d2939511aaf2cc",
+    "decor/poi_ruined_plant.png": "2fe476d69dd3f8d1c930b8177dbd0455",
+    "decor/poi_town_house.png": "91bb8707a367b0eef0cce18003cf85b1",
+    "decor/poi_tunnel_portal.png": "000da1d7446fd4b70936745f2505cdc9",
     "decor/rock_0.png": "7820d5e5b3c936df1e132905bcd5ace9",
     "decor/rock_1.png": "68e1139f1bc164ea03da0a4da885505e",
     "decor/rock_2.png": "a461dd4b63a80963204ad84b95191ec5",
@@ -917,6 +1094,10 @@
     "fx/pinned.png": "972b4c5745d32e293c0f65a989a5108f",
     "fx/retreat.png": "b83bef5c559eb9d44783aef5621e0545",
     "fx/smoke.png": "4797e1d01b82d2369d46367988decd81",
+    "icons/a_ew_truck.png": "0fe01e1d5c214370c3052d96379cca19",
+    "icons/a_guided_arty.png": "5ec3e01e8e0ee96a3209d114efdc914e",
+    "icons/a_old_tank.png": "bbb6d90e4b16a158136539a4074102b8",
+    "icons/a_uav.png": "064d6ca50548bf2bccca667ffb65c8b9",
     "icons/assign_officer.png": "ce28c9d391e86084e977106548b9bb06",
     "icons/at_gunner.png": "5f2cc6ad7f2380056d3eba6024989e26",
     "icons/at_team.png": "8ebec29b00a6620409c2f29e16af2239",
@@ -926,18 +1107,25 @@
     "icons/b_bunker.png": "1fa7d3f522779b27ddb8afd470637de7",
     "icons/b_carrier.png": "111542dc92ac1e39de34bf32a516dee4",
     "icons/b_crew.png": "80b989cfbfae5ecba804b2c719ec4706",
+    "icons/b_drafting_office.png": "bf9f222371afbfa5ad8204dc0847d8da",
+    "icons/b_field_gun.png": "790aaaeafb359e377df498cf8058ebac",
+    "icons/b_guided_battery.png": "e80551d2f1ab9ec2f3132fa5c80837c9",
     "icons/b_heavy_plant.png": "7ac7fca384537b2fc4a83d49b4187139",
     "icons/b_heavy_rifle.png": "6015aacbd9877f8abe114949d6e6b6ab",
     "icons/b_heavy_squad.png": "cfcb9f1d1ceaf433507b495373a4dd43",
+    "icons/b_jammer_truck.png": "de2f4c8244fb09a3b57c3242c57312a7",
     "icons/b_militia.png": "b6e2a5fc56da7d065164c787bb6f62c7",
     "icons/b_militia_squad.png": "ed1a8b15f3eacbede33cd2046751893c",
     "icons/b_officer.png": "4dc66650582514a9382e82cf629c3d65",
+    "icons/b_radar_aa.png": "5a4d3fb02a5f7c65ae0d4b15562bea2a",
     "icons/b_rebuilt_mbt.png": "437758cff29b5786f0b7dc42060e697e",
     "icons/b_recovery_truck.png": "669f9d3083ca2414cedad213fcb7febe",
     "icons/b_salvage_yard.png": "9da2f4ebdda91476abd40ba14bb70d88",
+    "icons/b_signal_mast.png": "2e89aa2f46a71a842ef3bc8a2c5e5815",
     "icons/b_smelter.png": "2626aeb76485d77b9da805c38cfe5f75",
     "icons/b_works.png": "ff7dcf6a0bf17a8e9c180c16a2ca4841",
     "icons/barracks.png": "dc528fd309094b0d74eaf8daf680e428",
+    "icons/comms_tower.png": "85797b228b3dc0a64442a45aaf442c7b",
     "icons/depot.png": "87833ca88ab2b9eb9bbe56abb08fcd46",
     "icons/engineer.png": "1dea08ff4ef5c3a56226c3b2efb3e062",
     "icons/formation_column.png": "b179dc62f48be3b38c0d3ad89f59f074",
@@ -948,21 +1136,34 @@
     "icons/guard_tower.png": "ba75c6d4ef8d45596155ddf97ebd2e62",
     "icons/hq.png": "0995d0c30c37353512709b75acc9a090",
     "icons/ifv.png": "80d27c6deb7609b210bf342a68fab06d",
+    "icons/lod_air.png": "fea692b9e19dc0e295a4da9b7b8bf1c2",
+    "icons/lod_artillery.png": "b4fbce91bf706eebb8ab6e10f152ab5b",
+    "icons/lod_building.png": "85e5237a9e69f39bec09806975e1bdd7",
+    "icons/lod_dot.png": "da15bc2c8f54ffb61f1f0c86fea3c729",
+    "icons/lod_infantry.png": "413f098280b87fc94fed6c41aa01ee6f",
+    "icons/lod_vehicle.png": "0a74daa675bfb163210868e67cee722f",
+    "icons/lod_vehicle_heavy.png": "127360ce2fa2b4ff8d219c6c3b77721d",
+    "icons/lod_vehicle_light.png": "d2bf68bc3ebd138d35b0125e11d28f5a",
     "icons/logistics_truck.png": "de439fb77209f546069ab2e9159da081",
     "icons/m_artillery_node.png": "2c72df5eeebb8d395ab1aea2fac9e19a",
     "icons/m_assembler.png": "ca90bfa695a45600cbebc03abbc095db",
     "icons/m_charging_hub.png": "f33e05051113c3c73271b7a743feb874",
+    "icons/m_compute_node.png": "059d3f10e6543121aaee82d18125d069",
     "icons/m_coordinator.png": "273be749a4ba8c19d83047174f7442f6",
     "icons/m_core.png": "eb7217653ee0df6564e40094a20e9302",
     "icons/m_crawler_works.png": "af1cb8f4262046c094efd145a37cdc6a",
     "icons/m_drone.png": "e81cd21811817121e5c5851e9dcb84cf",
     "icons/m_drone_pair.png": "fe03807ee9d6fd9272fbade62bb7a626",
+    "icons/m_ew_node.png": "87ac9fac2828f52a2efce6a417bf1230",
     "icons/m_hauler.png": "8e9be9b5a8eca6709ea449d0811d968c",
+    "icons/m_lancer.png": "4d910768af51fe3253d7d69ec3f53728",
     "icons/m_repair_bot.png": "820474bf10d484609d7b4f424c4d345b",
     "icons/m_reprocessor.png": "97c4cc32423a6876b9459251fbb25cc4",
     "icons/m_scout_crawler.png": "7cee36dbd6315c874cecd40bccc5224b",
     "icons/m_sensor_relay.png": "1687bd97ca310d98d264489b2a11c1dd",
     "icons/m_sentry.png": "9010081a57c26398a5f723026aaf6c22",
+    "icons/m_siege_crawler.png": "2dbf264091690810f76cc2ce2c1a72f6",
+    "icons/m_swarm.png": "3eda54df8139d328f9371054c4694459",
     "icons/m_tracked.png": "2d33834e78950d5648ae3858b0864ef5",
     "icons/m_walker.png": "87a8df100b6f6829d3f8fbddc080d82d",
     "icons/mbt.png": "e2c2e646bb412a66367fda00d1df6252",
@@ -977,6 +1178,7 @@
     "icons/recon.png": "d8e4cb2ebea040162251bd52b3525c66",
     "icons/refinery.png": "06a527f889c5a81938f52a66c7e8905a",
     "icons/repair.png": "faa8d1a912b29003a8b1376482b7b25a",
+    "icons/research_station.png": "fcee1b3afd9c177427d162b35a1cdfdf",
     "icons/rifle_squad.png": "4d12e9af5f93b973a190b3251c92be63",
     "icons/rifleman.png": "0fbc4832f8973f7f11ce82484e16f36c",
     "icons/salvage.png": "db19152930bca8be553f56fee70ba0fb",
@@ -1004,6 +1206,15 @@
     "terrain/water_1.png": "4767b3198a21b316fa5a109026903a36",
     "terrain/water_2.png": "1c1d7f07f51384ea6734207052861c37",
     "terrain/water_3.png": "36d93c8371276a5263cce044ef33f5d4",
+    "units/a_ew_truck.png": "1fe7d229371cc5c25f909a2e9722f347",
+    "units/a_ew_truck_mask.png": "6019fecd227f3baf5a20bae307ecdb5a",
+    "units/a_guided_arty.png": "0413339675ca6c80c925ac27c261c1be",
+    "units/a_guided_arty_mask.png": "3dacaa64537e928f9711ad8eecfbe5ab",
+    "units/a_old_tank.png": "f6b8d076d3fb2a6b85dee8e60df87176",
+    "units/a_old_tank_mask.png": "17b73f946b951a05914476620a07474d",
+    "units/a_uav.png": "963a2ef074f7db4b4a04ea4634ce03c8",
+    "units/a_uav_mask.png": "9a004266355051fc1cdb531853268208",
+    "units/a_uav_shadow.png": "a477353662a442725c7f34bf8632a2c6",
     "units/at_gunner.png": "609546228437047a599539f196cf5b37",
     "units/at_gunner_mask.png": "fe55b483a454677d51f462169a121969",
     "units/b_artillery_truck.png": "952ca88ead7bf60299a376f39327b6bc",
@@ -1012,12 +1223,20 @@
     "units/b_carrier_mask.png": "2284e75b107abec2664085dd5e4cfa95",
     "units/b_crew.png": "1376f3afc5a14cc56e7979123592a93f",
     "units/b_crew_mask.png": "c71d42e83d0059008bb93fd4827fade6",
+    "units/b_field_gun.png": "b5dab2dc5a797e5c79e9575b3c698bc0",
+    "units/b_field_gun_mask.png": "5516f6e9b97781a180eb58ea62c15da0",
+    "units/b_guided_battery.png": "ee418ac8a1d8781bbf452febd8856b9b",
+    "units/b_guided_battery_mask.png": "214fb77d37061a9750e3ffc8c88bff6e",
     "units/b_heavy_rifle.png": "9949e8bec57d0ec5227598ea84a8d793",
     "units/b_heavy_rifle_mask.png": "7f562f1696274d8c62686f757146d71a",
+    "units/b_jammer_truck.png": "b04090fd3f7b40acbe49fdb367eed5b1",
+    "units/b_jammer_truck_mask.png": "100f72840e1b9c1ae125aefe9383c9fe",
     "units/b_militia.png": "ba7570fb60a8d694cd58dd16fd5bc96d",
     "units/b_militia_mask.png": "f28c299a660b1340599eaa65ef9aad9c",
     "units/b_officer.png": "ddeec2c828d6cbc16292a8fe29ddf990",
     "units/b_officer_mask.png": "8419910c996001a7d7d9989510c49655",
+    "units/b_radar_aa.png": "3fc80958092d5e4ecdb40f3b909cf9a7",
+    "units/b_radar_aa_mask.png": "7cf1059df28bdaa1df1488d59e585eee",
     "units/b_rebuilt_mbt.png": "ae7420b67899d9fb6f08a144394998c9",
     "units/b_rebuilt_mbt_mask.png": "d9001037bc17ae7c48c2bee250cf1ffb",
     "units/b_recovery_truck.png": "d3efdb14f7d0437ff8223dec67e8015b",
@@ -1035,12 +1254,21 @@
     "units/m_drone.png": "3a0f3610701d43093d42d780d73410e5",
     "units/m_drone_mask.png": "6ee06e856c9d908c172ae6fd83580b5a",
     "units/m_drone_shadow.png": "3a53b9f085265167cbbe4d486b52eead",
+    "units/m_ew_node.png": "1751b47e447adad884fd40c3d08e56e1",
+    "units/m_ew_node_mask.png": "80be07d64daed30cbffba8ff8fba54f1",
     "units/m_hauler.png": "41d239e0164c7152e991756a4824aa72",
     "units/m_hauler_mask.png": "e61c05b75561777051989bc567b0d077",
+    "units/m_lancer.png": "72cb159fb663b010f500cd16c2dcefc9",
+    "units/m_lancer_mask.png": "f03ecef8b88e0c4975d72cb5e381d630",
     "units/m_repair_bot.png": "a1c8eb3e1580f2086cfe403367d922d7",
     "units/m_repair_bot_mask.png": "475d3009d08a667cbbdb1782e73ae478",
     "units/m_scout_crawler.png": "a163719543bf84bc85629128a6f19291",
     "units/m_scout_crawler_mask.png": "d0044c6ed334b84d187f5847cf591656",
+    "units/m_siege_crawler.png": "7cb5e705abce324ca4fb7e1d70e45517",
+    "units/m_siege_crawler_mask.png": "6f801f5ee04d86a2150e5664b346d5e5",
+    "units/m_swarm.png": "2d80f704a31a288d6db8e569f8e9ece3",
+    "units/m_swarm_mask.png": "ab708d3ebb6198ec72cb9e0461a1b2a5",
+    "units/m_swarm_shadow.png": "790fb752fb89e31994b8d542bc5bf860",
     "units/m_tracked.png": "7ca1ed77cd330a9da8bba4d52b384f47",
     "units/m_tracked_mask.png": "fd1189bef90d634c7ea05ed96fc91d79",
     "units/m_walker.png": "8551637e662f6b6aac96a32e5f5d8374",
@@ -1053,14 +1281,24 @@
     "units/recon_mask.png": "56ad097dd0ea1ef8edd8f1b849f6e504",
     "units/rifleman.png": "5041b0347f9f6eecb359b3f2cc086d34",
     "units/rifleman_mask.png": "f28c299a660b1340599eaa65ef9aad9c",
+    "wrecks/a_ew_truck_wreck.png": "4676fae2eefd8c0e8d25046cf6155131",
+    "wrecks/a_guided_arty_wreck.png": "fb9ed726cffcadfb4f02f15ba2b806f8",
+    "wrecks/a_old_tank_wreck.png": "875b0d06be5a847039d8e41e70c20677",
     "wrecks/b_artillery_truck_wreck.png": "ed4c1982b3540d5116f1d829feab0ceb",
     "wrecks/b_carrier_wreck.png": "dca8e1b9e908f82cfe81fcbe83f6c904",
+    "wrecks/b_field_gun_wreck.png": "324adadaa8027c59fab3e5e237aa85ce",
+    "wrecks/b_guided_battery_wreck.png": "43adbd787b74531c530590ac13e66111",
+    "wrecks/b_jammer_truck_wreck.png": "79f9a46aa6390aa2cb9cf56b74d7ea57",
+    "wrecks/b_radar_aa_wreck.png": "a6812adccce9cbbd61b7da8741506791",
     "wrecks/b_rebuilt_mbt_wreck.png": "af633693ec685be147f1fb946985fe33",
     "wrecks/b_recovery_truck_wreck.png": "c7a473ca9066fe273a8896c23b253473",
     "wrecks/ifv_wreck.png": "c59ef24255a1bc2036c69f53640335e3",
     "wrecks/logistics_truck_wreck.png": "b2d58ac7c27b18bf849f52ceac6e4af8",
     "wrecks/m_artillery_node_wreck.png": "734b466e9df9e4b32149a35e7ebfa20a",
+    "wrecks/m_ew_node_wreck.png": "8c1f05340609246960d6c8d425c1df2f",
     "wrecks/m_hauler_wreck.png": "4c092280624edd71a4bc5b43063a062e",
+    "wrecks/m_lancer_wreck.png": "5fe037d54592058721518397a10ebb14",
+    "wrecks/m_siege_crawler_wreck.png": "5859cc0631feb6ca2a016293a0dc2d90",
     "wrecks/m_tracked_wreck.png": "5ee3d8d2b8585d87895d21dd18ae2f53",
     "wrecks/m_walker_wreck.png": "644604394ec4501bb4c5e8d5aed3607b",
     "wrecks/mbt_wreck.png": "795c5a190fc0c6bf95f940e0b79e7645",
@@ -1073,6 +1311,10 @@
     "unexplored": "fog/unexplored.png"
   },
   "icons": {
+    "a_ew_truck": "icons/a_ew_truck.png",
+    "a_guided_arty": "icons/a_guided_arty.png",
+    "a_old_tank": "icons/a_old_tank.png",
+    "a_uav": "icons/a_uav.png",
     "assign_officer": "icons/assign_officer.png",
     "at_gunner": "icons/at_gunner.png",
     "at_team": "icons/at_team.png",
@@ -1082,18 +1324,25 @@
     "b_bunker": "icons/b_bunker.png",
     "b_carrier": "icons/b_carrier.png",
     "b_crew": "icons/b_crew.png",
+    "b_drafting_office": "icons/b_drafting_office.png",
+    "b_field_gun": "icons/b_field_gun.png",
+    "b_guided_battery": "icons/b_guided_battery.png",
     "b_heavy_plant": "icons/b_heavy_plant.png",
     "b_heavy_rifle": "icons/b_heavy_rifle.png",
     "b_heavy_squad": "icons/b_heavy_squad.png",
+    "b_jammer_truck": "icons/b_jammer_truck.png",
     "b_militia": "icons/b_militia.png",
     "b_militia_squad": "icons/b_militia_squad.png",
     "b_officer": "icons/b_officer.png",
+    "b_radar_aa": "icons/b_radar_aa.png",
     "b_rebuilt_mbt": "icons/b_rebuilt_mbt.png",
     "b_recovery_truck": "icons/b_recovery_truck.png",
     "b_salvage_yard": "icons/b_salvage_yard.png",
+    "b_signal_mast": "icons/b_signal_mast.png",
     "b_smelter": "icons/b_smelter.png",
     "b_works": "icons/b_works.png",
     "barracks": "icons/barracks.png",
+    "comms_tower": "icons/comms_tower.png",
     "depot": "icons/depot.png",
     "engineer": "icons/engineer.png",
     "formation_column": "icons/formation_column.png",
@@ -1108,17 +1357,22 @@
     "m_artillery_node": "icons/m_artillery_node.png",
     "m_assembler": "icons/m_assembler.png",
     "m_charging_hub": "icons/m_charging_hub.png",
+    "m_compute_node": "icons/m_compute_node.png",
     "m_coordinator": "icons/m_coordinator.png",
     "m_core": "icons/m_core.png",
     "m_crawler_works": "icons/m_crawler_works.png",
     "m_drone": "icons/m_drone.png",
     "m_drone_pair": "icons/m_drone_pair.png",
+    "m_ew_node": "icons/m_ew_node.png",
     "m_hauler": "icons/m_hauler.png",
+    "m_lancer": "icons/m_lancer.png",
     "m_repair_bot": "icons/m_repair_bot.png",
     "m_reprocessor": "icons/m_reprocessor.png",
     "m_scout_crawler": "icons/m_scout_crawler.png",
     "m_sensor_relay": "icons/m_sensor_relay.png",
     "m_sentry": "icons/m_sentry.png",
+    "m_siege_crawler": "icons/m_siege_crawler.png",
+    "m_swarm": "icons/m_swarm.png",
     "m_tracked": "icons/m_tracked.png",
     "m_walker": "icons/m_walker.png",
     "mbt": "icons/mbt.png",
@@ -1133,6 +1387,7 @@
     "recon": "icons/recon.png",
     "refinery": "icons/refinery.png",
     "repair": "icons/repair.png",
+    "research_station": "icons/research_station.png",
     "rifle_squad": "icons/rifle_squad.png",
     "rifleman": "icons/rifleman.png",
     "salvage": "icons/salvage.png"
@@ -1258,6 +1513,24 @@
         33
       ]
     },
+    "m_lancer": {
+      "facings": 8,
+      "fh": 66,
+      "file": "units/m_lancer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 72,
+      "legged": true,
+      "mask": "units/m_lancer_mask.png",
+      "pivot": [
+        36,
+        50
+      ]
+    },
     "m_repair_bot": {
       "facings": 8,
       "fh": 30,
@@ -1364,6 +1637,212 @@
       ]
     }
   },
+  "lod_icons": {
+    "*": {
+      "air": {
+        "file": "icons/lod_air.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "artillery": {
+        "file": "icons/lod_artillery.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "building": {
+        "file": "icons/lod_building.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "dot": {
+        "file": "icons/lod_dot.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "infantry": {
+        "file": "icons/lod_infantry.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "vehicle": {
+        "file": "icons/lod_vehicle.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "vehicle_heavy": {
+        "file": "icons/lod_vehicle_heavy.png",
+        "pivot": [
+          8,
+          8
+        ]
+      },
+      "vehicle_light": {
+        "file": "icons/lod_vehicle_light.png",
+        "pivot": [
+          8,
+          8
+        ]
+      }
+    }
+  },
+  "poi_decor": {
+    "airfield_tarmac": {
+      "file": "decor/poi_airfield_tarmac.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "airfield_tarmac_mark": {
+      "file": "decor/poi_airfield_tarmac_mark.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "dam_ew": {
+      "file": "decor/poi_dam_ew.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        24
+      ]
+    },
+    "factory_block": {
+      "file": "decor/poi_factory_block.png",
+      "flat": false,
+      "footprint": [
+        3,
+        3
+      ],
+      "pivot": [
+        102,
+        132
+      ]
+    },
+    "hangar": {
+      "file": "decor/poi_hangar.png",
+      "flat": false,
+      "footprint": [
+        3,
+        2
+      ],
+      "pivot": [
+        86,
+        84
+      ]
+    },
+    "rail_ew": {
+      "file": "decor/poi_rail_ew.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "rail_ns": {
+      "file": "decor/poi_rail_ns.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "rail_x": {
+      "file": "decor/poi_rail_x.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "refinery_tanks": {
+      "file": "decor/poi_refinery_tanks.png",
+      "flat": false,
+      "footprint": [
+        2,
+        2
+      ],
+      "pivot": [
+        70,
+        88
+      ]
+    },
+    "ruined_plant": {
+      "file": "decor/poi_ruined_plant.png",
+      "flat": false,
+      "footprint": [
+        3,
+        3
+      ],
+      "pivot": [
+        102,
+        92
+      ]
+    },
+    "town_house": {
+      "file": "decor/poi_town_house.png",
+      "flat": false,
+      "footprint": [
+        2,
+        2
+      ],
+      "pivot": [
+        70,
+        78
+      ]
+    },
+    "tunnel_portal": {
+      "file": "decor/poi_tunnel_portal.png",
+      "flat": false,
+      "footprint": [
+        2,
+        2
+      ],
+      "pivot": [
+        70,
+        72
+      ]
+    }
+  },
   "resources": {
     "ore": {
       "file": "resources/ore.png",
@@ -1442,6 +1921,45 @@
     32
   ],
   "vehicle_wrecks": {
+    "a_ew_truck": {
+      "facings": 8,
+      "fh": 66,
+      "file": "wrecks/a_ew_truck_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        46
+      ]
+    },
+    "a_guided_arty": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/a_guided_arty_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 76,
+      "pivot": [
+        38,
+        38
+      ]
+    },
+    "a_old_tank": {
+      "facings": 8,
+      "fh": 50,
+      "file": "wrecks/a_old_tank_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 68,
+      "pivot": [
+        34,
+        32
+      ]
+    },
     "b_artillery_truck": {
       "facings": 8,
       "fh": 58,
@@ -1466,6 +1984,58 @@
       "pivot": [
         31,
         30
+      ]
+    },
+    "b_field_gun": {
+      "facings": 8,
+      "fh": 46,
+      "file": "wrecks/b_field_gun_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 58,
+      "pivot": [
+        29,
+        31
+      ]
+    },
+    "b_guided_battery": {
+      "facings": 8,
+      "fh": 58,
+      "file": "wrecks/b_guided_battery_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 68,
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "b_jammer_truck": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/b_jammer_truck_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        44
+      ]
+    },
+    "b_radar_aa": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/b_radar_aa_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        44
       ]
     },
     "b_rebuilt_mbt": {
@@ -1533,6 +2103,19 @@
         38
       ]
     },
+    "m_ew_node": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/m_ew_node_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 48,
+      "pivot": [
+        24,
+        42
+      ]
+    },
     "m_hauler": {
       "facings": 8,
       "fh": 46,
@@ -1544,6 +2127,32 @@
       "pivot": [
         31,
         30
+      ]
+    },
+    "m_lancer": {
+      "facings": 8,
+      "fh": 66,
+      "file": "wrecks/m_lancer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 72,
+      "pivot": [
+        36,
+        50
+      ]
+    },
+    "m_siege_crawler": {
+      "facings": 8,
+      "fh": 62,
+      "file": "wrecks/m_siege_crawler_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 86,
+      "pivot": [
+        43,
+        38
       ]
     },
     "m_tracked": {
@@ -1587,6 +2196,80 @@
     }
   },
   "vehicles": {
+    "a_ew_truck": {
+      "facings": 8,
+      "fh": 66,
+      "file": "units/a_ew_truck.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 64,
+      "mask": "units/a_ew_truck_mask.png",
+      "pivot": [
+        32,
+        46
+      ]
+    },
+    "a_guided_arty": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/a_guided_arty.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 76,
+      "mask": "units/a_guided_arty_mask.png",
+      "pivot": [
+        38,
+        38
+      ]
+    },
+    "a_old_tank": {
+      "facings": 8,
+      "fh": 50,
+      "file": "units/a_old_tank.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 68,
+      "mask": "units/a_old_tank_mask.png",
+      "pivot": [
+        34,
+        32
+      ]
+    },
+    "a_uav": {
+      "air": true,
+      "altitude": 22,
+      "bob": 1,
+      "facings": 8,
+      "fh": 38,
+      "file": "units/a_uav.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 52,
+      "mask": "units/a_uav_mask.png",
+      "pivot": [
+        26,
+        22
+      ],
+      "shadow": {
+        "file": "units/a_uav_shadow.png",
+        "pivot": [
+          22,
+          9
+        ]
+      }
+    },
     "b_artillery_truck": {
       "facings": 8,
       "fh": 58,
@@ -1617,6 +2300,70 @@
       "pivot": [
         31,
         30
+      ]
+    },
+    "b_field_gun": {
+      "facings": 8,
+      "fh": 46,
+      "file": "units/b_field_gun.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 58,
+      "mask": "units/b_field_gun_mask.png",
+      "pivot": [
+        29,
+        31
+      ]
+    },
+    "b_guided_battery": {
+      "facings": 8,
+      "fh": 58,
+      "file": "units/b_guided_battery.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 68,
+      "mask": "units/b_guided_battery_mask.png",
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "b_jammer_truck": {
+      "facings": 8,
+      "fh": 64,
+      "file": "units/b_jammer_truck.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 66,
+      "mask": "units/b_jammer_truck_mask.png",
+      "pivot": [
+        33,
+        44
+      ]
+    },
+    "b_radar_aa": {
+      "facings": 8,
+      "fh": 64,
+      "file": "units/b_radar_aa.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 66,
+      "mask": "units/b_radar_aa_mask.png",
+      "pivot": [
+        33,
+        44
       ]
     },
     "b_rebuilt_mbt": {
@@ -1725,6 +2472,22 @@
         ]
       }
     },
+    "m_ew_node": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/m_ew_node.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 48,
+      "mask": "units/m_ew_node_mask.png",
+      "pivot": [
+        24,
+        42
+      ]
+    },
     "m_hauler": {
       "facings": 8,
       "fh": 46,
@@ -1740,6 +2503,48 @@
         31,
         30
       ]
+    },
+    "m_siege_crawler": {
+      "facings": 8,
+      "fh": 62,
+      "file": "units/m_siege_crawler.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 86,
+      "mask": "units/m_siege_crawler_mask.png",
+      "pivot": [
+        43,
+        38
+      ]
+    },
+    "m_swarm": {
+      "air": true,
+      "altitude": 20,
+      "bob": 2,
+      "facings": 8,
+      "fh": 40,
+      "file": "units/m_swarm.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 50,
+      "mask": "units/m_swarm_mask.png",
+      "pivot": [
+        25,
+        26
+      ],
+      "shadow": {
+        "file": "units/m_swarm_shadow.png",
+        "pivot": [
+          20,
+          10
+        ]
+      }
     },
     "m_tracked": {
       "facings": 8,
