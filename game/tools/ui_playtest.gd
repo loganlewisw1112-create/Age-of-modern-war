@@ -13,9 +13,11 @@ const Construction = preload("res://sim/systems/construction.gd")
 const MatchViewScript = preload("res://presentation/match_view.gd")
 const Ops = preload("res://sim/systems/ops.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
+const G3bData = preload("res://presentation/hud/g3b_data.gd")
 
 var main: Node
 var shot_dir := ""
+var stages_flow := false  # G3b: --ui-playtest-stages
 var faction := ""     # --ui-playtest-faction ("" = leave the menu defaults: Human A vs Human A)
 var passed := 0
 var failed := 0
@@ -281,6 +283,8 @@ func _pick_option(node_name: String, idx: int) -> bool:
 	var p := Vector2(pm.position) + Vector2(float(pm.size.x) * 0.5, top + (float(idx) + 0.5) * h)
 	await _click(p)
 	await _wait(0.3)
+	if ob.selected != idx:
+		print("PLAYTEST-DBG pick_option_miss %s idx=%d sel=%d click=%s pm_pos=%s pm_size=%s margins=%.0f/%.0f" % [node_name, idx, ob.selected, p, pm.position, pm.size, top, bottom])
 	if pm.visible:
 		pm.hide()
 	return ob.selected == idx
@@ -307,6 +311,19 @@ func _setup_menu() -> void:
 
 # ------------------------------------------------------------ the run
 ## Select the gatherer units and right-click the nearest visible salvage pile (smart gather).
+## True when a click on e's screen point picks e itself (not a building sprite drawn over it).
+func _pickable(e) -> bool:
+	var hit = _mv().entity_at(Vector2(e.pos), true)
+	return hit != null and int(hit.id) == int(e.id)
+
+
+## A screen point the player can click on the map: inside the window, clear of the top bar and the
+## bottom HUD panel (command card / minimap), so a synthetic click reaches the match view.
+func _on_map(sp: Vector2) -> bool:
+	var vs := get_viewport().get_visible_rect().size
+	return sp.x > 40.0 and sp.x < vs.x - 40.0 and sp.y > 80.0 and sp.y < vs.y * 0.72
+
+
 func _gather_salvage(gatherers: Array, tag: String) -> void:
 	var n_gat := _own_units_in(gatherers).size()
 	var n := await _select_units(gatherers)
@@ -315,7 +332,7 @@ func _gather_salvage(gatherers: Array, tag: String) -> void:
 	var best := 1e9
 	var hqp: Vector2 = _hq().pos
 	for e in _w().entities.values():
-		if e.kind == "resource" and e.res == "salvage" and _w().is_visible(0, e.pos):
+		if e.kind == "resource" and e.res == "salvage" and _w().is_visible(0, e.pos) and _pickable(e):
 			var dd: float = e.pos.distance_to(hqp)
 			if dd < best:
 				best = dd
@@ -329,6 +346,15 @@ func _gather_salvage(gatherers: Array, tag: String) -> void:
 	for e in _own_units_in(gatherers):
 		if String(e.order.type) == "gather":
 			gathering += 1
+	if gathering == 0:
+		var types := []
+		for e in _own_units_in(gatherers):
+			types.append(String(e.order.type))
+		var hov = get_viewport().gui_get_hovered_control()
+		print("PLAYTEST-DBG gather_miss pile=%s amt=%s screen=%s vp=%s hovered=%s orders=%s sel=%d" % [
+			str(pile.pos), str(pile.get("amount")), str(_to_screen(pile.pos)), str(get_viewport().get_visible_rect().size),
+			str(hov.get_path()) if hov != null else "none", str(types), _mv().selection.size()])
+		print("PLAYTEST-DBG gather_miss2 placing=%s am_armed=%s" % [str(_mv().placing_def), str(_mv().attack_move_armed)])
 	_log("right_click_gather_" + tag, gathering >= mini(4, n_gat) and gathering > 0, "gathering=%d" % gathering)
 	if tag == "1":
 		await _shot("ui_035_gathering")
@@ -338,6 +364,8 @@ func _run() -> void:
 	await _wait(1.5)
 	if faction != "":
 		await _setup_menu()
+	if stages_flow:
+		await _setup_stages_menu()
 	await _shot("ui_00_menu")
 	_log("menu_start_button", await _click_button("START MATCH"))
 	var started := await _wait_until(func(): return main.match_view != null and main.match_view.world != null, 10.0)
@@ -402,6 +430,8 @@ func _run() -> void:
 	await _shot("ui_05_squad_trained")
 
 	await _officer_flow(inf_units)
+	if stages_flow:
+		await _stages_flow(builders)
 	var rifles := _own_units_in(inf_units)
 	if rifles.size() > 0:
 		_mv().speed = 0.0  # freeze the sim for the selection gesture (units are moving under the officer)
@@ -426,20 +456,40 @@ func _run() -> void:
 				sel += 1
 		var want := mini(4, rifles.size())
 		_log("select_squad_boxdrag", sel >= want, "selected=%d of %d" % [sel, rifles.size()])
+		_mv().speed = 1.0  # issue + check at 1x: Machine crawlers at 3x can finish the order before the check
 		await _key(KEY_A)
 		# ORCH: aim 8 tiles from the squad toward the map centre so the click stays on screen for every spawn
 		var sc := Vector2.ZERO
 		for r in rifles:
 			sc += Vector2(r.pos)
 		sc /= float(rifles.size())
-		var goal := sc + (Vector2(48, 48) - sc).normalized() * 12.0
+		var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5  # G3b: any map size (48,48 on River Crossing)
+		var dir := (mc - sc).normalized()
+		var goal := sc + dir * 12.0
+		# keep the click on the map, not under the bottom HUD: shorter / rotated aims toward the centre
+		for dist in [12.0, 9.0, 6.0]:
+			var found := false
+			for ang in [0.0, 0.6, -0.6, 1.2, -1.2]:
+				var g: Vector2 = sc + dir.rotated(ang) * float(dist)
+				if _on_map(_to_screen(g)):
+					goal = g
+					found = true
+					break
+			if found:
+				break
 		await _click(_to_screen(goal))
 		await _wait(0.2)  # fast units (Machine crawlers at 3x) can finish an 8-tile order within 1 s
 		var am := 0
 		for e in _own_units_in(inf_units):
 			if String(e.order.type) == "attack_move":
 				am += 1
+		if am < want:
+			var dbg := []
+			for e in _own_units_in(inf_units):
+				dbg.append("%s pos=%s order=%s moving=%s" % [e.def, str(e.pos), str(e.order), str(e.get("moving"))])
+			print("PLAYTEST-DBG am_miss goal=%s screen=%s units=%s" % [str(goal), str(_to_screen(goal)), str(dbg)])
 		_log("attack_move_issued", am >= want, "attack_move_units=%d" % am)
+		_mv().speed = 3.0
 		await _wait(3.0)
 		await _shot("ui_06_attack_move")
 	_finish()
@@ -486,8 +536,14 @@ func _officer_flow(inf_units: Array) -> void:
 	print("PLAYTEST-DBG selection ", kinds)
 	var want_m := mini(4, _own_units_in(inf_units).size())
 	_log("g2_select_squad_plus_officer", _mv().selection.has(int(off.id)) and _mv().selection.size() >= 1 + want_m, "selected=%d" % _mv().selection.size())
+	var ab := _find_button(get_tree().root, "Assign")
+	if ab != null:
+		print("PLAYTEST-DBG assign_btn text=%s disabled=%s rect=%s tip=%s" % [ab.text, ab.disabled, ab.get_global_rect(), ab.tooltip_text.get_slice("\n", 0)])
 	_log("g2_click_assign_button", await _click_button("Assign"))
 	await _wait(0.5)
+	if ab != null:
+		var hov := get_viewport().gui_get_hovered_control()
+		print("PLAYTEST-DBG after_assign hovered=%s groups=%d" % ["null" if hov == null else String(hov.get_path()), (Ops.state(_w()).groups as Dictionary).size()])
 	var g: Dictionary = Ops.group_led_by(_w(), int(off.id))
 	_log("g2_group_formed", not g.is_empty() and (g.members as Array).size() >= want_m, "members=%d" % (0 if g.is_empty() else (g.members as Array).size()))
 	await _click(_to_screen(_w().get_e(int(off.id)).pos))
@@ -495,6 +551,9 @@ func _officer_flow(inf_units: Array) -> void:
 	_log("g2_click_secure_point", await _click_button("Secure point"))
 	await _wait(0.3)
 	var goal := Vector2(40.5, 40.5)  # toward the bridge
+	if _w().map.w != 96:  # G3b: bigger maps: 10 tiles from the officer toward the map centre (stays on screen)
+		var op: Vector2 = _w().get_e(int(off.id)).pos
+		goal = op + (Vector2(float(_w().map.w), float(_w().map.h)) * 0.5 - op).normalized() * 10.0
 	await _click(_to_screen(goal))
 	await _wait(1.0)
 	g = Ops.group_led_by(_w(), int(off.id))
@@ -505,6 +564,99 @@ func _officer_flow(inf_units: Array) -> void:
 	await _click(_to_screen(_w().get_e(int(off.id)).pos))
 	await _wait(1.5)
 	await _shot("ui_07_officer_mission")
+
+
+# ------------------------------------------------------------ G3b stages flow (UI4)
+## Menu by real clicks: Industrial Heartland (River Crossing if it is missing), slot 2 opened as
+## AI, stages 7 / 8 / 9 for slots 0 / 1 / 2, Standard advancement.
+func _setup_stages_menu() -> void:
+	var menu = get_tree().root.find_child("MapOption", true, false) as OptionButton
+	var want := -1
+	var fallback := 0
+	if menu != null:
+		for i in menu.item_count:
+			var t := menu.get_item_text(i)
+			if t.begins_with("Industrial Heartland") and not menu.is_item_disabled(i):
+				want = i
+			if t.begins_with("River Crossing"):
+				fallback = i
+	var picked := want if want >= 0 else fallback
+	_log("g3b_map_pick_click", menu != null and await _pick_option("MapOption", picked),
+		"%s%s" % ["" if menu == null else menu.get_item_text(picked), "" if want >= 0 else " (Industrial Heartland missing: fallback)"])
+	_log("g3b_slot2_open_ai_click", await _pick_option("Slot2Kind", 0))
+	for i in 3:
+		var ob = get_tree().root.find_child("Slot%dStage" % i, true, false) as OptionButton
+		var idx := -1
+		if ob != null:
+			for k in ob.item_count:
+				if ob.get_item_text(k).begins_with("Stage %d " % (7 + i)):
+					idx = k
+		_log("g3b_slot%d_stage%d_click" % [i, 7 + i], idx >= 0 and await _pick_option("Slot%dStage" % i, idx),
+			"items=%d" % (0 if ob == null else ob.item_count))
+	await _wait(0.3)
+	var summary := ""
+	for l in get_tree().root.find_children("*", "Label", true, false):
+		if String(l.text).contains("Stages "):
+			summary = String(l.text)
+	_log("g3b_summary_shows_stages", summary.contains("Stages 7/8/9"), summary.get_slice("
+", 0))
+
+
+func _stages_flow(builders: Array) -> void:
+	var w := _w()
+	_log("g3b_match_stages", int(w.factions[0].stage) == 7 and w.factions.size() >= 3 and int(w.factions[2].stage) == 9,
+		"map=%s stages=%s" % [String(w.map.get("id", "?")), str(w.factions.values().map(func(f): return int(f.stage)))])
+	var hud = main.get("hud")
+	var sp = hud.g3b_stage if hud != null else null
+	_log("g3b_stage_panel_visible", sp != null and sp.panel.is_visible_in_tree(), "" if sp == null else sp.title.text)
+	var rdef := ""
+	for b in Content.buildable_for(_fac()):
+		if bool(Content.building(String(b)).get("research", false)):
+			rdef = String(b)
+			break
+	_log("g3b_research_building_def", rdef != "", rdef)
+	if rdef == "":
+		return
+	var cost: Dictionary = Content.building(rdef).cost
+	_log("g3b_afford_research_building", await _wait_until(func(): return _w().can_afford(0, cost) == "", 120.0), str(cost))
+	var n := await _select_units(builders)
+	_log("g3b_select_builders", n > 0, "selected=%d" % n)
+	_log("g3b_place_research_hotkey_" + _hotkey(rdef), await _place(rdef), rdef)
+	var built := await _wait_until(func(): return _built(rdef), 90.0)
+	_log("g3b_research_building_completed", built, rdef)
+	if not built:
+		return
+	var rb: Dictionary = _w().buildings_of(0, rdef)[0]
+	await _click(_to_screen(rb.pos))
+	await _wait(0.5)
+	_log("g3b_select_research_building", _mv().selection.has(int(rb.id)))
+	# first project the side can start now (Stage 7: a 7->8 project)
+	var pid := ""
+	for p in G3bData.project_ids_sorted():
+		var pd: Dictionary = G3bData.research_projects()[p]
+		if int(pd.get("stage_min", 7)) <= int(_w().factions[0].stage):
+			pid = String(p)
+			break
+	_log("g3b_research_project_known", pid != "", pid)
+	if pid == "":
+		return
+	var pcost: Dictionary = G3bData.research_projects()[pid].get("cost", {})
+	await _wait_until(func(): return _w().can_afford(0, pcost) == "", 90.0)
+	var btn = get_tree().root.find_child("Research_" + pid, true, false) as Button
+	_log("g3b_research_button_enabled", btn != null and not btn.disabled, "" if btn == null else btn.tooltip_text.replace("
+", " | "))
+	await _shot("ui_g3b_research_card")
+	if btn != null:
+		await _click(btn.get_global_rect().get_center())
+	var started := await _wait_until(func(): return String(_w().factions[0].research.get("active", "")) == pid, 3.0)
+	_log("g3b_research_started_by_click", started, "active=%s" % String(_w().factions[0].research.get("active", "")))
+	var prog := await _wait_until(func(): return float(_w().factions[0].research.get("progress", 0.0)) > 0.0, 10.0)
+	_log("g3b_research_progress", prog, "progress=%s" % str(_w().factions[0].research.get("progress", 0.0)))
+	await _wait(0.5)
+	_log("g3b_stage_panel_gates", sp != null and sp.last_report.size() > 0 and sp.gate_box.get_child_count() == sp.last_report.size(),
+		"" if sp == null else "gates=%d rows=%d advance_disabled=%s" % [sp.last_report.size(), sp.gate_box.get_child_count(), str(sp.advance_btn.disabled)])
+	_log("g3b_advance_disabled_until_gates", sp != null and sp.advance_btn.disabled)
+	await _shot("ui_g3b_stage_panel")
 
 
 func _finish() -> void:

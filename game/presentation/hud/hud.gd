@@ -15,6 +15,9 @@ const G2Commands = preload("res://presentation/hud/g2_commands.gd")
 const G2Alerts = preload("res://presentation/hud/g2_alerts.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
+# G3b (UI4): stage panel, research card, stage/research lock reasons
+const G3bStage = preload("res://presentation/hud/g3b_stage.gd")
+const G3bData = preload("res://presentation/hud/g3b_data.gd")
 
 const REFRESH_SECS := 0.2
 const ALERT_LIFE := 9.0
@@ -28,6 +31,7 @@ var g2_insp = G2Inspector.new()
 var g2_cmd = G2Commands.new()
 var g2_alerts = G2Alerts.new()
 var g3_score = G3Score.new()
+var g3b_stage = G3bStage.new()
 
 # Top bar
 var _credits: Label
@@ -209,6 +213,7 @@ func _build_ui() -> void:
 		_obj_labels.append(l)
 
 	g3_score.build(root, _obj_panel)
+	g3b_stage.build(root, self)
 
 	# ---- hover info
 	_hover_lbl = HT.make_label("", HT.TEXT, 14)
@@ -351,6 +356,7 @@ func _refresh() -> void:
 	objectives.update(w, _pf())
 	_refresh_objectives()
 	g3_score.update(w, _pf())
+	g3b_stage.update(w, _pf())
 	_refresh_selection(w)
 	_refresh_hover()
 
@@ -594,6 +600,8 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			btn.pressed.connect(_on_train_pressed.bind(bid, String(item)))
 			_card_buttons.append({"btn": btn, "kind": "train", "item": String(item), "building": bid})
 			_register_hotkey(String(p.get("hotkey", "")), btn)
+		if bool(d.get("research", false)):
+			_add_research_buttons(bid)
 	elif mode == "construct":
 		var b2: Dictionary = ents[0]
 		_card_title.text = "UNDER CONSTRUCTION"
@@ -607,6 +615,49 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		for c in _card_grid.get_children():
 			if c is Button:
 				c.add_theme_font_size_override("font_size", 12)
+	# G3b (UI4-3): a card with 3+ rows (Machine repair-bot build list + Repair + Assign) ran off
+	# the bottom of the screen (Assign at y 882..956 on a 900 px window); shorter buttons keep
+	# every row inside the 214 px bottom panel.
+	var rows := ceili(float(_card_grid.get_child_count()) / float(maxi(1, _card_grid.columns)))
+	if rows >= 3:
+		var bh := floorf((150.0 - 4.0 * float(rows - 1)) / float(rows))
+		for c in _card_grid.get_children():
+			if c is Button:
+				c.custom_minimum_size = Vector2(138, bh)
+				c.add_theme_font_size_override("font_size", 11)
+				c.add_theme_constant_override("icon_max_width", 20)
+
+
+## G3b: research projects on a research building (start; cancel while one is active).
+func _add_research_buttons(bid: int) -> void:
+	_card_title.text = "RESEARCH   (one project at a time; progress is kept if the building is lost)"
+	var fdef := G3.faction_def(_world(), _pf())
+	var ps: Dictionary = G3bData.research_projects()
+	for pid in G3bData.project_ids_sorted():
+		var p: Dictionary = ps[pid]
+		var btn := _card_button(G3bData.project_name(String(pid), fdef), "%s  %ds" % [HT.cost_text(p.get("cost", {})), int(p.get("time", 0))], "", "")
+		btn.name = "Research_" + String(pid)
+		btn.pressed.connect(_issue.bind({"type": "research", "project": String(pid), "building_id": bid}))
+		_card_buttons.append({"btn": btn, "kind": "research", "project": String(pid), "building": bid})
+	var cancel := _card_button("Cancel research", "full refund", "", "")
+	cancel.name = "ResearchCancel"
+	cancel.pressed.connect(_issue.bind({"type": "research", "project": "", "cancel": true, "building_id": bid}))
+	_card_buttons.append({"btn": cancel, "kind": "research_cancel", "building": bid})
+
+
+func _research_reason(w: SimWorld, rec: Dictionary) -> String:
+	var pf := _pf()
+	var f: Dictionary = w.factions[pf]
+	var r: Dictionary = f.get("research", {})
+	var pid := String(rec.project)
+	if (r.get("done", []) as Array).has(pid):
+		return "Already researched."
+	if String(r.get("active", "")) == pid:
+		return "In progress (%d%%)." % int(round(G3bStage._frac(r) * 100.0))
+	var lock := G3bData.lock_reason(G3bData.research_projects().get(pid, {}), f, G3.faction_def(w, pf))
+	if lock != "":
+		return lock
+	return w.preview_command({"type": "research", "issuer": pf, "project": pid, "building_id": int(rec.building)})
 
 
 func _on_train_pressed(bid: int, item: String) -> void:
@@ -667,8 +718,22 @@ func _update_card_state(mode: String, ents: Array, w: SimWorld) -> void:
 			reason = _build_reason(w, String(rec.def))
 			var d: Dictionary = Content.building(String(rec.def))
 			tip = "%s\nCost: %s\nBuild time: %ds" % [d.name, HT.cost_text_long(d.cost), int(d.build_time)]
+		elif kind == "research":
+			reason = _research_reason(w, rec)
+			var rp: Dictionary = G3bData.research_projects().get(String(rec.project), {})
+			tip = "%s
+Cost: %s
+Research time: %ds
+For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)), HT.cost_text_long(rp.get("cost", {})), int(rp.get("time", 0)), int(rp.get("for_stage", 8))]
+			if reason == "Already researched.":
+				btn.text = "[done] " + G3bData.project_name(String(rec.project), G3.faction_def(w, pf))
+		elif kind == "research_cancel":
+			reason = "" if String(w.factions[pf].get("research", {}).get("active", "")) != "" else "No project is active."
+			tip = "Cancel the active project (full refund; its progress is lost)."
 		elif kind == "train":
-			reason = w.preview_command({"type": "queue_unit", "issuer": pf, "building_id": int(rec.building), "item": String(rec.item)})
+			reason = G3bData.production_lock(String(rec.item), w.factions[pf], G3.faction_def(w, pf))
+			if reason == "":
+				reason = w.preview_command({"type": "queue_unit", "issuer": pf, "building_id": int(rec.building), "item": String(rec.item)})
 			var p: Dictionary = Content.production(String(rec.item))
 			tip = "%s\nCost: %s\nTrain time: %ds" % [p.name, HT.cost_text_long(p.cost), int(p.train_time)]
 		rec["reason"] = reason
@@ -699,6 +764,9 @@ func _update_card_state(mode: String, ents: Array, w: SimWorld) -> void:
 func _build_reason(w: SimWorld, def_id: String) -> String:
 	var d: Dictionary = Content.building(def_id)
 	var pf := _pf()
+	var lock := G3bData.lock_reason(d, w.factions[pf], G3.faction_def(w, pf))  # G3b stage / research
+	if lock != "":
+		return lock
 	for req in d.get("requires", []):
 		var have := false
 		for b in w.buildings_of(pf, String(req)):
@@ -895,7 +963,8 @@ func _on_events(events: Array) -> void:
 				var wt := int(ev.get("winner_team", G3.team_of(w, int(ev.get("winner", -1)))))
 				_push_alert("Match ended: Team %d wins." % (wt + 1) if wt >= 0 else "Match ended.", HT.AMBER)
 			_:
-				g2_alerts.on_event(self, w, pf, ev)
+				if not g3b_stage.on_event(w, pf, ev):
+					g2_alerts.on_event(self, w, pf, ev)
 
 
 func _ev_pos(w: SimWorld, ev: Dictionary) -> Variant:

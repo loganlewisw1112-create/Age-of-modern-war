@@ -16,6 +16,8 @@ const ITEMS := [
 ]
 
 var done: Dictionary = {}
+const SCAN_THROTTLE_ENTITIES := 400  # above this many entities the state scan is rate-limited
+var _last_scan_ms: int = -1000
 var dismissed: bool = false
 var items: Array = ITEMS.duplicate(true)
 var faction_id: String = ""
@@ -80,21 +82,29 @@ func update(w: SimWorld, fid: int, events: Array = []) -> void:
 		configure(fac, String(w.cfg.get("victory", "hq_elimination")))
 	var pdef := String(_defs.get("power", ""))
 	var bdef := String(_defs.get("barracks", ""))
-	# State based (robust against missed events).
-	for b in w.buildings_of(fid):
-		if bool(b.get("built", false)):
-			if pdef != "" and b.def == pdef:
-				done["generator"] = true
-			elif bdef != "" and b.def == bdef:
-				done["barracks"] = true
-	# Trained, not starting, infantry: more infantry-role units than the faction starts with.
-	var inf := _infantry_units()
-	var n_inf := 0
-	for u in w.units_of(fid):
-		if inf.has(String(u.def)):
-			n_inf += 1
-	if n_inf > _start_inf:
-		done["squad"] = true
+	# State based (robust against missed events). Perf (UI4-2): on big worlds this full-entity
+	# scan runs at most 4 Hz (it used to run on every event batch, i.e. nearly every tick), as ONE
+	# pass instead of buildings_of + units_of.
+	var now_ms := Time.get_ticks_msec()
+	if w.entities.size() <= SCAN_THROTTLE_ENTITIES or now_ms - _last_scan_ms >= 250:
+		_last_scan_ms = now_ms
+		var inf := _infantry_units()
+		var n_inf := 0
+		for id in w.entities:
+			var e: Dictionary = w.entities[id]
+			if int(e.owner) != fid:
+				continue
+			if e.kind == "building":
+				if bool(e.get("built", false)):
+					if pdef != "" and e.def == pdef:
+						done["generator"] = true
+					elif bdef != "" and e.def == bdef:
+						done["barracks"] = true
+			elif e.kind == "unit" and inf.has(String(e.def)):
+				n_inf += 1
+		# Trained, not starting, infantry: more infantry-role units than the faction starts with.
+		if n_inf > _start_inf:
+			done["squad"] = true
 	for ofid in w.factions:
 		if int(ofid) != fid and not G3.is_ally(w, fid, int(ofid)) and not bool(w.factions[ofid].get("alive", true)):
 			done["enemy_hq"] = true

@@ -9,6 +9,7 @@ signal ui_scale_changed(s: float)
 const HT = preload("res://presentation/hud/hud_theme.gd")
 const SkirmishSetup = preload("res://presentation/menu/skirmish_setup.gd")
 const VictoryBuilder = preload("res://presentation/menu/victory_builder.gd")
+const G3bData = preload("res://presentation/hud/g3b_data.gd")  # G3b (UI4): maps, stages, advancement
 const SAVE_SLOTS := [
 	{"label": "Quick save", "path": "user://saves/quick.sav"},
 	{"label": "Slot 1", "path": "user://saves/slot_1.sav"},
@@ -40,14 +41,16 @@ START HERE (the OBJECTIVES panel names your faction's buildings)
 var _seed: LineEdit
 var setup: VBoxContainer       # skirmish_setup.gd (slots, economy)
 var victory: VBoxContainer     # victory_builder.gd
-var _stage: OptionButton
+var map_opt: OptionButton      # G3b map picker
+var adv_opt: OptionButton      # G3b advancement rules
+var _map_rows: Array = []
+var _adv_ids: Array = []
 var _summary: Label
 var _scale_opt: OptionButton
 var _load_panel: VBoxContainer
 var _howto: PanelContainer
 var _load_note: Label
 var _save_system_ok: bool = false
-var _stage_ids: Array = []
 
 
 func _ready() -> void:
@@ -90,7 +93,7 @@ func _build() -> void:
 	row.add_child(left)
 	left.add_child(HT.make_label("RTS", HT.OLIVE, 22))
 	left.add_child(HT.make_label("AGE OF\nMODERN WAR", HT.AMBER, 46))
-	left.add_child(HT.make_label("First playable slice: River Crossing", HT.DIM, 14))
+	left.add_child(HT.make_label("Three maps, Stages 7-9, up to 8 sides", HT.DIM, 14))
 	left.add_child(_spacer(18))
 	var start := _menu_button("Start Skirmish", left)
 	start.pressed.connect(_on_start)
@@ -118,7 +121,7 @@ func _build() -> void:
 
 	# ---- right column: skirmish setup
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(840, 0)
+	panel.custom_minimum_size = Vector2(900, 0)
 	row.add_child(panel)
 	var pv := VBoxContainer.new()
 	pv.add_theme_constant_override("separation", 10)
@@ -131,7 +134,17 @@ func _build() -> void:
 	pv.add_child(grid)
 
 	grid.add_child(HT.make_label("Map", HT.DIM))
-	grid.add_child(HT.make_label("River Crossing (96 x 96)", HT.TEXT))
+	map_opt = OptionButton.new()
+	map_opt.name = "MapOption"
+	map_opt.custom_minimum_size = Vector2(460, 0)
+	_map_rows = G3bData.map_rows()
+	for m in _map_rows:
+		map_opt.add_item(G3bData.map_label(m))
+		if not bool(m.present):
+			map_opt.set_item_disabled(map_opt.item_count - 1, true)
+	map_opt.select(0)
+	map_opt.item_selected.connect(_on_changed_num)
+	grid.add_child(map_opt)
 
 	grid.add_child(HT.make_label("Seed", HT.DIM))
 	var sh := HBoxContainer.new()
@@ -146,22 +159,17 @@ func _build() -> void:
 	sh.add_child(rnd)
 	grid.add_child(sh)
 
-	grid.add_child(HT.make_label("Stage", HT.DIM))
-	_stage = OptionButton.new()
-	_stage.custom_minimum_size = Vector2(380, 0)
-	var sel_idx := 0
-	for st in Content.stages():
-		var playable: bool = bool(st.get("playable_now", false))
-		_stage.add_item("Stage %d  %s%s" % [int(st.id), String(st.working_name), "" if playable else "   (not in this slice)"])
-		var idx := _stage.item_count - 1
-		_stage_ids.append(int(st.id))
-		if not playable:
-			_stage.set_item_disabled(idx, true)
-		elif int(st.id) == 8:
-			sel_idx = idx
-	_stage.select(sel_idx)
-	_stage.item_selected.connect(_on_changed_num)
-	grid.add_child(_stage)
+	grid.add_child(HT.make_label("Advancement", HT.DIM))
+	adv_opt = OptionButton.new()
+	adv_opt.name = "AdvancementOption"
+	adv_opt.custom_minimum_size = Vector2(300, 0)
+	adv_opt.tooltip_text = "Free: advancing costs nothing. Standard: normal cost. Simulation: x1.5 cost."
+	_adv_ids = G3bData.advancement_ids()
+	for a_id in _adv_ids:
+		adv_opt.add_item(G3bData.advancement_label(String(a_id)))
+	adv_opt.select(maxi(0, _adv_ids.find("standard")))
+	adv_opt.item_selected.connect(_on_changed_num)
+	grid.add_child(adv_opt)
 
 	pv.add_child(HSeparator.new())
 	setup = SkirmishSetup.new()
@@ -266,13 +274,17 @@ func build_config() -> Dictionary:
 	if not st.is_valid_int():
 		return {"cfg": cfg, "error": "Seed must be a whole number."}
 	cfg.seed = int(st)
-	var stage_id: int = _stage_ids[_stage.selected] if _stage.selected >= 0 else 8
 	var ui_reason := ""
+	var m := selected_map()
+	cfg.map = String(m.id)
+	if adv_opt != null and adv_opt.selected >= 0 and adv_opt.selected < _adv_ids.size():
+		cfg.advancement = String(_adv_ids[adv_opt.selected])
 	if setup != null:
-		ui_reason = setup.apply(cfg, stage_id)
-	else:
-		for s in cfg.sides:
-			s.stage = stage_id
+		ui_reason = setup.apply(cfg, 8)
+	if ui_reason == "" and cfg.sides.size() > int(m.get("max_sides", 4)):
+		ui_reason = "%s holds at most %d sides." % [String(m.name), int(m.get("max_sides", 4))]
+	if ui_reason == "" and not bool(m.get("present", true)):
+		ui_reason = "%s is not available yet." % String(m.name)
 	if victory != null:
 		victory.apply(cfg)
 	var err := SimWorld.validate_config(cfg)
@@ -292,12 +304,24 @@ func _validate() -> bool:
 		return false
 	var cfg: Dictionary = r.cfg
 	var prof: Dictionary = Content.rules().get("economy_profiles", {}).get(String(cfg.get("economy", "standard")), {})
-	_summary.text = "River Crossing  |  seed %d  |  %s economy  |  %s  |  Stage %d
+	var m := selected_map()
+	var stages: Array = []
+	for sd in cfg.sides:
+		stages.append(str(int(sd.get("stage", 8))))
+	_summary.text = "%s (%d x %d)  |  seed %d  |  %s economy  |  %s advancement  |  %s  |  Stages %s
 %s" % [
-		int(cfg.seed), String(prof.get("name", cfg.get("economy", ""))), VictoryBuilder.describe(cfg),
-		int(cfg.sides[0].stage), setup.describe(cfg) if setup != null else ""]
+		String(m.name), int(m.get("w", 0)), int(m.get("h", 0)), int(cfg.seed),
+		String(prof.get("name", cfg.get("economy", ""))), String(cfg.get("advancement", "standard")).capitalize(),
+		VictoryBuilder.describe(cfg), "/".join(stages), setup.describe(cfg) if setup != null else ""]
 	_summary.add_theme_color_override("font_color", HT.GREEN)
 	return true
+
+
+## G3b: the picked map row ({id, name, w, h, max_sides, present}).
+func selected_map() -> Dictionary:
+	if map_opt != null and map_opt.selected >= 0 and map_opt.selected < _map_rows.size():
+		return _map_rows[map_opt.selected]
+	return G3bData.map_row("river_crossing_s")
 
 
 func _on_start() -> void:

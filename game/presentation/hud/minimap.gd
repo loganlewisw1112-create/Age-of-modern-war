@@ -24,6 +24,15 @@ var _map_h: int = 96
 var _fog_timer: float = 0.0
 var _dragging: bool = false
 var _built_for: SimWorld = null
+# G3b (UI4): big maps (160/256) and big armies. Fog is rebuilt in row chunks into an LA8 byte
+# buffer, the full minimap redraws at ~6 Hz when the world is large, and the camera rectangle
+# lives on a child overlay that redraws every frame.
+const BIG_WORLD_ENTITIES := 400  # UI4-2: above this the minimap redraws at ~6 Hz instead of every frame
+const FOG_CHUNKS := 4
+var _fog_bytes := PackedByteArray()
+var _fog_row := 0
+var _redraw_acc := 0.0
+var _cam_overlay: Control = null
 
 
 func _init() -> void:
@@ -35,6 +44,13 @@ func _init() -> void:
 func setup(match_view: Node) -> void:
 	mv = match_view
 	_build_terrain()
+	if _cam_overlay == null:
+		_cam_overlay = Control.new()
+		_cam_overlay.name = "MinimapCamera"
+		_cam_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cam_overlay.size = Vector2(SIZE, SIZE)
+		_cam_overlay.draw.connect(_draw_camera)
+		add_child(_cam_overlay)
 
 
 func _world() -> SimWorld:
@@ -57,9 +73,13 @@ func _build_terrain() -> void:
 			var code: int = ter[y * _map_w + x]
 			img.set_pixel(x, y, TERRAIN_COLORS[clampi(code, 0, TERRAIN_COLORS.size() - 1)])
 	_terrain_tex = ImageTexture.create_from_image(img)
-	_fog_img = Image.create(_map_w, _map_h, false, Image.FORMAT_RGBA8)
-	_fog_img.fill(Color(0, 0, 0, 0.92))
+	_fog_bytes = PackedByteArray()
+	_fog_bytes.resize(_map_w * _map_h * 2)
+	for i in _map_w * _map_h:
+		_fog_bytes[i * 2 + 1] = 235
+	_fog_img = Image.create_from_data(_map_w, _map_h, false, Image.FORMAT_LA8, _fog_bytes)
 	_fog_tex = ImageTexture.create_from_image(_fog_img)
+	_fog_row = 0
 
 
 func _fog_arrays() -> Dictionary:
@@ -73,23 +93,27 @@ func _fog_arrays() -> Dictionary:
 	return f
 
 
-func _update_fog() -> void:
+## Rebuilds FOG_CHUNKS-th of the fog rows per call; uploads the texture after the last chunk.
+func _update_fog() -> bool:
 	if _fog_img == null:
-		return
+		return true
 	var f := _fog_arrays()
 	var vis: PackedByteArray = f.get("visible", PackedByteArray())
 	var exp: PackedByteArray = f.get("explored", PackedByteArray())
 	var n := _map_w * _map_h
 	if vis.size() < n or exp.size() < n:
-		return
-	for y in _map_h:
-		for x in _map_w:
-			var i := y * _map_w + x
-			var a := 0.0
-			if vis[i] == 0:
-				a = 0.5 if exp[i] != 0 else 0.93
-			_fog_img.set_pixel(x, y, Color(0, 0, 0, a))
+		return true
+	var rows := int(ceil(float(_map_h) / FOG_CHUNKS))
+	var y1 := mini(_map_h, _fog_row + rows)
+	for i in range(_fog_row * _map_w, y1 * _map_w):
+		_fog_bytes[i * 2 + 1] = 0 if vis[i] != 0 else (128 if exp[i] != 0 else 237)
+	_fog_row = y1
+	if _fog_row < _map_h:
+		return false
+	_fog_row = 0
+	_fog_img.set_data(_map_w, _map_h, false, Image.FORMAT_LA8, _fog_bytes)
 	_fog_tex.update(_fog_img)
+	return true
 
 
 func _process(delta: float) -> void:
@@ -97,10 +121,18 @@ func _process(delta: float) -> void:
 	if w != _built_for:
 		_build_terrain()
 	_fog_timer += delta
-	if _fog_timer >= 0.3:
+	if _fog_timer >= 0.3 or _fog_row > 0:
 		_fog_timer = 0.0
 		_update_fog()
-	queue_redraw()
+	_redraw_acc += delta
+	var big := w != null and w.entities.size() > BIG_WORLD_ENTITIES
+	if w != null and not w.map.is_empty() and (not big or _redraw_acc >= 0.16):
+		_redraw_acc = 0.0
+		if int(w.tick) != _dots_tick or _dot_tex == null:
+			_rebuild_dots(w)
+		queue_redraw()
+	if _cam_overlay != null:
+		_cam_overlay.queue_redraw()
 
 
 func _cell_scale() -> Vector2:
@@ -153,70 +185,143 @@ func _cell_visible(f: Dictionary, p: Vector2) -> bool:
 	return i < vis.size() and vis[i] != 0
 
 
+## R4 CR (board seq 645): entity dots are painted into two SIZE x SIZE images only when w.tick
+## changes (throttled to ~6 Hz on big worlds); _draw is then a handful of texture blits.
+## _res_img sits under the fog (explored resources), _dot_img above it (memory + live entities).
+var _res_img: Image = null
+var _dot_img: Image = null
+var _res_tex: ImageTexture = null
+var _dot_tex: ImageTexture = null
+var _dots_tick: int = -1
+
+
+func _dot(img: Image, p: Vector2, half: float, col: Color) -> void:
+	var r := Rect2i(Vector2i(roundi(p.x - half), roundi(p.y - half)), Vector2i(maxi(1, roundi(half * 2.0)), maxi(1, roundi(half * 2.0))))
+	r = r.intersection(Rect2i(0, 0, SIZE, SIZE))
+	if r.size.x > 0 and r.size.y > 0:
+		img.fill_rect(r, col)
+
+
+## Visible arrays the player sees through: own fog plus allied fog (G3a allied vision). Empty = no fog.
+func _vis_arrays(w: SimWorld, pf: int) -> Array:
+	var out := []
+	var f: Dictionary = w.fog.get(pf, {})
+	if f.is_empty():
+		return out
+	out.append(f.get("visible", PackedByteArray()))
+	for fid in w.factions:
+		if int(fid) != pf and G3.is_ally(w, pf, int(fid)):
+			var af: Dictionary = w.fog.get(int(fid), {})
+			if not af.is_empty():
+				out.append(af.get("visible", PackedByteArray()))
+	return out
+
+
+func _seen_idx(vis: Array, x: int, y: int) -> bool:
+	if vis.is_empty():
+		return true
+	if x < 0 or y < 0 or x >= _map_w or y >= _map_h:
+		return false
+	var i := y * _map_w + x
+	for v in vis:
+		if i < v.size() and int(v[i]) == 1:
+			return true
+	return false
+
+
+func _rebuild_dots(w: SimWorld) -> void:
+	if _dot_img == null:
+		_res_img = Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+		_dot_img = Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+	_res_img.fill(Color(0, 0, 0, 0))
+	_dot_img.fill(Color(0, 0, 0, 0))
+	var pf: int = int(mv.get("player_fid"))
+	var f := _fog_arrays()
+	var exp: PackedByteArray = f.get("explored", PackedByteArray())
+	var vis := _vis_arrays(w, pf)
+	var own_vis: Array = [] if vis.is_empty() else [vis[0]]
+	var s := _cell_scale()
+	var colors := {}  # owner -> [fill, is_ally, own]
+	# Remembered enemy buildings (under the live dots).
+	var mem: Dictionary = w.memory.get(pf, {})
+	for eid in mem:
+		var m: Dictionary = mem[eid]
+		var mp: Vector2 = m.pos
+		if w.entities.has(int(eid)) and _seen_idx(own_vis, floori(mp.x), floori(mp.y)):
+			continue  # drawn live below
+		var ocol := G3.side_color(w, int(m.owner)) if w.factions.has(int(m.owner)) else Color.RED
+		_dot(_dot_img, _to_mini(mp), 2.5, ocol.darkened(0.25))
+	# One pass over every entity.
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		var k: String = e.kind
+		var p: Vector2 = e.pos
+		if k == "resource":
+			var idx := floori(p.y) * _map_w + floori(p.x)
+			if idx >= 0 and idx < exp.size() and exp[idx] != 0:
+				_dot(_res_img, _to_mini(p), 1.0, Color("c9c9c9") if e.res == "salvage" else Color("d98a3d"))
+			continue
+		if k != "unit" and k != "building":
+			continue
+		var owner := int(e.owner)
+		if not colors.has(owner):
+			var ally0 := G3.is_ally(w, pf, owner)
+			var c0 := G3.side_color(w, owner) if w.factions.has(owner) else Color.WHITE
+			if owner != pf and not ally0:
+				c0 = c0.lightened(0.15) if w.factions.has(owner) else Color.RED
+			colors[owner] = [c0, ally0, owner == pf]
+		var cc: Array = colors[owner]
+		var col: Color = cc[0]
+		var ally: bool = cc[1]
+		# Enemies only where the player (or an ally) can see.
+		if not cc[2] and not ally and not _seen_idx(vis, floori(p.x), floori(p.y)):
+			continue
+		var edge := Color(1, 1, 1, 0.85) if ally else Color(0, 0, 0, 0.8)
+		var mp2 := _to_mini(p)
+		if k == "building":
+			var half: float = float(e.size) * s.x * 0.5
+			_dot(_dot_img, mp2, half + 0.5, edge)
+			_dot(_dot_img, mp2, maxf(0.5, half - 0.5), col)
+		elif ally:
+			_dot(_dot_img, mp2, 2.0, edge)
+			_dot(_dot_img, mp2, 1.0, col)
+		else:
+			_dot(_dot_img, mp2, 1.5, col)
+	if _res_tex == null:
+		_res_tex = ImageTexture.create_from_image(_res_img)
+		_dot_tex = ImageTexture.create_from_image(_dot_img)
+	else:
+		_res_tex.update(_res_img)
+		_dot_tex.update(_dot_img)
+	_dots_tick = int(w.tick)
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), Color("0c0f10"))
 	var w := _world()
 	if w == null or _terrain_tex == null:
 		return
-	draw_texture_rect(_terrain_tex, Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), false)
-	var pf: int = int(mv.get("player_fid"))
-	var f := _fog_arrays()
-	var s := _cell_scale()
-	# Resources (only where explored).
-	var exp: PackedByteArray = f.get("explored", PackedByteArray())
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind == "resource":
-			var c := w.cell_of(e.pos)
-			var idx := c.y * _map_w + c.x
-			if idx >= 0 and idx < exp.size() and exp[idx] != 0:
-				var col := Color("c9c9c9") if e.res == "salvage" else Color("d98a3d")
-				draw_rect(Rect2(_to_mini(e.pos) - Vector2(1, 1), Vector2(2, 2)), col)
+	var full := Rect2(Vector2.ZERO, Vector2(SIZE, SIZE))
+	draw_texture_rect(_terrain_tex, full, false)
+	if _res_tex != null:
+		draw_texture_rect(_res_tex, full, false)
 	# G3a: territory sectors tinted by owning team (only when the sim tracks territory).
 	if w.sys_state.has("territory"):
 		_draw_territory(w)
-	# Fog overlay.
 	if _fog_tex != null:
-		draw_texture_rect(_fog_tex, Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), false)
-	# Remembered enemy buildings.
-	var mem: Dictionary = w.memory.get(pf, {})
-	for eid in mem:
-		var m: Dictionary = mem[eid]
-		if w.entities.has(int(eid)) and _cell_visible(f, m.pos):
-			continue  # drawn live below
-		var ocol := G3.side_color(w, int(m.owner)) if w.factions.has(int(m.owner)) else Color.RED
-		draw_rect(Rect2(_to_mini(m.pos) - Vector2(2.5, 2.5), Vector2(5, 5)), ocol.darkened(0.25))
-	# Live entities.
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" and e.kind != "building":
-			continue
-		var owner := int(e.owner)
-		var own := owner == pf
-		# G3a: allies always show in their own colour (white outline); enemies only where the
-		# player (or an ally, via mv.cell_visible) can see, outlined black.
-		var ally := G3.is_ally(w, pf, owner)
-		if not own and not ally and not _seen(w, f, e.pos):
-			continue
-		var col := G3.side_color(w, owner) if w.factions.has(owner) else Color.WHITE
-		if not own and not ally:
-			col = col.lightened(0.15) if w.factions.has(owner) else Color.RED
-		var edge := Color(1, 1, 1, 0.85) if ally else Color(0, 0, 0, 0.8)
-		if e.kind == "building":
-			var sz: float = float(e.size) * s.x
-			draw_rect(Rect2(_to_mini(e.pos) - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), col)
-			draw_rect(Rect2(_to_mini(e.pos) - Vector2(sz, sz) * 0.5, Vector2(sz, sz)), edge, false, 1.0)
-		else:
-			draw_rect(Rect2(_to_mini(e.pos) - Vector2(1.5, 1.5), Vector2(3, 3)), col)
-			if ally:
-				draw_rect(Rect2(_to_mini(e.pos) - Vector2(2, 2), Vector2(4, 4)), edge, false, 1.0)
-	# Camera rectangle.
+		draw_texture_rect(_fog_tex, full, false)
+	if _dot_tex != null:
+		draw_texture_rect(_dot_tex, full, false)
+	draw_rect(full, Color("4b555b"), false, 1.0)
+
+
+## Camera rectangle (child overlay, every frame).
+func _draw_camera() -> void:
 	var poly := _camera_poly()
 	if poly.size() == 4:
 		var closed := PackedVector2Array(poly)
 		closed.append(poly[0])
-		draw_polyline(closed, Color(1, 1, 1, 0.9), 1.0)
-	draw_rect(Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), Color("4b555b"), false, 1.0)
+		_cam_overlay.draw_polyline(closed, Color(1, 1, 1, 0.9), 1.0)
 
 
 ## Visible screen area as 4 minimap points. Works whether MatchView uses a Camera2D or moves itself.

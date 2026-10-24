@@ -15,6 +15,7 @@ var _body: VBoxContainer
 var _obj_panel: Control
 var _sig := ""
 var _acc := 0
+var _last_rows_ms: int = -1000
 
 
 func build(root: Control, obj_panel: Control) -> void:
@@ -109,6 +110,11 @@ func update(w: SimWorld, pf: int) -> void:
 	_acc += 1
 	if _acc % 2 == 1 and _sig != "":
 		return
+	# Perf (UI4-2): rows() scans every entity (HQ count + Victory.progress); on big worlds do it at most 2 Hz.
+	var now_ms := Time.get_ticks_msec()
+	if _sig != "" and w.entities.size() > 400 and now_ms - _last_rows_ms < 500:
+		return
+	_last_rows_ms = now_ms
 	var op := ""
 	if String(w.cfg.get("victory", "")) == "combined":
 		op = "  (all terms)" if String(w.cfg.get("victory_rules", {}).get("op", "and")) == "and" else "  (any term)"

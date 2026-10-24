@@ -6,6 +6,9 @@ extends Node
 ##   --autostart [--autostart-seed=N]    skip the menu and start the default match
 ##   --autostart-factions=human_b,machine[,human_a]   (G3a) one side per faction, side 0 = you
 ##   --autostart-teams=0,1,1             (G3a) team per side;  --autostart-victory=territory
+##   --autostart-map=industrial_heartland_m   (G3b) map id (alias --map=<id>)
+##   --autostart-stages=7,8,9            (G3b) stage per side (adds AI sides if there are more stages)
+##   --autostart-advancement=free|standard|simulation   (G3b)
 ##   --player-ai                         (with --autostart) the AI plays side 0 too (demo)
 ##   --autoshot=ABS.png --autoshot-delay=4   save the viewport after N seconds, then quit (KEEP)
 ##   --debug-end=win|lose                force the end screen (debug)
@@ -72,6 +75,7 @@ func _ready() -> void:
 		pt.main = self
 		pt.shot_dir = String(_args["ui-playtest"])
 		pt.faction = String(_args.get("ui-playtest-faction", ""))  # G3a: human_b | machine
+		pt.stages_flow = _args.has("ui-playtest-stages")  # G3b: map + stage pick, research, gates
 		add_child(pt)
 
 
@@ -95,6 +99,22 @@ func _apply_autostart_g3(cfg: Dictionary) -> void:
 			cfg.sides[i].team = int(ts[i])
 	if _args.has("autostart-victory"):
 		cfg.victory = String(_args["autostart-victory"])
+	# G3b (UI4): map, per-side stages, advancement rules
+	var map_id := String(_args.get("autostart-map", _args.get("map", "")))
+	if map_id != "":
+		cfg.map = map_id
+	if _args.has("autostart-stages"):
+		var st: PackedStringArray = String(_args["autostart-stages"]).split(",", false)
+		while cfg.sides.size() < st.size():
+			var extra: Dictionary = (cfg.sides[cfg.sides.size() - 1] as Dictionary).duplicate(true)
+			extra.ai = true
+			extra.team = cfg.sides.size()
+			extra.name = "AI (%d)" % (cfg.sides.size() + 1)
+			cfg.sides.append(extra)
+		for i in mini(st.size(), cfg.sides.size()):
+			cfg.sides[i].stage = int(st[i])
+	if _args.has("autostart-advancement"):
+		cfg.advancement = String(_args["autostart-advancement"])
 
 
 func _parse_args() -> void:

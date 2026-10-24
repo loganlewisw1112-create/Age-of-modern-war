@@ -1,12 +1,16 @@
 extends Camera2D
 ## Fixed-isometric RTS camera (owner: agent D). Pan bounded to the map diamond's bounding box,
 ## zoom 0.5x-2.5x with the point under the cursor kept fixed.
+## G3b (UI4): bounds come from map.w/h (96, 160, 256 maps); the zoom-out floor scales with the
+## map so a 256x256 map can be viewed whole-ish; edge_pan_speed() scales with map size.
 
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 2.5
 
 var mv
 var _bounds := Rect2()
+var zoom_min := ZOOM_MIN
+var _map_span := 96.0
 
 
 func setup(view: Node2D) -> void:
@@ -15,6 +19,8 @@ func setup(view: Node2D) -> void:
 	var h := float(mv.world.map.h)
 	# map diamond: x in [-h*32, w*32], y in [0, (w+h)*16]
 	_bounds = Rect2(Vector2(-h * 32.0, 0.0), Vector2((w + h) * 32.0, (w + h) * 16.0))
+	_map_span = maxf(w, h)
+	zoom_min = clampf(ZOOM_MIN * 96.0 / maxf(1.0, _map_span), 0.15, ZOOM_MIN)
 	position_smoothing_enabled = false
 	anchor_mode = Camera2D.ANCHOR_MODE_DRAG_CENTER
 	zoom = Vector2.ONE
@@ -35,8 +41,14 @@ func pan_screen(viewport_delta: Vector2) -> void:
 	_clamp()
 
 
+## Edge/keyboard pan speed in viewport px/s at zoom 1 (900 on River Crossing, ~1.3x on 160,
+## ~1.6x on 256). Callers divide by zoom as before.
+func edge_pan_speed() -> float:
+	return 900.0 * sqrt(maxf(1.0, _map_span / 96.0))
+
+
 func set_zoom_level(z: float) -> void:
-	z = clampf(z, ZOOM_MIN, ZOOM_MAX)
+	z = clampf(z, zoom_min, ZOOM_MAX)
 	zoom = Vector2(z, z)
 	_clamp()
 
@@ -45,7 +57,7 @@ func set_zoom_level(z: float) -> void:
 func zoom_at(vp: Vector2, f: float) -> void:
 	var vs := get_viewport_rect().size
 	var before := position + (vp - vs * 0.5) / zoom.x
-	var z := clampf(zoom.x * f, ZOOM_MIN, ZOOM_MAX)
+	var z := clampf(zoom.x * f, zoom_min, ZOOM_MAX)
 	zoom = Vector2(z, z)
 	position = before - (vp - vs * 0.5) / z
 	_clamp()

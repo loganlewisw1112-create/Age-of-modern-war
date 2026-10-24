@@ -8,6 +8,7 @@ extends VBoxContainer
 signal changed
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
+const G3bData = preload("res://presentation/hud/g3b_data.gd")  # G3b (UI4): per-side stage
 const EXTRA_COLORS := ["#8a63b5", "#3a9fa5", "#c7c7bd", "#d07a9a"]
 const SLOT_COUNT := 4
 
@@ -17,6 +18,7 @@ var faction_ids: Array = []
 var colors: Array = []        # html strings
 var diffs: Array = []
 var econs: Array = []
+var stage_ids: Array = []      # G3b: playable stage ids (stages.json playable_now)
 
 
 func build() -> void:
@@ -31,13 +33,14 @@ func build() -> void:
 	diffs = []
 	for d in Content.rules().get("ai_difficulties", {}):
 		diffs.append(String(d))
+	stage_ids = G3bData.playable_stages()
 	econs = []
 	for e in Content.rules().get("economy_profiles", {}):
 		econs.append(String(e))
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 6)
 	add_child(head)
-	for h in [["", 22], ["Player", 92], ["Faction", 200], ["Team", 86], ["Colour", 96], ["Credits", 110], ["AI level", 92]]:
+	for h in [["", 22], ["Player", 92], ["Faction", 190], ["Stage", 150], ["Team", 86], ["Colour", 80], ["Credits", 104], ["AI level", 92]]:
 		var l := HT.make_label(String(h[0]), HT.DIM, 13)
 		l.custom_minimum_size = Vector2(float(h[1]), 0)
 		head.add_child(l)
@@ -85,13 +88,23 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	row.add_child(kind)
 	var fac := OptionButton.new()
 	fac.name = "Slot%dFaction" % i
-	fac.custom_minimum_size = Vector2(200, 0)
+	fac.custom_minimum_size = Vector2(190, 0)
 	for fid in faction_ids:
 		var fd: Dictionary = Content.faction(String(fid))
 		fac.add_item("%s (%s)" % [String(fd.get("name", fid)), String(fd.get("archetype", ""))])
 	fac.select(maxi(0, faction_ids.find("human_a")))
 	fac.item_selected.connect(_emit)
 	row.add_child(fac)
+	# G3b: Stage 7/8/9 per side (only stages.json playable_now)
+	var stg := OptionButton.new()
+	stg.name = "Slot%dStage" % i
+	stg.custom_minimum_size = Vector2(150, 0)
+	for sid in stage_ids:
+		stg.add_item("Stage %d  %s" % [int(sid), G3bData.stage_name(int(sid)).get_slice(" ", 0)])
+	stg.select(maxi(0, stage_ids.find(8)))
+	stg.tooltip_text = "Starting stage for this side. Higher stages unlock newer units; lower stages advance through research and gates."
+	stg.item_selected.connect(_emit)
+	row.add_child(stg)
 	var team := OptionButton.new()
 	team.name = "Slot%dTeam" % i
 	team.custom_minimum_size = Vector2(86, 0)
@@ -102,7 +115,7 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	row.add_child(team)
 	var col := OptionButton.new()
 	col.name = "Slot%dColor" % i
-	col.custom_minimum_size = Vector2(96, 0)
+	col.custom_minimum_size = Vector2(80, 0)
 	for c in colors:
 		col.add_icon_item(_swatch_tex(Color.html(String(c))), "")
 	col.select(i % colors.size())
@@ -110,7 +123,7 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	row.add_child(col)
 	var cr := SpinBox.new()
 	cr.name = "Slot%dCredits" % i
-	cr.custom_minimum_size = Vector2(110, 0)
+	cr.custom_minimum_size = Vector2(104, 0)
 	cr.min_value = 0
 	cr.max_value = 50000
 	cr.step = 500
@@ -129,7 +142,7 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	var blurb := HT.make_label("", HT.DIM, 12)
 	blurb.custom_minimum_size = Vector2(0, 16)
 	box.add_child(blurb)
-	return {"kind": kind, "faction": fac, "team": team, "color": col, "credits": cr, "diff": diff,
+	return {"kind": kind, "faction": fac, "stage": stg, "team": team, "color": col, "credits": cr, "diff": diff,
 		"blurb": blurb, "swatch": sw, "row": row}
 
 
@@ -152,7 +165,7 @@ func _refresh_rows() -> void:
 	for i in slots.size():
 		var s: Dictionary = slots[i]
 		var open := is_open(i)
-		for k in ["faction", "team", "color", "credits"]:
+		for k in ["faction", "stage", "team", "color", "credits"]:
 			var c = s[k]
 			if c is OptionButton:
 				c.disabled = not open
@@ -177,6 +190,18 @@ func set_slot(i: int, open: bool, faction_id: String = "", team: int = -1) -> vo
 	_refresh_rows()
 
 
+## G3b: programmatic stage pick (tests); the playtest clicks the Slot<i>Stage OptionButton.
+func set_stage(i: int, stage: int) -> void:
+	if stage_ids.has(stage):
+		(slots[i].stage as OptionButton).select(stage_ids.find(stage))
+	_refresh_rows()
+
+
+func slot_stage(i: int, fallback: int = 8) -> int:
+	var o: OptionButton = slots[i].stage
+	return int(stage_ids[o.selected]) if o.selected >= 0 and o.selected < stage_ids.size() else fallback
+
+
 ## Writes cfg.sides, cfg.economy and cfg.ai_difficulty (the first AI's level; per-side levels
 ## also go into sides[i].ai_difficulty). Returns a UI-only reason ("" if fine) for things the sim
 ## does not validate (duplicate colours).
@@ -196,7 +221,7 @@ func apply(cfg: Dictionary, stage: int) -> String:
 		used[col] = true
 		var diff: String = diffs[maxi(0, s.diff.selected)] if not diffs.is_empty() else "normal"
 		var fname := String(Content.faction(fid).get("name", fid))
-		var side := {"faction": fid, "stage": stage, "credits": int(s.credits.value), "ai": i != 0,
+		var side := {"faction": fid, "stage": slot_stage(i, stage), "credits": int(s.credits.value), "ai": i != 0,
 			"name": "You" if i == 0 else "%s AI (%d)" % [fname.get_slice(" ", 0), i + 1],
 			"team": int(s.team.selected), "color": col, "slot": i}
 		if i != 0:
@@ -219,5 +244,5 @@ func describe(cfg: Dictionary) -> String:
 	for s in cfg.get("sides", []):
 		teams[int(s.get("team", 0))] = true
 		var short := String(Content.faction(String(s.faction)).get("archetype", s.faction))
-		parts.append("%s [%s, T%d]" % [String(s.get("name", "?")), short, int(s.get("team", 0)) + 1])
+		parts.append("%s [%s, T%d, Stage %d]" % [String(s.get("name", "?")), short, int(s.get("team", 0)) + 1, int(s.get("stage", 8))])
 	return "%d sides, %d teams: %s" % [cfg.get("sides", []).size(), teams.size(), ", ".join(parts)]
