@@ -15,6 +15,8 @@ extends Node
 ##   --debug-select=engineers|barracks|hq   select entities / add a barracks (debug)
 ##   --debug-pause                       open the pause menu (debug)
 ##   --debug-menu-howto                  open the How to Play panel (debug)
+##   --editor [--editor-open=user://maps/x.rtsmap]   (G4e) open the map editor directly
+##   --editor-demo=ABS_DIR               (G4e) scripted editor tour: one screenshot per tab, then quit
 
 const MatchViewScript = preload("res://presentation/match_view.gd")
 const HudScript = preload("res://presentation/hud/hud.gd")
@@ -25,6 +27,7 @@ const PauseMenuScript = preload("res://presentation/menu/pause_menu.gd")
 const EndScreenScript = preload("res://presentation/menu/end_screen.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
+const EditorScript = preload("res://presentation/editor/editor_scene.gd")
 const SAVE_SYSTEM := "res://sim/save_system.gd"
 const QUICK_SAVE := "user://saves/quick.sav"
 
@@ -42,6 +45,8 @@ var _ui_scale: float = 1.0
 var _esc_had_state: bool = false
 var _end_check_acc: float = 0.0
 var _args: Dictionary = {}
+var _editor: Node = null          # G4e map editor (ED1); kept alive (hidden) during a test play
+var _editor_test := false
 
 
 func _ready() -> void:
@@ -65,6 +70,15 @@ func _ready() -> void:
 		start_match(cfg)
 		if _args.has("speed") and match_view != null:
 			match_view.speed = clampf(float(_args["speed"]), 0.25, 12.0)  # demo/debug only
+	elif _args.has("editor") or _args.has("editor-demo"):
+		open_editor()
+		if _args.has("editor-open"):
+			_editor.open_path(String(_args["editor-open"]))
+		if _args.has("editor-demo"):
+			var demo = load("res://presentation/editor/editor_demo.gd").new()
+			demo.editor = _editor
+			demo.shot_dir = String(_args["editor-demo"])
+			add_child(demo)
 	else:
 		show_menu()
 	_setup_debug()
@@ -133,6 +147,12 @@ func _parse_args() -> void:
 func show_menu() -> void:
 	_teardown_match()
 	_clear_overlays()
+	if _editor != null and _editor_test:
+		# G4e: leaving a test play (pause menu / end screen "Main menu") goes back to the editor
+		_editor_test = false
+		_editor.set_active(true)
+		_menu_layer.visible = false
+		return
 	if _menu != null:
 		_menu.queue_free()
 	_menu = MainMenuScript.new()
@@ -143,7 +163,46 @@ func show_menu() -> void:
 	_menu.load_requested.connect(_on_load_requested)
 	_menu.quit_requested.connect(func(): get_tree().quit())
 	_menu.ui_scale_changed.connect(_set_ui_scale)
+	if _menu.has_signal("editor_requested"):
+		_menu.editor_requested.connect(open_editor)
 	_menu_layer.visible = true
+
+
+# ------------------------------------------------------------------ G4e map editor (ED1)
+func open_editor() -> void:
+	_teardown_match()
+	_clear_overlays()
+	if _menu != null:
+		_menu.queue_free()
+		_menu = null
+	_menu_layer.visible = false
+	if _editor != null:
+		_editor.queue_free()
+	_editor = EditorScript.new()
+	_editor.ui_scale = _ui_scale
+	add_child(_editor)
+	_editor.exit_requested.connect(_close_editor)
+	_editor.test_play_requested.connect(_editor_test_play)
+	_editor_test = false
+
+
+func _close_editor() -> void:
+	if _editor != null:
+		_editor.queue_free()
+		_editor = null
+	_editor_test = false
+	show_menu()
+
+
+## Test Play (hook for ED2): start cfg, hide the editor, come back to it when the match is left.
+func _editor_test_play(cfg: Dictionary) -> void:
+	if _editor == null:
+		return
+	if start_match(cfg):
+		_editor.set_active(false)
+		_editor_test = true
+	else:
+		_editor.status("Test Play could not start the match (see the debugger output).", HT.RED)
 
 
 func _on_menu_start(cfg: Dictionary) -> void:
@@ -293,6 +352,8 @@ func _process(delta: float) -> void:
 	if _end_check_acc < 0.25:
 		return
 	_end_check_acc = 0.0
+	if match_view.has_method("sim_busy") and match_view.sim_busy():
+		return   # G4 THREAD CR 1462: never read the world while a worker step is in flight
 	var w := match_view.get("world") as SimWorld
 	if w != null and bool(w.match_state.get("ended", false)):
 		var pf := int(match_view.get("player_fid"))

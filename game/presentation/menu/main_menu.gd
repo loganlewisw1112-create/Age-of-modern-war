@@ -5,6 +5,7 @@ signal start_requested(cfg: Dictionary)
 signal load_requested(path: String)
 signal quit_requested
 signal ui_scale_changed(s: float)
+signal editor_requested   # G4e (ED1): "Map Editor" button
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
 const SkirmishSetup = preload("res://presentation/menu/skirmish_setup.gd")
@@ -99,6 +100,8 @@ func _build() -> void:
 	start.pressed.connect(_on_start)
 	var load_b := _menu_button("Load Game", left)
 	load_b.pressed.connect(_toggle_load)
+	var editor_b := _menu_button("Map Editor", left)
+	editor_b.pressed.connect(func(): editor_requested.emit())
 	var how := _menu_button("How to Play", left)
 	how.pressed.connect(_toggle_howto)
 	var quit := _menu_button("Quit", left)
