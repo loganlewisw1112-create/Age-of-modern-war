@@ -131,9 +131,20 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		return
 	st.think_count = int(st.think_count) + 1
 	var ctx := _context(w, fid, st)
+	# AI4-3: never spend the last gatherer's price on anything else (a Machine that lost every hauler
+	# with 13 salvage left could never gather again; heartland soak1, t=43200 on)
+	st.worker_hold = {}
+	if (ctx.gatherers as Array).size() < U.WORKER_FLOOR:
+		var gi := U.role(w, fid, "gatherer")
+		if gi != "":
+			st.worker_hold = (Content.production(gi).get("cost", {}) as Dictionary).duplicate()
 	# load = own units or enemies seen last think, whichever is larger (both scale the think cost)
 	var n_units := maxi((ctx.units as Array).size(), int(st.get("vis_n", 0)))
-	st.next_think_tick = w.tick + int(U.diff(w, fid).think_interval_ticks) * think_mult(n_units)
+	# AI4-3: the world-wide unit count also paces thinking (count only, never a decision input):
+	# visible_enemies scans every entity on the map, ~44 ms a think at 5,300 units even for a
+	# 306-unit side that sees few of them (ai_bench --units=5000, f1 intel phase)
+	var pace_n := maxi(n_units, w.entities.size())  # AI-FAIR: count only (think pacing, save/load stable)
+	st.next_think_tick = w.tick + int(U.diff(w, fid).think_interval_ticks) * think_mult(pace_n)
 	if ctx.hq != null:
 		st.rally = _rally_point(w, fid)
 	if prof != null:

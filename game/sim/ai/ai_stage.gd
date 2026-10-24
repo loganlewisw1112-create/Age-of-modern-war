@@ -153,8 +153,17 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 		want = _add(want, cost_e.cost)
 	# bank only after the first wave went out (G1/G2 openings and the first officer wave stay intact)
 	if core_ok and lab != null and not want.is_empty() and int(st.launches) >= 1:
-		g4.reserve = (want as Dictionary).duplicate()
-		g4.plan += " saving:" + PData.cost_label(want)
+		# AI4-3: never bank for a jump the side cannot finish: no ore left that we know of while the
+		# bank still needs ore (the credits would sit idle for the rest of the match). A timed bank
+		# release was tried and dropped: heartland soak2 Human A released 6200 cr + 597 ore at
+		# t=72000, 200 ore short of 8->9, and never advanced.
+		var ore_short := int(want.get("ore", 0)) > int(f.stock.get("ore", 0))
+		var ore_left := int(st.get("gather_plan", {}).get("ore_left", 1))
+		if ore_short and ore_left <= 0:
+			g4.plan += " no-ore"
+		else:
+			g4.reserve = (want as Dictionary).duplicate()
+			g4.plan += " saving:" + PData.cost_label(want)
 	_probe(w, fid, st, gates)
 
 

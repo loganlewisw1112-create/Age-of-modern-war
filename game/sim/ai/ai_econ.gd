@@ -326,11 +326,28 @@ static func _send_gather(w: SimWorld, fid: int, st: Dictionary, e: Dictionary, r
 const BUILDERS_SPLIT := 2
 
 
+const CREW_CAP_ARMY := 30
+
+
+## AI4-3: the difficulty's crew cap, raised while a big army is starved of materials and credits
+## pile up (heartland soak1: 100-pop Human B army 56/88 dry of ammo, 9000 credits idle, 8 crews).
+static func crew_cap(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> int:
+	var base := int(U.diff(w, fid).max_engineers)
+	# only once the army is out and big (the opening keeps its credits for the first waves)
+	if int(st.get("launches", 0)) < 1 or int(ctx.get("army_n", 0)) < CREW_CAP_ARMY:
+		return base
+	var f: Dictionary = w.factions[fid]
+	var starved := int(f.stock.salvage) < 300 or int(f.stock.ore) < 150 or int(f.stock.get("ammo", 0)) < AMMO_FLOOR
+	if not starved or int(f.credits) < 1000:
+		return base
+	return mini(base * 3, base + maxi(2, int(ctx.get("army_n", 0)) / 8))
+
+
 static func manage_engineers(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var hq = ctx.hq
 	if hq == null or not hq.built or not hq.queue.is_empty():
 		return
-	var cap := int(U.diff(w, fid).max_engineers)
+	var cap := crew_cap(w, fid, st, ctx)
 	var b_item := U.role(w, fid, "builder")
 	var g_item := U.role(w, fid, "gatherer")
 	var item := b_item

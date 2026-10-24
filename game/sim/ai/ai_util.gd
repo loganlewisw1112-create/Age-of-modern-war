@@ -78,16 +78,43 @@ static func submit(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: 
 
 ## G3b (AI4): research / advancement bank (st.g4.reserve, set by ai_stage.manage). A queue_unit or
 ## build that would dip into it is skipped (no backoff: it is retried once the bank is paid out).
+## Fewer gatherers than this: the price of one more is held back from every other purchase.
+const WORKER_FLOOR := 3
+
+
+static func _add_cost(a: Dictionary, b: Dictionary) -> Dictionary:
+	var out := a.duplicate()
+	for k in b:
+		out[k] = int(out.get(k, 0)) + int(b[k])
+	return out
+
+
 static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: String) -> bool:
 	var ty := String(cmd.type)
 	if ty != "queue_unit" and ty != "build":
 		return true
 	var hold: Dictionary = st.get("g4", {}).get("reserve", {})
-	if hold.is_empty() or bank_exempt(w, fid, cmd, key):
+	var wh: Dictionary = st.get("worker_hold", {})
+	if not wh.is_empty():
+		if ty == "queue_unit" and String(cmd.item) == role(w, fid, "gatherer"):
+			return true  # the missing gatherer itself goes first, ahead of the stage bank
+		hold = _add_cost(hold, wh)
+	elif hold.is_empty() or bank_exempt(w, fid, cmd, key):
+		return true
+	if hold.is_empty():
 		return true
 	var cost: Dictionary = Content.production(String(cmd.item)).get("cost", {}) if ty == "queue_unit" else Content.building(String(cmd.def)).get("cost", {})
 	var f: Dictionary = w.factions[fid]
-	return int(f.credits) - int(cost.get("credits", 0)) >= int(hold.get("credits", 0)) 		and int(f.stock.get("salvage", 0)) - int(cost.get("salvage", 0)) >= int(hold.get("salvage", 0)) 		and int(f.stock.get("ore", 0)) - int(cost.get("ore", 0)) >= int(hold.get("ore", 0))
+	# AI4-3: a purchase only has to respect the bank in the resources it actually spends (a
+	# credit-only unit is not blocked because the bank is still short of ore it does not use)
+	for k in ["credits", "salvage", "ore"]:
+		var c := int(cost.get(k, 0))
+		if c <= 0 or not hold.has(k):
+			continue
+		var have := int(f.credits) if k == "credits" else int(f.stock.get(k, 0))
+		if have - c < int(hold[k]):
+			return false
+	return true
 
 
 ## Exempt from the bank: the stage plan's own buildings, power, and gate units (keys "stage:*").
