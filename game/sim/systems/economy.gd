@@ -80,6 +80,8 @@ static func tick(w: SimWorld) -> void:
 ## of every unit spawned since (ids >= the kept next_id, still alive). A consistency check (the
 ## carried entity count must equal w.entities.size()) catches anything else (an entity removed
 ## without an event, a load, a skipped tick) and falls back to a full recount, as before.
+## G4 TRANS: the full recount adds each carrier's cargo. Boarding/unloading changes w.entities
+## without an EntityDestroyed/new id, so the size check forces that recount on those ticks.
 static func _pop_counts(w: SimWorld, pop: Dictionary) -> void:
 	var ents: Dictionary = w.entities
 	var nid := int(w.next_id)
@@ -117,8 +119,14 @@ static func _pop_counts(w: SimWorld, pop: Dictionary) -> void:
 			pop[fid] = 0
 		for e in SimIndex.of(w, "unit"):
 			var fid: int = int(e.owner)
-			if pop.has(fid) and ents.has(int(e.id)):
+			if not ents.has(int(e.id)):
+				continue
+			if pop.has(fid):
 				pop[fid] += _pop_of(String(e.def))
+			if e.has("cargo"):  # G4 TRANS: units riding in a carrier still count (they left w.entities)
+				for u in e.cargo:
+					if pop.has(int(u.owner)):
+						pop[int(u.owner)] += _pop_of(String(u.def))
 	w.cache["eco_pop"] = {"tick": w.tick, "nid": nid, "size": ents.size(), "pop": pop.duplicate(),
 		"ev": w.events, "ev_from": w.events.size()}
 

@@ -12,11 +12,12 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Missions = preload("res://sim/systems/ops_missions.gd")
+const Transport = preload("res://sim/systems/transport.gd")  # G4 TRANS: cargo-aware prune
 
 const EVAL_EVERY := 10
 const HISTORY_MAX := 10
 const MORALE_HIT := 20.0
-const MISSIONS := ["secure_point", "hold_zone", "attack_area", "patrol_route"]
+const MISSIONS := ["secure_point", "hold_zone", "attack_area", "patrol_route", "transport_to_point"]
 const RISKS := ["low", "medium", "high"]
 
 
@@ -105,6 +106,13 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 					return "A patrol waypoint is outside the map."
 			if m == "patrol_route" and (pts as Array).is_empty():
 				return "A patrol route needs at least one waypoint besides the target."
+			if m == "transport_to_point":
+				var has := false
+				for id in g.members:
+					if Transport.is_carrier(w.entities.get(int(id))):
+						has = true
+				if not has:
+					return "Assign a transport to this officer for a transport mission."
 			return ""
 		"cancel_mission":
 			var g := group_led_by(w, int(off.id))
@@ -181,6 +189,8 @@ static func on_direct_order(w: SimWorld, cmd: Dictionary) -> void:
 			e.erase("patrol")
 		if t != "guard":
 			e.erase("guard")
+		e.erase("unload_order")  # G4 TRANS: a direct order cancels a pending unload / pickup
+		e.erase("pickup")
 		if not group_of(w, int(raw)).is_empty():
 			e.ops_override_until = until
 
@@ -208,9 +218,12 @@ static func tick(w: SimWorld) -> void:
 
 
 ## Drop dead members (counting mission losses) and dissolve groups whose officer died.
+## G4 TRANS: first resolves carriers that died this step (Transport.sweep: eject or kill cargo);
+## members and officers riding in a carrier (w.cache.cargo_of) are alive and stay in the group.
 ## Runs in tick() AND at the end of every world step (ORCH), so no group ever outlives its
 ## officer past the tick it died in (found by the G2 soak invariant, seed 4).
 static func prune(w: SimWorld) -> void:
+	Transport.sweep(w)
 	if not w.sys_state.has("ops"):
 		return
 	var st: Dictionary = w.sys_state.ops
@@ -218,13 +231,13 @@ static func prune(w: SimWorld) -> void:
 	for gid in st.groups:
 		var g: Dictionary = st.groups[gid]
 		var off = w.entities.get(int(g.officer))
-		if off == null or off.kind != "unit":
+		if (off == null or off.kind != "unit") and not Transport.in_cargo(w, int(g.officer)):
 			dead.append(gid)
 			continue
 		var alive := []
 		for m in g.members:
 			var e = w.entities.get(int(m))
-			if e != null and e.kind == "unit":
+			if (e != null and e.kind == "unit") or (e == null and Transport.in_cargo(w, int(m))):
 				alive.append(int(m))
 			elif not (g.mission as Dictionary).is_empty():
 				g.losses = int(g.losses) + 1

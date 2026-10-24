@@ -7,6 +7,11 @@ extends RefCounted
 ##   of members are inside the radius for SECURE_TICKS. attack_area holds once no visible enemy is
 ##   left within radius. hold_zone then sets the hold stance. Enemy contact in hold -> secure again.
 ## patrol_route: assess -> move, cycling target + points with attack_move.
+## transport_to_point (G4 TRANS): assess -> load (members board the group's carriers, greedy by
+##   ascending id; the officer rides too when there is room; the rest attack-move) -> transit (the
+##   carriers drive to the target and unload around it) -> move -> secure -> hold, as secure_point.
+##   load ends when nobody is still boarding or after LOAD_TIMEOUT; transit ends when every live
+##   carrier is empty, or after TRANSIT_TIMEOUT (the carriers then unload where they are).
 ## Any mission: mean ammo < rules.ops.resupply_ammo_frac -> resupply (nearest own built HQ/depot or
 ##   logistics truck) and back; losses > risk bound of starting strength -> withdraw to the nearest
 ##   own HQ/depot, result "failed", then idle.
@@ -15,6 +20,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): per-def unit subsets
+const Transport = preload("res://sim/systems/transport.gd")  # G4 TRANS: transport_to_point
 
 const HISTORY_MAX := 10
 const REPORT_EVERY := 600        # 30 s without a phase change -> status report
@@ -25,6 +31,9 @@ const RESUPPLY_DONE := 0.9
 const RESUPPLY_TIMEOUT := 1200   # give up waiting for ammo after 60 s
 const PATROL_ARRIVE := 3.0
 const BASE_ARRIVE := 4.0
+const LOAD_TIMEOUT := 600        # 30 s to board
+const TRANSIT_TIMEOUT := 2400    # 2 min to reach the drop point
+const TRANSPORT_PHASES := ["assess", "load", "transit"]
 
 
 static func _rules() -> Dictionary:
@@ -178,6 +187,9 @@ static func evaluate(w: SimWorld, g: Dictionary) -> void:
 		if off != null and int(off.get("ops_override_until", -1)) <= w.tick:
 			units.append(off)
 		issue(w, g, units, "move", dest)
+		for c in ms:
+			if Transport.is_carrier(c) and not (c.get("cargo", []) as Array).is_empty():
+				Transport.order_unload(w, c, dest, [])  # carriers bring their riders home
 		set_phase(w, g, "withdraw", "Losses %d%% > %s risk; withdrawing." % [_pct(lf), String(m.risk)], float(g.progress))
 		return
 	if phase == "withdraw":
@@ -203,7 +215,7 @@ static func evaluate(w: SimWorld, g: Dictionary) -> void:
 		else:
 			_position_officer(w, g, ms, cen)
 		return
-	if phase != "assess":
+	if phase != "assess" and phase != "load" and phase != "transit":
 		var a := _ammo_frac(w, g)
 		if a < float(_rules().get("resupply_ammo_frac", 0.3)):
 			var src = _nearest_support(w, fid, cen, true)
@@ -215,6 +227,9 @@ static func evaluate(w: SimWorld, g: Dictionary) -> void:
 				return
 	if String(m.type) == "patrol_route":
 		_eval_patrol(w, g, ctl)
+	elif String(m.type) == "transport_to_point" and TRANSPORT_PHASES.has(String(g.phase)):
+		_eval_transport(w, g, ctl, ms)
+		return  # the officer rides or walks on its own while the lift is under way
 	else:
 		_eval_area(w, g, ctl, ms, cen)
 	if w.tick - int(g.last_report) >= REPORT_EVERY:
@@ -369,3 +384,89 @@ static func _position_officer(w: SimWorld, g: Dictionary, ms: Array, cen: Vector
 	if off.moving and typeof(cur) == TYPE_VECTOR2 and (cur as Vector2).distance_to(want) <= OFFICER_SLACK:
 		return
 	issue(w, g, [off], "move", want)
+
+
+## transport_to_point lift phases (assess -> load -> transit); then _eval_area takes over at "move".
+static func _eval_transport(w: SimWorld, g: Dictionary, ctl: Array, ms: Array) -> void:
+	var m: Dictionary = g.mission
+	var t: Vector2 = m.target
+	var where := "(%d, %d)" % [int(t.x), int(t.y)]
+	match String(g.phase):
+		"assess":
+			var carriers := []
+			var riders := []
+			for e in ms:
+				if Transport.is_carrier(e):
+					carriers.append(e)
+				elif ctl.has(e):
+					riders.append(e)
+			var off = w.entities.get(int(g.officer))
+			if off != null and int(off.get("ops_override_until", -1)) <= w.tick and not bool(off.get("broken", false)):
+				riders.append(off)
+			riders.sort_custom(func(a, b): return int(a.id) < int(b.id))
+			var room := {}
+			for c in carriers:
+				room[int(c.id)] = Transport.free_slots(c)
+			var boarded := []
+			var walk := []
+			for u in riders:
+				var put = null
+				for c in carriers:
+					if Transport.can_carry(c, u) == "" and Transport.cargo_size_of(String(u.def)) <= int(room[int(c.id)]):
+						put = c
+						break
+				if put == null:
+					walk.append(u)
+					continue
+				room[int(put.id)] = int(room[int(put.id)]) - Transport.cargo_size_of(String(u.def))
+				Transport.order_board(w, u, put)
+				boarded.append(int(u.id))
+			var cids := []
+			for c in carriers:
+				cids.append(int(c.id))
+			m.carriers = cids
+			m.riders = boarded
+			m.goal = t
+			issue(w, g, walk, "attack_move", t)
+			set_phase(w, g, "load", "Boarding %d units onto %d transports for %s; %d on foot." % [
+				boarded.size(), cids.size(), where, walk.size()], 0.1)
+		"load":
+			var waiting := []
+			for uid in m.riders:
+				var u = w.entities.get(int(uid))
+				if u != null and String(u.order.get("type", "")) == "board":
+					waiting.append(u)
+			if not waiting.is_empty() and w.tick - int(g.phase_tick) < LOAD_TIMEOUT:
+				return
+			issue(w, g, waiting, "attack_move", t)  # timed out: walk instead
+			var aboard := 0
+			for cid in m.carriers:
+				var c = w.entities.get(int(cid))
+				if c == null:
+					continue
+				aboard += (c.get("cargo", []) as Array).size()
+				if (c.get("cargo", []) as Array).is_empty():
+					issue(w, g, [c], "move", t)
+				else:
+					Transport.order_unload(w, c, t, [])
+			set_phase(w, g, "transit", "Transports carrying %d units to %s." % [aboard, where], 0.25)
+		"transit":
+			var busy := []
+			for cid in m.carriers:
+				var c = w.entities.get(int(cid))
+				if c != null and not (c.get("cargo", []) as Array).is_empty():
+					busy.append(c)
+			if not busy.is_empty() and w.tick - int(g.phase_tick) < TRANSIT_TIMEOUT:
+				var s := 0.0
+				for c in busy:
+					var q: Vector2 = c.pos
+					s += clampf(1.0 - q.distance_to(t) / float(m.dist0), 0.0, 1.0)
+				g.progress = snappedf(0.25 + 0.25 * s / float(busy.size()), 0.01)
+				return
+			for c in busy:  # timed out: everyone off where they are
+				c.erase("unload_order")
+				var p: Vector2 = c.pos
+				Transport.unload(w, c, Transport.cargo_ids(c), p, "unload")
+			var now := controlled(w, g)
+			issue(w, g, now, "attack_move", t)
+			set_phase(w, g, "move", "Dropped off near %s; moving %d units in to secure it." % [where, now.size()], 0.5)

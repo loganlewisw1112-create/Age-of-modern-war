@@ -1,0 +1,3 @@
+{
+  "_meta": "G4 TRANS (CONTRACTS_G4 section 7). Transport rules live in rules.json `transport`; carrier fields (cargo_slots, cargo_accepts) sit on the carrier defs: a_apc / b_halftrack in units_g4b.json (UNITS), b_carrier via CR to ORCH. Future carriers owned by TRANS go here. Cargo defs may set cargo_class / cargo_size (see sim/systems/transport.gd)."
+}
