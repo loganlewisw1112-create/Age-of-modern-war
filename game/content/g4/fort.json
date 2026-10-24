@@ -1,0 +1,50 @@
+{
+	"_meta": "G4b FORT (CONTRACTS_G4 section 6): walls, gates, wall towers for the 3 factions. All size 1, armor 'fortification'. Built one foundation per cell by build_line (sim/systems/fortify.gd) or plain build. PROVISIONAL numbers.",
+	"buildings": {
+		"a_wall": {"name": "Concrete Wall", "faction": "human_a", "size": 1, "hp": 1200, "armor": "fortification", "sight": 2, "power": 0,
+			"buildable": true, "requires": [], "requires_power": false, "wall": true, "stage_min": 7,
+			"cost": {"credits": 15, "salvage": 5, "ore": 0}, "build_time": 3},
+		"a_gate": {"name": "Steel Gate", "faction": "human_a", "size": 1, "hp": 1500, "armor": "fortification", "sight": 3, "power": 0,
+			"buildable": true, "requires": [], "requires_power": false, "gate": true, "stage_min": 7,
+			"cost": {"credits": 40, "salvage": 20, "ore": 0}, "build_time": 6},
+		"a_wall_tower": {"name": "Wall Tower", "faction": "human_a", "size": 1, "hp": 1400, "armor": "fortification", "sight": 9, "power": -5,
+			"buildable": true, "requires": [], "requires_power": false, "tower": true, "stage_min": 8, "weapon": "wt_mg",
+			"cost": {"credits": 120, "salvage": 60, "ore": 0}, "build_time": 12},
+		"b_wall": {"name": "Scrap Wall", "faction": "human_b", "size": 1, "hp": 1100, "armor": "fortification", "sight": 2, "power": 0,
+			"buildable": true, "requires": [], "requires_power": false, "wall": true, "stage_min": 7,
+			"cost": {"credits": 10, "salvage": 8, "ore": 0}, "build_time": 3},
+		"b_gate": {"name": "Scrap Gate", "faction": "human_b", "size": 1, "hp": 1400, "armor": "fortification", "sight": 3, "power": 0,
+			"buildable": true, "requires": [], "requires_power": false, "gate": true, "stage_min": 7,
+			"cost": {"credits": 30, "salvage": 25, "ore": 0}, "build_time": 6},
+		"b_wall_tower": {"name": "Flak Tower", "faction": "human_b", "size": 1, "hp": 1300, "armor": "fortification", "sight": 9, "power": -5,
+			"buildable": true, "requires": [], "requires_power": false, "tower": true, "stage_min": 8, "weapon": "wt_flak",
+			"cost": {"credits": 110, "salvage": 70, "ore": 0}, "build_time": 12},
+		"m_barrier": {"name": "Energy Barrier", "faction": "machine", "size": 1, "hp": 1000, "armor": "fortification", "sight": 2, "power": -1,
+			"buildable": true, "requires": [], "requires_power": false, "wall": true, "stage_min": 7,
+			"cost": {"credits": 20, "salvage": 4, "ore": 0}, "build_time": 3},
+		"m_field_gate": {"name": "Field Gate", "faction": "machine", "size": 1, "hp": 1300, "armor": "fortification", "sight": 3, "power": -2,
+			"buildable": true, "requires": [], "requires_power": false, "gate": true, "stage_min": 7,
+			"cost": {"credits": 50, "salvage": 15, "ore": 0}, "build_time": 6},
+		"m_spire": {"name": "Spire", "faction": "machine", "size": 1, "hp": 1250, "armor": "fortification", "sight": 9, "power": -8,
+			"buildable": true, "requires": [], "requires_power": false, "tower": true, "stage_min": 8, "weapon": "wt_spire",
+			"cost": {"credits": 140, "salvage": 40, "ore": 0}, "build_time": 12}
+	},
+	"weapons": {
+		"wt_mg": {"class": "small_arms", "damage": 9, "range": 8.5, "cooldown": 0.35, "accuracy": 0.7},
+		"wt_flak": {"class": "autocannon", "damage": 15, "range": 9, "cooldown": 0.6, "accuracy": 0.7, "anti_air": true},
+		"wt_spire": {"class": "energy", "damage": 20, "range": 9, "cooldown": 0.6, "accuracy": 0.8}
+	},
+	"armor_mult": {
+		"small_arms": {"fortification": 0.02},
+		"at": {"fortification": 0.9},
+		"autocannon": {"fortification": 0.15},
+		"artillery": {"fortification": 1.6},
+		"energy": {"fortification": 0.12},
+		"demolition": {"infantry": 0.3, "light": 0.8, "heavy": 0.8, "building": 2.0, "fortification": 3.0}
+	},
+	"faction_roles": {
+		"human_a": {"wall": "a_wall", "gate": "a_gate", "wall_tower": "a_wall_tower"},
+		"human_b": {"wall": "b_wall", "gate": "b_gate", "wall_tower": "b_wall_tower"},
+		"machine": {"wall": "m_barrier", "gate": "m_field_gate", "wall_tower": "m_spire"}
+	}
+}
