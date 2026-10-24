@@ -11,6 +11,7 @@ const ViewUtil = preload("res://presentation/view/view_util.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const BatchArt = preload("res://presentation/view/batch_art.gd")
 const LodIcons = preload("res://presentation/view/lod_icons.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 
 const LOD_MID := 0.8     # zoom below this: mid LOD (small FX dropped by fx_layer)
 const LOD_FAR := 0.45    # zoom below this: far LOD (unit icons)
@@ -32,6 +33,9 @@ var _seen_wrecks: Dictionary = {}
 var _ghosts: Dictionary = {}       # remembered-building id -> ghost entity dict
 var _decor: Dictionary = {}        # Vector2i chunk -> Array [pos, page, src, off, ...]
 var _decor_rect: Dictionary = {}   # Vector2i chunk -> Rect2 (screen bounds)
+var _flat: Dictionary = {}         # G4: flat map POI decor (rails, tarmac, dam): drawn under everything
+var _flat_rect: Dictionary = {}
+var poi_count := 0
 var _team: Dictionary = {}         # fid -> Color (refreshed each frame)
 var _ck: Dictionary = {}           # fid -> colour key string
 var _fac: Dictionary = {}          # fid -> faction def id
@@ -90,6 +94,43 @@ func _build_decor() -> void:
 			arr.append_array([p, pg, src, off])
 			_decor_rect[ck] = (_decor_rect[ck] as Rect2).merge(Rect2(p + off, src.size))
 			decor_count += 1
+	_build_poi_decor()
+
+
+## G4 (ED1 / ART4 gap): map.decor POI footprints (factory blocks, refinery, dam, hangar, houses,
+## rail...) drawn from manifest poi_decor[id] = {file, pivot, footprint, flat}. Static, bucketed
+## like terrain decor; an entry larger than its sprite's footprint is tiled with it.
+func _build_poi_decor() -> void:
+	var pois: Dictionary = ArtCatalog.manifest().get("poi_decor", {})
+	if pois.is_empty():
+		return
+	for d in mv.world.map.get("decor", []):
+		var spec: Dictionary = pois.get(String(d.get("id", "")), {})
+		if spec.is_empty():
+			continue
+		var img: Image = ArtCatalog._image(String(spec.file))
+		art._whole("poi|" + String(spec.file), img, spec.pivot)
+		if art.out_page < 0:
+			continue
+		var fp := Vector2i(int(spec.footprint[0]), int(spec.footprint[1]))
+		var c0 := Vector2i(d.cell)
+		var sz := Vector2i(d.get("size", fp))
+		var flat := bool(spec.get("flat", false))
+		for oy in range(0, maxi(1, sz.y), maxi(1, fp.y)):
+			for ox in range(0, maxi(1, sz.x), maxi(1, fp.x)):
+				var g := Vector2(c0 + Vector2i(ox, oy)) + Vector2(fp) * 0.5
+				var p: Vector2 = mv.world_to_screen(g)
+				var ck := Vector2i(int(g.x) / CHUNK, int(g.y) / CHUNK)
+				var bk: Dictionary = _flat if flat else _decor
+				var rk: Dictionary = _flat_rect if flat else _decor_rect
+				var r := Rect2(p + art.out_off, art.out_src.size)
+				if not bk.has(ck):
+					bk[ck] = []
+					rk[ck] = r
+				(bk[ck] as Array).append_array([p, art.out_page, art.out_src, art.out_off])
+				rk[ck] = (rk[ck] as Rect2).merge(r)
+				decor_count += 1
+				poi_count += 1
 
 
 func on_destroyed(id: int) -> void:
@@ -132,50 +173,61 @@ func _view_rect() -> Rect2:
 	return r.grow(MARGIN)
 
 
+## G4 (THREAD): reads ONLY mv.snap (sim/render_snap.gd) + immutable content, so it runs every
+## frame even while the next sim step is in flight on the worker. The vis_* lists handed to the
+## overlays hold live entity dicts, so they are rebuilt only when no step is in flight (the
+## overlays redraw only then, too).
 func refresh() -> void:
-	var w = mv.world
+	var sn: Dictionary = mv.snap
+	if sn.is_empty():
+		return
+	var live: bool = mv.world_readable()
+	var ents: Dictionary = mv._world.entities if live else {}
 	var pf: int = mv.player_fid
 	var z: float = mv.camera.zoom.x if mv.camera != null else 1.0
 	lod = 2 if z < LOD_FAR else (1 if z < LOD_MID else 0)
 	var far := lod == 2
 	var t: float = mv.anim_time()
 	var alpha: float = mv._alpha
-	var prev: Dictionary = mv._prev_pos
 	var vr := _view_rect()
+	var mem: Dictionary = (sn.get("memory", {}) as Dictionary).get(pf, {})
+	var statics: Dictionary = sn.statics
 	# far LOD draws un-interpolated icons, so the list only changes with the sim tick, the
 	# camera, the fog or the selection: reuse the canvas commands from the last rebuild.
 	if far:
-		var key := [w.tick, get_viewport().get_canvas_transform(), get_viewport_rect().size,
-			mv.fog_layer.rebuilds if mv.fog_layer != null else 0, w.entities.size(), mem_size(w, pf)]
+		var key := [int(sn.tick), get_viewport().get_canvas_transform(), get_viewport_rect().size,
+			mv.fog_layer.rebuilds if mv.fog_layer != null else 0, int(sn.entity_count), mem.size(), live]
 		if key == _far_key:
 			skipped += 1
 			return
 		_far_key = key
 	else:
 		_far_key = []
-	vis_units.clear()
-	vis_sp.resize(0)
-	vis_air.resize(0)
-	vis_bld.clear()
-	for fid in w.factions:
+	if live:
+		vis_units.clear()
+		vis_sp.resize(0)
+		vis_air.resize(0)
+		vis_bld.clear()
+	var facs: Dictionary = sn.factions
+	for fid in facs:
 		var c: Color = mv.team_color(int(fid))
 		_team[fid] = c
 		_ck[fid] = c.to_html()
-		_fac[fid] = String(w.factions[fid].get("faction_def", ""))
+		_fac[fid] = String(facs[fid].get("faction_def", ""))
 	var neutral: Color = mv.team_color(-1)
-	var mw := int(w.map.w)
-	var fog: Dictionary = w.fog.get(pf, {})
+	var mw := int(sn.map_w)
+	var fog: Dictionary = mv.fog_of(pf)
 	var vis: PackedByteArray = fog.get("visible", PackedByteArray())
 	var ally_vis: Array = []
 	for a in mv._ally_fids:
-		var af: Dictionary = w.fog.get(a, {})
+		var af: Dictionary = mv.fog_of(a)
 		if not af.is_empty():
 			ally_vis.append(af.visible)
-	var mem: Dictionary = w.memory.get(pf, {})
 	var inv_z := 1.0 / maxf(z, 0.05)
 	var ec: Dictionary = art._ec
+	var n_u: int = int(sn.n)
 	_n = 0
-	_reserve(w.entities.size() + decor_count + mem.size() + 16)
+	_reserve(n_u + statics.size() + decor_count + mem.size() + 16)
 	# decor (static, bucketed by chunk)
 	var t_sub := Time.get_ticks_usec()
 	for ck in _decor:
@@ -185,91 +237,117 @@ func refresh() -> void:
 		for k in range(0, arr.size(), 4):
 			var p: Vector2 = arr[k]
 			_push(0, p.y, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2), (arr[k + 2] as Rect2).size, Color.WHITE)
+	for ck in _flat:
+		if not vr.intersects(_flat_rect[ck]):
+			continue
+		var arr: Array = _flat[ck]
+		for k in range(0, arr.size(), 4):
+			var p: Vector2 = arr[k]
+			# y = -Y_OFF: sort key 0 -> under every unit, building and standing decor
+			_push(0, -Y_OFF, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2), (arr[k + 2] as Rect2).size, Color.WHITE)
 	ViewUtil.prof_add("p_e1_decor", t_sub)
 	t_sub = Time.get_ticks_usec()
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		var kind: String = e.kind
-		if kind == "unit":
-			var ow: int = e.owner
-			var raw: Vector2 = e.pos
-			var pos := raw
-			if not far:
-				var pp = prev.get(id)
-				if pp != null and (pp as Vector2).distance_squared_to(raw) < 4.0:
-					pos = (pp as Vector2).lerp(raw, alpha)
-			var sp := Vector2((pos.x - pos.y) * 32.0, (pos.x + pos.y) * 16.0)
-			if not vr.has_point(sp):
-				continue
-			if ow != pf:
-				var ci := floori(raw.y) * mw + floori(raw.x)
-				if not vis.is_empty() and (ci < 0 or ci >= vis.size()):
-					continue
-				if not vis.is_empty() and vis[ci] == 0:
-					var seen := false
-					for av in ally_vis:
-						if (av as PackedByteArray)[ci] == 1:
-							seen = true
-							break
-					if not seen:
-						continue
-			var dname: String = e.def
-			var is_air = _air_def.get(dname)
-			if is_air == null:
-				is_air = G3View.is_air_entity(e)
-				_air_def[dname] = is_air
-			if is_air:
-				vis_air.append(vis_units.size())
-			vis_units.append(e)
-			vis_sp.append(sp)
-			if far:
-				var ic: Array = icons.icon(art.atlas, String(_fac.get(ow, "")), icons.class_of(String(e.def)))
-				var isz: Vector2 = (ic[1] as Vector2) * inv_z
-				_push(2, sp.y, art.atlas.page_of(ic[0]), art.atlas.rect_of(ic[0]), sp + (ic[2] as Vector2) * inv_z, isz, _team.get(ow, neutral))
-				continue
-			# hot path: inline frame choice from the per-id art cache (see BatchArt.resolve_unit)
-			var c = ec.get(id)
-			if c == null or c[1] != ow or c[0] != dname:
-				c = art.cache_unit(e, _team.get(ow, neutral), String(_ck.get(ow, "x")))
-			var pg: int = c[2]
-			if pg == -2:
-				art.resolve_unit(e, _team.get(ow, neutral), String(_ck.get(ow, "x")), t)
-				if art.out_page >= 0:
-					_push(0, sp.y, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
-				continue
-			var fi := 0
-			if e.firing > 0:
-				fi = c[7]
-			elif e.moving:
-				var ph := int(t * 6.0 + int(id) * 0.37)
-				if c[8]:
-					fi = c[9] if ph % 2 == 0 else c[10]
-				else:
-					fi = c[11] if ph % 2 == 0 else 0
-			if fi < 0:
-				fi = 0
-			var row := posmod(int(round(float(e.facing) * FACING_INV)), 8)
-			var fsz := Vector2(c[4], c[5])
-			var layer := 0
-			if c[12]:
-				sp.y -= G3View.air_lift(e, t)  # G3a: air units fly above their ground point
-				layer = 1
-			# inlined _push (capacity reserved above)
-			var ii := _n
-			_keys[ii] = layer * LAYER_MUL + (int(sp.y) + Y_OFF) * IDX_MUL + ii
-			_page[ii] = pg
-			_src[ii] = (c[3] as Vector2) + Vector2(fi, row) * fsz
-			_size[ii] = fsz
-			_dst[ii] = sp + (c[6] as Vector2)
-			_dsz[ii] = fsz
-			_mod[ii] = Color.WHITE
-			_n = ii + 1
+	var ids: PackedInt32Array = sn.ids
+	var pos_a: PackedVector2Array = sn.pos
+	var prev_a: PackedVector2Array = sn.prev
+	var fac_a: PackedFloat32Array = sn.facing
+	var def_a: PackedInt32Array = sn.def
+	var defs: PackedStringArray = sn.defs
+	var own_a: PackedInt32Array = sn.owner
+	var flg_a: PackedInt32Array = sn.flags
+	# ART-T CR: HILL / CLIFF tiles are drawn raised (terrain_layer._raise[code] px): lift ground units
+	var raise_v = mv.terrain_layer.get("_raise") if mv.terrain_layer != null else null
+	var raise: Dictionary = raise_v if raise_v is Dictionary else {}
+	var terr: PackedByteArray = sn.get("terrain", PackedByteArray()) if not raise.is_empty() else PackedByteArray()
+	for i in n_u:
+		var id: int = ids[i]
+		var ow: int = own_a[i]
+		var raw: Vector2 = pos_a[i]
+		var pos := raw
+		if not far:
+			var pp: Vector2 = prev_a[i]
+			if pp.distance_squared_to(raw) < 4.0:
+				pos = pp.lerp(raw, alpha)
+		var sp := Vector2((pos.x - pos.y) * 32.0, (pos.x + pos.y) * 16.0)
+		if not vr.has_point(sp):
 			continue
-		var ow := int(e.get("owner", -1))
+		if not terr.is_empty() and (flg_a[i] & RenderSnap.FLAG_AIR) == 0:
+			var ti := floori(pos.y) * mw + floori(pos.x)
+			if ti >= 0 and ti < terr.size():
+				sp.y -= float(raise.get(int(terr[ti]), 0))
+		if ow != pf:
+			var ci := floori(raw.y) * mw + floori(raw.x)
+			if not vis.is_empty() and (ci < 0 or ci >= vis.size()):
+				continue
+			if not vis.is_empty() and vis[ci] == 0:
+				var seen := false
+				for av in ally_vis:
+					if (av as PackedByteArray)[ci] == 1:
+						seen = true
+						break
+				if not seen:
+					continue
+		var dname: String = defs[def_a[i]]
+		var fl: int = flg_a[i]
+		if live:
+			var le = ents.get(id)
+			if le != null:
+				if fl & RenderSnap.FLAG_AIR:
+					vis_air.append(vis_units.size())
+				vis_units.append(le)
+				vis_sp.append(sp)
+		if far:
+			var ic: Array = icons.icon(art.atlas, String(_fac.get(ow, "")), icons.class_of(dname))
+			var isz: Vector2 = (ic[1] as Vector2) * inv_z
+			_push(2, sp.y, art.atlas.page_of(ic[0]), art.atlas.rect_of(ic[0]), sp + (ic[2] as Vector2) * inv_z, isz, _team.get(ow, neutral))
+			continue
+		# hot path: inline frame choice from the per-id art cache (see BatchArt.resolve_unit)
+		var c = ec.get(id)
+		if c == null or c[1] != ow or c[0] != dname:
+			c = art.cache_unit(_proxy(id, dname, ow, fac_a[i], fl), _team.get(ow, neutral), String(_ck.get(ow, "x")))
+		var pg: int = c[2]
+		if pg == -2:
+			art.resolve_unit(_proxy(id, dname, ow, fac_a[i], fl), _team.get(ow, neutral), String(_ck.get(ow, "x")), t)
+			if art.out_page >= 0:
+				_push(0, sp.y, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
+			continue
+		var fi := 0
+		if fl & RenderSnap.FLAG_FIRING:
+			fi = c[7]
+		elif fl & RenderSnap.FLAG_MOVING:
+			var ph := int(t * 6.0 + id * 0.37)
+			if c[8]:
+				fi = c[9] if ph % 2 == 0 else c[10]
+			else:
+				fi = c[11] if ph % 2 == 0 else 0
+		if fi < 0:
+			fi = 0
+		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
+		var fsz := Vector2(c[4], c[5])
+		var layer := 0
+		if c[12]:
+			sp.y -= G3View.air_lift({"def": dname, "id": id}, t)  # G3a: air units fly above their ground point
+			layer = 1
+		# inlined _push (capacity reserved above)
+		var ii := _n
+		_keys[ii] = layer * LAYER_MUL + (int(sp.y) + Y_OFF) * IDX_MUL + ii
+		_page[ii] = pg
+		_src[ii] = (c[3] as Vector2) + Vector2(fi, row) * fsz
+		_size[ii] = fsz
+		_dst[ii] = sp + (c[6] as Vector2)
+		_dsz[ii] = fsz
+		_mod[ii] = Color.WHITE
+		_n = ii + 1
+	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
+	for id in statics:
+		var e: Dictionary = statics[id]
+		var kind: String = e.kind
+		var ow := int(e.owner)
 		var gp: Vector2 = e.pos
 		var gs := Vector2((gp.x - gp.y) * 32.0, (gp.x + gp.y) * 16.0)
+		var gc := Vector2i(floori(gp.x), floori(gp.y))
 		if not vr.has_point(gs):
-			if kind == "wreck" and not _seen_wrecks.has(id) and mv.cell_visible(w.cell_of(e.pos)):
+			if kind == "wreck" and not _seen_wrecks.has(id) and mv.cell_visible(gc):
 				_seen_wrecks[id] = true
 			continue
 		var mod := Color.WHITE
@@ -279,23 +357,29 @@ func refresh() -> void:
 					if not mem.has(id):
 						continue
 					mod = GHOST_MOD
-				else:
-					vis_bld.append(e)
+				elif live:
+					var le = ents.get(id)
+					if le != null:
+						vis_bld.append(le)
 			"resource":
-				if not mv.cell_explored(w.cell_of(e.pos)):
+				if not mv.cell_explored(gc):
 					continue
 			"wreck":
 				if not _seen_wrecks.has(id):
-					if not mv.cell_visible(w.cell_of(e.pos)):
+					if not mv.cell_visible(gc):
 						continue
 					_seen_wrecks[id] = true
+			"mine", "charge":
+				# G4b: hidden from enemies unless the sim marks them detected for this side
+				if ow != pf and not mv._ally_fids.has(ow) and not _detected(e, pf):
+					continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
 			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, mod)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
-	_push_ghosts(w, mem, vr, neutral)
+	_push_ghosts(statics, mem, vr, neutral)
 	art.atlas.flush()
 	_sorted = _keys.slice(0, _n)
 	_sorted.sort()
@@ -304,10 +388,23 @@ func refresh() -> void:
 	queue_redraw()
 
 
+## Minimal unit dict for the art cache / fallback sprite (built only on a cache miss).
+func _proxy(id: int, dname: String, ow: int, facing: float, fl: int) -> Dictionary:
+	return {"id": id, "kind": "unit", "def": dname, "owner": ow, "facing": facing,
+		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0}
+
+
+static func _detected(e: Dictionary, pf: int) -> bool:
+	var d = e.get("detected")
+	if d is Dictionary or d is Array:
+		return d.has(pf)
+	return d is bool and d
+
+
 ## Remembered enemy buildings that no longer exist (destroyed out of sight): greyed ghosts.
-func _push_ghosts(w, mem: Dictionary, vr: Rect2, neutral: Color) -> void:
+func _push_ghosts(statics: Dictionary, mem: Dictionary, vr: Rect2, neutral: Color) -> void:
 	for eid in mem:
-		if w.entities.has(eid):
+		if statics.has(eid):
 			continue
 		var m: Dictionary = mem[eid]
 		if String(m.get("kind", "building")) != "building":
@@ -327,7 +424,7 @@ func _push_ghosts(w, mem: Dictionary, vr: Rect2, neutral: Color) -> void:
 		if art.out_page >= 0:
 			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, GHOST_MOD)
 	for eid in _ghosts.keys():
-		if not mem.has(eid) or w.entities.has(eid):
+		if not mem.has(eid) or statics.has(eid):
 			_ghosts.erase(eid)
 			art.forget(int(eid))
 

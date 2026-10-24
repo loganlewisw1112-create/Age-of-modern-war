@@ -137,7 +137,9 @@ func resolve_static(e: Dictionary, team: Color, ck: String) -> void:
 
 func _state_code(e: Dictionary, kind: String) -> int:
 	if kind == "building":
-		return -1 if bool(e.get("built", true)) else clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
+		if bool(e.get("built", true)):
+			return -1 if not e.has("conn") else -100 - int(e.conn)  # G4: wall art conn_<mask>
+		return clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 	if kind == "wreck":
 		return posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8) * 10 + int(e.get("size", 1))
 	return 0
@@ -155,6 +157,8 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 			var st := "built"
 			if not bool(e.get("built", true)):
 				st = "build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
+			elif e.has("conn") and b.states.has("conn_%d" % int(e.conn)):
+				st = "conn_%d" % int(e.conn)  # G4 (FORT/ART-F): N1 E2 S4 W8 neighbour mask
 			var s: Dictionary = b.states.get(st, b.states.built)
 			var img: Image = ArtCatalog._sheet(String(s.file), String(s.mask), team)
 			_whole(String(s.file) + "|" + ck, img, b.pivot)

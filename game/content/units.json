@@ -224,6 +224,7 @@
     "is_officer": true
   },
   "b_carrier": {
+    "cargo_slots": 6, "cargo_accepts": ["foot"],
     "move_class": "vehicle",
     "leaves_wreck": true,
     "components": {

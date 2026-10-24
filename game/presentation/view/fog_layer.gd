@@ -63,7 +63,7 @@ func setup(view) -> void:
 
 
 func refresh(force: bool = false) -> void:
-	var f: Dictionary = mv.world.fog.get(mv.player_fid, {})
+	var f: Dictionary = mv.fog_of(mv.player_fid)  # G4: snapshot fog (safe during a step)
 	if f.is_empty():
 		return
 	var vis: PackedByteArray = f.visible

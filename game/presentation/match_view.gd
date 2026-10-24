@@ -11,6 +11,8 @@ extends Node2D
 ##   --fps-log             print FPS once per second (also on with --spawn-test)
 ##   --no-vsync            disable vsync (for perf headroom measurement)
 ##   --sim-paused          start with the sim paused (render-only perf measurement)
+##   --sim-thread=off|on|force  G4 (THREAD): step the sim on a WorkerThreadPool task (default on
+##                         when safe: native off, or a threads-enabled native DLL); off = inline
 
 const TILE_W := 64
 const TILE_H := 32
@@ -30,6 +32,8 @@ const G2Demo = preload("res://presentation/view/g2_demo.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const SimRunner = preload("res://presentation/view/sim_runner.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 
 signal selection_changed
 signal world_events(events: Array)
@@ -37,7 +41,24 @@ signal world_events(events: Array)
 signal placement_changed(def_id: String)
 
 # ------------------------------------------------------------ public API (CONTRACTS section 7)
-var world: SimWorld
+## G4 (THREAD): reading `world` while a sim step is in flight joins that step first (a safety
+## net that turns a would-be race into a stall; FPS log counts them as forced_joins). The hot
+## render path reads `snap` (the latest RenderSnap) instead and never stalls.
+var world: SimWorld:
+	get:
+		if _runner != null and _runner.task_id >= 0:
+			_forced_joins += 1
+			_join_now()
+		return _world
+	set(v):
+		if _runner != null and _runner.task_id >= 0:
+			_join_now()
+		_world = v
+		if _runner != null and v != null:
+			_runner.setup(v, sim_threaded)
+			snap = RenderSnap.latest(v)
+var snap: Dictionary = {}                # latest render snapshot (sim/render_snap.gd)
+var sim_threaded := false                # G4: true = steps run on a worker task
 var player_fid: int = 0
 var selection: Array[int] = []
 var speed: float = 1.0
@@ -61,6 +82,20 @@ var g2_over: Node2D
 var g3_ground: Node2D                    # G3a: air shadows, recharge radii (under entities)
 var _ally_fids: Array = []               # G3a: allies of player_fid (allied vision)
 
+var _world: SimWorld = null
+var _runner = null                       # SimRunner
+var _sim_thread_arg := "auto"
+var _sim_thread_why := ""
+var _kick_pending := false
+var _snap_t := 0.0                       # _anim_time when the current snapshot arrived
+var _snap_dt := 0.05                     # smoothed interval between snapshot arrivals (s)
+var _snap_idx: Dictionary = {}           # unit id -> index in snap arrays (lazy, per snapshot)
+var _snap_idx_tick := -1
+var _hover_id := -1
+var _team_cols: Dictionary = {}
+var _forced_joins := 0
+var _busy_frames := 0
+var _snap_us := 0
 var _acc: float = 0.0
 var _alpha: float = 0.0
 var _fps_tick0: int = -1   # world.tick at the start of the current --fps-log second (tps)
@@ -137,6 +172,8 @@ func _init_view() -> void:
 			ViewUtil.prof_on = true
 		elif a.begins_with("--prof-hide="):
 			_prof_hide = a.substr(12).split(",")
+		elif a.begins_with("--sim-thread="):
+			_sim_thread_arg = a.substr(13)
 	if spawn_test > 0:
 		_fps_log = true
 	# G3b (R4) perf flag: --map=<id> regenerates the fresh world on that map (debug/perf runs)
@@ -188,7 +225,6 @@ func _init_view() -> void:
 	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer, g2_ground, g2_over]:
 		layer.setup(self)
 	camera.setup(self)
-	_snapshot_positions()
 
 	# start centred on the player's HQ (or spawn)
 	var hq = _player_hq()
@@ -204,9 +240,143 @@ func _init_view() -> void:
 		# perf flag: bypasses the camera's zoom clamp so far LOD can be measured
 		camera.zoom = Vector2(zoom_arg, zoom_arg)
 		camera.tick(0.0)
+	_setup_sim_runner()
 	if demo != "":
 		_run_demo(demo)
 	_apply_prof_hide.call_deferred()
+
+
+# ================================================================ G4: sim thread (THREAD)
+func _setup_sim_runner() -> void:
+	sim_threaded = _thread_ok()
+	for fid in _world.factions:
+		_team_cols[int(fid)] = G3.side_color(_world, int(fid))
+	var fids: Array = [player_fid]
+	fids.append_array(_ally_fids)
+	_world.cache["snap_fids"] = fids
+	_runner = SimRunner.new()
+	_runner.setup(_world, sim_threaded)
+	snap = RenderSnap.latest(_world)
+	_snap_t = _anim_time
+	_snap_dt = SimWorld.DT
+	if not RenderingServer.frame_pre_draw.is_connected(_on_pre_draw):
+		RenderingServer.frame_pre_draw.connect(_on_pre_draw)
+	print("SIM_THREAD mode=%s why=%s native=%s" % ["on" if sim_threaded else "off", _sim_thread_why, _native_state()])
+
+
+## Threaded unless --sim-thread=off, or the native core is live without thread support
+## (gdext aborts when its objects are touched off the main thread; NAT ships threads_safe()).
+func _thread_ok() -> bool:
+	if _sim_thread_arg == "off":
+		_sim_thread_why = "flag"
+		return false
+	if _sim_thread_arg == "force":
+		_sim_thread_why = "force"
+		return true
+	var ns := _native_state()
+	if ns == "on":
+		var nc = load("res://sim/native_core.gd")
+		var safe := false
+		if nc.has_method("threads_safe"):
+			safe = bool(nc.threads_safe())
+		else:
+			# NAT (fact nat.threads_ready): rts_core >= 0.2.2 is built with experimental-threads
+			var re := RegEx.create_from_string("(\\d+)\\.(\\d+)\\.(\\d+)")
+			var m := re.search(String(nc.version()))
+			if m != null:
+				var v := int(m.get_string(1)) * 10000 + int(m.get_string(2)) * 100 + int(m.get_string(3))
+				safe = v >= 202
+		if not safe:
+			_sim_thread_why = "native_not_thread_safe"
+			return false
+	_sim_thread_why = "ok"
+	return true
+
+
+func _exit_tree() -> void:
+	if _runner != null and _runner.task_id >= 0:
+		_runner.join()
+	if RenderingServer.frame_pre_draw.is_connected(_on_pre_draw):
+		RenderingServer.frame_pre_draw.disconnect(_on_pre_draw)
+
+
+## Every canvas item has drawn this frame, so the worker may take the world now.
+func _on_pre_draw() -> void:
+	if _kick_pending and _runner != null and _runner.task_id < 0:
+		_kick_sim()
+
+
+func _kick_sim() -> void:
+	_kick_pending = false
+	var k := mini(int(_acc / SimWorld.DT), 5)
+	if k <= 0 or _runner == null or _runner.task_id >= 0:
+		return
+	_acc -= k * SimWorld.DT
+	if _acc >= SimWorld.DT:
+		_acc = 0.0  # drop backlog instead of spiralling
+	var req: Array = []
+	for id in selection:
+		if req.size() >= RenderSnap.DETAIL_MAX - 1:
+			break
+		req.append(id)
+	if _hover_id >= 0:
+		req.append(_hover_id)
+	RenderSnap.request(_world, req)
+	_runner.start(k)
+	if not _runner.threaded:
+		_join_now()
+
+
+## Hand-over: join the in-flight step (blocking if needed), take its snapshot, dispatch its
+## events and submit the commands queued meanwhile.
+func _join_now() -> void:
+	if _runner == null:
+		return
+	var r: Dictionary = _runner.join()
+	if r.is_empty():
+		return
+	_t_sim += int(r.us)
+	_snap_us += int(r.snap_us)
+	snap = RenderSnap.latest(_world)
+	var iv := clampf(_anim_time - _snap_t, 0.008, 0.5)
+	_snap_dt = lerpf(_snap_dt, iv, 0.3)
+	_snap_t = _anim_time
+	var evs: Array = r.events
+	_on_step_events(evs)
+	world_events.emit(evs)
+
+
+## True while a sim step is in flight (only the snapshot may be read).
+func sim_busy() -> bool:
+	return _runner != null and _runner.task_id >= 0
+
+
+## Blocks until no step is in flight (external tools / playtests before reading `world`).
+func join_sim() -> void:
+	if sim_busy():
+		_join_now()
+
+
+func world_readable() -> bool:
+	return not sim_busy()
+
+
+## Snapshot fog arrays for a side: {visible, explored} (or {} before the first snapshot).
+func fog_of(fid: int) -> Dictionary:
+	var f: Dictionary = snap.get("fog", {})
+	return f.get(fid, {})
+
+
+## Index of a unit in the snapshot arrays, or -1.
+func snap_index(id: int) -> int:
+	var t := int(snap.get("tick", -1))
+	if t != _snap_idx_tick or _snap_idx.size() != int(snap.get("n", 0)):
+		_snap_idx.clear()
+		var ids: PackedInt32Array = snap.get("ids", PackedInt32Array())
+		for i in ids.size():
+			_snap_idx[ids[i]] = i
+		_snap_idx_tick = t
+	return int(_snap_idx.get(id, -1))
 
 
 func _hide_script_nodes(n: Node, script_name: String) -> void:
@@ -250,32 +420,30 @@ func _apply_prof_hide() -> void:
 
 # ================================================================ sim ticking
 func _process(delta: float) -> void:
-	if world == null:
+	if _world == null:
 		return
 	if not _initialized:
 		_init_view()
-	if camera == null:
+	if camera == null or _runner == null:
 		return
 	_anim_time += delta
+	# G4 (THREAD): hand-over point. A finished worker step is joined here; one still running is
+	# left alone and this frame renders the last snapshot (the game slows, the frame rate holds).
+	# Catch-up keeps the G3b (R4-2) rule: <= 5 steps per task, stopping after
+	# SIM_FRAME_BUDGET_US of sim time (>= 1 step), backlog dropped. Same step sequence either way.
+	if _runner.task_id >= 0 and _runner.finished():
+		_join_now()
+	if _kick_pending and _runner.task_id < 0:
+		_kick_sim()  # frame_pre_draw did not fire (headless / minimized window): start it now
 	if not paused:
 		_acc += delta * speed
-		var steps := 0
-		var t_loop := Time.get_ticks_usec()
-		# G3b (R4-2): catch-up steps stop once this frame has spent SIM_FRAME_BUDGET_US on the
-		# sim (at least one step always runs), so a slow tick slows the game instead of
-		# spiralling into multi-step 400+ ms frames. Outcomes are unchanged (same step sequence).
-		while _acc >= SimWorld.DT and steps < 5 and (steps == 0 or Time.get_ticks_usec() - t_loop < SIM_FRAME_BUDGET_US):
-			_acc -= SimWorld.DT
-			_snapshot_positions()
-			var ts := Time.get_ticks_usec()
-			world.step()
-			_t_sim += Time.get_ticks_usec() - ts
-			steps += 1
-			_on_step_events(world.events)
-			world_events.emit(world.events)
-		if _acc >= SimWorld.DT:
-			_acc = 0.0  # drop backlog instead of spiralling
-	_alpha = clampf(_acc / SimWorld.DT, 0.0, 1.0) if not paused else 1.0
+		if not _runner.threaded and _acc >= SimWorld.DT:
+			_kick_sim()  # --sim-thread=off: the same steps, inline, through the same snapshot
+	var busy: bool = _runner.task_id >= 0
+	if busy:
+		_busy_frames += 1
+	# interpolate prev -> pos over the measured interval between snapshots
+	_alpha = clampf((_anim_time - _snap_t) / maxf(_snap_dt, 0.001), 0.0, 1.0) if not paused else 1.0
 	var tv := Time.get_ticks_usec()
 	if _prof:
 		if _prof_last_us > 0:
@@ -297,25 +465,31 @@ func _process(delta: float) -> void:
 	tp = Time.get_ticks_usec()
 	fx_layer.tick(delta)
 	ViewUtil.prof_add("p_fx", tp)
-	ring_layer.queue_redraw()
-	overlay_layer.queue_redraw()
-	g2_ground.queue_redraw()
-	g2_over.queue_redraw()
-	g3_ground.queue_redraw()
+	if not busy:
+		# these overlays read live entity dicts in _draw: only redraw while no step is in flight
+		# (they keep last frame's canvas meanwhile)
+		ring_layer.queue_redraw()
+		overlay_layer.queue_redraw()
+		g2_ground.queue_redraw()
+		g2_over.queue_redraw()
+		g3_ground.queue_redraw()
 	_t_view += Time.get_ticks_usec() - tv
+	_runner.budget_us = SIM_FRAME_BUDGET_US
+	_kick_pending = _runner.threaded and not paused and _runner.task_id < 0 and _acc >= SimWorld.DT
 	if _fps_log:
 		_fps_frames += 1
 		_fps_t += delta
 		if _fps_t >= 1.0:
 			var fps := float(_fps_frames) / _fps_t
 			_fps_samples.append(fps)
-			var units := 0
-			for id in world.entities:
-				if world.entities[id].kind == "unit":
-					units += 1
-			var tps := float(world.tick - _fps_tick0) / _fps_t if _fps_tick0 >= 0 else 0.0
-			_fps_tick0 = world.tick
-			print("FPS tps=%.1f fps=%.1f engine_fps=%.0f units=%d entities=%d tick=%d sim_ms_per_s=%.0f view_ms_per_s=%.0f ent_ms=%.1f proc_ms=%.1f draw_calls=%d zoom=%.2f lod=%d drawn=%d native=%s map=%dx%d" % [tps, fps, Engine.get_frames_per_second(), units, world.entities.size(), world.tick, _t_sim / 1000.0 / _fps_t, _t_view / 1000.0 / _fps_t, _t_ent / 1000.0 / maxf(1.0, _fps_frames), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), camera.zoom.x, entity_layer.lod, entity_layer.drawn, _native_state(), int(world.map.w), int(world.map.h)])
+			var units := int(snap.get("n", 0))
+			var stick := int(snap.get("tick", 0))
+			var tps := float(stick - _fps_tick0) / _fps_t if _fps_tick0 >= 0 else 0.0
+			_fps_tick0 = stick
+			print("SIMTHREAD mode=%s busy_frames=%d forced_joins=%d snap_ms_per_s=%.2f" % ["on" if sim_threaded else "off", _busy_frames, _forced_joins, _snap_us / 1000.0 / _fps_t])
+			_busy_frames = 0
+			_snap_us = 0
+			print("FPS tps=%.1f fps=%.1f engine_fps=%.0f units=%d entities=%d tick=%d sim_ms_per_s=%.0f view_ms_per_s=%.0f ent_ms=%.1f proc_ms=%.1f draw_calls=%d zoom=%.2f lod=%d drawn=%d native=%s map=%dx%d" % [tps, fps, Engine.get_frames_per_second(), units, int(snap.get("entity_count", 0)), stick, _t_sim / 1000.0 / _fps_t, _t_view / 1000.0 / _fps_t, _t_ent / 1000.0 / maxf(1.0, _fps_frames), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), camera.zoom.x, entity_layer.lod, entity_layer.drawn, _native_state(), int(snap.get("map_w", 0)), int(snap.get("map_h", 0))])
 			if _prof:
 				_print_prof()
 			_fps_total_t += _fps_t
@@ -336,7 +510,7 @@ func _native_state() -> String:
 	var nc = load("res://sim/native_core.gd")
 	if nc == null or not nc.has_method("available"):
 		return "na"
-	var on: bool = nc.available() and bool(world.get("native_enabled") if world.get("native_enabled") != null else true)
+	var on: bool = nc.available() and bool(_world.get("native_enabled") if _world.get("native_enabled") != null else true)
 	return "on" if on else "off"
 
 
@@ -388,14 +562,17 @@ func _snapshot_positions() -> void:
 			_prev_pos[id] = e.pos
 
 
-## Interpolated render position (screen-independent world tile coords).
+## Interpolated render position (screen-independent world tile coords). G4: prev/pos come from
+## the snapshot (identical to the live dict between steps, which is when overlays call this).
 func render_pos(e: Dictionary) -> Vector2:
 	if e.kind == "unit":
-		var p = _prev_pos.get(e.id)
-		if p != null:
-			var cur: Vector2 = e.pos
-			if (p as Vector2).distance_squared_to(cur) < 4.0:
-				return (p as Vector2).lerp(cur, _alpha)
+		var i := snap_index(int(e.id))
+		if i >= 0:
+			var p: Vector2 = (snap.prev as PackedVector2Array)[i]
+			var cur: Vector2 = (snap.pos as PackedVector2Array)[i]
+			if p.distance_squared_to(cur) < 4.0:
+				return p.lerp(cur, _alpha)
+			return cur
 	return e.pos
 
 
@@ -408,7 +585,6 @@ func _on_step_events(evs: Array) -> void:
 		match String(ev.type):
 			"EntityDestroyed":
 				var id := int(ev.id)
-				_prev_pos.erase(id)
 				entity_layer.on_destroyed(id)
 				fx_layer.on_destroyed(ev)
 				if selection.has(id):
@@ -436,7 +612,9 @@ func _on_step_events(evs: Array) -> void:
 # ================================================================ public API
 func issue(cmd: Dictionary) -> Dictionary:
 	cmd.issuer = player_fid
-	return world.submit(cmd)
+	if _runner != null:
+		return _runner.submit(cmd)  # G4: queued while a step is in flight, handed over at join
+	return _world.submit(cmd)
 
 
 func begin_build_placement(def_id: String) -> void:
@@ -532,6 +710,7 @@ func get_hover_info() -> Dictionary:
 	if e != null:
 		info.entity_id = int(e.id)
 		info.entity = e
+	_hover_id = int(info.entity_id)
 	if placing_def != "":
 		var o := placement_origin(placing_def, p)
 		info.placement_origin = o
@@ -541,34 +720,37 @@ func get_hover_info() -> Dictionary:
 
 
 # ================================================================ visibility helpers
+## G4: fog reads go to the snapshot's arrays (safe while a step is in flight).
 func _fog_arrays() -> Dictionary:
-	return world.fog.get(player_fid, {})
+	return fog_of(player_fid)
 
 
 func cell_visible(c: Vector2i) -> bool:
-	if not world.in_bounds(c):
+	var mw := int(snap.get("map_w", 0))
+	if c.x < 0 or c.y < 0 or c.x >= mw or c.y >= int(snap.get("map_h", 0)):
 		return false
 	var f := _fog_arrays()
-	if f.is_empty():
+	if f.is_empty() or (f.visible as PackedByteArray).is_empty():
 		return true
-	var i := c.y * int(world.map.w) + c.x
+	var i := c.y * mw + c.x
 	if int(f.visible[i]) == 1:
 		return true
 	# G3a allied vision: a cell any ally sees is visible (V3's fog does the same for the sim).
 	for a in _ally_fids:
-		var af: Dictionary = world.fog.get(a, {})
+		var af: Dictionary = fog_of(a)
 		if not af.is_empty() and int(af.visible[i]) == 1:
 			return true
 	return false
 
 
 func cell_explored(c: Vector2i) -> bool:
-	if not world.in_bounds(c):
+	var mw := int(snap.get("map_w", 0))
+	if c.x < 0 or c.y < 0 or c.x >= mw or c.y >= int(snap.get("map_h", 0)):
 		return false
 	var f := _fog_arrays()
-	if f.is_empty():
+	if f.is_empty() or (f.explored as PackedByteArray).is_empty():
 		return true
-	return int(f.explored[c.y * int(world.map.w) + c.x]) == 1
+	return int(f.explored[c.y * mw + c.x]) == 1
 
 
 ## Whether the player may currently see entity e (own entities are always visible).
@@ -588,7 +770,10 @@ func entity_visible(e: Dictionary) -> bool:
 
 
 func team_color(fid: int) -> Color:
-	if world != null and world.factions.has(fid):
+	var tc = _team_cols.get(fid)
+	if tc != null:
+		return tc
+	if _world != null and _world.factions.has(fid):
 		return G3.side_color(world, fid)  # G3a: menu colour (cfg.sides[i].color) when set
 	return Color(0.85, 0.85, 0.8)
 
@@ -671,7 +856,7 @@ func _viewport_to_canvas(vp: Vector2) -> Vector2:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if world == null:
+	if _world == null:
 		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
@@ -700,8 +885,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Releases and drags are tracked in _input so a release over a HUD panel still ends the drag.
 func _input(event: InputEvent) -> void:
-	if world == null:
+	if _world == null:
 		return
+	# G4: _input runs before GUI and unhandled input, so joining here makes every click / key
+	# handler (HUD buttons included) see a world with no step in flight. Motion does not join.
+	if not (event is InputEventMouseMotion) and sim_busy():
+		_join_now()
 	if event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		if _drag_start_screen != null:

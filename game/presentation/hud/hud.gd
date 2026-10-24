@@ -310,6 +310,10 @@ func _on_pause_pressed() -> void:
 
 # ------------------------------------------------------------------ main loop
 func _process(delta: float) -> void:
+	# G4 (THREAD): while a sim step is in flight the HUD keeps its last state (it reads live
+	# dicts); it refreshes on the next frame after the hand-over.
+	if mv != null and mv.has_method("sim_busy") and mv.sim_busy():
+		return
 	var w := _world()
 	if w == null:
 		return

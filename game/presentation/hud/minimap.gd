@@ -117,6 +117,11 @@ func _update_fog() -> bool:
 
 
 func _process(delta: float) -> void:
+	# G4 (THREAD): no live reads while a sim step is in flight; the camera box still follows
+	if mv != null and mv.has_method("sim_busy") and mv.sim_busy():
+		if _cam_overlay != null:
+			_cam_overlay.queue_redraw()
+		return
 	var w := _world()
 	if w != _built_for:
 		_build_terrain()
