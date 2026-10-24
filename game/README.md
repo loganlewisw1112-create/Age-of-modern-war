@@ -1,4 +1,4 @@
-# RTS: Age of Modern War: playable slice (G0+G1+G2+G3)
+# RTS: Age of Modern War: playable slice (G0+G1+G2+G3+G4)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
@@ -107,15 +107,24 @@ This runs 200 headless tests (22 files): ledger conservation, command validation
 - **The AI** researches, advances, uses Stage 9 units, routes over several crossings, commits decisive waves on big maps, and stays under 1 ms per tick per side at 5,000 units.
 - Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G3b_2026-10-24.md`. Packaged build: `build/RTS_Age_of_Modern_War_G3b/`. Keep `rts_core.dll` next to the exe.
 
+## G4 "Foundations, Editor, Fortifications" (2026-10-24)
+- **Map & scenario editor** (main menu > Map Editor): terrain, rivers, lakes, ocean, beaches, cliffs, hills, trees/rocks/decor, units and buildings for any player, symmetry, undo/redo, triggers and victory presets, validate, save `.rtsmap`, test-play, and play it from Skirmish Setup.
+- **Walls, gates, towers:** drag-built wall lines (8 directions), per-team gates with Lock/Unlock, wall towers, breach by attack or engineer charges.
+- **Troop transports:** load by right-click, cargo strip, unload at point / all, officer "Transport to point".
+- **8 new human units:** APC, Sniper (concealment), Mortar (deploy), Combat Engineer (mines, charges); Flamer (forest fire), Halftrack, Scrap Mech, Rocket Truck. All have art, frames and effects.
+- **Engine:** the sim runs on its own thread, with a render snapshot; new terrain (shallow/deep water, beach, cliff, hill) and movement classes (amphibious, naval, air); map files with triggers; save/load at 10k units.
+- **AI:** builds walls/gates, lays mines, uses transports, fields the new units, and breaches walls that force a detour.
+- **Scale:** native core 0.3.1. 2k fight 21 ms/tick; 10k march 63 ms; 10k all-fighting 104 ms (still about half speed). See `perf/PERF_REPORT_G4_2026-10-24.md`.
+- Evidence: `PROGRESS.md`. Packaged build: `build/RTS_Age_of_Modern_War_G4/` (keep `rts_core.dll` next to the exe).
+
 ## Status (honest)
-- **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages. Evidence is in `PROGRESS.md`.
+- **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.
 - **Measured performance (this PC, quiet):**
   - **Sim:** 2,000 fighting units average 29.5 ms per tick (p95 38.3), within the 20 Hz budget. That's about 4–5x faster than G3a.
   - **10,000 units on Valley Conquest:** 86.7 ms per tick (p95 124), over budget, so the game runs at about half speed.
   - **On screen:** rendering alone holds 71 fps at 2,000 units and 171 fps at 10,000 zoomed out. While the sim runs on the main thread, frame rate drops to about 22 fps with 2,000 fighting. See `perf/PERF_REPORT_G3b_2026-10-24.md`.
 - **Not in this slice:**
-  - naval units and aircraft beyond drones;
-  - walls and gates;
+  - naval units and aircraft beyond drones (G4c/G4d; the water terrain and move classes are in);
   - Stages 1–6 and 10–13;
   - audio.
   These are gates G4–G6 in the roadmap.

@@ -30,6 +30,38 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
                           determinism breaks; existing tests can't be kept green
 ```
 
+### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
+1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
+   - The run covered all of 59afdcf plus AI5-4's uncommitted AI edits, which were in the tree at the time.
+   - The shipped AI, 32eddf7, passed test_ai 18/0 in AI5-3's run.
+2. **Perf:** `perf/PERF_REPORT_G4_2026-10-24.md`. Sim avg/p95 ms:
+   - 2k fight 21.3/36.1: MET.
+   - 10k march 63.2/85.9: at the avg bound, p95 over.
+   - 10k fight 104.3/131.1: **NOT MET** (about half speed).
+   - Every A/B state hash was equal to HEAD.
+   - G4 windowed fps (2k fighting 60+, 10k zoomed 30+): **UNVERIFIED** (not re-measured on a quiet PC).
+3. **Editor:**
+   - editor playtest 25/0 (ED3, commit 121cd89);
+   - an editor-made map soak, custom_front s1: `winner=0 end_tick=96442 reason=hq_elimination`, INVARIANTS fails=0 (`.plan/shots/AI5/soak_custom_front_s1.txt`, AI5-2 code);
+   - clean-folder editor playtest: see 5.
+4. **AI soaks:** 0 invariant failures in every run.
+   - Winners: heartland s1 and s2, river s1, custom_front s1 (on cfe7bc5-era code), and river s2 (d2, commit 32eddf7: `winner=0 end_tick=86554`, breaches 3/7/2).
+   - **valley_conquest_l s1 and s2 still DRAW** at max_ticks (d2: hashes 88bb7510…, ff48173b…). **NOT MET.**
+   - The 4 winners above were not re-run on the 32eddf7 code.
+   - Walls, gates, transports and the new units are used in every soak (SOAK G4B lines). The AI now breaches walls.
+   - In-progress AI5-4 work (stage-bank launch-army fix plus a late bank drop plus retargeting) is **uncommitted in the tree** and was not shipped. Its handoff is `.plan/handoff/AI5-4.json`. Next step: keep the bank fix and lever (a), drop or decay lever (b), then rerun the valley soaks and all 7 configs.
+5. **Package:** `build/RTS_Age_of_Modern_War_G4/` + `build/RTS_Age_of_Modern_War_G4_2026-10-24.zip` (91.6 MB), also copied to `C:\Users\logan\Downloads\`.
+   - Exported from commit 59afdcf. AI5-4's work-in-progress was set aside for the export; its patch is in `build/_ai5-4_wip/`.
+   - Run from a clean folder (`build/_clean_G4_test`), each printing `NATIVE rts_core loaded (rts_core 0.3.1)`:
+     - human 33/0
+     - human_b 37/0
+     - machine 37/0
+     - stages 53/0
+     - walls/transports (g4b) 68/0
+     - editor 25/0
+   - MET. Owner decision (2026-10-24): 10k smoothness does not block delivery; it is tracked going forward.
+- Commits: 84d28b3 → 59afdcf. Nothing pushed.
+
 ## Previous goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core) — PARTIAL, see evidence
 
 ```
