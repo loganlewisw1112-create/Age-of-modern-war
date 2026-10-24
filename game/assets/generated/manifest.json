@@ -1184,24 +1184,128 @@
     "icons/salvage.png": "db19152930bca8be553f56fee70ba0fb",
     "resources/ore.png": "cacf0753445216b19f7f1c68964b9aa7",
     "resources/salvage.png": "3a01381e80683ce4a6c9396526cac98f",
+    "terrain/beach_0.png": "47bc823284abf1e51cc60f65948c9b9c",
+    "terrain/beach_1.png": "4f81af0720b45102984100230b422b55",
+    "terrain/beach_2.png": "b33059cba07af020ea7be000000ee2e9",
+    "terrain/beach_b1_0.png": "22a86ffd00025f05324e9efb1e300bfe",
+    "terrain/beach_b1_1.png": "17b117ac907d16175285d79b4d378ea8",
+    "terrain/beach_b2_0.png": "467eca1606c6df64c9c0c2fb50b2751b",
+    "terrain/beach_b2_1.png": "122b46df1a5173f621ba4cd9bd1d04e6",
+    "terrain/beach_b3_0.png": "d9b54abfa731ffea103d35ee32c47915",
+    "terrain/beach_b3_1.png": "7b2d3050466df5fc9930514b334f30b1",
     "terrain/bridge_0.png": "f116a60bcfdd043e2bba1b4837569d8a",
+    "terrain/building_0.png": "de9c0a590847c6352a8f6067f4353480",
+    "terrain/building_1.png": "315016924559ace2047b4328b6110683",
+    "terrain/building_b1_0.png": "4f51425261638e8cac934cd5abe56f92",
+    "terrain/building_b1_1.png": "0e2a462c8633ba05b0b7e4a5089bbfca",
+    "terrain/building_b2_0.png": "7fa1ec0534777055b43c05f5fe0fd5eb",
+    "terrain/building_b2_1.png": "8ac30bbc1f2463bd625f47350912ed6b",
+    "terrain/building_b3_0.png": "dbaa00510374b24ef574da37bea82f44",
+    "terrain/building_b3_1.png": "64a286fe6fd9c9093cfea223a280e18c",
+    "terrain/cliff_0.png": "c73177b9e94d5d9dccbc54ac6367e7c3",
+    "terrain/cliff_1.png": "bd59a1e447a39d2a1e0431fa268c5bc9",
+    "terrain/cliff_b1_0.png": "de267f3729d12d053421468c47a2d5c8",
+    "terrain/cliff_b1_1.png": "083d78c48aac90ef6204374192b63c69",
+    "terrain/cliff_b2_0.png": "c83d8464e5f2976303f6a2420f87dcc1",
+    "terrain/cliff_b2_1.png": "2eeafde99914e717f10aa2e33f5a4ce9",
+    "terrain/cliff_b3_0.png": "729887de503bb5475d505c8b23031970",
+    "terrain/cliff_b3_1.png": "abdac4e529519b405181f848151b57a1",
+    "terrain/deep_0.png": "ade7925cf2912fabe432079163f9f210",
+    "terrain/deep_1.png": "323e7d63bdb4c8a7a230c7567b2daea7",
+    "terrain/deep_2.png": "c8dd339ce73b8c8feab139618ab3d587",
+    "terrain/deep_3.png": "99bbdb384bf6f2754f0a4e5e5bcc577d",
+    "terrain/deep_b1_0.png": "1c8e467d8842633b41104f84765ca365",
+    "terrain/deep_b1_1.png": "a6b9481f4183b97b574d8f34ce8d018b",
+    "terrain/deep_b1_2.png": "3d2288509b6ade9a3c2c6f4dfa5a0583",
+    "terrain/deep_b1_3.png": "0b39a67ee888e935278f4b554370cd0f",
+    "terrain/deep_b2_0.png": "2eabe0082b42a2c762cab2dae2c98c75",
+    "terrain/deep_b2_1.png": "42942b209a16abee92c16924274c3327",
+    "terrain/deep_b2_2.png": "f261d4150fc75667e474dfbd698f50ac",
+    "terrain/deep_b2_3.png": "0f72e6007ab9be70dc674ec2717f7055",
+    "terrain/deep_b3_0.png": "9cf8fd5ae52f48eb64fc09aa0f1cd150",
+    "terrain/deep_b3_1.png": "1a32ee5d883fb0c1d30cac541c15ee60",
+    "terrain/deep_b3_2.png": "1f2bcb0f7146fbcc238e7127bd77a8b5",
+    "terrain/deep_b3_3.png": "5e1656c31cfce5415e8bb4165e086e69",
     "terrain/dirt_0.png": "7f0250dd07b285abcf79ba43c179d89b",
     "terrain/dirt_1.png": "041cba7884838edba098634bba0c5a37",
     "terrain/dirt_2.png": "e0c6185e2b0f05b0e7dd4e6a5a4d5b46",
+    "terrain/dirt_b1_0.png": "b7521ca68e31cbfc699d9a6504fe6223",
+    "terrain/dirt_b1_1.png": "2cf6de31cf1c8a99ce3fb80db64fbfc8",
+    "terrain/dirt_b2_0.png": "8bae2381a7418113009c7662aa38780e",
+    "terrain/dirt_b2_1.png": "26a9f2469941abc71c3c986f815f2108",
+    "terrain/dirt_b3_0.png": "f748fcc7d0d364e59fe212ccf9d9ea93",
+    "terrain/dirt_b3_1.png": "e93aebfb7b17c7a166ebda831480280a",
     "terrain/ford_0.png": "bb4e02e8549f42da1023076e83f392ad",
     "terrain/ford_1.png": "68ed6faf9ce5e7c69bc2b01a2c450ab7",
     "terrain/forest_0.png": "32994f7bac03e719a59b1af98732eb31",
     "terrain/forest_1.png": "2e7945d4b9a6c4b5a9e70b01d4354d0c",
     "terrain/forest_2.png": "8b3079268609124c1e0a7a8df774787c",
+    "terrain/forest_b1_0.png": "b09f52089225380b6790c9faf37e316b",
+    "terrain/forest_b1_1.png": "c10d8458a3294b4b98e3de18be1f99cf",
+    "terrain/forest_b2_0.png": "b39fc68c25b8dc0b0d38eda493affd43",
+    "terrain/forest_b2_1.png": "bd7fda2ad12a48526684cdaf50092017",
+    "terrain/forest_b3_0.png": "dc34194c10f1b7ae283e05dec55a5e83",
+    "terrain/forest_b3_1.png": "2bd250d2020c152d1fe84c413fe2df33",
     "terrain/grass_0.png": "4315a569a30b2b442b1c8ddb4207904d",
     "terrain/grass_1.png": "f25db5c38c763b84133afb16d1d31344",
     "terrain/grass_2.png": "348c87885c625410a42ff7e6ac90a485",
     "terrain/grass_3.png": "04f3d5d9c4ca072fb8a06ff6fe20563b",
+    "terrain/grass_b1_0.png": "9c5e29ef634cc59221ec7bd6c06e4134",
+    "terrain/grass_b1_1.png": "2d9f70f1c6c4af429cc515553ffc97e1",
+    "terrain/grass_b1_2.png": "09f8245eccdad1646a376934b5b996da",
+    "terrain/grass_b2_0.png": "673f19d757c51459676557a9ea1646e8",
+    "terrain/grass_b2_1.png": "aae5c599f47c6e2ae402160dbdc03cf6",
+    "terrain/grass_b2_2.png": "6e96fb1d51ea43b3316893880ed93dbe",
+    "terrain/grass_b3_0.png": "64a07d60c848d2045a7188245c068c70",
+    "terrain/grass_b3_1.png": "084081528a85a9de45de6a3e2b2338cc",
+    "terrain/grass_b3_2.png": "c93646141729c1bd03e370ac9b89e473",
+    "terrain/hill_0.png": "6a371527c7296a346235e485ee4b6173",
+    "terrain/hill_1.png": "7db1c140b946079596098e3969bdd12e",
+    "terrain/hill_b1_0.png": "d6d0ac03a928881704639199d8e5db67",
+    "terrain/hill_b1_1.png": "3dbab0d3bf9a1546ac50cec3b1ba16ef",
+    "terrain/hill_b2_0.png": "9c324ddc683f29f5ebd55f7bc34a6da0",
+    "terrain/hill_b2_1.png": "a42e60ecc10ddfea8eb3ece85f2b00d4",
+    "terrain/hill_b3_0.png": "63449819a494485e7874916a010a6453",
+    "terrain/hill_b3_1.png": "f05266d480a6d7ef7f774f786b3eda1a",
     "terrain/ridge_0.png": "76c36d93ba4ce056fb5fe8544f8fcbde",
     "terrain/ridge_1.png": "91f6661a0d58f6d69480070a4900b915",
     "terrain/ridge_2.png": "46de1fb6cde2fefc7b99ea3a737903d1",
+    "terrain/ridge_b1_0.png": "89da69c3108b0b660480940a40f727cd",
+    "terrain/ridge_b1_1.png": "07ee03573583ebd02826de1dcfce8559",
+    "terrain/ridge_b2_0.png": "20d1d7c8b7f16d9db03e2697b136638e",
+    "terrain/ridge_b2_1.png": "12cd4838565d5126c127c68306a3732c",
+    "terrain/ridge_b3_0.png": "5eab5230fc341f6a80f592597fad2b80",
+    "terrain/ridge_b3_1.png": "e959b1eeeb931fd1cf0089f8e0fb43de",
     "terrain/road_0.png": "336c313c11459c899442d61d998e0480",
     "terrain/road_1.png": "2a432adb8a3e9db3b3c3e10aac0b5e20",
+    "terrain/road_b1_0.png": "4727ca0645782900491e57136a7d2f8a",
+    "terrain/road_b1_1.png": "1aad850931395cc07f00f1e190c2c4cc",
+    "terrain/road_b2_0.png": "48f2a68ae8b9640ae4d19e8ad4e49ebb",
+    "terrain/road_b2_1.png": "c8ff7f28ab7b1b64c70c41ad79737d17",
+    "terrain/road_b3_0.png": "829344385027849853b36873634c177d",
+    "terrain/road_b3_1.png": "c0fdf94d54d87bf5721f668ba99290e4",
+    "terrain/shallow_0.png": "6acb6dc8026a335b31a541b0d41d951a",
+    "terrain/shallow_1.png": "be60c2f0e0a646aa115b0fbb008a6d93",
+    "terrain/shallow_2.png": "ef2a74989dd7ab76e139c9bebb7ece14",
+    "terrain/shallow_3.png": "6cc1e0b8851b9c70f615f5fb3f5b2473",
+    "terrain/shallow_b1_0.png": "2dc6f19ad72416c821e4f6e341965786",
+    "terrain/shallow_b1_1.png": "297783221b1549c658e060ae60de1a02",
+    "terrain/shallow_b1_2.png": "6d6c973b3d5e6e19edc5407eed644e79",
+    "terrain/shallow_b1_3.png": "40679863420d362eb53db03efef72832",
+    "terrain/shallow_b2_0.png": "331f2ac20dded88794fc7cbb49f32a04",
+    "terrain/shallow_b2_1.png": "b921c7cef9ed0ccb7d1b42171ebe31f3",
+    "terrain/shallow_b2_2.png": "a07925dfaa1583251396fbd1d7bfc4fa",
+    "terrain/shallow_b2_3.png": "c91288c4ac59c1a51835c3006debaaea",
+    "terrain/shallow_b3_0.png": "4393cecbc71b410bba0c170928614e54",
+    "terrain/shallow_b3_1.png": "1b077ef0a26e43c3b7d5663b4395d357",
+    "terrain/shallow_b3_2.png": "249c5bcad95ee9006df6c223e48df188",
+    "terrain/shallow_b3_3.png": "afb316e67ece16f021e7914ddd55e163",
+    "terrain/trans/foam.png": "fbde264060e8f75adb8aed4c5b2ffaa4",
+    "terrain/trans/mask.png": "5c7a4a73225bd8b582ea950501d2338c",
+    "terrain/trans/rim.png": "ebe77510c394791bfb131608b90aa488",
+    "terrain/trans/scree.png": "a5d0fcd8930d3a7acade6fc6cd08b2c3",
+    "terrain/trans/shelf.png": "0b9a40df2ccc9a84b3ee071e7268e902",
+    "terrain/trans/wet.png": "eba449ab14ca6e91807c6b2db5f76e9c",
     "terrain/water_0.png": "24122d5023ed2e021d867ba2836bcb76",
     "terrain/water_1.png": "4767b3198a21b316fa5a109026903a36",
     "terrain/water_2.png": "1c1d7f07f51384ea6734207052861c37",
@@ -1891,6 +1995,22 @@
       "name": "dirt",
       "variants": 3
     },
+    "10": {
+      "name": "deep",
+      "variants": 4
+    },
+    "11": {
+      "name": "beach",
+      "variants": 3
+    },
+    "12": {
+      "name": "cliff",
+      "variants": 2
+    },
+    "13": {
+      "name": "hill",
+      "variants": 2
+    },
     "2": {
       "name": "road",
       "variants": 2
@@ -1914,6 +2034,175 @@
     "7": {
       "name": "ridge",
       "variants": 3
+    },
+    "8": {
+      "name": "building",
+      "variants": 2
+    },
+    "9": {
+      "name": "shallow",
+      "variants": 4
+    }
+  },
+  "terrain_g4": {
+    "anim": {
+      "10": 4,
+      "9": 4
+    },
+    "biome_variants": {
+      "0": 3,
+      "1": 2,
+      "10": 4,
+      "11": 2,
+      "12": 2,
+      "13": 2,
+      "2": 2,
+      "3": 2,
+      "7": 2,
+      "8": 2,
+      "9": 4
+    },
+    "biomes": [
+      "temperate",
+      "desert",
+      "snow",
+      "wasteland"
+    ],
+    "raise": {
+      "12": 16,
+      "13": 6
+    },
+    "rules": [
+      {
+        "from": [
+          0,
+          1,
+          2,
+          3,
+          7,
+          8,
+          11,
+          12,
+          13
+        ],
+        "kind": "foam",
+        "recv": [
+          9,
+          10
+        ]
+      },
+      {
+        "from": [
+          4,
+          6,
+          9
+        ],
+        "kind": "shelf",
+        "recv": [
+          10
+        ]
+      },
+      {
+        "from": [
+          4,
+          6,
+          9,
+          10
+        ],
+        "kind": "wet",
+        "recv": [
+          11
+        ]
+      },
+      {
+        "art": "mask",
+        "from": [
+          11
+        ],
+        "kind": "sand",
+        "recv": [
+          0,
+          1,
+          3
+        ],
+        "src": 11
+      },
+      {
+        "from": [
+          12
+        ],
+        "kind": "scree",
+        "recv": [
+          0,
+          1,
+          2,
+          3,
+          8,
+          11,
+          13
+        ]
+      },
+      {
+        "from": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          13
+        ],
+        "kind": "rim",
+        "recv": [
+          12
+        ]
+      },
+      {
+        "from": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "kind": "rim",
+        "recv": [
+          13
+        ]
+      }
+    ],
+    "trans": {
+      "foam": "terrain/trans/foam.png",
+      "mask": "terrain/trans/mask.png",
+      "rim": "terrain/trans/rim.png",
+      "scree": "terrain/trans/scree.png",
+      "shelf": "terrain/trans/shelf.png",
+      "wet": "terrain/trans/wet.png"
+    },
+    "trans_atlas": {
+      "cell": [
+        64,
+        32
+      ],
+      "h": 64,
+      "rows": [
+        "edge",
+        "corner"
+      ],
+      "w": 1024
     }
   },
   "tile": [
