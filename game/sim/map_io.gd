@@ -534,11 +534,15 @@ static func validate(map: Dictionary, scenario: Dictionary) -> Array:
 			continue
 		starts.append([slot, s])
 		if pkgs:
+			var blocked := false   # ORCH (ED3 CR): one issue per blocked start, not one per row
 			for dy in range(-2, 3):
+				if blocked:
+					break
 				for dx in range(-2, 3):
 					var c := s + Vector2i(dx, dy)
 					if not inb.call(c) or not Terrain.buildable(t[c.y * w + c.x]):
 						_issue(out, "start_blocked", "Player %d start needs a buildable 5x5 area (blocked at %s)." % [slot, c], c)
+						blocked = true
 						break
 	var foot_reach := PackedInt32Array()
 	for mc in ["foot", "vehicle"]:
