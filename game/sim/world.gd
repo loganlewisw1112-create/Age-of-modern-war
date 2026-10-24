@@ -3,7 +3,7 @@ extends RefCounted
 ## Authoritative simulation state + fixed-step tick orchestrator + command bus.
 ## Pure logic: no Nodes, no rendering, no global RNG. See docs/CONTRACTS.md.
 
-const SCHEMA_VERSION := 3  # 2 = G2 (fuel/ammo ledger, unit tactical fields, bridge); 3 = G3b (stage/research/advancing)
+const SCHEMA_VERSION := 4  # 4 = G4 (cargo, walls, mines, triggers); 2 = G2 (fuel/ammo ledger, unit tactical fields, bridge); 3 = G3b (stage/research/advancing)
 const TICK_RATE := 20
 const DT := 1.0 / 20.0
 const EVENT_LOG_MAX := 300
@@ -28,10 +28,16 @@ const MapGen = preload("res://sim/map_gen.gd")
 const Progression = preload("res://sim/systems/progression.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")
+const Transport = preload("res://sim/systems/transport.gd")
+const G4bMech = preload("res://sim/systems/g4b_mech.gd")
+const Triggers = preload("res://sim/systems/triggers.gd")
+const MapIO = preload("res://sim/map_io.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Construction, Production, Progression, Gather, Repair, Ops, Orders, Movement, Combat, Morale, Supply, Bridges, Fog, Victory]
+const SYSTEM_ORDER := [Economy, Construction, Fortify, Production, Progression, Gather, Repair, Ops, Orders, Movement, Transport, Combat, G4bMech, Morale, Supply, Bridges, Fog, Triggers, Victory]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -56,6 +62,15 @@ const COMMANDS := {
 	"set_formation": Orders,
 	"research": Progression,
 	"advance_stage": Progression,
+	# G4 (CONTRACTS_G4 section 2.3)
+	"load": Transport,
+	"unload": Transport,
+	"unload_all": Transport,
+	"build_line": Fortify,
+	"set_gate_lock": Fortify,
+	"lay_mine": G4bMech,
+	"plant_charge": G4bMech,
+	"deploy": G4bMech,
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
@@ -166,7 +181,14 @@ static func new_match(c: Dictionary) -> SimWorld:
 	w.cfg = c.duplicate(true)
 	w.seed_value = int(c.get("seed", 1))
 	w.rng = SimRng.new(w.seed_value)
-	w.map = MapGen.generate(w.seed_value, String(c.get("map", "river_crossing_s")))
+	if c.has("map_file"):
+		# G4 (CONTRACTS_G4 section 5): map from a .rtsmap file (MAPIO owns MapIO.load_map / place_entities)
+		var merr := MapIO.load_map(w, c)
+		if merr != "":
+			push_error("SimWorld.new_match: " + merr)
+			return null
+	else:
+		w.map = MapGen.generate(w.seed_value, String(c.get("map", "river_crossing_s")))
 	var rules := Content.rules()
 	var colors: Array = rules.team_colors
 	for i in c.sides.size():
@@ -199,7 +221,10 @@ static func new_match(c: Dictionary) -> SimWorld:
 	for r in w.map.resources:
 		w.spawn_resource(String(r.res), int(r.amount), Vector2(r.cell) + Vector2(0.5, 0.5))
 	for fid in w.factions:
-		w._place_start_package(fid)
+		if bool(w.map.get("start_packages", true)):
+			w._place_start_package(fid)
+	if c.has("map_file"):
+		MapIO.place_entities(w, c)   # G4: pre-placed units/buildings, tags, regions, triggers
 	w._spawn_bridge()
 	Movement.rebuild_nav(w)
 	Fog.init_faction_fog(w)

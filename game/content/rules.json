@@ -205,5 +205,26 @@
         }
       }
     }
+  },
+  "transport": {
+    "_note": "G4 (CONTRACTS_G4 section 7). PROVISIONAL.",
+    "cargo_size": {
+      "foot": 1,
+      "vehicle_light": 4,
+      "vehicle_heavy": 8
+    },
+    "on_destroyed": {
+      "ground": {
+        "eject_hp_frac": 0.5
+      },
+      "air": {
+        "cargo_dies": true
+      },
+      "naval": {
+        "cargo_dies_unless_adjacent_land": true
+      }
+    },
+    "load_range": 1.5,
+    "unload_radius": 3
   }
 }

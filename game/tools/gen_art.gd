@@ -18,6 +18,9 @@ const MODULES := [
 	preload("res://tools/art/fx_ui.gd"),   # icons are made from earlier sprites
 	preload("res://tools/art/fx_g2.gd"),   # G2 effects/markers/command icons (extends fx_ui's maps)
 	preload("res://tools/art/g3b.gd"),   # G3b units/buildings/icons, POI decor, LOD icons (ART4)
+	preload("res://tools/art/g4_terrain.gd"),   # G4 terrain codes + shore/cliff transitions + biomes (ART-T)
+	preload("res://tools/art/g4_fort.gd"),      # G4 walls/gates/towers, 3 factions (ART-F)
+	preload("res://tools/art/g4_units.gd"),     # G4 8 human units + editor icons (ART-U)
 ]
 
 

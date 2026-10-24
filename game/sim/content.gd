@@ -25,7 +25,98 @@ static func load_all() -> void:
 			_data[f] = {}
 			continue
 		_data[f] = _normalize(parsed)
+	_merge_fragments()
 	_loaded = true
+
+
+## G4 (CONTRACTS_G4 section 2.1): merge content/g4/*.json fragments, sorted by file name.
+## Tables gain NEW ids only (an existing id is an error, never overridden). Special keys:
+##   armor_mult: {weapon_class: {armor: mult}}  new rows or new armor columns only
+##   faction_roles: {faction: {role: id}}       new role keys only
+##   faction_stage_roles: {faction: {"7": {role: id}}}  new keys only
+const FRAGMENT_DIR := "res://content/g4"
+
+
+static func _merge_fragments() -> void:
+	var files: Array = []
+	var dir := DirAccess.open(FRAGMENT_DIR)
+	if dir == null:
+		return
+	for fn in dir.get_files():
+		var name := String(fn).trim_suffix(".remap")
+		if name.ends_with(".json") and not files.has(name):
+			files.append(name)
+	files.sort()
+	for fn in files:
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(FRAGMENT_DIR + "/" + fn))
+		if typeof(parsed) != TYPE_DICTIONARY:
+			push_error("Content: invalid JSON fragment %s" % fn)
+			continue
+		var frag: Dictionary = _normalize(parsed)
+		for key in frag:
+			var k := String(key)
+			if k.begins_with("_"):
+				continue
+			if k == "armor_mult":
+				_merge_armor(frag[key], fn)
+			elif k == "faction_roles":
+				_merge_roles(frag[key], fn, "roles")
+			elif k == "faction_stage_roles":
+				_merge_stage_roles(frag[key], fn)
+			elif _data.has(k):
+				var t: Dictionary = _data[k]
+				for id in frag[key]:
+					if t.has(id):
+						push_error("Content: fragment %s redefines %s.%s (not allowed)" % [fn, k, id])
+					else:
+						t[id] = frag[key][id]
+			else:
+				push_error("Content: fragment %s has unknown table '%s'" % [fn, k])
+
+
+static func _merge_armor(add: Dictionary, fn: String) -> void:
+	var am: Dictionary = _data.get("weapons", {}).get("armor_mult", {})
+	for wc in add:
+		if not am.has(wc):
+			am[wc] = {}
+		for armor in add[wc]:
+			if am[wc].has(armor):
+				push_error("Content: fragment %s overrides armor_mult %s/%s" % [fn, wc, armor])
+			else:
+				am[wc][armor] = add[wc][armor]
+
+
+static func _merge_roles(add: Dictionary, fn: String, field: String) -> void:
+	for fid in add:
+		var f: Dictionary = _data.get("factions", {}).get(fid, {})
+		if f.is_empty():
+			push_error("Content: fragment %s names unknown faction %s" % [fn, fid])
+			continue
+		if not f.has(field):
+			f[field] = {}
+		for role in add[fid]:
+			if f[field].has(role) and String(f[field][role]) != "":
+				push_error("Content: fragment %s overrides role %s.%s" % [fn, fid, role])
+			else:
+				f[field][role] = add[fid][role]
+
+
+static func _merge_stage_roles(add: Dictionary, fn: String) -> void:
+	for fid in add:
+		var f: Dictionary = _data.get("factions", {}).get(fid, {})
+		if f.is_empty():
+			push_error("Content: fragment %s names unknown faction %s" % [fn, fid])
+			continue
+		if not f.has("stage_roles"):
+			f["stage_roles"] = {}
+		for st in add[fid]:
+			if not f.stage_roles.has(st):
+				f.stage_roles[st] = {}
+			for role in add[fid][st]:
+				if f.stage_roles[st].has(role):
+					push_error("Content: fragment %s overrides stage role %s.%s.%s" % [fn, fid, st, role])
+				else:
+					f.stage_roles[st][role] = add[fid][st][role]
 
 
 static func _normalize(v):

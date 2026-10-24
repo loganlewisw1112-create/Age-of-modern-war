@@ -1,6 +1,36 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core) — PARTIAL, see evidence
+## Active goal (G4a + G4e + G4b in parallel, started 2026-10-24; plan `docs/PLAN_G4.md`, contract `docs/CONTRACTS_G4.md`)
+Owner decisions (2026-10-24): D1 editor + naval/air pulled into G4 (DEC-G4-01); D2 8 new human land units (4 per Human faction); D3 Machine gets a small air/naval roster (G4c/G4d); D4 helicopters hover, jets sortie; D5 gunships carry troops or a slung vehicle (G4c); D6 no true heightmap (cliff + hill tiles); D7 REDUCED movement stride stays OFF; D8 no submarines.
+
+```
+GOAL - G4a Engine foundations + G4e Map & scenario editor + G4b Walls/transports/new units
+For whom / what changes:  Owner gets smooth big battles, builds and plays fully custom maps/scenarios,
+                          and fights with walls, gates, towers, troop transports and 8 new human units.
+Outcome:                  Sim off the main thread with 10k-scale budget, new terrain/movement layers and
+                          map files; an AoE/Stronghold-style editor; fortifications + transports + 8 units,
+                          all used by the AI.
+Done-when:                1. tests/run.sh TESTS OK incl new suites: terrain/move-class nav, gate team-pass,
+                             threaded==unthreaded hash, map file round trip, triggers, 10k save/load,
+                             walls/gates/breach, transports (load/unload/capacity/carrier death/save),
+                             each new unit mechanic, editor brushes/symmetry/undo/validate
+                          2. Quiet PC: 60+ fps with 2,000 fighting on screen; 30+ fps zoomed out with 10,000
+                             on Valley Conquest while the sim runs; 10k sim p95 < 50 ms OR >= 0.8x speed
+                             with smooth frames (number reported either way)
+                          3. Editor: a playtest builds a map by clicks (terrain, river, lake, trees, 2 players
+                             with HQ + units, symmetry, validate, save) and starts it from skirmish; an
+                             editor-made map AI soak ends with a winner
+                          4. AI soaks on the 3 built-in maps with walls, transports and new units in use end
+                             with winners, 0 invariant failures; playtest: drag a wall + gate, load/unload an APC
+                          5. Packaged build passes all playtests (3 factions, stages, walls/transport, editor)
+                             from a clean folder; README / perf report / PROGRESS match reality
+Out of scope:             aircraft + naval units (G4c/G4d; the water terrain and move classes ARE in scope),
+                          tutorial + settings (G4f), true elevation, submarines
+Stop-if:                  threaded sim can't be made crash-free (fall back to split-step, report);
+                          determinism breaks; existing tests can't be kept green
+```
+
+## Previous goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core) — PARTIAL, see evidence
 
 ```
 GOAL: G3b + Scale "Big Armies"

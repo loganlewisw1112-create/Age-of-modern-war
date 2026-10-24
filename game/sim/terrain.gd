@@ -10,8 +10,16 @@ const WATER := 4
 const BRIDGE := 5
 const FORD := 6
 const RIDGE := 7
+# G4 (CONTRACTS_G4 section 2.2/3; semantics owned by NAT)
+const BUILDING := 8   # impassable map-decor footprint (factory, house, hangar)
+const SHALLOW := 9    # shallow water: foot/vehicle slow, small boats, beaching
+const DEEP := 10      # deep water: naval only
+const BEACH := 11     # sand shore: landable, buildable
+const CLIFF := 12     # impassable, blocks line of sight
+const HILL := 13      # passable, +sight, light cover for foot
 
-const NAMES := ["grass", "dirt", "road", "forest", "water", "bridge", "ford", "ridge"]
+const NAMES := ["grass", "dirt", "road", "forest", "water", "bridge", "ford", "ridge",
+	"building", "shallow", "deep", "beach", "cliff", "hill"]
 
 ## Movement classes: "foot" (infantry) and "vehicle".
 static func passable(code: int, move_class: String) -> bool:
