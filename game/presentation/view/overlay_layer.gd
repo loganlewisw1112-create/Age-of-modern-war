@@ -24,6 +24,12 @@ func _ring(size_tiles: float):
 
 
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_body()
+	preload("res://presentation/view/view_util.gd").prof_add("d_ov_" + mode, t0)
+
+
+func _draw_body() -> void:
 	if mv == null or mv.world == null:
 		return
 	if mode == "under":
@@ -90,35 +96,73 @@ func _hp_color(f: float) -> Color:
 
 
 func _draw_bars() -> void:
-	var w = mv.world
 	var pf: int = mv.player_fid
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" and e.kind != "building":
+	# G3b (R4): only bars inside the camera view are considered
+	var inv: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+	var vr := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * get_viewport_rect().size).grow(120.0)
+	# G3b (R4-2): iterate the entity layer's per-frame visible lists (on screen + fog rules
+	# applied) and a selection set, instead of every entity x selection.has() each frame.
+	var el = mv.entity_layer
+	if el == null:
+		return
+	var selset := {}
+	for sid in mv.selection:
+		selset[int(sid)] = true
+	var us: Array = el.vis_units
+	var sps: PackedVector2Array = el.vis_sp
+	var far: bool = el.lod >= 2   # far LOD: unit HP bars only for the selection
+	if far:
+		us = []
+		sps = PackedVector2Array()
+		for sid in selset:
+			var se = mv.world.entities.get(sid)
+			if se != null and se.kind == "unit" and mv.entity_visible(se):
+				us.append(se)
+				sps.append(mv.world_to_screen(se.pos))
+	for i in us.size():
+		var e: Dictionary = us[i]
+		var hp: float = e.hp
+		var mhp: float = e.max_hp
+		if (far or hp >= mhp - 0.01) and not selset.has(int(e.id)):
 			continue
-		var sel: bool = mv.selection.has(id)
+		var sp: Vector2 = sps[i]
+		if not vr.has_point(sp):
+			continue
+		var frac := hp / maxf(1.0, mhp)
+		var r := _radius(String(e.def))
+		_bar(sp + Vector2(0, -26 - r * 18.0), 22.0 + r * 12.0, frac, _hp_color(frac))
+	for b in el.vis_bld:
+		var e: Dictionary = b
+		var gp: Vector2 = e.pos
+		if not vr.has_point(Vector2((gp.x - gp.y) * 32.0, (gp.x + gp.y) * 16.0)):
+			continue
+		var sel: bool = selset.has(int(e.id))
 		var damaged: bool = float(e.hp) < float(e.max_hp) - 0.01
-		var building_unfinished: bool = e.kind == "building" and not bool(e.get("built", true))
+		var building_unfinished: bool = not bool(e.get("built", true))
 		if not (sel or damaged or building_unfinished):
 			continue
-		if not mv.entity_visible(e):
-			continue
 		var frac := float(e.hp) / maxf(1.0, float(e.max_hp))
-		if e.kind == "unit":
-			var r := float(Content.unit(e.def).get("radius", 0.3))
-			var top: Vector2 = mv.world_to_screen(mv.render_pos(e)) + Vector2(0, -26 - r * 18.0)
-			_bar(top, 22.0 + r * 12.0, frac, _hp_color(frac))
-		else:
-			var s := int(e.size)
-			var top: Vector2 = mv.world_to_screen(e.pos) + Vector2(0, -s * 16 - 34)
-			if sel or damaged:
-				_bar(top, 18.0 * s + 14.0, frac, _hp_color(frac))
-			if building_unfinished and int(e.owner) == pf:
-				_bar(top + Vector2(0, 7), 18.0 * s + 14.0, float(e.get("progress", 0.0)), Color(1.0, 0.7, 0.2))
-			# production progress of the head queue item for selected own buildings
-			if sel and int(e.owner) == pf and not (e.get("queue", []) as Array).is_empty():
-				var q: Dictionary = e.queue[0]
-				_bar(top + Vector2(0, 7), 18.0 * s + 14.0, float(q.get("progress", 0.0)), Color(0.4, 0.75, 1.0))
+		var s := int(e.size)
+		var top: Vector2 = mv.world_to_screen(e.pos) + Vector2(0, -s * 16 - 34)
+		if sel or damaged:
+			_bar(top, 18.0 * s + 14.0, frac, _hp_color(frac))
+		if building_unfinished and int(e.owner) == pf:
+			_bar(top + Vector2(0, 7), 18.0 * s + 14.0, float(e.get("progress", 0.0)), Color(1.0, 0.7, 0.2))
+		# production progress of the head queue item for selected own buildings
+		if sel and int(e.owner) == pf and not (e.get("queue", []) as Array).is_empty():
+			var q: Dictionary = e.queue[0]
+			_bar(top + Vector2(0, 7), 18.0 * s + 14.0, float(q.get("progress", 0.0)), Color(0.4, 0.75, 1.0))
+
+
+var _rad: Dictionary = {}
+
+
+func _radius(def_id: String) -> float:
+	var r = _rad.get(def_id)
+	if r == null:
+		r = float(Content.unit(def_id).get("radius", 0.3))
+		_rad[def_id] = r
+	return r
 
 
 func _draw_rally() -> void:

@@ -2,6 +2,9 @@ extends Node2D
 ## Cosmetic effects (owner: agent D): tracers + muzzle flashes from ShotFired, explosions +
 ## smoke from EntityDestroyed, and short command markers. Uses its own cosmetic RNG.
 ## Effects in cells the player cannot see are skipped.
+## G3b (R4-render): culled to the camera view; zoom LOD (set by MatchView from the entity layer)
+## drops small FX at mid zoom (muzzle flashes, small explosions, small smoke) and also tracers at
+## far zoom.
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const MAX_FX := 400
@@ -10,6 +13,8 @@ var mv
 var _rng := RandomNumberGenerator.new()
 var _fx: Array = []    # {kind, t, life, a:Vector2 screen, b:Vector2 screen, size, color}
 var _frames: Dictionary = {}  # effect name -> Array of textures ([] if placeholder)
+var lod := 0                  # 0 close, 1 mid, 2 far (entity_layer.lod)
+var drawn := 0
 
 
 func setup(view) -> void:
@@ -49,8 +54,12 @@ func on_shot(ev: Dictionary) -> void:
 	var hit := bool(ev.get("hit", true))
 	var b: Vector2 = mv.world_to_screen(to) + Vector2(0, -_height_for(int(ev.get("target", -1)))) + (jitter if hit else jitter * 4.0)
 	var heavy := String(ev.get("weapon", "")) in ["tank_cannon", "at_rocket", "autocannon"]
+	if lod >= 2:
+		return
 	_fx.append({"kind": "tracer", "t": 0.0, "life": 0.09 if not heavy else 0.14, "a": a, "b": b,
 		"size": 2.0 if heavy else 1.0, "color": Color(1.0, 0.85, 0.45) if not heavy else Color(1.0, 0.6, 0.3)})
+	if lod >= 1:
+		return
 	_fx.append({"kind": "muzzle", "t": 0.0, "life": 0.07, "a": a, "b": a, "size": 6.0 if heavy else 3.0, "color": Color(1, 0.9, 0.5)})
 	if heavy and hit:
 		_fx.append({"kind": "explosion_small", "t": 0.0, "life": 0.35, "a": b, "b": b, "size": 8.0, "color": Color(1, 0.6, 0.2)})
@@ -122,9 +131,28 @@ func tick(delta: float) -> void:
 
 
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_body()
+	preload("res://presentation/view/view_util.gd").prof_add("d_fx", t0)
+
+
+func _draw_body() -> void:
+	var inv: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+	var vs: Vector2 = get_viewport_rect().size
+	var vr := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vs).grow(160.0)
+	drawn = 0
 	for f in _fx:
 		if f.t < 0.0:
 			continue
+		if not vr.has_point(f.a) and not vr.has_point(f.b):
+			continue
+		if lod >= 1:
+			var kd := String(f.kind)
+			if kd == "muzzle" or kd == "explosion_small" or (kd == "smoke" and float(f.size) < 6.0):
+				continue
+			if lod >= 2 and kd == "tracer":
+				continue
+		drawn += 1
 		var k: float = f.t / f.life
 		var col: Color = f.color
 		match String(f.kind):

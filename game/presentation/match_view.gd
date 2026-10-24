@@ -14,6 +14,7 @@ extends Node2D
 
 const TILE_W := 64
 const TILE_H := 32
+const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dropping backlog
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
@@ -28,6 +29,7 @@ const G2Overlay = preload("res://presentation/view/g2_overlay.gd")
 const G2Demo = preload("res://presentation/view/g2_demo.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
+const ViewUtil = preload("res://presentation/view/view_util.gd")
 
 signal selection_changed
 signal world_events(events: Array)
@@ -61,6 +63,7 @@ var _ally_fids: Array = []               # G3a: allies of player_fid (allied vis
 
 var _acc: float = 0.0
 var _alpha: float = 0.0
+var _fps_tick0: int = -1   # world.tick at the start of the current --fps-log second (tps)
 var _prev_pos: Dictionary = {}           # unit id -> Vector2 pos before the latest step
 var _anim_time: float = 0.0
 var _initialized := false
@@ -85,6 +88,15 @@ var _fps_frames := 0
 var _fps_samples: Array = []
 var _t_sim := 0
 var _t_view := 0
+var _t_ent := 0
+var _fps_quit := 0.0                     # --fps-quit=S: print FPS_SUMMARY and quit after S seconds
+var _fps_total_t := 0.0
+var map_arg := ""                        # --map=<id>
+var zoom_arg := 0.0                      # --zoom=<f>
+var _prof := false                       # --prof: per-node frame profile (PROF line per second)
+var _prof_hide: Array = []               # --prof-hide=a,b: ablation (hud, g2, g3, ring, over, fx, fog, ent)
+var _prof_last_us := 0
+var _prof_frame_us := 0
 
 
 # ================================================================ lifecycle
@@ -114,8 +126,27 @@ func _init_view() -> void:
 			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		elif a.begins_with("--autoshot="):
 			_edge_pan_enabled = false
+		elif a.begins_with("--map="):
+			map_arg = a.substr(6)
+		elif a.begins_with("--zoom="):
+			zoom_arg = float(a.substr(7))
+		elif a.begins_with("--fps-quit="):
+			_fps_quit = float(a.substr(11))
+		elif a == "--prof":
+			_prof = true
+			ViewUtil.prof_on = true
+		elif a.begins_with("--prof-hide="):
+			_prof_hide = a.substr(12).split(",")
 	if spawn_test > 0:
 		_fps_log = true
+	# G3b (R4) perf flag: --map=<id> regenerates the fresh world on that map (debug/perf runs)
+	if map_arg != "" and world.tick == 0 and String(world.cfg.get("map", "")) != map_arg:
+		var cfg: Dictionary = world.cfg.duplicate(true)
+		cfg.map = map_arg
+		var nw = SimWorld.new_match(cfg)
+		if nw != null:
+			world = nw
+			print("MAP --map=%s %dx%d" % [map_arg, int(world.map.w), int(world.map.h)])
 
 	terrain_layer = TerrainLayer.new()
 	terrain_layer.z_index = 0
@@ -168,8 +199,53 @@ func _init_view() -> void:
 
 	if spawn_test > 0:
 		_debug_spawn_test(spawn_test)
+		_center_on_spawn_test()
+	if zoom_arg > 0.0:
+		# perf flag: bypasses the camera's zoom clamp so far LOD can be measured
+		camera.zoom = Vector2(zoom_arg, zoom_arg)
+		camera.tick(0.0)
 	if demo != "":
 		_run_demo(demo)
+	_apply_prof_hide.call_deferred()
+
+
+func _hide_script_nodes(n: Node, script_name: String) -> void:
+	var sc = n.get_script()
+	if sc is Script and String((sc as Script).resource_path).ends_with(script_name):
+		n.process_mode = Node.PROCESS_MODE_DISABLED
+		if n is CanvasItem:
+			(n as CanvasItem).visible = false
+		print("PROF_HIDE %s" % n.get_path())
+	for c in n.get_children():
+		_hide_script_nodes(c, script_name)
+
+
+## --prof-hide ablation: hides named layers (and the sibling HUD) so their frame cost can be
+## measured by difference. Debug/perf runs only.
+func _apply_prof_hide() -> void:
+	var map := {"g2": [g2_ground, g2_over], "g3": [g3_ground], "ring": [ring_layer], "over": [overlay_layer],
+		"fx": [fx_layer], "fog": [fog_layer], "ent": [entity_layer], "terrain": [terrain_layer]}
+	for k in _prof_hide:
+		if k.begins_with("hud/"):
+			var hud0 = get_parent().get("hud") if get_parent() != null else null
+			if hud0 is Node:
+				_hide_script_nodes(hud0, k.substr(4))
+			continue
+		if k == "hud":
+			var hud = get_parent().get("hud") if get_parent() != null else null
+			if hud is Node:
+				(hud as Node).process_mode = Node.PROCESS_MODE_DISABLED
+				for c in (hud as Node).get_children():
+					if c is CanvasItem:
+						(c as CanvasItem).visible = false
+					elif c is CanvasLayer:
+						(c as CanvasLayer).visible = false
+				if hud is CanvasLayer:
+					(hud as CanvasLayer).visible = false
+			continue
+		for n in map.get(k, []):
+			(n as CanvasItem).visible = false
+			(n as Node).process_mode = Node.PROCESS_MODE_DISABLED
 
 
 # ================================================================ sim ticking
@@ -184,7 +260,11 @@ func _process(delta: float) -> void:
 	if not paused:
 		_acc += delta * speed
 		var steps := 0
-		while _acc >= SimWorld.DT and steps < 5:
+		var t_loop := Time.get_ticks_usec()
+		# G3b (R4-2): catch-up steps stop once this frame has spent SIM_FRAME_BUDGET_US on the
+		# sim (at least one step always runs), so a slow tick slows the game instead of
+		# spiralling into multi-step 400+ ms frames. Outcomes are unchanged (same step sequence).
+		while _acc >= SimWorld.DT and steps < 5 and (steps == 0 or Time.get_ticks_usec() - t_loop < SIM_FRAME_BUDGET_US):
 			_acc -= SimWorld.DT
 			_snapshot_positions()
 			var ts := Time.get_ticks_usec()
@@ -197,11 +277,26 @@ func _process(delta: float) -> void:
 			_acc = 0.0  # drop backlog instead of spiralling
 	_alpha = clampf(_acc / SimWorld.DT, 0.0, 1.0) if not paused else 1.0
 	var tv := Time.get_ticks_usec()
+	if _prof:
+		if _prof_last_us > 0:
+			_prof_frame_us += tv - _prof_last_us
+		_prof_last_us = tv
 	_process_input_state(delta)
 	camera.tick(delta)
+	var tp := Time.get_ticks_usec()
+	terrain_layer.tick()
+	ViewUtil.prof_add("p_terrain", tp)
+	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
+	ViewUtil.prof_add("p_fog", tp)
+	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
+	_t_ent += Time.get_ticks_usec() - te
+	ViewUtil.prof_add("p_ent", te)
+	fx_layer.lod = entity_layer.lod
+	tp = Time.get_ticks_usec()
 	fx_layer.tick(delta)
+	ViewUtil.prof_add("p_fx", tp)
 	ring_layer.queue_redraw()
 	overlay_layer.queue_redraw()
 	g2_ground.queue_redraw()
@@ -218,11 +313,72 @@ func _process(delta: float) -> void:
 			for id in world.entities:
 				if world.entities[id].kind == "unit":
 					units += 1
-			print("FPS fps=%.1f engine_fps=%.0f units=%d entities=%d tick=%d sim_ms_per_s=%.0f view_ms_per_s=%.0f" % [fps, Engine.get_frames_per_second(), units, world.entities.size(), world.tick, _t_sim / 1000.0 / _fps_t, _t_view / 1000.0 / _fps_t])
+			var tps := float(world.tick - _fps_tick0) / _fps_t if _fps_tick0 >= 0 else 0.0
+			_fps_tick0 = world.tick
+			print("FPS tps=%.1f fps=%.1f engine_fps=%.0f units=%d entities=%d tick=%d sim_ms_per_s=%.0f view_ms_per_s=%.0f ent_ms=%.1f proc_ms=%.1f draw_calls=%d zoom=%.2f lod=%d drawn=%d native=%s map=%dx%d" % [tps, fps, Engine.get_frames_per_second(), units, world.entities.size(), world.tick, _t_sim / 1000.0 / _fps_t, _t_view / 1000.0 / _fps_t, _t_ent / 1000.0 / maxf(1.0, _fps_frames), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), camera.zoom.x, entity_layer.lod, entity_layer.drawn, _native_state(), int(world.map.w), int(world.map.h)])
+			if _prof:
+				_print_prof()
+			_fps_total_t += _fps_t
+			if _fps_quit > 0.0 and _fps_total_t >= _fps_quit:
+				_print_fps_summary()
+				get_tree().quit()
 			_t_sim = 0
 			_t_view = 0
+			_t_ent = 0
 			_fps_t = 0.0
 			_fps_frames = 0
+
+
+## "on" / "off" / "na" (N1's sim/native_core.gd facade missing). Every perf number says which.
+func _native_state() -> String:
+	if not ResourceLoader.exists("res://sim/native_core.gd"):
+		return "na"
+	var nc = load("res://sim/native_core.gd")
+	if nc == null or not nc.has_method("available"):
+		return "na"
+	var on: bool = nc.available() and bool(world.get("native_enabled") if world.get("native_enabled") != null else true)
+	return "on" if on else "off"
+
+
+## PROF line: ms per frame per key (p_* = MatchView-driven refresh, d_* = that node's _draw),
+## frame = wall time between MatchView._process calls; other = frame minus everything measured
+## (HUD/minimap/main _process + render-server CPU + GPU wait).
+func _print_prof() -> void:
+	var n := maxf(1.0, float(_fps_frames))
+	var keys: Array = ViewUtil.prof.keys()
+	keys.sort()
+	var parts: Array = []
+	var tot := 0
+	for k in keys:
+		tot += int(ViewUtil.prof[k])
+		parts.append("%s=%.2f" % [k, ViewUtil.prof[k] / 1000.0 / n])
+	var fr := _prof_frame_us / 1000.0 / n
+	print("PROF frame=%.2f sim=%.2f measured=%.2f other=%.2f %s" % [fr, _t_sim / 1000.0 / n, tot / 1000.0 / n, fr - tot / 1000.0 / n - _t_sim / 1000.0 / n, " ".join(parts)])
+	ViewUtil.prof.clear()
+	_prof_frame_us = 0
+
+
+## FPS_SUMMARY: avg / min / p10 over the logged seconds, skipping the first 3 (load/bake warm-up).
+func _print_fps_summary() -> void:
+	var s: Array = _fps_samples.slice(3) if _fps_samples.size() > 5 else _fps_samples.duplicate()
+	if s.is_empty():
+		return
+	s.sort()
+	var tot := 0.0
+	for v in s:
+		tot += float(v)
+	print("FPS_SUMMARY samples=%d avg=%.1f min=%.1f p10=%.1f max=%.1f zoom=%.2f lod=%d native=%s" % [s.size(), tot / s.size(), float(s[0]), float(s[int(s.size() * 0.1)]), float(s[s.size() - 1]), camera.zoom.x, entity_layer.lod, _native_state()])
+
+
+## Spawn-test: centre the camera on the player's spawned group (so the units are on screen).
+func _center_on_spawn_test() -> void:
+	var c := Vector2.ZERO
+	var n := 0
+	for u in world.units_of(player_fid):
+		c += u.pos
+		n += 1
+	if n > 0:
+		center_camera_on(c / n)
 
 
 func _snapshot_positions() -> void:
@@ -454,6 +610,11 @@ func entity_at(p: Vector2, only_actionable: bool = true):
 	for id in world.entities:
 		var e: Dictionary = world.entities[id]
 		if e.kind != "unit":
+			continue
+		# G3b (R4-2): cheap world-space reject first (pick radius + sprite offset < 6 tiles),
+		# so hover/click picking stays cheap with 10k units
+		var dw: Vector2 = (e.pos as Vector2) - p
+		if absf(dw.x) + absf(dw.y) > 6.0:
 			continue
 		if not entity_visible(e):
 			continue
@@ -828,7 +989,8 @@ func _process_input_state(delta: float) -> void:
 			if m.y < 6: dir.y -= 1
 			elif m.y > vs.y - 6: dir.y += 1
 	if dir != Vector2.ZERO:
-		camera.pan_screen(dir.normalized() * 900.0 * delta / camera.zoom.x)
+		var pan_speed: float = camera.edge_pan_speed() if camera.has_method("edge_pan_speed") else 900.0
+		camera.pan_screen(dir.normalized() * pan_speed * delta / camera.zoom.x)
 	# a drag whose release we never saw (window lost focus etc.)
 	if _drag_start_screen != null and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and demo_marquee == null:
 		_finish_left(_drag_now_screen, Input.is_key_pressed(KEY_SHIFT))
@@ -868,7 +1030,7 @@ func _debug_spawn_test(n: int) -> void:
 		var ids := []
 		var placed := 0
 		var ring := 0
-		while placed < per and ring < 40:
+		while placed < per and ring < 40 + per / 50:
 			var cnt := maxi(1, ring * 6)
 			for k in cnt:
 				if placed >= per:
@@ -886,6 +1048,7 @@ func _debug_spawn_test(n: int) -> void:
 		var target := Vector2(world.factions[other].spawn) + Vector2(0.5, 0.5)
 		if not ids.is_empty():
 			world.submit({"type": "attack_move", "issuer": fid, "unit_ids": ids, "target": target})
+		print("SPAWN_TEST side %d placed %d" % [fid, placed])
 	print("SPAWN_TEST spawned %d extra units" % n)
 
 

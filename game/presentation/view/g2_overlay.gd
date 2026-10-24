@@ -36,6 +36,12 @@ func _real_frames(n: String) -> Array:
 
 
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_body()
+	preload("res://presentation/view/view_util.gd").prof_add("d_g2_" + mode, t0)
+
+
+func _draw_body() -> void:
 	if mv == null or mv.world == null:
 		return
 	if mode == "ground":
@@ -54,29 +60,71 @@ func _draw_unit_status() -> void:
 	var w = mv.world
 	var t: float = mv.anim_time()
 	var vr: Rect2 = _visible_world_rect()
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit":
+	# G3b (R4-2): only the entity layer's on-screen, fog-visible units (no full entity scan)
+	var el = mv.entity_layer
+	if el == null or el.lod >= 2:   # far LOD: per-unit status markers are dropped
+		return
+	var us: Array = el.vis_units
+	var sps: PackedVector2Array = el.vis_sp
+	# status bits only change when the sim steps: cache them per tick (one dict read per unit)
+	if int(w.tick) != _st_tick:
+		_st_tick = int(w.tick)
+		_st.clear()
+	for i in us.size():
+		var e: Dictionary = us[i]
+		var id := int(e.id)
+		var bits = _st.get(id)
+		if bits == null:
+			bits = _status_bits(e)
+			_st[id] = bits
+		if bits == 0:
 			continue
-		var has_status: bool = e.has("comp") or bool(e.get("pinned", false)) or bool(e.get("broken", false)) \
-			or bool(e.get("in_cover", false)) or float(e.get("supp", 0.0)) > 25.0
-		if not has_status:
+		var sp: Vector2 = sps[i]
+		if not vr.has_point(sp):
 			continue
-		var sp: Vector2 = mv.world_to_screen(mv.render_pos(e))
-		if not vr.has_point(sp) or not mv.entity_visible(e):
-			continue
-		var r := float(Content.unit(e.def).get("radius", 0.3))
+		var r := _radius(String(e.def))
 		var head := sp + Vector2(0, -26 - r * 18.0)
-		if e.has("comp") and G2.any_comp_disabled(e):
-			_draw_smoke(sp + Vector2(0, -8 - r * 10.0), t, int(id))
-		if bool(e.get("pinned", false)):
+		if bits & 1:
+			_draw_smoke(sp + Vector2(0, -8 - r * 10.0), t, id)
+		if bits & 2:
 			_draw_pinned(head + Vector2(0, -9))
-		elif float(e.get("supp", 0.0)) > 25.0:
+		elif bits & 4:
 			_draw_supp(head + Vector2(0, -7), float(e.supp))
-		if bool(e.get("in_cover", false)):
+		if bits & 8:
 			_draw_shield(head + Vector2(-17 - r * 6.0, 2))
-		if bool(e.get("broken", false)):
+		if bits & 16:
 			_draw_chevrons(sp, float(e.get("facing", 0.0)), t)
+
+
+var _st: Dictionary = {}     # unit id -> status bits for _st_tick
+var _st_tick := -1
+
+
+## 1 disabled-component smoke, 2 pinned, 4 suppressed (> 25), 8 in cover, 16 broken (retreating).
+static func _status_bits(e: Dictionary) -> int:
+	var b := 0
+	if e.has("comp") and G2.any_comp_disabled(e):
+		b |= 1
+	if bool(e.get("pinned", false)):
+		b |= 2
+	if float(e.get("supp", 0.0)) > 25.0:
+		b |= 4
+	if bool(e.get("in_cover", false)):
+		b |= 8
+	if bool(e.get("broken", false)):
+		b |= 16
+	return b
+
+
+var _rad: Dictionary = {}
+
+
+func _radius(def_id: String) -> float:
+	var r = _rad.get(def_id)
+	if r == null:
+		r = float(Content.unit(def_id).get("radius", 0.3))
+		_rad[def_id] = r
+	return r
 
 
 func _visible_world_rect() -> Rect2:

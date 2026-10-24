@@ -47,6 +47,12 @@ static func air_lift(e: Dictionary, t: float) -> float:
 
 
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_body()
+	preload("res://presentation/view/view_util.gd").prof_add("d_g3", t0)
+
+
+func _draw_body() -> void:
 	if mv == null or mv.world == null:
 		return
 	var w: SimWorld = mv.world
@@ -61,19 +67,26 @@ func _draw() -> void:
 			sel_hub[int(id)] = true
 		elif e.kind == "unit" and G3.is_energy(String(e.def)):
 			energy_sel = true
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind == "unit":
-			if is_air_entity(e) and (int(e.owner) == pf or mv.entity_visible(e)):
-				_draw_shadow(e)
-		elif e.kind == "building" and int(e.owner) == pf and (sel_hub.has(int(id)) or energy_sel):
+	# G3b (R4-2): air shadows come from the entity layer's per-frame visible list (on screen,
+	# fog rules applied, same interpolated ground point) instead of a scan of every entity.
+	var el = mv.entity_layer
+	if el != null:
+		var us: Array = el.vis_units
+		var sps: PackedVector2Array = el.vis_sp
+		for i in el.vis_air:
+			_draw_shadow(us[i], sps[i])
+	if sel_hub.is_empty() and not energy_sel:
+		return
+	for b in w.buildings_of(pf):
+		var e: Dictionary = b
+		var id := int(e.id)
+		if sel_hub.has(id) or energy_sel:
 			var r := G3.recharge_radius(String(e.def))
 			if r > 0.0 and bool(e.get("built", true)):
-				_draw_radius(e.pos, r, sel_hub.has(int(id)))
+				_draw_radius(e.pos, r, sel_hub.has(id))
 
 
-func _draw_shadow(e: Dictionary) -> void:
-	var p: Vector2 = mv.world_to_screen(mv.render_pos(e))
+func _draw_shadow(e: Dictionary, p: Vector2) -> void:
 	var s := _spec(String(e.def))
 	if s.shadow != null:
 		draw_texture(s.shadow, p - (s.pivot as Vector2), Color(1, 1, 1, 0.85))

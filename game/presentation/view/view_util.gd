@@ -16,6 +16,14 @@ const TERRAIN_COLORS := [
 
 static var _ph_cache: Dictionary = {}     # texture rid id -> bool
 static var _fallback: Dictionary = {}     # key -> Texture2D
+# G3b (R4) per-node frame profiler (--prof): usec accumulated per key, printed by MatchView
+static var prof_on := false
+static var prof: Dictionary = {}
+
+
+static func prof_add(k: String, t0: int) -> void:
+	if prof_on:
+		prof[k] = int(prof.get(k, 0)) + (Time.get_ticks_usec() - t0)
 
 
 ## True if tex is null or ArtCatalog's magenta placeholder (or any solid-magenta texture).
