@@ -15,6 +15,7 @@ const G2Commands = preload("res://presentation/hud/g2_commands.gd")
 const G2Alerts = preload("res://presentation/hud/g2_alerts.gd")
 const G4bCommands = preload("res://presentation/hud/g4b_commands.gd")  # G4b (UI4B)
 const G3 = preload("res://presentation/hud/g3_faction.gd")
+const G4bAlerts = preload("res://presentation/hud/g4b_alerts.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
 # G3b (UI4): stage panel, research card, stage/research lock reasons
 const G3bStage = preload("res://presentation/hud/g3b_stage.gd")
@@ -977,7 +978,9 @@ func _on_events(events: Array) -> void:
 				var wt := int(ev.get("winner_team", G3.team_of(w, int(ev.get("winner", -1)))))
 				_push_alert("Match ended: Team %d wins." % (wt + 1) if wt >= 0 else "Match ended.", HT.AMBER)
 			_:
-				if not g3b_stage.on_event(w, pf, ev):
+				if G4bAlerts.on_event(self, w, pf, ev):
+					pass  # G4b mechanics alerts (UI4B)
+				elif not g3b_stage.on_event(w, pf, ev):
 					g2_alerts.on_event(self, w, pf, ev)
 
 

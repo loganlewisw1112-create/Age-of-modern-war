@@ -13,18 +13,22 @@ extends RefCounted
 ##   statics {id: {id, kind, def, owner, pos, cell, size, built, progress, hp, facing, ...}},
 ##   events Array (this tick's events), factions {fid: {scalar fields + stock copy}},
 ##   detail {id: deep copy} for w.snap_request ids, fog {fid: {visible, explored}},
+##   hid_spot {id: [team ids]} for concealed (FLAG_HID) units only (G4b, UI4B),
 ##   memory {fid: shallow copy of w.memory[fid]}, ended, winner, entity_count, build_us.
 
 const FLAG_MOVING := 1
 const FLAG_FIRING := 2
 const FLAG_AIR := 4
 const FLAG_DETAIL := 8      # id is in w.snap_request (selected / hovered): detail dict present
+const FLAG_HID := 16        # G4b (UI4B): sniper concealed (e.hid); spotting teams in snap.hid_spot[id]
+const FLAG_DEPLOYED := 32   # G4b (UI4B): mortar set up (e.deployed)
 const CARGO_SHIFT := 8
 const DEF_CARRIER := 1 << 30  # def table only: the def has cargo_slots
+const DEF_G4B := 1 << 29      # def table only: conceal_still or setup_ticks (hid / deployed fields)
 const DETAIL_MAX := 64      # detail copies per snapshot (a 500-unit marquee must not cost 5 ms)
 # statics: fields copied when present (scalars / Vector2 / Vector2i only)
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
-	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse"]  # seen/fuse: G4b mines / charges (UI4B)
+	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse", "target"]  # seen/fuse/target: G4b mines / charges (UI4B)
 
 
 ## Builds the snapshot for the world's current state. Safe to call every tick; the cost is one
@@ -62,6 +66,7 @@ static func build(w) -> void:
 	var n := 0
 	var statics: Dictionary = {}
 	var detail: Dictionary = {}
+	var hid_spot: Dictionary = {}  # G4b: concealed unit id -> copy of e.spot (team ids that see it)
 	var last_def := ""
 	var last_di := -1
 	for e: Dictionary in w.entities.values():
@@ -76,8 +81,11 @@ static func build(w) -> void:
 					defs.append(dname)
 					def_idx[dname] = dv
 					var dfl := FLAG_AIR if _is_air(dname) else 0
-					if int(Content.unit(dname).get("cargo_slots", 0)) > 0:
+					var ud: Dictionary = Content.unit(dname)
+					if int(ud.get("cargo_slots", 0)) > 0:
 						dfl |= DEF_CARRIER
+					if ud.get("conceal_still", false) or int(ud.get("setup_ticks", 0)) > 0:
+						dfl |= DEF_G4B
 					def_fl.append(dfl)
 				di = dv
 				last_def = dname
@@ -99,6 +107,13 @@ static func build(w) -> void:
 				fl |= FLAG_MOVING
 			if e.firing > 0:
 				fl |= FLAG_FIRING
+			if dfl2 & DEF_G4B:
+				if e.get("hid", false):
+					fl |= FLAG_HID
+					var sp_v = e.get("spot")
+					hid_spot[id] = (sp_v as Array).duplicate() if sp_v is Array else []
+				if e.get("deployed", false):
+					fl |= FLAG_DEPLOYED
 			if dfl2 & DEF_CARRIER:
 				var cg = e.get("cargo")
 				if cg != null:
@@ -129,7 +144,7 @@ static func build(w) -> void:
 		"tick": int(w.tick), "map_w": int(w.map.get("w", 0)), "map_h": int(w.map.get("h", 0)),
 		"n": n, "ids": ids, "pos": pos, "prev": prev, "facing": facing, "def": defi,
 		"defs": defs, "owner": owner, "hp": hp, "flags": flags,
-		"statics": statics, "detail": detail, "events": w.events,
+		"statics": statics, "detail": detail, "hid_spot": hid_spot, "events": w.events,
 		"factions": _factions(w), "fog": _fog(w), "memory": _memory(w),
 		"ended": bool(w.match_state.get("ended", false)), "winner": int(w.match_state.get("winner", -1)),
 		"entity_count": int(w.entities.size()),

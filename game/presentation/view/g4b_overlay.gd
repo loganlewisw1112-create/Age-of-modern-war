@@ -5,6 +5,7 @@ extends Node2D
 ## is in flight (THREAD rule, CONTRACTS_G4 section 4).
 
 const RenderSnap = preload("res://sim/render_snap.gd")
+const EntityLayer = preload("res://presentation/view/entity_layer.gd")
 
 var mv
 var badges_drawn := 0       # last frame's counts (playtest / debug)
@@ -95,7 +96,7 @@ func _draw_statics(vr: Rect2, font: Font) -> void:
 			if mine_side or mv.entity_visible(e):
 				_lock_mark(sp + Vector2(0, -30))
 			continue
-		if not mine_side and not _detected_for_me(e):
+		if not mine_side and not EntityLayer.g4b_static_visible(e, st, mv.player_fid, _my_team(), mv._ally_fids):
 			continue
 		var col := Color(0.35, 1.0, 0.45) if mine_side else Color(1.0, 0.3, 0.25)
 		var r := 9.0 if kind == "mine" else 11.0

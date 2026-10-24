@@ -17,6 +17,7 @@ const G3bData = preload("res://presentation/hud/g3b_data.gd")
 const Fortify = preload("res://sim/systems/fortify.gd")  # G4b (UI4B) flow
 const Transport = preload("res://sim/systems/transport.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")
+const RenderSnapScript = preload("res://sim/render_snap.gd")
 
 var main: Node
 var shot_dir := ""
@@ -782,9 +783,39 @@ func _g4b_walls(builders: Array) -> void:
 	_log("g4b_click_lock", await _click_button("Lock gate"))
 	_log("g4b_gate_locked", await _wait_until(func(): return bool(_w().get_e(int(g.id)).get("locked", false)), 5.0))
 	await _wait(0.4)
+	_log("g4b_gate_art_closed", await _wait_until(func(): return not _g4b_gate_art(int(g.id), gdef).ends_with("_open"), 3.0), _g4b_gate_art(int(g.id), gdef))
 	await _shot("ui_g4b_03_gate_locked")
 	_log("g4b_click_unlock", await _click_button("Unlock gate"))
 	_log("g4b_gate_unlocked", await _wait_until(func(): return not bool(_w().get_e(int(g.id)).get("locked", true)), 5.0))
+	# UI4B-2: an unlocked gate draws its conn_<m>_open art (batch_art fort state, ART-F manifest)
+	_log("g4b_gate_art_open", await _wait_until(func(): return _g4b_gate_art(int(g.id), gdef).ends_with("_open"), 3.0), _g4b_gate_art(int(g.id), gdef))
+	await _wait(0.4)
+	await _shot("ui_g4b_03b_gate_open")
+
+
+## Fort art state the entity layer resolves for building id from the render snapshot ("" = none).
+func _g4b_gate_art(id: int, def_id: String) -> String:
+	var st = (_mv().snap.get("statics", {}) as Dictionary).get(id)
+	var b: Dictionary = ArtCatalog.manifest().get("buildings", {}).get(def_id, {})
+	if st == null or b.is_empty():
+		return ""
+	return String(_mv().entity_layer.art._fort_state(b.states, st))
+
+
+func _g4b_alert(sub: String) -> bool:
+	var hud = main.get("hud")
+	if hud == null:
+		return false
+	for a in hud._alerts:
+		if String(a.text).contains(sub):
+			return true
+	return false
+
+
+func _g4b_snap_flag(id: int, flag: int) -> bool:
+	var sn: Dictionary = _mv().snap
+	var i := (sn.get("ids", PackedInt32Array()) as PackedInt32Array).find(id)
+	return i >= 0 and ((sn.flags as PackedInt32Array)[i] & flag) != 0
 
 
 func _built_count(def_id: String) -> int:
@@ -894,6 +925,9 @@ func _g4b_mortar() -> void:
 	var done := await _wait_until(func(): return bool(_w().get_e(int(m.id)).get("deployed", false)), 20.0)
 	_log("g4b_mortar_deployed", done)
 	await _wait(0.6)
+	# UI4B-2: render snapshot carries the deployed flag (mortar set-up frame) + the HUD alert
+	_log("g4b_snap_flag_deployed", await _wait_until(func(): return _g4b_snap_flag(int(m.id), RenderSnapScript.FLAG_DEPLOYED), 3.0))
+	_log("g4b_alert_deployed", _g4b_alert("deployed"))
 	_log("g4b_pack_button_shown", _find_button(get_tree().root, "Pack") != null)
 	await _shot("ui_g4b_06_mortar_deployed")
 
@@ -931,6 +965,7 @@ func _g4b_mine() -> void:
 	var laid := await _wait_until(func(): return _own_mines() > 0, 30.0)
 	_log("g4b_mine_laid", laid, "mines=%d" % _own_mines())
 	await _wait(0.8)
+	_log("g4b_alert_mine_laid", _g4b_alert("Mine laid"))
 	_log("g4b_mine_marker_drawn", _mv().g4b_over.mines_drawn > 0, "markers=%d" % _mv().g4b_over.mines_drawn)
 	await _shot("ui_g4b_07_mine")
 

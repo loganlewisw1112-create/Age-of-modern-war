@@ -281,6 +281,9 @@ func _rebuild_dots(w: SimWorld) -> void:
 		# Enemies only where the player (or an ally) can see.
 		if not cc[2] and not ally and not _seen_idx(vis, floori(p.x), floori(p.y)):
 			continue
+		# G4b: concealed enemy snipers stay off the minimap unless our team spots them
+		if not cc[2] and not ally and k == "unit" and e.get("hid", false) and not (e.get("spot", []) as Array).has(G3.team_of(w, pf)):
+			continue
 		var edge := Color(1, 1, 1, 0.85) if ally else Color(0, 0, 0, 0.8)
 		var mp2 := _to_mini(p)
 		if k == "building":

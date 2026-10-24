@@ -604,6 +604,11 @@ func _on_step_events(evs: Array) -> void:
 				var t = world.entities.get(int(ev.get("target", -1)))
 				if t != null and int(t.owner) == player_fid:
 					last_alert_pos = t.pos
+			"TerrainChanged":
+				# G4b: burnt-out forest became DIRT (g4b_mech fire); re-bake those chunks
+				var tc: Array = ev.get("cells", [])
+				if not tc.is_empty():
+					terrain_layer.rebake_cells(tc)
 			"BridgeDestroyed", "BridgeRepaired":
 				# G2: the terrain array changed under the bridge; re-bake those chunks
 				var cells: Array = ev.get("cells", world.map.get("bridge_cells", []))
@@ -775,6 +780,11 @@ func entity_visible(e: Dictionary) -> bool:
 				if cell_visible(c + Vector2i(dx, dy)):
 					return true
 		return false
+	# G4b: a concealed sniper is invisible to enemy teams that do not spot it (hover, pick, alerts)
+	if e.get("hid", false) and not _ally_fids.has(o):
+		var my_team := int(((snap.get("factions", {}) as Dictionary).get(player_fid, {}) as Dictionary).get("team", player_fid))
+		if not (e.get("spot", []) as Array).has(my_team):
+			return false
 	return cell_visible(Vector2i(floori(e.pos.x), floori(e.pos.y)))
 
 

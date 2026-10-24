@@ -35,7 +35,8 @@ func _unit_spec(def: String) -> Dictionary:
 		s = {"file": String(spec.file), "mask": String(spec.get("mask", "")), "fw": int(spec.fw), "fh": int(spec.fh),
 			"pivot": Vector2(float(spec.pivot[0]), float(spec.pivot[1])), "n": frames.size(),
 			"fire": frames.find("fire"), "walk": frames.has("walk_a"),
-			"wa": frames.find("walk_a"), "wb": frames.find("walk_b"), "mv": frames.find("move")}
+			"wa": frames.find("walk_a"), "wb": frames.find("walk_b"), "mv": frames.find("move"),
+			"dep": frames.find("deployed")}  # G4b: mortar set-up frame (-1 = none yet)
 	_uspec[def] = s
 	return s
 
@@ -63,11 +64,11 @@ func _fallback(e: Dictionary, team: Color) -> void:
 	out_off = d.get("offset", Vector2.ZERO)
 
 
-## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air] (page -2 = fallback).
+## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed] (page -2 = fallback).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
 	var s := _unit_spec(def)
-	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e)]
+	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1]
 	if not s.is_empty():
 		var key: String = s.file + "|" + ck
 		var pg := atlas.page_of(key)
@@ -86,6 +87,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[9] = int(s.wa)
 			c[10] = int(s.wb)
 			c[11] = int(s.mv)
+			c[13] = int(s.get("dep", -1))
 	_ec[int(e.id)] = c
 	return c
 
@@ -107,6 +109,8 @@ func resolve_unit(e: Dictionary, team: Color, ck: String, anim_t: float) -> void
 			fi = int(c[9]) if ph % 2 == 0 else int(c[10])
 		else:
 			fi = int(c[11]) if ph % 2 == 0 else 0
+	elif bool(e.get("deployed", false)) and int(c[13]) >= 0:
+		fi = int(c[13])
 	fi = maxi(0, fi)
 	var row := posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8)
 	var fw: int = c[4]
@@ -138,7 +142,10 @@ func resolve_static(e: Dictionary, team: Color, ck: String) -> void:
 func _state_code(e: Dictionary, kind: String) -> int:
 	if kind == "building":
 		if bool(e.get("built", true)):
-			return -1 if not e.has("conn") else -100 - int(e.conn)  # G4: wall art conn_<mask>
+			if not e.has("conn"):
+				return -1
+			# G4: wall art conn_<mask>; G4b fort variants: +16 open (unlocked gate), +32 damaged
+			return -100 - (int(e.conn) + (16 if _gate_open(e) else 0) + (32 if _damaged(e) else 0))
 		return clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 	if kind == "wreck":
 		return posmod(int(round(float(e.get("facing", 0.0)) / ArtCatalog.FACING_STEP)), 8) * 10 + int(e.get("size", 1))
@@ -157,8 +164,8 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 			var st := "built"
 			if not bool(e.get("built", true)):
 				st = "build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
-			elif e.has("conn") and b.states.has("conn_%d" % int(e.conn)):
-				st = "conn_%d" % int(e.conn)  # G4 (FORT/ART-F): N1 E2 S4 W8 neighbour mask
+			elif e.has("conn"):
+				st = _fort_state(b.states, e)  # G4 (FORT/ART-F): N1 E2 S4 W8 neighbour mask
 			var s: Dictionary = b.states.get(st, b.states.built)
 			var img: Image = ArtCatalog._sheet(String(s.file), String(s.mask), team)
 			_whole(String(s.file) + "|" + ck, img, b.pivot)
@@ -193,3 +200,23 @@ func _whole(key: String, img: Image, pivot: Array) -> void:
 	out_page = atlas.add(key, img)
 	out_src = atlas.rect_of(key)
 	out_off = Vector2(-float(pivot[0]), -float(pivot[1]))
+
+
+## G4b fort art state (ART-F manifest: conn_<m> | conn_<m>_damaged | conn_<m>_open for gates).
+## Unlocked gates show open, under 50% hp damaged (a damaged gate shows damaged, the art has no
+## open+damaged frame). Falls back conn_<m>_x -> conn_<m> -> built.
+func _fort_state(states: Dictionary, e: Dictionary) -> String:
+	var base := "conn_%d" % int(e.conn)
+	if _damaged(e) and states.has(base + "_damaged"):
+		return base + "_damaged"
+	if _gate_open(e) and states.has(base + "_open"):
+		return base + "_open"
+	return base if states.has(base) else "built"
+
+
+static func _gate_open(e: Dictionary) -> bool:
+	return e.has("locked") and not bool(e.locked)  # FORT: only gates carry e.locked
+
+
+static func _damaged(e: Dictionary) -> bool:
+	return float(e.get("hp", 1.0)) < 0.5  # snapshot statics carry hp as a fraction

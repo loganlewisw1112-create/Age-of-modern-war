@@ -18,10 +18,19 @@ static func unit_class(def_id: String) -> String:
 	return "infantry" if String(d.get("move_class", "foot")) == "foot" else "vehicle"
 
 
+## G4b (ART-U CR): the manifest may map defs to finer icon classes
+## (lod_class {def: "artillery" | "vehicle_heavy" | ...}); a class without an icon spec draws the
+## procedural dot, so an unknown class falls back to the content-derived one instead.
 func class_of(def_id: String) -> String:
 	var c = _cls.get(def_id)
 	if c == null:
 		c = unit_class(def_id)
+		var lc = ArtCatalog.manifest().get("lod_class", {})
+		if lc is Dictionary and lc.has(def_id):
+			var want := String(lc[def_id])
+			var li = ArtCatalog.manifest().get("lod_icons", {})
+			if li is Dictionary and (li.get("*", {}) as Dictionary).has(want):
+				c = want
 		_cls[def_id] = c
 	return c
 

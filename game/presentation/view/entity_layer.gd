@@ -215,6 +215,8 @@ func refresh() -> void:
 		_ck[fid] = c.to_html()
 		_fac[fid] = String(facs[fid].get("faction_def", ""))
 	var neutral: Color = mv.team_color(-1)
+	var my_team := int((facs.get(pf, {}) as Dictionary).get("team", pf))
+	var hid_spot: Dictionary = sn.get("hid_spot", {})
 	var mw := int(sn.map_w)
 	var fog: Dictionary = mv.fog_of(pf)
 	var vis: PackedByteArray = fog.get("visible", PackedByteArray())
@@ -287,8 +289,11 @@ func refresh() -> void:
 						break
 				if not seen:
 					continue
-		var dname: String = defs[def_a[i]]
 		var fl: int = flg_a[i]
+		# G4b: a concealed sniper is drawn for enemies only while their team spots it
+		if fl & RenderSnap.FLAG_HID and ow != pf and not mv._ally_fids.has(ow) and not (hid_spot.get(id, []) as Array).has(my_team):
+			continue
+		var dname: String = defs[def_a[i]]
 		if live:
 			var le = ents.get(id)
 			if le != null:
@@ -314,6 +319,8 @@ func refresh() -> void:
 		var fi := 0
 		if fl & RenderSnap.FLAG_FIRING:
 			fi = c[7]
+		elif fl & RenderSnap.FLAG_DEPLOYED and c[13] >= 0:
+			fi = c[13]  # G4b: mortar set-up frame (manifest frames "deployed", ART-U)
 		elif fl & RenderSnap.FLAG_MOVING:
 			var ph := int(t * 6.0 + id * 0.37)
 			if c[8]:
@@ -370,8 +377,8 @@ func refresh() -> void:
 						continue
 					_seen_wrecks[id] = true
 			"mine", "charge":
-				# G4b: hidden from enemies unless the sim marks them detected for this side
-				if ow != pf and not mv._ally_fids.has(ow) and not _detected(e, pf, int(((mv.snap.get("factions", {}) as Dictionary).get(pf, {}) as Dictionary).get("team", pf))):
+				# G4b: hidden from enemies unless detected (mines) or planted on our side's target (charges)
+				if not g4b_static_visible(e, statics, pf, my_team, mv._ally_fids):
 					continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
@@ -392,6 +399,22 @@ func refresh() -> void:
 func _proxy(id: int, dname: String, ow: int, facing: float, fl: int) -> Dictionary:
 	return {"id": id, "kind": "unit", "def": dname, "owner": ow, "facing": facing,
 		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0}
+
+
+## G4b mine / charge visibility for the local side (entity layer + g4b_overlay share it):
+## own or allied always; an enemy mine once our team detected it (mine.seen); an enemy charge
+## when its target belongs to us or an ally (the defender sees the charge on his own wall).
+static func g4b_static_visible(e: Dictionary, statics: Dictionary, pf: int, team: int, allies: Array) -> bool:
+	var ow := int(e.owner)
+	if ow == pf or allies.has(ow):
+		return true
+	if String(e.kind) == "charge":
+		var t = statics.get(int(e.get("target", -1)))
+		if t != null:
+			var to := int(t.owner)
+			if to == pf or allies.has(to):
+				return true
+	return _detected(e, pf, team)
 
 
 static func _detected(e: Dictionary, pf: int, team: int = -1) -> bool:
