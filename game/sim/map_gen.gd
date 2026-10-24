@@ -1,4 +1,5 @@
 extends RefCounted
+## Map generation entry point (G3b: dispatches by map id to sim/maps/*.gd; owner MAP4).
 ## River Crossing (river_crossing_s): authored macro geography + seeded legal-zone variation.
 ## Authored (seed never changes these): diagonal river, central 3-wide bridge on the main
 ## road, two fords at fixed river positions, spawn sites. Seeded: river meander amplitude,
@@ -17,10 +18,53 @@ const FORD_U := 40          # fords where (x - y) == +-40 along the river
 const MAX_ATTEMPTS := 12
 
 
+## G3b (MAP4): generator modules by map id (content/maps.json lists the same ids).
+const MODULES := {
+	"industrial_heartland_m": preload("res://sim/maps/industrial_heartland.gd"),
+	"valley_conquest_l": preload("res://sim/maps/valley_conquest.gd"),
+}
+const MapCheck = preload("res://sim/maps/map_check.gd")
+const DEFAULT_ID := "river_crossing_s"
+## River Crossing spawn sets: identity, so 2/3/4-side matches use spawns 0..n-1 exactly as before.
+const RC_SPAWN_SETS := {"2": [0, 1], "3": [0, 1, 2], "4": [0, 1, 2, 3]}
+
+static var _defs: Dictionary = {}
+
+
+## content/maps.json entries by id (read once; FileAccess so it works in exported builds).
+static func defs() -> Dictionary:
+	if _defs.is_empty():
+		var j = JSON.parse_string(FileAccess.get_file_as_string("res://content/maps.json"))
+		if typeof(j) == TYPE_DICTIONARY:
+			for d in j.get("maps", []):
+				_defs[String(d.id)] = d
+	return _defs
+
+
+static func ids() -> Array:
+	return [DEFAULT_ID] + MODULES.keys()
+
+
+static func has_map(map_id: String) -> bool:
+	return map_id == DEFAULT_ID or MODULES.has(map_id)
+
+
+## Spawn cell for side i of n (CONTRACTS_G3b section 4): map.spawns[map.spawn_sets[str(n)][i]].
+## Falls back to spawns[i % size] for maps/saves without spawn_sets.
+static func spawn_for(m: Dictionary, i: int, n: int) -> Vector2i:
+	var spawns: Array = m.spawns
+	var sets: Dictionary = m.get("spawn_sets", {})
+	var key := str(n)
+	if sets.has(key) and i < (sets[key] as Array).size():
+		return spawns[int(sets[key][i]) % spawns.size()]
+	return spawns[i % spawns.size()]
+
+
 static func generate(seed_value: int, map_id: String = "river_crossing_s") -> Dictionary:
 	var m := {}
+	var mod = MODULES.get(map_id)
 	for attempt in MAX_ATTEMPTS:
-		m = _try(seed_value, attempt)
+		m = _try(seed_value, attempt) if mod == null else mod.try_gen(seed_value, attempt)
 		var reason := validate(m)
 		if reason == "":
 			m.gen_attempt = attempt
@@ -161,6 +205,11 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 		"terrain": t, "spawns": SPAWNS.duplicate(), "resources": resources,
 		"bridge_cells": bridge_cells, "ford_cells": ford_cells, "seed": seed_value,
 		"river_params": [a1, a2, f1, f2],
+		# G3b (MAP4) shared map fields; the terrain/resources above are unchanged.
+		"size": "s", "spawn_sets": RC_SPAWN_SETS.duplicate(true), "max_sides": 4,
+		"bridges": [{"id": 0, "name": "River Bridge", "cells": bridge_cells.duplicate()}], "hold_bridge": 0,
+		"decor": [], "pois": [{"type": "bridge", "name": "River Bridge", "cell": Vector2i(47, 47)},
+			{"type": "ford", "name": "North Ford", "cell": Vector2i(27, 67)}, {"type": "ford", "name": "South Ford", "cell": Vector2i(68, 28)}],
 	}
 
 
@@ -216,6 +265,8 @@ static func _add_resource(resources: Array, taken: Dictionary, t: PackedByteArra
 
 ## Returns "" if the map is legal, else a human-readable failure with location.
 static func validate(m: Dictionary) -> String:
+	if String(m.get("id", DEFAULT_ID)) != DEFAULT_ID:
+		return MapCheck.validate(m)
 	var t: PackedByteArray = m.terrain
 	for s in m.spawns:
 		for dy in range(-2, 3):
