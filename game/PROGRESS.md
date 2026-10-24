@@ -30,6 +30,15 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
                           determinism breaks; existing tests can't be kept green
 ```
 
+### Next slice: owner notes (2026-10-24). Both are REQUIRED scope.
+1. **10 more units/squads for the human faction(s)**, on top of G4's 8. The per-faction split is to be proposed in the plan.
+2. **Fix every current known gap:**
+   - 10k all-fighting speed. The lever is hot entity state in packed arrays in `world.gd` (SIM10K-2's CR).
+   - The two Valley Conquest 3-side AI soaks that end in a draw. Start from AI5-4's work-in-progress (bank launch-army fix plus late bank drop; drop the retarget penalty); its patch is in `build/_ai5-4_wip/`.
+   - Measure G4 windowed fps on a quiet PC.
+   - Keep burnt ground after save/load (needs a sim-side burnt set).
+   - Wire `Fortify.on_attack_move_blocked` in `movement.gd`, so player units breach walls too.
+
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
    - The run covered all of 59afdcf plus AI5-4's uncommitted AI edits, which were in the tree at the time.
