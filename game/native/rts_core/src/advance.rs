@@ -140,3 +140,36 @@ pub fn advance_one(nav: &RtsNav, mc: usize, pos0: Vector2, spd_base: f32, k: i32
     }
     out
 }
+
+/// N1-core-4: a PERF4 stride advance of k ticks = k exact one-tick advances (each with its own
+/// guard, terrain lookup, quantize and stuck +-1), no separation in between. Stops on arrive /
+/// repath, and before a sub-step when the waypoint window is nearly spent (the caller passes
+/// k + 2 waypoints; the rest of the path is served on the next advance). k = 1 is advance_one.
+#[allow(clippy::too_many_arguments)]
+pub fn advance_k(nav: &RtsNav, mc: usize, pos0: Vector2, spd_base: f32, k: i32, wp: &[Vector2],
+                 rem: i32, fin: Vector2, stuck0: i32, pr: &AdvParams) -> AdvOut {
+    if k <= 1 {
+        return advance_one(nav, mc, pos0, spd_base, 1, wp, rem, fin, stuck0, pr);
+    }
+    let mut acc = AdvOut { pos: pos0, dpi: 0, facing: 0.0, stuck: stuck0, flags: OUT_NONE };
+    for s in 0..k {
+        let off = acc.dpi.max(0) as usize;
+        let left = wp.len().saturating_sub(off);
+        if left == 0 || (s > 0 && left < 2 && (rem - acc.dpi) as usize > left) {
+            break;
+        }
+        let o = advance_one(nav, mc, acc.pos, spd_base, 1, &wp[off..], rem - acc.dpi, fin, acc.stuck, pr);
+        acc.pos = o.pos;
+        acc.dpi += o.dpi;
+        acc.stuck = o.stuck;
+        if o.flags & FLAG_FACING != 0 {
+            acc.facing = o.facing;
+            acc.flags |= FLAG_FACING;
+        }
+        if o.flags & 3 != OUT_NONE {
+            acc.flags |= o.flags & 3;
+            break;
+        }
+    }
+    acc
+}

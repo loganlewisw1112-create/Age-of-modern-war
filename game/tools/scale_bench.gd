@@ -46,6 +46,10 @@ func _init() -> void:
 			modes = [true] if v == "on" else ([false] if v == "off" else [true, false])
 		elif a.begins_with("--tiers="):
 			Tiers.force_off = a.substr(8) == "off"
+		elif a.begins_with("--held-paths="):
+			Movement.held_paths = a.substr(13) != "off"
+		elif a.begins_with("--move-stride="):
+			Tiers.move_stride = a.substr(14) == "on"
 		elif a == "--breakdown" or a == "--series":
 			breakdown = true
 			series = series or a == "--series"
@@ -62,6 +66,7 @@ func _init() -> void:
 	print("")
 	print("SCALE BENCH map=%s factions=%s ticks=%d native_available=%s (%s) tiers=%s cpu=%s" % [map_id, ",".join(facs), ticks,
 		str(NativeCore.available()), NativeCore.version(), "off" if Tiers.force_off else "on", OS.get_processor_name()])
+	print("  move_stride=%s held_paths=%s" % [str(Tiers.move_stride), str(Movement.held_paths)])
 	print("| units placed | path | avg ms | p95 ms | max ms | units at end | reduced at end | setup s |")
 	print("|---|---|---|---|---|---|---|---|")
 	for r in rows:

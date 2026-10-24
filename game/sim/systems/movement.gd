@@ -23,10 +23,12 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")
 ##   Paths stay plain waypoint lists in e.path, so saves and the queue are path-agnostic.
 ## G3b (N1-core-2): native tick = one RtsSteer.advance_separate call (path advance of every moving unit +
 ##   separation of every unit); GDScript gathers inputs and applies arrive / repath outcomes.
-##   PERF4 fidelity tiers: Tiers.move_k(w, e) = 1 FULL, STRIDE on a REDUCED unit's stride tick
-##   (k x step, segments <= SEG_MAX, guard 4k, stuck +-k), 0 otherwise (no advance). On the native
-##   path a REDUCED unit is also separated only on its stride tick (it is far from every enemy, and
-##   skipping it is what makes 10k units affordable); the GDScript fallback separates every unit.
+##   PERF4 fidelity tiers: stride_off(w, e) false = advance this tick (FULL, or a REDUCED unit on a
+##   tick % STRIDE == 0 tick), true = skipped (the tick is owed in e.mv_owed). N1-core-4: an advance runs 1 + owed
+##   exact one-tick steps (native advance_k / _advance), so stride units lag <= STRIDE-1 ticks and
+##   catch up exactly on their first FULL tick. Both paths
+##   separate every unit every tick (N1-core-4: the native path used to drop off-stride REDUCED
+##   units from the batch, so FULL units passed through them and fights were biased).
 
 const CLASSES := ["foot", "vehicle"]
 const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, FIFO)
@@ -49,10 +51,13 @@ const NATIVE_PATH_BUDGET := PATH_BUDGET  # same queue semantics on both paths (s
 const WP_TOL := 0.45             # intermediate waypoint reached within this many tiles
 const FLOW_MIN := 6              # group orders this big share a flow field (native path)
 const SEG_MAX := 0.5             # longest single collision-checked step (PERF4 stride steps)
+const REPATH_PER_TICK := 8       # N1-core-4: stuck / blocked repaths started per tick (rest retry next tick)
 
 static var _lut_speed: Dictionary = {}   # mc -> Array[float] speed_mult per terrain code (0 = impassable)
 static var profile := false             # tools/scale_bench.gd --breakdown: per-phase usec in prof
 static var prof: Dictionary = {}
+static var held_paths := false         # N1-core-4: native-held paths (RtsSteer.set_path / advance_held); bit-identical, but no measured gather gain at 2k rc_s (7.6 vs 7.5 ms), so off
+static var owed_paid := 0               # stride catch-up advances paid (diagnostics only, never saved)
 static var _group_flow: Dictionary = {}  # mc -> {"h": flow handle, "goal": Vector2i}; set only inside apply_command
 
 static var _udefs: Dictionary = {}
@@ -384,6 +389,7 @@ static func stop_path(e: Dictionary) -> void:
 	e.moving = false
 	e.path_req = -1
 	e.stuck = 0
+	e.erase("mv_owed")
 
 
 ## Contract helper: path e toward goal without changing e.order. Sets e.path, e.path_i, e.moving.
@@ -588,9 +594,10 @@ static func tick(w: SimWorld) -> void:
 		var mc: String = udef(String(e.def)).mc
 		_rescue(w, e, mc, solid, mw, bounds)
 		if e.moving:
-			var k := Tiers.move_k(w, e)  # PERF4: 1 FULL, STRIDE on a REDUCED stride tick, else 0
-			if k > 0:
-				_advance(w, e, mc, k)
+			if not stride_off(w, e):  # FULL, or a REDUCED unit's stride tick
+				_advance(w, e, mc, _take_owed(e, w.tick))
+			elif not e.has("mv_owed") and int(e.path_i) < (e.path as Array).size():
+				e.mv_owed = w.tick  # first skipped tick of this debt
 	if profile:
 		t0 = _pt("advance_loop", t0)
 	if steer != null:
@@ -679,22 +686,24 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	wp.resize(na * 3)
 	var wn := 0
 	var nm := 0
+	var steer = w.nav.steer
+	var held: bool = held_paths and steer.has_method("advance_held")
+	var prefs = w.nav.get("path_refs")  # id -> the e.path Array last pushed to steer (same lifetime as steer)
+	if held and prefs == null:
+		prefs = []
+		w.nav["path_refs"] = prefs
 	var reduced := Tiers.REDUCED
 	var stride := Tiers.STRIDE
-	var use_stride := Tiers.move_stride  # PERF4-2 CR 908: same gate as Tiers.move_k (fallback path)
-	var skipped := 0
+	var use_stride := Tiers.move_stride  # PERF4-2 CR 908 gate; `off` below inlines stride_off()
 	var n := 0
 	var tick := w.tick
 	for e: Dictionary in all:
 		var id: int = e.id
-		# PERF4 fidelity tier: a REDUCED unit (no enemy anywhere near) is advanced AND separated
-		# only on its stride tick (k = STRIDE); on the other ticks it is left out of the batch.
-		var k := 1
-		if use_stride and int(e.get("tier", 0)) == reduced:
-			if (tick + id) % stride != 0:
-				skipped += 1
-				continue
-			k = stride
+		# PERF4 fidelity tier: a REDUCED unit (no enemy anywhere near) is advanced only on its
+		# stride tick (k = STRIDE). N1-core-4: on the other ticks it stays in the separation batch
+		# (position + moving flag, no advance), exactly like the GDScript fallback; leaving it out
+		# let FULL units walk through it and biased fights (PERF4 fightcmp).
+		var off := use_stride and tick % stride != 0 and int(e.get("tier", 0)) == reduced  # == stride_off()
 		if not w.entities.has(id):
 			continue
 		if id >= tn or trad[id] <= 0.0:
@@ -718,7 +727,12 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 			_rescue(w, e, udef(String(e.def)).mc, {"foot": sf, "vehicle": sv}, mw, Rect2i(0, 0, mw, mh))
 			p = e.pos
 		var mflag := 0
-		if e.moving:
+		if off:
+			if e.moving:  # off-stride REDUCED: separated, not advanced; owes this tick's step
+				mflag = 1
+				if not e.has("mv_owed") and int(e.path_i) < (e.path as Array).size():
+					e.mv_owed = tick  # first skipped tick of this debt (one has() per later off tick)
+		elif e.moving:
 			var path: Array = e.path
 			var pi := int(e.path_i)
 			var ps := path.size()
@@ -731,7 +745,23 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 				_arrive(e)
 			else:
 				mflag = 1
-				if k > 0:  # k = inline Tiers.move_k(w, e) (the k == 0 case was skipped above)
+				var k := 1
+				if e.has("mv_owed"):
+					k = _take_owed(e, tick)  # 1 + ticks skipped since the last advance (stride)
+				if held:
+					# the path lives in RtsSteer; push it only when e.path is a different Array
+					# (every writer assigns a new one; loads make new ones too)
+					if id >= prefs.size():
+						prefs.resize(maxi(id + 1, prefs.size() * 2 + 64))
+					if not is_same(path, prefs[id]):
+						steer.set_path(id, PackedVector2Array(path))
+						prefs[id] = path
+					var b4 := nm * 4
+					mvi[b4] = n
+					mvi[b4 + 1] = k
+					mvi[b4 + 2] = pi
+					mvi[b4 + 3] = int(e.get("stuck", 0))
+				else:
 					var nw := mini(ps - pi, k + 2)  # waypoints a k x step can use (window end stops it)
 					if wn + nw > wp.size():
 						wp.resize(wp.size() * 2 + nw)
@@ -746,9 +776,9 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 						wp[wn + j] = path[pi + j]
 					wn += nw
 					fin[nm] = path[ps - 1]
-					spd[nm] = tsp[id] * Status.move_mult(w, e)
-					movers[nm] = e
-					nm += 1
+				spd[nm] = tsp[id] * Status.move_mult(w, e)
+				movers[nm] = e
+				nm += 1
 		units[n] = e
 		pos[n] = p
 		ids[n] = id
@@ -757,7 +787,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	pos.resize(n)
 	ids.resize(n)
 	mov.resize(n)
-	mvi.resize(nm * 6)
+	mvi.resize(nm * (4 if held else 6))
 	spd.resize(nm)
 	fin.resize(nm)
 	wp.resize(wn)
@@ -768,18 +798,21 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		tabs.spd = tsp
 	if profile:
 		t0 = _pt("gather", t0)
-	var steer = w.nav.steer
-	var out: PackedVector2Array = steer.advance_separate(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd,
-		wp, fin, PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS]))
+	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
+	var out: PackedVector2Array
+	if held:
+		out = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
+	else:
+		out = steer.advance_separate(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, wp, fin, prm)
 	if profile:
 		t0 = _pt("native_step", t0)
 	for i in steer.last_changed():
 		units[i].pos = out[i]
 	# N1-core-3: end-of-movement unit snapshot for other systems (runtime cache, never saved).
 	# ids ascending, pos = every listed unit's position after this tick's movement (nothing moves
-	# later in a tick). complete = no unit was left out (no REDUCED stride skip). Units destroyed
+	# later in a tick). complete = every unit is listed (always true since N1-core-4). Units destroyed
 	# later this tick stay listed (check w.entities), units spawned after movement are absent.
-	w.cache["unit_snap"] = {"tick": w.tick, "ids": ids, "pos": out, "complete": skipped == 0}
+	w.cache["unit_snap"] = {"tick": w.tick, "ids": ids, "pos": out, "complete": true}
 	var res: PackedFloat32Array = steer.last_adv()
 	for m in nm:
 		var e: Dictionary = movers[m]
@@ -794,7 +827,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		var oc := fl & 3
 		if oc == 1:
 			_arrive(e)
-		elif oc == 2:
+		elif oc == 2 and _repath_ok(w):
 			var path: Array = e.path
 			if not order_path(w, e, path[path.size() - 1]) and e.order.type == "move":
 				e.order = {"type": "idle"}
@@ -818,34 +851,81 @@ static func _arrive(e: Dictionary) -> void:
 		e.order = {"type": "idle"}
 
 
+## N1-core-4: caps the stuck / blocked repaths started per tick at REPATH_PER_TICK (both paths), so a
+## jam that trips many units at once spreads its A* work over several ticks instead of one burst
+## (mv.apply spikes up to 25 ms). A deferred unit keeps its stuck count and retries on its next
+## advance, in ascending id order. Runtime-only counter keyed by tick (never saved; saves happen
+## between ticks, so a restored world counts the same way).
+static func _repath_ok(w: SimWorld) -> bool:
+	var c = w.cache.get("mv_repath")
+	if c == null or int(c[0]) != w.tick:
+		c = [w.tick, 0]
+		w.cache["mv_repath"] = c
+	if int(c[1]) >= REPATH_PER_TICK:
+		return false
+	c[1] = int(c[1]) + 1
+	return true
+
+
+## PERF4 stride gate (N1-core-4), both paths: with Tiers.move_stride a REDUCED unit advances only
+## on ticks with tick % STRIDE == 0. The phase is the same for every unit (was tick + id in
+## Tiers.move_k): staggered phases moved neighbours of one group at different ticks, separation then
+## pushed them differently and fights drifted from FULL-only (.plan/shots/N1-core-4/fightcmp4_*.txt).
+static func stride_off(w: SimWorld, e: Dictionary) -> bool:
+	return Tiers.move_stride and w.tick % Tiers.STRIDE != 0 and int(e.get("tier", 0)) == Tiers.REDUCED
+
+
+## PERF4 stride (N1-core-4): ticks a unit skipped on the REDUCED stride are owed (e.mv_owed = the
+## first skipped tick of the debt, saved with the entity, cleared by stop_path) and paid back as exact one-tick steps on its next advance
+## (stride tick, or its first FULL tick), so a stride unit lags at most STRIDE - 1 ticks and never
+## runs ahead. Returns the step count for this advance (1 + owed, capped) and clears the debt.
+static func _take_owed(e: Dictionary, tick: int) -> int:
+	var ow = e.get("mv_owed")
+	if ow == null:
+		return 1
+	e.erase("mv_owed")
+	owed_paid += 1
+	return clampi(1 + tick - int(ow), 1, 2 * Tiers.STRIDE)
+
+
+## k exact one-tick advances (k > 1 = a PERF4 stride catch-up); stops on arrive / repath / immobile.
 static func _advance(w: SimWorld, e: Dictionary, mc: String, k := 1) -> void:
+	for s in k:
+		if not _advance_step(w, e, mc):
+			return
+
+
+## One tick of path advance. Returns true when the unit is still under way on the same path.
+static func _advance_step(w: SimWorld, e: Dictionary, mc: String) -> bool:
 	var path: Array = e.path
 	if path.is_empty():
 		if int(e.get("path_req", -1)) < 0:
 			_arrive(e)  # moving without a path and nothing pending
-		return  # else: waiting for a queued path
+		return false  # else: waiting for a queued path
 	var pi := int(e.path_i)
 	if pi >= path.size():
 		_arrive(e)
-		return
+		return false
 	var next_cell := w.cell_of(path[pi])
 	if not is_passable(w, next_cell, mc):
 		# the way became blocked (new footprint): repath to the final goal
+		if not _repath_ok(w):
+			return false  # over this tick's repath cap: wait here, retried next tick
 		var goal: Vector2 = path[path.size() - 1]
 		if not order_path(w, e, goal) and e.order.type == "move":
 			e.order = {"type": "idle"}
-		return
+		return false
 	var u := udef(String(e.def))
 	var pos: Vector2 = e.pos
 	var start_pos := pos
 	var tmult := 1.0 if mc == AIR else float(_lut(mc)[w.terrain_at(w.cell_of(pos))])
-	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e) * float(k)
+	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
 	if spd <= 0.0:
-		return  # immobile (mobility kill / no fuel): keep the path, do not move
+		return false  # immobile (mobility kill / no fuel): keep the path, do not move
 	var remaining := spd
 	var guard := 0
 	var blocked := false
-	while remaining > 0.0001 and pi < path.size() and guard < 4 * k:
+	while remaining > 0.0001 and pi < path.size() and guard < 4:
 		guard += 1
 		var wp: Vector2 = path[pi]
 		var d := wp - pos
@@ -872,22 +952,24 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String, k := 1) -> void:
 	e.path_i = pi
 	if pi >= path.size():
 		_arrive(e)
-		return
+		return false
 	var moved := pos.distance_to(start_pos)
 	if moved < spd * 0.25 or blocked:
-		e.stuck = int(e.get("stuck", 0)) + k
+		e.stuck = int(e.get("stuck", 0)) + 1
 	else:
-		e.stuck = maxi(int(e.get("stuck", 0)) - k, 0)
+		e.stuck = maxi(int(e.get("stuck", 0)) - 1, 0)
 	var st_ticks := int(e.stuck)
 	var final_pos: Vector2 = path[path.size() - 1]
 	var to_final := pos.distance_to(final_pos)
 	# crowding at the destination: accept arrival when close and not making progress
 	if pi == path.size() - 1 and ((to_final < 0.8 and st_ticks >= 6) or (to_final < 2.0 and st_ticks >= 20)):
 		_arrive(e)
-		return
-	if st_ticks >= STUCK_REPATH_TICKS:
+		return false
+	if st_ticks >= STUCK_REPATH_TICKS and _repath_ok(w):
 		if not order_path(w, e, final_pos) and e.order.type == "move":
 			e.order = {"type": "idle"}
+		return false
+	return true
 
 
 ## Moves from -> to if the destination cell is passable (and, on a diagonal cell change, both
