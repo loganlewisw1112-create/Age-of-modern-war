@@ -14,6 +14,7 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Combat = preload("res://sim/systems/combat.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
 const EVERY := 5            # each unit is re-evaluated every EVERY ticks (staggered by id)
 const ARRIVE := 2.5         # tiles from a patrol waypoint that count as arrived
@@ -92,6 +93,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				var e: Dictionary = units[k]
 				var off: Vector2 = slots[k] - pts[0]
 				e.erase("guard")
+				_track(w, e)
 				e.patrol = {"points": pts.duplicate(), "i": 0, "off": off, "visits": 0}
 				_go(w, e, _clamp(w, pts[0] + off), "attack_move")
 		"guard":
@@ -100,6 +102,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				if int(e.id) == tid:
 					continue
 				e.erase("patrol")
+				_track(w, e)
 				e.guard = {"target_id": tid, "goal": Vector2(-1000, -1000)}
 				_guard_step(w, e)
 		"set_formation":
@@ -108,15 +111,53 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 
 
 # ================================================================ tick
+## PERF5: only units holding a patrol/guard are walked (ascending id, as the old full scan did).
+## The set lives in w.cache.orders_pg (never saved): built by one pass over the unit index when
+## missing (new world, after a load), grown by apply_command (the only writer of patrol/guard),
+## and pruned here when a unit dies or loses both keys (direct orders, ops missions erase them).
 static func tick(w: SimWorld) -> void:
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" or (w.tick + int(id)) % EVERY != 0:
+	var c := _pg(w)
+	if c.dirty:
+		(c.ids as Array).sort()
+		c.dirty = false
+	var ids: Array = c.ids
+	var keep := []
+	var members: Dictionary = c.set
+	for id in ids:
+		var e = w.entities.get(id)
+		if e == null or e.kind != "unit" or not (e.has("patrol") or e.has("guard")):
+			members.erase(id)
+			continue
+		keep.append(id)
+		if (w.tick + int(id)) % EVERY != 0:
 			continue
 		if e.has("patrol"):
 			_patrol_step(w, e)
 		elif e.has("guard"):
 			_guard_step(w, e)
+	if keep.size() != ids.size():
+		c.ids = keep
+
+
+static func _pg(w: SimWorld) -> Dictionary:
+	var c = w.cache.get("orders_pg")
+	if c == null:
+		c = {"ids": [], "set": {}, "dirty": false}
+		for e in SimIndex.of(w, "unit"):
+			if SimIndex.alive(w, e) and (e.has("patrol") or e.has("guard")):
+				c.ids.append(int(e.id))
+				c.set[int(e.id)] = true
+		w.cache["orders_pg"] = c
+	return c
+
+
+static func _track(w: SimWorld, e: Dictionary) -> void:
+	var c := _pg(w)
+	var id := int(e.id)
+	if not c.set.has(id):
+		c.set[id] = true
+		c.ids.append(id)
+		c.dirty = true
 
 
 static func _patrol_step(w: SimWorld, e: Dictionary) -> void:

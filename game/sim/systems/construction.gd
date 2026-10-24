@@ -7,6 +7,8 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): builder units
 
 const MAX_BUILD_RANGE := 20.0
 const BUILD_REACH := 1.0   # engineer must be within this distance of the footprint edge
@@ -22,9 +24,8 @@ static func footprint_dist(pos: Vector2, cell: Vector2i, size: int) -> float:
 
 
 static func building_at_cell(w: SimWorld, cell: Vector2i) -> bool:
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind != "building":
+	for b in SimIndex.of(w, "building"):
+		if not SimIndex.alive(w, b):
 			continue
 		var bc: Vector2i = b.cell
 		var s := int(b.size)
@@ -152,17 +153,15 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 						return "Cannot build on a road, bridge or ford."
 					_:
 						return "Terrain is not buildable here."
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind != "building":
+	for b in SimIndex.of(w, "building"):
+		if not SimIndex.alive(w, b):
 			continue
 		var bc: Vector2i = b.cell
 		var bs := int(b.size)
 		if origin.x < bc.x + bs and origin.x + size > bc.x and origin.y < bc.y + bs and origin.y + size > bc.y:
 			return "Blocked by another building."
-	for id in w.entities:
-		var r: Dictionary = w.entities[id]
-		if r.kind != "resource":
+	for r in SimIndex.of(w, "resource"):
+		if not SimIndex.alive(w, r):
 			continue
 		var rc := w.cell_of(r.pos)
 		if rc.x >= origin.x and rc.x < origin.x + size and rc.y >= origin.y and rc.y < origin.y + size:
@@ -273,11 +272,9 @@ static func _order_builders(w: SimWorld, cmd: Dictionary, building_id: int) -> v
 
 
 # ================================================================ tick
+## Only can_build units ever hold a "build" order (validate_command), so walk that subset (PERF5).
 static func tick(w: SimWorld) -> void:
-	for id in w.entities.keys():
-		var e = w.entities.get(id)
-		if e == null or e.kind != "unit":
-			continue
+	for e in Subsets.units(w, Subsets.BUILDER):
 		var o: Dictionary = e.order
 		if o.type != "build":
 			continue

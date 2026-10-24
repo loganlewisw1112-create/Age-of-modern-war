@@ -13,6 +13,7 @@ extends RefCounted
 ## so Hold-the-bridge, the HUD and older callers are unchanged.
 
 const Movement = preload("res://sim/systems/movement.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
 const NUDGE_RADIUS := 3.0   # units on a collapsing span swim to a free cell within this, else drown
 const CLEAN_EVERY := 10     # ticks between sweeps that drop explicit attacks on a ruined span
@@ -23,9 +24,8 @@ const CLEAN_EVERY := 10     # ticks between sweeps that drop explicit attacks on
 static func tick(w: SimWorld) -> void:
 	if w.tick % CLEAN_EVERY != 0 or not any_ruined(w):
 		return
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" or String(e.order.get("type", "")) != "attack":
+	for e in SimIndex.of(w, "unit"):
+		if String(e.order.get("type", "")) != "attack" or not SimIndex.alive(w, e):
 			continue
 		var t = w.entities.get(int(e.order.get("target_id", -1)))
 		if t != null and t.kind == "structure" and String(t.get("state", "")) == "ruined":
@@ -87,11 +87,13 @@ static func on_destroyed(w: SimWorld, e: Dictionary, killer_owner: int) -> void:
 	for c in cells:
 		on_span[c] = true
 	var drowned := []
-	for id in w.entities:
-		var u: Dictionary = w.entities[id]
-		if u.kind == "unit" and int(u.order.get("target_id", -1)) == int(e.id) and String(u.order.get("type", "")) == "attack":
+	for u in SimIndex.of(w, "unit").duplicate():
+		if not SimIndex.alive(w, u):
+			continue
+		var id := int(u.id)
+		if int(u.order.get("target_id", -1)) == int(e.id) and String(u.order.get("type", "")) == "attack":
 			_drop_attack(u)
-		if u.kind != "unit" or not on_span.has(w.cell_of(u.pos)):
+		if not on_span.has(w.cell_of(u.pos)):
 			continue
 		var cell := w.cell_of(u.pos)
 		var free := Movement.nearest_free_cell(w, cell, Movement.move_class(u))

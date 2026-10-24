@@ -13,6 +13,7 @@ extends RefCounted
 ## NOTE: do not preload combat.gd here (combat preloads this file; avoid a cyclic preload).
 
 const Q := 1.0 / 1024.0
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
@@ -117,9 +118,8 @@ static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: floa
 	var r2 := NEAR_MISS_R * NEAR_MISS_R
 	var grid = w.cache.get("combat_grid")
 	if grid == null:
-		for id in w.entities:
-			var e: Dictionary = w.entities[id]
-			if e.kind == "unit" and e.has("morale") and w.is_enemy(shooter_owner, int(e.owner)):
+		for e in SimIndex.of(w, "unit"):
+			if e.has("morale") and w.is_enemy(shooter_owner, int(e.owner)) and SimIndex.alive(w, e):
 				var p: Vector2 = e.pos
 				if p.distance_squared_to(at) <= r2:
 					suppress(w, e, amount)

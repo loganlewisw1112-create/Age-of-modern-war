@@ -9,6 +9,8 @@ extends RefCounted
 ## JAM_MULT, or the best `jam_mult` of a researched project (electronic_resilience: 0.85).
 
 const PData = preload("res://sim/systems/progression_data.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): per-def unit subsets
 
 const JAM_EVERY := 10
 const JAM_TICKS := 20
@@ -101,18 +103,15 @@ static func ew_tick(w: SimWorld) -> void:
 	if w.tick % JAM_EVERY != 0:
 		return
 	var jammers := []
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind == "unit":
-			var r := ew_radius(String(e.def))
-			if r > 0.0:
-				jammers.append([int(e.owner), Vector2(e.pos), r * r])
+	for e in Subsets.units(w, Subsets.EW):   # PERF5: only units whose def has ew_radius > 0
+		var r := ew_radius(String(e.def))
+		if r > 0.0:
+			jammers.append([int(e.owner), Vector2(e.pos), r * r])
 	if jammers.is_empty():
 		return
 	var until := w.tick + JAM_TICKS
-	for id in w.entities:
-		var t: Dictionary = w.entities[id]
-		if t.kind != "unit":
+	for t in SimIndex.of(w, "unit"):
+		if not SimIndex.alive(w, t):
 			continue
 		var tp: Vector2 = t.pos
 		var town := int(t.owner)

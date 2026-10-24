@@ -27,6 +27,7 @@ const Bridges = preload("res://sim/systems/bridges.gd")
 const MapGen = preload("res://sim/map_gen.gd")
 const Progression = preload("res://sim/systems/progression.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
@@ -582,19 +583,18 @@ func econ(key: String) -> float:
 
 
 func units_of(fid: int) -> Array:
+	# G3b (PERF5 CR): shared per-tick index instead of a full entity scan; same members, ascending id.
 	var out := []
-	for id in entities:
-		var e: Dictionary = entities[id]
-		if e.kind == "unit" and int(e.owner) == fid:
+	for e in SimIndex.of(self, "unit"):
+		if int(e.owner) == fid and entities.has(int(e.id)):
 			out.append(e)
 	return out
 
 
 func buildings_of(fid: int, def_id: String = "") -> Array:
 	var out := []
-	for id in entities:
-		var e: Dictionary = entities[id]
-		if e.kind == "building" and int(e.owner) == fid and (def_id == "" or e.def == def_id):
+	for e in SimIndex.of(self, "building"):
+		if int(e.owner) == fid and (def_id == "" or e.def == def_id) and entities.has(int(e.id)):
 			out.append(e)
 	return out
 

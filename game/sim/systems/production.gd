@@ -6,6 +6,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
 const QUEUE_MAX := 5
 
@@ -70,10 +71,11 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 
 
 # ================================================================ tick
+## Buildings only, ascending id (PERF5: the index instead of a full w.entities scan). Units spawned
+## by _complete() are never buildings, so the list (fixed before the loop) misses nothing.
 static func tick(w: SimWorld) -> void:
-	for id in w.entities.keys():
-		var b = w.entities.get(id)
-		if b == null or b.kind != "building":
+	for b in SimIndex.of(w, "building").duplicate():
+		if not SimIndex.alive(w, b):
 			continue
 		var bd := Content.building(b.def)
 		if not bd.has("produces"):

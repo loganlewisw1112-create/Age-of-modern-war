@@ -13,6 +13,8 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): per-def unit subsets
 
 const HISTORY_MAX := 10
 const REPORT_EVERY := 600        # 30 s without a phase change -> status report
@@ -116,24 +118,29 @@ static func _enemies_near(w: SimWorld, fid: int, p: Vector2, r: float) -> Array:
 
 ## Nearest own built HQ/depot (and logistics truck if trucks=true) to p, or null.
 static func _nearest_support(w: SimWorld, fid: int, p: Vector2, trucks: bool):
+	# PERF5: own buildings from the index, trucks from the is_supply subset. The old single scan
+	# kept the FIRST (lowest id) of equally near candidates; the id tie-break below keeps that.
 	var best = null
 	var bd := INF
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if int(e.owner) != fid:
+	for e in SimIndex.of(w, "building"):
+		if int(e.owner) != fid or not SimIndex.alive(w, e):
 			continue
-		var ok := false
-		if e.kind == "building":
-			ok = bool(Content.building(e.def).get("supply_point", false)) and bool(e.get("built", false))  # G3a flag
-		elif e.kind == "unit" and trucks:
-			ok = bool(Content.unit(e.def).get("is_supply", false))
-		if not ok:
+		if not (bool(Content.building(e.def).get("supply_point", false)) and bool(e.get("built", false))):  # G3a flag
 			continue
 		var q: Vector2 = e.pos
 		var d := q.distance_to(p)
-		if d < bd:
+		if d < bd or (d == bd and best != null and int(e.id) < int(best.id)):
 			bd = d
 			best = e
+	if trucks:
+		for e in Subsets.units(w, Subsets.SUPPLY):
+			if int(e.owner) != fid:
+				continue
+			var q: Vector2 = e.pos
+			var d := q.distance_to(p)
+			if d < bd or (d == bd and best != null and int(e.id) < int(best.id)):
+				bd = d
+				best = e
 	return best
 
 

@@ -14,6 +14,7 @@ extends RefCounted
 
 const EVERY := 20
 const COUNT_MIN_FRAC := 0.3
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
 
 static func _cfg() -> Dictionary:
@@ -71,9 +72,10 @@ static func recompute(w: SimWorld) -> void:
 	var st := state(w)
 	var n: int = int(st.cols) * int(st.rows)
 	var present := {}   # sector -> team, or -2 when contested by two or more teams
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" and e.kind != "building":
+	# PERF5: units then buildings from the index. The result per sector (one team, or -2 when two
+	# or more teams are present) does not depend on visiting order, so this matches the old scan.
+	for e in SimIndex.of(w, "unit") + SimIndex.of(w, "building"):
+		if not SimIndex.alive(w, e):
 			continue
 		var fid := int(e.owner)
 		if not w.factions.has(fid) or not bool(w.factions[fid].alive):

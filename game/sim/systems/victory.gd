@@ -21,6 +21,7 @@ extends RefCounted
 ## - Territory: sim/systems/territory.gd, ticked from here (no SYSTEM_ORDER change needed).
 
 const Territory = preload("res://sim/systems/territory.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const MapGen = preload("res://sim/map_gen.gd")
 
 const MODES := ["hq_elimination", "territory", "hold_bridge", "combined", "endless"]
@@ -86,9 +87,8 @@ static func tick(w: SimWorld) -> void:
 
 static func _eliminate(w: SimWorld) -> void:
 	var has_hq := {}
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind == "building" and _is_hq(String(e.def)):
+	for e in SimIndex.of(w, "building"):
+		if _is_hq(String(e.def)) and SimIndex.alive(w, e):
 			has_hq[int(e.owner)] = true
 	var changed := false
 	for fid in w.factions:
@@ -236,10 +236,9 @@ static func bridge_entity(w: SimWorld):
 		var b = w.entities.get(int(bid))
 		if b != null:
 			return b
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind == "structure" and e.has("cells"):
-			w.cache["victory_bridge_id"] = int(id)
+	for e in SimIndex.of(w, "structure"):
+		if e.has("cells") and SimIndex.alive(w, e):
+			w.cache["victory_bridge_id"] = int(e.id)
 			return e
 	return null
 
@@ -254,14 +253,11 @@ static func _bridge_sample(w: SimWorld) -> void:
 	var bp: Vector2 = b.pos
 	var r2 := BRIDGE_RADIUS * BRIDGE_RADIUS
 	var holder := -1
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit":
-			continue
+	for e in SimIndex.of(w, "unit"):
 		var fid := int(e.owner)
 		if not w.factions.has(fid) or not bool(w.factions[fid].alive):
 			continue
-		if (e.pos as Vector2).distance_squared_to(bp) > r2:
+		if (e.pos as Vector2).distance_squared_to(bp) > r2 or not SimIndex.alive(w, e):
 			continue
 		var t := team_of(w, fid)
 		if holder == -1:
@@ -302,9 +298,8 @@ static func progress(w: SimWorld, team: int) -> Dictionary:
 						enemies += 1
 				var own := 0
 				var foe := 0
-				for id in w.entities:
-					var e: Dictionary = w.entities[id]
-					if e.kind == "building" and _is_hq(String(e.def)) and w.factions.has(int(e.owner)):
+				for e in SimIndex.of(w, "building"):
+					if _is_hq(String(e.def)) and w.factions.has(int(e.owner)) and SimIndex.alive(w, e):
 						if team_of(w, int(e.owner)) == team:
 							own += 1
 						else:

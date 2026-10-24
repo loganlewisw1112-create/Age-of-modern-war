@@ -8,6 +8,8 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): gatherer units
 
 const HARVEST_REACH := 1.2     # engineer harvests while within this distance of the resource pos
 const DROP_REACH := 1.2        # delivers within this distance of the deposit footprint edge
@@ -58,9 +60,8 @@ static func _gatherers(w: SimWorld, cmd: Dictionary) -> Array:
 static func _nearest_drop(w: SimWorld, fid: int, pos: Vector2):
 	var best = null
 	var best_d := INF
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind != "building" or int(b.owner) != fid or not b.built:
+	for b in SimIndex.of(w, "building"):
+		if int(b.owner) != fid or not b.built or not SimIndex.alive(w, b):
 			continue
 		if not bool(Content.building(b.def).get("deposit", false)):
 			continue
@@ -80,9 +81,8 @@ static func _target_resource(w: SimWorld, e: Dictionary):
 	var want := String(o.get("res", e.carry.res))
 	var best = null
 	var best_d := INF
-	for id in w.entities:
-		var c: Dictionary = w.entities[id]
-		if c.kind != "resource" or c.res != want or int(c.amount) <= 0:
+	for c in SimIndex.of(w, "resource"):
+		if c.res != want or int(c.amount) <= 0 or not SimIndex.alive(w, c):
 			continue
 		var d: float = Vector2(e.pos).distance_squared_to(c.pos)
 		if d < best_d:
@@ -109,10 +109,10 @@ static func _begin_drop(w: SimWorld, e: Dictionary) -> void:
 
 
 # ================================================================ tick
+## Only can_gather units ever hold a "gather" order (validate_command), so walk that subset (PERF5).
 static func tick(w: SimWorld) -> void:
-	for id in w.entities.keys():
-		var e = w.entities.get(id)
-		if e == null or e.kind != "unit":
+	for e in Subsets.units(w, Subsets.GATHERER):
+		if not w.entities.has(int(e.id)):
 			continue
 		var o: Dictionary = e.order
 		if o.type != "gather":

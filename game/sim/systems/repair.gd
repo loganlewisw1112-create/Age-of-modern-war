@@ -19,6 +19,7 @@ extends RefCounted
 const Construction = preload("res://sim/systems/construction.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const Bridges = preload("res://sim/systems/bridges.gd")
+const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): repairer units
 
 const REACH := 1.5
 const CHUNK_M := 100000
@@ -198,10 +199,12 @@ static func _block(w: SimWorld, e: Dictionary, tid: int, reason: String) -> void
 	Construction.make_idle(e)
 
 
+## Only repairers (can_build or can_repair) ever hold a "repair" order (_engineers), so walk that
+## subset (PERF5), ascending id as before.
 static func tick(w: SimWorld) -> void:
-	for id in w.entities.keys():
-		var e = w.entities.get(id)
-		if e == null or e.kind != "unit" or String(e.order.get("type", "")) != "repair":
+	for e in Subsets.units(w, Subsets.REPAIRER):
+		var id := int(e.id)
+		if not w.entities.has(id) or String(e.order.get("type", "")) != "repair":
 			continue
 		var tid := int(e.order.get("target_id", -1))
 		var t = w.entities.get(tid)
@@ -279,7 +282,6 @@ static func _work_bridge(w: SimWorld, e: Dictionary, t: Dictionary) -> void:
 		t.repair_progress = 0.0
 		t.repair_paid = 0
 		Bridges.on_repaired(w, t)
-		for id in w.entities.keys():
-			var o = w.entities.get(id)
-			if o != null and o.kind == "unit" and String(o.order.get("type", "")) == "repair" and int(o.order.get("target_id", -1)) == int(t.id):
+		for o in Subsets.units(w, Subsets.REPAIRER):
+			if String(o.order.get("type", "")) == "repair" and int(o.order.get("target_id", -1)) == int(t.id):
 				Construction.make_idle(o)
