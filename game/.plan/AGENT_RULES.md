@@ -47,3 +47,6 @@ Never claim anything you did not run. "Not verified" is an acceptable answer, bu
 - `tests/run.sh` takes 3-6 minutes now. While iterating, use `--only=<file>`, and run the full suite once at the end (in hb.sh).
 - `make_world()` in tests gives an inert side 1. Use `make_world({}, true)` for a live AI.
 - Godot GDScript gotchas: a bare `randf()` inside a class resolves to the GLOBAL RNG, so use `w.rng`. `var x := dict.field` cannot infer a type. Never use var_to_str for state.
+
+## Visual direction (owner, 2026-10-23)
+- Art, UI and scale agents: look at `docs/vision/README.md` and the images in `docs/vision/2026-10-23/` (view at most 2 with Read). `06_forward_base_tank_company.webp` is closest to the current build. These are concept references, and their "Stage 15" label is NOT a scope change (13 stages, DEC-03).
