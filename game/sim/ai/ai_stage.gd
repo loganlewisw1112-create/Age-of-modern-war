@@ -103,6 +103,14 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 		return
 	var defending := String(st.objective) == "defend"
 	var core_ok := army_pop * 3 >= int(st.attack_pop) and not defending
+	# AI5-3: once all-in, the bank waits for a full launch-size army (river s2 / valley s1+s2 drew at
+	# max_ticks: every side banked 6000-9600 cr for 30k+ ticks with pop 9-29 of 50-80, so each wave
+	# was a 5-25 pop trickle into towers and no side ever won). Same big-map scaling as ai_army.
+	if bool(st.get("all_in", false)):
+		var thr := float(int(st.attack_pop))
+		if U.map_scale(w) > 1.2:
+			thr *= minf(2.5, U.map_scale(w))
+		core_ok = core_ok and float(army_pop) >= thr
 	var lab = _research_building(w, fid, ctx)
 	var unmet := []
 	var rest_ok := true

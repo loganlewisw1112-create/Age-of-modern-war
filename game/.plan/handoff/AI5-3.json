@@ -1,0 +1,33 @@
+{
+ "agent": "AI5-3", "gen": 1, "calls_used": 58, "tokens_used_est": 430000,
+ "done": [
+  "Diagnosis (soak --ai-breach-log on river s2, valley s1, valley s2 = run d1, code = cfe7bc5 + diag only; all 3 still draw: hashes 46292c93.., b2b2a236.., c96d9cb1..). Walls are NOT the stall cause: AI wall lines never enclose a base, so Movement.can_reach is always true (bwhy tally: 'reach' 1000s of times, never a blocked case) -> the old breach path can never fire. That is why breaches=0 everywhere.",
+  "Real stall cause 1 (all 3 configs): the G3b stage bank (ai_stage.gd, st.g4.reserve) holds 6000-9600 credits + 800-1400 ore for 30k+ ticks while army pop stays 9-29 of 50-80 (credits come only from the 6 cr/s HQ stipend). core_ok only needed army_pop >= attack_pop/3, so armies hovered at a third of the launch size and every wave was a 5-25 pop trickle into towers/walls. Example river s2 t=60000: f0 cr 2950 reserve 6000, f1 cr 1760 reserve 6000, pop 9 and 22 of 50. Valley s1 t=60000: f1 cr 5500 sal 7234 pop 29/80 idle at regroup, reserve 6000.",
+  "Real stall cause 2 (river s2): small-map all-in trickle launched at thr/2 (= 6 pop): logs show 'army pop 5; attacking (wave 6)', 'army pop 7 (wave 7)' repeatedly. Late game (t>90k) the small map is mined out (f1 salvage_left 200-1300, sal stock 20-60 -> 2000-3800 credits idle, units need salvage), f0 credit-starved (50-100 cr, 3500 ore idle). Complementary starvation; the game must be decided before ~t=90k.",
+  "Valley: f0 (human_a, top centre 126,10) sent 11 waves of 23-27 pop 241 tiles to Machine (23,232), each lost ~70%; f2 only eliminated ~t=102k. f1 human_b ore-starved (ore 3-90 with 5-11 crews on ore), ammo dips to 0-260.",
+  "Code change A, sim/ai/ai_stage.gd Stage.manage: while st.all_in, banking (core_ok) also needs army_pop >= full launch threshold (attack_pop, x min(2.5, map_scale) when map_scale > 1.2, same as ai_army).",
+  "Code change B, sim/ai/ai_army.gd manage_army: removed 'if trickle: thr = maxi(6, thr / 2)' (comment left): small-map all-in launches at the full threshold; reinforcement stays continuous.",
+  "Code change C, sim/ai/ai_g4b.gd manage_breach: when the goal IS reachable, _detour_fort() looks at up to 12 wave units' own remaining paths; if remaining path > 1.5 x straight + 8 and a remembered enemy wall/gate (g.fort_seen) is within 3 tiles of the straight unit->goal line and 20 tiles of the unit, _siege() orders only non-small-arms units of the wave + artillery within 40 tiles to attack it, combat engineers plant charges (max 2), counts g.breaches/g.charges, same BREACH_STUCK skip. New consts DETOUR_MULT/ADD/LINE/NEAR. Plus _why(g, reason) tally in g5.bwhy / g5.bwhy_last (counts only, never a decision input; it is in ai_state so it changes the state hash vs cfe7bc5 runs).",
+  "Code change D (task 3), sim/ai/ai_g4b.gd: heavy_items() lists crushers (b_scrap_mech) before salvo items; manage_production holds the facility (skips cheaper items there) while a wanted crusher is missing and unaffordable, so rocket trucks no longer eat its ore.",
+  "tools/soak.gd: --ai-breach-log [--diag-every=N, default 2400] prints 'SOAK DIAG t f cr sal ore ammo fuel pop units obj mode focus saving reserve | crews plan | orders | wave cen enemy_hq_d foes14 tgt | bwhy last seen skip | q' per alive AI side, plus up to 12 new AI log lines per side as 'SOAK DIAGLOG'. Read-only referee view; new const AiU.",
+  "Compile clean (godot --headless --quit-after 60: no SCRIPT ERROR). test_ai --only on the A+B+C+D code: RESULT pass=18 fail=0, TESTS OK (.plan/shots/AI5-3/test_ai_run1.txt)."
+ ],
+ "in_flight": "Run d2 (code A+B+C+D) started ~call 56, NOT finished at handoff, left running per orch: TAG=d2 bash .plan/shots/AI5-3/run_diag.sh (river_crossing_s s2 stages 7,8,9; valley_conquest_l s1 and s2 stages 9,7,8; sides 3 human_a,human_b,machine; normal; 120000 ticks; --ai-breach-log --ai53soak). Outputs .plan/shots/AI5-3/soak_{river_crossing_s_s2,valley_conquest_l_s1,valley_conquest_l_s2}_d2.txt; done when .plan/shots/AI5-3/run_diag_d2.log prints ALL3_DONE (~10-25 min). Godot processes with '--ai53soak' in the command line are AI5-3's.",
+ "remaining": [
+  "1. Read d2: grep -h 'SOAK RESULT\\|SOAK INVARIANTS\\|SOAK G4B f' .plan/shots/AI5-3/soak_*_d2.txt. Check winners, fails=0, breaches>0 (g4b probe 'breaches=' and SOAK DIAG bwhy 'siege').",
+  "2. If still drawing: look at SOAK DIAG reserve/pop/wave columns around t=40k-90k. Next levers, in order: (a) late-game (all_in and tick >= ~48000) drop the stage bank entirely while army_pop < 2 x threshold; (b) on big maps prefer the nearer enemy side as target when waves to the far one keep failing (valley f0 lost 11 waves to Machine 241 tiles away); (c) human_b ore: raise want_ore when ore < 200 and salvage > 1500.",
+  "3. Then rerun all 7 configs (3 at a time max): bash .plan/shots/AI5/run_soaks.sh launches 7 at once - instead run TAG=fin of run_diag.sh (3 drawn) plus a second script for river s1, heartland s1/s2 and the custom map (copy the 4 lines from .plan/shots/AI5/run_soaks.sh with output to .plan/shots/AI5-3/). Same configs, 120000 ticks; never raise max_ticks or weaken criteria. The 4 currently-winning configs must be rechecked because B (full trickle threshold) and A change all sides.",
+  "4. ai_bench 5k: godot --headless --path . -s sim/ai/tools/ai_bench.gd -- --units=5000 --map=valley_conquest_l --ticks=600 --factions=human_a,human_b ; need avg < 2 ms per side (in hb.sh).",
+  "5. test_ai --only again if code changes; full suite once in hb.sh: bash tests/run.sh.",
+  "6. Final report with every SOAK RESULT + INVARIANTS + G4B line."
+ ],
+ "files_touched": ["sim/ai/ai_g4b.gd", "sim/ai/ai_stage.gd", "sim/ai/ai_army.gd", "tools/soak.gd", ".plan/shots/AI5-3/run_diag.sh", ".plan/shots/AI5-3/run_diag_d1.log", ".plan/shots/AI5-3/soak_*_d1.txt", ".plan/shots/AI5-3/test_ai_run1.txt", ".plan/handoff/AI5-3.json"],
+ "test_state": "test_ai --only: pass=18 fail=0 TESTS OK on final code. Full suite NOT run. ai_bench NOT run. d1 diag soaks (pre-fix code): 3/3 draws, INVARIANTS fails=0. d2 (post-fix) in flight, unread.",
+ "gotchas": [
+  "A soak of 120000 ticks takes ~10-25 min wall with 3 in parallel (fast early: ~19k ticks/min, slower later).",
+  "Walls never enclose a base, so 'blocked' breach logic is dead code in practice; only the detour siege (change C) can produce breaches.",
+  "g5.bwhy lives in ai_state -> state hash differs from cfe7bc5 runs even where behaviour is the same.",
+  "Do not touch sim/systems/** (SIM10K-2 live), presentation/**, world.gd, content/**.",
+  "ai_econ.gd is CRLF; ai_g4b/ai_stage/ai_army/soak.gd are LF. Edits done with python replace (newline='')."
+ ]
+}

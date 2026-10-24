@@ -117,8 +117,8 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	var obj_mode := float(st.g3.terms.territory) > 0.0 or int(st.g3.terms.bridge) > 0
 	if obj_mode:
 		thr = maxi(6, int(round(float(thr) * OBJECTIVE_THR)))
-	if trickle:
-		thr = maxi(6, thr / 2)
+	# AI5-3: an all-in trickle on a small map still launches at the full threshold (half-size waves of
+	# 5-7 pop fed river s2's tower line for 80k ticks); reinforcement stays continuous once out.
 	var threat := _threat(w, fid, st, ctx)
 	if threat.active:
 		st.threat_tick = w.tick

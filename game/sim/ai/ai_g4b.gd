@@ -78,6 +78,7 @@ static func heavy_items(fac: String) -> Array:
 	if _heavy_cache.has(fac):
 		return _heavy_cache[fac]
 	var out := []
+	var salvo := []
 	var ids: Array = Content.ids("production")
 	ids.sort()
 	for pid in ids:
@@ -87,9 +88,13 @@ static func heavy_items(fac: String) -> Array:
 		for u in p.get("spawns", []):
 			var ud: Dictionary = Content.unit(String(u))
 			var wp := String(ud.get("weapon", ""))
-			if float(ud.get("crush_damage", 0)) > 0.0 or (wp != "" and int(Content.weapon(wp).get("salvo", 1)) > 1):
-				out.append(String(pid))
+			if float(ud.get("crush_damage", 0)) > 0.0:
+				out.append(String(pid))  # AI5-3: crushers first (b_scrap_mech was never fielded)
 				break
+			if wp != "" and int(Content.weapon(wp).get("salvo", 1)) > 1:
+				salvo.append(String(pid))
+				break
+	out.append_array(salvo)
 	_heavy_cache[fac] = out
 	return out
 
@@ -169,9 +174,12 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		return  # never ahead of the refinery / first waves (test_g2, test_g3 FFA offensive)
 	var f: Dictionary = w.factions[fid]
 	var have := _counts(ctx)
+	var saving_fac := {}  # AI5-3: facility held for a missing crusher (cheaper salvo items would eat its ore)
 	for wnt in _wants(w, fid, st, ctx):
 		var item := String(wnt[0])
 		var p := Content.production(item)
+		if saving_fac.has(String(p.get("facility", ""))):
+			continue
 		var unit_def := String((p.get("spawns", [""]) as Array)[0])
 		if int(have.get(unit_def, 0)) >= int(wnt[1]):
 			continue
@@ -185,7 +193,11 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		var pop := 0
 		for u in p.get("spawns", []):
 			pop += U.pop_of(String(u))
-		if int(f.pop) + int(ctx.queued_pop) + pop > int(f.pop_cap) or w.can_afford(fid, p.cost) != "":
+		if int(f.pop) + int(ctx.queued_pop) + pop > int(f.pop_cap):
+			continue
+		if w.can_afford(fid, p.cost) != "":
+			if int(have.get(unit_def, 0)) == 0 and float(Content.unit(unit_def).get("crush_damage", 0)) > 0.0:
+				saving_fac[String(p.facility)] = true
 			continue
 		if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(fac.id), "item": item}, "g4b:%s" % item):
 			var q: Dictionary = g5(st).queued
@@ -424,15 +436,24 @@ static func manage_breach(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 			break
 	if lead == null:
 		if wave.size() < 3:
+			_why(g, "wave<3")
 			return
 		for e in wave:
 			if not Movement.is_air(Movement.move_class(e)):
 				lead = e
 				break
 		if lead == null:
+			_why(g, "no_ground_lead")
 			return
 		goal = Vector2(st.attack_target)
 		if Movement.can_reach(w, lead, goal):
+			# AI5-3: reachable, but a seen enemy wall/gate on the straight line forces a long detour
+			# (line walls never enclose a base, so "blocked" alone never fired: breaches=0 everywhere)
+			var dt := _detour_fort(g, wave, goal)
+			if dt < 0:
+				_why(g, "reach")
+				return
+			_siege(w, fid, st, g, ctx, wave, dt)
 			return
 	var best_id := -1
 	var best_s := INF
@@ -449,7 +470,9 @@ static func manage_breach(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 			best_s = s
 			best_id = int(k)
 	if best_id < 0:
+		_why(g, "no_fort_near_goal(seen=%d)" % (g.fort_seen as Dictionary).size())
 		return
+	_why(g, "breach")
 	g.breach_t = w.tick
 	var best = null
 	for e in ctx.visible:
@@ -491,6 +514,105 @@ static func manage_breach(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 
 ## Enemy walls / gates in sight go into g.fort_seen (str id -> [cell x, cell y]). A remembered fort
 ## whose cell a wave unit stands within FORT_FORGET tiles of, but which is not in sight, is gone.
+const DETOUR_MULT := 1.5      # remaining path > this x straight line (+ DETOUR_ADD) = a detour
+const DETOUR_ADD := 8.0
+const DETOUR_LINE := 3.0      # a fort this close to the straight wave->goal line is "in the way"
+const DETOUR_NEAR := 20.0     # ... and this close to the wave unit
+
+
+## AI5-3: id of a remembered enemy wall/gate that sits on the straight line from a wave unit to the
+## goal, within DETOUR_NEAR of it, while that unit's own remaining path is a long detour; else -1.
+## Uses own paths and remembered (seen) forts only.
+static func _detour_fort(g: Dictionary, wave: Array, goal: Vector2) -> int:
+	var n := mini(wave.size(), 12)
+	for i in n:
+		var e: Dictionary = wave[i]
+		var path: Array = e.get("path", [])
+		var pi := int(e.get("path_i", 0))
+		if path.size() - pi < 2:
+			continue
+		var p := Vector2(e.pos)
+		var plen := 0.0
+		var prev := p
+		for j in range(pi, path.size()):
+			var q := Vector2(path[j])
+			plen += prev.distance_to(q)
+			prev = q
+		var straight := p.distance_to(goal)
+		if plen <= straight * DETOUR_MULT + DETOUR_ADD:
+			continue
+		var best := -1
+		var best_d := INF
+		for k in _sorted_keys(g.fort_seen):
+			if (g.breach_skip as Array).has(int(k)):
+				continue
+			var c: Array = g.fort_seen[k]
+			var cp := Vector2(float(c[0]) + 0.5, float(c[1]) + 0.5)
+			var d := p.distance_to(cp)
+			if d <= DETOUR_NEAR and d < best_d and _seg_dist(cp, p, goal) <= DETOUR_LINE:
+				best_d = d
+				best = int(k)
+		if best >= 0:
+			return best
+	return -1
+
+
+## AI5-3: siege a wall/gate in the way: only units whose weapon is not small arms (small arms do
+## x0.02 to fortifications) plus artillery in reach fire on it; combat engineers plant charges.
+## Infantry keeps its orders. Same no-damage skip rule as the blocked breach.
+static func _siege(w: SimWorld, fid: int, st: Dictionary, g: Dictionary, ctx: Dictionary, wave: Array, fort_id: int) -> void:
+	var best = null
+	for e in ctx.visible:
+		if int(e.id) == fort_id:
+			best = e
+			break
+	var hp := int(best.hp) if best != null else -1
+	var bh: Array = g.breach_hp
+	if int(bh[0]) == fort_id and hp >= 0 and hp >= int(bh[1]):
+		bh[2] = int(bh[2]) + 1
+		if int(bh[2]) >= BREACH_STUCK:
+			(g.breach_skip as Array).append(fort_id)
+			g.breach_hp = [-1, 0, 0]
+			_why(g, "siege_skip")
+			return
+	elif int(bh[0]) != fort_id or hp >= 0:
+		g.breach_hp = [fort_id, hp if hp >= 0 else 1 << 30, 0]
+	var c0: Array = g.fort_seen[str(fort_id)]
+	var wp := Vector2(float(c0[0]) + 0.5, float(c0[1]) + 0.5)
+	var hitters := []
+	for e in wave + (ctx.arty as Array):
+		if hitters.has(int(e.id)) or is_mortar_def(String(e.def)) or Vector2(e.pos).distance_to(wp) > 40.0:
+			continue
+		var wpn := String(Content.unit(String(e.def)).get("weapon", ""))
+		if wpn != "" and String(Content.weapon(wpn).get("class", "small_arms")) != "small_arms":
+			hitters.append(int(e.id))
+	var charges := 0
+	if best != null and Mech.charge_target_error(w, fid, best) == "":
+		for e in ctx.cengs:
+			if bool(Content.unit(String(e.def)).get("can_charge", false)) and Vector2(e.pos).distance_to(wp) <= 34.0 and charges < 2:
+				if U.submit(w, fid, st, {"type": "plant_charge", "unit_ids": [int(e.id)], "target_id": fort_id}, "g4b:charge:%d" % int(e.id)):
+					charges += 1
+	if hitters.is_empty() and charges == 0:
+		_why(g, "siege_no_hitters")
+		return
+	if not hitters.is_empty():
+		U.submit(w, fid, st, {"type": "attack", "unit_ids": hitters, "target_id": fort_id}, "g4b:breach")
+	g.breach_t = w.tick
+	g.breaches = int(g.breaches) + 1
+	g.charges = int(g.charges) + charges
+	_why(g, "siege")
+	U.log_line(st, w, "g4b: breach (detour) #%d at %s hp=%d with %d hitters, %d charges" % [fort_id, str(wp), hp, hitters.size(), charges])
+
+
+## Breach decision tally (soak --ai-breach-log reads g.bwhy; counts only, never a decision input).
+static func _why(g: Dictionary, reason: String) -> void:
+	if not g.has("bwhy"):
+		g.bwhy = {}
+	var k := reason if not reason.begins_with("no_fort") else "no_fort_near_goal"
+	g.bwhy[k] = int(g.bwhy.get(k, 0)) + 1
+	g.bwhy_last = reason
+
+
 static func _remember_forts(w: SimWorld, g: Dictionary, ctx: Dictionary, wave: Array) -> void:
 	var seen: Dictionary = g.fort_seen
 	var vis := {}

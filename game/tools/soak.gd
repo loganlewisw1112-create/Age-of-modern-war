@@ -28,6 +28,7 @@ var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0
 const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
 const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
 const AiController = preload("res://sim/ai/ai_controller.gd")
+const AiU = preload("res://sim/ai/ai_util.gd")
 const MapIOS = preload("res://sim/map_io.gd")
 const MapGenS = preload("res://sim/map_gen.gd")
 const FortifyS = preload("res://sim/systems/fortify.gd")
@@ -35,6 +36,11 @@ const TransportS = preload("res://sim/systems/transport.gd")
 ## G4 (AI5): G4b evidence per side from the event stream (walls built, transports used, new units)
 const G4B_UNITS := ["a_apc", "a_sniper", "a_mortar", "a_combat_engineer", "b_flamer", "b_halftrack", "b_scrap_mech", "b_rocket_truck"]
 var _g4 := {}
+## AI5-3: --ai-breach-log [--diag-every=N] prints "SOAK DIAG" lines per AI side (economy, wave,
+## breach decision tally, queues, new AI log lines). Read-only: never changes the match.
+var _diag := false
+var _diag_every := 2400
+var _diag_log_t := {}
 
 
 func _init() -> void:
@@ -50,6 +56,10 @@ func _init() -> void:
 			difficulty = a.substr(13)
 		elif a == "--ailog":
 			_ailog = true
+		elif a == "--ai-breach-log":
+			_diag = true
+		elif a.begins_with("--diag-every="):
+			_diag_every = maxi(60, int(a.substr(13)))
 	var c := MatchCfg.from_args(OS.get_cmdline_user_args(), seed_value)
 	# G4 (AI5): --mapfile=<path.rtsmap> plays an editor / exported file map (--export-map=<id> writes
 	# a built-in map to that path first); --factions=a,b,.. overrides the file's player factions.
@@ -131,6 +141,8 @@ func _init() -> void:
 			_check_invariants(w)
 		if w.tick % SUMMARY_EVERY == 0:
 			_summary(w, Time.get_ticks_msec() - t0)
+		if _diag and w.tick % _diag_every == 0:
+			_print_diag(w)
 	_check_invariants(w)
 	var winner := "none"
 	if w.match_state.ended and int(w.match_state.winner) != SimWorld.NEUTRAL:
@@ -363,3 +375,73 @@ func _unit_or_cargo(w: SimWorld, id: int):
 		if int(u.id) == id:
 			return u if int(u.owner) == int(c.owner) else null
 	return null
+
+
+## AI5-3 diagnostics (--ai-breach-log). Soak-side view (may read any entity: this is the referee).
+func _print_diag(w: SimWorld) -> void:
+	var hqs := {}
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind == "building" and AiU.is_hq_def(String(e.def)):
+			hqs[int(e.owner)] = Vector2(e.pos)
+	for fid in w.ai_state:
+		if not w.factions[fid].alive:
+			continue
+		var st: Dictionary = w.ai_state[fid]
+		var f: Dictionary = w.factions[fid]
+		var fs: Dictionary = f.stock
+		var crews := {}
+		var orders := {}
+		var n_units := 0
+		for e in w.units_of(fid):
+			n_units += 1
+			var ot := String(e.order.type)
+			if bool(Content.unit(e.def).get("can_gather", false)):
+				var k := ot + ("/" + String(e.order.get("res", "")) if e.order.has("res") else "")
+				crews[k] = int(crews.get(k, 0)) + 1
+			else:
+				orders[ot] = int(orders.get(ot, 0)) + 1
+		var wave := []
+		for id in st.get("attack_group", []):
+			var e = w.entities.get(int(id))
+			if e != null and int(e.owner) == fid:
+				wave.append(e)
+		var cen := Vector2(-1, -1)
+		var near_foes := 0
+		if not wave.is_empty():
+			cen = Vector2.ZERO
+			for e in wave:
+				cen += Vector2(e.pos)
+			cen /= float(wave.size())
+			for id in w.entities:
+				var o: Dictionary = w.entities[id]
+				if o.kind == "unit" and int(o.owner) != fid and int(o.owner) >= 0 and Vector2(o.pos).distance_to(cen) <= 14.0:
+					near_foes += 1
+		var hq_d := INF
+		for o in hqs:
+			if int(o) != fid and cen.x >= 0.0:
+				hq_d = minf(hq_d, cen.distance_to(hqs[o]))
+		var focus := ""
+		var fe = w.entities.get(int(st.get("focus_id", -1)))
+		if fe != null:
+			focus = "%s#%d" % [String(fe.def), int(fe.id)]
+		var queues := []
+		for b in w.buildings_of(fid):
+			for q in b.get("queue", []):
+				queues.append(String(q.item))
+		var g5: Dictionary = st.get("g5", {})
+		print("SOAK DIAG t=%d f%d cr=%d sal=%d ore=%d ammo=%d fuel=%d pop=%d/%d units=%d obj=%s mode=%s focus=%s saving=%s reserve=%s | crews=%s plan=%s | orders=%s | wave=%d cen=%s enemy_hq_d=%.0f foes14=%d tgt=%s | bwhy=%s last=%s seen=%d skip=%d | q=%s" % [
+			w.tick, fid, int(f.credits), int(fs.salvage), int(fs.ore), int(fs.get("ammo", 0)), int(fs.get("fuel", 0)), int(f.pop), int(f.pop_cap), n_units,
+			String(st.get("objective", "")), String(st.get("army_mode", "")), focus, String(st.get("saving_for", "")), str(st.get("g4", {}).get("reserve", {})),
+			str(crews), str(st.get("gather_plan", {})), str(orders), wave.size(), str(cen.round()), hq_d, near_foes,
+			str(Vector2(st.get("attack_target", Vector2.ZERO)).round()), str(g5.get("bwhy", {})), String(g5.get("bwhy_last", "")),
+			(g5.get("fort_seen", {}) as Dictionary).size(), (g5.get("breach_skip", []) as Array).size(), str(queues)])
+		var last_t := int(_diag_log_t.get(fid, -1))
+		var shown := 0
+		for l in st.get("log", []):
+			var ls := String(l)
+			var t := int(ls.substr(3, ls.find("]") - 3)) if ls.begins_with("[t=") else -1
+			if t > last_t and shown < 12:
+				print("SOAK DIAGLOG f%d %s" % [fid, ls])
+				shown += 1
+		_diag_log_t[fid] = w.tick
