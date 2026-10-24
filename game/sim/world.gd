@@ -82,6 +82,7 @@ var event_log: Array = []         # rolling recent events (debug/UI)
 # ---------------------------------------------------------------- runtime caches (never serialized; rebuilt)
 var nav: Dictionary = {}          # owned by Movement (rebuild_nav)
 var cache: Dictionary = {}        # free-form per-system caches (spatial hash etc.)
+var native_enabled: bool = true   # G3b (N1-core): false forces GDScript movement/nav fallbacks; runtime only, not saved
 
 
 # ================================================================ construction
@@ -92,9 +93,13 @@ static func validate_config(c: Dictionary) -> String:
 	var sides: Array = c.get("sides", [])
 	if sides.size() < 2:
 		return "A match needs at least 2 sides."
-	var max_sides := int(rules.get("max_sides", 4))
+	var map_id := String(c.get("map", "river_crossing_s"))
+	if not MapGen.has_map(map_id):
+		return "Unknown map '%s'." % map_id
+	var mdef: Dictionary = MapGen.defs().get(map_id, {})
+	var max_sides := mini(int(rules.get("max_sides", 4)), int(mdef.get("max_sides", 4)))
 	if sides.size() > max_sides:
-		return "River Crossing supports at most %d sides." % max_sides
+		return "%s supports at most %d sides." % [String(mdef.get("name", map_id)), max_sides]
 	var teams := {}
 	for s in sides:
 		if Content.faction(String(s.get("faction", ""))).is_empty():
@@ -108,7 +113,7 @@ static func validate_config(c: Dictionary) -> String:
 			if int(st.id) == stage and st.get("playable_now", false):
 				playable = true
 		if not playable:
-			return "Stage %d is not playable in this slice (only Stage 8)." % stage
+			return "Stage %d is not playable in this slice (Stages 7-9 only)." % stage
 		if int(s.get("credits", 0)) < 0:
 			return "Starting credits cannot be negative."
 	if teams.size() < 2:
@@ -180,7 +185,7 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"pop": 0,
 			"pop_cap": 0,
 			"alive": true,
-			"spawn": spawns[i % spawns.size()],
+			"spawn": MapGen.spawn_for(w.map, i, c.sides.size()),  # MAP4: spawn_sets (G3b section 4)
 			"journal": [],   # ledger audit: {tick, credits, salvage, ore, cause}
 			"stats": {"trained": 0, "built": 0, "lost": 0, "killed": 0,
 				"ore_refined": 0, "power_ok_ticks": 0, "line_trained": 0, "officers_trained": 0},
@@ -443,19 +448,35 @@ func spawn_building(def_id: String, owner: int, origin: Vector2i, complete: bool
 	return id
 
 
-## The neutral river bridge as one attackable structure covering map.bridge_cells.
+## The neutral river bridges (MAP4, CONTRACTS_G3b section 4): one attackable structure per entry
+## of map.bridges (older maps/saves: map.bridge_cells as a single bridge). The hold bridge
+## (map.hold_bridge, default 0) spawns first, so Victory.bridge_entity() finds it.
 func _spawn_bridge() -> void:
-	var cells: Array = map.get("bridge_cells", [])
-	if cells.is_empty():
-		return
-	var sum := Vector2.ZERO
-	for c in cells:
-		sum += Vector2(c) + Vector2(0.5, 0.5)
+	var list: Array = map.get("bridges", [])
+	if list.is_empty():
+		var cells0: Array = map.get("bridge_cells", [])
+		if cells0.is_empty():
+			return
+		list = [{"id": 0, "cells": cells0}]
+	var hold := clampi(int(map.get("hold_bridge", 0)), 0, list.size() - 1)
+	var order := [hold]
+	for i in list.size():
+		if i != hold:
+			order.append(i)
 	var d := Content.building("bridge_span")
-	var id := _new_id()
-	entities[id] = {"id": id, "kind": "structure", "def": "bridge_span", "owner": NEUTRAL,
-		"pos": sum / float(cells.size()), "cells": cells.duplicate(), "state": "intact",
-		"hp": float(d.get("hp", 2500)), "max_hp": float(d.get("hp", 2500))}
+	for i in order:
+		var b: Dictionary = list[i]
+		var cells: Array = b.get("cells", [])
+		if cells.is_empty():
+			continue
+		var sum := Vector2.ZERO
+		for c in cells:
+			sum += Vector2(c) + Vector2(0.5, 0.5)
+		var id := _new_id()
+		entities[id] = {"id": id, "kind": "structure", "def": "bridge_span", "owner": NEUTRAL,
+			"pos": sum / float(cells.size()), "cells": cells.duplicate(), "state": "intact",
+			"hp": float(d.get("hp", 2500)), "max_hp": float(d.get("hp", 2500)), "bridge_index": int(i)}
+		b["state"] = "intact"
 	map.bridge_state = "intact"
 
 

@@ -15,8 +15,12 @@ func test_default_match_starts_with_two_sides() -> void:
 
 func test_invalid_configs_rejected_with_reason() -> void:
 	var c := SimWorld.default_config()
-	c.sides[0].stage = 7
-	check(SimWorld.validate_config(c).contains("not playable"), "stage 7 must be rejected in slice")
+	c.sides[0].stage = 6
+	check(SimWorld.validate_config(c).contains("not playable"), "stage 6 must be rejected in slice")
+	for st in [7, 9]:
+		c = SimWorld.default_config()
+		c.sides[0].stage = st
+		check(SimWorld.validate_config(c) == "", "stage %d is playable in the G3b slice" % st)
 	c = SimWorld.default_config()
 	c.sides[0].stage = 14
 	check(SimWorld.validate_config(c).contains("not a valid stage"), "stage 14 invalid ID")

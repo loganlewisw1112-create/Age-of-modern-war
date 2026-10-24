@@ -3,7 +3,7 @@ extends RefCounted
 ## Read-only access to versioned content definitions in res://content/*.json.
 ## Whole-number JSON values are normalized to int so ledger math stays integral.
 
-const FILES := ["units", "production", "buildings", "weapons", "rules", "stages", "factions"]
+const FILES := ["units", "production", "buildings", "weapons", "rules", "stages", "factions", "research"]
 
 static var _data: Dictionary = {}
 static var _loaded: bool = false
@@ -67,6 +67,11 @@ static func unit(id: String) -> Dictionary:
 
 static func production(id: String) -> Dictionary:
 	return table("production").get(id, {})
+
+
+## G3b research project def (content/research.json); {} when unknown.
+static func research(id: String) -> Dictionary:
+	return table("research").get(id, {})
 
 
 static func building(id: String) -> Dictionary:
