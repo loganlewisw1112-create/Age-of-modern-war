@@ -11,6 +11,9 @@ const HT = preload("res://presentation/hud/hud_theme.gd")
 const G3bData = preload("res://presentation/hud/g3b_data.gd")  # G3b (UI4): per-side stage
 const EXTRA_COLORS := ["#8a63b5", "#3a9fa5", "#c7c7bd", "#d07a9a"]
 const SLOT_COUNT := 4
+const Browser = preload("res://presentation/editor/ed2_map_browser.gd")  # G4e (ED2): built-in + custom maps
+const S = preload("res://presentation/editor/ed2_scenario.gd")
+const MapIO = preload("res://sim/map_io.gd")
 
 var slots: Array = []        # [{kind, faction, blurb, team, color, credits, diff, swatch}]
 var economy: OptionButton
@@ -19,6 +22,9 @@ var colors: Array = []        # html strings
 var diffs: Array = []
 var econs: Array = []
 var stage_ids: Array = []      # G3b: playable stage ids (stages.json playable_now)
+var browser: HBoxContainer     # G4e (ED2): ed2_map_browser.gd
+var menu: Node = null          # main_menu.gd (found in _ready): its MapOption stays in sync
+var _syncing := false
 
 
 func build() -> void:
@@ -37,6 +43,11 @@ func build() -> void:
 	econs = []
 	for e in Content.rules().get("economy_profiles", {}):
 		econs.append(String(e))
+	browser = Browser.new()
+	browser.name = "ED2MapBrowser"
+	add_child(browser)
+	browser.build()
+	browser.picked.connect(_on_map_picked)
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 6)
 	add_child(head)
@@ -229,6 +240,8 @@ func apply(cfg: Dictionary, stage: int) -> String:
 			if first_ai_diff == "":
 				first_ai_diff = diff
 		sides.append(side)
+	if is_custom():
+		reason = _apply_custom(cfg, sides, reason)  # G4e (ED2)
 	cfg.sides = sides
 	if economy != null and economy.selected >= 0 and economy.selected < econs.size():
 		cfg.economy = econs[economy.selected]
@@ -246,3 +259,130 @@ func describe(cfg: Dictionary) -> String:
 		var short := String(Content.faction(String(s.faction)).get("archetype", s.faction))
 		parts.append("%s [%s, T%d, Stage %d]" % [String(s.get("name", "?")), short, int(s.get("team", 0)) + 1, int(s.get("stage", 8))])
 	return "%d sides, %d teams: %s" % [cfg.get("sides", []).size(), teams.size(), ", ".join(parts)]
+
+
+# ------------------------------------------------------------------ G4e (ED2): custom maps
+func _ready() -> void:
+	var n := get_parent()
+	while n != null and not n.has_signal("start_requested"):
+		n = n.get_parent()
+	menu = n
+	if menu == null:
+		return
+	if not menu.start_requested.is_connected(finalize):
+		menu.start_requested.connect(finalize)   # connected before main.gd's handler, so it runs first
+	var mo = menu.get("map_opt")
+	if mo is OptionButton:
+		(mo as OptionButton).item_selected.connect(_on_menu_map)
+
+
+func is_custom() -> bool:
+	return browser != null and String(browser.current.get("kind", "")) == "custom"
+
+
+func custom_path() -> String:
+	return String(browser.current.get("path", "")) if is_custom() else ""
+
+
+func file_players() -> Array:
+	return browser.current.get("scenario", {}).get("players", []) if is_custom() else []
+
+
+## Browser pick: built-in -> select it in the menu's MapOption; custom -> prefill the slots
+## from the file's players.
+func _on_map_picked(e: Dictionary) -> void:
+	if _syncing:
+		return
+	_syncing = true
+	var mo = menu.get("map_opt") if menu != null else null
+	var rows = menu.get("_map_rows") if menu != null else null
+	if mo is OptionButton and rows is Array:
+		var want := String(e.get("id", ""))
+		if String(e.get("kind", "")) == "custom":
+			var best := -1
+			for i in (rows as Array).size():   # the roomiest built-in keeps the menu's side-count check quiet
+				if bool(rows[i].get("present", true)) and (best < 0 or int(rows[i].get("max_sides", 4)) > int(rows[best].get("max_sides", 4))):
+					best = i
+			want = String(rows[best].id) if best >= 0 else want
+		for i in (rows as Array).size():
+			if String(rows[i].id) == want and (mo as OptionButton).selected != i:
+				(mo as OptionButton).select(i)
+	if String(e.get("kind", "")) == "custom":
+		prefill(file_players())
+	_syncing = false
+	_emit()
+
+
+func _on_menu_map(i: int) -> void:
+	if _syncing or browser == null:
+		return
+	var rows = menu.get("_map_rows")
+	if rows is Array and i >= 0 and i < (rows as Array).size():
+		_syncing = true
+		browser.select_key(String(rows[i].id), false)
+		_syncing = false
+
+
+## Slots from a map file's players: slot 0 is always "You"; the rest are AI (or closed past the
+## file's player count).
+func prefill(players: Array) -> void:
+	for i in slots.size():
+		var s: Dictionary = slots[i]
+		if i >= players.size():
+			if i > 0:
+				s.kind.select(1)
+			continue
+		var p: Dictionary = players[i]
+		if i > 0:
+			s.kind.select(0)
+		var fid := String(p.get("faction", "human_a"))
+		if faction_ids.has(fid):
+			s.faction.select(faction_ids.find(fid))
+		s.team.select(clampi(int(p.get("team", i)), 0, SLOT_COUNT - 1))
+		var col := String(p.get("color", ""))
+		if col != "" and not colors.has(col):
+			colors.append(col)
+			s.color.add_icon_item(_swatch_tex(Color.html(col)), "")
+		if col != "":
+			s.color.select(colors.find(col))
+		s.credits.value = int(p.get("credits", s.credits.value))
+		if stage_ids.has(int(p.get("stage", 8))):
+			s.stage.select(stage_ids.find(int(p.get("stage", 8))))
+		if diffs.has(String(p.get("difficulty", ""))):
+			s.diff.select(diffs.find(String(p.difficulty)))
+	_refresh_rows()
+
+
+## cfg for a custom map: map_file, file slots on the sides, stock (scenario rules), scenario_rules.
+func _apply_custom(cfg: Dictionary, sides: Array, reason: String) -> String:
+	var ps := file_players()
+	cfg.map_file = custom_path()
+	var rules: bool = browser.scenario_rules()
+	cfg.scenario_rules = rules
+	for sd in sides:
+		var i := int(sd.slot)
+		if i >= ps.size():
+			if reason == "":
+				reason = "%s has %d player starts." % [String(browser.current.get("name", "This map")), ps.size()]
+			continue
+		sd.slot = int(ps[i].slot)
+		if rules and typeof(ps[i].get("stock")) == TYPE_DICTIONARY and not (ps[i].stock as Dictionary).is_empty():
+			sd.stock = (ps[i].stock as Dictionary).duplicate()
+	return reason
+
+
+## Runs on main_menu.start_requested before main.gd starts the match: scenario rules take the
+## victory block from the file (the victory builder only knows the skirmish presets).
+func finalize(cfg: Dictionary) -> void:
+	if not is_custom():
+		return
+	cfg.map_file = custom_path()
+	if not browser.scenario_rules():
+		return
+	var sc: Dictionary = browser.current.get("scenario", {}).duplicate(true)
+	S.normalize_victory(sc)
+	for k in ["victory", "victory_params", "victory_rules"]:
+		cfg.erase(k)
+	cfg.merge(MapIO.victory_cfg(sc), true)
+	if not cfg.has("victory"):
+		cfg.victory = "hq_elimination"
