@@ -1,11 +1,11 @@
-# RTS: Age of Modern War: playable slice (G0+G1+G2)
+# RTS: Age of Modern War: playable slice (G0+G1+G2+G3a)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
-You play **Human A (Modern Military Power) at Stage 8** against one autonomous AI on the **River Crossing** map: a river valley with one bridge, two fords, forests and ridges.
+You pick one of **three factions** (Human A, Human B, Machine) at Stage 8 and fight up to three autonomous AIs, free-for-all or in teams, on the **River Crossing** map: a river valley with one bridge, two fords, forests and ridges.
 
 ## What you can do in this build
-- Start a skirmish from the menu: seed, starting credits, AI difficulty, and victory (HQ elimination or Endless).
+- Start a skirmish from the menu (see G3a below for factions, teams and victory modes): seed, per-side credits and AI difficulty, economy profile.
   - All 13 stages are listed. Only Stage 8 is playable in this slice.
 - **Economy:**
   - Engineers gather salvage and ore and deliver them to the HQ or a depot.
@@ -40,6 +40,7 @@ Useful flags (append to the launcher):
 |---|---|
 | `--autostart` | Skip the menu |
 | `--autostart-seed=N` | Set the match seed |
+| `--autostart-factions=human_a,human_b,machine` | Skip the menu with these sides (you are the first) |
 | `--player-ai --speed=8` | Watch AI vs AI |
 | `--ui-playtest=<dir>` | Scripted UI playtest |
 | `--autoshot=<png> --autoshot-delay=N` | Save a screenshot after N seconds |
@@ -48,7 +49,7 @@ Useful flags (append to the launcher):
 ```bash
 bash game/tests/run.sh
 ```
-This runs 100 headless tests: ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and AI fairness. Other checks:
+This runs 144 headless tests: ledger conservation, command validation, placement rules, power/supply stalls, pathing, combat, fog fairness, victory, save round-trip, same-seed determinism, AI autonomy and AI fairness. Other checks:
 - `game/tools/soak.gd`: AI vs AI to a winner.
 - `game/tools/bench.gd`: sim performance.
 - `game/tools/ui_playtest.gd`: a menu → build → train → attack-move flow driven by synthetic input.
@@ -67,16 +68,32 @@ This runs 100 headless tests: ledger conservation, command validation, placement
 - More detailed vehicle and building art.
 - Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G2_2026-10-23.md`. Packaged build: `build/RTS_Age_of_Modern_War_G2/`.
 
+## G3a "Factions + Skirmish" (2026-10-23)
+- **Three factions**, each with its own buildings, units, art and economy twist:
+  - **Human A, Modern Military Power:** the G1/G2 combined-arms army.
+  - **Human B, Industrial Power:** salvage economy (the Salvage Yard pulls in scrap), tough infantry, rebuilt tanks, artillery trucks.
+  - **Machine, Autonomous Network:** energy-bound units that recharge near hubs, no morale; combat drones (air), walkers, artillery nodes.
+- **Skirmish setup:**
+  - 2–4 sides, each set to You, AI or Closed, with faction, team, colour, credits and AI level;
+  - free-for-all or teams, with allied shared vision;
+  - arcade / standard / simulation economy.
+- **Victory modes:** HQ elimination, territory control (hold N% of map sectors), hold the bridge for N seconds, Endless, or two combined with AND/OR.
+- **New weapons:** artillery (indirect fire, splash, minimum range) and anti-air rules (only small arms, machine guns and autocannons hit drones).
+- **The AI** plays every faction, picks targets among several enemies and cooperates with allies.
+- Evidence: `PROGRESS.md`, `perf/PERF_REPORT_G3a_2026-10-23.md`. Packaged build: `build/RTS_Age_of_Modern_War_G3a/` (see its `PLAY_ME.txt`).
+
 ## Status (honest)
-- **Done and verified:** G0+G1 core loop. Evidence is in `PROGRESS.md`.
-- **Measured performance:** about 256 fighting units sustained at 20 Hz on this PC. 512 is over budget. See `perf/PERF_REPORT_2026-10-23.md`.
+- **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish. Evidence is in `PROGRESS.md`.
+- **Measured performance:** 512 fighting units within the 20 Hz sim budget on this PC (p95 43 ms of 50).
+  - On screen, 3-side fights drop to 10–21 fps at 250+ units; this is a known gap.
+  - See `perf/PERF_REPORT_G3a_2026-10-23.md`.
 - **Not in this slice:**
-  - 3 distinct factions (the AI uses the Human A roster as a test economy);
-  - 3 maps;
+  - more maps;
   - Stage 7→8→9 progression;
-  - officers, cover/suppression, component damage, supply lines, destructible bridges;
-  - audio;
-  - an exported build.
-  These are gates G2–G4 in the roadmap.
+  - naval units and aircraft beyond Machine drones;
+  - walls and gates;
+  - audio.
+  These are gates G3b–G6 in the roadmap.
+- **Visual direction** for later gates: `docs/vision/` (owner mockups; reference only, not scope).
 - All costs and stats are **provisional balance fixtures** (`game/content/*.json`), not approved numbers.
-- Design sources: `RTS_Age_of_Modern_War_Claude_Handoff/` (immutable). Engineering contract: `game/docs/CONTRACTS.md`.
+- Design sources: `RTS_Age_of_Modern_War_Claude_Handoff/` (immutable). Engineering contracts: `game/docs/CONTRACTS.md`, `CONTRACTS_G2.md`, `CONTRACTS_G3a.md`.

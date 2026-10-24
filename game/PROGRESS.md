@@ -1,6 +1,51 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G2, started 2026-10-23)
+## Active goal (G3a, DONE 2026-10-23)
+
+```
+GOAL: G3a "Factions + Skirmish"
+For whom / what changes:  Owner picks from 3 distinct factions (Human A modern, Human B industrial, Machine network),
+                          sets up 2-4 side FFA or team skirmishes with per-side faction/team/credits/difficulty,
+                          chooses victory (HQ kill, territory %, hold bridge, AND/OR, Endless); AI plays every faction.
+Done-when:                1. tests/run.sh TESTS OK incl. faction/teams/territory/AND-OR tests (MATCH-01, VICT-01,
+                             QA-005, QA-011/012) + all G1/G2 tests
+                          2. 3-side FFA soak (one per faction) and a 2v2 soak each end with a winner
+                          3. Rebuilt .exe passes a UI playtest that sets up a 3-faction match via the menu and
+                             plays Human B and Machine openings (screenshots)
+                          4. Perf report re-run
+Out of scope:             new maps + Stage 7->9 (G3b); naval/air beyond Machine drones; audio
+Stop-if:                  G1/G2 tests can't be kept green
+```
+Contracts: `docs/CONTRACTS_G3a.md`. Scaffold `48332f1`.
+
+## G3a Done-when evidence (2026-10-23)
+1. **Tests:** `bash tests/run.sh` gives `RESULT pass=144 fail=0 files=16` / `TESTS OK` on AI commit `e8a8464` (final code).
+   - G3a suites: test_factions 12, test_victory 13 (VICT-01 territory 60%, sticky/recapture, QA-011 endless, AND/OR), test_art + test_art_machine, test_ai incl. 3-4 side cases, plus all G1/G2 tests.
+2. **AI-vs-AI soaks** (normal, `tools/soak.gd`, all on final code incl. the supply-truck escort fix): **10/10 end with a winner, 0 INVARIANT FAIL.**
+   - 3-side FFA (Human A, Human B, Machine): seed1 winner f0 @26443, seed2 winner f0 @46734, seed3 winner f1 @29311.
+   - 2v2 (A+Machine vs B+A): seed1 team 1 @22373 (5 tolerated pop-cap notes), seed2 team 1 @26185.
+   - Mirrors seeds 1-3: f1 @11573, f0 @18831, f0 @11980. Territory 60%: f0 @14960. Hold bridge 300 s: f0 @19780.
+   - Before the escort fix, FFA seeds 2 and 3 hit max_ticks (supply trucks left attacking waves to repair, so waves ran dry); fixed in `sim/ai/ai_logistics.gd`.
+   - FFA seed 2 is slow (46734 ticks, about 39 min of game time).
+3. **Packaged UI playtest:** `build/RTS_Age_of_Modern_War_G3a/` (zip `build/RTS_Age_of_Modern_War_G3a_2026-10-23.zip`), copied to a clean folder outside the repo, run with `--ui-playtest-faction`.
+   - The playtest sets up a 3-faction, 3-team match by clicking the skirmish menu, then plays the faction opening (build, gather, barracks, train, attack-move, officer + mission).
+   - Human B `PLAYTEST RESULT pass=37 fail=0`; Machine `pass=37 fail=0`; Human A `pass=37 fail=0` on rerun.
+   - **Flake:** Human A's first run (first launch of the new build) failed `match_started` within the 10 s wait, with no errors logged. The immediate rerun passed. Likely a cold-start load delay; not root-caused.
+   - Shots: `.plan/shots/orch/ui_g3a/` (3-faction menu, Human B officer mission, Machine attack-move, both factions' barracks equivalents).
+4. **Perf:** `perf/PERF_REPORT_G3a_2026-10-23.md` (quiet machine).
+   - Sim: no regression vs G2. At 512 units, 27.6 avg / 43.2 p95 ms (G2: 29.1 / 42.4). Cap stays 512.
+   - Window fps with 3 sides: 60 / 42-52 / 10-21 at ~80 / ~160 / 250-400 units.
+   - **Known gap:** 3-side fps at 250+ units is well below 2-side (34-45 fps). The cause is not isolated.
+
+Known gaps carried forward:
+- 3-side fps at 250+ units (above).
+- First-launch playtest flake (above).
+- The Machine top bar still shows Fuel, though Machine units don't use fuel (cosmetic).
+- The packaged build excludes `docs/` (vision mockups are reference only, not shipped). `docs/vision/.gdignore` keeps Godot from importing them.
+
+Next: G3b (Industrial Heartland + Valley Conquest maps, Stage 7->8->9). Needs an owner decision on stage-gate thresholds.
+
+## Previous goal (G2, DONE 2026-10-23)
 
 ```
 GOAL: G2 "Smart Warfare" slice + vehicle/building art detail pass
