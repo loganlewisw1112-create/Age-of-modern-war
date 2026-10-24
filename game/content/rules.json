@@ -158,5 +158,51 @@
   "hold_bridge": {
     "default_seconds": 300,
     "radius": 4
+  },
+  "advancement": {
+    "_note": "OWNER-APPROVED 2026-10-23 gates (tunable fixtures). See docs/CONTRACTS_G3b.md section 3.2.",
+    "transition_seconds": 60,
+    "rules": {
+      "free": {
+        "cost_mult": 0.0
+      },
+      "standard": {
+        "cost_mult": 1.0
+      },
+      "simulation": {
+        "cost_mult": 1.5
+      }
+    },
+    "gates": {
+      "8": {
+        "ore_refined": 600,
+        "power_ok_seconds": 60,
+        "officers_trained": 1,
+        "line_trained": 8,
+        "research": [
+          "integrated_manufacturing",
+          "combined_arms"
+        ],
+        "cost": {
+          "credits": 3000,
+          "salvage": 400
+        }
+      },
+      "9": {
+        "comms_buildings": 2,
+        "power_ok_seconds": 60,
+        "recon_alive": 3,
+        "or_explored_fraction": 0.4,
+        "research": [
+          "digital_networks",
+          "target_fusion",
+          "electronic_resilience"
+        ],
+        "cost": {
+          "credits": 6000,
+          "ore": 800
+        }
+      }
+    }
   }
 }

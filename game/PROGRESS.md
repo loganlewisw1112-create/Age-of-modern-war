@@ -1,6 +1,28 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G3a, DONE 2026-10-23)
+## Active goal (G3b + Scale "Big Armies", started 2026-10-23, owner-approved: stage gates + Rust core)
+
+```
+GOAL: G3b + Scale "Big Armies"
+For whom / what changes:  Owner picks from 3 maps, starts each side at Stage 7, 8 or 9, researches and advances
+                          mid-match, and fights battles with thousands of units without lag.
+Outcome:                  The rest of the approved G3 slice (3 maps, Stage 7->8->9) on a sim and renderer that hold
+                          2,000 fully simulated units and 10,000+ on the large map.
+Done-when:                1. tests/run.sh TESTS OK, all existing tests plus MATCH-01 (3 sides at stages 7/8/9),
+                             QA-002, QA-014, gate refuse/pass, research, native-core determinism + save round trip
+                          2. On each of the 3 maps, a 3-faction AI soak with mixed start stages ends with a winner;
+                             the logs show an AI advancing 7->8 and 8->9
+                          3. This PC: 2,000 fully simulated fighting units within the 50 ms budget (p95);
+                             10,000 units on Valley Conquest within budget; windowed 60+ fps with 2,000 fighting
+                             on screen, 30+ fps zoomed out with 10,000
+                          4. The packaged build passes the 3 faction playtests, extended to pick a map + stages
+                             and to research by clicking; the perf report + README match reality
+Out of scope:             naval, aircraft beyond drones, walls/gates, Stages 1-6/10-13, audio, 5+ sides
+Stop-if:                  native DLL won't load in the packaged exe; determinism breaks; existing tests can't stay green
+```
+Contracts: `docs/CONTRACTS_G3b.md`.
+
+## Previous goal (G3a, DONE 2026-10-23)
 
 ```
 GOAL: G3a "Factions + Skirmish"

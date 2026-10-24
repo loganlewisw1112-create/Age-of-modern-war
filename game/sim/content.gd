@@ -101,8 +101,22 @@ static func faction_ids() -> Array:
 ## Def id this faction uses for a generic role ("" if the faction has none).
 ## Building roles: hq power depot barracks factory refinery defense extra.
 ## Production roles: builder gatherer infantry antitank recon light heavy artillery officer supply air.
-static func role(faction_id: String, role_name: String) -> String:
-	return String(faction(faction_id).get("roles", {}).get(role_name, ""))
+static func role(faction_id: String, role_name: String, stage: int = 8) -> String:
+	var f := faction(faction_id)
+	# G3b: per-stage overrides (factions.json stage_roles {"7": {...}, "9": {...}})
+	var over: Dictionary = f.get("stage_roles", {}).get(str(stage), {})
+	if over.has(role_name):
+		return String(over[role_name])
+	return String(f.get("roles", {}).get(role_name, ""))
+
+
+## G3b: is a unit/building/production def available at this stage? (stage_min default 7, stage_max optional)
+static func available(d: Dictionary, stage: int) -> bool:
+	if stage < int(d.get("stage_min", 7)):
+		return false
+	if d.has("stage_max") and stage > int(d.stage_max):
+		return false
+	return true
 
 
 ## Buildable building defs for a faction (content order).

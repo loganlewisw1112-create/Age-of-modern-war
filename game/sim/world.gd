@@ -3,7 +3,7 @@ extends RefCounted
 ## Authoritative simulation state + fixed-step tick orchestrator + command bus.
 ## Pure logic: no Nodes, no rendering, no global RNG. See docs/CONTRACTS.md.
 
-const SCHEMA_VERSION := 2  # 2 = G2 (fuel/ammo ledger, unit tactical fields, bridge)
+const SCHEMA_VERSION := 3  # 2 = G2 (fuel/ammo ledger, unit tactical fields, bridge); 3 = G3b (stage/research/advancing)
 const TICK_RATE := 20
 const DT := 1.0 / 20.0
 const EVENT_LOG_MAX := 300
@@ -25,10 +25,11 @@ const Ops = preload("res://sim/systems/ops.gd")
 const Orders = preload("res://sim/systems/orders.gd")
 const Bridges = preload("res://sim/systems/bridges.gd")
 const MapGen = preload("res://sim/map_gen.gd")
+const Progression = preload("res://sim/systems/progression.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Construction, Production, Gather, Repair, Ops, Orders, Movement, Combat, Morale, Supply, Bridges, Fog, Victory]
+const SYSTEM_ORDER := [Economy, Construction, Production, Progression, Gather, Repair, Ops, Orders, Movement, Combat, Morale, Supply, Bridges, Fog, Victory]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -51,6 +52,8 @@ const COMMANDS := {
 	"patrol": Orders,
 	"guard": Orders,
 	"set_formation": Orders,
+	"research": Progression,
+	"advance_stage": Progression,
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
@@ -117,6 +120,8 @@ static func validate_config(c: Dictionary) -> String:
 		return vr
 	if not rules.get("economy_profiles", {}).has(String(c.get("economy", "standard"))):
 		return "Unknown economy profile '%s'." % c.get("economy", "")
+	if not rules.get("advancement", {}).get("rules", {}).has(String(c.get("advancement", "standard"))):
+		return "Unknown advancement rules '%s'." % c.get("advancement", "")
 	if not rules.ai_difficulties.has(c.get("ai_difficulty", "normal")):
 		return "Unknown AI difficulty '%s'." % c.get("ai_difficulty", "")
 	return ""
@@ -132,6 +137,7 @@ static func default_config() -> Dictionary:
 		"victory": String(d.victory),
 		"ai_difficulty": String(d.ai_difficulty),
 		"economy": "standard",
+		"advancement": "standard",
 		"sides": [
 			{"faction": "human_a", "stage": 8, "credits": int(d.starting_credits), "ai": false, "name": "You", "team": 0},
 			{"faction": "human_a", "stage": 8, "credits": int(d.starting_credits), "ai": true, "name": "Modern AI", "team": 1},
@@ -176,7 +182,11 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"alive": true,
 			"spawn": spawns[i % spawns.size()],
 			"journal": [],   # ledger audit: {tick, credits, salvage, ore, cause}
-			"stats": {"trained": 0, "built": 0, "lost": 0, "killed": 0},
+			"stats": {"trained": 0, "built": 0, "lost": 0, "killed": 0,
+				"ore_refined": 0, "power_ok_ticks": 0, "line_trained": 0, "officers_trained": 0},
+			# G3b progression (CONTRACTS_G3b section 2)
+			"research": {"done": [], "active": "", "progress": 0.0, "facility": -1},
+			"advancing": {"to": 0, "ticks_left": 0},
 		}
 	for r in w.map.resources:
 		w.spawn_resource(String(r.res), int(r.amount), Vector2(r.cell) + Vector2(0.5, 0.5))
