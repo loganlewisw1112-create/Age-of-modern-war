@@ -1,5 +1,6 @@
 extends RefCounted
 const Status = preload("res://sim/systems/status.gd")
+const NativeCore = preload("res://sim/native_core.gd")
 ## Movement (owner: agent B / sim-mil). Nav grids (foot/vehicle), A* pathing with a per-tick
 ## budget and a deterministic, saved request queue, steering with separation, formations.
 ## Commands: move, attack_move, stop, hold. Contract: docs/CONTRACTS.md section 5.
@@ -11,6 +12,12 @@ const Status = preload("res://sim/systems/status.gd")
 ## G3a (S3-sim): move_class "air" (drones) has no AStarGrid: every in-bounds cell is passable,
 ##   paths are one straight segment to the map-clamped goal, terrain never slows it, footprints
 ##   never block it, and separation only pushes air units against other air units.
+## G3b (N1-core): w.nav.solid = {mc: PackedByteArray (1 = solid)} is the passability source for
+##   both paths. When NativeCore.enabled(w), w.nav.native is an RtsNav (A*, components, flow
+##   fields, line checks) and separation runs in RtsSteer; no AStarGrid2D is built. Otherwise the
+##   G1 AStarGrid2D path is used unchanged. Group orders (>= FLOW_MIN units) on the native path
+##   share one flow field per move class and each unit's waypoints are read off it (no A*).
+##   Paths stay plain waypoint lists in e.path, so saves and the queue are path-agnostic.
 
 const CLASSES := ["foot", "vehicle"]
 const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, FIFO)
@@ -29,6 +36,14 @@ const SLOT_VEHICLE := 1.8
 const CENTER := Vector2(0.5, 0.5)
 const AIR := "air"
 const AIR_LAYER := 262144        # separation hash offset: air units only separate among themselves
+const NATIVE_PATH_BUDGET := PATH_BUDGET  # same queue semantics on both paths (saved queue, tests)
+const WP_TOL := 0.45             # intermediate waypoint reached within this many tiles
+const FLOW_MIN := 6              # group orders this big share a flow field (native path)
+
+static var _lut_speed: Dictionary = {}   # mc -> Array[float] speed_mult per terrain code (0 = impassable)
+static var profile := false             # tools/scale_bench.gd --breakdown: per-phase usec in prof
+static var prof: Dictionary = {}
+static var _group_flow: Dictionary = {}  # mc -> {"h": flow handle, "goal": Vector2i}; set only inside apply_command
 
 static var _udefs: Dictionary = {}
 static var _offsets: Array = []
@@ -81,12 +96,27 @@ static func _state(w: SimWorld) -> Dictionary:
 
 # ================================================================ nav
 static func _nav_ready(w: SimWorld) -> bool:
-	return w.nav.has("foot")
+	return w.nav.has("solid")
 
 
+## Rebuilds when missing, or when the native switch flipped since the last build.
 static func _ensure_nav(w: SimWorld) -> void:
-	if not _nav_ready(w):
+	if not _nav_ready(w) or bool(w.nav.get("is_native", false)) != NativeCore.enabled(w):
 		rebuild_nav(w)
+
+
+## Speed multiplier per terrain code for a move class (0.0 = impassable). Exact Terrain values.
+static func _lut(mc: String) -> Array:
+	if not _lut_speed.has(mc):
+		var a := []
+		for code in 256:
+			a.append(Terrain.speed_mult(code, mc) if Terrain.passable(code, mc) else 0.0)
+		_lut_speed[mc] = a
+	return _lut_speed[mc]
+
+
+static func _native(w: SimWorld):
+	return w.nav.get("native")
 
 
 ## Rebuild runtime nav caches from map + building entities. Called on new match and after load.
@@ -107,9 +137,23 @@ static func rebuild_nav(w: SimWorld) -> void:
 			for x in range(o.x, o.x + s):
 				if x >= 0 and y >= 0 and x < mw and y < mh:
 					blocked[y * mw + x] = mini(blocked[y * mw + x] + 1, 255)
-	w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true}
+	var native := NativeCore.enabled(w)
+	w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": native, "solid": {}}
 	var terrain: PackedByteArray = w.map.terrain
+	if native:
+		var nav = NativeCore.new_nav()
+		var lf := PackedFloat32Array(_lut("foot"))
+		var lv := PackedFloat32Array(_lut("vehicle"))
+		nav.setup(mw, mh, terrain, blocked, lf, lv)
+		w.nav["native"] = nav
+		w.nav["steer"] = NativeCore.new_steer()
+		for mc in CLASSES:
+			w.nav.solid[mc] = nav.solid_bytes(NativeCore.mc_index(mc))
+		return
 	for mc in CLASSES:
+		var lut := _lut(mc)
+		var solid := PackedByteArray()
+		solid.resize(mw * mh)
 		var g := AStarGrid2D.new()
 		g.region = Rect2i(0, 0, mw, mh)
 		g.cell_size = Vector2(1, 1)
@@ -120,15 +164,19 @@ static func rebuild_nav(w: SimWorld) -> void:
 		for y in mh:
 			for x in mw:
 				var i := y * mw + x
-				_apply_cell(g, terrain[i], blocked[i], mc, Vector2i(x, y))
+				solid[i] = _apply_cell(g, terrain[i], blocked[i], lut, Vector2i(x, y))
 		w.nav[mc] = g
+		w.nav.solid[mc] = solid
 
 
-static func _apply_cell(g: AStarGrid2D, code: int, blocked_count: int, mc: String, c: Vector2i) -> void:
-	var solid := blocked_count > 0 or not Terrain.passable(code, mc)
+## Fallback path: sets one AStarGrid2D cell; returns 1 if solid.
+static func _apply_cell(g: AStarGrid2D, code: int, blocked_count: int, lut: Array, c: Vector2i) -> int:
+	var sm: float = lut[code]
+	var solid := blocked_count > 0 or sm <= 0.0
 	g.set_point_solid(c, solid)
 	if not solid:
-		g.set_point_weight_scale(c, 1.0 / Terrain.speed_mult(code, mc))
+		g.set_point_weight_scale(c, 1.0 / sm)
+	return 1 if solid else 0
 
 
 ## Called when a building footprint is added (solid=true) or removed. No-op if nav is not built.
@@ -139,6 +187,11 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 	var mw := int(w.nav.w)
 	var blocked: PackedByteArray = w.nav.blocked
 	var terrain: PackedByteArray = w.map.terrain
+	var native = _native(w)
+	var sf: PackedByteArray = w.nav.solid.foot      # locals held through the loop (one COW copy),
+	var sv: PackedByteArray = w.nav.solid.vehicle   # written back below
+	var lf := _lut("foot")
+	var lv := _lut("vehicle")
 	for y in range(origin.y, origin.y + size):
 		for x in range(origin.x, origin.x + size):
 			var c := Vector2i(x, y)
@@ -149,8 +202,16 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 				blocked[i] = mini(blocked[i] + 1, 255)
 			else:
 				blocked[i] = maxi(blocked[i] - 1, 0)
-			for mc in CLASSES:
-				_apply_cell(w.nav[mc], terrain[i], blocked[i], mc, c)
+			if native == null:
+				sf[i] = _apply_cell(w.nav.foot, terrain[i], blocked[i], lf, c)
+				sv[i] = _apply_cell(w.nav.vehicle, terrain[i], blocked[i], lv, c)
+			else:
+				sf[i] = 1 if blocked[i] > 0 or float(lf[terrain[i]]) <= 0.0 else 0
+				sv[i] = 1 if blocked[i] > 0 or float(lv[terrain[i]]) <= 0.0 else 0
+	w.nav.solid.foot = sf
+	w.nav.solid.vehicle = sv
+	if native != null:
+		native.apply_footprint(origin.x, origin.y, size, solid)
 	w.nav.blocked = blocked
 	w.nav.comp_dirty = true
 	if solid:
@@ -168,49 +229,52 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 ## Connected-component labels (4-connected; diagonals never connect what orthogonals cannot).
 static func _comp(w: SimWorld, mc: String) -> PackedInt32Array:
 	if w.nav.comp_dirty:
-		var mw := int(w.nav.w)
-		var mh := int(w.nav.h)
-		var comps := {}
-		for k in CLASSES:
-			var g: AStarGrid2D = w.nav[k]
-			var lab := PackedInt32Array()
-			lab.resize(mw * mh)
-			lab.fill(-2)
-			for y in mh:
-				for x in mw:
-					if g.is_point_solid(Vector2i(x, y)):
-						lab[y * mw + x] = -1
-			var next := 0
-			var q := PackedInt32Array()
-			for s in mw * mh:
-				if lab[s] != -2:
-					continue
-				lab[s] = next
-				q.clear()
-				q.append(s)
-				var qi := 0
-				while qi < q.size():
-					var i := q[qi]
-					qi += 1
-					var x := i % mw
-					var y := i / mw
-					if x > 0 and lab[i - 1] == -2:
-						lab[i - 1] = next
-						q.append(i - 1)
-					if x < mw - 1 and lab[i + 1] == -2:
-						lab[i + 1] = next
-						q.append(i + 1)
-					if y > 0 and lab[i - mw] == -2:
-						lab[i - mw] = next
-						q.append(i - mw)
-					if y < mh - 1 and lab[i + mw] == -2:
-						lab[i + mw] = next
-						q.append(i + mw)
-				next += 1
-			comps[k] = lab
-		w.nav.comp = comps
+		w.nav.comp = {}
 		w.nav.comp_dirty = false
-	return w.nav.comp[mc]
+	if w.nav.comp.has(mc):
+		return w.nav.comp[mc]
+	var native = _native(w)
+	if native != null:
+		w.nav.comp[mc] = native.components(NativeCore.mc_index(mc))
+		return w.nav.comp[mc]
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var sb: PackedByteArray = w.nav.solid[mc]
+	var lab := PackedInt32Array()
+	lab.resize(mw * mh)
+	lab.fill(-2)
+	for i in mw * mh:
+		if sb[i] != 0:
+			lab[i] = -1
+	var next := 0
+	var q := PackedInt32Array()
+	for s in mw * mh:
+		if lab[s] != -2:
+			continue
+		lab[s] = next
+		q.clear()
+		q.append(s)
+		var qi := 0
+		while qi < q.size():
+			var i := q[qi]
+			qi += 1
+			var x := i % mw
+			var y := i / mw
+			if x > 0 and lab[i - 1] == -2:
+				lab[i - 1] = next
+				q.append(i - 1)
+			if x < mw - 1 and lab[i + 1] == -2:
+				lab[i + 1] = next
+				q.append(i + 1)
+			if y > 0 and lab[i - mw] == -2:
+				lab[i - mw] = next
+				q.append(i - mw)
+			if y < mh - 1 and lab[i + mw] == -2:
+				lab[i + mw] = next
+				q.append(i + mw)
+		next += 1
+	w.nav.comp[mc] = lab
+	return lab
 
 
 # ================================================================ public helpers
@@ -219,9 +283,10 @@ static func is_passable(w: SimWorld, cell: Vector2i, mc: String) -> bool:
 		return false
 	if mc == AIR:
 		return true  # G3a: air ignores terrain and footprints
-	if _nav_ready(w) and w.nav.has(mc):
-		var g: AStarGrid2D = w.nav[mc]
-		return not g.is_point_solid(cell)
+	if _nav_ready(w):
+		var sb = w.nav.solid.get(mc)
+		if sb != null:
+			return sb[cell.y * int(w.nav.w) + cell.x] == 0
 	if not Terrain.passable(w.terrain_at(cell), mc):
 		return false
 	for id in w.entities:
@@ -287,12 +352,16 @@ static func can_reach(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	return _resolve(w, e, goal).ok
 
 
+static func _budget(w: SimWorld) -> int:
+	return NATIVE_PATH_BUDGET if _native(w) != null else PATH_BUDGET
+
+
 static func _take_budget(w: SimWorld) -> bool:
 	var st := _state(w)
 	if int(st.budget_tick) != w.tick:
 		st.budget_tick = w.tick
 		st.budget_used = 0
-	if int(st.budget_used) < PATH_BUDGET:
+	if int(st.budget_used) < _budget(w):
 		st.budget_used = int(st.budget_used) + 1
 		return true
 	return false
@@ -324,7 +393,10 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 		e.path_req = -1
 		return true
 	if st.queue.is_empty() and _take_budget(w):
-		e.path = _compute(w, move_class(e), r.start, r.cell, r.pos)
+		var fp := []
+		if _group_flow.has(move_class(e)):
+			fp = _flow_path(w, move_class(e), r.start, r.cell, r.pos)
+		e.path = fp if not fp.is_empty() else _compute(w, move_class(e), r.start, r.cell, r.pos)
 		e.path_req = -1
 	else:
 		st.req_seq = int(st.req_seq) + 1
@@ -342,6 +414,15 @@ static func order_move(w: SimWorld, e: Dictionary, goal: Vector2) -> void:
 
 
 static func _compute(w: SimWorld, mc: String, start: Vector2i, dest: Vector2i, dest_pos: Vector2) -> Array:
+	var native = _native(w)
+	if native != null:
+		var pts: PackedVector2Array = native.find_path(start, dest, NativeCore.mc_index(mc))
+		var arr := Array(pts)
+		if arr.is_empty():
+			arr.append(dest_pos)
+		else:
+			arr[arr.size() - 1] = dest_pos
+		return arr
 	var g: AStarGrid2D = w.nav[mc]
 	var ids: Array[Vector2i] = g.get_id_path(start, dest)
 	var out := []
@@ -361,6 +442,9 @@ static func _compute(w: SimWorld, mc: String, start: Vector2i, dest: Vector2i, d
 ## Straight segment a->b is walkable (sampled every 0.3 tiles, diagonal cell changes need both
 ## orthogonal cells). Short open-ground moves (chases, formation slots) skip A* entirely.
 static func _line_clear(w: SimWorld, mc: String, a: Vector2, b: Vector2) -> bool:
+	var native = _native(w)
+	if native != null:
+		return native.line_clear(NativeCore.mc_index(mc), a, b, LOS_MAX)
 	var d := b - a
 	var l := d.length()
 	if l > LOS_MAX:
@@ -373,6 +457,45 @@ static func _line_clear(w: SimWorld, mc: String, a: Vector2, b: Vector2) -> bool
 			return false
 		prev = q
 	return true
+
+
+## Native group path: descend the shared flow field from start toward the group goal, cut over to
+## a straight run to this unit's slot at the first waypoint with a clear line, else A* the rest.
+## Returns [] when the flow cannot serve this unit (caller falls back to the normal A* path).
+static func _flow_path(w: SimWorld, mc: String, start: Vector2i, dest: Vector2i, dest_pos: Vector2) -> Array:
+	var gf: Dictionary = _group_flow[mc]
+	var native = _native(w)
+	if native == null:
+		return []
+	var pts: PackedVector2Array = native.flow_path(int(gf.h), start)
+	if pts.is_empty():
+		return []
+	var out := []
+	var idx := NativeCore.mc_index(mc)
+	var prev := Vector2(start) + CENTER
+	for p in pts:
+		# cut over at the first point (sampled every tile along the segment) with a clear line
+		# to the slot, so a group fans out toward its slots instead of sharing every corner
+		var seg: Vector2 = p - prev
+		var steps := maxi(int(ceil(seg.length())), 1)
+		for k in range(1, steps + 1):
+			var s: Vector2 = prev + seg * (float(k) / float(steps))
+			if s.distance_to(dest_pos) <= LOS_MAX and native.line_clear(idx, s, dest_pos, LOS_MAX):
+				out.append(_qpos(w, s))
+				out.append(dest_pos)
+				return out
+		out.append(p)
+		prev = p
+	# reached the group goal without a clear line to the slot: A* the last leg
+	var tail: PackedVector2Array = native.find_path(w.cell_of(out[out.size() - 1]), dest, idx)
+	if tail.is_empty() and w.cell_of(out[out.size() - 1]) != dest:
+		return []
+	out.append_array(Array(tail))
+	if out.is_empty():
+		out.append(dest_pos)
+	else:
+		out[out.size() - 1] = dest_pos
+	return out
 
 
 ## Quantize a position to Q (exact through var_to_str) without changing its cell.
@@ -389,7 +512,7 @@ static func _drain_queue(w: SimWorld) -> void:
 	if int(st.budget_tick) != w.tick:
 		st.budget_tick = w.tick
 		st.budget_used = 0
-	var allowed := maxi(PATH_BUDGET - int(st.budget_used), QUEUE_MIN_DRAIN)
+	var allowed := maxi(_budget(w) - int(st.budget_used), QUEUE_MIN_DRAIN)
 	var served := 0
 	var i := 0
 	while i < q.size() and served < allowed:
@@ -417,28 +540,70 @@ static func _drain_queue(w: SimWorld) -> void:
 
 # ================================================================ tick
 ## Advances every unit with e.moving == true along e.path, whatever its order type.
+static func _pt(key: String, t0: int) -> int:
+	var t := Time.get_ticks_usec()
+	prof[key] = int(prof.get(key, 0)) + t - t0
+	return t
+
+
 static func tick(w: SimWorld) -> void:
+	var t0 := Time.get_ticks_usec() if profile else 0
 	_ensure_nav(w)
 	_drain_queue(w)
-	var grids := {"foot": w.nav.foot, "vehicle": w.nav.vehicle}
-	var bounds := Rect2i(0, 0, int(w.nav.w), int(w.nav.h))
+	if profile:
+		t0 = _pt("drain", t0)
+	var solid := {"foot": w.nav.solid.foot, "vehicle": w.nav.solid.vehicle}
+	var mw := int(w.nav.w)
+	var bounds := Rect2i(0, 0, mw, int(w.nav.h))
+	var steer = w.nav.get("steer")
+	# native separation inputs, gathered in the same pass (each unit only moves itself above)
+	var units := []
+	var pos := PackedVector2Array()
+	var rad := PackedFloat32Array()
+	var mov := PackedByteArray()
+	var keys := PackedInt32Array()
+	var ids := PackedInt32Array()
+	var mcs := PackedByteArray()
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "unit":
 			continue
-		var mc := move_class(e)
+		var u := udef(String(e.def))
+		var mc: String = u.mc
 		var p: Vector2 = e.pos
 		var cell := Vector2i(floori(p.x), floori(p.y))
-		var g = grids.get(mc)
 		if mc == AIR:
 			if not bounds.has_point(cell):
 				e.pos = Vector2(clampi(cell.x, 0, bounds.size.x - 1), clampi(cell.y, 0, bounds.size.y - 1)) + CENTER
-		elif g == null or not bounds.has_point(cell) or g.is_point_solid(cell):
-			# safety invariant: never leave a unit inside an impassable cell
-			e.pos = Vector2(nearest_free_cell(w, cell, mc)) + CENTER
+		else:
+			var sb = solid.get(mc)
+			if sb == null or not bounds.has_point(cell) or sb[cell.y * mw + cell.x] != 0:
+				# safety invariant: never leave a unit inside an impassable cell
+				e.pos = Vector2(nearest_free_cell(w, cell, mc)) + CENTER
 		if e.moving:
 			_advance(w, e, mc)
-	_separate(w)
+		if steer != null:
+			units.append(e)
+			pos.append(e.pos)
+			rad.append(float(u.radius))
+			mov.append(1 if e.moving else 0)
+			keys.append((int(e.owner) + 1) * 1048576 + (AIR_LAYER if mc == AIR else 0))
+			ids.append(int(e.id))
+			mcs.append(NativeCore.mc_index(mc))
+	if profile:
+		t0 = _pt("advance_loop", t0)
+	if steer == null:
+		_separate(w)
+		if profile:
+			_pt("separate", t0)
+		return
+	var out: PackedVector2Array = steer.separate(w.nav.native, pos, rad, mov, keys, ids, mcs,
+		PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q]))
+	for i in out.size():
+		if out[i] != pos[i]:
+			units[i].pos = out[i]
+	if profile:
+		_pt("separate", t0)
 
 
 static func _arrive(e: Dictionary) -> void:
@@ -467,7 +632,7 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 	var u := udef(String(e.def))
 	var pos: Vector2 = e.pos
 	var start_pos := pos
-	var tmult := 1.0 if mc == AIR else Terrain.speed_mult(w.terrain_at(w.cell_of(pos)), mc)
+	var tmult := 1.0 if mc == AIR else float(_lut(mc)[w.terrain_at(w.cell_of(pos))])
 	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
 	if spd <= 0.0:
 		return  # immobile (mobility kill / no fuel): keep the path, do not move
@@ -481,6 +646,9 @@ static func _advance(w: SimWorld, e: Dictionary, mc: String) -> void:
 		var dist := d.length()
 		if dist > 0.0001:
 			e.facing = snappedf(d.angle(), Q)
+		if pi < path.size() - 1 and dist <= WP_TOL:
+			pi += 1  # G3b: intermediate waypoints count as reached within WP_TOL (no corner jams)
+			continue
 		var want := wp if dist <= remaining else pos + d / dist * remaining
 		var got := _try_move(w, mc, pos, want)
 		if got != want:
@@ -706,6 +874,34 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 	return out
 
 
+## Native path only: one flow field per ground move class toward the group's (snapped) target
+## cell, when at least FLOW_MIN units of that class move together. {mc: {h, goal}}.
+static func _group_flows(w: SimWorld, units: Array, target: Vector2) -> Dictionary:
+	_ensure_nav(w)
+	var native = _native(w)
+	if native == null or units.size() < FLOW_MIN:
+		return {}
+	var by_mc := {}
+	for e in units:
+		var mc := move_class(e)
+		if mc != AIR:
+			by_mc[mc] = int(by_mc.get(mc, 0)) + 1
+	var out := {}
+	for mc in CLASSES:
+		if int(by_mc.get(mc, 0)) < FLOW_MIN:
+			continue
+		for e in units:
+			if move_class(e) != mc:
+				continue
+			var r := _resolve(w, e, target)
+			if r.ok:
+				var h: int = native.flow(r.cell, NativeCore.mc_index(mc))
+				if h >= 0:
+					out[mc] = {"h": h, "goal": r.cell}
+			break
+	return out
+
+
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var units := []
 	for id in cmd.get("unit_ids", []):
@@ -725,6 +921,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					return pa.x < pb.x
 				return int(a.id) < int(b.id))
 			var slots := formation_slots(w, units, target)
+			_group_flow = _group_flows(w, units, target)
 			for i in units.size():
 				var e: Dictionary = units[i]
 				var slot: Vector2 = slots[i]
@@ -735,6 +932,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					e.order = {"type": "attack_move", "target": slot, "engaged": false}
 				if not order_path(w, e, slot):
 					e.order = {"type": "idle"}
+			_group_flow = {}
 		"stop":
 			for e in units:
 				e.order = {"type": "idle"}
