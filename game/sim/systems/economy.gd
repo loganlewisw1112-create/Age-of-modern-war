@@ -4,9 +4,25 @@ extends RefCounted
 
 const STIPEND_INTERVAL_TICKS := 20
 const MAGNET_EVERY := 20         # G3a scrap magnet period (ticks): 1 salvage per pile per second
+const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
+
+static var _pop: Dictionary = {}   # unit def -> pop (content is read-only)
 
 
+static func _pop_of(def_id: String) -> int:
+	var v = _pop.get(def_id)
+	if v == null:
+		v = int(Content.unit(def_id).get("pop", 1))
+		_pop[def_id] = v
+	return int(v)
+
+
+## G3b PERF4: Economy runs first in SYSTEM_ORDER, so it starts the tick for the scale layer:
+## Tiers.begin_tick rebuilds the shared SimIndex (and every unit's fidelity tier on recompute
+## ticks). Power/pop then read the index (buildings / units lists) instead of a full pass.
 static func tick(w: SimWorld) -> void:
+	Tiers.begin_tick(w)
 	var pp := {}
 	var pu := {}
 	var pc := {}
@@ -18,25 +34,23 @@ static func tick(w: SimWorld) -> void:
 		pc[fid] = 0
 		pop[fid] = 0
 		hqs[fid] = 0
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
+	for e in SimIndex.of(w, "building"):
 		var fid: int = int(e.owner)
-		if not pp.has(fid):
+		if not pp.has(fid) or not e.built or not w.entities.has(int(e.id)):
 			continue
-		if e.kind == "building":
-			if not e.built:
-				continue
-			var d := Content.building(e.def)
-			var p := int(d.get("power", 0))
-			if p > 0:
-				pp[fid] += p
-			elif p < 0:
-				pu[fid] += -p
-			pc[fid] += int(d.get("pop_cap", 0))
-			if bool(d.get("is_hq", false)):
-				hqs[fid] += 1
-		elif e.kind == "unit":
-			pop[fid] += int(Content.unit(e.def).get("pop", 1))
+		var d := Content.building(e.def)
+		var p := int(d.get("power", 0))
+		if p > 0:
+			pp[fid] += p
+		elif p < 0:
+			pu[fid] += -p
+		pc[fid] += int(d.get("pop_cap", 0))
+		if bool(d.get("is_hq", false)):
+			hqs[fid] += 1
+	for e in SimIndex.of(w, "unit"):
+		var fid: int = int(e.owner)
+		if pp.has(fid) and w.entities.has(int(e.id)):
+			pop[fid] += _pop_of(String(e.def))
 	var cap_max := int(Content.rules().get("pop_cap_max", 120))
 	var rate := int(Content.rules().get("hq_stipend_credits_per_second", 0))
 	var pay: bool = w.tick > 0 and w.tick % STIPEND_INTERVAL_TICKS == 0
@@ -65,9 +79,8 @@ static func _refineries(w: SimWorld) -> void:
 		return
 	var period := maxi(1, int(round(float(cfg.get("period_s", 6)) / SimWorld.DT)))
 	var ore_in := int(cfg.get("ore_in", 0))
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "building" or not bool(Content.building(e.def).get("refines", false)):  # G3a: flag, any faction
+	for e in SimIndex.of(w, "building"):
+		if not w.entities.has(int(e.id)) or not bool(Content.building(e.def).get("refines", false)):  # G3a: flag, any faction
 			continue
 		var fid := int(e.owner)
 		if not bool(e.built) or not w.factions.has(fid):
@@ -96,18 +109,16 @@ static func _refineries(w: SimWorld) -> void:
 ## (w.credit cause "scrap_magnet"). Emptied piles are removed like a harvested-out deposit.
 static func _scrap_magnets(w: SimWorld) -> void:
 	var yards := []
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind == "building" and bool(b.built) and w.factions.has(int(b.owner)):
+	for b in SimIndex.of(w, "building"):
+		if w.entities.has(int(b.id)) and bool(b.built) and w.factions.has(int(b.owner)):
 			var r := float(Content.building(b.def).get("scrap_magnet", 0))
 			if r > 0.0:
 				yards.append([b, r])
 	if yards.is_empty():
 		return
 	var piles := []
-	for id in w.entities:
-		var r: Dictionary = w.entities[id]
-		if r.kind == "resource" and String(r.res) == "salvage" and int(r.amount) > 0:
+	for r in SimIndex.of(w, "resource"):
+		if w.entities.has(int(r.id)) and String(r.res) == "salvage" and int(r.amount) > 0:
 			piles.append(r)
 	var gone := []
 	for y in yards:

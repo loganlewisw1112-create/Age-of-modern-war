@@ -26,6 +26,7 @@ const Orders = preload("res://sim/systems/orders.gd")
 const Bridges = preload("res://sim/systems/bridges.gd")
 const MapGen = preload("res://sim/map_gen.gd")
 const Progression = preload("res://sim/systems/progression.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
@@ -83,6 +84,7 @@ var event_log: Array = []         # rolling recent events (debug/UI)
 var nav: Dictionary = {}          # owned by Movement (rebuild_nav)
 var cache: Dictionary = {}        # free-form per-system caches (spatial hash etc.)
 var native_enabled: bool = true   # G3b (N1-core): false forces GDScript movement/nav fallbacks; runtime only, not saved
+var tiers_enabled: bool = true    # G3b (PERF4): false = every unit FULL tier; runtime only, not saved
 
 
 # ================================================================ construction
@@ -243,6 +245,11 @@ func step() -> void:
 		event_log.append(ev)
 	if event_log.size() > EVENT_LOG_MAX:
 		event_log = event_log.slice(event_log.size() - EVENT_LOG_MAX)
+
+
+## G3b (PERF4): fidelity tier counts {full, reduced} for perf reports.
+func tier_counts() -> Dictionary:
+	return Tiers.counts(self)
 
 
 func run_ticks(n: int) -> void:

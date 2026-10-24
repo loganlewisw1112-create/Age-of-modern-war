@@ -20,6 +20,25 @@ extends RefCounted
 ##   still comes from the stock like any unit.
 
 const Construction = preload("res://sim/systems/construction.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
+## G3b PERF4: loops read the shared SimIndex (units / buildings lists) and a per-def cache instead
+## of full passes with Content lookups. REDUCED-tier units (Tiers) burn fuel on their stride tick
+## only ((tick + id) % Tiers.STRIDE == 0); the burn covers the whole displacement since the last
+## burn (supply_prev_pos), so no fuel is created or lost by the stride (teleport rule unchanged).
+
+static var _ud: Dictionary = {}   # unit def -> {fpt, ammo_max, fuel_max, energy, is_supply}
+
+
+static func _u(def_id: String) -> Dictionary:
+	var v = _ud.get(def_id)
+	if v == null:
+		var d := Content.unit(def_id)
+		v = {"fpt": float(d.get("fuel_per_tile", 0.0)), "ammo_max": int(d.get("ammo_max", 0)),
+			"fuel_max": float(d.get("fuel_max", 0)), "energy": bool(d.get("energy", false)),
+			"is_supply": bool(d.get("is_supply", false))}
+		_ud[def_id] = v
+	return v
 
 const RESUPPLY_EVERY := 20
 const SHORTAGE_COOLDOWN := 600
@@ -57,9 +76,11 @@ static func tick(w: SimWorld) -> void:
 # ================================================================ fuel
 static func _burn_fuel(w: SimWorld) -> void:
 	var mult := maxf(w.econ("fuel_use_mult"), 0.0)
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" or not e.has("fuel"):
+	var tiers_on := Tiers.enabled(w)
+	for e in SimIndex.of(w, "unit"):
+		if not e.has("fuel") or not w.entities.has(int(e.id)):
+			continue
+		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED and (w.tick + int(e.id)) % Tiers.STRIDE != 0:
 			continue
 		var pos: Vector2 = e.pos
 		if not e.has("supply_prev_pos"):
@@ -69,7 +90,7 @@ static func _burn_fuel(w: SimWorld) -> void:
 		e.supply_prev_pos = pos
 		if dist <= 0.0 or dist > MAX_STEP_TILES:
 			continue
-		var per_tile := float(Content.unit(e.def).get("fuel_per_tile", 0.0)) * mult
+		var per_tile := float(_u(String(e.def)).fpt) * mult
 		if per_tile <= 0.0:
 			continue
 		var burn: float = round(dist * per_tile * FUEL_QUANT) / FUEL_QUANT
@@ -86,21 +107,22 @@ static func _state(w: SimWorld) -> Dictionary:
 ## Supply points per faction: [{kind:"b", cell, size} | {kind:"t", id, pos}] in entity order.
 static func _sources(w: SimWorld) -> Dictionary:
 	var out := {}
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		var fid := int(e.owner)
-		if not w.factions.has(fid):
+	var pts := []   # [id, point] in entity order (buildings and trucks interleaved as before)
+	for e in SimIndex.of(w, "building"):
+		if not w.factions.has(int(e.owner)) or not bool(e.built) or not w.entities.has(int(e.id)):
 			continue
-		if e.kind == "building" and bool(e.built):
-			var d := Content.building(e.def)
-			if bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)):  # G3a: flag replaces SUPPLY_BUILDINGS
-				if not out.has(fid):
-					out[fid] = []
-				out[fid].append({"kind": "b", "cell": e.cell, "size": int(e.size)})
-		elif e.kind == "unit" and bool(Content.unit(e.def).get("is_supply", false)):
-			if not out.has(fid):
-				out[fid] = []
-			out[fid].append({"kind": "t", "id": int(id), "pos": e.pos})
+		var d := Content.building(e.def)
+		if bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)):  # G3a: flag replaces SUPPLY_BUILDINGS
+			pts.append([int(e.id), int(e.owner), {"kind": "b", "cell": e.cell, "size": int(e.size)}])
+	for e in SimIndex.of(w, "unit"):
+		if w.factions.has(int(e.owner)) and bool(_u(String(e.def)).is_supply) and w.entities.has(int(e.id)):
+			pts.append([int(e.id), int(e.owner), {"kind": "t", "id": int(e.id), "pos": e.pos}])
+	pts.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
+	for q in pts:
+		var fid: int = q[1]
+		if not out.has(fid):
+			out[fid] = []
+		out[fid].append(q[2])
 	return out
 
 
@@ -122,23 +144,21 @@ static func _resupply(w: SimWorld) -> void:
 	var fuel_rate := int(rate.get("fuel", 0))
 	var sources := _sources(w)
 	var starved := {}   # fid -> {"ammo": bool, "fuel": bool}: a unit in range needed it and stock was short
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit":
-			continue
+	for e in SimIndex.of(w, "unit"):
 		var fid := int(e.owner)
-		if not sources.has(fid) or not bool(w.factions[fid].alive):
+		if not sources.has(fid) or not w.entities.has(int(e.id)) or not bool(w.factions[fid].alive):
 			continue
-		var ud := Content.unit(e.def)
+		var uc := _u(String(e.def))
 		var want_ammo := 0
 		var want_fuel := 0
 		if e.has("ammo"):
-			want_ammo = mini(maxi(0, int(ud.get("ammo_max", 0)) - int(e.ammo)), ammo_rate)
-		if e.has("fuel") and not bool(ud.get("energy", false)):  # G3a: energy units recharge instead
-			var miss := float(ud.get("fuel_max", 0)) - float(e.fuel)
+			want_ammo = mini(maxi(0, int(uc.ammo_max) - int(e.ammo)), ammo_rate)
+		if e.has("fuel") and not bool(uc.energy):  # G3a: energy units recharge instead
+			var miss := float(uc.fuel_max) - float(e.fuel)
 			want_fuel = mini(maxi(0, int(ceil(miss))), fuel_rate)
 		if want_ammo <= 0 and want_fuel <= 0:
 			continue
+		var ud := Content.unit(e.def)
 		if not _in_range(e, sources[fid], radius):
 			continue
 		if not starved.has(fid):
@@ -181,9 +201,8 @@ static func _recharge(w: SimWorld) -> void:
 	if rate <= 0.0:
 		return
 	var hubs := {}   # fid -> [{cell, size, r}]
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind != "building" or not bool(b.built):
+	for b in SimIndex.of(w, "building"):
+		if not bool(b.built) or not w.entities.has(int(b.id)):
 			continue
 		var r := float(Content.building(b.def).get("recharge", 0))
 		if r <= 0.0:
@@ -194,17 +213,16 @@ static func _recharge(w: SimWorld) -> void:
 		hubs[fid].append({"cell": b.cell, "size": int(b.size), "r": r})
 	if hubs.is_empty():
 		return
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" or not e.has("fuel"):
+	for e in SimIndex.of(w, "unit"):
+		if not e.has("fuel"):
 			continue
 		var fid := int(e.owner)
-		if not hubs.has(fid):
+		if not hubs.has(fid) or not w.entities.has(int(e.id)):
 			continue
-		var ud := Content.unit(e.def)
-		if not bool(ud.get("energy", false)):
+		var uc := _u(String(e.def))
+		if not bool(uc.energy):
 			continue
-		var fmax := float(ud.get("fuel_max", 0))
+		var fmax := float(uc.fuel_max)
 		if float(e.fuel) >= fmax:
 			continue
 		var f: Dictionary = w.factions[fid]

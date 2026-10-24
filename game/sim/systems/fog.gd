@@ -1,5 +1,6 @@
 extends RefCounted
 const Status = preload("res://sim/systems/status.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
 ## Fog of war (owner: agent B / sim-mil). Per-faction visibility, explored cells, last-seen memory.
 ## Contract: docs/CONTRACTS.md section 5.
 ##   w.fog[fid] = {visible: PackedByteArray, explored: PackedByteArray}  (1 = yes, idx y*w+x)
@@ -8,18 +9,28 @@ const Status = preload("res://sim/systems/status.gd")
 ## buildings (built or not), as circles of radius `sight` around their cell centre. Explored is sticky.
 
 const RECOMPUTE_EVERY := 4
+## G3b PERF4: recompute makes ONE pass over the SimIndex units + buildings for all teams (it used
+## to make one full pass per team plus one per side for memory), with per-def sight caches; memory
+## only walks buildings. Every source is still stamped on every recompute (vision is player-visible),
+## but sources sharing a cell and sight are stamped once (unchanged dedupe).
 
 static var _circles: Dictionary = {}   # sight (float) -> [src Image, mask Image, r]
 static var _sights: Dictionary = {}    # "kind:def" -> float sight
 
 
+static var _usight: Dictionary = {}   # unit def -> sight
+static var _bsight: Dictionary = {}   # building def -> sight
+
+
 static func sight_of(e: Dictionary) -> float:
-	var key := String(e.kind) + ":" + String(e.def)
-	if _sights.has(key):
-		return _sights[key]
-	var d: Dictionary = Content.unit(e.def) if e.kind == "unit" else Content.building(e.def)
+	var unit: bool = e.kind == "unit"
+	var cache: Dictionary = _usight if unit else _bsight
+	var v = cache.get(e.def)
+	if v != null:
+		return v
+	var d: Dictionary = Content.unit(e.def) if unit else Content.building(e.def)
 	var s := float(d.get("sight", 0))
-	_sights[key] = s
+	cache[e.def] = s
 	return s
 
 
@@ -99,7 +110,6 @@ static func recompute(w: SimWorld) -> void:
 	var mw := int(w.map.w)
 	var mh := int(w.map.h)
 	var n := mw * mh
-	var done := {}
 	for fid in w.factions:
 		if not w.fog.has(fid):
 			var e0 := PackedByteArray()
@@ -108,14 +118,35 @@ static func recompute(w: SimWorld) -> void:
 			w.fog[fid] = {"visible": e0.duplicate(), "explored": e0}
 		if not w.memory.has(fid):
 			w.memory[fid] = {}
+	# one pass: stamp sources per team (keyed by the team's first member)
+	var root := {}
 	for fid in w.factions:
-		if done.has(int(fid)):
-			continue
-		var members := team_members(w, int(fid))
-		var mset := {}
-		for m in members:
-			mset[int(m)] = true
-			done[int(m)] = true
+		if not root.has(int(fid)):
+			var members := team_members(w, int(fid))
+			for m in members:
+				root[int(m)] = int(members[0])
+	var srcs := {}   # root -> {stamp key: [cell, sight]}
+	for fid in w.factions:
+		if int(root[int(fid)]) == int(fid):
+			srcs[int(fid)] = {}
+	for kind in ["unit", "building"]:
+		for e in SimIndex.of(w, kind):
+			var rt = root.get(int(e.owner))
+			if rt == null or not w.entities.has(int(e.id)):
+				continue
+			var s := sight_of(e)
+			if e.has("comp") or e.has("jammed_until"):
+				s *= Status.sight_mult(w, e)
+			if s <= 0.0:
+				continue
+			var p: Vector2 = e.pos
+			var c := Vector2i(floori(p.x), floori(p.y))
+			var key := (c.y * mw + c.x) * 128 + int(s * 4.0)
+			var st: Dictionary = srcs[rt]
+			if not st.has(key):
+				st[key] = [c, s]
+	for rt in srcs:
+		var members := team_members(w, int(rt))
 		var ex_data: PackedByteArray = w.fog[members[0]].explored
 		for k in range(1, members.size()):
 			var other: PackedByteArray = w.fog[members[k]].explored
@@ -125,23 +156,13 @@ static func recompute(w: SimWorld) -> void:
 		# per-cell loop cost ~100 ms per recompute at 256 units.
 		var vis_img := Image.create_empty(mw, mh, false, Image.FORMAT_R8)
 		var ex_img := Image.create_from_data(mw, mh, false, Image.FORMAT_R8, ex_data)
-		var stamped := {}
-		for id in w.entities:
-			var e: Dictionary = w.entities[id]
-			if (e.kind != "unit" and e.kind != "building") or not mset.has(int(e.owner)):
-				continue
-			var s := sight_of(e) * Status.sight_mult(w, e)
-			if s <= 0.0:
-				continue
-			var c := w.cell_of(e.pos)
-			var key := (c.y * mw + c.x) * 128 + int(s * 4.0)
-			if stamped.has(key):
-				continue
-			stamped[key] = true
-			var st: Array = _stamp(s)
-			var r := int(st[2])
-			var src: Image = st[0]
-			var mask: Image = st[1]
+		var st: Dictionary = srcs[rt]
+		for key in st:
+			var c: Vector2i = st[key][0]
+			var stp: Array = _stamp(float(st[key][1]))
+			var r := int(stp[2])
+			var src: Image = stp[0]
+			var mask: Image = stp[1]
 			var rect := Rect2i(0, 0, 2 * r + 1, 2 * r + 1)
 			var dst := c - Vector2i(r, r)
 			vis_img.blit_rect_mask(src, mask, rect, dst)
@@ -156,10 +177,10 @@ static func recompute(w: SimWorld) -> void:
 
 static func _update_memory(w: SimWorld, fid: int, vis: PackedByteArray, mw: int) -> void:
 	var mem: Dictionary = w.memory[fid]
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "building" or not w.is_enemy(fid, int(e.owner)):
+	for e in SimIndex.of(w, "building"):
+		if not w.is_enemy(fid, int(e.owner)) or not w.entities.has(int(e.id)):
 			continue
+		var id := int(e.id)
 		if _building_seen(w, e, vis, mw):
 			mem[int(id)] = {"def": e.def, "kind": e.kind, "owner": int(e.owner), "pos": e.pos, "tick": w.tick}
 	var drop := []
@@ -222,11 +243,23 @@ static func entity_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
 ## Enemy units AND buildings on cells currently visible to fid (the only legal enemy query for AI).
 static func visible_enemies(w: SimWorld, fid: int) -> Array:
 	var out := []
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if (e.kind == "unit" or e.kind == "building") and w.is_enemy(fid, int(e.owner)) and entity_visible(w, fid, e):
-			out.append(e)
+	var us: Array = SimIndex.of(w, "unit")
+	var bs: Array = SimIndex.of(w, "building")
+	var bi := 0
+	for e in us:
+		while bi < bs.size() and int(bs[bi].id) < int(e.id):
+			_vis_add(w, fid, bs[bi], out)
+			bi += 1
+		_vis_add(w, fid, e, out)
+	while bi < bs.size():
+		_vis_add(w, fid, bs[bi], out)
+		bi += 1
 	return out
+
+
+static func _vis_add(w: SimWorld, fid: int, e: Dictionary, out: Array) -> void:
+	if w.is_enemy(fid, int(e.owner)) and w.entities.has(int(e.id)) and entity_visible(w, fid, e):
+		out.append(e)
 
 
 # ================================================================ G2 concealment (agent A2)
@@ -289,9 +322,8 @@ static func _spotted_by(idx: Dictionary, fid: int, p: Vector2) -> bool:
 static func _build_conceal_idx(w: SimWorld) -> Dictionary:
 	var r := maxf(float(Content.rules().get("concealment_range", 5)), 1.0)
 	var fids := {}
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" and e.kind != "building":
+	for e in SimIndex.of(w, "unit") + SimIndex.of(w, "building"):
+		if not w.entities.has(int(e.id)):
 			continue
 		var o := int(e.owner)
 		if not fids.has(o):

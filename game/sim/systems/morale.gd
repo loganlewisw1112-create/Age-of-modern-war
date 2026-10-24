@@ -16,6 +16,11 @@ extends RefCounted
 ##   order becomes idle, UnitRallied.
 
 const Movement = preload("res://sim/systems/movement.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
+const SimIndex = preload("res://sim/systems/sim_index.gd")
+## G3b PERF4: loops read the shared SimIndex. REDUCED-tier units (Tiers: no enemy near) update on
+## every 2nd morale update (staggered by id) with twice the dt, so recovery/decay rates are kept.
+## Squadmate losses use one squad index per tick instead of one full pass per death.
 
 const Q := 1.0 / 1024.0
 const UPDATE_EVERY := 4
@@ -56,10 +61,21 @@ static func tick(w: SimWorld) -> void:
 	var covers = null   # built lazily, only if some infantry is off-forest
 	var mw := int(w.map.w)
 	var terr: PackedByteArray = w.map.terrain
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
-		if e.kind != "unit" or not e.has("morale"):
+	var tiers_on := Tiers.enabled(w)
+	var p2 := {}
+	for k in p:
+		p2[k] = p[k]
+	for k in ["decay", "drain", "recover"]:
+		p2[k] = float(p[k]) * 2.0
+	var slot := (w.tick / UPDATE_EVERY) % 2
+	for e in SimIndex.of(w, "unit"):
+		if not e.has("morale") or not w.entities.has(int(e.id)):
 			continue
+		var pu := p
+		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED:
+			if (int(e.id) + slot) % 2 != 0:
+				continue
+			pu = p2
 		var pos: Vector2 = e.pos
 		var cell := Vector2i(floori(pos.x), floori(pos.y))
 		var cov := false
@@ -73,7 +89,7 @@ static func tick(w: SimWorld) -> void:
 		# steady state (unsuppressed, full morale, not broken): nothing else can change
 		if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false) and float(e.morale) >= max_morale(e.def):
 			continue
-		_update_unit(w, e, p)
+		_update_unit(w, e, pu)
 
 
 static func _update_unit(w: SimWorld, e: Dictionary, p: Dictionary) -> void:
@@ -128,9 +144,8 @@ static func _home_of(w: SimWorld, e: Dictionary):
 	var pos: Vector2 = e.pos
 	var best = null
 	var best_d := INF
-	for id in w.entities:
-		var b: Dictionary = w.entities[id]
-		if b.kind != "building" or int(b.owner) != int(e.owner) or not bool(b.get("built", false)):
+	for b in SimIndex.of(w, "building"):
+		if int(b.owner) != int(e.owner) or not bool(b.get("built", false)) or not w.entities.has(int(b.id)):
 			continue
 		if not bool(Content.building(b.def).get("home", false)):  # G3a: flag replaces HOME_DEFS
 			continue
@@ -163,15 +178,28 @@ static func _process_deaths(w: SimWorld) -> void:
 		return
 	var loss := float((Content.rules().get("morale", {}) as Dictionary).get("per_squadmate_death", 15))
 	var r2 := SQUAD_RADIUS * SQUAD_RADIUS
+	var want := {}   # squad -> true
+	for d in deaths:
+		if int(d.squad) >= 0:
+			want[int(d.squad)] = true
+	if want.is_empty():
+		return
+	var members := {}   # squad -> [living infantry of that squad], entity order
+	for e in SimIndex.of(w, "unit"):
+		if not e.has("morale"):
+			continue
+		var sq := int(e.get("squad", -1))
+		if sq >= 0 and want.has(sq) and w.entities.has(int(e.id)):
+			if members.has(sq):
+				members[sq].append(e)
+			else:
+				members[sq] = [e]
 	for d in deaths:
 		var sq := int(d.squad)
-		if sq < 0:
+		if sq < 0 or not members.has(sq):
 			continue
 		var dp: Vector2 = d.pos
-		for id in w.entities:
-			var e: Dictionary = w.entities[id]
-			if e.kind != "unit" or not e.has("morale") or int(e.get("squad", -1)) != sq:
-				continue
+		for e in members[sq]:
 			if int(e.owner) != int(d.owner):
 				continue
 			var ep: Vector2 = e.pos
@@ -183,8 +211,10 @@ static func _process_deaths(w: SimWorld) -> void:
 ## Built from current state when needed; never saved (lives only in this call).
 static func _cover_index(w: SimWorld) -> Dictionary:
 	var idx := {}
-	for id in w.entities:
-		var e: Dictionary = w.entities[id]
+	var src: Array = SimIndex.of(w, "building") + SimIndex.of(w, "wreck")
+	for e in src:
+		if not w.entities.has(int(e.id)):
+			continue
 		var r: Rect2
 		if e.kind == "building":
 			var o: Vector2i = e.cell
