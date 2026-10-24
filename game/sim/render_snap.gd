@@ -24,7 +24,7 @@ const DEF_CARRIER := 1 << 30  # def table only: the def has cargo_slots
 const DETAIL_MAX := 64      # detail copies per snapshot (a 500-unit marquee must not cost 5 ms)
 # statics: fields copied when present (scalars / Vector2 / Vector2i only)
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
-	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden"]
+	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse"]  # seen/fuse: G4b mines / charges (UI4B)
 
 
 ## Builds the snapshot for the world's current state. Safe to call every tick; the cost is one

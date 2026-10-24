@@ -14,16 +14,21 @@ const MatchViewScript = preload("res://presentation/match_view.gd")
 const Ops = preload("res://sim/systems/ops.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3bData = preload("res://presentation/hud/g3b_data.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")  # G4b (UI4B) flow
+const Transport = preload("res://sim/systems/transport.gd")
+const G4bMech = preload("res://sim/systems/g4b_mech.gd")
 
 var main: Node
 var shot_dir := ""
 var stages_flow := false  # G3b: --ui-playtest-stages
 var faction := ""     # --ui-playtest-faction ("" = leave the menu defaults: Human A vs Human A)
+var g4b_flow := false  # G4b (UI4B): --ui-playtest-g4b (walls/gate, APC load/unload, mortar deploy)
 var passed := 0
 var failed := 0
 
 
 func _ready() -> void:
+	g4b_flow = OS.get_cmdline_user_args().has("--ui-playtest-g4b")
 	_run()
 
 
@@ -375,6 +380,9 @@ func _run() -> void:
 	await _wait(1.5)
 	_log("player_faction", faction == "" or _fac() == faction, "faction=%s sides=%d" % [_fac(), _w().factions.size()])
 	await _shot("ui_01_start")
+	if g4b_flow:
+		await _g4b_flow()
+		return _finish()
 
 	var pdef := _role("power")
 	var bdef := _role("barracks")
@@ -662,3 +670,274 @@ func _stages_flow(builders: Array) -> void:
 func _finish() -> void:
 	print("PLAYTEST RESULT pass=%d fail=%d" % [passed, failed])
 	get_tree().quit(0 if failed == 0 else 1)
+
+
+# ------------------------------------------------------------ G4b flow (UI4B): --ui-playtest-g4b
+## Human A (menu defaults, Stage 8). A harness grant tops up the stock once (the flow tests the
+## G4b UI, not the economy). Then, all by synthetic input: build barracks + motor pool, drag a
+## 6-segment wall, place a gate at its end, lock + unlock it from the gate panel, train an APC and
+## a squad, right-click the APC with the squad (load), unload one rider from the cargo strip,
+## Unload at point for the rest, train a mortar and press Deploy.
+func _g4b_flow() -> void:
+	_mv().join_sim()
+	var f: Dictionary = _w().factions[0]
+	f.credits = int(f.credits) + 8000
+	for r in ["salvage", "ore"]:
+		f.stock[r] = int(f.stock.get(r, 0)) + 5000
+	_log("g4b_harness_grant", true, "credits=%d stock=%s" % [int(f.credits), str(f.stock)])
+	# ORCH CR (UI4B, content.gd): G4 production "facility" is not merged into the building's
+	# produces list yet; patch the loaded content in memory only while that merge is missing.
+	for item in ["a_apc", "a_mortar", "a_combat_engineer"]:
+		var fac := String(Content.production(item).get("facility", ""))
+		var pl: Array = Content.building(fac).get("produces", [])
+		if fac != "" and not pl.has(item):
+			pl.append(item)
+			print("PLAYTEST-DBG facility_patch %s -> %s (content.gd merge missing)" % [item, fac])
+	_log("speed_3x_button", await _click_button("3x"))
+	var builders := _defs_with("can_build")
+	for role in ["power", "barracks", "factory"]:
+		var d := _role(role)
+		var n := await _select_units(builders)
+		_log("g4b_select_builders_" + role, n > 0, "selected=%d" % n)
+		_log("g4b_place_" + role, await _place(d), d)
+		_log("g4b_built_" + role, await _wait_until(func(): return _built(d), 90.0), d)
+	await _g4b_walls(builders)
+	await _g4b_transport()
+	await _g4b_mortar()
+	await _g4b_mine()
+
+
+## A legal on-screen 6-cell line near the HQ for def (pure preview on the joined world).
+func _g4b_line(def_id: String) -> Array:
+	var c: Vector2i = _hq().cell
+	for r in range(5, 14):
+		for dir in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+			for off in [Vector2i(0, r), Vector2i(r, 0), Vector2i(0, -r), Vector2i(-r, 0), Vector2i(r, r), Vector2i(-r, -r)]:
+				var a: Vector2i = c + off
+				var b: Vector2i = a + dir * 5
+				var gate: Vector2i = b + dir
+				var pv: Dictionary = Fortify.preview_line(_w(), 0, def_id, a, b)
+				if (pv.legal as Array).size() != 6 or Construction.placement_error(_w(), 0, _role("gate"), gate) != "":
+					continue
+				var ok := true
+				for q in [a, b, gate]:
+					if not _on_map(_to_screen(Vector2(q) + Vector2(0.5, 0.5))):
+						ok = false
+				if ok:
+					return [a, b, gate]
+	return []
+
+
+func _g4b_walls(builders: Array) -> void:
+	var wdef := _role("wall")
+	var gdef := _role("gate")
+	_log("g4b_wall_roles", wdef != "" and gdef != "", "wall=%s gate=%s" % [wdef, gdef])
+	var n := await _select_units(builders)
+	_log("g4b_wall_select_builders", n > 0, "selected=%d" % n)
+	var line := _g4b_line(wdef)
+	_log("g4b_wall_line_found", not line.is_empty(), str(line))
+	if line.is_empty():
+		return
+	var a: Vector2i = line[0]
+	var b: Vector2i = line[1]
+	var before := _w().buildings_of(0, wdef).size()
+	var hk := _hotkey(wdef)
+	await _key(OS.find_keycode_from_string(hk))
+	await _wait(0.3)
+	_log("g4b_wall_tool_armed_hotkey_" + hk, _mv().placing_def == wdef, _mv().placing_def)
+	var sa := _to_screen(Vector2(a) + Vector2(0.5, 0.5))
+	var sb := _to_screen(Vector2(b) + Vector2(0.5, 0.5))
+	await _move(sa)
+	await _button(sa, MOUSE_BUTTON_LEFT, true)
+	for i in 6:
+		await _move(sa.lerp(sb, float(i + 1) / 6.0))
+	await _wait(0.4)
+	var pv: Dictionary = _mv().g4b.preview
+	_log("g4b_wall_drag_preview", (pv.get("legal", []) as Array).size() == 6, "legal=%d cells=%d" % [(pv.get("legal", []) as Array).size(), (pv.get("cells", []) as Array).size()])
+	await _shot("ui_g4b_01_wall_drag")
+	await _button(sb, MOUSE_BUTTON_LEFT, false)
+	await _wait(0.5)
+	_log("g4b_build_line_issued", String(_mv().g4b.last_line.get("type", "")) == "build_line", str(_mv().g4b.last_line))
+	var walls_ok := await _wait_until(func(): return _built_count(wdef) >= before + 6, 120.0)
+	_log("g4b_six_walls_built", walls_ok, "walls=%d" % _w().buildings_of(0, wdef).size())
+	# gate at the end of the line (single-building placement)
+	var gc: Vector2i = line[2]
+	await _select_units(builders)
+	await _key(OS.find_keycode_from_string(_hotkey(gdef)))
+	await _wait(0.3)
+	await _move(_to_screen(Vector2(gc) + Vector2(0.5, 0.5)))
+	await _click(_to_screen(Vector2(gc) + Vector2(0.5, 0.5)))
+	await _wait(0.5)
+	_log("g4b_gate_placed", _w().buildings_of(0, gdef).size() > 0, gdef)
+	var gate_ok := await _wait_until(func(): return _built(gdef), 90.0)
+	_log("g4b_gate_built", gate_ok)
+	if not gate_ok:
+		return
+	var g: Dictionary = _w().buildings_of(0, gdef)[0]
+	await _wait(1.0)
+	await _shot("ui_g4b_02_wall_gate")
+	await _click(_to_screen(g.pos))
+	await _wait(0.5)
+	_log("g4b_select_gate", _mv().selection.has(int(g.id)))
+	_log("g4b_click_lock", await _click_button("Lock gate"))
+	_log("g4b_gate_locked", await _wait_until(func(): return bool(_w().get_e(int(g.id)).get("locked", false)), 5.0))
+	await _wait(0.4)
+	await _shot("ui_g4b_03_gate_locked")
+	_log("g4b_click_unlock", await _click_button("Unlock gate"))
+	_log("g4b_gate_unlocked", await _wait_until(func(): return not bool(_w().get_e(int(g.id)).get("locked", true)), 5.0))
+
+
+func _built_count(def_id: String) -> int:
+	var k := 0
+	for e in _w().buildings_of(0, def_id):
+		if bool(e.built):
+			k += 1
+	return k
+
+
+## Select a producer building by click and press the production card button for item.
+func _train(item: String) -> Array:
+	var prod := _producer_of(item)
+	var units := G3.item_units(item)
+	if prod.is_empty():
+		_log("g4b_producer_" + item, false)
+		return []
+	var before := _own_units_in(units).size()
+	await _click(_to_screen(prod.pos))
+	await _wait(0.4)
+	var nm := String(Content.production(item).name)
+	_log("g4b_click_train_" + item, await _click_button(nm), nm)
+	var ok := await _wait_until(func(): return _own_units_in(units).size() > before, 90.0)
+	_log("g4b_trained_" + item, ok, "%s=%d" % [item, _own_units_in(units).size()])
+	return _own_units_in(units) if ok else []
+
+
+func _g4b_transport() -> void:
+	var tdef := _role("transport")
+	var apcs := await _train(tdef)
+	var inf_units := G3.item_units(_role("infantry"))
+	var squad := await _train(_role("infantry"))
+	if apcs.is_empty() or squad.is_empty():
+		return
+	await _wait(2.0)
+	var apc: Dictionary = apcs[0]
+	_mv().center_camera_on(apc.pos)
+	await _wait(0.4)
+	var n := await _select_units(inf_units)
+	_log("g4b_select_squad", n > 0, "selected=%d" % n)
+	await _click(_to_screen(_w().get_e(int(apc.id)).pos), MOUSE_BUTTON_RIGHT)
+	await _wait(0.3)
+	var loaded := await _wait_until(func(): return Transport.used_slots(_w().get_e(int(apc.id))) >= mini(n, 4), 40.0)
+	var cargo: Array = Transport.cargo_ids(_w().get_e(int(apc.id)))
+	_log("g4b_right_click_load", loaded, "cargo=%s" % str(cargo))
+	if not loaded:
+		return
+	await _wait_until(func(): return Transport.cargo_ids(_w().get_e(int(apc.id))).size() >= n, 10.0)
+	cargo = Transport.cargo_ids(_w().get_e(int(apc.id)))
+	await _click(_to_screen(_w().get_e(int(apc.id)).pos))
+	await _wait(0.6)
+	_log("g4b_select_apc", _mv().selection.has(int(apc.id)))
+	var hud = main.get("hud")
+	var strip = hud.g4b_cmd.strip if hud != null else null
+	_log("g4b_cargo_strip_visible", strip != null and strip.is_visible_in_tree() and hud.g4b_cmd.strip_box.get_child_count() >= cargo.size(),
+		"" if strip == null else hud.g4b_cmd.strip_title.text)
+	await _shot("ui_g4b_04_apc_loaded")
+	_log("g4b_cargo_badge_drawn", _mv().g4b_over.badges_drawn > 0, "badges=%d" % _mv().g4b_over.badges_drawn)
+	var first := int(cargo[0])
+	var cb = get_tree().root.find_child("G4bCargo_%d" % first, true, false) as Button
+	_log("g4b_click_cargo_slot", cb != null)
+	if cb != null:
+		await _click(cb.get_global_rect().get_center())
+	_log("g4b_slot_unloaded_one", await _wait_until(func(): return _w().entities.has(first), 15.0), "id=%d" % first)
+	await _wait(0.5)
+	_log("g4b_click_unload_at_point", await _click_button("Unload at point"))
+	await _wait(0.3)
+	var ap: Vector2 = _w().get_e(int(apc.id)).pos
+	var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5
+	var goal := ap + (mc - ap).normalized() * 6.0
+	for ang in [0.0, 0.8, -0.8, 1.6, -1.6, 3.14]:
+		var g2p: Vector2 = ap + (mc - ap).normalized().rotated(ang) * 6.0
+		if _on_map(_to_screen(g2p)) and _mv().entity_at(g2p, true) == null:
+			goal = g2p
+			break
+	await _click(_to_screen(goal))
+	await _wait(0.3)
+	var unl := await _wait_until(func(): return Transport.used_slots(_w().get_e(int(apc.id))) == 0, 60.0)
+	var near := 0
+	for id in cargo:
+		var u = _w().get_e(int(id))
+		if u != null and Vector2(u.pos).distance_to(goal) < 4.0:
+			near += 1
+	_log("g4b_unload_at_point", unl and near >= cargo.size() - 1, "empty=%s near_goal=%d of %d goal=%s" % [str(unl), near, cargo.size() - 1, str(goal)])
+	await _wait(1.0)
+	await _shot("ui_g4b_05_unloaded")
+
+
+func _g4b_mortar() -> void:
+	var mdef := _role("mortar")
+	_log("g4b_mortar_role", mdef != "", mdef)
+	if mdef == "":
+		return
+	var ms := await _train(mdef)
+	if ms.is_empty():
+		return
+	await _wait(1.5)
+	var m: Dictionary = ms[0]
+	_mv().center_camera_on(_w().get_e(int(m.id)).pos)
+	await _wait(0.4)
+	await _click(_to_screen(_w().get_e(int(m.id)).pos))
+	await _wait(0.5)
+	_log("g4b_select_mortar", _mv().selection.has(int(m.id)))
+	_log("g4b_click_deploy", await _click_button("Deploy"))
+	var dep := await _wait_until(func(): return int(_w().get_e(int(m.id)).get("setup_left", 0)) > 0 or bool(_w().get_e(int(m.id)).get("deployed", false)), 5.0)
+	_log("g4b_mortar_deploying", dep, "setup_left=%s deployed=%s" % [str(_w().get_e(int(m.id)).get("setup_left")), str(_w().get_e(int(m.id)).get("deployed"))])
+	var done := await _wait_until(func(): return bool(_w().get_e(int(m.id)).get("deployed", false)), 20.0)
+	_log("g4b_mortar_deployed", done)
+	await _wait(0.6)
+	_log("g4b_pack_button_shown", _find_button(get_tree().root, "Pack") != null)
+	await _shot("ui_g4b_06_mortar_deployed")
+
+
+## Combat engineer: Lay mine button -> click a cell -> own mine marker drawn by g4b_overlay.
+func _g4b_mine() -> void:
+	var edef := _role("engineer_combat")
+	if edef == "":
+		_log("g4b_engineer_role", false)
+		return
+	var es := await _train(edef)
+	if es.is_empty():
+		return
+	await _wait(1.5)
+	var e: Dictionary = _w().get_e(int(es[0].id))
+	_mv().center_camera_on(e.pos)
+	await _wait(0.4)
+	await _click(_to_screen(_w().get_e(int(e.id)).pos))
+	await _wait(0.5)
+	_log("g4b_select_engineer", _mv().selection.has(int(e.id)))
+	var c0 := Vector2i(Vector2(_w().get_e(int(e.id)).pos).floor())
+	var cell := Vector2i(-1, -1)
+	for off in [Vector2i(3, 0), Vector2i(0, 3), Vector2i(-3, 0), Vector2i(0, -3), Vector2i(3, 3), Vector2i(-3, -3)]:
+		var q: Vector2i = c0 + off
+		if _w().in_bounds(q):
+			if _on_map(_to_screen(Vector2(q) + Vector2(0.5, 0.5))) and G4bMech.mine_error(_w(), 0, q) == "":
+				cell = q
+				break
+	_log("g4b_mine_cell_found", cell.x >= 0, str(cell))
+	if cell.x < 0:
+		return
+	_log("g4b_click_lay_mine", await _click_button("Lay mine"))
+	await _wait(0.3)
+	await _click(_to_screen(Vector2(cell) + Vector2(0.5, 0.5)))
+	var laid := await _wait_until(func(): return _own_mines() > 0, 30.0)
+	_log("g4b_mine_laid", laid, "mines=%d" % _own_mines())
+	await _wait(0.8)
+	_log("g4b_mine_marker_drawn", _mv().g4b_over.mines_drawn > 0, "markers=%d" % _mv().g4b_over.mines_drawn)
+	await _shot("ui_g4b_07_mine")
+
+
+func _own_mines() -> int:
+	var k := 0
+	for x in _w().entities.values():
+		if String(x.kind) == "mine" and int(x.owner) == 0:
+			k += 1
+	return k

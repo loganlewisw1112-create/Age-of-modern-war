@@ -13,6 +13,7 @@ const ObjectivesScript = preload("res://presentation/hud/objectives.gd")
 const G2Inspector = preload("res://presentation/hud/g2_inspector.gd")
 const G2Commands = preload("res://presentation/hud/g2_commands.gd")
 const G2Alerts = preload("res://presentation/hud/g2_alerts.gd")
+const G4bCommands = preload("res://presentation/hud/g4b_commands.gd")  # G4b (UI4B)
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
 # G3b (UI4): stage panel, research card, stage/research lock reasons
@@ -29,6 +30,7 @@ var layer: Node = null
 var objectives := ObjectivesScript.new()
 var g2_insp = G2Inspector.new()
 var g2_cmd = G2Commands.new()
+var g4b_cmd = G4bCommands.new()
 var g2_alerts = G2Alerts.new()
 var g3_score = G3Score.new()
 var g3b_stage = G3bStage.new()
@@ -272,6 +274,8 @@ func _build_ui() -> void:
 	iv.add_child(_insp_counts)
 	g2_insp.build(iv, _insp_info, root)
 	g2_cmd.hud = self
+	g4b_cmd.hud = self
+	g4b_cmd.build(root)
 	# command card
 	var cv := VBoxContainer.new()
 	cv.custom_minimum_size = Vector2(580, 0)
@@ -563,6 +567,7 @@ func _set_card(mode: String, ents: Array, w: SimWorld) -> void:
 
 func _clear_card() -> void:
 	_card_buttons.clear()
+	g4b_cmd.reset()
 	_hotkeys.clear()
 	_hover_btn = null
 	for c in _card_grid.get_children():
@@ -606,6 +611,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			_register_hotkey(String(p.get("hotkey", "")), btn)
 		if bool(d.get("research", false)):
 			_add_research_buttons(bid)
+		g4b_cmd.add_building_buttons(b)
 	elif mode == "construct":
 		var b2: Dictionary = ents[0]
 		_card_title.text = "UNDER CONSTRUCTION"
@@ -676,6 +682,7 @@ func _add_unit_buttons(ids: Array, mode: String = "units") -> void:
 	hold.pressed.connect(_issue.bind({"type": "hold", "unit_ids": ids.duplicate()}))
 	_card_buttons.append({"btn": hold, "kind": "plain"})
 	g2_cmd.add_buttons(mode, ids)
+	g4b_cmd.add_buttons(mode, ids)
 
 
 func _card_button(title: String, cost: String, hotkey: String, icon_id: String) -> Button:
@@ -747,12 +754,15 @@ For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)
 		btn.tooltip_text = tip
 	if mode == "engineer" or mode == "units":
 		g2_cmd.update_state(w)
+	g4b_cmd.update_state(w)
 	if _hover_btn != null:
 		for rec in _card_buttons:
 			if rec.btn == _hover_btn and String(rec.get("reason", "")) != "":
 				hint = String(rec.reason)
 	if hint == "":
 		hint = g2_cmd.hint()
+	if hint == "":
+		hint = g4b_cmd.hint()
 	if hint == "" and mode == "building":
 		var st := String(ents[0].get("status", ""))
 		if st != "":

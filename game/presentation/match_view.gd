@@ -29,6 +29,8 @@ const CameraRig = preload("res://presentation/view/camera_rig.gd")
 # G2 (agent D2): order modes, overlays, demo scripts
 const G2Input = preload("res://presentation/view/g2_input.gd")
 const G2Overlay = preload("res://presentation/view/g2_overlay.gd")
+const G4bInput = preload("res://presentation/view/g4b_input.gd")    # G4b (UI4B): walls, transports, mines
+const G4bOverlay = preload("res://presentation/view/g4b_overlay.gd")
 const G2Demo = preload("res://presentation/view/g2_demo.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
@@ -80,6 +82,8 @@ var overlay_layer: Node2D
 var g2 = G2Input.new()                   # G2 order modes (patrol/guard/repair/mission)
 var g2_ground: Node2D
 var g2_over: Node2D
+var g4b = G4bInput.new()                 # G4b (UI4B) wall drag + transport / engineer modes
+var g4b_over: Node2D
 var g3_ground: Node2D                    # G3a: air shadows, recharge radii (under entities)
 var _ally_fids: Array = []               # G3a: allies of player_fid (allied vision)
 
@@ -220,6 +224,11 @@ func _init_view() -> void:
 	g2_over.mode = "over"
 	g2_over.z_index = 5
 	add_child(g2_over)
+	g4b.mv = self
+	g4b_over = G4bOverlay.new()
+	g4b_over.z_index = 5
+	add_child(g4b_over)
+	g4b_over.setup(self)
 	g3_ground = G3View.new()
 	g3_ground.z_index = 1
 	add_child(g3_ground)
@@ -621,6 +630,7 @@ func begin_build_placement(def_id: String) -> void:
 		return
 	placing_def = def_id
 	attack_move_armed = false
+	g4b.cancel()
 	placement_changed.emit(def_id)
 
 
@@ -633,6 +643,7 @@ func cancel_placement() -> void:
 	if placing_def == "":
 		return
 	placing_def = ""
+	g4b.wall_from = null
 	placement_changed.emit("")
 
 
@@ -895,13 +906,17 @@ func _input(event: InputEvent) -> void:
 			_drag_now_screen = mm.position
 			if (_drag_now_screen - (_drag_start_screen as Vector2)).length() > 6.0:
 				_dragging = true
+		if g4b.dragging():
+			g4b.on_motion(screen_to_world(_viewport_to_canvas(mm.position)))
 		if _mid_drag:
 			camera.pan_screen(_mid_last - mm.position)
 			_mid_last = mm.position
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if not mb.pressed:
-			if mb.button_index == MOUSE_BUTTON_LEFT and _drag_start_screen != null:
+			if mb.button_index == MOUSE_BUTTON_LEFT and g4b.dragging():
+				g4b.on_release(screen_to_world(_viewport_to_canvas(mb.position)), mb.shift_pressed)
+			elif mb.button_index == MOUSE_BUTTON_LEFT and _drag_start_screen != null:
 				_finish_left(mb.position, mb.shift_pressed)
 			elif mb.button_index == MOUSE_BUTTON_MIDDLE:
 				_mid_drag = false
@@ -910,11 +925,15 @@ func _input(event: InputEvent) -> void:
 func _on_left_press(mb: InputEventMouseButton) -> void:
 	var p := screen_to_world(_viewport_to_canvas(mb.position))
 	if placing_def != "":
+		if g4b.on_place_press(p):
+			return
 		_try_place(p, mb.shift_pressed)
 		return
 	if attack_move_armed:
 		attack_move_armed = false
 		_command_attack_move(p)
+		return
+	if g4b.on_left(p, mb.shift_pressed):
 		return
 	if g2.on_left(p, mb.shift_pressed):
 		return
@@ -1000,6 +1019,9 @@ func _select_same_def_on_screen(p: Vector2, shift: bool) -> void:
 
 
 func _on_right_press(mb: InputEventMouseButton) -> void:
+	if g4b.on_right():
+		cancel_placement()
+		return
 	if placing_def != "":
 		cancel_placement()
 		return
@@ -1027,6 +1049,8 @@ func smart_command(p: Vector2, shift: bool = false) -> void:
 		return
 	var t = entity_at(p, true)
 	var engineers := _own_engineers_in_selection()
+	if g4b.smart(p, t, units):
+		return
 	if g2.smart(p, shift, t, units, engineers):
 		return
 	if t != null:
@@ -1085,6 +1109,8 @@ func _on_key(k: InputEventKey) -> bool:
 			_recall_group(g, k.shift_pressed)
 		return true
 	if g2.on_key(kc):
+		return true
+	if g4b.on_key(kc):
 		return true
 	match kc:
 		KEY_ESCAPE:

@@ -371,7 +371,7 @@ func refresh() -> void:
 					_seen_wrecks[id] = true
 			"mine", "charge":
 				# G4b: hidden from enemies unless the sim marks them detected for this side
-				if ow != pf and not mv._ally_fids.has(ow) and not _detected(e, pf):
+				if ow != pf and not mv._ally_fids.has(ow) and not _detected(e, pf, int(((mv.snap.get("factions", {}) as Dictionary).get(pf, {}) as Dictionary).get("team", pf))):
 					continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
@@ -394,10 +394,13 @@ func _proxy(id: int, dname: String, ow: int, facing: float, fl: int) -> Dictiona
 		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0}
 
 
-static func _detected(e: Dictionary, pf: int) -> bool:
+static func _detected(e: Dictionary, pf: int, team: int = -1) -> bool:
 	var d = e.get("detected")
 	if d is Dictionary or d is Array:
 		return d.has(pf)
+	var s = e.get("seen")  # G4b (UNITS g4b_mech): team ids that detected this mine (UI4B)
+	if (s is Array or s is Dictionary) and team >= 0 and s.has(team):
+		return true
 	return d is bool and d
 
 
