@@ -15,6 +15,21 @@ extends RefCounted
 
 const REBUILD_EVERY := 4
 
+## Sub-phase profiler (bench only; off by default, never touches sim state).
+static var profiling := false
+static var prof := {}   # label -> [usec total, calls]
+
+
+static func pt(label: String, t0: int) -> int:
+	var t := Time.get_ticks_usec()
+	var a = prof.get(label)
+	if a == null:
+		prof[label] = [t - t0, 1]
+	else:
+		a[0] += t - t0
+		a[1] += 1
+	return t
+
 
 static func _empty(w: SimWorld) -> Dictionary:
 	return {"tick": w.tick, "next_id": int(w.next_id), "kinds": {}, "known": w.entities.size()}
@@ -55,6 +70,8 @@ static func get_index(w: SimWorld) -> Dictionary:
 				kinds[k] = [e]
 			else:
 				arr.append(e)
+			if k == "unit" and idx.has("full"):
+				idx.full.append(e)   # Tiers lists: new units are FULL (ascending id kept)
 		idx.known = int(idx.known) + nid - from
 		idx.next_id = nid
 	idx.tick = w.tick

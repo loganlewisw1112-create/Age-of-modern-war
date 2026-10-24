@@ -1,6 +1,7 @@
 extends RefCounted
 const Status = preload("res://sim/systems/status.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Tiers = preload("res://sim/systems/tiers.gd")
 ## Fog of war (owner: agent B / sim-mil). Per-faction visibility, explored cells, last-seen memory.
 ## Contract: docs/CONTRACTS.md section 5.
 ##   w.fog[fid] = {visible: PackedByteArray, explored: PackedByteArray}  (1 = yes, idx y*w+x)
@@ -53,8 +54,14 @@ static func _stamp(sight: float) -> Array:
 				var i := ((dy + r) * n + (dx + r)) * 2
 				m[i] = 255
 				m[i + 1] = 255
+	var la := PackedByteArray()
+	la.resize(n * n * 2)
+	for i in n * n:
+		la[2 * i] = 1
+		la[2 * i + 1] = 255
 	var out := [Image.create_from_data(n, n, false, Image.FORMAT_R8, ones),
-		Image.create_from_data(n, n, false, Image.FORMAT_LA8, m), r]
+		Image.create_from_data(n, n, false, Image.FORMAT_LA8, m), r,
+		Image.create_from_data(n, n, false, Image.FORMAT_LA8, la)]   # [3] LA8 source of (1, 255)
 	_circles[sight] = out
 	return out
 
@@ -74,9 +81,15 @@ static func init_faction_fog(w: SimWorld) -> void:
 	recompute(w)
 
 
+## G3b PERF4-2: teams are recomputed on alternating half-periods (team ordinal 0, 2, .. on
+## tick % RECOMPUTE_EVERY == 0; ordinal 1, 3, .. on tick % RECOMPUTE_EVERY == RECOMPUTE_EVERY / 2),
+## so each team's vision still refreshes every RECOMPUTE_EVERY ticks but the cost is split in two.
 static func tick(w: SimWorld) -> void:
-	if w.tick % RECOMPUTE_EVERY == 0:
-		recompute(w)
+	var ph := w.tick % RECOMPUTE_EVERY
+	if ph == 0:
+		recompute(w, 0)
+	elif ph == RECOMPUTE_EVERY / 2:
+		recompute(w, 1)
 
 
 ## G3a allied vision (agent V3): sides are grouped by team. Every member of a team gets the SAME
@@ -106,7 +119,8 @@ static func _or_bytes(a: PackedByteArray, b: PackedByteArray) -> PackedByteArray
 	return out
 
 
-static func recompute(w: SimWorld) -> void:
+## phase -1: every team (init, load, tests); 0 / 1: only teams whose ordinal % 2 == phase.
+static func recompute(w: SimWorld, phase := -1) -> void:
 	var mw := int(w.map.w)
 	var mh := int(w.map.h)
 	var n := mw * mh
@@ -118,6 +132,7 @@ static func recompute(w: SimWorld) -> void:
 			w.fog[fid] = {"visible": e0.duplicate(), "explored": e0}
 		if not w.memory.has(fid):
 			w.memory[fid] = {}
+	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	# one pass: stamp sources per team (keyed by the team's first member)
 	var root := {}
 	for fid in w.factions:
@@ -126,25 +141,36 @@ static func recompute(w: SimWorld) -> void:
 			for m in members:
 				root[int(m)] = int(members[0])
 	var srcs := {}   # root -> {stamp key: [cell, sight]}
+	var ordinal := 0
 	for fid in w.factions:
 		if int(root[int(fid)]) == int(fid):
-			srcs[int(fid)] = {}
+			if phase < 0 or ordinal % 2 == phase:
+				srcs[int(fid)] = {}
+			ordinal += 1
+	var ents: Dictionary = w.entities
+	var usight := _usight
+	var bsight := _bsight
 	for kind in ["unit", "building"]:
-		for e in SimIndex.of(w, kind):
-			var rt = root.get(int(e.owner))
-			if rt == null or not w.entities.has(int(e.id)):
+		var cache: Dictionary = usight if kind == "unit" else bsight
+		for e: Dictionary in SimIndex.of(w, kind):
+			var rt = root.get(e.owner)
+			if rt == null or not srcs.has(rt) or not ents.has(e.id):
 				continue
-			var s := sight_of(e)
+			var sv = cache.get(e.def)
+			var s: float = sv if sv != null else sight_of(e)
 			if e.has("comp") or e.has("jammed_until"):
 				s *= Status.sight_mult(w, e)
 			if s <= 0.0:
 				continue
 			var p: Vector2 = e.pos
-			var c := Vector2i(floori(p.x), floori(p.y))
-			var key := (c.y * mw + c.x) * 128 + int(s * 4.0)
+			var key := (floori(p.y) * mw + floori(p.x)) * 128 + int(s * 4.0)
 			var st: Dictionary = srcs[rt]
 			if not st.has(key):
-				st[key] = [c, s]
+				st[key] = s
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("fog.gather", t0)
+	var ones := _ones(mw, mh)
+	var full := Rect2i(0, 0, mw, mh)
 	for rt in srcs:
 		var members := team_members(w, int(rt))
 		var ex_data: PackedByteArray = w.fog[members[0]].explored
@@ -152,27 +178,44 @@ static func recompute(w: SimWorld) -> void:
 			var other: PackedByteArray = w.fog[members[k]].explored
 			if other != ex_data:
 				ex_data = _or_bytes(ex_data, other)
-		# Stamping is done with native Image blits (one call per source per layer): a GDScript
-		# per-cell loop cost ~100 ms per recompute at 256 units.
-		var vis_img := Image.create_empty(mw, mh, false, Image.FORMAT_R8)
-		var ex_img := Image.create_from_data(mw, mh, false, Image.FORMAT_R8, ex_data)
+		# Stamping is done with native Image blits (one call per unique source): visible is an
+		# LA8 image (L = 1, A = 255 where seen) so that it is also the mask that ORs it into
+		# explored in ONE blit (PERF4-2; it used to be a second blit per source).
+		var vis_img := Image.create_empty(mw, mh, false, Image.FORMAT_LA8)
 		var st: Dictionary = srcs[rt]
 		for key in st:
-			var c: Vector2i = st[key][0]
-			var stp: Array = _stamp(float(st[key][1]))
+			var ci: int = key >> 7
+			var cy := floori(float(ci) / float(mw))
+			var c := Vector2i(ci - cy * mw, cy)
+			var stp: Array = _stamp(float(st[key]))
 			var r := int(stp[2])
-			var src: Image = stp[0]
-			var mask: Image = stp[1]
-			var rect := Rect2i(0, 0, 2 * r + 1, 2 * r + 1)
-			var dst := c - Vector2i(r, r)
-			vis_img.blit_rect_mask(src, mask, rect, dst)
-			ex_img.blit_rect_mask(src, mask, rect, dst)
+			vis_img.blit_rect_mask(stp[3], stp[1], Rect2i(0, 0, 2 * r + 1, 2 * r + 1), c - Vector2i(r, r))
+		var ex_img := Image.create_from_data(mw, mh, false, Image.FORMAT_R8, ex_data)
+		ex_img.blit_rect_mask(ones, vis_img, full, Vector2i.ZERO)
+		vis_img.convert(Image.FORMAT_R8)
+		if SimIndex.profiling:
+			t0 = SimIndex.pt("fog.blit", t0)
 		var vis := vis_img.get_data()
 		var ex := ex_img.get_data()
 		for m in members:
 			w.fog[m].visible = vis
 			w.fog[m].explored = ex
 			_update_memory(w, int(m), vis, mw)
+		if SimIndex.profiling:
+			t0 = SimIndex.pt("fog.memory", t0)
+
+
+static var _ones_img: Image = null
+
+
+## Map-sized R8 image of 1s (source for the explored OR-blit).
+static func _ones(mw: int, mh: int) -> Image:
+	if _ones_img == null or _ones_img.get_width() != mw or _ones_img.get_height() != mh:
+		var b := PackedByteArray()
+		b.resize(mw * mh)
+		b.fill(1)
+		_ones_img = Image.create_from_data(mw, mh, false, Image.FORMAT_R8, b)
+	return _ones_img
 
 
 static func _update_memory(w: SimWorld, fid: int, vis: PackedByteArray, mw: int) -> void:
@@ -241,9 +284,22 @@ static func entity_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
 
 
 ## Enemy units AND buildings on cells currently visible to fid (the only legal enemy query for AI).
+## G3b PERF4-2: (1) REDUCED-tier units are skipped: by the Tiers contact bound no unit or
+## building of another team is within contact radius (>= every sight) of them, so they are never
+## on a cell fid sees; the candidates are the FULL list plus buildings. (2) The result is cached
+## per (tick, fid, entity count, next_id): repeated calls in one tick (AI think, ops) reuse it,
+## and any spawn or death in between invalidates it. Callers get a copy (safe to mutate).
 static func visible_enemies(w: SimWorld, fid: int) -> Array:
+	var vc = w.cache.get("vis_enemies")
+	var stamp := [w.tick, w.entities.size(), int(w.next_id)]
+	if vc == null or vc.stamp != stamp:
+		vc = {"stamp": stamp, "by": {}}
+		w.cache["vis_enemies"] = vc
+	var hit = vc.by.get(fid)
+	if hit != null:
+		return (hit as Array).duplicate()
 	var out := []
-	var us: Array = SimIndex.of(w, "unit")
+	var us: Array = Tiers.lists(w).full if Tiers.enabled(w) else SimIndex.of(w, "unit")
 	var bs: Array = SimIndex.of(w, "building")
 	var bi := 0
 	for e in us:
@@ -254,6 +310,7 @@ static func visible_enemies(w: SimWorld, fid: int) -> Array:
 	while bi < bs.size():
 		_vis_add(w, fid, bs[bi], out)
 		bi += 1
+	vc.by[fid] = out.duplicate()
 	return out
 
 

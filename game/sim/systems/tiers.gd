@@ -82,12 +82,24 @@ static func begin_tick(w: SimWorld) -> void:
 	if w.tick % RECOMPUTE_EVERY != 0:
 		SimIndex.get_index(w)
 		return
+	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	var idx := SimIndex.rebuild(w)
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("tiers.idx_rebuild", t0)
 	var units: Array = idx.kinds.get("unit", [])
+	var full := []
+	var rslot := []
+	for j in SCAN_STRIDE:
+		rslot.append([])
+	var newly := []
+	idx.full = full
+	idx.rslot = rslot
+	idx.newly = newly
 	if not enabled(w):
 		for e in units:
 			if e.has("tier"):
 				e.erase("tier")
+		full.append_array(units)
 		return
 	var bs := bucket_size()
 	var team := {}       # owner -> team bit
@@ -117,6 +129,7 @@ static func begin_tick(w: SimWorld) -> void:
 		ukey[i] = key
 		ubit[i] = int(bit)
 		occ[key] = int(occ.get(key, 0)) | int(bit)
+	var fmult := maxf(w.econ("fuel_use_mult"), 0.0)
 	var near := {}       # bucket key -> OR over the 3x3 neighbourhood
 	for i in units.size():
 		var e: Dictionary = units[i]
@@ -132,23 +145,100 @@ static func begin_tick(w: SimWorld) -> void:
 				near[key] = mm
 				m = mm
 			if (int(m) & ~ubit[i]) == 0 and w.tick - int(e.get("last_hit_tick", -100000)) > HIT_FULL_TICKS \
-					and String(e.order.get("type", "")) != "attack":
+					and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult):
 				t = REDUCED
 		if t == REDUCED:
 			if int(e.get("tier", 0)) != REDUCED:
 				e.tier = REDUCED
-		elif e.has("tier"):
-			e.erase("tier")
+				newly.append(e)
+			rslot[int(e.id) % SCAN_STRIDE].append(e)
+		else:
+			if e.has("tier"):
+				e.erase("tier")
+			full.append(e)
+	if SimIndex.profiling:
+		SimIndex.pt("tiers.recompute", t0)
+
+
+## Fuel-starved units stay FULL (orch fix 2026-10-24): a REDUCED vehicle moves STRIDE ticks at
+## once, so near empty it would overshoot the point where fuel 0 stops it. A unit is "low" when
+## its fuel could run out within one tier period plus one stride at its top speed (x1.5 roads).
+static var _burn: Dictionary = {}   # unit def -> max fuel burn per tick (before fuel_use_mult)
+
+
+static func _fuel_low(e: Dictionary, mult: float) -> bool:
+	if not e.has("fuel"):
+		return false
+	var b = _burn.get(e.def)
+	if b == null:
+		var d := Content.unit(e.def)
+		b = float(d.get("speed", 0)) * 1.5 / float(SimWorld.TICK_RATE) * float(d.get("fuel_per_tile", 0.0))
+		_burn[e.def] = b
+	if float(b) <= 0.0 or mult <= 0.0:
+		return false
+	return float(e.fuel) <= float(b) * mult * float(RECOMPUTE_EVERY + STRIDE)
 
 
 static func is_reduced(e: Dictionary) -> bool:
 	return int(e.get("tier", 0)) == REDUCED
 
 
-## Promote a unit to FULL now (explicit orders, hits). Safe at any time.
-static func promote(e: Dictionary) -> void:
+## Promote a unit to FULL now (explicit orders, hits). Safe at any time. With w, the unit also
+## joins this period's FULL list (lists(w).full) at once.
+static func promote(e: Dictionary, w: SimWorld = null) -> void:
 	if e.has("tier"):
 		e.erase("tier")
+		if w != null:
+			var idx = w.cache.get("sim_index")
+			if idx != null and idx.has("full"):
+				idx.full.append(e)
+				idx.full_dirty = true
+
+
+## The shared index with this period's tier lists (G3b PERF4-2), built at every tier recompute:
+##   full:  FULL units (no tier), ascending id; units spawned or promoted since are appended
+##          (full_dirty = true when an append broke the id order; units() sorts it).
+##   rslot: SCAN_STRIDE arrays, REDUCED units by id % SCAN_STRIDE, ascending id. A REDUCED unit is
+##          due for its stride work on the ticks where (tick + id) % stride == 0, i.e. it lives in
+##          rslot[(-tick) mod SCAN_STRIDE] (stride 8) or that slot and the one 4 away (stride 4).
+##   newly: units that became REDUCED at the last recompute.
+## Lists may hold destroyed units (skip with w.entities.has) and units promoted since (skip
+## REDUCED-slot entries whose e.tier is gone). After a load (no cache) they are rebuilt from the
+## saved e.tier, so a loaded game sees the same lists as the original run.
+static func lists(w: SimWorld) -> Dictionary:
+	var idx := SimIndex.get_index(w)
+	if not idx.has("full"):
+		var full := []
+		var rslot := []
+		for j in SCAN_STRIDE:
+			rslot.append([])
+		for e in idx.kinds.get("unit", []):
+			if int(e.get("tier", 0)) == REDUCED and enabled(w):
+				rslot[int(e.id) % SCAN_STRIDE].append(e)
+			else:
+				full.append(e)
+		idx.full = full
+		idx.rslot = rslot
+		idx.newly = []
+	if idx.get("full_dirty", false):
+		idx.full.sort_custom(func(a, b): return int(a.id) < int(b.id))
+		idx.full_dirty = false
+	return idx
+
+
+## REDUCED units due on this tick for a stride (STRIDE or SCAN_STRIDE): (tick + id) % stride == 0.
+static func due_reduced(w: SimWorld, stride: int) -> Array:
+	var idx := lists(w)
+	var rs: Array = idx.rslot
+	var a := posmod(-w.tick, SCAN_STRIDE)
+	if stride >= SCAN_STRIDE:
+		return rs[a]
+	var out := []
+	var j := posmod(-w.tick, stride)
+	while j < SCAN_STRIDE:
+		out.append_array(rs[j])
+		j += stride
+	return out
 
 
 ## True on 1 tick in `period` for this entity (staggered by id).

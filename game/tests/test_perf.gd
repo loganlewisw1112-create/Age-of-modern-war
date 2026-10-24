@@ -7,6 +7,7 @@ extends "res://tests/test_base.gd"
 const Tiers = preload("res://sim/systems/tiers.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const NativeCore = preload("res://sim/native_core.gd")
+const Construction = preload("res://sim/systems/construction.gd")
 
 
 ## Endless 2-side world on the default map with the start units removed (HQs in the corners stay).
@@ -155,3 +156,44 @@ func test_small_fight_matches_full_only() -> void:
 	print("  tiers on: %d vs %d left; FULL-only: %d vs %d left" % [a_on, b_on, a_off, b_off])
 	check((a_on > b_on) == (a_off > b_off) and (a_on > 0) == (a_off > 0) and (b_on > 0) == (b_off > 0), "same winner")
 	check(absi(a_on - a_off) <= 3 and absi(b_on - b_off) <= 3, "similar losses (within 3 units per side)")
+
+
+## Orch fix 2026-10-24: the refinery idles (no ore consumed, ore_refined unchanged) while both
+## fuel and ammo stocks are at or above rules.refinery.stock_cap, and resumes below it.
+func test_refinery_idles_at_stock_cap() -> void:
+	var cfg: Dictionary = Content.rules().refinery
+	var cap := int(cfg.get("stock_cap", 0))
+	if not check(cap > 0, "rules.refinery.stock_cap set"):
+		return
+	var w := make_world()
+	var hq: Vector2i = Vector2i(w.factions[0].spawn)
+	var site := Vector2i(-1, -1)
+	for r in range(4, 20):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if site != Vector2i(-1, -1) or maxi(absi(dx), absi(dy)) != r:
+					continue
+				var o := hq + Vector2i(dx, dy)
+				var ok := true
+				for yy in 3:
+					for xx in 3:
+						var cell := o + Vector2i(xx, yy)
+						if not w.in_bounds(cell) or not Terrain.buildable(w.terrain_at(cell)) or Construction.building_at_cell(w, cell):
+							ok = false
+				if ok:
+					site = o
+	if not check(site != Vector2i(-1, -1), "refinery site"):
+		return
+	var r: Dictionary = w.entities[w.spawn_building("refinery", 0, site, true)]
+	var f: Dictionary = w.factions[0]
+	w.credit(0, {"ore": 500, "fuel": maxi(0, cap - int(f.stock.fuel)), "ammo": maxi(0, cap - int(f.stock.ammo))}, "test")
+	var ore0 := int(f.stock.ore)
+	var refined0 := int(f.stats.get("ore_refined", 0))
+	w.run_ticks(300)
+	check_eq(String(r.status), "STOCK_FULL", "both stocks at cap -> STOCK_FULL")
+	check_eq(int(f.stock.ore), ore0, "no ore consumed at the cap")
+	check_eq(int(f.stats.get("ore_refined", 0)), refined0, "ore_refined unchanged while idle")
+	check(w.spend(0, {"fuel": int(f.stock.fuel) - (cap - 1)}, "test"), "drop fuel below the cap")
+	w.run_ticks(130)
+	check_eq(int(f.stock.ore), ore0 - int(cfg.ore_in), "below the cap: one cycle consumed ore_in")
+	check_eq(int(f.stats.get("ore_refined", 0)), refined0 + int(cfg.ore_in), "ore_refined counts real consumption")

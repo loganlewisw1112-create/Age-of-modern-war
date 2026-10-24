@@ -22,6 +22,7 @@ extends RefCounted
 const Construction = preload("res://sim/systems/construction.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Subsets = preload("res://sim/systems/unit_subsets.gd")
 ## G3b PERF4: loops read the shared SimIndex (units / buildings lists) and a per-def cache instead
 ## of full passes with Content lookups. REDUCED-tier units (Tiers) burn fuel on their stride tick
 ## only ((tick + id) % Tiers.STRIDE == 0); the burn covers the whole displacement since the last
@@ -66,18 +67,104 @@ static func is_energy(e: Dictionary) -> bool:
 	return e.kind == "unit" and bool(Content.unit(e.def).get("energy", false))
 
 
+## G3b PERF4-2: resupply and energy recharge are staggered by id. Every unit is still served once
+## per RESUPPLY_EVERY ticks with the same per-round amounts, on the tick where
+## (tick + id) % RESUPPLY_EVERY == 0, so the cost is spread instead of one spike every 20 ticks.
+## Shortage flags accumulate in sys_state.supply.starved over the 20-tick window and the faction
+## status_supply is published on tick % RESUPPLY_EVERY == 0 (same cadence as before).
+## Candidate units come from the Tiers lists (FULL list + REDUCED stride slots), not a full pass.
 static func tick(w: SimWorld) -> void:
 	_burn_fuel(w)
+	_serve_due(w)
 	if w.tick % RESUPPLY_EVERY == 0:
-		_resupply(w)
-		_recharge(w)
+		var st := _state(w)
+		var acc: Dictionary = st.get("starved", {})
+		for fid in w.factions:
+			var f: Dictionary = w.factions[fid]
+			var sa := bool(acc.get("%d:ammo" % int(fid), false))
+			var sf := bool(acc.get("%d:fuel" % int(fid), false))
+			f["status_supply"] = "NO_AMMO_STOCK" if sa else ("NO_FUEL_STOCK" if sf else "")
+		st["starved"] = {}
+
+
+## Units due for resupply / recharge this tick, ascending id within each list.
+static func _due(w: SimWorld) -> Array:
+	var tick := w.tick
+	var out := []
+	var ents: Dictionary = w.entities
+	if not Tiers.enabled(w):
+		for e in SimIndex.of(w, "unit"):
+			if (tick + int(e.id)) % RESUPPLY_EVERY == 0 and ents.has(int(e.id)):
+				out.append(e)
+		return out
+	var idx := Tiers.lists(w)
+	for e in idx.full:
+		if (tick + int(e.id)) % RESUPPLY_EVERY == 0 and ents.has(int(e.id)):
+			out.append(e)
+	for e in Tiers.due_reduced(w, Tiers.STRIDE):   # RESUPPLY_EVERY is a multiple of STRIDE
+		if (tick + int(e.id)) % RESUPPLY_EVERY == 0 and ents.has(int(e.id)) and int(e.get("tier", 0)) == Tiers.REDUCED:
+			out.append(e)
+	return out
+
+
+static func _serve_due(w: SimWorld) -> void:
+	var due := _due(w)
+	if due.is_empty():
+		return
+	var cfg: Dictionary = Content.rules().get("supply", {})
+	var radius := float(cfg.get("radius", 8))
+	var rate: Dictionary = cfg.get("refill_per_second", {})
+	var ammo_rate := int(rate.get("ammo", 0))
+	var fuel_rate := int(rate.get("fuel", 0))
+	var sources = null   # built lazily: only if some due unit needs something
+	var hubs = null
+	var st := _state(w)
+	if not st.has("starved"):
+		st["starved"] = {}
+	var acc: Dictionary = st.starved
+	for e: Dictionary in due:
+		var fid := int(e.owner)
+		if not w.factions.has(fid):
+			continue
+		var uc := _u(String(e.def))
+		var want_ammo := 0
+		var want_fuel := 0
+		if e.has("ammo"):
+			want_ammo = mini(maxi(0, int(uc.ammo_max) - int(e.ammo)), ammo_rate)
+		if e.has("fuel") and not bool(uc.energy):  # G3a: energy units recharge instead
+			var miss := float(uc.fuel_max) - float(e.fuel)
+			want_fuel = mini(maxi(0, int(ceil(miss))), fuel_rate)
+		if (want_ammo > 0 or want_fuel > 0) and bool(w.factions[fid].alive):
+			if sources == null:
+				sources = _sources(w)
+			if sources.has(fid) and _in_range(e, sources[fid], radius):
+				var flags := {"ammo": false, "fuel": false}
+				if want_ammo > 0:
+					var got := _draw(w, fid, "ammo", want_ammo, flags)
+					e.ammo = mini(int(uc.ammo_max), int(e.ammo) + got)
+				if want_fuel > 0:
+					var gotf := _draw(w, fid, "fuel", want_fuel, flags)
+					e.fuel = minf(float(uc.fuel_max), float(e.fuel) + float(gotf))
+				for r in ["ammo", "fuel"]:
+					if flags[r]:
+						acc["%d:%s" % [fid, r]] = true
+		if bool(uc.energy) and e.has("fuel") and float(e.fuel) < float(uc.fuel_max):
+			if hubs == null:
+				hubs = _hubs(w)
+			_recharge_unit(w, e, uc, hubs)
 
 
 # ================================================================ fuel
 static func _burn_fuel(w: SimWorld) -> void:
 	var mult := maxf(w.econ("fuel_use_mult"), 0.0)
 	var tiers_on := Tiers.enabled(w)
-	for e in SimIndex.of(w, "unit"):
+	var cand: Array
+	if tiers_on:
+		var idx := Tiers.lists(w)
+		cand = idx.full + Tiers.due_reduced(w, Tiers.STRIDE)   # FULL every tick, REDUCED on stride
+	else:
+		cand = SimIndex.of(w, "unit")
+	for e: Dictionary in cand:
 		if not e.has("fuel") or not w.entities.has(int(e.id)):
 			continue
 		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED and (w.tick + int(e.id)) % Tiers.STRIDE != 0:
@@ -114,7 +201,7 @@ static func _sources(w: SimWorld) -> Dictionary:
 		var d := Content.building(e.def)
 		if bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)):  # G3a: flag replaces SUPPLY_BUILDINGS
 			pts.append([int(e.id), int(e.owner), {"kind": "b", "cell": e.cell, "size": int(e.size)}])
-	for e in SimIndex.of(w, "unit"):
+	for e in Subsets.units(w, Subsets.SUPPLY):   # PERF4-2: supply trucks only (PERF5 subset)
 		if w.factions.has(int(e.owner)) and bool(_u(String(e.def)).is_supply) and w.entities.has(int(e.id)):
 			pts.append([int(e.id), int(e.owner), {"kind": "t", "id": int(e.id), "pos": e.pos}])
 	pts.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
@@ -232,3 +319,35 @@ static func _recharge(w: SimWorld) -> void:
 			if Construction.footprint_dist(e.pos, h.cell, int(h.size)) <= float(h.r):
 				e.fuel = minf(fmax, float(e.fuel) + rate)
 				break
+
+
+## G3a recharge hubs per faction (built, recharge > 0): fid -> [{cell, size, r}].
+static func _hubs(w: SimWorld) -> Dictionary:
+	var hubs := {}
+	for b in SimIndex.of(w, "building"):
+		if not bool(b.built) or not w.entities.has(int(b.id)):
+			continue
+		var r := float(Content.building(b.def).get("recharge", 0))
+		if r <= 0.0:
+			continue
+		var fid := int(b.owner)
+		if not hubs.has(fid):
+			hubs[fid] = []
+		hubs[fid].append({"cell": b.cell, "size": int(b.size), "r": r})
+	return hubs
+
+
+## One energy unit's recharge round (same rule as _recharge).
+static func _recharge_unit(w: SimWorld, e: Dictionary, uc: Dictionary, hubs: Dictionary) -> void:
+	var rate := float((Content.rules().get("supply", {}).get("refill_per_second", {}) as Dictionary).get("fuel", 0))
+	var fid := int(e.owner)
+	if rate <= 0.0 or not hubs.has(fid):
+		return
+	var f: Dictionary = w.factions[fid]
+	if int(f.power_prod) < int(f.power_use):
+		return
+	var fmax := float(uc.fuel_max)
+	for h in hubs[fid]:
+		if Construction.footprint_dist(e.pos, h.cell, int(h.size)) <= float(h.r):
+			e.fuel = minf(fmax, float(e.fuel) + rate)
+			break

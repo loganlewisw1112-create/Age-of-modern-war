@@ -58,38 +58,53 @@ static func tick(w: SimWorld) -> void:
 		"break_at": float(mor.get("break_at", 25)),
 		"rally_at": float(mor.get("rally_at", 60)),
 	}
-	var covers = null   # built lazily, only if some infantry is off-forest
-	var mw := int(w.map.w)
-	var terr: PackedByteArray = w.map.terrain
+	var ctx := [null, int(w.map.w), w.map.terrain]   # [cover index (lazy), map w, terrain]
 	var tiers_on := Tiers.enabled(w)
-	var p2 := {}
-	for k in p:
-		p2[k] = p[k]
+	var ents: Dictionary = w.entities
+	var tick := w.tick
+	# G3b PERF4-2: FULL units from the Tiers list (no pass over REDUCED units). The update phase is
+	# unchanged (every unit on tick % UPDATE_EVERY == 0): per-unit staggering was tried and broke
+	# phase-dependent morale scenarios (test_g2_scenarios s4), so it was not kept.
+	var idx := Tiers.lists(w)
+	for e: Dictionary in (idx.full if tiers_on else idx.kinds.get("unit", [])):
+		if not e.has("morale") or not ents.has(int(e.id)):
+			continue
+		_step_unit(w, e, p, ctx)
+	if not tiers_on:
+		return
+	# REDUCED units: every 2nd update ((id + slot) % 2 == 0, as before) with 2x dt, read from the
+	# Tiers slot lists (rslot[j] holds id % 8 == j, so id % 2 == slot means j % 2 == slot)
+	var p2 := p.duplicate()
 	for k in ["decay", "drain", "recover"]:
 		p2[k] = float(p[k]) * 2.0
-	var slot := (w.tick / UPDATE_EVERY) % 2
-	for e in SimIndex.of(w, "unit"):
-		if not e.has("morale") or not w.entities.has(int(e.id)):
-			continue
-		var pu := p
-		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED:
-			if (int(e.id) + slot) % 2 != 0:
+	var slot := (tick / UPDATE_EVERY) % 2
+	var j := slot
+	while j < Tiers.SCAN_STRIDE:
+		for e: Dictionary in idx.rslot[j]:
+			if not e.has("morale") or not ents.has(int(e.id)) or int(e.get("tier", 0)) != Tiers.REDUCED:
 				continue
-			pu = p2
-		var pos: Vector2 = e.pos
-		var cell := Vector2i(floori(pos.x), floori(pos.y))
-		var cov := false
-		if w.in_bounds(cell) and terr[cell.y * mw + cell.x] == FOREST:
-			cov = true
-		else:
-			if covers == null:
-				covers = _cover_index(w)
-			cov = _near_cover(covers, pos)
-		e.in_cover = cov
-		# steady state (unsuppressed, full morale, not broken): nothing else can change
-		if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false) and float(e.morale) >= max_morale(e.def):
-			continue
-		_update_unit(w, e, pu)
+			_step_unit(w, e, p2, ctx)
+		j += 2
+
+
+static func _step_unit(w: SimWorld, e: Dictionary, pu: Dictionary, ctx: Array) -> void:
+	var pos: Vector2 = e.pos
+	var mw: int = ctx[1]
+	var terr: PackedByteArray = ctx[2]
+	var cx := floori(pos.x)
+	var cy := floori(pos.y)
+	var cov := false
+	if cx >= 0 and cy >= 0 and cx < mw and cy * mw + cx < terr.size() and terr[cy * mw + cx] == FOREST:
+		cov = true
+	else:
+		if ctx[0] == null:
+			ctx[0] = _cover_index(w)
+		cov = _near_cover(ctx[0], pos)
+	e.in_cover = cov
+	# steady state (unsuppressed, full morale, not broken): nothing else can change
+	if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false) and float(e.morale) >= max_morale(e.def):
+		return
+	_update_unit(w, e, pu)
 
 
 static func _update_unit(w: SimWorld, e: Dictionary, p: Dictionary) -> void:

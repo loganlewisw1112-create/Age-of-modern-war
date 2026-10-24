@@ -22,7 +22,10 @@ static func _pop_of(def_id: String) -> int:
 ## Tiers.begin_tick rebuilds the shared SimIndex (and every unit's fidelity tier on recompute
 ## ticks). Power/pop then read the index (buildings / units lists) instead of a full pass.
 static func tick(w: SimWorld) -> void:
+	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	Tiers.begin_tick(w)
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("eco.begin_tick", t0)
 	var pp := {}
 	var pu := {}
 	var pc := {}
@@ -47,10 +50,11 @@ static func tick(w: SimWorld) -> void:
 		pc[fid] += int(d.get("pop_cap", 0))
 		if bool(d.get("is_hq", false)):
 			hqs[fid] += 1
-	for e in SimIndex.of(w, "unit"):
-		var fid: int = int(e.owner)
-		if pp.has(fid) and w.entities.has(int(e.id)):
-			pop[fid] += _pop_of(String(e.def))
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("eco.blds", t0)
+	_pop_counts(w, pop)
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("eco.pop", t0)
 	var cap_max := int(Content.rules().get("pop_cap_max", 120))
 	var rate := int(Content.rules().get("hq_stipend_credits_per_second", 0))
 	var pay: bool = w.tick > 0 and w.tick % STIPEND_INTERVAL_TICKS == 0
@@ -69,16 +73,71 @@ static func tick(w: SimWorld) -> void:
 		_scrap_magnets(w)
 
 
+## G3b PERF4-2: per-side pop without a per-tick pass over every unit. The last count is kept in
+## w.cache.eco_pop (never saved) with the entity count, next_id and this tick's event array. Next
+## tick it is carried forward exactly: minus the pop of every unit destroyed since (its
+## EntityDestroyed event: the rest of last tick's events plus this tick's so far), plus the pop
+## of every unit spawned since (ids >= the kept next_id, still alive). A consistency check (the
+## carried entity count must equal w.entities.size()) catches anything else (an entity removed
+## without an event, a load, a skipped tick) and falls back to a full recount, as before.
+static func _pop_counts(w: SimWorld, pop: Dictionary) -> void:
+	var ents: Dictionary = w.entities
+	var nid := int(w.next_id)
+	var c = w.cache.get("eco_pop")
+	var ok := false
+	if c != null and int(c.tick) == w.tick - 1 and int(c.nid) <= nid:
+		var cp: Dictionary = c.pop
+		var size := int(c.size)
+		var nid0 := int(c.nid)
+		for fid in pop:
+			pop[fid] = int(cp.get(fid, 0))
+		var evs: Array = c.ev
+		for i in range(int(c.ev_from), evs.size()):
+			var ev: Dictionary = evs[i]
+			if ev.type == "EntityDestroyed" and int(ev.id) < nid0:
+				size -= 1
+				if ev.kind == "unit" and pop.has(int(ev.owner)):
+					pop[int(ev.owner)] -= _pop_of(String(ev.def))
+		if not is_same(evs, w.events):
+			for ev in w.events:
+				if ev.type == "EntityDestroyed" and int(ev.id) < nid0:
+					size -= 1
+					if ev.kind == "unit" and pop.has(int(ev.owner)):
+						pop[int(ev.owner)] -= _pop_of(String(ev.def))
+		for id in range(nid0, nid):
+			var e = ents.get(id)
+			if e == null:
+				continue
+			size += 1
+			if e.kind == "unit" and pop.has(int(e.owner)):
+				pop[int(e.owner)] += _pop_of(String(e.def))
+		ok = size == ents.size()
+	if not ok:
+		for fid in pop:
+			pop[fid] = 0
+		for e in SimIndex.of(w, "unit"):
+			var fid: int = int(e.owner)
+			if pop.has(fid) and ents.has(int(e.id)):
+				pop[fid] += _pop_of(String(e.def))
+	w.cache["eco_pop"] = {"tick": w.tick, "nid": nid, "size": ents.size(), "pop": pop.duplicate(),
+		"ev": w.events, "ev_from": w.events.size()}
+
+
 ## G2 refinery (owner: agent B2, CONTRACTS_G2 section 3). While built and powered, every
 ## rules.refinery.period_s it converts ore_in ore into fuel_out fuel + ammo_out ammo through the
 ## ledger (spend then credit, cause "refinery"). Status: "" working, "LOW_POWER", "NO_ORE".
 ## The cycle only advances while ore is on hand; e.refine_acc counts progress ticks.
+## Stock cap (orch fix 2026-10-24): a cycle runs only while the side's fuel OR ammo stock is below
+## rules.refinery.stock_cap; with both at or above it the refinery idles ("STOCK_FULL"), consumes
+## no ore and its cycle does not advance, so ore can accumulate (Stage 8->9 costs ore).
+## ore_refined counts only ore actually consumed.
 static func _refineries(w: SimWorld) -> void:
 	var cfg: Dictionary = Content.rules().get("refinery", {})
 	if cfg.is_empty():
 		return
 	var period := maxi(1, int(round(float(cfg.get("period_s", 6)) / SimWorld.DT)))
 	var ore_in := int(cfg.get("ore_in", 0))
+	var cap := int(cfg.get("stock_cap", 0))   # 0 or absent: no cap (old behaviour)
 	for e in SimIndex.of(w, "building"):
 		if not w.entities.has(int(e.id)) or not bool(Content.building(e.def).get("refines", false)):  # G3a: flag, any faction
 			continue
@@ -89,6 +148,8 @@ static func _refineries(w: SimWorld) -> void:
 		var status := ""
 		if int(f.power_use) > int(f.power_prod):
 			status = "LOW_POWER"
+		elif cap > 0 and int(f.stock.get("fuel", 0)) >= cap and int(f.stock.get("ammo", 0)) >= cap:
+			status = "STOCK_FULL"
 		elif int(f.stock.get("ore", 0)) < ore_in:
 			status = "NO_ORE"
 		else:

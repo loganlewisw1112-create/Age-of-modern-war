@@ -45,6 +45,7 @@ const FIRING_HINT_TICKS := 3
 const Q := 1.0 / 1024.0          # quantum for saved floats (exact in decimal text)
 
 static var _stats: Dictionary = {}
+static var _no_search := false   # REDUCED pass: searches return null (Tiers contact bound)
 
 
 ## Cached combat stats for an entity def.
@@ -102,22 +103,28 @@ static func _cd(e: Dictionary) -> int:
 	return maxi(ceili(float(e.get("cooldown", 0.0)) * SimWorld.TICK_RATE - 1e-6), 0)
 
 
-## G3b PERF4 (fidelity tiers + native search): units come from the shared SimIndex (one pass per
-## tick for every system). FULL units run every tick. A REDUCED unit (Tiers, no enemy anywhere
-## near) runs only on its stride tick ((tick + id) % Tiers.SCAN_STRIDE == 0); its cooldown and
-## firing hint catch up by SCAN_STRIDE ticks there. Skipped REDUCED units are left out of the
-## per-tick grids: no enemy can be within any search or splash radius of them (Tiers contact).
+## G3b PERF4/PERF4-2 (fidelity tiers + native search). FULL units come from the Tiers lists
+## (Tiers.lists(w).full: one shared index, no per-tick pass over every unit) and run every tick.
+## A REDUCED unit (Tiers: no enemy unit or building anywhere near) runs only on its stride tick
+## ((tick + id) % Tiers.SCAN_STRIDE == 0), after the FULL units, with its cooldown and firing hint
+## caught up by SCAN_STRIDE. It never searches: by the Tiers contact bound no enemy can be inside
+## any search radius of it (and it is inside none), so the search result is null by construction
+## and REDUCED units are left out of the per-tick grids altogether.
 ## With the native core live, target search asks RtsGrid.nearest_enemy_batch for the nearest
-## enemy candidate and verifies it (visible, not concealed, min_range); if it fails the check,
-## an exact scan of RtsGrid.query_radius runs instead, so the result equals find_target().
+## enemy candidate (one batched call for every FULL unit on its scan slot, single calls otherwise)
+## and verifies it (visible, not concealed, min_range); if it fails the check, an exact scan of
+## RtsGrid.query_radius runs instead, so the result equals find_target().
 static func tick(w: SimWorld) -> void:
-	var units: Array = SimIndex.of(w, "unit")
-	var all_blds: Array = SimIndex.of(w, "building")
+	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	var tiers_on := Tiers.enabled(w)
+	var idx := Tiers.lists(w)
+	var units: Array = idx.full if tiers_on else idx.kinds.get("unit", [])
+	var all_blds: Array = idx.kinds.get("building", [])
 	var native := NativeCore.enabled(w)
+	var ents: Dictionary = w.entities
 	var grid := {}   # owner -> {bucket key -> [unit dicts]} (GDScript search, splash, Damage.near_miss)
 	var blds := []
-	var act := []    # units that act this tick, ascending id
+	var act := []    # FULL units that act this tick, ascending id
 	var nids := PackedInt32Array()
 	var npos := PackedVector2Array()
 	var nteam := PackedInt32Array()
@@ -126,41 +133,72 @@ static func tick(w: SimWorld) -> void:
 	var teams := {}
 	for fid in w.factions:
 		teams[int(fid)] = int(w.factions[fid].get("team", fid))
-	for e in units:
-		var id := int(e.id)
-		if not w.entities.has(id):
+	var scan_src := PackedInt32Array()   # native pre-batch: FULL units on their scan slot
+	var scan_r := PackedFloat32Array()
+	var scan_need := PackedInt32Array()
+	var scan_ids := PackedInt32Array()
+	var tick := w.tick
+	# the GDScript grid serves the non-native search/splash and Damage.near_miss; with native live
+	# it is skipped once damage.gd declares NEAR_MISS_NG (near_miss reads w.cache.combat_ng then)
+	var need_grid := not native or not _dmg_uses_ng()
+	for e: Dictionary in units:
+		var id: int = e.id
+		if not ents.has(id):
 			continue
-		var dec := 1
-		if tiers_on and int(e.get("tier", 0)) == Tiers.REDUCED:
-			if (w.tick + id) % Tiers.SCAN_STRIDE != 0:
-				continue
-			dec = Tiers.SCAN_STRIDE
 		var p: Vector2 = e.pos
-		var o := int(e.owner)
-		if not grid.has(o):
-			grid[o] = {}
-		var g: Dictionary = grid[o]
-		var key := int(floor(p.x / BUCKET)) + int(floor(p.y / BUCKET)) * GRID_STRIDE
-		if g.has(key):
-			g[key].append(e)
-		else:
-			g[key] = [e]
+		var o: int = e.owner
+		if need_grid:
+			var g = grid.get(o)
+			if g == null:
+				g = {}
+				grid[o] = g
+			var key := floori(p.x / BUCKET) + floori(p.y / BUCKET) * GRID_STRIDE
+			var cell = g.get(key)
+			if cell == null:
+				g[key] = [e]
+			else:
+				cell.append(e)
 		if native and teams.has(o):
-			nidx[id] = nids.size()
+			var sv = _stats.get(e.def)
+			var s: Dictionary = sv if sv != null else stats(e)
+			var si := nids.size()
+			nidx[id] = si
 			nids.append(id)
 			npos.append(p)
 			nteam.append(int(teams[o]))
-			nflags.append(2 if bool(stats(e).is_air) else 1)
+			nflags.append(2 if s.is_air else 1)
+			if (tick + id) % SCAN_EVERY == 0 and s.weapon != "" and not s.builder:
+				var ot = e.order.get("type", "idle")
+				if ot == "idle" or ot == "attack_move" or ot == "hold":
+					scan_src.append(si)
+					scan_r.append(float(s.range) if ot == "hold" else _search_r(s))
+					scan_need.append(0 if s.aa else 1)
+					scan_ids.append(id)
 		if int(e.firing) > 0:
-			e.firing = maxi(int(e.firing) - dec, 0)
-		var cd := _cd(e)
+			e.firing = int(e.firing) - 1
+		var cdv = e.get("cd_ticks")
+		var cd: int = int(cdv) if cdv != null else _cd(e)
 		if cd > 0:
-			cd = maxi(cd - dec, 0)
+			cd -= 1
 			e.cd_ticks = cd
 			e.cooldown = float(cd) / SimWorld.TICK_RATE
 		act.append(e)
+	var red := []    # REDUCED units on their stride tick
+	if tiers_on:
+		var dec := Tiers.SCAN_STRIDE
+		for e: Dictionary in Tiers.due_reduced(w, Tiers.SCAN_STRIDE):
+			if not ents.has(int(e.id)) or int(e.get("tier", 0)) != Tiers.REDUCED:
+				continue
+			if int(e.firing) > 0:
+				e.firing = maxi(int(e.firing) - dec, 0)
+			var cd := _cd(e)
+			if cd > 0:
+				cd = maxi(cd - dec, 0)
+				e.cd_ticks = cd
+				e.cooldown = float(cd) / SimWorld.TICK_RATE
+			red.append(e)
 	for b in all_blds:
-		if not w.entities.has(int(b.id)):
+		if not ents.has(int(b.id)):
 			continue
 		blds.append(b)
 		var cd := _cd(b)
@@ -168,6 +206,8 @@ static func tick(w: SimWorld) -> void:
 			cd -= 1
 			b.cd_ticks = cd
 			b.cooldown = float(cd) / SimWorld.TICK_RATE
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("cmb.prep", t0)
 	w.cache["combat_grid"] = grid
 	w.cache["combat_blds"] = blds
 	if native:
@@ -181,20 +221,45 @@ static func tick(w: SimWorld) -> void:
 		zr.fill(0.0)
 		ng.rebuild(nids, npos, nteam, zr)
 		ng.set_flags(nflags)
-		w.cache["combat_ng"] = {"grid": ng, "idx": nidx}
+		var pre := {}
+		if not scan_src.is_empty():
+			var res: PackedInt32Array = ng.nearest_enemy_batch(scan_src, scan_r, scan_need)
+			for i in scan_ids.size():
+				pre[scan_ids[i]] = Vector2(float(res[i]), scan_r[i])
+		w.cache["combat_ng"] = {"grid": ng, "idx": nidx, "pre": pre, "eb": {}}
 	else:
 		w.cache.erase("combat_ng")
-	# act in ascending id order, units and buildings interleaved as in w.entities
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("cmb.ngrid", t0)
+	# act in ascending id order, FULL units and buildings interleaved as in w.entities
 	var bi := 0
 	for e in act:
 		while bi < blds.size() and int(blds[bi].id) < int(e.id):
 			_bld_act(w, blds[bi], grid, blds)
 			bi += 1
-		if w.entities.has(int(e.id)):  # destroyed earlier this tick: dead entities never act
+		if ents.has(int(e.id)):  # destroyed earlier this tick: dead entities never act
 			_unit_tick(w, e, grid, blds)
 	while bi < blds.size():
 		_bld_act(w, blds[bi], grid, blds)
 		bi += 1
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("cmb.act", t0)
+	_no_search = true
+	for e in red:
+		if ents.has(int(e.id)):
+			_unit_tick(w, e, grid, blds)
+	_no_search = false
+	if SimIndex.profiling:
+		SimIndex.pt("cmb.reduced", t0)
+
+
+static var _dmg_ng := -1
+
+
+static func _dmg_uses_ng() -> bool:
+	if _dmg_ng < 0:
+		_dmg_ng = 1 if (Damage as Script).get_script_constant_map().has("NEAR_MISS_NG") else 0
+	return _dmg_ng == 1
 
 
 static func _bld_act(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Array) -> void:
@@ -312,9 +377,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var ng = w.cache.get("combat_ng")
 	if ng == null:
 		return find_target(w, e, radius, grid, blds)
-	var si = ng.idx.get(int(e.id))
-	if si == null:
-		return find_target(w, e, radius, grid, blds)
+	var si = ng.idx.get(int(e.id))   # null for shooters outside the grid (towers): exact scan below
 	var s := stats(e)
 	var aa: bool = s.aa
 	var fid := int(e.owner)
@@ -330,10 +393,17 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var best_d := INF
 	var best_id := 0
 	var rg = ng.grid
-	var res: PackedInt32Array = rg.nearest_enemy_batch(PackedInt32Array([int(si)]), PackedFloat32Array([radius]), PackedInt32Array([0 if aa else 1]))
-	var cand := res[0]
-	if cand >= 0:
-		var c = w.entities.get(cand)
+	var cand := -1
+	var pv = ng.pre.get(int(e.id))
+	if si == null:
+		cand = -2          # not in the grid: no nearest query, go straight to the exact scan
+	elif pv != null and is_equal_approx(float(pv.y), radius):
+		cand = int(pv.x)   # this tick's batched answer (same grid, same query)
+	else:
+		var res: PackedInt32Array = rg.nearest_enemy_batch(PackedInt32Array([int(si)]), PackedFloat32Array([radius]), PackedInt32Array([0 if aa else 1]))
+		cand = res[0]
+	if cand >= 0 or cand == -2:
+		var c = w.entities.get(cand) if cand >= 0 else null
 		var d2 := INF
 		if c != null:
 			d2 = p.distance_squared_to(Vector2(c.pos))
@@ -354,10 +424,22 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					best = c2
 					best_d = dd
 					best_id = cid
-	for b in blds:
-		if not w.is_enemy(fid, int(b.owner)):
-			continue
-		var d := dist_to(p, b)
+	# enemy buildings of fid, filtered once per tick (PERF4-2): [b, x0, y0, x1, y1]
+	var ebs: Dictionary = ng.eb
+	var eb = ebs.get(fid)
+	if eb == null:
+		eb = []
+		for b in blds:
+			if w.is_enemy(fid, int(b.owner)):
+				var o: Vector2i = b.cell
+				var sz := float(b.size)
+				eb.append([b, float(o.x), float(o.y), float(o.x) + sz, float(o.y) + sz])
+		ebs[fid] = eb
+	for q in eb:
+		var b: Dictionary = q[0]
+		var qx := clampf(p.x, q[1], q[3])
+		var qy := clampf(p.y, q[2], q[4])
+		var d := p.distance_to(Vector2(qx, qy))
 		var d2b := d * d
 		if d2b > r2 or d2b < mr2:
 			continue
@@ -393,6 +475,8 @@ static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:
 ## (every SCAN_EVERY ticks; every SCAN_EVERY_ENGAGED while the target is already in weapon range),
 ## or immediately when the tracked target just became invalid.
 static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, blds: Array):
+	if _no_search:
+		return null  # REDUCED unit: no enemy can be within radius (Tiers contact bound)
 	var s := stats(e)
 	var cur = _valid_target(w, int(e.owner), int(e.target), s)
 	if cur != null:
@@ -406,6 +490,11 @@ static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 			return cur
 	elif int(e.target) < 0 and not _scan_due(w, e, SCAN_EVERY):
 		return null  # nothing tracked: wait for this shooter's scan slot
+	if SimIndex.profiling:
+		var t0 := Time.get_ticks_usec()
+		var r = _find(w, e, radius, grid, blds)
+		SimIndex.pt("cmb.find", t0)
+		return r
 	return _find(w, e, radius, grid, blds)
 
 
@@ -423,10 +512,16 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 		var ot0 = e.order.type
 		if ot0 == "idle" or ot0 == "hold":
 			return
-	var s := stats(e)
+	var sv = _stats.get(e.def)
+	var s: Dictionary = sv if sv != null else stats(e)
 	if s.weapon == "":
 		return
 	var ot := String(e.order.get("type", "idle"))
+	# PERF4-2 fast paths (exact: they skip only calls that cannot change anything)
+	if tgt < 0 and ot != "attack" and ot != "idle" and ot != "hold" and ot != "attack_move" 			and w.tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
+		return  # move/other orders only return fire, and nothing hit it recently
+	if tgt < 0 and ot == "attack_move" and e.moving and not s.builder and (w.tick + int(e.id)) % SCAN_EVERY != 0 			and not e.order.get("engaged", false):
+		return  # marching, nothing tracked, not its scan slot: _pick would return null and change nothing
 	if ot == "attack":
 		_attack_order(w, e, s)
 		return
@@ -516,7 +611,7 @@ static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, ca
 	if d <= s.range and d >= mr and (bool(s.indirect) or Damage.line_clear(w, e.pos, t.pos)):
 		if e.moving:
 			Movement.stop_path(e)
-		_fire(w, e, s, t)
+		_fire(w, e, s, t, true)  # line of fire just checked (positions unchanged since)
 	elif can_chase:
 		var tp: Vector2 = t.pos
 		if d < mr:
@@ -545,13 +640,13 @@ static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Arra
 	_fire(w, b, s, t)
 
 
-static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> void:
+static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_ok := false) -> void:
 	if _cd(e) > 0:
 		return
 	if Status.can_fire(w, e) != "":
 		return
 	var indirect: bool = s.indirect
-	if not indirect and not Damage.line_clear(w, e.pos, t.pos):
+	if not indirect and not los_ok and not Damage.line_clear(w, e.pos, t.pos):
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
@@ -676,7 +771,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 		var e = w.entities.get(int(id))
 		if e == null or stats(e).weapon == "" or not can_target(stats(e), t):
 			continue
-		Tiers.promote(e)  # G3b PERF4: an explicit attack order is always FULL tier
+		Tiers.promote(e, w)  # G3b PERF4: an explicit attack order is always FULL tier (joins the FULL list now)
 		e.order = {"type": "attack", "target_id": tid, "last_pos": t.pos, "lost": false}
 		e.target = tid
 		e.chase_tick = -100000

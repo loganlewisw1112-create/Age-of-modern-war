@@ -106,7 +106,8 @@
     "ore_in": 20,
     "fuel_out": 15,
     "ammo_out": 25,
-    "period_s": 6
+    "period_s": 6,
+    "stock_cap": 600
   },
   "repair": {
     "hp_per_second": 25,
