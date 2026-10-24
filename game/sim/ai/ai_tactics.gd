@@ -11,6 +11,7 @@ extends RefCounted
 ## - Bridge: see manage_bridge. Fairness: see the convention in ai_util.gd.
 
 const U = preload("res://sim/ai/ai_util.gd")
+const StageR = preload("res://sim/ai/ai_stage.gd")
 const Ops = preload("res://sim/systems/ops.gd")
 
 const CROSSING_RADIUS := 6.0
@@ -74,6 +75,13 @@ static func effective_route(st: Dictionary) -> int:
 
 
 static func crossing(w: SimWorld, st: Dictionary) -> Vector2:
+	if StageR.multi_crossing(w) and st.has("g4"):
+		# G3b maps (MAP4 CR): pick among map.bridges + ford clusters; same-bank target -> half way
+		var fid := int(st.get("fid", -1))
+		var from := U.base_pos(w, fid) if fid >= 0 else U.map_center(w)
+		var tgt := Vector2(st.attack_target)
+		var via := StageR.route_via(w, fid, st, from, tgt)
+		return via if via.x >= 0.0 else from.lerp(tgt, 0.5)
 	var pts: Array = st.patrol
 	var r := effective_route(st)
 	if r == 1 and pts.size() >= 1:

@@ -37,14 +37,14 @@ static func new_g2() -> Dictionary:
 
 
 static func ammo_frac(e: Dictionary) -> float:
-	var amax := float(Content.unit(e.def).get("ammo_max", 0))
+	var amax: float = U.ud(String(e.def)).amax
 	if amax <= 0.0 or not e.has("ammo"):
 		return 1.0
 	return float(e.ammo) / amax
 
 
 static func fuel_frac(e: Dictionary) -> float:
-	var fmax := float(Content.unit(e.def).get("fuel_max", 0))
+	var fmax: float = U.ud(String(e.def)).fmax
 	if fmax <= 0.0 or not e.has("fuel"):
 		return 1.0
 	return float(e.fuel) / fmax
@@ -106,15 +106,23 @@ static func manage_resupply(w: SimWorld, fid: int, st: Dictionary, ctx: Dictiona
 				g2.refills = int(g2.refills) + 1
 				U.log_line(st, w, "%s #%d resupplied (ammo %d%%); re-committing" % [String(e.def), int(e.id), roundi(ammo_frac(e) * 100.0)])
 	var moves := {}
+	var ammo_ok := int(stock.get("ammo", 0)) >= 20
+	var fuel_ok := int(stock.get("fuel", 0)) >= 20
 	for e in ctx.army:
 		var id := int(e.id)
 		if rs.has(id):
 			continue
-		var af := ammo_frac(e)
+		var u := U.ud(String(e.def))  # G3b think cost: one cached per-def lookup per unit
+		var amax: float = u.amax
+		var af := float(e.ammo) / amax if amax > 0.0 and e.has("ammo") else 1.0
 		var dry := af <= 0.0
-		var low_ammo := af < AMMO_LOW and (dry or int(stock.get("ammo", 0)) >= 20)
-		var energy := U.is_energy(String(e.def))
-		var low_fuel := (U.is_vehicle(String(e.def)) or energy) and fuel_frac(e) < FUEL_LOW and (energy or int(stock.get("fuel", 0)) >= 20)
+		var low_ammo := af < AMMO_LOW and (dry or ammo_ok)
+		var energy: bool = u.energy
+		var low_fuel := false
+		if bool(u.veh) or energy:
+			var fmax: float = u.fmax
+			var ff := float(e.fuel) / fmax if fmax > 0.0 and e.has("fuel") else 1.0
+			low_fuel = ff < FUEL_LOW and (energy or fuel_ok)
 		if not low_ammo and not low_fuel:
 			continue
 		var sp := _supply_point(w, fid, st, ctx, e, energy and low_fuel and not low_ammo)
@@ -149,8 +157,9 @@ static func manage_truck(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 		return
 	var goal := Vector2(st.rally) - U.front_dir(w, fid) * 2.0
 	var group := []
+	var ag := U.ag_set(st, ctx)
 	for e in ctx.army:
-		if st.attack_group.has(int(e.id)):
+		if ag.has(int(e.id)):
 			group.append(e)
 	if String(st.objective) == "attack" and not group.is_empty():
 		var c := Vector2.ZERO

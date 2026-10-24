@@ -521,3 +521,161 @@ func test_g3_determinism_three_factions() -> void:
 	check(str(a.ai_state) == str(b.ai_state), "3-faction AI state identical")
 	for fid in a.ai_state:
 		check(int(a.ai_state[fid].cmds_issued) > 15, "side %d (%s) issued commands (%d)" % [fid, String(a.factions[fid].faction_def), int(a.ai_state[fid].cmds_issued)])
+
+
+# ================================================================ G3b (agent AI4)
+## Stage-aware AI: a Stage 7 AI never asks for a def above its stage; research + advancement in a
+## fixture; a big-map AI-vs-AI run has no errors. Soaks (tools/soak.gd --map --stages) cover the rest.
+const Progression = preload("res://sim/systems/progression.gd")
+const AiU = preload("res://sim/ai/ai_util.gd")
+const AiConstruction = preload("res://sim/systems/construction.gd")
+const G3B_STAGE7_TICKS := 8000
+const G3B_FIXTURE_TICKS := 6000
+const G3B_BIG_TICKS := 3000
+
+
+func test_g3b_stage7_ai_never_queues_stage8_defs() -> void:
+	var c := _g3_config(["--factions=human_a,human_b,machine", "--stages=7"], 2)
+	var w := SimWorld.new_match(c)
+	var seen := {}
+	var bad := []
+	var checked := 0
+	var stage_rejects := 0
+	while w.tick < G3B_STAGE7_TICKS and not w.match_state.ended:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "CommandRejected" and String(ev.reason).begins_with("Requires Stage"):
+				stage_rejects += 1
+		for cmd in w.pending:
+			var cid := int(cmd.id)
+			if seen.has(cid) or not w.ai_state.has(int(cmd.issuer)):
+				continue
+			seen[cid] = true
+			var fid := int(cmd.issuer)
+			var ty := String(cmd.type)
+			var d := {}
+			if ty == "queue_unit":
+				d = Content.production(String(cmd.item))
+			elif ty == "build":
+				d = Content.building(String(cmd.def))
+			else:
+				continue
+			checked += 1
+			var why := Progression.unavailable_reason(w, fid, d)
+			if why == "" and ty == "queue_unit":
+				for u in d.get("spawns", []):
+					why = Progression.unavailable_reason(w, fid, Content.unit(String(u)))
+					if why != "":
+						break
+			if why != "":
+				bad.append("t=%d f%d s%d %s %s: %s" % [w.tick, fid, int(w.factions[fid].stage), ty, String(cmd.get("item", cmd.get("def", ""))), why])
+	print("    G3b stage-7 FFA t=%d: %d queue/build commands checked, %d unavailable, %d 'Requires Stage' rejects" % [w.tick, checked, bad.size(), stage_rejects])
+	check(checked > 30, "stage-7 AIs issued queue/build commands (%d)" % checked)
+	check(bad.is_empty(), "no AI queue/build above its stage or research (%s)" % str(bad.slice(0, 5)))
+	check_eq(stage_rejects, 0, "no 'Requires Stage N' rejections for AI commands")
+	for fid in w.factions:
+		check_eq(int(w.factions[fid].stage), 7, "side %d stays at Stage 7 in %d ticks (no free advance)" % [fid, G3B_STAGE7_TICKS])
+
+
+## Fixture: side 0 is an AI at Stage 7 with every non-research gate already met, a completed
+## research building and the funds; side 1 is inert. The AI must research both 7->8 projects,
+## then pay and advance (StageAdvanced) on its own, with the log line the soak greps.
+func test_g3b_ai_researches_and_advances_fixture() -> void:
+	var c := SimWorld.default_config()
+	c.seed = 3
+	c.ai_difficulty = "normal"
+	c.sides[0].ai = true
+	c.sides[0].stage = 7
+	c.sides[1].ai = false
+	var w := SimWorld.new_match(c)
+	if not check(w != null and w.ai_state.has(0), "fixture match with an AI side 0"):
+		return
+	var f: Dictionary = w.factions[0]
+	var lab := AiU.role(w, 0, "research")
+	check(lab != "", "side 0 has a research building role at Stage 7 (%s)" % lab)
+	var o := _g3b_free_site(w, Vector2i(w.factions[0].spawn), int(Content.building(lab).size))
+	if not check(o.x >= 0, "a legal site for the research building"):
+		return
+	w.spawn_building(lab, 0, o, true)
+	w.credit(0, {"credits": 20000, "salvage": 3000}, "test_fixture")
+	f.stats.ore_refined = 600
+	f.stats.officers_trained = 1
+	f.stats.line_trained = 8
+	var started := []
+	var adv_tick := -1
+	var before := {}
+	while w.tick < G3B_FIXTURE_TICKS and adv_tick < 0:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "ResearchStarted" and int(ev.fid) == 0:
+				started.append(String(ev.project))
+			elif String(ev.type) == "StageAdvanceStarted" and int(ev.fid) == 0:
+				before = {"units": w.units_of(0).size()}
+			elif String(ev.type) == "StageAdvanced" and int(ev.fid) == 0:
+				adv_tick = w.tick
+	print("    G3b fixture: research=%s advanced_at=%d stage=%d g4=%s" % [str(started), adv_tick, int(f.stage), String(w.ai_state[0].g4.get("probe", ""))])
+	check(started.has("integrated_manufacturing") and started.has("combined_arms"), "AI researched both 7->8 projects (%s)" % str(started))
+	check(adv_tick > 0, "AI advanced to Stage 8 within %d ticks" % G3B_FIXTURE_TICKS)
+	check_eq(int(f.stage), 8, "side 0 is at Stage 8")
+	var logged := false
+	for line in w.ai_state[0].log:
+		logged = logged or String(line).find("AI f0 advanced to stage 8 at tick %d" % adv_tick) >= 0
+	check(logged, "AI log carries 'AI f0 advanced to stage 8 at tick %d'" % adv_tick)
+	var paid := 0
+	for e in f.journal:
+		if String(e.get("cause", "")).begins_with("advance_stage"):
+			paid += 1
+	check_eq(paid, 1, "advancement cost charged exactly once in the journal")
+
+
+## First free buildable footprint (with a 1-cell margin, no resources) spiralling out from `s`.
+func _g3b_free_site(w: SimWorld, s: Vector2i, size: int) -> Vector2i:
+	for r in range(5, 20):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if absi(dx) != r and absi(dy) != r:
+					continue
+				var o := s + Vector2i(dx, dy)
+				var ok := true
+				for yy in range(-1, size + 1):
+					for xx in range(-1, size + 1):
+						var c := o + Vector2i(xx, yy)
+						if not w.in_bounds(c) or not Terrain.buildable(w.terrain_at(c)) or AiConstruction.building_at_cell(w, c):
+							ok = false
+				if not ok:
+					continue
+				for id in w.entities:
+					var e: Dictionary = w.entities[id]
+					if e.kind == "resource" or e.kind == "unit":
+						var rc := w.cell_of(e.pos)
+						if rc.x >= o.x - 1 and rc.x <= o.x + size and rc.y >= o.y - 1 and rc.y <= o.y + size:
+							ok = false
+				if ok:
+					return o
+	return Vector2i(-1, -1)
+
+
+func test_g3b_big_map_ai_vs_ai_no_errors() -> void:
+	var c := _g3_config(["--map=valley_conquest_l", "--factions=human_a,human_b,machine", "--stages=7,8,9"], 1)
+	check_eq(SimWorld.validate_config(c), "", "valley_conquest_l 3-side config valid")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "big-map match created"):
+		return
+	for s in w.factions:
+		check(AiU.spawn_of(w, int(s)).distance_to(Vector2(w.factions[s].spawn) + Vector2(0.5, 0.5)) < 0.01, "AI spawn_of(%d) uses the map's spawn set" % int(s))
+	var cr: Array = AiU.crossings(w)
+	var bridges := 0
+	for x in cr:
+		if int(x.bridge) >= 0:
+			bridges += 1
+	check(bridges >= 3 and cr.size() > bridges, "crossings: %d bridges + %d ford clusters" % [bridges, cr.size() - bridges])
+	w.run_ticks(G3B_BIG_TICKS)
+	var lines := []
+	for fid in w.ai_state:
+		var st: Dictionary = w.ai_state[fid]
+		lines.append("f%d s%d cmds=%d rej=%d bld=%d units=%d %s" % [fid, int(w.factions[fid].stage), int(st.cmds_issued), int(st.rejects),
+			w.buildings_of(fid).size(), w.units_of(fid).size(), String(st.g4.get("probe", ""))])
+		check(int(st.cmds_issued) > 20, "big map: side %d issued commands (%d)" % [fid, int(st.cmds_issued)])
+		check(int(st.rejects) * 4 < int(st.cmds_issued), "big map: side %d rejects %d < 25%% of %d" % [fid, int(st.rejects), int(st.cmds_issued)])
+		check(w.buildings_of(fid).size() >= 3, "big map: side %d built up (%d buildings)" % [fid, w.buildings_of(fid).size()])
+	print("    G3b big map t=%d: %s" % [w.tick, " | ".join(lines)])

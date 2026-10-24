@@ -5,6 +5,7 @@ extends RefCounted
 
 const U = preload("res://sim/ai/ai_util.gd")
 const Construction = preload("res://sim/systems/construction.gd")
+const Stage = preload("res://sim/ai/ai_stage.gd")
 
 const PLACE_RADIUS := 13
 const PLACE_CHECKS := 50
@@ -55,6 +56,12 @@ static func next_build(w: SimWorld, fid: int, ctx: Dictionary) -> String:
 		if spare < _draw(refinery):
 			return "" if gen_pending else power
 		return refinery
+	# G3b: the research building (and the stage plan's other buildings) right after the refinery
+	var sw := Stage.want_building(w, fid, w.ai_state[fid], ctx)
+	if sw != "" and (refinery == "" or int(have.get(refinery, 0)) > 0 or not fac_built):
+		if sw != power and spare < _draw(sw):
+			return "" if gen_pending else power
+		return sw
 	var want_def := TURTLE_DEFENCES if turtle else 1
 	if defense != "" and int(have.get(defense, 0)) < want_def and fac_built and _reqs_built(defense, built):
 		if spare < _draw(defense):
@@ -243,6 +250,11 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	var stock_low := int(f.stock.get("ammo", 0)) < AMMO_FLOOR or int(f.stock.get("fuel", 0)) < FUEL_FLOOR
 	if int(ctx.built.get(U.role(w, fid, "refinery"), 0)) > 0 and stock_low and ore < 1500:
 		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.5)))
+	# G3b: the stage bank holds ore (8->9 research + advance) while the refinery eats 20 ore / 6 s:
+	# put most crews on ore until the bank's ore is on hand (salvage piles up unused late game)
+	var hold_ore := int(st.get("g4", {}).get("reserve", {}).get("ore", 0))
+	if hold_ore > 0 and ore < hold_ore + 200 and has_mp:
+		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.75)))
 	var known := U.known_resources(w, fid, st.g2.pub_res)
 	var left := {"ore": 0, "salvage": 0}
 	for r in known:
@@ -285,6 +297,7 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 static func _send_gather(w: SimWorld, fid: int, st: Dictionary, e: Dictionary, res: String, known: Array, drops: Array, allow_other: bool = true) -> void:
 	var best = null
 	var best_d := INF
+	var safe_d := SAFE_GATHER_DIST * sqrt(U.map_scale(w))  # G3b: bigger maps, wider expansion
 	for pass_i in 2:
 		for r in known:
 			if String(r.res) != res:
@@ -292,7 +305,7 @@ static func _send_gather(w: SimWorld, fid: int, st: Dictionary, e: Dictionary, r
 			var near_drop := INF
 			for d in drops:
 				near_drop = minf(near_drop, Vector2(r.pos).distance_to(d))
-			if pass_i == 0 and near_drop > SAFE_GATHER_DIST:
+			if pass_i == 0 and near_drop > safe_d:
 				continue
 			var dd := near_drop * 2.0 + Vector2(r.pos).distance_to(Vector2(e.pos))
 			if dd < best_d:

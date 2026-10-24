@@ -5,6 +5,9 @@ extends RefCounted
 ##   --victory=hq_elimination|territory|hold_bridge|combined|endless --percent=60 --seconds=300
 ##   --rules=and:hq_elimination+territory  (combined: op and "+"-joined term types)
 ##   --economy=standard
+## G3b (AI4): --map=river_crossing_s|industrial_heartland_m|valley_conquest_l
+##   --stages=7,8,9 (per-side start stage; a single value applies to every side)
+##   --advancement=free|standard|simulation
 ## Defaults: 2 sides, human_a mirror, teams 0..n-1 (FFA), hq_elimination.
 
 
@@ -17,6 +20,7 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 	var percent := -1
 	var seconds := -1
 	var rules_s := ""
+	var stages := []
 	for a in args:
 		var s := String(a)
 		if s.begins_with("--seed="):
@@ -40,6 +44,13 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 			rules_s = s.substr(8)
 		elif s.begins_with("--economy="):
 			c.economy = s.substr(10)
+		elif s.begins_with("--map="):
+			c.map = s.substr(6)
+		elif s.begins_with("--stages="):
+			for t in s.substr(9).split(","):
+				stages.append(int(t))
+		elif s.begins_with("--advancement="):
+			c.advancement = s.substr(14)
 	n = maxi(n, maxi(factions.size(), teams.size()))
 	var base: Dictionary = c.sides[1]
 	var sides := []
@@ -48,6 +59,8 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 		sd.ai = true
 		sd.faction = String(factions[i]) if i < factions.size() else "human_a"
 		sd.team = int(teams[i]) if i < teams.size() else i
+		if not stages.is_empty():
+			sd.stage = int(stages[i]) if i < stages.size() else int(stages[stages.size() - 1])
 		sd.name = "AI-%d %s" % [i, String(sd.faction)]
 		sides.append(sd)
 	c.sides = sides
@@ -72,5 +85,6 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 static func describe(c: Dictionary) -> String:
 	var parts := []
 	for s in c.sides:
-		parts.append("%s/t%d" % [String(s.faction), int(s.team)])
-	return "victory=%s economy=%s sides=[%s]" % [String(c.get("victory", "")), String(c.get("economy", "standard")), ", ".join(parts)]
+		parts.append("%s/t%d/s%d" % [String(s.faction), int(s.team), int(s.get("stage", 8))])
+	return "map=%s victory=%s economy=%s advancement=%s sides=[%s]" % [String(c.get("map", "river_crossing_s")),
+		String(c.get("victory", "")), String(c.get("economy", "standard")), String(c.get("advancement", "standard")), ", ".join(parts)]

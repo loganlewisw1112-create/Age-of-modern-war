@@ -8,6 +8,9 @@ extends SceneTree
 ## Prints a summary every 1200 ticks, checks invariants every 600 ticks (INVARIANT FAIL lines),
 ## and ends with:  SOAK RESULT winner=<fid|none> end_tick=<n> reason=<...> hash=<state_hash>
 ## Exits 0 unless a script error occurs (script errors are caught by the caller grepping output).
+## G3b (AI4): --map=<id> --stages=7,8,9 --advancement=<rules>. Prints
+##   "AI f<id> advanced to stage N at tick T" on every StageAdvanced of an AI side, and per-side
+##   AI think time (SOAK AI_MS: avg/max ms per think tick) from timing AiController.think here.
 
 const SUMMARY_EVERY := 1200
 const INVARIANT_EVERY := 600
@@ -19,6 +22,7 @@ var _last_cap := {}
 var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0 (G2 conservation check)
 const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
 const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
+const AiController = preload("res://sim/ai/ai_controller.gd")
 
 
 func _init() -> void:
@@ -53,8 +57,28 @@ func _init() -> void:
 	print("SOAK START seed=%d max_ticks=%d difficulty=%s %s" % [seed_value, max_ticks, difficulty, MatchCfg.describe(c)])
 	var t0 := Time.get_ticks_msec()
 	var kills_seen := {}
+	var ai_us := {}   # fid -> [total_us, max_us, ticks]
+	var ai_st := {}
+	for fid in w.ai_state:
+		ai_us[fid] = [0, 0, 0]
 	while w.tick < max_ticks and not w.match_state.ended:
+		# time the AI ourselves: detach the AI states so step() skips them, then think per side
+		ai_st = w.ai_state
+		w.ai_state = {}
 		w.step()
+		w.ai_state = ai_st
+		if not w.match_state.ended:
+			for fid in ai_st:
+				if w.factions[fid].alive:
+					var t_us := Time.get_ticks_usec()
+					AiController.think(w, fid)
+					var dt := Time.get_ticks_usec() - t_us
+					ai_us[fid][0] += dt
+					ai_us[fid][1] = maxi(int(ai_us[fid][1]), dt)
+					ai_us[fid][2] += 1
+		for ev in w.events:
+			if String(ev.type) == "StageAdvanced" and w.ai_state.has(int(ev.fid)):
+				print("AI f%d advanced to stage %d at tick %d" % [int(ev.fid), int(ev.stage), w.tick])
 		for fid in w.factions:
 			var cap := int(w.factions[fid].pop_cap)
 			if _last_cap.has(fid) and cap < int(_last_cap[fid]):
@@ -71,13 +95,16 @@ func _init() -> void:
 	var why: String = String(w.match_state.reason) if w.match_state.ended else "max_ticks"
 	print("SOAK INVARIANTS fails=%d notes=%d" % [_fail_count, _note_count])
 	print("SOAK WALL_MS %d" % (Time.get_ticks_msec() - t0))
+	for fid in ai_us:
+		var a: Array = ai_us[fid]
+		print("SOAK AI_MS f%d avg=%.3f max=%.2f ticks=%d units_end=%d" % [fid, float(a[0]) / 1000.0 / maxf(1.0, float(a[2])), float(a[1]) / 1000.0, int(a[2]), w.units_of(fid).size()])
 	var wteam := "none"
 	if w.match_state.ended and w.match_state.has("winner_team") and int(w.match_state.winner_team) >= 0:
 		wteam = str(int(w.match_state.winner_team))
 	elif winner != "none":
 		wteam = str(int(w.factions[int(winner)].get("team", int(winner))))
 	for fid in w.ai_state:
-		print("SOAK AI f%d %s %s | %s" % [fid, String(w.factions[fid].faction_def), str(w.ai_state[fid].get("g3", {}).get("probe", "")), str(w.ai_state[fid].get("g2", {}).get("probe", ""))])
+		print("SOAK AI f%d %s %s | %s | %s" % [fid, String(w.factions[fid].faction_def), str(w.ai_state[fid].get("g3", {}).get("probe", "")), str(w.ai_state[fid].get("g2", {}).get("probe", "")), str(w.ai_state[fid].get("g4", {}).get("probe", ""))])
 		# G3a econ funnel: gather plan, crew orders, supply stock and units out of ammo
 		var crews := {}
 		var dry := 0
@@ -101,8 +128,8 @@ func _summary(w: SimWorld, wall_ms: int) -> void:
 		for e in w.units_of(fid):
 			units[e.def] = int(units.get(e.def, 0)) + 1
 		var nb := w.buildings_of(fid).size()
-		parts.append("f%d[%s t%d]{cr=%d sal=%d ore=%d units=%s bld=%d pop=%d/%d kills=%d lost=%d alive=%s}" % [
-			fid, String(f.faction_def), int(f.get("team", fid)), int(f.credits), int(f.stock.salvage), int(f.stock.ore), str(units), nb,
+		parts.append("f%d[%s t%d s%d]{cr=%d sal=%d ore=%d units=%s bld=%d pop=%d/%d kills=%d lost=%d alive=%s}" % [
+			fid, String(f.faction_def), int(f.get("team", fid)), int(f.get("stage", 8)), int(f.credits), int(f.stock.salvage), int(f.stock.ore), str(units), nb,
 			int(f.pop), int(f.pop_cap), int(f.stats.killed), int(f.stats.lost), str(f.alive)])
 	print("SOAK t=%d wall_ms=%d ents=%d %s" % [w.tick, wall_ms, w.entities.size(), " ".join(parts)])
 

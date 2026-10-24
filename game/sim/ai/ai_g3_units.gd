@@ -152,8 +152,9 @@ static func manage_artillery(w: SimWorld, fid: int, st: Dictionary, ctx: Diction
 	if arty.is_empty():
 		return
 	var wave := []
+	var ag := U.ag_set(st, ctx)
 	for e in ctx.army:
-		if st.attack_group.has(int(e.id)):
+		if ag.has(int(e.id)):
 			wave.append(e)
 	var obj := String(st.objective)
 	var spot := Vector2(st.rally) - U.front_dir(w, fid) * 2.0

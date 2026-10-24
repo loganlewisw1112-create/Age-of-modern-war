@@ -8,6 +8,7 @@ const U = preload("res://sim/ai/ai_util.gd")
 const Mil = preload("res://sim/ai/ai_mil.gd")
 const Tac = preload("res://sim/ai/ai_tactics.gd")
 const G3 = preload("res://sim/ai/ai_g3.gd")
+const Stage = preload("res://sim/ai/ai_stage.gd")
 
 const DEFEND_RADIUS := 14.0
 const HIT_RADIUS := 16.0
@@ -86,12 +87,13 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		st.threat_pos = threat.pos
 	var obj := String(st.objective)
 	var group := []
+	var ag := U.ag_set(st, ctx)  # G3b: O(1) membership (waves of thousands)
 	for e in army:
-		if st.attack_group.has(int(e.id)):
+		if ag.has(int(e.id)):
 			group.append(e)
 	var keep := _ids(group)  # drop the dead; held (broken / resupplying) members stay in the wave
 	for e in ctx.held:
-		if st.attack_group.has(int(e.id)):
+		if ag.has(int(e.id)):
 			keep.append(int(e.id))
 	st.attack_group = keep
 	_momentum(w, fid, st)
@@ -244,6 +246,8 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army
 		st.attack_via = Vector2(pts[0])
 	elif route == 2 and pts.size() >= 3:
 		st.attack_via = Vector2(pts[2])
+	if Stage.multi_crossing(w):
+		st.attack_via = Stage.route_via(w, fid, st, _centroid(army), tgt)  # G3b: map.bridges + fords
 	st.launch_size = army.size()
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
@@ -334,7 +338,7 @@ static func _push(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group:
 	elif c.distance_to(tgt) < 5.0 and not bool(st.known_contacts.get("enemy_hq_known", false)):
 		st.search_i = int(st.search_i) + 1
 		var ang := float(int(st.search_i) % 8) * TAU / 8.0
-		tgt = tgt + Vector2(cos(ang), sin(ang)) * 10.0
+		tgt = tgt + Vector2(cos(ang), sin(ang)) * 10.0 * U.map_scale(w)
 		tgt = tgt.clamp(Vector2(2, 2), Vector2(float(w.map.w) - 3.0, float(w.map.h) - 3.0))
 	if tgt.distance_to(Vector2(st.attack_target)) > 2.0 or String(st.army_mode) != "push" or _any_idle(group):
 		st.attack_target = tgt
@@ -354,8 +358,9 @@ static func _any_idle(units: Array) -> bool:
 ## (a third of the threshold, at least 4 pop; any 3 pop when all-in).
 static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array, group: Array, all_in: bool) -> void:
 	var reserve := []
+	var ag := U.ag_set(st, ctx)
 	for e in army:
-		if not st.attack_group.has(int(e.id)):
+		if not ag.has(int(e.id)):
 			reserve.append(e)
 	var need := 3 if all_in else maxi(4, int(st.attack_pop) / 3)
 	if reserve.is_empty() or _pop(reserve) < need:

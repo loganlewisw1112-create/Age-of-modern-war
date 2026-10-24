@@ -9,7 +9,11 @@ extends RefCounted
 ##   "resource" (neutral resource objects on cells this side has explored), or "events" (only
 ##   events about this side's own commands / own entities are read).
 ## - The shooter of a shot that hits us is never read, only which own entity was hit.
-## - The enemy start location comes from the public map (map.spawns), never from entity data.
+## - The enemy start location comes from the public map (map.spawns + map.spawn_sets), never from
+##   entity data.
+
+const PData = preload("res://sim/systems/progression_data.gd")
+const MapGenS = preload("res://sim/map_gen.gd")
 
 const LOG_MAX := 20
 const BACKOFF_TICKS := 200
@@ -55,6 +59,8 @@ static func set_backoff(st: Dictionary, w: SimWorld, key: String, ticks: int = B
 static func submit(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: String, extra: Dictionary = {}) -> bool:
 	if blocked(st, w, key):
 		return false
+	if not _bank_ok(w, fid, st, cmd, key):
+		return false
 	cmd.issuer = fid
 	var r := w.submit(cmd)
 	st.last_command = "t=%d %s [%s]" % [w.tick, String(cmd.type), key]
@@ -62,12 +68,36 @@ static func submit(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: 
 	if not r.ok:
 		st.last_result = "refused: " + String(r.reason)
 		log_line(st, w, "refused %s: %s" % [key, String(r.reason)])
-		set_backoff(st, w, key)
+		set_backoff(st, w, key, BACKOFF_TICKS * 6 if String(r.reason).begins_with("Requires") else BACKOFF_TICKS)
 		return false
 	var p := {"key": key, "type": String(cmd.type), "tick": w.tick}
 	p.merge(extra)
 	st.pending[int(r.id)] = p
 	return true
+
+
+## G3b (AI4): research / advancement bank (st.g4.reserve, set by ai_stage.manage). A queue_unit or
+## build that would dip into it is skipped (no backoff: it is retried once the bank is paid out).
+static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: String) -> bool:
+	var ty := String(cmd.type)
+	if ty != "queue_unit" and ty != "build":
+		return true
+	var hold: Dictionary = st.get("g4", {}).get("reserve", {})
+	if hold.is_empty() or bank_exempt(w, fid, cmd, key):
+		return true
+	var cost: Dictionary = Content.production(String(cmd.item)).get("cost", {}) if ty == "queue_unit" else Content.building(String(cmd.def)).get("cost", {})
+	var f: Dictionary = w.factions[fid]
+	return int(f.credits) - int(cost.get("credits", 0)) >= int(hold.get("credits", 0)) 		and int(f.stock.get("salvage", 0)) - int(cost.get("salvage", 0)) >= int(hold.get("salvage", 0)) 		and int(f.stock.get("ore", 0)) - int(cost.get("ore", 0)) >= int(hold.get("ore", 0))
+
+
+## Exempt from the bank: the stage plan's own buildings, power, and gate units (keys "stage:*").
+static func bank_exempt(w: SimWorld, fid: int, cmd: Dictionary, key: String) -> bool:
+	if key.begins_with("stage:"):
+		return true
+	if String(cmd.type) == "build":
+		var d := String(cmd.get("def", ""))
+		return d == role(w, fid, "power") or d == role(w, fid, "research") or d == role(w, fid, "comms") 			or d == role(w, fid, "refinery")
+	return false
 
 
 ## Runs every tick (before the think throttle): learns from this tick's results of our own commands
@@ -84,7 +114,8 @@ static func scan_events(w: SimWorld, fid: int, st: Dictionary) -> void:
 			st.rejects = int(st.rejects) + 1
 			st.last_result = "rejected %s: %s" % [String(p.key), String(ev.reason)]
 			log_line(st, w, "REJECTED %s: %s" % [String(p.key), String(ev.reason)])
-			set_backoff(st, w, String(p.key))
+			# G3b: stage / research locks do not clear in 10 s; back off a minute (no retry loops)
+			set_backoff(st, w, String(p.key), BACKOFF_TICKS * 6 if String(ev.reason).begins_with("Requires") else BACKOFF_TICKS)
 			if p.has("origin"):
 				var bad: Array = st.bad_origins
 				bad.append(p.origin)
@@ -97,6 +128,13 @@ static func scan_events(w: SimWorld, fid: int, st: Dictionary) -> void:
 			if st.pending.has(cid):
 				st.last_result = "applied " + String(st.pending[cid].key)
 				st.pending.erase(cid)
+		elif ty == "StageAdvanced":
+			if int(ev.fid) != fid:
+				continue
+			var g4: Dictionary = st.get("g4", {})
+			if g4.has("advanced"):
+				g4.advanced.append(int(ev.stage))
+			log_line(st, w, "AI f%d advanced to stage %d at tick %d" % [fid, int(ev.stage), w.tick])
 		elif ty == "ShotFired":
 			var t = own(w, fid, int(ev.target))
 			if t != null:
@@ -246,12 +284,53 @@ static func front_dir(w: SimWorld, fid: int) -> Vector2:
 	return d.normalized() if d.length() > 0.01 else Vector2(1, 1).normalized()
 
 
+## G3b think cost: per-def facts the AI reads for every own unit each think, cached. A pure
+## function of the static content tables (cleared when the units table changes identity).
+static var _udc := {}
+static var _udc_src = null
+
+
+static func ud(def_id: String) -> Dictionary:
+	var tbl := Content.table("units")
+	if not is_same(_udc_src, tbl):
+		_udc.clear()
+		_udc_src = tbl
+	var c = _udc.get(def_id)
+	if c != null:
+		return c
+	var u: Dictionary = tbl.get(def_id, {})
+	var mc := String(u.get("move_class", "foot"))
+	var air := bool(u.get("is_air", false)) or mc == "air"
+	var wp := String(u.get("weapon", ""))
+	c = {"pop": int(u.get("pop", 1)), "veh": mc == "vehicle", "air": air,
+		"armored": String(u.get("armor", "infantry")) in ["light", "heavy"] and not air,
+		"arty": wp != "" and bool(Content.weapon(wp).get("indirect", false)),
+		"energy": bool(u.get("energy", false)),
+		"amax": float(u.get("ammo_max", 0)), "fmax": float(u.get("fuel_max", 0))}
+	_udc[def_id] = c
+	return c
+
+
 static func pop_of(def_id: String) -> int:
-	return int(Content.unit(def_id).get("pop", 1))
+	return int(ud(def_id).pop)
+
+
+## Set view of st.attack_group for this think (rebuilt when the array changes).
+static func ag_set(st: Dictionary, ctx: Dictionary) -> Dictionary:
+	var arr: Array = st.attack_group
+	if ctx.has("ag_set") and is_same(ctx.ag_arr, arr) and int(ctx.ag_n) == arr.size():
+		return ctx.ag_set
+	var s := {}
+	for id in arr:
+		s[int(id)] = true
+	ctx.ag_set = s
+	ctx.ag_arr = arr
+	ctx.ag_n = arr.size()
+	return s
 
 
 static func is_vehicle(def_id: String) -> bool:
-	return String(Content.unit(def_id).get("move_class", "foot")) == "vehicle"
+	return bool(ud(def_id).veh)
 
 
 ## Deterministic per-match, per-side number in [0, 1) without touching w.rng.
@@ -269,9 +348,31 @@ static func fac(w: SimWorld, fid: int) -> String:
 	return String(w.factions[fid].get("faction_def", "human_a"))
 
 
-## Def id of this side's role ("" when the faction has none).
+## Def id of this side's role at its CURRENT stage ("" when the faction has none, or when the def
+## is not usable by this side now: stage window or missing research). G3b (AI4): every def the AI
+## picks goes through here, so a Stage 7 AI never queues a Stage 8 def ("Requires Stage N").
 static func role(w: SimWorld, fid: int, r: String) -> String:
-	return Content.role(fac(w, fid), r)
+	var item := Content.role(fac(w, fid), r, stage(w, fid))
+	if item == "" or not available(w, fid, item):
+		return ""
+	return item
+
+
+## This side's current stage (7/8/9; pre-G3b saves: 8).
+static func stage(w: SimWorld, fid: int) -> int:
+	return int(w.factions[fid].get("stage", 8))
+
+
+## A production item, building or unit def usable by this side now (stage window + research).
+static func available(w: SimWorld, fid: int, def_id: String) -> bool:
+	var p := Content.production(def_id)
+	if not p.is_empty():
+		return PData.production_reason(w, fid, def_id) == ""
+	var b := Content.building(def_id)
+	if not b.is_empty():
+		return PData.unavailable_reason(w, fid, b) == ""
+	var u := Content.unit(def_id)
+	return u.is_empty() or PData.unavailable_reason(w, fid, u) == ""
 
 
 ## Unit def spawned by this side's production role ("" when none).
@@ -296,21 +397,20 @@ static func is_hq_def(def_id: String) -> bool:
 
 
 static func is_air(def_id: String) -> bool:
-	return uflag(def_id, "is_air") or String(Content.unit(def_id).get("move_class", "")) == "air"
+	return bool(ud(def_id).air)
 
 
 ## Armoured target (vehicles and walkers): AT weapons are the answer.
 static func is_armored(def_id: String) -> bool:
-	return String(Content.unit(def_id).get("armor", "infantry")) in ["light", "heavy"] and not is_air(def_id)
+	return bool(ud(def_id).armored)
 
 
 static func is_artillery(def_id: String) -> bool:
-	var wp := String(Content.unit(def_id).get("weapon", ""))
-	return wp != "" and bool(Content.weapon(wp).get("indirect", false))
+	return bool(ud(def_id).arty)
 
 
 static func is_energy(def_id: String) -> bool:
-	return uflag(def_id, "energy")
+	return bool(ud(def_id).energy)
 
 
 ## Def ids (any faction) of a building flag: e.g. defs_with("supply_point").
@@ -326,9 +426,57 @@ static func side_ids(w: SimWorld) -> Array:
 	return out
 
 
+## Start cell of a side from the public map + lobby (G3b: map.spawn_sets by side count, MAP4 CR).
 static func spawn_of(w: SimWorld, side: int) -> Vector2:
-	var sp: Array = w.map.spawns
-	return Vector2(sp[side % sp.size()]) + Vector2(0.5, 0.5)
+	return Vector2(MapGenS.spawn_for(w.map, side, maxi(1, side_ids(w).size()))) + Vector2(0.5, 0.5)
+
+
+## Map size relative to River Crossing (96 cells): 1.0 there, ~1.67 on 160, ~2.67 on 256.
+static func map_scale(w: SimWorld) -> float:
+	return maxf(1.0, float(maxi(int(w.map.w), int(w.map.h))) / 96.0)
+
+
+## Public crossings of the river(s): every bridge of map.bridges (index >= 0) plus each ford cluster
+## (bridge -1), as [{pos, bridge}]. Computed once per match from public map data.
+static func crossings(w: SimWorld) -> Array:
+	var out := []
+	var brs: Array = w.map.get("bridges", [])
+	if brs.is_empty() and not w.map.get("bridge_cells", []).is_empty():
+		brs = [{"cells": w.map.bridge_cells}]
+	for i in brs.size():
+		var cells: Array = brs[i].get("cells", [])
+		if cells.is_empty():
+			continue
+		var sum := Vector2.ZERO
+		for c in cells:
+			sum += Vector2(Vector2i(c)) + Vector2(0.5, 0.5)
+		out.append({"pos": sum / float(cells.size()), "bridge": i})
+	var left := {}
+	for c in w.map.get("ford_cells", []):
+		left[Vector2i(c)] = true
+	var keys := left.keys()
+	keys.sort()
+	for k in keys:
+		if not left.has(k):
+			continue
+		# flood one 8-connected ford cluster (sorted seeds: deterministic order)
+		var stack: Array = [k]
+		left.erase(k)
+		var sum := Vector2.ZERO
+		var n := 0
+		while not stack.is_empty():
+			var c: Vector2i = stack.pop_back()
+			sum += Vector2(c) + Vector2(0.5, 0.5)
+			n += 1
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var q := c + Vector2i(dx, dy)
+					if left.has(q):
+						left.erase(q)
+						stack.append(q)
+		if n >= 3:
+			out.append({"pos": sum / float(n), "bridge": -1})
+	return out
 
 
 ## Sides on another team (public lobby config, via w.is_enemy).

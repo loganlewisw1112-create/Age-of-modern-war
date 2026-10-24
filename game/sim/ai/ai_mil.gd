@@ -5,11 +5,13 @@ extends RefCounted
 
 const U = preload("res://sim/ai/ai_util.gd")
 const G3 = preload("res://sim/ai/ai_g3.gd")
+const Stage = preload("res://sim/ai/ai_stage.gd")
 
 ## G3a: building roles whose saving blocks army spending (G2: generator, barracks, depot, motor pool).
-const URGENT_ROLES := ["power", "barracks", "depot", "factory"]
+const URGENT_ROLES := ["power", "barracks", "depot", "factory", "comms"]  # G3b: + comms (8->9 gate); the lab never delays the first waves
 ## Production categories (G2 "rifle"/"at" are the infantry/antitank roles; "vehicle" = light|heavy).
-const CATS := ["antitank", "infantry", "vehicle", "artillery", "air"]
+## G3b: Stage 9 roles precision / ew / anti_air (ai_stage.stage_shares).
+const CATS := ["antitank", "infantry", "vehicle", "artillery", "air", "precision", "ew", "anti_air"]
 
 
 ## Updates known_contacts from legal sources only (visible_enemies + own memory).
@@ -17,17 +19,25 @@ static func update_intel(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	var vis := w.visible_enemies(fid)
 	var by_def := {}
 	var vehicles := 0
+	var air_n := 0
 	var near_base := 0
 	var base := U.base_pos(w, fid)
 	for e in vis:
 		if e.kind != "unit":
 			continue
-		by_def[String(e.def)] = int(by_def.get(String(e.def), 0)) + 1
-		if U.is_armored(String(e.def)):
+		var d := String(e.def)
+		by_def[d] = int(by_def.get(d, 0)) + 1
+		var u := U.ud(d)  # G3b think cost: one cached per-def lookup per contact
+		if bool(u.armored):
 			vehicles += 1
+		elif bool(u.air):
+			air_n += 1
 		if Vector2(e.pos).distance_to(base) <= 14.0:
 			near_base += 1
 	st.enemy_vehicles_seen = maxi(int(st.enemy_vehicles_seen), vehicles)
+	st.vis_n = vis.size()  # G3b: think-cost load (ai_controller.think_mult)
+	if st.has("g4"):
+		st.g4.enemy_air_seen = maxi(int(st.g4.get("enemy_air_seen", 0)), air_n)
 	var mem: Dictionary = w.memory[fid]
 	var hq_known := false
 	var tgt := int(st.g3.target_side)
@@ -50,6 +60,8 @@ static func attack_target(w: SimWorld, fid: int) -> Vector2:
 
 
 static func patrol_points(w: SimWorld, fid: int) -> Array:
+	if Stage.multi_crossing(w):
+		return Stage.patrol_points(w, fid)  # G3b maps: bridges list + ford clusters
 	var a := Vector2.ZERO
 	var na := 0
 	var b := Vector2.ZERO
@@ -140,7 +152,7 @@ static func _cat_map(w: SimWorld, fid: int) -> Dictionary:
 		if item != "":
 			for u in Content.production(item).get("spawns", []):
 				out[String(u)] = "vehicle"
-	for r in ["infantry", "antitank", "artillery", "air"]:
+	for r in ["infantry", "antitank", "artillery", "air", "precision", "ew", "anti_air"]:
 		var item := U.role(w, fid, r)
 		if item != "":
 			for u in Content.production(item).get("spawns", []):
@@ -201,7 +213,7 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 	var have := {}
 	for c in CATS:
 		have[c] = 0
-	for e in ctx.army + ctx.arty + ctx.air:
+	for e in ctx.army + ctx.arty + ctx.air + ctx.get("ew", []):
 		var cat := String(cmap.get(String(e.def), ""))
 		if cat != "":
 			have[cat] += U.pop_of(String(e.def))
@@ -216,7 +228,8 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 	var total := 0.0
 	for c in CATS:
 		total += float(have[c])
-	var shares := _shares(w, fid, st, int(ctx.built.get(factory_def, 0)) > 0)
+	var has_fac := int(ctx.built.get(factory_def, 0)) > 0
+	var shares := Stage.stage_shares(w, fid, st, _shares(w, fid, st, has_fac), has_fac)
 	var order := []
 	for cat in CATS:
 		if float(shares.get(cat, 0.0)) <= 0.0:
@@ -233,13 +246,15 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		if String(st.saving_for) != "" and String(st.saving_for) == U.role(w, fid, r):
 			reserve = int(Content.building(String(st.saving_for)).cost.credits)
 	var defending := String(st.objective) == "defend"
+	# G3b: research / advancement savings (ai_stage sets them only while a defensive core stands)
+	var hold: Dictionary = {} if defending else Stage.reserve(st)
 	for i in order.size():
 		var item := String(order[i][2])
 		var p := Content.production(item)
 		var fac = free[String(p.facility)]
 		if int(f.pop) + int(ctx.queued_pop) + _pop_of_item(item) > int(f.pop_cap):
 			return  # supply capped: the depot rule in ai_econ handles it
-		var affordable := w.can_afford(fid, p.cost) == "" and int(f.credits) - int(p.cost.credits) >= reserve
+		var affordable := w.can_afford(fid, p.cost) == "" and int(f.credits) - int(p.cost.credits) >= reserve + int(hold.get("credits", 0)) 			and int(f.stock.salvage) - int(p.cost.get("salvage", 0)) >= int(hold.get("salvage", 0)) 			and int(f.stock.ore) - int(p.cost.get("ore", 0)) >= int(hold.get("ore", 0))
 		if affordable:
 			U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(fac.id), "item": item}, "queue:%d" % int(fac.id))
 			return
