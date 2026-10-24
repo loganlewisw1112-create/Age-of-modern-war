@@ -27,7 +27,7 @@ static func diff(w: SimWorld, fid: int = -1) -> Dictionary:
 	var key := String(w.cfg.get("ai_difficulty", "normal"))
 	var sides: Array = w.cfg.get("sides", [])
 	if fid >= 0 and fid < sides.size():
-		key = String(sides[fid].get("ai_difficulty", key))
+		key = String(sides[fid].get("ai_difficulty", sides[fid].get("difficulty", key)))  # G4: file-map players carry "difficulty"
 	return all.get(key, all.normal)
 
 

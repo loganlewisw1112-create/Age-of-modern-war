@@ -28,6 +28,13 @@ var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0
 const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
 const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
 const AiController = preload("res://sim/ai/ai_controller.gd")
+const MapIOS = preload("res://sim/map_io.gd")
+const MapGenS = preload("res://sim/map_gen.gd")
+const FortifyS = preload("res://sim/systems/fortify.gd")
+const TransportS = preload("res://sim/systems/transport.gd")
+## G4 (AI5): G4b evidence per side from the event stream (walls built, transports used, new units)
+const G4B_UNITS := ["a_apc", "a_sniper", "a_mortar", "a_combat_engineer", "b_flamer", "b_halftrack", "b_scrap_mech", "b_rocket_truck"]
+var _g4 := {}
 
 
 func _init() -> void:
@@ -44,6 +51,32 @@ func _init() -> void:
 		elif a == "--ailog":
 			_ailog = true
 	var c := MatchCfg.from_args(OS.get_cmdline_user_args(), seed_value)
+	# G4 (AI5): --mapfile=<path.rtsmap> plays an editor / exported file map (--export-map=<id> writes
+	# a built-in map to that path first); --factions=a,b,.. overrides the file's player factions.
+	var mapfile := ""
+	var export_id := ""
+	var facs := []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--mapfile="):
+			mapfile = a.substr(10)
+		elif a.begins_with("--export-map="):
+			export_id = a.substr(13)
+		elif a.begins_with("--factions="):
+			facs = a.substr(11).split(",")
+	if mapfile != "":
+		if export_id != "":
+			var er := MapGenS.to_file(seed_value, export_id, mapfile)
+			print("SOAK EXPORT %s -> %s %s" % [export_id, mapfile, er if er != "" else "ok"])
+		c = MapIOS.config_for(mapfile, {"seed": seed_value})
+		if c.has("error"):
+			print("SOAK CONFIG INVALID: ", c.error)
+			quit(2)
+			return
+		for i in (c.sides as Array).size():
+			c.sides[i].ai = true
+			if i < facs.size():
+				c.sides[i].faction = String(facs[i])
+		print("SOAK MAPFILE %s sides=%d" % [mapfile, (c.sides as Array).size()])
 	c.ai_difficulty = difficulty
 	var reason := SimWorld.validate_config(c)
 	if reason != "":
@@ -84,6 +117,7 @@ func _init() -> void:
 					ai_us[fid][1] = maxi(int(ai_us[fid][1]), dt)
 					ai_us[fid][2] += 1
 		for ev in w.events:
+			_g4_event(w, ev)
 			if String(ev.type) == "StageAdvanced" and w.ai_state.has(int(ev.fid)):
 				print("AI f%d advanced to stage %d at tick %d" % [int(ev.fid), int(ev.stage), w.tick])
 		for fid in w.factions:
@@ -125,8 +159,57 @@ func _init() -> void:
 				dry += 1
 		var fs: Dictionary = w.factions[fid].stock
 		print("SOAK ECON f%d gp=%s crews=%s ammo=%d fuel=%d dry=%d/%d" % [fid, str(w.ai_state[fid].get("gather_plan", {})), str(crews), int(fs.get("ammo", 0)), int(fs.get("fuel", 0)), dry, w.units_of(fid).size()])
+	for fid in w.factions:
+		var gd: Dictionary = _g4.get(fid, {})
+		print("SOAK G4B f%d %s forts_done=%s lines=%d loaded=%d unloaded=%d mines=%d charges=%d deployed=%d fielded=%s | %s" % [fid, String(w.factions[fid].faction_def),
+			str(gd.get("forts", {})), int(gd.get("lines", 0)), int(gd.get("loaded", 0)), int(gd.get("unloaded", 0)), int(gd.get("mines", 0)),
+			int(gd.get("charges", 0)), int(gd.get("deployed", 0)), str(gd.get("fielded", {})), str(w.ai_state.get(fid, {}).get("g5", {}).get("probe", ""))])
 	print("SOAK RESULT winner=%s end_tick=%d reason=%s hash=%s winner_team=%s winners=%s" % [winner, w.tick, why, w.state_hash(), wteam, str(w.match_state.get("winners", []))])
 	quit(0)
+
+
+func _g4_bump(fid: int, key: String, sub: String = "") -> void:
+	if not _g4.has(fid):
+		_g4[fid] = {}
+	var d: Dictionary = _g4[fid]
+	if sub == "":
+		d[key] = int(d.get(key, 0)) + 1
+		return
+	if not d.has(key):
+		d[key] = {}
+	d[key][sub] = int(d[key].get(sub, 0)) + 1
+
+
+func _g4_event(w: SimWorld, ev: Dictionary) -> void:
+	var ty := String(ev.type)
+	var o := int(ev.get("owner", -1))
+	match ty:
+		"ConstructionCompleted":
+			if FortifyS.is_fort(String(ev.get("def", ""))):
+				_g4_bump(o, "forts", FortifyS.kind_of(String(ev.def)))
+				if not _g4[o].has("first_fort"):
+					_g4[o].first_fort = w.tick
+					print("SOAK G4B_EVT t=%d f%d first fort built: %s" % [w.tick, o, String(ev.def)])
+		"LinePlanned":
+			_g4_bump(o, "lines")
+		"UnitLoaded":
+			_g4_bump(o, "loaded")
+			if int(_g4[o].loaded) == 1:
+				print("SOAK G4B_EVT t=%d f%d first unit loaded into carrier %d" % [w.tick, o, int(ev.carrier)])
+		"UnitUnloaded":
+			if String(ev.get("cause", "")) == "unload":
+				_g4_bump(o, "unloaded")
+		"AiTargetSet":
+			print("SOAK G4B_EVT t=%d f%d ai_target set by trigger: region %s" % [w.tick, int(ev.faction), String(ev.region)])
+		"MineLaid":
+			_g4_bump(o, "mines")
+		"ChargePlanted":
+			_g4_bump(o, "charges")
+		"Deployed":
+			_g4_bump(o, "deployed")
+		"ProductionCompleted":
+			if String(ev.get("item", "")) in G4B_UNITS:
+				_g4_bump(o, "fielded", String(ev.item))
 
 
 func _summary(w: SimWorld, wall_ms: int) -> void:
@@ -255,10 +338,28 @@ func _check_g2(w: SimWorld) -> void:
 	if w.sys_state.has("ops"):
 		for gid in w.sys_state.ops.groups:
 			var g: Dictionary = w.sys_state.ops.groups[gid]
-			var off = w.entities.get(int(g.officer))
+			var off = _unit_or_cargo(w, int(g.officer))
 			if off == null or int(off.owner) != int(g.owner):
 				_fail(w, "officer group %s: officer %s missing or not owned by f%d" % [str(gid), str(g.officer), int(g.owner)])
 			for m in g.members:
-				var me = w.entities.get(int(m))
+				var me = _unit_or_cargo(w, int(m))
 				if me == null or int(me.owner) != int(g.owner):
 					_fail(w, "officer group %s: member %s missing or not owned by f%d" % [str(gid), str(m), int(g.owner)])
+
+
+## Contract G4 section 7: a loaded unit leaves w.entities but keeps its group membership; it lives in
+## the cargo array of an own carrier. Returns the unit dict (from the world or from cargo) or null.
+func _unit_or_cargo(w: SimWorld, id: int):
+	var e = w.entities.get(id)
+	if e != null:
+		return e
+	var cid := TransportS.carrier_of(w, id)
+	if cid < 0:
+		return null
+	var c = w.entities.get(cid)
+	if c == null:
+		return null
+	for u in c.get("cargo", []):
+		if int(u.id) == id:
+			return u if int(u.owner) == int(c.owner) else null
+	return null

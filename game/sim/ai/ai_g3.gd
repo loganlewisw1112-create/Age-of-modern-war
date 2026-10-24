@@ -16,6 +16,7 @@ extends RefCounted
 
 const U = preload("res://sim/ai/ai_util.gd")
 const Territory = preload("res://sim/systems/territory.gd")
+const Triggers = preload("res://sim/systems/triggers.gd")
 
 const RETARGET_MARGIN := 8.0
 const DEFENCE_WEIGHT := 2.0
@@ -170,7 +171,12 @@ static func objective(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, fr
 	var t: Dictionary = g3.terms
 	var kind := "base"
 	var pos := Vector2(-1, -1)
-	if int(t.bridge) > 0:
+	# G4 (AI5): a scenario ai_target trigger aimed at this side overrides the victory-term goal
+	var scripted = Triggers.ai_target(w, fid)
+	if scripted != null:
+		kind = "ai_target"
+		pos = Vector2(scripted)
+	elif int(t.bridge) > 0:
 		var met := int(g3.hold_ticks) >= int(t.bridge) * SimWorld.TICK_RATE
 		if not (met and bool(t.elim) and String(t.op) == "and"):
 			kind = "bridge"

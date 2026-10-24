@@ -21,6 +21,8 @@ const Tac = preload("res://sim/ai/ai_tactics.gd")
 const G3 = preload("res://sim/ai/ai_g3.gd")
 const G3U = preload("res://sim/ai/ai_g3_units.gd")
 const Stage = preload("res://sim/ai/ai_stage.gd")
+const G4B = preload("res://sim/ai/ai_g4b.gd")
+const Triggers = preload("res://sim/systems/triggers.gd")
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
@@ -55,6 +57,7 @@ static func new_state(w: SimWorld, fid: int) -> Dictionary:
 	st.g2 = _new_g2(w, fid)
 	st.g3 = G3.new_g3(w, fid)
 	st.g4 = Stage.new_g4(w, fid)
+	st.g5 = G4B.new_g5()
 	st.fid = fid
 	if Stage.multi_crossing(w):
 		st.patrol = Stage.patrol_points(w, fid)
@@ -124,6 +127,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		st.g3 = G3.new_g3(w, fid)  # pre-G3a save
 	if not st.has("g4"):
 		st.g4 = Stage.new_g4(w, fid)  # pre-G3b save
+	G4B.g5(st)  # pre-G4b save
 	U.scan_events(w, fid, st)
 	if prof != null:
 		prof.mark(fid, "scan_events")
@@ -153,6 +157,8 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 	var econ_turn := not big or int(st.think_count) % 2 == 0
 	var mil_turn := not big or int(st.think_count) % 2 == 1
 	Mil.update_intel(w, fid, st, ctx)
+	var scripted = Triggers.ai_target(w, fid)  # G4 (AI5): scenario ai_target trigger (public to this side)
+	st.g5.ai_target = "" if scripted == null else str(Vector2(scripted).round())
 	if prof != null:
 		prof.mark(fid, "intel")
 	Stage.note_bridges(w, fid, st)
@@ -164,6 +170,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 	if econ_turn:
 		Logi.manage_repair(w, fid, st, ctx)
 		Econ.manage_construction(w, fid, st, ctx)
+		G4B.manage_fort(w, fid, st, ctx)
 		Econ.manage_gather(w, fid, st, ctx)
 		Econ.manage_engineers(w, fid, st, ctx)
 		Mil.manage_scout(w, fid, st, ctx)
@@ -175,6 +182,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		if prof != null:
 			prof.mark(fid, "officer_stage")
 		Logi.manage_truck_production(w, fid, st, ctx, army_pop)
+		G4B.manage_production(w, fid, st, ctx)
 		Mil.manage_production(w, fid, st, ctx)
 		if prof != null:
 			prof.mark(fid, "production")
@@ -182,6 +190,12 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		Logi.manage_resupply(w, fid, st, ctx)
 		if prof != null:
 			prof.mark(fid, "resupply")
+		G4B.manage_ferry(w, fid, st, ctx)
+		G4B.manage_units(w, fid, st, ctx)
+		G4B.manage_breach(w, fid, st, ctx)
+		G4B.manage_gates(w, fid, st, ctx)
+		if prof != null:
+			prof.mark(fid, "g4b")
 		Army.manage_army(w, fid, st, ctx)
 		if prof != null:
 			prof.mark(fid, "army")
@@ -196,6 +210,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 	g2.probe = "stage=%s waves=%d wd=%d pull=%d refill=%d rep=%d flank=%d bridge=%s/%d" % [String(g2.stage),
 		int(g2.officer_waves), int(g2.withdrawals), int(g2.pullbacks), int(g2.refills), int(g2.repairs),
 		int(g2.flanks), "ruined" if bool(g2.bridge_ruined) else "ok", int(g2.bridge_repairs)]
+	st.g5.probe = G4B.probe(st)
 	var g3: Dictionary = st.g3
 	g3.probe = "tgt=%d out=%s retg=%d obj=%s caps=%d hold=%ds raids=%d arty=%d" % [int(g3.target_side),
 		str(g3.eliminated), int(g3.retargets), String(g3.obj_kind), int(g3.captures),
@@ -236,6 +251,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 	var held := []  # own army units not commandable this think (broken, resupplying)
 	var recon := []      # G3b: recon-role units other than the scout (8->9 people gate pickets)
 	var ew := []         # G3b: EW units (ew_radius, unarmed): held behind the front
+	var carriers := []   # G4b: transports (cargo_slots): ferried by ai_g4b, not in the army
+	var cengs := []      # G4b: combat engineers (mines / charges): ai_g4b, not economy crews
 	var rec_def := U.role_unit(w, fid, "recon")
 	if rec_def == U.role_unit(w, fid, "infantry"):
 		rec_def = ""  # Machine: the scout crawler is its line infantry too
@@ -246,7 +263,9 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		var def_id := String(e.def)
 		var kc = _cls_cache.get(def_id)
 		var k: int = kc if kc != null else _cls(def_id)
-		if k & (K_BUILD | K_GATHER):
+		if k & K_CENG:
+			cengs.append(e)
+		elif k & (K_BUILD | K_GATHER):
 			engineers.append(e)
 			if k & K_BUILD:
 				builders.append(e)
@@ -264,6 +283,10 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 			arty.append(e)
 		elif k & K_EW:
 			ew.append(e)
+		elif k & K_CARRIER:
+			carriers.append(e)
+		elif String(e.order.type) == "board":
+			held.append(e)  # G4b: walking to a carrier (ai_g4b ferry)
 		elif def_id == rec_def:
 			recon.append(e)
 		elif bool(e.get("broken", false)):
@@ -303,7 +326,7 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		"power_planned": power, "cap_planned": cap_planned, "queued_pop": queued_pop, "hq": hq, "busy": {}, "visible": [],
 		"officers": officers, "trucks": trucks, "held": held,
 		"builders": builders, "gatherers": gatherers, "air": air, "arty": arty, "recon": recon, "ew": ew,
-		"army_pop": army_pop, "army_n": army.size()}
+		"army_pop": army_pop, "army_n": army.size(), "carriers": carriers, "cengs": cengs}
 
 
 const K_BUILD := 1
@@ -313,6 +336,8 @@ const K_SUPPLY := 8
 const K_AIR := 16
 const K_ARTY := 32
 const K_EW := 64
+const K_CARRIER := 128
+const K_CENG := 256
 ## def -> K_* bits. Pure function of the static content tables, so caching never changes outcomes;
 ## it keeps _context cheap with thousands of own units (G3b think-cost budget).
 static var _cls_cache := {}
@@ -336,6 +361,10 @@ static func _cls(def_id: String) -> int:
 		k |= K_ARTY
 	if float(Content.unit(def_id).get("ew_radius", 0)) > 0.0 and String(Content.unit(def_id).get("weapon", "")) == "":
 		k |= K_EW
+	if G4B.is_carrier_def(def_id):
+		k |= K_CARRIER
+	if G4B.is_ceng_def(def_id):
+		k |= K_CENG
 	_cls_cache[def_id] = k
 	return k
 

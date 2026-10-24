@@ -529,6 +529,7 @@ func test_g3_determinism_three_factions() -> void:
 const Progression = preload("res://sim/systems/progression.gd")
 const AiU = preload("res://sim/ai/ai_util.gd")
 const AiConstruction = preload("res://sim/systems/construction.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")
 const G3B_STAGE7_TICKS := 8000
 const G3B_FIXTURE_TICKS := 6000
 const G3B_BIG_TICKS := 3000
@@ -769,3 +770,40 @@ func test_g3b_ammo_tight_skips_small_arms() -> void:
 		if ammo == 0:
 			for item in queued:
 				check(Mil.item_dpr(item) >= Mil.AMMO_DPR, "ammo tight: %s is not small arms" % item)
+
+
+## G4b (AI5): on River Crossing at Stage 8 (Human A vs Human B, both AI) the AI plans a wall line
+## with a gate (build_line from ai_g4b), Human A's combat engineers lay mines, and the new st.g5
+## state survives save/load (same hash 300 ticks after the reload as without it).
+func test_g4b_walls_mines_and_save_roundtrip() -> void:
+	const SaveSys = preload("res://sim/save_system.gd")
+	var c := _ai_config(1)
+	c.sides[1].faction = "human_b"
+	for s in c.sides:
+		s.stage = 8
+	var w := SimWorld.new_match(c)
+	var lines := {}
+	var gate_lines := 0
+	var mines := 0
+	while w.tick < 9000 and not w.match_state.ended:  # AI5-2: forts wait for the refinery (~t6000), mines ~t7700
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "LinePlanned" and w.ai_state.has(int(ev.owner)):
+				lines[int(ev.owner)] = true
+				if Fortify.kind_of(String(ev.def)) == "gate":
+					gate_lines += 1
+			elif String(ev.type) == "MineLaid":
+				mines += 1
+	print("    G4b river s1 t=%d: wall sides=%s gate runs=%d mines=%d probes=%s | %s" % [w.tick, str(lines.keys()), gate_lines, mines,
+		String(w.ai_state[0].g5.probe), String(w.ai_state[1].g5.probe)])
+	check(lines.size() >= 1, "an AI side planned a wall line (%s)" % str(lines.keys()))
+	check(gate_lines >= 1, "a wall line has a gate run (%d)" % gate_lines)
+	check(mines >= 1, "combat engineers laid mines (%d)" % mines)
+	var path := ProjectSettings.globalize_path("user://ai5_g4b_save.json")
+	check_eq(SaveSys.save(w, path), "", "save ok")
+	var l: SimWorld = SaveSys.load(path)
+	check(l != null and l.ai_state[0].has("g5"), "g5 state loaded")
+	for i in 300:
+		w.step()
+		l.step()
+	check_eq(l.state_hash(), w.state_hash(), "hash equal 300 ticks after save/load with g5 state")
