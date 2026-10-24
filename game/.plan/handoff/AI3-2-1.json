@@ -1,0 +1,36 @@
+{
+  "agent": "AI3-2", "gen": 1, "calls_used": 55, "tokens_used_est": 335000,
+  "why": "self-check hit: 60k+5k*calls + 90k >= 0.7 x 600k at ~55 calls",
+  "done": [
+    "Verified UI3 CR: U.diff(w, fid) reads cfg.sides[fid].ai_difficulty (ai_util.gd line ~21).",
+    "Verified s3.api can_target: no AI attack order targets air with a non-AA shooter (flank picks move_class=='vehicle' only; drones are move_class 'air'; raids/arty/focus target ground units or buildings).",
+    "tools/soak.gd: invariant 'unit in impassable cell' now skips move_class 'air' (movement.gd S3: air ignores terrain). Was a false INVARIANT FAIL on m_drone over forest in 2v2 seed 2.",
+    "tools/soak.gd: new end line 'SOAK ECON f<n> gp=<gather_plan> crews=<order/res counts> ammo= fuel= dry=<dry>/<units>'.",
+    "sim/ai/ai_mil.gd manage_production: never save for an item blocked on ORE (falls through to the next choice). Human B had banked 2440 credits for ~15k ticks waiting on a rebuilt_mbt with ore=8.",
+    "sim/ai/ai_util.gd: public_deposits split into all_public_deposits(w) (match-start snapshot) + zone_deposits(w, fid, all, gone); scan_events on SideEliminated appends the beaten side's deposits (re-zoned among survivors) to st.g2.pub_res. ai_controller._new_g2 stores g2.pub_all."
+  ],
+  "soaks_after_fixes": {
+    "ffa seed1 (h_a,h_b,machine)": "SOAK RESULT winner=0 end_tick=26443 reason=hq_elimination winner_team=0 winners=[0]",
+    "ffa seed2": "SOAK RESULT winner=none end_tick=36000 reason=max_ticks winners=[]  <-- STILL OPEN",
+    "ffa seed3": "winner=0 end_tick=27949 reason=hq_elimination (run BEFORE the ai_mil/ai_util fixes - re-run)",
+    "2v2 seed1": "SOAK RESULT winner=1 end_tick=22417 reason=hq_elimination winner_team=1 winners=[1, 3]",
+    "2v2 seed2": "winner=1 end_tick=28517 winners=[1, 3] (run BEFORE fixes; had the air false-invariant - re-run)",
+    "mirror 1/2/3": "winner=1 t=11573 / winner=0 t=18831 / winner=0 t=11980, all hq_elimination",
+    "territory --percent=60 seed1": "SOAK RESULT winner=0 end_tick=14960 reason=territory (caps f0=34 f1=24)",
+    "hold_bridge --seconds=300 seed1": "SOAK RESULT winner=0 end_tick=19780 reason=hold_bridge (f0 hold=57s at end, stage=crossing)"
+  },
+  "ffa2_diagnosis": "Not an econ stall any more (end: B ammo=599, crews 5 salvage/3 ore, ore_left 8533; A ammo 3155). It is an attrition grind: Machine out ~t20000, then B (attack, 4 launches, pull=172 pullbacks, refill=38) vs A (defend, guard tower). A's army collapses only ~t34000 (A pop 23 at 30000 -> 5 at 36000; B pop 41). B would likely win shortly after 36000 (not run). Suspects: B's supply role is b_recovery_truck which can_repair, so _truck_repair (ai_logistics) diverts it from the wave and low-ammo units walk home (NEAR_TRUCK 14); many new militia 'resupplied (ammo 100%)' log lines suggest a commute loop.",
+  "remaining": [
+    "1. ffa seed 2: check pullback commute. Try: in ai_logistics.manage_truck, skip _truck_repair while objective=='attack' and the group is non-empty (keep the truck with the wave); and/or in manage_resupply only pull 'low' (not dry) units when the truck is far AND the target side is beaten-down. Re-run: bash .plan/hb.sh AI3-2 <calls> <est> ffa2 -- \"$G\" --headless --path . -s tools/soak.gd -- --seed=2 --max-ticks=36000 --factions=human_a,human_b,machine . A quick check that it would end: --max-ticks=45000.",
+    "2. Re-run (after any change) all step-2 soaks: ffa seeds 1,2,3; 2v2 (--factions=human_a,human_b,machine,human_a --teams=0,1,0,1) seeds 1,2; mirror seeds 1,2,3; plus territory/hold_bridge smoke. Batch script used: scratchpad soak2.sh runs N soaks in parallel and greps SCRIPT ERROR|INVARIANT FAIL|SOAK RESULT|SOAK AI|SOAK ECON (5 in parallel ~9 min wall).",
+    "3. bash tests/run.sh --only=test_ai (not re-run since these edits; soaks parse clean), then the full suite once under hb.sh.",
+    "4. Final report; post done."
+  ],
+  "files_touched": ["tools/soak.gd", "sim/ai/ai_mil.gd", "sim/ai/ai_util.gd", "sim/ai/ai_controller.gd"],
+  "test_state": "test_ai/full suite NOT run by AI3-2. All soaks above ran with no SCRIPT ERROR / Parse Error; only INVARIANT FAILs seen were the air false positives (fixed in soak.gd; not seen in r3/r4).",
+  "gotchas": [
+    "Board guard counts real tool calls: post status every 5 calls (I was flagged LATE twice).",
+    "ffa seed 2 is deterministic: hash 6ca13eb40fde... identical on two runs with the same code.",
+    "All 24 unit defs have ammo_max; ammo only comes from refineries (ore). An ore-starved side's whole army goes dry."
+  ]
+}

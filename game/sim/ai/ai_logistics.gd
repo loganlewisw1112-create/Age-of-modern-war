@@ -59,16 +59,24 @@ static func truck(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary):
 
 
 ## Nearest supply point for unit e: [pos, label] or [] when this side has none.
-static func _supply_point(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, e: Dictionary) -> Array:
+## G3a: ammo comes from buildings flagged is_hq / supply_point; an energy unit low on charge goes to
+## the nearest building with `recharge` instead (Machine core / charging hubs).
+static func _supply_point(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, e: Dictionary, charge: bool = false) -> Array:
 	var p := Vector2(e.pos)
 	var t = truck(w, fid, st, ctx)
-	if t != null and Vector2(t.pos).distance_to(p) <= NEAR_TRUCK:
+	if not charge and t != null and Vector2(t.pos).distance_to(p) <= NEAR_TRUCK:
 		var dt := p - Vector2(t.pos)
 		return [Vector2(t.pos) + (dt.normalized() * 2.0 if dt.length() > 0.1 else Vector2.ZERO), "truck"]
 	var best = null
 	var best_d := INF
 	for b in ctx.buildings:
-		if not b.built or not (String(b.def) in ["hq", "depot"]):
+		var bd: Dictionary = Content.building(String(b.def))
+		if not b.built:
+			continue
+		if charge:
+			if int(bd.get("recharge", 0)) <= 0:
+				continue
+		elif not (bool(bd.get("is_hq", false)) or bool(bd.get("supply_point", false))):
 			continue
 		var d := Vector2(b.pos).distance_to(p)
 		if d < best_d:
@@ -105,10 +113,11 @@ static func manage_resupply(w: SimWorld, fid: int, st: Dictionary, ctx: Dictiona
 		var af := ammo_frac(e)
 		var dry := af <= 0.0
 		var low_ammo := af < AMMO_LOW and (dry or int(stock.get("ammo", 0)) >= 20)
-		var low_fuel := U.is_vehicle(String(e.def)) and fuel_frac(e) < FUEL_LOW and int(stock.get("fuel", 0)) >= 20
+		var energy := U.is_energy(String(e.def))
+		var low_fuel := (U.is_vehicle(String(e.def)) or energy) and fuel_frac(e) < FUEL_LOW and (energy or int(stock.get("fuel", 0)) >= 20)
 		if not low_ammo and not low_fuel:
 			continue
-		var sp := _supply_point(w, fid, st, ctx, e)
+		var sp := _supply_point(w, fid, st, ctx, e, energy and low_fuel and not low_ammo)
 		if sp.is_empty():
 			continue
 		rs[id] = {"tick": w.tick}
@@ -151,6 +160,11 @@ static func manage_truck(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 		var d := Vector2(st.attack_target) - c
 		goal = c - (d.normalized() * TRUCK_BEHIND if d.length() > 0.1 else Vector2.ZERO)
 	goal = goal.clamp(Vector2(1, 1), Vector2(float(w.map.w) - 2.0, float(w.map.h) - 2.0))
+	# ORCH (G3a, FFA seed 2 grind): while a wave is attacking, the supply truck stays with it
+	# instead of detouring to repair; otherwise low-ammo units commute home to resupply.
+	var escorting := String(st.objective) == "attack" and not group.is_empty()
+	if not escorting and _truck_repair(w, fid, st, ctx, t):
+		return
 	if Vector2(t.pos).distance_to(goal) <= 3.0:
 		return
 	var cur = t.order.get("target")
@@ -163,11 +177,15 @@ static func manage_truck(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 static func manage_truck_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_pop: int) -> void:
 	if truck(w, fid, st, ctx) != null:
 		return
+	var item := U.role(w, fid, "supply")
+	if item == "":
+		return
+	var fac_def := String(Content.production(item).facility)
 	var motor = null
 	for b in ctx.buildings:
-		if String(b.def) == "motor_pool" and b.built:
+		if String(b.def) == fac_def and b.built:
 			for q in b.queue:
-				if String(q.item) == "logistics_truck":
+				if String(q.item) == item:
 					return
 			if motor == null or b.queue.size() < motor.queue.size():
 				motor = b
@@ -175,10 +193,10 @@ static func manage_truck_production(w: SimWorld, fid: int, st: Dictionary, ctx: 
 		return
 	if army_pop * 4 < int(st.attack_pop) * 3 and String(st.objective) != "attack":
 		return
-	var p := Content.production("logistics_truck")
+	var p := Content.production(item)
 	if w.can_afford(fid, p.cost) != "":
 		return
-	if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(motor.id), "item": "logistics_truck"}, "queue:truck"):
+	if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(motor.id), "item": item}, "queue:truck"):
 		U.log_line(st, w, "training a logistics truck for the attack group")
 
 
@@ -190,7 +208,7 @@ static func manage_repair(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	var base := U.base_pos(w, fid)
 	var taken := {}
 	var crews := 0
-	for e in ctx.engineers:
+	for e in ctx.builders:
 		if String(e.order.type) == "repair":
 			crews += 1
 			taken[int(e.order.get("target_id", -1))] = true
@@ -221,7 +239,7 @@ static func manage_repair(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	var pick = null
 	var pick_d := INF
 	for pass_i in 2:
-		for e in ctx.engineers:
+		for e in ctx.builders:
 			var ot := String(e.order.type)
 			if ctx.busy.has(int(e.id)) or (ot != "idle" if pass_i == 0 else ot != "gather"):
 				continue
@@ -237,3 +255,35 @@ static func manage_repair(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 		ctx.busy[int(pick.id)] = true
 		st.g2.repairs = int(st.g2.repairs) + 1
 		U.log_line(st, w, "engineer #%d repairs %s #%d (%d%%)" % [int(pick.id), String(best.def), int(best.id), roundi(best_f * 100.0)])
+
+
+## G3a: a supply vehicle that can_repair (Human B recovery truck) fixes a damaged own vehicle within
+## TRUCK_REPAIR_RANGE (not moving) before it goes back to trailing the wave. True while busy.
+const TRUCK_REPAIR_RANGE := 9.0
+
+
+static func _truck_repair(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, t: Dictionary) -> bool:
+	if not U.uflag(String(t.def), "can_repair"):
+		return false
+	if String(t.order.type) == "repair":
+		return true
+	if int(w.factions[fid].stock.salvage) < REPAIR_SALVAGE_MIN / 2:
+		return false
+	var best = null
+	var best_f := 0.7
+	for u in ctx.units:
+		if int(u.id) == int(t.id) or u.moving or not U.is_vehicle(String(u.def)):
+			continue
+		if Vector2(u.pos).distance_to(Vector2(t.pos)) > TRUCK_REPAIR_RANGE:
+			continue
+		var f := float(u.hp) / maxf(1.0, float(u.max_hp))
+		if f < best_f:
+			best_f = f
+			best = u
+	if best == null:
+		return false
+	if U.submit(w, fid, st, {"type": "repair", "unit_ids": [int(t.id)], "target_id": int(best.id)}, "truck_repair"):
+		st.g2.repairs = int(st.g2.repairs) + 1
+		U.log_line(st, w, "%s #%d repairs %s #%d (%d%%)" % [String(t.def), int(t.id), String(best.def), int(best.id), roundi(best_f * 100.0)])
+		return true
+	return false

@@ -15,45 +15,79 @@ const FUEL_FLOOR := 300
 
 
 ## The next building this side wants, or "". Power is counted for planned (unfinished) buildings too.
+## G3a: every def comes from the faction's roles. Human B turtles (TURTLE_DEFENCES bunkers), the
+## Machine keeps a second charging hub near the front (recharge radius for its energy units).
 static func next_build(w: SimWorld, fid: int, ctx: Dictionary) -> String:
 	var f: Dictionary = w.factions[fid]
 	var have: Dictionary = ctx.have
 	var built: Dictionary = ctx.built
 	var spare := int(ctx.power_planned)
-	if int(have.get("generator", 0)) == 0:
-		return "generator"
-	if int(have.get("barracks", 0)) == 0:
-		return "barracks"
+	var power := U.role(w, fid, "power")
+	var barracks := U.role(w, fid, "barracks")
+	var depot := U.role(w, fid, "depot")
+	var factory := U.role(w, fid, "factory")
+	var refinery := U.role(w, fid, "refinery")
+	var defense := U.role(w, fid, "defense")
+	if power != "" and int(have.get(power, 0)) == 0:
+		return power
+	if barracks != "" and int(have.get(barracks, 0)) == 0:
+		return barracks
 	var cap_max := int(Content.rules().pop_cap_max)
 	# planned cap counts unfinished buildings too (f.pop_cap lags a tick behind completion)
 	var cap := mini(int(ctx.cap_planned), cap_max)
 	var free_pop := cap - int(f.pop) - int(ctx.queued_pop)
-	if free_pop <= 6 and cap < cap_max:
-		return "depot"
-	var gen_pending := int(ctx.unfinished.get("generator", 0)) > 0
-	if int(have.get("motor_pool", 0)) == 0 and int(built.get("barracks", 0)) > 0:
-		if spare < 40:
-			return "" if gen_pending else "generator"
-		return "motor_pool"
-	# G2: a refinery right after the motor pool keeps fuel/ammo stock up (ore -> fuel + ammo)
-	if int(have.get("refinery", 0)) == 0 and int(built.get("motor_pool", 0)) > 0:
-		if spare < 30:
-			return "" if gen_pending else "generator"
-		return "refinery"
-	if int(have.get("guard_tower", 0)) == 0 and int(built.get("motor_pool", 0)) > 0:
-		if spare < 10:
-			return "" if gen_pending else "generator"
-		return "guard_tower"
-	if spare < 0 and not gen_pending:
-		return "generator"
+	if free_pop <= 6 and cap < cap_max and depot != "" and int(Content.building(depot).get("pop_cap", 0)) > 0:
+		return depot
+	var gen_pending := power != "" and int(ctx.unfinished.get(power, 0)) > 0
+	var turtle := U.fac(w, fid) == "human_b"
+	# Human B: the first bunker goes up as soon as the barracks stands (turtle opening)
+	if turtle and defense != "" and int(have.get(defense, 0)) == 0 and _reqs_built(defense, built):
+		if spare < _draw(defense):
+			return "" if gen_pending else power
+		return defense
+	if factory != "" and int(have.get(factory, 0)) == 0 and _reqs_built(factory, built):
+		if spare < _draw(factory):
+			return "" if gen_pending else power
+		return factory
+	var fac_built := factory != "" and int(built.get(factory, 0)) > 0
+	# G2: a refinery right after the factory keeps fuel/ammo stock up (ore -> fuel + ammo)
+	if refinery != "" and int(have.get(refinery, 0)) == 0 and fac_built and _reqs_built(refinery, built):
+		if spare < _draw(refinery):
+			return "" if gen_pending else power
+		return refinery
+	var want_def := TURTLE_DEFENCES if turtle else 1
+	if defense != "" and int(have.get(defense, 0)) < want_def and fac_built and _reqs_built(defense, built):
+		if spare < _draw(defense):
+			return "" if gen_pending else power
+		return defense
+	# Machine: a forward charging hub (the power role carries `recharge`) once the factory stands
+	if power != "" and int(Content.building(power).get("recharge", 0)) > 0 and int(have.get(power, 0)) < 2 and fac_built:
+		return power
+	if spare < 0 and not gen_pending and power != "":
+		return power
 	# a second refinery when ammo runs short and ore is piling up
 	var stock: Dictionary = f.stock
-	if int(have.get("refinery", 0)) == 1 and int(built.get("refinery", 0)) == 1 and int(have.get("guard_tower", 0)) > 0:
+	if refinery != "" and int(have.get(refinery, 0)) == 1 and int(built.get(refinery, 0)) == 1 and int(have.get(defense, 0)) > 0:
 		if int(stock.get("ammo", 0)) < AMMO_FLOOR and int(stock.get("ore", 0)) >= 1000:
-			if spare < 30:
-				return "" if gen_pending else "generator"
-			return "refinery"
+			if spare < _draw(refinery):
+				return "" if gen_pending else power
+			return refinery
 	return ""
+
+
+const TURTLE_DEFENCES := 3
+
+
+## Power a building draws (positive number; 0 for producers).
+static func _draw(def_id: String) -> int:
+	return maxi(0, -int(Content.building(def_id).get("power", 0)))
+
+
+static func _reqs_built(def_id: String, built: Dictionary) -> bool:
+	for r in Content.building(def_id).get("requires", []):
+		if int(built.get(String(r), 0)) == 0:
+			return false
+	return true
 
 
 static func manage_construction(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
@@ -62,7 +96,7 @@ static func manage_construction(w: SimWorld, fid: int, st: Dictionary, ctx: Dict
 		if b.built:
 			continue
 		var crew := 0
-		for e in ctx.engineers:
+		for e in ctx.builders:
 			if String(e.order.type) == "build" and int(e.order.get("building_id", -1)) == int(b.id):
 				crew += 1
 		if crew < CREWS_PER_SITE:
@@ -102,10 +136,10 @@ static func manage_construction(w: SimWorld, fid: int, st: Dictionary, ctx: Dict
 			ctx.busy[id] = true
 
 
-## Nearest engineers to `pos` that are not already constructing (and not reserved this think).
+## Nearest builders to `pos` that are not already constructing (and not reserved this think).
 static func _pick_engineers(ctx: Dictionary, pos: Vector2, n: int) -> Array:
 	var cands := []
-	for e in ctx.engineers:
+	for e in ctx.builders:
 		if String(e.order.type) == "build" or ctx.busy.has(int(e.id)):
 			continue
 		cands.append([Vector2(e.pos).distance_squared_to(pos), int(e.id)])
@@ -122,9 +156,14 @@ static func find_origin(w: SimWorld, fid: int, st: Dictionary, def_id: String) -
 	var base := U.base_pos(w, fid)
 	var dir := U.front_dir(w, fid)
 	var anchor := base + dir * 3.0
-	if def_id == "guard_tower":
-		anchor = base + dir * 8.0
-	elif def_id == "generator" or def_id == "depot":
+	var n_same := w.buildings_of(fid, def_id).size()
+	if def_id == U.role(w, fid, "defense"):
+		# defences fan out along the front arc (Human B builds three)
+		var ang: float = [0.0, 0.7, -0.7, 1.3, -1.3][n_same % 5]
+		anchor = base + dir.rotated(float(ang)) * 8.0
+	elif def_id == U.role(w, fid, "power") and n_same >= 1 and int(Content.building(def_id).get("recharge", 0)) > 0:
+		anchor = base + dir * 9.0  # Machine forward charging hub: recharge near the front
+	elif def_id == U.role(w, fid, "power") or def_id == U.role(w, fid, "depot"):
 		anchor = base - dir * 3.0
 	var occ := {}
 	for b in w.buildings_of(fid):
@@ -189,8 +228,8 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	var f: Dictionary = w.factions[fid]
 	var ore := int(f.stock.ore)
 	var sal := int(f.stock.salvage)
-	var n_eng: int = ctx.engineers.size()
-	var has_mp := int(ctx.have.get("motor_pool", 0)) > 0
+	var n_eng: int = ctx.gatherers.size()
+	var has_mp := int(ctx.have.get(U.role(w, fid, "factory"), 0)) > 0
 	var want_ore := 0
 	if has_mp:
 		want_ore = int(round(float(n_eng) * 0.4))
@@ -202,7 +241,7 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 		want_ore = 1
 	# G2: a working refinery eats 20 ore / 6 s; keep crews on ore while fuel/ammo stock is short
 	var stock_low := int(f.stock.get("ammo", 0)) < AMMO_FLOOR or int(f.stock.get("fuel", 0)) < FUEL_FLOOR
-	if int(ctx.built.get("refinery", 0)) > 0 and stock_low and ore < 1500:
+	if int(ctx.built.get(U.role(w, fid, "refinery"), 0)) > 0 and stock_low and ore < 1500:
 		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.5)))
 	var known := U.known_resources(w, fid, st.g2.pub_res)
 	var left := {"ore": 0, "salvage": 0}
@@ -217,7 +256,7 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 	st.gather_plan = {"ore": want_ore, "salvage_left": int(left.salvage), "ore_left": int(left.ore)}
 	var on := {"ore": [], "salvage": []}
 	var idle := []
-	for e in ctx.engineers:
+	for e in ctx.gatherers:
 		var ot := String(e.order.type)
 		if ot == "gather":
 			on[String(e.order.get("res", "salvage"))].append(e)
@@ -269,22 +308,42 @@ static func _send_gather(w: SimWorld, fid: int, st: Dictionary, e: Dictionary, r
 
 
 ## Keeps crews up to max_engineers (gathered salvage/ore pay for most of the army), holding back
-## credits for an urgent building while one is being saved for.
+## credits for an urgent building while one is being saved for. G3a: the builder and gatherer roles
+## may differ (Machine: repair bots build, haulers gather): then BUILDERS_SPLIT of the cap build.
+const BUILDERS_SPLIT := 2
+
+
 static func manage_engineers(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var hq = ctx.hq
 	if hq == null or not hq.built or not hq.queue.is_empty():
 		return
-	var cap := int(U.diff(w).max_engineers)
-	if ctx.engineers.size() >= cap:
+	var cap := int(U.diff(w, fid).max_engineers)
+	var b_item := U.role(w, fid, "builder")
+	var g_item := U.role(w, fid, "gatherer")
+	var item := b_item
+	var crews: int = ctx.engineers.size()
+	if b_item != g_item:
+		if ctx.builders.size() < BUILDERS_SPLIT:
+			item = b_item
+			crews = ctx.builders.size() + 4  # one missing builder is always urgent
+		elif ctx.gatherers.size() < cap - BUILDERS_SPLIT:
+			item = g_item
+			crews = ctx.gatherers.size()
+		else:
+			return
+	elif crews >= cap:
+		return
+	if item == "":
 		return
 	var credits := int(w.factions[fid].credits)
 	var reserve := 0
 	if String(st.saving_for) != "":
 		reserve = int(Content.building(String(st.saving_for)).cost.credits)
-	var cost := int(Content.production("engineer").cost.credits)
+	var p := Content.production(item)
+	var cost := int(p.cost.credits)
 	# below 4 crews the economy itself is at risk: always rebuild
-	if ctx.engineers.size() >= 4 and credits - cost < reserve:
+	if crews >= 4 and credits - cost < reserve:
 		return
-	if w.can_afford(fid, Content.production("engineer").cost) != "":
+	if w.can_afford(fid, p.cost) != "":
 		return
-	U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(hq.id), "item": "engineer"}, "queue:hq")
+	U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(hq.id), "item": item}, "queue:hq")

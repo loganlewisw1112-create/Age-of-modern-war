@@ -24,7 +24,10 @@ const FLANK_SIDE := 2.0
 const FLANK_MOVE_TICKS := 160
 const FLANK_MAX_TICKS := 400
 const FLANK_COOLDOWN := 300
-const FLANKER_DEFS := ["at_gunner", "mbt"]
+## G3a: flankers are units with an AT-class weapon (at_gunner, MBTs, the Machine walker).
+static func is_flanker(def_id: String) -> bool:
+	var wp := String(Content.unit(def_id).get("weapon", ""))
+	return wp != "" and String(Content.weapon(wp).get("class", "")) == "at"
 const BRIDGE_SAFE := 10.0
 
 
@@ -86,11 +89,15 @@ static func crossing(w: SimWorld, st: Dictionary) -> Vector2:
 static func manage_officer_training(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_pop: int) -> void:
 	if officer(w, fid, st, ctx) != null:
 		return
+	var item := U.role(w, fid, "officer")
+	if item == "":
+		return
+	var fac_def := String(Content.production(item).facility)
 	var bar = null
 	for b in ctx.buildings:
-		if String(b.def) == "barracks" and b.built:
+		if String(b.def) == fac_def and b.built:
 			for q in b.queue:
-				if String(q.item) == "officer":
+				if String(q.item) == item:
 					return
 			if bar == null or b.queue.size() < bar.queue.size():
 				bar = b
@@ -98,9 +105,9 @@ static func manage_officer_training(w: SimWorld, fid: int, st: Dictionary, ctx: 
 		return
 	if army_pop * 2 < int(st.attack_pop) and String(st.objective) != "attack":
 		return
-	if w.can_afford(fid, Content.production("officer").cost) != "":
+	if w.can_afford(fid, Content.production(item).cost) != "":
 		return
-	if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(bar.id), "item": "officer"}, "queue:officer"):
+	if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(bar.id), "item": item}, "queue:officer"):
 		U.log_line(st, w, "training an officer for the next wave")
 
 
@@ -181,10 +188,13 @@ static func manage_mission(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionar
 				return "push"
 			return "drive"
 		"crossing":
+			if String(st.g3.get("obj_kind", "base")) == "bridge":
+				return "drive"  # G3a hold_bridge: the officer holds the secured span
 			var secured := phase == "hold"
 			if secured or w.tick - int(g2.stage_tick) > CROSSING_TIMEOUT:
 				var tgt := Vector2(st.attack_target)
 				if _mission(w, fid, st, o, "attack_area", tgt, ATTACK_RADIUS, "high"):
+					g2.officer_tgt = tgt
 					g2.stage = "attack"
 					g2.stage_tick = w.tick
 					U.log_line(st, w, "%s; officer attacks the enemy base at %s" % ["crossing secured" if secured else "crossing contested, pushing on", str(tgt.round())])
@@ -247,7 +257,7 @@ static func manage_flank(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary,
 		return
 	var cands := []
 	for e in wave:
-		if FLANKER_DEFS.has(String(e.def)) and not bool(e.get("broken", false)):
+		if is_flanker(String(e.def)) and not bool(e.get("broken", false)):
 			cands.append([int(e.id), e])
 	if cands.size() < 2:
 		return
@@ -340,7 +350,7 @@ static func manage_bridge(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 		if int(w.factions[fid].stock.salvage) < need or ctx.engineers.size() < 5 or String(st.objective) == "defend":
 			return
 		var cands := []
-		for e in ctx.engineers:
+		for e in ctx.builders:
 			var ot := String(e.order.type)
 			if not ctx.busy.has(int(e.id)) and (ot == "gather" or ot == "idle"):
 				cands.append([Vector2(e.pos).distance_squared_to(center), int(e.id), e])
@@ -370,3 +380,16 @@ static func manage_bridge(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 				go.append(e)
 		if not go.is_empty():
 			U.submit(w, fid, st, {"type": "move", "unit_ids": _ids(go), "target": stand}, "bridge_crew")
+
+
+## G3a: the wave's objective moved (retarget after an elimination, next sector): an officer already
+## attacking gets the new attack_area. Called by the army each think while attacking.
+static func retarget(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, tgt: Vector2) -> void:
+	if String(st.g2.stage) != "attack":
+		return
+	if tgt.distance_to(Vector2(st.g2.get("officer_tgt", tgt))) <= 8.0:
+		return
+	var o = officer(w, fid, st, ctx)
+	if o != null and _mission(w, fid, st, o, "attack_area", tgt, ATTACK_RADIUS, "high"):
+		st.g2.officer_tgt = tgt
+		U.log_line(st, w, "officer retargeted to %s" % str(tgt.round()))

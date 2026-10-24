@@ -290,3 +290,234 @@ func test_g2_ruined_bridge_reroute_and_repair() -> void:
 		check(not bool(st.g2.bridge_ruined) or w.tick > 0, "bridge state tracked")
 	var cp: Vector2 = Tac.crossing(w, {"route": 0, "patrol": st.patrol, "g2": {"bridge_ruined": true, "reroute": 1}})
 	check(cp.distance_to(sp) > 3.0, "the crossing for a ruined bridge is a ford, not the span (%s vs %s)" % [str(cp), str(sp)])
+
+
+# ================================================================ G3a (agent AI3): factions, teams
+## CONTRACTS_G3a section 5. AI-01 per faction + QA-005 in one 3-side FFA (Human A / Human B /
+## Machine): each side builds its barracks-role building, trains a combat unit, issues an
+## offensive command toward an enemy start, and damages an enemy. 2v2: no attack command ever
+## targets an ally, allies share their target side. Elimination retargets. Objectives for the
+## territory / hold_bridge modes. Faction-agnostic static scan. 3-faction determinism.
+const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
+const G3_FFA_TICKS := 14000
+const G3_2V2_TICKS := 7000
+const G3_DET_TICKS := 3000
+
+
+func _g3_config(args: Array, seed_value: int) -> Dictionary:
+	var c := MatchCfg.from_args(args, seed_value)
+	c.ai_difficulty = "normal"
+	return c
+
+
+func _spawn_pt(w: SimWorld, side: int) -> Vector2:
+	var sp: Array = w.map.spawns
+	return Vector2(sp[side % sp.size()]) + Vector2(0.5, 0.5)
+
+
+## Offensive: the target point is closer to some enemy start than to our own start.
+func _toward_enemy(w: SimWorld, fid: int, p: Vector2) -> bool:
+	var mine := p.distance_to(_spawn_pt(w, fid))
+	for s in w.factions:
+		if w.is_enemy(fid, int(s)) and p.distance_to(_spawn_pt(w, int(s))) < mine:
+			return true
+	return false
+
+
+## Runs an all-AI match; returns per-side facts and checks AI-02 + alliance rules on the way.
+func _run_g3(c: Dictionary, max_ticks: int, label: String, stop_when_done: bool) -> Dictionary:
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "%s: match created (%s)" % [label, SimWorld.validate_config(c)]):
+		return {}
+	var got := {}
+	for fid in w.factions:
+		got[fid] = {"barracks": false, "trained": false, "offensive": false, "damage": 0}
+	var combat_items := {}
+	for fid in w.factions:
+		var fd := String(w.factions[fid].faction_def)
+		for r in ["infantry", "antitank", "light", "heavy", "artillery", "air"]:
+			if Content.role(fd, r) != "":
+				combat_items[Content.role(fd, r)] = true
+	var seen_cmd := {}
+	var bad := {"unseen": 0, "ally": 0, "checked": 0}
+	var pairs := {}
+	var same_target := 0
+	var target_samples := 0
+	while w.tick < max_ticks and not w.match_state.ended:
+		w.step()
+		for ev in w.events:
+			var ty := String(ev.type)
+			if ty == "ProductionCompleted" and got.has(int(ev.owner)) and combat_items.has(String(ev.item)):
+				got[int(ev.owner)].trained = true
+			elif ty == "ConstructionCompleted" and got.has(int(ev.owner)):
+				if String(ev.def) == Content.role(String(w.factions[int(ev.owner)].faction_def), "barracks"):
+					got[int(ev.owner)].barracks = true
+			elif ty == "Damage":
+				var sh = w.entities.get(int(ev.get("shooter", -1)))
+				var tg = w.entities.get(int(ev.get("target", -1)))
+				if sh != null and tg != null and got.has(int(sh.owner)) and w.is_enemy(int(sh.owner), int(tg.owner)):
+					got[int(sh.owner)].damage += 1
+					pairs["%d>%d" % [int(sh.owner), int(tg.owner)]] = true
+		for cmd in w.pending:
+			var cid := int(cmd.id)
+			if seen_cmd.has(cid) or not w.ai_state.has(int(cmd.issuer)):
+				continue
+			seen_cmd[cid] = true
+			var fid := int(cmd.issuer)
+			var ty := String(cmd.type)
+			if (ty == "attack_move" or ty == "set_mission") and _toward_enemy(w, fid, Vector2(cmd.target)):
+				got[fid].offensive = true
+			elif ty == "attack":
+				bad.checked += 1
+				var t = w.entities.get(int(cmd.target_id))
+				if t != null and t.kind != "structure" and not w.is_enemy(fid, int(t.owner)):
+					bad.ally += 1
+					check(false, "%s t=%d: AI %d attack command on own/allied entity %d (owner %d)" % [label, w.tick, fid, int(cmd.target_id), int(t.owner)])
+				var vis := {}
+				for e in w.visible_enemies(fid):
+					vis[int(e.id)] = true
+				if t != null and t.kind != "structure" and not vis.has(int(cmd.target_id)):
+					bad.unseen += 1
+		if w.tick % 200 == 0:
+			for a in w.ai_state:
+				for b in w.ai_state:
+					if int(a) < int(b) and w.is_ally(int(a), int(b)):
+						target_samples += 1
+						if int(w.ai_state[a].g3.target_side) == int(w.ai_state[b].g3.target_side):
+							same_target += 1
+		if stop_when_done:
+			var all := true
+			for fid in got:
+				all = all and got[fid].barracks and got[fid].trained and got[fid].offensive and int(got[fid].damage) > 0
+			if all:
+				break
+	var probes := []
+	for fid in w.ai_state:
+		probes.append("f%d %s %s" % [fid, String(w.factions[fid].faction_def), String(w.ai_state[fid].g3.get("probe", ""))])
+	print("    %s at t=%d: %s pairs=%s bad=%s same_target=%d/%d | %s" % [label, w.tick, str(got), str(pairs.keys()), str(bad), same_target, target_samples, " | ".join(probes)])
+	return {"w": w, "got": got, "bad": bad, "pairs": pairs, "same": same_target, "samples": target_samples}
+
+
+func test_g3_ffa_three_factions() -> void:
+	var r := _run_g3(_g3_config(["--factions=human_a,human_b,machine"], 1), G3_FFA_TICKS, "G3 FFA seed 1", true)
+	if r.is_empty():
+		return
+	var w: SimWorld = r.w
+	for fid in r.got:
+		var fd := String(w.factions[fid].faction_def)
+		var g: Dictionary = r.got[fid]
+		check(g.barracks, "AI-01 %s (side %d) built its barracks-role building (%s)" % [fd, fid, Content.role(fd, "barracks")])
+		check(g.trained, "AI-01 %s (side %d) trained a combat unit" % [fd, fid])
+		check(g.offensive, "AI-01 %s (side %d) issued an offensive command toward an enemy start" % [fd, fid])
+		check(int(g.damage) > 0, "QA-005 %s (side %d) damaged an enemy in the FFA (%d hits)" % [fd, fid, int(g.damage)])
+	check((r.pairs as Dictionary).size() >= 3, "QA-005: at least 3 attacker>victim pairs in the FFA (%s)" % str(r.pairs.keys()))
+	check_eq(int(r.bad.unseen), 0, "AI-02 (FFA): attacks on unseen targets (%d checked)" % int(r.bad.checked))
+	check_eq(int(r.bad.ally), 0, "FFA: attack commands on own entities")
+
+
+func test_g3_2v2_alliances() -> void:
+	var c := _g3_config(["--factions=human_a,human_b,machine,human_a", "--teams=0,1,0,1"], 1)
+	var r := _run_g3(c, G3_2V2_TICKS, "G3 2v2 seed 1", false)
+	if r.is_empty():
+		return
+	var w: SimWorld = r.w
+	check_eq(int(r.bad.ally), 0, "2v2: no AI attack command targets an ally (%d attack commands)" % int(r.bad.checked))
+	check_eq(int(r.bad.unseen), 0, "AI-02 (2v2): attacks on unseen targets")
+	for fid in w.ai_state:
+		var tgt := int(w.ai_state[fid].g3.target_side)
+		check(tgt < 0 or w.is_enemy(int(fid), tgt), "2v2: side %d targets an enemy side (%d)" % [fid, tgt])
+	check(int(r.samples) > 0 and int(r.same) * 10 >= int(r.samples) * 8, "2v2: allies share their target side >= 80%% of samples (%d/%d)" % [int(r.same), int(r.samples)])
+	var hit := 0
+	for fid in r.got:
+		hit += 1 if int(r.got[fid].damage) > 0 else 0
+	check(hit >= 2, "2v2: the teams fought (%d sides dealt damage)" % hit)
+
+
+## Elimination: the public SideEliminated announcement drops the side and the AI retargets.
+func test_g3_retarget_on_elimination() -> void:
+	var U = preload("res://sim/ai/ai_util.gd")
+	var G3 = preload("res://sim/ai/ai_g3.gd")
+	var w := SimWorld.new_match(_g3_config(["--factions=human_a,human_b,machine"], 2))
+	w.step()
+	var st: Dictionary = w.ai_state[0]
+	var old := int(st.g3.target_side)
+	check(old in [1, 2], "side 0 starts with an enemy target (%d)" % old)
+	w.events = [{"type": "SideEliminated", "faction": old, "tick": w.tick}]
+	U.scan_events(w, 0, st)
+	check((st.g3.eliminated as Array).has(old), "SideEliminated recorded")
+	var now := int(G3.choose_target(w, 0, st))
+	check(now != old and now in [1, 2], "retargeted from side %d to side %d" % [old, now])
+	check_eq(int(st.g3.retargets), 1, "retarget counted")
+	check(G3.hq_target(w, 0, st).distance_to(_spawn_pt(w, old)) > 10.0, "the new attack target is not the beaten side's start")
+	st.g3.eliminated.append(now)
+	check_eq(int(G3.choose_target(w, 0, st)), -1, "no live enemy left -> no target")
+
+
+## Victory awareness: territory -> an uncaptured counted sector; hold_bridge -> the bridge (route 0).
+func test_g3_victory_objectives() -> void:
+	var G3 = preload("res://sim/ai/ai_g3.gd")
+	var Territory = preload("res://sim/systems/territory.gd")
+	var w := SimWorld.new_match(_g3_config(["--victory=territory", "--percent=60"], 1))
+	if not check(w != null, "territory match created (%s)" % SimWorld.validate_config(_g3_config(["--victory=territory", "--percent=60"], 1))):
+		return
+	w.step()
+	var st: Dictionary = w.ai_state[0]
+	var ctx := {"visible": [], "army": []}
+	var o: Dictionary = G3.objective(w, 0, st, ctx, Vector2(w.factions[0].spawn))
+	check_eq(String(o.kind), "sector", "territory mode: the wave goes for a sector")
+	var s := Territory.sector_of(w, Vector2(o.pos))
+	check(Territory.is_counted(w, s), "the sector goal counts toward territory (%d)" % s)
+	check(Vector2(o.pos).distance_to(_spawn_pt(w, 0)) < Vector2(o.pos).distance_to(_spawn_pt(w, 1)), "the first sector is on our side")
+	var c2 := _g3_config(["--victory=hold_bridge", "--seconds=300"], 1)
+	var w2 := SimWorld.new_match(c2)
+	if not check(w2 != null, "hold_bridge match created (%s)" % SimWorld.validate_config(c2)):
+		return
+	var st2: Dictionary = w2.ai_state[0]
+	check_eq(int(st2.route), 0, "hold_bridge: the AI routes over the bridge")
+	var o2: Dictionary = G3.objective(w2, 0, st2, ctx, Vector2(w2.factions[0].spawn))
+	check_eq(String(o2.kind), "bridge", "hold_bridge mode: the wave holds the bridge")
+	check(Vector2(o2.pos).distance_to(G3.bridge_point(w2)) < 0.01, "objective at the bridge")
+	var w3 := SimWorld.new_match(_g3_config([], 1))
+	check_eq(String(G3.objective(w3, 0, w3.ai_state[0], ctx, Vector2.ZERO).kind), "base", "hq_elimination: the wave goes for the enemy base")
+
+
+## Faction-agnostic: no AI source line names a faction def (unit/building/production id) as a
+## string literal, except role names passed to role()/role_unit() (role names coincide with some
+## Human A def ids), dictionary keys, and the neutral public bridge structure.
+func test_g3_no_hardcoded_defs() -> void:
+	var ids := {}
+	for t in ["units", "buildings", "production"]:
+		for id in Content.ids(t):
+			ids[String(id)] = true
+	ids.erase("bridge_span")
+	var re := RegEx.new()
+	re.compile("\"([a-z0-9_]+)\"([ \t]*:)?")
+	var dir := DirAccess.open(AI_DIR)
+	var bad := []
+	for f in dir.get_files():
+		if not f.ends_with(".gd"):
+			continue
+		var lines := FileAccess.get_file_as_string(AI_DIR + "/" + f).split("\n")
+		for i in lines.size():
+			var line := String(lines[i])
+			if line.strip_edges().begins_with("#"):
+				continue
+			var code := line.substr(0, line.find("#")) if line.find("#") >= 0 else line
+			if code.find("role(") >= 0 or code.find("role_unit(") >= 0 or code.find("_ROLES") >= 0:
+				continue
+			for m in re.search_all(code):
+				if ids.has(m.get_string(1)) and m.get_string(2) == "":
+					bad.append("%s:%d: %s" % [f, i + 1, line.strip_edges()])
+	check(bad.is_empty(), "no hard-coded def names in sim/ai (%s)" % str(bad))
+
+
+func test_g3_determinism_three_factions() -> void:
+	var c := _g3_config(["--factions=human_b,machine,human_a"], 4)
+	var a := SimWorld.new_match(c)
+	var b := SimWorld.new_match(c)
+	a.run_ticks(G3_DET_TICKS)
+	b.run_ticks(G3_DET_TICKS)
+	check_eq(a.state_hash(), b.state_hash(), "3-faction AI state_hash equal at tick %d" % G3_DET_TICKS)
+	check(str(a.ai_state) == str(b.ai_state), "3-faction AI state identical")
+	for fid in a.ai_state:
+		check(int(a.ai_state[fid].cmds_issued) > 15, "side %d (%s) issued commands (%d)" % [fid, String(a.factions[fid].faction_def), int(a.ai_state[fid].cmds_issued)])

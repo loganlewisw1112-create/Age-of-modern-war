@@ -6,6 +6,9 @@ extends RefCounted
 ## Modules: ai_econ.gd (build order, placement, gathering), ai_mil.gd (intel, production,
 ## scouting), ai_army.gd (attack / regroup / defend). G2: ai_logistics.gd (truck, resupply,
 ## repair), ai_tactics.gd (officer-led waves, flanking, bridge); their state lives in st.g2.
+## G3a (agent AI3): faction-agnostic (every def from Content.role / unit and building flags),
+## multi-enemy targeting + victory objectives (ai_g3.gd), drone raids and artillery
+## (ai_g3_units.gd); their state lives in st.g3.
 
 const U = preload("res://sim/ai/ai_util.gd")
 const Econ = preload("res://sim/ai/ai_econ.gd")
@@ -13,15 +16,17 @@ const Mil = preload("res://sim/ai/ai_mil.gd")
 const Army = preload("res://sim/ai/ai_army.gd")
 const Logi = preload("res://sim/ai/ai_logistics.gd")
 const Tac = preload("res://sim/ai/ai_tactics.gd")
+const G3 = preload("res://sim/ai/ai_g3.gd")
+const G3U = preload("res://sim/ai/ai_g3_units.gd")
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
-	var d := U.diff(w)
+	var d := U.diff(w, fid)
 	# per-side personality (deterministic from seed + fid, no RNG draw): attack threshold x0.9..1.25
 	var thr := int(round(float(d.attack_army_pop) * (0.9 + 0.35 * U.personal(w, fid, 1))))
 	var scout := -1
 	for e in w.units_of(fid):
-		if String(e.def) == "recon":
+		if is_scout_def(w, fid, String(e.def)):
 			scout = int(e.id)
 			break
 	var st := {
@@ -45,16 +50,34 @@ static func new_state(w: SimWorld, fid: int) -> Dictionary:
 	}
 	st.patrol = Mil.patrol_points(w, fid)
 	st.g2 = _new_g2(w, fid)
+	st.g3 = G3.new_g3(w, fid)
+	if int(st.g3.terms.bridge) > 0:
+		st.route = 0  # hold_bridge: the officer secures the span itself (ai_tactics crossing)
 	st.rally = _rally_point(w, fid)
-	U.log_line(st, w, "AI online (%s): attack at army pop %d" % [String(w.cfg.get("ai_difficulty", "normal")), thr])
+	U.log_line(st, w, "AI online (%s, %s): attack at army pop %d" % [String(w.cfg.get("ai_difficulty", "normal")), U.fac(w, fid), thr])
 	return st
+
+
+## The scout: the faction's recon unit; a faction without one (Human B) scouts with its start
+## infantry (the first start unit that is not a worker, officer or supply vehicle).
+static func is_scout_def(w: SimWorld, fid: int, def_id: String) -> bool:
+	var rec := U.role_unit(w, fid, "recon")
+	if rec != "":
+		return def_id == rec
+	var f := U.fac(w, fid)
+	for u in Content.faction(f).get("start_units", []):
+		var ud := String(u)
+		if not (U.uflag(ud, "can_build") or U.uflag(ud, "can_gather") or U.uflag(ud, "is_officer") or U.uflag(ud, "is_supply")):
+			return def_id == ud
+	return false
 
 
 ## G2 state. pub_res: ids of the deposits published in the initial map on our half, recorded at
 ## match start (public knowledge then), so later turns never probe unexplored deposits.
 static func _new_g2(w: SimWorld, fid: int) -> Dictionary:
 	var g2 := Logi.new_g2()
-	g2.pub_res = U.public_deposits(w, fid)
+	g2.pub_all = U.all_public_deposits(w)  # G3a: re-zoned when a side is eliminated (U.scan_events)
+	g2.pub_res = U.zone_deposits(w, fid, g2.pub_all, [])
 	return g2
 
 
@@ -68,15 +91,18 @@ static func think(w: SimWorld, fid: int) -> void:
 	var st: Dictionary = w.ai_state[fid]
 	if not st.has("g2"):
 		st.g2 = _new_g2(w, fid)  # pre-G2 save
+	if not st.has("g3"):
+		st.g3 = G3.new_g3(w, fid)  # pre-G3a save
 	U.scan_events(w, fid, st)
 	if w.tick < int(st.next_think_tick):
 		return
-	st.next_think_tick = w.tick + int(U.diff(w).think_interval_ticks)
+	st.next_think_tick = w.tick + int(U.diff(w, fid).think_interval_ticks)
 	st.think_count = int(st.think_count) + 1
 	var ctx := _context(w, fid, st)
 	if ctx.hq != null:
 		st.rally = _rally_point(w, fid)
 	Mil.update_intel(w, fid, st, ctx)
+	G3.choose_target(w, fid, st)
 	Tac.manage_bridge(w, fid, st, ctx)
 	Logi.manage_repair(w, fid, st, ctx)
 	Econ.manage_construction(w, fid, st, ctx)
@@ -91,12 +117,18 @@ static func think(w: SimWorld, fid: int) -> void:
 	Mil.manage_production(w, fid, st, ctx)
 	Logi.manage_resupply(w, fid, st, ctx)
 	Army.manage_army(w, fid, st, ctx)
+	G3U.manage_artillery(w, fid, st, ctx)
+	G3U.manage_air(w, fid, st, ctx)
 	Logi.manage_truck(w, fid, st, ctx)
 	_scores(w, fid, st, ctx)
 	var g2: Dictionary = st.g2
 	g2.probe = "stage=%s waves=%d wd=%d pull=%d refill=%d rep=%d flank=%d bridge=%s/%d" % [String(g2.stage),
 		int(g2.officer_waves), int(g2.withdrawals), int(g2.pullbacks), int(g2.refills), int(g2.repairs),
 		int(g2.flanks), "ruined" if bool(g2.bridge_ruined) else "ok", int(g2.bridge_repairs)]
+	var g3: Dictionary = st.g3
+	g3.probe = "tgt=%d out=%s retg=%d obj=%s caps=%d hold=%ds raids=%d arty=%d" % [int(g3.target_side),
+		str(g3.eliminated), int(g3.retargets), String(g3.obj_kind), int(g3.captures),
+		int(g3.hold_ticks) / SimWorld.TICK_RATE, int(g3.raids), int(g3.arty_moves)]
 
 
 ## One snapshot of OWN units/buildings per think.
@@ -105,26 +137,41 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 	var buildings := w.buildings_of(fid)
 	if U.own(w, fid, int(st.scout_id)) == null:
 		st.scout_id = -1
+		var rec := U.role_unit(w, fid, "recon")
 		for e in units:
-			if String(e.def) == "recon":
+			if rec != "" and String(e.def) == rec:
 				st.scout_id = int(e.id)
 				st.scout_phase = "patrol" if int(st.recon_requeues) > 0 else "enemy_base"
 				break
-	var engineers := []
+	var engineers := []  # every worker (builds and/or gathers)
+	var builders := []   # can_build (Human crews / engineers, Machine repair bots)
+	var gatherers := []  # can_gather (Human crews / engineers, Machine haulers)
 	var army := []
 	var officers := []
 	var trucks := []
+	var air := []        # is_air units: drone raids (ai_g3_units.gd), not in the main army
+	var arty := []       # indirect-fire units: kept behind the line (ai_g3_units.gd)
 	var held := []  # own army units not commandable this think (broken, resupplying)
 	for e in units:
 		var def_id := String(e.def)
-		if def_id == "engineer":
+		var cb := U.uflag(def_id, "can_build")
+		var cg := U.uflag(def_id, "can_gather")
+		if cb or cg:
 			engineers.append(e)
-		elif def_id == "officer":
+			if cb:
+				builders.append(e)
+			if cg:
+				gatherers.append(e)
+		elif U.uflag(def_id, "is_officer"):
 			officers.append(e)
-		elif def_id == "logistics_truck":
+		elif U.uflag(def_id, "is_supply"):
 			trucks.append(e)
 		elif int(e.id) == int(st.scout_id):
 			continue
+		elif U.is_air(def_id):
+			air.append(e)
+		elif U.is_artillery(def_id):
+			arty.append(e)
 		elif bool(e.get("broken", false)):
 			held.append(e)  # morale.gd retreats it; never order it back into the fight
 		else:
@@ -147,7 +194,7 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		else:
 			unfinished[def_id] = int(unfinished.get(def_id, 0)) + 1
 			unfinished_total += 1
-		if def_id == "hq" and hq == null:
+		if U.is_hq_def(def_id) and hq == null:
 			hq = b
 		for q in b.queue:
 			for u in Content.production(String(q.item)).get("spawns", []):
@@ -155,7 +202,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 	return {"units": units, "buildings": buildings, "engineers": engineers, "army": army,
 		"have": have, "built": built, "unfinished": unfinished, "unfinished_total": unfinished_total,
 		"power_planned": power, "cap_planned": cap_planned, "queued_pop": queued_pop, "hq": hq, "busy": {}, "visible": [],
-		"officers": officers, "trucks": trucks, "held": held}
+		"officers": officers, "trucks": trucks, "held": held,
+		"builders": builders, "gatherers": gatherers, "air": air, "arty": arty}
 
 
 ## Utility scores shown in the inspector (0..1, higher = more pressing).
@@ -164,7 +212,7 @@ static func _scores(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> v
 	for e in ctx.army:
 		army_pop += U.pop_of(String(e.def))
 	var thr := maxf(1.0, float(int(st.attack_pop)))
-	var max_eng := maxf(1.0, float(int(U.diff(w).max_engineers)))
+	var max_eng := maxf(1.0, float(int(U.diff(w, fid).max_engineers)))
 	var threat := 1.0 if w.tick - int(st.threat_tick) < 200 else 0.0
 	st.strategy_scores = {
 		"economy": snappedf(clampf(1.0 - float(ctx.engineers.size()) / max_eng, 0.0, 1.0) * 0.5 + (0.5 if String(st.next_build) != "" else 0.0), 0.01),

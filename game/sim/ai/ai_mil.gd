@@ -4,8 +4,12 @@ extends RefCounted
 ## Fairness: see the convention in ai_util.gd.
 
 const U = preload("res://sim/ai/ai_util.gd")
+const G3 = preload("res://sim/ai/ai_g3.gd")
 
-const URGENT_BUILDS := ["generator", "barracks", "depot", "motor_pool"]
+## G3a: building roles whose saving blocks army spending (G2: generator, barracks, depot, motor pool).
+const URGENT_ROLES := ["power", "barracks", "depot", "factory"]
+## Production categories (G2 "rifle"/"at" are the infantry/antitank roles; "vehicle" = light|heavy).
+const CATS := ["antitank", "infantry", "vehicle", "artillery", "air"]
 
 
 ## Updates known_contacts from legal sources only (visible_enemies + own memory).
@@ -19,17 +23,20 @@ static func update_intel(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 		if e.kind != "unit":
 			continue
 		by_def[String(e.def)] = int(by_def.get(String(e.def), 0)) + 1
-		if U.is_vehicle(String(e.def)):
+		if U.is_armored(String(e.def)):
 			vehicles += 1
 		if Vector2(e.pos).distance_to(base) <= 14.0:
 			near_base += 1
 	st.enemy_vehicles_seen = maxi(int(st.enemy_vehicles_seen), vehicles)
 	var mem: Dictionary = w.memory[fid]
 	var hq_known := false
+	var tgt := int(st.g3.target_side)
 	for eid in mem:
-		if String(mem[eid].def) == "hq":
-			hq_known = true
-		elif String(mem[eid].def) == "guard_tower":
+		var md := String(mem[eid].def)
+		if U.is_hq_def(md):
+			if tgt < 0 or int(mem[eid].get("owner", -1)) == tgt:
+				hq_known = true
+		elif String(Content.building(md).get("weapon", "")) != "":
 			st.tower_seen = true  # adapt: heavy armour cracks towers (HMG barely scratches an MBT)
 	st.known_contacts = {"visible_units": by_def, "visible_total": vis.size(), "near_base": near_base,
 		"remembered_buildings": mem.size(), "enemy_hq_known": hq_known,
@@ -37,19 +44,9 @@ static func update_intel(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	ctx.visible = vis
 
 
-## Last known enemy HQ position (memory), else another remembered building, else the public spawn.
+## G3a: the target side's last known HQ, else another of its remembered buildings, else its start.
 static func attack_target(w: SimWorld, fid: int) -> Vector2:
-	var mem: Dictionary = w.memory[fid]
-	var other = null
-	for eid in mem:
-		var m: Dictionary = mem[eid]
-		if String(m.def) == "hq":
-			return Vector2(m.pos)
-		if other == null:
-			other = Vector2(m.pos)
-	if other != null:
-		return other
-	return U.enemy_spawn(w, fid)
+	return G3.hq_target(w, fid, w.ai_state[fid])
 
 
 static func patrol_points(w: SimWorld, fid: int) -> Array:
@@ -104,106 +101,151 @@ static func manage_scout(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 		U.submit(w, fid, st, {"type": "move", "unit_ids": [int(s.id)], "target": wp}, key)
 
 
-## Desired army shares by unit category. With a motor pool the mix leans on armour: salvage is the
-## finite resource and an MBT is the most salvage-efficient way to crack towers and the HQ, while
-## ore (vehicles) is plentiful. AT share rises when enemy vehicles are seen.
-static func _shares(st: Dictionary, has_mp: bool) -> Dictionary:
-	var vehicles_seen := int(st.enemy_vehicles_seen) >= 1  # G2: prefer AT/MBT once any enemy vehicle is seen
-	var heavy := vehicles_seen or bool(st.get("tower_seen", false))
-	if not has_mp:
-		return {"rifle": 0.45, "at": 0.55, "vehicle": 0.0} if heavy else {"rifle": 0.6, "at": 0.4, "vehicle": 0.0}
-	if vehicles_seen:
-		return {"rifle": 0.15, "at": 0.35, "vehicle": 0.5}
-	return {"rifle": 0.25, "at": 0.2, "vehicle": 0.55}
 
 
-static func _category(def_id: String) -> String:
-	match def_id:
-		"rifleman", "rifle_squad":
-			return "rifle"
-		"at_gunner", "at_team":
-			return "at"
-		"ifv", "mbt":
-			return "vehicle"
-	return ""
+## Desired army shares by production category, per faction. With a factory the mix leans on
+## armour: salvage is the finite resource and heavy armour is the most salvage-efficient way to
+## crack defences and the HQ, while ore (vehicles) is plentiful. AT/heavy share rises once armour is
+## seen. Human A keeps the G2 numbers. Human B adds artillery behind a carrier/tank line; the
+## Machine adds drone pairs (raids) before and after its crawler works.
+static func _shares(w: SimWorld, fid: int, st: Dictionary, has_factory: bool) -> Dictionary:
+	var armored_seen := int(st.enemy_vehicles_seen) >= 1  # G2: prefer AT/MBT once any enemy vehicle is seen
+	var heavy := armored_seen or bool(st.get("tower_seen", false))
+	match U.fac(w, fid):
+		"human_b":
+			if not has_factory:
+				return {"infantry": 0.4, "antitank": 0.6} if heavy else {"infantry": 0.6, "antitank": 0.4}
+			if armored_seen:
+				return {"infantry": 0.15, "antitank": 0.2, "vehicle": 0.5, "artillery": 0.15}
+			return {"infantry": 0.2, "antitank": 0.15, "vehicle": 0.45, "artillery": 0.2}
+		"machine":
+			if not has_factory:
+				return {"infantry": 0.45, "air": 0.55}
+			if armored_seen:
+				return {"infantry": 0.1, "air": 0.2, "vehicle": 0.6, "artillery": 0.1}
+			return {"infantry": 0.15, "air": 0.25, "vehicle": 0.45, "artillery": 0.15}
+	if not has_factory:
+		return {"infantry": 0.45, "antitank": 0.55} if heavy else {"infantry": 0.6, "antitank": 0.4}
+	if armored_seen:
+		return {"infantry": 0.15, "antitank": 0.35, "vehicle": 0.5}
+	return {"infantry": 0.25, "antitank": 0.2, "vehicle": 0.55}
+
+
+## Unit def -> category for this side (vehicle roles first: the Machine walker is both antitank
+## and heavy, and comes from the factory).
+static func _cat_map(w: SimWorld, fid: int) -> Dictionary:
+	var out := {}
+	for r in ["light", "heavy"]:
+		var item := U.role(w, fid, r)
+		if item != "":
+			for u in Content.production(item).get("spawns", []):
+				out[String(u)] = "vehicle"
+	for r in ["infantry", "antitank", "artillery", "air"]:
+		var item := U.role(w, fid, r)
+		if item != "":
+			for u in Content.production(item).get("spawns", []):
+				if not out.has(String(u)):
+					out[String(u)] = r
+	return out
+
+
+## Production item for a category ("" when the faction has none).
+static func _item_for(w: SimWorld, fid: int, st: Dictionary, cat: String) -> String:
+	if cat != "vehicle":
+		return U.role(w, fid, cat)
+	var hv := U.role(w, fid, "heavy")
+	var lt := U.role(w, fid, "light")
+	if hv == "" or lt == "":
+		return hv if hv != "" else lt
+	# heavy by default (defences/HQ); the light vehicle only when ore is short for a heavy one
+	var hv_ore := int(Content.production(hv).cost.get("ore", 0))
+	var ore := int(w.factions[fid].stock.ore)
+	return hv if ore >= hv_ore or int(st.enemy_vehicles_seen) >= 1 else lt
+
+
+static func _pop_of_item(item: String) -> int:
+	var p := 0
+	for u in Content.production(item).get("spawns", []):
+		p += U.pop_of(String(u))
+	return p
 
 
 static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var f: Dictionary = w.factions[fid]
-	var barracks = null
-	var motor = null
+	var barracks_def := U.role(w, fid, "barracks")
+	var factory_def := U.role(w, fid, "factory")
+	var free := {}  # producing building def -> least-loaded built building with queue room
 	for b in ctx.buildings:
-		if not b.built or not Content.building(b.def).has("produces") or b.def == "hq":
+		var bd := String(b.def)
+		if not b.built or not Content.building(bd).has("produces") or U.is_hq_def(bd):
 			continue
 		if not st.rallied.has(int(b.id)):
 			if U.submit(w, fid, st, {"type": "set_rally", "building_id": int(b.id), "target": Vector2(st.rally)}, "rally:%d" % int(b.id)):
 				st.rallied[int(b.id)] = true
-		if b.def == "barracks" and b.queue.size() < 2 and (barracks == null or b.queue.size() < barracks.queue.size()):
-			barracks = b
-		elif b.def == "motor_pool" and b.queue.size() < 1:
-			motor = b
-	if barracks == null and motor == null:
+		var room := 2 if bd == barracks_def else 1
+		if b.queue.size() < room and (not free.has(bd) or b.queue.size() < free[bd].queue.size()):
+			free[bd] = b
+	if free.is_empty():
 		return
 	# scout replacement (cheap, at most twice)
-	if barracks != null and U.own(w, fid, int(st.scout_id)) == null and int(st.recon_requeues) < 2 and w.tick > 2400:
-		if w.can_afford(fid, Content.production("recon").cost) == "":
-			if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(barracks.id), "item": "recon"}, "queue:recon"):
+	var rec := U.role(w, fid, "recon")
+	if rec != "" and U.own(w, fid, int(st.scout_id)) == null and int(st.recon_requeues) < 2 and w.tick > 2400:
+		var rf = free.get(String(Content.production(rec).facility))
+		if rf != null and w.can_afford(fid, Content.production(rec).cost) == "":
+			if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(rf.id), "item": rec}, "queue:recon"):
 				st.recon_requeues = int(st.recon_requeues) + 1
 				st.want_scout = true
 			return
 	# current + queued army pop per category
-	var have := {"rifle": 0, "at": 0, "vehicle": 0}
-	for e in ctx.army:
-		var cat := _category(String(e.def))
+	var cmap := _cat_map(w, fid)
+	var have := {}
+	for c in CATS:
+		have[c] = 0
+	for e in ctx.army + ctx.arty + ctx.air:
+		var cat := String(cmap.get(String(e.def), ""))
 		if cat != "":
 			have[cat] += U.pop_of(String(e.def))
 	var queued_any := false
 	for b in ctx.buildings:
 		for q in b.queue:
-			var cat := _category(String(q.item))
-			if cat != "":
-				queued_any = true
-				for u in Content.production(String(q.item)).spawns:
+			for u in Content.production(String(q.item)).get("spawns", []):
+				var cat := String(cmap.get(String(u), ""))
+				if cat != "":
+					queued_any = true
 					have[cat] += U.pop_of(String(u))
-	var total := float(have.rifle + have.at + have.vehicle)
-	var shares := _shares(st, motor != null or int(ctx.built.get("motor_pool", 0)) > 0)
+	var total := 0.0
+	for c in CATS:
+		total += float(have[c])
+	var shares := _shares(w, fid, st, int(ctx.built.get(factory_def, 0)) > 0)
 	var order := []
-	for cat in ["at", "rifle", "vehicle"]:
-		if float(shares[cat]) <= 0.0:
+	for cat in CATS:
+		if float(shares.get(cat, 0.0)) <= 0.0:
 			continue
-		if cat == "vehicle" and motor == null:
+		var item := _item_for(w, fid, st, cat)
+		if item == "" or not free.has(String(Content.production(item).facility)):
 			continue
-		if cat != "vehicle" and barracks == null:
-			continue
-		order.append([-(float(shares[cat]) * (total + 4.0) - float(have[cat])), cat])
+		order.append([-(float(shares[cat]) * (total + 4.0) - float(have[cat])), cat, item])
 	if order.is_empty():
 		return
 	order.sort()
 	var reserve := 0
-	if String(st.saving_for) in URGENT_BUILDS:
-		reserve = int(Content.building(String(st.saving_for)).cost.credits)
+	for r in URGENT_ROLES:
+		if String(st.saving_for) != "" and String(st.saving_for) == U.role(w, fid, r):
+			reserve = int(Content.building(String(st.saving_for)).cost.credits)
 	var defending := String(st.objective) == "defend"
 	for i in order.size():
-		var cat := String(order[i][1])
-		var item := "rifle_squad"
-		var fac = barracks
-		if cat == "at":
-			item = "at_team"
-		elif cat == "vehicle":
-			fac = motor
-			# MBT by default (towers/HQ); an IFV only when ore is short for a tank
-			var mbt_ore := int(Content.production("mbt").cost.get("ore", 0))
-			item = "mbt" if int(f.stock.ore) >= mbt_ore or int(st.enemy_vehicles_seen) >= 1 else "ifv"
+		var item := String(order[i][2])
 		var p := Content.production(item)
-		var item_pop := 0
-		for u in p.spawns:
-			item_pop += U.pop_of(String(u))
-		if int(f.pop) + int(ctx.queued_pop) + item_pop > int(f.pop_cap):
+		var fac = free[String(p.facility)]
+		if int(f.pop) + int(ctx.queued_pop) + _pop_of_item(item) > int(f.pop_cap):
 			return  # supply capped: the depot rule in ai_econ handles it
 		var affordable := w.can_afford(fid, p.cost) == "" and int(f.credits) - int(p.cost.credits) >= reserve
 		if affordable:
 			U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(fac.id), "item": item}, "queue:%d" % int(fac.id))
 			return
-		# save for the top choice unless we are defending (then buy whatever is affordable)
-		if not defending and (queued_any or i == 0):
+		# save for the top choice unless we are defending (then buy whatever is affordable).
+		# G3a: never save for an item blocked on ORE (ore only arrives from crews; infantry needs
+		# none) - Human B banked 2400 credits for 15k ticks waiting on a tank with ore=8 (ffa seed 2).
+		var ore_short := int(p.cost.get("ore", 0)) > int(f.stock.ore)
+		if not defending and not ore_short and (queued_any or i == 0):
 			return

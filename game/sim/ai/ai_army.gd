@@ -7,6 +7,7 @@ extends RefCounted
 const U = preload("res://sim/ai/ai_util.gd")
 const Mil = preload("res://sim/ai/ai_mil.gd")
 const Tac = preload("res://sim/ai/ai_tactics.gd")
+const G3 = preload("res://sim/ai/ai_g3.gd")
 
 const DEFEND_RADIUS := 14.0
 const HIT_RADIUS := 16.0
@@ -14,7 +15,8 @@ const REGROUP_FRAC := 0.4
 const NEAR_ARMY := 12.0
 const BUILDING_NEAR_ARMY := 16.0
 const COMMIT_DIST := 18.0
-const PRODUCTION_DEFS := ["barracks", "motor_pool"]
+## G3a: objective modes (territory sweep / bridge hold) launch earlier and with fewer units.
+const OBJECTIVE_THR := 0.6
 ## After this tick (18 sim-minutes), or once our known salvage is gone, the side goes all-in:
 ## smaller launch threshold, no regrouping, continuous reinforcement. Waiting gains nothing then.
 const ALL_IN_TICK := 21600
@@ -65,7 +67,7 @@ static func _threat(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> D
 
 static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var army: Array = ctx.army
-	var army_pop := _pop(army)
+	var army_pop := _pop(army) + _pop(ctx.arty)  # artillery follows the wave (ai_g3_units.gd)
 	var plan: Dictionary = st.get("gather_plan", {})
 	var sal_out := plan.has("salvage_left") and int(plan.salvage_left) <= 0 and int(w.factions[fid].stock.salvage) < 100
 	if not bool(st.get("all_in", false)) and (w.tick >= ALL_IN_TICK or sal_out):
@@ -73,6 +75,9 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		U.log_line(st, w, "going all-in (%s)" % ("salvage exhausted" if sal_out else "late game"))
 	var all_in := bool(st.get("all_in", false))
 	var thr := int(st.attack_pop)
+	var obj_mode := float(st.g3.terms.territory) > 0.0 or int(st.g3.terms.bridge) > 0
+	if obj_mode:
+		thr = maxi(6, int(round(float(thr) * OBJECTIVE_THR)))
 	if all_in:
 		thr = maxi(6, thr / 2)
 	var threat := _threat(w, fid, st, ctx)
@@ -102,7 +107,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 				var d := Vector2(e.pos).distance_to(c)
 				if e.kind == "unit" and d <= NEAR_ARMY:
 					foes_near = true
-				elif String(e.def) == "hq" and d <= COMMIT_DIST:
+				elif e.kind == "building" and U.is_hq_def(String(e.def)) and d <= COMMIT_DIST:
 					hq_near = true
 			committed = committed or hq_near
 			finishing = hq_near and not foes_near
@@ -113,7 +118,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 				var d2 := Vector2(e.pos).distance_to(c)
 				if e.kind == "unit" and d2 <= 14.0:
 					foe_pop += U.pop_of(String(e.def))
-				elif String(e.def) == "guard_tower" and d2 <= 11.0:
+				elif e.kind == "building" and _armed(e) and d2 <= 11.0:
 					tower_near = true
 			if not tower_near and _pop(group) >= 4 and _pop(group) * 2 >= foe_pop * 3:
 				finishing = true
@@ -133,6 +138,11 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 			Tac.release(w, fid, st, ctx, "base under threat")
 			_defend(w, fid, st, army, threat.pos)
 			return
+		# G3a: the wave follows the current objective (target side's HQ, a sector, the bridge)
+		var goal := G3.objective(w, fid, st, ctx, _centroid(group))
+		if String(goal.kind) == "bridge":
+			G3.note_bridge(w, fid, st, ctx, _centroid(group))
+		Tac.retarget(w, fid, st, ctx, Vector2(goal.pos))
 		# G2: the officer drives the wave until it nears enemy buildings; a withdraw report regroups
 		var mode := Tac.manage_mission(w, fid, st, ctx, group)
 		if mode == "withdraw":
@@ -165,7 +175,10 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	# build_up / regroup: launch at the threshold, or early to exploit a won fight (momentum)
 	# Difficulty grace period: no offensive before first_attack_tick (defence still runs above).
 	# Found by the UI playtest: without it the AI razed a new player's HQ at 02:57.
-	if w.tick < int(U.diff(w).get("first_attack_tick", 0)):
+	var grace := int(U.diff(w, fid).get("first_attack_tick", 0))
+	if obj_mode:
+		grace /= 2
+	if w.tick < grace:
 		return
 	var exploit := float(st.momentum) >= 4.0 and army_pop * 2 >= thr
 	if (army_pop >= thr or exploit) and not army.is_empty():
@@ -219,7 +232,8 @@ static func _amove(w: SimWorld, fid: int, st: Dictionary, units: Array, target: 
 
 
 static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army: Array) -> void:
-	var tgt := Mil.attack_target(w, fid)
+	var obj := G3.objective(w, fid, st, ctx, _centroid(army))
+	var tgt := Vector2(obj.pos)
 	st.attack_target = tgt
 	# approach route (personality): direct, or via one of the two fords (public map crossings);
 	# a bridge seen ruined moves route 0 to a ford (Tac.effective_route)
@@ -234,7 +248,7 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
 	_set_obj(w, st, "attack", "army pop %d; attacking %s (wave %d)" % [_pop(army), str(tgt.round()), int(st.launches)])
-	if Tac.officer(w, fid, st, ctx) != null:
+	if Tac.officer(w, fid, st, ctx) != null and String(obj.kind) != "sector":
 		# G2: march out, then the officer takes command and handles the crossing itself
 		st.attack_via = Vector2(-1, -1)
 		_amove(w, fid, st, army, tgt, "push")
@@ -276,11 +290,14 @@ static func _push(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group:
 				near_unit = e
 		elif d <= BUILDING_NEAR_ARMY:
 			var rank := 2
-			if String(e.def) == "guard_tower":
+			var gone := (st.g3.eliminated as Array).has(int(e.owner))
+			if _armed(e):
 				rank = 0
-			elif String(e.def) == "hq":
+			elif gone:
+				continue  # a beaten side's leftover buildings are not worth a wave
+			elif U.is_hq_def(String(e.def)):
 				rank = 1  # hq_elimination: the HQ ends the match
-			elif PRODUCTION_DEFS.has(String(e.def)):
+			elif Content.building(String(e.def)).has("produces"):
 				rank = 2
 			else:
 				rank = 3
@@ -307,8 +324,14 @@ static func _push(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, group:
 	if via.x >= 0.0 and c.distance_to(via) < 6.0:
 		st.attack_via = Vector2(-1, -1)
 		U.log_line(st, w, "attack group crossed at %s" % str(via.round()))
-	var tgt := Mil.attack_target(w, fid)
-	if c.distance_to(tgt) < 5.0 and not bool(st.known_contacts.get("enemy_hq_known", false)):
+	var obj := G3.objective(w, fid, st, ctx, c)
+	var tgt := Vector2(obj.pos)
+	if String(obj.kind) != "base":
+		# territory / bridge: hold the point (attack_move auto-engages); no search spiral
+		if c.distance_to(tgt) < G3.SECTOR_REACHED and not _any_idle_far(group, tgt, 6.0):
+			st.attack_target = tgt
+			return
+	elif c.distance_to(tgt) < 5.0 and not bool(st.known_contacts.get("enemy_hq_known", false)):
 		st.search_i = int(st.search_i) + 1
 		var ang := float(int(st.search_i) % 8) * TAU / 8.0
 		tgt = tgt + Vector2(cos(ang), sin(ang)) * 10.0
@@ -346,3 +369,15 @@ static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, a
 		st.launch_size = int(st.launch_size) + reserve.size()
 		U.log_line(st, w, "reinforcement wave of %d sent" % reserve.size())
 		Tac.add_members(w, fid, st, ctx, st.attack_group)
+
+
+## Enemy building with a weapon (guard tower, bunker, sentry).
+static func _armed(e: Dictionary) -> bool:
+	return e.kind == "building" and String(Content.building(String(e.def)).get("weapon", "")) != ""
+
+
+static func _any_idle_far(units: Array, p: Vector2, r: float) -> bool:
+	for e in units:
+		if String(e.order.type) == "idle" and not e.moving and Vector2(e.pos).distance_to(p) > r:
+			return true
+	return false

@@ -1,6 +1,10 @@
 extends SceneTree
 ## AI-vs-AI headless soak.
 ##   godot --headless --path game -s tools/soak.gd -- --seed=N --max-ticks=36000 --difficulty=normal
+## G3a (AI3): multi-side / faction / team / victory flags, parsed by sim/ai/tools/match_cfg.gd:
+##   --sides=3 --factions=human_a,human_b,machine --teams=0,1,0,1 --victory=territory --percent=60
+##   --seconds=300 --rules=and:hq_elimination+territory --economy=standard
+## The result line also carries winner_team=<team|none> winners=<fids>.
 ## Prints a summary every 1200 ticks, checks invariants every 600 ticks (INVARIANT FAIL lines),
 ## and ends with:  SOAK RESULT winner=<fid|none> end_tick=<n> reason=<...> hash=<state_hash>
 ## Exits 0 unless a script error occurs (script errors are caught by the caller grepping output).
@@ -14,6 +18,7 @@ var _cap_dropped := {}   # fid -> true once its pop_cap was ever seen to fall
 var _last_cap := {}
 var _start_ledger := {}   # fid -> {credits, salvage, ore, fuel, ammo} at tick 0 (G2 conservation check)
 const LEDGER := ["credits", "salvage", "ore", "fuel", "ammo"]
+const MatchCfg = preload("res://sim/ai/tools/match_cfg.gd")
 
 
 func _init() -> void:
@@ -27,13 +32,8 @@ func _init() -> void:
 			max_ticks = int(a.substr(12))
 		elif a.begins_with("--difficulty="):
 			difficulty = a.substr(13)
-	var c := SimWorld.default_config()
-	c.seed = seed_value
+	var c := MatchCfg.from_args(OS.get_cmdline_user_args(), seed_value)
 	c.ai_difficulty = difficulty
-	c.sides[0].ai = true
-	c.sides[0].name = "AI-A"
-	c.sides[1].ai = true
-	c.sides[1].name = "AI-B"
 	var reason := SimWorld.validate_config(c)
 	if reason != "":
 		print("SOAK CONFIG INVALID: ", reason)
@@ -50,7 +50,7 @@ func _init() -> void:
 		for k in LEDGER:
 			if k != "credits":
 				_start_ledger[fid][k] = int(f0.stock.get(k, 0))
-	print("SOAK START seed=%d max_ticks=%d difficulty=%s" % [seed_value, max_ticks, difficulty])
+	print("SOAK START seed=%d max_ticks=%d difficulty=%s %s" % [seed_value, max_ticks, difficulty, MatchCfg.describe(c)])
 	var t0 := Time.get_ticks_msec()
 	var kills_seen := {}
 	while w.tick < max_ticks and not w.match_state.ended:
@@ -71,7 +71,25 @@ func _init() -> void:
 	var why: String = String(w.match_state.reason) if w.match_state.ended else "max_ticks"
 	print("SOAK INVARIANTS fails=%d notes=%d" % [_fail_count, _note_count])
 	print("SOAK WALL_MS %d" % (Time.get_ticks_msec() - t0))
-	print("SOAK RESULT winner=%s end_tick=%d reason=%s hash=%s" % [winner, w.tick, why, w.state_hash()])
+	var wteam := "none"
+	if w.match_state.ended and w.match_state.has("winner_team") and int(w.match_state.winner_team) >= 0:
+		wteam = str(int(w.match_state.winner_team))
+	elif winner != "none":
+		wteam = str(int(w.factions[int(winner)].get("team", int(winner))))
+	for fid in w.ai_state:
+		print("SOAK AI f%d %s %s | %s" % [fid, String(w.factions[fid].faction_def), str(w.ai_state[fid].get("g3", {}).get("probe", "")), str(w.ai_state[fid].get("g2", {}).get("probe", ""))])
+		# G3a econ funnel: gather plan, crew orders, supply stock and units out of ammo
+		var crews := {}
+		var dry := 0
+		for e in w.units_of(fid):
+			if bool(Content.unit(e.def).get("can_gather", false)):
+				var k := String(e.order.type) + ("/" + String(e.order.get("res", "")) if e.order.has("res") else "")
+				crews[k] = int(crews.get(k, 0)) + 1
+			if e.has("ammo") and int(e.ammo) <= 0:
+				dry += 1
+		var fs: Dictionary = w.factions[fid].stock
+		print("SOAK ECON f%d gp=%s crews=%s ammo=%d fuel=%d dry=%d/%d" % [fid, str(w.ai_state[fid].get("gather_plan", {})), str(crews), int(fs.get("ammo", 0)), int(fs.get("fuel", 0)), dry, w.units_of(fid).size()])
+	print("SOAK RESULT winner=%s end_tick=%d reason=%s hash=%s winner_team=%s winners=%s" % [winner, w.tick, why, w.state_hash(), wteam, str(w.match_state.get("winners", []))])
 	quit(0)
 
 
@@ -83,8 +101,8 @@ func _summary(w: SimWorld, wall_ms: int) -> void:
 		for e in w.units_of(fid):
 			units[e.def] = int(units.get(e.def, 0)) + 1
 		var nb := w.buildings_of(fid).size()
-		parts.append("f%d{cr=%d sal=%d ore=%d units=%s bld=%d pop=%d/%d kills=%d lost=%d alive=%s}" % [
-			fid, int(f.credits), int(f.stock.salvage), int(f.stock.ore), str(units), nb,
+		parts.append("f%d[%s t%d]{cr=%d sal=%d ore=%d units=%s bld=%d pop=%d/%d kills=%d lost=%d alive=%s}" % [
+			fid, String(f.faction_def), int(f.get("team", fid)), int(f.credits), int(f.stock.salvage), int(f.stock.ore), str(units), nb,
 			int(f.pop), int(f.pop_cap), int(f.stats.killed), int(f.stats.lost), str(f.alive)])
 	print("SOAK t=%d wall_ms=%d ents=%d %s" % [w.tick, wall_ms, w.entities.size(), " ".join(parts)])
 
@@ -127,7 +145,7 @@ func _check_invariants(w: SimWorld) -> void:
 			_fail(w, "unit %d (%s) out of bounds at %s" % [int(id), e.def, str(e.pos)])
 			continue
 		var mc: String = Content.unit(e.def).get("move_class", "foot")
-		if not Terrain.passable(w.terrain_at(cell), mc):
+		if mc != "air" and not Terrain.passable(w.terrain_at(cell), mc):  # G3a: air ignores terrain (movement.gd S3)
 			_fail(w, "unit %d (%s, %s) in impassable cell %s (terrain %d)" % [int(id), e.def, mc, str(cell), w.terrain_at(cell)])
 	# 4. pop <= cap + in-flight squads (queue heads that may complete this tick)
 	for fid in w.factions:

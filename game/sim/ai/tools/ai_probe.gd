@@ -17,12 +17,14 @@ func _init() -> void:
 			every = int(a.substr(8))
 		elif a.begins_with("--difficulty="):
 			difficulty = a.substr(13)
-	var c := SimWorld.default_config()
+	var c: Dictionary = preload("res://sim/ai/tools/match_cfg.gd").from_args(OS.get_cmdline_user_args(), seed_value)
 	c.seed = seed_value
 	c.ai_difficulty = difficulty
-	c.sides[0].ai = true
-	c.sides[1].ai = true
 	var w := SimWorld.new_match(c)
+	if w == null:
+		print("PROBE: invalid config: ", SimWorld.validate_config(c))
+		quit(2)
+		return
 	var t0 := Time.get_ticks_msec()
 	var think_ms := 0
 	while w.tick < ticks and not w.match_state.ended:
@@ -77,5 +79,6 @@ func _line(w: SimWorld, ms: int) -> void:
 				var g: Dictionary = w.sys_state.ops.groups[gid]
 				if int(g.owner) == fid:
 					groups.append("%d:%s/%d/%s" % [int(gid), String(g.phase), (g.members as Array).size(), String((g.mission as Dictionary).get("type", "-"))])
+		print("    f%d G3 %s %s" % [fid, String(f.faction_def), str(st.get("g3", {}).get("probe", ""))])
 		print("    f%d G2 fuel=%d ammo=%d dry=%d low=%d nofuel=%d broken=%d groups=%s g2=%s bridge=%s" % [fid, int(f.stock.get("fuel", 0)),
 			int(f.stock.get("ammo", 0)), dry, low, nofuel, broken, str(groups), str(st.get("g2", {}).get("probe", "")), String(w.map.get("bridge_state", "?"))])

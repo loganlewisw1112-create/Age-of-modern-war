@@ -16,9 +16,14 @@ const BACKOFF_TICKS := 200
 const PENDING_TTL := 12
 
 
-static func diff(w: SimWorld) -> Dictionary:
+## Difficulty of side fid: cfg.sides[fid].ai_difficulty (per-side, G3a skirmish menu), else the
+## match-wide cfg.ai_difficulty.
+static func diff(w: SimWorld, fid: int = -1) -> Dictionary:
 	var all: Dictionary = Content.rules().ai_difficulties
 	var key := String(w.cfg.get("ai_difficulty", "normal"))
+	var sides: Array = w.cfg.get("sides", [])
+	if fid >= 0 and fid < sides.size():
+		key = String(sides[fid].get("ai_difficulty", key))
 	return all.get(key, all.normal)
 
 
@@ -97,6 +102,21 @@ static func scan_events(w: SimWorld, fid: int, st: Dictionary) -> void:
 			if t != null:
 				st.hit_tick = w.tick
 				st.hit_pos = Vector2(t.pos)
+		elif ty == "SideEliminated":
+			# public announcement (the HUD shows it to everyone): retarget away from a beaten side
+			var g3: Dictionary = st.get("g3", {})
+			if g3.has("eliminated") and not (g3.eliminated as Array).has(int(ev.faction)):
+				g3.eliminated.append(int(ev.faction))
+				# G3a: the beaten side's deposits join the survivors' zones (ffa seed 2: Human B ran
+				# dry of ore with the Machine's untouched deposits next door)
+				var g2: Dictionary = st.get("g2", {})
+				if g2.has("pub_all"):
+					var have_ids := {}
+					for d in g2.pub_res:
+						have_ids[int(d.id)] = true
+					for d in zone_deposits(w, fid, g2.pub_all, g3.eliminated):
+						if not have_ids.has(int(d.id)):
+							g2.pub_res.append(d)
 		elif ty == "EntityDestroyed":
 			if int(ev.owner) == fid and String(ev.kind) != "resource":
 				st.losses = int(st.losses) + 1
@@ -147,25 +167,44 @@ static func known_resources(w: SimWorld, fid: int, pub: Array = []) -> Array:
 ## The initial map's published deposits on our half (closer to our start than to the enemy start),
 ## mapped to their entity ids. Called once at match start, when the published list is the truth.
 static func public_deposits(w: SimWorld, fid: int) -> Array:
-	var mine := Vector2(w.factions[fid].spawn) + Vector2(0.5, 0.5)
-	var theirs := enemy_spawn(w, fid)
-	var half := {}
+	return zone_deposits(w, fid, all_public_deposits(w), [])
+
+
+## Every deposit published in the initial map, mapped to its entity id. Call at match start only
+## (the published list is the truth then); later zone changes filter this snapshot.
+static func all_public_deposits(w: SimWorld) -> Array:
+	var cells := {}
 	for pr in w.map.resources:
-		var pc: Vector2i = pr.cell
-		var pp := Vector2(pc) + Vector2(0.5, 0.5)
-		if pp.distance_to(mine) < pp.distance_to(theirs):
-			half[pc] = true
+		cells[Vector2i(pr.cell)] = true
 	var out := []
 	for id in w.entities:  # AI-FAIR: resource (match start: maps the public deposit list to ids)
 		var r: Dictionary = w.entities[id]  # AI-FAIR: resource
-		if r.kind == "resource" and half.has(w.cell_of(r.pos)):
+		if r.kind == "resource" and cells.has(w.cell_of(r.pos)):
 			out.append({"id": int(id), "pos": Vector2(r.pos), "res": String(r.res)})
 	return out
 
 
+## Deposits of `all` in our zone: closer to our start than to ANY other start (allies keep theirs),
+## ignoring sides in `gone` (eliminated: their zone is shared out among the survivors).
+static func zone_deposits(w: SimWorld, fid: int, all: Array, gone: Array) -> Array:
+	var mine := Vector2(w.factions[fid].spawn) + Vector2(0.5, 0.5)
+	var out := []
+	for d in all:
+		var pp := Vector2(w.cell_of(Vector2(d.pos))) + Vector2(0.5, 0.5)
+		var d0 := pp.distance_to(mine)
+		var ours := true
+		for s in side_ids(w):
+			if s != fid and not gone.has(s) and pp.distance_to(spawn_of(w, s)) <= d0:
+				ours = false
+		if ours:
+			out.append(d)
+	return out
+
+
 static func hq_of(w: SimWorld, fid: int):
-	for b in w.buildings_of(fid, "hq"):
-		return b
+	for b in w.buildings_of(fid):
+		if is_hq_def(String(b.def)):
+			return b
 	return null
 
 
@@ -179,13 +218,22 @@ static func base_pos(w: SimWorld, fid: int) -> Vector2:
 	return Vector2(w.factions[fid].spawn) + Vector2(0.5, 0.5)
 
 
-## Public map knowledge: the start location that is not ours.
+## Public map knowledge: the start location of the side we target (G3a: st.g3.target_side), else
+## the nearest enemy start. Side i starts at map.spawns[i] (public lobby + map data).
 static func enemy_spawn(w: SimWorld, fid: int) -> Vector2:
-	var mine: Vector2i = w.factions[fid].spawn
-	for s in w.map.spawns:
-		if Vector2i(s) != mine:
-			return Vector2(s) + Vector2(0.5, 0.5)
-	return Vector2(mine) + Vector2(0.5, 0.5)
+	var st: Dictionary = w.ai_state.get(fid, {})
+	var tgt := int(st.get("g3", {}).get("target_side", -1))
+	if tgt >= 0:
+		return spawn_of(w, tgt)
+	var mine := spawn_of(w, fid)
+	var best := mine
+	var best_d := INF
+	for s in enemy_side_ids(w, fid):
+		var d := spawn_of(w, s).distance_to(mine)
+		if d < best_d:
+			best_d = d
+			best = spawn_of(w, s)
+	return best
 
 
 static func map_center(w: SimWorld) -> Vector2:
@@ -210,3 +258,92 @@ static func is_vehicle(def_id: String) -> bool:
 static func personal(w: SimWorld, fid: int, salt: int) -> float:
 	var h := hash([int(w.seed_value), fid, salt])
 	return float(absi(h) % 10007) / 10007.0
+
+
+# ================================================================ G3a (agent AI3): factions, sides
+## Faction-agnostic lookups. Never hard-code def names: every def comes from the faction's roles
+## (content/factions.json) or from building/unit flags.
+
+## This side's faction def id ("human_a" | "human_b" | "machine").
+static func fac(w: SimWorld, fid: int) -> String:
+	return String(w.factions[fid].get("faction_def", "human_a"))
+
+
+## Def id of this side's role ("" when the faction has none).
+static func role(w: SimWorld, fid: int, r: String) -> String:
+	return Content.role(fac(w, fid), r)
+
+
+## Unit def spawned by this side's production role ("" when none).
+static func role_unit(w: SimWorld, fid: int, r: String) -> String:
+	var item := role(w, fid, r)
+	if item == "":
+		return ""
+	var sp: Array = Content.production(item).get("spawns", [])
+	return String(sp[0]) if not sp.is_empty() else ""
+
+
+static func uflag(def_id: String, flag: String) -> bool:
+	return bool(Content.unit(def_id).get(flag, false))
+
+
+static func bflag(def_id: String, flag: String) -> bool:
+	return bool(Content.building(def_id).get(flag, false))
+
+
+static func is_hq_def(def_id: String) -> bool:
+	return bflag(def_id, "is_hq")
+
+
+static func is_air(def_id: String) -> bool:
+	return uflag(def_id, "is_air") or String(Content.unit(def_id).get("move_class", "")) == "air"
+
+
+## Armoured target (vehicles and walkers): AT weapons are the answer.
+static func is_armored(def_id: String) -> bool:
+	return String(Content.unit(def_id).get("armor", "infantry")) in ["light", "heavy"] and not is_air(def_id)
+
+
+static func is_artillery(def_id: String) -> bool:
+	var wp := String(Content.unit(def_id).get("weapon", ""))
+	return wp != "" and bool(Content.weapon(wp).get("indirect", false))
+
+
+static func is_energy(def_id: String) -> bool:
+	return uflag(def_id, "energy")
+
+
+## Def ids (any faction) of a building flag: e.g. defs_with("supply_point").
+static func building_has(def_id: String, flag: String) -> bool:
+	return bflag(def_id, flag)
+
+
+## All side ids of this match (public lobby config).
+static func side_ids(w: SimWorld) -> Array:
+	var out := []
+	for i in (w.cfg.get("sides", []) as Array).size():
+		out.append(i)
+	return out
+
+
+static func spawn_of(w: SimWorld, side: int) -> Vector2:
+	var sp: Array = w.map.spawns
+	return Vector2(sp[side % sp.size()]) + Vector2(0.5, 0.5)
+
+
+## Sides on another team (public lobby config, via w.is_enemy).
+static func enemy_side_ids(w: SimWorld, fid: int) -> Array:
+	var out := []
+	for s in side_ids(w):
+		if w.is_enemy(fid, s):
+			out.append(s)
+	return out
+
+
+## Own team incl. fid.
+static func team_side_ids(w: SimWorld, fid: int) -> Array:
+	var out := []
+	for s in side_ids(w):
+		if s == fid or w.is_ally(fid, s):
+			out.append(s)
+	return out
