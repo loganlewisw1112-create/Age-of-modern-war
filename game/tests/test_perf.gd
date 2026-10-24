@@ -194,6 +194,49 @@ func test_refinery_idles_at_stock_cap() -> void:
 	check_eq(int(f.stock.ore), ore0, "no ore consumed at the cap")
 	check_eq(int(f.stats.get("ore_refined", 0)), refined0, "ore_refined unchanged while idle")
 	check(w.spend(0, {"fuel": int(f.stock.fuel) - (cap - 1)}, "test"), "drop fuel below the cap")
+	var ammo0 := int(f.stock.ammo)
+	var fuel0 := int(f.stock.fuel)
 	w.run_ticks(130)
-	check_eq(int(f.stock.ore), ore0 - int(cfg.ore_in), "below the cap: one cycle consumed ore_in")
-	check_eq(int(f.stats.get("ore_refined", 0)), refined0 + int(cfg.ore_in), "ore_refined counts real consumption")
+	# per-product cap (PERF4-3): only fuel is short -> the cycle burns the fuel share (ore_in / 2)
+	# and credits fuel only; ammo (at the cap) is not produced
+	var half := int(cfg.ore_in) / 2
+	check_eq(int(f.stock.ore), ore0 - half, "only fuel below the cap: one cycle consumed the fuel share of ore")
+	check_eq(int(f.stats.get("ore_refined", 0)), refined0 + half, "ore_refined counts real consumption")
+	check_eq(int(f.stock.fuel), fuel0 + int(cfg.fuel_out), "fuel credited")
+	check_eq(int(f.stock.ammo), ammo0, "no ammo produced while ammo is at the cap")
+	# now ammo short too: the next cycle burns the full ore_in and credits both
+	check(w.spend(0, {"ammo": int(f.stock.ammo) - (cap - 1), "fuel": int(f.stock.fuel) - (cap - 1)}, "test"), "drop both below the cap")
+	var ore1 := int(f.stock.ore)
+	ammo0 = int(f.stock.ammo)
+	w.run_ticks(130)
+	check_eq(int(f.stock.ore), ore1 - int(cfg.ore_in), "both below the cap: one cycle consumed ore_in")
+	check_eq(int(f.stock.ammo), ammo0 + int(cfg.ammo_out), "ammo credited when below the cap")
+
+
+## G3b PERF4-3: RtsFog stamping (native) gives byte-identical visible/explored to the Image path.
+func test_native_fog_matches_gdscript_fog() -> void:
+	const FogS = preload("res://sim/systems/fog.gd")
+	const NC = preload("res://sim/native_core.gd")
+	if NC.new_fog(null) == null:
+		check(true, "native fog not available: GDScript path only (skipped)")
+		return
+	var hs := []
+	var fogs := []
+	for off in [false, true]:
+		FogS.native_off = off
+		var w := _clean(9)
+		_armies(w, 10, 8)
+		for t in 120:
+			w.step()
+		hs.append(w.state_hash())
+		var snap := {}
+		for fid in w.fog:
+			snap[fid] = [w.fog[fid].visible, w.fog[fid].explored]
+		fogs.append(snap)
+	FogS.native_off = false
+	var same := true
+	for fid in fogs[0]:
+		if fogs[0][fid][0] != fogs[1][fid][0] or fogs[0][fid][1] != fogs[1][fid][1]:
+			same = false
+	check(same, "visible + explored byte-identical native vs Image path")
+	check_eq(hs[0], hs[1], "state hash equal with native fog on/off")

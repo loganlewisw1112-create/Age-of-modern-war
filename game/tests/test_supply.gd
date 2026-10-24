@@ -165,6 +165,12 @@ func test_refinery_converts_ore_then_reports_no_ore_and_low_power() -> void:
 		return
 	var r: Dictionary = w.entities[w.spawn_building("refinery", 0, o, true)]
 	var f: Dictionary = w.factions[0]
+	# G3b PERF4-3 (orch directive): the refinery now produces only the outputs below
+	# rules.refinery.stock_cap; the start ammo stock sits at the cap, so drop both below it first
+	var cap := int((Content.rules().refinery as Dictionary).get("stock_cap", 0))
+	for k in ["fuel", "ammo"]:
+		if cap > 0 and int(f.stock[k]) >= cap:
+			w.spend(0, {k: int(f.stock[k]) - (cap - 100)}, "test")
 	var ore0 := int(f.stock.ore)
 	var fuel0 := int(f.stock.fuel)
 	var ammo0 := int(f.stock.ammo)

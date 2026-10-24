@@ -22,6 +22,10 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")
 const FULL := 0
 const REDUCED := 1
 const RECOMPUTE_EVERY := 8          # closing distance over this period is in bucket_size()
+## G3b PERF4-3: recompute (and the index rebuild) runs on tick % RECOMPUTE_EVERY == PHASE, a tick
+## that carries no other periodic job (Morale: tick % 4 == 0; Fog teams: tick % 4 == 1 / 3), so the
+## periodic spikes never stack on one tick (p95).
+const PHASE := 6
 const STRIDE := 4            # Movement / Supply: REDUCED units every STRIDE ticks
 const SCAN_STRIDE := 8       # Combat: REDUCED units every SCAN_STRIDE ticks
 const MIN_CONTACT := 14.0    # tiles (brief)
@@ -79,11 +83,17 @@ static func enabled(w) -> bool:
 ## Called once at the start of every tick (Economy.tick). On recompute ticks it rebuilds the
 ## shared index and every unit's tier in one pass; otherwise it only refreshes the index.
 static func begin_tick(w: SimWorld) -> void:
-	if w.tick % RECOMPUTE_EVERY != 0:
+	if w.tick % RECOMPUTE_EVERY != PHASE:
 		SimIndex.get_index(w)
 		return
 	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
-	var idx := SimIndex.rebuild(w)
+	# G3b PERF4-3: the full index rebuild (one pass over every entity, resources included) only runs
+	# once destroyed entries pass 1/8 of the lists; otherwise the appended index is kept and the
+	# loops below skip destroyed entities, which gives the same lists and tiers as a rebuild.
+	var idx := SimIndex.get_index(w)
+	if (int(idx.known) - w.entities.size()) * 8 > int(idx.known):
+		idx = SimIndex.rebuild(w)
+	var ents: Dictionary = w.entities
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("tiers.idx_rebuild", t0)
 	var units: Array = idx.kinds.get("unit", [])
@@ -108,7 +118,7 @@ static func begin_tick(w: SimWorld) -> void:
 	var occ := {}        # bucket key -> OR of team bits present
 	for b in idx.kinds.get("building", []):
 		var bit = team.get(int(b.owner))
-		if bit == null:
+		if bit == null or not ents.has(int(b.id)):
 			continue
 		var o: Vector2i = b.cell
 		var c := Vector2(o) + Vector2(float(b.size), float(b.size)) * 0.5
@@ -120,18 +130,25 @@ static func begin_tick(w: SimWorld) -> void:
 	ubit.resize(units.size())
 	for i in units.size():
 		var e: Dictionary = units[i]
-		var bit = team.get(int(e.owner))
+		if not ents.has(int(e.id)):
+			ubit[i] = -1     # destroyed since the index was built: in no list, no occupancy
+			continue
+		var bit = team.get(e.owner)
 		if bit == null:
 			ubit[i] = 0
 			continue
 		var p: Vector2 = e.pos
 		var key := floori(p.x / bs) + floori(p.y / bs) * KSTRIDE
 		ukey[i] = key
-		ubit[i] = int(bit)
-		occ[key] = int(occ.get(key, 0)) | int(bit)
+		var ib: int = bit
+		ubit[i] = ib
+		var ov = occ.get(key)
+		occ[key] = ib if ov == null else (int(ov) | ib)
 	var fmult := maxf(w.econ("fuel_use_mult"), 0.0)
 	var near := {}       # bucket key -> OR over the 3x3 neighbourhood
 	for i in units.size():
+		if ubit[i] < 0:
+			continue
 		var e: Dictionary = units[i]
 		var t := FULL
 		if ubit[i] != 0:

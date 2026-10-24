@@ -10,6 +10,11 @@ const Tiers = preload("res://sim/systems/tiers.gd")
 ## buildings (built or not), as circles of radius `sight` around their cell centre. Explored is sticky.
 
 const RECOMPUTE_EVERY := 4
+const NativeCore = preload("res://sim/native_core.gd")
+## G3b PERF4-3: with the native core live, stamping uses RtsFog.stamp/explored_out (same circle rule:
+## r = floor(sight), dx*dx + dy*dy <= sight*sight, clipped); the Image-blit path below is the
+## fallback. native_off forces the fallback (parity tests).
+static var native_off := false
 ## G3b PERF4: recompute makes ONE pass over the SimIndex units + buildings for all teams (it used
 ## to make one full pass per team plus one per side for memory), with per-def sight caches; memory
 ## only walks buildings. Every source is still stamped on every recompute (vision is player-visible),
@@ -84,11 +89,13 @@ static func init_faction_fog(w: SimWorld) -> void:
 ## G3b PERF4-2: teams are recomputed on alternating half-periods (team ordinal 0, 2, .. on
 ## tick % RECOMPUTE_EVERY == 0; ordinal 1, 3, .. on tick % RECOMPUTE_EVERY == RECOMPUTE_EVERY / 2),
 ## so each team's vision still refreshes every RECOMPUTE_EVERY ticks but the cost is split in two.
+## G3b PERF4-3: the two phases moved to tick % RECOMPUTE_EVERY == 1 and == 3, off Morale's update
+## tick (tick % 4 == 0) and the Tiers recompute (tick % 8 == 6), so periodic jobs never stack.
 static func tick(w: SimWorld) -> void:
 	var ph := w.tick % RECOMPUTE_EVERY
-	if ph == 0:
+	if ph == 1:
 		recompute(w, 0)
-	elif ph == RECOMPUTE_EVERY / 2:
+	elif ph == 3:
 		recompute(w, 1)
 
 
@@ -150,9 +157,18 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 	var ents: Dictionary = w.entities
 	var usight := _usight
 	var bsight := _bsight
-	for kind in ["unit", "building"]:
-		var cache: Dictionary = usight if kind == "unit" else bsight
-		for e: Dictionary in SimIndex.of(w, kind):
+	# G3b PERF4-3: units come from the index's per-owner lists, so an off-phase team's units are
+	# never walked (ascending id within each owner, owners in first-seen order)
+	var lists := []
+	var uown: Dictionary = SimIndex.units_by_owner(w)
+	for o in uown:
+		var rto = root.get(o)
+		if rto != null and srcs.has(rto):
+			lists.append(uown[o])
+	lists.append(SimIndex.of(w, "building"))
+	for li in lists.size():
+		var cache: Dictionary = usight if li < lists.size() - 1 else bsight
+		for e: Dictionary in lists[li]:
 			var rt = root.get(e.owner)
 			if rt == null or not srcs.has(rt) or not ents.has(e.id):
 				continue
@@ -181,8 +197,30 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 		# Stamping is done with native Image blits (one call per unique source): visible is an
 		# LA8 image (L = 1, A = 255 where seen) so that it is also the mask that ORs it into
 		# explored in ONE blit (PERF4-2; it used to be a second blit per source).
-		var vis_img := Image.create_empty(mw, mh, false, Image.FORMAT_LA8)
 		var st: Dictionary = srcs[rt]
+		var rf = null if native_off else NativeCore.new_fog(w)
+		if rf != null:
+			var cells := PackedInt32Array()
+			var sights := PackedFloat64Array()
+			cells.resize(st.size())
+			sights.resize(st.size())
+			var q := 0
+			for key in st:
+				cells[q] = key >> 7
+				sights[q] = float(st[key])
+				q += 1
+			var nvis: PackedByteArray = rf.stamp(mw, mh, cells, sights, ex_data)
+			var nex: PackedByteArray = rf.explored_out()
+			if SimIndex.profiling:
+				t0 = SimIndex.pt("fog.blit", t0)
+			for m in members:
+				w.fog[m].visible = nvis
+				w.fog[m].explored = nex
+				_update_memory(w, int(m), nvis, mw)
+			if SimIndex.profiling:
+				t0 = SimIndex.pt("fog.memory", t0)
+			continue
+		var vis_img := Image.create_empty(mw, mh, false, Image.FORMAT_LA8)
 		for key in st:
 			var ci: int = key >> 7
 			var cy := floori(float(ci) / float(mw))
@@ -298,18 +336,29 @@ static func visible_enemies(w: SimWorld, fid: int) -> Array:
 	var hit = vc.by.get(fid)
 	if hit != null:
 		return (hit as Array).duplicate()
+	# G3b PERF4-3: only ENEMY owners' units are walked (per-owner index lists), REDUCED ones skipped
+	# (never visible to another team: Tiers contact bound >= every sight), then enemy buildings;
+	# the result is sorted by id, i.e. the same list in the same order as the old full scan.
 	var out := []
-	var us: Array = Tiers.lists(w).full if Tiers.enabled(w) else SimIndex.of(w, "unit")
-	var bs: Array = SimIndex.of(w, "building")
-	var bi := 0
-	for e in us:
-		while bi < bs.size() and int(bs[bi].id) < int(e.id):
-			_vis_add(w, fid, bs[bi], out)
-			bi += 1
+	var tiers_on := Tiers.enabled(w)
+	var uown: Dictionary = SimIndex.units_by_owner(w)
+	var parts := 0
+	for o in uown:
+		if not w.is_enemy(fid, int(o)):
+			continue
+		parts += 1
+		for e: Dictionary in uown[o]:
+			if tiers_on and e.has("tier") and int(e.tier) == Tiers.REDUCED:
+				continue
+			if w.entities.has(int(e.id)) and entity_visible(w, fid, e):
+				out.append(e)
+	var nb := out.size()
+	for e in SimIndex.of(w, "building"):
 		_vis_add(w, fid, e, out)
-	while bi < bs.size():
-		_vis_add(w, fid, bs[bi], out)
-		bi += 1
+	if out.size() > nb:
+		parts += 1
+	if parts > 1:
+		out.sort_custom(func(x, y): return int(x.id) < int(y.id))
 	vc.by[fid] = out.duplicate()
 	return out
 

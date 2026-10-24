@@ -131,6 +131,10 @@ static func _pop_counts(w: SimWorld, pop: Dictionary) -> void:
 ## rules.refinery.stock_cap; with both at or above it the refinery idles ("STOCK_FULL"), consumes
 ## no ore and its cycle does not advance, so ore can accumulate (Stage 8->9 costs ore).
 ## ore_refined counts only ore actually consumed.
+## Per-product cap (PERF4-3, orch/AI4-3 refinery.fuel_burn 2026-10-24): a cycle produces only the
+## products whose stock is below the cap and consumes ore in proportion: the fuel share is
+## ore_in / 2 and the ammo share the rest, so with only fuel short a cycle costs half the ore and
+## credits fuel_out only (no more ammo piling up past the cap while fuel is short).
 static func _refineries(w: SimWorld) -> void:
 	var cfg: Dictionary = Content.rules().get("refinery", {})
 	if cfg.is_empty():
@@ -148,18 +152,28 @@ static func _refineries(w: SimWorld) -> void:
 		var status := ""
 		if int(f.power_use) > int(f.power_prod):
 			status = "LOW_POWER"
-		elif cap > 0 and int(f.stock.get("fuel", 0)) >= cap and int(f.stock.get("ammo", 0)) >= cap:
-			status = "STOCK_FULL"
-		elif int(f.stock.get("ore", 0)) < ore_in:
-			status = "NO_ORE"
 		else:
-			var acc := int(e.get("refine_acc", 0)) + 1
-			if acc >= period:
-				acc = 0
-				if w.spend(fid, {"ore": ore_in}, "refinery"):
-					f.stats.ore_refined = int(f.stats.get("ore_refined", 0)) + ore_in  # G3b gate counter (STG4)
-					w.credit(fid, {"fuel": int(cfg.get("fuel_out", 0)), "ammo": int(cfg.get("ammo_out", 0))}, "refinery")
-			e.refine_acc = acc
+			var fuel_low := cap <= 0 or int(f.stock.get("fuel", 0)) < cap
+			var ammo_low := cap <= 0 or int(f.stock.get("ammo", 0)) < cap
+			var fuel_share := ore_in / 2
+			var need := (fuel_share if fuel_low else 0) + ((ore_in - fuel_share) if ammo_low else 0)
+			if not fuel_low and not ammo_low:
+				status = "STOCK_FULL"
+			elif int(f.stock.get("ore", 0)) < need:
+				status = "NO_ORE"
+			else:
+				var acc := int(e.get("refine_acc", 0)) + 1
+				if acc >= period:
+					acc = 0
+					if need > 0 and w.spend(fid, {"ore": need}, "refinery"):
+						f.stats.ore_refined = int(f.stats.get("ore_refined", 0)) + need  # G3b gate counter (STG4)
+						var out := {}
+						if fuel_low:
+							out["fuel"] = int(cfg.get("fuel_out", 0))
+						if ammo_low:
+							out["ammo"] = int(cfg.get("ammo_out", 0))
+						w.credit(fid, out, "refinery")
+				e.refine_acc = acc
 		if String(e.status) != status:
 			e.status = status
 

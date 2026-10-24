@@ -129,7 +129,12 @@ static func tick(w: SimWorld) -> void:
 	var npos := PackedVector2Array()
 	var nteam := PackedInt32Array()
 	var nflags := PackedInt32Array()
-	var nidx := {}
+	# id -> index in this tick's RtsGrid (-1: not in it). A packed array over ids (one memset)
+	# instead of a Dictionary insert per unit (PERF4-3)
+	var nidx := PackedInt32Array()
+	if native:
+		nidx.resize(int(w.next_id) + 1)
+		nidx.fill(-1)
 	var teams := {}
 	for fid in w.factions:
 		teams[int(fid)] = int(w.factions[fid].get("team", fid))
@@ -158,14 +163,16 @@ static func tick(w: SimWorld) -> void:
 				g[key] = [e]
 			else:
 				cell.append(e)
-		if native and teams.has(o):
+		var tv = teams.get(o) if native else null
+		if tv != null:
 			var sv = _stats.get(e.def)
 			var s: Dictionary = sv if sv != null else stats(e)
 			var si := nids.size()
-			nidx[id] = si
+			if id < nidx.size():
+				nidx[id] = si
 			nids.append(id)
 			npos.append(p)
-			nteam.append(int(teams[o]))
+			nteam.append(int(tv))
 			nflags.append(2 if s.is_air else 1)
 			if (tick + id) % SCAN_EVERY == 0 and s.weapon != "" and not s.builder:
 				var ot = e.order.get("type", "idle")
@@ -377,7 +384,9 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var ng = w.cache.get("combat_ng")
 	if ng == null:
 		return find_target(w, e, radius, grid, blds)
-	var si = ng.idx.get(int(e.id))   # null for shooters outside the grid (towers): exact scan below
+	var nix: PackedInt32Array = ng.idx
+	var eid := int(e.id)
+	var si := nix[eid] if eid >= 0 and eid < nix.size() else -1   # -1: outside the grid (towers): exact scan below
 	var s := stats(e)
 	var aa: bool = s.aa
 	var fid := int(e.owner)
@@ -395,7 +404,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var rg = ng.grid
 	var cand := -1
 	var pv = ng.pre.get(int(e.id))
-	if si == null:
+	if si < 0:
 		cand = -2          # not in the grid: no nearest query, go straight to the exact scan
 	elif pv != null and is_equal_approx(float(pv.y), radius):
 		cand = int(pv.x)   # this tick's batched answer (same grid, same query)

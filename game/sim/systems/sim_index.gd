@@ -32,13 +32,14 @@ static func pt(label: String, t0: int) -> int:
 
 
 static func _empty(w: SimWorld) -> Dictionary:
-	return {"tick": w.tick, "next_id": int(w.next_id), "kinds": {}, "known": w.entities.size()}
+	return {"tick": w.tick, "next_id": int(w.next_id), "kinds": {}, "known": w.entities.size(), "uown": {}}
 
 
 ## Full rebuild from w.entities (one pass). Returns the index.
 static func rebuild(w: SimWorld) -> Dictionary:
 	var idx := _empty(w)
 	var kinds: Dictionary = idx.kinds
+	var uown: Dictionary = idx.uown
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		var k: String = e.kind
@@ -47,6 +48,12 @@ static func rebuild(w: SimWorld) -> Dictionary:
 			kinds[k] = [e]
 		else:
 			arr.append(e)
+		if k == "unit":
+			var ua = uown.get(e.owner)
+			if ua == null:
+				uown[e.owner] = [e]
+			else:
+				ua.append(e)
 	w.cache["sim_index"] = idx
 	return idx
 
@@ -70,8 +77,14 @@ static func get_index(w: SimWorld) -> Dictionary:
 				kinds[k] = [e]
 			else:
 				arr.append(e)
-			if k == "unit" and idx.has("full"):
-				idx.full.append(e)   # Tiers lists: new units are FULL (ascending id kept)
+			if k == "unit":
+				var ua = idx.uown.get(e.owner)
+				if ua == null:
+					idx.uown[e.owner] = [e]
+				else:
+					ua.append(e)
+				if idx.has("full"):
+					idx.full.append(e)   # Tiers lists: new units are FULL (ascending id kept)
 		idx.known = int(idx.known) + nid - from
 		idx.next_id = nid
 	idx.tick = w.tick
@@ -82,6 +95,11 @@ static func get_index(w: SimWorld) -> Dictionary:
 static func of(w: SimWorld, kind: String) -> Array:
 	var arr = get_index(w).kinds.get(kind)
 	return arr if arr != null else []
+
+
+## Units grouped by owner (G3b PERF4-3): {owner -> [unit dicts, ascending id]}, same liveness rule.
+static func units_by_owner(w: SimWorld) -> Dictionary:
+	return get_index(w).uown
 
 
 ## Still in the world (not destroyed since the index was built)?

@@ -17,6 +17,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5):
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
+const NEAR_MISS_NG := true   # G3b PERF4-3: near_miss reads w.cache.combat_ng (Combat then skips its GDScript grid)
 const COMPONENTS := ["mobility", "weapon", "sensors"]
 const FRONT_HALF := PI / 4.0          # front arc +-45 deg
 const REAR_HALF := PI / 4.0           # rear arc +-45 deg around the back
@@ -116,6 +117,20 @@ static func suppress(w: SimWorld, e: Dictionary, amount: float) -> void:
 ## Uses combat's per-tick unit grid when present (always during a sim tick); falls back to a scan.
 static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: float) -> void:
 	var r2 := NEAR_MISS_R * NEAR_MISS_R
+	# G3b PERF4-3 (NEAR_MISS_NG): with the native core live, Combat skips its GDScript unit grid and
+	# this reads the tick's RtsGrid instead (same FULL units). Candidates come from a slightly wider
+	# native query and pass the exact GDScript distance test below, so the set equals the grid path;
+	# each unit is suppressed at most once and independently, so the order does not matter.
+	var ng = w.cache.get("combat_ng")
+	if ng != null:
+		for cid in ng.grid.query_radius(at, NEAR_MISS_R + 0.05):
+			var e = w.entities.get(cid)
+			if e == null or not e.has("morale") or not w.is_enemy(shooter_owner, int(e.owner)):
+				continue
+			var p: Vector2 = e.pos
+			if p.distance_squared_to(at) <= r2:
+				suppress(w, e, amount)
+		return
 	var grid = w.cache.get("combat_grid")
 	if grid == null:
 		for e in SimIndex.of(w, "unit"):

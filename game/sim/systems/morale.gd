@@ -66,10 +66,13 @@ static func tick(w: SimWorld) -> void:
 	# unchanged (every unit on tick % UPDATE_EVERY == 0): per-unit staggering was tried and broke
 	# phase-dependent morale scenarios (test_g2_scenarios s4), so it was not kept.
 	var idx := Tiers.lists(w)
+	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	for e: Dictionary in (idx.full if tiers_on else idx.kinds.get("unit", [])):
 		if not e.has("morale") or not ents.has(int(e.id)):
 			continue
 		_step_unit(w, e, p, ctx)
+	if SimIndex.profiling:
+		t0 = SimIndex.pt("mor.full", t0)
 	if not tiers_on:
 		return
 	# REDUCED units: every 2nd update ((id + slot) % 2 == 0, as before) with 2x dt, read from the
@@ -98,7 +101,10 @@ static func _step_unit(w: SimWorld, e: Dictionary, pu: Dictionary, ctx: Array) -
 		cov = true
 	else:
 		if ctx[0] == null:
+			var tc := Time.get_ticks_usec() if SimIndex.profiling else 0
 			ctx[0] = _cover_index(w)
+			if SimIndex.profiling:
+				SimIndex.pt("mor.cover_idx", tc)
 		cov = _near_cover(ctx[0], pos)
 	e.in_cover = cov
 	# steady state (unsuppressed, full morale, not broken): nothing else can change
