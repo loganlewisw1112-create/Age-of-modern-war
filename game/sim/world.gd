@@ -101,6 +101,9 @@ var nav: Dictionary = {}          # owned by Movement (rebuild_nav)
 var cache: Dictionary = {}        # free-form per-system caches (spatial hash etc.)
 var native_enabled: bool = true   # G3b (N1-core): false forces GDScript movement/nav fallbacks; runtime only, not saved
 var tiers_enabled: bool = true    # G3b (PERF4): false = every unit FULL tier; runtime only, not saved
+var render_snap: Dictionary = {}  # G4 THREAD: latest render snapshot (runtime, never saved)
+var snap_request: Array = []      # G4 THREAD: ids whose full dicts go into render_snap.detail
+var snap_enabled: bool = false    # G4 THREAD: build render_snap at the end of step()
 
 
 # ================================================================ construction
@@ -271,6 +274,8 @@ func step() -> void:
 		event_log.append(ev)
 	if event_log.size() > EVENT_LOG_MAX:
 		event_log = event_log.slice(event_log.size() - EVENT_LOG_MAX)
+	if snap_enabled:
+		RenderSnap.build(self)   # G4 THREAD: built on the sim thread, read by the renderer/HUD
 
 
 ## G3b (PERF4): fidelity tier counts {full, reduced} for perf reports.
