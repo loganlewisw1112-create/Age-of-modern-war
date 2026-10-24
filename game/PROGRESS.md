@@ -35,10 +35,10 @@ Contracts: `docs/CONTRACTS_G3a.md`. Scaffold `48332f1`.
 4. **Perf:** `perf/PERF_REPORT_G3a_2026-10-23.md` (quiet machine).
    - Sim: no regression vs G2. At 512 units, 27.6 avg / 43.2 p95 ms (G2: 29.1 / 42.4). Cap stays 512.
    - Window fps with 3 sides: 60 / 42-52 / 10-21 at ~80 / ~160 / 250-400 units.
-   - **Known gap:** 3-side fps at 250+ units is well below 2-side (34-45 fps). The cause is not isolated.
+   - **Known gap:** large fights lag. A follow-up profile showed the cause is not the side count (3 sides cost +10% sim time). The limits are the GDScript sim (~65 µs per unit-tick, so 1,000 units = ~70 ms per tick) and per-unit sprite rendering (~12 ms per frame at 1,000), both on the main thread.
 
 Known gaps carried forward:
-- 3-side fps at 250+ units (above).
+- Large-fight lag (above). The owner has made scale the priority for the next slice.
 - First-launch playtest flake (above).
 - The Machine top bar still shows Fuel, though Machine units don't use fuel (cosmetic).
 - The packaged build excludes `docs/` (vision mockups are reference only, not shipped). `docs/vision/.gdignore` keeps Godot from importing them.

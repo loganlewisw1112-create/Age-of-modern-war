@@ -37,7 +37,14 @@ For comparison, the G2 report measured 45–53 fps at ~210 units and 21–24 fps
   - in two runs with the order reversed, the "3 sides is slower" result flipped.
   - In both runs, combat and movement were about 75% of tick cost, and fog, AI and supply were 1–2.5 ms each.
 - The two windowed runs were also not equal fights: more units were still alive in the 3-side run at the same tick, so more combat was happening.
-- **Next step:** measure each configuration in a separate process at a matched unit count. If the gap holds, profile the 3-side fight in the windowed build. The structural fix is still the G4 sim worker thread (rendering currently waits on the sim).
+- **Resolved later the same day (separate process per configuration, 200 ticks, `--spawn-test` fight):**
+  - 3 sides cost about 10% more sim time than 2: 37.9 vs 32.9 ms per tick at ~545 entities; 73.6 vs 69.0 at ~1,045.
+  - The windowed gap comes from the fight itself (more units still alive and fighting), not the side count.
+  - **Real limits:**
+    - The sim costs ~65 µs per unit per tick and scales linearly, with movement + combat ~75% of it. 1,000 units = ~70 ms per tick, over the 50 ms budget.
+    - Rendering costs ~12 ms of CPU per frame at 1,000 units even with the sim paused: 33–43 fps, one Sprite2D per unit.
+    - The sim runs on the main thread, so its cost lands directly on frame time.
+  - `bench.gd --g2 --sizes=1024`: 166.6 avg / 435 p95 ms per tick (a denser layout than the spawn test).
 
 ## Not measured / caveats
 - 1,000+ units.
