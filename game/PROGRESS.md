@@ -55,6 +55,12 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
 8. **Logistics truck "Auto" restock mode** (owner note, 2026-10-24): every nearby unit that needs restocking gets it automatically, one of two ways:
    - the units drive to the truck, restock and return to the fight;
    - or, with the truck placed in an area, the truck drives to them one by one.
+9. **UI facelift** (owner note, 2026-10-24): interface, controls, screen layout and functionality all get an upgrade.
+   - Everything on screen must FIT at all times, never cut off at the top, bottom or sides.
+   - A custom, unique military-style modern typeface designed for this game.
+10. **Medical auto mode + 2 new human buildings** (owner note, 2026-10-24):
+   - A med team or med vehicle placed in an active area with wounded troops picks the wounded up with its team.
+   - It evacuates them back to base, to a "Hospital" or a "Field Hospital", both new buildings for the human faction(s).
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
