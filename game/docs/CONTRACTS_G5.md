@@ -195,6 +195,7 @@ Until a fact is posted, callers use the stub (which returns a safe default). Cal
   - can `land_at` any open, flat, dry cell without trees or buildings;
   - each has a `home_pad` (buying needs a free pad);
   - rearm/refuel/repair at any friendly pad, forward strip or airfield. With engineers assigned it is automatic, and 50% faster.
+- **Landing zones (owner note, 2026-10-24):** VTOLs, gunships and helicopters land ANYWHERE with open ground big enough for that aircraft, OR at their pads/hangars/airfield. `Air.landing_ok` checks a clear square of `lz_size` (helicopters/lifters 2×2, heavy-lift and VTOLs 3×3): in bounds, no water/deep/cliff/forest/building, no landed aircraft. A too-small spot is rejected with "Not enough open ground to land".
 - **Jets:** sortie → strike → return → land → rearm (time by hangar level). They can't hover.
 - **VTOL Dropship:** air_low, Heavy hangar, `cargo: {vehicle: 2, foot: 8}`, Stage 9; heavy AA missiles + cannon; lands on any `land_at` cell or at a field.
 - **Interceptors and VTOLs** auto-engage enemy aircraft in range.

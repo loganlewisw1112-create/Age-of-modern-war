@@ -12,6 +12,7 @@ extends RefCounted
 ## map.bridge_cells / map.bridge_state keep describing the HOLD bridge (map.hold_bridge, default 0)
 ## so Hold-the-bridge, the HUD and older callers are unchanged.
 
+const HotState = preload("res://sim/hot_state.gd")  # G5 (CORE10K CR)
 const Movement = preload("res://sim/systems/movement.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 
@@ -99,6 +100,7 @@ static func on_destroyed(w: SimWorld, e: Dictionary, killer_owner: int) -> void:
 		var free := Movement.nearest_free_cell(w, cell, Movement.move_class(u))
 		if Movement.is_passable(w, free, Movement.move_class(u)) and Vector2(free - cell).length() <= NUDGE_RADIUS:
 			u.pos = Vector2(free) + Movement.CENTER
+			HotState.touch(w, int(u.id))  # G5 (CORE10K CR): direct pos write -> hot state
 		else:
 			drowned.append(int(id))
 	for id in drowned:
