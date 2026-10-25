@@ -1,0 +1,45 @@
+# g6_seaair: 14 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **a_supply_ship_a** - Supply Ship - Human A (Modern Military Power, olive) - Stage 8 - plate ground: water
+  - What it is: A container-and-fuel ship that resupplies nearby vessels on Auto, the way logistics trucks do on land.
+  - Strong vs: Keeps fleets at sea. Beaten by: Destroyers, strike jets (unarmed).
+- **b_supply_ship_b** - Fuel Tender - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: water
+  - What it is: Human B's riveted tanker barge with round fuel tanks and a smokestack. It is the same resupply role as the A Supply Ship.
+  - Strong vs: Keeps fleets at sea. Beaten by: Gunboats, bombers.
+- **m_charge_tender** - Charge Tender - Machine (Autonomous Network, graphite+panel+cyan) - Stage 8 - plate ground: water
+  - What it is: A Machine catamaran with glowing battery cells. It recharges nearby Machine boats and hover units at sea.
+  - Strong vs: Keeps the Machine navy running. Beaten by: Any warship.
+- **a_minesweeper** - Minesweeper - Human A (Modern Military Power, olive) - Stage 8 - plate ground: water
+  - What it is: A small ship that trails a sweep cable and clears sea mines along its wake, opening lanes for landings.
+  - Strong vs: Naval minefields. Beaten by: Anything armed.
+- **b_mine_barge** - Mine Barge - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: water
+  - What it is: A rail-decked barge that drops contact mines behind it, sealing a channel or estuary.
+  - Strong vs: Landing craft, warships in channels. Beaten by: Minesweeper, air.
+- **a_hovercraft** - Hovercraft - Human A (Modern Military Power, olive) - Stage 9 - plate ground: sand
+  - What it is: An air-cushion landing craft that carries one tank and crosses water, beach and flat ground without stopping to unload.
+  - Strong vs: Fast landings anywhere flat. Beaten by: Any armed boat, AT on the beach.
+- **b_aa_barge** - AA Barge - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 9 - plate ground: water
+  - What it is: A towed flat barge with three flak mounts. It gives Human B fleet air defence, since B has no AA ship today.
+  - Strong vs: Helicopters, bombers over water. Beaten by: Warships, subs.
+- **m_lance_cruiser** - Lance Cruiser - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: water
+  - What it is: The Machine's first warship: a sharp-hulled cruiser with a centreline rail lance for long-range shore and ship strikes.
+  - Strong vs: Ships, coastal batteries. Beaten by: Subs, strike jets, Destroyer groups.
+- **a_carrier** - Aircraft Carrier - Human A (G6 headline) - Stage 9 - plate ground: water
+  - What it is: G6 headline, already noted in PLAN_G5 D20. A floating airfield: the hangar system goes to sea, with jets launching and recovering on deck.
+  - Strong vs: Projects air power anywhere on water. Beaten by: Submarines, cruise missiles, strike packages.
+- **a_submarine** - Attack Submarine - Human A (G6 headline) - Stage 9 - plate ground: water
+  - What it is: G6 headline. Submerged boats are invisible without sonar (destroyers, frigates) and hunt ships and carriers.
+  - Strong vs: Warships, carriers, supply ships. Beaten by: Destroyers, sonar planes, minefields.
+- **b_recon_plane** - Recon Plane - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 9 - plate ground: grass
+  - What it is: A rusty high-wing prop plane with a camera pod. It fills Human B's empty Stage 9 air slot: wide reveal sorties, no weapons.
+  - Strong vs: Fog, hidden artillery. Beaten by: Interceptors, AA.
+- **a_awacs** - AWACS - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A large radar plane with a rotodome. It reveals all aircraft in a huge radius and sharpens friendly AA and SAM tracking.
+  - Strong vs: Air superiority, stealth. Beaten by: Interceptors (it must be escorted).
+- **a_airlift** - Airlift Transport - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A four-engine cargo plane for the "Airlift" order in vision image 01. It parachutes supply pallets or a light vehicle anywhere in sight.
+  - Strong vs: Cut-off units, forward strips. Beaten by: AA, interceptors.
+- **m_stealth_drone** - Stealth Strike Drone - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: grass
+  - What it is: A flying-wing strike drone that radar can't see. AA only engages it once it fires or flies very close.
+  - Strong vs: Radar, SAM sites, AA nets. Beaten by: Interceptors with AWACS, Pulse Spire Mk II.

@@ -1,0 +1,783 @@
+<title>G6 Arsenal Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&display=swap">
+<style>
+@font-face{font-family:"RTS Mil";src:url(data:font/ttf;base64,__FONT_R__) format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"RTS Mil";src:url(data:font/ttf;base64,__FONT_B__) format("truetype");font-weight:700;font-display:swap}
+/* Layout: a field manual. Stencil headings in the game's own RTS Mil face, pixel mockup plates on terrain,
+   faction-coded chips, sticky filter bar; sections follow the asset categories. */
+:root{
+  --bg:#e6e3d6; --panel:#efede3; --ink:#1d2016; --muted:#5c5e50; --rule:#c7c3b2; --plate:#22251a;
+  --accent:#b07d1c; --accent-ink:#ffffff;
+  --fa:#5c6a3b; --fb:#a3542a; --fm:#1f8f86; --fs:#8a6a14; --fx:#9a3a2e; --g6:#5a4c8a;
+  --display:"RTS Mil","Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"Barlow","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15170f; --panel:#1d2016; --ink:#e3e1d2; --muted:#9c9d8a; --rule:#33362a; --plate:#0d0f09;
+  --accent:#d9a03a; --accent-ink:#15170f;
+  --fa:#9aad62; --fb:#e07a3e; --fm:#52e6d8; --fs:#d9a03a; --fx:#e06a58; --g6:#a596e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15170f; --panel:#1d2016; --ink:#e3e1d2; --muted:#9c9d8a; --rule:#33362a; --plate:#0d0f09;
+  --accent:#d9a03a; --accent-ink:#15170f;
+  --fa:#9aad62; --fb:#e07a3e; --fm:#52e6d8; --fs:#d9a03a; --fx:#e06a58; --g6:#a596e6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1200px;margin:0 auto}
+h1,h2,h3,.disp{font-family:var(--display);font-weight:700;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(34px,6vw,58px);line-height:1;margin:0}
+h2{font-size:26px;margin:0}
+h3{font-size:18px;margin:0;line-height:1.2}
+p{margin:0;max-width:68ch}
+.lab{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+header.top{padding-block:40px 24px;display:grid;gap:14px;border-bottom:2px solid var(--ink)}
+.top .meta{display:flex;flex-wrap:wrap;gap:8px 20px}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-size:12px;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 8px;border:1.5px solid currentColor;border-radius:2px;white-space:nowrap;line-height:1.5}
+.chip i{width:8px;height:8px;background:currentColor;display:inline-block}
+.f-A{color:var(--fa)} .f-B{color:var(--fb)} .f-M{color:var(--fm)} .f-S{color:var(--fs)} .f-X{color:var(--fx)} .f-G{color:var(--g6)}
+.chip.stage{color:var(--muted)}
+.chip.gap{color:var(--accent);border-style:dashed}
+section{padding-block:36px 8px;display:grid;gap:18px}
+.sechead{display:grid;gap:6px;border-top:1px solid var(--rule);padding-top:22px}
+.sechead p{color:var(--muted)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar button{font-family:var(--display);font-size:13px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--ink);
+  border:1.5px solid var(--rule);padding:5px 12px;cursor:pointer;border-radius:2px}
+.bar button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bar button:focus-visible,.nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar .count{margin-left:auto;font-family:var(--display);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.nav{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--display);font-size:13px}
+.nav a{color:var(--ink);text-decoration:none;border-bottom:1.5px solid var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.card{display:grid;grid-template-rows:auto 1fr;background:var(--panel);border:1px solid var(--rule);min-width:0}
+.plate{background:var(--plate);padding:6px;position:relative}
+.plate canvas{display:block;width:100%;height:auto;aspect-ratio:128/88;image-rendering:pixelated;max-width:100%}
+.plate .id{position:absolute;left:10px;top:9px;font-family:var(--display);font-size:11px;color:#e3e1d2;background:rgba(13,15,9,.72);padding:1px 6px;letter-spacing:.06em}
+.body{padding:12px 14px 14px;display:grid;gap:8px;align-content:start;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.body .what{font-size:14px}
+.body dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:13px}
+.body dt{font-family:var(--display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.body dd{margin:0;min-width:0}
+.scene{background:var(--panel);border:1px solid var(--rule);display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+.scene .plate canvas{aspect-ratio:256/128}
+.scene .body{padding:18px}
+@media (max-width:760px){.scene{grid-template-columns:1fr}}
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.spr{background:var(--plate);display:grid;gap:4px;padding:6px 6px 5px;justify-items:center;min-width:0}
+.spr canvas{width:100%;max-width:96px;height:auto;image-rendering:pixelated}
+.spr span{font-family:var(--display);font-size:10px;color:#c9c7b8;text-align:center;line-height:1.2;overflow-wrap:anywhere}
+.pending{display:flex;flex-wrap:wrap;gap:8px}
+.pending .chip{color:var(--muted);border-style:dotted}
+.counts{display:grid;gap:10px}
+.crow{display:grid;grid-template-columns:110px minmax(0,1fr) 44px;gap:10px;align-items:center;font-family:var(--display);font-size:13px}
+.track{display:flex;height:18px;background:var(--rule);min-width:0}
+.track span{display:block;height:100%}
+.crow b{font-variant-numeric:tabular-nums;text-align:right}
+.ckey{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.ckey i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px}
+.gaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.gapc{border:1.5px dashed var(--accent);padding:12px 14px;display:grid;gap:6px;min-width:0}
+.gapc .disp{font-size:15px}
+.gapc p{font-size:14px;color:var(--muted)}
+.hud{background:#151710;border:1px solid #33362a;color:#e3e1d2;font-family:var(--display);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0}
+@media (max-width:760px){.hud{grid-template-columns:1fr}}
+.hud .pane{padding:14px;display:grid;gap:10px;align-content:start;border-right:1px solid #33362a;min-width:0}
+.hud .tabs{display:flex;flex-wrap:wrap;gap:4px}
+.hud .tabs span{padding:3px 10px;border:1px solid #4a4d3e;font-size:12px;letter-spacing:.08em}
+.hud .tabs span.on{background:#d9a03a;color:#15170f;border-color:#d9a03a}
+.hud .icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.hud .ic{border:1px solid #4a4d3e;background:#1d2016;padding:4px;display:grid;gap:2px;min-width:0}
+.hud .ic canvas{width:100%;height:auto;image-rendering:pixelated;aspect-ratio:128/88}
+.hud .ic small{font-size:10px;display:flex;justify-content:space-between;gap:4px;color:#c9c7b8}
+.hud .ic small b{color:#d9a03a;font-weight:700}
+.hud .sel{display:grid;gap:8px}
+.hud .row{display:flex;flex-wrap:wrap;gap:6px}
+.hud .btn{padding:5px 10px;border:1px solid #6a6c5a;font-size:12px;letter-spacing:.06em}
+.hud .btn.pri{background:#d9a03a;color:#15170f;border-color:#d9a03a;font-weight:700}
+.hud .stat{font-size:12px;color:#c9c7b8;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.hud .meter{height:6px;background:#33362a;position:relative}
+.hud .meter span{position:absolute;inset:0 auto 0 0;background:#9aad62}
+.top10{display:grid;gap:8px;counter-reset:t}
+.t10{display:grid;grid-template-columns:34px 112px minmax(0,1fr);gap:12px;align-items:center;border-bottom:1px solid var(--rule);padding-block:8px}
+.t10 .n{font-family:var(--display);font-size:24px;color:var(--accent);font-variant-numeric:tabular-nums}
+.t10 canvas{width:112px;height:auto;aspect-ratio:128/88;image-rendering:pixelated;background:var(--plate)}
+.t10 .disp{font-size:16px}
+.t10 p{font-size:14px;color:var(--muted)}
+@media (max-width:480px){.t10{grid-template-columns:28px 84px minmax(0,1fr)}.t10 canvas{width:84px}}
+.note{font-size:13px;color:var(--muted)}
+footer{border-top:2px solid var(--ink);margin-top:40px;padding-top:16px;display:grid;gap:6px}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="lab">RTS: Age of Modern War · Proposal board · drafted 2026-10-24</div>
+  <h1>G6 Arsenal Concepts</h1>
+  <p>Drafted mockups for every proposed unit, turret, fortification, drone, vehicle, aircraft, ship and building after the G5 "Full Spectrum" slice. These are concept plates drawn in the game's own sprite style and faction colors. They are not in-game art, and none of this is in the repo yet.</p>
+  <div class="meta">
+    <div class="legend">
+      <span class="chip f-A"><i></i>Human A · Modern</span>
+      <span class="chip f-B"><i></i>Human B · Industrial</span>
+      <span class="chip f-M"><i></i>Machine · Autonomous</span>
+      <span class="chip f-S"><i></i>Shared (all factions)</span>
+      <span class="chip f-X"><i></i>New 4th faction</span>
+      <span class="chip f-G"><i></i>G6 headline</span>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a href="#now">On the table now</a><a href="#gaps">Gaps</a><a href="#turret">Turrets</a><a href="#fort">Fortifications</a>
+    <a href="#drone">Drones</a><a href="#vehicle">Vehicles</a><a href="#infantry">Infantry</a><a href="#air">Air</a>
+    <a href="#naval">Naval</a><a href="#building">Buildings</a><a href="#horizon">Horizon</a><a href="#scenes">Scenes</a>
+    <a href="#hud">HUD mockup</a><a href="#top10">Top 10</a>
+  </nav>
+</header>
+
+<section id="now">
+  <div class="sechead">
+    <div class="lab">Section 1 · Active slice</div>
+    <h2>On the table now: G5 "Full Spectrum"</h2>
+    <p>These are the real G5 sprite sheets from <code>assets/art/g5_units</code>, which the art agents have already produced. Air units, ships and the new buildings are still being drawn, so they appear as names only.</p>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="pending" aria-label="Art still in progress">
+    <span class="lab" style="align-self:center">Art in progress:</span>
+    <span class="chip">Attack Helicopter</span><span class="chip">Transport Gunship</span><span class="chip">Strike Jet</span><span class="chip">Interceptor</span><span class="chip">VTOL Dropship ×2</span><span class="chip">Armored Gunship</span><span class="chip">Heavy-Lift</span><span class="chip">Bomber</span><span class="chip">Drone Carrier</span><span class="chip">Lifter Drone</span><span class="chip">Interceptor Swarm</span><span class="chip">Micro Drone</span><span class="chip">9 ships</span><span class="chip">Airfield set ×2</span><span class="chip">Launch Rail + Bay</span><span class="chip">Shipyards, piers, batteries ×3</span><span class="chip">Hospitals ×4</span>
+  </div>
+  <div class="counts" aria-label="New G5 content per faction">
+    <div class="lab">New content G5 adds, per faction (from content/g5/*.json; launched drones not counted)</div>
+    <div id="counts"></div>
+    <div class="ckey"><span><i style="background:var(--fa)"></i>Ground units</span><span><i style="background:var(--fs)"></i>Aircraft</span><span><i style="background:var(--fm)"></i>Ships</span><span><i style="background:var(--muted)"></i>Buildings</span></div>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="sechead">
+    <div class="lab">Section 2 · Why these proposals</div>
+    <h2>Six gaps after G5</h2>
+    <p>Each proposal card is tagged with the gap it closes (G1 to G6).</p>
+  </div>
+  <div class="gaps">
+    <div class="gapc"><span class="disp">G1 · Machine falls behind</span><p>1 new ground unit vs 15 for the humans; no warship; no new infantry tier.</p></div>
+    <div class="gapc"><span class="disp">G2 · Human A has no artillery</span><p>Its artillery role slot is empty until Guided Artillery at Stage 9. Only the Mortar Team covers it.</p></div>
+    <div class="gapc"><span class="disp">G3 · Human B recon and air holes</span><p>Its recon role is empty, and so is its Stage 9 air role.</p></div>
+    <div class="gapc"><span class="disp">G4 · Thin defense</span><p>One tower, one wall tower and one coastal battery each. No AT, AA or artillery emplacements, no mines. Cover comes only from hills.</p></div>
+    <div class="gapc"><span class="disp">G5 · No supply ship</span><p>The naval rules say ships can restock "from a supply ship", but no such unit exists in naval.json.</p></div>
+    <div class="gapc"><span class="disp">G6 · No counter-drone layer</span><p>Drones are on every side now. Only the EMP drone and the SPAAG answer them.</p></div>
+  </div>
+</section>
+
+<div class="bar" role="toolbar" aria-label="Filter by faction">
+  <button type="button" id="f-all" data-f="all" aria-pressed="true">All</button>
+  <button type="button" id="f-A" data-f="A" aria-pressed="false">Human A</button>
+  <button type="button" id="f-B" data-f="B" aria-pressed="false">Human B</button>
+  <button type="button" id="f-M" data-f="M" aria-pressed="false">Machine</button>
+  <button type="button" id="f-S" data-f="S" aria-pressed="false">Shared</button>
+  <button type="button" id="f-X" data-f="X" aria-pressed="false">4th faction</button>
+  <span class="count" id="count"></span>
+</div>
+
+<div id="cats"></div>
+
+<section id="scenes">
+  <div class="sechead">
+    <div class="lab">Section 12 · Where this can go</div>
+    <h2>Four directions, drawn as battle scenes</h2>
+    <p>Each scene combines proposals from the plates above into a single slice pitch.</p>
+  </div>
+  <div id="scenelist" style="display:grid;gap:18px"></div>
+</section>
+
+<section id="hud">
+  <div class="sechead">
+    <div class="lab">Section 13 · Interface draft</div>
+    <h2>HUD mockup: the new Fortify tab and EOD Sappers</h2>
+    <p>This shows how the defensive-depth proposals would surface in the build panel and the selected-unit card, set in RTS Mil. Costs are placeholders for layout only, not balance numbers.</p>
+  </div>
+  <div class="hud">
+    <div class="pane">
+      <div class="tabs"><span>BUILD</span><span class="on">FORTIFY</span><span>DEFENSE</span><span>SUPPORT</span></div>
+      <div class="icons" id="hudicons"></div>
+      <div style="font-size:12px;color:#c9c7b8">Drag to paint a line · Shift-drag for a minefield area · R rotates</div>
+    </div>
+    <div class="pane sel">
+      <div style="display:flex;gap:10px;align-items:center"><canvas id="hudsel" style="width:96px;height:auto;aspect-ratio:128/88;image-rendering:pixelated;background:#0d0f09"></canvas>
+        <div><div style="font-size:16px;font-weight:700">EOD SAPPERS ×2</div><div style="font-size:12px;color:#c9c7b8">Human A · Engineer · Stage 8</div></div></div>
+      <div class="stat"><span>HP</span><div class="meter"><span style="width:84%"></span></div><span>Kits</span><div class="meter"><span style="width:60%;background:#d9a03a"></span></div></div>
+      <div class="row"><span class="btn pri">SWEEP AREA</span><span class="btn">MARK SAFE LANE</span><span class="btn">CLEAR WIRE</span><span class="btn">DEFUSE</span></div>
+      <div style="font-size:12px;color:#c9c7b8">Sweeping: 3 AT mines found · lane 40% clear</div>
+    </div>
+  </div>
+</section>
+
+<section id="top10">
+  <div class="sechead">
+    <div class="lab">Section 14 · Recommendation</div>
+    <h2>Top 10 for the next slice</h2>
+    <p>Recommended next slice: <b>G6 "Machine parity + defensive depth"</b>. It closes all six gaps and matches the stronghold wall-defense vision images (02 to 04).</p>
+  </div>
+  <div class="top10" id="t10"></div>
+</section>
+
+<footer>
+  <div class="lab">Provenance</div>
+  <p class="note">The roster and gap counts were read from <code>game/content/*.json</code>, <code>content/g4</code>, <code>content/g5</code> and <code>factions.json</code> on 2026-10-24. Sprites in Section 1 are the real G5 sheets. Every other plate is a hand-drafted concept, drawn by code in this page. Stage suggestions are proposals. No stats, costs or balance are implied.</p>
+</footer>
+</div>
+
+<script>
+"use strict";
+const SPRITES = __SPRITES__;
+const W=128,H=88;
+let X=null, R=Math.random, SCENE=false, MANS=1;
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function hash(str){let h=2166136261;for(const c of str){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+const PAL={
+ A:{o:'#20251a',d:'#394226',m:'#5c6a3b',l:'#7d8c51',hi:'#a3b073',acc:'#cbb98a',gl:'#9fd0e0'},
+ B:{o:'#1c1510',d:'#3f2c1d',m:'#6a4730',l:'#8e6443',hi:'#b5855c',acc:'#e07a2e',gl:'#ffb050'},
+ M:{o:'#101316',d:'#2a2f34',m:'#454c53',l:'#69737c',hi:'#97a2ab',acc:'#52e6d8',gl:'#bffcf6'},
+ X:{o:'#1d1a14',d:'#4a4030',m:'#7a6a4a',l:'#9c8a62',hi:'#c4b285',acc:'#c0503c',gl:'#e0c080'},
+ C:{o:'#2a2925',d:'#5f5d55',m:'#85827a',l:'#a5a297',hi:'#c4c1b5',acc:'#d39a2c',gl:'#ffffff'},
+ S:{o:'#3a3121',d:'#7b6a48',m:'#a08c62',l:'#bfaa7c',hi:'#d6c497',acc:'#8a7a50',gl:'#fff'},
+ T:{o:'#121211',d:'#262624',m:'#3b3a37',l:'#5b5954',hi:'#7b7973',acc:'#999',gl:'#ddd'},
+ W:{o:'#2a1d10',d:'#4f3820',m:'#6b5030',l:'#8a6a42',hi:'#a8865a',acc:'#c9a070',gl:'#fff'}
+};
+const GR={grass:['#4b5631','#56623a','#424c2b'],dirt:['#6a5a40','#76664a','#5d4f37'],sand:['#a38f66','#b09c72','#94815a'],
+ conc:['#6f6d66','#7a7870','#64625b'],water:['#28495a','#2f5568','#223f4e'],mud:['#4e4434','#584d3b','#463d2e'],
+ rubble:['#5b5850','#67645b','#4f4c45'],sky:['#4b5631','#56623a','#424c2b']};
+const rect=(x,y,w,h,c)=>{X.fillStyle=c;X.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+const px=(x,y,c)=>rect(x,y,1,1,c);
+const ell=(cx,cy,rx,ry,c)=>{X.fillStyle=c;X.beginPath();X.ellipse(cx,cy,Math.max(.5,rx),Math.max(.5,ry),0,0,Math.PI*2);X.fill();};
+const ring=(cx,cy,rx,ry,c,w=1,dash)=>{X.strokeStyle=c;X.lineWidth=w;if(dash)X.setLineDash(dash);X.beginPath();X.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);X.stroke();X.setLineDash([]);};
+const arc=(cx,cy,r,a0,a1,c,w=1)=>{X.strokeStyle=c;X.lineWidth=w;X.beginPath();X.arc(cx,cy,r,a0,a1);X.stroke();};
+const poly=(p,c)=>{X.fillStyle=c;X.beginPath();X.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)X.lineTo(p[i],p[i+1]);X.closePath();X.fill();};
+const ln=(x1,y1,x2,y2,c,w=1,dash)=>{X.strokeStyle=c;X.lineWidth=w;X.lineCap='butt';if(dash)X.setLineDash(dash);X.beginPath();X.moveTo(x1,y1);X.lineTo(x2,y2);X.stroke();X.setLineDash([]);};
+const sh=(cx,cy,rx,ry)=>ell(cx,cy,rx,ry,'rgba(0,0,0,.32)');
+function ground(t,w=W,h=H){const g=GR[t];rect(0,0,w,h,g[0]);for(let i=0;i<w*h/8;i++)px(R()*w|0,R()*h|0,g[1+(R()*2|0)]);
+ if(t==='water')for(let i=0;i<w*h/70;i++){const x=R()*w|0,y=R()*h|0;rect(x,y,3,1,'#4c788a');}}
+function coast(split,a='sand',b='water',w=W,h=H){if(SCENE)return;ground(a,w,h);const g=GR[b];X.save();X.beginPath();X.moveTo(0,0);
+ for(let x=0;x<=w;x+=4)X.lineTo(x,split(x));X.lineTo(w,h);X.lineTo(0,h);X.closePath();X.clip();ground(b,w,h);X.restore();
+ for(let x=0;x<w;x+=2){const y=split(x);rect(x,y-1,2,1,'#d8d3bd');if(R()<.5)rect(x,y+1,2,1,'#7fa6b4');}}
+function river(y0,y1,w=W){if(SCENE&&w===W)return;rect(0,y0,w,y1-y0,GR.water[0]);for(let i=0;i<w*(y1-y0)/40;i++)rect(R()*w|0,y0+R()*(y1-y0)|0,3,1,'#4c788a');rect(0,y0,w,1,'#8f8466');rect(0,y1-1,w,1,'#8f8466');}
+function blk(x,gb,w,d,h,P,tc,fc){const t=gb-h-d;rect(x-1,t-1,w+2,d+h+2,P.o);rect(x,t,w,d,tc||P.l);rect(x,gb-h,w,h,fc||P.m);rect(x,t,w,1,P.hi);rect(x,gb-h,w,1,P.d);return t;}
+function gun(x1,y1,x2,y2,P,w=3){ln(x1,y1,x2,y2,P.o,w);ln(x1,y1,x2,y2,P.l,Math.max(1,w-2));}
+function trk(x,gb,L,D,P,hh=5){const T=PAL.T;blk(x,gb,L,D,4,T,T.m,T.d);for(let i=x+1;i<x+L-1;i+=3)px(i,gb-2,T.hi);
+ for(let i=x+3;i<x+L-2;i+=5)ell(i,gb-1.5,1.6,1.6,T.l);return blk(x+1,gb-3,L-2,D-1,hh,P);}
+function whl(x,gb,L,D,P,n,hh=6){const t=blk(x,gb-3,L,D,hh,P);for(let i=0;i<n;i++){const wx=x+4+i*(L-8)/Math.max(1,n-1);ell(wx,gb-2,2.8,2.8,'#141412');px(wx,gb-2,'#666');}return t;}
+function tur(cx,cy,rx,ry,h,P){ell(cx,cy+h,rx+1,ry+1,P.o);rect(cx-rx,cy,rx*2,h,P.m);ell(cx,cy+h,rx,ry,P.m);ell(cx,cy,rx+1,ry+1,P.o);ell(cx,cy,rx,ry,P.l);ell(cx-rx*.3,cy-ry*.3,rx*.45,ry*.4,P.hi);}
+function man(x,gb,P,o={}){if(o.sh!==false)ell(x,gb,3.2,1.3,'rgba(0,0,0,.35)');const s=o.s||MANS;
+ rect(x-1.5*s,gb-3*s,1*s,3*s,P.d);rect(x+.5*s,gb-3*s,1*s,3*s,P.d);rect(x-2*s,gb-7*s,4*s,4*s,o.body||P.m);rect(x-2*s,gb-7*s,4*s,1,o.body?o.body:P.l);
+ rect(x-1*s,gb-9*s,2.5*s,2*s,o.skin||'#c09a76');rect(x-2*s,gb-10*s,4*s,1.6*s,o.helm||P.d);
+ if(o.pack)rect(x-3.2*s,gb-7*s,1.6*s,3.5*s,o.pack);
+ if(o.gun!==false&&!o.up)ln(x+1,gb-5*s,x+5*s,gb-6*s,'#1b1b19',1);
+ if(o.up)ln(x+1,gb-6*s,x+4*s,gb-11*s,'#1b1b19',1.4);
+ if(o.tube)ln(x-2*s,gb-8.5*s,x+6*s,gb-11.5*s,o.tube,2.2);
+ if(o.ant)ln(x-3*s,gb-7*s,x-4*s,gb-17*s,'#1b1b19',1);}
+function head(x,y,P){rect(x-2,y-2,4,2,P.d);rect(x-1,y,2.5,1.5,'#c09a76');}
+function bags(x,y,n,step=7,P=PAL.S){for(let i=0;i<n;i++){ell(x+i*step,y,step*.6,2.4,P.o);ell(x+i*step,y-.5,step*.55,2,P.l);ell(x+i*step-1,y-1.2,step*.3,.8,P.hi);}}
+function bagring(cx,cy,rx,ry,front,P=PAL.S){const n=18;for(let i=0;i<n;i++){const a=i/n*Math.PI*2,s=Math.sin(a);if(front?s<0:s>=0)continue;
+ const x=cx+Math.cos(a)*rx,y=cy-s*ry;ell(x,y,4.5,2.4,P.o);ell(x,y-.5,4,2,P.l);}}
+function glo(x,y,r=3,c='82,230,216'){ell(x,y,r*2,r*2,`rgba(${c},.14)`);ell(x,y,r,r,`rgba(${c},.35)`);ell(x,y,Math.max(1,r*.4),Math.max(1,r*.4),'#d6fffa');}
+function puff(x,y,r,a=.6,c='215,212,200'){ell(x,y,r,r*.85,`rgba(${c},${a})`);}
+function trail(x1,y1,x2,y2,n=14){for(let i=0;i<n;i++){const t=i/(n-1);puff(x1+(x2-x1)*t,y1+(y2-y1)*t,2.6-1.6*t,.15+.45*t);}}
+function missile(x,y,ang=-.4){X.save();X.translate(x,y);X.rotate(ang);rect(-3,-1,7,2,'#d9d6c8');px(4,-1,'#b8402e');rect(-5,-1,2,2,'#ffb040');X.restore();}
+function flash(x,y,r=3){ell(x,y,r*1.6,r*1.2,'rgba(255,190,80,.35)');ell(x,y,r,r*.8,'#ffd27a');ell(x,y,r*.4,r*.4,'#fff6d8');}
+function zig(x1,y1,x2,y2,c='#bffcf6',n=7){X.strokeStyle='rgba(82,230,216,.35)';X.lineWidth=3;X.beginPath();X.moveTo(x1,y1);const p=[];
+ for(let i=1;i<n;i++){const t=i/n;p.push([x1+(x2-x1)*t+(R()-.5)*7,y1+(y2-y1)*t+(R()-.5)*7]);}
+ p.forEach(q=>X.lineTo(q[0],q[1]));X.lineTo(x2,y2);X.stroke();X.strokeStyle=c;X.lineWidth=1;X.beginPath();X.moveTo(x1,y1);p.forEach(q=>X.lineTo(q[0],q[1]));X.lineTo(x2,y2);X.stroke();}
+function rivets(x,y,w,step=4,c='#2a1d12'){for(let i=x+1;i<x+w-1;i+=step)px(i,y,c);}
+function drone(x,y,P,s=1){ln(x-4*s,y-2*s,x+4*s,y+2*s,P.o,1.4);ln(x-4*s,y+2*s,x+4*s,y-2*s,P.o,1.4);rect(x-1.5*s,y-1*s,3*s,2*s,P.l);
+ for(const [a,b] of [[-4,-2],[4,2],[-4,2],[4,-2]])ring(x+a*s,y+b*s,1.8*s,.8*s,'rgba(230,230,220,.55)');px(x,y,P.gl||P.acc);}
+function rotor(cx,cy,r){ring(cx,cy,r,r*.42,'rgba(230,228,215,.45)',1);ln(cx-r,cy,cx+r,cy,'rgba(230,228,215,.25)',1);}
+function wreck(x,gb,L,D){blk(x,gb,L,D,6,{o:'#0e0e0d',d:'#1f1d1a',m:'#2c2925',l:'#3a3631',hi:'#4a453e'});puff(x+L*.6,gb-16,4,.4,'60,58,54');puff(x+L*.7,gb-22,5,.3,'60,58,54');}
+function sign(x,gb){ln(x,gb,x,gb-9,'#3a2e1d',1.4);poly([x-4,gb-9,x+4,gb-9,x,gb-15],'#b8402e');poly([x-2.4,gb-10,x+2.4,gb-10,x,gb-13.2],'#e8e2cc');}
+function hedge(x,gb){const c=PAL.T;ln(x-4,gb-7,x+4,gb,c.o,2.4);ln(x+4,gb-7,x-4,gb,c.o,2.4);ln(x-4,gb-7,x+4,gb,c.l,1);ln(x+4,gb-7,x-4,gb,c.l,1);ln(x,gb-8,x,gb,c.m,1.6);}
+function tooth(x,gb){poly([x-4,gb,x+4,gb,x+2,gb-6,x-2,gb-6],PAL.C.m);poly([x-2,gb-6,x+2,gb-6,x+1,gb-8,x-1,gb-8],PAL.C.hi);rect(x-4,gb-1,8,1,PAL.C.o);}
+function coil(x,y,len){for(let i=0;i<len;i+=3){ring(x+i,y,2.6,2,'rgba(170,170,160,.9)',1);}}
+function plane(cx,cy,L,span,P,o={}){/* top-down-ish aircraft, nose right */
+ sh(cx+(o.shx||0),cy+(o.alt||26),L*.45,span*.18);
+ poly([cx-L*.15,cy,cx+L*.12,cy-span*.5,cx+L*.2,cy-span*.5,cx+L*.1,cy,cx+L*.2,cy+span*.5,cx+L*.12,cy+span*.5],P.o);
+ poly([cx-L*.13,cy,cx+L*.12,cy-span*.46,cx+L*.17,cy-span*.46,cx+L*.08,cy,cx+L*.17,cy+span*.46,cx+L*.12,cy+span*.46],P.m);
+ poly([cx-L*.5,cy,cx-L*.42,cy-span*.2,cx-L*.36,cy-span*.2,cx-L*.38,cy,cx-L*.36,cy+span*.2,cx-L*.42,cy+span*.2],P.m);
+ ell(cx,cy,L*.5,Math.max(2,span*.07),P.o);ell(cx,cy,L*.48,Math.max(1.4,span*.055),P.l);ell(cx+L*.32,cy-0.5,L*.07,1,P.gl||'#9fd0e0');}
+
+/* ----------------------------- the proposals ----------------------------- */
+const CATS=[
+ {k:'turret',n:'Turrets and emplacements',p:'Fixed defenses, one per job per faction: anti-tank, anti-air, counter-drone, artillery, and a hidden or garrison piece.'},
+ {k:'fort',n:'Walls and field fortifications',p:'The vision images show layered strongholds. Infantry can build these in the field, so the battlefield gets cover beyond hills.'},
+ {k:'drone',n:'Drones and counter-drone',p:'This builds on the G5 Drone Team. It adds persistent recon, launcher vehicles, drone production and a real counter-drone answer.'},
+ {k:'vehicle',n:'Ground vehicles',p:'Artillery for Human A, recon and a super-heavy for Human B, and a full late-game ladder for the Machine.'},
+ {k:'infantry',n:'Infantry and squads',p:'Specialists that use the new systems: beaches, airdrops, mines, airstrikes and morale.'},
+ {k:'air',n:'Aircraft',p:'Fills Human B\'s empty Stage 9 air slot and adds the "Airlift" button from vision image 01.'},
+ {k:'naval',n:'Naval',p:'The missing supply ship, mine warfare, and the Machine\'s first warship. Carriers and submarines are the G6 headline items the G5 plan set aside.'},
+ {k:'building',n:'Buildings',p:'Unlock and support buildings that the units above need: radar for SAMs, forward bases, repair, rail.'},
+ {k:'horizon',n:'Horizon: new stages and a 4th faction',p:'Stages 1 to 6 and 10 to 13 have names but no units. A 4th faction would add an irregular playstyle.'}
+];
+const STAGE={6:'Stage 6',7:'Stage 7',8:'Stage 8',9:'Stage 9',10:'Stage 10'};
+const I=[];
+function add(o){I.push(o);}
+
+/* ===== TURRETS ===== */
+add({id:'atgm_bunker',f:'A',c:'turret',n:'ATGM Bunker',st:8,gap:['G4'],g:'grass',
+ w:'A low concrete bunker with a roof-mounted guided-missile launcher. Long range, slow reload, top-attack hits on armor.',b:'Tanks and heavy vehicles',k:'Artillery, infantry assault, EMP',
+ d(){sh(64,67,36,7);blk(38,66,52,14,9,PAL.C);rect(46,59,36,2,'#14130f');bags(36,68,8,8);blk(58,50,14,7,4,PAL.A);gun(62,43,76,36,PAL.A);gun(64,46,78,39,PAL.A);trail(80,35,110,19);missile(114,17);}});
+add({id:'sam_site',f:'A',c:'turret',n:'SAM Site',st:9,gap:['G4','G6'],g:'grass',
+ w:'Four-canister launcher on a pad. It reaches high-flying jets, which today only AA vehicles touch. It needs a Radar Station in range.',b:'Jets, bombers, gunships',k:'Ground assault, EMP, strike jets that dive under radar',
+ d(){sh(62,68,40,8);blk(26,69,70,18,3,PAL.C);blk(40,62,32,10,4,PAL.A);for(let k=0;k<4;k++){ln(46,52+k*2.5,70,38+k*2.5,PAL.A.o,4);ln(46,52+k*2.5,70,38+k*2.5,PAL.A.l,2);px(70,38+k*2.5,'#1b1b19');}
+  ln(92,62,92,48,'#1b1b19',1.4);ell(92,46,7,3,PAL.C.o);ell(92,45.5,6,2.4,PAL.C.l);ln(92,46,96,42,'#1b1b19');missile(108,18,-.7);trail(74,36,104,20,10);}});
+add({id:'laser_ciws',f:'A',c:'turret',n:'Laser CIWS',st:9,gap:['G6'],g:'conc',
+ w:'A pedestal laser that burns drones, rockets and mortar shells out of the air inside a short dome of cover.',b:'Drones, rockets, shells',k:'Tanks, artillery out of its range, smoke',
+ d(){sh(56,70,22,6);blk(42,70,28,12,8,PAL.C);tur(56,47,9,5,5,PAL.A);gun(59,46,70,40,PAL.A,3);px(70,40,'#fff2c0');ln(70,40,104,18,'rgba(255,190,80,.35)',4);ln(70,40,104,18,'#ffcf5a',1);
+  drone(106,16,PAL.B);flash(106,16,3);ring(56,52,40,20,'rgba(255,207,90,.35)',1,[2,3]);}});
+add({id:'howitzer_pit',f:'A',c:'turret',n:'Howitzer Pit',st:8,gap:['G2','G4'],g:'dirt',
+ w:'A dug-in 155-class gun behind a sandbag ring. Fixed position, very long range, and cheaper than a self-propelled gun.',b:'Static defenses, massed infantry',k:'Counter-battery fire, drones, raiders',
+ d(){ell(64,58,32,12,'#4a3f2c');bagring(64,58,34,13,false);blk(54,62,22,8,4,PAL.A);ln(58,62,44,68,PAL.A.o,2);ln(70,62,84,68,PAL.A.o,2);gun(66,52,104,32,PAL.A,4);rect(102,31,4,3,PAL.A.o);
+  man(46,64,PAL.A,{gun:false});man(84,63,PAL.A,{gun:false});blk(86,70,7,4,3,PAL.W);bagring(64,58,34,13,true);}});
+add({id:'popup_turret',f:'A',c:'turret',n:'Pop-up Remote Turret',st:9,gap:['G4'],g:'grass',
+ w:'A buried remote weapon station. It stays hidden from enemy fog until it fires, then pops up and drops back down.',b:'Infantry and light vehicles that walk into it',k:'Recon drones, artillery, EOD sweeps',
+ d(){ring(64,62,30,13,'rgba(217,160,58,.7)',1,[2,2]);ell(64,62,18,7,PAL.T.o);ell(64,62,17,6,'#0f0f0e');poly([47,59,81,59,86,49,52,49],PAL.T.l);poly([47,59,81,59,82,57,48,57],PAL.T.m);
+  blk(56,64,16,8,10,PAL.A);gun(70,50,90,46,PAL.A,2);px(59,49,PAL.A.gl);px(60,49,PAL.A.gl);flash(92,46,2.5);}});
+add({id:'pak_nest',f:'B',c:'turret',n:'Pak Nest',st:7,gap:['G4'],g:'dirt',
+ w:'A towed anti-tank gun dug in behind scrap plates and sandbags. Cheap, hard-hitting, easy to hide.',b:'Armor at medium range',k:'Infantry, mortars, flamers',
+ d(){bagring(62,60,30,11,false);poly([50,46,68,44,68,58,50,60],PAL.B.o);poly([51,47,67,45,67,57,51,59],PAL.B.m);rivets(52,48,15,3);rivets(52,56,15,3);
+  gun(64,50,102,42,PAL.T,3);rect(100,41,4,3,PAL.T.o);ell(55,63,4,4,'#141412');ell(68,63,4,4,'#141412');man(42,66,PAL.B,{gun:false,helm:'#2b2b28'});man(80,67,PAL.B,{gun:false,helm:'#2b2b28'});bagring(62,60,30,11,true);}});
+add({id:'flak_battery',f:'B',c:'turret',n:'Flak Battery',st:8,gap:['G4','G6'],g:'conc',
+ w:'A twin-barrel flak gun on a cross base. It fills the sky with bursts: area damage against every low flyer and drone in a cone.',b:'Helicopters, drones, gunships',k:'Jets above its ceiling, ground armor',
+ d(){sh(64,68,30,7);ln(38,68,90,60,PAL.T.o,4);ln(42,58,88,70,PAL.T.o,4);ln(38,68,90,60,PAL.T.l,2);ln(42,58,88,70,PAL.T.l,2);blk(54,64,20,10,7,PAL.B);rivets(54,57,20,3);
+  gun(60,50,80,22,PAL.T,3);gun(67,52,87,24,PAL.T,3);blk(52,52,24,4,6,PAL.B);for(const [x,y] of [[96,14],[110,26],[84,10],[104,10]]){puff(x,y,4,.75,'40,38,34');flash(x,y,1.4);}}});
+add({id:'net_post',f:'B',c:'turret',n:'Net Launcher Post',st:9,gap:['G6'],g:'grass',
+ w:'A scaffold tower that fires weighted nets. Each net catches one drone intact, and Human B can salvage it.',b:'FPV drones, recon drones',k:'Swarms (too many), artillery',
+ d(){sh(64,70,18,5);ln(50,70,54,40,PAL.W.o,2);ln(78,70,74,40,PAL.W.o,2);ln(51,60,77,50,PAL.W.m,1);ln(77,60,51,50,PAL.W.m,1);ln(52,50,76,50,PAL.W.m,1);blk(48,42,32,8,3,PAL.B);rivets(48,34,32,3);
+  gun(62,32,76,20,PAL.T,4);X.strokeStyle='rgba(220,210,180,.8)';X.lineWidth=1;for(let i=0;i<5;i++){ln(84+i*5,8,94+i*5,32,'rgba(220,210,180,.7)');ln(84,12+i*5,110,6+i*5,'rgba(220,210,180,.7)');}drone(98,20,PAL.A);}});
+add({id:'mortar_pit',f:'B',c:'turret',n:'Mortar Pit',st:7,gap:['G4'],g:'dirt',
+ w:'A sandbagged mortar pit with an ammo stack. Indirect fire over walls at short-to-medium range.',b:'Infantry behind cover, entrenched teams',k:'Armor rushes, counter-battery',
+ d(){ell(60,60,22,9,'#4a3f2c');bagring(60,60,24,10,false);rect(56,61,8,2,PAL.T.m);gun(60,61,70,42,PAL.T,3);man(50,63,PAL.B,{gun:false,helm:'#2b2b28'});blk(76,66,9,5,5,PAL.W);blk(86,68,9,5,5,PAL.W);bagring(60,60,24,10,true);puff(72,38,3,.5);puff(76,32,4,.35);}});
+add({id:'pillbox',f:'B',c:'turret',n:'Pillbox',st:7,gap:['G4'],g:'grass',
+ w:'A hexagonal concrete pillbox with a riveted roof. A squad garrisons it and fires from the slits; it shows 6 garrison slots.',b:'Infantry waves',k:'Flamers, satchel charges, artillery',
+ d(){sh(64,70,30,8);poly([40,58,50,48,78,48,88,58,78,68,50,68],PAL.C.o);poly([41,58,51,49,77,49,87,58,77,62,51,62],PAL.B.l);rivets(52,52,24,3);rivets(46,57,36,4);
+  poly([41,58,51,62,77,62,87,58,87,63,77,69,51,69,41,63],PAL.C.m);rect(52,64,8,2,'#111');rect(68,64,8,2,'#111');flash(80,65,2.5);for(let i=0;i<6;i++)rect(48+i*6,38,4,4,i<4?'#d9a03a':'rgba(0,0,0,.45)');}});
+add({id:'arc_pylon',f:'M',c:'turret',n:'Arc Pylon',st:9,gap:['G1','G4'],g:'grass',
+ w:'A coil pylon that chains lightning between nearby enemies. The more targets bunch up, the more it hurts.',b:'Massed infantry, crawler swarms',k:'Artillery out of range, single heavy tanks',
+ d(){sh(56,71,14,4);blk(46,71,20,10,4,PAL.M);rect(52,22,8,45,PAL.M.o);rect(53,22,6,45,PAL.M.m);rect(53,22,2,45,PAL.M.l);for(const y of [32,42,52])ring(56,y,8,3,'#52e6d8',1);
+  glo(56,20,4);zig(56,20,98,58);zig(56,20,108,42);zig(56,20,88,72);man(98,62,PAL.A);man(108,46,PAL.A);man(88,76,PAL.A);flash(98,56,2);flash(108,40,2);}});
+add({id:'pulse_spire2',f:'M',c:'turret',n:'Pulse Spire Mk II',st:9,gap:['G1','G4','G6'],g:'grass',
+ w:'An upgraded Spire with a rotating emitter ring. It locks on to aircraft at long range and pulses them out of the sky.',b:'Jets, helicopters, dropships',k:'Ground armor, EMP drones',
+ d(){sh(60,72,18,5);poly([48,72,72,72,70,30,60,10,50,30],PAL.M.o);poly([50,71,60,71,60,12,51,31],PAL.M.l);poly([60,71,70,71,69,31,60,12],PAL.M.m);ring(60,34,14,4,'#52e6d8',1.4);glo(60,34,3);glo(60,14,3);
+  for(const [x,y] of [[100,14],[110,30]]){ln(60,14,x,y,'rgba(82,230,216,.4)',3);ln(60,14,x,y,'#bffcf6',1);}plane(104,18,22,16,PAL.A,{alt:40});flash(104,18,3);}});
+add({id:'jammer_obelisk',f:'M',c:'turret',n:'Jammer Obelisk',st:9,gap:['G1','G6'],g:'grass',
+ w:'A field generator. Enemy drones inside its rings lose their link and fall, and guided shots lose their lock.',b:'Drones, guided missiles, the Drone Team',k:'Dumb artillery, tanks, infantry',
+ d(){for(const r of [46,34,22])ring(60,66,r,r*.38,'rgba(82,230,216,.45)',1,[3,3]);sh(60,70,10,3);poly([52,70,68,70,64,22,56,22],PAL.M.o);poly([53,69,60,69,60,23,57,23],PAL.M.l);poly([60,69,67,69,63,23,60,23],PAL.M.m);
+  for(const y of [32,44,56])rect(57,y,6,1,'#52e6d8');glo(60,20,3);drone(94,30,PAL.A);puff(96,24,3,.4,'60,58,54');ln(94,30,98,44,'rgba(60,58,54,.5)',2,[2,2]);drone(26,40,PAL.B);puff(24,34,3,.4,'60,58,54');}});
+add({id:'mass_driver',f:'M',c:'turret',n:'Mass Driver',st:10,gap:['G1','G4'],g:'conc',
+ w:'A rail-launched kinetic artillery platform with glowing capacitor banks. Very long range, slow cycle.',b:'Bases and static defenses at long range',k:'Drones, raiders, air',
+ d(){sh(62,70,36,7);blk(28,70,64,16,5,PAL.M);for(let i=0;i<4;i++){blk(32+i*8,56,6,4,8,PAL.M);glo(35+i*8,46,1.6);}ln(56,52,120,26,PAL.M.o,5);ln(56,50,120,24,PAL.M.l,1);ln(56,54,120,28,PAL.M.l,1);ln(58,52,118,26,'rgba(82,230,216,.6)',1);flash(121,25,3);}});
+add({id:'sentry_mine',f:'M',c:'turret',n:'Sentry Mine Turret',st:9,gap:['G1','G4'],g:'dirt',
+ w:'A buried hex disc that rises when enemies cross it and fires at close range, then re-buries. It can be painted in fields.',b:'Infantry, light vehicles',k:'EOD sweeps, recon, artillery',
+ d(){for(const [x,y] of [[30,70],[98,68]]){poly([x-8,y,x-4,y-3,x+4,y-3,x+8,y,x+4,y+3,x-4,y+3],PAL.M.d);px(x,y,'#52e6d8');}
+  poly([46,62,54,56,74,56,82,62,74,68,54,68],PAL.M.o);poly([48,62,55,57,73,57,80,62,73,66,55,66],PAL.M.m);blk(56,62,16,6,9,PAL.M);glo(60,50,1.6);gun(68,50,88,46,PAL.M,2);for(let i=0;i<6;i++)px(52+i*4,60,'#52e6d8');}});
+
+/* ===== FORTIFICATIONS ===== */
+add({id:'sandbags',f:'S',c:'fort',ms:1.4,n:'Sandbag Line',st:7,gap:['G4'],g:'grass',
+ w:'Infantry drag a line of sandbags anywhere. Units behind it get the cover bonus that today only hills give.',b:'Small arms',k:'Mortars, grenadiers, flamers',
+ d(){for(let i=0;i<5;i++)man(26+i*18,57,PAL.A,{sh:false});for(let i=0;i<14;i++){const x=12+i*8,y=63+Math.sin(i/13*Math.PI)*-5;ell(x,y,5,2.6,PAL.S.o);ell(x,y-.5,4.6,2.2,PAL.S.l);ell(x,y-4,5,2.6,PAL.S.o);ell(x,y-4.5,4.6,2.2,PAL.S.m);ell(x-1,y-5.4,2.4,.8,PAL.S.hi);}flash(50,51,1.6);flash(86,51,1.6);}});
+add({id:'trench',f:'S',c:'fort',n:'Trench Line',st:7,gap:['G4'],g:'dirt',
+ w:'Dug zig-zag trench. Infantry in it take far less damage from small arms and shell splash, but move slowly.',b:'Artillery splash, MG fire',k:'Flamers, top-attack drones, tanks crossing',
+ d(){const pts=[[6,44],[30,52],[50,42],[74,54],[98,44],[122,52]];X.strokeStyle='#6b5030';X.lineWidth=11;X.lineJoin='miter';X.beginPath();pts.forEach((p,i)=>i?X.lineTo(p[0],p[1]):X.moveTo(p[0],p[1]));X.stroke();
+  X.strokeStyle='#1f1a12';X.lineWidth=8;X.stroke();X.strokeStyle='rgba(120,90,50,.8)';X.lineWidth=1;X.setLineDash([1,2]);X.stroke();X.setLineDash([]);for(const [x,y] of [[18,47],[40,47],[62,48],[86,49],[110,48]])head(x,y,PAL.A);puff(70,24,5,.35,'90,80,64');}});
+add({id:'tank_traps',f:'S',c:'fort',n:'Tank Traps',st:7,gap:['G4'],g:'grass',
+ w:'Steel hedgehogs and concrete dragon\'s teeth. They block vehicles completely, while infantry pass through.',b:'Vehicle rushes',k:'Engineers, armored bulldozers, demolition',
+ d(){for(let i=0;i<9;i++)hedge(12+i*13,44+(i%2)*3);for(let i=0;i<12;i++)tooth(8+i*10,64+(i%2)*2);for(let i=0;i<10;i++)tooth(14+i*11,78);}});
+add({id:'barbed_wire',f:'S',c:'fort',n:'Barbed Wire',st:7,gap:['G4'],g:'grass',
+ w:'Concertina coils on posts. Infantry crossing it slow to a crawl; flamers, engineers and tanks clear it.',b:'Infantry charges',k:'Flamers, tanks, EOD sappers',
+ d(){for(const y of [42,62]){for(let x=8;x<124;x+=14)ln(x,y+4,x,y-5,'#4a3a24',1.4);coil(8,y,116);}man(60,76,PAL.B,{helm:'#2b2b28'});man(76,78,PAL.B,{helm:'#2b2b28'});}});
+add({id:'minefield',f:'S',c:'fort',n:'Minefield',st:8,gap:['G4'],g:'grass',
+ w:'Painted as an area with a brush. Anti-tank and anti-personnel mines are hidden from enemies; the owner sees the dashed boundary.',b:'Any ground push',k:'EOD sappers, mine-clearing vehicles, recon',
+ d(){X.strokeStyle='rgba(217,160,58,.85)';X.setLineDash([3,2]);X.strokeRect(14.5,26.5,100,46);X.setLineDash([]);for(let i=0;i<9;i++){const x=24+R()*80,y=34+R()*32;ell(x,y,3.4,1.6,'rgba(20,20,18,.55)');ell(x,y-.5,2.2,1,'rgba(90,90,80,.55)');}
+  for(let i=0;i<16;i++)px(20+R()*90,30+R()*38,'rgba(20,20,18,.7)');sign(14,30);sign(114,30);sign(14,74);sign(114,74);}});
+add({id:'garrison_bld',f:'S',c:'fort',n:'Garrisonable Building',st:7,gap:['G4'],g:'rubble',
+ w:'City blocks and ruins that squads can occupy. Sandbagged windows give cover, and garrison pips show how many squads are inside.',b:'Infantry in the open',k:'Flamers, artillery, tanks',
+ d(){sh(62,74,38,7);blk(28,74,68,16,32,PAL.C);for(let r=0;r<2;r++)for(let c=0;c<5;c++){rect(34+c*12,48+r*12,7,6,'#141310');rect(34+c*12,53+r*12,7,2,PAL.S.l);}
+  poly([28,26,40,22,48,28,60,20,70,27,82,22,96,26,96,30,28,30],PAL.C.d);flash(43,51,1.6);flash(79,63,1.6);for(let i=0;i<4;i++)rect(46+i*8,12,6,5,i<3?'#d9a03a':'rgba(0,0,0,.5)');}});
+add({id:'camo_decoy',f:'S',c:'fort',n:'Camo Nets and Decoys',st:8,gap:['G4'],g:'grass',
+ w:'Nets hide a parked unit from recon until it moves. Inflatable decoy tanks and SAMs draw enemy strikes and artillery.',b:'Recon, strike jets, artillery AI',k:'Close recon, Recon drones',
+ d(){sh(36,66,24,6);trk(14,66,42,12,PAL.A);poly([10,46,58,44,62,68,8,70],'rgba(60,70,40,.85)');for(let i=0;i<40;i++)px(10+R()*50,46+R()*22,['#3e4a28','#5e6d3c','#2f3820'][i%3]);
+  X.globalAlpha=.82;sh(94,70,24,6);trk(72,70,44,12,{o:'#5a6a40',d:'#6a7a48',m:'#7a8a54',l:'#93a46a',hi:'#b5c48a'});tur(94,52,9,5,4,{o:'#5a6a40',d:'#6a7a48',m:'#7a8a54',l:'#93a46a',hi:'#b5c48a'});gun(100,51,118,47,{o:'#5a6a40',l:'#93a46a'},3);X.globalAlpha=1;ring(94,60,28,15,'rgba(217,160,58,.8)',1,[2,2]);}});
+add({id:'nanite_wall',f:'M',c:'fort',n:'Nanite Wall',st:9,gap:['G1','G4'],g:'grass',
+ w:'A Machine wall segment that slowly rebuilds its own breaches while it stays powered.',b:'Sieges and attrition',k:'Burst damage, EMP (stops regrowth)',
+ d(){sh(64,70,52,5);blk(12,70,104,10,18,PAL.M);for(let x=16;x<112;x+=8)for(let y=56;y<68;y+=6)poly([x,y,x+3,y-2,x+6,y,x+6,y+3,x+3,y+5,x,y+3],'rgba(82,230,216,.16)');
+  rect(56,42,18,28,GR.grass[0]);rect(56,52,18,18,PAL.M.m);for(let i=0;i<12;i++)px(56+R()*18,42+R()*12,'#52e6d8');glo(65,46,2);}});
+add({id:'phase_gate',f:'M',c:'fort',n:'Phase Gate',st:9,gap:['G1','G4'],g:'grass',
+ w:'Two emitter pylons with a shimmering field. Machine units pass through it and everything else is blocked; it replaces the Field Gate at Stage 9.',b:'Wall breaches by infantry',k:'Power loss, EMP',
+ d(){for(const x of [26,90]){sh(x+6,70,9,3);blk(x,70,12,8,30,PAL.M);glo(x+6,36,2.4);}for(let x=38;x<90;x+=2)ln(x,38,x,66,`rgba(82,230,216,${.12+.12*Math.sin(x)})`,1);
+  rect(38,38,52,1,'#52e6d8');rect(38,65,52,1,'#52e6d8');blk(54,72,22,10,6,PAL.M);glo(65,62,1.4);}});
+
+/* ===== DRONES ===== */
+add({id:'aerostat',f:'A',c:'drone',n:'Tethered Recon Aerostat',st:8,gap:['G6'],g:'grass',
+ w:'A winch truck flies a tethered balloon with a sensor pod. It gives a huge sight radius over one area and is easy to shoot down.',b:'Fog of war, ambushes',k:'Any AA, the Interceptor Swarm',
+ d(){ring(46,70,58,16,'rgba(159,208,224,.5)',1,[3,3]);sh(40,72,20,5);whl(24,72,34,10,PAL.A,3);blk(26,58,10,6,6,PAL.A);ln(46,58,76,24,'rgba(30,30,28,.8)',1);
+  ell(76,18,22,8,PAL.A.o);ell(76,17,21,7,'#c9c4b0');ell(72,14,12,3,'#e2ddca');poly([54,12,48,6,52,18],'#a8a38f');poly([54,22,48,28,52,18],'#a8a38f');rect(74,25,5,3,PAL.A.d);px(76,27,'#9fd0e0');}});
+add({id:'loiter_truck',f:'A',c:'drone',n:'Loitering Munition Truck',st:9,gap:['G6'],g:'dirt',
+ w:'A truck with a six-cell launcher. Each cell launches a strike drone that circles until a target appears, then dives.',b:'Artillery, parked armor, AA vehicles',k:'Jammers, CIWS, raiders',
+ d(){sh(60,72,32,6);whl(26,72,62,12,PAL.A,4);blk(70,60,18,12,10,PAL.A);px(84,52,'#9fd0e0');px(86,52,'#9fd0e0');poly([28,50,62,38,66,48,32,60],PAL.A.o);poly([29,50,62,39,65,47,32,58],PAL.A.l);
+  for(let r=0;r<2;r++)for(let c=0;c<3;c++)ell(58+c*-9+r*2,44+c*3.6+r*5,2.2,1.6,'#1b1b19');trail(66,38,104,18,10);drone(108,16,PAL.A,1.2);}});
+add({id:'drone_cc',f:'A',c:'drone',n:'Drone Control Center',st:9,gap:['G6'],g:'conc',
+ w:'A building that boosts every friendly Drone Team in range: +1 charge, longer drone range and faster restock.',b:'Supports drone play',k:'Jammers, strike jets',
+ d(){sh(60,72,38,7);blk(24,72,72,22,16,PAL.C);for(let i=0;i<5;i++)rect(30+i*13,60,9,5,'#5aa0b8');ring(72,42,9,4,'#d9a03a',1);rect(71,40,3,4,'#d9a03a');
+  for(const x of [32,40])ln(x,40,x,24,'#1b1b19',1);ell(52,32,6,3,PAL.C.l);ln(52,34,52,40,'#1b1b19');drone(100,20,PAL.A);drone(20,18,PAL.A);ring(60,32,48,16,'rgba(159,208,224,.35)',1,[2,4]);}});
+add({id:'fpv_workshop',f:'B',c:'drone',n:'FPV Workshop',st:8,gap:['G6'],g:'dirt',
+ w:'A corrugated shed where Human B solders FPV drones from scrap. It rebuilds Drone Team charges at base, and salvaged nets feed it.',b:'Keeps B drone teams stocked',k:'Artillery, raids',
+ d(){sh(56,72,34,6);blk(24,72,62,18,16,PAL.B);for(let x=24;x<86;x+=3)ln(x,56,x,72,'rgba(30,20,12,.35)',1);rect(40,60,22,12,'#140e09');flash(48,66,1.6);ell(55,66,1.4,1.4,'#ffd27a');
+  for(const [x,y] of [[30,28],[44,24]])drone(x,y,PAL.B,.9);blk(90,74,8,5,4,PAL.W);blk(98,72,10,6,6,PAL.T);puff(80,30,4,.35,'60,58,54');}});
+add({id:'jammer_team',f:'B',c:'drone',ms:1.5,n:'Backpack Jammer Team',st:9,gap:['G3','G6'],g:'grass',
+ w:'Two soldiers with backpack jammers and whip antennas. Enemy drones near them drift and crash; their own drones are not affected.',b:'Drones, guided munitions',k:'Rifles, snipers (they are lightly armed)',
+ d(){man(54,66,PAL.B,{pack:'#3b3a37',ant:true,helm:'#2b2b28'});man(70,68,PAL.B,{pack:'#3b3a37',ant:true,helm:'#2b2b28'});for(const r of [14,24,34])arc(62,54,r,-2.6,-.5,'rgba(224,122,46,.6)',1.2);
+  drone(100,22,PAL.A);puff(102,18,3,.4,'60,58,54');ln(100,22,96,36,'rgba(60,58,54,.5)',2,[2,2]);}});
+add({id:'scrap_aa',f:'B',c:'drone',ms:1.5,n:'Scrap Shotgun AA Squad',st:8,gap:['G6'],g:'grass',
+ w:'Three troops with big-bore scrap shotguns that throw pellet clouds at anything flying low. Cheap counter-drone for the frontline.',b:'FPV and recon drones',k:'Armor, helicopters out of range',
+ d(){for(const x of [44,60,76])man(x,70,PAL.B,{up:true,helm:'#2b2b28'});for(let i=0;i<22;i++)px(70+R()*40,8+R()*30,'#e8d9a0');drone(96,18,PAL.A);flash(96,18,2.4);flash(80,52,1.4);}});
+add({id:'hive_node',f:'M',c:'drone',n:'Hive Node',st:9,gap:['G1','G6'],g:'grass',
+ w:'A hexagonal hive that slowly spawns free micro-drones on its own and sends them to the nearest fight.',b:'Attrition, map control',k:'Flak, jammers, strike jets',
+ d(){sh(60,72,26,6);for(const [x,gb,w,h] of [[40,72,40,12],[46,60,28,10],[52,50,16,8]]){blk(x,gb,w,8,h,PAL.M);}for(const [x,y] of [[50,66],[70,66],[60,54]])glo(x,y,1.6);
+  ring(60,40,40,14,'rgba(82,230,216,.3)',1,[2,3]);for(let i=0;i<6;i++){const a=i/6*Math.PI*2;drone(60+Math.cos(a)*40,40+Math.sin(a)*14,PAL.M,.7);}}});
+add({id:'swarm_queen',f:'M',c:'drone',n:'Swarm Queen',st:10,gap:['G1','G6'],g:'grass',
+ w:'A large, slow hexacopter mothership that endlessly releases micro-drones while it lives. A priority target.',b:'Everything on the ground nearby',k:'SAMs, interceptors, AA focus',
+ d(){sh(64,76,26,6);for(let i=0;i<6;i++){const a=i/6*Math.PI*2,x=64+Math.cos(a)*22,y=32+Math.sin(a)*9;ln(64,32,x,y,PAL.M.o,2);rotor(x,y,7);}poly([50,32,57,24,71,24,78,32,71,40,57,40],PAL.M.o);
+  poly([52,32,58,26,70,26,76,32,70,38,58,38],PAL.M.l);glo(64,32,3);for(const [x,y] of [[30,58],[44,66],[92,62],[104,52]])drone(x,y,PAL.M,.6);}});
+add({id:'mimic_drone',f:'M',c:'drone',n:'Mimic Drone',st:10,gap:['G1','G6'],g:'grass',
+ w:'It reads as an enemy drone on the opponent\'s screen until it is within 3 tiles, then dives. It fools both AA targeting and players.',b:'AA nests, Drone Teams, officers',k:'CIWS (sees through it), jammers',
+ d(){ring(46,40,16,10,'rgba(255,255,255,.25)',1,[2,2]);drone(46,40,PAL.A,1.8);sh(46,70,10,3);ln(80,40,96,40,'rgba(255,255,255,.3)',1,[2,2]);poly([96,36,100,40,96,44],'rgba(255,255,255,.4)');
+  drone(110,40,PAL.M,1.8);glo(110,40,2);sh(110,70,10,3);}});
+
+/* ===== VEHICLES ===== */
+add({id:'sp_howitzer',f:'A',c:'vehicle',n:'SP Howitzer',st:8,gap:['G2'],g:'dirt',
+ w:'A tracked self-propelled gun with a big boxy turret. This is Human A\'s missing Stage 8 artillery: shoot, then relocate.',b:'Bases, static defenses, massed troops',k:'Counter-battery, drones, raiders',
+ d(){sh(60,74,36,6);trk(22,74,66,15,PAL.A);blk(38,59,32,12,8,PAL.A);gun(66,46,114,28,PAL.A,4);rect(110,26,6,4,PAL.A.o);rect(40,40,6,2,PAL.A.d);}});
+add({id:'mlrs',f:'A',c:'vehicle',n:'MLRS',st:8,gap:['G2'],g:'dirt',
+ w:'A tracked rocket launcher with a 12-cell pod. It fires a ripple salvo over a wide area, then needs a long reload or a resupply.',b:'Area denial, infantry blobs',k:'Drones, air, raiders',
+ d(){sh(60,74,36,6);trk(22,74,66,15,PAL.A);blk(68,58,18,13,10,PAL.A);px(82,49,'#9fd0e0');poly([26,48,62,36,66,48,30,60],PAL.A.o);poly([27,48,62,37,65,47,30,58],PAL.A.l);
+  for(let r=0;r<2;r++)for(let c=0;c<6;c++)px(60-c*5+r*1,40+c*1.7+r*4,'#1b1b19');trail(64,36,98,14,9);trail(64,38,108,20,9);missile(102,12,-.6);missile(112,18,-.5);}});
+add({id:'mine_clearer',f:'A',c:'vehicle',n:'Mine-Clearing Vehicle',st:8,gap:['G4'],g:'dirt',
+ w:'A tank chassis with a front roller and a rocket line charge. It blasts a safe lane through a minefield and wire.',b:'Minefields, wire, tank traps (lane)',k:'AT guns, anything once it\'s alone',
+ d(){sh(46,74,30,6);trk(14,74,54,14,PAL.A);blk(24,60,26,10,6,PAL.A);for(let i=0;i<3;i++){ell(76,62+i*5,3.4,2.4,PAL.T.o);ell(76,62+i*5,2.6,1.8,PAL.T.l);}ln(66,62,74,62,PAL.T.o,2);ln(66,70,74,72,PAL.T.o,2);
+  X.strokeStyle='rgba(30,30,28,.8)';X.lineWidth=1;X.beginPath();X.moveTo(40,48);X.quadraticCurveTo(80,6,120,34);X.stroke();missile(120,34,.6);for(let i=0;i<4;i++)puff(92+i*7,58+i*2,4,.4,'120,100,70');}});
+add({id:'bridge_layer',f:'A',c:'vehicle',n:'Bridge Layer',st:8,gap:[],g:'grass',
+ w:'It unfolds a scissor bridge over a river or gap in a few seconds and can pick it back up. This opens crossings the map didn\'t plan for.',b:'River chokepoints',k:'Artillery on the crossing',
+ d(){river(40,78);sh(30,40,22,5);trk(10,40,42,12,PAL.A);blk(16,28,18,8,5,PAL.A);poly([50,22,124,40,124,46,50,30],PAL.A.o);poly([50,23,123,40,123,44,50,28],PAL.A.l);poly([50,28,123,44,123,46,50,30],PAL.A.m);
+  for(let x=56;x<120;x+=8)ln(x,24+(x-50)*.24,x,29+(x-50)*.22,PAL.A.d,1);ln(46,22,52,24,PAL.T.o,2);}});
+add({id:'command_vehicle',f:'A',c:'vehicle',n:'Command Vehicle',st:8,gap:[],g:'dirt',
+ w:'An 8-wheel armored command post with a mast and dish. It gives a mobile officer aura (morale, accuracy, call-ins) when parked.',b:'Supports big pushes',k:'Artillery, strike jets (high value)',
+ d(){ring(60,66,52,18,'rgba(217,160,58,.65)',1,[3,3]);sh(60,72,32,6);whl(28,72,64,14,PAL.A,4,8);ln(46,52,46,20,'#1b1b19',1.4);ln(42,22,50,22,'#1b1b19',1);ell(70,46,6,3,PAL.A.l);ln(70,48,70,52,'#1b1b19');px(84,54,'#9fd0e0');px(86,54,'#9fd0e0');rect(30,52,10,4,PAL.A.d);}});
+add({id:'ugv',f:'A',c:'vehicle',n:'Robotic UGV',st:9,gap:[],g:'grass',
+ w:'A small remote tracked robot with a weapon station. Cheap and fearless; it doesn\'t count as infantry for wounded or morale.',b:'Scouting minefields, holding chokepoints',k:'EMP, jammers, any AT',
+ d(){sh(62,72,22,5);trk(42,72,40,11,PAL.A,4);blk(54,61,16,7,5,PAL.A);gun(66,54,84,50,PAL.A,2);px(58,53,'#9fd0e0');px(59,53,'#9fd0e0');ln(48,58,46,46,'#1b1b19',1);for(const r of [6,10])arc(46,46,r,-2.4,-.7,'rgba(159,208,224,.6)',1);}});
+add({id:'landship',f:'B',c:'vehicle',n:'Landship',st:9,gap:[],g:'mud',
+ w:'Human B\'s super-heavy: a riveted land-cruiser with a main gun, two sponson guns and a smokestack. Slow and close to unkillable head-on.',b:'Everything in front of it',k:'Air, AT from flanks, minefields',
+ d(){sh(64,76,58,8);trk(8,76,112,20,PAL.B,8);for(let r=0;r<3;r++)rivets(10,48+r*5,108,4);blk(30,50,46,14,10,PAL.B);rivets(30,40,46,3);tur(78,36,10,6,6,PAL.B);gun(86,36,122,32,PAL.T,4);
+  gun(24,62,4,64,PAL.T,3);gun(100,64,124,66,PAL.T,3);blk(40,36,6,4,12,PAL.T);puff(43,18,4,.5,'60,58,54');puff(47,10,5,.35,'60,58,54');}});
+add({id:'flak_halftrack',f:'B',c:'vehicle',n:'Flak Halftrack',st:8,gap:['G6'],g:'dirt',
+ w:'A halftrack with a quad flak mount in the bed. It escorts columns against helicopters and drones.',b:'Low air, drones',k:'Tanks, AT',
+ d(){sh(60,74,32,6);blk(24,74,40,12,4,PAL.T,PAL.T.m,PAL.T.d);ell(80,72,4,4,'#141412');blk(22,71,64,12,6,PAL.B);rivets(22,59,64,4);blk(70,62,16,10,8,PAL.B);
+  for(let k=0;k<4;k++)gun(38+k*3,52,52+k*3,28,PAL.T,2);blk(34,56,22,6,4,PAL.B);puff(60,20,3,.6,'40,38,34');puff(72,14,4,.6,'40,38,34');}});
+add({id:'armored_dozer',f:'B',c:'vehicle',n:'Armored Bulldozer',st:8,gap:['G4'],g:'dirt',
+ w:'A heavy dozer with a slit-window armored cab. It builds walls and trenches under fire and shoves tank traps and wrecks aside.',b:'Tank traps, wrecks, wire',k:'AT teams, artillery',
+ d(){sh(56,74,30,6);trk(26,74,52,15,PAL.B);blk(34,59,26,12,14,PAL.B);rect(38,52,18,2,'#111');rivets(34,45,26,3);poly([80,52,90,48,92,74,82,76],PAL.T.o);poly([81,53,89,50,90,73,83,74],PAL.T.l);
+  ln(74,62,82,60,PAL.T.o,2);for(let i=0;i<6;i++)ell(98+R()*14,64+R()*10,3,2,'#76664a');}});
+add({id:'salvage_crane',f:'B',c:'vehicle',n:'Salvage Crane',st:8,gap:[],g:'dirt',
+ w:'A crane truck that hooks battlefield wrecks and hauls them to a Salvage Yard for resources, fitting Human B\'s salvage economy.',b:'Turns wrecks into income',k:'Anything; it is unarmed',
+ d(){sh(40,74,26,6);whl(14,74,52,12,PAL.B,3);blk(50,62,14,10,9,PAL.B);ln(30,58,96,18,PAL.B.o,4);ln(30,58,96,18,PAL.B.acc,2);ln(96,18,96,46,'#1b1b19',1);ln(94,46,98,46,'#1b1b19',1.4);
+  wreck(82,70,30,10);}});
+add({id:'moto_scouts',f:'B',c:'vehicle',n:'Motorcycle Scouts',st:7,gap:['G3'],g:'dirt',
+ w:'Three motorcycles, one with a sidecar MG. Human B finally gets a recon role: fast, long sight, fragile.',b:'Scouting, harassing engineers',k:'Any MG, mines',
+ d(){for(const [x,y,sc] of [[34,58,0],[62,70,1],[90,56,0]]){puff(x-14,y-2,3,.35,'150,130,100');ell(x-6,y,3,3,'#141412');ell(x+6,y,3,3,'#141412');rect(x-6,y-4,12,3,PAL.B.m);rect(x-6,y-4,12,1,PAL.B.hi);man(x,y-2,PAL.B,{gun:false,sh:false,helm:'#2b2b28'});
+  if(sc){blk(x-8,y+8,14,5,4,PAL.B);ell(x,y+8,2.6,2.6,'#141412');gun(x-2,y+1,x+12,y,PAL.T,2);}}}});
+add({id:'spider_layer',f:'M',c:'vehicle',n:'Spider Mine Layer',st:9,gap:['G1','G4'],g:'grass',
+ w:'A six-legged crawler that seeds Sentry Mines as it walks. It can lay a minefield behind a retreating army.',b:'Pursuers, flank routes',k:'EOD sweeps, air',
+ d(){for(let i=0;i<3;i++){for(const s of [-1,1]){ln(52+i*10,48,48+i*12,62+s*0,PAL.M.o,2);}}for(let i=0;i<6;i++){const x=44+i*8;ln(60,46,x,64,PAL.M.o,2);ln(60,46,x,64,PAL.M.l,1);}
+  sh(60,64,18,4);ell(60,44,16,7,PAL.M.o);ell(60,43,15,6,PAL.M.l);glo(60,42,2);for(const [x,y] of [[24,70],[14,62],[34,76]]){ell(x,y,3,1.4,PAL.M.d);px(x,y,'#52e6d8');}}});
+add({id:'hover_tank',f:'M',c:'vehicle',n:'Hover Tank',st:10,gap:['G1'],g:'water',
+ w:'A hovering battle tank that crosses water and beaches like land, so the Machine gets real amphibious armor.',b:'River and coast lines',k:'Heavy AT, EMP drops it',
+ d(){coast(x=>48+Math.sin(x/16)*6,'grass','water');sh(62,74,30,5);ell(62,62,30,6,'rgba(82,230,216,.25)');poly([30,56,86,54,96,60,86,66,30,66],PAL.M.o);poly([31,56,86,55,94,60,86,64,31,64],PAL.M.l);poly([31,61,86,61,94,60,86,66,31,66],PAL.M.m);
+  tur(58,50,9,5,4,PAL.M);ln(64,49,102,44,PAL.M.o,3);ln(64,48,102,43,'#52e6d8',1);glo(40,63,1.6);glo(84,63,1.6);for(let i=0;i<8;i++)px(26+R()*70,66+R()*4,'#d8e8ee');}});
+add({id:'colossus',f:'M',c:'vehicle',n:'Colossus Walker',st:10,gap:['G1'],g:'grass',
+ w:'The Machine\'s late-game centrepiece: a four-legged siege walker with a core cannon. A rifleman stands next to it for scale.',b:'Bases, armor groups',k:'Air focus, mass AT, EMP',
+ d(){sh(64,78,40,7);for(const [x1,x2] of [[46,30],[82,98],[52,44],[76,86]]){ln(x1,44,x2,78,PAL.M.o,5);ln(x1,44,x2,78,PAL.M.l,2);}blk(36,52,56,18,18,PAL.M);rect(40,38,48,1,'#52e6d8');glo(64,30,4);
+  gun(80,32,124,26,PAL.M,5);ln(84,32,122,26,'#52e6d8',1);man(14,78,PAL.A);}});
+add({id:'assimilator',f:'M',c:'vehicle',n:'Assimilator',st:10,gap:['G1'],g:'dirt',
+ w:'A crawler that claws wrecks apart and rebuilds them as Machine units. It is the Machine\'s answer to the B salvage economy.',b:'Turns enemy losses into units',k:'Anything that catches it alone',
+ d(){wreck(70,70,40,12);sh(40,74,22,5);trk(20,74,36,12,PAL.M);ell(38,56,10,5,PAL.M.l);glo(38,55,2);for(const [x,y] of [[72,52],[78,60]]){ln(44,56,x,y,PAL.M.o,2);ln(44,56,x,y,PAL.M.l,1);}
+  for(let i=0;i<10;i++)px(50+R()*24,48+R()*12,'#52e6d8');}});
+
+/* ===== INFANTRY ===== */
+add({id:'marines',f:'A',c:'infantry',n:'Marines',st:8,gap:[],g:'sand',
+ w:'Infantry trained for beach assault: they unload from landing craft faster and fight at full strength while wading.',b:'Coastal Front landings',k:'MGs on the beach, mines',
+ d(){coast(x=>44+Math.sin(x/20)*4,'sand','water');blk(4,74,30,14,6,PAL.A);for(const [x,y] of [[48,50],[62,52],[76,48],[54,62],[70,64],[86,60]])man(x,y,PAL.A,{sh:y<56});X.fillStyle='rgba(40,73,90,.7)';X.fillRect(40,58,60,10);for(const x of [54,70,86])rect(x-3,63,7,1,'#d8e8ee');}});
+add({id:'paratroopers',f:'A',c:'infantry',n:'Paratroopers',st:9,gap:[],g:'grass',
+ w:'A squad that drops from a Transport Gunship or VTOL anywhere in sight and lands behind the lines.',b:'Artillery, supply lines',k:'AA during the drop, quick-reaction forces',
+ d(){for(const [x,y] of [[30,18],[62,12],[96,22]]){sh(x,y+56,4,1.4);X.fillStyle='#c9c4b0';X.beginPath();X.ellipse(x,y,10,5,0,Math.PI,0);X.fill();X.fillStyle='#a8a38f';X.fillRect(x-10,y,20,1);ln(x-9,y,x,y+12,'rgba(30,30,28,.6)');ln(x+9,y,x,y+12,'rgba(30,30,28,.6)');man(x,y+20,PAL.A,{sh:false});}
+  man(74,76,PAL.A);poly([66,78,74,74,82,78],'#c9c4b0');}});
+add({id:'eod',f:'A',c:'infantry',n:'EOD Sappers',st:8,gap:['G4'],g:'grass',
+ w:'Two sappers who sweep an area, mark a safe lane, defuse mines and cut wire. This is the hard counter to minefields.',b:'Minefields, wire, Sentry Mines',k:'Anything shooting at them',
+ d(){man(50,64,PAL.A,{gun:false,pack:'#3e4a28'});ln(52,60,62,68,'#1b1b19',1);ell(64,69,4,1.6,'rgba(217,160,58,.8)');man(84,62,PAL.A,{gun:false});
+  ell(68,74,3.4,1.6,'#222');ell(68,73.5,2.2,1,'#5a5a50');for(const x of [30,40,92,102]){ln(x,78,x,70,'#3a2e1d',1);rect(x,70,4,3,'#b8402e');}ring(66,72,14,5,'rgba(255,255,255,.35)',1,[2,2]);}});
+add({id:'jtac',f:'A',c:'infantry',n:'JTAC',st:9,gap:[],g:'grass',
+ w:'A forward air controller with a laser designator and radio. Airstrikes and artillery called through them land faster and cost less.',b:'Makes air and artillery count',k:'Snipers, recon',
+ d(){man(30,70,PAL.A,{gun:false,ant:true,pack:'#3e4a28'});ln(34,64,104,46,'rgba(255,60,40,.8)',1,[2,2]);sh(104,56,16,4);trk(88,56,32,10,PAL.B,4);ring(104,46,10,5,'#ff5a40',1);ln(92,46,116,46,'#ff5a40');ln(104,40,104,52,'#ff5a40');plane(70,14,26,18,PAL.A,{alt:60});}});
+add({id:'manpads',f:'A',c:'infantry',n:'MANPADS Team',st:9,gap:['G6'],g:'grass',
+ w:'A two-man team with a shoulder-fired heat-seeker that reaches helicopters and low jets. Fast to reposition.',b:'Helicopters, gunships, dropships',k:'Infantry, artillery',
+ d(){man(50,70,PAL.A,{gun:false,tube:'#3e4a28'});man(64,72,PAL.A,{gun:false,pack:'#3e4a28'});trail(58,58,96,22,12);missile(100,20,-.8);rotor(110,14,10);ell(110,14,7,3,PAL.B.o);ell(110,14,6,2,PAL.B.l);}});
+add({id:'conscripts',f:'B',c:'infantry',ms:1.25,n:'Conscript Wave',st:7,gap:[],g:'mud',
+ w:'Ten cheap, poorly armed conscripts in one purchase. They soak fire and capture ground fast, with low morale.',b:'Sheer numbers, territory capture',k:'MGs, HMG Team, artillery',
+ d(){for(let r=0;r<3;r++)for(let c=0;c<4;c++){if(r===2&&c===3)continue;if(r===0&&c===0)continue;man(30+c*20+r*6,46+r*14,PAL.B,{helm:'#5a4a36',body:'#6e5a40'});}}});
+add({id:'satchel_sappers',f:'B',c:'infantry',n:'Satchel Sappers',st:7,gap:['G4'],g:'dirt',
+ w:'Three sappers with satchel charges who sprint to a wall, gate or bunker and blow a breach.',b:'Walls, gates, bunkers, pillboxes',k:'MGs, wire, anything that sees them coming',
+ d(){blk(92,72,30,12,20,PAL.C);for(const [x,y] of [[40,60],[58,68],[72,58]]){man(x,y,PAL.B,{gun:false,pack:'#5a3a22',helm:'#2b2b28'});puff(x-8,y,2.6,.35,'150,130,100');}flash(90,58,1.2);}});
+add({id:'marksman',f:'B',c:'infantry',n:'Marksman',st:7,gap:[],g:'grass',
+ w:'Human B has no sniper. This is a cruder long-range rifleman who works best prone and picks off officers and crew.',b:'Officers, AT teams, gun crews',k:'Recon, mortars, vehicles',
+ d(){X.translate(64,64);X.scale(1.6,1.6);X.translate(-56,-63);sh(54,66,16,3);rect(40,62,22,4,PAL.B.m);rect(40,62,22,1,PAL.B.hi);rect(60,60,5,4,'#c09a76');rect(60,59,5,2,'#2b2b28');ln(62,62,92,60,'#1b1b19',1.2);rect(70,59,5,2,'#1b1b19');px(75,59,'#ffffff');for(let i=0;i<10;i++)px(30+R()*40,60+R()*10,'#3e4a28');}});
+add({id:'propaganda_team',f:'B',c:'infantry',n:'Propaganda Team',st:8,gap:[],g:'grass',
+ w:'A loudspeaker and banner team. It is a morale aura for friendly troops and a slow morale drain on enemies who hear it.',b:'Morale fights, holding ground',k:'Snipers, artillery',
+ d(){man(50,68,PAL.B,{gun:false,helm:'#2b2b28'});poly([53,60,60,56,60,64],'#c9c4b0');ln(66,70,66,40,'#3a2e1d',1.4);poly([66,40,88,42,86,50,66,48],'#e07a2e');for(const r of [10,18,26])arc(60,60,r,-.8,.8,'rgba(224,122,46,.6)',1.2);
+  for(const [x,y] of [[96,72],[106,66]]){man(x,y,PAL.B,{helm:'#2b2b28'});rect(x+2,y-14,3,1,'#9aad62');rect(x+3,y-15,1,3,'#9aad62');}}});
+add({id:'shield_drone',f:'M',c:'infantry',n:'Shield Drone',st:9,gap:['G1'],g:'grass',
+ w:'A hovering drone that projects a curved energy shield in front of nearby Machine ground units, blocking small arms.',b:'Rifle fire, MGs',k:'Explosives, EMP, air',
+ d(){for(const [x,y] of [[40,70],[58,74],[50,60]]){sh(x,y,8,2);ell(x,y-5,8,4,PAL.M.o);ell(x,y-6,7,3,PAL.M.l);glo(x,y-6,1);}drone(52,30,PAL.M,1.4);glo(52,30,2);
+  X.fillStyle='rgba(82,230,216,.18)';X.beginPath();X.ellipse(70,60,8,24,0,-Math.PI/2,Math.PI/2);X.fill();arc(52,60,26,-.9,.9,'#52e6d8',1.4);for(const y of [46,58,70])px(80,y,'#ffd27a');}});
+add({id:'stalker_synth',f:'M',c:'infantry',n:'Stalker Synth',st:10,gap:['G1'],g:'grass',
+ w:'A tall synthetic hunter that cloaks while still and strikes officers and crews. It is the Machine\'s Special Forces equivalent.',b:'Officers, artillery crews, Drone Teams',k:'Recon, detection, area fire',
+ d(){X.globalAlpha=.5;sh(60,76,6,2);ln(57,76,58,58,PAL.M.l,2);ln(63,76,62,58,PAL.M.l,2);rect(55,40,10,18,PAL.M.l);rect(57,32,6,7,PAL.M.l);ln(65,44,78,54,PAL.M.hi,1.4);X.globalAlpha=1;
+  px(59,35,'#52e6d8');px(61,35,'#52e6d8');ring(60,54,14,24,'rgba(255,255,255,.18)',1,[1,3]);}});
+add({id:'repair_swarm2',f:'M',c:'infantry',n:'Repair Swarm II',st:9,gap:['G1'],g:'dirt',
+ w:'An upgraded Maintenance Swarm that repairs units in combat, not only buildings, and reconnects damaged Machine units.',b:'Sustains Machine pushes',k:'Flak, area fire',
+ d(){sh(60,74,30,6);trk(30,74,60,14,PAL.M);ell(50,56,6,3,'#1a1816');ell(72,58,5,2,'#1a1816');for(const [x,y] of [[44,40],[60,34],[78,40],[66,46]]){drone(x,y,PAL.M,.6);ln(x,y,x+2,y+12,'rgba(82,230,216,.6)');flash(x+2,y+13,.8);}}});
+add({id:'breacher_crawler',f:'M',c:'infantry',n:'Breacher Crawler',st:9,gap:['G1','G4'],g:'dirt',
+ w:'A cheap crawler with a shaped charge. It rushes a wall or gate and detonates, so the Machine finally gets a dedicated breacher.',b:'Walls, gates, bunkers',k:'MGs, wire, mines',
+ d(){blk(86,74,36,12,24,PAL.C);for(const [x,y] of [[34,62],[56,70]]){puff(x-10,y,3,.35,'150,130,100');sh(x,y,8,2);ell(x,y-4,8,4,PAL.M.o);ell(x,y-5,7,3,PAL.M.l);rect(x-2,y-8,4,3,'#c0503c');px(x,y-9,'#ffd27a');}}});
+
+/* ===== AIR ===== */
+add({id:'recon_plane',f:'B',c:'air',n:'Recon Plane',st:9,gap:['G3'],g:'grass',
+ w:'A rusty high-wing prop plane with a camera pod. It fills Human B\'s empty Stage 9 air slot: wide reveal sorties, no weapons.',b:'Fog, hidden artillery',k:'Interceptors, AA',
+ d(){ring(64,70,40,10,'rgba(255,176,80,.45)',1,[3,3]);sh(62,72,24,6);ell(62,40,26,4,PAL.B.o);ell(62,39.5,25,3,PAL.B.l);rect(57,12,10,56,PAL.B.o);rect(58,13,8,54,PAL.B.m);rect(58,13,2,54,PAL.B.hi);for(let y=16;y<66;y+=5)px(63,y,'#2a1d12');
+  rect(36,34,5,12,PAL.B.o);rect(37,35,3,10,PAL.B.m);ring(90,40,2,9,'rgba(230,228,215,.55)');ell(88,40,2,2,PAL.B.o);rect(66,42,4,3,'#1b1b19');px(67,43,'#9fd0e0');}});
+add({id:'awacs',f:'A',c:'air',n:'AWACS',st:9,gap:['G6'],g:'grass',
+ w:'A large radar plane with a rotodome. It reveals all aircraft in a huge radius and sharpens friendly AA and SAM tracking.',b:'Air superiority, stealth',k:'Interceptors (it must be escorted)',
+ d(){plane(60,30,64,48,PAL.A,{alt:40});ell(56,30,11,4,PAL.A.o);ell(56,29.5,10,3,'#c9c4b0');rect(46,29,20,1,'#3a3a36');ring(60,30,54,22,'rgba(159,208,224,.4)',1,[2,4]);}});
+add({id:'airlift',f:'A',c:'air',n:'Airlift Transport',st:9,gap:[],g:'grass',
+ w:'A four-engine cargo plane for the "Airlift" order in vision image 01. It parachutes supply pallets or a light vehicle anywhere in sight.',b:'Cut-off units, forward strips',k:'AA, interceptors',
+ d(){plane(58,24,60,52,PAL.A,{alt:50});for(const y of [10,16,32,38])ell(60,y,3,1.6,PAL.A.o);X.fillStyle='#c9c4b0';X.beginPath();X.ellipse(30,46,8,4,0,Math.PI,0);X.fill();ln(23,46,30,54,'rgba(30,30,28,.6)');ln(37,46,30,54,'rgba(30,30,28,.6)');blk(26,60,8,4,4,PAL.W);sh(30,76,5,1.4);}});
+add({id:'stealth_drone',f:'M',c:'air',n:'Stealth Strike Drone',st:10,gap:['G1'],g:'grass',
+ w:'A flying-wing strike drone that radar can\'t see. AA only engages it once it fires or flies very close.',b:'Radar, SAM sites, AA nets',k:'Interceptors with AWACS, Pulse Spire Mk II',
+ d(){sh(64,74,22,4);poly([30,44,64,18,98,44,86,46,64,32,42,46],PAL.M.o);poly([32,43,64,20,96,43,86,44,64,30,42,44],PAL.M.m);ln(40,42,64,22,'#52e6d8',1);ln(88,42,64,22,'#52e6d8',1);glo(64,26,1.6);}});
+
+/* ===== NAVAL ===== */
+function ship(x,y,L,D,h,P){poly([x,y+D,x+L-12,y+D,x+L,y+D/2,x+L,y+D/2+h,x+L-12,y+D+h,x+2,y+D+h],P.m);poly([x,y,x+L-12,y,x+L,y+D/2,x+L-12,y+D,x,y+D],P.l);
+ ln(x,y,x+L-12,y,P.hi,1);for(let i=0;i<10;i++)px(x-4-R()*10,y+D/2+R()*h,'#d8e8ee');for(let i=0;i<5;i++)px(x+L+R()*3,y+D/2+h-R()*3,'#d8e8ee');}
+add({id:'supply_ship_a',f:'A',c:'naval',n:'Supply Ship',st:8,gap:['G5'],g:'water',
+ w:'A container-and-fuel ship that resupplies nearby vessels on Auto, the way logistics trucks do on land.',b:'Keeps fleets at sea',k:'Destroyers, strike jets (unarmed)',
+ d(){sh(64,62,46,6);ship(16,40,96,16,7,PAL.A);blk(20,54,18,14,12,PAL.A);for(let i=0;i<4;i++)blk(44+i*12,52,10,10,5,{o:'#202020',d:'#3a3a3a',m:['#8a3a2e','#2e5a8a','#8a7a2e','#3a6a3a'][i],l:['#a54a3a','#3a6aa5','#a58f3a','#4a7a4a'][i],hi:'#ddd'});ln(70,40,70,24,'#1b1b19',1);ln(70,24,86,32,'#1b1b19',1);}});
+add({id:'supply_ship_b',f:'B',c:'naval',n:'Fuel Tender',st:8,gap:['G5'],g:'water',
+ w:'Human B\'s riveted tanker barge with round fuel tanks and a smokestack. It is the same resupply role as the A Supply Ship.',b:'Keeps fleets at sea',k:'Gunboats, bombers',
+ d(){sh(64,62,46,6);ship(16,40,96,16,7,PAL.B);rivets(18,54,80,4);for(let i=0;i<3;i++){tur(50+i*18,44,7,4,5,PAL.T);}blk(22,54,14,12,12,PAL.B);blk(26,40,5,3,10,PAL.T);puff(28,24,4,.5,'60,58,54');}});
+add({id:'charge_tender',f:'M',c:'naval',n:'Charge Tender',st:8,gap:['G5','G1'],g:'water',
+ w:'A Machine catamaran with glowing battery cells. It recharges nearby Machine boats and hover units at sea.',b:'Keeps the Machine navy running',k:'Any warship',
+ d(){sh(64,64,44,6);ship(18,36,90,8,5,PAL.M);ship(18,52,90,8,5,PAL.M);blk(34,56,56,14,4,PAL.M);for(let i=0;i<5;i++){blk(38+i*10,52,6,4,5,PAL.M);glo(41+i*10,44,1.4);}}});
+add({id:'minesweeper',f:'A',c:'naval',n:'Minesweeper',st:8,gap:['G4'],g:'water',
+ w:'A small ship that trails a sweep cable and clears sea mines along its wake, opening lanes for landings.',b:'Naval minefields',k:'Anything armed',
+ d(){sh(40,58,24,5);ship(16,42,50,12,5,PAL.A);blk(24,54,14,10,8,PAL.A);ln(16,48,4,60,'#1b1b19',1);X.strokeStyle='rgba(30,30,28,.8)';X.beginPath();X.moveTo(16,50);X.quadraticCurveTo(60,80,120,64);X.stroke();
+  for(const [x,y] of [[70,70],[96,68],[118,64]])ell(x,y,2.6,1.6,'#e07a2e');ell(104,40,4,4,'#222');flash(104,40,3);for(let i=0;i<8;i++)px(98+R()*14,36+R()*10,'#d8e8ee');}});
+add({id:'mine_barge',f:'B',c:'naval',n:'Mine Barge',st:8,gap:['G4'],g:'water',
+ w:'A rail-decked barge that drops contact mines behind it, sealing a channel or estuary.',b:'Landing craft, warships in channels',k:'Minesweeper, air',
+ d(){sh(50,58,30,5);ship(20,40,66,16,6,PAL.B);rivets(22,54,56,4);for(let i=0;i<5;i++){ell(30+i*9,46,3,2,'#1b1b19');}for(const [x,y] of [[14,50],[6,62],[12,72]]){ell(x,y,3,2.4,'#1b1b19');for(let a=0;a<6;a++)px(x+Math.cos(a)*4,y+Math.sin(a)*3,'#1b1b19');}}});
+add({id:'hovercraft',f:'A',c:'naval',n:'Hovercraft',st:9,gap:[],g:'sand',
+ w:'An air-cushion landing craft that carries one tank and crosses water, beach and flat ground without stopping to unload.',b:'Fast landings anywhere flat',k:'Any armed boat, AT on the beach',
+ d(){coast(x=>40+Math.sin(x/14)*4,'sand','water');for(let i=0;i<16;i++)puff(18+R()*90,70+R()*6,3,.35,'220,230,235');ell(64,66,44,9,'#161616');poly([22,52,100,52,108,60,100,66,22,66],PAL.A.o);poly([23,53,100,53,106,59,100,64,23,64],PAL.A.l);
+  for(const x of [24,32])tur(x,46,4,4,6,PAL.A);trk(46,60,40,10,PAL.A,4);tur(66,46,6,3,3,PAL.A);gun(70,45,88,42,PAL.A,2);}});
+add({id:'aa_barge',f:'B',c:'naval',n:'AA Barge',st:9,gap:['G6'],g:'water',
+ w:'A towed flat barge with three flak mounts. It gives Human B fleet air defence, since B has no AA ship today.',b:'Helicopters, bombers over water',k:'Warships, subs',
+ d(){sh(58,60,40,6);ship(12,44,90,14,5,PAL.B);rivets(14,57,80,4);for(let i=0;i<3;i++){blk(24+i*24,56,14,8,4,PAL.B);gun(30+i*24,47,40+i*24,32,PAL.T,2);gun(34+i*24,47,44+i*24,32,PAL.T,2);}puff(100,14,4,.7,'40,38,34');puff(86,8,3,.7,'40,38,34');}});
+add({id:'lance_cruiser',f:'M',c:'naval',n:'Lance Cruiser',st:9,gap:['G1'],g:'water',
+ w:'The Machine\'s first warship: a sharp-hulled cruiser with a centreline rail lance for long-range shore and ship strikes.',b:'Ships, coastal batteries',k:'Subs, strike jets, Destroyer groups',
+ d(){sh(64,62,50,6);poly([8,54,96,50,124,56,96,62,8,60],PAL.M.m);poly([8,46,96,44,124,52,96,58,8,56],PAL.M.l);ln(20,51,116,51,PAL.M.o,3);ln(20,51,116,51,'#52e6d8',1);blk(30,56,22,10,10,PAL.M);glo(41,42,2);
+  for(let i=0;i<14;i++)px(2-R()*2+R()*6,50+R()*10,'#d8e8ee');flash(120,51,2);}});
+add({id:'carrier',f:'G',c:'naval',n:'Aircraft Carrier',st:9,gap:[],g:'water',
+ w:'G6 headline, already noted in PLAN_G5 D20. A floating airfield: the hangar system goes to sea, with jets launching and recovering on deck.',b:'Projects air power anywhere on water',k:'Submarines, cruise missiles, strike packages',
+ d(){sh(64,66,60,7);poly([4,58,112,58,124,50,124,56,112,64,6,64],PAL.A.m);poly([4,38,112,38,124,46,112,58,4,58],'#5a5d56');rect(10,47,104,1,'#d9d6c8');ln(30,56,110,40,'rgba(230,230,220,.5)',1,[3,3]);
+  blk(70,40,12,6,14,PAL.A);ln(76,20,76,14,'#1b1b19');for(const [x,y] of [[24,44],[38,44],[52,52]]){plane(x,y,12,10,PAL.A,{alt:0});}}});
+add({id:'submarine',f:'G',c:'naval',n:'Attack Submarine',st:9,gap:[],g:'water',
+ w:'G6 headline. Submerged boats are invisible without sonar (destroyers, frigates) and hunt ships and carriers.',b:'Warships, carriers, supply ships',k:'Destroyers, sonar planes, minefields',
+ d(){sh(64,56,40,5);ell(60,52,44,6,'#141616');ell(60,51,42,5,'#252a2c');X.fillStyle='rgba(40,73,90,.55)';X.fillRect(8,52,112,8);blk(52,52,12,6,10,{o:'#101212',d:'#1c1f20',m:'#252a2c',l:'#343a3c',hi:'#4a5254'});ln(58,36,58,28,'#1b1b19');
+  for(let i=0;i<20;i++)px(100+R()*20,48+R()*8,'#d8e8ee');}});
+
+/* ===== BUILDINGS ===== */
+add({id:'radar_station',f:'A',c:'building',n:'Radar Station',st:9,gap:['G4','G6'],g:'conc',
+ w:'It unlocks the SAM Site, warns of incoming aircraft on the minimap and extends AA lock range around it.',b:'Air raids, stealth (partial)',k:'Strike jets, EW trucks',
+ d(){sh(60,74,36,6);blk(28,74,40,18,14,PAL.C);for(let i=0;i<3;i++)rect(32+i*12,64,8,4,'#5aa0b8');for(const [x1,x2] of [[80,74],[96,102]])ln(x1,74,88,40,'#3a3a36',1.6);ln(84,56,92,56,'#3a3a36');
+  ell(88,34,16,8,PAL.C.o);ell(88,33,15,7,PAL.C.l);ell(90,32,9,4,PAL.C.hi);ln(88,34,96,26,'#1b1b19');X.fillStyle='rgba(159,208,224,.18)';X.beginPath();X.moveTo(88,34);X.arc(88,34,40,-1.4,-.6);X.closePath();X.fill();}});
+add({id:'fob',f:'A',c:'building',n:'Forward Operating Base',st:8,gap:[],g:'dirt',
+ w:'A small walled compound near the front with a tent, a flag and a container HQ. It rebuilds and reinforces infantry, and supply trucks restock from it.',b:'Long front lines',k:'Artillery, raids',
+ d(){for(let i=0;i<10;i++){blk(14+i*10,40,9,6,6,PAL.S);}for(let i=0;i<10;i++){blk(14+i*10,78,9,6,6,PAL.S);}for(let j=0;j<3;j++){blk(14,50+j*10,9,6,6,PAL.S);blk(104,50+j*10,9,6,6,PAL.S);}
+  poly([32,66,46,52,60,66],PAL.A.l);rect(32,66,28,2,PAL.A.d);blk(66,68,24,10,8,PAL.A);ln(92,64,92,44,'#1b1b19');poly([92,44,102,47,92,50],'#d9a03a');whl(36,76,22,6,PAL.A,2,4);}});
+add({id:'repair_bay',f:'A',c:'building',n:'Vehicle Repair Bay',st:8,gap:[],g:'conc',
+ w:'A garage with a gantry crane. Damaged vehicles parked inside repair fast and wrecks can be recovered into it.',b:'Keeps armor in the fight',k:'Artillery',
+ d(){sh(60,76,40,6);blk(22,76,76,22,22,PAL.C);rect(30,60,40,16,'#141310');trk(34,76,30,8,PAL.A,3);ln(22,30,98,30,PAL.A.o,3);ln(50,30,50,58,'#1b1b19');flash(60,66,1.4);rect(76,62,14,10,'#5aa0b8');}});
+add({id:'cruise_battery',f:'A',c:'building',n:'Cruise Missile Battery',st:9,gap:[],g:'conc',
+ w:'A late-game strike: an erector launcher raises one cruise missile that can hit any target in sight on a long cooldown.',b:'HQs, carriers, key buildings',k:'Laser CIWS, cooldown',
+ d(){sh(60,74,40,6);blk(22,74,76,18,4,PAL.C);whl(30,70,58,12,PAL.A,4);poly([38,54,86,18,92,24,44,60],PAL.A.o);poly([40,54,86,20,90,24,44,58],'#d9d6c8');poly([86,20,92,16,92,24],'#b8402e');blk(14,70,12,6,14,PAL.C);}});
+add({id:'rail_yard',f:'B',c:'building',n:'Rail Yard',st:8,gap:[],g:'dirt',
+ w:'Lays rail tiles and builds armored trains. Rail lines move units and supply fast along a fixed route. This needs a new rail tile type.',b:'Long-distance logistics',k:'Cut rails, bombers',
+ d(){for(const y of [62,76]){ln(0,y,128,y,'#3b3a37',1);ln(0,y+4,128,y+4,'#3b3a37',1);for(let x=0;x<128;x+=5)rect(x,y-1,2,7,'#4f3820');ln(0,y,128,y,'#7b7973',1);ln(0,y+4,128,y+4,'#7b7973',1);}
+  blk(20,56,56,18,18,PAL.B);rivets(20,38,56,4);rect(28,42,10,6,'#141310');rect(48,42,10,6,'#141310');blk(90,54,14,10,20,PAL.W);ln(110,62,110,40,'#1b1b19');rect(108,40,5,6,'#2b2b28');px(110,42,'#c0503c');}});
+add({id:'armored_train',f:'B',c:'building',n:'Armored Train',st:8,gap:[],g:'dirt',
+ w:'A locomotive with a flak car and a gun car. It runs only on rails but carries heavy firepower and troops along them.',b:'Anything near the line',k:'Cut rails, bombers, AT at the rails',
+ d(){for(const y of [64]){ln(0,y,128,y,'#3b3a37',1);ln(0,y+6,128,y+6,'#3b3a37',1);for(let x=0;x<128;x+=5)rect(x,y-1,2,9,'#4f3820');ln(0,y,128,y,'#7b7973',1);ln(0,y+6,128,y+6,'#7b7973',1);}
+  for(const [x,w] of [[6,36],[46,36],[86,38]]){blk(x,66,w,10,12,PAL.B);rivets(x,52,w,4);for(let i=0;i<3;i++)ell(x+6+i*12,66,2.6,2.6,'#141412');}tur(64,44,6,3,3,PAL.T);gun(68,43,84,40,PAL.T,2);
+  gun(22,44,30,30,PAL.T,2);gun(26,44,34,30,PAL.T,2);blk(100,50,5,3,8,PAL.T);puff(102,34,4,.5,'60,58,54');puff(108,26,5,.35,'60,58,54');}});
+add({id:'scrapyard',f:'B',c:'building',n:'Scrapyard Crane',st:7,gap:[],g:'dirt',
+ w:'A gantry magnet crane over scrap piles. It is an upgrade to the Salvage Yard that turns hauled wrecks into steel faster.',b:'Faster salvage economy',k:'Raids, artillery',
+ d(){for(let i=0;i<14;i++){const x=20+R()*90,y=60+R()*16;poly([x,y,x+6,y-4-R()*4,x+10,y],['#5b4a3a','#3b3a37','#6a4730','#2b2b28'][i%4]);}ln(24,80,28,24,PAL.B.o,3);ln(104,80,100,24,PAL.B.o,3);ln(24,24,104,24,PAL.B.o,4);ln(24,24,104,24,PAL.B.acc,2);
+  ln(70,24,70,44,'#1b1b19');ell(70,46,6,2.6,PAL.T.l);}});
+add({id:'propaganda_tower',f:'B',c:'building',n:'Propaganda Tower',st:8,gap:[],g:'grass',
+ w:'A lattice tower with loudspeakers and a banner. It is a base-wide morale buff and slows enemy capture of nearby territory.',b:'Territory mode, morale',k:'Artillery, snipers on crews',
+ d(){sh(64,74,16,4);ln(56,74,62,16,PAL.T.o,2);ln(72,74,66,16,PAL.T.o,2);for(let y=24;y<74;y+=10){ln(57,y,71,y+8,PAL.T.m,1);ln(71,y,57,y+8,PAL.T.m,1);}poly([66,18,72,14,72,22],'#c9c4b0');poly([62,18,56,14,56,22],'#c9c4b0');
+  rect(76,30,26,18,'#e07a2e');rect(80,34,18,2,'#1c1510');rect(80,40,12,2,'#1c1510');for(const r of [10,18])arc(64,18,r,-.9,.9,'rgba(224,122,46,.55)',1.2);for(const r of [10,18])arc(64,18,r,Math.PI-.9,Math.PI+.9,'rgba(224,122,46,.55)',1.2);}});
+add({id:'nanite_forge',f:'M',c:'building',n:'Nanite Forge',st:9,gap:['G1'],g:'grass',
+ w:'A dome that releases a nanite cloud. Every Machine unit in a wide radius slowly self-repairs out of combat.',b:'Attrition wars',k:'EMP, focused strikes',
+ d(){sh(64,74,34,7);blk(32,74,64,16,4,PAL.M);X.fillStyle=PAL.M.o;X.beginPath();X.ellipse(64,62,30,22,0,Math.PI,0);X.fill();X.fillStyle=PAL.M.l;X.beginPath();X.ellipse(64,62,28,20,0,Math.PI,0);X.fill();
+  for(let a=0;a<6;a++)ln(64,42,36+a*11,62,'rgba(16,19,22,.5)',1);glo(64,46,3);for(let i=0;i<26;i++){ell(40+R()*48,10+R()*30,1+R(),1+R(),'rgba(82,230,216,.35)');}}});
+add({id:'overmind',f:'M',c:'building',n:'Overmind Uplink',st:10,gap:['G1'],g:'conc',
+ w:'An HQ add-on: a tall uplink that unlocks Stage 10 Machine tech and lets Coordinators command at any distance.',b:'Late-game scaling',k:'Its own cost; a priority target',
+ d(){sh(64,76,30,6);blk(34,76,60,18,10,PAL.M);poly([56,58,72,58,66,6,62,6],PAL.M.o);poly([57,57,64,57,64,7,62,7],PAL.M.l);poly([64,57,71,57,66,7,64,7],PAL.M.m);for(const y of [20,32,44])ring(64,y,10,3,'#52e6d8',1);
+  ln(64,0,64,8,'rgba(82,230,216,.5)',4);ln(64,0,64,8,'#bffcf6',1);glo(64,6,3);}});
+add({id:'relay_lattice',f:'M',c:'building',n:'Relay Lattice',st:9,gap:['G1'],g:'grass',
+ w:'Small linked pylons that extend Machine power and build range along a chain, so the Machine can expand without full bases.',b:'Map expansion',k:'Cutting one pylon breaks the chain',
+ d(){const p=[[20,60],[50,44],[82,58],[108,40]];for(let i=0;i<p.length-1;i++){ln(p[i][0],p[i][1]-16,p[i+1][0],p[i+1][1]-16,'rgba(82,230,216,.35)',3);ln(p[i][0],p[i][1]-16,p[i+1][0],p[i+1][1]-16,'#bffcf6',1);}
+  for(const [x,y] of p){sh(x,y,6,2);blk(x-3,y,6,4,14,PAL.M);glo(x,y-16,1.8);ring(x,y,16,6,'rgba(82,230,216,.25)',1,[2,3]);}}});
+
+/* ===== HORIZON ===== */
+add({id:'rhomboid',f:'B',c:'horizon',n:'Stage 6: Rhomboid Landcrawler',st:6,gap:[],g:'mud',
+ w:'Stage 6 "Industrial Revival" is unplayable today. Its signature piece is an early rhomboid tank with side sponsons, clumsy and terrifying.',b:'Stage 6 trench warfare',k:'Field guns, mud',
+ d(){sh(64,74,44,6);poly([20,72,30,44,100,44,110,72],PAL.T.o);poly([22,71,31,46,99,46,108,71],PAL.T.m);for(let x=24;x<106;x+=4)px(x,70,PAL.T.hi);blk(34,66,60,12,14,PAL.B);rivets(34,54,60,4);rivets(34,60,60,4);
+  blk(38,60,12,6,6,PAL.B);gun(40,58,26,60,PAL.T,2);blk(80,40,5,3,8,PAL.T);puff(82,26,4,.5,'60,58,54');}});
+add({id:'laser_tank',f:'A',c:'horizon',n:'Stage 10: Laser Tank',st:10,gap:[],g:'conc',
+ w:'Stage 10 "Automated Technocracies". A sleek tank with a beam emitter: no ammo, but it draws power and overheats.',b:'Aircraft and armor alike',k:'Smoke, EMP, overheating',
+ d(){sh(60,74,34,6);trk(26,74,64,14,PAL.A);poly([30,58,86,56,94,62,30,64],PAL.A.l);tur(56,50,11,5,5,PAL.A);gun(64,49,84,46,PAL.A,4);ell(86,46,3,3,'#9fd0e0');ln(86,46,126,40,'rgba(159,208,224,.45)',4);ln(86,46,126,40,'#e8faff',1);}});
+add({id:'exo_trooper',f:'A',c:'horizon',n:'Stage 10: Exo-Suit Trooper',st:10,gap:[],g:'conc',
+ w:'Heavy powered-armor infantry that walks through rifle fire, carries a rotary gun and counts as light vehicle armor.',b:'Infantry, light vehicles',k:'AT teams, snipers with AP',
+ d(){man(56,74,PAL.A,{s:2.2,gun:false,helm:PAL.A.d,skin:'#9fd0e0'});gun(62,62,80,60,PAL.T,3);man(92,74,PAL.A);flash(82,60,2);}});
+add({id:'technical',f:'X',c:'horizon',n:'4th faction: Technical',st:7,gap:[],g:'sand',
+ w:'An irregular faction\'s core unit: a pickup with a bed-mounted heavy gun, mismatched paint, fast and cheap.',b:'Raids, harassment',k:'Anything armored',
+ d(){sh(60,74,30,6);whl(28,74,58,12,PAL.X,2,5);blk(66,64,18,12,9,{...PAL.X,l:'#7a8a54',m:'#5c6a3b'});rect(30,58,10,3,'#c0503c');tur(42,52,4,3,3,PAL.T);gun(42,50,62,46,PAL.T,2);man(40,60,PAL.X,{gun:false,sh:false,helm:'#c0503c'});puff(18,72,4,.35,'170,150,110');}});
+add({id:'tunnel',f:'X',c:'horizon',n:'4th faction: Tunnel Network',st:7,gap:[],g:'dirt',
+ w:'Hidden tunnel entrances that move infantry between any two exits instantly, the irregulars\' answer to transports.',b:'Flanks, surprise attacks',k:'Recon, flamers, collapsing an exit',
+ d(){ell(60,62,20,8,PAL.W.o);ell(60,62,18,7,'#0d0b08');ln(42,62,42,46,PAL.W.m,3);ln(78,62,78,46,PAL.W.m,3);ln(40,46,80,46,PAL.W.m,3);for(const [x,y] of [[60,62],[88,70],[100,58]])man(x,y,PAL.X,{helm:'#5a4a36'});for(let i=0;i<12;i++)px(20+R()*90,40+R()*40,'#4a3f2c');}});
+add({id:'ambush_cell',f:'X',c:'horizon',n:'4th faction: Ambush Cell',st:7,gap:[],g:'grass',
+ w:'A squad that hides in brush and ruins. It gets a first-strike damage bonus and is invisible until it opens fire.',b:'Columns on roads',k:'Recon drones, area fire',
+ d(){for(const [x,y,r] of [[34,56,14],[64,62,16],[96,54,13]]){ell(x,y,r,r*.6,'#2f3a1f');ell(x-3,y-2,r*.8,r*.5,'#3e4a28');ell(x+2,y-3,r*.5,r*.3,'#56623a');}for(const [x,y] of [[34,54],[64,60],[96,52]]){px(x-1,y,'#e8e2cc');px(x+1,y,'#e8e2cc');}ln(62,60,76,58,'#1b1b19',1);}});
+add({id:'captured_tank',f:'X',c:'horizon',n:'4th faction: Captured Tank',st:8,gap:[],g:'sand',
+ w:'Irregulars repair and repaint enemy wrecks into their own units. Each one is a stolen tank with patchwork paint and a faction flag.',b:'Late-game punch for a poor faction',k:'Same as the original tank',
+ d(){sh(60,74,34,6);trk(26,74,64,14,PAL.A);for(let i=0;i<10;i++)rect(30+R()*56,50+R()*10,6,3,['#9c8a62','#c0503c','#7a6a4a'][i%3]);tur(56,48,10,6,5,PAL.A);rect(52,42,8,3,'#9c8a62');gun(64,47,100,42,PAL.A,3);ln(46,46,46,30,'#1b1b19');poly([46,30,56,33,46,36],'#c0503c');}});
+
+/* ----------------------------- scenes ----------------------------- */
+const SCENES=[
+ {id:'s1',n:'G6 option A · Holding the line',tag:'Recommended',g:'grass',
+  p:'Defensive depth: minefield boundary, tank traps, wire, sandbags and trench, with an ATGM bunker and a Laser CIWS behind. Enemy armor is stuck at the traps while the CIWS burns a drone.',
+  parts:[['minefield',64,-18],['tank_traps',128,-4],['barbed_wire',0,6],['sandbags',70,26],['trench',130,40],['atgm_bunker',-14,48],['laser_ciws',184,44]],
+  pre(){sh(130,18,16,4);trk(112,18,36,10,PAL.B,4);tur(130,8,5,3,3,PAL.B);sh(170,14,16,4);trk(152,14,36,10,PAL.B,4);}},
+ {id:'s2',n:'G6 option A · The Machine catches up',tag:'Recommended',g:'grass',
+  p:'Machine parity: a Colossus Walker leads hover tanks across a river under a Swarm Queen, with a Nanite Wall and Arc Pylon holding the base.',
+  parts:[['nanite_wall',-10,50],['arc_pylon',20,10],['colossus',90,22],['swarm_queen',140,-10],['hover_tank',150,40]],pre(){}},
+ {id:'s3',n:'G6 option B · Blue water',tag:'Alternative',g:'water',
+  p:'Carriers and submarines go to sea, plus the missing supply ship and mine warfare. The Coastal Front map grows into a fleet battle.',
+  parts:[['carrier',0,10],['submarine',120,-20],['supply_ship_a',130,30],['minesweeper',20,54],['lance_cruiser',132,60]],pre(){}},
+ {id:'s4',n:'Option C · A 4th faction: Irregulars',tag:'Bigger bet',g:'sand',
+  p:'An asymmetric faction: technicals, tunnels, ambush cells and stolen tanks. It plays nothing like the three existing factions.',
+  parts:[['tunnel',-8,30],['ambush_cell',60,-20],['technical',80,34],['captured_tank',150,-14],['garrison_bld',160,44]],pre(){}}
+];
+
+/* ----------------------------- render ----------------------------- */
+const BY={};I.forEach(o=>BY[o.id]=o);
+function drawItem(cv,o,showGround=true){MANS=o.ms||(o.c==='infantry'?1.5:1);X=mk(cv,W,H);R=rng(hash(o.id));if(showGround)ground(o.g);X.save();o.d();X.restore();}
+function mk(cv,w,h){cv.width=w;cv.height=h;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;return c;}
+function el(t,cls,html){const e=document.createElement(t);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+const FN={A:'Human A',B:'Human B',M:'Machine',S:'Shared',X:'4th faction',G:'G6 headline'};
+const cats=document.getElementById('cats');
+CATS.forEach((c,ci)=>{
+  const s=el('section');s.id=c.k;
+  const items=I.filter(o=>o.c===c.k);
+  s.appendChild(el('div','sechead',`<div class="lab">Section ${ci+3} · ${items.length} plates</div><h2>${c.n}</h2><p>${c.p}</p>`));
+  const g=el('div','grid');
+  items.forEach(o=>{
+    const card=el('article','card');card.dataset.f=o.f;
+    const plate=el('div','plate');const cv=document.createElement('canvas');cv.setAttribute('role','img');cv.setAttribute('aria-label',`Mockup of ${o.n}`);
+    plate.appendChild(cv);plate.appendChild(el('span','id',o.id));card.appendChild(plate);
+    const gaps=o.gap.map(x=>`<span class="chip gap">${x}</span>`).join('');
+    card.appendChild(el('div','body',`<div class="chips"><span class="chip f-${o.f}"><i></i>${FN[o.f]}</span><span class="chip stage">${STAGE[o.st]||''}</span>${gaps}</div>
+      <h3>${o.n}</h3><p class="what">${o.w}</p><dl><dt>Strong vs</dt><dd>${o.b}</dd><dt>Beaten by</dt><dd>${o.k}</dd></dl>`));
+    g.appendChild(card);drawItem(cv,o);
+  });
+  s.appendChild(g);cats.appendChild(s);
+});
+/* scenes */
+const sl=document.getElementById('scenelist');
+SCENES.forEach(sc=>{
+  const box=el('div','scene');const plate=el('div','plate');const cv=document.createElement('canvas');cv.setAttribute('role','img');cv.setAttribute('aria-label',sc.n);plate.appendChild(cv);box.appendChild(plate);
+  box.appendChild(el('div','body',`<div class="chips"><span class="chip ${sc.tag==='Recommended'?'gap':'stage'}">${sc.tag}</span></div><h3>${sc.n}</h3><p class="what">${sc.p}</p>
+    <dl><dt>Uses</dt><dd>${sc.parts.map(p=>BY[p[0]].n).join(', ')}</dd></dl>`));
+  sl.appendChild(box);
+  X=mk(cv,256,128);R=rng(hash(sc.id));ground(sc.g,256,128);
+  if(sc.id==='s2'){R=rng(7);river(78,98,256);}
+  if(sc.id==='s4'){R=rng(9);for(let i=0;i<30;i++)px(R()*256|0,R()*128|0,'#6a5a40');}
+  X.save();sc.pre();X.restore();
+  SCENE=true;MANS=1;[...sc.parts].sort((a,b)=>a[2]-b[2]).forEach(([id,dx,dy])=>{X.save();X.translate(dx,dy);R=rng(hash(id));BY[id].d();X.restore();});SCENE=false;
+});
+/* G5 sprite strip */
+const strip=document.getElementById('strip');
+const NAMES={a_airfield_engineers:'Airfield Engineers A',a_drone_team:'Drone Team A',a_hmg_team:'HMG Team',a_medic_team:'Medic Team',a_special_forces:'Special Forces',
+ b_airfield_engineers:'Airfield Engineers B',b_at_rocket_team:'AT Rocket Team',b_drone_team:'Drone Team B (FPV)',b_grenadiers:'Grenadiers',b_shock_troops:'Shock Troopers',
+ a_ambulance:'Armored Ambulance',a_drone_emp:'Drone EMP A',a_drone_frag:'Drone Frag A',a_drone_recon:'Drone Recon A',a_drone_strike:'Drone Strike A',a_recon_car:'Recon Car',a_spaag:'SPAAG',
+ b_armored_car:'Armored Car',b_drone_emp:'FPV EMP',b_drone_frag:'FPV Frag',b_drone_recon:'FPV Recon',b_drone_strike:'FPV Strike',b_field_ambulance:'Field Ambulance',m_maint_swarm:'Maintenance Swarm'};
+Object.entries(SPRITES).forEach(([id,s])=>{
+  const d=el('div','spr');const cv=document.createElement('canvas');cv.width=s.fw;cv.height=s.fh;cv.setAttribute('role','img');cv.setAttribute('aria-label',NAMES[id]||id);d.appendChild(cv);d.appendChild(el('span',null,NAMES[id]||id));strip.appendChild(d);
+  const img=new Image();img.onload=()=>{const c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(img,0,0,s.fw,s.fh,0,0,s.fw,s.fh);};img.src=s.src;
+});
+/* counts chart: new G5 content per faction, read from content/g5 */
+const COUNTS=[['Human A',8,5,4,13],['Human B',7,4,3,13],['Machine',1,4,2,5]];
+const MAX=Math.max(...COUNTS.map(r=>r[1]+r[2]+r[3]+r[4]));
+const cc=document.getElementById('counts');
+COUNTS.forEach(r=>{const tot=r[1]+r[2]+r[3]+r[4];const cols=['var(--fa)','var(--fs)','var(--fm)','var(--muted)'];
+  const segs=[1,2,3,4].map((k,i)=>`<span style="width:${r[k]/MAX*100}%;background:${cols[i]}" title="${r[k]}"></span>`).join('');
+  cc.appendChild(el('div','crow',`<span>${r[0]}</span><div class="track">${segs}</div><b>${tot}</b>`));});
+/* HUD */
+const hi=document.getElementById('hudicons');
+[['sandbags','Sandbags','40'],['trench','Trench','60'],['barbed_wire','Wire','30'],['tank_traps','Tank traps','80'],['minefield','Minefield','150'],['camo_decoy','Decoy','90'],['atgm_bunker','ATGM','400'],['laser_ciws','CIWS','550']].forEach(([id,l,c])=>{
+  const d=el('div','ic');const cv=document.createElement('canvas');cv.setAttribute('role','img');cv.setAttribute('aria-label',l);d.appendChild(cv);d.appendChild(el('small',null,`<span>${l}</span><b>${c}</b>`));hi.appendChild(d);drawItem(cv,BY[id]);});
+drawItem(document.getElementById('hudsel'),BY.eod);
+/* Top 10 */
+const T10=[
+ ['lance_cruiser','Machine Lance Cruiser','The Machine\'s first warship.','G1'],
+ ['supply_ship_a','Supply Ship (all 3 factions)','Supply Ship, Fuel Tender and Charge Tender close the rules gap.','G5'],
+ ['sp_howitzer','Human A SP Howitzer','Fills Human A\'s empty artillery slot at Stage 8.','G2'],
+ ['moto_scouts','Human B Motorcycle Scouts','Fills Human B\'s empty recon slot.','G3'],
+ ['minefield','Minefields + EOD Sappers','A new brush and its hard counter.','G4'],
+ ['sandbags','Sandbags and trenches','Cover anywhere, not only on hills.','G4'],
+ ['laser_ciws','Counter-drone trio','Laser CIWS, Net Launcher Post and Jammer Obelisk, one per faction.','G6'],
+ ['sam_site','SAM Site + Radar Station','Ground answer to high-flying jets.','G4 · G6'],
+ ['shield_drone','Shield Drone + Stalker Synth','A Machine infantry tier at last.','G1'],
+ ['landship','Human B Landship','A super-heavy centrepiece for the industrial faction.','']];
+const t=document.getElementById('t10');
+T10.forEach(([id,n,p,g],i)=>{const r=el('div','t10');r.appendChild(el('span','n',String(i+1)));const cv=document.createElement('canvas');cv.setAttribute('role','img');cv.setAttribute('aria-label',n);r.appendChild(cv);
+  r.appendChild(el('div',null,`<div class="disp">${n}</div><p>${p}${g?` <span class="chip gap" style="margin-left:4px">${g}</span>`:''}</p>`));t.appendChild(r);drawItem(cv,BY[id]);});
+/* filter */
+const btns=[...document.querySelectorAll('.bar button')];const countEl=document.getElementById('count');
+function applyF(f){btns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===f)));let n=0;
+  document.querySelectorAll('#cats .card').forEach(c=>{const show=f==='all'||c.dataset.f===f||(c.dataset.f==='S'&&f!=='X')||(c.dataset.f==='G'&&(f==='A'||f==='B'));c.hidden=!show;if(show)n++;});
+  document.querySelectorAll('#cats section').forEach(s=>{s.hidden=!s.querySelector('.card:not([hidden])');});
+  countEl.textContent=`${n} of ${I.length} plates`;try{localStorage.setItem('g6f',f);}catch(e){}}
+btns.forEach(b=>b.addEventListener('click',()=>applyF(b.dataset.f)));
+let start='all';try{start=localStorage.getItem('g6f')||'all';}catch(e){}applyF(start);
+</script>

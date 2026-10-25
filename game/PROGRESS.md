@@ -1,6 +1,33 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G5 "Full Spectrum", owner-approved 2026-10-24: rev 4, all defaults D9-D20; plan `docs/PLAN_G5.md`, contract `docs/CONTRACTS_G5.md`)
+## Active goal (G6 "Command & Terrain", owner-approved 2026-10-25: all defaults D21-D44; plan `docs/PLAN_G6.md`, contract `docs/CONTRACTS_G6.md`; branch `g6`)
+One continuous wave, up to 8 agents live (D21, owner override), 23 agents each with an operating guide (`.plan/agents/prompts/G6-*.md`; MECH6c and ART-G6b split out of MECH6a / ART-G6 for budget). Message board + semantic layer run all wave. Scope: the G6 owner notes and answers below (items 1-17).
+
+```
+GOAL - G6 "Command & Terrain"
+For whom / what changes:  Owner fights on real high ground with companies and armies under a chain of command,
+                          AI that fights like a military (and AI Commanders that assist), 89 new assets with
+                          their systems (mines, garrisons, rail, subs, carriers, SAM/radar, counter-drone, ...),
+                          exo-suits and loadouts, Stage 10, a marketplace, a new airfield, survival mode and
+                          editor Live mode; G5 gaps fixed.
+Outcome:                  One continuous orchestrated wave delivers a packaged G6 build that passes every check below.
+Done-when:                PLAN_G6 section 12 (frozen):
+                          1. tests/run.sh TESTS OK on the final commit incl. every G6 suite; 0 files in tests/pending_g6/
+                          2. Quiet PC: 10k all-fighting avg <= 62.5 ms/tick on an elevated map; 2k on screen 60+ fps;
+                             10k zoomed out 30+ fps (numbers reported either way)
+                          3. AI soaks 4 maps x 2 seeds + 1 editor + 1 survival map: winners (Valley incl.), 0 invariant
+                             failures, logs show companies/army, doctrine tags, mines, garrison, sub, carrier, market,
+                             Stage 10, an AI-commanded player formation
+                          4. Playtests: existing 12 + 14 G6 flows pass twice, incl. 2 at a time
+                          5. UI fit 0 issues at 7 resolutions; 6. owner doctrine+elevation checkpoint passed;
+                          7. packaged build passes all from a clean folder, copied to Downloads; README/perf/PROGRESS true
+Out of scope:             weather + day/night and veterancy (G7), 4th faction (G7/G8), Stages 1-6 and 11-13, audio,
+                          multiplayer
+Stop-if / park-if:        determinism can't be restored; existing tests can't be kept green; elevation breaks the
+                          path/render core beyond repair (park with a written note). Tests are never cut.
+```
+
+## Previous goal (G5 "Full Spectrum", owner-approved 2026-10-24: rev 4, all defaults D9-D20; plan `docs/PLAN_G5.md`, contract `docs/CONTRACTS_G5.md`) — DELIVERED, PARTIAL (see G5 evidence)
 One continuous wave, up to 8 agents live (owner override), 18 agents each with an operating guide. Message board + semantic layer run all wave.
 
 ```
@@ -119,6 +146,7 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
 12. **Up to 8 subagents at once** for this build (owner override of the default 6). Every agent gets its own role/task/operating guide (owner note, 2026-10-24).
 
 ### G6 (slice after G5): owner notes. REQUIRED scope, recorded 2026-10-24
+**Plan:** `docs/PLAN_G6.md` was **approved by the owner 2026-10-25 with all default decisions D21-D44**. It is now the active goal (top of this file).
 1. **Marketplace:** the player buys salvage, ore, etc. with credits (in-game money). Exchange rates are to be designed (scarcity pricing, fair for AI). Note: G5 soaks showed small maps running out of salvage, so the marketplace also fixes that late-game economy dead end.
 2. **Airfield / runway / hangar overhaul:** a completely new design and layout.
    - Newly bought hangars are placed in a sensible spot next to the tarmac.

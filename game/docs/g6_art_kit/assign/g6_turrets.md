@@ -1,0 +1,48 @@
+# g6_turrets: 15 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **a_atgm_bunker** - ATGM Bunker - Human A (Modern Military Power, olive) - Stage 8 - plate ground: grass
+  - What it is: A low concrete bunker with a roof-mounted guided-missile launcher. Long range, slow reload, top-attack hits on armor.
+  - Strong vs: Tanks and heavy vehicles. Beaten by: Artillery, infantry assault, EMP.
+- **a_sam_site** - SAM Site - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: Four-canister launcher on a pad. It reaches high-flying jets, which today only AA vehicles touch. It needs a Radar Station in range.
+  - Strong vs: Jets, bombers, gunships. Beaten by: Ground assault, EMP, strike jets that dive under radar.
+- **a_laser_ciws** - Laser CIWS - Human A (Modern Military Power, olive) - Stage 9 - plate ground: conc
+  - What it is: A pedestal laser that burns drones, rockets and mortar shells out of the air inside a short dome of cover.
+  - Strong vs: Drones, rockets, shells. Beaten by: Tanks, artillery out of its range, smoke.
+- **a_howitzer_pit** - Howitzer Pit - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: A dug-in 155-class gun behind a sandbag ring. Fixed position, very long range, and cheaper than a self-propelled gun.
+  - Strong vs: Static defenses, massed infantry. Beaten by: Counter-battery fire, drones, raiders.
+- **a_popup_turret** - Pop-up Remote Turret - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A buried remote weapon station. It stays hidden from enemy fog until it fires, then pops up and drops back down.
+  - Strong vs: Infantry and light vehicles that walk into it. Beaten by: Recon drones, artillery, EOD sweeps.
+- **b_pak_nest** - Pak Nest - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: dirt
+  - What it is: A towed anti-tank gun dug in behind scrap plates and sandbags. Cheap, hard-hitting, easy to hide.
+  - Strong vs: Armor at medium range. Beaten by: Infantry, mortars, flamers.
+- **b_flak_battery** - Flak Battery - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: conc
+  - What it is: A twin-barrel flak gun on a cross base. It fills the sky with bursts: area damage against every low flyer and drone in a cone.
+  - Strong vs: Helicopters, drones, gunships. Beaten by: Jets above its ceiling, ground armor.
+- **b_net_post** - Net Launcher Post - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 9 - plate ground: grass
+  - What it is: A scaffold tower that fires weighted nets. Each net catches one drone intact, and Human B can salvage it.
+  - Strong vs: FPV drones, recon drones. Beaten by: Swarms (too many), artillery.
+- **b_mortar_pit** - Mortar Pit - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: dirt
+  - What it is: A sandbagged mortar pit with an ammo stack. Indirect fire over walls at short-to-medium range.
+  - Strong vs: Infantry behind cover, entrenched teams. Beaten by: Armor rushes, counter-battery.
+- **b_pillbox** - Pillbox - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: grass
+  - What it is: A hexagonal concrete pillbox with a riveted roof. A squad garrisons it and fires from the slits; it shows 6 garrison slots.
+  - Strong vs: Infantry waves. Beaten by: Flamers, satchel charges, artillery.
+- **m_arc_pylon** - Arc Pylon - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A coil pylon that chains lightning between nearby enemies. The more targets bunch up, the more it hurts.
+  - Strong vs: Massed infantry, crawler swarms. Beaten by: Artillery out of range, single heavy tanks.
+- **m_pulse_spire2** - Pulse Spire Mk II - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: An upgraded Spire with a rotating emitter ring. It locks on to aircraft at long range and pulses them out of the sky.
+  - Strong vs: Jets, helicopters, dropships. Beaten by: Ground armor, EMP drones.
+- **m_jammer_obelisk** - Jammer Obelisk - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A field generator. Enemy drones inside its rings lose their link and fall, and guided shots lose their lock.
+  - Strong vs: Drones, guided missiles, the Drone Team. Beaten by: Dumb artillery, tanks, infantry.
+- **m_mass_driver** - Mass Driver - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: conc
+  - What it is: A rail-launched kinetic artillery platform with glowing capacitor banks. Very long range, slow cycle.
+  - Strong vs: Bases and static defenses at long range. Beaten by: Drones, raiders, air.
+- **m_sentry_mine** - Sentry Mine Turret - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: dirt
+  - What it is: A buried hex disc that rises when enemies cross it and fires at close range, then re-buries. It can be painted in fields.
+  - Strong vs: Infantry, light vehicles. Beaten by: EOD sweeps, recon, artillery.

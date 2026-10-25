@@ -1,0 +1,51 @@
+# g6_infantry: 16 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **a_marines** - Marines - Human A (Modern Military Power, olive) - Stage 8 - plate ground: sand
+  - What it is: Infantry trained for beach assault: they unload from landing craft faster and fight at full strength while wading.
+  - Strong vs: Coastal Front landings. Beaten by: MGs on the beach, mines.
+- **a_paratroopers** - Paratroopers - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A squad that drops from a Transport Gunship or VTOL anywhere in sight and lands behind the lines.
+  - Strong vs: Artillery, supply lines. Beaten by: AA during the drop, quick-reaction forces.
+- **a_eod** - EOD Sappers - Human A (Modern Military Power, olive) - Stage 8 - plate ground: grass
+  - What it is: Two sappers who sweep an area, mark a safe lane, defuse mines and cut wire. This is the hard counter to minefields.
+  - Strong vs: Minefields, wire, Sentry Mines. Beaten by: Anything shooting at them.
+- **a_jtac** - JTAC - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A forward air controller with a laser designator and radio. Airstrikes and artillery called through them land faster and cost less.
+  - Strong vs: Makes air and artillery count. Beaten by: Snipers, recon.
+- **a_manpads** - MANPADS Team - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A two-man team with a shoulder-fired heat-seeker that reaches helicopters and low jets. Fast to reposition.
+  - Strong vs: Helicopters, gunships, dropships. Beaten by: Infantry, artillery.
+- **b_conscripts** - Conscript Wave - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: mud
+  - What it is: Ten cheap, poorly armed conscripts in one purchase. They soak fire and capture ground fast, with low morale.
+  - Strong vs: Sheer numbers, territory capture. Beaten by: MGs, HMG Team, artillery.
+- **b_satchel_sappers** - Satchel Sappers - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: dirt
+  - What it is: Three sappers with satchel charges who sprint to a wall, gate or bunker and blow a breach.
+  - Strong vs: Walls, gates, bunkers, pillboxes. Beaten by: MGs, wire, anything that sees them coming.
+- **b_marksman** - Marksman - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: grass
+  - What it is: Human B has no sniper. This is a cruder long-range rifleman who works best prone and picks off officers and crew.
+  - Strong vs: Officers, AT teams, gun crews. Beaten by: Recon, mortars, vehicles.
+- **b_propaganda_team** - Propaganda Team - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: grass
+  - What it is: A loudspeaker and banner team. It is a morale aura for friendly troops and a slow morale drain on enemies who hear it.
+  - Strong vs: Morale fights, holding ground. Beaten by: Snipers, artillery.
+- **m_shield_drone** - Shield Drone - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A hovering drone that projects a curved energy shield in front of nearby Machine ground units, blocking small arms.
+  - Strong vs: Rifle fire, MGs. Beaten by: Explosives, EMP, air.
+- **m_stalker_synth** - Stalker Synth - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: grass
+  - What it is: A tall synthetic hunter that cloaks while still and strikes officers and crews. It is the Machine's Special Forces equivalent.
+  - Strong vs: Officers, artillery crews, Drone Teams. Beaten by: Recon, detection, area fire.
+- **m_repair_swarm2** - Repair Swarm II - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: dirt
+  - What it is: An upgraded Maintenance Swarm that repairs units in combat, not only buildings, and reconnects damaged Machine units.
+  - Strong vs: Sustains Machine pushes. Beaten by: Flak, area fire.
+- **m_breacher_crawler** - Breacher Crawler - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: dirt
+  - What it is: A cheap crawler with a shaped charge. It rushes a wall or gate and detonates, so the Machine finally gets a dedicated breacher.
+  - Strong vs: Walls, gates, bunkers. Beaten by: MGs, wire, mines.
+- **a_exo_trooper** - Stage 10: Exo-Suit Trooper - Human A (Modern Military Power, olive) - Stage 10 - plate ground: conc
+  - What it is: Heavy powered-armor infantry that walks through rifle fire, carries a rotary gun and counts as light vehicle armor.
+  - Strong vs: Infantry, light vehicles. Beaten by: AT teams, snipers with AP.
+- **x_ambush_cell** - 4th faction: Ambush Cell - 4th faction "Irregulars" (new; patchwork civilian/captured kit) - Stage 7 - plate ground: grass
+  - What it is: A squad that hides in brush and ruins. It gets a first-strike damage bonus and is invisible until it opens fire.
+  - Strong vs: Columns on roads. Beaten by: Recon drones, area fire.
+- **x_tunnel** - 4th faction: Tunnel Network - 4th faction "Irregulars" (new; patchwork civilian/captured kit) - Stage 7 - plate ground: dirt
+  - What it is: Hidden tunnel entrances that move infantry between any two exits instantly, the irregulars' answer to transports.
+  - Strong vs: Flanks, surprise attacks. Beaten by: Recon, flamers, collapsing an exit.

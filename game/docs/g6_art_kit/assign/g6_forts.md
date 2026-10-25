@@ -1,0 +1,42 @@
+# g6_forts: 13 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **s_sandbags** - Sandbag Line - Shared (draw in Human A style; usable by all) - Stage 7 - plate ground: grass
+  - What it is: Infantry drag a line of sandbags anywhere. Units behind it get the cover bonus that today only hills give.
+  - Strong vs: Small arms. Beaten by: Mortars, grenadiers, flamers.
+- **s_trench** - Trench Line - Shared (draw in Human A style; usable by all) - Stage 7 - plate ground: dirt
+  - What it is: Dug zig-zag trench. Infantry in it take far less damage from small arms and shell splash, but move slowly.
+  - Strong vs: Artillery splash, MG fire. Beaten by: Flamers, top-attack drones, tanks crossing.
+- **s_tank_traps** - Tank Traps - Shared (draw in Human A style; usable by all) - Stage 7 - plate ground: grass
+  - What it is: Steel hedgehogs and concrete dragon's teeth. They block vehicles completely, while infantry pass through.
+  - Strong vs: Vehicle rushes. Beaten by: Engineers, armored bulldozers, demolition.
+- **s_barbed_wire** - Barbed Wire - Shared (draw in Human A style; usable by all) - Stage 7 - plate ground: grass
+  - What it is: Concertina coils on posts. Infantry crossing it slow to a crawl; flamers, engineers and tanks clear it.
+  - Strong vs: Infantry charges. Beaten by: Flamers, tanks, EOD sappers.
+- **s_minefield** - Minefield - Shared (draw in Human A style; usable by all) - Stage 8 - plate ground: grass
+  - What it is: Painted as an area with a brush. Anti-tank and anti-personnel mines are hidden from enemies; the owner sees the dashed boundary.
+  - Strong vs: Any ground push. Beaten by: EOD sappers, mine-clearing vehicles, recon.
+- **s_garrison_bld** - Garrisonable Building - Shared (draw in Human A style; usable by all) - Stage 7 - plate ground: rubble
+  - What it is: City blocks and ruins that squads can occupy. Sandbagged windows give cover, and garrison pips show how many squads are inside.
+  - Strong vs: Infantry in the open. Beaten by: Flamers, artillery, tanks.
+- **s_camo_decoy** - Camo Nets and Decoys - Shared (draw in Human A style; usable by all) - Stage 8 - plate ground: grass
+  - What it is: Nets hide a parked unit from recon until it moves. Inflatable decoy tanks and SAMs draw enemy strikes and artillery.
+  - Strong vs: Recon, strike jets, artillery AI. Beaten by: Close recon, Recon drones.
+- **m_nanite_wall** - Nanite Wall - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A Machine wall segment that slowly rebuilds its own breaches while it stays powered.
+  - Strong vs: Sieges and attrition. Beaten by: Burst damage, EMP (stops regrowth).
+- **m_phase_gate** - Phase Gate - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: Two emitter pylons with a shimmering field. Machine units pass through it and everything else is blocked; it replaces the Field Gate at Stage 9.
+  - Strong vs: Wall breaches by infantry. Beaten by: Power loss, EMP.
+- **a_radar_station** - Radar Station - Human A (Modern Military Power, olive) - Stage 9 - plate ground: conc
+  - What it is: It unlocks the SAM Site, warns of incoming aircraft on the minimap and extends AA lock range around it.
+  - Strong vs: Air raids, stealth (partial). Beaten by: Strike jets, EW trucks.
+- **a_fob** - Forward Operating Base - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: A small walled compound near the front with a tent, a flag and a container HQ. It rebuilds and reinforces infantry, and supply trucks restock from it.
+  - Strong vs: Long front lines. Beaten by: Artillery, raids.
+- **a_repair_bay** - Vehicle Repair Bay - Human A (Modern Military Power, olive) - Stage 8 - plate ground: conc
+  - What it is: A garage with a gantry crane. Damaged vehicles parked inside repair fast and wrecks can be recovered into it.
+  - Strong vs: Keeps armor in the fight. Beaten by: Artillery.
+- **a_cruise_battery** - Cruise Missile Battery - Human A (Modern Military Power, olive) - Stage 9 - plate ground: conc
+  - What it is: A late-game strike: an erector launcher raises one cruise missile that can hit any target in sight on a long cooldown.
+  - Strong vs: HQs, carriers, key buildings. Beaten by: Laser CIWS, cooldown.

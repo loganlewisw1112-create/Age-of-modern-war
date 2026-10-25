@@ -1,0 +1,18 @@
+# g6_dronebld notes (art-dronebld)
+- a_aerostat: vehicle 76x104 piv 38,84; frames idle/move/fire/deployed (+wreck). truck.gd A chassis + winch bed, tethered blimp (team band ring, sensor pod); move = reeled low with guy lines, fire = sensor ping, deployed = full altitude. Plate is zoom 1 (tall frame).
+- a_loiter_truck: vehicle 68x58 piv 34,40; idle/move/fire/deployed. Tilting 2x3-cell launcher (_tbox pitch helper), fire = top cell open + g5 strike munition leaving. SHOW row 2 (cells + drone read best).
+- a_drone_cc: building size 2 top 64, K.render "a" palette; ops block, lattice mast, dish, drone pad with parked + lifting quad, drone-rack container, team flag.
+- b_fpv_workshop: building size 2; faction_b_bdress shed + brick lean-to, flue, bench with FPV frames, scrap, painted quad emblem on roof, test drone hovering.
+- b_jammer_team: squad 2; idle/walk_a/walk_b/fire/jam/wounded. Jammer packs + whips composited per figure; jam = crouched, amber field rings.
+- b_scrap_aa: squad 3; idle/walk_a/walk_b/fire/wounded. Custom scrap shotgun overlay; fire = muzzle flash + pellet cloud upward.
+- m_hive_node: building size 2; honeycomb hex hive with cyan cells, port crown, 5 micro-drones (g3b_machine _micro).
+- m_swarm_queen: air vehicle 76x56 piv 38,36; idle/move/fire; altitude 22, shadow 18x8. Hex hull, 6 ducted rotors, fire = 3 micro-drones dropping from the bay.
+- m_mimic_drone: air vehicle 40x34 piv 20,22; idle/move (disguised as the a_drone_recon airframe with cyan scan lines + graphite tear), fire/dive (true Machine form). altitude 16.
+- b_rail_yard: building size 3; two tracks (run past the slab edge), brick engine shed with arched gable openings + iron roof, stack, water tower, armored wagon on the slip with sparks, signal post.
+- b_armored_train: vehicle 112x68 piv 56,46 (wide); idle/move/fire. Rail section + armored loco (stack plume) + gun/flak car; wreck derailed.
+- b_scrapyard: building size 3; portal gantry (4 legs, truss girders), trolley with team cab, magnet holding a car shell, scrap piles, baler, bales, shed.
+- b_propaganda_tower: building size 1 top 86; 4-leg lattice tower, two tiers of horns, team banner with cog, brick hut, cable. No corner flag (banner carries team).
+- m_nanite_forge: building size 2; ribbed dome (stacked-ellipse helper) with cyan ring + team band, nanite speckle cloud, coil/tank/vent.
+- m_overmind: building size 2 top 108; stepped hex spire, halo rings, uplink beam to the canvas top, pylon arcs.
+- m_relay_lattice: building size 1; three pylons with team heads, cyan links + chain stubs leaving the plate.
+- Terrain "conc" (a_drone_cc, m_overmind) does not exist in assets/generated/terrain; g6_lib.ground falls back to grass.

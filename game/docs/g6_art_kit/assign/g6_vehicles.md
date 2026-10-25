@@ -1,0 +1,48 @@
+# g6_vehicles: 15 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **a_sp_howitzer** - SP Howitzer - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: A tracked self-propelled gun with a big boxy turret. This is Human A's missing Stage 8 artillery: shoot, then relocate.
+  - Strong vs: Bases, static defenses, massed troops. Beaten by: Counter-battery, drones, raiders.
+- **a_mlrs** - MLRS - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: A tracked rocket launcher with a 12-cell pod. It fires a ripple salvo over a wide area, then needs a long reload or a resupply.
+  - Strong vs: Area denial, infantry blobs. Beaten by: Drones, air, raiders.
+- **a_mine_clearer** - Mine-Clearing Vehicle - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: A tank chassis with a front roller and a rocket line charge. It blasts a safe lane through a minefield and wire.
+  - Strong vs: Minefields, wire, tank traps (lane). Beaten by: AT guns, anything once it's alone.
+- **a_bridge_layer** - Bridge Layer - Human A (Modern Military Power, olive) - Stage 8 - plate ground: grass
+  - What it is: It unfolds a scissor bridge over a river or gap in a few seconds and can pick it back up. This opens crossings the map didn't plan for.
+  - Strong vs: River chokepoints. Beaten by: Artillery on the crossing.
+- **a_command_vehicle** - Command Vehicle - Human A (Modern Military Power, olive) - Stage 8 - plate ground: dirt
+  - What it is: An 8-wheel armored command post with a mast and dish. It gives a mobile officer aura (morale, accuracy, call-ins) when parked.
+  - Strong vs: Supports big pushes. Beaten by: Artillery, strike jets (high value).
+- **a_ugv** - Robotic UGV - Human A (Modern Military Power, olive) - Stage 9 - plate ground: grass
+  - What it is: A small remote tracked robot with a weapon station. Cheap and fearless; it doesn't count as infantry for wounded or morale.
+  - Strong vs: Scouting minefields, holding chokepoints. Beaten by: EMP, jammers, any AT.
+- **b_landship** - Landship - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 9 - plate ground: mud
+  - What it is: Human B's super-heavy: a riveted land-cruiser with a main gun, two sponson guns and a smokestack. Slow and close to unkillable head-on.
+  - Strong vs: Everything in front of it. Beaten by: Air, AT from flanks, minefields.
+- **b_flak_halftrack** - Flak Halftrack - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: A halftrack with a quad flak mount in the bed. It escorts columns against helicopters and drones.
+  - Strong vs: Low air, drones. Beaten by: Tanks, AT.
+- **b_armored_dozer** - Armored Bulldozer - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: A heavy dozer with a slit-window armored cab. It builds walls and trenches under fire and shoves tank traps and wrecks aside.
+  - Strong vs: Tank traps, wrecks, wire. Beaten by: AT teams, artillery.
+- **b_salvage_crane** - Salvage Crane - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: A crane truck that hooks battlefield wrecks and hauls them to a Salvage Yard for resources, fitting Human B's salvage economy.
+  - Strong vs: Turns wrecks into income. Beaten by: Anything; it is unarmed.
+- **b_moto_scouts** - Motorcycle Scouts - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: dirt
+  - What it is: Three motorcycles, one with a sidecar MG. Human B finally gets a recon role: fast, long sight, fragile.
+  - Strong vs: Scouting, harassing engineers. Beaten by: Any MG, mines.
+- **m_spider_layer** - Spider Mine Layer - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A six-legged crawler that seeds Sentry Mines as it walks. It can lay a minefield behind a retreating army.
+  - Strong vs: Pursuers, flank routes. Beaten by: EOD sweeps, air.
+- **m_hover_tank** - Hover Tank - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: water
+  - What it is: A hovering battle tank that crosses water and beaches like land, so the Machine gets real amphibious armor.
+  - Strong vs: River and coast lines. Beaten by: Heavy AT, EMP drops it.
+- **m_colossus** - Colossus Walker - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: grass
+  - What it is: The Machine's late-game centrepiece: a four-legged siege walker with a core cannon. A rifleman stands next to it for scale.
+  - Strong vs: Bases, armor groups. Beaten by: Air focus, mass AT, EMP.
+- **m_assimilator** - Assimilator - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: dirt
+  - What it is: A crawler that claws wrecks apart and rebuilds them as Machine units. It is the Machine's answer to the B salvage economy.
+  - Strong vs: Turns enemy losses into units. Beaten by: Anything that catches it alone.

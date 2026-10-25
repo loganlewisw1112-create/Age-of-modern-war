@@ -1,0 +1,1358 @@
+[
+ {
+  "page_id": "atgm_bunker",
+  "art_id": "a_atgm_bunker",
+  "faction": "A",
+  "cat": "turret",
+  "name": "ATGM Bunker",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "A low concrete bunker with a roof-mounted guided-missile launcher. Long range, slow reload, top-attack hits on armor.",
+  "strong": "Tanks and heavy vehicles",
+  "weak": "Artillery, infantry assault, EMP"
+ },
+ {
+  "page_id": "sam_site",
+  "art_id": "a_sam_site",
+  "faction": "A",
+  "cat": "turret",
+  "name": "SAM Site",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G4",
+   "G6"
+  ],
+  "what": "Four-canister launcher on a pad. It reaches high-flying jets, which today only AA vehicles touch. It needs a Radar Station in range.",
+  "strong": "Jets, bombers, gunships",
+  "weak": "Ground assault, EMP, strike jets that dive under radar"
+ },
+ {
+  "page_id": "laser_ciws",
+  "art_id": "a_laser_ciws",
+  "faction": "A",
+  "cat": "turret",
+  "name": "Laser CIWS",
+  "stage": 9,
+  "ground": "conc",
+  "gap": [
+   "G6"
+  ],
+  "what": "A pedestal laser that burns drones, rockets and mortar shells out of the air inside a short dome of cover.",
+  "strong": "Drones, rockets, shells",
+  "weak": "Tanks, artillery out of its range, smoke"
+ },
+ {
+  "page_id": "howitzer_pit",
+  "art_id": "a_howitzer_pit",
+  "faction": "A",
+  "cat": "turret",
+  "name": "Howitzer Pit",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G2",
+   "G4"
+  ],
+  "what": "A dug-in 155-class gun behind a sandbag ring. Fixed position, very long range, and cheaper than a self-propelled gun.",
+  "strong": "Static defenses, massed infantry",
+  "weak": "Counter-battery fire, drones, raiders"
+ },
+ {
+  "page_id": "popup_turret",
+  "art_id": "a_popup_turret",
+  "faction": "A",
+  "cat": "turret",
+  "name": "Pop-up Remote Turret",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "A buried remote weapon station. It stays hidden from enemy fog until it fires, then pops up and drops back down.",
+  "strong": "Infantry and light vehicles that walk into it",
+  "weak": "Recon drones, artillery, EOD sweeps"
+ },
+ {
+  "page_id": "pak_nest",
+  "art_id": "b_pak_nest",
+  "faction": "B",
+  "cat": "turret",
+  "name": "Pak Nest",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "A towed anti-tank gun dug in behind scrap plates and sandbags. Cheap, hard-hitting, easy to hide.",
+  "strong": "Armor at medium range",
+  "weak": "Infantry, mortars, flamers"
+ },
+ {
+  "page_id": "flak_battery",
+  "art_id": "b_flak_battery",
+  "faction": "B",
+  "cat": "turret",
+  "name": "Flak Battery",
+  "stage": 8,
+  "ground": "conc",
+  "gap": [
+   "G4",
+   "G6"
+  ],
+  "what": "A twin-barrel flak gun on a cross base. It fills the sky with bursts: area damage against every low flyer and drone in a cone.",
+  "strong": "Helicopters, drones, gunships",
+  "weak": "Jets above its ceiling, ground armor"
+ },
+ {
+  "page_id": "net_post",
+  "art_id": "b_net_post",
+  "faction": "B",
+  "cat": "turret",
+  "name": "Net Launcher Post",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G6"
+  ],
+  "what": "A scaffold tower that fires weighted nets. Each net catches one drone intact, and Human B can salvage it.",
+  "strong": "FPV drones, recon drones",
+  "weak": "Swarms (too many), artillery"
+ },
+ {
+  "page_id": "mortar_pit",
+  "art_id": "b_mortar_pit",
+  "faction": "B",
+  "cat": "turret",
+  "name": "Mortar Pit",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "A sandbagged mortar pit with an ammo stack. Indirect fire over walls at short-to-medium range.",
+  "strong": "Infantry behind cover, entrenched teams",
+  "weak": "Armor rushes, counter-battery"
+ },
+ {
+  "page_id": "pillbox",
+  "art_id": "b_pillbox",
+  "faction": "B",
+  "cat": "turret",
+  "name": "Pillbox",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "A hexagonal concrete pillbox with a riveted roof. A squad garrisons it and fires from the slits; it shows 6 garrison slots.",
+  "strong": "Infantry waves",
+  "weak": "Flamers, satchel charges, artillery"
+ },
+ {
+  "page_id": "arc_pylon",
+  "art_id": "m_arc_pylon",
+  "faction": "M",
+  "cat": "turret",
+  "name": "Arc Pylon",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A coil pylon that chains lightning between nearby enemies. The more targets bunch up, the more it hurts.",
+  "strong": "Massed infantry, crawler swarms",
+  "weak": "Artillery out of range, single heavy tanks"
+ },
+ {
+  "page_id": "pulse_spire2",
+  "art_id": "m_pulse_spire2",
+  "faction": "M",
+  "cat": "turret",
+  "name": "Pulse Spire Mk II",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G4",
+   "G6"
+  ],
+  "what": "An upgraded Spire with a rotating emitter ring. It locks on to aircraft at long range and pulses them out of the sky.",
+  "strong": "Jets, helicopters, dropships",
+  "weak": "Ground armor, EMP drones"
+ },
+ {
+  "page_id": "jammer_obelisk",
+  "art_id": "m_jammer_obelisk",
+  "faction": "M",
+  "cat": "turret",
+  "name": "Jammer Obelisk",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G6"
+  ],
+  "what": "A field generator. Enemy drones inside its rings lose their link and fall, and guided shots lose their lock.",
+  "strong": "Drones, guided missiles, the Drone Team",
+  "weak": "Dumb artillery, tanks, infantry"
+ },
+ {
+  "page_id": "mass_driver",
+  "art_id": "m_mass_driver",
+  "faction": "M",
+  "cat": "turret",
+  "name": "Mass Driver",
+  "stage": 10,
+  "ground": "conc",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A rail-launched kinetic artillery platform with glowing capacitor banks. Very long range, slow cycle.",
+  "strong": "Bases and static defenses at long range",
+  "weak": "Drones, raiders, air"
+ },
+ {
+  "page_id": "sentry_mine",
+  "art_id": "m_sentry_mine",
+  "faction": "M",
+  "cat": "turret",
+  "name": "Sentry Mine Turret",
+  "stage": 9,
+  "ground": "dirt",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A buried hex disc that rises when enemies cross it and fires at close range, then re-buries. It can be painted in fields.",
+  "strong": "Infantry, light vehicles",
+  "weak": "EOD sweeps, recon, artillery"
+ },
+ {
+  "page_id": "sandbags",
+  "art_id": "s_sandbags",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Sandbag Line",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Infantry drag a line of sandbags anywhere. Units behind it get the cover bonus that today only hills give.",
+  "strong": "Small arms",
+  "weak": "Mortars, grenadiers, flamers"
+ },
+ {
+  "page_id": "trench",
+  "art_id": "s_trench",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Trench Line",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "Dug zig-zag trench. Infantry in it take far less damage from small arms and shell splash, but move slowly.",
+  "strong": "Artillery splash, MG fire",
+  "weak": "Flamers, top-attack drones, tanks crossing"
+ },
+ {
+  "page_id": "tank_traps",
+  "art_id": "s_tank_traps",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Tank Traps",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Steel hedgehogs and concrete dragon's teeth. They block vehicles completely, while infantry pass through.",
+  "strong": "Vehicle rushes",
+  "weak": "Engineers, armored bulldozers, demolition"
+ },
+ {
+  "page_id": "barbed_wire",
+  "art_id": "s_barbed_wire",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Barbed Wire",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Concertina coils on posts. Infantry crossing it slow to a crawl; flamers, engineers and tanks clear it.",
+  "strong": "Infantry charges",
+  "weak": "Flamers, tanks, EOD sappers"
+ },
+ {
+  "page_id": "minefield",
+  "art_id": "s_minefield",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Minefield",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Painted as an area with a brush. Anti-tank and anti-personnel mines are hidden from enemies; the owner sees the dashed boundary.",
+  "strong": "Any ground push",
+  "weak": "EOD sappers, mine-clearing vehicles, recon"
+ },
+ {
+  "page_id": "garrison_bld",
+  "art_id": "s_garrison_bld",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Garrisonable Building",
+  "stage": 7,
+  "ground": "rubble",
+  "gap": [
+   "G4"
+  ],
+  "what": "City blocks and ruins that squads can occupy. Sandbagged windows give cover, and garrison pips show how many squads are inside.",
+  "strong": "Infantry in the open",
+  "weak": "Flamers, artillery, tanks"
+ },
+ {
+  "page_id": "camo_decoy",
+  "art_id": "s_camo_decoy",
+  "faction": "S",
+  "cat": "fort",
+  "name": "Camo Nets and Decoys",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Nets hide a parked unit from recon until it moves. Inflatable decoy tanks and SAMs draw enemy strikes and artillery.",
+  "strong": "Recon, strike jets, artillery AI",
+  "weak": "Close recon, Recon drones"
+ },
+ {
+  "page_id": "nanite_wall",
+  "art_id": "m_nanite_wall",
+  "faction": "M",
+  "cat": "fort",
+  "name": "Nanite Wall",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A Machine wall segment that slowly rebuilds its own breaches while it stays powered.",
+  "strong": "Sieges and attrition",
+  "weak": "Burst damage, EMP (stops regrowth)"
+ },
+ {
+  "page_id": "phase_gate",
+  "art_id": "m_phase_gate",
+  "faction": "M",
+  "cat": "fort",
+  "name": "Phase Gate",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "Two emitter pylons with a shimmering field. Machine units pass through it and everything else is blocked; it replaces the Field Gate at Stage 9.",
+  "strong": "Wall breaches by infantry",
+  "weak": "Power loss, EMP"
+ },
+ {
+  "page_id": "aerostat",
+  "art_id": "a_aerostat",
+  "faction": "A",
+  "cat": "drone",
+  "name": "Tethered Recon Aerostat",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G6"
+  ],
+  "what": "A winch truck flies a tethered balloon with a sensor pod. It gives a huge sight radius over one area and is easy to shoot down.",
+  "strong": "Fog of war, ambushes",
+  "weak": "Any AA, the Interceptor Swarm"
+ },
+ {
+  "page_id": "loiter_truck",
+  "art_id": "a_loiter_truck",
+  "faction": "A",
+  "cat": "drone",
+  "name": "Loitering Munition Truck",
+  "stage": 9,
+  "ground": "dirt",
+  "gap": [
+   "G6"
+  ],
+  "what": "A truck with a six-cell launcher. Each cell launches a strike drone that circles until a target appears, then dives.",
+  "strong": "Artillery, parked armor, AA vehicles",
+  "weak": "Jammers, CIWS, raiders"
+ },
+ {
+  "page_id": "drone_cc",
+  "art_id": "a_drone_cc",
+  "faction": "A",
+  "cat": "drone",
+  "name": "Drone Control Center",
+  "stage": 9,
+  "ground": "conc",
+  "gap": [
+   "G6"
+  ],
+  "what": "A building that boosts every friendly Drone Team in range: +1 charge, longer drone range and faster restock.",
+  "strong": "Supports drone play",
+  "weak": "Jammers, strike jets"
+ },
+ {
+  "page_id": "fpv_workshop",
+  "art_id": "b_fpv_workshop",
+  "faction": "B",
+  "cat": "drone",
+  "name": "FPV Workshop",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G6"
+  ],
+  "what": "A corrugated shed where Human B solders FPV drones from scrap. It rebuilds Drone Team charges at base, and salvaged nets feed it.",
+  "strong": "Keeps B drone teams stocked",
+  "weak": "Artillery, raids"
+ },
+ {
+  "page_id": "jammer_team",
+  "art_id": "b_jammer_team",
+  "faction": "B",
+  "cat": "drone",
+  "name": "Backpack Jammer Team",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G3",
+   "G6"
+  ],
+  "what": "Two soldiers with backpack jammers and whip antennas. Enemy drones near them drift and crash; their own drones are not affected.",
+  "strong": "Drones, guided munitions",
+  "weak": "Rifles, snipers (they are lightly armed)"
+ },
+ {
+  "page_id": "scrap_aa",
+  "art_id": "b_scrap_aa",
+  "faction": "B",
+  "cat": "drone",
+  "name": "Scrap Shotgun AA Squad",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G6"
+  ],
+  "what": "Three troops with big-bore scrap shotguns that throw pellet clouds at anything flying low. Cheap counter-drone for the frontline.",
+  "strong": "FPV and recon drones",
+  "weak": "Armor, helicopters out of range"
+ },
+ {
+  "page_id": "hive_node",
+  "art_id": "m_hive_node",
+  "faction": "M",
+  "cat": "drone",
+  "name": "Hive Node",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G6"
+  ],
+  "what": "A hexagonal hive that slowly spawns free micro-drones on its own and sends them to the nearest fight.",
+  "strong": "Attrition, map control",
+  "weak": "Flak, jammers, strike jets"
+ },
+ {
+  "page_id": "swarm_queen",
+  "art_id": "m_swarm_queen",
+  "faction": "M",
+  "cat": "drone",
+  "name": "Swarm Queen",
+  "stage": 10,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G6"
+  ],
+  "what": "A large, slow hexacopter mothership that endlessly releases micro-drones while it lives. A priority target.",
+  "strong": "Everything on the ground nearby",
+  "weak": "SAMs, interceptors, AA focus"
+ },
+ {
+  "page_id": "mimic_drone",
+  "art_id": "m_mimic_drone",
+  "faction": "M",
+  "cat": "drone",
+  "name": "Mimic Drone",
+  "stage": 10,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G6"
+  ],
+  "what": "It reads as an enemy drone on the opponent's screen until it is within 3 tiles, then dives. It fools both AA targeting and players.",
+  "strong": "AA nests, Drone Teams, officers",
+  "weak": "CIWS (sees through it), jammers"
+ },
+ {
+  "page_id": "sp_howitzer",
+  "art_id": "a_sp_howitzer",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "SP Howitzer",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G2"
+  ],
+  "what": "A tracked self-propelled gun with a big boxy turret. This is Human A's missing Stage 8 artillery: shoot, then relocate.",
+  "strong": "Bases, static defenses, massed troops",
+  "weak": "Counter-battery, drones, raiders"
+ },
+ {
+  "page_id": "mlrs",
+  "art_id": "a_mlrs",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "MLRS",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G2"
+  ],
+  "what": "A tracked rocket launcher with a 12-cell pod. It fires a ripple salvo over a wide area, then needs a long reload or a resupply.",
+  "strong": "Area denial, infantry blobs",
+  "weak": "Drones, air, raiders"
+ },
+ {
+  "page_id": "mine_clearer",
+  "art_id": "a_mine_clearer",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "Mine-Clearing Vehicle",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "A tank chassis with a front roller and a rocket line charge. It blasts a safe lane through a minefield and wire.",
+  "strong": "Minefields, wire, tank traps (lane)",
+  "weak": "AT guns, anything once it's alone"
+ },
+ {
+  "page_id": "bridge_layer",
+  "art_id": "a_bridge_layer",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "Bridge Layer",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [],
+  "what": "It unfolds a scissor bridge over a river or gap in a few seconds and can pick it back up. This opens crossings the map didn't plan for.",
+  "strong": "River chokepoints",
+  "weak": "Artillery on the crossing"
+ },
+ {
+  "page_id": "command_vehicle",
+  "art_id": "a_command_vehicle",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "Command Vehicle",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [],
+  "what": "An 8-wheel armored command post with a mast and dish. It gives a mobile officer aura (morale, accuracy, call-ins) when parked.",
+  "strong": "Supports big pushes",
+  "weak": "Artillery, strike jets (high value)"
+ },
+ {
+  "page_id": "ugv",
+  "art_id": "a_ugv",
+  "faction": "A",
+  "cat": "vehicle",
+  "name": "Robotic UGV",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [],
+  "what": "A small remote tracked robot with a weapon station. Cheap and fearless; it doesn't count as infantry for wounded or morale.",
+  "strong": "Scouting minefields, holding chokepoints",
+  "weak": "EMP, jammers, any AT"
+ },
+ {
+  "page_id": "landship",
+  "art_id": "b_landship",
+  "faction": "B",
+  "cat": "vehicle",
+  "name": "Landship",
+  "stage": 9,
+  "ground": "mud",
+  "gap": [],
+  "what": "Human B's super-heavy: a riveted land-cruiser with a main gun, two sponson guns and a smokestack. Slow and close to unkillable head-on.",
+  "strong": "Everything in front of it",
+  "weak": "Air, AT from flanks, minefields"
+ },
+ {
+  "page_id": "flak_halftrack",
+  "art_id": "b_flak_halftrack",
+  "faction": "B",
+  "cat": "vehicle",
+  "name": "Flak Halftrack",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G6"
+  ],
+  "what": "A halftrack with a quad flak mount in the bed. It escorts columns against helicopters and drones.",
+  "strong": "Low air, drones",
+  "weak": "Tanks, AT"
+ },
+ {
+  "page_id": "armored_dozer",
+  "art_id": "b_armored_dozer",
+  "faction": "B",
+  "cat": "vehicle",
+  "name": "Armored Bulldozer",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "A heavy dozer with a slit-window armored cab. It builds walls and trenches under fire and shoves tank traps and wrecks aside.",
+  "strong": "Tank traps, wrecks, wire",
+  "weak": "AT teams, artillery"
+ },
+ {
+  "page_id": "salvage_crane",
+  "art_id": "b_salvage_crane",
+  "faction": "B",
+  "cat": "vehicle",
+  "name": "Salvage Crane",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [],
+  "what": "A crane truck that hooks battlefield wrecks and hauls them to a Salvage Yard for resources, fitting Human B's salvage economy.",
+  "strong": "Turns wrecks into income",
+  "weak": "Anything; it is unarmed"
+ },
+ {
+  "page_id": "moto_scouts",
+  "art_id": "b_moto_scouts",
+  "faction": "B",
+  "cat": "vehicle",
+  "name": "Motorcycle Scouts",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [
+   "G3"
+  ],
+  "what": "Three motorcycles, one with a sidecar MG. Human B finally gets a recon role: fast, long sight, fragile.",
+  "strong": "Scouting, harassing engineers",
+  "weak": "Any MG, mines"
+ },
+ {
+  "page_id": "spider_layer",
+  "art_id": "m_spider_layer",
+  "faction": "M",
+  "cat": "vehicle",
+  "name": "Spider Mine Layer",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A six-legged crawler that seeds Sentry Mines as it walks. It can lay a minefield behind a retreating army.",
+  "strong": "Pursuers, flank routes",
+  "weak": "EOD sweeps, air"
+ },
+ {
+  "page_id": "hover_tank",
+  "art_id": "m_hover_tank",
+  "faction": "M",
+  "cat": "vehicle",
+  "name": "Hover Tank",
+  "stage": 10,
+  "ground": "water",
+  "gap": [
+   "G1"
+  ],
+  "what": "A hovering battle tank that crosses water and beaches like land, so the Machine gets real amphibious armor.",
+  "strong": "River and coast lines",
+  "weak": "Heavy AT, EMP drops it"
+ },
+ {
+  "page_id": "colossus",
+  "art_id": "m_colossus",
+  "faction": "M",
+  "cat": "vehicle",
+  "name": "Colossus Walker",
+  "stage": 10,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "The Machine's late-game centrepiece: a four-legged siege walker with a core cannon. A rifleman stands next to it for scale.",
+  "strong": "Bases, armor groups",
+  "weak": "Air focus, mass AT, EMP"
+ },
+ {
+  "page_id": "assimilator",
+  "art_id": "m_assimilator",
+  "faction": "M",
+  "cat": "vehicle",
+  "name": "Assimilator",
+  "stage": 10,
+  "ground": "dirt",
+  "gap": [
+   "G1"
+  ],
+  "what": "A crawler that claws wrecks apart and rebuilds them as Machine units. It is the Machine's answer to the B salvage economy.",
+  "strong": "Turns enemy losses into units",
+  "weak": "Anything that catches it alone"
+ },
+ {
+  "page_id": "marines",
+  "art_id": "a_marines",
+  "faction": "A",
+  "cat": "infantry",
+  "name": "Marines",
+  "stage": 8,
+  "ground": "sand",
+  "gap": [],
+  "what": "Infantry trained for beach assault: they unload from landing craft faster and fight at full strength while wading.",
+  "strong": "Coastal Front landings",
+  "weak": "MGs on the beach, mines"
+ },
+ {
+  "page_id": "paratroopers",
+  "art_id": "a_paratroopers",
+  "faction": "A",
+  "cat": "infantry",
+  "name": "Paratroopers",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [],
+  "what": "A squad that drops from a Transport Gunship or VTOL anywhere in sight and lands behind the lines.",
+  "strong": "Artillery, supply lines",
+  "weak": "AA during the drop, quick-reaction forces"
+ },
+ {
+  "page_id": "eod",
+  "art_id": "a_eod",
+  "faction": "A",
+  "cat": "infantry",
+  "name": "EOD Sappers",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [
+   "G4"
+  ],
+  "what": "Two sappers who sweep an area, mark a safe lane, defuse mines and cut wire. This is the hard counter to minefields.",
+  "strong": "Minefields, wire, Sentry Mines",
+  "weak": "Anything shooting at them"
+ },
+ {
+  "page_id": "jtac",
+  "art_id": "a_jtac",
+  "faction": "A",
+  "cat": "infantry",
+  "name": "JTAC",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [],
+  "what": "A forward air controller with a laser designator and radio. Airstrikes and artillery called through them land faster and cost less.",
+  "strong": "Makes air and artillery count",
+  "weak": "Snipers, recon"
+ },
+ {
+  "page_id": "manpads",
+  "art_id": "a_manpads",
+  "faction": "A",
+  "cat": "infantry",
+  "name": "MANPADS Team",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G6"
+  ],
+  "what": "A two-man team with a shoulder-fired heat-seeker that reaches helicopters and low jets. Fast to reposition.",
+  "strong": "Helicopters, gunships, dropships",
+  "weak": "Infantry, artillery"
+ },
+ {
+  "page_id": "conscripts",
+  "art_id": "b_conscripts",
+  "faction": "B",
+  "cat": "infantry",
+  "name": "Conscript Wave",
+  "stage": 7,
+  "ground": "mud",
+  "gap": [],
+  "what": "Ten cheap, poorly armed conscripts in one purchase. They soak fire and capture ground fast, with low morale.",
+  "strong": "Sheer numbers, territory capture",
+  "weak": "MGs, HMG Team, artillery"
+ },
+ {
+  "page_id": "satchel_sappers",
+  "art_id": "b_satchel_sappers",
+  "faction": "B",
+  "cat": "infantry",
+  "name": "Satchel Sappers",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [
+   "G4"
+  ],
+  "what": "Three sappers with satchel charges who sprint to a wall, gate or bunker and blow a breach.",
+  "strong": "Walls, gates, bunkers, pillboxes",
+  "weak": "MGs, wire, anything that sees them coming"
+ },
+ {
+  "page_id": "marksman",
+  "art_id": "b_marksman",
+  "faction": "B",
+  "cat": "infantry",
+  "name": "Marksman",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [],
+  "what": "Human B has no sniper. This is a cruder long-range rifleman who works best prone and picks off officers and crew.",
+  "strong": "Officers, AT teams, gun crews",
+  "weak": "Recon, mortars, vehicles"
+ },
+ {
+  "page_id": "propaganda_team",
+  "art_id": "b_propaganda_team",
+  "faction": "B",
+  "cat": "infantry",
+  "name": "Propaganda Team",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [],
+  "what": "A loudspeaker and banner team. It is a morale aura for friendly troops and a slow morale drain on enemies who hear it.",
+  "strong": "Morale fights, holding ground",
+  "weak": "Snipers, artillery"
+ },
+ {
+  "page_id": "shield_drone",
+  "art_id": "m_shield_drone",
+  "faction": "M",
+  "cat": "infantry",
+  "name": "Shield Drone",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "A hovering drone that projects a curved energy shield in front of nearby Machine ground units, blocking small arms.",
+  "strong": "Rifle fire, MGs",
+  "weak": "Explosives, EMP, air"
+ },
+ {
+  "page_id": "stalker_synth",
+  "art_id": "m_stalker_synth",
+  "faction": "M",
+  "cat": "infantry",
+  "name": "Stalker Synth",
+  "stage": 10,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "A tall synthetic hunter that cloaks while still and strikes officers and crews. It is the Machine's Special Forces equivalent.",
+  "strong": "Officers, artillery crews, Drone Teams",
+  "weak": "Recon, detection, area fire"
+ },
+ {
+  "page_id": "repair_swarm2",
+  "art_id": "m_repair_swarm2",
+  "faction": "M",
+  "cat": "infantry",
+  "name": "Repair Swarm II",
+  "stage": 9,
+  "ground": "dirt",
+  "gap": [
+   "G1"
+  ],
+  "what": "An upgraded Maintenance Swarm that repairs units in combat, not only buildings, and reconnects damaged Machine units.",
+  "strong": "Sustains Machine pushes",
+  "weak": "Flak, area fire"
+ },
+ {
+  "page_id": "breacher_crawler",
+  "art_id": "m_breacher_crawler",
+  "faction": "M",
+  "cat": "infantry",
+  "name": "Breacher Crawler",
+  "stage": 9,
+  "ground": "dirt",
+  "gap": [
+   "G1",
+   "G4"
+  ],
+  "what": "A cheap crawler with a shaped charge. It rushes a wall or gate and detonates, so the Machine finally gets a dedicated breacher.",
+  "strong": "Walls, gates, bunkers",
+  "weak": "MGs, wire, mines"
+ },
+ {
+  "page_id": "recon_plane",
+  "art_id": "b_recon_plane",
+  "faction": "B",
+  "cat": "air",
+  "name": "Recon Plane",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G3"
+  ],
+  "what": "A rusty high-wing prop plane with a camera pod. It fills Human B's empty Stage 9 air slot: wide reveal sorties, no weapons.",
+  "strong": "Fog, hidden artillery",
+  "weak": "Interceptors, AA"
+ },
+ {
+  "page_id": "awacs",
+  "art_id": "a_awacs",
+  "faction": "A",
+  "cat": "air",
+  "name": "AWACS",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G6"
+  ],
+  "what": "A large radar plane with a rotodome. It reveals all aircraft in a huge radius and sharpens friendly AA and SAM tracking.",
+  "strong": "Air superiority, stealth",
+  "weak": "Interceptors (it must be escorted)"
+ },
+ {
+  "page_id": "airlift",
+  "art_id": "a_airlift",
+  "faction": "A",
+  "cat": "air",
+  "name": "Airlift Transport",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [],
+  "what": "A four-engine cargo plane for the \"Airlift\" order in vision image 01. It parachutes supply pallets or a light vehicle anywhere in sight.",
+  "strong": "Cut-off units, forward strips",
+  "weak": "AA, interceptors"
+ },
+ {
+  "page_id": "stealth_drone",
+  "art_id": "m_stealth_drone",
+  "faction": "M",
+  "cat": "air",
+  "name": "Stealth Strike Drone",
+  "stage": 10,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "A flying-wing strike drone that radar can't see. AA only engages it once it fires or flies very close.",
+  "strong": "Radar, SAM sites, AA nets",
+  "weak": "Interceptors with AWACS, Pulse Spire Mk II"
+ },
+ {
+  "page_id": "supply_ship_a",
+  "art_id": "a_supply_ship_a",
+  "faction": "A",
+  "cat": "naval",
+  "name": "Supply Ship",
+  "stage": 8,
+  "ground": "water",
+  "gap": [
+   "G5"
+  ],
+  "what": "A container-and-fuel ship that resupplies nearby vessels on Auto, the way logistics trucks do on land.",
+  "strong": "Keeps fleets at sea",
+  "weak": "Destroyers, strike jets (unarmed)"
+ },
+ {
+  "page_id": "supply_ship_b",
+  "art_id": "b_supply_ship_b",
+  "faction": "B",
+  "cat": "naval",
+  "name": "Fuel Tender",
+  "stage": 8,
+  "ground": "water",
+  "gap": [
+   "G5"
+  ],
+  "what": "Human B's riveted tanker barge with round fuel tanks and a smokestack. It is the same resupply role as the A Supply Ship.",
+  "strong": "Keeps fleets at sea",
+  "weak": "Gunboats, bombers"
+ },
+ {
+  "page_id": "charge_tender",
+  "art_id": "m_charge_tender",
+  "faction": "M",
+  "cat": "naval",
+  "name": "Charge Tender",
+  "stage": 8,
+  "ground": "water",
+  "gap": [
+   "G5",
+   "G1"
+  ],
+  "what": "A Machine catamaran with glowing battery cells. It recharges nearby Machine boats and hover units at sea.",
+  "strong": "Keeps the Machine navy running",
+  "weak": "Any warship"
+ },
+ {
+  "page_id": "minesweeper",
+  "art_id": "a_minesweeper",
+  "faction": "A",
+  "cat": "naval",
+  "name": "Minesweeper",
+  "stage": 8,
+  "ground": "water",
+  "gap": [
+   "G4"
+  ],
+  "what": "A small ship that trails a sweep cable and clears sea mines along its wake, opening lanes for landings.",
+  "strong": "Naval minefields",
+  "weak": "Anything armed"
+ },
+ {
+  "page_id": "mine_barge",
+  "art_id": "b_mine_barge",
+  "faction": "B",
+  "cat": "naval",
+  "name": "Mine Barge",
+  "stage": 8,
+  "ground": "water",
+  "gap": [
+   "G4"
+  ],
+  "what": "A rail-decked barge that drops contact mines behind it, sealing a channel or estuary.",
+  "strong": "Landing craft, warships in channels",
+  "weak": "Minesweeper, air"
+ },
+ {
+  "page_id": "hovercraft",
+  "art_id": "a_hovercraft",
+  "faction": "A",
+  "cat": "naval",
+  "name": "Hovercraft",
+  "stage": 9,
+  "ground": "sand",
+  "gap": [],
+  "what": "An air-cushion landing craft that carries one tank and crosses water, beach and flat ground without stopping to unload.",
+  "strong": "Fast landings anywhere flat",
+  "weak": "Any armed boat, AT on the beach"
+ },
+ {
+  "page_id": "aa_barge",
+  "art_id": "b_aa_barge",
+  "faction": "B",
+  "cat": "naval",
+  "name": "AA Barge",
+  "stage": 9,
+  "ground": "water",
+  "gap": [
+   "G6"
+  ],
+  "what": "A towed flat barge with three flak mounts. It gives Human B fleet air defence, since B has no AA ship today.",
+  "strong": "Helicopters, bombers over water",
+  "weak": "Warships, subs"
+ },
+ {
+  "page_id": "lance_cruiser",
+  "art_id": "m_lance_cruiser",
+  "faction": "M",
+  "cat": "naval",
+  "name": "Lance Cruiser",
+  "stage": 9,
+  "ground": "water",
+  "gap": [
+   "G1"
+  ],
+  "what": "The Machine's first warship: a sharp-hulled cruiser with a centreline rail lance for long-range shore and ship strikes.",
+  "strong": "Ships, coastal batteries",
+  "weak": "Subs, strike jets, Destroyer groups"
+ },
+ {
+  "page_id": "carrier",
+  "art_id": "a_carrier",
+  "faction": "G",
+  "cat": "naval",
+  "name": "Aircraft Carrier",
+  "stage": 9,
+  "ground": "water",
+  "gap": [],
+  "what": "G6 headline, already noted in PLAN_G5 D20. A floating airfield: the hangar system goes to sea, with jets launching and recovering on deck.",
+  "strong": "Projects air power anywhere on water",
+  "weak": "Submarines, cruise missiles, strike packages"
+ },
+ {
+  "page_id": "submarine",
+  "art_id": "a_submarine",
+  "faction": "G",
+  "cat": "naval",
+  "name": "Attack Submarine",
+  "stage": 9,
+  "ground": "water",
+  "gap": [],
+  "what": "G6 headline. Submerged boats are invisible without sonar (destroyers, frigates) and hunt ships and carriers.",
+  "strong": "Warships, carriers, supply ships",
+  "weak": "Destroyers, sonar planes, minefields"
+ },
+ {
+  "page_id": "radar_station",
+  "art_id": "a_radar_station",
+  "faction": "A",
+  "cat": "building",
+  "name": "Radar Station",
+  "stage": 9,
+  "ground": "conc",
+  "gap": [
+   "G4",
+   "G6"
+  ],
+  "what": "It unlocks the SAM Site, warns of incoming aircraft on the minimap and extends AA lock range around it.",
+  "strong": "Air raids, stealth (partial)",
+  "weak": "Strike jets, EW trucks"
+ },
+ {
+  "page_id": "fob",
+  "art_id": "a_fob",
+  "faction": "A",
+  "cat": "building",
+  "name": "Forward Operating Base",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [],
+  "what": "A small walled compound near the front with a tent, a flag and a container HQ. It rebuilds and reinforces infantry, and supply trucks restock from it.",
+  "strong": "Long front lines",
+  "weak": "Artillery, raids"
+ },
+ {
+  "page_id": "repair_bay",
+  "art_id": "a_repair_bay",
+  "faction": "A",
+  "cat": "building",
+  "name": "Vehicle Repair Bay",
+  "stage": 8,
+  "ground": "conc",
+  "gap": [],
+  "what": "A garage with a gantry crane. Damaged vehicles parked inside repair fast and wrecks can be recovered into it.",
+  "strong": "Keeps armor in the fight",
+  "weak": "Artillery"
+ },
+ {
+  "page_id": "cruise_battery",
+  "art_id": "a_cruise_battery",
+  "faction": "A",
+  "cat": "building",
+  "name": "Cruise Missile Battery",
+  "stage": 9,
+  "ground": "conc",
+  "gap": [],
+  "what": "A late-game strike: an erector launcher raises one cruise missile that can hit any target in sight on a long cooldown.",
+  "strong": "HQs, carriers, key buildings",
+  "weak": "Laser CIWS, cooldown"
+ },
+ {
+  "page_id": "rail_yard",
+  "art_id": "b_rail_yard",
+  "faction": "B",
+  "cat": "building",
+  "name": "Rail Yard",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [],
+  "what": "Lays rail tiles and builds armored trains. Rail lines move units and supply fast along a fixed route. This needs a new rail tile type.",
+  "strong": "Long-distance logistics",
+  "weak": "Cut rails, bombers"
+ },
+ {
+  "page_id": "armored_train",
+  "art_id": "b_armored_train",
+  "faction": "B",
+  "cat": "building",
+  "name": "Armored Train",
+  "stage": 8,
+  "ground": "dirt",
+  "gap": [],
+  "what": "A locomotive with a flak car and a gun car. It runs only on rails but carries heavy firepower and troops along them.",
+  "strong": "Anything near the line",
+  "weak": "Cut rails, bombers, AT at the rails"
+ },
+ {
+  "page_id": "scrapyard",
+  "art_id": "b_scrapyard",
+  "faction": "B",
+  "cat": "building",
+  "name": "Scrapyard Crane",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [],
+  "what": "A gantry magnet crane over scrap piles. It is an upgrade to the Salvage Yard that turns hauled wrecks into steel faster.",
+  "strong": "Faster salvage economy",
+  "weak": "Raids, artillery"
+ },
+ {
+  "page_id": "propaganda_tower",
+  "art_id": "b_propaganda_tower",
+  "faction": "B",
+  "cat": "building",
+  "name": "Propaganda Tower",
+  "stage": 8,
+  "ground": "grass",
+  "gap": [],
+  "what": "A lattice tower with loudspeakers and a banner. It is a base-wide morale buff and slows enemy capture of nearby territory.",
+  "strong": "Territory mode, morale",
+  "weak": "Artillery, snipers on crews"
+ },
+ {
+  "page_id": "nanite_forge",
+  "art_id": "m_nanite_forge",
+  "faction": "M",
+  "cat": "building",
+  "name": "Nanite Forge",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "A dome that releases a nanite cloud. Every Machine unit in a wide radius slowly self-repairs out of combat.",
+  "strong": "Attrition wars",
+  "weak": "EMP, focused strikes"
+ },
+ {
+  "page_id": "overmind",
+  "art_id": "m_overmind",
+  "faction": "M",
+  "cat": "building",
+  "name": "Overmind Uplink",
+  "stage": 10,
+  "ground": "conc",
+  "gap": [
+   "G1"
+  ],
+  "what": "An HQ add-on: a tall uplink that unlocks Stage 10 Machine tech and lets Coordinators command at any distance.",
+  "strong": "Late-game scaling",
+  "weak": "Its own cost; a priority target"
+ },
+ {
+  "page_id": "relay_lattice",
+  "art_id": "m_relay_lattice",
+  "faction": "M",
+  "cat": "building",
+  "name": "Relay Lattice",
+  "stage": 9,
+  "ground": "grass",
+  "gap": [
+   "G1"
+  ],
+  "what": "Small linked pylons that extend Machine power and build range along a chain, so the Machine can expand without full bases.",
+  "strong": "Map expansion",
+  "weak": "Cutting one pylon breaks the chain"
+ },
+ {
+  "page_id": "rhomboid",
+  "art_id": "b_rhomboid",
+  "faction": "B",
+  "cat": "horizon",
+  "name": "Stage 6: Rhomboid Landcrawler",
+  "stage": 6,
+  "ground": "mud",
+  "gap": [],
+  "what": "Stage 6 \"Industrial Revival\" is unplayable today. Its signature piece is an early rhomboid tank with side sponsons, clumsy and terrifying.",
+  "strong": "Stage 6 trench warfare",
+  "weak": "Field guns, mud"
+ },
+ {
+  "page_id": "laser_tank",
+  "art_id": "a_laser_tank",
+  "faction": "A",
+  "cat": "horizon",
+  "name": "Stage 10: Laser Tank",
+  "stage": 10,
+  "ground": "conc",
+  "gap": [],
+  "what": "Stage 10 \"Automated Technocracies\". A sleek tank with a beam emitter: no ammo, but it draws power and overheats.",
+  "strong": "Aircraft and armor alike",
+  "weak": "Smoke, EMP, overheating"
+ },
+ {
+  "page_id": "exo_trooper",
+  "art_id": "a_exo_trooper",
+  "faction": "A",
+  "cat": "horizon",
+  "name": "Stage 10: Exo-Suit Trooper",
+  "stage": 10,
+  "ground": "conc",
+  "gap": [],
+  "what": "Heavy powered-armor infantry that walks through rifle fire, carries a rotary gun and counts as light vehicle armor.",
+  "strong": "Infantry, light vehicles",
+  "weak": "AT teams, snipers with AP"
+ },
+ {
+  "page_id": "technical",
+  "art_id": "x_technical",
+  "faction": "X",
+  "cat": "horizon",
+  "name": "4th faction: Technical",
+  "stage": 7,
+  "ground": "sand",
+  "gap": [],
+  "what": "An irregular faction's core unit: a pickup with a bed-mounted heavy gun, mismatched paint, fast and cheap.",
+  "strong": "Raids, harassment",
+  "weak": "Anything armored"
+ },
+ {
+  "page_id": "tunnel",
+  "art_id": "x_tunnel",
+  "faction": "X",
+  "cat": "horizon",
+  "name": "4th faction: Tunnel Network",
+  "stage": 7,
+  "ground": "dirt",
+  "gap": [],
+  "what": "Hidden tunnel entrances that move infantry between any two exits instantly, the irregulars' answer to transports.",
+  "strong": "Flanks, surprise attacks",
+  "weak": "Recon, flamers, collapsing an exit"
+ },
+ {
+  "page_id": "ambush_cell",
+  "art_id": "x_ambush_cell",
+  "faction": "X",
+  "cat": "horizon",
+  "name": "4th faction: Ambush Cell",
+  "stage": 7,
+  "ground": "grass",
+  "gap": [],
+  "what": "A squad that hides in brush and ruins. It gets a first-strike damage bonus and is invisible until it opens fire.",
+  "strong": "Columns on roads",
+  "weak": "Recon drones, area fire"
+ },
+ {
+  "page_id": "captured_tank",
+  "art_id": "x_captured_tank",
+  "faction": "X",
+  "cat": "horizon",
+  "name": "4th faction: Captured Tank",
+  "stage": 8,
+  "ground": "sand",
+  "gap": [],
+  "what": "Irregulars repair and repaint enemy wrecks into their own units. Each one is a stolen tank with patchwork paint and a faction flag.",
+  "strong": "Late-game punch for a poor faction",
+  "weak": "Same as the original tank"
+ }
+]

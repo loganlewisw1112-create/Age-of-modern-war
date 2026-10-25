@@ -1,0 +1,51 @@
+[
+ {"id": "s1_line", "n": "G6 option A · Holding the line", "tag": "Recommended", "w": 480, "h": 250, "ground": "grass",
+  "bands": [{"tile": "dirt", "from": -14, "to": -6}],
+  "p": "Defensive depth. An enemy Human B push (red) stalls in front of tank traps, wire and a marked minefield, while EOD sappers clear a lane. The line behind is trench, sandbags, an ATGM bunker and a Laser CIWS burning a strike drone, with the new SP Howitzer firing in support.",
+  "uses": "Tank Traps, Barbed Wire, Minefield, EOD Sappers, Trench Line, Sandbag Line, ATGM Bunker, Laser CIWS, SP Howitzer; enemy: Landship, shipped Rebuilt Tank, shipped FPV drone",
+  "parts": [
+   ["b_landship", "move", 1, 175, 62, true], ["b_rebuilt_mbt", "move", 1, 300, 54, true], ["b_rebuilt_mbt", "move", 1, 395, 70, true],
+   ["s_tank_traps", "", 0, 120, 98], ["s_tank_traps", "", 0, 250, 92], ["s_tank_traps", "", 0, 380, 100],
+   ["s_minefield", "", 0, 250, 128],
+   ["s_barbed_wire", "", 0, 80, 140], ["s_barbed_wire", "", 0, 420, 142],
+   ["a_eod", "sweep", 5, 300, 146],
+   ["s_trench", "", 0, 150, 182], ["s_trench", "", 0, 330, 184],
+   ["s_sandbags", "", 0, 240, 176],
+   ["a_atgm_bunker", "", 0, 70, 214], ["a_laser_ciws", "", 0, 420, 206],
+   ["b_drone_strike", "dive", 1, 395, 150, true, 36],
+   ["a_sp_howitzer", "fire", 5, 250, 232]
+  ]},
+ {"id": "s2_machine", "n": "G6 option A · The Machine catches up", "tag": "Recommended", "w": 480, "h": 250, "ground": "grass",
+  "bands": [{"tile": "water", "from": 0, "to": 1}, {"tile": "shallow", "from": -1, "to": -1}, {"tile": "shallow", "from": 2, "to": 2}],
+  "p": "Machine parity. A Colossus Walker and Hover Tanks cross the river under a Swarm Queen and a Shield Drone. A Nanite Wall, an Arc Pylon and a Relay Lattice hold the Machine bank against a Human A counter-attack (red, shipped MBT and IFV).",
+  "uses": "Colossus Walker, Hover Tank, Swarm Queen, Shield Drone, Nanite Wall, Arc Pylon, Relay Lattice, Spider Mine Layer; shipped Heavy Walker; enemy: shipped MBT, IFV",
+  "parts": [
+   ["mbt", "fire", 5, 120, 52, true], ["ifv", "move", 5, 230, 44, true], ["mbt", "move", 5, 360, 56, true],
+   ["m_hover_tank", "move", 1, 170, 118], ["m_hover_tank", "move", 1, 320, 122],
+   ["m_colossus", "idle", 1, 245, 150],
+   ["m_swarm_queen", "idle", 1, 380, 150, false, 52], ["m_shield_drone", "idle", 1, 120, 160, false, 18],
+   ["m_spider_layer", "move", 1, 80, 196],
+   ["m_walker", "walk_a", 1, 330, 196],
+   ["m_nanite_wall", "", 0, 210, 214], ["m_arc_pylon", "", 0, 420, 214], ["m_relay_lattice", "", 0, 110, 236]
+  ]},
+ {"id": "s3_blue", "n": "G6 option B · Blue water", "tag": "Alternative", "w": 480, "h": 250, "ground": "deep",
+  "bands": [{"tile": "water", "from": 5, "to": 7}, {"tile": "shallow", "from": 8, "to": 8}, {"tile": "beach", "from": 9, "to": 14}],
+  "p": "Carriers and submarines go to sea, with the missing supply ship and mine warfare. A carrier group with a supply ship and minesweeper faces a Machine Lance Cruiser and a lurking submarine (red), while an AWACS watches overhead.",
+  "uses": "Aircraft Carrier, Supply Ship, Minesweeper, AWACS, Hovercraft; enemy: Lance Cruiser, Attack Submarine",
+  "parts": [
+   ["m_lance_cruiser", "fire", 5, 360, 50, true], ["a_submarine", "idle", 3, 140, 46, true],
+   ["a_carrier", "idle", 0, 190, 120], ["a_supply_ship_a", "idle", 0, 360, 130],
+   ["a_minesweeper", "move", 0, 90, 172], ["a_awacs", "idle", 0, 300, 90, false, 70],
+   ["a_hovercraft", "move", 1, 330, 214]
+  ]},
+ {"id": "s4_irregular", "n": "Option C · A 4th faction: Irregulars", "tag": "Bigger bet", "w": 480, "h": 250, "ground": "beach",
+  "bands": [{"tile": "dirt", "from": 0, "to": 0, "axis": "i-j"}, {"tile": "dirt", "from": 6, "to": 14}],
+  "p": "An asymmetric faction. Irregulars spring an ambush on a Human A column (red, shipped IFV and MBT) from brush, a tunnel exit and a ruined block, with a technical and a captured tank.",
+  "uses": "Tunnel Network, Ambush Cell, Technical, Captured Tank, Garrisonable Building; enemy: shipped IFV, MBT, riflemen",
+  "parts": [
+   ["ifv", "move", 2, 230, 96, true], ["mbt", "move", 2, 300, 132, true], ["rifleman", "walk_a", 2, 180, 80, true], ["rifleman", "walk_a", 2, 196, 74, true],
+   ["x_ambush_cell", "fire", 6, 120, 120], ["x_tunnel", "", 0, 390, 70],
+   ["x_technical", "fire", 7, 120, 200], ["x_captured_tank", "fire", 6, 400, 190],
+   ["s_garrison_bld", "", 0, 280, 230]
+  ]}
+]

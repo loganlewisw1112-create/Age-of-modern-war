@@ -1,0 +1,204 @@
+<title>G6 Arsenal Concepts</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&display=swap">
+<style>
+__STYLE__
+.plate img.pl{display:block;width:100%;height:auto;aspect-ratio:240/150;image-rendering:pixelated;max-width:100%}
+.plate .zoom{position:absolute;right:10px;top:9px;font-family:var(--display);font-size:11px;color:#e3e1d2;background:rgba(13,15,9,.72);padding:1px 6px;letter-spacing:.06em}
+.turn{background:#0d0f09;border-top:1px solid #2a2d22;overflow-x:auto;padding:4px 6px}
+.turn img{display:block;height:auto;image-rendering:pixelated;max-width:none}
+.turn .lab{color:#8f907e;font-size:10px;padding:0 0 2px}
+.scene .plate img{display:block;width:100%;height:auto;image-rendering:pixelated}
+.spr img{width:auto;max-width:100%;height:56px;object-fit:contain;image-rendering:pixelated}
+.hud .ic img{width:100%;height:auto;image-rendering:pixelated;aspect-ratio:240/150;object-fit:cover}
+.t10 img{width:112px;height:auto;aspect-ratio:240/150;image-rendering:pixelated;background:var(--plate)}
+@media (max-width:480px){.t10 img{width:84px}}
+.pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pipe div{border:1px solid var(--rule);padding:10px 12px;display:grid;gap:4px;min-width:0}
+.pipe b{font-family:var(--display);font-size:14px}
+.pipe span{font-size:13px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="lab">RTS: Age of Modern War · Proposal board · drafted 2026-10-24</div>
+  <h1>G6 Arsenal Concepts</h1>
+  <p>Every plate below is a <b>real game sprite</b>. It was rendered by the game's own art pipeline (<code>game/tools/art</code>, the same code that draws the shipped units), with the same iso projection, faction palettes, shading, outline and team-colour mask, on the game's own terrain tiles. Each asset is a full sheet: 8 facings × its frames, plus a wreck. None of it has been added to the repo yet.</p>
+  <div class="meta">
+    <div class="legend">
+      <span class="chip f-A"><i></i>Human A · Modern</span>
+      <span class="chip f-B"><i></i>Human B · Industrial</span>
+      <span class="chip f-M"><i></i>Machine · Autonomous</span>
+      <span class="chip f-S"><i></i>Shared (all factions)</span>
+      <span class="chip f-X"><i></i>New 4th faction</span>
+      <span class="chip f-G"><i></i>G6 headline</span>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a href="#now">On the table now</a><a href="#gaps">Gaps</a><a href="#turret">Turrets</a><a href="#fort">Fortifications</a>
+    <a href="#drone">Drones</a><a href="#vehicle">Vehicles</a><a href="#infantry">Infantry</a><a href="#air">Air</a>
+    <a href="#naval">Naval</a><a href="#building">Buildings</a><a href="#horizon">Horizon</a><a href="#scenes">Scenes</a>
+    <a href="#hud">HUD mockup</a><a href="#top10">Top 10</a>
+  </nav>
+</header>
+
+<section id="now">
+  <div class="sechead">
+    <div class="lab">Section 1 · Active slice</div>
+    <h2>On the table now: G5 "Full Spectrum"</h2>
+    <p>This is the art the G5 agents have already produced in <code>assets/art/g5_units</code> and <code>assets/art/g5_bld</code>, read straight from the repo and tinted in player blue. G5 aircraft and ships are still being drawn, so they don't appear here yet.</p>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="counts" aria-label="New G5 content per faction">
+    <div class="lab">New content G5 adds, per faction (from content/g5/*.json; launched drones not counted)</div>
+    <div id="counts"></div>
+    <div class="ckey"><span><i style="background:var(--fa)"></i>Ground units</span><span><i style="background:var(--fs)"></i>Aircraft</span><span><i style="background:var(--fm)"></i>Ships</span><span><i style="background:var(--muted)"></i>Buildings</span></div>
+  </div>
+</section>
+
+<section id="gaps">
+  <div class="sechead">
+    <div class="lab">Section 2 · Why these proposals</div>
+    <h2>Six gaps after G5</h2>
+    <p>Each proposal card is tagged with the gap it closes (G1 to G6).</p>
+  </div>
+  <div class="gaps">
+    <div class="gapc"><span class="disp">G1 · Machine falls behind</span><p>1 new ground unit vs 15 for the humans; no warship; no new infantry tier.</p></div>
+    <div class="gapc"><span class="disp">G2 · Human A has no artillery</span><p>Its artillery role slot is empty until Guided Artillery at Stage 9. Only the Mortar Team covers it.</p></div>
+    <div class="gapc"><span class="disp">G3 · Human B recon and air holes</span><p>Its recon role is empty, and so is its Stage 9 air role.</p></div>
+    <div class="gapc"><span class="disp">G4 · Thin defense</span><p>One tower, one wall tower and one coastal battery each. No AT, AA or artillery emplacements, no mines. Cover comes only from hills.</p></div>
+    <div class="gapc"><span class="disp">G5 · No supply ship</span><p>The naval rules say ships can restock "from a supply ship", but no such unit exists in naval.json.</p></div>
+    <div class="gapc"><span class="disp">G6 · No counter-drone layer</span><p>Drones are on every side now. Only the EMP drone and the SPAAG answer them.</p></div>
+  </div>
+  <div class="pipe" aria-label="How the plates were made">
+    <div><b>Same code as the game</b><span>Drawers are written against <code>pix.gd</code>, <code>vdetail.gd</code>, <code>g5_bld_lib.gd</code>, the G5 figure kit and the faction libraries.</span></div>
+    <div><b>Game-ready sheets</b><span>Each unit has 8 facings × frames (idle, move, fire and role states), a team mask and a wreck. Buildings have rotations.</span></div>
+    <div><b>Team colour as in-game</b><span>Masks are tinted with the same formula as <code>art_catalog.gd</code>, in side colour 1 (#4f7db0).</span></div>
+    <div><b>Real terrain</b><span>Plates sit on the game's own 64×32 terrain tiles at an integer zoom (shown top right).</span></div>
+  </div>
+</section>
+
+<div class="bar" role="toolbar" aria-label="Filter by faction">
+  <button type="button" id="f-all" data-f="all" aria-pressed="true">All</button>
+  <button type="button" id="f-A" data-f="A" aria-pressed="false">Human A</button>
+  <button type="button" id="f-B" data-f="B" aria-pressed="false">Human B</button>
+  <button type="button" id="f-M" data-f="M" aria-pressed="false">Machine</button>
+  <button type="button" id="f-S" data-f="S" aria-pressed="false">Shared</button>
+  <button type="button" id="f-X" data-f="X" aria-pressed="false">4th faction</button>
+  <span class="count" id="count"></span>
+</div>
+
+<div id="cats"></div>
+
+<section id="scenes">
+  <div class="sechead">
+    <div class="lab">Section 12 · Where this can go</div>
+    <h2>Four directions, as battle scenes</h2>
+    <p>These are composed from the rendered proposal sprites plus shipped game units (enemies in side colour 2, red), on game terrain at 2× zoom.</p>
+  </div>
+  <div id="scenelist" style="display:grid;gap:18px"></div>
+</section>
+
+<section id="hud">
+  <div class="sechead">
+    <div class="lab">Section 13 · Interface draft</div>
+    <h2>HUD mockup: the new Fortify tab and EOD Sappers</h2>
+    <p>This shows how the defensive-depth proposals would surface in the build panel and the selected-unit card, set in RTS Mil. Costs are placeholders for layout only, not balance numbers.</p>
+  </div>
+  <div class="hud">
+    <div class="pane">
+      <div class="tabs"><span>BUILD</span><span class="on">FORTIFY</span><span>DEFENSE</span><span>SUPPORT</span></div>
+      <div class="icons" id="hudicons"></div>
+      <div style="font-size:12px;color:#c9c7b8">Drag to paint a line · Shift-drag for a minefield area · R rotates</div>
+    </div>
+    <div class="pane sel">
+      <div style="display:flex;gap:10px;align-items:center"><img id="hudsel" alt="EOD Sappers" style="width:120px;height:auto;image-rendering:pixelated;background:#0d0f09">
+        <div><div style="font-size:16px;font-weight:700">EOD SAPPERS ×2</div><div style="font-size:12px;color:#c9c7b8">Human A · Engineer · Stage 8</div></div></div>
+      <div class="stat"><span>HP</span><div class="meter"><span style="width:84%"></span></div><span>Kits</span><div class="meter"><span style="width:60%;background:#d9a03a"></span></div></div>
+      <div class="row"><span class="btn pri">SWEEP AREA</span><span class="btn">MARK SAFE LANE</span><span class="btn">CLEAR WIRE</span><span class="btn">DEFUSE</span></div>
+      <div style="font-size:12px;color:#c9c7b8">Sweeping: 3 AT mines found · lane 40% clear</div>
+    </div>
+  </div>
+</section>
+
+<section id="top10">
+  <div class="sechead">
+    <div class="lab">Section 14 · Recommendation</div>
+    <h2>Top 10 for the next slice</h2>
+    <p>Recommended next slice: <b>G6 "Machine parity + defensive depth"</b>. It closes all six gaps and matches the stronghold wall-defense vision images (02 to 04).</p>
+  </div>
+  <div class="top10" id="t10"></div>
+</section>
+
+<footer>
+  <div class="lab">Provenance</div>
+  <p class="note">The roster and gap counts were read from <code>game/content/*.json</code>, <code>content/g4</code>, <code>content/g5</code> and <code>factions.json</code> on 2026-10-24. Section 1 shows the repo's own G5 sheets. Every proposal plate was rendered headless with Godot 4.7.2 from drawer scripts that call the game's <code>tools/art</code> libraries. Those drawers live outside the repo; nothing was written into the game folder. Stage suggestions are proposals. No stats, costs or balance are implied.</p>
+</footer>
+</div>
+
+<script>
+"use strict";
+const DATA = __DATA__;
+function el(t,cls,html){const e=document.createElement(t);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+function img(src,cls,alt){const i=document.createElement('img');i.src=src;if(cls)i.className=cls;i.alt=alt||'';i.loading='lazy';i.decoding='async';return i;}
+const FN={A:'Human A',B:'Human B',M:'Machine',S:'Shared',X:'4th faction',G:'G6 headline'};
+const CATS=[
+ {k:'turret',n:'Turrets and emplacements',p:'Fixed defenses, one per job per faction: anti-tank, anti-air, counter-drone, artillery, and a hidden or garrison piece.'},
+ {k:'fort',n:'Walls and field fortifications',p:'The vision images show layered strongholds. Infantry can build these in the field, so the battlefield gets cover beyond hills.'},
+ {k:'drone',n:'Drones and counter-drone',p:'This builds on the G5 Drone Team. It adds persistent recon, launcher vehicles, drone production and a real counter-drone answer.'},
+ {k:'vehicle',n:'Ground vehicles',p:'Artillery for Human A, recon and a super-heavy for Human B, and a full late-game ladder for the Machine.'},
+ {k:'infantry',n:'Infantry and squads',p:'Specialists that use the new systems: beaches, airdrops, mines, airstrikes and morale.'},
+ {k:'air',n:'Aircraft',p:'Fills Human B\'s empty Stage 9 air slot and adds the "Airlift" button from vision image 01.'},
+ {k:'naval',n:'Naval',p:'The missing supply ship, mine warfare, and the Machine\'s first warship. Carriers and submarines are the G6 headline items the G5 plan set aside.'},
+ {k:'building',n:'Buildings',p:'Unlock and support buildings that the units above need: radar for SAMs, forward bases, repair, rail.'},
+ {k:'horizon',n:'Horizon: new stages and a 4th faction',p:'Stages 1 to 6 and 10 to 13 have names but no units. A 4th faction would add an irregular playstyle.'}];
+const BY={};DATA.items.forEach(o=>BY[o.page_id]=o);
+const KIND={vehicles:'Unit sheet · 8 facings',infantry:'Squad sheet · 8 facings',buildings:'Building · 2 rotations'};
+const cats=document.getElementById('cats');
+CATS.forEach((c,ci)=>{
+  const s=el('section');s.id=c.k;const items=DATA.items.filter(o=>o.cat===c.k);
+  s.appendChild(el('div','sechead',`<div class="lab">Section ${ci+3} · ${items.length} assets</div><h2>${c.n}</h2><p>${c.p}</p>`));
+  const g=el('div','grid');
+  items.forEach(o=>{
+    const card=el('article','card');card.dataset.f=o.faction;
+    const top=el('div');const plate=el('div','plate');
+    if(o.plate){plate.appendChild(img(o.plate,'pl',`${o.name}, rendered game sprite`));}else{plate.appendChild(el('div','pl',`<div style="aspect-ratio:240/150;display:grid;place-items:center;color:#8f907e;font-family:var(--display)">render pending</div>`));}
+    plate.appendChild(el('span','id',o.art_id));if(o.zoom)plate.appendChild(el('span','zoom',`${o.zoom}× zoom`));top.appendChild(plate);
+    if(o.turn){const t=el('div','turn');t.appendChild(el('div','lab',KIND[o.kind]||'Sheet'));const ti=img(o.turn,null,`${o.name}, all facings`);ti.style.height=(o.th*2)+'px';t.appendChild(ti);top.appendChild(t);}
+    card.appendChild(top);
+    const gaps=(o.gap||[]).map(x=>`<span class="chip gap">${x}</span>`).join('');
+    card.appendChild(el('div','body',`<div class="chips"><span class="chip f-${o.faction}"><i></i>${FN[o.faction]}</span><span class="chip stage">Stage ${o.stage}</span>${gaps}</div>
+      <h3>${o.name}</h3><p class="what">${o.what}</p><dl><dt>Strong vs</dt><dd>${o.strong}</dd><dt>Beaten by</dt><dd>${o.weak}</dd></dl>`));
+    g.appendChild(card);});
+  s.appendChild(g);cats.appendChild(s);});
+const sl=document.getElementById('scenelist');
+DATA.scenes.forEach(sc=>{const box=el('div','scene');const plate=el('div','plate');if(sc.img)plate.appendChild(img(sc.img,null,sc.n));box.appendChild(plate);
+  box.appendChild(el('div','body',`<div class="chips"><span class="chip ${sc.tag==='Recommended'?'gap':'stage'}">${sc.tag}</span></div><h3>${sc.n}</h3><p class="what">${sc.p}</p><dl><dt>Uses</dt><dd>${sc.uses}</dd></dl>`));sl.appendChild(box);});
+const strip=document.getElementById('strip');
+DATA.now.forEach(n=>{const d=el('div','spr');d.appendChild(img(n.src,null,n.name));d.appendChild(el('span',null,n.name));strip.appendChild(d);});
+const COUNTS=[['Human A',8,5,4,13],['Human B',7,4,3,13],['Machine',1,4,2,5]];const MAX=Math.max(...COUNTS.map(r=>r[1]+r[2]+r[3]+r[4]));
+const cc=document.getElementById('counts');
+COUNTS.forEach(r=>{const tot=r[1]+r[2]+r[3]+r[4];const cols=['var(--fa)','var(--fs)','var(--fm)','var(--muted)'];
+  cc.appendChild(el('div','crow',`<span>${r[0]}</span><div class="track">${[1,2,3,4].map((k,i)=>`<span style="width:${r[k]/MAX*100}%;background:${cols[i]}" title="${r[k]}"></span>`).join('')}</div><b>${tot}</b>`));});
+const hi=document.getElementById('hudicons');
+[['sandbags','Sandbags','40'],['trench','Trench','60'],['barbed_wire','Wire','30'],['tank_traps','Tank traps','80'],['minefield','Minefield','150'],['camo_decoy','Decoy','90'],['atgm_bunker','ATGM','400'],['laser_ciws','CIWS','550']].forEach(([id,l,c])=>{
+  const d=el('div','ic');if(BY[id]&&BY[id].plate)d.appendChild(img(BY[id].plate,null,l));d.appendChild(el('small',null,`<span>${l}</span><b>${c}</b>`));hi.appendChild(d);});
+if(BY.eod&&BY.eod.plate)document.getElementById('hudsel').src=BY.eod.plate;
+const T10=[['lance_cruiser','Machine Lance Cruiser','The Machine\'s first warship.','G1'],['supply_ship_a','Supply Ship (all 3 factions)','Supply Ship, Fuel Tender and Charge Tender close the rules gap.','G5'],
+ ['sp_howitzer','Human A SP Howitzer','Fills Human A\'s empty artillery slot at Stage 8.','G2'],['moto_scouts','Human B Motorcycle Scouts','Fills Human B\'s empty recon slot.','G3'],
+ ['minefield','Minefields + EOD Sappers','A new brush and its hard counter.','G4'],['sandbags','Sandbags and trenches','Cover anywhere, not only on hills.','G4'],
+ ['laser_ciws','Counter-drone trio','Laser CIWS, Net Launcher Post and Jammer Obelisk, one per faction.','G6'],['sam_site','SAM Site + Radar Station','Ground answer to high-flying jets.','G4 · G6'],
+ ['shield_drone','Shield Drone + Stalker Synth','A Machine infantry tier at last.','G1'],['landship','Human B Landship','A super-heavy centrepiece for the industrial faction.','']];
+const t=document.getElementById('t10');
+T10.forEach(([id,n,p,g],i)=>{const r=el('div','t10');r.appendChild(el('span','n',String(i+1)));if(BY[id]&&BY[id].plate)r.appendChild(img(BY[id].plate,null,n));else r.appendChild(el('span'));
+  r.appendChild(el('div',null,`<div class="disp">${n}</div><p>${p}${g?` <span class="chip gap" style="margin-left:4px">${g}</span>`:''}</p>`));t.appendChild(r);});
+const btns=[...document.querySelectorAll('.bar button')];const countEl=document.getElementById('count');
+function applyF(f){btns.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.f===f)));let n=0;
+  document.querySelectorAll('#cats .card').forEach(c=>{const show=f==='all'||c.dataset.f===f||(c.dataset.f==='S'&&f!=='X')||(c.dataset.f==='G'&&(f==='A'||f==='B'));c.hidden=!show;if(show)n++;});
+  document.querySelectorAll('#cats section').forEach(s=>{s.hidden=!s.querySelector('.card:not([hidden])');});
+  countEl.textContent=`${n} of ${DATA.items.length} assets`;try{localStorage.setItem('g6f',f);}catch(e){}}
+btns.forEach(b=>b.addEventListener('click',()=>applyF(b.dataset.f)));
+let start='all';try{start=localStorage.getItem('g6f')||'all';}catch(e){}applyF(start);
+</script>

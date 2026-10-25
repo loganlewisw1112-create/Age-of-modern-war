@@ -1,0 +1,51 @@
+# g6_dronebld: 16 assets
+Every art_id below is required and must appear in your module's SHOW dict exactly as written.
+
+- **a_aerostat** - Tethered Recon Aerostat - Human A (Modern Military Power, olive) - Stage 8 - plate ground: grass
+  - What it is: A winch truck flies a tethered balloon with a sensor pod. It gives a huge sight radius over one area and is easy to shoot down.
+  - Strong vs: Fog of war, ambushes. Beaten by: Any AA, the Interceptor Swarm.
+- **a_loiter_truck** - Loitering Munition Truck - Human A (Modern Military Power, olive) - Stage 9 - plate ground: dirt
+  - What it is: A truck with a six-cell launcher. Each cell launches a strike drone that circles until a target appears, then dives.
+  - Strong vs: Artillery, parked armor, AA vehicles. Beaten by: Jammers, CIWS, raiders.
+- **a_drone_cc** - Drone Control Center - Human A (Modern Military Power, olive) - Stage 9 - plate ground: conc
+  - What it is: A building that boosts every friendly Drone Team in range: +1 charge, longer drone range and faster restock.
+  - Strong vs: Supports drone play. Beaten by: Jammers, strike jets.
+- **b_fpv_workshop** - FPV Workshop - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: A corrugated shed where Human B solders FPV drones from scrap. It rebuilds Drone Team charges at base, and salvaged nets feed it.
+  - Strong vs: Keeps B drone teams stocked. Beaten by: Artillery, raids.
+- **b_jammer_team** - Backpack Jammer Team - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 9 - plate ground: grass
+  - What it is: Two soldiers with backpack jammers and whip antennas. Enemy drones near them drift and crash; their own drones are not affected.
+  - Strong vs: Drones, guided munitions. Beaten by: Rifles, snipers (they are lightly armed).
+- **b_scrap_aa** - Scrap Shotgun AA Squad - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: grass
+  - What it is: Three troops with big-bore scrap shotguns that throw pellet clouds at anything flying low. Cheap counter-drone for the frontline.
+  - Strong vs: FPV and recon drones. Beaten by: Armor, helicopters out of range.
+- **m_hive_node** - Hive Node - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A hexagonal hive that slowly spawns free micro-drones on its own and sends them to the nearest fight.
+  - Strong vs: Attrition, map control. Beaten by: Flak, jammers, strike jets.
+- **m_swarm_queen** - Swarm Queen - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: grass
+  - What it is: A large, slow hexacopter mothership that endlessly releases micro-drones while it lives. A priority target.
+  - Strong vs: Everything on the ground nearby. Beaten by: SAMs, interceptors, AA focus.
+- **m_mimic_drone** - Mimic Drone - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: grass
+  - What it is: It reads as an enemy drone on the opponent's screen until it is within 3 tiles, then dives. It fools both AA targeting and players.
+  - Strong vs: AA nests, Drone Teams, officers. Beaten by: CIWS (sees through it), jammers.
+- **b_rail_yard** - Rail Yard - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: Lays rail tiles and builds armored trains. Rail lines move units and supply fast along a fixed route. This needs a new rail tile type.
+  - Strong vs: Long-distance logistics. Beaten by: Cut rails, bombers.
+- **b_armored_train** - Armored Train - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: dirt
+  - What it is: A locomotive with a flak car and a gun car. It runs only on rails but carries heavy firepower and troops along them.
+  - Strong vs: Anything near the line. Beaten by: Cut rails, bombers, AT at the rails.
+- **b_scrapyard** - Scrapyard Crane - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 7 - plate ground: dirt
+  - What it is: A gantry magnet crane over scrap piles. It is an upgrade to the Salvage Yard that turns hauled wrecks into steel faster.
+  - Strong vs: Faster salvage economy. Beaten by: Raids, artillery.
+- **b_propaganda_tower** - Propaganda Tower - Human B (Industrial Power, khaki-brown/rust, riveted) - Stage 8 - plate ground: grass
+  - What it is: A lattice tower with loudspeakers and a banner. It is a base-wide morale buff and slows enemy capture of nearby territory.
+  - Strong vs: Territory mode, morale. Beaten by: Artillery, snipers on crews.
+- **m_nanite_forge** - Nanite Forge - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: A dome that releases a nanite cloud. Every Machine unit in a wide radius slowly self-repairs out of combat.
+  - Strong vs: Attrition wars. Beaten by: EMP, focused strikes.
+- **m_overmind** - Overmind Uplink - Machine (Autonomous Network, graphite+panel+cyan) - Stage 10 - plate ground: conc
+  - What it is: An HQ add-on: a tall uplink that unlocks Stage 10 Machine tech and lets Coordinators command at any distance.
+  - Strong vs: Late-game scaling. Beaten by: Its own cost; a priority target.
+- **m_relay_lattice** - Relay Lattice - Machine (Autonomous Network, graphite+panel+cyan) - Stage 9 - plate ground: grass
+  - What it is: Small linked pylons that extend Machine power and build range along a chain, so the Machine can expand without full bases.
+  - Strong vs: Map expansion. Beaten by: Cutting one pylon breaks the chain.
