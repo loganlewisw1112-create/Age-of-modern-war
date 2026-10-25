@@ -3,6 +3,7 @@ extends Node2D
 ## count badges over carriers, own-mine / detected-enemy-mine and charge markers, gate lock marks.
 ## Reads ONLY the render snapshot (mv.snap) and immutable content; redraws only when no sim step
 ## is in flight (THREAD rule, CONTRACTS_G4 section 4).
+## G5 (UI5b): also the auto-area circle and the armed-mode tag at the cursor (mv.g4b.draw_g5).
 
 const RenderSnap = preload("res://sim/render_snap.gd")
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
@@ -45,6 +46,7 @@ func _draw() -> void:
 	_draw_statics(vr, font)
 	if mv.g4b != null:
 		mv.g4b.draw_preview(self)
+		mv.g4b.draw_g5(self, get_global_mouse_position())   # G5 (UI5b): area drag + mode tag
 
 
 func _draw_badges(vr: Rect2, font: Font) -> void:

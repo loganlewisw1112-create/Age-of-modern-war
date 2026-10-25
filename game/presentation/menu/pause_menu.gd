@@ -47,6 +47,9 @@ func _ready() -> void:
 	_save_btn.pressed.connect(func(): save_requested.emit("user://saves/slot_1.sav"))
 	_load_btn = _btn("Load game (slot 1)", v)
 	_load_btn.pressed.connect(func(): load_requested.emit("user://saves/slot_1.sav"))
+	var st := _btn("Settings", v)   # G5 (UI5b)
+	st.name = "PauseSettings"
+	st.pressed.connect(func(): add_child(load("res://presentation/menu/settings.gd").new()))
 	var sc := HBoxContainer.new()
 	v.add_child(sc)
 	sc.add_child(HT.make_label("UI scale  ", HT.DIM, 14))

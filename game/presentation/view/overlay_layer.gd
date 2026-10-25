@@ -5,6 +5,7 @@ extends Node2D
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const Construction = preload("res://sim/systems/construction.gd")
+const Settings = preload("res://presentation/menu/settings.gd")  # G5 (UI5b): health-bar setting
 
 var mv
 var mode := "over"
@@ -111,6 +112,7 @@ func _draw_bars() -> void:
 	var us: Array = el.vis_units
 	var sps: PackedVector2Array = el.vis_sp
 	var far: bool = el.lod >= 2   # far LOD: unit HP bars only for the selection
+	var hb_mode := Settings.health_bars()   # G5 (UI5b): always | damaged (default, as before) | selected | off
 	if far:
 		us = []
 		sps = PackedVector2Array()
@@ -123,7 +125,9 @@ func _draw_bars() -> void:
 		var e: Dictionary = us[i]
 		var hp: float = e.hp
 		var mhp: float = e.max_hp
-		if (far or hp >= mhp - 0.01) and not selset.has(int(e.id)):
+		var sel_u: bool = selset.has(int(e.id))
+		var show_u: bool = sel_u or (not far and (hb_mode == "always" or (hb_mode == "damaged" and hp < mhp - 0.01)))
+		if hb_mode == "off" or (hb_mode == "selected" and not sel_u) or not show_u:
 			continue
 		var sp: Vector2 = sps[i]
 		if not vr.has_point(sp):
@@ -139,12 +143,13 @@ func _draw_bars() -> void:
 		var sel: bool = selset.has(int(e.id))
 		var damaged: bool = float(e.hp) < float(e.max_hp) - 0.01
 		var building_unfinished: bool = not bool(e.get("built", true))
-		if not (sel or damaged or building_unfinished):
+		var show_hp: bool = hb_mode == "always" or (hb_mode == "damaged" and (sel or damaged)) or (hb_mode == "selected" and sel)
+		if not (show_hp or building_unfinished or sel):
 			continue
 		var frac := float(e.hp) / maxf(1.0, float(e.max_hp))
 		var s := int(e.size)
 		var top: Vector2 = mv.world_to_screen(e.pos) + Vector2(0, -s * 16 - 34)
-		if sel or damaged:
+		if show_hp:
 			_bar(top, 18.0 * s + 14.0, frac, _hp_color(frac))
 		if building_unfinished and int(e.owner) == pf:
 			_bar(top + Vector2(0, 7), 18.0 * s + 14.0, float(e.get("progress", 0.0)), Color(1.0, 0.7, 0.2))

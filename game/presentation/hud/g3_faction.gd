@@ -117,15 +117,76 @@ static func recharge_radius(def_id: String) -> float:
 	return float(Content.building(def_id).get("recharge", 0))
 
 
-## Build-card hotkey for a building def: the data hotkey unless it collides with a G2 order key
-## or a key already used on this card (`used`), else the first free ALT_KEYS letter.
+## G5 (UI5b): the build card is split into category pages (Base / Military / Air / Naval / Support,
+## Tab cycles them). A def's page is its `build_cat` field when set, else derived from its flags.
+const BUILD_CATS := ["base", "military", "air", "naval", "support"]
+const BUILD_CAT_NAMES := {"base": "Base", "military": "Military", "air": "Air", "naval": "Naval", "support": "Support"}
+## Letters a generated build key avoids (pan W/D, Deploy E, Lay mine M, Plant charge O sit on the
+## engineer card too); a data hotkey keeps its letter.
+const AVOID_KEYS := ["W", "D", "E", "M", "O"]
+
+
+static func _flag(d: Dictionary, k: String) -> bool:
+	if not d.has(k):
+		return false
+	var v = d[k]
+	if v == null or (typeof(v) == TYPE_BOOL and not v):
+		return false
+	return not (typeof(v) == TYPE_STRING and String(v) == "")
+
+
+static func build_category(def_id: String) -> String:
+	var d := Content.building(def_id)
+	var c := String(d.get("build_cat", ""))
+	if BUILD_CATS.has(c):
+		return c
+	if _flag(d, "air_field"):
+		return "air"
+	if _flag(d, "shore") or _flag(d, "pier") or _flag(d, "near_water"):
+		return "naval"
+	if _flag(d, "hospital") or _flag(d, "field_hospital"):
+		return "support"
+	if not (d.get("produces", []) as Array).is_empty() or _flag(d, "weapon") or _flag(d, "wall") or _flag(d, "gate") or _flag(d, "tower"):
+		return "military"
+	return "base"
+
+
+## The non-empty build pages of a faction, in BUILD_CATS order: [{cat, name, defs: [...]}].
+static func build_pages(faction_id: String) -> Array:
+	var by := {}
+	for b in Content.buildable_for(faction_id):
+		var c := build_category(String(b))
+		if not by.has(c):
+			by[c] = []
+		by[c].append(String(b))
+	var out: Array = []
+	for c in BUILD_CATS:
+		if by.has(c):
+			out.append({"cat": c, "name": BUILD_CAT_NAMES[c], "defs": by[c]})
+	return out
+
+
+## Build-card hotkey for a building def, unique within its category page. `used` holds
+## "<cat>:<KEY>" entries (one card = one dict). Order: the data hotkey, then the letters of the
+## name, then ALT_KEYS, then A-Z; never a RESERVED_BUILD_KEYS letter (G2 order keys).
 static func build_hotkey(def_id: String, used: Dictionary) -> String:
-	var hk := String(Content.building(def_id).get("hotkey", "")).to_upper()
-	if hk != "" and not RESERVED_BUILD_KEYS.has(hk) and not used.has(hk):
-		used[hk] = true
-		return hk
-	for k in ALT_KEYS:
-		if not used.has(k):
-			used[k] = true
-			return k
+	var d := Content.building(def_id)
+	var cat := build_category(def_id)
+	var hk := String(d.get("hotkey", "")).to_upper()
+	var cand: Array = []
+	if hk != "":
+		cand.append(hk)
+	for ch in String(d.get("name", def_id)).to_upper():
+		if ch >= "A" and ch <= "Z" and not AVOID_KEYS.has(ch):
+			cand.append(ch)
+	cand.append_array(ALT_KEYS)
+	for i in 26:
+		var ch := String.chr(65 + i)
+		if not AVOID_KEYS.has(ch):
+			cand.append(ch)
+	for k in cand:
+		if RESERVED_BUILD_KEYS.has(k) or used.has(cat + ":" + String(k)):
+			continue
+		used[cat + ":" + String(k)] = true
+		return String(k)
 	return ""

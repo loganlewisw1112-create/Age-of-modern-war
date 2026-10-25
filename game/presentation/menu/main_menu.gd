@@ -149,6 +149,10 @@ func _build() -> void:
 		_scale_opt.add_item("%d%%" % int(round(float(s) * 100.0)))
 	_scale_opt.item_selected.connect(_on_scale)
 	sc.add_child(_scale_opt)
+	var sett := UiKit.button("Settings", "", "Graphics, speed, edge-pan, health bars and key bindings")   # G5 (UI5b)
+	sett.name = "MenuSettings"
+	sett.pressed.connect(func(): add_child(load("res://presentation/menu/settings.gd").new()))
+	sc.add_child(sett)
 
 	# ---- skirmish setup (scrolls vertically on short canvases)
 	_setup_scroll = ScrollContainer.new()

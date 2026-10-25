@@ -6,6 +6,10 @@ extends RefCounted
 ##                                   + cargo strip: one icon button per loaded unit (click = unload it)
 ##   officer alone:                  Transport to point (G2 mission mode, mission transport_to_point)
 ##   gate building:                  Lock / Unlock [L]
+## G5 (UI5b) adds, through this file: the build-card category pages (BuildPages), every G5 unit
+## command (G5UnitCmds: aircraft, Drone Team, truck/medic Auto, bombard, engineer assign), the
+## airfield/hangar card + info panel (AirfieldPanel), VTOL sling info on the cargo strip and the G5
+## rows of the F1 hotkey sheet. Card buttons never take keyboard focus (Space / Tab stay hotkeys).
 ## The HUD only refreshes with no sim step in flight (hud._process), so reading hud._world() here
 ## is safe. Every action goes through hud._issue (MatchView.issue) or arms a MatchView.g4b mode.
 
@@ -13,6 +17,10 @@ const HT = preload("res://presentation/hud/hud_theme.gd")
 const Fortify = preload("res://sim/systems/fortify.gd")
 const Transport = preload("res://sim/systems/transport.gd")
 const G2 = preload("res://presentation/view/g2_data.gd")
+const BuildPages = preload("res://presentation/ui5/panels/build_pages.gd")
+const G5UnitCmds = preload("res://presentation/ui5/panels/g5_unit_cmds.gd")
+const AirfieldPanel = preload("res://presentation/ui5/panels/airfield_panel.gd")
+const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 
 var hud
 var strip: PanelContainer        # cargo strip (above the bottom panel)
@@ -23,6 +31,10 @@ var _mortars: Array = []
 var _carrier := -1
 var _gate := -1
 var _strip_sig := ""
+var pages = BuildPages.new()
+var g5u = G5UnitCmds.new()
+var afp = AirfieldPanel.new()
+var _sheet_done := false
 
 
 func _mv():
@@ -55,6 +67,10 @@ func build(root: Control) -> void:
 	strip_box = HBoxContainer.new()
 	strip_box.add_theme_constant_override("separation", 3)
 	hb.add_child(strip_box)
+	pages.hud = hud
+	g5u.hud = hud
+	afp.hud = hud
+	afp.build(root)
 
 
 func reset() -> void:
@@ -65,10 +81,13 @@ func reset() -> void:
 	_mortars.clear()
 	_carrier = -1
 	_gate = -1
+	pages.hide_bar()
+	g5u.reset()
+	afp.reset()
 
 
 ## Called by hud._add_unit_buttons after the G2 buttons. ids are the selected own units.
-func add_buttons(_mode: String, ids: Array) -> void:
+func add_buttons(_mode: String, ids: Array) -> void:  # _mode: "units" | "engineer"
 	var miners: Array = []
 	var chargers: Array = []
 	var officer := -1
@@ -109,6 +128,17 @@ func add_buttons(_mode: String, ids: Array) -> void:
 		var oid := officer
 		var t = _btn("Transport to point", "click the target", "", "transport_mission", "The group boards its transports, rides to the point, unloads and secures it.")
 		t.btn.pressed.connect(func(): _mv().g2.arm("mission", {"mission": "transport_to_point", "officer_id": oid, "risk": G2.RISKS[hud.g2_cmd.risk_idx]}))
+	g5u.add_buttons(ids)
+	if _mode == "engineer":
+		pages.apply(hud)
+	_no_focus()
+
+
+## Card buttons never take keyboard focus: a focused button would eat Space / Tab / Enter.
+func _no_focus() -> void:
+	for rec in hud._card_buttons:
+		if is_instance_valid(rec.btn):
+			(rec.btn as Button).focus_mode = Control.FOCUS_NONE
 
 
 ## Called by hud._rebuild_card for a single own built building.
@@ -119,6 +149,8 @@ func add_building_buttons(b: Dictionary) -> void:
 		var r = _btn("Lock gate", "", "L", "gate_lock", "Lock or unlock the gate. Unlocked gates let own units through.")
 		r.btn.name = "G4bGateLock"
 		r.btn.pressed.connect(_toggle_gate)
+	afp.add_building_buttons(b)
+	_no_focus()
 
 
 func _btn(title: String, sub: String, hotkey: String, kind: String, tip: String) -> Dictionary:
@@ -179,7 +211,35 @@ func update_state(w: SimWorld) -> void:
 		rec["reason"] = reason
 		b.disabled = reason != ""
 		b.tooltip_text = String(rec.tip) + ("\nUnavailable: " + reason if reason != "" else "")
+	g5u.update_state(w)
+	afp.update_state(w)
 	_update_strip()
+	_sheet_rows()
+
+
+## F1 sheet: append the G5 command keys once (the sheet itself is UI5a's hud_extras).
+func _sheet_rows() -> void:
+	if _sheet_done or hud.get("extras") == null or hud.extras.sheet == null:
+		return
+	var sc = hud.extras.sheet.find_child("HotkeyScroll", true, false)
+	if sc == null or sc.get_child_count() == 0 or not (sc.get_child(0) is GridContainer):
+		return
+	_sheet_done = true
+	var grid: GridContainer = sc.get_child(0)
+	var hd := HT.make_label("G5 COMMANDS", HT.AMBER, 13)
+	hd.name = "SheetG5Header"
+	grid.add_child(hd)
+	grid.add_child(Control.new())
+	for row in Hotkeys.sheet_rows():
+		var k := HT.make_label(String(row[0]), HT.AMBER, 14)
+		grid.add_child(k)
+		var d := HT.make_label(String(row[1]), HT.TEXT, 14)
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(380, 0)
+		grid.add_child(d)
+	var k2 := HT.make_label("Tab", HT.AMBER, 14)
+	grid.add_child(k2)
+	grid.add_child(HT.make_label("Next build category (engineer card)", HT.TEXT, 14))
 
 
 func _update_strip() -> void:
@@ -193,6 +253,9 @@ func _update_strip() -> void:
 	var ids: Array = Transport.cargo_ids(c)
 	var sig := "%d:%s" % [_carrier, str(ids)]
 	strip_title.text = "CARGO %d/%d" % [Transport.used_slots(c), Transport.capacity(String(c.def))]
+	var slung: Array = Transport.slung(c)   # G5 VTOL: vehicles carried on the sling
+	if not slung.is_empty():
+		strip_title.text += "  SLING %d" % slung.size()
 	if sig == _strip_sig:
 		return
 	_strip_sig = sig

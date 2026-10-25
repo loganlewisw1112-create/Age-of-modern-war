@@ -142,6 +142,7 @@ var _prof_frame_us := 0
 
 # ================================================================ lifecycle
 func _ready() -> void:
+	preload("res://presentation/menu/settings.gd").apply_to_match(self)   # G5 (UI5b): default speed, edge-pan
 	if world == null:
 		push_warning("MatchView: no world assigned")
 		return

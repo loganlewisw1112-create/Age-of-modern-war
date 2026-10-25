@@ -7,9 +7,19 @@ extends RefCounted
 ##   wall drag: build card wall def -> press = line start, drag = preview (8-direction snap,
 ##              green legal / red illegal, cost total), release = build_line (Shift appends).
 ##   modes:     "unload_point" (carrier_id), "lay_mine" / "plant_charge" (engineer unit_ids).
+## G5 (UI5b) modes (CONTRACTS_G5 section 4), armed by presentation/ui5/panels/g5_unit_cmds.gd:
+##   sortie (enemy -> target_id, ground -> area [x,y,r]), rebase (own field), land_at (cell),
+##   bombard (cell), launch_drone (enemy -> target_id, else cell), tactical (ability: target or cell),
+##   assign_engineers (own field / hangar / helipad; pointing-hand cursor),
+##   auto_area (truck / medic: press = centre, drag = radius, release = set_auto_resupply / set_auto_evac).
 
 const Fortify = preload("res://sim/systems/fortify.gd")
 const Transport = preload("res://sim/systems/transport.gd")
+const Airfield = preload("res://sim/systems/airfield.gd")
+
+const G5_MODES := ["sortie", "rebase", "land_at", "bombard", "launch_drone", "tactical", "assign_engineers", "auto_area"]
+const SORTIE_R := 4.0
+const AREA_MIN_R := 1.5
 
 var mv
 var mode := ""                 # "" | unload_point | lay_mine | plant_charge
@@ -24,6 +34,10 @@ var wall_def := ""
 var preview: Dictionary = {}   # Fortify.preview_line result for (wall_from, wall_to)
 var _preview_key := ""
 var last_line: Dictionary = {} # the last build_line command issued (playtest / debug)
+var g5p: Dictionary = {}       # G5 mode parameters (drone, ability, kind, mode)
+var area_from: Variant = null  # G5 auto_area drag centre (world Vector2)
+var area_to := Vector2.ZERO
+var last_cmd: Dictionary = {}  # the last G5 command issued (tests / playtest)
 
 
 static func is_wall_def(def_id: String) -> bool:
@@ -35,13 +49,18 @@ func active() -> bool:
 
 
 func dragging() -> bool:
-	return wall_from != null
+	return wall_from != null or area_from != null
 
 
 func arm(m: String, params: Dictionary = {}) -> void:
 	mode = m
 	unit_ids = (params.get("unit_ids", []) as Array).duplicate()
 	carrier_id = int(params.get("carrier_id", -1))
+	g5p = params.duplicate(true)
+	g5p["_m"] = m
+	area_from = null
+	if G5_MODES.has(m) and DisplayServer.get_name() != "headless":
+		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if m == "assign_engineers" else Input.CURSOR_CROSS)
 	mv.attack_move_armed = false
 	mv.cancel_placement()
 	if mv.g2 != null:
@@ -55,6 +74,10 @@ func cancel() -> void:
 	wall_from = null
 	preview = {}
 	_preview_key = ""
+	if not g5p.is_empty() and DisplayServer.get_name() != "headless":
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	g5p = {}
+	area_from = null
 
 
 func flash(text: String, secs: float = 2.5) -> void:
@@ -70,6 +93,25 @@ func status_text() -> String:
 			return "LAY MINE: click a ground cell. Esc cancels."
 		"plant_charge":
 			return "PLANT CHARGE: click a wall, building or bridge. Esc cancels."
+		"sortie":
+			return "SORTIE: click an enemy to strike it, or the ground for an area strike. Esc cancels."
+		"rebase":
+			return "REBASE: click an own airfield, hangar or helipad. Esc cancels."
+		"land_at":
+			return "LAND: click an open spot (helicopters / VTOL) or an airfield (jets). Esc cancels."
+		"bombard":
+			return "BOMBARD: click the cell to shell. Esc cancels."
+		"launch_drone":
+			return "%s DRONE: click an enemy or a cell in range (20). Esc cancels." % String(g5p.get("drone", "")).to_upper()
+		"tactical":
+			return "%s: click the %s. Esc cancels." % [String(g5p.get("ability", "")).replace("_", " ").to_upper(),
+				"spot" if ["infiltrate", "stack_up"].has(String(g5p.get("ability", ""))) else "target"]
+		"assign_engineers":
+			return "ASSIGN ENGINEERS: click an own airfield, hangar or helipad. Esc cancels."
+		"auto_area":
+			if area_from != null:
+				return "AREA: radius %.0f. Release to set it." % (area_from as Vector2).distance_to(area_to)
+			return "AUTO AREA: press and drag a circle for the area (click = default radius). Esc keeps the default."
 	if wall_from != null:
 		var n := (preview.get("legal", []) as Array).size()
 		return "WALL: %d segments, %s. Release to build (Shift appends to the queue)." % [n, _cost_text(n)]
@@ -97,6 +139,9 @@ func on_place_press(p: Vector2) -> bool:
 
 
 func on_motion(p: Vector2) -> void:
+	if area_from != null:
+		area_to = p
+		return
 	if wall_from == null:
 		return
 	wall_to = _cell(p)
@@ -106,6 +151,11 @@ func on_motion(p: Vector2) -> void:
 
 ## Left release: issue build_line for the dragged line. True = consumed.
 func on_release(p: Vector2, shift: bool) -> bool:
+	if area_from != null:
+		area_to = p
+		_issue_area()
+		cancel()
+		return true
 	if wall_from == null:
 		return false
 	wall_to = _cell(p)
@@ -152,6 +202,8 @@ func _cost_text(n: int) -> String:
 func on_left(p: Vector2, _shift: bool) -> bool:
 	if mode == "":
 		return false
+	if G5_MODES.has(mode):
+		return _g5_left(p)
 	match mode:
 		"unload_point":
 			mv.issue({"type": "unload", "carrier": carrier_id, "target": p})
@@ -169,6 +221,119 @@ func on_left(p: Vector2, _shift: bool) -> bool:
 			mv.fx_layer.add_marker(t.pos, Color(1.0, 0.35, 0.2))
 	cancel()
 	return true
+
+
+# ---------------------------------------------------------------- G5 modes (UI5b)
+func _send(cmd: Dictionary, at: Vector2, col: Color) -> bool:
+	last_cmd = cmd.duplicate(true)
+	var r: Dictionary = mv.issue(cmd)
+	if not bool(r.get("ok", true)):
+		flash(String(r.get("reason", "rejected")))
+		return false
+	if mv.get("fx_layer") != null:
+		mv.fx_layer.add_marker(at, col)
+	return true
+
+
+func _own_field_at(p: Vector2) -> int:
+	var t = mv.entity_at(p, true)
+	if t == null or String(t.kind) != "building" or int(t.owner) != int(mv.player_fid):
+		return -1
+	return int(t.id) if Airfield.field_of(mv.world, int(t.id)) >= 0 else -1
+
+
+func _enemy_at(p: Vector2):
+	var t = mv.entity_at(p, true)
+	if t != null and int(t.owner) != int(mv.player_fid) and mv.world.is_enemy(int(mv.player_fid), int(t.owner)):
+		return t
+	return null
+
+
+## Click while a G5 mode is armed (world readable: MatchView joined the step). True = consumed.
+func _g5_left(p: Vector2) -> bool:
+	var c := _cell(p)
+	var cc := [c.x, c.y]
+	var ids: Array = unit_ids.duplicate()
+	match mode:
+		"sortie":
+			var t = _enemy_at(p)
+			if t != null:
+				_send({"type": "sortie", "unit_ids": ids, "target_id": int(t.id)}, t.pos, Color(1, 0.35, 0.2))
+			else:
+				_send({"type": "sortie", "unit_ids": ids, "area": [p.x, p.y, SORTIE_R]}, p, Color(1, 0.55, 0.2))
+		"rebase", "assign_engineers":
+			var bid := _own_field_at(p)
+			if bid < 0:
+				flash("Click an own airfield, hangar or helipad.")
+				return true
+			_send({"type": mode, "unit_ids": ids, "building_id": bid}, mv.world.entities[bid].pos, Color(0.45, 0.85, 1.0))
+		"land_at":
+			_send({"type": "land_at", "unit_ids": ids, "cell": cc}, Vector2(c) + Vector2(0.5, 0.5), Color(0.45, 0.85, 1.0))
+		"bombard":
+			_send({"type": "bombard", "unit_ids": ids, "cell": cc}, Vector2(c) + Vector2(0.5, 0.5), Color(1, 0.35, 0.2))
+		"launch_drone":
+			var cmd := {"type": "launch_drone", "unit_id": int(ids[0]) if not ids.is_empty() else -1, "drone": String(g5p.get("drone", "strike"))}
+			var t2 = _enemy_at(p)
+			if t2 != null:
+				cmd["target_id"] = int(t2.id)
+			else:
+				cmd["cell"] = cc
+			_send(cmd, p, Color(1, 0.8, 0.3))
+		"tactical":
+			var ab := String(g5p.get("ability", ""))
+			var cmd2 := {"type": "tactical", "unit_id": int(ids[0]) if not ids.is_empty() else -1, "ability": ab}
+			var t3 = mv.entity_at(p, true)
+			if ab == "infiltrate" or ab == "stack_up":
+				cmd2["cell"] = cc
+			elif t3 != null:
+				cmd2["target_id"] = int(t3.id)
+			else:
+				flash("Click a target for %s." % ab.replace("_", " "))
+				return true
+			_send(cmd2, p, Color(1, 0.8, 0.3))
+		"auto_area":
+			area_from = p
+			area_to = p
+			return true
+	cancel()
+	return true
+
+
+## auto_area release: centre + radius for every armed truck / medic (a click keeps the default radius).
+func _issue_area() -> void:
+	var ctr: Vector2 = area_from
+	var r := ctr.distance_to(area_to)
+	for id in unit_ids:
+		var cmd := {"unit_id": int(id), "center": [snappedf(ctr.x, 0.01), snappedf(ctr.y, 0.01)]}
+		if String(g5p.get("kind", "")) == "medic":
+			cmd["type"] = "set_auto_evac"
+			cmd["on"] = true
+		else:
+			cmd["type"] = "set_auto_resupply"
+			cmd["mode"] = String(g5p.get("mode", "station"))
+		if r >= AREA_MIN_R:
+			cmd["radius"] = snappedf(r, 0.1)
+		_send(cmd, ctr, Color(0.4, 1.0, 0.5))
+
+
+## Overlay: the auto_area circle while dragging, and a mode tag at the mouse (g4b_overlay).
+func draw_g5(ci: CanvasItem, mouse_canvas: Vector2) -> void:
+	if mode == "" or not G5_MODES.has(mode):
+		return
+	var f := ThemeDB.fallback_font
+	if area_from != null:
+		var c: Vector2 = mv.world_to_screen(area_from)
+		var e: Vector2 = mv.world_to_screen(area_to)
+		var rr := c.distance_to(e)
+		ci.draw_arc(c, maxf(rr, 4.0), 0.0, TAU, 48, Color(0.4, 1.0, 0.5, 0.9), 2.0)
+		ci.draw_circle(c, maxf(rr, 4.0), Color(0.4, 1.0, 0.5, 0.12))
+	var at: Vector2 = mouse_canvas + Vector2(16, 22)
+	var tag := mode.replace("_", " ").to_upper()
+	if mode == "assign_engineers":
+		tag = "ASSIGN"
+		ci.draw_arc(at - Vector2(16, 22), 10.0, 0.0, TAU, 24, Color(0.45, 0.85, 1.0), 2.0)
+	ci.draw_string_outline(f, at, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color(0, 0, 0, 0.85))
+	ci.draw_string(f, at, tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 0.95, 0.7))
 
 
 func on_right() -> bool:
