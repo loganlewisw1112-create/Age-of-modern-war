@@ -6,6 +6,7 @@ signal load_requested(path: String)
 signal quit_requested
 signal ui_scale_changed(s: float)
 signal editor_requested   # G4e (ED1): "Map Editor" button
+signal tutorial_requested   # G5 (ED5 CR): "Tutorial" button
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")   # G5 (UI5a)
@@ -129,6 +130,8 @@ func _build() -> void:
 	load_b.pressed.connect(_toggle_load)
 	var editor_b := _menu_button("Map Editor", _btn_flow)
 	editor_b.pressed.connect(func(): editor_requested.emit())
+	var tut_b := _menu_button("Tutorial", _btn_flow)   # G5 (ED5 CR)
+	tut_b.pressed.connect(func(): tutorial_requested.emit())
 	var how := _menu_button("How to Play", _btn_flow)
 	how.pressed.connect(_toggle_howto)
 	var quit := _menu_button("Quit", _btn_flow)
