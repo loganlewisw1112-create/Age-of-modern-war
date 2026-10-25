@@ -1,0 +1,35 @@
+{
+  "agent": "CORE10K-2",
+  "gen": 2,
+  "status": "partial: native gather panic fixed and re-enabled; test_hot_state 16/16; 10k fight speed target NOT met (~94-101 ms/tick at 3-13% CPU vs 62.5)",
+  "done": [
+    "gather.rs:229 panic: pass 2 grew hpos and mfl together only when hpos was short; with gather_trust=false movement.gd passes an EMPTY mflags while hot.pos is already long -> mfl[iu] out of bounds. Fixed: each mirror grows on its own, plus a tmc/tsp length guard. rts_core 0.4.1, then 0.4.2 (current bin/rts_core.dll)",
+    "Movement.native_gather = true again (movement.gd line 75)",
+    "rts_core 0.4.2: RtsCombat.prep_units_ids (dict-free pass 1 using the FULL list's ids, returns act_ids); combat.gd uses it (Combat.prep_ids toggle, _list_ids cache in the tier index) and walks the act list by index (no dict read for skipped entries)",
+    "landed-aircraft targeting parity: the RtsGrid flag of a landed aircraft is air|ground (3) in both the GDScript native-branch prep and the Rust prep, so non-AA shooters see it in nearest_enemy_batch as find_target does",
+    "supply.gd: _burn_fuel walks only FULL units that can burn fuel (_full_fuel cache, Supply.fuel_list toggle)",
+    "tools/scale_bench.gd: --gather= --trust= --prep-ids= --fuel-list= --ab-only=; AB lines print gather/trust",
+    "tests/test_hot_state.gd: GOLD re-baselined (ORCH-authorized, comment above GOLD); new in-tree A/B tests (perf paths on==off 2k/10k fight/10k march/threaded, hot-state path == dict path, sim thread on==off) and landed parity test",
+    "Damage -> Airfield.on_impact for cratering weapons: already wired by CORE10K (damage.gd ~103); inert today because no weapons-table entry has cratering:true; AIRSYS air strikes call Airfield.on_impact directly (air.gd _strike)"
+  ],
+  "remaining": [
+    "1. 10k fight avg ~94-101 ms (quiet PC) -> 62.5. Biggest costs (quiet, breakdown): combat 42 (cmb.np 23.7 native prep pass 2, cmb.act 15), movement 26 (mv.ng_call 11 = gather pass 1 reading every dict because gather_trust is off), supply 7.3, fog 6.6, morale 6.3, economy ~2.4",
+    "2. gather_trust=true would cut most of mv.ng_call; equal hashes proven (bench 8/8 + test_hot_state_path_equals_dict_path with verify_gather 0 drift), but every e.pos/e.path/e.moving writer outside movement.gd must call HotState.touch first: audit tests/*.gd direct pos writes (9 files per CORE10K) and every G5 system, then flip the default",
+    "3. combat prep pass 2 / morale / fog only drop with array-held state (cd, firing, target, broken, moving, last_hit, morale, supp, in_cover) kept current by every writer and flushed before hash/save/snapshot; writers outside CORE10K files: g5_mech.gd (cd_ticks/cooldown, morale), medical.gd (cooldown, morale, broken, fuel), naval.gd (firing), ops.gd (morale), orders/commands (order, target): needs CRs to UNITS5, SUPPORT, NAVAL, ORCH",
+    "4. supply: the fuel sublist saved only ~0.4 ms; the rest of supply.tick (_serve_due) is unprofiled"
+  ],
+  "files_touched": [
+    "native/rts_core/src/gather.rs", "native/rts_core/src/combat_prep.rs", "native/rts_core/src/combat.rs", "native/rts_core/Cargo.toml (0.4.2)", "native/rts_core/Cargo.lock (cargo)",
+    "bin/rts_core.dll (0.4.2; old kept as bin/rts_core.prev*.dll by build_native.sh)",
+    "sim/systems/movement.gd (native_gather default)", "sim/systems/combat.gd", "sim/systems/supply.gd",
+    "tools/scale_bench.gd", "tests/test_hot_state.gd"
+  ],
+  "test_state": "test_hot_state 16/16, test_native 12/12, test_perf 11/11, test_perf_systems 4/4, test_supply 10/10, test_airfield 13/13, test_medical 8/8, test_transport 11/11, test_air_transport 6/6, test_air 9/9, test_determinism 5/5 (all --only, live tree)",
+  "gotchas": [
+    "A/B envs in the session scratchpad: k2ref (git archive HEAD + hot_state.gd + bench; HEAD alone does not compile: bridges/medical call HotState.touch), k2new (k2ref + CORE10K files + new DLL), k2live (copy of the live tree); scripts k2_env.sh, k2_ab.sh, k2_bench.sh",
+    "native on vs off hash differently by design (G4); compare like with like",
+    "k2new (HEAD + CORE10K damage/combat) differs from k2ref on fight scenarios because of the Medical zero-HP hook with HEAD's medical.gd; the live tree equals k2ref on 2k_fight and 10k_march",
+    "static toggles are set from the bench via (load(script) as Script).set(name, v); calling Script.set on a preload const directly is a parse error",
+    "timings swing 3x with other agents' load (CPU 5% -> 100% in minutes); record the load with every number"
+  ]
+}

@@ -318,6 +318,9 @@ static func entity_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
 		if f == null:
 			return false
 		return _building_seen(w, e, f.visible, int(w.map.w))
+	# G5 (UNITS5 CR 2845): a recon-drone mark (G5Mech) reveals the unit to the marking team
+	if e.has("marked_until") and int(e.marked_until) > w.tick and w.factions.has(fid) 			and int(e.get("marked_team", -999)) == int(w.factions[fid].get("team", fid)):
+		return true
 	return is_visible(w, fid, e.pos) and not concealed(w, fid, e)
 
 

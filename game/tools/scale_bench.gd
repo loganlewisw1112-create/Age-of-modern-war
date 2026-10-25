@@ -54,6 +54,14 @@ func _init() -> void:
 			scenario = a.substr(11)
 		elif a.begins_with("--tiers="):
 			Tiers.force_off = a.substr(8) == "off"
+		elif a.begins_with("--gather="):
+			(Movement as Script).set("native_gather", a.substr(9) == "on")   # CORE10K-2: native gather A/B (no-op on builds without it)
+		elif a.begins_with("--prep-ids="):
+			(load("res://sim/systems/combat.gd") as Script).set("prep_ids", a.substr(11) == "on")   # CORE10K-2 A/B
+		elif a.begins_with("--fuel-list="):
+			(load("res://sim/systems/supply.gd") as Script).set("fuel_list", a.substr(12) == "on")
+		elif a.begins_with("--trust="):
+			(Movement as Script).set("gather_trust", a.substr(8) == "on")
 		elif a.begins_with("--held-paths="):
 			Movement.held_paths = a.substr(13) != "off"
 		elif a.begins_with("--move-stride="):
@@ -67,6 +75,20 @@ func _init() -> void:
 			SimIndex.profiling = true
 	if sys_only:
 		SimIndex.profiling = false
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--ab"):
+			# G5 (CORE10K): print the A/B hashes (native on and off; --ab=thread also threaded) and quit
+			var only := ""
+			for a2 in OS.get_cmdline_user_args():
+				if a2.begins_with("--ab-only="):
+					only = a2.substr(10)   # CORE10K-2: comma list of AB scenario names
+			for nm in AB:
+				if only != "" and not (nm in only.split(",")):
+					continue
+				for on in ([true, false] if NativeCore.available() else [false]):
+					print("AB %s native=%s gather=%s trust=%s %s" % [nm, "on" if on else "off", str((Movement as Script).get("native_gather")), str((Movement as Script).get("gather_trust")), ab_hash(nm, on, a == "--ab=thread")])
+			quit(0)
+			return
 	if not NativeCore.available():
 		modes = [false]
 	var rows := []
@@ -94,7 +116,7 @@ func _mv_flag(name: String) -> String:
 	return str(m.get(name))
 
 
-func _config(map_id: String, facs: Array) -> Dictionary:
+static func config(map_id: String, facs: Array) -> Dictionary:
 	var c := SimWorld.default_config()
 	c.map = map_id
 	c.victory = "endless"
@@ -106,7 +128,7 @@ func _config(map_id: String, facs: Array) -> Dictionary:
 
 
 ## Free cells near `from` for move class mc, breadth-first (deterministic), skipping `used`.
-func _cells_near(w: SimWorld, from: Vector2i, mc: String, count: int, used: Dictionary) -> Array:
+static func cells_near(w: SimWorld, from: Vector2i, mc: String, count: int, used: Dictionary) -> Array:
 	var out := []
 	var seen := {from: true}
 	var q := [from]
@@ -125,9 +147,10 @@ func _cells_near(w: SimWorld, from: Vector2i, mc: String, count: int, used: Dict
 	return out
 
 
-func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
-	var t_setup := Time.get_ticks_usec()
-	var w := SimWorld.new_match(_config(map_id, facs))
+## G5 (CORE10K): the bench scenario as a static builder (also used by tests/test_hot_state.gd A/B runs).
+## scen: "mixed" | "fight". Returns {w, fight, march, legs, placed}; call pre_tick(st, i) before step i.
+static func build(map_id: String, n: int, facs: Array, scen: String) -> Dictionary:
+	var w := SimWorld.new_match(config(map_id, facs))
 	w.ai_state = {}
 	for fid in w.factions:
 		for e in w.units_of(fid):
@@ -142,14 +165,14 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 		var fdef := String(w.factions[fid].faction_def)
 		var spawn: Vector2i = w.factions[fid].spawn
 		var start := spawn + Vector2i(signi(int(centre.x) - spawn.x), signi(int(centre.y) - spawn.y)) * 6
-		if scenario == "fight":
+		if scen == "fight":
 			var dc := (Vector2(spawn) - centre).normalized()
 			start = Vector2i(centre + dc * FIGHT_GAP)
 		var defs := []
 		for k in per_side:
-			var d := _unit_def(fdef, ROLES[k % ROLES.size()])
+			var d := unit_def(fdef, ROLES[k % ROLES.size()])
 			if d == "":
-				d = _unit_def(fdef, "infantry")
+				d = unit_def(fdef, "infantry")
 			defs.append(d)
 		var by_mc := {}
 		for d in defs:
@@ -157,7 +180,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 			by_mc[mc] = int(by_mc.get(mc, 0)) + 1
 		var cells := {}
 		for mc in by_mc:
-			cells[mc] = _cells_near(w, start, mc, int(by_mc[mc]), used)
+			cells[mc] = cells_near(w, start, mc, int(by_mc[mc]), used)
 		fight[fid] = []
 		march[fid] = []
 		var k := 0
@@ -168,7 +191,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 				continue
 			var cell: Vector2i = arr.pop_front()
 			var id := w.spawn_unit(d, fid, Vector2(cell) + Vector2(0.5, 0.5))
-			(fight[fid] if k % 2 == 0 or scenario == "fight" else march[fid]).append(id)
+			(fight[fid] if k % 2 == 0 or scen == "fight" else march[fid]).append(id)
 			k += 1
 			placed += 1
 	var legs := {}
@@ -176,8 +199,56 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 		var sp := Vector2(w.factions[fid].spawn) + Vector2(0.5, 0.5)
 		var to_c := (centre - sp).normalized()
 		var side := Vector2(-to_c.y, to_c.x)
-		legs[fid] = [_clamp(w, sp + to_c * 10.0 + side * 14.0), _clamp(w, sp + to_c * 10.0 - side * 14.0)]
+		legs[fid] = [clamp_in(w, sp + to_c * 10.0 + side * 14.0), clamp_in(w, sp + to_c * 10.0 - side * 14.0)]
 		w.submit({"type": "attack_move", "issuer": fid, "unit_ids": fight[fid], "target": centre})
+	return {"w": w, "fight": fight, "march": march, "legs": legs, "placed": placed}
+
+
+## G5 (CORE10K): A/B hash scenarios (tests/test_hot_state.gd + `--ab`): name -> [map, units, scenario, ticks].
+## The goldens in the test were taken from a `git archive HEAD` copy with this file overlaid.
+const AB := {
+	"2k_fight": ["river_crossing_s", 2000, "fight", 240],
+	"2k_mixed": ["river_crossing_s", 2000, "mixed", 240],
+	"10k_fight": ["valley_conquest_l", 10000, "fight", 160],
+	"10k_march": ["valley_conquest_l", 10000, "mixed", 120],
+}
+
+
+## State hash after an AB scenario (native on/off; threaded = each step on a WorkerThreadPool task).
+static func ab_hash(name: String, native_on: bool, threaded: bool = false, ticks: int = -1) -> String:
+	var spec: Array = AB[name]
+	var prev := NativeCore.force_off
+	NativeCore.force_off = not native_on
+	var st := build(String(spec[0]), int(spec[1]), ["human_a", "human_b"], String(spec[2]))
+	var w: SimWorld = st.w
+	var n := int(spec[3]) if ticks < 0 else ticks
+	for i in n:
+		pre_tick(st, i)
+		if threaded:
+			var tid := WorkerThreadPool.add_task(Callable(w, "step"))
+			WorkerThreadPool.wait_for_task_completion(tid)
+		else:
+			w.step()
+	var h := w.state_hash()
+	NativeCore.force_off = prev
+	return h
+
+
+## Re-orders the marching half every 150 ticks (call before the i-th step, i from 0).
+static func pre_tick(st: Dictionary, i: int) -> void:
+	var w: SimWorld = st.w
+	if i % 150 == 0:
+		for fid in w.factions:
+			var ids: Array = st.march[fid].filter(func(x): return w.entities.has(x))
+			if not ids.is_empty():
+				w.submit({"type": "move", "issuer": fid, "unit_ids": ids, "target": st.legs[fid][(i / 150) % 2]})
+
+
+func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
+	var t_setup := Time.get_ticks_usec()
+	var st := build(map_id, n, facs, scenario)
+	var w: SimWorld = st.w
+	var placed := int(st.placed)
 	var setup_s := float(Time.get_ticks_usec() - t_setup) / 1e6
 	var times := PackedFloat64Array()
 	var sys_ms := {}
@@ -186,11 +257,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	for i in ticks:
 		if i % 50 == 49:
 			max_full = maxi(max_full, int(Tiers.counts(w).get("full", 0)))
-		if i % 150 == 0:
-			for fid in w.factions:
-				var ids: Array = march[fid].filter(func(x): return w.entities.has(x))
-				if not ids.is_empty():
-					w.submit({"type": "move", "issuer": fid, "unit_ids": ids, "target": legs[fid][(i / 150) % 2]})
+		pre_tick(st, i)
 		var t0 := Time.get_ticks_usec()
 		if series:
 			var one := {}
@@ -252,7 +319,7 @@ func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 
 
 ## Role -> unit def id (roles name production entries or units; a squad gives its first spawn).
-func _unit_def(fdef: String, role: String) -> String:
+static func unit_def(fdef: String, role: String) -> String:
 	var d := String(Content.role(fdef, role))
 	if d == "":
 		return ""
@@ -265,7 +332,7 @@ func _unit_def(fdef: String, role: String) -> String:
 	return ""
 
 
-func _clamp(w: SimWorld, p: Vector2) -> Vector2:
+static func clamp_in(w: SimWorld, p: Vector2) -> Vector2:
 	return Vector2(clampf(p.x, 2.5, float(w.map.w) - 2.5), clampf(p.y, 2.5, float(w.map.h) - 2.5))
 
 

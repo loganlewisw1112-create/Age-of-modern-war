@@ -28,6 +28,8 @@ const Subsets = preload("res://sim/systems/unit_subsets.gd")
 ## only ((tick + id) % Tiers.STRIDE == 0); the burn covers the whole displacement since the last
 ## burn (supply_prev_pos), so no fuel is created or lost by the stride (teleport rule unchanged).
 
+## CORE10K-2: the fuel burn walks only the FULL units that can burn fuel (_full_fuel). Off = every FULL unit.
+static var fuel_list := true
 static var _ud: Dictionary = {}   # unit def -> {fpt, ammo_max, fuel_max, energy, is_supply}
 
 
@@ -181,7 +183,7 @@ static func _burn_fuel(w: SimWorld) -> void:
 	var cands: Array
 	if tiers_on:
 		var idx := Tiers.lists(w)
-		cands = [idx.full, Tiers.due_reduced(w, Tiers.STRIDE)]   # FULL every tick, REDUCED on stride
+		cands = [_full_fuel(idx) if fuel_list else idx.full, Tiers.due_reduced(w, Tiers.STRIDE)]   # FULL every tick, REDUCED on stride
 	else:
 		cands = [SimIndex.of(w, "unit")]
 	var ents: Dictionary = w.entities
@@ -210,6 +212,23 @@ static func _burn_fuel(w: SimWorld) -> void:
 			e.fuel = maxf(0.0, float(e.fuel) - burn)
 
 
+## CORE10K-2: runtime cache in the tier index (never saved): the idx.full units that can burn fuel
+## (a "fuel" key, or a def with fuel_max: world.gd spawn gives those the key), same relative order.
+## Rebuilt exactly like _full_buckets. The loop above skips every other unit at its first check, so
+## the result is identical; at 10k it stops touching ~7k foot-unit dicts per tick.
+static func _full_fuel(idx: Dictionary) -> Array:
+	var full: Array = idx.full
+	var c = idx.get("sup_fuel")
+	if c != null and is_same(c.src, full) and int(c.n) == full.size():
+		return c.l
+	var l := []
+	for e: Dictionary in full:
+		if e.has("fuel") or float(_u(String(e.def)).fuel_max) > 0.0 or Content.unit(String(e.def)).has("fuel_max"):
+			l.append(e)
+	idx["sup_fuel"] = {"src": full, "n": full.size(), "l": l}
+	return l
+
+
 # ================================================================ resupply
 static func _state(w: SimWorld) -> Dictionary:
 	if not w.sys_state.has("supply"):
@@ -228,7 +247,7 @@ static func _sources(w: SimWorld) -> Dictionary:
 		if bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)):  # G3a: flag replaces SUPPLY_BUILDINGS
 			pts.append([int(e.id), int(e.owner), {"kind": "b", "cell": e.cell, "size": int(e.size)}])
 	for e in Subsets.units(w, Subsets.SUPPLY):   # PERF4-2: supply trucks only (PERF5 subset)
-		if w.factions.has(int(e.owner)) and bool(_u(String(e.def)).is_supply) and w.entities.has(int(e.id)):
+		if w.factions.has(int(e.owner)) and bool(_u(String(e.def)).is_supply) and w.entities.has(int(e.id)) 				and not (e.has("supply_load") and int(e.supply_load) <= 0):   # G5 (SUPPORT CR 2840): empty auto truck
 			pts.append([int(e.id), int(e.owner), {"kind": "t", "id": int(e.id), "pos": e.pos}])
 	pts.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
 	for q in pts:
@@ -272,6 +291,8 @@ static func _resupply(w: SimWorld) -> void:
 		if want_ammo <= 0 and want_fuel <= 0:
 			continue
 		var ud := Content.unit(e.def)
+		if ud.has("aircraft"):
+			continue   # G5 (AIRSYS CR 2828): aircraft rearm / refuel only via Air (hangars, pads) and Support trucks
 		if not _in_range(e, sources[fid], radius):
 			continue
 		if not starved.has(fid):

@@ -32,7 +32,7 @@ static func pt(label: String, t0: int) -> int:
 
 
 static func _empty(w: SimWorld) -> Dictionary:
-	return {"tick": w.tick, "next_id": int(w.next_id), "kinds": {}, "known": w.entities.size(), "uown": {}}
+	return {"tick": w.tick, "next_id": int(w.next_id), "kinds": {}, "known": w.entities.size(), "uown": {}, "uids": PackedInt32Array()}
 
 
 ## Full rebuild from w.entities (one pass). Returns the index.
@@ -40,6 +40,7 @@ static func rebuild(w: SimWorld) -> Dictionary:
 	var idx := _empty(w)
 	var kinds: Dictionary = idx.kinds
 	var uown: Dictionary = idx.uown
+	var uids := PackedInt32Array()   # G5 CORE10K: ids parallel to kinds.unit
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		var k: String = e.kind
@@ -49,11 +50,13 @@ static func rebuild(w: SimWorld) -> Dictionary:
 		else:
 			arr.append(e)
 		if k == "unit":
+			uids.append(int(id))
 			var ua = uown.get(e.owner)
 			if ua == null:
 				uown[e.owner] = [e]
 			else:
 				ua.append(e)
+	idx.uids = uids
 	w.cache["sim_index"] = idx
 	return idx
 
@@ -78,6 +81,9 @@ static func get_index(w: SimWorld) -> Dictionary:
 			else:
 				arr.append(e)
 			if k == "unit":
+				var uu: PackedInt32Array = idx.uids
+				uu.append(id)
+				idx.uids = uu
 				var ua = idx.uown.get(e.owner)
 				if ua == null:
 					idx.uown[e.owner] = [e]
@@ -95,6 +101,11 @@ static func get_index(w: SimWorld) -> Dictionary:
 static func of(w: SimWorld, kind: String) -> Array:
 	var arr = get_index(w).kinds.get(kind)
 	return arr if arr != null else []
+
+
+## G5 CORE10K: entity ids parallel to of(w, "unit") (same order, same liveness rule).
+static func unit_ids(w: SimWorld) -> PackedInt32Array:
+	return get_index(w).uids
 
 
 ## Units grouped by owner (G3b PERF4-3): {owner -> [unit dicts, ascending id]}, same liveness rule.

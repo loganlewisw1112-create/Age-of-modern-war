@@ -3,6 +3,8 @@ const Status = preload("res://sim/systems/status.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")   # G5 (CORE10K): player breach hook
+const HotState = preload("res://sim/hot_state.gd")       # G5 (CORE10K): pos mirror + dirty marks for the gather
 ## Movement (owner: agent B / sim-mil). Nav grids (foot/vehicle), A* pathing with a per-tick
 ## budget and a deterministic, saved request queue, steering with separation, formations.
 ## Commands: move, attack_move, stop, hold. Contract: docs/CONTRACTS.md section 5.
@@ -68,6 +70,13 @@ static var prof: Dictionary = {}
 static var held_paths := false         # N1-core-4: native-held paths (RtsSteer.set_path / advance_held); bit-identical, but no measured gather gain at 2k rc_s (7.6 vs 7.5 ms), so off
 ## PERF10K: held mover state (see _tick_held). Bit-identical to _tick_native; on by default.
 static var held_state := true
+## G5 CORE10K: the held gather loop as one RtsSteer.gather_held call (rts_core >= 0.4.0, exact port;
+## the GDScript loop stays the fallback and the oracle). Off = GDScript loop.
+static var native_gather := true   # CORE10K-2: rts_core 0.4.1 fixes the 0.4.0 gather.rs:229 panic (empty mflags with gather_trust off); A/B on == off 8/8
+## G5 CORE10K: with native_gather, skip the dict read of a synced, clean, non-moving foot/vehicle unit
+## (HotState.pos mirror). Needs every pos/path/moving writer outside movement.gd to call HotState.touch /
+## set_* (core.hot_writer_rule). Off = the native gather reads every unit's dict (exact, slower).
+static var gather_trust := false   # default off: 9 test files + air/medical/transport/bridges write e.pos directly
 static var held_verify := false          # tests: compare every mirror with its dict each tick
 static var verify_bad := 0               # mismatches found by held_verify (diagnostics, never saved)
 static var owed_paid := 0               # stride catch-up advances paid (diagnostics only, never saved)
@@ -358,6 +367,7 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 			if rect.has_point(cell):
 				var free := nearest_free_cell(w, cell, move_class(e), _qteam(w, e))
 				e.pos = Vector2(free) + CENTER
+				HotState.mark(w, int(id))
 
 
 ## Connected-component labels (4-connected; diagonals never connect what orthogonals cannot).
@@ -551,6 +561,7 @@ static func stop_path(e: Dictionary) -> void:
 ## Returns false if unreachable (goal snapped within 6 tiles). When this tick's A* budget is
 ## spent the request is queued (FIFO, saved in sys_state) and e.path stays empty until served.
 static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
+	HotState.mark(w, int(e.id))
 	var r := _resolve(w, e, goal)
 	if not r.ok:
 		stop_path(e)
@@ -720,6 +731,7 @@ static func _drain_queue(w: SimWorld) -> void:
 			e.path = fp if not fp.is_empty() else _compute(w, mc, r.start, r.cell, r.pos, tm)
 		e.path_i = 0
 		e.path_req = -1
+		HotState.mark(w, int(e.id))
 	st.queue = q.slice(i)
 
 
@@ -806,6 +818,7 @@ static func _separate_native_only(w: SimWorld, steer) -> void:
 
 ## Safety invariant: never leave a unit inside an impassable cell (or off the map).
 static func _rescue(w: SimWorld, e: Dictionary, mc: String, solid: Dictionary, mw: int, bounds: Rect2i, team: int = -1) -> void:
+	HotState.mark(w, int(e.id))
 	var p: Vector2 = e.pos
 	var cell := Vector2i(floori(p.x), floori(p.y))
 	if is_air(mc):
@@ -1031,6 +1044,7 @@ static func _held(w: SimWorld) -> Dictionary:
 	if h == null:
 		h = {"ref": [], "pi": PackedInt32Array(), "st": PackedInt32Array(), "ps": PackedInt32Array(), "mv": PackedByteArray()}
 		w.nav["held"] = h
+		HotState.reset_movement(w)   # G5: the pos mirror is re-read with the held mirrors
 	return h
 
 
@@ -1076,7 +1090,64 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	var n := 0
 	var nm := 0
 	var tick := w.tick
-	for e: Dictionary in all:
+	var uix := PackedInt32Array()   # G5: native gather: n index -> index into all
+	var ng_done := false
+	if native_gather and steer.has_method("gather_held"):
+		var ns := [sols[0], sols[1], PackedByteArray()]
+		for mcn in ["amphibious", "naval_small", "naval"]:
+			var sb = w.nav.solid.get(mcn)
+			ns.append(sb if sb != null else PackedByteArray())
+		var hot = HotState.of(w)
+		hot._grow(int(w.next_id))
+		var uids: PackedInt32Array = SimIndex.unit_ids(w)
+		var r: Array = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
+		if r.size() == 1:
+			for nid in r[0]:
+				var e: Dictionary = ents[nid]
+				var id: int = nid
+				if id >= tn:
+					tn = maxi(id + 1, tn * 2 + 64)
+					trad.resize(tn)
+					tkey.resize(tn)
+					tmc.resize(tn)
+					tsp.resize(tn)
+				var u := udef(String(e.def))
+				trad[id] = maxf(float(u.radius), 0.001)
+				tkey[id] = (int(e.owner) + 1) * 1048576 + _layer(u.mc)
+				_ensure_class(w, u.mc)
+				tmc[id] = _key(u.mc, team_of(w, e))
+				tsp[id] = float(u.speed) * SimWorld.DT
+				grown = true
+			r = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
+		if r.size() == 13:
+			pos = r[0]
+			ids = r[1]
+			mov = r[2]
+			mvi = r[3]
+			spd = r[4]
+			uix = r[5]
+			hpi = r[7]
+			hst = r[8]
+			hps = r[9]
+			hmv = r[10]
+			hot.pos = r[11]
+			if gather_trust:
+				hot.mflags = r[12]
+			hgrown = true
+			n = ids.size()
+			nm = spd.size()
+			for i in r[6]:
+				_arrive(all[i])   # moving without a path (or path done): same order as the loop
+			ng_done = true
+			if HotState.verify_gather:   # tests: every trusted (not re-read) position equals its dict
+				for j in n:
+					if all[uix[j]].pos != pos[j]:
+						HotState.verify_bad += 1
+						push_error("HotState gather drift: unit %d dict %s mirror %s" % [ids[j], str(all[uix[j]].pos), str(pos[j])])
+		if profile:   # share of ticks on the native gather (bench prints prof / 1000 / ticks)
+			prof["ng_native"] = int(prof.get("ng_native", 0)) + (1000 if ng_done else 0)
+			t0 = _pt("ng_call", t0)
+	for e: Dictionary in ([] if ng_done else all):
 		var id: int = e.id
 		if not ents.has(id):
 			continue
@@ -1170,11 +1241,12 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 		ids[n] = id
 		mov[n] = mflag
 		n += 1
-	pos.resize(n)
-	ids.resize(n)
-	mov.resize(n)
-	mvi.resize(nm * 4)
-	spd.resize(nm)
+	if not ng_done:
+		pos.resize(n)
+		ids.resize(n)
+		mov.resize(n)
+		mvi.resize(nm * 4)
+		spd.resize(nm)
 	if grown:
 		tabs.rad = trad
 		tabs.key = tkey
@@ -1193,13 +1265,25 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	var out: PackedVector2Array = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
 	if profile:
 		t0 = _pt("native_step", t0)
-	for i in steer.last_changed():
-		units[i].pos = out[i]
+	var hpm = w.get("hot")
+	var hposm: PackedVector2Array = hpm.pos if hpm != null else PackedVector2Array()
+	var hcap := hposm.size()
+	if ng_done:
+		for i in steer.last_changed():
+			all[uix[i]].pos = out[i]
+			hposm[ids[i]] = out[i]
+	else:
+		for i in steer.last_changed():
+			units[i].pos = out[i]
+			if ids[i] < hcap:
+				hposm[ids[i]] = out[i]
+	if hpm != null:
+		hpm.pos = hposm
 	w.cache["unit_snap"] = {"tick": w.tick, "ids": ids, "pos": out, "complete": true}
 	var res: PackedFloat32Array = steer.last_adv()
 	for m in nm:
-		var e: Dictionary = movers[m]
-		var id := mid[m]
+		var e: Dictionary = all[uix[mvi[m * 4]]] if ng_done else movers[m]
+		var id: int = e.id if ng_done else mid[m]
 		var b := m * 4
 		var fl := int(res[b + 3])
 		if fl & 4:
@@ -1513,10 +1597,27 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				var e = w.entities.get(int(id))
 				if e != null and can_reach(w, e, tv):
 					return ""
+			if String(cmd.type) == "attack_move" and _player_breach_ok(w, int(cmd.get("issuer", -1))):
+				return ""   # G5 (CORE10K): blocked by enemy fortifications -> apply breaches (Fortify)
 			return "No selected unit can reach that location."
 		"stop", "hold":
 			return ""
 	return "Unknown movement command."
+
+
+## G5 (CORE10K, core.breach_wired): a player (non-AI) attack-move may be accepted although no unit can
+## reach the goal when the enemy has known fortification pieces (walls / gates / towers): apply_command
+## then hands each blocked unit to Fortify.on_attack_move_blocked (idle when nothing fits).
+static func _player_breach_ok(w: SimWorld, fid: int) -> bool:
+	if w.ai_state.has(fid):
+		return false
+	var st = w.sys_state.get("fortify")
+	if st == null:
+		return false
+	for k in st.known:
+		if w.is_enemy(fid, int(k[3])):
+			return true
+	return false
 
 
 ## Formation slots around target: a grid with ~1.1 tile spacing (1.8 if any vehicle), clamped to the map.
@@ -1616,6 +1717,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					return pa.x < pb.x
 				return int(a.id) < int(b.id))
 			var slots := formation_slots(w, units, target)
+			var breach: bool = cmd.type == "attack_move" and not w.ai_state.has(int(cmd.get("issuer", -1)))
 			_group_flow = _group_flows(w, units, target)
 			for i in units.size():
 				var e: Dictionary = units[i]
@@ -1626,7 +1728,10 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				else:
 					e.order = {"type": "attack_move", "target": slot, "engaged": false}
 				if not order_path(w, e, slot):
-					e.order = {"type": "idle"}
+					# G5 (CORE10K, core.breach_wired): a player attack-move whose path fails targets the
+					# blocking enemy wall / gate / tower (Fortify breach). AI sides breach via ai_g4b.
+					if not (breach and Fortify.on_attack_move_blocked(w, e, slot)):
+						e.order = {"type": "idle"}
 			_group_flow = {}
 		"stop":
 			for e in units:
@@ -1708,6 +1813,7 @@ static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool) -
 		var cell := w.cell_of(e.pos)
 		if touched.has(cell.y * mw + cell.x) and not is_passable(w, cell, move_class(e), team_of(w, e)):
 			e.pos = Vector2(nearest_free_cell(w, cell, move_class(e), team_of(w, e))) + CENTER
+			HotState.mark(w, int(id))
 
 
 ## {} if no gate at cell, else {"team": owner team, "locked": bool}.

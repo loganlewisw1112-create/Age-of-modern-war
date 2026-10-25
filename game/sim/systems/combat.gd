@@ -25,6 +25,11 @@ extends RefCounted
 ##   every ground unit/building within `splash` of the impact point (allies too) with linear falloff
 ##   to 50% at the edge: one ShotFired {indirect:true} plus one Damage event per entity hit.
 ##   An explicit attack on a target inside min_range backs the shooter away.
+## G5 (CORE10K, CONTRACTS_G5 section 3.6): weapon flags anti_air_low / anti_air_high / anti_drone go
+##   into stats (aa_low, aa_high, anti_drone); `aa` = anti_air or either new flag. An air target must
+##   also pass Air.can_target(s, t) (AIRSYS rule; s = these combat stats, s.weapon = weapon id), and a
+##   Wounded unit (Medical, e.wounded) is never a direct-fire target (splash still hits it). Both are
+##   no-ops for G4 content, so G4 results are unchanged. See _g5_ok.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
@@ -56,6 +61,8 @@ static var prof_units := false   # bench: time each _unit_tick by order type (ad
 ## codes + null-search skip); native_prep = run the prep loop as RtsCombat.prep_units (needs
 ## act_skip and rts_core >= 0.3.1). Both exact (tests/test_perf_systems.gd); false = PERF10K-2 path.
 static var act_skip := true
+## CORE10K-2: native prep with the list's ids (rts_core >= 0.4.2; dict-free pass 1, act by index). Off = 0.3.1 call.
+static var prep_ids := true
 static var native_prep := true
 
 
@@ -77,7 +84,10 @@ static func stats(e: Dictionary) -> Dictionary:
 		"armor": String(d.get("armor", "infantry")),
 		"sight": float(d.get("sight", 0)),
 		"builder": bool(d.get("can_build", false)),
-		"aa": bool(wd.get("anti_air", false)),
+		"aa": bool(wd.get("anti_air", false)) or bool(wd.get("anti_air_low", false)) or bool(wd.get("anti_air_high", false)),
+		"aa_low": bool(wd.get("anti_air_low", false)) or bool(wd.get("anti_air", false)),   # G5 section 3.6
+		"aa_high": bool(wd.get("anti_air_high", false)),
+		"anti_drone": bool(wd.get("anti_drone", false)),
 		"indirect": bool(wd.get("indirect", false)),
 		"min_range": 0.0 if bool(wd.get("guided", false)) else float(wd.get("min_range", 0)),  # G3b STG4: guided
 		"guided": bool(wd.get("guided", false)),  # G3b STG4: indirect, no friendly splash, no scatter
@@ -146,6 +156,8 @@ static func tick(w: SimWorld) -> void:
 	var act := []    # FULL units that act this tick, ascending id
 	var askip := PackedByteArray()   # SIM10K: per act entry, 0 = call _unit_tick, else a no-op class
 	var atg := PackedInt32Array()    # SIM10K: per act entry, its target id at prep
+	var act_ix := PackedInt32Array()  # CORE10K-2 (rts_core >= 0.4.2): act entries as indices into units
+	var act_id := PackedInt32Array()  # and their ids (when set, act stays empty)
 	var nids := PackedInt32Array()
 	var npos := PackedVector2Array()
 	var nteam := PackedInt32Array()
@@ -202,7 +214,14 @@ static func tick(w: SimWorld) -> void:
 				tabs.dx = dxa
 			if SimIndex.profiling:
 				t0 = SimIndex.pt("cmb.pre_np", t0)
-			var r: Array = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			# CORE10K-2: rts_core >= 0.4.2 takes the FULL list's ids (cached per list) so its pass 1 reads
+			# no unit dict, and returns act_ids so a skipped act entry is never read either
+			var pids := _list_ids(idx, units) if prep_ids and tiers_on and cobj.has_method("prep_units_ids") else PackedInt32Array()
+			var r: Array
+			if not pids.is_empty():
+				r = cobj.prep_units_ids(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			else:
+				r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
 			if SimIndex.profiling:
 				t0 = SimIndex.pt("cmb.np", t0)
 			if r.size() == 1:
@@ -211,8 +230,11 @@ static func tick(w: SimWorld) -> void:
 					if tf[nid] == 0:
 						tf[nid] = _tf_of(ne, teams)
 					dxa[nid] = _dx_of(ne, tabs)
-				r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
-			if r.size() == 12:
+				if not pids.is_empty():
+					r = cobj.prep_units_ids(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+				else:
+					r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			if r.size() == 12 or r.size() == 13:
 				nids = r[0]
 				npos = r[1]
 				nteam = r[2]
@@ -225,8 +247,12 @@ static func tick(w: SimWorld) -> void:
 				var aix: PackedInt32Array = r[9]
 				askip = r[10]
 				atg = r[11]
-				for k in aix:
-					act.append(units[k])
+				if r.size() == 13:
+					act_ix = aix          # CORE10K-2: act entries by index into units, ids alongside
+					act_id = r[12]
+				else:
+					for k in aix:
+						act.append(units[k])
 				np_done = true
 				if SimIndex.profiling:
 					var nz := 0
@@ -272,7 +298,9 @@ static func tick(w: SimWorld) -> void:
 					nids[si] = id
 					npos[si] = p
 					nteam[si] = (tfv >> 3) - 1
-					nflags[si] = tfv & 3
+					# CORE10K-2: a landed aircraft is a ground target too (AIRSYS CR 2831): air|ground, so the
+					# native nearest-enemy search offers it to non-AA shooters exactly like find_target does
+					nflags[si] = 3 if tfv & 2 and _landed(e) else tfv & 3
 					if tfv & 4 and (tick + id) % SCAN_EVERY == 0:
 						var ot = e.order.get("type", "idle")
 						if ot == "idle" or ot == "attack_move" or ot == "hold":
@@ -420,9 +448,9 @@ static func tick(w: SimWorld) -> void:
 	w.cache["cmb_ev"] = ev
 	var use_nr := not nores.is_empty()
 	var bi := 0
-	for i in act.size():
-		var e: Dictionary = act[i]
-		var eid: int = e.id
+	var by_ix := not act_id.is_empty()
+	for i in (act_id.size() if by_ix else act.size()):
+		var eid: int = act_id[i] if by_ix else int(act[i].id)
 		while bi < blds.size() and int(blds[bi].id) < eid:
 			_bld_act(w, blds[bi], grid, blds)
 			bi += 1
@@ -436,7 +464,10 @@ static func tick(w: SimWorld) -> void:
 				continue
 			if sk == 3 and not ev.has(eid):
 				continue
-		elif use_nr and nores[eid] == 1 and atg[i] < 0:
+		var e: Dictionary = units[act_ix[i]] if by_ix else act[i]
+		if by_ix and int(e.id) != eid:
+			e = ents[eid]   # the list was re-sorted mid-act (an append + Tiers.lists): same dict by id
+		if sk == 0 and use_nr and nores[eid] == 1 and atg[i] < 0:
 			# SIM10K: untargeted scan-slot shooter whose search is null by construction (see above):
 			# _unit_tick is then a no-op for idle / hold, and for an attack-move that is moving and
 			# not engaged (it only rewrites target = -1). Anything else still calls.
@@ -503,6 +534,21 @@ static func _combat_obj(w: SimWorld):
 		lc = NativeCore.new_combat(w)
 		w.cache["combat_lc"] = lc if lc != null else false
 	return lc if lc is Object else null
+
+
+## CORE10K-2: ids parallel to a Tiers list (runtime cache in the tier index, never saved), rebuilt
+## when the list is a new Array or changed size (the same rule as Supply._full_buckets: Tiers only
+## appends to a list, and re-sorts it only after an append).
+static func _list_ids(idx: Dictionary, units: Array) -> PackedInt32Array:
+	var c = idx.get("cmb_ids")
+	if c != null and is_same(c.src, units) and int(c.n) == units.size():
+		return c.ids
+	var ids := PackedInt32Array()
+	ids.resize(units.size())
+	for i in units.size():
+		ids[i] = int(units[i].id)
+	idx["cmb_ids"] = {"src": units, "n": units.size(), "ids": ids}
+	return ids
 
 
 ## SIM10K: def-table index of e for RtsCombat.prep_units (cmb_tabs: dmap def -> index; dr range,
@@ -581,7 +627,24 @@ static func _g4_mult(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -
 
 ## True if a shooter with stats s may engage t at all (air targets need an anti_air weapon).
 static func can_target(s: Dictionary, t: Dictionary) -> bool:
-	return bool(s.aa) or t.kind != "unit" or not bool(stats(t).is_air)
+	return (bool(s.aa) or t.kind != "unit" or not bool(stats(t).is_air) or _landed(t)) and _g5_ok(s, t)
+
+
+## G5 (AIRSYS CR 2831): a landed / parked aircraft (e.air_landed) is a ground target: no anti_air needed.
+static func _landed(t: Dictionary) -> bool:
+	return t.has("air_landed") and bool(t.air_landed)
+
+
+## G5 (CORE10K): the AIRSYS air rule for air targets + no direct fire at Wounded units. Call only
+## after the G3a anti_air filter passed. True for every G4 target (no is_air rule change, no wounded).
+static func _g5_ok(s: Dictionary, t: Dictionary) -> bool:
+	if t.kind != "unit":
+		return true
+	if t.has("wounded") and bool(t.wounded):
+		return false
+	if bool(stats(t).is_air):
+		return SimWorld.Air.can_target(s, t)
+	return true
 
 
 ## Search radius for auto-acquisition: sight, or the full range for indirect fire.
@@ -658,8 +721,8 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 								continue
 							if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
 								continue  # G2: infantry hidden in forest (A2)
-							if (not aa and bool(stats(c).is_air)) or d2 < mr2:
-								continue  # G3a: air needs anti_air; artillery min_range
+							if (not aa and bool(stats(c).is_air) and not _landed(c)) or d2 < mr2 or not _g5_ok(s, c):
+								continue  # G3a: air needs anti_air; artillery min_range; G5 air rule / wounded
 							best = c
 							best_d = d2
 							best_id = cid
@@ -723,7 +786,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 		var d2 := INF
 		if c != null:
 			d2 = p.distance_squared_to(Vector2(c.pos))
-		if c != null and _cand_ok(w, fid, c, d2, r2, mr2, aa, vis, mw):
+		if c != null and _cand_ok(w, fid, c, d2, r2, mr2, aa, vis, mw, s):
 			best = c
 			best_d = d2
 			best_id = cand
@@ -753,7 +816,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					if vi < 0 or vi >= nvis or vis[vi] != 1:
 						continue
 					var c3 = ents.get(cid)
-					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or (not aa and bool(stats(c3).is_air)):
+					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
 						continue
 					best = c3
 					best_d = dd
@@ -768,7 +831,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				var dd := p.distance_squared_to(Vector2(c2.pos))
 				if dd > best_d or (dd == best_d and cid > best_id):
 					continue
-				if _cand_ok(w, fid, c2, dd, r2, mr2, aa, vis, mw):
+				if _cand_ok(w, fid, c2, dd, r2, mr2, aa, vis, mw, s):
 					best = c2
 					best_d = dd
 					best_id = cid
@@ -808,7 +871,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 
 
 ## The per-candidate filters of find_target (range, visible cell, alive, concealment, air, min_range).
-static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float, mr2: float, aa: bool, vis: PackedByteArray, mw: int) -> bool:
+static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float, mr2: float, aa: bool, vis: PackedByteArray, mw: int, s: Dictionary = {}) -> bool:
 	if d2 > r2 or d2 < mr2:
 		return false
 	var cp: Vector2 = c.pos
@@ -817,7 +880,7 @@ static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float,
 		return false
 	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
 		return false
-	return aa or not bool(stats(c).is_air)
+	return (aa or not bool(stats(c).is_air) or _landed(c)) and _g5_ok(s, c)
 
 
 static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:

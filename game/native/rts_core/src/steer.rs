@@ -7,6 +7,7 @@
 
 use crate::advance::{advance_k, qpos, AdvParams, OUT_ARRIVE};
 use crate::nav::RtsNav;
+use crate::gather::{gather, GatherIn, GatherOut, Held};
 use godot::prelude::*;
 use std::collections::HashMap;
 
@@ -60,6 +61,70 @@ impl RtsSteer {
                            key_tab.as_slice(), mc_tab.as_slice(), mvi.as_slice(), spd.as_slice(), wp.as_slice(),
                            fin.as_slice(), params.as_slice());
         PackedVector2Array::from(out.as_slice())
+    }
+
+    /// G5 CORE10K: movement.gd _tick_held gather loop as one call (exact port, src/gather.rs).
+    /// units = SimIndex unit dicts (ascending id), ents = w.entities, refs = held path refs (written
+    /// in place), sols = solid bytes per class index 0..5 (empty = not built), tabs by id, held
+    /// tabs = [rad, mc, spd] by id; held = [pi, st, ps, mv, hot_pos, hot_mflags]; uids = ids parallel
+    /// to units. Returns [need_ids] (fill tables, call again), [] (run the GDScript loop
+    /// this tick) or [pos, ids, mov, mvi, spd, uix, arrive, pi, st, ps, mv, hot_pos, mflags] (uix / arrive = indices
+    /// into units; changed paths are stored with set_path).
+    #[func]
+    #[allow(clippy::too_many_arguments)]
+    fn gather_held(&mut self, units: VarArray, ents: VarDictionary, mut refs: VarArray, tick: i64, mw: i32, mh: i32,
+                   sols: VarArray, tabs: VarArray, held: VarArray, uids: PackedInt32Array) -> VarArray {
+        let pb = |a: &VarArray, j: usize| -> PackedByteArray { a.at(j).try_to::<PackedByteArray>().unwrap_or_default() };
+        let pi32 = |a: &VarArray, j: usize| -> PackedInt32Array { a.at(j).try_to::<PackedInt32Array>().unwrap_or_default() };
+        let pf32 = |a: &VarArray, j: usize| -> PackedFloat32Array { a.at(j).try_to::<PackedFloat32Array>().unwrap_or_default() };
+        let (rad_tab, mc_tab, spd_tab) = (pf32(&tabs, 0), pb(&tabs, 1), pf32(&tabs, 2));
+        let (pi, st, ps, mv) = (pi32(&held, 0), pi32(&held, 1), pi32(&held, 2), pb(&held, 3));
+        let hpos = held.at(4).try_to::<PackedVector2Array>().unwrap_or_default();
+        let mflags = pb(&held, 5);
+        let mut bufs: Vec<PackedByteArray> = Vec::with_capacity(6);
+        for j in 0..6 {
+            bufs.push(if j < sols.len() { sols.at(j).try_to::<PackedByteArray>().unwrap_or_default() } else { PackedByteArray::new() });
+        }
+        let sl: Vec<&[u8]> = bufs.iter().map(|b| b.as_slice()).collect();
+        let g = GatherIn { tick, mw, mh, sols: &sl, trad: rad_tab.as_slice(), tmc: mc_tab.as_slice(), tsp: spd_tab.as_slice(), uids: uids.as_slice() };
+        let mut h = Held { hpos: hpos.as_slice().to_vec(), mfl: mflags.as_slice().to_vec(), pi: pi.as_slice().to_vec(), st: st.as_slice().to_vec(), ps: ps.as_slice().to_vec(), mv: mv.as_slice().to_vec() };
+        let mut out = VarArray::new();
+        match gather(&units, &ents, &mut refs, &g, &mut h) {
+            GatherOut::NeedTables(need) => {
+                out.push(&PackedInt32Array::from(need.as_slice()).to_variant());
+            }
+            GatherOut::Fallback => {}
+            GatherOut::Done { pos, ids, mov, mvi, spd, uix, arrive, paths_set } => {
+                for (id, pv) in paths_set {
+                    let i = id as usize;
+                    if i >= self.paths.len() {
+                        self.paths.resize_with(i + 1, Vec::new);
+                    }
+                    self.paths[i] = pv;
+                }
+                out.push(&PackedVector2Array::from(pos.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(ids.as_slice()).to_variant());
+                out.push(&PackedByteArray::from(mov.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(mvi.as_slice()).to_variant());
+                out.push(&PackedFloat32Array::from(spd.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(uix.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(arrive.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(h.pi.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(h.st.as_slice()).to_variant());
+                out.push(&PackedInt32Array::from(h.ps.as_slice()).to_variant());
+                out.push(&PackedByteArray::from(h.mv.as_slice()).to_variant());
+                out.push(&PackedVector2Array::from(h.hpos.as_slice()).to_variant());
+                out.push(&PackedByteArray::from(h.mfl.as_slice()).to_variant());
+            }
+        }
+        out
+    }
+
+    /// G5 CORE10K (bench): [pass1 usec, pass2 usec, calls] of gather_held since load.
+    #[func]
+    fn gather_times(&self) -> PackedInt64Array {
+        let g = unsafe { crate::gather::GT };
+        PackedInt64Array::from(&[g[0] as i64, g[1] as i64, g[2] as i64][..])
     }
 
     /// N1-core-4: store entity `id`'s path (movement.gd pushes it whenever e.path is a new array).

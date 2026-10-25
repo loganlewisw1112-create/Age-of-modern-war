@@ -123,4 +123,15 @@ impl RtsCombat {
                   next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
         crate::combat_prep::prep_units(units, ents, tick, tf, dx, d_range, d_search, d_flags, next_id, trf, scan_every, ret_fire)
     }
+
+    /// CORE10K-2 (rts_core 0.4.2): prep_units with `ids` parallel to `units` (pass 1 reads no dict)
+    /// and tabs = [tf, dx, d_range, d_search, d_flags]. Returns prep_units' list plus act_ids (13 entries)
+    /// when ids match units, else exactly prep_units' result.
+    #[func]
+    fn prep_units_ids(&self, units: VarArray, ents: VarDictionary, ids: PackedInt32Array, tick: i64, tabs: VarArray,
+                      next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
+        let pi = |j: usize| -> PackedInt32Array { tabs.at(j).try_to::<PackedInt32Array>().unwrap_or_default() };
+        let pf = |j: usize| -> PackedFloat32Array { tabs.at(j).try_to::<PackedFloat32Array>().unwrap_or_default() };
+        crate::combat_prep::prep_units_ids(units, ents, ids.as_slice(), tick, pi(0), pi(1), pf(2), pf(3), pi(4), next_id, trf, scan_every, ret_fire)
+    }
 }

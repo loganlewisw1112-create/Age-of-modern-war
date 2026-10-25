@@ -11,6 +11,8 @@ extends RefCounted
 ## Infantry = units that carry a `morale` field (units.json `morale`); vehicles carry `comp`.
 ## Combat deaths are queued in w.cache.morale_deaths (with squad) for morale.gd, which consumes
 ## the queue in the same tick (Morale runs right after Combat), so the cache never spans a save.
+## G5 (CORE10K): before destroying a unit at 0 HP, apply_hit calls Medical.on_zero_hp(w, e) (via
+## SimWorld.Medical, no preload cycle); true = SUPPORT keeps it alive as Wounded, apply_hit returns.
 ## NOTE: do not preload combat.gd here (combat preloads this file; avoid a cyclic preload).
 
 const Q := 1.0 / 1024.0
@@ -98,9 +100,19 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	if target.kind == "unit":
 		target.last_attacker = int(shooter.id)
 		target.last_hit_tick = w.tick
+	# G5 (AIRSYS CR 2590): a cratering weapon closes airfield strips at the impact point
+	var cwd: Dictionary = Content.weapon(String(s.get("weapon", ""))) if String(s.get("weapon", "")) != "" else {}
+	if bool(cwd.get("cratering", false)):
+		var oi := Callable(SimWorld.Airfield, "on_impact")
+		if oi.is_valid():
+			oi.call(w, cwd, target.pos)
 	w.emit("Damage", {"shooter": int(shooter.id), "target": int(target.id), "amount": dmg,
 		"hit_side": side, "in_cover": cover})
 	if float(target.hp) <= 0.0:
+		# G5 (CORE10K, CONTRACTS_G5 section 5 core.zero_hp_hook_ready): SUPPORT's Medical may keep a
+		# unit alive as Wounded (true = do not destroy). The stub returns false: G4 results unchanged.
+		if target.kind == "unit" and SimWorld.Medical.on_zero_hp(w, target):
+			return
 		_note_death(w, target)
 		if SimIndex.profiling:
 			var tde := Time.get_ticks_usec()

@@ -29,7 +29,7 @@ fn vfloat(v: &Variant) -> f64 {
 struct Keys {
     id: StringName, pos: StringName, firing: StringName, cd_ticks: StringName, cooldown: StringName,
     target: StringName, broken: StringName, moving: StringName, order: StringName, typ: StringName,
-    last_hit: StringName, engaged: StringName,
+    last_hit: StringName, engaged: StringName, air_landed: StringName,
     idle: Variant, hold: Variant, attack: Variant, attack_move: Variant,
 }
 
@@ -40,7 +40,7 @@ impl Keys {
         Keys {
             id: n("id"), pos: n("pos"), firing: n("firing"), cd_ticks: n("cd_ticks"), cooldown: n("cooldown"),
             target: n("target"), broken: n("broken"), moving: n("moving"), order: n("order"), typ: n("type"),
-            last_hit: n("last_hit_tick"), engaged: n("engaged"), idle: k("idle"), hold: k("hold"),
+            last_hit: n("last_hit_tick"), engaged: n("engaged"), air_landed: n("air_landed"), idle: k("idle"), hold: k("hold"),
             attack: k("attack"), attack_move: k("attack_move"),
         }
     }
@@ -95,7 +95,20 @@ fn order_engaged(e: &Variant, k: &Keys) -> bool {
 pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt32Array, dx: PackedInt32Array,
                   d_range: PackedFloat32Array, d_search: PackedFloat32Array, d_flags: PackedInt32Array,
                   next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
+    prep_units_ids(units, ents, &[], tick, tf, dx, d_range, d_search, d_flags, next_id, trf, scan_every, ret_fire)
+}
+
+/// CORE10K-2 (rts_core 0.4.2): `ids` parallel to `units` (combat.gd: the FULL list's ids, cached per
+/// list). With it, pass 1 (liveness + table check) reads no unit dict at all, so each unit dict is
+/// touched once per tick instead of twice; the output gains a 13th entry, act_ids (the id of every act
+/// entry), so the act loop needs no dict read for a skipped entry. Same results by construction:
+/// ids[i] == units[i].id. An empty or mismatched `ids` gives the old (dict-read) pass 1.
+#[allow(clippy::too_many_arguments)]
+pub fn prep_units_ids(units: VarArray, ents: VarDictionary, ids: &[i32], tick: i64, tf: PackedInt32Array, dx: PackedInt32Array,
+                  d_range: PackedFloat32Array, d_search: PackedFloat32Array, d_flags: PackedInt32Array,
+                  next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
     let k = Keys::new();
+    let use_ids = !ids.is_empty() && ids.len() == units.len();
     let tfs = tf.as_slice();
     let dxs = dx.as_slice();
     let (dr, ds, df) = (d_range.as_slice(), d_search.as_slice(), d_flags.as_slice());
@@ -104,12 +117,17 @@ pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt
     // pass 1: ids, liveness and table check (no writes)
     let mut need: Vec<i32> = Vec::new();
     for i in 0..n {
-        let e = units.at(i);
-        if e.get_type() != VariantType::DICTIONARY {
-            dicts.push(None);
-            continue;
-        }
-        let id = vint(&gn(&e, &k.id));
+        let (e, id) = if use_ids {
+            (Variant::nil(), ids[i] as i64)   // fetched in pass 2 (only live units)
+        } else {
+            let e = units.at(i);
+            if e.get_type() != VariantType::DICTIONARY {
+                dicts.push(None);
+                continue;
+            }
+            let id = vint(&gn(&e, &k.id));
+            (e, id)
+        };
         if !ents.contains_key(&id.to_variant()) {
             dicts.push(None);
             continue;
@@ -132,8 +150,12 @@ pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt
     let mut nidx: Vec<i32> = vec![-1; (next_id.max(0) + 1) as usize];
     let (mut scan_src, mut scan_r, mut scan_need, mut scan_ids) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut act_idx, mut act_code, mut act_tg): (Vec<i32>, Vec<u8>, Vec<i32>) = (Vec::with_capacity(n), Vec::with_capacity(n), Vec::with_capacity(n));
+    let mut act_id: Vec<i32> = Vec::with_capacity(n);
     for (i, slot) in dicts.into_iter().enumerate() {
         let (mut e, id) = match slot { Some(x) => x, None => continue };
+        if use_ids {
+            e = units.at(i);
+        }
         let iu = id as usize;
         let tfv = tfs[iu];
         let d = dxs[iu] as usize;
@@ -148,7 +170,8 @@ pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt
             nids.push(id as i32);
             npos.push(p);
             nteam.push((tfv >> 3) - 1);
-            nflags.push(tfv & 3);
+            // CORE10K-2: a landed aircraft (e.air_landed) is air|ground (combat.gd _landed), as the GDScript prep
+            nflags.push(if tfv & 2 != 0 && gn(&e, &k.air_landed).booleanize() { 3 } else { tfv & 3 });
             if tfv & 4 != 0 && on_slot {
                 let o = order_type(&e, &k);
                 if o == k.idle || o == k.attack_move || o == k.hold {
@@ -206,6 +229,7 @@ pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt
             act_idx.push(i as i32);
             act_code.push(code);
             act_tg.push(tg as i32);
+            act_id.push(id as i32);
         }
     }
     out.push(&PackedInt32Array::from(nids.as_slice()).to_variant());
@@ -220,5 +244,8 @@ pub fn prep_units(units: VarArray, ents: VarDictionary, tick: i64, tf: PackedInt
     out.push(&PackedInt32Array::from(act_idx.as_slice()).to_variant());
     out.push(&PackedByteArray::from(act_code.as_slice()).to_variant());
     out.push(&PackedInt32Array::from(act_tg.as_slice()).to_variant());
+    if use_ids {
+        out.push(&PackedInt32Array::from(act_id.as_slice()).to_variant());
+    }
     out
 }
