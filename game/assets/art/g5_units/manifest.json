@@ -1,0 +1,1216 @@
+{
+  "effects": {
+    "g5_drone_trail": {
+      "fh": 8,
+      "file": "fx/g5_drone_trail.png",
+      "frames": 4,
+      "fw": 10,
+      "pivot": [
+        5,
+        4
+      ]
+    },
+    "g5_emp_pulse": {
+      "fh": 22,
+      "file": "fx/g5_emp_pulse.png",
+      "frames": 4,
+      "fw": 40,
+      "pivot": [
+        20,
+        11
+      ]
+    },
+    "g5_red_cross": {
+      "fh": 9,
+      "file": "fx/g5_red_cross.png",
+      "frames": 1,
+      "fw": 9,
+      "pivot": [
+        4,
+        8
+      ]
+    },
+    "g5_wounded_a": {
+      "fh": 26,
+      "file": "fx/g5_wounded_a.png",
+      "frames": 4,
+      "fw": 24,
+      "mask": "fx/g5_wounded_a_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "g5_wounded_b": {
+      "fh": 26,
+      "file": "fx/g5_wounded_b.png",
+      "frames": 4,
+      "fw": 24,
+      "mask": "fx/g5_wounded_b_mask.png",
+      "pivot": [
+        12,
+        21
+      ]
+    },
+    "g5_wounded_marker": {
+      "fh": 12,
+      "file": "fx/g5_wounded_marker.png",
+      "frames": 2,
+      "fw": 11,
+      "pivot": [
+        5,
+        11
+      ]
+    }
+  },
+  "files": {
+    "fx/g5_drone_trail.png": "da818d700612bf05e16f40038d57ced0",
+    "fx/g5_emp_pulse.png": "47eab54eaa489a1ef31667cb2e083b16",
+    "fx/g5_red_cross.png": "628cf287be600575b345cb78700b09e1",
+    "fx/g5_wounded_a.png": "c60628a96ff3149ab04cd1fa46c2234b",
+    "fx/g5_wounded_a_mask.png": "e5d9c6cb1b16ebe63cb6a47579c77be6",
+    "fx/g5_wounded_b.png": "4d20d69cfc8d043bbd94900bac6f9ed0",
+    "fx/g5_wounded_b_mask.png": "e5d9c6cb1b16ebe63cb6a47579c77be6",
+    "fx/g5_wounded_marker.png": "c9015c8fa30fd04453daa70f57a34540",
+    "icons/a_airfield_engineers.png": "bd40683e0c731f25306d5d7b9d939c89",
+    "icons/a_ambulance.png": "5690b9e5e5d034a03e55e8080cef4f5a",
+    "icons/a_drone_emp.png": "1cd25a9e39dec6d38f69946216e9c18d",
+    "icons/a_drone_frag.png": "1e8c9447c5549cbbb4f0457be96a8748",
+    "icons/a_drone_recon.png": "80bab15e9e50dbb62f05023fcc2db909",
+    "icons/a_drone_strike.png": "993b46c4474d102e32d41b4f54e719a0",
+    "icons/a_drone_team.png": "02e0a05dc7db3c57b77fcd28e6013537",
+    "icons/a_hmg_team.png": "e2c641d9505f7d07eb0b787ad4e2d8ec",
+    "icons/a_medic_team.png": "4593506a023ef9d108203b4e56f20c7f",
+    "icons/a_recon_car.png": "3c55d45ddbd29e28fef1ca37a66e7fa6",
+    "icons/a_spaag.png": "b02706d0d0288dfdd99c3488f4db942b",
+    "icons/a_special_forces.png": "314152bf7e9a4a6a066f857656840092",
+    "icons/b_airfield_engineers.png": "214b3f8323287f919ca8af32425aa31e",
+    "icons/b_armored_car.png": "0bf47392fc57adb0fcc58c6321466a3a",
+    "icons/b_at_rocket_team.png": "76b6d2dabcc3b60c2780a2c6b7e5a609",
+    "icons/b_drone_emp.png": "4f3f0903f42ef5971aa9bc04c73a79e9",
+    "icons/b_drone_frag.png": "e29efa01b038dd231c7b553dec40d5e3",
+    "icons/b_drone_recon.png": "b01fb913195a120b27beda1d3e93ea7e",
+    "icons/b_drone_strike.png": "4d5412986f2ad50b75ac7bb8bc02b45d",
+    "icons/b_drone_team.png": "659bed74941bc89bc390af7a477cc731",
+    "icons/b_field_ambulance.png": "354bbad05e3fb86c37548e08a3cfddb6",
+    "icons/b_grenadiers.png": "fb60f39c840a47083fb0eb1ba6b2c03e",
+    "icons/b_shock_troops.png": "2ae9d9a32f1f8b4552d184c88b8f2ca5",
+    "icons/m_maint_swarm.png": "b38f3a5480c3717a77e3304838da02d1",
+    "units/a_airfield_engineers.png": "92083c5cf79b9501b8820bbc0499705c",
+    "units/a_airfield_engineers_a1.png": "b946c5b9f998b43b6d68425116740d2a",
+    "units/a_airfield_engineers_a1_mask.png": "daefd27dad0d64af95a1c0510d9f1ef2",
+    "units/a_airfield_engineers_a2.png": "bef0ffa5fd35a04d35dace8048e28b77",
+    "units/a_airfield_engineers_a2_mask.png": "94a1574664d674933be1bd347be7f65d",
+    "units/a_airfield_engineers_a3.png": "62c047abde8a406f63f7e852c763d924",
+    "units/a_airfield_engineers_a3_mask.png": "b0d1b694bcd96f23ecc00f6f9d6d3a43",
+    "units/a_airfield_engineers_mask.png": "5ae7822485aecefb93564df3e3a7483d",
+    "units/a_ambulance.png": "778528f58fcad92925ffffae8ccc5969",
+    "units/a_ambulance_mask.png": "049d3ae854e909f0ff59803bf1afac54",
+    "units/a_drone_emp.png": "30d89137b3a669e9578c3cd742268c3f",
+    "units/a_drone_emp_mask.png": "0f71b64bc513bec833e45a6b31302176",
+    "units/a_drone_frag.png": "4d40ef2e60254d8eec575220c3791778",
+    "units/a_drone_frag_mask.png": "2b4094aad4bd9538b899f5e70f305e40",
+    "units/a_drone_recon.png": "7ce860a60287f3fc5b292b669a46562c",
+    "units/a_drone_recon_mask.png": "4abb542356d96c9ae353af1e78e09e87",
+    "units/a_drone_strike.png": "6c3dc9a3b0b2c46911346759b6270d25",
+    "units/a_drone_strike_mask.png": "636b8ffd3becb627cc4ef84da26ec15e",
+    "units/a_drone_team.png": "984c31d73e4f29db03fdefaf15c346a1",
+    "units/a_drone_team_a1.png": "4c6adcb7ef956f6befde20134f7f2d21",
+    "units/a_drone_team_a1_mask.png": "52d26a76c9389838b27ba8cf4fcfb8ce",
+    "units/a_drone_team_a2.png": "01c7e7138d8b3bf09c60da23962bcedd",
+    "units/a_drone_team_a2_mask.png": "bfca047415947cf838de3897af4a03d2",
+    "units/a_drone_team_mask.png": "d070ff9ea56cbdb81c76aa12d6d63cc1",
+    "units/a_hmg_team.png": "f323f194e2e70890bf62c535bb2698db",
+    "units/a_hmg_team_a1.png": "9fb027b32221c484ac535691a455670e",
+    "units/a_hmg_team_a1_mask.png": "751128d527f203fa1fa9001f79cb1592",
+    "units/a_hmg_team_a2.png": "6fcc5dcc0f6508de7141f835010ef4fc",
+    "units/a_hmg_team_a2_mask.png": "02b5d4ead9b9add9a7e399b2bc2c7b62",
+    "units/a_hmg_team_mask.png": "ae9770817917c2a84b302197172f413c",
+    "units/a_medic_team.png": "4bf4130e904de0693f2df2b2e77fa3d4",
+    "units/a_medic_team_a1.png": "9e47022da340a3fe61039873a6da10f5",
+    "units/a_medic_team_a1_mask.png": "286522fed7ab7ceb1fd6066aedfa309b",
+    "units/a_medic_team_mask.png": "17c59d3ba905a4a05d2551ad34de5c61",
+    "units/a_recon_car.png": "4a2404af917336b64ef51fa9aed405e8",
+    "units/a_recon_car_mask.png": "4e920028b632c8d9ed262e21d1375c08",
+    "units/a_spaag.png": "6050d55bef134000a181c1dceb340e77",
+    "units/a_spaag_mask.png": "fbc61b75a93edd27ba65a6606880c1cb",
+    "units/a_special_forces.png": "e2a1e580ee25a79242f68e6f41ca42b6",
+    "units/a_special_forces_a1.png": "e5674ed111f2b0c416c81f1add35b31a",
+    "units/a_special_forces_a1_mask.png": "8a61a2a4235a0e81db75837833979ff8",
+    "units/a_special_forces_a2.png": "a6c4857c241e70b2a58c4433a0c1a720",
+    "units/a_special_forces_a2_mask.png": "a2f1630c51af28e6f1d71a30491a72a8",
+    "units/a_special_forces_a3.png": "1c3ee843f3069ab14cf6ba4b4f1e5276",
+    "units/a_special_forces_a3_mask.png": "08ee2df51471ef276c7bc622c857afa5",
+    "units/a_special_forces_mask.png": "845776c96f1e5e100ec21ab9ec388d93",
+    "units/b_airfield_engineers.png": "fe520d636118b5e0e0f6a05926837991",
+    "units/b_airfield_engineers_a1.png": "ad789a88a8853f0405abbcbb29b3f4c3",
+    "units/b_airfield_engineers_a1_mask.png": "ff6382ee5e81c4f56bb89814a9889d2c",
+    "units/b_airfield_engineers_a2.png": "3966a30bc9526ed6f7b53b2e6efef376",
+    "units/b_airfield_engineers_a2_mask.png": "57d4abfd65c63a2986c8988603e70c35",
+    "units/b_airfield_engineers_a3.png": "6385636b7f21367db00dfdfb488039d3",
+    "units/b_airfield_engineers_a3_mask.png": "ab113c325652bd0bfe38a8a238741339",
+    "units/b_airfield_engineers_mask.png": "caaa0e3d99ce56275cb5c4bcab95a6da",
+    "units/b_armored_car.png": "cd02e362e9ad535741aae80fe296119c",
+    "units/b_armored_car_mask.png": "5bead557df905f73f5e0b03711457917",
+    "units/b_at_rocket_team.png": "169b3991f6f3ce54fe2c6546b393c468",
+    "units/b_at_rocket_team_a1.png": "d65001a7e848dd8bf1ef9acb1d0933b6",
+    "units/b_at_rocket_team_a1_mask.png": "5a1719aa75de91f0506ed78f8820e5b0",
+    "units/b_at_rocket_team_a2.png": "c864a764b8d6753b9ba8c9d68b87c845",
+    "units/b_at_rocket_team_a2_mask.png": "76c80668413daa01e1fb9a4afbc66ed6",
+    "units/b_at_rocket_team_mask.png": "623ef3ca2bd5383cae06dbd46599e02c",
+    "units/b_drone_emp.png": "2dd31dcf59aef839efbf8c4ef78adf81",
+    "units/b_drone_emp_mask.png": "9747b51d2c1c33e8f8ae5400c3d6c185",
+    "units/b_drone_frag.png": "ca0e691453f50d6edd2b4a8fb64a762b",
+    "units/b_drone_frag_mask.png": "d1a8c9dc6434978b792a87f3207b1397",
+    "units/b_drone_recon.png": "04731b4bebe37c245fdc95d0301304b8",
+    "units/b_drone_recon_mask.png": "a9cf377652e35c222e02626e1a373590",
+    "units/b_drone_strike.png": "73e5e934cd8ca792772537c29a6a1172",
+    "units/b_drone_strike_mask.png": "2b4094aad4bd9538b899f5e70f305e40",
+    "units/b_drone_team.png": "2c856ebd140b9f6055bc44fbec65b085",
+    "units/b_drone_team_a1.png": "b7913d56b68d7c49657c5c28783b38f9",
+    "units/b_drone_team_a1_mask.png": "15f04922bf1f98faa03e81671410c211",
+    "units/b_drone_team_a2.png": "a93ba533a89206538d66d8d172225b9d",
+    "units/b_drone_team_a2_mask.png": "caff52ff6c5e48bc4f338536d2980d68",
+    "units/b_drone_team_mask.png": "37f9ca318b713e32613df3f288178776",
+    "units/b_field_ambulance.png": "008f4416629a6ddb030972a274cc8639",
+    "units/b_field_ambulance_mask.png": "719720c73480d823485b09308b0d71f0",
+    "units/b_grenadiers.png": "7d4d373948bd498af0935be90ea1c433",
+    "units/b_grenadiers_a1.png": "818188d8329fc7a3adb3132dff21dcc2",
+    "units/b_grenadiers_a1_mask.png": "c4a5f57bef29b55fe540bf3144b9fe1d",
+    "units/b_grenadiers_a2.png": "3eb3ff49bb703bf46a0c5ffb591471be",
+    "units/b_grenadiers_a2_mask.png": "03b01b10b35a6645450002c41109146d",
+    "units/b_grenadiers_a3.png": "febc61d906a1bd79689026171952f123",
+    "units/b_grenadiers_a3_mask.png": "18abcec4c143e5386533f93674bdded1",
+    "units/b_grenadiers_mask.png": "185fc5c98d0f4c4478742ed14d0d61c4",
+    "units/b_shock_troops.png": "3b1a67b16126d4ce719eb2dfb0a4f254",
+    "units/b_shock_troops_a1.png": "94eb3768fc1aa9cc6f6457cbcc2f1113",
+    "units/b_shock_troops_a1_mask.png": "692dd84cbfbca67e9643c013d09b3cd5",
+    "units/b_shock_troops_a2.png": "95885ee7fc67383c1331285be6dfaa02",
+    "units/b_shock_troops_a2_mask.png": "8af071b0125c95fa7674f54cad2e721d",
+    "units/b_shock_troops_a3.png": "8445abcca75479bbb8b568120a683472",
+    "units/b_shock_troops_a3_mask.png": "8e9ab6e2004365775cecd8d515980853",
+    "units/b_shock_troops_mask.png": "eeb3ff18d5916e732a5c11b43b768fb3",
+    "units/g5_drone_shadow_m.png": "18fc7670963e6c8d6bad904667a24068",
+    "units/g5_drone_shadow_s.png": "0726ba836b16688a61172a6621eb999e",
+    "units/m_maint_swarm.png": "dbaf3b69faff0e2c7d343c733ce2eeda",
+    "units/m_maint_swarm_mask.png": "7c8167053fe2c7af731c2e641b8fa974",
+    "wrecks/a_ambulance_wreck.png": "3b1cd9845de31b6f0c2f12d0ef1810c3",
+    "wrecks/a_drone_emp_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
+    "wrecks/a_drone_frag_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
+    "wrecks/a_drone_recon_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
+    "wrecks/a_drone_strike_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
+    "wrecks/a_recon_car_wreck.png": "18a292b0c91ddd68939e39dcadbeaea6",
+    "wrecks/a_spaag_wreck.png": "8439718edf43cd23908a05a0e83b3ccf",
+    "wrecks/b_armored_car_wreck.png": "bde6b5b75f37ff3cdedd8a66baa13a4c",
+    "wrecks/b_drone_emp_wreck.png": "330782f4624194e8420321d1be787329",
+    "wrecks/b_drone_frag_wreck.png": "330782f4624194e8420321d1be787329",
+    "wrecks/b_drone_recon_wreck.png": "330782f4624194e8420321d1be787329",
+    "wrecks/b_drone_strike_wreck.png": "330782f4624194e8420321d1be787329",
+    "wrecks/b_field_ambulance_wreck.png": "6cc3d0b622637f8da1137f073da8190d",
+    "wrecks/m_maint_swarm_wreck.png": "afbf71531e739a7ccd395764c6b74b67"
+  },
+  "group": "g5_units",
+  "icons": {
+    "a_airfield_engineers": "icons/a_airfield_engineers.png",
+    "a_ambulance": "icons/a_ambulance.png",
+    "a_drone_emp": "icons/a_drone_emp.png",
+    "a_drone_frag": "icons/a_drone_frag.png",
+    "a_drone_recon": "icons/a_drone_recon.png",
+    "a_drone_strike": "icons/a_drone_strike.png",
+    "a_drone_team": "icons/a_drone_team.png",
+    "a_hmg_team": "icons/a_hmg_team.png",
+    "a_medic_team": "icons/a_medic_team.png",
+    "a_recon_car": "icons/a_recon_car.png",
+    "a_spaag": "icons/a_spaag.png",
+    "a_special_forces": "icons/a_special_forces.png",
+    "b_airfield_engineers": "icons/b_airfield_engineers.png",
+    "b_armored_car": "icons/b_armored_car.png",
+    "b_at_rocket_team": "icons/b_at_rocket_team.png",
+    "b_drone_emp": "icons/b_drone_emp.png",
+    "b_drone_frag": "icons/b_drone_frag.png",
+    "b_drone_recon": "icons/b_drone_recon.png",
+    "b_drone_strike": "icons/b_drone_strike.png",
+    "b_drone_team": "icons/b_drone_team.png",
+    "b_field_ambulance": "icons/b_field_ambulance.png",
+    "b_grenadiers": "icons/b_grenadiers.png",
+    "b_shock_troops": "icons/b_shock_troops.png",
+    "m_maint_swarm": "icons/m_maint_swarm.png"
+  },
+  "infantry": {
+    "a_airfield_engineers": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_airfield_engineers_a1.png",
+          "mask": "units/a_airfield_engineers_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_airfield_engineers_a2.png",
+          "mask": "units/a_airfield_engineers_a2_mask.png"
+        },
+        "3": {
+          "file": "units/a_airfield_engineers_a3.png",
+          "mask": "units/a_airfield_engineers_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_airfield_engineers.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "work",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_airfield_engineers_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "a_drone_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_drone_team_a1.png",
+          "mask": "units/a_drone_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_drone_team_a2.png",
+          "mask": "units/a_drone_team_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_drone_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "launch",
+        "tactical",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_drone_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    },
+    "a_hmg_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_hmg_team_a1.png",
+          "mask": "units/a_hmg_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_hmg_team_a2.png",
+          "mask": "units/a_hmg_team_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_hmg_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed",
+        "deploy",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_hmg_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    },
+    "a_medic_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_medic_team_a1.png",
+          "mask": "units/a_medic_team_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_medic_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "heal",
+        "carry",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_medic_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "a_special_forces": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_special_forces_a1.png",
+          "mask": "units/a_special_forces_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_special_forces_a2.png",
+          "mask": "units/a_special_forces_a2_mask.png"
+        },
+        "3": {
+          "file": "units/a_special_forces_a3.png",
+          "mask": "units/a_special_forces_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_special_forces.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "stance",
+        "work",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_special_forces_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "b_airfield_engineers": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_airfield_engineers_a1.png",
+          "mask": "units/b_airfield_engineers_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_airfield_engineers_a2.png",
+          "mask": "units/b_airfield_engineers_a2_mask.png"
+        },
+        "3": {
+          "file": "units/b_airfield_engineers_a3.png",
+          "mask": "units/b_airfield_engineers_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_airfield_engineers.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "work",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_airfield_engineers_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "b_at_rocket_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_at_rocket_team_a1.png",
+          "mask": "units/b_at_rocket_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_at_rocket_team_a2.png",
+          "mask": "units/b_at_rocket_team_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_at_rocket_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_at_rocket_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    },
+    "b_drone_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_drone_team_a1.png",
+          "mask": "units/b_drone_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_drone_team_a2.png",
+          "mask": "units/b_drone_team_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_drone_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "launch",
+        "tactical",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_drone_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    },
+    "b_grenadiers": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_grenadiers_a1.png",
+          "mask": "units/b_grenadiers_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_grenadiers_a2.png",
+          "mask": "units/b_grenadiers_a2_mask.png"
+        },
+        "3": {
+          "file": "units/b_grenadiers_a3.png",
+          "mask": "units/b_grenadiers_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_grenadiers.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_grenadiers_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "b_shock_troops": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_shock_troops_a1.png",
+          "mask": "units/b_shock_troops_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_shock_troops_a2.png",
+          "mask": "units/b_shock_troops_a2_mask.png"
+        },
+        "3": {
+          "file": "units/b_shock_troops_a3.png",
+          "mask": "units/b_shock_troops_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_shock_troops.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "stance",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_shock_troops_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    }
+  },
+  "lod_class": {
+    "a_airfield_engineers": "infantry",
+    "a_ambulance": "vehicle_light",
+    "a_drone_emp": "air",
+    "a_drone_frag": "air",
+    "a_drone_recon": "air",
+    "a_drone_strike": "air",
+    "a_drone_team": "infantry",
+    "a_hmg_team": "infantry",
+    "a_medic_team": "infantry",
+    "a_recon_car": "vehicle_light",
+    "a_spaag": "vehicle_light",
+    "a_special_forces": "infantry",
+    "b_airfield_engineers": "infantry",
+    "b_armored_car": "vehicle_light",
+    "b_at_rocket_team": "infantry",
+    "b_drone_emp": "air",
+    "b_drone_frag": "air",
+    "b_drone_recon": "air",
+    "b_drone_strike": "air",
+    "b_drone_team": "infantry",
+    "b_field_ambulance": "vehicle_light",
+    "b_grenadiers": "infantry",
+    "b_shock_troops": "infantry",
+    "m_maint_swarm": "vehicle_light"
+  },
+  "specials": {
+    "a_airfield_engineers": {
+      "work": "work",
+      "wounded": "wounded"
+    },
+    "a_ambulance": {
+      "beacon": "fire",
+      "load": "unload",
+      "unload": "unload"
+    },
+    "a_drone_emp": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "a_drone_frag": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "a_drone_recon": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "a_drone_strike": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "a_drone_team": {
+      "launch": "launch",
+      "tactical": "tactical",
+      "wounded": "wounded"
+    },
+    "a_hmg_team": {
+      "deploy": "deploy",
+      "deployed": "deployed",
+      "wounded": "wounded"
+    },
+    "a_medic_team": {
+      "carry": "carry",
+      "heal": "heal",
+      "wounded": "wounded"
+    },
+    "a_special_forces": {
+      "tactical": "stance",
+      "work": "work",
+      "wounded": "wounded"
+    },
+    "b_airfield_engineers": {
+      "work": "work",
+      "wounded": "wounded"
+    },
+    "b_at_rocket_team": {
+      "deployed": "deployed",
+      "wounded": "wounded"
+    },
+    "b_drone_emp": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "b_drone_frag": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "b_drone_recon": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "b_drone_strike": {
+      "attack": "fire",
+      "dive": "dive",
+      "trail": "trail"
+    },
+    "b_drone_team": {
+      "launch": "launch",
+      "tactical": "tactical",
+      "wounded": "wounded"
+    },
+    "b_field_ambulance": {
+      "beacon": "fire",
+      "load": "unload",
+      "unload": "unload"
+    },
+    "b_grenadiers": {
+      "wounded": "wounded"
+    },
+    "b_shock_troops": {
+      "tactical": "stance",
+      "wounded": "wounded"
+    },
+    "m_maint_swarm": {
+      "work": "work"
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_ambulance": {
+      "facings": 8,
+      "fh": 54,
+      "file": "wrecks/a_ambulance_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        35
+      ]
+    },
+    "a_drone_emp": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/a_drone_emp_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "a_drone_frag": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/a_drone_frag_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "a_drone_recon": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/a_drone_recon_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "a_drone_strike": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/a_drone_strike_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "a_recon_car": {
+      "facings": 8,
+      "fh": 46,
+      "file": "wrecks/a_recon_car_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 60,
+      "pivot": [
+        30,
+        30
+      ]
+    },
+    "a_spaag": {
+      "facings": 8,
+      "fh": 58,
+      "file": "wrecks/a_spaag_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        38
+      ]
+    },
+    "b_armored_car": {
+      "facings": 8,
+      "fh": 50,
+      "file": "wrecks/b_armored_car_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 62,
+      "pivot": [
+        31,
+        33
+      ]
+    },
+    "b_drone_emp": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/b_drone_emp_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "b_drone_frag": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/b_drone_frag_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "b_drone_recon": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/b_drone_recon_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "b_drone_strike": {
+      "facings": 8,
+      "fh": 30,
+      "file": "wrecks/b_drone_strike_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34,
+      "pivot": [
+        17,
+        18
+      ]
+    },
+    "b_field_ambulance": {
+      "facings": 8,
+      "fh": 56,
+      "file": "wrecks/b_field_ambulance_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        37
+      ]
+    },
+    "m_maint_swarm": {
+      "facings": 8,
+      "fh": 46,
+      "file": "wrecks/m_maint_swarm_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 54,
+      "pivot": [
+        27,
+        31
+      ]
+    }
+  },
+  "vehicles": {
+    "a_ambulance": {
+      "facings": 8,
+      "fh": 54,
+      "file": "units/a_ambulance.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "unload"
+      ],
+      "fw": 64,
+      "mask": "units/a_ambulance_mask.png",
+      "pivot": [
+        32,
+        35
+      ]
+    },
+    "a_drone_emp": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/a_drone_emp.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/a_drone_emp_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/g5_drone_shadow_m.png",
+        "fw": 14,
+        "pivot": [
+          7,
+          4
+        ]
+      }
+    },
+    "a_drone_frag": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/a_drone_frag.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/a_drone_frag_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 6,
+        "file": "units/g5_drone_shadow_s.png",
+        "fw": 11,
+        "pivot": [
+          5,
+          3
+        ]
+      }
+    },
+    "a_drone_recon": {
+      "air": true,
+      "altitude": 18,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/a_drone_recon.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/a_drone_recon_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/g5_drone_shadow_m.png",
+        "fw": 14,
+        "pivot": [
+          7,
+          4
+        ]
+      }
+    },
+    "a_drone_strike": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/a_drone_strike.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/a_drone_strike_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 6,
+        "file": "units/g5_drone_shadow_s.png",
+        "fw": 11,
+        "pivot": [
+          5,
+          3
+        ]
+      }
+    },
+    "a_recon_car": {
+      "facings": 8,
+      "fh": 46,
+      "file": "units/a_recon_car.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 60,
+      "mask": "units/a_recon_car_mask.png",
+      "pivot": [
+        30,
+        30
+      ]
+    },
+    "a_spaag": {
+      "facings": 8,
+      "fh": 58,
+      "file": "units/a_spaag.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 66,
+      "mask": "units/a_spaag_mask.png",
+      "pivot": [
+        33,
+        38
+      ]
+    },
+    "b_armored_car": {
+      "facings": 8,
+      "fh": 50,
+      "file": "units/b_armored_car.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 62,
+      "mask": "units/b_armored_car_mask.png",
+      "pivot": [
+        31,
+        33
+      ]
+    },
+    "b_drone_emp": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/b_drone_emp.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/b_drone_emp_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/g5_drone_shadow_m.png",
+        "fw": 14,
+        "pivot": [
+          7,
+          4
+        ]
+      }
+    },
+    "b_drone_frag": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/b_drone_frag.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/b_drone_frag_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 6,
+        "file": "units/g5_drone_shadow_s.png",
+        "fw": 11,
+        "pivot": [
+          5,
+          3
+        ]
+      }
+    },
+    "b_drone_recon": {
+      "air": true,
+      "altitude": 18,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/b_drone_recon.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/b_drone_recon_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/g5_drone_shadow_m.png",
+        "fw": 14,
+        "pivot": [
+          7,
+          4
+        ]
+      }
+    },
+    "b_drone_strike": {
+      "air": true,
+      "altitude": 14,
+      "bob": 1,
+      "facings": 8,
+      "fh": 30,
+      "file": "units/b_drone_strike.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail"
+      ],
+      "fw": 34,
+      "mask": "units/b_drone_strike_mask.png",
+      "pivot": [
+        17,
+        18
+      ],
+      "shadow": {
+        "fh": 6,
+        "file": "units/g5_drone_shadow_s.png",
+        "fw": 11,
+        "pivot": [
+          5,
+          3
+        ]
+      }
+    },
+    "b_field_ambulance": {
+      "facings": 8,
+      "fh": 56,
+      "file": "units/b_field_ambulance.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "unload"
+      ],
+      "fw": 66,
+      "mask": "units/b_field_ambulance_mask.png",
+      "pivot": [
+        33,
+        37
+      ]
+    },
+    "m_maint_swarm": {
+      "facings": 8,
+      "fh": 46,
+      "file": "units/m_maint_swarm.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work"
+      ],
+      "fw": 54,
+      "mask": "units/m_maint_swarm_mask.png",
+      "pivot": [
+        27,
+        31
+      ]
+    }
+  },
+  "version": 1
+}
