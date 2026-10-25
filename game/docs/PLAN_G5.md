@@ -34,7 +34,8 @@
 
 ## 0. How "one wave" works
 - I write the contracts and IDs first (about 1 hour). Then every workstream runs at once in a single continuous pipeline.
-- The rule of **at most 6 agents live at a time** still holds. When an agent finishes, the next queued agent starts immediately, so from your side it is one wave.
+- **Up to 8 agents live at a time** (owner override for G5, 2026-10-24; the standing default is 6). When an agent finishes, the next queued agent starts immediately, so from your side it is one wave.
+- **Every agent gets its own operating guide** (section 11): role, files it owns, inputs, ordered tasks, what it publishes, done-when, budget, and what it must never touch. No two agents own the same file.
 - Dependencies are handled with "API ready" facts on the board, not with separate waves:
   - the AI starts as soon as the air/naval/support APIs are posted;
   - art agents start at once from the fixed IDs.
@@ -49,7 +50,7 @@
 |---|---|---|---|
 | D9 | New ground units per human faction | **Human A 8, Human B 7** (the 10 requested + Drone Team + Airfield Engineers per faction + a Human A ambulance) | 10 each |
 | D10 | Engine change for 10k speed | **Yes:** hot per-unit state in packed arrays in `world.gd`, results identical | Keep dictionaries, accept about half speed |
-| D11 | Helicopters | **Helipads** (1 pad = 1 helicopter "hangar"), placeable forward | Helicopters also need airfield hangars |
+| D11 | Helicopters | **Land on any open ground, anywhere** (in or outside a base, forward, in the field). **Helipads are restock/repair points**: a landed helicopter there is rearmed, refuelled and repaired, automatically when Airfield Engineers are assigned. Each helicopter still has a home pad (buying one needs a free pad, like hangars) | No pad gating (helicopters need no pad at all) |
 | D12 | Hangar classes | **Light** (fighters, strike, interceptor) and **Heavy** (bomber, heavy-lift, VTOL Dropship); Light → Heavy upgrade | One size fits all |
 | D13 | Hangar upgrades | **3 levels:** faster rearm/refuel, repair while parked, armored roof | Fewer levels |
 | D14 | Airfield size and strips | **Base 1 strip + 4 hangar slots; each "Extra Airstrip" upgrade adds 1 strip + 2 hangar slots (max 3 extra → 4 strips, 10 hangars)** | Fixed strips |
@@ -120,9 +121,11 @@
   - the same rules (1 bay per aircraft, upgrades, holding) with a different look and feel;
   - no Extra Airstrip upgrade: it gets an Extra Rail upgrade instead.
 
-### B2. Helipads (D11)
-- 1 helipad holds 1 helicopter: build and rearm there. Placeable anywhere (forward bases).
-- Helicopters fly home to their pad to rearm when out of ammo or low on fuel.
+### B2. Helicopter landing + helipads (D11, owner note)
+- **Helicopters land on any open, flat ground** (not water, trees or buildings), in a base, outside it, at the front, wherever ordered. Order: Land here / Take off. A landed helicopter can load and unload troops and sling vehicles, and is more vulnerable while on the ground.
+- **Helipads are service points:** a helicopter landed on a pad is rearmed, refuelled and repaired. With **Airfield Engineers assigned** to the pad (or to its airfield), this runs automatically and faster. Pads draw ammo and fuel from your supply stock.
+- Each helicopter has a **home pad**; buying one needs a free pad. When low on ammo or fuel, a helicopter returns to the nearest friendly pad with a free slot, not only its home pad.
+- **Forward pads:** Airfield Engineers can build a Forward Helipad in the field, giving a restock point near the front. A logistics truck on Auto (E1) also restocks helicopters landed nearby.
 
 ### B3. Air rosters
 
@@ -142,7 +145,7 @@
 | Machine | Interceptor Swarm | air_high | bay | anti-air |
 
 ### B4. Air rules
-- **air_low** (helicopters, VTOL): hit by AA and by small arms/HMG flagged `anti_air_low`. Lands to load and unload (landing-zone check: open, flat, not water).
+- **air_low** (helicopters, VTOL): hit by AA and by small arms/HMG flagged `anti_air_low`. **Can land on any open, flat ground** (landing-zone check: open, flat, not water, no trees or buildings) to wait, hide fuel use, or load and unload. Restock happens only at helipads, an airfield, a logistics truck on Auto, or with Airfield Engineers nearby.
 - **air_high** (jets): only AA reaches them. **Sortie model:** order a target or area → fly in → strike → return to the airfield → land → rearm. They can't hover.
 - **Air vs air:** interceptors and VTOL Dropships auto-engage enemy aircraft in range.
 - **Fuel and ammo:** use the existing supply rules; helicopters return to their pad, jets to their airfield.
@@ -162,7 +165,8 @@
   - rearm/refuel parked aircraft faster.
   - Assigned to a hangar, they put that hangar first, then the rest of the airfield.
 - **Forward strip:** the engineers can build a temporary **Forward Airstrip / Helipad** near the front, where light aircraft and helicopters rearm and refuel.
-- **Field rearm:** rearms a landed helicopter or light aircraft anywhere, using supply stock.
+- **Field rearm:** rearms, refuels and repairs a helicopter or light aircraft landed anywhere nearby, using supply stock.
+- **Helipad service:** engineers assigned to a helipad (or its airfield) keep it stocked and auto-service every helicopter that lands there.
 - Sidearms only. They stay assigned until given another order.
 
 ---
@@ -383,36 +387,374 @@
 
 ---
 
-## 11. How it's built (agents, one wave)
-Each agent gets **one fixed role, a fixed file list and contract sections**. Every agent runs under the budget rules:
-- caps ≥ 400k;
-- status every 5 calls;
-- a heartbeat during long runs;
-- a handoff at 70%;
-- a successor from that handoff.
+## 11. How it's built: agents, roles and operating guides (one wave, up to 8 live)
 
-**At most 6 agents live at once, in a queue.**
+### 11.0 Rules every agent follows (the common operating guide)
+Each agent gets this block plus its own guide (11.2) as its brief. They become `.plan/agents/prompts/G5_COMMON.md` and `G5-<ID>.md`.
+1. **Read first, in order:**
+   1. `.plan/AGENT_RULES.md`;
+   2. `docs/CONTRACTS_G5.md` (§0 hard rules, §1 ownership, plus the sections its guide names);
+   3. this plan;
+   4. its own guide;
+   5. the code it owns or calls (headers and public functions first).
+2. **Touch only the files you own.** For anything else, post a `change_request` to the file's owner on the board and list it in your report. No two agents own the same file.
+3. **Determinism:** same seed + same commands = same state hash, threaded or not, native or fallback. New state must survive a save/load round trip and be included in the hash.
+4. **Keep the tree compiling after every write:**
+   - add stub functions first;
+   - write chunks of ≤250 lines;
+   - after each, run `godot --headless --path . --quit-after 60 | grep "SCRIPT ERROR"`, which must print nothing.
+5. **Tests:** iterate with `tests/run.sh --only=<file>`, then run the full suite once at the end inside `.plan/hb.sh`.
+6. **Budget:**
+   - post a status as your **first** tool call, then every 5 calls (with `calls_used`, `tokens_used_est` and `next_action`);
+   - wrap any command over 60 s in `.plan/hb.sh`;
+   - at 70% of the projection, write `.plan/handoff/<ID>-<n>.json` (done / exact remaining steps / files / test state / gotchas) and stop. A successor resumes from it.
+   - Silent for 12 minutes = stopped.
+7. **Machine sharing:**
+   - never kill a godot process you didn't start;
+   - rebuild the native DLL only by `build_native.sh --stage` then `--swap`;
+   - record the CPU load with any timing.
+   - Final benchmarks are taken by ORCH with every agent stopped.
+8. **Finish:** kill your own processes, post `done`, and send the final report:
+   - STATUS;
+   - FILES;
+   - TESTS (raw lines);
+   - EVIDENCE;
+   - CONTRACT_DEVIATIONS;
+   - CHANGE_REQUESTS;
+   - KNOWN_GAPS.
 
-| Agent | Role | Starts |
-|---|---|---|
-| ORCH | contracts (`docs/CONTRACTS_G5.md`), IDs, scaffold, commits, final gate | first |
-| CORE10K | packed hot state + perf + breach hook + burnt save | immediately |
-| AIRSYS | airfield/strips/hangars/helipads, flight model, sorties, holding, runway damage, air transport, VTOL | immediately |
-| UNITS5 | 16 ground units incl. Drone Team + engineers + ambulances, wounded state | immediately |
-| SUPPORT | Auto resupply, medical evac, Hospital/Field Hospital | immediately |
-| UI5 | facelift, fit test, all new panels/commands, settings | immediately |
-| ART-U5 | ground unit + drone art | immediately |
-| NAVAL | naval systems, Coastal Front map, shipyard, landing, bombardment | next free slot |
-| ART-AIR / ART-NAV / ART-BLD | air units, naval units, all buildings | as slots free |
-| FONT | typeface tool + specimen + the TTF | early (you approve the specimen) |
-| AI6 | AI for everything (+ successors) | when air/naval/support APIs post `api_ready` |
-| ED5 | editor additions, tutorial, polish | after UI5's panel kit |
+   Do not commit. Do not add a GENESIS offer.
 
-- **Benchmarks** are taken only with every agent stopped.
-- **Commits** are made by me, by path, after verifying each agent's files.
-- **Nothing is pushed.**
+### 11.1 Schedule (one continuous wave)
+
+| Slot use | Agents |
+|---|---|
+| **Start (8 live)** | CORE10K, AIRSYS, NAVAL, UNITS5, SUPPORT, UI5, FONT, ART-U5 |
+| **Queue, starting the moment a slot frees** | ART-BLD → ART-AIR → VIEW5 → ART-NAV → AI6 → PT5 → ED5 |
+| **Successors** | take queue priority (a stopped agent's work resumes before new work starts) |
+| **Final gate** | ORCH, with every agent stopped |
+
+Before anyone starts, ORCH writes `CONTRACTS_G5.md`, which fixes:
+- the IDs (units, buildings, upgrades, commands);
+- file ownership;
+- the APIs between agents (signatures);
+- the `api_ready` facts.
+
+ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empty content fragments, and stub panels. Every agent therefore starts on a compiling tree.
+
+### 11.2 Operating guide for each agent
 
 ---
+#### CORE10K: engine hot state, 10k speed, wall-breach hook
+- **Role:** make 10,000 fighting units run at ≥0.8x speed with identical results, and fix the engine-side G4 gaps.
+- **Owns:**
+  - `sim/hot_state.gd` (new); the hot-state block of `sim/world.gd` (the region marked by ORCH);
+  - `sim/systems/{movement,combat,damage,supply,morale,fog,tiers,territory,sim_index,unit_subsets}.gd`;
+  - `sim/native_core.gd`, `native/**`, `bin/**`, `tools/build_native.sh`, `tools/scale_bench.gd`;
+  - `tests/test_perf*.gd`, `tests/test_hot_state.gd`.
+- **Inputs:** SIM10K-2's report and CR (packed per-id arrays), `perf/PERF_REPORT_G4_2026-10-24.md`, `.plan/handoff/SIM10K-2-*`.
+- **Tasks (in order):**
+  1. Post the hot-state API (`HotState.set_pos/set_target/set_moving/set_cd/set_order/set_hp`, plus array getters) as `fact core.hot_api_ready` within the first hour, stubbed and compiling.
+  2. Move movement gather, combat prep, supply, morale and fog onto the arrays, with the dictionaries flushed for hash, save and snapshot.
+  3. Native core reads the arrays directly (rts_core 0.4.x).
+  4. Wire `Fortify.on_attack_move_blocked` where an attack-move path fails, so player units breach.
+  5. Add the `Damage.on_zero_hp(w, e)` hook for SUPPORT's Wounded state: return true = "don't destroy".
+  6. Add the air/naval damage-class flags AIRSYS/NAVAL request through CRs.
+- **Publishes:** `core.hot_api_ready`, `core.zero_hp_hook_ready`, `core.breach_wired`.
+- **Done-when:**
+  - A/B state hash equal to HEAD on 2k fight, 2k mixed, 10k fight and 10k march, with native on and off and with the sim thread on and off;
+  - 10k fight avg ≤ 62.5 ms/tick in its own run (CPU load noted);
+  - test_hot_state + test_perf green;
+  - full suite green.
+- **Budget:** 700k / 170.
+- **Never:** change a gameplay result without a flag that defaults off.
+
+---
+#### AIRSYS: airfields, hangars, flight model, air transport
+- **Role:** the whole air sim.
+- **Owns:**
+  - `sim/systems/air.gd` (flight: hover, sorties, holding, fuel/ammo return, air-vs-air targeting);
+  - `sim/systems/airfield.gd` (strips, hangars, upgrades, runway queue, craters, diverts, engineer assignment hooks);
+  - `sim/systems/transport.gd` (adds sling, `cargo_size` and mixed cargo for the VTOL);
+  - `content/g5/air.json`;
+  - `tests/test_air.gd`, `tests/test_airfield.gd`, `tests/test_air_transport.gd`.
+- **Inputs:** plan §3, contract §AIR, `core.hot_api_ready`.
+- **Tasks:**
+  1. Content for every air unit and air building with fixed IDs (Human A/B/Machine), including the Airstrip variant and the Drone Launch Rail/Bays.
+  2. Hangar gating: production of an aircraft fails with `no_free_hangar` unless a free hangar of the right class exists. Post `fact air.gating_ready`.
+  3. Runway ops:
+     - deterministic taxi → roll → airborne;
+     - approach → touchdown → taxi → hangar;
+     - one aircraft per strip;
+     - a holding-pattern queue with low-fuel priority.
+  4. Sorties, rearm/refuel timed by hangar level. Helicopters `land_at` any open ground (landing-zone check). Helipad service (rearm/refuel/repair) is automatic with assigned engineers; low helicopters return to the nearest free friendly pad.
+  5. Craters close a strip; `Airfield.repair_crater` is the engineer API; diverts and crashes when no field is left; a destroyed hangar kills the aircraft parked in it.
+  6. Air transport: troops, sling vehicles, VTOL 2 vehicles + 8 troops, and landing-zone validation.
+  7. `air_low`/`air_high` targeting rules plus the `anti_air_low` flag.
+  8. Save/load mid-flight and mid-holding.
+- **Publishes:** `air.api_ready` (commands: `build_hangar`, `upgrade_hangar`, `upgrade_airfield_strip`, `sortie`, `rebase`, `land_at`, `assign_engineers`), `air.gating_ready`.
+- **Done-when:** the 3 test files green (sortie cycle, holding, craters + repair, gating, VTOL cargo, air-vs-air, save mid-flight) and the full suite green.
+- **Budget:** 700k / 170.
+- **Never:** touch `movement.gd`; ground units keep their nav. Aircraft use their own flight model in `air.gd`.
+
+---
+#### NAVAL: ships, shipyards, Coastal Front
+- **Role:** the whole naval sim and the new map.
+- **Owns:**
+  - `sim/systems/naval.gd` (bombardment, beaching/unload rules, sinking wrecks, pier resupply);
+  - `sim/maps/coastal_front.gd` (new map generator + validation);
+  - `content/g5/naval.json`;
+  - `tests/test_naval.gd`, `tests/test_coastal_front.gd`.
+- **Inputs:** plan §4; G4 movement classes (`naval`, `naval_small`, `amphibious`); `Movement` API (call only).
+- **Tasks:**
+  1. Content for every ship and naval building with fixed IDs.
+  2. Coastal Front (192×192):
+     - mainland, 2 islands, beaches, an estuary with fords;
+     - 2–4 spawns validated reachable by land or sea;
+     - registered through a CR to ORCH (map list).
+  3. Shipyard shore placement (part water, part beach).
+  4. Landing craft unload only at beach/shallow; the amphibious crawler drives ashore.
+  5. Shore bombardment (indirect fire on land in range).
+  6. Wrecks sink into a shallow obstruction (nav updated).
+  7. Supply Pier restock.
+  8. Save/load mid-sea.
+- **Publishes:** `naval.api_ready`, `map.coastal_front_ready`.
+- **Done-when:** test files green (movement by class, placement, beaching, amphibious path, bombardment, sinking, save mid-sea); the map validates for seeds 1–5; full suite green.
+- **Budget:** 700k / 170.
+- **Never:** edit `movement.gd` (CR to CORE10K) or the AI.
+
+---
+#### UNITS5: 17 new ground units and the Drone Team
+- **Role:** every new human ground unit's sim behaviour, plus the burnt-ground save fix.
+- **Owns:**
+  - `content/g5/units_g5.json`;
+  - `sim/systems/g5_mech.gd` (new: Drone Team, HMG deploy, Special Forces concealment/charges, Grenadier/Shock bonuses, ambulance carry slots);
+  - `sim/systems/g4b_mech.gd` (burnt cells become a saved, hashed sim set);
+  - `tests/test_units_g5.gd`, `tests/test_drone_team.gd`.
+- **Inputs:** plan §5, contract §UNITS; `core.hot_api_ready`; the transport API for ambulance slots.
+- **Tasks:**
+  1. Content for all 16 human units and the Machine Maintenance Swarm (stats, weapons, armor, production links, stage gates).
+  2. **Drone Team:**
+     - one squad entity of 3;
+     - `launch_drone {type, target}` command;
+     - 4 charges;
+     - 4 drone types as short-lived `air_low` entities (strike dive, frag, recon reveal/mark, EMP/jam), shootable by AA and jammable by EW;
+     - auto-switch to **tactical mode** at 0 charges (infiltrate, takedown, breach, stack-up, armored attack);
+     - restock at a supply source returns it to drone mode.
+  3. HMG deploy/pack, Special Forces concealment + charges + air-drop flag, Grenadier/Shock bonuses, Mobile AA targeting `air_high`.
+  4. Burnt cells as sim state, kept through save/load.
+- **Publishes:** `units5.api_ready` (commands: `launch_drone`, `tactical_*`, `deploy`/`pack`).
+- **Done-when:**
+  - tests green: each unit's special, drone launch per type, the 4 → tactical switch, restock back to drone mode, burnt ground saved and reloaded;
+  - full suite green.
+- **Budget:** 700k / 170.
+- **Never:** write the wounded/medical logic (SUPPORT) or the art.
+
+---
+#### SUPPORT: Auto resupply, Wounded, evacuation, hospitals
+- **Role:** the two auto-support systems and the medical buildings.
+- **Owns:**
+  - `sim/systems/support.gd` (Auto Resupply: station + roam, thresholds, combat rule, resume orders, truck self-refill, multi-truck split);
+  - `sim/systems/medical.gd` (Wounded state via `Damage.on_zero_hp`, 60 s bleed-out, auto evac, Hospital/Field Hospital healing → free reinforcement);
+  - `content/g5/support.json` (Hospital, Field Hospital for both human factions);
+  - `tests/test_support.gd`, `tests/test_medical.gd`.
+- **Inputs:** plan §6; `core.zero_hp_hook_ready`; the Supply API (call only); UNITS5's ambulance/medic IDs.
+- **Tasks:**
+  1. The `set_auto_resupply {mode: station|roam, area, thresholds}` command and per-truck state.
+  2. Units requesting supply go and return to the order they had saved.
+  3. A truck refills itself at the nearest depot/refinery.
+  4. Wounded: infantry at 0 HP → Wounded (immobile, no fire, counted in pop); bleed-out after 60 s; saved and hashed.
+  5. `set_auto_evac {area}` for medic/ambulance; pick-up capacity per unit; delivery to the nearest hospital; Field Hospital triage → Hospital; healed → a free reinforcement at the Hospital.
+  6. Works for ships (pier) and helicopters (forward strip) through AIRSYS/NAVAL APIs.
+- **Publishes:** `support.api_ready`, `medical.api_ready`.
+- **Done-when:**
+  - tests green: station and roam resupply, combat rule, resume order, self-refill, two trucks not doubling up, wounded → evac → hospital → reinforcement, bleed-out, save mid-evac;
+  - full suite green.
+- **Budget:** 700k / 170.
+- **Never:** edit `supply.gd` or `damage.gd` (CRs to CORE10K).
+
+---
+#### UI5: interface facelift and every new panel
+- **Role:** a new UI kit, layouts that fit at every size, and every new command panel and setting.
+- **Owns:**
+  - `presentation/hud/**`, `presentation/menu/**`, `presentation/match_view.gd`, `presentation/view/g4b_*.gd`;
+  - `presentation/ui5/**` (new panel kit, airfield/hangar panel, drone picker, truck and medic Auto panels, control-group bar, idle button, F1 sheet, settings menu with key rebinding);
+  - `tools/ui_fit_test.gd`.
+- **Inputs:** plan §7; FONT's TTF when ready (use a placeholder until then); every `*.api_ready` command list; THREAD's rule to read only the render snapshot while `sim_busy()`.
+- **Tasks:**
+  1. **Fit test first:** `tools/ui_fit_test.gd` opens every screen and panel at the 7 resolutions; it fails on any rect outside the viewport or overlapping. Run it on today's UI to list every current clip.
+  2. Panel kit and theme: a military style, faction accents, hover/selected/disabled states, tooltips with hotkey + cost.
+  3. Re-layout the HUD, menus, setup, pause and objectives with anchors/containers, plus a UI Scale setting (75–150%).
+  4. New panels:
+     - airfield (strips, hangars, occupants, upgrades, engineers, Buy hangar, "No free hangar" state);
+     - aircraft commands (sortie, rebase, land);
+     - VTOL cargo;
+     - drone picker with the ● counter;
+     - tactical-mode buttons;
+     - truck Auto (station/roam drag);
+     - medic Auto;
+     - naval commands.
+  5. Control-group bar, idle-units button, double-click select-type, F1 hotkey sheet, settings menu (graphics, speed, edge-pan, health bars, key rebinding).
+  6. Swap in FONT's typeface everywhere once the owner approves the specimen.
+- **Publishes:** `ui5.kit_ready` (ED5 and PT5 build on it), `ui5.fit_green`.
+- **Done-when:**
+  - the fit test shows 0 clipped/overlapping controls at all 7 resolutions (screenshot sheets saved);
+  - the 6 existing playtests still pass;
+  - full suite green.
+- **Budget:** 700k / 170.
+- **Never:** read `w.entities` during a step; edit the editor (ED5) or `ui_playtest.gd` (PT5).
+
+---
+#### FONT: the game's own typeface
+- **Role:** design and build an original military-modern typeface.
+- **Owns:** `tools/font/**` (an outline-based builder that writes a TTF via fontTools), `assets/fonts/rts_mil_{bold,regular}.ttf`, `assets/fonts/specimen.png`.
+- **Tasks:**
+  1. Glyph design rules: angular stencil cuts, squared counters, clear 0/O and 1/l/I.
+  2. Full Latin A–Z/a–z, digits, punctuation, symbols used in the UI (● × % + − / : arrows).
+  3. Build the TTF in 2 weights, with kerning pairs for common pairs.
+  4. A specimen sheet (UI sizes 12–48 px, light/dark backgrounds, numbers in tables). Post `fact font.specimen_ready`. **ORCH shows it to the owner for approval.**
+  5. Apply the owner's fixes and post `fact font.final`.
+- **Done-when:** both TTFs load in Godot; the specimen is approved; licence note: original work, no third-party outlines.
+- **Budget:** 400k / 100.
+- **Never:** copy or trace an existing font.
+
+---
+#### ART-U5: ground units and launched drones
+- **Owns:** `tools/art/g5_units*.gd`, `assets/art/g5_units/**`, `tests/test_art_g5_units.gd`.
+- **Tasks:**
+  - sheets for all 17 new ground units: 8 facings; idle/move/fire; specials (deploy, launch, carry wounded, wounded pose, tactical stance); team masks; wrecks; icons;
+  - the 4 drone types × 2 factions (Human A precision, Human B rigged) with dive/trail frames;
+  - faction styles kept;
+  - self-check every sheet by viewing zoomed crops; manifest entries with `lod_class`.
+- **Done-when:** the art test green; every ID in `units_g5.json` has art; zoomed crops saved in `.plan/shots/ART-U5/`.
+- **Budget:** 600k / 150.
+
+#### ART-BLD: all new buildings and command icons
+- **Owns:** `tools/art/g5_bld*.gd`, `assets/art/g5_bld/**`, `tests/test_art_g5_bld.gd`.
+- **Tasks:**
+  - airfield (4 rotations, 1–4 strips, crater overlays);
+  - Light/Heavy hangars with 3 upgrade looks;
+  - helipad, control tower, Forward Airstrip, Airstrip variant;
+  - Machine Launch Rail + Drone Bays;
+  - shipyard (shore art), Supply Pier, Coastal Battery × 3 factions;
+  - Hospital and Field Hospital × 2 human factions;
+  - damaged states;
+  - icons for every new unit, building and command.
+- **Done-when:** the art test green; every new building ID has art; crops saved.
+- **Budget:** 600k / 150.
+
+#### ART-AIR: aircraft
+- **Owns:** `tools/art/g5_air*.gd`, `assets/art/g5_air/**`, `tests/test_art_g5_air.gd`.
+- **Tasks:**
+  - 12 aircraft;
+  - rotor/jet animations;
+  - a ground shadow plus altitude offset;
+  - landing-gear frames for taxi/landing;
+  - a sling-load pose;
+  - VTOL hover/landing frames for both versions;
+  - wrecks;
+  - effects: bombs, missile trails, smoke.
+- **Done-when:** the art test green; every air ID has art; crops saved.
+- **Budget:** 600k / 150.
+
+#### ART-NAV: ships and the coast
+- **Owns:** `tools/art/g5_naval*.gd`, `assets/art/g5_naval/**`, `tests/test_art_g5_naval.gd`.
+- **Tasks:**
+  - 9 ships: wakes, bow spray, firing, sinking frames, wrecks;
+  - Coastal Front decor (piers, cliffs-to-sea transitions, island details);
+  - effects: shell splash, landing-ramp frames.
+- **Done-when:** the art test green; every naval ID has art; crops saved.
+- **Budget:** 600k / 150.
+
+---
+#### VIEW5: drawing everything new in the game world
+- **Role:** render the new sim state from the snapshot.
+- **Owns:** `sim/render_snap.gd`, `presentation/view/{entity_layer,batch_art,fx_layer,terrain_layer,lod_icons}.gd`, `presentation/art/art_catalog.gd`.
+- **Inputs:** every `*.api_ready`; the art manifests from the ART agents.
+- **Tasks:**
+  - aircraft with altitude offset + shadow, takeoff/landing/taxi on the strips, holding circles, sling loads;
+  - runway craters and hangar states;
+  - ships with wakes and sinking;
+  - drones in flight;
+  - the wounded marker and the evac carry pose;
+  - the truck Auto area circle and supply icons;
+  - burnt ground from the sim set;
+  - LOD icons for all new units;
+  - snapshot flags for every new visual state.
+- **Done-when:**
+  - a headless probe passes for each new visual state;
+  - the 6 existing playtests pass;
+  - screenshots of air, naval, drones and evac saved;
+  - full suite green.
+- **Budget:** 600k / 150.
+- **Never:** read the live world while `sim_busy()`.
+
+---
+#### AI6: the AI for all of it, plus the Valley fix
+- **Owns:** `sim/ai/**`, `tools/soak.gd`, `tests/test_ai.gd`.
+- **Inputs:** `air.api_ready`, `naval.api_ready`, `units5.api_ready`, `support.api_ready`, `medical.api_ready`; AI5-4's work-in-progress patch in `build/_ai5-4_wip/`; `.plan/handoff/AI5-3.json` and `AI5-4.json`.
+- **Tasks:**
+  1. **Valley fix first:** the bank uses the launch army plus a late-game bank drop, with no retarget penalty. Valley s1/s2 must end with winners.
+  2. Air: pick an airfield site, buy then upgrade hangars, assign engineers, AA cover, air assaults with gunship/VTOL, jet strikes on clusters/artillery, bombing enemy airfields, AA on contact.
+  3. Naval: a shipyard on water maps, contest the water, bombardment, amphibious landings when the land route is blocked or long.
+  4. New units: Drone Team usage by type, tactical breaching, medics/ambulances on Auto with hospitals, a logistics truck on Auto behind every army.
+  5. Soaks: 4 maps × 2 seeds + 1 editor map, run at most 3 at a time; log lines for sorties, landings, resupply and evac.
+  6. ai_bench < 2 ms per side at 5k units.
+- **Done-when:** every soak ends with a winner with 0 invariant failures and the usage logs present; test_ai green; full suite green.
+- **Budget:** 700k / 170, with successors expected.
+- **Never:** change soak criteria or max_ticks.
+
+---
+#### PT5: playtests for every new flow
+- **Owns:** `tools/ui_playtest.gd`, `tools/editor_playtest.gd`, `.plan/shots/PT5/**`.
+- **Inputs:** `ui5.kit_ready` plus every `api_ready`.
+- **Tasks:** add synthetic-input flows (screenshots at each step) for:
+  - **air:** place airfield → buy hangar → assign engineers → build a jet → takeoff → sortie → land; VTOL loads 2 vehicles + 8 → flies → unloads; a helicopter lands on open ground outside the base → takes off → is serviced at a helipad with engineers assigned;
+  - **naval:** shipyard → landing craft → load → beach landing;
+  - **Drone Team:** 4 launches of chosen types → tactical breach;
+  - **Auto resupply:** station and roam;
+  - **medical:** wounded → evac → Hospital → reinforcement;
+  - **tutorial:** a full run-through.
+
+  Keep the existing 6 flows passing.
+- **Done-when:** every flow prints `PLAYTEST RESULT pass=N fail=0` twice in a row; screenshots self-checked.
+- **Budget:** 500k / 120.
+
+---
+#### ED5: editor additions, tutorial, polish
+- **Owns:**
+  - `presentation/editor/**`;
+  - `sim/systems/triggers.gd` (new conditions: aircraft landed, unit evacuated, beach landing);
+  - `content/scenarios/tutorial.rtsmap`;
+  - `presentation/main.gd`;
+  - the polish items in files it owns, with CRs for the rest.
+- **Inputs:** `ui5.kit_ready`; all content IDs.
+- **Tasks:**
+  1. Editor palettes show the new units/buildings. Place airfields with strips/hangars and aircraft already parked, plus helipads, shipyards, hospitals and ships on water. Validate the new placements.
+  2. New trigger conditions.
+  3. The tutorial match: move, gather, build, train, attack, advance a stage, walls, transports, Auto resupply, airfield (buy a hangar, build a jet, take off/land), med evac. Step prompts in the new UI; reachable from the main menu.
+  4. The polish list (§9).
+- **Done-when:** the editor playtest passes; the tutorial completes in PT5's flow; test_editor_* green; full suite green.
+- **Budget:** 600k / 150.
+
+---
+#### ORCH (me): contracts, verification, commits, final gate
+- Writes `CONTRACTS_G5.md` + scaffold + every brief before any agent starts.
+- Registers every budget cap and runs the budget guard + board monitors all wave.
+- Audits each completion; verifies tests and evidence; commits each agent's files by path.
+- Handles every change request in files it owns (`world.gd` outside the hot block, `content.gd`, base `rules.json`, the map list).
+- Shows you the typeface specimen and asks for your OK.
+- **Final gate**, with all agents stopped:
+  - full suite;
+  - quiet-PC perf (sim + windowed fps);
+  - all soaks;
+  - all playtests;
+  - the UI fit test;
+  - packaged build from a clean folder;
+  - copy to Downloads;
+  - README/perf/PROGRESS updated.
+
+  Then a report to you with raw evidence per Done-when item.
 
 ## 12. Done-when (frozen once work starts)
 1. `tests/run.sh` TESTS OK, including new suites for:
@@ -439,7 +781,7 @@ Each agent gets **one fixed role, a fixed file list and contract sections**. Eve
 3. **AI soaks:** 4 built-in maps × 2 seeds + 1 editor map end with winners and 0 invariant failures. The logs show air sorties, at least 1 amphibious landing on Coastal Front, Auto resupply and med evacuations.
 4. **Playtests pass:**
    - the existing 6;
-   - **air:** place airfield → buy hangar → assign engineers → build jet → takeoff/land; VTOL carries 2 vehicles + 8;
+   - **air:** place airfield → buy hangar → assign engineers → build jet → takeoff/land; VTOL carries 2 vehicles + 8; a helicopter lands in the field and is auto-serviced at a helipad;
    - **naval:** shipyard → landing craft → beach landing;
    - **Drone Team:** 4 launches → tactical breach;
    - **Auto resupply;**

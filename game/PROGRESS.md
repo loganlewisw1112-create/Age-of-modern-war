@@ -61,6 +61,8 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
 10. **Medical auto mode + 2 new human buildings** (owner note, 2026-10-24):
    - A med team or med vehicle placed in an active area with wounded troops picks the wounded up with its team.
    - It evacuates them back to base, to a "Hospital" or a "Field Hospital", both new buildings for the human faction(s).
+11. **Helicopters land anywhere open** (outside a base or wherever needed), not only on helipads. Helipads are restock/repair points, auto-serviced by Airfield Engineers (owner note, 2026-10-24).
+12. **Up to 8 subagents at once** for this build (owner override of the default 6). Every agent gets its own role/task/operating guide (owner note, 2026-10-24).
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
