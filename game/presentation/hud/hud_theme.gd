@@ -1,10 +1,13 @@
 extends RefCounted
-## Dark military UI theme, built in code (no external fonts). Gunmetal panels, amber/olive accents.
+## Dark military UI theme, built in code. Gunmetal panels, amber/olive accents.
+## G5 (UI5a): make_theme() delegates to the panel kit; colours match UiKit.
 
-const BG := Color("14181b")
-const PANEL := Color("23292d")
-const PANEL_HI := Color("2f373c")
-const EDGE := Color("4b555b")
+const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
+
+const BG := Color("0f1315")
+const PANEL := Color("1b2226")
+const PANEL_HI := Color("263036")
+const EDGE := Color("4a565c")
 const AMBER := Color("e3a83a")
 const OLIVE := Color("8fa24e")
 const TEXT := Color("dcdfd2")
@@ -28,51 +31,9 @@ static func box(bg: Color, border: Color = EDGE, bw: int = 1, radius: int = 2, m
 	return sb
 
 
-static func make_theme() -> Theme:
-	var t := Theme.new()
-	t.default_font_size = 15
-	# Labels
-	t.set_color("font_color", "Label", TEXT)
-	t.set_font_size("font_size", "Label", 15)
-	# Panels
-	t.set_stylebox("panel", "PanelContainer", box(PANEL, EDGE, 1, 2, 8))
-	t.set_stylebox("panel", "Panel", box(PANEL, EDGE, 1, 2, 8))
-	# Buttons
-	for type_name in ["Button", "OptionButton", "MenuButton"]:
-		t.set_stylebox("normal", type_name, box(PANEL_HI, EDGE, 1, 2, 8))
-		t.set_stylebox("hover", type_name, box(Color("3b454b"), AMBER, 1, 2, 8))
-		t.set_stylebox("pressed", type_name, box(Color("5a4a22"), AMBER, 1, 2, 8))
-		t.set_stylebox("focus", type_name, box(Color(0, 0, 0, 0), AMBER, 1, 2, 8))
-		t.set_stylebox("disabled", type_name, box(Color("1c2124"), Color("30383c"), 1, 2, 8))
-		t.set_color("font_color", type_name, TEXT)
-		t.set_color("font_hover_color", type_name, Color.WHITE)
-		t.set_color("font_pressed_color", type_name, AMBER)
-		t.set_color("font_disabled_color", type_name, Color("68716d"))
-		t.set_font_size("font_size", type_name, 15)
-	# Check box
-	t.set_color("font_color", "CheckBox", TEXT)
-	# Line edits / spin boxes
-	t.set_stylebox("normal", "LineEdit", box(BG, EDGE, 1, 2, 6))
-	t.set_stylebox("focus", "LineEdit", box(BG, AMBER, 1, 2, 6))
-	t.set_color("font_color", "LineEdit", TEXT)
-	# Popups (OptionButton lists)
-	t.set_stylebox("panel", "PopupMenu", box(PANEL, AMBER, 1, 2, 6))
-	t.set_stylebox("hover", "PopupMenu", box(Color("4a4226"), AMBER, 0, 0, 4))
-	t.set_color("font_color", "PopupMenu", TEXT)
-	t.set_color("font_disabled_color", "PopupMenu", Color("5d6661"))
-	t.set_color("font_hover_color", "PopupMenu", Color.WHITE)
-	# Progress bars
-	var bg := box(BG, EDGE, 1, 1, 0)
-	var fill := box(OLIVE, OLIVE, 0, 1, 0)
-	t.set_stylebox("background", "ProgressBar", bg)
-	t.set_stylebox("fill", "ProgressBar", fill)
-	t.set_color("font_color", "ProgressBar", Color.WHITE)
-	t.set_font_size("font_size", "ProgressBar", 12)
-	# Tooltips
-	t.set_stylebox("panel", "TooltipPanel", box(Color("0e1114"), AMBER, 1, 2, 6))
-	t.set_color("font_color", "TooltipLabel", TEXT)
-	t.set_font_size("font_size", "TooltipLabel", 14)
-	return t
+static func make_theme(accent: Color = AMBER) -> Theme:
+	# G5 (UI5a): the military panel kit (presentation/ui5/kit/ui_kit.gd) is the one theme.
+	return UiKit.make_theme(accent)
 
 
 static func cost_text(cost: Dictionary) -> String:

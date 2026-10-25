@@ -1,0 +1,29 @@
+{
+  "agent": "UI5a",
+  "gen": 1,
+  "done": [
+    "tools/ui_fit_test.gd (SceneTree, -s): opens 13 screens (presentation/ui5/kit/fit_screens.gd NAMES) in a SubViewport per resolution (7) and UI scale; reports CLIP / OVERFLOW / TEXTCUT / OVERLAP; --fit-out saves fit_report.json and (windowed) sheet_<W>x<H>_s<scale>.png; --fit-font=final previews FONT's TTFs",
+    "Baseline (pre-change) 1998 issues / 397 distinct (.plan/shots/UI5a/baseline/fit_report.json); after relayout 273 screen-runs (13 x 7 res x 75/100/150%) -> only the editor status bar (ED5, since fixed) -> 0",
+    "UiKit (presentation/ui5/kit/ui_kit.gd + mil_box.gd chamfered/riveted plate StyleBox): make_theme, panel, button, icon_button, label, bar, tooltip, accent, fit_register, font, scroll; fact ui5.kit_ready posted; HT.make_theme delegates to it",
+    "ScaledLayer: effective scale = user UI Scale (SCALE_STEPS 75/90/100/110/125/150%) x viewport_h/900, clamped so the virtual canvas >= 1024x576; 1600x900 window unchanged",
+    "HUD relayout (hud.gd): anchored bottom panel (220 px, grows up), minimap inset frame, inspector scroll, card _fit_card (cols/rows/font fitted, hotkey corner badge, paging 'More n/m' when a build list exceeds capacity, orders stay on every page), content-capped LeftScroll/RightScroll stacks, compact top bar with tooltips, PAUSED banner at 30% height",
+    "hud_extras.gd: control-group bar (bottom-right, only used groups), idle-workers button ('.' / Shift+'.'), F1 hotkey sheet (modal)",
+    "Menus: main menu responsive (side-by-side >= 1360 canvas, stacked below; setup scrolls; HowTo modal + scroll), pause/end as ModalPanel, 75-150% scale options, skirmish slot rows at 13 px",
+    "Double-click select-type already existed in match_view.gd (_select_same_def_on_screen); not changed",
+    "Playtests r1: h 33/0, hb 37/0, m 37/0, s 53/0, g4b 68/0, editor 25/0 (.plan/shots/UI5a/run_pt.sh, 2 windows at a time)"
+  ],
+  "remaining": [
+    "After FONT posts font.final (owner approval): set UiKit.USE_FINAL_FONT = true in presentation/ui5/kit/ui_kit.gd; run `godot --headless --path . -s tools/ui_fit_test.gd -- --fit-scales=0.75,1,1.5` (expect issues=0; with --fit-font=final preview on 2026-10-24 menus/HUD were 0, editor had a 1px panel OVERLAP = ED5); `bash tests/run.sh --only=test_ui_fit` -> test_typeface_applied_to_theme turns green",
+    "Register UI5b/ED5 screens in presentation/ui5/kit/fit_screens.gd NAMES when they exist (settings, cargo strip, airfield/hangar/truck/med panels, tutorial overlay) and re-run the fit test",
+    "Re-run .plan/shots/UI5a/run_pt.sh r2 and the full suite once at the end"
+  ],
+  "files_touched": ["presentation/ui5/kit/ui_kit.gd", "presentation/ui5/kit/mil_box.gd", "presentation/ui5/kit/hud_extras.gd", "presentation/ui5/kit/fit_screens.gd", "tools/ui_fit_test.gd", "tests/test_ui_fit.gd", "presentation/hud/hud.gd", "presentation/hud/hud_theme.gd", "presentation/hud/scaled_layer.gd", "presentation/hud/g3b_stage.gd", "presentation/menu/main_menu.gd", "presentation/menu/pause_menu.gd", "presentation/menu/end_screen.gd", "presentation/menu/skirmish_setup.gd"],
+  "test_state": "see final report (tests --only=test_ui_fit: fit tests expected green, typeface test red by design until font.final)",
+  "gotchas": [
+    "TTFs in assets/fonts have no .import yet: UiKit.font() falls back to FontFile.load_dynamic_font + take_over_path",
+    "post.mjs has no change_request type: use `need change_request.<topic>`",
+    "Bash heredocs containing some python text broke the tool wrapper twice; write patch scripts with the Write tool and run them",
+    "Fit test treats controls under a clip_contents ancestor (ScrollContainer) as fine; only the scroll itself is checked. HFlowContainer min height is one row; use .size for wrapped height",
+    "UI5b's cargo strip sits at bottom offsets -284..-222: keep hud BOTTOM_H <= 222"
+  ]
+}

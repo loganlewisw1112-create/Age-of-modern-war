@@ -1,0 +1,35 @@
+{
+  "agent": "CORE10K",
+  "gen": 1,
+  "status": "partial: hooks done, hot-state API done (write-through), native gather 0.4.0 done; 10k fight speed target NOT met",
+  "done": [
+    "sim/hot_state.gd: HotState write API (set_pos/set_target/set_moving/set_cd/set_order/set_hp), getters, touch/mark/sync/flush, movement mirror flags (mflags) + verify_gather; world.gd HOT block: var hot",
+    "fact core.hot_api_ready, core.zero_hp_hook_ready, core.breach_wired, core.air_rule_wired, core.hot_writer_rule posted",
+    "damage.gd: Medical.on_zero_hp hook before destroy; Airfield.on_impact for cratering weapons (Callable, optional)",
+    "combat.gd: Air.can_target(s,t) for is_air targets, stats aa/aa_low/aa_high/anti_drone, no direct fire at wounded, landed aircraft (air_landed) ground-targetable",
+    "movement.gd: player attack-move breach (validate + apply -> Fortify.on_attack_move_blocked); native gather (RtsSteer.gather_held) with clean-unit skip; HotState dirty marks in order_path/_rescue/drain/footprint/gate",
+    "native rts_core 0.4.0: src/gather.rs, src/fastdict.rs, RtsSteer.gather_held + gather_times; staged/swapped via tools/build_native.sh",
+    "sim_index.gd: unit_ids(w) parallel ids; supply.gd: skip aircraft defs, skip empty auto trucks; fog.gd: recon marks (marked_until/marked_team)",
+    "tools/scale_bench.gd: static build/pre_tick, AB table + ab_hash + --ab mode; tests/test_hot_state.gd with HEAD goldens (git archive HEAD cd011a7)"
+  ],
+  "remaining": [
+    "1. 10k fight avg 104 ms/tick -> target 62.5: combat prep (RtsCombat.prep_units, ~23 ms) still reads ~12 dict fields per FULL unit; per-unit dict access is memory-latency bound (~1.3 us first touch), so it only drops with array-held state (target, order code, firing, cd, broken, moving, last_hit) kept current by every writer (HotState setters) and flushed for hash/save/snapshot",
+    "2. supply (7.5 ms), morale (6.3), fog (5.9): same, read pos from HotState.pos (valid after Movement apply; writers rule core.hot_writer_rule) instead of dicts",
+    "3. native combat prep for landed aircraft: tf flags per id mark aircraft as air; a non-AA shooter on the native path can pick a different target than the GDScript path when the nearest enemy is a LANDED aircraft (G5 content only)",
+    "4. ORCH CR world.flush_hooks (HotState.flush in to_dict and before RenderSnap.build) -> test_flush_before_hash_save_snapshot passes once applied",
+    "5. ORCH CR bridges_touch, AIRSYS CR transport_touch (HotState.touch after unit pos writes)"
+  ],
+  "files_touched": [
+    "sim/hot_state.gd", "sim/world.gd (HOT block only)", "sim/systems/movement.gd", "sim/systems/combat.gd", "sim/systems/damage.gd",
+    "sim/systems/supply.gd", "sim/systems/fog.gd", "sim/systems/sim_index.gd", "native/rts_core/Cargo.toml", "native/rts_core/src/{lib,steer,gather,fastdict}.rs",
+    "bin/rts_core.dll", "tools/scale_bench.gd", "tests/test_hot_state.gd"
+  ],
+  "test_state": "see final report: test_hot_state 8/9 on HEAD+overlay (flush test waits for ORCH CR)",
+  "gotchas": [
+    "A/B env: scratchpad git archive HEAD copy + only CORE10K files overlaid (scratchpad/overlay.sh); other agents' WIP keeps the shared tree unstable",
+    "Movement.native_gather=false gives the GDScript gather (oracle); HotState.verify_gather=true checks every trusted mirror pos each tick",
+    "The native gather never reads the dict of a synced, clean, non-moving FOOT/VEHICLE unit: any other writer of e.pos/e.path/e.moving must call HotState.touch/set_*",
+    "godot-rust #[func] max param count: gather_held packs tables/held mirrors into VarArrays",
+    "Callable(SimWorld.Airfield, \"on_impact\").is_valid() is false on the HEAD stub, true with AIRSYS's airfield.gd"
+  ]
+}

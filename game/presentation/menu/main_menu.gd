@@ -8,6 +8,10 @@ signal ui_scale_changed(s: float)
 signal editor_requested   # G4e (ED1): "Map Editor" button
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
+const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")   # G5 (UI5a)
+const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
+const WIDE_W := 1360.0
+const MENU_BTN_W := 170.0
 const SkirmishSetup = preload("res://presentation/menu/skirmish_setup.gd")
 const VictoryBuilder = preload("res://presentation/menu/victory_builder.gd")
 const G3bData = preload("res://presentation/hud/g3b_data.gd")  # G3b (UI4): maps, stages, advancement
@@ -51,6 +55,15 @@ var _summary: Label
 var _scale_opt: OptionButton
 var _load_panel: VBoxContainer
 var _howto: PanelContainer
+var _howto_scroll: ScrollContainer
+var _row: BoxContainer
+var _margin: MarginContainer
+var _left: VBoxContainer
+var _btn_flow: HFlowContainer
+var _title: Label
+var _title_small: Label
+var _tagline: Label
+var _setup_scroll: ScrollContainer
 var _load_note: Label
 var _save_system_ok: bool = false
 
@@ -68,6 +81,9 @@ func set_save_system_available(ok: bool) -> void:
 
 
 func _build() -> void:
+	# G5 (UI5a): responsive layout. Wide canvases put the title/buttons column beside the setup
+	# panel; narrow ones (< WIDE_W) stack them. The setup panel scrolls vertically when the canvas
+	# is short, so nothing is ever cut off (tools/ui_fit_test.gd).
 	var bg := ColorRect.new()
 	bg.color = Color("0d1113")
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -80,57 +96,75 @@ func _build() -> void:
 	deco.draw.connect(_draw_deco.bind(deco))
 	add_child(deco)
 
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 36)
-	center.add_child(row)
+	var margin := MarginContainer.new()
+	_margin = margin
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 20)
+	add_child(margin)
+	_row = BoxContainer.new()
+	_row.add_theme_constant_override("separation", 24)
+	margin.add_child(_row)
 
-	# ---- left column: title + buttons
-	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(300, 0)
-	left.add_theme_constant_override("separation", 10)
-	row.add_child(left)
-	left.add_child(HT.make_label("RTS", HT.OLIVE, 22))
-	left.add_child(HT.make_label("AGE OF\nMODERN WAR", HT.AMBER, 46))
-	left.add_child(HT.make_label("Three maps, Stages 7-9, up to 4 sides", HT.DIM, 14))
-	left.add_child(_spacer(18))
-	var start := _menu_button("Start Skirmish", left)
+	# ---- title + buttons column (a row of buttons when stacked)
+	_left = VBoxContainer.new()
+	_left.add_theme_constant_override("separation", 8)
+	_row.add_child(_left)
+	_title_small = UiKit.label("RTS", "header")
+	_title_small.add_theme_color_override("font_color", HT.OLIVE)
+	_left.add_child(_title_small)
+	_title = UiKit.label("AGE OF\nMODERN WAR", "title")
+	_title.add_theme_font_size_override("font_size", 46)
+	_left.add_child(_title)
+	_tagline = UiKit.label("Three maps, Stages 7-9, up to 4 sides", "dim")
+	_left.add_child(_tagline)
+	_btn_flow = HFlowContainer.new()
+	_btn_flow.add_theme_constant_override("h_separation", 8)
+	_btn_flow.add_theme_constant_override("v_separation", 8)
+	_left.add_child(_btn_flow)
+	var start := _menu_button("Start Skirmish", _btn_flow)
 	start.pressed.connect(_on_start)
-	var load_b := _menu_button("Load Game", left)
+	var load_b := _menu_button("Load Game", _btn_flow)
 	load_b.pressed.connect(_toggle_load)
-	var editor_b := _menu_button("Map Editor", left)
+	var editor_b := _menu_button("Map Editor", _btn_flow)
 	editor_b.pressed.connect(func(): editor_requested.emit())
-	var how := _menu_button("How to Play", left)
+	var how := _menu_button("How to Play", _btn_flow)
 	how.pressed.connect(_toggle_howto)
-	var quit := _menu_button("Quit", left)
+	var quit := _menu_button("Quit", _btn_flow)
 	quit.pressed.connect(func(): quit_requested.emit())
 	_load_panel = VBoxContainer.new()
 	_load_panel.visible = false
 	_load_panel.add_theme_constant_override("separation", 4)
-	left.add_child(_load_panel)
+	_left.add_child(_load_panel)
 	_load_note = HT.make_label("", HT.YELLOW, 14)
-	left.add_child(_load_note)
-	left.add_child(_spacer(10))
+	_load_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_left.add_child(_load_note)
 	var sc := HBoxContainer.new()
-	left.add_child(sc)
-	sc.add_child(HT.make_label("UI scale  ", HT.DIM, 14))
+	_left.add_child(sc)
+	sc.add_child(UiKit.label("UI scale", "dim"))
 	_scale_opt = OptionButton.new()
-	for s in ["1.0", "1.25", "1.5"]:
-		_scale_opt.add_item(s)
+	_scale_opt.tooltip_text = "Interface size (on top of the automatic resolution scaling)"
+	for s in ScaledLayer.SCALE_STEPS:
+		_scale_opt.add_item("%d%%" % int(round(float(s) * 100.0)))
 	_scale_opt.item_selected.connect(_on_scale)
 	sc.add_child(_scale_opt)
 
-	# ---- right column: skirmish setup
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(900, 0)
-	row.add_child(panel)
+	# ---- skirmish setup (scrolls vertically on short canvases)
+	_setup_scroll = ScrollContainer.new()
+	_setup_scroll.name = "SetupScroll"
+	_setup_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_setup_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_setup_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_row.add_child(_setup_scroll)
+	var panel := UiKit.panel("frame")
+	panel.name = "SetupPanel"
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_setup_scroll.add_child(panel)
 	var pv := VBoxContainer.new()
 	pv.add_theme_constant_override("separation", 10)
 	panel.add_child(pv)
-	pv.add_child(HT.make_label("SKIRMISH SETUP", HT.AMBER, 20))
+	pv.add_child(UiKit.label("SKIRMISH SETUP", "header"))
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 16)
@@ -141,7 +175,8 @@ func _build() -> void:
 	grid.add_child(_map_lbl)
 	map_opt = OptionButton.new()
 	map_opt.name = "MapOption"
-	map_opt.custom_minimum_size = Vector2(460, 0)
+	map_opt.custom_minimum_size = Vector2(300, 0)
+	map_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_map_rows = G3bData.map_rows()
 	for m in _map_rows:
 		map_opt.add_item(G3bData.map_label(m))
@@ -190,33 +225,54 @@ func _build() -> void:
 	pv.add_child(HSeparator.new())
 	_summary = HT.make_label("", HT.TEXT, 14)
 	_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_summary.custom_minimum_size = Vector2(800, 58)
+	_summary.custom_minimum_size = Vector2(0, 58)
 	pv.add_child(_summary)
-	var go := Button.new()
-	go.text = "START MATCH"
+	var go := UiKit.button("START MATCH")
+	go.tooltip_text = "Start the match with these settings"
 	go.custom_minimum_size = Vector2(0, 46)
 	go.pressed.connect(_on_start)
 	pv.add_child(go)
 
-	# ---- how to play overlay
-	_howto = PanelContainer.new()
-	_howto.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	# ---- how to play overlay (modal; its text scrolls on short canvases)
+	_howto = UiKit.panel("modal")
+	_howto.name = "HowToPanel"
 	_howto.visible = false
 	add_child(_howto)
 	var hv := VBoxContainer.new()
 	_howto.add_child(hv)
-	hv.add_child(HT.make_label("HOW TO PLAY", HT.AMBER, 20))
+	hv.add_child(UiKit.label("HOW TO PLAY", "header"))
 	var txt := HT.make_label(HOW_TO_PLAY, HT.TEXT, 14)
 	var mono := SystemFont.new()
 	mono.font_names = PackedStringArray(["Consolas", "Courier New", "monospace"])
 	txt.add_theme_font_override("font", mono)
-	hv.add_child(txt)
-	var close := Button.new()
-	close.text = "Close"
+	_howto_scroll = UiKit.scroll(txt)
+	hv.add_child(_howto_scroll)
+	var close := UiKit.button("Close", "", "Close How to Play")
 	close.pressed.connect(_toggle_howto)
 	hv.add_child(close)
-	_howto.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+	resized.connect(_relayout)
+	_relayout()
 	_refresh_load()
+
+
+## Side-by-side when the canvas is wide, stacked (buttons in a row on top) when it is narrow.
+func _relayout() -> void:
+	if _row == null:
+		return
+	var wide := size.x >= WIDE_W
+	_row.vertical = not wide
+	for side in ["left", "right", "top", "bottom"]:
+		_margin.add_theme_constant_override("margin_" + side, 20 if wide else 8)
+	_left.custom_minimum_size = Vector2(300 if wide else 0, 0)
+	_title.text = "AGE OF\nMODERN WAR" if wide else "AGE OF MODERN WAR"
+	_title.add_theme_font_size_override("font_size", 46 if wide else 30)
+	_tagline.visible = wide
+	for b in _btn_flow.get_children():
+		(b as Control).custom_minimum_size.x = 280.0 if wide else MENU_BTN_W
+	if _howto != null:
+		_howto_scroll.custom_minimum_size = Vector2(minf(720.0, size.x - 120.0), clampf(size.y - 220.0, 120.0, 560.0))
+		_howto.reset_size()
+		_howto.position = ((size - _howto.get_combined_minimum_size()) * 0.5).floor()
 
 
 func _draw_deco(deco: Control) -> void:
@@ -234,9 +290,9 @@ func _spacer(h: float) -> Control:
 
 
 func _menu_button(text: String, parent: Control) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(0, 44)
+	var b := UiKit.button(text, "", text)
+	b.custom_minimum_size = Vector2(MENU_BTN_W, 44)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(b)
 	return b
 
@@ -258,16 +314,15 @@ func _on_randomize() -> void:
 
 
 func _on_scale(i: int) -> void:
-	var vals := [1.0, 1.25, 1.5]
-	ui_scale_changed.emit(vals[i])
+	ui_scale_changed.emit(float(ScaledLayer.SCALE_STEPS[i]))
 
 
 func set_scale_index(s: float) -> void:
 	if _scale_opt == null:
 		return
-	var vals := [1.0, 1.25, 1.5]
+	var vals: Array = ScaledLayer.SCALE_STEPS
 	for i in vals.size():
-		if is_equal_approx(vals[i], s):
+		if is_equal_approx(float(vals[i]), s):
 			_scale_opt.select(i)
 
 
@@ -349,6 +404,7 @@ func show_error(msg: String) -> void:
 
 func _toggle_howto() -> void:
 	_howto.visible = not _howto.visible
+	_relayout()
 
 
 func _toggle_load() -> void:

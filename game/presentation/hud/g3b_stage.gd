@@ -38,6 +38,7 @@ func build(root: Control, hud_node: Node) -> void:
 	panel.name = "StagePanel"
 	panel.position = Vector2(14, 196)
 	panel.custom_minimum_size = Vector2(300, 0)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN   # G5 (UI5a): keep 300 px inside the left stack
 	panel.modulate = Color(1, 1, 1, 0.94)
 	root.add_child(panel)
 	var v := VBoxContainer.new()

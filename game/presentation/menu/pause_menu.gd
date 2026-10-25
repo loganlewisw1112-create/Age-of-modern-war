@@ -8,6 +8,8 @@ signal menu_requested
 signal ui_scale_changed(s: float)
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
+const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")   # G5 (UI5a)
+const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
 
 var _status: Label
 var _save_btn: Button
@@ -29,13 +31,16 @@ func _ready() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
-	var panel := PanelContainer.new()
+	var panel := UiKit.panel("modal")
+	panel.name = "PausePanel"
 	panel.custom_minimum_size = Vector2(340, 0)
 	center.add_child(panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
-	v.add_child(HT.make_label("PAUSED", HT.AMBER, 26))
+	var ttl := UiKit.label("PAUSED", "title")
+	ttl.add_theme_font_size_override("font_size", 26)
+	v.add_child(ttl)
 	var resume := _btn("Resume", v)
 	resume.pressed.connect(func(): resume_requested.emit())
 	_save_btn = _btn("Save game (slot 1)", v)
@@ -46,8 +51,8 @@ func _ready() -> void:
 	v.add_child(sc)
 	sc.add_child(HT.make_label("UI scale  ", HT.DIM, 14))
 	_scale_opt = OptionButton.new()
-	for s in ["1.0", "1.25", "1.5"]:
-		_scale_opt.add_item(s)
+	for s in ScaledLayer.SCALE_STEPS:
+		_scale_opt.add_item("%d%%" % int(round(float(s) * 100.0)))
 	_scale_opt.item_selected.connect(_on_scale)
 	sc.add_child(_scale_opt)
 	var quit := _btn("Back to editor" if editor_test else "Quit to main menu", v)
@@ -62,20 +67,20 @@ func _ready() -> void:
 func _btn(text: String, parent: Control) -> Button:
 	var b := Button.new()
 	b.text = text
+	b.tooltip_text = text
 	b.custom_minimum_size = Vector2(0, 40)
 	parent.add_child(b)
 	return b
 
 
 func _on_scale(i: int) -> void:
-	var vals := [1.0, 1.25, 1.5]
-	ui_scale_changed.emit(vals[i])
+	ui_scale_changed.emit(float(ScaledLayer.SCALE_STEPS[i]))
 
 
 func set_scale_index(s: float) -> void:
-	var vals := [1.0, 1.25, 1.5]
+	var vals: Array = ScaledLayer.SCALE_STEPS
 	for i in vals.size():
-		if is_equal_approx(vals[i], s):
+		if is_equal_approx(float(vals[i]), s):
 			_scale_opt.select(i)
 
 

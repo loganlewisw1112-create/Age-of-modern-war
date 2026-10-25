@@ -5,6 +5,7 @@ signal continue_requested
 signal menu_requested
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
+const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")   # G5 (UI5a)
 
 
 ## stats: {won:bool, clock:String, trained:int, built:int, lost:int, killed:int, reason:String}
@@ -21,7 +22,8 @@ func setup(stats: Dictionary) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
-	var panel := PanelContainer.new()
+	var panel := UiKit.panel("modal")
+	panel.name = "EndPanel"
 	panel.custom_minimum_size = Vector2(440, 0)
 	panel.add_theme_stylebox_override("panel", HT.box(HT.PANEL, HT.GREEN if won else HT.RED, 2, 2, 16))
 	center.add_child(panel)
@@ -29,6 +31,7 @@ func setup(stats: Dictionary) -> void:
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
 	var title := HT.make_label("VICTORY" if won else "DEFEAT", HT.GREEN if won else HT.RED, 48)
+	title.add_theme_font_override("font", UiKit.font(true))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
 	var sub := HT.make_label(String(stats.get("subtitle", "")), HT.DIM, 14)

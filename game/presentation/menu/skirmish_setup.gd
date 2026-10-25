@@ -49,7 +49,7 @@ func build() -> void:
 	browser.build()
 	browser.picked.connect(_on_map_picked)
 	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 6)
+	head.add_theme_constant_override("separation", 4)
 	add_child(head)
 	for h in [["", 22], ["Player", 92], ["Faction", 190], ["Stage", 150], ["Team", 86], ["Colour", 80], ["Credits", 104], ["AI level", 92]]:
 		var l := HT.make_label(String(h[0]), HT.DIM, 13)
@@ -79,7 +79,7 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	box.add_theme_constant_override("separation", 0)
 	add_child(box)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 4)
 	box.add_child(row)
 	var sw := ColorRect.new()
 	sw.custom_minimum_size = Vector2(22, 22)
@@ -153,6 +153,12 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 	var blurb := HT.make_label("", HT.DIM, 12)
 	blurb.custom_minimum_size = Vector2(0, 16)
 	box.add_child(blurb)
+	# G5 (UI5a): dense form row at 13 px, so 8 columns fit a 1024-px canvas with any typeface
+	for c in row.get_children():
+		if c is Button or c is SpinBox or c is LineEdit:
+			(c as Control).add_theme_font_size_override("font_size", 13)
+		if c is SpinBox:
+			(c as SpinBox).get_line_edit().add_theme_font_size_override("font_size", 13)
 	return {"kind": kind, "faction": fac, "stage": stg, "team": team, "color": col, "credits": cr, "diff": diff,
 		"blurb": blurb, "swatch": sw, "row": row}
 

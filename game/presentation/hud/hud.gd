@@ -22,6 +22,16 @@ const G3bStage = preload("res://presentation/hud/g3b_stage.gd")
 const G3bData = preload("res://presentation/hud/g3b_data.gd")
 
 const REFRESH_SECS := 0.2
+const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")      # G5 (UI5a) panel kit
+const HudExtras = preload("res://presentation/ui5/kit/hud_extras.gd")
+const TOP_H := 34.0        # G5 layout (virtual canvas px; ScaledLayer scales them)
+const BOTTOM_H := 220.0    # keep <= 222: UI5b's cargo strip sits right above it (-284..-222)
+const EDGE_M := 12.0
+const ALERT_W := 500.0
+const RIGHT_W := 306.0
+const INSP_MIN_W := 270.0
+const CARD_MIN_W := 500.0
+const BTN_MIN_W := 112.0
 const ALERT_LIFE := 9.0
 const ALERT_MAX := 6
 const ATTACK_ALERT_TICKS := 20 * 10
@@ -56,7 +66,15 @@ var _insp_icon: TextureRect
 var _insp_name: Label
 var _insp_hp: ProgressBar
 var _insp_info: Label
-var _insp_counts: GridContainer
+var _insp_counts: Container
+var _card_cv: VBoxContainer
+var _left_scroll: ScrollContainer
+var _insp_scroll: ScrollContainer
+var _card_pager: Button = null
+var _card_page := 0
+var _right_scroll: ScrollContainer
+var _card_scroll: ScrollContainer
+var extras = HudExtras.new()   # G5: control groups, idle button, F1 sheet
 var _card_title: Label
 var _card_grid: GridContainer
 var _queue_box: HBoxContainer
@@ -123,83 +141,113 @@ func _pf() -> int:
 
 # ------------------------------------------------------------------ construction
 func _build_ui() -> void:
+	# G5 (UI5a): anchored, container-driven layout. Nothing is placed in absolute pixels except
+	# margins; the bottom panel has a fixed height and grows upward, never off-screen; the card
+	# re-fits its columns/rows to the space it has (_fit_card); long inspector text scrolls.
 	var root: Control = layer.root
 	# ---- top bar
-	var top := PanelContainer.new()
+	var top := UiKit.panel("header")
+	top.name = "TopBar"
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	top.custom_minimum_size = Vector2(0, 36)
-	top.add_theme_stylebox_override("panel", HT.box(Color("101417"), HT.EDGE, 1, 0, 8))
+	top.custom_minimum_size = Vector2(0, TOP_H)
 	root.add_child(top)
 	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 22)
+	hb.add_theme_constant_override("separation", 10)
 	top.add_child(hb)
-	_credits = _tb_label(hb, HT.AMBER)
-	_salvage = _tb_label(hb, Color("c9ccc4"))
-	_ore = _tb_label(hb, Color("e0944a"))
-	_fuel = _tb_label(hb, Color("d9c05a"))
-	_ammo = _tb_label(hb, Color("d08a4a"))
-	_power = _tb_label(hb, HT.YELLOW)
-	_pop = _tb_label(hb, HT.BLUE)
-	_stage = _tb_label(hb, HT.DIM)
-	_clock = _tb_label(hb, HT.TEXT)
-	var sp := Control.new()
-	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hb.add_child(sp)
-	_btn_pause = Button.new()
-	_btn_pause.text = "Pause (P)"
+	# resources sit in a scroll strip (min width 0): on a canvas narrower than the readouts they
+	# truncate at the right instead of pushing the buttons off the screen
+	var res_strip := ScrollContainer.new()
+	res_strip.name = "ResStrip"
+	res_strip.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	res_strip.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	res_strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	res_strip.mouse_filter = Control.MOUSE_FILTER_PASS
+	hb.add_child(res_strip)
+	var rb := HBoxContainer.new()
+	rb.add_theme_constant_override("separation", 16)
+	res_strip.add_child(rb)
+	_credits = _tb_label(rb, HT.AMBER, "Credits: spent on everything")
+	_salvage = _tb_label(rb, Color("c9ccc4"), "Salvage: gathered from wrecks and scrap fields")
+	_ore = _tb_label(rb, Color("e0944a"), "Ore: mined by gatherers")
+	_fuel = _tb_label(rb, Color("d9c05a"), "Fuel stock: vehicles and aircraft burn it")
+	_ammo = _tb_label(rb, Color("d08a4a"), "Ammo stock: units restock from it")
+	_power = _tb_label(rb, HT.YELLOW, "Power: use / production")
+	_pop = _tb_label(rb, HT.BLUE, "Population / supply cap")
+	_stage = _tb_label(rb, HT.DIM, "Tech stage")
+	_clock = _tb_label(rb, HT.TEXT, "Match time")
+	_btn_pause = UiKit.button("Pause", "P", "Pause or resume the match")
 	_btn_pause.toggle_mode = true
 	_btn_pause.pressed.connect(_on_pause_pressed)
 	hb.add_child(_btn_pause)
 	for s in [1.0, 2.0, 3.0]:
 		var b := Button.new()
 		b.text = "%dx" % int(s)
+		b.tooltip_text = "Game speed %dx" % int(s)
 		b.toggle_mode = true
 		b.pressed.connect(_set_speed.bind(s))
 		hb.add_child(b)
 		_btn_speed.append(b)
-	var mb := Button.new()
-	mb.text = "Menu (Esc)"
+	var mb := UiKit.button("Menu", "Esc", "Pause menu: save, load, settings, quit")
 	mb.pressed.connect(func(): menu_requested.emit())
 	hb.add_child(mb)
 
-	_paused_banner = HT.make_label("PAUSED", HT.AMBER, 34)
-	_paused_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_paused_banner.offset_left = -80.0
-	_paused_banner.offset_right = 80.0
-	_paused_banner.offset_top = 80.0
+	_paused_banner = UiKit.label("PAUSED", "title")
+	_paused_banner.add_theme_font_size_override("font_size", 34)
+	_paused_banner.add_theme_constant_override("outline_size", 6)
+	_paused_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_paused_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_paused_banner.anchor_top = 0.3
+	_paused_banner.anchor_bottom = 0.3
 	_paused_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_paused_banner.visible = false
 	root.add_child(_paused_banner)
 
-	# ---- alerts feed (top-left under the bar)
+	# ---- left stack (alerts feed, then the G3b stage panel), top-left under the bar
+	_left_scroll = _stack_scroll("LeftScroll")
+	_left_scroll.position = Vector2(EDGE_M, TOP_H + 8)
+	root.add_child(_left_scroll)
+	var left := VBoxContainer.new()
+	left.name = "LeftStack"
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.add_theme_constant_override("separation", 6)
+	_left_scroll.add_child(left)
 	_alert_box = VBoxContainer.new()
 	_alert_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_alert_box.position = Vector2(14, 48)
-	_alert_box.custom_minimum_size = Vector2(520, 0)
+	_alert_box.custom_minimum_size = Vector2(0, 0)   # width comes from the visible lines only
 	_alert_box.add_theme_constant_override("separation", 2)
-	root.add_child(_alert_box)
+	left.add_child(_alert_box)
 	for i in ALERT_MAX:
 		var l := HT.make_label("", HT.TEXT, 15)
 		l.add_theme_constant_override("outline_size", 4)
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		l.custom_minimum_size = Vector2(ALERT_W, 0)
+		l.visible = false
 		_alert_box.add_child(l)
 
-	# ---- objectives (top-right)
-	_obj_panel = PanelContainer.new()
-	_obj_panel.anchor_left = 1.0
-	_obj_panel.anchor_right = 1.0
-	_obj_panel.anchor_top = 0.0
-	_obj_panel.anchor_bottom = 0.0
-	_obj_panel.offset_left = -320
-	_obj_panel.offset_right = -14
-	_obj_panel.offset_top = 46
+	# ---- right stack (objectives, then the victory panel), top-right under the bar
+	_right_scroll = _stack_scroll("RightScroll")
+	_right_scroll.anchor_left = 1.0
+	_right_scroll.anchor_right = 1.0
+	_right_scroll.offset_left = -(RIGHT_W + EDGE_M)
+	_right_scroll.offset_right = -EDGE_M
+	_right_scroll.offset_top = TOP_H + 8
+	_right_scroll.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	root.add_child(_right_scroll)
+	var right := VBoxContainer.new()
+	right.name = "RightStack"
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right.custom_minimum_size = Vector2(RIGHT_W, 0)
+	right.add_theme_constant_override("separation", 6)
+	_right_scroll.add_child(right)
+	_obj_panel = UiKit.panel("frame")
+	_obj_panel.name = "ObjectivesPanel"
 	_obj_panel.modulate = Color(1, 1, 1, 0.95)
-	root.add_child(_obj_panel)
+	right.add_child(_obj_panel)
 	var ov := VBoxContainer.new()
 	_obj_panel.add_child(ov)
 	var oh := HBoxContainer.new()
 	ov.add_child(oh)
-	_obj_title = HT.make_label("OBJECTIVES", HT.AMBER, 14)
+	_obj_title = UiKit.label("OBJECTIVES", "header")
 	_obj_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	oh.add_child(_obj_title)
 	var ox := Button.new()
@@ -215,40 +263,63 @@ func _build_ui() -> void:
 		ov.add_child(l)
 		_obj_labels.append(l)
 
-	g3_score.build(root, _obj_panel)
-	g3b_stage.build(root, self)
+	g3_score.build(right, _obj_panel)
+	g3b_stage.build(left, self)
 
-	# ---- hover info
+	# ---- hover info (just above the bottom panel)
 	_hover_lbl = HT.make_label("", HT.TEXT, 14)
 	_hover_lbl.anchor_top = 1.0
 	_hover_lbl.anchor_bottom = 1.0
 	_hover_lbl.offset_left = 220
-	_hover_lbl.offset_top = -246
+	_hover_lbl.offset_top = -(BOTTOM_H + 32)
+	_hover_lbl.offset_bottom = -(BOTTOM_H + 10)
+	_hover_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hover_lbl.add_theme_constant_override("outline_size", 4)
 	_hover_lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	root.add_child(_hover_lbl)
+	_build_bottom(root)
+	extras.build(self, root)
+	extras.bar.resized.connect(_cap_stacks)
+	left.resized.connect(_cap_stacks)
+	right.resized.connect(_cap_stacks)
+	layer.root.resized.connect(_cap_stacks)
 
-	# ---- bottom panel
-	var bottom := PanelContainer.new()
+
+func _build_bottom(root: Control) -> void:
+	var bottom := UiKit.panel("frame")
+	bottom.name = "BottomPanel"
 	bottom.anchor_left = 0.0
 	bottom.anchor_right = 1.0
 	bottom.anchor_top = 1.0
 	bottom.anchor_bottom = 1.0
-	bottom.offset_top = -214
-	bottom.add_theme_stylebox_override("panel", HT.box(Color("101417"), HT.EDGE, 1, 0, 8))
+	bottom.offset_top = -BOTTOM_H
+	bottom.offset_bottom = 0.0
+	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN   # extra height goes up, never off-screen
 	root.add_child(bottom)
 	var bh := HBoxContainer.new()
-	bh.add_theme_constant_override("separation", 12)
+	bh.add_theme_constant_override("separation", 10)
 	bottom.add_child(bh)
+	var mm_frame := UiKit.panel("inset")
+	mm_frame.name = "MinimapFrame"
+	var mmsb = UiKit.box("inset")
+	mmsb.set_content_margin_all(3.0)
+	mm_frame.add_theme_stylebox_override("panel", mmsb)
+	mm_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bh.add_child(mm_frame)
 	_minimap = MinimapScript.new()
 	_minimap.setup(mv)
-	bh.add_child(_minimap)
-	# inspector
+	mm_frame.add_child(_minimap)
+	# inspector (scrolls if a selection has more lines than fit)
+	var isc := ScrollContainer.new()
+	isc.name = "InspectorScroll"
+	isc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	isc.custom_minimum_size = Vector2(INSP_MIN_W, 0)
+	_insp_scroll = isc
+	bh.add_child(isc)
 	var iv := VBoxContainer.new()
-	iv.custom_minimum_size = Vector2(340, 0)
 	iv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	iv.add_theme_constant_override("separation", 4)
-	bh.add_child(iv)
+	isc.add_child(iv)
 	var ih := HBoxContainer.new()
 	ih.add_theme_constant_override("separation", 8)
 	iv.add_child(ih)
@@ -259,47 +330,182 @@ func _build_ui() -> void:
 	_insp_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ih.add_child(_insp_icon)
 	_insp_name = HT.make_label("No selection", HT.AMBER, 18)
+	_insp_name.add_theme_font_override("font", UiKit.font(true))
 	_insp_name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_insp_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_insp_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	ih.add_child(_insp_name)
-	_insp_hp = ProgressBar.new()
-	_insp_hp.custom_minimum_size = Vector2(0, 16)
-	_insp_hp.show_percentage = false
-	_insp_hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_insp_hp = UiKit.bar("hp")
+	_insp_hp.custom_minimum_size = Vector2(0, 14)
 	iv.add_child(_insp_hp)
 	_insp_info = HT.make_label("", HT.TEXT, 14)
 	_insp_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	iv.add_child(_insp_info)
-	_insp_counts = GridContainer.new()
-	_insp_counts.columns = 4
-	_insp_counts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var flow := HFlowContainer.new()
+	flow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flow.add_theme_constant_override("h_separation", 4)
+	_insp_counts = flow
 	iv.add_child(_insp_counts)
 	g2_insp.build(iv, _insp_info, root)
 	g2_cmd.hud = self
 	g4b_cmd.hud = self
 	g4b_cmd.build(root)
-	# command card
+	# command card: title, button grid (re-fitted to the space; scrolls only as a last resort),
+	# production queue, hint
 	var cv := VBoxContainer.new()
-	cv.custom_minimum_size = Vector2(580, 0)
+	cv.name = "CommandCard"
+	cv.custom_minimum_size = Vector2(CARD_MIN_W, 0)
+	cv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cv.size_flags_stretch_ratio = 1.7
 	cv.add_theme_constant_override("separation", 4)
 	bh.add_child(cv)
-	_card_title = HT.make_label("", HT.AMBER, 14)
+	_card_cv = cv
+	_card_title = UiKit.label("", "header")
+	_card_title.add_theme_font_size_override("font_size", 14)
+	_card_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	cv.add_child(_card_title)
+	_card_scroll = ScrollContainer.new()
+	_card_scroll.name = "CardScroll"
+	_card_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_card_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	cv.add_child(_card_scroll)
 	_card_grid = GridContainer.new()
 	_card_grid.columns = 4
 	_card_grid.add_theme_constant_override("h_separation", 4)
 	_card_grid.add_theme_constant_override("v_separation", 4)
-	cv.add_child(_card_grid)
+	_card_scroll.add_child(_card_grid)
 	_queue_box = HBoxContainer.new()
 	_queue_box.add_theme_constant_override("separation", 4)
 	cv.add_child(_queue_box)
 	_hint = HT.make_label("", HT.YELLOW, 14)
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.visible = false
 	cv.add_child(_hint)
+	cv.resized.connect(_fit_card)
 
 
-func _tb_label(parent: Control, col: Color) -> Label:
-	var l := HT.make_label("", col, 16)
+## G5 (UI5a): choose columns / button size so the whole card fits the bottom panel (replaces the
+## G3a/G3b per-case shrinking). When even 3-line buttons cannot all fit (G5 build lists run past 24
+## structures) the build/train/research buttons are paged ("More" button, hotkeys keep working for
+## every page); order buttons (Stop, Hold, ...) stay on every page. The scroll is a last resort.
+func _fit_card() -> void:
+	if _card_grid == null or _card_cv == null:
+		return
+	var pageable: Array = []
+	for rec in _card_buttons:
+		if is_instance_valid(rec.btn) and ["build", "train", "research"].has(String(rec.kind)):
+			pageable.append(rec.btn)
+	var fixed: Array = []
+	for c in _card_grid.get_children():
+		if c is Button and c != _card_pager and not pageable.has(c) and (c.visible or c.has_meta("ui5_paged")):
+			fixed.append(c)
+	var n := pageable.size() + fixed.size()
+	if n == 0:
+		return
+	var w := maxf(_card_cv.size.x, CARD_MIN_W)
+	var cols := clampi(int((w + 4.0) / (BTN_MIN_W + 4.0)), 3, 8)
+	var avail := BOTTOM_H - 18.0 - _card_title.get_combined_minimum_size().y - 4.0
+	if _queue_box.get_child_count() > 0:
+		avail -= _queue_box.get_combined_minimum_size().y + 4.0
+	if _hint.text != "":
+		avail -= _hint.get_combined_minimum_size().y + 4.0
+	var f: Font = UiKit.font(false)
+	var need3 := _btn_need(f, 11)   # 2-line name + cost line at the smallest card font
+	var cap_rows := maxi(1, int((avail + 4.0) / (need3 + 4.0)))
+	var shown: Array = pageable
+	var pages := 1
+	if n > cols * cap_rows and pageable.size() > 1:
+		var per := maxi(1, cols * cap_rows - fixed.size() - 1)
+		pages = ceili(float(pageable.size()) / float(per))
+		_card_page = _card_page % pages
+		shown = pageable.slice(_card_page * per, mini(pageable.size(), (_card_page + 1) * per))
+	for b in pageable:
+		b.visible = shown.has(b)
+		b.set_meta("ui5_paged", true)
+	if pages > 1:
+		if _card_pager == null or not is_instance_valid(_card_pager):
+			_card_pager = UiKit.button("More", "", "Show the next page of this card (hotkeys work on every page)")
+			_card_pager.pressed.connect(func(): _card_page += 1; _fit_card())
+			_card_grid.add_child(_card_pager)
+		_card_pager.text = "More  %d/%d" % [_card_page + 1, pages]
+		_card_pager.visible = true
+		_card_grid.move_child(_card_pager, (shown.back() as Node).get_index() + 1)
+	elif _card_pager != null and is_instance_valid(_card_pager):
+		_card_pager.visible = false
+	var count := shown.size() + fixed.size() + (1 if pages > 1 else 0)
+	var rows := ceili(float(count) / float(cols))
+	var bh := clampf(floorf((avail - 4.0 * float(rows - 1)) / float(rows)), 34.0, 74.0)
+	var bw := clampf(floorf((w - 4.0 * float(cols - 1)) / float(cols)) - 1.0, BTN_MIN_W, 190.0)
+	var fs := 11
+	for cand in [14, 13, 12]:
+		if _btn_need(f, cand) <= bh:
+			fs = cand
+			break
+	var icons := bh >= 60.0   # short buttons give the icon's width to the text
+	_card_grid.columns = mini(cols, count)
+	for c in _card_grid.get_children():
+		if c is Button:
+			var b := c as Button
+			b.custom_minimum_size = Vector2(bw, bh)
+			b.add_theme_font_size_override("font_size", fs)
+			b.add_theme_constant_override("icon_max_width", clampi(int(bh * 0.4), 14, 24))
+			if b.icon != null and not icons:
+				b.set_meta("ui5_icon", b.icon)
+				b.icon = null
+			elif icons and b.icon == null and b.has_meta("ui5_icon"):
+				b.icon = b.get_meta("ui5_icon")
+
+
+## Height a card button needs for 3 text lines (wrapped name + cost) at font size fs (conservative).
+func _btn_need(f: Font, fs: int) -> float:
+	return 3.0 * (f.get_height(fs) + 2.0) + 12.0
+
+
+func _stack_scroll(nm: String) -> ScrollContainer:
+	var sc := ScrollContainer.new()
+	sc.name = nm
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.mouse_filter = Control.MOUSE_FILTER_PASS
+	return sc
+
+
+## G5 (UI5a): size the left/right stacks to their content, capped above the bottom panel and the
+## group bar, so they scroll instead of running into them on short canvases (720p at 150 %).
+func _cap_stacks() -> void:
+	if _left_scroll == null or layer == null:
+		return
+	var cs: Vector2 = layer.canvas_size()
+	var bar_h := 0.0
+	if extras.bar != null:
+		bar_h = extras.bar.size.y + 8.0
+	# alert lines never reach the centred PAUSED banner / cargo strip
+	var aw := clampf(cs.x * 0.5 - 90.0 - EDGE_M, 260.0, ALERT_W)
+	for l in _alert_box.get_children():
+		(l as Control).custom_minimum_size.x = aw
+	if _insp_scroll != null:
+		_insp_scroll.custom_minimum_size.x = clampf(floorf(cs.x * 0.22), INSP_MIN_W, 380.0)
+	for sc in [_left_scroll, _right_scroll]:
+		var c: Control = sc.get_child(0)
+		var need := c.get_combined_minimum_size()
+		var avail := cs.y - (TOP_H + 8.0) - BOTTOM_H - 10.0 - (bar_h if sc == _right_scroll else 34.0)
+		var h := clampf(need.y, 0.0, maxf(avail, 60.0))
+		# fits: no scrolling at all (the container then sizes itself to the content)
+		sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if need.y <= h + 0.5 else ScrollContainer.SCROLL_MODE_AUTO
+		var w := need.x + (14.0 if need.y > h + 0.5 else 0.0)
+		if sc == _right_scroll:
+			sc.offset_left = -(EDGE_M + w)
+			sc.offset_right = -EDGE_M
+			sc.offset_bottom = sc.offset_top + h
+		else:
+			sc.size = Vector2(w, h)
+
+
+func _tb_label(parent: Control, col: Color, tip: String = "") -> Label:
+	var l := HT.make_label("", col, UiKit.FS_NUMBER)
+	l.add_theme_font_override("font", UiKit.font(true))
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	l.tooltip_text = tip
+	l.mouse_filter = Control.MOUSE_FILTER_PASS if tip != "" else Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
 
@@ -337,24 +543,24 @@ func _refresh() -> void:
 	if w == null or not w.factions.has(_pf()):
 		return
 	var f: Dictionary = w.factions[_pf()]
-	_credits.text = "Credits %d" % int(f.credits)
-	_salvage.text = "Salvage %d" % int(f.stock.get("salvage", 0))
-	_ore.text = "Ore %d" % int(f.stock.get("ore", 0))
+	_credits.text = "CR %d" % int(f.credits)
+	_salvage.text = "SALV %d" % int(f.stock.get("salvage", 0))
+	_ore.text = "ORE %d" % int(f.stock.get("ore", 0))
 	var fuel := int(f.stock.get("fuel", 0))
 	var ammo := int(f.stock.get("ammo", 0))
-	_fuel.text = "Fuel %d%s" % [fuel, "  LOW" if fuel < 100 else ""]
+	_fuel.text = "FUEL %d%s" % [fuel, " LOW" if fuel < 100 else ""]
 	_fuel.add_theme_color_override("font_color", HT.RED if fuel < 100 else Color("d9c05a"))
-	_ammo.text = "Ammo %d%s" % [ammo, "  LOW" if ammo < 100 else ""]
+	_ammo.text = "AMMO %d%s" % [ammo, " LOW" if ammo < 100 else ""]
 	_ammo.add_theme_color_override("font_color", HT.RED if ammo < 100 else Color("d08a4a"))
 	var pp := int(f.power_prod)
 	var pu := int(f.power_use)
-	_power.text = "Power %d use / %d prod%s" % [pu, pp, "  LOW" if pu > pp else ""]
+	_power.text = "PWR %d/%d%s" % [pu, pp, " LOW" if pu > pp else ""]
 	_power.add_theme_color_override("font_color", HT.RED if pu > pp else HT.YELLOW)
 	var pop := int(f.pop)
 	var cap := int(f.pop_cap)
-	_pop.text = "Pop %d / %d" % [pop, cap]
+	_pop.text = "POP %d/%d" % [pop, cap]
 	_pop.add_theme_color_override("font_color", HT.RED if pop >= cap and cap > 0 else HT.BLUE)
-	_stage.text = "Stage %d" % int(f.stage)
+	_stage.text = "STAGE %d" % int(f.stage)
 	_clock.text = HT.clock_text(w.tick)
 	var paused: bool = bool(mv.get("paused"))
 	var spd: float = float(mv.get("speed"))
@@ -368,6 +574,8 @@ func _refresh() -> void:
 	g3b_stage.update(w, _pf())
 	_refresh_selection(w)
 	_refresh_hover()
+	extras.update(w, mv)
+	_cap_stacks()
 
 
 func _refresh_objectives() -> void:
@@ -568,6 +776,8 @@ func _set_card(mode: String, ents: Array, w: SimWorld) -> void:
 
 func _clear_card() -> void:
 	_card_buttons.clear()
+	_card_pager = null
+	_card_page = 0
 	g4b_cmd.reset()
 	_hotkeys.clear()
 	_hover_btn = null
@@ -592,7 +802,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			var hk := G3.build_hotkey(String(bid), used)
 			var btn := _card_button(String(d.name), HT.cost_text(d.cost), hk, String(bid))
 			btn.pressed.connect(_on_build_pressed.bind(String(bid)))
-			_card_buttons.append({"btn": btn, "kind": "build", "def": String(bid)})
+			_card_buttons.append({"btn": btn, "kind": "build", "def": String(bid), "hk": hk})
 			_register_hotkey(hk, btn)
 		_add_unit_buttons(ids, mode)
 	elif mode == "units":
@@ -608,7 +818,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			var p: Dictionary = Content.production(String(item))
 			var btn := _card_button(String(p.name), HT.cost_text(p.cost), String(p.get("hotkey", "")), String(item))
 			btn.pressed.connect(_on_train_pressed.bind(bid, String(item)))
-			_card_buttons.append({"btn": btn, "kind": "train", "item": String(item), "building": bid})
+			_card_buttons.append({"btn": btn, "kind": "train", "item": String(item), "building": bid, "hk": String(p.get("hotkey", ""))})
 			_register_hotkey(String(p.get("hotkey", "")), btn)
 		if bool(d.get("research", false)):
 			_add_research_buttons(bid)
@@ -620,23 +830,8 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		btn2.pressed.connect(_issue.bind({"type": "cancel_building", "building_id": int(b2.id)}))
 		_card_buttons.append({"btn": btn2, "kind": "plain"})
 	g2_cmd.compact(_card_grid)
-	# G3a: a 5-column card has 2 rows; smaller text keeps long names + 3-resource costs inside
-	# the bottom panel (Human B / Machine build cards).
-	if _card_grid.columns >= 5:
-		for c in _card_grid.get_children():
-			if c is Button:
-				c.add_theme_font_size_override("font_size", 12)
-	# G3b (UI4-3): a card with 3+ rows (Machine repair-bot build list + Repair + Assign) ran off
-	# the bottom of the screen (Assign at y 882..956 on a 900 px window); shorter buttons keep
-	# every row inside the 214 px bottom panel.
-	var rows := ceili(float(_card_grid.get_child_count()) / float(maxi(1, _card_grid.columns)))
-	if rows >= 3:
-		var bh := floorf((150.0 - 4.0 * float(rows - 1)) / float(rows))
-		for c in _card_grid.get_children():
-			if c is Button:
-				c.custom_minimum_size = Vector2(138, bh)
-				c.add_theme_font_size_override("font_size", 11)
-				c.add_theme_constant_override("icon_max_width", 20)
+	# G5 (UI5a): one fit routine for every card (replaces the G3a/G3b per-case shrinking)
+	_fit_card()
 
 
 ## G3b: research projects on a research building (start; cancel while one is active).
@@ -689,10 +884,19 @@ func _add_unit_buttons(ids: Array, mode: String = "units") -> void:
 func _card_button(title: String, cost: String, hotkey: String, icon_id: String) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(138, 74)
-	var t := title
+	# G5 (UI5a): the hotkey is a corner badge, not part of the text, so names wrap less
+	b.text = title + ("\n" + cost if cost != "" else "")
 	if hotkey != "":
-		t = "[%s] %s" % [hotkey, title]
-	b.text = t + ("\n" + cost if cost != "" else "")
+		var hk := UiKit.label(hotkey, "small")
+		hk.name = "HotkeyBadge"
+		hk.add_theme_color_override("font_color", UiKit.AMBER)
+		hk.add_theme_constant_override("outline_size", 3)
+		hk.add_theme_font_override("font", UiKit.font(true))
+		hk.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		hk.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		hk.offset_right = -4.0
+		hk.offset_top = 1.0
+		b.add_child(hk)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	b.clip_text = false
@@ -748,6 +952,11 @@ For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)
 				reason = w.preview_command({"type": "queue_unit", "issuer": pf, "building_id": int(rec.building), "item": String(rec.item)})
 			var p: Dictionary = Content.production(String(rec.item))
 			tip = "%s\nCost: %s\nTrain time: %ds" % [p.name, HT.cost_text_long(p.cost), int(p.train_time)]
+		var hk := String(rec.get("hk", ""))
+		if hk != "" and tip != "":
+			var nl := tip.find("
+")
+			tip = (tip + "   [Hotkey %s]" % hk) if nl < 0 else tip.substr(0, nl) + "   [Hotkey %s]" % hk + tip.substr(nl)
 		rec["reason"] = reason
 		btn.disabled = reason != ""
 		if reason != "":
@@ -768,7 +977,10 @@ For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)
 		var st := String(ents[0].get("status", ""))
 		if st != "":
 			hint = "Production blocked: " + _status_text(st)
-	_hint.text = hint
+	if _hint.text != hint:
+		_hint.text = hint
+		_hint.visible = hint != ""   # an empty label still takes a line
+		_fit_card()
 	if mode == "building":
 		var q: Array = ents[0].queue
 		for i in _queue_bars.size():
@@ -798,6 +1010,7 @@ func _rebuild_queue(b: Dictionary) -> void:
 		c.queue_free()
 	_queue_bars.clear()
 	if b.is_empty():
+		_queue_box.visible = false
 		return
 	var q: Array = b.queue
 	var bid: int = int(b.id)
@@ -805,21 +1018,25 @@ func _rebuild_queue(b: Dictionary) -> void:
 		var vb := VBoxContainer.new()
 		vb.add_theme_constant_override("separation", 1)
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(108, 26)
+		btn.custom_minimum_size = Vector2(84, 24)
 		var p: Dictionary = Content.production(String(q[i].item))
-		btn.text = "%s %s" % [">" if i == 0 else "#%d" % (i + 1), String(p.get("name", q[i].item)).get_slice(" (", 0)]
-		btn.clip_text = true
-		btn.tooltip_text = "Click to cancel (full refund)"
+		var qn := String(p.get("name", q[i].item)).get_slice(" (", 0)
+		btn.text = "%s %s" % [">" if i == 0 else "#%d" % (i + 1), qn if qn.length() <= 11 else qn.substr(0, 10) + "."]
+		btn.add_theme_font_size_override("font_size", 12)
+		btn.tooltip_text = "%s
+Click to cancel (full refund)" % qn
 		btn.pressed.connect(_issue.bind({"type": "cancel_unit", "building_id": bid, "index": i}))
 		vb.add_child(btn)
 		var pb := ProgressBar.new()
-		pb.custom_minimum_size = Vector2(108, 8)
+		pb.custom_minimum_size = Vector2(84, 6)
 		pb.max_value = 1.0
 		pb.show_percentage = false
 		pb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vb.add_child(pb)
 		_queue_box.add_child(vb)
 		_queue_bars.append(pb)
+	_queue_box.visible = _queue_box.get_child_count() > 0
+	_fit_card()
 
 
 func _on_build_pressed(def_id: String) -> void:
@@ -848,6 +1065,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var k: InputEventKey = event
 	if k.ctrl_pressed or k.alt_pressed or k.meta_pressed:
+		return
+	if extras.on_key(k):
+		get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_P:
 		_set_paused(not bool(mv.get("paused")))
@@ -899,8 +1119,10 @@ func _update_alerts() -> void:
 			var c: Color = a.color
 			l.add_theme_color_override("font_color", Color(c.r, c.g, c.b, alpha))
 			l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9 * alpha))
+			l.visible = true
 		else:
 			l.text = ""
+			l.visible = false
 
 
 func _owner_of(w: SimWorld, ev: Dictionary) -> int:
