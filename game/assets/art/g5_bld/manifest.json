@@ -1,0 +1,3934 @@
+{
+  "airfield": {
+    "closed": {
+      "0": {
+        "file": "strips/closed_f0.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      "1": {
+        "file": "strips/closed_f1.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      "2": {
+        "file": "strips/closed_f2.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      "3": {
+        "file": "strips/closed_f3.png",
+        "pivot": [
+          70,
+          40
+        ]
+      }
+    },
+    "craters": [
+      {
+        "file": "strips/crater_0.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      {
+        "file": "strips/crater_1.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      {
+        "file": "strips/crater_2.png",
+        "pivot": [
+          70,
+          40
+        ]
+      }
+    ],
+    "craters_repair": [
+      {
+        "file": "strips/crater_0_repair.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      {
+        "file": "strips/crater_1_repair.png",
+        "pivot": [
+          70,
+          40
+        ]
+      },
+      {
+        "file": "strips/crater_2_repair.png",
+        "pivot": [
+          70,
+          40
+        ]
+      }
+    ],
+    "layout": "strip k of field b (k = 0 .. strips-1): start = b.pos + perp*(size/2 + 1.5 + 4k) - axis*size/2, axis = AXES[facing_i], perp = (-axis.y, axis.x) (airfield.gd strip_points); segment i in 0 .. strip_len-1 is centred at start + axis*(i + 0.5): i = 0 'start', i = strip_len-1 'end', else 'mid'; 'link' tiles fill the 1-tile gap between strip k-1 and k at perp offset size/2 + 4k - 0.5, i = 0 .. size-1; a closed strip (crater) shows a crater overlay at its crater segment and 'closed' at i = 1 and i = strip_len-2",
+    "segment_len": 1,
+    "segments": {
+      "a": {
+        "0": {
+          "end": {
+            "file": "strips/a_f0_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/a_f0_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/a_f0_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/a_f0_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "1": {
+          "end": {
+            "file": "strips/a_f1_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/a_f1_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/a_f1_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/a_f1_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "2": {
+          "end": {
+            "file": "strips/a_f2_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/a_f2_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/a_f2_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/a_f2_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "3": {
+          "end": {
+            "file": "strips/a_f3_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/a_f3_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/a_f3_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/a_f3_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        }
+      },
+      "b": {
+        "0": {
+          "end": {
+            "file": "strips/b_f0_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/b_f0_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/b_f0_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/b_f0_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "1": {
+          "end": {
+            "file": "strips/b_f1_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/b_f1_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/b_f1_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/b_f1_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "2": {
+          "end": {
+            "file": "strips/b_f2_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/b_f2_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/b_f2_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/b_f2_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "3": {
+          "end": {
+            "file": "strips/b_f3_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/b_f3_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/b_f3_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/b_f3_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        }
+      },
+      "fwd": {
+        "0": {
+          "end": {
+            "file": "strips/fwd_f0_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/fwd_f0_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/fwd_f0_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/fwd_f0_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "1": {
+          "end": {
+            "file": "strips/fwd_f1_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/fwd_f1_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/fwd_f1_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/fwd_f1_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "2": {
+          "end": {
+            "file": "strips/fwd_f2_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/fwd_f2_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/fwd_f2_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/fwd_f2_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "3": {
+          "end": {
+            "file": "strips/fwd_f3_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/fwd_f3_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/fwd_f3_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/fwd_f3_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        }
+      },
+      "m": {
+        "0": {
+          "end": {
+            "file": "strips/m_f0_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/m_f0_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/m_f0_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/m_f0_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "1": {
+          "end": {
+            "file": "strips/m_f1_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/m_f1_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/m_f1_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/m_f1_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "2": {
+          "end": {
+            "file": "strips/m_f2_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/m_f2_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/m_f2_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/m_f2_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        },
+        "3": {
+          "end": {
+            "file": "strips/m_f3_end.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "link": {
+            "file": "strips/m_f3_link.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "mid": {
+            "file": "strips/m_f3_mid.png",
+            "pivot": [
+              70,
+              40
+            ]
+          },
+          "start": {
+            "file": "strips/m_f3_start.png",
+            "pivot": [
+              70,
+              40
+            ]
+          }
+        }
+      }
+    },
+    "strip_spacing": 4,
+    "strip_width": 3,
+    "styles": {
+      "a_airfield": "a",
+      "a_airstrip": "a",
+      "a_forward_strip": "fwd",
+      "b_aerodrome": "b",
+      "b_airstrip": "b",
+      "b_forward_strip": "fwd",
+      "m_launch_rail": "m"
+    }
+  },
+  "buildings": {
+    "a_air_tower": {
+      "g5": {
+        "kind": "tower",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        124
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_air_tower_build_0.png",
+          "mask": "buildings/a_air_tower_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_air_tower_build_1.png",
+          "mask": "buildings/a_air_tower_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_air_tower_build_2.png",
+          "mask": "buildings/a_air_tower_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_air_tower_built.png",
+          "mask": "buildings/a_air_tower_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_air_tower_damaged.png",
+          "mask": "buildings/a_air_tower_damaged_mask.png"
+        }
+      }
+    },
+    "a_airfield": {
+      "g5": {
+        "kind": "airfield",
+        "variants": "rot"
+      },
+      "pivot": [
+        198,
+        146
+      ],
+      "size": 6,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_airfield_rot_0_build_0.png",
+          "mask": "buildings/a_airfield_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_airfield_rot_0_build_1.png",
+          "mask": "buildings/a_airfield_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_airfield_rot_0_build_2.png",
+          "mask": "buildings/a_airfield_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_airfield_rot_0.png",
+          "mask": "buildings/a_airfield_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_airfield_rot_0_damaged.png",
+          "mask": "buildings/a_airfield_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/a_airfield_rot_0.png",
+          "mask": "buildings/a_airfield_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/a_airfield_rot_0_build_0.png",
+          "mask": "buildings/a_airfield_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/a_airfield_rot_0_build_1.png",
+          "mask": "buildings/a_airfield_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/a_airfield_rot_0_build_2.png",
+          "mask": "buildings/a_airfield_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/a_airfield_rot_0_damaged.png",
+          "mask": "buildings/a_airfield_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/a_airfield_rot_1.png",
+          "mask": "buildings/a_airfield_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/a_airfield_rot_1_build_0.png",
+          "mask": "buildings/a_airfield_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/a_airfield_rot_1_build_1.png",
+          "mask": "buildings/a_airfield_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/a_airfield_rot_1_build_2.png",
+          "mask": "buildings/a_airfield_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/a_airfield_rot_1_damaged.png",
+          "mask": "buildings/a_airfield_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/a_airfield_rot_2.png",
+          "mask": "buildings/a_airfield_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/a_airfield_rot_2_build_0.png",
+          "mask": "buildings/a_airfield_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/a_airfield_rot_2_build_1.png",
+          "mask": "buildings/a_airfield_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/a_airfield_rot_2_build_2.png",
+          "mask": "buildings/a_airfield_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/a_airfield_rot_2_damaged.png",
+          "mask": "buildings/a_airfield_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/a_airfield_rot_3.png",
+          "mask": "buildings/a_airfield_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/a_airfield_rot_3_build_0.png",
+          "mask": "buildings/a_airfield_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/a_airfield_rot_3_build_1.png",
+          "mask": "buildings/a_airfield_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/a_airfield_rot_3_build_2.png",
+          "mask": "buildings/a_airfield_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/a_airfield_rot_3_damaged.png",
+          "mask": "buildings/a_airfield_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_airstrip": {
+      "g5": {
+        "kind": "airstrip",
+        "variants": "rot"
+      },
+      "pivot": [
+        134,
+        100
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_airstrip_rot_0_build_0.png",
+          "mask": "buildings/a_airstrip_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_airstrip_rot_0_build_1.png",
+          "mask": "buildings/a_airstrip_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_airstrip_rot_0_build_2.png",
+          "mask": "buildings/a_airstrip_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_airstrip_rot_0.png",
+          "mask": "buildings/a_airstrip_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_airstrip_rot_0_damaged.png",
+          "mask": "buildings/a_airstrip_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/a_airstrip_rot_0.png",
+          "mask": "buildings/a_airstrip_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/a_airstrip_rot_0_build_0.png",
+          "mask": "buildings/a_airstrip_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/a_airstrip_rot_0_build_1.png",
+          "mask": "buildings/a_airstrip_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/a_airstrip_rot_0_build_2.png",
+          "mask": "buildings/a_airstrip_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/a_airstrip_rot_0_damaged.png",
+          "mask": "buildings/a_airstrip_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/a_airstrip_rot_1.png",
+          "mask": "buildings/a_airstrip_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/a_airstrip_rot_1_build_0.png",
+          "mask": "buildings/a_airstrip_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/a_airstrip_rot_1_build_1.png",
+          "mask": "buildings/a_airstrip_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/a_airstrip_rot_1_build_2.png",
+          "mask": "buildings/a_airstrip_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/a_airstrip_rot_1_damaged.png",
+          "mask": "buildings/a_airstrip_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/a_airstrip_rot_2.png",
+          "mask": "buildings/a_airstrip_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/a_airstrip_rot_2_build_0.png",
+          "mask": "buildings/a_airstrip_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/a_airstrip_rot_2_build_1.png",
+          "mask": "buildings/a_airstrip_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/a_airstrip_rot_2_build_2.png",
+          "mask": "buildings/a_airstrip_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/a_airstrip_rot_2_damaged.png",
+          "mask": "buildings/a_airstrip_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/a_airstrip_rot_3.png",
+          "mask": "buildings/a_airstrip_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/a_airstrip_rot_3_build_0.png",
+          "mask": "buildings/a_airstrip_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/a_airstrip_rot_3_build_1.png",
+          "mask": "buildings/a_airstrip_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/a_airstrip_rot_3_build_2.png",
+          "mask": "buildings/a_airstrip_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/a_airstrip_rot_3_damaged.png",
+          "mask": "buildings/a_airstrip_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_coastal_battery": {
+      "g5": {
+        "kind": "battery",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        68
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_coastal_battery_build_0.png",
+          "mask": "buildings/a_coastal_battery_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_coastal_battery_build_1.png",
+          "mask": "buildings/a_coastal_battery_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_coastal_battery_build_2.png",
+          "mask": "buildings/a_coastal_battery_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_coastal_battery_built.png",
+          "mask": "buildings/a_coastal_battery_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_coastal_battery_damaged.png",
+          "mask": "buildings/a_coastal_battery_damaged_mask.png"
+        }
+      }
+    },
+    "a_field_hospital": {
+      "g5": {
+        "kind": "field_hospital",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        66
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_field_hospital_build_0.png",
+          "mask": "buildings/a_field_hospital_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_field_hospital_build_1.png",
+          "mask": "buildings/a_field_hospital_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_field_hospital_build_2.png",
+          "mask": "buildings/a_field_hospital_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_field_hospital_built.png",
+          "mask": "buildings/a_field_hospital_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_field_hospital_damaged.png",
+          "mask": "buildings/a_field_hospital_damaged_mask.png"
+        }
+      }
+    },
+    "a_forward_helipad": {
+      "g5": {
+        "kind": "fwd_helipad",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        58
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_forward_helipad_build_0.png",
+          "mask": "buildings/a_forward_helipad_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_forward_helipad_build_1.png",
+          "mask": "buildings/a_forward_helipad_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_forward_helipad_build_2.png",
+          "mask": "buildings/a_forward_helipad_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_forward_helipad_built.png",
+          "mask": "buildings/a_forward_helipad_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_forward_helipad_damaged.png",
+          "mask": "buildings/a_forward_helipad_damaged_mask.png"
+        }
+      }
+    },
+    "a_forward_strip": {
+      "g5": {
+        "kind": "fwd_strip",
+        "variants": "rot"
+      },
+      "pivot": [
+        102,
+        78
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_forward_strip_rot_0_build_0.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_forward_strip_rot_0_build_1.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_forward_strip_rot_0_build_2.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_forward_strip_rot_0.png",
+          "mask": "buildings/a_forward_strip_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_forward_strip_rot_0_damaged.png",
+          "mask": "buildings/a_forward_strip_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/a_forward_strip_rot_0.png",
+          "mask": "buildings/a_forward_strip_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/a_forward_strip_rot_0_build_0.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/a_forward_strip_rot_0_build_1.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/a_forward_strip_rot_0_build_2.png",
+          "mask": "buildings/a_forward_strip_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/a_forward_strip_rot_0_damaged.png",
+          "mask": "buildings/a_forward_strip_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/a_forward_strip_rot_1.png",
+          "mask": "buildings/a_forward_strip_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/a_forward_strip_rot_1_build_0.png",
+          "mask": "buildings/a_forward_strip_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/a_forward_strip_rot_1_build_1.png",
+          "mask": "buildings/a_forward_strip_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/a_forward_strip_rot_1_build_2.png",
+          "mask": "buildings/a_forward_strip_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/a_forward_strip_rot_1_damaged.png",
+          "mask": "buildings/a_forward_strip_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/a_forward_strip_rot_2.png",
+          "mask": "buildings/a_forward_strip_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/a_forward_strip_rot_2_build_0.png",
+          "mask": "buildings/a_forward_strip_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/a_forward_strip_rot_2_build_1.png",
+          "mask": "buildings/a_forward_strip_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/a_forward_strip_rot_2_build_2.png",
+          "mask": "buildings/a_forward_strip_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/a_forward_strip_rot_2_damaged.png",
+          "mask": "buildings/a_forward_strip_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/a_forward_strip_rot_3.png",
+          "mask": "buildings/a_forward_strip_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/a_forward_strip_rot_3_build_0.png",
+          "mask": "buildings/a_forward_strip_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/a_forward_strip_rot_3_build_1.png",
+          "mask": "buildings/a_forward_strip_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/a_forward_strip_rot_3_build_2.png",
+          "mask": "buildings/a_forward_strip_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/a_forward_strip_rot_3_damaged.png",
+          "mask": "buildings/a_forward_strip_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_hangar_heavy": {
+      "g5": {
+        "kind": "hangar_heavy",
+        "variants": "lvl"
+      },
+      "pivot": [
+        70,
+        78
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_hangar_heavy_build_0.png",
+          "mask": "buildings/a_hangar_heavy_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_hangar_heavy_build_1.png",
+          "mask": "buildings/a_hangar_heavy_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_hangar_heavy_build_2.png",
+          "mask": "buildings/a_hangar_heavy_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_hangar_heavy_lvl_0.png",
+          "mask": "buildings/a_hangar_heavy_lvl_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_hangar_heavy_lvl_0_damaged.png",
+          "mask": "buildings/a_hangar_heavy_lvl_0_damaged_mask.png"
+        },
+        "lvl_0": {
+          "file": "buildings/a_hangar_heavy_lvl_0.png",
+          "mask": "buildings/a_hangar_heavy_lvl_0_mask.png"
+        },
+        "lvl_0_damaged": {
+          "file": "buildings/a_hangar_heavy_lvl_0_damaged.png",
+          "mask": "buildings/a_hangar_heavy_lvl_0_damaged_mask.png"
+        },
+        "lvl_1": {
+          "file": "buildings/a_hangar_heavy_lvl_1.png",
+          "mask": "buildings/a_hangar_heavy_lvl_1_mask.png"
+        },
+        "lvl_1_damaged": {
+          "file": "buildings/a_hangar_heavy_lvl_1_damaged.png",
+          "mask": "buildings/a_hangar_heavy_lvl_1_damaged_mask.png"
+        },
+        "lvl_2": {
+          "file": "buildings/a_hangar_heavy_lvl_2.png",
+          "mask": "buildings/a_hangar_heavy_lvl_2_mask.png"
+        },
+        "lvl_2_damaged": {
+          "file": "buildings/a_hangar_heavy_lvl_2_damaged.png",
+          "mask": "buildings/a_hangar_heavy_lvl_2_damaged_mask.png"
+        },
+        "lvl_3": {
+          "file": "buildings/a_hangar_heavy_lvl_3.png",
+          "mask": "buildings/a_hangar_heavy_lvl_3_mask.png"
+        },
+        "lvl_3_damaged": {
+          "file": "buildings/a_hangar_heavy_lvl_3_damaged.png",
+          "mask": "buildings/a_hangar_heavy_lvl_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_hangar_light": {
+      "g5": {
+        "kind": "hangar_light",
+        "variants": "lvl"
+      },
+      "pivot": [
+        70,
+        72
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_hangar_light_build_0.png",
+          "mask": "buildings/a_hangar_light_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_hangar_light_build_1.png",
+          "mask": "buildings/a_hangar_light_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_hangar_light_build_2.png",
+          "mask": "buildings/a_hangar_light_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_hangar_light_lvl_0.png",
+          "mask": "buildings/a_hangar_light_lvl_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_hangar_light_lvl_0_damaged.png",
+          "mask": "buildings/a_hangar_light_lvl_0_damaged_mask.png"
+        },
+        "lvl_0": {
+          "file": "buildings/a_hangar_light_lvl_0.png",
+          "mask": "buildings/a_hangar_light_lvl_0_mask.png"
+        },
+        "lvl_0_damaged": {
+          "file": "buildings/a_hangar_light_lvl_0_damaged.png",
+          "mask": "buildings/a_hangar_light_lvl_0_damaged_mask.png"
+        },
+        "lvl_1": {
+          "file": "buildings/a_hangar_light_lvl_1.png",
+          "mask": "buildings/a_hangar_light_lvl_1_mask.png"
+        },
+        "lvl_1_damaged": {
+          "file": "buildings/a_hangar_light_lvl_1_damaged.png",
+          "mask": "buildings/a_hangar_light_lvl_1_damaged_mask.png"
+        },
+        "lvl_2": {
+          "file": "buildings/a_hangar_light_lvl_2.png",
+          "mask": "buildings/a_hangar_light_lvl_2_mask.png"
+        },
+        "lvl_2_damaged": {
+          "file": "buildings/a_hangar_light_lvl_2_damaged.png",
+          "mask": "buildings/a_hangar_light_lvl_2_damaged_mask.png"
+        },
+        "lvl_3": {
+          "file": "buildings/a_hangar_light_lvl_3.png",
+          "mask": "buildings/a_hangar_light_lvl_3_mask.png"
+        },
+        "lvl_3_damaged": {
+          "file": "buildings/a_hangar_light_lvl_3_damaged.png",
+          "mask": "buildings/a_hangar_light_lvl_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_helipad": {
+      "g5": {
+        "kind": "helipad",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        58
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_helipad_build_0.png",
+          "mask": "buildings/a_helipad_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_helipad_build_1.png",
+          "mask": "buildings/a_helipad_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_helipad_build_2.png",
+          "mask": "buildings/a_helipad_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_helipad_built.png",
+          "mask": "buildings/a_helipad_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_helipad_damaged.png",
+          "mask": "buildings/a_helipad_damaged_mask.png"
+        }
+      }
+    },
+    "a_hospital": {
+      "g5": {
+        "kind": "hospital",
+        "variants": ""
+      },
+      "pivot": [
+        102,
+        94
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_hospital_build_0.png",
+          "mask": "buildings/a_hospital_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_hospital_build_1.png",
+          "mask": "buildings/a_hospital_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_hospital_build_2.png",
+          "mask": "buildings/a_hospital_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_hospital_built.png",
+          "mask": "buildings/a_hospital_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_hospital_damaged.png",
+          "mask": "buildings/a_hospital_damaged_mask.png"
+        }
+      }
+    },
+    "a_shipyard": {
+      "g5": {
+        "kind": "shipyard",
+        "variants": "water"
+      },
+      "pivot": [
+        102,
+        104
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_shipyard_water_0_build_0.png",
+          "mask": "buildings/a_shipyard_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_shipyard_water_0_build_1.png",
+          "mask": "buildings/a_shipyard_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_shipyard_water_0_build_2.png",
+          "mask": "buildings/a_shipyard_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_shipyard_water_0.png",
+          "mask": "buildings/a_shipyard_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_shipyard_water_0_damaged.png",
+          "mask": "buildings/a_shipyard_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/a_shipyard_water_0.png",
+          "mask": "buildings/a_shipyard_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/a_shipyard_water_0_build_0.png",
+          "mask": "buildings/a_shipyard_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/a_shipyard_water_0_build_1.png",
+          "mask": "buildings/a_shipyard_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/a_shipyard_water_0_build_2.png",
+          "mask": "buildings/a_shipyard_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/a_shipyard_water_0_damaged.png",
+          "mask": "buildings/a_shipyard_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/a_shipyard_water_1.png",
+          "mask": "buildings/a_shipyard_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/a_shipyard_water_1_build_0.png",
+          "mask": "buildings/a_shipyard_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/a_shipyard_water_1_build_1.png",
+          "mask": "buildings/a_shipyard_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/a_shipyard_water_1_build_2.png",
+          "mask": "buildings/a_shipyard_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/a_shipyard_water_1_damaged.png",
+          "mask": "buildings/a_shipyard_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/a_shipyard_water_2.png",
+          "mask": "buildings/a_shipyard_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/a_shipyard_water_2_build_0.png",
+          "mask": "buildings/a_shipyard_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/a_shipyard_water_2_build_1.png",
+          "mask": "buildings/a_shipyard_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/a_shipyard_water_2_build_2.png",
+          "mask": "buildings/a_shipyard_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/a_shipyard_water_2_damaged.png",
+          "mask": "buildings/a_shipyard_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/a_shipyard_water_3.png",
+          "mask": "buildings/a_shipyard_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/a_shipyard_water_3_build_0.png",
+          "mask": "buildings/a_shipyard_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/a_shipyard_water_3_build_1.png",
+          "mask": "buildings/a_shipyard_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/a_shipyard_water_3_build_2.png",
+          "mask": "buildings/a_shipyard_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/a_shipyard_water_3_damaged.png",
+          "mask": "buildings/a_shipyard_water_3_damaged_mask.png"
+        }
+      }
+    },
+    "a_supply_pier": {
+      "g5": {
+        "kind": "pier",
+        "variants": "water"
+      },
+      "pivot": [
+        70,
+        78
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_supply_pier_water_0_build_0.png",
+          "mask": "buildings/a_supply_pier_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_supply_pier_water_0_build_1.png",
+          "mask": "buildings/a_supply_pier_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_supply_pier_water_0_build_2.png",
+          "mask": "buildings/a_supply_pier_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_supply_pier_water_0.png",
+          "mask": "buildings/a_supply_pier_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_supply_pier_water_0_damaged.png",
+          "mask": "buildings/a_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/a_supply_pier_water_0.png",
+          "mask": "buildings/a_supply_pier_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/a_supply_pier_water_0_build_0.png",
+          "mask": "buildings/a_supply_pier_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/a_supply_pier_water_0_build_1.png",
+          "mask": "buildings/a_supply_pier_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/a_supply_pier_water_0_build_2.png",
+          "mask": "buildings/a_supply_pier_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/a_supply_pier_water_0_damaged.png",
+          "mask": "buildings/a_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/a_supply_pier_water_1.png",
+          "mask": "buildings/a_supply_pier_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/a_supply_pier_water_1_build_0.png",
+          "mask": "buildings/a_supply_pier_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/a_supply_pier_water_1_build_1.png",
+          "mask": "buildings/a_supply_pier_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/a_supply_pier_water_1_build_2.png",
+          "mask": "buildings/a_supply_pier_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/a_supply_pier_water_1_damaged.png",
+          "mask": "buildings/a_supply_pier_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/a_supply_pier_water_2.png",
+          "mask": "buildings/a_supply_pier_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/a_supply_pier_water_2_build_0.png",
+          "mask": "buildings/a_supply_pier_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/a_supply_pier_water_2_build_1.png",
+          "mask": "buildings/a_supply_pier_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/a_supply_pier_water_2_build_2.png",
+          "mask": "buildings/a_supply_pier_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/a_supply_pier_water_2_damaged.png",
+          "mask": "buildings/a_supply_pier_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/a_supply_pier_water_3.png",
+          "mask": "buildings/a_supply_pier_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/a_supply_pier_water_3_build_0.png",
+          "mask": "buildings/a_supply_pier_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/a_supply_pier_water_3_build_1.png",
+          "mask": "buildings/a_supply_pier_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/a_supply_pier_water_3_build_2.png",
+          "mask": "buildings/a_supply_pier_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/a_supply_pier_water_3_damaged.png",
+          "mask": "buildings/a_supply_pier_water_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_aerodrome": {
+      "g5": {
+        "kind": "airfield",
+        "variants": "rot"
+      },
+      "pivot": [
+        198,
+        152
+      ],
+      "size": 6,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_aerodrome_rot_0_build_0.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_aerodrome_rot_0_build_1.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_aerodrome_rot_0_build_2.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_aerodrome_rot_0.png",
+          "mask": "buildings/b_aerodrome_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_aerodrome_rot_0_damaged.png",
+          "mask": "buildings/b_aerodrome_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/b_aerodrome_rot_0.png",
+          "mask": "buildings/b_aerodrome_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/b_aerodrome_rot_0_build_0.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/b_aerodrome_rot_0_build_1.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/b_aerodrome_rot_0_build_2.png",
+          "mask": "buildings/b_aerodrome_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/b_aerodrome_rot_0_damaged.png",
+          "mask": "buildings/b_aerodrome_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/b_aerodrome_rot_1.png",
+          "mask": "buildings/b_aerodrome_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/b_aerodrome_rot_1_build_0.png",
+          "mask": "buildings/b_aerodrome_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/b_aerodrome_rot_1_build_1.png",
+          "mask": "buildings/b_aerodrome_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/b_aerodrome_rot_1_build_2.png",
+          "mask": "buildings/b_aerodrome_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/b_aerodrome_rot_1_damaged.png",
+          "mask": "buildings/b_aerodrome_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/b_aerodrome_rot_2.png",
+          "mask": "buildings/b_aerodrome_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/b_aerodrome_rot_2_build_0.png",
+          "mask": "buildings/b_aerodrome_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/b_aerodrome_rot_2_build_1.png",
+          "mask": "buildings/b_aerodrome_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/b_aerodrome_rot_2_build_2.png",
+          "mask": "buildings/b_aerodrome_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/b_aerodrome_rot_2_damaged.png",
+          "mask": "buildings/b_aerodrome_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/b_aerodrome_rot_3.png",
+          "mask": "buildings/b_aerodrome_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/b_aerodrome_rot_3_build_0.png",
+          "mask": "buildings/b_aerodrome_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/b_aerodrome_rot_3_build_1.png",
+          "mask": "buildings/b_aerodrome_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/b_aerodrome_rot_3_build_2.png",
+          "mask": "buildings/b_aerodrome_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/b_aerodrome_rot_3_damaged.png",
+          "mask": "buildings/b_aerodrome_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_air_tower": {
+      "g5": {
+        "kind": "tower",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        128
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_air_tower_build_0.png",
+          "mask": "buildings/b_air_tower_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_air_tower_build_1.png",
+          "mask": "buildings/b_air_tower_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_air_tower_build_2.png",
+          "mask": "buildings/b_air_tower_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_air_tower_built.png",
+          "mask": "buildings/b_air_tower_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_air_tower_damaged.png",
+          "mask": "buildings/b_air_tower_damaged_mask.png"
+        }
+      }
+    },
+    "b_airstrip": {
+      "g5": {
+        "kind": "airstrip",
+        "variants": "rot"
+      },
+      "pivot": [
+        134,
+        100
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_airstrip_rot_0_build_0.png",
+          "mask": "buildings/b_airstrip_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_airstrip_rot_0_build_1.png",
+          "mask": "buildings/b_airstrip_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_airstrip_rot_0_build_2.png",
+          "mask": "buildings/b_airstrip_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_airstrip_rot_0.png",
+          "mask": "buildings/b_airstrip_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_airstrip_rot_0_damaged.png",
+          "mask": "buildings/b_airstrip_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/b_airstrip_rot_0.png",
+          "mask": "buildings/b_airstrip_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/b_airstrip_rot_0_build_0.png",
+          "mask": "buildings/b_airstrip_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/b_airstrip_rot_0_build_1.png",
+          "mask": "buildings/b_airstrip_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/b_airstrip_rot_0_build_2.png",
+          "mask": "buildings/b_airstrip_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/b_airstrip_rot_0_damaged.png",
+          "mask": "buildings/b_airstrip_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/b_airstrip_rot_1.png",
+          "mask": "buildings/b_airstrip_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/b_airstrip_rot_1_build_0.png",
+          "mask": "buildings/b_airstrip_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/b_airstrip_rot_1_build_1.png",
+          "mask": "buildings/b_airstrip_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/b_airstrip_rot_1_build_2.png",
+          "mask": "buildings/b_airstrip_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/b_airstrip_rot_1_damaged.png",
+          "mask": "buildings/b_airstrip_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/b_airstrip_rot_2.png",
+          "mask": "buildings/b_airstrip_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/b_airstrip_rot_2_build_0.png",
+          "mask": "buildings/b_airstrip_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/b_airstrip_rot_2_build_1.png",
+          "mask": "buildings/b_airstrip_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/b_airstrip_rot_2_build_2.png",
+          "mask": "buildings/b_airstrip_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/b_airstrip_rot_2_damaged.png",
+          "mask": "buildings/b_airstrip_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/b_airstrip_rot_3.png",
+          "mask": "buildings/b_airstrip_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/b_airstrip_rot_3_build_0.png",
+          "mask": "buildings/b_airstrip_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/b_airstrip_rot_3_build_1.png",
+          "mask": "buildings/b_airstrip_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/b_airstrip_rot_3_build_2.png",
+          "mask": "buildings/b_airstrip_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/b_airstrip_rot_3_damaged.png",
+          "mask": "buildings/b_airstrip_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_coastal_battery": {
+      "g5": {
+        "kind": "battery",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        76
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_coastal_battery_build_0.png",
+          "mask": "buildings/b_coastal_battery_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_coastal_battery_build_1.png",
+          "mask": "buildings/b_coastal_battery_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_coastal_battery_build_2.png",
+          "mask": "buildings/b_coastal_battery_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_coastal_battery_built.png",
+          "mask": "buildings/b_coastal_battery_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_coastal_battery_damaged.png",
+          "mask": "buildings/b_coastal_battery_damaged_mask.png"
+        }
+      }
+    },
+    "b_field_hospital": {
+      "g5": {
+        "kind": "field_hospital",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        66
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_field_hospital_build_0.png",
+          "mask": "buildings/b_field_hospital_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_field_hospital_build_1.png",
+          "mask": "buildings/b_field_hospital_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_field_hospital_build_2.png",
+          "mask": "buildings/b_field_hospital_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_field_hospital_built.png",
+          "mask": "buildings/b_field_hospital_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_field_hospital_damaged.png",
+          "mask": "buildings/b_field_hospital_damaged_mask.png"
+        }
+      }
+    },
+    "b_forward_helipad": {
+      "g5": {
+        "kind": "fwd_helipad",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        58
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_forward_helipad_build_0.png",
+          "mask": "buildings/b_forward_helipad_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_forward_helipad_build_1.png",
+          "mask": "buildings/b_forward_helipad_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_forward_helipad_build_2.png",
+          "mask": "buildings/b_forward_helipad_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_forward_helipad_built.png",
+          "mask": "buildings/b_forward_helipad_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_forward_helipad_damaged.png",
+          "mask": "buildings/b_forward_helipad_damaged_mask.png"
+        }
+      }
+    },
+    "b_forward_strip": {
+      "g5": {
+        "kind": "fwd_strip",
+        "variants": "rot"
+      },
+      "pivot": [
+        102,
+        78
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_forward_strip_rot_0_build_0.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_forward_strip_rot_0_build_1.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_forward_strip_rot_0_build_2.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_forward_strip_rot_0.png",
+          "mask": "buildings/b_forward_strip_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_forward_strip_rot_0_damaged.png",
+          "mask": "buildings/b_forward_strip_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/b_forward_strip_rot_0.png",
+          "mask": "buildings/b_forward_strip_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/b_forward_strip_rot_0_build_0.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/b_forward_strip_rot_0_build_1.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/b_forward_strip_rot_0_build_2.png",
+          "mask": "buildings/b_forward_strip_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/b_forward_strip_rot_0_damaged.png",
+          "mask": "buildings/b_forward_strip_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/b_forward_strip_rot_1.png",
+          "mask": "buildings/b_forward_strip_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/b_forward_strip_rot_1_build_0.png",
+          "mask": "buildings/b_forward_strip_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/b_forward_strip_rot_1_build_1.png",
+          "mask": "buildings/b_forward_strip_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/b_forward_strip_rot_1_build_2.png",
+          "mask": "buildings/b_forward_strip_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/b_forward_strip_rot_1_damaged.png",
+          "mask": "buildings/b_forward_strip_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/b_forward_strip_rot_2.png",
+          "mask": "buildings/b_forward_strip_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/b_forward_strip_rot_2_build_0.png",
+          "mask": "buildings/b_forward_strip_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/b_forward_strip_rot_2_build_1.png",
+          "mask": "buildings/b_forward_strip_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/b_forward_strip_rot_2_build_2.png",
+          "mask": "buildings/b_forward_strip_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/b_forward_strip_rot_2_damaged.png",
+          "mask": "buildings/b_forward_strip_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/b_forward_strip_rot_3.png",
+          "mask": "buildings/b_forward_strip_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/b_forward_strip_rot_3_build_0.png",
+          "mask": "buildings/b_forward_strip_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/b_forward_strip_rot_3_build_1.png",
+          "mask": "buildings/b_forward_strip_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/b_forward_strip_rot_3_build_2.png",
+          "mask": "buildings/b_forward_strip_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/b_forward_strip_rot_3_damaged.png",
+          "mask": "buildings/b_forward_strip_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_hangar_heavy": {
+      "g5": {
+        "kind": "hangar_heavy",
+        "variants": "lvl"
+      },
+      "pivot": [
+        70,
+        84
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_hangar_heavy_build_0.png",
+          "mask": "buildings/b_hangar_heavy_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_hangar_heavy_build_1.png",
+          "mask": "buildings/b_hangar_heavy_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_hangar_heavy_build_2.png",
+          "mask": "buildings/b_hangar_heavy_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_hangar_heavy_lvl_0.png",
+          "mask": "buildings/b_hangar_heavy_lvl_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_hangar_heavy_lvl_0_damaged.png",
+          "mask": "buildings/b_hangar_heavy_lvl_0_damaged_mask.png"
+        },
+        "lvl_0": {
+          "file": "buildings/b_hangar_heavy_lvl_0.png",
+          "mask": "buildings/b_hangar_heavy_lvl_0_mask.png"
+        },
+        "lvl_0_damaged": {
+          "file": "buildings/b_hangar_heavy_lvl_0_damaged.png",
+          "mask": "buildings/b_hangar_heavy_lvl_0_damaged_mask.png"
+        },
+        "lvl_1": {
+          "file": "buildings/b_hangar_heavy_lvl_1.png",
+          "mask": "buildings/b_hangar_heavy_lvl_1_mask.png"
+        },
+        "lvl_1_damaged": {
+          "file": "buildings/b_hangar_heavy_lvl_1_damaged.png",
+          "mask": "buildings/b_hangar_heavy_lvl_1_damaged_mask.png"
+        },
+        "lvl_2": {
+          "file": "buildings/b_hangar_heavy_lvl_2.png",
+          "mask": "buildings/b_hangar_heavy_lvl_2_mask.png"
+        },
+        "lvl_2_damaged": {
+          "file": "buildings/b_hangar_heavy_lvl_2_damaged.png",
+          "mask": "buildings/b_hangar_heavy_lvl_2_damaged_mask.png"
+        },
+        "lvl_3": {
+          "file": "buildings/b_hangar_heavy_lvl_3.png",
+          "mask": "buildings/b_hangar_heavy_lvl_3_mask.png"
+        },
+        "lvl_3_damaged": {
+          "file": "buildings/b_hangar_heavy_lvl_3_damaged.png",
+          "mask": "buildings/b_hangar_heavy_lvl_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_hangar_light": {
+      "g5": {
+        "kind": "hangar_light",
+        "variants": "lvl"
+      },
+      "pivot": [
+        70,
+        72
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_hangar_light_build_0.png",
+          "mask": "buildings/b_hangar_light_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_hangar_light_build_1.png",
+          "mask": "buildings/b_hangar_light_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_hangar_light_build_2.png",
+          "mask": "buildings/b_hangar_light_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_hangar_light_lvl_0.png",
+          "mask": "buildings/b_hangar_light_lvl_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_hangar_light_lvl_0_damaged.png",
+          "mask": "buildings/b_hangar_light_lvl_0_damaged_mask.png"
+        },
+        "lvl_0": {
+          "file": "buildings/b_hangar_light_lvl_0.png",
+          "mask": "buildings/b_hangar_light_lvl_0_mask.png"
+        },
+        "lvl_0_damaged": {
+          "file": "buildings/b_hangar_light_lvl_0_damaged.png",
+          "mask": "buildings/b_hangar_light_lvl_0_damaged_mask.png"
+        },
+        "lvl_1": {
+          "file": "buildings/b_hangar_light_lvl_1.png",
+          "mask": "buildings/b_hangar_light_lvl_1_mask.png"
+        },
+        "lvl_1_damaged": {
+          "file": "buildings/b_hangar_light_lvl_1_damaged.png",
+          "mask": "buildings/b_hangar_light_lvl_1_damaged_mask.png"
+        },
+        "lvl_2": {
+          "file": "buildings/b_hangar_light_lvl_2.png",
+          "mask": "buildings/b_hangar_light_lvl_2_mask.png"
+        },
+        "lvl_2_damaged": {
+          "file": "buildings/b_hangar_light_lvl_2_damaged.png",
+          "mask": "buildings/b_hangar_light_lvl_2_damaged_mask.png"
+        },
+        "lvl_3": {
+          "file": "buildings/b_hangar_light_lvl_3.png",
+          "mask": "buildings/b_hangar_light_lvl_3_mask.png"
+        },
+        "lvl_3_damaged": {
+          "file": "buildings/b_hangar_light_lvl_3_damaged.png",
+          "mask": "buildings/b_hangar_light_lvl_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_helipad": {
+      "g5": {
+        "kind": "helipad",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        58
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_helipad_build_0.png",
+          "mask": "buildings/b_helipad_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_helipad_build_1.png",
+          "mask": "buildings/b_helipad_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_helipad_build_2.png",
+          "mask": "buildings/b_helipad_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_helipad_built.png",
+          "mask": "buildings/b_helipad_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_helipad_damaged.png",
+          "mask": "buildings/b_helipad_damaged_mask.png"
+        }
+      }
+    },
+    "b_hospital": {
+      "g5": {
+        "kind": "hospital",
+        "variants": ""
+      },
+      "pivot": [
+        102,
+        100
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_hospital_build_0.png",
+          "mask": "buildings/b_hospital_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_hospital_build_1.png",
+          "mask": "buildings/b_hospital_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_hospital_build_2.png",
+          "mask": "buildings/b_hospital_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_hospital_built.png",
+          "mask": "buildings/b_hospital_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_hospital_damaged.png",
+          "mask": "buildings/b_hospital_damaged_mask.png"
+        }
+      }
+    },
+    "b_shipyard": {
+      "g5": {
+        "kind": "shipyard",
+        "variants": "water"
+      },
+      "pivot": [
+        102,
+        108
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_shipyard_water_0_build_0.png",
+          "mask": "buildings/b_shipyard_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_shipyard_water_0_build_1.png",
+          "mask": "buildings/b_shipyard_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_shipyard_water_0_build_2.png",
+          "mask": "buildings/b_shipyard_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_shipyard_water_0.png",
+          "mask": "buildings/b_shipyard_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_shipyard_water_0_damaged.png",
+          "mask": "buildings/b_shipyard_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/b_shipyard_water_0.png",
+          "mask": "buildings/b_shipyard_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/b_shipyard_water_0_build_0.png",
+          "mask": "buildings/b_shipyard_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/b_shipyard_water_0_build_1.png",
+          "mask": "buildings/b_shipyard_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/b_shipyard_water_0_build_2.png",
+          "mask": "buildings/b_shipyard_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/b_shipyard_water_0_damaged.png",
+          "mask": "buildings/b_shipyard_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/b_shipyard_water_1.png",
+          "mask": "buildings/b_shipyard_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/b_shipyard_water_1_build_0.png",
+          "mask": "buildings/b_shipyard_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/b_shipyard_water_1_build_1.png",
+          "mask": "buildings/b_shipyard_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/b_shipyard_water_1_build_2.png",
+          "mask": "buildings/b_shipyard_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/b_shipyard_water_1_damaged.png",
+          "mask": "buildings/b_shipyard_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/b_shipyard_water_2.png",
+          "mask": "buildings/b_shipyard_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/b_shipyard_water_2_build_0.png",
+          "mask": "buildings/b_shipyard_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/b_shipyard_water_2_build_1.png",
+          "mask": "buildings/b_shipyard_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/b_shipyard_water_2_build_2.png",
+          "mask": "buildings/b_shipyard_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/b_shipyard_water_2_damaged.png",
+          "mask": "buildings/b_shipyard_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/b_shipyard_water_3.png",
+          "mask": "buildings/b_shipyard_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/b_shipyard_water_3_build_0.png",
+          "mask": "buildings/b_shipyard_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/b_shipyard_water_3_build_1.png",
+          "mask": "buildings/b_shipyard_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/b_shipyard_water_3_build_2.png",
+          "mask": "buildings/b_shipyard_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/b_shipyard_water_3_damaged.png",
+          "mask": "buildings/b_shipyard_water_3_damaged_mask.png"
+        }
+      }
+    },
+    "b_supply_pier": {
+      "g5": {
+        "kind": "pier",
+        "variants": "water"
+      },
+      "pivot": [
+        70,
+        68
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/b_supply_pier_water_0_build_0.png",
+          "mask": "buildings/b_supply_pier_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/b_supply_pier_water_0_build_1.png",
+          "mask": "buildings/b_supply_pier_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/b_supply_pier_water_0_build_2.png",
+          "mask": "buildings/b_supply_pier_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/b_supply_pier_water_0.png",
+          "mask": "buildings/b_supply_pier_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/b_supply_pier_water_0_damaged.png",
+          "mask": "buildings/b_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/b_supply_pier_water_0.png",
+          "mask": "buildings/b_supply_pier_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/b_supply_pier_water_0_build_0.png",
+          "mask": "buildings/b_supply_pier_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/b_supply_pier_water_0_build_1.png",
+          "mask": "buildings/b_supply_pier_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/b_supply_pier_water_0_build_2.png",
+          "mask": "buildings/b_supply_pier_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/b_supply_pier_water_0_damaged.png",
+          "mask": "buildings/b_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/b_supply_pier_water_1.png",
+          "mask": "buildings/b_supply_pier_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/b_supply_pier_water_1_build_0.png",
+          "mask": "buildings/b_supply_pier_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/b_supply_pier_water_1_build_1.png",
+          "mask": "buildings/b_supply_pier_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/b_supply_pier_water_1_build_2.png",
+          "mask": "buildings/b_supply_pier_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/b_supply_pier_water_1_damaged.png",
+          "mask": "buildings/b_supply_pier_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/b_supply_pier_water_2.png",
+          "mask": "buildings/b_supply_pier_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/b_supply_pier_water_2_build_0.png",
+          "mask": "buildings/b_supply_pier_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/b_supply_pier_water_2_build_1.png",
+          "mask": "buildings/b_supply_pier_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/b_supply_pier_water_2_build_2.png",
+          "mask": "buildings/b_supply_pier_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/b_supply_pier_water_2_damaged.png",
+          "mask": "buildings/b_supply_pier_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/b_supply_pier_water_3.png",
+          "mask": "buildings/b_supply_pier_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/b_supply_pier_water_3_build_0.png",
+          "mask": "buildings/b_supply_pier_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/b_supply_pier_water_3_build_1.png",
+          "mask": "buildings/b_supply_pier_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/b_supply_pier_water_3_build_2.png",
+          "mask": "buildings/b_supply_pier_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/b_supply_pier_water_3_damaged.png",
+          "mask": "buildings/b_supply_pier_water_3_damaged_mask.png"
+        }
+      }
+    },
+    "m_coastal_battery": {
+      "g5": {
+        "kind": "battery",
+        "variants": ""
+      },
+      "pivot": [
+        70,
+        76
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_coastal_battery_build_0.png",
+          "mask": "buildings/m_coastal_battery_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_coastal_battery_build_1.png",
+          "mask": "buildings/m_coastal_battery_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_coastal_battery_build_2.png",
+          "mask": "buildings/m_coastal_battery_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_coastal_battery_built.png",
+          "mask": "buildings/m_coastal_battery_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/m_coastal_battery_damaged.png",
+          "mask": "buildings/m_coastal_battery_damaged_mask.png"
+        }
+      }
+    },
+    "m_drone_bay": {
+      "g5": {
+        "kind": "bay",
+        "variants": "lvl"
+      },
+      "pivot": [
+        70,
+        72
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_drone_bay_build_0.png",
+          "mask": "buildings/m_drone_bay_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_drone_bay_build_1.png",
+          "mask": "buildings/m_drone_bay_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_drone_bay_build_2.png",
+          "mask": "buildings/m_drone_bay_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_drone_bay_lvl_0.png",
+          "mask": "buildings/m_drone_bay_lvl_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/m_drone_bay_lvl_0_damaged.png",
+          "mask": "buildings/m_drone_bay_lvl_0_damaged_mask.png"
+        },
+        "lvl_0": {
+          "file": "buildings/m_drone_bay_lvl_0.png",
+          "mask": "buildings/m_drone_bay_lvl_0_mask.png"
+        },
+        "lvl_0_damaged": {
+          "file": "buildings/m_drone_bay_lvl_0_damaged.png",
+          "mask": "buildings/m_drone_bay_lvl_0_damaged_mask.png"
+        },
+        "lvl_1": {
+          "file": "buildings/m_drone_bay_lvl_1.png",
+          "mask": "buildings/m_drone_bay_lvl_1_mask.png"
+        },
+        "lvl_1_damaged": {
+          "file": "buildings/m_drone_bay_lvl_1_damaged.png",
+          "mask": "buildings/m_drone_bay_lvl_1_damaged_mask.png"
+        },
+        "lvl_2": {
+          "file": "buildings/m_drone_bay_lvl_2.png",
+          "mask": "buildings/m_drone_bay_lvl_2_mask.png"
+        },
+        "lvl_2_damaged": {
+          "file": "buildings/m_drone_bay_lvl_2_damaged.png",
+          "mask": "buildings/m_drone_bay_lvl_2_damaged_mask.png"
+        },
+        "lvl_3": {
+          "file": "buildings/m_drone_bay_lvl_3.png",
+          "mask": "buildings/m_drone_bay_lvl_3_mask.png"
+        },
+        "lvl_3_damaged": {
+          "file": "buildings/m_drone_bay_lvl_3_damaged.png",
+          "mask": "buildings/m_drone_bay_lvl_3_damaged_mask.png"
+        }
+      }
+    },
+    "m_launch_rail": {
+      "g5": {
+        "kind": "rail",
+        "variants": "rot"
+      },
+      "pivot": [
+        166,
+        120
+      ],
+      "size": 5,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_launch_rail_rot_0_build_0.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_launch_rail_rot_0_build_1.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_launch_rail_rot_0_build_2.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_launch_rail_rot_0.png",
+          "mask": "buildings/m_launch_rail_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/m_launch_rail_rot_0_damaged.png",
+          "mask": "buildings/m_launch_rail_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/m_launch_rail_rot_0.png",
+          "mask": "buildings/m_launch_rail_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/m_launch_rail_rot_0_build_0.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/m_launch_rail_rot_0_build_1.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/m_launch_rail_rot_0_build_2.png",
+          "mask": "buildings/m_launch_rail_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/m_launch_rail_rot_0_damaged.png",
+          "mask": "buildings/m_launch_rail_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/m_launch_rail_rot_1.png",
+          "mask": "buildings/m_launch_rail_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/m_launch_rail_rot_1_build_0.png",
+          "mask": "buildings/m_launch_rail_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/m_launch_rail_rot_1_build_1.png",
+          "mask": "buildings/m_launch_rail_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/m_launch_rail_rot_1_build_2.png",
+          "mask": "buildings/m_launch_rail_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/m_launch_rail_rot_1_damaged.png",
+          "mask": "buildings/m_launch_rail_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/m_launch_rail_rot_2.png",
+          "mask": "buildings/m_launch_rail_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/m_launch_rail_rot_2_build_0.png",
+          "mask": "buildings/m_launch_rail_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/m_launch_rail_rot_2_build_1.png",
+          "mask": "buildings/m_launch_rail_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/m_launch_rail_rot_2_build_2.png",
+          "mask": "buildings/m_launch_rail_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/m_launch_rail_rot_2_damaged.png",
+          "mask": "buildings/m_launch_rail_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/m_launch_rail_rot_3.png",
+          "mask": "buildings/m_launch_rail_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/m_launch_rail_rot_3_build_0.png",
+          "mask": "buildings/m_launch_rail_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/m_launch_rail_rot_3_build_1.png",
+          "mask": "buildings/m_launch_rail_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/m_launch_rail_rot_3_build_2.png",
+          "mask": "buildings/m_launch_rail_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/m_launch_rail_rot_3_damaged.png",
+          "mask": "buildings/m_launch_rail_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "m_shipyard": {
+      "g5": {
+        "kind": "shipyard",
+        "variants": "water"
+      },
+      "pivot": [
+        102,
+        96
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_shipyard_water_0_build_0.png",
+          "mask": "buildings/m_shipyard_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_shipyard_water_0_build_1.png",
+          "mask": "buildings/m_shipyard_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_shipyard_water_0_build_2.png",
+          "mask": "buildings/m_shipyard_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_shipyard_water_0.png",
+          "mask": "buildings/m_shipyard_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/m_shipyard_water_0_damaged.png",
+          "mask": "buildings/m_shipyard_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/m_shipyard_water_0.png",
+          "mask": "buildings/m_shipyard_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/m_shipyard_water_0_build_0.png",
+          "mask": "buildings/m_shipyard_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/m_shipyard_water_0_build_1.png",
+          "mask": "buildings/m_shipyard_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/m_shipyard_water_0_build_2.png",
+          "mask": "buildings/m_shipyard_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/m_shipyard_water_0_damaged.png",
+          "mask": "buildings/m_shipyard_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/m_shipyard_water_1.png",
+          "mask": "buildings/m_shipyard_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/m_shipyard_water_1_build_0.png",
+          "mask": "buildings/m_shipyard_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/m_shipyard_water_1_build_1.png",
+          "mask": "buildings/m_shipyard_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/m_shipyard_water_1_build_2.png",
+          "mask": "buildings/m_shipyard_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/m_shipyard_water_1_damaged.png",
+          "mask": "buildings/m_shipyard_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/m_shipyard_water_2.png",
+          "mask": "buildings/m_shipyard_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/m_shipyard_water_2_build_0.png",
+          "mask": "buildings/m_shipyard_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/m_shipyard_water_2_build_1.png",
+          "mask": "buildings/m_shipyard_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/m_shipyard_water_2_build_2.png",
+          "mask": "buildings/m_shipyard_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/m_shipyard_water_2_damaged.png",
+          "mask": "buildings/m_shipyard_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/m_shipyard_water_3.png",
+          "mask": "buildings/m_shipyard_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/m_shipyard_water_3_build_0.png",
+          "mask": "buildings/m_shipyard_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/m_shipyard_water_3_build_1.png",
+          "mask": "buildings/m_shipyard_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/m_shipyard_water_3_build_2.png",
+          "mask": "buildings/m_shipyard_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/m_shipyard_water_3_damaged.png",
+          "mask": "buildings/m_shipyard_water_3_damaged_mask.png"
+        }
+      }
+    },
+    "m_supply_pier": {
+      "g5": {
+        "kind": "pier",
+        "variants": "water"
+      },
+      "pivot": [
+        70,
+        68
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/m_supply_pier_water_0_build_0.png",
+          "mask": "buildings/m_supply_pier_water_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/m_supply_pier_water_0_build_1.png",
+          "mask": "buildings/m_supply_pier_water_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/m_supply_pier_water_0_build_2.png",
+          "mask": "buildings/m_supply_pier_water_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/m_supply_pier_water_0.png",
+          "mask": "buildings/m_supply_pier_water_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/m_supply_pier_water_0_damaged.png",
+          "mask": "buildings/m_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_0": {
+          "file": "buildings/m_supply_pier_water_0.png",
+          "mask": "buildings/m_supply_pier_water_0_mask.png"
+        },
+        "water_0_build_0": {
+          "file": "buildings/m_supply_pier_water_0_build_0.png",
+          "mask": "buildings/m_supply_pier_water_0_build_0_mask.png"
+        },
+        "water_0_build_1": {
+          "file": "buildings/m_supply_pier_water_0_build_1.png",
+          "mask": "buildings/m_supply_pier_water_0_build_1_mask.png"
+        },
+        "water_0_build_2": {
+          "file": "buildings/m_supply_pier_water_0_build_2.png",
+          "mask": "buildings/m_supply_pier_water_0_build_2_mask.png"
+        },
+        "water_0_damaged": {
+          "file": "buildings/m_supply_pier_water_0_damaged.png",
+          "mask": "buildings/m_supply_pier_water_0_damaged_mask.png"
+        },
+        "water_1": {
+          "file": "buildings/m_supply_pier_water_1.png",
+          "mask": "buildings/m_supply_pier_water_1_mask.png"
+        },
+        "water_1_build_0": {
+          "file": "buildings/m_supply_pier_water_1_build_0.png",
+          "mask": "buildings/m_supply_pier_water_1_build_0_mask.png"
+        },
+        "water_1_build_1": {
+          "file": "buildings/m_supply_pier_water_1_build_1.png",
+          "mask": "buildings/m_supply_pier_water_1_build_1_mask.png"
+        },
+        "water_1_build_2": {
+          "file": "buildings/m_supply_pier_water_1_build_2.png",
+          "mask": "buildings/m_supply_pier_water_1_build_2_mask.png"
+        },
+        "water_1_damaged": {
+          "file": "buildings/m_supply_pier_water_1_damaged.png",
+          "mask": "buildings/m_supply_pier_water_1_damaged_mask.png"
+        },
+        "water_2": {
+          "file": "buildings/m_supply_pier_water_2.png",
+          "mask": "buildings/m_supply_pier_water_2_mask.png"
+        },
+        "water_2_build_0": {
+          "file": "buildings/m_supply_pier_water_2_build_0.png",
+          "mask": "buildings/m_supply_pier_water_2_build_0_mask.png"
+        },
+        "water_2_build_1": {
+          "file": "buildings/m_supply_pier_water_2_build_1.png",
+          "mask": "buildings/m_supply_pier_water_2_build_1_mask.png"
+        },
+        "water_2_build_2": {
+          "file": "buildings/m_supply_pier_water_2_build_2.png",
+          "mask": "buildings/m_supply_pier_water_2_build_2_mask.png"
+        },
+        "water_2_damaged": {
+          "file": "buildings/m_supply_pier_water_2_damaged.png",
+          "mask": "buildings/m_supply_pier_water_2_damaged_mask.png"
+        },
+        "water_3": {
+          "file": "buildings/m_supply_pier_water_3.png",
+          "mask": "buildings/m_supply_pier_water_3_mask.png"
+        },
+        "water_3_build_0": {
+          "file": "buildings/m_supply_pier_water_3_build_0.png",
+          "mask": "buildings/m_supply_pier_water_3_build_0_mask.png"
+        },
+        "water_3_build_1": {
+          "file": "buildings/m_supply_pier_water_3_build_1.png",
+          "mask": "buildings/m_supply_pier_water_3_build_1_mask.png"
+        },
+        "water_3_build_2": {
+          "file": "buildings/m_supply_pier_water_3_build_2.png",
+          "mask": "buildings/m_supply_pier_water_3_build_2_mask.png"
+        },
+        "water_3_damaged": {
+          "file": "buildings/m_supply_pier_water_3_damaged.png",
+          "mask": "buildings/m_supply_pier_water_3_damaged_mask.png"
+        }
+      }
+    }
+  },
+  "command_icons": {
+    "commands": [
+      "build_hangar",
+      "upgrade_hangar",
+      "upgrade_airfield",
+      "assign_engineers",
+      "sortie",
+      "rebase",
+      "land_at",
+      "take_off",
+      "bombard",
+      "launch_drone",
+      "tactical",
+      "set_auto_resupply",
+      "set_auto_evac"
+    ],
+    "modes": [
+      "build_hangar_light",
+      "build_hangar_heavy",
+      "upgrade_hangar_level",
+      "upgrade_hangar_to_heavy",
+      "upgrade_airfield_extra_strip",
+      "launch_drone_strike",
+      "launch_drone_frag",
+      "launch_drone_recon",
+      "launch_drone_emp",
+      "tactical_infiltrate",
+      "tactical_takedown",
+      "tactical_breach",
+      "tactical_stack_up",
+      "tactical_armored_attack",
+      "set_auto_resupply_off",
+      "set_auto_resupply_station",
+      "set_auto_resupply_roam",
+      "set_auto_evac_on",
+      "set_auto_evac_off"
+    ]
+  },
+  "files": {
+    "buildings/a_air_tower_build_0.png": "0533814542572dfefcc840ff204c0e95",
+    "buildings/a_air_tower_build_0_mask.png": "272453b785aad3d35f5e472d88ad8ec6",
+    "buildings/a_air_tower_build_1.png": "cec397d6467aa88e2e2ec3335671ddcd",
+    "buildings/a_air_tower_build_1_mask.png": "272453b785aad3d35f5e472d88ad8ec6",
+    "buildings/a_air_tower_build_2.png": "f855ddd45b14bc9f8b4537020332d91b",
+    "buildings/a_air_tower_build_2_mask.png": "272453b785aad3d35f5e472d88ad8ec6",
+    "buildings/a_air_tower_built.png": "a7e1309552d499e2a79eee8f8df8509e",
+    "buildings/a_air_tower_built_mask.png": "492c99db1719449d7a17c9745ef7e2ca",
+    "buildings/a_air_tower_damaged.png": "15d43a29faba3b9d10ef10cb5272616b",
+    "buildings/a_air_tower_damaged_mask.png": "5cb850a312713f76f33f1edc137020a6",
+    "buildings/a_airfield_rot_0.png": "3faf0de7aec1a1176ec6b19ee423ab79",
+    "buildings/a_airfield_rot_0_build_0.png": "56450eec92b4b2419dd9d3ad8ad24162",
+    "buildings/a_airfield_rot_0_build_0_mask.png": "5f8591453a231853021b148cd4ba1106",
+    "buildings/a_airfield_rot_0_build_1.png": "341034ea1cf7ba1a13fa7ad0ca1e097d",
+    "buildings/a_airfield_rot_0_build_1_mask.png": "5f8591453a231853021b148cd4ba1106",
+    "buildings/a_airfield_rot_0_build_2.png": "6f7fa30e29098ee9793a5403ddcd8da9",
+    "buildings/a_airfield_rot_0_build_2_mask.png": "5f8591453a231853021b148cd4ba1106",
+    "buildings/a_airfield_rot_0_damaged.png": "c9c92de608a3dd078690b0656da51206",
+    "buildings/a_airfield_rot_0_damaged_mask.png": "f5b06a13a2f6ad36f5b2d39b4032135d",
+    "buildings/a_airfield_rot_0_mask.png": "3a3c4dc4b63d8a522bc8b7761839ed6c",
+    "buildings/a_airfield_rot_1.png": "bdf9e4a5d69b24d7bbd4ce98a8f53cc2",
+    "buildings/a_airfield_rot_1_build_0.png": "147c8c74fd67bc018240b4bc94eeca12",
+    "buildings/a_airfield_rot_1_build_0_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
+    "buildings/a_airfield_rot_1_build_1.png": "24d27a55b39228d945ae111693b729ab",
+    "buildings/a_airfield_rot_1_build_1_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
+    "buildings/a_airfield_rot_1_build_2.png": "77ec4ce6a85d4b099ee3edf3df688888",
+    "buildings/a_airfield_rot_1_build_2_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
+    "buildings/a_airfield_rot_1_damaged.png": "e9cce5f4d7494e9471b5ed19d141d526",
+    "buildings/a_airfield_rot_1_damaged_mask.png": "e3db89f53fb0f8ea22041bca0639c968",
+    "buildings/a_airfield_rot_1_mask.png": "3ba249c70ab59832a1b9e2299068545f",
+    "buildings/a_airfield_rot_2.png": "711fc1a3230716449b1e23e9b400ec26",
+    "buildings/a_airfield_rot_2_build_0.png": "72eb1f9d29affc536edba837d8156236",
+    "buildings/a_airfield_rot_2_build_0_mask.png": "c32bd050893ecdd375db1305de94cde6",
+    "buildings/a_airfield_rot_2_build_1.png": "fd25a26defcdf16061fb3bd703ffc5a2",
+    "buildings/a_airfield_rot_2_build_1_mask.png": "c32bd050893ecdd375db1305de94cde6",
+    "buildings/a_airfield_rot_2_build_2.png": "ac39089a12d674a4664975579209e8d2",
+    "buildings/a_airfield_rot_2_build_2_mask.png": "c32bd050893ecdd375db1305de94cde6",
+    "buildings/a_airfield_rot_2_damaged.png": "917ec794d9149f14d666d54fc3cd1ba0",
+    "buildings/a_airfield_rot_2_damaged_mask.png": "08320a726522f97134df68fb97cd58f7",
+    "buildings/a_airfield_rot_2_mask.png": "faa9b383e28b9f9a3a1f6f1e45b5fc3e",
+    "buildings/a_airfield_rot_3.png": "6db61ed9fa9f559140e86eff8ae52edf",
+    "buildings/a_airfield_rot_3_build_0.png": "359bbea871dae1d8a5d326b9b1051762",
+    "buildings/a_airfield_rot_3_build_0_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
+    "buildings/a_airfield_rot_3_build_1.png": "3f9e77113a4f49ae192153f14105dfd2",
+    "buildings/a_airfield_rot_3_build_1_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
+    "buildings/a_airfield_rot_3_build_2.png": "0458bbb1b6f50ec1199531eaf86b5651",
+    "buildings/a_airfield_rot_3_build_2_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
+    "buildings/a_airfield_rot_3_damaged.png": "bdde73b02b7a91182a263244f4f89774",
+    "buildings/a_airfield_rot_3_damaged_mask.png": "2b12bf1cd0803bd21e0f6fbd31c6d00e",
+    "buildings/a_airfield_rot_3_mask.png": "698bd10b5c3bf684d56ff07140dc3584",
+    "buildings/a_airstrip_rot_0.png": "8a82cd899b259c2b159527cead8f5995",
+    "buildings/a_airstrip_rot_0_build_0.png": "cf74218737337407e8338a1f5881c9de",
+    "buildings/a_airstrip_rot_0_build_0_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/a_airstrip_rot_0_build_1.png": "68126071d2ca59d99088ff43a08f3eac",
+    "buildings/a_airstrip_rot_0_build_1_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/a_airstrip_rot_0_build_2.png": "12de24cc0b74bec4bdca6c031d573029",
+    "buildings/a_airstrip_rot_0_build_2_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/a_airstrip_rot_0_damaged.png": "a8baabb5d48dc1f784c4541182df0c69",
+    "buildings/a_airstrip_rot_0_damaged_mask.png": "a9884d8a5562012100451ac2f1ae0696",
+    "buildings/a_airstrip_rot_0_mask.png": "cfe78ebb0c1e44cdcfbd713b53a75818",
+    "buildings/a_airstrip_rot_1.png": "ae5041b8284756f1348cb3189d840ab2",
+    "buildings/a_airstrip_rot_1_build_0.png": "d0bb32af2409f10490bb96eb2131be6c",
+    "buildings/a_airstrip_rot_1_build_0_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/a_airstrip_rot_1_build_1.png": "aac44871d1a82dd79f11d11e2beca8a1",
+    "buildings/a_airstrip_rot_1_build_1_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/a_airstrip_rot_1_build_2.png": "7703693b7ac3ba886671e60a6bc95cc8",
+    "buildings/a_airstrip_rot_1_build_2_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/a_airstrip_rot_1_damaged.png": "ebd6b3b962ccdb1986e0737cbebd6d8d",
+    "buildings/a_airstrip_rot_1_damaged_mask.png": "c5b60274311e21508bb9072cd508230b",
+    "buildings/a_airstrip_rot_1_mask.png": "9871c3e28655cf8df0b0b63f4877bb62",
+    "buildings/a_airstrip_rot_2.png": "6139e113407c045a441de0618804ce99",
+    "buildings/a_airstrip_rot_2_build_0.png": "77a06b5a942caf773028c067467491c9",
+    "buildings/a_airstrip_rot_2_build_0_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/a_airstrip_rot_2_build_1.png": "316854a3b35041dde4acb598b2265ffa",
+    "buildings/a_airstrip_rot_2_build_1_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/a_airstrip_rot_2_build_2.png": "7dc110079e484df720d42ff71d659a30",
+    "buildings/a_airstrip_rot_2_build_2_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/a_airstrip_rot_2_damaged.png": "0eb55e6c3ffbd02f64a14c9ad369621e",
+    "buildings/a_airstrip_rot_2_damaged_mask.png": "9d8c2ffe41e9a229381f37b2d68e2ef7",
+    "buildings/a_airstrip_rot_2_mask.png": "1de280ac90d8c230f93e732b678dc771",
+    "buildings/a_airstrip_rot_3.png": "6bef580c1f841e9ad374355b12ab72e0",
+    "buildings/a_airstrip_rot_3_build_0.png": "5cfe211e1a35d2c0c9d130816ef4212c",
+    "buildings/a_airstrip_rot_3_build_0_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/a_airstrip_rot_3_build_1.png": "faeffb78b2a4492c10128d0356279a30",
+    "buildings/a_airstrip_rot_3_build_1_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/a_airstrip_rot_3_build_2.png": "c5b683685a1f94d596ecfc357804f664",
+    "buildings/a_airstrip_rot_3_build_2_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/a_airstrip_rot_3_damaged.png": "8ef0c286046c6f62141415f50370b788",
+    "buildings/a_airstrip_rot_3_damaged_mask.png": "f56d9e4f990f244220587651aa9c2050",
+    "buildings/a_airstrip_rot_3_mask.png": "bc0c8fbdb5384c325f1c44eefc7c3f5e",
+    "buildings/a_coastal_battery_build_0.png": "68157bd0968c56bc4c93896bd54531f3",
+    "buildings/a_coastal_battery_build_0_mask.png": "e0a9ce163c22c49799a68fa8e0400757",
+    "buildings/a_coastal_battery_build_1.png": "149bafe00ab3132a6e57bb9b63e4946f",
+    "buildings/a_coastal_battery_build_1_mask.png": "e0a9ce163c22c49799a68fa8e0400757",
+    "buildings/a_coastal_battery_build_2.png": "255649cce6067f5c7cdf3354614336fd",
+    "buildings/a_coastal_battery_build_2_mask.png": "e0a9ce163c22c49799a68fa8e0400757",
+    "buildings/a_coastal_battery_built.png": "949aad7a4d89b846e29cb7e11bf50267",
+    "buildings/a_coastal_battery_built_mask.png": "a3ff25a98a05537073996c9017c65484",
+    "buildings/a_coastal_battery_damaged.png": "658ea02e74522721a97a08b1a02ce445",
+    "buildings/a_coastal_battery_damaged_mask.png": "4d623e539554a8fab0f0d9b18860fa1f",
+    "buildings/a_field_hospital_build_0.png": "6a1ba7b267b440a8d1bf5b6590c86e44",
+    "buildings/a_field_hospital_build_0_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/a_field_hospital_build_1.png": "3bd6037c40a5e389136685588622758c",
+    "buildings/a_field_hospital_build_1_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/a_field_hospital_build_2.png": "c18d7802a8713baf791b1f46e6a0ec43",
+    "buildings/a_field_hospital_build_2_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/a_field_hospital_built.png": "8afc240ee4732ff97f6f542ae1c5a8a8",
+    "buildings/a_field_hospital_built_mask.png": "fd20f85ec9c269293e363735afcf2101",
+    "buildings/a_field_hospital_damaged.png": "41db2793705a3f2d1fae20b4e5182993",
+    "buildings/a_field_hospital_damaged_mask.png": "fd20f85ec9c269293e363735afcf2101",
+    "buildings/a_forward_helipad_build_0.png": "0af157219c00b4a0e5db9f047ae1a6ba",
+    "buildings/a_forward_helipad_build_0_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_forward_helipad_build_1.png": "08bbb21d12092ce478ebcf135d36857c",
+    "buildings/a_forward_helipad_build_1_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_forward_helipad_build_2.png": "3306b45fbdfec0c9e4afca1a7dbb558e",
+    "buildings/a_forward_helipad_build_2_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_forward_helipad_built.png": "87817cc8729ca557af76e5d222787dab",
+    "buildings/a_forward_helipad_built_mask.png": "49f6d89f873c4c266fbef04c97e45c82",
+    "buildings/a_forward_helipad_damaged.png": "76c547effc7a8b22251e532ce451c1c9",
+    "buildings/a_forward_helipad_damaged_mask.png": "7e1b0733af8d15f710cebf83ef54bb5e",
+    "buildings/a_forward_strip_rot_0.png": "fe9302662d244badb08ec06247a979de",
+    "buildings/a_forward_strip_rot_0_build_0.png": "5087515f47ce13c1a6096bced3c199e6",
+    "buildings/a_forward_strip_rot_0_build_0_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/a_forward_strip_rot_0_build_1.png": "25d6b206827bac04ab9ed8eb760a781b",
+    "buildings/a_forward_strip_rot_0_build_1_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/a_forward_strip_rot_0_build_2.png": "4c8815f4a6cbd6e385bc26e7e680f7c0",
+    "buildings/a_forward_strip_rot_0_build_2_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/a_forward_strip_rot_0_damaged.png": "fca87ad0659e2017f613a5919583360f",
+    "buildings/a_forward_strip_rot_0_damaged_mask.png": "b3a37589a2cca939c6923569a4b21482",
+    "buildings/a_forward_strip_rot_0_mask.png": "5440ce02df87186d7fbc1cf6de669ca0",
+    "buildings/a_forward_strip_rot_1.png": "975b90e1e68ea4d8221d27ae5a0ca5c7",
+    "buildings/a_forward_strip_rot_1_build_0.png": "cceea16f8401b6d9b5a88dfd24b407ac",
+    "buildings/a_forward_strip_rot_1_build_0_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/a_forward_strip_rot_1_build_1.png": "45b1aefd6b2150db0c2408342f790cc9",
+    "buildings/a_forward_strip_rot_1_build_1_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/a_forward_strip_rot_1_build_2.png": "8dfae47b3305530df9e3bb03e12c5e1e",
+    "buildings/a_forward_strip_rot_1_build_2_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/a_forward_strip_rot_1_damaged.png": "32062ac977b1cc19d463dd336a97eeb2",
+    "buildings/a_forward_strip_rot_1_damaged_mask.png": "f41db87f603e564ba2074ecc0cb38e17",
+    "buildings/a_forward_strip_rot_1_mask.png": "f41db87f603e564ba2074ecc0cb38e17",
+    "buildings/a_forward_strip_rot_2.png": "238b79bc9eda6171c4d4008f589893e2",
+    "buildings/a_forward_strip_rot_2_build_0.png": "9e1bc4a3de368510d76eaa04e1e33dd8",
+    "buildings/a_forward_strip_rot_2_build_0_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/a_forward_strip_rot_2_build_1.png": "30732ce37d83627b98b21932e661d6b0",
+    "buildings/a_forward_strip_rot_2_build_1_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/a_forward_strip_rot_2_build_2.png": "1ae646547d7d75ab81b3c38d2ac685ee",
+    "buildings/a_forward_strip_rot_2_build_2_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/a_forward_strip_rot_2_damaged.png": "ef813433bfd150a1e5940ebd15630212",
+    "buildings/a_forward_strip_rot_2_damaged_mask.png": "741d988e4d178679663600eb2ca282c9",
+    "buildings/a_forward_strip_rot_2_mask.png": "b62a1f6a7b9369b8e27cbca6e57c8d85",
+    "buildings/a_forward_strip_rot_3.png": "9b50159ad06a2645ea02e8667a07f254",
+    "buildings/a_forward_strip_rot_3_build_0.png": "5b8d34f0541ef59a6c2f8967166b5aa6",
+    "buildings/a_forward_strip_rot_3_build_0_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/a_forward_strip_rot_3_build_1.png": "52646215e6f7b305638d3d66216b80f6",
+    "buildings/a_forward_strip_rot_3_build_1_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/a_forward_strip_rot_3_build_2.png": "6b7b44a4ea4c759929381157a1dae16e",
+    "buildings/a_forward_strip_rot_3_build_2_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/a_forward_strip_rot_3_damaged.png": "8e445883ddd79700e8951d3b943fe9a7",
+    "buildings/a_forward_strip_rot_3_damaged_mask.png": "0b3f7c602bd82747726401e3a4ee968b",
+    "buildings/a_forward_strip_rot_3_mask.png": "0b3f7c602bd82747726401e3a4ee968b",
+    "buildings/a_hangar_heavy_build_0.png": "bf737516c881ee9eac08b19aa7897c84",
+    "buildings/a_hangar_heavy_build_0_mask.png": "96c4dbebbab05ee0ac4e1f32f242e5ea",
+    "buildings/a_hangar_heavy_build_1.png": "d8d3fe9cd6e8f7eadf5ad89dda31824c",
+    "buildings/a_hangar_heavy_build_1_mask.png": "96c4dbebbab05ee0ac4e1f32f242e5ea",
+    "buildings/a_hangar_heavy_build_2.png": "b1ecd82e58550d8353b8dc227b322ba9",
+    "buildings/a_hangar_heavy_build_2_mask.png": "96c4dbebbab05ee0ac4e1f32f242e5ea",
+    "buildings/a_hangar_heavy_lvl_0.png": "289d937f4c06898451e5c9f716779bc0",
+    "buildings/a_hangar_heavy_lvl_0_damaged.png": "80bd8f21da18cee667f28ee221b6d10f",
+    "buildings/a_hangar_heavy_lvl_0_damaged_mask.png": "c67d77e24485e49618f9c0d43d624852",
+    "buildings/a_hangar_heavy_lvl_0_mask.png": "7f0918df3526cecc962b34c3b38e13d8",
+    "buildings/a_hangar_heavy_lvl_1.png": "a0fd3dcb47032d74099c815d8e2351e0",
+    "buildings/a_hangar_heavy_lvl_1_damaged.png": "a8c9a67093ac834e152409915d5173b4",
+    "buildings/a_hangar_heavy_lvl_1_damaged_mask.png": "0685df504cccbde19a6a79a1b1243bc9",
+    "buildings/a_hangar_heavy_lvl_1_mask.png": "7f0918df3526cecc962b34c3b38e13d8",
+    "buildings/a_hangar_heavy_lvl_2.png": "36244e9e655f73662825089c9c0ec10b",
+    "buildings/a_hangar_heavy_lvl_2_damaged.png": "b2c8a305219cde28ee7c6b3a2e76db78",
+    "buildings/a_hangar_heavy_lvl_2_damaged_mask.png": "0eb3b371812f0264a53521879e425b56",
+    "buildings/a_hangar_heavy_lvl_2_mask.png": "7f0918df3526cecc962b34c3b38e13d8",
+    "buildings/a_hangar_heavy_lvl_3.png": "89a34e23e6278469b5276e5fc817fd9c",
+    "buildings/a_hangar_heavy_lvl_3_damaged.png": "6edbeabaeabeafce3c7db022c4fc5e5f",
+    "buildings/a_hangar_heavy_lvl_3_damaged_mask.png": "8be2136a12c7bad9c1bde88c87c3d793",
+    "buildings/a_hangar_heavy_lvl_3_mask.png": "8be2136a12c7bad9c1bde88c87c3d793",
+    "buildings/a_hangar_light_build_0.png": "b80ea6b3ed7af25965b5bdf3e2b46e35",
+    "buildings/a_hangar_light_build_0_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/a_hangar_light_build_1.png": "84390b0927c80781c4c7e7f3e4c87986",
+    "buildings/a_hangar_light_build_1_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/a_hangar_light_build_2.png": "eaeb70a0b5ae7358040d035929472cbb",
+    "buildings/a_hangar_light_build_2_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/a_hangar_light_lvl_0.png": "9bc8e9b699e8c6933bdd0a048948f7f1",
+    "buildings/a_hangar_light_lvl_0_damaged.png": "aa3526dacb8469aca9bb5139c3f33671",
+    "buildings/a_hangar_light_lvl_0_damaged_mask.png": "a29c938ff064dd9e1eb7a10b372deb5f",
+    "buildings/a_hangar_light_lvl_0_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/a_hangar_light_lvl_1.png": "36accaac7dc1f74274ae1d14794f1de4",
+    "buildings/a_hangar_light_lvl_1_damaged.png": "813a331c99c7fafacd23100d9c3a28e0",
+    "buildings/a_hangar_light_lvl_1_damaged_mask.png": "25f10f677f0894b136c802e54ac295c5",
+    "buildings/a_hangar_light_lvl_1_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/a_hangar_light_lvl_2.png": "70430eb2830262f574a5b3b9355a3c86",
+    "buildings/a_hangar_light_lvl_2_damaged.png": "fcec73155e92e86dd7c51eb9a0b8e9b3",
+    "buildings/a_hangar_light_lvl_2_damaged_mask.png": "2a836ab942125eb9da8abc422adf0fef",
+    "buildings/a_hangar_light_lvl_2_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/a_hangar_light_lvl_3.png": "c13a8ec1e46f2780fe2e1f22b119e7c6",
+    "buildings/a_hangar_light_lvl_3_damaged.png": "71eb14188c208d1698eeacdb5d76b378",
+    "buildings/a_hangar_light_lvl_3_damaged_mask.png": "298b91cfe8276f3049a8117750d97783",
+    "buildings/a_hangar_light_lvl_3_mask.png": "298b91cfe8276f3049a8117750d97783",
+    "buildings/a_helipad_build_0.png": "d5eb53abcd6147c86f3dcfe6bc1f02ab",
+    "buildings/a_helipad_build_0_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_helipad_build_1.png": "03351cdea467f43538b61e78d8456461",
+    "buildings/a_helipad_build_1_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_helipad_build_2.png": "4b788faa31285dcd2813e5bcd2866152",
+    "buildings/a_helipad_build_2_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/a_helipad_built.png": "f90fae2da45c0dff0fd5c865019997ae",
+    "buildings/a_helipad_built_mask.png": "7bd4c07ebf0412c804ff1a8a7ca932c1",
+    "buildings/a_helipad_damaged.png": "ad4db16b51db7df03ed7c58db1077048",
+    "buildings/a_helipad_damaged_mask.png": "995c185cbf21290d7c37d80bb3c71842",
+    "buildings/a_hospital_build_0.png": "97228c865a3fbe243b2e944a40ed56da",
+    "buildings/a_hospital_build_0_mask.png": "248ed3ce74d9650b7747f4367d8a7c62",
+    "buildings/a_hospital_build_1.png": "bdb8b2aced6d72dc24d18693e37f4060",
+    "buildings/a_hospital_build_1_mask.png": "248ed3ce74d9650b7747f4367d8a7c62",
+    "buildings/a_hospital_build_2.png": "567ede966f4aa5edba988b2f97a596be",
+    "buildings/a_hospital_build_2_mask.png": "248ed3ce74d9650b7747f4367d8a7c62",
+    "buildings/a_hospital_built.png": "3e49cef449ea5ce8c42260c65265f468",
+    "buildings/a_hospital_built_mask.png": "b1608f52d9001a56bc430281fea67cc0",
+    "buildings/a_hospital_damaged.png": "f7af45202c9cd4caca7014e2bce921a9",
+    "buildings/a_hospital_damaged_mask.png": "0da1bb8750f0ae0fbcf19e61178a23b5",
+    "buildings/a_shipyard_water_0.png": "31d1e2ebe338bade2eef01531dd8c24b",
+    "buildings/a_shipyard_water_0_build_0.png": "091e870576bc2b725f36ae7658c23e4b",
+    "buildings/a_shipyard_water_0_build_0_mask.png": "45741baf98a68bf1bfacab5a2248dc00",
+    "buildings/a_shipyard_water_0_build_1.png": "a50df970184cd4d382daf78747943a50",
+    "buildings/a_shipyard_water_0_build_1_mask.png": "45741baf98a68bf1bfacab5a2248dc00",
+    "buildings/a_shipyard_water_0_build_2.png": "9bdaf22a0fcf88c5141311204bea0344",
+    "buildings/a_shipyard_water_0_build_2_mask.png": "45741baf98a68bf1bfacab5a2248dc00",
+    "buildings/a_shipyard_water_0_damaged.png": "eba25e77c3bdf729172372a039906627",
+    "buildings/a_shipyard_water_0_damaged_mask.png": "4871ec0125004f1f228491bbeb37acce",
+    "buildings/a_shipyard_water_0_mask.png": "9028d28d3c85e5799ff5ffd745d3e591",
+    "buildings/a_shipyard_water_1.png": "2fa0a6195c0fb05ea77d6a14da50cb7d",
+    "buildings/a_shipyard_water_1_build_0.png": "c7c4364dde6637b77773bb9a08007b79",
+    "buildings/a_shipyard_water_1_build_0_mask.png": "e7cee087e35eb1fcf0f50bdeb7087b80",
+    "buildings/a_shipyard_water_1_build_1.png": "8f0a7c457057f908542ecd59dda39445",
+    "buildings/a_shipyard_water_1_build_1_mask.png": "e7cee087e35eb1fcf0f50bdeb7087b80",
+    "buildings/a_shipyard_water_1_build_2.png": "a097bcf2267c58a7f68672a6fd967947",
+    "buildings/a_shipyard_water_1_build_2_mask.png": "e7cee087e35eb1fcf0f50bdeb7087b80",
+    "buildings/a_shipyard_water_1_damaged.png": "4f3979b2df0aa35315bd466f37610a6c",
+    "buildings/a_shipyard_water_1_damaged_mask.png": "ef29d84cb62b4c9d87d85cb8521fc850",
+    "buildings/a_shipyard_water_1_mask.png": "642926b45f5a2593a0700db875cab0fa",
+    "buildings/a_shipyard_water_2.png": "897c4d5559685d28c2d889ad853b146b",
+    "buildings/a_shipyard_water_2_build_0.png": "4eb56da895dd8fd61acd65ec636a2ed5",
+    "buildings/a_shipyard_water_2_build_0_mask.png": "475cd21154a202e6fbbf5c06091a8ddf",
+    "buildings/a_shipyard_water_2_build_1.png": "fb5df404e6bc0a54008fc1ad39ab5d00",
+    "buildings/a_shipyard_water_2_build_1_mask.png": "475cd21154a202e6fbbf5c06091a8ddf",
+    "buildings/a_shipyard_water_2_build_2.png": "80e5035cb8c694ef1b4bdb64680d5f99",
+    "buildings/a_shipyard_water_2_build_2_mask.png": "475cd21154a202e6fbbf5c06091a8ddf",
+    "buildings/a_shipyard_water_2_damaged.png": "e1831d5bc28fb202a7af8fadd8552df7",
+    "buildings/a_shipyard_water_2_damaged_mask.png": "b0ee4e4b0c5663b8eff13be32f1ebaae",
+    "buildings/a_shipyard_water_2_mask.png": "8f55939476558e40d22cd0e2cf9ba7e3",
+    "buildings/a_shipyard_water_3.png": "bdf37cb6bd563e4210b731dd068749a3",
+    "buildings/a_shipyard_water_3_build_0.png": "bcbb550e6a4ee68fafbbad6bcea0a3ca",
+    "buildings/a_shipyard_water_3_build_0_mask.png": "bda99fe0d4ae5103653b77a5bdf77207",
+    "buildings/a_shipyard_water_3_build_1.png": "829b43832f9841c7ddcfa7d425bc6954",
+    "buildings/a_shipyard_water_3_build_1_mask.png": "bda99fe0d4ae5103653b77a5bdf77207",
+    "buildings/a_shipyard_water_3_build_2.png": "28cc3d86396f552051384f9100389546",
+    "buildings/a_shipyard_water_3_build_2_mask.png": "bda99fe0d4ae5103653b77a5bdf77207",
+    "buildings/a_shipyard_water_3_damaged.png": "1a5a2f096c82bb2dfb40734a09a13c62",
+    "buildings/a_shipyard_water_3_damaged_mask.png": "c50bfa184ee8db1b2893ed9a1519876e",
+    "buildings/a_shipyard_water_3_mask.png": "46a0953eafd9c0e50a448629a4032761",
+    "buildings/a_supply_pier_water_0.png": "833095c0b238fce32d1b7b357b5a0d14",
+    "buildings/a_supply_pier_water_0_build_0.png": "c0d7bed0eb7d2c921d24f2a3f22d3c22",
+    "buildings/a_supply_pier_water_0_build_0_mask.png": "ebd31099a26a7c1f0361cfbcec6fa846",
+    "buildings/a_supply_pier_water_0_build_1.png": "8f2cb988178356eeb079f53886dbe262",
+    "buildings/a_supply_pier_water_0_build_1_mask.png": "ebd31099a26a7c1f0361cfbcec6fa846",
+    "buildings/a_supply_pier_water_0_build_2.png": "d5e9a53f0f75b54752205e12d529d821",
+    "buildings/a_supply_pier_water_0_build_2_mask.png": "ebd31099a26a7c1f0361cfbcec6fa846",
+    "buildings/a_supply_pier_water_0_damaged.png": "8206f0f229e005a05a5d091e38c53435",
+    "buildings/a_supply_pier_water_0_damaged_mask.png": "181deee9e4673ef10ee9cf847104f385",
+    "buildings/a_supply_pier_water_0_mask.png": "5cdca7e7a42762dbc6cbf5aba48b46e6",
+    "buildings/a_supply_pier_water_1.png": "a90989bd671aedbf9f6d739f3364d57a",
+    "buildings/a_supply_pier_water_1_build_0.png": "27e061c46206fa4ead64cb7dae9460c3",
+    "buildings/a_supply_pier_water_1_build_0_mask.png": "3d49f16753f571b345fb05475b5dea3e",
+    "buildings/a_supply_pier_water_1_build_1.png": "05a4b7d42c0397a80e65ec3982afc70f",
+    "buildings/a_supply_pier_water_1_build_1_mask.png": "3d49f16753f571b345fb05475b5dea3e",
+    "buildings/a_supply_pier_water_1_build_2.png": "36947294223a38131ffb0ec4ecb1d9bb",
+    "buildings/a_supply_pier_water_1_build_2_mask.png": "3d49f16753f571b345fb05475b5dea3e",
+    "buildings/a_supply_pier_water_1_damaged.png": "90157d39aeea0e6317bb0c2a67884f17",
+    "buildings/a_supply_pier_water_1_damaged_mask.png": "0fcad28bdc9220948be27c663b12538f",
+    "buildings/a_supply_pier_water_1_mask.png": "2dd44ba75d5fda02263fe6c82143e7f4",
+    "buildings/a_supply_pier_water_2.png": "c2abf991e90c27839addfd0539b75def",
+    "buildings/a_supply_pier_water_2_build_0.png": "3c7749437955242e6a95b2ac2fa273d8",
+    "buildings/a_supply_pier_water_2_build_0_mask.png": "0cbf58e220554a5d0e9ef8fedab9b885",
+    "buildings/a_supply_pier_water_2_build_1.png": "248e8e50bd58e18f1e35c112dedabe45",
+    "buildings/a_supply_pier_water_2_build_1_mask.png": "0cbf58e220554a5d0e9ef8fedab9b885",
+    "buildings/a_supply_pier_water_2_build_2.png": "3825a6bc5226cbb68297c2412b1ae614",
+    "buildings/a_supply_pier_water_2_build_2_mask.png": "0cbf58e220554a5d0e9ef8fedab9b885",
+    "buildings/a_supply_pier_water_2_damaged.png": "6f04b4967292a3981be337b2e60d34e5",
+    "buildings/a_supply_pier_water_2_damaged_mask.png": "4f93629e920d2c10b21277f69430c4de",
+    "buildings/a_supply_pier_water_2_mask.png": "7a3a242e5d194c69493881446f8373f7",
+    "buildings/a_supply_pier_water_3.png": "2f68dfba6112aee8f5caf505120407ec",
+    "buildings/a_supply_pier_water_3_build_0.png": "5134df89abb0fa30335ba6180c118c3a",
+    "buildings/a_supply_pier_water_3_build_0_mask.png": "c92c4265e1873e2cd20d3d1b84b4bd95",
+    "buildings/a_supply_pier_water_3_build_1.png": "90592096e59a8b71c0c42f37f940ba09",
+    "buildings/a_supply_pier_water_3_build_1_mask.png": "c92c4265e1873e2cd20d3d1b84b4bd95",
+    "buildings/a_supply_pier_water_3_build_2.png": "a179e66827aebe632dcfd74fc8d85ad1",
+    "buildings/a_supply_pier_water_3_build_2_mask.png": "c92c4265e1873e2cd20d3d1b84b4bd95",
+    "buildings/a_supply_pier_water_3_damaged.png": "9ec63633039028a11fc42df25b1eede7",
+    "buildings/a_supply_pier_water_3_damaged_mask.png": "9353616aa2a83191aee21ec8ea426887",
+    "buildings/a_supply_pier_water_3_mask.png": "d1b1f58472783a3571801015a2e3f139",
+    "buildings/b_aerodrome_rot_0.png": "7657295ec1c2e82be9efa7a9fcbc70a1",
+    "buildings/b_aerodrome_rot_0_build_0.png": "66ceb024f0d662358bd72933d4898464",
+    "buildings/b_aerodrome_rot_0_build_0_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
+    "buildings/b_aerodrome_rot_0_build_1.png": "a30ea879dfc0f63468a46abc7d65a530",
+    "buildings/b_aerodrome_rot_0_build_1_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
+    "buildings/b_aerodrome_rot_0_build_2.png": "709ab2e9b2e60fb743dc2d592107b0db",
+    "buildings/b_aerodrome_rot_0_build_2_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
+    "buildings/b_aerodrome_rot_0_damaged.png": "0a6d64c30d1c2eb00b72cce69a931da2",
+    "buildings/b_aerodrome_rot_0_damaged_mask.png": "392e500aa8dfacfb7cfac51ec1c2996c",
+    "buildings/b_aerodrome_rot_0_mask.png": "f50837b9bfd87af992010d7fe806319a",
+    "buildings/b_aerodrome_rot_1.png": "2e9a2a8f6a1f957c1b8ba9d8686c189a",
+    "buildings/b_aerodrome_rot_1_build_0.png": "4b57f3b77b8d6ad01a9d2597e98f987b",
+    "buildings/b_aerodrome_rot_1_build_0_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
+    "buildings/b_aerodrome_rot_1_build_1.png": "8c225b596afcfbf92f03b272c7a95dc1",
+    "buildings/b_aerodrome_rot_1_build_1_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
+    "buildings/b_aerodrome_rot_1_build_2.png": "4537585efa2fc2b619265954d1c3145f",
+    "buildings/b_aerodrome_rot_1_build_2_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
+    "buildings/b_aerodrome_rot_1_damaged.png": "ab4b15df6df3dfda6718c250c2a2c384",
+    "buildings/b_aerodrome_rot_1_damaged_mask.png": "0fd8003066f86782eede8912f048b559",
+    "buildings/b_aerodrome_rot_1_mask.png": "ece0e7f16ffbb4ef21283f9398ba5669",
+    "buildings/b_aerodrome_rot_2.png": "0a2b1b5f97244cbcf64ca231170b0dfa",
+    "buildings/b_aerodrome_rot_2_build_0.png": "b34c17a07d47303cf81febdabff248ae",
+    "buildings/b_aerodrome_rot_2_build_0_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
+    "buildings/b_aerodrome_rot_2_build_1.png": "42d6e166ed86dab1fc7dbb8b077b6f46",
+    "buildings/b_aerodrome_rot_2_build_1_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
+    "buildings/b_aerodrome_rot_2_build_2.png": "a20598b36b26fb316c512ed1253b9c7d",
+    "buildings/b_aerodrome_rot_2_build_2_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
+    "buildings/b_aerodrome_rot_2_damaged.png": "07b53c5291b5da24fa110ec433c446c2",
+    "buildings/b_aerodrome_rot_2_damaged_mask.png": "ed8b1ebaa819d76082a4516cf5ce6e9c",
+    "buildings/b_aerodrome_rot_2_mask.png": "324a36183c38784a86ebf3c44e3cbf0b",
+    "buildings/b_aerodrome_rot_3.png": "c4bf8d164207f5affe5f9525f7e098a2",
+    "buildings/b_aerodrome_rot_3_build_0.png": "edea4c55fe1728f952e0385951006cfa",
+    "buildings/b_aerodrome_rot_3_build_0_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
+    "buildings/b_aerodrome_rot_3_build_1.png": "778a83192f4564cb245fd4daccd01cd0",
+    "buildings/b_aerodrome_rot_3_build_1_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
+    "buildings/b_aerodrome_rot_3_build_2.png": "402033ce8fa8fd613d4a28ae118392e2",
+    "buildings/b_aerodrome_rot_3_build_2_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
+    "buildings/b_aerodrome_rot_3_damaged.png": "5932987510245b55d8412f5bca26a479",
+    "buildings/b_aerodrome_rot_3_damaged_mask.png": "aa1df000f754fc6df89210503bd383a5",
+    "buildings/b_aerodrome_rot_3_mask.png": "aa1df000f754fc6df89210503bd383a5",
+    "buildings/b_air_tower_build_0.png": "b3adf884bea0885959ae6fb93d2c8267",
+    "buildings/b_air_tower_build_0_mask.png": "0acb278420a46a41228e5a6a967aa185",
+    "buildings/b_air_tower_build_1.png": "6acb7a82d64fc68c0599705933b9d6f6",
+    "buildings/b_air_tower_build_1_mask.png": "0acb278420a46a41228e5a6a967aa185",
+    "buildings/b_air_tower_build_2.png": "951cd04dd4308fa242599793e08b8625",
+    "buildings/b_air_tower_build_2_mask.png": "0acb278420a46a41228e5a6a967aa185",
+    "buildings/b_air_tower_built.png": "679b1d81c13ab2009d408dcb4713abe1",
+    "buildings/b_air_tower_built_mask.png": "18abd6f7368ab0996bed2ebef35c813b",
+    "buildings/b_air_tower_damaged.png": "e0be269ca4004e2c9320a18040ea5242",
+    "buildings/b_air_tower_damaged_mask.png": "edfc0cc4b42f89c3087541c0f3242dec",
+    "buildings/b_airstrip_rot_0.png": "facb6ec625dda92161c06f92e95b5ac3",
+    "buildings/b_airstrip_rot_0_build_0.png": "9f58ca634957545262b27b7b1bc07d5c",
+    "buildings/b_airstrip_rot_0_build_0_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/b_airstrip_rot_0_build_1.png": "1f0d0f123eeaaad88a8b98bcdd002fcf",
+    "buildings/b_airstrip_rot_0_build_1_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/b_airstrip_rot_0_build_2.png": "806ea3e56e91c44996aa2b046c04781f",
+    "buildings/b_airstrip_rot_0_build_2_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
+    "buildings/b_airstrip_rot_0_damaged.png": "6d0d4ccf7172e0e506e2eff8d59c5a42",
+    "buildings/b_airstrip_rot_0_damaged_mask.png": "30822329c268647e5f78b5fd8eaed087",
+    "buildings/b_airstrip_rot_0_mask.png": "cfe78ebb0c1e44cdcfbd713b53a75818",
+    "buildings/b_airstrip_rot_1.png": "ea5b25c273861f5c25fabfee7bd6d1ae",
+    "buildings/b_airstrip_rot_1_build_0.png": "53ade2f5882f39582106679e41c9db0f",
+    "buildings/b_airstrip_rot_1_build_0_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/b_airstrip_rot_1_build_1.png": "cc64791765b4cab3583c09e4ba32fc03",
+    "buildings/b_airstrip_rot_1_build_1_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/b_airstrip_rot_1_build_2.png": "cc46036d873b3f8fc2e5d1bc58eb8020",
+    "buildings/b_airstrip_rot_1_build_2_mask.png": "787328106743508ce62252dbe29060be",
+    "buildings/b_airstrip_rot_1_damaged.png": "5f16d22c925cad02b7f987bf57933d15",
+    "buildings/b_airstrip_rot_1_damaged_mask.png": "cf97f6b0fdcdccde184cbdd9ee535731",
+    "buildings/b_airstrip_rot_1_mask.png": "9871c3e28655cf8df0b0b63f4877bb62",
+    "buildings/b_airstrip_rot_2.png": "75baf054ab0a7e20ee90d9e1926b8401",
+    "buildings/b_airstrip_rot_2_build_0.png": "bc603971ce9c9bcd467bb9c228108276",
+    "buildings/b_airstrip_rot_2_build_0_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/b_airstrip_rot_2_build_1.png": "3b7f4a1997862bb26c79a25167fe887c",
+    "buildings/b_airstrip_rot_2_build_1_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/b_airstrip_rot_2_build_2.png": "9ec724a4da087655046dc2cf79743d72",
+    "buildings/b_airstrip_rot_2_build_2_mask.png": "5598b6e00066eef310b48ab69336afdc",
+    "buildings/b_airstrip_rot_2_damaged.png": "c9ffb64392df2b612f1c8a61c787f63a",
+    "buildings/b_airstrip_rot_2_damaged_mask.png": "631ef463c7739c2305556700b03dada0",
+    "buildings/b_airstrip_rot_2_mask.png": "1de280ac90d8c230f93e732b678dc771",
+    "buildings/b_airstrip_rot_3.png": "0ac52236a25bdc4b82ca4da085e97a72",
+    "buildings/b_airstrip_rot_3_build_0.png": "5882e4eeee98c35bd725f0eb5be2a577",
+    "buildings/b_airstrip_rot_3_build_0_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/b_airstrip_rot_3_build_1.png": "297de9a4c3e38ad1ff4a2d9970713956",
+    "buildings/b_airstrip_rot_3_build_1_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/b_airstrip_rot_3_build_2.png": "ddeba2ec184e8422b762757b526ea283",
+    "buildings/b_airstrip_rot_3_build_2_mask.png": "a0f1292a1d0305cc93286e818a68cda1",
+    "buildings/b_airstrip_rot_3_damaged.png": "1dda3a1798d7baaaa419743f659ddc07",
+    "buildings/b_airstrip_rot_3_damaged_mask.png": "08474c72e83b47010641e9fae83ef6d9",
+    "buildings/b_airstrip_rot_3_mask.png": "bc0c8fbdb5384c325f1c44eefc7c3f5e",
+    "buildings/b_coastal_battery_build_0.png": "ae3c44bb7225123c5c45ffe212f4a5c6",
+    "buildings/b_coastal_battery_build_0_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/b_coastal_battery_build_1.png": "8f08767a4122ee358cf8f6e19221a721",
+    "buildings/b_coastal_battery_build_1_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/b_coastal_battery_build_2.png": "4b6c94679cefe48b400cafdb49d58132",
+    "buildings/b_coastal_battery_build_2_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/b_coastal_battery_built.png": "576dc61ca2d32bb398f3c37cedddab17",
+    "buildings/b_coastal_battery_built_mask.png": "fb451c62cbffbccab6df887e70336f69",
+    "buildings/b_coastal_battery_damaged.png": "b46228709b1573474ac26cc9a31a42ee",
+    "buildings/b_coastal_battery_damaged_mask.png": "98fd4ac10d7805779fa2cb2d8355323b",
+    "buildings/b_field_hospital_build_0.png": "a751dcb2485693de5fa37dfcdbf4e657",
+    "buildings/b_field_hospital_build_0_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/b_field_hospital_build_1.png": "a7f6e2af78605b249ed4f4d369f52af1",
+    "buildings/b_field_hospital_build_1_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/b_field_hospital_build_2.png": "d66efa95f247feb198125d08ac612560",
+    "buildings/b_field_hospital_build_2_mask.png": "3ac53d3798db837c5d34b2a2e8b7b57f",
+    "buildings/b_field_hospital_built.png": "9f5ef66c4bdd0e5e5eebb005ee25ff88",
+    "buildings/b_field_hospital_built_mask.png": "018aa982b6edb653aa9f2039d0505b13",
+    "buildings/b_field_hospital_damaged.png": "cf49c763f30aae4e622d3dcfccb0738b",
+    "buildings/b_field_hospital_damaged_mask.png": "018aa982b6edb653aa9f2039d0505b13",
+    "buildings/b_forward_helipad_build_0.png": "7a918dcd19df191386d2b63bac2845d6",
+    "buildings/b_forward_helipad_build_0_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_forward_helipad_build_1.png": "5658df5e111e1ab281c7d7a687f40f58",
+    "buildings/b_forward_helipad_build_1_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_forward_helipad_build_2.png": "0f5b76ecd030dddd862278817d2df150",
+    "buildings/b_forward_helipad_build_2_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_forward_helipad_built.png": "20734d1018826c42ff05c9cfa12ab653",
+    "buildings/b_forward_helipad_built_mask.png": "49f6d89f873c4c266fbef04c97e45c82",
+    "buildings/b_forward_helipad_damaged.png": "3c10cc3290715df43d8482422577be15",
+    "buildings/b_forward_helipad_damaged_mask.png": "7a822cf178d8f44f5a4b65d21a9e99a9",
+    "buildings/b_forward_strip_rot_0.png": "d9e0db52b4b1fadd7f4cf11cb16f3a74",
+    "buildings/b_forward_strip_rot_0_build_0.png": "eefb1f3fe0daa5d37ce9da25fe798f9c",
+    "buildings/b_forward_strip_rot_0_build_0_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/b_forward_strip_rot_0_build_1.png": "fce55adf815639cddc5656ffbba68568",
+    "buildings/b_forward_strip_rot_0_build_1_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/b_forward_strip_rot_0_build_2.png": "57ef8030c591bb11001c8fb76c29f196",
+    "buildings/b_forward_strip_rot_0_build_2_mask.png": "9dae96e80926f32b1f68ec389419528d",
+    "buildings/b_forward_strip_rot_0_damaged.png": "be7802940b5f546eab3d192be3d3bd1c",
+    "buildings/b_forward_strip_rot_0_damaged_mask.png": "dc0df5cb3c949a988d1dac4a891bea46",
+    "buildings/b_forward_strip_rot_0_mask.png": "5440ce02df87186d7fbc1cf6de669ca0",
+    "buildings/b_forward_strip_rot_1.png": "011581cc66909dccbc9945e0f3727ecf",
+    "buildings/b_forward_strip_rot_1_build_0.png": "c316da043f4508e4f0a80a9c25b030e0",
+    "buildings/b_forward_strip_rot_1_build_0_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/b_forward_strip_rot_1_build_1.png": "b92bcb18d48a1d3fc153d9516885e562",
+    "buildings/b_forward_strip_rot_1_build_1_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/b_forward_strip_rot_1_build_2.png": "949e44cdb54924fa61e25e1ff1ef7d51",
+    "buildings/b_forward_strip_rot_1_build_2_mask.png": "d531be572d229b7a0db0cd39c6542887",
+    "buildings/b_forward_strip_rot_1_damaged.png": "eb6af77af8c02dd48352ff5f101ebc6c",
+    "buildings/b_forward_strip_rot_1_damaged_mask.png": "f41db87f603e564ba2074ecc0cb38e17",
+    "buildings/b_forward_strip_rot_1_mask.png": "f41db87f603e564ba2074ecc0cb38e17",
+    "buildings/b_forward_strip_rot_2.png": "abc6db2d427cbdf20d5796994d211bcd",
+    "buildings/b_forward_strip_rot_2_build_0.png": "6c36874f8cf5718ececee4149e1942eb",
+    "buildings/b_forward_strip_rot_2_build_0_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/b_forward_strip_rot_2_build_1.png": "284a1263591763342a7c738600676287",
+    "buildings/b_forward_strip_rot_2_build_1_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/b_forward_strip_rot_2_build_2.png": "6fe7d522b11c7d11f080aea49a7a1de1",
+    "buildings/b_forward_strip_rot_2_build_2_mask.png": "2018b8577e1d717d1a59ff09ff9cab87",
+    "buildings/b_forward_strip_rot_2_damaged.png": "135be947f54ce9a34392db767353a6be",
+    "buildings/b_forward_strip_rot_2_damaged_mask.png": "797e778833a4e1f0e847d6cbbb225c47",
+    "buildings/b_forward_strip_rot_2_mask.png": "b62a1f6a7b9369b8e27cbca6e57c8d85",
+    "buildings/b_forward_strip_rot_3.png": "a3dab16141687db14499d426a9940e98",
+    "buildings/b_forward_strip_rot_3_build_0.png": "5098cf864d024f3c2d16dffc0c5145c2",
+    "buildings/b_forward_strip_rot_3_build_0_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/b_forward_strip_rot_3_build_1.png": "6b1603a86d11667bb66f9e167a724cec",
+    "buildings/b_forward_strip_rot_3_build_1_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/b_forward_strip_rot_3_build_2.png": "2e4691dfaf1a7b8c8fe98b293d2957bb",
+    "buildings/b_forward_strip_rot_3_build_2_mask.png": "cb135c53bffcfcb70464719110d1763e",
+    "buildings/b_forward_strip_rot_3_damaged.png": "a57254db7d30655740e1069fab904bd7",
+    "buildings/b_forward_strip_rot_3_damaged_mask.png": "0b3f7c602bd82747726401e3a4ee968b",
+    "buildings/b_forward_strip_rot_3_mask.png": "0b3f7c602bd82747726401e3a4ee968b",
+    "buildings/b_hangar_heavy_build_0.png": "b2a50965fe94c21f0068966ae8033f46",
+    "buildings/b_hangar_heavy_build_0_mask.png": "817b06de66217e9685584bd12b1dfd7b",
+    "buildings/b_hangar_heavy_build_1.png": "f714a97652cf2259e1384d84bb5d1e0e",
+    "buildings/b_hangar_heavy_build_1_mask.png": "817b06de66217e9685584bd12b1dfd7b",
+    "buildings/b_hangar_heavy_build_2.png": "36ce505cd66f6286c573a05d47e931c1",
+    "buildings/b_hangar_heavy_build_2_mask.png": "817b06de66217e9685584bd12b1dfd7b",
+    "buildings/b_hangar_heavy_lvl_0.png": "530ff9f94a340d04190a06f258037541",
+    "buildings/b_hangar_heavy_lvl_0_damaged.png": "08cf9e07cfe603746dad09a90abec892",
+    "buildings/b_hangar_heavy_lvl_0_damaged_mask.png": "afab324de67e2801d73821c6bd580073",
+    "buildings/b_hangar_heavy_lvl_0_mask.png": "affc6de1df9967da95c813af1e8bf2e9",
+    "buildings/b_hangar_heavy_lvl_1.png": "a1102e50c6c18ce6ad4f3c7b61407cf1",
+    "buildings/b_hangar_heavy_lvl_1_damaged.png": "ca8982f7773c696c86cf499d6a3ab0ad",
+    "buildings/b_hangar_heavy_lvl_1_damaged_mask.png": "50e4d6acd2ccd0f85d918e1f8a36d4f4",
+    "buildings/b_hangar_heavy_lvl_1_mask.png": "affc6de1df9967da95c813af1e8bf2e9",
+    "buildings/b_hangar_heavy_lvl_2.png": "1d73d2381bdb8264ee0a9ef183cfed73",
+    "buildings/b_hangar_heavy_lvl_2_damaged.png": "60ab1526010da1c21300f7a336e436b4",
+    "buildings/b_hangar_heavy_lvl_2_damaged_mask.png": "cb08dcbbf6ada3f147e1678d37323e26",
+    "buildings/b_hangar_heavy_lvl_2_mask.png": "affc6de1df9967da95c813af1e8bf2e9",
+    "buildings/b_hangar_heavy_lvl_3.png": "904403980ce3b33775c21646d1a7a56c",
+    "buildings/b_hangar_heavy_lvl_3_damaged.png": "03dc0b61a7d9c4a21802bda6da5d3f94",
+    "buildings/b_hangar_heavy_lvl_3_damaged_mask.png": "63a7e828827514004d0ec3ce1b619815",
+    "buildings/b_hangar_heavy_lvl_3_mask.png": "63a7e828827514004d0ec3ce1b619815",
+    "buildings/b_hangar_light_build_0.png": "62b7073acdc714e4ebfdf96992ea3899",
+    "buildings/b_hangar_light_build_0_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/b_hangar_light_build_1.png": "31d558493638795b5580a1d4dcd6f7bc",
+    "buildings/b_hangar_light_build_1_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/b_hangar_light_build_2.png": "4de378ddf5ce87fb0ad4c9b2e52d4124",
+    "buildings/b_hangar_light_build_2_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/b_hangar_light_lvl_0.png": "ac0cdd2da09c158ac36b0df81fe8ed67",
+    "buildings/b_hangar_light_lvl_0_damaged.png": "cf37d1fe21bf0673562bd93ec98f92a6",
+    "buildings/b_hangar_light_lvl_0_damaged_mask.png": "76290648eb5f2400a4a7d4021f9c1341",
+    "buildings/b_hangar_light_lvl_0_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/b_hangar_light_lvl_1.png": "9e96d7ea1e9826e67cd51a3df2998f60",
+    "buildings/b_hangar_light_lvl_1_damaged.png": "fc73c1940a8ca1ff12eb8256340cef73",
+    "buildings/b_hangar_light_lvl_1_damaged_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/b_hangar_light_lvl_1_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/b_hangar_light_lvl_2.png": "6a64473c8684074607b7a290837f9c8d",
+    "buildings/b_hangar_light_lvl_2_damaged.png": "b0f4d491d310d3d0d2013291f4e0ecba",
+    "buildings/b_hangar_light_lvl_2_damaged_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/b_hangar_light_lvl_2_mask.png": "3c3328f76a9d985e7a95847885ef5118",
+    "buildings/b_hangar_light_lvl_3.png": "e83daa6135535f9dd0943efc260ebb47",
+    "buildings/b_hangar_light_lvl_3_damaged.png": "5311c92f39036f5d35f60081c8c8563a",
+    "buildings/b_hangar_light_lvl_3_damaged_mask.png": "a5554b278655acfd5202b703d4890f45",
+    "buildings/b_hangar_light_lvl_3_mask.png": "298b91cfe8276f3049a8117750d97783",
+    "buildings/b_helipad_build_0.png": "4f3c2f9322fc9dfd63a66a76d6d7e73c",
+    "buildings/b_helipad_build_0_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_helipad_build_1.png": "fe557d2b80f593f318cf62625662f606",
+    "buildings/b_helipad_build_1_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_helipad_build_2.png": "bda563be3d5c98eae21a9d4e3692000c",
+    "buildings/b_helipad_build_2_mask.png": "fe2eaf18fc1c39f262916bcb8c89bcfc",
+    "buildings/b_helipad_built.png": "059189d275025bc3875ac55cec254485",
+    "buildings/b_helipad_built_mask.png": "7bd4c07ebf0412c804ff1a8a7ca932c1",
+    "buildings/b_helipad_damaged.png": "21492d1019469c6701b981ec7dace433",
+    "buildings/b_helipad_damaged_mask.png": "19e4f1b8c27628d8cdf44c62015769dc",
+    "buildings/b_hospital_build_0.png": "d656ea3e45154e3962a0ba131aef7264",
+    "buildings/b_hospital_build_0_mask.png": "122eea56b48600e0689a02202655a5a9",
+    "buildings/b_hospital_build_1.png": "448c12ea05eea100453cddaf446fb089",
+    "buildings/b_hospital_build_1_mask.png": "122eea56b48600e0689a02202655a5a9",
+    "buildings/b_hospital_build_2.png": "bbe925b8ccfc92fd38f00ad0cd5e908f",
+    "buildings/b_hospital_build_2_mask.png": "122eea56b48600e0689a02202655a5a9",
+    "buildings/b_hospital_built.png": "b85950cc29fa78b78c72753c5cbf923e",
+    "buildings/b_hospital_built_mask.png": "00955a053d78689a24c2f508764f2cfd",
+    "buildings/b_hospital_damaged.png": "a5785c66cb155bd7e75f0c709870f7a3",
+    "buildings/b_hospital_damaged_mask.png": "62efd5ffeb4d1b4a3f1debea2e419cdd",
+    "buildings/b_shipyard_water_0.png": "703a4305023fdd1947e3151368d473bd",
+    "buildings/b_shipyard_water_0_build_0.png": "87298c0457bf11e1c708fddb178c8dd4",
+    "buildings/b_shipyard_water_0_build_0_mask.png": "3bf0d72e2a780be33eacd1f08e1d3181",
+    "buildings/b_shipyard_water_0_build_1.png": "4409a03003015e45e09d8835608dea07",
+    "buildings/b_shipyard_water_0_build_1_mask.png": "3bf0d72e2a780be33eacd1f08e1d3181",
+    "buildings/b_shipyard_water_0_build_2.png": "2919948d3acb6d54c05786b1bcee6833",
+    "buildings/b_shipyard_water_0_build_2_mask.png": "3bf0d72e2a780be33eacd1f08e1d3181",
+    "buildings/b_shipyard_water_0_damaged.png": "6f6001416aefd387c32285418041e5d2",
+    "buildings/b_shipyard_water_0_damaged_mask.png": "dae51a2da5fea3b63e524e854459ec06",
+    "buildings/b_shipyard_water_0_mask.png": "542db308d99abc128dabe1c8e807d6f0",
+    "buildings/b_shipyard_water_1.png": "d389d8077d7ae72fafac32675b97d7fa",
+    "buildings/b_shipyard_water_1_build_0.png": "2f8a05fb7be13cd79f6db43c9b95674d",
+    "buildings/b_shipyard_water_1_build_0_mask.png": "5ad97b234dcddfe021da7f6053db93e9",
+    "buildings/b_shipyard_water_1_build_1.png": "3d6601bd95cdacecb00aec23260ce1c6",
+    "buildings/b_shipyard_water_1_build_1_mask.png": "5ad97b234dcddfe021da7f6053db93e9",
+    "buildings/b_shipyard_water_1_build_2.png": "01ed81f5348b410f9d13f1a42310567b",
+    "buildings/b_shipyard_water_1_build_2_mask.png": "5ad97b234dcddfe021da7f6053db93e9",
+    "buildings/b_shipyard_water_1_damaged.png": "15260f6b7bde0633bae9f8fd227d79db",
+    "buildings/b_shipyard_water_1_damaged_mask.png": "0bbfbb6dc3521fb867717544714028c6",
+    "buildings/b_shipyard_water_1_mask.png": "493f65b8fd604d87c02d42c7d8144cdb",
+    "buildings/b_shipyard_water_2.png": "7cc75636853ec242a4a00a9e591ad69b",
+    "buildings/b_shipyard_water_2_build_0.png": "bf27e2ae2b0d161ab8cdac3448d9e6d1",
+    "buildings/b_shipyard_water_2_build_0_mask.png": "bcbf67c20d1b06e73bd2542f28509583",
+    "buildings/b_shipyard_water_2_build_1.png": "22adc29fa0add2dee24cb275ee4fd37c",
+    "buildings/b_shipyard_water_2_build_1_mask.png": "bcbf67c20d1b06e73bd2542f28509583",
+    "buildings/b_shipyard_water_2_build_2.png": "7fa0a7a1f9de68106527fc9d4d7954e1",
+    "buildings/b_shipyard_water_2_build_2_mask.png": "bcbf67c20d1b06e73bd2542f28509583",
+    "buildings/b_shipyard_water_2_damaged.png": "41fd7932756e014ffa1db6b55b475dc5",
+    "buildings/b_shipyard_water_2_damaged_mask.png": "5f3af8c376b6cbac714d45d81a2f971c",
+    "buildings/b_shipyard_water_2_mask.png": "f9f1631b5440096170f7e92a29e460cb",
+    "buildings/b_shipyard_water_3.png": "0d5772e5689120e722ca5d281773c221",
+    "buildings/b_shipyard_water_3_build_0.png": "bd4466a4b6f16fcd9e5e5c2097626435",
+    "buildings/b_shipyard_water_3_build_0_mask.png": "09fe4769eb259467f42612169ec4ba62",
+    "buildings/b_shipyard_water_3_build_1.png": "e45cfaeaed62c48d5234b6777ea58313",
+    "buildings/b_shipyard_water_3_build_1_mask.png": "09fe4769eb259467f42612169ec4ba62",
+    "buildings/b_shipyard_water_3_build_2.png": "fbb7c79fd9b8860b7a978c678e6bd6e8",
+    "buildings/b_shipyard_water_3_build_2_mask.png": "09fe4769eb259467f42612169ec4ba62",
+    "buildings/b_shipyard_water_3_damaged.png": "0adea33cd2885a05c7129f6435094ee1",
+    "buildings/b_shipyard_water_3_damaged_mask.png": "b3a1ea33903a35de6e931057c4b5bda7",
+    "buildings/b_shipyard_water_3_mask.png": "b3a1ea33903a35de6e931057c4b5bda7",
+    "buildings/b_supply_pier_water_0.png": "5bba8e085ac53e13c16fca9dabeddf93",
+    "buildings/b_supply_pier_water_0_build_0.png": "99125b9f396ee7e3768adc0bf839d49a",
+    "buildings/b_supply_pier_water_0_build_0_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/b_supply_pier_water_0_build_1.png": "1cbac857aa94b2ae447df50e288a4547",
+    "buildings/b_supply_pier_water_0_build_1_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/b_supply_pier_water_0_build_2.png": "1d31b265be9a3e3e27d788ae5fa9d1dd",
+    "buildings/b_supply_pier_water_0_build_2_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/b_supply_pier_water_0_damaged.png": "7b8d8408229cd782cd415d338f50f3b5",
+    "buildings/b_supply_pier_water_0_damaged_mask.png": "2976544a9028dbbc0e868fbf8fd2fe44",
+    "buildings/b_supply_pier_water_0_mask.png": "af04cfa5f84e4dc51cd36139090bf6bf",
+    "buildings/b_supply_pier_water_1.png": "62873487f05e6e8465575e609783228d",
+    "buildings/b_supply_pier_water_1_build_0.png": "0327ef652defbec494908f4b1933e981",
+    "buildings/b_supply_pier_water_1_build_0_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/b_supply_pier_water_1_build_1.png": "473c75648d00994975736a71d1cb2f43",
+    "buildings/b_supply_pier_water_1_build_1_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/b_supply_pier_water_1_build_2.png": "eafb36cb74e83421c7d0b01656d5ecda",
+    "buildings/b_supply_pier_water_1_build_2_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/b_supply_pier_water_1_damaged.png": "4485219120d8827bb2bc03b74547c9f9",
+    "buildings/b_supply_pier_water_1_damaged_mask.png": "4ccd0b98ffdc9ca013afe332883d0a40",
+    "buildings/b_supply_pier_water_1_mask.png": "4ccd0b98ffdc9ca013afe332883d0a40",
+    "buildings/b_supply_pier_water_2.png": "19357e46b097f1642fd4cb7009dcd690",
+    "buildings/b_supply_pier_water_2_build_0.png": "95de9c36d7d98dc39dff1be7724c6f68",
+    "buildings/b_supply_pier_water_2_build_0_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/b_supply_pier_water_2_build_1.png": "376c8554e388959a4e8dc7e8847d376d",
+    "buildings/b_supply_pier_water_2_build_1_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/b_supply_pier_water_2_build_2.png": "1ee541c3b9f0e91892e3efc50b8ae933",
+    "buildings/b_supply_pier_water_2_build_2_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/b_supply_pier_water_2_damaged.png": "a2543e464887b39d0c6a9d807535ecff",
+    "buildings/b_supply_pier_water_2_damaged_mask.png": "9a0a0cee8a301a7a9278c50e4dcd3e53",
+    "buildings/b_supply_pier_water_2_mask.png": "d61c2b5e2670b517c07a77e0a56ce14c",
+    "buildings/b_supply_pier_water_3.png": "37ba40428e01723e3a81964e69f9e8ab",
+    "buildings/b_supply_pier_water_3_build_0.png": "f266d425c636f0b70587b9290c3a4321",
+    "buildings/b_supply_pier_water_3_build_0_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/b_supply_pier_water_3_build_1.png": "ee525e31f2bc4433e2ba8bb17aeeb947",
+    "buildings/b_supply_pier_water_3_build_1_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/b_supply_pier_water_3_build_2.png": "abd8fc9adc917c5059a7c0f249565b2f",
+    "buildings/b_supply_pier_water_3_build_2_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/b_supply_pier_water_3_damaged.png": "793a2baa8aa8f390705ecb363a8df3fa",
+    "buildings/b_supply_pier_water_3_damaged_mask.png": "91eae0310defa6a2beace42cee203c1c",
+    "buildings/b_supply_pier_water_3_mask.png": "91eae0310defa6a2beace42cee203c1c",
+    "buildings/m_coastal_battery_build_0.png": "dea18c63f57663daae7f9a8adbe8a6a9",
+    "buildings/m_coastal_battery_build_0_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/m_coastal_battery_build_1.png": "c75cb2c5341ecac41858b82f2855ce7c",
+    "buildings/m_coastal_battery_build_1_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/m_coastal_battery_build_2.png": "2398e50cf54a8ba478308dd52f37a562",
+    "buildings/m_coastal_battery_build_2_mask.png": "98837ddb205b9e9e5856abba882a5f15",
+    "buildings/m_coastal_battery_built.png": "035c5fca07ab1fed65ce5dedc04d4700",
+    "buildings/m_coastal_battery_built_mask.png": "3ec453d9c0b286df51a25d1e414f065e",
+    "buildings/m_coastal_battery_damaged.png": "52b04006a4e3f976105265e3361fc4f4",
+    "buildings/m_coastal_battery_damaged_mask.png": "e61ba0c5d7b22395edaaf2dfe9a5b5b1",
+    "buildings/m_drone_bay_build_0.png": "c8297044fc48fed255c983d45b15c1ec",
+    "buildings/m_drone_bay_build_0_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/m_drone_bay_build_1.png": "366ede997cd835603cb8be493cf73752",
+    "buildings/m_drone_bay_build_1_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/m_drone_bay_build_2.png": "7f690f3ce7e3104ea8cb771e837ccad5",
+    "buildings/m_drone_bay_build_2_mask.png": "bb98dbd344e185bac30312698f30e664",
+    "buildings/m_drone_bay_lvl_0.png": "3a1631f27d5aa172d2e40e5b55673187",
+    "buildings/m_drone_bay_lvl_0_damaged.png": "20727f2434efa2694653aa8271740511",
+    "buildings/m_drone_bay_lvl_0_damaged_mask.png": "e7252617d82ba6540ba6aa958c0063df",
+    "buildings/m_drone_bay_lvl_0_mask.png": "2ab2d70d8109a17bfce0c727ef272b1d",
+    "buildings/m_drone_bay_lvl_1.png": "bcca5d86a1fda1a06f791768992a3168",
+    "buildings/m_drone_bay_lvl_1_damaged.png": "da92ada7c619890d3d549989454ff55c",
+    "buildings/m_drone_bay_lvl_1_damaged_mask.png": "2d3ab064a03165438ea7cf5a685cc27e",
+    "buildings/m_drone_bay_lvl_1_mask.png": "2ab2d70d8109a17bfce0c727ef272b1d",
+    "buildings/m_drone_bay_lvl_2.png": "249e9e498d535225a74f66b4d92f0642",
+    "buildings/m_drone_bay_lvl_2_damaged.png": "37c954531e3a1effc03fdbae2a4c8bf5",
+    "buildings/m_drone_bay_lvl_2_damaged_mask.png": "810fa90f2bfebfdc3d8e36555631992c",
+    "buildings/m_drone_bay_lvl_2_mask.png": "2ab2d70d8109a17bfce0c727ef272b1d",
+    "buildings/m_drone_bay_lvl_3.png": "e7d9855b64ec6505a5c247e5ddd02da4",
+    "buildings/m_drone_bay_lvl_3_damaged.png": "9b0e8526975155c66d2f42aea8fc3880",
+    "buildings/m_drone_bay_lvl_3_damaged_mask.png": "197d8712c7512aeff19c3c96c9ed9e45",
+    "buildings/m_drone_bay_lvl_3_mask.png": "197d8712c7512aeff19c3c96c9ed9e45",
+    "buildings/m_launch_rail_rot_0.png": "b17589f6a0aa20c28a05dc01b6e95adc",
+    "buildings/m_launch_rail_rot_0_build_0.png": "094875ab2c0411d9307e86d3468f1f52",
+    "buildings/m_launch_rail_rot_0_build_0_mask.png": "0ac5601078c86a29234dbafb0ecc417c",
+    "buildings/m_launch_rail_rot_0_build_1.png": "de0f791384978fe93e58d47687f6619e",
+    "buildings/m_launch_rail_rot_0_build_1_mask.png": "0ac5601078c86a29234dbafb0ecc417c",
+    "buildings/m_launch_rail_rot_0_build_2.png": "016d34dc5139cad002aaabc239bc6cdf",
+    "buildings/m_launch_rail_rot_0_build_2_mask.png": "0ac5601078c86a29234dbafb0ecc417c",
+    "buildings/m_launch_rail_rot_0_damaged.png": "50f67d27a20bc1846329e0d4619dd91f",
+    "buildings/m_launch_rail_rot_0_damaged_mask.png": "aa361d4f3160c7a0cb2559313a061579",
+    "buildings/m_launch_rail_rot_0_mask.png": "6f8fcf3a191ef119545fc0f52eff36cb",
+    "buildings/m_launch_rail_rot_1.png": "349a54ac63d5f8b132344f3b3f91893e",
+    "buildings/m_launch_rail_rot_1_build_0.png": "415eeea7eec6c8f1ee1bceb507404269",
+    "buildings/m_launch_rail_rot_1_build_0_mask.png": "a2c252f04eb90790461af6c540a2875c",
+    "buildings/m_launch_rail_rot_1_build_1.png": "adff6675fd54b1583f7bc8bef46aaa92",
+    "buildings/m_launch_rail_rot_1_build_1_mask.png": "a2c252f04eb90790461af6c540a2875c",
+    "buildings/m_launch_rail_rot_1_build_2.png": "1fb6fabdd20112320923caf98fb0b650",
+    "buildings/m_launch_rail_rot_1_build_2_mask.png": "a2c252f04eb90790461af6c540a2875c",
+    "buildings/m_launch_rail_rot_1_damaged.png": "530facde0071590f45697e084b3aab11",
+    "buildings/m_launch_rail_rot_1_damaged_mask.png": "39016306c3bd50a02bbf1d1044ce986d",
+    "buildings/m_launch_rail_rot_1_mask.png": "92b359d3629abcd1f2231bb1a6f40dc9",
+    "buildings/m_launch_rail_rot_2.png": "a08acabc6a59abf2918947af07eb9a4c",
+    "buildings/m_launch_rail_rot_2_build_0.png": "0dcbf4425f90d4b5e13505e5cbf6c441",
+    "buildings/m_launch_rail_rot_2_build_0_mask.png": "a1f8dfca622a6e75b4eb5c765f4bbf91",
+    "buildings/m_launch_rail_rot_2_build_1.png": "e79b659d8e914e71a3bad737854d51bf",
+    "buildings/m_launch_rail_rot_2_build_1_mask.png": "a1f8dfca622a6e75b4eb5c765f4bbf91",
+    "buildings/m_launch_rail_rot_2_build_2.png": "becaf430952bcf85c5ede398112567a4",
+    "buildings/m_launch_rail_rot_2_build_2_mask.png": "a1f8dfca622a6e75b4eb5c765f4bbf91",
+    "buildings/m_launch_rail_rot_2_damaged.png": "97c08d6402d28dfe7608a782c97b13c5",
+    "buildings/m_launch_rail_rot_2_damaged_mask.png": "68ef06d8ee3324ddc14f7d61f28916ff",
+    "buildings/m_launch_rail_rot_2_mask.png": "c5f0a23eead52788bfecda331a243f00",
+    "buildings/m_launch_rail_rot_3.png": "9ec8fa6af6704b946113177e9a5b315e",
+    "buildings/m_launch_rail_rot_3_build_0.png": "66bf5e4bc8602c2e2dad99d7efc5cd98",
+    "buildings/m_launch_rail_rot_3_build_0_mask.png": "bedbefd60d26062f40757aa1d2d44044",
+    "buildings/m_launch_rail_rot_3_build_1.png": "a763939b001277ac452ee222416825b5",
+    "buildings/m_launch_rail_rot_3_build_1_mask.png": "bedbefd60d26062f40757aa1d2d44044",
+    "buildings/m_launch_rail_rot_3_build_2.png": "99f25759ec4ef213d29cc361b41b1a92",
+    "buildings/m_launch_rail_rot_3_build_2_mask.png": "bedbefd60d26062f40757aa1d2d44044",
+    "buildings/m_launch_rail_rot_3_damaged.png": "595d7397b56cf593eb70588b82d777b9",
+    "buildings/m_launch_rail_rot_3_damaged_mask.png": "eba45742d37fa747360dbc50e5672b92",
+    "buildings/m_launch_rail_rot_3_mask.png": "3adef99246d33cbaefcf2481bbca3238",
+    "buildings/m_shipyard_water_0.png": "c720de5f4da4887ed84c4d1e23e0cdce",
+    "buildings/m_shipyard_water_0_build_0.png": "e4c30f20aece83a0f02cb1c0ba9912da",
+    "buildings/m_shipyard_water_0_build_0_mask.png": "58535b5c15f5589c0191e9ccab11135d",
+    "buildings/m_shipyard_water_0_build_1.png": "7ee280ae4fe71f93864ef7357014d3d2",
+    "buildings/m_shipyard_water_0_build_1_mask.png": "58535b5c15f5589c0191e9ccab11135d",
+    "buildings/m_shipyard_water_0_build_2.png": "3d8df2df4319efb9742f89dec1d02be5",
+    "buildings/m_shipyard_water_0_build_2_mask.png": "58535b5c15f5589c0191e9ccab11135d",
+    "buildings/m_shipyard_water_0_damaged.png": "25bdbd0c4e33c60635cc3cf91767a8bb",
+    "buildings/m_shipyard_water_0_damaged_mask.png": "440f7338dae472e7fd6931036788bdf7",
+    "buildings/m_shipyard_water_0_mask.png": "928ac2b8ffe4b628a076cb35732acb7c",
+    "buildings/m_shipyard_water_1.png": "af2527e5481371189837e0c7e91b57aa",
+    "buildings/m_shipyard_water_1_build_0.png": "205f582087ef70f564b6f140b8e79420",
+    "buildings/m_shipyard_water_1_build_0_mask.png": "9f90ae0cb6232685c1212ad22ae53f0a",
+    "buildings/m_shipyard_water_1_build_1.png": "a62644a8e9ab478aba5fa8ebd36358cd",
+    "buildings/m_shipyard_water_1_build_1_mask.png": "9f90ae0cb6232685c1212ad22ae53f0a",
+    "buildings/m_shipyard_water_1_build_2.png": "1b4e51ff2ba8755cf619d05d3abb5034",
+    "buildings/m_shipyard_water_1_build_2_mask.png": "9f90ae0cb6232685c1212ad22ae53f0a",
+    "buildings/m_shipyard_water_1_damaged.png": "e9e0ad6bdfe041acd18e81bbda593599",
+    "buildings/m_shipyard_water_1_damaged_mask.png": "5c8c594a5facf09336ef779e001f0660",
+    "buildings/m_shipyard_water_1_mask.png": "5c8c594a5facf09336ef779e001f0660",
+    "buildings/m_shipyard_water_2.png": "cbc5713f5e9c4a969ca7a31b20bdc02f",
+    "buildings/m_shipyard_water_2_build_0.png": "716e99cfd1589d222324ff50683d7b29",
+    "buildings/m_shipyard_water_2_build_0_mask.png": "6cdb2a9c3f0ba98e344703e6687f1c30",
+    "buildings/m_shipyard_water_2_build_1.png": "d26c66f314e3740d1d554085fee84a27",
+    "buildings/m_shipyard_water_2_build_1_mask.png": "6cdb2a9c3f0ba98e344703e6687f1c30",
+    "buildings/m_shipyard_water_2_build_2.png": "13e38101063e9d95eb2cea647b065b52",
+    "buildings/m_shipyard_water_2_build_2_mask.png": "6cdb2a9c3f0ba98e344703e6687f1c30",
+    "buildings/m_shipyard_water_2_damaged.png": "13b00102c95a7755d15edc132e3425c5",
+    "buildings/m_shipyard_water_2_damaged_mask.png": "1393253f54656ca18a2ac673b20d4ec4",
+    "buildings/m_shipyard_water_2_mask.png": "1393253f54656ca18a2ac673b20d4ec4",
+    "buildings/m_shipyard_water_3.png": "f2c61a6ba04380b3391e055c0802b7dc",
+    "buildings/m_shipyard_water_3_build_0.png": "bb5fbfab9e95e97afe1c59a090d64f7b",
+    "buildings/m_shipyard_water_3_build_0_mask.png": "31c2643fd37708e424850553c7da03fb",
+    "buildings/m_shipyard_water_3_build_1.png": "be63d54c3ca75e74a27120c10131ef25",
+    "buildings/m_shipyard_water_3_build_1_mask.png": "31c2643fd37708e424850553c7da03fb",
+    "buildings/m_shipyard_water_3_build_2.png": "46d2babdf252badf5ec54125415988e4",
+    "buildings/m_shipyard_water_3_build_2_mask.png": "31c2643fd37708e424850553c7da03fb",
+    "buildings/m_shipyard_water_3_damaged.png": "f731f8493c0faba9e502f8a9e5be47ff",
+    "buildings/m_shipyard_water_3_damaged_mask.png": "acf5b51a246691aa0cff3a03c64d3255",
+    "buildings/m_shipyard_water_3_mask.png": "acf5b51a246691aa0cff3a03c64d3255",
+    "buildings/m_supply_pier_water_0.png": "ca7cbdfd5b8f16411a8b7deb92066daa",
+    "buildings/m_supply_pier_water_0_build_0.png": "08a28e556bf30a0adfa350a68cbface3",
+    "buildings/m_supply_pier_water_0_build_0_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/m_supply_pier_water_0_build_1.png": "c5a96b6be6bd27626a0eeafbeb81a6fe",
+    "buildings/m_supply_pier_water_0_build_1_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/m_supply_pier_water_0_build_2.png": "cec055283747664cf5bada38f3206afb",
+    "buildings/m_supply_pier_water_0_build_2_mask.png": "6ed3e0d4a65db8b7cd3d0efa66a804c6",
+    "buildings/m_supply_pier_water_0_damaged.png": "5a2789f817ca15e730d7bfd04606b17f",
+    "buildings/m_supply_pier_water_0_damaged_mask.png": "24a6fc5e255ed4192ab6e7f6d1c68b60",
+    "buildings/m_supply_pier_water_0_mask.png": "24a6fc5e255ed4192ab6e7f6d1c68b60",
+    "buildings/m_supply_pier_water_1.png": "392b967cba31d30e5674142b0f64a4fa",
+    "buildings/m_supply_pier_water_1_build_0.png": "4aac79e0849ce87570144fe2a4dfed2a",
+    "buildings/m_supply_pier_water_1_build_0_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/m_supply_pier_water_1_build_1.png": "7301908c063ee583c8b4702d3233d9e8",
+    "buildings/m_supply_pier_water_1_build_1_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/m_supply_pier_water_1_build_2.png": "6f513228b4c6d05cf6e517d980fa6654",
+    "buildings/m_supply_pier_water_1_build_2_mask.png": "4367963df7af63f8a14078e33b1daca7",
+    "buildings/m_supply_pier_water_1_damaged.png": "508214dbf06818cd009cf91dd45df995",
+    "buildings/m_supply_pier_water_1_damaged_mask.png": "45880f94dd289a3b90cd502438a37c15",
+    "buildings/m_supply_pier_water_1_mask.png": "45880f94dd289a3b90cd502438a37c15",
+    "buildings/m_supply_pier_water_2.png": "77adea706f6a40cb1ee9dc2745851d2f",
+    "buildings/m_supply_pier_water_2_build_0.png": "dd71d83fe8f5d580f7061cb39101d181",
+    "buildings/m_supply_pier_water_2_build_0_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/m_supply_pier_water_2_build_1.png": "e5231daa3b4c58f1bb8ede7cda68b3f9",
+    "buildings/m_supply_pier_water_2_build_1_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/m_supply_pier_water_2_build_2.png": "1474ee0920aa12d5b5d9bfa85b8bd0bc",
+    "buildings/m_supply_pier_water_2_build_2_mask.png": "e19ae40741752843cd95af4841bd0a7e",
+    "buildings/m_supply_pier_water_2_damaged.png": "ce72bde75be453f98203894bf76b1c76",
+    "buildings/m_supply_pier_water_2_damaged_mask.png": "9259ce439be697f232e2a29f7dc5fd30",
+    "buildings/m_supply_pier_water_2_mask.png": "1b2beccd7a9c695f4ced1413a35d173c",
+    "buildings/m_supply_pier_water_3.png": "662ee85976ad91a2656ab21f516afeb9",
+    "buildings/m_supply_pier_water_3_build_0.png": "45004046bcf2f71f07e15fea77151f64",
+    "buildings/m_supply_pier_water_3_build_0_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/m_supply_pier_water_3_build_1.png": "ae593e3390757fed029eaafc3359026a",
+    "buildings/m_supply_pier_water_3_build_1_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/m_supply_pier_water_3_build_2.png": "29b57b7586e4445b0140d82087c598d3",
+    "buildings/m_supply_pier_water_3_build_2_mask.png": "07193aa779338e10af24c3423d37f2c8",
+    "buildings/m_supply_pier_water_3_damaged.png": "3035ec8d864c9ea9ee1d1a153a8a5340",
+    "buildings/m_supply_pier_water_3_damaged_mask.png": "afd87ec6319f15b4f8e3ca9eb868aaf3",
+    "buildings/m_supply_pier_water_3_mask.png": "afd87ec6319f15b4f8e3ca9eb868aaf3",
+    "icons/a_aa_frigate.png": "3608d1279cccc0deb71538a9db3b4d4e",
+    "icons/a_air_tower.png": "6314bf4c4f3aac796f0b110929d14559",
+    "icons/a_airfield.png": "e2fb1a4178eb6ca41f8b8c61462fbac1",
+    "icons/a_airstrip.png": "1f13f0f56c9616acf73f622bd3b4d583",
+    "icons/a_attack_heli.png": "7e71390438928a6ce7ce8f0ab792607c",
+    "icons/a_coastal_battery.png": "f3301b4c4d0441dec1e1bb375a0925c0",
+    "icons/a_destroyer.png": "795098ace49165c39970e80f95f1d84d",
+    "icons/a_field_hospital.png": "52e475a60dd46ba01380ccf3fdd08c36",
+    "icons/a_forward_helipad.png": "85f5ac98c9aa15bc6aa99a6d6561058a",
+    "icons/a_forward_strip.png": "30cc9a9a8b9590744f94ab770740da36",
+    "icons/a_hangar_heavy.png": "a02d5191571f7fd3f2c6e1bd271d717a",
+    "icons/a_hangar_light.png": "d1d379d506eda4b5cee3b084d8f846be",
+    "icons/a_helipad.png": "a0f43b9b6f59220d8eb88588295a092c",
+    "icons/a_hospital.png": "da729460155c0f99282609c29ccaedca",
+    "icons/a_interceptor.png": "feaeaf78ba0bfe7a8804b715795d8a40",
+    "icons/a_landing_craft.png": "3bb6dcc35cd43db9be05087bb73a7f08",
+    "icons/a_patrol_boat.png": "367676cb303f4489177984c7bf3d434b",
+    "icons/a_shipyard.png": "90651e66b0ca05db2a4f37dc653a3935",
+    "icons/a_strike_jet.png": "9eb88da826e927ec269d096cf06a34f3",
+    "icons/a_supply_pier.png": "ac9bb78a894b72f63fa8115433c250f7",
+    "icons/a_transport_gunship.png": "0c1bfa92c6fab6f2a3be2181af7e7393",
+    "icons/a_vtol_dropship.png": "4b664fb9f099106e804edeffbb1f3e3d",
+    "icons/assign_engineers.png": "b3c15fdd0c1ab689da68faac7c8a8fa9",
+    "icons/b_aerodrome.png": "b7bdcc8171be6f5596e2435433ba9e9d",
+    "icons/b_air_tower.png": "eaa39f28aa6a5719aa83d4659fc0cf46",
+    "icons/b_airstrip.png": "57eb212915a0b85905dcb40bf06b426c",
+    "icons/b_barge_carrier.png": "c7cfbf1e25f8db8f402e8bf0de22f688",
+    "icons/b_bomber.png": "c4fcf502efa5bf6b8dc9035daa11d806",
+    "icons/b_coastal_battery.png": "3793d46f873fdea29478ed923515079f",
+    "icons/b_field_hospital.png": "e9c2f78c172ed98d6569d6f19a392042",
+    "icons/b_forward_helipad.png": "db0df948b54aed51ea2ff2649652afc7",
+    "icons/b_forward_strip.png": "eabb04fd6c1ba80f8d504efb86b2efc5",
+    "icons/b_gunship.png": "e177efd2a1574b44c1137eb850111222",
+    "icons/b_hangar_heavy.png": "7eac04baf5595fdf291e95232ecf50b9",
+    "icons/b_hangar_light.png": "aee434e89c9210c95ef006ee9afc4fa0",
+    "icons/b_heavy_lift.png": "21ee7e000378a65e63c7bffd16103287",
+    "icons/b_helipad.png": "4528d52977b3ae4230da27f5e46f2b06",
+    "icons/b_hospital.png": "0b3453c821d410952342fa432b8f7f9b",
+    "icons/b_monitor.png": "31d7288052f68d82dee9bcf2c6de63cb",
+    "icons/b_river_gunboat.png": "8285bd53989f9c16ad93363279d3ce96",
+    "icons/b_shipyard.png": "d332cb40f19d770683cba6f230cf909e",
+    "icons/b_supply_pier.png": "b4aabdb42e082a4a31298c526189cbe3",
+    "icons/b_vtol_dropship.png": "70ab90d552f35451c5a0c04e256cbae5",
+    "icons/bombard.png": "6980b7bbc13838179e3dd83703c22261",
+    "icons/build_hangar.png": "d6fb11f901c043c797f25c37e41d6577",
+    "icons/build_hangar_heavy.png": "77b1721df6e2088755b2cb480c3c192b",
+    "icons/build_hangar_light.png": "dde4048826858f2cf739ad3f242985c8",
+    "icons/land_at.png": "ec1bf6f0d0076dcbf08d85ad6705d14a",
+    "icons/launch_drone.png": "2bf0e866f89f69ecc26a1a38bd302be6",
+    "icons/launch_drone_emp.png": "b2cd9b3c0edabb00d62b5d608bb24cae",
+    "icons/launch_drone_frag.png": "70c7b1ad5a876b87b70f6069c104d3d3",
+    "icons/launch_drone_recon.png": "4d8700671aad8807f81be1f527aca44a",
+    "icons/launch_drone_strike.png": "6d7e6bcf681535c1d9dc49553817afea",
+    "icons/m_amphib_crawler.png": "8d46cfbf1f3b14ef8d50445ce8b0ec24",
+    "icons/m_coastal_battery.png": "b804cd0c036610e184d9bb45c35d7664",
+    "icons/m_drone_bay.png": "6261b93396c01da54eab7fc6e4c20038",
+    "icons/m_drone_carrier.png": "1ac909291bce8a967de08235eae47a8e",
+    "icons/m_hydro_skiff.png": "c8db3c9acae010ba567c4a7011e0afd7",
+    "icons/m_interceptor_swarm.png": "ffd93a11a186ff2835f507918d93e0c3",
+    "icons/m_launch_rail.png": "f92ea10b4296a014f0912556b0b60629",
+    "icons/m_lifter_drone.png": "09f78c021b34894cf25a375f59e3454a",
+    "icons/m_micro_drone.png": "65f70681dcb384ed4c4175cf6b3ca5ca",
+    "icons/m_shipyard.png": "c5c9fb0ef723ffa44db21e0a9c2f733f",
+    "icons/m_supply_pier.png": "0d9935b11418ac054a6672a3bfae6d26",
+    "icons/rebase.png": "54bf98b7bbe9b229ebe3d6fc30f2f3db",
+    "icons/set_auto_evac.png": "ae8edc0d24194051593997d7ff9d9a26",
+    "icons/set_auto_evac_off.png": "869aff0f3be0d74cf78b37e2f2affec4",
+    "icons/set_auto_evac_on.png": "ae8edc0d24194051593997d7ff9d9a26",
+    "icons/set_auto_resupply.png": "5600994dec978601e32724fad2fbde77",
+    "icons/set_auto_resupply_off.png": "06eb451b8fdbe3e160ac1a9202c154b9",
+    "icons/set_auto_resupply_roam.png": "1b47157f1a4d5f54d34a137a539eab66",
+    "icons/set_auto_resupply_station.png": "f9735834c46fbcc574322221fd92cd5d",
+    "icons/sortie.png": "1dee9dd7e291fb077416535686747e3a",
+    "icons/tactical.png": "8af43235d2f3cd25ed5818efffee17f3",
+    "icons/tactical_armored_attack.png": "9642d01232542ad46e01f3626999b1a7",
+    "icons/tactical_breach.png": "56e428be2440fd8c0f26ad731494143b",
+    "icons/tactical_infiltrate.png": "12c9dab5aca24404cca37e35c20f29a7",
+    "icons/tactical_stack_up.png": "30994a5cc58b62b13809dd63f79b8dd6",
+    "icons/tactical_takedown.png": "3f46568060bf61ff03a72f42f2c2f4b8",
+    "icons/take_off.png": "f986988cc22e9785b6a039e8ac6c4665",
+    "icons/upgrade_airfield.png": "904ae9c7ecc1d691bda5ded2b67d2328",
+    "icons/upgrade_airfield_extra_strip.png": "904ae9c7ecc1d691bda5ded2b67d2328",
+    "icons/upgrade_hangar.png": "ac5b61ff1c2d0a56968e8f746a2506ec",
+    "icons/upgrade_hangar_level.png": "ac5b61ff1c2d0a56968e8f746a2506ec",
+    "icons/upgrade_hangar_to_heavy.png": "9a8a5a6999e20ae5178498cddcceeeda",
+    "strips/a_f0_end.png": "a27507f11ceb32e5d801829863839598",
+    "strips/a_f0_link.png": "9f11fe8843ff618240084fc0de792c2f",
+    "strips/a_f0_mid.png": "304fe8f4229bc9fc0feaf28572c03c26",
+    "strips/a_f0_start.png": "4efd4e767d811767bcbeb06ede43d518",
+    "strips/a_f1_end.png": "d115fd3bc7a7b76b934dac32d27cf89b",
+    "strips/a_f1_link.png": "20694b524deb42293fb6c662548cacfd",
+    "strips/a_f1_mid.png": "1cc24dfb73f640e3967e944fb936a6e5",
+    "strips/a_f1_start.png": "237f0ac93391e52bc427b00032a8c5c5",
+    "strips/a_f2_end.png": "cb595c5291e434b1d1e552941a27d15a",
+    "strips/a_f2_link.png": "5563078c70961aec24ae3a28f50fe983",
+    "strips/a_f2_mid.png": "8dd1c4fd68704eaca11b2f18231917d2",
+    "strips/a_f2_start.png": "6b40fe0edbca6d6cd4b2fe4695483db0",
+    "strips/a_f3_end.png": "1b95a80eab5e6e15b62cb6df467dcd4b",
+    "strips/a_f3_link.png": "e5dfe9dc0ff82bdf3670a4855168dd36",
+    "strips/a_f3_mid.png": "7da2d6bc7323bc10e064b746a9eb9b50",
+    "strips/a_f3_start.png": "ffcee1630136864f7adbe7e8da7786bd",
+    "strips/b_f0_end.png": "61d98d3c91baa07b5cc5ef0da8d1d151",
+    "strips/b_f0_link.png": "9e48b9da3cc62354d0188814443597ae",
+    "strips/b_f0_mid.png": "4bbb4cafffa57c2e53d5554272177b45",
+    "strips/b_f0_start.png": "78f6a0ea71a56cca9fb1811f0ceddce0",
+    "strips/b_f1_end.png": "e7e27546b77b14f0ad84516e14305e34",
+    "strips/b_f1_link.png": "3ba6b11ebfc37f75344b4288a017144f",
+    "strips/b_f1_mid.png": "f29d7dead61e9e0d4b9903cc6b63e05b",
+    "strips/b_f1_start.png": "db49dc6ef1f9173859442251f1dc9ef3",
+    "strips/b_f2_end.png": "08e1cf3a25a1aa078899da06c5ea97a2",
+    "strips/b_f2_link.png": "05bf4190a180c06ac405772afc3b9201",
+    "strips/b_f2_mid.png": "b195dfa8f1b51c9bb0b111e99f9c6419",
+    "strips/b_f2_start.png": "8e154914270e0acac01e4166ded183fa",
+    "strips/b_f3_end.png": "4bbb2a7eeea5f031a8909a3ff4154108",
+    "strips/b_f3_link.png": "dc7c815575a816cac3e4ddc2485ed824",
+    "strips/b_f3_mid.png": "291fd7e8dc0b942ffd387554d9555ae1",
+    "strips/b_f3_start.png": "965c89dcaf8b7ffb0e4d5ff1b183f18c",
+    "strips/closed_f0.png": "22873d62725ac1da046d52a707d80ca6",
+    "strips/closed_f1.png": "d08f5ffbce25cb03298cb0c589ad1378",
+    "strips/closed_f2.png": "e180c9bbe53fbddbbfe0be546cd10b11",
+    "strips/closed_f3.png": "d08f5ffbce25cb03298cb0c589ad1378",
+    "strips/crater_0.png": "4d0ff8eb97018262798d56621bdf69d4",
+    "strips/crater_0_repair.png": "bd20f1525975c448b11b017678ca0ff7",
+    "strips/crater_1.png": "5ee8176e27638cb98cad4bb539e472b6",
+    "strips/crater_1_repair.png": "64a1542c24885da438b0b3885f6075b9",
+    "strips/crater_2.png": "df89cff7c2eb4bf6ab69d111d62f826f",
+    "strips/crater_2_repair.png": "61227c9ae8a16c5c55483eb92eb135ab",
+    "strips/fwd_f0_end.png": "f49196d27f2e6b49f2509cf621ba384c",
+    "strips/fwd_f0_link.png": "a7307f42cefa3da92b67ac1c9f9e6733",
+    "strips/fwd_f0_mid.png": "f87891fb3df8b405edc912ab8b4ecf10",
+    "strips/fwd_f0_start.png": "fa5f5fc904ae074751d9a4f8cb674eb7",
+    "strips/fwd_f1_end.png": "2a89b346ea26d00a6dc0dc89f8b622f8",
+    "strips/fwd_f1_link.png": "5b993dc762f2703645244cf549b586b1",
+    "strips/fwd_f1_mid.png": "6ac6c4881870289374e2f8184ad25bea",
+    "strips/fwd_f1_start.png": "b45dbdde423c1c973c8873c23b42a0dc",
+    "strips/fwd_f2_end.png": "83a3d7f2a7afd94b7dbe263080ef72ab",
+    "strips/fwd_f2_link.png": "9e141da610a883c3b42c7a8f1426eae7",
+    "strips/fwd_f2_mid.png": "32876c5ec2f3f950a387bdbcd27f1871",
+    "strips/fwd_f2_start.png": "230c4598cb11962943299c4f1522c034",
+    "strips/fwd_f3_end.png": "824bf5d8ebcc6121b7ce1ff83220212e",
+    "strips/fwd_f3_link.png": "255944e8a5689774e5ca0df74778dcc5",
+    "strips/fwd_f3_mid.png": "fbab7897b404b3617cc264e2644700b2",
+    "strips/fwd_f3_start.png": "25d24375b42634ded7b175b50b828278",
+    "strips/m_f0_end.png": "c9e9d98cd08ff88a3d4c48dd01ccfe03",
+    "strips/m_f0_link.png": "28d26b8527655b17837bf1e86751c84c",
+    "strips/m_f0_mid.png": "c75339a208963dcb54b419c48f506461",
+    "strips/m_f0_start.png": "3150544cf1b24639a44538c78983803f",
+    "strips/m_f1_end.png": "227a320a997074d3ebd2ec833b64bc3d",
+    "strips/m_f1_link.png": "50841a48e5dc0d9c3e1552ab3d5fb7c1",
+    "strips/m_f1_mid.png": "266f05421f50d886c0aca5281d1cfd2b",
+    "strips/m_f1_start.png": "a1a7a4016ba99356584e68b80216f535",
+    "strips/m_f2_end.png": "035236bc5b5870af9da7a554bb9fd41c",
+    "strips/m_f2_link.png": "18b86285c559f92633c83727491742eb",
+    "strips/m_f2_mid.png": "417ed625aebb225ae02f16db7f677f94",
+    "strips/m_f2_start.png": "d758a66eb74c8b41291b08045e6b10b5",
+    "strips/m_f3_end.png": "92a2385926b9e429b5242211791e0729",
+    "strips/m_f3_link.png": "bc873aa3fc7ee6d4f828763e31daa25a",
+    "strips/m_f3_mid.png": "f5a200097bbb013fa8865ea32b357f65",
+    "strips/m_f3_start.png": "19dd49d94acff185d197cd2041d5fec3"
+  },
+  "g5_bld": {
+    "defs": [
+      "a_airfield",
+      "a_airstrip",
+      "a_hangar_light",
+      "a_hangar_heavy",
+      "a_helipad",
+      "a_air_tower",
+      "a_forward_strip",
+      "a_forward_helipad",
+      "b_aerodrome",
+      "b_airstrip",
+      "b_hangar_light",
+      "b_hangar_heavy",
+      "b_helipad",
+      "b_air_tower",
+      "b_forward_strip",
+      "b_forward_helipad",
+      "m_launch_rail",
+      "m_drone_bay",
+      "a_shipyard",
+      "b_shipyard",
+      "m_shipyard",
+      "a_supply_pier",
+      "b_supply_pier",
+      "m_supply_pier",
+      "a_coastal_battery",
+      "b_coastal_battery",
+      "m_coastal_battery",
+      "a_hospital",
+      "a_field_hospital",
+      "b_hospital",
+      "b_field_hospital"
+    ],
+    "state_rules": {
+      "": "built / damaged / build_<0..2>",
+      "lvl": "hangar.level n (0..3) -> lvl_<n>; under 50% hp lvl_<n>_damaged; under construction build_<0..2>",
+      "rot": "facing_i f -> rot_<f>; under 50% hp rot_<f>_damaged; under construction rot_<f>_build_<0..2>",
+      "water": "water side d of the footprint (AX[d] points at the water cells) -> water_<d>; water_<d>_damaged; water_<d>_build_<0..2>"
+    },
+    "variants": {
+      "a_air_tower": "",
+      "a_airfield": "rot",
+      "a_airstrip": "rot",
+      "a_coastal_battery": "",
+      "a_field_hospital": "",
+      "a_forward_helipad": "",
+      "a_forward_strip": "rot",
+      "a_hangar_heavy": "lvl",
+      "a_hangar_light": "lvl",
+      "a_helipad": "",
+      "a_hospital": "",
+      "a_shipyard": "water",
+      "a_supply_pier": "water",
+      "b_aerodrome": "rot",
+      "b_air_tower": "",
+      "b_airstrip": "rot",
+      "b_coastal_battery": "",
+      "b_field_hospital": "",
+      "b_forward_helipad": "",
+      "b_forward_strip": "rot",
+      "b_hangar_heavy": "lvl",
+      "b_hangar_light": "lvl",
+      "b_helipad": "",
+      "b_hospital": "",
+      "b_shipyard": "water",
+      "b_supply_pier": "water",
+      "m_coastal_battery": "",
+      "m_drone_bay": "lvl",
+      "m_launch_rail": "rot",
+      "m_shipyard": "water",
+      "m_supply_pier": "water"
+    }
+  },
+  "group": "g5_bld",
+  "icons": {
+    "a_aa_frigate": "icons/a_aa_frigate.png",
+    "a_air_tower": "icons/a_air_tower.png",
+    "a_airfield": "icons/a_airfield.png",
+    "a_airstrip": "icons/a_airstrip.png",
+    "a_attack_heli": "icons/a_attack_heli.png",
+    "a_coastal_battery": "icons/a_coastal_battery.png",
+    "a_destroyer": "icons/a_destroyer.png",
+    "a_field_hospital": "icons/a_field_hospital.png",
+    "a_forward_helipad": "icons/a_forward_helipad.png",
+    "a_forward_strip": "icons/a_forward_strip.png",
+    "a_hangar_heavy": "icons/a_hangar_heavy.png",
+    "a_hangar_light": "icons/a_hangar_light.png",
+    "a_helipad": "icons/a_helipad.png",
+    "a_hospital": "icons/a_hospital.png",
+    "a_interceptor": "icons/a_interceptor.png",
+    "a_landing_craft": "icons/a_landing_craft.png",
+    "a_patrol_boat": "icons/a_patrol_boat.png",
+    "a_shipyard": "icons/a_shipyard.png",
+    "a_strike_jet": "icons/a_strike_jet.png",
+    "a_supply_pier": "icons/a_supply_pier.png",
+    "a_transport_gunship": "icons/a_transport_gunship.png",
+    "a_vtol_dropship": "icons/a_vtol_dropship.png",
+    "assign_engineers": "icons/assign_engineers.png",
+    "b_aerodrome": "icons/b_aerodrome.png",
+    "b_air_tower": "icons/b_air_tower.png",
+    "b_airstrip": "icons/b_airstrip.png",
+    "b_barge_carrier": "icons/b_barge_carrier.png",
+    "b_bomber": "icons/b_bomber.png",
+    "b_coastal_battery": "icons/b_coastal_battery.png",
+    "b_field_hospital": "icons/b_field_hospital.png",
+    "b_forward_helipad": "icons/b_forward_helipad.png",
+    "b_forward_strip": "icons/b_forward_strip.png",
+    "b_gunship": "icons/b_gunship.png",
+    "b_hangar_heavy": "icons/b_hangar_heavy.png",
+    "b_hangar_light": "icons/b_hangar_light.png",
+    "b_heavy_lift": "icons/b_heavy_lift.png",
+    "b_helipad": "icons/b_helipad.png",
+    "b_hospital": "icons/b_hospital.png",
+    "b_monitor": "icons/b_monitor.png",
+    "b_river_gunboat": "icons/b_river_gunboat.png",
+    "b_shipyard": "icons/b_shipyard.png",
+    "b_supply_pier": "icons/b_supply_pier.png",
+    "b_vtol_dropship": "icons/b_vtol_dropship.png",
+    "bombard": "icons/bombard.png",
+    "build_hangar": "icons/build_hangar.png",
+    "build_hangar_heavy": "icons/build_hangar_heavy.png",
+    "build_hangar_light": "icons/build_hangar_light.png",
+    "land_at": "icons/land_at.png",
+    "launch_drone": "icons/launch_drone.png",
+    "launch_drone_emp": "icons/launch_drone_emp.png",
+    "launch_drone_frag": "icons/launch_drone_frag.png",
+    "launch_drone_recon": "icons/launch_drone_recon.png",
+    "launch_drone_strike": "icons/launch_drone_strike.png",
+    "m_amphib_crawler": "icons/m_amphib_crawler.png",
+    "m_coastal_battery": "icons/m_coastal_battery.png",
+    "m_drone_bay": "icons/m_drone_bay.png",
+    "m_drone_carrier": "icons/m_drone_carrier.png",
+    "m_hydro_skiff": "icons/m_hydro_skiff.png",
+    "m_interceptor_swarm": "icons/m_interceptor_swarm.png",
+    "m_launch_rail": "icons/m_launch_rail.png",
+    "m_lifter_drone": "icons/m_lifter_drone.png",
+    "m_micro_drone": "icons/m_micro_drone.png",
+    "m_shipyard": "icons/m_shipyard.png",
+    "m_supply_pier": "icons/m_supply_pier.png",
+    "rebase": "icons/rebase.png",
+    "set_auto_evac": "icons/set_auto_evac.png",
+    "set_auto_evac_off": "icons/set_auto_evac_off.png",
+    "set_auto_evac_on": "icons/set_auto_evac_on.png",
+    "set_auto_resupply": "icons/set_auto_resupply.png",
+    "set_auto_resupply_off": "icons/set_auto_resupply_off.png",
+    "set_auto_resupply_roam": "icons/set_auto_resupply_roam.png",
+    "set_auto_resupply_station": "icons/set_auto_resupply_station.png",
+    "sortie": "icons/sortie.png",
+    "tactical": "icons/tactical.png",
+    "tactical_armored_attack": "icons/tactical_armored_attack.png",
+    "tactical_breach": "icons/tactical_breach.png",
+    "tactical_infiltrate": "icons/tactical_infiltrate.png",
+    "tactical_stack_up": "icons/tactical_stack_up.png",
+    "tactical_takedown": "icons/tactical_takedown.png",
+    "take_off": "icons/take_off.png",
+    "upgrade_airfield": "icons/upgrade_airfield.png",
+    "upgrade_airfield_extra_strip": "icons/upgrade_airfield_extra_strip.png",
+    "upgrade_hangar": "icons/upgrade_hangar.png",
+    "upgrade_hangar_level": "icons/upgrade_hangar_level.png",
+    "upgrade_hangar_to_heavy": "icons/upgrade_hangar_to_heavy.png"
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}
