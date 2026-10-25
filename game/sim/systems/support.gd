@@ -15,7 +15,15 @@ extends RefCounted
 ##   supply point / refinery, reloads (refill_s) and goes back to work.
 ## - no doubling up: a claimed unit carries e.resup_by = truck id and no other truck may claim it.
 ## State (saved, hashed): w.sys_state.support = {trucks: {id: {mode, center: [x,y], radius,
-##   thr: {ammo, fuel}, queue: [unit ids], phase: "serve"|"refill", load, t, goal?, tp?, rt?}}, ver}
+##   thr: {ammo, fuel}, queue: [unit ids], phase: "serve"|"refill", load, t, goal?, tp?, rt?}}, ver,
+##   needy?: {unit id: grid cell key}}
+## PERF (G5): `needy` is refreshed by a slot scan (ids with id % NEEDY_SLOTS == tick % NEEDY_SLOTS, so
+##   every unit once per 2 s) while trucks exist, against the loosest thresholds of the unit's
+##   side; claim rounds filter only needy units in the GRID cells near the truck's area, with the same
+##   live checks as before (a unit can join up to NEEDY_SLOTS ticks after it became needy). The cell
+##   buckets are a runtime cache (w.cache.sup_needy) rebuilt from `needy` after a load.
+##   New path orders (claims, retries, roam targets) are capped at MAX_ORDERS per tick (ascending truck
+##   id); the rest wait for their truck's next round.
 ## G5 entity fields: unit e.resup_by (int truck id while claimed), e.resume_order (Dictionary, station
 ##   mode only), e.resup_t (claim tick); truck e.supply_load (int, mirror of the state for UI).
 ## Aircraft (def `aircraft`): Supply skips them (AIRSYS CR), so a truck restocks its claimed aircraft
@@ -33,6 +41,10 @@ const REPATH := 40               # min ticks between path orders toward the same
 const RETURN_FIRE := 60          # = Combat.RETURN_FIRE_TICKS: "in combat" window after a hit
 const NAVAL := ["naval", "naval_small"]
 const AIRLOW := ["air", "air_low"]
+const NEEDY_SLOTS := 40
+const GRID := 16.0
+const SLACK := 6.0               # tiles a unit may have moved since its last needy scan
+const MAX_ORDERS := 8
 
 
 static func cfg() -> Dictionary:
@@ -168,6 +180,8 @@ static func tick(w: SimWorld) -> void:
 		if (w.tick + int(tid)) % STEP == 0:   # PERF: each truck on its own tick bucket
 			ids.append(tid)
 	ids.sort()
+	_scan_needy(w, st)
+	var bud := {"n": 0}
 	for tid in ids:
 		var e = w.entities.get(int(tid))
 		var ts: Dictionary = st.trucks[tid]
@@ -181,15 +195,15 @@ static func tick(w: SimWorld) -> void:
 		elif int(ts.load) <= 0 and int(cfg().get("truck_load", 600)) > 0:
 			_start_refill(w, e, ts)
 		elif String(ts.mode) == "station":
-			_station_step(w, e, ts)
+			_station_step(w, e, ts, bud)
 		else:
-			_roam_step(w, e, ts)
+			_roam_step(w, e, ts, bud)
 		e.supply_load = int(ts.load)
 		HotState.touch(w, int(tid))
 
 
 # ================================================================ station / roam
-static func _station_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
+static func _station_step(w: SimWorld, e: Dictionary, ts: Dictionary, bud: Dictionary) -> void:
 	var tid := int(e.id)
 	var c := cfg()
 	var center := Vector2(float(ts.center[0]), float(ts.center[1]))
@@ -212,22 +226,30 @@ static func _station_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 		if d <= serve_r:
 			if AIRLOW.has(_mc(u)) and not bool(u.moving) and not _landed(u):
 				_air_cmd(w, u, "land_at", w.cell_of(u.pos))
-		elif not bool(u.moving) and String(o.get("type", "idle")) == "idle" and (w.tick - int(u.get("resup_t", 0))) % 100 < STEP:
+		elif not bool(u.moving) and String(o.get("type", "idle")) == "idle" and (w.tick - int(u.get("resup_t", 0))) % 100 < STEP and int(bud.n) < MAX_ORDERS:
+			bud.n = int(bud.n) + 1
 			_send(w, u, e, (ts.queue as Array).find(int(uid)))   # stuck short of the truck: retry every 5 s
 	_drain(w, e, ts)
 	var maxc := int(c.get("max_claims", 6))
-	if (ts.queue as Array).size() >= maxc or not _round(w, tid):
+	if (ts.queue as Array).size() >= maxc or not _round(w, tid) or int(bud.n) >= MAX_ORDERS:
 		return
-	for u in _candidates(w, e, ts):
-		if (ts.queue as Array).size() >= maxc:
+	# top-k batches (k = free claim slots) walk the same neediest-first order as one full sort: a
+	# processed unit is claimed (resup_by) or skipped (resup_skip), so the next batch excludes it.
+	while (ts.queue as Array).size() < maxc and int(bud.n) < MAX_ORDERS:
+		var batch := _candidates(w, e, ts, maxc - (ts.queue as Array).size())
+		if batch.is_empty():
 			break
-		_claim(w, u, ts, tid, true)
-		if not _send(w, u, e, (ts.queue as Array).size() - 1):
-			u.resup_skip = w.tick + 400   # unreachable: do not retry for 20 s
-			_release(w, u, ts)
+		for u in batch:
+			if (ts.queue as Array).size() >= maxc or int(bud.n) >= MAX_ORDERS:
+				break
+			bud.n = int(bud.n) + 1
+			_claim(w, u, ts, tid, true)
+			if not _send(w, u, e, (ts.queue as Array).size() - 1):
+				u.resup_skip = w.tick + 400   # unreachable: do not retry for 20 s
+				_release(w, u, ts)
 
 
-static func _roam_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
+static func _roam_step(w: SimWorld, e: Dictionary, ts: Dictionary, bud: Dictionary) -> void:
 	var tid := int(e.id)
 	var c := cfg()
 	var serve_r := float(c.get("serve_radius", 4.0))
@@ -251,8 +273,11 @@ static func _roam_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 	_drain(w, e, ts)
 	if not q.is_empty():
 		return
-	var cands := _candidates(w, e, ts)
+	if int(bud.n) >= MAX_ORDERS:
+		return   # capped: look again on the next round
+	var cands := _candidates(w, e, ts, 1)
 	if not cands.is_empty():
+		bud.n = int(bud.n) + 1
 		var u: Dictionary = cands[0]
 		_claim(w, u, ts, tid, false)
 		Movement.order_move(w, e, u.pos)
@@ -265,14 +290,32 @@ static func _roam_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 		ts["tp"] = w.tick
 
 
-## Needy, unclaimed own units inside the truck's area, neediest first (ties by id).
-static func _candidates(w: SimWorld, e: Dictionary, ts: Dictionary) -> Array:
+## The k neediest unclaimed own units inside the truck's area (lowest supply_frac first, ties by id).
+static func _candidates(w: SimWorld, e: Dictionary, ts: Dictionary, k: int) -> Array:
 	var out := []
+	var keys := []   # [frac, id] parallel to out, ascending
 	var tid := int(e.id)
+	var fid := int(e.owner)
 	var center := Vector2(float(ts.center[0]), float(ts.center[1]))
 	var r2 := float(ts.radius) * float(ts.radius)
-	for u in SimIndex.units_by_owner(w).get(int(e.owner), []):
-		if int(u.id) == tid or not w.entities.has(int(u.id)) or u.has("resup_by") or u.has("evac_by"):
+	var bk := _buckets(w, _state(w))
+	var rr := float(ts.radius) + SLACK
+	var x0 := int(floorf((center.x - rr) / GRID))
+	var x1 := int(floorf((center.x + rr) / GRID))
+	var y0 := int(floorf((center.y - rr) / GRID))
+	var y1 := int(floorf((center.y + rr) / GRID))
+	var pool := []
+	for gx in range(x0, x1 + 1):
+		for gy in range(y0, y1 + 1):
+			var cell = bk.get(gx * 65536 + gy)
+			if cell != null:
+				for id in cell:
+					pool.append(id)
+	for id in pool:
+		var u = w.entities.get(id)
+		if u == null or u.kind != "unit" or int(u.owner) != fid:
+			continue
+		if int(u.id) == tid or u.has("resup_by") or u.has("evac_by"):
 			continue
 		if (Vector2(u.pos) - center).length_squared() > r2 or int(u.get("resup_skip", -1)) > w.tick:
 			continue
@@ -280,12 +323,101 @@ static func _candidates(w: SimWorld, e: Dictionary, ts: Dictionary) -> Array:
 			continue
 		if in_combat(w, u) and not (u.has("ammo") and int(u.ammo) <= 0):
 			continue   # combat rule: only an empty unit leaves a fight
-		out.append(u)
-	out.sort_custom(func(a, b):
-		var fa := supply_frac(a)
-		var fb := supply_frac(b)
-		return fa < fb or (fa == fb and int(a.id) < int(b.id)))
+		var f := supply_frac(u)
+		var uid := int(u.id)
+		var n := out.size()
+		if n >= k:
+			var lk: Array = keys[n - 1]
+			if not (f < float(lk[0]) or (f == float(lk[0]) and uid < int(lk[1]))):
+				continue
+		var i := n
+		while i > 0:
+			var pk: Array = keys[i - 1]
+			if f < float(pk[0]) or (f == float(pk[0]) and uid < int(pk[1])):
+				i -= 1
+			else:
+				break
+		out.insert(i, u)
+		keys.insert(i, [f, uid])
+		if out.size() > k:
+			out.pop_back()
+			keys.pop_back()
 	return out
+
+
+## Slot scan (see header): ids id % NEEDY_SLOTS == tick % NEEDY_SLOTS against the loosest
+## thresholds of the side's trucks; keeps sys_state.support.needy and the runtime buckets in step.
+static func _scan_needy(w: SimWorld, st: Dictionary) -> void:
+	if not st.has("needy"):
+		st["needy"] = {}
+	var nd: Dictionary = st.needy
+	var lo := {}   # owner -> loosest thresholds of its trucks
+	for tid in st.trucks:
+		var te = w.entities.get(int(tid))
+		if te == null:
+			continue
+		var th: Dictionary = st.trucks[tid].thr
+		var o := int(te.owner)
+		var cur = lo.get(o)
+		if cur == null:
+			lo[o] = {"ammo": float(th.ammo), "fuel": float(th.fuel)}
+		else:
+			cur.ammo = maxf(float(cur.ammo), float(th.ammo))
+			cur.fuel = maxf(float(cur.fuel), float(th.fuel))
+	var cache = w.cache.get("sup_needy")
+	var bk = cache.b if cache != null and is_same(cache.src, nd) else null
+	var nid := int(w.next_id)
+	var id := posmod(w.tick, NEEDY_SLOTS)
+	var dc := {}   # def -> [skip (supply / air_high), ammo_max, fuel_max (0 = energy or none)]
+	while id < nid:
+		var u = w.entities.get(id)
+		var k := -1
+		if u != null and u.kind == "unit" and lo.has(int(u.owner)) and not u.get("wounded", false):
+			var di = dc.get(u.def)
+			if di == null:
+				var d := Content.unit(String(u.def))
+				var fm := float(d.get("fuel_max", 0))
+				di = [bool(d.get("is_supply", false)) or String(d.get("move_class", "foot")) == "air_high",
+					int(d.get("ammo_max", 0)), 0.0 if bool(d.get("energy", false)) else fm]
+				dc[u.def] = di
+			if not di[0]:
+				var th: Dictionary = lo[int(u.owner)]
+				# = needs_supply(w, u, th) for a non-supply, non-air_high, non-wounded unit
+				var need: bool = (di[1] > 0 and u.has("ammo") and float(u.ammo) < float(th.ammo) / 100.0 * float(di[1])) 					or (di[2] > 0.0 and u.has("fuel") and float(u.fuel) < float(th.fuel) / 100.0 * float(di[2])) 					or (u.has("drone_charges") and int(u.drone_charges) == 0)
+				if need:
+					k = _gkey(Vector2(u.pos))
+		var old = nd.get(id)
+		if old != null and int(old) != k:
+			nd.erase(id)
+			if bk != null and bk.has(int(old)):
+				(bk[int(old)] as Dictionary).erase(id)
+		if k >= 0 and (old == null or int(old) != k):
+			nd[id] = k
+			if bk != null:
+				if not bk.has(k):
+					bk[k] = {}
+				bk[k][id] = 1
+		id += NEEDY_SLOTS
+
+
+static func _gkey(p: Vector2) -> int:
+	return int(floorf(p.x / GRID)) * 65536 + int(floorf(p.y / GRID))
+
+
+## Runtime cell buckets of sys_state.support.needy (rebuilt when the saved dict object changes).
+static func _buckets(w: SimWorld, st: Dictionary) -> Dictionary:
+	var nd: Dictionary = st.get("needy", {})
+	var cache = w.cache.get("sup_needy")
+	if cache != null and is_same(cache.src, nd):
+		return cache.b
+	var b := {}
+	for id in nd:
+		var k := int(nd[id])
+		if not b.has(k):
+			b[k] = {}
+		b[k][int(id)] = 1
+	w.cache["sup_needy"] = {"src": nd, "b": b}
+	return b
 
 
 static func _claim(w: SimWorld, u: Dictionary, ts: Dictionary, tid: int, station: bool) -> void:

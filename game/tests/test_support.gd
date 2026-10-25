@@ -5,6 +5,7 @@ extends "res://tests/test_base.gd"
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const Support = preload("res://sim/systems/support.gd")
+const SaveSystem = preload("res://sim/save_system.gd")
 
 
 # ---------------------------------------------------------------- helpers
@@ -267,3 +268,33 @@ func test_ship_and_helicopter_restock() -> void:
 	check_eq(int(heli.ammo), int(Content.unit("a_attack_heli").ammo_max), "helicopter restocked by the truck")
 	check_eq(int(boat.ammo), int(Content.unit("a_patrol_boat").ammo_max), "ship restocked at the shore")
 	check(_first(evs, "ResupplyResumed", "unit", int(heli.id)) >= 0 and _first(evs, "ResupplyResumed", "unit", int(boat.id)) >= 0, "both resume their orders (heli ammo %s fuel %s claim %s / boat ammo %s fuel %s claim %s pos %s truck %s)" % [heli.ammo, heli.get("fuel"), heli.get("resup_by"), boat.ammo, boat.get("fuel"), boat.get("resup_by"), boat.pos, truck.pos])
+
+
+## PERF (G5): the needy slot-scan set (sys_state.support.needy, saved) and its runtime cell buckets
+## survive save/load: same hash right after the load and 600 ticks later, claims included.
+func test_save_load_mid_resupply_same_hash() -> void:
+	var w := make_world()
+	var site := _site(w)
+	var t1 := _unit(w, "logistics_truck", site)
+	var t2 := _unit(w, "logistics_truck", site + Vector2(4, 0))
+	var us := []
+	for i in 6:
+		us.append(_unit(w, "ifv", site + Vector2(6 + 2 * (i % 3), 3 + 2 * (i / 3))))
+	w.step()
+	for u in us:
+		_low(u, 0.1)
+	_auto(w, t1, "station")
+	_auto(w, t2, "roam")
+	for i in 45:
+		w.step()
+	check(w.sys_state.support.has("needy"), "needy set saved in sys_state.support")
+	check(not (w.sys_state.support.needy as Dictionary).is_empty(), "needy units found by the slot scan")
+	var res: Dictionary = SaveSystem.decode_bytes(SaveSystem.encode_dict(w.to_dict()))
+	check(bool(res.ok), "save decodes")
+	var w2 := SimWorld.from_dict(res.dict)
+	check_eq(w2.state_hash(), w.state_hash(), "hash equal after load")
+	for i in 600:
+		w.step()
+		w2.step()
+	check_eq(w2.state_hash(), w.state_hash(), "same hash 600 ticks after load")
+	check(int(w.entities[int(us[0].id)].ammo) > int(0.1 * float(Content.unit("ifv").ammo_max)) + 1, "resupply happened (ammo above its 10% start)")

@@ -63,6 +63,12 @@ func _place(w: SimWorld, def: String, fid: int, near: Vector2i) -> Dictionary:
 	return {}
 
 
+## ORCH design rule: Wounded needs medical capability (a live med unit or a built hospital). A medic
+## team (not on auto evac) away from the action gives the faction that capability.
+func _medic(w: SimWorld, fid: int = 0) -> Dictionary:
+	return _spawn(w, "a_medic_team", fid, Vector2(-8, -8))
+
+
 func _wound(w: SimWorld, e: Dictionary) -> void:
 	e.hp = 0.0
 	check(Medical.on_zero_hp(w, e), "on_zero_hp keeps %s alive" % e.def)
@@ -91,6 +97,7 @@ func test_human_infantry_become_wounded_at_zero_hp() -> void:
 	var w := make_world()
 	var e := _spawn(w, "rifleman", 0, Vector2(6, 4))
 	var foe := _spawn(w, "mbt", 1, Vector2(9, 4))
+	_medic(w)
 	w.step()
 	var pop0 := int(w.factions[0].pop)
 	e.hp = 0.001
@@ -131,9 +138,38 @@ func test_machines_and_vehicles_never_wounded() -> void:
 	check(not w.sys_state.get("medical", {"wounded": {}}).wounded.has(int(tank.id)), "no wounded entry for the tank")
 
 
+## ORCH design rule: no medics and no hospital -> a human infantry unit at 0 HP dies exactly as in G4;
+## with a medic team (or a built hospital) on the side it becomes Wounded.
+func test_wounded_only_with_medical_capability() -> void:
+	var w := make_world()
+	var e := _spawn(w, "rifleman", 0, Vector2(6, 4))
+	var foe := _spawn(w, "mbt", 1, Vector2(9, 4))
+	w.step()
+	check(not Medical.has_medical(w, 0), "no medics / hospitals at the start")
+	e.hp = 0.001
+	Damage.apply_hit(w, foe, e, Combat.stats(foe), true)
+	check(not w.entities.has(int(e.id)), "without medical capability the unit is destroyed (G4)")
+	check(not Medical.is_wounded(e), "not wounded")
+	check(not w.sys_state.get("medical", {"wounded": {}}).wounded.has(int(e.id)), "no wounded entry")
+	var medic := _medic(w)
+	var e2 := _spawn(w, "rifleman", 0, Vector2(6, 6))
+	w.step()
+	check(Medical.has_medical(w, 0), "a medic team gives medical capability")
+	e2.hp = 0.001
+	Damage.apply_hit(w, foe, e2, Combat.stats(foe), true)
+	check(w.entities.has(int(e2.id)) and Medical.is_wounded(e2), "with a medic the unit becomes Wounded")
+	w.destroy(int(medic.id), "test")
+	w.step()
+	check(not Medical.has_medical(w, 0), "medic gone: capability gone")
+	_place(w, "a_hospital", 0, Vector2i(_hq(w).cell) + Vector2i(-10, 6))
+	w.step()
+	check(Medical.has_medical(w, 0), "a built hospital gives medical capability")
+
+
 func test_wounded_bleed_out_after_60s() -> void:
 	var w := make_world()
 	var e := _spawn(w, "rifleman", 0, Vector2(6, 4))
+	_medic(w)
 	w.step()
 	_wound(w, e)
 	var bleed := Medical.bleed_ticks()
