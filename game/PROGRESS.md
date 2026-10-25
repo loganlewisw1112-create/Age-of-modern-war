@@ -43,6 +43,11 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
    - Every air vehicle needs its own hangar. You buy and upgrade hangars per aircraft at your airfield; with no free hangar you can't buy a new aircraft.
    - Design gaps and defaults are to be settled in the next-slice plan: helicopters, runway traffic, hangar sizes and upgrades, losses, small maps, Machine equivalent, AI, UI.
 4. **New unit: Airfield Engineer Team** (owner note, 2026-10-24). One purchase gives a squad of 4 units. Role and defaults go in the next-slice plan.
+   - **Assigning:** select the engineers, then click the airfield or one hangar. Once assigned, they handle all upkeep on their own (repair, fixes, runway, hangar, airstrips).
+5. **Airfield upgrade: +2-3 extra airstrips** for landing and launching (owner note, 2026-10-24).
+6. **VTOL Dropship** for the human faction(s) (owner note, 2026-10-24):
+   - an EXPENSIVE unit with massive air superiority;
+   - carries 2 vehicles plus a squad of 8.
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
