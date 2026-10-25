@@ -69,6 +69,7 @@ var paused: bool = false
 var control_groups: Dictionary = {}     # int 1..9 -> Array[int] of entity ids
 var placing_def: String = ""             # build ghost def id ("" = not placing)
 var attack_move_armed: bool = false      # after pressing A, next left click = attack-move
+var _point_pick_cb: Callable = Callable()  # G6 (UI6a): armed map-click callback (AI Commander objective)
 var last_alert_pos: Variant = null       # Vector2 world pos of the last alert (Space jumps there)
 
 # ------------------------------------------------------------ internals
@@ -680,11 +681,43 @@ static func screen_to_world(s: Vector2) -> Vector2:
 	return Vector2((a + b) * 0.5, (b - a) * 0.5)
 
 
+## G6 (UI6a, ELEV-VIEW CR seq 820): world-tile position of the ground actually drawn under canvas
+## point s: raised tiles, ramps and cliff faces pick the cell on top (camera_rig.pick_canvas). Flat
+## maps give exactly screen_to_world(s).
+func pick_world(s: Vector2) -> Vector2:
+	if camera != null and camera.has_method("pick_canvas"):
+		return camera.pick_canvas(s)
+	return screen_to_world(s)
+
+
+## G6 (UI6a): screen (canvas) position an entity is drawn at, lifted by its ground height.
+func entity_canvas_pos(e: Dictionary) -> Vector2:
+	if camera != null and camera.has_method("height_map"):
+		return ViewUtil.world_to_screen_h(camera.height_map(), render_pos(e))
+	return world_to_screen(render_pos(e))
+
+
+## G6 (UI6a): the next left click on the map calls cb(world_pos) instead of selecting (AI Commander
+## objective pick). Right click or cancel_point_pick() disarms it.
+func begin_point_pick(cb: Callable) -> void:
+	_point_pick_cb = cb
+	cancel_placement()
+	attack_move_armed = false
+
+
+func cancel_point_pick() -> void:
+	_point_pick_cb = Callable()
+
+
+func point_pick_armed() -> bool:
+	return _point_pick_cb.is_valid()
+
+
 ## World-tile position under the mouse cursor (or the demo override).
 func mouse_world() -> Vector2:
 	if demo_mouse_world != null:
 		return demo_mouse_world
-	return screen_to_world(get_global_mouse_position())
+	return pick_world(get_global_mouse_position())
 
 
 ## Four world-tile corners of the current camera view (TL, TR, BR, BL), for the minimap.
@@ -694,7 +727,7 @@ func get_view_corners_world() -> PackedVector2Array:
 		return out
 	var vs := get_viewport_rect().size
 	for sp in [Vector2.ZERO, Vector2(vs.x, 0), vs, Vector2(0, vs.y)]:
-		out.append(screen_to_world(_viewport_to_canvas(sp)))
+		out.append(pick_world(_viewport_to_canvas(sp)))
 	return out
 
 
@@ -920,7 +953,7 @@ func _input(event: InputEvent) -> void:
 			if (_drag_now_screen - (_drag_start_screen as Vector2)).length() > 6.0:
 				_dragging = true
 		if g4b.dragging():
-			g4b.on_motion(screen_to_world(_viewport_to_canvas(mm.position)))
+			g4b.on_motion(pick_world(_viewport_to_canvas(mm.position)))
 		if _mid_drag:
 			camera.pan_screen(_mid_last - mm.position)
 			_mid_last = mm.position
@@ -928,7 +961,7 @@ func _input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if not mb.pressed:
 			if mb.button_index == MOUSE_BUTTON_LEFT and g4b.dragging():
-				g4b.on_release(screen_to_world(_viewport_to_canvas(mb.position)), mb.shift_pressed)
+				g4b.on_release(pick_world(_viewport_to_canvas(mb.position)), mb.shift_pressed)
 			elif mb.button_index == MOUSE_BUTTON_LEFT and _drag_start_screen != null:
 				_finish_left(mb.position, mb.shift_pressed)
 			elif mb.button_index == MOUSE_BUTTON_MIDDLE:
@@ -936,7 +969,12 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_left_press(mb: InputEventMouseButton) -> void:
-	var p := screen_to_world(_viewport_to_canvas(mb.position))
+	var p := pick_world(_viewport_to_canvas(mb.position))
+	if _point_pick_cb.is_valid():   # G6 (UI6a): AI Commander objective pick
+		var cb := _point_pick_cb
+		_point_pick_cb = Callable()
+		cb.call(p)
+		return
 	if placing_def != "":
 		if g4b.on_place_press(p):
 			return
@@ -969,7 +1007,7 @@ func _finish_left(pos: Vector2, shift: bool) -> void:
 		_dragging = false
 		_marquee_select(Rect2(start, pos - start).abs(), shift)
 	else:
-		_click_select(screen_to_world(_viewport_to_canvas(pos)), shift)
+		_click_select(pick_world(_viewport_to_canvas(pos)), shift)
 
 
 func _click_select(p: Vector2, shift: bool) -> void:
@@ -1000,7 +1038,7 @@ func _marquee_select(r: Rect2, shift: bool) -> void:
 		var e: Dictionary = world.entities[id]
 		if int(e.owner) != player_fid:
 			continue
-		var sp: Vector2 = ct * world_to_screen(render_pos(e))
+		var sp: Vector2 = ct * entity_canvas_pos(e)   # G6 (UI6a): height-lifted, matches the drawn sprite
 		if e.kind == "unit" and r.grow(6).has_point(sp + Vector2(0, -8)):
 			units.append(id)
 		elif e.kind == "building" and r.has_point(sp):
@@ -1026,7 +1064,7 @@ func _select_same_def_on_screen(p: Vector2, shift: bool) -> void:
 	for id in world.entities:
 		var o: Dictionary = world.entities[id]
 		if o.def == e.def and o.kind == e.kind and int(o.owner) == player_fid:
-			if vr.has_point(ct * world_to_screen(render_pos(o))) and not out.has(id):
+			if vr.has_point(ct * entity_canvas_pos(o)) and not out.has(id):
 				out.append(id)
 	select_ids(out)
 
@@ -1041,7 +1079,10 @@ func _on_right_press(mb: InputEventMouseButton) -> void:
 	if attack_move_armed:
 		attack_move_armed = false
 		return
-	var p := screen_to_world(_viewport_to_canvas(mb.position))
+	if _point_pick_cb.is_valid():   # G6 (UI6a): right click cancels an objective pick
+		_point_pick_cb = Callable()
+		return
+	var p := pick_world(_viewport_to_canvas(mb.position))
 	if g2.on_right(p, mb.shift_pressed):
 		return
 	smart_command(p, mb.shift_pressed)

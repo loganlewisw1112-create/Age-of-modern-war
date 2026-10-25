@@ -1,5 +1,128 @@
 {
   "airfield": {
+    "apron_pads": {
+      "a": {
+        "0": {
+          "file": "strips/a_f0_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "1": {
+          "file": "strips/a_f1_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "2": {
+          "file": "strips/a_f2_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "3": {
+          "file": "strips/a_f3_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        }
+      },
+      "b": {
+        "0": {
+          "file": "strips/b_f0_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "1": {
+          "file": "strips/b_f1_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "2": {
+          "file": "strips/b_f2_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "3": {
+          "file": "strips/b_f3_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        }
+      },
+      "fwd": {
+        "0": {
+          "file": "strips/fwd_f0_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "1": {
+          "file": "strips/fwd_f1_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "2": {
+          "file": "strips/fwd_f2_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "3": {
+          "file": "strips/fwd_f3_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        }
+      },
+      "m": {
+        "0": {
+          "file": "strips/m_f0_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "1": {
+          "file": "strips/m_f1_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "2": {
+          "file": "strips/m_f2_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        },
+        "3": {
+          "file": "strips/m_f3_apron.png",
+          "pivot": [
+            70,
+            40
+          ]
+        }
+      }
+    },
+    "apron_slot_size": 2,
     "closed": {
       "0": {
         "file": "strips/closed_f0.png",
@@ -76,7 +199,7 @@
         ]
       }
     ],
-    "layout": "strip k of field b (k = 0 .. strips-1): start = b.pos + perp*(size/2 + 1.5 + 4k) - axis*size/2, axis = AXES[facing_i], perp = (-axis.y, axis.x) (airfield.gd strip_points); segment i in 0 .. strip_len-1 is centred at start + axis*(i + 0.5): i = 0 'start', i = strip_len-1 'end', else 'mid'; 'link' tiles fill the 1-tile gap between strip k-1 and k at perp offset size/2 + 4k - 0.5, i = 0 .. size-1; a closed strip (crater) shows a crater overlay at its crater segment and 'closed' at i = 1 and i = strip_len-2",
+    "layout": "airfield v2 (CONTRACTS_G6 s13, sim/systems/airfield.gd layout_for / strip_points): the field building is the main base (a_airfield / b_aerodrome size 2); axis = AXES[facing_i], perp = (-axis.y, axis.x); the apron is the band beside the base on the +perp side (layout.apron, apron_rows x slot_size deep), cut into slot_size squares at layout.slots (draw apron_pads.<style>.<facing_i> centred on each slot square; hangars are real buildings on slot squares); runway k starts at strip_points(k)[0] beyond the apron and runs strip_len tiles along the axis: segment i in 0 .. strip_len-1 is centred at start + axis*(i + 0.5): i = 0 'start', i = strip_len-1 'end', else 'mid'; 'link' tiles fill the 1-tile gap between strip k-1 and k (runway_gap 4, strips 3 wide); a closed strip (crater) shows a crater overlay at its crater segment and 'closed' at i = 1 and i = strip_len-2",
     "segment_len": 1,
     "segments": {
       "a": {
@@ -620,10 +743,10 @@
         "variants": "rot"
       },
       "pivot": [
-        198,
-        146
+        70,
+        82
       ],
-      "size": 6,
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/a_airfield_rot_0_build_0.png",
@@ -1480,10 +1603,10 @@
         "variants": "rot"
       },
       "pivot": [
-        198,
-        152
+        70,
+        88
       ],
-      "size": 6,
+      "size": 2,
       "states": {
         "build_0": {
           "file": "buildings/b_aerodrome_rot_0_build_0.png",
@@ -2821,6 +2944,9 @@
       "set_auto_resupply",
       "set_auto_evac"
     ],
+    "g6": [
+      "lay_sea_mines"
+    ],
     "modes": [
       "build_hangar_light",
       "build_hangar_heavy",
@@ -2854,46 +2980,46 @@
     "buildings/a_air_tower_built_mask.png": "492c99db1719449d7a17c9745ef7e2ca",
     "buildings/a_air_tower_damaged.png": "15d43a29faba3b9d10ef10cb5272616b",
     "buildings/a_air_tower_damaged_mask.png": "5cb850a312713f76f33f1edc137020a6",
-    "buildings/a_airfield_rot_0.png": "3faf0de7aec1a1176ec6b19ee423ab79",
-    "buildings/a_airfield_rot_0_build_0.png": "56450eec92b4b2419dd9d3ad8ad24162",
-    "buildings/a_airfield_rot_0_build_0_mask.png": "5f8591453a231853021b148cd4ba1106",
-    "buildings/a_airfield_rot_0_build_1.png": "341034ea1cf7ba1a13fa7ad0ca1e097d",
-    "buildings/a_airfield_rot_0_build_1_mask.png": "5f8591453a231853021b148cd4ba1106",
-    "buildings/a_airfield_rot_0_build_2.png": "6f7fa30e29098ee9793a5403ddcd8da9",
-    "buildings/a_airfield_rot_0_build_2_mask.png": "5f8591453a231853021b148cd4ba1106",
-    "buildings/a_airfield_rot_0_damaged.png": "c9c92de608a3dd078690b0656da51206",
-    "buildings/a_airfield_rot_0_damaged_mask.png": "f5b06a13a2f6ad36f5b2d39b4032135d",
-    "buildings/a_airfield_rot_0_mask.png": "3a3c4dc4b63d8a522bc8b7761839ed6c",
-    "buildings/a_airfield_rot_1.png": "bdf9e4a5d69b24d7bbd4ce98a8f53cc2",
-    "buildings/a_airfield_rot_1_build_0.png": "147c8c74fd67bc018240b4bc94eeca12",
-    "buildings/a_airfield_rot_1_build_0_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
-    "buildings/a_airfield_rot_1_build_1.png": "24d27a55b39228d945ae111693b729ab",
-    "buildings/a_airfield_rot_1_build_1_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
-    "buildings/a_airfield_rot_1_build_2.png": "77ec4ce6a85d4b099ee3edf3df688888",
-    "buildings/a_airfield_rot_1_build_2_mask.png": "42f6ecba0f7f655ddce964787a94f3f1",
-    "buildings/a_airfield_rot_1_damaged.png": "e9cce5f4d7494e9471b5ed19d141d526",
-    "buildings/a_airfield_rot_1_damaged_mask.png": "e3db89f53fb0f8ea22041bca0639c968",
-    "buildings/a_airfield_rot_1_mask.png": "3ba249c70ab59832a1b9e2299068545f",
-    "buildings/a_airfield_rot_2.png": "711fc1a3230716449b1e23e9b400ec26",
-    "buildings/a_airfield_rot_2_build_0.png": "72eb1f9d29affc536edba837d8156236",
-    "buildings/a_airfield_rot_2_build_0_mask.png": "c32bd050893ecdd375db1305de94cde6",
-    "buildings/a_airfield_rot_2_build_1.png": "fd25a26defcdf16061fb3bd703ffc5a2",
-    "buildings/a_airfield_rot_2_build_1_mask.png": "c32bd050893ecdd375db1305de94cde6",
-    "buildings/a_airfield_rot_2_build_2.png": "ac39089a12d674a4664975579209e8d2",
-    "buildings/a_airfield_rot_2_build_2_mask.png": "c32bd050893ecdd375db1305de94cde6",
-    "buildings/a_airfield_rot_2_damaged.png": "917ec794d9149f14d666d54fc3cd1ba0",
-    "buildings/a_airfield_rot_2_damaged_mask.png": "08320a726522f97134df68fb97cd58f7",
-    "buildings/a_airfield_rot_2_mask.png": "faa9b383e28b9f9a3a1f6f1e45b5fc3e",
-    "buildings/a_airfield_rot_3.png": "6db61ed9fa9f559140e86eff8ae52edf",
-    "buildings/a_airfield_rot_3_build_0.png": "359bbea871dae1d8a5d326b9b1051762",
-    "buildings/a_airfield_rot_3_build_0_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
-    "buildings/a_airfield_rot_3_build_1.png": "3f9e77113a4f49ae192153f14105dfd2",
-    "buildings/a_airfield_rot_3_build_1_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
-    "buildings/a_airfield_rot_3_build_2.png": "0458bbb1b6f50ec1199531eaf86b5651",
-    "buildings/a_airfield_rot_3_build_2_mask.png": "2ab97f7a7ff1e8eb01574c7657a98d25",
-    "buildings/a_airfield_rot_3_damaged.png": "bdde73b02b7a91182a263244f4f89774",
-    "buildings/a_airfield_rot_3_damaged_mask.png": "2b12bf1cd0803bd21e0f6fbd31c6d00e",
-    "buildings/a_airfield_rot_3_mask.png": "698bd10b5c3bf684d56ff07140dc3584",
+    "buildings/a_airfield_rot_0.png": "cc5232516658049cd67cf309c8baf83c",
+    "buildings/a_airfield_rot_0_build_0.png": "65763485d4db34736bbe5717d0a5be61",
+    "buildings/a_airfield_rot_0_build_0_mask.png": "46a86ddb829fb171e6205b0c22187cc1",
+    "buildings/a_airfield_rot_0_build_1.png": "f4d7625509a4f89bb729f2fdbd7ed4a9",
+    "buildings/a_airfield_rot_0_build_1_mask.png": "46a86ddb829fb171e6205b0c22187cc1",
+    "buildings/a_airfield_rot_0_build_2.png": "a6c27b1ab3414a5d5432d991674ea110",
+    "buildings/a_airfield_rot_0_build_2_mask.png": "46a86ddb829fb171e6205b0c22187cc1",
+    "buildings/a_airfield_rot_0_damaged.png": "db9cc932c39ad537c8769d6ea828d907",
+    "buildings/a_airfield_rot_0_damaged_mask.png": "0a4a54196adb95f1b467ab5ffe72e2ee",
+    "buildings/a_airfield_rot_0_mask.png": "d90b43ad37d9846cbd09efb516cf384f",
+    "buildings/a_airfield_rot_1.png": "fccd51b4889a8ef7fd7ea651a93aa3c6",
+    "buildings/a_airfield_rot_1_build_0.png": "146f54ce32abe7a0d3419408161d9207",
+    "buildings/a_airfield_rot_1_build_0_mask.png": "0397e5fe306b92ea62dc16b0a5febf9d",
+    "buildings/a_airfield_rot_1_build_1.png": "5bb4885e024d8ebbcedc10a7f2cd82ad",
+    "buildings/a_airfield_rot_1_build_1_mask.png": "0397e5fe306b92ea62dc16b0a5febf9d",
+    "buildings/a_airfield_rot_1_build_2.png": "a49b1b1968518ace569053f66d9b9ca4",
+    "buildings/a_airfield_rot_1_build_2_mask.png": "0397e5fe306b92ea62dc16b0a5febf9d",
+    "buildings/a_airfield_rot_1_damaged.png": "1d0d4d12a34dbd2a9658df9f9e7bf324",
+    "buildings/a_airfield_rot_1_damaged_mask.png": "27aab1bca959180a36013548e56fb395",
+    "buildings/a_airfield_rot_1_mask.png": "704ac600df8176d2630bfe72f2ff2c9c",
+    "buildings/a_airfield_rot_2.png": "ef139ddef98e22a1a3131f9aa56ee8dd",
+    "buildings/a_airfield_rot_2_build_0.png": "e6c90adb4df186b68dd4a1bb8687e641",
+    "buildings/a_airfield_rot_2_build_0_mask.png": "25efc56609836406f465f3f209639eee",
+    "buildings/a_airfield_rot_2_build_1.png": "bf9194ed07aa12d19c59f8821663df0b",
+    "buildings/a_airfield_rot_2_build_1_mask.png": "25efc56609836406f465f3f209639eee",
+    "buildings/a_airfield_rot_2_build_2.png": "99be830659ea913fa8b3cc21a77a616f",
+    "buildings/a_airfield_rot_2_build_2_mask.png": "25efc56609836406f465f3f209639eee",
+    "buildings/a_airfield_rot_2_damaged.png": "ffdbbed472848fdc90038a77343c914a",
+    "buildings/a_airfield_rot_2_damaged_mask.png": "218a8f02bf156f9928d23c1daf927655",
+    "buildings/a_airfield_rot_2_mask.png": "e9c075547d5dda77b029b5995482365f",
+    "buildings/a_airfield_rot_3.png": "77a345db582710ffca3c64231671db41",
+    "buildings/a_airfield_rot_3_build_0.png": "62abe5247ef0f59fa2b83e566e9c42c4",
+    "buildings/a_airfield_rot_3_build_0_mask.png": "d64f8624b38a2e4d9ca9c39ddcff2a3b",
+    "buildings/a_airfield_rot_3_build_1.png": "66639899913af8ecf4587af6531c3b75",
+    "buildings/a_airfield_rot_3_build_1_mask.png": "d64f8624b38a2e4d9ca9c39ddcff2a3b",
+    "buildings/a_airfield_rot_3_build_2.png": "f96dca05d10dca4fac675bffba06b912",
+    "buildings/a_airfield_rot_3_build_2_mask.png": "d64f8624b38a2e4d9ca9c39ddcff2a3b",
+    "buildings/a_airfield_rot_3_damaged.png": "7bd856cb31bd4e9c6af7cbb776fdf40c",
+    "buildings/a_airfield_rot_3_damaged_mask.png": "6d60866052b92f674c8a0bda0cbab464",
+    "buildings/a_airfield_rot_3_mask.png": "280766958b52a13fd0f8f97ace22326c",
     "buildings/a_airstrip_rot_0.png": "8a82cd899b259c2b159527cead8f5995",
     "buildings/a_airstrip_rot_0_build_0.png": "cf74218737337407e8338a1f5881c9de",
     "buildings/a_airstrip_rot_0_build_0_mask.png": "32b65dbf71bf1da7b538105b6f869ac1",
@@ -3148,46 +3274,46 @@
     "buildings/a_supply_pier_water_3_damaged.png": "9ec63633039028a11fc42df25b1eede7",
     "buildings/a_supply_pier_water_3_damaged_mask.png": "9353616aa2a83191aee21ec8ea426887",
     "buildings/a_supply_pier_water_3_mask.png": "d1b1f58472783a3571801015a2e3f139",
-    "buildings/b_aerodrome_rot_0.png": "7657295ec1c2e82be9efa7a9fcbc70a1",
-    "buildings/b_aerodrome_rot_0_build_0.png": "66ceb024f0d662358bd72933d4898464",
-    "buildings/b_aerodrome_rot_0_build_0_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
-    "buildings/b_aerodrome_rot_0_build_1.png": "a30ea879dfc0f63468a46abc7d65a530",
-    "buildings/b_aerodrome_rot_0_build_1_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
-    "buildings/b_aerodrome_rot_0_build_2.png": "709ab2e9b2e60fb743dc2d592107b0db",
-    "buildings/b_aerodrome_rot_0_build_2_mask.png": "a45f0cfb51bd54442a17f62e35d2e7e4",
-    "buildings/b_aerodrome_rot_0_damaged.png": "0a6d64c30d1c2eb00b72cce69a931da2",
-    "buildings/b_aerodrome_rot_0_damaged_mask.png": "392e500aa8dfacfb7cfac51ec1c2996c",
-    "buildings/b_aerodrome_rot_0_mask.png": "f50837b9bfd87af992010d7fe806319a",
-    "buildings/b_aerodrome_rot_1.png": "2e9a2a8f6a1f957c1b8ba9d8686c189a",
-    "buildings/b_aerodrome_rot_1_build_0.png": "4b57f3b77b8d6ad01a9d2597e98f987b",
-    "buildings/b_aerodrome_rot_1_build_0_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
-    "buildings/b_aerodrome_rot_1_build_1.png": "8c225b596afcfbf92f03b272c7a95dc1",
-    "buildings/b_aerodrome_rot_1_build_1_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
-    "buildings/b_aerodrome_rot_1_build_2.png": "4537585efa2fc2b619265954d1c3145f",
-    "buildings/b_aerodrome_rot_1_build_2_mask.png": "e3fa52fa58ff16e5ecd5b8e5aefd5d37",
-    "buildings/b_aerodrome_rot_1_damaged.png": "ab4b15df6df3dfda6718c250c2a2c384",
-    "buildings/b_aerodrome_rot_1_damaged_mask.png": "0fd8003066f86782eede8912f048b559",
-    "buildings/b_aerodrome_rot_1_mask.png": "ece0e7f16ffbb4ef21283f9398ba5669",
-    "buildings/b_aerodrome_rot_2.png": "0a2b1b5f97244cbcf64ca231170b0dfa",
-    "buildings/b_aerodrome_rot_2_build_0.png": "b34c17a07d47303cf81febdabff248ae",
-    "buildings/b_aerodrome_rot_2_build_0_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
-    "buildings/b_aerodrome_rot_2_build_1.png": "42d6e166ed86dab1fc7dbb8b077b6f46",
-    "buildings/b_aerodrome_rot_2_build_1_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
-    "buildings/b_aerodrome_rot_2_build_2.png": "a20598b36b26fb316c512ed1253b9c7d",
-    "buildings/b_aerodrome_rot_2_build_2_mask.png": "1de8dc9b3b8ffc860e416cd6d237bb10",
-    "buildings/b_aerodrome_rot_2_damaged.png": "07b53c5291b5da24fa110ec433c446c2",
-    "buildings/b_aerodrome_rot_2_damaged_mask.png": "ed8b1ebaa819d76082a4516cf5ce6e9c",
-    "buildings/b_aerodrome_rot_2_mask.png": "324a36183c38784a86ebf3c44e3cbf0b",
-    "buildings/b_aerodrome_rot_3.png": "c4bf8d164207f5affe5f9525f7e098a2",
-    "buildings/b_aerodrome_rot_3_build_0.png": "edea4c55fe1728f952e0385951006cfa",
-    "buildings/b_aerodrome_rot_3_build_0_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
-    "buildings/b_aerodrome_rot_3_build_1.png": "778a83192f4564cb245fd4daccd01cd0",
-    "buildings/b_aerodrome_rot_3_build_1_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
-    "buildings/b_aerodrome_rot_3_build_2.png": "402033ce8fa8fd613d4a28ae118392e2",
-    "buildings/b_aerodrome_rot_3_build_2_mask.png": "2dd652d2c48a8c3826e95de87df2ed1e",
-    "buildings/b_aerodrome_rot_3_damaged.png": "5932987510245b55d8412f5bca26a479",
-    "buildings/b_aerodrome_rot_3_damaged_mask.png": "aa1df000f754fc6df89210503bd383a5",
-    "buildings/b_aerodrome_rot_3_mask.png": "aa1df000f754fc6df89210503bd383a5",
+    "buildings/b_aerodrome_rot_0.png": "ad1153d58abbfde0bb2c8cd701917279",
+    "buildings/b_aerodrome_rot_0_build_0.png": "bb4d108d4e59d669111cf50e0f15767a",
+    "buildings/b_aerodrome_rot_0_build_0_mask.png": "4c03107e770f13f824ef17ee2e571651",
+    "buildings/b_aerodrome_rot_0_build_1.png": "93d9e22414f60fe284e2cf2e05700cb2",
+    "buildings/b_aerodrome_rot_0_build_1_mask.png": "4c03107e770f13f824ef17ee2e571651",
+    "buildings/b_aerodrome_rot_0_build_2.png": "9e3e5ba3abc7f1810dd4ea0d25a7bda3",
+    "buildings/b_aerodrome_rot_0_build_2_mask.png": "4c03107e770f13f824ef17ee2e571651",
+    "buildings/b_aerodrome_rot_0_damaged.png": "31b3fa2ba7a779a7bd35b93778a235ab",
+    "buildings/b_aerodrome_rot_0_damaged_mask.png": "b221f21b5a08040e9f2997cc67cf6d6f",
+    "buildings/b_aerodrome_rot_0_mask.png": "7ce9bc6a154388848d6f67eae328d329",
+    "buildings/b_aerodrome_rot_1.png": "0de79dbdf909fb40aea631e2016bba6d",
+    "buildings/b_aerodrome_rot_1_build_0.png": "41d37043a8690707961c049ca8dca840",
+    "buildings/b_aerodrome_rot_1_build_0_mask.png": "750a15a90499dbc5ee2264810feed8c4",
+    "buildings/b_aerodrome_rot_1_build_1.png": "bbffa0ce9f1b7836840a3ffc7670545f",
+    "buildings/b_aerodrome_rot_1_build_1_mask.png": "750a15a90499dbc5ee2264810feed8c4",
+    "buildings/b_aerodrome_rot_1_build_2.png": "78a158cf0a5e1102dd02cbf4af405263",
+    "buildings/b_aerodrome_rot_1_build_2_mask.png": "750a15a90499dbc5ee2264810feed8c4",
+    "buildings/b_aerodrome_rot_1_damaged.png": "e21947f1996b126774eb2daa86b0010e",
+    "buildings/b_aerodrome_rot_1_damaged_mask.png": "c91300b73da92559bb0b45e9116e50d6",
+    "buildings/b_aerodrome_rot_1_mask.png": "14719b5d3da534f59d5e5d2ed6fd79e6",
+    "buildings/b_aerodrome_rot_2.png": "f72703d46462fe2cbda3b89b7d861f57",
+    "buildings/b_aerodrome_rot_2_build_0.png": "e7c4ac3acfc2ed80b2804b63cdddaf29",
+    "buildings/b_aerodrome_rot_2_build_0_mask.png": "5054958472e16db22e6c996ac29e70eb",
+    "buildings/b_aerodrome_rot_2_build_1.png": "7600c3c38ff8328ebc8ab19349f046be",
+    "buildings/b_aerodrome_rot_2_build_1_mask.png": "5054958472e16db22e6c996ac29e70eb",
+    "buildings/b_aerodrome_rot_2_build_2.png": "3f58a9ee305f98649cbf45a0243adbca",
+    "buildings/b_aerodrome_rot_2_build_2_mask.png": "5054958472e16db22e6c996ac29e70eb",
+    "buildings/b_aerodrome_rot_2_damaged.png": "c88d9bc28f37aca0389a966779fee6ae",
+    "buildings/b_aerodrome_rot_2_damaged_mask.png": "37311543e10f150235cc5ff06f5b5b0a",
+    "buildings/b_aerodrome_rot_2_mask.png": "cc7630f18951b25f37a4444fff8bbec4",
+    "buildings/b_aerodrome_rot_3.png": "cb8caad52e8eecd574c20cf4371e9f75",
+    "buildings/b_aerodrome_rot_3_build_0.png": "cb8a76fe14036d407f87c7121ef00c67",
+    "buildings/b_aerodrome_rot_3_build_0_mask.png": "dd24253cb099c32805a362286081ebcf",
+    "buildings/b_aerodrome_rot_3_build_1.png": "1a8e0b44a894aa4cfa29be271eac2784",
+    "buildings/b_aerodrome_rot_3_build_1_mask.png": "dd24253cb099c32805a362286081ebcf",
+    "buildings/b_aerodrome_rot_3_build_2.png": "9ecbb30c76a8002d1ab169fc350a0969",
+    "buildings/b_aerodrome_rot_3_build_2_mask.png": "dd24253cb099c32805a362286081ebcf",
+    "buildings/b_aerodrome_rot_3_damaged.png": "1c08e7f13bb96d25d3e7324e959300d4",
+    "buildings/b_aerodrome_rot_3_damaged_mask.png": "7dd1a64667c3b8962eaea93c3d26e835",
+    "buildings/b_aerodrome_rot_3_mask.png": "79cdb244cd8fc4cd4ffeace72558abe3",
     "buildings/b_air_tower_build_0.png": "b3adf884bea0885959ae6fb93d2c8267",
     "buildings/b_air_tower_build_0_mask.png": "0acb278420a46a41228e5a6a967aa185",
     "buildings/b_air_tower_build_1.png": "6acb7a82d64fc68c0599705933b9d6f6",
@@ -3606,7 +3732,7 @@
     "buildings/m_supply_pier_water_3_mask.png": "afd87ec6319f15b4f8e3ca9eb868aaf3",
     "icons/a_aa_frigate.png": "3608d1279cccc0deb71538a9db3b4d4e",
     "icons/a_air_tower.png": "6314bf4c4f3aac796f0b110929d14559",
-    "icons/a_airfield.png": "e2fb1a4178eb6ca41f8b8c61462fbac1",
+    "icons/a_airfield.png": "fc53cf9a980d779a067f4ff08590fb6d",
     "icons/a_airstrip.png": "1f13f0f56c9616acf73f622bd3b4d583",
     "icons/a_attack_heli.png": "7e71390438928a6ce7ce8f0ab792607c",
     "icons/a_coastal_battery.png": "f3301b4c4d0441dec1e1bb375a0925c0",
@@ -3627,7 +3753,7 @@
     "icons/a_transport_gunship.png": "0c1bfa92c6fab6f2a3be2181af7e7393",
     "icons/a_vtol_dropship.png": "4b664fb9f099106e804edeffbb1f3e3d",
     "icons/assign_engineers.png": "b3c15fdd0c1ab689da68faac7c8a8fa9",
-    "icons/b_aerodrome.png": "b7bdcc8171be6f5596e2435433ba9e9d",
+    "icons/b_aerodrome.png": "ecbc33f7a779224c0024f6c9c6e23529",
     "icons/b_air_tower.png": "eaa39f28aa6a5719aa83d4659fc0cf46",
     "icons/b_airstrip.png": "57eb212915a0b85905dcb40bf06b426c",
     "icons/b_barge_carrier.png": "c7cfbf1e25f8db8f402e8bf0de22f688",
@@ -3657,6 +3783,7 @@
     "icons/launch_drone_frag.png": "70c7b1ad5a876b87b70f6069c104d3d3",
     "icons/launch_drone_recon.png": "4d8700671aad8807f81be1f527aca44a",
     "icons/launch_drone_strike.png": "6d7e6bcf681535c1d9dc49553817afea",
+    "icons/lay_sea_mines.png": "82c31095c3f9c500a01fcdb52953a738",
     "icons/m_amphib_crawler.png": "8d46cfbf1f3b14ef8d50445ce8b0ec24",
     "icons/m_coastal_battery.png": "b804cd0c036610e184d9bb45c35d7664",
     "icons/m_drone_bay.png": "6261b93396c01da54eab7fc6e4c20038",
@@ -3689,34 +3816,42 @@
     "icons/upgrade_hangar.png": "ac5b61ff1c2d0a56968e8f746a2506ec",
     "icons/upgrade_hangar_level.png": "ac5b61ff1c2d0a56968e8f746a2506ec",
     "icons/upgrade_hangar_to_heavy.png": "9a8a5a6999e20ae5178498cddcceeeda",
+    "strips/a_f0_apron.png": "a5e012883f10e4a770513a953be639a7",
     "strips/a_f0_end.png": "a27507f11ceb32e5d801829863839598",
     "strips/a_f0_link.png": "9f11fe8843ff618240084fc0de792c2f",
     "strips/a_f0_mid.png": "304fe8f4229bc9fc0feaf28572c03c26",
     "strips/a_f0_start.png": "4efd4e767d811767bcbeb06ede43d518",
+    "strips/a_f1_apron.png": "7f5c3626e59f40db8d3b1f1f8e583b08",
     "strips/a_f1_end.png": "d115fd3bc7a7b76b934dac32d27cf89b",
     "strips/a_f1_link.png": "20694b524deb42293fb6c662548cacfd",
     "strips/a_f1_mid.png": "1cc24dfb73f640e3967e944fb936a6e5",
     "strips/a_f1_start.png": "237f0ac93391e52bc427b00032a8c5c5",
+    "strips/a_f2_apron.png": "f19df7d2c4add70fdf867b2c806614ec",
     "strips/a_f2_end.png": "cb595c5291e434b1d1e552941a27d15a",
     "strips/a_f2_link.png": "5563078c70961aec24ae3a28f50fe983",
     "strips/a_f2_mid.png": "8dd1c4fd68704eaca11b2f18231917d2",
     "strips/a_f2_start.png": "6b40fe0edbca6d6cd4b2fe4695483db0",
+    "strips/a_f3_apron.png": "1a6e0a5b1680eaa661b481c10e37f8e1",
     "strips/a_f3_end.png": "1b95a80eab5e6e15b62cb6df467dcd4b",
     "strips/a_f3_link.png": "e5dfe9dc0ff82bdf3670a4855168dd36",
     "strips/a_f3_mid.png": "7da2d6bc7323bc10e064b746a9eb9b50",
     "strips/a_f3_start.png": "ffcee1630136864f7adbe7e8da7786bd",
+    "strips/b_f0_apron.png": "00742ce6eb161b8fc13a62a4b3787b84",
     "strips/b_f0_end.png": "61d98d3c91baa07b5cc5ef0da8d1d151",
     "strips/b_f0_link.png": "9e48b9da3cc62354d0188814443597ae",
     "strips/b_f0_mid.png": "4bbb4cafffa57c2e53d5554272177b45",
     "strips/b_f0_start.png": "78f6a0ea71a56cca9fb1811f0ceddce0",
+    "strips/b_f1_apron.png": "01672335edabfe482885f38b54c4e41d",
     "strips/b_f1_end.png": "e7e27546b77b14f0ad84516e14305e34",
     "strips/b_f1_link.png": "3ba6b11ebfc37f75344b4288a017144f",
     "strips/b_f1_mid.png": "f29d7dead61e9e0d4b9903cc6b63e05b",
     "strips/b_f1_start.png": "db49dc6ef1f9173859442251f1dc9ef3",
+    "strips/b_f2_apron.png": "d411c1037eada2eb9f3db838ebdf49cb",
     "strips/b_f2_end.png": "08e1cf3a25a1aa078899da06c5ea97a2",
     "strips/b_f2_link.png": "05bf4190a180c06ac405772afc3b9201",
     "strips/b_f2_mid.png": "b195dfa8f1b51c9bb0b111e99f9c6419",
     "strips/b_f2_start.png": "8e154914270e0acac01e4166ded183fa",
+    "strips/b_f3_apron.png": "4e04b740d67fb58a4c60cf28a887d7af",
     "strips/b_f3_end.png": "4bbb2a7eeea5f031a8909a3ff4154108",
     "strips/b_f3_link.png": "dc7c815575a816cac3e4ddc2485ed824",
     "strips/b_f3_mid.png": "291fd7e8dc0b942ffd387554d9555ae1",
@@ -3731,34 +3866,42 @@
     "strips/crater_1_repair.png": "64a1542c24885da438b0b3885f6075b9",
     "strips/crater_2.png": "df89cff7c2eb4bf6ab69d111d62f826f",
     "strips/crater_2_repair.png": "61227c9ae8a16c5c55483eb92eb135ab",
+    "strips/fwd_f0_apron.png": "a1056b727cb9d3f8d94589785d402426",
     "strips/fwd_f0_end.png": "f49196d27f2e6b49f2509cf621ba384c",
     "strips/fwd_f0_link.png": "a7307f42cefa3da92b67ac1c9f9e6733",
     "strips/fwd_f0_mid.png": "f87891fb3df8b405edc912ab8b4ecf10",
     "strips/fwd_f0_start.png": "fa5f5fc904ae074751d9a4f8cb674eb7",
+    "strips/fwd_f1_apron.png": "c326efb91155843fed66b66c509ae89b",
     "strips/fwd_f1_end.png": "2a89b346ea26d00a6dc0dc89f8b622f8",
     "strips/fwd_f1_link.png": "5b993dc762f2703645244cf549b586b1",
     "strips/fwd_f1_mid.png": "6ac6c4881870289374e2f8184ad25bea",
     "strips/fwd_f1_start.png": "b45dbdde423c1c973c8873c23b42a0dc",
+    "strips/fwd_f2_apron.png": "290f5a4d52cb208684fe107aecaf63fe",
     "strips/fwd_f2_end.png": "83a3d7f2a7afd94b7dbe263080ef72ab",
     "strips/fwd_f2_link.png": "9e141da610a883c3b42c7a8f1426eae7",
     "strips/fwd_f2_mid.png": "32876c5ec2f3f950a387bdbcd27f1871",
     "strips/fwd_f2_start.png": "230c4598cb11962943299c4f1522c034",
+    "strips/fwd_f3_apron.png": "093723cc17cc6db9fb4770ca6474932a",
     "strips/fwd_f3_end.png": "824bf5d8ebcc6121b7ce1ff83220212e",
     "strips/fwd_f3_link.png": "255944e8a5689774e5ca0df74778dcc5",
     "strips/fwd_f3_mid.png": "fbab7897b404b3617cc264e2644700b2",
     "strips/fwd_f3_start.png": "25d24375b42634ded7b175b50b828278",
+    "strips/m_f0_apron.png": "49944a0f9b929acfd46ccd3230240681",
     "strips/m_f0_end.png": "c9e9d98cd08ff88a3d4c48dd01ccfe03",
     "strips/m_f0_link.png": "28d26b8527655b17837bf1e86751c84c",
     "strips/m_f0_mid.png": "c75339a208963dcb54b419c48f506461",
     "strips/m_f0_start.png": "3150544cf1b24639a44538c78983803f",
+    "strips/m_f1_apron.png": "b0b71f06a2a46f39fc004745c8529a6c",
     "strips/m_f1_end.png": "227a320a997074d3ebd2ec833b64bc3d",
     "strips/m_f1_link.png": "50841a48e5dc0d9c3e1552ab3d5fb7c1",
     "strips/m_f1_mid.png": "266f05421f50d886c0aca5281d1cfd2b",
     "strips/m_f1_start.png": "a1a7a4016ba99356584e68b80216f535",
+    "strips/m_f2_apron.png": "06e410514e5b35693da341728da372e7",
     "strips/m_f2_end.png": "035236bc5b5870af9da7a554bb9fd41c",
     "strips/m_f2_link.png": "18b86285c559f92633c83727491742eb",
     "strips/m_f2_mid.png": "417ed625aebb225ae02f16db7f677f94",
     "strips/m_f2_start.png": "d758a66eb74c8b41291b08045e6b10b5",
+    "strips/m_f3_apron.png": "8ee92ed3f951857824edf6adbd0342f0",
     "strips/m_f3_end.png": "92a2385926b9e429b5242211791e0729",
     "strips/m_f3_link.png": "bc873aa3fc7ee6d4f828763e31daa25a",
     "strips/m_f3_mid.png": "f5a200097bbb013fa8865ea32b357f65",
@@ -3893,6 +4036,7 @@
     "launch_drone_frag": "icons/launch_drone_frag.png",
     "launch_drone_recon": "icons/launch_drone_recon.png",
     "launch_drone_strike": "icons/launch_drone_strike.png",
+    "lay_sea_mines": "icons/lay_sea_mines.png",
     "m_amphib_crawler": "icons/m_amphib_crawler.png",
     "m_coastal_battery": "icons/m_coastal_battery.png",
     "m_drone_bay": "icons/m_drone_bay.png",

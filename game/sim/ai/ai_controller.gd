@@ -28,6 +28,7 @@ const G5 = preload("res://sim/ai/ai_g5.gd")  # G5 (AI6): drone teams, tactical, 
 const G6 = preload("res://sim/ai/ai_g6.gd")  # G6 scaffold (owner AI7-USE): every G6 unit and system
 const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")  # G6 scaffold (owner AI7-DOC)
 const Triggers = preload("res://sim/systems/triggers.gd")
+const Waves = preload("res://sim/systems/waves.gd")  # G6: survival attacker (MODES6)
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
@@ -137,6 +138,13 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 	if prof != null:
 		prof.mark(fid, "scan_events")
 	if w.tick < int(st.next_think_tick):
+		return
+	if Waves.is_attacker(w, fid):
+		# G6 (MODES6 CR 755): the survival attacker has no base, workers or income; only WaveAI drives
+		# it, once per tick from AiCommand.tick (not called here too: tools/soak.gd detaches
+		# w.ai_state during step(), so AiCommand would host it in sys_state and a second call here
+		# with this st would drive every wave twice)
+		st.next_think_tick = w.tick + int(U.diff(w, fid).think_interval_ticks)
 		return
 	st.think_count = int(st.think_count) + 1
 	var ctx := _context(w, fid, st)
@@ -310,6 +318,9 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		var k: int = kc if kc != null else _cls(def_id)
 		if k & K_DRONE:
 			continue  # G5 (AI6): launched drones fly their own short G5Mech flight; never ordered
+		if e.has("ai_cmd"):
+			held.append(e)  # G6 (AI7-CMD CR 744): driven by an ally commitment / the wave AI
+			continue
 		if bool(e.get("wounded", false)):
 			held.append(e)  # G5 (AI6): wounded (immobile, no fire) until evacuated or bled out; valley
 			continue        # v3: wounded wave members pinned the wave centroid / officer group for 50k ticks

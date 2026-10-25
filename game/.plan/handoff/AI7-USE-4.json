@@ -1,0 +1,46 @@
+{
+ "agent": "AI7-USE-4",
+ "gen": 4,
+ "calls_used": 97,
+ "status": "recycled at the 70% budget mark (no lane running; no godot process of mine alive)",
+ "done": [
+  "Lane d4 finished (LANE_DONE d4, .plan/shots/AI7-USE/run_lane_d4.log): heart_s2, valley_s1, valley_s2, heart_s1, custom_s1 ALL DRAW (winner=none at 120000), 0 script errors, 0 invariant fails. companies=0 and co_req=0 on every side; Human A/B res=0 (no research at all) on every side starting at Stage 8/9.",
+  "ROOT CAUSE res=0 / companies=0 / no Stage 10 (answered to ORCH on the board, topic research_res0): not progression*.gd. Sides that start at Stage 8/9 never BUILT their research building (diag_valley_u4a.txt SOAK BLDS: no research_station / m_compute_node after 36k ticks) because credits go to units the moment they arrive (cr < 600 all game while 2000-3800 salvage + 1000-1500 ore sat idle); Econ saving_for never reserves. Same for the Company HQ (750 cr never piled up) and for companies (a PLATOON costs 26-66 pop and 3230-7910 cr + 1000-3400 salvage, see diag_company.gd output in this handoff's evidence; CO_CREDITS[0]=1200 was far too low).",
+  "FIX 1 ai_stage.gd: plan_buildings_cost() + g6_wants() + _note_pre_co(): the stage plan banks (g4.reserve) the missing research building, comms buildings for an unmet comms gate, the next gate research project (+DEFENCE_FLOOR, only when the stage bank does not already hold it), and AiG6's st.g6.use.hq_want / co_want, whenever plan_open, not defending and army_pop*3 >= attack_pop (also in the top/advancing branch for the G6 wants). g4.pre = that part; g4.pre_co = the company/Commander credits inside it. Plan probe shows ' pre:<cost>'.",
+  "FIX 2 ai_g6_co.gd: _company_hq sets g.hq_want (HQ cost + MIN_CREDITS) while the HQ is wanted; _co_want sets g.co_want = cheapest platoon plan cost (_cheapest_platoon) for the first 2 companies, then 600 for the Commander; _free_credits no longer counts the side's own banked company share (g4.pre_co). U.bank_exempt: key 'g6:build:hq' is exempt (the HQ is paid from the bank).",
+  "FIX 3 ai_util._bank_ok: queue_unit with key 'g6:*' (G5 role units, capped wants) skips the g4.pre part of the bank (_sub_cost) - without this test_ai_g5 test_ai_fields_new_ground_units failed (side 0 queued no G5 units).",
+  "FIX 4 ai_g6_sea._market: also sells surplus ore/salvage (beyond SURPLUS + reserve) while the bank's credits are short, SELL_BATCH=60 per trade, larger sale value first (broke: ore first as before).",
+  "FIX 5 ai_army.gd (draw lever, UNTESTED in a full soak): all-in and at the hard supply cap (pop+queued >= Economy.cap_max_for - CAP_SLACK) with army_pop >= attack_pop but < thr: thr = army_pop (valley d4 Machine: pop 72/75, army 25 < thr 33, launched 1 wave in 120k ticks).",
+  "ORCH item 2 done: ai_g3_units.manage_artillery skips arty in ctx.busy (doctrine artillery prep). ORCH item 1 (soak_doctrine_tags) was already in tools/soak.gd: 'SOAK DOCTRINE f<n> tags={..}' counts AiDecision {fid, tag} per side (doc_util.decide emits exactly those keys); tags only appear once companies exist.",
+  "tools/soak.gd: new 'SOAK DIAGG t= f<n> stage= | <g4 probe> | <g6 probe>' line per DIAG interval (needs --ai-breach-log) and 'SOAK BLDS f<n> def:count' at the end (unfinished marked *).",
+  "Evidence of the fix (diag_valley_u4c.txt, valley s1 60k ticks, tree before FIX 3/cheapest-platoon): Human A (Stage 9) built research_station + 2 comms_tower + a_company_hq + a_exo_garage, finished g6_automation_doctrine (res=1, gates 4/5: only 'cost' 9000 cr + 1200 ore left); Machine (Stage 8) built m_compute_node + 2 m_sensor_relay + m_company_hq, res=3 (gates 4/5, only cost). Companies still 0 there: co_why=no_fit free~1240 (platoon costs 3230+ cr) -> fixed by the cheapest-platoon co_want AFTER that run (not soak-verified yet)."
+ ],
+ "remaining": [
+  "1. Short check of the company fix: valley s1 60k diag (same command as diag_valley_u4c, out diag_valley_u4d.txt; ~5 min): expect co_req>=1 / companies>=1 for Human A and the Machine, SOAK DOCTRINE tags non-empty. If co_why shows 'training LOW_POWER' or no_fit room, read it. If companies starve the army (draws get worse), consider requesting co_want only when army_pop >= attack_pop.",
+  "2. Stage 10: with research + comms now done, only the 9000 cr + 1200 ore advance cost is left; the stage bank opens only when core_ok (all-in: launch army >= thr_l, x2 after LATE_BANK_TICK). If no side reaches 10 in the next lane, lever: for the 9->10 jump let the bank open at army_pop*3 >= attack_pop (like pre) once research+comms are done, or include the advance cost in pre when gates 4/5 and the market can cover the ore.",
+  "3. Lane d5 on the final tree (all 5 drawing configs first): TAG=d5 bash .plan/hb.sh <ID> <calls> <tok> 'lane d5' -- timeout 4500 bash .plan/shots/AI7-USE/run_lane.sh heart_s2 valley_s1 valley_s2 heart_s1 custom_s1 (run_in_background). Grep each soak for SCRIPT ERROR first. Then the full 9-config lane (+river s1/s2, coastal s1/s2). Post fact ai.g5_soaks only with winners on every config.",
+  "4. custom_s1 (river_crossing_s 2 sides, d4): Human B waves of 6-10 units (apop 18-28 of pop 65, rest support: crews 8, recovery trucks 4, airfield engineers 4, heavy lift 3) fail against a beaten Human A (6 buildings) for 100k ticks. Levers: count the support bloat (SOAK COMP) and stop queueing b_airfield_engineers / b_heavy_lift / extra recovery trucks late; or raise the decisive size after failed waves vs a lone enemy (g3.fails).",
+  "5. Wait on facts survival.api_ready + ridge_bastion_m (survival_s1) and aicmd.api_ready (assist_s1); configs already in run_lane.sh args_for.",
+  "6. Final --only runs: test_ai, test_ai_g5, test_ai_air_naval, test_mil, test_g2_scenarios, test_triggers, test_ai_g6."
+ ],
+ "files_touched": [
+  "sim/ai/ai_stage.gd",
+  "sim/ai/ai_g6_co.gd",
+  "sim/ai/ai_g6_sea.gd",
+  "sim/ai/ai_util.gd",
+  "sim/ai/ai_army.gd",
+  "sim/ai/ai_g3_units.gd",
+  "tools/soak.gd",
+  ".plan/shots/AI7-USE/diag_research.gd (diagnostic only; side 0 is not AI in it)",
+  ".plan/shots/AI7-USE/diag_company.gd (diagnostic only)",
+  ".plan/handoff/AI7-USE-4.json"
+ ],
+ "test_state": "Final tree: test_ai_g6 9/9 (r_test_ai_g6_u4d.txt, 0 SE), test_ai_g5 5/5 (r_test_ai_g5_u4d.txt, 0 SE). test_ai 16/18 on the tree before FIX 3 (r_test_ai_u4c.txt): BOTH failures are in AI7-CMD's files, not mine: test_ai02_static_fairness (ally_cmds.gd:65/66/106, commanders.gd:68/225 lack AI-FAIR tags / per-side queries) and test_g3_no_hardcoded_defs (commanders.gd:480/504 phase strings) - change_request posted to AI7-CMD. test_ai_air_naval, test_mil, test_g2_scenarios, test_triggers NOT re-run this gen (they touch ai_army / ai_util / ai_stage paths: re-run them).",
+ "gotchas": [
+  "The guard counts ~2.3k tokens per call: 70% is about 96 calls at this cap.",
+  "A company 'platoon' is the smallest size and still 26-66 pop / 3230-7910 credits: companies are a big saving goal, not a cheap add-on.",
+  "g4.reserve is rebuilt every econ think by ai_stage.manage (runs after Econ.manage_construction, before production); AiG6 runs on mil thinks, every 3rd think per module, so its wants live in st.g6.use (hq_want / co_want) and ai_stage reads them.",
+  "waves.gd was mid-edit by another agent for ~2 minutes this gen (parse errors in waves.gd -> victory.gd -> world.gd): always grep for SCRIPT ERROR before trusting a run.",
+  "Lane d4 hashes are from the tree before these fixes; every soak hash changes with them (AI behaviour)."
+ ]
+}

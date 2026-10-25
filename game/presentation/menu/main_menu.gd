@@ -199,6 +199,7 @@ func _build() -> void:
 			map_opt.set_item_disabled(map_opt.item_count - 1, true)
 	map_opt.select(0)
 	map_opt.item_selected.connect(_on_changed_num)
+	map_opt.item_selected.connect(_on_map_survival)   # G6 (UI6a): survival maps preselect a survival victory
 	grid.add_child(map_opt)
 
 	grid.add_child(HT.make_label("Seed", HT.DIM))
@@ -275,6 +276,12 @@ func _relayout() -> void:
 	if _row == null:
 		return
 	var wide := size.x >= WIDE_W
+	# G6 (UI6a): side by side only when both columns' minimum widths fit the canvas (the setup panel's
+	# minimum grows with the victory rows; 3440x1440@150% ran 4 px over with a fixed WIDE_W test)
+	if wide and size.x > 0.0:
+		var need := 18.0 * 2.0 + maxf(300.0, _left.get_combined_minimum_size().x) + 24.0 \
+			+ _setup_scroll.get_combined_minimum_size().x + 2.0
+		wide = need <= size.x
 	_row.vertical = not wide
 	for side in ["left", "right", "top", "bottom"]:
 		_margin.add_theme_constant_override("margin_" + side, 18 if wide else 8)  # G5: 18 keeps 3440x1440@150% inside the window (was 1 px over)
@@ -288,6 +295,17 @@ func _relayout() -> void:
 		_howto_scroll.custom_minimum_size = Vector2(minf(720.0, size.x - 120.0), clampf(size.y - 220.0, 120.0, 560.0))
 		_howto.reset_size()
 		_howto.position = ((size - _howto.get_combined_minimum_size()) * 0.5).floor()
+
+
+## G6 (UI6a): picking a survival map (ridge_bastion_m, river_dam_m) switches the victory to "survive"
+## unless a survival mode is already chosen; the player can still pick any other victory.
+func _on_map_survival(i: int) -> void:
+	if victory == null or i < 0 or i >= _map_rows.size():
+		return
+	if bool(_map_rows[i].get("survival", false)) and not ["survive", "repel_waves"].has(String(victory.current_mode())):
+		victory.select_mode("survive")
+		_on_changed_num(0)
+	call_deferred("_relayout")
 
 
 func _draw_deco(deco: Control) -> void:
@@ -319,6 +337,8 @@ func _on_changed_text(_t: String) -> void:
 
 func _on_changed_num(_v: Variant = null) -> void:
 	_validate()
+	if is_inside_tree():
+		_relayout.call_deferred()   # G6 (UI6a): victory rows change the setup panel's minimum width
 
 
 func _on_randomize() -> void:

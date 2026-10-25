@@ -239,3 +239,39 @@ func test_generator_reproduces_modules_byte_identically() -> void:
 				bad.append(rel)
 	check(n > 200, "regenerated %d images (g6_forts + g6_horizon)" % n)
 	check(bad.is_empty(), "regenerated images match the shipped md5s %s" % str(bad.slice(0, 5)))
+
+
+## ART-G6b task 4 (PLAN_G6 s3): an icon for every CONTRACTS_G6 s4 command (fixed list here) in the g6_bld group,
+## plus the mine marker / garrison pip / sonar ping effect sheets.
+const S4_COMMANDS := ["market_trade", "train_company", "train_commander", "form_army", "disband_army",
+	"set_company_refill", "set_loadout", "resuit", "lay_minefield", "sweep", "line_charge", "tow_wreck", "breach",
+	"garrison", "ungarrison", "build_rail", "deploy_bridge", "pack_bridge", "airdrop", "designate", "aerostat",
+	"strike", "assimilate", "cloak", "submerge", "set_ai_commander", "recall_ai_commander", "ally_request"]
+
+
+func test_command_icons_and_fx_sheets() -> void:
+	var bm := _json(BBASE + "manifest.json")
+	var icons: Dictionary = bm.get("icons", {})
+	for k in S4_COMMANDS:
+		check(SimWorld.COMMANDS.has(k), "s4 command %s is registered" % k)
+		var im := _img(BBASE, String(icons.get(k, "")))
+		if not check(im != null and im.get_size() == Vector2i(32, 32), "32x32 icon for command " + k):
+			continue
+		var ink := 0
+		for y in range(4, 28):
+			for x in range(4, 28):
+				var c := im.get_pixel(x, y)
+				if c.r + c.g + c.b > 1.2:
+					ink += 1
+		check(ink > 12, "%s icon has a visible glyph (%d bright px)" % [k, ink])
+	var fx: Dictionary = bm.get("fx_g6", {})
+	for nm in ["mine_marker", "garrison_pip", "sonar_ping"]:
+		var e: Dictionary = fx.get(nm, {})
+		var im := _img(BBASE, String(e.get("file", "")))
+		if not check(im != null, "fx sheet " + nm):
+			continue
+		check_eq(im.get_size(), Vector2i(int(e.fw) * int(e.frames), int(e.fh)), "%s sheet = %d frames" % [nm, int(e.frames)])
+		for f in int(e.frames):
+			check(H.frame(im, int(e.fw), int(e.fh), f, 0).get_used_rect().size.x > 2, "%s frame %d drawn" % [nm, f])
+	var pm := _img(BBASE, String(fx.get("garrison_pip", {}).get("mask", "")))
+	check(pm != null and pm.get_used_rect().size.x > 0, "garrison pip has team pixels")

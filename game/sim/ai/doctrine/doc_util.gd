@@ -18,7 +18,7 @@ const DEFAULTS := {"phase_line_spacing": 9.0, "arrive_dist": 3.5, "standoff": 9.
 	"advance_timeout": 6000, "consolidate_ticks": 400, "reorder_ticks": 120, "launch_ratio": 1.3,
 	"launch_strength": 0.75, "commit_strength": 0.6, "stall_ticks": 1200, "retreat_strength": 0.4,
 	"retreat_ratio": 0.45, "regroup_strength": 0.7, "regroup_ticks": 1800, "hold_depth": 12.0,
-	"mission_every": 1800, "mission_first_tick": 600, "raid_ticks": 400, "observe_ticks": 200,
+	"mission_every": 1800, "mission_retry": 200, "mission_first_tick": 600, "raid_ticks": 400, "observe_ticks": 200,
 	"mission_timeout": 4800, "exfil_radius": 5.0, "safe_radius": 6.0, "officer_hunt_range": 40.0,
 	"mine_avoid": 2.0, "breach_width": 2, "breach_timeout": 900, "score_height": 3.0, "score_cover": 2.0,
 	"score_los": 1.5, "score_dist": 0.15, "score_mine": 6.0}

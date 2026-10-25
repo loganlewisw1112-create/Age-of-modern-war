@@ -137,6 +137,61 @@ static func _or_bytes(a: PackedByteArray, b: PackedByteArray) -> PackedByteArray
 	return out
 
 
+## G6 PERF6-4: tests / bench toggle for the native source gather (RtsCombat.fog_gather, rts_core >= 0.5.1).
+static var native_gather := true
+static var _uair: Dictionary = {}   # unit def -> Elevation.is_air (fog_gather input)
+
+
+## The recompute source gather as RtsCombat.fog_gather (no G6 SIGHT hook; hb = the packed height term or
+## empty): fills nsrc[root] = [cells, sights] in the GDScript gather's first-wins key order. False (nothing
+## computed) when the batch is unavailable or the stamp step would not take arrays: the GDScript loop runs.
+static func _native_gather(w: SimWorld, lists: Array, root: Dictionary, srcs: Dictionary, hb: PackedByteArray, mw: int, mh: int, nsrc: Dictionary) -> bool:
+	if NativeCore.new_fog(w) == null:
+		return false
+	var lc = w.cache.get("combat_lc")   # the shared RtsCombat (combat.gd _combat_obj, same cache key)
+	if lc == null:
+		lc = NativeCore.new_combat(w)
+		w.cache["combat_lc"] = lc if lc != null else false
+	var cobj = lc if lc is Object else null
+	if cobj == null or not cobj.has_method("fog_gather"):
+		return false
+	var slots := []
+	for rt in srcs:
+		slots.append(int(rt))
+	var top := 0
+	for fid in w.factions:
+		top = maxi(top, int(fid))
+	var rmap := PackedInt32Array()
+	rmap.resize(top + 1)
+	rmap.fill(-1)
+	var jm := PackedFloat64Array()
+	jm.resize(top + 1)
+	jm.fill(1.0)
+	for fid in w.factions:
+		var f := int(fid)
+		if f < 0:
+			continue
+		var rt = root.get(f)
+		if rt != null:
+			rmap[f] = slots.find(int(rt))
+		jm[f] = Status.jam_mult(w, f)
+	if not Elevation._loaded:
+		Elevation._load()
+	var prm := PackedFloat64Array([float(mw), float(mh), float(Elevation.PLAIN), float(Elevation._sight), float(w.tick)])
+	var r: Array = cobj.fog_gather(lists, w.entities, rmap, slots.size(), _usight, _bsight, _uair, jm, hb, prm)
+	if r.size() == 1:
+		for e in r[0]:
+			sight_of(e)
+			if e.kind == "unit":
+				_uair[e.def] = Elevation.is_air(e)
+		r = cobj.fog_gather(lists, w.entities, rmap, slots.size(), _usight, _bsight, _uair, jm, hb, prm)
+	if r.size() != 2 * slots.size():
+		return false
+	for k in slots.size():
+		nsrc[slots[k]] = [r[2 * k], r[2 * k + 1]]
+	return true
+
+
 ## phase -1: every team (init, load, tests); 0 / 1: only teams whose ordinal % 2 == phase.
 static func recompute(w: SimWorld, phase := -1) -> void:
 	var mw := int(w.map.w)
@@ -186,7 +241,10 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 	if sight_split and not g6s and SimIndex.g6_spy == null and SimIndex.g6_hooks_on and w.map.has("height"):
 		hb = w.map.height
 	var has_hb := not hb.is_empty()
-	for li in lists.size():
+	# G6 PERF6-4: the same gather as one native batch when the SIGHT hook does not run (exact port)
+	var nsrc := {}   # root -> [cells, sights] (first-wins order) from the native gather
+	var nat := native_gather and not g6s and not native_off and _native_gather(w, lists, root, srcs, hb, mw, mh, nsrc)
+	for li in (0 if nat else lists.size()):
 		var cache: Dictionary = usight if li < lists.size() - 1 else bsight
 		for e: Dictionary in lists[li]:
 			var rt = root.get(e.owner)
@@ -230,13 +288,17 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 		if rf != null:
 			var cells := PackedInt32Array()
 			var sights := PackedFloat64Array()
-			cells.resize(st.size())
-			sights.resize(st.size())
-			var q := 0
-			for key in st:
-				cells[q] = key >> 7
-				sights[q] = float(st[key])
-				q += 1
+			if nsrc.has(rt):
+				cells = nsrc[rt][0]
+				sights = nsrc[rt][1]
+			else:
+				cells.resize(st.size())
+				sights.resize(st.size())
+				var q := 0
+				for key in st:
+					cells[q] = key >> 7
+					sights[q] = float(st[key])
+					q += 1
 			var nvis: PackedByteArray = rf.stamp(mw, mh, cells, sights, ex_data)
 			var nex: PackedByteArray = rf.explored_out()
 			if SimIndex.profiling:

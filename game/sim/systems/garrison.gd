@@ -217,6 +217,49 @@ static func _pin(w: SimWorld, e: Dictionary, r: Dictionary, i: int) -> void:
 	HotState.touch(w, int(e.id))
 
 
+## MAPIO6 (ED6 CR seq 963, additive): puts unit uid straight into building bid (map-placed garrisons)
+## through the same record / pin / hold path as a unit that walked in (no walk, no reach check).
+## Same rules as the garrison command: the owner's built building with a free slot, infantry only.
+## Returns "" when the unit is inside, else the reason (nothing changes then).
+static func place_inside(w: SimWorld, bid: int, uid: int) -> String:
+	var b = w.entities.get(bid)
+	var e = w.entities.get(uid)
+	if b == null or b.kind != "building":
+		return "No building."
+	if e == null or e.kind != "unit" or int(e.owner) != int(b.owner):
+		return "Not a unit of the building's owner."
+	if slots_of(String(b.def)) <= 0:
+		return "That building cannot be garrisoned."
+	if not bool(b.get("built", false)):
+		return "The building is not finished."
+	if not can_enter(String(e.def)):
+		return "Only infantry squads can garrison."
+	if int(e.get("garrisoned_in", -1)) == bid:
+		return ""
+	if free_slots(w, b) <= 0:
+		return "The building is full."
+	if e.has("garrisoned_in"):
+		_leave(w, e, "regarrison")
+	var st := _state(w)
+	var r = _rec(w, bid)
+	if r == null:
+		r = {"id": bid, "def": String(b.def), "cell": Vector2i(b.cell), "size": int(b.size), "owner": int(b.owner), "units": []}
+		st.blds.append(r)
+		st.blds.sort_custom(func(a, c): return int(a.id) < int(c.id))
+	r.units.append(uid)
+	r.units.sort()
+	e.erase("patrol")
+	e.erase("guard")
+	Construction.make_idle(e)
+	e.target = -1
+	e.order = {"type": "hold"}
+	e.garrisoned_in = bid
+	_pin(w, e, r, (r.units as Array).find(uid))
+	HotState.touch(w, uid)
+	w.emit("GarrisonEntered", {"unit": uid, "building": bid, "owner": int(e.owner)})
+	return ""
+
+
 static func _place_out(w: SimWorld, e: Dictionary, r: Dictionary, i: int) -> void:
 	var ring := []
 	for c in Construction.ring_cells(Vector2i(r.cell), int(r.size), 1):

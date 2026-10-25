@@ -1,0 +1,52 @@
+{
+  "agent": "UI6b",
+  "gen": 1,
+  "reason": "budget.handoff_now from ORCH at 72+ calls (guard 71%)",
+  "done": [
+    "tests/pending_g6/test_ui6b.gd git mv'd to tests/test_ui6b.gd (still the 5 failing skeleton checks: NOT implemented yet)",
+    "presentation/ui5/panels/hotkeys.gd: 25 G6 actions added to ACTIONS (rebindable) with groups mines6/rail6/garrison6/loadout6/designate6/breach6/cloak6/strike6/bridge6/aerostat6/assim6/tow6/airdrop6/sub6/seamine6 (unit) and garrison_bld6/battery6/garage6 (building); SHARE pairs; G6_UNIT_GROUPS, G6_BUILDING_GROUPS, ICONS + icon_id(action) (ART-G6b icons/<command>.png via ArtCatalog.icon); sheet names; _order covers G6. Hotkeys.collisions() == [] (verified). Sortie->X and bombard->Z rebinding tests still legal by construction (no G6 group sharing air/naval uses X or Z).",
+    "presentation/hud/g3_faction.gd: AVOID_KEYS += J,U,X,Z (engineer-card G6 keys) and ALT_KEYS filtered by AVOID; LAST_RESORT_KEYS appended so a crowded page never gets ''",
+    "presentation/ui6/b/g6_modes.gd: G6 targeted modes (rect: minefield/sweep/sea_mines; line: build_rail; click: line_charge/designate/strike(unit_ids or building_id)/deploy_bridge(cell=layer's own cell, dir toward click)/airdrop/garrison/breach/assimilate/tow_wreck) + status_text + draw preview",
+    "presentation/view/g4b_input.gd: owns `g6` (G6Modes), delegates arm/cancel/dragging/on_left/on_motion/on_release/status_text/draw_g5/on_right for G6 modes (g4b_overlay already calls draw_g5, so the G6 preview draws with no overlay change)",
+    "presentation/ui6/b/loadout_panel.gd (Exo.plan_loadout previews, nearest loadout building), garage_panel.gd (pilots list + per-suit Re-suit buttons via Exo.plan_resuit), research_panel.gd (G6 projects from Progression.research_list + Stage 10 block: gate research, gate_report, advance cost/reason, stage_roles '10' unlocks; filter_card removes other-faction research buttons from the card)",
+    "presentation/ui6/b/g6_cmds.gd: every G6 unit/building card button (names G6_<action>), icons, update_state reasons via w.preview_command for toggles; hooked from presentation/hud/g4b_commands.gd (g6c: build/reset/add_buttons/add_building_buttons/update_state; F1 header 'G5 / G6 COMMANDS')",
+    "presentation/ui6/b/live_bar.gd: Live toggle + pause/1x/2x/4x widget (extends HBoxContainer) calling EditorLive.start/stop/set_speed; neutral fallback = disabled without a world getter; handle_key(KEY_L)",
+    "presentation/ui6/b/g6_scen.gd: SPEC group->defs, make_world(stage), spawn_units, spawn_building, spawn_garage, research_def, fit screen build() for NAMES ui5b_g6_infantry/vehicles/engineer/garage/research",
+    "Verified: every file above loads (can_instantiate) in a headless load-check; --quit-after 60 compile check prints no SCRIPT ERROR / Parse Error. Baseline before my edits: test_ui_panels 5/5 PASS. NOT re-run after edits."
+  ],
+  "remaining": [
+    "1. presentation/ui5/panels/fit_panels.gd build(): add at the top `if nm.begins_with(\"ui5b_g6_\"): return await load(\"res://presentation/ui6/b/g6_scen.gd\").build(nm, vp, sc, tree)` (use load(), not preload, to avoid a preload cycle: g6_scen preloads fit_panels).",
+    "2. presentation/ui6/b/g6_probe.gd (extends SceneTree, PROBE OK/FAIL/END lines like panel_probe.gd): world = G6Scen.make_world(); groups = G6Scen.spawn_units(w); FitPanels.hud_for(root,1.0,w); for each g in Hotkeys.G6_UNIT_GROUPS select groups[g] (hud._card_sig=''; hud._refresh()), check button G6_<a>, hotkey bound (hud._hotkeys[key]==btn), badge; press key (hud._unhandled_input InputEventKey) -> mode armed == action's mode (g6_cmds UNIT_ACTIONS[a][0]) or immediate. Then click shapes: arm + mv.g4b.on_left / on_motion / on_release and check mv.g4b.last_cmd type+fields for lay_minefield(rect,kind), sweep(rect), build_rail(from,to; spawn b_rail_yard via G6Scen.spawn_building), line_charge, designate(cell), strike(cell), garrison(spawn s_garrison_bld built), airdrop, deploy_bridge(dir); w.step() and check no CommandRejected for the ones that must be accepted (lay_minefield near a_eod, sweep, designate cell within 14, strike loiter cell within 30, garrison, set_loadout next to a built barracks, resuit with G6Scen.spawn_garage ready pilot, cloak, aerostat). Panels: loadout panel opens with V and lists Loadouts.loadouts_for buttons; garage panel shows 2 pilots, Resuit_<pid>_a_exo_rifle enabled for the ready one, disabled for the wounded; research panel rows has every g6_ project of research_list for human_a and stage10.gate_ids == ['g6_automation_doctrine']; card has no Research_g6_nanite_1 (machine-only) button. LiveBar: new() without setup -> toggle disabled; setup(func(): return w2) -> set_live(true) => EditorLive.is_live(w2) and w2.cfg.live_mode; step a few ticks; set_live(false) => w2.state_hash() == pre-Live hash; set_speed(2) -> EditorLive.speed()==2; handle_key(KEY_L) toggles. Building cards: s_garrison_bld -> G6_ungarrison bound to U; a_cruise_battery -> G6_battery_strike (K) arms strike with building_id; a_exo_garage -> G6_resuit (J). Engineer card (rail6 group = 'engineer'): J/U/X/Z must still be bound to G6_minefield/G6_sweep/G6_build_rail/G6_garrison after pages.apply.",
+    "3. tests/test_ui6b.gd: replace the 5 skeleton checks with real checks parsing g6_probe output (copy the _run_probe/_probe_ok pattern from tests/test_ui_panels.gd) + static checks (Hotkeys.collisions()==[], every G6 action has an icon id that ArtCatalog manifest has, G6Modes.rect_of clamps to Mines max_rect). Keep the 5 test names (loadout_panel, garage_panel, live_toggle_and_speed, mine_garrison_rail_tools, research_and_stage10_entries).",
+    "4. presentation/ui5/panels/panel_probe.gd: test_ui_panels.test_every_new_command_has_button_and_hotkey iterates ALL Hotkeys.ACTIONS, so it now needs 'PROBE OK button <a>' and 'PROBE OK hotkey <a>=<K>' for the 25 G6 actions. Add a step to panel_probe that spawns G6Scen.spawn_units into its world (or a second world) and prints those lines for every G6 unit group, plus the 3 building groups (spawn s_garrison_bld, a_cruise_battery, a_exo_garage built). Until this is done test_ui_panels WILL FAIL that test.",
+    "5. Run: bash .plan/hb.sh UI6b <calls> <est> label -- timeout 600 bash tests/run.sh --only=test_ui_panels ; same for test_ui6b ; also --only=test_ui3 (g3_faction build_hotkey change) and test_hud (hud card). grep logs for SCRIPT ERROR = 0.",
+    "6. Fit: timeout 600 $G --headless --path . -s tools/ui_fit_test.gd -- --fit-screens=ui5b_g6_infantry,ui5b_g6_vehicles,ui5b_g6_engineer,ui5b_g6_garage,ui5b_g6_research (check the exact arg format in tools/ui_fit_test.gd lines 28-62) -> 0 issues; fix panel sizes if not.",
+    "7. Post change_requests (NOT yet posted): (a) to UI6a: add the 5 names ui5b_g6_infantry, ui5b_g6_vehicles, ui5b_g6_engineer, ui5b_g6_garage, ui5b_g6_research to presentation/ui5/kit/fit_screens.gd NAMES (the 'ui5b_' prefix already routes to FitPanels.build); also note hud._add_research_buttons lists other factions' G6 projects (UI6b filters them in research_panel.filter_card; a cleaner fix is to iterate Progression.research_list). (b) to ED6: mount presentation/ui6/b/live_bar.gd in the editor toolbar: bar = preload(...).new(); bar.setup(func(): return <live SimWorld>); route the editor key handler through bar.handle_key(kc) (L); while bar.live step bar.world bar.steps_per_frame() times per frame; listen to live_changed/speed_changed. (c) to UI6a (info): match_view passes screen_to_world positions to g4b.on_left/on_motion/on_release; once it uses camera.pick_canvas there, G6 rect/line drags pick raised ground automatically.",
+    "8. Post fact ui6b.ready after 3-6 are green; bus DONE; final AGENT_RULES report."
+  ],
+  "files_touched": [
+    "tests/test_ui6b.gd (git mv only, skeleton unchanged)",
+    "presentation/ui5/panels/hotkeys.gd",
+    "presentation/hud/g3_faction.gd",
+    "presentation/hud/g4b_commands.gd",
+    "presentation/view/g4b_input.gd",
+    "presentation/ui6/b/g6_modes.gd (new)",
+    "presentation/ui6/b/g6_cmds.gd (new)",
+    "presentation/ui6/b/loadout_panel.gd (new)",
+    "presentation/ui6/b/garage_panel.gd (new)",
+    "presentation/ui6/b/research_panel.gd (new)",
+    "presentation/ui6/b/live_bar.gd (new)",
+    "presentation/ui6/b/g6_scen.gd (new)"
+  ],
+  "test_state": "test_ui_panels: 5/5 PASS at baseline (before edits), NOT re-run since; expected to FAIL test_every_new_command_has_button_and_hotkey until remaining step 4. test_ui6b: skeleton (5 x check(false)) -> FAILS until step 3. All scripts load; compile check clean.",
+  "gotchas": [
+    "Board: export AGENT_BOARD to game/.plan/board.jsonl (post.mjs defaults to the tool dir otherwise; seq 15 of my first post went there).",
+    "Engineer card: BuildPages.apply() re-registers build hotkeys AFTER unit buttons, so a G6 engineer key equal to a build key would lose; that is why engineer-card G6 keys are J/U/X/Z (no building data hotkey uses them) and g3_faction AVOID_KEYS holds them.",
+    "Building data hotkeys in use: G D B V T F R C Y P K N. Production hotkeys of a_fob / a_exo_garage not yet checked against U / J (probe will tell: hud._hotkeys[key]==button).",
+    "Mines._rect is inclusive [x0,y0,x1,y1]; Mines.field_rule('max_rect', 8). Mobility.span takes the layer's own bank cell + dir ('n'/'s'/'e'/'w'). Strike for batteries needs building_id (not unit_ids). lay_sea_mines {unit_ids, rect} is a Naval command.",
+    "Aerostat up = sys_state.callins.aerostats.has(id) or .rising.has(id). Cloak field e.cloaked; submerge field e.submerged.",
+    "Loadout research: Loadouts.research_for() keys on research effect 'unlock_loadout'; plan_loadout gives the reason strings shown on the panel.",
+    "g6_scen preloads fit_panels.gd: fit_panels must reach g6_scen with load(), not preload."
+  ],
+  "open_crs": ["see remaining step 7 (none posted yet)"]
+}

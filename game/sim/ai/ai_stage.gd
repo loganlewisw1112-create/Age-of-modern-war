@@ -99,10 +99,20 @@ static func _reqs_built(def_id: String, built: Dictionary) -> bool:
 static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_pop: int) -> void:
 	var g4: Dictionary = st.g4
 	g4.reserve = {}
+	if g4.has("pre_co"):
+		g4.erase("pre_co")
+	if g4.has("pre"):
+		g4.erase("pre")
 	var gates := gates_of(w, fid, st)
 	var f: Dictionary = w.factions[fid]
 	if gates.is_empty() or int(f.advancing.ticks_left) > 0:
 		g4.plan = "top" if gates.is_empty() else "advancing"
+		var g6w := g6_wants(st)  # AI7-USE-4: Company HQ / first companies / Commander
+		if not g6w.is_empty() and String(st.objective) != "defend" and army_pop * 3 >= int(st.attack_pop):
+			g4.reserve = g6w
+			g4.pre = g6w.duplicate()
+			_note_pre_co(st)
+			g4.plan += " pre:" + PData.cost_label(g6w)
 		_probe(w, fid, st, gates)
 		return
 	var defending := String(st.objective) == "defend"
@@ -184,6 +194,14 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 		else:
 			g4.reserve = (want as Dictionary).duplicate()
 			g4.plan += " saving:" + PData.cost_label(want)
+	# AI7-USE-4: the plan's buildings (lab, comms) and the Company HQ are banked first, with only a
+	# defensive core at home (not the all-in launch army the stage bank waits for)
+	var pre := plan_buildings_cost(w, fid, st, ctx, gates, lab, (g4.reserve as Dictionary).is_empty())  # the stage bank already holds the project
+	if not pre.is_empty() and not defending and army_pop * 3 >= int(st.attack_pop):
+		g4.reserve = _add(g4.reserve, pre)
+		g4.pre = pre
+		_note_pre_co(st)
+		g4.plan += " pre:" + PData.cost_label(pre)
 	_probe(w, fid, st, gates)
 
 
@@ -192,6 +210,50 @@ static func _add(a: Dictionary, b: Dictionary) -> Dictionary:
 	for k in b:
 		out[k] = int(out.get(k, 0)) + int(b[k])
 	return out
+
+
+## AI7-USE-4: price of the stage plan's own buildings still missing (research building, comms
+## buildings for the comms gate) plus the Company HQ AiG6 wants (st.g6.use.hq_want, set by
+## ai_g6_co). Credits went to units the moment they arrived, so a side that started at Stage 8/9
+## never had the 300-320 credits of its lab at once: d4 soaks, res=0 on every such side for 120k
+## ticks while 2000-3800 salvage sat idle. These builds are bank-exempt (U.bank_exempt), so
+## banking their price only holds it back from units and other buildings.
+static func plan_buildings_cost(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, gates: Array, lab, with_research: bool = true) -> Dictionary:
+	var out := {}
+	if not plan_open(w, fid, st) or not ctx.has("have"):
+		return out
+	var have: Dictionary = ctx.have
+	var built: Dictionary = ctx.built
+	var rs := U.role(w, fid, "research")
+	if lab == null and rs != "" and int(have.get(rs, 0)) == 0 and _reqs_built(rs, built):
+		out = _add(out, Content.building(rs).get("cost", {}))
+	for g in gates:
+		if String(g.key) == "comms" and not bool(g.ok):
+			var cm := U.role(w, fid, "comms")
+			if cm != "" and _reqs_built(cm, built) and int(have.get(cm, 0)) < int(g.need):
+				out = _add(out, Content.building(cm).get("cost", {}))
+		# the next gate project too (one at a time; the advancement price keeps the stage bank's rules):
+		# a valley Machine with its lab never launched a wave, so its stage bank never opened (res=0)
+		elif with_research and String(g.key) == "research" and not bool(g.ok) and lab != null and String(w.factions[fid].research.active) == "":
+			var miss: Array = g.get("missing", [])
+			if not miss.is_empty():  # + DEFENCE_FLOOR: manage starts research only above that floor
+				out = _add(out, _add(PData.project(String(miss[0])).get("cost", {}), {"credits": DEFENCE_FLOOR}))
+	return _add(out, g6_wants(st))
+
+
+## AI7-USE-4: what AiG6 asks the bank for (st.g6.use.hq_want: Company HQ; co_want: the first two
+## companies, then the Commander), {} when nothing.
+static func g6_wants(st: Dictionary) -> Dictionary:
+	var u: Dictionary = st.get("g6", {}).get("use", {})
+	return _add(u.get("hq_want", {}), u.get("co_want", {}))
+
+
+## The company / Commander credits now inside the bank (ai_g6_co._free_credits does not count
+## its own banked share against itself).
+static func _note_pre_co(st: Dictionary) -> void:
+	var c := int(st.get("g6", {}).get("use", {}).get("co_want", {}).get("credits", 0))
+	if c > 0:
+		st.g4.pre_co = c
 
 
 static func _probe(w: SimWorld, fid: int, st: Dictionary, gates: Array) -> void:

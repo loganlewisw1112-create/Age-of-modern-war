@@ -178,11 +178,15 @@ static func prune(w: SimWorld) -> void:
 ## loadout `dmg` x `dmg_vs[target armor]`, and the EXO6 research effects (armor kits on vehicle targets,
 ## exo weapons on exo shooters). 1.0 for standard units of sides without those research items.
 static func armor_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
+	var c = w.cache.get("exo_fx")   # inlined per-tick fast path (called on every hit)
+	if c == null or c[0] != w.tick:
+		_fx(w)
+		c = w.cache["exo_fx"]
 	var tl = t.get("loadout")
 	var sl = src.get("loadout")
-	var fx := _fx(w)
-	if tl == null and sl == null and fx.is_empty():
+	if tl == null and sl == null and c[2]:
 		return 1.0
+	var fx: Dictionary = c[1]
 	var m := 1.0
 	if sl != null:
 		var L := lo(String(sl))
@@ -270,5 +274,5 @@ static func _fx(w: SimWorld) -> Dictionary:
 					exo *= float(p.get("value", 1.0))
 		if kits != 1.0 or exo != 1.0:
 			out[int(fid)] = [kits, exo]
-	w.cache["exo_fx"] = [w.tick, out]
+	w.cache["exo_fx"] = [w.tick, out, out.is_empty()]
 	return out

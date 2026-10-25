@@ -10,6 +10,8 @@ const G3 = preload("res://presentation/hud/g3_faction.gd")
 const Settings = preload("res://presentation/menu/settings.gd")
 const Airfield = preload("res://sim/systems/airfield.gd")
 const Naval = preload("res://sim/systems/naval.gd")
+const G6Scen = preload("res://presentation/ui6/b/g6_scen.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")
 
 var ok := 0
 var fail := 0
@@ -55,6 +57,67 @@ func _select(mv, hud, ids: Array) -> void:
 	mv.select_ids(ids)
 	hud._card_sig = ""
 	hud._refresh()
+
+
+## G6 (UI6b): every action of Hotkeys group `g` has its G6_<action> button on the current card, the
+## action's hotkey bound to that button, and the hotkey badge.
+func _g6_keys(hud, g: String) -> void:
+	for a in Hotkeys.ACTIONS:
+		if Hotkeys.group(String(a)) != g:
+			continue
+		var b := _btn(hud, "G6_" + String(a))
+		var k := Hotkeys.key(String(a))
+		if not _rep(b != null, "button %s" % a, "no G6_%s on the %s card" % [a, g]):
+			continue
+		_rep(hud._hotkeys.get(k) == b, "hotkey %s=%s" % [a, k], "bound to %s" % str(hud._hotkeys.get(k)))
+		_rep(b.get_node_or_null("HotkeyBadge") != null and String(b.get_node("HotkeyBadge").text) == k, "badge %s" % a, "badge missing")
+
+
+## Every train button of a building card keeps its data hotkey (no G6 building key took it).
+func _train_keys(hud, def_id: String) -> void:
+	var n := 0
+	for rec in hud._card_buttons:
+		if String(rec.kind) != "train" or String(rec.hk) == "":
+			continue
+		n += 1
+		_rep(hud._hotkeys.get(String(rec.hk).to_upper()) == rec.btn, "train key %s %s=%s" % [def_id, rec.item, rec.hk],
+			"bound to %s" % str(hud._hotkeys.get(String(rec.hk).to_upper())))
+	print("PROBE NOTE %s card: %d train hotkeys checked" % [def_id, n])
+
+
+## 6. G6 (UI6b) cards in their own world (G6Scen): unit groups, the 3 G6 building groups, and the FOB
+## (garrisonable and trains units: Empty building [U] must not take a production key).
+func _g6_cards() -> void:
+	var w := G6Scen.make_world()
+	var groups := G6Scen.spawn_units(w)
+	var pair := FitPanels.hud_for(root, 1.0, w)
+	var mv = pair[0]
+	var hud = pair[1]
+	await process_frame
+	for g in Hotkeys.G6_UNIT_GROUPS:
+		var ids: Array = groups.get(g, [])
+		if not _rep(not ids.is_empty(), "spawn %s" % g, "no unit spawned"):
+			continue
+		_select(mv, hud, ids)
+		_g6_keys(hud, String(g))
+	var bdefs := {"garrison_bld6": "s_garrison_bld", "battery6": "a_cruise_battery", "garage6": "a_exo_garage"}
+	for g in Hotkeys.G6_BUILDING_GROUPS:
+		var bid := G6Scen.spawn_building(w, String(bdefs[g]))
+		if not _rep(bid >= 0, "spawn %s" % bdefs[g], "no free origin"):
+			continue
+		_select(mv, hud, [bid])
+		_g6_keys(hud, String(g))
+		_train_keys(hud, String(bdefs[g]))
+	var fob := G6Scen.spawn_building(w, "a_fob")
+	if _rep(fob >= 0, "spawn a_fob", "no free origin"):
+		_select(mv, hud, [fob])
+		_train_keys(hud, "a_fob")
+		if Garrison.slots_of("a_fob") > 0:
+			_rep(hud._hotkeys.get(Hotkeys.key("ungarrison")) == _btn(hud, "G6_ungarrison"), "a_fob Empty building key %s" % Hotkeys.key("ungarrison"),
+				"bound to %s" % str(hud._hotkeys.get(Hotkeys.key("ungarrison"))))
+	mv.queue_free()
+	hud.queue_free()
+	await process_frame
 
 
 func _run() -> void:
@@ -182,5 +245,9 @@ func _run() -> void:
 	Settings.reset_bindings()
 	Settings.save()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://ui5b_probe_settings.cfg"))
+	mv.queue_free()
+	hud.queue_free()
+	await process_frame
+	await _g6_cards()
 	print("PROBE END ok=%d fail=%d" % [ok, fail])
 	quit(0 if fail == 0 else 1)

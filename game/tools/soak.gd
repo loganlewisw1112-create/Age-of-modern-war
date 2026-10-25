@@ -99,6 +99,8 @@ func _init() -> void:
 				c.sides[i].faction = String(facs[i])
 		print("SOAK MAPFILE %s sides=%d" % [mapfile, (c.sides as Array).size()])
 	c.ai_difficulty = difficulty
+	if _assist:
+		c.sides[0].ai = false  # AI7-USE-5: a player side (set_ai_commander refuses AI sides)
 	var reason := SimWorld.validate_config(c)
 	if reason != "":
 		print("SOAK CONFIG INVALID: ", reason)
@@ -455,6 +457,9 @@ func _print_diag(w: SimWorld) -> void:
 			str(crews), str(st.get("gather_plan", {})), str(orders), wave.size(), str(cen.round()), hq_d, near_foes,
 			str(Vector2(st.get("attack_target", Vector2.ZERO)).round()), str(g5.get("bwhy", {})), String(g5.get("bwhy_last", "")),
 			(g5.get("fort_seen", {}) as Dictionary).size(), (g5.get("breach_skip", []) as Array).size(), str(queues)])
+		# AI7-USE-4: stage plan + G6 probe over time (Stage 10 / Company HQ diagnosis)
+		print("SOAK DIAGG t=%d f%d stage=%d | %s | %s" % [w.tick, fid, int(f.get("stage", 0)), str(st.get("g4", {}).get("probe", "")),
+			String(st.get("g6", {}).get("use", {}).get("probe", "")) if st.has("g6") else ""])
 		var last_t := int(_diag_log_t.get(fid, -1))
 		var shown := 0
 		for l in st.get("log", []):
@@ -527,6 +532,16 @@ func _g6_report(w: SimWorld) -> void:
 		for k in ck:
 			cparts.append("%s:%d" % [k, int(comp[k])])
 		print("SOAK COMP f%d %s" % [int(fid), " ".join(cparts)])
+		var bl := {}  # AI7-USE-4: own buildings at the end (def -> count, unfinished marked '*')
+		for b in w.buildings_of(int(fid)):
+			var bk := String(b.def) + ("" if bool(b.get("built", true)) else "*")
+			bl[bk] = int(bl.get(bk, 0)) + 1
+		var bks := bl.keys()
+		bks.sort()
+		var bparts := []
+		for k in bks:
+			bparts.append("%s:%d" % [k, int(bl[k])])
+		print("SOAK BLDS f%d %s" % [int(fid), " ".join(bparts)])
 	var keys := _g6_evt.keys()
 	keys.sort()
 	var parts := []

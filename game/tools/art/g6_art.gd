@@ -8,7 +8,8 @@ extends RefCounted
 ##   assets/art/g6_bld/    buildings (every building id: rot_<f>, rot_<f>_damaged, rot_<f>_build_<0..2> for
 ##                         f = 0..3; built / damaged / build_<0..2> = rotation 0; see g6_lib.bld), icons,
 ##                         g6_bld {defs, state_rules, variants}
-## Drawers: g6_turrets, g6_forts, g6_dronebld, g6_vehicles, g6_infantry, g6_seaair, g6_horizon (ported kit).
+## Drawers: g6_turrets, g6_forts, g6_dronebld, g6_vehicles, g6_infantry, g6_seaair, g6_horizon (ported kit);
+## g6_new (+ g6_new_units, g6_new_suits): the CONTRACTS_G6 s3.2 pieces (ART-G6b).
 const G = preload("res://tools/art/g3b_lib.gd")
 const FL = preload("res://tools/art/g4_fort_lib.gd")
 const H = preload("res://tools/art/g6_lib.gd")
@@ -20,6 +21,8 @@ const MODS := {
 	"g6_infantry": preload("res://tools/art/g6_infantry.gd"),
 	"g6_seaair": preload("res://tools/art/g6_seaair.gd"),
 	"g6_horizon": preload("res://tools/art/g6_horizon.gd"),
+	"g6_new": preload("res://tools/art/g6_new.gd"),
+	"g6_icons": preload("res://tools/art/g6_icons.gd"),
 }
 
 ## Unit id -> [icon facing row, lod class]. CONTRACTS_G6 s3.1 U and S ids (52).
@@ -44,6 +47,11 @@ const UNITS := {
 	"m_charge_tender": [0, "naval"], "m_lance_cruiser": [0, "naval"],
 	"b_armored_train": [0, "vehicle_heavy"],
 	"a_laser_tank": [0, "vehicle_heavy"], "a_exo_trooper": [0, "infantry"], "b_rhomboid": [0, "vehicle_heavy"],
+	# CONTRACTS_G6 s3.2 (ART-G6b, tools/art/g6_new*.gd): officers, Machine command nodes, exo suits
+	"a_commander": [1, "infantry"], "a_captain": [1, "infantry"], "a_lieutenant": [1, "infantry"],
+	"b_commander": [1, "infantry"], "b_captain": [1, "infantry"], "b_lieutenant": [1, "infantry"],
+	"m_commander": [1, "vehicle_light"], "m_captain": [1, "vehicle_light"], "m_lieutenant": [1, "vehicle_light"],
+	"a_exo_rifle": [1, "vehicle_light"], "a_exo_missile": [1, "vehicle_light"], "a_exo_aa": [1, "vehicle_light"],
 }
 ## CONTRACTS_G6 s3.1 B ids (37), all drawn with g6_lib.bld (4 rotations + damaged + build stages).
 const BLDS := ["a_atgm_bunker", "a_sam_site", "a_laser_ciws", "a_howitzer_pit", "a_popup_turret",
@@ -52,7 +60,8 @@ const BLDS := ["a_atgm_bunker", "a_sam_site", "a_laser_ciws", "a_howitzer_pit", 
 	"m_nanite_wall", "m_phase_gate", "s_sandbags", "s_trench", "s_tank_traps", "s_barbed_wire", "s_minefield",
 	"s_garrison_bld", "s_camo_decoy", "a_drone_cc", "b_fpv_workshop", "m_hive_node",
 	"a_radar_station", "a_fob", "a_repair_bay", "a_cruise_battery", "b_rail_yard", "b_scrapyard",
-	"b_propaganda_tower", "m_nanite_forge", "m_overmind", "m_relay_lattice"]
+	"b_propaganda_tower", "m_nanite_forge", "m_overmind", "m_relay_lattice",
+	"a_company_hq", "b_company_hq", "m_company_hq", "a_exo_garage"]  # s3.2 (ART-G6b)
 ## Frame names that are plain animation, not a semantic special state.
 const PLAIN := ["idle", "move", "walk_a", "walk_b"]
 

@@ -13,27 +13,30 @@ const Damage = preload("res://sim/systems/damage.gd")
 const SaveSystem = preload("res://sim/save_system.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
 const Supply = preload("res://sim/systems/supply.gd")
+const Morale = preload("res://sim/systems/morale.gd")   # G6 PERF6-4: native_scan A/B
+const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gather A/B
 
 ## "<scenario>/<on|off>" -> reference state hash (native on / off), from bench --ab on the current tree.
-## GOLD re-baselined 2026-10-25 by PERF6-2 (the one G6 re-baseline after elev.maps_ready; authority:
-## PLAN_G6 / CONTRACTS_G6, ORCH-authorized 2026-10-25, board orch.decisions B): river_crossing_s and
-## valley_conquest_l now carry ELEV's authored height, so every AB scenario runs elevated. Evidence that
-## nothing else moved: with the height flattened (Bench.ab_hash(..., elev_mode = -1)) all 8 scenario/native
-## pairs reproduce the previous (G5) GOLD exactly; that is test_g5_gold_holds_flattened below (GOLD_G5_FLAT,
-## 2k on/off + 10k on; the 10k off pairs matched in the PERF6-2 scratch run, 80-100 s each). It holds only
-## with the Tiers fix of the same day (indirect weapons capped at 18 in contact_radius, bucket_size floored
-## at the G5 value 36; with 35 the flattened 2k_mixed/on hash differed). Source of the new values: PERF6-2
-## scratch p62_flat.gd --elev=0 on the g6 tree, rts_core 0.5.0.
-## (Previous re-baseline: 2026-10-24 by CORE10K-2, ORCH-authorized, G5 approved features; before that cd011a7.)
+## GOLD re-baselined 2026-10-25 by PERF6-3, ORCH-authorized (board fact gold.drift_root_cause, ORCH reply), because
+## the previous capture (PERF6-2, ~09:17) ran with sonar.gd missing tick(): its logs hold exactly those 8 hashes
+## and 1520 SCRIPT ERRORs (Nonexistent function 'tick', world.gd step), i.e. step() aborted at Sonar every tick
+## (Transport .. Combat .. Fog .. Victory never ran); reproduced exactly by aborting step() at SYSTEM_ORDER index 21.
+## The values below: two independent capture runs of the g6 tree (PERF6-2 scratch p62_flat.gd --elev=0, all 8
+## scenario/native pairs, rts_core 0.5.0), run 1 10:06:59-10:12:45 and run 2 10:07:24-10:13:17 PDT, identical
+## hashes; grep -c "SCRIPT ERROR|Parse Error" = 0 in both logs. Height as authored (river_crossing_s,
+## valley_conquest_l carry ELEV's height, so every AB scenario runs elevated). Flattened, the tree still gives
+## the G5 GOLD exactly (test_g5_gold_holds_flattened, GOLD_G5_FLAT; Tiers bucket floored at 36, indirect cap 18).
+## (Earlier: 2026-10-25 PERF6-2 elevated capture, invalid as above; 2026-10-24 CORE10K-2, ORCH-authorized,
+## G5 approved features; before that cd011a7.)
 const GOLD := {
-	"2k_fight/on": "f207a5bd4c6e7a34cc7e6b8cf06f7630531352bbcb3a3102c244d28bf6fb6259",
-	"2k_fight/off": "5ebbfc81da352400bf6e0fb66a4a5147244b5c84a507cbbb9cefcbf9c8950196",
-	"2k_mixed/on": "ea983093eb92221c44a2ecc8efb1521bcba4a1aef2a5ee9b0c519b194ecf8a3e",
-	"2k_mixed/off": "d265c347764d0bb1d837e79b0fcc4c39194f04a6c965ccc46d90d29352a1398d",
-	"10k_fight/on": "d6dea4547e4a8ccd0a7d2831e2893f90ea5285ffc55d4ebba629e79eefa764e5",
-	"10k_fight/off": "4fb9ac6c73222cfaa6c04f9cd37a98917f36437e48de0b13d09f704685137267",
-	"10k_march/on": "f36bab59ae5815f380b4aa14b6256360ef3a75fa24c2dfa22e35a63e0f9cce98",
-	"10k_march/off": "9c6703e77e08012ebf2b1cf87a532822b8aa4a4dede6d0f9c676c9f30f4b5fbf",
+	"2k_fight/on": "f500b7ebe32d54b13d9c3d3ec1debf8010039a1feec88d06a4845b7958ee1c15",
+	"2k_fight/off": "371710a07f521e8545e9a35f1d19aae888f0df137fda3d7f47e0d9a46cc147b2",
+	"2k_mixed/on": "623db57dd90eb54bddc7b3df8d6fb73b1f04f964f0021af3c0d57251bff4aa67",
+	"2k_mixed/off": "0e3c0fdc4c66f8e39e32d2a09fd0471dc76d1e59357b3cc40dd661d9af94bb92",
+	"10k_fight/on": "cc7e99acdf6723081976c49978d0590c4c055e12cae1e3520453a97641c19d48",
+	"10k_fight/off": "361c383a0fdfe6272b8e9c7a6624046de1318ffc1c25a60ea03d3154b0bc6363",
+	"10k_march/on": "510e6a39b4c11d2c55afcca9b8fc7f9bd3080d962e5d00ffc9530dcd07a8e7d3",
+	"10k_march/off": "ec9283b620089ae3941413bdea2a95dcdf8c330f876141c56a78fd911dd2adf3",
 }
 
 ## The G5 GOLD (CORE10K-2, 2026-10-24): what the AB scenarios give with the height flattened.
@@ -314,10 +317,13 @@ func _perf_paths(on: bool) -> void:
 	Movement.native_gather = on
 	Combat.prep_ids = on
 	Supply.fuel_list = on
+	Movement.flow_skip = on   # G6 PERF6-3: _flow_path far-segment skip
+	Morale.native_scan = on   # G6 PERF6-4: native morale FULL loop (RtsCombat.morale_scan)
+	Fog.native_gather = on    # G6 PERF6-4: native fog source gather (RtsCombat.fog_gather)
 
 
 func _perf_ab(name: String, native_on: bool, threaded := false) -> void:
-	var keep := [Movement.native_gather, Combat.prep_ids, Supply.fuel_list]
+	var keep := [Movement.native_gather, Combat.prep_ids, Supply.fuel_list, Movement.flow_skip, Morale.native_scan, Fog.native_gather]
 	_perf_paths(false)
 	var h_off := Bench.ab_hash(name, native_on, threaded)
 	_perf_paths(true)
@@ -325,6 +331,9 @@ func _perf_ab(name: String, native_on: bool, threaded := false) -> void:
 	Movement.native_gather = keep[0]
 	Combat.prep_ids = keep[1]
 	Supply.fuel_list = keep[2]
+	Movement.flow_skip = keep[3]
+	Morale.native_scan = keep[4]
+	Fog.native_gather = keep[5]
 	check_eq(h_on, h_off, "%s native=%s threaded=%s: CORE10K perf paths on == off" % [name, native_on, threaded])
 
 

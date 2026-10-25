@@ -24,7 +24,7 @@ const DEEP := 10
 const BEACH := 11
 const CLIFF := 12
 const HILL := 13
-const MAX_CODE := 13
+const MAX_CODE := 14   # G6 (ED6): 14 = RAIL (Terrain.RAIL)
 const WATER_CODES := [WATER, SHALLOW, DEEP, FORD]
 
 

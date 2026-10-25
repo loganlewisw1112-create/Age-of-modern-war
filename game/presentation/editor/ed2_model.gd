@@ -150,6 +150,68 @@ static func make_entity(kind: String, def: String, slot: int, cell: Vector2i, fa
 	return e
 
 
+# ------------------------------------------------------------------ G6 placements (ED6)
+const MINE_KINDS := ["mixed", "at", "ap"]
+const MINEFIELD_MAX := 8      # CONTRACTS_G6 s9: a minefield rect is at most 8x8
+
+
+## A scenario minefield over the rect spanned by cells a..b (clamped to 8x8):
+## {kind: "minefield", def: "minefield", owner_slot, cell, size: [w, h], mine: "mixed"|"at"|"ap"}.
+static func make_minefield(slot: int, a: Vector2i, b: Vector2i, mine: String = "mixed") -> Dictionary:
+	var lo := Vector2i(mini(a.x, b.x), mini(a.y, b.y))
+	var sz := Vector2i(mini(absi(b.x - a.x) + 1, MINEFIELD_MAX), mini(absi(b.y - a.y) + 1, MINEFIELD_MAX))
+	return {"kind": "minefield", "def": "minefield", "owner_slot": slot, "cell": lo, "size": [sz.x, sz.y],
+		"mine": mine if MINE_KINDS.has(mine) else "mixed"}
+
+
+## "" when unit def `add` can join building bdef's garrison list, else why not (Garrison rules).
+static func garrison_reason(bdef: String, garrison: Array, add: String) -> String:
+	var Garrison = load("res://sim/systems/garrison.gd")
+	var cap: int = Garrison.slots_of(bdef)
+	if cap <= 0:
+		return "%s cannot be garrisoned." % def_label("building", bdef)
+	if Content.unit(add).is_empty() or not Garrison.can_enter(add):
+		return "%s cannot garrison (infantry only)." % def_label("unit", add)
+	if garrison.size() >= cap:
+		return "%s holds at most %d (full)." % [def_label("building", bdef), cap]
+	return ""
+
+
+## The unit defs of company template tid (slot def, or its alt when the def is unknown), in slot order.
+static func company_units(tid: String) -> Array:
+	var Companies = load("res://sim/systems/companies.gd")
+	var t: Dictionary = Companies.presets().get(tid, {})
+	var out: Array = []
+	for sl in t.get("slots", []):
+		var d := String(sl.get("def", ""))
+		if Content.unit(d).is_empty():
+			d = String(sl.get("alt", ""))
+		if Content.unit(d).is_empty():
+			continue
+		for i in int(sl.get("count", 1)):
+			out.append(d)
+	return out
+
+
+## A whole company placed as one block: its units on a square grid from origin, each tagged with the
+## template and a shared block id ({company: tid, company_block: "tid@x,y"}). Cells the map rejects
+## are skipped. Returns the entity dicts (not yet added to the scenario).
+static func company_block(tid: String, slot: int, origin: Vector2i, map: Dictionary, facing: float = 0.0) -> Array:
+	var defs := company_units(tid)
+	var side := maxi(1, ceili(sqrt(float(defs.size()))))
+	var block := "%s@%d,%d" % [tid, origin.x, origin.y]
+	var out: Array = []
+	for i in defs.size():
+		var c := origin + Vector2i(i % side, i / side)
+		if place_reason(map, "unit", String(defs[i]), c) != "":
+			continue
+		var e := make_entity("unit", String(defs[i]), slot, c, facing)
+		e["company"] = tid
+		e["company_block"] = block
+		out.append(e)
+	return out
+
+
 static func ent_cell(e: Dictionary) -> Vector2i:
 	if e.has("cell"):
 		return MapIO._v2i(e.cell)
@@ -159,6 +221,9 @@ static func ent_cell(e: Dictionary) -> Vector2i:
 
 static func footprint(e: Dictionary) -> Rect2i:
 	var s := 1
+	if String(e.get("kind", "unit")) == "minefield":   # G6 (ED6): a minefield covers its rect
+		var sz = e.get("size", [1, 1])
+		return Rect2i(ent_cell(e), Vector2i(maxi(1, int(sz[0])), maxi(1, int(sz[1]))))
 	if String(e.get("kind", "unit")) == "building":
 		s = int(Content.building(String(e.get("def", ""))).get("size", 1))
 	return Rect2i(ent_cell(e), Vector2i(s, s))

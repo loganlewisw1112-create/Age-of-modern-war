@@ -102,7 +102,10 @@ static func patrol_points(w: SimWorld, fid: int) -> Array:
 	var na := 0
 	var b := Vector2.ZERO
 	var nb := 0
-	for c in w.map.ford_cells:
+	# G6 (AI7-USE-5): survival maps (ridge_bastion_m, river_dam_m) carry no ford_cells / bridge_cells
+	var fords: Array = w.map.get("ford_cells", [])
+	var bcells: Array = w.map.get("bridge_cells", [])
+	for c in fords:
 		var cc: Vector2i = c
 		if cc.x - cc.y < 0:
 			a += Vector2(cc) + Vector2(0.5, 0.5)
@@ -111,17 +114,17 @@ static func patrol_points(w: SimWorld, fid: int) -> Array:
 			b += Vector2(cc) + Vector2(0.5, 0.5)
 			nb += 1
 	var br := Vector2.ZERO
-	for c in w.map.bridge_cells:
+	for c in bcells:
 		br += Vector2(Vector2i(c)) + Vector2(0.5, 0.5)
 	var pts := []
 	if na > 0:
 		pts.append(a / na)
-	if not w.map.bridge_cells.is_empty():
-		pts.append(br / w.map.bridge_cells.size())
+	if not bcells.is_empty():
+		pts.append(br / bcells.size())
 	if nb > 0:
 		pts.append(b / nb)
-	if not w.map.bridge_cells.is_empty():
-		pts.append(br / w.map.bridge_cells.size())
+	if not bcells.is_empty():
+		pts.append(br / bcells.size())
 	return pts
 
 

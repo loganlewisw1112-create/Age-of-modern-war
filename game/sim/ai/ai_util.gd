@@ -89,6 +89,15 @@ static func _add_cost(a: Dictionary, b: Dictionary) -> Dictionary:
 	return out
 
 
+static func _sub_cost(a: Dictionary, b: Dictionary) -> Dictionary:
+	var out := {}
+	for k in a:
+		var v := int(a[k]) - int(b.get(k, 0))
+		if v > 0:
+			out[k] = v
+	return out
+
+
 static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key: String) -> bool:
 	var ty := String(cmd.type)
 	if ty != "queue_unit" and ty != "build":
@@ -96,6 +105,9 @@ static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key
 	if ty == "queue_unit" and bool(st.get("trim", false)) and _support_item(w, fid, st, String(cmd.item)):
 		return false  # AI7-USE-3 support trim (ai_controller._support_trim)
 	var hold: Dictionary = st.get("g4", {}).get("reserve", {})
+	var pre: Dictionary = st.get("g4", {}).get("pre", {})
+	if not pre.is_empty() and ty == "queue_unit" and key.begins_with("g6:"):
+		hold = _sub_cost(hold, pre)  # AI7-USE-4: G5 role units (capped wants) skip the plan-building bank (test_ai_g5)
 	var wh: Dictionary = st.get("worker_hold", {})
 	var is_g := ty == "queue_unit" and String(cmd.item) == role(w, fid, "gatherer")
 	if wh.has("soft") and is_g:
@@ -148,7 +160,7 @@ static func _support_item(w: SimWorld, fid: int, st: Dictionary, item: String) -
 
 ## Exempt from the bank: the stage plan's own buildings, power, and gate units (keys "stage:*").
 static func bank_exempt(w: SimWorld, fid: int, cmd: Dictionary, key: String) -> bool:
-	if key.begins_with("stage:"):
+	if key.begins_with("stage:") or key == "g6:build:hq":  # AI7-USE-4: the Company HQ is banked for (ai_stage)
 		return true
 	if String(cmd.type) == "build":
 		var d := String(cmd.get("def", ""))

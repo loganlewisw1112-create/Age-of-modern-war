@@ -16,7 +16,7 @@ func _build() -> void:
 	W.choice_row(self, ["Terrain", "Biome (look only)"], 0, _on_layer)
 	_pal_terrain = VBoxContainer.new()
 	add_child(_pal_terrain)
-	W.terrain_palette(_pal_terrain, range(14), code, _on_code)
+	W.terrain_palette(_pal_terrain, range(15), code, _on_code)   # G6 (ED6): 14 = Rail (armored train track)
 	W.note(_pal_terrain, "Cliff, ridge and solid buildings block movement and sight. Hills give sight and light cover.")
 	_pal_biome = VBoxContainer.new()
 	_pal_biome.visible = false

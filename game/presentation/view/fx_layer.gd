@@ -59,10 +59,13 @@ func on_shot(ev: Dictionary) -> void:
 	if _is_flame(String(ev.get("weapon", ""))):
 		_add_flame(ev)
 		return
-	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	if _is_laser(String(ev.get("weapon", ""))):
+		_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))  # G6: beam, not a tracer
+		return
+	var a: Vector2 = _w2s(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
 	var jitter := Vector2(_rng.randf_range(-4, 4), _rng.randf_range(-3, 3))
 	var hit := bool(ev.get("hit", true))
-	var b: Vector2 = mv.world_to_screen(to) + Vector2(0, -_height_for(int(ev.get("target", -1)))) + (jitter if hit else jitter * 4.0)
+	var b: Vector2 = _w2s(to) + Vector2(0, -_height_for(int(ev.get("target", -1)))) + (jitter if hit else jitter * 4.0)
 	var heavy := String(ev.get("weapon", "")) in ["tank_cannon", "at_rocket", "autocannon"]
 	if lod >= 2:
 		return
@@ -88,8 +91,8 @@ func _is_flame(wid: String) -> bool:
 func _add_flame(ev: Dictionary) -> void:
 	if lod >= 2:
 		return
-	var a: Vector2 = mv.world_to_screen(ev.get("from", Vector2.ZERO)) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
-	var b: Vector2 = mv.world_to_screen(ev.get("to", Vector2.ZERO)) + Vector2(0, -8.0)
+	var a: Vector2 = _w2s(ev.get("from", Vector2.ZERO)) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	var b: Vector2 = _w2s(ev.get("to", Vector2.ZERO)) + Vector2(0, -8.0)
 	_fx.append({"kind": "flame", "t": 0.0, "life": 0.4, "a": a, "b": b, "size": 1.0, "color": Color(1.0, 0.6, 0.2)})
 	flames += 1
 
@@ -97,8 +100,8 @@ func _add_flame(ev: Dictionary) -> void:
 ## G3a artillery: a shell flies a ballistic arc from the gun to the impact point, then an impact
 ## blast sized by the weapon's splash radius (tiles) plus a short smoke puff.
 func _add_shell(ev: Dictionary, from: Vector2, to: Vector2) -> void:
-	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
-	var b: Vector2 = mv.world_to_screen(to)
+	var a: Vector2 = _w2s(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	var b: Vector2 = _w2s(to)
 	var dist := from.distance_to(to)
 	var splash := float(Content.weapon(String(ev.get("weapon", ""))).get("splash", 1.0))
 	var energy := String(ev.get("weapon", "")).contains("plasma")
@@ -126,7 +129,7 @@ func on_destroyed(ev: Dictionary) -> void:
 	var p: Vector2 = ev.get("pos", Vector2.ZERO)
 	if not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
 		return
-	var s: Vector2 = mv.world_to_screen(p)
+	var s: Vector2 = _w2s(p)
 	if kind == "unit" and _is_air_def(String(ev.get("def", ""))):
 		_add_crash(s, String(ev.get("cause", "")) == "crashed")
 		return
@@ -141,13 +144,14 @@ func on_destroyed(ev: Dictionary) -> void:
 
 
 func add_marker(world_pos: Vector2, col: Color) -> void:
-	var s: Vector2 = mv.world_to_screen(world_pos)
+	var s: Vector2 = _w2s(world_pos)
 	_fx.append({"kind": "marker", "t": 0.0, "life": 0.5, "a": s, "b": s, "size": 14.0, "color": col})
 
 
 func tick(delta: float) -> void:
 	_g5_refresh()
 	_air_trails(delta)
+	_g6_tick()
 	if _fx.is_empty():
 		if _g5_any:
 			queue_redraw()
@@ -231,6 +235,8 @@ func _draw_body() -> void:
 				_draw_flame(f, k)
 			"missile", "bomb", "air_fx":
 				_draw_air_fx(f, k)
+			"g6":
+				_draw_g6(f, k)
 			"marker":
 				var r2: float = f.size * (1.0 - k * 0.6)
 				_draw_iso_ring(f.a, r2, Color(col.r, col.g, col.b, 1.0 - k), 2.0)
@@ -340,7 +346,7 @@ func _g5_draw(vr: Rect2) -> void:
 		return
 	var tm := Time.get_ticks_msec() * 0.001
 	for tk in _g5.trucks:
-		var c: Vector2 = mv.world_to_screen(tk[0])
+		var c: Vector2 = _w2s(tk[0])
 		var r: float = float(tk[1]) * ISO_R
 		if not vr.grow(r).has_point(c):
 			continue
@@ -350,7 +356,7 @@ func _g5_draw(vr: Rect2) -> void:
 			_dashed_iso_ring(c, r, Color(0.45, 0.95, 0.45, 0.6), 2.0, tm)
 		cnt.trucks += 1
 	for hd in _g5.holding:
-		var c: Vector2 = mv.world_to_screen(hd[0])
+		var c: Vector2 = _w2s(hd[0])
 		var r: float = float(hd[1]) * ISO_R
 		if vr.grow(r).has_point(c):
 			_dashed_iso_ring(c, r, Color(0.55, 0.8, 1.0, 0.45), 1.5, tm)
@@ -359,13 +365,13 @@ func _g5_draw(vr: Rect2) -> void:
 		var p: Vector2 = wk[0]
 		var d := Vector2(cos(float(wk[1])), sin(float(wk[1])))
 		var pr := Vector2(-d.y, d.x)
-		var st: Vector2 = mv.world_to_screen(p - d * 0.35)
+		var st: Vector2 = _w2s(p - d * 0.35)
 		if not vr.has_point(st):
 			continue
 		var ph := fmod(tm * 2.0, 1.0)
 		var col := Color(0.92, 0.97, 1.0, 0.6)
 		for side in [-1.0, 1.0]:
-			var tail: Vector2 = mv.world_to_screen(p - d * 1.6 + pr * 0.55 * side)
+			var tail: Vector2 = _w2s(p - d * 1.6 + pr * 0.55 * side)
 			draw_line(st, tail, col, 1.5)
 			draw_line(st.lerp(tail, ph), st.lerp(tail, minf(1.0, ph + 0.2)), Color(1, 1, 1, 0.85), 2.0)
 		draw_set_transform(st, 0.0, Vector2(1.0, 0.5))
@@ -373,7 +379,7 @@ func _g5_draw(vr: Rect2) -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		cnt.wakes += 1
 	for sk in _g5.sinking:
-		var c: Vector2 = mv.world_to_screen(sk[0])
+		var c: Vector2 = _w2s(sk[0])
 		if not vr.has_point(c):
 			continue
 		for b in 4:
@@ -382,7 +388,7 @@ func _g5_draw(vr: Rect2) -> void:
 			draw_arc(c + o, 1.5 + ph * 1.5, 0.0, TAU, 8, Color(0.85, 0.95, 1.0, (1.0 - ph) * (0.4 + 0.6 * float(sk[1]))), 1.0)
 		cnt.sinking += 1
 	for su in _g5.supply:
-		var c: Vector2 = mv.world_to_screen(su[0]) + Vector2(10, -38.0 if bool(su[2]) else -30.0)
+		var c: Vector2 = _w2s(su[0]) + Vector2(10, -38.0 if bool(su[2]) else -30.0)
 		if not vr.has_point(c):
 			continue
 		var fill := Color(0.4, 0.9, 0.4) if bool(su[1]) else Color(1.0, 0.75, 0.2)
@@ -464,9 +470,9 @@ func _air_shot(ev: Dictionary, from: Vector2, to: Vector2) -> bool:
 	var hit := bool(ev.get("hit", true))
 	var ha: float = (float(ls[0]) + 6.0) if bool(ls[1]) else _height_for(sid)
 	var hb: float = (float(lt[0]) + 4.0) if bool(lt[1]) else _height_for(tid)
-	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -ha)
+	var a: Vector2 = _w2s(from) + Vector2(0, -ha)
 	var jit := Vector2(_rng.randf_range(-5, 5), _rng.randf_range(-4, 4)) * (1.0 if hit else 4.0)
-	var b: Vector2 = mv.world_to_screen(to) + Vector2(0, -hb) + jit
+	var b: Vector2 = _w2s(to) + Vector2(0, -hb) + jit
 	var wc := _weapon_cls(String(ev.get("weapon", "")))
 	if wc == 1:
 		var dir := (to - from).angle()
@@ -499,13 +505,146 @@ func _on_world_events(evs: Array) -> void:
 	for ev in evs:
 		if String(ev.get("type", "")) == "AirStrike":
 			on_air_strike(ev)
+		elif String(ev.get("type", "")) != "ShotFired":  # lasers come through on_shot (MatchView dispatch)
+			_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))
+
+
+# ---------------------------------------------------------------- G6 (VIEW6) effects
+# Specs from presentation/art/g6_fx.gd (world space) -> screen-space fx items of kind "g6".
+const G6Fx = preload("res://presentation/art/g6_fx.gd")
+var g6_made: Dictionary = {}   # kind -> effects started this session (probe / tests)
+var _g6_smoke_tick := -1
+
+
+var _laser_w: Dictionary = {}  # weapon id -> bool
+
+
+## G6 (VIEW6, CR 822): world -> canvas on the drawn (raised) ground: ViewUtil.world_to_screen_h with the
+## terrain layer's height map = iso(p) - (0, (ground_level - 1) * 16). Flat maps: exactly the old iso spot.
+func _w2s(p: Vector2) -> Vector2:
+	var tl = mv.get("terrain_layer") if mv != null else null
+	if tl == null or not tl.has_method("height_map"):
+		return ViewUtil.iso(p)
+	return ViewUtil.world_to_screen_h(tl.height_map(), p)
+
+
+func _is_laser(wid: String) -> bool:
+	var v = _laser_w.get(wid)
+	if v == null:
+		v = G6Fx.is_laser(wid)
+		_laser_w[wid] = v
+	return v
+
+
+func _add_g6_list(specs: Array) -> void:
+	for sp in specs:
+		if _fx.size() >= MAX_FX:
+			return
+		var a: Vector2 = sp.a
+		var b: Vector2 = sp.b
+		if not bool(sp.get("own_only", false)) and not (mv.cell_visible(Vector2i(floori(a.x), floori(a.y)))
+				or mv.cell_visible(Vector2i(floori(b.x), floori(b.y)))):
+			continue
+		var kd := String(sp.g6)
+		if lod >= 2 and kd in ["nanite", "shimmer", "train_smoke", "jam"]:
+			continue
+		g6_made[kd] = int(g6_made.get(kd, 0)) + 1
+		_fx.append({"kind": "g6", "g6": kd, "t": -float(sp.get("delay", 0.0)), "life": float(sp.life),
+			"a": _w2s(a), "b": _w2s(b), "size": float(sp.get("size", 1.0)), "color": sp.color})
+
+
+## Once per sim tick: smoke puffs over moving armoured trains.
+func _g6_tick() -> void:
+	var sn: Dictionary = mv.snap if mv != null else {}
+	if sn.is_empty() or int(sn.get("tick", -1)) == _g6_smoke_tick or lod >= 2:
+		return
+	_g6_smoke_tick = int(sn.tick)
+	if _g6_smoke_tick % 4 == 0:
+		_add_g6_list(G6Fx.train_smoke(sn))
+
+
+func _draw_g6(f: Dictionary, k: float) -> void:
+	var col: Color = f.color
+	var a: Vector2 = f.a
+	var b: Vector2 = f.b
+	var fade := 1.0 - k
+	match String(f.g6):
+		"laser", "ciws":
+			# beam: wide soft glow + bright core, flickering out; CIWS adds a short burst of dashes
+			var wdt: float = 2.0 if String(f.g6) == "laser" else 1.0
+			draw_line(a + Vector2(0, -6), b + Vector2(0, -4), Color(col.r, col.g, col.b, 0.35 * fade), wdt * 4.0)
+			draw_line(a + Vector2(0, -6), b + Vector2(0, -4), Color(1, 1, 1, 0.9 * fade), wdt)
+			draw_circle(b + Vector2(0, -4), 3.0 + 4.0 * k, Color(col.r, col.g, col.b, 0.6 * fade))
+		"net":
+			var at := a.lerp(b, clampf(k * 3.0, 0.0, 1.0))
+			draw_line(a, at, Color(col.r, col.g, col.b, 0.7 * fade), 1.0)
+			var r := 4.0 + 10.0 * minf(1.0, k * 2.0)
+			for i in 8:
+				var q := at + Vector2.from_angle(TAU * i / 8.0) * Vector2(r, r * 0.6)
+				var q2 := at + Vector2.from_angle(TAU * (i + 1) / 8.0) * Vector2(r, r * 0.6)
+				draw_line(at, q, Color(col.r, col.g, col.b, fade), 1.0)
+				draw_line(q, q2, Color(col.r, col.g, col.b, fade), 1.0)
+		"jam":
+			for i in 6:
+				var ang := TAU * i / 6.0 + k * 3.0
+				var p0 := a + Vector2.from_angle(ang) * Vector2(8.0 + 14.0 * k, (8.0 + 14.0 * k) * 0.5)
+				var p1 := p0 + Vector2.from_angle(ang + 1.2) * 5.0
+				draw_polyline(PackedVector2Array([p0, p1, p1 + Vector2.from_angle(ang - 0.9) * 5.0]), Color(col.r, col.g, col.b, fade), 1.0)
+			_draw_iso_ring(a, 10.0 + 22.0 * k, Color(col.r, col.g, col.b, 0.5 * fade), 1.0)
+		"sonar":
+			# CR 843: ART-G6b sonar_ping sheet (8-frame expanding ring, outer radius 30 px at the last frame),
+			# scaled to the contact radius; procedural iso ring when the sheet is missing
+			var sp6 := ArtCatalog.fx_g6("sonar_ping", int(k * 8.0))
+			if not sp6.is_empty():
+				var sc := maxf(0.5, ISO_R * float(f.size) / 30.0)
+				var tex: Texture2D = sp6.texture
+				draw_texture_rect(tex, Rect2(a + (sp6.offset as Vector2) * sc, tex.get_size() * sc), false, Color(1, 1, 1, minf(1.0, fade * 1.6)))
+			else:
+				_draw_iso_ring(a, ISO_R * float(f.size) * k, Color(col.r, col.g, col.b, 0.8 * fade), 1.5)
+		"mine_blast", "strike":
+			var big := float(f.size)
+			if not _draw_frames("explosion_large" if big >= 1.2 else "explosion_small", a, k, 1.0):
+				var rr := 10.0 * big * (0.4 + k)
+				draw_circle(a, rr, Color(1.0, 0.7 - k * 0.5, 0.2, fade))
+			_draw_iso_ring(a, 14.0 * big * (0.5 + k), Color(0.45, 0.36, 0.25, 0.6 * fade), 2.0)
+		"line_charge":
+			var head := a.lerp(b, clampf(k * 1.8, 0.0, 1.0))
+			draw_line(a, head, Color(col.r, col.g, col.b, 0.9), 1.5)
+			draw_circle(head, 2.5, Color(1, 0.9, 0.5, 1.0))
+		"chute":
+			var hgt := 70.0 * (1.0 - k)
+			var p := a + Vector2(sin(k * 7.0) * 3.0, -hgt)
+			draw_arc(p + Vector2(0, -10), 9.0, PI, TAU, 10, Color(col.r, col.g, col.b, minf(1.0, fade * 3.0)), 3.0)
+			draw_line(p + Vector2(-9, -10), p, Color(0.2, 0.2, 0.2, fade), 1.0)
+			draw_line(p + Vector2(9, -10), p, Color(0.2, 0.2, 0.2, fade), 1.0)
+			draw_rect(Rect2(p - Vector2(2, 0), Vector2(4, 4)), Color(0.35, 0.33, 0.25, minf(1.0, fade * 3.0)))
+		"shimmer":
+			for i in 5:
+				var x := -10.0 + 5.0 * i
+				var y0 := -4.0 - 26.0 * fmod(k + i * 0.17, 1.0)
+				draw_line(a + Vector2(x, y0), a + Vector2(x + 1.5, y0 - 7.0), Color(col.r, col.g, col.b, 0.55 * fade), 1.0)
+			_draw_iso_ring(a, 12.0 * (0.6 + k * 0.6), Color(col.r, col.g, col.b, 0.5 * fade), 1.0)
+		"nanite":
+			for i in int(f.size) * 3:
+				var ang2 := TAU * float(i) / (float(f.size) * 3.0) + k * 5.0
+				var rad := 6.0 + 14.0 * (1.0 - k)
+				draw_circle(a + Vector2(cos(ang2) * rad, sin(ang2) * rad * 0.5 - 10.0 - 12.0 * k), 1.5, Color(col.r, col.g, col.b, fade))
+		"assimilate":
+			for i in 8:
+				var u := fmod(k * 2.0 + i / 8.0, 1.0)
+				var p2 := a.lerp(b, u) + Vector2(0, -sin(u * PI) * 14.0 - 6.0)
+				draw_circle(p2, 1.5 * float(f.size), Color(col.r, col.g, col.b, 0.85 * fade))
+		"train_smoke":
+			var p3 := a.lerp(b, k) + Vector2(0, -22.0 - 20.0 * k)
+			if not _draw_frames("smoke", p3, k, 0.8 * fade):
+				draw_circle(p3, 4.0 + 8.0 * k, Color(col.r, col.g, col.b, 0.5 * fade))
 
 
 func on_air_strike(ev: Dictionary) -> void:
 	var p: Vector2 = ev.get("pos", Vector2.ZERO)
 	if mv == null or not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))) or _fx.size() >= MAX_FX:
 		return
-	var s: Vector2 = mv.world_to_screen(p)
+	var s: Vector2 = _w2s(p)
 	_fx.append({"kind": "bomb", "name": "g5_air_bomb", "t": 0.0, "life": 0.45, "a": s + Vector2(_rng.randf_range(-6, 6), -80.0),
 		"b": s, "size": 3.0, "color": Color(0.3, 0.3, 0.3)})
 	air_fx.bombs += 1
@@ -565,7 +704,7 @@ func _air_trails(delta: float) -> void:
 				var l := _snap_lift(ids[i])
 				if not bool(l[1]):
 					continue
-				var sp: Vector2 = mv.world_to_screen(p) + Vector2(0, -float(l[0]))
+				var sp: Vector2 = _w2s(p) + Vector2(0, -float(l[0]))
 				add.append({"kind": "air_fx", "name": "g5_air_smoke", "t": 0.0, "life": 0.9, "a": sp, "b": sp + Vector2(0, -10),
 					"size": 5.0, "color": Color(0.2, 0.2, 0.2), "fade": true})
 				air_fx.smoke += 1

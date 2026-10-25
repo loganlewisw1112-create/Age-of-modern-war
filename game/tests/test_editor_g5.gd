@@ -109,7 +109,8 @@ func test_place_airfield_with_hangars_and_parked_aircraft() -> void:
 	ed.view.scripted_stroke([Vector2i(20, 20)])
 	check_eq(ut.ents().size(), 1, "airfield placed")
 	ut.set_mode("select")
-	ed.view.scripted_stroke([Vector2i(22, 22)])
+	# airfield v2 (CONTRACTS_G6 s13): the main base is 2x2 at the placement origin; pick inside it
+	ed.view.scripted_stroke([Vector2i(21, 21)])
 	check_eq(int(ut.selected), 0, "airfield selected")
 	var fs = ut.sel.field
 	check(fs.visible, "air-field section shown for a field")
@@ -131,8 +132,9 @@ func test_place_airfield_with_hangars_and_parked_aircraft() -> void:
 	ed.free()
 	# --- field rules
 	check(MapIO.field_reason({"kind": "building", "def": "a_airstrip", "hangars": ["heavy"]}).contains("light hangars only"), "airstrip: light only")
-	check(MapIO.field_reason({"kind": "building", "def": "a_airfield", "hangars": ["light", "light", "light", "light", "light"]}).contains("at most 4"), "slot cap")
-	check_eq(MapIO.field_reason({"kind": "building", "def": "a_airfield", "extra_strips": 1, "hangars": ["light", "light", "light", "light", "light"]}), "", "extra strip adds slots")
+	check(MapIO.field_reason({"kind": "building", "def": "a_airfield", "hangars": ["light", "light", "light", "light", "light", "light", "light"]}).contains("at most 6"), "slot cap (v2: 6 apron slots)")
+	check_eq(MapIO.field_reason({"kind": "building", "def": "a_airfield", "extra_strips": 1, "hangars": ["light", "light", "light", "light", "light", "light", "light"]}), "", "extra strip adds slots (v2: +2)")
+	check(MapIO.field_reason({"kind": "building", "def": "a_airfield", "extra_strips": 1, "hangars": ["light", "light", "light", "light", "light", "light", "light", "light", "light"]}).contains("at most 8"), "slot cap with one extra strip")
 	check(MapIO.field_reason({"kind": "building", "def": "a_helipad", "hangars": ["light"]}).contains("cannot hold hangars"), "helipads have no hangars")
 	check(MapIO.field_reason({"kind": "building", "def": "a_hospital", "parked": ["a_strike_jet"]}).contains("not an air field"), "not a field")
 	check(MapIO.field_reason({"kind": "building", "def": "a_airfield", "parked": ["rifleman"]}).contains("not an aircraft"), "infantry cannot park")

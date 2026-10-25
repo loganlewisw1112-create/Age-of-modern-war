@@ -14,6 +14,7 @@ var tag_edit: LineEdit
 var _built: CheckBox
 var _cargo_box: VBoxContainer
 var _load_btn: Button
+var _garrison_btn: Button     # G6 (ED6): "Garrison picked unit" for garrisonable buildings
 var _quiet := false
 var field: VBoxContainer      # G5 (ED5): ed5_field_sel.gd, air-field extras of the selection
 
@@ -37,6 +38,8 @@ func setup(t) -> void:
 	_cargo_box = VBoxContainer.new()
 	add_child(_cargo_box)
 	_load_btn = W.button(self, "Load picked unit", load_picked, "Adds the palette's unit to this carrier's cargo")
+	_garrison_btn = W.button(self, "Garrison picked unit", garrison_picked, "Puts the palette's infantry inside this building")
+	W.button(self, "Clear garrison", clear_garrison)
 	field = FieldSel.new()
 	add_child(field)
 	field.setup(tab)
@@ -90,12 +93,48 @@ func refresh() -> void:
 		lines.append("Tag: %s" % e.tag)
 	if not cargo.is_empty():
 		lines.append("Cargo: %s" % ", ".join(PackedStringArray(cargo)))
+	var gar: Array = e.get("garrison", [])
+	_garrison_btn.disabled = kind != "building" or M.garrison_reason(def, [], "rifleman").contains("cannot be garrisoned")
+	if not gar.is_empty():
+		lines.append("Garrison: %s" % ", ".join(PackedStringArray(gar)))
+	if kind == "minefield":
+		lines.append("Minefield %s, %dx%d" % [String(e.get("mine", "mixed")), int(e.size[0]), int(e.size[1])])
+	if String(e.get("company", "")) != "":
+		lines.append("Company: %s" % String(e.company))
 	for k in ["hangars", "parked"]:
 		if not (e.get(k, []) as Array).is_empty():
 			lines.append("%s: %s" % [k.capitalize(), ", ".join(PackedStringArray(e[k]))])
 	field.refresh()
 	tab.ed.set_properties(M.def_label(kind, def), lines)
 	_quiet = false
+
+
+## G6: adds the palette's unit to the selected building's garrison list. "" or why not.
+func garrison_picked() -> String:
+	var e = _ent()
+	if e == null:
+		return "Nothing selected."
+	var why := "Select a building."
+	if String(e.get("kind", "")) == "building":
+		why = M.garrison_reason(String(e.get("def", "")), e.get("garrison", []), String(tab.pick_def))
+	if why != "":
+		tab.ed.status(why, HT.YELLOW)
+		return why
+	var i: int = tab.selected
+	var add := String(tab.pick_def)
+	tab._edit("Garrison", func():
+		var g: Array = (tab.ents()[i].get("garrison", []) as Array).duplicate()
+		g.append(add)
+		tab.ents()[i]["garrison"] = g)
+	return ""
+
+
+func clear_garrison() -> void:
+	var e = _ent()
+	if e == null or not e.has("garrison"):
+		return
+	var i: int = tab.selected
+	tab._edit("Clear garrison", func(): tab.ents()[i].erase("garrison"))
 
 
 func _on_tag(t: String) -> void:

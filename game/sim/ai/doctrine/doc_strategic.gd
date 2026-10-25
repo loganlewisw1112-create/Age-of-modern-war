@@ -34,9 +34,17 @@ static func front(w: SimWorld, fid: int, st: Dictionary, d: Dictionary, intel: D
 		var obj: Vector2 = key.pos if int(key.level) >= 2 else target
 		if d.has("force_obj"):
 			obj = key.pos if int(key.level) >= 2 and (key.pos as Vector2).distance_to(target) <= D.num("key_terrain_radius") else target
+		# an objective already taken is not attacked again: go on to the target itself, or hold when that is it
+		var taken = d.get("taken_obj", null)
+		var idle := false
+		if typeof(taken) == TYPE_VECTOR2 and (taken as Vector2).distance_to(obj) <= 3.0:
+			if (taken as Vector2).distance_to(target) > 6.0:
+				obj = target
+			else:
+				idle = true
 		var hp: Vector2 = base + (target - base).normalized() * minf(dist * 0.3, 30.0) if dist > 1.0 else base
 		var hk := T.key_terrain(w, hp, D.num("key_terrain_radius") * 0.6, base)
-		fr = {"target": target, "obj": obj, "obj_level": int(key.level), "hold": T.clamp_map(w, hk.pos), "base": base}
+		fr = {"target": target, "obj": obj, "obj_level": int(key.level), "hold": T.clamp_map(w, hk.pos), "base": base, "idle": idle}
 		d.front = fr
 	return fr
 
@@ -96,7 +104,10 @@ static func _timing(w: SimWorld, fid: int, st: Dictionary, d: Dictionary, ranked
 	var foes := D.power(D.near(intel.vis, fr.obj, D.num("key_terrain_radius") + D.num("contact_range")))
 	var ratio := 99.0 if foes <= 0.0 else power / foes
 	var launched := bool(d.get("launched", false))
-	if not launched and ready and (ratio >= D.num("launch_ratio") or String(st.get("objective", "")) == "attack" or bool(d.get("force_attack", false))):
+	# timing: strike when the enemy at the objective is seen and outmatched, when the side's army goes over to
+	# the attack (ai_army objective), or when ordered; never blind on an empty map
+	var seen_weak := foes > 0.0 and ratio >= D.num("launch_ratio")
+	if not launched and ready and not bool(fr.get("idle", false)) and (seen_weak or String(st.get("objective", "")) == "attack" or bool(d.get("force_attack", false))):
 		d.launched = true
 		d.launch_tick = w.tick
 		launched = true
@@ -133,6 +144,7 @@ static func _timing(w: SimWorld, fid: int, st: Dictionary, d: Dictionary, ranked
 	if launched and all_done:
 		d.launched = false
 		d.committed = false
+		d.taken_obj = fr.obj
 		for form in ranked:
 			d.forms[String(form.key)].done = false
 		d.front = {}  # the next think picks the next objective

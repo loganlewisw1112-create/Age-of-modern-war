@@ -24,6 +24,10 @@ func _init() -> void:
 	var ticks := 600
 	var write := true
 	g2 = false
+	if OS.get_cmdline_user_args().has("--fps"):
+		_fps_main()
+		quit(0)
+		return
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--sizes="):
 			sizes = []
@@ -298,3 +302,97 @@ func _report(rows: Array, ticks: int) -> String:
 	else:
 		lines.append("Note: all listed implementations were real when this ran.")
 	return "\n".join(lines) + "\n"
+
+
+# ================================================================ G6 PERF6-3: windowed fps harness
+## Final gates (PLAN_G6 / G6-PERF6 task 9): 2k units on screen >= 60 fps, 10k units zoomed out >= 30 fps.
+##   godot --headless --path game -s tools/bench.gd -- --fps [--fps-secs=30] [--fps-cases=2k,10k] [--no-write]
+## Each case launches the game WINDOWED as a child process (this executable, without --headless):
+##   --autostart --map=<map> --spawn-test=<N> --zoom=<z> --no-vsync --fps-quit=<secs>
+## (spawn-test sends both halves at each other and centres the camera on the player's group), then parses
+## the child's FPS_SUMMARY line (avg / min / p10 over the logged seconds after a 3 s warm-up; vsync off so
+## the number is headroom, not the monitor cap). PASS = p10 >= gate. Every row carries the CPU load and
+## the godot process count at start: ORCH takes the final numbers on a quiet PC. Writes perf/FPS_G6_<date>.md.
+const FPS_CASES := {
+	"2k": {"map": "river_crossing_s", "units": 2000, "zoom": 1.0, "gate": 60.0, "what": "2k on screen"},
+	"10k": {"map": "valley_conquest_l", "units": 10000, "zoom": 0.15, "gate": 30.0, "what": "10k zoomed out"},
+}
+
+
+func _fps_main() -> void:
+	var secs := 30
+	var cases := ["2k", "10k"]
+	var write := true
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--fps-secs="):
+			secs = maxi(int(a.substr(11)), 8)
+		elif a.begins_with("--fps-cases="):
+			cases = Array(a.substr(12).split(","))
+		elif a == "--no-write":
+			write = false
+	var lines := ["# G6 windowed fps (%s)" % Time.get_datetime_string_from_system(), "",
+		"`godot --headless -s tools/bench.gd -- --fps --fps-secs=%d`; gate on p10 fps; vsync off. %s" % [secs, _system_status()], "",
+		"| case | map | units | zoom | avg | min | p10 | gate | result | CPU load % / godot procs at start | summary |",
+		"|---|---|---|---|---|---|---|---|---|---|---|"]
+	var all_ok := not cases.is_empty()
+	for c in cases:
+		if not FPS_CASES.has(c):
+			print("FPS unknown case ", c)
+			all_ok = false
+			continue
+		var cfg: Dictionary = FPS_CASES[c]
+		var cpu := _load_str()
+		var args := ["--path", ProjectSettings.globalize_path("res://"), "--", "--autostart",
+			"--map=%s" % cfg.map, "--spawn-test=%d" % int(cfg.units), "--zoom=%s" % str(cfg.zoom), "--no-vsync",
+			"--fps-quit=%d" % secs]
+		var out := []
+		var t0 := Time.get_ticks_msec()
+		var rc := OS.execute(OS.get_executable_path(), args, out, true, false)
+		var txt := "\n".join(out)
+		var summ := ""
+		for ln in txt.split("\n"):
+			if ln.begins_with("FPS_SUMMARY"):
+				summ = ln.strip_edges()
+		var errs := txt.count("SCRIPT ERROR") + txt.count("Parse Error")
+		var v := _fps_parse(summ)
+		var ok: bool = not v.is_empty() and float(v.p10) >= float(cfg.gate) and errs == 0
+		all_ok = all_ok and ok
+		var res := ("PASS" if ok else "FAIL") if not v.is_empty() else "NO SUMMARY (rc %d)" % rc
+		if errs > 0:
+			res += " (%d script errors)" % errs
+		lines.append("| %s | %s | %d | %s | %s | %s | %s | %.0f | %s | %s | %s |" % [cfg.what, cfg.map, int(cfg.units), str(cfg.zoom),
+			v.get("avg", "-"), v.get("min", "-"), v.get("p10", "-"), float(cfg.gate), res, cpu, summ])
+		print("FPS %s %s rc=%d %d ms load=%s :: %s" % [c, res, rc, Time.get_ticks_msec() - t0, cpu, summ])
+	lines.append("")
+	lines.append("RESULT %s" % ("all gates met" if all_ok else "gate(s) NOT met (or not measured)"))
+	var report := "\n".join(lines) + "\n"
+	print(report)
+	if write:
+		var path := ProjectSettings.globalize_path("res://perf/FPS_G6_%s.md" % Time.get_date_string_from_system())
+		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+		var f := FileAccess.open(path, FileAccess.WRITE)
+		if f != null:
+			f.store_string(report)
+			f.close()
+			print("FPS wrote ", path)
+
+
+## {avg, min, p10, max} strings from an FPS_SUMMARY line ({} when missing).
+static func _fps_parse(summ: String) -> Dictionary:
+	var v := {}
+	for tok in summ.split(" "):
+		var kv := tok.split("=")
+		if kv.size() == 2 and kv[0] in ["avg", "min", "p10", "max"]:
+			v[kv[0]] = kv[1]
+	return v if v.has("p10") else {}
+
+
+## "<CPU load %> / <godot process count>" (Windows; "?" elsewhere or on failure).
+static func _load_str() -> String:
+	if OS.get_name() != "Windows":
+		return "?"
+	var out := []
+	OS.execute("powershell", ["-NoProfile", "-Command",
+		"$l=(Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average; $n=@(Get-Process | Where-Object { $_.ProcessName -like 'godot*' }).Count; Write-Output ([string]$l + ' / ' + [string]$n)"], out, true, false)
+	var s := " ".join("\n".join(out).replace("\r", "").split("\n", false)).strip_edges()
+	return s if s != "" else "?"

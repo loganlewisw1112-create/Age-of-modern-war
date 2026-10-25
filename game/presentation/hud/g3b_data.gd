@@ -5,12 +5,14 @@ extends RefCounted
 ## buttons. Pure reads: never mutates the world. Missing data degrades gracefully (River
 ## Crossing only, no research, "no gates").
 
-const MAP_ORDER := ["river_crossing_s", "industrial_heartland_m", "valley_conquest_l"]
+const MAP_ORDER := ["river_crossing_s", "industrial_heartland_m", "valley_conquest_l", "ridge_bastion_m", "river_dam_m"]  # G6 (UI6a): survival maps
 ## Shown (disabled) when maps.json does not list them yet.
 const MAP_FALLBACK := {
 	"river_crossing_s": {"id": "river_crossing_s", "name": "River Crossing", "size": "s", "w": 96, "h": 96, "max_sides": 4},
 	"industrial_heartland_m": {"id": "industrial_heartland_m", "name": "Industrial Heartland", "size": "m", "w": 160, "h": 160, "max_sides": 6},
 	"valley_conquest_l": {"id": "valley_conquest_l", "name": "Valley Conquest", "size": "l", "w": 256, "h": 256, "max_sides": 8},
+	"ridge_bastion_m": {"id": "ridge_bastion_m", "name": "Ridge Bastion (survival)", "size": "m", "w": 128, "h": 128, "max_sides": 4, "survival": true},
+	"river_dam_m": {"id": "river_dam_m", "name": "River Dam (survival)", "size": "m", "w": 128, "h": 128, "max_sides": 4, "survival": true},
 }
 const SIZE_NAMES := {"s": "Small", "m": "Medium", "l": "Large"}
 

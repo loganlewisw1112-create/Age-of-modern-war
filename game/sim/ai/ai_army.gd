@@ -148,6 +148,13 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	var obj_mode := float(st.g3.terms.territory) > 0.0 or int(st.g3.terms.bridge) > 0
 	if obj_mode:
 		thr = maxi(6, int(round(float(thr) * OBJECTIVE_THR)))
+	# AI7-USE-4: all-in and at the hard supply cap, the army cannot grow any more: what stands at home
+	# goes (at least the base attack_pop). Valley d4: the Machine sat at pop 72/75 with a 25-pop army
+	# under a 33 threshold from t~36000 to the cap and launched 1 wave in 120k ticks (3 draws).
+	var fq: Dictionary = w.factions[fid]
+	if all_in and army_pop >= int(st.attack_pop) and army_pop < thr \
+			and int(fq.pop) + int(ctx.get("queued_pop", 0)) >= Economy.cap_max_for(w, fid) - CAP_SLACK:
+		thr = army_pop
 	# AI5-3: an all-in trickle on a small map still launches at the full threshold (half-size waves of
 	# 5-7 pop fed river s2's tower line for 80k ticks); reinforcement stays continuous once out.
 	var threat := _threat(w, fid, st, ctx)

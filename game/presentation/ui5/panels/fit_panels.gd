@@ -89,6 +89,9 @@ static func hud_for(vp: Node, sc: float, w: SimWorld) -> Array:
 
 
 static func build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -> bool:
+	if nm.begins_with("ui5b_g6_"):
+		# load(), not preload: g6_scen preloads this script (a preload here would be a cycle).
+		return bool(await load("res://presentation/ui6/b/g6_scen.gd").build(nm, vp, sc, tree))
 	if not NAMES.has(nm):
 		return false
 	var w := make_world()

@@ -43,6 +43,9 @@ func _ready() -> void:
 	for fl in G5_FLOWS:
 		if OS.get_cmdline_user_args().has("--ui-playtest-" + String(fl)):
 			g5_flow = String(fl)
+	for fl in G6_FLOWS:
+		if OS.get_cmdline_user_args().has("--ui-playtest-" + String(fl)):
+			g6_flow = String(fl)
 	_run()
 
 
@@ -243,17 +246,38 @@ func _site(def_id: String) -> Vector2i:
 ## Click then double-click one unit of defs[0] (= select all of that type on screen); returns how
 ## many selected units have a def in defs.
 func _select_units(defs: Array) -> int:
-	var us := _own_units_in(defs)
-	if us.is_empty():
-		return 0
-	await _click(_to_screen(us[0].pos), MOUSE_BUTTON_LEFT)
-	await _click(_to_screen(us[0].pos), MOUSE_BUTTON_LEFT, true)
-	await _wait(0.3)
+	# G6 (PT6) parallel-run fix: wait on state, not on time. Under load (2 windowed runs) the first
+	# unit could be off screen / under the HUD or walking, and one click-pair found 0 units. Now: pick
+	# a unit that is on the map area (else scroll to it), freeze the sim for the gesture, and retry
+	# until the selection holds (3 attempts).
 	var n := 0
-	for id in _mv().selection:
-		var e = _w().get_e(int(id))
-		if e != null and defs.has(String(e.def)):
-			n += 1
+	for attempt in 3:
+		var us := _own_units_in(defs)
+		if us.is_empty():
+			return 0
+		var pick = us[0]
+		for u in us:
+			if _on_map(_to_screen(u.pos)):
+				pick = u
+				break
+		var sp0: float = _mv().speed
+		_mv().speed = 0.0
+		if not _on_map(_to_screen(pick.pos)):
+			_mv().center_camera_on(pick.pos)
+			await _wait(0.4)
+		await _click(_to_screen(pick.pos), MOUSE_BUTTON_LEFT)
+		await _click(_to_screen(pick.pos), MOUSE_BUTTON_LEFT, true)
+		await _wait(0.3)
+		_mv().speed = sp0
+		n = 0
+		for id in _mv().selection:
+			var e = _w().get_e(int(id))
+			if e != null and defs.has(String(e.def)):
+				n += 1
+		if n > 0:
+			return n
+		print("PLAYTEST-DBG select_units retry %d defs=%s pick=%s screen=%s" % [attempt, str(defs), str(pick.pos), str(_to_screen(pick.pos))])
+		await _wait(0.5)
 	return n
 
 
@@ -401,6 +425,11 @@ func _gather_salvage(gatherers: Array, tag: String) -> void:
 
 func _run() -> void:
 	await _wait(1.5)
+	if g6_flow == "checkpoint":
+		await _checkpoint_flow()
+		return _finish()
+	if g6_flow != "":
+		await _g6_menu()
 	if g5_flow != "" and g5_flow != "tutorial":
 		await _g5_menu()
 	if faction != "":
@@ -427,6 +456,9 @@ func _run() -> void:
 		return _finish()
 	if g5_flow != "":
 		await _g5_flow()
+		return _finish()
+	if g6_flow != "":
+		await _g6_flow()
 		return _finish()
 
 	var pdef := _role("power")
@@ -872,6 +904,11 @@ func _built_count(def_id: String) -> int:
 	return k
 
 
+func _btn_enabled(needle: String) -> bool:
+	var bb := _find_button(get_tree().root, needle)
+	return bb != null and not bb.disabled
+
+
 ## Select a producer building by click and press the production card button for item.
 func _train(item: String) -> Array:
 	var prod := _producer_of(item)
@@ -886,6 +923,11 @@ func _train(item: String) -> Array:
 	await _click(_to_screen(prod.pos))
 	await _wait(0.4)
 	var nm := String(Content.production(item).name)
+	# G6 (PT6) parallel-run fix: the production button is enabled only once its gate holds (e.g. the
+	# hangar just bought is still being built): wait for the enabled button, not a fixed delay.
+	var en := await _wait_until(func(): return _btn_enabled(nm), 90.0)
+	if not en:
+		print("PLAYTEST-DBG train_button_disabled %s gate=%s" % [item, Airfield.can_produce(_w(), 0, item)])
 	_log("g4b_click_train_" + item, await _click_button(nm), nm)
 	await _wait(0.2)
 	var pq = _w().get_e(int(prod.id))
@@ -2062,6 +2104,10 @@ func _tut_flow() -> void:
 		await _tut_done(11, "hangar", 150.0)
 	# 12 jet: train a Strike Jet at the airstrip
 	if await _tut_at(12, "jet", "Strike Jet"):
+		# G6 (PT6) parallel flake: the Strike Jet click was refused right after the hangar buy (hangar
+		# still building). Wait until the airfield gate accepts the jet before clicking.
+		var gate_ok := await _wait_until(func(): return Airfield.can_produce(_w(), 0, "a_strike_jet") == "", 120.0)
+		_log("tut_jet_gate_open", gate_ok, Airfield.can_produce(_w(), 0, "a_strike_jet"))
 		await _train("a_strike_jet")
 		await _tut_done(12, "jet", 60.0)
 	# 13 takeoff
@@ -2130,3 +2176,555 @@ func _tut_unmet_gates() -> Array:
 		if not bool(r.get("ok", r.get("met", true))):
 			out.append(r)
 	return out
+
+
+# ============================================================ G6 (PT6) flows: --ui-playtest-<flow>
+## PLAN_G6 section 12.4: elev company aicmd mines garrison naval6 airdef exo loadout market airfield2
+## survival (+ editor Live / height brushes in tools/editor_playtest.gd), and the owner checkpoint
+## (--ui-playtest-checkpoint with --load=<doctrine demo save>). Human A at Stage 9 unless noted; the
+## harness grant + peace window are the G5 ones (this process only, in memory).
+const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint"]
+const Elevation = preload("res://sim/systems/elevation.gd")
+const Companies = preload("res://sim/systems/companies.gd")
+const Mines = preload("res://sim/systems/mines.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")
+const Loadouts = preload("res://sim/systems/loadouts.gd")
+const Exo = preload("res://sim/systems/exo.gd")
+const Sonar = preload("res://sim/systems/sonar.gd")
+const Market = preload("res://sim/systems/market.gd")
+const Airdef = preload("res://sim/systems/airdef.gd")
+const AiCommand = preload("res://sim/systems/ai_command.gd")
+const Waves = preload("res://sim/systems/waves.gd")
+const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")
+const DocUtil = preload("res://sim/ai/doctrine/doc_util.gd")
+const AiController = preload("res://sim/ai/ai_controller.gd")
+var g6_flow := ""
+
+
+func _g6_menu() -> void:
+	var menu = get_tree().root.find_child("MapOption", true, false) as OptionButton
+	var want := {"naval6": "Coastal Front", "survival": "Ridge Bastion"}
+	if want.has(g6_flow) and menu != null:
+		var idx := -1
+		for i in menu.item_count:
+			if menu.get_item_text(i).begins_with(String(want[g6_flow])) and not menu.is_item_disabled(i):
+				idx = i
+		_log("g6_map_pick_click", idx >= 0 and await _pick_option("MapOption", idx), "" if idx < 0 else menu.get_item_text(idx))
+	if g6_flow != "survival":
+		var ob = get_tree().root.find_child("Slot0Stage", true, false) as OptionButton
+		var k := -1
+		if ob != null:
+			for i in ob.item_count:
+				if ob.get_item_text(i).begins_with("Stage 9 "):
+					k = i
+		_log("g6_slot0_stage9_click", k >= 0 and await _pick_option("Slot0Stage", k), "items=%d" % (0 if ob == null else ob.item_count))
+	await _wait(0.3)
+
+
+func _g6_grant(peace: bool) -> void:
+	_mv().join_sim()
+	var f: Dictionary = _w().factions[0]
+	f.credits = int(f.credits) + 60000
+	for r in (f.stock as Dictionary).keys():
+		f.stock[r] = int(f.stock.get(r, 0)) + 20000
+	if peace:
+		for dk in (Content.rules().get("ai_difficulties", {}) as Dictionary).keys():
+			Content.rules().ai_difficulties[dk]["first_attack_tick"] = 1000000
+	_log("g6_harness_grant", true, "stage=%d credits=%d stock=%s" % [int(f.stage), int(f.credits), str(f.stock)])
+
+
+## A box-drag around ids (the camera on their centre first); returns how many of ids are selected.
+func _g6_box(ids: Array) -> int:
+	return await _g5_select_many(ids)
+
+
+func _g6_ids(es: Array) -> Array:
+	var out := []
+	for e in es:
+		out.append(int(e.id) if e is Dictionary else int(e))
+	return out
+
+
+func _g6_rclick(p: Vector2) -> void:
+	await _tut_rclick(p)
+
+
+func _g6_panel(nm: String) -> Control:
+	var p = get_tree().root.find_child(nm, true, false)
+	return p as Control if p is Control and (p as Control).is_visible_in_tree() else null
+
+
+func _g6_click_in(panel: Node, child: String) -> bool:
+	if panel == null:
+		return false
+	var b = panel.find_child(child, true, false)
+	if not (b is BaseButton) or not (b as Control).is_visible_in_tree() or (b as BaseButton).disabled:
+		return false
+	await _click((b as Control).get_global_rect().get_center())
+	await _wait(0.3)
+	return true
+
+
+## Real clicks on an OptionButton inside panel: the first item whose text contains needle.
+func _g6_option(panel: Node, child: String, needle: String) -> bool:
+	if panel == null:
+		return false
+	var ob = panel.find_child(child, true, false) as OptionButton
+	if ob == null:
+		return false
+	var idx := -1
+	for i in ob.item_count:
+		if idx < 0 and ob.get_item_text(i).to_lower().contains(needle.to_lower()) and not ob.is_item_disabled(i):
+			idx = i
+	if idx < 0:
+		return false
+	if ob.selected == idx:
+		return true
+	await _click(ob.get_global_rect().get_center())
+	await _wait(0.3)
+	var pop := ob.get_popup()
+	if not pop.visible:
+		return false
+	var rect := Rect2(Vector2(pop.position), Vector2(pop.size))
+	var y := rect.position.y + (float(idx) + 0.5) * rect.size.y / float(maxi(1, ob.item_count))
+	await _click(Vector2(rect.position.x + rect.size.x * 0.5, y))
+	await _wait(0.3)
+	return ob.selected == idx
+
+
+## Builds the infantry chain (power, barracks) and trains one rifle squad; returns its unit ids.
+func _g6_squad() -> Array:
+	if _built_count(_role("power")) == 0:
+		await _g5_build(_role("power"))
+	if _built_count(_role("barracks")) == 0:
+		await _g5_build(_role("barracks"))
+	return _g6_ids(await _train(_role("infantry")))
+
+
+# ------------------------------------------------------------ owner checkpoint (doctrine + elevation)
+## --load=<.plan/shots/AI7-DOC/demo_start.save> --ui-playtest=<dir> --ui-playtest-checkpoint
+## The demo start (side 1 AI off) is driven exactly like sim/ai/doctrine/doc_demo.gd: Doctrine.think for
+## side 1 every 10 ticks with force_obj = the hill and force_attack, here inside the real game loop, so
+## the rendered match shows the same assault. A shot at every AiDecision and every 60 ticks.
+func _checkpoint_flow() -> void:
+	var ok := await _wait_until(func(): return main.match_view != null and main.match_view.world != null, 20.0)
+	_log("cp_save_loaded", ok)
+	if not ok:
+		return
+	await _wait(1.5)
+	_mv().join_sim()
+	var w := _w()
+	var hill := Vector2(float(int(w.map.w) / 2 + 10), float(int(w.map.h) / 2)) + Vector2(0.5, 0.5)
+	_log("cp_hill_height", Elevation.height_at(w, Vector2i(hill)) == 3, "hill=%s level=%d units=%d" % [str(hill), Elevation.height_at(w, Vector2i(hill)), w.units_of(1).size()])
+	var st := AiController.new_state(w, 1)
+	var d := DocUtil.dstate(st)
+	d.force_obj = hill
+	d.force_attack = true
+	var cam := hill + Vector2(-16.0, 0.0)
+	_mv().center_camera_on(cam)
+	var cam_rig = _mv().get("camera")
+	if cam_rig != null and cam_rig.has_method("set_zoom_level"):
+		cam_rig.set_zoom_level(0.75)
+	_mv().speed = 1.0
+	await _wait(0.6)
+	await _shot("cp_00_start")
+	var tags := []
+	var next_think := (int(w.tick) / 10) * 10
+	var end_t := -1
+	var n_shot := 1
+	var last_shot_t := int(w.tick)
+	var t_real := 0.0
+	while t_real < 600.0:
+		await get_tree().process_frame
+		t_real += get_process_delta_time()
+		_mv().join_sim()
+		w = _w()
+		if int(w.tick) < next_think:
+			continue
+		next_think = (int(w.tick) / 10 + 1) * 10
+		var n0 := w.events.size()
+		Doctrine.think(w, 1, st, {"visible": w.visible_enemies(1), "units": w.units_of(1), "buildings": w.buildings_of(1), "arty": [], "army": [], "busy": {}})
+		var fresh := ""
+		for i in range(n0, w.events.size()):
+			var ev: Dictionary = w.events[i]
+			if String(ev.get("type", "")) == "AiDecision":
+				fresh = String(ev.tag)
+				tags.append("t=%d %s" % [int(w.tick), fresh])
+				print("PLAYTEST-CP decision t=%d tag=%s reason=%s" % [int(w.tick), fresh, String(ev.get("reason", ""))])
+				if fresh == "high_ground_taken" and end_t < 0:
+					end_t = int(w.tick) + 300
+		# follow the company: camera between its centre and the hill
+		var cen := Vector2.ZERO
+		var us: Array = w.units_of(1)
+		for u in us:
+			cen += Vector2(u.pos)
+		if us.size() > 0:
+			cen /= float(us.size())
+			_mv().center_camera_on(cen.lerp(hill, 0.45))
+		if fresh != "" or int(w.tick) - last_shot_t >= 60:
+			await _wait(0.05)
+			await _shot("cp_%02d_t%d_%s" % [n_shot, int(w.tick), fresh if fresh != "" else "step"])
+			n_shot += 1
+			last_shot_t = int(w.tick)
+		if end_t >= 0 and int(w.tick) >= end_t:
+			break
+	_log("cp_tags_seen", tags.size() > 0, str(tags))
+	_log("cp_high_ground_taken", end_t >= 0, "tags=%s" % str(d.get("tags", {})))
+	await _shot("cp_99_end")
+
+
+func _g6_flow() -> void:
+	await _g6_grant(g6_flow != "survival")
+	_log("speed_3x_button", await _click_button("3x"))
+	match g6_flow:
+		"market":
+			await _market_flow()
+		"loadout":
+			await _loadout_flow()
+		"garrison":
+			await _garrison_flow()
+		"mines":
+			await _mines_flow()
+		"elev":
+			await _elev_flow()
+		"company":
+			await _company_flow()
+		"aicmd":
+			await _aicmd_flow()
+		"exo":
+			await _exo_flow()
+		"airdef":
+			await _airdef_flow()
+		"naval6":
+			await _naval6_flow()
+		"airfield2":
+			await _airfield2_flow()
+		"survival":
+			await _survival_flow()
+
+
+# ------------------------------------------------------------ market (buy / sell)
+func _market_flow() -> void:
+	var hq := _hq()
+	_log("mk_select_hq", await _g5_select(int(hq.id)))
+	_log("mk_market_button_click", await _click_named("G6Market"))
+	var mp := _g6_panel("MarketPanel")
+	_log("mk_panel_open", mp != null)
+	if mp == null:
+		return
+	_mv().join_sim()
+	var f: Dictionary = _w().factions[0]
+	var ore0 := int(f.stock.get("ore", 0))
+	var cr0 := int(f.credits)
+	_log("mk_buy_ore_click", await _g6_click_in(mp, "Buy50_ore"), "price=%d" % Market.price(_w(), "ore", "buy"))
+	var bought := await _wait_until(func(): return int(_w().factions[0].stock.get("ore", 0)) > ore0 and int(_w().factions[0].credits) < cr0, 5.0)
+	_log("mk_bought", bought, "ore %d -> %d credits %d -> %d" % [ore0, int(_w().factions[0].stock.get("ore", 0)), cr0, int(_w().factions[0].credits)])
+	var sal0 := int(_w().factions[0].stock.get("salvage", 0))
+	var cr1 := int(_w().factions[0].credits)
+	_log("mk_sell_salvage_click", await _g6_click_in(mp, "Sell50_salvage"), "price=%d" % Market.price(_w(), "salvage", "sell"))
+	var sold := await _wait_until(func(): return int(_w().factions[0].stock.get("salvage", 0)) < sal0 and int(_w().factions[0].credits) > cr1, 5.0)
+	_log("mk_sold", sold, "salvage %d -> %d credits %d -> %d" % [sal0, int(_w().factions[0].stock.get("salvage", 0)), cr1, int(_w().factions[0].credits)])
+	await _shot("g6_market")
+
+
+# ------------------------------------------------------------ loadout swap
+func _loadout_flow() -> void:
+	var sq := await _g6_squad()
+	_log("lo_squad_trained", sq.size() > 0, str(sq))
+	if sq.is_empty():
+		return
+	var e0 = _ent(int(sq[0]))
+	var opts: Array = Loadouts.loadouts_for(0, String(e0.def))
+	_log("lo_loadouts_known", opts.has("assault"), str(opts))
+	_log("lo_select_squad", await _g6_box(sq) > 0)
+	_log("lo_loadout_button_click", await _click_named("G6_loadout"))
+	await _wait(0.4)
+	var lp := _g6_panel("LoadoutPanel")
+	_log("lo_panel_open", lp != null)
+	await _shot("g6_loadout_panel")
+	_log("lo_assault_click", await _g6_click_in(lp, "Loadout_assault"))
+	var ok := await _wait_until(func(): return _ent(int(sq[0])) != null and Loadouts.of(_ent(int(sq[0]))) == "assault", 60.0)
+	_log("lo_loadout_applied", ok, "loadout=%s" % ("" if _ent(int(sq[0])) == null else Loadouts.of(_ent(int(sq[0])))))
+	await _shot("g6_loadout_applied")
+
+
+# ------------------------------------------------------------ garrison
+func _garrison_flow() -> void:
+	var sq := await _g6_squad()
+	_log("gar_squad_trained", sq.size() > 0, str(sq))
+	var gb := await _g5_build("s_garrison_bld")
+	if sq.is_empty() or gb.is_empty():
+		return
+	var bid := int(gb.id)
+	_log("gar_slots", Garrison.slots_of("s_garrison_bld") > 0, "slots=%d" % Garrison.slots_of("s_garrison_bld"))
+	_log("gar_select_squad", await _g6_box(sq) > 0)
+	_log("gar_button_click", await _g5_arm_click("G6_garrison", gb.pos), _g5_last_cmd())
+	var inside := await _wait_until(func(): return Garrison.occupants(_w(), bid).size() > 0, 90.0)
+	_log("gar_squad_inside", inside, "occupants=%s" % str(Garrison.occupants(_w(), bid)))
+	await _shot("g6_garrison_in")
+	_log("gar_select_building", await _g5_select(bid))
+	_log("gar_empty_click", await _click_named("G6_ungarrison"))
+	var out := await _wait_until(func(): return Garrison.occupants(_w(), bid).is_empty(), 30.0)
+	_log("gar_squad_left", out, "occupants=%s" % str(Garrison.occupants(_w(), bid)))
+	await _shot("g6_garrison_out")
+
+
+# ------------------------------------------------------------ mines (lay; EOD clears a lane)
+func _g6_mines_in(r: Rect2i) -> int:
+	var n := 0
+	for e in _w().entities.values():
+		if String(e.get("kind", "")) == "mine" and int(e.get("owner", -1)) == 0 and r.has_point(Vector2i(floori(e.pos.x), floori(e.pos.y))):
+			n += 1
+	return n
+
+
+func _g6_free_rect(sz: int) -> Rect2i:
+	var c: Vector2i = _hq().cell
+	var mc := Vector2i(int(_w().map.w) / 2, int(_w().map.h) / 2)
+	var dir := Vector2(mc - c).normalized()
+	var probe := c + Vector2i(dir * 9.0)
+	_mv().center_camera_on(Vector2(probe))
+	await _wait(0.4)
+	var free := func(q: Vector2i) -> bool:
+		for dy in sz:
+			for dx in sz:
+				if Construction.placement_error(_w(), 0, "s_sandbags", q + Vector2i(dx, dy)) != "":
+					return false
+		return _on_map(_to_screen(Vector2(q + Vector2i(sz, sz))))
+	var o := _g5_cell_near(probe, 0, 8, free)
+	return Rect2i(o, Vector2i(sz, sz)) if o.x >= 0 else Rect2i()
+
+
+func _mines_flow() -> void:
+	await _g6_squad()  # barracks for the EOD squad
+	var r := await _g6_free_rect(3)
+	_log("mn_free_rect", r.size.x > 0, str(r))
+	if r.size.x == 0:
+		return
+	var eng := _own_units_in(_defs_with("can_build"))
+	_log("mn_select_engineers", await _g6_box(_g6_ids(eng.slice(0, 2))) > 0)
+	var a := _to_screen(Vector2(r.position) + Vector2(0.5, 0.5))
+	var b := _to_screen(Vector2(r.end) - Vector2(0.5, 0.5))
+	_log("mn_minefield_click", await _click_named("G6_minefield"))
+	await _drag(a, b)
+	await _wait(0.4)
+	_log("mn_lay_issued", _g5_last_cmd() == "lay_minefield", _g5_last_cmd())
+	var laid := await _wait_until(func(): return _g6_mines_in(r) >= 3, 150.0)
+	_log("mn_mines_laid", laid, "mines=%d known=%d" % [_g6_mines_in(r), Mines.known_to(_w(), 0).size()])
+	await _shot("g6_mines_laid")
+	var eod := _g6_ids(await _train("a_eod"))
+	_log("mn_eod_trained", eod.size() > 0)
+	if eod.is_empty():
+		return
+	_log("mn_select_eod", await _g6_box(eod) > 0)
+	_mv().center_camera_on(Vector2(r.get_center()))
+	await _wait(0.4)
+	_log("mn_sweep_click", await _click_named("G6_sweep"))
+	await _drag(_to_screen(Vector2(r.position) + Vector2(0.5, 0.5)), _to_screen(Vector2(r.end) - Vector2(0.5, 0.5)))
+	await _wait(0.4)
+	_log("mn_sweep_issued", _g5_last_cmd() == "sweep", _g5_last_cmd())
+	var clear := await _wait_until(func(): return _g6_mines_in(r) == 0, 180.0)
+	_log("mn_lane_cleared", clear, "mines left=%d" % _g6_mines_in(r))
+	await _shot("g6_mines_cleared")
+
+
+# ------------------------------------------------------------ elevation (take a hill)
+func _elev_flow() -> void:
+	var sq := await _g6_squad()
+	_log("el_squad_trained", sq.size() > 0)
+	if sq.is_empty():
+		return
+	var w := _w()
+	var c0 := Vector2i(_ent(int(sq[0])).pos)
+	var hill := Vector2i(-1, -1)
+	var bd := 1e9
+	for y in range(maxi(0, c0.y - 40), mini(int(w.map.h), c0.y + 41)):
+		for x in range(maxi(0, c0.x - 40), mini(int(w.map.w), c0.x + 41)):
+			var q := Vector2i(x, y)
+			var ok := Elevation.height_at(w, q) >= 2 and [0, 1, 3].has(int(w.map.terrain[y * int(w.map.w) + x]))
+			for n in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				ok = ok and w.in_bounds(q + n) and Elevation.height_at(w, q + n) >= 2
+			var d2 := float((q - c0).length_squared())
+			if ok and d2 < bd:
+				bd = d2
+				hill = q
+	_log("el_hill_found", hill.x >= 0, "hill=%s level=%d dist=%.0f" % [str(hill), Elevation.height_at(w, hill) if hill.x >= 0 else -1, sqrt(bd)])
+	if hill.x < 0:
+		return
+	_log("el_select_squad", await _g6_box(sq) > 0)
+	await _g6_rclick(Vector2(hill) + Vector2(0.5, 0.5))
+	var up := await _wait_until(func(): return _g6_on_high(sq) * 2 >= sq.size(), 180.0)
+	_log("el_hill_taken", up, "on_high=%d of %d" % [_g6_on_high(sq), sq.size()])
+	var e = _ent(int(sq[0]))
+	if e == null:
+		return
+	var rm := Elevation.range_mult(_w(), e, Content.unit(String(e.def)))
+	var sb := Elevation.sight_bonus(_w(), e)
+	_log("el_range_bonus", rm > 1.0, "range_mult=%.3f level=%d" % [rm, Elevation.height_at(_w(), Vector2i(e.pos))])
+	_log("el_sight_bonus", sb > 0.0, "sight_bonus=%.2f" % sb)
+	_mv().center_camera_on(Vector2(hill))
+	await _g6_box(sq)
+	await _wait(0.6)
+	var ins := _labels_text(get_tree().root.find_child("InspectorScroll", true, false)) if get_tree().root.find_child("InspectorScroll", true, false) != null else ""
+	_log("el_bonus_visible_in_ui", ins.to_lower().contains("high ground") or ins.to_lower().contains("height"), ins.left(160).replace("\n", " | "))
+	await _shot("g6_elev_hill")
+
+
+# ------------------------------------------------------------ companies / armies / AI Commanders
+func _g6_close(panel: Node) -> void:
+	if panel == null:
+		return
+	for b in panel.find_children("*", "Button", true, false):
+		if String((b as Button).tooltip_text).begins_with("Close") and (b as Control).is_visible_in_tree():
+			await _click((b as Control).get_global_rect().get_center())
+			await _wait(0.3)
+			return
+
+
+func _g6_company_hq() -> Dictionary:
+	var hdef := ""
+	for b in Content.buildable_for(_fac()):
+		if hdef == "" and Companies.is_hq_def(String(b)):
+			hdef = String(b)
+	_log("co_hq_def", hdef != "", hdef)
+	if hdef == "":
+		return {}
+	if _built_count(_role("power")) == 0:
+		await _g5_build(_role("power"))
+	return await _g5_build(hdef)
+
+
+## Army Builder by clicks: size Platoon, Train n times; waits for n companies.
+func _g6_train_companies(hq: Dictionary, n: int) -> bool:
+	_log("co_select_hq", await _g5_select(int(hq.id)))
+	_log("co_army_builder_click", await _click_named("G6ArmyBuilder"))
+	var ab := _g6_panel("ArmyBuilder")
+	_log("co_builder_open", ab != null)
+	if ab == null:
+		return false
+	_log("co_size_platoon_click", await _g6_option(ab, "TemplateSize", "platoon"))
+	await _shot("g6_army_builder")
+	for i in n:
+		_log("co_train_template_click_%d" % i, await _g6_click_in(ab, "TrainTemplate"))
+	await _g6_close(ab)
+	var ok := await _wait_until(func(): return Companies.companies_of(_w(), 0).size() >= n, 300.0)
+	_log("co_companies_trained", ok, "companies=%d" % Companies.companies_of(_w(), 0).size())
+	return ok
+
+
+func _company_flow() -> void:
+	var hq := await _g6_company_hq()
+	if hq.is_empty() or not await _g6_train_companies(hq, 2):
+		return
+	var c: Dictionary = Companies.companies_of(_w(), 0)[0]
+	var ids := _g6_ids(Companies.units_of(_w(), c))
+	_log("co_select_company", await _g6_box(ids) > 0, "units=%d" % ids.size())
+	await _wait(0.6)
+	var card = get_tree().root.find_child("Company_%d" % int(c.id), true, false)
+	_log("co_company_card", card != null and (card as Control).is_visible_in_tree(), String(c.get("name", "")))
+	await _shot("g6_company_card")
+	_log("co_select_hq_2", await _g5_select(int(hq.id)))
+	_log("co_train_commander_click", await _click_named("G6TrainCommander"))
+	var cm := await _wait_until(func(): return Companies.commanders_of(_w(), 0).size() > 0, 180.0)
+	_log("co_commander_trained", cm, "commanders=%d" % Companies.commanders_of(_w(), 0).size())
+	if not cm:
+		return
+	_log("co_forces_click", await _click_named("G6Forces") or await _click_named("ForcesButton"))
+	var fp := _g6_panel("ForcesPanel")
+	_log("co_forces_open", fp != null)
+	if fp == null:
+		return
+	_log("co_commander_pick", await _g6_option(fp, "CommanderOption", "commander"))
+	var picks := fp.find_children("Pick", "BaseButton", true, false)
+	for k in mini(2, picks.size()):
+		await _click((picks[k] as Control).get_global_rect().get_center())
+		await _wait(0.3)
+	_log("co_form_army_click", await _g6_click_in(fp, "FormArmy"), "picks=%d" % picks.size())
+	var army := await _wait_until(func(): return Companies.armies_of(_w(), 0).size() > 0, 20.0)
+	_log("co_army_formed", army, str(Companies.armies_of(_w(), 0)).left(160))
+	await _shot("g6_army_formed")
+
+
+func _aicmd_flow() -> void:
+	var hq := await _g6_company_hq()
+	if hq.is_empty() or not await _g6_train_companies(hq, 1):
+		return
+	var c: Dictionary = Companies.companies_of(_w(), 0)[0]
+	_log("ac_panel_button_click", await _click_named("CommandersButton"))
+	var cp := _g6_panel("CommandersPanel")
+	_log("ac_panel_open", cp != null)
+	var s1 = cp.find_child("Slot1", true, false) if cp != null else null
+	if s1 == null:
+		_log("ac_slot1", false)
+		return
+	var cname := String(c.get("name", "company"))
+	_log("ac_target_click", await _g6_option(s1, "Target", cname) or await _g6_option(s1, "Target", "co"), cname)
+	_log("ac_playstyle_click", await _g6_option(s1, "Playstyle", "aggressive"))
+	_log("ac_stance_click", await _g6_option(s1, "Stance", "cautious"))
+	_log("ac_objective_click", await _g6_option(s1, "Objective", "hold"))
+	await _shot("g6_aicmd_panel")
+	_log("ac_assign_click", await _g6_click_in(s1, "Assign"))
+	var on := await _wait_until(func(): return _g6_slot_units(0) > 0, 10.0)
+	var sl: Dictionary = _g6_slot(0)
+	_log("ac_assigned", on, "units=%d playstyle=%s stance=%s objective=%s phase=%s" % [_g6_slot_units(0), str(sl.get("playstyle")), str(sl.get("stance")), str(sl.get("objective")), str(sl.get("phase"))])
+	_log("ac_objective_stance", String(sl.get("stance", "")) == "cautious" and str(sl.get("objective", "")).contains("hold"), "")
+	await _g6_close(cp)
+	await _wait(3.0)
+	# override: a direct player order to the commanded company
+	var ids := _g6_ids(Companies.units_of(_w(), c))
+	_log("ac_select_company", await _g6_box(ids) > 0)
+	var goal: Vector2 = _ent(int(ids[0])).pos + Vector2(4.0, 0.0)
+	await _g6_rclick(goal)
+	await _wait(0.6)
+	var e = _ent(int(ids[0]))
+	_log("ac_override_order", e != null and String(e.order.get("type", "")) == "move", "order=%s player_order=%s badge=%s" % [str(e.order.get("type", "")) if e != null else "", str(e.get("player_order")) if e != null else "", str(e.get("ai_cmd")) if e != null else ""])
+	await _shot("g6_aicmd_override")
+	_log("ac_panel_button_click_2", await _click_named("CommandersButton"))
+	cp = _g6_panel("CommandersPanel")
+	s1 = cp.find_child("Slot1", true, false) if cp != null else null
+	_log("ac_recall_click", s1 != null and await _g6_click_in(s1, "Recall"))
+	var off := await _wait_until(func(): return _g6_slot_units(0) == 0, 10.0)
+	_log("ac_recalled", off, str(_g6_slot(0)).left(160))
+	await _g6_close(cp)
+
+
+func _g6_slot(sl: int) -> Dictionary:
+	for s in AiCommand.slots(_w(), 0):
+		if int(s.get("slot", -1)) == sl:
+			return s
+	return {}
+
+
+func _g6_slot_units(sl: int) -> int:
+	var s := _g6_slot(sl)
+	var u = s.get("units", [])
+	return (u as Array).size() if u is Array else (0 if s.is_empty() or String(s.get("kind", "")) == "" else 1)
+
+
+func _naval6_flow() -> void:
+	_log("nv6_pending", false, "not written yet")
+
+
+func _airfield2_flow() -> void:
+	_log("af2_pending", false, "not written yet")
+
+
+func _survival_flow() -> void:
+	_log("sv_pending", false, "not written yet")
+
+
+func _exo_flow() -> void:
+	_log("exo_pending", false, "not written yet")
+
+
+func _airdef_flow() -> void:
+	_log("ad_pending", false, "not written yet")
+
+
+func _g6_on_high(ids: Array) -> int:
+	var n := 0
+	for id in ids:
+		var e = _ent(int(id))
+		if e != null and Elevation.height_at(_w(), Vector2i(floori(e.pos.x), floori(e.pos.y))) >= 2:
+			n += 1
+	return n

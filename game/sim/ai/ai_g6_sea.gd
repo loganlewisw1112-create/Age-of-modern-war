@@ -21,6 +21,7 @@ const TRADE_HEADROOM := 800        # credits kept after a buy
 const FLOORS := {"salvage": 150, "ore": 100, "ammo": 400, "fuel": 300}
 const SURPLUS := {"salvage": 1500, "ore": 900}
 const BROKE := 250
+const SELL_BATCH := 60             # AI7-USE-4: units per sale while saving for the bank
 const PARK := 3000
 ## AI7-USE-3: no buying back what was sold (or selling what was bought) within CHURN (heartland d3
 ## s1: Human A sold 2000 ore when broke, then bought ore back 10-15 at a time at the buy price).
@@ -154,17 +155,25 @@ static func _market(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g: D
 			amount = n
 			pick = r
 			break
-	if pick == "" and int(f.credits) < BROKE:
+	# AI7-USE-4: also sell while the bank (stage plan / lab / Company HQ) is short of credits: valley d4
+	# sides sat on 2000-3800 salvage + 1000-1500 ore with < 600 credits all game. The larger surplus
+	# (by sale value) goes first, SELL_BATCH at a time so the price (1%/unit) is not dumped.
+	var saving := int(res.get("credits", 0)) > 0 and int(f.credits) < int(res.get("credits", 0))
+	if pick == "" and (int(f.credits) < BROKE or saving):
+		var best_v := 0
 		for r in ["ore", "salvage"]:
 			if w.tick - int((g.get("mkt_bought", {}) as Dictionary).get(r, -1000000)) < CHURN:
 				continue
 			var extra := _have(w, fid, r) - int(SURPLUS[r]) - int(res.get(r, 0))
 			var lim2 := int(L.callf(M, "limit_left", [w, fid, r], TRADE_MAX))
-			var n2 := mini(mini(extra, TRADE_MAX), lim2)
-			if n2 >= 10:
+			var n2 := mini(mini(extra, SELL_BATCH if saving else TRADE_MAX), lim2)
+			var v := n2 * maxi(1, int(L.callf(M, "price", [w, r, "sell"], 1)))
+			if n2 >= 10 and v > best_v:
+				best_v = v
 				amount = -n2
 				pick = r
-				break
+				if int(f.credits) < BROKE:
+					break  # broke: ore first, as before (test_ai_trades_on_market)
 	if pick == "":
 		return
 	if U.submit(w, fid, st, {"type": "market_trade", "resource": pick, "amount": amount}, "g6:trade"):

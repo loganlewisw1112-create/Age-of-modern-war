@@ -1,5 +1,5 @@
 extends RefCounted
-## G5 air buildings (agent ART-BLD): airfield / aerodrome aprons, airstrips, forward strips, the Machine
+## G5 air buildings (agent ART-BLD; airfield v2 base: ART-G6b): airfield / aerodrome main bases (2x2, v2), airstrips, forward strips, the Machine
 ## launch rail, helipads, forward helipads and control towers. Local frame of g5_bld_lib: +v is the
 ## side the strips run along (airfield.gd strip_points), so taxi lines and edge lights face +v.
 ## draw(cv, o, kind, fk, f, var, hk, raw) -> the part list used (for scaffolds).
@@ -34,19 +34,20 @@ static func parts(kind: String, fk: String) -> Array:
 	var tar := K.pal(fk, "tarmac")
 	var trim := K.pal(fk, "trim")
 	match kind:
-		"airfield":
-			var ps: Array = [[0, 0, 0, 2.95, 2.95, 2, P.mix(tar, K.pal(fk, "slab"), 0.35), "slab"],
-				[-1.7, -1.7, 2, 1.05, 0.85, 20 if fk == "a" else 24, wall, "ops"],
-				[-1.7, -1.7, 22 if fk == "a" else 26, 0.95, 0.75, 3, roof, "team"],
-				[1.5, -2.3, 2, 0.34, 0.34, 18, metal, "cyl"], [2.35, -2.3, 2, 0.34, 0.34, 18, metal, "cyl"],
-				[0.2, -2.55, 2, 0.75, 0.1, 8, P.mul(K.pal(fk, "slab"), 1.15), "wall"],
-				[0.9, 0.9, 2, 0.26, 0.15, 6, trim, "veh"], [1.35, 0.9, 2, 0.14, 0.12, 4, P.mul(trim, 0.8), "veh"],
-				[-2.55, -0.4, 2, 0.04, 0.04, 40, Color8(70, 72, 70), "pole"]]
+		"airfield":  # airfield v2 main base, 2x2 (CONTRACTS_G6 s13): ops block, fuel, bowser, radio mast
+			var ps: Array = [[0, 0, 0, 0.95, 0.95, 2, P.mix(tar, K.pal(fk, "slab"), 0.35), "slab"]]
 			if fk == "b":
-				ps.append([-0.55, -2.35, 2, 0.32, 0.32, 40, P.mul(wall, 0.9), "clock"])
-				ps.append([2.35, -1.2, 22, 0.42, 0.42, 14, metal, "cyl"])
+				ps.append_array([[-0.3, -0.35, 2, 0.58, 0.48, 24, wall, "ops"], [-0.3, -0.35, 26, 0.5, 0.4, 3, roof, "team"],
+					[0.62, -0.62, 2, 0.2, 0.2, 40, P.mul(wall, 0.9), "clock"], [0.62, 0.12, 22, 0.2, 0.2, 12, metal, "cyl"],
+					[0.05, 0.6, 2, 0.22, 0.12, 6, trim, "veh"], [0.33, 0.6, 2, 0.09, 0.11, 4, P.mul(trim, 0.8), "veh"]])
 				for s in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
-					ps.append([2.35 + s.x * 0.3, -1.2 + s.y * 0.3, 2, 0.03, 0.03, 20, Color8(70, 66, 60), "pole"])
+					ps.append([0.62 + s.x * 0.15, 0.12 + s.y * 0.15, 2, 0.03, 0.03, 20, Color8(70, 66, 60), "pole"])
+			else:
+				ps.append_array([[-0.28, -0.4, 2, 0.6, 0.45, 20, wall, "ops"], [-0.28, -0.4, 22, 0.52, 0.37, 3, roof, "team"],
+					[-0.55, -0.55, 25, 0.13, 0.13, 5, metal, "box"],
+					[0.62, -0.62, 2, 0.2, 0.2, 16, metal, "cyl"], [0.62, -0.14, 2, 0.2, 0.2, 16, metal, "cyl"],
+					[0.3, 0.55, 2, 0.24, 0.13, 6, trim, "veh"], [0.62, 0.55, 2, 0.1, 0.12, 5, P.mul(trim, 0.8), "veh"]])
+			ps.append([-0.82, 0.62, 2, 0.03, 0.03, 40, Color8(70, 72, 70), "pole"])
 			return ps
 		"airstrip":
 			return [[0, 0, 0, 1.95, 1.95, 2, P.mix(tar, K.pal(fk, "slab"), 0.35), "slab"],
@@ -99,14 +100,11 @@ static func parts(kind: String, fk: String) -> Array:
 static func decals(cv, o: Vector2, kind: String, fk: String, f: int) -> void:
 	var mk := K.pal(fk, "mark")
 	match kind:
-		"airfield":
-			K.gquad(cv, o, f, -0.06, -0.6, 0.06, 2.95, 2.1, mk)
-			K.gquad(cv, o, f, -2.9, 1.95, 2.9, 2.07, 2.1, mk)
-			for i in 3:
-				var u := -1.4 + i * 1.4
-				K.gquad(cv, o, f, u - 0.5, 0.2, u + 0.5, 0.24, 2.1, P.mul(mk, 0.85))
-				K.gquad(cv, o, f, u - 0.5, 0.2, u - 0.46, 1.2, 2.1, P.mul(mk, 0.85))
-			K.gquad(cv, o, f, -2.9, 2.75, 2.9, 2.9, 2.1, Color(0.85, 0.85, 0.85), true)
+		"airfield":  # taxi exit to the apron (+v) with hold-short bars and the team edge band
+			K.gquad(cv, o, f, -0.04, 0.1, 0.04, 0.95, 2.1, mk)
+			K.gquad(cv, o, f, -0.9, 0.68, 0.9, 0.72, 2.1, P.mul(mk, 0.85))
+			K.gquad(cv, o, f, -0.9, 0.76, 0.9, 0.8, 2.1, P.mul(mk, 0.85))
+			K.gquad(cv, o, f, -0.9, 0.86, 0.9, 0.93, 2.1, Color(0.85, 0.85, 0.85), true)
 		"airstrip":
 			K.gquad(cv, o, f, -0.05, -0.2, 0.05, 1.95, 2.1, mk)
 			K.gquad(cv, o, f, -1.9, 1.3, 1.9, 1.38, 2.1, mk)
@@ -187,12 +185,12 @@ static func dress(cv, o: Vector2, f: int, p: Array, r: Dictionary, fk: String) -
 static func extras(cv, o: Vector2, kind: String, fk: String, f: int) -> void:
 	match kind:
 		"airfield":
-			var tip := K.pt(o, f, -2.55, -0.4, 42)
+			var tip := K.pt(o, f, -0.82, 0.62, 42)
 			cv.rect(int(tip.x) - 3, int(tip.y) - 1, 7, 2, Color8(150, 154, 150))
 			K.lamp(cv, tip + Vector2(0, -2), LAMP_R)
-			for i in 7:
-				K.lamp(cv, K.pt(o, f, -2.8 + i * 0.93, 2.93, 2.5), LAMP_G if i % 2 == 0 else Color8(240, 230, 150))
-			_sock(cv, K.pt(o, f, 2.6, 2.5, 2))
+			for i in 4:
+				K.lamp(cv, K.pt(o, f, -0.85 + i * 0.567, 0.935, 2.5), LAMP_G if i % 2 == 0 else Color8(240, 230, 150))
+			_sock(cv, K.pt(o, f, 0.84, 0.86, 2))
 		"airstrip":
 			_sock(cv, K.pt(o, f, 1.7, 1.5, 2))
 			for i in 5:

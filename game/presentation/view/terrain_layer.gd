@@ -17,6 +17,19 @@ extends Node2D
 ##  - rebake_cells(cells) re-bakes the chunks of the cells and of their 8 neighbours (editor
 ##    brushes, fire, bridges); rebuild() re-does everything (new map / size).
 ## Codes 0-7 on a map without biome or G4 codes bake exactly as before (River Crossing identical).
+## G6 (ELEV-VIEW, CONTRACTS_G6 s7, PLAN_G6 A1): true elevation, cached per chunk (nothing per frame).
+##  - A map with a height layer (map.height / map.ramps, ViewUtil.height_map_of) still bakes the flat chunk
+##    image as above (plus ramp treads, cliff scree on the low side, crest rims on the high side, and the face
+##    atlas copied under it), but each chunk is drawn as a MeshInstance2D: one quad per cell whose vertices are
+##    lifted ViewUtil.lift_px(level) px (16 px per level above plain; ramps slope per ViewUtil.vtx), plus face
+##    quads under every front edge that drops (SW face lit, SE face dark, darker at the foot), textured from
+##    assets/art/g6_terrain faces.png in the cliff style of the top tile (earth / rock / sand / wall) and biome.
+##    Quads go back-to-front (x + y diagonals) with each cell's faces right after it, and chunks stay row-major,
+##    so higher tiles overdraw what is behind them and lower ones show the faces above them.
+##  - Vertex colours tint each level (valley darker, ridge brighter) and shade slopes; the far-zoom base image
+##    gets the same level tint and darkens cells over a front cliff edge.
+##  - RAIL (code 14): ballast tile per biome + rails/sleepers towards connected rail neighbours (any map).
+##  - Maps without height bake and draw exactly as before (Sprite2D chunks).
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const CHUNK := 16
@@ -58,6 +71,39 @@ var _base_tex: ImageTexture
 var _show_base := false
 var _avg: Dictionary = {}
 
+# G6 terrain height (ELEV-VIEW)
+const LEVEL_TINT := [0.76, 1.0, 1.14, 1.27]   # top-surface brightness per level (vertex colour / BRIGHT)
+const SLOPE_X := 0.3                          # ramp shading per level of rise towards +x (faces the light)
+const SLOPE_Y := -0.14                        # ... towards +y
+const BRIGHT := 1.4                           # height-chunk shader scales vertex colours by this (tints > 1)
+const FACE_H := 96                            # rows of the face atlas under every height chunk image
+const FACE_TOP := [0.96, 0.76]                # SW (lit) / SE face brightness at the lip
+const FACE_FOOT := 0.64                       # times that at the foot
+const STYLE_OF_CODE := [0, 0, 3, 0, 1, 3, 1, 1, 3, 1, 1, 2, 1, 0, 3, 0]  # earth rock sand wall
+const G6_DIR := "res://assets/art/g6_terrain/"
+const HSHADER := """
+shader_type canvas_item;
+uniform float bright = 1.25;
+void fragment() {
+	vec4 t = texture(TEXTURE, UV);
+	COLOR = vec4(t.rgb * COLOR.rgb * bright, t.a * COLOR.a);
+}
+"""
+var hmap: Dictionary = {}          # {w, h, height, ramps} of the drawn map; empty = flat map (G5 path)
+var height_ver := 0                # bumped whenever the height layer is (re)read; fog_layer re-uploads
+var g6_art := false                # assets/art/g6_terrain loaded (else procedural face fallback)
+var meshes_built := 0
+var _faces_img: Image
+var _ramp_ov: Array = []           # biome * 4 + rise dir (N E S W) -> 64x32 overlay (null = none)
+var _hscree: Array = []            # biome -> [edge[16], corner[16]] or []
+var _hrim: Array = []              # [edge[16], corner[16]] or []
+var _rail_tracks: Array = []       # 4-bit neighbour mask -> 64x32 overlay
+var _hmat: ShaderMaterial
+## G6 (VIEW6 CR 712): screen lift (px) of the drawn ground at every cell centre, index y * w + x: exactly the mesh
+## height there, (level - 1) * level_px on plain cells and the slope's centre value on ramps. Empty on flat maps.
+## Exact at any point (mid-ramp): ViewUtil.ground_lift(height_map(), p).
+var lift_px := PackedFloat32Array()
+
 
 func setup(view: Node2D) -> void:
 	mv = view
@@ -65,6 +111,9 @@ func setup(view: Node2D) -> void:
 	_w = int(mv.world.map.w)
 	_h = int(mv.world.map.h)
 	_prefill()
+	_load_g6()
+	_read_height()
+	_update_lift()
 	var biome := _biome_arr()
 	if _any_biome(biome):
 		_load_biomes()
@@ -76,9 +125,10 @@ func setup(view: Node2D) -> void:
 	else:
 		for cy0 in range(0, _h, CHUNK):
 			for cx0 in range(0, _w, CHUNK):
-				_install(Vector2i(cx0, cy0), _bake_image(cx0, cy0, mv.world.map.terrain, biome))
+				_install(Vector2i(cx0, cy0), _bake(cx0, cy0, mv.world.map.terrain, biome, _hg(), _rp()))
 	bake_ms = Time.get_ticks_msec() - t0
-	print("TERRAIN %s %d chunks (%dx%d) in %d ms" % ["lazy base +" if lazy else "baked", _chunks.size(), _w, _h, bake_ms])
+	print("TERRAIN %s %d chunks (%dx%d)%s in %d ms" % ["lazy base +" if lazy else "baked", _chunks.size(), _w, _h,
+		" height" if not hmap.is_empty() else "", bake_ms])
 
 
 ## G4 editor: the map was replaced or resized; drop every chunk and bake again.
@@ -312,13 +362,19 @@ func _any_biome(b: PackedByteArray) -> bool:
 
 
 ## Pure function of (chunk, terrain, biome): safe on a worker thread.
-func _bake_image(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByteArray = PackedByteArray()) -> Image:
+## G6: with a height layer (hg, rp) the cells also get ramp / scree / rim overlays and the face atlas is copied
+## under the flat image (rows img_h .. img_h + FACE_H) for the chunk mesh's face quads.
+func _bake_image(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByteArray = PackedByteArray(), hg: PackedByteArray = PackedByteArray(), rp: PackedByteArray = PackedByteArray()) -> Image:
 	var w := _w
 	var h := _h
 	var img_w := CHUNK * 64
 	var img_h := pad + (CHUNK - 1) * 32 + _below
-	var img := Image.create(img_w, img_h, false, Image.FORMAT_RGBA8)
+	var has_h := not hg.is_empty() and hg.size() == w * h
+	var img := Image.create(img_w, img_h + (FACE_H if has_h else 0), false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
+	if has_h and _faces_img != null:
+		img.blit_rect(_faces_img, Rect2i(0, 0, mini(img_w, _faces_img.get_width()), FACE_H), Vector2i(0, img_h))
+	var rail_ok := _rail_tracks.size() == 16
 	var has_b := biome.size() == w * h
 	# back-to-front so raised tiles overdraw the cells behind them
 	for s in range(0, 2 * CHUNK - 1):
@@ -335,6 +391,10 @@ func _bake_image(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByte
 			img.blend_rect(tile, Rect2i(Vector2i.ZERO, tile.get_size()), dst)
 			if _recv[code] == 1:
 				_overlays(img, terrain, x, y, code, b, dst)
+			if rail_ok and code == Terrain.RAIL:
+				_rail_overlay(img, terrain, x, y, dst)
+			if has_h:
+				_height_overlays(img, hg, rp, x, y, b, dst)
 	return img
 
 
@@ -370,31 +430,344 @@ func _overlays(img: Image, terrain: PackedByteArray, x: int, y: int, code: int, 
 			img.blend_rect(ov[1][cm], Rect2i(0, 0, 64, 32), dst)
 
 
-func _worker(key: Vector2i, terrain: PackedByteArray, biome: PackedByteArray) -> void:
-	var img := _bake_image(key.x, key.y, terrain, biome)
+# ---------------------------------------------------------------- G6 terrain height (ELEV-VIEW)
+## Height-map dict of the drawn map ({} = flat). Pickers and VIEW6 pass it to ViewUtil (thread-safe: arrays only).
+func height_map() -> Dictionary:
+	return hmap
+
+
+## Refresh lift_px: every cell when `cells` is empty or the size changed, else the given cells and their
+## 4-neighbours (a ramp's slope depends on its neighbours' levels). Plain cells: (level - 1) * level_px.
+func _update_lift(cells: Array = []) -> void:
+	if hmap.is_empty():
+		lift_px = PackedFloat32Array()
+		return
+	var hg: PackedByteArray = hmap.height
+	var rp: PackedByteArray = hmap.ramps
+	var n := _w * _h
+	var todo: Array = []
+	if cells.is_empty() or lift_px.size() != n:
+		lift_px.resize(n)
+		for i in n:
+			lift_px[i] = (float(hg[i]) - 1.0) * ViewUtil.level_px
+		if rp.size() == n:  # ramps and their 4-neighbours (plain corners bending with a ramp pair)
+			for i in n:
+				if rp[i] != 0:
+					var c := Vector2i(i % _w, i / _w)
+					todo.append_array([c, c + Vector2i(1, 0), c + Vector2i(-1, 0), c + Vector2i(0, 1), c + Vector2i(0, -1)])
+	else:
+		for c in cells:
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					todo.append(Vector2i(int(c.x) + dx, int(c.y) + dy))
+	for c in todo:
+		var q: Vector2i = c
+		if q.x >= 0 and q.y >= 0 and q.x < _w and q.y < _h:
+			lift_px[q.y * _w + q.x] = ViewUtil.ground_lift(hmap, Vector2(q) + Vector2(0.5, 0.5))
+
+
+func _hg() -> PackedByteArray:
+	return hmap.get("height", PackedByteArray())
+
+
+func _rp() -> PackedByteArray:
+	return hmap.get("ramps", PackedByteArray())
+
+
+## Main thread: (re)read the height layer while no sim step is in flight (height only changes in the editor).
+func _read_height() -> void:
+	if _busy_snap().is_empty() and mv.world.map is Dictionary:
+		hmap = ViewUtil.height_map_of(mv.world.map)
+	height_ver += 1
+	if not hmap.is_empty() and _hmat == null:
+		var sh := Shader.new()
+		sh.code = HSHADER
+		_hmat = ShaderMaterial.new()
+		_hmat.shader = sh
+		_hmat.set_shader_parameter("bright", BRIGHT)
+
+
+## Main thread, at setup: the G6 terrain art (faces, ramp treads, scree, rims, rail). Missing art: a flat-colour
+## face atlas and no overlays (the height still draws).
+func _load_g6() -> void:
+	var man: Dictionary = {}
+	var p := G6_DIR + "manifest.json"
+	if FileAccess.file_exists(p):
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(p))
+		if parsed is Dictionary:
+			man = parsed
+	g6_art = not man.is_empty()
+	_faces_img = _g6_img(String(man.get("faces", {}).get("file", "")), Vector2i(1024, FACE_H))
+	if _faces_img == null:
+		_faces_img = _fallback_faces()
+	var ramp := _g6_img(String(man.get("ramp", {}).get("file", "")), Vector2i(1024, 32))
+	_ramp_ov.clear()
+	for k in 16:
+		_ramp_ov.append(ramp.get_region(Rect2i(k * 64, 0, 64, 32)) if ramp != null else null)
+	var scree: Array = man.get("scree", [])
+	_hscree.clear()
+	for b in 4:
+		_hscree.append(_rows(_g6_img(String(scree[b]) if b < scree.size() else "", Vector2i(1024, 64))))
+	_hrim = _rows(_g6_img(String(man.get("rim", "")), Vector2i(1024, 64)))
+	var rail: Dictionary = man.get("rail", {})
+	var tracks := _g6_img(String(rail.get("tracks", "")), Vector2i(1024, 32))
+	_rail_tracks.clear()
+	if tracks != null:
+		for m in 16:
+			_rail_tracks.append(tracks.get_region(Rect2i(m * 64, 0, 64, 32)))
+	var base: Array = rail.get("base", [])
+	for b in mini(4, base.size()):
+		var t := _g6_img(String(base[b]), Vector2i(64, 32))
+		if t == null:
+			continue
+		if b == 0:
+			_tile_cache["%d_0" % Terrain.RAIL] = t
+			_variants[Terrain.RAIL] = 1
+		else:
+			_tile_cache["%d_0_b%d" % [Terrain.RAIL, b]] = t
+			_bvar[Terrain.RAIL * 4 + b] = 1
+
+
+func _g6_img(rel: String, size: Vector2i) -> Image:
+	if rel == "":
+		return null
+	var img: Image = ArtCatalog._image(G6_DIR + rel)
+	if img == null or img.get_size() != size:
+		return null
+	return img
+
+
+## G4 transition atlas (1024x64) -> [edge[16], corner[16]] tiles; [] when missing.
+func _rows(atlas: Image) -> Array:
+	if atlas == null:
+		return []
+	var rows := [[], []]
+	for row in 2:
+		for m in 16:
+			rows[row].append(atlas.get_region(Rect2i(m * 64, row * 32, 64, 32)))
+	return rows
+
+
+func _fallback_faces() -> Image:
+	var img := Image.create(1024, FACE_H, false, Image.FORMAT_RGBA8)
+	var cols := [Color(0.42, 0.36, 0.28), Color(0.45, 0.43, 0.4), Color(0.7, 0.62, 0.45), Color(0.55, 0.55, 0.53)]
+	for blk in 16:
+		var c: Color = cols[blk % 4]
+		img.fill_rect(Rect2i(blk * 64, 0, 64, FACE_H), c)
+		img.fill_rect(Rect2i(blk * 64, 0, 64, 2), c.lightened(0.3))
+	return img
+
+
+func _flat_h() -> int:
+	return pad + (CHUNK - 1) * 32 + _below
+
+
+## Pure function of (chunk, arrays): the chunk image, plus mesh arrays when the map has height. Worker-safe.
+func _bake(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByteArray, hg: PackedByteArray, rp: PackedByteArray) -> Variant:
+	var img := _bake_image(cx0, cy0, terrain, biome, hg, rp)
+	if hg.size() != _w * _h or hg.is_empty():
+		return img
+	return [img, _mesh_arrays(cx0, cy0, terrain, biome, hg, rp, Vector2(img.get_size()))]
+
+
+## Mesh of a height chunk in chunk-local px (the flat image's frame): per cell, back-to-front, the top quad
+## (hexagon for raised codes) lifted per vertex, then its SW and SE faces where the front neighbour is lower.
+## Returns [verts, uvs, colors, indices]. Pure (worker-safe).
+func _mesh_arrays(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByteArray, hg: PackedByteArray, rp: PackedByteArray, tex: Vector2) -> Array:
+	var vs := PackedVector2Array()
+	var uv := PackedVector2Array()
+	var cl := PackedColorArray()
+	var ix := PackedInt32Array()
+	var w := _w
+	var h := _h
+	var lp: float = ViewUtil.level_px
+	var inv := Vector2(1.0 / tex.x, 1.0 / tex.y)
+	var fy := float(_flat_h())
+	var has_b := biome.size() == w * h
+	for s in range(0, 2 * CHUNK - 1):
+		for i in range(maxi(0, s - CHUNK + 1), mini(CHUNK, s + 1)):
+			var j := s - i
+			var x := cx0 + i
+			var y := cy0 + j
+			if x >= w or y >= h:
+				continue
+			var code := mini(int(terrain[y * w + x]), MAX_CODE - 1)
+			var pv := ViewUtil.vtx(hg, rp, w, h, x, y)
+			var lv := PackedFloat32Array([pv & 3, (pv >> 2) & 3, (pv >> 4) & 3, (pv >> 6) & 3])  # top right bottom left
+			var tp := Vector2(CHUNK * 32 + (i - j) * 32, (i + j) * 16 + pad)
+			var flat := [tp, tp + Vector2(32, 16), tp + Vector2(0, 32), tp + Vector2(-32, 16)]
+			var gx := (lv[1] + lv[2] - lv[0] - lv[3]) * 0.5
+			var gy := (lv[2] + lv[3] - lv[0] - lv[1]) * 0.5
+			var shade := (1.0 + SLOPE_X * gx + SLOPE_Y * gy) / BRIGHT
+			var base := vs.size()
+			var r: int = _raise[code]
+			var order := [0, 1, 2, 3] if r == 0 else [0, 1, 1, 2, 3, 3]
+			for k in order.size():
+				var v: int = order[k]
+				var f: Vector2 = flat[v]
+				if r > 0 and (k == 0 or k == 1 or k == 5):
+					f.y -= r
+				vs.append(f - Vector2(0.0, (lv[v] - 1.0) * lp))
+				uv.append(f * inv)
+				var c: float = LEVEL_TINT[int(lv[v])] * shade
+				cl.append(Color(c, c, c, 1.0))
+			if r == 0:
+				ix.append_array([base, base + 1, base + 3, base + 1, base + 2, base + 3])
+			else:
+				ix.append_array([base, base + 1, base + 2, base, base + 2, base + 3, base, base + 3, base + 4, base, base + 4, base + 5])
+			var b := mini(int(biome[y * w + x]), 3) if has_b else 0
+			var ux := float((b * 4 + STYLE_OF_CODE[code]) * 64 + ((x + y) & 1) * 32)
+			if y + 1 < h:  # SW face: our left/bottom vertices over S's top/right vertices
+				var ps := ViewUtil.vtx(hg, rp, w, h, x, y + 1)
+				var fl := maxf(0.0, lv[3] - float(ps & 3)) * lp
+				var fb := maxf(0.0, lv[2] - float((ps >> 2) & 3)) * lp
+				if fl > 0.0 or fb > 0.0:
+					_face_quad(vs, uv, cl, ix, flat[3], flat[2], (lv[3] - 1.0) * lp, (lv[2] - 1.0) * lp, fl, fb, ux, fy, inv, FACE_TOP[0])
+			if x + 1 < w:  # SE face: our bottom/right vertices over E's left/top vertices
+				var pe := ViewUtil.vtx(hg, rp, w, h, x + 1, y)
+				var fb2 := maxf(0.0, lv[2] - float((pe >> 6) & 3)) * lp
+				var fr := maxf(0.0, lv[1] - float(pe & 3)) * lp
+				if fb2 > 0.0 or fr > 0.0:
+					_face_quad(vs, uv, cl, ix, flat[2], flat[1], (lv[2] - 1.0) * lp, (lv[1] - 1.0) * lp, fb2, fr, ux, fy, inv, FACE_TOP[1])
+	return [vs, uv, cl, ix]
+
+
+## RAIL: sleepers and rails towards the 4-neighbours that are rail too (isolated: straight N-S).
+func _rail_overlay(img: Image, terrain: PackedByteArray, x: int, y: int, dst: Vector2i) -> void:
+	var m := 0
+	for k in 4:
+		if _code_at(terrain, x + NBR[k].x, y + NBR[k].y, -1) == Terrain.RAIL:
+			m |= 1 << k
+	img.blend_rect(_rail_tracks[m], Rect2i(0, 0, 64, 32), dst)
+
+
+## Height overlays on the flat image: the ramp tread in the rise direction; scree on a low cell along cliff edges
+## to higher cells; a lit rim on a high cell along cliff edges to lower cells (ramp-connected steps get neither).
+func _height_overlays(img: Image, hg: PackedByteArray, rp: PackedByteArray, x: int, y: int, b: int, dst: Vector2i) -> void:
+	var w := _w
+	var i := y * w + x
+	var lv := int(hg[i])
+	var has_rp := rp.size() == hg.size()
+	if has_rp and rp[i] != 0 and _ramp_ov.size() == 16:
+		var dir := _rise_dir(ViewUtil.vtx(hg, rp, w, _h, x, y))
+		if dir >= 0 and _ramp_ov[b * 4 + dir] != null:
+			img.blend_rect(_ramp_ov[b * 4 + dir], Rect2i(0, 0, 64, 32), dst)
+	var up := 0
+	var down := 0
+	var cu := 0
+	var cd := 0
+	for k in 8:
+		var nx: int = x + NBR[k].x
+		var ny: int = y + NBR[k].y
+		if nx < 0 or ny < 0 or nx >= w or ny >= _h:
+			continue
+		var j := ny * w + nx
+		var d := int(hg[j]) - lv
+		if d == 0 or (absi(d) == 1 and has_rp and (rp[i] != 0 or rp[j] != 0)):
+			continue
+		# a diagonal step between two ramps is smooth (the corners bend with the ramps, ViewUtil._corner_fill)
+		if k >= 4 and absi(d) == 1 and has_rp and rp[y * w + nx] != 0 and rp[ny * w + x] != 0:
+			continue
+		if k < 4:
+			if d > 0:
+				up |= 1 << k
+			else:
+				down |= 1 << k
+		elif d > 0 and (up & CORNER_EDGES[k - 4]) == 0:
+			cu |= 1 << (k - 4)
+		elif d < 0 and (down & CORNER_EDGES[k - 4]) == 0:
+			cd |= 1 << (k - 4)
+	var sc: Array = _hscree[b] if b < _hscree.size() else []
+	if not sc.is_empty():
+		if up != 0:
+			img.blend_rect(sc[0][up], Rect2i(0, 0, 64, 32), dst)
+		if cu != 0:
+			img.blend_rect(sc[1][cu], Rect2i(0, 0, 64, 32), dst)
+	if not _hrim.is_empty():
+		if down != 0:
+			img.blend_rect(_hrim[0][down], Rect2i(0, 0, 64, 32), dst)
+		if cd != 0:
+			img.blend_rect(_hrim[1][cd], Rect2i(0, 0, 64, 32), dst)
+
+
+## Rise direction of a ramp from its packed vertex levels: 0 N, 1 E, 2 S, 3 W; -1 = flat.
+func _rise_dir(pv: int) -> int:
+	var t := pv & 3
+	var r := (pv >> 2) & 3
+	var bt := (pv >> 4) & 3
+	var l := (pv >> 6) & 3
+	var gx := r + bt - t - l
+	var gy := bt + l - t - r
+	if gx == 0 and gy == 0:
+		return -1
+	if absi(gx) >= absi(gy):
+		return 1 if gx > 0 else 3
+	return 2 if gy > 0 else 0
+
+
+## Face under the flat edge a -> b (a = left end on screen) whose top ends are lifted la / lb px and which hangs
+## ha / hb px; textured from the face atlas column ux (32 px along the edge, rows = depth below the lip).
+func _face_quad(vs: PackedVector2Array, uv: PackedVector2Array, cl: PackedColorArray, ix: PackedInt32Array, a: Vector2, b: Vector2, la: float, lb: float, ha: float, hb: float, ux: float, fy: float, inv: Vector2, top: float) -> void:
+	var base := vs.size()
+	var ta := a - Vector2(0.0, la)
+	var tb := b - Vector2(0.0, lb)
+	vs.append_array([ta, tb, ta + Vector2(0.0, ha), tb + Vector2(0.0, hb)])
+	uv.append_array([Vector2(ux, fy) * inv, Vector2(ux + 32.0, fy) * inv,
+		Vector2(ux, fy + minf(ha, FACE_H - 1.0)) * inv, Vector2(ux + 32.0, fy + minf(hb, FACE_H - 1.0)) * inv])
+	var t := top / BRIGHT
+	var f := t * FACE_FOOT
+	cl.append_array([Color(t, t, t, 1.0), Color(t, t, t, 1.0), Color(f, f, f, 1.0), Color(f, f, f, 1.0)])
+	ix.append_array([base, base + 1, base + 3, base, base + 3, base + 2])
+
+
+func _worker(key: Vector2i, terrain: PackedByteArray, biome: PackedByteArray, hg: PackedByteArray = PackedByteArray(), rp: PackedByteArray = PackedByteArray()) -> void:
+	var img = _bake(key.x, key.y, terrain, biome, hg, rp)
 	_mutex.lock()
 	_results[key] = img
 	_mutex.unlock()
 
 
-func _install(key: Vector2i, img: Image) -> void:
-	var spr: Sprite2D = _chunks.get(key)
+## res = Image (flat map: a Sprite2D chunk) or [Image, mesh arrays] (height map: a MeshInstance2D chunk).
+func _install(key: Vector2i, res) -> void:
+	var img: Image = res if res is Image else res[0]
+	var arrays: Array = [] if res is Image else res[1]
+	var spr: Node2D = _chunks.get(key)
+	if spr != null and (spr is MeshInstance2D) != (not arrays.is_empty()):
+		spr.queue_free()
+		_chunks.erase(key)
+		spr = null
 	if spr == null:
-		spr = Sprite2D.new()
-		spr.centered = false
+		if arrays.is_empty():
+			var sp := Sprite2D.new()
+			sp.centered = false
+			spr = sp
+		else:
+			spr = MeshInstance2D.new()
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		spr.position = mv.world_to_screen(Vector2(key)) + Vector2(-CHUNK * 32, -pad)
 		spr.set_meta("k", key)
 		add_child(spr)
 		_order(spr, key)
 		_chunks[key] = spr
-	spr.texture = ImageTexture.create_from_image(img)
+	spr.set("texture", ImageTexture.create_from_image(img))
+	if not arrays.is_empty():
+		var arr := []
+		arr.resize(Mesh.ARRAY_MAX)
+		arr[Mesh.ARRAY_VERTEX] = arrays[0]
+		arr[Mesh.ARRAY_TEX_UV] = arrays[1]
+		arr[Mesh.ARRAY_COLOR] = arrays[2]
+		arr[Mesh.ARRAY_INDEX] = arrays[3]
+		var am := ArrayMesh.new()
+		am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+		(spr as MeshInstance2D).mesh = am
+		spr.material = _hmat
+		meshes_built += 1
 	baked_total += 1
 
 
 ## Chunk sprites stay in row-major (back-to-front) order so a raised tile's overhang into the
 ## chunk behind it is drawn on top of that chunk.
-func _order(spr: Sprite2D, key: Vector2i) -> void:
+func _order(spr: Node2D, key: Vector2i) -> void:
 	var i := 0
 	for ch in get_children():
 		if ch != spr and ch.has_meta("k"):
@@ -408,11 +781,20 @@ func _order(spr: Sprite2D, key: Vector2i) -> void:
 ## Re-bake the chunks holding `cells` and their 8 neighbours (transitions and raised overhangs
 ## reach one cell out). Cells may be Vector2i or Vector2. Used by the G2 bridge, G4 editor
 ## brushes (terrain or map.biome edits) and fire (FOREST -> DIRT).
+## G6: also re-reads the height layer (editor height brushes); with height the reach is two cells (ramp slopes
+## and faces depend on neighbours' vertices). Height appearing or vanishing rebuilds everything.
 func rebake_cells(cells: Array) -> void:
+	var was_h := not hmap.is_empty()
+	_read_height()
+	if was_h != (not hmap.is_empty()):
+		rebuild()
+		return
+	_update_lift(cells)
 	var biome := _biome_arr()
 	var terrain := _terrain()
 	if not _biomes_loaded and _any_biome(biome):
 		_load_biomes()
+	var rad := 1 if hmap.is_empty() else 2
 	var done := {}
 	for c in cells:
 		var cx := int(c.x)
@@ -421,17 +803,23 @@ func rebake_cells(cells: Array) -> void:
 			continue
 		if lazy and _base_img != null:
 			_base_cell(cx, cy, biome, terrain)
-		for k in 9:
-			var nx := cx + k % 3 - 1
-			var ny := cy + k / 3 - 1
-			if nx < 0 or ny < 0 or nx >= _w or ny >= _h:
-				continue
-			done[Vector2i((nx / CHUNK) * CHUNK, (ny / CHUNK) * CHUNK)] = true
+			if rad == 2:  # base cliff shading looks at the E / S neighbours
+				if cx > 0:
+					_base_cell(cx - 1, cy, biome, terrain)
+				if cy > 0:
+					_base_cell(cx, cy - 1, biome, terrain)
+		for dy in range(-rad, rad + 1):
+			for dx in range(-rad, rad + 1):
+				var nx := cx + dx
+				var ny := cy + dy
+				if nx < 0 or ny < 0 or nx >= _w or ny >= _h:
+					continue
+				done[Vector2i((nx / CHUNK) * CHUNK, (ny / CHUNK) * CHUNK)] = true
 	var keys: Array = done.keys()
 	keys.sort()
 	for key in keys:
 		if not lazy or _chunks.has(key):
-			_install(key, _bake_image(key.x, key.y, terrain, biome))
+			_install(key, _bake(key.x, key.y, terrain, biome, _hg(), _rp()))
 	if lazy and _base_tex != null:
 		_base_tex.update(_base_img)
 	rebakes += keys.size()
@@ -456,7 +844,26 @@ func _base_cell(x: int, y: int, biome: PackedByteArray, terrain: PackedByteArray
 		var t: Image = _tile_for(code, b, 0, 0) if b > 0 else _tile_cache.get("%d_0" % code, _tile_cache["0_0"])
 		c = t.get_pixel(32, 16)  # diamond centre (top face of a raised tile): representative colour
 		_avg[code * 4 + b] = c
+	if not hmap.is_empty():
+		c = _base_height_col(c, x, y)
 	_base_img.set_pixel(x, y, c)
+
+
+## G6 far-zoom base: level tint, and the dark of a cliff face where the E or S neighbour sits lower (no ramp).
+func _base_height_col(c: Color, x: int, y: int) -> Color:
+	var hg: PackedByteArray = hmap.height
+	var rp: PackedByteArray = hmap.ramps
+	var i := y * _w + x
+	var lv := int(hg[i])
+	var k: float = LEVEL_TINT[lv]
+	for j in [i + 1 if x + 1 < _w else -1, i + _w if y + 1 < _h else -1]:
+		if j < 0:
+			continue
+		var d := lv - int(hg[j])
+		if d >= 2 or (d == 1 and (rp.size() != hg.size() or (rp[i] == 0 and rp[j] == 0))):
+			k *= 0.62
+			break
+	return Color(clampf(c.r * k, 0.0, 1.0), clampf(c.g * k, 0.0, 1.0), clampf(c.b * k, 0.0, 1.0), c.a)
 
 
 ## Per frame (MatchView._process): lazy maps bake chunks near the view on worker threads.
@@ -476,7 +883,7 @@ func tick() -> void:
 	var z: float = mv.camera.zoom.x
 	var far := z < FAR_ZOOM
 	for key in _chunks:
-		(_chunks[key] as Sprite2D).visible = not far
+		(_chunks[key] as Node2D).visible = not far
 	if far:
 		return
 	var inv: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
@@ -489,8 +896,9 @@ func tick() -> void:
 		lo = Vector2i(mini(lo.x, floori(wp.x)), mini(lo.y, floori(wp.y)))
 		hi = Vector2i(maxi(hi.x, ceili(wp.x)), maxi(hi.y, ceili(wp.y)))
 	var want: Array = []
-	for cy0 in range(maxi(0, (lo.y - 2) / CHUNK) * CHUNK, mini(_h, hi.y + 2), CHUNK):
-		for cx0 in range(maxi(0, (lo.x - 2) / CHUNK) * CHUNK, mini(_w, hi.x + 2), CHUNK):
+	var mg := 2 if hmap.is_empty() else 4  # G6: raised tiles reach into view from below the screen edge
+	for cy0 in range(maxi(0, (lo.y - 2) / CHUNK) * CHUNK, mini(_h, hi.y + mg), CHUNK):
+		for cx0 in range(maxi(0, (lo.x - 2) / CHUNK) * CHUNK, mini(_w, hi.x + mg), CHUNK):
 			var key := Vector2i(cx0, cy0)
 			_seen[key] = _frame
 			if not _chunks.has(key) and not _pending.has(key):
@@ -499,7 +907,7 @@ func tick() -> void:
 	for key in want:
 		if _pending.size() >= MAX_PENDING:
 			break
-		_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, _terrain(), biome), false, "terrain chunk")
+		_pending[key] = WorkerThreadPool.add_task(_worker.bind(key, _terrain(), biome, _hg(), _rp()), false, "terrain chunk")
 	if _chunks.size() > CHUNK_CAP:
 		_evict()
 

@@ -69,6 +69,17 @@ const Commanders = preload("res://sim/ai/commanders.gd")      # player-side AI c
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
 const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, Companies, Progression, Gather, Repair, Ops, AiCommand, Orders, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Combat, G4bMech, G5Mech, MachineG6, Strikes, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, Bridges, Fog, Waves, Triggers, Victory]
+## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
+## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
+## and these command types are rejected. The flag is absent outside Live, so no hash changes.
+const LIVE_SKIPS := [Economy, Market, Construction, Production, Progression, Gather]
+const LIVE_BLOCKED := ["build", "assist_build", "cancel_building", "queue_unit", "cancel_unit", "research",
+	"advance_stage", "market_trade", "train_company", "train_commander", "build_line", "build_hangar",
+	"upgrade_hangar", "upgrade_airfield"]
+
+
+static func live_skips() -> Array:
+	return ["Economy", "Market", "Construction", "Production", "Progression", "Gather"]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -351,7 +362,12 @@ func step() -> void:
 	tick += 1
 	events = []
 	_apply_due_commands()
+	var live := bool(cfg.get("live_mode", false))
 	for sys in SYSTEM_ORDER:
+		if live and LIVE_SKIPS.has(sys):
+			if sys == Progression:
+				Progression.Status.ew_tick(self)  # EW jamming is combat: keep it in Live
+			continue
 		sys.tick(self)
 	Ops.prune(self)  # end-of-tick: groups never reference units that died this tick
 	for fid in ai_state:
@@ -433,6 +449,7 @@ func _apply_due_commands() -> void:
 			emit("CommandRejected", {"command_id": c.id, "type": c.type, "issuer": c.issuer, "reason": reason})
 			continue
 		COMMANDS[c.type].apply_command(self, c)
+		AiCommand.on_applied(self, c)  # G6 (AI7-CMD CR 743): stamps e.player_order_tick; no-op unless the side used AI commanders
 		if DIRECT_ORDERS.has(String(c.type)):
 			Ops.on_direct_order(self, c)
 		emit("CommandApplied", {"command_id": c.id, "type": c.type, "issuer": c.issuer})
@@ -445,6 +462,8 @@ func _common_validate(c: Dictionary) -> String:
 		return "Issuer is not an active side."
 	if match_state.ended:
 		return "Match has ended."
+	if bool(cfg.get("live_mode", false)) and LIVE_BLOCKED.has(String(c.get("type", ""))):
+		return "Not available in Live mode."
 	if c.has("unit_ids"):
 		var ok_ids := []
 		for raw in c.unit_ids:

@@ -42,9 +42,12 @@ static func load_all() -> void:
 ## load: every ".png" string is rebased to an absolute res:// path, and section entries are added
 ## only for keys the base manifest does not define (new ids only; lod_icons merge per faction).
 ## A group that has not landed yet simply contributes nothing (placeholder_for keeps drawing).
-const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval"]
+## G6 (VIEW6, CR artcatalog_g6_groups): the ART-G6 / ART-G6b groups use the same schema and merge
+## through the same path after the G5 groups (new ids only). g6_bld buildings carry `g6: {variants:
+## "rot", fire}` (G5Art.variant_of reads g5 or g6); squads carry their own fw/fh (b_conscripts 64x44).
+const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval", "g6_units", "g6_bld", "g6_new"]
 const G5_SKIP := ["files", "version", "group", "tile"]
-static var g5_groups: Array = []   # groups merged this session (tests / playtest evidence)
+static var g5_groups: Array = []   # groups merged this session (tests / playtest evidence; G6 groups too)
 
 
 static func _merge_g5() -> void:
@@ -73,7 +76,16 @@ static func _merge_g5() -> void:
 					dst[k] = v[k]
 				elif sec == "lod_icons" and dst[k] is Dictionary and v[k] is Dictionary:
 					(dst[k] as Dictionary).merge(v[k], false)
+				elif sec == "command_icons" and dst[k] is Array and v[k] is Array:
+					# G6 (CR 843): g5_bld and g6_bld both list command icon ids: union, G5 order first
+					for x in v[k]:
+						if not (dst[k] as Array).has(x):
+							(dst[k] as Array).append(x)
 		g5_groups.append(grp)
+		if grp.begins_with("g6"):
+			if not (_man.get("g6_groups") is Array):
+				_man["g6_groups"] = []
+			(_man.g6_groups as Array).append(grp)
 		if not (_man.get("g5_groups") is Array):
 			_man["g5_groups"] = []
 		(_man.g5_groups as Array).append(grp)
@@ -313,6 +325,32 @@ static func bridge_overlay(state: String, cell: Vector2i) -> Dictionary:
 	var rel := String(files[_ihash(cell.x, cell.y, 41) % files.size()])
 	var piv: Array = b.get("pivot", [32, 40])
 	return {"texture": _texture(rel), "offset": Vector2(-float(piv[0]), -float(piv[1]))}
+
+
+# ---------------------------------------------------------------- G6 fx sheets + command icons (VIEW6, CR 843)
+## ART-G6b fx_g6 sheet spec {file, mask, frames, fw, fh, pivot}: mine_marker (2 frames: flag, blink),
+## garrison_pip (2: empty slot, filled in the team colour via its mask), sonar_ping (8: expanding iso ring).
+## {} when the g6_bld group has not shipped (callers keep their procedural fallback).
+static func fx_g6_spec(name: String) -> Dictionary:
+	load_all()
+	var s = (_man.get("fx_g6", {}) as Dictionary).get(name)
+	return s if s is Dictionary and (s as Dictionary).has("file") else {}
+
+
+## Frame `frame` (wraps) of an fx_g6 sheet as {texture, offset = -pivot, flip_h}, tinted with `team` where the
+## sheet's mask is set; {} = no sheet.
+static func fx_g6(name: String, frame: int, team := Color.WHITE) -> Dictionary:
+	var s := fx_g6_spec(name)
+	if s.is_empty():
+		return {}
+	return _sheet_sprite(s, team, posmod(frame, maxi(1, int(s.get("frames", 1)))), 0, s.has("mask"))
+
+
+## ART-G6b command icon set {commands: [...], modes: [...]}; each id's art is ArtCatalog.icon(id).
+static func command_icons() -> Dictionary:
+	load_all()
+	var c = _man.get("command_icons", {})
+	return c if c is Dictionary else {}
 
 
 static func _sheet_sprite(spec: Dictionary, col: Color, frame: int, row: int, tinted := true) -> Dictionary:

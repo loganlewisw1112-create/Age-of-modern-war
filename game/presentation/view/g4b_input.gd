@@ -12,10 +12,14 @@ extends RefCounted
 ##   bombard (cell), launch_drone (enemy -> target_id, else cell), tactical (ability: target or cell),
 ##   assign_engineers (own field / hangar / helipad; pointing-hand cursor),
 ##   auto_area (truck / medic: press = centre, drag = radius, release = set_auto_resupply / set_auto_evac).
+## G6 (UI6b) modes (CONTRACTS_G6 section 4) live in presentation/ui6/b/g6_modes.gd (`g6`): rect drags
+##   (minefield, sweep, sea_mines), the rail line drag (build_rail) and click modes (line_charge, designate,
+##   strike, deploy_bridge, airdrop, garrison, breach, assimilate, tow_wreck); armed by ui6/b/g6_cmds.gd.
 
 const Fortify = preload("res://sim/systems/fortify.gd")
 const Transport = preload("res://sim/systems/transport.gd")
 const Airfield = preload("res://sim/systems/airfield.gd")
+const G6Modes = preload("res://presentation/ui6/b/g6_modes.gd")
 
 const G5_MODES := ["sortie", "rebase", "land_at", "bombard", "launch_drone", "tactical", "assign_engineers", "auto_area"]
 const SORTIE_R := 4.0
@@ -37,7 +41,8 @@ var last_line: Dictionary = {} # the last build_line command issued (playtest / 
 var g5p: Dictionary = {}       # G5 mode parameters (drone, ability, kind, mode)
 var area_from: Variant = null  # G5 auto_area drag centre (world Vector2)
 var area_to := Vector2.ZERO
-var last_cmd: Dictionary = {}  # the last G5 command issued (tests / playtest)
+var last_cmd: Dictionary = {}  # the last G5 / G6 command issued (tests / playtest)
+var g6 = G6Modes.new()         # G6 modes (UI6b)
 
 
 static func is_wall_def(def_id: String) -> bool:
@@ -49,7 +54,7 @@ func active() -> bool:
 
 
 func dragging() -> bool:
-	return wall_from != null or area_from != null
+	return wall_from != null or area_from != null or (g6 != null and g6.dragging())
 
 
 func arm(m: String, params: Dictionary = {}) -> void:
@@ -59,7 +64,9 @@ func arm(m: String, params: Dictionary = {}) -> void:
 	g5p = params.duplicate(true)
 	g5p["_m"] = m
 	area_from = null
-	if G5_MODES.has(m) and DisplayServer.get_name() != "headless":
+	g6.g4b = self
+	g6.cancel()
+	if (G5_MODES.has(m) or G6Modes.has_mode(m)) and DisplayServer.get_name() != "headless":
 		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if m == "assign_engineers" else Input.CURSOR_CROSS)
 	mv.attack_move_armed = false
 	mv.cancel_placement()
@@ -78,6 +85,8 @@ func cancel() -> void:
 		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	g5p = {}
 	area_from = null
+	if g6 != null:
+		g6.cancel()
 
 
 func flash(text: String, secs: float = 2.5) -> void:
@@ -86,6 +95,8 @@ func flash(text: String, secs: float = 2.5) -> void:
 
 
 func status_text() -> String:
+	if G6Modes.has_mode(mode):
+		return g6.status_text(mode)
 	match mode:
 		"unload_point":
 			return "UNLOAD: click the point where the transport drops its cargo. Esc cancels."
@@ -139,6 +150,9 @@ func on_place_press(p: Vector2) -> bool:
 
 
 func on_motion(p: Vector2) -> void:
+	if g6.dragging():
+		g6.motion(p)
+		return
 	if area_from != null:
 		area_to = p
 		return
@@ -151,6 +165,8 @@ func on_motion(p: Vector2) -> void:
 
 ## Left release: issue build_line for the dragged line. True = consumed.
 func on_release(p: Vector2, shift: bool) -> bool:
+	if g6.dragging():
+		return g6.release(p)
 	if area_from != null:
 		area_to = p
 		_issue_area()
@@ -202,6 +218,9 @@ func _cost_text(n: int) -> String:
 func on_left(p: Vector2, _shift: bool) -> bool:
 	if mode == "":
 		return false
+	if G6Modes.has_mode(mode):
+		g6.g4b = self
+		return g6.left(p)
 	if G5_MODES.has(mode):
 		return _g5_left(p)
 	match mode:
@@ -318,6 +337,9 @@ func _issue_area() -> void:
 
 ## Overlay: the auto_area circle while dragging, and a mode tag at the mouse (g4b_overlay).
 func draw_g5(ci: CanvasItem, mouse_canvas: Vector2) -> void:
+	if G6Modes.has_mode(mode):
+		g6.draw(ci, mouse_canvas)
+		return
 	if mode == "" or not G5_MODES.has(mode):
 		return
 	var f := ThemeDB.fallback_font
@@ -337,7 +359,7 @@ func draw_g5(ci: CanvasItem, mouse_canvas: Vector2) -> void:
 
 
 func on_right() -> bool:
-	if mode != "" or wall_from != null:
+	if mode != "" or wall_from != null or g6.dragging():
 		cancel()
 		return true
 	return false

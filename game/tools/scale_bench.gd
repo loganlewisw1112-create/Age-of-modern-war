@@ -65,6 +65,10 @@ func _init() -> void:
 			(load("res://sim/systems/combat.gd") as Script).set("prep_ids", a.substr(11) == "on")   # CORE10K-2 A/B
 		elif a.begins_with("--fuel-list="):
 			(load("res://sim/systems/supply.gd") as Script).set("fuel_list", a.substr(12) == "on")
+		elif a.begins_with("--fog-native="):
+			(load("res://sim/systems/fog.gd") as Script).set("native_gather", a.substr(13) == "on")   # G6 PERF6-4 A/B
+		elif a.begins_with("--morale-native="):
+			(load("res://sim/systems/morale.gd") as Script).set("native_scan", a.substr(16) == "on")   # G6 PERF6-4 A/B
 		elif a.begins_with("--trust="):
 			(Movement as Script).set("gather_trust", a.substr(8) == "on")
 		elif a.begins_with("--held-paths="):

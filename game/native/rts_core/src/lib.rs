@@ -19,8 +19,10 @@ mod combat;
 mod combat_prep;
 mod fastdict;
 mod fog;
+mod fog_gather;
 mod gather;
 mod grid;
+mod morale_scan;
 mod nav;
 mod steer;
 

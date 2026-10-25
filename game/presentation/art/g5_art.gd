@@ -67,9 +67,12 @@ static func squad_sheet(spec: Dictionary, alive: int) -> Dictionary:
 	return {"file": String(spec.get("file", "")), "mask": String(spec.get("mask", ""))}
 
 
-## ART-BLD variant family of a building def ("" | lvl | rot | water).
+## ART-BLD variant family of a building def ("" | lvl | rot | water). G6 (VIEW6): g6_bld defs carry the
+## same family under `g6` (every G6 building is "rot": rot_<f>, _damaged, _build_<n>, optional _fire).
 static func variant_of(b: Dictionary) -> String:
 	var g = b.get("g5")
+	if not (g is Dictionary):
+		g = b.get("g6")
 	return String(g.get("variants", "")) if g is Dictionary else ""
 
 
@@ -96,6 +99,10 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 		if states.has("build_%d" % n):
 			return "build_%d" % n
 	if base != "":
+		# G6 (VIEW6): the 14 G6 turrets carry rot_<f>_fire (kit action art: muzzle flash / missile /
+		# beam), shown while the snapshot static has `firing` (the sim's shot counter) and hp >= 50%
+		if int(e.get("firing", 0)) > 0 and not dmg and states.has(base + "_fire"):
+			return base + "_fire"
 		if dmg and states.has(base + "_damaged"):
 			return base + "_damaged"
 		if states.has(base):

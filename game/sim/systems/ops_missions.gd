@@ -673,7 +673,7 @@ static func _eval_doc(w: SimWorld, g: Dictionary, ctl: Array, ms: Array, cen: Ve
 	if ph == "assess":
 		m.goal = t
 		var stealth := ty == "recon" or ty == "sabotage" or ty == "officer_hunt"
-		issue(w, g, ctl, "move" if stealth else "attack_move", t)
+		issue(w, g, ctl, "attack_move" if ty == "raid" else "move", t)  # exfil moves fast; only a raid fights in
 		set_phase(w, g, "move", "%s: moving to (%d, %d)%s." % [ty.capitalize().replace("_", " "), int(t.x), int(t.y),
 			" avoiding contact" if stealth else ""], 0.1)
 		return
@@ -689,7 +689,7 @@ static func _eval_doc(w: SimWorld, g: Dictionary, ctl: Array, ms: Array, cen: Ve
 		for e in ctl:
 			if not e.moving and String(e.order.type) == "idle" and (e.pos as Vector2).distance_to(m.goal) > r:
 				late.append(e)
-		issue(w, g, late, "move" if ty != "raid" and ty != "exfil" else "attack_move", m.goal)
+		issue(w, g, late, "attack_move" if ty == "raid" else "move", m.goal)
 		return
 	if ph == "return":
 		if ms.is_empty() or _inside(ms, m.safe, _doc("safe_radius")) * 2 >= ms.size():

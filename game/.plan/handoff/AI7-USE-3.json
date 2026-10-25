@@ -1,0 +1,53 @@
+{
+ "agent": "AI7-USE-3",
+ "gen": 3,
+ "calls_used": 95,
+ "status": "recycled at the 70% budget mark",
+ "done": [
+  "Lane d3 finished (LANE_DONE d3, .plan/shots/AI7-USE/run_lane_d3.log): river_s1 winner=0 t=54168, river_s2 winner=1 t=101508, coastal_s1 winner=2 t=52234, coastal_s2 winner=2 t=56782 (all 0 invariant fails, 0 script errors). DRAWS: heart_s1 (regressed from a d1 win; both humans fed 52 waves into a 27-pop Machine), valley_s1, valley_s2 (Machine ends with 0 army pop and survives; Human B 88 supply but army 29), custom_s1 (0 invariant fails now; bomber OOB fixed by ECON-AIRF6-2). heart_s2 d3 INVALID (mid-edit parse errors from MECH6b).",
+  "custom_s1 draw root cause: Human B's whole wave idled at its scripted ai_target (79,79) from t~40000 to the cap. Fix in ai_g3.objective: an ai_target held by the wave (centroid within AI_TGT_R=8 for AI_TGT_HOLD=120 s) is marked g3.ai_tgt_done; the side then plays the victory terms; a moved/new ai_target applies again.",
+  "ai_g3 failure-penalty retarget: ai_army regroup ('attack group down to X of Y') calls G3.note_failed_wave(st) -> g3.fails[side]++; choose_target adds FAIL_WEIGHT=12 tiles per failed wave (cap FAIL_CAP=10) for LONE sides only (team size 1; allies still converge). Visible in d4 logs as 'retarget -> ... fail penalty N'.",
+  "Support trim (ai_controller._support_trim + U._bank_ok/_support_item): from TRIM_TICK=36000, when supply-capped (pop+queued >= pop_cap-6) and army_pop*2 < pop, queue_unit of unarmed ground support (no weapon, not air, no drone_charges, not commander) is refused; crews only below max_engineers+4. st.trim is written only once it first turns on (G5 hashes unchanged until then). Logs 'support trim on/off'.",
+  "Market churn guard (ai_g6_sea._market): no buy of a resource sold within CHURN=300 s, no sale of one bought within CHURN (heartland d3: sold 2000 ore when broke then bought it back 10-15 at a time). State g.mkt_sold / g.mkt_bought.",
+  "ai_g6_sea fixes: _ammo_frac used U.ud summary keys that do not exist (always 1.0) -> U.ud().amax; carrier jet detection used U.ud().hangar (never present) -> Content.unit(); rebase phase from Air.phase(w,id) incl. 'air' (airborne, no mission). test_ai_g6 9/9 (needed world.gd mobile_ok for carrier rebase, landed 09:29).",
+  "ORCH directive done: the 4 pop_cap_max reads now use Economy.cap_max_for(w, fid): ai_army.gd massed() + _reinforce, ai_econ.gd next_build, ai_g6_co.gd room_max (const Economy preload added in those 3 files).",
+  "CR ai_airfield_site_ok (ECON-AIRF6-2) done: ai_air.find_site requires site_facing(w, def, o) >= 0 (first facing 0-3 with Airfield.site_ok == ''); build_near adds cmd.facing_i when the fitting facing is > 0 (ORCH applied CR build_cmd_facing_i in construction.gd; no key = facing 0, G5 hashes kept).",
+  "ai_g6 probe now also prints hq_req and co_why=[...] (why no company was trained). tools/soak.gd prints 'SOAK COMP f<n> def:supply ...' per side at the end (army vs support composition).",
+  "Regression (--only, this tree before the facing edit): test_ai 18/18, test_ai_g5 5/5, test_ai_air_naval 8/8, test_mil 13/13, test_g2_scenarios 7/7, test_triggers 10/10, test_ai_g6 9/9, all 0 script errors. After the facing edit: test_ai_g6 9/9 (0 SE), test_ai_air_naval 8/8 (0 SE, rerun; an earlier run showed 12 SE from ops_missions.gd mid-edit by another agent)."
+ ],
+ "in_flight": {
+  "lane_d4": "My background lane (hb.sh label 'lane d4', timeout 4500 s, started ~09:50 local). Log .plan/shots/AI7-USE/run_lane_d4.log; outputs soak_<cfg>_d4.txt; ends with per-config lines + LANE_DONE d4. Its heartbeat posts status as AI7-USE-3 until it ends. Batch 1 (heart_s2, valley_s1, valley_s2) = tree with fail-retarget, ai_target advance, cap_max_for, market churn, sea fixes, COMP line, but NO support trim. Batch 2 (heart_s1, custom_s1) starts on the tree WITH support trim + airfield site_ok (facings). At handoff: heart_s2 t=115200 no winner yet, valley_s1 t=97200, valley_s2 t=98400, 0 script errors so far."
+ },
+ "remaining": [
+  "1. When LANE_DONE d4 prints, grep each soak for SCRIPT ERROR first, then read SOAK RESULT / INVARIANTS / SOAK COMP / 'support trim' / 'retarget' lines. Batch 1 shows the effect without trim; batch 2 with trim.",
+  "2. If valley/heart still draw: run a d5 mini-lane on the current tree (heart_s2 valley_s1 valley_s2, then heart_s1 custom_s1): TAG=d5 bash .plan/hb.sh <ID> <calls> <tok> 'lane d5' -- timeout 4500 bash .plan/shots/AI7-USE/run_lane.sh heart_s2 valley_s1 valley_s2 heart_s1 custom_s1. Do not edit sim/ai while a lane has configs waiting to start. Read SOAK COMP to size the support bloat; if trim is not enough, candidate next levers: (a) Machine base on elevation (valley 'ridge plateaus', heartland uplands) beats waves of ~25-30 pop: raise the decisive-wave size / wait for pop near cap on maps where waves keep failing; (b) humans' ammo/fuel at 0 late (valley_s2 d3 f0 ammo=0 fuel=0): check logistics/market floors.",
+  "3. Then a full 9-config lane (river s1/s2, heart s1/s2, valley s1/s2, coastal s1/s2, custom_s1) on the final tree; post fact ai.g5_soaks with the SOAK RESULT lines (NOT posted yet: draws remain).",
+  "4. Company evidence: d3 companies=0 on every side (co_req=0). Read co_why=[..] in the SOAK G6 lines of d4/d5. HQ needs credits >= cost+150 (600 cr / 250 sal / 100 ore), army_pop >= 10, unfinished_total <= 1; train_company needs free credits >= CO_CREDITS[0]=1200. With cap_max_for the HQ now also lifts supply to 200, so it is worth a building hold once army_pop >= HQ_ARMY (U._bank_ok has the g6an_hold pattern; add a separate hold, AiAir resets st.g6an_hold every think).",
+  "5. Stage 10 not reached in any soak (max stage 9). test_ai_reaches_stage_10 passes in isolation.",
+  "6. Wait on facts: survival.api_ready + ridge_bastion_m map (survival_s1 config), aicmd.api_ready (assist_s1). Neither posted at handoff. Both configs already exist in run_lane.sh args_for.",
+  "7. Final: --only runs of test_ai, test_ai_g5, test_ai_air_naval, test_mil, test_g2_scenarios, test_triggers, test_ai_g6 (all green at handoff). ORCH runs the full suite."
+ ],
+ "files_touched": [
+  "sim/ai/ai_g6_sea.gd",
+  "sim/ai/ai_g6.gd",
+  "sim/ai/ai_g3.gd",
+  "sim/ai/ai_army.gd",
+  "sim/ai/ai_econ.gd",
+  "sim/ai/ai_g6_co.gd",
+  "sim/ai/ai_controller.gd",
+  "sim/ai/ai_util.gd",
+  "sim/ai/ai_air.gd",
+  "tools/soak.gd",
+  "tests/test_ai_g6.gd",
+  ".plan/handoff/AI7-USE-3.json"
+ ],
+ "test_state": "test_ai 18/18, test_ai_g5 5/5, test_ai_air_naval 8/8, test_mil 13/13, test_g2_scenarios 7/7, test_triggers 10/10, test_ai_g6 9/9 (raw lines in .plan/shots/AI7-USE/r_<test>_u3*.txt). Full suite not run (ORCH rule).",
+ "gotchas": [
+  "post.mjs types: claim|status|need|answer|fact|warn|done|blocked|directive|ack|review|handoff. A change_request is type 'need' with topic change_request.<x>.",
+  "The test runner hides test prints; put diagnostics in the check() message (it is truncated at ~250 chars, so put the key values first).",
+  "U.ud(def) is a summary (pop/veh/air/armored/arty/energy/amax/fmax); raw keys (hangar, payload, aircraft, drone_charges, ammo_max) need Content.unit(def).",
+  "Air flight phase: Air.phase(w,id); 'air' = airborne without a mission (a freshly spawned jet has phase 'air', home -1).",
+  "Other agents' mid-edits break the tree for minutes at a time (naval.gd, mobility.gd, ops_missions.gd seen this gen): always grep soaks and test output for SCRIPT ERROR before trusting a result.",
+  "test_ai02_static_fairness: any sim/ai line touching w.entities / events needs an 'AI-FAIR:' comment on the same line."
+ ]
+}

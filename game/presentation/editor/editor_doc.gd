@@ -17,6 +17,7 @@ const Brushes = preload("res://presentation/editor/brushes.gd")
 const Symmetry = preload("res://presentation/editor/symmetry.gd")
 const MAX_UNDO := 200
 const LIST_KEYS := ["decor", "resources", "bridges", "regions"]
+const HEIGHT_KEYS := ["height", "ramps"]   # G6 (ED6): whole-layer undo (absent layer = empty array)
 
 var map: Dictionary = {}
 var scenario: Dictionary = {}
@@ -55,6 +56,9 @@ func set_doc(m: Dictionary, scen: Dictionary, file_path: String = "") -> void:
 		"hold_bridge": int(m.get("hold_bridge", 0)), "start_packages": bool(m.get("start_packages", true))}
 	if m.has("biome") and (m.biome as PackedByteArray).size() == w * h:
 		map["biome"] = (m.biome as PackedByteArray).duplicate()
+	for k in HEIGHT_KEYS:   # G6 (ED6): height levels + ramp flags (CONTRACTS_G6 s6/s7)
+		if m.has(k) and typeof(m[k]) == TYPE_PACKED_BYTE_ARRAY and (m[k] as PackedByteArray).size() == w * h:
+			map[k] = (m[k] as PackedByteArray).duplicate()
 	Brushes.ensure_biome(map)
 	for r in map.resources:
 		r["cell"] = Brushes.Objects._vec(r.cell)
@@ -159,7 +163,7 @@ func begin_stroke(label: String) -> void:
 		lists[k] = (map.get(k, []) as Array).duplicate(true)
 	_stroke = {"label": label, "terrain": (map.terrain as PackedByteArray).duplicate(),
 		"biome": (map.biome as PackedByteArray).duplicate(), "lists": lists,
-		"scenario": scenario.duplicate(true), "cells": {},
+		"scenario": scenario.duplicate(true), "cells": {}, "hlayers": _hlayers(),
 		"flags": {"hold_bridge": map.get("hold_bridge", 0), "start_packages": map.get("start_packages", true)}}
 
 
@@ -194,6 +198,10 @@ func end_stroke() -> bool:
 		if now != st.lists[k]:
 			cmd.lists_old[k] = st.lists[k]
 			cmd.lists_new[k] = now.duplicate(true)
+	var hl := _hlayers()
+	if hl != st.get("hlayers", hl):
+		cmd["h_old"] = st.hlayers
+		cmd["h_new"] = hl
 	if scenario != st.scenario:
 		cmd["scen_old"] = st.scenario
 		cmd["scen_new"] = scenario.duplicate(true)
@@ -202,10 +210,19 @@ func end_stroke() -> bool:
 		cmd["flags_old"] = st.flags
 		cmd["flags_new"] = flags_now
 	if (cmd.idx as PackedInt32Array).is_empty() and (cmd.get("bidx", PackedInt32Array()) as PackedInt32Array).is_empty() \
-			and (cmd.lists_old as Dictionary).is_empty() and not cmd.has("scen_old") and not cmd.has("flags_old"):
+			and (cmd.lists_old as Dictionary).is_empty() and not cmd.has("scen_old") and not cmd.has("flags_old") 			and not cmd.has("h_old"):
 		return false
 	_push(cmd)
 	return true
+
+
+## Copies of the height / ramps layers ({} entries absent = no layer).
+func _hlayers() -> Dictionary:
+	var out := {}
+	for k in HEIGHT_KEYS:
+		if map.has(k):
+			out[k] = (map[k] as PackedByteArray).duplicate()
+	return out
 
 
 func _diff_layer(cmd: Dictionary, st: Dictionary, key: String, ok: String, nk: String) -> void:
@@ -309,5 +326,20 @@ func _apply_cmd(cmd: Dictionary, back: bool) -> void:
 		scenario.merge(s.duplicate(true))
 	if cmd.has("flags_old"):
 		map.merge(cmd.flags_old if back else cmd.flags_new, true)
+	if cmd.has("h_old"):
+		var hl: Dictionary = cmd.h_old if back else cmd.h_new
+		var cur := _hlayers()
+		for k in HEIGHT_KEYS:
+			var before: PackedByteArray = cur.get(k, PackedByteArray())
+			var after: PackedByteArray = hl.get(k, PackedByteArray())
+			for i in maxi(before.size(), after.size()):
+				var a := int(before[i]) if i < before.size() else -1
+				var b := int(after[i]) if i < after.size() else -1
+				if a != b:
+					cells.append(Vector2i(i % w, i / w))
+			if hl.has(k):
+				map[k] = (hl[k] as PackedByteArray).duplicate()
+			else:
+				map.erase(k)
 	var objects := not lists.is_empty() or cmd.has("scen_old") or cmd.has("flags_old")
 	changed.emit(cells, "objects" if objects else "terrain")

@@ -1,0 +1,55 @@
+{
+  "agent": "UI6a",
+  "gen": 1,
+  "calls_used": 103,
+  "tokens_used_est": 360000,
+  "reason": "budget.handoff_now (guard projection 70%)",
+  "done": [
+    "Task 1 Marketplace: presentation/ui6/a/market_panel.gd (rows per Market.resources(): stock, buy/sell price, limit_left, Buy/Sell 10/50; enabled state + tooltips from w.preview_command + Market.quote; HQ-missing note). Opened from the HQ card button 'Market' (hud._add_g6_building_buttons).",
+    "Task 2 Army Builder: presentation/ui6/a/army_model.gd (per-profile store user://profiles/<profile>/company_templates.json, normalize/add/set_count/remove, from_preset, candidates, summary via Companies.plan/validate_template, train_cmd) + army_builder.gd (preset/custom source + size + Train, editor with name, slot rows -/+/Remove, Add unit/+5, summary, Save/Delete/Train custom). Opened from the Company HQ card 'Army Builder'.",
+    "Task 3 Company/army cards: company_card.gd (selection_company, ai_slot badge, activity, model -> title + battle-status line + unit grid with captain/lieutenant marked; army_model; card widget) + forces_panel.gd (army rows with Disband, company cards with Select / Refill toggle / Army pick, Form army with Commander option). HUD inspector shows the company card when the whole selection is one company (hud._inspect_company). Top-bar 'Forces' button; Company HQ card also has 'Commander' (train_commander) and 'Forces'.",
+    "Task 4 Commanders panel: commanders_panel.gd (4 slots C1-C4 with badge colours, target = selected units / company / army / role, playstyle, stance, objective, 'Pick on map', Assign, Recall; status from AiCommand.slots). Map pick: hub hides the panel, MatchView.begin_point_pick(cb) arms the next left click (right click cancels), reopens with the cell. Top-bar 'Commanders' button.",
+    "Hub: presentation/ui6/a/ui6a_hub.gd (build/open/toggle/close/update/on_key Esc; modal frames sized by ui6a_util.fit_modal). hud.gd: preloads, var ui6a, built after extras, ui6a.update in _refresh, Esc first in _unhandled_input, 'ui6a' card-button kind in _update_card_state.",
+    "Task 5 Skirmish setup (also MODES6 CR seq 877): victory_builder.gd gains modes survive ('Survival: hold out', seconds) and repel_waves ('Survival: repel waves', count) on their own SurvivalRow; apply() uses Waves.survival_config(cfg, mode, amount, -1) (last side = AI wave attacker on its own team); describe() 'Survive m:ss' / 'Repel N waves'. g3b_data.gd MAP_ORDER/MAP_FALLBACK add ridge_bastion_m and river_dam_m (128x128, survival: true; enabled once maps.json lists them). main_menu.gd: picking a survival map preselects 'survive'.",
+    "Task 6 fit: main_menu 3440x1440@150% CLIP fixed (_relayout goes side-by-side only when both columns' minimum widths fit; relayout deferred on every form change). hud._cap_stacks lifts the group bar and ends the right stack above UI6b's G2 group panel when it is visible (company/platoon officer selected; was an OVERLAP). 7 new fit screens in presentation/ui5/kit/fit_screens.gd NAMES routed to presentation/ui6/a/fit_ui6a.gd (ui6a_market, ui6a_army, ui6a_forces, ui6a_commanders, ui6a_hud_company, ui6a_hud_company_hq, ui6a_menu_survival); fixture world g6_world() trains 2 companies + Commander + army + AI commander C1 through real commands.",
+    "ELEV-VIEW CR seq 820: match_view.gd pick_world(canvas) = camera.pick_canvas (flat = screen_to_world) used by mouse_world, view corners, g4b on_motion/on_release, left press, click select, right-click target; marquee and double-click same-def use entity_canvas_pos (ViewUtil.world_to_screen_h, height-lifted).",
+    "tests/test_ui6a.gd (git mv'd from pending_g6) with 5 real tests."
+  ],
+  "test_state": {
+    "test_ui6a": "RESULT pass=5 fail=0 files=1 time_ms=165789 / TESTS OK",
+    "test_hud": "RESULT pass=4 fail=0 files=1 time_ms=6820 / TESTS OK",
+    "test_ui3": "RESULT pass=7 fail=0 files=1 time_ms=9416 / TESTS OK",
+    "test_ui_panels (UI6b, hud caller)": "RESULT pass=5 fail=0 files=1 time_ms=41661 / TESTS OK",
+    "test_editor_scenario (ED6, main_menu caller)": "RESULT pass=5 fail=0 files=1 time_ms=17434 / TESTS OK",
+    "fit tool targeted": "10 screens (7 ui6a + main_menu + hud_army + hud_hq) x 7 res x scales 1,1.5,0.75: FIT RESULT screens=210 controls=29184 issues=0 distinct=0",
+    "test_ui_fit (full)": "STARTED in background at handoff (log C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/1121247f-c9b8-4ed3-adb4-546f11b33109/scratchpad/t3.log); result NOT seen by UI6a-1 -> unverified, rerun it"
+  },
+  "remaining": [
+    "1. Run `bash .plan/hb.sh <ID> <calls> <tokens> test_ui_fit -- timeout 1500 bash tests/run.sh --only=test_ui_fit` (it now covers 25 screens; ~8-12 min). Must print TESTS OK with issues=0; grep the log for SCRIPT ERROR (must be 0).",
+    "2. UI6b request (UI6b-1 handoff step 7a): add ui5b_g6_infantry, ui5b_g6_vehicles, ui5b_g6_engineer, ui5b_g6_garage, ui5b_g6_research to presentation/ui5/kit/fit_screens.gd NAMES ONLY AFTER UI6b's successor routes them in presentation/ui5/panels/fit_panels.gd (otherwise they SKIP and test_ui_fit fails its skips==0 check). Then rerun test_ui_fit.",
+    "3. UI6b note: hud._add_research_buttons lists other factions' G6 projects; iterate Progression.research_list (side's faction) instead of G3bData.project_ids_sorted, or filter by faction; then rerun test_hud, test_ui_panels, test_ui3.",
+    "4. Optional (MODES6 HUD note): wave countdown line from Waves.next_wave(w) {index, seconds_left, total, destroyed, done} in g3_score/objectives (UI6a files) if Victory.progress rows do not already show it.",
+    "5. Reply on the board: CR 820 (ELEV-VIEW) and CR 877 (MODES6) are implemented (see done). Post fact ui6a.ready after step 1 is green; bus DONE; final AGENT_RULES report."
+  ],
+  "files_touched": [
+    "presentation/ui6/a/ui6a_util.gd (new)", "presentation/ui6/a/market_panel.gd (new)", "presentation/ui6/a/army_model.gd (new)",
+    "presentation/ui6/a/army_builder.gd (new)", "presentation/ui6/a/company_card.gd (new)", "presentation/ui6/a/forces_panel.gd (new)",
+    "presentation/ui6/a/commanders_panel.gd (new)", "presentation/ui6/a/ui6a_hub.gd (new)", "presentation/ui6/a/fit_ui6a.gd (new)",
+    "presentation/hud/hud.gd", "presentation/hud/g3b_data.gd", "presentation/menu/main_menu.gd", "presentation/menu/victory_builder.gd",
+    "presentation/match_view.gd", "presentation/ui5/kit/fit_screens.gd", "tests/test_ui6a.gd (git mv + rewrite)"
+  ],
+  "gotchas": [
+    "Companies.leader_def(faction, 'hq') returns the fallback officer; the Company HQ def is Companies.leaders(faction).hq (or Companies.is_hq_def / hq_of).",
+    "Market.price() rounds to whole credits; with cheap resources +10% may not change it; compare Market.price_milli.",
+    "fit_ui6a.g6_world() is cached in a static (_w); tests reset Fx._w = null for a fresh world. Training time is skipped by setting queue progress to 1 (one entry per HQ per tick).",
+    "Modal panels: content min width must stay under ~976 px (1024 canvas - 48): ScrollContainer with horizontal scroll disabled reports its child's min width.",
+    "OptionButtons with clip_text are TEXTCUT-checked by the fit tool: keep item text short (Forces commander option was 248 px > 204).",
+    "UI6b's G2 group panel (presentation/hud/g2_inspector.gd) appears whenever a selection contains an ops-group officer (every company has lieutenants), bottom-right -380..-222; hud._cap_stacks now shifts the group bar above it.",
+    "run.sh --only accepts one file name per run here (comma list ran 0 files)."
+  ],
+  "open_crs": [
+    "ELEV-VIEW seq 820 pick_on_raised_tiles: DONE (not yet acknowledged on the board).",
+    "MODES6 seq 877 survival_setup_option: DONE via victory_builder survival modes (not yet acknowledged).",
+    "UI6b (handoff UI6b-1 step 7a): 5 fit names + research_list: NOT done (remaining 2, 3)."
+  ]
+}

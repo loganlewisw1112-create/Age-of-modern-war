@@ -4,9 +4,9 @@ extends RefCounted
 const HT = preload("res://presentation/hud/hud_theme.gd")
 
 const TERRAIN_LABELS := ["Grass", "Dirt", "Road", "Forest", "River water", "Bridge", "Ford", "Ridge",
-	"Building (solid)", "Shallow water", "Deep water", "Beach", "Cliff", "Hill"]
+	"Building (solid)", "Shallow water", "Deep water", "Beach", "Cliff", "Hill", "Rail"]
 const TERRAIN_COLORS := ["5f8a3c", "8a6e4a", "7d7a72", "2f5a26", "3d6fa0", "8a6a3a", "6a8fa8", "6b6358",
-	"4a4440", "5a8fb8", "24497a", "d2c08a", "514a43", "86945a"]
+	"4a4440", "5a8fb8", "24497a", "d2c08a", "514a43", "86945a", "5c4a3a"]
 const BIOME_LABELS := ["Temperate", "Desert", "Snow", "Wasteland"]
 const BIOME_COLORS := ["5f8a3c", "c8b070", "e6eef2", "6d6250"]
 

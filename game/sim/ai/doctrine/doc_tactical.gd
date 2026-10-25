@@ -68,9 +68,10 @@ static func mines_on_leg(mines: Dictionary, a: Vector2, b: Vector2, width: int) 
 
 
 ## Best firing position within radius of center: height first, then cover, LOS to `toward` (when it is not
-## Vector2.INF), a short walk, and never next to a known mine.
+## Vector2.INF), a short walk, and never next to a known mine. min_dist > 0 keeps the pick at least that far
+## from `toward` (a base of fire / overwatch stays at stand-off instead of climbing into the objective).
 static func best_position(w: SimWorld, center: Vector2, radius: float, toward: Vector2, mines: Dictionary,
-		mc: String = "foot") -> Vector2:
+		mc: String = "foot", min_dist: float = 0.0) -> Vector2:
 	var r := int(ceil(radius))
 	var c0 := cell(center)
 	var has_h := Elevation.has_height(w)
@@ -91,6 +92,8 @@ static func best_position(w: SimWorld, center: Vector2, radius: float, toward: V
 				continue
 			var p := Vector2(c) + Vector2(0.5, 0.5)
 			var s := -p.distance_to(center) * sd
+			if min_dist > 0.0 and toward != Vector2.INF and p.distance_to(toward) < min_dist:
+				s -= sm * 2.0
 			if has_h:
 				s += float(Elevation.height_at(w, c)) * sh
 				if toward != Vector2.INF and Elevation.los(w, p, toward):

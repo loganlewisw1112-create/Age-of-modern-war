@@ -34,12 +34,194 @@ func _draw_body() -> void:
 	if mv == null or mv.world == null:
 		return
 	if mode == "under":
+		_draw_g6_under()
 		_draw_rings()
 	else:
+		_draw_g6_over()
 		_draw_bars()
 		_draw_rally()
 		_draw_ghost()
 		_draw_marquee()
+
+
+# ---------------------------------------------------------------- G6 (VIEW6) overlays
+# Read from mv.snap only (thread rule) + immutable content. Under the entities: own minefield
+# boundaries, radar / sonar ranges (radar buildings always faint, selected radars / sonar ships bright),
+# own company cohesion rings, jamming fields. Over them: garrison pips (own / allied), AI-command badges.
+const G6Vis = preload("res://presentation/art/g6_vis.gd")
+const ISO_R := 45.254834  # screen half-width (px) of a 1-tile world radius (32 * sqrt 2)
+const C_MINES := Color(1.0, 0.72, 0.25)
+const C_RADAR := Color(0.4, 0.95, 0.9)
+const C_SONAR := Color(0.35, 0.75, 1.0)
+const C_COH := Color(0.65, 1.0, 0.55)
+const C_JAM := Color(0.75, 0.55, 1.0)
+var g6_drawn: Dictionary = {}  # last frame's counts (probe / tests)
+var _jam_r: Dictionary = {}    # def -> jammer radius (tiles, 0 = none)
+
+
+func _jam_radius(def_id: String) -> float:
+	var v = _jam_r.get(def_id)
+	if v == null:
+		var d: Dictionary = Content.building(def_id)
+		if d.is_empty():
+			d = Content.unit(def_id)
+		var j = d.get("jammer", d.get("jam"))
+		v = float(j.get("radius", 0.0)) if j is Dictionary else 0.0
+		_jam_r[def_id] = v
+	return v
+
+
+## G6 (VIEW6, CR 822): height-map dict of the drawn terrain ({} = flat).
+func _hm() -> Dictionary:
+	var tl = mv.get("terrain_layer") if mv != null else null
+	return tl.height_map() if tl != null and tl.has_method("height_map") else {}
+
+
+## Ground lift (px) at world p: exactly the terrain mesh (ramps slope), ViewUtil.ground_lift. sn unused (kept
+## for the callers' signature).
+func _lift(p: Vector2, _sn: Dictionary) -> float:
+	return ViewUtil.ground_lift(_hm(), p)
+
+
+## World -> canvas on the drawn (raised) ground: ViewUtil.world_to_screen_h (flat maps: the old iso spot).
+func _w2s(p: Vector2) -> Vector2:
+	return ViewUtil.world_to_screen_h(_hm(), p)
+
+
+func _iso_circle(c: Vector2, r_tiles: float, col: Color, width: float, dashed := false) -> void:
+	draw_set_transform(c, 0.0, Vector2(1.0, 0.5))
+	var r := r_tiles * ISO_R
+	if dashed:
+		var n := clampi(int(r / 9.0), 12, 96)
+		for i in n:
+			if i % 2 == 0:
+				draw_arc(Vector2.ZERO, r, TAU * i / n, TAU * (i + 1) / n, 3, col, width)
+	else:
+		draw_arc(Vector2.ZERO, r, 0, TAU, clampi(int(r / 6.0), 16, 96), col, width)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_g6_under() -> void:
+	var sn: Dictionary = mv.snap
+	if sn.is_empty():
+		return
+	var pf: int = mv.player_fid
+	var allies: Array = mv._ally_fids
+	var cnt := {"minefields": 0, "radar": 0, "sonar": 0, "cohesion": 0, "jam": 0}
+	g6_drawn = cnt
+	var tm := float(Time.get_ticks_msec()) * 0.001
+	for f in G6Vis.minefields_for(sn, pf, allies):
+		var r: Array = f.rect
+		if r.size() < 4:
+			continue
+		var o := Vector2(float(r[0]), float(r[1]))
+		var s := Vector2(float(r[2]) - float(r[0]) + 1.0, float(r[3]) - float(r[1]) + 1.0)
+		var pts := PackedVector2Array([_w2s(o), _w2s(o + Vector2(s.x, 0)),
+			_w2s(o + s), _w2s(o + Vector2(0, s.y)), _w2s(o)])
+		var col := C_MINES if bool(f.get("done", false)) else Color(C_MINES, 0.55)
+		for i in 4:
+			draw_dashed_line(pts[i], pts[i + 1], col, 1.5, 6.0)
+		cnt.minefields += 1
+		# CR 843: ART-G6b mine_marker flag at the field centre (blinks; half-alpha while still being laid)
+		var mk := ArtCatalog.fx_g6("mine_marker", int(tm * 1.5))
+		if not mk.is_empty():
+			var mc := _w2s(o + s * 0.5)
+			draw_texture(mk.texture, mc + (mk.offset as Vector2), Color(1, 1, 1, 1.0 if bool(f.get("done", false)) else 0.6))
+			cnt["markers"] = int(cnt.get("markers", 0)) + 1
+	var sel := {}
+	for id in mv.selection:
+		sel[int(id)] = true
+	var statics: Dictionary = sn.get("statics", {})
+	for id in statics:
+		var st: Dictionary = statics[id]
+		if st.kind != "building":
+			continue
+		var own := int(st.owner) == pf or allies.has(int(st.owner))
+		var rr := G6Vis.radar_radius(String(st.def))
+		var c: Vector2 = mv.world_to_screen(st.pos) - Vector2(0, _lift(st.pos, sn))
+		if rr > 0.0 and own and bool(st.get("built", true)):
+			_iso_circle(c, rr, Color(C_RADAR, 0.55 if sel.has(int(id)) else 0.16), 1.5 if sel.has(int(id)) else 1.0, not sel.has(int(id)))
+			cnt.radar += 1
+		var jr := _jam_radius(String(st.def))
+		if jr > 0.0 and bool(st.get("built", true)) and (own or mv.entity_visible(st)):
+			_iso_circle(c, jr * (0.97 + 0.03 * sin(tm * 3.0)), Color(C_JAM, 0.28), 1.0, true)
+			cnt.jam += 1
+	var g6u: Dictionary = sn.get("g6u", {})
+	var ids: PackedInt32Array = sn.get("ids", PackedInt32Array())
+	for id in sel:
+		var k := ids.find(int(id))
+		if k < 0:
+			continue
+		var p: Vector2 = (sn.pos as PackedVector2Array)[k]
+		var c2: Vector2 = mv.world_to_screen(p) - Vector2(0, _lift(p, sn))
+		var dn: String = (sn.defs as PackedStringArray)[(sn.def as PackedInt32Array)[k]]
+		var ent = g6u.get(int(id))
+		if ent != null and float(ent.get("sonar", 0.0)) > 0.0:
+			_iso_circle(c2, float(ent.sonar), Color(C_SONAR, 0.5), 1.5, true)
+			cnt.sonar += 1
+		var ur := G6Vis.radar_radius(dn)
+		if ur > 0.0:
+			_iso_circle(c2, ur, Color(C_RADAR, 0.5), 1.5)
+			cnt.radar += 1
+		var uj := _jam_radius(dn)
+		if uj > 0.0:
+			_iso_circle(c2, uj, Color(C_JAM, 0.4), 1.0, true)
+			cnt.jam += 1
+	for ring in G6Vis.cohesion_rings(sn, pf):
+		var cp: Vector2 = ring[0]
+		_iso_circle(mv.world_to_screen(cp) - Vector2(0, _lift(cp, sn)), float(ring[1]), Color(C_COH, 0.22), 1.0, true)
+		cnt.cohesion += 1
+
+
+func _draw_g6_over() -> void:
+	var sn: Dictionary = mv.snap
+	if sn.is_empty():
+		return
+	var pf: int = mv.player_fid
+	var allies: Array = mv._ally_fids
+	var statics: Dictionary = sn.get("statics", {})
+	var pips := 0
+	for bid in sn.get("garrison", {}):
+		var st = statics.get(bid)
+		if st == null or not (int(st.owner) == pf or allies.has(int(st.owner))):
+			continue
+		var g: Array = G6Vis.garrison_pips(sn, int(bid))
+		var n := int(g[1])
+		if n <= 0:
+			continue
+		var top: Vector2 = mv.world_to_screen(st.pos) - Vector2(0, _lift(st.pos, sn) + 22.0 + 10.0 * float(st.get("size", 1)))
+		var x0 := top.x - float(n) * 3.5
+		# CR 843: ART-G6b garrison_pip sheet (frame 0 empty slot, 1 filled in the owner's team colour)
+		var tcol: Color = mv.team_color(int(st.owner)) if mv.has_method("team_color") else Color(0.55, 1.0, 0.5)
+		var pe := ArtCatalog.fx_g6("garrison_pip", 0)
+		var pfull := ArtCatalog.fx_g6("garrison_pip", 1, tcol)
+		for i in n:
+			var spr: Dictionary = pfull if i < int(g[0]) else pe
+			if not spr.is_empty():
+				draw_texture(spr.texture, Vector2(top.x - float(n - 1) * 4.5 + i * 9.0, top.y + 4.0) + (spr.offset as Vector2))
+				pips += 1
+				continue
+			var r := Rect2(Vector2(x0 + i * 7.0, top.y), Vector2(5, 5))
+			if i < int(g[0]):
+				draw_rect(r, Color(0.55, 1.0, 0.5))
+			draw_rect(r, Color(0.05, 0.08, 0.05, 0.9), false, 1.0)
+			pips += 1
+	g6_drawn["garrison_pips"] = pips
+	var badges := 0
+	var cmd := G6Vis.ai_commanded(sn, pf)
+	if not cmd.is_empty():
+		var ids: PackedInt32Array = sn.get("ids", PackedInt32Array())
+		for uid in cmd:
+			var k := ids.find(int(uid))
+			if k < 0:
+				continue
+			var p: Vector2 = (sn.pos as PackedVector2Array)[k]
+			var c: Vector2 = mv.world_to_screen(p) - Vector2(0, _lift(p, sn) + 34.0)
+			var chev := PackedVector2Array([c + Vector2(-6, -3), c + Vector2(0, 2), c + Vector2(6, -3), c + Vector2(6, 1), c + Vector2(0, 6), c + Vector2(-6, 1)])
+			draw_colored_polygon(chev, Color(0.95, 0.8, 0.3))
+			draw_polyline(chev + PackedVector2Array([chev[0]]), Color(0.1, 0.08, 0.02), 1.0)
+			badges += 1
+	g6_drawn["ai_badges"] = badges
 
 
 func _rel_color(owner: int) -> Color:
@@ -53,8 +235,8 @@ func _rel_color(owner: int) -> Color:
 func _diamond(o: Vector2, s: float) -> PackedVector2Array:
 	# footprint diamond for cells [o, o+s)
 	return PackedVector2Array([
-		mv.world_to_screen(o), mv.world_to_screen(o + Vector2(s, 0)),
-		mv.world_to_screen(o + Vector2(s, s)), mv.world_to_screen(o + Vector2(0, s))])
+		_w2s(o), _w2s(o + Vector2(s, 0)),
+		_w2s(o + Vector2(s, s)), _w2s(o + Vector2(0, s))])
 
 
 func _draw_rings() -> void:
@@ -69,7 +251,7 @@ func _draw_rings() -> void:
 			pts.append(pts[0])
 			draw_polyline(pts, col, 2.0)
 			continue
-		var c: Vector2 = mv.world_to_screen(mv.render_pos(e))
+		var c: Vector2 = _w2s(mv.render_pos(e))
 		var r := 0.5
 		if e.kind == "unit":
 			r = float(Content.unit(e.def).get("radius", 0.3)) + 0.25
@@ -120,7 +302,7 @@ func _draw_bars() -> void:
 			var se = mv.world.entities.get(sid)
 			if se != null and se.kind == "unit" and mv.entity_visible(se):
 				us.append(se)
-				sps.append(mv.world_to_screen(se.pos))
+				sps.append(_w2s(se.pos))
 	for i in us.size():
 		var e: Dictionary = us[i]
 		var hp: float = e.hp
@@ -148,7 +330,7 @@ func _draw_bars() -> void:
 			continue
 		var frac := float(e.hp) / maxf(1.0, float(e.max_hp))
 		var s := int(e.size)
-		var top: Vector2 = mv.world_to_screen(e.pos) + Vector2(0, -s * 16 - 34)
+		var top: Vector2 = _w2s(e.pos) + Vector2(0, -s * 16 - 34)
 		if show_hp:
 			_bar(top, 18.0 * s + 14.0, frac, _hp_color(frac))
 		if building_unfinished and int(e.owner) == pf:
@@ -178,8 +360,8 @@ func _draw_rally() -> void:
 			continue
 		if (Content.building(b.def).get("produces", []) as Array).is_empty():
 			continue
-		var a: Vector2 = mv.world_to_screen(b.pos)
-		var r: Vector2 = mv.world_to_screen(b.get("rally", b.pos))
+		var a: Vector2 = _w2s(b.pos)
+		var r: Vector2 = _w2s(b.get("rally", b.pos))
 		var segs := int(a.distance_to(r) / 10.0)
 		for i in segs:
 			if i % 2 == 0:
@@ -219,7 +401,7 @@ func _draw_ghost() -> void:
 	var lines := ["%s  %s" % [String(d.get("name", def)), "  ".join(parts)]]
 	if not ok:
 		lines.append(err)
-	var anchor: Vector2 = mv.world_to_screen(Vector2(o) + Vector2(size, size) * 0.5) + Vector2(0, size * 16 + 12)
+	var anchor: Vector2 = _w2s(Vector2(o) + Vector2(size, size) * 0.5) + Vector2(0, size * 16 + 12)
 	var z: float = mv.camera.zoom.x
 	draw_set_transform(anchor, 0.0, Vector2.ONE / z)
 	var font := ThemeDB.fallback_font

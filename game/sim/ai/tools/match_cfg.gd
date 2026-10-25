@@ -9,6 +9,10 @@ extends RefCounted
 ##   --stages=7,8,9 (per-side start stage; a single value applies to every side)
 ##   --advancement=free|standard|simulation
 ## Defaults: 2 sides, human_a mirror, teams 0..n-1 (FFA), hq_elimination.
+## G6 (AI7-USE): --victory=survive --seconds=N | --victory=repel_waves --count=N: survival mode
+##   (Waves.survival_config; the attacker is the last side, alone on a new team).
+
+const Waves = preload("res://sim/systems/waves.gd")
 
 
 static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
@@ -19,6 +23,7 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 	var teams := []
 	var percent := -1
 	var seconds := -1
+	var count := -1
 	var rules_s := ""
 	var stages := []
 	for a in args:
@@ -40,6 +45,8 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 			percent = int(s.substr(10))
 		elif s.begins_with("--seconds="):
 			seconds = int(s.substr(10))
+		elif s.begins_with("--count="):
+			count = int(s.substr(8))
 		elif s.begins_with("--rules="):
 			rules_s = s.substr(8)
 		elif s.begins_with("--economy="):
@@ -79,6 +86,10 @@ static func from_args(args: Array, seed_default: int = 1337) -> Dictionary:
 				term.seconds = seconds if seconds > 0 else 300
 			terms.append(term)
 		c.victory_rules = {"op": String(parts[0]) if parts.size() > 1 else "and", "terms": terms}
+	if String(c.victory) == "survive":
+		c = Waves.survival_config(c, "survive", seconds if seconds > 0 else 900)
+	elif String(c.victory) == "repel_waves":
+		c = Waves.survival_config(c, "repel_waves", count if count > 0 else 6)
 	return c
 
 

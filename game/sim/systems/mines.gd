@@ -396,6 +396,44 @@ static func spawn_mine(w: SimWorld, owner: int, cell: Vector2i, kind: String, la
 	return id
 
 
+## MAPIO6 (ED6 CR seq 963, additive): a map-placed minefield. The cells come from the same seeded
+## pattern lay_minefield draws (w.rng row-major, density, max_mines_per_field, centre fallback), but
+## every mine is in place at once: no layers, no cost, the field is recorded done (its boundary stays
+## until the last mine is gone, as for a laid field). rect: Rect2i or [x0, y0, x1, y1] (inclusive);
+## kind: at | ap | mixed. Returns the field id, or -1 for a bad kind / empty rect.
+static func place_field(w: SimWorld, fid: int, rect, kind: String) -> int:
+	var r: Rect2i = rect if typeof(rect) == TYPE_RECT2I else _rect(rect)
+	if not KINDS.has(kind) or r.size.x <= 0 or r.size.y <= 0:
+		return -1
+	var dens := float(field_rule("density", 0.45))
+	var cap := int(R().get("max_mines_per_field", 32))
+	var cells := []
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			var roll := w.rng.randf()
+			var k := kind
+			if kind == "mixed":
+				k = "at" if w.rng.randf() < 0.5 else "ap"
+			if roll >= dens or cells.size() >= cap:
+				continue
+			if G4bMech.mine_error(w, fid, Vector2i(x, y)) == "":
+				cells.append([x, y, k])
+	if cells.is_empty():
+		var c := r.position + r.size / 2
+		if G4bMech.mine_error(w, fid, c) == "":
+			cells.append([c.x, c.y, "at" if kind == "at" else "ap"])
+	var st := _state(w)
+	var f := {"id": int(st.next_field), "owner": fid, "rect": [r.position.x, r.position.y, r.end.x - 1, r.end.y - 1],
+		"kind": kind, "cells": cells, "next": cells.size(), "layers": [], "done": true}
+	st.next_field = int(st.next_field) + 1
+	st.fields.append(f)
+	w.emit("MinefieldPlanned", {"field": int(f.id), "owner": fid, "rect": f.rect, "kind": kind, "count": cells.size()})
+	for s in cells:
+		spawn_mine(w, fid, Vector2i(int(s[0]), int(s[1])), String(s[2]), "land", int(f.id), -1)
+	w.emit("MinefieldDone", {"field": int(f.id), "owner": fid, "laid": cells.size()})
+	return int(f.id)
+
+
 ## NAVAL6: lay one sea mine (b_mine_barge). -1 when the cell is not water or already mined.
 static func lay_sea(w: SimWorld, owner: int, cell: Vector2i) -> int:
 	if not w.in_bounds(cell):

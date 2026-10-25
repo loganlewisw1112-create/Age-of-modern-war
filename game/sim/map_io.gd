@@ -18,8 +18,21 @@ extends RefCounted
 ## 0 valley .. 3 ridge) and ramps_b64 (0/1 per cell), written only when the map carries a height layer
 ## (absent = all plain, so flat maps keep their G5 results). Version 1 files still load: they get no
 ## height unless they hold HILL tiles, which migrate to height level 2 (Elevation.migrate_hill).
+## G6 placements (owner MAPIO6, ED6 CRs seq 927 / 963). All optional; maps without them load as before:
+##   building facing_i: 0..3 air-field facing, set on the building before its field is laid (Airfield.layout);
+##   building garrison: [unit defs] spawned at the building and put inside (Garrison.place_inside);
+##     <= Garrison.slots_of(def), each Garrison.can_enter, else illegal_placement;
+##   entity {kind:"minefield", def:"minefield", owner_slot, cell:[x,y], size:[w,h] (1..8 each),
+##     mine:"mixed"|"at"|"ap"}: laid at match start on lay_minefield's seeded pattern (Mines.place_field);
+##   unit company:<template id>, company_block:"tid@x,y": after placement every block (per side, file
+##     order) becomes one ARMY6 company (Companies.form_from_units).
+## encode / decode carry every entity key through unchanged (to_json / _intify), so these round trip.
 
 const Victory = preload("res://sim/systems/victory.gd")
+const Mines = preload("res://sim/systems/mines.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")
+const Companies = preload("res://sim/systems/companies.gd")
+const MINEFIELD_MAX := 8   # a placed minefield is at most 8x8 cells (the editor clamps to this)
 const Triggers = preload("res://sim/systems/triggers.gd")
 const MapCheck = preload("res://sim/maps/map_check.gd")
 const Movement = preload("res://sim/systems/movement.gd")
@@ -462,13 +475,22 @@ static func place_entities(w: SimWorld, c: Dictionary) -> void:
 				if SimWorld.LEDGER_KEYS.has(String(k)) and String(k) != "credits":
 					w.factions[i].stock[String(k)] = maxi(0, int(st[k]))
 	var tags := {}
+	var blocks := {}       # "fid|block" -> {fid, tid, ids}   (G6 company blocks)
+	var block_order := []  # first appearance (file order)
 	for e in sc.get("entities", []):
 		var slot := int(e.get("owner_slot", 0))
 		if not sm.has(slot):
 			continue   # that player is not in this match
 		var id := place_one(w, e, int(sm[slot]))
-		if id < 0:
+		if id < 0 or String(e.get("kind", "unit")) == "minefield":
 			continue
+		var blk := String(e.get("company_block", ""))
+		if blk != "" and String(e.get("kind", "unit")) == "unit":
+			var key := "%d|%s" % [int(sm[slot]), blk]
+			if not blocks.has(key):
+				blocks[key] = {"fid": int(sm[slot]), "tid": String(e.get("company", blk.get_slice("@", 0))), "ids": []}
+				block_order.append(key)
+			blocks[key].ids.append(id)
 		var tag := String(e.get("tag", ""))
 		if tag != "":
 			w.entities[id].tag = tag
@@ -477,14 +499,19 @@ static func place_entities(w: SimWorld, c: Dictionary) -> void:
 			tags[tag].ids.append(id)
 			if not tags[tag].owners.has(int(sm[slot])):
 				tags[tag].owners.append(int(sm[slot]))
+	for key in block_order:
+		Companies.form_from_units(w, int(blocks[key].fid), String(blocks[key].tid), blocks[key].ids)
 	_apply_progress(w, sc, sm)
 	Triggers.init_state(w, tags)
 	Victory.note_hqless(w)
 
 
 ## Spawns one placed entity for fid. Returns its id, or -1 when the def/cell is unusable.
+## A minefield entity returns the id of its first mine (place_entities gives minefields no tag).
 static func place_one(w: SimWorld, e: Dictionary, fid: int) -> int:
 	var def := String(e.get("def", ""))
+	if String(e.get("kind", "unit")) == "minefield":
+		return _place_minefield(w, e, fid)
 	if String(e.get("kind", "unit")) == "building":
 		var bd := Content.building(def)
 		if bd.is_empty():
@@ -493,8 +520,12 @@ static func place_one(w: SimWorld, e: Dictionary, fid: int) -> int:
 		if not w.in_bounds(origin) or not w.in_bounds(origin + Vector2i(int(bd.size) - 1, int(bd.size) - 1)):
 			return -1
 		var bid := w.spawn_building(def, fid, origin, bool(e.get("built", true)))
+		if bid >= 0 and e.has("facing_i"):
+			w.entities[bid].facing_i = posmod(int(e.facing_i), 4)   # ED6 CR 927: before the field is laid
 		if bid >= 0 and (e.has("hangars") or e.has("parked") or e.has("extra_strips")) and field_reason(e) == "":
 			_place_field(w, e, bid, fid)
+		if bid >= 0:
+			_place_garrison(w, e, bid, fid)
 		return bid
 	if Content.unit(def).is_empty():
 		return -1
@@ -626,6 +657,48 @@ static func _place_field(w: SimWorld, e: Dictionary, bid: int, fid: int) -> void
 					slots.remove_at(k)
 					break
 		w.spawn_unit(String(n), fid, at)
+
+
+# ================================================================ G6 (MAPIO6): minefields, garrisons
+## A placed minefield entity -> Mines.place_field on its rect. Returns its first mine's id, or -1.
+static func _place_minefield(w: SimWorld, e: Dictionary, fid: int) -> int:
+	var r := Rect2i(_v2i(e.get("cell", [-1, -1])), _v2i(e.get("size", [1, 1])))
+	var mk := String(e.get("mine", "mixed"))
+	if r.size.x < 1 or r.size.y < 1 or r.size.x > MINEFIELD_MAX or r.size.y > MINEFIELD_MAX or not Mines.KINDS.has(mk):
+		return -1
+	if not w.in_bounds(r.position) or not w.in_bounds(r.end - Vector2i.ONE):
+		return -1
+	var fld := Mines.place_field(w, fid, r, mk)
+	if fld < 0:
+		return -1
+	var first := -1
+	for id in w.entities:
+		var m: Dictionary = w.entities[id]
+		if String(m.kind) == "mine" and int(m.get("field", -1)) == fld and (first < 0 or int(id) < first):
+			first = int(id)
+	return first
+
+
+## A placed building's garrison list: each infantry def is spawned just below the footprint and put
+## inside through Garrison.place_inside (an unfinished building leaves them standing there).
+static func _place_garrison(w: SimWorld, e: Dictionary, bid: int, fid: int) -> void:
+	var gl = e.get("garrison", [])
+	if typeof(gl) != TYPE_ARRAY or (gl as Array).is_empty():
+		return
+	var b: Dictionary = w.entities[bid]
+	var sz := int(b.size)
+	var below := Vector2i(b.cell) + Vector2i(sz / 2, sz)
+	var p: Vector2 = Vector2(below) + Vector2(0.5, 0.5) if w.in_bounds(below) else Vector2(b.pos)
+	var cap := Garrison.slots_of(String(b.def))
+	var n := 0
+	for gd in gl:
+		if n >= cap:
+			break
+		if Content.unit(String(gd)).is_empty() or not Garrison.can_enter(String(gd)):
+			continue
+		var uid := w.spawn_unit(String(gd), fid, p)
+		Garrison.place_inside(w, bid, uid)
+		n += 1
 
 
 ## Scenario progress seeds on a player (tutorials / mid-game scenarios): research: [project ids] done,
@@ -803,6 +876,18 @@ static func _validate_entities(out: Array, ents: Array, slots: Dictionary, t: Pa
 			var fr := field_reason(e)
 			if fr != "":
 				_issue(out, "field_bad", "Building %d: %s" % [i, fr], c)
+			var gl = e.get("garrison", [])
+			if typeof(gl) != TYPE_ARRAY:
+				_issue(out, "illegal_placement", "Building %d (%s): garrison must be a list of unit defs." % [i, def], c)
+			elif not (gl as Array).is_empty():
+				var gcap := Garrison.slots_of(def)
+				if (gl as Array).size() > gcap:
+					_issue(out, "illegal_placement", "Building %d (%s) holds at most %d in its garrison (has %d)." % [i, def, gcap, (gl as Array).size()], c)
+				for gd in gl:
+					if Content.unit(String(gd)).is_empty():
+						_issue(out, "illegal_placement", "Building %d: unknown garrison unit '%s'." % [i, gd], c)
+					elif not Garrison.can_enter(String(gd)):
+						_issue(out, "illegal_placement", "Building %d: %s cannot garrison (infantry only)." % [i, gd], c)
 			for dy in size:
 				for dx in size:
 					occupied[c + Vector2i(dx, dy)] = "building"
@@ -820,8 +905,17 @@ static func _validate_entities(out: Array, ents: Array, slots: Dictionary, t: Pa
 			for cd in e.get("cargo", []):
 				if Content.unit(String(cd)).is_empty():
 					_issue(out, "unknown_def", "Entity %d: unknown cargo unit '%s'." % [i, cd], c)
+		elif kind == "minefield":
+			var msz := _v2i(e.get("size", [1, 1]))
+			var mk := String(e.get("mine", "mixed"))
+			if msz.x < 1 or msz.y < 1 or msz.x > MINEFIELD_MAX or msz.y > MINEFIELD_MAX:
+				_issue(out, "illegal_placement", "Minefield %d must be 1x1 to %dx%d (is %dx%d)." % [i, MINEFIELD_MAX, MINEFIELD_MAX, msz.x, msz.y], c)
+			elif c.x < 0 or c.y < 0 or c.x + msz.x > w or c.y + msz.y > h:
+				_issue(out, "illegal_placement", "Minefield %d is off the map." % i, c)
+			if not Mines.KINDS.has(mk):
+				_issue(out, "illegal_placement", "Minefield %d: mine must be mixed, at or ap (got '%s')." % [i, mk], c)
 		else:
-			_issue(out, "unknown_def", "Entity %d: kind must be unit or building (got '%s')." % [i, kind], c)
+			_issue(out, "unknown_def", "Entity %d: kind must be unit, building or minefield (got '%s')." % [i, kind], c)
 
 
 static func _validate_scenario(out: Array, map: Dictionary, sc: Dictionary, slots: Dictionary, w: int, h: int) -> void:

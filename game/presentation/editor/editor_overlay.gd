@@ -91,6 +91,13 @@ func _draw() -> void:
 	if bool(ev.layers_on.get("decor", true)):
 		for e in m.get("decor", []):
 			_draw_decor(e)
+	for e in ev.doc.scenario.get("entities", []):   # G6 (ED6): scenario minefields
+		if String(e.get("kind", "")) == "minefield":
+			var sz = e.get("size", [1, 1])
+			var o := Vector2i(e.get("cell", Vector2i.ZERO))
+			for y in int(sz[1]):
+				for x in int(sz[0]):
+					draw_colored_polygon(_diamond(o + Vector2i(x, y)), Color(0.85, 0.2, 0.15, 0.32))
 	for br in m.get("bridges", []):
 		for c in br.get("cells", []):
 			draw_colored_polygon(_diamond(Vector2i(c)), Color(0.75, 0.6, 0.35, 0.35))

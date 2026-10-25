@@ -237,7 +237,7 @@ static func _advance(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g: D
 		fs.li = li + 1
 		fs.bound = 1 - int(fs.bound)
 		fs.pt = w.tick
-		var p := T.best_position(w, goal, D.num("position_radius"), obj, intel.mines)
+		var p := T.best_position(w, goal, D.num("position_radius"), obj, intel.mines, "foot", D.num("standoff") - 2.0)
 		_go(w, fid, st, fs, "ow%d" % (li % 2), bd, "move", p, out)
 		var nxt: Vector2 = lines[mini(li + 1, lines.size() - 1)]
 		_tag(w, fid, st, "overwatch_set", bd, "Overwatch set at phase line %d (%d, %d) level %d; %d units bound to (%d, %d)." % [
@@ -272,7 +272,8 @@ static func _suppress(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g: 
 	if (fs.hp as Array).is_empty() or String(fs.get("hp_for", "")) != "suppress":
 		fs.hp_for = "suppress"
 		var sup: Array = g.sup if not (g.sup as Array).is_empty() else g.all
-		var p := T.best_position(w, T.short_of(D.centroid(sup), obj, D.num("standoff") - 1.0), D.num("position_radius") + 1.0, obj, intel.mines)
+		var p := T.best_position(w, T.short_of(D.centroid(sup), obj, D.num("standoff") - 1.0), D.num("position_radius") + 1.0, obj, intel.mines,
+			"foot", D.num("standoff") - 2.0)
 		var rest0: Array = g.asl + g.flank
 		fs.hp = [p, T.best_position(w, T.short_of(D.centroid(rest0, obj), obj, D.num("standoff")), 3.0, obj, intel.mines)]
 		var guns := []

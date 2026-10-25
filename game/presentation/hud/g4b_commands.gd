@@ -21,6 +21,8 @@ const BuildPages = preload("res://presentation/ui5/panels/build_pages.gd")
 const G5UnitCmds = preload("res://presentation/ui5/panels/g5_unit_cmds.gd")
 const AirfieldPanel = preload("res://presentation/ui5/panels/airfield_panel.gd")
 const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
+## G6 (UI6b): every G6 command button, the loadout / garage / research panels (presentation/ui6/b/g6_cmds.gd)
+const G6Cmds = preload("res://presentation/ui6/b/g6_cmds.gd")
 
 var hud
 var strip: PanelContainer        # cargo strip (above the bottom panel)
@@ -34,6 +36,7 @@ var _strip_sig := ""
 var pages = BuildPages.new()
 var g5u = G5UnitCmds.new()
 var afp = AirfieldPanel.new()
+var g6c = G6Cmds.new()
 var _sheet_done := false
 
 
@@ -71,6 +74,8 @@ func build(root: Control) -> void:
 	g5u.hud = hud
 	afp.hud = hud
 	afp.build(root)
+	g6c.hud = hud
+	g6c.build(root)
 
 
 func reset() -> void:
@@ -84,6 +89,7 @@ func reset() -> void:
 	pages.hide_bar()
 	g5u.reset()
 	afp.reset()
+	g6c.reset()
 
 
 ## Called by hud._add_unit_buttons after the G2 buttons. ids are the selected own units.
@@ -129,6 +135,7 @@ func add_buttons(_mode: String, ids: Array) -> void:  # _mode: "units" | "engine
 		var t = _btn("Transport to point", "click the target", "", "transport_mission", "The group boards its transports, rides to the point, unloads and secures it.")
 		t.btn.pressed.connect(func(): _mv().g2.arm("mission", {"mission": "transport_to_point", "officer_id": oid, "risk": G2.RISKS[hud.g2_cmd.risk_idx]}))
 	g5u.add_buttons(ids)
+	g6c.add_buttons(ids)
 	if _mode == "engineer":
 		pages.apply(hud)
 	_no_focus()
@@ -150,6 +157,7 @@ func add_building_buttons(b: Dictionary) -> void:
 		r.btn.name = "G4bGateLock"
 		r.btn.pressed.connect(_toggle_gate)
 	afp.add_building_buttons(b)
+	g6c.add_building_buttons(b)
 	_no_focus()
 
 
@@ -213,6 +221,7 @@ func update_state(w: SimWorld) -> void:
 		b.tooltip_text = String(rec.tip) + ("\nUnavailable: " + reason if reason != "" else "")
 	g5u.update_state(w)
 	afp.update_state(w)
+	g6c.update_state(w)
 	_update_strip()
 	_sheet_rows()
 
@@ -226,7 +235,7 @@ func _sheet_rows() -> void:
 		return
 	_sheet_done = true
 	var grid: GridContainer = sc.get_child(0)
-	var hd := HT.make_label("G5 COMMANDS", HT.AMBER, 13)
+	var hd := HT.make_label("G5 / G6 COMMANDS", HT.AMBER, 13)
 	hd.name = "SheetG5Header"
 	grid.add_child(hd)
 	grid.add_child(Control.new())

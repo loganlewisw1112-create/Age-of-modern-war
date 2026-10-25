@@ -1,0 +1,29 @@
+{
+  "agent": "AI7-CMD",
+  "calls_used": 94,
+  "tokens_used_est": 313000,
+  "done": [
+    "sim/systems/ai_command.gd: set_ai_commander / recall_ai_commander / ally_request validate+apply, AiCommand.slots(w,fid), on_applied(w,c) stamp hook (inert unless the issuer has used commanders), recall (badges cleared, pending ai_cmd orders dropped), tick -> AllyCmds.tick + WaveAI.think for the survival attacker",
+    "sim/ai/commanders.gd: drive engine over Doctrine.plan_for (send dedupe, 20 s fresh-order skip, tags via Doctrine.emit), playstyles defensive/aggressive/specops/combined, stance retreat thresholds + pursuit, roles base_defence/air_ops/naval/logistics, think_player",
+    "sim/ai/ally_cmds.gd: handle (pick within means: nearest company or half of loose army <=12; aircraft for air_support), tick, release",
+    "sim/ai/wave_ai.gd: per-wave drive, tiers aggressive(1-2)/combined(3-5)/raid(6+), no_retreat, retarget to nearest seen enemy building",
+    "tests: test_ai_commanders 5/6, test_ally_cmds 2/3, test_wave_ai 2/2 (git mv'd from pending_g6)",
+    "fact aicmd.api_ready (partial) seq 790"
+  ],
+  "remaining": [
+    "1. ORCH CR seq 743 (change_request.aicmd_player_order_stamp): add `AiCommand.on_applied(self, c)` in world._apply_due_commands right after `COMMANDS[c.type].apply_command(self, c)`. Then rerun `bash tests/run.sh --only=test_ai_commanders`: test_never_overrides_fresh_player_order should go green (it fails only on the missing stamp).",
+    "2. AI7-USE CR seq 744 (change_request.aicmd_hold_commanded_units): in ai_controller._context unit loop after the K_DRONE continue: `if e.has(\"ai_cmd\"): held.append(e); continue`. Then rerun `--only=test_ally_cmds`: test_ally_air_support fails because the ally AI flies committed aircraft back (diag: helis idle at (28,12) instead of heading to (60.5,12.5)). If it still fails after the CR, check AiAir/G3U.manage_air use ctx.air (built after the filter) and whether `move` is valid for a_attack_heli.",
+    "3. Optional: VIEW6 CR seq 747 (badge every id in slot.units); MODES6 CR seq 755 to AI7-USE (attacker side only calls WaveAI.think) is compatible: WaveAI gates itself on st.waves.next_think, so AiCommand.tick + ai_controller both calling it is safe.",
+    "4. Post fact aicmd.api_ready complete once 1-2 are green; post done."
+  ],
+  "files_touched": ["sim/systems/ai_command.gd", "sim/ai/commanders.gd", "sim/ai/ally_cmds.gd", "sim/ai/wave_ai.gd", "tests/test_ai_commanders.gd", "tests/test_ally_cmds.gd", "tests/test_wave_ai.gd"],
+  "test_state": {"test_ai_commanders": "5/6 (fresh-order waits CR 743)", "test_ally_cmds": "2/3 (air support waits CR 744)", "test_wave_ai": "2/2", "test_determinism": "5/5", "test_view6": "5/5"},
+  "gotchas": [
+    "commanders.gd must never preload ai_command.gd (cycle); ally_cmds/wave_ai preload commanders.gd; ai_command.gd preloads all three",
+    "slot dicts must be built with Commanders.new_drive (tag_tick etc.)",
+    "plan_for returns every order each call: Commanders.send dedupes per unit (type+cell+target, reorder_ticks, idle, arrived)",
+    "standalone parse check for scripts nothing preloads yet: scratch SceneTree script that load()s each file (the main-scene compile check does not parse unreferenced scripts)",
+    "test_wave_ai escalation uses an AI defender so the match lasts to wave 3 (an inert defender is overrun once waves fight properly)",
+    "numbers: Commanders.RULES (PROVISIONAL), overridable by an optional content/rules.json ai_cmd block (not created; ORCH-owned)"
+  ]
+}

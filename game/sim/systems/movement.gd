@@ -122,7 +122,8 @@ static var _g6_has_active := -1   # G6Hooks defines active(w): -1 unknown, 0 no,
 ##
 ## Runtime-only (never saved, rebuilt by rebuild_nav): w.nav = {w, h, blocked (footprint counts),
 ##   foot: AStarGrid2D, vehicle: AStarGrid2D, comp: {mc: PackedInt32Array}, comp_dirty}.
-## Saved: w.sys_state.movement = {queue: [{id, req, goal, [fx, fy]}], req_seq, budget_tick, budget_used}
+## Saved: w.sys_state.movement = {queue: [{id, req, goal, [fx, fy], [pk]}], [qin], req_seq, budget_tick, budget_used}
+##   (G6 PERF6-4: queue sorted by (pk, req) = serving priority, see _qpk; qin = AI entries awaiting merge)
 ##   (fx, fy = the group flow goal cell of a queued group request, native path only; ints).
 ## Entity fields added lazily: path_req (int, -1 = none pending), stuck (int ticks).
 ## G3a (S3-sim): move_class "air" (drones) has no AStarGrid: every in-bounds cell is passable,
@@ -152,7 +153,7 @@ const GROUND_EXTRA := ["amphibious", "naval_small", "naval"]  # G4: built lazily
 ## ([[cell index, team, locked 0/1], ...] ascending); w.nav.gates mirrors it (idx -> [team, locked]).
 ## Every path / passability query takes the team from the entity (team_of); is_passable(w, cell,
 ## mc) without a team treats every gate cell as solid.
-const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, FIFO)
+const PATH_BUDGET := 40          # new A* computations per tick (rest are queued, priority order: _qpk)
 const QUEUE_MIN_DRAIN := 8       # queued requests always drained per tick, even if over budget
 const SNAP_RADIUS := 6           # goal snaps to the nearest reachable cell within this many tiles
 const OFFSET_RADIUS := 16        # precomputed search offsets
@@ -739,9 +740,97 @@ static func stop_path(e: Dictionary) -> void:
 	e.erase("mv_owed")
 
 
+## G6 PERF6-4 (ORCH decision, path queue priority; budget stays 40/tick): st.queue is served in ascending
+## (pk, req) order. pk 0 (the entry holds no "pk" key, as every pre-G6 entry): the unit's owner is not an
+## AI side (player orders, chases, repaths): FIFO among themselves and ahead of every AI request, so a
+## player never waits behind a mass AI order. AI sides: pk = 1 + enqueue tick + min(group size, Q_SIZE_CAP) / 2,
+## so among requests of about the same age smaller groups go first, and a mass order is delayed at most
+## Q_SIZE_CAP / 2 ticks behind a later single request (never starved). Keys come from saved state and the
+## tick only (no wall clock). Out-of-order AI entries wait in sys_state.movement.qin (present only while
+## non-empty) and are merged into the sorted queue at the next drain (O(n) slices, no per-entry insert).
+const Q_SIZE_CAP := 200
+static var _q_size := 1   # size of the group order being applied (set only inside apply_command), else 1
+
+
+static func _qpk(w: SimWorld, e: Dictionary) -> int:
+	var f = w.factions.get(int(e.owner))
+	if f == null or not bool(f.get("is_ai", false)):
+		return 0
+	return 1 + w.tick + mini(_q_size, Q_SIZE_CAP) / 2
+
+
+## Queue entry pk (0 when absent).
+static func _qk(qe: Dictionary) -> int:
+	return int(qe.get("pk", 0))
+
+
+## First index in q[lo, size) whose pk > k (q is sorted by pk).
+static func _q_after(q: Array, lo: int, k: int) -> int:
+	var hi := q.size()
+	while lo < hi:
+		var mid := (lo + hi) >> 1
+		if _qk(q[mid]) <= k:
+			lo = mid + 1
+		else:
+			hi = mid
+	return lo
+
+
+static func _q_put(st: Dictionary, qe: Dictionary, pk: int) -> void:
+	var q: Array = st.queue
+	var n := q.size()
+	if pk == 0:
+		# player side: end of the queued pk-0 prefix (pk-0 entries never wait in qin)
+		if n == 0 or _qk(q[n - 1]) == 0:
+			q.append(qe)
+		else:
+			q.insert(_q_after(q, 0, 0), qe)
+		return
+	qe["pk"] = pk
+	if not st.has("qin") and (n == 0 or _qk(q[n - 1]) <= pk):
+		q.append(qe)   # in order (req only grows): stays sorted
+		return
+	if not st.has("qin"):
+		st["qin"] = []
+	(st.qin as Array).append(qe)
+
+
+## Merges qin into the sorted queue. Every qin entry is newer (higher req) than every queue entry (qin
+## exists => no direct append), so each pk group goes after the queue entries with an equal pk.
+static func _q_merge(st: Dictionary) -> void:
+	if not st.has("qin"):
+		return
+	var qin: Array = st.qin
+	st.erase("qin")
+	var by := {}
+	var keys := []
+	for qe in qin:
+		var k := _qk(qe)
+		var g = by.get(k)
+		if g == null:
+			g = []
+			by[k] = g
+			keys.append(k)
+		g.append(qe)
+	keys.sort()
+	var q: Array = st.queue
+	var out := []
+	var at := 0
+	for k in keys:
+		var cut := _q_after(q, at, k)
+		if cut > at:
+			out.append_array(q.slice(at, cut))
+		out.append_array(by[k])
+		at = cut
+	if at < q.size():
+		out.append_array(q.slice(at))
+	st.queue = out
+
+
 ## Contract helper: path e toward goal without changing e.order. Sets e.path, e.path_i, e.moving.
 ## Returns false if unreachable (goal snapped within 6 tiles). When this tick's A* budget is
-## spent the request is queued (FIFO, saved in sys_state) and e.path stays empty until served.
+## spent the request is queued (saved in sys_state; served in priority order, see _qpk) and e.path
+## stays empty until served.
 static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	HotState.mark(w, int(e.id))
 	var r := _resolve(w, e, goal)
@@ -757,7 +846,12 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 		e.path = [r.pos]
 		e.path_req = -1
 		return true
-	if st.queue.is_empty() and _take_budget(w):
+	var pk := _qpk(w, e)
+	var q0: Array = st.queue
+	var front := q0.is_empty() and not st.has("qin")
+	if not front and pk == 0:
+		front = q0.is_empty() or _qk(q0[0]) != 0   # only AI requests queued: a player request goes first
+	if front and _take_budget(w):
 		var fp := []
 		if _group_flow.has(move_class(e)):
 			fp = _flow_path(w, move_class(e), int(_group_flow[move_class(e)].h), r.start, r.cell, r.pos, tm)
@@ -772,7 +866,7 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 			var fg: Vector2i = _group_flow[move_class(e)].goal
 			qe["fx"] = fg.x  # N1-core-2: served later off the same group flow field (no A*)
 			qe["fy"] = fg.y
-		st.queue.append(qe)
+		_q_put(st, qe, pk)
 	return true
 
 
@@ -843,6 +937,13 @@ static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: V
 	var idx := _key(mc, team)
 	var prev := Vector2(start) + CENTER
 	for p in pts:
+		# G6 PERF6-3 (flow_skip): a segment whose closest point to the slot is beyond LOS_MAX + 0.05
+		# (exact, in doubles) has no sample that can pass the distance test below (float32 sample and
+		# distance rounding is ~1e-4 here), so its per-tile loop is skipped: same path, same hash.
+		if flow_skip and _seg_far(prev, p, dest_pos):
+			out.append(p)
+			prev = p
+			continue
 		# cut over at the first point (sampled every tile along the segment) with a clear line
 		# to the slot, so a group fans out toward its slots instead of sharing every corner
 		var seg: Vector2 = p - prev
@@ -867,6 +968,28 @@ static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: V
 	return out
 
 
+## G6 PERF6-3: tests/bench toggle for the _flow_path far-segment skip (false = the per-tile loop everywhere).
+static var flow_skip := true
+
+
+## True when every point of segment a-b is farther than LOS_MAX + 0.05 from c (computed in doubles).
+static func _seg_far(a: Vector2, b: Vector2, c: Vector2) -> bool:
+	var ax: float = a.x
+	var ay: float = a.y
+	var dx: float = float(b.x) - ax
+	var dy: float = float(b.y) - ay
+	var cx: float = float(c.x) - ax
+	var cy: float = float(c.y) - ay
+	var l2 := dx * dx + dy * dy
+	var t := 0.0
+	if l2 > 0.0:
+		t = clampf((cx * dx + cy * dy) / l2, 0.0, 1.0)
+	var qx := dx * t - cx
+	var qy := dy * t - cy
+	var lim := LOS_MAX + 0.05
+	return qx * qx + qy * qy > lim * lim
+
+
 ## Quantize a position to Q (exact through var_to_str) without changing its cell.
 static func _qpos(w: SimWorld, p: Vector2) -> Vector2:
 	var s := p.snapped(Vector2(Q, Q))
@@ -875,6 +998,7 @@ static func _qpos(w: SimWorld, p: Vector2) -> Vector2:
 
 static func _drain_queue(w: SimWorld) -> void:
 	var st := _state(w)
+	_q_merge(st)
 	var q: Array = st.queue
 	if q.is_empty():
 		return
@@ -1065,10 +1189,13 @@ static func _separate_native_only(w: SimWorld, steer) -> void:
 	var keys := PackedInt32Array()
 	var ids := PackedInt32Array()
 	var mcs := PackedByteArray()
+	var gar_any := _garrison_any(w)
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "unit":
 			continue
+		if gar_any and e.has("garrisoned_in"):
+			continue   # G6: garrisoned units stay out of separation (as _separate / _tick_native)
 		var u := udef(String(e.def))
 		units.append(e)
 		pos.append(e.pos)
@@ -2008,6 +2135,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			var slots := formation_slots(w, units, target)
 			var breach: bool = cmd.type == "attack_move" and not w.ai_state.has(int(cmd.get("issuer", -1)))
 			_group_flow = _group_flows(w, units, target)
+			_q_size = units.size()
 			for i in units.size():
 				var e: Dictionary = units[i]
 				var slot: Vector2 = slots[i]
@@ -2022,6 +2150,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					if not (breach and Fortify.on_attack_move_blocked(w, e, slot)):
 						e.order = {"type": "idle"}
 			_group_flow = {}
+			_q_size = 1
 		"stop":
 			for e in units:
 				e.order = {"type": "idle"}

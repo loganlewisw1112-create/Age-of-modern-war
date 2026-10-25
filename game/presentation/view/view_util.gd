@@ -143,3 +143,191 @@ static func fallback_sprite(e: Dictionary, team: Color) -> Dictionary:
 			var t := _circle_tex("w%d" % px, px, Color(0.18, 0.17, 0.16), Color(0.08, 0.08, 0.08))
 			return {"texture": t, "offset": Vector2(-px - 1, -px - 1), "flip_h": false}
 	return {}
+
+
+# ---------------------------------------------------------------- G6 terrain height (owner: ELEV-VIEW)
+## OFFSET RULE (every layer that draws on the ground; VIEW6 entities, rings, fx): a point at ground level g
+## (0 valley, 1 plain, 2 hill, 3 ridge; fractional on ramps) is drawn lift_px(g) px ABOVE its flat iso spot:
+##     screen = world_to_screen(p) - Vector2(0, (g - 1) * level_px)        (level_px = 16, tunable)
+## so a map without height (every cell plain) draws exactly as before. ground_level(hm, p) gives g at a world
+## position with the same surface the terrain mesh draws (ramps slope; each diamond is split along its
+## left-right diagonal); world_to_screen_h() does the whole conversion; pick_world() is its inverse for clicks
+## (ray-marches the height field from the top level down, so a click on a raised tile picks that tile).
+## `hm` = height-map dict {w, h, height: PackedByteArray, ramps: PackedByteArray}: terrain_layer.height_map(),
+## or the world map itself. A dict without a matching "height" layer is flat.
+const LEVEL_PX_DEFAULT := 16.0
+const MAX_LEVEL := 3
+## 4-neighbours N, E, S, W and, per vertex (top, right, bottom, left), the two neighbours sharing it.
+const NB4 := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+const VTX_NB := [[0, 3], [0, 1], [1, 2], [2, 3]]
+const VTX_FLAT := 0x55   # every vertex at level 1
+static var level_px := LEVEL_PX_DEFAULT
+
+
+static func lift_px(level: float) -> float:
+	return (level - 1.0) * level_px
+
+
+static func has_height(hm: Dictionary) -> bool:
+	var n := int(hm.get("w", 0)) * int(hm.get("h", 0))
+	return n > 0 and hm.get("height") is PackedByteArray and (hm.height as PackedByteArray).size() == n
+
+
+## Height-map dict for a map (shares the arrays; empty when the map has no height layer).
+static func height_map_of(m: Dictionary) -> Dictionary:
+	if not has_height(m):
+		return {}
+	var rp = m.get("ramps")
+	if not (rp is PackedByteArray) or (rp as PackedByteArray).size() != (m.height as PackedByteArray).size():
+		rp = PackedByteArray()
+	return {"w": int(m.w), "h": int(m.h), "height": m.height, "ramps": rp}
+
+
+static func cell_level(hm: Dictionary, c: Vector2i) -> int:
+	if not has_height(hm) or c.x < 0 or c.y < 0 or c.x >= int(hm.w) or c.y >= int(hm.h):
+		return 1
+	return int((hm.height as PackedByteArray)[c.y * int(hm.w) + c.x])
+
+
+## Vertex levels of cell (x, y), 2 bits each: top (x,y) bits 0-1, right (x+1,y) 2-3, bottom (x+1,y+1) 4-5,
+## left (x,y+1) 6-7. A plain (non-ramp) cell has every vertex at its level (except a corner bending with a ramp
+## pair, see _corner_fill). A ramp cell slopes: a vertex rises
+## to L+1 when either 4-neighbour sharing it is at L+1, else drops to L-1 when either is at L-1 and is not a
+## ramp itself (of a ramp pair, the lower cell carries the slope and the upper stays flat, so they meet flush).
+## Outside the map: all plain. Pure function of the arrays (safe on worker threads).
+static func vtx(hg: PackedByteArray, rp: PackedByteArray, w: int, h: int, x: int, y: int) -> int:
+	if x < 0 or y < 0 or x >= w or y >= h:
+		return VTX_FLAT
+	var i := y * w + x
+	var l := int(hg[i])
+	if rp.size() != hg.size():
+		return l | (l << 2) | (l << 4) | (l << 6)
+	if rp[i] == 0:
+		return _corner_fill(hg, rp, w, h, x, y, l)
+	var nl := PackedInt32Array([l, l, l, l])
+	var nramp := PackedInt32Array([0, 0, 0, 0])
+	for k in 4:
+		var qx: int = x + NB4[k].x
+		var qy: int = y + NB4[k].y
+		if qx >= 0 and qy >= 0 and qx < w and qy < h:
+			nl[k] = hg[qy * w + qx]
+			nramp[k] = rp[qy * w + qx]
+	var out := 0
+	for v in 4:
+		var a: int = VTX_NB[v][0]
+		var b: int = VTX_NB[v][1]
+		var lv := l
+		if nl[a] == l + 1 or nl[b] == l + 1:
+			lv = l + 1
+		elif (nl[a] == l - 1 and nramp[a] == 0) or (nl[b] == l - 1 and nramp[b] == 0):
+			lv = l - 1
+		out |= clampi(lv, 0, MAX_LEVEL) << (v * 2)
+	return out
+
+
+## Vertex levels of a plain (non-ramp) cell at level l: flat, except a corner where both 4-neighbours sharing it
+## are ramps at level l and the diagonal cell across it is at l + 1 (or at l - 1 and not a ramp). Both ramps bend
+## to meet that diagonal cell there, so this corner bends with them: no notch (a triangular pit with sliver
+## faces) at every diagonal step of a ramp-ringed hill or valley.
+static func _corner_fill(hg: PackedByteArray, rp: PackedByteArray, w: int, h: int, x: int, y: int, l: int) -> int:
+	var out := l | (l << 2) | (l << 4) | (l << 6)
+	for v in 4:
+		var na: Vector2i = NB4[VTX_NB[v][0]]
+		var nb: Vector2i = NB4[VTX_NB[v][1]]
+		var ax := x + na.x
+		var ay := y + na.y
+		var bx := x + nb.x
+		var by := y + nb.y
+		var dx := x + na.x + nb.x
+		var dy := y + na.y + nb.y
+		if dx < 0 or dy < 0 or dx >= w or dy >= h or ax < 0 or ay < 0 or ax >= w or ay >= h or bx < 0 or by < 0 or bx >= w or by >= h:
+			continue
+		var ia := ay * w + ax
+		var ib := by * w + bx
+		if rp[ia] == 0 or rp[ib] == 0 or int(hg[ia]) != l or int(hg[ib]) != l:
+			continue
+		var dl := int(hg[dy * w + dx])
+		var lv := l
+		if dl == l + 1:
+			lv = l + 1
+		elif dl == l - 1 and rp[dy * w + dx] == 0:
+			lv = l - 1
+		else:
+			continue
+		out = (out & ~(3 << (v * 2))) | (clampi(lv, 0, MAX_LEVEL) << (v * 2))
+	return out
+
+
+static func vtx_at(packed: int, v: int) -> int:
+	return (packed >> (v * 2)) & 3
+
+
+## Ground level at world position p (fractional on ramps). Same triangles as the terrain mesh: back triangle
+## (top, right, left) where u + w <= 1, front triangle (right, bottom, left) beyond.
+static func ground_level(hm: Dictionary, p: Vector2) -> float:
+	if not has_height(hm):
+		return 1.0
+	var cx := floori(p.x)
+	var cy := floori(p.y)
+	var pv := vtx(hm.height, hm.ramps, int(hm.w), int(hm.h), cx, cy)
+	var u := p.x - cx
+	var w := p.y - cy
+	var t := float(pv & 3)
+	var r := float((pv >> 2) & 3)
+	var b := float((pv >> 4) & 3)
+	var l := float((pv >> 6) & 3)
+	if u + w <= 1.0:
+		return t + (r - t) * u + (l - t) * w
+	return b + (l - b) * (1.0 - u) + (r - b) * (1.0 - w)
+
+
+static func ground_lift(hm: Dictionary, p: Vector2) -> float:
+	return lift_px(ground_level(hm, p))
+
+
+static func iso(p: Vector2) -> Vector2:
+	return Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
+
+
+static func iso_inv(s: Vector2) -> Vector2:
+	var a := s.x / 32.0
+	var b := s.y / 16.0
+	return Vector2((a + b) * 0.5, (b - a) * 0.5)
+
+
+## World tile position -> canvas px on the drawn (raised) ground.
+static func world_to_screen_h(hm: Dictionary, p: Vector2) -> Vector2:
+	return iso(p) - Vector2(0.0, ground_lift(hm, p))
+
+
+## Canvas px -> world tile position of the ground actually drawn there (raised tiles, ramps, cliff faces pick
+## the cell on top). Flat maps: exactly iso_inv(s), the old screen_to_world.
+static func pick_world(hm: Dictionary, s: Vector2) -> Vector2:
+	if not has_height(hm):
+		return iso_inv(s)
+	var step := 0.25
+	var k := MAX_LEVEL * 4
+	while k >= 0:
+		var lv := k * step
+		var wp := iso_inv(s + Vector2(0.0, lift_px(lv)))
+		if ground_level(hm, wp) >= lv - 0.001:
+			if k == MAX_LEVEL * 4:
+				return wp
+			var lo := lv            # ground above the ray here
+			var hi := lv + step     # ray above the ground here
+			for _i in 6:
+				var mid := (lo + hi) * 0.5
+				var mp := iso_inv(s + Vector2(0.0, lift_px(mid)))
+				if ground_level(hm, mp) >= mid:
+					lo = mid
+				else:
+					hi = mid
+			return iso_inv(s + Vector2(0.0, lift_px(lo)))
+		k -= 1
+	return iso_inv(s)
+
+
+## Cell whose drawn ground is under canvas px s.
+static func pick_cell(hm: Dictionary, s: Vector2) -> Vector2i:
+	var p := pick_world(hm, s)
+	return Vector2i(floori(p.x), floori(p.y))

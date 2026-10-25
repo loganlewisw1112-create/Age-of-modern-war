@@ -23,6 +23,8 @@ const MODULES := {
 	"industrial_heartland_m": preload("res://sim/maps/industrial_heartland.gd"),
 	"valley_conquest_l": preload("res://sim/maps/valley_conquest.gd"),
 	"coastal_front_m": preload("res://sim/maps/coastal_front.gd"),  # G5 (NAVAL)
+	"ridge_bastion_m": preload("res://sim/maps/ridge_bastion.gd"),  # G6 (MODES6) survival
+	"river_dam_m": preload("res://sim/maps/river_dam.gd"),  # G6 (MODES6) survival
 }
 const MapCheck = preload("res://sim/maps/map_check.gd")
 ## G6 (owner ELEV, CONTRACTS_G6 section 7): authored height for River Crossing (_rc_height, its own rng
@@ -276,6 +278,8 @@ static func _add_resource(resources: Array, taken: Dictionary, t: PackedByteArra
 static func validate(m: Dictionary) -> String:
 	if String(m.get("id", "")) == "coastal_front_m":  # G5 (NAVAL): adds the coastal checks
 		return MODULES["coastal_front_m"].validate(m)
+	if String(m.get("id", "")) in ["ridge_bastion_m", "river_dam_m"]:  # G6 (MODES6): gate / lane / barrier checks
+		return MODULES[String(m.id)].validate(m)
 	if String(m.get("id", DEFAULT_ID)) != DEFAULT_ID:
 		return MapCheck.validate(m)
 	var t: PackedByteArray = m.terrain

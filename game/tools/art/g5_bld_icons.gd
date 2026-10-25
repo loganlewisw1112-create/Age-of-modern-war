@@ -26,12 +26,14 @@ const MODES := ["build_hangar_light", "build_hangar_heavy", "upgrade_hangar_leve
 	"upgrade_airfield_extra_strip", "launch_drone_strike", "launch_drone_frag", "launch_drone_recon", "launch_drone_emp",
 	"tactical_infiltrate", "tactical_takedown", "tactical_breach", "tactical_stack_up", "tactical_armored_attack",
 	"set_auto_resupply_off", "set_auto_resupply_station", "set_auto_resupply_roam", "set_auto_evac_on", "set_auto_evac_off"]
+## G6 commands registered on a G5 system script (ART-G6b): naval.gd lay_sea_mines (NAVAL6, CONTRACTS_G6 s11).
+const G6_ON_G5 := ["lay_sea_mines"]
 
 
 static func build(out: Dictionary) -> void:
 	var icons: Dictionary = out.manifest.get("icons", {})
 	var cmd := {}
-	for id in COMMANDS + MODES:
+	for id in COMMANDS + MODES + G6_ON_G5:
 		var cv = P.Canvas.new(32, 32)
 		glyph(cv, id)
 		cv.outline(Color(0.05, 0.05, 0.04, 1))
@@ -41,7 +43,7 @@ static func build(out: Dictionary) -> void:
 		icons[id] = "icons/%s.png" % id
 		cmd[id] = "icons/%s.png" % id
 	out.manifest["icons"] = icons
-	out.manifest["command_icons"] = {"commands": COMMANDS.duplicate(), "modes": MODES.duplicate()}
+	out.manifest["command_icons"] = {"commands": COMMANDS.duplicate(), "modes": MODES.duplicate(), "g6": G6_ON_G5.duplicate()}
 	IU.build(out)
 
 
@@ -113,6 +115,21 @@ static func _loop(cv, c: Color) -> void:
 
 static func glyph(cv, id: String) -> void:
 	match id:
+		"lay_sea_mines":  # moored contact mine dropping into the sea: spiked ball, mooring chain, waves
+			for i in 3:
+				var y := 22 + i * 3
+				for x in range(3, 29):
+					cv.px(x, y + int(round(sin((x + i * 2) * 0.7))), P.mul(TEAM, 1.25 - i * 0.2))
+			cv.line(16, 21, 16, 28, INK_D)
+			F2._ring(cv, 16, 13, 6, 6, Color8(70, 72, 70))
+			cv.ellipse(16, 13, 5.5, 5.5, Color8(54, 56, 54))
+			for a in 8:
+				var d := Vector2.from_angle(a * TAU / 8.0)
+				cv.line_v(Vector2(16, 13) + d * 5.0, Vector2(16, 13) + d * 8.0, INK)
+			cv.px(14, 11, Color8(180, 184, 176))
+			cv.line(26, 3, 26, 9, GOLD)
+			cv.line(24, 7, 26, 9, GOLD)
+			cv.line(28, 7, 26, 9, GOLD)
 		"build_hangar", "build_hangar_light":
 			_arch(cv, 13, 25, 10 if id == "build_hangar" else 8, 12 if id == "build_hangar" else 9, INK)
 			_plus(cv, 25, 8, GOLD)

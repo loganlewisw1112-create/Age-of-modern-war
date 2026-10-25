@@ -19,6 +19,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")  # G6 PERF6: morale_delta
+const NativeCore = preload("res://sim/native_core.gd")  # G6 PERF6-4: morale_scan
 ## G3b PERF4: loops read the shared SimIndex. REDUCED-tier units (Tiers: no enemy near) update on
 ## every 2nd morale update (staggered by id) with twice the dt, so recovery/decay rates are kept.
 ## Squadmate losses use one squad index per tick instead of one full pass per death.
@@ -79,7 +80,10 @@ static func tick(w: SimWorld) -> void:
 	var mw: int = ctx[1]
 	var terr: PackedByteArray = ctx[2]
 	var nterr := terr.size()
-	for e: Dictionary in (idx.full if tiers_on else idx.kinds.get("unit", [])):
+	var fl: Array = idx.full if tiers_on else idx.kinds.get("unit", [])
+	# G6 PERF6-4: the same loop as one native batch when the MORALE hook bit is clear (exact port)
+	var nat_done := native_scan and not g6m and _native_full(w, fl, p, idx if tiers_on else {}, mw, terr)
+	for e: Dictionary in ([] if nat_done else fl):
 		if not e.has("morale") or not ents.has(int(e.id)):
 			continue
 		var pos: Vector2 = e.pos
@@ -118,6 +122,76 @@ static func tick(w: SimWorld) -> void:
 				continue
 			_step_unit(w, e, p2, ctx)
 		j += 2
+
+
+## G6 PERF6-4: tests / bench toggle for the native FULL loop (RtsCombat.morale_scan, rts_core >= 0.5.1).
+static var native_scan := true
+
+
+## Cover rectangles in _cover_index source order, as their Rect2 (f32) [px, py, sx, sy].
+static func _cover_rects(w: SimWorld) -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	var src: Array = SimIndex.of(w, "building") + SimIndex.of(w, "wreck")
+	for e in src:
+		if not w.entities.has(int(e.id)):
+			continue
+		var r: Rect2
+		if e.kind == "building":
+			var o: Vector2i = e.cell
+			r = Rect2(Vector2(o), Vector2(float(e.size), float(e.size)))
+		elif e.kind == "wreck":
+			var h := float(e.get("size", 1)) * 0.5
+			var wp: Vector2 = e.pos
+			r = Rect2(wp - Vector2(h, h), Vector2(2.0 * h, 2.0 * h))
+		else:
+			continue
+		out.append_array(PackedFloat32Array([r.position.x, r.position.y, r.size.x, r.size.y]))
+	return out
+
+
+## The FULL loop (MORALE bit clear: md = 0.0) as RtsCombat.morale_scan: cover + in_cover, steady exit and
+## _update_unit's writes in native; _break / _rally run here afterwards in list order (they change only
+## the unit itself, the path queue and the event log, none of which a later unit's update reads).
+## False (nothing written) when the native batch is unavailable: the GDScript loop then runs.
+static func _native_full(w: SimWorld, fl: Array, p: Dictionary, idx: Dictionary, mw: int, terr: PackedByteArray) -> bool:
+	if fl.is_empty() or not NativeCore.enabled(w):
+		return false
+	var lc = w.cache.get("combat_lc")   # the shared RtsCombat (combat.gd _combat_obj, same cache key)
+	if lc == null:
+		lc = NativeCore.new_combat(w)
+		w.cache["combat_lc"] = lc if lc != null else false
+	var cobj = lc if lc is Object else null
+	if cobj == null or not cobj.has_method("morale_scan"):
+		return false
+	var tab = w.cache.get("mor_mmax")   # per id max morale (def never changes after spawn; runtime only)
+	var mm: PackedFloat64Array = tab if tab != null else PackedFloat64Array()
+	if mm.size() < int(w.next_id) + 1:
+		mm.resize(int(w.next_id) + 1)
+	var ids := PackedInt32Array()   # combat.gd _list_ids cache of this list (empty: native reads e.id)
+	var ci = idx.get("cmb_ids")
+	if ci != null and is_same(ci.src, fl) and int(ci.n) == fl.size():
+		ids = ci.ids
+	var prm := PackedFloat64Array([float(p.decay), float(p.pin_at), float(p.drain), float(p.recover), float(p.break_at),
+		float(p.rally_at), Q, COVER_R, CB, float(CB_STRIDE), float(UNDER_FIRE_TICKS), float(OUT_OF_COMBAT_TICKS), float(FOREST), 0.0])
+	var rects := _cover_rects(w)
+	var ents: Dictionary = w.entities
+	var r: Array = cobj.morale_scan(fl, ents, ids, mm, terr, mw, rects, prm, w.tick)
+	if r.size() == 1:
+		for nid in r[0]:
+			mm[nid] = max_morale(ents[nid].def)
+		r = cobj.morale_scan(fl, ents, ids, mm, terr, mw, rects, prm, w.tick)
+	w.cache["mor_mmax"] = mm
+	if r.size() != 2:
+		return false
+	var ix: PackedInt32Array = r[0]
+	var cd: PackedInt32Array = r[1]
+	for k in ix.size():
+		var e: Dictionary = fl[ix[k]]
+		if cd[k] == 1:
+			_break(w, e)
+		else:
+			_rally(w, e)
+	return true
 
 
 static func _step_unit(w: SimWorld, e: Dictionary, pu: Dictionary, ctx: Array) -> void:

@@ -810,6 +810,142 @@ static func _spawn_company(w: SimWorld, st: Dictionary, b: Dictionary, t: Dictio
 		"template": String(t.template), "size": String(t.size)})
 
 
+## MAPIO6 (MODES6 CR, additive): public wrapper over _spawn_company for spawners without a Company HQ
+## (survival waves). tmpl: a preset / "custom:<name>" id (presets scale by size, as train_company) or a
+## template dict {id?, name, slots} (exact counts; id is stored as the company template, name is the
+## company name). The company forms around cell facing rally. No cost or training time; pop and
+## stats count as for a trained company (exactly what _spawn_company does). Returns the cid or -1.
+static func spawn_company_at(w: SimWorld, fid: int, tmpl, size: String, cell: Vector2i, rally: Vector2) -> int:
+	if not w.factions.has(fid):
+		return -1
+	var t: Dictionary = {}
+	var tid := ""
+	var scaled := false
+	if typeof(tmpl) == TYPE_DICTIONARY:
+		t = tmpl
+		tid = String(t.get("id", "custom:" + String(t.get("name", "custom"))))
+	else:
+		tid = String(tmpl) if tmpl != null else ""
+		t = template(w, fid, tid)
+		scaled = not tid.begins_with("custom:")
+	if t.is_empty():
+		return -1
+	var pl := plan(w, fid, t, size, scaled)
+	if (pl.get("elements", []) as Array).is_empty():
+		return -1
+	var st := state(w)
+	var b := {"id": -1, "cell": cell, "size": 1, "pos": Vector2(cell) + Vector2(0.5, 0.5), "rally": rally}
+	var cid := int(st.next_cid)
+	_spawn_company(w, st, b, {"owner": fid, "plan": pl, "template": tid, "size": size,
+		"tdef": {"name": String(t.get("name", tid))}})
+	return cid if (st.companies as Dictionary).has(cid) else -1
+
+
+## The size key whose size_mult is 1 (a preset at its listed counts, as the editor places it).
+static func _base_size() -> String:
+	var sm: Dictionary = rules().get("size_mult", {})
+	for k in sm:
+		if int(sm[k]) == 1:
+			return String(k)
+	return "company"
+
+
+## MAPIO6 (ED6 CR seq 963, additive): forms one company from units already on the map (an editor
+## company block). Members = ids alive, owned by fid and not yet in a company (ascending id). Each
+## squad (e.squad) or lone unit is one element, dealt round-robin to ceil(n / platoon_max) platoons
+## (G2 ops groups, parent_company = cid). The captain and one lieutenant per platoon (the faction's
+## leader defs) are spawned free at the block centre; no pop change (map-placed, like any placed unit).
+## Returns the cid, or -1 (no members, or the faction has no captain / lieutenant def).
+static func form_from_units(w: SimWorld, fid: int, tid: String, ids: Array) -> int:
+	if not w.factions.has(fid):
+		return -1
+	var faction := faction_of(w, fid)
+	var cdef := leader_def(faction, "captain")
+	var ldef := leader_def(faction, "lieutenant")
+	if cdef == "" or ldef == "" or Content.unit(cdef).is_empty() or Content.unit(ldef).is_empty():
+		return -1
+	var mem := []
+	for raw in ids:
+		var e = w.entities.get(int(raw))
+		if e != null and e.kind == "unit" and int(e.owner) == fid and not e.has("company") and not mem.has(int(raw)):
+			mem.append(int(raw))
+	mem.sort()
+	if mem.is_empty():
+		return -1
+	var els := []   # [{item, units}] in member order; one per squad or lone unit
+	var by_squad := {}
+	var sum := Vector2.ZERO
+	for uid in mem:
+		var e: Dictionary = w.entities[uid]
+		sum += Vector2(e.pos)
+		var sq := int(e.get("squad", 0))
+		if sq > 0 and by_squad.has(sq):
+			els[int(by_squad[sq])].units.append(uid)
+			continue
+		if sq > 0:
+			by_squad[sq] = els.size()
+		els.append({"item": String(e.def), "units": [uid]})
+	var c := w.cell_of(sum / float(mem.size()))
+	if not w.in_bounds(c) or not Movement.is_passable(w, c, "foot"):
+		c = w.cell_of(Vector2(w.entities[mem[0]].pos))
+	var face := float(w.entities[mem[0]].get("facing", 0.0))
+	var st := state(w)
+	var ost := Ops.state(w)
+	var pmax := maxi(int(rules().get("platoon_max", 15)), 1)
+	var npl := maxi(int(ceil(float(els.size()) / float(pmax))), 1)
+	var cid := int(st.next_cid)
+	st.next_cid = cid + 1
+	var all_ids := []
+	var lead := []
+	for k in npl + 1:
+		var off := Vector2(float(k % 4) * 0.2 - 0.3, float((k / 4) % 4) * 0.2 - 0.3)
+		var lid := w.spawn_unit(cdef if k == 0 else ldef, fid, Vector2(c) + Movement.CENTER + off)
+		var le: Dictionary = w.entities[lid]
+		le.facing = face
+		le.rank_role = "captain" if k == 0 else "lieutenant"
+		le.company = cid
+		lead.append(lid)
+		all_ids.append(lid)
+	var gids := []
+	var groups := []
+	for k in npl:
+		var le: Dictionary = w.entities[int(lead[k + 1])]
+		var gid := int(ost.next_gid)
+		ost.next_gid = gid + 1
+		le.platoon = gid
+		var g := {"id": gid, "owner": fid, "officer": int(le.id), "members": [], "mission": {}, "phase": "idle",
+			"reason": "", "progress": 0.0, "history": [], "phase_tick": w.tick, "last_report": w.tick, "start": 0,
+			"losses": 0, "secure_ticks": 0, "resume": "", "result": "", "parent_company": cid}
+		ost.groups[gid] = g
+		gids.append(gid)
+		groups.append(g)
+	var elements := []
+	for i in els.size():
+		var g: Dictionary = groups[i % npl]
+		var units: Array = els[i].units
+		var squad := int(w.entities[int(units[0])].get("squad", 0))
+		if squad <= 0:
+			squad = _next_squad(w)
+		for uid in units:
+			var u: Dictionary = w.entities[int(uid)]
+			u.squad = squad
+			u.company = cid
+			u.platoon = int(g.id)
+			u.element = i + 1
+			g.members.append(int(uid))
+			all_ids.append(int(uid))
+		elements.append({"id": i + 1, "item": String(els[i].item), "units": units.duplicate(), "platoon": int(g.id)})
+	var tname := String(template(w, fid, tid).get("name", tid if tid != "" else "Company"))
+	st.companies[cid] = {"id": cid, "owner": fid, "template": tid, "name": "%s %d" % [tname, cid],
+		"size": _base_size(), "captain": int(lead[0]), "platoons": gids, "refill": false, "army": -1, "losses": 0,
+		"elements": elements, "next_eid": els.size() + 1, "confused_until": 0, "hq": -1}
+	for g in groups:
+		g.reason = "Platoon formed with %d units." % (g.members as Array).size()
+		Ops.report(w, g)
+	w.emit("CompanyFormed", {"company_id": cid, "owner": fid, "unit_ids": all_ids, "template": tid})
+	return cid
+
+
 ## One replacement in progress per side; it is paid when it starts (normal cost) and waits for money
 ## and for a built Company HQ.
 static func _tick_refill(w: SimWorld, st: Dictionary) -> void:

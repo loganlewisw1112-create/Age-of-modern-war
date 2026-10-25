@@ -174,7 +174,10 @@ static func manage_artillery(w: SimWorld, fid: int, st: Dictionary, ctx: Diction
 				focus = v
 	var shell := []
 	var movers := []
+	var busy: Dictionary = ctx.get("busy", {})
 	for e in arty:
+		if busy.has(int(e.id)):
+			continue  # AI7-USE-4 (ORCH, AI7-DOC): artillery prep ordered by the doctrine this think
 		var wp: Dictionary = Content.weapon(String(Content.unit(String(e.def)).get("weapon", "")))
 		if focus != null:
 			var fd := Vector2(focus.pos).distance_to(Vector2(e.pos))

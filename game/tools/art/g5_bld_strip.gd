@@ -50,7 +50,61 @@ static func build(out: Dictionary) -> Dictionary:
 		var file := "strips/closed_f%d.png" % f
 		out.images[file] = cv.img
 		sec.closed[str(f)] = {"file": file, "pivot": [int(PIV.x), int(PIV.y)]}
+	# airfield v2 (CONTRACTS_G6 s13): one 2x2 apron pad per slot square (Airfield.layout().slots), per style / facing
+	sec["apron_slot_size"] = 2
+	sec["apron_pads"] = {}
+	for st in STYLES:
+		var per := {}
+		for f in 4:
+			var cv = P.Canvas.new(W, H)
+			apron(cv, PIV, st, f)
+			var file := "strips/%s_f%d_apron.png" % [st, f]
+			out.images[file] = cv.img
+			per[str(f)] = {"file": file, "pivot": [int(PIV.x), int(PIV.y)]}
+		sec.apron_pads[st] = per
 	return sec
+
+
+## Airfield v2 apron pad: a 2x2-tile parking square centred on the canvas pivot, seamless with its
+## neighbours (joints on the edges), stand box + lead-in line along v toward the runway side, stop bar,
+## tie-downs. m = Machine dock hex ring with cyan lamps; fwd = steel matting with orange corner flags.
+static func apron(cv, o: Vector2, st: String, f: int) -> void:
+	var s: Dictionary = STYLES[st]
+	var deck: Color = P.mul(s.deck, 1.05)
+	cv.poly(PackedVector2Array([K.pt(o, f, -1, -1, 0), K.pt(o, f, 1, -1, 0), K.pt(o, f, 1, 1, 0), K.pt(o, f, -1, 1, 0)]),
+		deck, P.speckle(0.06, 21 + f))
+	var joint := P.mul(deck, 0.84)
+	for t in [-0.99, 0.0, 0.99]:
+		K.gline(cv, o, f, t, -1, t, 1, 0, joint)
+		K.gline(cv, o, f, -1, t, 1, t, 0, joint)
+	match st:
+		"m":
+			for i in 6:
+				var a0 := i * TAU / 6.0
+				var a1 := (i + 1) * TAU / 6.0
+				K.gline(cv, o, f, cos(a0) * 0.72, sin(a0) * 0.72, cos(a1) * 0.72, sin(a1) * 0.72, 0, L.CYAN)
+				K.gline(cv, o, f, cos(a0) * 0.62, sin(a0) * 0.62, cos(a1) * 0.62, sin(a1) * 0.62, 0, L.TEAL)
+			for c in [Vector2(-0.85, -0.85), Vector2(0.85, -0.85), Vector2(0.85, 0.85), Vector2(-0.85, 0.85)]:
+				K.lamp(cv, K.pt(o, f, c.x, c.y, 0), L.CYAN_HOT)
+			return
+		"fwd":
+			for i in 11:
+				var u := -0.9 + i * 0.18
+				K.gline(cv, o, f, u, -0.95, u, 0.95, 0, P.mul(deck, 0.82))
+			for c in [Vector2(-0.88, -0.88), Vector2(0.88, -0.88), Vector2(0.88, 0.88), Vector2(-0.88, 0.88)]:
+				var p := K.pt(o, f, c.x, c.y, 0)
+				cv.line_v(p, p + Vector2(0, -4), Color8(70, 70, 66))
+				cv.rect(int(p.x), int(p.y) - 4, 2, 2, s.edge)
+			return
+	var ln: Color = s.line
+	for e in [[-0.8, -0.8, 0.8, -0.8], [0.8, -0.8, 0.8, 0.8], [-0.8, 0.8, -0.8, -0.8]]:
+		K.gline(cv, o, f, e[0], e[1], e[2], e[3], 0, P.mul(ln, 0.8))
+	K.gquad(cv, o, f, -0.04, -0.55, 0.04, 0.98, 0, ln)
+	K.gquad(cv, o, f, -0.35, -0.62, 0.35, -0.55, 0, ln)
+	for c in [Vector2(-0.45, 0.2), Vector2(0.45, 0.2), Vector2(-0.45, -0.3), Vector2(0.45, -0.3)]:
+		var p := K.pt(o, f, c.x, c.y, 0)
+		cv.rect(int(p.x), int(p.y), 2, 1, P.mul(deck, 0.6))
+	K.lamp(cv, K.pt(o, f, 0, 0.95, 0), Color8(120, 236, 120) if st == "a" else Color8(240, 200, 80))
 
 
 static func segment(cv, o: Vector2, st: String, f: int, kind: String) -> void:

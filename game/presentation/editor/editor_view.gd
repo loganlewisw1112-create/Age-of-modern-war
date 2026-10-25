@@ -14,10 +14,18 @@ const EntityLayer = preload("res://presentation/view/entity_layer.gd")
 const CameraRig = preload("res://presentation/view/camera_rig.gd")
 const Overlay = preload("res://presentation/editor/editor_overlay.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
+const ViewUtil = preload("res://presentation/view/view_util.gd")
 const TILE_W := 64
 const TILE_H := 32
 
 signal hover_changed(cell: Vector2i)
+signal live_blocked                  # G6 (ED6): a doc-editing tool was used while Live runs
+
+## G6 (ED6, CONTRACTS_G6 s15): while Live runs, the entity layer draws `live_world` (a stepping
+## SimWorld built from the doc by EditorLive) instead of the static display world. The doc and the
+## display `world` are untouched; tools that edit the doc are blocked (a tool may opt in with
+## live_ok() -> true, e.g. unit placement, which spawns into the Live world only).
+var live_world: SimWorld = null
 
 var doc                      # editor_doc.gd
 var world: SimWorld
@@ -101,6 +109,8 @@ func _rebuild_entity_layer() -> void:
 
 ## Factions (for colours) and display entities (resources + ED2's placed units/buildings).
 func _sync_world() -> void:
+	if live_world != null:
+		return   # Live owns the entity layer; the display world is resynced when Live stops
 	world.entities.clear()
 	world.factions.clear()
 	world.next_id = 1
@@ -219,7 +229,15 @@ func center_camera_on(world_pos: Vector2) -> void:
 ## demo) would otherwise paint wherever the real cursor sits.
 func mouse_cell() -> Vector2i:
 	var vp: Vector2 = _mouse_vp if _mouse_known else get_viewport().get_mouse_position()
-	var p := screen_to_world(get_canvas_transform().affine_inverse() * vp)
+	return pick_canvas(get_canvas_transform().affine_inverse() * vp)
+
+
+## Canvas (screen-space world) point -> cell, height-aware (ELEV-VIEW CR: ViewUtil.pick_cell over
+## terrain_layer.height_map(); plain maps pick exactly as before).
+func pick_canvas(s: Vector2) -> Vector2i:
+	if terrain_layer != null and terrain_layer.has_method("height_map"):
+		return ViewUtil.pick_cell(terrain_layer.height_map(), s)
+	var p := screen_to_world(s)
 	return Vector2i(floori(p.x), floori(p.y))
 
 
@@ -231,8 +249,52 @@ func _input(event: InputEvent) -> void:
 
 ## Viewport position -> map cell (used by the demo/playtest scripts).
 func cell_at_viewport(vp: Vector2) -> Vector2i:
-	var p := screen_to_world(get_viewport().get_canvas_transform().affine_inverse() * vp)
-	return Vector2i(floori(p.x), floori(p.y))
+	return pick_canvas(get_viewport().get_canvas_transform().affine_inverse() * vp)
+
+
+# ------------------------------------------------------------------ G6 Live (ED6)
+func is_live() -> bool:
+	return live_world != null
+
+
+## Enter (w = the Live world) or leave (w = null) Live display. Leaving resyncs from the doc.
+func set_live_world(w: SimWorld) -> void:
+	live_world = w
+	if w != null:
+		w.snap_enabled = true
+		RenderSnap.build(w)
+		snap = RenderSnap.latest(w)
+		_world = w
+	else:
+		_world = world
+		_sync_world()
+	_rebuild_entity_layer()
+	if overlay != null:
+		overlay.queue_redraw()
+
+
+## Steps the Live world n ticks (the render snapshot is rebuilt at the end of each step).
+func live_step(n: int) -> void:
+	if live_world == null or n <= 0:
+		return
+	for i in n:
+		live_world.step()
+	snap = RenderSnap.latest(live_world)
+
+
+func _tool_allowed() -> bool:
+	if live_world == null or tool == null:
+		return true
+	if tool.has_method("live_ok") and bool(tool.live_ok()):
+		return true
+	live_blocked.emit()
+	return false
+
+
+## After a height brush: the terrain layer re-reads map.height / ramps for these cells.
+func height_changed(cells: Array) -> void:
+	if terrain_layer != null and not cells.is_empty():
+		terrain_layer.rebake_cells(cells)
 
 
 func in_map(c: Vector2i) -> bool:
@@ -291,7 +353,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if mb.pressed:
 				_down = true
 				_last_cell = c
-				if tool != null and tool.has_method("tool_begin"):
+				if not _tool_allowed():
+					_down = false
+				elif tool != null and tool.has_method("tool_begin"):
 					tool.tool_begin(c)
 			elif _down:
 				_down = false
@@ -313,7 +377,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Scripted input for the demo/playtest: press at a, drag through `path`, release at the end.
 func scripted_stroke(cells: Array) -> void:
-	if cells.is_empty() or tool == null:
+	if cells.is_empty() or tool == null or not _tool_allowed():
 		return
 	if tool.has_method("tool_begin"):
 		tool.tool_begin(cells[0])

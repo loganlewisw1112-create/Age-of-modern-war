@@ -54,14 +54,71 @@ const ACTIONS := {
 	"extra_strip": ["N", "Add strip", "airfield", "upgrade_airfield"],
 	"hangar_level": ["U", "Upgrade hangar", "hangar", "upgrade_hangar"],
 	"hangar_to_heavy": ["Y", "Hangar to heavy", "hangar", "upgrade_hangar"],
+	# G6 (UI6b) unit actions, armed / issued by presentation/ui6/b/g6_cmds.gd. Engineer-card keys
+	# (minefield, sweep, rail, garrison, tow) are J/U/X/Z/C: no building data hotkey uses them and
+	# G3.AVOID_KEYS keeps generated build keys off them, so the build page never steals them.
+	"minefield": ["J", "Lay minefield", "mines6", "lay_minefield"],
+	"sweep": ["U", "Sweep mines", "mines6", "sweep"],
+	"line_charge": ["C", "Line charge", "mines6", "line_charge"],
+	"build_rail": ["X", "Lay rail", "rail6", "build_rail"],
+	"garrison": ["Z", "Garrison", "garrison6", "garrison"],
+	"loadout": ["V", "Loadout", "loadout6", "set_loadout"],
+	"designate": ["T", "Designate", "designate6", "designate"],
+	"breach": ["B", "Breach", "breach6", "breach"],
+	"cloak": ["N", "Cloak", "cloak6", "cloak"],
+	"strike": ["K", "Strike", "strike6", "strike"],
+	"deploy_bridge": ["B", "Deploy bridge", "bridge6", "deploy_bridge"],
+	"pack_bridge": ["N", "Pack bridge", "bridge6", "pack_bridge"],
+	"aerostat": ["Y", "Raise aerostat", "aerostat6", "aerostat"],
+	"assimilate": ["Y", "Assimilate", "assim6", "assimilate"],
+	"tow_wreck": ["Z", "Tow wreck", "tow6", "tow_wreck"],
+	"airdrop": ["C", "Airdrop", "airdrop6", "airdrop"],
+	"submerge": ["V", "Dive / surface", "sub6", "submerge"],
+	"sea_mines": ["J", "Lay sea mines", "seamine6", "lay_sea_mines"],
+	# G6 (UI6b) building-card actions
+	"ungarrison": ["U", "Empty building", "garrison_bld6", "ungarrison"],
+	"battery_strike": ["K", "Fire strike", "battery6", "strike"],
+	"resuit": ["J", "Re-suit pilot", "garage6", "resuit"],
 }
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
 const SHARE := [["air", "naval"], ["drone", "truck"], ["drone", "medic"], ["drone", "eng_air"],
 	["tactical", "truck"], ["tactical", "medic"], ["tactical", "eng_air"], ["truck", "medic"],
-	["truck", "eng_air"], ["medic", "eng_air"], ["naval", "truck"], ["naval", "medic"]]
+	["truck", "eng_air"], ["medic", "eng_air"], ["naval", "truck"], ["naval", "medic"],
+	# G6 (UI6b): engineers / EOD / sappers / JTAC / synths mix these on one infantry card
+	["mines6", "rail6"], ["mines6", "garrison6"], ["mines6", "loadout6"], ["rail6", "garrison6"],
+	["rail6", "loadout6"], ["garrison6", "loadout6"], ["breach6", "mines6"], ["breach6", "rail6"],
+	["breach6", "garrison6"], ["breach6", "loadout6"], ["designate6", "garrison6"], ["designate6", "loadout6"],
+	["designate6", "mines6"], ["designate6", "breach6"], ["designate6", "strike6"], ["cloak6", "garrison6"],
+	["cloak6", "loadout6"], ["cloak6", "breach6"], ["cloak6", "mines6"], ["cloak6", "assim6"],
+	["strike6", "mines6"], ["strike6", "aerostat6"], ["designate6", "aerostat6"], ["bridge6", "mines6"],
+	["bridge6", "strike6"], ["tow6", "mines6"], ["tow6", "rail6"],
+	["airdrop6", "air"], ["airdrop6", "naval"], ["sub6", "air"], ["sub6", "naval"], ["seamine6", "air"],
+	["seamine6", "naval"], ["airdrop6", "sub6"], ["airdrop6", "seamine6"], ["sub6", "seamine6"]]
+## G6 (UI6b): group pairs that DO share a card (one unit def is in both) but cannot get unique static keys
+## (11 free letters for 39 unit actions). On such a card the G6 action yields: G6Cmds gives it the first
+## key of G6_FALLBACK not yet on the card (fallback_key), so the earlier G1-G5 button keeps its key.
+## The Drone Team (drone / tactical modes) is foot infantry with loadouts: Garrison Z and Loadout V
+## would take Strike drone Z / EMP drone V / Infiltrate Z / Stack up V.
+const YIELD := [["drone", "garrison6"], ["drone", "loadout6"], ["tactical", "garrison6"], ["tactical", "loadout6"]]
+## Fallback keys for a yielding G6 action: J/U/X/Z first (G3.AVOID_KEYS: no generated or data build key
+## uses them), then the other free card letters.
+const G6_FALLBACK := ["J", "U", "X", "Z", "K", "N", "B", "T", "Y", "C", "V"]
 const UNIT_GROUPS := ["air", "drone", "tactical", "truck", "medic", "naval", "eng_air"]
-const BUILDING_GROUPS := ["airfield", "hangar"]
+const G6_UNIT_GROUPS := ["mines6", "rail6", "garrison6", "loadout6", "designate6", "breach6", "cloak6", "strike6",
+	"bridge6", "aerostat6", "assim6", "tow6", "airdrop6", "sub6", "seamine6"]
+const BUILDING_GROUPS := ["airfield", "hangar", "garrison_bld6", "battery6", "garage6"]
+const G6_BUILDING_GROUPS := ["garrison_bld6", "battery6", "garage6"]
+## G6 command icon per action (ART-G6b icons/<command>.png, through ArtCatalog.icon).
+const ICONS := {"minefield": "lay_minefield", "sea_mines": "lay_sea_mines", "battery_strike": "strike",
+	"loadout": "set_loadout"}
+
+
+## ArtCatalog icon id for a G6 action ("" for G5 actions, which have no command icon).
+static func icon_id(action: String) -> String:
+	if not ACTIONS.has(action) or not (G6_UNIT_GROUPS.has(group(action)) or G6_BUILDING_GROUPS.has(group(action))):
+		return ""
+	return String(ICONS.get(action, ACTIONS[action][3]))
 
 static var _user: Dictionary = {}     # action -> key (loaded from Settings)
 static var _loaded := false
@@ -106,6 +163,23 @@ static func label(action: String) -> String:
 
 static func group(action: String) -> String:
 	return String(ACTIONS[action][2]) if ACTIONS.has(action) else "fixed"
+
+
+## True when groups ga / gb share a card with the G6 one yielding its key (YIELD).
+static func yields(ga: String, gb: String) -> bool:
+	for p in YIELD:
+		if (p[0] == ga and p[1] == gb) or (p[0] == gb and p[1] == ga):
+			return true
+	return false
+
+
+## The key a yielding G6 action takes on a card whose keys are `taken` (key -> anything): the first free
+## G6_FALLBACK letter, "" when none is free (the button then has no hotkey).
+static func fallback_key(taken: Dictionary) -> String:
+	for k in G6_FALLBACK:
+		if not taken.has(k):
+			return String(k)
+	return ""
 
 
 static func shares(ga: String, gb: String) -> bool:
@@ -178,7 +252,13 @@ static func rebind_error(action: String, k: String) -> String:
 static func sheet_rows() -> Array:
 	var names := {"air": "aircraft", "drone": "Drone Team", "tactical": "Drone Team, tactical mode",
 		"truck": "supply truck", "medic": "medic / ambulance", "naval": "ships", "eng_air": "airfield engineers",
-		"airfield": "airfield selected", "hangar": "hangar selected"}
+		"airfield": "airfield selected", "hangar": "hangar selected",
+		"mines6": "engineers / EOD / mine clearer", "rail6": "engineers", "garrison6": "infantry",
+		"loadout6": "infantry near a barracks or Company HQ", "designate6": "JTAC", "breach6": "sappers / breacher",
+		"cloak6": "Stalker Synth", "strike6": "loitering-munition truck / MLRS", "bridge6": "bridge layer",
+		"aerostat6": "aerostat", "assim6": "Assimilator", "tow6": "salvage crane / dozer", "airdrop6": "airlifter",
+		"sub6": "submarine", "seamine6": "mine barge", "garrison_bld6": "garrisoned building selected",
+		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected"}
 	var out: Array = []
 	var acts: Array = ACTIONS.keys()
 	acts.sort_custom(func(a, b): return _order(a) < _order(b))
@@ -189,4 +269,5 @@ static func sheet_rows() -> Array:
 
 static func _order(a: String) -> String:
 	var g := group(a)
-	return "%d_%s" % [UNIT_GROUPS.find(g) if UNIT_GROUPS.has(g) else 9, a]
+	var all: Array = UNIT_GROUPS + G6_UNIT_GROUPS + BUILDING_GROUPS
+	return "%02d_%s" % [all.find(g) if all.has(g) else 99, a]

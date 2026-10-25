@@ -19,10 +19,17 @@ extends RefCounted
 ##   seconds; reset when contested, emptied or the bridge is ruined.
 ##   Saved: w.sys_state.victory = {bridge_holder, bridge_secs, out_teams: [team]}.
 ## - Territory: sim/systems/territory.gd, ticked from here (no SYSTEM_ORDER change needed).
+## - G6 survival (MODES6, CONTRACTS_G6 section 15), active when Waves.active(w) (cfg.survival, or a
+##   repel_waves term): the wave attacker side is never eliminated and its team never wins by terms;
+##   survive{seconds}: a defender team wins at time while its HQ stands; repel_waves{count}: a defender
+##   team wins once `count` waves are destroyed (Waves.destroyed_count); every defender team out ->
+##   the attacker team wins (reason "overrun", terms ["overrun"]). Without survival, survive keeps
+##   its G4 scenario meaning below.
 
 const Territory = preload("res://sim/systems/territory.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const MapGen = preload("res://sim/map_gen.gd")
+const Waves = preload("res://sim/systems/waves.gd")  # G6 (MODES6): survival waves
 
 ## G4 (MAPIO, CONTRACTS_G4 section 5): scenario presets, combinable with AND/OR like the others.
 ## survive{seconds, slot?}: the team is alive when the clock reaches `seconds`.
@@ -32,8 +39,8 @@ const MapGen = preload("res://sim/map_gen.gd")
 ##   (sampled with the bridge; state w.sys_state.victory.points, created only when used).
 ## slot (optional, a map-file player slot) restricts which team can satisfy the term.
 const SCENARIO_TERMS := ["survive", "destroy_target", "reach_stage", "hold_point"]
-const MODES := ["hq_elimination", "territory", "hold_bridge", "combined", "endless", "survive", "destroy_target", "reach_stage", "hold_point"]
-const TERM_TYPES := ["hq_elimination", "territory", "hold_bridge", "survive", "destroy_target", "reach_stage", "hold_point"]
+const MODES := ["hq_elimination", "territory", "hold_bridge", "combined", "endless", "survive", "destroy_target", "reach_stage", "hold_point", "repel_waves"]
+const TERM_TYPES := ["hq_elimination", "territory", "hold_bridge", "survive", "destroy_target", "reach_stage", "hold_point", "repel_waves"]
 const BRIDGE_RADIUS := 4.0
 const BRIDGE_EVERY := 20
 const DEFAULT_SECONDS := 300
@@ -74,10 +81,22 @@ static func tick(w: SimWorld) -> void:
 	if teams.is_empty():
 		_end(w, -1, "all_eliminated", [])
 		return
+	var at_team := -1
+	if Waves.active(w):   # G6 survival: the attacker never wins by terms; defenders all out -> overrun
+		at_team = Waves.attacker_team(w)
+		var defending := false
+		for team in teams:
+			if int(team) != at_team:
+				defending = true
+		if not defending:
+			_end(w, at_team, "overrun", ["overrun"])
+			return
 	var rules := rules_of_world(w)
 	var best := -1
 	var best_terms := []
 	for team in teams:
+		if int(team) == at_team:
+			continue
 		var sat := []
 		var ok := String(rules.op) == "and"
 		for t in rules.terms:
@@ -107,6 +126,8 @@ static func _eliminate(w: SimWorld) -> void:
 		for e in SimIndex.of(w, "building"):
 			if hqless.has(int(e.owner)) and SimIndex.alive(w, e):
 				has_hq[int(e.owner)] = true
+	if Waves.active(w):   # G6 survival: the wave attacker has no base and is never eliminated
+		has_hq[Waves.attacker(w)] = true
 	var changed := false
 	for fid in w.factions:
 		var f: Dictionary = w.factions[fid]
@@ -239,6 +260,8 @@ static func rules_of(c: Dictionary) -> Dictionary:
 			if SCENARIO_TERMS.has(mode):
 				t.merge(p)
 				t.type = mode
+			if mode == "repel_waves" and p.has("count"):
+				t.count = p.count
 		raw = [t]
 	var terms := []
 	for t in raw:
@@ -254,6 +277,8 @@ static func _norm_term(t: Dictionary) -> Dictionary:
 		out.percent = float(t.get("percent", Content.rules().get("territory", {}).get("default_percent", 60)))
 	elif ty == "hold_bridge":
 		out.seconds = int(t.get("seconds", Content.rules().get("hold_bridge", {}).get("default_seconds", DEFAULT_SECONDS)))
+	elif ty == "repel_waves":
+		out.count = int(t.get("count", Waves.rules().get("default_count", 10)))
 	elif SCENARIO_TERMS.has(ty):
 		if ty == "survive" or ty == "hold_point":
 			out.seconds = int(t.get("seconds", DEFAULT_SECONDS))
@@ -292,7 +317,13 @@ static func term_satisfied(w: SimWorld, team: int, t: Dictionary) -> bool:
 			var vs := _vstate(w)
 			return int(vs.bridge_holder) == team and int(vs.bridge_secs) >= int(t.get("seconds", DEFAULT_SECONDS))
 		"survive", "destroy_target", "reach_stage", "hold_point":
+			if Waves.active(w) and team == Waves.attacker_team(w):
+				return false
 			return _scenario_term(w, team, t)
+		"repel_waves":
+			if not team_alive(w, team) or team == Waves.attacker_team(w):
+				return false
+			return Waves.destroyed_count(w) >= int(t.get("count", 10))
 	return false
 
 
@@ -495,6 +526,10 @@ static func progress(w: SimWorld, team: int) -> Dictionary:
 				var secs := w.tick / SimWorld.TICK_RATE
 				row.merge({"value": secs, "target": int(t.seconds),
 					"label": "Survive for %d s (%d s left)" % [int(t.seconds), maxi(0, int(t.seconds) - secs)]})
+			"repel_waves":
+				var killed := Waves.destroyed_count(w)
+				row.merge({"value": killed, "target": int(t.count), "next": Waves.next_wave(w),
+					"label": "Repel %d waves (%d destroyed)" % [int(t.count), killed]})
 			"destroy_target":
 				var tg: Dictionary = w.sys_state.get("triggers", {}).get("tags", {}).get(String(t.tag), {})
 				var left := 0
@@ -552,7 +587,13 @@ static func validate_rules(c: Dictionary, map: Dictionary = {}) -> String:
 			t.percent = params.percent
 		if mode == "hold_bridge" and params.has("seconds"):
 			t.seconds = params.seconds
+		if mode == "repel_waves" and params.has("count"):
+			t.count = params.count
 		terms = [t]
+	if Waves.config_active(c):   # G6 survival: a valid attacker and at least one defender
+		var we := Waves.config_error(c)
+		if we != "":
+			return we
 	var seen := {}
 	var needs_bridge := false
 	for t in terms:
@@ -573,6 +614,10 @@ static func validate_rules(c: Dictionary, map: Dictionary = {}) -> String:
 		var sm := _scenario_param_error(ty, t)
 		if sm != "":
 			return sm
+		if ty == "repel_waves" and t.has("count"):
+			var sr := Waves.rules()
+			if not (typeof(t.count) == TYPE_INT or typeof(t.count) == TYPE_FLOAT) or int(t.count) < int(sr.get("count_min", 1)) or int(t.count) > int(sr.get("count_max", 100)):
+				return "Repel waves count must be between %d and %d (got %s)." % [int(sr.get("count_min", 1)), int(sr.get("count_max", 100)), str(t.count)]
 		if ty == "hold_bridge":
 			needs_bridge = true
 			if t.has("seconds"):

@@ -24,6 +24,9 @@ const G3bData = preload("res://presentation/hud/g3b_data.gd")
 const REFRESH_SECS := 0.2
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")      # G5 (UI5a) panel kit
 const HudExtras = preload("res://presentation/ui5/kit/hud_extras.gd")
+const Ui6aHub = preload("res://presentation/ui6/a/ui6a_hub.gd")          # G6 (UI6a): market, army builder, forces, commanders
+const CompanyCard = preload("res://presentation/ui6/a/company_card.gd")
+const Companies = preload("res://sim/systems/companies.gd")
 const TOP_H := 34.0        # G5 layout (virtual canvas px; ScaledLayer scales them)
 const BOTTOM_H := 220.0    # keep <= 222: UI5b's cargo strip sits right above it (-284..-222)
 const EDGE_M := 12.0
@@ -75,6 +78,7 @@ var _card_page := 0
 var _right_scroll: ScrollContainer
 var _card_scroll: ScrollContainer
 var extras = HudExtras.new()   # G5: control groups, idle button, F1 sheet
+var ui6a = Ui6aHub.new()       # G6 (UI6a): the four G6 panels (modal)
 var _card_title: Label
 var _card_grid: GridContainer
 var _queue_box: HBoxContainer
@@ -187,6 +191,14 @@ func _build_ui() -> void:
 		b.pressed.connect(_set_speed.bind(s))
 		hb.add_child(b)
 		_btn_speed.append(b)
+	var fb := UiKit.button("Forces", "", "Forces: your armies and companies (cards, refill, form / disband armies)")
+	fb.name = "ForcesButton"
+	fb.pressed.connect(func(): ui6a.toggle("forces"))
+	hb.add_child(fb)
+	var cb := UiKit.button("Commanders", "", "AI Commanders: hand a formation or a role to an AI commander")
+	cb.name = "CommandersButton"
+	cb.pressed.connect(func(): ui6a.toggle("commanders"))
+	hb.add_child(cb)
 	var mb := UiKit.button("Menu", "Esc", "Pause menu: save, load, settings, quit")
 	mb.pressed.connect(func(): menu_requested.emit())
 	hb.add_child(mb)
@@ -279,6 +291,7 @@ func _build_ui() -> void:
 	root.add_child(_hover_lbl)
 	_build_bottom(root)
 	extras.build(self, root)
+	ui6a.build(self, root)   # G6 (UI6a): after everything else, so the modal panels draw on top
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)
@@ -476,8 +489,16 @@ func _cap_stacks() -> void:
 		return
 	var cs: Vector2 = layer.canvas_size()
 	var bar_h := 0.0
+	# G6 (UI6a): selecting a platoon / company officer shows the G2 group panel bottom-right, above the
+	# bottom panel (-380..-222): lift the group bar above it and end the right stack above both
+	var shift := 0.0
+	var gp = g2_insp.get("group_panel")
+	if gp is Control and (gp as Control).visible:
+		shift = maxf(0.0, -(BOTTOM_H + 6.0) - ((gp as Control).offset_top - 6.0))
 	if extras.bar != null:
-		bar_h = extras.bar.size.y + 8.0
+		extras.bar.offset_bottom = -(BOTTOM_H + 6.0) - shift
+		extras.bar.offset_top = extras.bar.offset_bottom - 30.0
+		bar_h = extras.bar.size.y + 8.0 + shift
 	# alert lines never reach the centred PAUSED banner / cargo strip
 	var aw := clampf(cs.x * 0.5 - 90.0 - EDGE_M, 260.0, ALERT_W)
 	for l in _alert_box.get_children():
@@ -575,6 +596,7 @@ func _refresh() -> void:
 	_refresh_selection(w)
 	_refresh_hover()
 	extras.update(w, mv)
+	ui6a.update(w, _pf())
 	_cap_stacks()
 
 
@@ -714,6 +736,7 @@ func _refresh_selection(w: SimWorld) -> void:
 			if nm.is_empty():
 				nm = Content.building(String(d))
 			_insp_counts.add_child(HT.make_label("%s x%d   " % [String(nm.get("name", d)), int(counts[d])], HT.TEXT, 14))
+		_inspect_company(w, ents)
 		_set_card_for(ents[0], ents, w)
 
 
@@ -822,6 +845,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 			_register_hotkey(String(p.get("hotkey", "")), btn)
 		if bool(d.get("research", false)):
 			_add_research_buttons(bid)
+		_add_g6_building_buttons(b, d)
 		g4b_cmd.add_building_buttons(b)
 	elif mode == "construct":
 		var b2: Dictionary = ents[0]
@@ -849,6 +873,56 @@ func _add_research_buttons(bid: int) -> void:
 	cancel.name = "ResearchCancel"
 	cancel.pressed.connect(_issue.bind({"type": "research", "project": "", "cancel": true, "building_id": bid}))
 	_card_buttons.append({"btn": cancel, "kind": "research_cancel", "building": bid})
+
+
+## G6 (UI6a): HQ -> Market; Company HQ -> Army Builder, Train Commander, Forces.
+func _add_g6_building_buttons(b: Dictionary, d: Dictionary) -> void:
+	if not bool(b.get("built", false)) or int(b.owner) != _pf():
+		return
+	if bool(d.get("is_hq", false)):
+		var mk := _card_button("Market", "buy / sell", "", "")
+		mk.name = "G6Market"
+		mk.pressed.connect(func(): ui6a.open("market"))
+		_card_buttons.append({"btn": mk, "kind": "ui6a", "tip": "Marketplace: buy and sell salvage, ore, fuel and ammo for credits"})
+	if Companies.is_hq_def(String(b.def)):
+		var ab := _card_button("Army Builder", "companies", "", "")
+		ab.name = "G6ArmyBuilder"
+		ab.pressed.connect(func(): ui6a.open("army"))
+		_card_buttons.append({"btn": ab, "kind": "ui6a", "tip": "Army Builder: train preset or custom companies; edit and save your own templates"})
+		var cdef := Companies.leader_def(Companies.faction_of(_world(), _pf()), "commander")
+		var cm := _card_button("Commander", HT.cost_text(Companies._leader_cost(cdef, "commander")), "", cdef)
+		cm.name = "G6TrainCommander"
+		var cmd := {"type": "train_commander", "issuer": _pf(), "building_id": int(b.id)}
+		cm.pressed.connect(_issue.bind(cmd))
+		_card_buttons.append({"btn": cm, "kind": "ui6a", "cmd": cmd, "tip": "Train a Commander: leads an army of 2-4 companies"})
+		var fo := _card_button("Forces", "cards", "", "")
+		fo.name = "G6Forces"
+		fo.pressed.connect(func(): ui6a.open("forces"))
+		_card_buttons.append({"btn": fo, "kind": "ui6a", "tip": "Your armies and companies"})
+
+
+## G6 (UI6a): when the whole selection is one company, the inspector becomes its card (vision 05):
+## name, battle-status line and the unit grid. Returns true when it did.
+func _inspect_company(w: SimWorld, ents: Array) -> bool:
+	if not w.sys_state.has("companies") or ents.is_empty() or int(ents[0].owner) != _pf():
+		return false
+	var ids: Array = []
+	for e in ents:
+		ids.append(int(e.id))
+	var c := CompanyCard.selection_company(w, ids)
+	if c.is_empty():
+		return false
+	var cm := CompanyCard.model(w, c)
+	_insp_name.text = String(cm.title)
+	_insp_hp.max_value = maxf(1.0, float(cm.max_hp))
+	_insp_hp.value = float(cm.hp)
+	_insp_info.text = "HP %d / %d\n%s" % [int(cm.hp), int(cm.max_hp), String(cm.status)]
+	for ch in _insp_counts.get_children():
+		_insp_counts.remove_child(ch)
+		ch.queue_free()
+	_insp_counts.add_child(CompanyCard.unit_grid(cm.units, 24.0))
+	_insp_counts.visible = true
+	return true
 
 
 func _research_reason(w: SimWorld, rec: Dictionary) -> String:
@@ -943,6 +1017,9 @@ Research time: %ds
 For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)), HT.cost_text_long(rp.get("cost", {})), int(rp.get("time", 0)), int(rp.get("for_stage", 8))]
 			if reason == "Already researched.":
 				btn.text = "[done] " + G3bData.project_name(String(rec.project), G3.faction_def(w, pf))
+		elif kind == "ui6a":
+			reason = w.preview_command(rec.cmd) if rec.has("cmd") else ""
+			tip = String(rec.get("tip", ""))
 		elif kind == "research_cancel":
 			reason = "" if String(w.factions[pf].get("research", {}).get("active", "")) != "" else "No project is active."
 			tip = "Cancel the active project (full refund; its progress is lost)."
@@ -1067,6 +1144,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if k.ctrl_pressed or k.alt_pressed or k.meta_pressed:
 		return
 	if extras.on_key(k):
+		get_viewport().set_input_as_handled()
+		return
+	if ui6a.on_key(k):   # G6 (UI6a): Esc closes an open G6 panel first
 		get_viewport().set_input_as_handled()
 		return
 	if k.keycode == KEY_P:

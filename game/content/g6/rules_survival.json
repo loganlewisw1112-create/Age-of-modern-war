@@ -1,3 +1,50 @@
 {
-  "_meta": "G6 fragment (owner: MODES6). CONTRACTS_G6: rules.g6_survival (section 15). New ids/keys only; numbers are PROVISIONAL balance fixtures."
+  "_meta": "G6 fragment (owner: MODES6). CONTRACTS_G6: rules.g6_survival (section 15). New ids/keys only; numbers are PROVISIONAL balance fixtures.",
+  "rules": {
+    "g6_survival": {
+      "ver": 1,
+      "_note": "Survival (D42). cfg.survival = {attacker: side index} (optional for repel_waves: default = the highest-index AI side). Wave i spawns at first_wave_s + (i-1) * interval_s. elements = tier elements x (1 + growth_per_wave x (i - tier.from)) x dynamic mult, per company.",
+      "interval_s": 90,
+      "first_wave_s": 90,
+      "warn_s": 15,
+      "default_seconds": 1200,
+      "default_count": 10,
+      "count_min": 1,
+      "count_max": 100,
+      "seconds_min": 60,
+      "seconds_max": 36000,
+      "check_every_ticks": 20,
+      "spawn_edge_inset": 2,
+      "spawn_min_dist_frac": 0.3,
+      "wave_spawn_min_dist_frac": 0.25,
+      "spawn_points_max": 4,
+      "fallback_orders": true,
+      "unit_cap": 400,
+      "rout_frac": 0.1,
+      "reorder_every_s": 10,
+      "growth_per_wave": 0.1,
+      "elements_max_per_company": 30,
+      "dynamic": {
+        "_note": "mult = (1 + per_extra_defender x (defender sides - 1)) x lerp(1, clamp(defender pop / (ref_pop x defender sides), min_mult, max_mult), weight)",
+        "per_extra_defender": 0.5,
+        "ref_pop": 60,
+        "min_mult": 0.8,
+        "max_mult": 1.6,
+        "weight": 0.5
+      },
+      "roles": {
+        "human_a": {"infantry": "a_rifle_co", "mech": "a_mech_co", "armor": "a_armor_co", "arty": "a_arty_bty", "special": "a_specops_det", "assault": "a_air_assault_co"},
+        "human_b": {"infantry": "b_conscript_bn", "mech": "b_shock_co", "armor": "b_heavy_armor_co", "arty": "b_siege_bty", "special": "b_shock_co", "assault": "b_works_co"},
+        "machine": {"infantry": "m_swarm_cluster", "mech": "m_hunter_pack", "armor": "m_walker_phalanx", "arty": "m_siege_array", "special": "m_hunter_pack", "assault": "m_hunter_pack"}
+      },
+      "escalation": [
+        {"from": 1, "companies": [{"role": "infantry", "elements": 4}]},
+        {"from": 3, "companies": [{"role": "infantry", "elements": 5}, {"role": "mech", "elements": 3}]},
+        {"from": 5, "companies": [{"role": "infantry", "elements": 6}, {"role": "mech", "elements": 4}, {"role": "armor", "elements": 3}]},
+        {"from": 8, "companies": [{"role": "infantry", "elements": 7}, {"role": "armor", "elements": 5}, {"role": "arty", "elements": 3}]},
+        {"from": 11, "companies": [{"role": "mech", "elements": 7}, {"role": "armor", "elements": 7}, {"role": "arty", "elements": 4}, {"role": "special", "elements": 4}]},
+        {"from": 15, "companies": [{"role": "infantry", "elements": 8}, {"role": "mech", "elements": 8}, {"role": "armor", "elements": 8}, {"role": "arty", "elements": 5}, {"role": "assault", "elements": 5}]}
+      ]
+    }
+  }
 }

@@ -25,10 +25,12 @@ const View = preload("res://presentation/editor/editor_view.gd")
 const Minimap = preload("res://presentation/editor/editor_minimap.gd")
 const Panels = preload("res://presentation/editor/editor_panels.gd")
 const MapIO = preload("res://sim/map_io.gd")
+const EditorLive = preload("res://sim/editor_live.gd")
 const ED2_ENTRY := "res://presentation/editor/ed2_tabs.gd"
 const ED1_TABS := [
 	["map", "Map", "res://presentation/editor/tab_map.gd", 10],
 	["terrain", "Terrain", "res://presentation/editor/tab_terrain.gd", 20],
+	["height", "Height", "res://presentation/editor/tab_height.gd", 25],   # G6 (ED6)
 	["water", "Water", "res://presentation/editor/tab_water.gd", 30],
 	["nature", "Nature & objects", "res://presentation/editor/tab_nature.gd", 40],
 	["resources", "Resources", "res://presentation/editor/tab_resources.gd", 50],
@@ -44,6 +46,13 @@ var test_play_handler: Callable
 var validate_handler: Callable
 var ui_scale: float = 1.0
 var _p: Panels
+# G6 Live (ED6, CONTRACTS_G6 s15): L toggles; the doc and its undo history are never touched.
+var live_world: SimWorld = null
+var live_snap: Dictionary = {}
+var live_bar: PanelContainer
+var _live_label: Label
+var _live_speed_btns: Array = []
+var _live_acc := 0.0
 
 
 func _ready() -> void:
@@ -71,6 +80,8 @@ func _ready() -> void:
 		var s = load(ED2_ENTRY)
 		if s != null:
 			s.register_editor(self)
+	_build_live_bar()
+	view.live_blocked.connect(func(): status("Live is running: press L to stop Live before editing the map.", HT.YELLOW))
 	select_tab("terrain")
 	_refresh_buttons()
 	status("Map editor ready. Left-drag paints, middle-drag or WASD pans, wheel zooms, right-click cancels.", HT.DIM)
@@ -203,6 +214,9 @@ func open_path(path: String) -> String:
 
 
 func action_undo() -> void:
+	if live_on():
+		status("Live is running: press L to stop Live first (undo history is kept).", HT.YELLOW)
+		return
 	if doc.undo():
 		view.stroke_finished()
 		status("Undo", HT.DIM)
@@ -210,6 +224,9 @@ func action_undo() -> void:
 
 
 func action_redo() -> void:
+	if live_on():
+		status("Live is running: press L to stop Live first (undo history is kept).", HT.YELLOW)
+		return
 	if doc.redo():
 		view.stroke_finished()
 		status("Redo", HT.DIM)
@@ -228,6 +245,7 @@ func action_validate() -> Array:
 
 
 func action_test_play() -> void:
+	live_stop()
 	if test_play_handler.is_valid():
 		test_play_handler.call(self)
 	else:
@@ -235,7 +253,138 @@ func action_test_play() -> void:
 
 
 func action_exit() -> void:
+	live_stop()
 	exit_requested.emit()
+
+
+# ------------------------------------------------------------------ G6 Live mode (ED6)
+func live_on() -> bool:
+	return live_world != null
+
+
+func toggle_live() -> void:
+	if live_on():
+		live_stop()
+	else:
+		live_start()
+
+
+## Builds the Live world from the doc (placed units/buildings only, every side AI, endless), snapshots
+## it and starts stepping. Returns "" or why Live could not start.
+func live_start() -> String:
+	if live_on():
+		return ""
+	if doc.in_stroke():
+		doc.end_stroke()
+	var r: Dictionary = EditorLive.make_world(doc.map_for_save(), doc.scenario_for_save())
+	if r.world == null:
+		status("Live: %s" % String(r.reason), HT.RED)
+		_sync_live_bar()
+		return String(r.reason)
+	live_world = r.world
+	live_snap = EditorLive.start(live_world)
+	_live_acc = 0.0
+	view.set_live_world(live_world)
+	_sync_live_bar()
+	status("LIVE: placed units fight (combat + AI tactics, no economy). L stops and rewinds.", HT.GREEN)
+	return ""
+
+
+## Leaves Live: restores the Live world's snapshot (exact) and shows the untouched doc again.
+func live_stop() -> void:
+	if not live_on():
+		return
+	EditorLive.stop(live_world, live_snap)
+	live_world = null
+	live_snap = {}
+	view.set_live_world(null)
+	_sync_live_bar()
+	status("Live stopped: the map is back exactly as it was before Live.", HT.DIM)
+
+
+func set_live_speed(n: int) -> void:
+	EditorLive.set_speed(n)
+	_sync_live_bar()
+
+
+## Unit placement while Live runs: spawn into the Live world only (gone when Live stops).
+func live_place(e: Dictionary) -> int:
+	if not live_on():
+		return -1
+	var id := EditorLive.spawn(live_world, e)
+	if id >= 0:
+		view.live_step(0)
+	return id
+
+
+## Steps `n` Live ticks now (tests / scripted demos; the frame loop uses the speed).
+func live_advance(n: int) -> void:
+	if live_on():
+		view.live_step(n)
+		_sync_live_bar()
+
+
+func _process(delta: float) -> void:
+	if not live_on():
+		return
+	var sp := EditorLive.speed()
+	if sp > 0:
+		_live_acc += delta * float(SimWorld.TICK_RATE * sp)
+		var n := mini(int(_live_acc), 8 * sp)
+		_live_acc = minf(_live_acc - float(n), 1.0)
+		view.live_step(n)
+	if Engine.get_process_frames() % 10 == 0:
+		_sync_live_bar()
+
+
+func _build_live_bar() -> void:
+	live_bar = PanelContainer.new()
+	live_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	live_bar.offset_top = Panels.TOP_H + 6.0
+	live_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	ui.root.add_child(live_bar)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 6)
+	live_bar.add_child(hb)
+	_live_label = HT.make_label("LIVE", HT.RED, 16)
+	hb.add_child(_live_label)
+	var grp := ButtonGroup.new()
+	for sp in EditorLive.SPEEDS:
+		var b := Button.new()
+		b.text = "Pause" if int(sp) == 0 else "%dx" % int(sp)
+		b.toggle_mode = true
+		b.button_group = grp
+		b.focus_mode = Control.FOCUS_NONE
+		b.tooltip_text = "Pause Live" if int(sp) == 0 else "Live speed %dx" % int(sp)
+		var v := int(sp)
+		b.pressed.connect(func(): set_live_speed(v))
+		hb.add_child(b)
+		_live_speed_btns.append(b)
+	var stop := Button.new()
+	stop.text = "Stop (L)"
+	stop.focus_mode = Control.FOCUS_NONE
+	stop.tooltip_text = "Stop Live and rewind to the map as it was"
+	stop.pressed.connect(live_stop)
+	hb.add_child(stop)
+	_sync_live_bar()
+
+
+func _sync_live_bar() -> void:
+	if live_bar == null:
+		return
+	live_bar.visible = live_on()
+	if _p != null and _p.live_btn != null:
+		_p.live_btn.button_pressed = live_on()
+	if not live_on():
+		return
+	var sp := EditorLive.speed()
+	for i in _live_speed_btns.size():
+		(_live_speed_btns[i] as Button).set_pressed_no_signal(int(EditorLive.SPEEDS[i]) == sp)
+	var units := 0
+	for e in live_world.entities.values():
+		if String(e.kind) == "unit":
+			units += 1
+	_live_label.text = "● LIVE %s  %.0fs  %d units" % ["(paused)" if sp == 0 else "", float(live_world.tick) / float(SimWorld.TICK_RATE), units]
 
 
 func set_symmetry(mode: String) -> void:
@@ -283,6 +432,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		action_redo()
 	elif k.ctrl_pressed and k.keycode == KEY_S:
 		action_save()
+	elif k.keycode == KEY_L and not k.ctrl_pressed and not k.alt_pressed and not view._typing():
+		toggle_live()
 	elif k.keycode == KEY_ESCAPE and view.tool != null and view.tool.has_method("tool_cancel"):
 		view.tool.tool_cancel()
 	else:

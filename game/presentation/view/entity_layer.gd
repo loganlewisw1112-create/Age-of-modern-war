@@ -13,6 +13,7 @@ const BatchArt = preload("res://presentation/view/batch_art.gd")
 const LodIcons = preload("res://presentation/view/lod_icons.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
 const G5Art = preload("res://presentation/art/g5_art.gd")
+const G6Vis = preload("res://presentation/art/g6_vis.gd")
 
 const LOD_MID := 0.8     # zoom below this: mid LOD (small FX dropped by fx_layer)
 const LOD_FAR := 0.45    # zoom below this: far LOD (unit icons)
@@ -75,6 +76,29 @@ var g4b_fx_drawn := 0                      # mines + charges drawn from effect a
 var g5_counts: Dictionary = {}             # shadows, lifted, wounded, markers, red_cross, trails, slung, strips, sinking
 var _burnt_src := PackedByteArray()        # last snap.burnt merged into `burnt`
 var _lift := 0.0                           # last _g5_lift result (px)
+# G6 (VIEW6): height lift table (terrain_layer.lift_px when ELEV-VIEW publishes it, else built from
+# snap.height x terrain_layer.level_px) and last frame's counts (probe / tests)
+var _hlift := PackedFloat32Array()
+var _hlift_src := PackedByteArray()
+var _hlift_px := -1.0
+var g6_counts: Dictionary = {}
+
+
+## Per-cell lift (px) for this frame: ELEV-VIEW's own table wins (exactly what the terrain bake used).
+func _height_lift(sn: Dictionary) -> PackedFloat32Array:
+	var tl = mv.terrain_layer if mv != null else null
+	if tl != null:
+		var lt = tl.get("lift_px")
+		if lt is PackedFloat32Array and not (lt as PackedFloat32Array).is_empty():
+			return lt
+	var lp = tl.get("level_px") if tl != null else null
+	var px: float = float(lp) if lp != null else G6Vis.DEFAULT_LEVEL_PX
+	var h: PackedByteArray = sn.get("height", PackedByteArray())
+	if px != _hlift_px or h.size() != _hlift_src.size() or h != _hlift_src:
+		_hlift_px = px
+		_hlift_src = h
+		_hlift = G6Vis.lift_table(h, sn.get("ramps", PackedByteArray()), px)
+	return _hlift
 
 
 func setup(view) -> void:
@@ -279,6 +303,18 @@ func refresh() -> void:
 	var t_sub := Time.get_ticks_usec()
 	_sync_burnt(sn.get("burnt", PackedByteArray()))
 	var any_burnt := not burnt.is_empty()
+	# G6 (VIEW6): height lift per cell (empty on flat maps / before ELEV-VIEW publishes level_px)
+	var hl_t := _height_lift(sn)
+	var hl_n := hl_t.size()
+	# CR 822: ramp cells slope, so a unit on a ramp takes the exact ViewUtil.ground_lift at its point (plain
+	# cells are flat: the per-cell table is exact there and cheaper)
+	var hm6: Dictionary = mv.terrain_layer.height_map() if hl_n > 0 and mv.terrain_layer != null and mv.terrain_layer.has_method("height_map") else {}
+	var rp6: PackedByteArray = hm6.get("ramps", PackedByteArray())
+	var rp6_n := rp6.size() if rp6.size() == hl_n else 0
+	var g6u: Dictionary = sn.get("g6u", {})
+	var has_g6 := not g6u.is_empty()
+	var gc6 := {"art_override": 0, "disguised": 0, "cloaked": 0, "submerged": 0, "garrisoned": 0, "lifted": 0, "command": 0}
+	g6_counts = gc6
 	for ck in _decor:
 		if not vr.intersects(_decor_rect[ck]):
 			continue
@@ -287,7 +323,12 @@ func refresh() -> void:
 			if any_burnt and burnt.has(arr[k + 4]):
 				continue  # G4b: the tree on this cell burnt down
 			var p: Vector2 = arr[k]
-			_push(0, p.y, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2), (arr[k + 2] as Rect2).size, Color.WHITE)
+			var dl := 0.0
+			if hl_n > 0:
+				var dci: int = arr[k + 4]
+				if dci >= 0 and dci < hl_n:
+					dl = hl_t[dci]
+			_push(0, p.y, arr[k + 1], arr[k + 2], p + (arr[k + 3] as Vector2) - Vector2(0, dl), (arr[k + 2] as Rect2).size, Color.WHITE)
 	for ck in _flat:
 		if not vr.intersects(_flat_rect[ck]):
 			continue
@@ -309,6 +350,10 @@ func refresh() -> void:
 	# ART-T CR: HILL / CLIFF tiles are drawn raised (terrain_layer._raise[code] px): lift ground units
 	var raise_v = mv.terrain_layer.get("_raise") if mv.terrain_layer != null else null
 	var raise: Dictionary = raise_v if raise_v is Dictionary else {}
+	if raise_v is PackedInt32Array:  # G6: terrain_layer keeps _raise as a per-code PackedInt32Array now
+		for code in (raise_v as PackedInt32Array).size():
+			if raise_v[code] != 0:
+				raise[code] = raise_v[code]
 	var terr: PackedByteArray = sn.get("terrain", PackedByteArray()) if not raise.is_empty() else PackedByteArray()
 	var terr_w: PackedByteArray = sn.get("terrain", PackedByteArray())  # G5 (VIEW5-2): amphibians swim on water
 	# G5 (VIEW5) side tables (sparse; empty dicts in a G4 match)
@@ -340,6 +385,16 @@ func refresh() -> void:
 			var ti := floori(pos.y) * mw + floori(pos.x)
 			if ti >= 0 and ti < terr.size():
 				sp.y -= float(raise.get(int(terr[ti]), 0))
+		var hl := 0.0
+		if hl_n > 0:
+			var hci := floori(pos.y) * mw + floori(pos.x)
+			if hci >= 0 and hci < hl_n:
+				hl = hl_t[hci]
+				if rp6_n > 0 and rp6[hci] != 0:
+					hl = ViewUtil.ground_lift(hm6, pos)
+				sp.y -= hl
+				if hl != 0.0:
+					gc6.lifted += 1
 		if ow != pf:
 			var ci := floori(raw.y) * mw + floori(raw.x)
 			if not vis.is_empty() and (ci < 0 or ci >= vis.size()):
@@ -357,6 +412,26 @@ func refresh() -> void:
 		if fl & RenderSnap.FLAG_HID and ow != pf and not mv._ally_fids.has(ow) and not (hid_spot.get(id, []) as Array).has(my_team):
 			continue
 		var dname: String = defs[def_a[i]]
+		var mod6 := Color.WHITE
+		if fl & RenderSnap.FLAG_G6 and has_g6:
+			# G6 (VIEW6): garrisoned units ride inside (pips on the building); art override (e.art_def) and
+			# the mimic disguise for this viewer; own cloaked / submerged units translucent
+			var g6e = g6u.get(id)
+			if G6Vis.hidden_inside(g6e):
+				gc6.garrisoned += 1
+				continue
+			var an := G6Vis.art_def(g6e, pf, dname)
+			if an != dname:
+				if g6e.has("dis") and (g6e.dis as Dictionary).has(pf):
+					gc6.disguised += 1
+				else:
+					gc6.art_override += 1
+				dname = an
+			mod6 = G6Vis.modulate(g6e, ow == pf or mv._ally_fids.has(ow))
+			if g6e != null and int(g6e.get("cloak", 0)) > 0:
+				gc6.cloaked += 1
+			elif g6e != null and g6e.has("sub"):
+				gc6.submerged += 1
 		if live:
 			var le = ents.get(id)
 			if le != null:
@@ -435,6 +510,9 @@ func refresh() -> void:
 					fi = c[9] if ph % 2 == 0 else c[10]
 				else:
 					fi = c[11] if ph % 2 == 0 else 0
+			elif c[30] >= 0 and int(t * 0.5 + id * 0.61) % 4 == 0:
+				fi = c[30]  # G6 (ART-G6b s3.2): an idle officer / command node gives orders 2 s in every 8
+				gc6.command += 1
 		if fi < 0:
 			fi = 0
 		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
@@ -456,13 +534,14 @@ func refresh() -> void:
 		var ii := _n
 		if ii >= _page.size():
 			_reserve(ii * 2 + 16)
-		_keys[ii] = layer * LAYER_MUL + (int(sp.y) + Y_OFF) * IDX_MUL + ii
+		# G6: sort by ground depth (sp.y + height lift) so units on a ridge order correctly against the valley
+		_keys[ii] = layer * LAYER_MUL + (int(sp.y + hl) + Y_OFF) * IDX_MUL + ii
 		_page[ii] = pg
 		_src[ii] = (c[3] as Vector2) + Vector2(fi, row) * fsz
 		_size[ii] = fsz
 		_dst[ii] = sp + (c[6] as Vector2)
 		_dsz[ii] = fsz
-		_mod[ii] = Color.WHITE
+		_mod[ii] = mod6
 		_n = ii + 1
 		if fl & RenderSnap.FLAG_SLUNG:
 			_g5_slung(sling.get(id, []), id, ow, fac_a[i], sp, t, gc5)
@@ -482,6 +561,11 @@ func refresh() -> void:
 			continue
 		var mod := Color.WHITE
 		var sdy := 0.0
+		var gd := gs  # G6: draw origin = ground point raised by the cell's height lift (gs.y stays the sort depth)
+		if hl_n > 0:
+			var sci := gc.y * mw + gc.x
+			if sci >= 0 and sci < hl_n:
+				gd.y -= hl_t[sci]
 		match kind:
 			"building":
 				if ow != pf and not mv.entity_visible(e):
@@ -505,7 +589,7 @@ func refresh() -> void:
 					# G5 (NAVAL): a sinking ship wreck settles and fades as its sink timer runs out
 					var kk: float = sk.k
 					mod = Color(1, 1, 1, 0.3 + 0.7 * kk)
-					sdy = (1.0 - kk) * 10.0
+					sdy = (1.0 - kk) * 10.0  # (water is never lifted, so this replaces the height term)
 					gc5.sinking += 1
 					# G5 (VIEW5-2, ART-NAV): vehicles[def].sink columns sink_0..3 from the timer (1 - k)
 					var sks = G5Art.unit_spec(String(e.get("def", ""))).get("sink")
@@ -524,13 +608,13 @@ func refresh() -> void:
 				if kind == "mine" and ow != pf and not mv._ally_fids.has(ow):
 					nm = "mine_detected"
 				if art.resolve_fx(nm, _team.get(ow, neutral), String(_ck.get(ow, "x")), int(t * 2.0 + id * 0.31)):
-					_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
+					_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off, art.out_src.size, Color.WHITE)
 					g4b_fx_drawn += 1
 					continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
-			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 	_push_strips(sn, vr, pf, mem, statics, gc5)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
@@ -749,12 +833,18 @@ func _push_strips(sn: Dictionary, vr: Rect2, pf: int, mem: Dictionary, statics: 
 		var c = _strip_cache.get(bid)
 		if c == null or c[0] != sig:
 			var lst: Array = []
-			for tl in G5Art.strip_tiles(int(bid), af):
+			# G6 (VIEW6, airfield v2): apron pads under the slot squares first, then the runway tiles
+			var tiles: Array = G6Vis.apron_tiles(af)
+			gc5["apron"] = int(gc5.get("apron", 0)) + tiles.size()
+			tiles.append_array(G5Art.strip_tiles(int(bid), af))
+			# CR 822: runway / apron tiles sit on the drawn (raised) ground
+			var hmS: Dictionary = mv.terrain_layer.height_map() if mv.terrain_layer != null and mv.terrain_layer.has_method("height_map") else {}
+			for tl in tiles:
 				var f: String = tl[1]
 				var pv: Vector2 = tl[2]
 				art._whole("strip|" + f, ArtCatalog._image(f), [pv.x, pv.y])
 				if art.out_page >= 0:
-					lst.append([mv.world_to_screen(tl[0]), art.out_page, art.out_src, art.out_off])
+					lst.append([ViewUtil.world_to_screen_h(hmS, tl[0]), art.out_page, art.out_src, art.out_off])
 			c = [sig, lst]
 			_strip_cache[bid] = c
 		for it in c[1]:

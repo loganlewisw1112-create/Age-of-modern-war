@@ -123,7 +123,10 @@ const BUILD_CATS := ["base", "military", "air", "naval", "support"]
 const BUILD_CAT_NAMES := {"base": "Base", "military": "Military", "air": "Air", "naval": "Naval", "support": "Support"}
 ## Letters a generated build key avoids (pan W/D, Deploy E, Lay mine M, Plant charge O sit on the
 ## engineer card too); a data hotkey keeps its letter.
-const AVOID_KEYS := ["W", "D", "E", "M", "O"]
+## G6 (UI6b): J / U / X / Z are the engineer-card G6 keys (minefield, sweep, rail, garrison / tow), so a
+## generated key avoids them too; they (and E / M / O) are only a last resort on a crowded page.
+const AVOID_KEYS := ["W", "D", "E", "M", "O", "J", "U", "X", "Z"]
+const LAST_RESORT_KEYS := ["E", "M", "O", "J", "U", "X", "Z"]
 
 
 static func _flag(d: Dictionary, k: String) -> bool:
@@ -179,11 +182,14 @@ static func build_hotkey(def_id: String, used: Dictionary) -> String:
 	for ch in String(d.get("name", def_id)).to_upper():
 		if ch >= "A" and ch <= "Z" and not AVOID_KEYS.has(ch):
 			cand.append(ch)
-	cand.append_array(ALT_KEYS)
+	for ak in ALT_KEYS:
+		if not AVOID_KEYS.has(ak):
+			cand.append(ak)
 	for i in 26:
 		var ch := String.chr(65 + i)
 		if not AVOID_KEYS.has(ch):
 			cand.append(ch)
+	cand.append_array(LAST_RESORT_KEYS)
 	for k in cand:
 		if RESERVED_BUILD_KEYS.has(k) or used.has(cat + ":" + String(k)):
 			continue

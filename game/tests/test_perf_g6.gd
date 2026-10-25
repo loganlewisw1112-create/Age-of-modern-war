@@ -347,3 +347,59 @@ func test_native_rail_hover_classes_keep_foot_nav() -> void:
 			w.step()
 		check(Vector2(u.pos).distance_to(p0) > 3.0, "%s: infantry still paths with a train + hovercraft on the map (moved %.2f)" % [tag, Vector2(u.pos).distance_to(p0)])
 	_after()
+
+## G6 PERF6-4 (ORCH decision): the path queue keeps its 40/tick budget but serves player-side requests first,
+## then smaller AI groups, then mass AI orders (stable keys, no wall clock); a world with no AI side keeps the
+## old FIFO entries (no "pk" key: hash-compatible).
+func test_path_queue_priority_player_first_then_small_groups() -> void:
+	NativeCore.force_off = false
+	var w := make_world({}, true)   # side 1 is an AI side (is_ai); no controller thinks in this test
+	w.ai_state = {}
+	var t: PackedByteArray = w.map.terrain
+	for y in range(0, 26):
+		for x in range(22, 74):
+			t[y * int(w.map.w) + x] = Terrain.GRASS
+	w.map.terrain = t
+	Movement.rebuild_nav(w)
+	check(bool(w.factions[1].is_ai) and not bool(w.factions[0].is_ai), "fixture: side 1 is AI, side 0 is not")
+	var mass := []
+	for i in 120:
+		mass.append(int(_spawn(w, "rifleman", 1, Vector2i(23 + i % 12, 1 + i / 12)).id))
+	var small := []
+	for i in 8:
+		small.append(int(_spawn(w, "rifleman", 1, Vector2i(37 + i % 4, 1 + i / 4)).id))
+	var mine := []
+	for i in 3:
+		mine.append(int(_spawn(w, "rifleman", 0, Vector2i(23 + i, 22)).id))
+	var goal := Vector2(70.5, 20.5)
+	Movement.apply_command(w, {"type": "move", "issuer": 1, "unit_ids": mass, "target": goal})
+	Movement.apply_command(w, {"type": "move", "issuer": 1, "unit_ids": small, "target": goal + Vector2(0, -6)})
+	Movement.apply_command(w, {"type": "move", "issuer": 0, "unit_ids": mine, "target": goal + Vector2(0, 3)})
+	var st: Dictionary = w.sys_state.movement
+	var waiting := func(ids: Array) -> int:
+		var n := 0
+		for id in ids:
+			if int(w.entities[id].get("path_req", -1)) >= 0:
+				n += 1
+		return n
+	check(int(waiting.call(mass)) > 0, "fixture: the mass AI order overflows the budget (%d queued)" % int(waiting.call(mass)))
+	var q: Array = st.queue
+	check(q.size() > 0 and not q[0].has("pk") and mine.has(int(q[0].id)), "a player request waits at the queue head, ahead of the AI mass order")
+	w.step()
+	check_eq(int(waiting.call(mine)), 0, "player requests served on the next drain")
+	check_eq(int(waiting.call(small)), 0, "the small AI group is served before the mass AI order")
+	check(int(waiting.call(mass)) > 0, "the mass AI order is still partly queued (budget 40/tick)")
+	for i in 10:
+		w.step()
+	check_eq(int(waiting.call(mass)), 0, "the mass AI order drains within its budget (never starved)")
+	# no AI side: FIFO entries without a pk key (pre-G6 queue format)
+	var w2 := make_world()
+	w2.ai_state = {}
+	var ids2 := []
+	for i in 60:
+		ids2.append(int(w2.entities[w2.spawn_unit("rifleman", 1, Vector2(Movement.nearest_free_cell(w2, Vector2i(10 + i % 10, 10 + i / 10), "foot")) + C)].id))
+	Movement.apply_command(w2, {"type": "move", "issuer": 1, "unit_ids": ids2, "target": Vector2(60.5, 40.5)})
+	var pk_any := false
+	for qe in w2.sys_state.movement.queue:
+		pk_any = pk_any or qe.has("pk")
+	check(not pk_any and not w2.sys_state.movement.has("qin"), "non-AI sides keep plain FIFO entries (no pk / qin keys)")

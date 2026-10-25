@@ -46,6 +46,7 @@ At every finding, decision, dead end or milestone, append ONE short line:
   - compile check: `timeout 240 "$G" --headless --path . --quit-after 60 2>&1 | grep -E -A2 "SCRIPT ERROR|Parse Error"` must print nothing.
   - In the G6 art pass, an agent writing one 60 KB file in a single call went silent for 12 minutes and was stopped with nothing saved.
   - **Every intermediate state must compile** (ORCH rule, 2026-10-25): three agents broke the whole tree for every other agent by appending a call before the function it calls (machine_g6.gd, mobility.gd `_pack`, ops_missions.gd `_eval_doc`). Write callees before callers, keep public functions present in every chunk, and use the Write/Edit tools for code: a shell heredoc append that fails silently caused one of the three.
+  - **Never capture a fixture from a broken tree** (ORCH rule, 2026-10-25): before trusting any hash, golden, soak RESULT or perf number, grep its log for `SCRIPT ERROR`; it must be 0. A test_hot_state GOLD captured at 09:16 came from a tree where sonar.gd lacked tick() (1520 errors, every step aborted) and cost two agents an hour.
 - **Never break callers mid-rewrite** (G6 wave, day 1: three agents broke the whole tree within an hour):
   - every CONTRACTS_G6 §5 function in your files stays present with its exact static signature at all times (keep the stub until the real one replaces it);
   - create a new file as a compiling stub BEFORE you add a `preload` of it anywhere;
@@ -58,6 +59,7 @@ At every finding, decision, dead end or milestone, append ONE short line:
 - **Tests:**
   1. At start, `git mv` your skeleton(s) from `tests/pending_g6/` into `tests/` (`git mv` is the one git command you may run, for your own skeletons only).
   2. Make every test pass with real checks. Iterate with `bash tests/run.sh --only=<file>`.
+  2b. **One heavy Godot job at a time per agent** (ORCH rule, 2026-10-25 11:20: about 22 Godot processes made every run 10x slower). Heavy = soak config, 10k bench, test_ui_fit, test_hot_state, windowed capture. Soak lanes: at most 2 configs in parallel. On Windows `timeout` may not kill the Godot child: if a run hangs, Stop-Process your own PIDs.
   3. **Do NOT run the full suite** (ORCH rule, 2026-10-25: concurrent full runs share user:// and broke test_save; 13 Godot runs at once slowed everyone). At the end, run `--only=` for every test file you own **plus** each test file covering a file whose callers you touched (e.g. production, world, damage, movement, airfield). ORCH runs the full suite at heartbeats and sends you any failure in your files. If a targeted run fails in another agent's in-progress file, quote it and keep yours green.
 - **Height-aware:** after `elev.api_ready`, range, sight and LOS code goes through the `Elevation` API.
 - **Machine sharing:**

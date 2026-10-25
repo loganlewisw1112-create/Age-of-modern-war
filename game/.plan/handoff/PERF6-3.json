@@ -1,0 +1,35 @@
+{
+  "agent": "PERF6-3",
+  "gen": 3,
+  "status": "partial: P1 (GOLD drift) solved and re-baselined under ORCH authority; fps harness built; 10k elevated target NOT met (143.5 ms/tick under load vs <= 62.5)",
+  "done": [
+    "P1 root cause: the 09:16 elevated GOLD (PERF6-2) was captured on a broken tree. Its capture logs (scratchpad as_2k.log 09:17:55, as_10kf.log, as_10km.log) print exactly the 8 GOLD hashes and 1520 SCRIPT ERRORs 'Nonexistent function tick in base GDScript' at world.gd step (one per tick per run): sonar.gd (NAVAL6, mtime 09:16:56) sat in SYSTEM_ORDER without tick(), so step() aborted at Sonar every tick. Reproduced in a scratch copy of the tree by aborting step() at SYSTEM_ORDER index 21: 2k_fight/on f207a5bd, 2k_mixed/on ea983093, 10k_fight/on d6dea454, 10k_march/on f36bab59 = old GOLD; indexes 0..20 do not match. Exonerated by scratch A/B: speed/sight split vs the old height-in-SPEED/SIGHT rule + pre-split path (same hash at every 40-tick checkpoint to 240), Airdef.acc_mult / Counterdrone.damage_mult / SHOT bit (same hash). Board: fact gold.drift_root_cause.",
+    "GOLD re-baselined (ORCH-authorized, 4 conditions met): two independent captures 10:06:59-10:12:45 and 10:07:24-10:13:17 PDT, identical, 0 SCRIPT ERROR / Parse Error each; header in tests/test_hot_state.gd replaced as ORCH specified; test_hot_state 17/17 TESTS OK (incl. test_g5_gold_holds_flattened). Board: fact gold.rebaselined.",
+    "Movement._separate_native_only (pre-0.4 DLL fallback) skips garrisoned units while a garrison exists (same rule as _separate / _tick_native).",
+    "Movement.flow_skip (default on): _flow_path skips the per-tile cut-over loop on flow segments whose closest point to the slot is beyond LOS_MAX + 0.05 (exact in doubles; float32 rounding ~1e-4). Hash equal on/off: 10k_fight/on cc7e99ac, 2k_fight/on f500b7eb, 2k_fight/off 371710a0, 10k_march/on 510e6a39; added to test_hot_state _perf_paths. Gain small: mv.drain 12.14 -> 11.36 ms/tick at 10k fight.",
+    "Windowed fps harness: tools/bench.gd --fps [--fps-secs=30] [--fps-cases=2k,10k] [--no-write] launches the game windowed as a child (--autostart --map --spawn-test --zoom --no-vsync --fps-quit), parses FPS_SUMMARY, gates on p10 (2k on screen river_crossing_s zoom 1.0 >= 60; 10k valley_conquest_l zoom 0.15 >= 30), records CPU load / godot count per row, writes perf/FPS_G6_<date>.md. Smoke: 2k 12 s avg 110.2 min 94.5 p10 94.5 PASS at CPU 69%."
+  ],
+  "evidence": [
+    "10k fight valley_conquest_l (authored height) native, 80 ticks, --breakdown: avg 143.5 ms/tick p95 187.6 (CPU 88% -> 77%, 10 -> 12 godot processes); hash 70acd0ed..; combat 65.7 (cmb.np 28.9, cmb.act 26.4, cmb.ngrid 9.1), movement 31.6 (mv.drain 11.6, mv.ng_call 11.5, mv.apply 4.4, mv.native_step 4.0), supply 9.8, fog 9.5 (fog.gather 8.0), morale 8.3 (mor.full 8.1), economy 4.0, victory 2.5",
+    "path queue probe (scratch p63_queue.gd): 10k fight keeps ~8000-9300 queued attack_move group path requests; budget 40 served/tick (NATIVE_PATH_BUDGET), ~0.29 ms per served request"
+  ],
+  "remaining": [
+    "1. 10k elevated <= 62.5 ms/tick (143.5 under load). Next: profile inside Movement._drain_queue (split _resolve / native.flow / _flow_path / _compute / q.slice per tick with ~8000 entries) - the per-tile loop is NOT the cost; cmb.np 28.9 is the native prep reading unit dicts (memory-latency floor, CORE10K-3 item 3: array-held combat state is a multi-agent wave); CORE10K-3 item 2 native morale_scan + fog_gather ports (~3-4 ms each) still not started (build_native.sh --stage then --swap).",
+    "2. fps harness: only the 2k case was smoke-run; run the 10k case (and ORCH's final numbers on a quiet PC): godot --headless --path . -s tools/bench.gd -- --fps",
+    "3. ORCH decision (gameplay/perf): at 10k the path queue is ~8000 deep with 40 served per tick, so late units wait ~200 ticks (10 s) for a path."
+  ],
+  "files_touched": [
+    "tests/test_hot_state.gd (GOLD + header; flow_skip in _perf_paths)",
+    "sim/systems/movement.gd (_separate_native_only garrison skip; flow_skip + _seg_far)",
+    "tools/bench.gd (--fps windowed harness)",
+    ".plan/handoff/PERF6-3.json"
+  ],
+  "test_state": "test_hot_state 17/17 TESTS OK on the new GOLD (before flow_skip); final per-file reruns of test_hot_state, test_perf, test_perf_g6, test_movement in scratchpad t_final.log (see final report)",
+  "gotchas": [
+    "Any GOLD capture must grep its log for SCRIPT ERROR: a system missing tick() aborts world.step() every tick and still yields a stable hash",
+    "tests/run.sh --only takes ONE file name (a comma list runs nothing and prints TESTS FAILED files=0)",
+    "hb.sh beats only after 90 s; post a board status yourself before every call or the guard flags STALE",
+    "scratch tree copy (sim/content/tools/bin/tests + project.godot + .godot caches) runs headless fine for bisects: scratchpad/tree"
+  ],
+  "open_crs": []
+}

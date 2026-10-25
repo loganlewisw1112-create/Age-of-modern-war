@@ -51,7 +51,9 @@ func _unit_spec(def: String) -> Dictionary:
 			# G5 (VIEW5-2, ART-NAV): wake sheet, swim / swim_move (amphibians on water), ramp (half-down)
 			"wake": spec.get("wake", {}) if spec.get("wake") is Dictionary else {},
 			"swim": G5Art.special_col(def, frames, "swim"), "swim_mv": G5Art.special_col(def, frames, "swim_move"),
-			"ramp": G5Art.special_col(def, frames, "ramp")}
+			"ramp": G5Art.special_col(def, frames, "ramp"),
+			# G6 (VIEW6, ART-G6b s3.2): officers / Machine command nodes carry a `command` pose column
+			"cmd": frames.find("command")}
 		if s.dep < 0:
 			s.dep = G5Art.special_col(def, frames, "deployed")
 	_uspec[def] = s
@@ -82,14 +84,15 @@ func _fallback(e: Dictionary, team: Color) -> void:
 
 
 ## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed, work, unload,
-## squad_alive (0 = full sheet), wounded, tactical, carry, dive, parked, landed, air anim cols, move anim cols, anim fps]
+## squad_alive (0 = full sheet), wounded, tactical, carry, dive, parked, landed, air anim cols, move anim cols, anim fps,
+## wake, swim, swim_move, ramp, command (G6 officer pose, index 30)]
 ## (page -2 = fallback; frame index -1 = the sheet has no such column).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
 	var s := _unit_spec(def)
 	var alive := int(e.get("squad_alive", 0))
 	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1,
-		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0, {}, -1, -1, -1]
+		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0, {}, -1, -1, -1, -1]
 	if not s.is_empty():
 		var sh: Dictionary = G5Art.squad_sheet(s.spec, alive)  # G5: alive_sheets[n] for a reduced squad
 		var key: String = String(sh.file) + "|" + ck
@@ -125,6 +128,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[27] = int(s.swim)
 			c[28] = int(s.swim_mv)
 			c[29] = int(s.ramp)
+			c[30] = int(s.get("cmd", -1))
 	_ec[int(e.id)] = c
 	return c
 
@@ -214,7 +218,7 @@ func _state_code(e: Dictionary, kind: String) -> int:
 			# G5 (VIEW5): ART-BLD variants (hangar level, field facing, shore side, damaged, build)
 			return -1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
 				+ posmod(int(e.get("water_d", 0)), 4) * 4 + (2 if _damaged(e) else 0)
-				+ (1 if float(e.get("air_build", 0.0)) > 0.0 else 0)) - (4096 if not bool(e.get("built", true)) else 0) 				- 8192 * clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
+				+ (1 if float(e.get("air_build", 0.0)) > 0.0 else 0)) - (4096 if not bool(e.get("built", true)) else 0) 				- 8192 * clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2) 				- (32768 if int(e.get("firing", 0)) > 0 else 0)  # G6 (VIEW6): rot_<f>_fire
 		if bool(e.get("built", true)):
 			if not e.has("conn"):
 				return -1

@@ -105,7 +105,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			if g.is_empty() or (g.members as Array).is_empty():
 				return "This officer has no units assigned."
 			var m := String(cmd.get("mission", ""))
-			if not MISSIONS.has(m):
+			if not MISSIONS.has(m) and not Missions.DOC_MISSIONS.has(m):  # G6 (AI7-DOC CR ops_doc_missions)
 				return "Unknown mission type '%s'." % m
 			var t = _pt(cmd.get("target"))
 			if t == null or not w.in_bounds(w.cell_of(t)):
@@ -131,6 +131,10 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 						has = true
 				if not has:
 					return "Assign a transport to this officer for a transport mission."
+			if Missions.DOC_MISSIONS.has(m):  # G6 doctrine missions: raid / sabotage / recon / officer_hunt / exfil
+				var why := Missions.validate_doc(w, g, cmd)
+				if why != "":
+					return why
 			return ""
 		"cancel_mission":
 			var g := group_led_by(w, int(off.id))
@@ -179,6 +183,8 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			var cen := Missions.centroid(w, g)
 			g.mission = {"type": m, "target": t, "radius": float(cmd.get("radius", 6.0)), "risk": risk,
 				"points": pts, "i": 0, "goal": t, "dist0": maxf(cen.distance_to(t), 1.0)}
+			if Missions.DOC_MISSIONS.has(m):
+				Missions.init_doc(w, g, cmd)  # G6 (AI7-DOC CR ops_doc_missions)
 			g.start = (g.members as Array).size()
 			g.losses = 0
 			g.secure_ticks = 0

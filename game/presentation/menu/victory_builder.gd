@@ -7,8 +7,11 @@ extends VBoxContainer
 signal changed
 
 const HT = preload("res://presentation/hud/hud_theme.gd")
+const Waves = preload("res://sim/systems/waves.gd")  # G6 (UI6a): survival config helper (MODES6)
 const MODE_NAMES := {"hq_elimination": "HQ elimination", "territory": "Territory control",
-	"hold_bridge": "Hold the bridge", "combined": "Combined (AND / OR)", "endless": "Endless"}
+	"hold_bridge": "Hold the bridge", "combined": "Combined (AND / OR)", "endless": "Endless",
+	"survive": "Survival: hold out", "repel_waves": "Survival: repel waves"}
+const SURVIVAL := ["survive", "repel_waves"]
 const TERMS := ["hq_elimination", "territory", "hold_bridge", "endless"]
 
 var modes: Array = []
@@ -20,6 +23,11 @@ var term_boxes: Dictionary = {}   # term type -> CheckBox
 var _pct_row: Control
 var _sec_row: Control
 var _combo_row: Control
+var surv_seconds: SpinBox      # G6 (UI6a): survive {seconds}
+var surv_count: SpinBox        # G6 (UI6a): repel_waves {count}
+var _surv_row: Control
+var _surv_secs_box: Control
+var _surv_count_box: Control
 
 
 func build() -> void:
@@ -80,7 +88,44 @@ func build() -> void:
 		cb.toggled.connect(_emit)
 		r2.add_child(cb)
 		term_boxes[t] = cb
+	_build_survival()
 	_sync()
+
+
+## G6 (UI6a): survival parameters on their own row (keeps the setup panel narrow). The wave attacker
+## is the last side (Waves.survival_config makes it an AI alone on its own team).
+func _build_survival() -> void:
+	var sr: Dictionary = Waves.rules()
+	var r3 := HBoxContainer.new()
+	r3.name = "SurvivalRow"
+	r3.add_theme_constant_override("separation", 8)
+	add_child(r3)
+	_surv_row = r3
+	_surv_secs_box = HBoxContainer.new()
+	r3.add_child(_surv_secs_box)
+	_surv_secs_box.add_child(HT.make_label("Hold out (s)", HT.DIM, 14))
+	surv_seconds = SpinBox.new()
+	surv_seconds.name = "SurvivalSeconds"
+	surv_seconds.min_value = int(sr.get("seconds_min", 60))
+	surv_seconds.max_value = int(sr.get("seconds_max", 36000))
+	surv_seconds.step = 60
+	surv_seconds.value = int(sr.get("default_seconds", 1200))
+	surv_seconds.value_changed.connect(_emit)
+	_surv_secs_box.add_child(surv_seconds)
+	_surv_count_box = HBoxContainer.new()
+	r3.add_child(_surv_count_box)
+	_surv_count_box.add_child(HT.make_label("Waves", HT.DIM, 14))
+	surv_count = SpinBox.new()
+	surv_count.name = "SurvivalWaves"
+	surv_count.min_value = int(sr.get("count_min", 1))
+	surv_count.max_value = int(sr.get("count_max", 100))
+	surv_count.step = 1
+	surv_count.value = int(sr.get("default_count", 10))
+	surv_count.value_changed.connect(_emit)
+	_surv_count_box.add_child(surv_count)
+	var note := HT.make_label("Waves attack from the last side (AI).", HT.DIM, 13)
+	note.name = "SurvivalNote"
+	r3.add_child(note)
 
 
 func _emit(_v: Variant = null) -> void:
@@ -101,6 +146,10 @@ func _sync() -> void:
 	_combo_row.visible = m == "combined"
 	_pct_row.visible = m == "territory" or (m == "combined" and _term_on("territory"))
 	_sec_row.visible = m == "hold_bridge" or (m == "combined" and _term_on("hold_bridge"))
+	if _surv_row != null:
+		_surv_row.visible = SURVIVAL.has(m)
+		_surv_secs_box.visible = m == "survive"
+		_surv_count_box.visible = m == "repel_waves"
 
 
 func select_mode(m: String) -> void:
@@ -132,6 +181,15 @@ func apply(cfg: Dictionary) -> void:
 					term["seconds"] = int(seconds.value)
 				terms.append(term)
 			cfg.victory_rules = {"op": "and" if op.selected == 0 else "or", "terms": terms}
+		"survive", "repel_waves":
+			# G6 (UI6a): MODES6's helper sets victory_params, cfg.survival and the attacker's team
+			var amount := int(surv_seconds.value) if m == "survive" else int(surv_count.value)
+			var c: Dictionary = Waves.survival_config(cfg, m, amount, -1)
+			cfg.sides = c.get("sides", cfg.get("sides", []))
+			cfg.victory_params = c.get("victory_params", {})
+			cfg.survival = c.get("survival", {})
+	if not SURVIVAL.has(m):
+		cfg.erase("survival")
 
 
 ## Human-readable victory text for a cfg (menu summary, HUD panel title, end screen).
@@ -151,6 +209,11 @@ static func describe(cfg: Dictionary) -> String:
 			return (" AND " if String(vr.get("op", "and")) == "and" else " OR ").join(parts) if not parts.is_empty() else "(no terms)"
 		"endless":
 			return "Endless"
+		"survive":
+			var secs := int(vp.get("seconds", Waves.rules().get("default_seconds", 1200)))
+			return "Survive %d:%02d" % [secs / 60, secs % 60]
+		"repel_waves":
+			return "Repel %d waves" % int(vp.get("count", Waves.rules().get("default_count", 10)))
 	return "HQ elimination"
 
 

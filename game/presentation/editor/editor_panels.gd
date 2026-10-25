@@ -23,6 +23,7 @@ var props_body: Label
 var issues_box: VBoxContainer
 var undo_btn: Button
 var redo_btn: Button
+var live_btn: Button             # G6 (ED6): Live toggle (L)
 var sym_opt: OptionButton
 var dialog: FileDialog
 var _dialog_save := false
@@ -53,6 +54,8 @@ func build(editor) -> void:
 	redo_btn = W.button(tb, "Redo", ed.action_redo, "Redo (Ctrl+Y)")
 	W.button(tb, "Validate", ed.action_validate, "Check starts, reachability, placements")
 	W.button(tb, "Test Play", ed.action_test_play, "Play this map now, then come back")
+	live_btn = W.button(tb, "Live", ed.toggle_live, "Live (L): placed units fight right here; L again rewinds")
+	live_btn.toggle_mode = true
 	W.button(tb, "Exit", ed.action_exit, "Back to the main menu")
 	title_label = HT.make_label("", HT.TEXT, 15)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL

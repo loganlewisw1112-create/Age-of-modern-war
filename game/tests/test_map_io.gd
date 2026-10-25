@@ -251,3 +251,179 @@ func test_mapio_seed_repeat_every_builtin_and_file() -> void:
 			fh.append(w.state_hash())
 		check_eq(fh[0], fh[1], "%s file map: same hash twice" % id)
 	cleanup()
+
+
+# ================================================================ G6 (MAPIO6): ED6 CRs 927 / 963, MODES6 CR
+const Airfield = preload("res://sim/systems/airfield.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")
+const Companies = preload("res://sim/systems/companies.gd")
+
+
+## The editor's company block (ed2_model.company_block): template unit defs on a square grid, one block id.
+static func company_ents(tid: String, slot: int, origin: Vector2i) -> Array:
+	var defs := []
+	for sl in Companies.presets().get(tid, {}).get("slots", []):
+		var d := String(sl.get("def", ""))
+		if Content.unit(d).is_empty():
+			d = String(sl.get("alt", ""))
+		if Content.unit(d).is_empty():
+			continue
+		for i in int(sl.get("count", 1)):
+			defs.append(d)
+	var side := maxi(1, ceili(sqrt(float(defs.size()))))
+	var out := []
+	for i in defs.size():
+		out.append({"kind": "unit", "def": String(defs[i]), "owner_slot": slot, "cell": origin + Vector2i(i % side, i / side),
+			"facing": 0.0, "company": tid, "company_block": "%s@%d,%d" % [tid, origin.x, origin.y]})
+	return out
+
+
+func test_mapio_g6_field_facing_i_before_layout() -> void:
+	var fdef := "a_airfield"
+	if not check(Airfield.STRIP_KINDS.has(String(Content.building(fdef).get("air_field", ""))), "a_airfield is a strip field"):
+		return
+	var cell := Vector2i(20, 20)
+	check(Airfield.layout_for(fdef, cell, 1, 0) != Airfield.layout_for(fdef, cell, 0, 0), "facing changes the layout (test is meaningful)")
+	var sc := scenario()
+	sc.entities = [{"kind": "building", "def": fdef, "owner_slot": 0, "cell": cell, "facing_i": 1, "extra_strips": 1}]
+	var enc := MapIO.encode(flat(), sc)
+	var dec := MapIO.decode(JSON.parse_string(JSON.stringify(enc)))
+	check_eq(typeof(dec.scenario.entities[0].facing_i), TYPE_INT, "facing_i decodes as an int")
+	check_eq(int(dec.scenario.entities[0].facing_i), 1, "facing_i kept through encode/decode")
+	var p := write("facing.rtsmap", flat(), sc)
+	var w := SimWorld.new_match(MapIO.config_for(p, {"seed": 5}))
+	if not check(w != null, "built"):
+		return
+	var b: Dictionary = w.buildings_of(0, fdef)[0]
+	check_eq(int(b.get("facing_i", -1)), 1, "facing_i set on the placed field")
+	check_eq(int(b.get("extra_strips", 0)), 1, "extra strips still applied")
+	check_eq(Airfield.layout(w, int(b.id)), Airfield.layout_for(fdef, cell, 1, 1), "match layout = editor preview")
+	sc.entities[0].erase("facing_i")
+	var w0 := SimWorld.new_match(MapIO.config_for(write("facing0.rtsmap", flat(), sc), {"seed": 5}))
+	check(not (w0.buildings_of(0, fdef)[0] as Dictionary).has("facing_i"), "absent facing_i: building unchanged (facing 0)")
+	cleanup()
+
+
+func test_mapio_g6_validate_minefield_and_garrison() -> void:
+	var sc := scenario()
+	sc.entities = [{"kind": "minefield", "def": "minefield", "owner_slot": 1, "cell": Vector2i(20, 30), "size": [4, 3], "mine": "at"},
+		{"kind": "building", "def": "s_garrison_bld", "owner_slot": 0, "cell": Vector2i(30, 10), "garrison": ["rifleman", "rifleman"]}]
+	check_eq(MapIO.validate(flat(), sc), [], "a minefield and a garrisoned building are legal")
+	var bad := [
+		[{"kind": "minefield", "def": "minefield", "owner_slot": 1, "cell": Vector2i(20, 30), "size": [9, 2], "mine": "at"}, "minefield wider than 8"],
+		[{"kind": "minefield", "def": "minefield", "owner_slot": 1, "cell": Vector2i(20, 30), "size": [2, 2], "mine": "sea"}, "unknown mine kind"],
+		[{"kind": "minefield", "def": "minefield", "owner_slot": 1, "cell": Vector2i(45, 45), "size": [4, 4], "mine": "ap"}, "minefield off the map"],
+		[{"kind": "building", "def": "s_garrison_bld", "owner_slot": 0, "cell": Vector2i(30, 10), "garrison": ["rifleman", "rifleman", "rifleman", "rifleman", "rifleman"]}, "garrison over slots_of"],
+		[{"kind": "building", "def": "s_garrison_bld", "owner_slot": 0, "cell": Vector2i(30, 10), "garrison": ["a_carrier"]}, "a ship cannot garrison"],
+		[{"kind": "building", "def": "s_garrison_bld", "owner_slot": 0, "cell": Vector2i(30, 10), "garrison": ["no_such_unit"]}, "unknown garrison def"],
+		[{"kind": "building", "def": "barracks", "owner_slot": 0, "cell": Vector2i(30, 10), "garrison": ["rifleman"]}, "building with no slots"]]
+	for b in bad:
+		var s2 := scenario()
+		s2.entities = [b[0]]
+		var codes := _codes(MapIO.validate(flat(), s2))
+		check(codes == ["illegal_placement"], "%s -> illegal_placement (%s)" % [b[1], str(codes)])
+	var s3 := scenario()
+	s3.entities = [{"kind": "crate", "def": "x", "owner_slot": 0, "cell": Vector2i(20, 20)}]
+	check(_codes(MapIO.validate(flat(), s3)).has("unknown_def"), "other kinds still rejected")
+	var w := SimWorld.new_match(MapIO.config_for(write("plain.rtsmap", flat(), scenario()), {"seed": 2}))
+	check(not w.sys_state.has("mines") and not w.sys_state.has("garrison"), "a map without the keys creates no mine / garrison state")
+	cleanup()
+
+
+func test_mapio_g6_placements_round_trip_equal_hash() -> void:
+	var tid := "a_rifle_co"
+	var block := company_ents(tid, 0, Vector2i(12, 26))
+	if not check(block.size() >= 4, "%s has units (%d)" % [tid, block.size()]):
+		return
+	var sc := scenario()
+	sc.entities = [{"kind": "minefield", "def": "minefield", "owner_slot": 1, "cell": Vector2i(30, 30), "size": [4, 4], "mine": "mixed"},
+		{"kind": "building", "def": "s_garrison_bld", "owner_slot": 0, "cell": Vector2i(20, 10), "garrison": ["rifleman", "rifleman", "rifleman"]}]
+	sc.entities.append_array(block)
+	check_eq(MapIO.validate(flat(), sc), [], "the G6 placement map is legal")
+	var p := write("g6place.rtsmap", flat(), sc)
+	var r := MapIO.read(p)
+	var ents: Array = r.scenario.entities
+	check_eq(ents[0].size, [4, 4], "minefield size kept")
+	check_eq(String(ents[0].mine), "mixed", "minefield mine kept")
+	check_eq(String(ents[0].kind), "minefield", "minefield kind kept")
+	check_eq(ents[1].garrison, ["rifleman", "rifleman", "rifleman"], "garrison kept")
+	check_eq(String(ents[2].company), tid, "company kept")
+	check_eq(String(ents[2].company_block), "%s@12,26" % tid, "company_block kept")
+	var w := SimWorld.new_match(MapIO.config_for(p, {"seed": 7}))
+	if not check(w != null, "file match built"):
+		return
+	# minefield: one done field of slot 1, every pattern cell holds a mine inside the rect
+	var fields: Array = w.sys_state.get("mines", {}).get("fields", [])
+	check_eq(fields.size(), 1, "one minefield")
+	var mines := 0
+	if fields.size() == 1:
+		check(int(fields[0].owner) == 1 and bool(fields[0].get("done", false)), "field owned by slot 1, done")
+		for id in w.entities:
+			var m: Dictionary = w.entities[id]
+			if String(m.kind) == "mine" and int(m.get("field", -1)) == int(fields[0].id):
+				mines += 1
+				check(Rect2i(30, 30, 4, 4).has_point(Vector2i(m.cell)), "mine inside the rect")
+		check(mines > 0 and mines == (fields[0].cells as Array).size(), "every pattern cell mined (%d)" % mines)
+	# garrison: three riflemen inside through Garrison
+	var gb: Dictionary = w.buildings_of(0, "s_garrison_bld")[0]
+	var occ := Garrison.occupants(w, int(gb.id))
+	check_eq(occ.size(), 3, "three riflemen garrisoned")
+	for uid in occ:
+		check(int(w.entities[uid].get("garrisoned_in", -1)) == int(gb.id) and String(w.entities[uid].order.type) == "hold", "occupant inside, holding")
+	# company block -> one ARMY6 company
+	var cos := Companies.companies_of(w, 0)
+	check_eq(cos.size(), 1, "one company from the block")
+	if cos.size() == 1:
+		var co: Dictionary = cos[0]
+		check_eq(String(co.template), tid, "company template")
+		check(String(w.entities[int(co.captain)].get("rank_role", "")) == "captain", "captain spawned")
+		check(not (co.platoons as Array).is_empty(), "platoons formed")
+		var members := 0
+		for el in co.elements:
+			members += (el.units as Array).size()
+		check_eq(members, block.size(), "every block unit is a company member")
+		for u in w.units_of(0):
+			if String(u.def) == String(block[0].def) and not u.has("garrisoned_in"):
+				check_eq(int(u.get("company", -1)), int(co.id), "block unit carries the company")
+	# determinism: same file twice, and save -> load
+	var w2 := SimWorld.new_match(MapIO.config_for(p, {"seed": 7}))
+	check_eq(w2.state_hash(), w.state_hash(), "same file, same seed: same hash at start")
+	w.run_ticks(120)
+	w2.run_ticks(120)
+	check_eq(w2.state_hash(), w.state_hash(), "same hash after 120 ticks")
+	var sp := DIR.path_join("g6place.sav")
+	check_eq(SaveSystem.save(w, sp), "", "saved")
+	var l: SimWorld = SaveSystem.load(sp)
+	if not check(l != null, "loaded"):
+		return
+	check_eq(l.state_hash(), w.state_hash(), "hash equal after load")
+	w.run_ticks(80)
+	l.run_ticks(80)
+	check_eq(l.state_hash(), w.state_hash(), "hash equal after 80 more ticks")
+	check_eq(Garrison.occupants(l, int(gb.id)).size(), 3, "garrison survives save/load")
+	cleanup()
+
+
+func test_mapio_g6_spawn_company_at_matches_private_spawner() -> void:
+	var p := write("co.rtsmap", flat(), scenario())
+	var a := SimWorld.new_match(MapIO.config_for(p, {"seed": 3}))
+	var b := SimWorld.new_match(MapIO.config_for(p, {"seed": 3}))
+	var slots := [{"def": "rifle_squad", "count": 2}]
+	var cell := Vector2i(24, 24)
+	var rally := Vector2(30.5, 30.5)
+	# the call waves.gd makes today (private) vs the public wrapper with the same template dict
+	var pl := Companies.plan(a, 0, {"name": "Rifle", "slots": slots}, "platoon", false)
+	var cst := Companies.state(a)
+	var cid_a := int(cst.next_cid)
+	Companies._spawn_company(a, cst, {"id": -1, "cell": cell, "size": 1, "pos": Vector2(cell) + Vector2(0.5, 0.5), "rally": rally},
+		{"owner": 0, "plan": pl, "template": "a_rifle_co", "size": "platoon", "tdef": {"name": "Wave 1 Rifle"}})
+	var cid_b := Companies.spawn_company_at(b, 0, {"id": "a_rifle_co", "name": "Wave 1 Rifle", "slots": slots}, "platoon", cell, rally)
+	check(cid_b >= 0 and cid_b == cid_a, "wrapper returns the new cid (%d)" % cid_b)
+	check_eq(b.state_hash(), a.state_hash(), "wrapper = private spawner, same hash")
+	var co: Dictionary = Companies.state(b).companies.get(cid_b, {})
+	check(String(co.get("name", "")).begins_with("Wave 1 Rifle"), "company named from the template dict")
+	check(Companies.units_of(b, co).size() > 2, "captain, lieutenant and members spawned")
+	var cid_p := Companies.spawn_company_at(b, 0, "a_rifle_co", "platoon", Vector2i(16, 30), rally)
+	check(cid_p > cid_b and String(Companies.state(b).companies[cid_p].template) == "a_rifle_co", "preset id path")
+	check_eq(Companies.spawn_company_at(b, 0, "b_no_such_template", "platoon", cell, rally), -1, "unknown template -> -1")
+	cleanup()

@@ -178,4 +178,29 @@ impl RtsCombat {
         let pf = |j: usize| -> PackedFloat32Array { tabs.at(j).try_to::<PackedFloat32Array>().unwrap_or_default() };
         crate::combat_prep::prep_units_ids(units, ents, ids.as_slice(), tick, pi(0), pi(1), pf(2), pf(3), pi(4), next_id, trf, scan_every, ret_fire)
     }
+
+    /// G6 PERF6-4 (rts_core 0.5.1): morale.gd FULL-loop batch (G6 MORALE bit clear). ids parallel to
+    /// units (or empty), mmax per id (0.0 = unfilled), terr = w.map.terrain, mw = map width, rects =
+    /// cover Rect2s [px, py, sx, sy] (f32, _cover_index source order), prm = [decay, pin_at, drain,
+    /// recover, break_at, rally_at, Q, COVER_R, CB, CB_STRIDE, UNDER_FIRE_TICKS, OUT_OF_COMBAT_TICKS,
+    /// FOREST, md]. Returns [need_ids] (no writes) or [idx, code] (1 _break, 2 _rally), input order.
+    #[func]
+    fn morale_scan(&self, units: VarArray, ents: VarDictionary, ids: PackedInt32Array, mmax: PackedFloat64Array,
+                   terr: PackedByteArray, mw: i64, rects: PackedFloat32Array, prm: PackedFloat64Array, tick: i64) -> VarArray {
+        crate::morale_scan::morale_scan(units, ents, ids.as_slice(), mmax.as_slice(), terr.as_slice(), mw,
+                                        rects.as_slice(), prm.as_slice(), tick)
+    }
+
+    /// G6 PERF6-4 (rts_core 0.5.1): fog.gd recompute source gather (G6 SIGHT hook not running). lists =
+    /// the gather lists (building list last), rmap[fid] = source slot of the fid's root (-1 = skip),
+    /// usight / bsight = fog.gd def -> sight caches, uair = unit def -> is_air, jm[fid] = Status.jam_mult,
+    /// hb = height bytes when the height term applies (else empty), prm = [mw, mh, PLAIN, sight_per_level,
+    /// tick]. Returns [need entity dicts] or [cells, sights] per slot (first-wins key order).
+    #[func]
+    fn fog_gather(&self, lists: VarArray, ents: VarDictionary, rmap: PackedInt32Array, nslots: i64, usight: VarDictionary,
+                  bsight: VarDictionary, uair: VarDictionary, jm: PackedFloat64Array, hb: PackedByteArray,
+                  prm: PackedFloat64Array) -> VarArray {
+        crate::fog_gather::fog_gather(lists, ents, rmap.as_slice(), nslots, usight, bsight, uair, jm.as_slice(),
+                                      hb.as_slice(), prm.as_slice())
+    }
 }

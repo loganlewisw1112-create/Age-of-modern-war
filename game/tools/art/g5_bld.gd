@@ -24,11 +24,11 @@ const IC = preload("res://tools/art/g5_bld_icons.gd")
 
 ## def -> [faction key, kind, footprint size (content/g5 *.json), headroom px, drawer, variant kind]
 const BLD := {
-	"a_airfield": ["a", "airfield", 6, 50, "air", "rot"], "a_airstrip": ["a", "airstrip", 4, 36, "air", "rot"],
+	"a_airfield": ["a", "airfield", 2, 50, "air", "rot"], "a_airstrip": ["a", "airstrip", 4, 36, "air", "rot"],
 	"a_hangar_light": ["a", "hangar_light", 2, 40, "hangar", "lvl"], "a_hangar_heavy": ["a", "hangar_heavy", 2, 46, "hangar", "lvl"],
 	"a_helipad": ["a", "helipad", 2, 26, "air", ""], "a_air_tower": ["a", "tower", 2, 92, "air", ""],
 	"a_forward_strip": ["a", "fwd_strip", 3, 30, "air", "rot"], "a_forward_helipad": ["a", "fwd_helipad", 2, 26, "air", ""],
-	"b_aerodrome": ["b", "airfield", 6, 56, "air", "rot"], "b_airstrip": ["b", "airstrip", 4, 36, "air", "rot"],
+	"b_aerodrome": ["b", "airfield", 2, 56, "air", "rot"], "b_airstrip": ["b", "airstrip", 4, 36, "air", "rot"],
 	"b_hangar_light": ["b", "hangar_light", 2, 40, "hangar", "lvl"], "b_hangar_heavy": ["b", "hangar_heavy", 2, 52, "hangar", "lvl"],
 	"b_helipad": ["b", "helipad", 2, 26, "air", ""], "b_air_tower": ["b", "tower", 2, 96, "air", ""],
 	"b_forward_strip": ["b", "fwd_strip", 3, 30, "air", "rot"], "b_forward_helipad": ["b", "fwd_helipad", 2, 26, "air", ""],
@@ -91,11 +91,15 @@ static func build(out: Dictionary) -> void:
 	out.manifest["icons"] = icons
 	var air := ST.build(out)
 	air["styles"] = STRIP_STYLE.duplicate()
-	air["layout"] = ("strip k of field b (k = 0 .. strips-1): start = b.pos + perp*(size/2 + 1.5 + 4k) - axis*size/2, "
-		+ "axis = AXES[facing_i], perp = (-axis.y, axis.x) (airfield.gd strip_points); segment i in 0 .. strip_len-1 is "
-		+ "centred at start + axis*(i + 0.5): i = 0 'start', i = strip_len-1 'end', else 'mid'; 'link' tiles fill the "
-		+ "1-tile gap between strip k-1 and k at perp offset size/2 + 4k - 0.5, i = 0 .. size-1; a closed strip "
-		+ "(crater) shows a crater overlay at its crater segment and 'closed' at i = 1 and i = strip_len-2")
+	air["layout"] = ("airfield v2 (CONTRACTS_G6 s13, sim/systems/airfield.gd layout_for / strip_points): the field "
+		+ "building is the main base (a_airfield / b_aerodrome size 2); axis = AXES[facing_i], perp = (-axis.y, axis.x); the "
+		+ "apron is the band beside the base on the +perp side (layout.apron, apron_rows x slot_size deep), cut into "
+		+ "slot_size squares at layout.slots (draw apron_pads.<style>.<facing_i> centred on each slot square; hangars are "
+		+ "real buildings on slot squares); runway k starts at strip_points(k)[0] beyond the apron and runs strip_len "
+		+ "tiles along the axis: segment i in 0 .. strip_len-1 is centred at start + axis*(i + 0.5): i = 0 'start', "
+		+ "i = strip_len-1 'end', else 'mid'; 'link' tiles fill the 1-tile gap between strip k-1 and k (runway_gap 4, "
+		+ "strips 3 wide); a closed strip (crater) shows a crater overlay at its crater segment and 'closed' at i = 1 "
+		+ "and i = strip_len-2")
 	out.manifest["airfield"] = air
 	out.manifest["g5_bld"] = {"defs": BLD.keys(), "state_rules": {
 		"rot": "facing_i f -> rot_<f>; under 50% hp rot_<f>_damaged; under construction rot_<f>_build_<0..2>",

@@ -18,6 +18,8 @@ extends Node
 ##   --editor [--editor-open=user://maps/x.rtsmap]   (G4e) open the map editor directly
 ##   --editor-demo=ABS_DIR               (G4e) scripted editor tour: one screenshot per tab, then quit
 ##   --tutorial                          (G5 ED5) start the tutorial match (content/scenarios/tutorial.rtsmap)
+##   --load=<path>                       (G6 ED6) open a SaveSystem save (user:// or absolute) in the match view
+##                                       (with --speed=N; replays / doctrine demos start from a real save)
 
 const MatchViewScript = preload("res://presentation/match_view.gd")
 const HudScript = preload("res://presentation/hud/hud.gd")
@@ -77,6 +79,13 @@ func _ready() -> void:
 			cfg.sides[0].ai = true
 		start_match(cfg)
 		if _args.has("speed") and match_view != null:
+			match_view.speed = clampf(float(_args["speed"]), 0.25, 12.0)  # demo/debug only
+	elif _args.has("load"):
+		var lmsg := load_from(String(_args["load"]))
+		if lmsg != "":
+			push_warning("--load: " + lmsg)
+			show_menu()
+		elif _args.has("speed") and match_view != null:
 			match_view.speed = clampf(float(_args["speed"]), 0.25, 12.0)  # demo/debug only
 	elif _args.has("tutorial"):
 		if not start_tutorial():

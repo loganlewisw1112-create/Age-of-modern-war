@@ -52,7 +52,8 @@ const DEF_PASS := FLAG_AIR | FLAG_SHIP | FLAG_DRONE  # def-table bits copied str
 # statics: fields copied when present (scalars / Vector2 / Vector2i only)
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
 	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse", "target",  # seen/fuse/target: G4b mines / charges (UI4B)
-	"level", "class", "facing_i", "air_build", "air_parent", "extra_strips", "sinking"]  # G5 (VIEW5): hangars, fields, sinking wrecks
+	"level", "class", "facing_i", "air_build", "air_parent", "extra_strips", "sinking",  # G5 (VIEW5): hangars, fields, sinking wrecks
+	"firing"]  # G6 (VIEW6): turret shot hint (rot_<f>_fire art)
 
 
 ## Builds the snapshot for the world's current state. Safe to call every tick; the cost is one
@@ -96,6 +97,8 @@ static func build(w) -> void:
 	var last_di := -1
 	var g5: Dictionary = _g5_inputs(w)  # G5 (VIEW5): sim tables read once per snapshot
 	var g5_any: bool = g5.any
+	var g6: Dictionary = _g6_inputs(w)  # G6 (VIEW6): per-unit G6 side table inputs
+	var g6_any: bool = g6.any
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
 		if e.kind == "unit":
@@ -114,6 +117,7 @@ static func build(w) -> void:
 					if ud.get("conceal_still", false) or int(ud.get("setup_ticks", 0)) > 0 							or ud.get("can_mine", false) or ud.get("can_charge", false):
 						dfl |= DEF_G4B
 					dfl |= _g5_def_bits(ud)
+					dfl |= _g6_def_bits(ud)
 					def_fl.append(dfl)
 				di = dv
 				last_def = dname
@@ -152,6 +156,8 @@ static func build(w) -> void:
 					fl |= FLAG_WORK
 			if dfl2 & DEF_CARRIER:
 				fl |= _carrier_flags(e, id, int(w.tick), old, unl)
+			if dfl2 & DEF_G6 or (g6_any and (e.has("art_def") or e.has("garrisoned_in") or e.has("camo_net"))):
+				fl |= _g6_unit(w, e, id, dfl2, g6, hid_spot)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
@@ -187,6 +193,7 @@ static func build(w) -> void:
 		"terrain": w.map.get("terrain", PackedByteArray()), "biome": w.map.get("biome", PackedByteArray()),
 	}
 	_g5_out(w, snap, g5)
+	_g6_out(w, snap, g6)
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
 
@@ -489,24 +496,27 @@ static func _airfields(w) -> Dictionary:
 			continue
 		var d: Dictionary = Content.building(String(b.def))
 		var fi := int(b.get("facing_i", 0)) % 4
-		var axis: Vector2 = AXES[fi]
-		var perp := Vector2(-axis.y, axis.x)
 		var sl := float(d.get("strip_len", 10))
 		var bs := float(b.get("size", 1))
 		var strips: Array = []
 		var k := 0
+		var af_s = _sys("airfield")
 		for s in fr.get("strips", []):
-			# same geometry as Airfield.strip_points (start beside the apron, along the field axis)
-			var p0: Vector2 = Vector2(b.pos) + perp * (bs * 0.5 + 1.5 + 4.0 * float(k)) - axis * bs * 0.5
+			# G6 (VIEW6, CR airfield_v2_render): the sim's own v2 geometry, map-clamped (Airfield.strip_points)
+			var pts: Array = af_s.strip_points(w, int(bid), k)
 			strips.append({"open": bool(s.get("open", true)), "crater_t": float(s.get("crater_t", 0.0)),
-				"busy": int(s.get("busy_id", -1)), "a": p0, "b": p0 + axis * sl})
+				"busy": int(s.get("busy_id", -1)), "a": pts[0], "b": pts[1]})
 			k += 1
+		var lo: Dictionary = af_s.layout(w, int(bid)) if b.kind == "building" else {}
 		var hs: Array = []
 		for hg in fr.get("hangars", []):
 			hs.append((hg as Dictionary).duplicate(true))
 		out[int(bid)] = {"def": String(b.def), "owner": int(b.owner), "kind": String(fr.get("kind", "")),
 			"facing_i": fi, "strip_len": int(sl), "size": int(bs), "pos": Vector2(b.pos), "strips": strips, "hangars": hs,
-			"pads": (fr.get("pads", []) as Array).duplicate(true)}
+			"pads": (fr.get("pads", []) as Array).duplicate(true),
+			# G6 (VIEW6): v2 apron (world Rect2) + slot squares (cell origins, slot order) from Airfield.layout
+			"apron": lo.get("apron", Rect2()), "slots": (lo.get("slots", []) as Array).duplicate(),
+			"slot_size": int(lo.get("slot_size", 2))}
 	return out
 
 
@@ -581,3 +591,150 @@ static func _water_sides(w, statics: Dictionary) -> void:
 		s["water_d"] = int(d)
 	cache["snap_water"] = wd
 	cache["snap_shore"] = shore
+
+
+# ================================================================ G6 (VIEW6)
+# Snapshot additions (fresh containers only; built on the sim thread so the view never reads w):
+#   g6u {id: {art?: def (e.art_def), dis?: {viewer fid: def} (MachineG6.disguise_for), cloak?: 1 cloaked |
+#        2 cloak-hidden, sub?: true (submerged), gar?: building id, sonar?: range}} for units with FLAG_G6;
+#   concealed G6 units (cloak-hidden, submerged, garrisoned, under a camo net) also set FLAG_HID with
+#   hid_spot[id] = the team ids that see them (G6Hooks.visible_to per side, the authoritative rule);
+#   garrison {bid: [occupants, slots]}, minefields [{id, owner, rect, kind, done}], companies {cid: company
+#   copy + {pos (captain), r (cohesion radius)}}, ai_cmd {fid: AiCommand.slots}, airdef {fid: [aircraft ids]}
+#   (radar picture), height (w.map.height ref, COW) + ramps for the entity height offset.
+const FLAG_G6 := 1 << 6   # unit has an entry in snap.g6u
+const DEF_G6 := 1 << 24   # def table only: cloak / disguise / submersible / sonar / art override candidates
+const G6_SYS := {"airfield": "res://sim/systems/airfield.gd", "machine_g6": "res://sim/systems/machine_g6.gd",
+	"hooks": "res://sim/systems/g6_hooks.gd", "sonar": "res://sim/systems/sonar.gd",
+	"companies": "res://sim/systems/companies.gd", "garrison": "res://sim/systems/garrison.gd",
+	"ai_command": "res://sim/systems/ai_command.gd"}
+static var _g6_scripts: Dictionary = {}
+
+
+## Lazily loaded system script (no preload: world.gd preloads this file and g6_hooks must not be in a cycle).
+static func _sys(k: String):
+	var s = _g6_scripts.get(k)
+	if s == null:
+		s = load(String(G6_SYS[k]))
+		_g6_scripts[k] = s
+	return s
+
+
+static func _g6_def_bits(ud: Dictionary) -> int:
+	if ud.has("cloak") or ud.has("disguise") or ud.has("submersible") or ud.has("sonar") 			or String(ud.get("move_class", "")).begins_with("naval"):
+		return DEF_G6
+	return 0
+
+
+static func _g6_inputs(w) -> Dictionary:
+	var ss: Dictionary = w.sys_state
+	var lo = ss.get("loadouts")
+	var art := lo is Dictionary and int(lo.get("nonstandard", 0)) > 0
+	var gar := ss.get("garrison") is Dictionary and not ((ss.garrison as Dictionary).get("blds", []) as Array).is_empty()
+	var fw := ss.get("fieldworks") is Dictionary
+	var fids: Array = w.factions.keys()
+	fids.sort()
+	var teams := {}
+	for f in fids:
+		teams[f] = int((w.factions[f] as Dictionary).get("team", f))
+	return {"any": art or gar or fw, "art": art, "gar": gar, "fw": fw, "fids": fids, "teams": teams, "u": {}}
+
+
+## Per-unit G6 entry (only for DEF_G6 defs, or every unit while loadouts / garrisons / fieldworks hold state).
+static func _g6_unit(w, e: Dictionary, id: int, dfl: int, g6: Dictionary, hid_spot: Dictionary) -> int:
+	var r := {}
+	var conceal := false
+	if g6.art:
+		var ad = e.get("art_def")
+		if ad != null and String(ad) != "" and String(ad) != String(e.def):
+			r["art"] = String(ad)
+	if dfl & DEF_G6:
+		var ud: Dictionary = Content.unit(String(e.def))
+		if ud.has("disguise"):
+			var dis := {}
+			var mg = _sys("machine_g6")
+			for f in g6.fids:
+				var a: String = mg.disguise_for(w, int(f), e)
+				if a != "":
+					dis[int(f)] = a
+			if not dis.is_empty():
+				r["dis"] = dis
+		if bool(e.get("cloaked", false)):
+			var hid := bool(e.get("cloak_hid", false))
+			r["cloak"] = 2 if hid else 1
+			conceal = conceal or hid
+		if e.has("submerged"):
+			r["sub"] = true
+			conceal = true
+		if dfl & FLAG_SHIP:
+			var sr: float = _sys("sonar").sonar_range(w, e)
+			if sr > 0.0:
+				r["sonar"] = sr
+	if g6.gar and e.has("garrisoned_in"):
+		r["gar"] = int(e.garrisoned_in)
+		conceal = true
+	if g6.fw and e.has("camo_net"):
+		conceal = true
+	var fl := 0
+	if conceal:
+		var spot: Array = []
+		var hk = _sys("hooks")
+		for f in g6.fids:
+			if hk.visible_to(w, int(f), e):
+				var tm: int = g6.teams[f]
+				if not spot.has(tm):
+					spot.append(tm)
+		hid_spot[id] = spot
+		fl |= FLAG_HID
+	if not r.is_empty():
+		g6.u[id] = r
+		fl |= FLAG_G6
+	return fl
+
+
+static func _g6_out(w, snap: Dictionary, g6: Dictionary) -> void:
+	snap["g6u"] = g6.u
+	snap["height"] = w.map.get("height", PackedByteArray())  # COW ref (ELEV writes it only at load / editor)
+	snap["ramps"] = w.map.get("ramps", PackedByteArray())
+	var ss: Dictionary = w.sys_state
+	var gar := {}
+	if g6.gar:
+		var gs = _sys("garrison")
+		for rec in ss.garrison.blds:
+			gar[int(rec.id)] = [(rec.get("units", []) as Array).size(), int(gs.slots_of(String(rec.get("def", ""))))]
+	snap["garrison"] = gar
+	var mf: Array = []
+	var mn = ss.get("mines")
+	if mn is Dictionary:
+		for f in mn.get("fields", []):
+			mf.append({"id": int(f.get("id", 0)), "owner": int(f.get("owner", -1)), "rect": (f.get("rect", []) as Array).duplicate(),
+				"kind": String(f.get("kind", "")), "done": bool(f.get("done", false))})
+	snap["minefields"] = mf
+	var cos := {}
+	var cst = ss.get("companies")
+	if cst is Dictionary and cst.get("companies") is Dictionary and not (cst.companies as Dictionary).is_empty():
+		var cm = _sys("companies")
+		var base_r := float(cm.rules().get("cohesion_radius", 12))
+		var ks: Array = (cst.companies as Dictionary).keys()
+		ks.sort()
+		for cid in ks:
+			var c: Dictionary = (cst.companies[cid] as Dictionary).duplicate(true)
+			var cap = w.entities.get(int(c.get("captain", -1)))
+			c["pos"] = Vector2(cap.pos) if cap != null else Vector2(-1, -1)
+			c["r"] = base_r * float(cm.research_mult(w, int(c.get("owner", -1)), "cohesion_radius_mult"))
+			cos[cid] = c
+	snap["companies"] = cos
+	var aic := {}
+	if ss.has("ai_cmd"):
+		var ac = _sys("ai_command")
+		for f in g6.fids:
+			var sl: Array = ac.slots(w, int(f))
+			if not sl.is_empty():
+				aic[int(f)] = sl.duplicate(true)
+	snap["ai_cmd"] = aic
+	var pic := {}
+	var adf = ss.get("airdef")
+	if adf is Dictionary and adf.get("picture") is Dictionary:
+		for f in adf.picture:
+			pic[int(f)] = (adf.picture[f] as Array).duplicate()
+	snap["airdef"] = pic

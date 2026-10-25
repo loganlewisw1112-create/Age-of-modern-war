@@ -27,7 +27,8 @@ static func _park_if_stub(st: Dictionary, w: SimWorld, key: String) -> void:
 
 static func _free_credits(w: SimWorld, fid: int, st: Dictionary) -> int:
 	var res: Dictionary = st.get("g4", {}).get("reserve", {})
-	return int(w.factions[fid].credits) - int(res.get("credits", 0))
+	var own := int(st.get("g4", {}).get("pre_co", 0))  # AI7-USE-4: our own banked share (ai_stage)
+	return int(w.factions[fid].credits) - maxi(0, int(res.get("credits", 0)) - own)
 
 
 static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g: Dictionary) -> void:
@@ -62,8 +63,13 @@ static func manage_units(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary,
 
 static func _company_hq(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g: Dictionary) -> void:
 	var hq := L.rdef(w, fid, "company_hq")
-	if hq == "" or L.count_def(ctx, hq) > 0 or int(ctx.army_pop) < HQ_ARMY:
+	if hq == "" or L.count_def(ctx, hq) > 0 or int(ctx.army_pop) < HQ_ARMY or not bool(ctx.get("g6_spend", true)):
+		g.erase("hq_want")
 		return
+	# AI7-USE-4: ai_stage banks this price (credits never piled up to 750 while units were bought:
+	# d4 soaks, hq_req=0 / co_why=no_hq on every Stage 8+ side); the build itself is bank-exempt
+	var hc: Dictionary = Content.building(hq).get("cost", {})
+	g.hq_want = {"credits": int(hc.get("credits", 0)) + L.MIN_CREDITS, "salvage": int(hc.get("salvage", 0)), "ore": int(hc.get("ore", 0))}
 	if L.build_at(w, fid, st, ctx, hq, Vector2(-1, -1), "g6:build:hq"):
 		L.bump(g, "hq_req")
 		U.log_line(st, w, "g6: build Company HQ %s" % hq)
@@ -97,19 +103,54 @@ static func _template_id(t) -> String:
 	return String(t)
 
 
+## AI7-USE-4: the bank request (ai_stage reads st.g6.use.co_want): platoon credits for the first two
+## companies (none in training), then the Commander's 600 (d4 + diag b: HQ built, co_why=no_fit free<1200).
+static func _co_want(w: SimWorld, fid: int, ctx: Dictionary, g: Dictionary, have: int) -> void:
+	var training := false
+	for t in w.sys_state.get("companies", {}).get("training", []):
+		if int(t.get("owner", -1)) == fid:
+			training = true
+	if have < 2 and not training:
+		var cp := _cheapest_platoon(w, fid)  # a platoon is 26-66 pop / 3230-7910 cr (diag_company.gd)
+		g.co_want = cp if not cp.is_empty() else {"credits": int(CO_CREDITS[0])}
+	elif have >= 2 and not training and _commanders(w, fid, ctx).is_empty():
+		g.co_want = {"credits": 600}
+	elif g.has("co_want"):
+		g.erase("co_want")
+
+
+## AI7-USE-4: the cheapest platoon plan of this side's templates (credits / salvage / ore), {} if none.
+static func _cheapest_platoon(w: SimWorld, fid: int) -> Dictionary:
+	var C := L.sys("companies")
+	var best := {}
+	for t0 in L.callf(C, "templates_for", [fid, w], []):
+		var tid := _template_id(t0)
+		var t: Dictionary = L.callf(C, "template", [w, fid, tid], {})
+		if tid == "" or t.is_empty():
+			continue
+		var pl: Dictionary = L.callf(C, "plan", [w, fid, t, "platoon", not tid.begins_with("custom:")], {})
+		var c: Dictionary = pl.get("cost", {})
+		if not c.is_empty() and (best.is_empty() or int(c.get("credits", 0)) < int(best.credits)):
+			best = {"credits": int(c.get("credits", 0)), "salvage": int(c.get("salvage", 0)), "ore": int(c.get("ore", 0))}
+	return best
+
+
 ## Trains the next company at the Company HQ: the first template of the faction this side may train,
 ## rotating through the list; platoon size first, company / battalion when the credits allow.
 static func _companies(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g: Dictionary) -> void:
 	var hq := L.rdef(w, fid, "company_hq")
 	if hq == "" or not bool(ctx.get("g6_spend", true)) or U.blocked(st, w, "g6:company"):
 		g.co_why = "gate"
+		g.erase("co_want")
 		return
 	var b = L.facility(ctx, hq, 1)
 	if b == null:
 		g.co_why = "no_hq"
+		g.erase("co_want")
 		return
 	var have := (L.callf(L.sys("companies"), "companies_of", [w, fid], []) as Array).size()
 	g.co_ok = have
+	_co_want(w, fid, ctx, g, have)
 	if have >= CO_MAX or w.tick - int(g.get("co_t", -1000000)) < CO_GAP:
 		return
 	for t in w.sys_state.get("companies", {}).get("training", []):  # one company in training at a time
