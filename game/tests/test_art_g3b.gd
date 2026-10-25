@@ -6,6 +6,18 @@ extends "res://tests/test_base.gd"
 const AC = preload("res://presentation/art/art_catalog.gd")
 const GEN = preload("res://tools/gen_art.gd")
 const G3B = preload("res://tools/art/g3b.gd")
+
+
+## G5 scope (ORCH, 2026-10-25, authority fact `authority.g3g4_art_test_scope`): units whose art comes from a
+## G5 manifest (res://assets/art/g5_*) have a different frame layout and are fully checked by
+## tests/test_art_g5_units.gd / test_art_g5_air.gd / test_art_g5_naval.gd, so this G3/G4 test skips them.
+static func _g5_art(def: String) -> bool:
+	var m: Dictionary = AC.manifest()
+	for sec in ["infantry", "vehicles"]:
+		var s = m.get(sec, {}).get(def)
+		if s is Dictionary and String(s.get("file", "")).begins_with("res://assets/art/g5_"):
+			return true
+	return false
 const DECOR = preload("res://tools/art/g3b_decor.gd")
 
 const BLUE := Color("#4f7db0")
@@ -24,7 +36,7 @@ func _real(t, what: String) -> bool:
 func _unit_ids() -> Array:
 	var a: Array = G3B.UNIT_ICONS.keys()
 	for id in Content.ids("units"):
-		if int(Content.unit(id).get("stage_min", 0)) >= 9 and not a.has(id):
+		if int(Content.unit(id).get("stage_min", 0)) >= 9 and not a.has(id) and not _g5_art(id):
 			a.append(id)
 	return a
 

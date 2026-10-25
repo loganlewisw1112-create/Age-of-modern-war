@@ -101,7 +101,9 @@ static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key
 	# AI6-2 (CR ai_bank_air_naval_hold from AI6-AN): AiAir / AiNaval publish their next blocked
 	# purchase (airfield / shipyard ...) as st.g6an_hold; other purchases leave it untouched.
 	var gh: Dictionary = st.get("g6an_hold", {})
-	var use_gh := not gh.is_empty() and not key.begins_with("air:") and not key.begins_with("naval:")
+	# ORCH 2026-10-25: the hold competes with other buildings only. Held against unit production it
+	# starved armies (f1 soaks: 8/9 draws; test_ai_g5 Human A fielded no G5 units at ~20-420 credits).
+	var use_gh := ty == "build" and not gh.is_empty() and not key.begins_with("air:") and not key.begins_with("naval:")
 	if not wh.is_empty():
 		if is_g:
 			return true  # the missing gatherer itself goes first, ahead of the stage bank

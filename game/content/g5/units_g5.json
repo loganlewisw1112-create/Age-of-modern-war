@@ -65,7 +65,7 @@
    "fuel_max": 300,
    "stage_min": 9
   },
-  "a_recon_car": {
+  "a_recon_car": {"cargo_class": "vehicle_light", 
    "move_class": "vehicle",
    "leaves_wreck": true,
    "components": {
@@ -221,7 +221,7 @@
    "ammo_max": 15,
    "squad_size": 3
   },
-  "b_armored_car": {
+  "b_armored_car": {"cargo_class": "vehicle_light", 
    "move_class": "vehicle",
    "leaves_wreck": true,
    "components": {

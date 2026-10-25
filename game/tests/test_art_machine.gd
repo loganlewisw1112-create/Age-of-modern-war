@@ -3,6 +3,18 @@ extends "res://tests/test_base.gd"
 ## Reads the shipped assets/generated/ files; regenerates the faction_m module in memory for determinism.
 
 const AC = preload("res://presentation/art/art_catalog.gd")
+
+
+## G5 scope (ORCH, 2026-10-25, authority fact `authority.g3g4_art_test_scope`): units whose art comes from a
+## G5 manifest (res://assets/art/g5_*) have a different frame layout and are fully checked by
+## tests/test_art_g5_units.gd / test_art_g5_air.gd / test_art_g5_naval.gd, so this G3/G4 test skips them.
+static func _g5_art(def: String) -> bool:
+	var m: Dictionary = AC.manifest()
+	for sec in ["infantry", "vehicles"]:
+		var s = m.get(sec, {}).get(def)
+		if s is Dictionary and String(s.get("file", "")).begins_with("res://assets/art/g5_"):
+			return true
+	return false
 const GEN = preload("res://tools/gen_art.gd")
 const FM = preload("res://tools/art/faction_m.gd")
 
@@ -14,7 +26,7 @@ func _real(t, what: String) -> bool:
 func _ids(table: String) -> Array:
 	var a: Array = []
 	for id in Content.ids(table):
-		if String(Content.table(table)[id].get("faction", "")) == "machine":
+		if String(Content.table(table)[id].get("faction", "")) == "machine" and not (table == "units" and _g5_art(id)):
 			a.append(id)
 	return a
 

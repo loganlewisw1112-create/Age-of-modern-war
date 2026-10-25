@@ -2,6 +2,18 @@ extends "res://tests/test_base.gd"
 ## ArtCatalog API coverage for every content def + generator determinism (agent C-art).
 
 const AC = preload("res://presentation/art/art_catalog.gd")
+
+
+## G5 scope (ORCH, 2026-10-25, authority fact `authority.g3g4_art_test_scope`): units whose art comes from a
+## G5 manifest (res://assets/art/g5_*) have a different frame layout and are fully checked by
+## tests/test_art_g5_units.gd / test_art_g5_air.gd / test_art_g5_naval.gd, so this G3/G4 test skips them.
+static func _g5_art(def: String) -> bool:
+	var m: Dictionary = AC.manifest()
+	for sec in ["infantry", "vehicles"]:
+		var s = m.get(sec, {}).get(def)
+		if s is Dictionary and String(s.get("file", "")).begins_with("res://assets/art/g5_"):
+			return true
+	return false
 const GEN = preload("res://tools/gen_art.gd")
 
 
@@ -75,7 +87,8 @@ func test_entities_every_def() -> void:
 	for res in ["salvage", "ore"]:
 		_real(AC.entity_sprite({"kind": "resource", "def": res, "res": res, "amount": 100}, blue, 0).texture, "resource " + res)
 	var bad: Dictionary = AC.entity_sprite({"kind": "unit", "def": "no_such_def"}, blue, 0)
-	check(bad.texture == AC._ph(), "unknown def falls back to the magenta placeholder")
+	# G5 (CONTRACTS_G5 s2.7, approved plan): missing art draws a team-tinted class silhouette, not magenta
+	check(bad.texture == AC.placeholder_for({"kind": "unit", "def": "no_such_def"}, blue).texture, "unknown def falls back to the class silhouette placeholder")
 
 
 func test_effects_and_icons() -> void:
@@ -164,7 +177,7 @@ func test_faction_coverage() -> void:
 	for fid in Content.faction_ids():
 		for def in Content.ids("units"):
 			var u: Dictionary = Content.unit(def)
-			if String(u.get("faction", "")) != fid:
+			if String(u.get("faction", "")) != fid or _g5_art(def):
 				continue
 			var spec: Dictionary = man.get("infantry", {}).get(def, man.get("vehicles", {}).get(def, {}))
 			if not check(not spec.is_empty(), "%s: sprite sheet for unit %s" % [fid, def]):

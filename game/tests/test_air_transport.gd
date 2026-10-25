@@ -8,16 +8,12 @@ const Movement = preload("res://sim/systems/movement.gd")
 const SaveSystem = preload("res://sim/save_system.gd")
 const Helper = preload("res://tests/test_air.gd")
 const TMP_DIR := "user://test_air_transport"
-const JEEP := "t_test_jeep"   # light vehicle fixture (no shipped def sets cargo_class vehicle_light yet)
+const JEEP := "a_recon_car"   # shipped light vehicle (cargo_class vehicle_light); was a leaked test-only fixture
 
 var ha = Helper.new()
 
 
 func _w() -> SimWorld:
-	var units: Dictionary = Content.table("units")
-	if not units.has(JEEP):
-		units[JEEP] = {"name": "Test Jeep", "faction": "human_a", "move_class": "vehicle", "hp": 200, "armor": "light",
-			"speed": 4.0, "sight": 7, "pop": 1, "radius": 0.5, "cargo_class": "vehicle_light"}
 	return ha._w()
 
 

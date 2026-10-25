@@ -26,6 +26,7 @@ const PLAN_ROLES := [["drone_team", 2, 8], ["hmg", 2, 8], ["grenadier", 2, 8], [
 const BREACH_ROLES := ["special_forces", "shock"]
 
 const PROD_FROM_TICK := 9000  # and after the first launch: the G4b opening (mines ~t7700) keeps its credits
+const PROD_NO_LAUNCH_TICK := 18000  # ORCH 2026-10-25: a side that has not attacked by ~15 min still fields its G5 units
 ## launch_drone kinds are not defs; the dictionary form keeps test_g3_no_hardcoded_defs meaningful.
 const DRONE_KIND := {"strike": 0, "frag": 1, "recon": 2, "emp": 3}
 static var RECON: String = DRONE_KIND.keys()[2]
@@ -173,7 +174,7 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 	# every third think (staggered big armies run the economy on even thinks: 4, 10, 16 ...)
 	if String(st.objective) == "defend" or int(st.think_count) % 3 != 1:
 		return
-	if w.tick < PROD_FROM_TICK or int(st.get("launches", 0)) < 1 or int(w.factions[fid].credits) < PROD_MIN_CREDITS:
+	if w.tick < PROD_FROM_TICK or (int(st.get("launches", 0)) < 1 and w.tick < PROD_NO_LAUNCH_TICK) or int(w.factions[fid].credits) < PROD_MIN_CREDITS:
 		return
 	var ap: int = ctx.army_pop
 	var have := {}
@@ -518,9 +519,15 @@ static func probe(w: SimWorld, st: Dictionary, ctx: Dictionary) -> String:
 	if int(st.think_count) % 8 == 0:
 		var fl: Dictionary = g.fielded
 		var now := {}
+		var plan := {}  # ORCH 2026-10-25 (ai_bench 5k): role lookups once per probe, one test per def
+		for row in PLAN_ROLES:
+			plan[U.role_unit(w, int(st.fid), String(row[0]))] = true
+		var keep := {}
 		for e in ctx.units:
 			var d := String(e.def)
-			if is_drone_team(d) or is_med(d) or _in_plan(w, int(st.fid), d):
+			if not keep.has(d):
+				keep[d] = is_drone_team(d) or is_med(d) or plan.has(d)
+			if keep[d]:
 				now[d] = int(now.get(d, 0)) + 1
 		for d in now:
 			fl[d] = maxi(int(fl.get(d, 0)), int(now[d]))
