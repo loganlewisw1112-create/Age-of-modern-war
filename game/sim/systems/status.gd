@@ -44,6 +44,8 @@ static func can_fire(w: SimWorld, e: Dictionary) -> String:
 		return ""
 	if e.has("comp") and float(e.comp.get("weapon", 100)) <= 0.0:
 		return "WEAPON_DISABLED"
+	if bool(e.get("wounded", false)):  # G5 (SUPPORT CR): wounded never fire
+		return "WOUNDED"
 	if e.has("ammo") and int(e.ammo) <= 0:
 		return "NO_AMMO"
 	if bool(e.get("broken", false)):
