@@ -1,0 +1,39 @@
+{
+  "agent": "SUPPORT",
+  "gen": 1,
+  "reason": "budget.handoff_now at 82 calls (guard 492k/700k)",
+  "done": [
+    "sim/systems/support.gd: set_auto_resupply (off|station|roam, center, radius, ammo_pct, fuel_pct); per-truck state in sys_state.support.trucks; station claims (max_claims) -> unit to slot by truck -> Supply refills -> resume e.resume_order (player override detected via order.resup); roam neediest-first (supply_frac, ties id), truck follows; combat rule (target>=0 or hit <= 60 ticks ago -> only at 0 ammo); abstract truck load (rules.auto_resupply.truck_load) drained per Supply round, TruckEmpty -> nearest own HQ/supply_point/refinery -> refill_s -> TruckRefilled; no doubling up via e.resup_by; ships slot to nearest water / own *_supply_pier; helicopters land_at/take_off via SimWorld.COMMANDS (runtime-only AIRSYS coupling) and trucks self-restock claimed defs with `aircraft` from faction stock (compatible with AIRSYS CR supply_skip_aircraft); HotState.touch after direct dict writes; PERF: trucks bucketed by (tick+id)%10, repath throttles (REPATH 40 ticks)",
+    "sim/systems/medical.gd: on_zero_hp (human_a/human_b def armor infantry -> wounded, hp 1, pinned e.wnd_pos, order idle, cooldown pinned 600 so never fires, drops resupply claim); 60 s bleed-out (BledOut, destroy cause bled_out); set_auto_evac; capacity = def wounded_slots else rules.medical.capacity; pick-up nearest in area, aboard units ride carrier (e.evac_by, carrier e.evac_load), bleeding frozen aboard; Field Hospital heals light (<=30 s used) in place, rest forwarded to Hospital; Hospital revives same entity id beside it at full hp/ammo/fuel/squad (Reinforcement free:true); PERF: carriers bucketed by (tick+id)%10 with one shared per-tick prep (ground wounded by owner, taken targets, med buildings), REPATH throttle, home order once, HotState.touch only on pos change",
+    "content/g5/support.json: a_hospital, a_field_hospital, b_hospital, b_field_hospital (flags hospital / field_hospital) + rules.auto_resupply + rules.medical (PROVISIONAL)",
+    "tests/test_support.gd 7/7 and tests/test_medical.gd 7/7 green (git mv'd from tests/pending_g5)",
+    "facts posted: support.api_ready (complete), medical.api_ready (complete); CRs: ORCH status.can_fire WOUNDED (low), CORE10K supply skip empty truck (low, optional)"
+  ],
+  "perf": {
+    "probe": ".plan/shots/SUPPORT/prof.gd (valley_conquest_l, ai_bench _fill 5000+300, 40 trucks half station/half roam, 500 medic carriers on evac, 265 wounded; Support.tick/Medical.tick timed by an extra direct call after each w.step, 200 ticks; PC busy with other agents' soaks + my full suite)",
+    "before": "support avg 0.219 ms max 3.14 ms; medical avg 37.2 ms max 601.8 ms; step avg 475 ms",
+    "after": "support avg 0.460 ms max 10.67 ms; medical avg 6.04 ms max 67.6 ms; step avg 109 ms",
+    "verdict": "Medical improved ~6x but is still above the 1-2 ms target; Support avg is under 1 ms but has 10 ms spikes. NOT DONE."
+  },
+  "remaining": [
+    "1. Profile inside Medical._evac/_bleed with SimIndex.pt-style usec counters (or Time.get_ticks_usec around Movement.order_move calls) to confirm the remaining cost; suspects in order: (a) Movement.order_move A* per carrier when a carrier first targets a wounded (500 carriers x new targets) - consider ordering toward the target only when the carrier is within its area and capping new path orders per tick (e.g. 8/tick, deterministic by ascending carrier id, the rest wait for their next bucket); (b) _bleed sorts st.wounded keys every tick (265 wounded) - keep a sorted id list in state or bucket bleed decrement (decrement by STEP on the unit's bucket tick: t_left -= STEP when (tick+id)%STEP==0, destroy at <=0; keep the 60 s test exact: 1200 is a multiple of 10); (c) the per-tick ground/taken prep iterates all evac + all wounded every tick - build it only on ticks with due carriers (already) and avoid the wids sort by reusing (b)'s sorted list.",
+    "2. Support spikes: _candidates scans SimIndex.units_by_owner(owner) (5k units) per truck claim round with needs_supply Content lookups. Plan: hash-safe needy set in sys_state.support.needy {owner: {id: 1}} refreshed by a bucket scan of ids (id % 20 == tick % 20, iterate ids by stepping 20 up to w.next_id, w.entities.get) only while trucks exist; _candidates then filters needy[owner] (sorted ids) by radius/thr/claim/combat with live state. Note this adds a saved key (contract deviation to report).",
+    "3. Rerun prof.gd and post bus FOUND with before/after ms (before numbers above). Target <1-2 ms per system per tick at 5k.",
+    "4. Rerun bash tests/run.sh --only=test_medical and --only=test_support (must stay 7/7), then the full suite once inside .plan/hb.sh; report raw final lines. My earlier full-suite run (.plan/shots/SUPPORT/full_suite.log, background) had not printed a RESULT line when I stopped and was started BEFORE the perf patch - treat it as void.",
+    "5. Final AGENT_RULES report; post done + bus DONE."
+  ],
+  "files_touched": ["sim/systems/support.gd", "sim/systems/medical.gd", "content/g5/support.json", "tests/test_support.gd", "tests/test_medical.gd", ".plan/shots/SUPPORT/* (probe/check scripts, cand/ copies used for isolated compile checks)"],
+  "test_state": {
+    "test_medical": "RESULT pass=7 fail=0 files=1 time_ms=6366 / TESTS OK (after perf patch)",
+    "test_support": "RESULT pass=7 fail=0 files=1 time_ms=10005 / TESTS OK (after perf patch)",
+    "full_suite": "NOT VERIFIED"
+  },
+  "gotchas": [
+    "Stub-first: compile-check edits on a copy in .plan/shots/SUPPORT/cand/ via chk_cand.gd before copying into sim/systems (a half-written support.gd broke the shared compile once). chk.gd loads world.gd + content.",
+    "Never reference AIRSYS/NAVAL/UNITS5 functions statically (their files change); use SimWorld.COMMANDS / SimWorld.Air at run time.",
+    "Bash heredocs containing many quotes failed to parse once; writing code with the Write tool into the scratchpad and patching with python is reliable.",
+    "Supply (CORE10K) does the actual unit refill from faction stock within rules.supply.radius (8) of a truck; Support only moves/claims and tracks an abstract truck load. Aircraft are self-served by Support because AIRSYS asked CORE10K to skip `aircraft` defs in Supply.",
+    "Wounded keep their entity id; Hospital revival reuses the entity (no stats.lost, no new id).",
+    "Wounded (D16) changes G4 results wherever human infantry dies; G4 hash goldens were not checked (full suite unverified)."
+  ]
+}

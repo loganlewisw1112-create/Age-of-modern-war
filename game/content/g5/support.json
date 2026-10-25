@@ -1,3 +1,24 @@
 {
-  "_meta": "G5 support fragment (owner: SUPPORT). CONTRACTS_G5 section 3 fixes the ids. PROVISIONAL numbers."
+  "_meta": "G5 support fragment (owner: SUPPORT). CONTRACTS_G5 sections 3.4 and 10. Hospital / Field Hospital for both human factions (flags hospital / field_hospital read by sim/systems/medical.gd) plus rules.auto_resupply and rules.medical. PROVISIONAL numbers (balance fixtures, not approved values).",
+  "buildings": {
+    "a_hospital": {"name": "Combat Support Hospital", "faction": "human_a", "size": 3, "hp": 1400, "armor": "building", "sight": 6,
+      "power": -10, "buildable": true, "requires": [], "requires_power": false, "hospital": true, "stage_min": 5,
+      "cost": {"credits": 300, "salvage": 100, "ore": 0}, "build_time": 30},
+    "a_field_hospital": {"name": "Field Aid Station", "faction": "human_a", "size": 2, "hp": 700, "armor": "building", "sight": 5,
+      "power": 0, "buildable": true, "requires": [], "requires_power": false, "field_hospital": true, "stage_min": 3,
+      "cost": {"credits": 120, "salvage": 40, "ore": 0}, "build_time": 15},
+    "b_hospital": {"name": "Field Infirmary", "faction": "human_b", "size": 3, "hp": 1300, "armor": "building", "sight": 6,
+      "power": -10, "buildable": true, "requires": [], "requires_power": false, "hospital": true, "stage_min": 5,
+      "cost": {"credits": 240, "salvage": 140, "ore": 0}, "build_time": 30},
+    "b_field_hospital": {"name": "Triage Tent", "faction": "human_b", "size": 2, "hp": 550, "armor": "building", "sight": 5,
+      "power": 0, "buildable": true, "requires": [], "requires_power": false, "field_hospital": true, "stage_min": 3,
+      "cost": {"credits": 90, "salvage": 50, "ore": 0}, "build_time": 12}
+  },
+  "rules": {
+    "auto_resupply": {"_note": "PROVISIONAL. Thresholds in percent. truck_load = abstract supply points a truck hands out before it reloads at an HQ / supply point / refinery.",
+      "ammo_pct": 40, "fuel_pct": 30, "radius": 12, "serve_radius": 4, "max_claims": 6, "max_wait_s": 90, "truck_load": 600, "refill_s": 5},
+    "medical": {"_note": "PROVISIONAL. capacity applies when a def has no wounded_slots field (UNITS5 sets wounded_slots on its own defs).",
+      "enabled": true, "bleed_out_s": 60, "light_s": 30, "radius": 14, "pickup_radius": 1.5, "deliver_radius": 2.5,
+      "capacity": {"a_ambulance": 6, "b_field_ambulance": 4, "a_medic_team": 2}}
+  }
 }
