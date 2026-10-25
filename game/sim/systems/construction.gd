@@ -7,6 +7,7 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
+const Naval = preload("res://sim/systems/naval.gd")  # G5 (NAVAL CR): shore placement
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): builder units
 
@@ -152,22 +153,27 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 			var c := origin + Vector2i(dx, dy)
 			if not w.in_bounds(c):
 				return "Outside the map."
-	for dy in size:
-		for dx in size:
-			var c := origin + Vector2i(dx, dy)
-			var t := w.terrain_at(c)
-			if not Terrain.buildable(t):
-				match t:
-					Terrain.WATER:
-						return "Cannot build on water."
-					Terrain.RIDGE:
-						return "Cannot build on a ridge."
-					Terrain.FOREST:
-						return "Cannot build in dense forest."
-					Terrain.ROAD, Terrain.BRIDGE, Terrain.FORD:
-						return "Cannot build on a road, bridge or ford."
-					_:
-						return "Terrain is not buildable here."
+	if not bool(d.get("shore", false)):  # G5 (NAVAL CR): shore footprints are part water
+		for dy in size:
+			for dx in size:
+				var c := origin + Vector2i(dx, dy)
+				var t := w.terrain_at(c)
+				if not Terrain.buildable(t):
+					match t:
+						Terrain.WATER:
+							return "Cannot build on water."
+						Terrain.RIDGE:
+							return "Cannot build on a ridge."
+						Terrain.FOREST:
+							return "Cannot build in dense forest."
+						Terrain.ROAD, Terrain.BRIDGE, Terrain.FORD:
+							return "Cannot build on a road, bridge or ford."
+						_:
+							return "Terrain is not buildable here."
+	if bool(d.get("shore", false)) or d.has("near_water"):
+		var se: String = Naval.shore_error(w, def_id, origin)
+		if se != "":
+			return se
 	for b in SimIndex.of(w, "building"):
 		if not SimIndex.alive(w, b):
 			continue

@@ -127,6 +127,7 @@ var render_snap: Dictionary = {}  # G4 THREAD: latest render snapshot (runtime, 
 var snap_request: Array = []      # G4 THREAD: ids whose full dicts go into render_snap.detail
 var snap_enabled: bool = false    # G4 THREAD: build render_snap at the end of step()
 # >>> G5 HOT (owner CORE10K, CONTRACTS_G5 section 1): packed hot-state runtime fields go here.
+var hot = null   # G5 HOT: HotState instance (sim/hot_state.gd): packed per-id hot arrays; runtime only, never saved
 # <<< G5 HOT
 
 
@@ -308,6 +309,7 @@ func step() -> void:
 	if event_log.size() > EVENT_LOG_MAX:
 		event_log = event_log.slice(event_log.size() - EVENT_LOG_MAX)
 	if snap_enabled:
+		HotState.flush(self)     # G5 (CORE10K CR): flush before the render snapshot
 		RenderSnap.build(self)   # G4 THREAD: built on the sim thread, read by the renderer/HUD
 
 
@@ -688,6 +690,7 @@ func visible_enemies(fid: int) -> Array:
 
 # ================================================================ persistence
 func to_dict() -> Dictionary:
+	HotState.flush(self)  # G5 (CORE10K CR): packed hot state -> dicts before hash/save
 	return {
 		"schema_version": SCHEMA_VERSION,
 		"tick": tick, "seed_value": seed_value, "rng_state": rng.state,

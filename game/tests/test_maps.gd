@@ -41,7 +41,7 @@ func _match(map_id: String, sides: Array, seed_value := 7) -> SimWorld:
 
 func test_maps_json_matches_generators() -> void:
 	var defs := MapGen.defs()
-	check_eq(defs.size(), 3, "maps.json lists 3 maps")
+	check_eq(defs.size(), 4, "maps.json lists 4 maps (G5: + coastal_front_m)")
 	for id in MapGen.ids():
 		check(defs.has(id), "maps.json has %s" % id)
 		if not defs.has(id):

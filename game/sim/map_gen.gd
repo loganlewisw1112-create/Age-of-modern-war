@@ -22,6 +22,7 @@ const MAX_ATTEMPTS := 12
 const MODULES := {
 	"industrial_heartland_m": preload("res://sim/maps/industrial_heartland.gd"),
 	"valley_conquest_l": preload("res://sim/maps/valley_conquest.gd"),
+	"coastal_front_m": preload("res://sim/maps/coastal_front.gd"),  # G5 (NAVAL)
 }
 const MapCheck = preload("res://sim/maps/map_check.gd")
 const DEFAULT_ID := "river_crossing_s"
@@ -265,6 +266,8 @@ static func _add_resource(resources: Array, taken: Dictionary, t: PackedByteArra
 
 ## Returns "" if the map is legal, else a human-readable failure with location.
 static func validate(m: Dictionary) -> String:
+	if String(m.get("id", "")) == "coastal_front_m":  # G5 (NAVAL): adds the coastal checks
+		return MODULES["coastal_front_m"].validate(m)
 	if String(m.get("id", DEFAULT_ID)) != DEFAULT_ID:
 		return MapCheck.validate(m)
 	var t: PackedByteArray = m.terrain
