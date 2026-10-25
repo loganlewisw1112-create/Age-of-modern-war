@@ -1,0 +1,42 @@
+{
+  "agent": "PT5", "n": 1, "reason": "budget.handoff_now at 101/140 calls",
+  "files": ["tools/ui_playtest.gd (G5 section appended + _build_page/_place(at)/_train camera+diagnostics)", ".plan/shots/PT5/pt_all.sh", ".plan/shots/PT5/pt_*_<tag>/ shots + .log"],
+  "editor_playtest_gd": "untouched",
+  "flows": {
+    "h":   {"flag": "--ui-playtest=DIR", "latest": "base: pass=12 fail=2 (place_barracks) -- run BEFORE the _build_page fix; not re-run since"},
+    "hb":  {"flag": "--ui-playtest-faction=human_b", "latest": "base: pass=16 fail=2 (same cause, pre-fix); not re-run"},
+    "m":   {"flag": "--ui-playtest-faction=machine", "latest": "base: pass=16 fail=2 (same cause, pre-fix); not re-run"},
+    "s":   {"flag": "--ui-playtest-stages", "latest": "base: pass=18 fail=2 (same cause, pre-fix); not re-run"},
+    "g4b": {"flag": "--ui-playtest-g4b", "latest": "base: pass=68 fail=0 (launched while the fix was being written; unclear which code it ran)"},
+    "ed":  {"flag": "-s res://tools/editor_playtest.gd -- --shots=DIR", "latest": "base: pass=25 fail=0"},
+    "air": {"flag": "--ui-playtest-air", "latest": "t9: pass=97 fail=1 (air_vtol_unloaded: VTOL landed far, Unload at point clicked, load stays foot 8 / vehicle 2)"},
+    "naval": {"flag": "--ui-playtest-naval (Coastal Front, Stage 9)", "latest": "t4: pass=32 fail=0 (once); t3 had a flaky rifle_squad training miss"},
+    "drone": {"flag": "--ui-playtest-drone", "latest": "t7: pass=30 fail=0 (once)"},
+    "support": {"flag": "--ui-playtest-support", "latest": "t9: pass=36 fail=1 (support_roam_claimed_flag: FLAG_RESUP never seen in roam; units were resupplied)"},
+    "med": {"flag": "--ui-playtest-med", "latest": "NEVER RUN (code written: hospital + medic auto evac drag + harness wound via Damage.apply_hit + evac + hospital reinforcement)"},
+    "tutorial": {"flag": "--ui-playtest-tutorial", "latest": "stub: logs tutorial_available ok=false; ED5 tutorial not built (tests/pending_g5/test_tutorial.gd still pending)"}
+  },
+  "pass_twice_in_a_row": [],
+  "blocked": {"tutorial": "ED5 has not built it", "panels": "none: all UI5b G5 buttons used exist (G5_<action> names)", "rendering": "none blocking; VIEW5 in progress (landing craft and wall art still placeholder in shots)"},
+  "remaining_steps": [
+    "1. Re-run h hb m s g4b ed after the _build_page fix: bash .plan/shots/PT5/pt_all.sh r1 h hb m s g4b ed (expect 33/37/37/53/68/25).",
+    "2. air VTOL unload: find why Unload at point on a landed VTOL does nothing (check _w().preview_command of the unload cmd; try the 'Unload all here' card button; Transport line 24: air carriers unload only while landed at a valid LZ).",
+    "3. support roam: FLAG_RESUP check (_any_flag) polls only every 0.25 s at 3x; roam service may be brief -> poll at 1x or check e.resup_by / Support.truck_state queue instead.",
+    "4. Run med for the first time and fix.",
+    "5. Then every flow twice: bash .plan/shots/PT5/pt_all.sh r1 && bash .plan/shots/PT5/pt_all.sh r2; read the shots (one per step, named <flow>_NN_*.png).",
+    "6. Tutorial flow once ED5 posts its fact; replace the stub in _g5_flow."
+  ],
+  "pt_all_usage": "bash .plan/shots/PT5/pt_all.sh [TAG] [flow ...]; default flows: h hb m s g4b ed air naval drone support med tutorial; max 2 Godot at once (PT_MAXJ); G5 flows timeout 1500 s, old 900 s; logs .plan/shots/PT5/pt_<flow>_<TAG>.log; wrap in .plan/hb.sh (a run of 2 G5 flows takes ~8-12 min on the loaded PC).",
+  "gotchas": [
+    "UI5b build pages: build hotkeys are page-local; _place now clicks BuildTab_<cat> first (_build_page). This broke h/hb/m/s at baseline.",
+    "G5 flows pick Stage 9 by menu click (Slot0Stage) and naval also Coastal Front (MapOption).",
+    "Harness writes (logged): stock grant; in-memory AI first_attack_tick=1e6 (a normal AI raid destroyed the airfield at ~8 game-min); heli hp/ammo drop; ammo drain for support; wound via Damage.apply_hit; enemy wall spawn for breach.",
+    "VTOL pop is 8: the air flow builds 3 depots or production stalls on SUPPLY_CAP while the button tooltip says no_free_hangar (that tooltip is correct for queuing a 2nd VTOL).",
+    "Drone teams within supply.radius (6) of a supply point restock at once: the flow walks the team out 18 tiles first; strike drones die fast, so launches are checked at 1x.",
+    "Coastal Front: the shore is unexplored 23 tiles from the HQ: the flow scouts it with a builder right-click first.",
+    "Parked aircraft under a hangar roof are not pickable by click: _g5_select falls back to a box drag.",
+    "Stdout of a killed (timeout) Godot run can repeat its last chunk: duplicated PLAYTEST lines mean a timeout, not a double coroutine.",
+    "PLAYTEST-DBG lines (train_miss, wrong_item_queued, select_miss, heli_land) are diagnostics only."
+  ],
+  "test_state": "no tests owned; full suite not run (ORCH runs it)"
+}

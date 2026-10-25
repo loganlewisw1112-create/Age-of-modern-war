@@ -18,18 +18,31 @@ const Fortify = preload("res://sim/systems/fortify.gd")  # G4b (UI4B) flow
 const Transport = preload("res://sim/systems/transport.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")
 const RenderSnapScript = preload("res://sim/render_snap.gd")
+const Air = preload("res://sim/systems/air.gd")  # G5 (PT5) flows
+const Airfield = preload("res://sim/systems/airfield.gd")
+const Naval = preload("res://sim/systems/naval.gd")
+const G5Mech = preload("res://sim/systems/g5_mech.gd")
+const Support = preload("res://sim/systems/support.gd")
+const Medical = preload("res://sim/systems/medical.gd")
+const Damage = preload("res://sim/systems/damage.gd")
+const Combat = preload("res://sim/systems/combat.gd")
+const HotState = preload("res://sim/hot_state.gd")
 
 var main: Node
 var shot_dir := ""
 var stages_flow := false  # G3b: --ui-playtest-stages
 var faction := ""     # --ui-playtest-faction ("" = leave the menu defaults: Human A vs Human A)
 var g4b_flow := false  # G4b (UI4B): --ui-playtest-g4b (walls/gate, APC load/unload, mortar deploy)
+var g5_flow := ""  # G5 (PT5): --ui-playtest-air|naval|drone|support|med|tutorial
 var passed := 0
 var failed := 0
 
 
 func _ready() -> void:
 	g4b_flow = OS.get_cmdline_user_args().has("--ui-playtest-g4b")
+	for fl in G5_FLOWS:
+		if OS.get_cmdline_user_args().has("--ui-playtest-" + String(fl)):
+			g5_flow = String(fl)
 	_run()
 
 
@@ -244,11 +257,31 @@ func _select_units(defs: Array) -> int:
 	return n
 
 
-func _place(def_id: String) -> bool:
-	var o := _site(def_id)
+## G5 (UI5b build pages): build hotkeys are page-local, so click the def's category tab first
+## (BuildTab_<cat> in the card title row) when it is not the current page. True = page shown.
+func _build_page(def_id: String) -> bool:
+	var cat := G3.build_category(def_id)
+	var tab = get_tree().root.find_child("BuildTab_" + cat, true, false) as Button
+	if tab == null or not tab.is_visible_in_tree():
+		return true  # no tab strip (single page) or not an engineer card
+	if not tab.button_pressed:
+		await _click(tab.get_global_rect().get_center())
+		await _wait(0.4)
+		tab = get_tree().root.find_child("BuildTab_" + cat, true, false) as Button
+	return tab != null and tab.button_pressed
+
+
+func _place(def_id: String, at: Vector2i = Vector2i(-1, -1)) -> bool:
+	if at.x >= 0:  # G5: a given origin (shore site): scroll the camera there like a player
+		var sz := int(Content.building(def_id).size)
+		_mv().center_camera_on(Vector2(at) + Vector2(sz, sz) * 0.5)
+		await _wait(0.4)
+	var o := _site(def_id) if at.x < 0 else at
 	if o.x < 0:
 		_log("site_" + def_id, false, "no legal on-screen site")
 		return false
+	if not await _build_page(def_id):
+		_log("build_page_" + G3.build_category(def_id), false, def_id)
 	var hk := _hotkey(def_id)
 	var code := OS.find_keycode_from_string(hk)
 	if hk == "" or code == KEY_NONE:
@@ -368,6 +401,8 @@ func _gather_salvage(gatherers: Array, tag: String) -> void:
 
 func _run() -> void:
 	await _wait(1.5)
+	if g5_flow != "":
+		await _g5_menu()
 	if faction != "":
 		await _setup_menu()
 	if stages_flow:
@@ -383,6 +418,9 @@ func _run() -> void:
 	await _shot("ui_01_start")
 	if g4b_flow:
 		await _g4b_flow()
+		return _finish()
+	if g5_flow != "":
+		await _g5_flow()
 		return _finish()
 
 	var pdef := _role("power")
@@ -742,6 +780,7 @@ func _g4b_walls(builders: Array) -> void:
 	var a: Vector2i = line[0]
 	var b: Vector2i = line[1]
 	var before := _w().buildings_of(0, wdef).size()
+	await _build_page(wdef)
 	var hk := _hotkey(wdef)
 	await _key(OS.find_keycode_from_string(hk))
 	await _wait(0.3)
@@ -764,6 +803,7 @@ func _g4b_walls(builders: Array) -> void:
 	# gate at the end of the line (single-building placement)
 	var gc: Vector2i = line[2]
 	await _select_units(builders)
+	await _build_page(gdef)
 	await _key(OS.find_keycode_from_string(_hotkey(gdef)))
 	await _wait(0.3)
 	await _move(_to_screen(Vector2(gc) + Vector2(0.5, 0.5)))
@@ -834,11 +874,31 @@ func _train(item: String) -> Array:
 		_log("g4b_producer_" + item, false)
 		return []
 	var before := _own_units_in(units).size()
+	if not _on_map(_to_screen(prod.pos)):  # G5: producer scrolled off screen
+		_mv().center_camera_on(prod.pos)
+		await _wait(0.4)
 	await _click(_to_screen(prod.pos))
 	await _wait(0.4)
 	var nm := String(Content.production(item).name)
 	_log("g4b_click_train_" + item, await _click_button(nm), nm)
+	await _wait(0.2)
+	var pq = _w().get_e(int(prod.id))
+	if pq != null and not (pq.queue as Array).is_empty() and String((pq.queue as Array).back().item) != item:
+		var hv := get_viewport().gui_get_hovered_control()
+		var bb := _find_button(get_tree().root, nm)
+		print("PLAYTEST-DBG wrong_item_queued want=%s got=%s hovered=%s(%s) btn_rect=%s mouse=%s" % [item, String((pq.queue as Array).back().item),
+			"null" if hv == null else String(hv.name), "" if not (hv is Button) else String(hv.text).replace("
+", " "), "null" if bb == null else str(bb.get_global_rect()), str(get_viewport().get_mouse_position())])
 	var ok := await _wait_until(func(): return _own_units_in(units).size() > before, 90.0)
+	if not ok:  # PT5: why production stalled (button state, queue, air gating)
+		var pb = _find_button(get_tree().root, nm)
+		var pe = _w().get_e(int(prod.id))
+		print("PLAYTEST-DBG train_miss %s prod=%s#%d alive=%s queue=%s btn_disabled=%s tip=%s gate=%s sel=%s" % [item, String(prod.def), int(prod.id), str(pe != null),
+			str(pe.get("queue") if pe != null else null), str(pb.disabled if pb != null else null), "" if pb == null else pb.tooltip_text.replace("
+", " | "),
+			Airfield.can_produce(_w(), 0, item), str(_mv().selection)])
+		print("PLAYTEST-DBG train_miss_fac pop=%s/%s power=%s/%s" % [str(_w().factions[0].pop), str(_w().factions[0].pop_cap), str(_w().factions[0].get("power_use")), str(_w().factions[0].get("power_prod"))])
+		print("PLAYTEST-DBG train_miss_field %s free=%s" % [str(Airfield.field(_w(), int(prod.id))), str(Airfield.free_slots(_w(), int(prod.id)))])
 	_log("g4b_trained_" + item, ok, "%s=%d" % [item, _own_units_in(units).size()])
 	return _own_units_in(units) if ok else []
 
@@ -1021,3 +1081,743 @@ func _own_mines() -> int:
 		if String(x.kind) == "mine" and int(x.owner) == 0:
 			k += 1
 	return k
+
+
+# ------------------------------------------------------------ G5 flows (PT5): --ui-playtest-<flow>
+## Human A, Stage 9 picked in the menu by real clicks (naval: Coastal Front map too). A harness grant
+## tops up the stock once (the flows test the G5 UI, not the economy); every order is synthetic
+## input through UI5b's buttons / hotkeys and map clicks. Harness writes (marked "harness") stand in
+## only for combat damage and are done with the sim joined.
+const G5_FLOWS := ["air", "naval", "drone", "support", "med", "tutorial"]
+
+
+func _g5_menu() -> void:
+	if g5_flow == "naval":
+		var menu = get_tree().root.find_child("MapOption", true, false) as OptionButton
+		var idx := -1
+		if menu != null:
+			for i in menu.item_count:
+				if menu.get_item_text(i).begins_with("Coastal Front") and not menu.is_item_disabled(i):
+					idx = i
+		_log("g5_map_coastal_click", idx >= 0 and await _pick_option("MapOption", idx), "" if idx < 0 else menu.get_item_text(idx))
+	var ob = get_tree().root.find_child("Slot0Stage", true, false) as OptionButton
+	var k := -1
+	if ob != null:
+		for i in ob.item_count:
+			if ob.get_item_text(i).begins_with("Stage 9 "):
+				k = i
+	_log("g5_slot0_stage9_click", k >= 0 and await _pick_option("Slot0Stage", k), "items=%d" % (0 if ob == null else ob.item_count))
+	await _wait(0.3)
+
+
+func _g5_flow() -> void:
+	_mv().join_sim()
+	var f: Dictionary = _w().factions[0]
+	f.credits = int(f.credits) + 40000
+	for r in ["salvage", "ore"]:
+		f.stock[r] = int(f.stock.get(r, 0)) + 20000
+	# harness peace window (this process only, in memory): the AI's first offensive is pushed past the
+	# flow so a 10+ minute UI flow is not cut short by a raid (defence and economy AI still run)
+	for dk in (Content.rules().get("ai_difficulties", {}) as Dictionary).keys():
+		Content.rules().ai_difficulties[dk]["first_attack_tick"] = 1000000
+	_log("g5_harness_grant", int(f.stage) >= 9, "stage=%d credits=%d stock=%s" % [int(f.stage), int(f.credits), str(f.stock)])
+	_log("speed_3x_button", await _click_button("3x"))
+	match g5_flow:
+		"air":
+			await _air_flow()
+		"naval":
+			await _naval_flow()
+		"drone":
+			await _drone_flow()
+		"support":
+			await _support_flow()
+		"med":
+			await _med_flow()
+		"tutorial":
+			_log("tutorial_available", false, "ED5 tutorial not built yet (tests/pending_g5/test_tutorial.gd)")
+
+
+func _g5_named(node_name: String) -> Button:
+	var b = get_tree().root.find_child(node_name, true, false) as Button
+	return b if b != null and b.is_visible_in_tree() else null
+
+
+## Click a named (UI5b) button; false when it is missing, hidden or disabled.
+func _click_named(node_name: String) -> bool:
+	var b := _g5_named(node_name)
+	if b == null or b.disabled:
+		return false
+	await _click(b.get_global_rect().get_center())
+	await _wait(0.3)
+	return true
+
+
+func _ent(id: int):
+	return _w().entities.get(id)
+
+
+## Select builders, place def (hotkey + click, page tab first), wait until built. Returns the newest
+## built building of def ({} on failure).
+func _g5_build(def_id: String, at: Vector2i = Vector2i(-1, -1)) -> Dictionary:
+	var before := _built_count(def_id)
+	var bl := _own_units_in(_defs_with("can_build"))
+	if not bl.is_empty() and not _on_map(_to_screen(bl[0].pos)):
+		_mv().center_camera_on(bl[0].pos)
+		await _wait(0.3)
+	var n := await _select_units(_defs_with("can_build"))
+	_log("g5_select_builders_" + def_id, n > 0, "selected=%d" % n)
+	_log("g5_place_" + def_id, await _place(def_id, at), def_id)
+	var ok := await _wait_until(func(): return _built_count(def_id) > before, 150.0)
+	_log("g5_built_" + def_id, ok, "%s built=%d" % [def_id, _built_count(def_id)])
+	return _newest(def_id) if ok else {}
+
+
+func _newest(def_id: String) -> Dictionary:
+	var best: Dictionary = {}
+	for b in _w().buildings_of(0, def_id):
+		if bool(b.get("built", true)) and (best.is_empty() or int(b.id) > int(best.id)):
+			best = b
+	return best
+
+
+## Select one own entity: a click when the click picks it, else a small box drag around it.
+func _g5_select(id: int) -> bool:
+	var e = _ent(id)
+	if e == null:
+		return false
+	if not _on_map(_to_screen(e.pos)):
+		_mv().center_camera_on(e.pos)
+		await _wait(0.3)
+	e = _ent(id)
+	if _pickable(e):
+		await _click(_to_screen(e.pos))
+	else:
+		var sp := _to_screen(e.pos)
+		await _drag(sp - Vector2(26, 26), sp + Vector2(26, 26))
+	await _wait(0.4)
+	if not _mv().selection.has(id) and _ent(id) != null:
+		# parked aircraft under a hangar roof: a click on the exact spot, then a tight box
+		var sp2 := _to_screen(_ent(id).pos)
+		await _drag(sp2 - Vector2(8, 8), sp2 + Vector2(8, 8))
+		await _wait(0.4)
+		if not _mv().selection.has(id):
+			print("PLAYTEST-DBG select_miss id=%d def=%s pickable=%s at=%s sel=%s hit=%s" % [id, String(_ent(id).def), str(_pickable(_ent(id))), str(_ent(id).get("air_at", -1)), str(_mv().selection), str(_mv().entity_at(Vector2(_ent(id).pos), true).get("def") if _mv().entity_at(Vector2(_ent(id).pos), true) != null else null)])
+	return _mv().selection.has(id)
+
+
+## Arm a UI5b targeted button, then click world point p. True when the button was clicked.
+func _g5_arm_click(btn_name: String, p: Vector2) -> bool:
+	if not await _click_named(btn_name):
+		return false
+	await _wait(0.2)
+	await _click(_to_screen(p))
+	await _wait(0.4)
+	return true
+
+
+## A cell around c (rings r0..r1) where pred(cell) holds and whose centre is on the map on screen.
+func _g5_cell_near(c: Vector2i, r0: int, r1: int, pred: Callable) -> Vector2i:
+	for r in range(r0, r1 + 1):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var q := c + Vector2i(dx, dy)
+				if _w().in_bounds(q) and pred.call(q) and _on_map(_to_screen(Vector2(q) + Vector2(0.5, 0.5))):
+					return q
+	return Vector2i(-1, -1)
+
+
+func _g5_wait_phase(id: int, phases: Array, secs: float) -> bool:
+	return await _wait_until(func(): return _ent(id) != null and phases.has(Air.phase(_w(), id)), secs)
+
+
+func _g5_last_cmd() -> String:
+	return String(_mv().g4b.last_cmd.get("type", ""))
+
+
+# ------------------------------------------------------------ air
+func _air_flow() -> void:
+	for role in ["power", "power", "barracks", "factory", "depot", "depot", "depot"]:  # depots: pop cap (VTOL pop 8)
+		await _g5_build(_role(role))
+	var tower := await _g5_build("a_air_tower")
+	var field := await _g5_build("a_airfield")
+	if field.is_empty() or tower.is_empty():
+		return
+	var fid := int(field.id)
+	_log("air_gating_no_hangar", Airfield.can_produce(_w(), 0, "a_strike_jet") == "no_free_hangar", Airfield.can_produce(_w(), 0, "a_strike_jet"))
+	_log("air_select_airfield", await _g5_select(fid))
+	var panel = get_tree().root.find_child("AirfieldPanel", true, false) as Control
+	_log("air_airfield_panel_visible", panel != null and panel.is_visible_in_tree())
+	var warn = get_tree().root.find_child("AirfieldWarn", true, false) as Label
+	_log("air_panel_warns_no_hangar", warn != null and String(warn.text).to_lower().contains("hangar"), "" if warn == null else warn.text)
+	await _shot("air_01_airfield_card")
+	# buy a light (jet) and a heavy (VTOL) hangar from the airfield card
+	for cls in ["light", "heavy"]:
+		var before := _built_count("a_hangar_" + cls)
+		_log("air_click_buy_hangar_" + cls, await _click_named("G5_hangar_" + cls))
+		_log("air_hangar_" + cls + "_built", await _wait_until(func(): return _built_count("a_hangar_" + cls) > before, 120.0), "hangars=%d" % _built_count("a_hangar_" + cls))
+		await _g5_select(fid)
+	_log("air_gating_ok_after_hangar", Airfield.can_produce(_w(), 0, "a_strike_jet") == "", Airfield.can_produce(_w(), 0, "a_strike_jet"))
+	await _shot("air_02_hangars")
+	# airfield engineers -> Assign [N] -> click the airfield
+	var engs := await _train("a_airfield_engineers")
+	if not engs.is_empty():
+		await _wait(1.0)
+		_log("air_select_engineers", await _g5_select(int(engs[0].id)))
+		_log("air_assign_engineers_click", await _g5_arm_click("G5_assign_engineers", _ent(fid).pos), _g5_last_cmd())
+		_log("air_engineers_assigned", await _wait_until(func(): return not Airfield.engineers_at(_w(), fid).is_empty(), 60.0), "engineers=%s" % str(Airfield.engineers_at(_w(), fid)))
+		await _shot("air_03_engineers_assigned")
+	await _air_jet(fid)
+	await _air_vtol(fid)
+	await _air_heli(engs)
+
+
+func _air_jet(fid: int) -> void:
+	await _g5_select(fid)
+	var jets := await _train("a_strike_jet")
+	if jets.is_empty():
+		return
+	var jid := int(jets[0].id)
+	_log("air_jet_parked", await _g5_wait_phase(jid, ["parked"], 30.0), Air.phase(_w(), jid))
+	await _shot("air_04_jet_parked")
+	_log("air_select_jet", await _g5_select(jid))
+	var fp: Vector2 = _ent(fid).pos
+	var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5
+	var goal := fp + (mc - fp).normalized() * 14.0
+	for ang in [0.0, 0.7, -0.7, 1.4, -1.4]:
+		var g2: Vector2 = fp + (mc - fp).normalized().rotated(ang) * 14.0
+		if _on_map(_to_screen(g2)):
+			goal = g2
+			break
+	_log("air_sortie_click", await _g5_arm_click("G5_sortie", goal), _g5_last_cmd())
+	_log("air_jet_taxi_roll", await _g5_wait_phase(jid, ["taxi", "hold", "roll"], 20.0), Air.phase(_w(), jid))
+	await _shot("air_05_jet_takeoff")
+	_log("air_jet_airborne_sortie", await _g5_wait_phase(jid, ["sortie", "air"], 60.0), Air.phase(_w(), jid))
+	await _wait(1.0)
+	await _shot("air_06_jet_sortie")
+	_log("air_jet_returns", await _g5_wait_phase(jid, ["ret", "holding", "approach", "taxi_in"], 120.0), Air.phase(_w(), jid))
+	_log("air_jet_landed_parked", await _g5_wait_phase(jid, ["parked"], 150.0), Air.phase(_w(), jid))
+	await _shot("air_07_jet_landed")
+
+
+func _g5_cell(p: Vector2) -> Vector2i:
+	return Vector2i(Vector2(p).floor())
+
+
+func _lz_ok(def_id: String) -> Callable:
+	var d := Content.unit(def_id)
+	return func(q: Vector2i) -> bool: return Air.landing_ok(_w(), q, d)
+
+
+## Select ids by clicking the first and shift-clicking the rest (camera on each).
+func _g5_select_many(ids: Array) -> int:
+	if ids.is_empty():
+		return 0
+	await _g5_select(int(ids[0]))
+	for i in range(1, ids.size()):
+		var e = _ent(int(ids[i]))
+		if e == null:
+			continue
+		if not _on_map(_to_screen(e.pos)):
+			_mv().center_camera_on(e.pos)
+			await _wait(0.2)
+		await _click(_to_screen(_ent(int(ids[i])).pos), MOUSE_BUTTON_LEFT, false, true)
+		await _wait(0.15)
+	var n := 0
+	for id in ids:
+		if _mv().selection.has(int(id)):
+			n += 1
+	return n
+
+
+func _air_vtol(fid: int) -> void:
+	await _g5_select(fid)
+	var vs := await _train("a_vtol_dropship")
+	if vs.is_empty():
+		return
+	var vid := int(vs[0].id)
+	var tanks: Array = []
+	for i in 2:
+		tanks.append_array(await _train(_role("heavy")))
+	var troops: Array = []
+	while troops.size() < 8:
+		var sq := await _train(_role("infantry"))
+		if sq.is_empty():
+			break
+		troops = _own_units_in(G3.item_units(_role("infantry")))
+	var tank_ids: Array = []
+	for t in _own_units_in([_role("heavy")]):
+		if tank_ids.size() < 2:
+			tank_ids.append(int(t.id))
+	var troop_ids: Array = []
+	for t in troops:
+		if troop_ids.size() < 8:
+			troop_ids.append(int(t.id))
+	_log("air_vtol_cargo_ready", tank_ids.size() == 2 and troop_ids.size() == 8, "tanks=%d troops=%d" % [tank_ids.size(), troop_ids.size()])
+	await _g5_wait_phase(vid, ["parked"], 30.0)
+	# land the VTOL on open ground beside the cargo
+	var tp: Vector2 = _ent(tank_ids[0]).pos if not tank_ids.is_empty() else _ent(vid).pos
+	_mv().center_camera_on(tp)
+	await _wait(0.3)
+	var lz := _g5_cell_near(_g5_cell(tp), 3, 14, _lz_ok("a_vtol_dropship"))
+	_log("air_vtol_lz_found", lz.x >= 0, str(lz))
+	if lz.x < 0:
+		return
+	_log("air_select_vtol", await _g5_select(vid))
+	_mv().center_camera_on(Vector2(lz))
+	await _wait(0.3)
+	_log("air_vtol_land_here_click", await _g5_arm_click("G5_land_at", Vector2(lz) + Vector2(0.5, 0.5)), _g5_last_cmd())
+	_log("air_vtol_landed_open_ground", await _g5_wait_phase(vid, ["landed"], 120.0), Air.phase(_w(), vid))
+	await _shot("air_08_vtol_landed")
+	# troops then tanks: double-click one (= all of that type on screen), right-click the VTOL = load
+	var full := {"foot": 8, "vehicle": 2}
+	for grp in [troop_ids, tank_ids]:
+		var cen := Vector2.ZERO
+		for id in grp:
+			cen += Vector2(_ent(int(id)).pos)
+		cen /= maxf(1.0, float(grp.size()))
+		_mv().center_camera_on(cen)
+		await _wait(0.3)
+		var dn := await _select_units([String(_ent(int(grp[0])).def)])
+		_log("air_vtol_select_cargo_" + String(_ent(int(grp[0])).def), dn >= grp.size(), "selected=%d of %d" % [dn, grp.size()])
+		_mv().center_camera_on(_ent(vid).pos)
+		await _wait(0.3)
+		await _click(_to_screen(_ent(vid).pos), MOUSE_BUTTON_RIGHT)
+		await _wait(0.5)
+	var loaded := await _wait_until(func(): return Transport.group_load(_ent(vid)) == full, 120.0)
+	_log("air_vtol_loaded_2v_8f", loaded, "load=%s" % str(Transport.group_load(_ent(vid))))
+	await _g5_select(vid)
+	await _shot("air_09_vtol_loaded")
+	_log("air_vtol_take_off_click", await _click_named("G5_take_off"), _g5_last_cmd())
+	_log("air_vtol_airborne", await _g5_wait_phase(vid, ["air"], 30.0), Air.phase(_w(), vid))
+	var c0 := _g5_cell(_ent(vid).pos)
+	var lz2 := _g5_cell_near(c0, 10, 16, _lz_ok("a_vtol_dropship"))
+	if lz2.x < 0:
+		_mv().center_camera_on(Vector2(c0))
+		await _wait(0.3)
+		lz2 = _g5_cell_near(c0, 9, 14, _lz_ok("a_vtol_dropship"))
+	_log("air_vtol_far_lz_found", lz2.x >= 0, str(lz2))
+	if lz2.x < 0:
+		return
+	_log("air_vtol_fly_land_click", await _g5_arm_click("G5_land_at", Vector2(lz2) + Vector2(0.5, 0.5)), _g5_last_cmd())
+	await _wait(2.0)
+	await _shot("air_10_vtol_flying")
+	_log("air_vtol_landed_far", await _g5_wait_phase(vid, ["landed"], 120.0), "phase=%s at=%s" % [Air.phase(_w(), vid), str(_ent(vid).pos)])
+	await _g5_select(vid)
+	_log("air_vtol_unload_click", await _click_button("Unload at point"))
+	var vp: Vector2 = _ent(vid).pos
+	await _click(_to_screen(vp + Vector2(0.5, 0.5)))
+	var empty := await _wait_until(func(): return Transport.used_slots(_ent(vid)) == 0 and Transport.group_load(_ent(vid)).values().all(func(x): return int(x) == 0), 90.0)
+	var near := 0
+	for id in tank_ids + troop_ids:
+		var u = _ent(int(id))
+		if u != null and Vector2(u.pos).distance_to(vp) < 7.0:
+			near += 1
+	_log("air_vtol_unloaded", empty and near >= 9, "near=%d of 10 load=%s" % [near, str(Transport.group_load(_ent(vid)))])
+	await _wait(1.0)
+	await _shot("air_11_vtol_unloaded")
+
+
+func _air_heli(engs: Array) -> void:
+	_mv().center_camera_on(_hq().pos)
+	await _wait(0.3)
+	var pad := await _g5_build("a_helipad")
+	if pad.is_empty():
+		return
+	var pid := int(pad.id)
+	if not engs.is_empty():
+		_log("air_heli_select_engineers", await _g5_select(int(engs[0].id)))
+		_log("air_heli_assign_pad_click", await _g5_arm_click("G5_assign_engineers", _ent(pid).pos), _g5_last_cmd())
+		_log("air_heli_pad_engineers", await _wait_until(func(): return not Airfield.engineers_at(_w(), pid).is_empty(), 60.0), str(Airfield.engineers_at(_w(), pid)))
+	await _g5_select(pid)
+	var hs := await _train("a_attack_heli")
+	if hs.is_empty():
+		return
+	var hid := int(hs[0].id)
+	await _g5_wait_phase(hid, ["parked", "landed"], 30.0)
+	# open ground outside the base: >= 7 tiles from every own building
+	var hq: Vector2 = _hq().pos
+	var away := func(q: Vector2i) -> bool:
+		if not Air.landing_ok(_w(), q, Content.unit("a_attack_heli")):
+			return false
+		for b in _w().buildings_of(0):
+			if Vector2(b.pos).distance_to(Vector2(q)) < 7.0:
+				return false
+		return true
+	_mv().center_camera_on(hq)
+	await _wait(0.3)
+	var roomy := func(q: Vector2i) -> bool: return away.call(q) and away.call(q + Vector2i(1, 1)) and away.call(q - Vector2i(1, 1))
+	var lz := _g5_cell_near(_g5_cell(hq), 8, 20, roomy)
+	_log("air_heli_open_ground_found", lz.x >= 0, str(lz))
+	if lz.x < 0:
+		return
+	_log("air_select_heli", await _g5_select(hid))
+	_mv().center_camera_on(Vector2(lz))
+	await _wait(0.3)
+	_log("air_heli_land_here_click", await _g5_arm_click("G5_land_at", Vector2(lz) + Vector2(0.5, 0.5)), _g5_last_cmd())
+	var lc: Dictionary = _mv().g4b.last_cmd.duplicate(true)
+	lc["issuer"] = 0
+	print("PLAYTEST-DBG heli_land cmd=%s preview=%s sel=%s" % [str(lc), _w().preview_command(lc), str(_mv().selection)])
+	var lzc := Vector2(lz) + Vector2(0.5, 0.5)
+	_log("air_heli_landed_outside", await _wait_until(func(): return Air.phase(_w(), hid) == "landed" and Vector2(_ent(hid).pos).distance_to(lzc) < 1.6, 90.0),
+		"phase=%s pos=%s lz=%s air_at=%s" % [Air.phase(_w(), hid), str(_ent(hid).pos), str(lzc), str(_ent(hid).get("air_at", -1))])
+	await _shot("air_12_heli_landed_outside")
+	# harness (combat stand-in): the helicopter took hits and spent its rockets
+	_mv().join_sim()
+	var he: Dictionary = _ent(hid)
+	HotState.set_hp(_w(), hid, float(he.max_hp) * 0.5)
+	he.ammo = 0
+	await _g5_select(hid)
+	_log("air_heli_take_off_click", await _click_named("G5_take_off"), _g5_last_cmd())
+	_log("air_heli_airborne", await _g5_wait_phase(hid, ["air", "ret"], 30.0), Air.phase(_w(), hid))
+	await _shot("air_13_heli_airborne")
+	_mv().center_camera_on(_ent(pid).pos)
+	await _wait(0.3)
+	_log("air_heli_rebase_pad_click", await _g5_arm_click("G5_rebase", _ent(pid).pos), _g5_last_cmd())
+	_log("air_heli_at_pad", await _wait_until(func(): return Air.is_landed(_ent(hid)) and int(_ent(hid).get("air_at", -1)) == pid, 90.0),
+		"phase=%s at=%s" % [Air.phase(_w(), hid), str(_ent(hid).get("air_at", -1))])
+	var dd := Content.unit("a_attack_heli")
+	var svc := await _wait_until(func(): return float(_ent(hid).hp) >= float(_ent(hid).max_hp) - 0.01 and int(_ent(hid).get("ammo", 0)) >= int(dd.get("ammo_max", 0)), 90.0)
+	_log("air_heli_serviced_with_engineers", svc and not Airfield.engineers_at(_w(), pid).is_empty(),
+		"hp=%.0f/%.0f ammo=%s/%s engineers=%d" % [float(_ent(hid).hp), float(_ent(hid).max_hp), str(_ent(hid).get("ammo")), str(dd.get("ammo_max")), Airfield.engineers_at(_w(), pid).size()])
+	await _g5_select(hid)
+	await _shot("air_14_heli_serviced")
+
+
+# ------------------------------------------------------------ naval (Coastal Front)
+func _naval_flow() -> void:
+	for role in ["power", "barracks", "factory"]:
+		await _g5_build(_role(role))
+	var w := _w()
+	var c: Vector2i = _hq().cell
+	var site := Vector2i(-1, -1)
+	for r in range(3, 48):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if site.x < 0 and maxi(absi(dx), absi(dy)) == r and Construction.placement_error(w, 0, "a_shipyard", c + Vector2i(dx, dy)) == "":
+					site = c + Vector2i(dx, dy)
+		if site.x >= 0:
+			break
+	if site.x < 0:
+		# the coast is unexplored: scout it with the builders (right-click move), then build there
+		var shore := Vector2i(-1, -1)
+		var bd := 1e9
+		for y in w.map.h:
+			for x in w.map.w:
+				var o := Vector2i(x, y)
+				var d2 := float((o - c).length_squared())
+				if d2 < bd and Naval.shore_error(w, "a_shipyard", o) == "":
+					bd = d2
+					shore = o
+		_log("naval_shore_known", shore.x >= 0, "shore=%s dist=%.0f err=%s" % [str(shore), sqrt(bd), Construction.placement_error(w, 0, "a_shipyard", shore) if shore.x >= 0 else ""])
+		if shore.x >= 0:
+			_mv().center_camera_on(_own_units_in(_defs_with("can_build"))[0].pos)
+			await _wait(0.3)
+			var n0 := await _select_units(_defs_with("can_build"))
+			_mv().center_camera_on(Vector2(shore))
+			await _wait(0.4)
+			await _click(_to_screen(Vector2(shore) + Vector2(1.5, 1.5)), MOUSE_BUTTON_RIGHT)
+			var ok_s := await _wait_until(func(): return Construction.placement_error(_w(), 0, "a_shipyard", shore) == "", 90.0)
+			_log("naval_scout_coast_rightclick", n0 > 0 and ok_s, "err=%s" % Construction.placement_error(_w(), 0, "a_shipyard", shore))
+			if ok_s:
+				site = shore
+	_log("naval_shore_site_found", site.x >= 0, "site=%s hq=%s" % [str(site), str(c)])
+	if site.x < 0:
+		return
+	var yard := await _g5_build("a_shipyard", site)
+	if yard.is_empty():
+		return
+	await _shot("naval_01_shipyard")
+	var crafts := await _train("a_landing_craft")
+	if crafts.is_empty():
+		return
+	var cid := int(crafts[0].id)
+	_log("naval_craft_on_water", Naval.is_water_class(String(_ent(cid).def)), String(_ent(cid).def))
+	var squad := await _train(_role("infantry"))
+	if squad.is_empty():
+		return
+	await _wait(2.0)
+	var sids: Array = []
+	for u in squad:
+		sids.append(int(u.id))
+	var n := await _g5_select_many(sids)
+	_log("naval_select_squad", n == sids.size(), "selected=%d of %d" % [n, sids.size()])
+	_mv().center_camera_on(_ent(cid).pos)
+	await _wait(0.3)
+	await _click(_to_screen(_ent(cid).pos), MOUSE_BUTTON_RIGHT)
+	var loaded := await _wait_until(func(): return Transport.cargo_ids(_ent(cid)).size() >= sids.size(), 120.0)
+	_log("naval_right_click_load", loaded, "cargo=%s" % str(Transport.cargo_ids(_ent(cid))))
+	await _g5_select(cid)
+	await _shot("naval_02_craft_loaded")
+	if not loaded:
+		return
+	# a beach across the water, >= 10 tiles from the shipyard (camera moved there like a player scrolls)
+	var cc := _g5_cell(_ent(cid).pos)
+	var beach := Vector2i(-1, -1)
+	var best := 1e9
+	for dy in range(-40, 41):
+		for dx in range(-40, 41):
+			var q := cc + Vector2i(dx, dy)
+			var d2 := float(dx * dx + dy * dy)
+			if d2 >= 100.0 and d2 < best and w.in_bounds(q) and Naval.beach_ok(w, q) and Naval.drop_ok(w, _ent(cid), q):
+				best = d2
+				beach = q
+	_log("naval_beach_found", beach.x >= 0, "beach=%s from=%s" % [str(beach), str(cc)])
+	if beach.x < 0:
+		return
+	_mv().center_camera_on(Vector2(beach))
+	await _wait(0.3)
+	_log("naval_unload_at_point_click", await _click_button("Unload at point"))
+	await _click(_to_screen(Vector2(beach) + Vector2(0.5, 0.5)))
+	await _wait(3.0)
+	_mv().center_camera_on(_ent(cid).pos)
+	await _shot("naval_03_craft_underway")
+	var landed := await _wait_until(func(): return Transport.cargo_ids(_ent(cid)).is_empty(), 180.0)
+	var ashore := 0
+	for id in sids:
+		var u = _ent(int(id))
+		if u != null and not Naval.is_water_class(String(u.def)) and Vector2(u.pos).distance_to(Vector2(beach)) < 6.0:
+			ashore += 1
+	_log("naval_beach_landing", landed and ashore == sids.size(), "ashore=%d of %d" % [ashore, sids.size()])
+	_mv().center_camera_on(Vector2(beach))
+	await _wait(1.0)
+	await _shot("naval_04_beach_landing")
+
+
+# ------------------------------------------------------------ Drone Team
+func _drone_flow() -> void:
+	for role in ["power", "barracks"]:
+		await _g5_build(_role(role))
+	var teams := await _train("a_drone_team")
+	if teams.is_empty():
+		return
+	var tid := int(teams[0].id)
+	await _wait(2.0)
+	# walk the team out of supply range (supply.radius) so spent drones are not restocked at once
+	_log("drone_select_team_move", await _g5_select(tid))
+	var hqp: Vector2 = _hq().pos
+	var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5
+	var dest := hqp + (mc - hqp).normalized() * 18.0
+	_mv().center_camera_on(dest)
+	await _wait(0.4)
+	await _click(_to_screen(dest), MOUSE_BUTTON_RIGHT)
+	var far := func() -> bool:
+		for b in _w().buildings_of(0):
+			if Vector2(b.pos).distance_to(Vector2(_ent(tid).pos)) < 11.0:
+				return false
+		return not bool(_ent(tid).get("moving", false))
+	_log("drone_team_moved_out", await _wait_until(far, 90.0), "pos=%s" % str(_ent(tid).pos))
+	# harness: an enemy wall section 8 tiles out (the breach target; no enemy base this close)
+	_mv().join_sim()
+	var w := _w()
+	var efid := -1
+	for k in w.factions.keys():
+		if w.is_enemy(0, int(k)):
+			efid = int(k)
+			break
+	var wdef := Content.role(G3.faction_def(w, efid), "wall") if efid >= 0 else ""
+	var tc := _g5_cell(_ent(tid).pos)
+	_mv().center_camera_on(_ent(tid).pos)
+	await _wait(0.3)
+	var wc := _g5_cell_near(tc, 7, 12, func(q: Vector2i) -> bool: return Construction.placement_error(_w(), efid, wdef, q) == "")
+	if wc.x < 0:
+		wc = _g5_cell_near(tc, 7, 12, func(q: Vector2i) -> bool: return Construction.placement_error(_w(), 0, wdef, q) == "")
+	var wid := -1
+	if wdef != "" and wc.x >= 0:
+		_mv().join_sim()
+		wid = _w().spawn_building(wdef, efid, wc, true)
+	_log("drone_harness_enemy_wall", wid >= 0 and _ent(wid) != null, "def=%s cell=%s owner=%d" % [wdef, str(wc), efid])
+	_log("drone_select_team", await _g5_select(tid))
+	await _shot("drone_01_team_card")
+	var k := 0
+	_mv().speed = 1.0  # strike drones dive in well under a second at 3x: launch and check at 1x
+	for dt in ["strike", "frag", "recon", "emp"]:
+		var before := G5Mech.drone_charges(_ent(tid))
+		var q := _g5_cell_near(tc, 6 + k, 10 + k, func(x: Vector2i) -> bool: return _w().terrain_at(x) != G4bMech.FOREST)
+		k += 1
+		await _g5_select(tid)
+		_log("drone_launch_%s_click" % dt, await _g5_arm_click("G5_drone_" + dt, Vector2(q) + Vector2(0.5, 0.5)), "%s cell=%s" % [_g5_last_cmd(), str(q)])
+		var flying := await _wait_until(func(): return _own_drones() > 0 and G5Mech.drone_charges(_ent(tid)) == before - 1, 10.0)
+		_log("drone_%s_launched" % dt, flying, "charges=%d drones=%d" % [G5Mech.drone_charges(_ent(tid)), _own_drones()])
+		await _wait(0.5)
+		await _shot("drone_0%d_%s" % [k + 1, dt])
+	_mv().speed = 3.0
+	_log("drone_team_tactical_mode", await _wait_until(func(): return G5Mech.mode(_ent(tid)) == "tactical", 10.0), G5Mech.mode(_ent(tid)))
+	await _g5_select(tid)
+	await _wait(0.6)
+	_log("drone_tactical_buttons_shown", _g5_named("G5_tact_breach") != null and _g5_named("G5_drone_strike") == null)
+	await _shot("drone_06_tactical_card")
+	if wid < 0:
+		return
+	var hp0 := float(_ent(wid).hp)
+	_log("drone_breach_click", await _g5_arm_click("G5_tact_breach", _ent(wid).pos) and String(_mv().g4b.last_cmd.get("ability", "")) == "breach", str(_mv().g4b.last_cmd))
+	var hit := await _wait_until(func(): return _ent(wid) == null or float(_ent(wid).hp) < hp0, 90.0)
+	_log("drone_tactical_breach", hit, "wall hp=%s" % ("destroyed" if _ent(wid) == null else str(_ent(wid).hp)))
+	await _wait(1.0)
+	await _shot("drone_07_breach")
+
+
+func _own_drones() -> int:
+	var n := 0
+	for e in _w().units_of(0):
+		if G5Mech.is_launched_drone(e):
+			n += 1
+	return n
+
+
+# ------------------------------------------------------------ auto resupply
+func _support_flow() -> void:
+	for role in ["power", "barracks", "factory"]:
+		await _g5_build(_role(role))
+	var trucks := await _train(_role("supply"))
+	var squad := await _train(_role("infantry"))
+	if trucks.is_empty() or squad.is_empty():
+		return
+	var trid := int(trucks[0].id)
+	await _wait(2.0)
+	await _g5_walk_out(squad)
+	await _support_mode(trid, squad, "station", 1)
+	var squad2 := await _train(_role("infantry"))
+	await _wait(2.0)
+	await _g5_walk_out(squad2 if not squad2.is_empty() else squad)
+	await _support_mode(trid, squad2 if not squad2.is_empty() else squad, "roam", 2)
+
+
+## Select units (double-click) and right-click a point 16 tiles out toward the map centre, out of
+## supply-point range, so only the truck can serve them.
+func _g5_walk_out(units: Array) -> void:
+	if units.is_empty():
+		return
+	_mv().center_camera_on(_ent(int(units[0].id)).pos)
+	await _wait(0.3)
+	var n := await _select_units([String(units[0].def)])
+	var hqp: Vector2 = _hq().pos
+	var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5
+	var dest := hqp + (mc - hqp).normalized() * 16.0
+	_mv().center_camera_on(dest)
+	await _wait(0.3)
+	await _click(_to_screen(dest), MOUSE_BUTTON_RIGHT)
+	var far := func() -> bool:
+		for u in units:
+			var e = _ent(int(u.id))
+			if e == null or bool(e.get("moving", false)):
+				return false
+			for b in _w().buildings_of(0):
+				if Vector2(b.pos).distance_to(Vector2(e.pos)) < 9.0:
+					return false
+		return true
+	_log("support_walk_out_rightclick", n > 0 and await _wait_until(far, 90.0), "selected=%d dest=%s" % [n, str(dest)])
+
+
+func _drain_ammo(units: Array) -> Array:
+	_mv().join_sim()
+	var ids: Array = []
+	for u in units:
+		var e = _ent(int(u.id))
+		var am := int(Content.unit(String(e.def)).get("ammo_max", 0)) if e != null else 0
+		if am > 0:
+			e.ammo = int(am * 0.1)   # harness (combat stand-in): magazines nearly spent
+			ids.append(int(e.id))
+	return ids
+
+
+func _support_mode(trid: int, units: Array, mode: String, n: int) -> void:
+	var needy := _drain_ammo(units)
+	_log("support_%s_needy_units" % mode, needy.size() > 0 and Support.needs_supply(_w(), _ent(int(needy[0]))), "needy=%d" % needy.size())
+	var cen := Vector2.ZERO
+	for id in needy:
+		cen += Vector2(_ent(int(id)).pos)
+	cen /= maxf(1.0, float(needy.size()))
+	_log("support_%s_select_truck" % mode, await _g5_select(trid))
+	_log("support_%s_auto_click" % mode, await _click_named("G5_truck_auto"))
+	await _wait(0.3)
+	_mv().center_camera_on(cen)
+	await _wait(0.3)
+	await _drag(_to_screen(cen), _to_screen(cen + Vector2(7.0, 0.0)))
+	await _wait(0.5)
+	var ts := Support.truck_state(_w(), trid)
+	_log("support_%s_area_set" % mode, String(ts.get("mode", "")) == mode and Vector2(float(ts.get("center", [0, 0])[0]), float(ts.get("center", [0, 0])[1])).distance_to(cen) < 2.0,
+		"state mode=%s center=%s radius=%s" % [String(ts.get("mode", "")), str(ts.get("center")), str(ts.get("radius"))])
+	await _g5_select(trid)
+	await _wait(0.4)
+	var b := _g5_named("G5_truck_auto")
+	_log("support_%s_button_shows_mode" % mode, b != null and String(b.text).contains(mode), "" if b == null else String(b.text).replace("\n", " | "))
+	var resup := await _wait_until(func(): return _any_flag(needy, RenderSnapScript.FLAG_RESUP), 60.0)
+	_log("support_%s_claimed_flag" % mode, resup)
+	await _shot("support_0%d_%s_serving" % [n, mode])
+	var served := await _wait_until(func(): return needy.all(func(id): return _ent(int(id)) == null or not Support.needs_supply(_w(), _ent(int(id)))), 120.0)
+	_log("support_%s_units_resupplied" % mode, served, "ammo=%s" % str(needy.map(func(id): return _ent(int(id)).get("ammo") if _ent(int(id)) != null else -1)))
+	await _shot("support_0%d_%s_done" % [n, mode])
+
+
+func _any_flag(ids: Array, flag: int) -> bool:
+	for id in ids:
+		if _g4b_snap_flag(int(id), flag):
+			return true
+	return false
+
+
+# ------------------------------------------------------------ medical
+func _med_flow() -> void:
+	for role in ["power", "barracks", "factory"]:
+		await _g5_build(_role(role))
+	var hosp := await _g5_build("a_hospital")
+	var medics := await _train("a_medic_team")
+	var squad := await _train(_role("infantry"))
+	if hosp.is_empty() or medics.is_empty() or squad.is_empty():
+		return
+	var mid := int(medics[0].id)
+	await _wait(2.0)
+	_log("med_has_medical", Medical.has_medical(_w(), 0))
+	var sids: Array = []
+	var cen := Vector2.ZERO
+	for u in squad:
+		sids.append(int(u.id))
+		cen += Vector2(_ent(int(u.id)).pos)
+	cen /= float(sids.size())
+	_log("med_select_medic", await _g5_select(mid))
+	_log("med_auto_evac_click", await _click_named("G5_medic_auto"))
+	await _wait(0.3)
+	_mv().center_camera_on(cen)
+	await _wait(0.3)
+	await _drag(_to_screen(cen), _to_screen(cen + Vector2(9.0, 0.0)))
+	await _wait(0.5)
+	_log("med_auto_evac_on", _mv().g4b.last_cmd.get("type", "") == "set_auto_evac" and bool(_mv().g4b.last_cmd.get("on", false)), str(_mv().g4b.last_cmd))
+	# harness (combat stand-in): an enemy shot through the real Damage path drops two riflemen to 0 hp
+	_mv().join_sim()
+	var w := _w()
+	var foe = null
+	for e in w.entities.values():
+		if e.kind == "unit" and w.is_enemy(0, int(e.owner)) and not Combat.stats(e).is_empty():
+			foe = e
+			break
+	var hurt: Array = sids.slice(0, mini(2, sids.size()))
+	if foe != null:
+		for id in hurt:
+			var e: Dictionary = _ent(int(id))
+			HotState.set_hp(w, int(id), 0.01)
+			Damage.apply_hit(w, foe, e, Combat.stats(foe), true)
+	var wounded := hurt.filter(func(id): return _ent(int(id)) != null and Medical.is_wounded(_ent(int(id))))
+	_log("med_wounded", foe != null and wounded.size() == hurt.size(), "wounded=%d of %d (foe=%s)" % [wounded.size(), hurt.size(), "none" if foe == null else String(foe.def)])
+	await _wait(0.6)
+	_log("med_wounded_flag", _any_flag(wounded, RenderSnapScript.FLAG_WOUNDED))
+	await _shot("med_01_wounded")
+	if wounded.is_empty():
+		return
+	var picked := await _wait_until(func(): return Medical.carrying(_ent(mid)).size() > 0 or wounded.any(func(id): return int(_ent(int(id)).get("evac_by", -1)) >= 0), 90.0)
+	_log("med_evac_pickup", picked, "carrying=%s" % str(Medical.carrying(_ent(mid))))
+	_mv().center_camera_on(_ent(mid).pos)
+	await _wait(0.5)
+	await _shot("med_02_evac")
+	var hp_pos: Vector2 = _ent(int(hosp.id)).pos
+	var healed := await _wait_until(func(): return wounded.all(func(id): return _ent(int(id)) != null and not Medical.is_wounded(_ent(int(id))) and int(_ent(int(id)).get("evac_by", -1)) < 0), 180.0)
+	var at_h := 0
+	for id in wounded:
+		var u = _ent(int(id))
+		if u != null and float(u.hp) >= float(u.max_hp) - 0.01 and Vector2(u.pos).distance_to(hp_pos) < 8.0:
+			at_h += 1
+	_log("med_hospital_reinforcement", healed and at_h == wounded.size(), "healed_at_hospital=%d of %d" % [at_h, wounded.size()])
+	_mv().center_camera_on(hp_pos)
+	await _wait(0.8)
+	await _shot("med_03_hospital_reinforcement")
