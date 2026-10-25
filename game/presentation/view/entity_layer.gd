@@ -40,6 +40,7 @@ var _decor_rect: Dictionary = {}   # Vector2i chunk -> Rect2 (screen bounds)
 var _flat: Dictionary = {}         # G4: flat map POI decor (rails, tarmac, dam): drawn under everything
 var _flat_rect: Dictionary = {}
 var poi_count := 0
+var coast_count := 0  # G5 (VIEW5-2): coast_* decor sprites placed from map.decor
 var _team: Dictionary = {}         # fid -> Color (refreshed each frame)
 var _ck: Dictionary = {}           # fid -> colour key string
 var _fac: Dictionary = {}          # fid -> faction def id
@@ -117,11 +118,12 @@ func _build_decor() -> void:
 ## like terrain decor; an entry larger than its sprite's footprint is tiled with it.
 func _build_poi_decor() -> void:
 	var pois: Dictionary = ArtCatalog.manifest().get("poi_decor", {})
-	if pois.is_empty():
-		return
+	var lists: Dictionary = ArtCatalog.manifest().get("decor", {})
 	for d in mv.world.map.get("decor", []):
 		var spec: Dictionary = pois.get(String(d.get("id", "")), {})
 		if spec.is_empty():
+			if String(d.get("id", "")).begins_with("coast_") and lists.get(String(d.id)) is Array:
+				_build_coast_decor(d, lists[String(d.id)])
 			continue
 		var img: Image = ArtCatalog._image(String(spec.file))
 		art._whole("poi|" + String(spec.file), img, spec.pivot)
@@ -146,6 +148,32 @@ func _build_poi_decor() -> void:
 				rk[ck] = (rk[ck] as Rect2).merge(r)
 				decor_count += 1
 				poi_count += 1
+
+
+## G5 (VIEW5-2, ART-NAV): a map.decor entry naming a manifest decor list (coast_beach / coast_cliff /
+## coast_shallow) scatters one variant (cell hash) per footprint cell, y-sorted like terrain decor.
+func _build_coast_decor(d: Dictionary, list: Array) -> void:
+	if list.is_empty():
+		return
+	var c0 := Vector2i(d.get("cell", Vector2i.ZERO))
+	var sz := Vector2i(d.get("size", Vector2i.ONE))
+	for oy in maxi(1, sz.y):
+		for ox in maxi(1, sz.x):
+			var cell := c0 + Vector2i(ox, oy)
+			var v: Dictionary = list[absi((cell.x * 73856093) ^ (cell.y * 19349663)) % list.size()]
+			art._whole("decor|" + String(v.file), ArtCatalog._image(String(v.file)), v.get("pivot", [0, 0]))
+			if art.out_page < 0:
+				continue
+			var p: Vector2 = mv.world_to_screen(Vector2(cell) + Vector2(0.5, 0.5))
+			var ck := Vector2i(cell.x / CHUNK, cell.y / CHUNK)
+			var r := Rect2(p + art.out_off, art.out_src.size)
+			if not _decor.has(ck):
+				_decor[ck] = []
+				_decor_rect[ck] = r
+			(_decor[ck] as Array).append_array([p, art.out_page, art.out_src, art.out_off, -1])
+			_decor_rect[ck] = (_decor_rect[ck] as Rect2).merge(r)
+			decor_count += 1
+			coast_count += 1
 
 
 func on_destroyed(id: int) -> void:
@@ -282,6 +310,7 @@ func refresh() -> void:
 	var raise_v = mv.terrain_layer.get("_raise") if mv.terrain_layer != null else null
 	var raise: Dictionary = raise_v if raise_v is Dictionary else {}
 	var terr: PackedByteArray = sn.get("terrain", PackedByteArray()) if not raise.is_empty() else PackedByteArray()
+	var terr_w: PackedByteArray = sn.get("terrain", PackedByteArray())  # G5 (VIEW5-2): amphibians swim on water
 	# G5 (VIEW5) side tables (sparse; empty dicts in a G4 match)
 	var g5air: Dictionary = sn.get("air", {})
 	var has_air := not g5air.is_empty()
@@ -289,7 +318,8 @@ func refresh() -> void:
 	var has_sq := not squad.is_empty()
 	var sling: Dictionary = sn.get("sling", {})
 	var gc5 := {"shadows": 0, "lifted": 0, "wounded": 0, "markers": 0, "red_cross": 0, "trails": 0, "slung": 0,
-		"strips": 0, "sinking": 0, "tactical": 0, "squads": 0, "aboard": 0}
+		"strips": 0, "sinking": 0, "tactical": 0, "squads": 0, "aboard": 0,
+		"wake_sheets": 0, "sink_sheets": 0, "swim": 0, "ramp": 0}
 	g5_counts = gc5
 	for i in n_u:
 		var id: int = ids[i]
@@ -380,6 +410,10 @@ func refresh() -> void:
 			# G5 (ART-AIR anim): rotor / prop frames cycle at anim_fps while airborne
 			var an: Array = c[24] if (fl & RenderSnap.FLAG_MOVING) or (c[23] as Array).is_empty() else c[23]
 			fi = an[int(t * float(c[25]) + id * 0.37) % an.size()]
+		elif c[27] >= 0 and G5Art.on_water(terr_w, pos, mw):
+			# G5 (VIEW5-2, ART-NAV specials): amphibian afloat, swim / swim_move frames
+			fi = c[28] if (fl & RenderSnap.FLAG_MOVING and c[28] >= 0) else c[27]
+			gc5.swim += 1
 		elif fl & RenderSnap.FLAG_EVAC and c[19] >= 0:
 			fi = c[19]  # G5: medic team carrying / ambulance loading
 		elif fl & RenderSnap.FLAG_TACTICAL and c[18] >= 0 and not (fl & RenderSnap.FLAG_MOVING):
@@ -390,6 +424,9 @@ func refresh() -> void:
 			var pz := -1
 			if fl & POSE_MASK:
 				pz = c[13] if fl & RenderSnap.FLAG_DEPLOYED else (c[14] if fl & RenderSnap.FLAG_WORK else c[15])
+				if fl & RenderSnap.FLAG_UNLOAD and c[29] >= 0 and ((fl >> 8) & 0xFF) > 0:
+					pz = c[29]  # G5 (VIEW5-2, ART-NAV specials): ramp half down while cargo is still aboard
+					gc5.ramp += 1
 			if pz >= 0:
 				fi = pz
 			elif fl & RenderSnap.FLAG_MOVING:
@@ -409,6 +446,12 @@ func refresh() -> void:
 		elif c[12]:
 			sp.y -= G3View.air_lift({"def": dname, "id": id}, t)  # G3a: air units fly above their ground point
 			layer = 1
+		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not (c[26] as Dictionary).is_empty() and (c[27] < 0 or G5Art.on_water(terr_w, pos, mw)):
+			# G5 (VIEW5-2, ART-NAV): wake sheet under the hull (fx_layer skips its line wake for these defs)
+			var wk: Dictionary = c[26]
+			if art.resolve_sheet(wk, int(t * float(wk.get("fps", 6)) + id * 0.37) % maxi(1, int(wk.get("frames", 3))), row):
+				_push(layer, sp.y - 3.0, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color(1, 1, 1, 0.85))
+				gc5.wake_sheets += 1
 		# inlined _push (capacity reserved above; G5 extras per unit - shadow, trail, markers, sling - may outgrow it)
 		var ii := _n
 		if ii >= _page.size():
@@ -464,6 +507,13 @@ func refresh() -> void:
 					mod = Color(1, 1, 1, 0.3 + 0.7 * kk)
 					sdy = (1.0 - kk) * 10.0
 					gc5.sinking += 1
+					# G5 (VIEW5-2, ART-NAV): vehicles[def].sink columns sink_0..3 from the timer (1 - k)
+					var sks = G5Art.unit_spec(String(e.get("def", ""))).get("sink")
+					if sks is Dictionary and art.resolve_sheet(sks, G5Art.sink_col(kk, (sks.get("frames", []) as Array).size()),
+							posmod(int(round(float(e.get("facing", 0.0)) * FACING_INV)), 8)):
+						_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color(1, 1, 1, 0.55 + 0.45 * kk))
+						gc5.sink_sheets += 1
+						continue
 			"mine", "charge":
 				# G4b: hidden from enemies unless detected (mines) or planted on our side's target (charges)
 				if not g4b_static_visible(e, statics, pf, my_team, mv._ally_fids):

@@ -40,6 +40,7 @@ var _variants: PackedInt32Array = PackedInt32Array()
 var _raise: PackedInt32Array = PackedInt32Array()
 var _bvar: Dictionary = {}         # code * 4 + biome -> loaded biome variants
 var _biomes_loaded := false
+var g5_rules := 0                  # G5 (VIEW5-2): terrain_g5 transition rules loaded (surf, cliff_wet)
 var _rules: Array = []             # {kind, recv, from: PackedByteArray flags, img: [biome] -> [edge[16], corner[16]]}
 var _recv: PackedByteArray = PackedByteArray()
 var _masks: Dictionary = {}        # art -> [edge[16], corner[16]] (mask atlases, for per-biome composites)
@@ -183,8 +184,18 @@ func _load_rules(g4: Dictionary) -> void:
 	_masks.clear()
 	_recv.resize(MAX_CODE)
 	_recv.fill(0)
-	var trans: Dictionary = g4.get("trans", {})
+	# G5 (VIEW5-2, ART-NAV): terrain_g5 rules (surf: cliff edge onto water, cliff_wet: water onto
+	# cliff) follow the G4 rules with their own trans table; same 1024x64 edge/corner atlas layout.
+	var g5: Dictionary = ArtCatalog.manifest().get("terrain_g5", {})
+	var all_rules: Array = []
 	for r in g4.get("rules", []):
+		all_rules.append([r, g4.get("trans", {})])
+	for r in g5.get("rules", []):
+		all_rules.append([r, g5.get("trans", {})])
+	g5_rules = 0
+	for pair in all_rules:
+		var r: Dictionary = pair[0]
+		var trans: Dictionary = pair[1]
 		var art := String(r.get("art", r.get("kind", "")))
 		var atlas: Image = ArtCatalog._image(String(trans.get(art, ""))) if trans.has(art) else null
 		if atlas == null or atlas.get_size() != Vector2i(1024, 64):
@@ -201,6 +212,8 @@ func _load_rules(g4: Dictionary) -> void:
 		else:
 			rule.img = [rows, rows, rows, rows]
 		_rules.append(rule)
+		if g5.get("rules", []).has(r):
+			g5_rules += 1
 		for c in r.get("recv", []):
 			if int(c) < MAX_CODE:
 				_recv[int(c)] = 1

@@ -9,6 +9,7 @@ const DRONE_ALT := 14.0
 const STRIP_KINDS := ["start", "mid", "end"]
 
 static var _alt: Dictionary = {}   # def -> [altitude px, bob px]
+static var _wake: Dictionary = {}  # def -> has an ART-NAV wake sheet (VIEW5-2)
 
 
 static func unit_spec(def_id: String) -> Dictionary:
@@ -173,3 +174,29 @@ static func anim_cols(spec: Dictionary, frames: Array, state: String) -> Array:
 			if k >= 0:
 				out.append(k)
 	return out
+
+
+## G5 (VIEW5-2, ART-NAV): terrain codes an amphibian swims on (water, shallow, deep).
+const WATER_CODES := [4, 9, 10]
+
+
+static func on_water(terr: PackedByteArray, p: Vector2, mw: int) -> bool:
+	if terr.is_empty() or mw <= 0:
+		return false
+	var ti := floori(p.y) * mw + floori(p.x)
+	return ti >= 0 and ti < terr.size() and WATER_CODES.has(int(terr[ti]))
+
+
+## Sink sheet column (sink_0 .. sink_{n-1}) for sink timer fraction k (1 = just sunk, 0 = gone).
+static func sink_col(k: float, n: int) -> int:
+	var m := maxi(1, n if n > 0 else 4)
+	return clampi(int((1.0 - clampf(k, 0.0, 1.0)) * m), 0, m - 1)
+
+
+## True when def `d` has an ART-NAV wake sheet (vehicles[def].wake): fx_layer then skips its line wake.
+static func has_wake_sheet(d: String) -> bool:
+	var v = _wake.get(d)
+	if v == null:
+		v = unit_spec(d).get("wake") is Dictionary
+		_wake[d] = v
+	return v

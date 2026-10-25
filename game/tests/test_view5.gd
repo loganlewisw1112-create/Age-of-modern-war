@@ -326,3 +326,111 @@ func test_g5_art_groups_merged() -> void:
 		check(li.class_of(d) == String(man.lod_class[d]), "lod class %s" % d)
 	var ph: Dictionary = ArtCatalog.placeholder_for({"kind": "unit", "def": "zz_no_art"}, Color.RED)
 	check(ph.get("texture") != null, "placeholder silhouette still works")
+
+
+# ---------------------------------------------------------------- VIEW5-2: air event fx, ART-NAV opt-ins
+## Minimal MatchView stand-in for FxLayer (thread rule: the layer reads mv.snap only, plus the
+## live dict for _height_for, which MatchView allows right after join).
+class FxView:
+	extends RefCounted
+	var snap: Dictionary = {}
+	var world = null
+	var player_fid := 0
+	var _ally_fids: Array = []
+
+	func snap_index(id: int) -> int:
+		return (snap.get("ids", PackedInt32Array()) as PackedInt32Array).find(id)
+
+	func anim_time() -> float:
+		return 0.0
+
+	func world_to_screen(p: Vector2) -> Vector2:
+		return Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
+
+	func cell_visible(_c: Vector2i) -> bool:
+		return true
+
+
+func _fx_view() -> FxView:
+	var v := FxView.new()
+	v.world = {"entities": {}}
+	v.snap = {"tick": 1, "n": 2, "ids": PackedInt32Array([10, 11]),
+		"pos": PackedVector2Array([Vector2(5, 5), Vector2(9, 9)]), "prev": PackedVector2Array([Vector2(5, 5), Vector2(9, 9)]),
+		"facing": PackedFloat32Array([0.0, 0.0]), "hp": PackedFloat32Array([0.3, 1.0]),
+		"def": PackedInt32Array([0, 1]), "defs": PackedStringArray(["a_attack_heli", "mbt"]),
+		"owner": PackedInt32Array([0, 1]), "flags": PackedInt32Array([RenderSnap.FLAG_AIR, 0]),
+		"air": {10: {"ph": "air", "alt": 1.0, "field": -1, "strip": -1}}}
+	return v
+
+
+func test_fx_air_events_missile_flak_bomb_crash() -> void:
+	var FxLayer = load("res://presentation/view/fx_layer.gd")
+	var fx = FxLayer.new()
+	var v := _fx_view()
+	fx.setup(v)
+	for n in fx.AIR_FX:
+		check(not (fx._frames.get(n, []) as Array).is_empty(), "ART-AIR fx %s loaded" % n)
+	check_eq((fx._frames.get("g5_missile", []) as Array).size(), 8, "missile: 8 facings")
+	# ground-to-ground keeps the G4 tracer path
+	fx.on_shot({"shooter": 11, "target": 12, "weapon": "tank_cannon", "hit": true, "from": Vector2(9, 9), "to": Vector2(12, 9)})
+	check_eq(int(fx.air_fx.missiles) + int(fx.air_fx.air_tracers), 0, "ground fire is not an air shot")
+	# airborne gunship rockets -> missile sprite + trail puffs, lifted to its altitude
+	fx.on_shot({"shooter": 10, "target": 11, "weapon": "heli_rockets", "hit": true, "from": Vector2(5, 5), "to": Vector2(9, 9)})
+	check_eq(int(fx.air_fx.missiles), 1, "rocket from the air = missile")
+	var m: Dictionary = fx._fx[fx._fx.size() - 1]
+	check(String(m.kind) == "missile" and (m.a as Vector2).y < v.world_to_screen(Vector2(5, 5)).y - 20.0, "missile leaves the lifted aircraft")
+	for i in 6:
+		fx.tick(0.05)
+	check(int(fx.air_fx.trails) > 0, "missile trail puffs")
+	check(int(fx.air_fx.smoke) > 0, "damaged airborne aircraft trails smoke")
+	# AA fire at the airborne gunship: flak bursts for flak / autocannon AA, tracers only for rifles
+	fx.on_shot({"shooter": 11, "target": 10, "weapon": "radar_flak", "hit": false, "from": Vector2(9, 9), "to": Vector2(5, 5)})
+	check_eq(int(fx.air_fx.flak), 1, "radar flak bursts at the aircraft")
+	fx.on_shot({"shooter": 11, "target": 10, "weapon": "rifle", "hit": true, "from": Vector2(9, 9), "to": Vector2(5, 5)})
+	check_eq(int(fx.air_fx.flak), 1, "rifle fire at aircraft draws no flak")
+	# AirStrike -> falling bomb -> bomb blast when it lands
+	fx._on_world_events([{"type": "AirStrike", "id": 3, "owner": 0, "pos": Vector2(9, 9), "hits": 1}])
+	check_eq(int(fx.air_fx.bombs), 1, "AirStrike drops a bomb")
+	for i in 12:
+		fx.tick(0.05)
+	check_eq(int(fx.air_fx.blasts), 1, "bomb blast on impact")
+	# AircraftCrashed (EntityDestroyed cause crashed) -> crash fireball + smoke columns
+	fx.on_destroyed({"id": 10, "kind": "unit", "def": "a_attack_heli", "owner": 0, "pos": Vector2(5, 5), "cause": "crashed"})
+	check_eq(int(fx.air_fx.crashes), 1, "aircraft crash fx")
+	var kinds := {}
+	for f in fx._fx:
+		kinds[String(f.get("name", f.kind))] = true
+	check(kinds.has("g5_air_crash") and kinds.has("g5_air_smoke"), "crash uses g5_air_crash + g5_air_smoke")
+	fx.free()
+
+
+func test_naval_opt_ins_wake_sink_specials_coast_terrain() -> void:
+	check(G5Art.has_wake_sheet("a_destroyer") and not G5Art.has_wake_sheet("mbt"), "wake sheets by def")
+	check_eq(G5Art.sink_col(1.0, 4), 0, "fresh wreck: sink_0")
+	check_eq(G5Art.sink_col(0.5, 4), 2, "half sunk: sink_2")
+	check_eq(G5Art.sink_col(0.0, 4), 3, "almost gone: sink_3")
+	var terr := PackedByteArray([0, 4, 10, 12])
+	check(G5Art.on_water(terr, Vector2(1.5, 0.5), 4) and G5Art.on_water(terr, Vector2(2.5, 0.5), 4), "water / deep = afloat")
+	check(not G5Art.on_water(terr, Vector2(0.5, 0.5), 4) and not G5Art.on_water(terr, Vector2(3.5, 0.5), 4), "grass / cliff = ashore")
+	var ba = BatchArt.new()
+	var dd: Array = ba.cache_unit({"id": 1, "kind": "unit", "def": "a_destroyer", "owner": 0}, Color.BLUE, "b")
+	check(not (dd[26] as Dictionary).is_empty(), "destroyer caches its wake spec")
+	check(ba.resolve_sheet(dd[26], 1, 3) and ba.out_src.size == Vector2(float(dd[26].fw), float(dd[26].fh)), "wake sheet frame size from the spec")
+	var sk = G5Art.unit_spec("a_destroyer").get("sink")
+	check(sk is Dictionary and ba.resolve_sheet(sk, 3, 2), "sink sheet column resolves")
+	var cr: Array = ba.cache_unit({"id": 2, "kind": "unit", "def": "m_amphib_crawler", "owner": 0}, Color.BLUE, "b")
+	var fr: Array = G5Art.unit_spec("m_amphib_crawler").frames
+	check(int(cr[27]) == fr.find("swim") and int(cr[28]) == fr.find("swim_move") and int(cr[27]) >= 0, "crawler swim / swim_move columns")
+	var lc: Array = ba.cache_unit({"id": 3, "kind": "unit", "def": "a_landing_craft", "owner": 0}, Color.BLUE, "b")
+	check(int(lc[29]) == (G5Art.unit_spec("a_landing_craft").frames as Array).find("ramp_half") and int(lc[15]) >= 0, "landing craft ramp_half + unload")
+	var mb: Array = ba.cache_unit({"id": 4, "kind": "unit", "def": "mbt", "owner": 0}, Color.BLUE, "b")
+	check((mb[26] as Dictionary).is_empty() and int(mb[27]) < 0 and int(mb[29]) < 0, "G4 units: no wake / swim / ramp")
+	var man: Dictionary = ArtCatalog.manifest()
+	for k in ["coast_beach", "coast_cliff", "coast_shallow"]:
+		var lst: Array = man.get("decor", {}).get(k, [])
+		check(not lst.is_empty() and ArtCatalog._image(String(lst[0].file)) != null, "decor %s loads" % k)
+	var g5t: Dictionary = man.get("terrain_g5", {})
+	check_eq((g5t.get("rules", []) as Array).size(), 2, "terrain_g5 rules")
+	for k in ["surf", "cliff_wet"]:
+		var img: Image = ArtCatalog._image(String(g5t.get("trans", {}).get(k, "")))
+		check(img != null and img.get_size() == Vector2i(1024, 64), "%s transition atlas 1024x64" % k)

@@ -19,6 +19,7 @@ var out_off := Vector2.ZERO
 var _uspec: Dictionary = {}   # def -> spec Dictionary ({} = no sheet art)
 var _ec: Dictionary = {}      # entity id -> Array cache, see _cache_unit / resolve_static (read by entity_layer)
 var _tex_keys: Dictionary = {} # texture rid id -> atlas key (fallbacks, decor)
+var _shc: Dictionary = {}      # G5 (VIEW5-2): plain sub-sheets (wake / sink) file -> [page, origin, fw, fh, -pivot, cols, rows]
 
 
 func forget(id: int) -> void:
@@ -46,7 +47,11 @@ func _unit_spec(def: String) -> Dictionary:
 			# G5 (ART-AIR): ground frames + rotor / prop animation pairs (manifest anim, anim_fps)
 			"park": G5Art.special_col(def, frames, "parked"), "land": G5Art.special_col(def, frames, "landed"),
 			"anim_air": G5Art.anim_cols(spec, frames, "air"), "anim_move": G5Art.anim_cols(spec, frames, "move"),
-			"fps": float(spec.get("anim_fps", 8))}
+			"fps": float(spec.get("anim_fps", 8)),
+			# G5 (VIEW5-2, ART-NAV): wake sheet, swim / swim_move (amphibians on water), ramp (half-down)
+			"wake": spec.get("wake", {}) if spec.get("wake") is Dictionary else {},
+			"swim": G5Art.special_col(def, frames, "swim"), "swim_mv": G5Art.special_col(def, frames, "swim_move"),
+			"ramp": G5Art.special_col(def, frames, "ramp")}
 		if s.dep < 0:
 			s.dep = G5Art.special_col(def, frames, "deployed")
 	_uspec[def] = s
@@ -84,7 +89,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var s := _unit_spec(def)
 	var alive := int(e.get("squad_alive", 0))
 	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1,
-		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0]
+		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0, {}, -1, -1, -1]
 	if not s.is_empty():
 		var sh: Dictionary = G5Art.squad_sheet(s.spec, alive)  # G5: alive_sheets[n] for a reduced squad
 		var key: String = String(sh.file) + "|" + ck
@@ -116,6 +121,10 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[23] = s.anim_air
 			c[24] = s.anim_move
 			c[25] = float(s.fps)
+			c[26] = s.wake
+			c[27] = int(s.swim)
+			c[28] = int(s.swim_mv)
+			c[29] = int(s.ramp)
 	_ec[int(e.id)] = c
 	return c
 
@@ -150,6 +159,33 @@ func resolve_unit(e: Dictionary, team: Color, ck: String, anim_t: float) -> void
 	out_page = c[2]
 	out_src = Rect2((c[3] as Vector2) + Vector2(fi * fw, row * fh), Vector2(fw, fh))
 	out_off = c[6]
+
+
+## G5 (VIEW5-2): frame (col, row) of an untinted manifest sub-sheet {file, fw, fh, pivot} (ART-NAV
+## vehicles[def].wake / .sink). Sets out_page / out_src / out_off; false when the sheet is missing.
+func resolve_sheet(spec: Dictionary, col: int, row: int) -> bool:
+	var file := String(spec.get("file", ""))
+	var c = _shc.get(file)
+	if c == null:
+		c = []
+		var img: Image = ArtCatalog._image(file) if file != "" else null
+		var fw := int(spec.get("fw", 0))
+		var fh := int(spec.get("fh", 0))
+		if img != null and fw > 0 and fh > 0 and img.get_width() >= fw and img.get_height() >= fh:
+			var pg := atlas.add("sheet|" + file, img)
+			if pg >= 0:
+				var piv: Array = spec.get("pivot", [fw / 2, fh / 2])
+				c = [pg, atlas.rect_of("sheet|" + file).position, fw, fh, Vector2(-float(piv[0]), -float(piv[1])),
+					img.get_width() / fw, img.get_height() / fh]
+		_shc[file] = c
+	if (c as Array).is_empty():
+		out_page = -1
+		return false
+	out_page = c[0]
+	out_src = Rect2((c[1] as Vector2) + Vector2(clampi(col, 0, int(c[5]) - 1) * int(c[2]), clampi(row, 0, int(c[6]) - 1) * int(c[3])),
+		Vector2(c[2], c[3]))
+	out_off = c[4]
+	return true
 
 
 ## Buildings, resources, wrecks (and remembered-building ghosts). Cached per id + art state.

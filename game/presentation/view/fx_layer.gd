@@ -23,7 +23,9 @@ var _flame_w: Dictionary = {} # weapon id -> bool (weapon class "flame")
 func setup(view) -> void:
 	mv = view
 	_rng.seed = 12345
-	for n in ["muzzle", "explosion_small", "explosion_large", "smoke", "flame_jet"]:
+	if mv != null and mv.has_signal("world_events") and not mv.world_events.is_connected(_on_world_events):
+		mv.world_events.connect(_on_world_events)  # G5 (VIEW5-2): AirStrike is not dispatched by MatchView
+	for n in ["muzzle", "explosion_small", "explosion_large", "smoke", "flame_jet"] + AIR_FX:
 		var arr: Array = ArtCatalog.effect_frames(n)
 		var ok: Array = []
 		for t in arr:
@@ -51,6 +53,8 @@ func on_shot(ev: Dictionary) -> void:
 		return
 	if bool(ev.get("indirect", false)):
 		_add_shell(ev, from, to)
+		return
+	if _air_shot(ev, from, to):
 		return
 	if _is_flame(String(ev.get("weapon", ""))):
 		_add_flame(ev)
@@ -123,6 +127,9 @@ func on_destroyed(ev: Dictionary) -> void:
 	if not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
 		return
 	var s: Vector2 = mv.world_to_screen(p)
+	if kind == "unit" and _is_air_def(String(ev.get("def", ""))):
+		_add_crash(s, String(ev.get("cause", "")) == "crashed")
+		return
 	var big: bool = kind == "building" or Content.unit(String(ev.get("def", ""))).get("leaves_wreck", false)
 	_fx.append({"kind": "explosion_large" if big else "explosion_small", "t": 0.0, "life": 0.8 if big else 0.45,
 		"a": s + Vector2(0, -8), "b": s, "size": 26.0 if big else 10.0, "color": Color(1, 0.55, 0.15)})
@@ -140,6 +147,7 @@ func add_marker(world_pos: Vector2, col: Color) -> void:
 
 func tick(delta: float) -> void:
 	_g5_refresh()
+	_air_trails(delta)
 	if _fx.is_empty():
 		if _g5_any:
 			queue_redraw()
@@ -150,11 +158,16 @@ func tick(delta: float) -> void:
 		f.t += delta
 		if f.t < f.life:
 			keep.append(f)
-		elif String(f.kind) == "shell":
+		elif String(f.kind) in ["shell", "bomb", "missile"]:
 			landed.append(f)
 	_fx = keep
 	for f in landed:
-		_shell_landed(f)
+		if String(f.kind) == "bomb":
+			_bomb_landed(f)
+		elif String(f.kind) == "missile":
+			_missile_landed(f)
+		else:
+			_shell_landed(f)
 	queue_redraw()
 
 
@@ -216,6 +229,8 @@ func _draw_body() -> void:
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"flame":
 				_draw_flame(f, k)
+			"missile", "bomb", "air_fx":
+				_draw_air_fx(f, k)
 			"marker":
 				var r2: float = f.size * (1.0 - k * 0.6)
 				_draw_iso_ring(f.a, r2, Color(col.r, col.g, col.b, 1.0 - k), 2.0)
@@ -280,6 +295,8 @@ func _g5_refresh() -> void:
 	var pos: PackedVector2Array = sn.pos
 	var own: PackedInt32Array = sn.owner
 	var fac: PackedFloat32Array = sn.facing
+	var sdefs: PackedStringArray = sn.defs
+	var sdef: PackedInt32Array = sn.def
 	var want := RenderSnap.FLAG_SHIP | RenderSnap.FLAG_NEEDY | RenderSnap.FLAG_RESUP
 	for i in int(sn.n):
 		var fl: int = flg[i]
@@ -287,7 +304,7 @@ func _g5_refresh() -> void:
 			continue
 		var p: Vector2 = pos[i]
 		var mine: bool = own[i] == pf or allies.has(own[i])
-		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING:
+		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not G5Art.has_wake_sheet(String(sdefs[sdef[i]])):
 			if mine or mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
 				wakes.append([p, fac[i]])
 		if mine and fl & (RenderSnap.FLAG_NEEDY | RenderSnap.FLAG_RESUP):
@@ -383,3 +400,208 @@ func _dashed_iso_ring(c: Vector2, r: float, col: Color, width: float, tm: float)
 		var a0 := off + k * TAU / n
 		draw_arc(Vector2.ZERO, r, a0, a0 + TAU / n * 0.55, 4, col, width)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# ---------------------------------------------------------------- G5 air event effects (VIEW5-2)
+# ART-AIR fx sheets on sim events: ShotFired by / at an airborne aircraft (missile + trail puffs for
+# missile / rocket weapons, flak bursts for anti-air guns, lifted tracers for aircraft guns),
+# AirStrike (MatchView.world_events: falling bomb -> bomb blast), the EntityDestroyed of an aircraft
+# (crash fireball + smoke columns; cause "crashed" = AircraftCrashed) and smoke trailing damaged
+# airborne aircraft (from mv.snap). Ground-to-ground fire keeps the G4 tracers.
+const AIR_FX := ["g5_missile", "g5_missile_trail", "g5_air_bomb", "g5_bomb_blast", "g5_flak_burst", "g5_air_crash", "g5_air_smoke"]
+const G5Art = preload("res://presentation/art/g5_art.gd")
+var air_fx: Dictionary = {"missiles": 0, "trails": 0, "flak": 0, "bombs": 0, "blasts": 0, "crashes": 0, "smoke": 0, "air_tracers": 0}
+var _pivot: Dictionary = {}
+var _wcls: Dictionary = {}    # weapon id -> 0 gun, 1 missile, 2 flak
+var _air_def: Dictionary = {}
+var _smoke_t := 0.0
+
+
+func _is_air_def(def_id: String) -> bool:
+	var v = _air_def.get(def_id)
+	if v == null:
+		var ud: Dictionary = Content.unit(def_id)
+		v = ud.has("aircraft") or bool(ud.get("launched_drone", false))
+		_air_def[def_id] = v
+	return v
+
+
+func _weapon_cls(wid: String) -> int:
+	var v = _wcls.get(wid)
+	if v == null:
+		var wd: Dictionary = Content.weapon(wid)
+		v = 0
+		if wid.contains("missile") or wid.contains("rocket") or wid.contains("sam") or bool(wd.get("missile", false)):
+			v = 1
+		elif wid.contains("flak") or wid.ends_with("_aa") or (bool(wd.get("anti_air", false)) and String(wd.get("class", "")) in ["autocannon", "flak", "aa"]):
+			v = 2
+		_wcls[wid] = v
+	return v
+
+
+## [lift px, airborne] of entity eid from the snapshot ([0, false] unless an airborne aircraft).
+func _snap_lift(eid: int) -> Array:
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	var air: Dictionary = sn.get("air", {})
+	var a = air.get(eid)
+	if a == null or float(a.alt) <= 0.0:
+		return [0.0, false]
+	var i: int = mv.snap_index(eid)
+	if i < 0:
+		return [0.0, false]
+	var dname := String((sn.defs as PackedStringArray)[(sn.def as PackedInt32Array)[i]])
+	var t: float = mv.anim_time() if mv.has_method("anim_time") else 0.0
+	return [G5Art.lift_px(dname, float(a.alt), eid, t), true]
+
+
+func _air_shot(ev: Dictionary, from: Vector2, to: Vector2) -> bool:
+	var sid := int(ev.get("shooter", -1))
+	var tid := int(ev.get("target", -1))
+	var ls := _snap_lift(sid)
+	var lt := _snap_lift(tid)
+	if not bool(ls[1]) and not bool(lt[1]):
+		return false
+	var hit := bool(ev.get("hit", true))
+	var ha: float = (float(ls[0]) + 6.0) if bool(ls[1]) else _height_for(sid)
+	var hb: float = (float(lt[0]) + 4.0) if bool(lt[1]) else _height_for(tid)
+	var a: Vector2 = mv.world_to_screen(from) + Vector2(0, -ha)
+	var jit := Vector2(_rng.randf_range(-5, 5), _rng.randf_range(-4, 4)) * (1.0 if hit else 4.0)
+	var b: Vector2 = mv.world_to_screen(to) + Vector2(0, -hb) + jit
+	var wc := _weapon_cls(String(ev.get("weapon", "")))
+	if wc == 1:
+		var dir := (to - from).angle()
+		_fx.append({"kind": "missile", "name": "g5_missile", "t": 0.0, "life": clampf(a.distance_to(b) / 480.0, 0.22, 0.9),
+			"a": a, "b": b, "size": 3.0, "color": Color(1, 0.8, 0.5), "fi": posmod(roundi(dir / (PI / 4.0)), 8),
+			"tr": 0.0, "hit": hit, "air_t": bool(lt[1])})
+		air_fx.missiles += 1
+		return true
+	if lod < 2:
+		_fx.append({"kind": "tracer", "t": 0.0, "life": 0.12, "a": a, "b": b, "size": 1.5, "color": Color(1.0, 0.8, 0.4)})
+		air_fx.air_tracers += 1
+	if wc == 2 and bool(lt[1]):
+		_fx.append({"kind": "air_fx", "name": "g5_flak_burst", "t": 0.0, "life": 0.55, "a": b, "b": b + Vector2(0, -4),
+			"size": 8.0, "color": Color(0.2, 0.2, 0.2), "fade": true})
+		air_fx.flak += 1
+	elif hit and lod < 1:
+		_fx.append({"kind": "muzzle", "t": 0.0, "life": 0.07, "a": b, "b": b, "size": 3.0, "color": Color(1, 0.9, 0.5)})
+	return true
+
+
+func _missile_landed(f: Dictionary) -> void:
+	if bool(f.get("air_t", false)):
+		_fx.append({"kind": "air_fx", "name": "g5_flak_burst", "t": 0.0, "life": 0.5, "a": f.b, "b": f.b,
+			"size": 8.0, "color": Color(1, 0.6, 0.2), "fade": true})
+	elif bool(f.get("hit", true)):
+		_fx.append({"kind": "explosion_small", "t": 0.0, "life": 0.4, "a": f.b, "b": f.b, "size": 9.0, "color": Color(1, 0.6, 0.2)})
+
+
+func _on_world_events(evs: Array) -> void:
+	for ev in evs:
+		if String(ev.get("type", "")) == "AirStrike":
+			on_air_strike(ev)
+
+
+func on_air_strike(ev: Dictionary) -> void:
+	var p: Vector2 = ev.get("pos", Vector2.ZERO)
+	if mv == null or not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))) or _fx.size() >= MAX_FX:
+		return
+	var s: Vector2 = mv.world_to_screen(p)
+	_fx.append({"kind": "bomb", "name": "g5_air_bomb", "t": 0.0, "life": 0.45, "a": s + Vector2(_rng.randf_range(-6, 6), -80.0),
+		"b": s, "size": 3.0, "color": Color(0.3, 0.3, 0.3)})
+	air_fx.bombs += 1
+
+
+func _bomb_landed(f: Dictionary) -> void:
+	var b: Vector2 = f.b
+	_fx.append({"kind": "air_fx", "name": "g5_bomb_blast", "t": 0.0, "life": 0.9, "a": b, "b": b, "size": 26.0, "color": Color(1, 0.55, 0.15)})
+	_fx.append({"kind": "blast", "t": 0.0, "life": 0.6, "a": b, "b": b, "size": 40.0, "color": Color(1.0, 0.6, 0.2)})
+	for i in 3:
+		var off := Vector2(_rng.randf_range(-14, 14), _rng.randf_range(-6, 4))
+		_fx.append({"kind": "smoke", "t": -_rng.randf_range(0.2, 0.5), "life": 1.8 + _rng.randf(),
+			"a": b + off, "b": b + off + Vector2(_rng.randf_range(-8, 8), -36), "size": 6.0, "color": Color(0.28, 0.26, 0.24)})
+	air_fx.blasts += 1
+
+
+func _add_crash(s: Vector2, crashed: bool) -> void:
+	_fx.append({"kind": "air_fx", "name": "g5_air_crash", "t": 0.0, "life": 0.8, "a": s, "b": s, "size": 20.0, "color": Color(1, 0.55, 0.15)})
+	_fx.append({"kind": "explosion_large", "t": 0.0, "life": 0.7, "a": s + Vector2(0, -8), "b": s, "size": 18.0, "color": Color(1, 0.55, 0.15)})
+	for i in (4 if crashed else 3):
+		var off := Vector2(_rng.randf_range(-10, 10), _rng.randf_range(-4, 4))
+		_fx.append({"kind": "air_fx", "name": "g5_air_smoke", "t": -_rng.randf_range(0.0, 0.6), "life": 2.4 + _rng.randf(),
+			"a": s + off, "b": s + off + Vector2(_rng.randf_range(-10, 10), -46), "size": 8.0, "color": Color(0.2, 0.2, 0.2), "fade": true})
+	air_fx.crashes += 1
+
+
+## Per frame: trail puffs behind flying missiles; every 0.15 s a smoke puff behind each visible
+## airborne aircraft below half health (snapshot only).
+func _air_trails(delta: float) -> void:
+	var add: Array = []
+	for f in _fx:
+		if String(f.kind) != "missile" or f.t < 0.0:
+			continue
+		f.tr += delta
+		if f.tr >= 0.035:
+			f.tr = 0.0
+			var p: Vector2 = (f.a as Vector2).lerp(f.b, clampf(f.t / f.life, 0.0, 1.0))
+			add.append({"kind": "air_fx", "name": "g5_missile_trail", "t": 0.0, "life": 0.35, "a": p, "b": p + Vector2(0, -3),
+				"size": 3.0, "color": Color(0.9, 0.9, 0.9), "fade": true})
+	air_fx.trails += add.size()
+	_smoke_t += delta
+	if _smoke_t >= 0.15 and lod < 2:
+		_smoke_t = 0.0
+		var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+		var air: Dictionary = sn.get("air", {})
+		if not air.is_empty():
+			var ids: PackedInt32Array = sn.ids
+			var hp: PackedFloat32Array = sn.hp
+			var pos: PackedVector2Array = sn.pos
+			var flg: PackedInt32Array = sn.flags
+			for i in int(sn.n):
+				if hp[i] >= 0.5 or (flg[i] & RenderSnap.FLAG_AIR) == 0 or flg[i] & RenderSnap.FLAG_LANDED or not air.has(ids[i]):
+					continue
+				var p: Vector2 = pos[i]
+				if not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
+					continue
+				var l := _snap_lift(ids[i])
+				if not bool(l[1]):
+					continue
+				var sp: Vector2 = mv.world_to_screen(p) + Vector2(0, -float(l[0]))
+				add.append({"kind": "air_fx", "name": "g5_air_smoke", "t": 0.0, "life": 0.9, "a": sp, "b": sp + Vector2(0, -10),
+					"size": 5.0, "color": Color(0.2, 0.2, 0.2), "fade": true})
+				air_fx.smoke += 1
+	for f in add:
+		if _fx.size() >= MAX_FX:
+			break
+		_fx.append(f)
+
+
+func _fx_pivot(name: String, t: Texture2D) -> Vector2:
+	var v = _pivot.get(name)
+	if v == null:
+		var pv = ArtCatalog.manifest().get("effects", {}).get(name, {}).get("pivot")
+		v = Vector2(float(pv[0]), float(pv[1])) if pv is Array and (pv as Array).size() >= 2 else t.get_size() * 0.5
+		_pivot[name] = v
+	return v
+
+
+func _draw_air_fx(f: Dictionary, k: float) -> void:
+	var name := String(f.name)
+	var arr: Array = _frames.get(name, [])
+	var kd := String(f.kind)
+	var p: Vector2 = (f.a as Vector2).lerp(f.b, k * k if kd == "bomb" else k)
+	var alpha := (1.0 - k) if bool(f.get("fade", false)) else 1.0
+	if arr.is_empty():
+		var col: Color = f.color
+		if kd == "missile":
+			draw_line(p, (f.a as Vector2).lerp(f.b, maxf(0.0, k - 0.1)), Color(1, 1, 1, 0.6), 1.5)
+		draw_circle(p, float(f.size) * (0.5 + k * 0.5), Color(col.r, col.g, col.b, alpha))
+		return
+	var idx: int
+	if kd == "missile":
+		idx = int(f.fi) % arr.size()
+	elif kd == "bomb":
+		idx = int(f.t * 12.0) % arr.size()
+	else:
+		idx = clampi(int(k * arr.size()), 0, arr.size() - 1)
+	var tx: Texture2D = arr[idx]
+	draw_texture(tx, p - _fx_pivot(name, tx), Color(1, 1, 1, alpha))
