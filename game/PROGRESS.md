@@ -48,6 +48,10 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
 6. **VTOL Dropship** for the human faction(s) (owner note, 2026-10-24):
    - an EXPENSIVE unit with massive air superiority;
    - carries 2 vehicles plus a squad of 8.
+7. **Human Drone Team** (owner note, 2026-10-24; inspired by soldier-portable quick-launch drone systems):
+   - 3 soldiers that move and select as ONE squad;
+   - 4 launchable attack drones per squad, in different drone styles the squad picks per scenario;
+   - once all 4 drones are spent, the squad switches to a tactical team: infiltration, takedown, breaching, stack-up and armored attack.
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
