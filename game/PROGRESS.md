@@ -91,6 +91,12 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
 13. **Landing anywhere big enough** (owner note, 2026-10-24): VTOLs, gunships and helicopters land on any open area big enough for them, or at their pads/hangars (CONTRACTS_G5 §7).
 12. **Up to 8 subagents at once** for this build (owner override of the default 6). Every agent gets its own role/task/operating guide (owner note, 2026-10-24).
 
+### G6 (slice after G5): owner notes. REQUIRED scope, recorded 2026-10-24
+1. **Marketplace:** the player buys salvage, ore, etc. with credits (in-game money). Exchange rates are to be designed (scarcity pricing, fair for AI). Note: G5 soaks showed small maps running out of salvage, so the marketplace also fixes that late-game economy dead end.
+2. **Airfield / runway / hangar overhaul:** a completely new design and layout.
+   - Newly bought hangars are placed in a sensible spot next to the tarmac.
+   - Owner idea: hangars connect directly to a main airfield base, which connects to the tarmac and runway. Layout options to be worked out in the G6 plan.
+
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
    - The run covered all of 59afdcf plus AI5-4's uncommitted AI edits, which were in the tree at the time.
