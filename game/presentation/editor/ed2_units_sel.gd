@@ -6,6 +6,7 @@ extends VBoxContainer
 const W = preload("res://presentation/editor/editor_widgets.gd")
 const HT = preload("res://presentation/hud/hud_theme.gd")
 const M = preload("res://presentation/editor/ed2_model.gd")
+const FieldSel = preload("res://presentation/editor/ed5_field_sel.gd")
 
 var tab                       # ed2_tab_units.gd
 var _title: Label
@@ -14,6 +15,7 @@ var _built: CheckBox
 var _cargo_box: VBoxContainer
 var _load_btn: Button
 var _quiet := false
+var field: VBoxContainer      # G5 (ED5): ed5_field_sel.gd, air-field extras of the selection
 
 
 func setup(t) -> void:
@@ -35,6 +37,9 @@ func setup(t) -> void:
 	_cargo_box = VBoxContainer.new()
 	add_child(_cargo_box)
 	_load_btn = W.button(self, "Load picked unit", load_picked, "Adds the palette's unit to this carrier's cargo")
+	field = FieldSel.new()
+	add_child(field)
+	field.setup(tab)
 
 
 func _ent():
@@ -55,6 +60,7 @@ func refresh() -> void:
 		tag_edit.editable = false
 		_built.disabled = true
 		_load_btn.disabled = true
+		field.refresh()
 		_quiet = false
 		return
 	var kind := String(e.get("kind", "unit"))
@@ -84,6 +90,10 @@ func refresh() -> void:
 		lines.append("Tag: %s" % e.tag)
 	if not cargo.is_empty():
 		lines.append("Cargo: %s" % ", ".join(PackedStringArray(cargo)))
+	for k in ["hangars", "parked"]:
+		if not (e.get(k, []) as Array).is_empty():
+			lines.append("%s: %s" % [k.capitalize(), ", ".join(PackedStringArray(e[k]))])
+	field.refresh()
 	tab.ed.set_properties(M.def_label(kind, def), lines)
 	_quiet = false
 

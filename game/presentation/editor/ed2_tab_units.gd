@@ -208,6 +208,10 @@ func place_at(origin: Vector2i) -> int:
 		if o.x < 0 or o.y < 0 or o.x + s > int(ed.doc.map.w) or o.y + s > int(ed.doc.map.h):
 			continue
 		var owner := current_slot() if k == 0 else M.nearest_slot(players, o)
+		var why := M.place_reason(ed.doc.map, pick_kind, pick_def, o)   # G5 (ED5): ships on water, shore rules
+		if why != "":
+			ed.status(why, HT.YELLOW)
+			continue
 		ents().append(M.make_entity(pick_kind, pick_def, owner, o, facing, built))
 		n += 1
 	return n

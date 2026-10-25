@@ -1,0 +1,800 @@
+{
+	"author": "RTS: Age of Modern War",
+	"bridges": [],
+	"decor": [],
+	"description": "Learn the basics step by step: move, gather, build, train, attack, advance, walls, transports, supply, air and medical evac.",
+	"entities": [
+		{
+			"built": true,
+			"cell": [
+				4,
+				22
+			],
+			"def": "hq",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				4,
+				27
+			],
+			"def": "generator",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				1,
+				27
+			],
+			"def": "generator",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				4,
+				32
+			],
+			"def": "a_hospital",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				14,
+				4
+			],
+			"def": "a_airstrip",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				8,
+				30
+			],
+			"def": "depot",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				10,
+				30
+			],
+			"def": "depot",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				20,
+				4
+			],
+			"def": "a_air_tower",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 0
+		},
+		{
+			"built": true,
+			"cell": [
+				56,
+				40
+			],
+			"def": "b_works",
+			"facing": 0,
+			"kind": "building",
+			"owner_slot": 1
+		},
+		{
+			"cell": [
+				9,
+				21
+			],
+			"def": "engineer",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				9,
+				22
+			],
+			"def": "engineer",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				9,
+				23
+			],
+			"def": "engineer",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				10,
+				26
+			],
+			"def": "recon",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				12,
+				28
+			],
+			"def": "rifleman",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				13,
+				28
+			],
+			"def": "rifleman",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				12,
+				29
+			],
+			"def": "rifleman",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				13,
+				29
+			],
+			"def": "rifleman",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				15,
+				31
+			],
+			"def": "a_apc",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				12,
+				34
+			],
+			"def": "logistics_truck",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				16,
+				36
+			],
+			"def": "a_ambulance",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 0
+		},
+		{
+			"cell": [
+				34,
+				26
+			],
+			"def": "b_militia",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 1,
+			"tag": "outpost"
+		},
+		{
+			"cell": [
+				34,
+				27
+			],
+			"def": "b_militia",
+			"facing": 0,
+			"kind": "unit",
+			"owner_slot": 1,
+			"tag": "outpost"
+		}
+	],
+	"format": "rtsmap",
+	"h": 48,
+	"hold_bridge": 0,
+	"name": "Tutorial",
+	"players": [
+		{
+			"ai": false,
+			"color": "#3d7fd1",
+			"credits": 20000,
+			"difficulty": "normal",
+			"faction": "human_a",
+			"research": [
+				"integrated_manufacturing",
+				"combined_arms"
+			],
+			"slot": 0,
+			"stage": 7,
+			"start": [
+				10,
+				24
+			],
+			"stats": {
+				"line_trained": 8,
+				"officers_trained": 1,
+				"ore_refined": 600,
+				"power_ok_ticks": 1200
+			},
+			"stock": {
+				"ore": 300,
+				"salvage": 400
+			},
+			"team": 0
+		},
+		{
+			"ai": false,
+			"color": "#c0473b",
+			"credits": 0,
+			"difficulty": "normal",
+			"faction": "human_b",
+			"slot": 1,
+			"stage": 7,
+			"start": [
+				58,
+				42
+			],
+			"stock": {},
+			"team": 1
+		}
+	],
+	"regions": [
+		{
+			"id": "flag",
+			"name": "Flag",
+			"rect": [
+				22,
+				22,
+				4,
+				4
+			]
+		},
+		{
+			"id": "drop",
+			"name": "Drop zone",
+			"rect": [
+				40,
+				8,
+				5,
+				5
+			]
+		},
+		{
+			"id": "aid",
+			"name": "Casualty",
+			"rect": [
+				17,
+				38,
+				3,
+				3
+			]
+		}
+	],
+	"resources": [
+		{
+			"amount": 3000,
+			"cell": [
+				16,
+				22
+			],
+			"res": "salvage"
+		},
+		{
+			"amount": 3000,
+			"cell": [
+				17,
+				26
+			],
+			"res": "salvage"
+		}
+	],
+	"start_packages": false,
+	"terrain_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAADAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAADAwMDAwMDAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAwMDAwMDAwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAMDAwMDAwMDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	"triggers": [
+		{
+			"id": "step_move",
+			"name": "step_move",
+			"once": true,
+			"prompt": "MOVE: select your Recon scout (left-click) and right-click inside the yellow flag area.",
+			"step": 1,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Good. Units go where you right-click.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"def": "recon",
+					"owner_slot": 0,
+					"region": "flag",
+					"type": "unit_in_region"
+				}
+			]
+		},
+		{
+			"id": "step_gather",
+			"name": "step_gather",
+			"once": true,
+			"prompt": "GATHER: select an Engineer and right-click the salvage pile. Bring back 50 salvage.",
+			"step": 2,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Salvage is coming in.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_move",
+					"type": "trigger_fired"
+				},
+				{
+					"amount": 450,
+					"res": "salvage",
+					"slot": 0,
+					"type": "stock_at_least"
+				}
+			]
+		},
+		{
+			"id": "step_build",
+			"name": "step_build",
+			"once": true,
+			"prompt": "BUILD: select an Engineer, open Build and place a Barracks near your HQ.",
+			"step": 3,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Barracks ready.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_gather",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"def": "barracks",
+					"slot": 0,
+					"type": "owns"
+				}
+			]
+		},
+		{
+			"id": "step_train",
+			"name": "step_train",
+			"once": true,
+			"prompt": "TRAIN: select the Barracks and train a Rifle Squad.",
+			"step": 4,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Squad trained.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_build",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 8,
+					"def": "rifleman",
+					"slot": 0,
+					"type": "owns"
+				}
+			]
+		},
+		{
+			"id": "step_attack",
+			"name": "step_attack",
+			"once": true,
+			"prompt": "ATTACK: select your riflemen and right-click the enemy militia to the east.",
+			"step": 5,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Outpost cleared. Command sends 800 salvage for the Stage 8 advance.",
+					"type": "message"
+				},
+				{
+					"amount": 800,
+					"res": "salvage",
+					"slot": 0,
+					"type": "grant"
+				}
+			],
+			"when": [
+				{
+					"name": "step_train",
+					"type": "trigger_fired"
+				},
+				{
+					"tag": "outpost",
+					"type": "entity_destroyed"
+				}
+			]
+		},
+		{
+			"id": "step_stage",
+			"name": "step_stage",
+			"once": true,
+			"prompt": "ADVANCE: your Stage 8 gates are met (research, officers, line units, refined ore, steady power, cost). Press Advance Stage and wait for Stage 8.",
+			"step": 6,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Stage 8: air power unlocked. Command sends 1500 salvage for the air wing.",
+					"type": "message"
+				},
+				{
+					"amount": 1500,
+					"res": "salvage",
+					"slot": 0,
+					"type": "grant"
+				},
+				{
+					"amount": 500,
+					"res": "ore",
+					"slot": 0,
+					"type": "grant"
+				}
+			],
+			"when": [
+				{
+					"name": "step_attack",
+					"type": "trigger_fired"
+				},
+				{
+					"slot": 0,
+					"stage": 8,
+					"type": "stage_reached"
+				}
+			]
+		},
+		{
+			"id": "step_walls",
+			"name": "step_walls",
+			"once": true,
+			"prompt": "WALLS: select an Engineer, pick Wall and drag a line.",
+			"step": 7,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Wall up.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_stage",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"def": "a_wall",
+					"slot": 0,
+					"type": "owns"
+				}
+			]
+		},
+		{
+			"id": "step_load",
+			"name": "step_load",
+			"once": true,
+			"prompt": "TRANSPORT: select riflemen and right-click the APC to board it.",
+			"step": 8,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Troops aboard.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_walls",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"slot": 0,
+					"type": "units_loaded"
+				}
+			]
+		},
+		{
+			"id": "step_unload",
+			"name": "step_unload",
+			"once": true,
+			"prompt": "TRANSPORT: drive the APC to the blue drop zone and press Unload.",
+			"step": 9,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Troops delivered.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_load",
+					"type": "trigger_fired"
+				},
+				{
+					"def": "rifleman",
+					"owner_slot": 0,
+					"region": "drop",
+					"type": "unit_in_region"
+				}
+			]
+		},
+		{
+			"id": "step_resupply",
+			"name": "step_resupply",
+			"once": true,
+			"prompt": "SUPPLY: select the Logistics Truck and switch Auto resupply on.",
+			"step": 10,
+			"then": [
+				{
+					"slot": 0,
+					"text": "The truck now refills nearby units.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_unload",
+					"type": "trigger_fired"
+				},
+				{
+					"slot": 0,
+					"type": "auto_resupply"
+				}
+			]
+		},
+		{
+			"id": "step_hangar",
+			"name": "step_hangar",
+			"once": true,
+			"prompt": "AIRFIELD: select the Airstrip and buy a Light Hangar. Wait for it to finish.",
+			"step": 11,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Hangar ready.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_resupply",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"def": "a_hangar_light",
+					"slot": 0,
+					"type": "owns"
+				}
+			]
+		},
+		{
+			"id": "step_jet",
+			"name": "step_jet",
+			"once": true,
+			"prompt": "AIRFIELD: train a Strike Jet at the Airstrip (the control tower clears jets to fly). It parks in the hangar.",
+			"step": 12,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Jet on the apron.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_hangar",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"def": "a_strike_jet",
+					"slot": 0,
+					"type": "owns"
+				}
+			]
+		},
+		{
+			"id": "step_takeoff",
+			"name": "step_takeoff",
+			"once": true,
+			"prompt": "AIR: select the jet and press Take off.",
+			"step": 13,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Wheels up.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_jet",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"owner_slot": 0,
+					"type": "aircraft_airborne"
+				}
+			]
+		},
+		{
+			"id": "step_land",
+			"name": "step_land",
+			"once": true,
+			"prompt": "AIR: send the jet home (Rebase to the Airstrip) and watch it land.",
+			"step": 14,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Landed and parked.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_takeoff",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"owner_slot": 0,
+					"type": "aircraft_landed"
+				}
+			]
+		},
+		{
+			"id": "step_evac_on",
+			"name": "step_evac_on",
+			"once": true,
+			"prompt": "MEDICAL: select the Ambulance and switch Auto evac on.",
+			"step": 15,
+			"then": [
+				{
+					"slot": 0,
+					"text": "A soldier is down near the ambulance!",
+					"type": "message"
+				},
+				{
+					"count": 1,
+					"def": "rifleman",
+					"region": "aid",
+					"slot": 0,
+					"type": "spawn",
+					"wounded": true
+				}
+			],
+			"when": [
+				{
+					"name": "step_land",
+					"type": "trigger_fired"
+				},
+				{
+					"slot": 0,
+					"type": "auto_evac"
+				}
+			]
+		},
+		{
+			"id": "step_evac",
+			"name": "step_evac",
+			"once": true,
+			"prompt": "MEDICAL: the ambulance picks up the wounded soldier and drives him to the Hospital.",
+			"step": 16,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Soldier evacuated.",
+					"type": "message"
+				}
+			],
+			"when": [
+				{
+					"name": "step_evac_on",
+					"type": "trigger_fired"
+				},
+				{
+					"count": 1,
+					"owner_slot": 0,
+					"type": "unit_evacuated"
+				}
+			]
+		},
+		{
+			"id": "finish",
+			"name": "finish",
+			"once": true,
+			"then": [
+				{
+					"slot": 0,
+					"text": "Tutorial complete. Well done, Commander.",
+					"type": "message"
+				},
+				{
+					"slot": 0,
+					"type": "win"
+				}
+			],
+			"when": [
+				{
+					"name": "step_evac",
+					"type": "trigger_fired"
+				},
+				{
+					"t": 0,
+					"type": "time_reached"
+				}
+			]
+		}
+	],
+	"version": 1,
+	"victory": {
+		"victory": "hq_elimination"
+	},
+	"w": 64
+}

@@ -27,7 +27,17 @@ const WHEN_SPEC := {
 	"unit_in_region": [["region", "region", ""], ["owner_slot", "slot_any", -1], ["count", "int", 1]],
 	"entity_destroyed": [["tag", "str", ""]],
 	"stage_reached": [["slot", "slot", 0], ["stage", "int", 9]],
-	"units_below": [["slot", "slot", 0], ["n", "int", 1]]}
+	"units_below": [["slot", "slot", 0], ["n", "int", 1]],
+	# G5 (ED5): triggers.gd G5 conditions (region "" = anywhere)
+	"aircraft_landed": [["owner_slot", "slot", 0], ["count", "int", 1], ["region", "region", ""]],
+	"unit_evacuated": [["owner_slot", "slot", 0], ["count", "int", 1]],
+	"beach_landing": [["owner_slot", "slot", 0], ["count", "int", 1], ["region", "region", ""]],
+	"aircraft_airborne": [["owner_slot", "slot", 0], ["count", "int", 1]],
+	"owns": [["slot", "slot", 0], ["def", "def", ""], ["count", "int", 1]],
+	"stock_at_least": [["slot", "slot", 0], ["res", "res", "credits"], ["amount", "int", 500]],
+	"units_loaded": [["slot", "slot", 0], ["count", "int", 1]],
+	"auto_resupply": [["slot", "slot", 0]], "auto_evac": [["slot", "slot", 0]],
+	"trigger_fired": [["name", "str", ""]]}
 const THEN_SPEC := {
 	"message": [["text", "str", ""]],
 	"spawn": [["slot", "slot", 0], ["def", "def", ""], ["count", "int", 1], ["region", "region", ""]],
@@ -35,7 +45,9 @@ const THEN_SPEC := {
 	"grant": [["slot", "slot", 0], ["res", "res", "credits"], ["amount", "int", 500]],
 	"win": [["slot", "slot", 0]], "lose": [["slot", "slot", 0]],
 	"ai_target": [["slot", "slot", 1], ["region", "region", ""]]}
-const WHEN_TYPES := ["time_reached", "unit_in_region", "entity_destroyed", "stage_reached", "units_below"]
+const WHEN_TYPES := ["time_reached", "unit_in_region", "entity_destroyed", "stage_reached", "units_below",
+	"aircraft_landed", "unit_evacuated", "beach_landing", "aircraft_airborne", "owns", "stock_at_least",
+	"units_loaded", "auto_resupply", "auto_evac", "trigger_fired"]
 const THEN_TYPES := ["message", "spawn", "reveal", "grant", "win", "lose", "ai_target"]
 
 
@@ -110,6 +122,27 @@ static func cargo_reason(carrier_def: String, cargo: Array, add: String) -> Stri
 
 
 # ------------------------------------------------------------------ placed entities
+## G5 (ED5): "" when def may be placed at origin on this map (ground / water units on passable
+## cells for their move class, shore and near-water buildings by Naval.shore_error), else the reason.
+static func place_reason(map: Dictionary, kind: String, def: String, origin: Vector2i) -> String:
+	var w := int(map.get("w", 0))
+	var h := int(map.get("h", 0))
+	var t = map.get("terrain", PackedByteArray())
+	if typeof(t) != TYPE_PACKED_BYTE_ARRAY or (t as PackedByteArray).size() != w * h:
+		return ""
+	if origin.x < 0 or origin.y < 0 or origin.x >= w or origin.y >= h:
+		return "Outside the map."
+	if kind == "unit":
+		var mc := String(MapIO.Movement.udef(def).mc)
+		if not mc.begins_with("air") and not Terrain.passable(t[origin.y * w + origin.x], mc):
+			return "%s cannot stand here (%s)." % [String(Content.unit(def).get("name", def)), mc]
+		return ""
+	var bd := Content.building(def)
+	if bool(bd.get("shore", false)) or bd.has("near_water"):
+		return MapIO._shore_reason(def, origin, t, w, h)
+	return ""
+
+
 static func make_entity(kind: String, def: String, slot: int, cell: Vector2i, facing: float = 0.0, built: bool = true) -> Dictionary:
 	var e := {"kind": kind, "def": def, "owner_slot": slot, "cell": cell, "facing": facing}
 	if kind == "building":

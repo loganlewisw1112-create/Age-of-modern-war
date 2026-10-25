@@ -11,16 +11,37 @@ extends RefCounted
 ## Runtime state (saved): w.sys_state.triggers = {fired: [0/1 per trigger], prev: [0/1], tags: {tag: {ids, owners}},
 ##   reveals: [{fid, rect}], ai_targets: {fid: Vector2}}. It exists only for file maps (MapIO.place_entities).
 ## Slots are map-file player slots; they map to sides through cfg.sides[i].slot (default slot i).
+## G5 (ED5) conditions (every condition also takes `not: true` to invert it):
+##   aircraft_landed{owner_slot, count=1, region?}: landings (AircraftLanded) by aircraft that took off
+##     in this match (a freshly built or placed aircraft parking does not count);
+##   unit_evacuated{owner_slot, count=1}: wounded picked up by own evac units (WoundedPickedUp);
+##   beach_landing{owner_slot, count=1, region?}: units put ashore from a ship on a beach_ok cell;
+##   aircraft_airborne{owner_slot, count=1}: own aircraft in the air right now (launched drones excluded);
+##   owns{slot, def, count=1}: live units / built buildings of def; stock_at_least{slot, res, amount};
+##   units_loaded{slot, count=1}: units aboard own transports; auto_resupply{slot}; auto_evac{slot};
+##   trigger_fired{name}: the trigger with that name/id has fired (chains tutorial steps).
+##   unit_in_region also takes def? (only that unit def counts).
+## G5 actions: spawn takes wounded: true (the spawned human infantry start Wounded, Medical rules).
+## Event counters (aircraft_landed, unit_evacuated, beach_landing) live in st.counts {key: n} and
+## st.flown {id: 1}; both are created only when a map uses those conditions (G4 maps hash unchanged).
+## Trigger defs may carry `step` (int) and `prompt` (text): the tutorial prompt panel shows the
+## prompt of the lowest unfired step (presentation/editor/tutorial_prompt.gd).
 
 const Victory = preload("res://sim/systems/victory.gd")
 const Fog = preload("res://sim/systems/fog.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Medical = preload("res://sim/systems/medical.gd")
+const Naval = preload("res://sim/systems/naval.gd")
 
 const EVERY := 5
 const PHASE := 2
 const MAX_SPAWN := 200
-const WHEN_TYPES := ["time_reached", "unit_in_region", "entity_destroyed", "stage_reached", "units_below"]
+const WHEN_TYPES := ["time_reached", "unit_in_region", "entity_destroyed", "stage_reached", "units_below",
+	"aircraft_landed", "unit_evacuated", "beach_landing", "aircraft_airborne", "owns", "stock_at_least",
+	"units_loaded", "auto_resupply", "auto_evac", "trigger_fired"]
+const EVENT_TYPES := ["aircraft_landed", "unit_evacuated", "beach_landing"]
+const OPTIONAL_REGION := ["aircraft_landed", "beach_landing"]
 const THEN_TYPES := ["message", "spawn", "reveal", "grant", "win", "lose", "ai_target"]
 
 
@@ -31,6 +52,27 @@ static func init_state(w: SimWorld, tags: Dictionary) -> void:
 	z.fill(0)
 	w.sys_state["triggers"] = {"fired": z.duplicate(), "prev": z.duplicate(), "tags": tags,
 		"reveals": [], "ai_targets": {}}
+	if uses_events(w.map.get("triggers", [])):
+		w.sys_state.triggers["counts"] = {}
+		w.sys_state.triggers["flown"] = {}
+
+
+## True when any trigger condition needs the event counters.
+static func uses_events(defs) -> bool:
+	if typeof(defs) != TYPE_ARRAY:
+		return false
+	for d in defs:
+		if typeof(d) != TYPE_DICTIONARY:
+			continue
+		var conds = d.get("when", [])
+		if typeof(conds) == TYPE_DICTIONARY:
+			conds = [conds]
+		if typeof(conds) != TYPE_ARRAY:
+			continue
+		for c in conds:
+			if typeof(c) == TYPE_DICTIONARY and EVENT_TYPES.has(String(c.get("type", ""))):
+				return true
+	return false
 
 
 static func state(w: SimWorld):
@@ -58,6 +100,8 @@ static func tick(w: SimWorld) -> void:
 	var st = state(w)
 	if st == null:
 		return
+	if st.has("counts"):
+		_count_events(w, st)
 	if not st.reveals.is_empty() and (w.tick % Fog.RECOMPUTE_EVERY == 1 or w.tick % Fog.RECOMPUTE_EVERY == 3):
 		for rv in st.reveals:
 			_apply_reveal(w, int(rv.fid), rv.rect)
@@ -104,6 +148,11 @@ static func _rect_of(w: SimWorld, rid) -> Variant:
 
 
 static func _cond(w: SimWorld, c: Dictionary) -> bool:
+	var r := _cond_raw(w, c)
+	return not r if bool(c.get("not", false)) else r
+
+
+static func _cond_raw(w: SimWorld, c: Dictionary) -> bool:
 	match String(c.get("type", "")):
 		"time_reached":
 			var at := int(c.ticks) if c.has("ticks") else roundi(float(c.get("t", 0)) * SimWorld.TICK_RATE)
@@ -118,7 +167,10 @@ static func _cond(w: SimWorld, c: Dictionary) -> bool:
 				return false
 			var need := maxi(1, int(c.get("count", 1)))
 			var n := 0
+			var only := String(c.get("def", ""))
 			for e in SimIndex.of(w, "unit"):
+				if only != "" and String(e.def) != only:
+					continue
 				if (fid == SimWorld.NEUTRAL or int(e.owner) == fid) and SimIndex.alive(w, e) and (rect as Rect2i).has_point(w.cell_of(e.pos)):
 					n += 1
 					if n >= need:
@@ -143,7 +195,151 @@ static func _cond(w: SimWorld, c: Dictionary) -> bool:
 			for e in w.units_of(fid):
 				n += 1 + (e.cargo as Array).size() if e.has("cargo") else 1
 			return n < int(c.get("n", 1))
+	return _cond_g5(w, c)
+
+
+# ================================================================ G5 conditions (ED5)
+static func _slot_fid(w: SimWorld, c: Dictionary) -> int:
+	var slot := int(c.get("owner_slot", c.get("slot", -1)))
+	return fid_of_slot(w, slot) if slot >= 0 else SimWorld.NEUTRAL
+
+
+static func _is_aircraft_def(def: String) -> bool:
+	var a := String(Content.unit(def).get("aircraft", ""))
+	return a != "" and a != "micro"
+
+
+static func _count_of(w: SimWorld, key: String) -> int:
+	return int((state(w).get("counts", {}) as Dictionary).get(key, 0))
+
+
+static func _ev_key(kind: String, fid: int, region: String = "") -> String:
+	return "%s:%d" % [kind, fid] if region == "" else "%s:%d:%s" % [kind, fid, region]
+
+
+static func _cond_g5(w: SimWorld, c: Dictionary) -> bool:
+	var ty := String(c.get("type", ""))
+	var need := maxi(1, int(c.get("count", 1)))
+	if ty == "trigger_fired":
+		var defs: Array = w.map.get("triggers", [])
+		var nm := String(c.get("name", ""))
+		for i in mini(defs.size(), (state(w).fired as Array).size()):
+			var d = defs[i]
+			if typeof(d) == TYPE_DICTIONARY and nm != "" and (String(d.get("name", "")) == nm or String(d.get("id", "")) == nm):
+				return int(state(w).fired[i]) == 1
+		return false
+	var fid := _slot_fid(w, c)
+	if fid == SimWorld.NEUTRAL or not w.factions.has(fid):
+		return false
+	match ty:
+		"aircraft_landed":
+			return _count_of(w, _ev_key("landed", fid, String(c.get("region", "")))) >= need
+		"unit_evacuated":
+			return _count_of(w, _ev_key("evac", fid)) >= need
+		"beach_landing":
+			return _count_of(w, _ev_key("beach", fid, String(c.get("region", "")))) >= need
+		"aircraft_airborne":
+			var n := 0
+			for e in w.units_of(fid):
+				if _is_aircraft_def(String(e.def)) and not bool(e.get("air_landed", true)):
+					n += 1
+			return n >= need
+		"owns":
+			var def := String(c.get("def", ""))
+			var n := 0
+			if not Content.building(def).is_empty():
+				for b in w.buildings_of(fid, def):
+					if bool(b.built):
+						n += 1
+			else:
+				for e in w.units_of(fid):
+					if String(e.def) == def and not bool(e.get("wounded", false)):
+						n += 1
+			return n >= need
+		"stock_at_least":
+			var res := String(c.get("res", "credits"))
+			var f: Dictionary = w.factions[fid]
+			var have := int(f.credits) if res == "credits" else int((f.stock as Dictionary).get(res, 0))
+			return have >= int(c.get("amount", 0))
+		"units_loaded":
+			var n := 0
+			for e in w.units_of(fid):
+				if e.has("cargo"):
+					n += (e.cargo as Array).size()
+			return n >= need
+		"auto_resupply":
+			var sup = w.sys_state.get("support")
+			if sup == null:
+				return false
+			for tid in sup.get("trucks", {}):
+				var t = w.entities.get(int(tid))
+				if t != null and int(t.owner) == fid and String(sup.trucks[tid].get("mode", "off")) != "off":
+					return true
+			return false
+		"auto_evac":
+			var med = w.sys_state.get("medical")
+			if med == null:
+				return false
+			for cid in med.get("evac", {}):
+				var u = w.entities.get(int(cid))
+				if u != null and int(u.owner) == fid:
+					return true
+			return false
 	return false
+
+
+## Regions named by event conditions of `kind` (aircraft_landed / beach_landing), cached per map.
+static func _ev_regions(w: SimWorld, kind: String) -> Array:
+	var cache: Dictionary = w.cache.get("trig_ev_regions", {})
+	if cache.is_empty():
+		cache = {"aircraft_landed": [], "beach_landing": []}
+		for d in w.map.get("triggers", []):
+			if typeof(d) != TYPE_DICTIONARY:
+				continue
+			var conds = d.get("when", [])
+			if typeof(conds) == TYPE_DICTIONARY:
+				conds = [conds]
+			for cnd in (conds if typeof(conds) == TYPE_ARRAY else []):
+				if typeof(cnd) == TYPE_DICTIONARY and cache.has(String(cnd.get("type", ""))) and String(cnd.get("region", "")) != "":
+					if not (cache[String(cnd.type)] as Array).has(String(cnd.region)):
+						cache[String(cnd.type)].append(String(cnd.region))
+		w.cache["trig_ev_regions"] = cache
+	return cache.get(kind, [])
+
+
+static func _bump(st: Dictionary, key: String) -> void:
+	st.counts[key] = int(st.counts.get(key, 0)) + 1
+
+
+static func _bump_at(w: SimWorld, st: Dictionary, kind: String, cond: String, fid: int, pos: Vector2) -> void:
+	_bump(st, _ev_key(kind, fid))
+	var cell := w.cell_of(pos)
+	for rid in _ev_regions(w, cond):
+		var rect = _rect_of(w, rid)
+		if rect != null and (rect as Rect2i).has_point(cell):
+			_bump(st, _ev_key(kind, fid, String(rid)))
+
+
+## Every tick (event order): AircraftTookOff marks an aircraft as flown; AircraftLanded of a flown
+## aircraft, WoundedPickedUp and ship unloads onto a beach_ok cell bump the counters.
+static func _count_events(w: SimWorld, st: Dictionary) -> void:
+	for ev in w.events:
+		match String(ev.type):
+			"AircraftTookOff":
+				st.flown[str(int(ev.id))] = 1
+			"AircraftLanded":
+				var e = w.entities.get(int(ev.id))
+				if e != null and st.flown.has(str(int(ev.id))):
+					_bump_at(w, st, "landed", "aircraft_landed", int(ev.owner), Vector2(e.pos))
+			"WoundedPickedUp":
+				_bump(st, _ev_key("evac", int(ev.owner)))
+			"UnitUnloaded":
+				var car = w.entities.get(int(ev.get("carrier", -1)))
+				if car == null or not Naval.is_ship(String(car.def)):
+					continue
+				var p := Vector2(ev.pos)
+				if Naval.beach_ok(w, w.cell_of(p)):
+					_bump_at(w, st, "beach", "beach_landing", int(ev.owner), p)
 
 
 # ================================================================ actions
@@ -156,7 +352,8 @@ static func _act(w: SimWorld, ti: int, a: Dictionary) -> void:
 		"spawn":
 			if fid == SimWorld.NEUTRAL:
 				return
-			_spawn(w, fid, String(a.get("def", "")), clampi(int(a.get("count", 1)), 1, MAX_SPAWN), a.get("region", ""))
+			_spawn(w, fid, String(a.get("def", "")), clampi(int(a.get("count", 1)), 1, MAX_SPAWN), a.get("region", ""),
+				bool(a.get("wounded", false)))
 		"reveal":
 			var rect = _rect_of(w, a.get("region", ""))
 			if fid == SimWorld.NEUTRAL or rect == null:
@@ -183,7 +380,7 @@ static func _act(w: SimWorld, ti: int, a: Dictionary) -> void:
 
 ## Spawns count units of def for fid on free cells of the region (row-major from its centre ring
 ## outwards; falls back to the side's spawn). Buildings: one, complete, at the region origin.
-static func _spawn(w: SimWorld, fid: int, def: String, count: int, rid) -> void:
+static func _spawn(w: SimWorld, fid: int, def: String, count: int, rid, wounded: bool = false) -> void:
 	var rect = _rect_of(w, rid)
 	if not Content.building(def).is_empty():
 		var o: Vector2i = (rect as Rect2i).position if rect != null else Vector2i(w.factions[fid].spawn)
@@ -205,7 +402,9 @@ static func _spawn(w: SimWorld, fid: int, def: String, count: int, rid) -> void:
 					continue
 				if not w.in_bounds(c) or not Movement.is_passable(w, c, mc):
 					continue
-				w.spawn_unit(def, fid, Vector2(c) + Vector2(0.5, 0.5))
+				var sid := w.spawn_unit(def, fid, Vector2(c) + Vector2(0.5, 0.5))
+				if wounded:
+					Medical.on_zero_hp(w, w.entities[sid])   # G5: no-op unless human infantry + medical capability
 				placed += 1
 	if placed < count:
 		w.emit("TriggerSpawnShort", {"faction": fid, "def": def, "wanted": count, "placed": placed})
@@ -232,7 +431,8 @@ static func _apply_reveal(w: SimWorld, fid: int, rect) -> void:
 ## Checks one condition/action/victory term's references. ctx = {regions: {id: true}, slots: {slot: true},
 ## tags: {tag: true}}. Returns "" or a reason.
 static func check_refs(d: Dictionary, ctx: Dictionary) -> String:
-	if d.has("region") and not ctx.get("regions", {}).has(String(d.region)):
+	var opt_region := String(d.get("region", "")) == "" and OPTIONAL_REGION.has(String(d.get("type", "")))
+	if d.has("region") and not opt_region and not ctx.get("regions", {}).has(String(d.region)):
 		return "unknown region '%s'" % d.region
 	for k in ["slot", "owner_slot"]:
 		if d.has(k) and not (k == "owner_slot" and int(d[k]) < 0) and not ctx.get("slots", {}).has(int(d[k])):
@@ -251,6 +451,12 @@ static func validate_defs(defs, ctx: Dictionary) -> Array:
 	var out := []
 	if typeof(defs) != TYPE_ARRAY:
 		return ["Triggers must be a list."]
+	var names := {}
+	for d in defs:
+		if typeof(d) == TYPE_DICTIONARY:
+			for k in ["name", "id"]:
+				if String(d.get(k, "")) != "":
+					names[String(d[k])] = true
 	var i := 0
 	for d in defs:
 		i += 1
@@ -270,6 +476,8 @@ static func validate_defs(defs, ctx: Dictionary) -> Array:
 					out.append("%s: unknown condition '%s'." % [label, ty])
 				elif check_refs(c, ctx) != "":
 					out.append("%s: %s." % [label, check_refs(c, ctx)])
+				elif ty == "trigger_fired" and not names.has(String(c.get("name", ""))):
+					out.append("%s: no trigger is named '%s'." % [label, String(c.get("name", ""))])
 		var acts = d.get("then", [])
 		if typeof(acts) == TYPE_DICTIONARY:
 			acts = [acts]

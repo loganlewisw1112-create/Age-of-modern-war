@@ -17,6 +17,7 @@ extends Node
 ##   --debug-menu-howto                  open the How to Play panel (debug)
 ##   --editor [--editor-open=user://maps/x.rtsmap]   (G4e) open the map editor directly
 ##   --editor-demo=ABS_DIR               (G4e) scripted editor tour: one screenshot per tab, then quit
+##   --tutorial                          (G5 ED5) start the tutorial match (content/scenarios/tutorial.rtsmap)
 
 const MatchViewScript = preload("res://presentation/match_view.gd")
 const HudScript = preload("res://presentation/hud/hud.gd")
@@ -28,6 +29,9 @@ const EndScreenScript = preload("res://presentation/menu/end_screen.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3Score = preload("res://presentation/hud/g3_score.gd")
 const MapEditorScene = preload("res://presentation/editor/editor_scene.gd")
+const TutorialPrompt = preload("res://presentation/editor/tutorial_prompt.gd")   # G5 (ED5)
+const MapIO = preload("res://sim/map_io.gd")
+const TUTORIAL_PATH := "res://content/scenarios/tutorial.rtsmap"
 const SAVE_SYSTEM := "res://sim/save_system.gd"
 const QUICK_SAVE := "user://saves/quick.sav"
 
@@ -47,10 +51,14 @@ var _end_check_acc: float = 0.0
 var _args: Dictionary = {}
 var _editor: Node = null          # G4e map editor (ED1); kept alive (hidden) during a test play
 var _editor_test := false
+signal booted   # G5 (ED5 polish: first-launch playtest flake): first screen drawn, input is live
+var boot_ready := false           # set with `booted`; playtests wait on it instead of a fixed sleep
+var tutorial_prompt: Node = null  # G5 (ED5): step prompts over a match whose map has tutorial steps
 
 
 func _ready() -> void:
 	_parse_args()
+	preload("res://presentation/menu/settings.gd").apply_graphics()   # G5 (UI5b): window / vsync / frame cap
 	_overlay_layer = ScaledLayer.new()
 	_overlay_layer.layer = 30
 	add_child(_overlay_layer)
@@ -70,6 +78,9 @@ func _ready() -> void:
 		start_match(cfg)
 		if _args.has("speed") and match_view != null:
 			match_view.speed = clampf(float(_args["speed"]), 0.25, 12.0)  # demo/debug only
+	elif _args.has("tutorial"):
+		if not start_tutorial():
+			show_menu()
 	elif _args.has("editor") or _args.has("editor-demo"):
 		open_editor()
 		if _args.has("editor-open"):
@@ -82,6 +93,7 @@ func _ready() -> void:
 	else:
 		show_menu()
 	_setup_debug()
+	_mark_booted()
 	_setup_autoshot()
 	if _args.has("ui-playtest"):
 		# UI-01 playtest: synthetic input events through the real viewport (tools/ui_playtest.gd).
@@ -165,6 +177,8 @@ func show_menu() -> void:
 	_menu.ui_scale_changed.connect(_set_ui_scale)
 	if _menu.has_signal("editor_requested"):
 		_menu.editor_requested.connect(open_editor)
+	if _menu.has_signal("tutorial_requested"):   # G5 (ED5): main menu "Tutorial" (CR to ORCH for the button)
+		_menu.tutorial_requested.connect(_on_menu_tutorial)
 	_menu_layer.visible = true
 
 
@@ -205,6 +219,30 @@ func _editor_test_play(cfg: Dictionary) -> void:
 		_editor.status("Test Play could not start the match (see the debugger output).", HT.RED)
 
 
+# ------------------------------------------------------------------ G5 tutorial (ED5)
+## Match config of the tutorial scenario (side 0 = the player, side 1 inert). {error} if unreadable.
+static func tutorial_config() -> Dictionary:
+	var c := MapIO.config_for(TUTORIAL_PATH)
+	if c.has("error"):
+		return c
+	for s in c.sides:
+		s.ai = false
+	return c
+
+
+func start_tutorial() -> bool:
+	var c := tutorial_config()
+	if c.has("error"):
+		push_warning("tutorial: " + String(c.error))
+		return false
+	return start_match(c)
+
+
+func _on_menu_tutorial() -> void:
+	if not start_tutorial() and _menu != null:
+		_menu.show_error("The tutorial could not be started. See the debugger output.")
+
+
 func _on_menu_start(cfg: Dictionary) -> void:
 	if not start_match(cfg) and _menu != null:
 		_menu.show_error("The match could not be created. See the debugger output.")
@@ -235,6 +273,10 @@ func _begin_world(w: SimWorld) -> void:
 	add_child(hud)
 	hud.setup(match_view, _ui_scale)
 	hud.menu_requested.connect(open_pause)
+	if TutorialPrompt.has_steps(w):
+		tutorial_prompt = TutorialPrompt.new()
+		add_child(tutorial_prompt)
+		tutorial_prompt.setup(match_view, _ui_scale)
 	if _menu != null:
 		_menu.queue_free()
 		_menu = null
@@ -242,6 +284,9 @@ func _begin_world(w: SimWorld) -> void:
 
 
 func _teardown_match() -> void:
+	if tutorial_prompt != null:
+		tutorial_prompt.queue_free()
+		tutorial_prompt = null
 	if hud != null:
 		hud.queue_free()
 		hud = null
@@ -265,6 +310,8 @@ func _set_ui_scale(s: float) -> void:
 	_menu_layer.set_ui_scale(s)
 	if hud != null:
 		hud.set_ui_scale(s)
+	if tutorial_prompt != null and tutorial_prompt.layer != null:
+		tutorial_prompt.layer.set_ui_scale(s)
 
 
 # ------------------------------------------------------------------ pause
@@ -496,11 +543,22 @@ func _select(ids: Array) -> void:
 ## Debug hook (KEEP: used by every visual agent and the orchestrator):
 ##   godot --path game -- --autoshot=C:/abs/out.png --autoshot-delay=4 [--autostart]
 ## Saves the viewport after N seconds of real time, then quits.
+## G5 (ED5): a cold first launch (shader / font / atlas caches) can take > 10 s before the first frame;
+## `booted` fires after the first two drawn frames, so timers below start from a live screen.
+func _mark_booted() -> void:
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	boot_ready = true
+	booted.emit()
+
+
 func _setup_autoshot() -> void:
 	var shot := String(_args.get("autoshot", ""))
 	var delay := float(_args.get("autoshot-delay", 4.0))
 	if shot == "":
 		return
+	if not boot_ready:
+		await booted
 	await get_tree().create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()

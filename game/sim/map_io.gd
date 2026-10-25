@@ -6,7 +6,9 @@ extends RefCounted
 ##   {format:"rtsmap", version:1, name, author, description, w, h, terrain_b64, biome_b64?,
 ##    decor:[{id, cell:[x,y], size:[w,h]}], resources:[{res, amount, cell}], bridges:[{id?, name?, cells, state}],
 ##    hold_bridge, start_packages, players:[{slot, faction, team, color, stage, credits, stock, ai, difficulty, start}],
-##    entities:[{kind, def, owner_slot, cell | pos, facing, built, tag?, cargo?:[defs]}],
+##    entities:[{kind, def, owner_slot, cell | pos, facing, built, tag?, cargo?:[defs],
+##              G5 air fields: hangars?:["light"|"heavy"], extra_strips?, hangar_level?, parked?:[aircraft defs]}],
+##    G5 players may carry research?:[ids] and stats?:{..} progress seeds (_apply_progress).
 ##    victory:{victory, victory_params?, victory_rules?}, regions:[{id, name, rect:[x,y,w,h]}], triggers:[..]}
 ## Optional extension keys (additive, written by MapGen.to_file so exports keep the built-in
 ## layout data): source_id, size, max_sides, spawn_sets {"n": [start index..]}, pois, ford_cells.
@@ -17,6 +19,8 @@ const Victory = preload("res://sim/systems/victory.gd")
 const Triggers = preload("res://sim/systems/triggers.gd")
 const MapCheck = preload("res://sim/maps/map_check.gd")
 const Movement = preload("res://sim/systems/movement.gd")
+const Airfield = preload("res://sim/systems/airfield.gd")
+const Naval = preload("res://sim/systems/naval.gd")
 
 const FORMAT := "rtsmap"
 const VERSION := 1
@@ -441,6 +445,7 @@ static func place_entities(w: SimWorld, c: Dictionary) -> void:
 			tags[tag].ids.append(id)
 			if not tags[tag].owners.has(int(sm[slot])):
 				tags[tag].owners.append(int(sm[slot]))
+	_apply_progress(w, sc, sm)
 	Triggers.init_state(w, tags)
 	Victory.note_hqless(w)
 
@@ -455,7 +460,10 @@ static func place_one(w: SimWorld, e: Dictionary, fid: int) -> int:
 		var origin := _v2i(e.get("cell", e.get("pos", [-1, -1])))
 		if not w.in_bounds(origin) or not w.in_bounds(origin + Vector2i(int(bd.size) - 1, int(bd.size) - 1)):
 			return -1
-		return w.spawn_building(def, fid, origin, bool(e.get("built", true)))
+		var bid := w.spawn_building(def, fid, origin, bool(e.get("built", true)))
+		if bid >= 0 and (e.has("hangars") or e.has("parked") or e.has("extra_strips")) and field_reason(e) == "":
+			_place_field(w, e, bid, fid)
+		return bid
 	if Content.unit(def).is_empty():
 		return -1
 	var p: Vector2 = _v2(e.pos) if e.has("pos") else Vector2(_v2i(e.get("cell"))) + Vector2(0.5, 0.5)
@@ -479,6 +487,143 @@ static func place_one(w: SimWorld, e: Dictionary, fid: int) -> int:
 			carrier.cargo.append(u)
 			w.cache.cargo_of[cid] = id
 	return id
+
+
+# ================================================================ G5 (ED5): air fields, shore, scenario progress
+## Airfield extras on a placed field entity (all optional): hangars: ["light" | "heavy", ...] bought into the
+## field's slots, extra_strips 0..3, hangar_level 0..3, parked: [aircraft defs] that start parked in a
+## hangar (light -> light/heavy, heavy -> heavy, bay -> bay/light/heavy) or on a pad. "" = valid.
+static func field_reason(e: Dictionary) -> String:
+	if not (e.has("hangars") or e.has("parked") or e.has("extra_strips")):
+		return ""
+	var def := String(e.get("def", ""))
+	var bd := Content.building(def)
+	var nm := String(bd.get("name", def))
+	var kind := String(bd.get("air_field", ""))
+	if String(e.get("kind", "unit")) != "building" or not Airfield.FIELD_KINDS.has(kind):
+		return "%s is not an air field." % nm
+	var hangars: Array = e.get("hangars", []) if typeof(e.get("hangars", [])) == TYPE_ARRAY else []
+	var parked: Array = e.get("parked", []) if typeof(e.get("parked", [])) == TYPE_ARRAY else []
+	var xs := int(e.get("extra_strips", 0))
+	if xs < 0 or xs > 3 or (xs > 0 and not Airfield.STRIP_KINDS.has(kind)):
+		return "%s: extra strips must be 0..3 (strip fields only)." % nm
+	var free := {"light": 0, "heavy": 0, "bay": 0, "pad": int(bd.get("pad_slots", 0))}
+	var rail := String(bd.get("hangar_light", "")) == "m_drone_bay"
+	if not hangars.is_empty():
+		if not Airfield.HANGAR_FIELDS.has(kind):
+			return "%s cannot hold hangars." % nm
+		var cap := int(bd.get("slots_base", 0)) + int(bd.get("slots_per_strip", 0)) * xs
+		if hangars.size() > cap:
+			return "%s holds at most %d hangars (has %d)." % [nm, cap, hangars.size()]
+		for h in hangars:
+			var cls := String(h)
+			if not ["light", "heavy"].has(cls):
+				return "%s: unknown hangar class '%s'." % [nm, cls]
+			if cls == "heavy" and (bool(bd.get("light_only", false)) or String(bd.get("hangar_heavy", "")) == ""):
+				return "%s takes light hangars only." % nm
+			free["bay" if rail else cls] += 1
+	for n in _parked_order(parked):
+		var ud := Content.unit(String(n))
+		var ac := String(ud.get("aircraft", ""))
+		if ud.is_empty() or ac == "" or ac == "micro":
+			return "%s: '%s' is not an aircraft that can park." % [nm, n]
+		var hc := String(ud.get("hangar", ""))
+		var ok := false
+		for o in PARK_OPTS.get(hc, []):
+			if int(free[o]) > 0:
+				free[o] -= 1
+				ok = true
+				break
+		if not ok:
+			return "%s: no free %s for %s." % [nm, "pad" if hc == "pad" else "%s hangar" % hc, String(ud.get("name", n))]
+	return ""
+
+
+const PARK_OPTS := {"pad": ["pad"], "light": ["light", "heavy"], "heavy": ["heavy"], "bay": ["bay", "light", "heavy"]}
+const PARK_ORDER := {"heavy": 0, "pad": 1, "light": 2, "bay": 3}
+
+
+## Parked defs, strictest hangar need first (stable: then by def id).
+static func _parked_order(parked: Array) -> Array:
+	var need := []
+	for pd in parked:
+		need.append([int(PARK_ORDER.get(String(Content.unit(String(pd)).get("hangar", "")), 9)), String(pd)])
+	need.sort()
+	var out := []
+	for n in need:
+		out.append(n[1])
+	return out
+
+
+## Spawns a valid field entity's hangars (complete) and parked aircraft (bound and parked by
+## Airfield / Air on their first scan: field, then hangars, then aircraft, in id order).
+static func _place_field(w: SimWorld, e: Dictionary, bid: int, fid: int) -> void:
+	var b: Dictionary = w.entities[bid]
+	var bd := Content.building(String(b.def))
+	if Airfield.STRIP_KINDS.has(String(bd.get("air_field", ""))):
+		b.extra_strips = clampi(int(e.get("extra_strips", 0)), 0, 3)
+	var slots := []   # [class, pos]
+	for h in e.get("hangars", []):
+		var cls := String(h)
+		var hdef := String(bd.get("hangar_heavy" if cls == "heavy" else "hangar_light", ""))
+		var hd := Content.building(hdef)
+		if hd.is_empty():
+			continue
+		var cell := Airfield._hangar_cell(w, b, int(hd.get("size", 2)))
+		if cell.x < 0:
+			continue
+		var hid := w.spawn_building(hdef, fid, cell, true)
+		if hid < 0:
+			continue
+		var he: Dictionary = w.entities[hid]
+		he["class"] = "bay" if hdef == "m_drone_bay" else cls
+		he.level = clampi(int(e.get("hangar_level", 0)), 0, 3)
+		slots.append([String(he["class"]), Vector2(he.pos)])
+	for n in _parked_order(e.get("parked", [])):
+		var hc := String(Content.unit(String(n)).get("hangar", ""))
+		var at := Vector2(b.pos)
+		if hc != "pad":
+			for o in PARK_OPTS.get(hc, []):
+				var k := -1
+				for i in slots.size():
+					if slots[i][0] == o:
+						k = i
+						break
+				if k >= 0:
+					at = slots[k][1]
+					slots.remove_at(k)
+					break
+		w.spawn_unit(String(n), fid, at)
+
+
+## Scenario progress seeds on a player (tutorials / mid-game scenarios): research: [project ids] done,
+## stats: {ore_refined, officers_trained, line_trained, power_ok_ticks} raised to at least the value.
+const PROGRESS_STATS := ["ore_refined", "officers_trained", "line_trained", "power_ok_ticks"]
+
+
+static func _apply_progress(w: SimWorld, sc: Dictionary, sm: Dictionary) -> void:
+	for p in sc.get("players", []):
+		var slot := int(p.get("slot", -1))
+		if not sm.has(slot) or not w.factions.has(int(sm[slot])):
+			continue
+		var f: Dictionary = w.factions[int(sm[slot])]
+		var rs = p.get("research", [])
+		if typeof(rs) == TYPE_ARRAY and f.has("research"):
+			for r in rs:
+				if not (f.research.done as Array).has(String(r)):
+					f.research.done.append(String(r))
+		var stv = p.get("stats", {})
+		if typeof(stv) == TYPE_DICTIONARY and f.has("stats"):
+			for k in PROGRESS_STATS:
+				if stv.has(k):
+					f.stats[k] = maxi(int(f.stats.get(k, 0)), int(stv[k]))
+
+
+## Shore / near-water rules for a placed building on map terrain (Naval.shore_error on a bare world).
+static func _shore_reason(def: String, c: Vector2i, t: PackedByteArray, w: int, h: int) -> String:
+	var sw := SimWorld.new()
+	sw.map = {"w": w, "h": h, "terrain": t}
+	return Naval.shore_error(sw, def, c)
 
 
 # ================================================================ validate
@@ -598,12 +743,13 @@ static func _validate_entities(out: Array, ents: Array, slots: Dictionary, t: Pa
 				continue
 			var size := int(bd.get("size", 1))
 			var bad := ""
+			var shore := bool(bd.get("shore", false))
 			for dy in size:
 				for dx in size:
 					var fc := c + Vector2i(dx, dy)
 					if fc.x < 0 or fc.y < 0 or fc.x >= w or fc.y >= h:
 						bad = "is off the map"
-					elif not Terrain.buildable(t[fc.y * w + fc.x]):
+					elif not shore and not Terrain.buildable(t[fc.y * w + fc.x]):
 						bad = "is on unbuildable %s" % Terrain.NAMES[t[fc.y * w + fc.x]] if t[fc.y * w + fc.x] < Terrain.NAMES.size() else "is on unbuildable ground"
 					elif occupied.has(fc):
 						bad = "overlaps a %s" % occupied[fc]
@@ -611,9 +757,16 @@ static func _validate_entities(out: Array, ents: Array, slots: Dictionary, t: Pa
 						break
 				if bad != "":
 					break
+			if bad == "" and (shore or bd.has("near_water")):
+				var sr := _shore_reason(def, c, t, w, h)
+				if sr != "":
+					bad = "breaks the shore rule: %s" % sr.trim_suffix(".")
 			if bad != "":
 				_issue(out, "illegal_placement", "Building %d (%s) %s." % [i, def, bad], c)
 				continue
+			var fr := field_reason(e)
+			if fr != "":
+				_issue(out, "field_bad", "Building %d: %s" % [i, fr], c)
 			for dy in size:
 				for dx in size:
 					occupied[c + Vector2i(dx, dy)] = "building"

@@ -118,6 +118,19 @@ func build(editor) -> void:
 	bb.add_child(hover_label)
 	for c in [top, left, right, bottom]:
 		c.mouse_filter = Control.MOUSE_FILTER_STOP
+	# G5 (ED5 fit fix): the RTS Mil typeface makes the top/bottom bars a few px taller than TOP_H /
+	# BOTTOM_H, so the side columns follow the bars' real heights instead of the constants.
+	var fit_cols := func() -> void:
+		var t := maxf(TOP_H, top.size.y) + 4.0
+		var b := maxf(BOTTOM_H, bottom.size.y) + 4.0
+		for col in [left, right]:
+			if not is_equal_approx(col.offset_top, t):
+				col.offset_top = t
+			if not is_equal_approx(col.offset_bottom, -b):
+				col.offset_bottom = -b
+	top.resized.connect(fit_cols)
+	bottom.resized.connect(fit_cols)
+	fit_cols.call()
 	# ---- file dialog
 	dialog = FileDialog.new()
 	dialog.access = FileDialog.ACCESS_USERDATA
