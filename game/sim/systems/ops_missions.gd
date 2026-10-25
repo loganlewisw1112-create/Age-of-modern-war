@@ -66,6 +66,9 @@ static func members(w: SimWorld, g: Dictionary) -> Array:
 	for id in g.members:
 		var e = w.entities.get(int(id))
 		if e != null and e.kind == "unit":
+			# G5 (AI6 CR): wounded members (immobile) and launched drones never steer, count or pin a group
+			if bool(e.get("wounded", false)) or bool(Content.unit(String(e.def)).get("launched_drone", false)):
+				continue
 			out.append(e)
 	return out
 
