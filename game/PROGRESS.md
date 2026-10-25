@@ -25,6 +25,33 @@ Stop-if / park-if:        determinism breaks and can't be restored; existing tes
                           with a written note; tests are never cut.
 ```
 
+### G5 evidence (2026-10-25, owner asked to finish now) — DELIVERED, PARTIAL
+1. **Tests:** last full `tests/run.sh`: `RESULT pass=425 fail=8 files=57`. All 8 failures were then fixed and their files re-run alone:
+   - test_air_transport 7/7, test_art 7/7, test_art_g3b 5/5, test_art_machine 4/4;
+   - test_ai_g5 5/5 (`.plan/shots/ORCH/t_ai_g5_r3.log`, bench f0 1.386 ms at 5006 units), test_ai 18/18, test_ai_air_naval 8/8.
+   - `tests/pending_g5/` holds only README.md.
+   - A full-suite rerun after commit 3716861 was **not done**: owner asked to finish.
+2. **Perf:** 10k all-fighting is about 94-101 ms/tick on a quiet PC (CORE10K-2/3 handoffs). The target is 62.5, so **NOT MET**.
+   - gather_trust is now on (hash-proven); the projection with it is about 86-88 ms.
+   - Breakdown and next steps are in `.plan/handoff/CORE10K-3.json`.
+   - Windowed fps (2k at 60+, 10k at 30+): **UNVERIFIED**, not measured.
+3. **AI soaks:** the f1 lane (AI6-2 code) had 0 invariant failures but only 1 of 9 winners (coastal s1). **NOT MET.**
+   - Earlier a2/a3 lanes had winners on 7 of 9.
+   - The cause identified was the air/naval savings hold, which starved unit production. It was fixed in 3716861 (now buildings only).
+   - The soaks were **not re-run** on the fixed code. Next step: `TAG=o1 bash .plan/shots/AI6-2/run_lane.sh river_s1 river_s2 heart_s1 heart_s2 coastal_s1 coastal_s2 valley_s1 valley_s2 custom_s1`.
+   - Valley Conquest has drawn on every code version so far.
+4. **Playtests:** all 12 flows pass from a clean folder on the 3716861 build. MET, with two flakes noted:
+   - h 33/0, hb 37/0, m 37/0, g4b 68/0, air 98/0, naval 32/0, drone 30/0, support 37/0, med 30/0, editor 25/0.
+   - stages: 43/3 when run two at a time ("select builders" found 0 units, plus 2 cascades), then **53/0 run alone**.
+   - tutorial: 54/8 when run two at a time (the Strike Jet click was refused right after the hangar buy), then **72/0 run alone**.
+   - Logs: `build/_clean_G5_test/pt_*.log`, `pt_s2.log`, `pt_tut2.log`. The parallel-run flakes are a G6 item.
+5. **UI fit:**
+   - UI5b final: `FIT RESULT screens=273 controls=29508 issues=0`.
+   - Main menu after the Tutorial button: `FIT RESULT screens=63 controls=7164 issues=0` (commit 7de3984).
+   - The RTS Mil typeface is the theme default. MET.
+6. **Package:** `build/RTS_Age_of_Modern_War_G5/` was re-exported after 3716861, and the clean-folder playtests were re-run (`.plan/shots/ORCH/package_r2.log`). It is copied to `C:\Users\logan\Downloads\RTS_Age_of_Modern_War_G5\` plus a zip.
+- Commits cd011a7 → 3716861. Nothing pushed.
+
 ## Previous goal (G4a + G4e + G4b in parallel, started 2026-10-24; plan `docs/PLAN_G4.md`, contract `docs/CONTRACTS_G4.md`) — DELIVERED, PARTIAL (see G4 evidence)
 Owner decisions (2026-10-24): D1 editor + naval/air pulled into G4 (DEC-G4-01); D2 8 new human land units (4 per Human faction); D3 Machine gets a small air/naval roster (G4c/G4d); D4 helicopters hover, jets sortie; D5 gunships carry troops or a slung vehicle (G4c); D6 no true heightmap (cliff + hill tiles); D7 REDUCED movement stride stays OFF; D8 no submarines.
 
@@ -97,16 +124,119 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
    - Newly bought hangars are placed in a sensible spot next to the tarmac.
    - Owner idea: hangars connect directly to a main airfield base, which connects to the tarmac and runway. Layout options to be worked out in the G6 plan.
    - **Shorter runways** (owner, explicitly G6, NOT G5): the current strip_len is 26 tiles (airfield/aerodrome), 14 (airstrip), 10 (forward strip) and 12 (Machine launch rail), which is far too long. Shorten them as part of the overhaul.
-3. **Every asset on the "G6 Arsenal Concepts" page goes into the game in G6** (owner note, 2026-10-24). That is all 93 assets: units, turrets, fortifications, drones, vehicles, aircraft, ships and buildings.
+3. **Every asset on the "G6 Arsenal Concepts" page goes into the game in G6** (owner note, 2026-10-24): units, turrets, fortifications, drones, vehicles, aircraft, ships and buildings. That is **89 assets**: the page's 93 minus the 4 Irregulars assets (see owner note 5).
    - Page: https://claude.ai/artifact/CqtGqskcCzkoCjPrhMWkgw
    - Source: `docs/g6_art_kit/` holds the proposal list in `items.json`, plus drawers that already render every asset with `tools/art` as game-schema sheets. It is not wired into content, sim or AI yet; see its README.
-   - By category: turrets 15, fortifications 9, drones 9, vehicles 15, infantry 13, aircraft 4, naval 10, buildings 11, horizon 7. By faction: Human A, Human B, Machine, shared, plus a 4th faction.
+   - By category: turrets 15, fortifications 9, drones 9, vehicles 15, infantry 13, aircraft 4, naval 10, buildings 11, horizon 3 (the Stage 6 Rhomboid Landcrawler and the Stage 10 Laser Tank and Exo-Suit Trooper). By faction: Human A, Human B, Machine and shared.
    - Each asset has to become playable: content defs, art moved into an `assets/art/g6_*` module, sim mechanics, AI use and tests.
    - Scope the G6 plan has to settle (big items inside this note):
      - new systems: minefields + EOD/mine clearing, garrisons, trench/sandbag cover, rail tiles + armored train, submarines + sonar, carriers (the hangar system at sea), radar-gated SAMs, counter-drone (laser, nets, jamming), tethered recon;
-     - a **4th faction (Irregulars)**: technical, tunnel network, ambush cell, captured tank;
      - **Stage 6 and Stage 10** units: rhomboid landcrawler, laser tank, exo-suit trooper.
      - Submarines and carriers were out of scope in G5 (D20) and are in scope now.
+4. **Map editor "Live" mode** (owner note, 2026-10-24): a toggle in the editor that is easy to switch on and off.
+   - With Live on, units placed for different factions behave as in a live match or skirmish. When they are close enough, they start fighting on their own.
+   - Reference: the Stronghold and Age of Empires III editors.
+   - Toggling off returns to normal editing.
+   - Details for the G6 plan:
+     - whether Live pauses or rewinds when switched off;
+     - whether the AI economy and production also run, or only combat;
+     - the speed controls;
+     - how undo behaves for units lost during Live.
+5. **The 4th faction is out of G6** (owner note, 2026-10-24). The Irregulars faction and its 4 assets (Technical, Tunnel Network, Ambush Cell, Captured Tank) are removed from the G6 plan, to be raised again possibly in G7 or G8.
+   - Their drawers stay in `docs/g6_art_kit/` (`x_*` ids in `g6_horizon.gd`, `g6_infantry.gd`), but G6 does not integrate them.
+
+#### G6 scoping answers (owner, 2026-10-24, five-question pass). REQUIRED scope
+6. **Delivery:** one continuous orchestrated wave (like G5), ending in one packaged build. Not split into G6a and G6b.
+7. **Stage 10 becomes playable** ("Automated Technocracies"): an advancement gate from Stage 9 and its own unlocks. Its units are the Laser Tank, Exo-Suit Trooper, Mass Driver, Colossus Walker, Hover Tank, Assimilator, Swarm Queen, Mimic Drone, Stalker Synth, Stealth Strike Drone and Overmind Uplink. The Rhomboid Landcrawler moves to Human B at **Stage 7** as an early heavy. Stage 6 stays unplayable.
+8. **True elevation** (owner, 2026-10-24; this reverses G5 D20, where it was out of scope): real terrain height in place of the G4 cliff and hill tiles.
+   - Height affects sight, weapon range, cover and movement.
+   - The map editor gets height brushes.
+   - Rendering, pathing and fog must handle it.
+9. **Wave / survival mode:** new victory types, "Repel all waves" and "Survive mm:ss" (vision images 03-04), a natural showcase for the new defenses.
+10. **AI upgrades.** The baseline is that every AI uses every new unit and system. On top of that:
+    - **AI Commanders** (owner design, still to be worked out properly):
+      - assist commanders on the player's side, each with its own playstyle;
+      - they make in-game decisions on their own, without asking for approval;
+      - they are meant to ASSIST the player, NOT play the game for them.
+      - The G6 plan must define:
+        - what a commander controls (a group, a sector, a role such as air or logistics);
+        - how the player assigns, reins in or dismisses one;
+        - the playstyles;
+        - how to keep it from fighting the player's own orders.
+    - **Ally AI commands:** in team games the player can order an allied AI to "attack here", "defend me" or "send air support".
+    - **Wave AI:** a dedicated attacker for survival mode that builds escalating waves.
+11. ~~Veterancy / unit XP~~ **MOVED TO G7** (owner, 2026-10-25). Not in G6.
+12. **Research upgrades** for the new units and defenses, extending `research.json` (e.g. better mines, CIWS range, armor kits).
+13. ~~Weather and day/night~~ **MOVED TO G7** (owner, 2026-10-25). Not in G6.
+14. **Infantry loadout upgrades and enhancements, plus exoskeleton armour suits** (owner: "think Iron Man armour"). Infantry can be upgraded with new loadouts and gear, up to powered exo-suits. The G6 plan must define how this relates to the Stage 10 Exo-Suit Trooper unit.
+15. **Companies and armies (army builder)** (owner notes + design chat, 2026-10-25). Builds on the G2 officer groups (`ops.gd`) and the G5 squads.
+    - **Company:** a pre-organized formation of **15-45 elements MAX** (element = one squad or one vehicle) of specialized units, trained as one order and commanded as one bigger squad.
+    - **Templates: presets + custom.**
+      - Each faction ships preset company types, for example:
+        - A: Rifle, Mechanized, Armored, Artillery Battery, Air Assault, Engineer, Special Ops;
+        - B: Conscript Battalion, Shock Assault, Heavy Armor, Siege Battery, Works;
+        - Machine: Swarm Cluster, Walker Phalanx, Siege Array, Hunter Pack.
+      - An **Army Builder** screen lets the player design, save and train their own templates within slot rules and the 45 cap.
+    - **Training: a new Company HQ building** (one per faction, styled per faction) trains whole companies itself and spawns them all at once.
+    - **Chain of command:**
+      - each company has a **captain** and **lieutenants**, one lieutenant leading each platoon;
+      - leaders are real units in the company.
+    - **Armies:** join 2-4 companies into an **army**. This needs a **Commander unit in play**; the Commander becomes the army's top leader (army -> companies -> platoons).
+    - **Limits for now:** up to 4 companies per army and 2 armies per player.
+    - **Leader loss: the next in line steps up.**
+      - Captain dies -> the senior lieutenant is field-promoted (short confusion + morale hit).
+      - Commander dies -> the army splits back into its companies until a new Commander joins them.
+      - Nothing dissolves outright.
+    - **Still to settle in the G6 plan:**
+      - cohesion bonuses while together;
+      - auto-replenishment of losses;
+      - cost and population rules;
+      - company / army cards in the HUD (vision image 05);
+      - the AI training and using companies;
+      - letting an AI Commander (item 10) run a company or an army.
+16. **Exo-suit garage + exo-suit soldiers** (owner note, 2026-10-25). A new, smaller building (an exo-suit garage / suit bay) that trains exo-suit soldiers.
+    - Reference: the AMP suits from *Avatar*. A pilot in a walking armoured exo-suit, about 2-3x a soldier's height.
+    - Heavy weapons: oversized assault rifles, shoulder or arm missile tubes, and similar.
+    - Fits with item 14 (infantry exo armour upgrades) and the Stage 10 Exo-Suit Trooper.
+    - The G6 plan must settle:
+      - the suit roster and variants (e.g. rifle suit, missile suit, AA or breacher suit);
+      - which factions get them (Human A sleek, Human B crude welded; the Machine has no pilots, so maybe none);
+      - stage gating;
+      - how they count against squad / company slots (item 15);
+      - repair and resupply at the garage;
+      - the pilot surviving (ejecting) when the suit is destroyed.
+17. **AI command structure with true military strategy and focus** (owner note, 2026-10-25). Every AI command level (Commander -> army -> company captain -> platoon lieutenant, plus AI Commanders and enemy AI) has to fight like a real military:
+    - positioning troops correctly: terrain, cover, high ground (item 8), overwatch, flanks, depth;
+    - formations and structure;
+    - attacking: combined arms, fire and manoeuvre, suppression then assault, breaching;
+    - special ops missions: raids, sabotage, recon, sniping officers;
+    - exfil missions: extracting squads, wounded and VIPs under fire;
+    - and the rest of real doctrine: defence in depth, retreat and regroup, reserves, logistics, timing.
+
+#### G6 design answers (owner, 2026-10-25, second question pass). These settle the open details above
+- **Marketplace (1):** buy AND sell. Prices move with what every player trades (scarcity), and the AI uses the same market.
+- **Airfield (2):** the airfield base has fixed hangar slots along the tarmac. Buying a hangar auto-fills the next free slot.
+- **Editor Live mode (4):**
+  - switching Live off **rewinds** the map to exactly how it was placed, so it is a repeatable test;
+  - Live runs **combat + AI tactics** (units fight, and AI positions and moves them). There is **no economy or production**.
+- **True elevation (8):** 4 height levels (valley, plain, hill, ridge) with slopes and ramps between them.
+  - High ground gives sight, range and defence bonuses.
+  - The editor gets raise, lower and smooth brushes.
+- **Weather and day/night (13), for G7:** a skirmish setup option: Off, Fixed (pick the weather and time) or Dynamic (weather fronts plus a day-night cycle during the match).
+- **Wave / survival (9):** works on any skirmish or editor map, with attackers spawning from the map edges, plus **2 new purpose-built stronghold maps** like vision images 03-04.
+- **Veterancy (11), for G7:** 3 ranks (Veteran / Hardened / Elite) shown as chevrons. Each rank adds accuracy, HP and morale. Companies and armies track their own pooled XP.
+- **AI Commanders (10):**
+  - you hand one **a formation** (company or army) **or a role** (base defence, air ops, logistics, naval);
+  - you steer it with an **objective** (take / hold / raid / escort) plus a **stance** (cautious / balanced / aggressive);
+  - your direct orders on a unit always override it for a while, and you can recall it at any time.
+  - **All four playstyles:** Defensive / fortifier, Aggressive / breakthrough, Special ops / raider, Combined arms / balanced.
+- **Enemy AI (17):** uses the **same military doctrine**: companies, armies, chain of command and tactics. Fair, same rules.
+- **Exo-suits (16):** **Human A only** (sleek AMP suits, e.g. rifle, missile and AA variants). The Machine has its walkers instead, and Human B gets none.
+  - A destroyed suit **ejects its pilot** as one wounded soldier, who can be evacuated (G5 medical) and re-suited at the garage for less.
+- **Infantry loadouts (14):** chosen **per squad at a barracks** (or the Company HQ) for a cost, e.g. assault, AT, marksman, breacher, armour plates. Exo armour is the top tier.
+- **Company refill (15):** losses **auto-request replacements at the Company HQ** (toggle per company). Replacements travel to the company (lower veterancy only once G7 adds veterancy).
+- **Still out of scope for G6:** Stages 1-6 and 11-13, audio, multiplayer, and the 4th faction (G7 or G8).
+- **Moved to G7** (owner, 2026-10-25): weather + day/night (13) and veterancy / unit XP (11). Their answers above are kept as G7 design input.
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.

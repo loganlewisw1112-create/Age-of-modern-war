@@ -117,6 +117,21 @@ This runs 200 headless tests (22 files): ledger conservation, command validation
 - **Scale:** native core 0.3.1. 2k fight 21 ms/tick; 10k march 63 ms; 10k all-fighting 104 ms (still about half speed). See `perf/PERF_REPORT_G4_2026-10-24.md`.
 - Evidence: `PROGRESS.md`. Packaged build: `build/RTS_Age_of_Modern_War_G4/` (keep `rts_core.dll` next to the exe).
 
+## G5 "Full Spectrum" (2026-10-25)
+- **Air war:**
+  - airfields with hangars you buy and upgrade, and extra airstrips;
+  - Airfield Engineer Teams (click to assign, then automatic upkeep);
+  - helipads as restock points;
+  - helicopters, gunships and VTOLs land on any open area big enough;
+  - VTOL dropship (2 vehicles + a squad of 8).
+- **Naval war:** shipyards, ships, shore bombardment, amphibious landings.
+- **17 new human ground units**, including the Drone Team: 3 soldiers, 4 drone styles, then tactical breach, takedown and stack-up.
+- **Support:** logistics truck "auto" restock; medics and ambulances auto-evacuate wounded to a Hospital or Field Hospital.
+- **UI:** refreshed layout that fits at 7 resolutions x 3 UI scales (0 clipped controls), the original RTS Mil typeface, and a 16-step tutorial.
+- **AI:** uses air, naval, drones, medevac and the new units.
+- **Scale:** native core 0.4.2. 10k all-fighting is about 94-101 ms/tick, still under target.
+- Valley AI soaks still draw; see PROGRESS G5 evidence. Packaged build: `build/RTS_Age_of_Modern_War_G5/`.
+
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.
 - **Measured performance (this PC, quiet):**
