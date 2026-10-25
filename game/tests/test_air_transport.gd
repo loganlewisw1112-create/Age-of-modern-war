@@ -163,3 +163,30 @@ func test_save_load_with_air_cargo() -> void:
 		l.step()
 	check_eq(l.state_hash(), w.state_hash(), "same future after load")
 	check(_cargo(l, v).is_empty(), "the loaded game unloads at the landing zone too")
+
+
+## PT5-2 regression: a landed VTOL clicked "Unload at point" on (or right beside) its own landing spot was
+## refused with "Not enough open ground to land." because its own landed body blocked the LZ check.
+func test_vtol_unload_at_its_own_landed_spot() -> void:
+	var w := _w()
+	w.factions[0].stage = 9
+	var s := _landed(w, "a_vtol_dropship")
+	var v: int = s.id
+	var veh := _spawn_near(w, "mbt", s.cell, 2)
+	var troops := _spawn_near(w, "rifleman", s.cell, 8)
+	check(_load(w, v, veh + troops, 10) > 0, "2 vehicles + 8 troops board")
+	var here: Vector2 = w.entities[v].pos
+	var r := w.preview_command({"type": "unload", "issuer": 0, "carrier": v, "target": here})
+	check_eq(r, "", "unload at its own landed spot is allowed")
+	check(w.submit({"type": "unload", "issuer": 0, "carrier": v, "target": here}).ok, "unload submitted")
+	check(_run(w, 600, func() -> bool: return _cargo(w, v).is_empty()) > 0, "all 10 unloaded at the landed spot")
+	check(Air.is_landed(w.entities[v]), "still landed")
+	for id in veh + troops:
+		check(w.entities.has(id) and Vector2(w.entities[id].pos).distance_to(here) < 7.0, "unit %d unloaded beside the VTOL" % id)
+	# another landed aircraft still blocks the LZ
+	var o := _landed(w, "a_vtol_dropship", Vector2i(26, 22))
+	var g := _landed(w, "a_transport_gunship", Vector2i(10, 22))
+	var t2 := _spawn_near(w, "rifleman", g.cell, 2)
+	_load(w, int(g.id), t2, 2)
+	var r2 := w.preview_command({"type": "unload", "issuer": 0, "carrier": int(g.id), "target": w.entities[int(o.id)].pos})
+	check(r2.contains("Not enough open ground"), "unload onto another landed aircraft refused (%s)" % r2)

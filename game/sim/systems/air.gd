@@ -122,7 +122,7 @@ static func lz_size(def: Dictionary) -> int:
 	return maxi(1, int(def.get("lz_size", 2)))
 
 
-static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary) -> bool:
+static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary, ignore_id: int = -1) -> bool:
 	if String(def.get("aircraft", "heli")) == "jet":
 		return false
 	var n := lz_size(def)
@@ -136,7 +136,7 @@ static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary) -> bool:
 			cells[c] = true
 	for fid in _sorted(flights(w)):
 		var o = w.entities.get(int(fid))
-		if o != null and bool(o.get("air_landed", false)) and cells.has(w.cell_of(o.pos)):
+		if o != null and int(o.id) != ignore_id and bool(o.get("air_landed", false)) and cells.has(w.cell_of(o.pos)):
 			return false
 	return true
 

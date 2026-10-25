@@ -291,7 +291,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				var t = _pt(cmd.target)
 				if t == null or not w.in_bounds(w.cell_of(t)):
 					return "The unload point is outside the map."
-				if is_air_carrier(c) and not Air.landing_ok(w, w.cell_of(t), Content.unit(String(c.def))) and not _all_airdrop(c, cmd.get("cargo_ids", [])):
+				if is_air_carrier(c) and not Air.landing_ok(w, w.cell_of(t), Content.unit(String(c.def)), int(c.id)) and not _all_airdrop(c, cmd.get("cargo_ids", [])):
 					return Air.LZ_REASON
 			if cmd.has("cargo_ids"):
 				var ids := cargo_ids(c)

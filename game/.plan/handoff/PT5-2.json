@@ -1,0 +1,16 @@
+{
+  "agent": "PT5-2", "n": 2, "reason": "deadline final pass",
+  "files": ["tools/ui_playtest.gd (support claim check, med pickup check, tutorial flow)", "sim/systems/air.gd (landing_ok ignore_id, ORCH narrow grant)", "sim/systems/transport.gd (preview unload passes carrier id, ORCH narrow grant)", "tests/test_air_transport.gd (+test_vtol_unload_at_its_own_landed_spot)", ".plan/shots/PT5/pt_*_{r1,r2,t1,t2,r3,r4}/ + logs"],
+  "editor_playtest_gd": "untouched",
+  "results": {
+    "h": ["r1 33/0", "r2 33/0"], "hb": ["r1 37/0", "r2 37/0"], "m": ["r1 37/0", "r2 37/0"], "s": ["r1 53/0", "r2 53/0"],
+    "g4b": ["r1 68/0", "r2 68/0"], "ed": ["r1 25/0", "r2 25/0"],
+    "med": ["t1 29/1 (pickup check)", "t2 30/0", "r2 30/0"], "support": ["t1 37/0", "r2 37/0"],
+    "drone": ["PT5 t7 30/0", "r2 30/0"], "naval": ["PT5 t4 32/0", "r2 32/0"],
+    "air": ["t1 98/0", "r2 98/0"],
+    "tutorial": ["t1/t2/r2 killed (harness fixes)", "r3 68/3 (ran to Tutorial complete; 3 harness fails, fixed)", "r4 72/0"]
+  },
+  "remaining_steps": ["tutorial: one more run to make it twice in a row: bash .plan/shots/PT5/pt_all.sh r5 tutorial", "air: if r2 was not 0-fail, rerun air"],
+  "change_requests": ["ED5 need tutorial_step6_salvage (seq 4283): grant 400 salvage on the attack step; harness re-gathers meanwhile"],
+  "gotchas": ["tutorial: menu Tutorial button exists and frees itself on click (capture text first)", "tutorial step 16 evac can complete between 0.25 s polls: _tut_at accepts an already-passed step", "an airborne jet is hard to click: keep the selection from Take off for Rebase"]
+}

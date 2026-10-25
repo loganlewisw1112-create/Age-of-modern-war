@@ -401,14 +401,17 @@ func _gather_salvage(gatherers: Array, tag: String) -> void:
 
 func _run() -> void:
 	await _wait(1.5)
-	if g5_flow != "":
+	if g5_flow != "" and g5_flow != "tutorial":
 		await _g5_menu()
 	if faction != "":
 		await _setup_menu()
 	if stages_flow:
 		await _setup_stages_menu()
 	await _shot("ui_00_menu")
-	_log("menu_start_button", await _click_button("START MATCH"))
+	if g5_flow == "tutorial":
+		await _tut_start()
+	else:
+		_log("menu_start_button", await _click_button("START MATCH"))
 	var started := await _wait_until(func(): return main.match_view != null and main.match_view.world != null, 10.0)
 	_log("match_started", started)
 	if not started:
@@ -418,6 +421,9 @@ func _run() -> void:
 	await _shot("ui_01_start")
 	if g4b_flow:
 		await _g4b_flow()
+		return _finish()
+	if g5_flow == "tutorial":
+		await _tut_flow()
 		return _finish()
 	if g5_flow != "":
 		await _g5_flow()
@@ -1133,8 +1139,6 @@ func _g5_flow() -> void:
 			await _support_flow()
 		"med":
 			await _med_flow()
-		"tutorial":
-			_log("tutorial_available", false, "ED5 tutorial not built yet (tests/pending_g5/test_tutorial.gd)")
 
 
 func _g5_named(node_name: String) -> Button:
@@ -1724,6 +1728,7 @@ func _drain_ammo(units: Array) -> Array:
 
 func _support_mode(trid: int, units: Array, mode: String, n: int) -> void:
 	var needy := _drain_ammo(units)
+	var t0: int = _w().tick
 	_log("support_%s_needy_units" % mode, needy.size() > 0 and Support.needs_supply(_w(), _ent(int(needy[0]))), "needy=%d" % needy.size())
 	var cen := Vector2.ZERO
 	for id in needy:
@@ -1743,12 +1748,49 @@ func _support_mode(trid: int, units: Array, mode: String, n: int) -> void:
 	await _wait(0.4)
 	var b := _g5_named("G5_truck_auto")
 	_log("support_%s_button_shows_mode" % mode, b != null and String(b.text).contains(mode), "" if b == null else String(b.text).replace("\n", " | "))
-	var resup := await _wait_until(func(): return _any_flag(needy, RenderSnapScript.FLAG_RESUP), 60.0)
-	_log("support_%s_claimed_flag" % mode, resup)
+	# claim evidence (PT5-2): the FLAG_RESUP poll alone missed brief roam claims at 3x speed, so a claim
+	# counts when a needy unit carries resup_by = this truck, the truck queue holds it, the sim logged a
+	# ResupplyClaimed for it since the order, or the render snapshot shows FLAG_RESUP.
+	var how := [""]
+	var resup := await _wait_until(func(): return _support_claimed(trid, needy, t0, how), 60.0)
+	_log("support_%s_claimed_flag" % mode, resup, "via=%s" % how[0])
 	await _shot("support_0%d_%s_serving" % [n, mode])
 	var served := await _wait_until(func(): return needy.all(func(id): return _ent(int(id)) == null or not Support.needs_supply(_w(), _ent(int(id)))), 120.0)
 	_log("support_%s_units_resupplied" % mode, served, "ammo=%s" % str(needy.map(func(id): return _ent(int(id)).get("ammo") if _ent(int(id)) != null else -1)))
 	await _shot("support_0%d_%s_done" % [n, mode])
+
+
+func _support_claimed(trid: int, needy: Array, t0: int, how: Array) -> bool:
+	for id in needy:
+		var u = _ent(int(id))
+		if u != null and int(u.get("resup_by", -1)) == trid:
+			how[0] = "resup_by"
+			return true
+	for id in Support.truck_state(_w(), trid).get("queue", []):
+		if needy.has(int(id)) or needy.has(float(id)):
+			how[0] = "truck_queue"
+			return true
+	for ev in _w().event_log:
+		if String(ev.get("type", "")) == "ResupplyClaimed" and int(ev.get("tick", -1)) >= t0 and int(ev.get("truck", -1)) == trid and (needy.has(int(ev.get("unit", -1))) or needy.has(float(ev.get("unit", -1)))):
+			how[0] = "event_log"
+			return true
+	if _any_flag(needy, RenderSnapScript.FLAG_RESUP):
+		how[0] = "FLAG_RESUP"
+		return true
+	return false
+
+
+func _med_picked(wounded: Array, t0: int, by: Array) -> bool:
+	for id in wounded:
+		var u = _ent(int(id))
+		if u != null and int(u.get("evac_by", -1)) >= 0:
+			by[0] = int(u.evac_by)
+			return true
+	for ev in _w().event_log:
+		if String(ev.get("type", "")) == "WoundedPickedUp" and int(ev.get("tick", -1)) >= t0 and (wounded.has(int(ev.get("id", -1))) or wounded.has(float(ev.get("id", -1)))):
+			by[0] = int(ev.get("carrier", -1))
+			return true
+	return false
 
 
 func _any_flag(ids: Array, flag: int) -> bool:
@@ -1805,8 +1847,13 @@ func _med_flow() -> void:
 	await _shot("med_01_wounded")
 	if wounded.is_empty():
 		return
-	var picked := await _wait_until(func(): return Medical.carrying(_ent(mid)).size() > 0 or wounded.any(func(id): return int(_ent(int(id)).get("evac_by", -1)) >= 0), 90.0)
-	_log("med_evac_pickup", picked, "carrying=%s" % str(Medical.carrying(_ent(mid))))
+	# pickup evidence (PT5-2): any own carrier holding a wounded (evac_by), or a WoundedPickedUp event for one
+	# since the wound (the medic team is several units; carrying(medics[0]) alone missed a teammate's pickup)
+	var by := [-1]
+	var picked := await _wait_until(func(): return _med_picked(wounded, 0, by), 90.0)
+	if not picked:
+		print("PLAYTEST-DBG med_events %s" % str(_w().event_log.filter(func(ev): return ["UnitWounded", "WoundedPickedUp", "Reinforcement", "BledOut"].has(String(ev.get("type", ""))))))
+	_log("med_evac_pickup", picked, "carrier=%d def=%s" % [by[0], "" if _ent(by[0]) == null else String(_ent(by[0]).def)])
 	_mv().center_camera_on(_ent(mid).pos)
 	await _wait(0.5)
 	await _shot("med_02_evac")
@@ -1821,3 +1868,265 @@ func _med_flow() -> void:
 	_mv().center_camera_on(hp_pos)
 	await _wait(0.8)
 	await _shot("med_03_hospital_reinforcement")
+
+
+const ProgressionPT = preload("res://sim/systems/progression.gd")  # PT5-2: tutorial gate diagnostics
+const TutorialPromptScript = preload("res://presentation/editor/tutorial_prompt.gd")  # G5 (ED5) step reader
+
+# ------------------------------------------------------------ G5 tutorial (PT5-2): --ui-playtest-tutorial
+## ED5's content/scenarios/tutorial.rtsmap, played step by step through the on-screen TutorialPrompt with
+## synthetic input only. No harness writes (no grant, no AI change: the tutorial's side 1 is inert).
+func _tut_start() -> void:
+	var b := _find_button(get_tree().root, "Tutorial")
+	if b != null and b.is_visible_in_tree() and not b.disabled:
+		var bt := String(b.text)  # the menu frees the button on click
+		await _click(b.get_global_rect().get_center())
+		_log("tut_menu_button", true, bt)
+	else:
+		# no menu button yet (CR to ORCH): the same entry point the button would call
+		_log("tut_menu_button_missing_harness_start", main.start_tutorial(), "main.start_tutorial()")
+
+
+func _tut() -> Dictionary:
+	return TutorialPromptScript.current(_w())
+
+
+func _labels_text(n: Node) -> String:
+	var s := ""
+	if n is Label:
+		s += (n as Label).text + " "
+	elif n is RichTextLabel:
+		s += (n as RichTextLabel).get_parsed_text() + " "
+	for c in n.get_children():
+		s += _labels_text(c)
+	return s
+
+
+func _tut_panel_text() -> String:
+	var p = get_tree().root.find_child("TutorialPrompt", true, false)
+	if p == null or not (p is CanvasItem) or not (p as CanvasItem).is_visible_in_tree():
+		return ""
+	return _labels_text(p)
+
+
+## Waits for step n, logs that the on-screen prompt shows it (keyword key).
+func _tut_at(n: int, nm: String, key: String) -> bool:
+	var ok := await _wait_until(func(): return int(_tut().get("step", 0)) == n and _tut_panel_text().contains(key), 30.0)
+	var cur := _tut()
+	if not ok and (int(cur.get("step", 0)) > n or bool(cur.get("done", false))):
+		# a fast step (the ambulance evac) can fire between two 0.25 s polls: the step is passed, not missed
+		_log("tut_%02d_%s_prompt" % [n, nm], true, "already passed: step=%s done=%s" % [str(cur.get("step")), str(cur.get("done"))])
+		return true
+	_log("tut_%02d_%s_prompt" % [n, nm], ok, "step=%s/%s panel=%s" % [str(cur.get("step")), str(cur.get("total")), _tut_panel_text().left(90).replace("\n", " ")])
+	return ok
+
+
+func _tut_done(n: int, nm: String, secs: float) -> bool:
+	var ok := await _wait_until(func(): return int(_tut().get("step", 0)) > n or bool(_tut().get("done", false)), secs)
+	_log("tut_%02d_%s_done" % [n, nm], ok, "now step=%s" % str(_tut().get("step")))
+	await _wait(0.4)
+	await _shot("tut_%02d_%s" % [n, nm])
+	return ok
+
+
+func _tut_rclick(p: Vector2) -> void:
+	if not _on_map(_to_screen(p)):
+		_mv().center_camera_on(p)
+		await _wait(0.4)
+	await _click(_to_screen(p), MOUSE_BUTTON_RIGHT)
+	await _wait(0.4)
+
+
+func _tut_first(def_id: String) -> int:
+	var us := _own_units(def_id)
+	return int(us[0].id) if not us.is_empty() else -1
+
+
+func _tut_select_all(def_id: String) -> int:
+	var us := _own_units(def_id)
+	if us.is_empty():
+		return 0
+	var cen := Vector2.ZERO
+	for u in us:
+		cen += Vector2(u.pos)
+	_mv().center_camera_on(cen / float(us.size()))
+	await _wait(0.4)
+	return await _select_units([def_id])
+
+
+func _tut_flow() -> void:
+	var started := await _wait_until(func(): return int(_tut().get("total", 0)) > 0, 5.0)
+	_log("tut_has_steps", started, "total=%s map=%s" % [str(_tut().get("total")), String(_w().map.get("name", "?"))])
+	if not started:
+		return
+	_log("speed_3x_button", await _click_button("3x"))
+	await _shot("tut_00_start")
+	# 1 move: recon -> flag region (22,22 4x4)
+	if await _tut_at(1, "move", "MOVE"):
+		_log("tut_select_recon", await _g5_select(_tut_first("recon")))
+		await _tut_rclick(Vector2(24.0, 24.0))
+		await _tut_done(1, "move", 60.0)
+	# 2 gather: engineers -> salvage pile
+	if await _tut_at(2, "gather", "GATHER"):
+		_mv().center_camera_on(_hq().pos)
+		await _wait(0.4)
+		await _gather_salvage(["engineer"], "tut")
+		await _tut_done(2, "gather", 150.0)
+	# 3 build: barracks
+	if await _tut_at(3, "build", "BUILD"):
+		_mv().center_camera_on(_hq().pos)
+		await _wait(0.4)
+		await _g5_build(_role("barracks"))
+		await _tut_done(3, "build", 30.0)
+	# 4 train: a rifle squad -> 8 riflemen
+	if await _tut_at(4, "train", "TRAIN"):
+		await _train(_role("infantry"))
+		await _tut_done(4, "train", 60.0)
+	# 5 attack: riflemen -> the tagged militia outpost
+	if await _tut_at(5, "attack", "ATTACK"):
+		_log("tut_select_riflemen", await _tut_select_all("rifleman") >= 4, "selected=%d" % _mv().selection.size())
+		var foe = null
+		for e in _w().entities.values():
+			if e.kind == "unit" and int(e.owner) != 0 and String(e.get("tag", "")) == "outpost":
+				foe = e
+				break
+		_log("tut_outpost_found", foe != null)
+		if foe != null:
+			await _tut_rclick(Vector2(foe.pos))
+		await _tut_done(5, "attack", 180.0)
+	# 6 stage: Advance on the stage panel
+	if await _tut_at(6, "stage", "ADVANCE"):
+		# the gates (power held, cost) may still be filling: a player waits for the button to light up.
+		# The 400-salvage cost is not guaranteed by the map (engineers idle after building the barracks), so
+		# like a player the flow sends the engineers back to the salvage when the stock is short.
+		var need_s := int((Content.rules().get("advancement", {}).get("gates", {}).get("8", {}).get("cost", {}) as Dictionary).get("salvage", 0))
+		if int(_w().factions[0].stock.get("salvage", 0)) < need_s:
+			_mv().center_camera_on(_hq().pos)
+			await _wait(0.4)
+			await _gather_salvage(["engineer"], "tut6")
+		var ready := await _wait_until(func(): return _g5_named("AdvanceStageButton") != null and not _g5_named("AdvanceStageButton").disabled, 150.0)
+		if not ready:
+			print("PLAYTEST-DBG tut_gates unmet=%s stock=%s credits=%s" % [str(_tut_unmet_gates()), str(_w().factions[0].stock), str(_w().factions[0].credits)])
+		var adv := _g5_named("AdvanceStageButton")
+		_log("tut_advance_enabled", ready and adv != null and not adv.disabled, "" if adv == null else adv.tooltip_text.left(80).replace("\n", " | "))
+		_log("tut_advance_click", await _click_named("AdvanceStageButton"))
+		await _tut_done(6, "stage", 400.0)
+	# 7 walls: engineers, Wall tool, drag a short line
+	if await _tut_at(7, "walls", "WALLS"):
+		await _tut_walls()
+		await _tut_done(7, "walls", 120.0)
+	# 8 load: riflemen right-click the APC
+	var apc := -1
+	if await _tut_at(8, "load", "TRANSPORT"):
+		apc = _tut_first("a_apc")
+		_log("tut_apc_found", apc >= 0, "apc=%d at=%s" % [apc, "" if apc < 0 else str(_ent(apc).pos)])
+		_log("tut_select_riflemen_load", await _tut_select_all("rifleman") >= 1, "selected=%d" % _mv().selection.size())
+		if apc >= 0:
+			_mv().center_camera_on(Vector2(_ent(apc).pos))
+			await _wait(0.5)
+			await _click(_to_screen(Vector2(_ent(apc).pos)), MOUSE_BUTTON_RIGHT)
+			await _wait(0.5)
+			var boarding := 0
+			for u in _own_units("rifleman"):
+				if String(u.order.get("type", "")) == "board":
+					boarding += 1
+			_log("tut_rightclick_apc_board", boarding > 0, "boarding=%d last=%s" % [boarding, _g5_last_cmd()])
+		await _tut_done(8, "load", 120.0)
+	if apc < 0:
+		apc = _tut_first("a_apc")
+	# 9 unload: APC -> Unload at point in the drop zone (40,8 5x5)
+	if await _tut_at(9, "unload", "drop zone"):
+		_log("tut_select_apc", await _g5_select(apc))
+		_log("tut_unload_at_point_click", await _click_button("Unload at point"))
+		await _wait(0.2)
+		_mv().center_camera_on(Vector2(42.5, 10.5))
+		await _wait(0.4)
+		await _click(_to_screen(Vector2(42.5, 10.5)))
+		await _wait(0.4)
+		await _tut_done(9, "unload", 180.0)
+	# 10 resupply: truck Auto (Off -> Station), drag its area
+	if await _tut_at(10, "resupply", "SUPPLY"):
+		var tr := _tut_first("logistics_truck")
+		_log("tut_select_truck", await _g5_select(tr))
+		_log("tut_truck_auto_click", await _click_named("G5_truck_auto"))
+		await _wait(0.3)
+		var tp: Vector2 = _ent(tr).pos
+		await _drag(_to_screen(tp), _to_screen(tp + Vector2(6.0, 0.0)))
+		await _wait(0.4)
+		await _tut_done(10, "resupply", 30.0)
+	# 11 hangar: airstrip card -> Buy light hangar
+	var strip := _newest("a_airstrip")
+	if await _tut_at(11, "hangar", "AIRFIELD"):
+		_log("tut_select_airstrip", not strip.is_empty() and await _g5_select(int(strip.id)))
+		_log("tut_buy_light_hangar_click", await _click_named("G5_hangar_light"))
+		await _tut_done(11, "hangar", 150.0)
+	# 12 jet: train a Strike Jet at the airstrip
+	if await _tut_at(12, "jet", "Strike Jet"):
+		await _train("a_strike_jet")
+		await _tut_done(12, "jet", 60.0)
+	# 13 takeoff
+	var jet := _tut_first("a_strike_jet")
+	if await _tut_at(13, "takeoff", "Take off"):
+		_log("tut_select_jet", await _g5_select(jet))
+		_log("tut_take_off_click", await _click_named("G5_take_off"), _g5_last_cmd())
+		await _tut_done(13, "takeoff", 90.0)
+	# 14 land: Rebase to the airstrip
+	if await _tut_at(14, "land", "Rebase"):
+		# the jet stays selected after Take off; an airborne jet is hard to click, so reselect only if lost
+		if not _mv().selection.has(jet):
+			await _g5_select(jet)
+		_log("tut_select_jet_air", _mv().selection.has(jet), "sel=%s phase=%s" % [str(_mv().selection), Air.phase(_w(), jet)])
+		_log("tut_rebase_click", not strip.is_empty() and await _g5_arm_click("G5_rebase", Vector2(strip.pos)), _g5_last_cmd())
+		await _tut_done(14, "land", 240.0)
+	# 15 evac_on: ambulance Auto evac, drag the area over the casualty region (17,38 3x3)
+	if await _tut_at(15, "evac_on", "Ambulance"):
+		var amb := _tut_first("a_ambulance")
+		_log("tut_select_ambulance", await _g5_select(amb))
+		_log("tut_auto_evac_click", await _click_named("G5_medic_auto"))
+		await _wait(0.3)
+		var ac := Vector2(18.5, 39.5)
+		_mv().center_camera_on(ac)
+		await _wait(0.3)
+		await _drag(_to_screen(ac), _to_screen(ac + Vector2(8.0, 0.0)))
+		await _wait(0.4)
+		await _tut_done(15, "evac_on", 30.0)
+	# 16 evac: the ambulance carries the spawned casualty to the Hospital
+	if await _tut_at(16, "evac", "Hospital"):
+		await _tut_done(16, "evac", 240.0)
+	var fin := await _wait_until(func(): return bool(_tut().get("done", false)), 20.0)
+	await _wait(1.0)
+	_log("tut_complete", fin and _tut_panel_text().contains("complete"), _tut_panel_text().left(90).replace("\n", " "))
+	await _shot("tut_17_complete")
+
+
+func _tut_walls() -> void:
+	var wdef := _role("wall")
+	_mv().center_camera_on(_hq().pos)
+	await _wait(0.4)
+	_log("tut_wall_select_engineers", await _select_units(["engineer"]) > 0)
+	var line := _g4b_line(wdef)
+	_log("tut_wall_line_found", not line.is_empty(), "%s %s" % [wdef, str(line)])
+	if line.is_empty():
+		return
+	await _build_page(wdef)
+	await _key(OS.find_keycode_from_string(_hotkey(wdef)))
+	await _wait(0.3)
+	_log("tut_wall_tool_armed", _mv().placing_def == wdef, _mv().placing_def)
+	var sa := _to_screen(Vector2(line[0]) + Vector2(0.5, 0.5))
+	var sb := _to_screen(Vector2(line[1]) + Vector2(0.5, 0.5))
+	await _move(sa)
+	await _button(sa, MOUSE_BUTTON_LEFT, true)
+	for i in 6:
+		await _move(sa.lerp(sb, float(i + 1) / 6.0))
+	await _wait(0.3)
+	await _button(sb, MOUSE_BUTTON_LEFT, false)
+	await _wait(0.5)
+	_log("tut_wall_line_issued", String(_mv().g4b.last_line.get("type", "")) == "build_line", str(_mv().g4b.last_line))
+
+
+func _tut_unmet_gates() -> Array:
+	var out := []
+	for r in ProgressionPT.gate_report(_w(), 0):
+		if not bool(r.get("ok", r.get("met", true))):
+			out.append(r)
+	return out
