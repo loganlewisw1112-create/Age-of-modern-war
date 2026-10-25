@@ -44,6 +44,25 @@
 
 ---
 
+## 0b. Built for speed and first-time-right (lessons from G4)
+"Perfect first try" can't be promised for software this size. What this plan guarantees is that **nothing counts as done without evidence**, and that problems surface within hours, not at the end. Every measure below answers something that cost time in G4.
+
+| # | Measure | G4 problem it prevents |
+|---|---|---|
+| 1 | **Contracts + compiling scaffold + test skeletons before any agent starts.** ORCH writes `CONTRACTS_G5.md` with exact IDs and API signatures, registers empty systems/panels, and writes **failing acceptance tests named after each agent's Done-when** (e.g. `test_air.gd::test_no_free_hangar_blocks_purchase`). Agents implement until their own tests pass. | agents guessing APIs; "done" meaning different things |
+| 2 | **APIs posted in the first hour as compiling stubs** (`*.api_ready` facts), then filled in. AI, VIEW, PT and UI build against real signatures from hour 1. | AI/UI waiting hours on sim agents |
+| 3 | **Placeholder art from the start:** coloured silhouettes per ID are generated automatically, so VIEW5/PT5/UI5 never wait for ART. | rendering blocked on art |
+| 4 | **Right-sized caps set up front** (never raised mid-run): heavy roles get 900k/220; overloaded roles are split in two. | UI4B-3 / AI5-3 / AI5-4 hitting caps mid-task; 4 AI successors |
+| 5 | **Two heaviest roles split:** UI5 → UI5a (kit, fit, layouts) + UI5b (new panels, settings); AI6 → AI6 (Valley fix, ground units, support, soaks) + AI6-AN (air and naval AI in their own files). | single agents carrying too much |
+| 6 | **Integration heartbeat every ~3 h:** ORCH runs the full suite + 6 playtests on the committed head and commits verified work in small batches. | cross-agent breakage found only at the end |
+| 7 | **Commit check script:** every owned file, tracked and untracked, is listed and diffed before each commit. | `combat_prep.rs` missed from a commit |
+| 8 | **Compile guard:** stub-first writes plus a compile check after every write; a `tree.broken` bus line pages ORCH at once. | peers breaking the shared tree mid-write |
+| 9 | **Test lanes on a shared PC:** at most 3 soaks and 2 windowed playtests at once; agents use `--only` runs; **all timing is final-gate only**, on a quiet PC. | machine load inflating timings and slowing everyone |
+| 10 | **Packaging rehearsed mid-wave:** export from the main tree (warm import cache), GUI exe for playtests, the clean-folder test run once mid-wave. | the export/worktree/error-193 detour at delivery |
+| 11 | **Resilience:** board status + handoff files make every agent resumable. Network drops get a standard resume message; the semantic layer tells a real hang (STALL, no TICK) from long thinking. | outages and false "silent" stops |
+| 12 | **One owner gate only:** the typeface specimen, delivered in the first hours; every other decision is defaulted in section 1. | waiting on decisions mid-wave |
+| 13 | **Soak lanes start early:** AI6 starts soaking Valley on day one (it doesn't need air/naval), so the longest-running checks overlap everything else. | soaks (10-25 min each) as the tail |
+
 ## 1. Decisions (recommended default first; change any before approval)
 
 | ID | Question | Default | Alternative |
@@ -449,8 +468,8 @@ ORCH registers every cap (`fact budget.cap`) and runs `guard.mjs` under a Monito
 
 | Slot use | Agents |
 |---|---|
-| **Start (8 live)** | CORE10K, AIRSYS, NAVAL, UNITS5, SUPPORT, UI5, FONT, ART-U5 |
-| **Queue, starting the moment a slot frees** | ART-BLD → ART-AIR → VIEW5 → ART-NAV → AI6 → PT5 → ED5 |
+| **Start (8 live)** | CORE10K, AIRSYS, NAVAL, UNITS5, SUPPORT, UI5a, AI6 (Valley fix + soaks first), FONT |
+| **Queue, starting the moment a slot frees** | ART-U5 → ART-BLD → UI5b → VIEW5 → ART-AIR → AI6-AN → ART-NAV → PT5 → ED5 (FONT is short, so its slot frees first) |
 | **Successors** | take queue priority (a stopped agent's work resumes before new work starts) |
 | **Final gate** | ORCH, with every agent stopped |
 
@@ -486,7 +505,7 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
   - 10k fight avg ≤ 62.5 ms/tick in its own run (CPU load noted);
   - test_hot_state + test_perf green;
   - full suite green.
-- **Budget:** 700k / 170.
+- **Budget:** 900k / 220.
 - **Never:** change a gameplay result without a flag that defaults off.
 
 ---
@@ -514,7 +533,7 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
   8. Save/load mid-flight and mid-holding.
 - **Publishes:** `air.api_ready` (commands: `build_hangar`, `upgrade_hangar`, `upgrade_airfield_strip`, `sortie`, `rebase`, `land_at`, `assign_engineers`), `air.gating_ready`.
 - **Done-when:** the 3 test files green (sortie cycle, holding, craters + repair, gating, VTOL cargo, air-vs-air, save mid-flight) and the full suite green.
-- **Budget:** 700k / 170.
+- **Budget:** 900k / 220.
 - **Never:** touch `movement.gd`; ground units keep their nav. Aircraft use their own flight model in `air.gd`.
 
 ---
@@ -594,35 +613,40 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
 - **Never:** edit `supply.gd` or `damage.gd` (CRs to CORE10K).
 
 ---
-#### UI5: interface facelift and every new panel
-- **Role:** a new UI kit, layouts that fit at every size, and every new command panel and setting.
+#### UI5a: UI kit, screen fit, layouts
+- **Role:** the new look and the "everything fits" guarantee.
 - **Owns:**
-  - `presentation/hud/**`, `presentation/menu/**`, `presentation/match_view.gd`, `presentation/view/g4b_*.gd`;
-  - `presentation/ui5/**` (new panel kit, airfield/hangar panel, drone picker, truck and medic Auto panels, control-group bar, idle button, F1 sheet, settings menu with key rebinding);
+  - `presentation/ui5/kit/**` (theme, panel kit, faction accents, tooltips);
+  - `presentation/hud/hud.gd`, `hud_theme.gd`, `scaled_layer.gd`, `minimap.gd`, `objectives.gd`;
+  - `presentation/menu/**` except `settings.gd`;
+  - `presentation/match_view.gd`;
   - `tools/ui_fit_test.gd`.
-- **Inputs:** plan §7; FONT's TTF when ready (use a placeholder until then); every `*.api_ready` command list; THREAD's rule to read only the render snapshot while `sim_busy()`.
+- **Inputs:** plan §7; FONT's TTF when ready (placeholder until then); THREAD's rule (read only the render snapshot while `sim_busy()`).
 - **Tasks:**
-  1. **Fit test first:** `tools/ui_fit_test.gd` opens every screen and panel at the 7 resolutions; it fails on any rect outside the viewport or overlapping. Run it on today's UI to list every current clip.
-  2. Panel kit and theme: a military style, faction accents, hover/selected/disabled states, tooltips with hotkey + cost.
-  3. Re-layout the HUD, menus, setup, pause and objectives with anchors/containers, plus a UI Scale setting (75–150%).
-  4. New panels:
-     - airfield (strips, hangars, occupants, upgrades, engineers, Buy hangar, "No free hangar" state);
-     - aircraft commands (sortie, rebase, land);
-     - VTOL cargo;
-     - drone picker with the ● counter;
-     - tactical-mode buttons;
-     - truck Auto (station/roam drag);
-     - medic Auto;
-     - naval commands.
-  5. Control-group bar, idle-units button, double-click select-type, F1 hotkey sheet, settings menu (graphics, speed, edge-pan, health bars, key rebinding).
-  6. Swap in FONT's typeface everywhere once the owner approves the specimen.
-- **Publishes:** `ui5.kit_ready` (ED5 and PT5 build on it), `ui5.fit_green`.
-- **Done-when:**
-  - the fit test shows 0 clipped/overlapping controls at all 7 resolutions (screenshot sheets saved);
-  - the 6 existing playtests still pass;
-  - full suite green.
+  1. **Fit test first:** it opens every screen and panel at the 7 resolutions and fails on any rect outside the viewport or overlapping another. Run it on today's UI to list every current clip.
+  2. Panel kit and theme: military style, faction accents, hover/selected/disabled states, tooltips with hotkey + cost. Post `fact ui5.kit_ready` early.
+  3. Re-layout the HUD, top bar, minimap frame, menus, skirmish setup, pause and objectives with anchors/containers; add UI Scale (75-150%).
+  4. Control-group bar, idle-units button, double-click select-type.
+  5. Swap in FONT's typeface everywhere after the owner approves it.
+- **Done-when:** the fit test shows 0 clipped/overlapping controls at all 7 resolutions (screenshot sheets saved); the 6 existing playtests pass; full suite green.
+- **Budget:** 900k / 220.
+- **Never:** read `w.entities` during a step; edit UI5b/ED5/PT5 files.
+
+#### UI5b: new command panels and settings
+- **Role:** every new control the player uses.
+- **Owns:**
+  - `presentation/ui5/panels/**`: airfield/hangar panel (strips, hangars, occupants, upgrades, engineers, Buy hangar, "No free hangar"), aircraft commands (sortie, rebase, land here, take off), VTOL cargo, drone picker with the ● counter, tactical-mode buttons, truck Auto (station/roam drag), medic Auto, naval commands, engineer assign cursor;
+  - `presentation/hud/g2_commands.gd`, `g4b_commands.gd`, `g3_faction.gd`, `g2_inspector.gd`, `presentation/view/g4b_input.gd`, `g4b_overlay.gd`;
+  - `presentation/menu/settings.gd` (graphics, speed, edge-pan, health bars, **key rebinding**);
+  - the F1 hotkey sheet.
+- **Inputs:** `ui5.kit_ready`; every `*.api_ready` command list.
+- **Tasks:**
+  1. Build each panel on the kit. Every button calls only the posted commands.
+  2. Hotkey map with no collisions (checked by a test).
+  3. Settings menu with persistence.
+  4. Each panel passes UI5a's fit test.
+- **Done-when:** every new command reachable by button + hotkey; the fit test green including the new panels; full suite green.
 - **Budget:** 700k / 170.
-- **Never:** read `w.entities` during a step; edit the editor (ED5) or `ui_playtest.gd` (PT5).
 
 ---
 #### FONT: the game's own typeface
@@ -710,24 +734,34 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
 - **Never:** read the live world while `sim_busy()`.
 
 ---
-#### AI6: the AI for all of it, plus the Valley fix
-- **Owns:** `sim/ai/**`, `tools/soak.gd`, `tests/test_ai.gd`.
-- **Inputs:** `air.api_ready`, `naval.api_ready`, `units5.api_ready`, `support.api_ready`, `medical.api_ready`; AI5-4's work-in-progress patch in `build/_ai5-4_wip/`; `.plan/handoff/AI5-3.json` and `AI5-4.json`.
+#### AI6: Valley fix, ground units, support use, soaks
+- **Owns:** `sim/ai/**` except `ai_air.gd` and `ai_naval.gd`; `tools/soak.gd`, `tests/test_ai.gd`, `sim/ai/tools/ai_bench.gd`.
+- **Inputs:** AI5-4's work-in-progress patch in `build/_ai5-4_wip/`, `.plan/handoff/AI5-3.json` and `AI5-4.json`; `units5.api_ready`, `support.api_ready`, `medical.api_ready`.
 - **Tasks:**
-  1. **Valley fix first:** the bank uses the launch army plus a late-game bank drop, with no retarget penalty. Valley s1/s2 must end with winners.
-  2. Air: pick an airfield site, buy then upgrade hangars, assign engineers, AA cover, air assaults with gunship/VTOL, jet strikes on clusters/artillery, bombing enemy airfields, AA on contact.
-  3. Naval: a shipyard on water maps, contest the water, bombardment, amphibious landings when the land route is blocked or long.
-  4. New units: Drone Team usage by type, tactical breaching, medics/ambulances on Auto with hospitals, a logistics truck on Auto behind every army.
-  5. Soaks: 4 maps × 2 seeds + 1 editor map, run at most 3 at a time; log lines for sorties, landings, resupply and evac.
+  1. **Day one, Valley fix:** the bank uses the launch army plus a late-game bank drop, with no retarget penalty. Start the Valley s1/s2 soaks immediately (the long-running checks overlap everything else).
+  2. Drone Team usage by type, tactical breaching, new ground units in production plans.
+  3. Medics/ambulances on Auto with hospitals; a logistics truck on Auto behind every army.
+  4. Call into AI6-AN's `AiAir.manage(ctx)` / `AiNaval.manage(ctx)` hooks (stubs from the ORCH scaffold).
+  5. Soak lane (max 3 at once): 4 maps × 2 seeds + 1 editor map, with usage log lines.
   6. ai_bench < 2 ms per side at 5k units.
 - **Done-when:** every soak ends with a winner with 0 invariant failures and the usage logs present; test_ai green; full suite green.
-- **Budget:** 700k / 170, with successors expected.
+- **Budget:** 900k / 220, with successors if needed.
 - **Never:** change soak criteria or max_ticks.
+
+#### AI6-AN: air and naval AI
+- **Owns:** `sim/ai/ai_air.gd`, `sim/ai/ai_naval.gd`, `tests/test_ai_air_naval.gd`.
+- **Inputs:** `air.api_ready`, `naval.api_ready`, `map.coastal_front_ready`.
+- **Tasks:**
+  1. **Air:** pick an airfield site, buy then upgrade hangars, assign engineers, AA cover, air assaults (gunship/VTOL lands troops + vehicles behind lines), helicopters landing in the field, jet strikes on clusters/artillery, bombing enemy airfields, AA on contact.
+  2. **Naval:** a shipyard on water maps, contest the water, bombardment, amphibious landings when the land route is blocked or long.
+  3. Hand soak requests to AI6's soak lane via the board.
+- **Done-when:** test_ai_air_naval green; AI6's soaks show sorties on every map and at least 1 amphibious landing on Coastal Front; think time stays under budget.
+- **Budget:** 900k / 220.
 
 ---
 #### PT5: playtests for every new flow
 - **Owns:** `tools/ui_playtest.gd`, `tools/editor_playtest.gd`, `.plan/shots/PT5/**`.
-- **Inputs:** `ui5.kit_ready` plus every `api_ready`.
+- **Inputs:** `ui5.kit_ready`, UI5b panels, every `api_ready`.
 - **Tasks:** add synthetic-input flows (screenshots at each step) for:
   - **air:** place airfield → buy hangar → assign engineers → build a jet → takeoff → sortie → land; VTOL loads 2 vehicles + 8 → flies → unloads; a helicopter lands on open ground outside the base → takes off → is serviced at a helipad with engineers assigned;
   - **naval:** shipyard → landing craft → load → beach landing;
@@ -759,8 +793,17 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
 
 ---
 #### ORCH (me): contracts, verification, commits, final gate
-- Writes `CONTRACTS_G5.md` + scaffold + every brief before any agent starts.
+- **Before any agent starts** (about 1–2 h):
+  - `CONTRACTS_G5.md`: IDs, ownership, API signatures, `api_ready` facts;
+  - the compiling scaffold: empty systems in SYSTEM_ORDER, empty content fragments, stub panels, `AiAir`/`AiNaval` hooks, the hot-state block marker in `world.gd`;
+  - **failing acceptance-test skeletons** for every agent's Done-when;
+  - **placeholder art** (a coloured silhouette per new ID);
+  - all 18 briefs;
+  - the commit-check script.
 - Registers every budget cap and runs the budget guard + board monitors all wave.
+- **Integration heartbeat every ~3 h:** full suite + 6 playtests on the committed head; any break is routed to its owner at once.
+- **Packaging rehearsal mid-wave:** export + a clean-folder run of the existing playtests, so delivery day has no surprises.
+- Starts the next queued agent the moment a slot frees (up to 8 live); successors take queue priority.
 - Runs the semantic layer: `busd.py` on the subagent transcripts plus the wide bus Monitor; answers BLOCKs and routes FOUNDs between agents.
 - Audits each completion; verifies tests and evidence; commits each agent's files by path.
 - Handles every change request in files it owns (`world.gd` outside the hot block, `content.gd`, base `rules.json`, the map list).
