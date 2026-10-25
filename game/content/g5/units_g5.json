@@ -1,3 +1,948 @@
 {
-  "_meta": "G5 units_g5 fragment (owner: UNITS5). CONTRACTS_G5 section 3 fixes the ids. PROVISIONAL numbers."
+ "_meta": "G5 units_g5 fragment (owner: UNITS5). CONTRACTS_G5 sections 3.1 and 9 fix the ids. PROVISIONAL balance numbers. squad_size n = one entity whose hp is n x member hp; launched drones (launched_drone) have no production entry and are spawned by G5Mech (launch_drone).",
+ "units": {
+  "a_medic_team": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Medic Team",
+   "role": "medic",
+   "faction": "human_a",
+   "hp": 160,
+   "speed": 2.3,
+   "sight": 8,
+   "weapon": "pistol",
+   "pop": 2,
+   "ammo_max": 30,
+   "squad_size": 2,
+   "heal_aura": {
+    "radius": 4.0,
+    "hp_per_sec": 6.0,
+    "morale_per_sec": 2.0,
+    "armor": "infantry"
+   },
+   "wounded_slots": 2,
+   "med_unit": true
+  },
+  "a_hmg_team": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "HMG Team",
+   "role": "hmg",
+   "faction": "human_a",
+   "hp": 255,
+   "speed": 1.9,
+   "sight": 9,
+   "weapon": "g5_hmg",
+   "pop": 3,
+   "ammo_max": 400,
+   "squad_size": 3,
+   "setup_ticks": 30
+  },
+  "a_spaag": {
+   "move_class": "vehicle",
+   "leaves_wreck": true,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "fuel_per_tile": 1.0,
+   "name": "Mobile AA (SPAAG)",
+   "role": "anti_air",
+   "faction": "human_a",
+   "armor": "light",
+   "hp": 380,
+   "speed": 3.0,
+   "sight": 12,
+   "weapon": "g5_spaag_gun",
+   "pop": 3,
+   "radius": 0.6,
+   "ammo_max": 400,
+   "fuel_max": 300,
+   "stage_min": 9
+  },
+  "a_recon_car": {
+   "move_class": "vehicle",
+   "leaves_wreck": true,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "fuel_per_tile": 1.0,
+   "name": "Armored Recon Car",
+   "role": "recon",
+   "faction": "human_a",
+   "armor": "light",
+   "hp": 300,
+   "speed": 4.6,
+   "sight": 13,
+   "weapon": "g5_recon_ac",
+   "pop": 2,
+   "radius": 0.6,
+   "ammo_max": 200,
+   "fuel_max": 280,
+   "detects_mines": true
+  },
+  "a_special_forces": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Special Forces",
+   "role": "special_forces",
+   "faction": "human_a",
+   "hp": 380,
+   "speed": 2.5,
+   "sight": 10,
+   "weapon": "g5_sf_rifle",
+   "pop": 4,
+   "ammo_max": 80,
+   "squad_size": 4,
+   "conceal_still": true,
+   "can_charge": true,
+   "airdrop_ok": true,
+   "stage_min": 9
+  },
+  "a_drone_team": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Drone Team",
+   "role": "drone_team",
+   "faction": "human_a",
+   "hp": 255,
+   "speed": 2.2,
+   "sight": 9,
+   "weapon": "g5_team_rifle",
+   "pop": 3,
+   "ammo_max": 60,
+   "squad_size": 3,
+   "drone_team": true,
+   "drone_charges": 4,
+   "drone_prefix": "a_drone_",
+   "stage_min": 8
+  },
+  "a_airfield_engineers": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Airfield Engineer Team",
+   "role": "airfield_engineer",
+   "faction": "human_a",
+   "hp": 280,
+   "speed": 2.3,
+   "sight": 7,
+   "weapon": "pistol",
+   "pop": 4,
+   "ammo_max": 30,
+   "squad_size": 4,
+   "can_repair": true,
+   "build_power": 1.2,
+   "airfield_engineer": true,
+   "stage_min": 8
+  },
+  "a_ambulance": {
+   "move_class": "vehicle",
+   "leaves_wreck": true,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "fuel_per_tile": 1.0,
+   "name": "Armored Ambulance",
+   "role": "ambulance",
+   "faction": "human_a",
+   "armor": "light",
+   "hp": 420,
+   "speed": 3.4,
+   "sight": 8,
+   "weapon": "",
+   "pop": 2,
+   "radius": 0.6,
+   "ammo_max": 0,
+   "fuel_max": 300,
+   "wounded_slots": 6,
+   "med_unit": true
+  },
+  "b_grenadiers": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Grenadier Squad",
+   "role": "grenadier",
+   "faction": "human_b",
+   "hp": 340,
+   "speed": 2.0,
+   "sight": 8,
+   "weapon": "g5_grenade",
+   "pop": 4,
+   "ammo_max": 40,
+   "squad_size": 4
+  },
+  "b_shock_troops": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Shock Troopers",
+   "role": "shock",
+   "faction": "human_b",
+   "hp": 400,
+   "speed": 2.4,
+   "sight": 7,
+   "weapon": "g5_shock_smg",
+   "pop": 4,
+   "ammo_max": 80,
+   "squad_size": 4,
+   "stage_min": 8
+  },
+  "b_at_rocket_team": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "AT Rocket Team",
+   "role": "antitank",
+   "faction": "human_b",
+   "hp": 240,
+   "speed": 2.0,
+   "sight": 8,
+   "weapon": "g5_at_rocket",
+   "pop": 3,
+   "ammo_max": 15,
+   "squad_size": 3
+  },
+  "b_armored_car": {
+   "move_class": "vehicle",
+   "leaves_wreck": true,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "fuel_per_tile": 1.0,
+   "name": "Armored Car",
+   "role": "raider",
+   "faction": "human_b",
+   "armor": "light",
+   "hp": 360,
+   "speed": 4.2,
+   "sight": 9,
+   "weapon": "g5_heavy_mg",
+   "pop": 2,
+   "radius": 0.6,
+   "ammo_max": 300,
+   "fuel_max": 300
+  },
+  "b_field_ambulance": {
+   "move_class": "vehicle",
+   "leaves_wreck": true,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "fuel_per_tile": 1.0,
+   "name": "Field Ambulance",
+   "role": "ambulance",
+   "faction": "human_b",
+   "armor": "light",
+   "hp": 340,
+   "speed": 3.2,
+   "sight": 8,
+   "weapon": "",
+   "pop": 2,
+   "radius": 0.6,
+   "ammo_max": 0,
+   "fuel_max": 300,
+   "wounded_slots": 4,
+   "med_unit": true,
+   "heal_aura": {
+    "radius": 3.5,
+    "hp_per_sec": 2.5,
+    "morale_per_sec": 1.0,
+    "armor": "infantry"
+   }
+  },
+  "b_drone_team": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Drone Team (Rigged FPV)",
+   "role": "drone_team",
+   "faction": "human_b",
+   "hp": 240,
+   "speed": 2.2,
+   "sight": 8,
+   "weapon": "old_rifle",
+   "pop": 3,
+   "ammo_max": 50,
+   "squad_size": 3,
+   "drone_team": true,
+   "drone_charges": 4,
+   "drone_prefix": "b_drone_",
+   "stage_min": 8
+  },
+  "b_airfield_engineers": {
+   "armor": "infantry",
+   "move_class": "foot",
+   "radius": 0.35,
+   "morale": 100,
+   "name": "Airfield Engineer Team",
+   "role": "airfield_engineer",
+   "faction": "human_b",
+   "hp": 280,
+   "speed": 2.2,
+   "sight": 7,
+   "weapon": "pistol",
+   "pop": 4,
+   "ammo_max": 30,
+   "squad_size": 4,
+   "can_repair": true,
+   "build_power": 1.1,
+   "airfield_engineer": true,
+   "stage_min": 8
+  },
+  "m_maint_swarm": {
+   "name": "Maintenance Drone Swarm",
+   "role": "builder",
+   "faction": "machine",
+   "armor": "light",
+   "move_class": "foot",
+   "radius": 0.45,
+   "energy": true,
+   "hp": 160,
+   "speed": 3.0,
+   "sight": 8,
+   "weapon": "",
+   "pop": 2,
+   "can_build": true,
+   "can_repair": true,
+   "build_power": 1.4,
+   "airfield_engineer": true,
+   "fuel_max": 220,
+   "fuel_per_tile": 0.5,
+   "ammo_max": 0,
+   "heal_aura": {
+    "radius": 3.0,
+    "hp_per_sec": 4.0,
+    "morale_per_sec": 0.0,
+    "energy": true
+   }
+  },
+  "a_drone_strike": {
+   "name": "Drone Strike",
+   "role": "drone",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "strike",
+   "hp": 40,
+   "speed": 9.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "g5_drone_strike",
+   "spread": 0.0
+  },
+  "a_drone_frag": {
+   "name": "Drone Frag",
+   "role": "drone",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "frag",
+   "hp": 40,
+   "speed": 8.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "g5_drone_frag",
+   "spread": 0.0
+  },
+  "a_drone_recon": {
+   "name": "Drone Recon",
+   "role": "drone",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "recon",
+   "hp": 50,
+   "speed": 7.0,
+   "sight": 12,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 400,
+   "payload": "",
+   "spread": 0.0,
+   "mark_ticks": 300,
+   "mark_radius": 8.0
+  },
+  "a_drone_emp": {
+   "name": "Drone Emp",
+   "role": "drone",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "emp",
+   "hp": 40,
+   "speed": 8.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "",
+   "spread": 0.0,
+   "emp_ticks": 120,
+   "emp_radius": 3.0
+  },
+  "b_drone_strike": {
+   "name": "Rigged FPV Strike",
+   "role": "drone",
+   "faction": "human_b",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "strike",
+   "hp": 32,
+   "speed": 9.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "g5_fpv_strike",
+   "spread": 1.2
+  },
+  "b_drone_frag": {
+   "name": "Rigged FPV Frag",
+   "role": "drone",
+   "faction": "human_b",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "frag",
+   "hp": 32,
+   "speed": 8.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "g5_drone_frag",
+   "spread": 1.2
+  },
+  "b_drone_recon": {
+   "name": "Rigged FPV Recon",
+   "role": "drone",
+   "faction": "human_b",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "recon",
+   "hp": 40,
+   "speed": 7.0,
+   "sight": 12,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 400,
+   "payload": "",
+   "spread": 0.0,
+   "mark_ticks": 300,
+   "mark_radius": 8.0
+  },
+  "b_drone_emp": {
+   "name": "Rigged FPV Emp",
+   "role": "drone",
+   "faction": "human_b",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "launched_drone": true,
+   "drone": "emp",
+   "hp": 32,
+   "speed": 8.0,
+   "sight": 6,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.2,
+   "drone_life": 240,
+   "payload": "",
+   "spread": 1.2,
+   "emp_ticks": 120,
+   "emp_radius": 3.0
+  }
+ },
+ "weapons": {
+  "g5_hmg": {
+   "class": "small_arms",
+   "damage": 12,
+   "range": 10,
+   "cooldown": 0.3,
+   "accuracy": 0.6,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "g5_spaag_gun": {
+   "class": "autocannon",
+   "damage": 20,
+   "range": 10,
+   "cooldown": 0.25,
+   "accuracy": 0.8,
+   "anti_air": true,
+   "anti_air_low": true,
+   "anti_air_high": true,
+   "anti_drone": true
+  },
+  "g5_recon_ac": {
+   "class": "autocannon",
+   "damage": 12,
+   "range": 7,
+   "cooldown": 0.5,
+   "accuracy": 0.7,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "g5_sf_rifle": {
+   "class": "small_arms",
+   "damage": 14,
+   "range": 8,
+   "cooldown": 0.45,
+   "accuracy": 0.8,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "g5_team_rifle": {
+   "class": "small_arms",
+   "damage": 10,
+   "range": 7,
+   "cooldown": 0.5,
+   "accuracy": 0.7,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "g5_grenade": {
+   "class": "grenade",
+   "damage": 30,
+   "range": 6,
+   "cooldown": 2.0,
+   "accuracy": 0.8,
+   "indirect": true,
+   "splash": 1.2
+  },
+  "g5_shock_smg": {
+   "class": "assault",
+   "damage": 14,
+   "range": 4,
+   "cooldown": 0.35,
+   "accuracy": 0.75
+  },
+  "g5_at_rocket": {
+   "class": "at",
+   "damage": 60,
+   "range": 7,
+   "cooldown": 3.0,
+   "accuracy": 0.7
+  },
+  "g5_heavy_mg": {
+   "class": "small_arms",
+   "damage": 13,
+   "range": 8,
+   "cooldown": 0.3,
+   "accuracy": 0.65,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "g5_drone_strike": {
+   "class": "top_attack",
+   "damage": 260,
+   "splash": 0.6
+  },
+  "g5_fpv_strike": {
+   "class": "top_attack",
+   "damage": 220,
+   "splash": 0.8
+  },
+  "g5_drone_frag": {
+   "class": "frag",
+   "damage": 70,
+   "splash": 2.0
+  },
+  "g5_team_at": {
+   "class": "at",
+   "damage": 110,
+   "range": 4
+  },
+  "g5_takedown": {
+   "class": "melee",
+   "damage": 400
+  },
+  "g5_breach": {
+   "class": "demolition",
+   "damage": 700
+  },
+  "g5_burst": {
+   "class": "small_arms",
+   "damage": 70,
+   "splash": 1.5
+  }
+ },
+ "armor_mult": {
+  "grenade": {
+   "infantry": 1.1,
+   "light": 0.4,
+   "heavy": 0.08,
+   "building": 0.9,
+   "fortification": 1.8
+  },
+  "assault": {
+   "infantry": 1.2,
+   "light": 0.3,
+   "heavy": 0.05,
+   "building": 0.8,
+   "fortification": 2.2
+  },
+  "top_attack": {
+   "infantry": 0.4,
+   "light": 1.3,
+   "heavy": 1.6,
+   "building": 0.6,
+   "fortification": 0.3
+  },
+  "frag": {
+   "infantry": 1.2,
+   "light": 0.3,
+   "heavy": 0.05,
+   "building": 0.2,
+   "fortification": 0.05
+  },
+  "melee": {
+   "infantry": 1.0,
+   "light": 0.0,
+   "heavy": 0.0,
+   "building": 0.0,
+   "fortification": 0.0
+  }
+ },
+ "production": {
+  "a_medic_team": {
+   "name": "Medic Team (2)",
+   "spawns": [
+    "a_medic_team"
+   ],
+   "facility": "barracks",
+   "cost": {
+    "credits": 180,
+    "salvage": 40,
+    "ore": 0
+   },
+   "train_time": 12,
+   "hotkey": "V",
+   "faction": "human_a"
+  },
+  "a_hmg_team": {
+   "name": "HMG Team (3)",
+   "spawns": [
+    "a_hmg_team"
+   ],
+   "facility": "barracks",
+   "cost": {
+    "credits": 220,
+    "salvage": 80,
+    "ore": 0
+   },
+   "train_time": 16,
+   "hotkey": "H",
+   "faction": "human_a"
+  },
+  "a_spaag": {
+   "name": "Mobile AA (SPAAG)",
+   "spawns": [
+    "a_spaag"
+   ],
+   "facility": "motor_pool",
+   "cost": {
+    "credits": 380,
+    "salvage": 160,
+    "ore": 120
+   },
+   "train_time": 26,
+   "hotkey": "A",
+   "faction": "human_a",
+   "stage_min": 9
+  },
+  "a_recon_car": {
+   "name": "Armored Recon Car",
+   "spawns": [
+    "a_recon_car"
+   ],
+   "facility": "motor_pool",
+   "cost": {
+    "credits": 260,
+    "salvage": 110,
+    "ore": 40
+   },
+   "train_time": 18,
+   "hotkey": "C",
+   "faction": "human_a"
+  },
+  "a_special_forces": {
+   "name": "Special Forces (4)",
+   "spawns": [
+    "a_special_forces"
+   ],
+   "facility": "barracks",
+   "cost": {
+    "credits": 400,
+    "salvage": 120,
+    "ore": 0
+   },
+   "train_time": 24,
+   "hotkey": "F",
+   "faction": "human_a",
+   "stage_min": 9
+  },
+  "a_drone_team": {
+   "name": "Drone Team (3)",
+   "spawns": [
+    "a_drone_team"
+   ],
+   "facility": "barracks",
+   "cost": {
+    "credits": 320,
+    "salvage": 140,
+    "ore": 40
+   },
+   "train_time": 20,
+   "hotkey": "D",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_airfield_engineers": {
+   "name": "Airfield Engineer Team (4)",
+   "spawns": [
+    "a_airfield_engineers"
+   ],
+   "facility": "barracks",
+   "cost": {
+    "credits": 200,
+    "salvage": 60,
+    "ore": 0
+   },
+   "train_time": 14,
+   "hotkey": "W",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_ambulance": {
+   "name": "Armored Ambulance",
+   "spawns": [
+    "a_ambulance"
+   ],
+   "facility": "motor_pool",
+   "cost": {
+    "credits": 240,
+    "salvage": 90,
+    "ore": 30
+   },
+   "train_time": 18,
+   "hotkey": "B",
+   "faction": "human_a"
+  },
+  "b_grenadiers": {
+   "name": "Grenadier Squad (4)",
+   "spawns": [
+    "b_grenadiers"
+   ],
+   "facility": "b_barracks",
+   "cost": {
+    "credits": 190,
+    "salvage": 90,
+    "ore": 0
+   },
+   "train_time": 15,
+   "hotkey": "G",
+   "faction": "human_b"
+  },
+  "b_shock_troops": {
+   "name": "Shock Troopers (4)",
+   "spawns": [
+    "b_shock_troops"
+   ],
+   "facility": "b_barracks",
+   "cost": {
+    "credits": 230,
+    "salvage": 100,
+    "ore": 0
+   },
+   "train_time": 16,
+   "hotkey": "S",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "b_at_rocket_team": {
+   "name": "AT Rocket Team (3)",
+   "spawns": [
+    "b_at_rocket_team"
+   ],
+   "facility": "b_barracks",
+   "cost": {
+    "credits": 170,
+    "salvage": 80,
+    "ore": 0
+   },
+   "train_time": 14,
+   "hotkey": "K",
+   "faction": "human_b"
+  },
+  "b_armored_car": {
+   "name": "Armored Car",
+   "spawns": [
+    "b_armored_car"
+   ],
+   "facility": "b_heavy_plant",
+   "cost": {
+    "credits": 240,
+    "salvage": 120,
+    "ore": 40
+   },
+   "train_time": 18,
+   "hotkey": "C",
+   "faction": "human_b"
+  },
+  "b_field_ambulance": {
+   "name": "Field Ambulance",
+   "spawns": [
+    "b_field_ambulance"
+   ],
+   "facility": "b_heavy_plant",
+   "cost": {
+    "credits": 200,
+    "salvage": 80,
+    "ore": 20
+   },
+   "train_time": 16,
+   "hotkey": "B",
+   "faction": "human_b"
+  },
+  "b_drone_team": {
+   "name": "Drone Team (Rigged FPV) (3)",
+   "spawns": [
+    "b_drone_team"
+   ],
+   "facility": "b_barracks",
+   "cost": {
+    "credits": 240,
+    "salvage": 100,
+    "ore": 20
+   },
+   "train_time": 18,
+   "hotkey": "D",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "b_airfield_engineers": {
+   "name": "Airfield Engineer Team (4)",
+   "spawns": [
+    "b_airfield_engineers"
+   ],
+   "facility": "b_barracks",
+   "cost": {
+    "credits": 180,
+    "salvage": 60,
+    "ore": 0
+   },
+   "train_time": 14,
+   "hotkey": "W",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "m_maint_swarm": {
+   "name": "Maintenance Drone Swarm",
+   "spawns": [
+    "m_maint_swarm"
+   ],
+   "facility": "m_assembler",
+   "cost": {
+    "credits": 160,
+    "salvage": 60,
+    "ore": 0
+   },
+   "train_time": 12,
+   "hotkey": "W",
+   "faction": "machine"
+  }
+ },
+ "faction_roles": {
+  "human_a": {
+   "medic": "a_medic_team",
+   "hmg": "a_hmg_team",
+   "spaag": "a_spaag",
+   "recon_car": "a_recon_car",
+   "special_forces": "a_special_forces",
+   "drone_team": "a_drone_team",
+   "airfield_engineer": "a_airfield_engineers",
+   "ambulance": "a_ambulance",
+   "grenadier": "",
+   "shock": "",
+   "rocket_team": "",
+   "raider": ""
+  },
+  "human_b": {
+   "medic": "",
+   "hmg": "",
+   "spaag": "",
+   "recon_car": "",
+   "special_forces": "",
+   "drone_team": "b_drone_team",
+   "airfield_engineer": "b_airfield_engineers",
+   "ambulance": "b_field_ambulance",
+   "grenadier": "b_grenadiers",
+   "shock": "b_shock_troops",
+   "rocket_team": "b_at_rocket_team",
+   "raider": "b_armored_car"
+  },
+  "machine": {
+   "medic": "",
+   "hmg": "",
+   "spaag": "",
+   "recon_car": "",
+   "special_forces": "",
+   "drone_team": "",
+   "airfield_engineer": "m_maint_swarm",
+   "ambulance": "",
+   "grenadier": "",
+   "shock": "",
+   "rocket_team": "",
+   "raider": ""
+  }
+ }
 }

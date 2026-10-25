@@ -1,0 +1,50 @@
+{
+  "agent": "UNITS5",
+  "gen": 1,
+  "reason": "budget.handoff_now (guard: 496k / 700k at 84 calls)",
+  "done": [
+    "content/g5/units_g5.json: all 16 human units + m_maint_swarm (squad_size, stats, weapons, armor_mult rows grenade/assault/top_attack/frag/melee, production at barracks/motor_pool/b_barracks/b_heavy_plant/m_assembler, stage gates, faction_roles) + 8 launched-drone defs a_/b_drone_{strike,frag,recon,emp}. Generator: scratchpad units5/gen_units.py (session scratchpad; the JSON is the source of truth now)",
+    "sim/systems/g5_mech.gd: squads (squad_alive from hp, slower fire when under strength), Drone Team (launch_drone, 4 charges, drone flight in w.sys_state.g5mech.drones, strike/frag impact, Human B spread from w.rng, recon loiter+mark, EMP disable + downs enemy drones, EW jam crash, AA shoot-down via normal combat), tactical mode at 0 charges (infiltrate/takedown/breach/stack_up+first-strike/armored_attack), restock near a Supply source after 60 ticks or restock_drones(), heal aura (medic, field ambulance, maint swarm), wounded_slots getter",
+    "sim/systems/g4b_mech.gd: burnt-out cells set in w.map.burnt (PackedByteArray, created at first burn-out so G4 hashes are unchanged), G4bMech.is_burnt(w, cell)",
+    "HMG deploy/pack and Special Forces conceal + charges reuse G4bMech (setup_ticks / conceal_still / can_charge def flags)",
+    "tests/test_drone_team.gd 8/8 and tests/test_units_g5.gd 8/8 green with --only; tests/test_units_g4b.gd 10/10 green (before the perf rewrite)",
+    "fact units5.api_ready posted twice (stub, then complete)",
+    "PERF fix (ORCH directive): bench .plan/shots/UNITS5/bench.gd (5012 units on 96x96, 50% G5 squads, 17% aura units: much denser than real games). G5Mech.tick avg BEFORE 654.4 ms (worst 2946 ms) -> AFTER 3.57 ms avg (non-pulse ticks 2.43 ms, aura-pulse tick every 20 ticks 25.2 ms, worst 38.9 ms), CPU load 100% shared with other agents both times. Causes fixed: heal aura scanned every unit per aura unit; squad fire-rate scan over all events; per-tick Supply._sources; full-unit scans in impact/mark/emp/burst (now G4bMech.near_units)."
+  ],
+  "remaining": [
+    "1. Run the FULL suite once inside hb.sh: bash .plan/hb.sh UNITS5-2 <calls> <tok> 'full suite' -- bash tests/run.sh . (A full run was started before the perf rewrite and had not finished at handoff; its result does not cover the current code.) Quote any failure in another agent's in-progress file; keep test_drone_team / test_units_g5 / test_units_g4b green.",
+    "2. Re-run --only=test_units_g4b after the perf rewrite (g4b_mech.gd itself did not change after its last green run, but confirm).",
+    "3. Optional perf: the aura pulse tick (tick % 20 == 7) still scans all units once to build its heal-candidate grid (25 ms in the dense bench). If ORCH wants the spike lower, split auras into 4 id groups on 4 phase ticks, or ask CORE10K for an infantry/energy unit subset. Non-pulse ticks are ~2.4 ms in the dense bench under 100% CPU; re-measure on a quiet PC.",
+    "4. Post bus FOUND with before/after ms (numbers above) if ORCH has not relayed them; post done + DONE line after the full suite."
+  ],
+  "files_touched": [
+    "content/g5/units_g5.json",
+    "sim/systems/g5_mech.gd",
+    "sim/systems/g4b_mech.gd",
+    "tests/test_drone_team.gd (git mv from tests/pending_g5/)",
+    "tests/test_units_g5.gd (git mv from tests/pending_g5/)",
+    ".plan/shots/UNITS5/probe.gd, .plan/shots/UNITS5/bench.gd (debug/bench probes, not tests)"
+  ],
+  "test_state": {
+    "test_drone_team": "RESULT pass=8 fail=0 / TESTS OK (after cadence rewrite)",
+    "test_units_g5": "RESULT pass=8 fail=0 / TESTS OK (after cadence rewrite)",
+    "test_units_g4b": "RESULT pass=10 fail=0 / TESTS OK (before perf rewrite; g4b_mech.gd unchanged since)",
+    "full_suite": "NOT VERIFIED on current code"
+  },
+  "open_change_requests": [
+    "CORE10K (board need change_request.fog.marked): Fog.entity_visible true for e.marked_until > tick and e.marked_team == viewer team; plus note that G5Mech writes e.pos (drones), e.hp (aura), e.cd_ticks/e.cooldown (squad stretch, EMP hold) directly - route via HotState.set_* once it owns them",
+    "SUPPORT (change_request.units5.hooks): Medical capacity via G5Mech.wounded_slots(e); Support drone threshold via G5Mech.mode(e)=='tactical' and restock via G5Mech.restock_drones(w,e); launched drones never wounded",
+    "AIRSYS (change_request.units5.drones): Air.tick skip launched_drone units; Air.can_target lets anti_air_low/anti_drone hit them; a_special_forces airdrop_ok",
+    "VIEW5 (change_request.burnt.snapshot): expose w.map.burnt in render_snap; entity_layer can drop its presentation-only burnt set",
+    "AI6 (answer units5.ai): API summary"
+  ],
+  "gotchas": [
+    "Launched drones are kind 'unit' with def launched_drone:true; G5Mech writes their pos each tick and e.moving must stay FALSE, or Movement paths them and save/load diverges (path_req/stuck appear only in the loaded world).",
+    "launch_drone range is 20 tiles (LAUNCH_RANGE); enemy target_id must be visible to the issuer; otherwise use cell.",
+    "Squads update on a 4-tick cadence bucketed by id % 4 (SQUAD_EVERY); SquadLoss can lag up to 3 ticks. Fire-rate stretch adds full_cd x (size/alive - 1) to the cooldown of a shot detected since the last check (e.sq_cd).",
+    "Running tactical orders live in w.cache g5_sub.act (rebuilt from entity fields tact/infil_until/stacked after load); tactical apply registers there.",
+    "w.sys_state.g5mech and w.map.burnt are created lazily, so G4 states/hashes are untouched until a drone launches / a fire burns out.",
+    "This tool's bash heredocs sometimes fail with 'unexpected EOF' for cat <<EOF; python - <<'EOF' and Write-tool temp files work.",
+    "tests/run.sh --only takes ONE file name (no comma lists)."
+  ]
+}

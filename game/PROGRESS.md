@@ -87,6 +87,7 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
    - A med team or med vehicle placed in an active area with wounded troops picks the wounded up with its team.
    - It evacuates them back to base, to a "Hospital" or a "Field Hospital", both new buildings for the human faction(s).
 11. **Helicopters land anywhere open** (outside a base or wherever needed), not only on helipads. Helipads are restock/repair points, auto-serviced by Airfield Engineers (owner note, 2026-10-24).
+14. **Typeface approved** (owner, 2026-10-24): "RTS Mil" approved in totality; apply it everywhere.
 13. **Landing anywhere big enough** (owner note, 2026-10-24): VTOLs, gunships and helicopters land on any open area big enough for them, or at their pads/hangars (CONTRACTS_G5 §7).
 12. **Up to 8 subagents at once** for this build (owner override of the default 6). Every agent gets its own role/task/operating guide (owner note, 2026-10-24).
 

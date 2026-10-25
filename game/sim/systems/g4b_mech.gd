@@ -27,6 +27,7 @@ extends RefCounted
 ##   DIRT: event TerrainChanged{cells, cause:"fire"} + Movement.on_terrain_changed (renderer rebakes).
 ## Events: MineLaid, MineDetected, MineTriggered, ChargePlanted, ChargeDetonated, FireStarted,
 ##   FireSpread, FireOut, TerrainChanged, Deployed, Packed.
+##   G5 (UNITS5): every burnt-out cell is also set in w.map.burnt (saved, hashed; see _burnt_layer).
 ## Determinism: ascending ids / cell order, w.rng only, integer tick state. Caches never saved.
 
 const Movement = preload("res://sim/systems/movement.gd")
@@ -530,6 +531,28 @@ static func is_burning(w: SimWorld, cell: Vector2i) -> bool:
 	return fs != null and w.in_bounds(cell) and (fs.fires as Dictionary).has(cell.y * int(w.map.w) + cell.x)
 
 
+## G5 (UNITS5, CONTRACTS_G5 section 9): w.map.burnt is a PackedByteArray (w x h, 1 = burnt-out
+## forest), created at the first burn-out so maps without fire keep their G4 state hash. It is part of
+## w.map, so it is saved, loaded and hashed with the map; the render snapshot reads it.
+static func _burnt_layer(w: SimWorld) -> PackedByteArray:
+	var n := int(w.map.w) * int(w.map.h)
+	var b = w.map.get("burnt")
+	if b == null or typeof(b) != TYPE_PACKED_BYTE_ARRAY or (b as PackedByteArray).size() != n:
+		var nb := PackedByteArray()
+		nb.resize(n)
+		nb.fill(0)
+		return nb
+	return b
+
+
+static func is_burnt(w: SimWorld, cell: Vector2i) -> bool:
+	var b = w.map.get("burnt")
+	if b == null or not w.in_bounds(cell):
+		return false
+	var k := cell.y * int(w.map.w) + cell.x
+	return k < (b as PackedByteArray).size() and int(b[k]) != 0
+
+
 static func _cell_of_index(k: int, mw: int) -> Vector2i:
 	return Vector2i(k % mw, floori(float(k) / float(mw)))
 
@@ -568,14 +591,17 @@ static func _fire_step(w: SimWorld, fs: Dictionary) -> void:
 	if out.is_empty():
 		return
 	var t: PackedByteArray = w.map.terrain
+	var burnt := _burnt_layer(w)
 	var cells := []
 	for k in out:
 		fires.erase(k)
 		t[k] = DIRT
+		burnt[k] = 1
 		var c := _cell_of_index(k, mw)
 		cells.append(c)
 		w.emit("FireOut", {"cell": c})
 	w.map.terrain = t
+	w.map.burnt = burnt
 	w.emit("TerrainChanged", {"cells": cells, "cause": "fire"})
 	Movement.on_terrain_changed(w)
 
