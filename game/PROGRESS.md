@@ -52,6 +52,9 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
    - 3 soldiers that move and select as ONE squad;
    - 4 launchable attack drones per squad, in different drone styles the squad picks per scenario;
    - once all 4 drones are spent, the squad switches to a tactical team: infiltration, takedown, breaching, stack-up and armored attack.
+8. **Logistics truck "Auto" restock mode** (owner note, 2026-10-24): every nearby unit that needs restocking gets it automatically, one of two ways:
+   - the units drive to the truck, restock and return to the fight;
+   - or, with the truck placed in an area, the truck drives to them one by one.
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.
