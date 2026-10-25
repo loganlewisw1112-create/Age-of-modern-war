@@ -277,6 +277,7 @@ func test_bridge_repair_charges_repair_salvage_and_calls_hook() -> void:
 	for e in w.units_of(0):
 		if e.def == "engineer" and engs.size() < 2:
 			e.pos = Vector2(br.pos)
+			preload("res://sim/hot_state.gd").touch(w, int(e.id))  # CORE10K-3: direct pos/path write -> hot state
 			engs.append(int(e.id))
 	_run(w, 8)   # fog catches up so the bridge is visible to the player
 	var log := {}

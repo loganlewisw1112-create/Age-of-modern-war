@@ -112,6 +112,7 @@ func test_attack_order_promotes_at_once() -> void:
 	w.run_ticks(17)
 	check(Tiers.is_reduced(w.entities[a]), "lone far unit is REDUCED")
 	w.entities[b].pos = Vector2(w.entities[a].pos) + Vector2(5, 0)  # dropped next to it
+	preload("res://sim/hot_state.gd").touch(w, b)  # CORE10K-3: direct pos/path write -> hot state
 	w.run_ticks(4 - w.tick % 4)   # next fog recompute: b becomes visible (tiers recompute only every 8)
 	check(Tiers.is_reduced(w.entities[a]), "still REDUCED until the next tier recompute")
 	var ev := do_cmd(w, 0, {"type": "attack", "unit_ids": [a], "target_id": b})
@@ -388,9 +389,13 @@ func test_territory_presence_matches_reference() -> void:
 	for i in 6:
 		ids.append(_place(w, "rifleman", i % 2, Vector2(10 + i * 9, 40)))
 	w.entities[ids[0]].pos = Vector2(-0.5, 3.0)
+	preload("res://sim/hot_state.gd").touch(w, int(ids[0]))  # CORE10K-3: direct pos/path write -> hot state
 	w.entities[ids[1]].pos = Vector2(float(w.map.w), 3.0)
+	preload("res://sim/hot_state.gd").touch(w, int(ids[1]))  # CORE10K-3: direct pos/path write -> hot state
 	w.entities[ids[2]].pos = Vector2(float(w.map.w) - 0.01, float(w.map.h) - 0.01)
+	preload("res://sim/hot_state.gd").touch(w, int(ids[2]))  # CORE10K-3: direct pos/path write -> hot state
 	w.entities[ids[3]].pos = Vector2(0.0, 0.0)
+	preload("res://sim/hot_state.gd").touch(w, int(ids[3]))  # CORE10K-3: direct pos/path write -> hot state
 	w.destroy(int(ids[4]), "test")
 	check_eq(Array(Territory.presence(w)), _presence_ref(w), "presence == G3b scan (both sides alive)")
 	w.factions[1].alive = false

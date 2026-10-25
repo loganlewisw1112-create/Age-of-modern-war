@@ -131,6 +131,7 @@ func _loaded_craft(w: SimWorld) -> Array:
 func _teleport(w: SimWorld, id: int, p: Vector2) -> void:
 	Movement.stop_path(w.entities[id])
 	w.entities[id].pos = p
+	preload("res://sim/hot_state.gd").touch(w, id)  # CORE10K-3: direct pos/path write -> hot state
 
 
 func test_landing_craft_unloads_only_at_beach() -> void:

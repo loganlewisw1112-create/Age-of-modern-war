@@ -237,6 +237,7 @@ func test_drone_ignores_footprints_and_ground_separation() -> void:
 	# a ground unit sharing the drone's spot is not pushed by it
 	var g := _spawn(w, "m_scout_crawler", 0, Vector2(8, 4))
 	d.pos = g.pos
+	preload("res://sim/hot_state.gd").touch(w, int(d.id))  # CORE10K-3: direct pos/path write -> hot state
 	var before: Vector2 = g.pos
 	w.step()
 	check(Vector2(g.pos).distance_to(before) < 0.001, "ground unit not separated from a drone")

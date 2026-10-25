@@ -205,6 +205,7 @@ func test_grenadier_and_shock_bonus_vs_walls() -> void:
 	w.destroy(tower, "test")   # the tower would shoot the troops
 	se.cd_ticks = 0
 	se.pos = _p(o, 8.5, 10.5)
+	preload("res://sim/hot_state.gd").touch(w, int(se.id))  # CORE10K-3: direct pos/path write -> hot state
 	var hp0 := float(w.entities[wall].hp)
 	w.run_ticks(12)   # fog: side 1 sees the wall
 	var r := do_cmd(w, 1, {"type": "attack", "unit_ids": [shock], "target_id": wall})

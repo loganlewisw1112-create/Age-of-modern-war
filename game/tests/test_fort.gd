@@ -336,15 +336,22 @@ func test_fort_walls_block_direct_fire_towers_fire_over() -> void:
 	check(Fortify.fire_blocked(w, S, T), "wall between shooter and target blocks")
 	check(not Fortify.fire_blocked(w, S, w.entities[int(Fortify._cell_map(w, Fortify.state(w))[Vector2i(64, 30)][0])]), "the wall itself can be shot")
 	T.pos = Vector2(67.5, 36.5)
+	preload("res://sim/hot_state.gd").touch(w, int(T.id))  # CORE10K-3: direct pos/path write -> hot state
 	S.pos = Vector2(61.5, 36.5)
+	preload("res://sim/hot_state.gd").touch(w, int(S.id))  # CORE10K-3: direct pos/path write -> hot state
 	check(Fortify.fire_blocked(w, S, T), "a gate blocks fire too")
 	T.pos = Vector2(67.5, 37.5)
+	preload("res://sim/hot_state.gd").touch(w, int(T.id))  # CORE10K-3: direct pos/path write -> hot state
 	S.pos = Vector2(61.5, 37.5)
+	preload("res://sim/hot_state.gd").touch(w, int(S.id))  # CORE10K-3: direct pos/path write -> hot state
 	check(not Fortify.fire_blocked(w, S, T), "an unfinished foundation does not block")
 	T.pos = Vector2(67.5, 41.5)
+	preload("res://sim/hot_state.gd").touch(w, int(T.id))  # CORE10K-3: direct pos/path write -> hot state
 	S.pos = Vector2(61.5, 41.5)
+	preload("res://sim/hot_state.gd").touch(w, int(S.id))  # CORE10K-3: direct pos/path write -> hot state
 	check(not Fortify.fire_blocked(w, S, T), "clear line beside the wall")
 	T.pos = Vector2(67.5, 30.5)
+	preload("res://sim/hot_state.gd").touch(w, int(T.id))  # CORE10K-3: direct pos/path write -> hot state
 	var tw := w.spawn_building("a_wall_tower", 0, Vector2i(61, 31), true)
 	w.step()
 	check(not Fortify.fire_blocked(w, w.entities[tw], T), "towers fire over walls")

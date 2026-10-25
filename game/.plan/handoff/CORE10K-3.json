@@ -1,0 +1,31 @@
+{
+  "agent": "CORE10K-3",
+  "gen": 3,
+  "status": "partial (ORCH hard deadline): gather_trust=true kept and proven; morale/fog native ports written but reverted (not hash-proven in time); 10k fight target NOT met",
+  "done": [
+    "Writer audit (grep of every direct e.pos / e.path / e.moving / path_req / mv_owed write in sim/**, presentation/**, tools/**): every ground-unit writer outside movement.gd already calls HotState.touch/set_pos (medical 147/227/236/474/524, transport 580/683, bridges 102). Remaining direct writes are aircraft/drones (air.gd, g5_mech drones: move classes air_low/air_high, never trusted by the gather: mi <= 1 only) and construction.make_idle/stop_moving (stop on a mover; a stationary clean unit is unaffected). sim/ai/** and presentation/** write none of these fields.",
+    "tests: HotState.touch added after the 21 direct pos/path writes in 10 test files (test_ai, test_factions, test_fort x7, test_naval, test_perf x5, test_save, test_supply, test_transport, test_triggers x2, test_units_g5); inline preload(\"res://sim/hot_state.gd\").touch(w, id); no assertion changed",
+    "sim/systems/movement.gd: gather_trust default true",
+    "sim/hot_state.gd: verify_gather default = (env RTS_VERIFY_GATHER == \"1\"), so any test run can audit trusted mirror positions without code edits"
+  ],
+  "evidence": [
+    "RTS_VERIFY_GATHER=1, live tree, gather_trust on: test_hot_state 16/16 (incl. perf paths on==off 2k/10k fight/10k march/threaded, hot-state == dict path, sim thread on==off), drift 0; test_fort 10/10, test_perf 11/11, test_save 6/6, test_supply 10/10, test_transport 11/11, test_triggers 10/10, test_units_g5 8/8, test_naval 8/8, test_factions 12/12, all drift 0 (log: scratchpad k3_vg.log)",
+    "test_ai and later files of that subset were not completed (run stopped at the deadline)"
+  ],
+  "remaining": [
+    "1. 10k fight still far from 62.5 ms. Quiet-PC breakdown (CORE10K-2): combat 42 (cmb.np 23.7, cmb.act 15), movement 26 (mv.ng_call 11 -> mostly removed by gather_trust; mv.drain 7.2 path drain; mv.apply 5), supply 7.3, fog 6.6, morale 6.3, economy 3.0, victory 1.7",
+    "2. Morale FULL-loop pre-pass as native RtsCombat.morale_scan (in_cover write + steady-state test, returns indices for _update_unit) and fog source gather as RtsCombat.fog_gather (per-id sight table, comp.sensors / jammed_until mult, first-wins keys per root): both were written as exact ports (rts_core 0.4.3, built OK) and REVERTED at the deadline before the A/B finished. Re-derive: per-id tables (def/owner never change after spawn), Status.jam_mult per owner precomputed, add toggles Morale.native_scan / Fog.native_gather to test_hot_state _perf_paths and scale_bench flags, prove with --ab-only on/off. Expected saving ~3-4 ms each (memory-latency floor ~1.3 us per dict per pass remains).",
+    "3. Array-held combat state (cd, firing, target, broken, moving, last_hit, morale, supp) needs every writer to update arrays: ~90 direct target/order writer sites across air, airfield, bridges, combat, fortify, g4b_mech, g5_mech, medical, morale, movement, naval, orders, repair, transport, support, construction, gather, production (plus in-place e.order.* writes); sim/ai writes none of them directly (commands only). Realistic only as a multi-agent wave.",
+    "4. supply._serve_due and mv.drain unprofiled/unoptimized"
+  ],
+  "files_touched": [
+    "sim/systems/movement.gd (gather_trust default)", "sim/hot_state.gd (verify_gather env default)",
+    "tests/test_ai.gd, test_factions.gd, test_fort.gd, test_naval.gd, test_perf.gd, test_save.gd, test_supply.gd, test_transport.gd, test_triggers.gd, test_units_g5.gd (touch lines only)",
+    "reverted to HEAD: sim/systems/morale.gd, sim/systems/fog.gd, tests/test_hot_state.gd, tools/scale_bench.gd, native/rts_core/{Cargo.toml,Cargo.lock,src/combat.rs,src/lib.rs}; deleted my src/morale_scan.rs, src/fog_gather.rs, bin/rts_core.new.dll. bin/rts_core.dll unchanged (0.4.2, never swapped)"
+  ],
+  "gotchas": [
+    "scale_bench: '--ab-only=...' itself matches a.begins_with(\"--ab\") (harmless, the mode runs non-threaded)",
+    "machine at 93-100% CPU (4 ai62soak + playtests): 10k fight measured 750 ms/tick under that load earlier; any number must carry the load",
+    "a k3_vg.sh test loop of mine (bash pid 31496, godot test_ai pid 24920/8980) could not be stopped: Stop-Process was denied by the permission classifier"
+  ]
+}

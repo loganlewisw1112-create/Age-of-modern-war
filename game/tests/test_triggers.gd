@@ -89,8 +89,10 @@ func test_trig_destroyed_tag_win_and_edge_refire() -> void:
 	var u := w.spawn_unit("rifleman", 0, Vector2(29.5, 29.5))
 	var edges := _events(w, 20, "TriggerMessage").size()
 	w.entities[u].pos = Vector2(10.5, 29.5)
+	preload("res://sim/hot_state.gd").touch(w, u)  # CORE10K-3: direct pos/path write -> hot state
 	edges += _events(w, 20, "TriggerMessage").size()
 	w.entities[u].pos = Vector2(29.5, 29.5)
+	preload("res://sim/hot_state.gd").touch(w, u)  # CORE10K-3: direct pos/path write -> hot state
 	edges += _events(w, 20, "TriggerMessage").size()
 	check_eq(edges, 2, "once=false fires on each false->true edge, not every tick")
 	check(not w.match_state.ended, "radar alive: no win")

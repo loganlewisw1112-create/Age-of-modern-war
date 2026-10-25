@@ -25,6 +25,7 @@ func _busy_world() -> SimWorld:
 	var u: Dictionary = w.units_of(0)[0]
 	u.order = {"type": "move", "target": Vector2(33.25, 41.5)}
 	u.path = [Vector2(33.25, 41.5)]
+	preload("res://sim/hot_state.gd").touch(w, int(u.id))  # CORE10K-3: direct pos/path write -> hot state
 	u.carry = {"res": "salvage", "amt": 7}
 	w.submit({"type": "move", "issuer": 0, "unit_ids": [int(u.id)], "target": Vector2(50, 50), "tick": w.tick + 500})
 	w.memory[0][99999] = {"def": "hq", "kind": "building", "owner": 1, "pos": Vector2(80.5, 80.5), "tick": w.tick}

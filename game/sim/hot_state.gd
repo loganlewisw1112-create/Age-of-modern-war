@@ -34,7 +34,7 @@ var live := PackedByteArray()      # 1 = slot synced from a live unit dict
 ## Movement gather mirror (G5 CORE10K): bit 0 = pos[id] was synced by the held gather, bit 1 = dirty
 ## (re-read the dict next gather). A synced, clean, non-moving unit is not read from its dict.
 var mflags := PackedByteArray()
-static var verify_gather := false  # tests: compare every trusted pos with its dict (push_error on drift)
+static var verify_gather := OS.get_environment("RTS_VERIFY_GATHER") == "1"  # tests: compare every trusted pos with its dict (push_error on drift)
 static var verify_bad := 0
 var cap := 0
 var syncs := 0                     # full syncs done (bench / tests)

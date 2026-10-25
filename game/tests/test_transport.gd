@@ -297,6 +297,7 @@ func test_save_mid_transport() -> void:
 	var far := _spot(w, 0, Vector2i(8, 12))
 	for id in [ids[2], ids[3]]:
 		w.entities[id].pos = c.pos + Vector2(5, 0)
+		preload("res://sim/hot_state.gd").touch(w, id)  # CORE10K-3: direct pos/path write -> hot state
 	w.submit({"type": "load", "issuer": 0, "carrier": s.carrier, "unit_ids": [ids[2], ids[3]]})
 	w.step()
 	w.step()

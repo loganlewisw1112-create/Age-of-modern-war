@@ -76,7 +76,7 @@ static var native_gather := true   # CORE10K-2: rts_core 0.4.1 fixes the 0.4.0 g
 ## G5 CORE10K: with native_gather, skip the dict read of a synced, clean, non-moving foot/vehicle unit
 ## (HotState.pos mirror). Needs every pos/path/moving writer outside movement.gd to call HotState.touch /
 ## set_* (core.hot_writer_rule). Off = the native gather reads every unit's dict (exact, slower).
-static var gather_trust := false   # default off: 9 test files + air/medical/transport/bridges write e.pos directly
+static var gather_trust := true   # CORE10K-3: on; every outside pos/path/moving writer touches HotState (sim audit + 10 test files)
 static var held_verify := false          # tests: compare every mirror with its dict each tick
 static var verify_bad := 0               # mismatches found by held_verify (diagnostics, never saved)
 static var owed_paid := 0               # stride catch-up advances paid (diagnostics only, never saved)
