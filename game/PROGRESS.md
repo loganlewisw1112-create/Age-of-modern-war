@@ -97,6 +97,16 @@ Stop-if:                  threaded sim can't be made crash-free (fall back to sp
    - Newly bought hangars are placed in a sensible spot next to the tarmac.
    - Owner idea: hangars connect directly to a main airfield base, which connects to the tarmac and runway. Layout options to be worked out in the G6 plan.
    - **Shorter runways** (owner, explicitly G6, NOT G5): the current strip_len is 26 tiles (airfield/aerodrome), 14 (airstrip), 10 (forward strip) and 12 (Machine launch rail), which is far too long. Shorten them as part of the overhaul.
+3. **Every asset on the "G6 Arsenal Concepts" page goes into the game in G6** (owner note, 2026-10-24). That is all 93 assets: units, turrets, fortifications, drones, vehicles, aircraft, ships and buildings.
+   - Page: https://claude.ai/artifact/CqtGqskcCzkoCjPrhMWkgw
+   - Source: `docs/g6_art_kit/` holds the proposal list in `items.json`, plus drawers that already render every asset with `tools/art` as game-schema sheets. It is not wired into content, sim or AI yet; see its README.
+   - By category: turrets 15, fortifications 9, drones 9, vehicles 15, infantry 13, aircraft 4, naval 10, buildings 11, horizon 7. By faction: Human A, Human B, Machine, shared, plus a 4th faction.
+   - Each asset has to become playable: content defs, art moved into an `assets/art/g6_*` module, sim mechanics, AI use and tests.
+   - Scope the G6 plan has to settle (big items inside this note):
+     - new systems: minefields + EOD/mine clearing, garrisons, trench/sandbag cover, rail tiles + armored train, submarines + sonar, carriers (the hangar system at sea), radar-gated SAMs, counter-drone (laser, nets, jamming), tethered recon;
+     - a **4th faction (Irregulars)**: technical, tunnel network, ambush cell, captured tank;
+     - **Stage 6 and Stage 10** units: rhomboid landcrawler, laser tank, exo-suit trooper.
+     - Submarines and carriers were out of scope in G5 (D20) and are in scope now.
 
 ### G4 evidence (2026-10-24, owner asked for the packaged build within 30 min) — PARTIAL
 1. **Tests:** `bash tests/run.sh` → `RESULT pass=297 fail=0 files=35 time_ms=1970802` / `TESTS OK` (log `build/final_suite_G4.log`). MET.

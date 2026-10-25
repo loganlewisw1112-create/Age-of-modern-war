@@ -1,0 +1,19 @@
+# G5 agent ids (ORCH, 2026-10-24)
+CORE10K afa4501b445704922
+AIRSYS a9184c654cfb14a5a
+NAVAL a486df0950605f519
+UNITS5 ad53450263e18a35b
+SUPPORT a67bf83814665e3af
+UI5a a373bc8c14d3b7c2c
+AI6 abd1049c7e58f3b50
+FONT ac0cfb92497e8a8de
+QUEUE: ART-U5 -> ART-BLD -> UI5b -> VIEW5 -> ART-AIR -> AI6-AN -> ART-NAV -> PT5 -> ED5
+FONT-2 af6fb4dfbdf681e4d (FONT handed off: cap below guard base 303k)
+FONT-3 ac1eda767a4b9801a (FONT-2 stopped: STALE x2, work on disk kept)
+ART-U5 a7817b64198e1f4e0 | SUPPORT-2 a7a9e6af1d76a508f | ART-BLD a26bb7a7b212915c8 | UNITS5 done (aura spike + full suite left: fold into heartbeat / later UNITS5-2 if needed)
+CORE10K-2 a3a54ae841c83e7b1 | UI5b a58431ed6634bdbf2 | VIEW5 af36fc71e67f8de3f | ART-AIR a208dfe7d02e9921f
+AI6-2 afcd832b89c572c6e | AI6-AN a49a0a73d567131fa | ART-NAV a4794ee8a7eeae92b
+PT5 a116270ceb4167e6a | ED5 af57778eef12e0b1c | queue EMPTY (all 17 roles started)
+VIEW5-2 abc0ef6dbff368de0
+CORE10K-3 a59a984d57eb038ed (narrow writer-edit grant on finished agents' files)
+PT5-2 ab8b2ba0fb768d733

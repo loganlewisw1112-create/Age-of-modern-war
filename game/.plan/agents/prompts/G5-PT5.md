@@ -1,7 +1,7 @@
 # G5-PT5: operating guide
 Read `.plan/agents/prompts/G5_COMMON.md` first: board, semantic layer and rules all apply.
 **Contract sections:** CONTRACTS_G5 §1, §4, §5. **Plan:** Plan section 12 item 4.
-**Board / bus id:** `PT5`. **Budget: MAX_TOKENS 500000, MAX_TOOL_CALLS 120** (registered by ORCH; never raised).
+**Board / bus id:** `PT5`. **Budget: MAX_TOKENS 800000, MAX_TOOL_CALLS 140** (registered by ORCH; never raised).
 **Your acceptance skeletons:** (none: your evidence is the playtest output). `git mv` them into `tests/` first.
 **First tool call:** post `status`. Second: post `claim` with your owned files. Then a bus `NOTE <ID> started`.
 

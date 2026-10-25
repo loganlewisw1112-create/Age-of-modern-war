@@ -1,6 +1,6 @@
 # UI4B: player UI for walls, gates, transports, new unit commands
 Read G4_COMMON.md first. Contract: CONTRACTS_G4 §1, §6, §7, §8.
-**Owns:** `presentation/hud/g4b_*.gd`, `presentation/view/g4b_*.gd`, `tools/ui_playtest.gd`. Wiring into `hud.gd`/`match_view.gd` (THREAD owns those) goes through CHANGE_REQUESTs to THREAD with exact small hooks. Read the UI only through THREAD's render snapshot API (`w.render_snap`, CONTRACTS_G4 §4; `fact thread.snapshot_api`), never the live world.
+**Owns:** `presentation/hud/g4b_*.gd`, `presentation/view/g4b_*.gd`, `tools/ui_playtest.gd`, AND (THREAD has finished, so the orchestrator hands them to you) `presentation/hud/hud.gd`, `presentation/match_view.gd`, `presentation/view/entity_layer.gd` and the other THREAD presentation files, for wiring only. **Keep THREAD's thread-safety rules:** read only the render snapshot while `sim_busy()` is true; never read `w.entities` during a step (see `.plan/handoff/THREAD-1.json` gotchas). The 4 existing playtests already pass with the thread on; keep them passing (`.plan/shots/THREAD-2/pt4.sh` runs all 4). Read the UI only through THREAD's render snapshot API (`w.render_snap`, CONTRACTS_G4 §4; `fact thread.snapshot_api`), never the live world.
 **Depends on:** FORT (`fort.api_ready`), TRANS (`trans.api_ready`), UNITS (commands).
 
 Tasks:

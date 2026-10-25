@@ -1,7 +1,7 @@
 # G5-ED5: operating guide
 Read `.plan/agents/prompts/G5_COMMON.md` first: board, semantic layer and rules all apply.
 **Contract sections:** CONTRACTS_G5 §1, §3, §4, §5. **Plan:** Plan section 9 (Workstream H).
-**Board / bus id:** `ED5`. **Budget: MAX_TOKENS 600000, MAX_TOOL_CALLS 150** (registered by ORCH; never raised).
+**Board / bus id:** `ED5`. **Budget: MAX_TOKENS 850000, MAX_TOOL_CALLS 170** (registered by ORCH; never raised).
 **Your acceptance skeletons:** `tests/pending_g5/test_tutorial.gd`, `tests/pending_g5/test_editor_g5.gd`. `git mv` them into `tests/` first.
 **First tool call:** post `status`. Second: post `claim` with your owned files. Then a bus `NOTE <ID> started`.
 

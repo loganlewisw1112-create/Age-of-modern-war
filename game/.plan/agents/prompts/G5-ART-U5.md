@@ -1,7 +1,7 @@
 # G5-ART-U5: operating guide
 Read `.plan/agents/prompts/G5_COMMON.md` first: board, semantic layer and rules all apply.
 **Contract sections:** CONTRACTS_G5 §1, §3.1. **Plan:** Plan section 10 (art).
-**Board / bus id:** `ART-U5`. **Budget: MAX_TOKENS 600000, MAX_TOOL_CALLS 150** (registered by ORCH; never raised).
+**Board / bus id:** `ART-U5`. **Budget: MAX_TOKENS 850000, MAX_TOOL_CALLS 170** (registered by ORCH; never raised).
 **Your acceptance skeletons:** `tests/pending_g5/test_art_g5_units.gd`. `git mv` them into `tests/` first.
 **First tool call:** post `status`. Second: post `claim` with your owned files. Then a bus `NOTE <ID> started`.
 

@@ -13,3 +13,8 @@ Tasks:
 
 **Target:** 10k p95 < 50 ms, or as close as you get, with honest numbers.
 Done when: tasks 1-6 are done and the full suite is green. MAX_TOKENS 700000, MAX_TOOL_CALLS 170, board id `PERF10K`.
+
+## Pending items assigned to you (orchestrator)
+- **UNITS CR, `fog.gd` `concealed()`:** right after the first guard line insert `if bool(e.get("hid", false)): var f = w.factions.get(fid); return not (e.spot as Array).has(int(f.get("team", fid)) if f != null else fid)`, so AI `visible_enemies` and fog agree with combat about hidden snipers. Optional: count mines as Tiers contacts.
+- **Possible bug (UNITS):** units reinserted from transport cargo can drop out of `sim/systems/unit_subsets.gd` subsets (cargo/subset interaction). You now own `unit_subsets.gd`. Test that a unit loaded and unloaded stays in its subsets, and fix it.
+- The movement/native work is yours: NAT is done.

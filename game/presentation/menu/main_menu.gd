@@ -111,7 +111,15 @@ func _build() -> void:
 	# ---- title + buttons column (a row of buttons when stacked)
 	_left = VBoxContainer.new()
 	_left.add_theme_constant_override("separation", 8)
-	_row.add_child(_left)
+	var left_scroll := ScrollContainer.new()   # G5: the column scrolls instead of clipping on short canvases / big UI scale
+	left_scroll.name = "LeftScroll"
+	left_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # no theme frame margin (kept the row 1 px too wide)
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER  # wheel-scrolls; no bar width added to the row
+	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_scroll.add_child(_left)
+	_row.add_child(left_scroll)
 	_title_small = UiKit.label("RTS", "header")
 	_title_small.add_theme_color_override("font_color", HT.OLIVE)
 	_left.add_child(_title_small)
@@ -269,7 +277,7 @@ func _relayout() -> void:
 	var wide := size.x >= WIDE_W
 	_row.vertical = not wide
 	for side in ["left", "right", "top", "bottom"]:
-		_margin.add_theme_constant_override("margin_" + side, 20 if wide else 8)
+		_margin.add_theme_constant_override("margin_" + side, 18 if wide else 8)  # G5: 18 keeps 3440x1440@150% inside the window (was 1 px over)
 	_left.custom_minimum_size = Vector2(300 if wide else 0, 0)
 	_title.text = "AGE OF\nMODERN WAR" if wide else "AGE OF MODERN WAR"
 	_title.add_theme_font_size_override("font_size", 46 if wide else 30)

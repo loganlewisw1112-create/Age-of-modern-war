@@ -1,7 +1,7 @@
 # G5-UI5b: operating guide
 Read `.plan/agents/prompts/G5_COMMON.md` first: board, semantic layer and rules all apply.
 **Contract sections:** CONTRACTS_G5 §0.6, §1, §4, §5. **Plan:** Plan sections 3, 5, 6, 7.
-**Board / bus id:** `UI5b`. **Budget: MAX_TOKENS 700000, MAX_TOOL_CALLS 170** (registered by ORCH; never raised).
+**Board / bus id:** `UI5b`. **Budget: MAX_TOKENS 900000, MAX_TOOL_CALLS 220** (registered by ORCH; never raised).
 **Your acceptance skeletons:** `tests/pending_g5/test_ui_panels.gd`. `git mv` them into `tests/` first.
 **First tool call:** post `status`. Second: post `claim` with your owned files. Then a bus `NOTE <ID> started`.
 

@@ -23,3 +23,9 @@ Tasks:
 3. Every new kind/state saves and loads (`mine`, `charge`, fire cells in `w.map.fire` or entities). Determinism holds.
 4. **Tests:** one test per mechanic (concealment, deploy, mine trigger/detect, charge vs wall/bridge, fire spread/burnout/terrain change, crush, salvo), save mid-fire, and that existing combat tests stay green.
 Done when: tasks 1-4 are green and the full suite is green. MAX_TOKENS 700000, MAX_TOOL_CALLS 170, board id `UNITS`.
+
+## Pending change request for your combat.gd (from FORT, board): walls block direct fire
+- `const Fortify = preload("res://sim/systems/fortify.gd")`
+- In `_engage`: `(bool(s.indirect) or (_los(w, e.pos, t.pos) and not Fortify.fire_blocked(w, e, t)))`
+- In `_fire`: `if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t)): return`
+- Apply it early. test_fort switches to its real path once the hook text is present.
