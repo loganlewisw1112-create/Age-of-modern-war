@@ -404,17 +404,18 @@ Each agent gets this block plus its own guide (11.2) as its brief. They become `
    - write chunks of ≤250 lines;
    - after each, run `godot --headless --path . --quit-after 60 | grep "SCRIPT ERROR"`, which must print nothing.
 5. **Tests:** iterate with `tests/run.sh --only=<file>`, then run the full suite once at the end inside `.plan/hb.sh`.
-6. **Budget:**
+6. **Message board + semantic layer (11.0a):** post board `status`/`claim`/`fact`/`change_request`/`done` as required, AND append a bus line (`NOTE`/`FOUND`/`BLOCK`/`DONE`) at every finding, decision, dead end or milestone. Answer any BLOCK addressed to you.
+7. **Budget:**
    - post a status as your **first** tool call, then every 5 calls (with `calls_used`, `tokens_used_est` and `next_action`);
    - wrap any command over 60 s in `.plan/hb.sh`;
    - at 70% of the projection, write `.plan/handoff/<ID>-<n>.json` (done / exact remaining steps / files / test state / gotchas) and stop. A successor resumes from it.
    - Silent for 12 minutes = stopped.
-7. **Machine sharing:**
+8. **Machine sharing:**
    - never kill a godot process you didn't start;
    - rebuild the native DLL only by `build_native.sh --stage` then `--swap`;
    - record the CPU load with any timing.
    - Final benchmarks are taken by ORCH with every agent stopped.
-8. **Finish:** kill your own processes, post `done`, and send the final report:
+9. **Finish:** kill your own processes, post `done`, and send the final report:
    - STATUS;
    - FILES;
    - TESTS (raw lines);
@@ -424,6 +425,25 @@ Each agent gets this block plus its own guide (11.2) as its brief. They become `
    - KNOWN_GAPS.
 
    Do not commit. Do not add a GENESIS offer.
+
+### 11.0a Coordination layers (both run for the whole wave)
+**1. Message board** (`D:/CODING/SKILLS/tools/agent-board`, file `.plan/board.jsonl`): the structured record. Every agent posts:
+- a `claim` for its files;
+- a `status` every 5 calls (calls_used, tokens_used_est, next_action);
+- `change_request`s to file owners;
+- `fact`s such as `air.api_ready` (the dependency signals the one-wave pipeline runs on);
+- `handoff` and `done`.
+
+ORCH registers every cap (`fact budget.cap`) and runs `guard.mjs` under a Monitor all wave. Guard lines (NUDGE / STOP / STALE) are acted on exactly as the budget rule says. A second board monitor surfaces CRs, blockers and done.
+
+**2. Semantic layer** (`D:/CODING/SKILLS/tools/agent-bus`, file `.plan/bus.log`): the live meaning stream.
+- Every agent appends one line **at each finding, decision, dead end or milestone**:
+  `echo "$(date +%H:%M:%S) <ID> NOTE|FOUND|BLOCK|DONE <short message>" >> .plan/bus.log`
+  - Examples: `FOUND runway queue desyncs on save`, `BLOCK need Damage.on_zero_hp`, `NOTE hangar gating passes 6/6`.
+- ORCH runs `busd.py` on this session's subagent transcripts folder (`--stall 45 --max-min 60`). It adds `SPAWN / TICK / STALL / GONE / BACK` per agent: a real hang (`STALL` with no `TICK`) is told apart from long thinking.
+- ORCH watches the bus with the wide filter (`NOTE|FOUND|STALL|SPAWN|BLOCK|ERROR|FAIL|CONTRADICT|UNSURE|CANNOT|UNABLE|DONE`).
+- The bus holds compact derived lines only, never raw transcript content.
+- **Use:** BLOCK lines get answered at once; FOUND lines that affect another agent get routed to it; STALL/TICK evidence goes into every stop/keep decision and into the final report.
 
 ### 11.1 Schedule (one continuous wave)
 
@@ -741,6 +761,7 @@ ORCH also adds the scaffold: empty system files registered in SYSTEM_ORDER, empt
 #### ORCH (me): contracts, verification, commits, final gate
 - Writes `CONTRACTS_G5.md` + scaffold + every brief before any agent starts.
 - Registers every budget cap and runs the budget guard + board monitors all wave.
+- Runs the semantic layer: `busd.py` on the subagent transcripts plus the wide bus Monitor; answers BLOCKs and routes FOUNDs between agents.
 - Audits each completion; verifies tests and evidence; commits each agent's files by path.
 - Handles every change request in files it owns (`world.gd` outside the hot block, `content.gd`, base `rules.json`, the map list).
 - Shows you the typeface specimen and asks for your OK.
