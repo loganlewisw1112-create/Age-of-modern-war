@@ -1,0 +1,1107 @@
+{
+  "decor": {
+    "coast_beach": [
+      {
+        "file": "decor/coast_beach_0.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_beach_1.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_beach_2.png",
+        "pivot": [
+          14,
+          13
+        ]
+      }
+    ],
+    "coast_cliff": [
+      {
+        "file": "decor/coast_cliff_0.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_cliff_1.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_cliff_2.png",
+        "pivot": [
+          14,
+          13
+        ]
+      }
+    ],
+    "coast_shallow": [
+      {
+        "file": "decor/coast_shallow_0.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_shallow_1.png",
+        "pivot": [
+          14,
+          13
+        ]
+      },
+      {
+        "file": "decor/coast_shallow_2.png",
+        "pivot": [
+          14,
+          13
+        ]
+      }
+    ]
+  },
+  "effects": {
+    "g5_bow_spray": {
+      "fh": 12,
+      "file": "fx/g5_bow_spray.png",
+      "frames": 3,
+      "fw": 16,
+      "pivot": [
+        8,
+        9
+      ]
+    },
+    "g5_naval_muzzle": {
+      "fh": 20,
+      "file": "fx/g5_naval_muzzle.png",
+      "frames": 4,
+      "fw": 30,
+      "pivot": [
+        6,
+        10
+      ]
+    },
+    "g5_ramp_splash": {
+      "fh": 18,
+      "file": "fx/g5_ramp_splash.png",
+      "frames": 4,
+      "fw": 36,
+      "pivot": [
+        18,
+        12
+      ]
+    },
+    "g5_shell_splash": {
+      "fh": 46,
+      "file": "fx/g5_shell_splash.png",
+      "frames": 6,
+      "fw": 28,
+      "pivot": [
+        14,
+        40
+      ]
+    },
+    "g5_shell_splash_small": {
+      "fh": 24,
+      "file": "fx/g5_shell_splash_small.png",
+      "frames": 4,
+      "fw": 16,
+      "pivot": [
+        8,
+        20
+      ]
+    },
+    "g5_ship_smoke": {
+      "fh": 30,
+      "file": "fx/g5_ship_smoke.png",
+      "frames": 4,
+      "fw": 20,
+      "pivot": [
+        10,
+        27
+      ]
+    },
+    "g5_sink_bubbles": {
+      "fh": 16,
+      "file": "fx/g5_sink_bubbles.png",
+      "frames": 4,
+      "fw": 24,
+      "pivot": [
+        12,
+        9
+      ]
+    }
+  },
+  "files": {
+    "decor/coast_beach_0.png": "94da4b71c2116b36396354fb94bc35c7",
+    "decor/coast_beach_1.png": "8933005ac173599dc9664591d9b46f49",
+    "decor/coast_beach_2.png": "872b02cb41d180f5816e99f7e376035d",
+    "decor/coast_cliff_0.png": "385251699e737ad7e3e46f9d2bf85760",
+    "decor/coast_cliff_1.png": "b1c16c9b8d2cd0ff806afb461e701414",
+    "decor/coast_cliff_2.png": "070f549f34b2eac61767a7e9eb214aa2",
+    "decor/coast_shallow_0.png": "34b8e00b48becf0ddcd14d3cf79b8395",
+    "decor/coast_shallow_1.png": "ce834b27165e2865a408953a94307d65",
+    "decor/coast_shallow_2.png": "eb0b16fa8b7eb97e157fbc27caaadcc0",
+    "decor/poi_coast_beached_hulk.png": "e6643071dbc3e9c8ef7ec83dcab4dc45",
+    "decor/poi_coast_boathouse.png": "b215a2bb6bf913c08d72ce9e228a5bc6",
+    "decor/poi_coast_buoy_green.png": "3a92c81e63d86c45258cf49d62541126",
+    "decor/poi_coast_buoy_red.png": "05c20de54f99bcaed34fea3ff3ab8fde",
+    "decor/poi_coast_cliff_rocks.png": "631381ff7c25965847a393c253e6761a",
+    "decor/poi_coast_driftwood.png": "c111591161296d9a6e12e82227c922f1",
+    "decor/poi_coast_dune_grass.png": "ffd91bf9473f2e45711c156ef1e36862",
+    "decor/poi_coast_hedgehogs.png": "32693479de20938ebf63882795fe3e66",
+    "decor/poi_coast_island_pines.png": "def6c1b8d971a79fbf02967e85be4c4c",
+    "decor/poi_coast_jetty_ew.png": "02120cd2bbe7046c897ab994625c8cb3",
+    "decor/poi_coast_jetty_ns.png": "b6bc5462e33bc9fef8ddebaa2281fa92",
+    "decor/poi_coast_lighthouse.png": "100324f961547b4ac6b8c7e2de4e37ca",
+    "decor/poi_coast_net_rack.png": "13883c81102570df4b2562147847092f",
+    "decor/poi_coast_pier_end.png": "9abd8ab18eb279d795e7fabab6f72e64",
+    "decor/poi_coast_pier_ew.png": "0177ec446bfac1f2685affbbc2080daf",
+    "decor/poi_coast_pier_ns.png": "6cf1b0b9f90a85d2190c9cc881f4045b",
+    "decor/poi_coast_sea_stack.png": "dad33ad6f606a0ea6d724bfe3dedbe24",
+    "fx/g5_bow_spray.png": "b878942358e7b0fb1dfaccff1b4f83ca",
+    "fx/g5_naval_muzzle.png": "aba1ada39dbe85188ac5b0eed664c334",
+    "fx/g5_ramp_splash.png": "ece70d03af47a45ffebb1534e34bd4c5",
+    "fx/g5_shell_splash.png": "a7fa4e6136f1670da39f648af5b7af10",
+    "fx/g5_shell_splash_small.png": "d49902c83c9efb0151a4c8eb437850f5",
+    "fx/g5_ship_smoke.png": "fa3cf8be676686c2b23054ab84a14148",
+    "fx/g5_sink_bubbles.png": "3dcc8443a20d7da705a94fcd594eb540",
+    "icons/a_aa_frigate.png": "37586ba89ec28497ff34c75ef0ab9626",
+    "icons/a_destroyer.png": "1887239547246fa9144ea42924657082",
+    "icons/a_landing_craft.png": "410b5842d059d5f7b6167453e6d80f02",
+    "icons/a_patrol_boat.png": "c2a761b19955cf8ed37f37bec145eb38",
+    "icons/b_barge_carrier.png": "d8bc5fdac369a5546d50c495fdfb8ccf",
+    "icons/b_monitor.png": "8ad8124f53b96fe746a9699b0fd6eabf",
+    "icons/b_river_gunboat.png": "fc322942dc827550c29dc98f5531211d",
+    "icons/lod_naval.png": "bc2329d6fd5686912d05bf80fc6ca9a2",
+    "icons/m_amphib_crawler.png": "8083a0bd72b123e7a68837007259e969",
+    "icons/m_hydro_skiff.png": "d1d7e8c363906af7cdea0156909d538f",
+    "sink/a_aa_frigate_sink.png": "37ae425d144342f90e8494fc6626af1a",
+    "sink/a_destroyer_sink.png": "e2d99f6aa792ad8cc08c1a354f26d172",
+    "sink/a_landing_craft_sink.png": "4ae17cae3669026809b9cb98ed924182",
+    "sink/a_patrol_boat_sink.png": "fc0be760a8509f355b9a3ef1e85c339a",
+    "sink/b_barge_carrier_sink.png": "56c502013fc71f55ae4e6d6c3d2f1dc3",
+    "sink/b_monitor_sink.png": "f544b2a1d8f7d48832cd809bf47140c9",
+    "sink/b_river_gunboat_sink.png": "783d68a87df6469213f0fa304ef27e0f",
+    "sink/m_amphib_crawler_sink.png": "4e7c689faf82989ff4a038d49ecfb257",
+    "sink/m_hydro_skiff_sink.png": "22a6da0773b06b4adeadbda83105b066",
+    "terrain/trans_cliff_wet.png": "3e42984911b70b3dd5a881c182963964",
+    "terrain/trans_surf.png": "5018982c6cfb252aa1f03b93b6db7830",
+    "units/a_aa_frigate.png": "d3390361d3812a369b09a57116fbca69",
+    "units/a_aa_frigate_mask.png": "f639aab1977282a4434894039b115b15",
+    "units/a_destroyer.png": "b5914d9a8eb0435d704849cb49836422",
+    "units/a_destroyer_mask.png": "15c9b9a2d45a8204564131869e9922fc",
+    "units/a_landing_craft.png": "c268c94d4bfbda513ebd041d6d348449",
+    "units/a_landing_craft_mask.png": "846dd8fe61ab404c5162c99f823dfe05",
+    "units/a_patrol_boat.png": "e5666e674c0cbc6c351ad0add1208269",
+    "units/a_patrol_boat_mask.png": "a4f32daad8fd7212fadfe207fba5f211",
+    "units/b_barge_carrier.png": "0a7c9849456add8df07597e158f038fd",
+    "units/b_barge_carrier_mask.png": "0931a942a2ed57b4a9672e30fedf5353",
+    "units/b_monitor.png": "2bac49a4900ea6dd25902405bac56bb4",
+    "units/b_monitor_mask.png": "5845a5fc96bee651c137906502d665c2",
+    "units/b_river_gunboat.png": "3f1bb5a262f2b660861eef1e23f4243b",
+    "units/b_river_gunboat_mask.png": "4e02f2a2a8a2510cf4fbdd920c5d432b",
+    "units/m_amphib_crawler.png": "6d75b9d580d4558d372389981adbd026",
+    "units/m_amphib_crawler_mask.png": "b17c9b042142fc13b9e59645d4d58df4",
+    "units/m_hydro_skiff.png": "c0144bb5ef9d9f85bd5cf5f9f6287eb1",
+    "units/m_hydro_skiff_mask.png": "4f3692e1bd0d44c276718e6f1a9e4d96",
+    "wake/a_aa_frigate_wake.png": "41a096b0afb6cdb0260e609b3576cc0d",
+    "wake/a_destroyer_wake.png": "7f6bc5a391ce48250ad64a1a2aea7b92",
+    "wake/a_landing_craft_wake.png": "26758a795754af0a9bbc22cc952960e1",
+    "wake/a_patrol_boat_wake.png": "6930b0cb666b2720052e52ad129b990d",
+    "wake/b_barge_carrier_wake.png": "650ccb32a84479420dd671191bbfbd08",
+    "wake/b_monitor_wake.png": "b1b02516c8336c6387a1a68c8a378918",
+    "wake/b_river_gunboat_wake.png": "6e88f44172e4095288743dfd0285987e",
+    "wake/m_amphib_crawler_wake.png": "c01c64c82a260f1725c26d15488f7d96",
+    "wake/m_hydro_skiff_wake.png": "1f4ab12741206ae1b49131d19c95bd12",
+    "wrecks/a_aa_frigate_wreck.png": "41496f584699f9bbf59564b6a1c6344f",
+    "wrecks/a_destroyer_wreck.png": "25487f1de9f6fa612a20c3803ae31af6",
+    "wrecks/a_landing_craft_wreck.png": "30fe967a269d4599b29359d963e6b8d3",
+    "wrecks/a_patrol_boat_wreck.png": "569ae3d674be9bccedcccf3b75f6b2d1",
+    "wrecks/b_barge_carrier_wreck.png": "cff6506807f834cae20c64620e77b5f3",
+    "wrecks/b_monitor_wreck.png": "e2c378d0352836d7927333b2fd1adcde",
+    "wrecks/b_river_gunboat_wreck.png": "f2edb6751055730489dd0ff6629f2d61",
+    "wrecks/m_amphib_crawler_wreck.png": "710e842df4a867e787374df189d937a9",
+    "wrecks/m_hydro_skiff_wreck.png": "902cdf70b5be685a483823b41c40feef"
+  },
+  "group": "g5_naval",
+  "icons": {
+    "a_aa_frigate": "icons/a_aa_frigate.png",
+    "a_destroyer": "icons/a_destroyer.png",
+    "a_landing_craft": "icons/a_landing_craft.png",
+    "a_patrol_boat": "icons/a_patrol_boat.png",
+    "b_barge_carrier": "icons/b_barge_carrier.png",
+    "b_monitor": "icons/b_monitor.png",
+    "b_river_gunboat": "icons/b_river_gunboat.png",
+    "m_amphib_crawler": "icons/m_amphib_crawler.png",
+    "m_hydro_skiff": "icons/m_hydro_skiff.png"
+  },
+  "lod_class": {
+    "a_aa_frigate": "naval",
+    "a_destroyer": "naval",
+    "a_landing_craft": "naval",
+    "a_patrol_boat": "naval",
+    "b_barge_carrier": "naval",
+    "b_monitor": "naval",
+    "b_river_gunboat": "naval",
+    "m_amphib_crawler": "naval",
+    "m_hydro_skiff": "naval"
+  },
+  "lod_icons": {
+    "*": {
+      "naval": {
+        "file": "icons/lod_naval.png",
+        "pivot": [
+          8,
+          8
+        ]
+      }
+    }
+  },
+  "poi_decor": {
+    "coast_beached_hulk": {
+      "file": "decor/poi_coast_beached_hulk.png",
+      "flat": false,
+      "footprint": [
+        2,
+        2
+      ],
+      "pivot": [
+        70,
+        62
+      ]
+    },
+    "coast_boathouse": {
+      "file": "decor/poi_coast_boathouse.png",
+      "flat": false,
+      "footprint": [
+        2,
+        1
+      ],
+      "pivot": [
+        54,
+        58
+      ]
+    },
+    "coast_buoy_green": {
+      "file": "decor/poi_coast_buoy_green.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        32
+      ]
+    },
+    "coast_buoy_red": {
+      "file": "decor/poi_coast_buoy_red.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        32
+      ]
+    },
+    "coast_cliff_rocks": {
+      "file": "decor/poi_coast_cliff_rocks.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        32
+      ]
+    },
+    "coast_driftwood": {
+      "file": "decor/poi_coast_driftwood.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        20
+      ]
+    },
+    "coast_dune_grass": {
+      "file": "decor/poi_coast_dune_grass.png",
+      "flat": true,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        22
+      ]
+    },
+    "coast_hedgehogs": {
+      "file": "decor/poi_coast_hedgehogs.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        28
+      ]
+    },
+    "coast_island_pines": {
+      "file": "decor/poi_coast_island_pines.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        60
+      ]
+    },
+    "coast_jetty_ew": {
+      "file": "decor/poi_coast_jetty_ew.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        28
+      ]
+    },
+    "coast_jetty_ns": {
+      "file": "decor/poi_coast_jetty_ns.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        28
+      ]
+    },
+    "coast_lighthouse": {
+      "file": "decor/poi_coast_lighthouse.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        92
+      ]
+    },
+    "coast_net_rack": {
+      "file": "decor/poi_coast_net_rack.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        34
+      ]
+    },
+    "coast_pier_end": {
+      "file": "decor/poi_coast_pier_end.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        40
+      ]
+    },
+    "coast_pier_ew": {
+      "file": "decor/poi_coast_pier_ew.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        26
+      ]
+    },
+    "coast_pier_ns": {
+      "file": "decor/poi_coast_pier_ns.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        26
+      ]
+    },
+    "coast_sea_stack": {
+      "file": "decor/poi_coast_sea_stack.png",
+      "flat": false,
+      "footprint": [
+        1,
+        1
+      ],
+      "pivot": [
+        38,
+        62
+      ]
+    }
+  },
+  "specials": {
+    "a_landing_craft": {
+      "load": "unload",
+      "ramp": "ramp_half",
+      "unload": "unload"
+    },
+    "b_barge_carrier": {
+      "load": "unload",
+      "ramp": "ramp_half",
+      "unload": "unload"
+    },
+    "m_amphib_crawler": {
+      "load": "unload",
+      "ramp": "ramp_half",
+      "swim": "swim",
+      "swim_move": "swim_move",
+      "unload": "unload"
+    },
+    "m_hydro_skiff": {
+      "foil": "move"
+    }
+  },
+  "terrain_g5": {
+    "rules": [
+      {
+        "from": [
+          12
+        ],
+        "kind": "surf",
+        "recv": [
+          4,
+          9,
+          10
+        ]
+      },
+      {
+        "from": [
+          4,
+          9,
+          10
+        ],
+        "kind": "cliff_wet",
+        "recv": [
+          12
+        ]
+      }
+    ],
+    "trans": {
+      "cliff_wet": "terrain/trans_cliff_wet.png",
+      "surf": "terrain/trans_surf.png"
+    },
+    "trans_atlas": {
+      "cell": [
+        64,
+        32
+      ],
+      "h": 64,
+      "rows": [
+        "edge",
+        "corner"
+      ],
+      "w": 1024
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_aa_frigate": {
+      "facings": 8,
+      "fh": 97,
+      "file": "wrecks/a_aa_frigate_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 108,
+      "pivot": [
+        54,
+        66
+      ]
+    },
+    "a_destroyer": {
+      "facings": 8,
+      "fh": 105,
+      "file": "wrecks/a_destroyer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 126,
+      "pivot": [
+        63,
+        70
+      ]
+    },
+    "a_landing_craft": {
+      "facings": 8,
+      "fh": 73,
+      "file": "wrecks/a_landing_craft_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 88,
+      "pivot": [
+        44,
+        47
+      ]
+    },
+    "a_patrol_boat": {
+      "facings": 8,
+      "fh": 63,
+      "file": "wrecks/a_patrol_boat_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 70,
+      "pivot": [
+        35,
+        42
+      ]
+    },
+    "b_barge_carrier": {
+      "facings": 8,
+      "fh": 87,
+      "file": "wrecks/b_barge_carrier_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 102,
+      "pivot": [
+        51,
+        58
+      ]
+    },
+    "b_monitor": {
+      "facings": 8,
+      "fh": 107,
+      "file": "wrecks/b_monitor_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 124,
+      "pivot": [
+        62,
+        72
+      ]
+    },
+    "b_river_gunboat": {
+      "facings": 8,
+      "fh": 73,
+      "file": "wrecks/b_river_gunboat_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 76,
+      "pivot": [
+        38,
+        50
+      ]
+    },
+    "m_amphib_crawler": {
+      "facings": 8,
+      "fh": 73,
+      "file": "wrecks/m_amphib_crawler_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        48
+      ]
+    },
+    "m_hydro_skiff": {
+      "facings": 8,
+      "fh": 59,
+      "file": "wrecks/m_hydro_skiff_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 66,
+      "pivot": [
+        33,
+        39
+      ]
+    }
+  },
+  "vehicles": {
+    "a_aa_frigate": {
+      "facings": 8,
+      "fh": 97,
+      "file": "units/a_aa_frigate.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 108,
+      "length_tiles": 2.1,
+      "mask": "units/a_aa_frigate_mask.png",
+      "naval": true,
+      "pivot": [
+        54,
+        66
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 97,
+        "file": "sink/a_aa_frigate_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 108,
+        "pivot": [
+          54,
+          66
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 136,
+        "file": "wake/a_aa_frigate_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 264,
+        "pivot": [
+          132,
+          68
+        ],
+        "under": true
+      },
+      "waterline_px": 7
+    },
+    "a_destroyer": {
+      "facings": 8,
+      "fh": 105,
+      "file": "units/a_destroyer.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 126,
+      "length_tiles": 2.5,
+      "mask": "units/a_destroyer_mask.png",
+      "naval": true,
+      "pivot": [
+        63,
+        70
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 105,
+        "file": "sink/a_destroyer_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 126,
+        "pivot": [
+          63,
+          70
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 156,
+        "file": "wake/a_destroyer_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 304,
+        "pivot": [
+          152,
+          78
+        ],
+        "under": true
+      },
+      "waterline_px": 7
+    },
+    "a_landing_craft": {
+      "facings": 8,
+      "fh": 73,
+      "file": "units/a_landing_craft.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "ramp_half",
+        "unload"
+      ],
+      "fw": 88,
+      "length_tiles": 1.6,
+      "mask": "units/a_landing_craft_mask.png",
+      "naval": true,
+      "pivot": [
+        44,
+        47
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 73,
+        "file": "sink/a_landing_craft_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 88,
+        "pivot": [
+          44,
+          47
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 114,
+        "file": "wake/a_landing_craft_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 218,
+        "pivot": [
+          109,
+          57
+        ],
+        "under": true
+      },
+      "waterline_px": 6
+    },
+    "a_patrol_boat": {
+      "facings": 8,
+      "fh": 63,
+      "file": "units/a_patrol_boat.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 70,
+      "length_tiles": 1.24,
+      "mask": "units/a_patrol_boat_mask.png",
+      "naval": true,
+      "pivot": [
+        35,
+        42
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 63,
+        "file": "sink/a_patrol_boat_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 70,
+        "pivot": [
+          35,
+          42
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 92,
+        "file": "wake/a_patrol_boat_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 176,
+        "pivot": [
+          88,
+          46
+        ],
+        "under": true
+      },
+      "waterline_px": 4
+    },
+    "b_barge_carrier": {
+      "facings": 8,
+      "fh": 87,
+      "file": "units/b_barge_carrier.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "ramp_half",
+        "unload"
+      ],
+      "fw": 102,
+      "length_tiles": 1.9,
+      "mask": "units/b_barge_carrier_mask.png",
+      "naval": true,
+      "pivot": [
+        51,
+        58
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 87,
+        "file": "sink/b_barge_carrier_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 102,
+        "pivot": [
+          51,
+          58
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 128,
+        "file": "wake/b_barge_carrier_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 250,
+        "pivot": [
+          125,
+          64
+        ],
+        "under": true
+      },
+      "waterline_px": 5
+    },
+    "b_monitor": {
+      "facings": 8,
+      "fh": 107,
+      "file": "units/b_monitor.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 124,
+      "length_tiles": 2.4,
+      "mask": "units/b_monitor_mask.png",
+      "naval": true,
+      "pivot": [
+        62,
+        72
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 107,
+        "file": "sink/b_monitor_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 124,
+        "pivot": [
+          62,
+          72
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 154,
+        "file": "wake/b_monitor_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 298,
+        "pivot": [
+          149,
+          77
+        ],
+        "under": true
+      },
+      "waterline_px": 4
+    },
+    "b_river_gunboat": {
+      "facings": 8,
+      "fh": 73,
+      "file": "units/b_river_gunboat.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 76,
+      "length_tiles": 1.4,
+      "mask": "units/b_river_gunboat_mask.png",
+      "naval": true,
+      "pivot": [
+        38,
+        50
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 73,
+        "file": "sink/b_river_gunboat_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 76,
+        "pivot": [
+          38,
+          50
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 100,
+        "file": "wake/b_river_gunboat_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 194,
+        "pivot": [
+          97,
+          50
+        ],
+        "under": true
+      },
+      "waterline_px": 4
+    },
+    "m_amphib_crawler": {
+      "facings": 8,
+      "fh": 73,
+      "file": "units/m_amphib_crawler.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "ramp_half",
+        "unload",
+        "swim",
+        "swim_move"
+      ],
+      "fw": 84,
+      "length_tiles": 1.5,
+      "mask": "units/m_amphib_crawler_mask.png",
+      "naval": true,
+      "pivot": [
+        42,
+        48
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 73,
+        "file": "sink/m_amphib_crawler_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 84,
+        "pivot": [
+          42,
+          48
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 108,
+        "file": "wake/m_amphib_crawler_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 208,
+        "pivot": [
+          104,
+          54
+        ],
+        "under": true
+      },
+      "waterline_px": 8
+    },
+    "m_hydro_skiff": {
+      "facings": 8,
+      "fh": 59,
+      "file": "units/m_hydro_skiff.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 66,
+      "length_tiles": 1.16,
+      "mask": "units/m_hydro_skiff_mask.png",
+      "naval": true,
+      "pivot": [
+        33,
+        39
+      ],
+      "sink": {
+        "facings": 8,
+        "fh": 59,
+        "file": "sink/m_hydro_skiff_sink.png",
+        "frames": [
+          "sink_0",
+          "sink_1",
+          "sink_2",
+          "sink_3"
+        ],
+        "fw": 66,
+        "pivot": [
+          33,
+          39
+        ]
+      },
+      "wake": {
+        "facings": 8,
+        "fh": 88,
+        "file": "wake/m_hydro_skiff_wake.png",
+        "fps": 6,
+        "frames": 3,
+        "fw": 168,
+        "pivot": [
+          84,
+          44
+        ],
+        "under": true
+      },
+      "waterline_px": 3
+    }
+  },
+  "version": 1
+}
