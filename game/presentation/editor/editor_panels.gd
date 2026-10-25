@@ -106,6 +106,8 @@ func build(editor) -> void:
 	# ---- status bar
 	var bottom := _panel(root, Control.PRESET_BOTTOM_WIDE)
 	bottom.offset_top = -BOTTOM_H
+	bottom.offset_bottom = 0  # G5 (UI5a fit CR): keep the bar inside the window; a taller theme grows it upward
+	bottom.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var bb := HBoxContainer.new()
 	bottom.add_child(bb)
 	status_label = HT.make_label("", HT.DIM, 13)
