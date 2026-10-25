@@ -1,0 +1,33 @@
+{
+  "agent": "NAVAL",
+  "gen": 1,
+  "reason": "budget.handoff_now at 83 calls (projection 494k / 700k); every task in G5-NAVAL.md is done and its tests are green, so no successor is needed for the brief itself",
+  "done": [
+    "content/g5/naval.json: 9 ship ids (CONTRACTS_G5 3.3), 9 building ids (3.4: shipyard / supply_pier / coastal_battery x 3 factions), 10 nv_* weapons, production entries (facility = the faction's shipyard), rules.naval tunables (sink_ticks 60, pier_radius 3, pier_every 20, pier_refill, beach_drop_radius 5). PROVISIONAL numbers.",
+    "sim/systems/naval.gd: beach_ok, shore_error (shore / near_water placement), unload_error / drop_ok (beach_unload carriers), pier_at, is_ship, is_water_class, bombard_stats; the bombard command (validate/apply); tick = ship-wreck scan -> sinking -> SHALLOW + Movement.on_terrain_changed, bombard fire missions (indirect splash through Damage.apply_hit), Supply Pier restock from the faction stock",
+    "sim/maps/coastal_front.gd: coastal_front_m 192x192 generator (try_gen / generate / validate = MapCheck.validate + coastal checks), 6 spawns in mirror pairs, 2 islands with sandbars, beaches with seeded cliff stretches, an estuary with 3 SHALLOW fords joining the seas for naval_small",
+    "CRs applied by owners: ORCH construction.gd shore placement (seq 2725), ORCH map registration in map_gen.gd, maps.json and test_maps.gd (seq 2761), AIRSYS transport.gd beach unload (seq 2796)",
+    "facts posted: naval.api_ready, map.coastal_front_ready"
+  ],
+  "remaining": [
+    "Nothing in the NAVAL brief.",
+    "Cross-agent (not NAVAL-owned): test_ui3::test_build_hotkeys_unique_and_not_reserved fails because G3.build_hotkey runs out of letters once the G5 air and naval buildings are buildable (19 failures, including a/b shipyard, supply_pier, coastal_battery and m_coastal_battery). Fix belongs to the owner of presentation/hud/g3* or test_ui3 (ORCH / UI5b): widen the hotkey pool, or page the build menu.",
+    "ART-NAV: test_art::test_effects_and_icons reports placeholder icons for all 9 naval unit ids, which is expected until art.naval_ready."
+  ],
+  "files_touched": ["content/g5/naval.json", "sim/systems/naval.gd", "sim/maps/coastal_front.gd", "tests/test_naval.gd (git mv from tests/pending_g5)", "tests/test_coastal_front.gd (git mv from tests/pending_g5)", ".plan/shots/NAVAL/* (probes, logs, cf_seed1.png)"],
+  "test_state": {
+    "only_test_naval": "RESULT pass=8 fail=0 files=1 time_ms=2849 / TESTS OK",
+    "only_test_coastal_front": "RESULT pass=3 fail=0 files=1 time_ms=6272 / TESTS OK",
+    "only_test_maps": "RESULT pass=11 fail=0 files=1 time_ms=28343 / TESTS OK (includes coastal_front_m seeds 1-20)",
+    "full_suite": "RESULT pass=351 fail=24 files=48 time_ms=2073751 / TESTS FAILED (rc=1 script_errors=1). All 11 NAVAL tests PASS inside it. Failures are in test_air_transport (skeletons), test_art / test_art_g3b / test_art_machine (placeholder art for G5 ids), test_damage / test_g2_scenarios / test_mil (morale and kill checks), test_hot_state (hash vs HEAD), test_ui3 (hotkey pool), test_ui_fit (font not final); the script error is test_units_g5.gd:125, which cannot find SQUAD_EVERY in g5_mech.gd",
+    "log": ".plan/shots/NAVAL/full.log"
+  },
+  "gotchas": [
+    "Events are flat dicts (ev.type, ev.<field>), not ev.data.",
+    "Ship wrecks reuse the world's G2 wreck entity (leaves_wreck); Naval finds the newest wrecks by reverse-scanning SimIndex.of(w, 'wreck') down to tick < w.tick - 1. State is sys_state.naval.wrecks = [[x, y, t_left, wreck_id]]. The 4th element is an addition to the contract's [[x, y, t]].",
+    "The world's _spawn_scrap still drops a salvage pile on the water cell when a ship dies (unreachable for gatherers).",
+    "Landing craft 12 slots carry 12 foot, 3 light or 1 heavy vehicle (rules cargo_size); the plan's '2 vehicles' would need per-carrier sizing.",
+    "Coastal Front 3-side set is the north triangle [0, 3, 4]: with 4-connected paths, any 3 corners of the coastal rectangle skew mean paths about 1.5x.",
+    "A heredoc with a quoted EOF failed twice in this shell wrapper; use the Edit/Write tools for multi-line appends."
+  ]
+}
