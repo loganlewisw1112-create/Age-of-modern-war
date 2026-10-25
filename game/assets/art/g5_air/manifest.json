@@ -1,0 +1,1431 @@
+{
+  "effects": {
+    "g5_afterburner": {
+      "fh": 12,
+      "file": "fx/g5_afterburner.png",
+      "frames": 2,
+      "fw": 12,
+      "pivot": [
+        6,
+        6
+      ]
+    },
+    "g5_air_bomb": {
+      "fh": 16,
+      "file": "fx/g5_air_bomb.png",
+      "frames": 4,
+      "fw": 9,
+      "pivot": [
+        4,
+        8
+      ]
+    },
+    "g5_air_crash": {
+      "fh": 30,
+      "file": "fx/g5_air_crash.png",
+      "frames": 4,
+      "fw": 40,
+      "pivot": [
+        20,
+        24
+      ]
+    },
+    "g5_air_smoke": {
+      "fh": 22,
+      "file": "fx/g5_air_smoke.png",
+      "frames": 4,
+      "fw": 16,
+      "pivot": [
+        8,
+        20
+      ]
+    },
+    "g5_bomb_blast": {
+      "fh": 36,
+      "file": "fx/g5_bomb_blast.png",
+      "frames": 6,
+      "fw": 48,
+      "pivot": [
+        24,
+        30
+      ]
+    },
+    "g5_flak_burst": {
+      "fh": 18,
+      "file": "fx/g5_flak_burst.png",
+      "frames": 4,
+      "fw": 20,
+      "pivot": [
+        10,
+        9
+      ]
+    },
+    "g5_missile": {
+      "fh": 18,
+      "file": "fx/g5_missile.png",
+      "frames": 8,
+      "fw": 18,
+      "pivot": [
+        9,
+        9
+      ]
+    },
+    "g5_missile_trail": {
+      "fh": 8,
+      "file": "fx/g5_missile_trail.png",
+      "frames": 4,
+      "fw": 10,
+      "pivot": [
+        5,
+        4
+      ]
+    },
+    "g5_rotor_wash": {
+      "fh": 30,
+      "file": "fx/g5_rotor_wash.png",
+      "frames": 4,
+      "fw": 64,
+      "pivot": [
+        32,
+        15
+      ]
+    }
+  },
+  "files": {
+    "fx/g5_afterburner.png": "5e1c8cc2b574a734e247454c107ceb2f",
+    "fx/g5_air_bomb.png": "d57511654db72a79c161dc1463ad2ff8",
+    "fx/g5_air_crash.png": "62db8aaeccf9d211308ea6c69b381e45",
+    "fx/g5_air_smoke.png": "c5bf77e055cf0336e755e042926e7bbe",
+    "fx/g5_bomb_blast.png": "c3d9c288d3d383fef917f0f2145ab4c9",
+    "fx/g5_flak_burst.png": "ef2fcda902f7fd7a259d6aa1758331d5",
+    "fx/g5_missile.png": "f039fa4579d5ffd2c40b41921167b489",
+    "fx/g5_missile_trail.png": "a893baac73437ef10353462481456816",
+    "fx/g5_rotor_wash.png": "76b939f27104cc666666f6354eca2a5c",
+    "icons/a_attack_heli.png": "8ce10cd8976223a1de5d049e7970e4f5",
+    "icons/a_interceptor.png": "852e0170e2cf32830762bdf891400b66",
+    "icons/a_strike_jet.png": "bf096cb1bde9f1f60fd876c283251539",
+    "icons/a_transport_gunship.png": "d5c179df9724b1d458a56818481f3327",
+    "icons/a_vtol_dropship.png": "a91880470b5cd8f2555baa0d4bef4459",
+    "icons/b_bomber.png": "c3e88750883d8f6c7633f9fb912c2b5e",
+    "icons/b_gunship.png": "3519c5f184272cdd2f6220e7818d10f6",
+    "icons/b_heavy_lift.png": "41e3c99199d4f7cff08a43a1c16240d3",
+    "icons/b_vtol_dropship.png": "c91457bc892f3b26b0bbd3fe05170b6f",
+    "icons/m_drone_carrier.png": "191e7a71dacee620c8acb92a1b19a63e",
+    "icons/m_interceptor_swarm.png": "35de077716f726d415184642ccf7cefa",
+    "icons/m_lifter_drone.png": "9ab143bfbd82966a3c5bdf6b5e3010e8",
+    "icons/m_micro_drone.png": "cc670fec29ad96ef1d220f3d7e493a4a",
+    "units/a_attack_heli.png": "34541c1696ddf87651a9b8dbc0a7231e",
+    "units/a_attack_heli_mask.png": "c940801334cc68eb5d5dbd3bc1ec2bc6",
+    "units/a_attack_heli_shadow.png": "f5ea0ca63a74dfa82f90a7b017c08958",
+    "units/a_attack_heli_shadow8.png": "492dee1f08ed51da41f99e4ad518ac23",
+    "units/a_interceptor.png": "d7f20629414e6a793314fbc54cac765a",
+    "units/a_interceptor_mask.png": "d3c257666ba929d128a473ca75ede9ca",
+    "units/a_interceptor_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/a_interceptor_shadow8.png": "6ee9ff951fa219594a757fcd1a695bcd",
+    "units/a_strike_jet.png": "06bc6af951d3e16a91df9bb17596d5c5",
+    "units/a_strike_jet_mask.png": "fa2da7e376cb7c87d6e9a3d14ba0626d",
+    "units/a_strike_jet_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/a_strike_jet_shadow8.png": "63e2755613fe2d1831ee113da85b315f",
+    "units/a_transport_gunship.png": "6c781ce3e9de482f21329f3c90af9292",
+    "units/a_transport_gunship_mask.png": "bab0aabcc462b3e504100ad98fdcba70",
+    "units/a_transport_gunship_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/a_transport_gunship_shadow8.png": "fbcfc8aa90f57d509e30c7abd90d09d1",
+    "units/a_vtol_dropship.png": "eff8d524a05a0409007a83ef7c878528",
+    "units/a_vtol_dropship_mask.png": "8878bafb2026be253ea3ce0df61cfdf7",
+    "units/a_vtol_dropship_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
+    "units/a_vtol_dropship_shadow8.png": "329c20d4071c893bf1d1444c75935d36",
+    "units/b_bomber.png": "828eb1611c5c1cd7306a690c749e3821",
+    "units/b_bomber_mask.png": "2664ae215a244aa36c12d8359d527b1b",
+    "units/b_bomber_shadow.png": "23bcfa77cc7f9db2d4e846dec5653447",
+    "units/b_bomber_shadow8.png": "9c5ef77e1dc0ac858bf1316adbf231b1",
+    "units/b_gunship.png": "b9f305cabddebe5525f1c3c76c9d24f6",
+    "units/b_gunship_mask.png": "fd6b03e310ab5c923567a2782f284fc3",
+    "units/b_gunship_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/b_gunship_shadow8.png": "e6c82ce779c731ce921727d35989ca96",
+    "units/b_heavy_lift.png": "6a32a492bcfa4092e474f73e0992f5f3",
+    "units/b_heavy_lift_mask.png": "90a15cd9b1cd76c59b788d908ca70da0",
+    "units/b_heavy_lift_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
+    "units/b_heavy_lift_shadow8.png": "8b7b8ff371299eee35b4640d31cae398",
+    "units/b_vtol_dropship.png": "789e3a0524d02d838ca0dd540a9c4457",
+    "units/b_vtol_dropship_mask.png": "d00836cb145aa81d02b8cd1ca1d37bf2",
+    "units/b_vtol_dropship_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
+    "units/b_vtol_dropship_shadow8.png": "ece5b0d4b07e205b1c44fabf4cd91dda",
+    "units/m_drone_carrier.png": "559b7fae4ee60bdf2051d804de579204",
+    "units/m_drone_carrier_mask.png": "2c08b0d933d3a42cec6514c706bbac9d",
+    "units/m_drone_carrier_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/m_drone_carrier_shadow8.png": "02b78a58ca34855862d24a7b43fd851c",
+    "units/m_interceptor_swarm.png": "f75d83401ca0edb2229cc96946045955",
+    "units/m_interceptor_swarm_mask.png": "3f7bf8f2d5dfcbd644f7e595bd2f915d",
+    "units/m_interceptor_swarm_shadow.png": "73ecee4cb041ac5987399e3e9657b592",
+    "units/m_interceptor_swarm_shadow8.png": "50a4781261f185df72732f457d2a379c",
+    "units/m_lifter_drone.png": "46b60f27b33df868a2b1107514bacf55",
+    "units/m_lifter_drone_mask.png": "d29e96dde156e3499583eb482a804673",
+    "units/m_lifter_drone_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/m_lifter_drone_shadow8.png": "91f196ae516c0d3fbe8524a7d75a7ec4",
+    "units/m_micro_drone.png": "598b1dff497f1bb5a07809ded5c74280",
+    "units/m_micro_drone_mask.png": "41e1cfc753ca465c9cab2e2b98afc8a5",
+    "units/m_micro_drone_shadow.png": "18b86b8d8727c6870d80643420127504",
+    "units/m_micro_drone_shadow8.png": "66bace3f9a4b432035788d5dacf16abd",
+    "wrecks/a_attack_heli_wreck.png": "2b6ffc29cddb2886c6e3e6766b5773c1",
+    "wrecks/a_interceptor_wreck.png": "a341e6f6700c697f6be6a3264d635549",
+    "wrecks/a_strike_jet_wreck.png": "a8121a36bce22cb313118bc6bf3a4e42",
+    "wrecks/a_transport_gunship_wreck.png": "697092ad8e0bb4f335df988aacddeeef",
+    "wrecks/a_vtol_dropship_wreck.png": "01cca0632755236e25ef7376cdbb963b",
+    "wrecks/b_bomber_wreck.png": "bb05a357852a78554a1afe89da9fe635",
+    "wrecks/b_gunship_wreck.png": "67c77cfd24c55653ae9bfcb6d0f85bd9",
+    "wrecks/b_heavy_lift_wreck.png": "e10cc02ae95bbd7fa5dcf45aef40d65b",
+    "wrecks/b_vtol_dropship_wreck.png": "62913e4a4873ed07b40fa41d95d51612",
+    "wrecks/m_drone_carrier_wreck.png": "7bebf7861e5c59fa33fee444022d1bb4",
+    "wrecks/m_interceptor_swarm_wreck.png": "b031f47c64d60bffd5691b414ccd9690",
+    "wrecks/m_lifter_drone_wreck.png": "5d6875afcd03258b0f379ff7b967035d",
+    "wrecks/m_micro_drone_wreck.png": "222ea91010b556874b8b111c7863e202"
+  },
+  "group": "g5_air",
+  "icons": {
+    "a_attack_heli": "icons/a_attack_heli.png",
+    "a_interceptor": "icons/a_interceptor.png",
+    "a_strike_jet": "icons/a_strike_jet.png",
+    "a_transport_gunship": "icons/a_transport_gunship.png",
+    "a_vtol_dropship": "icons/a_vtol_dropship.png",
+    "b_bomber": "icons/b_bomber.png",
+    "b_gunship": "icons/b_gunship.png",
+    "b_heavy_lift": "icons/b_heavy_lift.png",
+    "b_vtol_dropship": "icons/b_vtol_dropship.png",
+    "m_drone_carrier": "icons/m_drone_carrier.png",
+    "m_interceptor_swarm": "icons/m_interceptor_swarm.png",
+    "m_lifter_drone": "icons/m_lifter_drone.png",
+    "m_micro_drone": "icons/m_micro_drone.png"
+  },
+  "lod_class": {
+    "a_attack_heli": "air",
+    "a_interceptor": "air",
+    "a_strike_jet": "air",
+    "a_transport_gunship": "air",
+    "a_vtol_dropship": "air",
+    "b_bomber": "air",
+    "b_gunship": "air",
+    "b_heavy_lift": "air",
+    "b_vtol_dropship": "air",
+    "m_drone_carrier": "air",
+    "m_interceptor_swarm": "air",
+    "m_lifter_drone": "air",
+    "m_micro_drone": "air"
+  },
+  "specials": {
+    "a_attack_heli": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move"
+    },
+    "a_interceptor": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hold": "taxi",
+      "holding": "idle",
+      "landed": "parked",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "roll": "roll",
+      "sortie": "move",
+      "taxi": "taxi",
+      "taxi_in": "taxi"
+    },
+    "a_strike_jet": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hold": "taxi",
+      "holding": "idle",
+      "landed": "parked",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "roll": "roll",
+      "sortie": "move",
+      "taxi": "taxi",
+      "taxi_in": "taxi"
+    },
+    "a_transport_gunship": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "load": "unload",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "sling": "sling",
+      "sling_hook": "sling_hook",
+      "unload": "unload"
+    },
+    "a_vtol_dropship": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hover": "hover",
+      "landed": "landed",
+      "load": "unload",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "sling": "sling",
+      "sling_hook": "sling_hook",
+      "unload": "unload"
+    },
+    "b_bomber": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hold": "taxi",
+      "holding": "idle",
+      "landed": "parked",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "roll": "roll",
+      "sortie": "move",
+      "taxi": "taxi",
+      "taxi_in": "taxi"
+    },
+    "b_gunship": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move"
+    },
+    "b_heavy_lift": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "load": "unload",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "sling": "sling",
+      "sling_hook": "sling_hook",
+      "unload": "unload"
+    },
+    "b_vtol_dropship": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hover": "hover",
+      "landed": "landed",
+      "load": "unload",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "sling": "sling",
+      "sling_hook": "sling_hook",
+      "unload": "unload"
+    },
+    "m_drone_carrier": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move"
+    },
+    "m_interceptor_swarm": {
+      "air": "idle",
+      "approach": "landing",
+      "fire": "fire",
+      "hold": "taxi",
+      "holding": "idle",
+      "landed": "parked",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "roll": "roll",
+      "sortie": "move",
+      "taxi": "taxi",
+      "taxi_in": "taxi"
+    },
+    "m_lifter_drone": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "load": "unload",
+      "move": "move",
+      "parked": "parked",
+      "ret": "move",
+      "sling": "sling",
+      "sling_hook": "sling_hook",
+      "unload": "unload"
+    },
+    "m_micro_drone": {
+      "air": "idle",
+      "fire": "fire",
+      "landed": "landed",
+      "move": "move",
+      "parked": "landed"
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_attack_heli": {
+      "facings": 8,
+      "fh": 79,
+      "file": "wrecks/a_attack_heli_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 97,
+      "pivot": [
+        45,
+        45
+      ]
+    },
+    "a_interceptor": {
+      "facings": 8,
+      "fh": 67,
+      "file": "wrecks/a_interceptor_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 98,
+      "pivot": [
+        49,
+        40
+      ]
+    },
+    "a_strike_jet": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/a_strike_jet_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 92,
+      "pivot": [
+        46,
+        39
+      ]
+    },
+    "a_transport_gunship": {
+      "facings": 8,
+      "fh": 83,
+      "file": "wrecks/a_transport_gunship_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 105,
+      "pivot": [
+        49,
+        47
+      ]
+    },
+    "a_vtol_dropship": {
+      "facings": 8,
+      "fh": 83,
+      "file": "wrecks/a_vtol_dropship_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 103,
+      "pivot": [
+        52,
+        50
+      ]
+    },
+    "b_bomber": {
+      "facings": 8,
+      "fh": 88,
+      "file": "wrecks/b_bomber_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 112,
+      "pivot": [
+        52,
+        48
+      ]
+    },
+    "b_gunship": {
+      "facings": 8,
+      "fh": 86,
+      "file": "wrecks/b_gunship_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 109,
+      "pivot": [
+        51,
+        49
+      ]
+    },
+    "b_heavy_lift": {
+      "facings": 8,
+      "fh": 95,
+      "file": "wrecks/b_heavy_lift_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 120,
+      "pivot": [
+        60,
+        60
+      ]
+    },
+    "b_vtol_dropship": {
+      "facings": 8,
+      "fh": 76,
+      "file": "wrecks/b_vtol_dropship_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 86,
+      "pivot": [
+        39,
+        44
+      ]
+    },
+    "m_drone_carrier": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/m_drone_carrier_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 90,
+      "pivot": [
+        45,
+        38
+      ]
+    },
+    "m_interceptor_swarm": {
+      "facings": 8,
+      "fh": 54,
+      "file": "wrecks/m_interceptor_swarm_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 77,
+      "pivot": [
+        39,
+        31
+      ]
+    },
+    "m_lifter_drone": {
+      "facings": 8,
+      "fh": 69,
+      "file": "wrecks/m_lifter_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 79,
+      "pivot": [
+        36,
+        41
+      ]
+    },
+    "m_micro_drone": {
+      "facings": 8,
+      "fh": 36,
+      "file": "wrecks/m_micro_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 40,
+      "pivot": [
+        20,
+        21
+      ]
+    }
+  },
+  "vehicles": {
+    "a_attack_heli": {
+      "air": true,
+      "aircraft": "heli",
+      "alt_scale": {},
+      "altitude": 20,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 79,
+      "file": "units/a_attack_heli.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked"
+      ],
+      "fw": 97,
+      "ground_frames": [
+        "landed",
+        "parked"
+      ],
+      "mask": "units/a_attack_heli_mask.png",
+      "pivot": [
+        45,
+        45
+      ],
+      "shadow": {
+        "fh": 16,
+        "file": "units/a_attack_heli_shadow.png",
+        "fw": 30,
+        "pivot": [
+          15,
+          8
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 79,
+        "file": "units/a_attack_heli_shadow8.png",
+        "fw": 97,
+        "pivot": [
+          45,
+          45
+        ]
+      }
+    },
+    "a_interceptor": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 67,
+      "file": "units/a_interceptor.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "taxi",
+        "roll",
+        "landing",
+        "parked"
+      ],
+      "fw": 98,
+      "ground_frames": [
+        "taxi",
+        "roll",
+        "parked"
+      ],
+      "mask": "units/a_interceptor_mask.png",
+      "pivot": [
+        49,
+        40
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/a_interceptor_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 67,
+        "file": "units/a_interceptor_shadow8.png",
+        "fw": 98,
+        "pivot": [
+          49,
+          40
+        ]
+      }
+    },
+    "a_strike_jet": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 64,
+      "file": "units/a_strike_jet.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "taxi",
+        "roll",
+        "landing",
+        "parked"
+      ],
+      "fw": 92,
+      "ground_frames": [
+        "taxi",
+        "roll",
+        "parked"
+      ],
+      "mask": "units/a_strike_jet_mask.png",
+      "pivot": [
+        46,
+        39
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/a_strike_jet_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 64,
+        "file": "units/a_strike_jet_shadow8.png",
+        "fw": 92,
+        "pivot": [
+          46,
+          39
+        ]
+      }
+    },
+    "a_transport_gunship": {
+      "air": true,
+      "aircraft": "lift",
+      "alt_scale": {},
+      "altitude": 22,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 83,
+      "file": "units/a_transport_gunship.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked",
+        "sling",
+        "sling_b",
+        "sling_hook",
+        "unload"
+      ],
+      "fw": 105,
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/a_transport_gunship_mask.png",
+      "pivot": [
+        49,
+        47
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/a_transport_gunship_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 83,
+        "file": "units/a_transport_gunship_shadow8.png",
+        "fw": 105,
+        "pivot": [
+          49,
+          47
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 3,
+        "hook_frame": "sling_hook",
+        "load_dy": 14
+      }
+    },
+    "a_vtol_dropship": {
+      "air": true,
+      "aircraft": "vtol",
+      "alt_scale": {
+        "hover": 0.6,
+        "hover_b": 0.6,
+        "landing": 0.35
+      },
+      "altitude": 24,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "hover": [
+          "hover",
+          "hover_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 83,
+      "file": "units/a_vtol_dropship.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "hover",
+        "hover_b",
+        "landing",
+        "landed",
+        "parked",
+        "unload",
+        "sling",
+        "sling_b",
+        "sling_hook"
+      ],
+      "fw": 103,
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/a_vtol_dropship_mask.png",
+      "pivot": [
+        52,
+        50
+      ],
+      "shadow": {
+        "fh": 21,
+        "file": "units/a_vtol_dropship_shadow.png",
+        "fw": 39,
+        "pivot": [
+          19,
+          10
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 83,
+        "file": "units/a_vtol_dropship_shadow8.png",
+        "fw": 103,
+        "pivot": [
+          52,
+          50
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 3,
+        "hook_frame": "sling_hook",
+        "load_dy": 14
+      }
+    },
+    "b_bomber": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 88,
+      "file": "units/b_bomber.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "taxi",
+        "roll",
+        "landing",
+        "parked"
+      ],
+      "fw": 112,
+      "ground_frames": [
+        "taxi",
+        "roll",
+        "parked"
+      ],
+      "mask": "units/b_bomber_mask.png",
+      "pivot": [
+        52,
+        48
+      ],
+      "shadow": {
+        "fh": 22,
+        "file": "units/b_bomber_shadow.png",
+        "fw": 42,
+        "pivot": [
+          21,
+          11
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 88,
+        "file": "units/b_bomber_shadow8.png",
+        "fw": 112,
+        "pivot": [
+          52,
+          48
+        ]
+      }
+    },
+    "b_gunship": {
+      "air": true,
+      "aircraft": "heli",
+      "alt_scale": {},
+      "altitude": 20,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 86,
+      "file": "units/b_gunship.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked"
+      ],
+      "fw": 109,
+      "ground_frames": [
+        "landed",
+        "parked"
+      ],
+      "mask": "units/b_gunship_mask.png",
+      "pivot": [
+        51,
+        49
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/b_gunship_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 86,
+        "file": "units/b_gunship_shadow8.png",
+        "fw": 109,
+        "pivot": [
+          51,
+          49
+        ]
+      }
+    },
+    "b_heavy_lift": {
+      "air": true,
+      "aircraft": "lift",
+      "alt_scale": {},
+      "altitude": 22,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 95,
+      "file": "units/b_heavy_lift.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked",
+        "sling",
+        "sling_b",
+        "sling_hook",
+        "unload"
+      ],
+      "fw": 120,
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/b_heavy_lift_mask.png",
+      "pivot": [
+        60,
+        60
+      ],
+      "shadow": {
+        "fh": 21,
+        "file": "units/b_heavy_lift_shadow.png",
+        "fw": 39,
+        "pivot": [
+          19,
+          10
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 95,
+        "file": "units/b_heavy_lift_shadow8.png",
+        "fw": 120,
+        "pivot": [
+          60,
+          60
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 3,
+        "hook_frame": "sling_hook",
+        "load_dy": 14
+      }
+    },
+    "b_vtol_dropship": {
+      "air": true,
+      "aircraft": "vtol",
+      "alt_scale": {
+        "hover": 0.6,
+        "hover_b": 0.6,
+        "landing": 0.35
+      },
+      "altitude": 24,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "hover": [
+          "hover",
+          "hover_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 76,
+      "file": "units/b_vtol_dropship.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "hover",
+        "hover_b",
+        "landing",
+        "landed",
+        "parked",
+        "unload",
+        "sling",
+        "sling_b",
+        "sling_hook"
+      ],
+      "fw": 86,
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/b_vtol_dropship_mask.png",
+      "pivot": [
+        39,
+        44
+      ],
+      "shadow": {
+        "fh": 21,
+        "file": "units/b_vtol_dropship_shadow.png",
+        "fw": 39,
+        "pivot": [
+          19,
+          10
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 76,
+        "file": "units/b_vtol_dropship_shadow8.png",
+        "fw": 86,
+        "pivot": [
+          39,
+          44
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 3,
+        "hook_frame": "sling_hook",
+        "load_dy": 14
+      }
+    },
+    "m_drone_carrier": {
+      "air": true,
+      "aircraft": "heli",
+      "alt_scale": {},
+      "altitude": 20,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 64,
+      "file": "units/m_drone_carrier.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked"
+      ],
+      "fw": 90,
+      "ground_frames": [
+        "landed",
+        "parked"
+      ],
+      "mask": "units/m_drone_carrier_mask.png",
+      "pivot": [
+        45,
+        38
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/m_drone_carrier_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 64,
+        "file": "units/m_drone_carrier_shadow8.png",
+        "fw": 90,
+        "pivot": [
+          45,
+          38
+        ]
+      }
+    },
+    "m_interceptor_swarm": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 54,
+      "file": "units/m_interceptor_swarm.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "taxi",
+        "roll",
+        "landing",
+        "parked"
+      ],
+      "fw": 77,
+      "ground_frames": [
+        "taxi",
+        "roll",
+        "parked"
+      ],
+      "mask": "units/m_interceptor_swarm_mask.png",
+      "pivot": [
+        39,
+        31
+      ],
+      "shadow": {
+        "fh": 19,
+        "file": "units/m_interceptor_swarm_shadow.png",
+        "fw": 36,
+        "pivot": [
+          18,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 54,
+        "file": "units/m_interceptor_swarm_shadow8.png",
+        "fw": 77,
+        "pivot": [
+          39,
+          31
+        ]
+      }
+    },
+    "m_lifter_drone": {
+      "air": true,
+      "aircraft": "lift",
+      "alt_scale": {},
+      "altitude": 22,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 2,
+      "facings": 8,
+      "fh": 69,
+      "file": "units/m_lifter_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked",
+        "sling",
+        "sling_b",
+        "sling_hook",
+        "unload"
+      ],
+      "fw": 79,
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/m_lifter_drone_mask.png",
+      "pivot": [
+        36,
+        41
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/m_lifter_drone_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 69,
+        "file": "units/m_lifter_drone_shadow8.png",
+        "fw": 79,
+        "pivot": [
+          36,
+          41
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 6,
+        "hook_frame": "sling_hook",
+        "load_dy": 14
+      }
+    },
+    "m_micro_drone": {
+      "air": true,
+      "aircraft": "micro",
+      "alt_scale": {},
+      "altitude": 12,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 36,
+      "file": "units/m_micro_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed"
+      ],
+      "fw": 40,
+      "ground_frames": [
+        "landed"
+      ],
+      "mask": "units/m_micro_drone_mask.png",
+      "pivot": [
+        20,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/m_micro_drone_shadow.png",
+        "fw": 12,
+        "pivot": [
+          6,
+          3
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8,
+        "fh": 36,
+        "file": "units/m_micro_drone_shadow8.png",
+        "fw": 40,
+        "pivot": [
+          20,
+          21
+        ]
+      }
+    }
+  },
+  "version": 1
+}
