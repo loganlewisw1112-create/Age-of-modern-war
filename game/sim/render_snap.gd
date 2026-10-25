@@ -31,9 +31,28 @@ const UNLOAD_NEAR := 4.0      # carrier within this of its unload_order target s
 const DEF_CARRIER := 1 << 30  # def table only: the def has cargo_slots
 const DEF_G4B := 1 << 29      # def table only: conceal_still / setup_ticks / can_mine / can_charge
 const DETAIL_MAX := 64      # detail copies per snapshot (a 500-unit marquee must not cost 5 ms)
+# ---- G5 (VIEW5): per-unit visual-state bits (CONTRACTS_G5 sections 6-10). Sparse side tables in the
+# snapshot carry the numbers: air {id: {ph, alt, field, strip}}, aboard {id: carrier id},
+# evac {carrier id: n}, squad {id: squad_alive} (only while < squad_size), sling {carrier id: [defs]}.
+const FLAG_WOUNDED := 1 << 18   # e.wounded (Medical, D16): wounded pose + marker
+const FLAG_ABOARD := 1 << 19    # wounded riding in an evac carrier (e.evac_by): hidden, rides at the carrier
+const FLAG_LANDED := 1 << 20    # G5 aircraft on the ground (parked / taxi / landed): no lift, no shadow gap
+const FLAG_SHIP := 1 << 21      # def moves on water (naval / naval_small): wake while moving
+const FLAG_DRONE := 1 << 22     # launched drone (UNITS5): altitude + shadow + trail
+const FLAG_EVAC := 1 << 23      # carrier with wounded aboard (medical carriers): carry / load frame + red cross
+const FLAG_NEEDY := 1 << 24     # unit flagged needy by Support (auto resupply scan): supply icon
+const FLAG_RESUP := 1 << 25     # unit claimed by a resupply truck (e.resup_by): supply icon (served)
+const FLAG_TACTICAL := 1 << 26  # Drone Team in tactical mode (G5Mech.mode == "tactical"): tactical frame
+const FLAG_SLUNG := 1 << 27     # sling carrier with a vehicle under it (snap.sling[id] lists the defs)
+const DEF_AIRCRAFT := 1 << 28   # def table only: G5 aircraft (def `aircraft`) or launched drone
+const DEF_SQUAD := 1 << 27      # def table only: squad entity (squad_size > 1)
+const DEF_DTEAM := 1 << 26      # def table only: drone_charges (Drone Team)
+const DEF_SLING := 1 << 25      # def table only: sling carrier
+const DEF_PASS := FLAG_AIR | FLAG_SHIP | FLAG_DRONE  # def-table bits copied straight into flags
 # statics: fields copied when present (scalars / Vector2 / Vector2i only)
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
-	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse", "target"]  # seen/fuse/target: G4b mines / charges (UI4B)
+	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse", "target",  # seen/fuse/target: G4b mines / charges (UI4B)
+	"level", "class", "facing_i", "air_build", "air_parent", "extra_strips", "sinking"]  # G5 (VIEW5): hangars, fields, sinking wrecks
 
 
 ## Builds the snapshot for the world's current state. Safe to call every tick; the cost is one
@@ -75,6 +94,8 @@ static func build(w) -> void:
 	var unl: Dictionary = cache.get("snap_unload", {})  # carrier id -> tick its cargo count last dropped
 	var last_def := ""
 	var last_di := -1
+	var g5: Dictionary = _g5_inputs(w)  # G5 (VIEW5): sim tables read once per snapshot
+	var g5_any: bool = g5.any
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
 		if e.kind == "unit":
@@ -92,6 +113,7 @@ static func build(w) -> void:
 						dfl |= DEF_CARRIER
 					if ud.get("conceal_still", false) or int(ud.get("setup_ticks", 0)) > 0 							or ud.get("can_mine", false) or ud.get("can_charge", false):
 						dfl |= DEF_G4B
+					dfl |= _g5_def_bits(ud)
 					def_fl.append(dfl)
 				di = dv
 				last_def = dname
@@ -108,7 +130,11 @@ static func build(w) -> void:
 				if k < o_n and o_ids[k] == id:
 					pp = o_pos[k]
 			var dfl2: int = def_fl[di]
-			var fl := dfl2 & FLAG_AIR
+			var fl := dfl2 & DEF_PASS
+			if dfl2 & DEF_G5:
+				fl |= _g5_unit(e, id, dfl2, g5)
+			if g5_any:
+				fl |= _g5_dyn(e, id, g5)
 			if e.moving:
 				fl |= FLAG_MOVING
 			if e.firing > 0:
@@ -160,6 +186,7 @@ static func build(w) -> void:
 		# PackedByteArray refs (copy-on-write): terrain changes only via bridge / fire events
 		"terrain": w.map.get("terrain", PackedByteArray()), "biome": w.map.get("biome", PackedByteArray()),
 	}
+	_g5_out(w, snap, g5)
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
 
@@ -286,3 +313,271 @@ static func _memory(w) -> Dictionary:
 		# deep for the viewing sides (match_view sets snap_fids): the sim edits entries in place
 		out[fid] = (w.memory[fid] as Dictionary).duplicate(only != null)
 	return out
+
+
+# ================================================================ G5 (VIEW5)
+# Snapshot additions (all fresh containers; nothing aliases a mutable sim container):
+#   air {id: {ph, alt 0..1, field, strip}} for G5 aircraft + launched drones (alt 0 = on the ground),
+#   holding {field id: [ids]}, airfields {bid: {def, owner, kind, facing_i, strip_len, strips: [{open,
+#   crater_t, busy, a, b}], hangars, pads}}, sinking {wreck id: {pos, k (1 = just sunk .. 0 = gone)}},
+#   trucks {id: {owner, mode, center, radius, phase, load}} (auto resupply, mode != off),
+#   aboard {id: carrier id}, evac {carrier id: wounded aboard}, squad {id: squad_alive (< size)},
+#   sling {carrier id: [vehicle defs]}, burnt (w.map.burnt ref, COW), water_d on shore statics.
+const AXES := [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]  # = Airfield.AXES
+const DEF_G5 := DEF_AIRCRAFT | DEF_SQUAD | DEF_DTEAM | DEF_SLING
+const GROUND_PHASES := ["parked", "taxi", "hold", "taxi_in", "landed"]
+const FLOWN_PHASES := ["taxi", "roll", "sortie", "ret", "holding", "approach", "taxi_in", "fly"]
+
+
+static func _g5_def_bits(ud: Dictionary) -> int:
+	var b := 0
+	if String(ud.get("move_class", "")).begins_with("naval"):
+		b |= FLAG_SHIP
+	if bool(ud.get("launched_drone", false)):
+		b |= FLAG_DRONE | DEF_AIRCRAFT
+	if ud.has("aircraft"):
+		b |= DEF_AIRCRAFT
+	if int(ud.get("squad_size", 0)) > 1:
+		b |= DEF_SQUAD
+	if ud.has("drone_charges"):
+		b |= DEF_DTEAM
+	if bool(ud.get("sling", false)):
+		b |= DEF_SLING
+	return b
+
+
+static func _g5_inputs(w) -> Dictionary:
+	var ss: Dictionary = w.sys_state
+	var flights: Dictionary = {}
+	var a = ss.get("air")
+	if a is Dictionary and a.get("flights") is Dictionary:
+		flights = a.flights
+	var drones: Dictionary = {}
+	var g = ss.get("g5mech")
+	if g is Dictionary and g.get("drones") is Dictionary:
+		drones = g.drones
+	var needy: Dictionary = {}
+	var s = ss.get("support")
+	var trucks := false
+	if s is Dictionary:
+		if s.get("needy") is Dictionary:
+			needy = s.needy
+		trucks = s.get("trucks") is Dictionary and not (s.trucks as Dictionary).is_empty()
+	var med: bool = ss.get("medical") is Dictionary
+	return {"any": med or trucks or not needy.is_empty(), "med": med, "trucks": trucks, "needy": needy,
+		"flights": flights, "drones": drones, "air": {}, "aboard": {}, "evac": {}, "squad": {}, "sling": {}}
+
+
+## Per-unit dynamic G5 bits (medical / support): only called while those systems hold state.
+static func _g5_dyn(e: Dictionary, id: int, g5: Dictionary) -> int:
+	var fl := 0
+	if g5.med:
+		if e.get("wounded", false):
+			fl |= FLAG_WOUNDED
+		var cb = e.get("evac_by")
+		if cb != null and int(cb) >= 0:
+			fl |= FLAG_ABOARD
+			g5.aboard[id] = int(cb)
+		var el = e.get("evac_load")
+		if el is Array and not (el as Array).is_empty():
+			fl |= FLAG_EVAC
+			g5.evac[id] = (el as Array).size()
+	if (g5.needy as Dictionary).has(id):
+		fl |= FLAG_NEEDY
+	if g5.trucks:
+		var rb = e.get("resup_by")
+		if rb != null and int(rb) >= 0:
+			fl |= FLAG_RESUP
+	return fl
+
+
+## Per-def G5 bits (aircraft / drones / squads / drone teams / sling carriers).
+static func _g5_unit(e: Dictionary, id: int, dfl: int, g5: Dictionary) -> int:
+	var fl := 0
+	if dfl & DEF_AIRCRAFT:
+		var ph := "air"
+		var alt := 1.0
+		var fld := -1
+		var stp := -1
+		var f = (g5.flights as Dictionary).get(id)
+		if f is Dictionary:
+			ph = String(f.get("phase", "air"))
+			alt = alt_of(ph, float(f.get("t", 0.0)))
+			fld = int(f.get("field", -1))
+			stp = int(f.get("strip", -1))
+		if dfl & FLAG_DRONE:
+			var dr = (g5.drones as Dictionary).get(id)
+			ph = String(dr.get("phase", "fly")) if dr is Dictionary else "fly"
+			alt = 1.0
+		elif not (f is Dictionary) and e.get("air_landed", false):
+			alt = 0.0  # no flight record yet: trust the landed mirror (air_landed stays set through the roll)
+			ph = "landed"
+		if alt <= 0.0:
+			fl |= FLAG_LANDED
+		if FLOWN_PHASES.has(ph):
+			fl |= FLAG_MOVING  # Air / G5Mech move these themselves (e.moving stays false): move frame, trail
+		g5.air[id] = {"ph": ph, "alt": alt, "field": fld, "strip": stp}
+	if dfl & DEF_SQUAD:
+		var sz := int(e.get("squad_size", 0))
+		var al := int(e.get("squad_alive", sz))
+		if al > 0 and al < sz:
+			g5.squad[id] = al
+	if dfl & DEF_DTEAM and String(e.get("dmode", "drone")) == "tactical":
+		fl |= FLAG_TACTICAL
+	if dfl & DEF_SLING:
+		var cg = e.get("cargo")
+		if cg is Array and not (cg as Array).is_empty():
+			var out: Array = []
+			for x in cg:
+				if x is Dictionary and String(Content.unit(String(x.get("def", ""))).get("move_class", "foot")) != "foot":
+					out.append(String(x.def))
+			if not out.is_empty():
+				g5.sling[id] = out
+				fl |= FLAG_SLUNG
+	return fl
+
+
+## Altitude fraction of a G5 aircraft by flight phase (air.gd): ground phases 0; roll lifts off in the
+## second half of the run; approach descends to touchdown; every airborne phase 1.
+static func alt_of(ph: String, t: float) -> float:
+	if GROUND_PHASES.has(ph):
+		return 0.0
+	var r: Dictionary = Content.rules().get("g5_air", {})
+	if ph == "roll":
+		var k := 1.0 - t / maxf(float(r.get("roll_s", 2.0)), 0.001)
+		return clampf((k - 0.5) * 2.0, 0.0, 1.0)
+	if ph == "approach":
+		return clampf(t / maxf(float(r.get("approach_s", 4.0)), 0.001), 0.0, 1.0)
+	return 1.0
+
+
+static func _g5_out(w, snap: Dictionary, g5: Dictionary) -> void:
+	for k in ["air", "aboard", "evac", "squad", "sling"]:
+		snap[k] = g5[k]
+	var hold := {}
+	var a = w.sys_state.get("air")
+	if a is Dictionary and a.get("holding") is Dictionary:
+		for fid in a.holding:
+			hold[int(fid)] = (a.holding[fid] as Array).duplicate()
+	snap["holding"] = hold
+	snap["airfields"] = _airfields(w)
+	snap["sinking"] = _sinking(w)
+	snap["trucks"] = _trucks(w)
+	# w.map.burnt is written in place by G4bMech (packed arrays are shared by reference in Godot 4), so
+	# the snapshot gets a private copy, refreshed only when the sim set changed (one memcmp per tick)
+	var bsrc: PackedByteArray = w.map.get("burnt", PackedByteArray())
+	var bcp: PackedByteArray = w.cache.get("snap_burnt", PackedByteArray())
+	if bsrc.size() != bcp.size() or bsrc != bcp:
+		bcp = bsrc.duplicate()
+		w.cache["snap_burnt"] = bcp
+	snap["burnt"] = bcp
+	_water_sides(w, snap.statics)
+
+
+static func _airfields(w) -> Dictionary:
+	var out := {}
+	var af = w.sys_state.get("airfield")
+	if not (af is Dictionary) or not (af.get("fields") is Dictionary):
+		return out
+	var flds: Dictionary = af.fields
+	var keys: Array = flds.keys()
+	keys.sort()
+	for bid in keys:
+		var fr: Dictionary = flds[bid]
+		var b = w.entities.get(int(bid))
+		if b == null:
+			continue
+		var d: Dictionary = Content.building(String(b.def))
+		var fi := int(b.get("facing_i", 0)) % 4
+		var axis: Vector2 = AXES[fi]
+		var perp := Vector2(-axis.y, axis.x)
+		var sl := float(d.get("strip_len", 10))
+		var bs := float(b.get("size", 1))
+		var strips: Array = []
+		var k := 0
+		for s in fr.get("strips", []):
+			# same geometry as Airfield.strip_points (start beside the apron, along the field axis)
+			var p0: Vector2 = Vector2(b.pos) + perp * (bs * 0.5 + 1.5 + 4.0 * float(k)) - axis * bs * 0.5
+			strips.append({"open": bool(s.get("open", true)), "crater_t": float(s.get("crater_t", 0.0)),
+				"busy": int(s.get("busy_id", -1)), "a": p0, "b": p0 + axis * sl})
+			k += 1
+		var hs: Array = []
+		for hg in fr.get("hangars", []):
+			hs.append((hg as Dictionary).duplicate(true))
+		out[int(bid)] = {"def": String(b.def), "owner": int(b.owner), "kind": String(fr.get("kind", "")),
+			"facing_i": fi, "strip_len": int(sl), "size": int(bs), "pos": Vector2(b.pos), "strips": strips, "hangars": hs,
+			"pads": (fr.get("pads", []) as Array).duplicate(true)}
+	return out
+
+
+static func _sinking(w) -> Dictionary:
+	var out := {}
+	var nv = w.sys_state.get("naval")
+	if not (nv is Dictionary) or not (nv.get("wrecks") is Array):
+		return out
+	var st := maxf(1.0, float(Content.rules().get("naval", {}).get("sink_ticks", 60)))
+	for r in nv.wrecks:
+		if r is Array and (r as Array).size() >= 4:
+			out[int(r[3])] = {"pos": Vector2(float(r[0]) + 0.5, float(r[1]) + 0.5), "k": clampf(float(r[2]) / st, 0.0, 1.0)}
+	return out
+
+
+static func _trucks(w) -> Dictionary:
+	var out := {}
+	var s = w.sys_state.get("support")
+	if not (s is Dictionary) or not (s.get("trucks") is Dictionary):
+		return out
+	for id in s.trucks:
+		var tr: Dictionary = s.trucks[id]
+		var mode := String(tr.get("mode", "off"))
+		var e = w.entities.get(int(id))
+		if mode == "off" or e == null:
+			continue
+		var c = tr.get("center", e.pos)
+		var cv: Vector2 = Vector2(float(c[0]), float(c[1])) if c is Array else Vector2(c)
+		out[int(id)] = {"owner": int(e.owner), "mode": mode, "center": cv, "radius": float(tr.get("radius", 8.0)),
+			"phase": String(tr.get("phase", "serve")), "load": float(tr.get("load", 0.0))}
+	return out
+
+
+## Shore buildings (def `shore`, e.g. shipyards / piers): water side d (AXES[d] points at the water)
+## for the ART-BLD `water_<d>` variants. Cached per id (terrain under a building does not change).
+static func _water_sides(w, statics: Dictionary) -> void:
+	var cache: Dictionary = w.cache
+	var wd: Dictionary = cache.get("snap_water", {})
+	var shore: Dictionary = cache.get("snap_shore", {})
+	var terr: PackedByteArray = w.map.get("terrain", PackedByteArray())
+	var mw := int(w.map.get("w", 0))
+	var mh := int(w.map.get("h", 0))
+	for id in statics:
+		var s: Dictionary = statics[id]
+		if s.kind != "building":
+			continue
+		var def: String = s.def
+		var sh = shore.get(def)
+		if sh == null:
+			sh = bool(Content.building(def).get("shore", false))
+			shore[def] = sh
+		if not sh:
+			continue
+		var d = wd.get(id)
+		if d == null:
+			var c0: Vector2i = s.get("cell", Vector2i(floori(s.pos.x), floori(s.pos.y)))
+			var sz := int(s.get("size", 1))
+			var ctr := Vector2(c0) + Vector2(sz, sz) * 0.5
+			var acc := Vector2.ZERO
+			for y in range(c0.y - 1, c0.y + sz + 1):
+				for x in range(c0.x - 1, c0.x + sz + 1):
+					if x >= 0 and y >= 0 and x < mw and y < mh and Terrain.is_water(int(terr[y * mw + x])):
+						acc += Vector2(x + 0.5, y + 0.5) - ctr
+			d = 0
+			var best := -INF
+			for k in 4:
+				var v: float = acc.dot(AXES[k])
+				if v > best:
+					best = v
+					d = k
+			wd[id] = d
+		s["water_d"] = int(d)
+	cache["snap_water"] = wd
+	cache["snap_shore"] = shore

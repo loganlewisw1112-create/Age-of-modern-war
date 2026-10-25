@@ -7,6 +7,7 @@ extends Node2D
 ## far zoom.
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 const MAX_FX := 400
 
 var mv
@@ -138,7 +139,10 @@ func add_marker(world_pos: Vector2, col: Color) -> void:
 
 
 func tick(delta: float) -> void:
+	_g5_refresh()
 	if _fx.is_empty():
+		if _g5_any:
+			queue_redraw()
 		return
 	var keep: Array = []
 	var landed: Array = []
@@ -165,6 +169,7 @@ func _draw_body() -> void:
 	var vs: Vector2 = get_viewport_rect().size
 	var vr := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vs).grow(160.0)
 	drawn = 0
+	_g5_draw(vr)
 	for f in _fx:
 		if f.t < 0.0:
 			continue
@@ -248,4 +253,133 @@ func _draw_frames(name: String, at: Vector2, k: float, alpha: float) -> bool:
 func _draw_iso_ring(c: Vector2, r: float, col: Color, width: float) -> void:
 	draw_set_transform(c, 0.0, Vector2(1.0, 0.5))
 	draw_arc(Vector2.ZERO, r, 0, TAU, 24, col, width)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# ---------------------------------------------------------------- G5 overlays (VIEW5)
+# Read from mv.snap only (thread rule): ship wakes, supply icons over needy / served units, the
+# Auto Resupply area of own trucks, holding circles over own fields, bubbles over sinking wrecks.
+# The item lists are rebuilt once per sim tick; drawing re-projects them every frame.
+const ISO_R := 45.254834  # screen half-width (px) of a 1-tile world radius (32 * sqrt 2)
+var g5_drawn: Dictionary = {}  # last frame's counts: wakes, supply, trucks, holding, sinking
+var _g5_any := false
+var _g5_tick := -1
+var _g5: Dictionary = {"wakes": [], "supply": [], "trucks": [], "holding": [], "sinking": []}
+
+
+func _g5_refresh() -> void:
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	if sn.is_empty() or int(sn.get("tick", -1)) == _g5_tick:
+		return
+	_g5_tick = int(sn.tick)
+	var pf: int = mv.player_fid
+	var allies: Array = mv._ally_fids
+	var wakes: Array = []
+	var supply: Array = []
+	var flg: PackedInt32Array = sn.flags
+	var pos: PackedVector2Array = sn.pos
+	var own: PackedInt32Array = sn.owner
+	var fac: PackedFloat32Array = sn.facing
+	var want := RenderSnap.FLAG_SHIP | RenderSnap.FLAG_NEEDY | RenderSnap.FLAG_RESUP
+	for i in int(sn.n):
+		var fl: int = flg[i]
+		if (fl & want) == 0 or fl & RenderSnap.FLAG_ABOARD:
+			continue
+		var p: Vector2 = pos[i]
+		var mine: bool = own[i] == pf or allies.has(own[i])
+		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING:
+			if mine or mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
+				wakes.append([p, fac[i]])
+		if mine and fl & (RenderSnap.FLAG_NEEDY | RenderSnap.FLAG_RESUP):
+			supply.append([p, (fl & RenderSnap.FLAG_RESUP) != 0, (fl & RenderSnap.FLAG_AIR) != 0 and (fl & RenderSnap.FLAG_LANDED) == 0])
+	var trucks: Array = []
+	var tr: Dictionary = sn.get("trucks", {})
+	for id in tr:
+		var t: Dictionary = tr[id]
+		if int(t.owner) == pf or allies.has(int(t.owner)):
+			trucks.append([t.center, float(t.radius), String(t.mode)])
+	var holding: Array = []
+	var afs: Dictionary = sn.get("airfields", {})
+	var hold: Dictionary = sn.get("holding", {})
+	var hr := float(Content.rules().get("g5_air", {}).get("hold_radius", 7.0))
+	for fid in hold:
+		var af = afs.get(int(fid))
+		if af != null and not (hold[fid] as Array).is_empty() and (int(af.owner) == pf or allies.has(int(af.owner))):
+			holding.append([af.pos, hr, (hold[fid] as Array).size()])
+	var sinking: Array = []
+	var sk: Dictionary = sn.get("sinking", {})
+	for wid in sk:
+		var sp: Vector2 = sk[wid].pos
+		if mv.cell_visible(Vector2i(floori(sp.x), floori(sp.y))):
+			sinking.append([sp, float(sk[wid].k)])
+	_g5 = {"wakes": wakes, "supply": supply, "trucks": trucks, "holding": holding, "sinking": sinking}
+	_g5_any = not (wakes.is_empty() and supply.is_empty() and trucks.is_empty() and holding.is_empty() and sinking.is_empty())
+
+
+func _g5_draw(vr: Rect2) -> void:
+	var cnt := {"wakes": 0, "supply": 0, "trucks": 0, "holding": 0, "sinking": 0}
+	g5_drawn = cnt
+	if not _g5_any:
+		return
+	var tm := Time.get_ticks_msec() * 0.001
+	for tk in _g5.trucks:
+		var c: Vector2 = mv.world_to_screen(tk[0])
+		var r: float = float(tk[1]) * ISO_R
+		if not vr.grow(r).has_point(c):
+			continue
+		if String(tk[2]) == "station":
+			_draw_iso_ring(c, r, Color(1.0, 0.78, 0.25, 0.55), 2.0)
+		else:
+			_dashed_iso_ring(c, r, Color(0.45, 0.95, 0.45, 0.6), 2.0, tm)
+		cnt.trucks += 1
+	for hd in _g5.holding:
+		var c: Vector2 = mv.world_to_screen(hd[0])
+		var r: float = float(hd[1]) * ISO_R
+		if vr.grow(r).has_point(c):
+			_dashed_iso_ring(c, r, Color(0.55, 0.8, 1.0, 0.45), 1.5, tm)
+			cnt.holding += 1
+	for wk in _g5.wakes:
+		var p: Vector2 = wk[0]
+		var d := Vector2(cos(float(wk[1])), sin(float(wk[1])))
+		var pr := Vector2(-d.y, d.x)
+		var st: Vector2 = mv.world_to_screen(p - d * 0.35)
+		if not vr.has_point(st):
+			continue
+		var ph := fmod(tm * 2.0, 1.0)
+		var col := Color(0.92, 0.97, 1.0, 0.6)
+		for side in [-1.0, 1.0]:
+			var tail: Vector2 = mv.world_to_screen(p - d * 1.6 + pr * 0.55 * side)
+			draw_line(st, tail, col, 1.5)
+			draw_line(st.lerp(tail, ph), st.lerp(tail, minf(1.0, ph + 0.2)), Color(1, 1, 1, 0.85), 2.0)
+		draw_set_transform(st, 0.0, Vector2(1.0, 0.5))
+		draw_circle(Vector2.ZERO, 4.0, Color(1, 1, 1, 0.35))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		cnt.wakes += 1
+	for sk in _g5.sinking:
+		var c: Vector2 = mv.world_to_screen(sk[0])
+		if not vr.has_point(c):
+			continue
+		for b in 4:
+			var ph := fmod(tm * 0.8 + b * 0.25, 1.0)
+			var o := Vector2(sin(b * 2.1) * 9.0, -ph * 10.0)
+			draw_arc(c + o, 1.5 + ph * 1.5, 0.0, TAU, 8, Color(0.85, 0.95, 1.0, (1.0 - ph) * (0.4 + 0.6 * float(sk[1]))), 1.0)
+		cnt.sinking += 1
+	for su in _g5.supply:
+		var c: Vector2 = mv.world_to_screen(su[0]) + Vector2(10, -38.0 if bool(su[2]) else -30.0)
+		if not vr.has_point(c):
+			continue
+		var fill := Color(0.4, 0.9, 0.4) if bool(su[1]) else Color(1.0, 0.75, 0.2)
+		draw_rect(Rect2(c - Vector2(4, 3), Vector2(8, 6)), Color(0.05, 0.05, 0.05, 0.9))
+		draw_rect(Rect2(c - Vector2(3, 2), Vector2(6, 4)), fill)
+		draw_line(c - Vector2(3, 0), c + Vector2(3, 0), Color(0.05, 0.05, 0.05, 0.8), 1.0)
+		cnt.supply += 1
+
+
+func _dashed_iso_ring(c: Vector2, r: float, col: Color, width: float, tm: float) -> void:
+	draw_set_transform(c, 0.0, Vector2(1.0, 0.5))
+	var n := 24
+	var off := fmod(tm * 0.25, 1.0) * TAU / n
+	for k in n:
+		var a0 := off + k * TAU / n
+		draw_arc(Vector2.ZERO, r, a0, a0 + TAU / n * 0.55, 4, col, width)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

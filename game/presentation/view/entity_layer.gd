@@ -12,6 +12,7 @@ const G3View = preload("res://presentation/view/g3_view.gd")
 const BatchArt = preload("res://presentation/view/batch_art.gd")
 const LodIcons = preload("res://presentation/view/lod_icons.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
+const G5Art = preload("res://presentation/art/g5_art.gd")
 
 const LOD_MID := 0.8     # zoom below this: mid LOD (small FX dropped by fx_layer)
 const LOD_FAR := 0.45    # zoom below this: far LOD (unit icons)
@@ -24,6 +25,7 @@ const GHOST_MOD := Color(0.75, 0.75, 0.8)
 const FACING_INV := 1.0 / (PI / 4.0)  # = 1 / ArtCatalog.FACING_STEP
 const POSE_MASK := RenderSnap.FLAG_DEPLOYED | RenderSnap.FLAG_WORK | RenderSnap.FLAG_UNLOAD
 const DSTRIDE := 5                    # decor item: [pos, page, src, off, cell index (-1 = POI)]
+const G5_POSE := RenderSnap.FLAG_TACTICAL | RenderSnap.FLAG_EVAC
 
 var mv
 var art = BatchArt.new()
@@ -68,6 +70,10 @@ var burnt: Dictionary = {}
 var fires_drawn := 0                       # last frame's counts (playtest / debug)
 var burnt_drawn := 0
 var g4b_fx_drawn := 0                      # mines + charges drawn from effect art
+# G5 (VIEW5): last frame's counts (headless probe / playtests) and the sim burnt-set sync
+var g5_counts: Dictionary = {}             # shadows, lifted, wounded, markers, red_cross, trails, slung, strips, sinking
+var _burnt_src := PackedByteArray()        # last snap.burnt merged into `burnt`
+var _lift := 0.0                           # last _g5_lift result (px)
 
 
 func setup(view) -> void:
@@ -144,6 +150,7 @@ func _build_poi_decor() -> void:
 
 func on_destroyed(id: int) -> void:
 	art.forget(id)
+	art.forget(-1 - id)  # G5: its sling-load sprite cache
 	_seen_wrecks.erase(id)
 
 
@@ -242,6 +249,7 @@ func refresh() -> void:
 	_reserve(n_u + statics.size() + decor_count + mem.size() + 16)
 	# decor (static, bucketed by chunk)
 	var t_sub := Time.get_ticks_usec()
+	_sync_burnt(sn.get("burnt", PackedByteArray()))
 	var any_burnt := not burnt.is_empty()
 	for ck in _decor:
 		if not vr.intersects(_decor_rect[ck]):
@@ -274,8 +282,20 @@ func refresh() -> void:
 	var raise_v = mv.terrain_layer.get("_raise") if mv.terrain_layer != null else null
 	var raise: Dictionary = raise_v if raise_v is Dictionary else {}
 	var terr: PackedByteArray = sn.get("terrain", PackedByteArray()) if not raise.is_empty() else PackedByteArray()
+	# G5 (VIEW5) side tables (sparse; empty dicts in a G4 match)
+	var g5air: Dictionary = sn.get("air", {})
+	var has_air := not g5air.is_empty()
+	var squad: Dictionary = sn.get("squad", {})
+	var has_sq := not squad.is_empty()
+	var sling: Dictionary = sn.get("sling", {})
+	var gc5 := {"shadows": 0, "lifted": 0, "wounded": 0, "markers": 0, "red_cross": 0, "trails": 0, "slung": 0,
+		"strips": 0, "sinking": 0, "tactical": 0, "squads": 0, "aboard": 0}
+	g5_counts = gc5
 	for i in n_u:
 		var id: int = ids[i]
+		if flg_a[i] & RenderSnap.FLAG_ABOARD:
+			gc5.aboard += 1
+			continue  # G5: wounded aboard an evac carrier ride inside it (hidden)
 		var ow: int = own_a[i]
 		var raw: Vector2 = pos_a[i]
 		var pos := raw
@@ -320,18 +340,51 @@ func refresh() -> void:
 			_push(2, sp.y, art.atlas.page_of(ic[0]), art.atlas.rect_of(ic[0]), sp + (ic[2] as Vector2) * inv_z, isz, _team.get(ow, neutral))
 			continue
 		# hot path: inline frame choice from the per-id art cache (see BatchArt.resolve_unit)
+		var sq_al: int = int(squad.get(id, 0)) if has_sq else 0
 		var c = ec.get(id)
-		if c == null or c[1] != ow or c[0] != dname:
-			c = art.cache_unit(_proxy(id, dname, ow, fac_a[i], fl), _team.get(ow, neutral), String(_ck.get(ow, "x")))
+		if c == null or c[1] != ow or c[0] != dname or c[16] != sq_al:
+			c = art.cache_unit(_proxy(id, dname, ow, fac_a[i], fl, sq_al), _team.get(ow, neutral), String(_ck.get(ow, "x")))
+		if sq_al > 0:
+			gc5.squads += 1
 		var pg: int = c[2]
+		var ad = g5air.get(id) if has_air else null
 		if pg == -2:
-			art.resolve_unit(_proxy(id, dname, ow, fac_a[i], fl), _team.get(ow, neutral), String(_ck.get(ow, "x")), t)
+			# no sheet yet: ArtCatalog.placeholder_for silhouette (G5 scaffold), lifted like the art would be
+			var lz := 0
+			if ad != null:
+				lz = _g5_lift(dname, id, ad, fl, fac_a[i], t, gc5, sp)
+				sp.y -= _lift
+			art.resolve_unit(_proxy(id, dname, ow, fac_a[i], fl, sq_al), _team.get(ow, neutral), String(_ck.get(ow, "x")), t)
 			if art.out_page >= 0:
+				_push(lz, sp.y, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
+			if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
+				_g5_markers(sp, fl, id, t, neutral, gc5)
+			continue
+		if fl & RenderSnap.FLAG_WOUNDED and c[17] < 0:
+			# G1-G4 human infantry: the wounded pose comes from effects g5_wounded_a/b (team mask)
+			if art.resolve_fx(G5Art.wounded_fx(String(_fac.get(ow, ""))), _team.get(ow, neutral), String(_ck.get(ow, "x")), int(t * 3.0 + id * 0.3)):
 				_push(0, sp.y, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
+				gc5.wounded += 1
+			_g5_markers(sp, fl, id, t, neutral, gc5)
 			continue
 		var fi := 0
-		if fl & RenderSnap.FLAG_FIRING:
-			fi = c[7]
+		if fl & RenderSnap.FLAG_WOUNDED:
+			fi = c[17]
+			gc5.wounded += 1
+		elif fl & RenderSnap.FLAG_FIRING:
+			fi = c[20] if (fl & RenderSnap.FLAG_DRONE and c[20] >= 0) else c[7]
+		elif ad != null and c[21] >= 0 and fl & RenderSnap.FLAG_LANDED:
+			# G5 (ART-AIR ground_frames): parked in a hangar / on a pad, else landed in the open
+			fi = c[21] if String(ad.ph) == "parked" or (c[22] < 0) else c[22]
+		elif ad != null and not (fl & RenderSnap.FLAG_LANDED) and not (c[24] as Array).is_empty():
+			# G5 (ART-AIR anim): rotor / prop frames cycle at anim_fps while airborne
+			var an: Array = c[24] if (fl & RenderSnap.FLAG_MOVING) or (c[23] as Array).is_empty() else c[23]
+			fi = an[int(t * float(c[25]) + id * 0.37) % an.size()]
+		elif fl & RenderSnap.FLAG_EVAC and c[19] >= 0:
+			fi = c[19]  # G5: medic team carrying / ambulance loading
+		elif fl & RenderSnap.FLAG_TACTICAL and c[18] >= 0 and not (fl & RenderSnap.FLAG_MOVING):
+			fi = c[18]
+			gc5.tactical += 1
 		else:
 			# G4b poses (ART-U-3): mortar "deployed", engineer "work", carrier "unload"; -1 = no column
 			var pz := -1
@@ -350,11 +403,16 @@ func refresh() -> void:
 		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
 		var fsz := Vector2(c[4], c[5])
 		var layer := 0
-		if c[12]:
+		if ad != null:
+			layer = _g5_lift(dname, id, ad, fl, fac_a[i], t, gc5, sp)  # G5: altitude by flight phase + shadow
+			sp.y -= _lift
+		elif c[12]:
 			sp.y -= G3View.air_lift({"def": dname, "id": id}, t)  # G3a: air units fly above their ground point
 			layer = 1
-		# inlined _push (capacity reserved above)
+		# inlined _push (capacity reserved above; G5 extras per unit - shadow, trail, markers, sling - may outgrow it)
 		var ii := _n
+		if ii >= _page.size():
+			_reserve(ii * 2 + 16)
 		_keys[ii] = layer * LAYER_MUL + (int(sp.y) + Y_OFF) * IDX_MUL + ii
 		_page[ii] = pg
 		_src[ii] = (c[3] as Vector2) + Vector2(fi, row) * fsz
@@ -363,6 +421,10 @@ func refresh() -> void:
 		_dsz[ii] = fsz
 		_mod[ii] = Color.WHITE
 		_n = ii + 1
+		if fl & RenderSnap.FLAG_SLUNG:
+			_g5_slung(sling.get(id, []), id, ow, fac_a[i], sp, t, gc5)
+		if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
+			_g5_markers(sp, fl, id, t, neutral, gc5)
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
 	for id in statics:
 		var e: Dictionary = statics[id]
@@ -376,6 +438,7 @@ func refresh() -> void:
 				_seen_wrecks[id] = true
 			continue
 		var mod := Color.WHITE
+		var sdy := 0.0
 		match kind:
 			"building":
 				if ow != pf and not mv.entity_visible(e):
@@ -394,6 +457,13 @@ func refresh() -> void:
 					if not mv.cell_visible(gc):
 						continue
 					_seen_wrecks[id] = true
+				var sk = (sn.get("sinking", {}) as Dictionary).get(id)
+				if sk != null:
+					# G5 (NAVAL): a sinking ship wreck settles and fades as its sink timer runs out
+					var kk: float = sk.k
+					mod = Color(1, 1, 1, 0.3 + 0.7 * kk)
+					sdy = (1.0 - kk) * 10.0
+					gc5.sinking += 1
 			"mine", "charge":
 				# G4b: hidden from enemies unless detected (mines) or planted on our side's target (charges)
 				if not g4b_static_visible(e, statics, pf, my_team, mv._ally_fids):
@@ -410,7 +480,8 @@ func refresh() -> void:
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
-			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, mod)
+			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+	_push_strips(sn, vr, pf, mem, statics, gc5)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
 	_push_fire(sn, vr, mw, vis, ally_vis, t, neutral)
@@ -424,8 +495,8 @@ func refresh() -> void:
 
 
 ## Minimal unit dict for the art cache / fallback sprite (built only on a cache miss).
-func _proxy(id: int, dname: String, ow: int, facing: float, fl: int) -> Dictionary:
-	return {"id": id, "kind": "unit", "def": dname, "owner": ow, "facing": facing,
+func _proxy(id: int, dname: String, ow: int, facing: float, fl: int, sq_al: int = 0) -> Dictionary:
+	return {"id": id, "kind": "unit", "def": dname, "owner": ow, "facing": facing, "squad_alive": sq_al,
 		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0,
 		"deployed": (fl & RenderSnap.FLAG_DEPLOYED) != 0, "working": (fl & RenderSnap.FLAG_WORK) != 0,
 		"unloading": (fl & RenderSnap.FLAG_UNLOAD) != 0}
@@ -546,3 +617,121 @@ func _draw_body() -> void:
 	for k in _sorted:
 		var i := k % IDX_MUL
 		draw_texture_rect_region(texs[_page[i]], Rect2(_dst[i], _dsz[i]), Rect2(_src[i], _size[i]), _mod[i])
+
+
+# ---------------------------------------------------------------- G5 (VIEW5)
+var _strip_cache: Dictionary = {}   # field id -> [signature, [[screen pos, page, src, off], ...]]
+
+
+## w.map.burnt (UNITS5, saved + hashed) reaches us through the snapshot: merge it into `burnt`, so a
+## loaded save shows its burnt ground too (closes the G4b presentation-only KNOWN GAP).
+func _sync_burnt(arr: PackedByteArray) -> void:
+	if arr.is_empty() or arr == _burnt_src:
+		return
+	_burnt_src = arr
+	for k in G5Art.burnt_cells(arr):
+		burnt[k] = true
+	_far_key = []
+
+
+## Altitude (snap.air[id].alt via G5Art.lift_px) for a G5 aircraft / drone: pushes its ground shadow
+## (manifest shadow or a procedural ellipse) and, for a moving drone, the trail effect. Stores the lift
+## in _lift (the caller raises the sprite by it) and returns the draw layer (1 = above ground items).
+func _g5_lift(dname: String, id: int, ad: Dictionary, fl: int, facing: float, t: float, gc5: Dictionary, sp: Vector2) -> int:
+	_lift = G5Art.lift_px(dname, float(ad.get("alt", 1.0)), id, t)
+	if _lift <= 0.5:
+		_lift = 0.0
+		return 0
+	gc5.lifted += 1
+	if art.resolve_shadow(dname, posmod(int(round(facing * FACING_INV)), 8)):
+		var a := clampf(1.1 - _lift / 80.0, 0.45, 1.0)
+		_push(0, 1 - Y_OFF, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color(1, 1, 1, a))  # over runways / burnt ground
+		gc5.shadows += 1
+	_g5_air_fx(dname, ad, fl, facing, t, gc5, sp)
+	if fl & RenderSnap.FLAG_DRONE and fl & RenderSnap.FLAG_MOVING:
+		var d := Vector2(cos(facing), sin(facing))
+		var sd := Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0).normalized()
+		if art.resolve_fx("g5_drone_trail", Color.WHITE, "-", int(t * 8.0) + id):
+			var tp := sp - sd * 12.0 - Vector2(0, _lift)
+			_push(1, sp.y - _lift - 1.0, art.out_page, art.out_src, tp + art.out_off, art.out_src.size, Color.WHITE)
+			gc5.trails += 1
+	return 1
+
+
+## Wounded marker (blinking) over a wounded unit; red cross over a carrier with wounded aboard.
+func _g5_markers(sp: Vector2, fl: int, id: int, t: float, neutral: Color, gc5: Dictionary) -> void:
+	if fl & RenderSnap.FLAG_WOUNDED and art.resolve_fx("g5_wounded_marker", neutral, "-", int(t * 2.0 + id * 0.5)):
+		_push(1, sp.y, art.out_page, art.out_src, sp + Vector2(0, -26) + art.out_off, art.out_src.size, Color.WHITE)
+		gc5.markers += 1
+	if fl & RenderSnap.FLAG_EVAC and art.resolve_fx("g5_red_cross", neutral, "-", 0):
+		_push(1, sp.y, art.out_page, art.out_src, sp + Vector2(0, -34) + art.out_off, art.out_src.size, Color.WHITE)
+		gc5.red_cross += 1
+
+
+## Sling load: the first slung vehicle hangs under its (lifted) carrier, drawn just behind it.
+func _g5_slung(defs: Array, id: int, ow: int, facing: float, sp: Vector2, t: float, gc5: Dictionary) -> void:
+	if defs.is_empty():
+		return
+	art.resolve_unit(_proxy(-1 - id, String(defs[0]), ow, facing, 0), _team.get(ow, mv.team_color(-1)), String(_ck.get(ow, "x")), t)
+	if art.out_page >= 0:
+		_push(1, sp.y - 2.0, art.out_page, art.out_src, sp + Vector2(0, 18) + art.out_off, art.out_src.size, Color.WHITE)
+		gc5.slung += 1
+
+
+## Runway strips of every visible airfield (snap.airfields, ART-BLD airfield tiles), flat under
+## everything; closed strips get the crater (or crater_repair while engineers are past half way)
+## and the closed markers. Tile regions are cached per field until a strip opens / closes.
+func _push_strips(sn: Dictionary, vr: Rect2, pf: int, mem: Dictionary, statics: Dictionary, gc5: Dictionary) -> void:
+	var afs: Dictionary = sn.get("airfields", {})
+	if afs.is_empty():
+		return
+	var rep_s := float(Content.rules().get("g5_air", {}).get("crater_repair_s", 15.0))
+	for bid in afs:
+		var af: Dictionary = afs[bid]
+		var ow := int(af.owner)
+		if ow != pf and not mv._ally_fids.has(ow):
+			var st = statics.get(bid)
+			if st == null or (not mv.entity_visible(st) and not mem.has(bid)):
+				continue
+		var sig := "%d|%d" % [int(af.get("facing_i", 0)), (af.strips as Array).size()]
+		for s in af.strips:
+			sig += "|%d%d" % [1 if bool(s.open) else 0, 1 if float(s.crater_t) < rep_s * 0.5 else 0]
+		var c = _strip_cache.get(bid)
+		if c == null or c[0] != sig:
+			var lst: Array = []
+			for tl in G5Art.strip_tiles(int(bid), af):
+				var f: String = tl[1]
+				var pv: Vector2 = tl[2]
+				art._whole("strip|" + f, ArtCatalog._image(f), [pv.x, pv.y])
+				if art.out_page >= 0:
+					lst.append([mv.world_to_screen(tl[0]), art.out_page, art.out_src, art.out_off])
+			c = [sig, lst]
+			_strip_cache[bid] = c
+		for it in c[1]:
+			var p: Vector2 = it[0]
+			if not vr.has_point(p):
+				continue
+			_push(0, -Y_OFF, it[1], it[2], p + (it[3] as Vector2), (it[2] as Rect2).size, Color.WHITE)
+			gc5.strips += 1
+	for bid in _strip_cache.keys():
+		if not afs.has(bid):
+			_strip_cache.erase(bid)
+
+
+
+## ART-AIR effects tied to flight state: rotor wash on the ground under a hovering / low rotorcraft,
+## afterburner behind a jet on its take-off roll or climbing out.
+func _g5_air_fx(dname: String, ad: Dictionary, fl: int, facing: float, t: float, gc5: Dictionary, sp: Vector2) -> void:
+	var ac := String(Content.unit(dname).get("aircraft", ""))
+	if ac == "heli" or ac == "vtol":
+		if (fl & RenderSnap.FLAG_MOVING) == 0 or float(ad.get("alt", 1.0)) < 1.0:
+			if art.resolve_fx("g5_rotor_wash", Color.WHITE, "-", int(t * 10.0)):
+				_push(0, 2 - Y_OFF, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color(1, 1, 1, 0.7))
+				gc5["wash"] = int(gc5.get("wash", 0)) + 1
+	elif ac == "jet" and String(ad.get("ph", "")) in ["roll", "sortie"]:
+		var d := Vector2(cos(facing), sin(facing))
+		var sd := Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0).normalized()
+		if art.resolve_fx("g5_afterburner", Color.WHITE, "-", int(t * 12.0)):
+			var tp := sp - sd * 20.0 - Vector2(0, _lift)
+			_push(1, sp.y - _lift - 1.0, art.out_page, art.out_src, tp + art.out_off, art.out_src.size, Color.WHITE)
+			gc5["burner"] = int(gc5.get("burner", 0)) + 1

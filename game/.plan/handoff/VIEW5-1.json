@@ -1,0 +1,34 @@
+{
+  "agent": "VIEW5",
+  "gen": 1,
+  "status": "recycled (budget.handoff_now at ~100 calls); acceptance work done, see remaining",
+  "done": {
+    "manifests_merged": "ArtCatalog._merge_g5 merges assets/art/{g5_units,g5_bld,g5_air,g5_naval}/manifest.json when present (all 4 merged this session; manifest().g5_groups lists them). '.png' strings rebased to res://assets/art/<group>/..., new keys only, lod_icons merged per faction. ArtCatalog._image accepts absolute res:// paths.",
+    "snapshot (sim/render_snap.gd)": "flags FLAG_WOUNDED 1<<18, ABOARD 19, LANDED 20, SHIP 21, DRONE 22, EVAC 23, NEEDY 24, RESUP 25, TACTICAL 26, SLUNG 27; FLAG_MOVING also set for Air/G5Mech self-flown phases. Side tables: air{id:{ph,alt,field,strip}}, holding, airfields{bid:{def,owner,kind,facing_i,strip_len,size,pos,strips[{open,crater_t,busy,a,b}],hangars,pads}}, sinking{wid:{pos,k}}, trucks{id:{owner,mode,center,radius,phase,load}}, aboard, evac, squad, sling, burnt (private copy of w.map.burnt, recopied on change). Statics add level/class/facing_i/air_build/air_parent/extra_strips/sinking + water_d for shore buildings.",
+    "drawn (entity_layer/batch_art/fx_layer/lod_icons)": "altitude by phase + shadow (manifest shadow_sheet by facing, else shadow, else procedural ellipse); ART-AIR ground_frames (parked/landed), anim pairs at anim_fps, rotor wash, jet afterburner; sling load under carrier; runway strips + craters/crater_repair + closed markers from g5_bld airfield block; hangar lvl_n / field rot_f / shore water_d / _damaged / build_n states; sinking wreck fade+settle + bubbles; ship wakes; drone trail + dive frame on fire; wounded pose (sheet column or g5_wounded_a/b fx) + marker; aboard hidden; carrier carry/load frame + red cross; tactical frame; squad alive_sheets; truck Auto area ring (station solid amber / roam dashed green); supply icons for NEEDY/RESUP; holding dashed ring; burnt ground from sim set; naval LOD class (procedural hull) + manifest lod_class.",
+    "helpers": "presentation/art/g5_art.gd (pure rules), presentation/art/view5_probe.gd (live probe + screenshots)"
+  },
+  "remaining": [
+    "Holding ring is implemented (fx_layer._g5_draw) but the probe never reached a holding state (holding max=0): stage a jet return with strips busy in view5_probe.gd and confirm.",
+    "Tactical frame / squad alive sheets not exercised live by the probe (tactical=0, squads=0); covered only by test_view5 cache checks.",
+    "ART-AIR event effects (g5_missile, g5_missile_trail, g5_air_bomb, g5_bomb_blast, g5_flak_burst, g5_air_crash, g5_air_smoke) are merged but not wired to ShotFired/AirStrike/AircraftCrashed events in fx_layer.",
+    "ART-BLD command icons are in the merged manifest.icons; using them in panels is UI5b's job (not VIEW5).",
+    "ORCH runs the full suite (not run by VIEW5)."
+  ],
+  "files_touched": ["sim/render_snap.gd", "presentation/view/entity_layer.gd", "presentation/view/batch_art.gd", "presentation/view/fx_layer.gd", "presentation/view/lod_icons.gd", "presentation/art/art_catalog.gd", "presentation/art/g5_art.gd (new)", "presentation/art/view5_probe.gd (new)", "tests/test_view5.gd (git mv from pending_g5 + filled)", ".plan/shots/VIEW5/**"],
+  "test_state": {
+    "test_view5": "RESULT pass=8 fail=0 files=1 time_ms=4770 / TESTS OK",
+    "test_thread": "RESULT pass=4 fail=0 files=1 time_ms=115777 / TESTS OK",
+    "probe": "VIEW5_PROBE RESULT ok=true (12/12 required states; .plan/shots/VIEW5/probe_windowed.log, probe_headless.log)",
+    "playtests_r2": "h pass=33 fail=0; hb pass=37 fail=0; m pass=37 fail=0; s pass=53 fail=0; g4b pass=68 fail=0; ed pass=25 fail=0 (.plan/shots/VIEW5/pt_*_r2.log)"
+  },
+  "gotchas": [
+    "Tests must call RenderSnap.build(w) themselves: world.snap_enabled is false outside MatchView.",
+    "Packed arrays are shared by reference in Godot 4: never hand w.map.burnt (or anything written in place) to the snapshot without a copy.",
+    "e.air_landed stays true during the take-off roll: render_snap uses the flight record first.",
+    "Air/G5Mech move aircraft and drones themselves (e.moving false): FLOWN_PHASES sets FLAG_MOVING.",
+    "BatchArt unit cache array grew to 26 entries (indexes 16..25 G5); entity_layer inline push now grows capacity itself because G5 adds several items per unit.",
+    "No --import was needed: ArtCatalog loads raw PNGs with Image.load_from_file from source (exports would need an import pass for assets/art/g5_*).",
+    "r1 h/hb barracks hotkey failure was external (PT5 baseline at the same time failed identically); r2 all green."
+  ]
+}

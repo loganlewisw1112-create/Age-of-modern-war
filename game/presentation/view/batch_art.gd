@@ -9,6 +9,7 @@ extends RefCounted
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const BatchAtlas = preload("res://presentation/view/batch_atlas.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
+const G5Art = preload("res://presentation/art/g5_art.gd")
 
 var atlas = BatchAtlas.new()
 var out_page := -1
@@ -37,7 +38,17 @@ func _unit_spec(def: String) -> Dictionary:
 			"fire": frames.find("fire"), "walk": frames.has("walk_a"),
 			"wa": frames.find("walk_a"), "wb": frames.find("walk_b"), "mv": frames.find("move"),
 			"dep": frames.find("deployed"),  # G4b: mortar set-up frame (-1 = none yet)
-			"work": frames.find("work"), "unl": frames.find("unload")}  # G4b (UI4B-3): engineer / carrier ramp
+			"work": frames.find("work"), "unl": frames.find("unload"),  # G4b (UI4B-3): engineer / carrier ramp
+			# G5 (VIEW5, ART-U5 specials): wounded / tactical / carry (medic) or load (ambulance) / dive
+			"wnd": G5Art.special_col(def, frames, "wounded"), "tac": G5Art.special_col(def, frames, "tactical"),
+			"carry": maxi(G5Art.special_col(def, frames, "carry"), G5Art.special_col(def, frames, "load")),
+			"dive": G5Art.special_col(def, frames, "dive"), "spec": spec,
+			# G5 (ART-AIR): ground frames + rotor / prop animation pairs (manifest anim, anim_fps)
+			"park": G5Art.special_col(def, frames, "parked"), "land": G5Art.special_col(def, frames, "landed"),
+			"anim_air": G5Art.anim_cols(spec, frames, "air"), "anim_move": G5Art.anim_cols(spec, frames, "move"),
+			"fps": float(spec.get("anim_fps", 8))}
+		if s.dep < 0:
+			s.dep = G5Art.special_col(def, frames, "deployed")
 	_uspec[def] = s
 	return s
 
@@ -65,17 +76,21 @@ func _fallback(e: Dictionary, team: Color) -> void:
 	out_off = d.get("offset", Vector2.ZERO)
 
 
-## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed, work, unload]
+## Unit: cache [def, owner, page, origin, fw, fh, pivot, fire, walk, wa, wb, mv, is_air, deployed, work, unload,
+## squad_alive (0 = full sheet), wounded, tactical, carry, dive, parked, landed, air anim cols, move anim cols, anim fps]
 ## (page -2 = fallback; frame index -1 = the sheet has no such column).
 func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 	var def := String(e.def)
 	var s := _unit_spec(def)
-	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1]
+	var alive := int(e.get("squad_alive", 0))
+	var c: Array = [def, int(e.owner), -2, Vector2.ZERO, 0, 0, Vector2.ZERO, 0, false, 0, 0, 0, G3View.is_air_entity(e), -1, -1, -1,
+		alive, -1, -1, -1, -1, -1, -1, [], [], 8.0]
 	if not s.is_empty():
-		var key: String = s.file + "|" + ck
+		var sh: Dictionary = G5Art.squad_sheet(s.spec, alive)  # G5: alive_sheets[n] for a reduced squad
+		var key: String = String(sh.file) + "|" + ck
 		var pg := atlas.page_of(key)
 		if pg < 0:
-			var img: Image = ArtCatalog._sheet(s.file, s.mask, team)
+			var img: Image = ArtCatalog._sheet(String(sh.file), String(sh.get("mask", "")), team)
 			if img != null and img.get_width() >= int(s.fw) * maxi(1, int(s.n)) and img.get_height() >= int(s.fh) * 8:
 				pg = atlas.add(key, img)
 		if pg >= 0:
@@ -92,6 +107,15 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 			c[13] = int(s.get("dep", -1))
 			c[14] = int(s.get("work", -1))
 			c[15] = int(s.get("unl", -1))
+			c[17] = int(s.wnd)
+			c[18] = int(s.tac)
+			c[19] = int(s.carry)
+			c[20] = int(s.dive)
+			c[21] = int(s.park)
+			c[22] = int(s.land)
+			c[23] = s.anim_air
+			c[24] = s.anim_move
+			c[25] = float(s.fps)
 	_ec[int(e.id)] = c
 	return c
 
@@ -99,7 +123,7 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 ## Resolves a unit's current frame. anim_t = MatchView.anim_time().
 func resolve_unit(e: Dictionary, team: Color, ck: String, anim_t: float) -> void:
 	var c = _ec.get(int(e.id))
-	if c == null or c[0] != e.def or c[1] != int(e.owner):
+	if c == null or c[0] != e.def or c[1] != int(e.owner) or c[16] != int(e.get("squad_alive", 0)):
 		c = cache_unit(e, team, ck)
 	if int(c[2]) == -2:
 		_fallback(e, team)
@@ -149,6 +173,12 @@ func resolve_static(e: Dictionary, team: Color, ck: String) -> void:
 
 func _state_code(e: Dictionary, kind: String) -> int:
 	if kind == "building":
+		var g5v := _g5_variant(String(e.get("def", "")))
+		if g5v != "":
+			# G5 (VIEW5): ART-BLD variants (hangar level, field facing, shore side, damaged, build)
+			return -1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
+				+ posmod(int(e.get("water_d", 0)), 4) * 4 + (2 if _damaged(e) else 0)
+				+ (1 if float(e.get("air_build", 0.0)) > 0.0 else 0)) - (4096 if not bool(e.get("built", true)) else 0) 				- 8192 * clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 		if bool(e.get("built", true)):
 			if not e.has("conn"):
 				return -1
@@ -170,7 +200,10 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 			if b.is_empty():
 				return
 			var st := "built"
-			if not bool(e.get("built", true)):
+			var g5v := G5Art.variant_of(b)
+			if g5v != "":
+				st = G5Art.building_state(b.states, e, g5v)  # G5 (VIEW5): ART-BLD state_rules
+			elif not bool(e.get("built", true)):
 				st = "build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 			elif e.has("conn"):
 				st = _fort_state(b.states, e)  # G4 (FORT/ART-F): N1 E2 S4 W8 neighbour mask
@@ -261,4 +294,68 @@ func resolve_fx(name: String, team: Color, ck: String, frame: int) -> bool:
 	out_page = c[0]
 	out_src = Rect2((c[1] as Vector2) + Vector2(posmod(frame, int(c[5])) * int(c[2]), 0), Vector2(c[2], c[3]))
 	out_off = c[4]
+	return true
+
+
+# ---------------------------------------------------------------- G5 (VIEW5)
+var _g5v: Dictionary = {}    # building def -> ART-BLD variant family
+var _shadow: Dictionary = {} # unit def -> [page, src origin, size, offset] ([] = none)
+
+
+func _g5_variant(def: String) -> String:
+	var v = _g5v.get(def)
+	if v == null:
+		v = G5Art.variant_of(ArtCatalog.manifest().get("buildings", {}).get(def, {}))
+		_g5v[def] = v
+	return v
+
+
+## Ground shadow of an aircraft / drone: the manifest shadow sprite (ART-U5 drones) or a soft
+## procedural ellipse sized from the sprite (aircraft until their art carries one). Sets out_*.
+func resolve_shadow(def: String, row: int = 0) -> bool:
+	var c = _shadow.get(def)
+	if c == null:
+		c = []
+		var spec := G5Art.unit_spec(def)
+		var sh = spec.get("shadow_sheet")  # ART-AIR: 8-facing shadow sheet (one column, row = facing)
+		if not (sh is Dictionary and sh.has("file") and ArtCatalog._image(String(sh.file)) != null):
+			sh = spec.get("shadow")
+		var img: Image = null
+		var piv := Vector2.ZERO
+		var key := ""
+		if sh is Dictionary and sh.has("file"):
+			img = ArtCatalog._image(String(sh.file))
+			var pv: Array = sh.get("pivot", [0, 0])
+			piv = Vector2(float(pv[0]), float(pv[1]))
+			key = String(sh.file)
+		if img == null:
+			var fw := int(spec.get("fw", 40))
+			var w := clampi(int(fw * 0.6), 10, 60)
+			var h := maxi(4, w / 3)
+			img = Image.create(w, h, false, Image.FORMAT_RGBA8)
+			img.fill(Color(0, 0, 0, 0))
+			for y in h:
+				for x in w:
+					var dx := (x + 0.5 - w * 0.5) / (w * 0.5)
+					var dy := (y + 0.5 - h * 0.5) / (h * 0.5)
+					var d := dx * dx + dy * dy
+					if d <= 1.0:
+						img.set_pixel(x, y, Color(0, 0, 0, 0.38 * (1.0 - d * 0.5)))
+			piv = Vector2(w, h) * 0.5
+			key = "shadow:%d" % w
+		var pg := atlas.add(key, img)
+		if pg >= 0:
+			var sz := atlas.rect_of(key).size
+			var rows := 1
+			if sh is Dictionary and int(sh.get("facings", 1)) > 1 and int(sh.get("fh", 0)) > 0:
+				rows = int(sh.facings)
+				sz = Vector2(float(sh.fw), float(sh.fh))
+			c = [pg, atlas.rect_of(key).position, sz, -piv, rows]
+		_shadow[def] = c
+	if (c as Array).is_empty():
+		out_page = -1
+		return false
+	out_page = c[0]
+	out_src = Rect2((c[1] as Vector2) + Vector2(0, float(posmod(row, int(c[4]))) * (c[2] as Vector2).y), c[2])
+	out_off = c[3]
 	return true

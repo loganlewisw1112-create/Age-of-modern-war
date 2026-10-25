@@ -13,9 +13,12 @@ var _keys: Dictionary = {}   # "faction|class" -> [atlas key, Vector2 size, Vect
 
 static func unit_class(def_id: String) -> String:
 	var d: Dictionary = Content.unit(def_id)
-	if bool(d.get("is_air", false)) or String(d.get("move_class", "")) == "air":
+	var mc := String(d.get("move_class", "foot"))
+	if bool(d.get("is_air", false)) or mc.begins_with("air"):  # G5: air_low / air_high aircraft + drones
 		return "air"
-	return "infantry" if String(d.get("move_class", "foot")) == "foot" else "vehicle"
+	if mc.begins_with("naval"):
+		return "naval"  # G5 (VIEW5): ships get a hull icon (procedural until ART-NAV ships lod art)
+	return "infantry" if mc == "foot" else "vehicle"
 
 
 ## G4b (ART-U CR): the manifest may map defs to finer icon classes
@@ -66,7 +69,7 @@ func icon(atlas, faction_id: String, cls: String) -> Array:
 
 
 func _dot(cls: String) -> Image:
-	var rad := DOT_R + (2 if cls == "vehicle" else 0)
+	var rad := DOT_R + (2 if cls == "vehicle" or cls == "naval" else 0)
 	var d := rad * 2 + 2
 	var img := Image.create(d, d, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
@@ -77,6 +80,8 @@ func _dot(cls: String) -> Image:
 			var dist: float = p.distance_to(c)
 			if cls == "air":
 				dist = absf(p.x - c.x) + absf(p.y - c.y)  # diamond for air
+			if cls == "naval":
+				dist = maxf(absf(p.x - c.x) * 0.75 + absf(p.y - c.y) * 0.9, absf(p.y - c.y) * 2.2)  # flat hull
 			if dist <= rad - 1.5:
 				img.set_pixel(x, y, Color.WHITE)
 			elif dist <= rad + 0.5:

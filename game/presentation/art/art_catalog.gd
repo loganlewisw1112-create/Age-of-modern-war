@@ -33,6 +33,66 @@ static func load_all() -> void:
 			_man = parsed
 	if _man.is_empty():
 		push_warning("ArtCatalog: manifest.json missing; run tools/gen_art.gd. Using placeholders.")
+	_merge_g5()
+
+
+# ---------------------------------------------------------------- G5 art groups (VIEW5)
+## G5 art agents ship one manifest per group (assets/art/<group>/manifest.json, same schema as the
+## base manifest, paths relative to that folder). Each present group is merged into the catalog at
+## load: every ".png" string is rebased to an absolute res:// path, and section entries are added
+## only for keys the base manifest does not define (new ids only; lod_icons merge per faction).
+## A group that has not landed yet simply contributes nothing (placeholder_for keeps drawing).
+const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval"]
+const G5_SKIP := ["files", "version", "group", "tile"]
+static var g5_groups: Array = []   # groups merged this session (tests / playtest evidence)
+
+
+static func _merge_g5() -> void:
+	for grp in G5_GROUPS:
+		var p := "res://assets/art/%s/manifest.json" % grp
+		if not FileAccess.file_exists(p):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(p))
+		if not (parsed is Dictionary):
+			push_warning("ArtCatalog: %s unreadable; skipped" % p)
+			continue
+		var m: Dictionary = _rebase(parsed, "res://assets/art/%s/" % grp)
+		for sec in m:
+			if G5_SKIP.has(sec):
+				continue
+			var v = m[sec]
+			if not (v is Dictionary):
+				if not _man.has(sec):
+					_man[sec] = v
+				continue
+			if not (_man.get(sec) is Dictionary):
+				_man[sec] = {}
+			var dst: Dictionary = _man[sec]
+			for k in v:
+				if not dst.has(k):
+					dst[k] = v[k]
+				elif sec == "lod_icons" and dst[k] is Dictionary and v[k] is Dictionary:
+					(dst[k] as Dictionary).merge(v[k], false)
+		g5_groups.append(grp)
+		if not (_man.get("g5_groups") is Array):
+			_man["g5_groups"] = []
+		(_man.g5_groups as Array).append(grp)
+
+
+static func _rebase(v, root: String):
+	if v is Dictionary:
+		var o := {}
+		for k in v:
+			o[k] = _rebase(v[k], root)
+		return o
+	if v is Array:
+		var a := []
+		for x in v:
+			a.append(_rebase(x, root))
+		return a
+	if v is String and (v as String).ends_with(".png") and not (v as String).begins_with("res://"):
+		return root + v
+	return v
 
 
 static func manifest() -> Dictionary:
@@ -52,7 +112,7 @@ static func _image(rel: String) -> Image:
 	if _imgs.has(rel):
 		return _imgs[rel]
 	var img: Image = null
-	var p := BASE + rel
+	var p := rel if rel.begins_with("res://") else BASE + rel  # G5 groups carry absolute paths
 	if rel != "" and FileAccess.file_exists(p):
 		img = Image.load_from_file(p)  # running from source: raw PNG
 	elif rel != "" and ResourceLoader.exists(p):
