@@ -18,9 +18,17 @@ extends RefCounted
 ## Carrier death: Ops.prune (end of every step) calls sweep(): rules.transport.on_destroyed, ground
 ## ejects at eject_hp_frac hp, air cargo dies, naval cargo dies unless land is adjacent. Deaths go
 ## through w.destroy (cause "carrier_destroyed"), so ledger/stats/pop stay consistent.
+## G5 (AIRSYS, CONTRACTS_G5 section 4): carrier `cargo_caps: {foot: n, vehicle: n}` counts per group
+## (foot = squad_size men per entity, vehicle = 1 per vehicle) instead of slots; `cargo_exclusive: true`
+## = troops OR vehicles (gunship / heavy-lift / lifter); `sling: true` = vehicles ride slung (slung()).
+## G5 air carriers (defs with `aircraft`) load and unload only while landed: they land on the spot when it is a
+## valid landing zone (Air.landing_ok), else the unload fails with UnloadFailed.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Air = preload("res://sim/systems/air.gd")  # G5 AIRSYS: air carriers land to load / unload
+const Naval = preload("res://sim/systems/naval.gd")  # G5 (NAVAL CR seq 2721): beach_unload carriers
+const HotState = preload("res://sim/hot_state.gd")  # core.hot_writer_rule (CORE10K CR seq 3023)
 
 const LOAD_RANGE := 1.6        # unit-carrier centre distance (tiles) at which a boarding unit gets in
 const UNLOAD_RANGE := 2.5      # a carrier this close to its unload target unloads there
@@ -101,9 +109,103 @@ static func can_carry(c, u) -> String:
 	var cls := cargo_class_of(String(u.def))
 	if cls == "" or not accepts(String(c.def)).has(cls):
 		return "This transport cannot carry that unit."
-	if cargo_size_of(String(u.def)) > capacity(String(c.def)):
+	var cp := caps(String(c.def))
+	if not cp.is_empty():
+		if int(cp.get(_group(cls), 0)) < _count_of(String(u.def)):
+			return "That unit is too big for this transport."
+	elif cargo_size_of(String(u.def)) > capacity(String(c.def)):
 		return "That unit is too big for this transport."
 	return ""
+
+
+# ================================================================ G5 mixed cargo (AIRSYS)
+static func caps(def_id: String) -> Dictionary:
+	var c = Content.unit(def_id).get("cargo_caps", {})
+	return c if typeof(c) == TYPE_DICTIONARY else {}
+
+
+static func _group(cls: String) -> String:
+	return "foot" if cls == "foot" else "vehicle"
+
+
+static func _count_of(def_id: String) -> int:
+	if cargo_class_of(def_id) == "foot":
+		return maxi(1, int(Content.unit(def_id).get("squad_size", 1)))
+	return 1
+
+
+## Per-group load {foot, vehicle} of carrier c.
+static func group_load(c) -> Dictionary:
+	var used := {"foot": 0, "vehicle": 0}
+	for x in c.get("cargo", []):
+		var g := _group(cargo_class_of(String(x.def)))
+		used[g] = int(used[g]) + _count_of(String(x.def))
+	return used
+
+
+## True when u fits in carrier c now (slots, or cargo_caps groups + exclusivity).
+static func fits(c, u) -> bool:
+	var cp := caps(String(c.def))
+	if cp.is_empty():
+		return cargo_size_of(String(u.def)) <= free_slots(c)
+	var g := _group(cargo_class_of(String(u.def)))
+	var used := group_load(c)
+	if bool(Content.unit(String(c.def)).get("cargo_exclusive", false)):
+		for k in used:
+			if k != g and int(used[k]) > 0:
+				return false
+	return int(used[g]) + _count_of(String(u.def)) <= int(cp.get(g, 0))
+
+
+## Ids of vehicles slung under carrier c (sling carriers only), ascending.
+static func slung(c) -> Array:
+	var out := []
+	if c == null or not bool(Content.unit(String(c.def)).get("sling", false)):
+		return out
+	for x in c.get("cargo", []):
+		if _group(cargo_class_of(String(x.def))) == "vehicle":
+			out.append(int(x.id))
+	return out
+
+
+## G5 aircraft carriers only (def has `aircraft`); G4-style air carriers keep the G4 hover rules.
+static func is_air_carrier(c) -> bool:
+	return c != null and Content.unit(String(c.def)).has("aircraft")
+
+
+## NAVAL CR (seq 2721): beach_unload carriers unload only onto BEACH/SHALLOW-adjacent land.
+static func _beach_ok(w: SimWorld, c: Dictionary, at: Vector2) -> bool:
+	var r := Naval.unload_error(w, c, at)
+	if r == "":
+		return true
+	w.emit("UnloadRefused", {"carrier": int(c.id), "owner": int(c.owner), "reason": r})
+	return false
+
+
+## Air carriers must be on the ground to unload: lands here when the spot is valid.
+static func _all_airdrop(c: Dictionary, want: Array) -> bool:
+	var any := false
+	for u in c.get("cargo", []):
+		if not want.is_empty() and not want.has(int(u.id)) and not want.has(float(u.id)):
+			continue
+		any = true
+		if not bool(Content.unit(String(u.def)).get("airdrop_ok", false)):
+			return false
+	return any
+
+
+## UNITS5 CR: cargo whose def has `airdrop_ok` (Special Forces) may drop while the aircraft hovers.
+static func _air_ready(w: SimWorld, c: Dictionary, ids: Array = []) -> bool:
+	if not is_air_carrier(c) or Air.land_now(w, c):
+		return true
+	var drop := not ids.is_empty()
+	for u in c.get("cargo", []):
+		if ids.has(int(u.id)) and not bool(Content.unit(String(u.def)).get("airdrop_ok", false)):
+			drop = false
+	if drop:
+		return true
+	w.emit("UnloadFailed", {"carrier": int(c.id), "owner": int(c.owner), "reason": Air.LZ_REASON})
+	return false
 
 
 # ================================================================ cache
@@ -172,17 +274,25 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				if u == null or int(u.id) == int(c.id):
 					continue
 				var r := can_carry(c, u)
-				if r == "" and cargo_size_of(String(u.def)) <= free:
+				if r == "" and (fits(c, u) if not caps(String(c.def)).is_empty() else cargo_size_of(String(u.def)) <= free):
 					return ""
 				why = r if r != "" else "The transport is full."
 			return why
 		"unload":
 			if (c.get("cargo", []) as Array).is_empty():
 				return "The transport is empty."
+			var at: Vector2 = c.pos
+			if cmd.has("target") and _pt(cmd.target) != null:
+				at = _pt(cmd.target)
+			var nv := Naval.unload_error(w, c, at)
+			if nv != "":
+				return nv
 			if cmd.has("target"):
 				var t = _pt(cmd.target)
 				if t == null or not w.in_bounds(w.cell_of(t)):
 					return "The unload point is outside the map."
+				if is_air_carrier(c) and not Air.landing_ok(w, w.cell_of(t), Content.unit(String(c.def))) and not _all_airdrop(c, cmd.get("cargo_ids", [])):
+					return Air.LZ_REASON
 			if cmd.has("cargo_ids"):
 				var ids := cargo_ids(c)
 				for raw in cmd.cargo_ids:
@@ -193,7 +303,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		"unload_all":
 			if (c.get("cargo", []) as Array).is_empty():
 				return "The transport is empty."
-			return ""
+			return Naval.unload_error(w, c, c.pos)
 	return "Unknown transport command."
 
 
@@ -232,7 +342,8 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 		"unload_all":
 			c.erase("unload_order")
 			c.erase("pickup")
-			unload(w, c, cargo_ids(c), c.pos, "unload")
+			if _air_ready(w, c, cargo_ids(c)):
+				unload(w, c, cargo_ids(c), c.pos, "unload")
 
 
 ## A player command detaches officer-group members from mission control (like a direct order).
@@ -268,9 +379,10 @@ static func order_unload(w: SimWorld, c: Dictionary, target: Vector2, ids: Array
 	if ids.is_empty():
 		ids = cargo_ids(c)
 	var p: Vector2 = c.pos
-	if p.distance_to(target) <= UNLOAD_RANGE:
+	if p.distance_to(target) <= UNLOAD_RANGE and not is_air_carrier(c):
 		c.erase("unload_order")
-		unload(w, c, ids, target, "unload")
+		if _beach_ok(w, c, target):
+			unload(w, c, ids, target, "unload")
 		return
 	c.unload_order = {"target": target, "ids": ids.duplicate()}
 	c.order = {"type": "move", "target": target}
@@ -299,12 +411,19 @@ static func tick(w: SimWorld) -> void:
 			var uo: Dictionary = c.unload_order
 			var t: Vector2 = uo.target
 			var p: Vector2 = c.pos
-			if p.distance_to(t) <= UNLOAD_RANGE:
+			if is_air_carrier(c):
+				if p.distance_to(t) <= 0.6 or not c.moving:
+					c.erase("unload_order")
+					if _air_ready(w, c, uo.ids):
+						unload(w, c, uo.ids, c.pos, "unload")
+			elif p.distance_to(t) <= UNLOAD_RANGE:
 				c.erase("unload_order")
-				unload(w, c, uo.ids, t, "unload")
+				if _beach_ok(w, c, t):
+					unload(w, c, uo.ids, t, "unload")
 			elif not c.moving:
 				c.erase("unload_order")
-				unload(w, c, uo.ids, p, "unload")
+				if _beach_ok(w, c, p):
+					unload(w, c, uo.ids, p, "unload")
 		if (c.get("cargo", []) as Array).is_empty() and not c.has("pickup") and not c.has("unload_order"):
 			carriers.erase(cid)
 
@@ -324,8 +443,12 @@ static func _tick_boarder(w: SimWorld, tc: Dictionary, uid: int) -> void:
 	var cp: Vector2 = c.pos
 	if p.distance_to(cp) <= LOAD_RANGE:
 		tc.boarding.erase(uid)
+		if is_air_carrier(c) and not bool(c.get("air_landed", false)):
+			Movement.stop_path(u)
+			tc.boarding[uid] = int(c.id)
+			return   # wait beside the aircraft until it is on the ground
 		var r := can_carry(c, u)
-		if r == "" and cargo_size_of(String(u.def)) > free_slots(c):
+		if r == "" and not fits(c, u):
 			r = "The transport is full."
 		if r != "":
 			u.order = {"type": "idle"}
@@ -437,7 +560,7 @@ static func _place(w: SimWorld, c: Dictionary, units: Array, center: Vector2, ca
 	var stay := []
 	var cc := w.cell_of(center)
 	for u in units:
-		var cell := _drop_cell(w, u, cc, used)
+		var cell := _drop_cell(w, u, cc, used, c)
 		if cell.x < 0:
 			stay.append(u)
 			continue
@@ -454,11 +577,13 @@ static func _place(w: SimWorld, c: Dictionary, units: Array, center: Vector2, ca
 		return stay
 	_reinsert(w, placed)
 	for u in placed:
+		HotState.touch(w, int(u.id))
+	for u in placed:
 		w.emit("UnitUnloaded", {"id": int(u.id), "carrier": int(c.id), "owner": int(u.owner), "pos": u.pos, "cause": cause})
 	return stay
 
 
-static func _drop_cell(w: SimWorld, u: Dictionary, cc: Vector2i, used: Dictionary) -> Vector2i:
+static func _drop_cell(w: SimWorld, u: Dictionary, cc: Vector2i, used: Dictionary, c: Dictionary = {}) -> Vector2i:
 	if _offs.is_empty():
 		for dy in range(-DROP_RADIUS, DROP_RADIUS + 1):
 			for dx in range(-DROP_RADIUS, DROP_RADIUS + 1):
@@ -476,7 +601,7 @@ static func _drop_cell(w: SimWorld, u: Dictionary, cc: Vector2i, used: Dictionar
 		var cell: Vector2i = cc + off
 		if used.has(cell) or not w.in_bounds(cell):
 			continue
-		if Movement.is_passable_e(w, u, cell):
+		if Movement.is_passable_e(w, u, cell) and (c.is_empty() or Naval.drop_ok(w, c, cell)):
 			return cell
 	return Vector2i(-1, -1)
 
@@ -555,6 +680,7 @@ static func on_carrier_destroyed(w: SimWorld, c: Dictionary, killer_owner: int) 
 		tc.cargo_of.erase(int(u.id))
 		u.pos = p
 		w.entities[int(u.id)] = u  # back in the world for one moment: the normal destroy path
+		HotState.touch(w, int(u.id))
 		w.destroy(int(u.id), "carrier_destroyed", killer_owner)
 	if not dead.is_empty():
 		_invalidate(w)

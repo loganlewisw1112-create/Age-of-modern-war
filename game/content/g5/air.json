@@ -1,3 +1,1115 @@
 {
-  "_meta": "G5 air fragment (owner: AIRSYS). CONTRACTS_G5 section 3 fixes the ids. PROVISIONAL numbers."
+ "_meta": "G5 air fragment (owner: AIRSYS). CONTRACTS_G5 section 3 fixes the ids. PROVISIONAL numbers. Aircraft fields: aircraft jet|heli|vtol|micro (flight model), hangar light|heavy|pad|bay (home slot class), fuel_burn (fuel/s airborne), payload (sortie strike), auto_engage_air, cargo_caps/cargo_exclusive/sling (Transport). Building field air_field selects the Airfield role.",
+ "weapons": {
+  "heli_rockets": {
+   "class": "at",
+   "damage": 45,
+   "range": 7,
+   "cooldown": 2.0,
+   "accuracy": 0.8
+  },
+  "door_guns": {
+   "class": "small_arms",
+   "damage": 9,
+   "range": 6,
+   "cooldown": 0.4,
+   "accuracy": 0.6,
+   "anti_air_low": true
+  },
+  "heli_hmg": {
+   "class": "autocannon",
+   "damage": 14,
+   "range": 7,
+   "cooldown": 0.5,
+   "accuracy": 0.65,
+   "anti_air_low": true
+  },
+  "aam_missile": {
+   "class": "at",
+   "damage": 70,
+   "range": 9,
+   "cooldown": 3.0,
+   "accuracy": 0.85,
+   "anti_air": true,
+   "anti_air_low": true,
+   "anti_air_high": true,
+   "air_only": true
+  },
+  "vtol_aa": {
+   "class": "autocannon",
+   "damage": 30,
+   "range": 8,
+   "cooldown": 1.0,
+   "accuracy": 0.8,
+   "anti_air": true,
+   "anti_air_low": true,
+   "anti_air_high": true
+  },
+  "vtol_flak": {
+   "class": "autocannon",
+   "damage": 20,
+   "range": 7,
+   "cooldown": 0.8,
+   "accuracy": 0.7,
+   "anti_air": true,
+   "anti_air_low": true
+  },
+  "swarm_aa": {
+   "class": "energy",
+   "damage": 25,
+   "range": 8,
+   "cooldown": 0.8,
+   "accuracy": 0.8,
+   "anti_air": true,
+   "anti_air_low": true,
+   "anti_air_high": true,
+   "air_only": true
+  },
+  "carrier_gun": {
+   "class": "energy",
+   "damage": 10,
+   "range": 6,
+   "cooldown": 0.8,
+   "accuracy": 0.6
+  },
+  "micro_drone_gun": {
+   "class": "energy",
+   "damage": 8,
+   "range": 4,
+   "cooldown": 0.6,
+   "accuracy": 0.6,
+   "anti_air_low": true
+  }
+ },
+ "units": {
+  "a_attack_heli": {
+   "name": "Attack Helicopter",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 420,
+   "speed": 4.5,
+   "sight": 11,
+   "pop": 3,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 16,
+   "fuel_max": 300,
+   "fuel_per_tile": 0.0,
+   "faction": "human_a",
+   "stage_min": 8,
+   "aircraft": "heli",
+   "hangar": "pad",
+   "fuel_burn": 1.0,
+   "weapon": "heli_rockets",
+   "lz_size": 2
+  },
+  "a_transport_gunship": {
+   "name": "Transport Gunship",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 520,
+   "speed": 4.2,
+   "sight": 10,
+   "pop": 3,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 200,
+   "fuel_max": 300,
+   "fuel_per_tile": 0.0,
+   "faction": "human_a",
+   "stage_min": 8,
+   "aircraft": "heli",
+   "hangar": "pad",
+   "fuel_burn": 1.0,
+   "weapon": "door_guns",
+   "lz_size": 2,
+   "cargo_slots": 8,
+   "cargo_caps": {
+    "foot": 8,
+    "vehicle": 1
+   },
+   "cargo_exclusive": true,
+   "cargo_accepts": [
+    "foot",
+    "vehicle_light"
+   ],
+   "sling": true
+  },
+  "a_strike_jet": {
+   "name": "Strike Jet",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_high",
+   "hp": 380,
+   "speed": 9.0,
+   "sight": 12,
+   "pop": 4,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 2,
+   "fuel_max": 400,
+   "fuel_per_tile": 0.0,
+   "faction": "human_a",
+   "stage_min": 8,
+   "aircraft": "jet",
+   "hangar": "light",
+   "fuel_burn": 2.0,
+   "payload": {
+    "class": "artillery",
+    "damage": 260,
+    "splash": 2.0,
+    "cratering": true
+   }
+  },
+  "a_interceptor": {
+   "name": "Interceptor",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_high",
+   "hp": 340,
+   "speed": 10.0,
+   "sight": 13,
+   "pop": 4,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 8,
+   "fuel_max": 400,
+   "fuel_per_tile": 0.0,
+   "faction": "human_a",
+   "stage_min": 8,
+   "aircraft": "jet",
+   "hangar": "light",
+   "fuel_burn": 2.0,
+   "weapon": "aam_missile",
+   "auto_engage_air": true
+  },
+  "a_vtol_dropship": {
+   "name": "VTOL Dropship",
+   "role": "air",
+   "armor": "heavy",
+   "move_class": "air_low",
+   "hp": 1400,
+   "speed": 3.6,
+   "sight": 11,
+   "pop": 8,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 120,
+   "fuel_max": 500,
+   "fuel_per_tile": 0.0,
+   "faction": "human_a",
+   "stage_min": 9,
+   "aircraft": "vtol",
+   "hangar": "heavy",
+   "fuel_burn": 1.0,
+   "weapon": "vtol_aa",
+   "lz_size": 3,
+   "cargo_slots": 10,
+   "cargo_caps": {
+    "vehicle": 2,
+    "foot": 8
+   },
+   "cargo_accepts": [
+    "foot",
+    "vehicle_light",
+    "vehicle_heavy"
+   ],
+   "auto_engage_air": true,
+   "sling": true
+  },
+  "b_gunship": {
+   "name": "Armored Gunship",
+   "role": "air",
+   "armor": "heavy",
+   "move_class": "air_low",
+   "hp": 620,
+   "speed": 4.0,
+   "sight": 10,
+   "pop": 3,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 240,
+   "fuel_max": 300,
+   "fuel_per_tile": 0.0,
+   "faction": "human_b",
+   "stage_min": 8,
+   "aircraft": "heli",
+   "hangar": "pad",
+   "fuel_burn": 1.0,
+   "weapon": "heli_hmg",
+   "lz_size": 2
+  },
+  "b_heavy_lift": {
+   "name": "Heavy-Lift",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 700,
+   "speed": 3.4,
+   "sight": 9,
+   "pop": 3,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 0,
+   "fuel_max": 320,
+   "fuel_per_tile": 0.0,
+   "faction": "human_b",
+   "stage_min": 8,
+   "aircraft": "heli",
+   "hangar": "pad",
+   "fuel_burn": 1.0,
+   "lz_size": 3,
+   "cargo_slots": 12,
+   "cargo_caps": {
+    "foot": 12,
+    "vehicle": 1
+   },
+   "cargo_exclusive": true,
+   "cargo_accepts": [
+    "foot",
+    "vehicle_light",
+    "vehicle_heavy"
+   ],
+   "sling": true
+  },
+  "b_bomber": {
+   "name": "Bomber",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_high",
+   "hp": 600,
+   "speed": 7.0,
+   "sight": 11,
+   "pop": 5,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 1,
+   "fuel_max": 450,
+   "fuel_per_tile": 0.0,
+   "faction": "human_b",
+   "stage_min": 8,
+   "aircraft": "jet",
+   "hangar": "heavy",
+   "fuel_burn": 2.0,
+   "payload": {
+    "class": "artillery",
+    "damage": 200,
+    "splash": 3.5,
+    "cratering": true
+   }
+  },
+  "b_vtol_dropship": {
+   "name": "VTOL Dropship (B)",
+   "role": "air",
+   "armor": "heavy",
+   "move_class": "air_low",
+   "hp": 1250,
+   "speed": 3.4,
+   "sight": 10,
+   "pop": 7,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 120,
+   "fuel_max": 480,
+   "fuel_per_tile": 0.0,
+   "faction": "human_b",
+   "stage_min": 9,
+   "aircraft": "vtol",
+   "hangar": "heavy",
+   "fuel_burn": 1.0,
+   "weapon": "vtol_flak",
+   "lz_size": 3,
+   "cargo_slots": 10,
+   "cargo_caps": {
+    "vehicle": 2,
+    "foot": 8
+   },
+   "cargo_accepts": [
+    "foot",
+    "vehicle_light",
+    "vehicle_heavy"
+   ],
+   "auto_engage_air": true,
+   "sling": true
+  },
+  "m_drone_carrier": {
+   "name": "Drone Carrier",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 450,
+   "speed": 3.8,
+   "sight": 11,
+   "pop": 4,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 100,
+   "fuel_max": 300,
+   "fuel_per_tile": 0.0,
+   "faction": "machine",
+   "stage_min": 9,
+   "aircraft": "heli",
+   "hangar": "bay",
+   "fuel_burn": 1.0,
+   "weapon": "carrier_gun",
+   "lz_size": 2,
+   "micro_drones": {
+    "unit": "m_micro_drone",
+    "interval_s": 8,
+    "max": 4,
+    "life_s": 30
+   }
+  },
+  "m_lifter_drone": {
+   "name": "Lifter Drone",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 500,
+   "speed": 3.8,
+   "sight": 9,
+   "pop": 3,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 0,
+   "fuel_max": 300,
+   "fuel_per_tile": 0.0,
+   "faction": "machine",
+   "stage_min": 8,
+   "aircraft": "heli",
+   "hangar": "bay",
+   "fuel_burn": 1.0,
+   "lz_size": 2,
+   "cargo_slots": 6,
+   "cargo_caps": {
+    "foot": 6,
+    "vehicle": 1
+   },
+   "cargo_exclusive": true,
+   "cargo_accepts": [
+    "foot",
+    "vehicle_light",
+    "vehicle_heavy"
+   ],
+   "sling": true
+  },
+  "m_interceptor_swarm": {
+   "name": "Interceptor Swarm",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_high",
+   "hp": 320,
+   "speed": 10.0,
+   "sight": 12,
+   "pop": 4,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 80,
+   "fuel_max": 380,
+   "fuel_per_tile": 0.0,
+   "faction": "machine",
+   "stage_min": 9,
+   "aircraft": "jet",
+   "hangar": "bay",
+   "fuel_burn": 2.0,
+   "weapon": "swarm_aa",
+   "auto_engage_air": true
+  },
+  "m_micro_drone": {
+   "name": "Micro Drone",
+   "role": "air",
+   "armor": "light",
+   "move_class": "air_low",
+   "hp": 40,
+   "speed": 6.0,
+   "sight": 7,
+   "pop": 0,
+   "radius": 0.5,
+   "is_air": true,
+   "ammo_max": 60,
+   "fuel_max": 60,
+   "fuel_per_tile": 0.0,
+   "faction": "machine",
+   "stage_min": 9,
+   "aircraft": "micro",
+   "hangar": "",
+   "fuel_burn": 1.0,
+   "weapon": "micro_drone_gun",
+   "lz_size": 1,
+   "life_s": 30
+  }
+ },
+ "production": {
+  "a_attack_heli": {
+   "name": "Attack Helicopter",
+   "spawns": [
+    "a_attack_heli"
+   ],
+   "facility": "a_helipad",
+   "cost": {
+    "credits": 700,
+    "salvage": 250,
+    "ore": 150
+   },
+   "train_time": 30,
+   "hotkey": "H",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_transport_gunship": {
+   "name": "Transport Gunship",
+   "spawns": [
+    "a_transport_gunship"
+   ],
+   "facility": "a_helipad",
+   "cost": {
+    "credits": 650,
+    "salvage": 220,
+    "ore": 120
+   },
+   "train_time": 28,
+   "hotkey": "G",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_strike_jet": {
+   "name": "Strike Jet",
+   "spawns": [
+    "a_strike_jet"
+   ],
+   "facility": "a_airfield",
+   "cost": {
+    "credits": 900,
+    "salvage": 300,
+    "ore": 200
+   },
+   "train_time": 35,
+   "hotkey": "J",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_interceptor": {
+   "name": "Interceptor",
+   "spawns": [
+    "a_interceptor"
+   ],
+   "facility": "a_airfield",
+   "cost": {
+    "credits": 850,
+    "salvage": 280,
+    "ore": 200
+   },
+   "train_time": 32,
+   "hotkey": "I",
+   "faction": "human_a",
+   "stage_min": 8
+  },
+  "a_vtol_dropship": {
+   "name": "VTOL Dropship",
+   "spawns": [
+    "a_vtol_dropship"
+   ],
+   "facility": "a_airfield",
+   "cost": {
+    "credits": 1800,
+    "salvage": 600,
+    "ore": 400
+   },
+   "train_time": 50,
+   "hotkey": "V",
+   "faction": "human_a",
+   "stage_min": 9
+  },
+  "b_gunship": {
+   "name": "Armored Gunship",
+   "spawns": [
+    "b_gunship"
+   ],
+   "facility": "b_helipad",
+   "cost": {
+    "credits": 600,
+    "salvage": 260,
+    "ore": 140
+   },
+   "train_time": 30,
+   "hotkey": "H",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "b_heavy_lift": {
+   "name": "Heavy-Lift",
+   "spawns": [
+    "b_heavy_lift"
+   ],
+   "facility": "b_helipad",
+   "cost": {
+    "credits": 600,
+    "salvage": 240,
+    "ore": 120
+   },
+   "train_time": 30,
+   "hotkey": "L",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "b_bomber": {
+   "name": "Bomber",
+   "spawns": [
+    "b_bomber"
+   ],
+   "facility": "b_aerodrome",
+   "cost": {
+    "credits": 1000,
+    "salvage": 350,
+    "ore": 250
+   },
+   "train_time": 40,
+   "hotkey": "O",
+   "faction": "human_b",
+   "stage_min": 8
+  },
+  "b_vtol_dropship": {
+   "name": "VTOL Dropship (B)",
+   "spawns": [
+    "b_vtol_dropship"
+   ],
+   "facility": "b_aerodrome",
+   "cost": {
+    "credits": 1500,
+    "salvage": 500,
+    "ore": 320
+   },
+   "train_time": 48,
+   "hotkey": "V",
+   "faction": "human_b",
+   "stage_min": 9
+  },
+  "m_drone_carrier": {
+   "name": "Drone Carrier",
+   "spawns": [
+    "m_drone_carrier"
+   ],
+   "facility": "m_launch_rail",
+   "cost": {
+    "credits": 750,
+    "salvage": 300,
+    "ore": 150
+   },
+   "train_time": 32,
+   "hotkey": "C",
+   "faction": "machine",
+   "stage_min": 9
+  },
+  "m_lifter_drone": {
+   "name": "Lifter Drone",
+   "spawns": [
+    "m_lifter_drone"
+   ],
+   "facility": "m_launch_rail",
+   "cost": {
+    "credits": 600,
+    "salvage": 240,
+    "ore": 120
+   },
+   "train_time": 28,
+   "hotkey": "L",
+   "faction": "machine",
+   "stage_min": 8
+  },
+  "m_interceptor_swarm": {
+   "name": "Interceptor Swarm",
+   "spawns": [
+    "m_interceptor_swarm"
+   ],
+   "facility": "m_launch_rail",
+   "cost": {
+    "credits": 800,
+    "salvage": 280,
+    "ore": 180
+   },
+   "train_time": 32,
+   "hotkey": "I",
+   "faction": "machine",
+   "stage_min": 9
+  }
+ },
+ "buildings": {
+  "a_airfield": {
+   "name": "Airfield",
+   "size": 6,
+   "hp": 3000,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 900,
+    "salvage": 400,
+    "ore": 200
+   },
+   "build_time": 60,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "airfield",
+   "strips": 1,
+   "max_extra": 3,
+   "slots_base": 4,
+   "slots_per_strip": 2,
+   "strip_len": 26,
+   "hangar_light": "a_hangar_light",
+   "hangar_heavy": "a_hangar_heavy",
+   "pad_slots": 2
+  },
+  "a_airstrip": {
+   "name": "Airstrip",
+   "size": 4,
+   "hp": 1800,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 500,
+    "salvage": 200,
+    "ore": 100
+   },
+   "build_time": 40,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "airstrip",
+   "strips": 1,
+   "max_extra": 0,
+   "slots_base": 2,
+   "slots_per_strip": 0,
+   "strip_len": 14,
+   "light_only": true,
+   "hangar_light": "a_hangar_light",
+   "produces": [
+    "a_strike_jet",
+    "a_interceptor"
+   ]
+  },
+  "a_hangar_light": {
+   "name": "Light Hangar",
+   "size": 2,
+   "hp": 900,
+   "armor": "building",
+   "sight": 7,
+   "power": -5,
+   "buildable": false,
+   "requires": [],
+   "cost": {
+    "credits": 250,
+    "salvage": 100,
+    "ore": 0
+   },
+   "build_time": 20,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "hangar",
+   "hangar_class": "light"
+  },
+  "a_hangar_heavy": {
+   "name": "Heavy Hangar",
+   "size": 2,
+   "hp": 1300,
+   "armor": "building",
+   "sight": 7,
+   "power": -8,
+   "buildable": false,
+   "requires": [],
+   "cost": {
+    "credits": 400,
+    "salvage": 180,
+    "ore": 60
+   },
+   "build_time": 30,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "hangar",
+   "hangar_class": "heavy"
+  },
+  "a_helipad": {
+   "name": "Helipad",
+   "size": 2,
+   "hp": 700,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 220,
+    "salvage": 80,
+    "ore": 0
+   },
+   "build_time": 20,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "helipad",
+   "pad_slots": 2
+  },
+  "a_air_tower": {
+   "name": "Air Control Tower",
+   "size": 2,
+   "hp": 800,
+   "armor": "building",
+   "sight": 14,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 300,
+    "salvage": 120,
+    "ore": 40
+   },
+   "build_time": 25,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "tower"
+  },
+  "a_forward_strip": {
+   "name": "Forward Airstrip",
+   "size": 3,
+   "hp": 600,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 300,
+    "salvage": 120,
+    "ore": 0
+   },
+   "build_time": 25,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "forward_strip",
+   "strips": 1,
+   "max_extra": 0,
+   "slots_base": 0,
+   "slots_per_strip": 0,
+   "strip_len": 10,
+   "light_only": true
+  },
+  "a_forward_helipad": {
+   "name": "Forward Helipad",
+   "size": 2,
+   "hp": 450,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 150,
+    "salvage": 60,
+    "ore": 0
+   },
+   "build_time": 15,
+   "faction": "human_a",
+   "stage_min": 8,
+   "air_field": "forward_helipad",
+   "pad_slots": 1,
+   "home_ok": false
+  },
+  "b_aerodrome": {
+   "name": "Aerodrome",
+   "size": 6,
+   "hp": 3000,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 900,
+    "salvage": 400,
+    "ore": 200
+   },
+   "build_time": 60,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "airfield",
+   "strips": 1,
+   "max_extra": 3,
+   "slots_base": 4,
+   "slots_per_strip": 2,
+   "strip_len": 26,
+   "hangar_light": "b_hangar_light",
+   "hangar_heavy": "b_hangar_heavy",
+   "pad_slots": 2
+  },
+  "b_airstrip": {
+   "name": "Airstrip",
+   "size": 4,
+   "hp": 1800,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 500,
+    "salvage": 200,
+    "ore": 100
+   },
+   "build_time": 40,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "airstrip",
+   "strips": 1,
+   "max_extra": 0,
+   "slots_base": 2,
+   "slots_per_strip": 0,
+   "strip_len": 14,
+   "light_only": true,
+   "hangar_light": "b_hangar_light",
+   "produces": []
+  },
+  "b_hangar_light": {
+   "name": "Light Hangar",
+   "size": 2,
+   "hp": 900,
+   "armor": "building",
+   "sight": 7,
+   "power": -5,
+   "buildable": false,
+   "requires": [],
+   "cost": {
+    "credits": 250,
+    "salvage": 100,
+    "ore": 0
+   },
+   "build_time": 20,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "hangar",
+   "hangar_class": "light"
+  },
+  "b_hangar_heavy": {
+   "name": "Heavy Hangar",
+   "size": 2,
+   "hp": 1300,
+   "armor": "building",
+   "sight": 7,
+   "power": -8,
+   "buildable": false,
+   "requires": [],
+   "cost": {
+    "credits": 400,
+    "salvage": 180,
+    "ore": 60
+   },
+   "build_time": 30,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "hangar",
+   "hangar_class": "heavy"
+  },
+  "b_helipad": {
+   "name": "Helipad",
+   "size": 2,
+   "hp": 700,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 220,
+    "salvage": 80,
+    "ore": 0
+   },
+   "build_time": 20,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "helipad",
+   "pad_slots": 2
+  },
+  "b_air_tower": {
+   "name": "Air Control Tower",
+   "size": 2,
+   "hp": 800,
+   "armor": "building",
+   "sight": 14,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 300,
+    "salvage": 120,
+    "ore": 40
+   },
+   "build_time": 25,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "tower"
+  },
+  "b_forward_strip": {
+   "name": "Forward Airstrip",
+   "size": 3,
+   "hp": 600,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 300,
+    "salvage": 120,
+    "ore": 0
+   },
+   "build_time": 25,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "forward_strip",
+   "strips": 1,
+   "max_extra": 0,
+   "slots_base": 0,
+   "slots_per_strip": 0,
+   "strip_len": 10,
+   "light_only": true
+  },
+  "b_forward_helipad": {
+   "name": "Forward Helipad",
+   "size": 2,
+   "hp": 450,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 150,
+    "salvage": 60,
+    "ore": 0
+   },
+   "build_time": 15,
+   "faction": "human_b",
+   "stage_min": 8,
+   "air_field": "forward_helipad",
+   "pad_slots": 1,
+   "home_ok": false
+  },
+  "m_launch_rail": {
+   "name": "Drone Launch Rail",
+   "size": 5,
+   "hp": 2600,
+   "armor": "building",
+   "sight": 7,
+   "power": -20,
+   "buildable": true,
+   "requires": [],
+   "cost": {
+    "credits": 850,
+    "salvage": 380,
+    "ore": 200
+   },
+   "build_time": 55,
+   "faction": "machine",
+   "stage_min": 8,
+   "air_field": "rail",
+   "strips": 1,
+   "max_extra": 3,
+   "slots_base": 4,
+   "slots_per_strip": 2,
+   "strip_len": 12,
+   "hangar_light": "m_drone_bay",
+   "hangar_heavy": "m_drone_bay"
+  },
+  "m_drone_bay": {
+   "name": "Drone Bay",
+   "size": 2,
+   "hp": 900,
+   "armor": "building",
+   "sight": 7,
+   "power": -5,
+   "buildable": false,
+   "requires": [],
+   "cost": {
+    "credits": 260,
+    "salvage": 100,
+    "ore": 20
+   },
+   "build_time": 20,
+   "faction": "machine",
+   "stage_min": 8,
+   "air_field": "hangar",
+   "hangar_class": "bay"
+  }
+ },
+ "rules": {
+  "g5_air": {
+   "_note": "AIRSYS (CONTRACTS_G5 section 7). PROVISIONAL balance fixtures.",
+   "taxi_s": 3.0,
+   "roll_s": 2.0,
+   "approach_s": 4.0,
+   "taxi_in_s": 3.0,
+   "rearm_s": 20.0,
+   "heli_service_s": 12.0,
+   "engineer_speed": 1.5,
+   "hangar_level_rearm_mult": [
+    1.0,
+    0.6,
+    0.6,
+    0.6
+   ],
+   "hangar_l2_repair_hp_s": 10.0,
+   "roof_damage_frac": 0.5,
+   "crater_repair_s": 15.0,
+   "hold_radius": 7.0,
+   "low_fuel_frac": 0.25,
+   "strike_range": 1.5,
+   "arrive_radius": 6.0,
+   "service_radius": {
+    "airfield": 7.0,
+    "airstrip": 5.0,
+    "rail": 6.0,
+    "forward_strip": 4.0,
+    "helipad": 1.6,
+    "forward_helipad": 1.6
+   },
+   "engineer_range": 10.0,
+   "engineer_repair_hp_s": 15.0,
+   "field_rearm_range": 4.0,
+   "tower_range": 20.0,
+   "hangar_build_s": {
+    "light": 20.0,
+    "heavy": 30.0,
+    "bay": 20.0
+   },
+   "upgrades": {
+    "extra_strip": {
+     "cost": {
+      "credits": 500,
+      "salvage": 200,
+      "ore": 100
+     },
+     "time_s": 40.0
+    },
+    "hangar_level": {
+     "cost": {
+      "credits": 250,
+      "salvage": 100,
+      "ore": 50
+     },
+     "time_s": 25.0
+    },
+    "to_heavy": {
+     "cost": {
+      "credits": 200,
+      "salvage": 100,
+      "ore": 60
+     },
+     "time_s": 25.0
+    }
+   }
+  }
+ }
 }
