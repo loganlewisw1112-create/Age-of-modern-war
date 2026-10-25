@@ -334,6 +334,9 @@ const BUILDERS_SPLIT := 2
 
 const CREW_CAP_ARMY := 30
 const CREW_IDLE_CR := 2500
+const LATE_CREW_TICK := 48000  # AI6: late-game crew boost (see crew_cap)
+const LATE_CREW_CR := 1500
+const LATE_CREW_POP := 15
 
 
 ## AI4-3: the difficulty's crew cap, raised while a big army is starved of materials and credits
@@ -345,11 +348,19 @@ static func crew_cap(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> 
 	# AI5: credits piling up (CREW_IDLE_CR) while materials starve also counts once the army is out
 	# (heartland v3 s1: Human B 3700 cr idle, salvage 51, ore 16, army 22 < 30 -> 8 crews only)
 	var idle_cr := int(f.credits) >= CREW_IDLE_CR
+	# AI6: only with supply headroom (valley v4: extra crews ate the pop the late waves needed)
+	var late := w.tick >= LATE_CREW_TICK and int(f.credits) >= LATE_CREW_CR and int(f.pop) <= int(f.pop_cap) - LATE_CREW_POP
+	idle_cr = idle_cr or late
 	if int(st.get("launches", 0)) < 1 or (int(ctx.get("army_n", 0)) < CREW_CAP_ARMY and not idle_cr):
 		return base
 	var starved := int(f.stock.salvage) < 300 or int(f.stock.ore) < 150 or int(f.stock.get("ammo", 0)) < AMMO_FLOOR
 	if not starved or int(f.credits) < 1000:
 		return base
+	# AI6 (valley v1, both seeds): late game both humans sat on 2000-6000 idle credits with salvage
+	# 0-200 and ore 0-400 at 8-12 crews (deposits 13k-45k left), so neither could rebuild a wave.
+	# From LATE_CREW_TICK idle credits buy up to triple the crews (still capped by credits >= 1000).
+	if late:
+		return mini(base * 3, base * 2 + int(ctx.get("army_n", 0)) / 6)
 	if int(ctx.get("army_n", 0)) < CREW_CAP_ARMY:
 		return mini(base * 2, base + 4)
 	return mini(base * 3, base + maxi(2, int(ctx.get("army_n", 0)) / 8))

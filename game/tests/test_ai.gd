@@ -277,6 +277,7 @@ func test_g2_ruined_bridge_reroute_and_repair() -> void:
 	var crew_seen := false
 	while w.tick < 4000 and not repaired:
 		scout.pos = bank
+		preload("res://sim/hot_state.gd").touch(w, int(scout.id))  # CORE10K-3: direct pos/path write -> hot state
 		w.step()
 		crew_seen = crew_seen or not (st.g2.bridge_crew as Array).is_empty()
 		for ev in w.events:

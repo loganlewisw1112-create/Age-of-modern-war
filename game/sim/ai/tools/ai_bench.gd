@@ -91,7 +91,8 @@ func _init() -> void:
 static func _fill(w: SimWorld, fid: int, n: int) -> void:
 	var fd := String(w.factions[fid].faction_def)
 	var defs := []
-	for r in ["infantry", "antitank", "light"]:
+	# AI6 (G5): drone teams, HMG teams and medics too, so the bench covers the ai_g5 paths
+	for r in ["infantry", "antitank", "light", "drone_team", "hmg", "medic"]:
 		var item := Content.role(fd, r, int(w.factions[fid].stage))
 		if item != "":
 			for u in Content.production(item).get("spawns", []):

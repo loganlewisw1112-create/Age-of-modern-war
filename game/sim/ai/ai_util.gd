@@ -95,12 +95,23 @@ static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key
 		return true
 	var hold: Dictionary = st.get("g4", {}).get("reserve", {})
 	var wh: Dictionary = st.get("worker_hold", {})
+	var is_g := ty == "queue_unit" and String(cmd.item) == role(w, fid, "gatherer")
+	if wh.has("soft") and is_g:
+		wh = {}  # AI6-2: the soft salvage floor is kept FOR crews, never against them
+	# AI6-2 (CR ai_bank_air_naval_hold from AI6-AN): AiAir / AiNaval publish their next blocked
+	# purchase (airfield / shipyard ...) as st.g6an_hold; other purchases leave it untouched.
+	var gh: Dictionary = st.get("g6an_hold", {})
+	var use_gh := not gh.is_empty() and not key.begins_with("air:") and not key.begins_with("naval:")
 	if not wh.is_empty():
-		if ty == "queue_unit" and String(cmd.item) == role(w, fid, "gatherer"):
+		if is_g:
 			return true  # the missing gatherer itself goes first, ahead of the stage bank
 		hold = _add_cost(hold, wh)
 	elif hold.is_empty() or bank_exempt(w, fid, cmd, key):
-		return true
+		if not use_gh:
+			return true
+		hold = {}
+	if use_gh:
+		hold = _add_cost(hold, gh)
 	if hold.is_empty():
 		return true
 	var cost: Dictionary = Content.production(String(cmd.item)).get("cost", {}) if ty == "queue_unit" else Content.building(String(cmd.def)).get("cost", {})
@@ -403,6 +414,37 @@ static func available(w: SimWorld, fid: int, def_id: String) -> bool:
 
 
 ## Unit def spawned by this side's production role ("" when none).
+## AI6-2: salvage spent on one unit of def_id (its producing item's salvage cost / spawns), cached.
+static var _unit_sal := {}
+
+
+static func unit_salvage(def_id: String) -> int:
+	if _unit_sal.is_empty():
+		for item in Content.ids("production"):
+			var p := Content.production(String(item))
+			var sp: Array = p.get("spawns", [])
+			if sp.is_empty():
+				continue
+			var each := int(p.get("cost", {}).get("salvage", 0)) / sp.size()
+			for u in sp:
+				if not _unit_sal.has(String(u)):
+					_unit_sal[String(u)] = each
+	return int(_unit_sal.get(def_id, 0))
+
+
+## AI6-2 (river s1 a2: every unit costs salvage and the map ran dry at ~t60k): the known salvage
+## still on the map plus the stock is below SAL_SCARCE (own fog only: gather_plan from known deposits).
+const SAL_SCARCE := 2500
+const SAL_SCARCE_FROM := 18000
+
+
+static func salvage_scarce(w: SimWorld, fid: int, st: Dictionary) -> bool:
+	if w.tick < SAL_SCARCE_FROM:
+		return false
+	var left := int(st.get("gather_plan", {}).get("salvage_left", 1 << 30))
+	return left + int(w.factions[fid].stock.get("salvage", 0)) < SAL_SCARCE
+
+
 static func role_unit(w: SimWorld, fid: int, r: String) -> String:
 	var item := role(w, fid, r)
 	if item == "":

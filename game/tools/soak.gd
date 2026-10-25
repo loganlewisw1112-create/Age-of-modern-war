@@ -176,6 +176,10 @@ func _init() -> void:
 		print("SOAK G4B f%d %s forts_done=%s lines=%d loaded=%d unloaded=%d mines=%d charges=%d deployed=%d fielded=%s | %s" % [fid, String(w.factions[fid].faction_def),
 			str(gd.get("forts", {})), int(gd.get("lines", 0)), int(gd.get("loaded", 0)), int(gd.get("unloaded", 0)), int(gd.get("mines", 0)),
 			int(gd.get("charges", 0)), int(gd.get("deployed", 0)), str(gd.get("fielded", {})), str(w.ai_state.get(fid, {}).get("g5", {}).get("probe", ""))])
+	# AI6 (G5): usage of the G5 ground units / support per AI side (ai_g5 probe, st.g6)
+	for fid in w.factions:
+		if w.ai_state.has(fid):
+			print("SOAK G5 f%d %s %s" % [fid, String(w.factions[fid].faction_def), str(w.ai_state[fid].get("g6", {}).get("probe", ""))])
 	print("SOAK RESULT winner=%s end_tick=%d reason=%s hash=%s winner_team=%s winners=%s" % [winner, w.tick, why, w.state_hash(), wteam, str(w.match_state.get("winners", []))])
 	quit(0)
 
@@ -430,9 +434,9 @@ func _print_diag(w: SimWorld) -> void:
 			for q in b.get("queue", []):
 				queues.append(String(q.item))
 		var g5: Dictionary = st.get("g5", {})
-		print("SOAK DIAG t=%d f%d cr=%d sal=%d ore=%d ammo=%d fuel=%d pop=%d/%d units=%d obj=%s mode=%s focus=%s saving=%s reserve=%s | crews=%s plan=%s | orders=%s | wave=%d cen=%s enemy_hq_d=%.0f foes14=%d tgt=%s | bwhy=%s last=%s seen=%d skip=%d | q=%s" % [
+		print("SOAK DIAG t=%d f%d cr=%d sal=%d ore=%d ammo=%d fuel=%d pop=%d/%d units=%d obj=%s mode=%s focus=%s saving=%s reserve=%s apop=%d thr=%d fv=%s | crews=%s plan=%s | orders=%s | wave=%d cen=%s enemy_hq_d=%.0f foes14=%d tgt=%s | bwhy=%s last=%s seen=%d skip=%d | q=%s" % [
 			w.tick, fid, int(f.credits), int(fs.salvage), int(fs.ore), int(fs.get("ammo", 0)), int(fs.get("fuel", 0)), int(f.pop), int(f.pop_cap), n_units,
-			String(st.get("objective", "")), String(st.get("army_mode", "")), focus, String(st.get("saving_for", "")), str(st.get("g4", {}).get("reserve", {})),
+			String(st.get("objective", "")), String(st.get("army_mode", "")), focus, String(st.get("saving_for", "")), str(st.get("g4", {}).get("reserve", {})), int(st.get("army_pop_eff", -1)), int(st.get("thr_eff", -1)), str(st.get("g3", {}).get("fails_vs", {})),
 			str(crews), str(st.get("gather_plan", {})), str(orders), wave.size(), str(cen.round()), hq_d, near_foes,
 			str(Vector2(st.get("attack_target", Vector2.ZERO)).round()), str(g5.get("bwhy", {})), String(g5.get("bwhy_last", "")),
 			(g5.get("fort_seen", {}) as Dictionary).size(), (g5.get("breach_skip", []) as Array).size(), str(queues)])

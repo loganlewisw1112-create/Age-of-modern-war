@@ -10,6 +10,7 @@ extends RefCounted
 ##   engineers to repair it when no visible enemy is within BRIDGE_SAFE tiles.
 ## All state lives in st.g2 (serializable). Fairness: see the convention in ai_util.gd.
 
+const G5 = preload("res://sim/ai/ai_g5.gd")
 const U = preload("res://sim/ai/ai_util.gd")
 const Repair = preload("res://sim/systems/repair.gd")
 
@@ -155,6 +156,8 @@ static func manage_truck(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	var t = truck(w, fid, st, ctx)
 	if t == null:
 		return
+	if G5.auto_on(st, t):
+		return  # G5 (AI6): Support drives a truck on auto-resupply
 	var goal := Vector2(st.rally) - U.front_dir(w, fid) * 2.0
 	var group := []
 	var ag := U.ag_set(st, ctx)

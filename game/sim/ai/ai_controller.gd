@@ -24,6 +24,7 @@ const Stage = preload("res://sim/ai/ai_stage.gd")
 const G4B = preload("res://sim/ai/ai_g4b.gd")
 const AiAir = preload("res://sim/ai/ai_air.gd")  # G5 scaffold
 const AiNaval = preload("res://sim/ai/ai_naval.gd")  # G5 scaffold
+const G5 = preload("res://sim/ai/ai_g5.gd")  # G5 (AI6): drone teams, tactical, auto truck / evac
 const Triggers = preload("res://sim/systems/triggers.gd")
 
 
@@ -144,6 +145,14 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		var gi := U.role(w, fid, "gatherer")
 		if gi != "":
 			st.worker_hold = (Content.production(gi).get("cost", {}) as Dictionary).duplicate()
+	else:
+		# AI6-2 (heartland v7 s2): crews that cost salvage (b_crew 10, m_hauler 20) need a salvage floor
+		# before the last one dies: Human B spent its salvage to 2-6 on units, lost every crew and sat on
+		# 5600 idle credits for 40k ticks unable to buy one. Units never dip below 3 crews' salvage.
+		var gi2 := U.role(w, fid, "gatherer")
+		var gs := int((Content.production(gi2).get("cost", {}) as Dictionary).get("salvage", 0)) if gi2 != "" else 0
+		if gs > 0:
+			st.worker_hold = {"salvage": gs * U.WORKER_FLOOR, "soft": 1}
 	# load = own units or enemies seen last think, whichever is larger (both scale the think cost)
 	var n_units := maxi((ctx.units as Array).size(), int(st.get("vis_n", 0)))
 	# AI4-3: the world-wide unit count also paces thinking (count only, never a decision input):
@@ -185,6 +194,8 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 			prof.mark(fid, "officer_stage")
 		Logi.manage_truck_production(w, fid, st, ctx, army_pop)
 		G4B.manage_production(w, fid, st, ctx)
+		G5.manage_production(w, fid, st, ctx)
+		G5.manage_hospital(w, fid, st, ctx)
 		Mil.manage_production(w, fid, st, ctx)
 		if prof != null:
 			prof.mark(fid, "production")
@@ -198,6 +209,9 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		G4B.manage_gates(w, fid, st, ctx)
 		AiAir.manage(w, fid, st, ctx)    # G5 scaffold (owner AI6-AN)
 		AiNaval.manage(w, fid, st, ctx)  # G5 scaffold (owner AI6-AN)
+		G5.manage_drones(w, fid, st, ctx)
+		G5.manage_medical(w, fid, st, ctx)
+		G5.manage_support(w, fid, st, ctx)
 		if prof != null:
 			prof.mark(fid, "g4b")
 		Army.manage_army(w, fid, st, ctx)
@@ -215,6 +229,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		int(g2.officer_waves), int(g2.withdrawals), int(g2.pullbacks), int(g2.refills), int(g2.repairs),
 		int(g2.flanks), "ruined" if bool(g2.bridge_ruined) else "ok", int(g2.bridge_repairs)]
 	st.g5.probe = G4B.probe(st)
+	G5.probe(w, st, ctx)
 	var g3: Dictionary = st.g3
 	g3.probe = "tgt=%d out=%s retg=%d obj=%s caps=%d hold=%ds raids=%d arty=%d" % [int(g3.target_side),
 		str(g3.eliminated), int(g3.retargets), String(g3.obj_kind), int(g3.captures),
@@ -267,6 +282,11 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		var def_id := String(e.def)
 		var kc = _cls_cache.get(def_id)
 		var k: int = kc if kc != null else _cls(def_id)
+		if k & K_DRONE:
+			continue  # G5 (AI6): launched drones fly their own short G5Mech flight; never ordered
+		if bool(e.get("wounded", false)):
+			held.append(e)  # G5 (AI6): wounded (immobile, no fire) until evacuated or bled out; valley
+			continue        # v3: wounded wave members pinned the wave centroid / officer group for 50k ticks
 		if k & K_CENG:
 			cengs.append(e)
 		elif k & (K_BUILD | K_GATHER):
@@ -342,6 +362,7 @@ const K_ARTY := 32
 const K_EW := 64
 const K_CARRIER := 128
 const K_CENG := 256
+const K_DRONE := 512  # G5 (AI6): launched drone (content launched_drone)
 ## def -> K_* bits. Pure function of the static content tables, so caching never changes outcomes;
 ## it keeps _context cheap with thousands of own units (G3b think-cost budget).
 static var _cls_cache := {}
@@ -369,6 +390,8 @@ static func _cls(def_id: String) -> int:
 		k |= K_CARRIER
 	if G4B.is_ceng_def(def_id):
 		k |= K_CENG
+	if bool(Content.unit(def_id).get("launched_drone", false)):
+		k |= K_DRONE
 	_cls_cache[def_id] = k
 	return k
 

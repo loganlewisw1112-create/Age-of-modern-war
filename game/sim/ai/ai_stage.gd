@@ -18,6 +18,10 @@ const POWER_HEADROOM := 15
 const EW_BEHIND := 3.0
 
 
+## AI5-4: from this tick an all-in side banks only with twice the launch-size army at home.
+const LATE_BANK_TICK := 48000
+
+
 static func new_g4(w: SimWorld, fid: int) -> Dictionary:
 	return {"crossings": U.crossings(w), "advanced": [], "researched": 0, "adv_orders": 0,
 		"reserve": {}, "plan": "", "bridge_seen": {}, "recon_wp": {}, "probe": "", "enemy_air_seen": 0}
@@ -110,7 +114,15 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 		var thr := float(int(st.attack_pop))
 		if U.map_scale(w) > 1.2:
 			thr *= minf(2.5, U.map_scale(w))
-		core_ok = core_ok and float(army_pop) >= thr
+		# AI5-4: judge the bank by the launch army of manage_army (resupply/ferry-held units left out);
+		# with ctx.army_pop valley f1 banked 6000-9600 cr for 20-46k ticks at pop 50-55/80 while its
+		# launch army stayed just under the threshold, so it neither launched nor built. Late game
+		# (lever a) the bank waits for twice the launch size.
+		var eff := mini(army_pop, int(st.get("army_pop_eff", army_pop)))
+		var thr_l := maxf(thr, float(int(st.get("thr_eff", 0))))
+		if w.tick >= LATE_BANK_TICK:
+			thr_l *= 2.0
+		core_ok = core_ok and float(eff) >= thr_l
 	var lab = _research_building(w, fid, ctx)
 	var unmet := []
 	var rest_ok := true

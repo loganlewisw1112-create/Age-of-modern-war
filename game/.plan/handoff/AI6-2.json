@@ -1,0 +1,16 @@
+{"agent":"AI6-2","gen":2,"calls_used":152,"tokens_used_est":455000,"status":"final lane f1 running at handoff",
+ "done":[
+  "ai_mil.manage_production: never saves forever for a SALVAGE-blocked top item (salvage_left<=0 or credits >= 3x item) - river s1 v7 freeze (5-6k cr idle, sal 5-61).",
+  "ai_controller: soft salvage floor (3 crews' salvage) when the gatherer costs salvage (b_crew/m_hauler); ai_util._bank_ok exempts crews from it (heart v7 s2: Human B lost every crew with sal 6, 5600 cr idle for 40k ticks).",
+  "ai_army: lever c (attack_target follows a moved objective, e.g. after an elimination), lever a (PROGRESS_TIMEOUT 9600: first stall releases the officer -> direct control, second regroups), lever b (big-map staging at STAGE_DIST 40 once per wave), salvage-scarce final all-in (thr/2, trickle), big-map release of an officer group in ops 'resupply' phase (whole wave walked 100+ tiles home).",
+  "ai_util: unit_salvage(def) cache, salvage_scarce (known map salvage_left + stock < 2500 after t18000); CR ai_bank_air_naval_hold (st.g6an_hold) applied in _bank_ok.",
+  "ai_g5: support_ok - no salvage on drone_team/medic/ambulance/recon_car/2nd truck when salvage scarce; small maps cap support salvage at 15% of combat until a side is eliminated (cached per think); hospital only gated by scarcity; medic/ambulance want = base + ap/60.",
+  "ai_g4b: manage_ferry skips naval/amphibious/air carriers (CR AI6-AN); manage_fort skips while salvage is scarce.",
+  "Tried and reverted: far-truck resupply in ai_logistics._supply_point (river s1 a1 held=72/101, pullbacks 2987)."],
+ "lane_results":{
+  "a2 (pre-salvage code)":["valley_s1 none","valley_s2 none","river_s1 none","heart_s2 W1 108011","river_s2 W2 59909","heart_s1 W1 74080","coastal_s1 W0 80903 (notes=51)","coastal_s2 W2 104561","custom_s1 W0 56824"],
+  "a3":["river_s1 W1 68684 fails=0","valley_s1 none (Machine eliminated late)","valley_s2 see file"],
+  "final f1":"see .plan/shots/AI6-2/run_lane_f1.log (LANE_DONE f1 prints per-config summary)"},
+ "remaining":["Read run_lane_f1.log + grep -H 'SOAK RESULT\\|SOAK INVARIANTS\\|SOAK G5\\|SOAK G4B f' .plan/shots/AI6-2/soak_*_f1.txt","Valley: Machine now dies ~t90-115k; the human duel afterwards does not finish in 120k. Next: shorter Machine kill (both humans), or duel-phase lever (no officer on 240-tile marches).","ai_bench 5k on a quiet PC (ORCH). Under 83% CPU: f0 avg 5.1 ms, of which one 2008 ms stall in the 'scores' profile segment (one think); f1 0.98 ms."],
+ "test_state":"test_ai --only: pass=18 fail=0 TESTS OK (r2). test_ai_g5 --only r3: pass=4 fail=1 - only the bench (4.52 ms under load; medics/hospitals passes after the hospital fix).",
+ "gotchas":["run_lane word-splits args: AI6's custom_s1 v7 was SOAK CONFIG INVALID (spaced $PWD path); AI6-2 lane uses res://.plan/shots/AI5/ai5_custom_front.rtsmap","AI6-2 lane marker is --ai62soak and it counts soak.gd processes machine-wide (GMAX)","taskkill of own soaks was denied by the classifier: never edit sim/ai while a lane still has configs to launch","ai_util/ai_controller CRLF"]}

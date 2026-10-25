@@ -33,10 +33,13 @@ static func update_intel(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	var air_n := 0
 	var near_base := 0
 	var base := U.base_pos(w, fid)
+	var skip := 0
 	for e in vis:
 		if e.kind != "unit":
 			continue
 		var d := String(e.def)
+		if _not_a_target(e, d):
+			skip += 1
 		by_def[d] = int(by_def.get(d, 0)) + 1
 		var u := U.ud(d)  # G3b think cost: one cached per-def lookup per contact
 		if bool(u.armored):
@@ -62,7 +65,29 @@ static func update_intel(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	st.known_contacts = {"visible_units": by_def, "visible_total": vis.size(), "near_base": near_base,
 		"remembered_buildings": mem.size(), "enemy_hq_known": hq_known,
 		"max_vehicles_seen": int(st.enemy_vehicles_seen)}
+	# AI6 (G5): wounded infantry (untargetable, immobile) and launched drones (seconds-long air_low)
+	# are not targets for a wave: valley v3 waves sat in "engage" for 50k ticks attack-moving onto
+	# them. They still count above (intel: air seen, contacts).
+	if skip > 0:
+		var keep := []
+		for e in vis:
+			if e.kind != "unit" or not _not_a_target(e, String(e.def)):
+				keep.append(e)
+		vis = keep
 	ctx.visible = vis
+
+
+static var _drone_def := {}  # def -> launched_drone flag (static content fact)
+
+
+static func _not_a_target(e: Dictionary, d: String) -> bool:
+	if bool(e.get("wounded", false)):
+		return true
+	var c = _drone_def.get(d)
+	if c == null:
+		c = bool(Content.unit(d).get("launched_drone", false))
+		_drone_def[d] = c
+	return bool(c)
 
 
 ## G3a: the target side's last known HQ, else another of its remembered buildings, else its start.
@@ -302,5 +327,13 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 		# G3a: never save for an item blocked on ORE (ore only arrives from crews; infantry needs
 		# none) - Human B banked 2400 credits for 15k ticks waiting on a tank with ore=8 (ffa seed 2).
 		var ore_short := int(p.cost.get("ore", 0)) > int(f.stock.ore)
+		# AI6-2 (river s1 v7): the same for SALVAGE once it is the binding resource (none left that we
+		# know of, or credits piling far past the item): both humans sat on 5-6k cr with sal 5-61 and
+		# salvage_left 0 for the last 20k ticks, saving for a heavy vehicle, and nobody ever won.
+		var sal_need := int(p.cost.get("salvage", 0))
+		if sal_need > int(f.stock.salvage):
+			var sal_left := int(st.get("gather_plan", {}).get("salvage_left", 1))
+			if sal_left <= 0 or int(f.credits) >= 3 * maxi(300, int(p.cost.credits)):
+				ore_short = true
 		if not defending and not ore_short and (queued_any or i == 0):
 			return

@@ -100,6 +100,19 @@ static func _ammo_starved(w: SimWorld, fid: int, army: Array) -> bool:
 	return float(dry) >= DRY_HOLD * float(army.size())
 
 
+const LATE_WAVE_TICK := 48000  # AI6
+const LATE_WAVE_MULT := 1.6
+const CAP_SLACK := 6
+## AI6-2: attack-progress timeout (ticks without the wave centroid closing PROGRESS_STEP tiles).
+const PROGRESS_TIMEOUT := 9600
+const PROGRESS_STEP := 4.0
+## AI6-2: big-map staging (gather STAGE_DIST tiles short, push once STAGE_FRAC are within STAGE_R).
+const STAGE_DIST := 40.0
+const STAGE_R := 10.0
+const STAGE_FRAC := 0.8
+const STAGE_MAX := 2400
+
+
 static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	var army: Array = ctx.army
 	var army_pop := _pop(army) + _pop(ctx.arty)  # artillery follows the wave (ai_g3_units.gd)
@@ -113,7 +126,24 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	var big_map := U.map_scale(w) > BIG_MAP
 	if big_map:
 		thr = int(round(float(thr) * minf(BIG_THR_MAX, U.map_scale(w))))
+		# AI6 (valley v4, both seeds): late waves of 10-20 units walked 240 tiles and died at the
+		# Machine's towers while pop sat at 80-118; late on a big map the wave is LATE_WAVE_MULT x the
+		# threshold unless supply is capped (then whatever is home goes).
+		var fp: Dictionary = w.factions[fid]
+		if w.tick >= LATE_WAVE_TICK and int(fp.pop) < int(fp.pop_cap) - CAP_SLACK:
+			thr = int(round(float(thr) * LATE_WAVE_MULT))
 	var trickle := all_in and not big_map  # small maps: all-in reinforces continuously, never regroups
+	# AI6-2 (river s1 a2, ORCH direction): the map's salvage is running out (every unit costs
+	# salvage, so nothing can be rebuilt after): commit what stands now, at half the threshold, with
+	# continuous reinforcement and no regrouping, before the army is the last one we will ever have.
+	if U.salvage_scarce(w, fid, st):
+		if not bool(st.get("sal_end", false)):
+			st.sal_end = true
+			st.all_in = true
+			all_in = true
+			U.log_line(st, w, "salvage running out: final all-in")
+		thr = maxi(4, thr / 2)
+		trickle = true
 	var obj_mode := float(st.g3.terms.territory) > 0.0 or int(st.g3.terms.bridge) > 0
 	if obj_mode:
 		thr = maxi(6, int(round(float(thr) * OBJECTIVE_THR)))
@@ -129,6 +159,9 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	for e in army:
 		if ag.has(int(e.id)):
 			group.append(e)
+	# AI5-4: the launch metric (after resupply/ferry holds), read by ai_stage's all-in bank next think
+	st.army_pop_eff = army_pop
+	st.thr_eff = thr
 	var keep := _ids(group)  # drop the dead; held (broken / resupplying) members stay in the wave
 	for e in ctx.held:
 		if ag.has(int(e.id)):
@@ -186,9 +219,75 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		var goal := G3.objective(w, fid, st, ctx, _centroid(group))
 		if String(goal.kind) == "bridge":
 			G3.note_bridge(w, fid, st, ctx, _centroid(group))
-		Tac.retarget(w, fid, st, ctx, Vector2(goal.pos))
+		# AI6-2 lever c: the objective moved (a target side eliminated, a new sector): the wave's
+		# attack_target follows it (it was left stale while the officer drove the wave).
+		var gp := Vector2(goal.pos)
+		if gp.distance_to(Vector2(st.get("goal_pos", gp))) > 8.0:
+			st.attack_target = gp
+			st.army_mode = ""
+			st.prog_best = 1.0e9
+			st.prog_tick = w.tick
+			U.log_line(st, w, "objective moved to %s; wave retargeted" % str(gp.round()))
+		st.goal_pos = gp
+		# AI6-2 lever a: attack-progress timeout. A wave that has not closed on its goal for
+		# PROGRESS_TIMEOUT ticks (and is not fighting at it) is released and regroups (valley v3/v4:
+		# officer-driven waves hovered mid-map in obj=attack for 50k ticks).
+		var gc := _centroid(group)
+		var gd := gc.distance_to(gp)
+		if gd < float(st.get("prog_best", 1.0e9)) - PROGRESS_STEP:
+			st.prog_best = gd
+			st.prog_tick = w.tick
+		var near_fight := committed or finishing or foe_pop > 0
+		if not near_fight and w.tick - int(st.get("prog_tick", w.tick)) > PROGRESS_TIMEOUT and String(st.g2.stage) != "":
+			# first stall under an officer: take direct control of the wave (attack_move on the goal)
+			st.stalls = int(st.get("stalls", 0)) + 1
+			Tac.release(w, fid, st, ctx, "wave stalled; direct control")
+			st.army_mode = ""
+			st.attack_via = Vector2(-1, -1)
+			st.prog_tick = w.tick
+		elif not near_fight and w.tick - int(st.get("prog_tick", w.tick)) > PROGRESS_TIMEOUT:
+			st.failed_waves = int(st.failed_waves) + 1
+			st.stalls = int(st.get("stalls", 0)) + 1
+			_set_obj(w, st, "regroup", "wave stalled %d tiles from the goal for %d ticks" % [roundi(gd), PROGRESS_TIMEOUT])
+			Tac.release(w, fid, st, ctx, "wave stalled")
+			_move_all(w, fid, st, army, Vector2(st.rally), "regroup")
+			st.attack_group = []
+			return
+		# AI6-2 lever b: big-map staging. The first time the wave closes to STAGE_DIST of an enemy
+		# base it halts and gathers (stragglers, reinforcements, artillery), then pushes together.
+		if big_map and String(goal.kind) == "base" and not bool(st.get("staged", true)) and gd > HQ_FOCUS:
+			if int(st.get("stage_t", -1)) < 0 and gd <= STAGE_DIST and not near_fight:
+				st.stage_t = w.tick
+				st.stage_pos = gc
+				Tac.release(w, fid, st, ctx, "staging short of the target")
+				_move_all(w, fid, st, group + ctx.arty, gc, "stage")
+				st.army_mode = "stage"
+				U.log_line(st, w, "staging %d units at %s, %d tiles short of %s" % [group.size(), str(gc.round()), roundi(gd), str(gp.round())])
+			if int(st.get("stage_t", -1)) >= 0:
+				var sp := Vector2(st.stage_pos)
+				var close := 0
+				for e in group:
+					if Vector2(e.pos).distance_to(sp) <= STAGE_R:
+						close += 1
+				var ready := float(close) >= STAGE_FRAC * float(group.size())
+				if ready or foe_pop > 0 or w.tick - int(st.stage_t) > STAGE_MAX:
+					st.staged = true
+					st.army_mode = ""
+					st.prog_tick = w.tick
+					U.log_line(st, w, "staged %d/%d units; pushing on %s" % [close, group.size(), str(gp.round())])
+				else:
+					_reinforce(w, fid, st, ctx, army, group, trickle, thr / 2)
+					return
+		Tac.retarget(w, fid, st, ctx, gp)
 		# G2: the officer drives the wave until it nears enemy buildings; a withdraw report regroups
 		var mode := Tac.manage_mission(w, fid, st, ctx, group)
+		# AI6-2 (valley a2 s1: an 84-unit wave oscillated 100+ tiles for 24k ticks): an officer group
+		# whose mean ammo dips walks the WHOLE wave back to the nearest HQ / depot. On a big map the
+		# wave takes direct control instead (dry units resupply one by one; the auto truck follows).
+		if big_map and String(st.g2.stage) != "" and String(Tac.group(w, fid, st, ctx).get("phase", "")) == "resupply":
+			Tac.release(w, fid, st, ctx, "officer resupply walk-back on a big map; direct control")
+			st.army_mode = ""
+			mode = "push"
 		if mode == "withdraw":
 			st.failed_waves = int(st.failed_waves) + 1
 			_set_obj(w, st, "regroup", "officer withdrew the wave; rebuilding")
@@ -301,6 +400,11 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army
 	st.launch_size = army.size()
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
+	st.prog_best = 1.0e9  # AI6-2: progress timeout restarts with every wave
+	st.prog_tick = w.tick
+	st.goal_pos = tgt
+	st.staged = U.map_scale(w) <= BIG_MAP
+	st.stage_t = -1
 	st.decisive = massed(w, fid, st, ctx, _pop(army) + _pop(ctx.arty))
 	if bool(st.decisive):
 		U.log_line(st, w, "decisive wave: %d units (pop %d of %d) commit together" % [army.size(), int(w.factions[fid].pop), int(w.factions[fid].pop_cap)])

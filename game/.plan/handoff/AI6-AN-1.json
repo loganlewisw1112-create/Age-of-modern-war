@@ -1,0 +1,24 @@
+{
+  "agent": "AI6-AN",
+  "gen": 1,
+  "reason": "budget.handoff_now + owner deadline; no successor planned",
+  "done": [
+    "sim/ai/ai_air.gd: field site behind base (airfield/rail, airstrip fallback), air tower, helipad; hangars BEFORE aircraft (build_hangar per class; extra strip when slots full); aircraft queued only when Airfield.can_produce == ''; hangar level upgrades; airfield engineers produced + assign_engineers (pulled out of ctx.army); AA ground units (anti_air_high weapons) ringed round the field and queued on enemy-air contact; jet sorties (visible artillery > enemy field/hangar visible or remembered > densest visible cluster); interceptors scramble on enemy air; attack helis follow army / defend / land_at an open LZ near rally; air assault state machine (land by riders, load, fly to flank/behind LZ via Air.landing_ok clear of visible enemies, unload, troops attack-move target, carrier rebases)",
+    "sim/ai/ai_naval.gd: water-map check, coast site cache (Naval.shore_error), shipyard build with a stepping-stone outpost when the shore is beyond the 20-tile build radius, ship plan by role, supply pier, contest the water (attack_move to sea point nearest target, per class/component), bombard (visible buildings > units > remembered buildings in range), amphibious landing when route blocked (foot components) or long (>70 tiles): dock, load, sail with escort, unload on beach_ok cell, troops attack-move",
+    "both modules publish st.g6an_hold (next blocked purchase) for the AI6 bank CR",
+    "ships removed from ctx.army/ctx.carriers, G5 aircraft from ctx.air; think-cost cuts (army scans every 16th think, capped rider scans, cached beach/sea point/route)",
+    "tests/test_ai_air_naval.gd: 7 skeleton tests made real + test_ai_air_naval_think_cost_5k"
+  ],
+  "remaining": [
+    "AI6-2: apply CR change_request.ai_bank_air_naval_hold (board seq 4192) in ai_util._bank_ok so other modules leave credits for st.g6an_hold; without it soaks show AI credits 30-250 all game and the airfield (900 cr) / shipyard (500 cr) are never bought",
+    "AI6-2 soak lane: coastal_front_m s1/s2 + valley_conquest_l s1 (request seq 4027); grep AILOG for 'air: sortie', 'air assault', 'naval: amphibious landing'",
+    "ORCH: quiet-PC ai_bench 5k numbers"
+  ],
+  "files_touched": ["sim/ai/ai_air.gd", "sim/ai/ai_naval.gd", "tests/test_ai_air_naval.gd (git mv from tests/pending_g5)"],
+  "test_state": "run.sh --only=test_ai_air_naval: RESULT pass=8 fail=0, TESTS OK. run.sh --only=test_ai: TESTS OK 18/18 (earlier run after fairness fix); final rerun in progress at handoff",
+  "gotchas": [
+    "Coastal Front s1 side 1: nearest shore site is ~23 tiles from the HQ: outpost first",
+    "think-cost wall time swings 10x on the saturated PC (0.09..1.09 ms/tick); the test is load-normalized against the own-context build",
+    "AiAir.build_near is shared by AiNaval (tag 'naval')"
+  ]
+}

@@ -212,6 +212,8 @@ static func manage_fort(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	if dkey(w, fid) == "easy" or w.tick < int(g.next_fort) or ctx.hq == null:
 		return
 	g.next_fort = w.tick + FORT_EVERY
+	if U.salvage_scarce(w, fid, st):
+		return  # AI6-2: the last salvage goes to combat units, not walls / towers
 	var wall := U.role(w, fid, "wall")
 	var gate := U.role(w, fid, "gate")
 	if wall == "" or gate == "":
@@ -677,6 +679,11 @@ static func manage_ferry(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary)
 	var taken := {}
 	for c in carriers:
 		var cid := int(c.id)
+		# AI6-2 (CR from AI6-AN): ships / amphibious carriers belong to AiNaval, aircraft to AiAir;
+		# only land carriers ferry here (content move_class, no def names)
+		var mcl := String(Content.unit(String(c.def)).get("move_class", ""))
+		if mcl.begins_with("naval") or mcl == "amphibious" or mcl.begins_with("air") or U.is_air(String(c.def)):
+			continue
 		var used := Transport.used_slots(c)
 		var j = jobs.get(str(cid))
 		if j == null:
