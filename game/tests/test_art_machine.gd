@@ -26,6 +26,8 @@ func _real(t, what: String) -> bool:
 func _ids(table: String) -> Array:
 	var a: Array = []
 	for id in Content.ids(table):
+		if bool(Content.table(table)[id].get("g6", false)):
+			continue  # G6 (CONTENT6 CR): G6 Machine defs are checked by tests/test_art_g6.gd
 		if String(Content.table(table)[id].get("faction", "")) == "machine" and not (table == "units" and _g5_art(id)):
 			a.append(id)
 	return a

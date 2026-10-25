@@ -1,0 +1,36 @@
+{
+  "_meta": "G6 fragment (owner: EXO6). CONTRACTS_G6: rules.g6_exo incl. loadouts (sections 3.4, 14). New ids/keys only; numbers are PROVISIONAL balance fixtures. Loadout effects: cost (per unit/squad, charged by set_loadout), dmg (shooter damage x), dmg_vs (shooter damage x by TARGET armor class), acc (shooter accuracy x), taken (damage taken x), speed (move speed x), stage_min, art_def (render override). A loadout unlocked by research names it in research.json (effect unlock_loadout, value = loadout id).",
+  "rules": {
+    "g6_exo": {
+      "pilot_def": "rifleman",
+      "pilot_needs_medical": true,
+      "pilot_needs_medical_note": "G5 medical rule (ORCH design rule D16): a pilot ejects as a Wounded only while its side has medical capability (Medical.has_medical); otherwise it dies with the suit.",
+      "resuit_cost_mult": 0.6,
+      "resuit_range": 6,
+      "loadout_range": 8,
+      "loadout_buildings": ["barracks", "b_barracks", "m_crawler_works"],
+      "loadout_buildings_note": "plus every building def with company_hq: true",
+      "sets": {
+        "human_a": ["standard", "assault", "at", "marksman", "breacher", "plates", "exo"],
+        "human_b": ["standard", "assault", "at", "breacher", "plates"],
+        "machine": ["mod_armor", "mod_sensor", "mod_weapon"]
+      },
+      "machine_defs": ["m_scout_crawler", "m_breacher_crawler", "m_stalker_synth"],
+      "human_excluded_roles": ["command", "commander", "exo_trooper", "exo_suit", "exo_aa"],
+      "vehicle_excluded_move_classes": ["air", "air_low", "air_high", "naval", "naval_small"],
+      "exo_trooper_roles": ["exo_trooper"],
+      "loadouts": {
+        "standard": {"cost": {}},
+        "assault": {"cost": {"credits": 60}, "dmg_vs": {"infantry": 1.25}, "speed": 1.05},
+        "at": {"cost": {"credits": 80, "ore": 20}, "dmg_vs": {"infantry": 0.7, "light": 1.5, "heavy": 1.6, "building": 1.3, "fortification": 1.3}, "speed": 0.92},
+        "marksman": {"cost": {"credits": 70}, "acc": 1.3, "dmg_vs": {"infantry": 1.15}, "speed": 0.95},
+        "breacher": {"cost": {"credits": 80, "ore": 20}, "dmg_vs": {"building": 1.8, "fortification": 2.0, "infantry": 1.1}},
+        "plates": {"cost": {"credits": 90, "ore": 30}, "taken": 0.75, "speed": 0.85},
+        "exo": {"cost": {"credits": 250, "salvage": 100, "ore": 80}, "stage_min": 10, "taken": 0.5, "dmg": 1.4, "acc": 1.1, "speed": 0.9, "art_def": "a_exo_trooper", "exo": true},
+        "mod_armor": {"cost": {"credits": 80, "salvage": 30}, "taken": 0.75, "speed": 0.9},
+        "mod_sensor": {"cost": {"credits": 60, "salvage": 20}, "acc": 1.25},
+        "mod_weapon": {"cost": {"credits": 80, "salvage": 30}, "dmg": 1.25}
+      }
+    }
+  }
+}

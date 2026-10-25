@@ -18,13 +18,21 @@ const SHALLOW := 9    # shallow water: foot/vehicle slow, small boats, beaching
 const DEEP := 10      # deep water: naval only
 const BEACH := 11     # sand shore: landable, buildable
 const CLIFF := 12     # impassable, blocks line of sight
-const HILL := 13      # passable, +sight, light cover for foot
+const HILL := 13      # passable, +sight, light cover for foot (G6: old-format files load HILL as height level 2)
+# G6 (CONTRACTS_G6 section 3.2 / 7 4a, owner ELEV): laid by MECH6a (Rail). Foot and vehicle pass it like
+# ROAD (same speed); the `rail` move class (armored train) may move ONLY on RAIL tiles.
+const RAIL := 14
 
 const NAMES := ["grass", "dirt", "road", "forest", "water", "bridge", "ford", "ridge",
-	"building", "shallow", "deep", "beach", "cliff", "hill"]
+	"building", "shallow", "deep", "beach", "cliff", "hill", "rail"]
 
 ## Movement classes (CONTRACTS_G4 section 3). "air" (G3a drones) is an alias of air_low.
-const CLASSES := ["foot", "vehicle", "amphibious", "naval_small", "naval", "air", "air_low", "air_high"]
+## G6 (ELEV, CONTRACTS_G6 section 7 4a): "rail" = RAIL tiles only; "hover" = land, beach, shallow,
+## water and deep, never CLIFF, FOREST, BUILDING or RIDGE (RIDGE keeps its G1 meaning: impassable rock).
+const CLASSES := ["foot", "vehicle", "amphibious", "naval_small", "naval", "air", "air_low", "air_high", "rail", "hover"]
+## Classes that obey terrain height (cliffs block them; Elevation.edge_ok applies). Air and the two
+## naval classes ignore height (water is authored flat).
+const HEIGHT_CLASSES := ["foot", "vehicle", "amphibious", "rail", "hover"]
 const AIR_CLASSES := ["air", "air_low", "air_high"]
 const HILL_SIGHT := 2.0          # sight bonus for ground units standing on HILL
 const HILL_COVER_FOOT := 0.85    # damage multiplier for foot units standing on HILL (light cover)
@@ -53,7 +61,16 @@ static func passable(code: int, move_class: String) -> bool:
 			return code == WATER or code == DEEP
 		"amphibious":
 			return _vehicle_ok(code) or code == WATER or code == DEEP
+		"rail":
+			return code == RAIL
+		"hover":
+			return code != CLIFF and code != FOREST and code != BUILDING and code != RIDGE
 	return _vehicle_ok(code)
+
+
+## G6: true when move_class obeys terrain height (see HEIGHT_CLASSES; unknown classes = vehicle rules).
+static func uses_height(move_class: String) -> bool:
+	return not is_air(move_class) and move_class != "naval" and move_class != "naval_small"
 
 
 static func _vehicle_ok(code: int) -> bool:
@@ -67,10 +84,10 @@ static func _vehicle_ok(code: int) -> bool:
 static func speed_mult(code: int, move_class: String) -> float:
 	if is_air(move_class):
 		return 1.0
-	if move_class == "naval" or move_class == "naval_small":
+	if move_class == "naval" or move_class == "naval_small" or move_class == "rail" or move_class == "hover":
 		return 1.0
 	match code:
-		ROAD, BRIDGE:
+		ROAD, BRIDGE, RAIL:
 			return 1.25
 		FOREST:
 			return 0.6

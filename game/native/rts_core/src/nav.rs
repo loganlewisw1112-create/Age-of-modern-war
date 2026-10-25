@@ -17,7 +17,7 @@ use godot::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 pub(crate) const SQRT2: f32 = std::f32::consts::SQRT_2;
-pub(crate) const NCLS: usize = 8;
+pub(crate) const NCLS: usize = 10;   // G6: + rail 8, hover 9
 
 pub const DIRS: [(i32, i32); 8] = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1)];
 
@@ -65,6 +65,10 @@ pub struct RtsNav {
     pub(crate) h: i32,
     pub(crate) terrain: Vec<u8>,
     pub(crate) blocked: Vec<u8>,
+    /// G6 (PERF6): per class, footprints at the cell that are passable for it (G6Hooks.passable).
+    pub(crate) pblk: Vec<Vec<u8>>,
+    /// G6 (PERF6): cliff edge bits per cell (1 +x, 2 +y, 4 -x, 8 -y; empty = no cliffs). Ground only.
+    pub(crate) edge: Vec<u8>,
     pub(crate) gate: Vec<u8>, // 0 none, else (owner team + 1) | 0x80 when locked
     pub(crate) gate_n: usize,
     pub(crate) lut: Vec<Vec<f32>>,
@@ -117,6 +121,31 @@ impl RtsNav {
     pub fn passable(&self, k: usize, x: i32, y: i32) -> bool {
         self.in_bounds(x, y) && self.passable_i(k, (y * self.w + x) as usize)
     }
+    /// G6 (PERF6): true when edge bit `bit` of cell i is open for key k (always for air / no cliffs).
+    #[inline]
+    pub(crate) fn eopen(&self, k: usize, i: usize, bit: u8) -> bool {
+        self.edge.is_empty() || is_air(k & 15) || self.edge.get(i).copied().unwrap_or(0) & bit == 0
+    }
+    /// G6 (PERF6): false when the step (x, y) -> (x + dx, y + dy) (|dx|, |dy| <= 1) crosses a cliff
+    /// edge (Elevation.edge_ok, symmetric bits). A diagonal needs all four sides of its square open.
+    #[inline]
+    pub fn edge_ok(&self, k: usize, x: i32, y: i32, dx: i32, dy: i32) -> bool {
+        if self.edge.is_empty() || is_air(k & 15) {
+            return true;
+        }
+        let ox = |x: i32, y: i32, dx: i32| -> bool {
+            if dx == 0 || !self.in_bounds(x, y) { return true; }
+            self.edge[(y * self.w + x) as usize] & (if dx > 0 { 1 } else { 4 }) == 0
+        };
+        let oy = |x: i32, y: i32, dy: i32| -> bool {
+            if dy == 0 || !self.in_bounds(x, y) { return true; }
+            self.edge[(y * self.w + x) as usize] & (if dy > 0 { 2 } else { 8 }) == 0
+        };
+        if dx == 0 || dy == 0 {
+            return ox(x, y, dx) && oy(x, y, dy);
+        }
+        ox(x, y, dx) && oy(x + dx, y, dy) && oy(x, y, dy) && ox(x, y + dy, dx)
+    }
     /// Entry weight of cell i for key k (1 for air).
     #[inline]
     pub(crate) fn wt(&self, k: usize, i: usize) -> f32 {
@@ -141,10 +170,10 @@ impl RtsNav {
         if !self.passable(mc, bx, by) {
             return false;
         }
-        if ax != bx && ay != by {
-            return self.passable(mc, bx, ay) && self.passable(mc, ax, by);
+        if ax != bx && ay != by && !(self.passable(mc, bx, ay) && self.passable(mc, ax, by)) {
+            return false;
         }
-        true
+        self.edge_ok(mc, ax, ay, (bx - ax).signum(), (by - ay).signum())
     }
     /// movement.gd _try_move: full move, else slide on x, else slide on y, else stay.
     pub fn try_move(&self, mc: usize, from: Vector2, to: Vector2) -> Vector2 {
@@ -167,7 +196,8 @@ impl RtsNav {
     fn cell_weight(&self, c: usize, i: usize) -> f32 {
         let sm = if self.lut[c].len() == 256 { self.lut[c][self.terrain[i] as usize] } else { 0.0 };
         let allow = self.allow[c].is_empty() || self.allow[c].get(i).copied().unwrap_or(0) != 0;
-        let blk = self.blocked[i] > 0 && self.gate.get(i).copied().unwrap_or(0) == 0;
+        let pb = self.pblk.get(c).and_then(|v| v.get(i)).copied().unwrap_or(0);
+        let blk = self.blocked[i] > pb && self.gate.get(i).copied().unwrap_or(0) == 0;
         if blk || sm <= 0.0 || !allow { 0.0 } else { 1.0 / sm }
     }
     pub(crate) fn recompute_cell(&mut self, i: usize) {

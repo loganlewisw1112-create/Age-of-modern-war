@@ -1,0 +1,78 @@
+{
+  "_meta": "G6 fragment (owner: MECH6a). CONTRACTS_G6: rules.g6_ground (section 9) + the two mine payload weapons. New ids/keys only; numbers are PROVISIONAL balance fixtures.",
+  "weapons": {
+    "g6_mine_at": {"class": "artillery", "damage": 420, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.2},
+    "g6_mine_ap": {"class": "artillery", "damage": 95, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.5},
+    "g6_mine_sea": {"class": "artillery", "damage": 600, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.5}
+  },
+  "rules": {
+    "g6_ground": {
+      "_note": "MECH6a systems: sim/systems/{mines,garrison,fieldworks,rail}.gd. Def flags win over the per-id fallbacks here.",
+      "mines": {
+        "max_rect": 8,
+        "density": 0.45,
+        "lay_ticks_per_mine": 6,
+        "reach": 1.5,
+        "max_mines_per_field": 32,
+        "cost_per_mine": {"credits": 8},
+        "layer_defs": ["m_spider_layer", "a_eod", "b_satchel_sappers"],
+        "sweeper_defs": ["a_eod", "a_mine_clearer", "b_armored_dozer", "a_combat_engineer", "m_spider_layer"],
+        "detect_radius": {"a_eod": 6.0, "a_mine_clearer": 5.0, "a_minesweeper": 6.0, "b_armored_dozer": 3.0},
+        "sweep_cells_per_s": 2.0,
+        "sweep_reach": 1.6,
+        "line_charge": {"defs": ["a_mine_clearer"], "width": 2, "length": 10, "cooldown_s": 30},
+        "weapons": {"at": "g6_mine_at", "ap": "g6_mine_ap", "sea": "g6_mine_sea"},
+        "trigger": 0.6
+      },
+      "garrison": {
+        "protect_mult": 0.5,
+        "anti_garrison_mult": 2.0,
+        "anti_garrison_classes": ["flame", "demolition"],
+        "reveal_s": 3.0,
+        "enter_reach": 1.2,
+        "defs": {
+          "s_garrison_bld": {"slots": 4, "death": "eject", "eject_damage": 0.25},
+          "b_pillbox": {"slots": 2, "death": "kill"},
+          "a_fob": {"slots": 6, "death": "eject", "eject_damage": 0.25}
+        }
+      },
+      "fieldworks": {
+        "defs": {
+          "s_sandbags": {"kind": "sandbags", "cover_direct": 0.75, "cover_splash": 0.75, "field_buildable": true},
+          "s_trench": {"kind": "trench", "cover_direct": 0.6, "cover_splash": 0.5, "field_buildable": true, "passable_for": ["foot"]},
+          "s_tank_traps": {"kind": "tank_traps", "passable_for": ["foot"]},
+          "s_barbed_wire": {"kind": "wire", "wire_mult": 0.35, "field_buildable": true, "passable_for": ["foot", "vehicle"]},
+          "s_camo_decoy": {"kind": "camo_decoy", "camo_radius": 1.6, "decoy_weight": 4.0}
+        },
+        "camo_settle_s": 2.0,
+        "camo_reveal_s": 4.0,
+        "wire_clear_armor": ["heavy"]
+      },
+      "rail": {
+        "yard_defs": ["b_rail_yard"],
+        "yard_radius": 8,
+        "max_line": 48,
+        "ticks_per_tile": 8,
+        "reach": 1.6,
+        "cost_per_tile": {"credits": 4},
+        "tile_hp": 150,
+        "cut_terrain": 1
+      },
+      "engineering": {
+        "tow_defs": ["b_salvage_crane", "b_armored_dozer"],
+        "yard_defs": ["b_scrapyard", "b_salvage_yard"],
+        "tow_reach": 1.8,
+        "yard_reach": 1.5,
+        "hook_s": 2.0,
+        "tow_frac": 0.6,
+        "tow_min": 15,
+        "bay_period_ticks": 10,
+        "bay_defs": ["a_repair_bay"],
+        "bay_default": {"mult": 3.0, "radius": 2, "classes": ["vehicle"]},
+        "breach_mult_walls": 2.0,
+        "breach_kinds": ["wall", "gate"],
+        "crawler_fuse_ticks": 2
+      }
+    }
+  }
+}

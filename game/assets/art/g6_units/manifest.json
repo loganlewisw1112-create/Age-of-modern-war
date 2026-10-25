@@ -1,0 +1,2383 @@
+{
+  "files": {
+    "icons/a_aerostat.png": "0542db08c132f1a70a97af4a55b7c6ba",
+    "icons/a_airlift.png": "5169a30b016740fb2f65a9308e3c23af",
+    "icons/a_awacs.png": "84419c7828f02704909290628937875c",
+    "icons/a_bridge_layer.png": "6aeca99914f554bb34a21a2d10337a07",
+    "icons/a_carrier.png": "362eaf70e69657cf61359d8af377e1e1",
+    "icons/a_command_vehicle.png": "a71d93d84b081f4fe39463474dd5c0c1",
+    "icons/a_eod.png": "257bf4df504d8e2659f74f38b1d750fb",
+    "icons/a_exo_trooper.png": "2a6d21722e24d8268378d9291a0c8f8e",
+    "icons/a_hovercraft.png": "3be730e4b0c9ea7998907c36ac6b24ad",
+    "icons/a_jtac.png": "e1dbc1a008a24a61bd6e0fb2bd0f64af",
+    "icons/a_laser_tank.png": "3c354256a64f3f4d236dcad4990782dc",
+    "icons/a_loiter_truck.png": "12d4a2bcddd98b48dee1ae15bbd21faf",
+    "icons/a_manpads.png": "00a2b6bf0a6c50ee61472446aa79234a",
+    "icons/a_marines.png": "468a7835358669d8603b3bc333cb2f37",
+    "icons/a_mine_clearer.png": "30b860e177b4001e43106e92a83c321a",
+    "icons/a_minesweeper.png": "287cac6ba400cbbbad15b6a0b7be3a0f",
+    "icons/a_mlrs.png": "58adbeb0437f437f7228ae60c199719a",
+    "icons/a_paratroopers.png": "096c095c9bd4c0819a58990f4b8a14c5",
+    "icons/a_sp_howitzer.png": "f826abfed01ab831fbd8eb7eb9696083",
+    "icons/a_submarine.png": "f931a8f5f447b91ecb26c2b55689e34e",
+    "icons/a_supply_ship_a.png": "9abe9386adf9f09a6e17e6290d4a0873",
+    "icons/a_ugv.png": "82ac7959d5e900d686174eea248d97d4",
+    "icons/b_aa_barge.png": "b0a4518fed5e91e09beaec83583cb9f5",
+    "icons/b_armored_dozer.png": "1c5a3d3f53f637164cd7b67f9d4e7eb3",
+    "icons/b_armored_train.png": "5854b4507ce650ae54b7ed87d77cb3d3",
+    "icons/b_conscripts.png": "a397c93cc2cee2ecfc43d8ef6324c221",
+    "icons/b_flak_halftrack.png": "db337f4553bdb2d061c3b4d333dc7361",
+    "icons/b_jammer_team.png": "f7112416fc96f92bfb0ee5c1a71cfc73",
+    "icons/b_landship.png": "3127f646fb4cf9ce44ab37978eee0835",
+    "icons/b_marksman.png": "d90fea29818bf97d6253879f4109426d",
+    "icons/b_mine_barge.png": "5a62ce197fc1aa542a25986372b8a950",
+    "icons/b_moto_scouts.png": "facacefff9349d8508efb96623f98f79",
+    "icons/b_propaganda_team.png": "cf1cf52c35670b37ce1817ccbf461dff",
+    "icons/b_recon_plane.png": "4f865c45ead2aec99658dd064d671150",
+    "icons/b_rhomboid.png": "7c15b2c9055261c69d1892be79178d3b",
+    "icons/b_salvage_crane.png": "c274d3d50c2e6c531ab1467d402c61d4",
+    "icons/b_satchel_sappers.png": "bdf7ff8ade97cfafef565e7b41444f99",
+    "icons/b_scrap_aa.png": "b0cdfcbc75612c7e65eb0558229c6576",
+    "icons/b_supply_ship_b.png": "5b823dd2d8a624eee24a5d5928ab6328",
+    "icons/m_assimilator.png": "e0aeac24d9fbea11b80e4b386d63cd06",
+    "icons/m_breacher_crawler.png": "381a51ad9a90dac2f8c8040a8c41e4bb",
+    "icons/m_charge_tender.png": "8f1246ba5930891a11c3813715c6f0d9",
+    "icons/m_colossus.png": "601557ee0140361de3e4ed16e0712ac9",
+    "icons/m_hover_tank.png": "dd374352246db7603de3229fc9fbf1e6",
+    "icons/m_lance_cruiser.png": "60adaad89e85ecba83c5c0d6689b7531",
+    "icons/m_mimic_drone.png": "bcee9aab68c3e778599ac9ce24f062bd",
+    "icons/m_repair_swarm2.png": "4db374cedff1cb3336d0ee202d62bb52",
+    "icons/m_shield_drone.png": "8b1804dfeb87ae1724a2983580f1872c",
+    "icons/m_spider_layer.png": "d900a561f62a894c2885ff637614eede",
+    "icons/m_stalker_synth.png": "e00fb07a08b23424365e4da1b0968dfd",
+    "icons/m_stealth_drone.png": "c0077f853d226b666488e9e031bb8689",
+    "icons/m_swarm_queen.png": "b348b2205e285d73382baec7aa9a26a1",
+    "units/a_aerostat.png": "745b2ea33876fb517c753db268dec4ef",
+    "units/a_aerostat_mask.png": "785d6f4fe339132e2f8b1818b446b3b4",
+    "units/a_airlift.png": "ada18e60bd27ce75a100e124390175b6",
+    "units/a_airlift_mask.png": "cbc441fc4e560e330bdd103903284cb0",
+    "units/a_airlift_shadow.png": "bcf0d754dd4012476cd45f0b3c34c4b0",
+    "units/a_awacs.png": "ea16a19f0ec26a64731de1defbc3c204",
+    "units/a_awacs_mask.png": "3990d76c0612c294357bb76826cb491d",
+    "units/a_awacs_shadow.png": "bcf0d754dd4012476cd45f0b3c34c4b0",
+    "units/a_bridge_layer.png": "5a8a6c323578cb9a5ae539193851756f",
+    "units/a_bridge_layer_mask.png": "9a4554968608f3c34d6f0f57ba31cc8a",
+    "units/a_carrier.png": "aed05cb19195a765a5759a0008e06796",
+    "units/a_carrier_mask.png": "37fff393cf86b5cb4a3647f9f2772136",
+    "units/a_command_vehicle.png": "e63428a4d3530f4c63da9ea7eef4116c",
+    "units/a_command_vehicle_mask.png": "db1042d84c740d0c228704c8cddb063e",
+    "units/a_eod.png": "4564cc6382cb4bd9ddf757eddaa5fa84",
+    "units/a_eod_a1.png": "101d7b3a880aac4ca906168a7fe0de90",
+    "units/a_eod_a1_mask.png": "e2ba49d00e5854f36684db40eb10a7b0",
+    "units/a_eod_mask.png": "d39d3a14d31f7824dc7f8866e81bcc01",
+    "units/a_exo_trooper.png": "897599301129976ae03137e6ac864d61",
+    "units/a_exo_trooper_mask.png": "0323b2d90d06fcc37143b9f1762f6767",
+    "units/a_hovercraft.png": "44ab0c7d6026b28356f6dfb00e801c95",
+    "units/a_hovercraft_mask.png": "b5525ddfa79c01861a537d3d8449a1c7",
+    "units/a_jtac.png": "dee757d7b9b906eadbc1698f79f3ac09",
+    "units/a_jtac_a1.png": "7f6a7bab64c450d96d46f5c1f4e43250",
+    "units/a_jtac_a1_mask.png": "94f0d68ce166e7e9707053637e2f864f",
+    "units/a_jtac_mask.png": "94627261c62c4f83dc1d14eb039dae84",
+    "units/a_laser_tank.png": "1bfcaa24dcf6bda40933fd0aafa0dc61",
+    "units/a_laser_tank_mask.png": "e1a289de285cf146854fea2e8f7a08e6",
+    "units/a_loiter_truck.png": "bffa3c72ab5d7940f9650a168cd6f363",
+    "units/a_loiter_truck_mask.png": "40c7a92009ecc5a96e7598242ec8250b",
+    "units/a_manpads.png": "d96697c0c9aee2bd507263485d899c85",
+    "units/a_manpads_a1.png": "d08b8c865f7c7fe0c5ef4c2a9a812292",
+    "units/a_manpads_a1_mask.png": "4c15348c1fb33a9c137f6ca2f5bef8c5",
+    "units/a_manpads_mask.png": "867e6b3d6aa43667c599c5b8fe231945",
+    "units/a_marines.png": "fb830b9f3887394c1edd5061f2e8166d",
+    "units/a_marines_a1.png": "717546ef50c7d2c891a7b569888081c8",
+    "units/a_marines_a1_mask.png": "c68fcfcf9e644c5f477d9aada30c07e5",
+    "units/a_marines_a2.png": "f2fe7123b56bb4d57620c224ecf58ff9",
+    "units/a_marines_a2_mask.png": "87a7a5b31ec054150a84a8ffbc25741c",
+    "units/a_marines_a3.png": "5ed00f6d2deb0f19db220f0a15a59d63",
+    "units/a_marines_a3_mask.png": "bb4a78b0d72ec93479412f7e6e900ef9",
+    "units/a_marines_mask.png": "bf6d631c3382f6b43fb2bab6bca314c0",
+    "units/a_mine_clearer.png": "4bcdaba57e140bd1ea349236942fe830",
+    "units/a_mine_clearer_mask.png": "375644d90e940f1a63339113e4b1d7ed",
+    "units/a_minesweeper.png": "bb102f4e371737f7d34f4b374a7437f2",
+    "units/a_minesweeper_mask.png": "10e3db28894ba29a7fcdb6d386a4083c",
+    "units/a_mlrs.png": "304873e3b6780891f620e7ef6ef92be2",
+    "units/a_mlrs_mask.png": "7d7a67370fc86c504d1ba8710682d1d1",
+    "units/a_paratroopers.png": "472677756d980eced178e83851349334",
+    "units/a_paratroopers_a1.png": "f77b43391acab9e3f5b367ff54bc7cdc",
+    "units/a_paratroopers_a1_mask.png": "166337529f1d993b19f3b6f7e471dd86",
+    "units/a_paratroopers_a2.png": "799f162f3fdc3c67a827cd87c4a0b305",
+    "units/a_paratroopers_a2_mask.png": "b870aea360c639e0ac4bc7c17ef62a11",
+    "units/a_paratroopers_a3.png": "81bd76d8610844b33bdb91bb6be6feee",
+    "units/a_paratroopers_a3_mask.png": "7363175b9f340c627a964f185a6ae4e9",
+    "units/a_paratroopers_mask.png": "99d43fd409eb76d6adf32b5f438a6256",
+    "units/a_sp_howitzer.png": "b5940eb2a2571e3f4916bf04d9c330b1",
+    "units/a_sp_howitzer_mask.png": "12f3c9ab47e3c40daa53225b05c07738",
+    "units/a_submarine.png": "9f00dcd103b0123f8dfb4276ce1c670d",
+    "units/a_submarine_mask.png": "f1992bc4d91123792736bc5cca9cde43",
+    "units/a_supply_ship_a.png": "01bc713c697792172dc0893972fa4228",
+    "units/a_supply_ship_a_mask.png": "b81d36d9ad26b5235fdcd3c0e842964a",
+    "units/a_ugv.png": "9ed7bc671078ee7dd21e75937fcbbb21",
+    "units/a_ugv_mask.png": "e1496bf246dd766a9926d547c6d37684",
+    "units/b_aa_barge.png": "d5e899a015acb2e12aa52260c30d6130",
+    "units/b_aa_barge_mask.png": "71f4a24f32ded39b9abc3098b2044f06",
+    "units/b_armored_dozer.png": "10561eee141c1c1ef21910615e479f20",
+    "units/b_armored_dozer_mask.png": "fdc8a3d86f56d5c20d1c551025c1c849",
+    "units/b_armored_train.png": "39b7ed5cd9d24018f4ea4ffe920cbb32",
+    "units/b_armored_train_mask.png": "98cd13a29ae45e867fe89a9857e92d58",
+    "units/b_conscripts.png": "2ca76f5489a7442359dc35335efdb7cc",
+    "units/b_conscripts_a1.png": "0e1dbd2d8ccaf24351194fde7bda34b2",
+    "units/b_conscripts_a1_mask.png": "0a7c28be02c511a9ea77febdd1939515",
+    "units/b_conscripts_a2.png": "28b8ae83e82482a2e99b111e9c7f9a90",
+    "units/b_conscripts_a2_mask.png": "99e0f172188013394d8d51a3ed961b63",
+    "units/b_conscripts_a3.png": "cbd71fcacdba99bd646cf344f9f13621",
+    "units/b_conscripts_a3_mask.png": "c214dee5bfcbd41a5c375a1a734113bd",
+    "units/b_conscripts_a4.png": "0007633fca036647d9461732f3fbe46b",
+    "units/b_conscripts_a4_mask.png": "0c52aa00ee6dbfb8dbbdf7a6ae785e0b",
+    "units/b_conscripts_a5.png": "5a9d225973d0f27fe9733be9ef96daf0",
+    "units/b_conscripts_a5_mask.png": "0e399ad0691d947e9e661af8ce999417",
+    "units/b_conscripts_a6.png": "a65e50dace2cc719bb33d34c2d6ff076",
+    "units/b_conscripts_a6_mask.png": "0a4d3b8d261fca5b76a6fb46ffd1f17d",
+    "units/b_conscripts_a7.png": "52bc9e4b7eb24026b99327c7720ce59a",
+    "units/b_conscripts_a7_mask.png": "da3aa3640f88f085a2c96c36373717e7",
+    "units/b_conscripts_a8.png": "72192984344adc39788e2d991b493fe2",
+    "units/b_conscripts_a8_mask.png": "af1353c19e0311145423fcc7ae4555b1",
+    "units/b_conscripts_a9.png": "df30c13e7c9c1292f9f601ba7fa3d7eb",
+    "units/b_conscripts_a9_mask.png": "908c74ead63036be3ee5e7d3e6b570fd",
+    "units/b_conscripts_mask.png": "29948ea527f0fa2d898da8bfd9efc453",
+    "units/b_flak_halftrack.png": "f1a7a0cbceaeaf4dbf741aac5ac048a0",
+    "units/b_flak_halftrack_mask.png": "95ed72d51ad84842b0bfb42f1104d01b",
+    "units/b_jammer_team.png": "f94af0087c6f364770ab2cf9f6cbd53c",
+    "units/b_jammer_team_a1.png": "d4dc77801751695864b03954bf288182",
+    "units/b_jammer_team_a1_mask.png": "47b587a47151936733ae7968565d752a",
+    "units/b_jammer_team_mask.png": "71052a7b86e449607ec5e3568a55ad2e",
+    "units/b_landship.png": "d104261367a4b153216bb46ef55eed41",
+    "units/b_landship_mask.png": "fc7fa3a1fc3f21be46f5103603944540",
+    "units/b_marksman.png": "8887188cf458cad398e730eeadecb57c",
+    "units/b_marksman_mask.png": "3d1ef2128137a1e8161930e44f686c39",
+    "units/b_mine_barge.png": "8274300da1a95d2acdad303ffe223a10",
+    "units/b_mine_barge_mask.png": "6d69823d26131a702e6e40ff455a9641",
+    "units/b_moto_scouts.png": "a9f60656e92513367ba95398aa5196b0",
+    "units/b_moto_scouts_mask.png": "a84501fe8059dcb23e09ff39c4f00e2d",
+    "units/b_propaganda_team.png": "8fc33fe675d38f3f025a3d836346c5f0",
+    "units/b_propaganda_team_a1.png": "14dee8c47c57a71655fa3179cc8268ef",
+    "units/b_propaganda_team_a1_mask.png": "b3af1b4995833e8dda2335fa778a9797",
+    "units/b_propaganda_team_mask.png": "4e375c676cad5e7264a0a5e13d63979d",
+    "units/b_recon_plane.png": "c5b0269c092d9c4a1d1bc8cf5b67513a",
+    "units/b_recon_plane_mask.png": "e6fc7c998379fb2f0df832f8e0cf94dc",
+    "units/b_recon_plane_shadow.png": "f5ea0ca63a74dfa82f90a7b017c08958",
+    "units/b_rhomboid.png": "01b18d2147c3cd8a184ad5acd7e9510d",
+    "units/b_rhomboid_mask.png": "b1fd77f9b26d16618f5993149f2c0297",
+    "units/b_salvage_crane.png": "e88865b1babe097f4feca2d27ef36bc9",
+    "units/b_salvage_crane_mask.png": "6626571eb164fd443c67077f10ce6f42",
+    "units/b_satchel_sappers.png": "05ad54ab2dea9e865b02be6dc0403e59",
+    "units/b_satchel_sappers_a1.png": "34a2a163c7f2f88e5ef8824abf691ed1",
+    "units/b_satchel_sappers_a1_mask.png": "c2c3bd03ec4f6b148b97761f21b5a92f",
+    "units/b_satchel_sappers_a2.png": "05b773db2ac1f9b277ec2916f0fe4662",
+    "units/b_satchel_sappers_a2_mask.png": "5b907acf0ec6942877d490ff2dcbc787",
+    "units/b_satchel_sappers_mask.png": "422fe27e3b66647d31d57d46312f1568",
+    "units/b_scrap_aa.png": "7947adf9140dc6d9821dbf3714002b29",
+    "units/b_scrap_aa_a1.png": "5e3c08750b1d84fc2925de0e4d74bd8e",
+    "units/b_scrap_aa_a1_mask.png": "fd635c39a7b28fc46f29e682ba1e962f",
+    "units/b_scrap_aa_a2.png": "30ccd23491396368eb9f518671fe4340",
+    "units/b_scrap_aa_a2_mask.png": "0af21f7882840afdb7a358079a4718a5",
+    "units/b_scrap_aa_mask.png": "448352cac8d93c30086bf2b880383d5c",
+    "units/b_supply_ship_b.png": "2f2e8509602343c216f4991592242655",
+    "units/b_supply_ship_b_mask.png": "251cc1dc8820a28dbd7b2934dc5ba78b",
+    "units/g6_mimic_shadow.png": "96a21a6574b4da14c399b2955e27a5a4",
+    "units/g6_queen_shadow.png": "05e34893dba57e577d5e7047d1c4d53c",
+    "units/m_assimilator.png": "b1dbf6c4f2e18bc98512126c3b24a4a7",
+    "units/m_assimilator_mask.png": "b0c16acef78e322a01eb4813d59eb40e",
+    "units/m_breacher_crawler.png": "50d61bcdf1f475ead892a16247426e8a",
+    "units/m_breacher_crawler_mask.png": "fe22738b269e739caaf89bc4637ea71d",
+    "units/m_charge_tender.png": "4836ace5c3de7f04d98653d008c9f8ca",
+    "units/m_charge_tender_mask.png": "337f7a350176d325c798acec5ba767d2",
+    "units/m_colossus.png": "6cdb53cb23eaf415d08c9db4b623d920",
+    "units/m_colossus_mask.png": "b4552afebf7a8bc1cb7412f47fa2d257",
+    "units/m_hover_tank.png": "f4d89c666df77162cd015613498c5a85",
+    "units/m_hover_tank_mask.png": "701527c2739ce823e7c156428a86eaa1",
+    "units/m_lance_cruiser.png": "9de38713c6cf7f3e048b684e93fa0359",
+    "units/m_lance_cruiser_mask.png": "baaefe6f1dd198653b7ea78876d9ac52",
+    "units/m_mimic_drone.png": "9362af2e4ccb5b53b142711904cd5df1",
+    "units/m_mimic_drone_mask.png": "adbd9229a8e78c9fc79aba126de0d263",
+    "units/m_repair_swarm2.png": "a513d953237de6a34a6ddd9aefaa5965",
+    "units/m_repair_swarm2_mask.png": "84d6d76491316e8a869239ae4968aa97",
+    "units/m_shield_drone.png": "e293025822842e65bb57e849ca4febd9",
+    "units/m_shield_drone_mask.png": "118898f911ded588056f78afe7cdaa85",
+    "units/m_shield_drone_shadow.png": "bd45cdd6a0c543d54d08c63636b49739",
+    "units/m_spider_layer.png": "0b894f6e94c2d0a78096a8cc04fc68ab",
+    "units/m_spider_layer_mask.png": "c0bfa13a4ec569f24bc0ad561555da4f",
+    "units/m_stalker_synth.png": "57073e6d8cef8937e2965de979a2909f",
+    "units/m_stalker_synth_mask.png": "b89d4001cafc8f2b3206bf00dc253b35",
+    "units/m_stealth_drone.png": "9a288d3486680b246b54b2ac3b00cfe1",
+    "units/m_stealth_drone_mask.png": "2b0283b97990835b6f88f524c63be433",
+    "units/m_stealth_drone_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/m_swarm_queen.png": "d0ace6a1d56dece2d11de62ad104bc53",
+    "units/m_swarm_queen_mask.png": "9f7ebc389bcb8d7a644cecaeb8aafa2b",
+    "wrecks/a_aerostat_wreck.png": "fff7e54706d758fb93ca81fde394af87",
+    "wrecks/a_airlift_wreck.png": "485ae0e6c07db7d138aab457bd93ea9e",
+    "wrecks/a_awacs_wreck.png": "c6e20a3d82d99299ec4b90f1fcec9262",
+    "wrecks/a_bridge_layer_wreck.png": "130353046c25172b5699ef5224d67d0f",
+    "wrecks/a_carrier_wreck.png": "dc4f106273a13e480807de8e4338c821",
+    "wrecks/a_command_vehicle_wreck.png": "67d35fc0ef37dd7c5feede9137c0b02a",
+    "wrecks/a_exo_trooper_wreck.png": "0829a262d18c88c38e549acc58ed8cfc",
+    "wrecks/a_hovercraft_wreck.png": "d229c7227abccbfee23b78534b7014b7",
+    "wrecks/a_laser_tank_wreck.png": "9ce4637a333845dfa00bf3bdc3e427b1",
+    "wrecks/a_loiter_truck_wreck.png": "88d958986ffd318613807c1a41aefe07",
+    "wrecks/a_mine_clearer_wreck.png": "587ab61848deedd29d7ed8f6b8d33b24",
+    "wrecks/a_minesweeper_wreck.png": "3a9b32e86bba90a05809d337a5ec132c",
+    "wrecks/a_mlrs_wreck.png": "b1506a097bd26e297d5d0e7567a7a61f",
+    "wrecks/a_sp_howitzer_wreck.png": "99955d48e80f5b5d3f4803a384c05713",
+    "wrecks/a_submarine_wreck.png": "b24f3c42f751a9003f8589b94bb2cefd",
+    "wrecks/a_supply_ship_a_wreck.png": "8352f61012c0d83041c375b907357dbc",
+    "wrecks/a_ugv_wreck.png": "73f51d4a63502a43f30787270042729f",
+    "wrecks/b_aa_barge_wreck.png": "ec1eed49fdafec631fc1f7b053e28d99",
+    "wrecks/b_armored_dozer_wreck.png": "d625c7fc743a0abc88010dff5aab06e3",
+    "wrecks/b_armored_train_wreck.png": "12f3c3fa6bad3e23a31a866a77508f71",
+    "wrecks/b_flak_halftrack_wreck.png": "9d24833ed16ad3ef0452f9cdb699d5cb",
+    "wrecks/b_landship_wreck.png": "efe52463a67f96dccb68d1f246bdf8c6",
+    "wrecks/b_mine_barge_wreck.png": "c10e6760b4dd28aa712b75fc0fd9075d",
+    "wrecks/b_moto_scouts_wreck.png": "14881c392177d1737074c7c5ce0da2c0",
+    "wrecks/b_recon_plane_wreck.png": "08283329ca3c678ba77bdb721a808540",
+    "wrecks/b_rhomboid_wreck.png": "918e92ff62ac38aaad23ecadaf26c5c6",
+    "wrecks/b_salvage_crane_wreck.png": "2363b112938b942ce03c1898a89183a4",
+    "wrecks/b_supply_ship_b_wreck.png": "8ff182526f236b972b2786fc4d8c9025",
+    "wrecks/m_assimilator_wreck.png": "e1d4989291de7d3aea460f0999ccc60f",
+    "wrecks/m_breacher_crawler_wreck.png": "a1b5ea4074b14190d00d0ece69876e4e",
+    "wrecks/m_charge_tender_wreck.png": "748653bfbb65e6bde46ef8f1bf6fc353",
+    "wrecks/m_colossus_wreck.png": "7e70b84bbbd410b581e3d6dfa5faefd3",
+    "wrecks/m_hover_tank_wreck.png": "f1cd7affc6f1bdda763c24e0315675b0",
+    "wrecks/m_lance_cruiser_wreck.png": "df7b7b7e6a07d2e2149251fdf8398210",
+    "wrecks/m_mimic_drone_wreck.png": "bb9a4cc092212d58517bd57270a4c7ec",
+    "wrecks/m_repair_swarm2_wreck.png": "54e3b6ae90d909dfa7f2977a1e5ce3b6",
+    "wrecks/m_shield_drone_wreck.png": "a2af92fcc7f79c005501d9b81d851a69",
+    "wrecks/m_spider_layer_wreck.png": "19b2b636980a85de6f0ce9fab1a367cb",
+    "wrecks/m_stalker_synth_wreck.png": "3c4ba66b76895304c746d0eafc73b4d1",
+    "wrecks/m_stealth_drone_wreck.png": "a480ed6cc2829daf0ac68e6f9976b61a",
+    "wrecks/m_swarm_queen_wreck.png": "6bbff78e11ea3c187acf0fa456b0dc58"
+  },
+  "g6_units": {
+    "defs": [
+      "a_aerostat",
+      "a_loiter_truck",
+      "b_jammer_team",
+      "b_scrap_aa",
+      "m_swarm_queen",
+      "m_mimic_drone",
+      "a_sp_howitzer",
+      "a_mlrs",
+      "a_mine_clearer",
+      "a_bridge_layer",
+      "a_command_vehicle",
+      "a_ugv",
+      "b_landship",
+      "b_flak_halftrack",
+      "b_armored_dozer",
+      "b_salvage_crane",
+      "b_moto_scouts",
+      "m_spider_layer",
+      "m_hover_tank",
+      "m_colossus",
+      "m_assimilator",
+      "a_marines",
+      "a_paratroopers",
+      "a_eod",
+      "a_jtac",
+      "a_manpads",
+      "b_conscripts",
+      "b_satchel_sappers",
+      "b_marksman",
+      "b_propaganda_team",
+      "m_shield_drone",
+      "m_stalker_synth",
+      "m_repair_swarm2",
+      "m_breacher_crawler",
+      "a_awacs",
+      "a_airlift",
+      "b_recon_plane",
+      "m_stealth_drone",
+      "a_supply_ship_a",
+      "a_minesweeper",
+      "a_hovercraft",
+      "a_carrier",
+      "a_submarine",
+      "b_supply_ship_b",
+      "b_mine_barge",
+      "b_aa_barge",
+      "m_charge_tender",
+      "m_lance_cruiser",
+      "b_armored_train",
+      "a_laser_tank",
+      "a_exo_trooper",
+      "b_rhomboid"
+    ],
+    "note": "squads use 48x36 frames except where infantry.<def>.fw/fh says otherwise (b_conscripts 64x44)",
+    "squad_frames": {
+      "b_conscripts": [
+        64,
+        44
+      ]
+    }
+  },
+  "group": "g6_units",
+  "icons": {
+    "a_aerostat": "icons/a_aerostat.png",
+    "a_airlift": "icons/a_airlift.png",
+    "a_awacs": "icons/a_awacs.png",
+    "a_bridge_layer": "icons/a_bridge_layer.png",
+    "a_carrier": "icons/a_carrier.png",
+    "a_command_vehicle": "icons/a_command_vehicle.png",
+    "a_eod": "icons/a_eod.png",
+    "a_exo_trooper": "icons/a_exo_trooper.png",
+    "a_hovercraft": "icons/a_hovercraft.png",
+    "a_jtac": "icons/a_jtac.png",
+    "a_laser_tank": "icons/a_laser_tank.png",
+    "a_loiter_truck": "icons/a_loiter_truck.png",
+    "a_manpads": "icons/a_manpads.png",
+    "a_marines": "icons/a_marines.png",
+    "a_mine_clearer": "icons/a_mine_clearer.png",
+    "a_minesweeper": "icons/a_minesweeper.png",
+    "a_mlrs": "icons/a_mlrs.png",
+    "a_paratroopers": "icons/a_paratroopers.png",
+    "a_sp_howitzer": "icons/a_sp_howitzer.png",
+    "a_submarine": "icons/a_submarine.png",
+    "a_supply_ship_a": "icons/a_supply_ship_a.png",
+    "a_ugv": "icons/a_ugv.png",
+    "b_aa_barge": "icons/b_aa_barge.png",
+    "b_armored_dozer": "icons/b_armored_dozer.png",
+    "b_armored_train": "icons/b_armored_train.png",
+    "b_conscripts": "icons/b_conscripts.png",
+    "b_flak_halftrack": "icons/b_flak_halftrack.png",
+    "b_jammer_team": "icons/b_jammer_team.png",
+    "b_landship": "icons/b_landship.png",
+    "b_marksman": "icons/b_marksman.png",
+    "b_mine_barge": "icons/b_mine_barge.png",
+    "b_moto_scouts": "icons/b_moto_scouts.png",
+    "b_propaganda_team": "icons/b_propaganda_team.png",
+    "b_recon_plane": "icons/b_recon_plane.png",
+    "b_rhomboid": "icons/b_rhomboid.png",
+    "b_salvage_crane": "icons/b_salvage_crane.png",
+    "b_satchel_sappers": "icons/b_satchel_sappers.png",
+    "b_scrap_aa": "icons/b_scrap_aa.png",
+    "b_supply_ship_b": "icons/b_supply_ship_b.png",
+    "m_assimilator": "icons/m_assimilator.png",
+    "m_breacher_crawler": "icons/m_breacher_crawler.png",
+    "m_charge_tender": "icons/m_charge_tender.png",
+    "m_colossus": "icons/m_colossus.png",
+    "m_hover_tank": "icons/m_hover_tank.png",
+    "m_lance_cruiser": "icons/m_lance_cruiser.png",
+    "m_mimic_drone": "icons/m_mimic_drone.png",
+    "m_repair_swarm2": "icons/m_repair_swarm2.png",
+    "m_shield_drone": "icons/m_shield_drone.png",
+    "m_spider_layer": "icons/m_spider_layer.png",
+    "m_stalker_synth": "icons/m_stalker_synth.png",
+    "m_stealth_drone": "icons/m_stealth_drone.png",
+    "m_swarm_queen": "icons/m_swarm_queen.png"
+  },
+  "infantry": {
+    "a_eod": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_eod_a1.png",
+          "mask": "units/a_eod_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_eod.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "sweep",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_eod_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "a_jtac": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_jtac_a1.png",
+          "mask": "units/a_jtac_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_jtac.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "lase",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_jtac_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "a_manpads": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_manpads_a1.png",
+          "mask": "units/a_manpads_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_manpads.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "aim",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_manpads_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "a_marines": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_marines_a1.png",
+          "mask": "units/a_marines_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_marines_a2.png",
+          "mask": "units/a_marines_a2_mask.png"
+        },
+        "3": {
+          "file": "units/a_marines_a3.png",
+          "mask": "units/a_marines_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_marines.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "wade",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_marines_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "a_paratroopers": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_paratroopers_a1.png",
+          "mask": "units/a_paratroopers_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_paratroopers_a2.png",
+          "mask": "units/a_paratroopers_a2_mask.png"
+        },
+        "3": {
+          "file": "units/a_paratroopers_a3.png",
+          "mask": "units/a_paratroopers_a3_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_paratroopers.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "land",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/a_paratroopers_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 4
+    },
+    "b_conscripts": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_conscripts_a1.png",
+          "mask": "units/b_conscripts_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_conscripts_a2.png",
+          "mask": "units/b_conscripts_a2_mask.png"
+        },
+        "3": {
+          "file": "units/b_conscripts_a3.png",
+          "mask": "units/b_conscripts_a3_mask.png"
+        },
+        "4": {
+          "file": "units/b_conscripts_a4.png",
+          "mask": "units/b_conscripts_a4_mask.png"
+        },
+        "5": {
+          "file": "units/b_conscripts_a5.png",
+          "mask": "units/b_conscripts_a5_mask.png"
+        },
+        "6": {
+          "file": "units/b_conscripts_a6.png",
+          "mask": "units/b_conscripts_a6_mask.png"
+        },
+        "7": {
+          "file": "units/b_conscripts_a7.png",
+          "mask": "units/b_conscripts_a7_mask.png"
+        },
+        "8": {
+          "file": "units/b_conscripts_a8.png",
+          "mask": "units/b_conscripts_a8_mask.png"
+        },
+        "9": {
+          "file": "units/b_conscripts_a9.png",
+          "mask": "units/b_conscripts_a9_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 44,
+      "file": "units/b_conscripts.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "charge",
+        "wounded"
+      ],
+      "fw": 64,
+      "mask": "units/b_conscripts_mask.png",
+      "pivot": [
+        32,
+        35
+      ],
+      "squad_size": 10
+    },
+    "b_jammer_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_jammer_team_a1.png",
+          "mask": "units/b_jammer_team_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_jammer_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "jam",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_jammer_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "b_marksman": {
+      "alive_sheets": {},
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_marksman.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "prone",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_marksman_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 1
+    },
+    "b_propaganda_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_propaganda_team_a1.png",
+          "mask": "units/b_propaganda_team_a1_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_propaganda_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "broadcast",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_propaganda_team_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 2
+    },
+    "b_satchel_sappers": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_satchel_sappers_a1.png",
+          "mask": "units/b_satchel_sappers_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_satchel_sappers_a2.png",
+          "mask": "units/b_satchel_sappers_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_satchel_sappers.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "plant",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_satchel_sappers_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    },
+    "b_scrap_aa": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/b_scrap_aa_a1.png",
+          "mask": "units/b_scrap_aa_a1_mask.png"
+        },
+        "2": {
+          "file": "units/b_scrap_aa_a2.png",
+          "mask": "units/b_scrap_aa_a2_mask.png"
+        }
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_scrap_aa.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "wounded"
+      ],
+      "fw": 48,
+      "mask": "units/b_scrap_aa_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 3
+    }
+  },
+  "lod_class": {
+    "a_aerostat": "vehicle_light",
+    "a_airlift": "air",
+    "a_awacs": "air",
+    "a_bridge_layer": "vehicle_light",
+    "a_carrier": "naval",
+    "a_command_vehicle": "vehicle_light",
+    "a_eod": "infantry",
+    "a_exo_trooper": "infantry",
+    "a_hovercraft": "naval",
+    "a_jtac": "infantry",
+    "a_laser_tank": "vehicle_heavy",
+    "a_loiter_truck": "vehicle_light",
+    "a_manpads": "infantry",
+    "a_marines": "infantry",
+    "a_mine_clearer": "vehicle_light",
+    "a_minesweeper": "naval",
+    "a_mlrs": "artillery",
+    "a_paratroopers": "infantry",
+    "a_sp_howitzer": "artillery",
+    "a_submarine": "naval",
+    "a_supply_ship_a": "naval",
+    "a_ugv": "vehicle_light",
+    "b_aa_barge": "naval",
+    "b_armored_dozer": "vehicle_light",
+    "b_armored_train": "vehicle_heavy",
+    "b_conscripts": "infantry",
+    "b_flak_halftrack": "vehicle_light",
+    "b_jammer_team": "infantry",
+    "b_landship": "vehicle_heavy",
+    "b_marksman": "infantry",
+    "b_mine_barge": "naval",
+    "b_moto_scouts": "vehicle_light",
+    "b_propaganda_team": "infantry",
+    "b_recon_plane": "air",
+    "b_rhomboid": "vehicle_heavy",
+    "b_salvage_crane": "vehicle_light",
+    "b_satchel_sappers": "infantry",
+    "b_scrap_aa": "infantry",
+    "b_supply_ship_b": "naval",
+    "m_assimilator": "vehicle_heavy",
+    "m_breacher_crawler": "infantry",
+    "m_charge_tender": "naval",
+    "m_colossus": "vehicle_heavy",
+    "m_hover_tank": "vehicle_heavy",
+    "m_lance_cruiser": "naval",
+    "m_mimic_drone": "air",
+    "m_repair_swarm2": "vehicle_light",
+    "m_shield_drone": "air",
+    "m_spider_layer": "vehicle_light",
+    "m_stalker_synth": "infantry",
+    "m_stealth_drone": "air",
+    "m_swarm_queen": "air"
+  },
+  "specials": {
+    "a_aerostat": {
+      "deployed": "deployed",
+      "fire": "fire"
+    },
+    "a_airlift": {
+      "drop": "drop",
+      "fire": "fire",
+      "idle_b": "idle_b",
+      "landing": "landing",
+      "move_b": "move_b",
+      "parked": "parked"
+    },
+    "a_awacs": {
+      "fire": "fire",
+      "idle_b": "idle_b",
+      "landing": "landing",
+      "move_b": "move_b",
+      "parked": "parked"
+    },
+    "a_bridge_layer": {
+      "deployed": "deployed"
+    },
+    "a_carrier": {
+      "fire": "fire",
+      "launch": "launch"
+    },
+    "a_command_vehicle": {
+      "deployed": "deployed",
+      "fire": "fire"
+    },
+    "a_eod": {
+      "fire": "fire",
+      "sweep": "sweep",
+      "wounded": "wounded"
+    },
+    "a_exo_trooper": {
+      "fire": "fire"
+    },
+    "a_hovercraft": {
+      "fire": "fire",
+      "loaded": "loaded",
+      "unload": "unload"
+    },
+    "a_jtac": {
+      "fire": "fire",
+      "lase": "lase",
+      "wounded": "wounded"
+    },
+    "a_laser_tank": {
+      "fire": "fire"
+    },
+    "a_loiter_truck": {
+      "deployed": "deployed",
+      "fire": "fire"
+    },
+    "a_manpads": {
+      "aim": "aim",
+      "fire": "fire",
+      "wounded": "wounded"
+    },
+    "a_marines": {
+      "fire": "fire",
+      "wade": "wade",
+      "wounded": "wounded"
+    },
+    "a_mine_clearer": {
+      "fire": "fire"
+    },
+    "a_minesweeper": {
+      "fire": "fire",
+      "sweep": "sweep"
+    },
+    "a_mlrs": {
+      "fire": "fire"
+    },
+    "a_paratroopers": {
+      "fire": "fire",
+      "land": "land",
+      "wounded": "wounded"
+    },
+    "a_sp_howitzer": {
+      "fire": "fire"
+    },
+    "a_submarine": {
+      "dive": "dive",
+      "fire": "fire"
+    },
+    "a_supply_ship_a": {
+      "fire": "fire",
+      "work": "work"
+    },
+    "a_ugv": {
+      "fire": "fire"
+    },
+    "b_aa_barge": {
+      "fire": "fire"
+    },
+    "b_armored_dozer": {
+      "work": "work"
+    },
+    "b_armored_train": {
+      "fire": "fire"
+    },
+    "b_conscripts": {
+      "charge": "charge",
+      "fire": "fire",
+      "wounded": "wounded"
+    },
+    "b_flak_halftrack": {
+      "fire": "fire"
+    },
+    "b_jammer_team": {
+      "fire": "fire",
+      "jam": "jam",
+      "wounded": "wounded"
+    },
+    "b_landship": {
+      "fire": "fire"
+    },
+    "b_marksman": {
+      "fire": "fire",
+      "prone": "prone",
+      "wounded": "wounded"
+    },
+    "b_mine_barge": {
+      "fire": "fire",
+      "lay": "lay"
+    },
+    "b_moto_scouts": {
+      "fire": "fire"
+    },
+    "b_propaganda_team": {
+      "broadcast": "broadcast",
+      "fire": "fire",
+      "wounded": "wounded"
+    },
+    "b_recon_plane": {
+      "fire": "fire",
+      "idle_b": "idle_b",
+      "landing": "landing",
+      "move_b": "move_b",
+      "parked": "parked"
+    },
+    "b_rhomboid": {
+      "fire": "fire"
+    },
+    "b_salvage_crane": {
+      "work": "work"
+    },
+    "b_satchel_sappers": {
+      "fire": "fire",
+      "plant": "plant",
+      "wounded": "wounded"
+    },
+    "b_scrap_aa": {
+      "fire": "fire",
+      "wounded": "wounded"
+    },
+    "b_supply_ship_b": {
+      "fire": "fire",
+      "work": "work"
+    },
+    "m_assimilator": {
+      "work": "work"
+    },
+    "m_breacher_crawler": {
+      "detonate": "detonate",
+      "fire": "fire"
+    },
+    "m_charge_tender": {
+      "fire": "fire",
+      "work": "work"
+    },
+    "m_colossus": {
+      "fire": "fire",
+      "scale": "scale"
+    },
+    "m_hover_tank": {
+      "fire": "fire"
+    },
+    "m_lance_cruiser": {
+      "fire": "fire"
+    },
+    "m_mimic_drone": {
+      "dive": "dive",
+      "fire": "fire"
+    },
+    "m_repair_swarm2": {
+      "fire": "fire",
+      "work": "work"
+    },
+    "m_shield_drone": {
+      "fire": "fire",
+      "shield": "shield"
+    },
+    "m_spider_layer": {
+      "lay": "lay"
+    },
+    "m_stalker_synth": {
+      "cloak": "cloak",
+      "fire": "fire"
+    },
+    "m_stealth_drone": {
+      "fire": "fire",
+      "idle_b": "idle_b",
+      "landing": "landing",
+      "move_b": "move_b",
+      "parked": "parked"
+    },
+    "m_swarm_queen": {
+      "fire": "fire"
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_aerostat": {
+      "facings": 8,
+      "fh": 104,
+      "file": "wrecks/a_aerostat_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 76,
+      "pivot": [
+        38,
+        84
+      ]
+    },
+    "a_airlift": {
+      "facings": 8,
+      "fh": 101,
+      "file": "wrecks/a_airlift_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 146,
+      "pivot": [
+        70,
+        56
+      ]
+    },
+    "a_awacs": {
+      "facings": 8,
+      "fh": 95,
+      "file": "wrecks/a_awacs_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 112,
+      "pivot": [
+        51,
+        52
+      ]
+    },
+    "a_bridge_layer": {
+      "facings": 8,
+      "fh": 94,
+      "file": "wrecks/a_bridge_layer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 166,
+      "pivot": [
+        83,
+        48
+      ]
+    },
+    "a_carrier": {
+      "facings": 8,
+      "fh": 93,
+      "file": "wrecks/a_carrier_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 140,
+      "pivot": [
+        70,
+        56
+      ]
+    },
+    "a_command_vehicle": {
+      "facings": 8,
+      "fh": 69,
+      "file": "wrecks/a_command_vehicle_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 78,
+      "pivot": [
+        39,
+        51
+      ]
+    },
+    "a_exo_trooper": {
+      "facings": 8,
+      "fh": 44,
+      "file": "wrecks/a_exo_trooper_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 40,
+      "pivot": [
+        20,
+        35
+      ]
+    },
+    "a_hovercraft": {
+      "facings": 8,
+      "fh": 67,
+      "file": "wrecks/a_hovercraft_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 103,
+      "pivot": [
+        51,
+        40
+      ]
+    },
+    "a_laser_tank": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/a_laser_tank_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 96,
+      "pivot": [
+        44,
+        36
+      ]
+    },
+    "a_loiter_truck": {
+      "facings": 8,
+      "fh": 58,
+      "file": "wrecks/a_loiter_truck_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 68,
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "a_mine_clearer": {
+      "facings": 8,
+      "fh": 66,
+      "file": "wrecks/a_mine_clearer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 96,
+      "pivot": [
+        48,
+        46
+      ]
+    },
+    "a_minesweeper": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/a_minesweeper_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 100,
+      "pivot": [
+        50,
+        35
+      ]
+    },
+    "a_mlrs": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/a_mlrs_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        43
+      ]
+    },
+    "a_sp_howitzer": {
+      "facings": 8,
+      "fh": 68,
+      "file": "wrecks/a_sp_howitzer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 100,
+      "pivot": [
+        50,
+        52
+      ]
+    },
+    "a_submarine": {
+      "facings": 8,
+      "fh": 76,
+      "file": "wrecks/a_submarine_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 115,
+      "pivot": [
+        57,
+        38
+      ]
+    },
+    "a_supply_ship_a": {
+      "facings": 8,
+      "fh": 77,
+      "file": "wrecks/a_supply_ship_a_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 109,
+      "pivot": [
+        54,
+        49
+      ]
+    },
+    "a_ugv": {
+      "facings": 8,
+      "fh": 38,
+      "file": "wrecks/a_ugv_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 48,
+      "pivot": [
+        24,
+        25
+      ]
+    },
+    "b_aa_barge": {
+      "facings": 8,
+      "fh": 78,
+      "file": "wrecks/b_aa_barge_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 105,
+      "pivot": [
+        52,
+        51
+      ]
+    },
+    "b_armored_dozer": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/b_armored_dozer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        38
+      ]
+    },
+    "b_armored_train": {
+      "facings": 8,
+      "fh": 68,
+      "file": "wrecks/b_armored_train_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 112,
+      "pivot": [
+        56,
+        46
+      ]
+    },
+    "b_flak_halftrack": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/b_flak_halftrack_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 70,
+      "pivot": [
+        35,
+        41
+      ]
+    },
+    "b_landship": {
+      "facings": 8,
+      "fh": 69,
+      "file": "wrecks/b_landship_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 112,
+      "pivot": [
+        56,
+        46
+      ]
+    },
+    "b_mine_barge": {
+      "facings": 8,
+      "fh": 74,
+      "file": "wrecks/b_mine_barge_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 103,
+      "pivot": [
+        51,
+        47
+      ]
+    },
+    "b_moto_scouts": {
+      "facings": 8,
+      "fh": 50,
+      "file": "wrecks/b_moto_scouts_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        31
+      ]
+    },
+    "b_recon_plane": {
+      "facings": 8,
+      "fh": 76,
+      "file": "wrecks/b_recon_plane_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 80,
+      "pivot": [
+        37,
+        45
+      ]
+    },
+    "b_rhomboid": {
+      "facings": 8,
+      "fh": 64,
+      "file": "wrecks/b_rhomboid_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        42
+      ]
+    },
+    "b_salvage_crane": {
+      "facings": 8,
+      "fh": 68,
+      "file": "wrecks/b_salvage_crane_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        48
+      ]
+    },
+    "b_supply_ship_b": {
+      "facings": 8,
+      "fh": 108,
+      "file": "wrecks/b_supply_ship_b_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 112,
+      "pivot": [
+        56,
+        80
+      ]
+    },
+    "m_assimilator": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/m_assimilator_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        42,
+        38
+      ]
+    },
+    "m_breacher_crawler": {
+      "facings": 8,
+      "fh": 40,
+      "file": "wrecks/m_breacher_crawler_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 44,
+      "pivot": [
+        22,
+        26
+      ]
+    },
+    "m_charge_tender": {
+      "facings": 8,
+      "fh": 67,
+      "file": "wrecks/m_charge_tender_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 96,
+      "pivot": [
+        48,
+        41
+      ]
+    },
+    "m_colossus": {
+      "facings": 8,
+      "fh": 92,
+      "file": "wrecks/m_colossus_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 108,
+      "pivot": [
+        54,
+        66
+      ]
+    },
+    "m_hover_tank": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/m_hover_tank_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 80,
+      "pivot": [
+        40,
+        38
+      ]
+    },
+    "m_lance_cruiser": {
+      "facings": 8,
+      "fh": 98,
+      "file": "wrecks/m_lance_cruiser_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 144,
+      "pivot": [
+        72,
+        64
+      ]
+    },
+    "m_mimic_drone": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/m_mimic_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 40,
+      "pivot": [
+        20,
+        22
+      ]
+    },
+    "m_repair_swarm2": {
+      "facings": 8,
+      "fh": 52,
+      "file": "wrecks/m_repair_swarm2_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        34
+      ]
+    },
+    "m_shield_drone": {
+      "facings": 8,
+      "fh": 60,
+      "file": "wrecks/m_shield_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        28
+      ]
+    },
+    "m_spider_layer": {
+      "facings": 8,
+      "fh": 52,
+      "file": "wrecks/m_spider_layer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64,
+      "pivot": [
+        32,
+        33
+      ]
+    },
+    "m_stalker_synth": {
+      "facings": 8,
+      "fh": 44,
+      "file": "wrecks/m_stalker_synth_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 36,
+      "pivot": [
+        18,
+        36
+      ]
+    },
+    "m_stealth_drone": {
+      "facings": 8,
+      "fh": 61,
+      "file": "wrecks/m_stealth_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84,
+      "pivot": [
+        40,
+        34
+      ]
+    },
+    "m_swarm_queen": {
+      "facings": 8,
+      "fh": 56,
+      "file": "wrecks/m_swarm_queen_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 76,
+      "pivot": [
+        38,
+        36
+      ]
+    }
+  },
+  "vehicles": {
+    "a_aerostat": {
+      "facings": 8,
+      "fh": 104,
+      "file": "units/a_aerostat.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "deployed"
+      ],
+      "fw": 76,
+      "mask": "units/a_aerostat_mask.png",
+      "pivot": [
+        38,
+        84
+      ]
+    },
+    "a_airlift": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 101,
+      "file": "units/a_airlift.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landing",
+        "parked",
+        "drop"
+      ],
+      "fw": 146,
+      "ground_frames": [
+        "parked"
+      ],
+      "mask": "units/a_airlift_mask.png",
+      "pivot": [
+        70,
+        56
+      ],
+      "shadow": {
+        "fh": 25,
+        "file": "units/a_airlift_shadow.png",
+        "fw": 47,
+        "pivot": [
+          23,
+          12
+        ]
+      }
+    },
+    "a_awacs": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 95,
+      "file": "units/a_awacs.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landing",
+        "parked"
+      ],
+      "fw": 112,
+      "ground_frames": [
+        "parked"
+      ],
+      "mask": "units/a_awacs_mask.png",
+      "pivot": [
+        51,
+        52
+      ],
+      "shadow": {
+        "fh": 25,
+        "file": "units/a_awacs_shadow.png",
+        "fw": 47,
+        "pivot": [
+          23,
+          12
+        ]
+      }
+    },
+    "a_bridge_layer": {
+      "facings": 8,
+      "fh": 94,
+      "file": "units/a_bridge_layer.png",
+      "frames": [
+        "idle",
+        "move",
+        "deployed"
+      ],
+      "fw": 166,
+      "mask": "units/a_bridge_layer_mask.png",
+      "pivot": [
+        83,
+        48
+      ]
+    },
+    "a_carrier": {
+      "facings": 8,
+      "fh": 93,
+      "file": "units/a_carrier.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "launch"
+      ],
+      "fw": 140,
+      "mask": "units/a_carrier_mask.png",
+      "naval": true,
+      "pivot": [
+        70,
+        56
+      ]
+    },
+    "a_command_vehicle": {
+      "facings": 8,
+      "fh": 69,
+      "file": "units/a_command_vehicle.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "deployed"
+      ],
+      "fw": 78,
+      "mask": "units/a_command_vehicle_mask.png",
+      "pivot": [
+        39,
+        51
+      ]
+    },
+    "a_exo_trooper": {
+      "facings": 8,
+      "fh": 44,
+      "file": "units/a_exo_trooper.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire"
+      ],
+      "fw": 40,
+      "mask": "units/a_exo_trooper_mask.png",
+      "pivot": [
+        20,
+        35
+      ]
+    },
+    "a_hovercraft": {
+      "facings": 8,
+      "fh": 67,
+      "file": "units/a_hovercraft.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "loaded",
+        "unload"
+      ],
+      "fw": 103,
+      "mask": "units/a_hovercraft_mask.png",
+      "naval": true,
+      "pivot": [
+        51,
+        40
+      ]
+    },
+    "a_laser_tank": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/a_laser_tank.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 96,
+      "mask": "units/a_laser_tank_mask.png",
+      "pivot": [
+        44,
+        36
+      ]
+    },
+    "a_loiter_truck": {
+      "facings": 8,
+      "fh": 58,
+      "file": "units/a_loiter_truck.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "deployed"
+      ],
+      "fw": 68,
+      "mask": "units/a_loiter_truck_mask.png",
+      "pivot": [
+        34,
+        40
+      ]
+    },
+    "a_mine_clearer": {
+      "facings": 8,
+      "fh": 66,
+      "file": "units/a_mine_clearer.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 96,
+      "mask": "units/a_mine_clearer_mask.png",
+      "pivot": [
+        48,
+        46
+      ]
+    },
+    "a_minesweeper": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/a_minesweeper.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "sweep"
+      ],
+      "fw": 100,
+      "mask": "units/a_minesweeper_mask.png",
+      "naval": true,
+      "pivot": [
+        50,
+        35
+      ]
+    },
+    "a_mlrs": {
+      "facings": 8,
+      "fh": 64,
+      "file": "units/a_mlrs.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 84,
+      "mask": "units/a_mlrs_mask.png",
+      "pivot": [
+        42,
+        43
+      ]
+    },
+    "a_sp_howitzer": {
+      "facings": 8,
+      "fh": 68,
+      "file": "units/a_sp_howitzer.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 100,
+      "mask": "units/a_sp_howitzer_mask.png",
+      "pivot": [
+        50,
+        52
+      ]
+    },
+    "a_submarine": {
+      "facings": 8,
+      "fh": 76,
+      "file": "units/a_submarine.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive"
+      ],
+      "fw": 115,
+      "mask": "units/a_submarine_mask.png",
+      "naval": true,
+      "pivot": [
+        57,
+        38
+      ]
+    },
+    "a_supply_ship_a": {
+      "facings": 8,
+      "fh": 77,
+      "file": "units/a_supply_ship_a.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work"
+      ],
+      "fw": 109,
+      "mask": "units/a_supply_ship_a_mask.png",
+      "naval": true,
+      "pivot": [
+        54,
+        49
+      ]
+    },
+    "a_ugv": {
+      "facings": 8,
+      "fh": 38,
+      "file": "units/a_ugv.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 48,
+      "mask": "units/a_ugv_mask.png",
+      "pivot": [
+        24,
+        25
+      ]
+    },
+    "b_aa_barge": {
+      "facings": 8,
+      "fh": 78,
+      "file": "units/b_aa_barge.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 105,
+      "mask": "units/b_aa_barge_mask.png",
+      "naval": true,
+      "pivot": [
+        52,
+        51
+      ]
+    },
+    "b_armored_dozer": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/b_armored_dozer.png",
+      "frames": [
+        "idle",
+        "move",
+        "work"
+      ],
+      "fw": 84,
+      "mask": "units/b_armored_dozer_mask.png",
+      "pivot": [
+        42,
+        38
+      ]
+    },
+    "b_armored_train": {
+      "facings": 8,
+      "fh": 68,
+      "file": "units/b_armored_train.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 112,
+      "mask": "units/b_armored_train_mask.png",
+      "pivot": [
+        56,
+        46
+      ]
+    },
+    "b_flak_halftrack": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/b_flak_halftrack.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 70,
+      "mask": "units/b_flak_halftrack_mask.png",
+      "pivot": [
+        35,
+        41
+      ]
+    },
+    "b_landship": {
+      "facings": 8,
+      "fh": 69,
+      "file": "units/b_landship.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 112,
+      "mask": "units/b_landship_mask.png",
+      "pivot": [
+        56,
+        46
+      ]
+    },
+    "b_mine_barge": {
+      "facings": 8,
+      "fh": 74,
+      "file": "units/b_mine_barge.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "lay"
+      ],
+      "fw": 103,
+      "mask": "units/b_mine_barge_mask.png",
+      "naval": true,
+      "pivot": [
+        51,
+        47
+      ]
+    },
+    "b_moto_scouts": {
+      "facings": 8,
+      "fh": 50,
+      "file": "units/b_moto_scouts.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 64,
+      "mask": "units/b_moto_scouts_mask.png",
+      "pivot": [
+        32,
+        31
+      ]
+    },
+    "b_recon_plane": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 76,
+      "file": "units/b_recon_plane.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landing",
+        "parked"
+      ],
+      "fw": 80,
+      "ground_frames": [
+        "parked"
+      ],
+      "mask": "units/b_recon_plane_mask.png",
+      "pivot": [
+        37,
+        45
+      ],
+      "shadow": {
+        "fh": 16,
+        "file": "units/b_recon_plane_shadow.png",
+        "fw": 30,
+        "pivot": [
+          15,
+          8
+        ]
+      }
+    },
+    "b_rhomboid": {
+      "facings": 8,
+      "fh": 64,
+      "file": "units/b_rhomboid.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 84,
+      "mask": "units/b_rhomboid_mask.png",
+      "pivot": [
+        42,
+        42
+      ]
+    },
+    "b_salvage_crane": {
+      "facings": 8,
+      "fh": 68,
+      "file": "units/b_salvage_crane.png",
+      "frames": [
+        "idle",
+        "move",
+        "work"
+      ],
+      "fw": 84,
+      "mask": "units/b_salvage_crane_mask.png",
+      "pivot": [
+        42,
+        48
+      ]
+    },
+    "b_supply_ship_b": {
+      "facings": 8,
+      "fh": 108,
+      "file": "units/b_supply_ship_b.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work"
+      ],
+      "fw": 112,
+      "mask": "units/b_supply_ship_b_mask.png",
+      "naval": true,
+      "pivot": [
+        56,
+        80
+      ]
+    },
+    "m_assimilator": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/m_assimilator.png",
+      "frames": [
+        "idle",
+        "move",
+        "work"
+      ],
+      "fw": 84,
+      "mask": "units/m_assimilator_mask.png",
+      "pivot": [
+        42,
+        38
+      ]
+    },
+    "m_breacher_crawler": {
+      "facings": 8,
+      "fh": 40,
+      "file": "units/m_breacher_crawler.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "detonate"
+      ],
+      "fw": 44,
+      "mask": "units/m_breacher_crawler_mask.png",
+      "pivot": [
+        22,
+        26
+      ]
+    },
+    "m_charge_tender": {
+      "facings": 8,
+      "fh": 67,
+      "file": "units/m_charge_tender.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work"
+      ],
+      "fw": 96,
+      "mask": "units/m_charge_tender_mask.png",
+      "naval": true,
+      "pivot": [
+        48,
+        41
+      ]
+    },
+    "m_colossus": {
+      "facings": 8,
+      "fh": 92,
+      "file": "units/m_colossus.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "scale"
+      ],
+      "fw": 108,
+      "mask": "units/m_colossus_mask.png",
+      "pivot": [
+        54,
+        66
+      ]
+    },
+    "m_hover_tank": {
+      "facings": 8,
+      "fh": 60,
+      "file": "units/m_hover_tank.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 80,
+      "mask": "units/m_hover_tank_mask.png",
+      "pivot": [
+        40,
+        38
+      ]
+    },
+    "m_lance_cruiser": {
+      "facings": 8,
+      "fh": 98,
+      "file": "units/m_lance_cruiser.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 144,
+      "mask": "units/m_lance_cruiser_mask.png",
+      "naval": true,
+      "pivot": [
+        72,
+        64
+      ]
+    },
+    "m_mimic_drone": {
+      "air": true,
+      "altitude": 16,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/m_mimic_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive"
+      ],
+      "fw": 40,
+      "mask": "units/m_mimic_drone_mask.png",
+      "pivot": [
+        20,
+        22
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/g6_mimic_shadow.png",
+        "fw": 14,
+        "pivot": [
+          7,
+          4
+        ]
+      }
+    },
+    "m_repair_swarm2": {
+      "facings": 8,
+      "fh": 52,
+      "file": "units/m_repair_swarm2.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work"
+      ],
+      "fw": 64,
+      "mask": "units/m_repair_swarm2_mask.png",
+      "pivot": [
+        32,
+        34
+      ]
+    },
+    "m_shield_drone": {
+      "air": true,
+      "altitude": 16,
+      "bob": 1,
+      "facings": 8,
+      "fh": 60,
+      "file": "units/m_shield_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "shield"
+      ],
+      "fw": 64,
+      "mask": "units/m_shield_drone_mask.png",
+      "pivot": [
+        32,
+        28
+      ],
+      "shadow": {
+        "fh": 8,
+        "file": "units/m_shield_drone_shadow.png",
+        "fw": 16,
+        "pivot": [
+          8,
+          4
+        ]
+      }
+    },
+    "m_spider_layer": {
+      "facings": 8,
+      "fh": 52,
+      "file": "units/m_spider_layer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "lay"
+      ],
+      "fw": 64,
+      "mask": "units/m_spider_layer_mask.png",
+      "pivot": [
+        32,
+        33
+      ]
+    },
+    "m_stalker_synth": {
+      "facings": 8,
+      "fh": 44,
+      "file": "units/m_stalker_synth.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "cloak"
+      ],
+      "fw": 36,
+      "mask": "units/m_stalker_synth_mask.png",
+      "pivot": [
+        18,
+        36
+      ]
+    },
+    "m_stealth_drone": {
+      "air": true,
+      "aircraft": "jet",
+      "alt_scale": {
+        "landing": 0.35
+      },
+      "altitude": 34,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 10,
+      "bob": 1,
+      "facings": 8,
+      "fh": 61,
+      "file": "units/m_stealth_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landing",
+        "parked"
+      ],
+      "fw": 84,
+      "ground_frames": [
+        "parked"
+      ],
+      "mask": "units/m_stealth_drone_mask.png",
+      "pivot": [
+        40,
+        34
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/m_stealth_drone_shadow.png",
+        "fw": 33,
+        "pivot": [
+          16,
+          9
+        ]
+      }
+    },
+    "m_swarm_queen": {
+      "air": true,
+      "altitude": 22,
+      "bob": 1,
+      "facings": 8,
+      "fh": 56,
+      "file": "units/m_swarm_queen.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire"
+      ],
+      "fw": 76,
+      "mask": "units/m_swarm_queen_mask.png",
+      "pivot": [
+        38,
+        36
+      ],
+      "shadow": {
+        "fh": 18,
+        "file": "units/g6_queen_shadow.png",
+        "fw": 38,
+        "pivot": [
+          19,
+          9
+        ]
+      }
+    }
+  },
+  "version": 1
+}

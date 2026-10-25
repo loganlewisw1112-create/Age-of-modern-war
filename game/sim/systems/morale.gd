@@ -18,6 +18,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")  # G6 PERF6: morale_delta
 ## G3b PERF4: loops read the shared SimIndex. REDUCED-tier units (Tiers: no enemy near) update on
 ## every 2nd morale update (staggered by id) with twice the dt, so recovery/decay rates are kept.
 ## Squadmate losses use one squad index per tick instead of one full pass per death.
@@ -42,6 +43,10 @@ static func max_morale(def_id: String) -> float:
 	return _mmax[def_id]
 
 
+## G6 PERF6 (CONTRACTS_G6 section 5.1): SimIndex.g6h().morale_delta(w, e) is added to morale on every morale update
+## (x2 for REDUCED units, which update every 2nd time with 2x dt) when the MORALE bit of SimIndex.g6m(w)
+## is set. A steady-state unit (full morale, unsuppressed) still skips the update when the delta is >= 0
+## (the clamp keeps it at max); a negative delta runs the update.
 static func tick(w: SimWorld) -> void:
 	_process_deaths(w)
 	if w.tick % UPDATE_EVERY != 0:
@@ -57,7 +62,9 @@ static func tick(w: SimWorld) -> void:
 		"recover": float(mor.get("recover_per_second", 4)) * dt,
 		"break_at": float(mor.get("break_at", 25)),
 		"rally_at": float(mor.get("rally_at", 60)),
+		"md": 0.0,
 	}
+	var g6m: bool = SimIndex.g6m(w) & SimIndex.G6_MORALE != 0
 	var ctx := [null, int(w.map.w), w.map.terrain]   # [cover index (lazy), map w, terrain]
 	var tiers_on := Tiers.enabled(w)
 	var ents: Dictionary = w.entities
@@ -86,7 +93,9 @@ static func tick(w: SimWorld) -> void:
 				ctx[0] = _cover_index(w)
 			cov = _near_cover(ctx[0], pos)
 		e.in_cover = cov
-		if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false):
+		var md: float = SimIndex.g6h().morale_delta(w, e) if g6m else 0.0
+		p.md = md
+		if md >= 0.0 and float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false):
 			var mm = _mmax.get(e.def)
 			if float(e.morale) >= (float(mm) if mm != null else max_morale(e.def)):
 				continue
@@ -100,6 +109,7 @@ static func tick(w: SimWorld) -> void:
 	var p2 := p.duplicate()
 	for k in ["decay", "drain", "recover"]:
 		p2[k] = float(p[k]) * 2.0
+	p2["g6"] = g6m
 	var slot := (tick / UPDATE_EVERY) % 2
 	var j := slot
 	while j < Tiers.SCAN_STRIDE:
@@ -127,8 +137,11 @@ static func _step_unit(w: SimWorld, e: Dictionary, pu: Dictionary, ctx: Array) -
 				SimIndex.pt("mor.cover_idx", tc)
 		cov = _near_cover(ctx[0], pos)
 	e.in_cover = cov
+	# G6: morale_delta for this update (2x for a REDUCED unit: every 2nd update, 2x dt)
+	var md: float = SimIndex.g6h().morale_delta(w, e) * 2.0 if bool(pu.get("g6", false)) else 0.0
+	pu["md"] = md
 	# steady state (unsuppressed, full morale, not broken): nothing else can change
-	if float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false) and float(e.morale) >= max_morale(e.def):
+	if md >= 0.0 and float(e.get("supp", 0.0)) <= 0.0 and not e.get("pinned", false) and not e.get("broken", false) and float(e.morale) >= max_morale(e.def):
 		return
 	_update_unit(w, e, pu)
 
@@ -147,6 +160,7 @@ static func _update_unit(w: SimWorld, e: Dictionary, p: Dictionary) -> void:
 		m -= float(p.drain)
 	elif since >= OUT_OF_COMBAT_TICKS:
 		m += float(p.recover)
+	m += float(p.get("md", 0.0))  # G6 morale_delta (+0.0 when neutral: bit-identical)
 	m = snappedf(clampf(m, 0.0, mmax), Q)
 	e.morale = m
 	var broken := bool(e.get("broken", false))

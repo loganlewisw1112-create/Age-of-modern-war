@@ -1,0 +1,51 @@
+{
+ "agent": "AI7-USE-2",
+ "gen": 2,
+ "calls_used": 96,
+ "status": "recycled at the 70% budget mark",
+ "done": [
+  "coastal_s2 rerun on the clean tree (TAG d2, before this gen's AI edits): winner=2 end_tick=55556 hq_elimination, SOAK INVARIANTS fails=0, 0 SCRIPT ERROR (.plan/shots/AI7-USE/soak_coastal_s2_d2.txt).",
+  "custom_s1 d1 invariant fails (b_bomber unit 391 out of bounds at y=160-161.5, t=79200-103200) were routed by ORCH to ECON-AIRF6 (air.gd owner) as change_request.air_out_of_bounds. No sim/ai cause. Re-check custom_s1 after ECON-AIRF6 answers.",
+  "test_ai_g6 8/9 (raw runner, 0 SCRIPT ERROR): companies, defences, garrison, mines, stage 10, market, airfield v2, SAM+radar+counter-drone PASS. Only test_ai_uses_subs_and_carriers fails, and it waits on NAVAL6: no naval6.api_ready on the board, submerge returns not_implemented.",
+  "ai_g6_co.gd: Companies.templates_for(fid, w) (an int fid needs w; it returned [] before, so no company was ever trained). Templates are ordered by doctrine (CO_PREFER: rifle/conscript/swarm, then mech/shock/walker, then armour). Size is picked from Companies.plan() cost and pop: first a company that fits pop_cap now, then one that fits pop_cap_max (Econ builds the supply). One company trains at a time. A LOW_POWER company builds a power plant. _army uses Companies.commanders_of (AI-FAIR tagged). g.co_why gives the refusal reason.",
+  "ai_controller._context: this side's company training entries (w.sys_state.companies.training, owner == fid) add plan.pop to ctx.queued_pop, so unit production leaves room and Econ builds supply (ARMY6 spawns a company whole, at SUPPLY_CAP).",
+  "ai_g6_def.gd: threats() read U.ud(), a summary dict with no aircraft/drone/drone_charges keys, so drones and aircraft were NEVER detected from visibility (only the g4 memory counter). Now uses Content.unit(). Drone sightings are remembered for DRONE_MEMORY=40 thinks (st.g6_drone_t). _defences now tries the next role when a row cannot be placed or paid (it returned after the first unplaceable row).",
+  "tests/test_ai_g6.gd: companies test places 8 supply depots (setup); airfield v2 detects take-off via Air.phase (e.air_state never existed); passive (ammo 0) strike cluster at 13 tiles; when aircraft exist, objective defend + threat_pos (as manage_army sets it). The SAM test's drone team is passive at 11 tiles, with a 20-tick fog prelude. The subs test falls back to Movement.nearest_free_cell for naval_large spawn cells.",
+  "Regression on this tree, --only each: test_ai_g5 5/5 TESTS OK, test_ai_air_naval 8/8 TESTS OK, test_mil 13/13 TESTS OK, test_g2_scenarios 7/7 TESTS OK, test_ai 17/18. The one failure was test_ai02_static_fairness (ai_g6_co.gd:172 needed an AI-FAIR tag). The tag is now added; rerun test_ai to confirm 18/18."
+ ],
+ "in_flight": {
+  "lane_d3": "Background lane (my process, hb.sh label 'lane d3 9 configs', timeout 5400 s) started ~09:05 local. Log: .plan/shots/AI7-USE/run_lane_d3.log; outputs .plan/shots/AI7-USE/soak_<cfg>_d3.txt. It ends with per-config lines and LANE_DONE d3. The hb heartbeat posts status as AI7-USE-2 until it ends.",
+  "d3_results_so_far": {
+   "river_s1": "winner=0 end_tick=54168, 0 invariant fails, 0 script errors",
+   "river_s2": "winner=1 end_tick=101508, 0 invariant fails, 0 script errors",
+   "heart_s2": "INVALID: it started while MECH6b's sim/systems/machine_g6.gd was mid-edit (Parse Error: shield_mult/cloak_visible/on_destroyed not found, via g6_hooks.gd). I killed it. It needs a rerun.",
+   "heart_s1, coastal_s1, coastal_s2": "running at handoff",
+   "valley_s1, valley_s2, custom_s1": "queued in the lane (they start on whatever tree exists when a slot frees)"
+  }
+ },
+ "remaining": [
+  "1. When run_lane_d3.log prints LANE_DONE d3, read each config's SOAK RESULT and INVARIANTS line. Then rerun heart_s2 (and anything else with SCRIPT ERROR): TAG=d4 bash .plan/hb.sh <ID> <calls> <tok> 'lane d4' -- timeout 3000 bash .plan/shots/AI7-USE/run_lane.sh heart_s2. Never edit run_lane.sh or sim/ai while a lane has configs still waiting to start (they load the tree at start).",
+  "2. Draws (valley s1/s2, heart s2 in d1). Diagnosis so far: valley is a 3-side big map; both humans target the Machine from t=1 and never retarget (G3.choose_target distance + 2 x known defences). Waves of 18-29 units walk ~240 tiles and die at its walls and towers. Each side sits at pop 104-110/110-120, but its army is only 30-45 pop: support units fill the supply (Human A: 20 engineers from the AI6 LATE_CREW triple crew cap, plus trucks, ambulances and medics). heart s2 after the Machine died (~t=55000): both humans are broke. Human A ends at ammo 29, fuel 0, cr ~360, with 5 gatherers, and feeds 3-4-troop air assaults into Human B's base. Human B is stuck at 20/65 pop and cr 50. Candidate levers, untried: (a) late big-map support trim (stop crews and g4b combat engineers past base caps when pop is capped and army pop < 50% of pop); (b) no air assaults below 6 riders; (c) the poverty trap: crews when broke with pop headroom. Test any lever on a d4 mini-lane (heart_s2 valley_s1 valley_s2) before the full lane.",
+  "3. Company evidence in soaks: river d3 shows companies=0 on every side. L.build_at needs credits >= cost + 150, so the 600-credit Company HQ rarely gets built in a soak. Consider an st.g6an_hold for the HQ cost once army_pop >= HQ_ARMY (it holds other BUILDINGS only, see U._bank_ok).",
+  "4. ORCH directive (pending): when board fact econ.cap_max_ready appears (ECON-AIRF6-2 adds Economy.cap_max_for(w, fid)), switch the Content.rules().pop_cap_max reads to it: sim/ai/ai_army.gd ~L86 and ~L555, sim/ai/ai_econ.gd ~L36, sim/ai/ai_g6_co.gd (room_max in _companies). Do not switch before the fact; that function does not exist yet.",
+  "5. Wait on facts: naval6.api_ready (subs/carrier test; then rerun test_ai_g6 for 9/9), survival.api_ready plus the ridge_bastion_m map (survival_s1 config; the map does not exist yet), aicmd.api_ready (assist_s1). Then add those two configs to a lane.",
+  "6. Rerun test_ai (expect 18/18 with the AI-FAIR tag), then test_ai_g6. Post fact ai.g5_soaks with the SOAK RESULT lines, and ai.g6_use_ready at 9/9. Run the full suite once at the end inside hb.sh."
+ ],
+ "files_touched": [
+  "sim/ai/ai_g6_co.gd",
+  "sim/ai/ai_g6_def.gd",
+  "sim/ai/ai_controller.gd",
+  "tests/test_ai_g6.gd",
+  ".plan/handoff/AI7-USE-2.json"
+ ],
+ "test_state": "test_ai_g6 8/9 (subs/carrier blocked on NAVAL6). test_ai_g5 5/5, test_ai_air_naval 8/8, test_mil 13/13, test_g2_scenarios 7/7. test_ai 17/18 before the AI-FAIR tag fix; rerun pending. Full suite not run.",
+ "gotchas": [
+  "U.ud(def) is a SUMMARY (pop/veh/air/armored/arty/energy/amax/fmax). For raw def keys (aircraft, drone_charges, hangar, ...) use Content.unit(def).",
+  "test_ai02_static_fairness: any line in sim/ai touching w.entities / events needs an 'AI-FAIR:' comment on the same line.",
+  "Companies.templates_for(fid) with an int fid returns [] unless w is passed.",
+  "A company spawns whole only once pop_cap - pop >= plan.pop (SUPPLY_CAP) and the HQ has power (LOW_POWER).",
+  "The air flight phase lives in Air.flight(w,id).phase (Air.phase). There is no e.air_state.",
+  "Lanes race other owners' mid-edits: always grep each soak for SCRIPT ERROR before trusting its RESULT.",
+  "The test_ai_g6 tests run AiG6 modules directly (not G6.manage), so ctx.g6_spend defaults to true and g.probe is only set by G6.manage."
+ ]
+}

@@ -5,6 +5,7 @@ extends RefCounted
 ## Fairness: enemy information only from ctx.visible (= w.visible_enemies(fid)) and memory.
 
 const U = preload("res://sim/ai/ai_util.gd")
+const Economy = preload("res://sim/systems/economy.gd")  # cap_max_for: 200 with a built Company HQ (ECON-AIRF6-2)
 const Mil = preload("res://sim/ai/ai_mil.gd")
 const Tac = preload("res://sim/ai/ai_tactics.gd")
 const G3 = preload("res://sim/ai/ai_g3.gd")
@@ -83,7 +84,7 @@ static func _threat(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> D
 ## Own pop near the hard cap (the army cannot grow any more), or an army far past the threshold.
 static func massed(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_pop: int) -> bool:
 	var f: Dictionary = w.factions[fid]
-	var cap_max := int(Content.rules().pop_cap_max)
+	var cap_max := Economy.cap_max_for(w, fid)
 	if int(f.pop) + int(ctx.get("queued_pop", 0)) >= int(float(cap_max) * MASS_FRAC) and army_pop >= int(st.attack_pop):
 		return true
 	return army_pop >= MASS_MULT * maxi(6, int(st.attack_pop))
@@ -201,6 +202,7 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 		var hold_on := bool(st.get("decisive", false)) and committed and _pop(group) >= maxi(4, foe_pop)
 		if group.is_empty() or (not finishing and not trickle and not hold_on and group.size() < int(ceil(REGROUP_FRAC * float(int(st.launch_size))))):
 			st.failed_waves = int(st.failed_waves) + 1
+			G3.note_failed_wave(st)
 			_set_obj(w, st, "regroup", "attack group down to %d of %d; falling back" % [group.size(), int(st.launch_size)])
 			Tac.release(w, fid, st, ctx, "wave too weak, regrouping")
 			_move_all(w, fid, st, army, Vector2(st.rally), "regroup")
@@ -552,7 +554,7 @@ static func _reinforce(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, a
 	# AI4-4: a decisive wave is fed in blocks, not a 3-pop trickle across a big map; at the hard
 	# cap the reserve only grows as the wave loses units, so blocks of 6 pop go
 	var f: Dictionary = w.factions[fid]
-	if int(f.pop) >= int(float(int(Content.rules().pop_cap_max)) * MASS_FRAC):
+	if int(f.pop) >= int(float(Economy.cap_max_for(w, fid)) * MASS_FRAC):
 		need = mini(need, 6)
 	elif bool(st.get("decisive", false)):
 		need = maxi(need, maxi(6, int(st.attack_pop) / 3))

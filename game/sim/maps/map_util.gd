@@ -9,6 +9,8 @@ extends RefCounted
 ## a Dictionary read hands back a copy-on-write value).
 
 const DIRS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+const MapCheck = preload("res://sim/maps/map_check.gd")   # G6 (ELEV): height-aware BFS
+const Elevation = preload("res://sim/systems/elevation.gd")
 
 
 static func mirror(c: Vector2i, w: int, h: int) -> Vector2i:
@@ -165,3 +167,238 @@ static func base_pads(t: PackedByteArray, w: int, h: int, spawns: Array, r: floa
 					var i := c.y * w + c.x
 					if t[i] == Terrain.GRASS or t[i] == Terrain.FOREST or t[i] == Terrain.RIDGE:
 						t[i] = Terrain.DIRT
+
+
+# ================================================================ G6 height (owner ELEV, CONTRACTS_G6 section 7)
+## Height layer = PackedByteArray beside terrain: 0 valley, 1 plain, 2 hill, 3 ridge. Ramps = 0/1 bytes.
+## Every painter below writes a cell AND its mirror, so a symmetric map stays symmetric. Painting
+## modes: HSET overwrites, HRAISE keeps max(level, current), HLOWER keeps min(level, current).
+const HSET := 0
+const HRAISE := 1
+const HLOWER := 2
+## Terrain codes whose level-boundary cells always become ramps (roads keep running over height).
+const PATH_CODES := [Terrain.ROAD, Terrain.BRIDGE, Terrain.FORD, Terrain.DIRT, Terrain.BEACH, 14]
+
+
+static func new_layer(w: int, h: int, v: int) -> PackedByteArray:
+	var p := PackedByteArray()
+	p.resize(w * h)
+	p.fill(v)
+	return p
+
+
+static func _hput(hg: PackedByteArray, i: int, level: int, mode: int) -> void:
+	var cur := int(hg[i])
+	if mode == HRAISE:
+		level = maxi(level, cur)
+	elif mode == HLOWER:
+		level = mini(level, cur)
+	hg[i] = level
+
+
+## Sets cell c (and its mirror) to level under mode.
+static func hset(hg: PackedByteArray, w: int, h: int, c: Vector2i, level: int, mode: int = HSET) -> void:
+	if not inb(c, w, h):
+		return
+	_hput(hg, c.y * w + c.x, level, mode)
+	_hput(hg, (h - 1 - c.y) * w + (w - 1 - c.x), level, mode)
+
+
+## Disc of radius r around c (mirrored).
+static func hdisc(hg: PackedByteArray, w: int, h: int, c: Vector2i, r: float, level: int, mode: int = HSET) -> void:
+	var ri := int(ceil(r))
+	for dy in range(-ri, ri + 1):
+		for dx in range(-ri, ri + 1):
+			if Vector2(dx, dy).length() <= r:
+				hset(hg, w, h, c + Vector2i(dx, dy), level, mode)
+
+
+## Polyline band of radius r (mirrored).
+static func hband(hg: PackedByteArray, w: int, h: int, pts: Array, r: float, level: int, mode: int = HSET) -> void:
+	for k in range(pts.size() - 1):
+		var a: Vector2i = pts[k]
+		var b: Vector2i = pts[k + 1]
+		var n := maxi(absi(b.x - a.x), absi(b.y - a.y))
+		for s in n + 1:
+			var p := Vector2(a).lerp(Vector2(b), float(s) / float(maxi(n, 1)))
+			hdisc(hg, w, h, Vector2i(roundi(p.x), roundi(p.y)), r, level, mode)
+
+
+## Inclusive rectangle (mirrored).
+static func hrect(hg: PackedByteArray, w: int, h: int, x0: int, y0: int, x1: int, y1: int, level: int, mode: int = HSET) -> void:
+	for y in range(y0, y1 + 1):
+		for x in range(x0, x1 + 1):
+			hset(hg, w, h, Vector2i(x, y), level, mode)
+
+
+## Deterministic cell hash in [0, 2^20).
+static func cell_hash(x: int, y: int) -> int:
+	return posmod(x * 92821 + y * 68917 + ((x * 31 + 7) * (y * 17 + 3)) % 1009, 1 << 20)
+
+
+## Symmetric ramp derivation. A cell is a ramp when it has a 4-neighbour exactly one level different
+## AND (its terrain is a PATH_CODES tile, or cell_hash % every_by_low[lower level of that pair] == 0).
+## every_by_low[k] = 1 makes every k<->k+1 boundary cell a ramp (gentle slope); 0 = only path tiles.
+## The hash is taken on the canonical cell min(i, n-1-i), so point-symmetric maps get symmetric ramps
+## and any other map gets a plain per-cell decision.
+static func derive_ramps(hg: PackedByteArray, t: PackedByteArray, w: int, h: int, every_by_low: Array) -> PackedByteArray:
+	var n := w * h
+	var rp := new_layer(w, h, 0)
+	for i in n:
+		var rep := mini(i, n - 1 - i)
+		var x := i % w
+		var y := i / w
+		var lv := int(hg[i])
+		var path := PATH_CODES.has(int(t[i]))
+		var on := false
+		for d in DIRS:
+			var q: Vector2i = Vector2i(x, y) + d
+			if not inb(q, w, h):
+				continue
+			var ql := int(hg[q.y * w + q.x])
+			if absi(ql - lv) != 1:
+				continue
+			var every := int(every_by_low[mini(ql, lv)]) if mini(ql, lv) < every_by_low.size() else 0
+			if path or (every > 0 and cell_hash(rep % w, rep / w) % every == 0):
+				on = true
+				break
+		if on:
+			rp[i] = 1
+	return rp
+
+
+## Clears ramp flags that sit on no exact-one-level boundary (validity after edits).
+static func prune_ramps(hg: PackedByteArray, rp: PackedByteArray, w: int, h: int) -> int:
+	var cleared := 0
+	for i in rp.size():
+		if rp[i] == 0:
+			continue
+		var x := i % w
+		var y := i / w
+		var ok := false
+		for d in DIRS:
+			var q: Vector2i = Vector2i(x, y) + d
+			if inb(q, w, h) and absi(int(hg[q.y * w + q.x]) - int(hg[i])) == 1:
+				ok = true
+		if not ok:
+			rp[i] = 0
+			cleared += 1
+	return cleared
+
+
+## Flattens a disc to the level found at its centre (base sites: buildings never straddle levels).
+static func hflat(hg: PackedByteArray, w: int, h: int, c: Vector2i, r: float) -> void:
+	if inb(c, w, h):
+		hdisc(hg, w, h, c, r, int(hg[c.y * w + c.x]), HSET)
+
+
+## Ramp placement: every foot-walkable region the height splits off from spawn 0's region gets a ramp
+## on its lowest-index cell that touches the reached region across a one-level step (symmetric: the
+## mirror cell too). Up to 6 rounds (a joined region can open the way to the next). Returns ramps added.
+static func connect_ramps(m: Dictionary, symmetric: bool = false) -> int:
+	if not m.has("height") or (m.get("spawns", []) as Array).is_empty():
+		return 0
+	var w := int(m.w)
+	var h := int(m.h)
+	var n := w * h
+	var hg: PackedByteArray = m.height
+	var rp: PackedByteArray = m.get("ramps", new_layer(w, h, 0))
+	var pm := MapCheck.passmask(m.terrain, "foot")
+	var p0 := probe_cell(pm, w, h, m.spawns[0])
+	if p0.x < 0:
+		return 0
+	var added := 0
+	for round in 6:
+		var reach := MapCheck.bfs_h(pm, w, h, p0.y * w + p0.x, hg, rp)
+		var mark := PackedByteArray()   # 1 = cell of a region already joined this round
+		mark.resize(n)
+		mark.fill(0)
+		var changed := false
+		for j in n:
+			if pm[j] == 0 or reach[j] >= 0 or mark[j] != 0:
+				continue
+			var x := j % w
+			var touch := false
+			for k in [j + 1 if x + 1 < w else -1, j - 1 if x > 0 else -1, j + w if j + w < n else -1, j - w]:
+				if k >= 0 and pm[k] != 0 and reach[k] >= 0 and absi(int(hg[k]) - int(hg[j])) == 1:
+					touch = true
+					break
+			if not touch:
+				continue
+			rp[j] = 1
+			added += 1
+			if symmetric:
+				rp[n - 1 - j] = 1
+			changed = true
+			_flood_mark(pm, hg, rp, w, h, j, mark)
+		if not changed:
+			break
+	m.ramps = rp
+	return added
+
+
+## Marks (mark[i] = 1) the walkable cells height-connected to start (queue-bounded, no full-map scan).
+static func _flood_mark(pm: PackedByteArray, hg: PackedByteArray, rp: PackedByteArray, w: int, h: int, start: int, mark: PackedByteArray) -> void:
+	var n := w * h
+	var q := PackedInt32Array([start])
+	mark[start] = 1
+	var head := 0
+	while head < q.size():
+		var i := q[head]
+		head += 1
+		var x := i % w
+		for j in [i + 1 if x + 1 < w else -1, i - 1 if x > 0 else -1, i + w if i + w < n else -1, i - w]:
+			if j >= 0 and mark[j] == 0 and pm[j] != 0 and Elevation.edge_ok_raw(hg, rp, i, j):
+				mark[j] = 1
+				q.append(j)
+
+
+## Nearest walkable cell to c (spawn + (0, 3) first, then rings up to 4), or (-1, -1).
+static func probe_cell(pm: PackedByteArray, w: int, h: int, c: Vector2i) -> Vector2i:
+	var p := c + Vector2i(0, 3)
+	if p.x >= 0 and p.y >= 0 and p.x < w and p.y < h and pm[p.y * w + p.x] != 0:
+		return p
+	for d in 5:
+		for dy in range(-d, d + 1):
+			for dx in range(-d, d + 1):
+				if maxi(absi(dx), absi(dy)) != d:
+					continue
+				var q := c + Vector2i(dx, dy)
+				if q.x >= 0 and q.y >= 0 and q.x < w and q.y < h and pm[q.y * w + q.x] != 0:
+					return q
+	return Vector2i(-1, -1)
+
+
+## Valley floor: every cell within r (8-connected steps) of river water (WATER, FORD, SHALLOW, DEEP,
+## or a BRIDGE span) is lowered to `level` (HLOWER). Symmetric terrain gives a symmetric basin.
+static func basin(hg: PackedByteArray, t: PackedByteArray, w: int, h: int, r: int, level: int) -> void:
+	var n := w * h
+	var dist := PackedInt32Array()
+	dist.resize(n)
+	dist.fill(-1)
+	var q := PackedInt32Array()
+	for i in n:
+		var c := int(t[i])
+		if Terrain.is_water(c) or c == Terrain.FORD or c == Terrain.BRIDGE:
+			dist[i] = 0
+			q.append(i)
+	var head := 0
+	while head < q.size():
+		var i := q[head]
+		head += 1
+		var d := dist[i]
+		_hput(hg, i, level, HLOWER)
+		if d >= r:
+			continue
+		var x := i % w
+		var y := i / w
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var xx := x + dx
+				var yy := y + dy
+				if xx < 0 or yy < 0 or xx >= w or yy >= h:
+					continue
+				var j := yy * w + xx
+				if dist[j] < 0:
+					dist[j] = d + 1
+					q.append(j)

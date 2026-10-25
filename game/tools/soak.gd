@@ -36,6 +36,15 @@ const TransportS = preload("res://sim/systems/transport.gd")
 ## G4 (AI5): G4b evidence per side from the event stream (walls built, transports used, new units)
 const G4B_UNITS := ["a_apc", "a_sniper", "a_mortar", "a_combat_engineer", "b_flamer", "b_halftrack", "b_scrap_mech", "b_rocket_truck"]
 var _g4 := {}
+## G6 (AI7-USE): CONTRACTS_G6 §16 / PLAN_G6 §12.3 soak evidence. _g6_tags: fid -> {AiDecision tag: n};
+## _g6_evt: event type -> n for the G6 systems (names matched by pattern: robust to owner naming).
+## --assist: side 0 plays as a human with an AI Commander slot (AI7-CMD set_ai_commander).
+var _g6_tags := {}
+var _g6_evt := {}
+var _assist := false
+var _assist_sent := false
+const G6_EVT_RE := "Company|Army|Commander|Mine|Sweep|Garrison|Submerg|Sonar|Torpedo|Sortie|Rebase|Carrier|Market|Trade|Loadout|Exo|Suit|Pilot|Radar|Sam|Jam|Drone|Strike|Wave|Survival|AiCommand|Ally"
+static var _g6_re: RegEx = null
 ## AI5-3: --ai-breach-log [--diag-every=N] prints "SOAK DIAG" lines per AI side (economy, wave,
 ## breach decision tally, queues, new AI log lines). Read-only: never changes the match.
 var _diag := false
@@ -56,6 +65,8 @@ func _init() -> void:
 			difficulty = a.substr(13)
 		elif a == "--ailog":
 			_ailog = true
+		elif a == "--assist":
+			_assist = true
 		elif a == "--ai-breach-log":
 			_diag = true
 		elif a.begins_with("--diag-every="):
@@ -128,6 +139,7 @@ func _init() -> void:
 					ai_us[fid][2] += 1
 		for ev in w.events:
 			_g4_event(w, ev)
+			_g6_event(w, ev)
 			if String(ev.type) == "StageAdvanced" and w.ai_state.has(int(ev.fid)):
 				print("AI f%d advanced to stage %d at tick %d" % [int(ev.fid), int(ev.stage), w.tick])
 		for fid in w.factions:
@@ -137,12 +149,15 @@ func _init() -> void:
 			_last_cap[fid] = cap
 		if _ailog and w.tick % 60 == 0:
 			_print_ailog(w)
+		if _assist:
+			_assist_tick(w)
 		if w.tick % INVARIANT_EVERY == 0:
 			_check_invariants(w)
 		if w.tick % SUMMARY_EVERY == 0:
 			_summary(w, Time.get_ticks_msec() - t0)
 		if _diag and w.tick % _diag_every == 0:
 			_print_diag(w)
+	_g6_report(w)
 	_check_invariants(w)
 	var winner := "none"
 	if w.match_state.ended and int(w.match_state.winner) != SimWorld.NEUTRAL:
@@ -449,3 +464,86 @@ func _print_diag(w: SimWorld) -> void:
 				print("SOAK DIAGLOG f%d %s" % [fid, ls])
 				shown += 1
 		_diag_log_t[fid] = w.tick
+
+
+# ================================================================ G6 evidence (AI7-USE)
+func _g6_event(w: SimWorld, ev: Dictionary) -> void:
+	var ty := String(ev.type)
+	if ty == "AiDecision":
+		var fid := int(ev.get("fid", -1))
+		if not _g6_tags.has(fid):
+			_g6_tags[fid] = {}
+		var tg := String(ev.get("tag", "?"))
+		_g6_tags[fid][tg] = int(_g6_tags[fid].get(tg, 0)) + 1
+		return
+	if _g6_re == null:
+		_g6_re = RegEx.new()
+		_g6_re.compile(G6_EVT_RE)
+	if _g6_re.search(ty) != null:
+		_g6_evt[ty] = int(_g6_evt.get(ty, 0)) + 1
+
+
+## Referee view at the end: per side stage, companies / armies, mines on the map, garrisoned squads,
+## subs (submerged), carriers, the AI's own G6 counters, and the doctrine tags it emitted.
+func _g6_report(w: SimWorld) -> void:
+	var co: Dictionary = w.sys_state.get("companies", {})
+	for fid in w.factions:
+		var n_co := 0
+		var n_ar := 0
+		for c in (co.get("companies", {}) as Dictionary).values():
+			if int(c.get("owner", -1)) == int(fid):
+				n_co += 1
+		for a in (co.get("armies", {}) as Dictionary).values():
+			if int(a.get("owner", -1)) == int(fid):
+				n_ar += 1
+		var mines := 0
+		var gar := 0
+		var subs := 0
+		var under := 0
+		var comp := {}  # AI7-USE-3: unit def -> supply used (army vs support share at the end)
+		for id in w.entities:
+			var e: Dictionary = w.entities[id]
+			if int(e.get("owner", -1)) != int(fid):
+				continue
+			if String(e.get("kind", "")) == "unit":
+				comp[String(e.def)] = int(comp.get(String(e.def), 0)) + int(Content.unit(String(e.def)).get("pop", 1))
+			if String(e.get("kind", "")) == "mine" or e.has("mine_kind"):
+				mines += 1
+			if int(e.get("garrisoned_in", -1)) >= 0:
+				gar += 1
+			if e.has("submerged"):
+				subs += 1
+				if bool(e.submerged):
+					under += 1
+		var ai := ""
+		if w.ai_state.has(fid) and w.ai_state[fid].has("g6"):
+			ai = String(w.ai_state[fid].g6.get("use", {}).get("probe", ""))
+		print("SOAK G6 f%d %s stage=%d companies=%d armies=%d mines=%d garrisoned=%d subs=%d submerged=%d | %s" % [int(fid),
+			String(w.factions[fid].faction_def), int(w.factions[fid].get("stage", 0)), n_co, n_ar, mines, gar, subs, under, ai])
+		print("SOAK DOCTRINE f%d tags=%s" % [int(fid), str(_g6_tags.get(fid, {}))])
+		var ck := comp.keys()
+		ck.sort_custom(func(x, y): return int(comp[x]) > int(comp[y]) or (int(comp[x]) == int(comp[y]) and String(x) < String(y)))
+		var cparts := []
+		for k in ck:
+			cparts.append("%s:%d" % [k, int(comp[k])])
+		print("SOAK COMP f%d %s" % [int(fid), " ".join(cparts)])
+	var keys := _g6_evt.keys()
+	keys.sort()
+	var parts := []
+	for k in keys:
+		parts.append("%s=%d" % [k, int(_g6_evt[k])])
+	print("SOAK G6_EVT %s" % " ".join(parts))
+	if _assist:
+		print("SOAK ASSIST ai_cmd=%s" % str(w.sys_state.get("ai_cmd", {})).left(600))
+
+
+## --assist: side 0 is a human player; at t=600 it hands its base defence to an AI Commander slot.
+func _assist_tick(w: SimWorld) -> void:
+	if w.ai_state.has(0) and w.tick == 1:
+		w.ai_state.erase(0)
+	if _assist_sent or w.tick < 600:
+		return
+	_assist_sent = true
+	var r := w.submit({"type": "set_ai_commander", "issuer": 0, "slot": 0, "target": {"role": "base_defence"},
+		"playstyle": "combined", "objective": {"type": "hold"}, "stance": "balanced"})
+	print("SOAK ASSIST t=%d set_ai_commander -> %s" % [w.tick, "ok" if bool(r.ok) else String(r.get("reason", ""))])

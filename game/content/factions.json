@@ -3,7 +3,8 @@
     "schema_version": 1,
     "status": "G3a faction registry. 'roles' map a generic role to this faction's def id so systems, AI and UI never hard-code names. Names are working concepts (DEC-14).",
     "roles": "buildings: hq power depot barracks factory refinery defense extra; production items: builder gatherer infantry antitank recon light heavy artillery officer supply air",
-    "stage_roles": "G3b: stage_roles {stage: {role: def}} override roles at that stage (Content.role). Extra roles: research, comms (buildings); ew, precision, anti_air (production)."
+    "stage_roles": "G3b: stage_roles {stage: {role: def}} override roles at that stage (Content.role). Extra roles: research, comms (buildings); ew, precision, anti_air (production).",
+    "stage_unlocks": "G6 (CONTENT6, CONTRACTS_G6 14 / PROGRESS item 7): stage_unlocks {stage: [def ids first available at that stage]}. stage_roles '10' repeats '9' (Content.role reads the exact stage) plus the Stage 10 role upgrades."
   },
   "human_a": {
     "name": "Modern Military Power",
@@ -53,7 +54,22 @@
         "air": "a_uav",
         "ew": "a_ew_truck",
         "precision": "a_guided_arty"
+      },
+      "10": {
+        "air": "a_uav",
+        "ew": "a_ew_truck",
+        "precision": "a_guided_arty",
+        "heavy": "a_laser_tank",
+        "elite_infantry": "a_exo_trooper",
+        "anti_air": "a_exo_aa"
       }
+    },
+    "stage_unlocks": {
+      "10": [
+        "a_laser_tank",
+        "a_exo_trooper",
+        "a_exo_aa"
+      ]
     }
   },
   "human_b": {
@@ -106,7 +122,16 @@
         "ew": "b_jammer_truck",
         "precision": "b_guided_battery",
         "anti_air": "b_radar_aa"
+      },
+      "10": {
+        "air": "",
+        "ew": "b_jammer_truck",
+        "precision": "b_guided_battery",
+        "anti_air": "b_radar_aa"
       }
+    },
+    "stage_unlocks": {
+      "10": []
     }
   },
   "machine": {
@@ -158,7 +183,28 @@
         "air": "m_swarm",
         "ew": "m_ew_node",
         "precision": "m_lancer"
+      },
+      "10": {
+        "air": "m_swarm",
+        "ew": "m_ew_node",
+        "precision": "m_lancer",
+        "heavy": "m_colossus",
+        "hover": "m_hover_tank",
+        "special_forces": "m_stalker_synth"
       }
+    },
+    "stage_unlocks": {
+      "10": [
+        "m_mass_driver",
+        "m_colossus",
+        "m_hover_tank",
+        "m_assimilator",
+        "m_swarm_queen",
+        "m_mimic_drone",
+        "m_stalker_synth",
+        "m_stealth_drone",
+        "m_overmind"
+      ]
     }
   }
 }

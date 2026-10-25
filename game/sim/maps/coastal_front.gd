@@ -182,7 +182,7 @@ static func _finish(t: PackedByteArray, rng: SimRng, seed_value: int, ford_cells
 		{"type": "ford", "name": "West Ford", "cell": Vector2i(69, 96)}, {"type": "ford", "name": "East Ford", "cell": Vector2i(122, 95)},
 		{"type": "beach", "name": "North Beach", "cell": Vector2i(int(COAST_X), 34)}, {"type": "beach", "name": "South Beach", "cell": Vector2i(191 - int(COAST_X), 157)},
 	]
-	return {
+	var m := {
 		"id": ID, "name": "Coastal Front", "size": "m", "w": W, "h": H,
 		"terrain": t, "spawns": SPAWNS.duplicate(), "spawn_sets": SPAWN_SETS.duplicate(true),
 		"max_sides": MAX_SIDES, "resources": resources,
@@ -191,6 +191,8 @@ static func _finish(t: PackedByteArray, rng: SimRng, seed_value: int, ford_cells
 		"islands": [isle, isle2], "island_r": isle_r,
 		"fair_tol": FAIR_TOL, "min_open_frac": MIN_OPEN,
 	}
+	_height(m)
+	return m
 
 
 # ================================================================ validation
@@ -308,3 +310,25 @@ static func validate(m: Dictionary) -> String:
 	m["naval_cells"] = nn
 	m["island_count"] = big
 	return ""
+
+
+# ================================================================ G6 height (owner ELEV, CONTRACTS_G6 section 7.5)
+## Authored height: two mainland uplands per half (level 2, every edge a ramp) with ridge caps (level 3,
+## ramps every third edge cell + connect_ramps), mirrored. Seas, estuary, beaches and fords stay plain
+## (level 1), so landings and the small-boat channel are unchanged. Spawn sites are flat. No rng draw.
+static func _height(m: Dictionary) -> void:
+	var t: PackedByteArray = m.terrain
+	var hg := MapUtil.new_layer(W, H, 1)
+	MapUtil.hdisc(hg, W, H, Vector2i(88, 40), 7.0, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(88, 40), 3.0, 3, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(70, 70), 6.0, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(71, 69), 2.5, 3, MapUtil.HRAISE)
+	for i in hg.size():
+		var c := int(t[i])
+		if Terrain.is_water(c) or c == Terrain.BEACH:
+			hg[i] = 1
+	for s in SPAWNS:
+		MapUtil.hflat(hg, W, H, s, 9.0)
+	m.height = hg
+	m.ramps = MapUtil.derive_ramps(hg, t, W, H, [3, 1, 3])
+	MapUtil.connect_ramps(m, true)

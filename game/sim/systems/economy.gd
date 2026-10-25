@@ -31,7 +31,9 @@ static func tick(w: SimWorld) -> void:
 	var pc := {}
 	var pop := {}
 	var hqs := {}
+	var chq := {}   # G6: built Company HQs per side (cap_max_for)
 	for fid in w.factions:
+		chq[fid] = 0
 		pp[fid] = 0
 		pu[fid] = 0
 		pc[fid] = 0
@@ -50,12 +52,15 @@ static func tick(w: SimWorld) -> void:
 		pc[fid] += int(d.get("pop_cap", 0))
 		if bool(d.get("is_hq", false)):
 			hqs[fid] += 1
+		if bool(d.get("company_hq", false)):
+			chq[fid] += 1
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("eco.blds", t0)
 	_pop_counts(w, pop)
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("eco.pop", t0)
-	var cap_max := int(Content.rules().get("pop_cap_max", 120))
+	var cap_max := _cap_max(false)
+	var cap_hq := _cap_max(true)
 	var rate := int(Content.rules().get("hq_stipend_credits_per_second", 0))
 	var pay: bool = w.tick > 0 and w.tick % STIPEND_INTERVAL_TICKS == 0
 	for fid in w.factions:
@@ -63,7 +68,7 @@ static func tick(w: SimWorld) -> void:
 		f.power_prod = int(pp[fid])
 		f.power_use = int(pu[fid])
 		f.pop = int(pop[fid])
-		f.pop_cap = mini(int(pc[fid]), cap_max)
+		f.pop_cap = mini(int(pc[fid]), cap_hq if int(chq[fid]) > 0 else cap_max)
 		# G3b gate counter (STG4): consecutive ticks with power_prod >= power_use; any shortfall resets
 		f.stats.power_ok_ticks = int(f.stats.get("power_ok_ticks", 0)) + 1 if int(f.power_prod) >= int(f.power_use) else 0
 		if pay and f.alive and int(hqs[fid]) > 0 and rate > 0:
@@ -72,6 +77,23 @@ static func tick(w: SimWorld) -> void:
 	if w.tick > 0 and w.tick % MAGNET_EVERY == 0:
 		_scrap_magnets(w)
 
+
+
+## G6 (CR econ.cap_max_for, ORCH): supply-cap ceiling of side fid: rules.g6_companies.hq_pop_cap_max
+## (200) while fid owns a BUILT building whose def has company_hq: true, else rules.pop_cap_max (120).
+## Reads the shared SimIndex building list (rebuilt by Economy at the start of each tick).
+static func cap_max_for(w: SimWorld, fid: int) -> int:
+	for e in SimIndex.of(w, "building"):
+		if int(e.owner) == fid and bool(e.get("built", false)) and w.entities.has(int(e.id)) 				and bool(Content.building(String(e.def)).get("company_hq", false)):
+			return _cap_max(true)
+	return _cap_max(false)
+
+
+static func _cap_max(company_hq: bool) -> int:
+	var base := int(Content.rules().get("pop_cap_max", 120))
+	if not company_hq:
+		return base
+	return int((Content.rules().get("g6_companies", {}) as Dictionary).get("hq_pop_cap_max", base))
 
 ## G3b PERF4-2: per-side pop without a per-tick pass over every unit. The last count is kept in
 ## w.cache.eco_pop (never saved) with the entity count, next_id and this tick's event array. Next

@@ -248,3 +248,23 @@ func test_threaded_step_same_hash_2k() -> void:
 	WorkerThreadPool.wait_for_task_completion(tid)
 	check_eq(b.tick, a.tick, "threaded world stepped every tick")
 	check_eq(b.state_hash(), a.state_hash(), "same hash threaded vs main (%s)" % NativeCore.path_name(a))
+
+
+## G6 (ELEV, CONTRACTS_G6 section 7 4a): RAIL = 14 is foot/vehicle ground like ROAD; the `rail` class
+## moves on RAIL only; `hover` crosses land, beach, shallow, water and deep, never cliff, forest,
+## building or ridge. Air and naval classes are unchanged on every old code.
+func test_g6_rail_code_and_rail_hover_classes() -> void:
+	check_eq(Terrain.RAIL, 14, "RAIL code")
+	check_eq(String(Terrain.NAMES[Terrain.RAIL]), "rail", "RAIL name")
+	check(Terrain.CLASSES.has("rail") and Terrain.CLASSES.has("hover"), "classes listed")
+	for mc in ["foot", "vehicle", "amphibious"]:
+		check(Terrain.passable(Terrain.RAIL, mc), "%s passes RAIL" % mc)
+		check_eq(Terrain.speed_mult(Terrain.RAIL, mc), Terrain.speed_mult(Terrain.ROAD, mc), "%s RAIL speed = ROAD" % mc)
+	for mc in ["naval", "naval_small"]:
+		check(not Terrain.passable(Terrain.RAIL, mc), "%s cannot use RAIL" % mc)
+	check(not Terrain.buildable(Terrain.RAIL) and not Terrain.blocks_los(Terrain.RAIL), "RAIL: not buildable, no LOS block")
+	for code in 15:
+		check_eq(Terrain.passable(code, "rail"), code == Terrain.RAIL, "rail class on code %d" % code)
+		var hover_ok := code != Terrain.CLIFF and code != Terrain.FOREST and code != Terrain.BUILDING and code != Terrain.RIDGE
+		check_eq(Terrain.passable(code, "hover"), hover_ok, "hover class on code %d" % code)
+		check_eq(Terrain.speed_mult(code, "hover"), 1.0, "hover speed flat on code %d" % code)

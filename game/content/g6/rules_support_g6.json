@@ -1,0 +1,32 @@
+{
+  "_meta": "G6 fragment (owner: MECH6c). CONTRACTS_G6: rules.g6_support (call-ins, auras, mobility; section 9). New keys only; numbers are PROVISIONAL balance fixtures.",
+  "rules": {
+    "g6_support": {
+      "_note": "Per-def numbers live on the defs (designator, deploy, drone_cc, awacs, aura, bridge_layer, airdrop, beach_unload_mult). These are the shared knobs.",
+      "callins": {
+        "designate_s": 30.0,
+        "designate_acc_mult": 1.25,
+        "designate_delay_mult": 0.7,
+        "designate_cell_radius": 2.0,
+        "designate_slack": 2.0,
+        "check_every": 10,
+        "awacs_share_every": 10
+      },
+      "auras": {
+        "morale_scale": 1.0,
+        "stack": false
+      },
+      "mobility": {
+        "bridge_reach": 2.5,
+        "pallet_ammo": 240,
+        "pallet_fuel": 400.0,
+        "pallet_life_s": 60.0,
+        "pallet_every": 10,
+        "pallet_cooldown_s": 45.0,
+        "drop_reach": 1.0,
+        "unload_s_per_squad": 2.0,
+        "staged_g5": false
+      }
+    }
+  }
+}

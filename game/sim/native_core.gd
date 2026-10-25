@@ -17,8 +17,9 @@ extends RefCounted
 ## range + target radius, (flags & need) != 0 when need != 0; ties break on the lower id.
 
 ## Native class indices (CONTRACTS_G4 section 3). Air classes (2, 6, 7) pass every in-bounds cell.
+## G6 (PERF6, CR native_mc_rail_hover): rail 8 and hover 9 (ELEV Terrain classes; rts_core >= 0.5.0, NCLS 10).
 const MC := {"foot": 0, "vehicle": 1, "air": 2, "amphibious": 3, "naval_small": 4, "naval": 5,
-	"air_low": 6, "air_high": 7}
+	"air_low": 6, "air_high": 7, "rail": 8, "hover": 9}
 
 static var force_off := false
 static var _checked := false
@@ -68,14 +69,20 @@ static func threads_safe() -> bool:
 	return v >= 202
 
 
+## -1 (and an error) for a class the native table does not know: never aliased to foot (G6 fix).
 static func mc_index(mc: String) -> int:
-	return int(MC.get(mc, 0))
+	var v = MC.get(mc)
+	if v == null:
+		push_error("NativeCore.mc_index: unknown move class %s" % mc)
+		return -1
+	return int(v)
 
 
 ## G4 class key for RtsNav / RtsSteer calls: class index | ((team + 1) << 4) (team -1 = none:
 ## gate cells are solid). RtsNav drops the team bits while no gate exists.
 static func mc_key(mc: String, team: int = -1) -> int:
-	return int(MC.get(mc, 0)) | (clampi(team + 1, 0, 15) << 4)
+	var c := mc_index(mc)
+	return -1 if c < 0 else c | (clampi(team + 1, 0, 15) << 4)
 
 
 ## True when the loaded DLL has the G4 nav API (add_class / set_gate).

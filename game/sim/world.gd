@@ -42,10 +42,33 @@ const G5Mech = preload("res://sim/systems/g5_mech.gd")
 const Medical = preload("res://sim/systems/medical.gd")
 const Support = preload("res://sim/systems/support.gd")
 const HotState = preload("res://sim/hot_state.gd")
+# G6 (CONTRACTS_G6 section 2): new systems (stubs until their owners fill them in)
+const Market = preload("res://sim/systems/market.gd")
+const Companies = preload("res://sim/systems/companies.gd")
+const AiCommand = preload("res://sim/systems/ai_command.gd")
+const Mines = preload("res://sim/systems/mines.gd")
+const Fieldworks = preload("res://sim/systems/fieldworks.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")
+const Rail = preload("res://sim/systems/rail.gd")
+const Mobility = preload("res://sim/systems/mobility.gd")
+const Engineering = preload("res://sim/systems/engineering.gd")  # G6: salvage crane, repair bay, breach (MECH6a)
+const Sonar = preload("res://sim/systems/sonar.gd")
+const Airdef = preload("res://sim/systems/airdef.gd")
+const Counterdrone = preload("res://sim/systems/counterdrone.gd")
+const MachineG6 = preload("res://sim/systems/machine_g6.gd")
+const Strikes = preload("res://sim/systems/strikes.gd")
+const Callins = preload("res://sim/systems/callins.gd")
+const Exo = preload("res://sim/systems/exo.gd")
+const Auras = preload("res://sim/systems/auras.gd")
+const Waves = preload("res://sim/systems/waves.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")   # library (no tick)
+const Loadouts = preload("res://sim/systems/loadouts.gd")     # library (no tick)
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")      # dispatcher (CONTRACTS_G6 section 5.1)
+const Commanders = preload("res://sim/ai/commanders.gd")      # player-side AI commanders (AI7-CMD)
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Construction, Fortify, Airfield, Production, Progression, Gather, Repair, Ops, Orders, Movement, Air, Naval, Transport, Combat, G4bMech, G5Mech, Medical, Support, Morale, Supply, Bridges, Fog, Triggers, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, Companies, Progression, Gather, Repair, Ops, AiCommand, Orders, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Combat, G4bMech, G5Mech, MachineG6, Strikes, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, Bridges, Fog, Waves, Triggers, Victory]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -93,6 +116,36 @@ const COMMANDS := {
 	"tactical": G5Mech,
 	"set_auto_resupply": Support,
 	"set_auto_evac": Medical,
+	# G6 (CONTRACTS_G6 section 4)
+	"market_trade": Market,
+	"train_company": Companies,
+	"train_commander": Companies,
+	"form_army": Companies,
+	"disband_army": Companies,
+	"set_company_refill": Companies,
+	"set_loadout": Exo,
+	"resuit": Exo,
+	"lay_minefield": Mines,
+	"sweep": Mines,
+	"lay_sea_mines": Naval,  # G6 (NAVAL6 CR naval6_commands): mine barges {issuer, unit_ids, rect:[x0,y0,x1,y1]}
+	"line_charge": Mines,
+	"garrison": Garrison,
+	"ungarrison": Garrison,
+	"build_rail": Rail,
+	"deploy_bridge": Mobility,
+	"pack_bridge": Mobility,
+	"airdrop": Mobility,
+	"designate": Callins,
+	"aerostat": Callins,
+	"strike": Strikes,
+	"tow_wreck": Engineering,
+	"breach": Engineering,
+	"assimilate": MachineG6,
+	"cloak": MachineG6,
+	"submerge": Sonar,
+	"set_ai_commander": AiCommand,
+	"recall_ai_commander": AiCommand,
+	"ally_request": AiCommand,
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
@@ -304,6 +357,12 @@ func step() -> void:
 	for fid in ai_state:
 		if factions[fid].alive:
 			AiController.think(self, fid)
+	# G6 (CONTRACTS_G6 section 2.5): player-side AI commanders run for non-AI sides (stub: no-op)
+	var g6_fids: Array = factions.keys()
+	g6_fids.sort()
+	for fid in g6_fids:
+		if factions[fid].alive and not ai_state.has(fid):
+			Commanders.think_player(self, fid)
 	for ev in events:
 		event_log.append(ev)
 	if event_log.size() > EVENT_LOG_MAX:
@@ -398,7 +457,10 @@ func _common_validate(c: Dictionary) -> String:
 			return "No valid units selected."
 	if c.has("building_id"):
 		var b = entities.get(int(c.building_id))
-		if b == null or b.kind != "building" or int(b.owner) != fid:
+		# G6 (NAVAL6 CR naval6_carrier_building_id): a carrier registered as a mobile field is a valid
+		# building_id for `rebase` only; every other command still needs a real building.
+		var mobile_ok: bool = b != null and b.kind == "unit" and String(c.get("type", "")) == "rebase" 			and Airfield.is_mobile(self, int(c.building_id))
+		if b == null or (b.kind != "building" and not mobile_ok) or int(b.owner) != fid:
 			return "Not your building."
 		c.building_id = int(c.building_id)
 	return ""

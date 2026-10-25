@@ -8,6 +8,8 @@ const MapGen = preload("res://sim/map_gen.gd")
 const Bridges = preload("res://sim/systems/bridges.gd")
 const Territory = preload("res://sim/systems/territory.gd")
 const Victory = preload("res://sim/systems/victory.gd")
+const MapCheck = preload("res://sim/maps/map_check.gd")   # G6 (ELEV)
+const MapUtil = preload("res://sim/maps/map_util.gd")
 
 const BIG := ["industrial_heartland_m", "valley_conquest_l"]
 ## sha256 of River Crossing terrain bytes from the pre-G3b generator (git 7f3f604), computed by
@@ -237,3 +239,68 @@ func test_ai_vs_ai_2000_ticks_on_big_maps() -> void:
 		print("    %s: AI vs AI %d ticks in %d ms, %d units alive" % [id, w.tick, Time.get_ticks_msec() - t0, units])
 		check(w.tick >= 2000 or w.match_state.ended, "%s ran 2000 ticks" % id)
 		check(units > 0, "%s has units" % id)
+
+
+## G6 (ELEV, CONTRACTS_G6 section 7.5): every built-in map carries valid, point-symmetric authored height,
+## generated deterministically (same seed -> same height and ramps bytes).
+func test_g6_builtin_height_symmetric_and_deterministic() -> void:
+	for id in MapGen.ids():
+		var a := MapGen.generate(5, id)
+		var b := MapGen.generate(5, id)
+		check(a.has("height") and a.has("ramps"), "%s has height + ramps" % id)
+		if not a.has("height"):
+			continue
+		check_eq(_sha(a.height), _sha(b.height), "%s: same seed -> same height bytes" % id)
+		check_eq(_sha(a.ramps), _sha(b.ramps), "%s: same seed -> same ramp bytes" % id)
+		check_eq(MapCheck.height_issue(a, true), "", "%s: height valid and point-symmetric" % id)
+		check_eq(MapGen.validate_height(a), [], "%s: validate_height clean" % id)
+
+
+## G6 (ELEV, task 6): height noise + ramp placement + validation for generated / editor maps.
+func test_g6_height_noise_and_validate_height() -> void:
+	var base := MapGen.generate(3)
+	base.erase("height")
+	base.erase("ramps")
+	check_eq(MapGen.validate_height(base), [], "flat map: no height issues")
+	var m := base.duplicate(true)
+	MapGen.add_height_noise(m, 11, {"symmetric": true})
+	var hist := [0, 0, 0, 0]
+	for i in (m.height as PackedByteArray).size():
+		hist[int(m.height[i])] += 1
+	check(hist[0] > 0 and hist[2] > 0 and hist[3] > 0, "noise uses valley, hill and ridge levels %s" % str(hist))
+	check_eq(MapGen.validate_height(m), [], "noise map: validate_height clean (ramps join every spawn)")
+	check_eq(MapCheck.height_issue(m, true), "", "symmetric noise stays point-symmetric")
+	check_eq(MapGen.validate(m), "", "noise map passes the River Crossing validator")
+	var m2 := base.duplicate(true)
+	MapGen.add_height_noise(m2, 11, {"symmetric": true})
+	check_eq(_sha(m2.height) + _sha(m2.ramps), _sha(m.height) + _sha(m.ramps), "same seed -> same noise")
+	var m3 := base.duplicate(true)
+	MapGen.add_height_noise(m3, 12, {"symmetric": true})
+	check(_sha(m3.height) != _sha(m.height), "different seed -> different noise")
+	# an editor-style mistake: wall spawn 0 in with a ridge ring and no ramps
+	var bad := m.duplicate(true)
+	var hg: PackedByteArray = bad.height
+	var rp: PackedByteArray = bad.ramps
+	var s0: Vector2i = bad.spawns[0]
+	var w := int(bad.w)
+	for y in int(bad.h):
+		for x in w:
+			var d := Vector2(x - s0.x, y - s0.y).length()
+			if d >= 9.5 and d <= 13.5:
+				hg[y * w + x] = 3 if d >= 10.5 and d <= 12.5 else 1
+				rp[y * w + x] = 0
+	MapUtil.prune_ramps(hg, rp, w, int(bad.h))   # editor brushes prune stale ramps after an edit
+	bad.height = hg
+	bad.ramps = rp
+	var codes := []
+	for it in MapGen.validate_height(bad):
+		codes.append(String(it.code))
+	check(codes.has("spawn_unreachable"), "walled-in start reported: %s" % str(codes))
+	var odd := m.duplicate(true)
+	var oh: PackedByteArray = odd.height
+	oh[(s0.y + 1) * w + s0.x + 1] = 2
+	odd.height = oh
+	var c2 := []
+	for it in MapGen.validate_height(odd):
+		c2.append(String(it.code))
+	check(c2.has("spawn_not_flat") or c2.has("height_invalid"), "mixed levels under a start reported: %s" % str(c2))

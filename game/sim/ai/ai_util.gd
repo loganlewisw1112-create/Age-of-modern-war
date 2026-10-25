@@ -93,6 +93,8 @@ static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key
 	var ty := String(cmd.type)
 	if ty != "queue_unit" and ty != "build":
 		return true
+	if ty == "queue_unit" and bool(st.get("trim", false)) and _support_item(w, fid, st, String(cmd.item)):
+		return false  # AI7-USE-3 support trim (ai_controller._support_trim)
 	var hold: Dictionary = st.get("g4", {}).get("reserve", {})
 	var wh: Dictionary = st.get("worker_hold", {})
 	var is_g := ty == "queue_unit" and String(cmd.item) == role(w, fid, "gatherer")
@@ -128,6 +130,20 @@ static func _bank_ok(w: SimWorld, fid: int, st: Dictionary, cmd: Dictionary, key
 		if have - c < int(hold[k]):
 			return false
 	return true
+
+
+## AI7-USE-3: an unarmed ground support unit (crew / engineer / medic / ambulance / truck ...).
+## Crews (gatherer / builder role) count only past st.trim_crews_ok.
+static func _support_item(w: SimWorld, fid: int, st: Dictionary, item: String) -> bool:
+	if item == role(w, fid, "gatherer") or item == role(w, fid, "builder"):
+		return not bool(st.get("trim_crews_ok", true))
+	var sp: Array = Content.production(item).get("spawns", [])
+	if sp.is_empty():
+		return false
+	var u := Content.unit(String(sp[0]))
+	if String(u.get("weapon", "")) != "" or bool(u.get("is_air", false)) or String(u.get("move_class", "")).begins_with("air"):
+		return false
+	return not u.has("drone_charges") and not u.has("company_hq") and not String(sp[0]).ends_with("commander")
 
 
 ## Exempt from the bank: the stage plan's own buildings, power, and gate units (keys "stage:*").

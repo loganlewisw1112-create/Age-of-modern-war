@@ -8,14 +8,18 @@ Read `.plan/agents/prompts/G6_COMMON.md` first: board, semantic layer and rules 
 ---
 #### ART-G6b: the new art pieces
 - **Role:** draw what the kit does not have: Company HQ ×3, Commanders ×3, captains/lieutenants ×3 factions, Exo-Suit Garage, Rifle/Missile/AA exo suits (Avatar AMP style), and icons for every new G6 command.
-- **Owns:** same files as ART-G6 (it has finished; never run together).
+- **Owns:** same files as ART-G6 (it has finished; never run together), plus the g5_bld art files for airfield v2 (CONTRACTS_G6 §1).
 - **Inputs:** ART-G6's modules and handoff; `docs/vision/` (2 images max); the G5 figure kit for leaders; vehicle drawers for the suits (2-3× a soldier's height, walking legs, big rifle / shoulder missile pod / AA cannon).
 - **Tasks (in order):**
   1. Company HQ per faction (size 3, faction style), team-masked, 4 rotations + states.
   2. Commander, captain and lieutenant figures per faction (officer kit with rank insignia; Machine = command nodes).
   3. Exo-Suit Garage (size 2) + the three suits (vehicle sheets, 8 facings, idle/move/fire + wreck).
   4. Icons for every §4 command (`train_company`, `form_army`, `set_loadout`, `lay_minefield`, `garrison`, `build_rail`, `strike`, `submerge`, `set_ai_commander` ...) + mine marker, garrison pip and sonar ping effect sheets.
-  5. Make `new_pieces_company_hq_commanders_leaders_garage_suits` green; post `fact art.g6_new_ready`.
+  5. **Airfield v2 art** (gap found 2026-10-25: ECON-AIRF6 made `a_airfield` / `b_aerodrome` a 2×2 main base, D26):
+     - redraw the main-base building per faction at the new footprint in `tools/art/g5_bld_air.gd` (you own the g5_bld art files for this);
+     - re-check the apron, strip segments and hangar slots against ECON-AIRF6's v2 geometry (`airfield6.api_ready`; read their FOUND lines);
+     - regenerate `assets/art/g5_bld` and make `test_art` (airfield footprint) + `test_art_g5_bld` green.
+  6. Make `new_pieces_company_hq_commanders_leaders_garage_suits` green; post `fact art.g6_new_ready`.
 - **Publishes:** `art.g6_new_ready`.
 - **Done-when:**
   - test_art_g6 fully green

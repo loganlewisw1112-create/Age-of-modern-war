@@ -107,12 +107,16 @@ static func _validate_research(w: SimWorld, fid: int, f: Dictionary, cmd: Dictio
 	if p.is_empty():
 		return "Unknown research project '%s'." % id
 	var nm := PData.project_name(id, String(f.faction_def))
+	var only: Array = p.get("factions", [])  # G6 (CONTENT6 CR): faction-only projects
+	if not only.is_empty() and not only.has(String(f.faction_def)):
+		return "%s is not available to your faction." % nm
 	if (r.done as Array).has(id):
 		return "%s is already researched." % nm
 	if String(r.active) != "":
 		return "Already researching %s." % PData.project_name(String(r.active), String(f.faction_def))
-	if int(f.stage) < int(p.get("stage_min", 7)):
-		return "Requires Stage %d" % int(p.get("stage_min", 7))
+	var why := PData.unavailable_reason(w, fid, p)  # stage_min, stage_max, requires_research (G6 chains)
+	if why != "":
+		return why
 	if cmd.has("building_id"):
 		var b: Dictionary = w.entities[int(cmd.building_id)]
 		if not bool(Content.building(b.def).get("research", false)):
@@ -188,6 +192,8 @@ static func research_list(w: SimWorld, fid: int) -> Array:
 	var out := []
 	for id in PData.project_ids():
 		var p := PData.project(id)
+		if not (p.get("factions", []) as Array).is_empty() and not (p.factions as Array).has(String(f.faction_def)):
+			continue  # G6 (CONTENT6 CR): hide other factions' projects
 		var is_active: bool = String(r.active) == String(id)
 		out.append({"id": id, "name": PData.project_name(id, String(f.faction_def)), "cost": p.get("cost", {}),
 			"time": float(p.get("time", 0)), "stage_min": int(p.get("stage_min", 7)), "for_stage": int(p.get("for_stage", 0)),

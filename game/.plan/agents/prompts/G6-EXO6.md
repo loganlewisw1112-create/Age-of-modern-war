@@ -16,6 +16,7 @@ Read `.plan/agents/prompts/G6_COMMON.md` first: board, semantic layer and rules 
   3. Loadouts: sets per faction (§3.4), `set_loadout` near a barracks or Company HQ with a cost, stat modifiers through the Loadouts lib, `exo` tier → `e.art_def = "a_exo_trooper"` (never changes `e.def`).
   4. Research effects for `g6_armor_kits_1`, `g6_infantry_plates_1`, `g6_exo_armor_1`, `g6_exo_weapons_1`.
   5. Make test_exo + test_loadouts green; keep test_medical green.
+- **Perf contract (G6Hooks.active mask, CONTRACTS_G6 §5.1):** keep `w.sys_state.loadouts.nonstandard` = the count of units with a non-standard loadout, always current. The hot loops skip `Loadouts.speed_mult` / `armor_mult` / `acc_mult` when it is 0, so keep each delegate cheap (no scans per call).
 - **Publishes:** `exo.api_ready`.
 - **Done-when:**
   - test_exo + test_loadouts + test_medical green

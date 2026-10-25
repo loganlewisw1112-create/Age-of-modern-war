@@ -12,6 +12,17 @@ extends RefCounted
 ## RECOMPUTE_EVERY ticks. A unit is FULL when an enemy team occupies its bucket or one of the 8
 ## around it. Also FULL: hit within HIT_FULL_TICKS, an explicit `attack` order, newly spawned
 ## (no tier yet), and promoted at once by Combat.apply_command.
+## G6 (PERF6-2, ORCH decision orch.decisions A, 2026-10-25): indirect weapons count at most
+## INDIRECT_CONTACT_CAP (18 tiles, the G5 maximum, b_rocket_truck) toward the contact radius, so the
+## long G6 artillery (m_mass_driver 34, a_mlrs 22, a_sp_howitzer / a_howitzer_pit 20) does not inflate
+## the bucket for every unit; a unit whose own indirect weapon reaches farther than the cap is always
+## FULL (long_indirect), so "never misses" still holds for its acquisition. Buildings are not tiered
+## (they scan every tick), so a long-range building needs no rule here. With the cap the contact radius
+## is 18 again (G5). bucket_size() is floored at G5_BUCKET (36): the largest G6 footprint is 5
+## (m_launch_rail) where G5's was 6 (a_airfield / b_aerodrome, shrunk to 2 by the G6 airfield rework), so
+## the formula alone gives 35, which changed the flattened 2k_mixed native hash against the G5 GOLD
+## (PERF6-2 A/B, 2026-10-25). A larger bucket only makes more units FULL, so the floor keeps "never
+## misses" and the G5 results.
 ## Determinism: tiers are recomputed every RECOMPUTE_EVERY ticks at the start of the tick (first
 ## system: Economy) from the sim state alone (never the camera) and stored on the entity
 ## (e.tier, saved with it), so a save loaded mid-period behaves exactly like the original run.
@@ -29,6 +40,8 @@ const PHASE := 6
 const STRIDE := 4            # Movement / Supply: REDUCED units every STRIDE ticks
 const SCAN_STRIDE := 8       # Combat: REDUCED units every SCAN_STRIDE ticks
 const MIN_CONTACT := 14.0    # tiles (brief)
+const INDIRECT_CONTACT_CAP := 18.0   # G6: indirect weapon range counted toward contact_radius (G5 max)
+const G5_BUCKET := 36.0      # G6: bucket_size() floor = the G5 value (see the header)
 const HIT_FULL_TICKS := 100
 const KSTRIDE := 4096
 
@@ -36,6 +49,7 @@ static var force_off := false
 static var move_stride := false  # OFF until N1 fixes the stride bias (PERF4 A/B, 2026-10-24): true = REDUCED units move every STRIDE ticks
 static var _bucket := -1.0
 static var _contact := -1.0
+static var _long_ind: Dictionary = {}   # unit def -> true when its indirect weapon exceeds the cap
 
 
 ## Largest auto-acquisition radius any unit or building can have, at least MIN_CONTACT.
@@ -51,9 +65,25 @@ static func contact_radius() -> float:
 				r = maxf(r, float(d.get("sight", 0)))
 				var wid := String(d.get("weapon", ""))
 				if wid != "":
-					r = maxf(r, float(Content.weapon(wid).get("range", 0)))
+					var wd: Dictionary = Content.weapon(wid)
+					var wr := float(wd.get("range", 0))
+					if bool(wd.get("indirect", false)):
+						wr = minf(wr, INDIRECT_CONTACT_CAP)   # G6: long indirect units are always FULL
+					r = maxf(r, wr)
 		_contact = r
 	return _contact
+
+
+## G6: true when unit def `def` carries an indirect weapon longer than INDIRECT_CONTACT_CAP. Such a
+## unit is never REDUCED (its acquisition radius is outside the contact bound). Cached per def.
+static func long_indirect(def) -> bool:
+	var v = _long_ind.get(def)
+	if v == null:
+		var wid := String(Content.unit(def).get("weapon", ""))
+		var wd: Dictionary = Content.weapon(wid) if wid != "" else {}
+		v = bool(wd.get("indirect", false)) and float(wd.get("range", 0)) > INDIRECT_CONTACT_CAP
+		_long_ind[def] = v
+	return bool(v)
 
 
 static func bucket_size() -> float:
@@ -69,7 +99,7 @@ static func bucket_size() -> float:
 			if typeof(d) == TYPE_DICTIONARY:
 				vmax = maxf(vmax, float(d.get("speed", 0)))
 		var closing := 2.0 * vmax * 1.5 * float(RECOMPUTE_EVERY) / float(SimWorld.TICK_RATE)  # x1.5: road bonus
-		_bucket = ceilf(contact_radius() + big * 0.75 + closing + 1.0)
+		_bucket = maxf(G5_BUCKET, ceilf(contact_radius() + big * 0.75 + closing + 1.0))
 	return _bucket
 
 
@@ -174,7 +204,7 @@ static func _recompute_dict(w: SimWorld, idx: Dictionary, units: Array, full: Ar
 				near[key] = mm
 				m = mm
 			if (int(m) & ~ubit[i]) == 0 and w.tick - int(e.get("last_hit_tick", -100000)) > HIT_FULL_TICKS \
-					and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult):
+					and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult) and not long_indirect(e.def):
 				t = REDUCED
 		if t == REDUCED:
 			if int(e.get("tier", 0)) != REDUCED:
@@ -249,7 +279,7 @@ static func _recompute_grid(w: SimWorld, idx: Dictionary, units: Array, full: Ar
 			continue
 		var e: Dictionary = units[i]
 		var t := FULL
-		if ib != 0 and (near[ukey[i]] & ~ib) == 0 and tick - int(e.get("last_hit_tick", -100000)) > HIT_FULL_TICKS 				and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult):
+		if ib != 0 and (near[ukey[i]] & ~ib) == 0 and tick - int(e.get("last_hit_tick", -100000)) > HIT_FULL_TICKS 				and String(e.order.get("type", "")) != "attack" and not _fuel_low(e, fmult) and not long_indirect(e.def):
 			t = REDUCED
 		if t == REDUCED:
 			if int(e.get("tier", 0)) != REDUCED:

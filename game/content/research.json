@@ -2,7 +2,8 @@
   "_meta": {
     "schema_version": 1,
     "status": "G3b research projects (CONTRACTS_G3b 3.1). Fixture costs: 7->8 projects 800 credits / 45 s; 8->9 projects 1,200 credits + 200 ore / 60 s. PROVISIONAL.",
-    "jam_mult": "optional: once researched, this side's jammed units fire/see at jam_mult instead of the base 0.7x (status.gd)."
+    "jam_mult": "optional: once researched, this side's jammed units fire/see at jam_mult instead of the base 0.7x (status.gd).",
+    "g6": "G6 (CONTENT6, CONTRACTS_G6 3.3/14): 24 projects. effect = key the owner system reads (owner field), value = its number/id. factions = only these factions may research it (empty/absent = all). requires_research = prerequisite projects. Stage 8 projects 900 cr + 100 ore / 45 s; Stage 9 1,300 + 250 / 60 s; gate research 1,800 + 300 / 75 s. PROVISIONAL."
   },
   "integrated_manufacturing": {
     "name": "Integrated Manufacturing",
@@ -72,5 +73,407 @@
     "stage_min": 8,
     "for_stage": 9,
     "jam_mult": 0.85
+  },
+  "g6_mines_1": {
+    "name": "Mine Warfare",
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "mine_damage_mult",
+    "value": 1.25,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "Mines hit 25% harder."
+  },
+  "g6_mines_2": {
+    "name": "Rapid Mining",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "requires_research": [
+      "g6_mines_1"
+    ],
+    "effect": "mine_lay_speed_mult",
+    "value": 2.0,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "Minefields are laid twice as fast."
+  },
+  "g6_eod_1": {
+    "name": "Route Clearance",
+    "names": {
+      "machine": "Ground Scan Arrays"
+    },
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "mine_detect_radius_mult",
+    "value": 1.5,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "+50% mine detection radius."
+  },
+  "g6_fieldworks_1": {
+    "name": "Field Engineering",
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "fieldworks_build_speed_mult",
+    "value": 1.5,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "Sandbags and trenches go up 50% faster."
+  },
+  "g6_cover_1": {
+    "name": "Hardened Positions",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "cover_mult_scale",
+    "value": 0.9,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "Cover multipliers x0.9 (stronger cover)."
+  },
+  "g6_garrison_1": {
+    "name": "Urban Combat",
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "garrison_slots_bonus",
+    "value": 2,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "+2 garrison slots per garrisonable building."
+  },
+  "g6_radar_1": {
+    "name": "Long-Range Radar",
+    "names": {
+      "machine": "Deep Sensor Lattice"
+    },
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "radar_range_mult",
+    "value": 1.25,
+    "owner": "AIRDEF6",
+    "g6": true,
+    "desc": "+25% radar range."
+  },
+  "g6_sam_1": {
+    "name": "SAM Guidance",
+    "names": {
+      "human_b": "Flak Predictors",
+      "machine": "Pulse Targeting"
+    },
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "sam_accuracy_mult",
+    "value": 1.15,
+    "owner": "AIRDEF6",
+    "g6": true,
+    "desc": "+15% SAM / flak / spire accuracy."
+  },
+  "g6_ciws_1": {
+    "name": "Point Defence",
+    "names": {
+      "human_b": "Net Drills",
+      "machine": "Field Overclock"
+    },
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "ciws_rate_mult",
+    "value": 1.5,
+    "owner": "AIRDEF6",
+    "g6": true,
+    "desc": "Counter-drone defences fire 50% faster."
+  },
+  "g6_jamming_1": {
+    "name": "Electronic Attack",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "jam_radius_mult",
+    "value": 1.3,
+    "owner": "AIRDEF6",
+    "g6": true,
+    "desc": "+30% jammer radius."
+  },
+  "g6_sonar_1": {
+    "name": "Sonar Arrays",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "sonar_range_mult",
+    "value": 1.3,
+    "owner": "NAVAL6",
+    "g6": true,
+    "desc": "+30% sonar range."
+  },
+  "g6_torpedo_1": {
+    "name": "Wire-Guided Torpedoes",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "torpedo_damage_mult",
+    "value": 1.25,
+    "owner": "NAVAL6",
+    "g6": true,
+    "desc": "Torpedoes hit 25% harder."
+  },
+  "g6_carrier_1": {
+    "name": "Carrier Air Wing",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "factions": [
+      "human_a"
+    ],
+    "effect": "carrier_slots_bonus",
+    "value": 2,
+    "owner": "NAVAL6",
+    "g6": true,
+    "desc": "+2 carrier hangar slots."
+  },
+  "g6_rail_1": {
+    "name": "Rail Logistics",
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "factions": [
+      "human_b"
+    ],
+    "effect": "rail_build_speed_mult",
+    "value": 2.0,
+    "owner": "MECH6a",
+    "g6": true,
+    "desc": "Rail is laid twice as fast."
+  },
+  "g6_armor_kits_1": {
+    "name": "Vehicle Armor Kits",
+    "names": {
+      "human_b": "Scrap Plating",
+      "machine": "Ablative Shells"
+    },
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "vehicle_damage_taken_mult",
+    "value": 0.9,
+    "owner": "EXO6",
+    "g6": true,
+    "desc": "Vehicles take 10% less damage."
+  },
+  "g6_infantry_plates_1": {
+    "name": "Infantry Plates",
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "factions": [
+      "human_a",
+      "human_b"
+    ],
+    "effect": "unlock_loadout",
+    "value": "plates",
+    "owner": "EXO6",
+    "g6": true,
+    "desc": "Unlocks the Plates loadout."
+  },
+  "g6_exo_armor_1": {
+    "name": "Exo Armour",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "factions": [
+      "human_a"
+    ],
+    "requires_research": [
+      "g6_infantry_plates_1"
+    ],
+    "effect": "unlock_loadout",
+    "value": "exo",
+    "owner": "EXO6",
+    "g6": true,
+    "desc": "Unlocks the Exo armour loadout (Stage 10)."
+  },
+  "g6_exo_weapons_1": {
+    "name": "Exo Weapon Systems",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "factions": [
+      "human_a"
+    ],
+    "effect": "exo_damage_mult",
+    "value": 1.2,
+    "owner": "EXO6",
+    "g6": true,
+    "desc": "Exo suits and exo troopers deal 20% more damage."
+  },
+  "g6_company_drills_1": {
+    "name": "Company Drills",
+    "names": {
+      "human_b": "Battalion Drill",
+      "machine": "Cluster Sync"
+    },
+    "cost": {
+      "credits": 900,
+      "ore": 100
+    },
+    "time": 45,
+    "stage_min": 8,
+    "effect": "cohesion_radius_mult",
+    "value": 1.25,
+    "owner": "ARMY6",
+    "g6": true,
+    "desc": "+25% cohesion radius."
+  },
+  "g6_command_net_1": {
+    "name": "Command Net",
+    "names": {
+      "human_b": "Field Telephones",
+      "machine": "Redundant Command"
+    },
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "effect": "confusion_time_mult",
+    "value": 0.5,
+    "owner": "ARMY6",
+    "g6": true,
+    "desc": "Officer-loss confusion halved."
+  },
+  "g6_nanite_1": {
+    "name": "Nanite Density",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "factions": [
+      "machine"
+    ],
+    "effect": "nanite_regen_mult",
+    "value": 1.5,
+    "owner": "MECH6b",
+    "g6": true,
+    "desc": "+50% nanite repair."
+  },
+  "g6_swarm_1": {
+    "name": "Swarm Protocols",
+    "cost": {
+      "credits": 1300,
+      "ore": 250
+    },
+    "time": 60,
+    "stage_min": 9,
+    "factions": [
+      "machine"
+    ],
+    "effect": "spawner_cap_bonus",
+    "value": 2,
+    "owner": "MECH6b",
+    "g6": true,
+    "desc": "+2 micro-drones per spawner."
+  },
+  "g6_automation_doctrine": {
+    "name": "Automation Doctrine",
+    "names": {
+      "human_b": "Automated Industry"
+    },
+    "cost": {
+      "credits": 1800,
+      "ore": 300
+    },
+    "time": 75,
+    "stage_min": 9,
+    "for_stage": 10,
+    "factions": [
+      "human_a",
+      "human_b"
+    ],
+    "effect": "stage_gate",
+    "value": 10,
+    "owner": "CONTENT6",
+    "g6": true,
+    "desc": "Stage 9->10 gate research (Human A/B)."
+  },
+  "g6_overmind_protocols": {
+    "name": "Overmind Protocols",
+    "cost": {
+      "credits": 1800,
+      "ore": 300
+    },
+    "time": 75,
+    "stage_min": 9,
+    "for_stage": 10,
+    "factions": [
+      "machine"
+    ],
+    "effect": "stage_gate",
+    "value": 10,
+    "owner": "CONTENT6",
+    "g6": true,
+    "desc": "Stage 9->10 gate research (Machine)."
   }
 }

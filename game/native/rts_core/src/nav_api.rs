@@ -30,6 +30,8 @@ impl RtsNav {
         self.terrain.resize(n, 0);
         self.blocked = blocked.as_slice().to_vec();
         self.blocked.resize(n, 0);
+        self.pblk = vec![Vec::new(); NCLS];
+        self.edge = Vec::new();
         self.gate = vec![0; n];
         self.gate_n = 0;
         self.reset_tables();
@@ -97,6 +99,37 @@ impl RtsNav {
     }
 
     /// Building footprint added (solid) or removed: per-cell block counts like movement.gd.
+    /// G6 (PERF6): cliff edge bits per cell (1 +x, 2 +y, 4 -x, 8 -y), symmetric; all-zero or empty =
+    /// no cliffs. Drops flows and components (passability changed).
+    #[func]
+    fn set_edges(&mut self, bits: PackedByteArray) {
+        let n = (self.w * self.h) as usize;
+        let mut v = bits.as_slice().to_vec();
+        if v.iter().all(|&b| b == 0) { v.clear(); } else { v.resize(n, 0); }
+        self.edge = v;
+        self.changed();
+    }
+
+    /// G6 (PERF6): apply_footprint for a footprint that is passable for the classes in cmask (bit c =
+    /// class index c): those classes do not count it as blocked.
+    #[func]
+    fn apply_footprint_pass(&mut self, ox: i32, oy: i32, size: i32, solid: bool, cmask: i32) {
+        let n = (self.w * self.h) as usize;
+        if self.pblk.len() != NCLS { self.pblk = vec![Vec::new(); NCLS]; }
+        for c in 0..NCLS {
+            if cmask & (1 << c) == 0 { continue; }
+            if self.pblk[c].len() != n { self.pblk[c] = vec![0; n]; }
+            for y in oy..oy + size {
+                for x in ox..ox + size {
+                    if !self.in_bounds(x, y) { continue; }
+                    let i = (y * self.w + x) as usize;
+                    self.pblk[c][i] = if solid { self.pblk[c][i].saturating_add(1) } else { self.pblk[c][i].saturating_sub(1) };
+                }
+            }
+        }
+        self.apply_footprint(ox, oy, size, solid);
+    }
+
     #[func]
     fn apply_footprint(&mut self, ox: i32, oy: i32, size: i32, solid: bool) {
         for y in oy..oy + size {

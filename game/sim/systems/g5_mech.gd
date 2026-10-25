@@ -25,6 +25,11 @@ extends RefCounted
 ## Events: SquadLoss, DroneLaunched, DroneImpact, DroneLost, DroneJammed, TargetsMarked, EmpBurst,
 ##   DroneTeamTactical, DronesRestocked, Infiltrate, Takedown, Breach, StackedUp, FirstStrike, ArmoredAttack.
 ## Determinism: ascending ids, w.rng only (Human B spread), integer tick state, floats snapped to Q.
+## G6 (owner: AIRDEF6, CONTRACTS_G6 section 12): a launched drone inside an enemy jamming field
+##   (Counterdrone.jammed: m_jammer_obelisk, b_jammer_team) crashes like an EW-jammed one (DroneJammed).
+##   Drone Control Center (a_drone_cc; bonuses computed by MECH6c's Callins.drone_cap_bonus / drone_range_mult /
+##   drone_restock_mult): a drone team near a friendly DCC holds more charges (charge_cap), launches farther
+##   (launch_range) and restocks faster (dcc_bonus). No DCC on the map = the G5 numbers exactly.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Damage = preload("res://sim/systems/damage.gd")
@@ -33,6 +38,8 @@ const Supply = preload("res://sim/systems/supply.gd")
 const Status = preload("res://sim/systems/status.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")
 const Medical = preload("res://sim/systems/medical.gd")
+const Callins = preload("res://sim/systems/callins.gd")            # G6 MECH6c: Drone CC bonuses (preloads only SimIndex)
+const Counterdrone = preload("res://sim/systems/counterdrone.gd")  # G6 AIRDEF6: jamming fields
 
 const DRONE_TYPES := ["strike", "frag", "recon", "emp"]
 const ABILITIES := ["infiltrate", "takedown", "breach", "stack_up", "armored_attack"]
@@ -80,7 +87,7 @@ static func restock_drones(w: SimWorld, e: Dictionary) -> void:
 	var d := Content.unit(String(e.get("def", "")))
 	if not bool(d.get("drone_team", false)):
 		return
-	e.drone_charges = int(d.get("drone_charges", 4))
+	e.drone_charges = charge_cap(w, e)
 	e.dmode = "drone"
 	e.restock_t = 0
 	e.erase("tact")
@@ -98,6 +105,23 @@ static func squad_alive(e: Dictionary) -> int:
 ## Wounded carry capacity of a med unit (ambulance A 6, B 4, medic team 2); 0 otherwise.
 static func wounded_slots(e: Dictionary) -> int:
 	return int(Content.unit(String(e.get("def", ""))).get("wounded_slots", 0))
+
+
+## G6 (AIRDEF6 hook, MECH6c CR seq 436): Drone Control Center bonus for drone team e, from MECH6c's Callins
+## (a friendly a_drone_cc in range; neutral with none): {charge_cap_bonus, range_mult, restock_mult}.
+static func dcc_bonus(w: SimWorld, e: Dictionary) -> Dictionary:
+	return {"charge_cap_bonus": Callins.drone_cap_bonus(w, e), "range_mult": Callins.drone_range_mult(w, e),
+		"restock_mult": Callins.drone_restock_mult(w, e)}
+
+
+## G6 (AIRDEF6): full charge count of drone team e (def drone_charges + DCC charge cap bonus).
+static func charge_cap(w: SimWorld, e: Dictionary) -> int:
+	return int(Content.unit(String(e.get("def", ""))).get("drone_charges", 4)) + Callins.drone_cap_bonus(w, e)
+
+
+## G6 (AIRDEF6): max team -> drone goal distance (LAUNCH_RANGE x DCC range factor).
+static func launch_range(w: SimWorld, e: Dictionary) -> float:
+	return LAUNCH_RANGE * Callins.drone_range_mult(w, e)
 
 
 static func is_launched_drone(e: Dictionary) -> bool:
@@ -209,7 +233,8 @@ static func tick(w: SimWorld) -> void:
 		for id in st.dt:
 			var e = ents.get(id)
 			if e == null or int(e.drone_charges) >= int(st.charges[String(e.def)]):
-				continue
+				if e == null or int(e.drone_charges) >= charge_cap(w, e):
+					continue
 			if srcs == null:
 				srcs = Supply._sources(w)
 			_restock_step(w, e, srcs)
@@ -343,7 +368,11 @@ static func _aura_step(w: SimWorld, st: Dictionary, e: Dictionary, grid: Diction
 static func _restock_step(w: SimWorld, e: Dictionary, srcs: Dictionary) -> void:
 	var radius := float(Content.rules().get("supply", {}).get("radius", 6.0))
 	if Supply._in_range(e, srcs.get(int(e.owner), []), radius):
-		e.restock_t = int(e.get("restock_t", 0)) + RESTOCK_EVERY
+		var step := RESTOCK_EVERY
+		var rm := Callins.drone_restock_mult(w, e)
+		if rm != 1.0:
+			step = roundi(float(RESTOCK_EVERY) * rm)
+		e.restock_t = int(e.get("restock_t", 0)) + step
 		if int(e.restock_t) >= RESTOCK_TICKS:
 			restock_drones(w, e)
 	else:
@@ -396,7 +425,7 @@ static func _drones_step(w: SimWorld, gs: Dictionary) -> void:
 			w.emit("DroneLost", {"id": int(id), "type": r.type, "squad": int(r.owner_squad)})
 			continue
 		r.t = int(r.t) - 1
-		if Status.is_jammed(w, e):
+		if Status.is_jammed(w, e) or Counterdrone.jammed(w, Vector2(e.pos), int(e.owner)):
 			drones.erase(id)
 			_remove(w, e, "jammed")
 			w.emit("DroneJammed", {"id": int(id), "type": r.type, "owner": int(e.owner), "pos": e.pos})
@@ -687,7 +716,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var g = _goal(w, fid, cmd)
 			if typeof(g) == TYPE_STRING:
 				return g
-			return "Target out of drone range." if Vector2(e.pos).distance_to(g) > LAUNCH_RANGE else ""
+			return "Target out of drone range." if Vector2(e.pos).distance_to(g) > launch_range(w, e) else ""
 		"tactical":
 			if mode(e) != "tactical":
 				return "Tactical abilities unlock when all drones are spent."

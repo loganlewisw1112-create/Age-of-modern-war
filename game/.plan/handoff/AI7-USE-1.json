@@ -1,0 +1,62 @@
+{
+ "agent": "AI7-USE",
+ "gen": 1,
+ "calls_used": 96,
+ "status": "recycled",
+ "done": [
+  "test_ai_g6 moved to tests/ (the skeleton was untracked, so a plain mv; ORCH git-adds it) with 9 real end-to-end tests; 5/9 PASS: builds_new_defences, garrisons, lays_and_clears_mines, trades_on_market, reaches_stage_10.",
+  "sim/ai/ai_g6.gd dispatcher: state st.g6.use, created lazily via G5.g6 only when a G6 def exists. G6 spending waits for the first launch or t>=24000.",
+  "sim/ai/ai_g6_lib.gd: role -> def via Content.role(fac,'g6_<role>'), else faction letter + page_id. L.sys() lazy-loads the G6 system scripts and L.callf() calls owner APIs by name, so an owner's broken file never breaks the sim/ai compile.",
+  "sim/ai/ai_g6_co.gd: Company HQ, train_company, train_commander, form_army, exo garage + suits, resuit, set_loadout.",
+  "sim/ai/ai_g6_def.gd: defences by threat (radar before SAM, counter-drone), garrison fill, lay_minefield, line_charge and sweep alternating, G6 support squads.",
+  "sim/ai/ai_g6_sea.gd: submerge/surface, carrier queue + rebase of light jets, market buy/sell.",
+  "ai_econ.find_origin(w,fid,st,def,at=Vector2(-1,-1)) gains an anchor param (old callers unchanged). ai_controller._context puts garrisoned units (e.garrisoned_in>=0) in held.",
+  "tools/soak.gd: SOAK G6 f<fid> (stage, companies, armies, mines, garrisoned, subs/submerged, AI probe), SOAK DOCTRINE f<fid> tags={AiDecision tag counts}, SOAK G6_EVT (G6 event histogram by name pattern), --assist (side 0 human; at t=600 set_ai_commander role base_defence; SOAK ASSIST lines).",
+  ".plan/shots/AI7-USE/run_lane.sh: a copy of the AI6-2 lane (out dir AI7-USE, --ai7soak marker) plus configs survival_s1 (ridge_bastion_m, survive 1500 s; verify the args against MODES6) and assist_s1.",
+  "Regression on the current tree, each --only and TESTS OK: test_ai 18/18, test_ai_g5 5/5, test_ai_air_naval 8/8, test_mil 13/13, test_g2_scenarios 7/7."
+ ],
+ "lane_d1": {
+  "note": "G5 lane on the live G6 tree, 120000 ticks. Outputs: .plan/shots/AI7-USE/soak_<cfg>_d1.txt. The lane script died at its final report because I edited run_lane.sh while it ran; the soaks themselves ran detached.",
+  "river_s1": "winner=1 t=66055, 0 invariant fails",
+  "river_s2": "winner=1 t=62466, 0 invariant fails",
+  "heart_s1": "winner=1 t=97191, 0 invariant fails",
+  "heart_s2": "DRAW at max_ticks, 0 invariant fails. human_b sat pop-capped at 65/65 all game and its waves died on Human A's base; Human A kept regrouping at apop 8.",
+  "coastal_s1": "winner=2 t=116685, 0 invariant fails",
+  "coastal_s2": "INVALID: 6280 SCRIPT ERROR 'Nonexistent function tick' at world.gd:351 (another owner's system script was broken when it started). I killed this run (my own process); it needs a rerun.",
+  "valley_s1": "DRAW at max_ticks, 0 invariant fails",
+  "valley_s2": "DRAW at max_ticks, 0 invariant fails",
+  "custom_s1": "DRAW at max_ticks (SOAK INVARIANTS fails=8 notes=0, 0 script errors)"
+ },
+ "remaining": [
+  "1. Rerun coastal_s2 once the tree compiles: TAG=d2 bash .plan/shots/AI7-USE/run_lane.sh coastal_s2. Never edit run_lane.sh while a lane is running. custom_s1 also drew in d1 and joins the draw fixes.",
+  "2. Fix the draws (valley s1/s2, heart s2). Start from the SOAK DIAG lines (apop/thr/bwhy/wave/enemy_hq_d per side) in soak_valley_s{1,2}_d1.txt and soak_heart_s2_d1.txt. Heart s2: find why human_b never raises its pop cap above 65 (Econ next_build / cap_planned) and why Human A stays in regroup at apop 8. See the levers in handoff AI5-4.json: the bank fix is kept; lever b (retarget penalty) is suspected counterproductive. Then run the full lane inside hb.sh with run_in_background: TAG=d2 bash .plan/shots/AI7-USE/run_lane.sh river_s1 river_s2 heart_s1 heart_s2 coastal_s1 coastal_s2 valley_s1 valley_s2 custom_s1 survival_s1 assist_s1. Post fact ai.g5_soaks with the SOAK RESULT lines.",
+  "3. test_ai_trains_companies_and_forms_army fails with companies=0. Check that ARMY6 has posted army.api_ready, the element shape of Companies.templates_for(fid) (dict with id, or string), and the train_company refusal reason (print the tail of w.ai_state[1].log in the test). Also check pop room: company sizes are 15/30/45 elements, and Co._companies picks the size by free credits only.",
+  "4. test_ai_uses_airfield_v2: the v2 slots fill (4) but no aircraft took off in 6000 ticks (AiAir sorties=0, even with Mil.update_intel and an enemy heavy 30 tiles out). Check whether the queued hangar aircraft (queued=4) are actually produced, and whether AiAir.strike_target needs the target in st memory. Alternatively, assert a take-off from a v2 strip using the Airfield/air state names once ECON-AIRF6 posts airfield6.api_ready.",
+  "5. test_ai_uses_sam_radar_and_counterdrone: radar=1 and sam=2, but cdrone (a_laser_ciws)=0. Check threats().drone (is the enemy drone team at front 8 visible? print g.thr) and the a_laser_ciws placement_error / requires. Consider a memory flag for drones seen.",
+  "6. test_ai_uses_subs_and_carriers: submerge still returns not_implemented (NAVAL6); rerun after naval6.api_ready. The carrier rebase is {type:rebase, unit_ids, building_id: carrier id}. A jet spawned with spawn_unit at the field may need air_home set; check the NAVAL6/AIR semantics.",
+  "7. Soak evidence gates (PLAN_G6 \u00c2\u00a712.3): after the facts land, confirm the SOAK G6 lines show companies and an army, mines laid and cleared, a garrison, a sub kill or detection, a carrier sortie, market trades and Stage 10, and that SOAK DOCTRINE shows the tags (AI7-DOC emits AiDecision {fid, tag}). assist_s1 needs aicmd.api_ready; the survival_s1 args must match MODES6 (survival.api_ready).",
+  "8. Post fact ai.g6_use_ready when test_ai_g6 is 9/9. Run the full suite once at the end inside hb.sh."
+ ],
+ "files_touched": [
+  "sim/ai/ai_g6.gd",
+  "sim/ai/ai_g6_lib.gd",
+  "sim/ai/ai_g6_co.gd",
+  "sim/ai/ai_g6_def.gd",
+  "sim/ai/ai_g6_sea.gd",
+  "sim/ai/ai_econ.gd",
+  "sim/ai/ai_controller.gd",
+  "tools/soak.gd",
+  "tests/test_ai_g6.gd",
+  ".plan/shots/AI7-USE/run_lane.sh"
+ ],
+ "test_state": "test_ai_g6 5/9 (failing: companies, airfield_v2 take-off, cdrone, subs/carrier). test_ai 18/18, test_ai_g5 5/5, test_ai_air_naval 8/8, test_mil 13/13, test_g2_scenarios 7/7. Full suite not run.",
+ "gotchas": [
+  "Never preload another owner's G6 system script from sim/ai. Use L.sys(name) + L.callf(script, fn, args, default); otherwise an owner's mid-edit parse error breaks the world.gd compile for everyone.",
+  "Create a new file before adding its preload (tree.broken incident at call ~37).",
+  "test_g3_no_hardcoded_defs: no quoted def ids in sim/ai except on lines containing role(, role_unit( or _ROLES. G6 ids come from PAGE_IDS page ids, which are not def ids.",
+  "st.g6 is the G5 module's dict; the G6 state is st.g6.use.",
+  "U.submit returns true once the command is queued. Validation refusals arrive later via scan_events (st.log REJECTED + backoff), so _park_if_stub only catches refusals at submit time.",
+  "tests/run.sh hides prints. For debug output run the raw runner: $G --headless --path . -s tests/run_tests.gd -- --only=test_ai_g6",
+  "Do not edit a bash script while it runs (bash reads it incrementally)."
+ ]
+}

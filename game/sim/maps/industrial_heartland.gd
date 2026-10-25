@@ -147,7 +147,7 @@ static func try_gen(seed_value: int, attempt: int) -> Dictionary:
 	for p in flank:
 		var c: Vector2i = p[2] + Vector2i(rng.randi_range(-2, 2), rng.randi_range(-2, 1))
 		MapUtil.add_res(t, W, H, SPAWNS, resources, taken, String(p[0]), int(p[1]), c)
-	return {
+	var m := {
 		"id": ID, "name": "Industrial Heartland", "size": "m", "w": W, "h": H,
 		"terrain": t, "spawns": SPAWNS.duplicate(), "spawn_sets": SPAWN_SETS.duplicate(true),
 		"max_sides": MAX_SIDES, "resources": resources,
@@ -156,6 +156,8 @@ static func try_gen(seed_value: int, attempt: int) -> Dictionary:
 		"decor": decor, "pois": _mirror_pois(pois), "seed": seed_value, "river_params": [a1, a2, f1, f2],
 		"fair_tol": FAIR_TOL, "min_open_frac": MIN_OPEN,
 	}
+	_height(m, seed_value, attempt)
+	return m
 
 
 ## A 2x2 compound of 3x3 blocks with 2-cell alleys and one salvage pile per side.
@@ -184,3 +186,23 @@ static func _mirror_pois(pois: Array) -> Array:
 			q.cell = MapUtil.mirror(p.cell, W, H)
 			out.append(q)
 	return out
+
+
+# ================================================================ G6 height (owner ELEV, CONTRACTS_G6 section 7.5)
+## Authored height: the river basin is the valley floor (level 0, 4 cells either side of the water),
+## two north-bank uplands (level 2, every edge a ramp) with ridge caps (level 3), mirrored onto the south
+## bank. Basin and cap edges get ramps every third cell plus every road / ford / dirt tile; connect_ramps
+## joins anything left. Spawn sites are flat. No rng draw: the terrain stream above is untouched.
+static func _height(m: Dictionary, _seed_value: int, _attempt: int) -> void:
+	var t: PackedByteArray = m.terrain
+	var hg := MapUtil.new_layer(W, H, 1)
+	MapUtil.basin(hg, t, W, H, 4, 0)
+	MapUtil.hdisc(hg, W, H, Vector2i(50, 32), 6.5, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(50, 32), 2.5, 3, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(112, 36), 6.0, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(113, 35), 2.2, 3, MapUtil.HRAISE)
+	for s in SPAWNS:
+		MapUtil.hflat(hg, W, H, s, 9.0)
+	m.height = hg
+	m.ramps = MapUtil.derive_ramps(hg, t, W, H, [3, 1, 3])
+	MapUtil.connect_ramps(m, true)

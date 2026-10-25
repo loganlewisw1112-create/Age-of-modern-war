@@ -11,6 +11,17 @@ const Tiers = preload("res://sim/systems/tiers.gd")
 
 const RECOMPUTE_EVERY := 4
 const NativeCore = preload("res://sim/native_core.gd")
+## G6 PERF6 (CONTRACTS_G6 section 5.1): reveal radius + G6Hooks.sight_bonus (source gather, both the native
+## stamp and the Image fallback read the same sight), entity_visible ANDs G6Hooks.visible_to for enemies.
+## Each hook is called only when its bit is set in SimIndex.g6m(w).
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
+## PERF6-2 sight split: with the SIGHT bit clear on a height map, the height term of G6Hooks.sight_bonus
+## (Elevation.sight_bonus: +sight_per_level per level above plain, ground units / buildings) is still
+## applied, but only sources standing above plain (one packed byte read each) call it; with the bit set the
+## full hook runs as before (hash-exact: the callin term is +0.0 when no aerostat exists). g6_hooks_on =
+## false turns it off too. ORCH can then drop height from the SIGHT rule in G6Hooks.active.
+const Elevation = preload("res://sim/systems/elevation.gd")
+static var sight_split := true   # tests: false = the pre-split path (bonus only with the SIGHT bit)
 ## G3b PERF4-3: with the native core live, stamping uses RtsFog.stamp/explored_out (same circle rule:
 ## r = floor(sight), dx*dx + dy*dy <= sight*sight, clipped); the Image-blit path below is the
 ## fallback. native_off forces the fallback (parity tests).
@@ -166,6 +177,15 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 		if rto != null and srcs.has(rto):
 			lists.append(uown[o])
 	lists.append(SimIndex.of(w, "building"))
+	var g6s: bool = SimIndex.g6m(w) & SimIndex.G6_SIGHT != 0
+	# sight split: the owners' own SIGHT rule decides whether the full hook runs (G6Hooks.sight_bonus returns
+	# 0.0 without it, height included), so with the bit forced on (G6_ALL) only the packed height term applies
+	if g6s and sight_split and SimIndex.g6_spy == null and (int(SimIndex.g6h().active(w)) & SimIndex.G6_SIGHT) == 0:
+		g6s = false
+	var hb := PackedByteArray()
+	if sight_split and not g6s and SimIndex.g6_spy == null and SimIndex.g6_hooks_on and w.map.has("height"):
+		hb = w.map.height
+	var has_hb := not hb.is_empty()
 	for li in lists.size():
 		var cache: Dictionary = usight if li < lists.size() - 1 else bsight
 		for e: Dictionary in lists[li]:
@@ -176,6 +196,14 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 			var s: float = sv if sv != null else sight_of(e)
 			if e.has("comp") or e.has("jammed_until"):
 				s *= Status.sight_mult(w, e)
+			if g6s and s > 0.0:
+				s += SimIndex.g6h().sight_bonus(w, e)  # G6: height / spotter bonus (+0.0 when neutral)
+			elif has_hb and s > 0.0:
+				var q: Vector2 = e.pos
+				var qx := floori(q.x)
+				var qy := floori(q.y)
+				if qx >= 0 and qy >= 0 and qx < mw and qy < mh and hb[qy * mw + qx] > Elevation.PLAIN:
+					s += Elevation.sight_bonus(w, e)   # sight split: height term only (SIGHT bit clear)
 			if s <= 0.0:
 				continue
 			var p: Vector2 = e.pos
@@ -313,6 +341,14 @@ static func is_explored(w: SimWorld, fid: int, pos: Vector2) -> bool:
 static func entity_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
 	if int(e.owner) == fid or w.is_ally(fid, int(e.owner)):
 		return true
+	if not _entity_visible0(w, fid, e):
+		return false
+	# G6: submerged / camouflaged / cloaked / garrisoned (G6Hooks.visible_to)
+	return SimIndex.g6m(w) & SimIndex.G6_VIS == 0 or SimIndex.g6h().visible_to(w, fid, e)
+
+
+## entity_visible before the G6 visible_to rule (an enemy or neutral e).
+static func _entity_visible0(w: SimWorld, fid: int, e: Dictionary) -> bool:
 	if e.kind == "building":
 		var f = w.fog.get(fid)
 		if f == null:

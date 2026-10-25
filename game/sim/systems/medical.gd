@@ -21,6 +21,9 @@ extends RefCounted
 ## G5 entity fields: e.wounded (bool), e.wnd_pos (Vector2), e.evac_by (int carrier id while aboard).
 ## Untargetable-by-direct-fire and no-fire are honoured by Combat / Status via CORE10K / ORCH CRs
 ## (field e.wounded); this file additionally pins e.cooldown so a wounded unit never fires.
+## G6 (owner now EXO6, CONTRACTS_G6 section 14): wound(w, e) is the Wounded transition on its own (Exo's
+##   ejected suit pilot, e.pilot_of, which _revive keeps); a bled-out unit leaves the loadout registry
+##   (Loadouts.forget) so sys_state.loadouts.nonstandard stays exact.
 ## Runtime caches (never saved; pure functions of the current state): w.cache.med_cap (per tick),
 ##   w.cache.med_evac (carrier buckets + live target map, rebuilt from st.evac when it changes).
 
@@ -136,6 +139,14 @@ static func on_zero_hp(w: SimWorld, e: Dictionary) -> bool:
 		return false
 	if not has_medical(w, int(e.owner)):
 		return false   # ORCH rule: no medics / hospitals -> dies as in G4
+	wound(w, e)
+	return true
+
+
+## G6 (EXO6): puts a live unit into the Wounded state (pinned, hold fire, bleeding). on_zero_hp uses it
+## after its checks; Exo uses it for an ejected suit pilot (CONTRACTS_G6 section 14) after its own
+## medical-capability check. Same fields, state and event as G5.
+static func wound(w: SimWorld, e: Dictionary) -> void:
 	var st := _state(w)
 	e.wounded = true
 	e.hp = 1.0
@@ -149,7 +160,6 @@ static func on_zero_hp(w: SimWorld, e: Dictionary) -> bool:
 	for k in ["resup_by", "resume_order", "resup_t"]:   # a claimed unit drops its resupply claim
 		e.erase(k)
 	w.emit("UnitWounded", {"id": int(e.id), "owner": int(e.owner), "def": String(e.def), "pos": e.pos})
-	return true
 
 
 # ================================================================ command
@@ -239,6 +249,8 @@ static func _bleed(w: SimWorld, st: Dictionary) -> void:
 			wd[id] = t
 			continue
 		wd.erase(id)
+		if e.has("loadout"):
+			SimWorld.Loadouts.forget(w, e)   # G6 (EXO6): keep loadouts.nonstandard exact
 		w.emit("BledOut", {"id": int(id), "owner": int(e.owner), "def": String(e.def)})
 		w.destroy(int(id), "bled_out")
 

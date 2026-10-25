@@ -1,0 +1,38 @@
+{
+  "_meta": "G6 fragment (owner: NAVAL6). CONTRACTS_G6: rules.g6_naval (section 11). New ids/keys only; numbers are PROVISIONAL balance fixtures.",
+  "rules": {
+    "g6_naval": {
+      "_note": "G6 NAVAL6 (CONTRACTS_G6 section 11, D38/D39). PROVISIONAL. Def keys (sonar, submersible.*, mobile_field.slots, mine_layer.charges, mine_sweep.width) win over these defaults.",
+      "sonar_by_def": {
+        "a_destroyer": 10,
+        "a_aa_frigate": 8,
+        "a_minesweeper": 6
+      },
+      "sonar_by_role": {
+        "naval_warship": 10,
+        "naval_cruiser": 10,
+        "naval_aa": 8,
+        "naval_aa_barge": 6,
+        "naval_sweeper": 6,
+        "naval_sub": 6
+      },
+      "sonar_research_mult": 1.3,
+      "torpedo_research_mult": 1.25,
+      "reveal_after_fire_s": 5,
+      "speed_mult_submerged": 0.75,
+      "carrier_slots": 4,
+      "carrier_research_slots": 2,
+      "carrier_check_every": 20,
+      "sea_mine_lay_s": 1.0,
+      "sea_mine_spacing": 2,
+      "sea_mine_charges": 8,
+      "sea_mine_reach": 1.6,
+      "sweep_every": 5,
+      "sweep_mines_per_s": 2.0,
+      "sweep_width": 2,
+      "supply_ship_refill_radius": 3.0,
+      "sea_mine_max_rect": 8,
+      "sea_mine_ammo": 10
+    }
+  }
+}

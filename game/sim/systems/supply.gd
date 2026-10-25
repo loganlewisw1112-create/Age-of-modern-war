@@ -148,6 +148,8 @@ static func _serve_due(w: SimWorld) -> void:
 		var fid := int(e.owner)
 		if not w.factions.has(fid):
 			continue
+		if e.has("submerged"):
+			continue   # G6 NAVAL6 CR: only surfaced subs can be resupplied
 		var uc := _u(String(e.def))
 		var want_ammo := 0
 		var want_fuel := 0
@@ -280,6 +282,8 @@ static func _resupply(w: SimWorld) -> void:
 		var fid := int(e.owner)
 		if not sources.has(fid) or not w.entities.has(int(e.id)) or not bool(w.factions[fid].alive):
 			continue
+		if e.has("submerged"):
+			continue   # G6 NAVAL6 CR: only surfaced subs can be resupplied (e.submerged only on G6 subs)
 		var uc := _u(String(e.def))
 		var want_ammo := 0
 		var want_fuel := 0

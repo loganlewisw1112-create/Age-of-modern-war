@@ -145,7 +145,7 @@ static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary, ignore_id: 
 static func _own_pad_at(w: SimWorld, fid: int, cell: Vector2i) -> int:
 	for fb in _sorted(Airfield.fields(w)):
 		var b = w.entities.get(int(fb))
-		if b == null or int(b.owner) != fid or not bool(b.built) or (Airfield.field(w, int(fb)).pads as Array).is_empty():
+		if b == null or int(b.owner) != fid or not bool(b.get("built", true)) or (Airfield.field(w, int(fb)).pads as Array).is_empty():
 			continue
 		var o: Vector2i = b.cell
 		if cell.x >= o.x and cell.y >= o.y and cell.x < o.x + int(b.size) and cell.y < o.y + int(b.size):
@@ -457,6 +457,7 @@ static func _pin_ground(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 		f.erase("pin")
 	elif f.has("pin"):
 		p = f.pin
+	p = Airfield.clamp_in(w, p)
 	if e.pos != p:
 		e.pos = p
 
@@ -476,6 +477,9 @@ static func tick(w: SimWorld) -> void:
 			continue
 		_tick_one(w, e, fl[raw])
 		if w.entities.has(id):
+			var q := Airfield.clamp_in(w, e.pos)   # backstop: no aircraft leaves the map (CR air_out_of_bounds)
+			if q != Vector2(e.pos):
+				e.pos = q
 			HotState.touch(w, id)   # Air writes pos / moving / hp / cooldown of its aircraft directly
 	_tick_holding(w)
 
@@ -563,7 +567,7 @@ static func _tick_flying(w: SimWorld, e: Dictionary, f: Dictionary, ph: String) 
 						return
 					f.field = nf
 					w.emit("AircraftDiverted", {"id": int(e.id), "field": nf, "owner": int(e.owner)})
-				var fp: Vector2 = w.entities[int(f.field)].pos
+				var fp := _hold_centre(w, int(f.field))
 				if Vector2(e.pos).distance_to(fp) <= rf("hold_radius", 7.0) + 0.5:
 					var hold: Dictionary = _st(w).holding
 					if not hold.has(int(f.field)):
@@ -582,7 +586,7 @@ static func _tick_flying(w: SimWorld, e: Dictionary, f: Dictionary, ph: String) 
 				f.phase = "ret"
 				return
 			var hr := rf("hold_radius", 7.0)
-			var c: Vector2 = w.entities[int(f.field)].pos
+			var c := _hold_centre(w, int(f.field))
 			f.ang = fmod(float(f.ang) + float(d.speed) / hr * dt, TAU)
 			e.pos = c + Vector2(cos(float(f.ang)), sin(float(f.ang))) * hr
 			e.facing = float(f.ang) + PI * 0.5
@@ -590,7 +594,7 @@ static func _tick_flying(w: SimWorld, e: Dictionary, f: Dictionary, ph: String) 
 			f.t = float(f.t) - dt
 			var ap := Airfield.strip_points(w, int(f.field), int(f.strip))
 			var axis: Vector2 = ((ap[1] as Vector2) - (ap[0] as Vector2)).normalized()
-			var p0: Vector2 = (ap[0] as Vector2) - axis * 8.0
+			var p0: Vector2 = Airfield.clamp_in(w, (ap[0] as Vector2) - axis * 8.0)
 			e.pos = p0.lerp(ap[0], clampf(1.0 - float(f.t) / maxf(rf("approach_s", 4.0), 0.001), 0.0, 1.0))
 			e.facing = axis.angle()
 			if float(f.t) <= 0.0:
@@ -655,7 +659,7 @@ static func _tick_air(w: SimWorld, e: Dictionary, f: Dictionary, d: Dictionary) 
 			if not f.has("loiter"):
 				f.loiter = Vector2(e.pos)
 			f.ang = fmod(float(f.get("ang", 0.0)) + float(d.speed) / 3.0 * SimWorld.DT, TAU)
-			var lp: Vector2 = Vector2(f.loiter) + Vector2(cos(float(f.ang)), sin(float(f.ang))) * 3.0
+			var lp: Vector2 = _inset(w, Vector2(f.loiter), 3.0) + Vector2(cos(float(f.ang)), sin(float(f.ang))) * 3.0
 			e.facing = (lp - Vector2(e.pos)).angle()
 			e.pos = lp
 		return
@@ -721,6 +725,28 @@ static func _burn(w: SimWorld, e: Dictionary, f: Dictionary) -> bool:
 	w.emit("AircraftCrashed", {"id": int(e.id), "owner": int(e.owner), "pos": e.pos})
 	w.destroy(int(e.id), "crashed")
 	return true
+
+
+## Centre of field fb's holding circle: the field itself, moved inward just enough that the circle stays
+## inside the map when the field stands near the border (CR air_out_of_bounds).
+static func _hold_centre(w: SimWorld, fb: int) -> Vector2:
+	return _inset(w, Vector2(w.entities[fb].pos), rf("hold_radius", 7.0))
+
+
+## c unchanged when a circle of radius r around it fits in the map; else c moved inward on each axis
+## that is wide enough (narrower axes: the map's middle).
+static func _inset(w: SimWorld, c: Vector2, r: float) -> Vector2:
+	var mw := float(w.map.get("w", 0))
+	var mh := float(w.map.get("h", 0))
+	var x := c.x
+	var y := c.y
+	if mw > 0.0:
+		x = clampf(x, r, mw - r - 0.01) if mw > 2.0 * r + 0.01 else mw * 0.5
+	if mh > 0.0:
+		y = clampf(y, r, mh - r - 0.01) if mh > 2.0 * r + 0.01 else mh * 0.5
+	if x == c.x and y == c.y:
+		return c
+	return Vector2(x, y)
 
 
 ## Moves e straight toward goal at speed (Air's own flight model). True on arrival.
@@ -850,7 +876,7 @@ static func _spawn_micro(w: SimWorld, e: Dictionary, f: Dictionary, d: Dictionar
 			n += 1
 	if n >= int(md.get("max", 4)):
 		return
-	var mid := w.spawn_unit(String(md.get("unit", "m_micro_drone")), int(e.owner), Vector2(e.pos) + Vector2(0.6, 0.0))
+	var mid := w.spawn_unit(String(md.get("unit", "m_micro_drone")), int(e.owner), Airfield.clamp_in(w, Vector2(e.pos) + Vector2(0.6, 0.0)))
 	w.entities[mid].air_parent = int(e.id)
 	HotState.touch(w, mid)
 

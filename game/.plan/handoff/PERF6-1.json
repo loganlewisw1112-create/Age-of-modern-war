@@ -1,0 +1,56 @@
+{
+  "agent": "PERF6",
+  "gen": 1,
+  "status": "recycled at 70% (budget.handoff_now): partial (70% budget point, ~95 calls): every 5.1 hook wired GD + native, nav passable/cliff edges, native height LOS, rail/hover fix; 10k target NOT met; elevation cost over budget",
+  "done": [
+    "G6Hooks call sites (all through SimIndex.g6h(), which returns SimIndex.g6_spy in tests, else g6_hooks.gd; each gated by SimIndex.g6m(w) bits): combat hit + splash damage_mult (next to _g4_mult), hit roll accuracy_mult (same single rng draw), range_mult at acquisition (_search_rm/_pick/_engage/_return_fire/towers + native scan radii rescaled in _scan_rm), height LOS _hlos after the terrain line of fire (air shooters/airborne targets/indirect skip), visible_to in every search filter (_cand_ok, find_target, _find exact scan via _g6_hidden) + Fog.entity_visible (covers _seen); fog reveal radius + sight_bonus; movement step speed_mult (native: spd array rescaled in _g6_speed before advance_held/advance_separate; fallback: _advance_step); morale_delta in the morale update (x2 for REDUCED, negative delta wakes steady-state units); Damage on_destroyed before removal (after Medical).",
+    "Per-tick mask: Movement.g6_refresh at the start of Movement.tick -> SimIndex.g6_set(G6Hooks.active(w)) via Callable(G6Hooks, 'active') (ORCH added active()); sites before Movement in a tick see an old tick key and call everything (deterministic across save/load). Test toggles: SimIndex.g6_hooks_on, g6_skip, g6_mask_override, g6_spy.",
+    "Nav: per-class passable footprints (G6Hooks.passable for every ground class at rebuild_nav and on_footprint_changed; w.nav.pblk/pfp; native RtsNav.apply_footprint_pass) and cliff edges (rebuild_nav asks Elevation.edge_ok for every 4-neighbour pair with different levels; w.nav.edge bits 1 +x 2 +y 4 -x 8 -y; native RtsNav.set_edges honoured in A*, flow, components, step_ok/try_move/line_clear; fallback _step_ok, _comp BFS, EdgeGrid(AStarGrid2D._compute_cost 1e9 on a cut edge)).",
+    "rts_core 0.5.0 installed (build_native.sh --stage then --swap): nav edges + pblk, RtsCombat.height_los (exact port of Elevation.los_map; Combat.native_elev toggle), NCLS 10 with rail 8 / hover 9 (ORCH priority CR native_mc_rail_hover: NativeCore.MC + mc_index/mc_key return -1 for unknown classes, never foot; pre-0.5.0 DLL makes rail/hover all-solid).",
+    "Damage.in_cover false when garrisoned (ORCH CR garrison_no_in_cover).",
+    "tools/scale_bench.gd: AB 2k_fight_elev / 10k_fight_elev / 2k_fight_flat, build(..., elev: 1 elevate | -1 flatten | 0 as is), --elev=on|off and --g6mask=N flags; elevate() = synthetic triangle-wave height + ramps unless the map has authored height (river_crossing_s already has ELEV height).",
+    "tests/test_perf_g6.gd (moved from pending_g6): 6 tests (5 skeleton names + rail/hover regression)."
+  ],
+  "evidence": [
+    "hook proxy (forwarding spy, real values), 2k_fight_elev, CPU ~62%: speed_mult 8.6 ms/tick (1778 calls/tick, ~4.9 us/call), sight_bonus 1.4 ms (500), morale_delta 0.6 (424), range_mult 0.16 (46), visible_to/los/dmg/acc ~0; total 10.9 of 41 ms/tick",
+    "10k_fight valley_conquest_l --elev=on native, 80 ticks: avg 132.8 ms/tick, p95 182.2, max 1048.8 (CPU 26% before -> 47% after, 5 godot processes on the box) hash 7bed8914c16b23b4",
+    "test_damage 10/10, test_native 12/12, test_thread 4/4 (after the hook wiring, before the rail/hover change)",
+    "10k method: godot --headless -s tools/scale_bench.gd -- --map=valley_conquest_l --units=10000 --scenario=fight --native=on --ticks=80 --elev=on (synthetic height unless authored), CPU load sampled before/after with Win32_Processor LoadPercentage; NOT a quiet PC",
+    "final owned runs: test_perf_g6 5/6 (only test_elevation_cost_within_budget_probe fails: 16.27 ms/tick overhead at 2k under load), test_perf_systems 4/4, test_perf 9/11, test_damage 10/10, test_native 12/12, test_thread 4/4; test_hot_state result not collected; full suite NOT run (ORCH rule seq 347)"
+  ],
+  "remaining": [
+    "0. test_perf 2 tier tests fail (test_attack_order_promotes_at_once, test_tier_promotion_on_contact_and_no_duplication): Tiers.contact_radius() is now 34.0 (bucket 51) because a G6 content def carries sight/range 34 (CONTENT6), so units in those tests are never REDUCED. Not caused by the hook wiring (tiers.gd untouched). Fix options: cap contact_radius to ground-combat sight/range and treat the long-range defs (strikes/radar) outside the tier bound, or move the test units further apart; needs a decision with CONTENT6/ORCH.",
+    "1. Speed split (biggest cost): in Movement._g6_speed apply the ramp factor in packed code (exact port of Elevation.slope_mult: w.map.ramps[cell] != 0 and not air -> rules_elevation ramp mult; ask ELEV for a public ramp_mult() getter instead of reading Elevation._ramp) and call G6Hooks.speed_mult_ex only when the SPEED bit is set; then tell ORCH to drop 'height' from the SPEED rule in G6Hooks.active (their comment line 72). Better: pass a per-cell ramp byte array to RtsSteer.gather_held/advance_held so the factor is applied in Rust. Re-run the proxy (scratchpad p6_prox.gd pattern) and test_perf_g6::test_elevation_cost_within_budget_probe (currently FAILS: 12.9-13.5 ms/tick overhead at 2k, assert <= 5).",
+    "2. sight_bonus 1.4 ms at 2k: per fog source; cache per (def, cell level) is NOT allowed unless derived from state each tick; port Elevation.sight_bonus (height level of the source cell -> +2/level above plain) to the fog gather (packed loop over sources reading w.map.height) and call G6Hooks only for the non-elevation part (needs a sight_bonus_ex split from ORCH like speed_mult_ex).",
+    "3. morale_delta 0.6 ms: only when MORALE bit (auras/companies) - already gated by active(); fine.",
+    "4. CORE10K-3 next steps not started: native morale_scan and fog_gather ports (expected ~3-4 ms each at 10k), then measure 10k fight elevated (target <= 62.5; now 132.8 under load).",
+    "5. Windowed fps harness in tools/bench.gd (2k on screen, 10k zoomed out) not started.",
+    "6. MECH6a CR change_request.garrison_movement_skip (skip e.garrisoned_in units in GD _separate and the native gather/separation) deferred: needs gather.rs/steer.rs changes.",
+    "7. Full suite run at the end of gen 1: see the final report (run inside hb.sh)."
+  ],
+  "files_touched": [
+    "sim/systems/sim_index.gd (G6 mask + spy + g6h)",
+    "sim/systems/combat.gd",
+    "sim/systems/fog.gd",
+    "sim/systems/morale.gd",
+    "sim/systems/damage.gd",
+    "sim/systems/movement.gd",
+    "sim/native_core.gd",
+    "native/rts_core/{Cargo.toml (0.5.0), src/nav.rs, src/nav_search.rs, src/nav_api.rs, src/combat.rs}",
+    "bin/rts_core.dll (0.5.0 installed)",
+    "tools/scale_bench.gd",
+    "tests/test_perf_g6.gd (moved from tests/pending_g6/, untracked so plain mv)"
+  ],
+  "test_state": "test_perf_g6: hooks damage/accuracy/range PASS, nav/passable/on_destroyed PASS, native==GD elevated hash PASS, rail/hover PASS, visibility/sight/speed/morale fixed (spy tests force g6_skip=false) - see final report; elevation_cost probe FAILS (real cost, item 1-2)",
+  "gotchas": [
+    "river_crossing_s now carries ELEV height, so AB 2k_fight is elevated; use 2k_fight_flat for neutral-hook A/B",
+    "the whole native core on vs off already differs in G5 (test_hot_state GOLD 2k_fight/on vs /off); compare native sub-features by toggle (Combat.native_elev) instead",
+    "spy tests must set SimIndex.g6_skip = false (G6Hooks.active clears bits like MORALE when no owner state exists)",
+    "Bash heredocs with very long python bodies failed once ('unexpected EOF'): write the script with the Write tool instead",
+    "_hlos bypasses G6Hooks.los_ok for RtsCombat.height_los while los_ok's only delegate is Elevation.los and no spy is set; if ORCH adds a delegate, update _hlos"
+  ],
+  "open_crs": [
+    "MECH6a change_request.garrison_movement_skip (deferred, remaining 6)",
+    "ORCH change_request.g6_hooks.speed_split: ORCH delivered G6Hooks.active + speed_mult_ex; PERF6 side (packed/native ramp factor + call speed_mult_ex, then ORCH drops height from the SPEED rule) not done (remaining 1)"
+  ]
+}

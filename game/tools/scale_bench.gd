@@ -22,6 +22,7 @@ const ROLES := ["infantry", "infantry", "infantry", "antitank", "infantry", "hea
 var breakdown := false
 var series := false   # --series: per-tick time series + per-system breakdown on spike ticks (implies --breakdown)
 var scenario := "mixed"
+var elev := 0   # G6 PERF6: --elev=on (synthetic height unless authored) | off (flattened) | map (as is, default)
 var sys_only := false
 const FIGHT_GAP := 26.0  # --scenario=fight: start distance from the centre (tiles)
 
@@ -52,6 +53,10 @@ func _init() -> void:
 			modes = [true] if v == "on" else ([false] if v == "off" else [true, false])
 		elif a.begins_with("--scenario="):
 			scenario = a.substr(11)
+		elif a.begins_with("--elev="):
+			elevate_mode(a.substr(7))
+		elif a.begins_with("--g6mask="):
+			(load("res://sim/systems/sim_index.gd") as Script).set("g6_mask_override", int(a.substr(9)))   # G6 PERF6 hook-cost A/B
 		elif a.begins_with("--tiers="):
 			Tiers.force_off = a.substr(8) == "off"
 		elif a.begins_with("--gather="):
@@ -111,6 +116,10 @@ func _init() -> void:
 
 
 ## A Movement static var by name ("null" when this tree's movement.gd has none: A/B against older trees).
+func elevate_mode(v: String) -> void:
+	elev = 1 if v == "on" else (-1 if v == "off" else 0)
+
+
 func _mv_flag(name: String) -> String:
 	var m: Script = Movement
 	return str(m.get(name))
@@ -149,9 +158,47 @@ static func cells_near(w: SimWorld, from: Vector2i, mc: String, count: int, used
 
 ## G5 (CORE10K): the bench scenario as a static builder (also used by tests/test_hot_state.gd A/B runs).
 ## scen: "mixed" | "fight". Returns {w, fight, march, legs, placed}; call pre_tick(st, i) before step i.
-static func build(map_id: String, n: int, facs: Array, scen: String) -> Dictionary:
+## G6 PERF6: synthetic height for maps without authored height: a triangle wave of levels 0..3 in
+## bands (4-neighbours differ by at most 1) and every cell next to another level flagged as a ramp
+## (w.map.height / w.map.ramps, CONTRACTS_G6 section 6/7), so it is elevated without cliffs. Maps that
+## already carry non-flat height (ELEV, after elev.maps_ready) are left as they are.
+static func elevate(w: SimWorld) -> void:
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var old = w.map.get("height")
+	if old is PackedByteArray and (old as PackedByteArray).size() == mw * mh:
+		for i in range(1, mw * mh):
+			if old[i] != old[0]:
+				return
+	var tri := [0, 1, 2, 3, 2, 1]
+	var hb := PackedByteArray()
+	hb.resize(mw * mh)
+	for y in mh:
+		for x in mw:
+			hb[y * mw + x] = tri[(x / 12 + y / 20) % 6]
+	var rp := PackedByteArray()
+	rp.resize(mw * mh)
+	rp.fill(0)
+	for y in mh:
+		for x in mw:
+			var i := y * mw + x
+			if (x + 1 < mw and hb[i + 1] != hb[i]) or (x > 0 and hb[i - 1] != hb[i]) or (y + 1 < mh and hb[i + mw] != hb[i]) or (y > 0 and hb[i - mw] != hb[i]):
+				rp[i] = 1
+	w.map["height"] = hb
+	w.map["ramps"] = rp
+	Movement.rebuild_nav(w)
+
+
+## elev: 1 = elevate() (synthetic height unless authored), -1 = flatten (height/ramps removed), 0 = as is.
+static func build(map_id: String, n: int, facs: Array, scen: String, elev := 0) -> Dictionary:
 	var w := SimWorld.new_match(config(map_id, facs))
 	w.ai_state = {}
+	if elev > 0:
+		elevate(w)
+	elif elev < 0:
+		w.map.erase("height")
+		w.map.erase("ramps")
+		Movement.rebuild_nav(w)
 	for fid in w.factions:
 		for e in w.units_of(fid):
 			w.destroy(int(e.id), "bench_clear")
@@ -211,15 +258,22 @@ const AB := {
 	"2k_mixed": ["river_crossing_s", 2000, "mixed", 240],
 	"10k_fight": ["valley_conquest_l", 10000, "fight", 160],
 	"10k_march": ["valley_conquest_l", 10000, "mixed", 120],
+	# G6 PERF6: elevated (5th field: synthetic height via elevate() unless the map has authored height)
+	"2k_fight_elev": ["river_crossing_s", 2000, "fight", 240, 1],
+	"10k_fight_elev": ["valley_conquest_l", 10000, "fight", 160, 1],
+	"2k_fight_flat": ["river_crossing_s", 2000, "fight", 240, -1],
 }
 
 
 ## State hash after an AB scenario (native on/off; threaded = each step on a WorkerThreadPool task).
-static func ab_hash(name: String, native_on: bool, threaded: bool = false, ticks: int = -1) -> String:
+## elev_mode: the scenario's own height mode (default), or 1 elevate / -1 flatten / 0 as is (G6 PERF6-2:
+## the flattened-equality proof behind the G6 GOLD re-baseline in tests/test_hot_state.gd).
+static func ab_hash(name: String, native_on: bool, threaded: bool = false, ticks: int = -1, elev_mode: int = 9) -> String:
 	var spec: Array = AB[name]
 	var prev := NativeCore.force_off
 	NativeCore.force_off = not native_on
-	var st := build(String(spec[0]), int(spec[1]), ["human_a", "human_b"], String(spec[2]))
+	var em := (int(spec[4]) if spec.size() > 4 else 0) if elev_mode == 9 else elev_mode
+	var st := build(String(spec[0]), int(spec[1]), ["human_a", "human_b"], String(spec[2]), em)
 	var w: SimWorld = st.w
 	var n := int(spec[3]) if ticks < 0 else ticks
 	for i in n:
@@ -246,7 +300,7 @@ static func pre_tick(st: Dictionary, i: int) -> void:
 
 func _run(map_id: String, n: int, facs: Array, ticks: int) -> Dictionary:
 	var t_setup := Time.get_ticks_usec()
-	var st := build(map_id, n, facs, scenario)
+	var st := build(map_id, n, facs, scenario, elev)
 	var w: SimWorld = st.w
 	var placed := int(st.placed)
 	var setup_s := float(Time.get_ticks_usec() - t_setup) / 1e6

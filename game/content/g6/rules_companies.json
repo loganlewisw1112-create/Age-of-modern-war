@@ -1,0 +1,90 @@
+{
+  "_meta": "G6 fragment (owner: ARMY6). CONTRACTS_G6: rules.g6_companies incl. preset templates (sections 3.5, 8). New ids/keys only; numbers are PROVISIONAL balance fixtures. Template slots name PRODUCTION items (1 item = 1 element, a squad counts once); counts are the platoon-size base, scaled by size_mult (custom templates are exact counts). A slot's alt is used when def is missing or not yet available to the side (stage/research).",
+  "rules": {
+    "g6_companies": {
+      "hq_pop_cap_max": 200,
+      "hq_pop_cap_max_note": "Owner-confirmed 2026-10-25: a side with a built Company HQ has supply cap max 200 instead of rules.pop_cap_max 120, so battalions (142-196 supply) can be trained. Read via Economy.cap_max_for(w, fid).",
+      "ver": 1,
+      "platoon_max": 15,
+      "element_cap": 45,
+      "sizes": ["platoon", "company", "battalion"],
+      "size_mult": {"platoon": 1, "company": 2, "battalion": 3},
+      "time_mult": 1.25,
+      "queue_max": 3,
+      "refill_queue_max": 30,
+      "max_commanders": 2,
+      "max_armies": 2,
+      "army_min": 2,
+      "army_max": 4,
+      "confusion_s": 10,
+      "promotion_morale": -15,
+      "cohesion_radius": 12,
+      "cohesion_acc": 1.10,
+      "cohesion_morale": 10,
+      "cohesion_morale_per_s": 2.0,
+      "research": {"cohesion_radius_mult": "g6_company_drills_1", "confusion_time_mult": "g6_command_net_1"},
+      "excluded_move_classes": ["naval", "naval_small", "air_low", "air_high"],
+      "leaders": {
+        "human_a": {"hq": "a_company_hq", "captain": "a_captain", "lieutenant": "a_lieutenant", "commander": "a_commander", "fallback": "officer"},
+        "human_b": {"hq": "b_company_hq", "captain": "b_captain", "lieutenant": "b_lieutenant", "commander": "b_commander", "fallback": "b_officer"},
+        "machine": {"hq": "m_company_hq", "captain": "m_captain", "lieutenant": "m_lieutenant", "commander": "m_commander", "fallback": "m_coordinator"}
+      },
+      "leader_cost": {
+        "captain": {"credits": 300, "salvage": 60, "ore": 0},
+        "lieutenant": {"credits": 200, "salvage": 40, "ore": 0},
+        "commander": {"credits": 1200, "salvage": 300, "ore": 100}
+      },
+      "leader_time": {"captain": 15, "lieutenant": 12, "commander": 40},
+      "templates": {
+        "a_rifle_co": {"faction": "human_a", "name": "Rifle Company", "slots": [
+          {"def": "rifle_squad", "count": 7}, {"def": "a_marines", "count": 1, "alt": "rifle_squad"}, {"def": "at_team", "count": 2},
+          {"def": "a_hmg_team", "count": 2}, {"def": "a_mortar", "count": 1}, {"def": "a_medic_team", "count": 1}, {"def": "recon", "count": 1}]},
+        "a_mech_co": {"faction": "human_a", "name": "Mechanized Company", "slots": [
+          {"def": "ifv", "count": 4}, {"def": "rifle_squad", "count": 6}, {"def": "at_team", "count": 2},
+          {"def": "a_apc", "count": 2}, {"def": "a_spaag", "count": 1, "alt": "a_hmg_team"}]},
+        "a_armor_co": {"faction": "human_a", "name": "Armored Company", "slots": [
+          {"def": "mbt", "count": 6, "alt": "a_old_tank"}, {"def": "ifv", "count": 4}, {"def": "a_recon_car", "count": 2},
+          {"def": "a_mine_clearer", "count": 1, "alt": "a_apc"}, {"def": "logistics_truck", "count": 1}, {"def": "a_command_vehicle", "count": 1, "alt": "a_recon_car"}]},
+        "a_arty_bty": {"faction": "human_a", "name": "Artillery Battery", "slots": [
+          {"def": "a_sp_howitzer", "count": 4, "alt": "a_mortar"}, {"def": "a_mlrs", "count": 2, "alt": "a_mortar"}, {"def": "a_mortar", "count": 3},
+          {"def": "recon", "count": 2}, {"def": "logistics_truck", "count": 2}, {"def": "a_jtac", "count": 1, "alt": "recon"}, {"def": "rifle_squad", "count": 1}]},
+        "a_air_assault_co": {"faction": "human_a", "name": "Air Assault Company", "slots": [
+          {"def": "a_paratroopers", "count": 6, "alt": "rifle_squad"}, {"def": "a_special_forces", "count": 2, "alt": "a_sniper"}, {"def": "at_team", "count": 2},
+          {"def": "a_manpads", "count": 2, "alt": "at_team"}, {"def": "a_uav", "count": 1, "alt": "recon"}, {"def": "a_medic_team", "count": 1}, {"def": "a_jtac", "count": 1, "alt": "recon"}]},
+        "a_engineer_co": {"faction": "human_a", "name": "Engineer Company", "slots": [
+          {"def": "a_combat_engineer", "count": 6}, {"def": "engineer", "count": 2}, {"def": "a_eod", "count": 2, "alt": "a_combat_engineer"},
+          {"def": "a_bridge_layer", "count": 1, "alt": "logistics_truck"}, {"def": "a_mine_clearer", "count": 1, "alt": "a_apc"}, {"def": "rifle_squad", "count": 3}]},
+        "a_specops_det": {"faction": "human_a", "name": "Special Operations Detachment", "slots": [
+          {"def": "a_special_forces", "count": 4, "alt": "a_sniper"}, {"def": "a_sniper", "count": 3}, {"def": "recon", "count": 3},
+          {"def": "a_jtac", "count": 2, "alt": "recon"}, {"def": "a_drone_team", "count": 2}, {"def": "a_recon_car", "count": 1}]},
+        "b_conscript_bn": {"faction": "human_b", "name": "Conscript Battalion", "slots": [
+          {"def": "b_conscripts", "count": 8, "alt": "b_militia_squad"}, {"def": "b_militia_squad", "count": 3}, {"def": "b_at_rocket_team", "count": 2},
+          {"def": "b_flamer", "count": 1}, {"def": "b_propaganda_team", "count": 1, "alt": "b_grenadiers"}]},
+        "b_shock_co": {"faction": "human_b", "name": "Shock Assault Company", "slots": [
+          {"def": "b_shock_troops", "count": 5, "alt": "b_grenadiers"}, {"def": "b_grenadiers", "count": 3}, {"def": "b_flamer", "count": 2},
+          {"def": "b_satchel_sappers", "count": 2, "alt": "b_flamer"}, {"def": "b_heavy_squad", "count": 2, "alt": "b_militia_squad"}, {"def": "b_halftrack", "count": 1}]},
+        "b_heavy_armor_co": {"faction": "human_b", "name": "Heavy Armor Company", "slots": [
+          {"def": "b_rebuilt_mbt", "count": 6}, {"def": "b_landship", "count": 1, "alt": "b_rebuilt_mbt"}, {"def": "b_rhomboid", "count": 2, "alt": "b_rebuilt_mbt"},
+          {"def": "b_armored_car", "count": 2}, {"def": "b_recovery_truck", "count": 1}, {"def": "b_flak_halftrack", "count": 1, "alt": "b_halftrack"}, {"def": "b_halftrack", "count": 2}]},
+        "b_siege_bty": {"faction": "human_b", "name": "Siege Battery", "slots": [
+          {"def": "b_field_gun", "count": 4}, {"def": "b_artillery_truck", "count": 3, "alt": "b_field_gun"}, {"def": "b_rocket_truck", "count": 2, "alt": "b_field_gun"},
+          {"def": "b_militia_squad", "count": 3}, {"def": "b_marksman", "count": 1, "alt": "b_militia_squad"}, {"def": "b_carrier", "count": 2}]},
+        "b_works_co": {"faction": "human_b", "name": "Works Company", "slots": [
+          {"def": "b_crew", "count": 5}, {"def": "b_armored_dozer", "count": 2, "alt": "b_recovery_truck"}, {"def": "b_salvage_crane", "count": 1, "alt": "b_recovery_truck"},
+          {"def": "b_recovery_truck", "count": 1}, {"def": "b_militia_squad", "count": 4}, {"def": "b_moto_scouts", "count": 2, "alt": "b_armored_car"}]},
+        "m_swarm_cluster": {"faction": "machine", "name": "Swarm Cluster", "slots": [
+          {"def": "m_scout_crawler", "count": 6}, {"def": "m_drone_pair", "count": 4}, {"def": "m_swarm", "count": 2, "alt": "m_drone_pair"},
+          {"def": "m_maint_swarm", "count": 2}, {"def": "m_repair_swarm2", "count": 1, "alt": "m_maint_swarm"}]},
+        "m_walker_phalanx": {"faction": "machine", "name": "Walker Phalanx", "slots": [
+          {"def": "m_walker", "count": 5, "alt": "m_tracked"}, {"def": "m_lancer", "count": 2, "alt": "m_walker"}, {"def": "m_tracked", "count": 4},
+          {"def": "m_shield_drone", "count": 2, "alt": "m_maint_swarm"}, {"def": "m_maint_swarm", "count": 2}]},
+        "m_siege_array": {"faction": "machine", "name": "Siege Array", "slots": [
+          {"def": "m_siege_crawler", "count": 4}, {"def": "m_artillery_node", "count": 4, "alt": "m_siege_crawler"}, {"def": "m_tracked", "count": 3},
+          {"def": "m_scout_crawler", "count": 3}, {"def": "m_ew_node", "count": 1, "alt": "m_scout_crawler"}]},
+        "m_hunter_pack": {"faction": "machine", "name": "Hunter Pack", "slots": [
+          {"def": "m_scout_crawler", "count": 6}, {"def": "m_tracked", "count": 4}, {"def": "m_stalker_synth", "count": 2, "alt": "m_scout_crawler"},
+          {"def": "m_breacher_crawler", "count": 2, "alt": "m_tracked"}, {"def": "m_hover_tank", "count": 1, "alt": "m_tracked"}]}
+      }
+    }
+  }
+}

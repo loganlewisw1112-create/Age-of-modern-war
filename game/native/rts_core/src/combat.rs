@@ -15,6 +15,44 @@ fn blocks(terr: &[u8], mw: i32, mh: i32, x: i32, y: i32, ridge: u8) -> bool {
     i >= terr.len() || terr[i] == ridge || terr[i] == 8 || terr[i] == 12 // G4: RIDGE, BUILDING, CLIFF block LOS
 }
 
+/// G6 (PERF6): exact port of Elevation.los_map (ELEV, sim/systems/elevation.gd): cell traversal from a to
+/// b (f32 vector difference, f64 stepping, as GDScript); blocked when a cell strictly between the end
+/// cells holds a level above the higher endpoint level. Out-of-map cells count as plain (1).
+pub fn height_los_core(hg: &[u8], mw: i32, mh: i32, max_level: i32, a: Vector2, b: Vector2) -> bool {
+    let lvl = |x: i32, y: i32| -> i32 {
+        if x < 0 || y < 0 || x >= mw || y >= mh { 1 } else { hg.get((y * mw + x) as usize).copied().unwrap_or(1) as i32 }
+    };
+    let (mut cx, mut cy) = (a.x.floor() as i32, a.y.floor() as i32);
+    let (ex, ey) = (b.x.floor() as i32, b.y.floor() as i32);
+    let top = lvl(cx, cy).max(lvl(ex, ey));
+    if top >= max_level || (cx == ex && cy == ey) {
+        return true;
+    }
+    let d = b - a;
+    let (dx, dy) = (d.x as f64, d.y as f64);
+    let (ax, ay) = (a.x as f64, a.y as f64);
+    let sx = if dx > 0.0 { 1 } else { -1 };
+    let sy = if dy > 0.0 { 1 } else { -1 };
+    let tdx = if dx == 0.0 { f64::INFINITY } else { (1.0 / dx).abs() };
+    let tdy = if dy == 0.0 { f64::INFINITY } else { (1.0 / dy).abs() };
+    let mut tmx = f64::INFINITY;
+    if dx > 0.0 { tmx = ((cx + 1) as f64 - ax) * tdx; } else if dx < 0.0 { tmx = (ax - cx as f64) * tdx; }
+    let mut tmy = f64::INFINITY;
+    if dy > 0.0 { tmy = ((cy + 1) as f64 - ay) * tdy; } else if dy < 0.0 { tmy = (ay - cy as f64) * tdy; }
+    let mut n = (ex - cx).abs() + (ey - cy).abs();
+    while n > 0 {
+        if tmx < tmy { cx += sx; tmx += tdx; } else { cy += sy; tmy += tdy; }
+        n -= 1;
+        if cx == ex && cy == ey {
+            break;
+        }
+        if cx >= 0 && cy >= 0 && cx < mw && cy < mh && hg.get((cy * mw + cx) as usize).copied().unwrap_or(0) as i32 > top {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn line_clear_core(terr: &[u8], mw: i32, mh: i32, ridge: u8, from: Vector2, to: Vector2) -> bool {
     let (mut cx, mut cy) = ((from.x as f64).floor() as i32, (from.y as f64).floor() as i32);
     let (ex, ey) = ((to.x as f64).floor() as i32, (to.y as f64).floor() as i32);
@@ -74,6 +112,12 @@ pub struct RtsCombat {}
 impl RtsCombat {
     /// Exact damage.gd line_clear: false if the segment crosses a `ridge` cell or leaves the map.
     /// terrain = w.map.terrain (map_w * map_h codes). Passing the PackedByteArray costs no copy.
+    /// G6 (PERF6): Elevation.los (height line of sight) in native; == Elevation.los_map bit for bit.
+    #[func]
+    fn height_los(&self, map_w: i32, map_h: i32, height: PackedByteArray, max_level: i32, from: Vector2, to: Vector2) -> bool {
+        height_los_core(height.as_slice(), map_w, map_h, max_level, from, to)
+    }
+
     #[func]
     fn line_clear(&self, map_w: i32, map_h: i32, terrain: PackedByteArray, ridge: i32, from: Vector2, to: Vector2) -> bool {
         line_clear_core(terrain.as_slice(), map_w, map_h, ridge as u8, from, to)

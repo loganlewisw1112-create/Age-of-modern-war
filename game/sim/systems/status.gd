@@ -7,10 +7,14 @@ extends RefCounted
 ## within R as jammed (e.jammed_until = tick + JAM_TICKS) every JAM_EVERY ticks (driven from
 ## Progression.tick). A jammed unit deals damage_mult() x damage and sees sight_mult() x sight:
 ## JAM_MULT, or the best `jam_mult` of a researched project (electronic_resilience: 0.85).
+## G6 (owner: AIRDEF6, CONTRACTS_G6 section 12): can_fire gates buildings through Airdef.gate: a radar_required
+## tower (a_sam_site) whose current target (b.target, set by combat before _fire) no friendly radar covers
+## returns "NO_RADAR". Every other building still returns "" (G5 results unchanged).
 
 const PData = preload("res://sim/systems/progression_data.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): per-def unit subsets
+const Airdef = preload("res://sim/systems/airdef.gd")  # G6 AIRDEF6: radar-gated SAMs (preloads only SimIndex)
 
 const JAM_EVERY := 10
 const JAM_TICKS := 20
@@ -41,7 +45,7 @@ static func move_mult(w: SimWorld, e: Dictionary) -> float:
 ## "" if the entity may fire now, else a reason code.
 static func can_fire(w: SimWorld, e: Dictionary) -> String:
 	if e.kind != "unit":
-		return ""
+		return Airdef.gate(w, e) if e.kind == "building" else ""
 	if e.has("comp") and float(e.comp.get("weapon", 100)) <= 0.0:
 		return "WEAPON_DISABLED"
 	if bool(e.get("wounded", false)):  # G5 (SUPPORT CR): wounded never fire

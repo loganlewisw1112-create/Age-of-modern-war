@@ -13,6 +13,18 @@ extends RefCounted
 ##   unit.air_assign (engineer -> assigned field/hangar id).
 ## Created lazily: a world without air buildings never gets sys_state.airfield (G4 hashes unchanged).
 ## This file never preloads air.gd / combat.gd / damage.gd (they preload this one).
+## ---- G6 airfield v2 (owner: ECON-AIRF6; CONTRACTS_G6 section 13, D25/D26; rules g5_air.v2) ----
+## Layout (layout_for): the field building is the main base (a_airfield / b_aerodrome 2x2); beside it, on
+##   the facing's perp side, a tarmac apron of hangar slots (2 rows of 2x2 slots, slot k = column k / 2,
+##   row k mod 2), then the runway(s) beyond the apron along the facing axis (strip_len tiles: airfield 12,
+##   airstrip 8, forward strip 6, launch rail 6). slots_base 6 (+2 per extra strip, each extra strip also
+##   adds one runway). build_hangar auto-fills the lowest free slot. Runways are virtual (no cells).
+## hangars[i].slot = apron slot index (saved). Fields with no hangar slots keep the G5 strip geometry.
+## Mobile fields (register_mobile_field, NAVAL6 carriers): kind "carrier", one deck strip along the
+##   unit's facing, `slots` virtual light hangar slots whose hangar bid is the carrier itself.
+## Migration (sys_state.airfield.ver 1 -> 2, on first scan after a G5 load): bases resized to the def
+##   size around their old centre, strips re-laid (count = strips + extra_strips, state kept), hangars
+##   re-slotted in order (moved onto slot k when its square is free, else left in place).
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
@@ -20,7 +32,9 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")
 const HotState = preload("res://sim/hot_state.gd")  # core.hot_writer_rule
 
 const FIELD_KINDS := ["airfield", "airstrip", "rail", "forward_strip", "helipad", "forward_helipad"]
-const STRIP_KINDS := ["airfield", "airstrip", "rail", "forward_strip"]
+const STRIP_KINDS := ["airfield", "airstrip", "rail", "forward_strip", "carrier"]
+const MOBILE_KIND := "carrier"
+const VER := 2
 const HANGAR_FIELDS := ["airfield", "airstrip", "rail"]
 const ENGINEER_DEFS := ["a_airfield_engineers", "b_airfield_engineers", "m_maint_swarm"]
 const AXES := [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]
@@ -41,8 +55,12 @@ static func kind_of(def_id: String) -> String:
 # ================================================================ state
 static func _st(w: SimWorld) -> Dictionary:
 	if not w.sys_state.has("airfield"):
-		w.sys_state["airfield"] = {"fields": {}, "ver": 1}
+		w.sys_state["airfield"] = {"fields": {}, "ver": VER}
 	return w.sys_state.airfield
+
+
+static func V(key: String, dflt: float) -> float:
+	return float((R().get("v2", {}) as Dictionary).get(key, dflt))
 
 
 static func fields(w: SimWorld) -> Dictionary:
@@ -72,7 +90,11 @@ static func field_of(w: SimWorld, bid: int) -> int:
 
 static func usable(w: SimWorld, fid_bid: int) -> bool:
 	var b = w.entities.get(fid_bid)
-	return b != null and b.kind == "building" and bool(b.built) and fields(w).has(fid_bid)
+	return b != null and bool(b.get("built", true)) and fields(w).has(fid_bid) and (b.kind == "building" or is_mobile(w, fid_bid))
+
+
+static func is_mobile(w: SimWorld, bid: int) -> bool:
+	return String(field(w, bid).get("kind", "")) == MOBILE_KIND
 
 
 static func open_strips(w: SimWorld, bid: int) -> int:
@@ -83,17 +105,141 @@ static func open_strips(w: SimWorld, bid: int) -> int:
 	return n
 
 
-## World-space ends [start, end] of strip k of field bid (virtual strips beside the apron building).
+## World-space ends [start, end] of strip k of field bid (v2: beyond the apron; carriers: the deck).
+## Both ends are clamped into the map (a field built near the border would otherwise put its runway, and
+## every aircraft rolling or landing on it, past the edge; ECON-AIRF6-2, CR air_out_of_bounds).
 static func strip_points(w: SimWorld, bid: int, k: int) -> Array:
 	var b = w.entities.get(bid)
 	if b == null:
 		return [Vector2.ZERO, Vector2.ZERO]
-	var d := Content.building(String(b.def))
-	var f := int(b.get("facing_i", 0)) % 4
+	if b.kind != "building":
+		var ax := Vector2.from_angle(float(b.get("facing", 0.0)))
+		var dl := V("carrier_deck_len", 4.0)
+		var st: Vector2 = Vector2(b.pos) - ax * dl * 0.5
+		return [clamp_in(w, st), clamp_in(w, st + ax * dl)]
+	var rw := _runway(String(b.def), Vector2(b.pos), int(b.size), int(b.get("facing_i", 0)), int(b.get("extra_strips", 0)), k)
+	return [clamp_in(w, rw[0]), clamp_in(w, rw[1])]
+
+
+## p unchanged when it lies inside the map ([0, w) x [0, h)); else the nearest point just inside it.
+## In-map positions are returned as-is, so flights that never reach the border keep their exact hashes.
+static func clamp_in(w: SimWorld, p: Vector2) -> Vector2:
+	var mw := float(w.map.get("w", 0))
+	var mh := float(w.map.get("h", 0))
+	if (p.x >= 0.0 and p.y >= 0.0 and p.x < mw and p.y < mh) or mw <= 0.0 or mh <= 0.0:
+		return p
+	return Vector2(clampf(p.x, 0.0, mw - 0.01), clampf(p.y, 0.0, mh - 0.01))
+
+
+## Runway k of a field def placed with centre pos / size / facing (shared by strip_points and layout_for).
+static func _runway(def_id: String, pos: Vector2, size: int, facing_i: int, extra: int, k: int) -> Array:
+	var d := Content.building(def_id)
+	var axis: Vector2 = AXES[facing_i % 4]
+	var perp := Vector2(-axis.y, axis.x)
+	var s := float(size)
+	var v := s + _apron_depth(d) + V("runway_offset", 1.5) + V("runway_gap", 4.0) * float(k)
+	var start: Vector2 = pos + axis * (-s * 0.5) + perp * (v - s * 0.5)
+	return [start, start + axis * float(d.get("strip_len", 10))]
+
+
+static func _apron_depth(d: Dictionary) -> float:
+	if int(d.get("slots_base", 0)) <= 0 or not HANGAR_FIELDS.has(String(d.get("air_field", ""))):
+		return 0.0
+	return V("apron_rows", 2.0) * V("slot_size", 2.0)
+
+
+static func _cap_for(d: Dictionary, extra: int) -> int:
+	if not HANGAR_FIELDS.has(String(d.get("air_field", ""))):
+		return 0
+	return int(d.get("slots_base", 0)) + int(d.get("slots_per_strip", 0)) * extra
+
+
+## Pure v2 layout of field def_id with origin cell / facing / extra strips (placement previews, AI, editor):
+## {base: Rect2i, apron: Rect2 (world), slots: [Vector2i slot origins, slot order], runways: [[a, b]],
+##  strip_len, slot_size, facing_i}. Empty for a def that is not a field.
+static func layout_for(def_id: String, cell: Vector2i, facing_i: int, extra: int = 0) -> Dictionary:
+	var d := Content.building(def_id)
+	var kind := String(d.get("air_field", ""))
+	if not FIELD_KINDS.has(kind):
+		return {}
+	var size := int(d.get("size", 1))
+	var s := float(size)
+	var pos := Vector2(cell) + Vector2(s, s) * 0.5
+	var f := facing_i % 4
 	var axis: Vector2 = AXES[f]
 	var perp := Vector2(-axis.y, axis.x)
-	var start: Vector2 = Vector2(b.pos) + perp * (float(b.size) * 0.5 + 1.5 + 4.0 * float(k)) - axis * float(b.size) * 0.5
-	return [start, start + axis * float(d.get("strip_len", 10))]
+	var ss := int(V("slot_size", 2.0))
+	var rows := maxi(1, int(V("apron_rows", 2.0)))
+	var cap := _cap_for(d, extra)
+	var slot_cells := []
+	for k in cap:
+		var lc := Vector2(float(ss * (k / rows)) + ss * 0.5, s + float(ss * (k % rows)) + ss * 0.5)
+		var pc: Vector2 = pos + axis * (lc.x - s * 0.5) + perp * (lc.y - s * 0.5)
+		slot_cells.append(Vector2i(roundi(pc.x - ss * 0.5), roundi(pc.y - ss * 0.5)))
+	var cols := ceili(float(cap) / float(rows))
+	var a0: Vector2 = pos + axis * (-s * 0.5) + perp * (s * 0.5)
+	var a1: Vector2 = a0 + axis * float(cols * ss) + perp * _apron_depth(d)
+	var runways := []
+	if STRIP_KINDS.has(kind):
+		for k in int(d.get("strips", 1)) + extra:
+			runways.append(_runway(def_id, pos, size, f, extra, k))
+	return {"base": Rect2i(cell, Vector2i(size, size)), "apron": Rect2(a0, Vector2.ZERO).expand(a1),
+		"slots": slot_cells, "runways": runways, "strip_len": int(d.get("strip_len", 0)), "slot_size": ss, "facing_i": f}
+
+
+## v2 layout of an existing field building (see layout_for).
+static func layout(w: SimWorld, bid: int) -> Dictionary:
+	var b = w.entities.get(bid)
+	if b == null or b.kind != "building":
+		return {}
+	return layout_for(String(b.def), b.cell, int(b.get("facing_i", 0)), int(b.get("extra_strips", 0)))
+
+
+## "" when every apron slot and runway cell of a field placed at cell / facing is on passable ground
+## (placement helper for UI, AI and editor; the base footprint itself is checked by construction).
+static func site_ok(w: SimWorld, def_id: String, cell: Vector2i, facing_i: int) -> String:
+	var lo := layout_for(def_id, cell, facing_i, 0)
+	if lo.is_empty():
+		return ""
+	for c in lo.slots:
+		for y in int(lo.slot_size):
+			for x in int(lo.slot_size):
+				var q: Vector2i = c + Vector2i(x, y)
+				if not w.in_bounds(q) or not Movement.is_passable(w, q, "vehicle"):
+					return "No room for the apron here."
+	for rw in lo.runways:
+		var n := maxi(1, int(lo.strip_len))
+		for i in n + 1:
+			var p: Vector2 = (rw[0] as Vector2).lerp(rw[1], float(i) / float(n))
+			var q := Vector2i(floori(p.x), floori(p.y))
+			if not w.in_bounds(q) or not Movement.is_passable(w, q, "vehicle"):
+				return "No room for the runway here."
+	return ""
+
+
+## Apron slots of field bid in slot order: [{slot, cell, hangar (bid or -1), class, level, occupant}].
+static func slots(w: SimWorld, bid: int) -> Array:
+	var fb := field_of(w, bid)
+	var out := []
+	if fb < 0:
+		return out
+	var fr := field(w, fb)
+	var cells: Array = []
+	if is_mobile(w, fb):
+		for i in (fr.hangars as Array).size():
+			cells.append(Vector2i(Vector2(w.entities[fb].pos)))
+	else:
+		cells = layout(w, fb).get("slots", [])
+	for k in maxi(cells.size(), slot_cap(w, fb)):
+		var row := {"slot": k, "cell": cells[k] if k < cells.size() else Vector2i(-1, -1), "hangar": -1, "class": "", "level": 0, "occupant": -1}
+		for h in fr.hangars:
+			if int(h.get("slot", -1)) == k:
+				row.hangar = int(h.bid)
+				row["class"] = String(h["class"])
+				row.level = int(h.level)
+				row.occupant = int(h.occupant)
+		out.append(row)
+	return out
 
 
 # ================================================================ registration
@@ -116,6 +262,15 @@ static func _register(w: SimWorld, b: Dictionary) -> void:
 		if not b.has("extra_strips") and STRIP_KINDS.has(kind):
 			b.extra_strips = 0
 	elif kind == "hangar" and not b.has("air_parent"):
+		var hcls := String(Content.building(String(b.def)).get("hangar_class", "light"))
+		for fb0 in _sorted(fields(w)):
+			var fe0 = w.entities.get(int(fb0))
+			if fe0 == null or fe0.kind != "building" or int(fe0.owner) != int(b.owner) or not HANGAR_FIELDS.has(String(fields(w)[fb0].kind)):
+				continue
+			var k0 := (layout(w, int(fb0)).get("slots", []) as Array).find(b.cell)
+			if k0 >= 0 and not _slot_used(field(w, int(fb0)), k0) and _class_ok(w, int(fb0), hcls):
+				_attach_hangar(w, int(fb0), b, k0)
+				return
 		var best := -1
 		var bd := 12.0
 		for fb in _sorted(fields(w)):
@@ -135,16 +290,55 @@ static func _register(w: SimWorld, b: Dictionary) -> void:
 			_attach_hangar(w, best, b)
 
 
-static func _attach_hangar(w: SimWorld, fbid: int, h: Dictionary) -> void:
+static func _attach_hangar(w: SimWorld, fbid: int, h: Dictionary, slot: int = -1) -> void:
 	var cls := String(Content.building(String(h.def)).get("hangar_class", "light"))
 	h.air_parent = fbid
 	h["class"] = String(h.get("class", cls))
 	h.level = int(h.get("level", 0))
-	(field(w, fbid).hangars as Array).append({"bid": int(h.id), "class": String(h["class"]), "level": int(h.level), "occupant": -1})
+	if slot < 0:
+		slot = _free_index(w, fbid)
+	(field(w, fbid).hangars as Array).append({"bid": int(h.id), "class": String(h["class"]), "level": int(h.level), "occupant": -1, "slot": slot})
+
+
+static func _slot_used(fr: Dictionary, k: int) -> bool:
+	for h in fr.get("hangars", []):
+		if int(h.get("slot", -1)) == k:
+			return true
+	return false
+
+
+## Lowest slot index no attached hangar uses.
+static func _free_index(w: SimWorld, fbid: int) -> int:
+	var fr := field(w, fbid)
+	var k := 0
+	while _slot_used(fr, k):
+		k += 1
+	return k
+
+
+## NAVAL6 (D39): carrier_id (a unit) acts as an air field with `slot_count` virtual light hangar slots
+## and one deck strip (the G5 hangar + sortie model at sea). Idempotent: re-registering resizes the
+## slots (never dropping an occupied one). The field is dropped when the carrier is destroyed.
+static func register_mobile_field(w: SimWorld, carrier_id: int, slot_count: int) -> void:
+	var e = w.entities.get(carrier_id)
+	if e == null or e.kind == "building":
+		return
+	var flds: Dictionary = _st(w).fields
+	if not flds.has(carrier_id):
+		flds[carrier_id] = {"kind": MOBILE_KIND, "owner": int(e.owner), "strips": [{"open": true, "crater_t": 0.0, "busy_id": -1}],
+			"hangars": [], "pads": [], "engineers": []}
+	var hs: Array = flds[carrier_id].hangars
+	while hs.size() < slot_count:
+		hs.append({"bid": carrier_id, "class": "light", "level": 0, "occupant": -1, "slot": hs.size()})
+	while hs.size() > maxi(0, slot_count) and int(hs[hs.size() - 1].occupant) < 0:
+		hs.remove_at(hs.size() - 1)
 
 
 ## Scans ids created since the last call (cheap: only new ids). Runtime cursor in w.cache.
 static func scan_new(w: SimWorld) -> void:
+	var s0 = w.sys_state.get("airfield")
+	if s0 != null and int(s0.get("ver", 1)) < VER:
+		_migrate(w)
 	var from := int(w.cache.get("af_next", 1))
 	if from >= w.next_id:
 		return
@@ -160,6 +354,8 @@ static func slot_cap(w: SimWorld, bid: int) -> int:
 	var b = w.entities.get(bid)
 	if b == null:
 		return 0
+	if is_mobile(w, bid):
+		return (field(w, bid).hangars as Array).size()
 	var d := Content.building(String(b.def))
 	return int(d.get("slots_base", 0)) + int(d.get("slots_per_strip", 0)) * int(b.get("extra_strips", 0))
 
@@ -209,10 +405,10 @@ static func free_slots(w: SimWorld, bid: int) -> Dictionary:
 		if bid != fb and int(h.bid) != bid:
 			continue
 		var he = w.entities.get(int(h.bid))
-		if int(h.occupant) < 0 and he != null and bool(he.built):
+		if int(h.occupant) < 0 and he != null and bool(he.get("built", true)):
 			out[String(h["class"])] = int(out.get(String(h["class"]), 0)) + 1
 	var fe = w.entities.get(fb)
-	if bid == fb and fe != null and bool(fe.built) and bool(Content.building(String(fe.def)).get("home_ok", true)):
+	if bid == fb and fe != null and bool(fe.get("built", true)) and bool(Content.building(String(fe.def)).get("home_ok", true)):
 		for p in fr.pads:
 			if int(p.occupant) < 0:
 				out.pad = int(out.pad) + 1
@@ -274,7 +470,7 @@ static func _tower_ok(w: SimWorld, fid: int) -> bool:
 	var rng := rf("tower_range", 20.0)
 	for fb in _sorted(fields(w)):
 		var fe = w.entities.get(int(fb))
-		if fe == null or int(fe.owner) != fid or not bool(fe.built) or not HANGAR_FIELDS.has(String(fields(w)[fb].kind)):
+		if fe == null or int(fe.owner) != fid or not bool(fe.get("built", true)) or not HANGAR_FIELDS.has(String(fields(w)[fb].kind)):
 			continue
 		if String(Content.building(String(fe.def)).get("hangar_light", "")) == "m_drone_bay":
 			return true   # Machine rails need no tower
@@ -307,7 +503,7 @@ static func bind_home(w: SimWorld, e: Dictionary, near: Vector2, max_d: float, o
 				var fe = w.entities.get(int(fb))
 				if only_bid >= 0 and int(fb) != only_bid:
 					continue
-				if not bool(fe.built) or not bool(Content.building(String(fe.def)).get("home_ok", true)):
+				if not bool(fe.get("built", true)) or not bool(Content.building(String(fe.def)).get("home_ok", true)):
 					continue
 				for i in (fr.pads as Array).size():
 					var dd: float = Vector2(fe.pos).distance_to(near)
@@ -319,7 +515,7 @@ static func bind_home(w: SimWorld, e: Dictionary, near: Vector2, max_d: float, o
 				for i in (fr.hangars as Array).size():
 					var h: Dictionary = fr.hangars[i]
 					var he = w.entities.get(int(h.bid))
-					if he == null or not bool(he.built) or int(h.occupant) >= 0 or String(h["class"]) != cls:
+					if he == null or not bool(he.get("built", true)) or int(h.occupant) >= 0 or String(h["class"]) != cls:
 						continue
 					if only_bid >= 0 and int(h.bid) != only_bid and int(fb) != only_bid:
 						continue
@@ -369,7 +565,7 @@ static func service_point_at(w: SimWorld, fid: int, pos: Vector2) -> int:
 	for fb in _sorted(fields(w)):
 		var fr: Dictionary = fields(w)[fb]
 		var fe = w.entities.get(int(fb))
-		if fe == null or int(fr.owner) != fid or not bool(fe.built):
+		if fe == null or int(fr.owner) != fid or not bool(fe.get("built", true)):
 			continue
 		var r := float(sr.get(String(fr.kind), 2.0)) + float(fe.size) * 0.5
 		if Vector2(fe.pos).distance_to(pos) <= r:
@@ -384,7 +580,7 @@ static func free_pad_near(w: SimWorld, fid: int, pos: Vector2) -> Dictionary:
 	for fb in _sorted(fields(w)):
 		var fr: Dictionary = fields(w)[fb]
 		var fe = w.entities.get(int(fb))
-		if fe == null or int(fr.owner) != fid or not bool(fe.built):
+		if fe == null or int(fr.owner) != fid or not bool(fe.get("built", true)):
 			continue
 		for i in (fr.pads as Array).size():
 			var dd: float = Vector2(fe.pos).distance_to(pos)
@@ -467,14 +663,15 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			var cls := String(cmd.get("class", "light"))
 			var hdef := _hangar_def(b, cls)
 			var hd := Content.building(hdef)
-			if not w.spend(fid, hd.get("cost", {}), "build_hangar"):
+			var slot := _next_slot(w, b, int(hd.get("size", 2)))
+			if slot < 0 or not w.spend(fid, hd.get("cost", {}), "build_hangar"):
 				return
-			var cell := _hangar_cell(w, b, int(hd.get("size", 2)))
+			var cell: Vector2i = layout(w, int(b.id)).slots[slot]
 			var hid := w.spawn_building(hdef, fid, cell, false)
 			var h: Dictionary = w.entities[hid]
 			h["class"] = "bay" if hdef == "m_drone_bay" else cls
 			h.air_build = float((R().get("hangar_build_s", {}) as Dictionary).get(String(h["class"]), 20.0))
-			_attach_hangar(w, int(b.id), h)
+			_attach_hangar(w, int(b.id), h, slot)
 			w.cache["af_next"] = maxi(int(w.cache.get("af_next", 1)), w.next_id)
 			w.emit("HangarStarted", {"building_id": int(b.id), "hangar_id": hid, "class": String(h["class"]), "owner": fid})
 		"upgrade_hangar":
@@ -512,11 +709,43 @@ static func _hangar_def(field_b: Dictionary, cls: String) -> String:
 	return String(d.get("hangar_heavy" if cls == "heavy" else "hangar_light", ""))
 
 
-## First free square of `size` around the field (ring order: margin, then Construction.ring_cells order).
+## v2: origin of the lowest free apron slot of field b (no attached hangar on it and its square clear),
+## or (-1, -1). map_io (G5 map fields) and tests call this to place hangars.
 static func _hangar_cell(w: SimWorld, b: Dictionary, size: int) -> Vector2i:
+	var k := _next_slot(w, b, size)
+	if k < 0:
+		return Vector2i(-1, -1)
+	return layout(w, int(b.id)).slots[k]
+
+
+## Index of the lowest free apron slot of field b (see _hangar_cell), or -1.
+static func _next_slot(w: SimWorld, b: Dictionary, size: int) -> int:
+	var cells: Array = layout(w, int(b.id)).get("slots", [])
+	var fr := field(w, int(b.id))
+	for k in mini(cells.size(), slot_cap(w, int(b.id)) if not fr.is_empty() else cells.size()):
+		if _slot_used(fr, k):
+			continue
+		if _square_free(w, cells[k], size):
+			return k
+	return -1
+
+
+## G5 ring search: first free square of `size` around the field (ring order: margin, then
+## Construction.ring_cells order). For non-hangar helpers (towers, tests).
+static func _ring_cell(w: SimWorld, b: Dictionary, size: int) -> Vector2i:
+	var apron := []
+	for sc in layout(w, int(b.id)).get("slots", []):
+		apron.append(Rect2i(sc, Vector2i(2, 2)))
 	for margin in range(1, 9):
 		for c in Construction.ring_cells(b.cell, int(b.size), margin):
-			if _square_free(w, c, size):
+			if not _square_free(w, c, size):
+				continue
+			var r := Rect2i(c, Vector2i(size, size))
+			var on_apron := false
+			for a in apron:
+				if r.intersects(a):
+					on_apron = true
+			if not on_apron:
 				return c
 	return Vector2i(-1, -1)
 
@@ -576,6 +805,10 @@ static func _tick_field(w: SimWorld, fb: int) -> void:
 				fe.extra_rails = int(fe.extra_strips)
 			(fr.strips as Array).append({"open": true, "crater_t": 0.0, "busy_id": -1})
 			w.emit("AirfieldUpgraded", {"building_id": fb, "extra_strips": int(fe.extra_strips), "owner": int(fe.owner)})
+	if fe.kind == "building" and STRIP_KINDS.has(String(fr.kind)):
+		var want := int(Content.building(String(fe.def)).get("strips", 1)) + int(fe.get("extra_strips", 0))
+		while (fr.strips as Array).size() < want:   # v2: extra_strips set outside the upgrade (maps, editor)
+			fr.strips.append({"open": true, "crater_t": 0.0, "busy_id": -1})
 	for s in fr.strips:
 		if int(s.busy_id) >= 0 and not w.entities.has(int(s.busy_id)):
 			s.busy_id = -1
@@ -643,7 +876,7 @@ static func _upkeep(w: SimWorld, fr: Dictionary, fe: Dictionary, present: Array)
 	var amt := rf("engineer_repair_hp_s", 15.0) * SimWorld.DT
 	for bid in order:
 		var b = w.entities.get(int(bid))
-		if b != null and bool(b.built) and float(b.hp) < float(b.max_hp):
+		if b != null and bool(b.get("built", true)) and float(b.hp) < float(b.max_hp):
 			b.hp = minf(float(b.max_hp), snappedf(float(b.hp) + amt, 0.001))
 			return
 
@@ -668,6 +901,12 @@ static func _hangar_lost(w: SimWorld, h: Dictionary) -> void:
 
 static func _field_lost(w: SimWorld, fb: int) -> void:
 	var fr := field(w, fb)
+	if String(fr.get("kind", "")) == MOBILE_KIND:
+		for h in fr.hangars:
+			var occ := int(h.occupant)
+			var a = w.entities.get(occ)
+			if a != null and bool(a.get("air_landed", false)) and int(a.get("air_at", -1)) == fb:
+				w.destroy(occ, "carrier_lost")
 	for raw in fr.engineers:
 		var e = w.entities.get(int(raw))
 		if e != null:
@@ -708,6 +947,8 @@ static func on_impact(w: SimWorld, weapon: Dictionary, pos: Vector2) -> void:
 	var reach := float(weapon.get("splash", 1.0)) + 1.0
 	for fb in _sorted(fields(w)):
 		var fr: Dictionary = fields(w)[fb]
+		if String(fr.kind) == MOBILE_KIND:
+			continue
 		for k in (fr.strips as Array).size():
 			var pts := strip_points(w, int(fb), k)
 			if Geometry2D.get_closest_point_to_segment(pos, pts[0], pts[1]).distance_to(pos) <= reach:
@@ -715,3 +956,90 @@ static func on_impact(w: SimWorld, weapon: Dictionary, pos: Vector2) -> void:
 				s.open = false
 				s.crater_t = rf("crater_repair_s", 15.0)
 				w.emit("StripCratered", {"building_id": int(fb), "strip": k, "owner": int(fr.owner)})
+
+
+# ================================================================ G5 -> v2 migration
+## CONTRACTS_G6 section 13: G5 saves load into v2. Bases resize to the def size around their old centre,
+## strips are re-laid (count = strips + extra_strips, open/crater state kept, geometry is derived), and
+## each field's hangars are re-slotted in order (moved onto the lowest free slot whose square is clear,
+## else left where they stand with the lowest unused slot index). Runs once (ver 1 -> 2).
+static func _migrate(w: SimWorld) -> void:
+	var st: Dictionary = w.sys_state.airfield
+	st.ver = VER
+	for fb in _sorted(st.fields):
+		var b = w.entities.get(int(fb))
+		var fr: Dictionary = st.fields[fb]
+		if b == null or b.kind != "building":
+			continue
+		var d := Content.building(String(b.def))
+		var ns := int(d.get("size", b.size))
+		if ns != int(b.size):
+			var os := int(b.size)
+			Movement.on_footprint_changed(w, b.cell, os, false)
+			var c: Vector2i = Vector2i(b.cell) + Vector2i((os - ns) / 2, (os - ns) / 2)
+			b.cell = c
+			b.size = ns
+			b.pos = Vector2(c) + Vector2(ns, ns) * 0.5
+			b.rally = Vector2(c) + Vector2(ns * 0.5, ns + 1.0)
+			Movement.on_footprint_changed(w, c, ns, true)
+		if STRIP_KINDS.has(String(fr.kind)):
+			var want := int(d.get("strips", 1)) + int(b.get("extra_strips", 0))
+			while (fr.strips as Array).size() < want:
+				fr.strips.append({"open": true, "crater_t": 0.0, "busy_id": -1})
+		_reslot(w, int(fb))
+	w.cache.erase("bld_occ")
+
+
+static func _reslot(w: SimWorld, fb: int) -> void:
+	var fr := field(w, fb)
+	var cells: Array = layout(w, fb).get("slots", [])
+	var hs: Array = fr.hangars
+	var mine := {}
+	for h in hs:
+		mine[int(h.bid)] = true
+		h.erase("slot")
+	for h in hs:
+		var he = w.entities.get(int(h.bid))
+		if he != null:
+			Movement.on_footprint_changed(w, he.cell, int(he.size), false)
+	var occ := {}
+	for id in _sorted(w.entities):
+		var o: Dictionary = w.entities[id]
+		if o.kind != "building" or mine.has(int(id)):
+			continue
+		for y in int(o.size):
+			for x in int(o.size):
+				occ[Vector2i(o.cell) + Vector2i(x, y)] = true
+	for h in hs:
+		var he = w.entities.get(int(h.bid))
+		if he == null:
+			continue
+		var sz := int(he.size)
+		var k := -1
+		for i in cells.size():
+			if not _slot_used(fr, i) and _free_in(w, occ, cells[i], sz):
+				k = i
+				break
+		if k >= 0:
+			he.cell = cells[k]
+			he.pos = Vector2(he.cell) + Vector2(sz, sz) * 0.5
+			he.rally = Vector2(he.cell) + Vector2(sz * 0.5, sz + 1.0)
+		else:
+			k = _free_index(w, fb)
+		h.slot = k
+		for y in sz:
+			for x in sz:
+				occ[Vector2i(he.cell) + Vector2i(x, y)] = true
+	for h in hs:
+		var he = w.entities.get(int(h.bid))
+		if he != null:
+			Movement.on_footprint_changed(w, he.cell, int(he.size), true)
+
+
+static func _free_in(w: SimWorld, occ: Dictionary, origin: Vector2i, size: int) -> bool:
+	for y in size:
+		for x in size:
+			var c := origin + Vector2i(x, y)
+			if not w.in_bounds(c) or occ.has(c) or not Movement.is_passable(w, c, "vehicle"):
+				return false
+	return true

@@ -27,7 +27,7 @@ impl RtsNav {
             let (ux, uy) = ((u as i32) % w, (u as i32) / w);
             for (k, &(dx, dy)) in DIRS.iter().enumerate() {
                 let (vx, vy) = (ux + dx, uy + dy);
-                if !self.passable(mc, vx, vy) || !self.diag_ok(mc, ux, uy, dx, dy) {
+                if !self.passable(mc, vx, vy) || !self.diag_ok(mc, ux, uy, dx, dy) || !self.edge_ok(mc, ux, uy, dx, dy) {
                     continue;
                 }
                 let v = (vy * w + vx) as usize;
@@ -106,10 +106,10 @@ impl RtsNav {
                 let i = q[qi];
                 qi += 1;
                 let (x, y) = (i % w, i / w);
-                if x > 0 && lab[i - 1] == -2 { lab[i - 1] = next; q.push(i - 1); }
-                if x < w - 1 && lab[i + 1] == -2 { lab[i + 1] = next; q.push(i + 1); }
-                if y > 0 && lab[i - w] == -2 { lab[i - w] = next; q.push(i - w); }
-                if y < h - 1 && lab[i + w] == -2 { lab[i + w] = next; q.push(i + w); }
+                if x > 0 && lab[i - 1] == -2 && self.eopen(mc, i, 4) { lab[i - 1] = next; q.push(i - 1); }
+                if x < w - 1 && lab[i + 1] == -2 && self.eopen(mc, i, 1) { lab[i + 1] = next; q.push(i + 1); }
+                if y > 0 && lab[i - w] == -2 && self.eopen(mc, i, 8) { lab[i - w] = next; q.push(i - w); }
+                if y < h - 1 && lab[i + w] == -2 && self.eopen(mc, i, 2) { lab[i + w] = next; q.push(i + w); }
             }
             next += 1;
         }
@@ -136,7 +136,7 @@ impl RtsNav {
             let wu = self.wt(mc, u);
             for (k, &(dx, dy)) in DIRS.iter().enumerate() {
                 let (vx, vy) = (ux + dx, uy + dy);
-                if !self.passable(mc, vx, vy) || !self.diag_ok(mc, ux, uy, dx, dy) {
+                if !self.passable(mc, vx, vy) || !self.diag_ok(mc, ux, uy, dx, dy) || !self.edge_ok(mc, ux, uy, dx, dy) {
                     continue;
                 }
                 let v = (vy * w + vx) as usize;
@@ -165,7 +165,7 @@ impl RtsNav {
         let mut best_v = f32::INFINITY;
         for (k, &(dx, dy)) in DIRS.iter().enumerate() {
             let (nx, ny) = (cx + dx, cy + dy);
-            if !self.passable(f.mc, nx, ny) || !self.diag_ok(f.mc, cx, cy, dx, dy) {
+            if !self.passable(f.mc, nx, ny) || !self.diag_ok(f.mc, cx, cy, dx, dy) || !self.edge_ok(f.mc, cx, cy, dx, dy) {
                 continue;
             }
             let ni = (ny * w + nx) as usize;

@@ -43,9 +43,34 @@ func _origin(w: SimWorld, size: int, off: Vector2i, fid: int = 0) -> Vector2i:
 
 
 func _field(w: SimWorld, def: String = "a_airfield", off: Vector2i = Vector2i(12, 0), fid: int = 0) -> int:
-	var id := w.spawn_building(def, fid, _origin(w, int(Content.building(def).size), off, fid), true)
+	var id := w.spawn_building(def, fid, _site(w, def, off, fid), true)
 	w.step()
 	return id
+
+
+## G6 (ECON-AIRF6, airfield v2): free origin nearest hq + off whose apron slots and runway are clear too.
+func _site(w: SimWorld, def: String, off: Vector2i, fid: int = 0) -> Vector2i:
+	var size := int(Content.building(def).size)
+	var base: Vector2i = (_hq(w, fid).cell as Vector2i) + off
+	for r in range(0, 40):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var c := base + Vector2i(dx, dy)
+				if Airfield.site_ok(w, def, c, 0) != "":
+					continue
+				var ok := true
+				for y in range(-1, size + 1):
+					for x in range(-1, size + 1):
+						if not Airfield._square_free(w, c + Vector2i(x, y), 1):
+							ok = false
+				for sc in Airfield.layout_for(def, c, 0, 0).get("slots", []):
+					if ok and not Airfield._square_free(w, sc, 2):
+						ok = false
+				if ok:
+					return c
+	return _origin(w, size, off, fid)
 
 
 func _hangar(w: SimWorld, fb: int, cls: String = "light", level: int = 0) -> int:
@@ -62,7 +87,7 @@ func _hangar(w: SimWorld, fb: int, cls: String = "light", level: int = 0) -> int
 
 func _tower(w: SimWorld, fb: int) -> int:
 	var b: Dictionary = w.entities[fb]
-	var t := w.spawn_building("a_air_tower", int(b.owner), Airfield._hangar_cell(w, b, 2), true)
+	var t := w.spawn_building("a_air_tower", int(b.owner), Airfield._ring_cell(w, b, 2), true)   # G6: off the apron
 	w.step()
 	return t
 
@@ -198,17 +223,17 @@ func test_extra_strip_upgrade_adds_strip_and_two_slots() -> void:
 	var w := _w()
 	var fb := _field(w)
 	check_eq((Airfield.field(w, fb).strips as Array).size(), 1, "base 1 strip")
-	check_eq(Airfield.slot_cap(w, fb), 4, "base 4 hangar slots")
-	for i in 4:
+	check_eq(Airfield.slot_cap(w, fb), 6, "base 6 hangar slots (G6 v2, CONTRACTS_G6 section 13; G5 had 4)")
+	for i in 6:
 		check(w.submit({"type": "build_hangar", "issuer": 0, "building_id": fb, "class": "light"}).ok, "hangar %d accepted" % i)
 		w.step()
-	check(w.preview_command({"type": "build_hangar", "issuer": 0, "building_id": fb, "class": "light"}).contains("No free hangar slot"), "5th hangar refused")
+	check(w.preview_command({"type": "build_hangar", "issuer": 0, "building_id": fb, "class": "light"}).contains("No free hangar slot"), "7th hangar refused")
 	check(w.submit({"type": "upgrade_airfield", "issuer": 0, "building_id": fb, "kind": "extra_strip"}).ok, "extra strip accepted")
 	var t := _run(w, 1200, func() -> bool: return int(w.entities[fb].get("extra_strips", 0)) == 1)
 	check(t > 0, "upgrade completes")
 	check_eq((Airfield.field(w, fb).strips as Array).size(), 2, "2 strips")
-	check_eq(Airfield.slot_cap(w, fb), 6, "6 hangar slots")
-	check_eq(w.preview_command({"type": "build_hangar", "issuer": 0, "building_id": fb, "class": "light"}), "", "5th hangar now allowed")
+	check_eq(Airfield.slot_cap(w, fb), 8, "8 hangar slots (v2: +2 per extra strip)")
+	check_eq(w.preview_command({"type": "build_hangar", "issuer": 0, "building_id": fb, "class": "light"}), "", "7th hangar now allowed")
 	var built := _run(w, 800, func() -> bool:
 		for h in Airfield.field(w, fb).hangars:
 			if not bool(w.entities[int(h.bid)].built):

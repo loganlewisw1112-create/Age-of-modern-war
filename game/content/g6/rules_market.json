@@ -1,0 +1,17 @@
+{
+  "_meta": "G6 fragment (owner: ECON-AIRF6). CONTRACTS_G6: rules.g6_market (section 13, D27). New ids/keys only; numbers are PROVISIONAL balance fixtures. base_price = credits per unit at rest; step_pct = price change per unit bought (+) or sold (-) by anyone; drift_s = time for a price to drift back to base after the last trade (linear); sell_pct = sell price as % of the buy price; limit_per_window = units per resource per player per limit_window_s (fixed windows from tick 0); min_pct / max_pct clamp the price around base; requires_hq = trading needs a built HQ (the market opens from the HQ panel, no building).",
+  "rules": {
+    "g6_market": {
+      "resources": ["salvage", "ore", "fuel", "ammo"],
+      "base_price": {"salvage": 3, "ore": 2, "fuel": 2, "ammo": 2},
+      "step_pct": 1,
+      "drift_s": 180,
+      "sell_pct": 70,
+      "limit_window_s": 60,
+      "limit_per_window": 200,
+      "min_pct": 40,
+      "max_pct": 400,
+      "requires_hq": true
+    }
+  }
+}

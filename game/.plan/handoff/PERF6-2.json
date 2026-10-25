@@ -1,0 +1,37 @@
+{
+  "agent": "PERF6-2",
+  "gen": 2,
+  "status": "partial at the 70% budget point (~88 calls): ORCH decisions A, B, C, D done; speed + sight split done and hash-exact; 10k elevated target NOT met (146-177 ms/tick under load vs <= 62.5)",
+  "done": [
+    "A tiers.gd: indirect weapon range counts at most INDIRECT_CONTACT_CAP 18 toward contact_radius (18 again); Tiers.long_indirect(def): units whose indirect weapon > 18 (a_mlrs 22, a_sp_howitzer 20) are never REDUCED; buildings untiered. bucket_size floored at G5_BUCKET 36: the formula now gives 35 because the largest footprint fell 6 -> 5 (a_airfield / b_aerodrome 6 -> 2 in the G6 airfield rework; m_launch_rail 5 is now largest), and 35 changed the flattened 2k_mixed/on hash vs G5 GOLD. Speed max is still 10 (G5). Header comment updated. test_perf 11/11.",
+    "B test_hot_state: flattened (Bench.ab_hash(..., elev_mode = -1)) == old G5 GOLD for all 8 scenario/native pairs (scratch p62_flat.gd; 10k off pairs 80-100 s each). GOLD re-baselined once to the as-is elevated values with an authority/evidence header; old values kept as GOLD_G5_FLAT + new test_g5_gold_holds_flattened (2k on/off, 10k_fight on). tools/scale_bench.gd ab_hash got an optional elev_mode param (9 = scenario default).",
+    "C speed split: Movement._g6_speed applies the ramp factor from w.map.ramps at the packed mover positions (pos[mvi[m*stride]]; exact port of Elevation.slope_mult, Elevation.ramp_mult()); hooks run only when the SPEED bit is set AND the owners rule (int(G6Hooks.active(w)) & G6_SPEED) is set: on a ramp the full speed_mult (includes slope, same product order), else speed_mult_ex. _advance_step (GD per-unit path) mirrors it. Spy: whole hook as before. g6_hooks_on=false: no ramp (unwired baseline). Movement.speed_split toggle (pre-split path, only meaningful while height was in the SPEED rule).",
+    "sight split: Fog gather applies Elevation.sight_bonus only for sources standing above plain (packed w.map.height byte) when the owners SIGHT rule is clear; full G6Hooks.sight_bonus when it is set. Fog.sight_split toggle.",
+    "ORCH dropped height from SPEED and SIGHT (their message); the G6_ALL case (g6_skip=false, and every site running before Movement.g6_refresh in a tick) first lost the ramp / height sight because the G6Hooks functions gate on active(); fixed by the owners-rule check above. Evidence: 2k_fight_elev 120 ticks native owners=all=mask687=e85bd7cf, GD owners=all=mask687=15b1a761 (identical to before the rule change).",
+    "D MECH6a CRs: Combat._splash calls Rail.on_splash(w, at, splash, damage, owner) (lazy load) when w.sys_state.rail exists or the map terrain has RAIL tiles (w.cache.rail_any); garrisoned units (e.garrisoned_in) skip separation/advance in Movement._tick_native, _tick_native_held and _separate while w.sys_state.garrison.blds is non-empty, and the native gather is bypassed for the GD gather then (no Rust change).",
+    "NAVAL6 CR naval6_torpedo_submerged: Combat stats naval_only; Combat._g5_ok rejects non-naval_ship targets for naval_only weapons (covers can_target, _cand_ok and the native-scan filters); Supply skips e.submerged in both resupply loops.",
+    "AIRDEF6 CR 492: SimIndex.G6_SHOT 1024, G6_ALL 2047; Combat._fire returns after ShotFired + Supply.on_shot when G6Hooks.shot_blocked (spy without the method never blocks)."
+  ],
+  "evidence": [
+    "flattened vs G5 GOLD: 8/8 gold_match=true (bucket 36); with bucket 35: 2k_mixed/on 929b9bce.. != 708927396d..",
+    "test_perf 11/11; test_perf_g6 6/6 (elevation cost probe passes after the split)",
+    "10k fight valley_conquest_l (authored height) native, 80 ticks: avg 146.2 ms/tick p95 206.8 (CPU 38->45%, 16 godot processes, my test_hot_state running) and avg 176.6 p95 239.8 after the G6_ALL fix (CPU 57->52%, 14 godot processes, my test batch running); hash 70acd0ed.. both runs. Top systems: combat 65-78 (cmb.np 28-32 native phase, cmb.act 26-33, cmb.ngrid 9-11), movement 33-40 (mv.drain 12-16, mv.ng_call 12-13), supply 10-13, fog 10-12 (fog.gather 8-10), morale 8.5-10 (mor.full).",
+    "command: godot --headless --path . -s tools/scale_bench.gd -- --map=valley_conquest_l --units=10000 --scenario=fight --native=on --ticks=80 --breakdown ; CPU via Win32_Processor LoadPercentage before/after"
+  ],
+  "remaining": [
+    "1. 10k elevated <= 62.5 ms/tick (now ~146-177 under load, not a quiet PC): biggest buckets are combat (cmb.act + cmb.np ~60 ms: GD act phase after the native scan), movement mv.drain 12-16 ms (Movement._drain_queue: look at what is queued per tick in the fight scenario), supply 10-13 ms, fog.gather 8-10, morale mor.full 8-10. CORE10K-3 next steps (native morale_scan + fog_gather ports in rts_core, build_native.sh --stage then --swap) are still not started.",
+    "2. Windowed fps harness in tools/bench.gd (2k on screen, 10k zoomed out) not started.",
+    "3. _separate_native_only (pre-0.4 DLL fallback) does not skip garrisoned units (old DLL only).",
+    "4. OPEN, needs ORCH: test_hot_state 12/17. The flattened proof (test_g5_gold_holds_flattened) passes, but the 5 elevated GOLD tests fail against the as-is values I captured at ~09:16 PDT (scratch p62_flat --elev=0): the tree at ~09:30 and ~09:45 gives the same different values both times (2k_fight/on f500b7eb.., 2k_fight/off 371710a0.., 2k_mixed/on 623db57d.., 2k_mixed/off 0e3c0fdc.., 10k_fight/on cc7e99ac.., 10k_march/on 510e6a39..). It is NOT the G6_ALL bug (unchanged after the fix). In that window other agents changed status.gd, economy.gd, loadouts.gd, exo.gd, counterdrone.gd, naval.gd, support.gd, transport.gd, g5_mech.gd, airdef.gd and g6_hooks.gd (09:24, height out of SPEED/SIGHT); 2k_fight_elev at 120 ticks is still e85bd7cf (as before the rule change) under every mask. Not re-baselined a second time (one re-baseline was authorized). Next: on a quiet tree, rerun p62_flat.gd --elev=0 --scen=2k_fight --native=on with 120/180/240 ticks to find the first diverging tick, and bisect by reverting the 09:16-09:30 changes in a scratch copy; then ORCH decides whether the new values may replace GOLD."
+  ],
+  "files_touched": [
+    "sim/systems/tiers.gd", "sim/systems/movement.gd", "sim/systems/fog.gd", "sim/systems/combat.gd", "sim/systems/supply.gd", "sim/systems/sim_index.gd", "tools/scale_bench.gd", "tests/test_hot_state.gd"
+  ],
+  "gotchas": [
+    "G6Hooks.speed_mult / speed_mult_ex / sight_bonus return neutral when the owners active() bit is clear even if SimIndex.g6m has the bit (G6_ALL): never rely on the full hook to carry the ramp / height terms; check int(G6Hooks.active(w)) & bit",
+    "2k_fight_elev == 2k_fight as is (river_crossing_s has authored height, elevate() leaves it)",
+    "scratch scripts: p62_flat.gd (flattened/as-is AB vs GOLD, --elev --bucket --scen --native), p62_mask2.gd (owners vs all vs 687) in the PERF6-2 scratchpad",
+    "the tree was briefly broken by MECH6c mobility.gd:170 (_pack missing) at ~16:25; recompile before trusting a failing run"
+  ],
+  "open_crs": []
+}

@@ -21,6 +21,7 @@ Plan: `docs/PLAN_G6.md` (owner-approved 2026-10-25, all defaults D21-D44). Where
    - after each write: `"$G" --headless --path . --quit-after 60 2>&1 | grep -E -A1 "SCRIPT ERROR|Parse Error"` must print nothing;
    - post a board status after each write or test run;
    - if you break the build: `<ID> BLOCK tree.broken <file>` on the bus, then fix it at once.
+5a. **Never break callers:** every §5 function keeps its exact static signature at all times (a stub until replaced). Create a file as a compiling stub before any `preload` of it.
 6. **Runners time out and show parse errors:** never pipe Godot through a filter that drops `SCRIPT ERROR` / `Parse Error`. Wrap anything over 60 s in `.plan/hb.sh`; give long Godot runs a `timeout`. Godot hangs on exit after a GDScript parse error.
 7. **Thread rule:** presentation reads only `w.render_snap` while `sim_busy()` is true, never `w.entities` during a step.
 8. **Tests:**
@@ -40,9 +41,9 @@ Plan: `docs/PLAN_G6.md` (owner-approved 2026-10-25, all defaults D21-D44). Where
 | ELEV | `sim/terrain.gd`, `sim/systems/elevation.gd` (new), `sim/map_io.gd`, `sim/map_gen.gd`, `sim/maps/{valley_conquest,industrial_heartland,coastal_front,map_util,map_check}.gd`, `content/g6/rules_elevation.json`, `tests/test_elevation.gd`, `tests/test_maps.gd`, `tests/test_map_io.gd`, `tests/test_coastal_front.gd`, `tests/test_terrain_classes.gd` |
 | PERF6 | `sim/hot_state.gd`; the `# >>> G5 HOT` block of `sim/world.gd`; `sim/systems/{movement,combat,damage,supply,morale,fog,tiers,territory,sim_index,unit_subsets}.gd`; `sim/native_core.gd`; `native/**`; `bin/**`; `tools/{build_native.sh,scale_bench.gd,bench.gd}`; `tests/{test_perf,test_perf_systems,test_hot_state,test_native,test_damage,test_thread}.gd` |
 | CONTENT6 | `content/g6/defs_*.json`, `content/stages.json`, `content/factions.json`, `content/research.json`, the `advancement` block of `content/rules.json`, `tests/test_content_g6.gd`, `tests/test_stage10.gd`, `tests/test_stages.gd`, `tests/test_factions.gd` |
-| ART-G6 / ART-G6b (sequential, never live together) | `tools/art/g6_*.gd` except `g6_terrain*.gd`, `tools/art/g6_art_gen.gd`, `assets/art/g6_units/**`, `assets/art/g6_bld/**`, `tests/test_art_g6.gd` |
+| ART-G6 / ART-G6b (sequential, never live together) | `tools/art/g6_*.gd` except `g6_terrain*.gd`, `tools/art/g6_art_gen.gd`, `assets/art/g6_units/**`, `assets/art/g6_bld/**`, `tests/test_art_g6.gd`; for airfield v2 art only (ART-G6b): `tools/art/g5_bld*.gd`, `assets/art/g5_bld/**`, `tests/test_art_g5_bld.gd` |
 | ARMY6 | `sim/systems/companies.gd` (new), `sim/systems/ops.gd`, `sim/systems/production.gd`, `content/g6/rules_companies.json`, `tests/test_companies.gd`, `tests/test_ops.gd` |
-| MECH6a | `sim/systems/{mines,garrison,fieldworks,rail}.gd` (new), `sim/systems/{fortify,construction,g4b_mech}.gd`, `content/g6/rules_ground.json`, `tests/{test_mines,test_garrison,test_fieldworks,test_rail,test_fort,test_units_g4b}.gd` |
+| MECH6a | `sim/systems/{mines,garrison,fieldworks,rail,engineering}.gd` (new), `sim/systems/{fortify,construction,g4b_mech}.gd`, `content/g6/rules_ground.json`, `tests/{test_mines,test_garrison,test_fieldworks,test_rail,test_fort,test_units_g4b}.gd` |
 | MECH6c | `sim/systems/{callins,auras,mobility}.gd` (new), `content/g6/rules_support_g6.json`, `tests/{test_callins,test_auras,test_mobility}.gd` |
 | MECH6b | `sim/systems/{machine_g6,strikes}.gd` (new), `content/g6/rules_machine.json`, `tests/{test_machine_g6,test_strikes}.gd` |
 | NAVAL6 | `sim/systems/{naval,sonar,transport,support}.gd` (`sonar` new), `content/g6/rules_naval.json`, `tests/{test_naval_g6,test_naval,test_transport,test_support}.gd` |
@@ -147,13 +148,15 @@ The 4th-faction `x_*` ids are **not** in G6.
 | `lay_minefield` | Mines | `{issuer, unit_ids, rect: [x0,y0,x1,y1], kind: "at"\|"ap"\|"mixed"}` |
 | `sweep` | Mines | `{issuer, unit_ids, rect}` |
 | `line_charge` | Mines | `{issuer, unit_id, cell: [x,y]}` |
+| `tow_wreck` | Engineering | `{issuer, unit_id (salvage crane / dozer), wreck_id}` (to a scrapyard / salvage yard) |
+| `breach` | Engineering | `{issuer, unit_ids, target_id}` (satchel sappers / breacher crawler charge, x2 vs walls and gates) |
 | `garrison` / `ungarrison` | Garrison | `{issuer, unit_ids, building_id}` / `{issuer, building_id}` |
 | `build_rail` | Rail | `{issuer, unit_ids, from: [x,y], to: [x,y]}` (the existing `build_line` stays for walls and fieldworks) |
 | `deploy_bridge` / `pack_bridge` | Mobility | `{issuer, unit_id, cell, dir}` / `{issuer, unit_id}` |
 | `airdrop` | Mobility | `{issuer, carrier_id, cell}` (paratroopers or supply pallet) |
 | `designate` | Callins | `{issuer, unit_id, target_id?, cell?}` |
 | `aerostat` | Callins | `{issuer, unit_id, on: bool}` |
-| `strike` | Strikes | `{issuer, unit_ids, cell, target_id?}` (loiter, MLRS salvo, cruise, mass driver) |
+| `strike` | Strikes | `{issuer, unit_ids, cell, target_id?}` for unit launchers (a_loiter_truck, a_mlrs); `{issuer, building_id, cell, target_id?}` for battery buildings (a_cruise_battery, m_mass_driver), since `_common_validate` strips buildings from unit_ids (MECH6b CR, 2026-10-25) |
 | `assimilate` | MachineG6 | `{issuer, unit_id, wreck_id}` |
 | `cloak` | MachineG6 | `{issuer, unit_ids, on}` |
 | `submerge` | Sonar | `{issuer, unit_ids, on}` |
@@ -171,6 +174,21 @@ The 4th-faction `x_*` ids are **not** in G6.
 
 ### §5.1 `sim/systems/g6_hooks.gd` (ORCH dispatcher; PERF6 wires the call sites, posts `core.g6_hooks_wired`)
 Each function is neutral in the scaffold (1.0 / true / 0). It delegates to the owner functions listed; owners fill in their delegates.
+
+**Activity mask (added 2026-10-25, PERF6 CR):** `G6Hooks.active(w) -> int` returns PERF6's bit layout (`SimIndex.G6_*`: DMG 1, ACC 2, RANGE 4, LOS 8, SIGHT 16, VIS 32, SPEED 64, PASS 128, MORALE 256, DESTROY 512). Movement.tick passes it to `SimIndex.g6_set` once per tick, and the hot loops skip a hook whose bit is clear. Only provably neutral costly hooks are gated:
+- RANGE and LOS: height maps only;
+- SIGHT: height, or deployed aerostats;
+- SPEED: height, wire, or non-standard loadouts;
+- MORALE: auras or companies;
+- the rest are always set.
+
+`G6Hooks.speed_mult_ex(w, e)` = wire × loadout (PERF6 ports the ramp factor natively). Owners keep these state keys so the mask works:
+- `sys_state.loadouts.nonstandard` (EXO6, count);
+- `sys_state.callins.aerostats` (MECH6c, Dictionary);
+- `sys_state.auras.sources` (MECH6c, Array);
+- `sys_state.companies.companies` (ARMY6).
+
+The cache key is `w.cache.g6_hooks_mask` (PERF6's per-tick copy is `w.cache.g6_mask`).
 
 | Hook | Called from (PERF6) | Delegates to |
 |---|---|---|
@@ -304,7 +322,7 @@ Until a fact is posted, callers use the stub, which returns a safe default. Call
   - `m_shield_drone` projects `shield_mult` 0.5 vs small arms on friendlies in a 4-tile arc.
 - **Other Machine buildings:**
   - `m_relay_lattice` extends Machine build/power range along a chain;
-  - `m_overmind` unlocks Stage 10 Machine tech + global Coordinator range;
+  - `m_overmind` unlocks Stage 10 Machine tech + global Coordinator range; `MachineG6.overmind_online(w, fid)` (built + powered). ORCH 2026-10-25: "Coordinator range" = company cohesion; `Companies.in_cohesion` returns true for that side's company units at any distance. Stage 10 itself stays gated by D36 (research `g6_overmind_protocols`);
   - `m_phase_gate` is a fort gate passable only to its team (the G4 gate rule).
 - **Strikes:**
   - `a_loiter_truck`: launches loitering munitions (G5 drone entity pattern), 6 per load;

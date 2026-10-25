@@ -48,8 +48,12 @@ static func report(w: SimWorld, fid: int) -> Array:
 		e.alt_have = int(floor(ex * 100.0))
 		e.alt_need = int(round(frac * 100.0))
 		out.append(e)
-	if g.has("research"):
-		var req: Array = g.research
+	if g.has("research") or g.has("research_by_faction"):
+		# G6 (CONTENT6 CR, CONTRACTS_G6 section 14): per-faction gate research (Stage 10)
+		var req: Array = (g.get("research", []) as Array).duplicate()
+		for rid in g.get("research_by_faction", {}).get(String(f.faction_def), []):
+			if not req.has(String(rid)):
+				req.append(String(rid))
 		var missing := []
 		for rid in req:
 			if not PData.has_research(w, fid, String(rid)):

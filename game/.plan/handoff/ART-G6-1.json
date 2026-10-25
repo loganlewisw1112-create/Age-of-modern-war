@@ -1,0 +1,34 @@
+{
+  "agent": "ART-G6",
+  "successor": "ART-G6b (new pieces, CONTRACTS_G6 s3.2)",
+  "done": [
+    "7 kit drawer modules ported to tools/art/g6_{turrets,forts,seaair,vehicles,infantry,dronebld,horizon}.gd (preload paths fixed, every x_* id and its drawer code dropped)",
+    "tools/art/g6_lib.gd: bld() renders every building at rot_0..3 with rot_<f>_damaged and rot_<f>_build_0..2 (built/damaged/build_<n> alias rot_0); buildings route to out.bld_out; firing FX gated on H.fx -> optional rot_<f>_fire (+ fire alias) on 14 turrets",
+    "tools/art/g6_art.gd (module root: MODS, UNITS id->[icon row, lod], BLDS, generate(mods), icons/lod_class/specials), tools/art/g6_art_gen.gd (SceneTree runner, --crops=<dir>, --mods=..+--out=<dir> for scratch subsets), tools/art/g6_art_crops.gd (contact sheets + polish zooms)",
+    "assets/art/g6_units (52 unit ids) and assets/art/g6_bld (37 building ids) generated, md5 manifests",
+    "polish: hovercraft cargo tank pale khaki on a dark well; supply ship crane load = orange container on cable + slings as its own deck item; fuel tender stack plume (alternating soot/light puffs, trails astern when moving); b_aa_barge got team bands + stern pennant (kit had no team pixels); s_trench redrawn as a 1-cell line piece (content/g6 line: true)",
+    "tests/test_art_g6.gd: real checks; 5/6 pass; test_new_pieces_company_hq_commanders_leaders_garage_suits fails until ART-G6b adds the s3.2 ids",
+    "facts posted: art.g6_units_ready, art.g6_bld_ready; CR VIEW6 change_request.artcatalog_g6_groups; CONTENT6 aligned footprints (a_atgm_bunker 2, b_pillbox 1, s_trench 1)"
+  ],
+  "remaining_for_ART-G6b": [
+    "Draw the s3.2 pieces: units a_commander b_commander m_commander a_captain a_lieutenant b_captain b_lieutenant m_captain m_lieutenant a_exo_rifle a_exo_missile a_exo_aa; buildings a_company_hq b_company_hq m_company_hq a_exo_garage (sizes from content/g6/defs_bld_g6.json).",
+    "Easiest path: new module tools/art/g6_new.gd with static build(out) using SL.veh_sheet / SL.squad_sheet / H.bld (H.bld already routes buildings to the g6_bld group and does 4 rotations + damaged + build stages); add it to g6_art.MODS, the unit ids to g6_art.UNITS ([icon row, lod class]) and the building ids to g6_art.BLDS.",
+    "Regenerate: godot --headless --path . -s tools/art/g6_art_gen.gd -- --crops=<abs>/.plan/shots/ART-G6b ; then bash tests/run.sh --only=test_art_g6 (new_pieces checks the same properties as the s3.1 tests: 8 facings drawn, team pixels, lod class, wrecks for vehicles, all 20 building states, icons).",
+    "Post fact art.g6_new_ready; rail tiles / cliffs / ramps are ELEV-VIEW (g6_terrain*), markers per PLAN_G6 s3."
+  ],
+  "files_touched": [
+    "tools/art/g6_lib.gd", "tools/art/g6_art.gd", "tools/art/g6_art_gen.gd", "tools/art/g6_art_crops.gd",
+    "tools/art/g6_turrets.gd", "tools/art/g6_forts.gd", "tools/art/g6_seaair.gd", "tools/art/g6_vehicles.gd",
+    "tools/art/g6_infantry.gd", "tools/art/g6_dronebld.gd", "tools/art/g6_horizon.gd",
+    "assets/art/g6_units/**", "assets/art/g6_bld/**", "tests/test_art_g6.gd (moved from tests/pending_g6/)"
+  ],
+  "test_state": "bash tests/run.sh --only=test_art_g6 -> RESULT pass=5 fail=1 (new_pieces only)",
+  "gotchas": [
+    "Full gen = 1883 files; 45 s on a quiet PC, 140-340 s with other agents' soaks running. Wrap in .plan/hb.sh.",
+    "A --mods subset must use --out=<dir>: it never writes into assets/ (a subset would drop the other ids from the manifest).",
+    "test_generator_reproduces_modules_byte_identically regenerates g6_forts + g6_horizon and compares md5s: rerun the full gen after touching any drawer or g6_lib.",
+    "New drawers: keep firing effects behind `if H.fx:` so built states stay static.",
+    "post.mjs has no change_request type: use `need` with topic change_request.<x>.",
+    "tests/pending_g6 skeletons are untracked, so git mv fails; plain mv was used."
+  ]
+}

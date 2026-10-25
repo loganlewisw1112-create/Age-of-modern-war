@@ -143,7 +143,7 @@ static func try_gen(seed_value: int, attempt: int) -> Dictionary:
 	for p in [["ore", 2500, Vector2i(66, 108)], ["salvage", 2000, Vector2i(178, 110)]]:
 		var c: Vector2i = p[2] + Vector2i(rng.randi_range(-2, 2), rng.randi_range(-2, 1))
 		MapUtil.add_res(t, W, H, SPAWNS, resources, taken, String(p[0]), int(p[1]), c)
-	return {
+	var m := {
 		"id": ID, "name": "Valley Conquest", "size": "l", "w": W, "h": H,
 		"terrain": t, "spawns": SPAWNS.duplicate(), "spawn_sets": SPAWN_SETS.duplicate(true),
 		"max_sides": MAX_SIDES, "resources": resources,
@@ -153,6 +153,8 @@ static func try_gen(seed_value: int, attempt: int) -> Dictionary:
 		"decor": decor, "pois": _mirror_pois(pois), "seed": seed_value, "river_params": [a1, a2, f1, f2],
 		"fair_tol": FAIR_TOL, "min_open_frac": MIN_OPEN,
 	}
+	_height(m, seed_value, attempt)
+	return m
 
 
 static func _massif(t: PackedByteArray, a: Vector2i, b: Vector2i, r: float) -> void:
@@ -216,3 +218,29 @@ static func _mirror_pois(pois: Array) -> Array:
 			q.cell = MapUtil.mirror(p.cell, W, H)
 			out.append(q)
 	return out
+
+
+# ================================================================ G6 height (owner ELEV, CONTRACTS_G6 section 7.5)
+## Real valleys and ridges: the river, reservoir and north branch sit in a valley floor (level 0, 6 cells
+## either side of the water); the north massifs rise out of foothills (level 2, 12 cells) onto ridge
+## plateaus (level 3, 9 cells); two interior hills (level 2) carry ridge caps (level 3). Everything is
+## mirrored onto the south bank. Floor / plateau edges get a ramp every third cell plus every road,
+## bridge approach, ford and dirt tile; hill edges are all ramps; connect_ramps joins anything left.
+## Spawn sites are flat. No rng draw: the terrain stream above is untouched.
+static func _height(m: Dictionary, _seed_value: int, _attempt: int) -> void:
+	var t: PackedByteArray = m.terrain
+	var hg := MapUtil.new_layer(W, H, 1)
+	MapUtil.basin(hg, t, W, H, 6, 0)
+	MapUtil.hband(hg, W, H, [Vector2i(60, 6), Vector2i(100, 10)], 12.0, 2, MapUtil.HRAISE)
+	MapUtil.hband(hg, W, H, [Vector2i(60, 6), Vector2i(100, 10)], 9.0, 3, MapUtil.HRAISE)
+	MapUtil.hband(hg, W, H, [Vector2i(158, 5), Vector2i(196, 8)], 10.0, 2, MapUtil.HRAISE)
+	MapUtil.hband(hg, W, H, [Vector2i(158, 5), Vector2i(196, 8)], 7.5, 3, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(140, 82), 7.0, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(141, 81), 3.0, 3, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(60, 75), 6.0, 2, MapUtil.HRAISE)
+	MapUtil.hdisc(hg, W, H, Vector2i(61, 74), 2.5, 3, MapUtil.HRAISE)
+	for s in SPAWNS:
+		MapUtil.hflat(hg, W, H, s, 9.0)
+	m.height = hg
+	m.ramps = MapUtil.derive_ramps(hg, t, W, H, [3, 1, 3])
+	MapUtil.connect_ramps(m, true)

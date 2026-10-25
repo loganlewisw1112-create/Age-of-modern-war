@@ -1,0 +1,28 @@
+{
+  "_meta": "G6 fragment (owner: MECH6b). CONTRACTS_G6: rules.g6_machine (section 10) + the strike warhead weapons. New ids/keys only; numbers are PROVISIONAL balance fixtures. Per-def numbers (hp_per_sec, radius, intervals, munitions, cooldowns) live on the CONTENT6 defs; these are the system-wide knobs.",
+  "weapons": {
+    "g6_cruise_warhead": {"class": "artillery", "damage": 900, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 2.5, "g6": true},
+    "g6_mlrs_salvo_rocket": {"class": "artillery", "damage": 50, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.6, "g6": true},
+    "g6_mass_slug_strike": {"class": "artillery", "damage": 320, "range": 0, "cooldown": 1, "accuracy": 1.0, "splash": 1.0, "g6": true}
+  },
+  "rules": {
+    "g6_machine": {
+      "_note": "MachineG6 (sim/systems/machine_g6.gd) and Strikes (sim/systems/strikes.gd) read these. Seconds are converted with SimWorld.TICK_RATE.",
+      "heal_every_ticks": 10,
+      "combat_window_s": 5.0,
+      "repair_swarm": {"heals_buildings": false},
+      "assimilate": {"light_unit": "m_scout_crawler", "heavy_unit": "m_tracked", "light_armor": ["light", "infantry"], "range_slack": 0.5},
+      "spawners": {"spawn_offset": 1.6},
+      "mimic": {"update_every_ticks": 5, "as_by_faction": {"human_a": "a_drone_recon", "human_b": "b_drone_recon", "machine": "m_drone"}},
+      "cloak": {"still_s": 1.0, "fire_reveal_s": 2.0, "detect_range": 2.0},
+      "shield": {"min_cover_dist": 0.25},
+      "relay": {"base_build_range": 20.0, "link_range": 30.0},
+      "strikes": {
+        "loiter": {"launch_range": 30.0, "loiter_s": 20.0, "search_radius": 6.0, "dive_speed_mult": 1.5, "search_every_ticks": 5},
+        "mlrs": {"area_radius": 3.0, "salvo_gap_ticks": 2, "flight_s": 3.0, "weapon": "g6_mlrs_salvo_rocket"},
+        "mass_driver": {"source_weapon": "g6_mass_slug", "flight_s": 1.5, "weapon": "g6_mass_slug_strike"},
+        "cruise": {"speed": 8.0, "min_flight_s": 4.0, "weapon": "g6_cruise_warhead"}
+      }
+    }
+  }
+}

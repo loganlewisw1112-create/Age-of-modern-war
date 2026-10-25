@@ -638,7 +638,7 @@
  "buildings": {
   "a_airfield": {
    "name": "Airfield",
-   "size": 6,
+   "size": 2,
    "hp": 3000,
    "armor": "building",
    "sight": 7,
@@ -656,9 +656,9 @@
    "air_field": "airfield",
    "strips": 1,
    "max_extra": 3,
-   "slots_base": 4,
+   "slots_base": 6,
    "slots_per_strip": 2,
-   "strip_len": 26,
+   "strip_len": 12,
    "hangar_light": "a_hangar_light",
    "hangar_heavy": "a_hangar_heavy",
    "pad_slots": 2
@@ -685,7 +685,7 @@
    "max_extra": 0,
    "slots_base": 2,
    "slots_per_strip": 0,
-   "strip_len": 14,
+   "strip_len": 8,
    "light_only": true,
    "hangar_light": "a_hangar_light",
    "produces": [
@@ -794,7 +794,7 @@
    "max_extra": 0,
    "slots_base": 0,
    "slots_per_strip": 0,
-   "strip_len": 10,
+   "strip_len": 6,
    "light_only": true
   },
   "a_forward_helipad": {
@@ -820,7 +820,7 @@
   },
   "b_aerodrome": {
    "name": "Aerodrome",
-   "size": 6,
+   "size": 2,
    "hp": 3000,
    "armor": "building",
    "sight": 7,
@@ -838,9 +838,9 @@
    "air_field": "airfield",
    "strips": 1,
    "max_extra": 3,
-   "slots_base": 4,
+   "slots_base": 6,
    "slots_per_strip": 2,
-   "strip_len": 26,
+   "strip_len": 12,
    "hangar_light": "b_hangar_light",
    "hangar_heavy": "b_hangar_heavy",
    "pad_slots": 2
@@ -867,7 +867,7 @@
    "max_extra": 0,
    "slots_base": 2,
    "slots_per_strip": 0,
-   "strip_len": 14,
+   "strip_len": 8,
    "light_only": true,
    "hangar_light": "b_hangar_light",
    "produces": []
@@ -973,7 +973,7 @@
    "max_extra": 0,
    "slots_base": 0,
    "slots_per_strip": 0,
-   "strip_len": 10,
+   "strip_len": 6,
    "light_only": true
   },
   "b_forward_helipad": {
@@ -1019,7 +1019,7 @@
    "max_extra": 3,
    "slots_base": 4,
    "slots_per_strip": 2,
-   "strip_len": 12,
+   "strip_len": 6,
    "hangar_light": "m_drone_bay",
    "hangar_heavy": "m_drone_bay"
   },
@@ -1109,6 +1109,14 @@
      },
      "time_s": 25.0
     }
+   },
+   "v2": {
+    "_doc": "G6 airfield v2 geometry (ECON-AIRF6, CONTRACTS_G6 section 13): hangar slot squares (slot_size) in apron_rows rows beside the base, first runway centre runway_offset beyond the apron, further runways every runway_gap; carrier deck strip length.",
+    "slot_size": 2,
+    "apron_rows": 2,
+    "runway_offset": 1.5,
+    "runway_gap": 4.0,
+    "carrier_deck_len": 4.0
    }
   }
  }

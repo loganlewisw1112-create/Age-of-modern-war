@@ -15,13 +15,29 @@ const RenderSnap = preload("res://sim/render_snap.gd")
 const Supply = preload("res://sim/systems/supply.gd")
 
 ## "<scenario>/<on|off>" -> reference state hash (native on / off), from bench --ab on the current tree.
-## GOLD re-baselined 2026-10-24 by CORE10K-2, authorized by ORCH: G5 approved features (AI G5 usage, auto
-## resupply, wounded-with-medics, ops skip) changed AI-scenario results; refactor equivalence proven by in-tree
-## A/B tests test_perf_paths_on_off_hash_equal_2k, test_perf_paths_on_off_hash_equal_10k_fight,
-## test_perf_paths_on_off_hash_equal_10k_march, test_perf_paths_on_off_hash_equal_threaded,
-## test_hot_state_path_equals_dict_path, test_sim_thread_on_equals_off_in_tree.
-## (Previous GOLD: cd011a7 setup commit. Source run: tools/scale_bench.gd --ab, rts_core 0.4.2, board need seq 3709.)
+## GOLD re-baselined 2026-10-25 by PERF6-2 (the one G6 re-baseline after elev.maps_ready; authority:
+## PLAN_G6 / CONTRACTS_G6, ORCH-authorized 2026-10-25, board orch.decisions B): river_crossing_s and
+## valley_conquest_l now carry ELEV's authored height, so every AB scenario runs elevated. Evidence that
+## nothing else moved: with the height flattened (Bench.ab_hash(..., elev_mode = -1)) all 8 scenario/native
+## pairs reproduce the previous (G5) GOLD exactly; that is test_g5_gold_holds_flattened below (GOLD_G5_FLAT,
+## 2k on/off + 10k on; the 10k off pairs matched in the PERF6-2 scratch run, 80-100 s each). It holds only
+## with the Tiers fix of the same day (indirect weapons capped at 18 in contact_radius, bucket_size floored
+## at the G5 value 36; with 35 the flattened 2k_mixed/on hash differed). Source of the new values: PERF6-2
+## scratch p62_flat.gd --elev=0 on the g6 tree, rts_core 0.5.0.
+## (Previous re-baseline: 2026-10-24 by CORE10K-2, ORCH-authorized, G5 approved features; before that cd011a7.)
 const GOLD := {
+	"2k_fight/on": "f207a5bd4c6e7a34cc7e6b8cf06f7630531352bbcb3a3102c244d28bf6fb6259",
+	"2k_fight/off": "5ebbfc81da352400bf6e0fb66a4a5147244b5c84a507cbbb9cefcbf9c8950196",
+	"2k_mixed/on": "ea983093eb92221c44a2ecc8efb1521bcba4a1aef2a5ee9b0c519b194ecf8a3e",
+	"2k_mixed/off": "d265c347764d0bb1d837e79b0fcc4c39194f04a6c965ccc46d90d29352a1398d",
+	"10k_fight/on": "d6dea4547e4a8ccd0a7d2831e2893f90ea5285ffc55d4ebba629e79eefa764e5",
+	"10k_fight/off": "4fb9ac6c73222cfaa6c04f9cd37a98917f36437e48de0b13d09f704685137267",
+	"10k_march/on": "f36bab59ae5815f380b4aa14b6256360ef3a75fa24c2dfa22e35a63e0f9cce98",
+	"10k_march/off": "9c6703e77e08012ebf2b1cf87a532822b8aa4a4dede6d0f9c676c9f30f4b5fbf",
+}
+
+## The G5 GOLD (CORE10K-2, 2026-10-24): what the AB scenarios give with the height flattened.
+const GOLD_G5_FLAT := {
 	"2k_fight/on": "f15e0ee2c7f78c96f695c792d7400c25c7f0bc22d086cb6e13eb927d65e6b6fa",
 	"2k_fight/off": "22136639430e22129af2f499ad7e0edfba1367c458274d2d9221354d8779a842",
 	"2k_mixed/on": "708927396dcc48441fab6e204fb7837b2ef3c5a5597992c25023fdc630cba302",
@@ -31,6 +47,16 @@ const GOLD := {
 	"10k_march/on": "ccfdc00114bf86e2f92ae7d808fe991032e6442816fcc0e60215757d39fe5d00",
 	"10k_march/off": "ea1f8679442362f4610609378db84e0e8a256a220ac2e53745351313855e6565",
 }
+
+
+## G6 PERF6-2: no hidden hash change under the height. Flattened, the G6 tree gives the G5 results.
+func test_g5_gold_holds_flattened() -> void:
+	for pair in [["2k_fight", true], ["2k_fight", false], ["2k_mixed", true], ["2k_mixed", false], ["10k_fight", true]]:
+		var nat: bool = pair[1]
+		if nat and not NativeCore.available():
+			continue
+		var key := "%s/%s" % [pair[0], "on" if nat else "off"]
+		check_eq(Bench.ab_hash(String(pair[0]), nat, false, -1, -1), String(GOLD_G5_FLAT[key]), "%s flattened == G5 GOLD" % key)
 
 
 func _gold(key: String) -> String:

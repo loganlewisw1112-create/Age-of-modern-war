@@ -15,6 +15,7 @@ Read `.plan/agents/prompts/G6_COMMON.md` first: board, semantic layer and rules 
   2. Auras: Command Vehicle, Commander and propaganda team/tower (`acc_mult`, `morale_delta`; propaganda drains enemy morale).
   3. Mobility: `deploy_bridge` / `pack_bridge` (a 1×N span over water ≤ 6), `airdrop` (paratroopers or supply pallet into a 3×3 area), marines unloading ×2 faster.
   4. Make the three acceptance files green.
+- **Perf contract (G6Hooks.active mask, CONTRACTS_G6 §5.1):** keep `w.sys_state.callins.aerostats` (Dictionary of deployed aerostats; empty when none) and `w.sys_state.auras.sources` (Array of active aura source ids; empty when none) always current. The hot loops skip your `sight_bonus` / `morale_delta` / `acc_mult` delegates entirely when these are empty, so keep each delegate cheap (per-tick caches, no full scans per call).
 - **Publishes:** `mech_c.api_ready`.
 - **Done-when:**
   - test_callins, test_auras, test_mobility green

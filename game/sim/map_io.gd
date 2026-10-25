@@ -14,6 +14,10 @@ extends RefCounted
 ## layout data): source_id, size, max_sides, spawn_sets {"n": [start index..]}, pois, ford_cells.
 ## In memory (read / save / the editor) everything is the w.map shape: Vector2i cells, Rect2i rects,
 ## PackedByteArray terrain. Spawns = player starts in ascending slot order.
+## G6 (owner ELEV, CONTRACTS_G6 section 7.4): version 2 adds optional height_b64 (one byte per cell,
+## 0 valley .. 3 ridge) and ramps_b64 (0/1 per cell), written only when the map carries a height layer
+## (absent = all plain, so flat maps keep their G5 results). Version 1 files still load: they get no
+## height unless they hold HILL tiles, which migrate to height level 2 (Elevation.migrate_hill).
 
 const Victory = preload("res://sim/systems/victory.gd")
 const Triggers = preload("res://sim/systems/triggers.gd")
@@ -23,7 +27,9 @@ const Airfield = preload("res://sim/systems/airfield.gd")
 const Naval = preload("res://sim/systems/naval.gd")
 
 const FORMAT := "rtsmap"
-const VERSION := 1
+const VERSION := 2
+const MIN_VERSION := 1   # G6: version-1 files load as plain (+ HILL -> level 2)
+const Elevation = preload("res://sim/systems/elevation.gd")
 const MAX_DIM := 512
 const MAX_PLAYERS := 8
 const EXT_KEYS := ["source_id", "size", "max_sides", "fair_tol", "min_open_frac"]
@@ -136,6 +142,14 @@ static func encode(map: Dictionary, scenario: Dictionary) -> Dictionary:
 	var b = map.get("biome")
 	if typeof(b) == TYPE_PACKED_BYTE_ARRAY and (b as PackedByteArray).size() == w * h:
 		d.biome_b64 = Marshalls.raw_to_base64(b)
+	var hg = map.get("height")
+	if typeof(hg) == TYPE_PACKED_BYTE_ARRAY:
+		if (hg as PackedByteArray).size() != w * h:
+			return {"error": "Height must be a PackedByteArray of %d cells." % (w * h)}
+		d.height_b64 = Marshalls.raw_to_base64(hg)
+		var rp = map.get("ramps")
+		if typeof(rp) == TYPE_PACKED_BYTE_ARRAY and (rp as PackedByteArray).size() == w * h:
+			d.ramps_b64 = Marshalls.raw_to_base64(rp)
 	d.decor = to_json(map.get("decor", []))
 	var res := []
 	for r in map.get("resources", []):
@@ -219,8 +233,9 @@ static func decode(raw: Dictionary) -> Dictionary:
 	var d: Dictionary = _intify(raw)
 	if String(d.get("format", "")) != FORMAT:
 		return {"error": "Not an rtsmap file (format '%s')." % d.get("format", "")}
-	if int(d.get("version", -1)) != VERSION:
-		return {"error": "Unsupported rtsmap version %s (this build reads %d)." % [str(d.get("version")), VERSION]}
+	var ver := int(d.get("version", -1))
+	if ver < MIN_VERSION or ver > VERSION:
+		return {"error": "Unsupported rtsmap version %s (this build reads %d..%d)." % [str(d.get("version")), MIN_VERSION, VERSION]}
 	var w := int(d.get("w", 0))
 	var h := int(d.get("h", 0))
 	if w <= 0 or h <= 0 or w > MAX_DIM or h > MAX_DIM:
@@ -234,6 +249,23 @@ static func decode(raw: Dictionary) -> Dictionary:
 		var b := Marshalls.base64_to_raw(String(d.biome_b64))
 		if b.size() == w * h:
 			m.biome = b
+	if d.has("height_b64"):
+		var hg := Marshalls.base64_to_raw(String(d.height_b64))
+		if hg.size() != w * h:
+			return {"error": "Height has %d cells, expected %d." % [hg.size(), w * h]}
+		for i in hg.size():
+			if hg[i] > Elevation.MAX_LEVEL:
+				return {"error": "Height level %d out of range (0..%d)." % [hg[i], Elevation.MAX_LEVEL]}
+		m.height = hg
+		var rp := Marshalls.base64_to_raw(String(d.get("ramps_b64", "")))
+		if rp.size() == w * h:
+			m.ramps = rp
+		else:
+			rp.resize(w * h)
+			rp.fill(0)
+			m.ramps = rp
+	if ver < 2:
+		Elevation.migrate_hill(m)
 	var decor := []
 	for x in d.get("decor", []):
 		var dd: Dictionary = x.duplicate()
@@ -695,7 +727,8 @@ static func validate(map: Dictionary, scenario: Dictionary) -> Array:
 			break
 		var pm := MapCheck.passmask(t, mc)
 		var p0 := _probe(pm, w, h, starts[0][1], 3)
-		var reach := MapCheck.bfs(pm, w, h, p0.y * w + p0.x) if p0.x >= 0 else PackedInt32Array()
+		var lay := MapCheck.layers(map)
+		var reach := MapCheck.bfs(pm, w, h, p0.y * w + p0.x, lay[0], lay[1]) if p0.x >= 0 else PackedInt32Array()
 		if mc == "foot":
 			foot_reach = reach
 		for k in range(1, starts.size()):
@@ -721,6 +754,9 @@ static func validate(map: Dictionary, scenario: Dictionary) -> Array:
 			for dy in range(-2, 3):
 				for dx in range(-2, 3):
 					occupied[st[1] + Vector2i(dx, dy)] = "start"
+	var hi := MapCheck.height_issue(map, false)   # G6 (ELEV): sizes, levels, ramp validity
+	if hi != "":
+		_issue(out, "height_invalid", hi)
 	_validate_entities(out, scenario.get("entities", []), slots, t, w, h, occupied)
 	_validate_scenario(out, map, scenario, slots, w, h)
 	return out

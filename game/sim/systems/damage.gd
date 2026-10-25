@@ -17,6 +17,9 @@ extends RefCounted
 
 const Q := 1.0 / 1024.0
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+## G6 PERF6 (CONTRACTS_G6 section 5.1): SimIndex.g6h().on_destroyed(w, target) runs right before a target at 0 HP is
+## removed (after Medical declined to keep it as Wounded), when the DESTROY bit of SimIndex.g6m(w) is set.
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
@@ -62,6 +65,8 @@ static func hit_side(from: Vector2, t: Dictionary) -> String:
 ## Infantry cover right now: forest under the unit (live), or the near-building/wreck flag that
 ## morale.gd refreshes every 4 ticks (e.in_cover also includes forest).
 static func in_cover(w: SimWorld, e: Dictionary) -> bool:
+	if int(e.get("garrisoned_in", -1)) >= 0:
+		return false   # G6 (ORCH CR garrison_no_in_cover): the garrison x0.5 in G6Hooks.damage_mult replaces cover
 	if bool(e.get("in_cover", false)):
 		return true
 	var p: Vector2 = e.pos
@@ -113,6 +118,8 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 		# unit alive as Wounded (true = do not destroy). The stub returns false: G4 results unchanged.
 		if target.kind == "unit" and SimWorld.Medical.on_zero_hp(w, target):
 			return
+		if SimIndex.g6m(w) & SimIndex.G6_DESTROY:
+			SimIndex.g6h().on_destroyed(w, target)  # G6: pilot eject, promotion, wreck registry
 		_note_death(w, target)
 		if SimIndex.profiling:
 			var tde := Time.get_ticks_usec()

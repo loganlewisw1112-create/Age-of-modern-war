@@ -555,3 +555,31 @@ func test_assist_build_speeds_up_construction() -> void:
 	check(_run_until(w, 3000, func(): return w.entities[did].built), "depot completes")
 	evs = do_cmd(w, 0, {"type": "assist_build", "unit_ids": [eng[0]], "target_id": did})
 	check(rejected_reason(evs).contains("already complete"), "cannot assist a finished building")
+
+
+# ---------------------------------------------------------------- G6 (CR econ.cap_max_for, ECON-AIRF6-2)
+func test_g6_cap_max_for_company_hq() -> void:
+	const Economy = preload("res://sim/systems/economy.gd")
+	var w := make_world()
+	var f: Dictionary = w.factions[0]
+	var base_max := int(Content.rules().get("pop_cap_max", 120))
+	var hq_max := int((Content.rules().get("g6_companies", {}) as Dictionary).get("hq_pop_cap_max", -1))
+	check_eq(base_max, 120, "rules.pop_cap_max")
+	check_eq(hq_max, 200, "rules.g6_companies.hq_pop_cap_max")
+	for i in 14:   # 14 depots x 15 + the HQ's 20 = 230 raw supply cap
+		w.spawn_building("depot", 0, Vector2i(30 + 3 * (i % 7), 44 + 3 * (i / 7)), true)
+	w.step()
+	check_eq(Economy.cap_max_for(w, 0), base_max, "no Company HQ: cap max 120")
+	check_eq(int(f.pop_cap), base_max, "raw 230 clamped to 120")
+	var chq := w.spawn_building("a_company_hq", 0, Vector2i(30, 52), true)
+	var pending := w.spawn_building("b_company_hq", 1, Vector2i(40, 52), false)
+	w.step()
+	check_eq(Economy.cap_max_for(w, 0), hq_max, "built Company HQ: cap max 200")
+	check_eq(int(f.pop_cap), hq_max, "raw 230 clamped to 200")
+	check_eq(Economy.cap_max_for(w, 1), base_max, "an unbuilt Company HQ does not count")
+	check(int(w.factions[1].pop_cap) <= base_max, "side 1 still capped at 120")
+	w.destroy(chq, "test")
+	w.destroy(pending, "test")
+	w.step()
+	check_eq(Economy.cap_max_for(w, 0), base_max, "Company HQ lost: back to 120")
+	check_eq(int(f.pop_cap), base_max, "pop cap back to 120")

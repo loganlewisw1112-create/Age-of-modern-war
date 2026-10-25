@@ -20,6 +20,13 @@ const Triggers = preload("res://sim/systems/triggers.gd")
 
 const RETARGET_MARGIN := 8.0
 const DEFENCE_WEIGHT := 2.0
+## AI7-USE: a side that keeps beating our waves gets FAIL_WEIGHT tiles of score per failed wave (up
+## to FAIL_CAP), so a lone side stops feeding waves into one fortress for the whole match (heartland
+## d3 s1: 52 waves, both humans, into the Machine; draw). Allies (team > 1) skip it: they converge.
+const FAIL_WEIGHT := 12.0
+const FAIL_CAP := 10
+const AI_TGT_R := 8.0
+const AI_TGT_HOLD := 120 * SimWorld.TICK_RATE
 const HOLD_RADIUS := 4.0
 const SECTOR_REACHED := 4.0
 const SECTOR_TIMEOUT := 1600
@@ -118,7 +125,7 @@ static func choose_target(w: SimWorld, fid: int, st: Dictionary) -> int:
 		var p := known_hq(w, fid, s)
 		if p.x < 0.0:
 			p = U.spawn_of(w, s)
-		var score := p.distance_to(anchor) + DEFENCE_WEIGHT * float(int(defences.get(s, 0)))
+		var score := p.distance_to(anchor) + DEFENCE_WEIGHT * float(int(defences.get(s, 0))) + _fail_pen(w, fid, g3, s)
 		if s == cur:
 			cur_score = score
 		if score < best_score - 0.001:
@@ -127,13 +134,32 @@ static func choose_target(w: SimWorld, fid: int, st: Dictionary) -> int:
 	if cur >= 0 and live.has(cur) and cur_score <= best_score + RETARGET_MARGIN:
 		return cur
 	g3.target_side = best
-	g3.target_why = "side %d: %.0f tiles from our team, %d known defences" % [best, best_score - DEFENCE_WEIGHT * float(int(defences.get(best, 0))), int(defences.get(best, 0))]
+	var fp := _fail_pen(w, fid, g3, best)
+	g3.target_why = "side %d: %.0f tiles from our team, %d known defences%s" % [best, best_score - DEFENCE_WEIGHT * float(int(defences.get(best, 0))) - fp, int(defences.get(best, 0)),
+		(", fail penalty %.0f" % fp) if fp > 0.0 else ""]
 	if cur >= 0:
 		g3.retargets = int(g3.retargets) + 1
 		U.log_line(st, w, "retarget -> %s%s" % [String(g3.target_why), " (side %d eliminated)" % cur if not live.has(cur) else ""])
 	else:
 		U.log_line(st, w, "target -> %s" % String(g3.target_why))
 	return best
+
+
+static func _fail_pen(w: SimWorld, fid: int, g3: Dictionary, s: int) -> float:
+	if not g3.has("fails") or U.team_side_ids(w, fid).size() > 1:
+		return 0.0
+	return FAIL_WEIGHT * float(mini(int((g3.fails as Dictionary).get(str(s), 0)), FAIL_CAP))
+
+
+## AI7-USE: ai_army calls this when a wave against the current target side is beaten back.
+static func note_failed_wave(st: Dictionary) -> void:
+	if not st.has("g3") or int(st.g3.get("target_side", -1)) < 0:
+		return
+	var g3: Dictionary = st.g3
+	if not g3.has("fails"):
+		g3.fails = {}
+	var k := str(int(g3.target_side))
+	g3.fails[k] = int((g3.fails as Dictionary).get(k, 0)) + 1
 
 
 ## Last known HQ of the target side, else another of its remembered buildings, else its start.
@@ -173,9 +199,22 @@ static func objective(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, fr
 	var pos := Vector2(-1, -1)
 	# G4 (AI5): a scenario ai_target trigger aimed at this side overrides the victory-term goal
 	var scripted = Triggers.ai_target(w, fid)
-	if scripted != null:
+	# AI7-USE-3: a reached ai_target (wave within AI_TGT_R for AI_TGT_HOLD) is done; the side then plays
+	# the victory terms (custom_s1 d1/d3: Human B's 34-unit wave idled at its ai_target from t~40000
+	# to the 120000 cap, 65 tiles from the enemy HQ: a draw). A new / moved ai_target applies again.
+	var skey := "" if scripted == null else str(Vector2(scripted).round())
+	if scripted != null and skey != String(g3.get("ai_tgt_done", "")):
 		kind = "ai_target"
 		pos = Vector2(scripted)
+		if from.x >= 0.0 and from.distance_to(pos) <= AI_TGT_R:
+			if int(g3.get("ai_tgt_t", -1)) < 0:
+				g3.ai_tgt_t = w.tick
+			elif w.tick - int(g3.ai_tgt_t) >= AI_TGT_HOLD:
+				g3.ai_tgt_done = skey
+				g3.ai_tgt_t = -1
+				U.log_line(st, w, "ai_target %s held; on to the victory terms" % skey)
+		else:
+			g3.ai_tgt_t = -1
 	elif int(t.bridge) > 0:
 		var met := int(g3.hold_ticks) >= int(t.bridge) * SimWorld.TICK_RATE
 		if not (met and bool(t.elim) and String(t.op) == "and"):

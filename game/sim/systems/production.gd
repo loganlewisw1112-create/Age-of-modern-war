@@ -5,6 +5,8 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Airfield = preload("res://sim/systems/airfield.gd")  # G5 scaffold
+const Exo = preload("res://sim/systems/exo.gd")            # G6 scaffold (CONTRACTS_G6 section 4)
+const Companies = preload("res://sim/systems/companies.gd")  # G6 scaffold (CONTRACTS_G6 section 4)
 const Construction = preload("res://sim/systems/construction.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
@@ -23,7 +25,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var p := Content.production(item)
 			if p.is_empty():
 				return "Unknown production item '%s'." % item
-			if p.has("faction") and w.factions.has(fid) and String(p.faction) != String(w.factions[fid].faction_def):
+			if p.has("faction") and String(p.faction) != "shared" and w.factions.has(fid) and String(p.faction) != String(w.factions[fid].faction_def):
 				return "%s belongs to another faction." % String(p.get("name", item))  # G3a defence in depth
 			var bd := Content.building(b.def)
 			if not bd.get("produces", []).has(item):
@@ -36,6 +38,11 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var air_gate := Airfield.can_produce(w, fid, item)  # G5 (CONTRACTS_G5 section 4): hangar / pad gating
 			if air_gate != "":
 				return "%s: %s." % [String(p.get("name", item)), air_gate]
+			var g6_gate := Exo.can_produce(w, fid, item)  # G6 (CONTRACTS_G6 section 4): exo suits
+			if g6_gate == "":
+				g6_gate = Companies.can_produce(w, fid, item)  # G6: company-only defs (leaders)
+			if g6_gate != "":
+				return "%s: %s." % [String(p.get("name", item)), g6_gate]
 			return w.can_afford(fid, p.cost)
 		"cancel_unit":
 			var i := int(cmd.get("index", -1))
@@ -134,6 +141,8 @@ static func _complete(w: SimWorld, b: Dictionary, item: String, p: Dictionary, i
 		var slot := rally + Vector2(float(i % 2) - 0.5, float(i / 2) - 0.5) * 1.1
 		u.order = {"type": "move", "target": slot}
 		Movement.order_path(w, u, slot)
+		if Companies.is_commander_def(String(spawns[i])):
+			u.rank_role = "commander"  # G6 (ARMY6): a Commander queued as a normal HQ item
 		ids.append(uid)
 		f.stats.trained += 1
 	f.pop = int(f.pop) + item_pop     # Economy recomputes next tick; keeps same-tick completions honest

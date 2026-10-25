@@ -30,6 +30,12 @@ extends RefCounted
 ##   itself within rules.supply.radius at the Supply per-second rates, drawn from the faction stock
 ##   (cause "resupply"). AIRSYS is reached only through SimWorld.COMMANDS / SimWorld.Air at run time,
 ##   so this file never fails to compile on an AIRSYS signature change.
+## G6 (owner: NAVAL6, CONTRACTS_G6 section 11): Supply Ships (a_supply_ship_a, b_supply_ship_b,
+##   m_charge_tender: is_supply + a naval move class) run the same Auto modes at sea: they claim only units
+##   that can come alongside (naval / naval_small / amphibious / hover ships and air_low / air aircraft),
+##   and reload at the nearest own Supply Pier (def `pier`) instead of an HQ / depot, sailing to the
+##   nearest navigable cell by it (reload within rules.g6_naval.supply_ship_refill_radius). Submerged
+##   submarines (Sonar, e.submerged) are never needy, so never claimed.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
@@ -45,6 +51,7 @@ const NEEDY_SLOTS := 40
 const GRID := 16.0
 const SLACK := 6.0               # tiles a unit may have moved since its last needy scan
 const MAX_ORDERS := 8
+const SEA_CLIENTS := ["naval", "naval_small", "amphibious", "hover", "air", "air_low"]   # G6 Supply Ship clients
 
 
 static func cfg() -> Dictionary:
@@ -64,7 +71,7 @@ static func _mc(e: Dictionary) -> String:
 # ================================================================ public API (support.api_ready)
 ## True when e is below its thresholds (defaults: ammo < 40%, fuel < 30%, drone_charges == 0).
 static func needs_supply(w: SimWorld, e: Dictionary, thr: Dictionary = {}) -> bool:
-	if e.kind != "unit" or bool(e.get("wounded", false)):
+	if e.kind != "unit" or bool(e.get("wounded", false)) or e.has("submerged"):
 		return false
 	var d := Content.unit(String(e.def))
 	if bool(d.get("is_supply", false)):
@@ -300,6 +307,7 @@ static func _candidates(w: SimWorld, e: Dictionary, ts: Dictionary, k: int) -> A
 	var r2 := float(ts.radius) * float(ts.radius)
 	var bk := _buckets(w, _state(w))
 	var rr := float(ts.radius) + SLACK
+	var sea := NAVAL.has(_mc(e))   # G6: a Supply Ship claims only units that can come alongside
 	var x0 := int(floorf((center.x - rr) / GRID))
 	var x1 := int(floorf((center.x + rr) / GRID))
 	var y0 := int(floorf((center.y - rr) / GRID))
@@ -320,6 +328,8 @@ static func _candidates(w: SimWorld, e: Dictionary, ts: Dictionary, k: int) -> A
 		if (Vector2(u.pos) - center).length_squared() > r2 or int(u.get("resup_skip", -1)) > w.tick:
 			continue
 		if _mc(u) == "air_high" or not needs_supply(w, u, ts.thr):
+			continue
+		if sea and not SEA_CLIENTS.has(_mc(u)):
 			continue
 		if in_combat(w, u) and not (u.has("ammo") and int(u.ammo) <= 0):
 			continue   # combat rule: only an empty unit leaves a fight
@@ -555,14 +565,15 @@ static func _start_refill(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 	w.emit("TruckEmpty", {"truck": int(e.id), "owner": int(e.owner)})
 	var b = _nearest_depot(w, e)
 	if b != null:
-		Movement.order_move(w, e, _bcenter(b))
+		Movement.order_move(w, e, _depot_goal(w, e, b))
 
 
 static func _refill_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 	var b = _nearest_depot(w, e)
 	if b == null:
 		return   # nothing to reload from: wait
-	if Construction.footprint_dist(e.pos, b.cell, int(b.size)) <= 3.0:
+	var near := 3.0 if not NAVAL.has(_mc(e)) else float(Content.rules().get("g6_naval", {}).get("supply_ship_refill_radius", 3.0))
+	if Construction.footprint_dist(e.pos, b.cell, int(b.size)) <= near:
 		if bool(e.moving):
 			Movement.stop_path(e)
 			e.order = {"type": "idle"}
@@ -574,19 +585,24 @@ static func _refill_step(w: SimWorld, e: Dictionary, ts: Dictionary) -> void:
 			ts.erase("rt")
 			w.emit("TruckRefilled", {"truck": int(e.id), "building": int(b.id)})
 	elif not bool(e.moving) and w.tick - int(ts.get("tp", -100000)) >= REPATH:
-		Movement.order_move(w, e, _bcenter(b))
+		Movement.order_move(w, e, _depot_goal(w, e, b))
 		ts["tp"] = w.tick
 
 
-## Nearest own built HQ / supply point / refinery (footprint distance, ties by id).
+## Nearest own built HQ / supply point / refinery (footprint distance, ties by id). G6: a Supply Ship
+## (naval move class) reloads at the nearest own Supply Pier instead.
 static func _nearest_depot(w: SimWorld, e: Dictionary):
 	var best = null
 	var bd := INF
+	var sea := NAVAL.has(_mc(e))
 	for b in SimIndex.of(w, "building"):
 		if int(b.owner) != int(e.owner) or not bool(b.built) or not w.entities.has(int(b.id)):
 			continue
 		var d := Content.building(String(b.def))
-		if not (bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)) or d.has("refines")):
+		if sea:
+			if not (bool(d.get("pier", false)) or String(b.def).ends_with("_supply_pier")):
+				continue
+		elif not (bool(d.get("is_hq", false)) or bool(d.get("supply_point", false)) or d.has("refines")):
 			continue
 		var dist := Construction.footprint_dist(e.pos, b.cell, int(b.size))
 		if dist < bd:
@@ -603,6 +619,16 @@ static func _round(w: SimWorld, tid: int) -> bool:
 
 static func _bcenter(b: Dictionary) -> Vector2:
 	return Vector2(b.cell) + Vector2(float(b.size), float(b.size)) * 0.5
+
+
+## Where truck e drives to reload at depot b: the depot centre, or for a Supply Ship the nearest cell its
+## class can float on (G6).
+static func _depot_goal(w: SimWorld, e: Dictionary, b: Dictionary) -> Vector2:
+	var mc := _mc(e)
+	if not NAVAL.has(mc):
+		return _bcenter(b)
+	var cell := Movement.nearest_free_cell(w, w.cell_of(_bcenter(b)), mc, Movement.team_of(w, e))
+	return Vector2(cell) + Vector2(0.5, 0.5)
 
 
 ## Issues an AIRSYS command for u when AIRSYS accepts it (the G5 stub refuses: then nothing happens).

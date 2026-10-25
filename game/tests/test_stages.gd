@@ -149,7 +149,7 @@ func _available_items(w: SimWorld, fid: int) -> Array:
 
 
 # ---------------------------------------------------------------- QA-014 / MATCH-01 / QA-002
-func test_qa014_thirteen_ids_only_7_to_9_playable() -> void:
+func test_qa014_thirteen_ids_only_7_to_10_playable() -> void:  # G6 (CONTRACTS_G6 14): Stage 10 joins
 	var ids := []
 	var playable := []
 	for s in Content.stages():
@@ -157,10 +157,10 @@ func test_qa014_thirteen_ids_only_7_to_9_playable() -> void:
 		if bool(s.get("playable_now", false)):
 			playable.append(int(s.id))
 	check_eq(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], "exactly 13 stage ids")
-	check_eq(playable, [7, 8, 9], "only stages 7-9 are active")
-	for st in [7, 8, 9]:
+	check_eq(playable, [7, 8, 9, 10], "only stages 7-10 are active")
+	for st in [7, 8, 9, 10]:
 		check_eq(SimWorld.validate_config(_cfg([["human_a", st, 1000], ["machine", 8, 1000]])), "", "stage %d accepted" % st)
-	for st in [6, 10]:
+	for st in [6, 11]:
 		check(SimWorld.validate_config(_cfg([["human_a", st, 1000], ["machine", 8, 1000]])).contains("not playable"), "stage %d rejected" % st)
 
 
@@ -354,8 +354,10 @@ func test_gates_8_to_9_each_refuses_then_passes() -> void:
 	check_eq(_journal(w, 0, "advance_stage:9").size(), 1, "8->9 charged once")
 	w.run_ticks(PData.transition_ticks())
 	check_eq(int(f.stage), 9, "Stage 9 reached")
-	check(Progression.gate_report(w, 0).is_empty(), "no gates above Stage 9")
-	check(Progression.can_advance(w, 0).contains("highest stage"), "Stage 9 is the top: " + Progression.can_advance(w, 0))
+	# G6 (CONTRACTS_G6 14): Stage 9 now has the 9->10 gate above it (tests/test_stage10.gd covers it)
+	check(not Progression.gate_report(w, 0).is_empty(), "the 9->10 gate is reported at Stage 9")
+	check(Progression.can_advance(w, 0).contains("Requires") or Progression.can_advance(w, 0).contains("Gate not met") or Progression.can_advance(w, 0).contains("Not enough"),
+		"Stage 9 -> 10 is gated: " + Progression.can_advance(w, 0))
 
 
 # ---------------------------------------------------------------- research
@@ -409,7 +411,15 @@ func test_research_progress_pause_resume_cancel() -> void:
 	check_eq(String(r.active), "", "cancel clears the project")
 	check(credits0 > 0 and c_before > 0, "sanity")
 	var rl := Progression.research_list(w, 0)
-	check_eq(rl.size(), 5, "5 research projects listed")
+	var g3b := 0
+	var g6_for_a := 0
+	for it in rl:
+		if String(it.id).begins_with("g6_"):
+			g6_for_a += 1
+		else:
+			g3b += 1
+	check_eq(g3b, 5, "5 G3b research projects listed")
+	check_eq(g6_for_a, 20, "G6 projects listed for Human A: 24 minus the 4 other-faction ones (CONTRACTS_G6 3.3)")
 
 
 func test_save_round_trip_mid_research_and_mid_transition() -> void:

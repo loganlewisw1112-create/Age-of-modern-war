@@ -25,6 +25,8 @@ const G4B = preload("res://sim/ai/ai_g4b.gd")
 const AiAir = preload("res://sim/ai/ai_air.gd")  # G5 scaffold
 const AiNaval = preload("res://sim/ai/ai_naval.gd")  # G5 scaffold
 const G5 = preload("res://sim/ai/ai_g5.gd")  # G5 (AI6): drone teams, tactical, auto truck / evac
+const G6 = preload("res://sim/ai/ai_g6.gd")  # G6 scaffold (owner AI7-USE): every G6 unit and system
+const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")  # G6 scaffold (owner AI7-DOC)
 const Triggers = preload("res://sim/systems/triggers.gd")
 
 
@@ -178,6 +180,7 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 	if prof != null:
 		prof.mark(fid, "target_bridge")
 	var army_pop: int = ctx.army_pop
+	_support_trim(w, fid, st, ctx)
 	if econ_turn:
 		Logi.manage_repair(w, fid, st, ctx)
 		Econ.manage_construction(w, fid, st, ctx)
@@ -212,6 +215,8 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		G5.manage_drones(w, fid, st, ctx)
 		G5.manage_medical(w, fid, st, ctx)
 		G5.manage_support(w, fid, st, ctx)
+		G6.manage(w, fid, st, ctx)        # G6 scaffold (owner AI7-USE)
+		Doctrine.think(w, fid, st, ctx)   # G6 scaffold (owner AI7-DOC)
 		if prof != null:
 			prof.mark(fid, "g4b")
 		Army.manage_army(w, fid, st, ctx)
@@ -239,6 +244,27 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 
 
 ## One snapshot of OWN units/buildings per think.
+## AI7-USE-3: supply-capped late game with the army under half the supply: no new unarmed support
+## units (U._bank_ok refuses their queue_unit; crews only up to the base cap + TRIM_CREWS). Valley d3
+## s2 end: Human B 88 supply, army 29; Machine with no army survived both humans to the cap.
+## st.trim is written only once it first turns on (G5 configs keep their hashes until then).
+const TRIM_TICK := 36000
+const TRIM_SLACK := 6
+const TRIM_CREWS := 4
+
+
+static func _support_trim(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
+	var f: Dictionary = w.factions[fid]
+	var capped := int(f.pop) + int(ctx.queued_pop) >= int(f.pop_cap) - TRIM_SLACK
+	var on := w.tick >= TRIM_TICK and capped and int(ctx.army_pop) * 2 < int(f.pop)
+	if not on and not st.has("trim"):
+		return
+	if on != bool(st.get("trim", false)):
+		U.log_line(st, w, "support trim %s (army %d of %d supply)" % ["on" if on else "off", int(ctx.army_pop), int(f.pop)])
+	st.trim = on
+	st.trim_crews_ok = (ctx.engineers as Array).size() < int(U.diff(w, fid).max_engineers) + TRIM_CREWS
+
+
 static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 	# one pass over the entity table instead of units_of + buildings_of (same order as both)
 	var units := []
@@ -313,6 +339,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 			held.append(e)  # G4b: walking to a carrier (ai_g4b ferry)
 		elif def_id == rec_def:
 			recon.append(e)
+		elif int(e.get("garrisoned_in", -1)) >= 0:
+			held.append(e)  # G6 (AI7-USE): garrisoned squads hold their building (ai_g6_def)
 		elif bool(e.get("broken", false)):
 			held.append(e)  # morale.gd retreats it; never order it back into the fight
 		else:
@@ -345,6 +373,11 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		for q in b.queue:
 			for u in Content.production(String(q.item)).get("spawns", []):
 				queued_pop += U.pop_of(String(u))
+	# G6 (AI7-USE): a company in training at a Company HQ spawns whole once its supply fits; its pop
+	# counts as queued so unit production leaves room for it and Econ builds supply (ARMY6 SUPPLY_CAP)
+	for t in w.sys_state.get("companies", {}).get("training", []):
+		if int(t.get("owner", -1)) == fid:
+			queued_pop += int((t.get("plan", {}) as Dictionary).get("pop", 0))
 	return {"units": units, "buildings": buildings, "engineers": engineers, "army": army,
 		"have": have, "built": built, "unfinished": unfinished, "unfinished_total": unfinished_total,
 		"power_planned": power, "cap_planned": cap_planned, "queued_pop": queued_pop, "hq": hq, "busy": {}, "visible": [],

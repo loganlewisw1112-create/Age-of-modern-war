@@ -1,0 +1,39 @@
+{
+  "agent": "ECON-AIRF6",
+  "gen": 1,
+  "reason": "budget handoff (orch directive: projection 530k of 750k, 71%)",
+  "done": [
+    "Market (task 1): sim/systems/market.gd implemented; content/g6/rules_market.json rules.g6_market (base prices salvage 3 / ore 2 / fuel 2 / ammo 2 credits, step 1%/unit, drift 180 s linear, sell 70%, 200 units/res/player per fixed 60 s window, clamp 40..400%, requires a built HQ). State w.sys_state.market {ver 1, res {res: {anchor (milli-units), t0 tick}}, limits {fid: {win, used {res}}}} created lazily on the first trade (worlds that never trade keep their hash). Price is a pure integer function of tick (no per-tick work). Ledger cause market:<res> on both legs; event MarketTrade. API: Market.price / price_milli / quote / limit_left / resources. fact market.api_ready posted.",
+    "Airfield v2 (task 2): sim/systems/airfield.gd: layout_for(def, cell, facing_i, extra) pure layout {base, apron, slots, runways, strip_len, slot_size, facing_i}; layout(w,bid); site_ok(w,def,cell,facing_i); slots(w,bid); hangars[i].slot index; build_hangar auto-fills the lowest free apron slot (_next_slot / _hangar_cell now return apron slots; old ring search kept as _ring_cell, which skips apron squares); runways beyond the apron (rules g5_air.v2 slot_size 2, apron_rows 2, runway_offset 1.5, runway_gap 4.0, carrier_deck_len 4.0); fields without slots keep the exact G5 strip formula; strip count reconciled each tick to strips + extra_strips (maps/editor).",
+    "register_mobile_field(w, carrier_id, slots): kind 'carrier' in STRIP_KINDS (not HANGAR_FIELDS), deck strip along unit facing, virtual light slots (hangar bid = carrier), idempotent, dropped when the carrier dies (landed aircraft destroyed 'carrier_lost'), never cratered. built checks use .get('built', true) so unit fields do not crash (airfield.gd + air.gd line ~148).",
+    "Migration: sys_state.airfield.ver 1 -> 2 on the first scan_new after a G5 load: base resized to def size around its old centre (nav footprint updated via Movement.on_footprint_changed), strips re-laid, hangars re-slotted in order (moved onto the lowest free slot square, else kept in place with the lowest unused index). G5 maps: MapIO._place_field -> Airfield._hangar_cell places map hangars onto apron slots in order.",
+    "content/g5/air.json geometry keys: a_airfield/b_aerodrome size 6->2, slots_base 4->6, strip_len 26->12; a_/b_airstrip strip_len 14->8; a_/b_forward_strip 10->6; m_launch_rail 12->6; rules.g5_air.v2 block added. fact airfield6.api_ready posted.",
+    "Tests: tests/test_market.gd 8/8 and tests/test_airfield_g6.gd 7/7 (moved from tests/pending_g6 with mv: the skeletons were untracked so git mv failed). test_airfield.gd updated: helper _field uses new _site() (site_ok + clear apron), _tower uses Airfield._ring_cell, extra-strip test expects 6 -> 8 slots (CONTRACTS_G6 s13). test_air 9/9, test_air_transport 7/7, test_econ 15/15, test_airfield 13/13 (all --only runs, this session).",
+    "Board needs posted (post.mjs has no change_request type, used type need): VIEW6 change_request.airfield_v2_render (sim/render_snap.gd ~L485-510 duplicates the G5 strip formula; must call Airfield.strip_points, optionally add apron/slots from Airfield.layout); info to AI7-USE (market API, use Airfield.site_ok for airfield sites), ED6 (layout_for/site_ok for editor placement), UI6b (Airfield.slots, market API)."
+  ],
+  "remaining": [
+    "1. OPEN CR change_request.air_out_of_bounds (orch, board seq 244): b_bomber unit 391 out of bounds at (85,160)/(84.75,160.375), t=93600..103200, custom_front map (.plan/shots/AI7-USE/soak_custom_s1_d1.txt). Fix in sim/systems/air.gd: clamp every air waypoint/position to [0,w) x [0,h) - holding circle (air.gd 'holding' phase: e.pos = c + (cos,sin)*hold_radius), approach start p0 = ap[0] - axis*8 (air.gd 'approach'), taxi/roll lerps along strip_points (v2 runway can extend past the map edge for a field near the border: runway sits apron_depth+1.5 beyond the base), sortie/loiter/divert targets. Suggest a helper _clamp_in(w, p) = Vector2(clampf(p.x, 0.0, w.map.w - 0.01), clampf(p.y, 0.0, w.map.h - 0.01)) (check the real map size field names in world.gd/in_bounds) applied wherever e.pos is assigned for flying phases. Add a regression test in tests/test_airfield_g6.gd (or test_air.gd): field placed near the map edge (e.g. a_airfield with facing so the runway points off-map, or base within 3 tiles of the bottom edge), sortie + rebase + holding, assert every tick 0 <= pos < map size for the jet. Re-run test_air, test_airfield, test_airfield_g6.",
+    "2. Optional hardening: Airfield.site_ok is advisory only; construction placement does not call it (construction.gd is MECH6a's; airfield.gd preloads construction.gd so a direct preload back would be cyclic). If ORCH wants it enforced, CR to MECH6a/ORCH to call it via load() for defs whose air_field is a strip kind.",
+    "3. Run the full suite once inside hb.sh: bash .plan/hb.sh ECON-AIRF6 <calls> <tokens> 'full suite' -- timeout 3000 bash tests/run.sh (it prints only at the end; takes > 20 min now). My gen-1 full run was started at 08:39 and stopped at handoff without a result. Watch especially: test_ai_air_naval (AI7-USE builds airfields; base is now 2x2), test_editor_g5 / test_tutorial (ED6; tutorial map airfield hangars now go onto apron slots), test_view5 / test_ui_panels (render_snap strip geometry pending VIEW6 CR), test_map_io, test_determinism hash fixtures with airfields (contract-sanctioned change; ORCH re-baselines).",
+    "4. Post done + bus DONE and the final report when the above is green."
+  ],
+  "files_touched": [
+    "sim/systems/market.gd",
+    "content/g6/rules_market.json",
+    "sim/systems/airfield.gd",
+    "sim/systems/air.gd (one line: pads loop b.get('built', true))",
+    "content/g5/air.json (geometry keys + rules.g5_air.v2)",
+    "tests/test_market.gd (new, from pending_g6)",
+    "tests/test_airfield_g6.gd (new, from pending_g6)",
+    "tests/test_airfield.gd (helpers + 6/8 slot expectations)"
+  ],
+  "test_state": "--only runs green this session: test_market 8/8 (RESULT pass=8 fail=0; that run also showed 'Nonexistent function tick' script errors from world.gd:351 while another agent's system file was mid-edit - transient, not mine), test_airfield_g6 7/7 TESTS OK, test_airfield 13/13 TESTS OK, test_air 9/9 TESTS OK, test_air_transport 7/7 TESTS OK, test_econ 15/15 TESTS OK. Full suite: NOT run to completion. Compile check at handoff: clean.",
+  "gotchas": [
+    "post.mjs types: claim|status|need|answer|fact|warn|done|blocked|directive|ack|review|handoff (no change_request type; use need with topic change_request.<x>).",
+    "Bash heredocs with GDScript containing quotes/% sometimes break the Bash tool; writing a python script to the scratchpad with Write and running it is reliable.",
+    "Market prices drift 1/3600 of the offset per tick, so trades on consecutive ticks are not exactly 1% apart; tests compare same-tick or with a small tolerance.",
+    "tests/run.sh output appears only when the whole run ends.",
+    "Hangar register exact-matches a hangar's cell to an apron slot first, then falls back to the G5 nearest-field rule.",
+    "Migration erases w.cache.bld_occ (Construction occupancy cache) because footprints change without next_id changing."
+  ]
+}

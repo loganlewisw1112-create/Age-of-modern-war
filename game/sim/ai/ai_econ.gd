@@ -4,6 +4,7 @@ extends RefCounted
 ## Fairness: see the convention in ai_util.gd.
 
 const U = preload("res://sim/ai/ai_util.gd")
+const Economy = preload("res://sim/systems/economy.gd")  # cap_max_for: 200 with a built Company HQ (ECON-AIRF6-2)
 const Construction = preload("res://sim/systems/construction.gd")
 const Stage = preload("res://sim/ai/ai_stage.gd")
 
@@ -33,7 +34,7 @@ static func next_build(w: SimWorld, fid: int, ctx: Dictionary) -> String:
 		return power
 	if barracks != "" and int(have.get(barracks, 0)) == 0:
 		return barracks
-	var cap_max := int(Content.rules().pop_cap_max)
+	var cap_max := Economy.cap_max_for(w, fid)
 	# planned cap counts unfinished buildings too (f.pop_cap lags a tick behind completion)
 	var cap := mini(int(ctx.cap_planned), cap_max)
 	var free_pop := cap - int(f.pop) - int(ctx.queued_pop)
@@ -160,13 +161,16 @@ static func _pick_engineers(ctx: Dictionary, pos: Vector2, n: int) -> Array:
 
 
 ## Deterministic ring search around an anchor near the HQ. Returns Vector2i(-1, -1) if nothing fits.
-static func find_origin(w: SimWorld, fid: int, st: Dictionary, def_id: String) -> Vector2i:
+## G6 (AI7-USE): `at` (>= 0) overrides the anchor (defences by threat at the front arc); default unchanged.
+static func find_origin(w: SimWorld, fid: int, st: Dictionary, def_id: String, at: Vector2 = Vector2(-1, -1)) -> Vector2i:
 	var size := int(Content.building(def_id).size)
 	var base := U.base_pos(w, fid)
 	var dir := U.front_dir(w, fid)
 	var anchor := base + dir * 3.0
 	var n_same := w.buildings_of(fid, def_id).size()
-	if def_id == U.role(w, fid, "defense"):
+	if at.x >= 0.0:
+		anchor = at
+	elif def_id == U.role(w, fid, "defense"):
 		# defences fan out along the front arc (Human B builds three)
 		var ang: float = [0.0, 0.7, -0.7, 1.3, -1.3][n_same % 5]
 		anchor = base + dir.rotated(float(ang)) * 8.0

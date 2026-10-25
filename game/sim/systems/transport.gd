@@ -23,6 +23,10 @@ extends RefCounted
 ## = troops OR vehicles (gunship / heavy-lift / lifter); `sling: true` = vehicles ride slung (slung()).
 ## G5 air carriers (defs with `aircraft`) load and unload only while landed: they land on the spot when it is a
 ## valid landing zone (Air.landing_ok), else the unload fails with UnloadFailed.
+## G6 (owner: NAVAL6, CONTRACTS_G6 section 11): hover carriers (a_hovercraft: move_class hover, cargo_caps
+##   {foot: 8, vehicle: 1}) use the G5 group caps above, cross land and water, and unload on any land
+##   (Naval.udef.beach is false for hover); a hover carrier lost over water counts as naval (cargo dies
+##   unless land is adjacent), over land as ground (cargo ejects).
 
 const Movement = preload("res://sim/systems/movement.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
@@ -661,7 +665,7 @@ static func on_carrier_destroyed(w: SimWorld, c: Dictionary, killer_owner: int) 
 	var kind := "ground"
 	if Movement.is_air(mc):
 		kind = "air"
-	elif mc == "naval" or mc == "naval_small" or (mc == "amphibious" and Terrain.is_water(w.terrain_at(w.cell_of(p)))):
+	elif mc == "naval" or mc == "naval_small" or ((mc == "amphibious" or mc == "hover") and Terrain.is_water(w.terrain_at(w.cell_of(p)))):
 		kind = "naval"
 	var dead := []
 	match kind:

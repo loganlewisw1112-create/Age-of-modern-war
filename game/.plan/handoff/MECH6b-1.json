@@ -1,0 +1,33 @@
+{
+  "agent": "MECH6b",
+  "status": "done (handoff on budget.handoff_now at 98 calls; no feature work left)",
+  "done": [
+    "sim/systems/machine_g6.gd: self-repair (nanite wall, needs power), nanite forge (out of combat), repair swarm II (in combat), assimilate + wreck registry (world wreck entities; wrecks(w), wreck_class), spawners (hive node to cap; swarm queen via air.gd while airborne), mimic disguise_for (e.mg6_spot), stalker cloak (cloak_visible), shield_mult, relay_chain/relay_covers/relay_power_covers, overmind_online, phase_gate_open; commands assimilate + cloak",
+    "sim/systems/strikes.gd: strike command (unit_ids for a_loiter_truck/a_mlrs, building_id for a_cruise_battery/m_mass_driver); loiter munitions 6/load + reload; MLRS 12-rocket salvo with rng scatter; mass driver long-range shell; cruise global strike with 180 s cooldown; every shot offered to Counterdrone.intercept_strike (AIRDEF6 CR applied); Callins designation multipliers (MECH6c CR applied)",
+    "content/g6/rules_machine.json: rules.g6_machine + 3 strike warhead weapons",
+    "tests/test_machine_g6.gd 12/12, tests/test_strikes.gd 5/5 (incl. save/load continuity + G5-neutral checks); test_determinism 5/5"
+  ],
+  "remaining": [
+    "nothing required for done-when except ORCH's full-suite run",
+    "optional: ECON-AIRF6 CR micro_life_preset (air.gd _register keeps preset e.air_life so hive drones live 40 s, not 30)",
+    "optional: VIEW6 CR mimic_cloak_snapshot (mg6_spot / cloaked / cloak_hid in render_snap detail)",
+    "optional: Fortify phase-gate power lock (ORCH declined unless needed; not needed by tests)"
+  ],
+  "open_crs": {
+    "AIRDEF6 cruise_intercept (to me)": "APPLIED: strikes.gd calls Counterdrone.intercept_strike(w, fid, at, kind) at impact for cruise/rocket/shell",
+    "MECH6c designation_strikes (to me)": "APPLIED: Callins.strike_delay_mult on flight times, strike_acc_mult shrinks MLRS scatter",
+    "MECH6b -> AIRDEF6 ciws_intercept_api": "superseded by their intercept_strike",
+    "MECH6b -> MECH6a relay_build_range": "APPLIED by ORCH",
+    "MECH6b -> ORCH contracts_strike_building": "APPLIED by ORCH",
+    "MECH6b -> ECON-AIRF6 micro_life_preset": "open (optional)",
+    "MECH6b -> VIEW6 mimic_cloak_snapshot": "open"
+  },
+  "test_state": "run.sh --only=test_machine_g6: 12/12 TESTS OK; --only=test_strikes: 5/5 TESTS OK; --only=test_determinism: 5/5 TESTS OK (before the last strikes.gd CR edit; determinism not re-run after it)",
+  "gotchas": [
+    "machine_g6.gd must not preload g6_hooks/damage/g4b_mech/movement (cycle): G4bMech and Movement are load()ed lazily",
+    "world._common_validate drops building ids from unit_ids: battery strikes need building_id",
+    "MachineG6 registry is w.cache.mg6_sub (never saved); state sys_state.machine_g6 / sys_state.strikes are created lazily only when a G6 special acts, so G5 hashes stay equal",
+    "save/load tests must round-trip through SaveSystem.encode_dict/decode_bytes; SimWorld.from_dict(w.to_dict()) shares dicts and diverges",
+    "cloak/mimic spot uses the combat grid (G4bMech.near_units: FULL-tier units, current because MachineG6 runs after Combat)"
+  ]
+}

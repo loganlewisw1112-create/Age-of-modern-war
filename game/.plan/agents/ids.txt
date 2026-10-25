@@ -37,3 +37,18 @@ MAP4 opus 600k task a85876723a4a9072f
 STG4 opus 700k task aa87786755141ec87
 UI4 opus 500k task a1a7d94aaecc4976a
 ART4 opus 500k task aff8e715ae633acd0
+--- G4 wave 1 (2026-10-24)
+NAT opus 700k a511e9dfea6361d4a
+THREAD opus 700k a47703531ecc103be
+MAPIO opus 700k a96981df466ef80af
+ED1 opus 700k a3cc1711bf475170d
+FORT opus 600k a36cc657cef3f4603
+ART-T opus 600k a0924b0a0239707c6
+--- G4 waves 2-3
+ED2 a a70a617af2aa8944 (done) | TRANS a1f376d5129661cf0 (done) | UNITS ae9567b431ce214f3 (done) | ART-F stopped | ART-F-2 a20d64dd66c66c15c (done)
+THREAD-2 a2567c8ba636ef89c (done) | ED3 a32baff6b33d65642 | UI4B a8b2b94a834480971 | ART-U a3f92cab659f6f091 (handoff) | ART-U-2 stopped
+ART-U-3 a4cff387a4c332d7f | PERF10K a65109bafc89ef5e0 | AI5 a6dad0d2b970153b0
+--- G6 wave (2026-10-25, branch g6, cap 750k/140 each)
+ELEV a8092dc7788c16b53 | PERF6 a013e6c7748c4d535 | CONTENT6 ae2037ff7282a4970 | ART-G6 a296600019816d321
+ARMY6 a0ad9c32f8ccc707c | MECH6a addac274bbcec7e52 | AI7-USE a1b12c0dc544ba2e4 | ECON-AIRF6 ada8e848adef93515
+MECH6a-2 a2b764622bae0d82a (successor, + engineering scope) | AI7-USE-2 a85701a13088d8158 (successor)

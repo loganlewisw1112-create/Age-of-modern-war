@@ -35,7 +35,7 @@ static func load_all() -> void:
 ##   faction_roles: {faction: {role: id}}       new role keys only
 ##   faction_stage_roles: {faction: {"7": {role: id}}}  new keys only
 const FRAGMENT_DIR := "res://content/g4"
-const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5"]  # G5: merged in this order
+const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5", "res://content/g6"]  # G5/G6: merged in this order
 
 
 static func _merge_fragments() -> void:
@@ -242,12 +242,14 @@ static func available(d: Dictionary, stage: int) -> bool:
 	return true
 
 
-## Buildable building defs for a faction (content order).
+## Buildable building defs for a faction (content order). G6 (CONTRACTS_G6 section 3.2): defs with
+## "faction": "shared" are buildable by every faction.
 static func buildable_for(faction_id: String) -> Array:
 	var out := []
 	for id in ids("buildings"):
 		var d: Dictionary = building(id)
-		if String(d.get("faction", "")) == faction_id and bool(d.get("buildable", false)):
+		var df := String(d.get("faction", ""))
+		if (df == faction_id or df == "shared") and bool(d.get("buildable", false)):
 			out.append(id)
 	return out
 

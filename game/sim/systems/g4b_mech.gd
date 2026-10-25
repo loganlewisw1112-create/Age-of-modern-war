@@ -12,6 +12,9 @@ extends RefCounted
 ##   crush_damage   scrap mech: while moving, enemy infantry within radius+0.3 take this per tick
 ##                  (weapon class "crush" through Damage.apply_hit).
 ##   detects_mines  (or def role "recon"): enemy mines within DETECT_RANGE join mine.seen (that team).
+##                  G6 (MECH6a): defs in rules.g6_ground.mines.detect_radius (EOD, mine clearer) detect
+##                  within their own radius. G6 mines carry mine_kind (mine_hits: AT vehicles, AP foot,
+##                  sea ships) and their payload weapon (m.weapon); see sim/systems/mines.gd.
 ##   can_mine / can_charge  combat engineer: orders {type:"lay_mine", cell, t} / {type:"plant_charge",
 ##                  target_id, t}; walk there, work LAY_TICKS / PLANT_TICKS, then spawn the entity.
 ## Entities (saved in w.entities, ascending ids):
@@ -33,6 +36,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const Damage = preload("res://sim/systems/damage.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Garrison = preload("res://sim/systems/garrison.gd")  # G6 (MECH6a): end-of-tick occupant re-pin
 
 const CONCEAL_TICKS := 60
 const CONCEAL_RANGE := 3.0
@@ -74,12 +78,44 @@ static func _mask(st: Dictionary, def_id: String) -> int:
 		v |= M_SETUP
 	if float(d.get("crush_damage", 0)) > 0.0:
 		v |= M_CRUSH
-	if bool(d.get("detects_mines", false)) or String(d.get("role", "")) == "recon":
+	if bool(d.get("detects_mines", false)) or String(d.get("role", "")) == "recon" or _g6_detect_r(def_id) > 0.0:
 		v |= M_DETECT
 	if bool(d.get("can_mine", false)) or bool(d.get("can_charge", false)):
 		v |= M_ENGINEER
 	st.defs[def_id] = v
 	return v
+
+
+## G6 (MECH6a): per-def detection radius (rules.g6_ground.mines.detect_radius; def detect_radius wins).
+static func _g6_detect_r(def_id: String) -> float:
+	var d := Content.unit(def_id)
+	if d.has("mine_detect_radius"):
+		return float(d.mine_detect_radius)
+	if d.has("detect_radius"):
+		return float(d.detect_radius)
+	return float(Content.rules().get("g6_ground", {}).get("mines", {}).get("detect_radius", {}).get(def_id, 0.0))
+
+
+static func detect_range_of(def_id: String) -> float:
+	var r := _g6_detect_r(def_id)
+	return r if r > 0.0 else DETECT_RANGE
+
+
+## G6 (MECH6a): does mine m trigger on unit u? G4 mines (no mine_kind) hit any ground unit; "at" hits
+## vehicles (non-foot or heavy armor), "ap" foot infantry, "sea" ships; land mines never hit ships.
+static func mine_hits(m: Dictionary, u: Dictionary) -> bool:
+	var k := String(m.get("mine_kind", ""))
+	if k == "":
+		return true
+	var d := Content.unit(String(u.def))
+	var mc := String(d.get("move_class", ""))
+	var naval := mc.begins_with("naval") or mc == "hover"
+	if k == "sea":
+		return naval
+	if naval:
+		return false
+	var foot := mc == "foot" and String(d.get("armor", "")) != "heavy"
+	return foot if k == "ap" else not foot
 
 
 static func _add(st: Dictionary, e: Dictionary) -> void:
@@ -155,6 +191,8 @@ static func tick(w: SimWorld) -> void:
 		_ground_pass(w, mines, fires)
 	if not fires.is_empty():
 		_fire_step(w, fs)
+	if w.sys_state.has("garrison"):
+		Garrison.repin(w)
 
 
 # ---------------------------------------------------------------- concealment (sniper)
@@ -352,7 +390,7 @@ static func _approach(e: Dictionary, t: Dictionary) -> Vector2:
 static func _mines_of(w: SimWorld, eng_id: int) -> int:
 	var n := 0
 	for m in SimIndex.of(w, "mine"):
-		if w.entities.has(int(m.id)) and int(m.get("layer", -1)) == eng_id:
+		if w.entities.has(int(m.id)) and typeof(m.get("layer")) == TYPE_INT and int(m.layer) == eng_id:
 			n += 1
 	return n
 
@@ -386,11 +424,19 @@ static func _spawn_mine(w: SimWorld, e: Dictionary, cell: Vector2i) -> void:
 	w.emit("MineLaid", {"id": id, "owner": int(e.owner), "cell": cell, "by": int(e.id)})
 
 
-static func _spawn_charge(w: SimWorld, e: Dictionary, t: Dictionary) -> void:
+## G6 (MECH6a, Engineering breach): optional payload weapon / damage mult / fuse; the keys "weapon" and
+## "mult" are stored only when not the G4 defaults, so G4 charges, saves and hashes are unchanged.
+static func _spawn_charge(w: SimWorld, e: Dictionary, t: Dictionary, weapon: String = "g4_charge", mult: float = 1.0, fuse: int = FUSE_TICKS) -> int:
 	var id: int = w._new_id()
-	w.entities[id] = {"id": id, "kind": "charge", "def": "g4_charge", "owner": int(e.owner),
-		"pos": Vector2(e.pos), "target": int(t.id), "fuse": FUSE_TICKS, "hp": 1.0, "max_hp": 1.0}
-	w.emit("ChargePlanted", {"id": id, "owner": int(e.owner), "target": int(t.id), "fuse": FUSE_TICKS, "by": int(e.id)})
+	var c := {"id": id, "kind": "charge", "def": "g4_charge", "owner": int(e.owner),
+		"pos": Vector2(e.pos), "target": int(t.id), "fuse": fuse, "hp": 1.0, "max_hp": 1.0}
+	if weapon != "g4_charge":
+		c["weapon"] = weapon
+	if mult != 1.0:
+		c["mult"] = mult
+	w.entities[id] = c
+	w.emit("ChargePlanted", {"id": id, "owner": int(e.owner), "target": int(t.id), "fuse": fuse, "by": int(e.id)})
+	return id
 
 
 static func _wpn(id: String) -> Dictionary:
@@ -407,7 +453,7 @@ static func _detect(w: SimWorld, mines: Array, detectors: Array) -> void:
 		for d in detectors:
 			if not w.entities.has(int(d.id)) or not w.is_enemy(int(m.owner), int(d.owner)):
 				continue
-			if Vector2(d.pos).distance_to(mp) > DETECT_RANGE:
+			if Vector2(d.pos).distance_to(mp) > detect_range_of(String(d.def)):
 				continue
 			var tm := team_of(w, int(d.owner))
 			var seen: Array = m.seen
@@ -436,7 +482,9 @@ static func _charges_step(w: SimWorld, charges: Array) -> void:
 		var t = w.entities.get(int(c.target))
 		w.emit("ChargeDetonated", {"id": cid, "owner": int(c.owner), "target": int(c.target), "pos": c.pos})
 		if t != null and (t.kind != "structure" or String(t.get("state", "")) != "ruined"):
-			Damage.apply_hit(w, c, t, _wpn("g4_charge"), true)
+			var wp := _wpn(String(c.get("weapon", "g4_charge")))
+			wp.damage = float(wp.damage) * float(c.get("mult", 1.0))  # G6 breach x2 vs walls / gates
+			Damage.apply_hit(w, c, t, wp, true)
 
 
 # ---------------------------------------------------------------- mines trigger + units in fire
@@ -478,7 +526,7 @@ static func _ground_pass(w: SimWorld, mines: Array, fires: Dictionary) -> void:
 		var mp: Vector2 = m.pos
 		for u in near:
 			if w.entities.has(int(u.id)) and w.is_enemy(int(m.owner), int(u.owner)) and not _is_air(u) \
-					and not (m.seen as Array).has(team_of(w, int(u.owner))) and mp.distance_to(u.pos) <= MINE_TRIGGER:
+					and not (m.seen as Array).has(team_of(w, int(u.owner))) and mp.distance_to(u.pos) <= MINE_TRIGGER 					and mine_hits(m, u):
 				_blast(w, m, near, int(u.id))
 				break
 	for u in burning:
@@ -493,7 +541,7 @@ static func _ground_pass(w: SimWorld, mines: Array, fires: Dictionary) -> void:
 
 
 static func _blast(w: SimWorld, m: Dictionary, near: Array, by: int) -> void:
-	var s := _wpn("g4_mine_blast")
+	var s := _wpn(String(m.get("weapon", "g4_mine_blast")))
 	var rad := maxf(float(s.splash), 0.01)
 	var mp: Vector2 = m.pos
 	w.entities.erase(int(m.id))

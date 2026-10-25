@@ -1,0 +1,22 @@
+{
+  "_meta": "G6 fragment (owner: AIRDEF6). CONTRACTS_G6: rules.g6_airdef (section 12). New ids/keys only; numbers are PROVISIONAL balance fixtures. Per-def numbers (radar radius, awacs radius/aa_acc_mult, ciws radius/shots_per_min, jammer radius, net_capture salvage, anti_drone_mult) live on the defs (CONTENT6).",
+  "rules": {
+    "g6_airdef": {
+      "_doc": "scan_every: ticks between radar picture / RadarContact / AWACS reveal passes. awacs_mark_ticks: how long an AWACS reveal (e.marked_until) lasts; > scan_every so a tracked aircraft stays revealed. contact_forget_scans: scans an aircraft must stay out of the picture before a new RadarContact can fire for it.",
+      "scan_every": 10,
+      "scan_phase": 4,
+      "awacs_mark_ticks": 30,
+      "contact_forget_scans": 6,
+      "counter_drone": {
+        "_doc": "drone_* select which air units count as drones (CIWS kills, nets capture, jammers drop, anti_drone_mult applies). intercept_classes: indirect weapon classes a CIWS may shoot down (rocket = a salvo weapon). net_default_cooldown_s: capture interval when the post has no weapon. jam_drops_guided: guided shots aimed into an enemy jam field drop (shot_blocked).",
+        "drone_flags": ["launched_drone"],
+        "drone_roles": ["drone", "mimic_drone"],
+        "drone_aircraft": ["micro"],
+        "intercept_classes": ["artillery", "grenade"],
+        "net_default_cooldown_s": 2.5,
+        "jam_drops_guided": true,
+        "kill_damage": 100000.0
+      }
+    }
+  }
+}

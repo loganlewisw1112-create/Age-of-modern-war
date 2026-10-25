@@ -1,0 +1,22 @@
+{
+  "_meta": "G6 fragment (owner: ELEV). CONTRACTS_G6: rules.g6_elevation (section 7, D23/D24). New ids/keys only; numbers are PROVISIONAL balance fixtures.",
+  "rules": {
+    "g6_elevation": {
+      "_doc": "Levels 0 valley, 1 plain (default), 2 hill, 3 ridge. Per level of advantage: sight +sight_per_level tiles, weapon range x range_mult_per_level, damage taken from a lower attacker x defence_mult_per_level. Ramp cells: speed x ramp_speed_mult. Old-format HILL tiles load as hill_level.",
+      "sight_per_level": 2.0,
+      "range_mult_per_level": 1.10,
+      "defence_mult_per_level": 0.85,
+      "ramp_speed_mult": 0.7,
+      "hill_level": 2,
+      "gen": {
+        "_doc": "MapGen height noise for generated / editor maps (MapGen.add_height_noise).",
+        "noise_cells": 12,
+        "hill_frac": 0.16,
+        "ridge_frac": 0.04,
+        "valley_frac": 0.06,
+        "ramp_every": 3,
+        "spawn_flat_r": 9.0
+      }
+    }
+  }
+}

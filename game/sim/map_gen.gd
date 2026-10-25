@@ -25,6 +25,12 @@ const MODULES := {
 	"coastal_front_m": preload("res://sim/maps/coastal_front.gd"),  # G5 (NAVAL)
 }
 const MapCheck = preload("res://sim/maps/map_check.gd")
+## G6 (owner ELEV, CONTRACTS_G6 section 7): authored height for River Crossing (_rc_height, its own rng
+## stream, so the terrain bytes and re-roll decisions stay exactly as before), height noise + ramp
+## placement + validation for generated / editor maps (add_height_noise, connect_ramps,
+## validate_height). Every validator walks the height edge rule (cliffs block, ramps join).
+const MapUtil = preload("res://sim/maps/map_util.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")
 const DEFAULT_ID := "river_crossing_s"
 ## River Crossing spawn sets: identity, so 2/3/4-side matches use spawns 0..n-1 exactly as before.
 const RC_SPAWN_SETS := {"2": [0, 1], "3": [0, 1, 2], "4": [0, 1, 2, 3]}
@@ -201,7 +207,7 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 		_add_resource(resources, taken, t, contested[k][0], contested[k][1], c)
 		k += 1
 
-	return {
+	var m := {
 		"id": "river_crossing_s", "name": "River Crossing", "w": W, "h": H,
 		"terrain": t, "spawns": SPAWNS.duplicate(), "resources": resources,
 		"bridge_cells": bridge_cells, "ford_cells": ford_cells, "seed": seed_value,
@@ -212,6 +218,8 @@ static func _try(seed_value: int, attempt: int) -> Dictionary:
 		"decor": [], "pois": [{"type": "bridge", "name": "River Bridge", "cell": Vector2i(47, 47)},
 			{"type": "ford", "name": "North Ford", "cell": Vector2i(27, 67)}, {"type": "ford", "name": "South Ford", "cell": Vector2i(68, 28)}],
 	}
+	_rc_height(m, seed_value, attempt)
+	return m
 
 
 static func _protected(t: PackedByteArray, ford_cells: Array, c: Vector2i) -> bool:
@@ -276,8 +284,12 @@ static func validate(m: Dictionary) -> String:
 			for dx in range(-2, 3):
 				if not Terrain.buildable(t[_idx(s.x + dx, s.y + dy)]):
 					return "Spawn %s footprint not buildable at %s." % [s, s + Vector2i(dx, dy)]
+	var hi := MapCheck.height_issue(m, true)   # G6 (ELEV)
+	if hi != "":
+		return hi
+	var lay := MapCheck.layers(m)
 	for mc in ["foot", "vehicle"]:
-		var reach := _flood(t, m.spawns[0] + Vector2i(0, 3), mc)
+		var reach := _flood(t, m.spawns[0] + Vector2i(0, 3), mc, lay[0], lay[1])
 		for si in range(1, m.spawns.size()):
 			var other: Vector2i = m.spawns[si] + Vector2i(0, 3)
 			if not reach.has(other):
@@ -292,7 +304,7 @@ static func validate(m: Dictionary) -> String:
 	return ""
 
 
-static func _flood(t: PackedByteArray, start: Vector2i, mc: String) -> Dictionary:
+static func _flood(t: PackedByteArray, start: Vector2i, mc: String, hg: PackedByteArray = PackedByteArray(), rp: PackedByteArray = PackedByteArray()) -> Dictionary:
 	var seen := {start: true}
 	var q := [start]
 	var qi := 0
@@ -303,7 +315,7 @@ static func _flood(t: PackedByteArray, start: Vector2i, mc: String) -> Dictionar
 			var n: Vector2i = c + d
 			if n.x < 0 or n.y < 0 or n.x >= W or n.y >= H or seen.has(n):
 				continue
-			if Terrain.passable(t[_idx(n.x, n.y)], mc):
+			if Terrain.passable(t[_idx(n.x, n.y)], mc) and (hg.is_empty() or Elevation.edge_ok_raw(hg, rp, _idx(c.x, c.y), _idx(n.x, n.y))):
 				seen[n] = true
 				q.append(n)
 	return seen
@@ -328,3 +340,165 @@ static func to_file(seed_value: int, map_id: String, path: String) -> String:
 		"players": players, "entities": [], "victory": {"victory": "hq_elimination"},
 		"regions": [], "triggers": [], "start_packages": true}
 	return load("res://sim/map_io.gd").save(path, m, sc)
+
+
+# ================================================================ G6 height (owner ELEV)
+## River Crossing authored height: two mirrored hill pairs (level 2, every edge a ramp) with ridge caps
+## (level 3, ramps every third edge cell + connect_ramps) overlooking the north ford approach and the
+## east flank of spawn 2. Spawns, the road corridor, the river and fords stay plain (level 1).
+## Its own rng stream: the terrain bytes and re-roll decisions above are untouched.
+static func _rc_height(m: Dictionary, seed_value: int, attempt: int) -> void:
+	var rng := SimRng.new(seed_value * 7919 + attempt * 104729 + 9173)
+	var t: PackedByteArray = m.terrain
+	var hg := MapUtil.new_layer(W, H, 1)
+	var ja := Vector2i(rng.randi_range(-1, 1), rng.randi_range(-1, 1))
+	var jb := Vector2i(rng.randi_range(-1, 1), rng.randi_range(-1, 1))
+	MapUtil.hdisc(hg, W, H, Vector2i(22, 46) + ja, 4.5 + rng.randf_range(-0.4, 0.4), 2)
+	MapUtil.hdisc(hg, W, H, Vector2i(21, 45) + ja, 1.8, 3)
+	MapUtil.hdisc(hg, W, H, Vector2i(56, 20) + jb, 4.0 + rng.randf_range(-0.4, 0.4), 2)
+	MapUtil.hdisc(hg, W, H, Vector2i(57, 19) + jb, 1.5, 3)
+	m.height = hg
+	m.ramps = MapUtil.derive_ramps(hg, t, W, H, [0, 1, 3])
+	connect_ramps(m, true)
+
+
+## Height noise for a generated / editor map (m = w.map shape): bilinear value noise over a coarse
+## lattice, cut into levels by quantiles (valley_frac lowest -> 0, ridge_frac highest -> 3, the next
+## hill_frac -> 2, the rest 1). Water / shore / crossing tiles stay plain, spawn sites are flattened,
+## then ramps are derived (ramp_every) and connect_ramps joins every walkable region.
+## opts override rules.g6_elevation.gen (symmetric: true mirrors the map's first half).
+static func add_height_noise(m: Dictionary, seed_value: int, opts: Dictionary = {}) -> void:
+	var g: Dictionary = (Elevation.rules().get("gen", {}) as Dictionary).duplicate()
+	g.merge(opts, true)
+	var w := int(m.w)
+	var h := int(m.h)
+	var n := w * h
+	var t: PackedByteArray = m.terrain
+	var rng := SimRng.new(seed_value * 2654435 + 977)
+	var cell := maxi(2, int(g.get("noise_cells", 12)))
+	var lw := w / cell + 2
+	var lh := h / cell + 2
+	var lat := PackedFloat32Array()
+	lat.resize(lw * lh)
+	for i in lat.size():
+		lat[i] = rng.randf()
+	var f := PackedFloat32Array()
+	f.resize(n)
+	var hist := PackedInt32Array()
+	hist.resize(256)
+	hist.fill(0)
+	for y in h:
+		for x in w:
+			var gx := float(x) / float(cell)
+			var gy := float(y) / float(cell)
+			var x0 := int(gx)
+			var y0 := int(gy)
+			var fx := gx - float(x0)
+			var fy := gy - float(y0)
+			var top := lerpf(lat[y0 * lw + x0], lat[y0 * lw + x0 + 1], fx)
+			var bot := lerpf(lat[(y0 + 1) * lw + x0], lat[(y0 + 1) * lw + x0 + 1], fx)
+			var v := clampf(lerpf(top, bot, fy), 0.0, 0.9999)
+			f[y * w + x] = v
+			hist[int(v * 256.0)] += 1
+	var cut_lo := _quantile(hist, n, float(g.get("valley_frac", 0.06)))
+	var cut_hill := _quantile(hist, n, 1.0 - float(g.get("hill_frac", 0.16)) - float(g.get("ridge_frac", 0.04)))
+	var cut_ridge := _quantile(hist, n, 1.0 - float(g.get("ridge_frac", 0.04)))
+	var hg := MapUtil.new_layer(w, h, 1)
+	var sym := bool(g.get("symmetric", false))
+	for i in n:
+		var src := mini(i, n - 1 - i) if sym else i
+		var b := int(f[src] * 256.0)
+		var lv := 1
+		if b < cut_lo:
+			lv = 0
+		elif b >= cut_ridge:
+			lv = 3
+		elif b >= cut_hill:
+			lv = 2
+		var code := int(t[i])
+		if Terrain.is_water(code) or code == Terrain.BEACH or code == Terrain.BRIDGE or code == Terrain.FORD:
+			lv = 1
+		hg[i] = lv
+	var flat_r := float(g.get("spawn_flat_r", 9.0))
+	for s in m.get("spawns", []):
+		var sc: Vector2i = s
+		var ri := int(ceil(flat_r))
+		for dy in range(-ri, ri + 1):
+			for dx in range(-ri, ri + 1):
+				var c := sc + Vector2i(dx, dy)
+				if c.x >= 0 and c.y >= 0 and c.x < w and c.y < h and Vector2(dx, dy).length() <= flat_r:
+					hg[c.y * w + c.x] = 1
+	var ev := maxi(1, int(g.get("ramp_every", 3)))
+	m.height = hg
+	m.ramps = MapUtil.derive_ramps(hg, t, w, h, [ev, ev, ev])
+	connect_ramps(m, sym)
+
+
+static func _quantile(hist: PackedInt32Array, n: int, q: float) -> int:
+	var want := int(q * float(n))
+	var acc := 0
+	for b in 256:
+		acc += hist[b]
+		if acc > want:
+			return b
+	return 256
+
+
+## Ramp placement (MapUtil.connect_ramps): joins every foot-walkable region split off by height.
+static func connect_ramps(m: Dictionary, symmetric: bool = false) -> int:
+	return MapUtil.connect_ramps(m, symmetric)
+
+
+## Height validation for any map (an SimWorld or a w.map-shaped Dictionary): ED6's brushes call it.
+## Returns [{code, msg, cell?}] (empty = valid): height_invalid (sizes, levels, a ramp on no one-level
+## step), spawn_not_flat (5x5 start footprint on mixed levels), spawn_unreachable (foot / vehicle from
+## the first spawn through ramps), resource_unreachable (foot). Flat maps (no height) return [].
+static func validate_height(w) -> Array:
+	var m: Dictionary = w.map if w is SimWorld else w
+	var out := []
+	if not m.has("height"):
+		return out
+	var hi := MapCheck.height_issue(m, false)
+	if hi != "":
+		out.append({"code": "height_invalid", "msg": hi})
+		return out
+	var mw := int(m.w)
+	var mh := int(m.h)
+	var hg: PackedByteArray = m.height
+	var rp: PackedByteArray = m.get("ramps", PackedByteArray())
+	var spawns: Array = m.get("spawns", [])
+	for s in spawns:
+		var sc: Vector2i = s
+		var lv := Elevation.map_level(m, sc)
+		var flat := true
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				if Elevation.map_level(m, sc + Vector2i(dx, dy)) != lv:
+					flat = false
+		if not flat:
+			out.append({"code": "spawn_not_flat", "msg": "Start %s sits on mixed height levels." % [sc], "cell": sc})
+	if spawns.is_empty():
+		return out
+	var foot := PackedInt32Array()
+	for mc in ["foot", "vehicle"]:
+		var pm := MapCheck.passmask(m.terrain, mc)
+		var p0 := MapUtil.probe_cell(pm, mw, mh, spawns[0])
+		if p0.x < 0:
+			continue
+		var reach := MapCheck.bfs_h(pm, mw, mh, p0.y * mw + p0.x, hg, rp)
+		if mc == "foot":
+			foot = reach
+		for k in range(1, spawns.size()):
+			var pk := MapUtil.probe_cell(pm, mw, mh, spawns[k])
+			if pk.x < 0 or reach[pk.y * mw + pk.x] < 0:
+				out.append({"code": "spawn_unreachable", "msg": "Start %s cannot be reached by %s through ramps." % [spawns[k], mc], "cell": spawns[k]})
+	for r in m.get("resources", []):
+		var c: Vector2i = r.cell
+		var ok := foot.is_empty()
+		for d in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var q: Vector2i = c + d
+			if not foot.is_empty() and q.x >= 0 and q.y >= 0 and q.x < mw and q.y < mh and foot[q.y * mw + q.x] >= 0:
+				ok = true
+		if not ok:
+			out.append({"code": "resource_unreachable", "msg": "Resource at %s cannot be reached on foot." % [c], "cell": c})
+	return out

@@ -27,6 +27,19 @@ Stop-if / park-if:        determinism can't be restored; existing tests can't be
                           path/render core beyond repair (park with a written note). Tests are never cut.
 ```
 
+**G6 status (2026-10-25 ~09:15 local, ORCH heartbeat 2). Not done; no Done-when item is met yet.**
+- Finished (own tests green, --only runs; budget audits OK): ELEV (height + ramps on all built-in maps, MapIO v2),
+  CONTENT6 (105 G6 ids, 24 research projects, Stage 10 playable), ARMY6 (companies/armies), MECH6a + MECH6a-2
+  (mines, fieldworks, garrison, rail, engineering), ART-G6 (89 assets, 1883 files; 16 new pieces left to ART-G6b).
+- Recycled at 70% budget, successors live: PERF6 -> PERF6-2 (10k elevated 132.8 ms/tick under load vs 62.5 target),
+  ECON-AIRF6 -> ECON-AIRF6-2 (market + airfield v2 in; bomber out-of-bounds fix open), AI7-USE -> AI7-USE-2 (soaks).
+- Live: MECH6b, NAVAL6, AIRDEF6, EXO6, MECH6c. Queued: AI7-DOC, AI7-CMD, ELEV-VIEW, VIEW6, UI6a, UI6b, MODES6, ED6,
+  ART-G6b, PT6.
+- ORCH decisions today (board fact orch.decisions): indirect fire counts at most 18 tiles toward the tier contact
+  radius (keeps G5 hashes); test_hot_state GOLD re-baselined once by PERF6-2 only after flattened hashes match the old
+  GOLD; supply cap: a side with a built Company HQ gets cap max 200 instead of 120 (owner-confirmed 2026-10-25);
+  agents no longer run the full suite (concurrent runs clashed on user://; test_save and test_save_scale pass alone).
+
 ## Previous goal (G5 "Full Spectrum", owner-approved 2026-10-24: rev 4, all defaults D9-D20; plan `docs/PLAN_G5.md`, contract `docs/CONTRACTS_G5.md`) — DELIVERED, PARTIAL (see G5 evidence)
 One continuous wave, up to 8 agents live (owner override), 18 agents each with an operating guide. Message board + semantic layer run all wave.
 

@@ -9,6 +9,12 @@ extends RefCounted
 ## The officer drives members through Movement.apply_command directly (never w.submit, which would
 ## loop through on_direct_order). A member under player override (e.ops_override_until > tick) or
 ## broken (morale) is skipped. Officer death dissolves the group (OfficerKilled, members -20 morale).
+## G6 (ARMY6, CONTRACTS_G6 section 8): a company platoon is a group with parent_company = cid. Its
+## officer is the lieutenant (e.rank_role "lieutenant" counts as an officer). When he dies, the
+## next-senior member (first alive in members order) takes the platoon (PlatoonLeaderPromoted);
+## an empty platoon is dropped. While its company is confused (w.sys_state.companies, captain lost)
+## the platoon takes no new orders and its mission is not evaluated. Groups without parent_company
+## behave exactly as in G2.
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Missions = preload("res://sim/systems/ops_missions.gd")
@@ -40,7 +46,15 @@ static func _pt(v):
 
 
 static func is_officer(e) -> bool:
-	return e != null and e.kind == "unit" and bool(Content.unit(e.def).get("is_officer", false))
+	return e != null and e.kind == "unit" and (bool(Content.unit(e.def).get("is_officer", false)) 		or String(e.get("rank_role", "")) == "lieutenant")
+
+
+## G6: true while the company owning platoon g is confused after losing its captain.
+static func company_confused(w: SimWorld, g: Dictionary) -> bool:
+	if not g.has("parent_company") or not w.sys_state.has("companies"):
+		return false
+	var c: Dictionary = w.sys_state.companies.get("companies", {}).get(int(g.parent_company), {})
+	return not c.is_empty() and int(c.get("confused_until", 0)) > w.tick
 
 
 ## The group led by officer oid, or {} (UI/AI helper).
@@ -68,6 +82,8 @@ static func group_of(w: SimWorld, uid: int) -> Dictionary:
 
 static func _assignable(w: SimWorld, uid: int, off: Dictionary) -> bool:
 	var e = w.entities.get(uid)
+	if e != null and e.has("company") and int(off.get("company", -1)) != int(e.company):
+		return false  # G6: company units stay in their company's chain of command
 	return e != null and e.kind == "unit" and int(e.owner) == int(off.owner) and uid != int(off.id) and not is_officer(e)
 
 
@@ -76,6 +92,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	var off = w.entities.get(int(cmd.get("officer_id", -1)))
 	if not is_officer(off) or int(off.owner) != int(cmd.issuer):
 		return "Select one of your officers."
+	if String(cmd.type) != "cancel_mission" and company_confused(w, group_led_by(w, int(off.id))):
+		return "The company is reorganising after losing its captain."
 	match String(cmd.type):
 		"assign_officer":
 			for id in cmd.get("unit_ids", []):
@@ -213,7 +231,7 @@ static func tick(w: SimWorld) -> void:
 	var st: Dictionary = w.sys_state.ops
 	for gid in st.groups:
 		var g: Dictionary = st.groups[gid]
-		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0:
+		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0 				and not company_confused(w, g):
 			Missions.evaluate(w, g)
 
 
@@ -232,6 +250,8 @@ static func prune(w: SimWorld) -> void:
 		var g: Dictionary = st.groups[gid]
 		var off = w.entities.get(int(g.officer))
 		if (off == null or off.kind != "unit") and not Transport.in_cargo(w, int(g.officer)):
+			if g.has("parent_company") and _succeed(w, g):
+				continue
 			dead.append(gid)
 			continue
 		var alive := []
@@ -247,8 +267,28 @@ static func prune(w: SimWorld) -> void:
 		_dissolve(w, st, gid)
 
 
+## G6 company platoon: the first live member becomes its officer. False when none is left; the
+## empty platoon is then dropped silently (no morale hit, nobody to hit).
+static func _succeed(w: SimWorld, g: Dictionary) -> bool:
+	var old := int(g.officer)
+	for m in g.members:
+		var e = w.entities.get(int(m))
+		if e != null and e.kind == "unit":
+			g.officer = int(m)
+			g.members = (g.members as Array).filter(func(x) -> bool: return int(x) != int(m))
+			e.rank_role = "lieutenant"
+			w.emit("PlatoonLeaderPromoted", {"gid": int(g.id), "owner": int(g.owner), "company_id": int(g.parent_company),
+				"old": old, "new": int(m)})
+			return true
+	g.members = []
+	return false
+
+
 static func _dissolve(w: SimWorld, st: Dictionary, gid) -> void:
 	var g: Dictionary = st.groups[gid]
+	if g.has("parent_company") and (g.members as Array).is_empty():
+		st.groups.erase(gid)
+		return
 	for m in g.members:
 		var e = w.entities.get(int(m))
 		if e != null and e.has("morale"):

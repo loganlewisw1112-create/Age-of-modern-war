@@ -7,7 +7,14 @@ const AC = preload("res://presentation/art/art_catalog.gd")
 ## G5 scope (ORCH, 2026-10-25, authority fact `authority.g3g4_art_test_scope`): units whose art comes from a
 ## G5 manifest (res://assets/art/g5_*) have a different frame layout and are fully checked by
 ## tests/test_art_g5_units.gd / test_art_g5_air.gd / test_art_g5_naval.gd, so this G3/G4 test skips them.
+## G6 (CONTENT6 CR): defs/production items carrying g6:true are checked by tests/test_art_g6.gd.
+static func _is_g6(id: String) -> bool:
+	return bool(Content.unit(id).get("g6", false)) or bool(Content.building(id).get("g6", false)) 		or bool(Content.production(id).get("g6", false))
+
+
 static func _g5_art(def: String) -> bool:
+	if bool(Content.unit(def).get("g6", false)):
+		return true  # G6 (CONTENT6 CR): G6 art is checked by tests/test_art_g6.gd
 	var m: Dictionary = AC.manifest()
 	for sec in ["infantry", "vehicles"]:
 		var s = m.get(sec, {}).get(def)
@@ -73,6 +80,8 @@ func test_entities_every_def() -> void:
 	for def in Content.ids("buildings"):
 		if int(Content.building(def).get("size", 0)) <= 0 or Content.building(def).get("neutral_structure", false):
 			continue  # bridge_span: drawn per cell via bridge_overlay (see test_bridge_overlay)
+		if _is_g6(String(def)):
+			continue  # G6 buildings: tests/test_art_g6.gd
 		var size := int(Content.building(def).size)
 		var built: Dictionary = AC.entity_sprite({"kind": "building", "def": def, "built": true, "progress": 1.0}, blue, 0)
 		if _real(built.texture, "building " + def):
@@ -109,8 +118,13 @@ func test_effects_and_icons() -> void:
 	var sm: Array = AC.effect_frames("disabled_smoke")
 	check(sm[0].get_image().get_data() != sm[3].get_image().get_data(), "disabled_smoke frames animate")
 	check_eq(AC.effect_frames("nope").size(), 1, "unknown effect gives 1 placeholder frame")
-	var ids: Array = Content.ids("production") + Content.ids("units")
+	var ids: Array = []
+	for id in Content.ids("production") + Content.ids("units"):
+		if not _is_g6(String(id)):
+			ids.append(id)
 	for def in Content.ids("buildings"):
+		if _is_g6(String(def)):
+			continue
 		if Content.building(def).get("buildable", false) or Content.building(def).get("is_hq", false):
 			ids.append(def)
 	ids += ["officer", "logistics_truck", "refinery", "repair", "patrol", "guard", "formation_line", "formation_wedge",
@@ -195,8 +209,8 @@ func test_faction_coverage() -> void:
 				check(man.get("vehicle_wrecks", {}).has(def), "wreck sheet for " + def)
 		for def in Content.ids("buildings"):
 			var b: Dictionary = Content.building(def)
-			if String(b.get("faction", "")) != fid or b.get("neutral_structure", false):
-				continue
+			if String(b.get("faction", "")) != fid or b.get("neutral_structure", false) or b.get("g6", false):
+				continue  # G6 buildings: tests/test_art_g6.gd
 			var entry: Dictionary = man.get("buildings", {}).get(def, {})
 			if not check(not entry.is_empty(), "%s: building art for %s" % [fid, def]):
 				continue
@@ -206,7 +220,7 @@ func test_faction_coverage() -> void:
 				check(AC._image(String(s.get("file", ""))) != null, "%s state %s" % [def, st])
 			_real(AC.icon(def), "%s: icon for building %s" % [fid, def])
 		for id in Content.ids("production"):
-			if String(Content.production(id).get("faction", "")) == fid:
+			if String(Content.production(id).get("faction", "")) == fid and not _is_g6(String(id)):
 				_real(AC.icon(id), "%s: icon for production item %s" % [fid, id])
 
 

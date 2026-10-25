@@ -1,0 +1,38 @@
+{
+  "id": "MECH6a",
+  "gen": 1,
+  "reason": "70% budget projection reached (~96/140 calls, projection ~524k of 750k)",
+  "done": [
+    "content/g6/rules_ground.json: rules.g6_ground {mines, garrison, fieldworks, rail} + weapons g6_mine_at/ap/sea",
+    "sim/systems/mines.gd: lay_minefield (seeded pattern at apply, layers walk + lay, s_minefield def cost charged at plan), sweep (N cells/s, probing so sweepers never trigger), line_charge (2x10 lane, def line_charge {w,len,cooldown_s}), lay_sea / sweep_cells / known_to / fields_for / can_lay / can_sweep / can_line_charge",
+    "sim/systems/g4b_mech.gd: mine_hits (AT vehicles, AP foot, sea ships), per-mine payload weapon, per-def detect radius (mine_detect_radius / rules detect_radius), _mines_of ignores string layers, Garrison.repin at end of tick",
+    "sim/systems/garrison.gd: garrison/ungarrison, slots (def garrison_slots or rules), enter/hold/pin, leave on other orders, protect_mult 0.5 (anti_garrison numeric or bool or class x2), visible_to (reveal_s after last_fired_tick), building death eject (damage) / kill (pillbox rule), repin",
+    "sim/systems/fieldworks.gd: info() merges rules + CONTENT6 def shapes, runtime index, cover_mult (trench in-cell, sandbags in/behind toward attacker; splash = s.is_splash or s.splash>0; flame x5 vs wire), cover_at, wire_mult, passable, camo (footprint-distance radius, settle/reveal), decoy target_weight/pick_target, clear_cells (wire; tank traps for dozers), field builders advanced via Construction.build_step, heavy vehicles crush wire",
+    "sim/systems/rail.gd: build_rail (L path, yard/line anchor, engineers, commit groups of 4 + on_terrain_changed), damage_cell / on_splash / cut / repair, rail-class train guard (path cut before first non-rail sample)",
+    "sim/systems/fortify.gd: build_line accepts size-1 fieldwork defs; field_buildable defs accept foot infantry builders (message for rejected defs unchanged)",
+    "sim/systems/construction.gd: build_step extracted; field_buildable defs skip the base-range rule; faction 'shared' defs placeable; ARMY6 CR Companies.can_build gate in placement_error",
+    "tests: test_mines 7/7, test_fieldworks 6/6, test_garrison 5/5, test_fort 10/10, test_units_g4b 10/10 (all --only, green); test_rail 1/3"
+  ],
+  "remaining": [
+    "1. tests/test_rail.gd test_build_rail_lays_rail_tiles: the 'rail costs resources' check fails because passive income over the build outweighs 15x4 credits. Replace it with a check that w.factions[0].journal has an entry with cause 'build:rail'. Optional: charge the yard def rail_cost (b_rail_yard.rail_cost {credits 20, salvage 10}) per tile in Rail._job_step instead of rules cost_per_tile.",
+    "2. tests/test_rail.gd test_cut_rail_stops_train_until_repaired: build_rail [14,10]->[16,10] over the cut tile never emits RailRepaired/RailBuilt in 3000 ticks. Debug in a scratch SceneTree script (print CommandRejected / RailAbandoned / engineer pos+order each 20 ticks). Suspects: the engineer never gets within reach 1.6 of (15.5,10.5) (the stopped train sits at (14.5,10.5), radius 1.0, separation), or the job is dropped. Fix in rail.gd (e.g. reach to the tile measured with the builder radius, or approach goal on the free side), not by weakening the test.",
+    "3. Then: bash tests/run.sh --only=test_rail ; --only=test_mines,test_garrison,test_fieldworks,test_fort,test_units_g4b again; full suite inside hb.sh: bash .plan/hb.sh MECH6a <calls> <tokens> 'full suite' -- timeout 1500 bash tests/run.sh",
+    "4. Post fact mech_a.api_ready (complete) once test_rail is green; post done + bus DONE.",
+    "5. Open CRs (posted as type need): PERF6 change_request.garrison_movement_skip (skip e.garrisoned_in in separation/unstick/advance; Damage splash -> Rail.on_splash). CONTENT6 change_request.g6_ground_def_flags is superseded: CONTENT6 shipped its own shapes and the code reads them."
+  ],
+  "files_touched": [
+    "content/g6/rules_ground.json", "sim/systems/mines.gd", "sim/systems/garrison.gd", "sim/systems/fieldworks.gd", "sim/systems/rail.gd",
+    "sim/systems/fortify.gd", "sim/systems/construction.gd", "sim/systems/g4b_mech.gd",
+    "tests/test_mines.gd", "tests/test_garrison.gd", "tests/test_fieldworks.gd", "tests/test_rail.gd"
+  ],
+  "test_state": {"test_mines": "7/7", "test_fieldworks": "6/6", "test_garrison": "5/5", "test_fort": "10/10", "test_units_g4b": "10/10", "test_rail": "1/3", "full_suite": "not run"},
+  "gotchas": [
+    "Unit pos/order/moving writes must go through HotState.set_pos/set_order/set_hp or be followed by HotState.touch(w,id): the G5 hot arrays overwrite direct dict writes (teleports in tests too).",
+    "post.mjs has no change_request type: post CRs as type need, topic change_request.<x>.",
+    "CONTENT6 def shapes: line_charge is a dict {w,len,cooldown_s}; mine_detect_radius; s_minefield.mine_field {max_rect, per_cell}; camo_net {radius}; decoy {ai_target_weight}; dozer {clears:[...]}; weapon/unit anti_garrison is a number (2.0); s_camo_decoy is size 2; b_pillbox 6 slots, a_fob 2.",
+    "Combat applies G6Hooks.damage_mult in _fire/splash, not in Damage.apply_hit: test hooks via G6Hooks, not apply_hit.",
+    "Garrisoned squads also get G2 morale in_cover (next to a footprint) -> small arms x0.6 stacks with garrison x0.5. Reported on the bus; balance call for ORCH.",
+    "tests/pending_g6 skeletons were untracked: moved with plain mv (git mv refused).",
+    "Rail commits terrain in groups of 4 tiles (one nav rebuild per group); RAIL code is the local const 14 until ELEV's Terrain.RAIL lands."
+  ]
+}

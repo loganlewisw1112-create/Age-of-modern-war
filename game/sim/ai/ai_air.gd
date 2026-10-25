@@ -199,11 +199,21 @@ static func find_site(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, de
 		if not Econ._quick_ok(w, fid, o - Vector2i(margin, margin), size + 2 * margin, occ, res_cells):
 			continue
 		checks += 1
-		if Construction.placement_error(w, fid, def_id, o) == "":
+		# AI7-USE-3 (CR ai_airfield_site_ok, ECON-AIRF6-2): a field's apron slots + runway cells must be in
+		# bounds and passable for some facing 0-3 (custom_s1: a b_aerodrome runway ran off the map edge).
+		if Construction.placement_error(w, fid, def_id, o) == "" and site_facing(w, def_id, o) >= 0:
 			return o
 		if checks >= SITE_CHECKS:
 			break
 	return Vector2i(-1, -1)
+
+
+## First facing 0-3 whose apron + runway fit (Airfield.site_ok), else -1; 0 for a non-field def.
+static func site_facing(w: SimWorld, def_id: String, o: Vector2i) -> int:
+	for f in 4:
+		if Airfield.site_ok(w, def_id, o, f) == "":
+			return f
+	return -1
 
 
 ## Orders 2 builders to put def_id up at a site near anchor. True when the build was submitted.
@@ -219,7 +229,11 @@ static func build_near(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, d
 	var picks := Econ._pick_engineers(ctx, Vector2(o) + Vector2(size, size) * 0.5, 2)
 	if picks.is_empty():
 		return false
-	if U.submit(w, fid, st, {"type": "build", "unit_ids": picks, "def": def_id, "origin": o}, key, {"origin": o}):
+	var cmd := {"type": "build", "unit_ids": picks, "def": def_id, "origin": o}
+	var fi := site_facing(w, def_id, o)
+	if fi > 0:
+		cmd.facing_i = fi  # ORCH CR build_cmd_facing_i: construction validates + stores b.facing_i (no key = facing 0)
+	if U.submit(w, fid, st, cmd, key, {"origin": o}):
 		var g := S(st)
 		g.builds = int(g.builds) + 1
 		U.log_line(st, w, "%s: build %s at %s (%s)" % [tag, def_id, str(o), why])

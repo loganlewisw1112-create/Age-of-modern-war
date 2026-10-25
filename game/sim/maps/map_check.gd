@@ -10,6 +10,11 @@ extends RefCounted
 ##  5. open ground: vehicle-reachable cells >= m.min_open_frac of the map (10k-unit capacity);
 ##  6. fairness: in every spawn_set, each side's mean vehicle path to its rivals is within
 ##     m.fair_tol (max/min) of the others' (base packages are identical by construction).
+## G6 (ELEV, CONTRACTS_G6 section 7.5): maps with m.height also get height_issue() (sizes, symmetry,
+## levels 0..3, every ramp on an exact one-level boundary) and every reach / path check above walks
+## the height edge rule (Elevation.edge_ok_raw: cliffs block, ramps join), so "every spawn reachable
+## by foot and vehicle" is proven through ramps.
+const Elevation = preload("res://sim/systems/elevation.gd")
 
 const UNREACHED := -1
 
@@ -27,7 +32,10 @@ static func passmask(t: PackedByteArray, mc: String) -> PackedByteArray:
 
 
 ## Breadth-first step distance from cell index `start` over a pm mask. -1 = unreachable.
-static func bfs(pm: PackedByteArray, w: int, h: int, start: int) -> PackedInt32Array:
+## G6: with a height layer hg (and ramps rp) a step must also pass Elevation.edge_ok_raw.
+static func bfs(pm: PackedByteArray, w: int, h: int, start: int, hg: PackedByteArray = PackedByteArray(), rp: PackedByteArray = PackedByteArray()) -> PackedInt32Array:
+	if not hg.is_empty():
+		return bfs_h(pm, w, h, start, hg, rp)
 	var n := w * h
 	var dist := PackedInt32Array()
 	dist.resize(n)
@@ -65,6 +73,73 @@ static func bfs(pm: PackedByteArray, w: int, h: int, start: int) -> PackedInt32A
 	return dist
 
 
+## Height-aware BFS (4-connected): pm passable AND the edge rule holds between the two cells.
+static func bfs_h(pm: PackedByteArray, w: int, h: int, start: int, hg: PackedByteArray, rp: PackedByteArray) -> PackedInt32Array:
+	var n := w * h
+	var dist := PackedInt32Array()
+	dist.resize(n)
+	dist.fill(UNREACHED)
+	if start < 0 or start >= n or pm[start] == 0:
+		return dist
+	var q := PackedInt32Array()
+	q.resize(n)
+	var head := 0
+	var tail := 0
+	q[tail] = start
+	tail += 1
+	dist[start] = 0
+	while head < tail:
+		var i := q[head]
+		head += 1
+		var d := dist[i] + 1
+		var x := i % w
+		for j in [i + 1 if x + 1 < w else -1, i - 1 if x > 0 else -1, i + w if i + w < n else -1, i - w]:
+			if j < 0 or dist[j] != UNREACHED or pm[j] == 0:
+				continue
+			if not Elevation.edge_ok_raw(hg, rp, i, j):
+				continue
+			dist[j] = d
+			q[tail] = j
+			tail += 1
+	return dist
+
+
+## Height layer of m (empty when the map has none) and its ramps.
+static func layers(m: Dictionary) -> Array:
+	var hg: PackedByteArray = m.get("height", PackedByteArray())
+	var rp: PackedByteArray = m.get("ramps", PackedByteArray())
+	return [hg, rp]
+
+
+## G6: "" or the first problem with m.height / m.ramps (symmetric = also require point symmetry).
+static func height_issue(m: Dictionary, symmetric: bool) -> String:
+	if not m.has("height"):
+		return ""
+	var w := int(m.w)
+	var h := int(m.h)
+	var n := w * h
+	var hg: PackedByteArray = m.height
+	var rp: PackedByteArray = m.get("ramps", PackedByteArray())
+	if hg.size() != n:
+		return "Height size %d != %dx%d." % [hg.size(), w, h]
+	if not rp.is_empty() and rp.size() != n:
+		return "Ramps size %d != %dx%d." % [rp.size(), w, h]
+	for i in n:
+		if hg[i] > Elevation.MAX_LEVEL:
+			return "Height level %d out of range at %s." % [hg[i], Vector2i(i % w, i / w)]
+		if symmetric and (hg[i] != hg[n - 1 - i] or (not rp.is_empty() and rp[i] != rp[n - 1 - i])):
+			return "Height not point-symmetric at %s." % [Vector2i(i % w, i / w)]
+		if not rp.is_empty() and rp[i] != 0:
+			var x := i % w
+			var ok := false
+			for j in [i + 1 if x + 1 < w else -1, i - 1 if x > 0 else -1, i + w if i + w < n else -1, i - w]:
+				if j >= 0 and absi(int(hg[j]) - int(hg[i])) == 1:
+					ok = true
+			if not ok:
+				return "Ramp at %s joins no one-level step." % [Vector2i(x, i / w)]
+	return ""
+
+
 static func _probe(s: Vector2i) -> Vector2i:
 	return s + Vector2i(0, 3)   # same probe cell as River Crossing's validator (south of the HQ)
 
@@ -79,6 +154,10 @@ static func validate(m: Dictionary) -> String:
 	for i in n / 2:
 		if t[i] != t[n - 1 - i]:
 			return "Terrain not point-symmetric at %s." % [Vector2i(i % w, i / w)]
+	var hi := height_issue(m, true)
+	if hi != "":
+		return hi
+	var lay := layers(m)
 	var spawns: Array = m.spawns
 	if spawns.size() % 2 != 0:
 		return "Spawn count must be even (mirror pairs)."
@@ -95,7 +174,7 @@ static func validate(m: Dictionary) -> String:
 	for mc in ["foot", "vehicle"]:
 		var pm := passmask(t, mc)
 		var p0 := _probe(spawns[0])
-		var reach := bfs(pm, w, h, p0.y * w + p0.x)
+		var reach := bfs(pm, w, h, p0.y * w + p0.x, lay[0], lay[1])
 		for si in range(1, spawns.size()):
 			var o := _probe(spawns[si])
 			if reach[o.y * w + o.x] == UNREACHED:
@@ -134,7 +213,8 @@ static func _pair_dist(m: Dictionary, cache: Dictionary, a: int, b: int) -> int:
 		target = Vector2i(w - 1 - target.x, h - 1 - target.y)
 	if not cache.has(src):
 		var s: Vector2i = m.spawns[src]
-		cache[src] = bfs(passmask(m.terrain, "vehicle"), w, h, s.y * w + s.x)
+		var lay := layers(m)
+		cache[src] = bfs(passmask(m.terrain, "vehicle"), w, h, s.y * w + s.x, lay[0], lay[1])
 	var dist: PackedInt32Array = cache[src]
 	return dist[target.y * w + target.x]
 

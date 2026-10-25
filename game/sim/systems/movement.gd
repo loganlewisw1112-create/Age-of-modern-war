@@ -5,6 +5,117 @@ const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Fortify = preload("res://sim/systems/fortify.gd")   # G5 (CORE10K): player breach hook
 const HotState = preload("res://sim/hot_state.gd")       # G5 (CORE10K): pos mirror + dirty marks for the gather
+## G6 PERF6 (CONTRACTS_G6 section 5.1): tick() first refreshes the per-tick G6 hook mask (SimIndex.g6_set from
+## G6Hooks.active when ORCH's dispatcher has it); every mover's step speed is x SimIndex.g6h().speed_mult(w, e)
+## (native: the gathered spd array is rescaled before the native advance; fallback: _advance_step).
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")   # G6: Elevation.edge_ok (cliff edges) at nav build
+## G6 PERF6 nav build: a building footprint passable for a class (G6Hooks.passable(def, mc), e.g. tank traps
+## for foot) is not solid for that class (w.nav.pblk[mc] counts such footprints per cell; native
+## RtsNav.apply_footprint_pass). Cliff edges: on maps whose w.map.height is not flat, every 4-neighbour
+## pair with different levels asks Elevation.edge_ok; a false edge sets symmetric bits in w.nav.edge
+## (1 +x, 2 +y, 4 -x, 8 -y), honoured by A*, components, flow fields, steps and line checks (native
+## RtsNav.set_edges, rts_core >= 0.5.0; fallback: _step_ok, _comp, EdgeGrid). Flat maps: unchanged.
+class EdgeGrid extends AStarGrid2D:
+	var edge := PackedByteArray()
+	var mw := 0
+	func _compute_cost(a: Vector2i, b: Vector2i) -> float:
+		var dx := b.x - a.x
+		var dy := b.y - a.y
+		if not eok(edge, mw, a, dx, dy):
+			return 1.0e9   # cliff edge (components keep goals reachable without crossing)
+		var ax := absi(dx)
+		var ay := absi(dy)
+		var f := sqrt(2.0) - 1.0   # == the AStarGrid2D octile cost
+		return f * ax + ay if ax < ay else f * ay + ax
+
+	## G6: edge-bit test of the step from cell a by (dx, dy) (|d| <= 1); see RtsNav::edge_ok.
+	static func eok(edge: PackedByteArray, mw: int, a: Vector2i, dx: int, dy: int) -> bool:
+		if edge.is_empty():
+			return true
+		var mh := edge.size() / maxi(mw, 1)
+		var sx := signi(dx)
+		var sy := signi(dy)
+		var pts := [[a.x, a.y, sx, 0], [a.x + sx, a.y, 0, sy], [a.x, a.y, 0, sy], [a.x, a.y + sy, sx, 0]] if sx != 0 and sy != 0 else [[a.x, a.y, sx, sy]]
+		for p in pts:
+			var x: int = p[0]
+			var y: int = p[1]
+			if x < 0 or y < 0 or x >= mw or y >= mh:
+				continue
+			var bits := int(edge[y * mw + x])
+			if (p[2] > 0 and bits & 1) or (p[2] < 0 and bits & 4) or (p[3] > 0 and bits & 2) or (p[3] < 0 and bits & 8):
+				return false
+		return true
+
+
+
+
+## G6: class bitmask (NativeCore.mc_index) for which building def_id's footprint is passable.
+static func _fp_cmask(def_id: String) -> int:
+	var d: Dictionary = Content.building(def_id)
+	var m := 0
+	for mc in NativeCore.MC:
+		if not is_air(String(mc)) and SimIndex.g6h().passable(d, String(mc)):
+			m |= 1 << NativeCore.mc_index(String(mc))
+	return m
+
+
+## G6: adds (sgn 1) / removes (-1) a passable footprint in the per-class counts w.nav.pblk.
+static func _pblk_add(w: SimWorld, origin: Vector2i, size: int, cmask: int, sgn: int) -> void:
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var pb: Dictionary = w.nav.pblk
+	for mc in NativeCore.MC:
+		if cmask & (1 << NativeCore.mc_index(String(mc))) == 0:
+			continue
+		var a: PackedByteArray = pb.get(mc, PackedByteArray())
+		if a.size() != mw * mh:
+			a.resize(mw * mh)
+			a.fill(0)
+		for y in range(maxi(origin.y, 0), mini(origin.y + size, mh)):
+			for x in range(maxi(origin.x, 0), mini(origin.x + size, mw)):
+				a[y * mw + x] = clampi(int(a[y * mw + x]) + sgn, 0, 255)
+		pb[mc] = a
+
+
+static func _pblk_at(w: SimWorld, mc: String, i: int) -> int:
+	var pb = w.nav.get("pblk")
+	if pb == null or pb.is_empty():
+		return 0
+	var a = pb.get(mc)
+	return 0 if a == null else int(a[i])
+
+
+## G6: cliff edge bits from w.map.height (empty when the map is flat or carries no height).
+static func _build_edges(w: SimWorld, mw: int, mh: int) -> PackedByteArray:
+	var out := PackedByteArray()
+	var hv = w.map.get("height")
+	if not hv is PackedByteArray or (hv as PackedByteArray).size() != mw * mh:
+		return out
+	var hb: PackedByteArray = hv
+	var any := false
+	for i in range(1, hb.size()):
+		if hb[i] != hb[0]:
+			any = true
+			break
+	if not any:
+		return out
+	out.resize(mw * mh)
+	out.fill(0)
+	var cut := 0
+	for y in mh:
+		for x in mw:
+			var i := y * mw + x
+			if x + 1 < mw and hb[i] != hb[i + 1] and not Elevation.edge_ok(w, Vector2i(x, y), Vector2i(x + 1, y)):
+				out[i] = out[i] | 1
+				out[i + 1] = out[i + 1] | 4
+				cut += 1
+			if y + 1 < mh and hb[i] != hb[i + mw] and not Elevation.edge_ok(w, Vector2i(x, y), Vector2i(x, y + 1)):
+				out[i] = out[i] | 2
+				out[i + mw] = out[i + mw] | 8
+				cut += 1
+	return out if cut > 0 else PackedByteArray()
+static var _g6_has_active := -1   # G6Hooks defines active(w): -1 unknown, 0 no, 1 yes
 ## Movement (owner: agent B / sim-mil). Nav grids (foot/vehicle), A* pathing with a per-tick
 ## budget and a deterministic, saved request queue, steering with separation, formations.
 ## Commands: move, attack_move, stop, hold. Contract: docs/CONTRACTS.md section 5.
@@ -196,12 +307,22 @@ static func rebuild_nav(w: SimWorld) -> void:
 	var blocked := PackedByteArray()
 	blocked.resize(mw * mh)
 	blocked.fill(0)
+	var pfp := {}	 # G6: origin key -> [class mask, ...] of passable footprints
+	var pfl := []	 # G6: [origin, size, cmask], counted after the native setup
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "building":
 			continue
 		var o: Vector2i = e.cell
 		var s := int(e.size)
+		var cm := _fp_cmask(String(e.def))
+		if cm != 0:
+			var pk := o.y * 65536 + o.x
+			if not pfp.has(pk):
+				pfp[pk] = []
+			pfp[pk].append(cm)
+			pfl.append([o, s, cm])
+			continue
 		for y in range(o.y, o.y + s):
 			for x in range(o.x, o.x + s):
 				if x >= 0 and y >= 0 and x < mw and y < mh:
@@ -212,13 +333,28 @@ static func rebuild_nav(w: SimWorld) -> void:
 	for g in _state(w).get("gates", []):
 		gates[int(g[0])] = [int(g[1]), int(g[2])]
 	w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": native,
-		"solid": {}, "gates": gates, "tg": {}}
+		"solid": {}, "gates": gates, "tg": {}, "pblk": {}, "pfp": pfp, "edge": _build_edges(w, mw, mh)}
+	var blocked0 := blocked.duplicate()   # native setup: without the passable footprints (added below)
+	for p in pfl:
+		var po: Vector2i = p[0]
+		_pblk_add(w, po, int(p[1]), int(p[2]), 1)
+		for y in range(maxi(po.y, 0), mini(po.y + int(p[1]), mh)):
+			for x in range(maxi(po.x, 0), mini(po.x + int(p[1]), mw)):
+				blocked[y * mw + x] = mini(blocked[y * mw + x] + 1, 255)
+	w.nav.blocked = blocked
 	var terrain: PackedByteArray = w.map.terrain
 	if native:
 		var nav = NativeCore.new_nav()
 		var lf := PackedFloat32Array(_lut("foot"))
 		var lv := PackedFloat32Array(_lut("vehicle"))
-		nav.setup(mw, mh, terrain, blocked, lf, lv)
+		nav.setup(mw, mh, terrain, blocked0, lf, lv)
+		for p in pfl:
+			if nav.has_method("apply_footprint_pass"):
+				nav.apply_footprint_pass(p[0].x, p[0].y, int(p[1]), true, int(p[2]))
+			else:
+				nav.apply_footprint(p[0].x, p[0].y, int(p[1]), true)   # old DLL: solid for all
+		if not (w.nav.edge as PackedByteArray).is_empty() and nav.has_method("set_edges"):
+			nav.set_edges(w.nav.edge)
 		w.nav["native"] = nav
 		w.nav["steer"] = NativeCore.new_steer()
 		if not gates.is_empty() and nav.has_method("set_gate"):
@@ -253,13 +389,20 @@ static func _channel(w: SimWorld) -> PackedByteArray:
 
 ## Base (team-less) solidity of cell i for mc: gate cells are solid, else footprint or terrain.
 static func _base_solid(w: SimWorld, mc: String, i: int) -> int:
-	if w.nav.gates.has(i) or int(w.nav.blocked[i]) > 0 or _cell_sm(w, mc, i) <= 0.0:
+	if w.nav.gates.has(i) or int(w.nav.blocked[i]) > _pblk_at(w, mc, i) or _cell_sm(w, mc, i) <= 0.0:
 		return 1
 	return 0
 
 
-static func _new_grid(mw: int, mh: int) -> AStarGrid2D:
-	var g := AStarGrid2D.new()
+static func _new_grid(mw: int, mh: int, edge := PackedByteArray()) -> AStarGrid2D:
+	var g: AStarGrid2D
+	if edge.is_empty():
+		g = AStarGrid2D.new()
+	else:
+		var eg := EdgeGrid.new()
+		eg.edge = edge
+		eg.mw = mw
+		g = eg
 	g.region = Rect2i(0, 0, mw, mh)
 	g.cell_size = Vector2(1, 1)
 	g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
@@ -275,7 +418,7 @@ static func _build_fallback_class(w: SimWorld, mc: String) -> void:
 	var mh := int(w.nav.h)
 	var solid := PackedByteArray()
 	solid.resize(mw * mh)
-	var g := _new_grid(mw, mh)
+	var g := _new_grid(mw, mh, w.nav.get("edge", PackedByteArray()))
 	for y in mh:
 		for x in mw:
 			var i := y * mw + x
@@ -294,6 +437,15 @@ static func _ensure_class(w: SimWorld, mc: String) -> void:
 		return
 	if not native.has_method("add_class"):
 		w.nav.solid[mc] = w.nav.solid.vehicle  # older DLL: no G4 classes (vehicle rules)
+		return
+	if NativeCore.mc_index(mc) < 0 or (NativeCore.mc_index(mc) >= 8 and not native.has_method("set_edges")):
+		# G6: a class the loaded DLL cannot hold (pre-0.5.0 DLL: rail/hover) is never aliased to foot:
+		# its units see every cell as solid (they stay put) and the other classes are untouched
+		push_error("Movement: move class %s not supported by the native nav" % mc)
+		var allsolid := PackedByteArray()
+		allsolid.resize(int(w.nav.w) * int(w.nav.h))
+		allsolid.fill(1)
+		w.nav.solid[mc] = allsolid
 		return
 	var n := int(w.nav.w) * int(w.nav.h)
 	var allow := PackedByteArray()
@@ -327,6 +479,31 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 	if not _nav_ready(w):
 		return
 	var mw := int(w.nav.w)
+	# G6: footprint passable for some classes (G6Hooks.passable): per-class counts, remembered per origin
+	var cmask := 0
+	var pk := origin.y * 65536 + origin.x
+	if not w.nav.has("pfp"):
+		w.nav["pfp"] = {}
+		w.nav["pblk"] = {}
+	var pfp: Dictionary = w.nav.pfp
+	if solid:
+		var be = w.entities.get(int(w.next_id) - 1)
+		if be == null or be.kind != "building" or be.cell != origin or int(be.size) != size:
+			be = null
+			for id in w.entities:
+				var b: Dictionary = w.entities[id]
+				if b.kind == "building" and b.cell == origin and int(b.size) == size:
+					be = b
+		if be != null:
+			cmask = _fp_cmask(String(be.def))
+		if cmask != 0:
+			if not pfp.has(pk):
+				pfp[pk] = []
+			pfp[pk].append(cmask)
+	elif pfp.has(pk) and not (pfp[pk] as Array).is_empty():
+		cmask = int(pfp[pk].pop_back())
+	if cmask != 0:
+		_pblk_add(w, origin, size, cmask, 1 if solid else -1)
 	var blocked: PackedByteArray = w.nav.blocked
 	var terrain: PackedByteArray = w.map.terrain
 	var native = _native(w)
@@ -354,7 +531,10 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 				sb[i] = bs
 		w.nav.solid[mc] = sb
 	if native != null:
-		native.apply_footprint(origin.x, origin.y, size, solid)
+		if cmask != 0 and native.has_method("apply_footprint_pass"):
+			native.apply_footprint_pass(origin.x, origin.y, size, solid, cmask)
+		else:
+			native.apply_footprint(origin.x, origin.y, size, solid)
 	w.nav.tg = {}
 	w.nav.comp_dirty = true
 	if solid:
@@ -387,6 +567,8 @@ static func _comp(w: SimWorld, mc: String, team: int = -1) -> PackedInt32Array:
 	var mw := int(w.nav.w)
 	var mh := int(w.nav.h)
 	var sb: PackedByteArray = _solid_view(w, mc, team)
+	var eg: PackedByteArray = w.nav.get("edge", PackedByteArray())   # G6 cliff edges
+	var hz := not eg.is_empty()
 	var lab := PackedInt32Array()
 	lab.resize(mw * mh)
 	lab.fill(-2)
@@ -407,16 +589,16 @@ static func _comp(w: SimWorld, mc: String, team: int = -1) -> PackedInt32Array:
 			qi += 1
 			var x := i % mw
 			var y := i / mw
-			if x > 0 and lab[i - 1] == -2:
+			if x > 0 and lab[i - 1] == -2 and (not hz or eg[i] & 4 == 0):
 				lab[i - 1] = next
 				q.append(i - 1)
-			if x < mw - 1 and lab[i + 1] == -2:
+			if x < mw - 1 and lab[i + 1] == -2 and (not hz or eg[i] & 1 == 0):
 				lab[i + 1] = next
 				q.append(i + 1)
-			if y > 0 and lab[i - mw] == -2:
+			if y > 0 and lab[i - mw] == -2 and (not hz or eg[i] & 8 == 0):
 				lab[i - mw] = next
 				q.append(i - mw)
-			if y < mh - 1 and lab[i + mw] == -2:
+			if y < mh - 1 and lab[i + mw] == -2 and (not hz or eg[i] & 2 == 0):
 				lab[i + mw] = next
 				q.append(i + mw)
 		next += 1
@@ -743,8 +925,95 @@ static func _pt(key: String, t0: int) -> int:
 	return t
 
 
+## G6: this tick's hook mask (owners' G6Hooks.active bits, or every bit while the dispatcher has none).
+static func g6_refresh(w: SimWorld) -> void:
+	var c := Callable(G6Hooks, "active")   # same pattern as Damage -> Airfield.on_impact (optional static)
+	if _g6_has_active < 0:
+		_g6_has_active = 1 if c.is_valid() else 0
+	SimIndex.g6_set(w, int(c.call(w)) if _g6_has_active == 1 else SimIndex.G6_ALL)
+
+
+## G6: rescales the gathered per-mover step speeds by G6Hooks.speed_mult (x 1.0 when neutral).
+## PERF6-2 speed split: the ramp term (an exact port of Elevation.slope_mult: a ground unit on a w.map.ramps
+## cell of a height map moves x Elevation.ramp_mult()) is found here from the packed positions (pos[mvi[m *
+## stride]]), so with the SPEED bit clear no hook runs; with it set, movers off a ramp (or aircraft) call
+## G6Hooks.speed_mult_ex (wire x loadout x tow, == speed_mult there since the ramp factor is 1.0) and movers
+## on a ramp call the full speed_mult (same product order as before: hash-exact). A test spy always gets
+## speed_mult. g6_hooks_on = false turns the ramp term off too (hooks-unwired baseline).
+static var _air_def: Dictionary = {}   # unit def -> is_air (Elevation.is_air for units)
+static var speed_split := true          # tests: false = the pre-split path (speed_mult for every mover)
+
+
+static func _def_air(def) -> bool:
+	var v = _air_def.get(def)
+	if v == null:
+		v = bool(Content.unit(String(def)).get("is_air", false))
+		_air_def[def] = v
+	return bool(v)
+
+
+## G6 (MECH6a CR change_request.garrison_movement_skip): garrisoned units (e.garrisoned_in, pinned to a
+## slot inside the footprint by Garrison) take no part in separation / unstick / advance, so they neither
+## get pushed out (Garrison.repin used to put them back every tick) nor push units near the building.
+## True while any garrison record exists (w.sys_state.garrison.blds); only then do the gathers read
+## e.garrisoned_in, and the native gather (no per-unit GD loop) is bypassed for the GD gather (equal
+## results, test_hot_state). Worlds without garrisons are unchanged.
+static func _garrison_any(w: SimWorld) -> bool:
+	var gs = w.sys_state.get("garrison")
+	return gs != null and not (gs.get("blds", []) as Array).is_empty()
+
+
+static func _g6_speed(w: SimWorld, spd: PackedFloat32Array, nm: int, movers: Array, all: Array, uix: PackedInt32Array, mvi: PackedInt32Array, stride: int, pos: PackedVector2Array) -> void:
+	var sp: bool = SimIndex.g6m(w) & SimIndex.G6_SPEED != 0
+	if not speed_split:
+		if sp:
+			for m in nm:
+				var e0: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+				spd[m] = spd[m] * SimIndex.g6h().speed_mult(w, e0)
+		return
+	var h = SimIndex.g6h()
+	if SimIndex.g6_spy != null:   # the spy stands in for the whole hook (ramp included)
+		if sp:
+			for m in nm:
+				var e1: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+				spd[m] = spd[m] * h.speed_mult(w, e1)
+		return
+	var rp := PackedByteArray()
+	if SimIndex.g6_hooks_on and w.map.has("height") and w.map.has("ramps"):
+		rp = w.map.ramps
+	if not sp and rp.is_empty():
+		return
+	# the owners' own SPEED rule (G6Hooks.active, cached per tick): speed_mult / speed_mult_ex return 1.0
+	# without it (ramps now live outside the rule), so with the bit forced on (G6_ALL) only the ramp applies
+	if sp and (int(h.active(w)) & SimIndex.G6_SPEED) == 0:
+		sp = false
+		if rp.is_empty():
+			return
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var rmul := Elevation.ramp_mult() if not rp.is_empty() else 1.0
+	var has_rp := not rp.is_empty()
+	for m in nm:
+		var on_ramp := false
+		if has_rp:
+			var p: Vector2 = pos[mvi[m * stride]]
+			var cx := floori(p.x)
+			var cy := floori(p.y)
+			on_ramp = cx >= 0 and cy >= 0 and cx < mw and cy < mh and rp[cy * mw + cx] != 0
+		if not sp and not on_ramp:
+			continue
+		var e: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+		if on_ramp and _def_air(e.def):
+			on_ramp = false
+		if sp:
+			spd[m] = spd[m] * (h.speed_mult(w, e) if on_ramp else h.speed_mult_ex(w, e))
+		elif on_ramp:
+			spd[m] = spd[m] * rmul
+
+
 static func tick(w: SimWorld) -> void:
 	var t0 := Time.get_ticks_usec() if profile else 0
+	g6_refresh(w)
 	_ensure_nav(w)
 	_drain_queue(w)
 	if profile:
@@ -838,7 +1107,7 @@ static func _rescue(w: SimWorld, e: Dictionary, mc: String, solid: Dictionary, m
 static func _tick_native(w: SimWorld, t0: int) -> void:
 	var sf: PackedByteArray = w.nav.solid.foot
 	var sv: PackedByteArray = w.nav.solid.vehicle
-	var sols := [sf, sv, null, null, null, null, null, null]  # G4: solid bytes by class index (lazy)
+	var sols := [sf, sv, null, null, null, null, null, null, null, null]  # G4: solid bytes by class index (lazy; G6: 10 classes)
 	var mw := int(w.nav.w)
 	var mh := int(w.nav.h)
 	var tabs := _tabs(w)
@@ -882,6 +1151,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	var use_stride := Tiers.move_stride  # PERF4-2 CR 908 gate; `off` below inlines stride_off()
 	var n := 0
 	var tick := w.tick
+	var gar_any := _garrison_any(w)
 	for e: Dictionary in all:
 		var id: int = e.id
 		# PERF4 fidelity tier: a REDUCED unit (no enemy anywhere near) is advanced only on its
@@ -891,6 +1161,8 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		var off := use_stride and tick % stride != 0 and int(e.get("tier", 0)) == reduced  # == stride_off()
 		if not w.entities.has(id):
 			continue
+		if gar_any and e.has("garrisoned_in"):
+			continue   # G6: garrisoned units stay out of separation / advance
 		if id >= tn or trad[id] <= 0.0:
 			if id >= tn:
 				tn = maxi(id + 1, tn * 2 + 64)
@@ -910,7 +1182,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		var cx := floori(p.x)
 		var cy := floori(p.y)
 		var bad := cx < 0 or cy < 0 or cx >= mw or cy >= mh
-		if not bad and mi != 2 and mi < 6:
+		if not bad and mi != 2 and mi != 6 and mi != 7 and mi < 10:
 			var sb = sols[mi]
 			if sb == null:
 				sb = _solid_of(w, udef(String(e.def)).mc)
@@ -992,6 +1264,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		tabs.spd = tsp
 	if profile:
 		t0 = _pt("gather", t0)
+	_g6_speed(w, spd, nm, movers, [], PackedInt32Array(), mvi, 4 if held else 6, pos)
 	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array
 	if held:
@@ -1049,7 +1322,7 @@ static func _held(w: SimWorld) -> Dictionary:
 
 
 static func _tick_held(w: SimWorld, t0: int) -> void:
-	var sols := [w.nav.solid.foot, w.nav.solid.vehicle, null, null, null, null, null, null]
+	var sols := [w.nav.solid.foot, w.nav.solid.vehicle, null, null, null, null, null, null, null, null]
 	var mw := int(w.nav.w)
 	var mh := int(w.nav.h)
 	var tabs := _tabs(w)
@@ -1092,7 +1365,8 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	var tick := w.tick
 	var uix := PackedInt32Array()   # G5: native gather: n index -> index into all
 	var ng_done := false
-	if native_gather and steer.has_method("gather_held"):
+	var gar_any := _garrison_any(w)
+	if native_gather and steer.has_method("gather_held") and not gar_any:
 		var ns := [sols[0], sols[1], PackedByteArray()]
 		for mcn in ["amphibious", "naval_small", "naval"]:
 			var sb = w.nav.solid.get(mcn)
@@ -1151,6 +1425,8 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 		var id: int = e.id
 		if not ents.has(id):
 			continue
+		if gar_any and e.has("garrisoned_in"):
+			continue   # G6: garrisoned units stay out of separation / advance
 		if id >= tn or trad[id] <= 0.0:
 			if id >= tn:
 				tn = maxi(id + 1, tn * 2 + 64)
@@ -1178,7 +1454,7 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 		var cx := floori(p.x)
 		var cy := floori(p.y)
 		var bad := cx < 0 or cy < 0 or cx >= mw or cy >= mh
-		if not bad and mi != 2 and mi < 6:
+		if not bad and mi != 2 and mi != 6 and mi != 7 and mi < 10:
 			var sb = sols[mi]
 			if sb == null:
 				sb = _solid_of(w, udef(String(e.def)).mc)
@@ -1261,6 +1537,7 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 		_verify_held(w, h)
 	if profile:
 		t0 = _pt("gather", t0)
+	_g6_speed(w, spd, nm, [] if ng_done else movers, all, uix, mvi, 4, pos)
 	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
 	if profile:
@@ -1409,6 +1686,13 @@ static func _advance_step(w: SimWorld, e: Dictionary, mc: String, team := -1) ->
 	var start_pos := pos
 	var tmult := 1.0 if is_air(mc) else float(_lut(mc)[w.terrain_at(w.cell_of(pos))])
 	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
+	if SimIndex.g6_spy != null or not speed_split or not SimIndex.g6_hooks_on or not w.map.has("height"):
+		if SimIndex.g6m(w) & SimIndex.G6_SPEED:
+			spd *= SimIndex.g6h().speed_mult(w, e)  # G6 (x 1.0 when neutral)
+	elif SimIndex.g6m(w) & SimIndex.G6_SPEED and int(SimIndex.g6h().active(w)) & SimIndex.G6_SPEED:
+		spd *= SimIndex.g6h().speed_mult(w, e)  # owners' SPEED rule live: speed_mult includes the ramp
+	else:
+		spd *= Elevation.slope_mult(w, e)  # G6 speed split: ramps live outside the SPEED rule
 	if spd <= 0.0:
 		return false  # immobile (mobility kill / no fuel): keep the path, do not move
 	var remaining := spd
@@ -1482,9 +1766,11 @@ static func _step_ok(w: SimWorld, mc: String, from: Vector2, to: Vector2, team :
 		return true
 	if not is_passable(w, b, mc, team):
 		return false
-	if a.x != b.x and a.y != b.y:
-		return is_passable(w, Vector2i(b.x, a.y), mc, team) and is_passable(w, Vector2i(a.x, b.y), mc, team)
-	return true
+	if a.x != b.x and a.y != b.y and not (is_passable(w, Vector2i(b.x, a.y), mc, team) and is_passable(w, Vector2i(a.x, b.y), mc, team)):
+		return false
+	if is_air(mc) or not _nav_ready(w):
+		return true
+	return EdgeGrid.eok(w.nav.get("edge", PackedByteArray()), int(w.nav.w), a, b.x - a.x, b.y - a.y)  # G6 cliff edges
 
 
 ## Light separation between overlapping friendly units, via a spatial hash in w.cache.
@@ -1498,10 +1784,13 @@ static func _separate(w: SimWorld) -> void:
 	var okeys := PackedInt32Array()
 	var grid := {}
 	var n := 0
+	var gar_any := _garrison_any(w)
 	for id in w.entities:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "unit":
 			continue
+		if gar_any and e.has("garrisoned_in"):
+			continue   # G6: garrisoned units stay out of separation
 		var p: Vector2 = e.pos
 		var ok := (int(e.owner) + 1) * 1048576 + _layer(move_class(e))
 		units.append(e)
@@ -1838,7 +2127,7 @@ static func _grid(w: SimWorld, mc: String, team: int) -> AStarGrid2D:
 	var mw := int(w.nav.w)
 	var mh := int(w.nav.h)
 	var sb := _solid_view(w, mc, team)
-	var ng := _new_grid(mw, mh)
+	var ng := _new_grid(mw, mh, w.nav.get("edge", PackedByteArray()))
 	for y in mh:
 		for x in mw:
 			var i := y * mw + x

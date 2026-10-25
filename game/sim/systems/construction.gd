@@ -10,6 +10,8 @@ const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/rese
 const Naval = preload("res://sim/systems/naval.gd")  # G5 (NAVAL CR): shore placement
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): builder units
+const Companies = preload("res://sim/systems/companies.gd")  # G6 (ARMY6 CR): Company HQ cap (D31)
+const MachineG6 = preload("res://sim/systems/machine_g6.gd")  # G6 (MECH6b CR relay_build_range; preloads sim_index + hot_state only)
 
 const MAX_BUILD_RANGE := 20.0
 const BUILD_REACH := 1.0   # engineer must be within this distance of the footprint edge
@@ -134,11 +136,14 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 	var nm := String(d.get("name", def_id))
 	if not bool(d.get("buildable", false)):
 		return "%s cannot be constructed." % nm
-	if w.factions.has(fid) and d.has("faction") and String(d.faction) != String(w.factions[fid].faction_def):
+	if w.factions.has(fid) and d.has("faction") and String(d.faction) != "shared" and String(d.faction) != String(w.factions[fid].faction_def):  # G6: shared defs
 		return "%s belongs to another faction." % nm
 	var gate := PData.unavailable_reason(w, fid, d)  # G3b: "Requires Stage 8" / "Requires research: X"
 	if gate != "":
 		return "%s: %s." % [nm, gate]
+	var hq_gate: String = Companies.can_build(w, fid, def_id)  # G6 (ARMY6 CR): one Company HQ per player
+	if hq_gate != "":
+		return hq_gate + "."
 	for req in d.get("requires", []):
 		var ok := false
 		for b in w.buildings_of(fid, String(req)):
@@ -196,15 +201,26 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 				var c := origin + Vector2i(dx, dy)
 				if ex[c.y * mw + c.x] == 0:
 					return "That area has not been explored yet."
+	if _field_buildable(def_id, d):
+		return ""   # G6 (MECH6a): fieldworks are dug in the field, no base-range rule
 	var center := Vector2(origin) + Vector2(size, size) * 0.5
 	var near := false
 	for b in w.buildings_of(fid):
 		if center.distance_to(Vector2(b.pos)) <= MAX_BUILD_RANGE:
 			near = true
 			break
+	if not near and MachineG6.relay_covers(w, fid, center):
+		near = true  # G6 (MECH6b CR): a linked m_relay_lattice extends Machine build range
 	if not near:
 		return "Too far from your base (build within %d tiles of a friendly building)." % int(MAX_BUILD_RANGE)
 	return ""
+
+
+## G6 (MECH6a): field_buildable def flag or rules.g6_ground.fieldworks.defs[id].field_buildable.
+static func _field_buildable(def_id: String, d: Dictionary) -> bool:
+	if d.has("field_buildable"):
+		return bool(d.field_buildable)
+	return bool(Content.rules().get("g6_ground", {}).get("fieldworks", {}).get("defs", {}).get(def_id, {}).get("field_buildable", false))
 
 
 # ================================================================ commands
@@ -215,6 +231,16 @@ static func _builders(w: SimWorld, cmd: Dictionary) -> Array:
 		if e != null and e.kind == "unit" and bool(Content.unit(e.def).get("can_build", false)):
 			out.append(int(raw))
 	return out
+
+
+## Airfield is loaded lazily: a preload from here would be a cycle (ECON-AIRF6 handoff note).
+static var _airfield_script = null
+
+
+static func _airfield():
+	if _airfield_script == null:
+		_airfield_script = load("res://sim/systems/airfield.gd")
+	return _airfield_script
 
 
 static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
@@ -228,6 +254,13 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var err := placement_error(w, fid, def_id, origin)
 			if err != "":
 				return err
+			if cmd.has("facing_i"):  # G6 (AI7-USE CR build_cmd_facing_i): optional runway facing for air fields
+				var fi := int(cmd.facing_i)
+				if fi < 0 or fi > 3:
+					return "Invalid facing."
+				var so: String = _airfield().site_ok(w, def_id, origin, fi)
+				if so != "":
+					return so
 			return w.can_afford(fid, Content.building(def_id).cost)
 		"assist_build":
 			if _builders(w, cmd).is_empty():
@@ -258,6 +291,8 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			var bid := w.spawn_building(def_id, fid, origin, false)
 			var b: Dictionary = w.entities[bid]
 			b.paid = {"credits": int(cost.get("credits", 0)), "salvage": int(cost.get("salvage", 0)), "ore": int(cost.get("ore", 0))}
+			if cmd.has("facing_i"):
+				b.facing_i = int(cmd.facing_i)  # read by Airfield.layout / strip layout; absent = facing 0 (G5)
 			w.emit("ConstructionStarted", {"building_id": bid, "def": def_id, "owner": fid})
 			_order_builders(w, cmd, bid)
 		"assist_build":
@@ -296,28 +331,32 @@ static func _order_builders(w: SimWorld, cmd: Dictionary, building_id: int) -> v
 ## Only can_build units ever hold a "build" order (validate_command), so walk that subset (PERF5).
 static func tick(w: SimWorld) -> void:
 	for e in Subsets.units(w, Subsets.BUILDER):
-		var o: Dictionary = e.order
-		if o.type != "build":
-			continue
-		var b = w.entities.get(int(o.get("building_id", -1)))
-		if b == null or b.kind != "building" or b.built:
-			make_idle(e)
-			continue
-		if footprint_dist(e.pos, b.cell, int(b.size)) <= BUILD_REACH:
-			if e.moving:
-				stop_moving(e)
-			var bp := float(Content.unit(e.def).get("build_power", 1.0))
-			var bt := maxf(float(Content.building(b.def).get("build_time", 1)) * w.econ("build_time_mult"), 0.001)  # G3a profile
-			var before := float(b.progress)
-			var after := minf(1.0, before + bp * SimWorld.DT / bt)
-			b.progress = after
-			b.hp = minf(float(b.max_hp), float(b.hp) + (after - before) * float(b.max_hp) * 0.9)
-			if after >= 1.0 - 0.000001:
-				b.progress = 1.0
-				b.built = true
-				if float(b.hp) > float(b.max_hp) - 0.01:
-					b.hp = float(b.max_hp)   # absorb float rounding when undamaged
-				w.factions[int(b.owner)].stats.built += 1
-				w.emit("ConstructionCompleted", {"building_id": int(b.id), "def": b.def, "owner": int(b.owner)})
-		else:
-			approach(w, e, b)
+		if e.order.type == "build":
+			build_step(w, e)
+
+
+## One tick of e working on its "build" order (also used by Fieldworks for field builders).
+static func build_step(w: SimWorld, e: Dictionary) -> void:
+	var o: Dictionary = e.order
+	var b = w.entities.get(int(o.get("building_id", -1)))
+	if b == null or b.kind != "building" or b.built:
+		make_idle(e)
+		return
+	if footprint_dist(e.pos, b.cell, int(b.size)) <= BUILD_REACH:
+		if e.moving:
+			stop_moving(e)
+		var bp := float(Content.unit(e.def).get("build_power", 1.0))
+		var bt := maxf(float(Content.building(b.def).get("build_time", 1)) * w.econ("build_time_mult"), 0.001)  # G3a profile
+		var before := float(b.progress)
+		var after := minf(1.0, before + bp * SimWorld.DT / bt)
+		b.progress = after
+		b.hp = minf(float(b.max_hp), float(b.hp) + (after - before) * float(b.max_hp) * 0.9)
+		if after >= 1.0 - 0.000001:
+			b.progress = 1.0
+			b.built = true
+			if float(b.hp) > float(b.max_hp) - 0.01:
+				b.hp = float(b.max_hp)   # absorb float rounding when undamaged
+			w.factions[int(b.owner)].stats.built += 1
+			w.emit("ConstructionCompleted", {"building_id": int(b.id), "def": b.def, "owner": int(b.owner)})
+	else:
+		approach(w, e, b)

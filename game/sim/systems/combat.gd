@@ -41,6 +41,16 @@ const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Fortify = preload("res://sim/systems/fortify.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")  # G4b UNITS: concealment, ignite
+## G6 PERF6 (CONTRACTS_G6 section 5.1): hit/splash damage_mult (next to _g4_mult), hit-roll accuracy_mult,
+## acquisition + fire range_mult (_rm: hold/indirect scan radii, _pick, _engage, _return_fire, towers; the
+## native scan radii are rescaled in _scan_rm), height LOS los_ok (_hlos, after the terrain line of fire;
+## air shooters/targets and indirect fire skip it), visible_to in _cand_ok (Fog.entity_visible covers _seen).
+## Each hook is called only when its bit is set in SimIndex.g6m(w).
+const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")   # G6: MAX_LEVEL for the native height LOS
+## G6 PERF6: height LOS through RtsCombat.height_los (rts_core >= 0.5.0, exact port of Elevation.los_map) while
+## G6Hooks.los_ok == Elevation.los (its only delegate) and no test spy is set. Off = the GDScript hook.
+static var native_elev := true
 
 const BUCKET := 2.0
 const GRID_STRIDE := 1024
@@ -87,6 +97,7 @@ static func stats(e: Dictionary) -> Dictionary:
 		"aa": bool(wd.get("anti_air", false)) or bool(wd.get("anti_air_low", false)) or bool(wd.get("anti_air_high", false)),
 		"aa_low": bool(wd.get("anti_air_low", false)) or bool(wd.get("anti_air", false)),   # G5 section 3.6
 		"aa_high": bool(wd.get("anti_air_high", false)),
+		"naval_only": bool(wd.get("naval_only", false)),   # G6 NAVAL6: torpedoes hit naval ships only
 		"anti_drone": bool(wd.get("anti_drone", false)),
 		"indirect": bool(wd.get("indirect", false)),
 		"min_range": 0.0 if bool(wd.get("guided", false)) else float(wd.get("min_range", 0)),  # G3b STG4: guided
@@ -393,6 +404,8 @@ static func tick(w: SimWorld) -> void:
 		ng.set_flags(nflags)
 		var pre := {}
 		if not scan_src.is_empty():
+			if SimIndex.g6m(w) & SimIndex.G6_RANGE:
+				_scan_rm(w, scan_ids, scan_r)
 			var res: PackedInt32Array = ng.nearest_enemy_batch(scan_src, scan_r, scan_need)
 			for i in scan_ids.size():
 				pre[scan_ids[i]] = Vector2(float(res[i]), scan_r[i])
@@ -433,6 +446,7 @@ static func tick(w: SimWorld) -> void:
 			elif not lc is Object:
 				lc = null   # older DLL without RtsCombat: GDScript line_clear
 		w.cache["combat_ng"] = {"grid": ng, "idx": nidx, "pre": pre, "eb": {}, "lc": lc,
+			"hl": lc != null and lc.has_method("height_los"),
 			"mw": int(w.map.w), "mh": int(w.map.h), "teams": teams, "npos": npos, "nteam": nteam}
 	else:
 		w.cache.erase("combat_ng")
@@ -607,6 +621,60 @@ static func _seen(w: SimWorld, fid: int, t: Dictionary) -> bool:
 	return Fog.entity_visible(w, fid, t) and not (t.has("hid") and G4bMech.hidden_from(w, fid, t))
 
 
+## G6: true when G6Hooks.visible_to hides candidate c from fid (search filters next to Fog.concealed).
+static func _g6_hidden(w: SimWorld, fid: int, c: Dictionary) -> bool:
+	return SimIndex.g6m(w) & SimIndex.G6_VIS != 0 and not SimIndex.g6h().visible_to(w, fid, c)
+
+
+## G6: weapon range factor of shooter e (G6Hooks.range_mult; 1.0 while the hook is off).
+static func _rm(w: SimWorld, e: Dictionary, s: Dictionary) -> float:
+	if SimIndex.g6m(w) & SimIndex.G6_RANGE == 0:
+		return 1.0
+	return SimIndex.g6h().range_mult(w, e, s)
+
+
+## G6: auto-acquisition radius with the range factor (sight, or max(sight, range x rm) for indirect).
+static func _search_rm(w: SimWorld, e: Dictionary, s: Dictionary) -> float:
+	if not bool(s.indirect):
+		return float(s.sight)
+	return maxf(float(s.sight), float(s.range) * _rm(w, e, s))
+
+
+## G6: rescales this tick's scan radii (hold: range x rm, indirect: max(sight, range x rm)), the
+## values _unit_tick passes to _pick, so the native nearest-enemy pre-batch searches the same circle.
+static func _scan_rm(w: SimWorld, ids: PackedInt32Array, rr: PackedFloat32Array) -> void:
+	var ents: Dictionary = w.entities
+	for k in ids.size():
+		var e = ents.get(ids[k])
+		if e == null:
+			continue
+		var sv = _stats.get(e.def)
+		var s: Dictionary = sv if sv != null else stats(e)
+		if e.order.get("type", "idle") == "hold":
+			rr[k] = float(s.range) * _rm(w, e, s)
+		elif bool(s.indirect):
+			rr[k] = _search_rm(w, e, s)
+
+
+## G6: height line of sight (G6Hooks.los_ok -> Elevation.los) for direct fire e -> t, on top of the
+## terrain line of fire. Air shooters and airborne targets ignore it (CONTRACTS_G6 section 7.2).
+static func _hlos(w: SimWorld, e: Dictionary, t: Dictionary) -> bool:
+	if SimIndex.g6m(w) & SimIndex.G6_LOS == 0:
+		return true
+	if e.kind == "unit" and bool(stats(e).is_air):
+		return true
+	if t.kind == "unit" and bool(stats(t).is_air) and not _landed(t):
+		return true
+	if native_elev and SimIndex.g6_spy == null:
+		var ng = w.cache.get("combat_ng")
+		if ng != null and bool(ng.get("hl", false)):
+			var m: Dictionary = w.map
+			if not m.has("height"):
+				return true
+			return ng.lc.height_los(ng.mw, ng.mh, m.height, Elevation.MAX_LEVEL, e.pos, t.pos)
+	return SimIndex.g6h().los_ok(w, e.pos, t.pos)
+
+
 ## G4b UNITS: target-side damage factor for a direct hit / splash victim: scrap-mech front armor
 ## (front_armor_mult divides front hits), foot infantry cover on HILL (Terrain.cover_mult, NAT) and the
 ## weapon's cover_mult vs infantry in cover. ignore_cover weapons (flamer) skip both cover terms.
@@ -638,6 +706,10 @@ static func _landed(t: Dictionary) -> bool:
 ## G5 (CORE10K): the AIRSYS air rule for air targets + no direct fire at Wounded units. Call only
 ## after the G3a anti_air filter passed. True for every G4 target (no is_air rule change, no wounded).
 static func _g5_ok(s: Dictionary, t: Dictionary) -> bool:
+	# G6 (NAVAL6 CR naval6_torpedo_submerged, CONTRACTS_G6 section 11): naval_only weapons (torpedoes) hit
+	# naval ships only (same rule as Sonar.naval_target_ok). Only g6_torpedo carries the flag.
+	if s.get("naval_only", false) and not (t.kind == "unit" and bool(Content.unit(String(t.def)).get("naval_ship", false))):
+		return false
 	if t.kind != "unit":
 		return true
 	if t.has("wounded") and bool(t.wounded):
@@ -719,7 +791,7 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 							var vi := floori(cp.y) * mw + floori(cp.x)
 							if vi < 0 or vi >= nvis or vis[vi] != 1 or not w.entities.has(cid):
 								continue
-							if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
+							if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)) or _g6_hidden(w, fid, c):
 								continue  # G2: infantry hidden in forest (A2)
 							if (not aa and bool(stats(c).is_air) and not _landed(c)) or d2 < mr2 or not _g5_ok(s, c):
 								continue  # G3a: air needs anti_air; artillery min_range; G5 air rule / wounded
@@ -816,7 +888,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					if vi < 0 or vi >= nvis or vis[vi] != 1:
 						continue
 					var c3 = ents.get(cid)
-					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
+					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or _g6_hidden(w, fid, c3) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
 						continue
 					best = c3
 					best_d = dd
@@ -878,7 +950,7 @@ static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float,
 	var vi := floori(cp.y) * mw + floori(cp.x)
 	if vi < 0 or vi >= vis.size() or vis[vi] != 1 or not w.entities.has(int(c.id)):
 		return false
-	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)):
+	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)) or _g6_hidden(w, fid, c):
 		return false
 	return (aa or not bool(stats(c).is_air) or _landed(c)) and _g5_ok(s, c)
 
@@ -899,7 +971,7 @@ static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 		var d := dist_to(e.pos, cur)
 		if d > radius or d < float(s.min_range):
 			cur = null
-		elif d <= float(stats(e).range):
+		elif d <= float(stats(e).range) * _rm(w, e, s):
 			if not _scan_due(w, e, SCAN_EVERY_ENGAGED):
 				return cur
 		elif not _scan_due(w, e, SCAN_EVERY):
@@ -948,7 +1020,7 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 		return
 	match ot:
 		"idle":
-			var t = _pick(w, e, _search_r(s), grid, blds)
+			var t = _pick(w, e, _search_rm(w, e, s), grid, blds)
 			if t == null:
 				if int(e.target) >= 0:
 					e.target = -1
@@ -957,14 +1029,14 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 				return
 			_engage(w, e, s, t, true)
 		"hold":
-			var t = _pick(w, e, s.range, grid, blds)
+			var t = _pick(w, e, float(s.range) * _rm(w, e, s), grid, blds)
 			if t == null:
 				e.target = -1
 				return
 			e.target = int(t.id)
 			_fire(w, e, s, t)
 		"attack_move":
-			var t = _pick(w, e, _search_r(s), grid, blds)
+			var t = _pick(w, e, _search_rm(w, e, s), grid, blds)
 			if t != null:
 				e.order.engaged = true
 				_engage(w, e, s, t, true)
@@ -985,7 +1057,7 @@ static func _return_fire(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 	if att < 0 or w.tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
 		return
 	var t = _valid_target(w, int(e.owner), att, s)
-	if t == null or dist_to(e.pos, t) > s.range:
+	if t == null or dist_to(e.pos, t) > float(s.range) * _rm(w, e, s):
 		return
 	_fire(w, e, s, t)
 
@@ -1024,7 +1096,7 @@ static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, ca
 	var mr: float = s.min_range
 	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
 	# G3a: indirect fire ignores the ridge check but needs d >= min_range.
-	if d <= s.range and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not Fortify.fire_blocked(w, e, t))):
+	if d <= float(s.range) * _rm(w, e, s) and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not Fortify.fire_blocked(w, e, t) and _hlos(w, e, t))):
 		if e.moving:
 			Movement.stop_path(e)
 		_fire(w, e, s, t, true)  # line of fire just checked (positions unchanged since)
@@ -1051,12 +1123,21 @@ static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Arra
 	var s := stats(b)
 	if s.weapon == "":
 		return
-	var t = _pick(w, b, s.range, grid, blds)
+	var t = _pick(w, b, float(s.range) * _rm(w, b, s), grid, blds)
 	if t == null:
 		b.target = -1
 		return
 	b.target = int(t.id)
 	_fire(w, b, s, t)
+
+
+## G6 AIRDEF6 (CR 492): G6Hooks.shot_blocked under the SHOT bit (set only while a CIWS / jammer exists). A
+## test spy without shot_blocked never blocks.
+static func _g6_shot_blocked(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, to: Vector2) -> bool:
+	var h = SimIndex.g6h()
+	if SimIndex.g6_spy != null and not SimIndex.g6_spy.has_method("shot_blocked"):
+		return false
+	return bool(h.shot_blocked(w, e, s, t, to))
 
 
 static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_ok := false) -> void:
@@ -1067,7 +1148,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if int(s.get("setup", 0)) > 0 and (not bool(e.get("deployed", false)) or bool(e.get("moving", false))):
 		return  # G4b UNITS: mortar fires only deployed (G4bMech set-up)
 	var indirect: bool = s.indirect
-	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t)):
+	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t) or not _hlos(w, e, t)):
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
@@ -1080,6 +1161,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	# --- end G3b STG4 hook
 	if not indirect:
 		var gm := _g4_mult(w, e, s, t)
+		if SimIndex.g6m(w) & SimIndex.G6_DMG:
+			gm *= SimIndex.g6h().damage_mult(w, e, s, t)  # G6 (x 1.0 when neutral: bit-identical)
 		if gm != 1.0:
 			s = s.duplicate()
 			s.damage = float(s.damage) * gm
@@ -1094,7 +1177,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 			cd = maxi(roundi(float(s.salvo_gap) * SimWorld.TICK_RATE), 1)
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
-	var hit := w.rng.chance(float(s.accuracy) * Status.accuracy_mult(w, e))
+	var acc := float(s.accuracy) * Status.accuracy_mult(w, e)
+	if SimIndex.g6m(w) & SimIndex.G6_ACC:
+		acc *= SimIndex.g6h().accuracy_mult(w, e, s, t)  # G6: same single rng draw
+	var hit := w.rng.chance(acc)
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
 	if not hit and not bool(s.get("guided", false)):  # G3b STG4: guided fire never scatters
@@ -1111,6 +1197,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		Supply.on_shot(w, e)
 	if SimIndex.profiling:
 		tfr = SimIndex.pt("fire.resolve", tfr)
+	if SimIndex.g6m(w) & SimIndex.G6_SHOT and _g6_shot_blocked(w, e, s, t, to):
+		return  # G6 AIRDEF6: CIWS intercept / guided shot jammed (Counterdrone emits CiwsIntercept / GuidedJammed); cooldown + ammo spent
 	if indirect:
 		_splash(w, e, s, to)
 		if SimIndex.profiling:
@@ -1127,8 +1215,31 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 ## G3a artillery impact: every ground unit and building within s.splash of `at` (any owner, the
 ## shooter's allies included) takes damage x (1 - 0.5 * d / splash) through the G2 pipeline, in id
 ## order. Nothing in the radius: near-miss suppression only.
+## G6 (MECH6a CR change_request.garrison_movement_skip, optional part): ground splash damages rail tiles
+## through Rail.on_splash(w, at, splash, damage, owner) when the world has rail (w.sys_state.rail, or RAIL
+## tiles on the map: scanned once per world into w.cache.rail_any, derived from state, so loads agree).
+## Called before the entity hits; maps without rail never call it (G5 results unchanged).
+static var _rail_script = null   # loaded lazily (rail.gd preloads Movement / Construction)
+const RAIL_CODE := 14            # Terrain.RAIL
+
+
+static func _rail_splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2, rad: float) -> void:
+	if not w.sys_state.has("rail"):
+		var ra = w.cache.get("rail_any")
+		if ra == null:
+			var t = w.map.get("terrain")
+			ra = t is PackedByteArray and (t as PackedByteArray).has(RAIL_CODE)
+			w.cache["rail_any"] = ra
+		if not bool(ra):
+			return
+	if _rail_script == null:
+		_rail_script = load("res://sim/systems/rail.gd")
+	_rail_script.on_splash(w, at, rad, float(s.damage), int(e.get("owner", -1)))
+
+
 static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> void:
 	var rad: float = maxf(float(s.splash), 0.01)
+	_rail_splash(w, e, s, at, rad)
 	var hits := {}   # id -> distance
 	var ng = w.cache.get("combat_ng")
 	if ng != null:
@@ -1177,6 +1288,8 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 			continue
 		var s2 := s.duplicate()
 		s2.damage = float(s.damage) * (1.0 - 0.5 * float(hits[id]) / rad) * _g4_mult(w, e, s, v)
+		if SimIndex.g6m(w) & SimIndex.G6_DMG:
+			s2.damage = float(s2.damage) * SimIndex.g6h().damage_mult(w, e, s, v)  # G6 splash
 		Damage.apply_hit(w, e, v, s2, true)
 
 

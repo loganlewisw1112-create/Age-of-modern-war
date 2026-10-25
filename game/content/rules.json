@@ -41,7 +41,9 @@
     "territory",
     "hold_bridge",
     "combined",
-    "endless"
+    "endless",
+    "survive",
+    "repel_waves"
   ],
   "ai_difficulties": {
     "easy": {
@@ -202,6 +204,28 @@
         "cost": {
           "credits": 6000,
           "ore": 800
+        }
+      },
+      "10": {
+        "_note": "G6 D36 (CONTENT6): the 8->9 structure, cost x1.5, plus the faction's gate research (research_by_faction); 60 s transition.",
+        "comms_buildings": 2,
+        "power_ok_seconds": 60,
+        "recon_alive": 3,
+        "or_explored_fraction": 0.4,
+        "research_by_faction": {
+          "human_a": [
+            "g6_automation_doctrine"
+          ],
+          "human_b": [
+            "g6_automation_doctrine"
+          ],
+          "machine": [
+            "g6_overmind_protocols"
+          ]
+        },
+        "cost": {
+          "credits": 9000,
+          "ore": 1200
         }
       }
     }

@@ -48,6 +48,8 @@ func test_fort_defs_match_content() -> void:
 	var content_ids: Array = []
 	for def in Content.ids("buildings"):
 		var b: Dictionary = Content.building(def)
+		if b.get("g6", false):
+			continue  # G6 (CONTENT6 CR): nanite wall / phase gate art is G6 (tests/test_art_g6.gd)
 		if b.get("wall", false) or b.get("gate", false) or b.get("tower", false):
 			content_ids.append(def)
 	content_ids.sort()

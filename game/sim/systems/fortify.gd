@@ -7,6 +7,9 @@ extends RefCounted
 ##     front: each segment pays its own cost (ledger cause "build:<def>") when its foundation
 ##     starts. Builders (can_build units) take the queued cells in order; with several builders
 ##     each idle one starts the next cell. append:true adds the cells to the builders' line.
+##     G6 (MECH6a): size-1 fieldwork defs (Fieldworks.kind_of) also line up; field_buildable ones
+##     (sandbags, trench, wire) accept any foot infantry as builders (Fieldworks advances the ones
+##     without can_build).
 ##   set_gate_lock {issuer, building_id, locked}
 ## State (saved): w.sys_state.fortify = {lines:[{id, owner, segs:[[x,y,def]...], next}],
 ##   next_line, scan, known:[[id, x, y, owner, kind, built]...] ascending id, breach:[unit ids], ver}.
@@ -22,6 +25,7 @@ extends RefCounted
 
 const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
+const Fieldworks = preload("res://sim/systems/fieldworks.gd")  # G6 (MECH6a): fieldwork lines
 
 const MAX_LINE := 64
 const KIND_WALL := 0
@@ -152,11 +156,17 @@ static func _vet_cells(w: SimWorld, fid: int, def_id: String, cells: Array) -> D
 # ================================================================ commands
 static func _builders(w: SimWorld, cmd: Dictionary) -> Array:
 	var out := []
+	var field := Fieldworks.is_field_buildable(String(cmd.get("def", "")))
 	for raw in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(raw))
-		if e != null and e.kind == "unit" and bool(Content.unit(e.def).get("can_build", false)):
+		if e != null and e.kind == "unit" and (bool(Content.unit(e.def).get("can_build", false)) or field and Fieldworks.is_foot(e)):
 			out.append(int(raw))
 	return out
+
+
+## G6 (MECH6a): walls/gates/towers, plus size-1 fieldworks (sandbags, trench, traps, wire, camo).
+static func line_ok(def_id: String) -> bool:
+	return int(Content.building(def_id).get("size", 1)) == 1 and (is_fort(def_id) or Fieldworks.kind_of(def_id) != "")
 
 
 static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
@@ -166,9 +176,11 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var def_id := String(cmd.get("def", ""))
 			if Content.building(def_id).is_empty():
 				return "Unknown building '%s'." % def_id
-			if not is_fort(def_id) or int(Content.building(def_id).get("size", 1)) != 1:
+			if not line_ok(def_id):
 				return "Only walls, gates and wall towers can be built as a line."
 			if _builders(w, cmd).is_empty():
+				if Fieldworks.is_field_buildable(def_id):
+					return "Only infantry and work crews can dig fieldworks."
 				return "Only work crews (engineers) can construct buildings."
 			if not cmd.has("from") or not cmd.has("to"):
 				return "A wall line needs a start and an end cell."

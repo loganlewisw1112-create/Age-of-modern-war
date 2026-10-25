@@ -12,6 +12,8 @@ const G3B = preload("res://tools/art/g3b.gd")
 ## G5 manifest (res://assets/art/g5_*) have a different frame layout and are fully checked by
 ## tests/test_art_g5_units.gd / test_art_g5_air.gd / test_art_g5_naval.gd, so this G3/G4 test skips them.
 static func _g5_art(def: String) -> bool:
+	if bool(Content.unit(def).get("g6", false)):
+		return true  # G6 (CONTENT6 CR): G6 art is checked by tests/test_art_g6.gd
 	var m: Dictionary = AC.manifest()
 	for sec in ["infantry", "vehicles"]:
 		var s = m.get(sec, {}).get(def)
@@ -84,8 +86,8 @@ func test_g3b_units() -> void:
 		if _real(t, "icon " + def):
 			check(t.get_width() == 32 and t.get_height() == 32, "icon 32x32 " + def)
 	for id in Content.ids("production"):
-		if int(Content.production(id).get("stage_min", 0)) >= 9:
-			_real(AC.icon(id), "icon for production item " + id)
+		if int(Content.production(id).get("stage_min", 0)) >= 9 and not bool(Content.production(id).get("g6", false)):
+			_real(AC.icon(id), "icon for production item " + id)  # G6 icons: tests/test_art_g6.gd
 
 
 func test_g3b_buildings() -> void:
