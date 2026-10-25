@@ -1,0 +1,30 @@
+{
+  "agent": "FONT",
+  "n": 1,
+  "reason": "budget.handoff_now from ORCH (guard cost model starts agents at ~303k; 400k cap too small). Stopped at 8 tool calls.",
+  "done": [
+    "board status posted (seq 2495), files claim posted (seq 2501): tools/font/**, assets/fonts/**, tests/test_font.gd",
+    "git mv tests/pending_g5/test_font.gd -> tests/test_font.gd (staged rename; body still the 2 failing skeleton checks)",
+    "bus line 'FONT NOTE started' appended",
+    "fontTools installed with pip --user: python 3.12.10 imports fontTools 4.67.0"
+  ],
+  "files_created": [".plan/handoff/FONT-1.json"],
+  "files_moved": ["tests/test_font.gd (from tests/pending_g5/)"],
+  "not_started": ["tools/font/** builder", "assets/fonts/rts_mil_{bold,regular}.ttf", "assets/fonts/specimen.png", "tools/font/README.md licence note", "facts font.specimen_ready / font.final"],
+  "test_state": "tests/test_font.gd: 2 skeleton checks still check(false) -> FAIL (test_both_weights_load, test_glyph_coverage_latin_digits_ui_symbols). Not run.",
+  "next_step": "Write tools/font/build_font.py (fontTools FontBuilder, UPM 1000, glyf outlines from hand-defined polygons, GPOS kern via feaLib), emit both TTFs to assets/fonts/, then a Godot specimen script.",
+  "design_notes": {
+    "metrics": "UPM 1000; cap 700; x-height 520 (large for UI); ascender 740; descender -200; hhea ascent ~900 / descent ~-250 so accents fit",
+    "weights": "Regular stem ~96 / horiz ~84; Bold stem ~150 / horiz ~130; outer corners chamfered 45deg (~70 reg, ~90 bold); counters square",
+    "stencil": "narrow slanted (angular) cuts, ~34 units reg / ~42 bold: top+bottom of O/0/Q, stem-bowl joins of B D P R b d p q, stem-arm joins of E F; small enough to vanish at 12px and read at 48px",
+    "disambiguation": "0 gets a diagonal slash or inner bar vs O; 1 with flag + foot serif; l with tail; I with top/bottom bars",
+    "coverage": "ASCII 0x20-0x7E, plus U+25CF ●, U+00D7 ×, U+2212 −, U+2190-2193 arrows, U+2022 •, U+00B7, U+00B0, U+2026, U+2013/2014, curly quotes U+2018/2019/201C/201D; optional Latin-1 accents as composites"
+  },
+  "gotchas": [
+    "skia-pathops (pathops) is NOT installed, so fontTools removeOverlaps is unavailable. Either `pip install --user skia-pathops` (lets you subtract the stencil cuts as polygons), or build each stencil piece as its own non-overlapping contour. Overlapping same-direction contours do render with nonzero fill in FreeType.",
+    "pip install --user took more than 120 s; run long pip calls in the background or inside hb.sh",
+    "In tests and the specimen, load the TTFs with FontFile.new().load_dynamic_font(ProjectSettings.globalize_path(...)). That avoids running --import project-wide while other agents are writing assets. load('res://...ttf') needs .import files, which don't exist yet.",
+    "Headless Godot uses the dummy renderer, so the specimen needs a windowed run with a SubViewport that saves get_texture().get_image(). That counts toward the 2-windowed-playtest machine limit; check the board first.",
+    "UI presentation .gd files contain about 10 distinct non-ASCII chars. Grep them with a UTF-8-aware tool and add any missing ones to coverage."
+  ]
+}
