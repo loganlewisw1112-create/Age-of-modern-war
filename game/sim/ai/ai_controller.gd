@@ -22,6 +22,8 @@ const G3 = preload("res://sim/ai/ai_g3.gd")
 const G3U = preload("res://sim/ai/ai_g3_units.gd")
 const Stage = preload("res://sim/ai/ai_stage.gd")
 const G4B = preload("res://sim/ai/ai_g4b.gd")
+const AiAir = preload("res://sim/ai/ai_air.gd")  # G5 scaffold
+const AiNaval = preload("res://sim/ai/ai_naval.gd")  # G5 scaffold
 const Triggers = preload("res://sim/systems/triggers.gd")
 
 
@@ -194,6 +196,8 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		G4B.manage_units(w, fid, st, ctx)
 		G4B.manage_breach(w, fid, st, ctx)
 		G4B.manage_gates(w, fid, st, ctx)
+		AiAir.manage(w, fid, st, ctx)    # G5 scaffold (owner AI6-AN)
+		AiNaval.manage(w, fid, st, ctx)  # G5 scaffold (owner AI6-AN)
 		if prof != null:
 			prof.mark(fid, "g4b")
 		Army.manage_army(w, fid, st, ctx)

@@ -16,6 +16,7 @@ static var _texs: Dictionary = {}    # rel path -> Texture2D
 static var _sheets: Dictionary = {}  # "rel|#color" -> tinted Image
 static var _frames: Dictionary = {}  # "rel|#color|col|row" -> Texture2D
 static var _fx: Dictionary = {}
+static var _sil: Dictionary = {}   # G5 scaffold: "class|#color" -> silhouette Texture2D
 static var _rings: Dictionary = {}
 static var _fog: Dictionary = {}
 
@@ -208,7 +209,7 @@ static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) ->
 			var rb: Dictionary = _man.get("rubble", {}).get(str(clampi(int(e.get("size", 1)), 1, 3)), {})
 			if not rb.is_empty():
 				return {"texture": _texture(String(rb.file)), "offset": Vector2(-float(rb.pivot[0]), -float(rb.pivot[1])), "flip_h": false}
-	return {"texture": _ph(), "offset": Vector2(-8, -16), "flip_h": false}
+	return placeholder_for(e, team_color)  # G5 scaffold: team-tinted silhouette by class (was a magenta square)
 
 
 ## G4b (UI4B-3): engineer at work. Accepts a live unit dict (order lay_mine / plant_charge with
@@ -331,3 +332,57 @@ static func fog_tile(kind: String) -> Texture2D:
 		t = ImageTexture.create_from_image(img)
 	_fog[kind] = t
 	return t
+
+
+## G5 scaffold (CONTRACTS_G5 section 2.7): a unit/building with no art yet draws as a team-tinted
+## silhouette by class, so new ids are visible and readable before their art lands.
+## Classes: infantry dot, vehicle box, air delta, naval hull, building block.
+static func placeholder_for(e: Dictionary, team_color: Color) -> Dictionary:
+	var cls := "vehicle"
+	if String(e.get("kind", "")) == "building":
+		cls = "building"
+	else:
+		var mc := String(Content.unit(String(e.get("def", ""))).get("move_class", e.get("move_class", "vehicle")))
+		if mc == "foot":
+			cls = "foot"
+		elif mc.begins_with("air"):
+			cls = "air"
+		elif mc.begins_with("naval"):
+			cls = "naval"
+	var key := "%s|%s" % [cls, team_color.to_html(false)]
+	if not _sil.has(key):
+		_sil[key] = ImageTexture.create_from_image(_silhouette(cls, team_color))
+	var sz: int = 32 if cls == "building" else 20
+	return {"texture": _sil[key], "offset": Vector2(-sz / 2.0, -sz * 0.75), "flip_h": false}
+
+
+static func _silhouette(cls: String, col: Color) -> Image:
+	var sz: int = 32 if cls == "building" else 20
+	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var dark := col.darkened(0.45)
+	var c := Vector2(sz / 2.0, sz / 2.0)
+	for y in sz:
+		for x in sz:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var inside := false
+			match cls:
+				"foot":
+					inside = p.distance_to(c) <= sz * 0.28
+				"air":
+					var dy := p.y - sz * 0.15
+					inside = dy >= 0.0 and dy <= sz * 0.7 and absf(p.x - c.x) <= dy * 0.62
+				"naval":
+					inside = absf(p.y - c.y) <= sz * 0.18 and absf(p.x - c.x) <= sz * 0.45 - absf(p.y - c.y) * 0.8
+				"building":
+					inside = x >= 3 and x < sz - 3 and y >= 6 and y < sz - 3
+				_:
+					inside = x >= 3 and x < sz - 3 and y >= 6 and y < sz - 5
+			if inside:
+				var edge := false
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var q: Vector2i = Vector2i(x, y) + (d as Vector2i)
+					if q.x < 0 or q.y < 0 or q.x >= sz or q.y >= sz:
+						edge = true
+				img.set_pixel(x, y, dark if edge else col)
+	return img

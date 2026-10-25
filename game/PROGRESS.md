@@ -1,6 +1,31 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G4a + G4e + G4b in parallel, started 2026-10-24; plan `docs/PLAN_G4.md`, contract `docs/CONTRACTS_G4.md`)
+## Active goal (G5 "Full Spectrum", owner-approved 2026-10-24: rev 4, all defaults D9-D20; plan `docs/PLAN_G5.md`, contract `docs/CONTRACTS_G5.md`)
+One continuous wave, up to 8 agents live (owner override), 18 agents each with an operating guide. Message board + semantic layer run all wave.
+
+```
+GOAL - G5 "Full Spectrum"
+For whom / what changes:  Owner plays the air war, the naval war, 17 new human ground units (incl. Drone Team),
+                          auto resupply + medical evac with hospitals, a refreshed UI with its own typeface,
+                          fixed G4 gaps and a tutorial.
+Outcome:                  One continuous orchestrated wave delivers a packaged G5 build that passes every check below.
+Done-when:                1. tests/run.sh TESTS OK incl. every new G5 suite (PLAN_G5 section 12.1) and 0 files left in
+                             tests/pending_g5/
+                          2. Quiet PC: 10k all-fighting avg <= 62.5 ms/tick; 2k on screen 60+ fps; 10k zoomed out
+                             30+ fps (numbers reported either way)
+                          3. AI soaks on 4 maps x 2 seeds + 1 editor map end with winners, 0 invariant failures; logs
+                             show sorties, >= 1 amphibious landing, auto resupply, med evacuations
+                          4. Playtests pass: existing 6 + air + naval + drone team + auto resupply + med evac + tutorial
+                          5. UI fit test: 0 clipped/overlapping controls at all 7 resolutions; new typeface everywhere
+                          6. Packaged build passes all of the above from a clean folder, is copied to Downloads;
+                             README / perf report / PROGRESS match reality
+Out of scope:             submarines, carriers, true elevation, Stages 1-6 and 10-13, audio, multiplayer
+Stop-if / park-if:        determinism breaks and can't be restored; existing tests can't be kept green; typeface
+                          specimen not approved (continue on a placeholder font). Anything that runs long is parked
+                          with a written note; tests are never cut.
+```
+
+## Previous goal (G4a + G4e + G4b in parallel, started 2026-10-24; plan `docs/PLAN_G4.md`, contract `docs/CONTRACTS_G4.md`) — DELIVERED, PARTIAL (see G4 evidence)
 Owner decisions (2026-10-24): D1 editor + naval/air pulled into G4 (DEC-G4-01); D2 8 new human land units (4 per Human faction); D3 Machine gets a small air/naval roster (G4c/G4d); D4 helicopters hover, jets sortie; D5 gunships carry troops or a slung vehicle (G4c); D6 no true heightmap (cliff + hill tiles); D7 REDUCED movement stride stays OFF; D8 no submarines.
 
 ```

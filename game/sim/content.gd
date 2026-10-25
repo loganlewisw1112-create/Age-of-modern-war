@@ -35,11 +35,18 @@ static func load_all() -> void:
 ##   faction_roles: {faction: {role: id}}       new role keys only
 ##   faction_stage_roles: {faction: {"7": {role: id}}}  new keys only
 const FRAGMENT_DIR := "res://content/g4"
+const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5"]  # G5: merged in this order
 
 
 static func _merge_fragments() -> void:
+	for fdir in FRAGMENT_DIRS:
+		_merge_fragment_dir(String(fdir))
+	_link_fragment_production()
+
+
+static func _merge_fragment_dir(fdir: String) -> void:
 	var files: Array = []
-	var dir := DirAccess.open(FRAGMENT_DIR)
+	var dir := DirAccess.open(fdir)
 	if dir == null:
 		return
 	for fn in dir.get_files():
@@ -48,7 +55,7 @@ static func _merge_fragments() -> void:
 			files.append(name)
 	files.sort()
 	for fn in files:
-		var parsed = JSON.parse_string(FileAccess.get_file_as_string(FRAGMENT_DIR + "/" + fn))
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(fdir + "/" + fn))
 		if typeof(parsed) != TYPE_DICTIONARY:
 			push_error("Content: invalid JSON fragment %s" % fn)
 			continue
@@ -72,7 +79,6 @@ static func _merge_fragments() -> void:
 						t[id] = frag[key][id]
 			else:
 				push_error("Content: fragment %s has unknown table '%s'" % [fn, k])
-	_link_fragment_production()
 
 
 ## G4 (UI4B CR): a fragment production entry names its producer with "facility". Add the id to that

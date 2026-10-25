@@ -34,10 +34,18 @@ const G4bMech = preload("res://sim/systems/g4b_mech.gd")
 const Triggers = preload("res://sim/systems/triggers.gd")
 const MapIO = preload("res://sim/map_io.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
+# G5 (CONTRACTS_G5 section 2)
+const Airfield = preload("res://sim/systems/airfield.gd")
+const Air = preload("res://sim/systems/air.gd")
+const Naval = preload("res://sim/systems/naval.gd")
+const G5Mech = preload("res://sim/systems/g5_mech.gd")
+const Medical = preload("res://sim/systems/medical.gd")
+const Support = preload("res://sim/systems/support.gd")
+const HotState = preload("res://sim/hot_state.gd")
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Construction, Fortify, Production, Progression, Gather, Repair, Ops, Orders, Movement, Transport, Combat, G4bMech, Morale, Supply, Bridges, Fog, Triggers, Victory]
+const SYSTEM_ORDER := [Economy, Construction, Fortify, Airfield, Production, Progression, Gather, Repair, Ops, Orders, Movement, Air, Naval, Transport, Combat, G4bMech, G5Mech, Medical, Support, Morale, Supply, Bridges, Fog, Triggers, Victory]
 
 ## command type -> handler script (must implement validate_command / apply_command).
 const COMMANDS := {
@@ -71,6 +79,20 @@ const COMMANDS := {
 	"lay_mine": G4bMech,
 	"plant_charge": G4bMech,
 	"deploy": G4bMech,
+	# G5 (CONTRACTS_G5 section 4)
+	"build_hangar": Airfield,
+	"upgrade_hangar": Airfield,
+	"upgrade_airfield": Airfield,
+	"assign_engineers": Airfield,
+	"sortie": Air,
+	"rebase": Air,
+	"land_at": Air,
+	"take_off": Air,
+	"bombard": Naval,
+	"launch_drone": G5Mech,
+	"tactical": G5Mech,
+	"set_auto_resupply": Support,
+	"set_auto_evac": Medical,
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
@@ -104,6 +126,8 @@ var tiers_enabled: bool = true    # G3b (PERF4): false = every unit FULL tier; r
 var render_snap: Dictionary = {}  # G4 THREAD: latest render snapshot (runtime, never saved)
 var snap_request: Array = []      # G4 THREAD: ids whose full dicts go into render_snap.detail
 var snap_enabled: bool = false    # G4 THREAD: build render_snap at the end of step()
+# >>> G5 HOT (owner CORE10K, CONTRACTS_G5 section 1): packed hot-state runtime fields go here.
+# <<< G5 HOT
 
 
 # ================================================================ construction

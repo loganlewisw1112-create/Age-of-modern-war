@@ -4,6 +4,7 @@ extends RefCounted
 ## Cost is spent in full at queue time and stored in the queue entry as `paid`; cancel refunds it exactly.
 
 const Movement = preload("res://sim/systems/movement.gd")
+const Airfield = preload("res://sim/systems/airfield.gd")  # G5 scaffold
 const Construction = preload("res://sim/systems/construction.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
@@ -32,6 +33,9 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				return "%s: %s." % [String(p.get("name", item)), gate]
 			if b.queue.size() >= QUEUE_MAX:
 				return "The production queue is full (%d)." % QUEUE_MAX
+			var air_gate := Airfield.can_produce(w, fid, item)  # G5 (CONTRACTS_G5 section 4): hangar / pad gating
+			if air_gate != "":
+				return "%s: %s." % [String(p.get("name", item)), air_gate]
 			return w.can_afford(fid, p.cost)
 		"cancel_unit":
 			var i := int(cmd.get("index", -1))
