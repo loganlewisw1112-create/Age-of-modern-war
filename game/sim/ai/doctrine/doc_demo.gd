@@ -127,6 +127,7 @@ func _company(w: SimWorld, at: Vector2, plats: int, per: int) -> Dictionary:
 	cst.next_cid = cid + 1
 	var cap := w.spawn_unit("officer", FID, at)
 	w.entities[cap].rank_role = "captain"
+	SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 	w.entities[cap].company = cid
 	var gids := []
 	var els := []
@@ -136,6 +137,7 @@ func _company(w: SimWorld, at: Vector2, plats: int, per: int) -> Dictionary:
 		var gid := int(ost.next_gid)
 		ost.next_gid = gid + 1
 		w.entities[lt].rank_role = "lieutenant"
+		SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 		w.entities[lt].company = cid
 		w.entities[lt].platoon = gid
 		var mem := []

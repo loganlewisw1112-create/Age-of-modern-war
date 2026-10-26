@@ -143,6 +143,7 @@ static func _complete(w: SimWorld, b: Dictionary, item: String, p: Dictionary, i
 		Movement.order_path(w, u, slot)
 		if Companies.is_commander_def(String(spawns[i])):
 			u.rank_role = "commander"  # G6 (ARMY6): a Commander queued as a normal HQ item
+			SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 		ids.append(uid)
 		f.stats.trained += 1
 	f.pop = int(f.pop) + item_pop     # Economy recomputes next tick; keeps same-tick completions honest

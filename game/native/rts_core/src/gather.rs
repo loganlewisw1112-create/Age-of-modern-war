@@ -12,7 +12,7 @@ use godot::sys;
 pub struct GKeys {
     id: StringName, pos: StringName, path: StringName, path_i: StringName, stuck: StringName,
     moving: StringName, path_req: StringName, mv_owed: StringName, comp: StringName, mobility: StringName,
-    fuel: StringName, broken: StringName, pinned: StringName,
+    fuel: StringName, broken: StringName, pinned: StringName, mvm: StringName,
 }
 
 impl GKeys {
@@ -21,7 +21,7 @@ impl GKeys {
         GKeys {
             id: n("id"), pos: n("pos"), path: n("path"), path_i: n("path_i"), stuck: n("stuck"),
             moving: n("moving"), path_req: n("path_req"), mv_owed: n("mv_owed"), comp: n("comp"),
-            mobility: n("mobility"), fuel: n("fuel"), broken: n("broken"), pinned: n("pinned"),
+            mobility: n("mobility"), fuel: n("fuel"), broken: n("broken"), pinned: n("pinned"), mvm: n("mvm"),
         }
     }
 }
@@ -74,6 +74,7 @@ pub struct GatherIn<'a> {
     pub tmc: &'a [u8],
     pub tsp: &'a [f32],
     pub uids: &'a [i32],         // ids parallel to units (SimIndex.unit_ids)
+    pub pin_move: f64,           // G6.1 (0.5.2): Morale.pin_move (tabs[3]); 0.5 when not passed (G6 rule)
 }
 
 /// Held mirrors (movement.gd _held): path_i, stuck, path size, flags; grown here like GDScript.
@@ -290,7 +291,12 @@ pub fn gather(units: &VarArray, ents: &VarDictionary, refs: &mut VarArray, g: &G
                 } else if gn(ee, &k.broken).booleanize() {
                     mm = 1.2;
                 } else if gn(ee, &k.pinned).booleanize() {
-                    mm = 0.5;
+                    mm = g.pin_move;
+                }
+                // G6.1 (0.5.2): suppressed / fatigue / fast trait factor, as movement.gd (absent = 1.0)
+                let fmv = gn(ee, &k.mvm);
+                if !fmv.is_nil() {
+                    mm *= vfloat(&fmv);
                 }
                 spd.push(((g.tsp[iu] as f64) * mm) as f32);
             }

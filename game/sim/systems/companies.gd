@@ -800,6 +800,7 @@ static func _spawn_commander(w: SimWorld, b: Dictionary, t: Dictionary) -> void:
 	var fid := int(t.owner)
 	var u := _spawn_at(w, b, String(t.template), fid, {}, 1)
 	u.rank_role = "commander"
+	SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 	w.factions[fid].pop = int(w.factions[fid].pop) + int(t.plan.pop)
 	w.emit("CommanderTrained", {"building_id": int(b.id), "owner": fid, "unit_id": int(u.id)})
 
@@ -817,6 +818,7 @@ static func _spawn_company(w: SimWorld, st: Dictionary, b: Dictionary, t: Dictio
 	var ids := []
 	var cap := _spawn_at(w, b, String(pl.leaders[0].def), fid, ctx, need)
 	cap.rank_role = "captain"
+	SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 	cap.company = cid
 	ids.append(int(cap.id))
 	var gids := []
@@ -824,6 +826,7 @@ static func _spawn_company(w: SimWorld, st: Dictionary, b: Dictionary, t: Dictio
 	for k in npl:
 		var lt := _spawn_at(w, b, String(pl.leaders[k + 1].def), fid, ctx, need)
 		lt.rank_role = "lieutenant"
+		SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 		lt.company = cid
 		var gid := int(ost.next_gid)
 		ost.next_gid = gid + 1
@@ -957,6 +960,7 @@ static func form_from_units(w: SimWorld, fid: int, tid: String, ids: Array) -> i
 		var le: Dictionary = w.entities[lid]
 		le.facing = face
 		le.rank_role = "captain" if k == 0 else "lieutenant"
+		SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 		le.company = cid
 		lead.append(lid)
 		all_ids.append(lid)
@@ -1172,6 +1176,7 @@ static func _promote(w: SimWorld, st: Dictionary, c: Dictionary, dying: int) -> 
 		return
 	var e: Dictionary = w.entities[nc]
 	e.rank_role = "captain"
+	SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 	e.erase("platoon")
 	if from_gid >= 0:
 		var g: Dictionary = groups[from_gid]
@@ -1184,6 +1189,7 @@ static func _promote(w: SimWorld, st: Dictionary, c: Dictionary, dying: int) -> 
 			g.officer = nxt
 			g.members = (g.members as Array).filter(func(x) -> bool: return int(x) != nxt)
 			w.entities[nxt].rank_role = "lieutenant"
+			SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 		else:
 			groups.erase(from_gid)
 			c.platoons = (c.platoons as Array).filter(func(x) -> bool: return int(x) != from_gid)

@@ -1520,7 +1520,7 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 		var hot = HotState.of(w)
 		hot._grow(int(w.next_id))
 		var uids: PackedInt32Array = SimIndex.unit_ids(w)
-		var r: Array = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
+		var r: Array = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp, SimWorld.Morale.pin_move], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
 		if r.size() == 1:
 			for nid in r[0]:
 				var e: Dictionary = ents[nid]
@@ -1538,7 +1538,7 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 				tmc[id] = _key(u.mc, team_of(w, e))
 				tsp[id] = float(u.speed) * SimWorld.DT
 				grown = true
-			r = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
+			r = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp, SimWorld.Morale.pin_move], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
 		if r.size() == 13:
 			pos = r[0]
 			ids = r[1]
@@ -1562,11 +1562,13 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 			# G6.1: rts_core's gather knows the G6 speed rules only (pinned = 0.5, no "mvm"). Re-derive the speed
 			# of a mover carrying a G6.1 realism multiplier exactly as the GDScript loop below does, so pinned,
 			# suppressed and tired units slow down on the native path too (test_hot_state perf paths on == off).
-			for j in nm:
-				var ni := mvi[j * 4]
-				var me: Dictionary = all[uix[ni]]
-				if me.has("mvm") or me.has("pinned"):
-					spd[j] = tsp[ids[ni]] * _speed_mult(me)
+			# rts_core >= 0.5.2 (gather_mvm) does this inside the gather (Morale.pin_move passed as tabs[3]).
+			if not steer.has_method("gather_mvm"):
+				for j in nm:
+					var ni := mvi[j * 4]
+					var me: Dictionary = all[uix[ni]]
+					if me.has("mvm") or me.has("pinned"):
+						spd[j] = tsp[ids[ni]] * _speed_mult(me)
 			if HotState.verify_gather:   # tests: every trusted (not re-read) position equals its dict
 				for j in n:
 					if all[uix[j]].pos != pos[j]:
@@ -2125,7 +2127,57 @@ static func _g61_is_veh(e: Dictionary) -> bool:
 
 
 ## n slots of one formation around target (slot 0 = the leader's / front slot).
+## A formation for more than SHAPE_CHUNK units is built as chunks of at most SHAPE_CHUNK, each in the shape, set
+## side by side across the front (platoons abreast). Every shape grows with its member count (a wedge n/2 ranks
+## deep, a column n slots long), so a 50-man company in one wedge put its slots ~30 tiles behind the target,
+## clamped at the map corner: the company "advanced" back to its base (G6.1 officer61, 2026-10-26).
+const SHAPE_CHUNK := 12
+
+
 static func _g61_shape(w: SimWorld, n: int, form: String, target: Vector2, fwd: Vector2, side: Vector2, sp: float) -> Array:
+	if n > SHAPE_CHUNK:
+		var groups := ceili(float(n) / float(SHAPE_CHUNK))
+		var per := ceili(float(n) / float(groups))
+		var parts := []    # [slots relative to target, lateral min, lateral max]
+		var total := 0.0
+		var k0 := 0
+		for g in groups:
+			var m := mini(per, n - k0)
+			k0 += m
+			var rel := _g61_shape_one(m, form, Vector2.ZERO, fwd, side, sp)
+			var lo := INF
+			var hi := -INF
+			for q in rel:
+				var u: float = (q as Vector2).dot(side)
+				lo = minf(lo, u)
+				hi = maxf(hi, u)
+			parts.append([rel, lo, hi])
+			total += hi - lo
+		var gap := sp * 1.5
+		total += gap * float(groups - 1)
+		var cur := -total * 0.5
+		var out := []
+		for pt in parts:
+			var off: float = cur - float(pt[1])
+			for q in pt[0]:
+				var p: Vector2 = target + (q as Vector2) + side * off
+				p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
+				p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
+				out.append(p)
+			cur += float(pt[2]) - float(pt[1]) + gap
+		return out
+	var abs1 := _g61_shape_one(n, form, target, fwd, side, sp)   # n <= SHAPE_CHUNK: exactly the old slots
+	var slots := []
+	for q in abs1:
+		var p: Vector2 = q
+		p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
+		p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
+		slots.append(p)
+	return slots
+
+
+## Unclamped slots of one group of n in form around target (the G6.1 shapes, same arithmetic as before).
+static func _g61_shape_one(n: int, form: String, target: Vector2, fwd: Vector2, side: Vector2, sp: float) -> Array:
 	var slots := []
 	var m := 2
 	while 4 * (m - 1) < n:
@@ -2167,8 +2219,6 @@ static func _g61_shape(w: SimWorld, n: int, form: String, target: Vector2, fwd: 
 				p = target - fwd * float(k) * sp * 0.9 + side * (0.35 if k % 2 == 1 else -0.35) * sp
 			"spread":
 				p = target + side * (float(k) - float(n - 1) * 0.5) * sp * 2.0 - fwd * (0.4 * sp if k % 2 == 1 else 0.0)
-		p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
-		p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
 		slots.append(p)
 	return slots
 

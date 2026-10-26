@@ -63,6 +63,12 @@ impl RtsSteer {
         PackedVector2Array::from(out.as_slice())
     }
 
+    /// G6.1 (0.5.2): gather_held applies Morale.pin_move (tabs[3]) and the unit's "mvm" factor itself.
+    #[func]
+    fn gather_mvm(&self) -> bool {
+        true
+    }
+
     /// G5 CORE10K: movement.gd _tick_held gather loop as one call (exact port, src/gather.rs).
     /// units = SimIndex unit dicts (ascending id), ents = w.entities, refs = held path refs (written
     /// in place), sols = solid bytes per class index 0..5 (empty = not built), tabs by id, held
@@ -86,7 +92,8 @@ impl RtsSteer {
             bufs.push(if j < sols.len() { sols.at(j).try_to::<PackedByteArray>().unwrap_or_default() } else { PackedByteArray::new() });
         }
         let sl: Vec<&[u8]> = bufs.iter().map(|b| b.as_slice()).collect();
-        let g = GatherIn { tick, mw, mh, sols: &sl, trad: rad_tab.as_slice(), tmc: mc_tab.as_slice(), tsp: spd_tab.as_slice(), uids: uids.as_slice() };
+        let pin_move = if tabs.len() > 3 { tabs.at(3).try_to::<f64>().unwrap_or(0.5) } else { 0.5 };
+        let g = GatherIn { tick, mw, mh, sols: &sl, trad: rad_tab.as_slice(), tmc: mc_tab.as_slice(), tsp: spd_tab.as_slice(), uids: uids.as_slice(), pin_move };
         let mut h = Held { hpos: hpos.as_slice().to_vec(), mfl: mflags.as_slice().to_vec(), pi: pi.as_slice().to_vec(), st: st.as_slice().to_vec(), ps: ps.as_slice().to_vec(), mv: mv.as_slice().to_vec() };
         let mut out = VarArray::new();
         match gather(&units, &ents, &mut refs, &g, &mut h) {

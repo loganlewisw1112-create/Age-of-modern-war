@@ -205,6 +205,63 @@ static func _set_or_erase(e: Dictionary, k: String, v: float) -> void:
 ## G6.1 PERF61-2 (ORCH-approved behaviour change): staggered by unit id. It runs every tick for the units whose
 ## (tick + id) % every == REAL_PHASE, so each unit still runs once per `every` ticks with the same dt, and the
 ## once-per-second spike (every unit on one tick) is gone. Leaders are this tick's (positions, broken state).
+## G6.1 perf (owner 2026-10-26: sim <= 1.2x G6): units that can lead (a leader def or a rank), in SimIndex order, cached
+## per SimIndex (a rebuild, i.e. a removal or load, starts over); units appended since the last call are scanned on their
+## own; any rank written to an existing unit calls note_rank() (rebuild). The per-tick checks (morale, rank or leader def,
+## alive, not broken, position) still run on every candidate, so the leader map is the one the full scan gave.
+## verify_leaders (tests): also run the full scan and count mismatches in leader_mismatch.
+static var rank_rev := 0
+static var verify_leaders := false
+static var leader_mismatch := 0
+
+
+static func note_rank() -> void:
+	rank_rev += 1
+
+
+static func _is_ldef(e: Dictionary, lead_def: Dictionary) -> bool:
+	var d := String(e.get("def", ""))
+	var ld = lead_def.get(d)
+	if ld == null:
+		ld = Veterancy.is_leader_def(d)
+		lead_def[d] = ld
+	return bool(ld)
+
+
+static var leader_cache := true   # false = the old full scan (bench A/B)
+
+
+static func _leader_cands(w: SimWorld, all: Array, lead_def: Dictionary) -> Array:
+	if not leader_cache:
+		return all
+	var idx = w.cache.get("sim_index")
+	var lc = w.cache.get("ldr61")
+	if lc == null or not is_same(lc.idx, idx) or int(lc.rv) != rank_rev or all.size() < int(lc.n):
+		lc = {"idx": idx, "rv": rank_rev, "n": 0, "c": []}
+		w.cache["ldr61"] = lc
+	var n0 := int(lc.n)
+	if all.size() > n0:
+		var c: Array = lc.c
+		for i in range(n0, all.size()):
+			var e: Dictionary = all[i]
+			if e.has("rank_role") or _is_ldef(e, lead_def):
+				c.append(e)
+		lc.n = all.size()
+	if verify_leaders:
+		var want := []
+		for e in all:
+			if e.has("rank_role") or _is_ldef(e, lead_def):
+				want.append(int(e.id))
+		var got := []
+		for e in lc.c:
+			if e.has("rank_role") or _is_ldef(e, lead_def):
+				got.append(int(e.id))
+		if want != got:
+			leader_mismatch += 1
+			push_error("Morale leader cache mismatch at tick %d: full %s cached %s" % [w.tick, str(want).left(120), str(got).left(120)])
+	return lc.c
+
+
 static func _realism_pass(w: SimWorld, every: int) -> void:
 	_ssync()
 	var dt := float(every) / float(SimWorld.TICK_RATE)
@@ -226,7 +283,7 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 	var cs := maxf(lr, 1.0)
 	var lead_def := _ldef   # def -> bool
 	var leaders := {}    # owner -> {Vector2i cell: [[pos, inspiring]]}
-	for e in all:
+	for e in _leader_cands(w, all, lead_def):   # G6.1 perf: was every unit every tick (same leaders, same order)
 		if not e.has("morale"):
 			continue
 		var d := String(e.get("def", ""))

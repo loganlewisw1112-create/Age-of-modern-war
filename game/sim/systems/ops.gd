@@ -312,6 +312,7 @@ static func _succeed(w: SimWorld, g: Dictionary) -> bool:
 			g.officer = int(m)
 			g.members = (g.members as Array).filter(func(x) -> bool: return int(x) != int(m))
 			e.rank_role = "lieutenant"
+			SimWorld.Morale.note_rank()  # G6.1 perf: leader cache
 			w.emit("PlatoonLeaderPromoted", {"gid": int(g.id), "owner": int(g.owner), "company_id": int(g.parent_company),
 				"old": old, "new": int(m)})
 			return true
