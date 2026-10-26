@@ -1,0 +1,13 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_ui_fit::test_every_screen_fits_at_7_resolutions
+    [1280x720,1366x768,1600x900,1920x1080,2560x1440,3440x1440,3840x2160 scales 1] FIT RESULT screens=210 controls=25879 issues=0 distinct=0
+  PASS test_ui_fit::test_every_screen_fits_at_7_resolutions (150145 ms)
+  RUN  test_ui_fit::test_typeface_applied_to_theme
+  PASS test_ui_fit::test_typeface_applied_to_theme (140 ms)
+  RUN  test_ui_fit::test_ui_scale_75_to_150_still_fits
+    [1280x720,2560x1440,3440x1440 scales 0.75,1.5] FIT RESULT screens=180 controls=21968 issues=0 distinct=0
+  PASS test_ui_fit::test_ui_scale_75_to_150_still_fits (125745 ms)
+
+RESULT pass=3 fail=0 files=1 time_ms=280215

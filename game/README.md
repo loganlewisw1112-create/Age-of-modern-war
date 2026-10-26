@@ -1,4 +1,4 @@
-# RTS: Age of Modern War: playable slice (G0+G1+G2+G3+G4)
+# RTS: Age of Modern War: playable slice (G0 through G6)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
@@ -131,6 +131,22 @@ This runs 200 headless tests (22 files): ledger conservation, command validation
 - **AI:** uses air, naval, drones, medevac and the new units.
 - **Scale:** native core 0.4.2. 10k all-fighting is about 94-101 ms/tick, still under target.
 - Valley AI soaks still draw; see PROGRESS G5 evidence. Packaged build: `build/RTS_Age_of_Modern_War_G5/`.
+
+## G6 "Command & Terrain" (2026-10-25) — delivered PARTIAL (see PROGRESS G6 evidence)
+- **True elevation:** 4 height levels with ramps and cliffs; high ground sees and shoots farther and takes less damage
+  from below. Bold in-game look approved by the owner (taller cliff faces, level tint, baked shadows).
+- **Companies, armies, Commanders:** Company HQ, Army Builder (presets + custom, 15-45 elements), captains and
+  lieutenants, armies under a Commander; a built Company HQ raises the supply cap to 200.
+- **AI:** military doctrine (overwatch, suppress, flank, assault, hold high ground, raids, exfil) for enemy and allies;
+  AI Commanders that assist the player (4 playstyles, never override an order from the last 20 s); ally commands;
+  wave AI for survival.
+- **89 new units and buildings** with their systems: mines, fieldworks, garrisons, rail, engineering, subs + sonar,
+  carriers, radar/SAM, CIWS, jammers, call-ins, auras, Machine specials, strike batteries; exo-suits and loadouts;
+  marketplace; compact airfields; Stage 10; survival mode (any map + Ridge Bastion, River Dam); editor Live mode.
+- **Not met (owner parked both):** 10k all-fighting speed on an elevated map (target 62.5 ms/tick; measured 296.5 under
+  heavy background load, 143-156 under shared agent load) and AI soak winners on every map (5/11; Valley and
+  Heartland draw). Frame rate gates pass: 2k on screen p10 83.7 fps, 10k zoomed out p10 111.1 fps.
+- Packaged build: `build/RTS_Age_of_Modern_War_G6/` (also copied to Downloads).
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.

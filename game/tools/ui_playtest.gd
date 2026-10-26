@@ -235,18 +235,31 @@ func _site(def_id: String) -> Vector2i:
 	if hq.is_empty():
 		return Vector2i(-1, -1)
 	var c: Vector2i = hq.cell
-	for r in range(4, 12):
+	var size := int(Content.building(def_id).size)
+	var legal := Vector2i(-1, -1)
+	var errs := {}
+	for r in range(4, 16):
 		for dy in range(-r, r + 1):
 			for dx in range(-r, r + 1):
 				if maxi(absi(dx), absi(dy)) != r:
 					continue
 				var o := c + Vector2i(dx, dy)
-				if Construction.placement_error(w, 0, def_id, o) == "":
-					var size := int(Content.building(def_id).size)
+				var er := Construction.placement_error(w, 0, def_id, o)
+				if er == "":
 					var centre := Vector2(o) + Vector2(size, size) * 0.5
 					var sp := _to_screen(centre)
-					if sp.x > 80 and sp.x < 1500 and sp.y > 120 and sp.y < 640:
+					if r < 12 and sp.x > 80 and sp.x < 1500 and sp.y > 120 and sp.y < 640:
 						return o
+					if legal.x < 0:
+						legal = o
+				else:
+					errs[er] = int(errs.get(er, 0)) + 1
+	# G6 (PT6-2): p1 airdef/survival "no legal on-screen site". Legal but off screen: scroll there like a
+	# player (callers re-read _to_screen after their waits). None legal: say why.
+	if legal.x >= 0:
+		_mv().center_camera_on(Vector2(legal) + Vector2(size, size) * 0.5)
+		return legal
+	print("PLAYTEST-DBG site_none def=%s hq=%s errs=%s" % [def_id, str(c), str(errs).left(500)])
 	return Vector2i(-1, -1)
 
 
@@ -719,8 +732,17 @@ func _stages_flow(builders: Array) -> void:
 	if not built:
 		return
 	var rb: Dictionary = _w().buildings_of(0, rdef)[0]
-	await _click(_to_screen(rb.pos))
-	await _wait(0.5)
+	# G6 (PT6-2) p1 parallel flake: one click missed (builder walking over the footprint / camera off it).
+	# Wait on state: up to 3 clicks, centring the camera on the building between tries.
+	for attempt in 3:
+		if not _on_map(_to_screen(rb.pos)) or attempt > 0:
+			_mv().center_camera_on(rb.pos)
+			await _wait(0.4)
+		await _click(_to_screen(rb.pos))
+		await _wait(0.5)
+		if _mv().selection.has(int(rb.id)):
+			break
+		print("PLAYTEST-DBG research_building_select retry %d sel=%s" % [attempt, str(_mv().selection)])
 	_log("g3b_select_research_building", _mv().selection.has(int(rb.id)))
 	# first project the side can start now (Stage 7: a 7->8 project)
 	var pid := ""
@@ -1891,8 +1913,8 @@ func _med_flow() -> void:
 			Damage.apply_hit(w, foe, e, Combat.stats(foe), true)
 	var wounded := hurt.filter(func(id): return _ent(int(id)) != null and Medical.is_wounded(_ent(int(id))))
 	_log("med_wounded", foe != null and wounded.size() == hurt.size(), "wounded=%d of %d (foe=%s)" % [wounded.size(), hurt.size(), "none" if foe == null else String(foe.def)])
-	await _wait(0.6)
-	_log("med_wounded_flag", _any_flag(wounded, RenderSnapScript.FLAG_WOUNDED))
+	# G6 (PT6-2) p2 parallel flake: under 2 windowed runs the render snapshot lagged past a fixed 0.6 s; wait on it.
+	_log("med_wounded_flag", await _wait_until(func(): return _any_flag(wounded, RenderSnapScript.FLAG_WOUNDED), 6.0))
 	await _shot("med_01_wounded")
 	if wounded.is_empty():
 		return
@@ -2190,9 +2212,10 @@ func _tut_unmet_gates() -> Array:
 ## survival (+ editor Live / height brushes in tools/editor_playtest.gd), and the owner checkpoint
 ## (--ui-playtest-checkpoint with --load=<doctrine demo save>). Human A at Stage 9 unless noted; the
 ## harness grant + peace window are the G5 ones (this process only, in memory).
-const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint"]
+const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "cmd61"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
+const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")
 const Mines = preload("res://sim/systems/mines.gd")
 const Garrison = preload("res://sim/systems/garrison.gd")
 const Loadouts = preload("res://sim/systems/loadouts.gd")
@@ -2322,6 +2345,20 @@ func _checkpoint_flow() -> void:
 	await _wait(1.5)
 	_mv().join_sim()
 	var w := _w()
+	# owner retake (PT6-3): --ui-playtest-fogoff also draws side 1's own vision (render only: the view's
+	# allied-vision list, the snapshot's fog sides, the fog layer hidden), so the attackers stay drawn on
+	# the hill after the side-0 defenders die. The sim, the save and the doctrine driver are unchanged.
+	if OS.get_cmdline_user_args().has("--ui-playtest-fogoff"):
+		var al: Array = (_mv().get("_ally_fids") as Array).duplicate()
+		for fid in w.factions:
+			if int(fid) != int(_mv().player_fid) and not al.has(int(fid)):
+				al.append(int(fid))
+		_mv().set("_ally_fids", al)
+		var sf: Array = [int(_mv().player_fid)]
+		sf.append_array(al)
+		w.cache["snap_fids"] = sf
+		(_mv().fog_layer as CanvasItem).visible = false
+		print("PLAYTEST-CP fog off (render only) allies=%s snap_fids=%s" % [str(al), str(sf)])
 	var hill := Vector2(float(int(w.map.w) / 2 + 10), float(int(w.map.h) / 2)) + Vector2(0.5, 0.5)
 	_log("cp_hill_height", Elevation.height_at(w, Vector2i(hill)) == 3, "hill=%s level=%d units=%d" % [str(hill), Elevation.height_at(w, Vector2i(hill)), w.units_of(1).size()])
 	var st := AiController.new_state(w, 1)
@@ -2409,6 +2446,14 @@ func _g6_flow() -> void:
 			await _airfield2_flow()
 		"survival":
 			await _survival_flow()
+		_:
+			# G6.1: each flow lives in tools/pt61_<flow>.gd with `func run(pt) -> void` (pt = this harness;
+			# call pt._log / pt._shot / pt._click_named / pt._g5_select / pt._w() / pt._mv() / pt._wait).
+			var path := "res://tools/pt61_%s.gd" % g6_flow
+			if ResourceLoader.exists(path):
+				await load(path).new().run(self)
+			else:
+				_log("g61_flow_file", false, path + " missing")
 
 
 # ------------------------------------------------------------ market (buy / sell)
@@ -2642,7 +2687,20 @@ func _g6_company_hq() -> Dictionary:
 	print("PLAYTEST-DBG company_hq_site errs=%s gate=%s" % [str(errs), str(Companies.can_build(_w(), 0, hdef))])
 	if str(errs).to_lower().contains("barracks") and _built_count(_role("barracks")) == 0:
 		await _g5_build(_role("barracks"))
-	return await _g5_build(hdef)
+	var hq := await _g5_build(hdef)
+	if hq.is_empty():
+		return hq
+	# p1/p2: "companies=0" after 300 s: a platoon is ~45 supply and the cap was 20 (POP 6/20), so the
+	# queue stalled. Build depots until 2 Rifle Company platoons fit (the HQ lifts the ceiling to 200).
+	var td: Dictionary = Companies.template(_w(), 0, "a_rifle_co")
+	var per := int(Companies.plan(_w(), 0, td, "platoon", true).pop) if not td.is_empty() else 50
+	var f: Dictionary = _w().factions[0]
+	for i in 10:
+		if int(f.get("pop_cap", 0)) >= int(f.get("pop", 0)) + 2 * per:
+			break
+		await _g5_build(_role("depot"))
+	_log("co_supply_room", int(f.get("pop_cap", 0)) >= int(f.get("pop", 0)) + 2 * per, "pop %d / %d, platoon supply %d" % [int(f.get("pop", 0)), int(f.get("pop_cap", 0)), per])
+	return hq
 
 
 ## Army Builder by clicks: size Platoon, Train n times; waits for n companies.
@@ -2653,6 +2711,7 @@ func _g6_train_companies(hq: Dictionary, n: int) -> bool:
 	_log("co_builder_open", ab != null)
 	if ab == null:
 		return false
+	_log("co_preset_rifle_click", await _g6_option(ab, "TemplateSource", "rifle company"))
 	_log("co_size_platoon_click", await _g6_option(ab, "TemplateSize", "platoon"))
 	await _shot("g6_army_builder")
 	for i in n:
@@ -2669,10 +2728,43 @@ func _company_flow() -> void:
 		return
 	var c: Dictionary = Companies.companies_of(_w(), 0)[0]
 	var ids := _g6_ids(Companies.units_of(_w(), c))
-	_log("co_select_company", await _g6_box(ids) > 0, "units=%d" % ids.size())
+	# p3 (PT6-3): a click + shift-click pass over 40 crowded units also caught company 2 (38 selected,
+	# Captain x2), and the inspector becomes the company card only when the WHOLE selection is one
+	# company. Select it the way the UI offers: Forces -> the company's card -> Select.
+	var via := "forces"
+	var fp0: Control = null
+	if await _click_named("ForcesButton") or await _click_named("G6Forces"):
+		fp0 = _g6_panel("ForcesPanel")
+	var cbox = fp0.find_child("Company_%d" % int(c.id), true, false) if fp0 != null else null
+	var sel_btn: Control = null
+	if cbox != null:
+		for b in (cbox as Node).find_children("*", "Button", true, false):
+			if String((b as Button).text) == "Select" and (b as Control).is_visible_in_tree():
+				sel_btn = b
+				break
+	if sel_btn != null:
+		await _click(sel_btn.get_global_rect().get_center())
+		await _wait(0.4)
+	if fp0 != null:
+		await _g6_close(fp0)
+	var nsel := 0
+	for id in ids:
+		if _mv().selection.has(int(id)):
+			nsel += 1
+	if nsel == 0:
+		via = "box"
+		nsel = await _g6_box(ids)
+	_log("co_select_company", nsel > 0, "units=%d selected=%d total=%d via=%s" % [ids.size(), nsel, _mv().selection.size(), via])
 	await _wait(0.6)
-	var card = get_tree().root.find_child("Company_%d" % int(c.id), true, false)
-	_log("co_company_card", card != null and (card as Control).is_visible_in_tree(), String(c.get("name", "")))
+	var one := CompanyCardM.selection_company(_w(), _mv().selection)
+	var title := String(CompanyCardM.model(_w(), c).title) if not one.is_empty() else ""
+	var shown := false
+	if title != "":
+		for l in get_tree().root.find_children("*", "Label", true, false):
+			if String((l as Label).text) == title and (l as Control).is_visible_in_tree():
+				shown = true
+				break
+	_log("co_company_card", not one.is_empty() and int(one.id) == int(c.id) and shown, "%s title=%s shown=%s" % [String(c.get("name", "")), title, str(shown)])
 	await _shot("g6_company_card")
 	_log("co_select_hq_2", await _g5_select(int(hq.id)))
 	_log("co_train_commander_click", await _click_named("G6TrainCommander"))
@@ -2724,11 +2816,30 @@ func _aicmd_flow() -> void:
 	# override: a direct player order to the commanded company
 	var ids := _g6_ids(Companies.units_of(_w(), c))
 	_log("ac_select_company", await _g6_box(ids) > 0)
-	var goal: Vector2 = _ent(int(ids[0])).pos + Vector2(4.0, 0.0)
+	# p3 (PT6-3): ids[0] stayed idle with no stamp: it need not be in the box selection, and a 4-cell move
+	# can finish within 0.6 s at 3x. Order at 1x, far enough, and check the selected units for the
+	# override stamp (AiCommand.on_applied -> e.player_order_tick) or a move order.
+	_mv().speed = 1.0
+	var sel_ids := []
+	for id in ids:
+		if _mv().selection.has(int(id)):
+			sel_ids.append(int(id))
+	var lead = _ent(int(sel_ids[0])) if not sel_ids.is_empty() else _ent(int(ids[0]))
+	var goal: Vector2 = lead.pos + Vector2(8.0, 0.0)
 	await _g6_rclick(goal)
 	await _wait(0.6)
-	var e = _ent(int(ids[0]))
-	_log("ac_override_order", e != null and String(e.order.get("type", "")) == "move", "order=%s player_order=%s badge=%s" % [str(e.order.get("type", "")) if e != null else "", str(e.get("player_order")) if e != null else "", str(e.get("ai_cmd")) if e != null else ""])
+	var fresh := 0
+	var moving := 0
+	for id in sel_ids:
+		var e = _ent(int(id))
+		if e == null:
+			continue
+		if AiCommand.player_fresh(_w(), e):
+			fresh += 1
+		if String(e.order.get("type", "")) == "move":
+			moving += 1
+	_mv().speed = 3.0
+	_log("ac_override_order", fresh > 0 and moving > 0, "selected=%d player_fresh=%d moving=%d badge=%s" % [sel_ids.size(), fresh, moving, str(lead.get("ai_cmd")) if lead != null else ""])
 	await _shot("g6_aicmd_override")
 	_log("ac_panel_button_click_2", await _click_named("CommandersButton"))
 	cp = _g6_panel("CommandersPanel")
@@ -2804,16 +2915,25 @@ func _naval6_flow() -> void:
 		_log("nv6_dive_click", await _click_named("G6_submerge"))
 		_log("nv6_sub_submerged", await _wait_until(func(): return _ent(sid) != null and Sonar.submerged(_ent(sid)), 20.0))
 		# an enemy sub dives next to ours (harness spawn): our sonar must pick it up
-		var wq := _g5_cell_near(Vector2i(_ent(sid).pos), 3, 9, func(q: Vector2i) -> bool: return _g6_water(q))
+		# p1/p2: setting e.submerged by hand skipped sys_state.sonar.subs, so Sonar.tick never computed contact.
+		# Now the enemy sub dives through Sonar.apply_command (issuer 1) on the same dive-able terrain as ours.
+		var deep_t: int = _w().terrain_at(_w().cell_of(_ent(sid).pos))
+		var wq := _g5_cell_near(Vector2i(_ent(sid).pos), 3, 9, func(q: Vector2i) -> bool: return _w().terrain_at(q) == deep_t)
 		if wq.x >= 0:
 			_mv().join_sim()
 			var eid: int = _w().spawn_unit("a_submarine", 1, Vector2(wq) + Vector2(0.5, 0.5))
-			_w().entities[eid]["submerged"] = true
+			Sonar.apply_command(_w(), {"type": "submerge", "issuer": 1, "unit_ids": [eid], "on": true})
 			var det := await _wait_until(func(): return _ent(eid) != null and Sonar.detected_by(_w(), 0, _ent(eid)), 30.0)
 			_log("nv6_enemy_sub_detected_by_sonar", det, "enemy at %s submerged=%s" % [str(wq), str(_ent(eid).get("submerged") if _ent(eid) != null else null)])
 		else:
 			_log("nv6_water_near_sub", false)
 		await _shot("g6_naval_sub")
+	# p4 (PT6-3): the carrier queue sat at progress 0 with pop 12/20 (carrier pop 10): depots first.
+	for i in 3:
+		var fp: Dictionary = _w().factions[0]
+		if int(fp.get("pop_cap", 0)) >= int(fp.get("pop", 0)) + int(Content.unit("a_carrier").get("pop", 0)):
+			break
+		await _g5_build(_role("depot"))
 	var cars := _g6_ids(await _train("a_carrier"))
 	if cars.is_empty():
 		return
@@ -2890,13 +3010,28 @@ func _survival_flow() -> void:
 	_log("sv_mode", String(w.cfg.get("victory", "")) == "survive" and Waves.active(w), "map=%s victory=%s params=%s attacker=%d" % [String(w.map.get("id", "?")), str(w.cfg.get("victory")), str(vp), Waves.attacker(w)])
 	if vp is Dictionary and (vp as Dictionary).has("seconds"):
 		vp.seconds = mini(int(vp.seconds), int(w.tick) / SimWorld.TICK_RATE + 420)  # harness: a 7 minute hold
+		# p6/p7 (PT6-3): Victory.rules_of_world caches the rules in w.cache.victory_rules, so the shortened hold
+		# never applied (the match kept its 1200 s term; both runs were overrun AFTER start + 420 s). Drop the
+		# cache so the 7 minute hold is the one evaluated.
+		w.cache.erase("victory_rules")
 	var att := Waves.attacker(w)
 	# r1: HQ overrun at 4:16 with nothing built (builder clicks missed the raised plateau). Defend properly:
 	# power (towers draw power), three defence towers, then a rifle squad.
+	# p3 (PT6-3): towers need a completed Barracks (site_none errs) and the base was overrun at tick 6462
+	# (323 s) while the harness gestures ran at 3x. Build at 1x (gestures cost a third of the game time),
+	# barracks + squad first, then the towers; back to 3x for the hold.
+	# p4: 3 towers + 1 squad killed 17 of 78 attackers and fell at tick 8228: six towers (power as needed)
+	# and three squads.
+	_mv().speed = 1.0
 	await _g5_build(_role("power"))
-	for i in 3:
-		await _g5_build(_role("defense"))
 	var sq := await _g6_squad()
+	# p5: 6 towers + 6 squads killed 43 of 78 and fell at tick 8773, ~12 s short of the hold: 9 towers, 5 squads.
+	for i in 9:
+		await _g6_power_room(_role("defense"))
+		await _g5_build(_role("defense"))
+	for i in 2:  # p6/p7: a 4th extra squad timed out (g4b_trained_rifle_squad rifle_squad=12)
+		sq.append_array(_g6_ids(await _train(_role("infantry"))))
+	_mv().speed = 3.0
 	_log("sv_defenders", _built_count(_role("defense")) >= 2 and sq.size() > 0, "towers=%d squad=%d" % [_built_count(_role("defense")), sq.size()])
 	var seen := {}
 	var t := 0.0
@@ -2941,12 +3076,30 @@ func _exo_flow() -> void:
 	var g := await _g5_build("a_exo_garage")
 	if g.is_empty():
 		return
+	# p1/p2: pilot=-1. Exo._eject: a pilot only ejects while the side has medical capability
+	# (rules pilot_needs_medical, Medical.has_medical), else PilotLost. Build a Field Hospital first.
+	if _built_count("a_hospital") == 0:
+		await _g5_build("a_hospital")
+	_log("exo_side_has_medical", Medical.has_medical(_w(), 0))
 	var gid := int(g.id)
 	var suits := _g6_ids(await _train("a_exo_rifle"))
 	_log("exo_suit_trained", suits.size() > 0)
 	if suits.is_empty():
 		return
 	await _shot("g6_exo_suit")
+	# p5 (PT6-3): the ejected pilot is Wounded and bled out after ~20 s (exo_wait: "must be treated first",
+	# then no pilot): nobody carried it to the hospital. Medic team on Auto evac over the suit, as the med flow.
+	var medics := await _train("a_medic_team")
+	if not medics.is_empty():
+		_log("exo_select_medic", await _g5_select(int(medics[0].id)))
+		_log("exo_auto_evac_click", await _click_named("G5_medic_auto"))
+		await _wait(0.3)
+		var sp0: Vector2 = _ent(int(suits[0])).pos
+		_mv().center_camera_on(sp0)
+		await _wait(0.3)
+		await _drag(_to_screen(sp0 - Vector2(4.0, 0.0)), _to_screen(sp0 + Vector2(5.0, 0.0)))
+		await _wait(0.5)
+		_log("exo_auto_evac_on", _mv().g4b.last_cmd.get("type", "") == "set_auto_evac" and bool(_mv().g4b.last_cmd.get("on", false)), str(_mv().g4b.last_cmd))
 	_g6_kill(int(suits[0]))  # harness hit: the suit is destroyed, its pilot ejects (G6Hooks.on_destroyed)
 	var ej := await _wait_until(func(): return _g6_pilot("a_exo_rifle") >= 0, 10.0)
 	var pid := _g6_pilot("a_exo_rifle")
@@ -2956,13 +3109,39 @@ func _exo_flow() -> void:
 	await _shot("g6_exo_ejected")
 	_log("exo_select_pilot", await _g5_select(pid))
 	await _g6_rclick(Vector2(g.pos) + Vector2(2.0, 0.5))
-	var rq := {"issuer": 0, "building_id": gid, "pilot_id": pid}
-	var ready := await _wait_until(func(): return _ent(pid) != null and String(Exo.plan_resuit(_w(), rq).reason) == "", 60.0)
-	_log("exo_pilot_ready", ready, String(Exo.plan_resuit(_w(), rq).reason) if _ent(pid) != null else "pilot gone")
+	# p3 (PT6-3): "pilot gone" at the ready check yet a suit appeared later. Track whichever own pilot of the
+	# suit exists (re-order it to the garage when it changes) and say why it is not ready yet.
+	var ready := false
+	var why := "no pilot"
+	var last := pid
+	var t := 0.0
+	var sent_treated := false
+	while t < 240.0:
+		var cur := _g6_pilot("a_exo_rifle")
+		if cur >= 0:
+			pid = cur
+			why = String(Exo.plan_resuit(_w(), {"issuer": 0, "building_id": gid, "pilot_id": cur}).reason)
+			ready = why == ""
+			# treated pilots re-spawn beside the hospital: walk them to the garage once (or a new pilot id)
+			if not ready and why.begins_with("Move the pilot") and (not sent_treated or cur != last):
+				last = cur
+				sent_treated = true
+				await _g5_select(cur)
+				await _g6_rclick(Vector2(g.pos) + Vector2(2.0, 0.5))
+		else:
+			why = "no pilot"
+		if ready:
+			break
+		if int(t) % 10 == 0:
+			print("PLAYTEST-DBG exo_wait t=%d pilot=%d why=%s exo=%s" % [int(t), cur, why, str(_w().sys_state.get("exo", {}))])
+		await _wait(1.0)
+		t += 1.0
+	_log("exo_pilot_ready", ready, "pilot=%d %s" % [pid, why])
 	_log("exo_select_garage", await _g5_select(gid))
 	var n0 := _own_units("a_exo_rifle").size()
+	var r0 := int(_w().sys_state.get("exo", {}).get("resuited", 0))
 	_log("exo_resuit_click", await _click_named("G6_resuit"))
-	_log("exo_resuited", await _wait_until(func(): return _own_units("a_exo_rifle").size() > n0, 120.0), "suits=%d" % _own_units("a_exo_rifle").size())
+	_log("exo_resuited", await _wait_until(func(): return int(_w().sys_state.get("exo", {}).get("resuited", 0)) > r0, 60.0), "suits=%d (was %d) resuited=%d" % [_own_units("a_exo_rifle").size(), n0, int(_w().sys_state.get("exo", {}).get("resuited", 0))])
 	await _shot("g6_exo_resuit")
 
 
@@ -2984,31 +3163,63 @@ func _g6_drone_dead(id: int) -> bool:
 	return e == null
 
 
+## p4 (PT6-3): airdef CIWS / radar stayed silent: Airdef.source_active is false while power_use >
+## power_prod. Build power plants (max 3) until the next building's draw fits.
+func _g6_power_room(def_id: String) -> void:
+	var need := -int(Content.building(def_id).get("power", 0))
+	for i in 3:
+		var f: Dictionary = _w().factions[0]
+		if need <= 0 or int(f.get("power_prod", 0)) - int(f.get("power_use", 0)) >= need + 15:
+			return
+		await _g5_build(_role("power"))
+
+
 func _airdef_flow() -> void:
 	if _built_count(_role("power")) == 0:
 		await _g5_build(_role("power"))
 	# prerequisites (r1 diag): CIWS + Radar Station need a Research Station; the SAM site needs a Radar Station
+	# p3 diag (PT6-3): site_none research_station errs={"Requires a completed Barracks first."}
+	if _built_count(_role("barracks")) == 0:
+		await _g5_build(_role("barracks"))
 	if _built_count(_role("research")) == 0:
 		await _g5_build(_role("research"))
 	_log("ad_sam_locked_without_radar", Construction.placement_error(_w(), 0, "a_sam_site", Vector2i(_hq().cell) + Vector2i(6, 0)).contains("Radar"),
 		Construction.placement_error(_w(), 0, "a_sam_site", Vector2i(_hq().cell) + Vector2i(6, 0)))
+	await _g6_power_room("a_laser_ciws")
 	var ciws := await _g5_build("a_laser_ciws")
 	if not ciws.is_empty():
 		var d1 := _g6_drone_at(Vector2(ciws.pos) + Vector2(2.5, 0.0))
 		var hp0: float = drone_min_hp[d1]
-		var down := await _wait_until(func(): return _g6_drone_dead(d1), 60.0)
-		_log("ad_ciws_downs_drone", down and float(drone_min_hp[d1]) < hp0, "hp %s -> min %s" % [str(hp0), str(drone_min_hp[d1])])
+		# p5 (PT6-3): Counterdrone._down REMOVES a launched drone (no hp loss), so "min hp < hp0" could never
+		# hold. Evidence now: the drone is gone and the CIWS spent its shot (counterdrone.ready[ciws] set);
+		# harness-spawned drones have no drone_life, so nothing else removes them.
+		var fired := [false]
+		var cid := int(ciws.id)
+		var down := await _wait_until(func():
+			var cst = _w().sys_state.get("counterdrone")
+			if cst != null and (cst.ready as Dictionary).has(cid):
+				fired[0] = true
+			return _g6_drone_dead(d1), 60.0)
+		_log("ad_ciws_downs_drone", down and (bool(fired[0]) or float(drone_min_hp[d1]) < hp0), "hp %s -> min %s gone=%s ciws_fired=%s" % [str(hp0), str(drone_min_hp[d1]), str(down), str(fired[0])])
 		await _shot("g6_airdef_ciws")
+	await _g6_power_room("a_radar_station")
 	var radar := await _g5_build("a_radar_station")
+	await _g6_power_room("a_sam_site")
 	var sam := await _g5_build("a_sam_site")
 	if sam.is_empty() or radar.is_empty():
 		return
+	for i in 2:  # p5: power 135/130 after the SAM: the radar (requires_power) went dark
+		if int(_w().factions[0].get("power_use", 0)) <= int(_w().factions[0].get("power_prod", 0)):
+			break
+		await _g5_build(_role("power"))
+	_log("ad_power_ok", int(_w().factions[0].get("power_use", 0)) <= int(_w().factions[0].get("power_prod", 0)), "power %s/%s" % [str(_w().factions[0].get("power_use")), str(_w().factions[0].get("power_prod"))])
 	var away := (Vector2(sam.pos) - Vector2(ciws.pos if not ciws.is_empty() else _hq().pos)).normalized()
 	_log("ad_radar_covers_sam", await _wait_until(func(): return Airdef.radar_covers(_w(), 0, Vector2(sam.pos)), 20.0))
 	var d2 := _g6_drone_at(Vector2(sam.pos) + away * 5.0)
 	var hp2: float = drone_min_hp[d2]
 	var killed := await _wait_until(func(): return _g6_drone_dead(d2), 60.0)
-	_log("ad_sam_fires_with_radar", killed and float(drone_min_hp[d2]) < hp2, "min hp %s" % str(drone_min_hp[d2]))
+	# one 95-damage SAM hit kills a 40 hp drone between two polls: gone (nothing else removes it) is the evidence
+	_log("ad_sam_fires_with_radar", killed, "min hp %s (start %s) gone=%s" % [str(drone_min_hp[d2]), str(hp2), str(killed)])
 	await _shot("g6_airdef_sam")
 	# radar lost (harness hit destroys the Radar Station): the SAM must go silent
 	_g6_kill(int(radar.id))

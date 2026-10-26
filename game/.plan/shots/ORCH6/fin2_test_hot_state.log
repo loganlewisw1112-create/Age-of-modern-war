@@ -1,0 +1,41 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_hot_state::test_air_target_rule_wired_into_combat
+NATIVE rts_core loaded (rts_core 0.5.1)
+  PASS test_hot_state::test_air_target_rule_wired_into_combat (272 ms)
+  RUN  test_hot_state::test_damage_calls_medical_zero_hp_hook
+HOT: Medical.on_zero_hp returned false for human infantry (SUPPORT stub or rule): destroyed as in G4
+  PASS test_hot_state::test_damage_calls_medical_zero_hp_hook (333 ms)
+  RUN  test_hot_state::test_flush_before_hash_save_snapshot
+  PASS test_hot_state::test_flush_before_hash_save_snapshot (482 ms)
+  RUN  test_hot_state::test_g5_gold_holds_flattened
+  PASS test_hot_state::test_g5_gold_holds_flattened (129144 ms)
+  RUN  test_hot_state::test_hash_equal_head_10k_fight_and_march
+  PASS test_hot_state::test_hash_equal_head_10k_fight_and_march (28218 ms)
+  RUN  test_hot_state::test_hash_equal_head_2k_fight
+  PASS test_hot_state::test_hash_equal_head_2k_fight (6247 ms)
+  RUN  test_hot_state::test_hash_equal_head_2k_mixed
+  PASS test_hot_state::test_hash_equal_head_2k_mixed (5356 ms)
+  RUN  test_hot_state::test_hot_state_path_equals_dict_path
+  PASS test_hot_state::test_hot_state_path_equals_dict_path (22097 ms)
+  RUN  test_hot_state::test_landed_aircraft_target_parity_native_gdscript
+  PASS test_hot_state::test_landed_aircraft_target_parity_native_gdscript (262 ms)
+  RUN  test_hot_state::test_native_on_off_hash_equal
+  PASS test_hot_state::test_native_on_off_hash_equal (53856 ms)
+  RUN  test_hot_state::test_perf_paths_on_off_hash_equal_10k_fight
+  PASS test_hot_state::test_perf_paths_on_off_hash_equal_10k_fight (44793 ms)
+  RUN  test_hot_state::test_perf_paths_on_off_hash_equal_10k_march
+  PASS test_hot_state::test_perf_paths_on_off_hash_equal_10k_march (19848 ms)
+  RUN  test_hot_state::test_perf_paths_on_off_hash_equal_2k
+  PASS test_hot_state::test_perf_paths_on_off_hash_equal_2k (81685 ms)
+  RUN  test_hot_state::test_perf_paths_on_off_hash_equal_threaded
+  PASS test_hot_state::test_perf_paths_on_off_hash_equal_threaded (13347 ms)
+  RUN  test_hot_state::test_player_attack_move_blocked_by_wall_breaches
+  PASS test_hot_state::test_player_attack_move_blocked_by_wall_breaches (135 ms)
+  RUN  test_hot_state::test_sim_thread_on_equals_off_in_tree
+  PASS test_hot_state::test_sim_thread_on_equals_off_in_tree (22329 ms)
+  RUN  test_hot_state::test_sim_thread_on_off_hash_equal
+  PASS test_hot_state::test_sim_thread_on_off_hash_equal (10865 ms)
+
+RESULT pass=17 fail=0 files=1 time_ms=445211

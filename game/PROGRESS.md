@@ -1,6 +1,29 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G6 "Command & Terrain", owner-approved 2026-10-25: all defaults D21-D44; plan `docs/PLAN_G6.md`, contract `docs/CONTRACTS_G6.md`; branch `g6`)
+## Active goal (G6.1 "Field Command", owner-scoped 2026-10-26 via 5 questions; one big drop; branch `g6`)
+GOAL — G6.1: massive new depth in AI and command, plus owner-reported fixes
+For whom / what changes:  the owner, playing: every level of command thinks (general > commander > captain > lieutenant > squad > soldier);
+                          AI commanders run whole wars on their own; squads fight as one unit; plans drawn on the map; realism (suppression,
+                          fatigue, comms, veterancy, traits, intel/belief); company training works; unlimited market; longer fuel; ammo bearer
+Outcome:                  the owner's G6.1 scope in one packaged build, tested and documented
+Owner answers (2026-10-26): Q1 full chain of command; Q2 full general (budget, reinforcements, fire support, logistics); Q3 suppression +
+                          fatigue, radio/comms, veterancy + traits, "EVEN MORE DEPTH" (intel/belief included); Q4 both control layers (classic micro +
+                          command layer with plans on the map); Q5 one big drop. Earlier notes: company purchase spawns nothing (bug); no market cap;
+                          fuel runs out too fast; ammo bearer restocks 3 units; smarter units, formations, team management.
+Done-when (frozen 2026-10-26):
+  1. Workstream tests pass (test_chain61, test_gen61, test_officers61, test_squad61, test_real61, test_plans61, test_bearer61, plus ORCH's
+     company-training / market / fuel tests) and the full suite has 0 FAIL outside the G6-parked items, 0 SCRIPT ERROR.
+  2. The 7 new flows (chain61 gen61 officer61 squad61 real61 plan61 bearer61), 3 ORCH flows (company61 market61 fuel61) and the 26 G6 flows
+     pass from the packaged build in a clean folder, 0 SCRIPT ERROR.
+  3. A 10-minute headless run with an auto general and no player input logs >=5 distinct operation types plus chain-of-command orders and reports.
+  4. 2k-unit sim ms/tick <= 1.2x the G6 figure measured in the same session and load.
+  5. New build in Downloads; README and PLAY_ME describe G6.1 accurately (limits included).
+Out of scope:             the G6-parked items (10k speed, soak winners) beyond not regressing them; the 200 supply ceiling; balance beyond the features.
+Stop-if / park-if:        determinism breaks and can't be fixed fast -> park that feature with a note; a helper's feature can't reach its tests
+                          -> park it in PROGRESS with what's done and the next step, ship the rest.
+Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), BEARER61 queued; briefs `.plan/agents/prompts/G61-*.md`, board `.plan/board_g61.jsonl`.
+
+## Previous goal (G6 "Command & Terrain", owner-approved 2026-10-25: all defaults D21-D44; plan `docs/PLAN_G6.md`, contract `docs/CONTRACTS_G6.md`; branch `g6`) — DELIVERED, PARTIAL (see G6 evidence)
 One continuous wave, up to 8 agents live (D21, owner override), 23 agents each with an operating guide (`.plan/agents/prompts/G6-*.md`; MECH6c and ART-G6b split out of MECH6a / ART-G6 for budget). Message board + semantic layer run all wave. Scope: the G6 owner notes and answers below (items 1-17).
 
 ```
@@ -36,10 +59,36 @@ Stop-if / park-if:        determinism can't be restored; existing tests can't be
   draws on Valley/Heartland/custom; no company formed and no Stage 10 reached in soaks yet), AI7-DOC (doctrine),
   AI7-CMD (AI Commanders), MODES6 (survival), ART-G6b (16 new pieces + airfield art), ELEV-VIEW, VIEW6.
 - Queued: UI6a, UI6b, ED6, PT6.
+- **Owner decision 2026-10-25: Done-when item 2 (10k elevated <= 62.5 ms/tick) is PARKED.** Last measurement 155.7
+  ms/tick under shared load (PERF6-4); the remaining big win needs a HotState writer migration (~90 sites, 18 files).
+  ORCH takes one clean quiet-PC measurement at the end; G6 is delivered as partial on this item.
+- **Owner decision 2026-10-25: Done-when item 3 (soak winners) is PARKED.** Lane d6 (0 SCRIPT ERROR, 0 invariant
+  failures): 5/11 winners (custom_s1, survival_s1, assist_s1, river_s2, coastal_s1); draws valley s1/s2, heart s1/s2,
+  river_s1, coastal_s2 (salvage starvation; Valley drew 27/28 soaks since G5). Subs and Stage 10 never appear in soak
+  logs (covered by test_ai_g6). Lane d7 retest stopped. G6 is delivered partial on this item.
+- **Owner approved the in-game elevation look 2026-10-25** (.plan/shots/ELEV-VIEW-3/valley_conquest_plateau.png).
 - ORCH decisions today (board facts orch.decisions / owner.decision): indirect fire counts at most 18 tiles toward
   the tier contact radius (+ G5 bucket floor 36; keeps G5 hashes); supply cap 200 with a built Company HQ, else 120
   (owner-confirmed); height left the SPEED/SIGHT hook rules (packed split, hash-exact); agents run only targeted
   tests (concurrent full runs clashed on user://) and must keep every intermediate write compiling (5 tree breaks).
+
+## G6 Done-when evidence (2026-10-26) — DELIVERED, PARTIAL (items 2 and 3 parked by the owner)
+1. Tests: full suite run 2026-10-25 reached 332 PASS / 0 FAIL before the machine slept (run stopped); the remaining 43 files ran as
+   two shards: 41 files 313 PASS / 0 FAIL, 0 SCRIPT ERROR; the 2 that hit the shard timeout reran alone:
+   `test_hot_state rc=0 SE=0 RESULT pass=17 fail=0`, `test_ui_fit rc=0 SE=0 ... FIT RESULT screens=210 controls=25879 issues=0` and
+   `screens=180 controls=21968 issues=0 (scales 0.75,1.5) RESULT pass=3 fail=0`. Total 665 PASS / 0 FAIL. Logs .plan/shots/ORCH6/fin_*.log,
+   fin2_*.log. Note: test_perf_g6's elevation probe passed in the shard (pass=7) but failed once under heavy load
+   (`hook + elevation overhead 7.78 ms/tick at 2k <= 5`, CPU 90%) — load-sensitive timing check.
+2. 10k perf — PARKED (owner 2026-10-25): `10000 placed native avg 296.5 ms p95 566.3` (CPU 100% busy browser), 143-156 ms under shared
+   load earlier; target 62.5 ms. NOT MET. 2k river: avg 54.9 ms (CPU 97%).
+3. Soak winners — PARKED (owner 2026-10-25): 5/11 configs produce a winner; Valley Conquest and Industrial Heartland draw. NOT MET.
+4. Playtests: all 26 flows (12 G5 + 14 G6) passed twice in the tree, plus the owner checkpoint and fog-off retake; from the packaged
+   build in a clean folder (.plan/package_g6.sh) 26/26 `PLAYTEST RESULT` ok, 0 SCRIPT ERROR.
+5. UI fit 0 issues at 7 resolutions and scales 0.75/1.5 (item 1). FPS (windowed harness, CPU 97-99%): 2k on screen p10 83.7 fps PASS
+   (gate 60); 10k zoomed out p10 111.1 fps PASS (gate 30).
+6. Owner checkpoints: elevation look approved and locked (2026-10-25); doctrine checkpoint shots after/cp_14 and after_fogoff/cp_16 sent.
+7. Package: C:/Users/logan/Downloads/RTS_Age_of_Modern_War_G6 (exe, console exe, .pck md5 e97c5f773876147ff06f002589bd8f68 = build/,
+   rts_core.dll, PLAY_ME.txt); README "G6" section and PLAY_ME list the parked items with these numbers.
 
 ## Previous goal (G5 "Full Spectrum", owner-approved 2026-10-24: rev 4, all defaults D9-D20; plan `docs/PLAN_G5.md`, contract `docs/CONTRACTS_G5.md`) — DELIVERED, PARTIAL (see G5 evidence)
 One continuous wave, up to 8 agents live (owner override), 18 agents each with an operating guide. Message board + semantic layer run all wave.

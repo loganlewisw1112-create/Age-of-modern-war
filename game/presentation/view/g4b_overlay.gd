@@ -4,14 +4,31 @@ extends Node2D
 ## Reads ONLY the render snapshot (mv.snap) and immutable content; redraws only when no sim step
 ## is in flight (THREAD rule, CONTRACTS_G4 section 4).
 ## G5 (UI5b): also the auto-area circle and the armed-mode tag at the cursor (mv.g4b.draw_g5).
+## G6 (UI6b-3, VIEW6-3 CR 1322): every marker sits on the drawn (raised) ground (ViewUtil.world_to_screen_h, as
+## fx_layer / overlay_layer do), and a mine is the ART-G6b mine_marker flag (ArtCatalog.fx_g6, team-tinted: green
+## own / allied, red detected enemy) over its ground diamond instead of a text "M".
 
 const RenderSnap = preload("res://sim/render_snap.gd")
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
+const ViewUtil = preload("res://presentation/view/view_util.gd")
 
 var mv
 var badges_drawn := 0       # last frame's counts (playtest / debug)
 var mines_drawn := 0
+var mine_art_drawn := 0     # mines drawn with the mine_marker sheet (0 = art missing, fell back to the glyph)
 var _team := -1
+var _hmap: Dictionary = {}  # this frame's terrain height map ({} = flat)
+
+
+## Height-map dict of the drawn terrain ({} = flat map or no terrain layer).
+func _hm() -> Dictionary:
+	var tl = mv.get("terrain_layer") if mv != null else null
+	return tl.height_map() if tl != null and tl.has_method("height_map") else {}
+
+
+## World -> canvas on the drawn (raised) ground (flat maps: the old iso spot).
+func _w2s(p: Vector2) -> Vector2:
+	return ViewUtil.world_to_screen_h(_hmap, p)
 
 
 func setup(match_view) -> void:
@@ -42,6 +59,7 @@ func _draw() -> void:
 		return
 	var vr := _vis_rect()
 	var font := ThemeDB.fallback_font
+	_hmap = _hm()
 	_draw_badges(vr, font)
 	_draw_statics(vr, font)
 	if mv.g4b != null:
@@ -63,7 +81,7 @@ func _draw_badges(vr: Rect2, font: Font) -> void:
 		var ow := own[i]
 		if ow != mv.player_fid and not mv._ally_fids.has(ow) and not mv.cell_visible(Vector2i(pos[i].floor())):
 			continue
-		var sp: Vector2 = mv.world_to_screen(pos[i]) + Vector2(0, -34)
+		var sp: Vector2 = _w2s(pos[i]) + Vector2(0, -34)
 		if not vr.has_point(sp):
 			continue
 		draw_circle(sp, 10.0, Color(0.08, 0.12, 0.16, 0.9))
@@ -83,13 +101,15 @@ func _detected_for_me(e: Dictionary) -> bool:
 
 func _draw_statics(vr: Rect2, font: Font) -> void:
 	mines_drawn = 0
+	mine_art_drawn = 0
+	var blink := int(float(Time.get_ticks_msec()) * 0.0015)   # mine_marker frame 1 = blink (overlay_layer's rate)
 	var st: Dictionary = mv.snap.get("statics", {})
 	for id in st:
 		var e: Dictionary = st[id]
 		var kind := String(e.kind)
 		if kind != "mine" and kind != "charge" and not (kind == "building" and bool(e.get("locked", false))):
 			continue
-		var sp: Vector2 = mv.world_to_screen(e.pos)
+		var sp: Vector2 = _w2s(e.pos)
 		if not vr.has_point(sp):
 			continue
 		var ow := int(e.owner)
@@ -104,10 +124,16 @@ func _draw_statics(vr: Rect2, font: Font) -> void:
 		var r := 9.0 if kind == "mine" else 11.0
 		var pts := PackedVector2Array([sp + Vector2(0, -r * 0.6), sp + Vector2(r, 0), sp + Vector2(0, r * 0.6), sp + Vector2(-r, 0), sp + Vector2(0, -r * 0.6)])
 		draw_polyline(pts, col, 2.0)
-		var lbl := "M" if kind == "mine" else str(int(e.get("fuse", 0)) / 20) + "s"
+		mines_drawn += 1
+		if kind == "mine":
+			var mk := ArtCatalog.fx_g6("mine_marker", blink if mine_side else 0, col)
+			if not mk.is_empty() and mk.get("texture") != null:
+				draw_texture(mk.texture, sp + (mk.offset as Vector2))
+				mine_art_drawn += 1
+				continue
+		var lbl := "M" if kind == "mine" else str(int(e.get("fuse", 0)) / 20) + "s"   # charge fuse; "M" only without art
 		draw_string_outline(font, sp + Vector2(-5, -r * 0.6 - 3), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(0, 0, 0, 0.8))
 		draw_string(font, sp + Vector2(-5, -r * 0.6 - 3), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
-		mines_drawn += 1
 
 
 func _lock_mark(at: Vector2) -> void:
