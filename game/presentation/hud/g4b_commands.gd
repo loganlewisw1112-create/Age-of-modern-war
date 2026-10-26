@@ -23,6 +23,9 @@ const AirfieldPanel = preload("res://presentation/ui5/panels/airfield_panel.gd")
 const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 ## G6 (UI6b): every G6 command button, the loadout / garage / research panels (presentation/ui6/b/g6_cmds.gd)
 const G6Cmds = preload("res://presentation/ui6/b/g6_cmds.gd")
+## G6 (UI6b-3): the cargo strip keeps clear of the HUD side columns at every UI scale
+const G6Place = preload("res://presentation/ui6/b/g6_place.gd")
+const STRIP_W := 600.0
 
 var hud
 var strip: PanelContainer        # cargo strip (above the bottom panel)
@@ -265,6 +268,7 @@ func _update_strip() -> void:
 	var slung: Array = Transport.slung(c)   # G5 VTOL: vehicles carried on the sling
 	if not slung.is_empty():
 		strip_title.text += "  SLING %d" % slung.size()
+	G6Place.place_h(strip, STRIP_W)
 	if sig == _strip_sig:
 		return
 	_strip_sig = sig
@@ -287,6 +291,7 @@ func _update_strip() -> void:
 		sl.custom_minimum_size = Vector2(20, 44)
 		sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		strip_box.add_child(sl)
+	G6Place.place_h(strip, STRIP_W)
 
 
 ## Hint line for the command card while a G4b mode is armed or the wall tool is active.

@@ -104,6 +104,9 @@ static func _ammo_starved(w: SimWorld, fid: int, army: Array) -> bool:
 const LATE_WAVE_TICK := 48000  # AI6
 const LATE_WAVE_MULT := 1.6
 const CAP_SLACK := 6
+## AI7-USE-6: big-map army stall (no +2 army pop for ARMY_STALL ticks while home) releases the wave
+## like the hard-cap rule does (see manage_army).
+const ARMY_STALL := 9600
 ## AI6-2: attack-progress timeout (ticks without the wave centroid closing PROGRESS_STEP tiles).
 const PROGRESS_TIMEOUT := 9600
 const PROGRESS_STEP := 4.0
@@ -151,9 +154,24 @@ static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) 
 	# AI7-USE-4: all-in and at the hard supply cap, the army cannot grow any more: what stands at home
 	# goes (at least the base attack_pop). Valley d4: the Machine sat at pop 72/75 with a 25-pop army
 	# under a 33 threshold from t~36000 to the cap and launched 1 wave in 120k ticks (3 draws).
+	# AI7-USE-6: the same release when the army has stopped growing on a big map (no +2 pop for
+	# ARMY_STALL ticks at home: starved of salvage, or its supply taken by crews / air / support).
+	# LATE_WAVE_MULT assumed pop < pop_cap - CAP_SLACK means the army can still grow; valley d6, both
+	# seeds: the Machine sat at 16-19 army pop under a 53-56 threshold (0 waves in 120k ticks) and
+	# Human A at 19-29 under 45-56 (2-5 waves); only the supply-capped Human B kept launching.
+	var home := String(st.objective) != "attack"
+	if home:
+		var gp0 := int(st.get("grow_pop", -1))
+		if gp0 < 0 or army_pop >= gp0 + 2 or army_pop < gp0 - 4:
+			st.grow_pop = army_pop
+			st.grow_tick = w.tick
+	var stalled := big_map and home and w.tick - int(st.get("grow_tick", w.tick)) >= ARMY_STALL
 	var fq: Dictionary = w.factions[fid]
 	if all_in and army_pop >= int(st.attack_pop) and army_pop < thr \
-			and int(fq.pop) + int(ctx.get("queued_pop", 0)) >= Economy.cap_max_for(w, fid) - CAP_SLACK:
+			and (stalled or int(fq.pop) + int(ctx.get("queued_pop", 0)) >= Economy.cap_max_for(w, fid) - CAP_SLACK):
+		if stalled and w.tick - int(st.get("stall_log_t", -100000)) >= ARMY_STALL:
+			st.stall_log_t = w.tick
+			U.log_line(st, w, "army stalled at pop %d for %d ticks: what stands goes (threshold %d)" % [army_pop, w.tick - int(st.grow_tick), thr])
 		thr = army_pop
 	# AI5-3: an all-in trickle on a small map still launches at the full threshold (half-size waves of
 	# 5-7 pop fed river s2's tower line for 80k ticks); reinforcement stays continuous once out.
@@ -409,6 +427,7 @@ static func _launch(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army
 	st.launch_size = army.size()
 	st.attack_group = _ids(army)
 	st.launches = int(st.launches) + 1
+	st.grow_pop = -1  # AI7-USE-6: the army-stall clock restarts once the wave is home again
 	st.prog_best = 1.0e9  # AI6-2: progress timeout restarts with every wave
 	st.prog_tick = w.tick
 	st.goal_pos = tgt

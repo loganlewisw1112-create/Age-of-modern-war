@@ -303,7 +303,10 @@ static func _loadouts(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g:
 	var bar := String(Content.production(inf_item).get("facility", "")) if inf_item != "" else ""
 	var hq := L.raw_def(U.fac(w, fid), "company_hq")
 	for b in ctx.buildings:
-		if b.built and (String(b.def) == bar or String(b.def) == hq):
+		# AI7-USE-5: only buildings EXO6 accepts (valley d5: the Machine's infantry facility is no
+		# loadout building; 257 set_loadout requests, every one rejected)
+		if b.built and (String(b.def) == bar or String(b.def) == hq) \
+				and bool(L.callf(L.sys("loadouts"), "is_loadout_building", [String(b.def)], true)):
 			homes.append(b)
 	if homes.is_empty():
 		return

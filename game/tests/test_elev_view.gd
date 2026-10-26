@@ -1,6 +1,6 @@
 extends "res://tests/test_base.gd"
 ## G6 acceptance (owner: ELEV-VIEW). CONTRACTS_G6 section 7, section 17; PLAN_G6 A1 (render).
-## Terrain height is drawn as cached chunk meshes (vertices lifted 16 px per level, cliff faces, sloped ramps) in
+## Terrain height is drawn as cached chunk meshes (vertices lifted ViewUtil.level_px per level, cliff faces, sloped ramps) in
 ## every terrain style, back-to-front across levels, with fog and picking on the raised tiles.
 ## Fixture: tools/art/g6_terrain_probe.gd demo_map (24x24: plateau level 3, ramp-ringed hill 2, sand dune 2,
 ## valley 0 with a ramp, rail line).
@@ -140,8 +140,11 @@ func _tri_cell(layer, arr: Array, key: Vector2i, t: int, faces: Dictionary = {})
 
 func test_height_offset_draw() -> void:
 	check_eq(VU.lift_px(1.0), 0.0, "plain draws unlifted")
-	check_eq(VU.lift_px(3.0), 32.0, "ridge lifted 2 x 16 px")
-	check_eq(VU.lift_px(0.0), -16.0, "valley sunk 16 px")
+	var lp: float = VU.level_px
+	check_eq(VU.level_px, VU.LEVEL_PX_DEFAULT, "one tunable lift constant")
+	check(lp >= 24.0, "cliff faces read at normal zoom: level_px %.0f >= 24" % lp)
+	check_eq(VU.lift_px(3.0), 2.0 * lp, "ridge lifted 2 x level_px")
+	check_eq(VU.lift_px(0.0), -lp, "valley sunk level_px")
 	var v = _view(PROBE.demo_map(0))
 	var layer = v.terrain_layer
 	check(not layer.hmap.is_empty(), "height map read from map.height / map.ramps")
@@ -155,8 +158,8 @@ func test_height_offset_draw() -> void:
 	check_eq(layer.meshes_built, 4, "meshes built once at setup (nothing per frame)")
 	var a0 := _arrays(layer, Vector2i(0, 0))
 	var pt := _flat_top(layer, PROBE.PLATEAU)
-	check(_has_vert(a0[0], pt - Vector2(0, 32)), "level-3 cell top vertex lifted 32 px")
-	# every vertex of the level-3 cell's top triangles sits exactly 32 px above its flat (UV) position
+	check(_has_vert(a0[0], pt - Vector2(0, 2.0 * lp)), "level-3 cell top vertex lifted 2 x level_px")
+	# every vertex of the level-3 cell's top triangles sits exactly 2 x level_px above its flat (UV) position
 	# (a bare "no vertex at the flat top" test is wrong: cell (7,7) is level 3 too and its lifted top vertex
 	# lands exactly on (6,6)'s flat top)
 	var size := Vector2(1024, layer._flat_h() + layer.FACE_H)
@@ -170,17 +173,17 @@ func test_height_offset_draw() -> void:
 			continue
 		for k in 3:
 			var vi := ix0[t * 3 + k]
-			if vs0[vi].distance_to(uv0[vi] * size - Vector2(0, 32)) < 0.01:
+			if vs0[vi].distance_to(uv0[vi] * size - Vector2(0, 2.0 * lp)) < 0.01:
 				lifted += 1
 			else:
 				unlifted += 1
-	check(lifted >= 6 and unlifted == 0, "every vertex of the level-3 cell's top is lifted 32 px (%d lifted, %d not)" % [lifted, unlifted])
+	check(lifted >= 6 and unlifted == 0, "every vertex of the level-3 cell's top is lifted 2 x level_px (%d lifted, %d not)" % [lifted, unlifted])
 	check(_has_vert(a0[0], _flat_top(layer, Vector2i(2, 2))), "plain cell unlifted")
 	var a16 := _arrays(layer, Vector2i(0, 16))
-	check(_has_vert(a16[0], _flat_top(layer, PROBE.VALLEY) + Vector2(0, 16)), "valley cell sunk 16 px")
+	check(_has_vert(a16[0], _flat_top(layer, PROBE.VALLEY) + Vector2(0, lp)), "valley cell sunk level_px")
 	var hm: Dictionary = layer.height_map()
 	check_eq(VU.ground_level(hm, Vector2(PROBE.RAMP) + Vector2(0.5, 0.5)), 1.5, "ramp centre halfway up")
-	check_eq(VU.world_to_screen_h(hm, Vector2(6.5, 6.5)), VU.iso(Vector2(6.5, 6.5)) - Vector2(0, 32), "entity offset rule on a ridge")
+	check_eq(VU.world_to_screen_h(hm, Vector2(6.5, 6.5)), VU.iso(Vector2(6.5, 6.5)) - Vector2(0, 2.0 * lp), "entity offset rule on a ridge")
 	# published per-cell lift (entity_layer reads terrain_layer.lift_px): the mesh height at every cell centre
 	var lt: PackedFloat32Array = layer.lift_px
 	check_eq(lt.size(), 24 * 24, "lift_px has one entry per cell")
@@ -190,9 +193,22 @@ func test_height_offset_draw() -> void:
 			if absf(lt[y * 24 + x] - VU.ground_lift(hm, Vector2(x + 0.5, y + 0.5))) > 0.001:
 				lift_bad += 1
 	check_eq(lift_bad, 0, "lift_px = drawn ground height at each cell centre")
-	check_eq(lt[PROBE.PLATEAU.y * 24 + PROBE.PLATEAU.x], 32.0, "lift_px plateau 32")
-	check_eq(lt[PROBE.VALLEY.y * 24 + PROBE.VALLEY.x], -16.0, "lift_px valley -16")
-	check_eq(lt[PROBE.RAMP.y * 24 + PROBE.RAMP.x], 8.0, "lift_px ramp centre half a level up")
+	check_eq(lt[PROBE.PLATEAU.y * 24 + PROBE.PLATEAU.x], 2.0 * lp, "lift_px plateau 2 x level_px")
+	check_eq(lt[PROBE.VALLEY.y * 24 + PROBE.VALLEY.x], -lp, "lift_px valley -level_px")
+	check_eq(lt[PROBE.RAMP.y * 24 + PROBE.RAMP.x], 0.5 * lp, "lift_px ramp centre half a level up")
+	# baked cliff shadow (owner pass): the low cell east of the plateau's SE face, (10,6), sits in the cast
+	# shadow in the cached chunk image: clearly darker than the same chunk baked without height
+	check(layer._sh_tab.size() == 25 and layer._ao_tab.size() == 16, "shadow + AO overlays built")
+	var img_h: Image = layer._bake_image(0, 0, layer._terrain(), layer._biome_arr(), layer._hg(), layer._rp())
+	var img_f: Image = layer._bake_image(0, 0, layer._terrain(), layer._biome_arr())
+	var sc := _flat_top(layer, Vector2i(10, 6)) + Vector2(0, 16)
+	var lum_h := 0.0
+	var lum_f := 0.0
+	for dy in range(-4, 4):
+		for dx in range(-8, 8):
+			lum_h += img_h.get_pixel(int(sc.x) + dx, int(sc.y) + dy).get_luminance()
+			lum_f += img_f.get_pixel(int(sc.x) + dx, int(sc.y) + dy).get_luminance()
+	check(lum_f > 0.0 and lum_h < lum_f * 0.8, "cast shadow baked at the foot of the SE cliff (%.1f vs %.1f unshadowed)" % [lum_h, lum_f])
 	v.free()
 	# a map without height bakes and draws exactly as before: sprites, no face strip
 	var f = _view(_flat_map())
@@ -275,13 +291,16 @@ func test_draw_order_across_levels() -> void:
 	var arr := _arrays(layer, key)
 	var faces := _expected_faces(layer, key)
 	check(faces.size() > 0, "fixture has cliff faces in chunk (0,0)")
-	# 1. the lifted plateau top is drawn over the plain cells behind it: the back corner (4,4) lifted 32 px
-	# covers the flat diamond of plain cell (3,3) exactly; probe 4 px above its centre (inside its back
+	# 1. the lifted plateau top is drawn over the plain cells behind it: the back corner (4,4) lifted 2 x level_px
+	# covers the flat diamond of the plain cell n = lift / 32 diagonal steps behind it exactly; probe 4 px above its centre (inside its back
 	# triangle, off the quad diagonal) is covered by both, and the raised top is the one drawn last
+	var lift3: float = VU.lift_px(3.0)
+	var nb := int(lift3 / 32.0)
 	var back := Vector2i(4, 4)
-	var plain := Vector2i(3, 3)
-	check_eq(VU.cell_level(layer.height_map(), plain), 1, "(3,3) is plain ground")
-	var p1 := _flat_top(layer, back) + Vector2(0, 16) - Vector2(0, 32) - Vector2(0, 4)
+	var plain := back - Vector2i(nb, nb)
+	check(nb >= 1 and is_equal_approx(lift3, nb * 32.0), "ridge lift is whole diagonal steps (%.0f px)" % lift3)
+	check_eq(VU.cell_level(layer.height_map(), plain), 1, "%s is plain ground" % plain)
+	var p1 := _flat_top(layer, back) + Vector2(0, 16) - Vector2(0, lift3) - Vector2(0, 4)
 	var covers_plain := false
 	var vs: PackedVector2Array = arr[0]
 	var ix: PackedInt32Array = arr[3]
@@ -291,12 +310,12 @@ func test_draw_order_across_levels() -> void:
 	check(covers_plain, "the plain cell behind is drawn under the probe point too")
 	var t := _top_tri(arr, p1)
 	check_eq(_tri_cell(layer, arr, key, t, faces), Vector3i(back.x, back.y, 0), "raised top wins over the plain cell behind")
-	t = _top_tri(arr, _flat_top(layer, PROBE.PLATEAU) + Vector2(0, 16) - Vector2(0, 32) + Vector2(0, 4))
+	t = _top_tri(arr, _flat_top(layer, PROBE.PLATEAU) + Vector2(0, 16) - Vector2(0, lift3) + Vector2(0, 4))
 	check_eq(_tri_cell(layer, arr, key, t, faces), Vector3i(PROBE.PLATEAU.x, PROBE.PLATEAU.y, 0), "plateau centre shows its own lifted top")
 	# 2. under the plateau's SE edge the cliff face is visible (drawn after the plain behind, not covered in front):
 	# probe the middle of (9,6)'s SE face column, 12 px below its lifted lip
 	var e := Vector2i(9, 6)
-	var se_mid := _flat_top(layer, e) + Vector2(16, 24) - Vector2(0, 32)
+	var se_mid := _flat_top(layer, e) + Vector2(16, 24) - Vector2(0, lift3)
 	t = _top_tri(arr, se_mid + Vector2(0, 12))
 	check_eq(_tri_cell(layer, arr, key, t, faces), Vector3i(e.x, e.y, 1), "cliff face below the raised edge is on top")
 	# 3. top quads go back to front (x + y); each face is one the height data calls for and directly follows its

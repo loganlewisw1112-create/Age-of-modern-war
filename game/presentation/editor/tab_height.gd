@@ -13,6 +13,7 @@ var level := 2
 var erase_ramps := false
 var issues: Array = []
 var _issues_label: Label
+var _stroke_seen := {}   # ORCH (PT6 CR height_raise_stroke): cells Raise / Lower already changed this stroke
 
 
 func _build() -> void:
@@ -36,7 +37,24 @@ func set_tool(t: String) -> void:
 	preview_color = TOOL_COLORS[BH.TOOLS.find(tool_name)]
 
 
+## A new stroke (brush drag, line, rect or click) starts with no cells touched.
+func tool_begin(c: Vector2i) -> void:
+	_stroke_seen = {}
+	super(c)
+
+
+## Raise / Lower change each cell at most once per stroke ("one level per stroke cell"): consecutive
+## brush samples overlap, so without this one drag stacked +2 or more (PT6 brush flow, hb_raise_stroke).
 func _apply(cells: Array) -> void:
+	if tool_name == "raise" or tool_name == "lower":
+		var fresh: Array = []
+		for q in cells:
+			if not _stroke_seen.has(q):
+				_stroke_seen[q] = true
+				fresh.append(q)
+		if fresh.is_empty():
+			return
+		cells = fresh
 	ed.doc.apply(BH.apply_tool, cells, {"tool": tool_name, "level": level, "erase": erase_ramps})
 
 

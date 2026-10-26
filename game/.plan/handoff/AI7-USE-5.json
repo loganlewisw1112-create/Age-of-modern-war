@@ -1,0 +1,22 @@
+{
+  "agent": "AI7-USE-5",
+  "written_by": "orch",
+  "reason": "guard STALE x2 (last status 18:24 UTC); ORCH TaskStop at 11:37 local. The agent was mid-edit: 'Now the market rich-buy in ai_g6_sea.gd' (tree compiles after the stop).",
+  "last_status_seq": 1162,
+  "in_flight": {
+    "lane_d6": "started detached 11:30 local at 2-wide (MAXJ=2 GMAX=2), 11 configs incl survival_s1 (ridge_bastion survive 1500 s) and assist_s1; log .plan/shots/AI7-USE/run_lane_d6.log; outputs soak_<cfg>_d6.txt. valley_s1 and valley_s2 running since 11:30 (2 Godot pairs). Configs that start later load the tree as it is then. DO NOT stop or restart it."
+  },
+  "done": [
+    "CR744 ai_cmd units held in ai_controller._context; CR755 survival attacker -> WaveAI only",
+    "tests at 11:30: test_ai 18/18, test_ai_g6 9/9, test_ai_g5 5/5",
+    "d5: heart_s1 draw; valley_s1/s2 d5 lost at ~106k when the 3-wide lane was stopped for the machine-load rule",
+    "draw analysis d5: salvage-starved sides hoard credits (valley s2 Machine 11811 cr / 150 salvage; heart s1 Human A holds 2843 cr vs a 920-salvage company want)",
+    "fixes written: ai_stage._scarce_hold (bank only the scarce parts while salvage/ore are short); ai_g6_co loadouts only at Loadouts.is_loadout_building homes (257 rejected requests before); ai_g6_sea market buys salvage/ore beyond the floor when spare credits >= 2500 (IN PROGRESS at stop: verify it is complete and correct)"
+  ],
+  "remaining": [
+    "1. Verify the ai_g6_sea.gd market rich-buy edit is complete; compile; run --only test_ai_g6, test_ai_g5, test_ai (sequential).",
+    "2. Watch lane d6 (do not restart it); read each SOAK RESULT / INVARIANTS / DOCTRINE / COMP line; grep SCRIPT ERROR first.",
+    "3. Remaining draws -> fix -> mini-lane 2-wide; then the full lane for the final gate: 4 maps x 2 seeds + editor + survival with winners, 0 invariant failures, logs showing companies/army, doctrine tags, mines, garrison, sub, carrier, market, Stage 10, an AI-commanded player formation.",
+    "4. Post ai.g5_soaks and ai.g6_soaks facts with the raw result lines."
+  ]
+}

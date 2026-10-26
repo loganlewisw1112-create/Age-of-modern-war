@@ -113,6 +113,7 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 			g4.pre = g6w.duplicate()
 			_note_pre_co(st)
 			g4.plan += " pre:" + PData.cost_label(g6w)
+		_scarce_hold(w, fid, g4)
 		_probe(w, fid, st, gates)
 		return
 	var defending := String(st.objective) == "defend"
@@ -202,6 +203,7 @@ static func manage(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, army_
 		g4.pre = pre
 		_note_pre_co(st)
 		g4.plan += " pre:" + PData.cost_label(pre)
+	_scarce_hold(w, fid, g4)
 	_probe(w, fid, st, gates)
 
 
@@ -246,6 +248,33 @@ static func plan_buildings_cost(w: SimWorld, fid: int, st: Dictionary, ctx: Dict
 static func g6_wants(st: Dictionary) -> Dictionary:
 	var u: Dictionary = st.get("g6", {}).get("use", {})
 	return _add(u.get("hq_want", {}), u.get("co_want", {}))
+
+
+## AI7-USE-5: credits banked against a want whose salvage / ore the side does not have only sit idle
+## (heart s1 d5: Human A held 2843 cr for 3160 cr + 920 salvage with 99 salvage in stock, its army
+## stuck at 26 of a 37-pop wave for the last 60k ticks). While a scarce part is short, only the scarce
+## parts are banked: the credits keep buying units and ai_g6_sea._market buys the missing salvage / ore.
+static func _scarce_hold(w: SimWorld, fid: int, g4: Dictionary) -> void:
+	var res: Dictionary = g4.reserve
+	if int(res.get("credits", 0)) <= 0:
+		return
+	var f: Dictionary = w.factions[fid]
+	var short := false
+	for k in ["salvage", "ore"]:
+		if int(res.get(k, 0)) > int(f.stock.get(k, 0)):
+			short = true
+	if not short:
+		return
+	var r2 := res.duplicate()
+	r2.erase("credits")
+	g4.reserve = r2
+	if g4.has("pre"):
+		var p2: Dictionary = (g4.pre as Dictionary).duplicate()
+		p2.erase("credits")
+		g4.pre = p2
+	if g4.has("pre_co"):
+		g4.erase("pre_co")
+	g4.plan = String(g4.plan) + " short"
 
 
 ## The company / Commander credits now inside the bank (ai_g6_co._free_credits does not count

@@ -15,6 +15,12 @@ const Fx = preload("res://presentation/ui6/a/fit_ui6a.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const AiCommand = preload("res://sim/systems/ai_command.gd")
 const Market = preload("res://sim/systems/market.gd")
+const HudScript = preload("res://presentation/hud/hud.gd")
+const G3Score = preload("res://presentation/hud/g3_score.gd")
+const Waves = preload("res://sim/systems/waves.gd")
+const Progression = preload("res://sim/systems/progression.gd")
+const ProgData = preload("res://sim/systems/progression_data.gd")
+const MatchViewScript = preload("res://presentation/match_view.gd")
 const TEST_PROFILE := "_test_ui6a"
 const RES7 := ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440", "3440x1440", "3840x2160"]
 
@@ -298,3 +304,110 @@ func test_new_panels_fit_7_resolutions() -> void:
 	var r2 := _fit(res3, "0.75,1.5")
 	check_eq(r2.screens, res3.size() * 2 * Fx.NAMES.size(), "G6 screens at UI scale 75% and 150%")
 	check(r2.issues == 0, "%d fit issues at 75/150%%: %s" % [r2.issues, "\n    ".join(PackedStringArray(r2.lines))])
+
+
+## G6 (UI6a): the research card lists only the side's own faction projects (hud.research_rows mirrors
+## Progression.research_list), and the victory panel carries the survival wave countdown.
+func test_research_rows_and_wave_line() -> void:
+	var w := SimWorld.new_match(SimWorld.default_config())
+	check(w.factions.size() >= 2, "default match has at least 2 sides")
+	for fid in w.factions:
+		var fdef := String(w.factions[fid].faction_def)
+		var rows: Array = HudScript.research_rows(w, int(fid))
+		var want := {}
+		for r in Progression.research_list(w, int(fid)):
+			want[String(r.id)] = true
+		var got := {}
+		var foreign: Array = []
+		for r in rows:
+			got[String(r.id)] = true
+			var facs: Array = ProgData.project(String(r.id)).get("factions", [])
+			if not facs.is_empty() and not facs.has(fdef):
+				foreign.append(String(r.id))
+		check(foreign.is_empty(), "side %d (%s): no other faction's project in the research card: %s" % [int(fid), fdef, str(foreign)])
+		check_eq(rows.size(), got.size(), "side %d: research rows have no duplicates" % int(fid))
+		check_eq(got.keys().size(), want.keys().size(), "side %d: research rows count == Progression.research_list" % int(fid))
+		var missing: Array = []
+		for k in want:
+			if not got.has(k):
+				missing.append(k)
+		check(missing.is_empty(), "side %d: every research_list project has a row (missing %s)" % [int(fid), str(missing)])
+	check_eq(HudScript.research_rows(null, 0).size(), 0, "research_rows(null) is empty")
+	# wave countdown: off in a normal match, "Next wave 1/3" in a 3-wave survival match
+	check_eq(G3Score.wave_line(w), "", "no wave line outside survival")
+	for row in G3Score.rows(w, 0):
+		check(not String(row.text).contains("wave"), "no wave row outside survival: %s" % String(row.text))
+	var ws := SimWorld.new_match(Waves.survival_config(SimWorld.default_config(), "repel_waves", 3, -1))
+	check(Waves.active(ws), "repel_waves survival config is active")
+	var wl := G3Score.wave_line(ws)
+	check(wl.contains("Next wave 1/3"), "wave line shows the first of 3 waves: '%s'" % wl)
+	check(wl.length() <= 40, "wave line fits the 306 px panel (<= 40 chars): '%s'" % wl)
+	var found := false
+	for row in G3Score.rows(ws, 0):
+		if String(row.text) == wl:
+			found = true
+	check(found, "victory panel rows include the wave line")
+	var we := SimWorld.new_match(Waves.survival_config(SimWorld.default_config(), "survive", 600, -1))
+	var wle := G3Score.wave_line(we)
+	check(wle.begins_with("Next wave 1 in") or wle.begins_with("Wave 1 incoming"), "endless survival wave line has no /N: '%s'" % wle)
+
+
+## G6 (UI6a, PT6 bug): a garrisoned unit is hidden in its building, so clicking the building picks the
+## building (its card), not the unit inside; marquee select skips it too.
+func test_garrisoned_unit_not_pickable() -> void:
+	var w := make_world()
+	var bld = null
+	var unit = null
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if int(e.owner) != 0:
+			continue
+		if e.kind == "building" and bld == null:
+			bld = e
+		elif e.kind == "unit" and unit == null:
+			unit = e
+	check(bld != null and unit != null, "side 0 starts with a building and a unit")
+	if bld == null or unit == null:
+		return
+	var mv = MatchViewScript.new()
+	mv.world = w
+	mv.player_fid = 0
+	var center := Vector2(bld.cell) + Vector2(float(bld.size), float(bld.size)) * 0.5
+	unit.pos = center
+	var hit = mv.entity_at(center, false)
+	check(hit != null and int(hit.id) == int(unit.id), "control: a free unit standing on the building is picked first")
+	unit["garrisoned_in"] = int(bld.id)
+	hit = mv.entity_at(center, false)
+	check(hit != null and int(hit.id) == int(bld.id), "garrisoned unit skipped: the click picks the building (got %s)" % (str(hit.id) if hit != null else "null"))
+	check(MatchViewScript.is_garrisoned(unit), "is_garrisoned reads garrisoned_in")
+	unit.erase("garrisoned_in")
+	check(not MatchViewScript.is_garrisoned(unit), "a unit that left is pickable again")
+	mv.free()
+
+
+## G6 (UI6a, PT6 CR 1193): the inspector shows the height bonus of a selection standing above plain.
+func test_inspector_high_ground_line() -> void:
+	var w := make_world()
+	var unit = null
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if int(e.owner) == 0 and e.kind == "unit" and not bool(Content.unit(String(e.def)).get("is_air", false)):
+			unit = e
+			break
+	check(unit != null, "side 0 starts with a ground unit")
+	if unit == null:
+		return
+	var mw := int(w.map.w)
+	var hg := PackedByteArray()
+	hg.resize(mw * int(w.map.h))
+	hg.fill(1)
+	w.map.height = hg
+	check_eq(HudScript.high_ground_line(w, [unit]), "", "no HIGH GROUND line on plain ground")
+	var c := Vector2i(floori(unit.pos.x), floori(unit.pos.y))
+	hg[c.y * mw + c.x] = 2
+	w.map.height = hg
+	var line := HudScript.high_ground_line(w, [unit])
+	check(line.to_lower().contains("high ground"), "HIGH GROUND line at height 2: '%s'" % line)
+	check(line.contains("range") and line.contains("sight"), "the line names the range and sight bonus: '%s'" % line)
+	check(not line.contains("+0% range"), "range bonus is positive at height 2: '%s'" % line)
+	check_eq(HudScript.high_ground_line(null, [unit]), "", "null world gives no line")

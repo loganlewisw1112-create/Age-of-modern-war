@@ -10,6 +10,7 @@ extends SceneTree
 ##   godot --path . [--headless] -s tools/ui_fit_test.gd -- [--fit-out=ABS_DIR]
 ##        [--fit-scales=1,0.75,1.5] [--fit-res=1280x720,1920x1080] [--fit-screens=main_menu,hud_idle]
 ##        [--fit-font=final]   (measure with FONT's rts_mil TTFs even before font.final)
+##        [--fit-full]         (windowed: also save every screen full size, <screen>_<W>x<H>_s<scale>.png)
 ## Prints "FIT <W>x<H> s=<scale> <screen> <KIND> <path> <detail>" per issue, a summary per screen and a
 ## final "FIT RESULT screens=N issues=K". Windowed runs also save sheet_<W>x<H>_s<scale>.png
 ## (one thumbnail per screen, issue rects outlined red) into --fit-out.
@@ -23,6 +24,7 @@ const FRAME_TYPES := ["Panel", "PanelContainer", "ScrollContainer", "TabContaine
 
 var out_dir := ""
 var shots := false
+var full_shots := false   # G6 (UI6a): --fit-full also saves each screen full size as <screen>_<W>x<H>_s<scale>.png
 var scales: Array = [1.0]
 var res_list: Array = RES.duplicate()
 var only_screens: Array = []
@@ -50,6 +52,7 @@ func _initialize() -> void:
 	if args.has("fit-screens"):
 		only_screens = Array(String(args["fit-screens"]).split(",", false))
 	shots = out_dir != "" and DisplayServer.get_name() != "headless"
+	full_shots = shots and args.has("fit-full")
 	if String(args.get("fit-font", "")) == "final":
 		load("res://presentation/ui5/kit/ui_kit.gd").preview_final = true
 	if out_dir != "":
@@ -97,6 +100,8 @@ func _run_screen(nm: String, r: Vector2i, sc: float) -> Variant:
 		var full: Image = vp.get_texture().get_image()
 		if full != null and not full.is_empty():
 			_outline(full, found, r)
+			if full_shots:
+				full.save_png("%s/%s_%dx%d_s%s.png" % [out_dir, nm, r.x, r.y, _sf(sc)])
 			var tw := 480
 			full.resize(tw, int(round(float(tw) * r.y / r.x)), Image.INTERPOLATE_BILINEAR)
 			img = full

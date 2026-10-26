@@ -19,7 +19,8 @@ const NAMES := ["main_menu", "main_menu_howto", "main_menu_load", "hud_idle", "h
 	"hud_builders_s9", "hud_hq", "hud_barracks", "hud_army", "hud_hotkeys", "pause", "end_win", "editor",
 	"settings", "ui5b_airfield", "ui5b_air_mixed", "ui5b_drone_tactical", "ui5b_build_air",  # G5 UI5b (ORCH CR)
 	"ui6a_market", "ui6a_army", "ui6a_forces", "ui6a_commanders", "ui6a_hud_company", "ui6a_hud_company_hq",
-	"ui6a_menu_survival"]  # G6 UI6a (presentation/ui6/a/fit_ui6a.gd)
+	"ui6a_menu_survival",  # G6 UI6a (presentation/ui6/a/fit_ui6a.gd)
+	"ui5b_g6_infantry", "ui5b_g6_vehicles", "ui5b_g6_engineer", "ui5b_g6_garage", "ui5b_g6_research"]  # G6 UI6b (presentation/ui6/b/g6_scen.gd via fit_panels)
 
 static var _worlds: Dictionary = {}   # "s8" / "s9" -> SimWorld (never stepped: the HUD is paused)
 

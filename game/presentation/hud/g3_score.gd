@@ -8,6 +8,7 @@ const HT = preload("res://presentation/hud/hud_theme.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const Victory = preload("res://sim/systems/victory.gd")
 const VictoryBuilder = preload("res://presentation/menu/victory_builder.gd")
+const Waves = preload("res://sim/systems/waves.gd")
 
 var panel: PanelContainer
 var _title: Label
@@ -59,6 +60,26 @@ static func team_label(w: SimWorld, team: int, pf: int) -> String:
 	return "Team %d: %s" % [team + 1, ", ".join(names)]
 
 
+## G6 survival countdown line from Waves.next_wave ("" when survival is off). Kept under ~40 chars
+## (the panel is 306 px wide). total < 0 = endless (survive the clock): no "/N".
+static func wave_line(w: SimWorld) -> String:
+	if w == null or not Waves.active(w):
+		return ""
+	var nw: Dictionary = Waves.next_wave(w)
+	if nw.is_empty():
+		return ""
+	var total := int(nw.get("total", -1))
+	var idx := int(nw.get("index", 1))
+	var kills := int(nw.get("destroyed", 0))
+	if bool(nw.get("done", false)):
+		return "Waves: all %d sent, %d destroyed" % [maxi(total, 0), kills]
+	var of := ("%d/%d" % [idx, total]) if total >= 0 else str(idx)
+	var secs := int(nw.get("seconds_left", 0))
+	if secs <= 0:
+		return "Wave %s incoming!" % of
+	return "Next wave %s in %d:%02d  (%d destroyed)" % [of, secs / 60, secs % 60, kills]
+
+
 ## Rows for the HUD panel and the end screen: [{text, color, size}] (pure; testable headless).
 static func rows(w: SimWorld, pf: int) -> Array:
 	var out: Array = []
@@ -80,6 +101,9 @@ static func rows(w: SimWorld, pf: int) -> Array:
 		out.append({"text": hq_txt, "color": HT.TEXT if alive else HT.DIM, "size": 12})
 		for t in prog.get("terms", []):
 			out.append({"text": "    " + _term_line(t), "color": HT.GREEN if bool(t.get("satisfied", false)) else HT.TEXT, "size": 12})
+	var wl := wave_line(w)
+	if wl != "":
+		out.append({"text": wl, "color": HT.AMBER, "size": 12})
 	return out
 
 

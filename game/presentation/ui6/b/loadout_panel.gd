@@ -10,6 +10,7 @@ extends RefCounted
 const Exo = preload("res://sim/systems/exo.gd")
 const Loadouts = preload("res://sim/systems/loadouts.gd")
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
+const G6Place = preload("res://presentation/ui6/b/g6_place.gd")
 
 const PANEL_W := 600.0
 const NAMES := {"standard": "Standard", "assault": "Assault", "at": "Anti-tank", "marksman": "Marksman",
@@ -18,6 +19,7 @@ const NAMES := {"standard": "Standard", "assault": "Assault", "at": "Anti-tank",
 
 var hud
 var panel: PanelContainer
+var scroll: ScrollContainer    # body scroller, capped to the room above the card (G6Place; UI6b-3)
 var title: Label
 var warn: Label
 var row: HFlowContainer
@@ -44,9 +46,14 @@ func build(root: Control) -> void:
 	root.add_child(panel)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 3)
-	panel.add_child(body)
+	scroll = UiKit.scroll(body)
+	scroll.name = "LoadoutScroll"
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
 	title = UiKit.label("LOADOUT", "header")
 	title.name = "LoadoutTitle"
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size = Vector2(PANEL_W - 24.0, 0)
 	body.add_child(title)
 	warn = UiKit.label("", "bad")
 	warn.name = "LoadoutWarn"
@@ -59,6 +66,18 @@ func build(root: Control) -> void:
 	row.add_theme_constant_override("v_separation", 4)
 	row.custom_minimum_size = Vector2(PANEL_W - 24.0, 0)
 	body.add_child(row)
+
+
+## Content widths for an inner width (G6Place.place callback).
+func _set_w(inner: float) -> void:
+	for c in [title, warn, row]:
+		(c as Control).custom_minimum_size.x = inner
+
+
+## Size and place the panel in the room above the card (between the HUD side columns, below PAUSED).
+func place() -> void:
+	if panel != null and panel.visible:
+		G6Place.place(hud, panel, scroll, PANEL_W, _set_w)
 
 
 static func loadout_name(lid: String) -> String:
@@ -219,6 +238,8 @@ func update_state(w: SimWorld) -> void:
 		b2.disabled = reason != ""
 		b2.tooltip_text = "%s: %s%s" % [loadout_name(String(lid)), stat_text(String(lid)),
 			("\nUnavailable: " + reason) if reason != "" else "\nCost: " + cost_text(pl.cost)]
+	place()
+	place.call_deferred()   # again once the new widths are laid out (wrapped label heights)
 
 
 static func _short(reason: String) -> String:

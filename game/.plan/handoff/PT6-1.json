@@ -1,0 +1,30 @@
+{
+  "agent": "PT6",
+  "gen": 1,
+  "calls_used": 96,
+  "tokens_used_est": 316000,
+  "done": [
+    "Parallel flake fixes in tools/ui_playtest.gd: (1) _select_units now picks an on-screen unit (or scrolls to it), freezes the sim speed during the click/double-click and retries up to 3x until the selection holds (stages flake: 'select builders' found 0); (2) _train waits until the production button exists and is enabled (90 s) before clicking (_btn_enabled helper); (3) tutorial step 12 waits for Airfield.can_produce(a_strike_jet)=='' before the Strike Jet click (tutorial flake). NOT yet re-run, alone or 2 at a time.",
+    "13 G6 flows written in tools/ui_playtest.gd (--ui-playtest-<flow>: elev company aicmd mines garrison naval6 airdef exo loadout market airfield2 survival) + owner checkpoint (--ui-playtest-checkpoint with --load=<save>); 2 editor flows in tools/editor_playtest.gd (--g6=brush | --g6=live).",
+    "Runner: .plan/shots/PT6/pt6_all.sh TAG flow... (PT_MAXJ=1 default 2; logs .plan/shots/PT6/pt_<flow>_<TAG>.log, shots pt_<flow>_<TAG>/).",
+    "r1 results: checkpoint 4/0; market 13/0; loadout 21/0; garrison 22/3 (game issue, CR seq 1192 UI6a-2); elev 20/1 (UI gap, CR seq 1193 UI6a-2); mines 25/1 (sweep did not clear own 3 mines in 180 s; debug print added; r1b pending); brush 12/1 (one Raise stroke 1->3, CR to ED6/ORCH); live 14/5 (my bug: symmetry not set; fixed; r1b pending); company 11/3 + aicmd 11/3 + exo 10/3 (my bug: prerequisites Barracks / Motor Pool; fixed); airdef r1 runs the old order (CIWS + radar need a Research Station, the SAM needs a Radar Station: flow reordered, r1 result expected to fail).",
+    "Owner checkpoint BEFORE set saved: .plan/shots/PT6/checkpoint/before/ (23 shots + run.log) + .plan/shots/PT6/checkpoint/NOTE.md (tags: overwatch_set x4, suppress, assault_phase, flank, high_ground_taken; matches demo_replay.json order)."
+  ],
+  "running_at_handoff": "Background batch B (hb.sh label 'pt6 batch B r1'), one windowed Godot at a time: remaining airdef r1 (old code), airfield2 r1, naval6 r1, survival r1, then live r1b, mines r1b. Wait for it to finish before starting another windowed job (ORCH rule seq 1132: one heavy Godot job per agent). Summary: grep 'PLAYTEST RESULT' .plan/shots/PT6/pt_*_r1*.log",
+  "remaining": [
+    "1. Read the batch B results for airfield2, naval6, survival, live r1b and mines r1b. Fix the flow-script issues (mine) and file a CR (board 'need' change_request.<topic>) for game issues, with the exact failing step and log line. Never edit game code.",
+    "2. Owner checkpoint AFTER set (ORCH directive): wait for 'ELEV-VIEW-3 DONE' in .plan/bus.log, then: bash .plan/shots/PT6/pt6_all.sh cp2 checkpoint; copy .plan/shots/PT6/pt_checkpoint_cp2/*.png + its log to .plan/shots/PT6/checkpoint/after/; add the tag list to checkpoint/NOTE.md 'after/'. View 2-3 shots with Read to confirm the terrain height and unit art read clearly (zoom 1.1 is set in _checkpoint_flow).",
+    "3. r2 of every flow (each flow must pass twice): PT_MAXJ=1 bash .plan/shots/PT6/pt6_all.sh r2 h hb m s g4b ed air naval drone support med tutorial elev company aicmd mines garrison naval6 airdef exo loadout market airfield2 survival live brush (about 26 runs x 5-15 min). Run it under bash .plan/hb.sh.",
+    "4. The 2-at-a-time requirement (Done-when item 4, plus the two G5 flakes stages/tutorial): it needs PT_MAXJ=2, which ORCH rule seq 1132 currently forbids (one heavy Godot job per agent). Ask ORCH for a quiet window, then run PT_MAXJ=2 bash .plan/shots/PT6/pt6_all.sh p1 s tutorial, plus pairs of the G6 flows.",
+    "5. Publish fact pt6.flows_green only once all 26 flows pass twice, including 2 at a time."
+  ],
+  "files_touched": ["tools/ui_playtest.gd", "tools/editor_playtest.gd", ".plan/shots/PT6/pt6_all.sh", ".plan/shots/PT6/checkpoint/NOTE.md", ".plan/shots/PT6/checkpoint/before/*", ".plan/shots/PT6/pt_*_r1*.log + dirs"],
+  "test_state": "No unit test files owned. Both playtest scripts parse (godot --check-only, no errors). The r1 logs above contain 0 SCRIPT ERROR lines in the flows checked (market, loadout, garrison, elev, mines, brush, live, company, aicmd, exo).",
+  "change_requests_open": ["seq 1192 UI6a-2 change_request.garrison_pick (match_view picks the rifleman inside a garrisoned building)", "seq 1193 UI6a-2 change_request.high_ground_inspector (no HIGH GROUND tag in the inspector)", "ED6 change_request.height_raise_stroke (one stroke raised 1->3; ED6 is finished: ORCH routes it)"],
+  "gotchas": [
+    "Checkpoint: the save has side 1 AI off; the flow drives Doctrine.think every 10 ticks exactly like sim/ai/doctrine/doc_demo.gd (force_obj = hill, force_attack). It is the only thing moving the attackers; say so to the owner.",
+    "New G6 buildings carry prerequisites: Company HQ needs a Barracks, the Exo Garage a Motor Pool, CIWS and the Radar Station a Research Station, the SAM site a Radar Station. Diag script: C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/1121247f-c9b8-4ed3-adb4-546f11b33109/scratchpad/pt6_site.gd",
+    "Harness actions (in memory, this process only): the G5-style grant + peace window; enemy drones / enemy sub spawned with w.spawn_unit; _g6_kill (hp=1 + Damage.apply_hit) to eject the exo pilot and to destroy the radar; survival shortens victory_params.seconds to a 7-minute hold.",
+    "The editor ED6 live bar has no node names: Live is toggled with the L key (focus released first), speed with the '4x' button, stop with 'Stop (L)'."
+  ]
+}

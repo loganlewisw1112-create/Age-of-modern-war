@@ -18,12 +18,15 @@ var main: Node
 var shot_dir := ""
 var passed := 0
 var failed := 0
+var g6 := ""  # G6 (PT6): --g6=live (fight, then rewind) | --g6=brush (height brushes)
 
 
 func _initialize() -> void:
 	for a in OS.get_cmdline_user_args():
 		if String(a).begins_with("--shots="):
 			shot_dir = String(a).trim_prefix("--shots=")
+		if String(a).begins_with("--g6="):  # G6 (PT6): live | brush
+			g6 = String(a).trim_prefix("--g6=")
 	if shot_dir == "":
 		shot_dir = OS.get_user_data_dir().path_join("editor_playtest")
 	DirAccess.make_dir_recursive_absolute(shot_dir)
@@ -336,6 +339,18 @@ func _run() -> void:
 	var mid := Vector2(root.get_visible_rect().size.x * 0.5 + 20.0, root.get_visible_rect().size.y * 0.5)
 	await _wheel(mid, false, 3)
 	await _settle()
+	if g6 == "brush":
+		await _g6_brush(ed)
+		_finish()
+		return
+	if g6 == "live":
+		# the same rotate_180 symmetry as the ED2 flow: _players / _units expect mirrored starts and HQs
+		_log("symmetry_rotate180", await _pick_option(ed._p.sym_opt, 4) and String(ed.doc.symmetry) == "rotate_180", String(ed.doc.symmetry))
+		await _players(ed)
+		await _units(ed)
+		await _g6_live(ed)
+		_finish()
+		return
 	# --- paint terrain
 	await _tab("Terrain")
 	await _press("Dirt", ed.tab_panel("terrain"), true)
@@ -407,6 +422,9 @@ func _units(ed) -> void:
 			hi = i
 		if foot < 0 and ut.items[i][0] == "unit" and M.cargo_class(String(ut.items[i][1])) == "foot":
 			foot = i
+		# G6 (PT6-2): live r1b placed engineers (first foot unit, unarmed): "lv_fight" saw no damage. Prefer riflemen.
+		if ut.items[i][0] == "unit" and String(ut.items[i][1]) == "rifleman":
+			foot = i
 	_log("palette_hq", await _click_item(ut.palette_list, hi) and ut.pick_def == hq, "hq=%s" % hq)
 	await _press("Place", ut, true)
 	await _jump(Vector2i(26, 26))
@@ -475,6 +493,100 @@ func _skirmish() -> void:
 				alive += 1
 	_log("match_runs_30s", w != null and t1 - t0 >= 15 * SimWorld.TICK_RATE and alive == 2, "ticks %d -> %d, alive sides %d" % [t0, t1, alive])
 	await _shot("05_match_30s")
+
+
+# ------------------------------------------------------------ G6 (PT6): height brushes + Live
+func _height_at(c: Vector2i) -> int:
+	var h = _ed().doc.map.get("height", null)
+	if h == null or (h as PackedByteArray).is_empty():
+		return 1
+	return int((h as PackedByteArray)[c.y * int(_ed().doc.map.w) + c.x])
+
+
+func _g6_brush(ed) -> void:
+	_log("hb_height_tab", await _tab("Height"))
+	var hp = ed.tab_panel("height")
+	await _wait(0.3)
+	_log("hb_raise_tool", await _press("Raise", hp, false) and String(hp.tool_name) == "raise", String(hp.tool_name))
+	await _jump(Vector2i(60, 60))
+	var raise_cells := [Vector2i(56, 60), Vector2i(60, 60), Vector2i(64, 60)]
+	var h0 := _height_at(Vector2i(60, 60))
+	await _map_drag(raise_cells)
+	await _frames(3)
+	_log("hb_raise_stroke", _height_at(Vector2i(60, 60)) == h0 + 1, "level %d -> %d" % [h0, _height_at(Vector2i(60, 60))])
+	await _map_drag(raise_cells)
+	await _frames(3)
+	_log("hb_raise_again", _height_at(Vector2i(60, 60)) == h0 + 2, "level -> %d" % _height_at(Vector2i(60, 60)))
+	await _shot("g6_height_raise")
+	_log("hb_lower_tool", await _press("Lower", hp, false) and String(hp.tool_name) == "lower", String(hp.tool_name))
+	var low := [Vector2i(58, 66), Vector2i(62, 66)]
+	var l0 := _height_at(Vector2i(60, 66))
+	await _map_drag(low)
+	await _frames(3)
+	_log("hb_lower_stroke", _height_at(Vector2i(60, 66)) == maxi(0, l0 - 1), "level %d -> %d" % [l0, _height_at(Vector2i(60, 66))])
+	_log("hb_smooth_tool", await _press("Smooth", hp, false) and String(hp.tool_name) == "smooth", String(hp.tool_name))
+	await _map_drag([Vector2i(56, 61), Vector2i(64, 61)])
+	await _frames(3)
+	_log("hb_auto_ramps_click", await _press("Auto ramps", hp, true))
+	await _frames(3)
+	var rp = ed.doc.map.get("ramps", null)
+	var ramps := 0
+	if rp != null:
+		for v in (rp as PackedByteArray):
+			if int(v) > 0:
+				ramps += 1
+	_log("hb_ramps_present", ramps > 0, "ramp cells=%d" % ramps)
+	_log("hb_undo", await _key_undo() and _height_at(Vector2i(60, 60)) >= 1, "after undo level=%d" % _height_at(Vector2i(60, 60)))
+	await _shot("g6_height_brushes")
+
+
+func _key_undo() -> bool:
+	await _key(KEY_Z, 0, true)
+	await _frames(3)
+	return true
+
+
+func _g6_live(ed) -> void:
+	# two adjacent formations at the centre (rotate_180 mirror lands next to the drag) so Live fights at once
+	await _jump(Vector2i(63, 63))
+	var n0: int = ed.tab_panel("units").ents().size()
+	await _map_drag([Vector2i(60, 61), Vector2i(62, 62), Vector2i(63, 62)])
+	var n_doc: int = ed.tab_panel("units").ents().size()
+	_log("lv_centre_formations", n_doc > n0, "doc entities %d -> %d" % [n0, n_doc])
+	# the ED6 live bar: L toggles Live, speed buttons Pause/1x/2x/4x, "Stop (L)"
+	root.gui_release_focus()  # no text field focused (L is ignored while typing)
+	await _frames(2)
+	await _key(KEY_L)
+	var on := await _wait_until(func(): return ed.live_on(), 5.0)
+	_log("lv_live_on_key_L", on, "" if on else str(ed._live_label.text if ed._live_label != null else ""))
+	if not on:
+		return
+	var lw: SimWorld = ed.live_world
+	var h0 := String(ed.live_snap.get("hash", ""))
+	var snap_tick := int(ed.live_snap.get("tick", 0))
+	var t0 := int(lw.tick)
+	var hp0 := _live_hp(lw)
+	_log("lv_speed_4x_click", await _press("4x", ed.live_bar, true))
+	await _wait(12.0)
+	await _shot("g6_live_fight")
+	var hp1 := _live_hp(lw)
+	_log("lv_ticks_run", int(lw.tick) > t0 + 100, "tick %d -> %d" % [t0, int(lw.tick)])
+	_log("lv_fight", hp1 < hp0, "unit hp total %.0f -> %.0f" % [hp0, hp1])
+	_log("lv_stop_click", await _press("Stop (L)", ed.live_bar, true))
+	var off := await _wait_until(func(): return not ed.live_on(), 5.0)
+	_log("lv_stopped", off)
+	var snap_t := int(snap_tick)
+	_log("lv_rewind_hash_equal", lw.state_hash() == h0 and int(lw.tick) == snap_t, "hash %s / %s tick %d (snapshot tick %d, read %d)" % [lw.state_hash().left(12), h0.left(12), int(lw.tick), snap_t, t0])
+	_log("lv_doc_untouched", ed.tab_panel("units").ents().size() == n_doc, "doc entities %d" % ed.tab_panel("units").ents().size())
+	await _shot("g6_live_rewound")
+
+
+func _live_hp(lw: SimWorld) -> float:
+	var t := 0.0
+	for e in lw.entities.values():
+		if String(e.get("kind", "")) == "unit":
+			t += float(e.get("hp", 0))
+	return t
 
 
 func _finish() -> void:

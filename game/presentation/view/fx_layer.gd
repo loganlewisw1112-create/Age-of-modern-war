@@ -520,7 +520,7 @@ var _laser_w: Dictionary = {}  # weapon id -> bool
 
 
 ## G6 (VIEW6, CR 822): world -> canvas on the drawn (raised) ground: ViewUtil.world_to_screen_h with the
-## terrain layer's height map = iso(p) - (0, (ground_level - 1) * 16). Flat maps: exactly the old iso spot.
+## terrain layer's height map = iso(p) - (0, (ground_level - 1) * ViewUtil.level_px). Flat maps: exactly the old iso spot.
 func _w2s(p: Vector2) -> Vector2:
 	var tl = mv.get("terrain_layer") if mv != null else null
 	if tl == null or not tl.has_method("height_map"):

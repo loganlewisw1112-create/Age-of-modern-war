@@ -9,12 +9,16 @@ extends RefCounted
 const Exo = preload("res://sim/systems/exo.gd")
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const LoadoutPanel = preload("res://presentation/ui6/b/loadout_panel.gd")
+const G6Place = preload("res://presentation/ui6/b/g6_place.gd")
 
 const PANEL_W := 620.0
 const ROWS := 4
+const PILOT_W := 250.0         # pilot label width when the room allows (down to PILOT_MIN_W)
+const PILOT_MIN_W := 120.0
 
 var hud
 var panel: PanelContainer
+var scroll: ScrollContainer    # body scroller, capped to the room above the card (G6Place; UI6b-3)
 var title: Label
 var info: Label
 var list: VBoxContainer
@@ -41,9 +45,14 @@ func build(root: Control) -> void:
 	root.add_child(panel)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 3)
-	panel.add_child(body)
+	scroll = UiKit.scroll(body)
+	scroll.name = "GarageScroll"
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
 	title = UiKit.label("EXO-SUIT GARAGE", "header")
 	title.name = "GarageTitle"
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size = Vector2(PANEL_W - 24.0, 0)
 	body.add_child(title)
 	info = UiKit.label("", "small")
 	info.name = "GarageInfo"
@@ -54,6 +63,34 @@ func build(root: Control) -> void:
 	list.name = "GaragePilots"
 	list.add_theme_constant_override("separation", 2)
 	body.add_child(list)
+
+
+## Width of a pilot row's buttons (everything after its label, with separations).
+static func _rest_w(hb: Control) -> float:
+	var rest := 0.0
+	for i in range(1, hb.get_child_count()):
+		rest += (hb.get_child(i) as Control).get_combined_minimum_size().x + 4.0
+	return rest
+
+
+## Content widths for an inner width (G6Place.place callback): pilot labels give way first.
+func _set_w(inner: float) -> void:
+	title.custom_minimum_size.x = inner
+	info.custom_minimum_size.x = inner
+	for hb in list.get_children():
+		if hb is HBoxContainer and hb.get_child_count() > 0:
+			(hb.get_child(0) as Control).custom_minimum_size.x = clampf(inner - _rest_w(hb), PILOT_MIN_W, PILOT_W)
+
+
+## Size and place the panel in the room above the card (between the HUD side columns, below PAUSED).
+func place() -> void:
+	if panel == null or not panel.visible:
+		return
+	var want := PANEL_W
+	for hb in list.get_children():
+		if hb is HBoxContainer:
+			want = maxf(want, 24.0 + PILOT_W + _rest_w(hb))
+	G6Place.place(hud, panel, scroll, want, _set_w)
 
 
 func reset() -> void:
@@ -129,6 +166,7 @@ func update_state(w: SimWorld) -> void:
 	var suits := suits_of(g)
 	var sig := "%s|%s|%d" % [str(pilots), str(suits), w.tick / 10]
 	if sig == _sig:
+		place()
 		return
 	_sig = sig
 	var mult := float(Content.building(String(g.def)).get("resuit_cost_mult", Exo.cfg().get("resuit_cost_mult", 0.6)))
@@ -171,3 +209,5 @@ func update_state(w: SimWorld) -> void:
 			btns["%d:%s" % [pid, String(s)]] = b
 	if pilots.size() > ROWS:
 		list.add_child(UiKit.label("+%d more pilots" % (pilots.size() - ROWS), "dim"))
+	place()
+	place.call_deferred()   # again once the new widths are laid out (wrapped label heights)

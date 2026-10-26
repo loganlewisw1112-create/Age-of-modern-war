@@ -21,7 +21,7 @@ extends Node2D
 ##  - A map with a height layer (map.height / map.ramps, ViewUtil.height_map_of) still bakes the flat chunk
 ##    image as above (plus ramp treads, cliff scree on the low side, crest rims on the high side, and the face
 ##    atlas copied under it), but each chunk is drawn as a MeshInstance2D: one quad per cell whose vertices are
-##    lifted ViewUtil.lift_px(level) px (16 px per level above plain; ramps slope per ViewUtil.vtx), plus face
+##    lifted ViewUtil.lift_px(level) px (ViewUtil.level_px per level above plain; ramps slope per ViewUtil.vtx), plus face
 ##    quads under every front edge that drops (SW face lit, SE face dark, darker at the foot), textured from
 ##    assets/art/g6_terrain faces.png in the cliff style of the top tile (earth / rock / sand / wall) and biome.
 ##    Quads go back-to-front (x + y diagonals) with each cell's faces right after it, and chunks stay row-major,
@@ -72,21 +72,47 @@ var _show_base := false
 var _avg: Dictionary = {}
 
 # G6 terrain height (ELEV-VIEW)
-const LEVEL_TINT := [0.76, 1.0, 1.14, 1.27]   # top-surface brightness per level (vertex colour / BRIGHT)
-const SLOPE_X := 0.3                          # ramp shading per level of rise towards +x (faces the light)
-const SLOPE_Y := -0.14                        # ... towards +y
-const BRIGHT := 1.4                           # height-chunk shader scales vertex colours by this (tints > 1)
+const LEVEL_TINT := [0.6, 1.0, 1.26, 1.52]    # top-surface brightness per level (grey; far-zoom fallback)
+## G6 owner pass: per biome (0 temperate 1 desert 2 snow 3 wasteland), per level (0 valley .. 3 ridge) RGB
+## multiplier of the top surface: valleys darker and cooler, high ground lighter and warmer. Snow (already near
+## white) gets a deep blue valley and a cream ridge instead of more white; desert a tan lift that does not clip.
+const LEVEL_TINT_B := [
+	[Color(0.56, 0.62, 0.76), Color(1, 1, 1), Color(1.3, 1.24, 1.06), Color(1.62, 1.48, 1.12)],
+	[Color(0.6, 0.6, 0.72), Color(1, 1, 1), Color(1.18, 1.12, 1.0), Color(1.36, 1.24, 1.02)],
+	[Color(0.5, 0.58, 0.8), Color(0.94, 0.96, 1.0), Color(1.06, 1.03, 0.95), Color(1.14, 1.07, 0.9)],
+	[Color(0.56, 0.58, 0.68), Color(1, 1, 1), Color(1.26, 1.2, 1.04), Color(1.55, 1.4, 1.1)]]
+const SLOPE_X := 0.34                         # ramp shading per level of rise towards +x (faces the light)
+const SLOPE_Y := -0.2                         # ... towards +y
+const BRIGHT := 1.8                           # height-chunk shader scales vertex colours by this (tints > 1)
 const FACE_H := 96                            # rows of the face atlas under every height chunk image
-const FACE_TOP := [0.96, 0.76]                # SW (lit) / SE face brightness at the lip
-const FACE_FOOT := 0.64                       # times that at the foot
+const FACE_TOP := [1.3, 0.5]                  # SW (lit wall) / SE (shadow side) face brightness at the lip
+const FACE_FOOT := 0.56                       # times that at the foot (ambient occlusion at the base)
+## Baked cliff shadows (cached chunk images, nothing per frame). The light comes from -x / +y (screen left: the
+## SW faces are lit), so a cliff casts its shadow onto the lower ground towards +x / -y: at the foot of every SE
+## (shadow-side) face, SH_LEN cells per level of drop, soft edged; plus an ambient-occlusion band along the base
+## of every cliff on the low cell.
+const SH_LEN := 0.7
+const SH_A := 0.55
+const SH_SOFT := 0.16
+const SH_COL := Color(0.04, 0.05, 0.12)
+const AO_A := 0.42
+const AO_W := 0.3
+static var _sh_tab: Array = []      # (lw * 5 + ls) -> 64x32 shadow overlay (lw / ls quarters of a cell from W / S edge)
+static var _sh_diag: Array = []     # ld (1..4) -> corner shadow from the SW diagonal only
+static var _ao_tab: Array = []      # 4-bit N E S W cliff-base mask -> 64x32 AO overlay
+## The one height constant, mirrored for layers that read it off the terrain layer (VIEW6 entity_layer fallback).
+var level_px: float:
+	get:
+		return ViewUtil.level_px
 const STYLE_OF_CODE := [0, 0, 3, 0, 1, 3, 1, 1, 3, 1, 1, 2, 1, 0, 3, 0]  # earth rock sand wall
 const G6_DIR := "res://assets/art/g6_terrain/"
 const HSHADER := """
 shader_type canvas_item;
 uniform float bright = 1.25;
+// Godot 4: COLOR in fragment() already is vertex colour x TEXTURE (sampling TEXTURE again squared the texture,
+// which darkened every height map); only the tint headroom is applied here.
 void fragment() {
-	vec4 t = texture(TEXTURE, UV);
-	COLOR = vec4(t.rgb * COLOR.rgb * bright, t.a * COLOR.a);
+	COLOR = vec4(COLOR.rgb * bright, COLOR.a);
 }
 """
 var hmap: Dictionary = {}          # {w, h, height, ramps} of the drawn map; empty = flat map (G5 path)
@@ -497,6 +523,7 @@ func _load_g6() -> void:
 		if parsed is Dictionary:
 			man = parsed
 	g6_art = not man.is_empty()
+	_build_shadow_tabs()
 	_faces_img = _g6_img(String(man.get("faces", {}).get("file", "")), Vector2i(1024, FACE_H))
 	if _faces_img == null:
 		_faces_img = _fallback_faces()
@@ -599,6 +626,8 @@ func _mesh_arrays(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByt
 			var gx := (lv[1] + lv[2] - lv[0] - lv[3]) * 0.5
 			var gy := (lv[2] + lv[3] - lv[0] - lv[1]) * 0.5
 			var shade := (1.0 + SLOPE_X * gx + SLOPE_Y * gy) / BRIGHT
+			var b := mini(int(biome[y * w + x]), 3) if has_b else 0
+			var tints: Array = LEVEL_TINT_B[b]
 			var base := vs.size()
 			var r: int = _raise[code]
 			var order := [0, 1, 2, 3] if r == 0 else [0, 1, 1, 2, 3, 3]
@@ -609,13 +638,12 @@ func _mesh_arrays(cx0: int, cy0: int, terrain: PackedByteArray, biome: PackedByt
 					f.y -= r
 				vs.append(f - Vector2(0.0, (lv[v] - 1.0) * lp))
 				uv.append(f * inv)
-				var c: float = LEVEL_TINT[int(lv[v])] * shade
-				cl.append(Color(c, c, c, 1.0))
+				var tc: Color = tints[int(lv[v])]
+				cl.append(Color(tc.r * shade, tc.g * shade, tc.b * shade, 1.0))
 			if r == 0:
 				ix.append_array([base, base + 1, base + 3, base + 1, base + 2, base + 3])
 			else:
 				ix.append_array([base, base + 1, base + 2, base, base + 2, base + 3, base, base + 3, base + 4, base, base + 4, base + 5])
-			var b := mini(int(biome[y * w + x]), 3) if has_b else 0
 			var ux := float((b * 4 + STYLE_OF_CODE[code]) * 64 + ((x + y) & 1) * 32)
 			if y + 1 < h:  # SW face: our left/bottom vertices over S's top/right vertices
 				var ps := ViewUtil.vtx(hg, rp, w, h, x, y + 1)
@@ -683,11 +711,155 @@ func _height_overlays(img: Image, hg: PackedByteArray, rp: PackedByteArray, x: i
 			img.blend_rect(sc[0][up], Rect2i(0, 0, 64, 32), dst)
 		if cu != 0:
 			img.blend_rect(sc[1][cu], Rect2i(0, 0, 64, 32), dst)
+	if not _sh_tab.is_empty():
+		_shadow_overlay(img, hg, rp, x, y, lv, dst)
 	if not _hrim.is_empty():
 		if down != 0:
 			img.blend_rect(_hrim[0][down], Rect2i(0, 0, 64, 32), dst)
 		if cd != 0:
 			img.blend_rect(_hrim[1][cd], Rect2i(0, 0, 64, 32), dst)
+
+
+## Baked-shadow overlays in the 64x32 diamond frame, built once per process on the main thread (before any
+## worker bakes): the W/S cast-shadow table, the SW-diagonal corner shadows and the cliff-base AO bands.
+static func _build_shadow_tabs() -> void:
+	if not _sh_tab.is_empty():
+		return
+	var uvs := PackedVector2Array()
+	uvs.resize(64 * 32)
+	for py in 32:
+		var hw := (py + 1) * 2 if py < 16 else (32 - py) * 2   # same diamond as ViewUtil.terrain_tile_image
+		for px in 64:
+			if px < 32 - hw or px >= 32 + hw:
+				uvs[py * 64 + px] = Vector2(-1.0, -1.0)
+				continue
+			var sx := (px + 0.5 - 32.0) / 32.0
+			var sy := (py + 0.5) / 16.0
+			uvs[py * 64 + px] = Vector2(clampf((sx + sy) * 0.5, 0.0, 1.0), clampf((sy - sx) * 0.5, 0.0, 1.0))
+	var tab: Array = []
+	for lw in 5:
+		for ls in 5:
+			tab.append(null if lw == 0 and ls == 0 else _sh_img(uvs, lw, ls, 0))
+	var dg: Array = [null]
+	for ld in range(1, 5):
+		dg.append(_sh_img(uvs, 0, 0, ld))
+	var ao: Array = [null]
+	for m in range(1, 16):
+		ao.append(_ao_img(uvs, m))
+	_sh_diag = dg
+	_ao_tab = ao
+	_sh_tab = tab   # last: it is the "built" flag
+
+
+## Shadow cover (0..1) at distance d (cells) from the casting edge for a shadow q quarters of a cell long
+## (q = 4: the whole cell, soft edge beyond it).
+static func _sh_cov(d: float, q: int) -> float:
+	if q <= 0:
+		return 0.0
+	var l := 1.25 if q >= 4 else q * 0.25
+	return clampf((l - d) / SH_SOFT + 0.5, 0.0, 1.0)
+
+
+static func _sh_img(uvs: PackedVector2Array, lw: int, ls: int, ld: int) -> Image:
+	var data := PackedByteArray()
+	data.resize(64 * 32 * 4)
+	for i in 64 * 32:
+		var q: Vector2 = uvs[i]
+		if q.x < 0.0:
+			continue
+		var a := maxf(_sh_cov(q.x, lw), _sh_cov(1.0 - q.y, ls))
+		if ld > 0:
+			a = maxf(a, _sh_cov(maxf(q.x, 1.0 - q.y), ld))
+		if a <= 0.0:
+			continue
+		data[i * 4] = SH_COL.r8
+		data[i * 4 + 1] = SH_COL.g8
+		data[i * 4 + 2] = SH_COL.b8
+		data[i * 4 + 3] = int(a * SH_A * 255.0)
+	return Image.create_from_data(64, 32, false, Image.FORMAT_RGBA8, data)
+
+
+## AO band along the cliff bases in mask m (1 N: v = 0, 2 E: u = 1, 4 S: v = 1, 8 W: u = 0).
+static func _ao_img(uvs: PackedVector2Array, m: int) -> Image:
+	var data := PackedByteArray()
+	data.resize(64 * 32 * 4)
+	for i in 64 * 32:
+		var q: Vector2 = uvs[i]
+		if q.x < 0.0:
+			continue
+		var d := 9.0
+		if m & 1:
+			d = minf(d, q.y)
+		if m & 2:
+			d = minf(d, 1.0 - q.x)
+		if m & 4:
+			d = minf(d, 1.0 - q.y)
+		if m & 8:
+			d = minf(d, q.x)
+		if d >= AO_W:
+			continue
+		var t := 1.0 - d / AO_W
+		data[i * 4 + 3] = int(AO_A * t * t * 255.0)
+	return Image.create_from_data(64, 32, false, Image.FORMAT_RGBA8, data)
+
+
+## Baked cast shadow + cliff-base AO on cell (x, y) (level lv) from higher ground, by edge vertex levels
+## (ViewUtil.vtx), so a smooth ramp step casts nothing. Casters on the light side: W (x - k), S (y + k) and the
+## SW diagonal, SH_LEN cells per level of drop minus the distance; AO along every edge with a cliff above it.
+func _shadow_overlay(img: Image, hg: PackedByteArray, rp: PackedByteArray, x: int, y: int, lv: int, dst: Vector2i) -> void:
+	var w := _w
+	var h := _h
+	var near := (y > 0 and int(hg[(y - 1) * w + x]) > lv) or (x + 1 < w and int(hg[y * w + x + 1]) > lv)
+	if not near:
+		for k in range(1, 4):
+			if (x - k >= 0 and int(hg[y * w + x - k]) > lv) or (y + k < h and int(hg[(y + k) * w + x]) > lv) \
+					or (x - k >= 0 and y + k < h and int(hg[(y + k) * w + x - k]) > lv):
+				near = true
+				break
+	if not near:
+		return
+	var pv := ViewUtil.vtx(hg, rp, w, h, x, y)
+	var r_t := float(pv & 3)
+	var r_r := float((pv >> 2) & 3)
+	var r_b := float((pv >> 4) & 3)
+	var r_l := float((pv >> 6) & 3)
+	var lw := 0.0
+	var ls := 0.0
+	var ld := 0.0
+	var ao := 0
+	for k in range(1, 4):
+		if x - k >= 0 and int(hg[y * w + x - k]) > lv - 1:
+			var c := ViewUtil.vtx(hg, rp, w, h, x - k, y)   # its E edge (right, bottom) over our W edge (top, left)
+			var d := (float((c >> 2) & 3) + float((c >> 4) & 3) - r_t - r_l) * 0.5
+			lw = maxf(lw, SH_LEN * d - (k - 1))
+			if k == 1 and d > 0.4:
+				ao |= 8
+		if y + k < h and int(hg[(y + k) * w + x]) > lv - 1:
+			var c2 := ViewUtil.vtx(hg, rp, w, h, x, y + k)  # its N edge (top, right) over our S edge (left, bottom)
+			var d2 := (float(c2 & 3) + float((c2 >> 2) & 3) - r_l - r_b) * 0.5
+			ls = maxf(ls, SH_LEN * d2 - (k - 1))
+			if k == 1 and d2 > 0.4:
+				ao |= 4
+		if x - k >= 0 and y + k < h and int(hg[(y + k) * w + x - k]) > lv:
+			var c3 := ViewUtil.vtx(hg, rp, w, h, x - k, y + k)  # its right vertex over our left vertex
+			ld = maxf(ld, SH_LEN * (float((c3 >> 2) & 3) - r_l) - (k - 1))
+	if y > 0:
+		var cn := ViewUtil.vtx(hg, rp, w, h, x, y - 1)  # its S edge (left, bottom) over our N edge (top, right)
+		if (float((cn >> 6) & 3) + float((cn >> 4) & 3) - r_t - r_r) * 0.5 > 0.4:
+			ao |= 1
+	if x + 1 < w:
+		var ce := ViewUtil.vtx(hg, rp, w, h, x + 1, y)  # its W edge (top, left) over our E edge (right, bottom)
+		if (float(ce & 3) + float((ce >> 6) & 3) - r_r - r_b) * 0.5 > 0.4:
+			ao |= 2
+	var qw := clampi(roundi(lw * 4.0), 0, 4)
+	var qs := clampi(roundi(ls * 4.0), 0, 4)
+	var qd := clampi(roundi(ld * 4.0), 0, 4)
+	if qw > 0 or qs > 0:
+		img.blend_rect(_sh_tab[qw * 5 + qs], Rect2i(0, 0, 64, 32), dst)
+	elif qd > 0:
+		img.blend_rect(_sh_diag[qd], Rect2i(0, 0, 64, 32), dst)
+	if ao != 0:
+		img.blend_rect(_ao_tab[ao], Rect2i(0, 0, 64, 32), dst)
 
 
 ## Rise direction of a ramp from its packed vertex levels: 0 N, 1 E, 2 S, 3 W; -1 = flat.
@@ -845,25 +1017,36 @@ func _base_cell(x: int, y: int, biome: PackedByteArray, terrain: PackedByteArray
 		c = t.get_pixel(32, 16)  # diamond centre (top face of a raised tile): representative colour
 		_avg[code * 4 + b] = c
 	if not hmap.is_empty():
-		c = _base_height_col(c, x, y)
+		c = _base_height_col(c, x, y, b)
 	_base_img.set_pixel(x, y, c)
 
 
-## G6 far-zoom base: level tint, and the dark of a cliff face where the E or S neighbour sits lower (no ramp).
-func _base_height_col(c: Color, x: int, y: int) -> Color:
+## G6 far-zoom base: biome level tint (LEVEL_TINT_B), the dark of a cliff face where the E or S neighbour sits
+## lower (no ramp), and the baked cast shadow where the W or S neighbour sits higher (no ramp).
+func _base_height_col(c: Color, x: int, y: int, b: int = 0) -> Color:
 	var hg: PackedByteArray = hmap.height
 	var rp: PackedByteArray = hmap.ramps
 	var i := y * _w + x
 	var lv := int(hg[i])
-	var k: float = LEVEL_TINT[lv]
+	var tc: Color = LEVEL_TINT_B[clampi(b, 0, 3)][lv]
+	var k := 1.0
+	var has_rp := rp.size() == hg.size()
 	for j in [i + 1 if x + 1 < _w else -1, i + _w if y + 1 < _h else -1]:
 		if j < 0:
 			continue
 		var d := lv - int(hg[j])
-		if d >= 2 or (d == 1 and (rp.size() != hg.size() or (rp[i] == 0 and rp[j] == 0))):
-			k *= 0.62
+		if d >= 2 or (d == 1 and (not has_rp or (rp[i] == 0 and rp[j] == 0))):
+			k = 0.55
 			break
-	return Color(clampf(c.r * k, 0.0, 1.0), clampf(c.g * k, 0.0, 1.0), clampf(c.b * k, 0.0, 1.0), c.a)
+	if k == 1.0:
+		for j in [i - 1 if x > 0 else -1, i + _w if y + 1 < _h else -1]:
+			if j < 0:
+				continue
+			var d := int(hg[j]) - lv
+			if d >= 2 or (d == 1 and (not has_rp or (rp[i] == 0 and rp[j] == 0))):
+				k = 1.0 - SH_A * 0.9
+				break
+	return Color(clampf(c.r * tc.r * k, 0.0, 1.0), clampf(c.g * tc.g * k, 0.0, 1.0), clampf(c.b * tc.b * k, 0.0, 1.0), c.a)
 
 
 ## Per frame (MatchView._process): lazy maps bake chunks near the view on worker threads.
@@ -896,9 +1079,11 @@ func tick() -> void:
 		lo = Vector2i(mini(lo.x, floori(wp.x)), mini(lo.y, floori(wp.y)))
 		hi = Vector2i(maxi(hi.x, ceili(wp.x)), maxi(hi.y, ceili(wp.y)))
 	var want: Array = []
-	var mg := 2 if hmap.is_empty() else 4  # G6: raised tiles reach into view from below the screen edge
-	for cy0 in range(maxi(0, (lo.y - 2) / CHUNK) * CHUNK, mini(_h, hi.y + mg), CHUNK):
-		for cx0 in range(maxi(0, (lo.x - 2) / CHUNK) * CHUNK, mini(_w, hi.x + mg), CHUNK):
+	# G6: raised tiles reach into view from below the screen edge, valleys from above (16 px per cell step)
+	var mg := 2 if hmap.is_empty() else 2 + ceili(ViewUtil.lift_px(ViewUtil.MAX_LEVEL) / 16.0)
+	var mt := 2 if hmap.is_empty() else 2 + ceili(ViewUtil.level_px / 16.0)
+	for cy0 in range(maxi(0, (lo.y - mt) / CHUNK) * CHUNK, mini(_h, hi.y + mg), CHUNK):
+		for cx0 in range(maxi(0, (lo.x - mt) / CHUNK) * CHUNK, mini(_w, hi.x + mg), CHUNK):
 			var key := Vector2i(cx0, cy0)
 			_seen[key] = _frame
 			if not _chunks.has(key) and not _pending.has(key):

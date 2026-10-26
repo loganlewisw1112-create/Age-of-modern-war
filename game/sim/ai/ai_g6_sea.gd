@@ -20,6 +20,10 @@ const TRADE_MAX := 100             # units per trade (the market's own limit is 
 const TRADE_HEADROOM := 800        # credits kept after a buy
 const FLOORS := {"salvage": 150, "ore": 100, "ammo": 400, "fuel": 300}
 const SURPLUS := {"salvage": 1500, "ore": 900}
+## AI7-USE-5: with RICH_SPARE credits beyond the bank, salvage / ore are bought up to the floor plus
+## RICH_STOCK (valley d5 s2: the Machine sat on 11811 credits with 150 salvage, army 19 of a 56 wave)
+const RICH_SPARE := 2500
+const RICH_STOCK := {"salvage": 600, "ore": 300}
 const BROKE := 250
 const SELL_BATCH := 60             # AI7-USE-4: units per sale while saving for the bank
 const PARK := 3000
@@ -142,8 +146,11 @@ static func _market(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g: D
 	var spare := int(f.credits) - int(res.get("credits", 0)) - TRADE_HEADROOM
 	var amount := 0
 	var pick := ""
+	var rich := spare >= RICH_SPARE
 	for r in ["salvage", "ore", "ammo", "fuel"]:
 		var need := int(FLOORS[r]) + int(res.get(r, 0)) - _have(w, fid, r)
+		if rich and RICH_STOCK.has(r):
+			need += int(RICH_STOCK[r])  # AI7-USE-5: idle credits buy the army's salvage / ore
 		if r == "salvage" and U.salvage_scarce(w, fid, st):
 			need = maxi(need, 2 * int(FLOORS[r]) - _have(w, fid, r))
 		if need <= 0 or w.tick - int((g.get("mkt_sold", {}) as Dictionary).get(r, -1000000)) < CHURN:

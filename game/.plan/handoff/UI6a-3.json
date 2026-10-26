@@ -1,0 +1,30 @@
+{
+  "agent": "UI6a-3",
+  "gen": 3,
+  "calls_used": 94,
+  "tokens_used_est": 352000,
+  "done": [
+    "1. presentation/ui5/kit/fit_screens.gd NAMES: + ui5b_g6_infantry, ui5b_g6_vehicles, ui5b_g6_engineer, ui5b_g6_garage, ui5b_g6_research (UI6b-2 CR 1098). 30 screens.",
+    "2. presentation/hud/g3_score.gd: const Waves; static wave_line(w) from Waves.next_wave ('Next wave i/N in m:ss  (K destroyed)', 'Wave i/N incoming!', 'Waves: all N sent, K destroyed'; endless omits /N); rows() appends it (AMBER, 12) when non-empty.",
+    "3. tests/test_ui6a.gd: test_research_rows_and_wave_line, test_garrisoned_unit_not_pickable, test_inspector_high_ground_line.",
+    "4. ORCH-forwarded PT6 CR 1192: presentation/match_view.gd static is_garrisoned(e); entity_at, _marquee_select, _select_same_def_on_screen skip garrisoned units (click falls through to the building).",
+    "5. ORCH-forwarded PT6 CR 1193: presentation/hud/hud.gd const Elevation; static high_ground_line(w, ents) 'HIGH GROUND (height N)  +X% range, +Y sight' appended to the inspector info (single, multi, company card) via _append_high_ground.",
+    "6. Screenshot fixes: commanders_panel.formation_label ('co:1' -> 'Company 1', 'army:2' -> 'Army 2'); hud _inspect_company unit grid SIZE_EXPAND_FILL (was one icon wide).",
+    "7. tools/ui_fit_test.gd: --fit-full saves each screen full size (<screen>_<W>x<H>_s<scale>.png) in windowed runs.",
+    "8. Board: CR 820 / 877 acked (1223/1224), PT6 1192/1193 acked (1287/1286, fact garrison.pick 1217); CR to orch 1289 (UI6b 150% overlaps)."
+  ],
+  "test_state": {
+    "test_ui6a": "RESULT pass=8 fail=0 / TESTS OK, 0 SCRIPT ERROR (after last edit)",
+    "test_hud": "RESULT pass=4 fail=0 / TESTS OK",
+    "test_ui3": "RESULT pass=7 fail=0 / TESTS OK",
+    "test_ui_panels": "RESULT pass=5 fail=0 / TESTS OK",
+    "test_ui_fit": "final direct run (.plan/shots/UI6a-3/test_ui_fit_final.log): FIT RESULT screens=210 controls=25872 issues=0 (7 res, 100%); FIT RESULT screens=180 controls=21968 issues=0 (3 res, 0.75/1.5); RESULT pass=3 fail=0, 0 SCRIPT ERROR. The earlier 150% failure (13 overlaps on ui5b_g6_*) was fixed by UI6b-3 (CR 1289) while this run was in progress."
+  },
+  "remaining": [
+    "None for UI6a. PT6 reruns its garrison and elev flows. ORCH's full-suite heartbeat re-confirms test_ui_fit on a settled tree."
+  ],
+  "gotchas": [
+    "tests/run.sh filters output and deletes the raw log: for raw FIT RESULT lines run `$G --headless --path . -s tests/run_tests.gd -- --only=test_ui_fit` directly and grep SCRIPT ERROR yourself.",
+    "Windowed captures: check (Get-Process | ? MainWindowTitle -like 'RTS: Age of Modern War*').Count <= 1 first (max 2 machine-wide)."
+  ]
+}

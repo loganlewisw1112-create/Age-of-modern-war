@@ -27,6 +27,8 @@ const HudExtras = preload("res://presentation/ui5/kit/hud_extras.gd")
 const Ui6aHub = preload("res://presentation/ui6/a/ui6a_hub.gd")          # G6 (UI6a): market, army builder, forces, commanders
 const CompanyCard = preload("res://presentation/ui6/a/company_card.gd")
 const Companies = preload("res://sim/systems/companies.gd")
+const Progression = preload("res://sim/systems/progression.gd")       # G6 (UI6a): research_list (side's faction only)
+const Elevation = preload("res://sim/systems/elevation.gd")           # G6 (UI6a, PT6 CR 1193): HIGH GROUND inspector tag
 const TOP_H := 34.0        # G5 layout (virtual canvas px; ScaledLayer scales them)
 const BOTTOM_H := 220.0    # keep <= 222: UI5b's cargo strip sits right above it (-284..-222)
 const EDGE_M := 12.0
@@ -709,6 +711,7 @@ func _refresh_selection(w: SimWorld) -> void:
 			info = "%d remaining" % int(e.amount)
 			_insp_hp.visible = false
 		_insp_info.text = info
+		_append_high_ground(w, ents)
 		_set_card_for(e, ents, w)
 	else:
 		var counts: Dictionary = {}
@@ -737,7 +740,36 @@ func _refresh_selection(w: SimWorld) -> void:
 				nm = Content.building(String(d))
 			_insp_counts.add_child(HT.make_label("%s x%d   " % [String(nm.get("name", d)), int(counts[d])], HT.TEXT, 14))
 		_inspect_company(w, ents)
+		_append_high_ground(w, ents)
 		_set_card_for(ents[0], ents, w)
+
+
+## G6 (UI6a, PT6 CR 1193): "HIGH GROUND +10% range, +2 sight" when a selected ground unit stands above
+## plain (Elevation.height_at >= 2); the highest unit of the selection gives the bonus. "" otherwise.
+## Pure; testable headless.
+static func high_ground_line(w: SimWorld, ents: Array) -> String:
+	if w == null:
+		return ""
+	var best = null
+	var best_lv := Elevation.PLAIN
+	for e in ents:
+		if typeof(e) != TYPE_DICTIONARY or String(e.get("kind", "")) != "unit" or not e.has("pos") or Elevation.is_air(e):
+			continue
+		var lv := Elevation.height_at(w, Vector2i(floori(e.pos.x), floori(e.pos.y)))
+		if lv > best_lv:
+			best_lv = lv
+			best = e
+	if best == null or best_lv < 2:
+		return ""
+	var rm := Elevation.range_mult(w, best, Content.unit(String(best.def)))
+	var sb := Elevation.sight_bonus(w, best)
+	return "HIGH GROUND (height %d)  +%d%% range, +%d sight" % [best_lv, int(round((rm - 1.0) * 100.0)), int(round(sb))]
+
+
+func _append_high_ground(w: SimWorld, ents: Array) -> void:
+	var hg := high_ground_line(w, ents)
+	if hg != "":
+		_insp_info.text += "\n" + hg
 
 
 func _status_text(st: String) -> String:
@@ -858,14 +890,30 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 	_fit_card()
 
 
+## G6 (UI6a): the research projects this side can see, from Progression.research_list (the sim hides
+## other factions' projects), in the G3b card order (for_stage, then content order). Pure; testable headless.
+static func research_rows(w: SimWorld, fid: int) -> Array:
+	if w == null or not w.factions.has(fid):
+		return []
+	var vis := {}
+	for r in Progression.research_list(w, fid):
+		vis[String(r.id)] = r
+	var out: Array = []
+	for pid in G3bData.project_ids_sorted():
+		if vis.has(String(pid)):
+			out.append(vis[String(pid)])
+			vis.erase(String(pid))
+	for pid in vis:   # projects only the sim table lists: after the sorted ones, in content order
+		out.append(vis[pid])
+	return out
+
+
 ## G3b: research projects on a research building (start; cancel while one is active).
 func _add_research_buttons(bid: int) -> void:
 	_card_title.text = "RESEARCH   (one project at a time; progress is kept if the building is lost)"
-	var fdef := G3.faction_def(_world(), _pf())
-	var ps: Dictionary = G3bData.research_projects()
-	for pid in G3bData.project_ids_sorted():
-		var p: Dictionary = ps[pid]
-		var btn := _card_button(G3bData.project_name(String(pid), fdef), "%s  %ds" % [HT.cost_text(p.get("cost", {})), int(p.get("time", 0))], "", "")
+	for p in research_rows(_world(), _pf()):
+		var pid := String(p.id)
+		var btn := _card_button(String(p.name), "%s  %ds" % [HT.cost_text(p.get("cost", {})), int(p.get("time", 0))], "", "")
 		btn.name = "Research_" + String(pid)
 		btn.pressed.connect(_issue.bind({"type": "research", "project": String(pid), "building_id": bid}))
 		_card_buttons.append({"btn": btn, "kind": "research", "project": String(pid), "building": bid})
@@ -920,7 +968,10 @@ func _inspect_company(w: SimWorld, ents: Array) -> bool:
 	for ch in _insp_counts.get_children():
 		_insp_counts.remove_child(ch)
 		ch.queue_free()
-	_insp_counts.add_child(CompanyCard.unit_grid(cm.units, 24.0))
+	var grid := CompanyCard.unit_grid(cm.units, 24.0)
+	# the grid is a flow inside the counts flow: let it take the whole line (it was one icon wide)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_insp_counts.add_child(grid)
 	_insp_counts.visible = true
 	return true
 

@@ -13,12 +13,15 @@ const Progression = preload("res://sim/systems/progression.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
+const G6Place = preload("res://presentation/ui6/b/g6_place.gd")
 
 const PANEL_W := 640.0
 const MARK := {"done": "[x]", "active": "[>]", "ready": "[ ]", "locked": "[-]"}
+const COL_SEP := 12.0
 
 var hud
 var panel: PanelContainer
+var scroll: ScrollContainer    # body scroller, capped to the room above the card (G6Place; UI6b-3)
 var title: Label
 var grid: GridContainer
 var stage_lines: Label
@@ -45,14 +48,20 @@ func build(root: Control) -> void:
 	root.add_child(panel)
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", 2)
-	panel.add_child(body)
+	scroll = UiKit.scroll(body)
+	scroll.name = "ResearchG6Scroll"
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(scroll)
 	title = UiKit.label("G6 RESEARCH", "header")
 	title.name = "ResearchG6Title"
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size = Vector2(PANEL_W - 24.0, 0)
 	body.add_child(title)
 	grid = GridContainer.new()
 	grid.name = "ResearchG6Grid"
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("h_separation", int(COL_SEP))
 	grid.add_theme_constant_override("v_separation", 0)
 	body.add_child(grid)
 	stage_lines = UiKit.label("", "small")
@@ -60,6 +69,29 @@ func build(root: Control) -> void:
 	stage_lines.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	stage_lines.custom_minimum_size = Vector2(PANEL_W - 24.0, 0)
 	body.add_child(stage_lines)
+
+
+## Project label width (one of two grid columns) for an inner width.
+static func col_w(inner: float) -> float:
+	return floorf((inner - COL_SEP) * 0.5) - 2.0
+
+
+## Content widths for an inner width (G6Place.place callback).
+func _set_w(inner: float) -> void:
+	title.custom_minimum_size.x = inner
+	stage_lines.custom_minimum_size.x = inner
+	for l in grid.get_children():
+		(l as Control).custom_minimum_size.x = col_w(inner)
+
+
+## Size and place the panel in the room above the card (between the HUD side columns, below PAUSED); the body
+## takes the mouse (wheel scrolling) only while it scrolls.
+func place() -> void:
+	if panel == null or not panel.visible:
+		return
+	G6Place.place(hud, panel, scroll, PANEL_W, _set_w)
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS if scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED \
+		else Control.MOUSE_FILTER_IGNORE
 
 
 func reset() -> void:
@@ -154,6 +186,7 @@ func update_state(w: SimWorld) -> void:
 	var stage := int(f.get("stage", 8))
 	var sig := "%s|%d|%s" % [str(texts), stage, Progression.can_advance(w, pf)]
 	if sig == _sig:
+		place()
 		return
 	_sig = sig
 	title.text = "G6 RESEARCH   %d projects  ([x] done  [>] active  [ ] ready  [-] locked)" % rows.size()
@@ -168,6 +201,8 @@ func update_state(w: SimWorld) -> void:
 		l.mouse_filter = Control.MOUSE_FILTER_PASS
 		grid.add_child(l)
 	_stage10(w, pf, fdef, stage, gate_ids, gate_done)
+	place()
+	place.call_deferred()   # again once the new widths are laid out (wrapped label heights)
 
 
 func _stage10(w: SimWorld, pf: int, fdef: String, stage: int, gate_ids: Array, gate_done: bool) -> void:

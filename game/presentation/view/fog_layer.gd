@@ -42,7 +42,7 @@ uniform sampler2D vis_tex : filter_nearest;
 uniform sampler2D exp_tex : filter_nearest;
 uniform sampler2D h_tex : filter_nearest;
 uniform float explored_a = 0.470588;
-uniform float level_px = 16.0;
+uniform float level_px;   // set from ViewUtil.level_px in _sync_height (no literal lift here)
 varying vec2 cpos;
 float fog_at(ivec2 c, ivec2 sz) {
 	c = clamp(c, ivec2(0), sz - ivec2(1));

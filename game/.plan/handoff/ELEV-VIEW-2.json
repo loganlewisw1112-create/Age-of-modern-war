@@ -1,0 +1,18 @@
+{
+  "agent": "ELEV-VIEW-2",
+  "written_by": "orch",
+  "reason": "guard STALE x2 at 11:24 local; ORCH TaskStop (agent was idle waiting on its own background caller-test run)",
+  "last_status_seq": 1056,
+  "done": [
+    "test_elev_view 5/5 (TESTS OK)",
+    "natural cliff faces by biome (earth/rock/sand); wall/brick only under man-made ground",
+    "corner-notch fix (ViewUtil._corner_fill), stronger level tint 0.76/1/1.14/1.27 and slope shading",
+    "terrain_layer.lift_px published (PackedFloat32Array y*w+x); ViewUtil.ground_lift exact per point",
+    "real match screenshots v2: .plan/shots/ELEV-VIEW-2/valley_conquest_{hill,mid,valley,far}.png",
+    "zoomed-out fps valley_conquest_l (zoom 0.188): min 49, avg 52.3, vsync on, CPU 100% machine-wide"
+  ],
+  "remaining": [
+    "caller --only tests (test_art_g4_terrain, test_view5, test_view6, test_editor_core/g5/g6/scenario, test_terrain_classes): covered by the ORCH full suite",
+    "optional: bolder in-game height (taller cliff faces, stronger tint/shadows) if the owner asks"
+  ]
+}

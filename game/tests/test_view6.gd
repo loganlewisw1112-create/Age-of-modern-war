@@ -279,7 +279,7 @@ class HView:
 
 
 ## VIEW6-2: ART-G6b fx_g6 sheets / command icons through ArtCatalog, the officer `command` pose column, and
-## CR 822 (fx + overlays draw at ViewUtil.world_to_screen_h: plateau +16 px per level, ramps exact).
+## CR 822 (fx + overlays draw at ViewUtil.world_to_screen_h: plateau +ViewUtil.level_px per level, ramps exact).
 func test_g6b_sheets_command_pose_and_height_lift() -> void:
 	const VU = preload("res://presentation/view/view_util.gd")
 	for nm in ["mine_marker", "garrison_pip", "sonar_ping"]:
@@ -322,11 +322,11 @@ func test_g6b_sheets_command_pose_and_height_lift() -> void:
 	var ov = load("res://presentation/view/overlay_layer.gd").new()
 	ov.mv = hv
 	var top := Vector2(2.5, 2.5)
-	check(fx._w2s(top).is_equal_approx(hv.world_to_screen(top) - Vector2(0, 16)), "fx on a level-2 plateau drawn 16 px up")
-	check(ov._w2s(top).is_equal_approx(fx._w2s(top)) and is_equal_approx(ov._lift(top, {}), 16.0), "overlay rings / bars use the same lift")
+	check(fx._w2s(top).is_equal_approx(hv.world_to_screen(top) - Vector2(0, VU.level_px)), "fx on a level-2 plateau drawn level_px (%.1f px) up" % float(VU.level_px))
+	check(ov._w2s(top).is_equal_approx(fx._w2s(top)) and is_equal_approx(ov._lift(top, {}), float(VU.level_px)), "overlay rings / bars use the same lift")
 	var mid := Vector2(1.5, 2.5)
 	var lm: float = VU.ground_lift(tl.hm, mid)
-	check(lm > 0.5 and lm < 15.5 and fx._w2s(mid).is_equal_approx(VU.world_to_screen_h(tl.hm, mid)), "mid-ramp lift is the exact slope (%.2f px)" % lm)
+	check(lm > 0.5 and lm < float(VU.level_px) - 0.5 and fx._w2s(mid).is_equal_approx(VU.world_to_screen_h(tl.hm, mid)), "mid-ramp lift is the exact slope (%.2f px)" % lm)
 	check(fx._w2s(Vector2(0.5, 0.5)).is_equal_approx(hv.world_to_screen(Vector2(0.5, 0.5))), "plain cells draw exactly as before")
 	hv.terrain_layer = null
 	check(fx._w2s(top).is_equal_approx(hv.world_to_screen(top)), "flat map (no terrain height): old iso spot")

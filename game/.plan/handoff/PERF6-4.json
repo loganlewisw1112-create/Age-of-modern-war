@@ -1,0 +1,45 @@
+{
+  "agent": "PERF6-4",
+  "gen": 4,
+  "status": "partial: path-queue priority (ORCH decision) done and hash-neutral on the GOLD; native morale_scan + fog_gather ported (rts_core 0.5.1, swapped) and hash-exact; 10k elevated target NOT met (~150 ms/tick under load vs <= 62.5)",
+  "done": [
+    "Path queue priority (sim/systems/movement.gd: _qpk, _qk, _q_after, _q_put, _q_merge; order_path immediate-service rule; apply_command sets _q_size): budget stays 40/tick; served in ascending (pk, req). pk 0 (no 'pk' key) = owner is not an AI side (factions[owner].is_ai false): player orders, chases, repaths, FIFO, always ahead of AI entries; a player request is served at once when only AI entries are queued and budget is left. AI sides: pk = 1 + enqueue tick + min(group size, Q_SIZE_CAP=200)/2 (smaller groups first among same-age requests, a mass order is delayed at most 100 ticks behind a later single request: never starved). Out-of-order AI entries wait in sys_state.movement.qin (key present only while non-empty), merged at the next drain with O(n) slices. Worlds with no AI side are byte-identical to before (no pk / qin keys).",
+    "Native morale FULL loop: native/rts_core/src/morale_scan.rs (RtsCombat.morale_scan): cover test (forest or _cover_index rects, Rect2 f32 math ported), in_cover write, steady exit, _update_unit writes (supp, pinned, morale; Math::snapped / CLAMP ported); _break/_rally stay in GDScript, called after the batch in list order. Used only when the G6 MORALE bit is clear. morale.gd: native_scan toggle, _cover_rects, _native_full (per-id max-morale table in w.cache.mor_mmax, need protocol, falls back to the GDScript loop with no writes).",
+    "Native fog source gather: native/rts_core/src/fog_gather.rs (RtsCombat.fog_gather): per-def sight caches (_usight/_bsight), Status.sight_mult (comp.sensors, jammed_until x per-owner jam_mult), Elevation.sight_bonus height term (map_level - PLAIN) x _sight (aircraft 0), stamp key, first-wins per root in GDScript insertion order; returns [cells, sights] per root straight into the RtsFog stamp step. Used only when the SIGHT hook does not run and the native stamp path is live. fog.gd: native_gather toggle, _uair cache, _native_gather.",
+    "rts_core 0.5.0 -> 0.5.1 (Cargo.toml; lib.rs mods; combat.rs #[func]s), built with build_native.sh --stage, sandbox-tested (scratchpad tree2), installed with --swap (bin/rts_core.dll 1619968 bytes; 0.5.0 kept as bin/rts_core.prev94063_1.dll until the next install).",
+    "Toggles in the A/B paths: tests/test_hot_state.gd _perf_paths/_perf_ab now flip Morale.native_scan and Fog.native_gather (consts Morale/Fog added); tools/scale_bench.gd --morale-native=on|off and --fog-native=on|off.",
+    "tests/test_perf_g6.gd: test_path_queue_priority_player_first_then_small_groups (player head of queue, small AI group served before the mass AI order, mass order drains, non-AI worlds keep plain FIFO entries)."
+  ],
+  "evidence": [
+    "test_hot_state 17/17 TESTS OK with the priority rule (live tree, 0 SCRIPT ERROR, 11:03-11:16, CPU 82-85%, 11-13 godots): GOLD unchanged (bench sides are non-AI).",
+    "test_mil TESTS OK, test_ai 18/18 TESTS OK (priority rule; CPU 100%, 23 godots).",
+    "test_perf_g6 6/7: priority test PASS; test_elevation_cost_within_budget_probe FAIL 9.50 ms/tick at 2k <= 5 at CPU 100% / 20 godots (timing probe; PERF6-3 logs show it both PASS and FAIL 10.42 under load).",
+    "Sandbox (rts_core 0.5.1, natives on): AB 2k_fight/on f500b7eb, 10k_fight/on cc7e99ac (both == GOLD), 2k_fight_elev/on f500b7eb with natives on AND with --morale-native=off --fog-native=off.",
+    "10k fight valley_conquest_l (authored height) native, 80 ticks, --breakdown, sandbox, one run at a time, CPU 97% -> 74%, 16 -> 5 godots: natives on 150.5 ms/tick avg (p95 214.5) vs natives off 159.2 (p95 204.3); hash 70acd0ed both (== PERF6-3's 80-tick hash). morale 9.1 -> 5.4 ms (mor.full 8.84 -> 5.15), fog 11.0 -> 7.0 (fog.gather 9.34 -> 6.30). Breakdown (on): combat 70.8 (cmb.np 31.8, cmb.act 27.8, cmb.ngrid 9.8), movement 35.3 (mv.ng_call 13.2, mv.drain 12.6, mv.apply 4.9, mv.native_step 4.5), supply 10.9, fog 7.0, morale 5.4, economy 4.1, victory 2.7."
+  ],
+  "remaining": [
+    "1. 10k elevated <= 62.5 (now ~150 under load). cmb.np 31.8 is the dict-read floor of RtsCombat.prep_units_ids (~11 Dictionary lookups/writes per unit: pos, firing, cd_ticks, cooldown, target, broken, moving, order.type, ...); packed arrays need every writer of target/order/cd/firing to go through HotState (CORE10K-3 item 3: ~90 writer sites across ~18 files) = a multi-agent wave; in-place pointer writes would save only ~1 lookup per firing unit. Next real targets: cmb.act 27.8 (_unit_tick GDScript for ~2900 code-0 units/tick: profile with Combat.prof_units), mv.ng_call 13.2, mv.drain 12.6 (40 served x ~0.3 ms: _resolve + native find_path tail), supply 10.9, cmb.ngrid 9.8.",
+    "2. Morale/fog natives are at their dict floor (mor.full ~2 us/unit per update, fog.gather ~0.65 us/entity): further gains need the same packed state.",
+    "3. Path-queue priority: ORCH may tune Q_SIZE_CAP (200 -> max 100-tick delay of a mass AI order); watch AI soaks for behaviour shifts (test_ai 18/18 already green).",
+    "4. fps harness 10k case still not run (machine never quiet): godot --headless --path . -s tools/bench.gd -- --fps; ORCH final numbers on a quiet PC."
+  ],
+  "files_touched": [
+    "sim/systems/movement.gd (path-queue priority)",
+    "sim/systems/morale.gd (native_scan, _cover_rects, _native_full, NativeCore preload)",
+    "sim/systems/fog.gd (native_gather, _uair, _native_gather; stamp step takes native arrays)",
+    "native/rts_core/src/morale_scan.rs (new), native/rts_core/src/fog_gather.rs (new), native/rts_core/src/combat.rs, native/rts_core/src/lib.rs, native/rts_core/Cargo.toml (0.5.1)",
+    "bin/rts_core.dll (0.5.1 via --swap)",
+    "tests/test_hot_state.gd (toggles only; GOLD untouched), tests/test_perf_g6.gd (priority test)",
+    "tools/scale_bench.gd (--morale-native, --fog-native)",
+    ".plan/handoff/PERF6-4.json"
+  ],
+  "test_state": "see final report: live owned-test chain after the swap in scratchpad chain.log (test_hot_state, test_native, test_perf, test_perf_g6, test_damage, test_thread, test_perf_systems, test_mil)",
+  "gotchas": [
+    "tests/run.sh --only=<name> takes the basename WITHOUT .gd (test_hot_state.gd runs nothing: files=0)",
+    "sim scripts are not class_names: Morale/Fog/Combat in tests need const preloads; morale.gd must not preload combat.gd (shared RtsCombat is read from w.cache.combat_lc instead)",
+    "scale_bench --ab ignores --native=on (always runs on and off; off is slow at 10k)",
+    "the main-project compile check does not compile tests/: use godot --headless --path . --check-only -s tests/<file>.gd",
+    "native morale/fog run only when the G6 MORALE / SIGHT hook bits are clear; with companies/auras/aerostats present the GDScript loops run (hooks are GDScript)"
+  ],
+  "open_crs": []
+}

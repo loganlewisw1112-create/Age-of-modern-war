@@ -120,13 +120,36 @@ static func _ph() -> Texture2D:
 	return _placeholder
 
 
+## Raw file decode (same decoder, same pixels as Image.load_from_file). Decoding the
+## bytes ourselves skips Godot's "Loaded resource as image file, this will not work
+## on export" warning that load_from_file prints for every IMPORTED res:// PNG (36 per
+## test_view6 run: G5 command icons, a_drone_recon, mbt). Exported builds have no raw
+## PNG and take the ResourceLoader branch in _image.
+static func _raw_image(p: String) -> Image:
+	var ext := p.get_extension().to_lower()
+	if ext != "png" and ext != "jpg" and ext != "jpeg" and ext != "webp":
+		return Image.load_from_file(p)
+	var bytes := FileAccess.get_file_as_bytes(p)
+	if bytes.is_empty():
+		return null
+	var img := Image.new()
+	var err := OK
+	if ext == "png":
+		err = img.load_png_from_buffer(bytes)
+	elif ext == "webp":
+		err = img.load_webp_from_buffer(bytes)
+	else:
+		err = img.load_jpg_from_buffer(bytes)
+	return img if err == OK else null
+
+
 static func _image(rel: String) -> Image:
 	if _imgs.has(rel):
 		return _imgs[rel]
 	var img: Image = null
 	var p := rel if rel.begins_with("res://") else BASE + rel  # G5 groups carry absolute paths
 	if rel != "" and FileAccess.file_exists(p):
-		img = Image.load_from_file(p)  # running from source: raw PNG
+		img = _raw_image(p)  # running from source: raw PNG
 	elif rel != "" and ResourceLoader.exists(p):
 		# exported build: only the imported (lossless) texture is packed, not the raw PNG
 		var tex = load(p)

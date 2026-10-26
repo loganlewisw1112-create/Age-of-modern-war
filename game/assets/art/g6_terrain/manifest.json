@@ -1,0 +1,79 @@
+{
+  "faces": {
+    "block": [
+      64,
+      96
+    ],
+    "file": "faces.png",
+    "style_of_code": {
+      "0": 0,
+      "1": 0,
+      "10": 1,
+      "11": 2,
+      "12": 1,
+      "13": 0,
+      "14": 3,
+      "2": 3,
+      "3": 0,
+      "4": 1,
+      "5": 3,
+      "6": 1,
+      "7": 1,
+      "8": 3,
+      "9": 1
+    },
+    "styles": [
+      "earth",
+      "rock",
+      "sand",
+      "wall"
+    ]
+  },
+  "files": {
+    "faces.png": "d7225652589231eed63a6e4331e1f73e",
+    "hrim.png": "732f3bc719041ed89574f14b7bd538bb",
+    "hscree_0.png": "0d28f9087916d0c73d0aea9a327b2e0f",
+    "hscree_1.png": "44f7d813fb7b9efba28c2d45e53c5035",
+    "hscree_2.png": "c23fb808628fbc17c5e3b9eea39f1fb7",
+    "hscree_3.png": "c52bdabfadae212ba70855dbafdf357a",
+    "rail_b0.png": "0c0302084b2edb140999ade84a1edbe9",
+    "rail_b1.png": "7184383fe677aa73894472007d64535a",
+    "rail_b2.png": "6dd710d75dcd21914c4c202008a8cbb3",
+    "rail_b3.png": "fb0fc78b92cc915497f918d1525bf1f0",
+    "rail_tracks.png": "b53e5f2b7bdd8e9f50320622a050f061",
+    "ramp.png": "d7d5132c0cb705a2434f89f3f1d6459a"
+  },
+  "group": "g6_terrain",
+  "level_px": 32,
+  "rail": {
+    "base": [
+      "rail_b0.png",
+      "rail_b1.png",
+      "rail_b2.png",
+      "rail_b3.png"
+    ],
+    "code": 14,
+    "tracks": "rail_tracks.png"
+  },
+  "ramp": {
+    "block": [
+      64,
+      32
+    ],
+    "dirs": [
+      "N",
+      "E",
+      "S",
+      "W"
+    ],
+    "file": "ramp.png"
+  },
+  "rim": "hrim.png",
+  "scree": [
+    "hscree_0.png",
+    "hscree_1.png",
+    "hscree_2.png",
+    "hscree_3.png"
+  ],
+  "version": 1
+}

@@ -21,6 +21,7 @@ func _fit(res: Array, scales: String) -> Dictionary:
 	for ln in text.split("\n"):
 		var l := String(ln)
 		if l.begins_with("FIT RESULT"):
+			print("    [%s scales %s] %s" % [",".join(PackedStringArray(res)), scales, l])   # raw line for the run log (G6 UI6a)
 			for part in l.split(" "):
 				if part.begins_with("screens="):
 					r.screens = int(part.get_slice("=", 1))

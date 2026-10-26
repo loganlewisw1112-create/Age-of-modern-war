@@ -14,6 +14,8 @@ const SAFE_GATHER_DIST := 22.0
 const CREWS_PER_SITE := 2
 const AMMO_FLOOR := 400   # G2 faction stock floors (same values as ai_logistics.gd)
 const FUEL_FLOOR := 300
+const SAL_LOW := 600        # AI7-USE-6: below this, salvage outranks the bank's ore (manage_gather)
+const SAL_FIRST_ORE := 0.34 # share of crews left on ore while salvage comes first
 
 
 ## The next building this side wants, or "". Power is counted for planned (unfinished) buildings too.
@@ -252,6 +254,16 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 			want_ore = int(round(float(n_eng) * 0.6))
 	elif ore < 150:
 		want_ore = 1
+	# AI7-USE-6: salvage first while it is the larger shortfall (valley d6 s1: Human A 6 of 8 crews on
+	# ore with 733 ore / 70 salvage, the Machine 5 of 6 with 12 ore / 344 salvage; every unit costs
+	# salvage, so both armies sat under the launch threshold for the last 60k ticks and the match drew).
+	# The refinery / ammo rules below still raise ore crews when the ammo or fuel stock runs short.
+	var res4: Dictionary = st.get("g4", {}).get("reserve", {})
+	var hold_ore := int(res4.get("ore", 0))
+	var sal_first := has_mp and sal < SAL_LOW \
+			and int(res4.get("salvage", 0)) + SAL_LOW - sal > hold_ore + 200 - ore
+	if sal_first:
+		want_ore = mini(want_ore, int(round(float(n_eng) * SAL_FIRST_ORE)))
 	# G2: a working refinery eats 20 ore / 6 s; keep crews on ore while fuel/ammo stock is short
 	var stock_low := int(f.stock.get("ammo", 0)) < AMMO_FLOOR or int(f.stock.get("fuel", 0)) < FUEL_FLOOR
 	if int(ctx.built.get(U.role(w, fid, "refinery"), 0)) > 0 and stock_low and ore < 1500:
@@ -262,8 +274,7 @@ static func manage_gather(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary
 		want_ore = maxi(want_ore, n_eng - 1)
 	# G3b: the stage bank holds ore (8->9 research + advance) while the refinery eats 20 ore / 6 s:
 	# put most crews on ore until the bank's ore is on hand (salvage piles up unused late game)
-	var hold_ore := int(st.get("g4", {}).get("reserve", {}).get("ore", 0))
-	if hold_ore > 0 and ore < hold_ore + 200 and has_mp:
+	if hold_ore > 0 and ore < hold_ore + 200 and has_mp and not sal_first:
 		want_ore = maxi(want_ore, int(round(float(n_eng) * 0.75)))
 	var known := U.known_resources(w, fid, st.g2.pub_res)
 	var left := {"ore": 0, "salvage": 0}
@@ -343,9 +354,29 @@ const LATE_CREW_CR := 1500
 const LATE_CREW_POP := 15
 
 
+const SAL_STARVED := 300       # AI7-USE-6: late salvage-starved crew boost (crew_cap)
+const SAL_STARVED_LEFT := 5000
+const SAL_STARVED_CREWS := 4
+const SAL_STARVED_CR := 300
+
+
+## AI7-USE-6: late game, salvage starved with salvage still on the map and supply to spare, a few
+## more crews even when credits are short (valley d6 s1: Human A 8 crews, 70 salvage, 56k salvage
+## left, army 29 under a 56 threshold for 60k ticks; heartland / custom d4-d5 ended the same way:
+## no unit can be built without salvage, so the credits wait on it anyway).
+static func crew_cap(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> int:
+	var cap := _crew_cap0(w, fid, st, ctx)
+	var f: Dictionary = w.factions[fid]
+	if w.tick >= LATE_CREW_TICK and int(f.stock.salvage) < SAL_STARVED and int(f.credits) >= SAL_STARVED_CR \
+			and int(st.get("gather_plan", {}).get("salvage_left", 0)) >= SAL_STARVED_LEFT \
+			and int(f.pop) <= int(f.pop_cap) - 4:
+		cap = maxi(cap, int(U.diff(w, fid).max_engineers) + SAL_STARVED_CREWS)
+	return cap
+
+
 ## AI4-3: the difficulty's crew cap, raised while a big army is starved of materials and credits
 ## pile up (heartland soak1: 100-pop Human B army 56/88 dry of ammo, 9000 credits idle, 8 crews).
-static func crew_cap(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> int:
+static func _crew_cap0(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> int:
 	var base := int(U.diff(w, fid).max_engineers)
 	# only once the army is out and big (the opening keeps its credits for the first waves)
 	var f: Dictionary = w.factions[fid]

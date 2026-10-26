@@ -148,14 +148,14 @@ static func fallback_sprite(e: Dictionary, team: Color) -> Dictionary:
 # ---------------------------------------------------------------- G6 terrain height (owner: ELEV-VIEW)
 ## OFFSET RULE (every layer that draws on the ground; VIEW6 entities, rings, fx): a point at ground level g
 ## (0 valley, 1 plain, 2 hill, 3 ridge; fractional on ramps) is drawn lift_px(g) px ABOVE its flat iso spot:
-##     screen = world_to_screen(p) - Vector2(0, (g - 1) * level_px)        (level_px = 16, tunable)
+##     screen = world_to_screen(p) - Vector2(0, (g - 1) * level_px)   (level_px = LEVEL_PX_DEFAULT: the one tunable)
 ## so a map without height (every cell plain) draws exactly as before. ground_level(hm, p) gives g at a world
 ## position with the same surface the terrain mesh draws (ramps slope; each diamond is split along its
 ## left-right diagonal); world_to_screen_h() does the whole conversion; pick_world() is its inverse for clicks
 ## (ray-marches the height field from the top level down, so a click on a raised tile picks that tile).
 ## `hm` = height-map dict {w, h, height: PackedByteArray, ramps: PackedByteArray}: terrain_layer.height_map(),
 ## or the world map itself. A dict without a matching "height" layer is flat.
-const LEVEL_PX_DEFAULT := 16.0
+const LEVEL_PX_DEFAULT := 32.0   # G6 owner pass: tall cliff faces (face atlas FACE_H 96 = 3 levels x 32)
 const MAX_LEVEL := 3
 ## 4-neighbours N, E, S, W and, per vertex (top, right, bottom, left), the two neighbours sharing it.
 const NB4 := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]

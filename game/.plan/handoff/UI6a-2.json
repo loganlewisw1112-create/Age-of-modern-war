@@ -1,0 +1,35 @@
+{
+  "agent": "UI6a-2",
+  "gen": 2,
+  "calls_used": 24,
+  "tokens_used_est": 160000,
+  "reason": "budget.handoff_now from ORCH (guard projection 351k of 500k cap at 21 calls)",
+  "done": [
+    "1. Full test_ui_fit baseline (before any UI6a-2 edit, 25 screens): `bash .plan/hb.sh UI6a-2 ... -- timeout 1500 bash tests/run.sh --only=test_ui_fit` -> PASS test_every_screen_fits_at_7_resolutions (230028 ms), PASS test_typeface_applied_to_theme, PASS test_ui_scale_75_to_150_still_fits (139994 ms), RESULT pass=3 fail=0 files=1 time_ms=376074, TESTS OK; SCRIPT ERROR 0, Parse Error 0 (log: C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/1121247f-c9b8-4ed3-adb4-546f11b33109/scratchpad/fit_full1.log). The raw FIT RESULT line was NOT printed by that run (the test parsed it from the child's output only); test passing proves screens==7x25, skips==0, issues==0.",
+    "2. tests/test_ui_fit.gd line 24: now prints the raw child line `    [<res> scales <s>] FIT RESULT screens=.. controls=.. issues=.. distinct=..` so the next run's log carries it.",
+    "3. presentation/hud/hud.gd: line 30 `const Progression = preload(\"res://sim/systems/progression.gd\")`; lines 862-878 new `static func research_rows(w, fid) -> Array` (Progression.research_list rows for the side's faction, ordered by G3bData.project_ids_sorted, extras appended); lines 880-892 `_add_research_buttons` now iterates research_rows(_world(), _pf()) and uses row.name/cost/time (other factions' projects never get a button). Compile check after the edit: clean (grep printed nothing)."
+  ],
+  "test_state": {
+    "test_ui_fit (full, before hud research edit)": "RESULT pass=3 fail=0 files=1 time_ms=376074 / TESTS OK, 0 SCRIPT ERROR",
+    "after hud research edit": "compile check clean; test_hud / test_ui3 / test_ui_panels / test_ui6a NOT rerun yet"
+  },
+  "remaining": [
+    "1. Add the 5 UI6b fit names to presentation/ui5/kit/fit_screens.gd NAMES (lines 18-22; append after \"ui6a_menu_survival\" on line 22): \"ui5b_g6_infantry\", \"ui5b_g6_vehicles\", \"ui5b_g6_engineer\", \"ui5b_g6_garage\", \"ui5b_g6_research\". UI6b-2 has routed them: presentation/ui5/panels/fit_panels.gd line 92 `if nm.begins_with(\"ui5b_g6_\")` -> load(presentation/ui6/b/g6_scen.gd).build. fit_screens.build (line 60) must delegate ui5b_ names to fit_panels (check how existing ui5b_ names are routed in build() before adding). Compile check after.",
+    "2. Optional wave countdown (UI6a file presentation/hud/g3_score.gd): add `const Waves = preload(\"res://sim/systems/waves.gd\")` after line 10; add a static `wave_line(w) -> String` (\"\" unless Waves.active(w); nw := Waves.next_wave(w); done -> \"Waves: all N sent, K destroyed\"; seconds_left<=0 -> \"Wave i/N incoming!\"; else \"Next wave i/N in m:ss  (K destroyed)\"; total<0 means endless, omit /N); in rows() before `return out` (line 83) append {text: wave_line, color: HT.AMBER, size: 12} when non-empty. Keep text under ~40 chars (panel is 306 px). Compile check after.",
+    "3. Add one test to tests/test_ui6a.gd (append at end): research_rows -> for each side of SimWorld.new_match(SimWorld.default_config()), every row's PData.project(id).factions is empty or has the side's faction_def, and ids == Progression.research_list ids (as a set); wave_line on SimWorld.new_match(Waves.survival_config(SimWorld.default_config(), \"repel_waves\", 3, -1)) contains \"Next wave 1/3\", and on the default config is \"\".",
+    "4. Targeted runs (one file per run.sh call; wrap slow ones in .plan/hb.sh): test_hud, test_ui3, test_ui_panels (UI6b, hud caller), test_ui6a (~170 s), then full test_ui_fit (~380 s, now 30 screens): must be TESTS OK, 0 SCRIPT ERROR; quote the printed `FIT RESULT ... issues=0` lines raw (7 res at 100%, and 3 res at 0.75/1.5). If a ui5b_g6_* screen has issues, that is UI6b-2's panel: send a change_request to UI6b-2 with the FIT lines.",
+    "5. Windowed screenshots (1920x1080) of market, Army Builder, company/army cards (forces), Commanders under .plan/shots/<ID>/ (windowed ui_fit_test saves sheet_<W>x<H>_s<scale>.png; e.g. `\"$G\" --path . -s tools/ui_fit_test.gd -- --fit-res=1920x1080 --fit-scales=1 --fit-only=...` check the tool's args first; at most 2 windowed playtests machine-wide). Look at them: UiKit style, not a generic form.",
+    "6. Board: acknowledge CR 820 (ELEV-VIEW) and CR 877 (MODES6) as done (see UI6a-1 handoff); post fact ui6a.ready after step 4 is green; bus DONE; AGENT_RULES final report."
+  ],
+  "files_touched": [
+    "tests/test_ui_fit.gd (line 24 print)",
+    "presentation/hud/hud.gd (line 30 preload; lines 862-892 research_rows + _add_research_buttons)"
+  ],
+  "gotchas": [
+    "test_ui_fit runs tools/ui_fit_test.gd in child Godot processes (OS.execute): editing any UI file while it runs changes what later children load. Do not edit during the run.",
+    "Foreground wait that works: `timeout 580 bash -c \"until grep -qE 'TESTS (OK|FAILED)' LOG; do sleep 15; done\"`.",
+    "UI6b's research_panel.filter_card() (presentation/ui6/b/research_panel.gd ~line 88) also strips other factions' research buttons after the card is built; with research_rows it now finds none to strip. Not a conflict.",
+    "Progression.research_list does w.factions[fid] unguarded; research_rows guards w == null / missing fid.",
+    "run.sh --only accepts one file name per run."
+  ]
+}

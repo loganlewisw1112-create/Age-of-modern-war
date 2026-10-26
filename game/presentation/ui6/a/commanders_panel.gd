@@ -155,11 +155,21 @@ func recall(sl: int) -> void:
 		issue.call({"type": "recall_ai_commander", "issuer": _fid, "slot": sl})
 
 
+## Player-facing name of an AI Commander formation key: "co:3" -> "Company 3", "army:2" -> "Army 2".
+static func formation_label(f) -> String:
+	var t := str(f)
+	if t.begins_with("co:"):
+		return "Company " + t.substr(3)
+	if t.begins_with("army:"):
+		return "Army " + t.substr(5)
+	return t
+
+
 ## "Formation: Company 3 | Aggressive | balanced | take (40, 52) | assault | 24 units" or "Unassigned".
 static func slot_text(s: Dictionary) -> String:
 	if s.is_empty():
 		return "Unassigned"
-	var what := "Role: " + U.pretty(String(s.role)) if String(s.kind) == "role" else "Formation: " + str(s.get("formation", "selected units"))
+	var what := "Role: " + U.pretty(String(s.role)) if String(s.kind) == "role" else "Formation: " + formation_label(s.get("formation", "selected units"))
 	var ob: Dictionary = s.get("objective", {})
 	var ot := String(ob.get("type", "hold"))
 	if ob.has("cell"):

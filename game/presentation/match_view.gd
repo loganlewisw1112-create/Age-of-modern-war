@@ -841,6 +841,12 @@ func _player_hq():
 
 
 # ================================================================ picking
+## G6 (UI6a, PT6 bug): a garrisoned unit is hidden inside its building (VIEW6 FLAG_HID), so it is
+## never picked by click, marquee or same-type select; the click falls through to the building card.
+static func is_garrisoned(e: Dictionary) -> bool:
+	return int(e.get("garrisoned_in", -1)) >= 0
+
+
 ## Entity under world point p. Units pick by screen proximity; buildings by footprint.
 ## only_actionable=true skips entities the player cannot currently see.
 func entity_at(p: Vector2, only_actionable: bool = true):
@@ -856,7 +862,7 @@ func entity_at(p: Vector2, only_actionable: bool = true):
 		var dw: Vector2 = (e.pos as Vector2) - p
 		if absf(dw.x) + absf(dw.y) > 6.0:
 			continue
-		if not entity_visible(e):
+		if is_garrisoned(e) or not entity_visible(e):
 			continue
 		var r := float(Content.unit(e.def).get("radius", 0.3))
 		var es := world_to_screen(render_pos(e)) + Vector2(0, -10 - r * 12.0)
@@ -1039,7 +1045,7 @@ func _marquee_select(r: Rect2, shift: bool) -> void:
 		if int(e.owner) != player_fid:
 			continue
 		var sp: Vector2 = ct * entity_canvas_pos(e)   # G6 (UI6a): height-lifted, matches the drawn sprite
-		if e.kind == "unit" and r.grow(6).has_point(sp + Vector2(0, -8)):
+		if e.kind == "unit" and not is_garrisoned(e) and r.grow(6).has_point(sp + Vector2(0, -8)):
 			units.append(id)
 		elif e.kind == "building" and r.has_point(sp):
 			buildings.append(id)
@@ -1063,7 +1069,7 @@ func _select_same_def_on_screen(p: Vector2, shift: bool) -> void:
 	var out: Array = selection.duplicate() if shift else []
 	for id in world.entities:
 		var o: Dictionary = world.entities[id]
-		if o.def == e.def and o.kind == e.kind and int(o.owner) == player_fid:
+		if o.def == e.def and o.kind == e.kind and int(o.owner) == player_fid and not is_garrisoned(o):
 			if vr.has_point(ct * entity_canvas_pos(o)) and not out.has(id):
 				out.append(id)
 	select_ids(out)

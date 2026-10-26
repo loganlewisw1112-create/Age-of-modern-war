@@ -13,6 +13,8 @@ const AirHelper = preload("res://tests/test_airfield.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const G6Fx = preload("res://presentation/art/g6_fx.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const Loadouts = preload("res://sim/systems/loadouts.gd")
+const HotState = preload("res://sim/hot_state.gd")
 const C := Vector2(0.5, 0.5)
 const SEA_W := 24   # sea columns on the east edge
 
@@ -57,6 +59,13 @@ func _world() -> SimWorld:
 	var rp := PackedByteArray()
 	rp.resize(mw * mh)
 	nw.map["ramps"] = rp
+	# the map's neutral props (factories, houses, tanks, wrecks, scrap) would sit on top of the galleries
+	var gone := 0
+	for id in nw.entities.keys():
+		if not nw.factions.has(int(nw.entities[id].get("owner", -1))):
+			nw.entities.erase(id)
+			gone += 1
+	print("VIEW6_PROBE removed %d neutral map entities" % gone)
 	Movement.rebuild_nav(nw)
 	for fid in nw.factions:
 		var ex: PackedByteArray = nw.fog[fid].explored
@@ -91,6 +100,9 @@ func _bld(def: String, fid: int, cell: Vector2i, label := true) -> int:
 
 func _cmd(cmd: Dictionary) -> String:
 	cmd.issuer = 0
+	var why := w.preview_command(cmd)  # submit() only queues; rejections happen at apply time
+	if why != "":
+		print("VIEW6_PROBE cmd would be rejected %s: %s" % [cmd.type, why])
 	var r: Dictionary = w.submit(cmd)
 	if not r.ok:
 		print("VIEW6_PROBE cmd rejected %s: %s" % [cmd.type, r.reason])
@@ -101,7 +113,7 @@ func _cmd(cmd: Dictionary) -> String:
 func _is_sea(def: String) -> bool:
 	var u: Dictionary = Content.unit(def)
 	var mc := String(u.get("move_class", ""))
-	return mc in ["naval", "ship", "sub", "water", "boat", "sea"]
+	return mc.begins_with("naval") or mc in ["ship", "sub", "water", "boat", "sea"]
 
 
 ## Rows run along the screen horizontal (+x -y), rows step down the screen (+x +y).
@@ -143,29 +155,172 @@ func _stage() -> void:
 	_gallery("bld_human", bh, Vector2(46, 22), 6, 4.0, 0.85, true)
 	_gallery("bld_machine_struct", bm, Vector2(46, 62), 6, 4.0, 0.85, true)
 	_stage_states()
+	_stage_mimic()
 	_stage_fx()
 	_stage_height()
 	_stage_air()
 
 
+## Every G6 unit state and overlay in one coastal patch: radar ring, enemy mimic (viewer 0 sees a recon
+## drone), own cloaked stalker, own submerged sub, minesweeper sonar ring, garrisoned marines, a planned
+## minefield (boundary + mine markers), art_def override, company captain cohesion ring + AI-command badge.
 func _stage_states() -> void:
-	pass
+	var S := Vector2(sea_x - 6, 24)
+	var radar := _bld("a_radar_station", 0, Vector2i(S))
+	var stalker := _unit("m_stalker_synth", 0, S + Vector2(-3, 2))
+	var sub := _unit("a_submarine", 0, Vector2(sea_x + 4, 24))
+	var sweeper := _unit("a_minesweeper", 0, Vector2(sea_x + 3, 29))
+	var gb := _bld("s_garrison_bld", 0, Vector2i(S + Vector2(-7, -4)))
+	var mar := _unit("a_marines", 0, S + Vector2(-4, -4))
+	var clr := _unit("a_combat_engineer", 0, S + Vector2(1, -4))  # a mine clearer cannot lay (Mines.can_lay)
+	var exo := _unit("a_exo_trooper", 0, S + Vector2(-2, 5))
+	var lo := _unit("a_marines", 0, S + Vector2(-5, 6))
+	var cap := _unit("a_captain", 0, S + Vector2(-6, 3))
+	if stalker >= 0:
+		_cmd({"type": "cloak", "unit_ids": [stalker], "on": true})
+	if sub >= 0:
+		_cmd({"type": "submerge", "unit_ids": [sub], "on": true})
+	if gb >= 0 and mar >= 0:
+		_cmd({"type": "garrison", "unit_ids": [mar], "building_id": gb})
+	if clr >= 0:
+		_cmd({"type": "lay_minefield", "unit_ids": [clr], "rect": [int(S.x) + 2, int(S.y) - 9, int(S.x) + 5, int(S.y) - 7], "kind": "at"})
+	if exo >= 0:  # art override by hand (a loadout variant sheet on another exo)
+		w.entities[exo].art_def = "a_exo_aa"
+		HotState.touch(w, exo)
+	if lo >= 0:   # the real path: exo loadout on marines -> e.art_def a_exo_trooper
+		Loadouts.apply(w, w.entities[lo], "exo")
+		HotState.touch(w, lo)
+		labels.append([Vector2(w.entities[lo].pos), "a_marines +exo loadout", 24.0])
+	if cap >= 0:  # full CONTRACTS_G6 company record (companies.gd header), captain only
+		w.sys_state["companies"] = {"companies": {1: {"id": 1, "owner": 0, "template": "a_rifle_co", "name": "1st Company",
+			"size": "platoon", "captain": cap, "platoons": [], "refill": false, "army": -1, "losses": 0, "elements": [],
+			"next_eid": 1, "confused_until": 0, "hq": -1}}, "armies": {}, "custom": {}, "training": [], "refill": [],
+			"next_cid": 2, "next_aid": 1, "next_tid": 1, "ver": 1}
+		w.entities[cap].company = 1
+		w.entities[cap].rank_role = "captain"
+		_cmd({"type": "set_ai_commander", "slot": 0, "target": {"formation": 1}, "playstyle": "aggressive",
+			"objective": {"type": "hold", "cell": [int(S.x) - 6, int(S.y) + 3]}, "stance": "aggressive"})
+	for i in 60:
+		w.step()
+	for f in (w.sys_state.get("mines", {}) as Dictionary).get("fields", []):
+		print("VIEW6_PROBE minefield id=%d owner=%d rect=%s cells=%d done=%s" % [int(f.id), int(f.owner), str(f.rect),
+			(f.get("cells", []) as Array).size(), str(f.get("done", false))])
+	var sel: Array = []
+	for id in [sweeper, radar]:
+		if int(id) >= 0:
+			sel.append(id)
+	scenes.append(["states", S, 1.4, sel, 3500])
 
 
+## Enemy mimic drone alone, seen by an unarmed side-0 radar station (sight 14) 12.5 tiles away: outside the
+## mimic's own sight (9) so it never dives on it, beyond its reveal_range (3), so viewer 0 must draw it as a
+## Human A recon drone (in the busy states patch it dove on an exo / the radar and was revealed).
+func _stage_mimic() -> void:
+	var r := _bld("a_radar_station", 0, Vector2i(30, 139), false)  # 12.5 tiles: in radar sight (14), outside the mimic's (9)
+	var mim := _unit("m_mimic_drone", 1, Vector2(43.5, 140.5), false)
+	if mim >= 0:
+		labels.append([Vector2(w.entities[mim].pos), "m_mimic_drone (enemy, disguised for viewer 0)", 14.0])
+	scenes.append(["mimic", Vector2(39, 140), 1.6, [r] if r >= 0 else [], 2000])
+
+
+## Every G6Fx kind on its own labelled spot (3 JTACs give the fog vision the fx layer needs).
 func _stage_fx() -> void:
-	pass
+	var F := Vector2(96, 60)
+	for o in [Vector2(-3, 3), Vector2(6, -6), Vector2(10, 4)]:
+		_unit("a_jtac", 0, F + o, false)
+	var i := 0
+	var ctr := Vector2.ZERO
+	for kind in G6Fx.KINDS:
+		var p := F + Vector2(i % 5, -(i % 5)) * 2.2 + Vector2(i / 5, i / 5) * 2.6
+		fx_spots.append([String(kind), p])
+		labels.append([p, String(kind), 10.0])
+		ctr += p
+		i += 1
+	scenes.append(["fx", ctr / maxf(1.0, float(i)), 1.5, [], 2600])
 
 
+## Plateau (level 2) with a ramp column on its west edge and a valley (level 0) to the east; units and a
+## selected radar station on each level. Runs before the MatchView exists (the terrain bakes the heights).
 func _stage_height() -> void:
-	pass
+	var mw := int(w.map.w)
+	var hg: PackedByteArray = w.map.height
+	var rp: PackedByteArray = w.map.ramps
+	for y in range(96, 103):
+		for x in range(94, 101):
+			hg[y * mw + x] = 2
+		rp[y * mw + 93] = 1
+		for x in range(104, 109):
+			hg[y * mw + x] = 0
+	w.map.height = hg
+	w.map.ramps = rp
+	Movement.rebuild_nav(w)
+	var radar := _bld("a_radar_station", 0, Vector2i(97, 97))
+	_unit("mbt", 0, Vector2(95.5, 100.5))            # plateau (G1 tank for scale)
+	_unit("a_exo_trooper", 0, Vector2(99.5, 101.5))  # plateau
+	_unit("a_jtac", 0, Vector2(93.5, 98.5))          # ramp
+	_unit("mbt", 0, Vector2(93.5, 101.5))            # ramp
+	_unit("a_captain", 0, Vector2(105.5, 98.5))      # valley
+	_unit("mbt", 0, Vector2(107.5, 101.5))           # valley
+	_unit("mbt", 0, Vector2(90.5, 99.5))             # plain reference
+	var sel: Array = [radar] if radar >= 0 else []
+	scenes.append(["height", Vector2(100, 100), 1.5, sel, 2500])
 
 
+## Airfield v2: a_airfield and b_aerodrome with a light + heavy hangar and parked jets (apron pads).
 func _stage_air() -> void:
-	pass
+	var ah = AirHelper.new()
+	var hq: Dictionary = ah._hq(w, 0)
+	if hq.is_empty():
+		print("VIEW6_PROBE air: no HQ for side 0")
+		missing.append("hq")
+		return
+	var hc := Vector2i(hq.cell)
+	for spec in [["a_airfield", Vector2i(108, 128), ["a_strike_jet"]], ["b_aerodrome", Vector2i(108, 148), ["b_recon_plane", "b_bomber"]]]:
+		var fdef := String(spec[0])
+		var fb: int = ah._field(w, fdef, (spec[1] as Vector2i) - hc)
+		if fb < 0 or not w.entities.has(fb):
+			missing.append(fdef)
+			continue
+		var hl: int = ah._hangar(w, fb, "light", 0)
+		var hh: int = ah._hangar(w, fb, "heavy", 0)
+		var k := 0
+		for jd in spec[2]:
+			var at := hl if k == 0 else hh
+			if not Content.unit(String(jd)).is_empty() and at >= 0 and w.entities.has(at):
+				ah._jet(w, String(jd), at)
+			k += 1
+		labels.append([Vector2(w.entities[fb].pos), fdef, 40.0])
+		scenes.append(["airfield_" + fdef, Vector2(w.entities[fb].pos), 1.4, [], 2500])
+
+
+## [a offset, b offset, life, colour, size, own_only] per kind, matching G6Fx.from_event (lives >= 0.8 s so
+## the 650 ms re-emission always has one live in the capture frame).
+func _fx_spec(kind: String) -> Array:
+	match kind:
+		"laser": return [Vector2.ZERO, Vector2(2.5, -1.2), 0.8, G6Fx.C_LASER, 2.0, false]
+		"net": return [Vector2(2.0, -1.0), Vector2.ZERO, 0.9, G6Fx.C_NET, 1.0, false]
+		"jam": return [Vector2.ZERO, Vector2.ZERO, 0.9, G6Fx.C_JAM, 1.0, false]
+		"sonar": return [Vector2.ZERO, Vector2.ZERO, 1.4, G6Fx.C_SONAR, 3.0, true]
+		"mine_blast": return [Vector2.ZERO, Vector2.ZERO, 0.9, G6Fx.C_FIRE, 1.4, false]
+		"line_charge": return [Vector2.ZERO, Vector2(3.0, -1.5), 0.8, G6Fx.C_NET, 1.0, false]
+		"chute": return [Vector2.ZERO, Vector2.ZERO, 1.6, Color(0.85, 0.85, 0.78), 1.0, false]
+		"shimmer": return [Vector2.ZERO, Vector2.ZERO, 0.9, G6Fx.C_ASSIM, 1.0, true]
+		"nanite": return [Vector2.ZERO, Vector2.ZERO, 0.9, G6Fx.C_NANITE, 4.0, false]
+		"assimilate": return [Vector2(1.5, -0.8), Vector2.ZERO, 1.6, G6Fx.C_ASSIM, 1.0, false]
+		"ciws": return [Vector2.ZERO, Vector2(2.0, -2.0), 0.8, G6Fx.C_LASER, 1.0, false]
+		"strike": return [Vector2.ZERO, Vector2.ZERO, 1.0, G6Fx.C_FIRE, 1.6, false]
+		"train_smoke": return [Vector2.ZERO, Vector2(-0.6, -0.6), 1.8, Color(0.32, 0.31, 0.3), 1.0, false]
+	return [Vector2.ZERO, Vector2(2, -1), 1.2, Color.WHITE, 1.0, false]
 
 
 func _emit_fx() -> void:
-	pass
+	if mv == null or mv.fx_layer == null:
+		return
+	for sp in fx_spots:
+		var kind := String(sp[0])
+		var p: Vector2 = sp[1]
+		var s := _fx_spec(kind)
+		mv.fx_layer._add_g6_list([G6Fx._fx(kind, p + (s[0] as Vector2), p + (s[1] as Vector2), float(s[2]), s[3], float(s[4]), 0.0, bool(s[5]))])
 
 
 func _add_labels() -> void:
@@ -207,6 +362,7 @@ func _run() -> void:
 	root.add_child(mv)
 	for i in 10:
 		await process_frame
+		_collect()  # cached draws (airfield strips / aprons) count only on their first frame
 	_add_labels()
 	for sc in scenes:
 		mv.center_camera_on(sc[1])
@@ -223,6 +379,10 @@ func _run() -> void:
 			await process_frame
 			_collect()
 		if shots != "":
+			if String(sc[0]) == "fx":  # capture every effect near the start of its life
+				_emit_fx()
+				for k in 4:
+					await process_frame
 			await RenderingServer.frame_post_draw
 			var img: Image = root.get_texture().get_image()
 			var path := shots.path_join("view6_%s.png" % sc[0])
