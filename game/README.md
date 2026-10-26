@@ -148,7 +148,7 @@ This runs 200 headless tests (22 files): ledger conservation, command validation
   Heartland draw). Frame rate gates pass: 2k on screen p10 83.7 fps, 10k zoomed out p10 111.1 fps.
 - Packaged build: `build/RTS_Age_of_Modern_War_G6/` (also copied to Downloads).
 
-## G6.1 "Field Command" (2026-10-26) — playable, verification in progress (see PROGRESS G6.1 goal)
+## G6.1 "Field Command" (2026-10-26) — delivered PARTIAL (see PROGRESS G6.1 evidence)
 Scoped by the owner in two question passes. Every level of the army now thinks for itself, and the game looks and sounds new.
 - **Chain of command:** General > Commander > Captain > Lieutenant > squad leader > soldier. Orders go down by radio with
   a delay (jammers slow or cut links), reports come up ("Contact, enemy armour, north-east!"), cut-off units act on their
@@ -171,12 +171,20 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   motion, rotating tank/IFV turrets, recoil, tracks, banking aircraft and ships; new effects (muzzle flashes, tracers,
   layered explosions, craters, burning wrecks, smoke screens, dust); generated battle sound and radio chatter (Windows
   speech voices through a radio filter) with Settings > Audio sliders.
-- **Verified so far:** each feature's tests pass (e.g. generals 15/15, officers 11/11, squads 14/14, chain of command 9/9,
-  ammo bearer 9/9, audio 10/10, animation 6/6 + 5/5, effects 8/8) and each feature's windowed playtest passes; the packaged
-  build was spot-checked from a clean folder (starting resources flow 10/10, 0 script errors).
-- **Not verified yet (honest):** the full test suite and fixed-result (hash) tests after the AI changes; the 40-flow
-  clean-build playtest run; the frame rate with 2,000 units on screen (36-48 fps measured on a heavily loaded PC, gate 60;
-  quiet-PC measurement pending); the enemy-general AI-vs-AI test; the owner's sign-off on the new look.
+- **Verified (2026-10-26, final build):** full test suite run (105 files): every failure found was fixed or shown to be
+  load noise (AI fair play, rifle-vs-tank, fast-path movement parity; the 3 timing tests pass on an idle PC); fixed-result
+  hash tests 17/17 after the G6.1 re-baseline (two identical capture runs); 42 playtests from the packaged build in a clean
+  folder: 34 fully pass, 0 script errors in all 42; the flicker probe passes 8/8; enemy general on vs off: no errors, no
+  invariant failures, same AI think time.
+- **Fixed today:** units flickering or not drawn; the AI general knew about enemy deaths it never saw; pinned, suppressed and
+  tired units did not slow down in the shipped build (fast movement path); tanks backed away from riflemen showing their rear.
+- **Not met / known issues (honest):** 7 playtest flows fail a few checks (g4b and air: the Mortar / Airfield Engineer
+  train click misses — also fails on the earlier G6.1 build, so not from today's fixes; mines: 2 of the expected mines laid;
+  airdef: builders not selected for the laser CIWS; support: walk-out right-click; officer61: the air-assault company wins
+  before the flank drill starts; vfx61: no craters from the barrage); frame rate at 2,000 units p10 57.6 fps (gate 60) and
+  sim 1.25x G6 (limit 1.2x); the 10,000-unit frame rate was not validly measured (a mouse wheel zoomed the test window in;
+  the harness now ignores the mouse). The enemy general stays off by default: in AI-vs-AI matches the AI fields no
+  companies, so it has little to command.
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
 
 ## Status (honest)

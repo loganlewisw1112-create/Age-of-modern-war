@@ -175,6 +175,7 @@ func _init_view() -> void:
 			zoom_arg = float(a.substr(7))
 		elif a.begins_with("--fps-quit="):
 			_fps_quit = float(a.substr(11))
+			_edge_pan_enabled = false   # fps measurement: the mouse must not move the camera
 		elif a == "--prof":
 			_prof = true
 			ViewUtil.prof_on = true
@@ -922,6 +923,8 @@ func _viewport_to_canvas(vp: Vector2) -> Vector2:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _fps_quit > 0.0 and event is InputEventMouse:
+		return   # fps measurement (G6.1 2026-10-26): a stray mouse wheel zoomed the 10k case in from 0.15 to 1.53
 	if _world == null:
 		return
 	if event is InputEventMouseButton:

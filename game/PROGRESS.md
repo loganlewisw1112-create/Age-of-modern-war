@@ -30,18 +30,30 @@ Stop-if / park-if:        determinism breaks and can't be fixed fast -> park tha
                           -> park it in PROGRESS with what's done and the next step, ship the rest.
 Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), then BEARER61, ANIMA61, AUDIO61, VFX61, ANIMB61 as slots free; briefs `.plan/agents/prompts/G61-*.md`, board `.plan/board_g61.jsonl`.
 
-**G6.1 status 2026-10-26 ~10:50 PDT: PARKED by the owner's time limit (5 min), not complete.**
-Done: flicker fix (fe8bb8f) shipped to Downloads + build/ (zip 2026-10-26, packaged flick61 8/8); AI general fair
-play (84a230a, test_ai 18/18, test_gen61 15/15); full suite run (98/105 files green at first pass); fixed since then
-(this commit): native movement gather ignored G6.1 pinned/suppressed/fatigue speed (Movement._speed_mult re-derive;
-bisect: native_gather the only diverging perf path; 2k fight on == off after the fix), MBT kited away from rifles
-(SquadAI KITE_MIN_MULT 0.25; test_mil 13/13, test_squad61 14/14); GOLD/GOLD_FLAT re-baselined (two identical runs).
-NOT done / unverified: test_hot_state full run with the new GOLD (running at park time); timing tests test_ai_g5
-(AI think 4.9 ms > 2), test_perf_g6 (elevation overhead 43.7 ms > 5), test_editor_core (brush 1.52 s > 1.5) measured
-only under full load; enemy-general soak; final export with these fixes (the Downloads build predates 84a230a and
-this commit); 41 clean-build playtests; quiet-PC fps; README/PLAY_ME final numbers.
-Next step: run `--only=test_hot_state`, then the 3 timing tests alone on a quiet PC; then .plan/package_g61.sh +
-package_g61_pt.sh, copy build to Downloads, zip, fps, docs, final commit.
+**G6.1 Done-when evidence (2026-10-26 12:40 PDT) — DELIVERED, PARTIAL.** Build: `build/RTS_Age_of_Modern_War_G61/`, zip
+`build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads, pck md5 64ec7c5ec3049d3d9598ecea4d2a7ed1), exported at d6261b3
+(import exit=0 errors=0, export exit=0). Two later changes are not in that pack: the SquadAI idle early-out (hash-identical:
+2k_fight/2k_mixed on+off == GOLD, .plan/hash61.gd) and the fps-mode mouse guard in match_view (measurement only).
+1. Tests: workstream tests pass (gen61 15/15, real61 8/8, squad61 14/14, ai 18/18, mil 13/13, ...). Full suite 105 files: first pass
+   98 green; every failure fixed (test_ai AI-02 fairness, test_mil rifle vs MBT, test_hot_state perf paths on != off = native
+   gather ignored G6.1 movement multipliers) or load noise (test_editor_core 10/10, test_perf_g6 7/7, test_ai_g5 5/5 rerun alone at
+   0-4% CPU); test_art_g4_fort launch failure rc=127 rerun 5/5; test_hot_state 17/17 after the GOLD re-baseline. MET.
+2. Packaged playtests (42 flows, clean folder, 2 at a time): 34 pass fully, 0 SCRIPT ERROR in all; rerun alone: bearer61 passes
+   (flake); 7 fail deterministically: g4b (mortar train click, also fails on the 09:51 build -> pre-existing), air (airfield
+   engineers train click, VTOL cargo select 4 of 8), support (walk-out right-click), mines (2 laid), airdef (builders not selected),
+   officer61 (air-assault company clears the outpost before the flank drill), vfx61 (0 craters). NOT MET.
+3. Enemy/auto general: test_gen61 15/15 and gen61 playtest pass. AI-vs-AI soak, seed 7, 18000 ticks, river_crossing_s and
+   coastal_front_m, general on vs off: rc=0, 0 SCRIPT ERROR, 0 INVARIANT FAIL, AI think avg 0.09-0.10 ms both ways, but
+   companies=0 so the general has nothing to command (no AiGeneral events). The 10-minute auto-general operation-count check was
+   not re-run here. Default stays OFF. UNVERIFIED as written.
+4. Sim 2k (river_crossing_s fight 600t, native, alternating trees, CPU 2-14%): G6 16.40 / 14.32 ms, G6.1 19.21 / 19.11 ms ->
+   1.25x (limit 1.2x). NOT MET (the squad early-out came after; not re-measured).
+5. Build in Downloads + D:, README updated with limits. MET.
+6. Look and feel tests/flows pass (anim61 animb61 vfx61-except-craters audio61); fps: 2k p10 57.6 (gate 60, export running at the
+   time), 10k invalid (mouse wheel zoomed the window to 1.53; harness now ignores mouse input). NOT MET / UNMEASURED.
+7. Owner approved the look. MET.
+Next step: fix the 7 flows (start with the barracks train-button click and officer61's company template), re-measure fps and the
+sim ratio on an idle PC (morale realism pass is the suspected cost: its leader map scans every unit every tick).
 
 ## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
 - Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;

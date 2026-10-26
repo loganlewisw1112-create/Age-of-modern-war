@@ -414,6 +414,10 @@ static func tick(w: SimWorld) -> void:
 static func _unit_think(w: SimWorld, c: Dictionary, e: Dictionary) -> void:
 	if bool(e.get("broken", false)) or e.has("garrisoned_in"):
 		return
+	# PERF61 CR 568 (hash-identical): a lone unit with nothing to do. Exactly the inputs on which the code below
+	# changes nothing: no squad / pace group / stance / pending resume, not pinned or prone, no target, not hit lately.
+	if int(e.target) < 0 and not e.has("sq_resume") and not e.has("prone") and String(e.get("stance", "")) == "" 			and int(e.get("squad", -1)) < 0 and int(e.get("pace_grp", -1)) < 0 and not bool(e.get("pinned", false)) 			and float(e.get("supp", 0.0)) < 60.0 and w.tick - int(e.get("last_hit_tick", -100000)) > HIT_RECENT:
+		return
 	var id := int(e.id)
 	var sq := int(e.get("squad", -1))
 	if sq >= 0:

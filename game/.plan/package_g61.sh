@@ -57,7 +57,8 @@ run gen61 --ui-playtest-gen61 & run chain61 --ui-playtest-chain61 & wait
 run real61 --ui-playtest-real61 & run plan61 --ui-playtest-plan61 & wait
 run anim61 --ui-playtest-anim61 & run animb61 --ui-playtest-animb61 & wait
 run vfx61 --ui-playtest-vfx61 & run audio61 --ui-playtest-audio61 & wait
-for f in h hb m s g4b air naval drone support med tutorial ed elev company aicmd mines garrison naval6 airdef exo loadout market airfield2 survival live brush company61 market61 fuel61 bearer61 squad61 officer61 gen61 chain61 real61 plan61 anim61 animb61 vfx61 audio61; do
+run stock61 --ui-playtest-stock61 & run flick61 --ui-playtest-flick61 & wait
+for f in h hb m s g4b air naval drone support med tutorial ed elev company aicmd mines garrison naval6 airdef exo loadout market airfield2 survival live brush company61 market61 fuel61 bearer61 squad61 officer61 gen61 chain61 real61 plan61 anim61 animb61 vfx61 audio61 stock61 flick61; do
   echo "== $f | $(grep -E 'NATIVE rts_core' pt_$f.log | head -1) | $(grep -E 'PLAYTEST RESULT' pt_$f.log | tail -1) | errs=$(grep -c 'SCRIPT ERROR' pt_$f.log)"
 done
 echo PACKAGE_DONE
