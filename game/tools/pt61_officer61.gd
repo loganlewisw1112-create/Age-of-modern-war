@@ -32,10 +32,26 @@ func _centre_on_company(pt, w: SimWorld, c: Dictionary) -> void:
 
 
 ## Waits (sim time) until the company's drill is one of `drills`; logs and shoots it.
+var trace := []   # every drill change seen: "t=<tick> <drill>: <line>"
+
+
 func _catch(pt, cid: int, drills: Array, shot: String, secs: float) -> bool:
 	var ok: bool = await pt._wait_until(func() -> bool:
 		pt._mv().join_sim()
-		return drills.has(String(_fs(pt._w(), cid).get("drill", ""))), secs)
+		var fs0 := _fs(pt._w(), cid)
+		var dr := String(fs0.get("drill", ""))
+		var ln := "%s: %s" % [dr, String(fs0.get("line61", ""))]
+		if trace.is_empty() or not String(trace.back()).ends_with(ln):
+			trace.append("t=%d %s" % [pt._w().tick, ln])
+		return drills.has(dr), secs)
+	if not ok:
+		var seq := []   # drill names in order, repeats collapsed
+		for t in trace:
+			var dn := String(t).split(" ", false, 2)[1].trim_suffix(":")
+			if seq.is_empty() or seq.back() != dn:
+				seq.append(dn)
+		print("PLAYTEST-DBG officer_seq %s: %s" % [shot, " > ".join(seq)])
+		print("PLAYTEST-DBG officer_trace %s: %s" % [shot, " || ".join(trace.slice(maxi(0, trace.size() - 6)))])
 	pt._mv().join_sim()
 	var w: SimWorld = pt._w()
 	var c: Dictionary = w.sys_state.companies.companies.get(cid, {})
@@ -85,8 +101,14 @@ func run(pt) -> void:
 	pt._log("officer_garrison", not Garrison.occupants(w, bid).is_empty(), "occupants %d at %s" % [Garrison.occupants(w, bid).size(), str(bp)])
 	Movement.apply_command(w, {"type": "hold", "issuer": foe, "unit_ids": outpost})
 	var tmpl: Array = Companies.templates_for(0, w)
-	var cid := Companies.spawn_company_at(w, 0, tmpl[0] if not tmpl.is_empty() else "a_rifle_co", "company", w.cell_of(start), start)
-	pt._log("officer_company", cid > 0, "company %d (%s)" % [cid, str(tmpl.slice(0, 1))])
+	# the rifle company this flow is written for (templates_for is alphabetical: [0] was the air-assault company)
+	var pick := "a_rifle_co" if tmpl.has("a_rifle_co") else (String(tmpl[0]) if not tmpl.is_empty() else "a_rifle_co")
+	for t in tmpl:
+		if pick != "a_rifle_co" and String(t).contains("rifle"):
+			pick = String(t)
+			break
+	var cid := Companies.spawn_company_at(w, 0, pick, "company", w.cell_of(start), start)
+	pt._log("officer_company", cid > 0, "company %d (%s)" % [cid, pick])
 	if cid <= 0:
 		return
 	var c: Dictionary = w.sys_state.companies.companies[cid]

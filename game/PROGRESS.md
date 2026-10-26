@@ -54,6 +54,20 @@ Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), then BEARER61, 
 7. Owner approved the look. MET.
 Next step: fix the 7 flows (start with the barracks train-button click and officer61's company template), re-measure fps and the
 sim ratio on an idle PC (morale realism pass is the suspected cost: its leader map scans every unit every tick).
+Follow-up 2026-10-26 13:30 PDT (owner: "fix the 7 failing playtest flows, then re-measure fps and the sim ratio on an idle PC"):
+- Flows, from source, one at a time: g4b 68/0, air 98/0, mines 29/0, airdef 37/0, support 37/0, vfx61 14/0 (logs in scratchpad
+  pt61/r2..r7). All causes were in the flows: card paging ("More"; G6.1 added card buttons), click during card re-layout (retry),
+  G6.1 double-click = one squad (VTOL cargo now box-selected; walk-out selects its exact units), minefield density 0.45 ("all
+  planned mines laid" / "own count unchanged" replace ">= 3"), a scout spawned beside the duel (recon drone over the town), the
+  SAM-silent oracle counted the recon vehicle's carbine (now: 0 ShotFired from the SAM). officer61 still 14/3: drill sequence
+  travelling > bounding > travelling > stack > assault > consolidate > defend; react-to-contact never starts because the outpost
+  dies before the company's contact test (company centroid within contact_range 11); a lead-element trigger was tried and
+  reverted (the flow still failed). Item 2 now: 41 of 42 flows green, officer61 open.
+- FPS (idle, CPU 11-18%, 2 Godot procs): 2k p10 85.2 (gate 60) PASS; 10k zoomed out p10 262.5, zoom 0.15 lod 2 (gate 30) PASS. Item 6 MET.
+- Sim 2k fight 600t native, alternating trees (CPU 10-18%): G6 14.81 / 14.97 ms, G6.1 18.42 / 19.18 ms -> 1.26x. Item 4 NOT MET.
+  Suspected cost: Morale._realism_pass builds the leader map over every unit every tick for a 1/20 bucket.
+- The Downloads build (pck 64ec7c5e, exported at d6261b3) is current for gameplay: later commits change test flows, a
+  hash-identical SquadAI early-out and the fps-mode mouse guard only.
 
 ## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
 - Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;

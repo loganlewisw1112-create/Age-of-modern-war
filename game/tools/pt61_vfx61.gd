@@ -50,8 +50,14 @@ func run(pt) -> void:
 	var town := Vector2(c) + Vector2(1.0, -5.0)
 	for i in 4:
 		w.spawn_building("s_garrison_bld", 1, Vector2i(town) + Vector2i((i % 2) * 3 - 2, (i / 2) * 3 - 2), true)
+	# a forward observer of ours beside the town: effects are drawn only where the player sees, and how many of
+	# our tanks survive the duel varies (G6.1 r2: 3 wrecks, the town fell back into fog and 0 craters were drawn)
+	# (a recon drone over the town: the enemy tanks can't shoot air; a ground scout beside the duel was killed)
+	h._unit(w, "a_drone_recon", 0, town + Vector2(-1.5, 1.0))
 	mv.center_camera_on(town + Vector2(0, 2))
-	await pt._wait(0.6)
+	var seen: bool = await pt._wait_until(func(): return mv.cell_visible(Vector2i(town)), 8.0)
+	if not seen:
+		print("PLAYTEST-DBG vfx_town_not_visible town=%s" % str(town))
 	var cr0 := _m(fx, "decal_crater")
 	var p0 := _barrage(fx, Vector2(c) + Vector2(-6, 4), town, 10, 1)
 	for i in 6:

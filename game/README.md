@@ -178,13 +178,15 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   invariant failures, same AI think time.
 - **Fixed today:** units flickering or not drawn; the AI general knew about enemy deaths it never saw; pinned, suppressed and
   tired units did not slow down in the shipped build (fast movement path); tanks backed away from riflemen showing their rear.
-- **Not met / known issues (honest):** 7 playtest flows fail a few checks (g4b and air: the Mortar / Airfield Engineer
-  train click misses — also fails on the earlier G6.1 build, so not from today's fixes; mines: 2 of the expected mines laid;
-  airdef: builders not selected for the laser CIWS; support: walk-out right-click; officer61: the air-assault company wins
-  before the flank drill starts; vfx61: no craters from the barrage); frame rate at 2,000 units p10 57.6 fps (gate 60) and
-  sim 1.25x G6 (limit 1.2x); the 10,000-unit frame rate was not validly measured (a mouse wheel zoomed the test window in;
-  the harness now ignores the mouse). The enemy general stays off by default: in AI-vs-AI matches the AI fields no
-  companies, so it has little to command.
+- **Follow-up (2026-10-26 afternoon):** 6 of the 7 failing playtest flows fixed and green from source (g4b 68/0, air 98/0,
+  mines 29/0, airdef 37/0, support 37/0, vfx61 14/0). The causes were in the test flows, not the game: G6.1's extra card
+  buttons pushed some units onto page 2 of the card, double-click now selects one squad, a minefield's size is random, a
+  scout placed beside the tank duel, a SAM check that counted another unit's shots. Frame rate on an idle PC: 2,000 units
+  on screen p10 85.2 fps (gate 60) PASS; 10,000 zoomed out p10 262.5 fps (gate 30) PASS.
+- **Not met / known issues (honest):** officer61: with an overmatching rifle company the outpost dies before the company
+  formally makes contact, so the fix-and-flank drill does not show in that flow (stack-up and breach do run); the
+  simulation costs 1.26x G6 at 2,000 fighting units (18.8 vs 14.9 ms per tick, limit 1.2x). The enemy general stays off by
+  default: in AI-vs-AI matches the AI fields no companies, so it has little to command.
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
 
 ## Status (honest)

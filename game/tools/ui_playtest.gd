@@ -276,10 +276,14 @@ func _select_units(defs: Array) -> int:
 		if us.is_empty():
 			return 0
 		var pick = us[0]
+		var cands := []
 		for u in us:
 			if _on_map(_to_screen(u.pos)):
-				pick = u
-				break
+				cands.append(u)
+		# G6.1: a different unit on each retry (one that just finished a building can stand on its footprint,
+		# where the click picks the building: airdef r2 picked the same engineer 3 times)
+		if not cands.is_empty():
+			pick = cands[attempt % cands.size()]
 		var sp0: float = _mv().speed
 		_mv().speed = 0.0
 		if not _on_map(_to_screen(pick.pos)):
@@ -296,7 +300,12 @@ func _select_units(defs: Array) -> int:
 				n += 1
 		if n > 0:
 			return n
-		print("PLAYTEST-DBG select_units retry %d defs=%s pick=%s screen=%s" % [attempt, str(defs), str(pick.pos), str(_to_screen(pick.pos))])
+		var got := []
+		for id in _mv().selection:
+			var ge = _w().get_e(int(id))
+			got.append("%s#%d" % [String(ge.def) if ge != null else "?", int(id)])
+		print("PLAYTEST-DBG select_units retry %d defs=%s pick=%s#%d screen=%s got=%s order=%s" % [attempt, str(defs), str(pick.pos), int(pick.id),
+			str(_to_screen(pick.pos)), str(got), str(pick.order).left(80)])
 		await _wait(0.5)
 	return n
 
@@ -938,6 +947,35 @@ func _btn_enabled(needle: String) -> bool:
 	return bb != null and not bb.disabled
 
 
+## G6.1: the command card (hud._card_grid) only; another visible panel can carry the same text.
+func _card_find(needle: String) -> Button:
+	var hud = main.get("hud")
+	var grid = hud.get("_card_grid") if hud != null else null
+	if grid == null or not is_instance_valid(grid):
+		return _find_button(get_tree().root, needle)
+	return _find_button(grid, needle)
+
+
+func _card_enabled(needle: String) -> bool:
+	var bb := _card_find(needle)
+	return bb != null and not bb.disabled
+
+
+## G6.1: the card pages its build/train buttons when they don't fit ("More n/m"; G6.1 added Ammo Bearer, stance,
+## formation and regroup buttons, so the Mortar Team moved to page 2). Press More like a player until it shows.
+func _reveal_card(needle: String) -> bool:
+	var hud = main.get("hud")
+	for i in 5:
+		if _card_find(needle) != null:
+			return true
+		var pg = hud.get("_card_pager") if hud != null else null
+		if pg == null or not is_instance_valid(pg) or not (pg as Button).is_visible_in_tree():
+			return false
+		await _click((pg as Button).get_global_rect().get_center())
+		await _wait(0.25)
+	return _card_find(needle) != null
+
+
 ## Select a producer building by click and press the production card button for item.
 func _train(item: String) -> Array:
 	var prod := _producer_of(item)
@@ -954,11 +992,33 @@ func _train(item: String) -> Array:
 	var nm := String(Content.production(item).name)
 	# G6 (PT6) parallel-run fix: the production button is enabled only once its gate holds (e.g. the
 	# hangar just bought is still being built): wait for the enabled button, not a fixed delay.
-	var en := await _wait_until(func(): return _btn_enabled(nm), 90.0)
+	await _reveal_card(nm)
+	var en := await _wait_until(func(): return _card_enabled(nm), 90.0)
 	if not en:
 		print("PLAYTEST-DBG train_button_disabled %s gate=%s" % [item, Airfield.can_produce(_w(), 0, item)])
-	_log("g4b_click_train_" + item, await _click_button(nm), nm)
-	await _wait(0.2)
+	var q_before := 0
+	var pqb = _w().get_e(int(prod.id))
+	if pqb != null:
+		q_before = (pqb.queue as Array).size()
+	var cb: Button = null
+	for attempt in 3:   # G6.1: the card re-lays out after a queue change; a click in that frame queued nothing
+		await _reveal_card(nm)
+		cb = _card_find(nm)
+		if cb == null:
+			break
+		await _click(cb.get_global_rect().get_center())
+		await _wait(0.3)
+		var pqa = _w().get_e(int(prod.id))
+		if pqa == null or (pqa.queue as Array).size() > q_before or _own_units_in(units).size() > before:
+			break
+		print("PLAYTEST-DBG train_click_retry %s attempt %d" % [item, attempt])
+	_log("g4b_click_train_" + item, cb != null, nm)
+	var pq0 = _w().get_e(int(prod.id))
+	if cb != null and pq0 != null and (pq0.queue as Array).is_empty() and _own_units_in(units).size() <= before:
+		var hv0 := get_viewport().gui_get_hovered_control()
+		print("PLAYTEST-DBG train_click_no_queue %s hovered=%s btn_rect=%s mouse=%s sel=%s" % [item,
+			"null" if hv0 == null else "%s(%s)" % [String(hv0.name), hv0.get_class()], str(cb.get_global_rect()),
+			str(get_viewport().get_mouse_position()), str(_mv().selection)])
 	var pq = _w().get_e(int(prod.id))
 	if pq != null and not (pq.queue as Array).is_empty() and String((pq.queue as Array).back().item) != item:
 		var hv := get_viewport().gui_get_hovered_control()
@@ -1217,6 +1277,20 @@ func _g5_named(node_name: String) -> Button:
 	return b if b != null and b.is_visible_in_tree() else null
 
 
+## G6.1: page the command card ("More") until the named button shows (hidden on another page).
+func _reveal_named(node_name: String) -> bool:
+	var hud = main.get("hud")
+	for i in 5:
+		if _g5_named(node_name) != null:
+			return true
+		var pg = hud.get("_card_pager") if hud != null else null
+		if pg == null or not is_instance_valid(pg) or not (pg as Button).is_visible_in_tree():
+			return false
+		await _click((pg as Button).get_global_rect().get_center())
+		await _wait(0.25)
+	return _g5_named(node_name) != null
+
+
 ## Click a named (UI5b) button; false when it is missing, hidden or disabled.
 func _click_named(node_name: String) -> bool:
 	var b := _g5_named(node_name)
@@ -1445,7 +1519,8 @@ func _air_vtol(fid: int) -> void:
 	_log("air_vtol_land_here_click", await _g5_arm_click("G5_land_at", Vector2(lz) + Vector2(0.5, 0.5)), _g5_last_cmd())
 	_log("air_vtol_landed_open_ground", await _g5_wait_phase(vid, ["landed"], 120.0), Air.phase(_w(), vid))
 	await _shot("air_08_vtol_landed")
-	# troops then tanks: double-click one (= all of that type on screen), right-click the VTOL = load
+	# troops then tanks: select every one (click + shift-click; G6.1 double-click now selects one SQUAD, not every
+	# unit of the type, so it took 4 of 8 riflemen), right-click the VTOL = load
 	var full := {"foot": 8, "vehicle": 2}
 	for grp in [troop_ids, tank_ids]:
 		var cen := Vector2.ZERO
@@ -1454,7 +1529,21 @@ func _air_vtol(fid: int) -> void:
 		cen /= maxf(1.0, float(grp.size()))
 		_mv().center_camera_on(cen)
 		await _wait(0.3)
-		var dn := await _select_units([String(_ent(int(grp[0])).def)])
+		# box-select the group (packed riflemen: a shift-click often hit an already selected neighbour and toggled it)
+		var lo := Vector2(INF, INF)
+		var hi := Vector2(-INF, -INF)
+		for id in grp:
+			var sp := _to_screen(Vector2(_ent(int(id)).pos))
+			lo = Vector2(minf(lo.x, sp.x), minf(lo.y, sp.y))
+			hi = Vector2(maxf(hi.x, sp.x), maxf(hi.y, sp.y))
+		await _drag(lo - Vector2(18, 18), hi + Vector2(18, 18))
+		await _wait(0.3)
+		var dn := 0
+		for id in grp:
+			if _mv().selection.has(int(id)):
+				dn += 1
+		if dn < grp.size():
+			dn = await _g5_select_many(grp)
 		_log("air_vtol_select_cargo_" + String(_ent(int(grp[0])).def), dn >= grp.size(), "selected=%d of %d" % [dn, grp.size()])
 		_mv().center_camera_on(_ent(vid).pos)
 		await _wait(0.3)
@@ -1766,7 +1855,11 @@ func _g5_walk_out(units: Array) -> void:
 		return
 	_mv().center_camera_on(_ent(int(units[0].id)).pos)
 	await _wait(0.3)
-	var n := await _select_units([String(units[0].def)])
+	# G6.1: select exactly these units (selecting "a rifleman" took the squad already standing at dest)
+	var wids := []
+	for u in units:
+		wids.append(int(u.id))
+	var n := await _g5_select_many(wids)
 	var hqp: Vector2 = _hq().pos
 	var mc := Vector2(float(_w().map.w), float(_w().map.h)) * 0.5
 	var dest := hqp + (mc - hqp).normalized() * 16.0
@@ -1782,7 +1875,23 @@ func _g5_walk_out(units: Array) -> void:
 				if Vector2(b.pos).distance_to(Vector2(e.pos)) < 9.0:
 					return false
 		return true
-	_log("support_walk_out_rightclick", n > 0 and await _wait_until(far, 90.0), "selected=%d dest=%s" % [n, str(dest)])
+	var wok: bool = n > 0 and await _wait_until(far, 90.0)
+	if not wok:
+		for u in units:
+			var e = _ent(int(u.id))
+			if e == null:
+				print("PLAYTEST-DBG walk_out %d gone" % int(u.id))
+				continue
+			var nb := 999.0
+			var nbd := ""
+			for bb in _w().buildings_of(0):
+				var dd := Vector2(bb.pos).distance_to(Vector2(e.pos))
+				if dd < nb:
+					nb = dd
+					nbd = String(bb.def)
+			print("PLAYTEST-DBG walk_out %s#%d pos=%s moving=%s order=%s squad=%s near_bld=%s %.1f" % [String(e.def), int(e.id), str(e.pos),
+				str(e.get("moving", false)), str(e.order).left(90), str(e.get("squad", -1)), nbd, nb])
+	_log("support_walk_out_rightclick", wok, "selected=%d dest=%s" % [n, str(dest)])
 
 
 func _drain_ammo(units: Array) -> Array:
@@ -1817,7 +1926,10 @@ func _support_mode(trid: int, units: Array, mode: String, n: int) -> void:
 		"state mode=%s center=%s radius=%s" % [String(ts.get("mode", "")), str(ts.get("center")), str(ts.get("radius"))])
 	await _g5_select(trid)
 	await _wait(0.4)
+	await _reveal_named("G5_truck_auto")
 	var b := _g5_named("G5_truck_auto")
+	if b == null:
+		print("PLAYTEST-DBG roam_button_missing sel=%s truck=%d" % [str(_mv().selection), trid])
 	_log("support_%s_button_shows_mode" % mode, b != null and String(b.text).contains(mode), "" if b == null else String(b.text).replace("\n", " | "))
 	# claim evidence (PT5-2): the FLAG_RESUP poll alone missed brief roam claims at 3x speed, so a claim
 	# counts when a needy unit carries resup_by = this truck, the truck queue holds it, the sim logged a
@@ -2529,6 +2641,18 @@ func _garrison_flow() -> void:
 
 
 # ------------------------------------------------------------ mines (lay; EOD clears a lane)
+## Mines planned in r by owner's fields (Mines field cells; the lay order works through them).
+func _g6_planned_in(r: Rect2i, owner: int = 0) -> int:
+	var n := 0
+	for f in (_w().sys_state.get("mines", {}) as Dictionary).get("fields", []):
+		if int(f.get("owner", -1)) != owner:
+			continue
+		for c in f.get("cells", []):
+			if r.has_point(Vector2i(int(c[0]), int(c[1]))):
+				n += 1
+	return n
+
+
 func _g6_mines_in(r: Rect2i, owner: int = 0) -> int:
 	var n := 0
 	for e in _w().entities.values():
@@ -2582,8 +2706,13 @@ func _mines_flow() -> void:
 	await _drag(a, b)
 	await _wait(0.4)
 	_log("mn_lay_issued", _g5_last_cmd() == "lay_minefield", _g5_last_cmd())
-	var laid := await _wait_until(func(): return _g6_mines_in(r) >= 3, 150.0)
-	_log("mn_mines_laid", laid, "mines=%d known=%d" % [_g6_mines_in(r), Mines.known_to(_w(), 0).size()])
+	# G6.1: a field rolls density 0.45 per cell (w.rng), so a 3x3 field plans 0-9 mines; ">= 3" failed on RNG
+	# alone (~15%). The check now is the intent: every mine the engineers' field planned gets laid.
+	var laid := await _wait_until(func():
+		var pl := _g6_planned_in(r)
+		return pl >= 1 and _g6_mines_in(r) >= pl, 150.0)
+	_log("mn_mines_laid", laid, "mines=%d planned=%d known=%d" % [_g6_mines_in(r), _g6_planned_in(r), Mines.known_to(_w(), 0).size()])
+	var own_laid := _g6_mines_in(r)
 	await _shot("g6_mines_laid")
 	# Sweeping clears ENEMY mines only (Mines.sweep_cells skips own/allied mines by design; r1 swept our own
 	# field and waited forever). Harness action: an enemy (side 1) AT field is placed beside ours with
@@ -2617,7 +2746,7 @@ func _mines_flow() -> void:
 				dbg.append("%d %s pos=%s order=%s" % [int(id), String(ee.def), str(ee.pos), str(ee.order)])
 		print("PLAYTEST-DBG sweep_miss rect=%s eod=%s mines_state=%s" % [str(r2), str(dbg), str(_w().sys_state.get("mines", {})).left(400)])
 	_log("mn_lane_cleared", clear, "enemy mines left=%d of %d" % [_g6_mines_in(r2, 1), n_enemy])
-	_log("mn_own_field_kept", _g6_mines_in(r) >= 3, "own mines=%d (sweeps never clear own mines)" % _g6_mines_in(r))
+	_log("mn_own_field_kept", own_laid >= 1 and _g6_mines_in(r) == own_laid, "own mines=%d of %d laid (sweeps never clear own mines)" % [_g6_mines_in(r), own_laid])
 	await _shot("g6_mines_cleared")
 
 
@@ -3239,9 +3368,28 @@ func _airdef_flow() -> void:
 	var d3 := _g6_drone_at(Vector2(sam.pos) + away * 5.0)
 	var hp3: float = drone_min_hp[d3]
 	_log("ad_no_radar_no_cover", lost and not Airdef.covers_target(_w(), _ent(int(sam.id)), _ent(d3)), "radar_alive=%s" % str(_ent(int(radar.id)) != null))
-	await _wait(8.0)
+	# G6.1: the oracle is the SAM's own fire. Drone hp alone also counted other shooters (r4: our recon vehicle's
+	# carbine hit the drone while the radar-less SAM stayed silent), so the SAM's ShotFired events are counted.
+	var who := {}
+	var sam_shots := 0
+	var seen_ev := {}
+	for k in 32:
+		await _wait(0.25)
+		for ev in _w().event_log:
+			if String(ev.type) != "ShotFired" or int(ev.get("target", -1)) != d3:
+				continue
+			var key := "%d:%d" % [int(ev.get("tick", 0)), int(ev.get("shooter", -1))]
+			if seen_ev.has(key):
+				continue
+			seen_ev[key] = true
+			var sh = _ent(int(ev.get("shooter", -1)))
+			who["%s#%d" % [String(sh.def) if sh != null else "?", int(ev.get("shooter", -1))]] = true
+			if int(ev.get("shooter", -1)) == int(sam.id):
+				sam_shots += 1
+		if _ent(d3) == null:
+			break
 	_g6_drone_dead(d3)
-	_log("ad_sam_silent_without_radar", _ent(d3) != null and float(drone_min_hp[d3]) >= hp3, "drone hp %s -> %s" % [str(hp3), str(drone_min_hp[d3])])
+	_log("ad_sam_silent_without_radar", sam_shots == 0, "SAM shots %d; drone hp %s -> %s; shooters %s" % [sam_shots, str(hp3), str(drone_min_hp[d3]), str(who.keys())])
 
 
 func _g6_on_high(ids: Array) -> int:
