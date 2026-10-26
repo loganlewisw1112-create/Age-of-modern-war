@@ -27,9 +27,9 @@ const DU = preload("res://sim/ai/doctrine/doc_util.gd")
 const U = preload("res://sim/ai/ai_util.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
 
-const OPS := ["strike", "infil", "attack", "defend", "counter", "recon", "screen", "raid_supply", "refit"]
+const OPS := ["strike", "infil", "attack", "defend", "counter", "recon_force", "screen", "raid_supply", "refit"]
 const OP_LABEL := {"strike": "STRIKE", "infil": "INFIL/EXFIL", "attack": "DELIBERATE ATTACK", "defend": "DEFEND",
-	"counter": "COUNTER-ATTACK", "recon": "RECON IN FORCE", "screen": "SCREEN/DELAY", "raid_supply": "SUPPLY RAID",
+	"counter": "COUNTER-ATTACK", "recon_force": "RECON IN FORCE", "screen": "SCREEN/DELAY", "raid_supply": "SUPPLY RAID",
 	"refit": "REGROUP/REFIT"}
 ## PROVISIONAL balance fixtures; content/rules.json ai_cmd.general overrides any key.
 const RULES := {
@@ -42,9 +42,9 @@ const RULES := {
 	"repeat_penalty": 0.25, "danger_close": 7.0,
 	"style": {
 		"defensive": {"defend": 1.4, "screen": 1.3, "counter": 1.1, "refit": 1.1},
-		"aggressive": {"strike": 1.3, "attack": 1.1, "counter": 1.3, "recon": 1.1},
-		"specops": {"infil": 1.7, "raid_supply": 1.5, "recon": 1.2, "attack": 0.7},
-		"combined": {"attack": 1.4, "strike": 1.1, "recon": 1.1}},
+		"aggressive": {"strike": 1.3, "attack": 1.1, "counter": 1.3, "recon_force": 1.1},
+		"specops": {"infil": 1.7, "raid_supply": 1.5, "recon_force": 1.2, "attack": 0.7},
+		"combined": {"attack": 1.4, "strike": 1.1, "recon_force": 1.1}},
 	"stance_ratio": {"cautious": 1.3, "balanced": 1.0, "aggressive": 0.75},
 }
 static var _r: Dictionary = {}
@@ -140,14 +140,14 @@ static func belief(w: SimWorld, fid: int) -> Array:
 			hpf = float(e.hp) / maxf(1.0, mx)
 		var ud := Content.unit(def_id) if kind == "unit" else {}
 		var pw := power_of(def_id, kind, hpf)
-		if e.has("strength") and float(e.strength) > 0.0 and not w.entities.has(int(e.id)):
+		if e.has("strength") and float(e.strength) > 0.0 and e.has("conf"):  # an Intel belief contact (not seen now)
 			pw = float(e.strength) * clampf(float(e.get("conf", 1.0)), 0.1, 1.0)
 		var armed := String((ud if kind == "unit" else Content.building(def_id)).get("weapon", "")) != "" or def_id == ""
 		out.append({"id": int(e.get("id", -1)), "pos": Vector2(e.pos), "def": def_id, "kind": kind, "armed": armed,
 			"power": pw, "value": value_of(def_id, kind),
 			"air": String(ud.get("move_class", "")).begins_with("air"), "supply": bool(ud.get("is_supply", false))
 				or (kind == "building" and (bool(Content.building(def_id).get("is_supply_point", false))
-				or def_id.contains("depot") or def_id.contains("refinery")))})
+				or bool(Content.building(def_id).get("supply_point", false)) or bool(Content.building(def_id).get("refines", false))))})
 	out.sort_custom(func(a, b): return int(a.id) < int(b.id))
 	w.cache[k] = [w.tick, out]
 	return out
@@ -214,7 +214,7 @@ static func mop_up(w: SimWorld, fid: int, s: Dictionary, badge: String, ids: Arr
 	var bd := INF
 	for b in bel:
 		var d := (b.pos as Vector2).distance_to(tgt)
-		if bool(b.air) or d > r or not w.entities.has(int(b.id)):
+		if bool(b.air) or d > r or not seen_now(w, fid).has(int(b.id)):  # only what the side sees right now
 			continue
 		if d < bd:
 			bd = d
@@ -260,7 +260,7 @@ static func trait_bias(w: SimWorld, fid: int, ids: Array, slot: int = -1) -> Dic
 		return {}
 	var out := {}
 	var keys := {"strike": "aggression", "attack": "aggression", "counter": "aggression", "defend": "caution",
-		"screen": "caution", "recon": "recon", "refit": "logistics", "infil": "flank", "raid_supply": "flank"}
+		"screen": "caution", "recon_force": "scouting", "refit": "logistics", "infil": "flank", "raid_supply": "flank"}
 	for op in keys:
 		var wt = v.call("slot_trait_weight", w, fid, "p%d" % slot, String(keys[op]))
 		var f := float(wt) if (wt is float or wt is int) else 0.0
@@ -392,7 +392,7 @@ static func candidates(w: SimWorld, fid: int, s: Dictionary, us: Array, home: Ve
 	var rt := U.enemy_spawn(w, fid)
 	if not cl.is_empty():
 		rt = (cl[cl.size() - 1].pos as Vector2) if (cl[cl.size() - 1].pos as Vector2).distance_to(cen) > 12.0 else rt
-	out.append({"type": "recon", "score": (0.8 if cl.is_empty() else 0.35) - memory_penalty(w, g, rt, cen) * 0.3, "tgt": rt,
+	out.append({"type": "recon_force", "score": (0.8 if cl.is_empty() else 0.35) - memory_penalty(w, g, rt, cen) * 0.3, "tgt": rt,
 		"tid": -1, "why": "picture thin (%d contacts)" % bel.size()})
 	# playstyle, traits, repetition
 	var sty: Dictionary = (G("style") as Dictionary).get(String(s.playstyle), {})
@@ -609,8 +609,8 @@ static func start(w: SimWorld, fid: int, s: Dictionary, cand: Dictionary, x: Dic
 	var spec: Dictionary = s.spec
 	var nco := (spec.get("companies", []) as Array).size()
 	var force := ("%d coys" % nco) if nco >= 2 else ("1 coy" if nco == 1 else "%d units" % (x.ids as Array).size())
-	var first := {"strike": "move", "attack": "recon", "infil": "in", "raid_supply": "in", "defend": "hold",
-		"counter": "move", "recon": "probe", "screen": "hold", "refit": "fall_back"}
+	var first := {"strike": "move", "attack": "scouting", "infil": "in", "raid_supply": "in", "defend": "hold",
+		"counter": "move", "recon_force": "probe", "screen": "hold", "refit": "fall_back"}
 	phase(w, fid, s, String(first.get(t, "move")), "%s, %s (score %.2f)" % [String(cand.why), force, float(cand.score)])
 
 
@@ -645,7 +645,7 @@ static func _ex_attack(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> v
 	var res := el_ids(op, "reserve", fset)
 	var wp: Vector2 = op.wp_in
 	match String(op.phase):
-		"recon":
+		"scouting":
 			if not fix.is_empty():
 				order(w, fid, s, x.badge, {"type": "attack_move", "unit_ids": [fix[0]], "target": short_of(from, tgt, 7.0)})
 			if w.tick - int(op.pt) >= int(G("recon_ticks")):
@@ -708,7 +708,7 @@ static func _ex_infil(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> vo
 				phase(w, fid, s, "out", "target hit, exfil by the other flank")
 				return
 			var o := {"type": "attack", "unit_ids": x.ids, "target": Vector2(best.pos), "target_id": int(best.id)} \
-				if w.entities.has(int(best.id)) else {"type": "attack_move", "unit_ids": x.ids, "target": Vector2(best.pos)}
+				if seen_now(w, fid).has(int(best.id)) else {"type": "attack_move", "unit_ids": x.ids, "target": Vector2(best.pos)}
 			if order(w, fid, s, x.badge, o) > 0 and bool(best.supply):
 				tag(w, fid, s, "sabotage", x.ids, "Op %s: hitting enemy supply at (%d, %d)." % [OP_LABEL[String(op.type)], int(best.pos.x), int(best.pos.y)])
 		"out":
@@ -851,7 +851,7 @@ static func _air_check(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> b
 const War = preload("res://sim/ai/general_war.gd")
 const War2 = preload("res://sim/ai/general_war2.gd")  # GEN61-2: production, air / call-ins, medevac, bearers
 const GNet = preload("res://sim/ai/general_net.gd")  # GEN61-2: intent down CommandNet, reports up
-const LOSS_OPS := ["strike", "attack", "infil", "raid_supply", "counter", "recon"]
+const LOSS_OPS := ["strike", "attack", "infil", "raid_supply", "counter", "recon_force"]
 
 
 ## One think of an auto general (called by Commanders.drive for objective type "auto"): us = the slot's
@@ -915,7 +915,7 @@ static func think(w: SimWorld, fid: int, s: Dictionary, us: Array, free: Array, 
 			_ex_defend(w, fid, s, x)
 		"counter":
 			_ex_counter(w, fid, s, x)
-		"recon":
+		"recon_force":
 			_ex_recon(w, fid, s, x)
 		"screen":
 			_ex_screen(w, fid, s, x)
@@ -949,3 +949,17 @@ static func view(w: SimWorld, s: Dictionary) -> Dictionary:
 	return {"op": String(op.get("type", "")), "phase": String(op.get("phase", "")), "status": String(g.status),
 		"ops": (g.ops as Dictionary).duplicate(), "budget": War.budget_left(w, s),
 		"log": lg.slice(maxi(0, lg.size() - 3))}
+
+
+## Ids of enemies side fid can see right now (its own fog view), cached per tick. G6.1 fairness fix: the general
+## used to test w.entities for believed contacts (knowing about deaths it never saw).
+static func seen_now(w: SimWorld, fid: int) -> Dictionary:
+	var k := "gen61_seen_%d" % fid
+	var c = w.cache.get(k)
+	if c != null and int(c[0]) == w.tick:
+		return c[1]
+	var d := {}
+	for e in w.visible_enemies(fid):  # the side's own fog view
+		d[int(e.id)] = true
+	w.cache[k] = [w.tick, d]
+	return d

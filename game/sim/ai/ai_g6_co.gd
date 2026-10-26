@@ -78,6 +78,7 @@ static func _company_hq(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, 
 ## Line combat templates first (rifle / conscript / swarm, then mechanised / shock / walker, then
 ## armour), specialists (air assault, spec ops, artillery, engineers) last; stable within a rank.
 const CO_PREFER := ["rifle", "conscript", "swarm", "mech", "shock", "walker", "armor", "hunter"]
+const FIX_ROLES := ["depot", "power"]  # _ROLES-style role names for the Company HQ deploy fix (not def ids)
 
 
 static func _by_doctrine(temps: Array) -> Array:
@@ -217,7 +218,7 @@ static func _companies(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g
 	if why != "":
 		var fp: Dictionary = w.factions[fid]
 		var low_power := int(fp.power_use) > int(fp.power_prod)
-		var role := "power" if low_power else "depot"
+		var role: String = FIX_ROLES[1 if low_power else 0]  # role names (U.role resolves the def below)
 		g.co_why = "deploy %s" % role
 		var bd := U.role(w, fid, role)
 		if bd != "" and not U.blocked(st, w, "g6:build:" + role) and L.build_at(w, fid, st, ctx, bd, Vector2(-1, -1), "g6:build:" + role):

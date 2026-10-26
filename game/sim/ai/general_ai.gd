@@ -32,7 +32,7 @@ static func ER(key: String):
 
 ## True when AI side fid runs a general.
 static func enabled(w: SimWorld, fid: int) -> bool:
-	if not w.factions.has(fid) or not w.ai_state.has(fid):
+	if not w.ai_state.has(fid):  # AI sides always have a faction
 		return false
 	var f: Dictionary = w.factions[fid]
 	if f.has("ai_general"):
@@ -46,7 +46,7 @@ static func tick(w: SimWorld) -> void:
 	if not bool(ER("enemy_general")) and not (ai0 is Dictionary and (ai0 as Dictionary).has("egen")):
 		var any := false
 		for fid in w.ai_state:
-			if bool((w.factions.get(fid, {}) as Dictionary).get("ai_general", false)):
+			if bool(w.factions[fid].get("ai_general", false)):  # own side flag (ai_state fids always have a faction)
 				any = true
 				break
 		if not any:
@@ -59,8 +59,6 @@ static func tick(w: SimWorld) -> void:
 	fids.sort()
 	for fid in fids:
 		fid = int(fid)
-		if not w.factions.has(fid):
-			continue
 		var on := enabled(w, fid) and bool(w.factions[fid].get("alive", true))
 		if not on:
 			if eg.has(fid):
@@ -69,7 +67,7 @@ static func tick(w: SimWorld) -> void:
 			continue
 		if not eg.has(fid):
 			var d: Dictionary = C().new_drive(w, String(ER("enemy_playstyle")), String(ER("enemy_stance")), {"type": "auto"})
-			d.slot = -1 - fid
+			d.slot = -(fid + 1)  # slot id encoding for AI generals (negative, never a player slot)
 			d.spec = {"companies": []}
 			d.next_think = w.tick + (fid % 20)   # staggered per side
 			eg[fid] = d

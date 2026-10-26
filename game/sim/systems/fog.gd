@@ -129,6 +129,16 @@ static func team_members(w: SimWorld, fid: int) -> Array:
 	return tm.get(fid, [fid])
 
 
+## True when a unit of fid or of an ally (the sides that share fid's vision) is within r of p. Used by the AI
+## general's danger-close check before it calls a strike; lives here so AI code never walks other sides' units.
+static func team_unit_near(w: SimWorld, fid: int, p: Vector2, r: float) -> bool:
+	for f in team_members(w, fid):
+		for e in w.units_of(int(f)):
+			if (e.pos as Vector2).distance_to(p) <= r:
+				return true
+	return false
+
+
 static func _or_bytes(a: PackedByteArray, b: PackedByteArray) -> PackedByteArray:
 	var out := a.duplicate()
 	for i in mini(out.size(), b.size()):

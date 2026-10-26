@@ -226,16 +226,7 @@ static func replace(w: SimWorld, fid: int, s: Dictionary, us: Array, badge: Stri
 
 ## True when no unit of fid's team is within r of p (danger-close check).
 static func clear_of_friends(w: SimWorld, fid: int, p: Vector2, r: float) -> bool:
-	var team := int(w.factions[fid].team)
-	var fids := w.factions.keys()
-	fids.sort()
-	for f in fids:
-		if int(w.factions[f].team) != team:
-			continue
-		for e in w.units_of(int(f)):
-			if (e.pos as Vector2).distance_to(p) <= r:
-				return false
-	return true
+	return not SimWorld.Fog.team_unit_near(w, fid, p, r)
 
 
 ## Calls the side's strikes (slot strike units, the side's batteries) on believed enemy groups.

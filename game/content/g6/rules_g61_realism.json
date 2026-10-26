@@ -70,7 +70,7 @@
           "stubborn": {"hold": 0.6, "morale": 0.15, "supp_resist": 0.1},
           "logistician": {"logistics": 0.5, "supply": 0.4},
           "inspiring": {"morale": 0.3, "aura": 1.0},
-          "recon_minded": {"recon": 0.6, "caution": 0.1},
+          "recon_minded": {"scouting": 0.6, "caution": 0.1},
           "marksman": {"accuracy": 0.1},
           "steady": {"supp_resist": 0.2},
           "fast": {"speed": 0.08},

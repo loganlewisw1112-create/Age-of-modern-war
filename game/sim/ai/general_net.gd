@@ -17,7 +17,7 @@ extends RefCounted
 
 const L = preload("res://sim/ai/ai_g6_lib.gd")
 const NET_TYPE := {"strike": "assault", "attack": "advance", "infil": "infil", "raid_supply": "infil",
-	"defend": "dig_in", "counter": "flank", "recon": "reposition", "screen": "dig_in", "refit": "fall_back"}
+	"defend": "dig_in", "counter": "flank", "recon_force": "reposition", "screen": "dig_in", "refit": "fall_back"}
 const RULES := {"net_wait": 600, "report_lines": 2}
 
 
