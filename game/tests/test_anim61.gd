@@ -230,3 +230,35 @@ func test_view_never_writes_sim() -> void:
 	var a := _run(false)
 	var b := _run(true)
 	check_eq(b, a, "state hash identical with the view reads on / off")
+
+
+## Owner bug 2026-10-26 ("units flicker or don't show at all"): building the unit cache for several teams (and
+## rebuilding it) must give every team the same in-page frame offsets and never shift the shared per-sheet layout.
+## Before the fix cache_unit added the atlas origin to the shared layout table in place (packed arrays are shared),
+## so each later build moved the anim61 frames further into empty atlas space.
+func test_cache_for_many_teams_keeps_frames_in_place() -> void:
+	var ba = BatchArt.new()
+	var teams := [Color(0.2, 0.4, 1.0), Color(1.0, 0.3, 0.2), Color(0.3, 0.9, 0.3), Color(0.9, 0.9, 0.2)]
+	var tested := 0
+	for def in ["rifleman", "mbt"]:
+		var s: Dictionary = ba._unit_spec(def)
+		if (s.get("blk", {}) as Dictionary).is_empty():
+			continue
+		var first := PackedVector2Array()
+		for ti in teams.size():
+			for rep in 2:  # the same team twice = a cache rebuild
+				var c: Array = ba.cache_unit({"def": def, "owner": ti, "id": 1}, teams[ti], "t%d_%d" % [ti, rep])
+				var tb: PackedVector2Array = c[38]
+				var org: Vector2 = c[34]
+				var page: Image = (ba.atlas.pages[int(c[33])] as Dictionary).img
+				var rel := PackedVector2Array()
+				for k in tb.size():
+					rel.append(tb[k] - org if tb[k].x >= 0.0 else tb[k])
+					if tb[k].x >= 0.0:
+						check(tb[k].x < page.get_width() and tb[k].y < page.get_height(), "%s team %d cell %d inside its atlas page" % [def, ti, k])
+				if first.is_empty():
+					first = rel
+				else:
+					check(rel == first, "%s team %d build %d: same in-page frame offsets as the first build" % [def, ti, rep])
+		tested += 1
+	check(tested >= 1, "at least one split sheet tested")

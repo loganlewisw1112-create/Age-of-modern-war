@@ -111,6 +111,11 @@ func _init() -> void:
 		print("SOAK FAILED to create match")
 		quit(2)
 		return
+	if OS.get_cmdline_user_args().has("--enemy-general"):  # G6.1: AI sides run the General engine (GeneralAI opt-in)
+		for fid in w.factions:
+			if bool(w.factions[fid].is_ai):
+				w.factions[fid].ai_general = true
+		print("SOAK ENEMY_GENERAL on")
 	for fid in w.factions:
 		var f0: Dictionary = w.factions[fid]
 		_start_ledger[fid] = {"credits": int(f0.credits)}

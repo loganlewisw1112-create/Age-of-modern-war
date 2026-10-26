@@ -2212,7 +2212,7 @@ func _tut_unmet_gates() -> Array:
 ## survival (+ editor Live / height brushes in tools/editor_playtest.gd), and the owner checkpoint
 ## (--ui-playtest-checkpoint with --load=<doctrine demo save>). Human A at Stage 9 unless noted; the
 ## harness grant + peace window are the G5 ones (this process only, in memory).
-const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61"]
+const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61", "flick61"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")

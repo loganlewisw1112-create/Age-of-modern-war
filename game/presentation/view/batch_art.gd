@@ -445,7 +445,10 @@ func cache_unit(e: Dictionary, team: Color, ck: String) -> Array:
 				c[35] = int(blk.b)
 				c[36] = blk.get("lut", PackedInt32Array())
 				c[37] = int(blk.get("nb", 0))
-				var tb: PackedVector2Array = lay.tb
+				# owner bug 2026-10-26 (units flicker / vanish): packed arrays are SHARED on assignment, so adding org in
+				# place shifted the cached per-sheet layout again on every later cache build (other team, squad size,
+				# rebuild) and the frames drifted into empty atlas space. Copy before offsetting.
+				var tb: PackedVector2Array = (lay.tb as PackedVector2Array).duplicate()
 				for k in tb.size():
 					if tb[k].x >= 0.0:
 						tb[k] += org
