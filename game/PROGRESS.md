@@ -68,6 +68,17 @@ Follow-up 2026-10-26 13:30 PDT (owner: "fix the 7 failing playtest flows, then r
   Suspected cost: Morale._realism_pass builds the leader map over every unit every tick for a 1/20 bucket.
 - The Downloads build (pck 64ec7c5e, exported at d6261b3) is current for gameplay: later commits change test flows, a
   hash-identical SquadAI early-out and the fps-mode mouse guard only.
+Follow-up 2 2026-10-26 14:50 PDT (owner: "get the sim cost under 1.2x G6 ... and fix the officer61 flank drill"):
+- Item 4 MET: idle PC (CPU 2-9%), 6 alternating pairs, 2k fight 600t native: G6 15.39/13.92/14.11/14.33/14.70/14.71, G6.1
+  16.96/15.84/17.27/17.98/17.41/16.52 ms; median 14.52 vs 17.12 = 1.179x (pairs 1.10-1.26). Changes (d601e1d), all hash-identical
+  (2k fight/mixed on+off == GOLD; test_hot_state 17/17): Morale leader-candidate cache (verify_leaders full-scan check 0 mismatches
+  over hash61, real61, officers61, companies, doctrine, gen61); rts_core 0.5.2 gather applies pin_move + mvm (no GDScript pass).
+- officer61: root cause a formation bug (Movement._g61_shape grew with group size; a 50-man wedge/echelon put slots ~30 tiles back,
+  clamped at the map corner, so the company marched back to base). Groups > 12 now chunk into <= 12 abreast (<= 12 bit-identical).
+  officer61 from source 17/0; squad61 14/0, ops 10/0, officers61 11/0, doctrine 9/0.
+- New build: pck ec9b69d49227681b99586a491ff4ea5e, rts_core.dll 4dc23240 (0.5.2), import exit=0 errors=0, export exit=0; packaged smoke
+  (clean folder): officer61 16/1 (stack_up missed: contact > assault without stacking, timing-dependent), flick61 8/0, squad61 26/0,
+  company61 41/0, air 98/0, h 33/0, 0 SCRIPT ERROR. Copied to Downloads + build zip. The full 42-flow packaged run was not repeated.
 
 ## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
 - Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;

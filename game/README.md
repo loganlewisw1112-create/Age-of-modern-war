@@ -183,10 +183,16 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   buttons pushed some units onto page 2 of the card, double-click now selects one squad, a minefield's size is random, a
   scout placed beside the tank duel, a SAM check that counted another unit's shots. Frame rate on an idle PC: 2,000 units
   on screen p10 85.2 fps (gate 60) PASS; 10,000 zoomed out p10 262.5 fps (gate 30) PASS.
-- **Not met / known issues (honest):** officer61: with an overmatching rifle company the outpost dies before the company
-  formally makes contact, so the fix-and-flank drill does not show in that flow (stack-up and breach do run); the
-  simulation costs 1.26x G6 at 2,000 fighting units (18.8 vs 14.9 ms per tick, limit 1.2x). The enemy general stays off by
-  default: in AI-vs-AI matches the AI fields no companies, so it has little to command.
+- **Follow-up 2 (2026-10-26 afternoon):** simulation cost now 1.18x G6 at 2,000 fighting units (median of 6 alternating
+  runs on an idle PC: 17.12 vs 14.52 ms per tick; limit 1.2x) with identical results (cached morale leader list;
+  native core 0.5.2 applies the realism movement factors itself). Fixed a formation bug: any group over 12 in formation
+  had slots ~30 tiles behind its target, so a big group ordered forward walked back toward its base; groups over 12 now
+  form blocks of up to 12 side by side. The officer61 flow passes from source (17/0: advance, contact drill, stack-up,
+  assault). The new build (pck ec9b69d4, native core 0.5.2) passed officer61 16/1, flick61 8/0, squad61 26/0,
+  company61 41/0, air 98/0 and the core flow 33/0 from a clean folder, 0 script errors.
+- **Known issues (honest):** in the packaged officer61 run the company went from the contact drill straight to the assault
+  without stacking up first (timing-dependent; it stacks in the run from source). The full 42-flow packaged run was not
+  repeated for this build. The enemy general stays off by default (in AI-vs-AI matches the AI fields no companies).
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
 
 ## Status (honest)
