@@ -2212,7 +2212,7 @@ func _tut_unmet_gates() -> Array:
 ## survival (+ editor Live / height brushes in tools/editor_playtest.gd), and the owner checkpoint
 ## (--ui-playtest-checkpoint with --load=<doctrine demo save>). Human A at Stage 9 unless noted; the
 ## harness grant + peace window are the G5 ones (this process only, in memory).
-const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61"]
+const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")
@@ -2248,6 +2248,12 @@ func _g6_menu() -> void:
 				if ob.get_item_text(i).begins_with("Stage 9 "):
 					k = i
 		_log("g6_slot0_stage9_click", k >= 0 and await _pick_option("Slot0Stage", k), "items=%d" % (0 if ob == null else ob.item_count))
+	if g6_flow == "stock61":  # owner 2026-10-26: Starting resources 50k by click
+		var so = get_tree().root.find_child("StartStockOption", true, false) as OptionButton
+		_log("stock61_option_visible", so != null and so.is_visible_in_tree())
+		if so != null:
+			_log("stock61_pick_50k", await _pick_option("StartStockOption", so.item_count - 1), so.get_item_text(so.item_count - 1))
+			await _shot("stock61_setup")
 	await _wait(0.3)
 
 

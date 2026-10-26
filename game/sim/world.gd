@@ -249,6 +249,8 @@ static func validate_config(c: Dictionary) -> String:
 			return "Stage %d is not playable in this slice (Stages 7-9 only)." % stage
 		if int(s.get("credits", 0)) < 0:
 			return "Starting credits cannot be negative."
+	if c.has("start_stock") and (int(c.start_stock) < 0 or int(c.start_stock) > 50000):
+		return "Starting resources must be 0-50000."
 	if teams.size() < 2:
 		return "All sides are on the same team: there is nobody to fight."
 	if not rules.victory_types.has(c.get("victory", "")):
@@ -318,8 +320,7 @@ static func new_match(c: Dictionary) -> SimWorld:
 			"is_ai": bool(s.get("ai", false)),
 			"stage": int(s.get("stage", 8)),
 			"credits": int(s.get("credits", 0)),
-			"stock": {"salvage": int(rules.start_package.stock.salvage), "ore": int(rules.start_package.stock.ore),
-				"fuel": int(rules.start_package.stock.get("fuel", 0)), "ammo": int(rules.start_package.stock.get("ammo", 0))},
+			"stock": _start_stock(c, rules),
 			"power_prod": 0,
 			"power_use": 0,
 			"pop": 0,
@@ -832,3 +833,13 @@ func state_hash() -> String:
 	ctx.start(HashingContext.HASH_SHA256)
 	ctx.update(var_to_bytes(to_dict()))
 	return ctx.finish().hex_encode()
+
+
+## Starting stock of every side: the rules start package, or cfg.start_stock (0-50000, owner 2026-10-26: "start a
+## match with up to 50k of all the different resources") for salvage, ore, fuel and ammo alike.
+static func _start_stock(c: Dictionary, rules: Dictionary) -> Dictionary:
+	if c.has("start_stock"):
+		var v := clampi(int(c.start_stock), 0, 50000)
+		return {"salvage": v, "ore": v, "fuel": v, "ammo": v}
+	var sp: Dictionary = rules.start_package.stock
+	return {"salvage": int(sp.salvage), "ore": int(sp.ore), "fuel": int(sp.get("fuel", 0)), "ammo": int(sp.get("ammo", 0))}

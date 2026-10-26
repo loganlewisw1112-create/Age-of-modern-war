@@ -17,6 +17,8 @@ const MapIO = preload("res://sim/map_io.gd")
 
 var slots: Array = []        # [{kind, faction, blurb, team, color, credits, diff, swatch}]
 var economy: OptionButton
+var start_stock: OptionButton  # owner 2026-10-26: start with up to 50k of every resource
+const START_STOCK := [-1, 1000, 5000, 10000, 25000, 50000]  # -1 = the standard start package (cfg.start_stock)
 var faction_ids: Array = []
 var colors: Array = []        # html strings
 var diffs: Array = []
@@ -71,6 +73,15 @@ func build() -> void:
 	economy.select(maxi(0, econs.find("standard")))
 	economy.item_selected.connect(_emit)
 	er.add_child(economy)
+	er.add_child(HT.make_label("Starting resources", HT.DIM, 14))
+	start_stock = OptionButton.new()
+	start_stock.name = "StartStockOption"
+	start_stock.tooltip_text = "Salvage, ore, fuel and ammo every side starts with (credits are set per side above)"
+	for v in START_STOCK:
+		start_stock.add_item("Standard" if int(v) < 0 else "%dk each" % (int(v) / 1000))
+	start_stock.select(0)
+	start_stock.item_selected.connect(_emit)
+	er.add_child(start_stock)
 	_refresh_rows()
 
 
@@ -251,6 +262,10 @@ func apply(cfg: Dictionary, stage: int) -> String:
 	cfg.sides = sides
 	if economy != null and economy.selected >= 0 and economy.selected < econs.size():
 		cfg.economy = econs[economy.selected]
+	if start_stock != null and start_stock.selected > 0 and start_stock.selected < START_STOCK.size():
+		cfg.start_stock = int(START_STOCK[start_stock.selected])
+	elif cfg.has("start_stock"):
+		cfg.erase("start_stock")
 	if first_ai_diff != "":
 		cfg.ai_difficulty = first_ai_diff
 	return reason
