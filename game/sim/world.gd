@@ -469,7 +469,7 @@ func _apply_due_commands() -> void:
 			SquadAI.on_direct_order(self, c)  # G6.1 (SQUAD61 CR seq 25)
 		elif String(c.type) == "set_formation":
 			SquadAI.on_direct_order(self, c)
-		emit("CommandApplied", {"command_id": c.id, "type": c.type, "issuer": c.issuer})
+		emit("CommandApplied", {"command_id": c.id, "type": c.type, "cmd_type": String(c.type), "issuer": c.issuer})  # G6.1: cmd_type survives the event envelope (INTEG61 CR seq 406, radio acks)
 
 
 ## Ownership/liveness checks shared by every command. Filters unit_ids in place.

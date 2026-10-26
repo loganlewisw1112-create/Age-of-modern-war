@@ -196,7 +196,12 @@ func test_chain61_report_plays_matching_line() -> void:
 	check_eq(String(Cat.radio_for_event({"type": "ReportSent", "fid": 0, "kind": "request", "text": "A requests resupply"}, 0).get("cat", "")), "ammo", "resupply request")
 	check_eq(String(Cat.radio_for_event({"type": "OrderDelivered", "fid": 0, "order": {"order": {"type": "attack"}}}, 0).get("cat", "")), "ack", "order delivered -> ack")
 	check_eq(String(Cat.radio_for_event({"type": "Succession", "fid": 0, "node": "c:1"}, 0).get("cat", "")), "officer_down", "succession -> officer down")
-	check(Cat.radio_for_event({"type": "CommandApplied", "issuer": 0, "command_id": 3}, 0).is_empty(), "direct commands are not voiced (the event carries no order type)")
+	check(Cat.radio_for_event({"type": "CommandApplied", "issuer": 0, "command_id": 3}, 0).is_empty(), "a CommandApplied without cmd_type is not voiced")
+	# G6.1 (INTEG61-2): world.gd CommandApplied now carries cmd_type (CR seq 406): the player's own orders get radio acks
+	check_eq(String(Cat.radio_for_event({"type": "CommandApplied", "issuer": 0, "command_id": 4, "cmd_type": "move"}, 0).get("cat", "")), "moving", "player move order -> moving ack")
+	check_eq(String(Cat.radio_for_event({"type": "CommandApplied", "issuer": 0, "command_id": 5, "cmd_type": "hold"}, 0).get("cat", "")), "holding", "player hold order -> holding ack")
+	check_eq(String(Cat.radio_for_event({"type": "CommandApplied", "issuer": 0, "command_id": 6, "cmd_type": "attack"}, 0).get("cat", "")), "ack", "player attack order -> ack")
+	check(Cat.radio_for_event({"type": "CommandApplied", "issuer": 1, "command_id": 7, "cmd_type": "move"}, 0).is_empty(), "the enemy's orders are never voiced to the player")
 	d.free()
 
 

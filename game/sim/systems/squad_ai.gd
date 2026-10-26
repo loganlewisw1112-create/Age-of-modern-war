@@ -76,10 +76,19 @@ static func platoon_members(w: SimWorld, gid: int) -> Array:
 
 
 ## Squad leader: a member with a rank_role, else the lowest id. -1 when the squad is gone.
+## G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearers never lead while a non-bearer member lives.
 static func leader_of(w: SimWorld, members: Array) -> int:
+	var first := -1
 	for id in members:
-		if String(w.entities[id].get("rank_role", "")) != "":
+		var e: Dictionary = w.entities[id]
+		if bool(Content.unit(String(e.get("def", ""))).get("ammo_bearer", false)):
+			continue
+		if first < 0:
+			first = int(id)
+		if String(e.get("rank_role", "")) != "":
 			return int(id)
+	if first >= 0:
+		return first
 	return int(members[0]) if not members.is_empty() else -1
 
 
@@ -716,6 +725,11 @@ static func _smart(w: SimWorld, c: Dictionary, e: Dictionary, ot: String) -> voi
 					_reposition(w, e, Vector2(sup.pos), "resupply")
 					return
 	if t == null:
+		return
+	# G6.1 (INTEG61-2): a unit that conceals by standing still (G4b conceal_still: sniper, special forces) holds:
+	# kiting or spreading would move it and break or never reach its concealment (test_units_g4b
+	# sniper_conceal_still, test_units_g5 special_forces_conceal). The player can still move it.
+	if bool(e.get("hid", false)) or bool(Content.unit(String(e.def)).get("conceal_still", false)):
 		return
 	var rng := float(s.range)
 	var trng := float(ts.range)

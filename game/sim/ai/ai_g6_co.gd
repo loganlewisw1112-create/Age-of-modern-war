@@ -175,6 +175,8 @@ static func _companies(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g
 	var room_now := int(f.pop_cap) - int(f.pop) - int(ctx.get("queued_pop", 0))
 	var tid := ""
 	var size := ""
+	var fits_now := true
+	var pop_need := 0
 	for room in [room_now, room_max]:  # a company that fits the supply now, else one Econ must house
 		for j in temps.size():  # rotate through the templates; the first that fits credits and supply
 			var cand := _template_id(temps[(int(g.co_req) + j) % temps.size()])
@@ -189,14 +191,38 @@ static func _companies(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g
 				if pl.is_empty() or int(pl.get("pop", 999)) > room or w.can_afford(fid, pl.get("cost", {})) != "":
 					continue
 				size = sz
+				pop_need = int(pl.get("pop", 0))
 				break
 			if size != "":
 				tid = cand
 				break
 		if tid != "":
 			break
+		fits_now = false
 	if tid == "":
 		g.co_why = "no_fit free=%d room=%d" % [free, room_max]
+		return
+	if not fits_now:
+		# G6.1 (ORCH): train_company now refuses a company that could not deploy (owner bug 2026-10-26), so the
+		# AI raises its supply cap first instead of queueing a company that waits on the cap.
+		g.co_why = "need_supply room=%d" % room_now
+		var dp := U.role(w, fid, "depot")
+		if dp != "" and not U.blocked(st, w, "g6:build:depot") and L.build_at(w, fid, st, ctx, dp, Vector2(-1, -1), "g6:build:depot"):
+			U.set_backoff(st, w, "g6:build:depot", 20 * SimWorld.TICK_RATE)
+			U.log_line(st, w, "g6: build %s (room for a company)" % dp)
+		return
+	# G6.1 (INTEG61): train_company also refuses while the Company HQ lacks power (Companies.deploy_reason);
+	# ask the same question first and fix the cause (power plant, else a depot) instead of submitting a refusal.
+	var why := String(L.callf(C, "deploy_reason", [w, fid, b, pop_need], ""))
+	if why != "":
+		var fp: Dictionary = w.factions[fid]
+		var low_power := int(fp.power_use) > int(fp.power_prod)
+		var role := "power" if low_power else "depot"
+		g.co_why = "deploy %s" % role
+		var bd := U.role(w, fid, role)
+		if bd != "" and not U.blocked(st, w, "g6:build:" + role) and L.build_at(w, fid, st, ctx, bd, Vector2(-1, -1), "g6:build:" + role):
+			U.set_backoff(st, w, "g6:build:" + role, 20 * SimWorld.TICK_RATE)
+			U.log_line(st, w, "g6: build %s (company HQ: %s)" % [bd, why.left(48)])
 		return
 	g.co_why = ""
 	if U.submit(w, fid, st, {"type": "train_company", "building_id": int(b.id), "template": tid, "size": size}, "g6:company"):

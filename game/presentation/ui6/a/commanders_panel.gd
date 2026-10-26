@@ -5,6 +5,9 @@ extends RefCounted
 ## cell is picked with a map click, escort guards the first selected unit), Assign and Recall. The live
 ## state of each slot comes from AiCommand.slots(w, fid); with no ai_cmd state it reads as unassigned.
 ## Issues set_ai_commander / recall_ai_commander only; reasons come from the sim's validation.
+## G6.1 (GEN61): "Auto (general decides)" is the default objective (the slot runs as a full general:
+## it picks its own operations); a Budget choice goes with Assign and Grant sends it later
+## (set_ai_budget); each live general shows its current operation, phase and last 3 log lines.
 
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const U = preload("res://presentation/ui6/a/ui6a_util.gd")
@@ -15,6 +18,13 @@ const WANT_W := 760.0
 const SLOTS := 4
 const PLAYSTYLE_NAMES := {"defensive": "Defensive (fortifier)", "aggressive": "Aggressive (breakthrough)",
 	"specops": "Special ops (raider)", "combined": "Combined arms"}
+const BUDGETS := [
+	{"label": "Budget: none", "v": {}},
+	{"label": "Budget: 300/min", "v": {"credits_pm": 300, "salvage_pm": 60, "ore_pm": 60}},
+	{"label": "Budget: 800/min", "v": {"credits_pm": 800, "salvage_pm": 160, "ore_pm": 160}},
+	{"label": "Budget: 2000 now", "v": {"lump": {"credits": 2000, "salvage": 400, "ore": 400}}},
+	{"label": "Budget: 6000 now", "v": {"lump": {"credits": 6000, "salvage": 1200, "ore": 1200}}},
+]
 
 var m: Dictionary = {}
 var panel: PanelContainer = null
@@ -74,10 +84,17 @@ func build(root: Control) -> PanelContainer:
 		var r2 := U.row(v, 6)
 		var objs: Array = []
 		for o in AiCommand.OBJECTIVES:
-			objs.append("Objective: " + U.pretty(String(o)))
+			objs.append("Auto (general)" if String(o) == "auto" else "Objective: " + U.pretty(String(o)))
 		r.obj = U.option(r2, objs, 170)
 		(r.obj as OptionButton).name = "Objective"
-		(r.obj as OptionButton).select(maxi(0, AiCommand.OBJECTIVES.find("hold")))
+		(r.obj as OptionButton).tooltip_text = "Auto: the general decides its own operations (strike, infil/exfil, attack, defend...)"  # G6.1 ORCH: fit at 1280x720
+		(r.obj as OptionButton).select(maxi(0, AiCommand.OBJECTIVES.find("auto")))
+		var buds: Array = []
+		for b in BUDGETS:
+			buds.append(String(b.label))
+		r.budget = U.option(r2, buds, 140)
+		(r.budget as OptionButton).name = "Budget"
+		(r.budget as OptionButton).tooltip_text = "What the general may spend on replacements (it never spends more)"
 		r.pick = U.small_button(r2, "Pick on map", "Click the map to set this slot's objective cell", 130)
 		(r.pick as Button).pressed.connect(func(): if on_pick.is_valid(): on_pick.call(sl))
 		r.assign = U.small_button(r2, "Assign", "Hand this formation or role to the AI Commander", 90)
@@ -86,6 +103,15 @@ func build(root: Control) -> PanelContainer:
 		r.recall = U.small_button(r2, "Recall", "Take back control at once", 90)
 		(r.recall as Button).name = "Recall"
 		(r.recall as Button).pressed.connect(recall.bind(sl))
+		r.grant = U.small_button(r2, "Grant", "Give the chosen budget to this slot's general now", 70)
+		(r.grant as Button).name = "Grant"
+		(r.grant as Button).pressed.connect(grant.bind(sl))
+		r.gen = UiKit.label("", "small")
+		(r.gen as Label).name = "GeneralLog"
+		(r.gen as Label).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		(r.gen as Label).custom_minimum_size = Vector2(200, 0)
+		(r.gen as Label).visible = false
+		v.add_child(r.gen)
 		r.note = UiKit.label("", "warn")
 		(r.note as Label).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		(r.note as Label).custom_minimum_size = Vector2(200, 0)
@@ -139,10 +165,40 @@ func assign_cmd(sl: int, fid: int) -> Dictionary:
 		ob.cell = [int(cell.x), int(cell.y)]
 	if ot == "escort" and not sel.is_empty():
 		ob.target_id = int(sel[0])
-	return {"type": "set_ai_commander", "issuer": fid, "slot": sl, "target": tv,
+	var cmd := {"type": "set_ai_commander", "issuer": fid, "slot": sl, "target": tv,
 		"playstyle": String(AiCommand.PLAYSTYLES[clampi((r.play as OptionButton).selected, 0, AiCommand.PLAYSTYLES.size() - 1)]),
 		"stance": String(AiCommand.STANCES[clampi((r.stance as OptionButton).selected, 0, AiCommand.STANCES.size() - 1)]),
 		"objective": ob}
+	var bv := budget_value(sl)
+	if not bv.is_empty():
+		cmd.budget = bv
+	return cmd
+
+
+## The budget dict the slot's Budget choice describes ({} = none).
+func budget_value(sl: int) -> Dictionary:
+	var bi := (rows[sl].budget as OptionButton).selected
+	return (BUDGETS[clampi(bi, 0, BUDGETS.size() - 1)].v as Dictionary).duplicate(true)
+
+
+func grant_cmd(sl: int, fid: int) -> Dictionary:
+	return {"type": "set_ai_budget", "issuer": fid, "slot": sl, "budget": budget_value(sl)}
+
+
+func grant(sl: int) -> void:
+	if issue.is_valid():
+		issue.call(grant_cmd(sl, _fid))
+
+
+## "Op STRIKE (move), strength 82%, budget 1200 cr ..." + the last 3 log lines of a general ("" otherwise).
+static func general_text(s: Dictionary) -> String:
+	var g: Dictionary = s.get("general", {})
+	if g.is_empty():
+		return ""
+	var lines: Array = [String(g.get("status", ""))]
+	for l in g.get("log", []):
+		lines.append("  " + String(l))
+	return "\n".join(PackedStringArray(lines))
 
 
 func assign(sl: int) -> void:
@@ -175,6 +231,11 @@ static func slot_text(s: Dictionary) -> String:
 	if ob.has("cell"):
 		var c = ob.cell
 		ot += " (%d, %d)" % [int(c.x), int(c.y)] if (c is Vector2 or c is Vector2i) else ""
+	if ot == "auto":
+		ot = "auto general"
+		var gop := String((s.get("general", {}) as Dictionary).get("op", ""))
+		if gop != "":
+			ot += ": " + gop
 	var parts: Array = [what, String(PLAYSTYLE_NAMES.get(String(s.playstyle), s.playstyle)), String(s.stance), ot]
 	if String(s.get("phase", "")) != "":
 		parts.append(String(s.phase))
@@ -213,3 +274,7 @@ func update(w: SimWorld, fid: int) -> void:
 		(r.note as Label).text = why if not s.is_empty() or why.contains("map") or why.contains("escort") else ""
 		(r.note as Label).visible = (r.note as Label).text != ""
 		(r.recall as Button).disabled = s.is_empty()
+		(r.grant as Button).disabled = s.is_empty() or w.preview_command(grant_cmd(sl, fid)) != ""
+		var gt := general_text(s)
+		(r.gen as Label).text = gt
+		(r.gen as Label).visible = gt != ""

@@ -14,6 +14,14 @@ const LodIcons = preload("res://presentation/view/lod_icons.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
 const G5Art = preload("res://presentation/art/g5_art.gd")
 const G6Vis = preload("res://presentation/art/g6_vis.gd")
+const Motion = preload("res://presentation/view/motion.gd")               # G6.1 (ANIMA61) render motion layer
+const Morale = preload("res://sim/systems/morale.gd")                     # G6.1 REAL61 (read-only, postures)
+const Fatigue = preload("res://sim/systems/fatigue.gd")
+const RealInfo = preload("res://presentation/ui6/realism_info.gd")
+const AmmoBearer = preload("res://sim/systems/ammo_bearer.gd")            # G6.1 BEARER61 load pips
+const VehAnim61 = preload("res://presentation/view/veh_anim61.gd")        # G6.1 (ANIMC61) vehicle frame selection
+const MOTION_CAP := 700      # G6.1: motion layer (smooth facing, ease, bob, reactions) only while <= this many units drew
+const RUN_SPEED := 2.3       # G6.1: drawn speed (tiles/s) above which infantry use the run cycle
 
 const LOD_MID := 0.8     # zoom below this: mid LOD (small FX dropped by fx_layer)
 const LOD_FAR := 0.45    # zoom below this: far LOD (unit icons)
@@ -82,6 +90,19 @@ var _hlift := PackedFloat32Array()
 var _hlift_src := PackedByteArray()
 var _hlift_px := -1.0
 var g6_counts: Dictionary = {}
+# G6.1 (ANIMA61): render motion layer + per-id cosmetic state (view only; never written back to the sim)
+var motion = Motion.new()
+var motion_on := true         # last frame's decision (MOTION_CAP)
+var _atlas_at: float = float(OS.get_environment("ANIM61_ATLAS_AT")) if OS.has_environment("ANIM61_ATLAS_AT") else -1.0
+var _units_drawn := 0
+var _mcls: Dictionary = {}    # def -> Motion class
+var _post: Dictionary = {}    # id -> Motion posture bits from REAL61 Morale (pinned / suppressed / broken)
+var _fat: Dictionary = {}     # id -> REAL61 Fatigue level 0..1
+var _chev: Dictionary = {}    # id -> rank chevron 0..4 (REAL61 realism_info.chevron)
+var _pips: Dictionary = {}    # id -> 1 + filled ammo pips (BEARER61 bearers), absent = not a bearer
+var g61_counts: Dictionary = {}
+var g61_off := OS.get_environment("ANIM61_OFF") == "1"   # perf A/B: G6.1 motion + anim61 frame choice off
+var _no61: Dictionary = {}
 
 
 ## Per-cell lift (px) for this frame: ELEV-VIEW's own table wins (exactly what the terrain bake used).
@@ -201,9 +222,59 @@ func _build_coast_decor(d: Dictionary, list: Array) -> void:
 
 
 func on_destroyed(id: int) -> void:
+	# G6.1: an infantry unit with the anim61 set leaves a corpse (die_0..2, lingers, fades)
+	var dc = art._ec.get(id)
+	if dc is Array and (dc as Array).size() > 37 and not (dc[31] as Dictionary).is_empty() and mv != null:
+		motion.kill(id, dc, mv.anim_time())
+	else:
+		motion.forget(id)
+	_post.erase(id)
+	_fat.erase(id)
+	_chev.erase(id)
+	_pips.erase(id)
 	art.forget(id)
 	art.forget(-1 - id)  # G5: its sling-load sprite cache
 	_seen_wrecks.erase(id)
+
+
+## G6.1: ShotFired view event (match_view): shooter recoil kick, target hit flinch.
+func on_shot(ev: Dictionary) -> void:
+	motion.on_shot(int(ev.get("shooter", -1)), int(ev.get("target", -1)))
+
+
+## G6.1: cosmetic posture / fatigue / rank / bearer pips of a live entity (read-only REAL61 / BEARER61 calls).
+func _refresh_post(id: int, e: Dictionary) -> void:
+	var w = mv._world
+	var p := 0
+	match Morale.state(w, e):
+		"pinned": p = Motion.P_PINNED
+		"suppressed": p = Motion.P_SUPPRESSED
+		"broken": p = Motion.P_BROKEN
+	_post[id] = p
+	_fat[id] = Fatigue.level(w, e)
+	_chev[id] = RealInfo.chevron(e)
+	if AmmoBearer.is_bearer(e):
+		_pips[id] = 1 + clampi(ceili(AmmoBearer.load_frac(e) * 3.0), 0, 3)
+
+
+## G6.1: small procedural marks in the atlas: rank chevrons chev:1..4 (gold), bearer pips pip:0 / pip:1.
+func _mark(key: String) -> int:
+	if art.atlas.has(key):
+		return art.atlas.page_of(key)
+	var img: Image
+	if key.begins_with("chev:"):
+		var r := int(key.substr(5))
+		img = Image.create(7, 2 + r * 2, false, Image.FORMAT_RGBA8)
+		for k in r:
+			for x in 7:
+				var y := k * 2 + absi(x - 3) / 2
+				img.set_pixel(x, mini(y, img.get_height() - 1), Color(0.95, 0.78, 0.25))
+				if y + 1 < img.get_height():
+					img.set_pixel(x, y + 1, Color(0.35, 0.25, 0.05))
+	else:
+		img = Image.create(2, 2, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0.95, 0.85, 0.3) if key == "pip:1" else Color(0.15, 0.15, 0.15, 0.85))
+	return art.atlas.add(key, img)
 
 
 func _push(layer: int, y: float, page: int, src: Rect2, dst: Vector2, dsz: Vector2, mod: Color) -> void:
@@ -256,6 +327,10 @@ func refresh() -> void:
 	lod = 2 if z < LOD_FAR else (1 if z < LOD_MID else 0)
 	var far := lod == 2
 	var t: float = mv.anim_time()
+	if _atlas_at > 0.0 and t >= _atlas_at:  # G6.1 (ANIMC61): env ANIM61_ATLAS_AT=<s> prints the live atlas once
+		_atlas_at = -1.0
+		var st: Dictionary = art.atlas.stats()
+		print("ANIM61_ATLAS pages=%d MB=%.1f units_drawn=%d t=%.1f" % [int(st.pages), float(st.bytes) / 1e6, _units_drawn, t])
 	var alpha: float = mv._alpha
 	var vr := _view_rect()
 	var mem: Dictionary = (sn.get("memory", {}) as Dictionary).get(pf, {})
@@ -347,6 +422,7 @@ func refresh() -> void:
 	var defs: PackedStringArray = sn.defs
 	var own_a: PackedInt32Array = sn.owner
 	var flg_a: PackedInt32Array = sn.flags
+	var hp_a: PackedFloat32Array = sn.get("hp", PackedFloat32Array())  # G6.1 (ANIMC61): damaged frames
 	# ART-T CR: HILL / CLIFF tiles are drawn raised (terrain_layer._raise[code] px): lift ground units
 	var raise_v = mv.terrain_layer.get("_raise") if mv.terrain_layer != null else null
 	var raise: Dictionary = raise_v if raise_v is Dictionary else {}
@@ -366,6 +442,12 @@ func refresh() -> void:
 		"strips": 0, "sinking": 0, "tactical": 0, "squads": 0, "aboard": 0,
 		"wake_sheets": 0, "sink_sheets": 0, "swim": 0, "ramp": 0}
 	g5_counts = gc5
+	# G6.1 (ANIMA61): motion layer on while the last frame drew <= MOTION_CAP units (2k-on-screen stays cheap)
+	motion_on = not far and not g61_off and _units_drawn <= MOTION_CAP
+	var gc61 := {"motion": 0, "a61": 0, "flipped": 0, "corpses": 0, "chevrons": 0, "pips": 0, "veh": 0, "turret": 0, "track": 0, "bank": 0, "recoil": 0}
+	g61_counts = gc61
+	var units_drawn := 0
+	var pframe := Engine.get_process_frames()
 	for i in n_u:
 		var id: int = ids[i]
 		if flg_a[i] & RenderSnap.FLAG_ABOARD:
@@ -451,6 +533,40 @@ func refresh() -> void:
 			c = art.cache_unit(_proxy(id, dname, ow, fac_a[i], fl, sq_al), _team.get(ow, neutral), String(_ck.get(ow, "x")))
 		if sq_al > 0:
 			gc5.squads += 1
+		units_drawn += 1
+		var a61: Dictionary = c[31] if not g61_off else _no61
+		var bits := 0
+		if fl & RenderSnap.FLAG_MOVING:
+			bits |= Motion.P_MOVING
+		if fl & RenderSnap.FLAG_FIRING:
+			bits |= Motion.P_FIRING
+		var mcls := -1
+		if motion_on and c[2] != -2:
+			if live and (pframe + id) % 8 == 0:
+				var pe = ents.get(id)
+				if pe != null:
+					_refresh_post(id, pe)
+			bits |= int(_post.get(id, 0))
+			mcls = int(_mcls.get(dname, -1))
+			if mcls < 0:
+				mcls = Motion.class_for(not a61.is_empty() or (ArtCatalog.manifest().get("infantry", {}) as Dictionary).has(dname),
+					bool(c[12]), (fl & RenderSnap.FLAG_SHIP) != 0, dname)
+				_mcls[dname] = mcls
+			if mcls == Motion.CLS_INF and motion.speed(id) >= RUN_SPEED:
+				bits |= Motion.P_RUN
+			motion.step(id, mcls, pos, fac_a[i], bits, t)
+			var mo: Vector2 = motion.out_off
+			var mpx: Vector2 = motion.out_px
+			if c[30] >= 0 and fl & RenderSnap.FLAG_MOVING:
+				# G6.1: officers / leaders walk slightly ahead of their men
+				var of: float = motion.out_face
+				mpx += Vector2(cos(of) - sin(of), (cos(of) + sin(of)) * 0.5).normalized() * 2.0
+			sp += Vector2((mo.x - mo.y) * 32.0, (mo.x + mo.y) * 16.0) + mpx
+			motion.mark_screen(id, sp)
+			if motion.out_flash > 0.0:
+				var fk: float = motion.out_flash
+				mod6 = Color(mod6.r * (1.0 + 0.9 * fk), mod6.g * (1.0 + 0.6 * fk), mod6.b * (1.0 + 0.5 * fk), mod6.a)
+			gc61.motion += 1
 		var pg: int = c[2]
 		var ad = g5air.get(id) if has_air else null
 		if pg == -2:
@@ -478,6 +594,9 @@ func refresh() -> void:
 			gc5.wounded += 1
 		elif fl & RenderSnap.FLAG_FIRING:
 			fi = c[20] if (fl & RenderSnap.FLAG_DRONE and c[20] >= 0) else c[7]
+			if not a61.is_empty():  # G6.1: fire standing / crouched (suppressed) / prone (pinned), cosmetic reload
+				fi = Motion.inf_col(a61, bits, t, Motion.seed_of(id), motion.firing_for(id), float(_fat.get(id, 0.0))) if mcls >= 0 else Motion.inf_col(a61, bits, t, (id % 61) * 0.0164)
+				gc61.a61 += 1
 		elif ad != null and c[21] >= 0 and fl & RenderSnap.FLAG_LANDED:
 			# G5 (ART-AIR ground_frames): parked in a hangar / on a pad, else landed in the open
 			fi = c[21] if String(ad.ph) == "parked" or (c[22] < 0) else c[22]
@@ -504,6 +623,10 @@ func refresh() -> void:
 					gc5.ramp += 1
 			if pz >= 0:
 				fi = pz
+			elif not a61.is_empty() and not (c[30] >= 0 and not (fl & RenderSnap.FLAG_MOVING) and (bits & (Motion.P_PINNED | Motion.P_SUPPRESSED)) == 0 and int(t * 0.5 + id * 0.61) % 4 == 0):
+				# G6.1: walk / run / crawl cycles (phase-offset per soldier), prone / crouch, idle breathing
+				fi = Motion.inf_col(a61, bits, t, Motion.seed_of(id), 0.0, float(_fat.get(id, 0.0))) if mcls >= 0 else Motion.inf_col(a61, bits, t, (id % 61) * 0.0164)
+				gc61.a61 += 1
 			elif fl & RenderSnap.FLAG_MOVING:
 				var ph := int(t * 6.0 + id * 0.37)
 				if c[8]:
@@ -515,7 +638,35 @@ func refresh() -> void:
 				gc6.command += 1
 		if fi < 0:
 			fi = 0
-		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
+		# G6.1 (ANIMC61): vehicle anim61 frames (track cycle, recoil, bank, burner, pulse, damaged) and the separate
+		# mbt / ifv turret aimed at the last shot target. Only while the motion layer runs (<= MOTION_CAP drawn).
+		var tur: Array = []
+		var v61: Dictionary = c[32]
+		if mcls >= 0 and not v61.is_empty():
+			var vmv: bool = (fl & RenderSnap.FLAG_MOVING) != 0 and (fi == c[11] or fi == 0 or (ad != null and (c[24] as Array).has(fi)))
+			var vid: bool = not vmv and fi == 0
+			var hpf: float = hp_a[i] if i < hp_a.size() else 1.0
+			var vfire: bool = fi == c[7] and (fl & RenderSnap.FLAG_FIRING) != 0
+			var fb := fi
+			fi = VehAnim61.pick(v61, fi, vid, vmv, motion, id, hpf, t)
+			gc61.veh += 1
+			if fi != fb:
+				if fi == int(v61.get("bank_l", -2)) or fi == int(v61.get("bank_r", -2)):
+					gc61.bank += 1
+				elif fi == int(v61.get("recoil", -2)):
+					gc61.recoil += 1
+				elif v61.has("track") or v61.has("move"):
+					gc61.track += 1
+			if v61.has("turret") and (vid or vmv or vfire) and fi != int(v61.get("damaged", -2)):
+				var hc: int = int(v61.get("hull_move" if vmv else "hull_idle", -1))
+				var ts: Array = art.turret_src(v61.turret, _team.get(ow, neutral), String(_ck.get(ow, "x")))
+				if hc >= 0 and not ts.is_empty():
+					fi = hc
+					var hrow := posmod(int(round(motion.out_face * FACING_INV)), 8)
+					var tcol := 2 if motion.recoil(id) > VehAnim61.RECOIL else (1 if vfire else 0)
+					var tsz := Vector2(ts[2], ts[3])
+					tur = [ts[0], (ts[1] as Vector2) + Vector2(tcol, motion.aim_row(id, sp, hrow)) * tsz, ts[4], tsz]
+		var row := posmod(int(round((motion.out_face if mcls >= 0 else fac_a[i]) * FACING_INV)), 8)
 		var fsz := Vector2(c[4], c[5])
 		var layer := 0
 		if ad != null:
@@ -536,17 +687,38 @@ func refresh() -> void:
 			_reserve(ii * 2 + 16)
 		# G6: sort by ground depth (sp.y + height lift) so units on a ridge order correctly against the valley
 		_keys[ii] = layer * LAYER_MUL + (int(sp.y + hl) + Y_OFF) * IDX_MUL + ii
-		_page[ii] = pg
-		_src[ii] = (c[3] as Vector2) + Vector2(fi, row) * fsz
-		_size[ii] = fsz
-		_dst[ii] = sp + (c[6] as Vector2)
-		_dsz[ii] = fsz
+		var tb61: Vector2 = Vector2(-1, -1) if fi < int(c[35]) else (c[38] as PackedVector2Array)[fi * 8 + row]
+		if tb61.x >= 0.0:
+			# G6.1: anim61 column in the split block B: cropped cell (ANIMC61), mirrored rows drawn with a negative width
+			var k61 := fi * 8 + row
+			var dz: Vector2 = (c[39] as PackedVector2Array)[k61]
+			_page[ii] = c[33]
+			_src[ii] = tb61
+			_dst[ii] = sp + (c[40] as PackedVector2Array)[k61]
+			_dsz[ii] = dz
+			_size[ii] = Vector2(absf(dz.x), dz.y)
+			if dz.x < 0.0:
+				gc61.flipped += 1
+		else:
+			_page[ii] = pg
+			_src[ii] = (c[3] as Vector2) + Vector2(fi if fi < int(c[35]) else 0, row) * fsz
+			_dst[ii] = sp + (c[6] as Vector2)
+			_dsz[ii] = fsz
+			_size[ii] = fsz
 		_mod[ii] = mod6
 		_n = ii + 1
+		if not tur.is_empty():  # G6.1 (ANIMC61): turret over its hull (same depth, later index sorts after)
+			_push(layer, sp.y + hl, tur[0], Rect2(tur[1], tur[3]), sp + (tur[2] as Vector2), tur[3], mod6)
+			gc61.turret += 1
+		if lod == 0 and motion_on:
+			_push_marks(id, sp, c, layer, hl, gc61)
 		if fl & RenderSnap.FLAG_SLUNG:
 			_g5_slung(sling.get(id, []), id, ow, fac_a[i], sp, t, gc5)
 		if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
 			_g5_markers(sp, fl, id, t, neutral, gc5)
+	_units_drawn = units_drawn
+	if not far:
+		_push_corpses(vr, t, gc61)
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
 	for id in statics:
 		var e: Dictionary = statics[id]
@@ -626,6 +798,46 @@ func refresh() -> void:
 	ViewUtil.prof_add("p_e3_sort", t_sub)
 	drawn = _n
 	queue_redraw()
+
+
+## G6.1: rank chevron (REAL61) and bearer ammo pips (BEARER61) above a drawn unit (close zoom only).
+func _push_marks(id: int, sp: Vector2, c: Array, layer: int, hl: float, gc61: Dictionary) -> void:
+	var top := sp.y + (c[6] as Vector2).y
+	var r := int(_chev.get(id, 0))
+	if r > 0:
+		var ck := "chev:%d" % clampi(r, 1, 4)
+		var pgc := _mark(ck)
+		var rc: Rect2 = art.atlas.rect_of(ck)
+		_push(layer, sp.y + hl + 1.0, pgc, rc, Vector2(sp.x - 3.0, top - 2.0), rc.size, Color.WHITE)
+		gc61.chevrons += 1
+	var pp := int(_pips.get(id, 0))
+	if pp > 0:
+		for k in 3:
+			var pk := "pip:1" if k < pp - 1 else "pip:0"
+			var pgp := _mark(pk)
+			_push(layer, sp.y + hl + 1.0, pgp, art.atlas.rect_of(pk), Vector2(sp.x - 4.0 + k * 3.0, top - 5.0), Vector2(2, 2), Color.WHITE)
+		gc61.pips += 1
+
+
+## G6.1: corpses (Motion.kill): die_0..die_2, then lie and fade; drawn just under living units at the same depth.
+func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
+	motion.prune(t)
+	for cp in motion.corpses:
+		var csp: Vector2 = cp[2]
+		if not vr.has_point(csp):
+			continue
+		var cc: Array = cp[1]
+		var age := t - float(cp[4])
+		var dcols: Array = (cc[31] as Dictionary).get("die", [])
+		if dcols.is_empty():
+			continue
+		art.frame_src(cc, int(dcols[Motion.corpse_frame(age)]), int(cp[3]))
+		if art.out_page < 0:
+			continue
+		var dst: Vector2 = csp + art.out_doff  # G6.1 (ANIMC61): cropped cell offset / signed size from frame_src
+		var dsz: Vector2 = art.out_dsz
+		_push(0, csp.y - 1.0, art.out_page, art.out_src, dst, dsz, Color(1, 1, 1, Motion.corpse_alpha(age)))
+		gc61.corpses += 1
 
 
 ## Minimal unit dict for the art cache / fallback sprite (built only on a cache miss).

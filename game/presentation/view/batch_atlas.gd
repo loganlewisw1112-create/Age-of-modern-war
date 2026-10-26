@@ -7,11 +7,22 @@ extends RefCounted
 
 const PAGE := 2048
 const PAD := 2
+const WIDE := 2560  # G6.1: shared page width for sheets wider than PAGE
 
 var pages: Array = []        # Array of Dictionary {img: Image, tex: ImageTexture, x, y, row_h, dirty}
 var _slots: Dictionary = {}  # key -> Rect2 (page index stored in _slot_page)
 var _slot_page: Dictionary = {}
 var uploads := 0
+var _wide: Array = []        # G6.1: indices of shared WIDE pages
+var _cur := -1               # G6.1: index of the regular page being filled
+
+
+## G6.1 (ANIMA61): atlas memory evidence {pages, bytes}.
+func stats() -> Dictionary:
+	var b := 0
+	for p in pages:
+		b += (p.img as Image).get_width() * (p.img as Image).get_height() * 4
+	return {"pages": pages.size(), "bytes": b}
 
 
 func has(key) -> bool:
@@ -47,11 +58,25 @@ func add(key, img: Image) -> int:
 	var sz := img.get_size()
 	var pi := -1
 	var at := Vector2i.ZERO
-	if sz.x + PAD > PAGE or sz.y + PAD > PAGE:
+	if sz.x + PAD > PAGE and sz.x + PAD <= WIDE and sz.y + PAD <= PAGE:
+		# G6.1 (ANIMA61): sheets wider than a page (72 px walkers / 64 px squads x 33+ columns) stack in
+		# shared WIDE x PAGE pages instead of one page (one texture, one batch break) each
+		for wi in _wide:
+			var wp: Dictionary = pages[wi]
+			if int(wp.y) + sz.y + PAD <= PAGE:
+				pi = wi
+				break
+		if pi < 0:
+			pi = _new_page(Vector2i(WIDE, PAGE))
+			pages[pi].x = WIDE
+			_wide.append(pi)
+		at = Vector2i(0, int(pages[pi].y))
+		pages[pi].y = int(pages[pi].y) + sz.y + PAD
+	elif sz.x + PAD > PAGE or sz.y + PAD > PAGE:
 		pi = _new_page(Vector2i(sz.x + PAD, sz.y + PAD))
 		pages[pi].x = PAGE  # an oversize page holds one image
 	else:
-		pi = pages.size() - 1
+		pi = _cur  # G6.1: the current regular page (oversize / wide pages never take small images)
 		var ok := false
 		if pi >= 0:
 			var p: Dictionary = pages[pi]
@@ -62,6 +87,7 @@ func add(key, img: Image) -> int:
 			ok = int(p.y) + sz.y + PAD <= int(p.img.get_height())
 		if not ok:
 			pi = _new_page(Vector2i(PAGE, PAGE))
+			_cur = pi
 		var q: Dictionary = pages[pi]
 		at = Vector2i(int(q.x), int(q.y))
 		q.x = int(q.x) + sz.x + PAD

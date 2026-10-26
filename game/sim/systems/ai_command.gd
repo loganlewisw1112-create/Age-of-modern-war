@@ -8,6 +8,9 @@ extends RefCounted
 ## Commands: set_ai_commander {issuer, slot, target: {formation: id} | {role: id} | {units: [ids]},
 ##   playstyle, objective: {type, cell?, target_id?}, stance}; recall_ai_commander {issuer, slot};
 ##   ally_request {issuer, ally_fid, kind: attack | defend | air_support, cell?}.
+##   G6.1 (GEN61): objective {type: "auto"} (the default) = a full general (sim/ai/general.gd) that picks
+##   its own operations; optional budget {credits_pm, salvage_pm, ore_pm, lump: {credits, salvage, ore}}
+##   on set_ai_commander, or set_ai_budget {issuer, slot, budget} later (general_war.gd spends only it).
 ##   formation id: int = company id; "co:N" = company N; "army:N" = army N (its companies + Commander).
 ## State w.sys_state.ai_cmd, created lazily by the first accepted command or by the wave AI (a match that
 ## never uses them is untouched, so every G5 hash stays equal):
@@ -26,14 +29,17 @@ extends RefCounted
 const Companies = preload("res://sim/systems/companies.gd")
 const Commanders = preload("res://sim/ai/commanders.gd")
 const AllyCmds = preload("res://sim/ai/ally_cmds.gd")
+const GeneralAI = preload("res://sim/ai/general_ai.gd")  # G6.1 GEN61-2: AI-side generals
 const WaveAI = preload("res://sim/ai/wave_ai.gd")
+const General = preload("res://sim/ai/general.gd")
+const War = preload("res://sim/ai/general_war.gd")
 
 const PLAYSTYLES := ["defensive", "aggressive", "specops", "combined"]
 const STANCES := ["cautious", "balanced", "aggressive"]
 const ROLES := ["base_defence", "air_ops", "logistics", "naval"]
-const OBJECTIVES := ["take", "hold", "raid", "escort"]
+const OBJECTIVES := ["auto", "take", "hold", "raid", "escort"]
 const ALLY_KINDS := ["attack", "defend", "air_support"]
-const OWN_COMMANDS := ["set_ai_commander", "recall_ai_commander", "ally_request"]
+const OWN_COMMANDS := ["set_ai_commander", "recall_ai_commander", "ally_request", "set_ai_budget"]
 
 
 ## The ai_cmd state (created on first use).
@@ -48,6 +54,7 @@ static func state(w: SimWorld) -> Dictionary:
 static func tick(w: SimWorld) -> void:
 	if w.sys_state.has("ai_cmd"):
 		AllyCmds.tick(w)
+	GeneralAI.tick(w)  # G6.1 GEN61-2: AI sides may run the same General engine (guarded, off by default)
 	var wv = w.sys_state.get("waves")
 	if not (wv is Dictionary) or (wv.get("waves", []) as Array).is_empty():
 		return
@@ -79,6 +86,12 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			return ""
 		"ally_request":
 			return _validate_ally(w, fid, cmd)
+		"set_ai_budget":
+			if bool(w.factions[fid].get("is_ai", false)):
+				return "AI sides command themselves."
+			if _slot_of(w, fid, int(cmd.get("slot", -1))).is_empty():
+				return "No AI commander in slot %d." % (int(cmd.get("slot", -1)) + 1)
+			return War.budget_error(cmd.get("budget", {}))
 	return "Unknown AI command."
 
 
@@ -91,6 +104,10 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			recall(w, fid, int(cmd.slot), "player")
 		"ally_request":
 			_apply_ally(w, fid, cmd)
+		"set_ai_budget":
+			var bs := _slot_of(w, fid, int(cmd.slot))
+			War.update_budget(w, bs, cmd.get("budget", {}))
+			w.emit("AiBudgetSet", {"fid": fid, "slot": int(cmd.slot), "left": War.budget_left(w, bs)})
 
 
 ## Player AI-commander slots, ascending slot: [{slot, kind, target, target_spec, formation, role,
@@ -112,7 +129,7 @@ static func slots(w: SimWorld, fid: int) -> Array:
 			"formation": spec.get("formation", null), "role": String(s.role), "playstyle": String(s.playstyle),
 			"objective": (s.objective as Dictionary).duplicate(true), "stance": String(s.stance),
 			"units": (s.units as Array).duplicate(), "phase": String((s.doc as Dictionary).get("phase", "")),
-			"mode": String(s.mode)})
+			"mode": String(s.mode), "general": General.view(w, s)})
 	return out
 
 
@@ -215,9 +232,12 @@ static func _validate_set(w: SimWorld, fid: int, cmd: Dictionary) -> String:
 	var rt := resolve_target(w, fid, cmd.get("target", null))
 	if rt.has("error"):
 		return String(rt.error)
-	var ob = cmd.get("objective", {"type": "hold"})
+	var ob = cmd.get("objective", {"type": "auto"})
 	if not (ob is Dictionary) or not OBJECTIVES.has(String(ob.get("type", ""))):
-		return "Pick an objective (take, hold, raid, escort)."
+		return "Pick an objective (auto, take, hold, raid, escort)."
+	var be := War.budget_error(cmd.get("budget", null))
+	if be != "":
+		return be
 	var p = cell_pos(ob.get("cell", null))
 	if ob.has("cell") and (p == null or not _in_map(w, p)):
 		return "Objective is off the map."
@@ -254,7 +274,7 @@ static func _apply_set(w: SimWorld, fid: int, cmd: Dictionary) -> void:
 	if not _slot_of(w, fid, sl).is_empty():
 		recall(w, fid, sl, "reassigned")
 	var rt := resolve_target(w, fid, cmd.target)
-	var ob: Dictionary = cmd.get("objective", {"type": "hold"})
+	var ob: Dictionary = cmd.get("objective", {"type": "auto"})
 	var obj := {"type": String(ob.type), "target_id": int(ob.get("target_id", -1))}
 	var p = cell_pos(ob.get("cell", null))
 	if p != null:
@@ -262,6 +282,10 @@ static func _apply_set(w: SimWorld, fid: int, cmd: Dictionary) -> void:
 	var s := Commanders.new_drive(w, String(cmd.playstyle), String(cmd.get("stance", "balanced")), obj)
 	s.merge({"slot": sl, "kind": String(rt.kind), "spec": rt.spec, "role": String(rt.spec.get("role", "")),
 		"since": w.tick}, true)
+	if String(obj.type) == "auto":
+		s.gen = General.new_gen(w)
+	if cmd.has("budget") or String(obj.type) == "auto":
+		s.budget = War.parse_budget(w, cmd.get("budget", {}))
 	st.slots[fid][sl] = s
 	w.emit("AiCommanderAssigned", {"fid": fid, "slot": sl, "kind": s.kind, "playstyle": s.playstyle,
 		"stance": s.stance, "objective": String(obj.type)})

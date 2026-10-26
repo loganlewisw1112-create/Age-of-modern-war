@@ -21,6 +21,7 @@ static var _from := 0.4
 static var _msl := 0.35
 static var _mal := 0.25
 static var _exh := 0.85
+static var _k: Array = []   # PERF61: update_unit rule values, read once per rules dict (see _sync)
 static var _def: Dictionary = {}   # def -> [kind (0 none, 1 infantry, 2 vehicle), load]
 
 
@@ -34,6 +35,10 @@ static func _sync() -> void:
 	_msl = float(_f.get("max_speed_loss", 0.35))
 	_mal = float(_f.get("max_acc_loss", 0.25))
 	_exh = float(_f.get("exhausted_at", 0.85))
+	_k = [float(_f.get("rest_move", 0.15)), float(_f.get("march_per_tile", 0.0045)), float(_f.get("assault_mult", 1.6)),
+		float(_f.get("combat_per_s", 0.006)), float(_f.get("vehicle_mult", 0.25)),
+		int(float(_f.get("rest_after_s", 8)) * SimWorld.TICK_RATE), float(_f.get("rest_per_s", 0.02)),
+		float(_f.get("garrison_mult", 2.0)), float(_f.get("hq_radius", 7.0)), float(_f.get("hq_mult", 1.75))]
 	_def.clear()
 
 
@@ -126,7 +131,10 @@ static func rest_points(w: SimWorld, blds: Array) -> Dictionary:
 
 ## One pass for one unit: dt seconds since the last pass; under_fire = suppressed recently.
 static func update_unit(w: SimWorld, e: Dictionary, dt: float, under_fire: bool, rest_pts: Dictionary) -> void:
-	var info := def_info(String(e.def))
+	var dk := String(e.def)
+	var info = _def.get(dk) if is_same(Content.rules(), _rref) else null   # PERF61: def_info without the call
+	if info == null:
+		info = def_info(dk)
 	var kind := int(info[0])
 	if kind == 0:
 		return
@@ -139,25 +147,27 @@ static func update_unit(w: SimWorld, e: Dictionary, dt: float, under_fire: bool,
 	var f := float(e.get("fat", 0.0))
 	var f0 := f
 	var since := w.tick - int(e.get("supp_tick", -100000))
-	if moved >= float(_f.get("rest_move", 0.15)) or under_fire:
-		var g := moved * float(_f.get("march_per_tile", 0.0045)) * float(info[1])
-		var ot := String((e.get("order", {}) as Dictionary).get("type", "idle"))
+	var k: Array = _k
+	if moved >= float(k[0]) or under_fire:
+		var g := moved * float(k[1]) * float(info[1])
+		var od = e.get("order")   # PERF61: no {} default allocated per unit
+		var ot := String((od as Dictionary).get("type", "idle")) if od != null else "idle"
 		if ot == "attack_move" or ot == "attack" or int(e.get("target", -1)) >= 0:
-			g *= float(_f.get("assault_mult", 1.6))
+			g *= float(k[2])
 		if under_fire:
-			g += float(_f.get("combat_per_s", 0.006)) * dt
+			g += float(k[3]) * dt
 		if kind == 2:
-			g *= float(_f.get("vehicle_mult", 0.25))
+			g *= float(k[4])
 		f += g
-	elif since >= int(float(_f.get("rest_after_s", 8)) * SimWorld.TICK_RATE) and f > 0.0:
-		var rr := float(_f.get("rest_per_s", 0.02)) * dt
+	elif since >= int(k[5]) and f > 0.0:
+		var rr := float(k[6]) * dt
 		if int(e.get("garrisoned_in", -1)) >= 0:
-			rr *= float(_f.get("garrison_mult", 2.0))
+			rr *= float(k[7])
 		else:
-			var hr := float(_f.get("hq_radius", 7.0))
+			var hr := float(k[8])
 			for p in rest_pts.get(int(e.owner), []):
 				if pos.distance_squared_to(p) <= hr * hr:
-					rr *= float(_f.get("hq_mult", 1.75))
+					rr *= float(k[9])
 					break
 		f -= rr
 	f = snappedf(clampf(f, 0.0, 1.0), Q)

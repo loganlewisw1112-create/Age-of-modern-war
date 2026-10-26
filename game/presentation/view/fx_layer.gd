@@ -19,6 +19,142 @@ var drawn := 0
 var flames := 0               # G4b (UI4B-3): flame_jet effects started (playtest / debug)
 var _flame_w: Dictionary = {} # weapon id -> bool (weapon class "flame")
 
+# G6.1 (VFX61): effects overhaul. fx61_engine draws particles here, ground lights in an additive child drawn
+# behind this layer, and craters / scorch decals in a child at absolute z 0 (under selection rings and units).
+const Fx61Core = preload("res://presentation/view/fx61_core.gd")
+const Fx61Engine = preload("res://presentation/view/fx61_engine.gd")
+var fx61 = null                 # Fx61Engine (lazy: _e())
+var fx61_drawn: Dictionary = {"parts": 0, "lights": 0, "decals": 0, "vignette": false}
+var _dec_node: Node2D = null
+var _lit_node: Node2D = null
+var _q_t := 0.0
+var _q_forced := ""
+var _fx61_tick := -1
+var _veh: Dictionary = {}       # def id -> bool (ground / naval vehicle: armour sparks, dust trail)
+
+
+class Fx61Proxy:
+	extends Node2D
+	var cb: Callable
+
+	func _draw() -> void:
+		if cb.is_valid():
+			cb.call(self)
+
+
+func _e():
+	if fx61 == null:
+		fx61 = Fx61Engine.new()
+		fx61.set_quality(_q_forced if _q_forced != "" else Fx61Core.quality_setting())
+		_dec_node = Fx61Proxy.new()
+		_dec_node.name = "Fx61Decals"
+		_dec_node.z_index = -3   # relative: 3 - 3 = absolute 0, after the terrain in tree order, below rings (z 1)
+		_dec_node.cb = func(ci): fx61_drawn.decals = fx61.draw_decals(ci, _vr())
+		add_child(_dec_node)
+		_lit_node = Fx61Proxy.new()
+		_lit_node.name = "Fx61Lights"
+		_lit_node.show_behind_parent = true
+		var m := CanvasItemMaterial.new()
+		m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_lit_node.material = m
+		_lit_node.cb = func(ci): fx61_drawn.lights = fx61.draw_lights(ci, _vr())
+		add_child(_lit_node)
+	return fx61
+
+
+## Effects quality override (playtests / tests); "" = follow Settings (graphics/fx_quality).
+func set_fx_quality(q: String) -> void:
+	_q_forced = Fx61Core.norm_quality(q) if q != "" else ""
+	_e().set_quality(_q_forced if _q_forced != "" else Fx61Core.quality_setting())
+
+
+func _vr() -> Rect2:
+	if not is_inside_tree():
+		return Rect2(-1.0e7, -1.0e7, 2.0e7, 2.0e7)
+	var inv: Transform2D = get_viewport().get_canvas_transform().affine_inverse()
+	var vs: Vector2 = get_viewport_rect().size
+	return Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vs).grow(160.0)
+
+
+func _is_vehicle(def_id: String) -> bool:
+	var v = _veh.get(def_id)
+	if v == null:
+		var mc := String(Content.unit(def_id).get("move_class", "foot"))
+		v = mc != "foot" and mc != "air" and not _is_air_def(def_id)
+		_veh[def_id] = v
+	return v
+
+
+func _terrain_at(p: Vector2) -> int:
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	var tr = sn.get("terrain")
+	var mw := int(sn.get("map_w", 0))
+	if not (tr is PackedByteArray) or mw <= 0:
+		return 0
+	var idx := floori(p.y) * mw + floori(p.x)
+	return int((tr as PackedByteArray)[idx]) if idx >= 0 and idx < (tr as PackedByteArray).size() else 0
+
+
+func _ent(eid: int):
+	var wd = mv.world if mv != null else null
+	if wd == null:
+		return null
+	return (wd.entities as Dictionary).get(eid)
+
+
+## Muzzle effects for a shot; returns the muzzle point (screen px).
+func _fx61_muzzle(ev: Dictionary, from: Vector2, to: Vector2, cls: String) -> Vector2:
+	var e = _e()
+	e.lod = lod
+	var sid := int(ev.get("shooter", -1))
+	var se = _ent(sid)
+	var ground: Vector2 = _w2s(from)
+	var a: Vector2 = ground + Fx61Core.muzzle_offset(String(se.def) if se != null else "", cls, (to - from).angle(), _height_for(sid))
+	var dir: Vector2 = (_w2s(to) - ground).normalized()
+	e.muzzle(cls, a, dir if dir != Vector2.ZERO else Vector2.RIGHT, ground)
+	return a
+
+
+## Impact effects where a direct shot lands (b = drawn hit point, to = world target point).
+func _fx61_impact(ev: Dictionary, to: Vector2, b: Vector2, hit: bool, cls: String) -> void:
+	var e = _e()
+	var heavy := cls == "cannon" or cls == "rocket"
+	if hit:
+		var t = _ent(int(ev.get("target", -1)))
+		var kind := "soft"
+		if t != null:
+			if String(t.kind) == "building":
+				kind = "building"
+			elif _is_vehicle(String(t.get("def", ""))):
+				kind = "armor"
+		if heavy:
+			e.explosion(b, 12.0, "" if kind == "armor" else "scorch")
+			if kind == "armor":
+				e.impact("armor", b, 1.6)
+		else:
+			e.impact(kind, b, 1.2 if cls == "autocannon" else 0.7)
+	else:
+		var g: Vector2 = _w2s(to) + Vector2(_rng.randf_range(-14, 14), _rng.randf_range(-7, 7))
+		var code := _terrain_at(to)
+		e.impact("water" if Fx61Core.is_water(code) else "dirt", g, 1.5 if heavy else 0.8)
+		if heavy and not Fx61Core.is_water(code):
+			e.add_decal(g, 7.0, "scorch")
+
+
+## OFF61 battle drill "smoke" (AiDecision tag): a smoke screen over the units it names (visible / own side only).
+func _fx61_smoke(ev: Dictionary) -> void:
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	var own: bool = int(ev.get("fid", -1)) == int(mv.player_fid) or (mv._ally_fids as Array).has(int(ev.get("fid", -1)))
+	var pts: Array = []
+	var ids: Array = ev.get("unit_ids", [])
+	var step := maxi(1, ids.size() / 6)
+	for i in range(0, ids.size(), step):
+		var p = G6Fx.pos_of(sn, int(ids[i]))
+		if p is Vector2 and (own or mv.cell_visible(Vector2i(floori(p.x), floori(p.y)))):
+			pts.append(_w2s(p))
+	if not pts.is_empty():
+		_e().smoke_screen(pts)
+
 
 func setup(view) -> void:
 	mv = view
@@ -35,7 +171,7 @@ func setup(view) -> void:
 
 
 func _height_for(eid: int) -> float:
-	var e = mv.world.entities.get(eid)
+	var e = _ent(eid)
 	if e == null:
 		return 10.0
 	if e.kind == "building":
@@ -53,29 +189,38 @@ func on_shot(ev: Dictionary) -> void:
 		return
 	if bool(ev.get("indirect", false)):
 		_add_shell(ev, from, to)
+		if lod < 2:
+			_fx61_muzzle(ev, from, to, "artillery")
 		return
 	if _air_shot(ev, from, to):
 		return
-	if _is_flame(String(ev.get("weapon", ""))):
+	var wid := String(ev.get("weapon", ""))
+	if _is_flame(wid):
 		_add_flame(ev)
+		_fx61_muzzle(ev, from, to, "flame")
 		return
-	if _is_laser(String(ev.get("weapon", ""))):
+	if _is_laser(wid):
 		_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))  # G6: beam, not a tracer
+		_fx61_muzzle(ev, from, to, "energy")
 		return
-	var a: Vector2 = _w2s(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	if lod >= 2:
+		return
+	# G6.1 (VFX61): per-class muzzle flash / light / casings / barrel smoke / backblast, glowing class tracer, impact
+	var cls: String = Fx61Core.weapon_class(wid)
+	var a: Vector2 = _fx61_muzzle(ev, from, to, cls)
 	var jitter := Vector2(_rng.randf_range(-4, 4), _rng.randf_range(-3, 3))
 	var hit := bool(ev.get("hit", true))
 	var b: Vector2 = _w2s(to) + Vector2(0, -_height_for(int(ev.get("target", -1)))) + (jitter if hit else jitter * 4.0)
-	var heavy := String(ev.get("weapon", "")) in ["tank_cannon", "at_rocket", "autocannon"]
-	if lod >= 2:
-		return
-	_fx.append({"kind": "tracer", "t": 0.0, "life": 0.09 if not heavy else 0.14, "a": a, "b": b,
-		"size": 2.0 if heavy else 1.0, "color": Color(1.0, 0.85, 0.45) if not heavy else Color(1.0, 0.6, 0.3)})
-	if lod >= 1:
-		return
-	_fx.append({"kind": "muzzle", "t": 0.0, "life": 0.07, "a": a, "b": a, "size": 6.0 if heavy else 3.0, "color": Color(1, 0.9, 0.5)})
-	if heavy and hit:
-		_fx.append({"kind": "explosion_small", "t": 0.0, "life": 0.35, "a": b, "b": b, "size": 8.0, "color": Color(1, 0.6, 0.2)})
+	var pr: Dictionary = Fx61Core.params(cls)
+	_fx.append({"kind": "tracer", "t": 0.0, "life": float(pr.tl), "a": a, "b": b, "size": float(pr.tw),
+		"color": pr.tc, "glow": float(pr.glow)})
+	if cls == "rocket" and lod < 1:
+		var e61 = _e()
+		var nt: int = e61.n(5)
+		for i in nt:
+			var u := (i + 0.5) / float(nt)
+			e61.part("puff", a.lerp(b, u), e61.wind() * 0.2 + Vector2(0, -6), 1.3, 3.0, 10.0, Color(0.78, 0.76, 0.72, 0.42), 0.0, float(pr.tl) * u)
+	_fx61_impact(ev, to, b, hit, cls)
 
 
 func _is_flame(wid: String) -> bool:
@@ -107,19 +252,21 @@ func _add_shell(ev: Dictionary, from: Vector2, to: Vector2) -> void:
 	var energy := String(ev.get("weapon", "")).contains("plasma")
 	_fx.append({"kind": "shell", "t": 0.0, "life": clampf(0.35 + dist * 0.06, 0.5, 1.3), "a": a, "b": b,
 		"size": maxf(12.0, dist * 7.0), "color": Color(0.5, 0.95, 1.0) if energy else Color(1.0, 0.8, 0.45),
-		"splash": splash, "energy": energy})
+		"splash": splash, "energy": energy, "wto": to})
 
 
 func _shell_landed(f: Dictionary) -> void:
 	var b: Vector2 = f.b
 	var r: float = 22.0 * float(f.get("splash", 1.0))
-	_fx.append({"kind": "blast", "t": 0.0, "life": 0.6, "a": b, "b": b, "size": r,
-		"color": Color(0.45, 0.9, 1.0) if bool(f.get("energy", false)) else Color(1.0, 0.6, 0.2)})
+	var e = _e()
+	e.lod = lod
+	# G6.1 (VFX61): water landing = splash column; ground = layered blast (flash, fireball, ring, debris, smoke column,
+	# light) with a persistent crater
+	if Fx61Core.is_water(_terrain_at(f.get("wto", Vector2(-1, -1)))):
+		e.impact("water", b, 1.5 + float(f.get("splash", 1.0)))
+		return
 	_fx.append({"kind": "explosion_large", "t": 0.0, "life": 0.7, "a": b + Vector2(0, -6), "b": b, "size": r * 0.8, "color": Color(1, 0.55, 0.15)})
-	for i in 3:
-		var off := Vector2(_rng.randf_range(-r * 0.4, r * 0.4), _rng.randf_range(-r * 0.2, r * 0.2))
-		_fx.append({"kind": "smoke", "t": -_rng.randf_range(0.0, 0.3), "life": 1.6 + _rng.randf(),
-			"a": b + off, "b": b + off + Vector2(_rng.randf_range(-8, 8), -30), "size": 5.0, "color": Color(0.28, 0.26, 0.24)})
+	e.explosion(b, r * 0.55, "crater", 0.0, bool(f.get("energy", false)))
 
 
 func on_destroyed(ev: Dictionary) -> void:
@@ -130,17 +277,22 @@ func on_destroyed(ev: Dictionary) -> void:
 	if not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
 		return
 	var s: Vector2 = _w2s(p)
+	var e = _e()
+	e.lod = lod
 	if kind == "unit" and _is_air_def(String(ev.get("def", ""))):
 		_add_crash(s, String(ev.get("cause", "")) == "crashed")
+		e.explosion(s, 14.0, "scorch")
 		return
-	var big: bool = kind == "building" or Content.unit(String(ev.get("def", ""))).get("leaves_wreck", false)
+	var dname := String(ev.get("def", ""))
+	if kind == "unit" and not _is_vehicle(dname):
+		e.impact("dirt", s + Vector2(0, -4), 0.8)   # G6.1: infantry fall without a fireball
+		return
+	var big: bool = kind == "building" or Content.unit(dname).get("leaves_wreck", false)
 	_fx.append({"kind": "explosion_large" if big else "explosion_small", "t": 0.0, "life": 0.8 if big else 0.45,
 		"a": s + Vector2(0, -8), "b": s, "size": 26.0 if big else 10.0, "color": Color(1, 0.55, 0.15)})
-	for i in (5 if big else 2):
-		var off := Vector2(_rng.randf_range(-12, 12), _rng.randf_range(-6, 4))
-		_fx.append({"kind": "smoke", "t": -_rng.randf_range(0.0, 0.4), "life": 2.2 + _rng.randf() * 1.2,
-			"a": s + off, "b": s + off + Vector2(_rng.randf_range(-10, 10), -40 - _rng.randf() * 30),
-			"size": 7.0 if big else 4.0, "color": Color(0.25, 0.24, 0.23)})
+	# G6.1 (VFX61): secondaries, then a burning wreck (fire + drifting smoke plume) keyed by the entity id
+	var burn: float = (40.0 if kind == "building" else (28.0 if big else 10.0)) * (0.5 if e.q == "low" else 1.0)
+	e.destruction(s, big, int(ev.get("id", -1)), burn)
 
 
 func add_marker(world_pos: Vector2, col: Color) -> void:
@@ -149,11 +301,14 @@ func add_marker(world_pos: Vector2, col: Color) -> void:
 
 
 func tick(delta: float) -> void:
+	var tg := Time.get_ticks_usec()
 	_g5_refresh()
+	ViewUtil.prof_add("p_fx_g5", tg)
 	_air_trails(delta)
 	_g6_tick()
+	var busy61 := _fx61_frame(delta)
 	if _fx.is_empty():
-		if _g5_any:
+		if _g5_any or busy61:
 			queue_redraw()
 		return
 	var keep: Array = []
@@ -206,7 +361,12 @@ func _draw_body() -> void:
 				# a short bright segment travelling from a to b
 				var head: Vector2 = (f.a as Vector2).lerp(f.b, clampf(k * 1.6, 0.0, 1.0))
 				var tail: Vector2 = (f.a as Vector2).lerp(f.b, clampf(k * 1.6 - 0.45, 0.0, 1.0))
+				var gl: float = float(f.get("glow", 0.0))
+				if gl > 0.0:
+					draw_line(tail, head, Color(col.r, col.g, col.b, gl * (1.0 - k) * 0.45), float(f.size) * 3.0)
 				draw_line(tail, head, Color(col.r, col.g, col.b, 1.0 - k * 0.5), f.size)
+				if gl > 0.0:
+					draw_line(tail.lerp(head, 0.6), head, Color(1, 1, 0.92, 1.0 - k * 0.5), maxf(1.0, float(f.size) * 0.5))
 			"muzzle":
 				if not _draw_frames("muzzle", f.a, k, 1.0):
 					draw_circle(f.a, f.size * (1.0 - k * 0.5), Color(1, 0.95, 0.6, 1.0 - k))
@@ -240,6 +400,9 @@ func _draw_body() -> void:
 			"marker":
 				var r2: float = f.size * (1.0 - k * 0.6)
 				_draw_iso_ring(f.a, r2, Color(col.r, col.g, col.b, 1.0 - k), 2.0)
+	if fx61 != null:
+		fx61_drawn.parts = fx61.draw_parts(self, vr)
+		fx61_drawn.vignette = fx61.draw_vignette(self, vr.grow(-160.0))
 
 
 func _draw_flame(f: Dictionary, k: float) -> void:
@@ -505,6 +668,9 @@ func _on_world_events(evs: Array) -> void:
 	for ev in evs:
 		if String(ev.get("type", "")) == "AirStrike":
 			on_air_strike(ev)
+		elif String(ev.get("type", "")) == "AiDecision":
+			if String(ev.get("tag", "")) == "smoke":
+				_fx61_smoke(ev)
 		elif String(ev.get("type", "")) != "ShotFired":  # lasers come through on_shot (MatchView dispatch)
 			_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))
 
@@ -654,6 +820,7 @@ func _bomb_landed(f: Dictionary) -> void:
 	var b: Vector2 = f.b
 	_fx.append({"kind": "air_fx", "name": "g5_bomb_blast", "t": 0.0, "life": 0.9, "a": b, "b": b, "size": 26.0, "color": Color(1, 0.55, 0.15)})
 	_fx.append({"kind": "blast", "t": 0.0, "life": 0.6, "a": b, "b": b, "size": 40.0, "color": Color(1.0, 0.6, 0.2)})
+	_e().explosion(b, 16.0, "crater")
 	for i in 3:
 		var off := Vector2(_rng.randf_range(-14, 14), _rng.randf_range(-6, 4))
 		_fx.append({"kind": "smoke", "t": -_rng.randf_range(0.2, 0.5), "life": 1.8 + _rng.randf(),
@@ -744,3 +911,81 @@ func _draw_air_fx(f: Dictionary, k: float) -> void:
 		idx = clampi(int(k * arr.size()), 0, arr.size() - 1)
 	var tx: Texture2D = arr[idx]
 	draw_texture(tx, p - _fx_pivot(name, tx), Color(1, 1, 1, alpha))
+
+
+# ---------------------------------------------------------------- G6.1 (VFX61) per-frame + ambient
+## Per frame: quality refresh (every 2 s), ambient scan once per snapshot tick, engine step, child redraws.
+## Returns true while the engine has anything to draw.
+func _fx61_frame(delta: float) -> bool:
+	var e = _e()
+	e.lod = lod
+	_q_t -= delta
+	if _q_t <= 0.0:
+		_q_t = 2.0
+		e.set_quality(_q_forced if _q_forced != "" else Fx61Core.quality_setting())
+	var t0 := Time.get_ticks_usec()
+	_fx61_scan()
+	ViewUtil.prof_add("p_fx61_scan", t0)
+	var busy: bool = not (e.parts.is_empty() and e.fixed.is_empty() and e.lights.is_empty() and e.emitters.is_empty())
+	if busy:
+		var t1 := Time.get_ticks_usec()
+		e.tick(delta, _vr())
+		ViewUtil.prof_add("p_fx61_tick", t1)
+	if busy or not e.decals.is_empty():
+		_dec_node.queue_redraw()
+		_lit_node.queue_redraw()
+	return busy or e.heat > 0.0
+
+
+## Once per snapshot tick (never the live world): dust trails behind moving ground vehicles in view (staggered;
+## colour by terrain, spray on water), fire emitters on burning buildings (hp < 40%) and burning forest cells.
+func _fx61_scan() -> void:
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	if sn.is_empty() or int(sn.get("tick", -1)) == _fx61_tick or not sn.has("flags"):
+		return
+	_fx61_tick = int(sn.tick)
+	if lod >= 2:
+		return
+	var e = fx61
+	var vr := _vr()
+	var stg := 6 if String(e.q) == "low" else 3
+	var flg: PackedInt32Array = sn.flags
+	var pos: PackedVector2Array = sn.pos
+	var fac: PackedFloat32Array = sn.facing
+	var sdefs: PackedStringArray = sn.defs
+	var sdef: PackedInt32Array = sn.def
+	var skip := RenderSnap.FLAG_AIR | RenderSnap.FLAG_SHIP | RenderSnap.FLAG_ABOARD
+	var vdef := PackedByteArray()   # per def index: 1 = ground vehicle (the def table is small)
+	vdef.resize(sdefs.size())
+	for di in sdefs.size():
+		vdef[di] = 1 if _is_vehicle(sdefs[di]) else 0
+	for i in range(_fx61_tick % stg, int(sn.n), stg):
+		var fl: int = flg[i]
+		if (fl & RenderSnap.FLAG_MOVING) == 0 or (fl & skip) != 0 or vdef[sdef[i]] == 0:
+			continue
+		var p: Vector2 = pos[i]
+		var bp: Vector2 = p - Vector2(cos(fac[i]), sin(fac[i])) * 0.45
+		var sp: Vector2 = _w2s(bp)
+		if not vr.has_point(sp) or not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
+			continue
+		var code := _terrain_at(bp)
+		e.dust(sp, Fx61Core.dust_color(code), Fx61Core.is_water(code))
+	if _fx61_tick % 4 != 0:   # fires: every 4th snapshot is enough (emitter ttl 1.5 s)
+		return
+	var st: Dictionary = sn.get("statics", {})
+	for id in st:
+		var s: Dictionary = st[id]
+		if String(s.get("kind", "")) != "building" or float(s.get("hp", 1.0)) >= 0.4 or not bool(s.get("built", true)):
+			continue
+		var bpos: Vector2 = s.pos
+		if mv.cell_visible(Vector2i(floori(bpos.x), floori(bpos.y))):
+			e.fire("b%d" % int(id), _w2s(bpos) + Vector2(0, -10), 5.0 + 2.0 * float(s.get("size", 2)), 1.5)
+	var fires = sn.get("fires")
+	var mw := int(sn.get("map_w", 0))
+	if fires is PackedInt32Array and mw > 0:
+		for ci in fires:
+			var c := Vector2i(ci % mw, ci / mw)
+			if mv.cell_visible(c):
+				var fp: Vector2 = _w2s(Vector2(c) + Vector2(0.5, 0.5))
+				if vr.has_point(fp):
+					e.fire("c%d" % ci, fp, 6.0, 1.5)

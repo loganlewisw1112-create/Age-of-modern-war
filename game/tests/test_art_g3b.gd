@@ -67,10 +67,13 @@ func test_g3b_units() -> void:
 			continue
 		check_eq(int(spec.facings), 8, "8 facings for " + def)
 		var want: Array = ["idle", "walk_a", "walk_b", "fire"] if String(u.get("move_class", "")) == "foot" else ["idle", "move", "fire"]
-		check_eq(spec.frames, want, "frame set for " + def)
+		# G6.1 (ANIMA61): foot units append the anim61 infantry set after their original columns (intended change)
+		# G6.1 (ANIMB61): vehicles append their anim61 frames (track/recoil/bank/damaged...) after the originals too
+		var foot := spec.has("anim61")
+		check_eq((spec.frames as Array).slice(0, want.size()) if foot else spec.frames, want, "frame set for " + def)
 		var img: Image = AC._image(String(spec.file))
 		if check(img != null, "sheet loads for " + def):
-			check_eq(img.get_size(), Vector2i(int(spec.fw) * want.size(), int(spec.fh) * 8), "sheet size for " + def)
+			check_eq(img.get_size(), Vector2i(int(spec.fw) * (spec.frames as Array).size() if foot else int(spec.fw) * want.size(), int(spec.fh) * 8), "sheet size for " + def)
 			check(int(spec.fw) >= 24 and int(spec.fw) <= 128 and int(spec.fh) >= 24 and int(spec.fh) <= 128, "sane frame size " + def)
 		check(AC._image(String(spec.get("mask", ""))) != null, "team mask for " + def)
 		if u.get("leaves_wreck", false):
@@ -176,6 +179,11 @@ func test_g3b_deterministic() -> void:
 	var b := {"images": {}, "manifest": {}}
 	G3B.build(a)
 	G3B.build(b)
+	# G6.1 (ANIMA61): every generator appends the infantry animation set after its modules
+	preload("res://tools/art/g61_anim.gd").build(a)
+	preload("res://tools/art/g61_anim.gd").build(b)
+	preload("res://tools/art/g61_anim_veh.gd").build(a)  # G6.1 (ANIMB61): vehicle frames, as in gen_art.generate()
+	preload("res://tools/art/g61_anim_veh.gd").build(b)
 	var files: Dictionary = AC.manifest().get("files", {})
 	var diff := 0
 	var stale := 0

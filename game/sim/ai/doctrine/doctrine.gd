@@ -24,6 +24,7 @@ const Spec = preload("res://sim/ai/doctrine/doc_specops.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const U = preload("res://sim/ai/ai_util.gd")
 const Ops = preload("res://sim/systems/ops.gd")
+const Fog = preload("res://sim/systems/fog.gd")
 
 
 ## Strategic/operational/tactical layers for an AI side (called by ai_controller in the mil turn).
@@ -75,7 +76,7 @@ static func plan_for(w: SimWorld, fid: int, formation: Dictionary) -> Dictionary
 		fs.rally = formation.rally
 	var base := U.base_pos(w, fid)
 	var dir: Vector2 = ((fs.obj as Vector2) - cen).normalized() if (fs.obj as Vector2).distance_to(cen) > 1.0 else U.front_dir(w, fid)
-	var intel := {"vis": w.visible_enemies(fid), "mines": T.known_mines(w, fid), "buildings": w.buildings_of(fid),
+	var intel := {"vis": Fog.visible_enemies_ro(w, fid), "mines": T.known_mines(w, fid), "buildings": w.buildings_of(fid),
 		"arty": [], "enemy_dir": dir, "base": base, "units": [], "in_form": {}, "safe": base}
 	var out := {"orders": [], "tags": []}
 	Op.step(w, fid, {}, fs, {"key": fs.key, "elems": split(w, fid, ids), "recon": [], "gids": []}, intel, out)
@@ -452,7 +453,7 @@ static func drive_orders(w: SimWorld) -> void:
 		var cen := D.centroid(D.movers(w, fid, form.units), fs.obj)
 		var obj: Vector2 = fs.obj
 		var base := U.base_pos(w, fid)
-		var intel := {"vis": w.visible_enemies(fid), "mines": T.known_mines(w, fid), "buildings": w.buildings_of(fid),
+		var intel := {"vis": Fog.visible_enemies_ro(w, fid), "mines": T.known_mines(w, fid), "buildings": w.buildings_of(fid),
 			"arty": [], "enemy_dir": (obj - cen).normalized() if obj.distance_to(cen) > 1.0 else U.front_dir(w, fid),
 			"base": base, "units": [], "in_form": {}, "safe": base}
 		Op.step(w, fid, st, fs, form, intel, null)

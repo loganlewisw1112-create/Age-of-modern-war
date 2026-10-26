@@ -114,56 +114,56 @@
     "icons/m_interceptor_swarm.png": "35de077716f726d415184642ccf7cefa",
     "icons/m_lifter_drone.png": "9ab143bfbd82966a3c5bdf6b5e3010e8",
     "icons/m_micro_drone.png": "cc670fec29ad96ef1d220f3d7e493a4a",
-    "units/a_attack_heli.png": "34541c1696ddf87651a9b8dbc0a7231e",
-    "units/a_attack_heli_mask.png": "c940801334cc68eb5d5dbd3bc1ec2bc6",
+    "units/a_attack_heli.png": "ed99d93f4da6f5793b632df60b56d90b",
+    "units/a_attack_heli_mask.png": "baf54b985aae217842c36fdae82ce015",
     "units/a_attack_heli_shadow.png": "f5ea0ca63a74dfa82f90a7b017c08958",
     "units/a_attack_heli_shadow8.png": "492dee1f08ed51da41f99e4ad518ac23",
-    "units/a_interceptor.png": "d7f20629414e6a793314fbc54cac765a",
-    "units/a_interceptor_mask.png": "d3c257666ba929d128a473ca75ede9ca",
+    "units/a_interceptor.png": "6b810cb6cef1248ee5e6f636e466a822",
+    "units/a_interceptor_mask.png": "6b228a835b3498526a5aea1bd9ddf9fa",
     "units/a_interceptor_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/a_interceptor_shadow8.png": "6ee9ff951fa219594a757fcd1a695bcd",
-    "units/a_strike_jet.png": "06bc6af951d3e16a91df9bb17596d5c5",
-    "units/a_strike_jet_mask.png": "fa2da7e376cb7c87d6e9a3d14ba0626d",
+    "units/a_strike_jet.png": "93db17bee5e53bcba6f10ffe49b201da",
+    "units/a_strike_jet_mask.png": "e2a4e4ef97c02614cb747dd6d8ece645",
     "units/a_strike_jet_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/a_strike_jet_shadow8.png": "63e2755613fe2d1831ee113da85b315f",
-    "units/a_transport_gunship.png": "6c781ce3e9de482f21329f3c90af9292",
-    "units/a_transport_gunship_mask.png": "bab0aabcc462b3e504100ad98fdcba70",
+    "units/a_transport_gunship.png": "082086797c155ad7b4acc9da4eba3905",
+    "units/a_transport_gunship_mask.png": "5774b1d49495a8fcbb446c2fc5c1700b",
     "units/a_transport_gunship_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/a_transport_gunship_shadow8.png": "fbcfc8aa90f57d509e30c7abd90d09d1",
-    "units/a_vtol_dropship.png": "eff8d524a05a0409007a83ef7c878528",
-    "units/a_vtol_dropship_mask.png": "8878bafb2026be253ea3ce0df61cfdf7",
+    "units/a_vtol_dropship.png": "f9ba87f8e85b7c2c69c1999f24881a16",
+    "units/a_vtol_dropship_mask.png": "5497940b7beb162b343468654fd1b544",
     "units/a_vtol_dropship_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
     "units/a_vtol_dropship_shadow8.png": "329c20d4071c893bf1d1444c75935d36",
-    "units/b_bomber.png": "828eb1611c5c1cd7306a690c749e3821",
-    "units/b_bomber_mask.png": "2664ae215a244aa36c12d8359d527b1b",
+    "units/b_bomber.png": "14ea890eb94c38cc0ad5c0938172de9d",
+    "units/b_bomber_mask.png": "a5858945d11d4a8aa8f62cfadcc6c068",
     "units/b_bomber_shadow.png": "23bcfa77cc7f9db2d4e846dec5653447",
     "units/b_bomber_shadow8.png": "9c5ef77e1dc0ac858bf1316adbf231b1",
-    "units/b_gunship.png": "b9f305cabddebe5525f1c3c76c9d24f6",
-    "units/b_gunship_mask.png": "fd6b03e310ab5c923567a2782f284fc3",
+    "units/b_gunship.png": "40e30b6420c86648dfd54d4d822caa7e",
+    "units/b_gunship_mask.png": "21b4320d9375721734e0ba1c154e2fb0",
     "units/b_gunship_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/b_gunship_shadow8.png": "e6c82ce779c731ce921727d35989ca96",
-    "units/b_heavy_lift.png": "6a32a492bcfa4092e474f73e0992f5f3",
-    "units/b_heavy_lift_mask.png": "90a15cd9b1cd76c59b788d908ca70da0",
+    "units/b_heavy_lift.png": "30d649c9d1cf51bb4205a16325620be2",
+    "units/b_heavy_lift_mask.png": "8289bc34abda787d6172261239c8463c",
     "units/b_heavy_lift_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
     "units/b_heavy_lift_shadow8.png": "8b7b8ff371299eee35b4640d31cae398",
-    "units/b_vtol_dropship.png": "789e3a0524d02d838ca0dd540a9c4457",
-    "units/b_vtol_dropship_mask.png": "d00836cb145aa81d02b8cd1ca1d37bf2",
+    "units/b_vtol_dropship.png": "e6886427684620ca1cc577c00e864bd3",
+    "units/b_vtol_dropship_mask.png": "be7f25a6dee6dbf02ace7e80b6f2e544",
     "units/b_vtol_dropship_shadow.png": "a0913ef934c9f663d74b054f7b97f0ff",
     "units/b_vtol_dropship_shadow8.png": "ece5b0d4b07e205b1c44fabf4cd91dda",
-    "units/m_drone_carrier.png": "559b7fae4ee60bdf2051d804de579204",
-    "units/m_drone_carrier_mask.png": "2c08b0d933d3a42cec6514c706bbac9d",
+    "units/m_drone_carrier.png": "1199d86fdaeecc5ef9ea325bd38c27d6",
+    "units/m_drone_carrier_mask.png": "00bdc240c1449172ef2cd1bd35645169",
     "units/m_drone_carrier_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/m_drone_carrier_shadow8.png": "02b78a58ca34855862d24a7b43fd851c",
-    "units/m_interceptor_swarm.png": "f75d83401ca0edb2229cc96946045955",
-    "units/m_interceptor_swarm_mask.png": "3f7bf8f2d5dfcbd644f7e595bd2f915d",
+    "units/m_interceptor_swarm.png": "30e21e2da88b35c5d3234f1028b4cb0a",
+    "units/m_interceptor_swarm_mask.png": "19b48cf3eb7bbb485e707bd6cae75648",
     "units/m_interceptor_swarm_shadow.png": "73ecee4cb041ac5987399e3e9657b592",
     "units/m_interceptor_swarm_shadow8.png": "50a4781261f185df72732f457d2a379c",
-    "units/m_lifter_drone.png": "46b60f27b33df868a2b1107514bacf55",
-    "units/m_lifter_drone_mask.png": "d29e96dde156e3499583eb482a804673",
+    "units/m_lifter_drone.png": "ce5dc360c38604ae68e0792345b1f620",
+    "units/m_lifter_drone_mask.png": "92f5028622e29c7a9e0d7272d35b38c4",
     "units/m_lifter_drone_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
     "units/m_lifter_drone_shadow8.png": "91f196ae516c0d3fbe8524a7d75a7ec4",
-    "units/m_micro_drone.png": "598b1dff497f1bb5a07809ded5c74280",
-    "units/m_micro_drone_mask.png": "41e1cfc753ca465c9cab2e2b98afc8a5",
+    "units/m_micro_drone.png": "3a7cd547d65956825dba4e8f437ec7de",
+    "units/m_micro_drone_mask.png": "1d7d8a233838dcff09cfd53436a77dc3",
     "units/m_micro_drone_shadow.png": "18b86b8d8727c6870d80643420127504",
     "units/m_micro_drone_shadow8.png": "66bace3f9a4b432035788d5dacf16abd",
     "wrecks/a_attack_heli_wreck.png": "2b6ffc29cddb2886c6e3e6766b5773c1",
@@ -559,6 +559,80 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            -12,
+            1
+          ],
+          [
+            -16,
+            -4
+          ],
+          [
+            -13,
+            -10
+          ],
+          [
+            0,
+            -14
+          ],
+          [
+            12,
+            -10
+          ],
+          [
+            15,
+            -4
+          ]
+        ],
+        "smoke": [
+          [
+            -4,
+            -32
+          ],
+          [
+            0,
+            -37
+          ],
+          [
+            3,
+            -32
+          ],
+          [
+            6,
+            -21
+          ],
+          [
+            3,
+            -20
+          ],
+          [
+            0,
+            -21
+          ],
+          [
+            -3,
+            -20
+          ],
+          [
+            -7,
+            -21
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -571,7 +645,10 @@
         "idle_b",
         "move_b",
         "landed",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 97,
       "ground_frames": [
@@ -620,6 +697,81 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "burner": "burner",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -16,
+            1
+          ],
+          [
+            -24,
+            -6
+          ],
+          [
+            -18,
+            -16
+          ],
+          [
+            -1,
+            -19
+          ],
+          [
+            16,
+            -16
+          ],
+          [
+            23,
+            -10
+          ],
+          [
+            17,
+            0
+          ],
+          [
+            -1,
+            4
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -27
+          ],
+          [
+            0,
+            -28
+          ],
+          [
+            3,
+            -27
+          ],
+          [
+            1,
+            -18
+          ],
+          [
+            3,
+            -19
+          ],
+          [
+            0,
+            -24
+          ],
+          [
+            -3,
+            -19
+          ],
+          [
+            -1,
+            -18
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 1,
       "facings": 8,
@@ -634,7 +786,11 @@
         "taxi",
         "roll",
         "landing",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged",
+        "burner"
       ],
       "fw": 98,
       "ground_frames": [
@@ -684,6 +840,81 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "burner": "burner",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22,
+            3
+          ],
+          [
+            -1,
+            9
+          ],
+          [
+            -23,
+            3
+          ],
+          [
+            -32,
+            -7
+          ],
+          [
+            -23,
+            -18
+          ],
+          [
+            -1,
+            -23
+          ],
+          [
+            22,
+            -18
+          ],
+          [
+            31,
+            -7
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -25
+          ],
+          [
+            0,
+            -27
+          ],
+          [
+            5,
+            -25
+          ],
+          [
+            2,
+            -18
+          ],
+          [
+            5,
+            -17
+          ],
+          [
+            0,
+            -21
+          ],
+          [
+            -5,
+            -17
+          ],
+          [
+            -2,
+            -18
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 1,
       "facings": 8,
@@ -698,7 +929,11 @@
         "taxi",
         "roll",
         "landing",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged",
+        "burner"
       ],
       "fw": 92,
       "ground_frames": [
@@ -750,6 +985,80 @@
           "sling_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9,
+            -2
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -10,
+            -2
+          ],
+          [
+            -14,
+            -8
+          ],
+          [
+            -11,
+            -13
+          ],
+          [
+            -1,
+            -15
+          ],
+          [
+            10,
+            -13
+          ],
+          [
+            13,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -8,
+            -33
+          ],
+          [
+            2,
+            -39
+          ],
+          [
+            8,
+            -33
+          ],
+          [
+            10,
+            -20
+          ],
+          [
+            8,
+            -32
+          ],
+          [
+            2,
+            -21
+          ],
+          [
+            -8,
+            -32
+          ],
+          [
+            -10,
+            -20
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -766,7 +1075,10 @@
         "sling",
         "sling_b",
         "sling_hook",
-        "unload"
+        "unload",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 105,
       "ground_frames": [
@@ -832,6 +1144,80 @@
           "sling_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22,
+            5
+          ],
+          [
+            2,
+            15
+          ],
+          [
+            -24,
+            11
+          ],
+          [
+            -31,
+            -1
+          ],
+          [
+            -26,
+            -14
+          ],
+          [
+            -3,
+            -22
+          ],
+          [
+            22,
+            -16
+          ],
+          [
+            32,
+            -4
+          ]
+        ],
+        "smoke": [
+          [
+            -1,
+            -37
+          ],
+          [
+            2,
+            -37
+          ],
+          [
+            -1,
+            -37
+          ],
+          [
+            -1,
+            -42
+          ],
+          [
+            -3,
+            -41
+          ],
+          [
+            -2,
+            -27
+          ],
+          [
+            1,
+            -31
+          ],
+          [
+            1,
+            -42
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -851,7 +1237,10 @@
         "unload",
         "sling",
         "sling_b",
-        "sling_hook"
+        "sling_hook",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 103,
       "ground_frames": [
@@ -907,6 +1296,81 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "burner": "burner",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            29,
+            6
+          ],
+          [
+            -1,
+            13
+          ],
+          [
+            -30,
+            6
+          ],
+          [
+            -41,
+            -10
+          ],
+          [
+            -30,
+            -23
+          ],
+          [
+            -2,
+            -30
+          ],
+          [
+            29,
+            -23
+          ],
+          [
+            40,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -7,
+            -37
+          ],
+          [
+            0,
+            -44
+          ],
+          [
+            7,
+            -37
+          ],
+          [
+            5,
+            -27
+          ],
+          [
+            7,
+            -23
+          ],
+          [
+            0,
+            -28
+          ],
+          [
+            -7,
+            -23
+          ],
+          [
+            -5,
+            -27
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 1,
       "facings": 8,
@@ -921,7 +1385,11 @@
         "taxi",
         "roll",
         "landing",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged",
+        "burner"
       ],
       "fw": 112,
       "ground_frames": [
@@ -969,6 +1437,80 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            10,
+            1
+          ],
+          [
+            0,
+            5
+          ],
+          [
+            -11,
+            1
+          ],
+          [
+            -15,
+            -4
+          ],
+          [
+            -11,
+            -10
+          ],
+          [
+            0,
+            -14
+          ],
+          [
+            10,
+            -10
+          ],
+          [
+            14,
+            -4
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -35
+          ],
+          [
+            0,
+            -41
+          ],
+          [
+            5,
+            -35
+          ],
+          [
+            7,
+            -20
+          ],
+          [
+            5,
+            -19
+          ],
+          [
+            0,
+            -27
+          ],
+          [
+            -6,
+            -29
+          ],
+          [
+            -8,
+            -20
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -981,7 +1523,10 @@
         "idle_b",
         "move_b",
         "landed",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 109,
       "ground_frames": [
@@ -1032,6 +1577,80 @@
           "sling_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -20,
+            -19
+          ],
+          [
+            -1,
+            -23
+          ],
+          [
+            19,
+            -19
+          ],
+          [
+            28,
+            -9
+          ],
+          [
+            20,
+            2
+          ],
+          [
+            -1,
+            7
+          ],
+          [
+            -21,
+            2
+          ],
+          [
+            -29,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -40
+          ],
+          [
+            0,
+            -48
+          ],
+          [
+            1,
+            -35
+          ],
+          [
+            10,
+            -35
+          ],
+          [
+            5,
+            -38
+          ],
+          [
+            -4,
+            -34
+          ],
+          [
+            -1,
+            -28
+          ],
+          [
+            -10,
+            -27
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -1048,7 +1667,10 @@
         "sling",
         "sling_b",
         "sling_hook",
-        "unload"
+        "unload",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 120,
       "ground_frames": [
@@ -1114,6 +1736,80 @@
           "sling_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            17,
+            -9
+          ],
+          [
+            0,
+            -4
+          ],
+          [
+            -18,
+            -9
+          ],
+          [
+            -24,
+            -18
+          ],
+          [
+            -17,
+            -26
+          ],
+          [
+            0,
+            -31
+          ],
+          [
+            16,
+            -26
+          ],
+          [
+            23,
+            -18
+          ]
+        ],
+        "smoke": [
+          [
+            1,
+            -33
+          ],
+          [
+            0,
+            -35
+          ],
+          [
+            -1,
+            -33
+          ],
+          [
+            3,
+            -27
+          ],
+          [
+            -1,
+            -27
+          ],
+          [
+            0,
+            -26
+          ],
+          [
+            1,
+            -27
+          ],
+          [
+            -3,
+            -27
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -1133,7 +1829,10 @@
         "unload",
         "sling",
         "sling_b",
-        "sling_hook"
+        "sling_hook",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 86,
       "ground_frames": [
@@ -1187,6 +1886,80 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            30,
+            12
+          ],
+          [
+            0,
+            21
+          ],
+          [
+            -31,
+            12
+          ],
+          [
+            -41,
+            -3
+          ],
+          [
+            -32,
+            -18
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            31,
+            -18
+          ],
+          [
+            40,
+            -3
+          ]
+        ],
+        "smoke": [
+          [
+            0,
+            -25
+          ],
+          [
+            0,
+            -21
+          ],
+          [
+            0,
+            -25
+          ],
+          [
+            -3,
+            -23
+          ],
+          [
+            0,
+            -25
+          ],
+          [
+            0,
+            -20
+          ],
+          [
+            0,
+            -25
+          ],
+          [
+            3,
+            -23
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -1199,7 +1972,10 @@
         "idle_b",
         "move_b",
         "landed",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 90,
       "ground_frames": [
@@ -1248,6 +2024,81 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "burner": "burner",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9,
+            0
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            -10,
+            0
+          ],
+          [
+            -13,
+            -3
+          ],
+          [
+            -10,
+            -9
+          ],
+          [
+            -2,
+            -12
+          ],
+          [
+            8,
+            -10
+          ],
+          [
+            12,
+            -5
+          ]
+        ],
+        "smoke": [
+          [
+            -7,
+            -19
+          ],
+          [
+            0,
+            -14
+          ],
+          [
+            7,
+            -19
+          ],
+          [
+            -3,
+            -18
+          ],
+          [
+            6,
+            -13
+          ],
+          [
+            0,
+            -15
+          ],
+          [
+            -6,
+            -13
+          ],
+          [
+            3,
+            -18
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 1,
       "facings": 8,
@@ -1262,7 +2113,11 @@
         "taxi",
         "roll",
         "landing",
-        "parked"
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged",
+        "burner"
       ],
       "fw": 77,
       "ground_frames": [
@@ -1314,6 +2169,80 @@
           "sling_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            33,
+            -12
+          ],
+          [
+            -9,
+            5
+          ],
+          [
+            -34,
+            -12
+          ],
+          [
+            -24,
+            -4
+          ],
+          [
+            -14,
+            -17
+          ],
+          [
+            -1,
+            -20
+          ],
+          [
+            13,
+            -17
+          ],
+          [
+            23,
+            -24
+          ]
+        ],
+        "smoke": [
+          [
+            0,
+            -28
+          ],
+          [
+            0,
+            -24
+          ],
+          [
+            0,
+            -28
+          ],
+          [
+            0,
+            -26
+          ],
+          [
+            0,
+            -28
+          ],
+          [
+            0,
+            -24
+          ],
+          [
+            0,
+            -28
+          ],
+          [
+            0,
+            -26
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 2,
       "facings": 8,
@@ -1330,7 +2259,10 @@
         "sling",
         "sling_b",
         "sling_hook",
-        "unload"
+        "unload",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 79,
       "ground_frames": [
@@ -1384,6 +2316,80 @@
           "move_b"
         ]
       },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9,
+            3
+          ],
+          [
+            0,
+            7
+          ],
+          [
+            -10,
+            3
+          ],
+          [
+            -13,
+            -1
+          ],
+          [
+            -11,
+            -6
+          ],
+          [
+            0,
+            -13
+          ],
+          [
+            10,
+            -6
+          ],
+          [
+            12,
+            -1
+          ]
+        ],
+        "smoke": [
+          [
+            1,
+            -7
+          ],
+          [
+            0,
+            -6
+          ],
+          [
+            0,
+            -7
+          ],
+          [
+            0,
+            -7
+          ],
+          [
+            -1,
+            -7
+          ],
+          [
+            0,
+            -7
+          ],
+          [
+            0,
+            -7
+          ],
+          [
+            0,
+            -7
+          ]
+        ],
+        "v": 1
+      },
       "anim_fps": 10,
       "bob": 1,
       "facings": 8,
@@ -1395,7 +2401,10 @@
         "fire",
         "idle_b",
         "move_b",
-        "landed"
+        "landed",
+        "bank_l",
+        "bank_r",
+        "damaged"
       ],
       "fw": 40,
       "ground_frames": [

@@ -19,6 +19,21 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
 
 
+## G6.1 (INTEG61): the HUD root Control has zero size (its panels are anchored to the viewport), so the
+## FULL_RECT anchors gave this overlay a 0x0 rect and real map clicks never reached it (plan61 playtest).
+## Size it to the visible canvas explicitly; command_layer calls this on activation and every update.
+func fit() -> void:
+	var p := get_parent() as Control
+	var s := p.size if p != null else Vector2.ZERO
+	if s.x < 1.0 or s.y < 1.0:
+		var sc := get_global_transform_with_canvas().get_scale()
+		s = get_viewport_rect().size / Vector2(maxf(0.01, sc.x), maxf(0.01, sc.y))
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	position = Vector2.ZERO
+	if size != s:
+		size = s
+
+
 # ---------------------------------------------------------------- coordinates
 func _mv():
 	return hub.mv() if hub != null else null

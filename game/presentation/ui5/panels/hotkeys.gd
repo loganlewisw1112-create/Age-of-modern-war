@@ -92,6 +92,10 @@ const ACTIONS := {
 	"stance_page": ["COMMA", "Stance (page)", "squad61", "set_stance"],
 	"formations_page": ["SEMICOLON", "Formations (page)", "squad61", "set_formation"],
 	"regroup": ["SLASH", "Regroup on leader", "squad61", "regroup"],
+	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. J is taken (medic_auto / minefield / sea mines share
+	# infantry cards) and the card ignores Shift, so the bearer actions use free punctuation keys [ and ].
+	"bearer_join": ["BRACKETLEFT", "Join squad", "bearer61", "join_squad"],
+	"bearer_leave": ["BRACKETRIGHT", "Leave squad", "bearer61", "leave_squad"],
 }
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
@@ -206,8 +210,8 @@ static func fallback_key(taken: Dictionary) -> String:
 static func shares(ga: String, gb: String) -> bool:
 	if ga == gb or ga == "fixed" or gb == "fixed":
 		return true
-	if ga == "squad61" or gb == "squad61":
-		return true   # G6.1: on every combat unit card
+	if ga == "squad61" or gb == "squad61" or ga == "bearer61" or gb == "bearer61":
+		return true   # G6.1: on every combat unit card (bearers mix with any infantry selection)
 	for p in SHARE:
 		if (p[0] == ga and p[1] == gb) or (p[0] == gb and p[1] == ga):
 			return true

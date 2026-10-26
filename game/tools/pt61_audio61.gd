@@ -20,9 +20,9 @@ func _director(pt):
 		d = Director.new()
 		mv.add_child(d)
 		d.setup(mv)
-		pt._log("audio_director_attached_by_flow", true, "MatchView hook (change_request to ORCH) not in yet")
+		pt._log("audio_director_hooked", false, "INTEG61-2: MatchView did not attach the AudioDirector (the flow attached it)")
 	else:
-		pt._log("audio_director_present", true, "hooked by MatchView")
+		pt._log("audio_director_hooked", true, "hooked by MatchView")
 	return d
 
 
@@ -75,6 +75,13 @@ func run(pt) -> void:
 	pt._log("audio_radio_contact_heard", has_contact, str(lines))
 	await pt._wait(4.0)
 	pt._log("audio_radio_total", d.radio_log.size() > 0, "all radio so far: %s" % str(d.radio_log.map(func(r): return String(r.line))))
+	# 2b. INTEG61-2: the player's own direct order is acknowledged on the radio (world CommandApplied carries cmd_type,
+	# CR seq 406); the hooked director reads it from the live event stream, the flow hands it nothing.
+	var b2 := int(d.radio_log.size())
+	var ack_id := int(h._unit(w, "rifleman", 0, Vector2(c) + Vector2(-6.5, -4.0)).id)  # fresh, out of the firefight
+	mv.issue({"type": "stop", "unit_ids": [ack_id]})
+	var acked: bool = await pt._wait_until(func(): return d.radio_log.slice(b2).any(func(r): return String(r.cat) in ["holding", "moving", "ack"]), 15.0)
+	pt._log("audio_player_order_ack", acked, str(d.radio_log.slice(b2).map(func(r): return "%s(%s)" % [r.line, r.cat])))
 	# 3. Settings > Audio: move the sliders
 	await _settings_flow(pt)
 	pt._log("audio_summary", true, _counts(d))
@@ -105,7 +112,9 @@ func _settings_flow(pt) -> void:
 	if tab == null and tabs != null:
 		tab = AudioTab.build()
 		tabs.add_child(tab)
-		pt._log("audio_tab_added_by_flow", true, "Settings hook (change_request to ORCH) not in yet")
+		pt._log("audio_tab_hooked", false, "INTEG61-2: Settings has no Audio tab (the flow added it)")
+	elif tab != null:
+		pt._log("audio_tab_hooked", true, "Settings has the Audio tab")
 	if tabs != null:
 		tabs.current_tab = tab.get_index()
 	await pt._wait(0.3)

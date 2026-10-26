@@ -310,6 +310,19 @@ static func radio_for_event(ev: Dictionary, player_fid: int) -> Dictionary:
 			return {"cat": "air_on_station", "tags": []} if int(ev.get("owner", ev.get("fid", -1))) == player_fid else {}
 		"WaveIncoming":
 			return {"cat": "wave", "tags": []} if int(ev.get("owner", -1)) != player_fid else {}
+		"CommandApplied":
+			# G6.1 (INTEG61, AUDIO61 gap): the player's own direct orders on the radio. The envelope overwrites
+			# "type" with the event name, so the command type is read from "cmd_type" (world.gd CR to ORCH);
+			# without it nothing is voiced.
+			if int(ev.get("issuer", -1)) != player_fid:
+				return {}
+			var ct := String(ev.get("cmd_type", ""))
+			if ct in ["hold", "stop", "guard"]:
+				return {"cat": "holding", "tags": []}
+			if ct in ["move", "patrol", "regroup", "set_formation"]:
+				return {"cat": "moving", "tags": []}
+			if ct in ["attack", "attack_move", "set_mission", "issue_plan", "set_stance", "join_squad"]:
+				return {"cat": "ack", "tags": []}
 	return {}
 
 

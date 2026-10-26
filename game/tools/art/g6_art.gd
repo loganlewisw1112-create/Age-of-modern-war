@@ -88,6 +88,8 @@ static func generate(mods: Array = []) -> Dictionary:
 		if mods.is_empty() or mods.has(m):
 			MODS[m].build(out)
 	out.erase("bld_out")
+	preload("res://tools/art/g61_anim.gd").build(out)  # G6.1 (ANIMA61): infantry animation set
+	preload("res://tools/art/g61_anim_veh.gd").build(out)  # G6.1 (ANIMB61): vehicle/air/naval/walker animation frames
 	finish_units(out)
 	finish_bld(bo)
 	return {"units": out, "bld": bo}

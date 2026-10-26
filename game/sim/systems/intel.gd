@@ -17,6 +17,7 @@ extends RefCounted
 
 const MachineG6 = preload("res://sim/systems/machine_g6.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Fog = preload("res://sim/systems/fog.gd")
 
 const VER := 1
 const TPS := 20.0
@@ -115,7 +116,7 @@ static func refresh(w: SimWorld, fid: int) -> void:
 		st.by[fid] = {}
 	var book: Dictionary = st.by[fid]
 	var seen := {}
-	for x in w.visible_enemies(fid):
+	for x in Fog.visible_enemies_ro(w, fid):   # PERF61-2: read-only, no copy
 		var id := int(x.id)
 		var kind := String(x.kind)
 		if kind != "unit" and kind != "building":

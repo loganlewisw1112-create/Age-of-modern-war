@@ -429,6 +429,17 @@ static func _entity_visible0(w: SimWorld, fid: int, e: Dictionary) -> bool:
 ## per (tick, fid, entity count, next_id): repeated calls in one tick (AI think, ops) reuse it,
 ## and any spawn or death in between invalidates it. Callers get a copy (safe to mutate).
 static func visible_enemies(w: SimWorld, fid: int) -> Array:
+	return _vis_cached(w, fid).duplicate()
+
+
+## G6.1 PERF61-2 (ORCH-approved): the same list as visible_enemies(w, fid) WITHOUT the copy. READ-ONLY: never
+## sort, append, erase or keep it past the call (it is the per-tick cache). For hot read-only callers
+## (Intel.refresh, CommandNet, Doctrine intel); everything else keeps visible_enemies().
+static func visible_enemies_ro(w: SimWorld, fid: int) -> Array:
+	return _vis_cached(w, fid)
+
+
+static func _vis_cached(w: SimWorld, fid: int) -> Array:
 	var vc = w.cache.get("vis_enemies")
 	var stamp := [w.tick, w.entities.size(), int(w.next_id)]
 	if vc == null or vc.stamp != stamp:
@@ -436,7 +447,7 @@ static func visible_enemies(w: SimWorld, fid: int) -> Array:
 		w.cache["vis_enemies"] = vc
 	var hit = vc.by.get(fid)
 	if hit != null:
-		return (hit as Array).duplicate()
+		return hit
 	# G3b PERF4-3: only ENEMY owners' units are walked (per-owner index lists), REDUCED ones skipped
 	# (never visible to another team: Tiers contact bound >= every sight), then enemy buildings;
 	# the result is sorted by id, i.e. the same list in the same order as the old full scan.
@@ -460,7 +471,7 @@ static func visible_enemies(w: SimWorld, fid: int) -> Array:
 		parts += 1
 	if parts > 1:
 		out.sort_custom(func(x, y): return int(x.id) < int(y.id))
-	vc.by[fid] = out.duplicate()
+	vc.by[fid] = out
 	return out
 
 

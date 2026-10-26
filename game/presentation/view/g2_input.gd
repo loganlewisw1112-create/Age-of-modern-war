@@ -5,6 +5,7 @@ extends RefCounted
 
 const G2 = preload("res://presentation/view/g2_data.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
+const AB = preload("res://sim/systems/ammo_bearer.gd")   # G6.1 (INTEG61): bearer Join squad
 
 var mv
 var mode := ""             # "" | patrol | guard | repair | mission
@@ -50,6 +51,8 @@ func status_text() -> String:
 			return "GUARD: click a friendly unit or building. Esc cancels."
 		"repair":
 			return "REPAIR: click a damaged vehicle/building or the ruined bridge. Esc cancels."
+		"bearer_join":
+			return "JOIN SQUAD: click a member of an own squad. Esc cancels."
 		"mission":
 			if mission == "patrol_route":
 				return "%s (%s risk): Shift+click route points, Enter confirms, Esc cancels [%d]" % [G2.mission_name(mission), risk, points.size()]
@@ -87,7 +90,24 @@ func on_left(p: Vector2, shift: bool) -> bool:
 			points.append(p)
 			if mission != "patrol_route" or not shift:
 				_finish_mission()
+		"bearer_join":
+			var sq = mv.entity_at(p, true)
+			if _squad_target(sq, unit_ids):
+				_issue_join(_live_ids(), sq)
+				cancel()
+			else:
+				flash("Join squad needs a member of an own squad.")
 	return true
+
+
+## G6.1 (INTEG61, BEARER61 CR seq 332): t is an own non-bearer unit in a squad, not one of `ids`.
+func _squad_target(t, ids: Array) -> bool:
+	return t != null and t.kind == "unit" and int(t.owner) == mv.player_fid and int(t.get("squad", -1)) >= 0 		and not AB.is_bearer(t) and not ids.has(int(t.id))
+
+
+func _issue_join(ids: Array, t) -> void:
+	mv.issue({"type": "join_squad", "unit_ids": ids, "squad_unit_id": int(t.id)})
+	mv.fx_layer.add_marker(t.pos, Color(0.95, 0.8, 0.3))
 
 
 func on_right(_p: Vector2, _shift: bool) -> bool:
@@ -123,6 +143,10 @@ func smart(p: Vector2, shift: bool, t, units: Array, engineers: Array) -> bool:
 	var pf: int = mv.player_fid
 	if t != null and t.kind in ["unit", "building"] and w.is_enemy(pf, int(t.owner)):
 		return false
+	# G6.1 (INTEG61): only ammo bearers selected + right-click an own squad member = Join squad
+	if not units.is_empty() and _squad_target(t, units) and units.all(func(x): return AB.is_bearer(w.entities.get(int(x)))):
+		_issue_join(units, t)
+		return true
 	var on_bridge: bool = G2.is_bridge_cell(w, Vector2i(floori(p.x), floori(p.y)))
 	if not engineers.is_empty():
 		var rt := _repair_target(p, t)

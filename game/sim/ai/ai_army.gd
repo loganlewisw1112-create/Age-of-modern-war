@@ -10,6 +10,8 @@ const Mil = preload("res://sim/ai/ai_mil.gd")
 const Tac = preload("res://sim/ai/ai_tactics.gd")
 const G3 = preload("res://sim/ai/ai_g3.gd")
 const Stage = preload("res://sim/ai/ai_stage.gd")
+const AB = preload("res://sim/systems/ammo_bearer.gd")   # G6.1 (INTEG61, BEARER61 CR seq 333)
+const Lib = preload("res://sim/ai/ai_g6_lib.gd")
 
 const DEFEND_RADIUS := 14.0
 const HIT_RADIUS := 16.0
@@ -118,6 +120,12 @@ const STAGE_MAX := 2400
 
 
 static func manage_army(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
+	# G6.1 (INTEG61, BEARER61 CR seq 333): free ammo bearers join the nearest infantry squad without one, and the
+	# AI trains about one bearer per three infantry squads. Staggered: one think every 100 ticks per side.
+	if (w.tick + fid) % 100 == 0:
+		AB.ai_attach(w, fid)
+		if AB.ai_wanted(w, fid) > 0:
+			Lib.queue_item(w, fid, st, ctx, AB.bearer_def_for(w, fid), "bearer")
 	var army: Array = ctx.army
 	var army_pop := _pop(army) + _pop(ctx.arty)  # artillery follows the wave (ai_g3_units.gd)
 	var plan: Dictionary = st.get("gather_plan", {})

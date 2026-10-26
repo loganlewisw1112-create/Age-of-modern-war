@@ -14,11 +14,12 @@ const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 
 const DEFAULTS := {
-	"graphics": {"window_mode": "windowed", "vsync": true, "max_fps": 0},
+	"graphics": {"window_mode": "windowed", "vsync": true, "max_fps": 0, "fx_quality": "medium"},
 	"game": {"speed": 1.0, "edge_pan": true, "edge_pan_speed": 1.0, "health_bars": "damaged"},
 }
 const WINDOW_MODES := ["windowed", "borderless", "fullscreen"]
 const FPS_CAPS := [0, 30, 60, 120, 144]
+const FX_QUALITIES := ["low", "medium", "high"]  # G6.1 VFX61
 const SPEEDS := [1.0, 2.0, 3.0]
 const HEALTH_BARS := ["always", "damaged", "selected", "off"]
 const PAN_SPEEDS := [0.5, 0.75, 1.0, 1.5, 2.0]
@@ -212,6 +213,8 @@ func _graphics_tab() -> Control:
 	_check(g, "V-Sync", "OptVsync", bool(get_value("graphics", "vsync")), func(on): _store("graphics", "vsync", on, true))
 	_option(g, "Frame cap", "OptFps", FPS_CAPS, ["Unlimited", "30", "60", "120", "144"],
 		get_value("graphics", "max_fps"), func(x): _store("graphics", "max_fps", x, true))
+	_option(g, "Effects quality", "OptFxQuality", FX_QUALITIES, ["Low", "Medium", "High"],  # G6.1 VFX61 CR
+		get_value("graphics", "fx_quality"), func(x): _store("graphics", "fx_quality", x, false))
 	return g
 
 

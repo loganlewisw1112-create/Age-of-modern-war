@@ -111,6 +111,17 @@ func _g6_cards() -> void:
 			var k := Hotkeys.key(String(a))
 			if _rep(b != null, "button %s" % a, "no G6_%s on the combat card" % a):
 				_rep(hud._hotkeys.get(k) == b, "hotkey %s=%s" % [a, k], "bound to %s" % str(hud._hotkeys.get(k)))
+	# G6.1 (INTEG61, BEARER61 CR seq 332): Join / Leave squad on the ammo bearer card
+	var brr := w.spawn_unit("a_ammo_bearer", 0, G6Scen.base_pos(w) + Vector2(4, 12))
+	if _rep(brr >= 0, "spawn bearer61", "no a_ammo_bearer"):
+		_select(mv, hud, [brr])
+		for a in Hotkeys.ACTIONS:
+			if Hotkeys.group(String(a)) != "bearer61":
+				continue
+			var b := _btn(hud, "G6_" + String(a))
+			var k := Hotkeys.key(String(a))
+			if _rep(b != null, "button %s" % a, "no G6_%s on the bearer card" % a):
+				_rep(hud._hotkeys.get(k) == b, "hotkey %s=%s" % [a, k], "bound to %s" % str(hud._hotkeys.get(k)))
 	var bdefs := {"garrison_bld6": "s_garrison_bld", "battery6": "a_cruise_battery", "garage6": "a_exo_garage"}
 	for g in Hotkeys.G6_BUILDING_GROUPS:
 		var bid := G6Scen.spawn_building(w, String(bdefs[g]))

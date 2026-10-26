@@ -7,8 +7,8 @@
     "units/a_ammo_bearer_mask.png": "94182fa4d32d6290b54fea657316f9d6",
     "units/b_supply_carrier.png": "af74308294ddc7787803c3ac574a8dff",
     "units/b_supply_carrier_mask.png": "c9d26b9c1b1169519e0b8f6914e60652",
-    "units/m_munitions_drone.png": "3a83029917b8266e6c9d5f17d1bc5ee0",
-    "units/m_munitions_drone_mask.png": "b51adf9fe08a6789112dc40d2ab5a7ab",
+    "units/m_munitions_drone.png": "d08fc4d2951811c20887e314c676d7db",
+    "units/m_munitions_drone_mask.png": "c2cbf8358ba902e4ceef83e5a2c4d6e6",
     "wrecks/m_munitions_drone_wreck.png": "b9b5bcc57dd9b4c3fb40d5417d87ae13"
   },
   "g61_bearer": {
@@ -169,6 +169,85 @@
   },
   "vehicles": {
     "m_munitions_drone": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            10,
+            -1
+          ],
+          [
+            6,
+            4
+          ],
+          [
+            -11,
+            -1
+          ],
+          [
+            -8,
+            -5
+          ],
+          [
+            -8,
+            -7
+          ],
+          [
+            -4,
+            -10
+          ],
+          [
+            7,
+            -7
+          ],
+          [
+            7,
+            -5
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            -1,
+            -9
+          ],
+          [
+            0,
+            -10
+          ],
+          [
+            1,
+            -9
+          ],
+          [
+            3,
+            -7
+          ],
+          [
+            1,
+            -9
+          ],
+          [
+            0,
+            -8
+          ],
+          [
+            -1,
+            -9
+          ],
+          [
+            -3,
+            -7
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 44,
       "file": "units/m_munitions_drone.png",
@@ -176,7 +255,12 @@
         "idle",
         "move",
         "fire",
-        "restock"
+        "restock",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged",
+        "pulse"
       ],
       "fw": 44,
       "mask": "units/m_munitions_drone_mask.png",

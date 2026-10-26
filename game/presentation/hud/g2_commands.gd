@@ -33,6 +33,8 @@ var _officer := -1
 var _others: Array = []
 var page := ""                 # G6.1: "" | "formation" | "stance" (a sub-card for the selection in _page_ids)
 var _page_ids: Array = []
+var _bearers: Array = []        # G6.1 (INTEG61): selected ammo bearers (Join / Leave squad)
+const AB = preload("res://sim/systems/ammo_bearer.gd")
 
 
 func _mv():
@@ -50,6 +52,7 @@ func add_buttons(mode: String, ids: Array) -> void:
 	_combat.clear()
 	_others.clear()
 	_officer = -1
+	_bearers = []
 	var engineers: Array = []
 	for id in ids:
 		var e = _ent(int(id))
@@ -103,6 +106,14 @@ func add_buttons(mode: String, ids: Array) -> void:
 		sp.btn.pressed.connect(_open_page.bind("stance"))
 		var rg = _btn2("Regroup", "on leader", "regroup", "regroup", "Selected squads and platoons reform on their leader.")
 		rg.btn.pressed.connect(func(): hud._issue({"type": "regroup", "unit_ids": _combat.duplicate()}))
+	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. Join arms a click on an own squad member;
+	# right-clicking one with only bearers selected does the same (G2Input.smart).
+	_bearers = _ids.filter(func(x): return AB.is_bearer(_ent(int(x))))
+	if not _bearers.is_empty():
+		var jb = _btn2("Join squad", "click a squad", "bearer_join", "bearer_join", "Click an own squad member: the selected ammo bearers follow that squad and restock it.\nRight-click a squad member does the same.")
+		jb.btn.pressed.connect(func(): _mv().g2.arm("bearer_join", {"unit_ids": _bearers.duplicate()}))
+		var lb = _btn2("Leave squad", "", "bearer_leave", "bearer_leave", "The selected ammo bearers leave their squad.")
+		lb.btn.pressed.connect(func(): hud._issue({"type": "leave_squad", "unit_ids": _bearers.duplicate()}))
 
 
 ## G6.1: a card button whose key comes from the Hotkeys table (badge shows the printable character).
@@ -245,6 +256,8 @@ func update_state(w: SimWorld) -> void:
 				b.text = "Group pace\n%s" % ("ON" if _pace_on() else "off")
 			"regroup":
 				reason = w.preview_command({"type": "regroup", "issuer": pf, "unit_ids": _combat})
+			"bearer_leave":
+				reason = w.preview_command({"type": "leave_squad", "issuer": pf, "unit_ids": _bearers})
 			"risk":
 				b.text = "Risk: %s\nclick to cycle" % String(G2.RISKS[risk_idx]).to_upper()
 			"assign":

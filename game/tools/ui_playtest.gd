@@ -2233,7 +2233,7 @@ var g6_flow := ""
 
 func _g6_menu() -> void:
 	var menu = get_tree().root.find_child("MapOption", true, false) as OptionButton
-	var want := {"naval6": "Coastal Front", "survival": "Ridge Bastion"}
+	var want := {"naval6": "Coastal Front", "survival": "Ridge Bastion", "animb61": "Coastal Front"}  # + G6.1 ANIMC61 CR (ships need water)
 	if want.has(g6_flow) and menu != null:
 		var idx := -1
 		for i in menu.item_count:

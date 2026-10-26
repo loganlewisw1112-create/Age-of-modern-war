@@ -26,6 +26,7 @@ func _init() -> void:
 static func generate() -> Dictionary:
 	var out := {"images": {}, "manifest": {"version": 1, "tile": [64, 32], "group": "g5_naval"}}
 	M.build(out)
+	preload("res://tools/art/g61_anim_veh.gd").build(out)  # G6.1 (ANIMB61): vehicle/air/naval/walker animation frames
 	return out
 
 

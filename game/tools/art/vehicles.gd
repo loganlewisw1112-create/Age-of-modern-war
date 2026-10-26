@@ -8,6 +8,16 @@ const D = preload("res://tools/art/vdetail.gd")
 const T = preload("res://tools/art/truck.gd")
 
 const FRAMES := ["idle", "move", "fire"]
+## G6.1 (ANIMB61): 0 = whole vehicle, 1 = hull only (no turret / barrel), 2 = turret + barrel only (no shadow).
+## Set by tools/art/g61_anim_veh.gd around its own draw() calls; always reset to 0.
+static var layer := 0
+
+
+static func _in_layer(kind: String) -> bool:
+	if layer == 0:
+		return true
+	var top := kind == "turret" or kind == "barrel"
+	return top if layer == 2 else not top
 const SPEC := {
 	"ifv": {"fw": 60, "fh": 46, "pivot": [30, 30]},
 	"mbt": {"fw": 70, "fh": 50, "pivot": [35, 32]},
@@ -89,14 +99,17 @@ static func draw(cv, def: String, rot: float, f: int, wreck: bool, o: Vector2) -
 		parts.append([_w(trot, 0.04, 0) + Vector3(0, 0, 12), 0.15, 0.13, 4.0, trot, hull, "turret"])
 		parts.append([_w(trot, 0.33, 0) + Vector3(0, 0, 13.5), 0.17, 0.022, 1.4, trot, GUNMETAL if not wreck else BURNT, "barrel"])
 	# shadows first (one composite pass)
-	for p in parts:
+	for p in (parts if layer != 2 else []):  # G6.1 (ANIMB61): no ground shadow on a turret-only sprite
 		P.box_shadow(cv, o, p[0], p[1], p[2], p[3], p[4])
-	if def == "ifv":
+	if def == "ifv" and layer != 2:
 		P.box_shadow(cv, o, Vector3(0, 0, 0), 0.5, 0.3, 3.0, rot)
 	cv.flush_shadow()
 	if def == "ifv":
-		_wheels(cv, o, rot, f, false, wreck)
+		if layer != 2:
+			_wheels(cv, o, rot, f, false, wreck)
 	for p in parts:
+		if not _in_layer(String(p[6])):
+			continue
 		var kind: String = p[6]
 		if kind == "barrel" and fwd_screen <= 0.0:
 			continue
@@ -133,8 +146,9 @@ static func draw(cv, def: String, rot: float, f: int, wreck: bool, o: Vector2) -
 		elif kind == "hull" or kind == "deck":
 			_hull_detail(cv, def, kind, rot, r, hull)
 	if def == "ifv":
-		_wheels(cv, o, rot, f, true, wreck)
-	if f == 2 and not wreck:
+		if layer != 2:
+			_wheels(cv, o, rot, f, true, wreck)
+	if f == 2 and not wreck and layer != 1:
 		var tip := P.proj(o, _w(trot, 0.19 + 0.72 if def == "mbt" else 0.5, 0) + Vector3(0, 0, 14))
 		cv.ellipse(tip.x, tip.y, 2.2, 1.6, Color8(255, 230, 150))
 		cv.px(int(tip.x), int(tip.y), Color8(255, 255, 230))

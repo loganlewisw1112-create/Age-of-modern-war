@@ -67,12 +67,13 @@ func test_machine_units() -> void:
 		var spec: Dictionary = AC.manifest().get("infantry", {}).get(def, AC.manifest().get("vehicles", {}).get(def, {}))
 		check_eq(int(spec.get("facings", 0)), 8, "8 facings " + def)
 		if String(Content.unit(def).get("move_class", "")) == "foot":
-			check(spec.get("frames", []) == ["idle", "walk_a", "walk_b", "fire"], "legged %s has walk frames" % def)
+			check((spec.get("frames", []) as Array).slice(0, 4) == ["idle", "walk_a", "walk_b", "fire"], "legged %s has walk frames" % def)
 			var w0: Texture2D = AC.entity_sprite({"kind": "unit", "def": def, "facing": 0.0, "moving": true, "id": 0}, blue, 0.0).texture
 			var w1: Texture2D = AC.entity_sprite({"kind": "unit", "def": def, "facing": 0.0, "moving": true, "id": 0}, blue, 1.0 / 6.0).texture
 			check(w0.get_image().get_data() != w1.get_image().get_data(), "walk frames alternate " + def)
 		else:
-			check(spec.get("frames", []) == ["idle", "move", "fire"], "vehicle frames " + def)
+			# G6.1 (ANIMB61): the G1 standard frames stay first; anim61 frames are appended after them
+			check((spec.get("frames", []) as Array).slice(0, 3) == ["idle", "move", "fire"] and spec.has("anim61"), "vehicle frames " + def)
 		check(_cyan(a.get_image()) + _cyan(AC.entity_sprite({"kind": "unit", "def": def, "facing": PI / 4}, blue, 0).texture.get_image()) >= 2,
 			"cyan emissive cue on " + def)
 		if Content.unit(def).get("leaves_wreck", false):
@@ -138,6 +139,12 @@ func test_machine_deterministic() -> void:
 	var b := {"images": {}, "manifest": {}}
 	FM.build(a)
 	FM.build(b)
+	# G6.1 (ANIMA61): every generator appends the infantry animation set after its modules
+	preload("res://tools/art/g61_anim.gd").build(a)
+	preload("res://tools/art/g61_anim.gd").build(b)
+	# G6.1 (ANIMB61): vehicle animation frames are appended by gen_art.generate() after the infantry rig
+	preload("res://tools/art/g61_anim_veh.gd").build(a)
+	preload("res://tools/art/g61_anim_veh.gd").build(b)
 	var files: Dictionary = AC.manifest().get("files", {})
 	var diff := 0
 	var stale := 0

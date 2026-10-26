@@ -29,6 +29,7 @@ static var _rel: Array = [0.0, 0.04, 0.08, 0.12, 0.15]
 static var _mor: Array = [0.0, 0.08, 0.16, 0.24, 0.32]
 static var _leader_def: Dictionary = {}   # def -> bool
 static var _tcache: Dictionary = {}       # "seed:uid:def:vet" -> Array (pure cache)
+static var _tcu: Dictionary = {}          # PERF61: uid -> [seed, def, vet key (-1 = leader), traits] (same pure cache, int key)
 
 
 static func _sync() -> void:
@@ -46,6 +47,7 @@ static func _sync() -> void:
 	_mor = _vr.get("morale_bonus", _mor)
 	_leader_def.clear()
 	_tcache.clear()
+	_tcu.clear()
 
 
 static func vr() -> Dictionary:
@@ -165,11 +167,66 @@ static func objectives(w: SimWorld) -> void:
 		w.sys_state["realism"] = rs
 		return
 	var pa: Array = prev
+	var flips := []   # [sector, team], ascending sector (the order _objective was called in)
 	for s in own.size():
 		if int(own[s]) != int(pa[s]):
 			if int(own[s]) >= 0:
-				_objective(w, ter, s, int(own[s]))
+				flips.append([s, int(own[s])])
 			pa[s] = int(own[s])
+	if not flips.is_empty():
+		_objectives_many(w, ter, flips, own.size())
+
+
+## PERF61-2: _objective for every flipped sector with ONE pass over the entities (was one full pass per sector:
+## a mass territory flip at 10k cost seconds). Same members (the exact distance test, sector centers looked up in
+## the <= 3x3 sector block around the unit) and the same credit order: sectors ascending, ids ascending.
+static func _objectives_many(w: SimWorld, ter: Dictionary, flips: Array, nsec: int) -> void:
+	_sync()
+	var size := float(ter.get("size", 12))
+	var cols := maxi(int(ter.get("cols", 1)), 1)
+	var r2 := float(_vr.get("objective_radius", 10.0))
+	r2 *= r2
+	var rr := sqrt(r2)
+	var oxp := float(_vr.get("objective_xp", 20))
+	var want := {}   # sector -> team
+	for f in flips:
+		want[int(f[0])] = int(f[1])
+	var team_of := {}   # owner -> team
+	for fid in w.factions:
+		team_of[int(fid)] = int(w.factions[fid].get("team", int(fid)))
+	var lists := {}   # sector -> [ids]
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit":
+			continue
+		var tm = team_of.get(int(e.owner))
+		if tm == null:
+			continue
+		var p: Vector2 = e.pos
+		var c0 := maxi(floori((p.x - rr) / size - 0.5) - 1, 0)
+		var c1 := mini(floori((p.x + rr) / size - 0.5) + 1, cols - 1)
+		var r0 := maxi(floori((p.y - rr) / size - 0.5) - 1, 0)
+		var r1 := floori((p.y + rr) / size - 0.5) + 1
+		for row in range(r0, r1 + 1):
+			for col in range(c0, c1 + 1):
+				var s := row * cols + col
+				if s >= nsec:
+					continue
+				var st = want.get(s)
+				if st == null or int(st) != int(tm):
+					continue
+				var cp := Vector2((float(s % cols) + 0.5) * size, (float(s / cols) + 0.5) * size)
+				if p.distance_squared_to(cp) <= r2:
+					if not lists.has(s):
+						lists[s] = []
+					lists[s].append(int(e.id))
+	for f in flips:
+		var ids = lists.get(int(f[0]))
+		if ids == null:
+			continue
+		(ids as Array).sort()
+		for id in ids:
+			_credit(w, w.entities[id], oxp)
 
 
 static func _objective(w: SimWorld, ter: Dictionary, sec: int, team: int) -> void:
@@ -252,9 +309,10 @@ static func traits(w: SimWorld, uid: int) -> Array:
 	_sync()
 	var vet := int(e.get("vet", 0))
 	var lead := is_leader(e)
-	var key := "%d:%d:%s:%d:%d" % [w.seed_value, uid, String(e.def), vet if not lead else -1, 1 if lead else 0]
-	if _tcache.has(key):
-		return _tcache[key]
+	var vk := vet if not lead else -1
+	var hit = _tcu.get(uid)
+	if hit != null and int(hit[0]) == int(w.seed_value) and int(hit[2]) == vk and String(hit[1]) == String(e.def):
+		return hit[3]
 	var out: Array = []
 	var h := _mix(int(w.seed_value) * 31 + uid * 7919 + 17)
 	if lead:
@@ -263,7 +321,7 @@ static func traits(w: SimWorld, uid: int) -> Array:
 		out = _pick(_tr.get("leader", []), n, h)
 	elif vet >= int(_tr.get("minor_from_rank", 2)):
 		out = _pick(_tr.get("minor", []), 1, h)
-	_tcache[key] = out
+	_tcu[uid] = [int(w.seed_value), String(e.def), vk, out]
 	return out
 
 

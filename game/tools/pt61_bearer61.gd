@@ -24,10 +24,41 @@ func _low(mem: Array) -> int:
 	return n
 
 
+## INTEG61-2 PLAYTEST-DBG: every visible button matching the needle, and the controls that would take a click at its centre.
+func _dbg_train(pt, needle: String) -> void:
+	var root: Node = pt.get_tree().root
+	var st: Array = [root]
+	var hits := []
+	var ctrls := []
+	while not st.is_empty():
+		var n: Node = st.pop_back()
+		for ch in n.get_children():
+			st.append(ch)
+		if n is Control and (n as Control).is_visible_in_tree():
+			ctrls.append(n)
+			if n is Button and String((n as Button).text).contains(needle):
+				hits.append(n)
+	for b in hits:
+		var c: Vector2 = (b as Control).get_global_rect().get_center()
+		var over := []
+		for k in ctrls:
+			if k != b and (k as Control).mouse_filter == Control.MOUSE_FILTER_STOP and (k as Control).get_global_rect().has_point(c):
+				over.append(String(k.get_path()).right(60))
+		print("PLAYTEST-DBG bearer_train btn=%s text=%s rect=%s disabled=%s stop_controls_at_centre=%s" % [String(b.get_path()).right(80),
+			String((b as Button).text).replace("
+", " "), str((b as Control).get_global_rect()), str((b as Button).disabled), str(over)])
+	var prod = null
+	for e in pt._w().entities.values():
+		if int(e.get("owner", -1)) == 0 and String(e.get("def", "")).contains("barracks"):
+			prod = e
+	print("PLAYTEST-DBG bearer_train barracks=%s queue=%s sel=%s" % [str(prod.id) if prod != null else "-", str(prod.get("queue")) if prod != null else "-", str(pt._mv().selection)])
+
+
 func run(pt) -> void:
 	var sq_ids: Array = await pt._g6_squad()
 	pt._log("bearer_squad_trained", not sq_ids.is_empty(), "units=%d" % sq_ids.size())
 	if sq_ids.is_empty():
+		_dbg_train(pt, "Rifle Squad")
 		return
 	var bs: Array = await pt._train("a_ammo_bearer")
 	pt._log("bearer_trained_click", not bs.is_empty())
@@ -42,8 +73,21 @@ func run(pt) -> void:
 	await pt._wait(0.3)
 	var via := "button"
 	if await pt._click_button("Join squad"):
+		# INTEG61-2: the button arms the g2 "bearer_join" mode; the real UI path is a LEFT click on a squad member
+		# (a right-click would cancel the armed mode). Centre on the squad leader so the click lands on it.
 		await pt._wait(0.3)
-		await pt._g6_rclick(pt._to_screen(lead.pos))
+		pt._mv().center_camera_on(Vector2(lead.pos))
+		await pt._wait(0.4)
+		var g2 = pt._mv().g2
+		var mode_before := String(g2.mode)
+		var lp: Vector2 = pt._to_screen(lead.pos)
+		await pt._click(lp)
+		await pt._wait(0.3)
+		if int(b.get("squad", -1)) != sq:  # INTEG61-2 PLAYTEST-DBG
+			var at = pt._mv().entity_at(Vector2(lead.pos), true)
+			print("PLAYTEST-DBG bearer_join mode_before=%s mode_after=%s hint=%s click=%s lead=%d lead_squad=%d at=%s sel=%s preview=%s" % [mode_before,
+				String(g2.mode), String(g2.hint_text), str(lp), int(lead.id), int(lead.get("squad", -1)), str(at.id) if at != null else "-",
+				str(pt._mv().selection), str(pt._w().preview_command({"type": "join_squad", "issuer": 0, "unit_ids": [int(b.id)], "squad_unit_id": int(lead.id)}))])
 	else:
 		via = "command (Join squad button pending SQUAD61 CR)"
 		pt._w().submit({"type": "join_squad", "issuer": 0, "unit_ids": [int(b.id)], "squad_unit_id": int(lead.id)})

@@ -15,6 +15,7 @@ const Combat = preload("res://sim/systems/combat.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const Info = preload("res://presentation/ui6/realism_info.gd")
 const Status = preload("res://sim/systems/status.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")
 
 
 func _setup(over: Dictionary = {}) -> Array:
@@ -199,6 +200,36 @@ func test_xp_ranks_and_bonuses() -> void:
 	w.entities[g].company = 77
 	var rep2: Dictionary = Veterancy.company_rep(w, 77)
 	check(float(rep2.avg_rank) < float(rep1.avg_rank) and int(rep2.n) == 2, "a green replacement dilutes the company reputation")
+
+
+
+## PERF61-2 (ORCH-approved fix): only raised ground (level > Elevation.PLAIN) gives the high-ground suppression
+## resist x high_ground; a plain cell (level 1) and a low cell (level 0) give none. The staggered realism pass
+## reaches every unit within one update_every cycle.
+func test_high_ground_only_raised() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2i = s[1]
+	var mw := int(w.map.w)
+	var hg := PackedByteArray()
+	hg.resize(mw * int(w.map.h))
+	hg.fill(Elevation.PLAIN)
+	var hc := Vector2i(o.x + 20, o.y + 5)
+	var lc := Vector2i(o.x + 5, o.y + 20)
+	hg[hc.y * mw + hc.x] = Elevation.PLAIN + 1
+	hg[lc.y * mw + lc.x] = 0
+	w.map.height = hg
+	var flat := w.spawn_unit("rifleman", 0, _c(o, 5, 5))
+	var high := w.spawn_unit("rifleman", 0, _c(o, 20, 5))
+	var low := w.spawn_unit("rifleman", 0, _c(o, 5, 20))
+	_steps(w, int(Fatigue.rules().get("update_every", 20)) + 5)
+	var f_hg := float((Content.rules().g61_realism.suppression as Dictionary).get("high_ground", 0.85))
+	var rf := float(w.entities[flat].get("rz", 1.0))
+	var rl := float(w.entities[low].get("rz", 1.0))
+	var rh := float(w.entities[high].get("rz", 1.0))
+	check(absf(rf - 1.0) < 0.005, "plain ground (level 1): no high-ground resist (rz %s)" % rf)
+	check(absf(rl - 1.0) < 0.005, "low ground (level 0): no high-ground resist (rz %s)" % rl)
+	check(absf(rh - f_hg) < 0.005, "raised ground (level 2): resist x%s (rz %s)" % [f_hg, rh])
 
 
 func test_traits_deterministic_from_seed() -> void:

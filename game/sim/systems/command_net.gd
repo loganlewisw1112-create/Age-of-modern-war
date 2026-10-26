@@ -27,6 +27,7 @@ const Ops = preload("res://sim/systems/ops.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const MachineG6 = preload("res://sim/systems/machine_g6.gd")
 const Movement = preload("res://sim/systems/movement.gd")
+const Fog = preload("res://sim/systems/fog.gd")
 
 const VER := 1
 const TPS := 20.0
@@ -1087,14 +1088,17 @@ static func _auto(w: SimWorld, st: Dictionary, fid: int, uid: int, key: String, 
 	var armor := 0
 	var best := rad * rad + 1.0
 	var np := Vector2(e.pos)
-	for x in w.visible_enemies(fid):
+	var ep := Vector2(e.pos)   # PERF61: loop invariants hoisted (same order, same values)
+	var rad2 := rad * rad
+	for x in Fog.visible_enemies_ro(w, fid):   # PERF61-2: read-only, no copy
 		if x.kind != "unit":
 			continue
-		var d2 := Vector2(e.pos).distance_squared_to(Vector2(x.pos))
-		if d2 > rad * rad:
+		var d2 := ep.distance_squared_to(Vector2(x.pos))
+		if d2 > rad2:
 			continue
 		n += 1
-		if ["heavy", "medium"].has(String(Content.unit(String(x.def)).get("armor", ""))):
+		var ar := String(Content.unit(String(x.def)).get("armor", ""))
+		if ar == "heavy" or ar == "medium":
 			armor += 1
 		if d2 < best:
 			best = d2

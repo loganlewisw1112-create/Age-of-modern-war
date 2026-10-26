@@ -6,6 +6,7 @@ extends SceneTree
 ## Modules live in tools/art/; each exposes static build(out) adding to out.images / out.manifest.
 
 const OUT_DIR := "res://assets/generated/"
+const G61Anim = preload("res://tools/art/g61_anim.gd")
 const MODULES := [
 	preload("res://tools/art/terrain.gd"),
 	preload("res://tools/art/units.gd"),
@@ -43,6 +44,8 @@ static func generate(modules: Array = MODULES) -> Dictionary:
 	var out := {"images": {}, "manifest": {"version": 1, "tile": [64, 32]}}
 	for m in modules:
 		m.build(out)
+	G61Anim.build(out)  # G6.1 (ANIMA61): full infantry animation set on every foot-unit sheet
+	preload("res://tools/art/g61_anim_veh.gd").build(out)  # G6.1 (ANIMB61): vehicle/air/naval/walker animation frames
 	return out
 
 

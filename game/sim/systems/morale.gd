@@ -70,6 +70,7 @@ static var pin_move := 0.1
 ## Bench / A-B toggle only (never set in a match): false skips the XP events and the realism pass.
 static var realism_on := true
 static var _wf: Dictionary = {}   # weapon id -> suppression factor
+static var _ldef: Dictionary = {}  # PERF61-2: def -> is_leader_def (content-static; cleared when rules change)
 
 
 static func _ssync() -> void:
@@ -83,6 +84,7 @@ static func _ssync() -> void:
 	_mv_s = float(_sr.get("move_suppressed", 0.75))
 	pin_move = float(_sr.get("move_pinned", 0.1))
 	_wf.clear()
+	_ldef.clear()
 
 
 static func is_pinned(w: SimWorld, e: Dictionary) -> bool:
@@ -200,29 +202,62 @@ static func _set_or_erase(e: Dictionary, k: String, v: float) -> void:
 
 
 ## The realism pass (see header above). Ground units in SimIndex order; leaders listed first per owner.
-static func _realism_pass(w: SimWorld) -> void:
+## G6.1 PERF61-2 (ORCH-approved behaviour change): staggered by unit id. It runs every tick for the units whose
+## (tick + id) % every == REAL_PHASE, so each unit still runs once per `every` ticks with the same dt, and the
+## once-per-second spike (every unit on one tick) is gone. Leaders are this tick's (positions, broken state).
+static func _realism_pass(w: SimWorld, every: int) -> void:
 	_ssync()
-	var fr := Fatigue.rules()
-	var every := maxi(int(fr.get("update_every", 20)), 1)
 	var dt := float(every) / float(SimWorld.TICK_RATE)
-	var units: Array = SimIndex.of(w, "unit")
+	var all: Array = SimIndex.of(w, "unit")
+	var uids: PackedInt32Array = SimIndex.unit_ids(w)
+	var ph := posmod(REAL_PHASE - w.tick, every)   # id % every == ph  <=>  (tick + id) % every == REAL_PHASE
+	var units: Array = []   # this tick's bucket, SimIndex (ascending id) order
+	for i in uids.size():
+		if uids[i] % every == ph:
+			units.append(all[i])
+	if units.is_empty():
+		return
 	var rest := Fatigue.rest_points(w, SimIndex.of(w, "building"))
-	var leaders := {}   # owner -> [[pos, inspiring]]
-	for e in units:
-		if e.has("morale") and Veterancy.is_leader(e) and w.entities.has(int(e.id)) and not bool(e.get("broken", false)):
-			var o := int(e.owner)
-			if not leaders.has(o):
-				leaders[o] = []
-			leaders[o].append([e.pos, Veterancy.has_trait(w, int(e.id), "inspiring")])
+	var ents: Dictionary = w.entities
 	var lr := float(_sr.get("leader_radius", 6.0))
 	var lr2 := lr * lr
+	# PERF61: leaders bucketed per owner in cells of cs >= lr tiles (a 3x3 block covers radius lr; the min over
+	# leaders in range is order-free, so the result is identical); is_leader_def cached per def (content-static).
+	var cs := maxf(lr, 1.0)
+	var lead_def := _ldef   # def -> bool
+	var leaders := {}    # owner -> {Vector2i cell: [[pos, inspiring]]}
+	for e in all:
+		if not e.has("morale"):
+			continue
+		var d := String(e.get("def", ""))
+		var ld = lead_def.get(d)
+		if ld == null:
+			ld = Veterancy.is_leader_def(d)
+			lead_def[d] = ld
+		if (e.has("rank_role") or bool(ld)) and ents.has(int(e.id)) and not bool(e.get("broken", false)):
+			var o := int(e.owner)
+			var lp: Vector2 = e.pos
+			var lc := Vector2i(floori(lp.x / cs), floori(lp.y / cs))
+			if not leaders.has(o):
+				leaders[o] = {}
+			var bk: Dictionary = leaders[o]
+			var rec := [lp, Veterancy.has_trait(w, int(e.id), "inspiring")]
+			for dy in range(-1, 2):   # listed in every cell of its 3x3 block: a unit reads its own cell only
+				for dx in range(-1, 2):
+					var nc := Vector2i(lc.x + dx, lc.y + dy)
+					if not bk.has(nc):
+						bk[nc] = []
+					bk[nc].append(rec)
 	var f_ld := float(_sr.get("leader_near", 0.85))
 	var f_in := float(_sr.get("inspiring_near", 0.7))
 	var f_hg := float(_sr.get("high_ground", 0.85))
 	var fpen := float(_sr.get("fatigue_penalty", 0.4))
 	var hgt := Elevation.has_height(w)
+	var hgm: PackedByteArray = w.map.height if hgt else PackedByteArray()
+	var hmw := int(w.map.w)
+	var hmh := int(w.map.h)
 	for e in units:
-		if not w.entities.has(int(e.id)):
+		if not ents.has(int(e.id)):
 			continue
 		var uf := w.tick - int(e.get("supp_tick", -100000)) < RECENT_FIRE_TICKS
 		Fatigue.update_unit(w, e, dt, uf, rest)
@@ -237,17 +272,37 @@ static func _realism_pass(w: SimWorld) -> void:
 		if float(e.get("supp", 0.0)) >= _supp_at and not bool(e.get("pinned", false)):
 			mv *= _mv_s
 		_set_or_erase(e, "mvm", mv)
-		var rz := Veterancy.supp_resist(w, e) * Fatigue.resist_mult(e, fpen)
+		var rz := 1.0
+		if int(e.get("vet", 0)) > 0 or e.has("rank_role"):
+			rz = Veterancy.supp_resist(w, e)
+		else:
+			var d := String(e.get("def", ""))
+			var ld = lead_def.get(d)
+			if ld == null:
+				ld = Veterancy.is_leader_def(d)
+				lead_def[d] = ld
+			if bool(ld):
+				rz = Veterancy.supp_resist(w, e)   # else 1.0, as supp_resist returns for a green non-leader
+		rz *= Fatigue.resist_mult(e, fpen)
 		var best := 1.0
 		var p: Vector2 = e.pos
-		for l in leaders.get(int(e.owner), []):
-			if p.distance_squared_to(l[0]) <= lr2:
-				best = minf(best, f_in if bool(l[1]) else f_ld)
+		var lb = leaders.get(int(e.owner))
+		if lb != null:
+			var lst = lb.get(Vector2i(floori(p.x / cs), floori(p.y / cs)))
+			if lst != null:
+				for l in lst:
+					if p.distance_squared_to(l[0]) <= lr2:
+						best = minf(best, f_in if bool(l[1]) else f_ld)
 		rz *= best
-		if hgt and Elevation.height_at(w, Vector2i(floori(p.x), floori(p.y))) > 0:
-			rz *= f_hg
+		if hgt:   # Elevation.height_at(w, cell) > PLAIN, inlined (PLAIN off the map)
+			var hx := floori(p.x)
+			var hy := floori(p.y)
+			var lvl := Elevation.PLAIN
+			if hx >= 0 and hy >= 0 and hx < hmw and hy < hmh:
+				lvl = hgm[hy * hmw + hx]
+			if lvl > Elevation.PLAIN:   # PERF61-2 (ORCH-approved fix): only raised ground; PLAIN is 1, not 0
+				rz *= f_hg
 		_set_or_erase(e, "rz", rz)
-	Veterancy.objectives(w)
 
 
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): SimIndex.g6h().morale_delta(w, e) is added to morale on every morale update
@@ -259,8 +314,10 @@ static func tick(w: SimWorld) -> void:
 	_ssync()
 	if realism_on:
 		Veterancy.on_tick(w)   # G6.1 REAL61: XP from this tick's Damage events
-		if w.tick % maxi(int(Fatigue.rules().get("update_every", 20)), 1) == REAL_PHASE:
-			_realism_pass(w)
+		var every := maxi(int(Fatigue.rules().get("update_every", 20)), 1)
+		_realism_pass(w, every)   # PERF61-2: this tick's id bucket
+		if w.tick % every == REAL_PHASE:
+			Veterancy.objectives(w)   # objective XP: once per cycle on the phase tick, as before
 	if w.tick % UPDATE_EVERY != 0:
 		return
 	var R: Dictionary = Content.rules()

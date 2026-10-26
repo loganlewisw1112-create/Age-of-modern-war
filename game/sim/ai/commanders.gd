@@ -19,6 +19,7 @@ const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const DU = preload("res://sim/ai/doctrine/doc_util.gd")
 const U = preload("res://sim/ai/ai_util.gd")
+const General = preload("res://sim/ai/general.gd")  # G6.1 GEN61: objective {type: "auto"} = full general
 
 ## PROVISIONAL balance fixtures; content/rules.json "ai_cmd" overrides any key (CR to ORCH).
 const RULES := {
@@ -55,9 +56,11 @@ static func R(key: String):
 ## Commander and current companies for an army, or the loose unit list.
 static func formation_ids(w: SimWorld, fid: int, s: Dictionary) -> Array:
 	var spec: Dictionary = s.spec
-	if spec.has("units"):
-		return (spec.units as Array).duplicate()
 	var out := []
+	if spec.has("units"):
+		out = (spec.units as Array).duplicate()
+		if (spec.get("companies", []) as Array).is_empty():
+			return out
 	var cids: Array = spec.get("companies", [])
 	var cst: Dictionary = w.sys_state.get("companies", {})
 	var aid := int(spec.get("army", -1))
@@ -398,6 +401,9 @@ static func drive(w: SimWorld, fid: int, s: Dictionary, ids: Array, badge: Strin
 		if not fresh(w, e):
 			free.append(e)
 	if free.is_empty():
+		return
+	if String((s.objective as Dictionary).get("type", "")) == "auto":
+		General.think(w, fid, s, us, free, badge, rally, int(s.get("slot", -1)))
 		return
 	var cen := DU.centroid(free)
 	if not s.has("start"):

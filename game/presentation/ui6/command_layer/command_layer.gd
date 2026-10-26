@@ -12,6 +12,7 @@ const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const ClModel = preload("res://presentation/ui6/command_layer/cl_model.gd")
 const ClOverlay = preload("res://presentation/ui6/command_layer/cl_overlay.gd")
 const Plans = preload("res://sim/systems/plans.gd")
+const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 
 const TOOLS := ["objective", "axis", "phase"]
 const QUICK := [["Attack here", "attack"], ["Hold here", "hold"], ["Withdraw to", "withdraw"], ["Screen this line", "screen"]]
@@ -37,6 +38,8 @@ var _tool_btns := {}
 var _issue_btn: Button
 var _reason_lbl: Label
 var _list: VBoxContainer
+var _card_sc: ScrollContainer = null   # G6.1 (INTEG61-2): whole card scrolls when the canvas is short
+var _list_sc: ScrollContainer = null
 var _list_sig := ""
 var _menu: PopupMenu
 var _menu_f := {}
@@ -55,7 +58,7 @@ func build(h, r: Control) -> void:
 	overlay.visible = false
 	root.add_child(overlay)
 	root.move_child(overlay, 0)  # under the HUD panels: they stay clickable in Command mode
-	toggle_btn = UiKit.button("COMMAND", "Tab", "Command mode: give orders to officers and draw plans on the map")
+	toggle_btn = UiKit.button("COMMAND", Hotkeys.badge(Hotkeys.key("command_mode")), "Command mode: give orders to officers and draw plans on the map")
 	toggle_btn.name = "CommandModeButton"
 	toggle_btn.toggle_mode = true
 	toggle_btn.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -78,10 +81,13 @@ func _build_card() -> void:
 	card.visible = false
 	card.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	card.custom_minimum_size = Vector2(300, 0)
-	card.position = Vector2(-312, 84)
+	# G6.1 (INTEG61, ui_fit cmd61_mode): left of the HUD's RightScroll column (hud.RIGHT_W 306 + EDGE_M 12), not on it
+	card.position = Vector2(-630, 84)   # _fit_card() places it against the live HUD columns
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", UiKit.GAP)
-	card.add_child(v)
+	_card_sc = UiKit.scroll(v)
+	_card_sc.name = "CommandCardScroll"
+	card.add_child(_card_sc)
 	_title = UiKit.label("COMMAND MODE", "header")
 	v.add_child(_title)
 	var row := HBoxContainer.new()
@@ -124,7 +130,8 @@ func _build_card() -> void:
 	v.add_child(UiKit.label("PLANS", "header"))
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 4)
-	v.add_child(UiKit.scroll(_list, 260.0))
+	_list_sc = UiKit.scroll(_list, 260.0)
+	v.add_child(_list_sc)
 	root.add_child(card)
 	UiKit.fit_register(card)
 
@@ -137,6 +144,9 @@ func set_active(on: bool) -> void:
 	if overlay != null:
 		overlay.visible = on
 		card.visible = on
+		if on:
+			overlay.fit()   # G6.1 (INTEG61): 0x0 overlay fix
+			_fit_card()
 	if not on:
 		model.draft = {}
 		quick = {}
@@ -303,10 +313,62 @@ func cancel_plan(pid: int) -> void:
 func update(w: SimWorld, fid: int) -> void:
 	if not active or w == null:
 		return
+	if overlay != null:
+		overlay.fit()
 	model.refresh(w, fid)
 	reason = Plans.validate_plan(w, fid, model.draft_plan()) if model.has_draft() else ""
 	_refresh_card()
+	_fit_card()
 	_redraw()
+
+
+## G6.1 (INTEG61-2, ui_fit cmd61_* at UI scale 150%): place the card in the free map area between the HUD's
+## LeftScroll / RightScroll columns, under the top bar and above the BottomPanel, clear of the centred PAUSED
+## banner when there is room; on a short canvas the card scrolls instead of running under the bottom panel.
+func _fit_card() -> void:
+	if card == null or root == null or _card_sc == null:
+		return
+	# global (canvas) rects throughout: the HUD root Control may have zero size (see cl_overlay.fit)
+	var cs: Vector2 = root.get_viewport_rect().size
+	var lay = hud.get("layer") if hud != null else null
+	if lay != null and lay.has_method("canvas_size"):
+		cs = lay.canvas_size()
+	var gap := 8.0
+	var top := 84.0
+	var bottom := cs.y - 230.0
+	var bp := root.get_node_or_null("BottomPanel") as Control
+	if bp != null and bp.visible:
+		bottom = bp.get_global_rect().position.y - gap
+	var right := cs.x - 12.0
+	var rs := root.get_node_or_null("RightScroll") as Control
+	if rs != null and rs.visible:
+		right = rs.get_global_rect().position.x - gap
+	var left := 12.0
+	var ls := root.get_node_or_null("LeftScroll") as Control
+	if ls != null and ls.visible and ls.size.x > 1.0:
+		left = ls.get_global_rect().end.x + gap
+	# plans list: only as tall as its rows (max 260)
+	_list_sc.custom_minimum_size.y = clampf(_list.get_combined_minimum_size().y, 24.0, 260.0)
+	var v: Control = _card_sc.get_child(0)
+	var need: Vector2 = v.get_combined_minimum_size()
+	var frame := card.get_combined_minimum_size() - _card_sc.get_combined_minimum_size()
+	var cw := maxf(300.0, need.x) + 14.0 + frame.x   # room for the scroll bar either way
+	var x := maxf(left, right - cw)
+	# keep clear of the centred PAUSED banner: beside it when there is room, else below it
+	var pb = hud.get("_paused_banner") if hud != null else null
+	if pb is Control:
+		var br := (pb as Control).get_global_rect()
+		if x < br.end.x + gap and x + cw > br.position.x - gap:
+			if br.position.x - gap - cw >= left:
+				x = br.position.x - gap - cw
+			elif br.position.y < bottom:
+				top = maxf(top, br.end.y + gap)
+	var h := clampf(need.y, 60.0, maxf(60.0, bottom - top - frame.y))
+	var scrolls := need.y > h + 0.5
+	_card_sc.custom_minimum_size = Vector2(cw - frame.x, h)
+	_card_sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if scrolls else ScrollContainer.SCROLL_MODE_DISABLED
+	card.size = Vector2.ZERO   # shrink to the new minimum
+	card.global_position = Vector2(x, top)
 
 
 func _refresh_card() -> void:
