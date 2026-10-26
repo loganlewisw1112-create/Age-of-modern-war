@@ -33,6 +33,8 @@ const HIT_RECENT := 40            # a hit within 2 s counts for return fire
 const LEASH := 6.0                # tiles from the squad leader before a straggler catches up
 const DEF_CHASE := 8.0            # defensive stance: max chase distance from the anchor
 const LOW_HP := 0.35
+## Kite only from a threat whose weapon does at least this fraction of its damage against our armour.
+const KITE_MIN_MULT := 0.25
 const LOW_AMMO := 0.2
 const SMART_CD := 60              # ticks between two smart repositions of one unit
 const SUPPORT_R := 14.0           # idle squad/platoon mates within this move up to an engaged mate
@@ -734,8 +736,10 @@ static func _smart(w: SimWorld, c: Dictionary, e: Dictionary, ot: String) -> voi
 	var rng := float(s.range)
 	var trng := float(ts.range)
 	var dt := pos.distance_to(Vector2(t.pos))
-	# 4) kiting: out-range the target, step back to our own range when it closes inside its range
-	if rng > trng + 1.0 and dt < trng + 0.5 and Combat.can_target(ts, e):
+	# 4) kiting: out-range the target, step back to our own range when it closes inside its range. Only from a
+	# threat that can really hurt us (owner test 2026-10-26: an MBT backed away from a rifleman, whose rifle does 5%
+	# against heavy armour, and showed it its rear armour); a tank holds against rifles and autocannons.
+	if rng > trng + 1.0 and dt < trng + 0.5 and Combat.can_target(ts, e) 			and Content.armor_mult(String(ts.cls), String(s.armor)) >= KITE_MIN_MULT:
 		_reposition(w, e, pos + away * (rng - 0.5 - dt), "kite")
 		return
 	# 5) spread out against splash

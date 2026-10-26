@@ -1448,6 +1448,25 @@ static func _held(w: SimWorld) -> Dictionary:
 	return h
 
 
+## Speed multiplier of a moving unit (== the inlined block in _tick_held's GDScript loop; keep them equal).
+static func _speed_mult(e: Dictionary) -> float:
+	var mm := 1.0
+	var c = e.get("comp")
+	var f = e.get("fuel")
+	if c != null and float(c.get("mobility", 100)) <= 0.0:
+		mm = 0.0
+	elif f != null and float(f) <= 0.0:
+		mm = 0.0
+	elif bool(e.get("broken", false)):
+		mm = 1.2
+	elif bool(e.get("pinned", false)):
+		mm = SimWorld.Morale.pin_move
+	var fmv = e.get("mvm")
+	if fmv != null:
+		mm *= float(fmv)
+	return mm
+
+
 static func _tick_held(w: SimWorld, t0: int) -> void:
 	var sols := [w.nav.solid.foot, w.nav.solid.vehicle, null, null, null, null, null, null, null, null]
 	var mw := int(w.nav.w)
@@ -1540,6 +1559,14 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 			for i in r[6]:
 				_arrive(all[i])   # moving without a path (or path done): same order as the loop
 			ng_done = true
+			# G6.1: rts_core's gather knows the G6 speed rules only (pinned = 0.5, no "mvm"). Re-derive the speed
+			# of a mover carrying a G6.1 realism multiplier exactly as the GDScript loop below does, so pinned,
+			# suppressed and tired units slow down on the native path too (test_hot_state perf paths on == off).
+			for j in nm:
+				var ni := mvi[j * 4]
+				var me: Dictionary = all[uix[ni]]
+				if me.has("mvm") or me.has("pinned"):
+					spd[j] = tsp[ids[ni]] * _speed_mult(me)
 			if HotState.verify_gather:   # tests: every trusted (not re-read) position equals its dict
 				for j in n:
 					if all[uix[j]].pos != pos[j]:

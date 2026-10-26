@@ -28,38 +28,47 @@ const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gat
 ## the G5 GOLD exactly (test_g5_gold_holds_flattened, GOLD_G5_FLAT; Tiers bucket floored at 36, indirect cap 18).
 ## (Earlier: 2026-10-25 PERF6-2 elevated capture, invalid as above; 2026-10-24 CORE10K-2, ORCH-authorized,
 ## G5 approved features; before that cd011a7.)
+## GOLD + GOLD_FLAT re-baselined 2026-10-26 for G6.1 by ORCH on the owner's explicit order ("Yes, finish G6.1:
+## re-baseline, full suite, ..."). G6.1 changes behaviour on purpose (squad AI, chain of command, realism pass:
+## suppression/fatigue/pinned movement, ammo bearers, generals), so every scenario hash moves. Before capturing, the
+## in-tree A/B (perf paths on == off) was made to hold again: rts_core's native gather ignored the G6.1 movement
+## multipliers (pinned 0.5 instead of Morale.pin_move 0.1, no "mvm"), fixed in Movement._tick_held; bisect showed
+## native_gather was the only perf path that differed (2k and 10k fight). Values: two independent parallel runs of
+## .plan/gold61.gd (Bench.ab_hash, rts_core 0.5.1), 2026-10-26 ~10:24-10:45 PDT, all 16 hashes identical, 0 SCRIPT
+## ERROR / Parse Error in both logs (scratchpad g61suite/gold_run1.log, gold_run2.log).
 const GOLD := {
-	"2k_fight/on": "f500b7ebe32d54b13d9c3d3ec1debf8010039a1feec88d06a4845b7958ee1c15",
-	"2k_fight/off": "371710a07f521e8545e9a35f1d19aae888f0df137fda3d7f47e0d9a46cc147b2",
-	"2k_mixed/on": "623db57dd90eb54bddc7b3df8d6fb73b1f04f964f0021af3c0d57251bff4aa67",
-	"2k_mixed/off": "0e3c0fdc4c66f8e39e32d2a09fd0471dc76d1e59357b3cc40dd661d9af94bb92",
-	"10k_fight/on": "cc7e99acdf6723081976c49978d0590c4c055e12cae1e3520453a97641c19d48",
-	"10k_fight/off": "361c383a0fdfe6272b8e9c7a6624046de1318ffc1c25a60ea03d3154b0bc6363",
-	"10k_march/on": "510e6a39b4c11d2c55afcca9b8fc7f9bd3080d962e5d00ffc9530dcd07a8e7d3",
-	"10k_march/off": "ec9283b620089ae3941413bdea2a95dcdf8c330f876141c56a78fd911dd2adf3",
+	"2k_fight/on": "2280645de8278b2b8dfff43ffc6f2bb7b5d4c443525bedfb28a31211322ad00b",
+	"2k_fight/off": "c098f03b93c782b2e85199199fdb4ddf89d6be623b5d2c25978bcc7978afd8ca",
+	"2k_mixed/on": "75b9fc62f1833382aef6447ddb4a4e442149735a5aea1cfca794bd6c794f81da",
+	"2k_mixed/off": "dbecb5f0969065cebe8dbe50916b054b12a149b1e63defc214e241e9ea1f159d",
+	"10k_fight/on": "4e525119979982b664f8c46514daa347af59d52465162ac30deafacbb6925480",
+	"10k_fight/off": "4a6f28d644b23a20b188285b25b8b12c77c13bfde198c361282415a01bfbc6e9",
+	"10k_march/on": "44862dfa425111016113fecbb4b4a15e386923aec19b91771d8028e73e8fa9bc",
+	"10k_march/off": "40bb885e7325f7cc9e272c6f65b8eab4811783b3d9edcf49c59347e409b20c19",
 }
 
-## The G5 GOLD (CORE10K-2, 2026-10-24): what the AB scenarios give with the height flattened.
-const GOLD_G5_FLAT := {
-	"2k_fight/on": "f15e0ee2c7f78c96f695c792d7400c25c7f0bc22d086cb6e13eb927d65e6b6fa",
-	"2k_fight/off": "22136639430e22129af2f499ad7e0edfba1367c458274d2d9221354d8779a842",
-	"2k_mixed/on": "708927396dcc48441fab6e204fb7837b2ef3c5a5597992c25023fdc630cba302",
-	"2k_mixed/off": "be6ce08ff1fda2e419590db954101f5b7214dd594bb901ad01b6e63421eeeac6",
-	"10k_fight/on": "f7a4af0ba1afd04e50a7224be03d4df8b0a52e986cc58a54ec7257c1de10fd0b",
-	"10k_fight/off": "966bdd2da9d84c8a4e039bb643428ff86e31ffb287e0e16d2a8f33c51dcbc5a3",
-	"10k_march/on": "ccfdc00114bf86e2f92ae7d808fe991032e6442816fcc0e60215757d39fe5d00",
-	"10k_march/off": "ea1f8679442362f4610609378db84e0e8a256a220ac2e53745351313855e6565",
+## What the AB scenarios give with the height flattened. G6.1 values (see the GOLD comment); before G6.1 this was the
+## G5 GOLD (CORE10K-2, 2026-10-24), which G6 still reproduced flattened.
+const GOLD_FLAT := {
+	"2k_fight/on": "99f1129e68567973fdb9a15119fa4eaa31f85d76c892991e68375a30c24de7ec",
+	"2k_fight/off": "9d85eac6dc9eac8ebeb5921bea5d28706499e75b19ac76c205f5d27347f92ac7",
+	"2k_mixed/on": "39db06ec9cf72040be661d271a58214e665396ff52e921fcadfdc7dbcee24cda",
+	"2k_mixed/off": "339d97b476650dd6945905d6a1cc0d448dc9f4e1ba5fa91e785ea88f39ba1bb6",
+	"10k_fight/on": "c5d513e1cda68aed77f51bcb719c25824a535e1d377cc58c922428a0c528544b",
+	"10k_fight/off": "478e5314783190961ec4b198fb0d36b1ee09959f89860ef7574fc0d001087317",
+	"10k_march/on": "8fc37e09005c319fbb6b5245ca3fedd6ec96406d0936f58d8080336a079c8f9b",
+	"10k_march/off": "fdb449fde4de5aaa685e0b3e11f740f16ddb0568b99543a176b4b91b8096aad7",
 }
 
 
-## G6 PERF6-2: no hidden hash change under the height. Flattened, the G6 tree gives the G5 results.
-func test_g5_gold_holds_flattened() -> void:
+## G6 PERF6-2: no hidden hash change under the height (flattened reference, GOLD_FLAT; was the G5 GOLD until G6.1).
+func test_gold_holds_flattened() -> void:
 	for pair in [["2k_fight", true], ["2k_fight", false], ["2k_mixed", true], ["2k_mixed", false], ["10k_fight", true]]:
 		var nat: bool = pair[1]
 		if nat and not NativeCore.available():
 			continue
 		var key := "%s/%s" % [pair[0], "on" if nat else "off"]
-		check_eq(Bench.ab_hash(String(pair[0]), nat, false, -1, -1), String(GOLD_G5_FLAT[key]), "%s flattened == G5 GOLD" % key)
+		check_eq(Bench.ab_hash(String(pair[0]), nat, false, -1, -1), String(GOLD_FLAT[key]), "%s flattened == GOLD_FLAT" % key)
 
 
 func _gold(key: String) -> String:

@@ -30,6 +30,19 @@ Stop-if / park-if:        determinism breaks and can't be fixed fast -> park tha
                           -> park it in PROGRESS with what's done and the next step, ship the rest.
 Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), then BEARER61, ANIMA61, AUDIO61, VFX61, ANIMB61 as slots free; briefs `.plan/agents/prompts/G61-*.md`, board `.plan/board_g61.jsonl`.
 
+**G6.1 status 2026-10-26 ~10:50 PDT: PARKED by the owner's time limit (5 min), not complete.**
+Done: flicker fix (fe8bb8f) shipped to Downloads + build/ (zip 2026-10-26, packaged flick61 8/8); AI general fair
+play (84a230a, test_ai 18/18, test_gen61 15/15); full suite run (98/105 files green at first pass); fixed since then
+(this commit): native movement gather ignored G6.1 pinned/suppressed/fatigue speed (Movement._speed_mult re-derive;
+bisect: native_gather the only diverging perf path; 2k fight on == off after the fix), MBT kited away from rifles
+(SquadAI KITE_MIN_MULT 0.25; test_mil 13/13, test_squad61 14/14); GOLD/GOLD_FLAT re-baselined (two identical runs).
+NOT done / unverified: test_hot_state full run with the new GOLD (running at park time); timing tests test_ai_g5
+(AI think 4.9 ms > 2), test_perf_g6 (elevation overhead 43.7 ms > 5), test_editor_core (brush 1.52 s > 1.5) measured
+only under full load; enemy-general soak; final export with these fixes (the Downloads build predates 84a230a and
+this commit); 41 clean-build playtests; quiet-PC fps; README/PLAY_ME final numbers.
+Next step: run `--only=test_hot_state`, then the 3 timing tests alone on a quiet PC; then .plan/package_g61.sh +
+package_g61_pt.sh, copy build to Downloads, zip, fps, docs, final commit.
+
 ## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
 - Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;
   "wayyyyy better animations for the entire game and all movement (complete upgrade/overhaul)".
