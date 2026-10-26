@@ -23,6 +23,8 @@ Done-when (frozen 2026-10-26):
      to every listed event (test_vfx61 / test_audio61), radio chatter voices chain-of-command reports; the fps gates still PASS
      (2k on screen p10 >= 60 fps, 10k zoomed out p10 >= 30 fps); flows anim61 animb61 vfx61 audio61 pass (counted in item 2).
   7. Owner checkpoint: the owner approves the new look from the animation/effects frame strips (shots sent with SendUserFile).
+     EVIDENCE 2026-10-26: owner "Approved: the G6.1 look and sound (animation, effects, sound, radio) is right." after the review set
+     .plan/shots/ORCH61/review/ (g61_look_review.jpg, g61_tanks_moving.gif, g61_infantry_moving.gif, g61_sound_and_radio_sample.wav). MET.
 Out of scope:             the G6-parked items (10k speed, soak winners) beyond not regressing them; the 200 supply ceiling; balance beyond the features.
 Stop-if / park-if:        determinism breaks and can't be fixed fast -> park that feature with a note; a helper's feature can't reach its tests
                           -> park it in PROGRESS with what's done and the next step, ship the rest.
