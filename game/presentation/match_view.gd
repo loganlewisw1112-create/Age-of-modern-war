@@ -210,6 +210,9 @@ func _init_view() -> void:
 	fx_layer = FxLayer.new()
 	fx_layer.z_index = 3
 	add_child(fx_layer)
+	var audio61 = preload("res://presentation/audio/audio_director.gd").new()  # G6.1 AUDIO61: battle sound + radio chatter
+	add_child(audio61)
+	audio61.setup(self)
 	fog_layer = FogLayer.new()
 	fog_layer.z_index = 4
 	add_child(fog_layer)
@@ -603,6 +606,8 @@ func _on_step_events(evs: Array) -> void:
 					last_alert_pos = ev.pos
 			"ShotFired":
 				fx_layer.on_shot(ev)
+				if entity_layer.has_method("on_shot"):  # G6.1 ANIMA61 CR: recoil kick + hit flinch
+					entity_layer.on_shot(ev)
 				var t = world.entities.get(int(ev.get("target", -1)))
 				if t != null and int(t.owner) == player_fid:
 					last_alert_pos = t.pos
@@ -995,7 +1000,8 @@ func _on_left_press(mb: InputEventMouseButton) -> void:
 	if g2.on_left(p, mb.shift_pressed):
 		return
 	if mb.double_click:
-		_select_same_def_on_screen(p, mb.shift_pressed)
+		if not _g61_select_unit_group(p, mb.shift_pressed, mb.ctrl_pressed):  # G6.1 SQUAD61
+			_select_same_def_on_screen(p, mb.shift_pressed)
 		_skip_click_release = true
 	_drag_start_screen = mb.position
 	_drag_now_screen = mb.position
@@ -1073,6 +1079,27 @@ func _select_same_def_on_screen(p: Vector2, shift: bool) -> void:
 			if vr.has_point(ct * entity_canvas_pos(o)) and not out.has(id):
 				out.append(id)
 	select_ids(out)
+
+
+## G6.1 (SQUAD61): double-click an own unit selects its squad (e.squad); Ctrl+double-click its platoon
+## (e.platoon). False when the unit has neither, so the caller falls back to same-type-on-screen.
+func _g61_select_unit_group(p: Vector2, shift: bool, ctrl: bool) -> bool:
+	var e = entity_at(p, false)
+	if e == null or e.kind != "unit" or int(e.owner) != player_fid:
+		return false
+	var key := "platoon" if ctrl else "squad"
+	var gid := int(e.get(key, -1))
+	if gid < 0:
+		return false
+	var out: Array = selection.duplicate() if shift else []
+	var ids: Array = world.entities.keys()
+	ids.sort()
+	for id in ids:
+		var o: Dictionary = world.entities[id]
+		if o.kind == "unit" and int(o.owner) == player_fid and int(o.get(key, -1)) == gid and not is_garrisoned(o) and not out.has(id):
+			out.append(id)
+	select_ids(out)
+	return true
 
 
 func _on_right_press(mb: InputEventMouseButton) -> void:
@@ -1163,7 +1190,14 @@ func _on_key(k: InputEventKey) -> bool:
 	# control groups
 	if kc >= KEY_1 and kc <= KEY_9:
 		var g := int(kc - KEY_0)
-		if k.ctrl_pressed:
+		if k.ctrl_pressed and k.shift_pressed:  # G6.1 SQUAD61: Ctrl+Shift+N adds the selection to group N
+			var add: Array = _own_units_in_selection() if has_units else selection.duplicate()
+			var cg: Array = Array(control_groups.get(g, [])).filter(func(x): return world.entities.has(x))
+			for id in add:
+				if not cg.has(id):
+					cg.append(id)
+			control_groups[g] = cg
+		elif k.ctrl_pressed:
 			control_groups[g] = _own_units_in_selection() if has_units else selection.duplicate()
 		else:
 			_recall_group(g, k.shift_pressed)

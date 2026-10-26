@@ -18,10 +18,27 @@ Done-when (frozen 2026-10-26):
   3. A 10-minute headless run with an auto general and no player input logs >=5 distinct operation types plus chain-of-command orders and reports.
   4. 2k-unit sim ms/tick <= 1.2x the G6 figure measured in the same session and load.
   5. New build in Downloads; README and PLAY_ME describe G6.1 accurately (limits included).
+  Added by the owner 2026-10-26 (scope addition, recorded here as the authority; items 1-5 unchanged):
+  6. Look and feel: every unit def has the new animation sets (test_anim61 / test_animb61 manifest checks), effects and sounds map
+     to every listed event (test_vfx61 / test_audio61), radio chatter voices chain-of-command reports; the fps gates still PASS
+     (2k on screen p10 >= 60 fps, 10k zoomed out p10 >= 30 fps); flows anim61 animb61 vfx61 audio61 pass (counted in item 2).
+  7. Owner checkpoint: the owner approves the new look from the animation/effects frame strips (shots sent with SendUserFile).
 Out of scope:             the G6-parked items (10k speed, soak winners) beyond not regressing them; the 200 supply ceiling; balance beyond the features.
 Stop-if / park-if:        determinism breaks and can't be fixed fast -> park that feature with a note; a helper's feature can't reach its tests
                           -> park it in PROGRESS with what's done and the next step, ship the rest.
-Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), BEARER61 queued; briefs `.plan/agents/prompts/G61-*.md`, board `.plan/board_g61.jsonl`.
+Agents: CHAIN61, GEN61, OFF61, SQUAD61, REAL61, PLAN61 (6 live), then BEARER61, ANIMA61, AUDIO61, VFX61, ANIMB61 as slots free; briefs `.plan/agents/prompts/G61-*.md`, board `.plan/board_g61.jsonl`.
+
+## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
+- Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;
+  "wayyyyy better animations for the entire game and all movement (complete upgrade/overhaul)".
+- Q2 economy: research tree overhaul; civilians and territory, inside the main single-player campaign.
+- Q3 combat sim: destructible terrain; armour + ballistics (facing armour, penetration vs angle, weak spots, ammo types); EW, drones, cyber.
+- Q4 units: named soldiers + careers; specialists + kits (per-soldier roles and gear inside squads).
+- Q5 enemy AI: adapts to the player's style; named rival generals; diplomacy + multiple factions; difficulty by intelligence (not cheats).
+- Q6 presentation: radio chatter + sound; visual effects overhaul -- MOVED INTO G6.1 by the owner 2026-10-26, together with the
+  animation overhaul from Q1.
+Not chosen this pass (kept as options): story campaign, multiplayer/co-op, physical supply lines, industry chains, weather/day-night,
+wounds/field medicine, vehicle crews, cinematic camera/replays, after-action reports.
 
 ## Previous goal (G6 "Command & Terrain", owner-approved 2026-10-25: all defaults D21-D44; plan `docs/PLAN_G6.md`, contract `docs/CONTRACTS_G6.md`; branch `g6`) — DELIVERED, PARTIAL (see G6 evidence)
 One continuous wave, up to 8 agents live (D21, owner override), 23 agents each with an operating guide (`.plan/agents/prompts/G6-*.md`; MECH6c and ART-G6b split out of MECH6a / ART-G6 for budget). Message board + semantic layer run all wave. Scope: the G6 owner notes and answers below (items 1-17).

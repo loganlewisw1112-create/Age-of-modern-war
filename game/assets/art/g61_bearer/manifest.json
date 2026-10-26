@@ -1,0 +1,190 @@
+{
+  "files": {
+    "icons/a_ammo_bearer.png": "48a1417431044cde84d3696a8d849ebc",
+    "icons/b_supply_carrier.png": "50736d396e57de3c340bf85681c37245",
+    "icons/m_munitions_drone.png": "31d8304f4bd51c5b4a9ba665d3331c7b",
+    "units/a_ammo_bearer.png": "743cdf83f49645ece6364e1f75f522a8",
+    "units/a_ammo_bearer_mask.png": "94182fa4d32d6290b54fea657316f9d6",
+    "units/b_supply_carrier.png": "af74308294ddc7787803c3ac574a8dff",
+    "units/b_supply_carrier_mask.png": "c9d26b9c1b1169519e0b8f6914e60652",
+    "units/m_munitions_drone.png": "3a83029917b8266e6c9d5f17d1bc5ee0",
+    "units/m_munitions_drone_mask.png": "b51adf9fe08a6789112dc40d2ab5a7ab",
+    "wrecks/m_munitions_drone_wreck.png": "b9b5bcc57dd9b4c3fb40d5417d87ae13"
+  },
+  "g61_bearer": {
+    "defs": [
+      "a_ammo_bearer",
+      "b_supply_carrier",
+      "m_munitions_drone"
+    ]
+  },
+  "group": "g61_bearer",
+  "icons": {
+    "a_ammo_bearer": "icons/a_ammo_bearer.png",
+    "b_supply_carrier": "icons/b_supply_carrier.png",
+    "m_munitions_drone": "icons/m_munitions_drone.png"
+  },
+  "infantry": {
+    "a_ammo_bearer": {
+      "alive_sheets": {},
+      "anim61": {
+        "base": 6,
+        "v": 1
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/a_ammo_bearer.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "restock",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 48,
+      "mask": "units/a_ammo_bearer_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 1
+    },
+    "b_supply_carrier": {
+      "alive_sheets": {},
+      "anim61": {
+        "base": 6,
+        "v": 1
+      },
+      "facings": 8,
+      "fh": 36,
+      "file": "units/b_supply_carrier.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "restock",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 48,
+      "mask": "units/b_supply_carrier_mask.png",
+      "pivot": [
+        24,
+        28
+      ],
+      "squad_size": 1
+    }
+  },
+  "lod_class": {
+    "a_ammo_bearer": "infantry",
+    "b_supply_carrier": "infantry",
+    "m_munitions_drone": "vehicle_light"
+  },
+  "specials": {
+    "a_ammo_bearer": {
+      "restock": "restock"
+    },
+    "b_supply_carrier": {
+      "restock": "restock"
+    },
+    "m_munitions_drone": {
+      "restock": "restock"
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "m_munitions_drone": {
+      "facings": 8,
+      "fh": 44,
+      "file": "wrecks/m_munitions_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 44,
+      "pivot": [
+        22,
+        32
+      ]
+    }
+  },
+  "vehicles": {
+    "m_munitions_drone": {
+      "facings": 8,
+      "fh": 44,
+      "file": "units/m_munitions_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "restock"
+      ],
+      "fw": 44,
+      "mask": "units/m_munitions_drone_mask.png",
+      "pivot": [
+        22,
+        32
+      ]
+    }
+  },
+  "version": 1
+}

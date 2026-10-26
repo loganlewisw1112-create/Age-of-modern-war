@@ -1,0 +1,6 @@
+{
+  "_meta": "G6.1 fragment (owner: ORCH). Owner directive 2026-10-26: \"gas/oil shouldn't run out of vehicles so quickly, makes moving across a large map more difficult\". fuel_burn_scale multiplies every unit's fuel_per_tile when fuel burns (Supply._u, Tiers fuel-low check): 0.33 = about 3x range (an MBT goes ~800 tiles on a tank instead of ~267; the large map is 256 tiles across). Economy profiles' fuel_use_mult still applies on top.",
+  "rules": {
+    "fuel_burn_scale": 0.33
+  }
+}

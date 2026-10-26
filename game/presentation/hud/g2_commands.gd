@@ -4,9 +4,25 @@ extends RefCounted
 ##   officer + units: Assign to officer
 ##   officer alone:   Mission panel (Secure/Hold/Attack/Patrol route, Risk cycle, Cancel mission)
 ##   engineers: Repair [R]
+## G6.1 (SQUAD61): Formation [F] cycles all 8 formations (Orders.PLAYER_FORMATIONS); new buttons Formations [;] (page:
+## one button per formation + Group pace on/off), Stance [,] (page: aggressive / defensive / hold fire /
+## hold position / default + Teams panel), Regroup [/]. Keys come from Hotkeys (rebindable, group squad61).
 ## Every action goes through match_view.issue() or arms a MatchView.g2 order mode.
 
 const G2 = preload("res://presentation/view/g2_data.gd")
+const Orders = preload("res://sim/systems/orders.gd")
+const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
+const FORM_NAMES := {"line": "Line", "wedge": "Wedge", "column": "Column", "box": "Box", "echelon_left": "Echelon left",
+	"echelon_right": "Echelon right", "file": "File", "spread": "Spread (skirmish)"}
+const FORM_KEYS := {"line": "L", "wedge": "E", "column": "C", "box": "B", "echelon_left": "J", "echelon_right": "K",
+	"file": "I", "spread": "X"}
+const STANCES := [["aggressive", "Aggressive", "Z", "Pursue and engage at max range."],
+	["defensive", "Defensive", "X", "Hold the area, return fire, chase only a short way."],
+	["hold_fire", "Hold fire", "C", "Only shoot back when shot at."],
+	["hold_position", "Hold position", "V", "Never move; fire at enemies in range."],
+	["default", "Default", "B", "Normal behaviour (engage what comes into sight)."]]
+const STANCE_NAME := {"": "Default", "aggressive": "Aggressive", "defensive": "Defensive", "hold_fire": "Hold fire",
+	"hold_position": "Hold position"}
 
 var hud
 var risk_idx := 1               # index into G2.RISKS (medium)
@@ -15,6 +31,8 @@ var _ids: Array = []
 var _combat: Array = []
 var _officer := -1
 var _others: Array = []
+var page := ""                 # G6.1: "" | "formation" | "stance" (a sub-card for the selection in _page_ids)
+var _page_ids: Array = []
 
 
 func _mv():
@@ -76,8 +94,96 @@ func add_buttons(mode: String, ids: Array) -> void:
 	var gb = _btn("Guard", "click a friendly", "G", "guard", "Follow and protect a friendly unit or building; engage enemies in sight.")
 	gb.btn.pressed.connect(func(): _mv().g2.arm("guard", {"unit_ids": orders}))
 	if not _combat.is_empty():
-		var fb = _btn("Formation", "line", "F", "formation", "Cycle formation: line, wedge, column.")
+		var fb = _btn("Formation", "line", "F", "formation", "Cycle formation: line, wedge, column, box, echelon left/right, file, spread.")
 		fb.btn.pressed.connect(_cycle_formation)
+		# G6.1 (SQUAD61)
+		var fp = _btn2("Formations", "pick one", "formations_page", "formations_page", "One button per formation, and Group pace (move at the slowest unit's speed).")
+		fp.btn.pressed.connect(_open_page.bind("formation"))
+		var sp = _btn2("Stance", "default", "stance_page", "stance", "Aggressive, defensive, hold fire, hold position.")
+		sp.btn.pressed.connect(_open_page.bind("stance"))
+		var rg = _btn2("Regroup", "on leader", "regroup", "regroup", "Selected squads and platoons reform on their leader.")
+		rg.btn.pressed.connect(func(): hud._issue({"type": "regroup", "unit_ids": _combat.duplicate()}))
+
+
+## G6.1: a card button whose key comes from the Hotkeys table (badge shows the printable character).
+func _btn2(title: String, sub: String, action: String, kind: String, tip: String) -> Dictionary:
+	var k := Hotkeys.key(action)
+	var b: Button = hud._card_button(title, sub, Hotkeys.badge(k), "")
+	b.name = "G6_" + action   # panel_probe finds squad61 actions by G6_<action>
+	var rec := {"btn": b, "kind": "g2", "g2": kind, "tip": tip}
+	hud._card_buttons.append(rec)
+	_recs.append(rec)
+	hud._register_hotkey(k, b)
+	return rec
+
+
+func _open_page(p: String) -> void:
+	page = p
+	_page_ids = _combat.duplicate()
+	hud._card_sig = "?"
+	hud._refresh()
+
+
+func _close_page() -> void:
+	page = ""
+	hud._card_sig = "?"
+	hud._refresh()
+
+
+## Called first by hud._add_unit_buttons: when a G6.1 sub-card is open for this selection it fills the card
+## and returns true (the normal unit buttons are skipped). A changed selection closes the page.
+func add_page(ids: Array) -> bool:
+	if page == "":
+		return false
+	var a := ids.duplicate()
+	var b := _page_ids.duplicate()
+	a.sort()
+	b.sort()
+	if a != b:
+		page = ""
+		return false
+	_recs.clear()
+	_ids = ids.duplicate()
+	_combat = ids.duplicate()
+	if page == "formation":
+		hud._card_title.text = "FORMATION   (the group faces its move direction; armour leads mixed groups)"
+		for f in Orders.PLAYER_FORMATIONS:
+			var r = _btn(String(FORM_NAMES.get(f, f)), "", String(FORM_KEYS.get(f, "")), "form_" + String(f), "Set formation: " + String(FORM_NAMES.get(f, f)))
+			r.btn.pressed.connect(func(): hud._issue({"type": "set_formation", "unit_ids": _combat.duplicate(), "formation": String(f)}))
+		var pc = _btn("Group pace", "off", "Z", "pace", "Move as a group at the slowest unit's speed (toggle).")
+		pc.btn.pressed.connect(_toggle_pace)
+	else:
+		hud._card_title.text = "STANCE"
+		for s in STANCES:
+			var r = _btn(String(s[1]), "", String(s[2]), "stance_" + String(s[0]), String(s[3]))
+			r.btn.pressed.connect(func(): hud._issue({"type": "set_stance", "unit_ids": _combat.duplicate(), "stance": String(s[0])}))
+		var tb = _btn("Teams panel", "F2", "T", "teams", "Open the Teams panel (groups, squads, platoons, companies).")
+		tb.btn.pressed.connect(func():
+			if hud.get("teams") != null:
+				hud.teams.toggle())
+	var bk = _btn("Back", "", "BACKSPACE", "back", "Back to the orders card.")
+	bk.btn.pressed.connect(_close_page)
+	return true
+
+
+func _pace_on() -> bool:
+	for id in _combat:
+		var e = _ent(int(id))
+		if e != null and e.has("pace_grp"):
+			return true
+	return false
+
+
+func _toggle_pace() -> void:
+	hud._issue({"type": "set_formation", "unit_ids": _combat.duplicate(), "pace": not _pace_on()})
+
+
+func _current_stance() -> String:
+	for id in _combat:
+		var e = _ent(int(id))
+		if e != null:
+			return String(e.get("stance", ""))
+	return ""
 
 
 func _btn(title: String, sub: String, hotkey: String, kind: String, tip: String) -> Dictionary:
@@ -117,7 +223,7 @@ func _current_formation() -> String:
 
 func _cycle_formation() -> void:
 	var cur := _current_formation()
-	var nxt: String = G2.FORMATIONS[(G2.FORMATIONS.find(cur) + 1) % G2.FORMATIONS.size()]
+	var nxt: String = Orders.PLAYER_FORMATIONS[(Orders.PLAYER_FORMATIONS.find(cur) + 1) % Orders.PLAYER_FORMATIONS.size()]
 	hud._issue({"type": "set_formation", "unit_ids": _combat.duplicate(), "formation": nxt})
 
 
@@ -131,8 +237,14 @@ func update_state(w: SimWorld) -> void:
 		var reason := ""
 		match String(rec.g2):
 			"formation":
-				b.text = "[F] Formation\n%s" % _current_formation()
+				b.text = "[F] Formation\n%s" % String(FORM_NAMES.get(_current_formation(), _current_formation()))
 				reason = w.preview_command({"type": "set_formation", "issuer": pf, "unit_ids": _combat, "formation": "line"})
+			"stance":
+				b.text = "Stance\n%s" % String(STANCE_NAME.get(_current_stance(), _current_stance()))
+			"pace":
+				b.text = "Group pace\n%s" % ("ON" if _pace_on() else "off")
+			"regroup":
+				reason = w.preview_command({"type": "regroup", "issuer": pf, "unit_ids": _combat})
 			"risk":
 				b.text = "Risk: %s\nclick to cycle" % String(G2.RISKS[risk_idx]).to_upper()
 			"assign":

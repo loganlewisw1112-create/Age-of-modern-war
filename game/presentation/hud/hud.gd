@@ -25,8 +25,11 @@ const REFRESH_SECS := 0.2
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")      # G5 (UI5a) panel kit
 const HudExtras = preload("res://presentation/ui5/kit/hud_extras.gd")
 const Ui6aHub = preload("res://presentation/ui6/a/ui6a_hub.gd")          # G6 (UI6a): market, army builder, forces, commanders
+const TeamsPanel = preload("res://presentation/ui6/teams_panel.gd")      # G6.1 (SQUAD61): Teams panel (F2)
+const CommandLayer = preload("res://presentation/ui6/command_layer/command_layer.gd")  # G6.1 (PLAN61): plans on the map
 const CompanyCard = preload("res://presentation/ui6/a/company_card.gd")
 const Companies = preload("res://sim/systems/companies.gd")
+const RealismInfo = preload("res://presentation/ui6/realism_info.gd")  # G6.1 (REAL61)
 const Progression = preload("res://sim/systems/progression.gd")       # G6 (UI6a): research_list (side's faction only)
 const Elevation = preload("res://sim/systems/elevation.gd")           # G6 (UI6a, PT6 CR 1193): HIGH GROUND inspector tag
 const TOP_H := 34.0        # G5 layout (virtual canvas px; ScaledLayer scales them)
@@ -81,6 +84,8 @@ var _right_scroll: ScrollContainer
 var _card_scroll: ScrollContainer
 var extras = HudExtras.new()   # G5: control groups, idle button, F1 sheet
 var ui6a = Ui6aHub.new()       # G6 (UI6a): the four G6 panels (modal)
+var teams = TeamsPanel.new()   # G6.1 (SQUAD61)
+var cmd_layer = CommandLayer.new()   # G6.1 (PLAN61)
 var _card_title: Label
 var _card_grid: GridContainer
 var _queue_box: HBoxContainer
@@ -294,6 +299,8 @@ func _build_ui() -> void:
 	_build_bottom(root)
 	extras.build(self, root)
 	ui6a.build(self, root)   # G6 (UI6a): after everything else, so the modal panels draw on top
+	cmd_layer.build(self, root)   # G6.1 (PLAN61)
+	teams.build(self, root)       # G6.1 (SQUAD61)
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)
@@ -599,6 +606,8 @@ func _refresh() -> void:
 	_refresh_hover()
 	extras.update(w, mv)
 	ui6a.update(w, _pf())
+	cmd_layer.update(w, _pf())   # G6.1 (PLAN61)
+	teams.refresh()              # G6.1 (SQUAD61)
 	_cap_stacks()
 
 
@@ -693,6 +702,15 @@ func _refresh_selection(w: SimWorld) -> void:
 		var info := "HP %d / %d" % [int(e.hp), int(e.max_hp)]
 		if e.kind == "unit":
 			info += "\n" + _order_text(e)
+			info += TeamsPanel.inspector_line(e)  # G6.1 SQUAD61: stance + formation
+			for rl in RealismInfo.lines(w, e):  # G6.1 REAL61 CR 60: suppression, fatigue, rank, XP, traits
+				info += "\n" + String(rl)
+			if own:
+				for cl in SimWorld.CommandNet.inspector_lines(w, int(e.id)):  # G6.1 CHAIN61 CR: comms + recent reports
+					info += "\n" + String(cl)
+				var bl := SimWorld.AmmoBearer.load_line(e)  # G6.1 BEARER61 CR seq 331: "Ammo load 2.4 / 3"
+				if bl != "":
+					info += "\n" + bl
 			if String(e.carry.get("res", "")) != "" and int(e.carry.get("amt", 0)) > 0:
 				info += "\nCarrying %d %s" % [int(e.carry.amt), e.carry.res]
 		elif e.kind == "building":
@@ -702,6 +720,8 @@ func _refresh_selection(w: SimWorld) -> void:
 				var st := String(e.get("status", ""))
 				if st != "":
 					info += "\nBlocked: " + _status_text(st)
+				if own and Companies.is_hq_def(String(e.def)):
+					info += _company_training_lines(w, int(e.id))
 				var d := Content.building(e.def)
 				if int(d.get("power", 0)) != 0:
 					info += "\nPower %+d" % int(d.power)
@@ -770,6 +790,27 @@ func _append_high_ground(w: SimWorld, ents: Array) -> void:
 	var hg := high_ground_line(w, ents)
 	if hg != "":
 		_insp_info.text += "\n" + hg
+
+
+## G6.1: Company HQ training queue lines for the inspector ("" when nothing trains). Owner bug 2026-10-26:
+## companies trained invisibly and could wait forever on the supply cap; now progress and the reason show here.
+func _company_training_lines(w: SimWorld, hq_id: int) -> String:
+	var rows := Companies.training_of(w, hq_id)
+	if rows.is_empty():
+		return "\nNo company in training"
+	var s := ""
+	for r in rows:
+		var label := String(r.name)
+		if String(r.size) != "":
+			label += " (%s)" % String(r.size)
+		if bool(r.active):
+			if String(r.status) != "":
+				s += "\nWaiting to deploy: %s - %s" % [label, _status_text(String(r.status))]
+			else:
+				s += "\nTraining: %s  %d%%  (%ds)" % [label, int(float(r.progress) * 100.0), int(ceil(float(r.seconds_left)))]
+		else:
+			s += "\nQueued: %s  (%d supply)" % [label, int(r.pop)]
+	return s
 
 
 func _status_text(st: String) -> String:
@@ -996,6 +1037,8 @@ func _on_train_pressed(bid: int, item: String) -> void:
 
 
 func _add_unit_buttons(ids: Array, mode: String = "units") -> void:
+	if g2_cmd.add_page(ids):   # G6.1 (SQUAD61): formation / stance sub-card
+		return
 	var stop := _card_button("Stop", "", "S", "")
 	stop.pressed.connect(_issue.bind({"type": "stop", "unit_ids": ids.duplicate()}))
 	_card_buttons.append({"btn": stop, "kind": "plain"})
@@ -1197,6 +1240,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if extras.on_key(k):
 		get_viewport().set_input_as_handled()
 		return
+	if teams.on_key(k) or cmd_layer.on_key(k):   # G6.1 (SQUAD61 Teams F2 / PLAN61 command mode)
+		get_viewport().set_input_as_handled()
+		return
 	if ui6a.on_key(k):   # G6 (UI6a): Esc closes an open G6 panel first
 		get_viewport().set_input_as_handled()
 		return
@@ -1302,6 +1348,18 @@ func _on_events(events: Array) -> void:
 				if _owner_of(w, ev) == pf:
 					var p := Content.production(String(ev.get("item", "")))
 					_push_alert("Trained: %s" % String(p.get("name", ev.get("item", "unit"))), HT.GREEN, _ev_pos(w, ev))
+			"CompanyQueued":
+				if int(ev.get("owner", -1)) == pf:
+					_push_alert("Company training started at the Company HQ (select it to see progress)", HT.GREEN, _ev_pos(w, ev))
+			"CompanyTrained":
+				if int(ev.get("owner", -1)) == pf:
+					_push_alert("Company ready: %d troops deployed at the Company HQ" % (ev.get("unit_ids", []) as Array).size(), HT.GREEN, _ev_pos(w, ev))
+			"CommanderTrained":
+				if int(ev.get("owner", -1)) == pf:
+					_push_alert("Commander ready at the Company HQ", HT.GREEN, _ev_pos(w, ev))
+			"CompanyTrainingBlocked":
+				if int(ev.get("owner", -1)) == pf:
+					_push_alert("Company trained but waiting to deploy: %s" % _status_text(String(ev.get("reason", ""))), HT.YELLOW, _ev_pos(w, ev))
 			"ProductionBlocked":
 				if _owner_of(w, ev) == pf:
 					var reason := String(ev.get("reason", ev.get("status", "blocked")))

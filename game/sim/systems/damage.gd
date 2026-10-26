@@ -77,13 +77,14 @@ static func in_cover(w: SimWorld, e: Dictionary) -> bool:
 static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: Dictionary, hit: bool) -> void:
 	var R: Dictionary = Content.rules()
 	var sup: Dictionary = R.get("suppression", {})
+	var sf: float = SimWorld.Morale.weapon_supp(s)  # G6.1 REAL61 CR 58: weapon-scaled suppression
 	if not hit:
 		if SimIndex.profiling:
 			var tnm := Time.get_ticks_usec()
-			near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)))
+			near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)), sf)
 			SimIndex.pt("dmg.near_miss", tnm)
 			return
-		near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)))
+		near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)), sf)
 		return
 	var cls := String(s.get("cls", ""))
 	var dmg := base_damage(s, target)
@@ -133,24 +134,19 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	if target.has("comp") and (cls == "at" or cls == "autocannon"):
 		_component_roll(w, target, dmg, R)
 	if target.has("morale"):
-		suppress(w, target, float(sup.get("per_hit", 18)))
+		suppress(w, target, float(sup.get("per_hit", 18)), sf)
 
 
 ## Adds suppression to one infantry unit (clamped 0..100) and marks it under fire.
-static func suppress(w: SimWorld, e: Dictionary, amount: float) -> void:
-	if not e.has("morale"):
-		return
-	var v := snappedf(clampf(float(e.get("supp", 0.0)) + amount, 0.0, 100.0), Q)
-	e.supp = v
-	e.supp_tick = w.tick
-	var pin_at := float((Content.rules().get("suppression", {}) as Dictionary).get("pinned_at", 60))
-	if v >= pin_at:
-		e.pinned = true
+## G6.1 (REAL61 CR 58): Morale.add_supp scales by the weapon factor sf, cover, rank and leaders (same field
+## check, clamp, supp_tick and pinning as before).
+static func suppress(w: SimWorld, e: Dictionary, amount: float, sf: float = 1.0) -> void:
+	SimWorld.Morale.add_supp(w, e, amount, sf)
 
 
 ## Near-miss suppression: infantry hostile to shooter_owner within NEAR_MISS_R of `at`.
 ## Uses combat's per-tick unit grid when present (always during a sim tick); falls back to a scan.
-static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: float) -> void:
+static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: float, sf: float = 1.0) -> void:
 	var r2 := NEAR_MISS_R * NEAR_MISS_R
 	# G3b PERF4-3 (NEAR_MISS_NG): with the native core live, Combat skips its GDScript unit grid and
 	# this reads the tick's RtsGrid instead (same FULL units). Candidates come from a slightly wider
@@ -164,7 +160,7 @@ static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: floa
 				continue
 			var p: Vector2 = e.pos
 			if p.distance_squared_to(at) <= r2:
-				suppress(w, e, amount)
+				suppress(w, e, amount, sf)
 		return
 	var grid = w.cache.get("combat_grid")
 	if grid == null:
@@ -172,7 +168,7 @@ static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: floa
 			if e.has("morale") and w.is_enemy(shooter_owner, int(e.owner)) and SimIndex.alive(w, e):
 				var p: Vector2 = e.pos
 				if p.distance_squared_to(at) <= r2:
-					suppress(w, e, amount)
+					suppress(w, e, amount, sf)
 		return
 	var bx := floori(at.x / BUCKET)
 	var by := floori(at.y / BUCKET)
@@ -190,7 +186,7 @@ static func near_miss(w: SimWorld, shooter_owner: int, at: Vector2, amount: floa
 						continue
 					var p: Vector2 = e.pos
 					if p.distance_squared_to(at) <= r2:
-						suppress(w, e, amount)
+						suppress(w, e, amount, sf)
 
 
 static func _component_roll(w: SimWorld, t: Dictionary, dmg: float, R: Dictionary) -> void:

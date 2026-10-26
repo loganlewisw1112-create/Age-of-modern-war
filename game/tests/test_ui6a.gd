@@ -67,7 +67,8 @@ func test_market_panel_buy_sell() -> void:
 	check_eq(int(w.factions[0].credits), cr0 - quote, "paid the quoted credits")
 	check(Market.price_milli(w, "salvage", "buy") > price0, "buying raised the shared price")
 	p.update(w, 0)
-	check_eq((p.rows.salvage.limit as Label).text, str(Market.limit_left(w, 0, "salvage")), "limit column shows limit_left")
+	var lim := Market.limit_left(w, 0, "salvage")
+	check_eq((p.rows.salvage.limit as Label).text, "No limit" if lim >= Market.UNLIMITED else str(lim), "limit column shows limit_left (G6.1: No limit)")
 	var sell: Button = p.rows.salvage.btns[-10]
 	check(not sell.disabled, "Sell 10 salvage enabled")
 	var cr1 := int(w.factions[0].credits)

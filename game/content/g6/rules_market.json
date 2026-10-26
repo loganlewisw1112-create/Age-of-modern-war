@@ -8,7 +8,8 @@
       "drift_s": 180,
       "sell_pct": 70,
       "limit_window_s": 60,
-      "limit_per_window": 200,
+      "limit_per_window": 0,
+      "limit_note": "Owner directive 2026-10-26: NO cap on how much a player can buy or sell; if they have the credits they can keep buying. 0 = unlimited (prices still rise 1% per unit up to max_pct).",
       "min_pct": 40,
       "max_pct": 400,
       "requires_hq": true

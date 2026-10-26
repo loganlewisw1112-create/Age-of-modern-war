@@ -100,6 +100,17 @@ func _g6_cards() -> void:
 			continue
 		_select(mv, hud, ids)
 		_g6_keys(hud, String(g))
+	# G6.1 (SQUAD61 CR seq 154): Stance / Formations / Regroup on a combat unit card (badge text is punctuation, not checked)
+	var cu: Array = groups.get("garrison6", [])
+	if _rep(not cu.is_empty(), "spawn squad61", "no rifleman"):
+		_select(mv, hud, cu)
+		for a in Hotkeys.ACTIONS:
+			if Hotkeys.group(String(a)) != "squad61":
+				continue
+			var b := _btn(hud, "G6_" + String(a))
+			var k := Hotkeys.key(String(a))
+			if _rep(b != null, "button %s" % a, "no G6_%s on the combat card" % a):
+				_rep(hud._hotkeys.get(k) == b, "hotkey %s=%s" % [a, k], "bound to %s" % str(hud._hotkeys.get(k)))
 	var bdefs := {"garrison_bld6": "s_garrison_bld", "battery6": "a_cruise_battery", "garage6": "a_exo_garage"}
 	for g in Hotkeys.G6_BUILDING_GROUPS:
 		var bid := G6Scen.spawn_building(w, String(bdefs[g]))

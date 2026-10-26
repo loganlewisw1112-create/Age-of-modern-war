@@ -161,6 +161,7 @@ func _ready() -> void:
 	tabs.add_child(_graphics_tab())
 	tabs.add_child(_game_tab())
 	tabs.add_child(_keys_tab())
+	tabs.add_child(preload("res://presentation/audio/audio_tab.gd").build())  # G6.1 AUDIO61: Master/Battle/Radio/UI/Music + mute
 	_msg = UiKit.label("", "warn")
 	_msg.name = "SettingsMsg"
 	_msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

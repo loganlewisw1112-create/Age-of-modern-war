@@ -1,4 +1,5 @@
 extends "res://tests/test_base.gd"
+const Supply = preload("res://sim/systems/supply.gd")
 ## G2 supply (agent B2): ammo/fuel consumption + resupply, refinery, repair command, save round trip.
 
 const Movement = preload("res://sim/systems/movement.gd")
@@ -120,14 +121,16 @@ func test_vehicle_burns_fuel_stops_at_zero_and_resupply_restarts_it() -> void:
 	var w := make_world()
 	_empty_stock(w, 0, "fuel")
 	var m := _spawn(w, "mbt", 0, Vector2(0, 5))
-	m.fuel = 6.0
+	m.fuel = 6.0 * Supply.burn_scale()  # G6.1: same ~4-tile drive at the new burn rate (stays in resupply range)
 	var start: Vector2 = m.pos
 	var mid := Vector2(w.map.w, w.map.h) * 0.5
 	do_cmd(w, 0, {"type": "move", "unit_ids": [int(m.id)], "target": mid})
 	_run(w, 120)
 	check(float(m.fuel) <= 0.0, "fuel burned down to 0 (is %s)" % str(m.fuel))
 	var dist := (Vector2(m.pos) - start).length()
-	check(dist > 3.0 and dist < 4.6, "drove about fuel/fuel_per_tile = 4 tiles (drove %.2f)" % dist)
+	# G6.1: burn per tile = fuel_per_tile x rules.fuel_burn_scale (owner 2026-10-26, ~3x range)
+	var exp_d := float(6.0 * Supply.burn_scale()) / (float(Content.unit("mbt").fuel_per_tile) * Supply.burn_scale())
+	check(dist > exp_d * 0.75 and dist < exp_d * 1.15, "drove about fuel/(fuel_per_tile x scale) = %.1f tiles (drove %.2f)" % [exp_d, dist])
 	var stopped_at: Vector2 = m.pos
 	_run(w, 60)
 	check((Vector2(m.pos) - stopped_at).length() < 0.001, "vehicle with no fuel does not move")

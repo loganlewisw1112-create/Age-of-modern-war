@@ -1166,7 +1166,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		if gm != 1.0:
 			s = s.duplicate()
 			s.damage = float(s.damage) * gm
-	var cd := maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
+	var cd := maxi(roundi(float(s.cooldown) * SimWorld.Morale.reload_mult(e) * SimWorld.TICK_RATE), 1)  # G6.1 rank reload
 	if int(s.get("salvo", 1)) > 1:   # G4b UNITS: rocket salvo, salvo_gap between rockets, then reload
 		var left := int(e.get("salvo_left", 0))
 		if left <= 0:
@@ -1278,7 +1278,7 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 			hits[int(b.id)] = d
 	if hits.is_empty():
 		var sup: Dictionary = Content.rules().get("suppression", {})
-		Damage.near_miss(w, int(e.owner), at, float(sup.get("per_near_miss", 8)))
+		Damage.near_miss(w, int(e.owner), at, float(sup.get("per_near_miss", 8)), SimWorld.Morale.weapon_supp(s))
 		return
 	var ids := hits.keys()
 	ids.sort()

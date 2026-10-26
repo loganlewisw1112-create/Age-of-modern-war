@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "owner": "BEARER61",
+    "wave": "G6.1",
+    "note": "Infantry ammo bearer per faction. ammo_bearer:true marks the def for sim/systems/ammo_bearer.gd and squad_ai helpers. bearer_load_max = restocks carried (1 restock fully restocks one unit); bearer_rounds_per_restock = faction ammo stock spent per restock when the bearer refills at a supply point."
+  },
+  "units": {
+    "a_ammo_bearer": {
+      "name": "Ammo Bearer", "faction": "human_a", "role": "ammo_bearer", "armor": "infantry", "move_class": "foot",
+      "hp": 90, "speed": 2.3, "sight": 7, "weapon": "", "pop": 1, "radius": 0.3, "morale": 100, "g6": true,
+      "ammo_bearer": true, "bearer_load_max": 3, "bearer_rounds_per_restock": 60
+    },
+    "b_supply_carrier": {
+      "name": "Supply Carrier", "faction": "human_b", "role": "ammo_bearer", "armor": "infantry", "move_class": "foot",
+      "hp": 100, "speed": 2.1, "sight": 7, "weapon": "", "pop": 1, "radius": 0.3, "morale": 100, "g6": true,
+      "ammo_bearer": true, "bearer_load_max": 3, "bearer_rounds_per_restock": 60
+    },
+    "m_munitions_drone": {
+      "name": "Munitions Drone", "faction": "machine", "role": "ammo_bearer", "armor": "light", "move_class": "foot",
+      "hp": 110, "speed": 2.7, "sight": 7, "weapon": "", "pop": 1, "radius": 0.4, "energy": true,
+      "fuel_max": 240, "fuel_per_tile": 0.5, "g6": true,
+      "ammo_bearer": true, "bearer_load_max": 3, "bearer_rounds_per_restock": 60
+    }
+  },
+  "production": {
+    "a_ammo_bearer": {
+      "name": "Ammo Bearer", "spawns": ["a_ammo_bearer"], "facility": "barracks",
+      "cost": {"credits": 120, "salvage": 40, "ore": 0}, "train_time": 10, "faction": "human_a", "g6": true
+    },
+    "b_supply_carrier": {
+      "name": "Supply Carrier", "spawns": ["b_supply_carrier"], "facility": "b_barracks",
+      "cost": {"credits": 110, "salvage": 40, "ore": 0}, "train_time": 10, "faction": "human_b", "g6": true
+    },
+    "m_munitions_drone": {
+      "name": "Munitions Drone", "spawns": ["m_munitions_drone"], "facility": "m_assembler",
+      "cost": {"credits": 130, "salvage": 50, "ore": 0}, "train_time": 10, "faction": "machine", "g6": true
+    }
+  }
+}

@@ -305,7 +305,7 @@ static func _fuel_low(e: Dictionary, mult: float) -> bool:
 	var b = _burn.get(e.def)
 	if b == null:
 		var d := Content.unit(e.def)
-		b = float(d.get("speed", 0)) * 1.5 / float(SimWorld.TICK_RATE) * float(d.get("fuel_per_tile", 0.0))
+		b = float(d.get("speed", 0)) * 1.5 / float(SimWorld.TICK_RATE) * float(d.get("fuel_per_tile", 0.0)) * maxf(float(Content.rules().get("fuel_burn_scale", 1.0)), 0.0)
 		_burn[e.def] = b
 	if float(b) <= 0.0 or mult <= 0.0:
 		return false

@@ -33,11 +33,17 @@ static var fuel_list := true
 static var _ud: Dictionary = {}   # unit def -> {fpt, ammo_max, fuel_max, energy, is_supply}
 
 
+## G6.1 (owner 2026-10-26: fuel ran out too fast on big maps): rules.fuel_burn_scale x fuel_per_tile is the burn
+## per tile actually driven (1.0 = the G2-G6 rate).
+static func burn_scale() -> float:
+	return maxf(float(Content.rules().get("fuel_burn_scale", 1.0)), 0.0)
+
+
 static func _u(def_id: String) -> Dictionary:
 	var v = _ud.get(def_id)
 	if v == null:
 		var d := Content.unit(def_id)
-		v = {"fpt": float(d.get("fuel_per_tile", 0.0)), "ammo_max": int(d.get("ammo_max", 0)),
+		v = {"fpt": float(d.get("fuel_per_tile", 0.0)) * burn_scale(), "ammo_max": int(d.get("ammo_max", 0)),
 			"fuel_max": float(d.get("fuel_max", 0)), "energy": bool(d.get("energy", false)),
 			"is_supply": bool(d.get("is_supply", false))}
 		_ud[def_id] = v

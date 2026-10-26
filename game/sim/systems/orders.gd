@@ -6,7 +6,11 @@ extends RefCounted
 ##   e.patrol = {points:[Vector2], i:int, off:Vector2, visits:int}  loop attack_move points[i] + off.
 ##   e.guard  = {target_id:int, goal:Vector2}  stay ~GUARD_DIST from an own unit/building, engage
 ##              within sight, leash back with a forced move beyond sight + GUARD_DIST.
-##   e.formation = "line"|"wedge"|"column"  read by Movement.formation_slots.
+##   e.formation = "line"|"wedge"|"column"|"box"|"echelon_left"|"echelon_right"|"file"|"spread"  read by
+##              Movement.formation_slots (G6.1 SQUAD61 added the last five).
+##   e.formation_spacing = float  G6.1 (OFF61 CR): set_formation {spacing: 1.0..2.5} widens the slots.
+##   e.pace_grp = int  G6.1: set_formation {pace: true} groups the units (id = lowest unit id); SquadAI keeps
+##              a paced group moving at its slowest member's pace. {pace: false} clears it.
 ## The order itself stays an ordinary move/attack_move/idle, so Movement and Combat need no new
 ## stances. Any other order on the unit (a direct order, gather/build/repair, an officer order)
 ## ends the patrol/guard: Ops.on_direct_order clears the fields, and tick() drops them when it
@@ -15,12 +19,20 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const Combat = preload("res://sim/systems/combat.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const SquadAI = preload("res://sim/systems/squad_ai.gd")  # G6.1 (SQUAD61): paced group moves
 
 const EVERY := 5            # each unit is re-evaluated every EVERY ticks (staggered by id)
 const ARRIVE := 2.5         # tiles from a patrol waypoint that count as arrived
 const GUARD_DIST := 2.0     # tiles from the ward's edge
 const GUARD_SLACK := 1.0    # re-path only when the guard spot moved more than this
-const FORMATIONS := ["line", "wedge", "column"]
+const FORMATIONS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "echelon"]  # G6.1 SQUAD61: +5, + "echelon" alias (OFF61)
+## The formations the player cycles through on the card / Teams panel (FORMATIONS minus aliases).
+const PLAYER_FORMATIONS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread"]
+## G6.1 (OFF61 CR): aliases resolved when the order is applied ("echelon" = echelon right).
+const FORMATION_ALIASES := {"echelon": "echelon_right"}
+## set_formation {spacing}: multiplier on formation slot spacing, stored as e.formation_spacing (1.0 = default, erased).
+const SPACING_MIN := 1.0
+const SPACING_MAX := 2.5
 
 
 static func _pt(v):
@@ -69,8 +81,17 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 					return ""
 			return "A unit cannot guard itself."
 		"set_formation":
+			if cmd.has("pace") and typeof(cmd.pace) != TYPE_BOOL:
+				return "Group pace must be on or off."
+			if cmd.has("spacing"):
+				if typeof(cmd.spacing) != TYPE_FLOAT and typeof(cmd.spacing) != TYPE_INT:
+					return "Formation spacing must be a number."
+				if float(cmd.spacing) < SPACING_MIN or float(cmd.spacing) > SPACING_MAX:
+					return "Formation spacing must be between 1.0 and 2.5."
+			if (cmd.has("pace") or cmd.has("spacing")) and not cmd.has("formation"):
+				return ""
 			if not FORMATIONS.has(String(cmd.get("formation", ""))):
-				return "Formation must be line, wedge or column."
+				return "Formation must be line, wedge, column, box, echelon left/right, file or spread."
 			return ""
 	return "Unknown order."
 
@@ -106,8 +127,32 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				e.guard = {"target_id": tid, "goal": Vector2(-1000, -1000)}
 				_guard_step(w, e)
 		"set_formation":
-			for e in units:
-				e.formation = String(cmd.formation)
+			if cmd.has("formation"):
+				var fm := String(cmd.formation)
+				fm = String(FORMATION_ALIASES.get(fm, fm))
+				for e in units:
+					e.formation = fm
+			if cmd.has("spacing"):
+				var spc := clampf(float(cmd.spacing), SPACING_MIN, SPACING_MAX)
+				for e in units:
+					if spc > SPACING_MIN + 0.001:
+						e.formation_spacing = spc
+					else:
+						e.erase("formation_spacing")
+			if cmd.has("pace"):
+				var gid := -1
+				for e in units:
+					gid = int(e.id) if gid < 0 else mini(gid, int(e.id))
+				for e in units:
+					if bool(cmd.pace) and units.size() > 1:
+						e.pace_grp = gid
+					else:
+						e.erase("pace_grp")
+						if e.has("sq_wait"):
+							e.erase("sq_wait")
+							if typeof(e.order.get("target")) == TYPE_VECTOR2 and not Movement.order_path(w, e, e.order.target):
+								e.order = {"type": "idle"}
+				SquadAI.on_pace_set(w, cmd.get("unit_ids", []))
 
 
 # ================================================================ tick

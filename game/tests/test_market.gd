@@ -114,21 +114,23 @@ func test_price_drifts_back_over_180s() -> void:
 	check_eq(Market.price_milli(w, "salvage", "buy"), b, "stays at base")
 
 
-func test_trade_limit_per_60s() -> void:
+## G6.1 owner directive 2026-10-26: "in marketplace there should be NO cap to how much goods player can buy, if
+## they have the credits they can keep buying". Replaces the G6 200-per-minute window check (spec change, not a
+## loosened bar): only credits (buy) and stock (sell) limit a trade now; prices still move 1% per unit.
+func test_no_trade_cap_only_credits_limit() -> void:
 	var w := _w()
-	var cap := int(Market.R().get("limit_per_window", 200))
-	check_eq(Market.limit_left(w, 0, "ore"), cap, "full limit before trading")
-	check_eq(_trade(w, 0, "ore", cap - 50), "", "buy within limit")
-	check_eq(Market.limit_left(w, 0, "ore"), 50, "limit counts bought units")
-	check_eq(_trade(w, 0, "ore", -40), "", "sell within limit")
-	check_eq(Market.limit_left(w, 0, "ore"), 10, "limit counts sold units too")
-	check(_trade(w, 0, "ore", 11).contains("limit"), "over the limit rejected")
-	check_eq(Market.limit_left(w, 1, "ore"), cap, "limits are per player")
-	check_eq(Market.limit_left(w, 0, "fuel"), cap, "limits are per resource")
-	var win_ticks := int(Market.R().get("limit_window_s", 60)) * 20
-	_steps(w, win_ticks - (w.tick % win_ticks))
-	check_eq(Market.limit_left(w, 0, "ore"), cap, "limit resets in the next 60 s window")
-	check_eq(_trade(w, 0, "ore", 11), "", "trade allowed again")
+	check(int(Market.R().get("limit_per_window", 0)) <= 0, "rules: limit_per_window 0 (no cap)")
+	check_eq(Market.limit_left(w, 0, "ore"), Market.UNLIMITED, "no limit before trading")
+	check_eq(_trade(w, 0, "ore", 500), "", "buy 500 in one go (G6 capped at 200 per minute)")
+	check_eq(_trade(w, 0, "ore", 700), "", "and keep buying in the same minute")
+	check_eq(Market.limit_left(w, 0, "ore"), Market.UNLIMITED, "still no limit after 1200 units")
+	check_eq(_trade(w, 0, "ore", -900), "", "sell lots back in the same minute")
+	var n := Market.max_affordable(w, 0, "fuel")
+	check(n > 0, "max_affordable finds a buyable amount")
+	check(Market.quote(w, "fuel", n) <= int(w.factions[0].credits), "max_affordable fits the credits")
+	check(Market.quote(w, "fuel", n + 1) > int(w.factions[0].credits) or n == Market.MAX_TRADE, "one more unit is too expensive")
+	w.factions[0].credits = 10
+	check(_trade(w, 0, "fuel", 50).contains("credits"), "credits are the only limit on buying")
 
 
 func test_ledger_cause_market() -> void:
@@ -157,9 +159,8 @@ func test_ai_uses_same_command() -> void:
 	var s0 := int(w.factions[1].stock.ore)
 	check_eq(_trade(w, 1, "ore", 20), "", "AI side trades with market_trade")
 	check_eq(int(w.factions[1].stock.ore), s0 + 20, "AI receives the units")
-	var cap := int(Market.R().get("limit_per_window", 200))
-	var r_ai := w.preview_command({"type": "market_trade", "issuer": 1, "resource": "ore", "amount": cap})
-	check(r_ai.contains("limit"), "AI is held to the same limit (%s)" % r_ai)
+	var r_ai := w.preview_command({"type": "market_trade", "issuer": 1, "resource": "ore", "amount": Market.MAX_TRADE + 1})
+	check(r_ai.contains("per trade"), "AI is held to the same per-trade bound (%s)" % r_ai)
 	w.factions[1].credits = 0
 	var r2 := w.preview_command({"type": "market_trade", "issuer": 1, "resource": "fuel", "amount": 5})
 	check(r2.contains("credits"), "AI pays like a player (%s)" % r2)

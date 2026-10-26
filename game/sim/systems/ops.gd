@@ -237,8 +237,20 @@ static func tick(w: SimWorld) -> void:
 	var st: Dictionary = w.sys_state.ops
 	for gid in st.groups:
 		var g: Dictionary = st.groups[gid]
-		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0 				and not company_confused(w, g):
+		if not (g.mission as Dictionary).is_empty() and (w.tick + int(gid)) % EVAL_EVERY == 0 				and not company_confused(w, g) and not leaderless(w, g):
 			Missions.evaluate(w, g)
+	if st.has("orders61") or not (w.sys_state.get("command_net", {}).get("inbox", {}) as Dictionary).is_empty():
+		_doctrine().drive_orders(w)  # G6.1 OFF61: chain-of-command orders -> company / platoon battle drills
+
+
+static var _doc: Script = null
+
+
+## doctrine.gd, loaded lazily (it preloads this file: no cyclic preload).
+static func _doctrine() -> Script:
+	if _doc == null:
+		_doc = load("res://sim/ai/doctrine/doctrine.gd")
+	return _doc
 
 
 ## Drop dead members (counting mission losses) and dissolve groups whose officer died.
@@ -275,11 +287,28 @@ static func prune(w: SimWorld) -> void:
 
 ## G6 company platoon: the first live member becomes its officer. False when none is left; the
 ## empty platoon is then dropped silently (no morale hit, nobody to hit).
+## G6.1 OFF61: the senior squad leader (highest REAL61 rank, ties: members order) is named at once, but
+## the platoon is leaderless for rules.ops.leaderless_ticks (it keeps its last orders; no new mission
+## steps, no doctrine orders) before he takes command (g.leaderless_until).
 static func _succeed(w: SimWorld, g: Dictionary) -> bool:
 	var old := int(g.officer)
+	var vet = load("res://sim/systems/veterancy.gd") if ResourceLoader.exists("res://sim/systems/veterancy.gd") else null
+	var has_rank: bool = vet != null and _api(vet, "rank")
+	var pick := -1
+	var best := -1
 	for m in g.members:
 		var e = w.entities.get(int(m))
 		if e != null and e.kind == "unit":
+			var r: int = int(vet.call("rank", w, int(m))) if has_rank else 0
+			if r > best:
+				best = r
+				pick = int(m)
+	for m in g.members:
+		var e = w.entities.get(int(m))
+		if e != null and e.kind == "unit" and int(m) == pick:
+			g.leaderless_until = w.tick + int(rules().get("leaderless_ticks", 100))
+			w.emit("PlatoonLeaderless", {"gid": int(g.id), "owner": int(g.owner), "old": old, "heir": int(m),
+				"until": int(g.leaderless_until)})
 			g.officer = int(m)
 			g.members = (g.members as Array).filter(func(x) -> bool: return int(x) != int(m))
 			e.rank_role = "lieutenant"
@@ -288,6 +317,26 @@ static func _succeed(w: SimWorld, g: Dictionary) -> bool:
 			return true
 	g.members = []
 	return false
+
+
+static var _apic := {}
+
+
+static func _api(s: Script, fn: String) -> bool:
+	var k := s.resource_path + ":" + fn
+	if not _apic.has(k):
+		var ok := false
+		for m in s.get_script_method_list():
+			if String(m.name) == fn:
+				ok = true
+				break
+		_apic[k] = ok
+	return bool(_apic[k])
+
+
+## G6.1 OFF61: true while platoon g waits for its new leader after losing its lieutenant.
+static func leaderless(w: SimWorld, g: Dictionary) -> bool:
+	return int(g.get("leaderless_until", 0)) > w.tick
 
 
 static func _dissolve(w: SimWorld, st: Dictionary, gid) -> void:

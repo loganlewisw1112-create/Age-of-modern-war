@@ -35,11 +35,13 @@ static func move_mult(w: SimWorld, e: Dictionary) -> float:
 		return 0.0
 	if e.has("fuel") and float(e.fuel) <= 0.0:
 		return 0.0
+	var fmv = e.get("mvm")  # G6.1 REAL61 CR 59 (parity with Movement's inline factor)
+	var fm := float(fmv) if fmv != null else 1.0
 	if bool(e.get("broken", false)):
-		return 1.2
+		return 1.2 * fm
 	if bool(e.get("pinned", false)):
-		return 0.5
-	return 1.0
+		return SimWorld.Morale.pin_move * fm
+	return fm
 
 
 ## "" if the entity may fire now, else a reason code.

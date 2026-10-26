@@ -1,0 +1,40 @@
+{
+  "_meta": "G6.1 fragment (owner: CHAIN61). rules.g61_command: chain of command, radio/comms and intel/belief numbers (PROVISIONAL balance fixtures). Radio ranges are tiles, times are seconds (20 ticks/s). A def may set its own radio_range; otherwise the role default applies.",
+  "rules": {
+    "g61_command": {
+      "net_every_ticks": 20,
+      "radio_by_role": {"general": 60.0, "commander": 40.0, "captain": 30.0, "lieutenant": 22.0, "officer": 22.0},
+      "radio_hq": 50.0,
+      "radio_building_roles": ["hq", "company_hq", "radar"],
+      "radio_building_default": 0.0,
+      "voice_range": 10.0,
+      "delay_base_s": 0.5,
+      "delay_per_hop_s": 1.0,
+      "delay_per_tile_s": 0.02,
+      "delayed_state_s": 3.0,
+      "jam_range_mult": 0.5,
+      "jam_delay_mult": 2.5,
+      "jam_drop_period": 3,
+      "order_ttl_s": 90.0,
+      "order_retry_ticks": 10,
+      "consume_window_s": 3.0,
+      "stale_order_s": 60.0,
+      "confusion_s": 8.0,
+      "report_every_ticks": 40,
+      "report_min_s": {"contact": 15.0, "casualty": 10.0, "ammo": 30.0, "fuel": 30.0, "objective": 5.0, "request": 10.0, "status": 30.0},
+      "report_keep": 120,
+      "ammo_low_frac": 0.3,
+      "fuel_low_frac": 0.25,
+      "contact_radius": 14.0,
+      "fall_back_morale": 25.0,
+      "intel_every_ticks": 20,
+      "intel_decay_unit_s": 90.0,
+      "intel_decay_building_s": 900.0,
+      "intel_min_conf": 0.05,
+      "intel_report_conf": 0.7,
+      "intel_identify_range": 4.0,
+      "intel_threat_margin": 3.0,
+      "intel_max_contacts": 600
+    }
+  }
+}

@@ -14,6 +14,8 @@ Owner answers (2026-10-26):
   panel), plus a command layer: give orders to officers and draw plans on the map (axis of advance, phase lines,
   objectives) that the chain of command carries out.
 - Q5 delivery: one big G6.1 drop.
+- Added by the owner 2026-10-26: **look and feel in G6.1**: a complete animation overhaul for the entire game and all
+  movement, a visual effects overhaul, radio chatter and battle sound (agents ANIMA61, ANIMB61, VFX61, AUDIO61).
 Earlier owner notes: commanders get real military training (stacking up, formations, attacking effectively, flanking,
 movement across a battlefield, "EVERYTHING possible"); squads "work as a unit, not just random pieces"; more
 intelligent units; new infantry ammo bearer that restocks 3 units. (ORCH does company training, market cap, fuel.)
@@ -59,6 +61,10 @@ intelligent units; new infantry ammo bearer that restocks 3 units. (ORCH does co
 | REAL61 suppression, fatigue, veterancy, traits | sim/systems/morale.gd, new sim/systems/veterancy.gd, new sim/systems/fatigue.gd, new content/g6/rules_g61_realism.json, inspector lines via a new presentation/ui6/realism_info.gd (ORCH hooks it), tests/test_real61.gd, tools/pt61_real61.gd |
 | PLAN61 command layer (plans on the map) | new sim/systems/plans.gd, new presentation/ui6/command_layer/*, tests/test_plans61.gd, tools/pt61_plan61.gd |
 | BEARER61 ammo bearer | sim/systems/ammo_bearer.gd (stub registered after Supply; commands join_squad, leave_squad), new content/g6/defs_g61_bearer.json, the bearer art via the G6 art pipeline, tests/test_bearer61.gd, tools/pt61_bearer61.gd |
+| ANIMA61 render motion + infantry animation | presentation/view/entity_layer.gd, batch_art.gd, batch_atlas.gd, lod_icons.gd, new presentation/view/motion.gd, the infantry/foot/walker drawers in tools/art (claimed by name), tests/test_anim61.gd, tools/pt61_anim61.gd |
+| ANIMB61 vehicle/air/naval animation | the vehicle/air/naval drawers in tools/art (claimed by name), tests/test_animb61.gd, tools/pt61_animb61.gd |
+| VFX61 visual effects | presentation/view/fx_layer.gd + new presentation/view/fx61_*.gd, fx drawers in tools/art, tests/test_vfx61.gd, tools/pt61_vfx61.gd |
+| AUDIO61 sound + radio chatter | tools/audio/*, assets/generated/audio/*, content/g6/audio_lines_g61.json, presentation/audio/*, tests/test_audio61.gd, tools/pt61_audio61.gd |
 | ORCH | world.gd (SYSTEM_ORDER, COMMANDS, preloads: ask by change_request), companies.gd, market.gd, supply/fuel, economy.gd, content/*.json outside your own new fragment, tools/ui_playtest.gd, g6_hooks.gd, README/PROGRESS/PLAY_ME, packaging |
 
 Layering (who decides what): GEN61 decides the operation and the war effort; CHAIN61 carries orders down and reports

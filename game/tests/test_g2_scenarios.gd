@@ -219,7 +219,7 @@ func test_s2_bridge_collapse_under_truck_then_ford_route_burns_more_fuel() -> vo
 	check(run.water.is_empty(), "no unit ever in water on the detour: %s" % str(run.water))
 	check(float(run.dist) > 2.0 * float(ctl.dist), "detour is far longer (%.1f vs %.1f tiles)" % [run.dist, ctl.dist])
 	check(float(run.burned) > 2.0 * float(ctl.burned), "and burns more fuel (%.1f vs %.1f)" % [run.burned, ctl.burned])
-	var fpt := float(Content.unit("logistics_truck").fuel_per_tile)
+	var fpt := float(Content.unit("logistics_truck").fuel_per_tile) * maxf(float(Content.rules().get("fuel_burn_scale", 1.0)), 0.0)  # G6.1 burn scale
 	for r in [[ctl, "control"], [run, "detour"]]:
 		var d: Dictionary = r[0]
 		check(absf(float(d.burned) - float(d.dist) * fpt) <= 0.1 * float(d.dist) * fpt + 1.0,

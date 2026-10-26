@@ -1,0 +1,243 @@
+{
+ "_meta": {"owner": "AUDIO61", "doc": "G6.1 radio line library. Render: py -3.13 tools/audio/render_radio.py (Windows SAPI + radio filter) -> assets/generated/audio/radio/<id>.wav; then py -3.13 tools/audio/build_manifest.py. Add a line: append to lines (unique id, cat from categories, faction human|machine, tags = direction N..NW and/or armor|infantry), re-run both scripts. priority: higher interrupts the queue order (officer_down > contact > orders). cooldown_s: min gap between two lines of one category.", "rate_hz": 22050, "shape": "Everything lives under the underscore key _audio so Content._merge_fragments skips this file (presentation-only data; never reaches the sim, saves or hashes). Read by presentation/audio/audio_catalog.gd and tools/audio/*.py."},
+ "_audio": {
+  "speakers": {
+   "alpha": {
+    "voice": "Microsoft David Desktop",
+    "rate": 1,
+    "pitch": 1.0,
+    "fx": "radio"
+   },
+   "bravo": {
+    "voice": "Microsoft David Desktop",
+    "rate": 0,
+    "pitch": 0.93,
+    "fx": "radio"
+   },
+   "charlie": {
+    "voice": "Microsoft Zira Desktop",
+    "rate": 1,
+    "pitch": 1.0,
+    "fx": "radio"
+   },
+   "delta": {
+    "voice": "Microsoft Zira Desktop",
+    "rate": 2,
+    "pitch": 0.94,
+    "fx": "radio"
+   },
+   "echo": {
+    "voice": "Microsoft David Desktop",
+    "rate": 2,
+    "pitch": 1.07,
+    "fx": "radio"
+   },
+   "machine": {
+    "voice": "Microsoft Zira Desktop",
+    "rate": 0,
+    "pitch": 0.86,
+    "fx": "machine"
+   }
+  },
+  "factions": {
+   "human_a": "human",
+   "human_b": "human",
+   "machine": "machine"
+  },
+  "categories": {
+   "officer_down": {
+    "priority": 100,
+    "cooldown_s": 2.0
+   },
+   "artillery_inbound": {
+    "priority": 90,
+    "cooldown_s": 2.0
+   },
+   "contact": {
+    "priority": 80,
+    "cooldown_s": 6.0
+   },
+   "base_attack": {
+    "priority": 80,
+    "cooldown_s": 6.0
+   },
+   "casualty": {
+    "priority": 75,
+    "cooldown_s": 6.0
+   },
+   "taking_fire": {
+    "priority": 70,
+    "cooldown_s": 6.0
+   },
+   "falling_back": {
+    "priority": 70,
+    "cooldown_s": 6.0
+   },
+   "broken": {
+    "priority": 70,
+    "cooldown_s": 6.0
+   },
+   "wave": {
+    "priority": 70,
+    "cooldown_s": 6.0
+   },
+   "request_medevac": {
+    "priority": 60,
+    "cooldown_s": 8.0
+   },
+   "objective": {
+    "priority": 60,
+    "cooldown_s": 8.0
+   },
+   "request_support": {
+    "priority": 55,
+    "cooldown_s": 8.0
+   },
+   "ammo": {
+    "priority": 55,
+    "cooldown_s": 8.0
+   },
+   "request_reinforce": {
+    "priority": 55,
+    "cooldown_s": 8.0
+   },
+   "fuel": {
+    "priority": 50,
+    "cooldown_s": 8.0
+   },
+   "air_on_station": {
+    "priority": 50,
+    "cooldown_s": 8.0
+   },
+   "company_ready": {
+    "priority": 45,
+    "cooldown_s": 8.0
+   },
+   "ack": {
+    "priority": 45,
+    "cooldown_s": 8.0
+   },
+   "initiative": {
+    "priority": 45,
+    "cooldown_s": 8.0
+   },
+   "moving": {
+    "priority": 40,
+    "cooldown_s": 8.0
+   },
+   "holding": {
+    "priority": 40,
+    "cooldown_s": 8.0
+   },
+   "building_done": {
+    "priority": 30,
+    "cooldown_s": 8.0
+   }
+  },
+  "lines": [
+   {"id": "contact_0", "cat": "contact", "faction": "human", "tags": ["armor", "N"], "speaker": "alpha", "text": "Contact, enemy armour, north!"},
+   {"id": "contact_1", "cat": "contact", "faction": "human", "tags": ["infantry", "N"], "speaker": "bravo", "text": "Contact, enemy infantry, north!"},
+   {"id": "contact_2", "cat": "contact", "faction": "human", "tags": ["armor", "NE"], "speaker": "charlie", "text": "Contact, enemy armour, north-east!"},
+   {"id": "contact_3", "cat": "contact", "faction": "human", "tags": ["infantry", "NE"], "speaker": "delta", "text": "Contact, enemy infantry, north-east!"},
+   {"id": "contact_4", "cat": "contact", "faction": "human", "tags": ["armor", "E"], "speaker": "echo", "text": "Contact, enemy armour, east!"},
+   {"id": "contact_5", "cat": "contact", "faction": "human", "tags": ["infantry", "E"], "speaker": "alpha", "text": "Contact, enemy infantry, east!"},
+   {"id": "contact_6", "cat": "contact", "faction": "human", "tags": ["armor", "SE"], "speaker": "bravo", "text": "Contact, enemy armour, south-east!"},
+   {"id": "contact_7", "cat": "contact", "faction": "human", "tags": ["infantry", "SE"], "speaker": "charlie", "text": "Contact, enemy infantry, south-east!"},
+   {"id": "contact_8", "cat": "contact", "faction": "human", "tags": ["armor", "S"], "speaker": "delta", "text": "Contact, enemy armour, south!"},
+   {"id": "contact_9", "cat": "contact", "faction": "human", "tags": ["infantry", "S"], "speaker": "echo", "text": "Contact, enemy infantry, south!"},
+   {"id": "contact_10", "cat": "contact", "faction": "human", "tags": ["armor", "SW"], "speaker": "alpha", "text": "Contact, enemy armour, south-west!"},
+   {"id": "contact_11", "cat": "contact", "faction": "human", "tags": ["infantry", "SW"], "speaker": "bravo", "text": "Contact, enemy infantry, south-west!"},
+   {"id": "contact_12", "cat": "contact", "faction": "human", "tags": ["armor", "W"], "speaker": "charlie", "text": "Contact, enemy armour, west!"},
+   {"id": "contact_13", "cat": "contact", "faction": "human", "tags": ["infantry", "W"], "speaker": "delta", "text": "Contact, enemy infantry, west!"},
+   {"id": "contact_14", "cat": "contact", "faction": "human", "tags": ["armor", "NW"], "speaker": "echo", "text": "Contact, enemy armour, north-west!"},
+   {"id": "contact_15", "cat": "contact", "faction": "human", "tags": ["infantry", "NW"], "speaker": "alpha", "text": "Contact, enemy infantry, north-west!"},
+   {"id": "contact_16", "cat": "contact", "faction": "human", "tags": [], "speaker": "bravo", "text": "Contact front!"},
+   {"id": "contact_17", "cat": "contact", "faction": "human", "tags": [], "speaker": "charlie", "text": "Enemy spotted, engaging!"},
+   {"id": "taking_fire_0", "cat": "taking_fire", "faction": "human", "tags": [], "speaker": "delta", "text": "Taking fire!"},
+   {"id": "taking_fire_1", "cat": "taking_fire", "faction": "human", "tags": [], "speaker": "echo", "text": "We're under fire!"},
+   {"id": "taking_fire_2", "cat": "taking_fire", "faction": "human", "tags": [], "speaker": "alpha", "text": "Taking contact, returning fire!"},
+   {"id": "casualty_0", "cat": "casualty", "faction": "human", "tags": [], "speaker": "bravo", "text": "Man down!"},
+   {"id": "casualty_1", "cat": "casualty", "faction": "human", "tags": [], "speaker": "charlie", "text": "We've got casualties!"},
+   {"id": "casualty_2", "cat": "casualty", "faction": "human", "tags": [], "speaker": "delta", "text": "Casualties, need a medic up here!"},
+   {"id": "officer_down_0", "cat": "officer_down", "faction": "human", "tags": [], "speaker": "echo", "text": "Officer down! Officer down!"},
+   {"id": "officer_down_1", "cat": "officer_down", "faction": "human", "tags": [], "speaker": "alpha", "text": "Lieutenant is down, I have command."},
+   {"id": "officer_down_2", "cat": "officer_down", "faction": "human", "tags": [], "speaker": "bravo", "text": "Captain's down, taking command of the company."},
+   {"id": "objective_0", "cat": "objective", "faction": "human", "tags": [], "speaker": "charlie", "text": "Objective secure."},
+   {"id": "objective_1", "cat": "objective", "faction": "human", "tags": [], "speaker": "delta", "text": "Objective taken, holding position."},
+   {"id": "objective_2", "cat": "objective", "faction": "human", "tags": [], "speaker": "echo", "text": "Area secure, all clear."},
+   {"id": "request_support_0", "cat": "request_support", "faction": "human", "tags": [], "speaker": "alpha", "text": "Requesting fire support on our position."},
+   {"id": "request_support_1", "cat": "request_support", "faction": "human", "tags": [], "speaker": "bravo", "text": "Need support, we are pinned down!"},
+   {"id": "ammo_0", "cat": "ammo", "faction": "human", "tags": [], "speaker": "charlie", "text": "Low on ammo, requesting resupply."},
+   {"id": "ammo_1", "cat": "ammo", "faction": "human", "tags": [], "speaker": "delta", "text": "We're running dry, need resupply!"},
+   {"id": "fuel_0", "cat": "fuel", "faction": "human", "tags": [], "speaker": "echo", "text": "Fuel is running low."},
+   {"id": "fuel_1", "cat": "fuel", "faction": "human", "tags": [], "speaker": "alpha", "text": "We need fuel, we're running on fumes."},
+   {"id": "request_medevac_0", "cat": "request_medevac", "faction": "human", "tags": [], "speaker": "bravo", "text": "Requesting medevac!"},
+   {"id": "request_medevac_1", "cat": "request_medevac", "faction": "human", "tags": [], "speaker": "charlie", "text": "Need a medevac at our position!"},
+   {"id": "request_reinforce_0", "cat": "request_reinforce", "faction": "human", "tags": [], "speaker": "delta", "text": "Requesting reinforcements."},
+   {"id": "request_reinforce_1", "cat": "request_reinforce", "faction": "human", "tags": [], "speaker": "echo", "text": "We need reinforcements, now!"},
+   {"id": "moving_0", "cat": "moving", "faction": "human", "tags": [], "speaker": "alpha", "text": "Moving out."},
+   {"id": "moving_1", "cat": "moving", "faction": "human", "tags": [], "speaker": "bravo", "text": "On the move."},
+   {"id": "moving_2", "cat": "moving", "faction": "human", "tags": [], "speaker": "charlie", "text": "Roger, moving."},
+   {"id": "holding_0", "cat": "holding", "faction": "human", "tags": [], "speaker": "delta", "text": "Holding position."},
+   {"id": "holding_1", "cat": "holding", "faction": "human", "tags": [], "speaker": "echo", "text": "Dug in and holding."},
+   {"id": "falling_back_0", "cat": "falling_back", "faction": "human", "tags": [], "speaker": "alpha", "text": "Falling back!"},
+   {"id": "falling_back_1", "cat": "falling_back", "faction": "human", "tags": [], "speaker": "bravo", "text": "Pulling back, cover us!"},
+   {"id": "artillery_inbound_0", "cat": "artillery_inbound", "faction": "human", "tags": [], "speaker": "charlie", "text": "Artillery inbound!"},
+   {"id": "artillery_inbound_1", "cat": "artillery_inbound", "faction": "human", "tags": [], "speaker": "delta", "text": "Incoming! Take cover!"},
+   {"id": "artillery_inbound_2", "cat": "artillery_inbound", "faction": "human", "tags": [], "speaker": "echo", "text": "Shot over. Splash, out."},
+   {"id": "air_on_station_0", "cat": "air_on_station", "faction": "human", "tags": [], "speaker": "alpha", "text": "Air support on station."},
+   {"id": "air_on_station_1", "cat": "air_on_station", "faction": "human", "tags": [], "speaker": "bravo", "text": "Bird is on station, ready for tasking."},
+   {"id": "ack_0", "cat": "ack", "faction": "human", "tags": [], "speaker": "charlie", "text": "Copy, moving to phase line Bravo."},
+   {"id": "ack_1", "cat": "ack", "faction": "human", "tags": [], "speaker": "delta", "text": "Wilco."},
+   {"id": "ack_2", "cat": "ack", "faction": "human", "tags": [], "speaker": "echo", "text": "Copy that, executing."},
+   {"id": "ack_3", "cat": "ack", "faction": "human", "tags": [], "speaker": "alpha", "text": "Roger, understood."},
+   {"id": "ack_4", "cat": "ack", "faction": "human", "tags": [], "speaker": "bravo", "text": "Orders received, moving to objective."},
+   {"id": "initiative_0", "cat": "initiative", "faction": "human", "tags": [], "speaker": "charlie", "text": "Engaging."},
+   {"id": "initiative_1", "cat": "initiative", "faction": "human", "tags": [], "speaker": "delta", "text": "Attacking now!"},
+   {"id": "initiative_2", "cat": "initiative", "faction": "human", "tags": [], "speaker": "echo", "text": "Taking the initiative, pushing forward."},
+   {"id": "company_ready_0", "cat": "company_ready", "faction": "human", "tags": [], "speaker": "alpha", "text": "Company ready."},
+   {"id": "company_ready_1", "cat": "company_ready", "faction": "human", "tags": [], "speaker": "bravo", "text": "Unit ready for orders."},
+   {"id": "company_ready_2", "cat": "company_ready", "faction": "human", "tags": [], "speaker": "charlie", "text": "Reinforcements have arrived."},
+   {"id": "building_done_0", "cat": "building_done", "faction": "human", "tags": [], "speaker": "delta", "text": "Construction complete."},
+   {"id": "building_done_1", "cat": "building_done", "faction": "human", "tags": [], "speaker": "echo", "text": "Building is up and running."},
+   {"id": "base_attack_0", "cat": "base_attack", "faction": "human", "tags": [], "speaker": "alpha", "text": "Base is under attack!"},
+   {"id": "base_attack_1", "cat": "base_attack", "faction": "human", "tags": [], "speaker": "bravo", "text": "We have enemies inside the perimeter!"},
+   {"id": "broken_0", "cat": "broken", "faction": "human", "tags": [], "speaker": "charlie", "text": "Unit is broken, they're running!"},
+   {"id": "broken_1", "cat": "broken", "faction": "human", "tags": [], "speaker": "delta", "text": "Morale is gone, we're breaking!"},
+   {"id": "wave_0", "cat": "wave", "faction": "human", "tags": [], "speaker": "echo", "text": "Enemy wave inbound!"},
+   {"id": "wave_1", "cat": "wave", "faction": "human", "tags": [], "speaker": "alpha", "text": "Large enemy force approaching!"},
+   {"id": "m_contact_0", "cat": "contact", "faction": "machine", "tags": ["N"], "speaker": "machine", "text": "Hostiles detected. Bearing north."},
+   {"id": "m_contact_1", "cat": "contact", "faction": "machine", "tags": ["NE"], "speaker": "machine", "text": "Hostiles detected. Bearing north-east."},
+   {"id": "m_contact_2", "cat": "contact", "faction": "machine", "tags": ["E"], "speaker": "machine", "text": "Hostiles detected. Bearing east."},
+   {"id": "m_contact_3", "cat": "contact", "faction": "machine", "tags": ["SE"], "speaker": "machine", "text": "Hostiles detected. Bearing south-east."},
+   {"id": "m_contact_4", "cat": "contact", "faction": "machine", "tags": ["S"], "speaker": "machine", "text": "Hostiles detected. Bearing south."},
+   {"id": "m_contact_5", "cat": "contact", "faction": "machine", "tags": ["SW"], "speaker": "machine", "text": "Hostiles detected. Bearing south-west."},
+   {"id": "m_contact_6", "cat": "contact", "faction": "machine", "tags": ["W"], "speaker": "machine", "text": "Hostiles detected. Bearing west."},
+   {"id": "m_contact_7", "cat": "contact", "faction": "machine", "tags": ["NW"], "speaker": "machine", "text": "Hostiles detected. Bearing north-west."},
+   {"id": "m_taking_fire_0", "cat": "taking_fire", "faction": "machine", "tags": [], "speaker": "machine", "text": "Hull integrity compromised. Returning fire."},
+   {"id": "m_casualty_0", "cat": "casualty", "faction": "machine", "tags": [], "speaker": "machine", "text": "Unit lost."},
+   {"id": "m_casualty_1", "cat": "casualty", "faction": "machine", "tags": [], "speaker": "machine", "text": "Units destroyed. Recalculating."},
+   {"id": "m_officer_down_0", "cat": "officer_down", "faction": "machine", "tags": [], "speaker": "machine", "text": "Command node lost. Rerouting control."},
+   {"id": "m_objective_0", "cat": "objective", "faction": "machine", "tags": [], "speaker": "machine", "text": "Objective assimilated."},
+   {"id": "m_request_support_0", "cat": "request_support", "faction": "machine", "tags": [], "speaker": "machine", "text": "Requesting fire support."},
+   {"id": "m_ammo_0", "cat": "ammo", "faction": "machine", "tags": [], "speaker": "machine", "text": "Munitions depleted. Request resupply."},
+   {"id": "m_fuel_0", "cat": "fuel", "faction": "machine", "tags": [], "speaker": "machine", "text": "Power reserves low."},
+   {"id": "m_request_reinforce_0", "cat": "request_reinforce", "faction": "machine", "tags": [], "speaker": "machine", "text": "Requesting additional units."},
+   {"id": "m_moving_0", "cat": "moving", "faction": "machine", "tags": [], "speaker": "machine", "text": "Relocating."},
+   {"id": "m_holding_0", "cat": "holding", "faction": "machine", "tags": [], "speaker": "machine", "text": "Holding sector."},
+   {"id": "m_falling_back_0", "cat": "falling_back", "faction": "machine", "tags": [], "speaker": "machine", "text": "Withdrawing."},
+   {"id": "m_artillery_inbound_0", "cat": "artillery_inbound", "faction": "machine", "tags": [], "speaker": "machine", "text": "Ordnance inbound."},
+   {"id": "m_air_on_station_0", "cat": "air_on_station", "faction": "machine", "tags": [], "speaker": "machine", "text": "Air asset on station."},
+   {"id": "m_ack_0", "cat": "ack", "faction": "machine", "tags": [], "speaker": "machine", "text": "Directive acknowledged."},
+   {"id": "m_ack_1", "cat": "ack", "faction": "machine", "tags": [], "speaker": "machine", "text": "Executing directive."},
+   {"id": "m_initiative_0", "cat": "initiative", "faction": "machine", "tags": [], "speaker": "machine", "text": "Engaging target."},
+   {"id": "m_company_ready_0", "cat": "company_ready", "faction": "machine", "tags": [], "speaker": "machine", "text": "Unit compiled. Awaiting directive."},
+   {"id": "m_building_done_0", "cat": "building_done", "faction": "machine", "tags": [], "speaker": "machine", "text": "Structure complete."},
+   {"id": "m_base_attack_0", "cat": "base_attack", "faction": "machine", "tags": [], "speaker": "machine", "text": "Core under attack."},
+   {"id": "m_contact_8", "cat": "contact", "faction": "machine", "tags": [], "speaker": "machine", "text": "Hostile signatures detected."},
+   {"id": "m_broken_0", "cat": "broken", "faction": "machine", "tags": [], "speaker": "machine", "text": "Control loss in sector."},
+   {"id": "m_wave_0", "cat": "wave", "faction": "machine", "tags": [], "speaker": "machine", "text": "Hostile mass approaching."},
+   {"id": "m_request_medevac_0", "cat": "request_medevac", "faction": "machine", "tags": [], "speaker": "machine", "text": "Repair requested."}
+  ]
+ }
+}

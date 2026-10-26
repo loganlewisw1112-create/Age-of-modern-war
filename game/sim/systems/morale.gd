@@ -44,12 +44,223 @@ static func max_morale(def_id: String) -> float:
 	return _mmax[def_id]
 
 
+## ================================================================ G6.1 REAL61: suppression states
+## States: alert < suppressed (supp >= suppressed_at: accuracy / speed down) < pinned (supp >= pinned_at: prone,
+## crawls at move_pinned, fires at acc_pinned) < broken (break/rally above). Rules: rules.g61_realism.suppression.
+## Incoming suppression goes through add_supp (Damage.suppress, ORCH CR realism_damage): weapon factor
+## (weapon_supp) x target resistance (live cover level x e.rz, the pass-computed leader / rank / trait / fatigue /
+## high-ground factor); in heavy cover a non-heavy weapon cannot push supp past heavy_cover_cap.
+## Realism pass (every fatigue.update_every ticks, phase REAL_PHASE): fatigue, combat XP, e.rz, e.mvm (movement
+## factor from the suppressed state, fatigue and the fast trait; Movement multiplies it in, ORCH CR realism_move),
+## objective XP. e.rz / e.mvm exist only when != 1.0 (saved + hashed with the entity).
+const Veterancy = preload("res://sim/systems/veterancy.gd")
+const Fatigue = preload("res://sim/systems/fatigue.gd")
+const Elevation = preload("res://sim/systems/elevation.gd")
+const Fieldworks = preload("res://sim/systems/fieldworks.gd")
+const REAL_PHASE := 7
+const RECENT_FIRE_TICKS := 40
+
+static var _srref = null
+static var _sr: Dictionary = {}
+static var _supp_at := 25.0
+static var _pin_at := 60.0
+static var _mv_s := 0.75
+## Movement factor of a pinned unit (Movement reads it; synced from rules each Morale tick).
+static var pin_move := 0.1
+## Bench / A-B toggle only (never set in a match): false skips the XP events and the realism pass.
+static var realism_on := true
+static var _wf: Dictionary = {}   # weapon id -> suppression factor
+
+
+static func _ssync() -> void:
+	var r: Dictionary = Content.rules()
+	if is_same(r, _srref):
+		return
+	_srref = r
+	_sr = (r.get("g61_realism", {}) as Dictionary).get("suppression", {})
+	_supp_at = float(_sr.get("suppressed_at", 25))
+	_pin_at = float((r.get("suppression", {}) as Dictionary).get("pinned_at", 60))
+	_mv_s = float(_sr.get("move_suppressed", 0.75))
+	pin_move = float(_sr.get("move_pinned", 0.1))
+	_wf.clear()
+
+
+static func is_pinned(w: SimWorld, e: Dictionary) -> bool:
+	return bool(e.get("pinned", false))
+
+
+static func is_suppressed(w: SimWorld, e: Dictionary) -> bool:
+	_ssync()
+	return float(e.get("supp", 0.0)) >= _supp_at
+
+
+## "alert" | "suppressed" | "pinned" | "broken" ("" for units without morale).
+static func state(w: SimWorld, e: Dictionary) -> String:
+	if not e.has("morale"):
+		return ""
+	if bool(e.get("broken", false)):
+		return "broken"
+	if bool(e.get("pinned", false)):
+		return "pinned"
+	return "suppressed" if is_suppressed(w, e) else "alert"
+
+
+## Suppression 0..1 (supp / 100).
+static func supp_level(w: SimWorld, e: Dictionary) -> float:
+	return clampf(float(e.get("supp", 0.0)) / 100.0, 0.0, 1.0)
+
+
+## Suppression factor of a weapon stats dict (Combat.stats: weapon, cls, cooldown): weapon def `suppress`,
+## else class_factor by class (small_arms with cooldown <= mg_cooldown = "mg"). Cached per weapon id.
+static func weapon_supp(s: Dictionary) -> float:
+	_ssync()
+	var wid := String(s.get("weapon", ""))
+	if _wf.has(wid):
+		return float(_wf[wid])
+	var wd: Dictionary = Content.weapon(wid) if wid != "" else {}
+	var f := 1.0
+	if wd.has("suppress"):
+		f = float(wd.suppress)
+	else:
+		var cls := String(s.get("cls", wd.get("class", "")))
+		if cls == "small_arms" and float(s.get("cooldown", wd.get("cooldown", 1.0))) <= float(_sr.get("mg_cooldown", 0.5)):
+			cls = "mg"
+		f = float((_sr.get("class_factor", {}) as Dictionary).get(cls, 1.0))
+	_wf[wid] = f
+	return f
+
+
+## 0 open, 1 light cover (forest / near a building or wreck: e.in_cover), 2 heavy (garrisoned, or a fieldwork
+## whose cover factor <= heavy_cover_at).
+static func cover_level(w: SimWorld, e: Dictionary) -> int:
+	if int(e.get("garrisoned_in", -1)) >= 0:
+		return 2
+	var p: Vector2 = e.pos
+	if Fieldworks.cover_at(w, Vector2i(floori(p.x), floori(p.y))) <= float(_sr.get("heavy_cover_at", 0.6)):
+		return 2
+	if bool(e.get("in_cover", false)) or w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == FOREST:
+		return 1
+	return 0
+
+
+## Adds suppression to an infantry unit: amount (rules base) x sf (weapon_supp) x resistance, clamped to 0..cap;
+## marks it under fire and pins at pinned_at. Returns the new supp. Called by Damage.suppress.
+static func add_supp(w: SimWorld, e: Dictionary, amount: float, sf: float = 1.0) -> float:
+	if not e.has("morale"):
+		return 0.0
+	_ssync()
+	var f := amount * sf * float(e.get("rz", 1.0))
+	var cap := 100.0
+	var cl := cover_level(w, e)
+	if cl == 2:
+		f *= float(_sr.get("cover_heavy", 0.45))
+		if sf < float(_sr.get("heavy_weapon_at", 2.0)):
+			cap = float(_sr.get("heavy_cover_cap", 55))
+	elif cl == 1:
+		f *= float(_sr.get("cover_light", 0.6))
+	var cur := float(e.get("supp", 0.0))
+	var v := snappedf(clampf(cur + f, 0.0, maxf(cap, cur)), Q)
+	e.supp = v
+	e.supp_tick = w.tick
+	if v >= _pin_at:
+		e.pinned = true
+	return v
+
+
+## Shooter accuracy factor: fatigue x rank / marksman (G6Hooks.accuracy_mult). The suppressed / pinned accuracy
+## penalties stay in Status.accuracy_mult (supp > 25 x0.8, pinned x0.5): single source, no double count (ORCH
+## directive realism.double_count).
+static func acc_mult(w: SimWorld, e: Dictionary) -> float:
+	var m := 1.0
+	if e.has("fat"):
+		m *= Fatigue.acc_mult(e)
+	if e.has("vet"):
+		m *= Veterancy.acc_mult(w, e)
+	return m
+
+
+## Movement factor (pinned crawl x e.mvm). Movement / Status inline the same: see ORCH CR realism_move.
+static func speed_mult(w: SimWorld, e: Dictionary) -> float:
+	var m := pin_move if bool(e.get("pinned", false)) and not bool(e.get("broken", false)) else 1.0
+	var fm = e.get("mvm")
+	return m * (float(fm) if fm != null else 1.0)
+
+
+## Cooldown factor from rank (Combat._fire, ORCH CR realism_reload).
+static func reload_mult(e: Dictionary) -> float:
+	return Veterancy.reload_mult(e) if e.has("vet") else 1.0
+
+
+static func _set_or_erase(e: Dictionary, k: String, v: float) -> void:
+	if absf(v - 1.0) < 1e-9:
+		if e.has(k):
+			e.erase(k)
+	else:
+		e[k] = snappedf(v, Q)
+
+
+## The realism pass (see header above). Ground units in SimIndex order; leaders listed first per owner.
+static func _realism_pass(w: SimWorld) -> void:
+	_ssync()
+	var fr := Fatigue.rules()
+	var every := maxi(int(fr.get("update_every", 20)), 1)
+	var dt := float(every) / float(SimWorld.TICK_RATE)
+	var units: Array = SimIndex.of(w, "unit")
+	var rest := Fatigue.rest_points(w, SimIndex.of(w, "building"))
+	var leaders := {}   # owner -> [[pos, inspiring]]
+	for e in units:
+		if e.has("morale") and Veterancy.is_leader(e) and w.entities.has(int(e.id)) and not bool(e.get("broken", false)):
+			var o := int(e.owner)
+			if not leaders.has(o):
+				leaders[o] = []
+			leaders[o].append([e.pos, Veterancy.has_trait(w, int(e.id), "inspiring")])
+	var lr := float(_sr.get("leader_radius", 6.0))
+	var lr2 := lr * lr
+	var f_ld := float(_sr.get("leader_near", 0.85))
+	var f_in := float(_sr.get("inspiring_near", 0.7))
+	var f_hg := float(_sr.get("high_ground", 0.85))
+	var fpen := float(_sr.get("fatigue_penalty", 0.4))
+	var hgt := Elevation.has_height(w)
+	for e in units:
+		if not w.entities.has(int(e.id)):
+			continue
+		var uf := w.tick - int(e.get("supp_tick", -100000)) < RECENT_FIRE_TICKS
+		Fatigue.update_unit(w, e, dt, uf, rest)
+		if uf:
+			Veterancy.combat_xp(w, e, dt)
+		var mv := Fatigue.speed_mult(e) if e.has("fat") else 1.0
+		if e.has("vet") and int(e.vet) >= 2:
+			mv *= 1.0 + Veterancy.trait_weight(w, int(e.id), "speed")
+		if not e.has("morale"):
+			_set_or_erase(e, "mvm", mv)
+			continue
+		if float(e.get("supp", 0.0)) >= _supp_at and not bool(e.get("pinned", false)):
+			mv *= _mv_s
+		_set_or_erase(e, "mvm", mv)
+		var rz := Veterancy.supp_resist(w, e) * Fatigue.resist_mult(e, fpen)
+		var best := 1.0
+		var p: Vector2 = e.pos
+		for l in leaders.get(int(e.owner), []):
+			if p.distance_squared_to(l[0]) <= lr2:
+				best = minf(best, f_in if bool(l[1]) else f_ld)
+		rz *= best
+		if hgt and Elevation.height_at(w, Vector2i(floori(p.x), floori(p.y))) > 0:
+			rz *= f_hg
+		_set_or_erase(e, "rz", rz)
+	Veterancy.objectives(w)
+
+
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): SimIndex.g6h().morale_delta(w, e) is added to morale on every morale update
 ## (x2 for REDUCED units, which update every 2nd time with 2x dt) when the MORALE bit of SimIndex.g6m(w)
 ## is set. A steady-state unit (full morale, unsuppressed) still skips the update when the delta is >= 0
 ## (the clamp keeps it at max); a negative delta runs the update.
 static func tick(w: SimWorld) -> void:
 	_process_deaths(w)
+	_ssync()
+	if realism_on:
+		Veterancy.on_tick(w)   # G6.1 REAL61: XP from this tick's Damage events
+		if w.tick % maxi(int(Fatigue.rules().get("update_every", 20)), 1) == REAL_PHASE:
+			_realism_pass(w)
 	if w.tick % UPDATE_EVERY != 0:
 		return
 	var R: Dictionary = Content.rules()
@@ -333,7 +544,8 @@ static func _process_deaths(w: SimWorld) -> void:
 				continue
 			var ep: Vector2 = e.pos
 			if ep.distance_squared_to(dp) <= r2:
-				e.morale = snappedf(maxf(float(e.morale) - loss, 0.0), Q)
+				var lm := Veterancy.morale_loss_mult(w, e) if (e.has("vet") or e.has("rank_role")) else 1.0  # G6.1 REAL61
+				e.morale = snappedf(maxf(float(e.morale) - loss * lm, 0.0), Q)
 
 
 ## Buckets of cover rectangles (building footprints and wrecks), each grown by COVER_R.

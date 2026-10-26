@@ -1634,7 +1634,10 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 				elif bool(e.get("broken", false)):
 					mm = 1.2
 				elif bool(e.get("pinned", false)):
-					mm = 0.5
+					mm = SimWorld.Morale.pin_move  # G6.1 REAL61 CR 59 (pinned crawl)
+				var fmv = e.get("mvm")  # suppressed / fatigue / fast trait (absent = 1.0)
+				if fmv != null:
+					mm *= float(fmv)
 				spd[nm] = tsp[id] * mm
 				movers[nm] = e
 				mid[nm] = id
@@ -2042,14 +2045,20 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 	if n <= 1:
 		return [target]
 	var sp := SLOT_FOOT
+	var nveh := 0
 	for e in units:
-		var smc := move_class(e)
-		if smc == "vehicle" or smc == "amphibious" or smc == "naval" or smc == "naval_small":
+		if _g61_is_veh(e):
 			sp = SLOT_VEHICLE
-	# G2 (agent C2): the first unit's e.formation ("line"|"wedge"|"column") shapes the group,
-	# oriented along centroid -> target. No formation keeps the G1 grid below.
+			nveh += 1
+	var smul := _g61_spacing(units[0])
+	sp *= smul
+	# G2 (agent C2) + G6.1 (SQUAD61): the first unit's e.formation shapes the group, oriented along
+	# centroid -> target (the group faces its move direction). line / wedge / column keep their G2 slots;
+	# G6.1 adds box, echelon_left / echelon_right, file and spread. A mixed selection (vehicles and foot)
+	# puts the armour in front in that formation and the infantry in the same formation behind it.
+	# No formation keeps the G1 grid below.
 	var form := String(units[0].get("formation", ""))
-	if form == "line" or form == "wedge" or form == "column":
+	if _g61_form_ok(form):
 		var cen := Vector2.ZERO
 		for e in units:
 			cen += e.pos
@@ -2057,22 +2066,9 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 		var fwd := target - cen
 		fwd = fwd / fwd.length() if fwd.length() > 0.01 else Vector2(0, -1)
 		var side := Vector2(-fwd.y, fwd.x)
-		var slots := []
-		for k in n:
-			var p := target
-			match form:
-				"line":
-					p = target + side * (float(k) - float(n - 1) * 0.5) * sp
-				"column":
-					p = target - fwd * float(k) * sp
-				"wedge":
-					var rank := (k + 1) / 2
-					var sgn := -1.0 if k % 2 == 1 else 1.0
-					p = target - fwd * float(rank) * sp + side * sgn * float(rank) * sp
-			p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
-			p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
-			slots.append(p)
-		return slots
+		if nveh > 0 and nveh < n:
+			return _g61_mixed(w, units, form, target, fwd, side, smul)
+		return _g61_shape(w, n, form, target, fwd, side, sp)
 	var cols := int(ceil(sqrt(float(n))))
 	var rows := int(ceil(float(n) / float(cols)))
 	var out := []
@@ -2083,6 +2079,97 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 		p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
 		p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
 		out.append(p)
+	return out
+
+
+## G6.1 (SQUAD61) formation helpers for formation_slots.
+static func _g61_form_ok(form: String) -> bool:
+	return form in ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "echelon"]
+
+
+## set_formation {spacing} (OFF61 CR): the group's slot-spacing multiplier, 1.0 when absent.
+static func _g61_spacing(e: Dictionary) -> float:
+	return clampf(float(e.get("formation_spacing", 1.0)), 1.0, 2.5)
+
+
+static func _g61_is_veh(e: Dictionary) -> bool:
+	var smc := move_class(e)
+	return smc == "vehicle" or smc == "amphibious" or smc == "naval" or smc == "naval_small"
+
+
+## n slots of one formation around target (slot 0 = the leader's / front slot).
+static func _g61_shape(w: SimWorld, n: int, form: String, target: Vector2, fwd: Vector2, side: Vector2, sp: float) -> Array:
+	var slots := []
+	var m := 2
+	while 4 * (m - 1) < n:
+		m += 1
+	var per := 4 * (m - 1)
+	for k in n:
+		var p := target
+		match form:
+			"line":
+				p = target + side * (float(k) - float(n - 1) * 0.5) * sp
+			"column":
+				p = target - fwd * float(k) * sp
+			"wedge":
+				var rank := (k + 1) / 2
+				var sgn := -1.0 if k % 2 == 1 else 1.0
+				p = target - fwd * float(rank) * sp + side * sgn * float(rank) * sp
+			"box":
+				# hollow square of side (m - 1) slots; the n members spread evenly round its perimeter
+				var i := k * per / n
+				var edge := i / (m - 1)
+				var o := float(i % (m - 1))
+				var h := float(m - 1) * 0.5
+				var u := -h
+				var v := -h + o
+				if edge == 0:
+					u = -h + o
+					v = h
+				elif edge == 1:
+					u = h
+					v = h - o
+				elif edge == 2:
+					u = h - o
+					v = -h
+				p = target + side * u * sp + fwd * v * sp
+			"echelon_left", "echelon_right", "echelon":
+				var sg := -1.0 if form == "echelon_left" else 1.0
+				p = target - fwd * float(k) * sp * 0.7 + side * sg * float(k) * sp * 0.9
+			"file":
+				p = target - fwd * float(k) * sp * 0.9 + side * (0.35 if k % 2 == 1 else -0.35) * sp
+			"spread":
+				p = target + side * (float(k) - float(n - 1) * 0.5) * sp * 2.0 - fwd * (0.4 * sp if k % 2 == 1 else 0.0)
+		p.x = clampf(p.x, 0.5, float(w.map.w) - 0.5)
+		p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
+		slots.append(p)
+	return slots
+
+
+## Mixed selection: vehicles take the formation at target, foot units the same formation one vehicle slot
+## behind the rearmost vehicle slot. Returned slots stay parallel to units.
+static func _g61_mixed(w: SimWorld, units: Array, form: String, target: Vector2, fwd: Vector2, side: Vector2, smul: float = 1.0) -> Array:
+	var vi := []
+	var fi := []
+	for k in units.size():
+		if _g61_is_veh(units[k]):
+			vi.append(k)
+		else:
+			fi.append(k)
+	var vs := _g61_shape(w, vi.size(), form, target, fwd, side, SLOT_VEHICLE * smul) if vi.size() > 1 else [target]
+	var depth := 0.0
+	for p in vs:
+		depth = maxf(depth, (target - Vector2(p)).dot(fwd))
+	var ft := target - fwd * (depth + SLOT_VEHICLE * smul)
+	ft.x = clampf(ft.x, 0.5, float(w.map.w) - 0.5)
+	ft.y = clampf(ft.y, 0.5, float(w.map.h) - 0.5)
+	var fs := _g61_shape(w, fi.size(), form, ft, fwd, side, SLOT_FOOT * smul) if fi.size() > 1 else [ft]
+	var out := []
+	out.resize(units.size())
+	for j in vi.size():
+		out[vi[j]] = vs[j]
+	for j in fi.size():
+		out[fi[j]] = fs[j]
 	return out
 
 

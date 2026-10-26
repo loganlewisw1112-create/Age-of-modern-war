@@ -453,6 +453,54 @@ static func _queued(w: SimWorld, hq_id: int) -> int:
 	return n
 
 
+## G6.1 (owner bug 2026-10-26: "buying a platoon/battalion doesn't spawn any units"): supply already promised to
+## companies and commanders in training for side fid (they take pop only when they deploy).
+static func reserved_supply(w: SimWorld, fid: int) -> int:
+	var n := 0
+	for t in _st(w).get("training", []):
+		if int(t.owner) == fid:
+			n += int((t.plan as Dictionary).get("pop", 0))
+	return n
+
+
+## Supply side fid can still promise to a new company: cap - used - reserved by training entries.
+static func free_supply(w: SimWorld, fid: int) -> int:
+	var f: Dictionary = w.factions[fid]
+	return int(f.pop_cap) - int(f.pop) - reserved_supply(w, fid)
+
+
+## Why a purchase needing `pop` supply at HQ b would never deploy now ("" = it fits). Shown at purchase so the
+## player never pays for a company that waits forever (the G6 bug: deploy was silently blocked by the cap).
+static func deploy_reason(w: SimWorld, fid: int, b: Dictionary, pop: int) -> String:
+	var f: Dictionary = w.factions[fid]
+	if bool(Content.building(String(b.def)).get("requires_power", false)) and int(f.power_use) > int(f.power_prod):
+		return "The Company HQ needs power (%d / %d): build a power plant first." % [int(f.power_prod), int(f.power_use)]
+	var free := free_supply(w, fid)
+	if pop > free:
+		return "This needs %d supply but only %d is free: build depots to raise your supply cap (now %d)." % [pop, maxi(free, 0), int(f.pop_cap)]
+	return ""
+
+
+## UI rows for the training queue of Company HQ hq_id, in order: {entry, kind, name, size, progress (0..1),
+## seconds_left, status ("" | LOW_POWER | SUPPLY_CAP), active (the one training now), pop}. Read-only.
+static func training_of(w: SimWorld, hq_id: int) -> Array:
+	var out := []
+	var first := true
+	for t in _st(w).get("training", []):
+		if int(t.hq) != hq_id:
+			continue
+		var pl: Dictionary = t.plan
+		var nm := "Commander"
+		if String(t.kind) == "company":
+			nm = String((t.get("tdef", {}) as Dictionary).get("name", "Company"))
+		var left := maxf(0.0, (1.0 - float(t.progress)) * float(pl.get("time", 0.0))) if first else float(pl.get("time", 0.0))
+		out.append({"entry": int(t.id), "kind": String(t.kind), "name": nm, "size": String(t.get("size", "")),
+			"progress": float(t.progress), "seconds_left": left, "status": String(t.get("status", "")),
+			"active": first, "pop": int(pl.get("pop", 0))})
+		first = false
+	return out
+
+
 ## {t, scaled, tid, reason} for a train_company template field (id or custom dict).
 static func _resolve_template(w: SimWorld, fid: int, tv) -> Dictionary:
 	if typeof(tv) == TYPE_DICTIONARY:
@@ -493,6 +541,9 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var cap_max := Economy.cap_max_for(w, fid)  # 200 with a built Company HQ, else rules.pop_cap_max
 			if int(pl.pop) > cap_max:
 				return "This company needs %d supply; the supply cap is %d." % [int(pl.pop), cap_max]
+			r = deploy_reason(w, fid, b, int(pl.pop))
+			if r != "":
+				return r
 			return w.can_afford(fid, pl.cost)
 		"train_commander":
 			var b = w.entities.get(int(cmd.get("building_id", -1)))
@@ -506,6 +557,9 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				return "At most %d Commanders at a time." % int(R.get("max_commanders", 2))
 			if _queued(w, int(b.id)) >= int(R.get("queue_max", 3)):
 				return "The Company HQ queue is full (%d)." % int(R.get("queue_max", 3))
+			r = deploy_reason(w, fid, b, int(Content.unit(cdef).get("pop", 1)))
+			if r != "":
+				return r
 			return w.can_afford(fid, _leader_cost(cdef, "commander"))
 		"form_army":
 			var c = w.entities.get(int(cmd.get("commander_id", -1)))

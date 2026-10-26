@@ -5,7 +5,8 @@ extends RefCounted
 ##   raises that resource's price step_pct (1%), every unit sold lowers it 1% (shared prices, all sides).
 ##   After the last trade the price drifts linearly back to base over drift_s (180 s).
 ##   Per player and resource: at most limit_per_window units (bought + sold) per fixed limit_window_s
-##   window (window index = tick / window ticks). Needs a built HQ (requires_hq). Ledger cause
+##   window (window index = tick / window ticks). G6.1 (owner 2026-10-26): limit_per_window 0 = NO cap
+##   (the shipped rule): limit_left returns UNLIMITED and only credits / stock limit a trade. Needs a built HQ (requires_hq). Ledger cause
 ##   "market:<res>" on both legs (credits and stock). AI sides use the same command and rules.
 ## State (saved, hashed; created lazily on the first trade, so worlds that never trade keep their hash):
 ##   w.sys_state.market = {ver: 1, res: {res: {anchor: int, t0: int}}, limits: {fid: {win: int, used: {res: int}}}}
@@ -14,6 +15,8 @@ extends RefCounted
 ## Event: MarketTrade {faction, resource, amount, credits, price}.
 
 const VER := 1
+const UNLIMITED := 1000000000  # limit_left when limit_per_window <= 0 (no cap)
+const MAX_TRADE := 1000000     # per-command sanity bound (repeat the trade for more)
 
 
 static func R() -> Dictionary:
@@ -84,11 +87,21 @@ static func quote(w: SimWorld, res: String, amount: int) -> int:
 	var off := offset_milli(w, res)
 	var total := 0
 	var n := absi(amount)
+	var hi := _clamp_off(1 << 40)
+	var lo := _clamp_off(-(1 << 40))
 	for i in n:
 		if amount > 0:
-			total += _buy_milli_at(res, off + 1000 * i)
+			var o := off + 1000 * i
+			if o >= hi:  # price pinned at max_pct: the rest cost the same (G6.1: big buys stay O(price steps))
+				total += _buy_milli_at(res, hi) * (n - i)
+				break
+			total += _buy_milli_at(res, o)
 		else:
-			total += _sell_milli_at(res, off - 1000 * i)
+			var o2 := off - 1000 * i
+			if o2 <= lo:
+				total += _sell_milli_at(res, lo) * (n - i)
+				break
+			total += _sell_milli_at(res, o2)
 	if amount > 0:
 		return (total + 999) / 1000
 	return total / 1000
@@ -101,7 +114,9 @@ static func _window(w: SimWorld) -> int:
 
 ## Units fid may still trade (buy + sell) of res in the current limit window. Read-only.
 static func limit_left(w: SimWorld, fid: int, res: String) -> int:
-	var cap := int(R().get("limit_per_window", 200))
+	var cap := int(R().get("limit_per_window", 0))
+	if cap <= 0:
+		return UNLIMITED
 	var s = w.sys_state.get("market")
 	if s == null:
 		return cap
@@ -109,6 +124,20 @@ static func limit_left(w: SimWorld, fid: int, res: String) -> int:
 	if l == null or int(l.win) != _window(w):
 		return cap
 	return maxi(0, cap - int((l.used as Dictionary).get(res, 0)))
+
+
+## Most units of res fid can buy right now with its credits (binary search on quote; 0 = none). UI "Buy max".
+static func max_affordable(w: SimWorld, fid: int, res: String) -> int:
+	var cr := int(w.factions[fid].credits)
+	var lo := 0
+	var hi := mini(MAX_TRADE, limit_left(w, fid, res))
+	while lo < hi:
+		var mid := (lo + hi + 1) / 2
+		if quote(w, res, mid) <= cr:
+			lo = mid
+		else:
+			hi = mid - 1
+	return lo
 
 
 static func _has_hq(w: SimWorld, fid: int) -> bool:
@@ -135,10 +164,12 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	var amount := int(raw)
 	if amount == 0:
 		return "Trade amount must be non-zero."
+	if absi(amount) > MAX_TRADE:
+		return "At most %d units per trade." % MAX_TRADE
 	if bool(R().get("requires_hq", true)) and not _has_hq(w, fid):
 		return "The market needs a standing HQ."
 	var left := limit_left(w, fid, res)
-	if absi(amount) > left:
+	if left < UNLIMITED and absi(amount) > left:
 		return "Trade limit: %d %s left this minute." % [left, res]
 	if amount > 0:
 		return w.can_afford(fid, {"credits": quote(w, res, amount)})
@@ -164,6 +195,10 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var st := _st(w)
 	var off := offset_milli(w, res)
 	st.res[res] = {"anchor": _clamp_off(off + 1000 * amount), "t0": w.tick}
+	if int(R().get("limit_per_window", 0)) <= 0:
+		w.emit("MarketTrade", {"faction": fid, "resource": res, "amount": amount, "credits": credits,
+			"price": price(w, res, "buy")})
+		return
 	var win := _window(w)
 	var l = (st.limits as Dictionary).get(fid)
 	if l == null or int(l.win) != win:

@@ -19,7 +19,16 @@ const GLOBAL := {
 	"1": "Group 1", "2": "Group 2", "3": "Group 3", "4": "Group 4", "5": "Group 5",
 	"6": "Group 6", "7": "Group 7", "8": "Group 8", "9": "Group 9", "0": "Group 0",
 	"F5": "Quick save", "F9": "Quick load",
+	"F2": "Teams panel", "F3": "Command mode (plans on the map)",   # G6.1 (SQUAD61 / PLAN61)
 }
+
+## G6.1 (SQUAD61): HUD-wide actions with a GLOBAL key (not rebindable here): action -> [key, label].
+const GLOBAL_ACTIONS := {"teams_panel": ["F2", "Teams panel"], "command_mode": ["F3", "Command mode (plans on the map)"]}
+## Printable badge for a non-letter key name.
+const BADGE := {"COMMA": ",", "SEMICOLON": ";", "SLASH": "/", "APOSTROPHE": "'", "BRACKETLEFT": "[",
+	"BRACKETRIGHT": "]", "BACKSLASH": "\\", "MINUS": "-", "EQUAL": "=", "BACKSPACE": "Bksp"}
+## Keys the squad61 card actions may be rebound to (letters are all taken by unit-card actions).
+const PUNCT_KEYS := ["COMMA", "SEMICOLON", "SLASH", "APOSTROPHE", "BRACKETLEFT", "BRACKETRIGHT", "BACKSLASH", "MINUS", "EQUAL"]
 
 ## G1-G4 card actions (fixed): action -> [key, label]
 const FIXED := {
@@ -79,6 +88,10 @@ const ACTIONS := {
 	"ungarrison": ["U", "Empty building", "garrison_bld6", "ungarrison"],
 	"battery_strike": ["K", "Fire strike", "battery6", "strike"],
 	"resuit": ["J", "Re-suit pilot", "garage6", "resuit"],
+	# G6.1 (SQUAD61): on every combat unit card, so they use punctuation keys (group squad61 shares all unit cards)
+	"stance_page": ["COMMA", "Stance (page)", "squad61", "set_stance"],
+	"formations_page": ["SEMICOLON", "Formations (page)", "squad61", "set_formation"],
+	"regroup": ["SLASH", "Regroup on leader", "squad61", "regroup"],
 }
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
@@ -149,15 +162,23 @@ static func _ensure() -> void:
 static func key(action: String) -> String:
 	if FIXED.has(action):
 		return String(FIXED[action][0])
+	if GLOBAL_ACTIONS.has(action):
+		return String(GLOBAL_ACTIONS[action][0])
 	if not ACTIONS.has(action):
 		return ""
 	_ensure()
 	return String(_user.get(action, ACTIONS[action][0]))
 
 
+static func badge(k: String) -> String:
+	return String(BADGE.get(k.to_upper(), k))
+
+
 static func label(action: String) -> String:
 	if FIXED.has(action):
 		return String(FIXED[action][1])
+	if GLOBAL_ACTIONS.has(action):
+		return String(GLOBAL_ACTIONS[action][1])
 	return String(ACTIONS[action][1]) if ACTIONS.has(action) else action
 
 
@@ -185,6 +206,8 @@ static func fallback_key(taken: Dictionary) -> String:
 static func shares(ga: String, gb: String) -> bool:
 	if ga == gb or ga == "fixed" or gb == "fixed":
 		return true
+	if ga == "squad61" or gb == "squad61":
+		return true   # G6.1: on every combat unit card
 	for p in SHARE:
 		if (p[0] == ga and p[1] == gb) or (p[0] == gb and p[1] == ga):
 			return true
@@ -238,7 +261,10 @@ static func rebind_error(action: String, k: String) -> String:
 	if not ACTIONS.has(action):
 		return "This key is fixed."
 	k = k.to_upper()
-	if k.length() != 1 or k < "A" or k > "Z":
+	if group(action) == "squad61":
+		if not PUNCT_KEYS.has(k):
+			return "Use , ; / ' [ ] \\ - or =."
+	elif k.length() != 1 or k < "A" or k > "Z":
 		return "Use a letter key."
 	var trial := _user.duplicate()
 	trial[action] = k
@@ -258,7 +284,8 @@ static func sheet_rows() -> Array:
 		"cloak6": "Stalker Synth", "strike6": "loitering-munition truck / MLRS", "bridge6": "bridge layer",
 		"aerostat6": "aerostat", "assim6": "Assimilator", "tow6": "salvage crane / dozer", "airdrop6": "airlifter",
 		"sub6": "submarine", "seamine6": "mine barge", "garrison_bld6": "garrisoned building selected",
-		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected"}
+		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected",
+		"squad61": "combat units"}
 	var out: Array = []
 	var acts: Array = ACTIONS.keys()
 	acts.sort_custom(func(a, b): return _order(a) < _order(b))
