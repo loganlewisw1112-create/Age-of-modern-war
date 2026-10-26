@@ -47,6 +47,9 @@ func _ready() -> void:
 	for fl in G6_FLOWS:
 		if OS.get_cmdline_user_args().has("--ui-playtest-" + String(fl)):
 			g6_flow = String(fl)
+	for fl in G7_FLOWS:
+		if OS.get_cmdline_user_args().has("--ui-playtest-" + String(fl)):
+			g6_flow = String(fl)
 	_run()
 
 
@@ -2325,6 +2328,8 @@ func _tut_unmet_gates() -> Array:
 ## (--ui-playtest-checkpoint with --load=<doctrine demo save>). Human A at Stage 9 unless noted; the
 ## harness grant + peace window are the G5 ones (this process only, in memory).
 const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61", "flick61"]
+## G7: flows live in tools/pt7_<flow>.gd (same `func run(pt) -> void` contract as the G6.1 pt61 flows).
+const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")
@@ -2568,6 +2573,8 @@ func _g6_flow() -> void:
 			# G6.1: each flow lives in tools/pt61_<flow>.gd with `func run(pt) -> void` (pt = this harness;
 			# call pt._log / pt._shot / pt._click_named / pt._g5_select / pt._w() / pt._mv() / pt._wait).
 			var path := "res://tools/pt61_%s.gd" % g6_flow
+			if not ResourceLoader.exists(path) and ResourceLoader.exists("res://tools/pt7_%s.gd" % g6_flow):
+				path = "res://tools/pt7_%s.gd" % g6_flow
 			if ResourceLoader.exists(path):
 				await load(path).new().run(self)
 			else:

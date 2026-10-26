@@ -1,6 +1,6 @@
 # Rules for every builder agent: RTS: Age of Modern War, G0+G1 slice
 
-Project root: `D:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game` (bash path `/d/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game`). Always quote paths, because they contain spaces.
+Project root: `C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game` (bash path `/c/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game`). Always quote paths, because they contain spaces.
 
 ## Read first
 1. `docs/CONTRACTS.md`: the binding contract. Re-read §0 (hard rules) and §1 (file ownership).
@@ -18,11 +18,11 @@ Five other builders work **in the same checkout at the same time**. Touch only f
 - On this Windows machine each tool call takes 30-120 s. Batch work into fewer, larger edits.
 
 ## Budget protocol (mandatory, owner rule)
-Board: `export AGENT_BOARD="/d/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/board.jsonl"`, scripts in `/d/CODING/SKILLS/tools/agent-board/`.
+Board: `export AGENT_BOARD="/c/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/board.jsonl"`, scripts in `/c/CODING/SKILLS/tools/agent-board/`.
 - Post a status **every 5 tool calls OR every 4 minutes, whichever comes first, and before any single call that may take over 2 minutes**:
-  `AGENT_BOARD=... node /d/CODING/SKILLS/tools/agent-board/post.mjs <your-id> orch status progress '{"calls_used":N,"tokens_used_est":N,"next_action":"<exact next step>","done_so_far":"<short>"}'`
+  `AGENT_BOARD=... node /c/CODING/SKILLS/tools/agent-board/post.mjs <your-id> orch status progress '{"calls_used":N,"tokens_used_est":N,"next_action":"<exact next step>","done_so_far":"<short>"}'`
   Estimate `tokens_used_est` as about 60000 + 5000 x calls_used, plus the real size of any huge reads.
-- After each status, read directives for you: `AGENT_BOARD=... node /d/CODING/SKILLS/tools/agent-board/read.mjs --for <your-id> --type directive`.
+- After each status, read directives for you: `AGENT_BOARD=... node /c/CODING/SKILLS/tools/agent-board/read.mjs --for <your-id> --type directive`.
 - Wrap any call expected to exceed ~60 s (long godot runs, soak, bench) in the heartbeat: `bash .plan/hb.sh <your-id> <calls_used> <tokens_est> "<label>" -- <command...>`.
 - Self-check at each status: if `max(est + 90000, 191000 + 2300 x calls) >= 0.7 x MAX_TOKENS` or `calls >= 0.7 x MAX_TOOL_CALLS`, or on a `budget.handoff_now` directive: stop new work and write `.plan/handoff/<your-id>-<gen>.json` (`{done, remaining (exact steps), files_touched, test_state, gotchas}`). Then post `handoff '{"file":"..."}'` and end with your final report with `status: "recycled"`.
 - On finishing, post `done '{"summary":"..."}'`.

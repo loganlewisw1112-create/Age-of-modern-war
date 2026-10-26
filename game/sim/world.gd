@@ -67,13 +67,16 @@ const G6Hooks = preload("res://sim/systems/g6_hooks.gd")      # dispatcher (CONT
 const Commanders = preload("res://sim/ai/commanders.gd")      # player-side AI commanders (AI7-CMD)
 const SquadAI = preload("res://sim/systems/squad_ai.gd")       # G6.1 squad AI (SQUAD61)
 const AmmoBearer = preload("res://sim/systems/ammo_bearer.gd") # G6.1 ammo bearer (BEARER61)
+const Wounds = preload("res://sim/systems/wounds.gd") # G7 hit zones + casualty care (WOUND7)
+const DronePilot = preload("res://sim/systems/drone_pilot.gd") # G7 player-flown drones (DRONE7)
+const Convoy = preload("res://sim/systems/convoy.gd") # G7 motorcade convoys + moving cover (SQUAD7)
 const CommandNet = preload("res://sim/systems/command_net.gd") # G6.1 chain of command + comms (CHAIN61)
 const Intel = preload("res://sim/systems/intel.gd")            # G6.1 per-side belief (CHAIN61)
 const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command layer (PLAN61)
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Combat, G4bMech, G5Mech, MachineG6, Strikes, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Combat, Wounds, G4bMech, G5Mech, MachineG6, Strikes, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -165,6 +168,17 @@ const COMMANDS := {
 	# G6.1 (owner directive 2026-10-26)
 	"set_stance": SquadAI,
 	"regroup": SquadAI,
+	# G7 (owners WOUND7 / DRONE7 / SQUAD7): stubs reject until the owner implements them.
+	"treat_casualty": Wounds,
+	"evacuate_casualty": Wounds,
+	"drone_take": DronePilot,
+	"drone_steer": DronePilot,
+	"drone_release": DronePilot,
+	"drone_detonate": DronePilot,
+	"drone_return": DronePilot,
+	"convoy_form": Convoy,
+	"convoy_move": Convoy,
+	"convoy_disband": Convoy,
 	"join_squad": AmmoBearer,
 	"leave_squad": AmmoBearer,
 	"issue_plan": Plans,

@@ -10,7 +10,7 @@ You are one builder on a Godot 4.7.2 RTS ("RTS: Age of Modern War"). G1-G5 shipp
 
 **Your role, files and tasks are fixed in your own brief (`G6-<ID>.md`). Do only that.**
 
-**Project root:** `D:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game`. Quote paths; they contain spaces. **Branch:** `g6`. Never switch branches.
+**Project root:** `C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game`. Quote paths; they contain spaces. **Branch:** `g6`. Never switch branches.
 **Godot console exe** (`$G`): `/c/Users/logan/AppData/Local/Microsoft/WinGet/Packages/GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe/Godot_v4.7.2-stable_win64_console.exe`.
 
 ## 1. Read first (in order)
@@ -21,7 +21,7 @@ You are one builder on a Godot 4.7.2 RTS ("RTS: Age of Modern War"). G1-G5 shipp
 
 ## 2. Message board: structured record (`.plan/board.jsonl`)
 Post with:
-`AGENT_BOARD="D:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/board.jsonl" node "D:/CODING/SKILLS/tools/agent-board/post.mjs" <ID> orch <type> <topic> '<json>'`
+`AGENT_BOARD="C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/board.jsonl" node "C:/CODING/SKILLS/tools/agent-board/post.mjs" <ID> orch <type> <topic> '<json>'`
 
 **What to post:**
 - **`status progress`:** as your FIRST tool call, then every 5 tool calls (reading files counts) and after every write or test run. Body: `{"calls_used":N,"tokens_used_est":N,"next_action":"...","done_so_far":"..."}`. Estimate tokens as about 95k + 2.3k per call.
@@ -29,13 +29,13 @@ Post with:
 - **`fact <name>`:** when an API in CONTRACTS_G6 §5 is callable. Post it for a compiling stub first, within your first hour, then again when it is complete.
 - **`change_request <topic>`:** to another file's owner (`to` = their ID), for anything outside your files.
 - **`handoff` and `done`:** at the end.
-- **After each status,** read directives for you: `... node "D:/CODING/SKILLS/tools/agent-board/read.mjs" --for <ID> --type directive`.
+- **After each status,** read directives for you: `... node "C:/CODING/SKILLS/tools/agent-board/read.mjs" --for <ID> --type directive`.
 
 **Long runs:** wrap any command that may run over 60 s as `bash .plan/hb.sh <ID> <calls> <tokens> "<label>" -- timeout <secs> <command>`. It posts heartbeats. **An agent silent for 12 minutes is stopped.**
 
 ## 3. Semantic layer: live meaning stream (`.plan/bus.log`)
 At every finding, decision, dead end or milestone, append ONE short line:
-`echo "$(date +%H:%M:%S) <ID> NOTE|FOUND|BLOCK|DONE <short message>" >> "D:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/bus.log"`
+`echo "$(date +%H:%M:%S) <ID> NOTE|FOUND|BLOCK|DONE <short message>" >> "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/bus.log"`
 - **NOTE** = progress or a decision; **FOUND** = a fact others may need; **BLOCK** = you need something (name who); **DONE** = finished.
 - Never paste file contents or logs into the bus.
 - If you break the shared tree: `<ID> BLOCK tree.broken <file>`, then fix it immediately.

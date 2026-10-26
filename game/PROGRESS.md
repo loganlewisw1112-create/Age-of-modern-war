@@ -1,6 +1,43 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G6.1 "Field Command", owner-scoped 2026-10-26 via 5 questions; one big drop; branch `g6`)
+## Active goal (G7 "Last Protocol", owner-approved 2026-10-26; execution ordered 2026-10-26 "start G7"; branch `g7`)
+Scope authority: the **G7 MASTER SCOPE** in `docs/G7_REFERENCE.md` (sections 0–13). Plan and agent roster: `docs/PLAN_G7.md`.
+Briefs: `.plan/agents/prompts/G7-*.md` + `G7_COMMON.md`. Board: `.plan/board_g7.jsonl`. Everything else moved to G8 (same file).
+```
+GOAL — G7 "Last Protocol": Signalborne ports + counter-nanite line + Last Protocol mode
+For whom / what changes:  the owner, playing: squads move and fight like a real military (formations, bounding,
+                          wounds, casualty care, senses); you fly drones yourself; a late-game Counter-Nanite
+                          facility fields the 20-soldier strike team, tactical operators, unhackable APCs and a
+                          stealth dropship to purge Machine creep; 8 new Human A turrets; a new 1v1 mode, Last
+                          Protocol, on a 512x512+ map with a 3-ring base, 3 living doomsday cores and the Tide.
+Outcome:                  the G7 master scope in one packaged build, playable from a clean folder
+Done-when (frozen 2026-10-26; light finish line by owner choice, owner verifies feel/look/balance by playing):
+  1. Full test suite: 0 FAIL and 0 SCRIPT ERROR, including every G7 suite (tests/test_*7.gd).
+  2. Determinism: every new sim system is same-inputs-same-result (two identical runs print the same hash),
+     including a recorded player drone flight replayed from commands.
+  3. Perf on an idle PC: 2k on screen p10 >= 60 fps, 10k zoomed out p10 >= 30 fps, 2k-unit sim ms/tick
+     <= 1.2x the G6.1 figure measured in the same session.
+  4. Last Protocol soak: a headless run on the 512x512+ map with the full pre-built base and AI-run strike teams
+     reaches the Tide finale and ends with a result line, 0 crashes, 0 invariant failures, 0 SCRIPT ERROR.
+  5. Packaged build launches from a clean folder with 0 SCRIPT ERROR; build copied to Downloads; README and
+     PLAY_ME describe G7 accurately (limits included).
+  6. Owner look checkpoint approved from the sample frame strips BEFORE the full art roll-out (strike team, both
+     APCs, facility, both dropships, drone cam, grey fog, wound/crawl, armbands, staggered column, herringbone,
+     2 turrets, packhunter, Weaver, living core).
+Out of scope:             everything in the G8 SCOPE list of docs/G7_REFERENCE.md; the G6-parked items (10k speed,
+                          soak winners) beyond not regressing them; balance beyond the features.
+Stop-if / park-if:        determinism breaks and can't be fixed fast -> park that feature with a note; the 512x512
+                          map can't meet the fps/sim gates -> stop and ask the owner before shrinking anything;
+                          the look checkpoint is rejected -> rework the samples before any full art roll-out;
+                          an agent's feature can't reach its tests -> park it in PROGRESS with the next step, ship the rest.
+```
+Status 2026-10-26 (ORCH): branch `g7` cut from `g6` at 55b4e04; G7 playtest flow names registered (tools/ui_playtest.gd,
+`tools/pt7_<flow>.gd`); hb.sh defaults to board_g7. D: drive (USB) threw hardware I/O errors during setup: wave 1 was stopped before
+it changed anything, the project was copied to C: (28,241/28,246 files; git fsck 0 errors; the 1 tracked file lost was restored
+from git, the 4 lost untracked art-kit review renders are regenerable). **G7 runs on the C: copy; push back to D: only when
+G7 is complete (owner).** Wave 1 relaunching on C:.
+
+## Previous goal (G6.1 "Field Command", owner-scoped 2026-10-26 via 5 questions; one big drop; branch `g6`)
 GOAL — G6.1: massive new depth in AI and command, plus owner-reported fixes
 For whom / what changes:  the owner, playing: every level of command thinks (general > commander > captain > lieutenant > squad > soldier);
                           AI commanders run whole wars on their own; squads fight as one unit; plans drawn on the map; realism (suppression,
@@ -80,7 +117,7 @@ Follow-up 2 2026-10-26 14:50 PDT (owner: "get the sim cost under 1.2x G6 ... and
   (clean folder): officer61 16/1 (stack_up missed: contact > assault without stacking, timing-dependent), flick61 8/0, squad61 26/0,
   company61 41/0, air 98/0, h 33/0, 0 SCRIPT ERROR. Copied to Downloads + build zip. The full 42-flow packaged run was not repeated.
 
-## Next slice (G7) owner scope, recorded 2026-10-26 (six-question pass during G6.1). REQUIRED scope once G6.1 completes
+## G7 owner scope, first pass (2026-10-26, six-question pass during G6.1) — SUPERSEDED by docs/G7_REFERENCE.md (G7 master scope; the rest moved to G8)
 - Q1 strategy: dynamic single-player campaign on a dynamic map; deeper single matches; richer gameplay; richer evolutions and upgrades;
   "wayyyyy better animations for the entire game and all movement (complete upgrade/overhaul)".
 - Q2 economy: research tree overhaul; civilians and territory, inside the main single-player campaign.
