@@ -15,6 +15,7 @@ extends RefCounted
 ##   HQ/depot (Movement.order_path), UnitBroken. Rally (morale >= rally_at): broken=false, a retreat
 ##   order becomes idle, UnitRallied.
 
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")   # G7 WALL7 CR 3393
 const Movement = preload("res://sim/systems/movement.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
@@ -137,6 +138,8 @@ static func weapon_supp(s: Dictionary) -> float:
 ## whose cover factor <= heavy_cover_at).
 static func cover_level(w: SimWorld, e: Dictionary) -> int:
 	if int(e.get("garrisoned_in", -1)) >= 0:
+		return 2
+	if WallWalk7.on_wall(w, e):   # G7 WALL7 CR 3393: behind the parapet = heavy cover
 		return 2
 	var p: Vector2 = e.pos
 	if Fieldworks.cover_at(w, Vector2i(floori(p.x), floori(p.y))) <= float(_sr.get("heavy_cover_at", 0.6)):

@@ -29,7 +29,9 @@ const KEY := "cn_facility"
 const CONF_PATH := "res://content/g7/defs_g7_facility.json"
 const DISCOVER_EVERY := 10
 const FLOW_EVERY := 5          # team phase checks (staggered by team id)
-const ZONES := ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab"]  # BASE7: + mission planning room; BASE7-2: + package lab
+const ZONES := ["gate_outer", "apc_wash", "gate_inner", "decon_hall", "staging", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab"]  # BASE7: + mission planning room; BASE7-2: + package lab; BASE7-3 (13.9c-2): two-layer APC entry (gate_outer -> apc_wash -> gate_inner) + infantry decon hall; the old single "gate" / "decon" are code aliases only (ALIASES), no longer drawn
+## BASE7-3: legacy zone names kept for callers (tests, other systems): "gate" = the outer gate layer, "decon" = the APC wash.
+const ALIASES := {"gate": "gate_outer", "decon": "apc_wash"}
 const PKG_KINDS := ["purge", "seed_hunter", "barrier", "core_breaker"]
 const CN_PATH := "res://sim/systems/counter_nanite.gd"
 const APC7_PATH := "res://sim/systems/apc7.gd"
@@ -42,6 +44,9 @@ static func conf() -> Dictionary:
 	if _conf.is_empty():
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(CONF_PATH)) if FileAccess.file_exists(CONF_PATH) else null
 		_conf = parsed["_g7_facility"] if typeof(parsed) == TYPE_DICTIONARY and parsed.has("_g7_facility") else {"compound": 32}
+		for a in ALIASES:   # BASE7-3: conf().gate / conf().decon still answer (same rects as gate_outer / apc_wash)
+			if not _conf.has(a) and _conf.has(ALIASES[a]):
+				_conf[a] = _conf[ALIASES[a]]
 	return _conf
 
 
@@ -113,7 +118,7 @@ static func origin(F: Dictionary) -> Vector2i:
 
 ## World rect of a named zone of facility F.
 static func zone(F: Dictionary, name: String) -> Rect2:
-	var z: Array = conf().get(name, [0, 0, 0, 0])
+	var z: Array = conf().get(name, conf().get(ALIASES.get(name, name), [0, 0, 0, 0]))
 	return Rect2(Vector2(origin(F)) + Vector2(float(z[0]), float(z[1])), Vector2(float(z[2]), float(z[3])))
 
 
@@ -282,7 +287,8 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	var owner := int(b.owner)
 	b.unhackable = true
 	var parts := []
-	var reserved := [_crect(c.gate)]
+	_clear_site(w, area)   # BASE7-3 (ORCH): the compound stands on flat, cleared ground in every match
+	var reserved := [_crect(c.gate_outer)]
 	for t in c.towers:
 		reserved.append(Rect2i(Vector2i(int(t[0]), int(t[1])), Vector2i(2, 2)))
 	reserved.append(Rect2i(Vector2i(int(c.checkpoint[0]), int(c.checkpoint[1])), Vector2i(2, 2)))
@@ -305,6 +311,19 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 				break
 		if not clash:
 			_part(w, parts, occ, "cn_blast_wall", O + r, owner, id)
+	# BASE7-3 (owner 13.9c-4): small sentry turrets on the inner face of every wall run, facing outward (they fire over
+	# the wall; walls do not block fire). Real turrets of the facility owner (turrets7 runs them like any t7 turret).
+	var sdef := String(c.get("sentry_def", ""))
+	if sdef != "" and not Content.building(sdef).is_empty():
+		for q in c.get("sentries", []):
+			var sc := Vector2i(int(q[0]), int(q[1]))
+			var n0 := parts.size()
+			_part(w, parts, occ, sdef, O + sc, owner, id)
+			if parts.size() > n0:
+				var se: Dictionary = w.entities[int(parts[parts.size() - 1])]
+				var ov := Vector2(-1, 0) if sc.x <= 2 else (Vector2(1, 0) if sc.x >= cs - 3 else (Vector2(0, -1) if sc.y <= 2 else Vector2(0, 1)))
+				se.facing = ov.angle()
+				se.cn_sentry = true
 	var F := {"id": id, "owner": owner, "origin": [O.x, O.y], "parts": parts, "queue": [],
 		"garages": [], "lab": {"queue": [], "tier": 0, "up": -1.0}, "stock": {}, "lock": false, "popups": [],
 		"evac": false, "heli": 0, "quiet": w.tick}
@@ -315,6 +334,86 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	st(w).facs[str(id)] = F
 	BaseState7.register(w, base_key(id), owner, area)
 	w.emit("CnFacilityRaised", {"id": id, "owner": owner, "origin": Vector2(O), "parts": parts.duplicate()})
+
+
+## BASE7-3 (ORCH, ART7F-2 shots: a grassy hill + cliff inside the NW corner, a boulder on the staging yard): every cell of
+## the compound becomes paved ROAD at plain height (no ramps), and map decor whose footprint touches it is removed;
+## resource nodes / deposits and salvage wrecks inside it are removed too (owner 13.9c-5).
+## Movement re-reads only the changed cells (a full nav rebuild only when the height changed); TerrainChanged
+## {cells, cause "cn_facility"} lets the display re-bake those chunks and drop their terrain decor.
+static func _clear_site(w: SimWorld, area: Rect2i) -> void:
+	var mw := int(w.map.w)
+	var t: PackedByteArray = w.map.terrain
+	var hg: PackedByteArray = w.map.get("height", PackedByteArray())
+	var rp: PackedByteArray = w.map.get("ramps", PackedByteArray())
+	var chg := []
+	var cells := []
+	var hchg := false
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
+			var c := Vector2i(x, y)
+			if not w.in_bounds(c):
+				continue
+			var i := y * mw + x
+			var dirty := false
+			if t[i] != Terrain.ROAD:
+				t[i] = Terrain.ROAD
+				dirty = true
+			if i < hg.size() and hg[i] != 1:
+				hg[i] = 1
+				hchg = true
+				dirty = true
+			if i < rp.size() and rp[i] != 0:
+				rp[i] = 0
+				hchg = true
+				dirty = true
+			if dirty:
+				chg.append(i)
+				cells.append(c)
+	# BASE7-3 (owner 13.9c-5): no ore / salvage / other resource deposit, node or pickup inside the compound, any map
+	var gone_ids := []
+	for e in w.entities.values():
+		if (e.kind == "resource" or e.kind == "wreck") and area.has_point(w.cell_of(e.pos)):
+			gone_ids.append(int(e.id))
+	gone_ids.sort()
+	for gid in gone_ids:
+		w.entities.erase(gid)
+	if not gone_ids.is_empty():
+		w.cache.erase("sim_index")
+		w.cache.erase("unit_subsets")
+	if w.map.has("resources"):
+		var rk := []
+		for r in w.map.resources:
+			if not area.has_point(Vector2i(r.cell)):
+				rk.append(r)
+		if rk.size() != (w.map.resources as Array).size():
+			w.map.resources = rk
+	if chg.is_empty() and not w.map.has("decor"):
+		return
+	w.map.terrain = t
+	if hchg:
+		w.map.height = hg
+		if not rp.is_empty():
+			w.map.ramps = rp
+	var keep := []
+	var gone := 0
+	for d in w.map.get("decor", []):
+		var dc: Array = [int(d.cell[0]), int(d.cell[1])] if d.cell is Array else [int(d.cell.x), int(d.cell.y)]
+		var sz = d.get("size", [1, 1])
+		var ds := Vector2i(int(sz[0]), int(sz[1])) if sz is Array else Vector2i(sz)
+		if Rect2i(Vector2i(dc[0], dc[1]), ds.max(Vector2i.ONE)).intersects(area):
+			gone += 1
+		else:
+			keep.append(d)
+	if gone > 0:
+		w.map.decor = keep
+	if chg.is_empty():
+		return
+	if hchg:
+		Movement.on_terrain_changed(w)
+	else:
+		Movement.on_cells_changed(w, chg)
+	w.emit("TerrainChanged", {"cells": cells, "cause": "cn_facility"})
 
 
 static func _crect(a: Array) -> Rect2i:
@@ -526,7 +625,8 @@ static func _teams_of(w: SimWorld, fid: int) -> Array:
 ## Decon zone (every 10 ticks): friendly soldiers walk the walkway, stopped APCs are rinsed, mimics are exposed;
 ## during lockdown the zone floods with counter-nanite mist that hurts Machine units.
 static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
-	var rect := zone(F, "decon")
+	var rect := zone(F, "apc_wash")   # BASE7-3 (13.9c-2): APCs are rinsed between the two gate layers ...
+	var hall := zone(F, "decon_hall")   # ... and the infantry walk their own decon hall (foot only)
 	var owner := int(F.owner)
 	var walk := secs(conf().get("walk_time", 3))
 	var rinse := secs(conf().get("rinse_time", 5))
@@ -535,7 +635,8 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 	var dead := []
 	for e in SimIndex.of(w, "unit"):
 		var p: Vector2 = e.pos
-		if not rect.has_point(p):
+		var in_hall := hall.has_point(p)
+		if not in_hall and not rect.has_point(p):
 			continue
 		var o := int(e.owner)
 		if o != owner:
@@ -548,6 +649,8 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 			e.mimic_exposed = true
 			w.emit("MimicExposed", {"id": int(e.id), "fac": int(F.id), "owner": owner})
 		var foot := Transport.cargo_class_of(String(e.def)) == "foot"
+		if in_hall and not foot and not rect.has_point(p):
+			continue
 		var k := "cn_dw" if foot else "cn_rinse"
 		if not foot and bool(e.get("moving", false)):
 			continue
@@ -668,7 +771,7 @@ static func extraction_drones(w: SimWorld, ds: Dictionary, F: Dictionary = {}) -
 
 
 static func evac_point(F: Dictionary) -> Vector2:
-	var g := zone(F, "gate")  # BASE7: staging moved inside the compound; the evacuation point stays outside the gate
+	var g := zone(F, "gate_outer")  # BASE7: staging moved inside the compound; the evacuation point stays outside the gate
 	return g.get_center() + Vector2(0, 6)
 
 
@@ -707,8 +810,12 @@ static func _slot_pos(F: Dictionary, T: Dictionary, where: String, i: int) -> Ve
 			return r.get_center() + Vector2((float(i) - 0.5 * float(maxi(0, (T.apcs as Array).size() - 1))) * 3.0, 0.0)
 		"gate":
 			return zone(F, "staging").get_center() + Vector2(float(i) * 2.0 - 1.0, 0.0)
-		"decon":
-			return zone(F, "decon").get_center() + Vector2(float(i) * 3.0 - 1.5, 0.0)
+		"decon":   # BASE7-3: the APCs stop nose to tail in the wash lane between the two gate layers
+			var n := maxi(1, (T.apcs as Array).size())
+			return zone(F, "apc_wash").get_center() + Vector2(0.0, (float(i) - 0.5 * float(n - 1)) * 2.0)
+		"inner":
+			var n := maxi(1, (T.apcs as Array).size())
+			return zone(F, "gate_inner").get_center() + Vector2(0.0, (float(i) - 0.5 * float(n - 1)) * 1.0)
 	var spots := garage_spots(F)
 	var sl: Array = T.slots
 	return spots[int(sl[mini(i, sl.size() - 1)])] if not sl.is_empty() else zone(F, "pad").get_center()
@@ -763,7 +870,11 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 			for a in aps:
 				if int(a.get("cn_rinsed", -1)) < int(T.t):
 					all_clean = false
-			if all_clean:
+			if all_clean:   # BASE7-3 (13.9c-2): rinsed in the wash -> through the inner gate layer -> garage
+				T.phase = "to_inner"
+				_order_slots(w, T, "inner")
+		"to_inner":
+			if _arrived(w, T, aps, "inner", 1.6):
 				T.phase = "to_garage"
 				_order_slots(w, T, "garage")
 		"to_garage":

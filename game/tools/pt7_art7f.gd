@@ -182,7 +182,7 @@ func run(pt) -> void:
 			await pt._wait(0.4)
 			await pt._shot("art7f_garage%d_z%d" % [gi, z])
 	# 3. wall joins: NW corner, a tower, the gate
-	var gt: Array = zs.get("gate", [0, 0, 0, 0])
+	var gt: Array = zs.get("gate_outer", zs.get("gate", [0, 0, 0, 0]))   # BASE7-3: "gate" retired
 	var joins: Array = [["corner_nw", Vector2(float(cr[0]) + 1.0, float(cr[1]) + 1.0)], ["corner_se", Vector2(float(cr[0] + cr[2]) - 1.0, float(cr[1] + cr[3]) - 1.0)],
 			["gate", Vector2(float(gt[0]) + float(gt[2]) * 0.5, float(gt[1]) + 1.0)]]
 	mv.join_sim()

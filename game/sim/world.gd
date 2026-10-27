@@ -75,6 +75,7 @@ const Cores = preload("res://sim/systems/cores.gd") # G7 doomsday/living cores +
 const CounterNanite = preload("res://sim/systems/counter_nanite.gd") # G7 counter-nanite ops (CNSIM7)
 const Apc7 = preload("res://sim/systems/apc7.gd") # G7 advanced APC systems (CNSIM7)
 const CnFacility = preload("res://sim/systems/cn_facility.gd") # G7 Counter-Nanite facility (CNFAC7)
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd") # G7 WALL7 walkable facility walls (CR 3391)
 const CnOps7 = preload("res://sim/systems/cn_ops7.gd") # G7 CN operation support: overwatch drone, fire support, relief (CNOPS7)
 const CnProgress7 = preload("res://sim/systems/cn_progress7.gd") # G7 CN progression: named operators, team XP, bonds (CNOPS7)
 const BaseState7 = preload("res://sim/systems/base_state7.gd") # G7 base secure state (CNFAC7)
@@ -88,7 +89,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Apc7, Combat, Turrets7, Wounds, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnOps7, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Apc7, Combat, Turrets7, Wounds, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnOps7, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.

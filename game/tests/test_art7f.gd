@@ -92,7 +92,16 @@ func test_walls_link() -> void:
 	check(walls.size() >= 20, "facility has its blast-wall ring (%d)" % walls.size())
 	check_eq(bad, 0, "every wall segment joins on >= 2 sides (masks %s)" % str(hist))
 	check(hist.has(5) and hist.has(10), "straight runs both ways")
-	check(hist.has(6) or hist.has(3) or hist.has(12) or hist.has(9), "corner pieces present")
+	# BASE7-3 (owner 13.9c-3 / 13.9c-4: hardened towers at the 4 corners): the corners are now towers, so the corner join
+	# is checked on the corner pieces themselves: a wall corner mask, or a corner tower linked on both ring sides.
+	var tcorner := 0
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if String(e.def) == "cn_tower" and e.kind == "building":
+			var m := EntityLayer.wall_mask(cells, e.pos)
+			if m == 6 or m == 3 or m == 12 or m == 9:
+				tcorner += 1
+	check(hist.has(6) or hist.has(3) or hist.has(12) or hist.has(9) or tcorner >= 4, "corner pieces present (wall corners %s, corner towers %d)" % [str(hist.has(6) or hist.has(3) or hist.has(12) or hist.has(9)), tcorner])
 
 
 ## ART7F-2 (13.9c-2): no two drawn facility footprints overlap (every zone sprite, garage, pad, helipad), so no

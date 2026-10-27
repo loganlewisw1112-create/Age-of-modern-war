@@ -120,9 +120,14 @@ func test_facility_raises_with_defences() -> void:
 		var p: Dictionary = w.entities[int(pid)]
 		n[String(p.def)] = int(n.get(String(p.def), 0)) + 1
 		check(bool(p.built) and bool(p.unhackable), "part %s complete and unhackable" % p.def)
-	check_eq(int(n.cn_tower), 4, "a hardened tower on each side")
+	# BASE7-3 (owner 13.9c-3 / 13.9c-4 "more hardened towers ... walls that all connect", "4 more"): was "4 towers" +
+	# ">= 40 wall segments"; the towers stand ON the wall line now, so the perimeter check is the stronger one: every 2x2
+	# slot of the ring is a wall, a tower, the checkpoint or the outer gate (full test: test_base73_wall_ring_closed_towers_tied_in).
+	var Cf := CnFacility.conf()
+	var cs := int(Cf.compound)
+	check(int(n.cn_tower) >= 16 and int(n.cn_tower) == (Cf.towers as Array).size(), "hardened towers on the wall line (%d)" % int(n.cn_tower))
 	check_eq(int(n.cn_checkpoint), 1, "armoured gate checkpoint")
-	check(int(n.cn_blast_wall) >= 40, "blast-wall perimeter (%d segments)" % int(n.cn_blast_wall))
+	check_eq(int(n.cn_blast_wall) + int(n.cn_tower) + int(n.cn_checkpoint) + int(Cf.gate_outer[2]) / 2, 4 * (cs / 2) - 4, "blast-wall perimeter closed (%d segments)" % int(n.cn_blast_wall))
 	check(String(Content.building("cn_tower").get("weapon", "")) != "" and Content.building("cn_tower").has("ciws"), "towers: remote weapon station + interceptors")
 	check_eq(BaseState7.state_of(w, CnFacility.base_key(fid)), "secure", "a fresh facility is secure")
 	check_eq((CnFacility.zones(w, fid).garages as Array).size(), 8, "8 APC garages")
@@ -175,7 +180,7 @@ func test_decon_clears_exposure_and_repairs_suits() -> void:
 	var sid := _unit(w, "rifleman", 0, dz.get_center())
 	w.entities[sid].exposure = 40.0
 	w.entities[sid].suit_punctured = true
-	var mid := _unit(w, "rifleman", 0, dz.get_center() + Vector2(2, 0))
+	var mid := _unit(w, "rifleman", 0, CnFacility.zone(F, "decon_hall").get_center())   # BASE7-3: the infantry decon hall (13.9c-2) exposes it
 	w.entities[mid].mimic = true
 	var evs := _run(w, 120, ["CnDecon", "MimicExposed"])
 	check(_has(evs, "CnDecon"), "walkway decon ran")
@@ -187,7 +192,7 @@ func test_decon_clears_exposure_and_repairs_suits() -> void:
 	var a: Dictionary = w.entities[int(T.apcs[0])]
 	for u in a.cargo:
 		u.exposure = 25.0
-	a.pos = dz.get_center() + Vector2(-3, 0)
+	a.pos = dz.get_center() + Vector2(0, -1)   # BASE7-3: inside the 4-wide APC wash lane (was -3 tiles across the 10-wide decon yard)
 	a.order = {"type": "hold"}
 	_run(w, 200)
 	var clean := true
@@ -829,7 +834,7 @@ func test_base7_facility_flow_packed() -> void:
 		for y in range(r.position.y, r.end.y):
 			for x in range(r.position.x, r.end.x):
 				cov[Vector2i(x, y)] = true
-	for n in ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning"]:
+	for n in ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab", "gate_inner", "decon_hall"]:   # BASE7-3: + the lab, the inner gate layer and the infantry decon hall
 		mark.call(R.call(n))
 	for g in Cf.garages:
 		mark.call(Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3))
@@ -950,3 +955,359 @@ func test_ramp_pt_wave_every_facing_pair_loads_full() -> void:
 	for pr in [[0, 1], [2, 3], [4, 5], [6, 7]]:
 		var r := _pt_wave(pr)
 		check(r == "", "pt7_cnfac7 wave facings %s: every craft holds APC + crew + 8 operators %s" % [pr, r])
+
+
+## BASE7-3: every facility footprint from the conf as [name, Rect2i, kind] (compound-local): "bld" building / garage,
+## "yard" pad or drive-through zone, "ring" wall-line part (towers, checkpoint).
+func _fac_footprints(C: Dictionary) -> Array:
+	var R := func(a: Array) -> Rect2i: return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
+	var fps := []
+	fps.append(["core", Rect2i(int(C.core_offset[0]), int(C.core_offset[1]), 4, 4), "bld"])
+	for n in ["planning", "lab", "drone_bay", "range", "workshop", "decon_hall"]:
+		fps.append([n, R.call(C[n]), "bld"])
+	for i in (C.garages as Array).size():
+		var g: Array = C.garages[i]
+		fps.append(["garage%d" % i, Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3), "bld"])
+	for n in ["gate_outer", "apc_wash", "gate_inner", "staging", "pad", "helipad"]:
+		fps.append([n, R.call(C[n]), "yard"])
+	for t in C.towers:
+		fps.append(["tower%s" % [t], Rect2i(int(t[0]), int(t[1]), 2, 2), "ring"])
+	fps.append(["checkpoint", Rect2i(int(C.checkpoint[0]), int(C.checkpoint[1]), 2, 2), "ring"])
+	return fps
+
+
+## BASE7-3 (owner 13.9c-2 "no overlap or conflict ... buildings, garages, the main stealth launchpads, the infantry
+## decon hall, the APC decon entry, training facilities"): every facility footprint (buildings, garages, pads, yards,
+## the entry layers, towers, checkpoint) is its own; buildings keep >= 1 tile clearance (garages stand in rows);
+## no lane crosses a footprint; every door opens onto a lane or yard, outside every footprint, one door per cell.
+func test_base73_no_footprint_door_or_lane_overlap() -> void:
+	var C := CnFacility.conf()
+	var cs := int(C.compound)
+	var R := func(a: Array) -> Rect2i: return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
+	var fps := _fac_footprints(C)
+	var named := {}
+	for f in fps:
+		named[f[0]] = f[1]
+	var gdoors := []
+	for i in (C.garages as Array).size():
+		var g: Array = C.garages[i]
+		gdoors.append(["garage%d" % i, Vector2i(int(g[0]) + (2 if int(g[0]) < cs / 2 else -2), int(g[1]))])
+	var inner := Rect2i(2, 2, cs - 4, cs - 4)
+	var bad := []
+	for i in fps.size():
+		var a: Rect2i = fps[i][1]
+		if fps[i][2] != "ring" and fps[i][0] != "gate_outer" and not inner.encloses(a):
+			bad.append("%s outside the wall ring" % fps[i][0])
+		for j in range(i + 1, fps.size()):
+			var b: Rect2i = fps[j][1]
+			if a.intersects(b):
+				bad.append("%s overlaps %s" % [fps[i][0], fps[j][0]])
+			elif fps[i][2] == "bld" and fps[j][2] == "bld" and a.grow(1).intersects(b) \
+					and not (String(fps[i][0]).begins_with("garage") and String(fps[j][0]).begins_with("garage")):
+				bad.append("%s has no clearance to %s" % [fps[i][0], fps[j][0]])
+	var lanes := []
+	for l in C.lanes:
+		var lr: Rect2i = R.call(l)
+		lanes.append(lr)
+		if not inner.encloses(lr):
+			bad.append("lane %s leaves the compound interior" % [l])
+		for f in fps:
+			if lr.intersects(f[1]):
+				bad.append("lane %s crosses %s" % [l, f[0]])
+	var on_way := func(c: Vector2i) -> bool:
+		for lr in lanes:
+			if lr.has_point(c):
+				return true
+		for n in ["staging", "pad", "helipad", "gate_inner", "apc_wash"]:
+			if (named[n] as Rect2i).has_point(c):
+				return true
+		return false
+	var doors := []
+	for n in (C.doors as Dictionary):
+		for d in C.doors[n]:
+			doors.append([n, Vector2i(int(d[0]), int(d[1]))])
+	doors.append_array(gdoors)
+	check(doors.size() >= 15, "doors listed for every building and garage (%d)" % doors.size())
+	var seen := {}
+	for d in doors:
+		var c: Vector2i = d[1]
+		var own: Rect2i = named.get(d[0], Rect2i())
+		for f in fps:
+			if f[0] == d[0]:
+				own = f[1]
+			if (f[1] as Rect2i).has_point(c) and f[2] != "yard":
+				bad.append("door of %s at %s is inside %s" % [d[0], c, f[0]])
+		var edge := own.grow(1).has_point(c) and not own.has_point(c) and (c.x >= own.position.x and c.x < own.end.x or c.y >= own.position.y and c.y < own.end.y)
+		if not edge:
+			bad.append("door of %s at %s is not on its wall" % [d[0], c])
+		if not on_way.call(c):
+			bad.append("door of %s at %s opens onto no lane" % [d[0], c])
+		if seen.has(c):
+			bad.append("doors of %s and %s share %s" % [d[0], seen[c], c])
+		seen[c] = d[0]
+	for p in C.popups:
+		for f in fps:
+			if (f[1] as Rect2i).has_point(Vector2i(int(p[0]), int(p[1]))):
+				bad.append("pop-up turret %s inside %s" % [p, f[0]])
+	for p in C.sentries:   # 13.9c-4 wall sentries: own cell, not on a door or a pop-up cell
+		var q := Vector2i(int(p[0]), int(p[1]))
+		for f in fps:
+			if (f[1] as Rect2i).has_point(q):
+				bad.append("sentry %s inside %s" % [p, f[0]])
+		if seen.has(q):
+			bad.append("sentry %s on the door of %s" % [p, seen[q]])
+		for pp in C.popups:
+			if Vector2i(int(pp[0]), int(pp[1])) == q:
+				bad.append("sentry %s on a pop-up cell" % [p])
+	check_eq(bad, [], "no footprint, door or lane overlaps another")
+	check(named.pad.get_area() >= 42 and named.helipad.get_area() >= 36, "the stealth launch pad and the helipad keep their full pads")
+	check((named.range as Rect2i).get_area() >= 30, "the training range has its own place (%d tiles)" % (named.range as Rect2i).get_area())
+
+
+## BASE7-3 (owner 13.9c-2): the APC entry is two reinforced gate layers with the wash zone between them (outer gate in
+## the south wall -> APC decon wash -> inner gate -> staging yard, one 4-wide lane); the infantry come in through the
+## checkpoint up their own walkway into their own decon hall, never through the vehicle wash.
+func test_base73_two_layer_apc_entry_and_infantry_hall() -> void:
+	var C := CnFacility.conf()
+	var cs := int(C.compound)
+	var R := func(n: String) -> Rect2i: return Rect2i(int(C[n][0]), int(C[n][1]), int(C[n][2]), int(C[n][3]))
+	var go: Rect2i = R.call("gate_outer")
+	var wa: Rect2i = R.call("apc_wash")
+	var gi: Rect2i = R.call("gate_inner")
+	var sg: Rect2i = R.call("staging")
+	var dh: Rect2i = R.call("decon_hall")
+	check(go.position.y == cs - 2 and go.size.y == 2, "the outer gate layer sits in the south wall")
+	check(wa.end.y == go.position.y and wa.position.x == go.position.x and wa.size.x == go.size.x and wa.size.y >= 4, "the wash zone is right inside the outer gate, as wide, >= 4 deep")
+	check(gi.end.y == wa.position.y and gi.position.x == go.position.x and gi.size.x == go.size.x and gi.size.y == 2, "the inner gate layer closes the wash zone")
+	check(sg.end.y == gi.position.y and sg.position.x <= gi.position.x and sg.end.x >= gi.end.x, "the staging yard opens behind the inner gate")
+	check(CnFacility.zone({"origin": [0, 0]}, "gate") == Rect2(go) and CnFacility.zone({"origin": [0, 0]}, "decon") == Rect2(wa), "legacy names gate / decon resolve to the outer gate / the wash")
+	check(dh.size.x >= 4 and dh.size.y >= 3 and not dh.grow(1).intersects(wa) and not dh.intersects(gi), "the infantry decon hall stands apart from the vehicle wash")
+	var cp := Rect2i(int(C.checkpoint[0]), int(C.checkpoint[1]), 2, 2)
+	var walk := Rect2i()
+	for d in C.doors.decon_hall:
+		for l in C.lanes:
+			var lr := Rect2i(int(l[0]), int(l[1]), int(l[2]), int(l[3]))
+			if lr.has_point(Vector2i(int(d[0]), int(d[1]))) and lr.grow(1).intersects(cp):
+				walk = lr
+	check(walk.has_area(), "a decon-hall door opens onto the walkway from the infantry checkpoint")
+	check(walk.has_area() and not walk.grow(1).intersects(wa) and not walk.grow(1).intersects(go) and not walk.grow(1).intersects(gi), "the infantry walkway never touches the vehicle entry")
+	check(not cp.grow(1).intersects(go), "a wall section separates the infantry checkpoint from the vehicle gate")
+	# sim: a returning APC drives outer gate -> wash (rinsed there) -> inner gate -> its garage
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var tid := _train(w, fid, "tactical_squad")
+	var F := CnFacility.fac(w, fid)
+	var out := CnFacility.compound_rect(F).end + Vector2(-14, 8)
+	_cmd(w, {"type": "cn_rollout", "team": tid, "target": out})
+	var T := CnFacility.team(w, tid)
+	for i in 1600:
+		w.step()
+		if String(T.phase) == "out" and Vector2(w.entities[int(T.apcs[0])].pos).distance_to(out) < 3.0:
+			break
+	check_eq(String(T.phase), "out", "the APC rolled out")
+	_cmd(w, {"type": "cn_return", "team": tid})
+	var a: Dictionary = w.entities[int(T.apcs[0])]
+	var seq := []
+	var rinse_at := -1
+	var zs := {"gate_outer": CnFacility.zone(F, "gate_outer"), "apc_wash": CnFacility.zone(F, "apc_wash"), "gate_inner": CnFacility.zone(F, "gate_inner")}
+	for i in 3000:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "CnDecon" and int(ev.id) == int(a.id) and String(ev.kind) == "rinse" and rinse_at < 0:
+				rinse_at = seq.size()
+		for n in zs:
+			if (zs[n] as Rect2).has_point(Vector2(a.pos)) and (seq.is_empty() or seq[seq.size() - 1] != n):
+				seq.append(n)
+		if String(T.phase) == "garage":
+			break
+	check_eq(seq, ["gate_outer", "apc_wash", "gate_inner"], "the returning APC drives outer gate -> wash -> inner gate")
+	check(rinse_at == 2, "it is rinsed in the wash, before the inner gate (rinsed after %d zones)" % rinse_at)
+	check_eq(String(T.phase), "garage", "and parks in its garage")
+
+
+## BASE7-3 (owner 13.9c-3 "more hardened towers ... walls that all connect + surround the towers"): every 2x2 slot of
+## the wall ring holds a blast wall, a hardened tower, the checkpoint or the outer gate (closed ring); every tower stands
+## on the ring with a wall / tower / gate / checkpoint on both sides; towers at all 4 corners and both gate flanks.
+func test_base73_wall_ring_closed_towers_tied_in() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var C := CnFacility.conf()
+	var cs := int(C.compound)
+	var O := CnFacility.origin(F)
+	var at := {}
+	for pid in F.parts:
+		var p: Dictionary = w.entities[int(pid)]
+		at[Vector2i(p.cell) - O] = String(p.def)
+	var go := Rect2i(int(C.gate_outer[0]), int(C.gate_outer[1]), int(C.gate_outer[2]), int(C.gate_outer[3]))
+	var ring := []   # clockwise from the NW corner
+	for x in range(0, cs - 2, 2):
+		ring.append(Vector2i(x, 0))
+	for y in range(0, cs - 2, 2):
+		ring.append(Vector2i(cs - 2, y))
+	for x in range(cs - 2, 0, -2):
+		ring.append(Vector2i(x, cs - 2))
+	for y in range(cs - 2, 0, -2):
+		ring.append(Vector2i(0, y))
+	var kind := func(q: Vector2i) -> String:
+		if go.has_point(q):
+			return "gate"
+		return String(at.get(q, ""))
+	var gaps := []
+	var loose := []
+	var towers := 0
+	for i in ring.size():
+		var k: String = kind.call(ring[i])
+		if not ["cn_blast_wall", "cn_tower", "cn_checkpoint", "gate"].has(k):
+			gaps.append(ring[i])
+		if k == "cn_tower":
+			towers += 1
+			for nb in [ring[(i + ring.size() - 1) % ring.size()], ring[(i + 1) % ring.size()]]:
+				if not ["cn_blast_wall", "cn_tower", "cn_checkpoint", "gate"].has(kind.call(nb)):
+					loose.append(ring[i])
+	check_eq(gaps, [], "the wall ring is closed (%d slots)" % ring.size())
+	check_eq(loose, [], "every tower is tied into the wall on both sides")
+	var off := 0
+	for q in at:
+		if at[q] == "cn_tower" and not ring.has(q):
+			off += 1
+	check_eq(off, 0, "no tower stands off the wall line")
+	check(towers >= 16, "hardened towers along the ring (13.9c-3 + 4 more, 13.9c-4: %d)" % towers)
+	for c in [Vector2i(0, 0), Vector2i(cs - 2, 0), Vector2i(0, cs - 2), Vector2i(cs - 2, cs - 2), go.position - Vector2i(2, 0)]:
+		check_eq(at.get(c, ""), "cn_tower", "tower at %s" % c)
+	var east := Vector2i(int(C.checkpoint[0]) + 2, cs - 2)
+	check_eq(at.get(east, ""), "cn_tower", "tower on the east flank of the entry (%s)" % east)
+	var longest := 0
+	var rl := 0
+	for i in ring.size() * 2:
+		rl = 0 if kind.call(ring[i % ring.size()]) == "cn_tower" else rl + 1
+		longest = maxi(longest, rl)
+	check(longest <= 5, "no wall run longer than 5 segments without a tower (%d)" % longest)
+	# 13.9c-4: sentry turrets on the inner face of every wall run of >= 2 segments, facing outward, owned by the owner
+	var sent := {}
+	for pid in F.parts:
+		var p: Dictionary = w.entities[int(pid)]
+		if String(p.def) == String(C.sentry_def):
+			sent[Vector2i(p.cell) - O] = p
+	check_eq(sent.size(), (C.sentries as Array).size(), "every wall sentry stands (%d)" % sent.size())
+	var lo := 2
+	var hi := cs - 3
+	var wrong := []
+	for q in sent:
+		var e: Dictionary = sent[q]
+		var ov := Vector2(-1, 0) if q.x == lo else (Vector2(1, 0) if q.x == hi else (Vector2(0, -1) if q.y == lo else (Vector2(0, 1) if q.y == hi else Vector2.ZERO)))
+		if ov == Vector2.ZERO:
+			wrong.append("%s off the inner wall face" % q)
+		elif absf(angle_difference(float(e.get("facing", 99.0)), ov.angle())) > 0.01:
+			wrong.append("%s not facing outward" % q)
+		if int(e.owner) != int(F.owner) or not bool(Content.building(String(e.def)).get("turret7", false)):
+			wrong.append("%s is not a real turret of the owner" % q)
+	check_eq(wrong, [], "sentries sit on the inner face, face outward and belong to the facility owner")
+	var bare := []
+	var run := []
+	for i in ring.size() + 1:
+		var k: String = kind.call(ring[i % ring.size()])
+		if k == "cn_blast_wall" and i < ring.size():
+			run.append(ring[i])
+			continue
+		if run.size() >= 2:
+			var cover := false
+			for q in sent:
+				for r0 in run:
+					var rr := Rect2i(r0, Vector2i(2, 2)).grow(1)
+					cover = cover or rr.has_point(q)
+			if not cover:
+				bare.append(run[0])
+		run = []
+	check_eq(bare, [], "every wall run of >= 2 segments has a sentry")
+	# 13.9c-4 wall-walk: every tower keeps a free inner cell (stairs); no building lines a whole wall face
+	var fps := _fac_footprints(C)
+	var inner := Rect2i(2, 2, cs - 4, cs - 4)
+	var no_stair := []
+	for t in C.towers:
+		var free := 0
+		var tr := Rect2i(int(t[0]), int(t[1]), 2, 2).grow(1)
+		for y in range(tr.position.y, tr.end.y):
+			for x in range(tr.position.x, tr.end.x):
+				var q := Vector2i(x, y)
+				if not inner.has_point(q) or sent.has(q):
+					continue
+				var hit := false
+				for f in fps:
+					hit = hit or (f[2] != "ring" and (f[1] as Rect2i).has_point(q))
+				if not hit:
+					free += 1
+		if free == 0:
+			no_stair.append(t)
+	check_eq(no_stair, [], "every tower keeps a free cell inside for the wall-walk stairs")
+	for side in 4:
+		var open := 0
+		for k in range(lo, hi + 1):
+			var q: Vector2i = [Vector2i(k, lo), Vector2i(hi, k), Vector2i(k, hi), Vector2i(lo, k)][side]
+			var hit := false
+			for f in fps:
+				hit = hit or (f[2] == "bld" and (f[1] as Rect2i).has_point(q))
+			if not hit:
+				open += 1
+		check(open >= (hi - lo + 1) / 2, "wall face %d: at least half of its inner face is open (%d of %d)" % [side, open, hi - lo + 1])
+
+
+## BASE7-3 (ORCH, ART7F-2 shots: a grassy hill + cliff inside the NW corner, a boulder on the staging yard): the raised
+## compound stands on flat, cleared ground: every cell paved, plain height, no ramps, no map decor inside the wall.
+func test_base73_compound_site_flat_and_clear() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2i = s[1]
+	var mw := int(w.map.w)
+	var cs := int(CnFacility.conf().compound)
+	var area := Rect2i(o + Vector2i(2, 2), Vector2i(cs, cs))
+	var t: PackedByteArray = w.map.terrain
+	var hg := PackedByteArray()
+	hg.resize(mw * int(w.map.h))
+	hg.fill(1)
+	for c in [Vector2i(1, 1), Vector2i(2, 1), Vector2i(1, 2), Vector2i(3, 3)]:
+		var q: Vector2i = area.position + c
+		t[q.y * mw + q.x] = Terrain.HILL
+		hg[q.y * mw + q.x] = 2
+	t[(area.position.y + 4) * mw + area.position.x + 3] = Terrain.CLIFF
+	t[(area.position.y + 18) * mw + area.position.x + 12] = Terrain.FOREST
+	w.map.terrain = t
+	w.map.height = hg
+	var res_in := w.spawn_resource("ore", 500, Vector2(area.position) + Vector2(9.5, 18.5))   # 13.9c-5: deposits inside go
+	var res_out := w.spawn_resource("salvage", 300, Vector2(area.position) - Vector2(5.5, 5.5))
+	w.map.resources = [{"res": "ore", "amount": 500, "cell": area.position + Vector2i(9, 18)}, {"res": "salvage", "amount": 300, "cell": area.position - Vector2i(6, 6)}]
+	w.map.decor = [{"id": "boulder_test", "cell": [area.position.x + 14, area.position.y + 18], "size": [1, 1]},
+		{"id": "keep_me", "cell": [area.position.x - 6, area.position.y - 6], "size": [1, 1]}]
+	Movement.on_terrain_changed(w)
+	var evs := []
+	var off: Array = CnFacility.conf().core_offset
+	var fid := w.spawn_building("a_cn_facility", 0, area.position + Vector2i(int(off[0]), int(off[1])), true)
+	for i in CnFacility.DISCOVER_EVERY + 1:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "TerrainChanged" and String(ev.get("cause", "")) == "cn_facility":
+				evs.append(ev)
+	check(CnFacility.active(w), "the facility raised")
+	var rough := 0
+	for y in range(area.position.y, area.end.y):
+		for x in range(area.position.x, area.end.x):
+			var i := y * mw + x
+			if int(w.map.terrain[i]) != Terrain.ROAD or int(w.map.height[i]) != 1:
+				rough += 1
+	check_eq(rough, 0, "every compound cell is paved at plain height")
+	var ids := []
+	for d in w.map.get("decor", []):
+		ids.append(String(d.id))
+	check_eq(ids, ["keep_me"], "map decor inside the compound is cleared, outside it stays")
+	check(not w.entities.has(res_in) and w.entities.has(res_out), "a resource deposit inside the compound is removed, one outside stays (13.9c-5)")
+	var inside := 0
+	for e in w.entities.values():
+		if (e.kind == "resource" or e.kind == "wreck") and area.has_point(w.cell_of(e.pos)):
+			inside += 1
+	check_eq(inside, 0, "no resource node or salvage pickup inside the wall")
+	check_eq((w.map.resources as Array).size(), 1, "the map's resource list keeps only the deposit outside")
+	check(evs.size() == 1 and (evs[0].cells as Array).size() >= 6, "one TerrainChanged{cause cn_facility} tells the display to re-bake")
+	var tid := _train(w, fid, "tactical_squad")
+	check(tid > 0, "the facility still trains on the cleared site")

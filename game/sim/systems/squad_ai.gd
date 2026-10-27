@@ -811,6 +811,8 @@ static func _cell_value(w: SimWorld, cell: Vector2i) -> float:
 	var v := 1.0 - Terrain.cover_mult(w.terrain_at(cell), "foot")
 	if Elevation.has_height(w):
 		v += 0.1 * float(Elevation.height_at(w, cell))
+	if Movement.wallwalk_team(w, cell) >= 0:   # G7 WALL7 CR 3427: the parapet is heavy cover; take-cover keeps men on the wall
+		v += 0.6
 	return v
 
 

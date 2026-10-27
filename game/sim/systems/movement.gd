@@ -361,9 +361,12 @@ static func rebuild_nav(w: SimWorld) -> void:
 	var prev_classes: Array = (w.nav.get("solid", {}) as Dictionary).keys() if w.nav is Dictionary else []
 	var gates := {}
 	for g in _state(w).get("gates", []):
-		gates[int(g[0])] = [int(g[1]), int(g[2])]
+		gates[int(g[0])] = [int(g[1]), int(g[2])] if (g as Array).size() < 4 else [int(g[1]), int(g[2]), int(g[3])]
+	var edge0 := _build_edges(w, mw, mh)
 	w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": native,
-		"solid": {}, "gates": gates, "tg": {}, "pblk": {}, "pfp": pfp, "edge": _build_edges(w, mw, mh)}
+		"solid": {}, "gates": gates, "tg": {}, "pblk": {}, "pfp": pfp, "edge": _ww_edges(w, edge0, mw, mh)}
+	if _state(w).has("wwo"):
+		w.nav["edge0"] = edge0   # G7 WALL7: cliff edges without the wall-walk faces
 	var blocked0 := blocked.duplicate()   # native setup: without the passable footprints (added below)
 	for p in pfl:
 		var po: Vector2i = p[0]
@@ -390,6 +393,7 @@ static func rebuild_nav(w: SimWorld) -> void:
 		if not gates.is_empty() and nav.has_method("set_gate"):
 			for idx in gates:
 				nav.set_gate(PackedInt32Array([idx]), _gate_code(gates[idx]))
+		_ww_native_allow(w, nav)
 		for mc in CLASSES:
 			w.nav.solid[mc] = nav.solid_bytes(_key(mc, -1))
 	else:
@@ -485,7 +489,7 @@ static func _ensure_class(w: SimWorld, mc: String) -> void:
 		allow.resize(n)
 		for i in n:
 			allow[i] = 0 if terr[i] == Terrain.WATER and ch[i] == 0 else 1
-	native.add_class(NativeCore.mc_index(mc), PackedFloat32Array(_lut(mc)), allow)
+	native.add_class(NativeCore.mc_index(mc), PackedFloat32Array(_lut(mc)), _ww_allow(w, mc, allow))
 	w.nav.solid[mc] = native.solid_bytes(_key(mc, -1))
 
 
@@ -567,6 +571,8 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 			native.apply_footprint(origin.x, origin.y, size, solid)
 	w.nav.tg = {}
 	w.nav.comp_dirty = true
+	if not solid and wallwalk_any(w):
+		_ww_remove(w, cells)   # G7 WALL7: a wall piece is gone: its wall-walk cells become plain ground
 	if solid:
 		var rect := Rect2i(origin, Vector2i(size, size))
 		for id in w.entities:
@@ -644,7 +650,7 @@ static func _solid_view(w: SimWorld, mc: String, team: int) -> PackedByteArray:
 		return sb
 	var out := sb.duplicate()
 	for i in gates:
-		out[i] = 0 if _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 else 1
+		out[i] = 0 if _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i])) else 1
 	return out
 
 
@@ -666,8 +672,8 @@ static func is_passable(w: SimWorld, cell: Vector2i, mc: String, team: int = -1)
 	if _nav_ready(w):
 		var i := cell.y * int(w.nav.w) + cell.x
 		var gates: Dictionary = w.nav.gates
-		if not gates.is_empty() and gates.has(i):
-			return _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0
+		if not gates.is_empty() and gates.has(i):   # G7 WALL7: a wall-walk cell is open for the owner's foot only
+			return _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i]))
 		var sb = w.nav.solid.get(mc)
 		if sb == null:
 			sb = _solid_of(w, mc)
@@ -2370,6 +2376,8 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				return int(a.id) < int(b.id))
 			_player_default_form(w, units, target, cmd)
 			var slots := formation_slots(w, units, target)
+			if wallwalk_any(w):
+				slots = _ww_slots(w, units, target, slots)   # G7 WALL7: a move onto the wall lines the soldiers up on top
 			var breach: bool = cmd.type == "attack_move" and not w.ai_state.has(int(cmd.get("issuer", -1)))
 			_group_flow = _group_flows(w, units, target)
 			_q_size = units.size()
@@ -2493,8 +2501,11 @@ static func on_cells_changed(w: SimWorld, cells: Array) -> void:
 		var prev_classes: Array = (w.nav.solid as Dictionary).keys()
 		var gates: Dictionary = w.nav.gates
 		var keep_ch = null if ch_drop else old_ch
+		var old_edge0 = w.nav.get("edge0")
 		w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": true,
 			"solid": {}, "gates": gates, "tg": {}, "pblk": w.nav.get("pblk", {}), "pfp": pfp, "edge": w.nav.get("edge", PackedByteArray())}
+		if old_edge0 != null:
+			w.nav["edge0"] = old_edge0   # G7 WALL7: cliff edges without the wall-walk faces
 		if keep_ch != null:
 			w.nav["channel"] = keep_ch
 		var nav = NativeCore.new_nav()
@@ -2511,6 +2522,7 @@ static func on_cells_changed(w: SimWorld, cells: Array) -> void:
 		if not gates.is_empty() and nav.has_method("set_gate"):
 			for idx in gates:
 				nav.set_gate(PackedInt32Array([idx]), _gate_code(gates[idx]))
+		_ww_native_allow(w, nav)
 		for mc in CLASSES:
 			w.nav.solid[mc] = nav.solid_bytes(_key(mc, -1))
 		for mc in prev_classes:
@@ -2548,7 +2560,6 @@ static func on_cells_changed(w: SimWorld, cells: Array) -> void:
 ## gate is completed (set), destroyed (owner_team -1) or locked/unlocked.
 static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool) -> void:
 	_ensure_nav(w)
-	var st := _state(w)
 	var gates: Dictionary = w.nav.gates
 	var mw := int(w.nav.w)
 	var touched := []
@@ -2566,15 +2577,7 @@ static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool) -
 		touched.append(i)
 	if touched.is_empty():
 		return
-	var keys := gates.keys()
-	keys.sort()
-	var arr := []
-	for i in keys:
-		arr.append([int(i), int(gates[i][0]), int(gates[i][1])])
-	if arr.is_empty():
-		st.erase("gates")
-	else:
-		st["gates"] = arr
+	_save_gates(w)   # G7 WALL7: keeps the wall-walk field of the other cells
 	var native = _native(w)
 	if native != null and native.has_method("set_gate"):
 		for i in touched:
@@ -2629,3 +2632,270 @@ static func _grid(w: SimWorld, mc: String, team: int) -> AStarGrid2D:
 			_apply_cell(ng, _cell_sm(w, mc, i), sb[i] != 0, Vector2i(x, y))
 	w.nav.tg[key] = ng
 	return ng
+
+
+# ================================================================ G7 wall-walk (WALL7, G7_REFERENCE 13.9c-4)
+## A wall-walk cell is a gate entry with a 3rd field 1 (w.nav.gates[idx] = [team, 0, 1]; saved in
+## sys_state.movement.gates as [idx, team, 0, 1]): open only for the owner team's FOOT class, solid for every other
+## class and team. Native: the gate code is the plain team gate and every non-foot ground class gets allow 0 on the
+## cell (RtsNav.add_class), so own vehicles never drive onto the wall. The wall's outer faces are closed edges
+## (sys_state.movement.wwo = [[idx, bits], ...] ascending, bits as the cliff edges: 1 +x, 2 +y, 4 -x, 8 -y), so own
+## soldiers climb up only from inside the compound (and walk along the top). sys_state.movement.wwn = wall-walk cell
+## count (absent = none: nothing below runs). w.nav.edge = cliff edges | wwo; w.nav.edge0 = cliff edges alone (kept
+## only while wwo exists). A wall piece that is removed drops its cells (on_footprint_changed): units on them stand on
+## the free ground below, and anyone left on a closed cell steps to nearest_free_cell.
+const WW_DIRS := [[1, 0, 1, 4], [0, 1, 2, 8], [-1, 0, 4, 1], [0, -1, 8, 2]]
+
+
+static func _is_ww(g) -> bool:
+	return g != null and (g as Array).size() > 2 and int(g[2]) != 0
+
+
+## True while any wall-walk cell exists (saved state only).
+static func wallwalk_any(w: SimWorld) -> bool:
+	return w.sys_state.has("movement") and w.sys_state.movement.has("wwn")
+
+
+## Team owning the wall-walk at `cell`, -1 when it is not a wall-walk cell.
+static func wallwalk_team(w: SimWorld, cell: Vector2i) -> int:
+	if not wallwalk_any(w) or not w.in_bounds(cell):
+		return -1
+	_ensure_nav(w)
+	var g = w.nav.gates.get(cell.y * int(w.nav.w) + cell.x)
+	return int(g[0]) if _is_ww(g) else -1
+
+
+## Cliff edges | the wall-walk outer faces (edge0 itself when there is no wall-walk face).
+static func _ww_edges(w: SimWorld, edge0: PackedByteArray, mw: int, mh: int) -> PackedByteArray:
+	var wwo: Array = _state(w).get("wwo", [])
+	if wwo.is_empty():
+		return edge0
+	var out := edge0.duplicate()
+	if out.size() != mw * mh:
+		out.resize(mw * mh)
+		out.fill(0)
+	for p in wwo:
+		var i := int(p[0])
+		if i >= 0 and i < out.size():
+			out[i] = out[i] | int(p[1])
+	return out
+
+
+## Allow mask of ground class mc: `base` (empty = every cell) with every wall-walk cell 0 (foot and air: base).
+static func _ww_allow(w: SimWorld, mc: String, base: PackedByteArray) -> PackedByteArray:
+	if mc == "foot" or is_air(mc) or not wallwalk_any(w):
+		return base
+	var n := int(w.nav.w) * int(w.nav.h)
+	var out := base.duplicate()
+	if out.size() != n:
+		out.resize(n)
+		out.fill(1)
+	var gates: Dictionary = w.nav.gates
+	for i in gates:
+		if _is_ww(gates[i]):
+			out[i] = 0
+	return out
+
+
+## Native allow base of a class (naval: its channel mask, else every cell).
+static func _base_allow(w: SimWorld, mc: String) -> PackedByteArray:
+	var allow := PackedByteArray()
+	if mc == "naval":
+		var ch := _channel(w)
+		var terr: PackedByteArray = w.map.terrain
+		allow.resize(int(w.nav.w) * int(w.nav.h))
+		for i in allow.size():
+			allow[i] = 0 if terr[i] == Terrain.WATER and ch[i] == 0 else 1
+	return allow
+
+
+## Native: the vehicle class gets the wall-walk allow mask (rebuild paths; extra classes get it in _ensure_class).
+static func _ww_native_allow(w: SimWorld, nav) -> void:
+	if not wallwalk_any(w) or not nav.has_method("add_class"):
+		return
+	nav.add_class(NativeCore.mc_index("vehicle"), PackedFloat32Array(_lut("vehicle")), _ww_allow(w, "vehicle", PackedByteArray()))
+
+
+## Writes w.nav.gates back to sys_state.movement.gates (ascending; wall-walk entries keep their 4th field) and wwn.
+static func _save_gates(w: SimWorld) -> void:
+	var st := _state(w)
+	var gates: Dictionary = w.nav.gates
+	var keys := gates.keys()
+	keys.sort()
+	var arr := []
+	var n := 0
+	for i in keys:
+		var g: Array = gates[i]
+		if _is_ww(g):
+			arr.append([int(i), int(g[0]), int(g[1]), 1])
+			n += 1
+		else:
+			arr.append([int(i), int(g[0]), int(g[1])])
+	if arr.is_empty():
+		st.erase("gates")
+	else:
+		st["gates"] = arr
+	if n == 0:
+		st.erase("wwn")
+	else:
+		st["wwn"] = n
+
+
+static func _wwo_dict(w: SimWorld) -> Dictionary:
+	var d := {}
+	for p in _state(w).get("wwo", []):
+		d[int(p[0])] = int(p[1])
+	return d
+
+
+## Registers `cells` as wall-walk cells of `team` (G7 WALL7). `inside` = the compound rect: the edge from a wall-walk
+## cell to a non-wall-walk cell outside it is closed (no climbing up from outside). Cells holding a plain gate are left.
+static func set_wallwalk(w: SimWorld, cells: Array, team: int, inside: Rect2i) -> void:
+	_ensure_nav(w)
+	if team < 0:
+		return
+	var gates: Dictionary = w.nav.gates
+	var mw := int(w.nav.w)
+	var touched := []
+	for c in cells:
+		var cv := Vector2i(c)
+		if not w.in_bounds(cv):
+			continue
+		var i := cv.y * mw + cv.x
+		var g = gates.get(i)
+		if g != null and (not _is_ww(g) or int(g[0]) == team):
+			continue
+		gates[i] = [team, 0, 1]
+		touched.append(i)
+	if touched.is_empty():
+		return
+	var wwo := _wwo_dict(w)
+	for i in touched:
+		var c := Vector2i(i % mw, i / mw)
+		for d in WW_DIRS:
+			var nc := c + Vector2i(int(d[0]), int(d[1]))
+			if not w.in_bounds(nc):
+				continue
+			var ni := nc.y * mw + nc.x
+			if _is_ww(gates.get(ni)):   # wall top to wall top: open (re-opens a face closed earlier)
+				wwo[i] = int(wwo.get(i, 0)) & ~int(d[2])
+				wwo[ni] = int(wwo.get(ni, 0)) & ~int(d[3])
+			elif not inside.has_point(nc):
+				wwo[i] = int(wwo.get(i, 0)) | int(d[2])
+				wwo[ni] = int(wwo.get(ni, 0)) | int(d[3])
+	_ww_commit(w, touched, wwo)
+
+
+## Drops the wall-walk cells among `cells` (Vector2i): the wall piece on them is gone.
+static func _ww_remove(w: SimWorld, cells: Array) -> void:
+	var gates: Dictionary = w.nav.gates
+	var mw := int(w.nav.w)
+	var touched := []
+	for c in cells:
+		var i: int = c.y * mw + c.x
+		if _is_ww(gates.get(i)):
+			gates.erase(i)
+			touched.append(i)
+	if touched.is_empty():
+		return
+	var wwo := _wwo_dict(w)
+	for i in touched:
+		var c := Vector2i(i % mw, i / mw)
+		wwo.erase(i)
+		for d in WW_DIRS:
+			var nc := c + Vector2i(int(d[0]), int(d[1]))
+			if w.in_bounds(nc):
+				var ni := nc.y * mw + nc.x
+				if wwo.has(ni):
+					wwo[ni] = int(wwo[ni]) & ~int(d[3])
+	_ww_commit(w, touched, wwo)
+
+
+## Saves gates + faces and updates every nav structure for the touched cells (wall-walk changes are rare: a facility
+## raised, a wall piece destroyed).
+static func _ww_commit(w: SimWorld, touched: Array, wwo: Dictionary) -> void:
+	var st := _state(w)
+	_save_gates(w)
+	var ks := wwo.keys()
+	ks.sort()
+	var arr := []
+	for i in ks:
+		if int(wwo[i]) != 0:
+			arr.append([int(i), int(wwo[i])])
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	if not w.nav.has("edge0"):
+		w.nav["edge0"] = w.nav.get("edge", PackedByteArray())
+	if arr.is_empty():
+		st.erase("wwo")
+	else:
+		st["wwo"] = arr
+	var e0: PackedByteArray = w.nav.edge0
+	w.nav.edge = _ww_edges(w, e0, mw, mh)
+	if arr.is_empty():
+		w.nav.erase("edge0")
+	var gates: Dictionary = w.nav.gates
+	var native = _native(w)
+	if native != null:
+		if native.has_method("set_gate"):
+			for i in touched:
+				native.set_gate(PackedInt32Array([i]), _gate_code(gates[i]) if gates.has(i) else 0)
+		if native.has_method("set_edges"):
+			native.set_edges(w.nav.edge)
+		for mc in w.nav.solid.keys():
+			var ms := String(mc)
+			if ms != "foot" and not is_air(ms) and native.has_method("add_class"):
+				native.add_class(NativeCore.mc_index(ms), PackedFloat32Array(_lut(ms)), _ww_allow(w, ms, _base_allow(w, ms)))
+			w.nav.solid[mc] = native.solid_bytes(_key(ms, -1))
+	else:
+		for mc in w.nav.solid.keys():
+			_build_fallback_class(w, String(mc))
+	w.nav.tg = {}
+	w.nav.comp_dirty = true
+	for id in w.entities:  # ascending ids: anyone now on a closed cell steps off it
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" or is_air(move_class(e)):
+			continue
+		var cell := w.cell_of(e.pos)
+		if touched.has(cell.y * mw + cell.x) and not is_passable(w, cell, move_class(e), team_of(w, e)):
+			e.pos = Vector2(nearest_free_cell(w, cell, move_class(e), team_of(w, e))) + CENTER
+			HotState.mark(w, int(id))
+
+
+## Group move onto a wall-walk cell: the team's foot units take the wall-walk cells nearest the clicked one
+## (breadth-first along the wall top, deterministic), one soldier per cell; everyone else keeps its formation slot.
+static func _ww_slots(w: SimWorld, units: Array, target: Vector2, slots: Array) -> Array:
+	var tc := w.cell_of(target)
+	var team := wallwalk_team(w, tc)
+	if team < 0:
+		return slots
+	var want := 0
+	for e in units:
+		if move_class(e) == "foot" and team_of(w, e) == team:
+			want += 1
+	if want == 0:
+		return slots
+	var gates: Dictionary = w.nav.gates
+	var mw := int(w.nav.w)
+	var seen := {tc.y * mw + tc.x: true}
+	var q: Array = [tc]
+	var qi := 0
+	while qi < q.size() and q.size() < want:
+		var c: Vector2i = q[qi]
+		qi += 1
+		for d in WW_DIRS:
+			var nc := c + Vector2i(int(d[0]), int(d[1]))
+			var ni := nc.y * mw + nc.x
+			if w.in_bounds(nc) and not seen.has(ni):
+				var g = gates.get(ni)
+				if _is_ww(g) and int(g[0]) == team:
+					seen[ni] = true
+					q.append(nc)
+	var out := slots.duplicate()
+	var j := 0
+	for i in units.size():
+		var e: Dictionary = units[i]
+		if move_class(e) == "foot" and team_of(w, e) == team:
+			out[i] = Vector2(q[j % q.size()]) + CENTER
+			j += 1
+	return out

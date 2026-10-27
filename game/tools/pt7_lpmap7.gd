@@ -91,9 +91,23 @@ func run(pt) -> void:
 	var cam = mv.get("camera")
 	var C: Vector2 = Vector2(lp.base.center) + Vector2(0.5, 0.5)
 	await _stop(pt, mv, cam, "overview", Vector2(256, 256), 0.04)
-	await _stop(pt, mv, cam, "outer_ring", Vector2(C.x, C.y - 66), 0.8)
-	await _stop(pt, mv, cam, "economy_ring", C + Vector2(40, -40), 0.6)
-	await _stop(pt, mv, cam, "core_ring", C + Vector2(10, -10), 0.5)
+	# BASE7-3: stops aimed at the BASE7-2 layout (rings 87 / 73 / 53 across = half 43 / 36 / 26, facility 3 north of C,
+	# airfield inside the core ring): the whole base, each wall, the outer gate yard, the airfield and the facility.
+	var rh: Array = [43.0, 36.0, 26.0]
+	var fc: Vector2 = Vector2(lp.base.facility) + Vector2(float(lp.base.facility_size), float(lp.base.facility_size)) * 0.5
+	await _stop(pt, mv, cam, "base_z1", C, 0.3)
+	await _stop(pt, mv, cam, "base_z2", C, 0.5)
+	await _stop(pt, mv, cam, "outer_ring", C + Vector2(0, -rh[0]), 0.8)
+	await _stop(pt, mv, cam, "outer_gate_s", C + Vector2(0, rh[0] - 3.0), 0.8)
+	await _stop(pt, mv, cam, "outer_corner_ne", C + Vector2(rh[0], -rh[0]), 0.8)
+	await _stop(pt, mv, cam, "economy_ring", C + Vector2(rh[1], 0), 0.6)
+	await _stop(pt, mv, cam, "core_ring", C + Vector2(0, rh[2]), 0.6)
+	var af: Dictionary = lp.base.get("airfield", {})
+	if af.has("strip"):
+		await _stop(pt, mv, cam, "airfield", Vector2(af.strip) + Vector2(0.5, 0.5), 0.6)
+	await _stop(pt, mv, cam, "facility_z1", fc, 0.6)
+	await _stop(pt, mv, cam, "facility_z2", fc, 1.0)
+	await _stop(pt, mv, cam, "facility_z3", fc + Vector2(0, 9), 1.6)
 	var seen := 0
 	for i in lp.cores.size():
 		seen += _observe(pt, mv, w, Vector2(lp.cores[i]) + Vector2(1.5, 1.5))

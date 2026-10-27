@@ -93,6 +93,9 @@ var skipped := 0                           # far-LOD frames that reused the last
 # tree decor is skipped and a burnt_ground variant (cell hash) is drawn flat. Presentation-only:
 # the sim keeps no burnt set, so a loaded save shows plain dirt there (KNOWN GAP).
 var burnt: Dictionary = {}
+# G7 (BASE7-3): cells a counter-nanite compound paved over (TerrainChanged cause "cn_facility"): their terrain decor
+# (rocks, bushes, trees) is skipped. Presentation-only; the sim cell is ROAD, so a rebuilt view draws no decor there.
+var cleared: Dictionary = {}
 var fires_drawn := 0                       # last frame's counts (playtest / debug)
 var burnt_drawn := 0
 var g4b_fx_drawn := 0                      # mines + charges drawn from effect art
@@ -122,6 +125,8 @@ var walls_linked := 0                      # ART7F: wall segments drawn with the
 var _fac_e: Array = []                     # last CnFacility.render_entries (reused while the sim step is in flight)
 var _fac_e_tick := -2
 var _wall_cells: Dictionary = {}           # Vector2i cell -> true (walls, towers, checkpoint, gate zones)
+var _ww_cells: Dictionary = {}             # G7 (WALL7): wall-walk cell -> Motion.wall_walk_cells value (soldiers on the wall top)
+var ww_drawn := 0                          # G7 (WALL7): soldiers drawn on a wall top last frame (probe / playtest)
 var _wall_dirty := true
 var _wall_nfac := -1
 var _wall_nstat := -1
@@ -446,6 +451,8 @@ func refresh() -> void:
 		for k in range(0, arr.size(), DSTRIDE):
 			if any_burnt and burnt.has(arr[k + 4]):
 				continue  # G4b: the tree on this cell burnt down
+			if not cleared.is_empty() and cleared.has(arr[k + 4]):
+				continue  # G7 BASE7-3: paved over by a counter-nanite compound
 			var p: Vector2 = arr[k]
 			var dl := 0.0
 			if hl_n > 0:
@@ -517,6 +524,11 @@ func refresh() -> void:
 	_hc = -1
 	if not far:   # ART7F flicker fix: the facility draws from its cached entries on frames the sim step is in flight
 		_push_fac(mv._world if live else null, vr, stick)
+	# G7 (WALL7): soldiers on the facility wall top are lifted onto it and sorted in front of it
+	if not _fac_e.is_empty() and (_wall_dirty or int((sn.get("statics", {}) as Dictionary).size()) != _wall_nstat):
+		_wall_rebuild()
+	var has_ww := not _ww_cells.is_empty() and not far
+	ww_drawn = 0
 	for i in n_u:
 		if _hc >= 0:
 			_bay_hide[_hc][1] = _n
@@ -549,6 +561,13 @@ func refresh() -> void:
 				sp.y -= hl
 				if hl != 0.0:
 					gc6.lifted += 1
+		var ww_ky := -1
+		if has_ww and (flg_a[i] & RenderSnap.FLAG_AIR) == 0:
+			var wwv = _ww_cells.get(Vector2i(floori(pos.x), floori(pos.y)))
+			if wwv != null:   # G7 (WALL7): only the owner's soldiers can stand on a wall-walk cell
+				sp += Motion.wall_top_offset(wwv, pos)
+				ww_ky = Motion.wall_top_depth(wwv)
+				ww_drawn += 1
 		if ow != pf:
 			var ci := floori(raw.y) * mw + floori(raw.x)
 			if not vis.is_empty() and (ci < 0 or ci >= vis.size()):
@@ -803,6 +822,8 @@ func refresh() -> void:
 			_reserve(ii * 2 + 16)
 		# G6: sort by ground depth (sp.y + height lift) so units on a ridge order correctly against the valley
 		var ky := int(sp.y + hl)
+		if ww_ky >= 0:
+			ky = ww_ky   # G7 (WALL7): in front of the wall piece it stands on
 		if has_cr and layer == 0:
 			ky = _craft_y(id, ky) if BAY_ART.has(dname) else bay_sort_y(pos, ky, _crafts)  # G7 (CNFAC7-2, CR seq 1193)
 			if not BAY_ART.has(dname) and _is_inf(dname):
@@ -983,6 +1004,14 @@ func _proxy(id: int, dname: String, ow: int, facing: float, fl: int, sq_al: int 
 		"moving": (fl & RenderSnap.FLAG_MOVING) != 0, "firing": 1 if (fl & RenderSnap.FLAG_FIRING) != 0 else 0,
 		"deployed": (fl & RenderSnap.FLAG_DEPLOYED) != 0, "working": (fl & RenderSnap.FLAG_WORK) != 0,
 		"unloading": (fl & RenderSnap.FLAG_UNLOAD) != 0}
+
+
+## G7 (BASE7-3): match_view calls this for TerrainChanged{cause:"cn_facility"} (the compound paved its footprint).
+func on_cleared(cells: Array, mw: int) -> void:
+	for c in cells:
+		var v := Vector2i(c)
+		cleared[v.y * mw + v.x] = true
+	_far_key = []
 
 
 ## G4b (UI4B-3): match_view calls this for TerrainChanged{cause:"fire"} (burnt-out forest -> DIRT).
@@ -1419,7 +1448,7 @@ func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 		_push_zone(man, "g7_cn_helipad", "lit" if int(F.get("heli", 0)) != 0 and not lock else "built", hp, vr, true)
 		var gts: Array = F.get("garage_team", [])
 		var grs: Array = F.get("garage_rects", [])
-		var gt: Array = zs.get("gate", [0, 0, 0, 0])
+		var gt: Array = zs.get("gate_outer", zs.get("gate", [0, 0, 0, 0]))   # BASE7-3: "gate" retired (two-layer entry)
 		var gmx := float(gt[0]) + float(gt[2]) * 0.5
 		for gi in grs.size():   # a closed shed: it sorts at its door face, so an APC parked inside is hidden by it
 			var occ := gi < gts.size() and int(gts[gi]) != 0
@@ -1427,8 +1456,8 @@ func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 			if float(grs[gi][0]) + float(grs[gi][2]) * 0.5 > gmx:   # ART7E: east-side garages face west (door on -x = rot_2 art)
 				gst = "rot_2" if gst == "built" else "rot_2_" + gst
 			_push_zone(man, "g7_cn_garage", gst, grs[gi], vr, false, float(grs[gi][2]) * 8.0)
-		_push_zone(man, "g7_cn_decon", "active" if not lock else "built", zs.get("decon", []), vr, false)
-		_push_zone(man, "g7_cn_gate", "built" if lock else "open", zs.get("gate", []), vr, false)
+		# BASE7-3 (ORCH): the old single gate + blue spray box (g7_cn_gate / g7_cn_decon) are retired; the two-layer
+		# entry (gate_outer, apc_wash, gate_inner) and the decon_hall draw from FAC7F_ZONES below.
 		for zi in FAC7F_ZONES:   # ART7F: finished interior buildings (planning room, drone bay, workshop, range, lab)
 			var zr: Array = zs.get(zi[0], [])
 			if zr.size() == 4:
@@ -1552,6 +1581,7 @@ func _wall_rebuild() -> void:
 	var statics: Dictionary = sn.get("statics", {})
 	_wall_nstat = statics.size()
 	_wall_cells = wall_cells_of(statics, _fac_e)
+	_ww_cells = Motion.wall_walk_cells(statics) if not _fac_e.is_empty() else {}   # G7 (WALL7)
 
 
 ## One zone sprite at the centre of rect r [x, y, w, h] (tiles). Flat art sorts under everything; the rest by depth.

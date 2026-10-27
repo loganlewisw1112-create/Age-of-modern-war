@@ -520,3 +520,73 @@ static func g7_facing(gv: Dictionary, sim_facing: float, moving: bool) -> float:
 	if gv.has("sector") and (not moving or bool(gv.get("back", false))):
 		return float(gv.sector)
 	return sim_facing
+
+
+# ---------------------------------------------------------------- G7 (WALL7, 13.9c-4): soldiers on the wall top
+## Feet height (px above the piece's ground point) of the walkable top per wall-walk def, measured on the ART7F
+## sheets (g7_fac_wall crest 40 px over the pivot, g7_fac_tower bastion deck ~47 px). Other wall-walk defs: WALL_TOP_DEF.
+const WALL_TOP_PX := {"cn_blast_wall": 39.0, "cn_tower": 46.0}
+const WALL_TOP_DEF := 39.0
+const WALL_DEPTH_PAD := 33   # sort a wall-walker after its own piece and the next piece along the run (+32 px)
+
+
+## True for a def the sim makes walkable (same content rule as WallWalk7.ring_cells).
+static func wall_walk_def(def_id: String) -> bool:
+	var d: Dictionary = Content.building(def_id)
+	var ww = d.get("wall_walk")
+	if ww == null:
+		ww = d.get("cn_part", "") == "wall" or d.get("cn_part", "") == "tower"
+	return bool(ww)
+
+
+## Wall-walk cells from the snapshot statics: Vector2i cell -> [centre x, centre y, lift px, run bits (1 E-W, 2 N-S)].
+static func wall_walk_cells(statics: Dictionary) -> Dictionary:
+	var pieces := {}
+	for id in statics:
+		var e: Dictionary = statics[id]
+		if String(e.get("kind", "building")) != "building" or not wall_walk_def(String(e.get("def", ""))):
+			continue
+		var p: Vector2 = e.pos
+		var sz := int(Content.building(String(e.def)).get("size", 2))
+		var o := Vector2i(floori(p.x - sz * 0.5 + 0.01), floori(p.y - sz * 0.5 + 0.01))
+		pieces[o] = [p, float(WALL_TOP_PX.get(String(e.def), WALL_TOP_DEF)), sz, String(e.def) == "cn_blast_wall"]
+	var out := {}
+	for o in pieces:
+		var pc: Array = pieces[o]
+		var sz: int = pc[2]
+		var run := 0
+		if bool(pc[3]):   # a slab: feet snap onto its crest line (towers: anywhere on the deck)
+			if pieces.has(o + Vector2i(sz, 0)) or pieces.has(o - Vector2i(sz, 0)):
+				run |= 1
+			if pieces.has(o + Vector2i(0, sz)) or pieces.has(o - Vector2i(0, sz)):
+				run |= 2
+		var c: Vector2 = pc[0]
+		for dy in sz:
+			for dx in sz:
+				out[o + Vector2i(dx, dy)] = [c.x, c.y, float(pc[1]), run]
+	return out
+
+
+## Screen offset (px) that puts a soldier at tile pos `p` on the wall top of piece `ww` (a wall_walk_cells value):
+## snapped onto the slab crest across the run, then lifted by the top height.
+static func wall_top_offset(ww: Array, p: Vector2) -> Vector2:
+	var q := p
+	var cx: float = ww[0]
+	var cy: float = ww[1]
+	var run: int = ww[3]
+	if run == 1:
+		q.y = cy
+	elif run == 2:
+		q.x = cx
+	elif run == 3:
+		if absf(p.x - cx) < absf(p.y - cy):
+			q.x = cx
+		else:
+			q.y = cy
+	var d := q - p
+	return Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0 - float(ww[2]))
+
+
+## Sort depth (screen y, px) of a soldier on wall piece `ww`: after its own piece and the next one along the run.
+static func wall_top_depth(ww: Array) -> int:
+	return int((float(ww[0]) + float(ww[1])) * 16.0) + WALL_DEPTH_PAD

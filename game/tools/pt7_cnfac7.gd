@@ -18,7 +18,7 @@ var evs: Array = []
 func _on_events(e: Array) -> void:
 	for ev in e:
 		var t := String(ev.get("type", ""))
-		if t.begins_with("Cn") or t == "BaseStateChanged" or t == "UnitLoaded":
+		if t.begins_with("Cn") or t == "BaseStateChanged" or t == "UnitLoaded" or t == "LoadFailed":   # BASE7-3: + LoadFailed (miss log)
 			evs.append(ev)
 
 
@@ -228,6 +228,40 @@ func _shoot_all(pt, mv, w: SimWorld, crafts: Array, stage: String, facs: Array =
 	return drawn
 
 
+## BASE7-3: on a load miss, every unit of the wave still outside its craft: def, order, position in the craft's u/v
+## frame (u along the nose), its LoadFailed reasons since the load order, and hostiles within 20 tiles.
+func _log_outside(pt, w: SimWorld, crafts: Array, all_ids: Array, t0: int) -> void:
+	for i in crafts.size():
+		var c = w.entities.get(int(crafts[i]))
+		if c == null:
+			pt._log("cnfac7_ramp_miss_detail", false, "craft %d gone" % int(crafts[i]))
+			continue
+		var f := float(c.facing)
+		var fwd := Vector2(cos(f), sin(f))
+		var g: Dictionary = Transport.group_load(c)
+		var lines := []
+		for uid in all_ids[i]:
+			if int(uid) <= 0 or Transport.carrier_of(w, int(uid)) == int(c.id):
+				continue
+			var u = w.entities.get(int(uid))
+			if u == null:
+				lines.append("%d dead" % int(uid))
+				continue
+			var d := Vector2(u.pos) - Vector2(c.pos)
+			var why := []
+			for ev in evs:
+				if String(ev.type) == "LoadFailed" and int(ev.get("id", -1)) == int(uid) and not why.has(String(ev.get("reason", ""))):
+					why.append(String(ev.get("reason", "")))
+			var hostile := 0
+			for o in w.entities.values():
+				if o.kind == "unit" and int(o.owner) != int(u.owner) and int(o.owner) >= 0 and Vector2(o.pos).distance_to(Vector2(u.pos)) <= 20.0:
+					hostile += 1
+			lines.append("%s#%d order=%s u=%.1f v=%.1f moving=%s fail=%s hostiles20=%d" % [String(u.def), int(uid), String((u.order as Dictionary).get("type", "")),
+				d.dot(fwd), d.dot(Vector2(-fwd.y, fwd.x)), str(bool(u.get("moving", false))), str(why), hostile])
+		pt._log("cnfac7_ramp_miss_detail", false, "craft %d f %.2f ticks %d load v%d f%d bay_seq=%s outside: %s" % [int(c.id), f, w.tick - t0,
+			int(g.vehicle), int(g.foot), str((c.get("bay_seq", {}) as Dictionary).get("ph", "")), "; ".join(lines)])
+
+
 func _all_done(w: SimWorld, crafts: Array, want_vehicle: int) -> bool:
 	for id in crafts:
 		var e = w.entities.get(int(id))
@@ -299,8 +333,14 @@ func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 	await pt._wait(1.0)
 	var d2: int = await _shoot_all(pt, mv, w, crafts, "squadin", facs)
 	pt._log("cnfac7_ramp_squad_walks_in" + tag, got and d2 > 0, "bay frames drawn %d" % d2)
-	got = await pt._wait_until(func(): return _all_done(w, crafts, 1), 60.0)
+	# BASE7-3: wait on SIM ticks (2400 = 2 sim minutes at 20 Hz), not wall-clock: a slow / busy frame rate no longer
+	# cuts the load short (wall cap 180 s only so a stuck flow still ends). The check below is unchanged.
+	var t_load := w.tick
+	got = await pt._wait_until(func(): return _all_done(w, crafts, 1) or w.tick - t_load >= 2400, 180.0)
 	mv.join_sim()
+	got = _all_done(w, crafts, 1)
+	if not got:
+		_log_outside(pt, w, crafts, all_ids, t_load)
 	var full := 0
 	for id in crafts:
 		var g: Dictionary = Transport.group_load(w.entities[int(id)])

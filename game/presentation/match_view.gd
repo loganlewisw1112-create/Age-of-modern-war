@@ -677,6 +677,8 @@ func _on_step_events(evs: Array) -> void:
 					terrain_layer.rebake_cells(tc)
 					if String(ev.get("cause", "")) == "fire":
 						entity_layer.on_burnt(tc, int(world.map.w))  # UI4B-3: burnt_ground, tree gone
+					elif String(ev.get("cause", "")) == "cn_facility" and entity_layer.has_method("on_cleared"):
+						entity_layer.on_cleared(tc, int(world.map.w))  # G7 BASE7-3: compound paved, decor gone
 			"BridgeDestroyed", "BridgeRepaired":
 				# G2: the terrain array changed under the bridge; re-bake those chunks
 				var cells: Array = ev.get("cells", world.map.get("bridge_cells", []))
@@ -1196,6 +1198,25 @@ func smart_command(p: Vector2, shift: bool = false) -> void:
 				fx_layer.add_marker(p, Color(0.4, 0.8, 1.0))
 		return
 	var t = entity_at(p, true)
+	# G7 WALL7 CR 3428: a click on an own facility wall sprite picks the ground BEHIND it in iso; send the men up onto
+	# the nearest wall-walk cell of that piece instead (otherwise they walk out of the gate to the far side)
+	if t != null and t.kind == "building" and int(t.owner) == player_fid:
+		var MvW = load("res://sim/systems/movement.gd")
+		var best := Vector2i(-1, -1)
+		var bd := INF
+		var sz := int(t.get("size", 1))
+		for dy in sz:
+			for dx in sz:
+				var cc: Vector2i = Vector2i(t.cell) + Vector2i(dx, dy)
+				if MvW.wallwalk_team(world, cc) >= 0:
+					var d := (Vector2(cc) + Vector2(0.5, 0.5)).distance_squared_to(p)
+					if d < bd:
+						bd = d
+						best = cc
+		if best.x >= 0:
+			issue({"type": "move", "unit_ids": units, "target": Vector2(best) + Vector2(0.5, 0.5)})
+			fx_layer.add_marker(Vector2(best) + Vector2(0.5, 0.5), Color(0.4, 1.0, 0.4))
+			return
 	var engineers := _own_engineers_in_selection()
 	if g4b.smart(p, t, units):
 		return

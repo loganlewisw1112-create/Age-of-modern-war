@@ -20,6 +20,7 @@ const Exo = preload("res://sim/systems/exo.gd")
 const SimSystemsIndex = preload("res://sim/systems/sim_index.gd")
 const Airdef = preload("res://sim/systems/airdef.gd")              # AIRDEF6 CR airdef_hooks (preloads sim_index only)
 const Counterdrone = preload("res://sim/systems/counterdrone.gd")  # AIRDEF6 CR airdef_hooks (preloads airdef only)
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")  # G7 WALL7 CR 3392 (preloads elevation only)
 const Apc7 = preload("res://sim/systems/apc7.gd")  # G7 CNSIM7 CR: APC dome / APS / panels (no preloads, no cycle)
 
 
@@ -27,7 +28,7 @@ const Apc7 = preload("res://sim/systems/apc7.gd")  # G7 CNSIM7 CR: APC dome / AP
 static func damage_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
 	return Elevation.defence_mult(w, src, t) * Fieldworks.cover_mult(w, src, s, t) \
 		* Garrison.protect_mult(w, src, s, t) * Loadouts.armor_mult(w, src, s, t) \
-		* MachineG6.shield_mult(w, src, s, t) * Counterdrone.damage_mult(w, src, s, t) * Apc7.damage_mult(w, src, s, t) 		* Sonar.torpedo_mult(w, src, s, t)
+		* MachineG6.shield_mult(w, src, s, t) * Counterdrone.damage_mult(w, src, s, t) * Apc7.damage_mult(w, src, s, t) 		* Sonar.torpedo_mult(w, src, s, t) * WallWalk7.defence_mult(w, src, t)
 
 
 ## Shooter-side accuracy factor for src firing at t.
@@ -38,7 +39,7 @@ static func accuracy_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictio
 
 ## Weapon range factor for src (acquisition and fire, GDScript and native paths).
 static func range_mult(w: SimWorld, src: Dictionary, s: Dictionary) -> float:
-	return Elevation.range_mult(w, src, s)
+	return Elevation.range_mult(w, src, s) * WallWalk7.range_mult(w, src, s)
 
 
 ## Height line of sight (in addition to the existing terrain LOS).
@@ -51,7 +52,7 @@ static func sight_bonus(w: SimWorld, e: Dictionary) -> float:
 	if (active(w) & G6_SIGHT) == 0:
 		return 0.0
 	var b := Elevation.sight_bonus(w, e) if w.map.has("height") else 0.0
-	return b + Callins.sight_bonus(w, e)
+	return b + Callins.sight_bonus(w, e) + WallWalk7.sight_bonus(w, e)
 
 
 ## True when a shot from src at t (resolving at `at`) is lost: a CIWS shoots down a shell / rocket, or a jam field
@@ -107,6 +108,8 @@ static func active(w: SimWorld) -> int:
 	var elev := w.map.has("height")
 	if elev:
 		m |= G6_RANGE | G6_LOS
+	if WallWalk7.any(w):   # G7 WALL7: soldiers on the facility wall top get range / sight
+		m |= G6_RANGE | G6_SIGHT
 	if not (ss.get("callins", {}).get("aerostats", {}) as Dictionary).is_empty():
 		m |= G6_SIGHT
 	var eng := not (ss.get("engineering", {}).get("active", []) as Array).is_empty()

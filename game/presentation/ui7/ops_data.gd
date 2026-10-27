@@ -23,7 +23,7 @@ const PHASE_NAME := {"scan": "SCANNING", "jam": "JAMMING", "arm": "ARMING", "her
 const STALL_TEXT := {"no_scanner": "no scanner on site", "no_ew": "no EW specialist on site", "no_deployer": "no deployer on site",
 	"dome_down": "dome down", "apc_lost": "APC lost"}
 const FAC_PHASE := {"garage": "IN GARAGE", "to_pad": "TO PAD", "loading": "LOADING", "to_gate": "ROLLING OUT", "out": "IN FIELD",
-	"returning": "RETURNING", "to_garage": "TO GARAGE"}
+	"returning": "RETURNING", "to_garage": "TO GARAGE", "to_inner": "INNER GATE"}
 const INCOMING_R := 34.0              # tiles around a deployment site watched for incoming forces
 const DROPSHIP_DEFS := ["cn_stealth_dropship", "a_vtol_dropship", "b_vtol_dropship"]
 

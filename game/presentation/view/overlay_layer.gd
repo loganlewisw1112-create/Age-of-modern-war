@@ -239,6 +239,9 @@ func _diamond(o: Vector2, s: float) -> PackedVector2Array:
 		_w2s(o + Vector2(s, s)), _w2s(o + Vector2(0, s))])
 
 
+const _MotionW = preload("res://presentation/view/motion.gd")   # G7 WALL7
+
+
 func _draw_rings() -> void:
 	var w = mv.world
 	for id in mv.selection:
@@ -251,7 +254,13 @@ func _draw_rings() -> void:
 			pts.append(pts[0])
 			draw_polyline(pts, col, 2.0)
 			continue
-		var c: Vector2 = _w2s(mv.render_pos(e))
+		var rp: Vector2 = mv.render_pos(e)
+		var c: Vector2 = _w2s(rp)
+		var el = mv.get("entity_layer")
+		if el != null and e.kind == "unit" and not (el._ww_cells as Dictionary).is_empty():   # G7 WALL7 CR 3428: ring on the wall top
+			var ww = el._ww_cells.get(Vector2i(floori(rp.x), floori(rp.y)))
+			if ww != null:
+				c += _MotionW.wall_top_offset(ww, rp)
 		var r := 0.5
 		if e.kind == "unit":
 			r = float(Content.unit(e.def).get("radius", 0.3)) + 0.25
