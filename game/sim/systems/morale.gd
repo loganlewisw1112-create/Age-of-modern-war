@@ -323,6 +323,8 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 		var mv := Fatigue.speed_mult(e) if e.has("fat") else 1.0
 		if e.has("vet") and int(e.vet) >= 2:
 			mv *= 1.0 + Veterancy.trait_weight(w, int(e.id), "speed")
+		if e.has("t7mv"):
+			mv *= float(e.t7mv)   # G7 (THREAT7 CR): Weaver web slow / burrower speed, vehicles included
 		if not e.has("morale"):
 			_set_or_erase(e, "mvm", mv)
 			continue

@@ -267,6 +267,51 @@ static func _walk_target(w: SimWorld, fid: int, from: Vector2) -> Variant:
 	return best if best != null else hq_best
 
 
+## G7 (THREAT7): walker pathing. Coarse A* over cell x cell tile blocks (rules g7_threats.walker_path, cell 4),
+## a block is open when its centre tile is vehicle-passable. Barrier lines are NOT planned around: they still stop
+## the walker (CoreWalkerBlocked). Returns world waypoints ending at `to`, or [] (no route: walk straight as before).
+## The block grid is rebuilt from terrain (deterministic) and cached in w.cache (not saved).
+static func walk_path(w: SimWorld, from: Vector2, to: Vector2) -> Array:
+	var wp: Dictionary = Content.rules().get("g7_threats", {}).get("walker_path", {})
+	var cs := maxi(int(wp.get("cell", 4)), 1)
+	var gw := ceili(float(w.map.w) / cs)
+	var gh := ceili(float(w.map.h) / cs)
+	var key := "core_walk_grid_%d" % cs
+	var g = w.cache.get(key)
+	if g == null or (g as AStarGrid2D).region.size != Vector2i(gw, gh):
+		g = AStarGrid2D.new()
+		g.region = Rect2i(0, 0, gw, gh)
+		g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+		g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+		g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+		g.update()
+		for y in gh:
+			for x in gw:
+				var tc := Vector2i(mini(x * cs + cs / 2, int(w.map.w) - 1), mini(y * cs + cs / 2, int(w.map.h) - 1))
+				if not Terrain.passable(w.terrain_at(tc), "vehicle"):
+					g.set_point_solid(Vector2i(x, y), true)
+		w.cache[key] = g
+	var a := Vector2i(clampi(floori(from.x / cs), 0, gw - 1), clampi(floori(from.y / cs), 0, gh - 1))
+	var b := Vector2i(clampi(floori(to.x / cs), 0, gw - 1), clampi(floori(to.y / cs), 0, gh - 1))
+	if a == b:
+		return [to]
+	var sa: bool = g.is_point_solid(a)
+	var sb: bool = g.is_point_solid(b)
+	g.set_point_solid(a, false)
+	g.set_point_solid(b, false)
+	var ids: Array = g.get_id_path(a, b)
+	g.set_point_solid(a, sa)
+	g.set_point_solid(b, sb)
+	if ids.is_empty():
+		return []
+	var out := []
+	for i in range(1, ids.size() - 1):
+		var c: Vector2i = ids[i]
+		out.append(Vector2((c.x + 0.5) * cs, (c.y + 0.5) * cs))
+	out.append(to)
+	return out
+
+
 static func _walk_step(w: SimWorld, s: Dictionary, c: Dictionary, rk: Dictionary) -> void:
 	var uid := int(c.walk)
 	var u = w.entities.get(uid)
@@ -275,24 +320,33 @@ static func _walk_step(w: SimWorld, s: Dictionary, c: Dictionary, rk: Dictionary
 		return
 	var hp := HotState.get_hp(w, uid)
 	_hit_check(w, c, u, hp, rk)
+	var p := HotState.get_pos(w, uid)
 	if c.tgt == null or (w.tick + uid) % 100 == 0:
-		c.tgt = _walk_target(w, int(u.owner), HotState.get_pos(w, uid))
+		var nt = _walk_target(w, int(u.owner), p)
+		if nt != c.tgt or not c.has("path"):
+			c.tgt = nt
+			c.path = [] if nt == null else walk_path(w, p, nt)
 	if c.tgt == null or MachineEW7.held(w, uid) != "":
 		return
-	var p := HotState.get_pos(w, uid)
+	var path: Array = c.get("path", [])
+	while path.size() > 1 and p.distance_to(path[0]) < 0.75:
+		path.pop_front()
+	var goal: Vector2 = path[0] if not path.is_empty() else c.tgt
 	var share := clampf(hp / maxf(float(u.max_hp), 1.0), float(rk.get("walker_leg_slow_min", 0.35)), 1.0)
 	var spd := float(rk.get("walker_speed", 0.9)) * share / SimWorld.TICK_RATE
-	var np := p.move_toward(c.tgt, spd)
+	var np := p.move_toward(goal, spd)
 	np = Vector2(snappedf(np.x, 1.0 / 1024.0), snappedf(np.y, 1.0 / 1024.0))
 	var nc := w.cell_of(np)
 	if Creep.is_barrier(w, nc) or not Terrain.passable(w.terrain_at(nc), "vehicle"):
 		if not bool(c.get("stopped", false)):
 			c.stopped = true
 			w.emit("CoreWalkerBlocked", {"ix": c.ix, "unit": uid, "pos": p})
+			if not Creep.is_barrier(w, nc):
+				c.path = walk_path(w, p, c.tgt)   # terrain corner: re-plan once
 		return
 	c.stopped = false
 	HotState.set_pos(w, uid, np)
-	u.facing = snappedf((c.tgt - p).angle(), 1.0 / 1024.0)
+	u.facing = snappedf((goal - p).angle(), 1.0 / 1024.0)
 
 
 static func validate_command(_w: SimWorld, cmd: Dictionary) -> String:

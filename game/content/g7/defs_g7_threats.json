@@ -1,0 +1,28 @@
+{
+ "_meta": "G7 fragment (owner: THREAT7). Machine threat units (G7_REFERENCE master scope 8, brainstorm B13-B15, B17): burrowers, nanite spitters, mimic infiltrators, packhunter walkers, leeches, Weavers. Behaviour: sim/systems/threats7.gd (all attacks are resolved there; the Combat weapon is empty on purpose). Every number is PROVISIONAL (untuned balance fixture). Units are never produced; they come from Threats7.spawn, Machine assault waves (rules.g7_threats.waves) or map placement (Threats7.adopt). Weavers spawn only while Threats7.allow_weavers(w, true) is set (LPMODE7: 60-75% into a Last Protocol run).",
+ "units": {
+  "g7_m_burrower": {"name": "Burrower", "faction": "machine", "stage_min": 10, "role": "burrower", "armor": "medium", "move_class": "foot", "hp": 520, "speed": 2.2, "sight": 9, "pop": 3, "radius": 0.7, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "burrower", "t7_class": "light_walker", "leaves_wreck": false},
+  "g7_m_spitter": {"name": "Nanite Spitter", "faction": "machine", "stage_min": 10, "role": "spitter", "armor": "light", "move_class": "foot", "hp": 260, "speed": 2.6, "sight": 12, "pop": 2, "radius": 0.5, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "spitter", "t7_class": "light_walker", "leaves_wreck": false},
+  "g7_m_mimic": {"name": "Mimic Infiltrator", "faction": "machine", "stage_min": 10, "role": "mimic", "armor": "light", "move_class": "foot", "hp": 170, "speed": 3.0, "sight": 9, "pop": 2, "radius": 0.3, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "mimic", "t7_class": "light_walker", "leaves_wreck": false},
+  "g7_m_packhunter": {"name": "Packhunter Walker", "faction": "machine", "stage_min": 10, "role": "packhunter", "armor": "light", "move_class": "foot", "hp": 380, "speed": 4.6, "sight": 11, "pop": 2, "radius": 0.5, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "packhunter", "t7_class": "packhunter", "legged": true, "leaves_wreck": false},
+  "g7_m_leech": {"name": "Leech", "faction": "machine", "stage_min": 10, "role": "leech", "armor": "light", "move_class": "foot", "hp": 70, "speed": 3.8, "sight": 8, "pop": 1, "radius": 0.25, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "leech", "t7_class": "leech", "leaves_wreck": false},
+  "g7_m_weaver": {"name": "Weaver", "faction": "machine", "stage_min": 10, "role": "weaver", "armor": "heavy", "move_class": "foot", "hp": 2600, "speed": 1.6, "sight": 12, "pop": 8, "radius": 1.4, "g7": true, "no_production": true, "weapon": "", "energy": true, "t7": "weaver", "t7_class": "heavy_walker", "heavy_walker": true, "legged": true, "leaves_wreck": false}
+ },
+ "rules": {
+  "g7_threats": {
+   "_note": "PROVISIONAL. think_every: AI decisions (movement orders) cadence in ticks, staggered by unit id; attacks run on their own every_s cadence. atk = {dmg, range tiles, every_s, acc 0..1, puncture: hit soldiers get Wounds.puncture}. Parts wrecked by leeches live on the vehicle in e.t7w {part: 0..1 integrity}.",
+   "ver": 1,
+   "think_every": 20,
+   "scan_every": 50,
+   "burrower": {"burrow_s": 3.0, "tunnel_tiles": 48.0, "trigger_radius": 2.0, "erupt_radius": 2.5, "erupt_dmg": 70.0, "erupt_vehicle_dmg": 160.0, "reburrow_s": 20.0, "speed_mult_burrowed": 1.5, "atk": {"dmg": 30.0, "range": 1.4, "every_s": 1.5, "acc": 0.9, "puncture": true}},
+   "spitter": {"atk": {"dmg": 14.0, "range": 9.0, "every_s": 2.5, "acc": 0.7, "puncture": true}, "suit_pref": true, "keep_range": 7.0},
+   "mimic": {"as_foot": "g7_cn_gunner", "scan_radius": 4.0, "strike_radius": 1.5, "atk": {"dmg": 40.0, "range": 1.3, "every_s": 1.2, "acc": 0.95, "puncture": true}},
+   "packhunter": {"pack": [4, 6], "flank_radius": 5.0, "close_radius": 6.5, "pounce_range": 3.5, "mount_wreck": 0.12, "atk": {"dmg": 22.0, "range": 1.3, "every_s": 0.9, "acc": 0.85, "puncture": true}},
+   "leech": {"latch_range": 1.3, "drill_every_s": 2.0, "part_dmg": 0.1, "hull_dmg": 4.0, "parts": ["mg_front", "mg_rear", "panel_l", "panel_r", "dome"], "pry_radius": 1.8, "pry_s_outside": 5.0, "pry_s_crew": 14.0, "throw_dmg": 25.0, "drop_stun_s": 3.0, "seek_radius": 14.0},
+   "weaver": {"web_range": 7.0, "web_every_s": 6.0, "web_slow": 0.45, "web_slow_s": 8.0, "max_cocoons": 2, "haul_speed": 1.2, "haul_offset": 1.6, "lost_on_creep_s": 4.0, "cut_radius": 1.4, "cut_s_slow": 14.0, "cut_s_fast": 3.5, "fast_roles": ["deploy", "medic"], "atk": {"dmg": 45.0, "range": 2.0, "every_s": 2.0, "acc": 0.9, "puncture": true}},
+   "walker_path": {"cell": 4, "max_nodes": 6000, "replan_ticks": 100},
+   "waves": {"_note": "extra threat units per Machine assault wave, by escalation unit tier (phase_info.unit_tier); spawned at the Machine side's buildings on the phase's wave cadence (own timer)", "1": ["g7_m_spitter", "g7_m_burrower"], "2": ["g7_m_packhunter", "g7_m_packhunter", "g7_m_packhunter", "g7_m_packhunter", "g7_m_leech", "g7_m_leech", "g7_m_spitter", "g7_m_mimic"], "3": ["g7_m_packhunter", "g7_m_packhunter", "g7_m_packhunter", "g7_m_packhunter", "g7_m_packhunter", "g7_m_leech", "g7_m_leech", "g7_m_leech", "g7_m_burrower", "g7_m_spitter", "g7_m_spitter", "g7_m_mimic", "g7_m_weaver"]},
+   "weaver_window": [0.6, 0.75]
+  }
+ }
+}

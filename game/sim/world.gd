@@ -193,6 +193,8 @@ const COMMANDS := {
 	"cn_evacuate": CnFacility,
 	"cn_set_loadout": CounterNanite,  # G7 CNSIM7 CR
 	"cn_pincer": CounterNanite,  # G7 CNSIM7-3 CR: anti-walker pincer on one order
+	"t7_pry": Threats7,  # G7 THREAT7 CR: pry a leech off a vehicle
+	"t7_cut": Threats7,  # G7 THREAT7 CR: cut a soldier out of a Weaver cocoon
 	"cn_break_contact": CounterNanite,  # G7 CNSIM7-3 CR: formed withdrawal
 	"cn_deploy": CounterNanite,
 	"cn_hero_detonate": CounterNanite,
