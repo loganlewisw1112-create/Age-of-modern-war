@@ -85,18 +85,21 @@ func test_gunship_slings_one_light_vehicle() -> void:
 	check(w.preview_command({"type": "load", "issuer": 0, "carrier": g, "unit_ids": tank}).contains("cannot carry"), "no heavy vehicles")
 
 
-func test_vtol_carries_two_vehicles_and_eight_troops() -> void:
+## G7 (owner-ordered spec change, docs/G7_REFERENCE.md B18): the VTOL dropship carries ONE vehicle + its occupants + one
+## squad INSIDE its cargo bay (nothing slung), replacing the G5 rule of 2 slung vehicles + 8 troops. Same checks, new rule.
+func test_vtol_bay_carries_one_vehicle_and_a_squad() -> void:
 	var w := _w()
 	w.factions[0].stage = 9
 	var s := _landed(w, "a_vtol_dropship")
 	var v: int = s.id
-	var veh := _spawn_near(w, "mbt", s.cell, 2) + _spawn_near(w, JEEP, s.cell, 1)
-	var troops := _spawn_near(w, "rifleman", s.cell, 9)
-	check(_load(w, v, [veh[0], veh[1]] + troops.slice(0, 8), 10) > 0, "2 vehicles + 8 troops board")
+	var veh := _spawn_near(w, "mbt", s.cell, 1) + _spawn_near(w, JEEP, s.cell, 1)
+	var troops := _spawn_near(w, "rifleman", s.cell, 11)
+	check(_load(w, v, [veh[0]] + troops.slice(0, 10), 11) > 0, "1 vehicle + 10 troops board")
 	var load := Transport.group_load(w.entities[v])
-	check_eq(load, {"foot": 8, "vehicle": 2}, "mixed cargo counts")
-	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [veh[2]]}).contains("full"), "3rd vehicle refused")
-	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [troops[8]]}).contains("full"), "9th trooper refused")
+	check_eq(load, {"foot": 10, "vehicle": 1}, "mixed cargo counts")
+	check(Transport.slung(w.entities[v]).is_empty(), "nothing slung: the vehicle rides inside the bay")
+	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [veh[1]]}).contains("full"), "2nd vehicle refused")
+	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [troops[10]]}).contains("full"), "11th trooper refused")
 
 
 func test_landing_zone_validation_for_unload() -> void:
@@ -168,14 +171,14 @@ func test_vtol_unload_at_its_own_landed_spot() -> void:
 	w.factions[0].stage = 9
 	var s := _landed(w, "a_vtol_dropship")
 	var v: int = s.id
-	var veh := _spawn_near(w, "mbt", s.cell, 2)
-	var troops := _spawn_near(w, "rifleman", s.cell, 8)
-	check(_load(w, v, veh + troops, 10) > 0, "2 vehicles + 8 troops board")
+	var veh := _spawn_near(w, "mbt", s.cell, 1)  # G7 B18: one vehicle + a squad inside the bay
+	var troops := _spawn_near(w, "rifleman", s.cell, 10)
+	check(_load(w, v, veh + troops, 11) > 0, "1 vehicle + 10 troops board")
 	var here: Vector2 = w.entities[v].pos
 	var r := w.preview_command({"type": "unload", "issuer": 0, "carrier": v, "target": here})
 	check_eq(r, "", "unload at its own landed spot is allowed")
 	check(w.submit({"type": "unload", "issuer": 0, "carrier": v, "target": here}).ok, "unload submitted")
-	check(_run(w, 600, func() -> bool: return _cargo(w, v).is_empty()) > 0, "all 10 unloaded at the landed spot")
+	check(_run(w, 600, func() -> bool: return _cargo(w, v).is_empty()) > 0, "all 11 unloaded at the landed spot")
 	check(Air.is_landed(w.entities[v]), "still landed")
 	for id in veh + troops:
 		check(w.entities.has(id) and Vector2(w.entities[id].pos).distance_to(here) < 7.0, "unit %d unloaded beside the VTOL" % id)

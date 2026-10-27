@@ -47,6 +47,49 @@ static func rules() -> Dictionary:
 	return Content.rules().get("transport", {})
 
 
+# ================================================================ G7 internal cargo bays (CNFAC7, master scope 6.9 / B18)
+## A def with `bay: {vehicle, foot, foot_empty, carry_occupants}` (or an entry in content/g7/defs_g7_facility.json
+## "_g7_bays", which upgrades existing defs such as a_vtol_dropship without redefining them) carries everything INSIDE
+## (never slung): at most `vehicle` vehicles (a ground carrier such as a strike APC rides with its own occupants still
+## aboard), plus `foot` men when a vehicle is loaded, or `foot_empty` men without one.
+const BAY_PATH := "res://content/g7/defs_g7_facility.json"
+static var _bay_over: Variant = null
+
+
+static func bay(def_id: String) -> Dictionary:
+	if _bay_over == null:
+		_bay_over = {}
+		if FileAccess.file_exists(BAY_PATH):
+			var parsed = JSON.parse_string(FileAccess.get_file_as_string(BAY_PATH))
+			if typeof(parsed) == TYPE_DICTIONARY and typeof(parsed.get("_g7_bays")) == TYPE_DICTIONARY:
+				_bay_over = parsed["_g7_bays"]
+	var b = Content.unit(def_id).get("bay", (_bay_over as Dictionary).get(def_id, {}))
+	return b if typeof(b) == TYPE_DICTIONARY else {}
+
+
+## Cargo class of u for carrier c: a bay also takes ground carriers (APCs) as vehicle_heavy.
+static func _class_for(c, def_id: String) -> String:
+	var cls := cargo_class_of(def_id)
+	if cls == "" and c != null and not bay(String(c.def)).is_empty() and capacity(def_id) > 0:
+		var mc := String(Content.unit(def_id).get("move_class", ""))
+		if mc == "vehicle" or mc == "amphibious":
+			return "vehicle_heavy"
+	return cls
+
+
+## Bay load {foot, vehicle}: occupants riding inside a loaded vehicle do not count.
+static func _bay_ok(c, u) -> bool:
+	var b := bay(String(c.def))
+	var used := group_load(c)
+	var g := _group(_class_for(c, String(u.def)))
+	var v := int(used.vehicle)
+	var f := int(used.foot)
+	if g == "vehicle":
+		return v + 1 <= int(b.get("vehicle", 1)) and f <= int(b.get("foot", 10))
+	var lim := int(b.get("foot", 10)) if v > 0 else int(b.get("foot_empty", b.get("foot", 10)))
+	return f + _count_of(String(u.def)) <= lim
+
+
 # ================================================================ def queries
 static func capacity(def_id: String) -> int:
 	return int(Content.unit(def_id).get("cargo_slots", 0))
@@ -110,8 +153,10 @@ static func can_carry(c, u) -> String:
 		return "Select units to load."
 	if int(u.owner) != int(c.owner):
 		return "Only your own units can board."
-	var cls := cargo_class_of(String(u.def))
+	var cls := _class_for(c, String(u.def))
 	if cls == "" or not accepts(String(c.def)).has(cls):
+		return "This transport cannot carry that unit."
+	if capacity(String(u.def)) > 0 and bay(String(c.def)).is_empty():
 		return "This transport cannot carry that unit."
 	var cp := caps(String(c.def))
 	if not cp.is_empty():
@@ -124,6 +169,9 @@ static func can_carry(c, u) -> String:
 
 # ================================================================ G5 mixed cargo (AIRSYS)
 static func caps(def_id: String) -> Dictionary:
+	var bb := bay(def_id)
+	if not bb.is_empty():
+		return {"vehicle": int(bb.get("vehicle", 1)), "foot": maxi(int(bb.get("foot", 10)), int(bb.get("foot_empty", 0)))}
 	var c = Content.unit(def_id).get("cargo_caps", {})
 	return c if typeof(c) == TYPE_DICTIONARY else {}
 
@@ -142,13 +190,15 @@ static func _count_of(def_id: String) -> int:
 static func group_load(c) -> Dictionary:
 	var used := {"foot": 0, "vehicle": 0}
 	for x in c.get("cargo", []):
-		var g := _group(cargo_class_of(String(x.def)))
+		var g := _group(_class_for(c, String(x.def)))
 		used[g] = int(used[g]) + _count_of(String(x.def))
 	return used
 
 
 ## True when u fits in carrier c now (slots, or cargo_caps groups + exclusivity).
 static func fits(c, u) -> bool:
+	if not bay(String(c.def)).is_empty():
+		return _bay_ok(c, u)
 	var cp := caps(String(c.def))
 	if cp.is_empty():
 		return cargo_size_of(String(u.def)) <= free_slots(c)
@@ -164,7 +214,7 @@ static func fits(c, u) -> bool:
 ## Ids of vehicles slung under carrier c (sling carriers only), ascending.
 static func slung(c) -> Array:
 	var out := []
-	if c == null or not bool(Content.unit(String(c.def)).get("sling", false)):
+	if c == null or not bool(Content.unit(String(c.def)).get("sling", false)) or not bay(String(c.def)).is_empty():
 		return out
 	for x in c.get("cargo", []):
 		if _group(cargo_class_of(String(x.def))) == "vehicle":
@@ -226,6 +276,8 @@ static func _cache(w: SimWorld) -> Dictionary:
 			c.carriers[id] = e
 			for u in e.cargo:
 				c.cargo_of[int(u.id)] = id
+				for x in u.get("cargo", []):
+					c.cargo_of[int(x.id)] = int(u.id)  # G7 bay: occupants riding inside a carried vehicle
 		if e.has("unload_order") or e.has("pickup"):
 			c.carriers[id] = e
 		if String(e.order.get("type", "")) == "board":
@@ -532,8 +584,17 @@ static func _load(w: SimWorld, tc: Dictionary, c: Dictionary, u: Dictionary) -> 
 	cargo.insert(at, u)
 	tc.cargo_of[uid] = cid
 	tc.carriers[cid] = c
+	tc.carriers.erase(uid)  # G7 bay: a carried APC is not a live carrier while aboard
 	_invalidate(w)
 	w.emit("UnitLoaded", {"id": uid, "carrier": cid, "owner": int(u.owner)})
+
+
+## G7 (CNFAC7): puts unit u into carrier c right now (spawn-inside, scripted loading). False when it does not fit.
+static func load_now(w: SimWorld, c: Dictionary, u: Dictionary) -> bool:
+	if can_carry(c, u) != "" or not fits(c, u) or not w.entities.has(int(u.id)):
+		return false
+	_load(w, _cache(w), c, u)
+	return true
 
 
 ## Unload cargo ids of carrier c around center now. Units with no free cell stay aboard.
@@ -582,6 +643,8 @@ static func _place(w: SimWorld, c: Dictionary, units: Array, center: Vector2, ca
 	_reinsert(w, placed)
 	for u in placed:
 		HotState.touch(w, int(u.id))
+		if not (u.get("cargo", []) as Array).is_empty():
+			tc.carriers[int(u.id)] = u  # G7 bay: an unloaded APC keeps its occupants
 	for u in placed:
 		w.emit("UnitUnloaded", {"id": int(u.id), "carrier": int(c.id), "owner": int(u.owner), "pos": u.pos, "cause": cause})
 	return stay
@@ -680,6 +743,12 @@ static func on_carrier_destroyed(w: SimWorld, c: Dictionary, killer_owner: int) 
 		_:
 			dead = _place(w, c, cargo, p, "ejected", float(od.get("ground", {}).get("eject_hp_frac", 0.5)))
 	var tc := _cache(w)
+	var nested := []
+	for u in dead:
+		if not (u.get("cargo", []) as Array).is_empty():
+			nested.append_array(u.cargo)  # G7 bay: occupants inside a carried vehicle share its fate
+			u.cargo = []
+	dead = dead + nested
 	for u in dead:
 		tc.cargo_of.erase(int(u.id))
 		u.pos = p

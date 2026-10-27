@@ -174,6 +174,14 @@ const COMMANDS := {
 	# G6.1 (owner directive 2026-10-26)
 	"set_stance": SquadAI,
 	"set_technique": SquadAI,  # G7 SQUAD7 CR
+	"cn_train": CnFacility,  # G7 CNFAC7 CR
+	"cn_cancel_train": CnFacility,
+	"cn_rollout": CnFacility,
+	"cn_return": CnFacility,
+	"cn_lab_queue": CnFacility,
+	"cn_lab_upgrade": CnFacility,
+	"cn_drill": CnFacility,
+	"cn_evacuate": CnFacility,
 	"cn_set_loadout": CounterNanite,  # G7 CNSIM7 CR
 	"cn_deploy": CounterNanite,
 	"cn_hero_detonate": CounterNanite,

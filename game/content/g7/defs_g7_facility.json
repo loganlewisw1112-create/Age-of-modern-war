@@ -1,0 +1,104 @@
+{
+  "_meta": {"owner": "CNFAC7", "note": "G7 Counter-Nanite facility, stealth strike dropship, dropship cargo bays, base secure state. Every number is PROVISIONAL (master scope 6.2, 6.9, 9; brainstorm B2, B4, B9, B11, B18)."},
+  "buildings": {
+    "a_cn_facility": {
+      "name": "Counter-Nanite Facility", "faction": "human_a", "stage_min": 10, "size": 4, "hp": 9000, "armor": "building",
+      "sight": 14, "power": -60, "buildable": true, "requires": ["research_station"], "requires_power": false,
+      "requires_research": ["g7_counter_nanite"], "cost": {"credits": 6000, "salvage": 2200, "ore": 1600}, "build_time": 150,
+      "g7": true, "cn_facility": true, "unhackable": true, "limit": 1
+    },
+    "b_cn_facility": {
+      "name": "Counter-Nanite Facility", "faction": "human_b", "stage_min": 10, "size": 4, "hp": 9000, "armor": "building",
+      "sight": 14, "power": -60, "buildable": true, "requires": ["research_station"], "requires_power": false,
+      "requires_research": ["g7_counter_nanite"], "cost": {"credits": 6000, "salvage": 2200, "ore": 1600}, "build_time": 150,
+      "g7": true, "cn_facility": true, "unhackable": true, "limit": 1
+    },
+    "cn_tower": {
+      "name": "Hardened Tower", "faction": "shared", "stage_min": 1, "size": 2, "hp": 4200, "armor": "building", "sight": 12,
+      "buildable": false, "requires_power": false, "weapon": "g6_popup_rws", "ciws": {"radius": 8, "shots_per_min": 14},
+      "g7": true, "cn_part": "tower", "unhackable": true
+    },
+    "cn_checkpoint": {
+      "name": "Armoured Gate Checkpoint", "faction": "shared", "stage_min": 1, "size": 2, "hp": 3600, "armor": "building",
+      "sight": 10, "buildable": false, "requires_power": false, "weapon": "g6_popup_rws", "g7": true, "cn_part": "checkpoint",
+      "unhackable": true
+    },
+    "cn_blast_wall": {
+      "name": "Blast Wall", "faction": "shared", "stage_min": 1, "size": 2, "hp": 3000, "armor": "building", "sight": 2,
+      "buildable": false, "requires_power": false, "g7": true, "cn_part": "wall", "unhackable": true
+    },
+    "cn_popup": {
+      "name": "Lockdown Pop-up Turret", "faction": "shared", "stage_min": 1, "size": 1, "hp": 1200, "armor": "building",
+      "sight": 9, "buildable": false, "requires_power": false, "weapon": "g6_popup_rws", "g7": true, "cn_part": "popup",
+      "unhackable": true
+    }
+  },
+  "units": {
+    "cn_stealth_dropship": {
+      "name": "Stealth Strike Dropship", "role": "air", "armor": "heavy", "move_class": "air_low", "hp": 2400, "speed": 4.2,
+      "sight": 12, "pop": 10, "radius": 0.9, "is_air": true, "ammo_max": 0, "fuel_max": 900, "fuel_per_tile": 0.0,
+      "faction": "shared", "stage_min": 10, "aircraft": "vtol", "hangar": "heavy", "fuel_burn": 0.5, "weapon": "",
+      "lz_size": 4, "cargo_slots": 25, "cargo_accepts": ["foot", "vehicle_light", "vehicle_heavy"],
+      "bay": {"vehicle": 1, "foot": 10, "foot_empty": 25, "carry_occupants": true},
+      "stealth": true, "unhackable": true, "g7": true, "cn_dropship": true,
+      "extract_drones": {"kamikaze": ["strike", 3], "gun": ["cn_gun_drone", 2], "radius": 12, "cooldown": 3600, "gun_life_s": 60}
+    },
+    "cn_gun_drone": {
+      "name": "Defence Drone (MG)", "role": "drone", "faction": "shared", "armor": "light", "move_class": "air_low",
+      "is_air": true, "hp": 60, "speed": 8.0, "sight": 7, "weapon": "lmg", "pop": 0, "radius": 0.2, "g7": true,
+      "no_production": true, "stage_min": 10
+    }
+  },
+  "_g7_bays": {
+    "a_vtol_dropship": {"vehicle": 1, "foot": 10, "foot_empty": 16, "carry_occupants": true}
+  },
+  "_g7_base_state": {
+    "eval_every": 10, "outer_pad": 12, "radius": 10, "fire_window": 100, "def_factor": 1.5, "min_threat_hp": 1.0,
+    "training_mult": {"secure": 1.0, "contested": 0.6, "under_fire": 0.35, "breached": 0.0}
+  },
+  "_g7_facility": {
+    "compound": 32,
+    "core_offset": [14, 2],
+    "gate": [14, 30, 4, 2],
+    "staging": [12, 32, 8, 4],
+    "decon": [11, 25, 10, 4],
+    "pad": [10, 13, 12, 9],
+    "helipad": [24, 2, 6, 6],
+    "drone_bay": [2, 2, 5, 4],
+    "range": [2, 22, 7, 6],
+    "workshop": [24, 22, 6, 6],
+    "garages": [[4, 8], [4, 12], [4, 16], [4, 20], [28, 10], [28, 14], [28, 18], [28, 22]],
+    "towers": [[15, 0], [0, 15], [30, 15], [10, 30]],
+    "checkpoint": [18, 30],
+    "popups": [[8, 8], [23, 8], [8, 23], [23, 23], [12, 27], [19, 27]],
+    "train": {
+      "strike_team": {"time": 120, "cost": {"credits": 2400, "salvage": 600, "ore": 400}, "garages": 2},
+      "tactical_squad": {"time": 75, "cost": {"credits": 1200, "salvage": 300, "ore": 200}, "garages": 1, "cap": 3},
+      "stealth_dropship": {"time": 150, "cost": {"credits": 3000, "salvage": 900, "ore": 700}, "unit": "cn_stealth_dropship", "cap": 1}
+    },
+    "fallback_roster": {
+      "strike_team": [{"apc": "a_apc", "crew": ["rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman"]}, {"apc": "a_apc", "crew": ["rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman"]}],
+      "tactical_squad": [{"apc": "a_apc", "crew": ["rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman", "rifleman"]}]
+    },
+    "load_time": 6,
+    "rollout_out": 6,
+    "rinse_time": 5,
+    "walk_time": 3,
+    "repair_hp_s": 25,
+    "packages": {
+      "purge": {"time": 30, "cost": {"credits": 300, "ore": 80}},
+      "seed_hunter": {"time": 40, "cost": {"credits": 400, "ore": 120}},
+      "barrier": {"time": 35, "cost": {"credits": 350, "ore": 100}},
+      "core_breaker": {"time": 90, "cost": {"credits": 1200, "ore": 400, "salvage": 200}}
+    },
+    "lab_tiers": [{"time": 60, "cost": {"credits": 1500, "ore": 400}}, {"time": 90, "cost": {"credits": 2500, "ore": 700}}],
+    "drill_xp_s": 2.0,
+    "team_levels": [0, 100, 250, 500, 900],
+    "emp_field": {"every": 40, "stun": 30, "machine_only": true},
+    "mist_dps": 18.0,
+    "evac_core_frac": 0.35,
+    "self_repair_frac_s": 0.004,
+    "self_repair_quiet": 200,
+    "machine_faction": "machine"
+  }
+}
