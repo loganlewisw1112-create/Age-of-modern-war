@@ -558,6 +558,21 @@ connect + sorround the towers and don't leave them unsecured".
   tied into it on both sides, never standing outside the wall or in a gap; no unsecured tower, no wall gap.
 - A test checks the ring is closed and every tower is wall-joined.
 
+#### 13.9c-4 More towers, wall sentry turrets, walkable walls (owner note, 2026-10-27)
+Owner: "add 4 more of those large towers to the counter nanite faculty plus add smaller sentry turrets faced outworda
+along the walls — + walls of facility need to be walkable for your units".
+- **4 more large hardened towers** on the facility wall ring (on top of the ones already placed), tied into the wall.
+- **Smaller sentry turrets along the walls**, facing outward, spaced along every wall run (real sentry turrets that
+  fire at enemies outside; they belong to the facility owner).
+- **Walkable walls:** the facility's own infantry can climb onto and walk along the wall top (a wall-walk): own foot
+  units path along wall cells (enemies still blocked), stand on the wall with a height / cover bonus, and are drawn on
+  top of the wall at the right depth. Access from inside the compound (stairs / at towers).
+
+#### 13.9c-5 No resources inside the facility (owner note, 2026-10-27)
+Owner: "NO ores, salv, etc should be found inside nanite facility at ALL". No ore, salvage or any other resource
+deposit / node / pickup inside the counter-nanite facility compound (every map, every match); the site is cleared of
+them along with terrain and props. A test checks it.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).
