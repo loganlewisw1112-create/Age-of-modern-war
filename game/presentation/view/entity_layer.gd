@@ -1347,16 +1347,21 @@ func _push_fac(w, vr: Rect2) -> void:
 		var ctr := Vector2(float(hp[0]) + float(hp[2]) * 0.5, float(hp[1]) + float(hp[3]) * 0.5)
 		if not mv.cell_explored(Vector2i(ctr)):
 			continue
+		var lock := bool(F.get("lock", false))
 		var pad: Array = zs.get("pad", [])
 		if pad.size() == 4:
-			_push_pad(Rect2(float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3])), vr)
-		var lock := bool(F.get("lock", false))
+			_push_pad(Rect2(float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3])), vr, lock)
 		_push_zone(man, "g7_cn_helipad", "lit" if int(F.get("heli", 0)) != 0 and not lock else "built", hp, vr, true)
 		var gts: Array = F.get("garage_team", [])
 		var grs: Array = F.get("garage_rects", [])
+		var gt: Array = zs.get("gate", [0, 0, 0, 0])
+		var gmx := float(gt[0]) + float(gt[2]) * 0.5
 		for gi in grs.size():   # a closed shed: it sorts at its door face, so an APC parked inside is hidden by it
 			var occ := gi < gts.size() and int(gts[gi]) != 0
-			_push_zone(man, "g7_cn_garage", "lockdown" if lock else ("open" if occ else "built"), grs[gi], vr, false, float(grs[gi][2]) * 8.0)
+			var gst := "lockdown" if lock else ("open" if occ else "built")
+			if float(grs[gi][0]) + float(grs[gi][2]) * 0.5 > gmx:   # ART7E: east-side garages face west (door on -x = rot_2 art)
+				gst = "rot_2" if gst == "built" else "rot_2_" + gst
+			_push_zone(man, "g7_cn_garage", gst, grs[gi], vr, false, float(grs[gi][2]) * 8.0)
 		_push_zone(man, "g7_cn_decon", "active" if not lock else "built", zs.get("decon", []), vr, false)
 		_push_zone(man, "g7_cn_gate", "built" if lock else "open", zs.get("gate", []), vr, false)
 
@@ -1380,25 +1385,55 @@ func _push_zone(man: Dictionary, key: String, st: String, r: Array, vr: Rect2, f
 		fac_drawn += 1
 
 
-## Concrete loading pad: one placeholder iso tile per cell (no ARTCN7 sample drew the pad).
-func _push_pad(r: Rect2, vr: Rect2) -> void:
-	if _pad_key == "":
-		var img := Image.create(64, 32, false, Image.FORMAT_RGBA8)
-		for y in 32:
-			for x in 64:
-				var dd := absf(float(x) - 31.5) / 32.0 + absf(float(y) - 15.5) / 16.0
-				if dd <= 1.0:
-					var v := (0.50 if dd > 0.93 else 0.60) + float((x * 7 + y * 13) % 5) * 0.012
-					img.set_pixel(x, y, Color(v, v * 0.99, v * 0.95, 1.0))
-		_pad_key = "cnfac7|pad"
-		art.atlas.add(_pad_key, img)
-	var pg: int = art.atlas.page_of(_pad_key)
-	if pg < 0:
+## ART7E loading pad: one flat tile per cell from the g7_cn_pad tile sheet (fw 64, fh 44, pivot = cell centre).
+## Column = _pad_col (same rule as tools/art/g7_cn_facility.gd pad_frame); row 1 = lockdown (red lamps).
+func _push_pad(r: Rect2, vr: Rect2, lock: bool) -> void:
+	var b: Dictionary = ArtCat.manifest().get("buildings", {}).get("g7_cn_pad", {})
+	var s: Dictionary = (b.get("states", {}) as Dictionary).get("built", {})
+	if s.is_empty():
 		return
-	var src: Rect2 = art.atlas.rect_of(_pad_key)
-	for y in range(int(r.position.y), int(r.end.y)):
-		for x in range(int(r.position.x), int(r.end.x)):
-			var sp := Vector2(float(x - y) * 32.0 - 32.0, float(x + y) * 16.0)
-			if vr.has_point(sp):
-				_push(0, -float(Y_OFF), pg, src, sp, src.size, Color.WHITE)
+	var spec := {"file": String(s.file), "fw": int(b.get("fw", 64)), "fh": int(b.get("fh", 44)), "pivot": b.get("pivot", [32, 24])}
+	var x0 := int(r.position.x)
+	var y0 := int(r.position.y)
+	var x1 := int(r.end.x) - 1
+	var y1 := int(r.end.y) - 1
+	var g := vr.grow(64.0)
+	for y in range(y0, y1 + 1):
+		for x in range(x0, x1 + 1):
+			var gs := Vector2(float(x - y) * 32.0, float(x + y + 1) * 16.0)
+			if g.has_point(gs) and art.resolve_sheet(spec, _pad_col(x, y, x0, y0, x1, y1), 1 if lock else 0):
+				_push(0, -float(Y_OFF), art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
 				fac_drawn += 1
+
+
+## Pad tile column: corners 9..12 (NW NE SE SW), edges 5..8 (N E S W), bay dividers 4 (west edge) / 13 (centre)
+## on the 3-tile loading-slot boundaries around the pad centre, tie-downs 3, plain slab 0..2.
+static func _pad_col(x: int, y: int, x0: int, y0: int, x1: int, y1: int) -> int:
+	var w := x == x0
+	var e := x == x1
+	var n := y == y0
+	var s := y == y1
+	if n and w:
+		return 9
+	if n and e:
+		return 10
+	if s and e:
+		return 11
+	if s and w:
+		return 12
+	if n:
+		return 5
+	if e:
+		return 6
+	if s:
+		return 7
+	if w:
+		return 8
+	var sm := x0 + x1 + 1
+	if posmod(2 * x - sm, 6) == 0:
+		return 4
+	if posmod(2 * x + 1 - sm, 6) == 0:
+		return 13
+	if posmod(x - x0, 3) == 2 and (y - y0) % 2 == 1:
+		return 3
+	return posmod(x * 7 + y * 13, 3)
