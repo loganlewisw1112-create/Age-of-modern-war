@@ -29,7 +29,7 @@ const KEY := "cn_facility"
 const CONF_PATH := "res://content/g7/defs_g7_facility.json"
 const DISCOVER_EVERY := 10
 const FLOW_EVERY := 5          # team phase checks (staggered by team id)
-const ZONES := ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop"]
+const ZONES := ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning"]  # BASE7: + mission planning room
 const PKG_KINDS := ["purge", "seed_hunter", "barrier", "core_breaker"]
 const CN_PATH := "res://sim/systems/counter_nanite.gd"
 const APC7_PATH := "res://sim/systems/apc7.gd"
@@ -215,7 +215,13 @@ static func render_entries(w: SimWorld) -> Array:
 		for g in garage_spots(F):
 			gs.append([g.x, g.y])
 			gr.append([g.x - float(gz[0]) * 0.5, g.y - float(gz[1]) * 0.5, float(gz[0]), float(gz[1])])  # CNFAC7-2: 3x3 garages
+		var ln := []  # BASE7: concrete lanes between the zones (display: baseprops_layer)
+		var o := Vector2(origin(F))
+		for l in conf().get("lanes", []):
+			ln.append([o.x + float(l[0]), o.y + float(l[1]), float(l[2]), float(l[3])])
+		var cs := float(conf().compound)
 		out.append({"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_rects": gr, "garage_team": (F.garages as Array).duplicate(),
+			"lanes": ln, "compound": [o.x, o.y, cs, cs],
 			"lock": bool(F.lock), "evac": bool(F.evac), "state": secure_state(w, id), "heli": int(F.heli)})
 	return out
 
@@ -662,8 +668,8 @@ static func extraction_drones(w: SimWorld, ds: Dictionary, F: Dictionary = {}) -
 
 
 static func evac_point(F: Dictionary) -> Vector2:
-	var s := zone(F, "staging")
-	return s.get_center() + Vector2(0, 10)
+	var g := zone(F, "gate")  # BASE7: staging moved inside the compound; the evacuation point stays outside the gate
+	return g.get_center() + Vector2(0, 6)
 
 
 static func _start_rollout(w: SimWorld, T: Dictionary) -> void:

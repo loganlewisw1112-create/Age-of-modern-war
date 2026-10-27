@@ -791,3 +791,88 @@ func test_soldier_behind_craft_hidden_every_facing() -> void:
 		check(tail_hidden > 40, "%s: soldiers whose feet the hull covers from behind are hidden (%d sample points)" % [sheet, tail_hidden])
 		check(shown_behind_covered * 100 <= behind, "%s: men behind the hull with hull pixels on them are hidden (%d of %d sample points escape the 3 px probe; <= 1%% allowed for 1-2 px antennas)" % [sheet, shown_behind_covered, behind])
 
+
+
+
+## BASE7 (13.9b, owner: "fix the spacing inside the counter-nanite facility"): the zones are packed in the order a
+## team moves - gate -> decon -> staging -> garages -> pad / helipad - each step adjacent to the next (a lane at
+## most 2 tiles), every garage door on a lane, and the interior has no empty yard (zones, garages and lanes cover
+## it, PROVISIONAL >= 85%).
+func test_base7_facility_flow_packed() -> void:
+	var Cf := CnFacility.conf()
+	var cs := int(Cf.compound)
+	var R := func(n: String) -> Rect2i: return Rect2i(int(Cf[n][0]), int(Cf[n][1]), int(Cf[n][2]), int(Cf[n][3]))
+	var gap := func(a: Rect2i, b: Rect2i) -> int:
+		var dx := maxi(0, maxi(a.position.x - b.end.x, b.position.x - a.end.x))
+		var dy := maxi(0, maxi(a.position.y - b.end.y, b.position.y - a.end.y))
+		return maxi(dx, dy)
+	check(R.call("gate").position.y >= cs - 2, "the gate is in the south wall")
+	check(gap.call(R.call("gate"), R.call("decon")) <= 1, "decon right behind the gate")
+	check(gap.call(R.call("decon"), R.call("staging")) <= 2, "staging right after decon")
+	var gmin := 99
+	for g in Cf.garages:
+		gmin = mini(gmin, gap.call(Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3), R.call("staging")))
+	check(gmin <= 3, "garages flank the staging yard (nearest %d)" % gmin)
+	check(R.call("pad").position.y < R.call("staging").position.y and R.call("helipad").position.y < R.call("staging").position.y, "pad and helipad at the far end from the gate")
+	check(gap.call(R.call("pad"), R.call("helipad")) <= 4, "loading pad beside the helipad apron")
+	var lanes := []
+	for l in Cf.lanes:
+		lanes.append(Rect2i(int(l[0]), int(l[1]), int(l[2]), int(l[3])))
+	for g in Cf.garages:
+		var gr := Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3)
+		var on := false
+		for l in lanes:
+			on = on or gr.grow(1).intersects(l)
+		check(on, "garage %s opens onto a lane" % [g])
+	var cov := {}
+	var mark := func(r: Rect2i) -> void:
+		for y in range(r.position.y, r.end.y):
+			for x in range(r.position.x, r.end.x):
+				cov[Vector2i(x, y)] = true
+	for n in ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning"]:
+		mark.call(R.call(n))
+	for g in Cf.garages:
+		mark.call(Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3))
+	for l in lanes:
+		mark.call(l)
+	mark.call(Rect2i(int(Cf.core_offset[0]), int(Cf.core_offset[1]), 4, 4))
+	var inner := Rect2i(2, 2, cs - 4, cs - 4)
+	var n_in := 0
+	for q in cov:
+		if inner.has_point(q):
+			n_in += 1
+	var frac := float(n_in) / float(inner.get_area())
+	check(frac >= 0.85, "no empty yard: %.2f of the interior is a zone, garage, lane or the core" % frac)
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var es: Array = CnFacility.render_entries(w)
+	check(not es.is_empty() and (es[0].lanes as Array).size() == lanes.size() and es[0].zones.has("planning"), "render entries carry the lanes and the planning room")
+
+
+class _StubView extends Node:
+	var world: SimWorld = null
+	var world7_layer = null
+
+
+## BASE7: the display-only base props layer (presentation/view/baseprops_layer.gd) picks up the facility lanes and
+## lights from CnFacility.render_entries, loads its generated props, and never touches the sim (state hash unchanged).
+func test_base7_baseprops_layer_reads_facility() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var h0 := w.state_hash()
+	var v := _StubView.new()
+	v.world = w
+	var L = load("res://presentation/view/baseprops_layer.gd").new()
+	v.add_child(L)
+	L.setup(v)
+	check_eq((L.tex as Dictionary).size(), 5, "5 generated prop textures loaded (assets/art/g7_baseprops)")
+	L.refresh({})
+	var kinds := {}
+	for l in L.lights:
+		kinds[String(l.kind)] = int(kinds.get(String(l.kind), 0)) + 1
+	check(int(kinds.get("pad", 0)) >= 8 and int(kinds.get("flood", 0)) >= 2 and int(kinds.get("street", 0)) >= 2, "facility lights: pad / helipad corners, gate floods, staging lamps (%s)" % str(kinds))
+	check(L.visible and (L.facs[0].lanes as Array).size() >= 8, "layer visible with the facility lanes")
+	check_eq(w.state_hash(), h0, "display layer leaves the sim untouched")
+	v.free()

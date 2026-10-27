@@ -1,0 +1,89 @@
+{
+  "buildings": {
+    "a_g7_camera": {
+      "fh": 96,
+      "fw": 64,
+      "pivot": [
+        32,
+        80
+      ],
+      "size": 1,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_g7_camera_build_0.png",
+          "mask": "buildings/a_g7_camera_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_g7_camera_build_1.png",
+          "mask": "buildings/a_g7_camera_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_g7_camera_build_2.png",
+          "mask": "buildings/a_g7_camera_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_g7_camera_built.png",
+          "mask": "buildings/a_g7_camera_built_mask.png"
+        }
+      }
+    }
+  },
+  "files": {
+    "buildings/a_g7_camera_build_0.png": "35611492056a6b9e049ab2ff083b2ddb",
+    "buildings/a_g7_camera_build_0_mask.png": "723448c79d413b194457a690020f17d5",
+    "buildings/a_g7_camera_build_1.png": "21b5eb77968ebccd21983bad1fd28d36",
+    "buildings/a_g7_camera_build_1_mask.png": "3dc44aafc724d1cfd22fd837af3d8596",
+    "buildings/a_g7_camera_build_2.png": "9bda7860e7c1a4ce76a7b9a1244da776",
+    "buildings/a_g7_camera_build_2_mask.png": "3dc44aafc724d1cfd22fd837af3d8596",
+    "buildings/a_g7_camera_built.png": "2bdf2f4c55cc6efc41f819bfe17c8735",
+    "buildings/a_g7_camera_built_mask.png": "5d8a92647d71856e8eae90bdb66f8941",
+    "props/flood_mast.png": "7eb201a80aaaa593c80acc460db16704",
+    "props/glow_cold.png": "43cb56e81b5beb96bb115592560aa737",
+    "props/glow_warm.png": "6a85005b7d81bd720435ec7ad1d1e7f1",
+    "props/pad_light.png": "6c60ff05bf0fe7950beda37af8979cc0",
+    "props/street_light.png": "34d81fe0ebcf1083d2c9d1ccc6cfa8c0"
+  },
+  "group": "g7_baseprops",
+  "props": {
+    "flood_mast": {
+      "file": "props/flood_mast.png",
+      "pivot": [
+        16,
+        68
+      ]
+    },
+    "glow_cold": {
+      "file": "props/glow_cold.png",
+      "pivot": [
+        80,
+        40
+      ]
+    },
+    "glow_warm": {
+      "file": "props/glow_warm.png",
+      "pivot": [
+        48,
+        24
+      ]
+    },
+    "pad_light": {
+      "file": "props/pad_light.png",
+      "pivot": [
+        4,
+        6
+      ]
+    },
+    "street_light": {
+      "file": "props/street_light.png",
+      "pivot": [
+        12,
+        53
+      ]
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}

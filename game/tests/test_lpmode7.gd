@@ -409,3 +409,67 @@ func test_real_map_layout_breach_and_tide() -> void:
 
 func LpDefence_fall(w: SimWorld, s: Dictionary) -> void:
 	preload("res://sim/systems/lp_defence.gd").fall(w, s, 0, Vector2(s.base.center) + Vector2(-40, 0))
+
+
+
+## BASE7 (13.9b): the real compact base is pre-built where map.lp says - the compound on its site, one company HQ on
+## its plot, cameras with real sight on every planned mast, turrets by role, generators in the economy power yard,
+## the army on its posts (nobody parked inside the facility compound or on a footprint), the base powered.
+func test_base7_real_base_built() -> void:
+	if not preload("res://sim/map_gen.gd").has_map("last_protocol"):
+		check(true, "last_protocol map not registered: skipped")
+		return
+	var w := SimWorld.new_match(LastProtocol.make_config(77, "last_protocol"))
+	w.run_ticks(25)  # the compound rises when CnFacility discovers the completed core
+	var s := _s(w)
+	var fid := int(s.fid)
+	var lp: Dictionary = w.map.lp
+	var CnF = load("res://sim/systems/cn_facility.gd")
+	var facs: Array = CnF.facilities(w, fid)
+	check_eq(facs.size(), 1, "the facility stands")
+	var comp := Rect2i(Vector2i(lp.base.facility), Vector2i(int(lp.base.facility_size), int(lp.base.facility_size)))
+	if not facs.is_empty():
+		check_eq(CnF.origin(CnF.fac(w, int(facs[0]))), comp.position, "the compound rose exactly on its map site")
+	var hqs := 0
+	var cams := 0
+	var gens := []
+	var by_cell := {}
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "building" or int(e.owner) != fid:
+			continue
+		by_cell[Vector2i(e.cell)] = String(e.def)
+		match String(e.def):
+			"a_company_hq":
+				hqs += 1
+			"a_g7_camera":
+				cams += 1
+				check(preload("res://sim/systems/fog.gd").sight_of(e) >= 12.0, "camera %s has real sight (%.1f)" % [e.cell, preload("res://sim/systems/fog.gd").sight_of(e)])
+			"generator":
+				gens.append(Vector2i(e.cell))
+	check_eq(hqs, 1, "one company HQ (on its command plot)")
+	check_eq(cams, (lp.base.cameras as Array).size(), "every planned camera mast built (%d)" % cams)
+	var C: Vector2i = lp.base.center
+	var out_band := 0
+	for g in gens:
+		var d := maxi(absi(g.x - C.x), absi(g.y - C.y))
+		if d < int(lp.base.rings[2].half) - 7 or d > int(lp.base.rings[1].half):
+			out_band += 1
+	check_eq(out_band, 0, "every generator in a power plot (core/economy rows), none scattered (%d gens)" % gens.size())
+	var r0: Dictionary = lp.base.rings[0]
+	var role_ok := 0
+	for i in (r0.turrets as Array).size():
+		var want := String(r0.turret_defs[i])
+		if String(by_cell.get(Vector2i(r0.turrets[i]), "")) == want:
+			role_ok += 1
+	check(role_ok >= (r0.turrets as Array).size() - 2, "outer turrets built by role (%d / %d)" % [role_ok, (r0.turrets as Array).size()])
+	var inside := []
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" or int(e.owner) != fid or e.has("cn_team") or e.has("cn_fac") or bool(Content.unit(String(e.def)).get("is_air", false)):
+			continue
+		if comp.has_point(Vector2i(int(floor(e.pos.x)), int(floor(e.pos.y)))):
+			inside.append(String(e.def))
+	check_eq(inside, [], "no defence unit parked inside the facility compound")
+	var f: Dictionary = w.factions[fid]
+	check(int(f.power_prod) >= int(f.power_use), "compact base powered (%d / %d)" % [int(f.power_prod), int(f.power_use)])

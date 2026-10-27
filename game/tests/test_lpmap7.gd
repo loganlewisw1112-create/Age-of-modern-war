@@ -71,12 +71,21 @@ func test_lpmap7_layout_consistent() -> void:
 		if k > 0:
 			check(h < int(base.rings[k - 1].half), "ring %s nested inside %s" % [r.name, base.rings[k - 1].name])
 	check_eq(names, ["outer", "economy", "core"], "ring order outer, economy, core")
-	check(int(base.rings[0].half) * 2 + 1 >= 135 and int(base.rings[0].half) * 2 + 1 <= 150, "outer ring ~140 across")
-	check(int(base.rings[1].half) * 2 + 1 >= 105 and int(base.rings[1].half) * 2 + 1 <= 120, "economy ring ~110 across")
-	check(int(base.rings[2].half) * 2 + 1 >= 65 and int(base.rings[2].half) * 2 + 1 <= 80, "core ring ~70 across")
+	# BASE7 (13.9b, owner 2026-10-27 "too many open spaces"): rings sized to what they hold (PROVISIONAL 83 / 69 / 49;
+	# the section 10 planning estimate of 140 / 110 / 70 left the economy ring ~5% built on).
+	check(int(base.rings[0].half) * 2 + 1 >= 79 and int(base.rings[0].half) * 2 + 1 <= 87, "outer ring ~83 across (%d)" % (int(base.rings[0].half) * 2 + 1))
+	check(int(base.rings[1].half) * 2 + 1 >= 65 and int(base.rings[1].half) * 2 + 1 <= 75, "economy ring ~69 across (%d)" % (int(base.rings[1].half) * 2 + 1))
+	check(int(base.rings[2].half) * 2 + 1 >= 45 and int(base.rings[2].half) * 2 + 1 <= 55, "core ring ~49 across (%d)" % (int(base.rings[2].half) * 2 + 1))
 	var site: Rect2i = base.facility_site
-	check(site.size.x >= 40 and site.size.y >= 40, "facility site reserved at 40x40 (owner order)")
-	check(Rect2i(base.facility, Vector2i(32, 32)).encloses(Rect2i(base.facility, Vector2i(32, 32))) and site.encloses(Rect2i(base.facility, Vector2i(32, 32))), "32x32 compound inside the site")
+	var comp := Rect2i(base.facility, Vector2i(int(base.facility_size), int(base.facility_size)))
+	check_eq(int(base.facility_size), int(load("res://sim/systems/cn_facility.gd").conf().compound), "map compound = the facility content's compound size")
+	check_eq(site, comp.grow(2), "site = the compound plus its 2-wide service road (the 40x40 dropship reservation is resolved: 6x6 helipad inside the compound)")
+	var sroad := 0
+	for y in range(site.position.y, site.end.y):
+		for x in range(site.position.x, site.end.x):
+			if not comp.has_point(Vector2i(x, y)) and m.terrain[y * 512 + x] == Terrain.ROAD:
+				sroad += 1
+	check_eq(sroad, site.get_area() - comp.get_area(), "the service road rings the compound")
 	check(LPM.ring_rect(2).grow(-1).encloses(site), "facility site inside the core ring")
 	var kinds := {}
 	for p in base.rings[2].plots:
@@ -230,3 +239,140 @@ func test_lpmap7_world_layer_reacts() -> void:
 	check(L.scares >= 1, "fighting scares the herd")
 	check((hd.pos as Vector2).x < p0.x, "the herd runs away from the fight")
 	L.free()
+
+
+## BASE7 (13.9b): a base that makes logistical sense - roads behind every wall and from every gate, functional
+## groups, cameras on every gate and corner, turrets covering gates / corners / walls, no dead open ground.
+func test_base7_logistics_layout() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var t: PackedByteArray = m.terrain
+	var C: Vector2i = base.center
+	for k in 3:
+		var rr: Vector2i = LPM.ring_road(k)
+		var bad := 0
+		for hh in range(rr.x, rr.y + 1):
+			for q in LPM._perimeter(hh):
+				if t[q.y * 512 + q.x] != Terrain.ROAD:
+					bad += 1
+		check_eq(bad, 0, "ring road behind the %s wall is road all the way round" % base.rings[k].name)
+		for g in base.rings[k].gates:
+			check(t[g.y * 512 + g.x] == Terrain.ROAD, "%s gate %s on the gate road" % [base.rings[k].name, g])
+	for r in base.roads:
+		var nr := 0
+		var pts: Array = LPM._walk(r)
+		for p in pts:
+			if t[p.y * 512 + p.x] == Terrain.ROAD:
+				nr += 1
+		check_eq(nr, pts.size(), "gate road %s -> %s is road end to end" % [r[0], r[1]])
+	# functional groups
+	var res := []
+	for r in m.resources:
+		res.append(Vector2(r.cell))
+	var far_ref := 0
+	for p in base.rings[1].plots:
+		if String(p.kind) == "refinery":
+			var best := 99.0
+			for rc in res:
+				best = minf(best, (Vector2(p.cell) + Vector2(1.5, 1.5)).distance_to(rc))
+			if best > 6.0:
+				far_ref += 1
+	check_eq(far_ref, 0, "every refinery sits beside its resource pile")
+	var strip: Vector2 = Vector2(base.airfield.strip) + Vector2(2, 2)
+	var art := []
+	for p in base.rings[2].plots:
+		var pc := Vector2(p.cell) + Vector2(float(p.size), float(p.size)) * 0.5
+		if String(p.kind) in ["hangar", "helipad", "tower"]:
+			check(pc.distance_to(strip) <= 14.0, "%s at %s grouped with the airfield strip" % [p.kind, p.cell])
+		if String(p.kind) == "artillery":
+			art.append(pc)
+	check_eq(art.size(), 12, "12 artillery pits")
+	var ammo := 0
+	for p in base.rings[2].plots:
+		if String(p.kind) == "depot":
+			for a in art:
+				if (Vector2(p.cell) + Vector2.ONE).distance_to(a) <= 4.0:
+					ammo += 1
+					break
+	check(ammo >= 2, "the artillery park has its ammunition depots (%d)" % ammo)
+	# cameras: every gate of every ring and every outer corner watched
+	var cams: Array = base.cameras
+	check(cams.size() >= 15, "security cameras placed (%d)" % cams.size())
+	for k in 3:
+		var ring: Dictionary = base.rings[k]
+		for gi in range(3, 6):
+			var g: Vector2i = ring.gates[gi]
+			var near := false
+			for cm in cams:
+				if Vector2(cm.cell).distance_to(Vector2(g)) <= 6.0:
+					near = true
+			check(near, "%s gate %s has a camera" % [ring.name, g])
+	var h0 := int(base.rings[0].half)
+	for cx in [-1, 1]:
+		for cy in [-1, 1]:
+			var corner := Vector2(C + Vector2i(cx * h0, cy * h0))
+			var cam_ok := false
+			var tur_ok := false
+			for cm in cams:
+				cam_ok = cam_ok or Vector2(cm.cell).distance_to(corner) <= 3.0
+			for tt in base.rings[0].turrets:
+				tur_ok = tur_ok or (Vector2(tt) + Vector2.ONE).distance_to(corner) <= 9.0
+			check(cam_ok and tur_ok, "outer corner %s: camera %s, turret %s" % [corner, cam_ok, tur_ok])
+	# auto turrets: a role def per slot; every outer gate flanked; rail guns only on the east wall
+	var r0: Dictionary = base.rings[0]
+	check_eq((r0.turret_defs as Array).size(), (r0.turrets as Array).size(), "a turret def per outer slot")
+	for gi in range(3, 6):
+		var g: Vector2i = r0.gates[gi]
+		var n := 0
+		for tt in r0.turrets:
+			if (Vector2(tt) + Vector2.ONE).distance_to(Vector2(g)) <= 6.0:
+				n += 1
+		check(n >= 2, "outer gate %s flanked by turrets (%d)" % [g, n])
+	for i in (r0.turrets as Array).size():
+		if String(r0.turret_defs[i]) == "a_t7_railgun":
+			check(Vector2i(r0.turrets[i]).x > C.x + h0 - 4, "rail cannon %s on the east wall" % r0.turrets[i])
+	# lights (display data): floods at every gate
+	var lights: Array = base.lights
+	check(lights.size() >= 100, "base lights (%d)" % lights.size())
+	for k in 3:
+		for gi in range(3, 6):
+			var g: Vector2i = base.rings[k].gates[gi]
+			var lit := false
+			for l in lights:
+				lit = lit or (String(l.kind) == "flood" and Vector2(l.cell).distance_to(Vector2(g) + Vector2(0.5, 0.5)) <= 3.0)
+			check(lit, "%s gate %s floodlit" % [base.rings[k].name, g])
+	# no dead open ground: inside the economy and core bands most cells are a footprint, a road or a resource pile
+	var foot := {}
+	for k in 3:
+		for p in base.rings[k].plots:
+			for y in int(p.size):
+				for x in int(p.size):
+					foot[Vector2i(p.cell) + Vector2i(x, y)] = true
+		for tt in base.rings[k].turrets + base.rings[k].bunkers:
+			for y in 2:
+				for x in 2:
+					foot[Vector2i(tt) + Vector2i(x, y)] = true
+	for o in base.power_yard:
+		for y in 2:
+			for x in 2:
+				foot[Vector2i(o) + Vector2i(x, y)] = true
+	for r in m.resources:
+		for y in range(-1, 2):
+			for x in range(-1, 2):
+				foot[Vector2i(r.cell) + Vector2i(x, y)] = true
+	for k in [0, 1, 2]:
+		var lo: int = (int(base.rings[k + 1].half) + 1) if k < 2 else (base.facility_site as Rect2i).size.x / 2 + 1
+		var hi: int = int(base.rings[k].half) - 1
+		var used := 0
+		var all := 0
+		for y in range(C.y - hi, C.y + hi + 1):
+			for x in range(C.x - hi, C.x + hi + 1):
+				var q := Vector2i(x, y)
+				if maxi(absi(q.x - C.x), absi(q.y - C.y)) < lo:
+					continue
+				all += 1
+				if foot.has(q) or t[y * 512 + x] == Terrain.ROAD:
+					used += 1
+		var frac := float(used) / float(all)
+		print("BASE7 band %s: %d / %d cells built or road = %.2f" % [base.rings[k].name, used, all, frac])
+		check(frac >= 0.5, "%s band: no dead open ground (%.2f of the band built on or road)" % [base.rings[k].name, frac])

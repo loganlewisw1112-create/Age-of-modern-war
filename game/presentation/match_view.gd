@@ -21,6 +21,7 @@ const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dr
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
+const BasePropsLayer = preload("res://presentation/view/baseprops_layer.gd")  # G7 BASE7: lights, facility lanes, small zone buildings
 const Vis7Layer = preload("res://presentation/view/vis7_layer.gd")  # G7 VIS7: topple, APC weapons/dome, threat states
 const SenseLayer = preload("res://presentation/view/sense_layer.gd")  # G7 SENSE7: view cones + heard contacts
 const World7Layer = preload("res://presentation/view/world7_layer.gd")  # G7 LPMAP7: creep-warped world, sky, traces
@@ -83,6 +84,7 @@ var creep_layer: Node2D  # G7 CREEP7
 var world7_layer: Node2D  # G7 LPMAP7
 var sense_layer: Node2D  # G7 SENSE7
 var vis7_layer: Node2D  # G7 VIS7
+var baseprops_layer: Node2D  # G7 BASE7
 var entity_layer: Node2D
 var fog_layer: Node2D
 var fx_layer: Node2D
@@ -216,6 +218,9 @@ func _init_view() -> void:
 	creep_layer = CreepLayer.new()  # G7 CREEP7 CR: right after the terrain, same z (drawn after it)
 	creep_layer.z_index = 0
 	add_child(creep_layer)
+	baseprops_layer = BasePropsLayer.new()  # G7 BASE7 CR 1798: right after the creep layer, same z
+	baseprops_layer.z_index = 0
+	add_child(baseprops_layer)
 	ring_layer = OverlayLayer.new()
 	ring_layer.mode = "under"
 	ring_layer.z_index = 1
@@ -268,6 +273,7 @@ func _init_view() -> void:
 	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer, g2_ground, g2_over]:
 		layer.setup(self)
 	world7_layer.setup(self)  # G7 LPMAP7
+	baseprops_layer.setup(self)  # G7 BASE7
 	camera.setup(self)
 
 	# start centred on the player's HQ (or spawn)
@@ -491,6 +497,7 @@ func _process(delta: float) -> void:
 	terrain_layer.tick()
 	world7_layer.refresh(snap)  # G7 LPMAP7: hidden and free with no creep and no map.lp
 	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
+	baseprops_layer.refresh(snap)  # G7 BASE7 CR 1798
 	ViewUtil.prof_add("p_terrain", tp)
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
