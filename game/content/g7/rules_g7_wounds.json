@@ -4,14 +4,18 @@
     "g7_wounds": {
       "ver": 1,
       "enabled": true,
-      "_note_zones": "w = base weight per zone (arm/leg weights are per limb). dmg = damage multiplier. bleed = hp per second added per wound (x clamp(dmg / 25, 0.5, 2)). ooa_s = out-of-action seconds (no fire). kill = head only: chance a head hit kills outright when one head hit (dmg x head mult) takes >= kill_full of max hp, scaled down linearly below that (REGRESS7-4 ORCH ruling, PROVISIONAL); not killed: unconscious with chance clamp(sev / unc_full), else a short knock-out of stun_s seconds (light hits, very tough targets).",
+      "_note_zones": "w = base weight per zone (arm/leg weights are per limb). dmg = damage multiplier. bleed = hp per second added per wound (x clamp(dmg / 25, 0.5, 2)). ooa_s = out-of-action seconds (no fire). kill = head only: chance a head hit kills outright when one head hit (dmg x head mult) takes >= kill_full of max hp, scaled down linearly below that (REGRESS7-4 ORCH ruling, PROVISIONAL); not killed: unconscious with chance clamp(sev / unc_full), else a short knock-out of stun_s seconds (light hits, very tough targets). graze_kill / graze_unc (REGRESS7-5, ORCH option c, PROVISIONAL): multipliers on those two chances for a graze (a hit below clot.light of max hp: drone guns, a carbine on a rifleman).",
       "zones": {
-        "head": {"w": 0.08, "dmg": 2.5, "bleed": 1.0, "ooa_s": 0, "kill": 0.6, "kill_full": 0.225, "unc_full": 0.25, "stun_s": 3},
+        "head": {"w": 0.08, "dmg": 2.5, "bleed": 1.0, "ooa_s": 0, "kill": 0.6, "kill_full": 0.225, "unc_full": 0.25, "stun_s": 3, "graze_kill": 0.5, "graze_unc": 0.75},
         "torso": {"w": 0.42, "dmg": 1.0, "bleed": 1.2, "ooa_s": 4, "ko": true},
         "arm": {"w": 0.1, "dmg": 0.5, "bleed": 0.35, "ooa_s": 1, "acc": 0.75, "reload": 1.3},
         "leg": {"w": 0.15, "dmg": 0.6, "bleed": 0.5, "ooa_s": 2, "move": 0.6}
       },
       "_note_mods": "posture.prone (pinned, cowering, crawling) and cover levels (Morale.cover_level 1 light / 2 heavy) multiply zone weights: cover hides lower zones. facing = Damage.hit_side of the shooter.",
+      "_note_ko": "REGRESS7-5 (ORCH ruling seq 2400, PROVISIONAL): a torso hit knocks out (out of action ooa_s, path stopped) with chance clamp(sev / full) where sev = torso damage / max hp, for ooa_s x clamp(sev / full, min_frac, 1). From any out-of-action until immune_s after it ends, only a hit with sev >= heavy puts the soldier out of action again (chip fire cannot pin a squad down forever).",
+      "ko": {"full": 0.09, "min_frac": 0.25, "immune_s": 8, "heavy": 0.2},
+      "_note_clot": "REGRESS7-5 (ORCH ruling on need 2471 option b, PROVISIONAL): a hit doing less than light x max hp (before the zone multiplier) is a graze: its bleeding stops by itself after s seconds even without care. Real wounds keep bleeding until treated.",
+      "clot": {"light": 0.09, "s": 15},
       "posture": {"prone": {"head": 1.6, "torso": 0.8, "arm": 1.0, "leg": 0.3}},
       "cover": {"1": {"leg": 0.25, "torso": 0.75}, "2": {"leg": 0.1, "torso": 0.5, "arm": 0.7}},
       "facing": {"side": {"arm": 1.6}, "rear": {"torso": 1.25, "head": 0.8}},

@@ -29,6 +29,8 @@ func _world() -> SimWorld:
 		f.credits = BIG
 		f.stock.salvage = BIG
 		f.stock.ore = BIG
+	for e in w.units_of(1):   # REGRESS7-5 setup (see _face_away): side 1's start units face east as before too
+		_face_away(w, int(e.id))
 	return w
 
 
@@ -37,7 +39,17 @@ func _squad(w: SimWorld, fid: int, n: int, p: Vector2, role: String = "infantry"
 	var out := []
 	for i in n:
 		out.append(w.spawn_unit(d, fid, p + Vector2(float(i % 3), float(i / 3))))
+		if fid == 1:
+			_face_away(w, int(out[-1]))
 	return out
+
+
+## G7 REGRESS7-5 (ORCH ruling on need seq 2471, setup only, oracles unchanged): spawn_unit now faces a new unit
+## toward its owner's front, i.e. side 1 now watches side 0 (G7_REFERENCE section 2 "Realistic senses": view cones,
+## spot passes every 16 ticks). These scenarios were built on the side-1 groups not watching that way (the old
+## east-facing default), so they face east again after spawning.
+func _face_away(w: SimWorld, id: int) -> void:
+	w.entities[id].facing = 0.0
 
 
 func _run(w: SimWorld, n: int, evs: Array) -> void:
@@ -160,6 +172,7 @@ func test_infil_exfil_returns_by_a_different_route() -> void:
 	if not check(art != "", "an artillery def exists for side 1"):
 		return
 	var tgt := w.spawn_unit(art, 1, Vector2(54.5, 12.5))
+	_face_away(w, tgt)   # REGRESS7-5 setup (see _face_away)
 	_squad(w, 1, 2, Vector2(55.5, 14.5))
 	var evs := _auto(w, 0, {"units": ids}, "specops")
 	var started := _run_until(w, 2400, evs, func(): return _op(w) == "infil")

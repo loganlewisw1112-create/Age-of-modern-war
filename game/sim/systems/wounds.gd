@@ -17,7 +17,8 @@ extends RefCounted
 ##   it dies there) = the G5 Medical Wounded state (pinned, no fire, untargetable by direct fire, bleed-out
 ##   clock in sys_state.medical.wounded, picked up by evac carriers, healed at hospitals). hp <= 0 = bled out.
 ## Care chain (second half of this file): buddy aid, medic (stabilise), drag, evacuation, return with scars.
-## State (saved, hashed): entity fields wz {zone: hits}, wb (bleed hp/s), wooa (tick out of action ends),
+## State (saved, hashed): entity fields wz {zone: hits}, wb (bleed hp/s), wooa (tick out of action ends), wimm (tick
+##   the knock-out immunity window ends, REGRESS7-5), wcl (light wounds that clot: [[clot tick, bleed]], REGRESS7-5),
 ##   wunc (unconscious), wdn (tick went down), wstab (stabilised), wtr (treater id), wdrg (dragging id),
 ##   wdby (dragged by id), wkill (head kill), scars [zones], wpunct (suit punctured), panic (morale.gd).
 ##   w.sys_state.wounds = {bleed: {id: 1}, care: {treater id: {c, k, t, to?}}, ver, vw: {id: 1} (display watch)}.
@@ -177,12 +178,15 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 	var b := float(zc.get("bleed", 0.0)) * clampf(dmg / 25.0, 0.5, 2.0)
 	if b > 0.0:
 		e.erase("wstab")   # a new wound bleeds again
+		if float(e.get("wb", 0.0)) <= 0.0:
+			e.erase("wcl")
 		e.wb = snappedf(float(e.get("wb", 0.0)) + b, Q)
 		_state(w).bleed[int(e.id)] = 1
+		_clot_mark(w, e, dmg, b)
 	var res := "hit"
 	var hr := 0   # head outcome: 0 none, 1 kill, 2 unconscious, 3 short knock-out
 	if zone == "head":
-		hr = head_roll(w.rng.frac(), md, max_hp(e))
+		hr = head_roll(w.rng.frac(), md, max_hp(e), _graze(e, dmg))
 	if hr == 1:
 		e.wkill = true
 		e.hp = 0.0
@@ -193,12 +197,20 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 		if hr == 2 or float(e.hp) <= unc_hp(e):
 			res = "down"
 		var ooa := int(float(zc.get("ooa_s", 0.0)) * SimWorld.TICK_RATE)
+		var ko := bool(zc.get("ko", false))
+		if ko and ooa > 0:
+			var kr := torso_ko(w.rng.frac() if _ko_rolls(md, max_hp(e)) else 0.0, md, max_hp(e))
+			ooa = int(float(ooa) * kr)
+			ko = ooa > 0
 		if hr == 3:
 			ooa = maxi(ooa, int(float(zc.get("stun_s", 3.0)) * SimWorld.TICK_RATE))
+		if ooa > 0 and not _ko_ok(w, e, md):
+			ooa = 0   # recovering from a knock-out: light hits do not knock him out again (immunity window)
 		if ooa > 0:
 			e.wooa = maxi(int(e.get("wooa", 0)), w.tick + ooa)
+			e.wimm = int(e.wooa) + int(float(_kcfg().get("immune_s", 8.0)) * SimWorld.TICK_RATE)
 			_hold_fire(e, ooa)
-			if bool(zc.get("ko", false)) or hr == 3:
+			if ko or hr == 3:
 				_ko_hold(w, e)
 				Movement.stop_path(e)
 	HotState.touch(w, int(e.id))
@@ -218,16 +230,83 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 ## kept). An ordinary rifle hit on a rifleman (9 x 2.5 / 100 = 0.225) keeps the full kill chance; a light hit
 ## on a very tough target (a 100000-hp test unit) is a short knock-out. One draw r in [0, 1) (w.rng, caller).
 ## Returns 1 kill, 2 unconscious, 3 short knock-out. Pure (the distribution report calls it too).
-static func head_roll(r: float, md: float, mh: float) -> int:
+## REGRESS7-5 (ORCH ruling on need 2471 option c, PROVISIONAL): graze = a light-weapon hit (below clot.light of
+## max hp, see _graze): its kill and unconscious chances are scaled by head.graze_kill / head.graze_unc.
+static func head_roll(r: float, md: float, mh: float, graze: bool = false) -> int:
 	var hc := _zcfg("head")
 	var sev := md / maxf(mh, 1.0)
 	var pk := float(hc.get("kill", 0.6)) * clampf(sev / maxf(float(hc.get("kill_full", 0.225)), 1e-6), 0.0, 1.0)
+	if graze:
+		pk *= float(hc.get("graze_kill", 1.0))
 	if r < pk:
 		return 1
 	var pu := clampf(sev / maxf(float(hc.get("unc_full", 0.25)), 1e-6), 0.0, 1.0)
+	if graze:
+		pu *= float(hc.get("graze_unc", 1.0))
 	if r < pk + (1.0 - pk) * pu:
 		return 2
 	return 3
+
+
+## G7 (REGRESS7-5, ORCH ruling seq 2400, PROVISIONAL numbers in rules g7_wounds.ko): "Torso: bleeding and a short
+## knock-out" stays for real hits, but the knock-out scales with hit severity like head_roll. sev = torso damage
+## / max hp; knock-out chance = clamp(sev / ko.full, 0, 1) (an ordinary rifle hit on a rifleman, 9 / 100, is a
+## sure knock-out); its out-of-action time = ooa_s x clamp(sev / ko.full, ko.min_frac, 1). One draw r in [0, 1)
+## (w.rng, caller; only drawn when the chance is strictly between 0 and 1). Returns the out-of-action factor
+## (0 = no knock-out). Pure (the outcome table report calls it too).
+static func torso_ko(r: float, md: float, mh: float) -> float:
+	var k := _kcfg()
+	var q := clampf(md / maxf(mh, 1.0) / maxf(float(k.get("full", 0.09)), 1e-6), 0.0, 1.0)
+	if q <= 0.0 or r >= q:
+		return 0.0
+	return clampf(q, float(k.get("min_frac", 0.25)), 1.0)
+
+
+static func _ko_rolls(md: float, mh: float) -> bool:
+	var q := md / maxf(mh, 1.0) / maxf(float(_kcfg().get("full", 0.09)), 1e-6)
+	return q > 0.0 and q < 1.0
+
+
+## G7 (REGRESS7-5, ORCH ruling on need seq 2471 option b, PROVISIONAL numbers in rules g7_wounds.clot): light
+## wounds clot. A hit whose damage is below clot.light of max hp (a graze: drone guns, a carbine on a rifleman)
+## stops bleeding by itself clot.s seconds later even without care; G7_REFERENCE section 2 "untreated bleeding leads
+## to unconsciousness, then death" stays for real wounds. Saved + hashed entity field wcl [[clot tick, bleed]].
+static func _graze(e: Dictionary, dmg: float) -> bool:
+	return dmg / maxf(max_hp(e), 1.0) < float((cfg().get("clot", {}) as Dictionary).get("light", 0.0))
+
+
+static func _clot_mark(w: SimWorld, e: Dictionary, dmg: float, b: float) -> void:
+	var c: Dictionary = cfg().get("clot", {})
+	if c.is_empty() or dmg / maxf(max_hp(e), 1.0) >= float(c.get("light", 0.0)):
+		return
+	var a: Array = e.get("wcl", [])
+	a.append([w.tick + int(float(c.get("s", 15.0)) * SimWorld.TICK_RATE), snappedf(b, Q)])
+	e.wcl = a
+
+
+## Clotted light wounds stop adding to the bleed rate (entries in hit order, so expired ones are at the front).
+static func _clot_pass(w: SimWorld, e: Dictionary) -> void:
+	var a: Array = e.wcl
+	var wb := float(e.get("wb", 0.0))
+	while not a.is_empty() and int(a[0][0]) <= w.tick:
+		wb = maxf(0.0, snappedf(wb - float(a[0][1]), Q))
+		a.pop_front()
+	e.wb = wb
+	if a.is_empty():
+		e.erase("wcl")
+
+
+static func _kcfg() -> Dictionary:
+	return cfg().get("ko", {})
+
+
+## Immunity window (same ruling): from a knock-out / out-of-action until ko.immune_s after it ends (e.wimm, tick),
+## only a heavy hit (sev >= ko.heavy) knocks the soldier out again, so chip fire (a lone recon's carbine, drone
+## guns) cannot keep a squad permanently out of action. Saved + hashed entity field wimm.
+static func _ko_ok(w: SimWorld, e: Dictionary, md: float) -> bool:
+	if w.tick >= int(e.get("wimm", -1)):
+		return true
+	return md / maxf(max_hp(e), 1.0) >= float(_kcfg().get("heavy", 0.2))
 
 
 ## G7 (REGRESS7): a torso knock-out is SHORT (G7 master scope section 2: "Torso: bleeding and a short knock-out").
@@ -595,6 +674,8 @@ static func _bleed_pass(w: SimWorld, st: Dictionary) -> void:
 		if e == null:
 			bl.erase(id)
 			continue
+		if e.has("wcl"):
+			_clot_pass(w, e)
 		var wb := float(e.get("wb", 0.0))
 		if wb <= 0.0 or bool(e.get("wstab", false)):
 			bl.erase(id)

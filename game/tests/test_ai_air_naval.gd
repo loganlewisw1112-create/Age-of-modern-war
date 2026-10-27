@@ -227,7 +227,10 @@ func test_ai_jets_strike_clusters() -> void:
 		w.spawn_unit(U.role_unit(w, 0, "infantry"), 0, Vector2(c) + Vector2(0.5, 0.5))
 	var rdef := U.role_unit(w, 1, "recon")
 	var eye := w.spawn_unit(rdef, 1, p - U.front_dir(w, 1) * (float(Content.unit(rdef).get("sight", 10)) - 1.5))
-	for i in 12:
+	# G7 REGRESS7-5 (ORCH ruling on need seq 2433, setup wait only): G7_REFERENCE section 2 "Realistic senses": a
+	# soldier spots on Senses7 passes every 16 ticks (a 0.8 s reaction) after the 4-tick fog refresh, so the spotter
+	# needs ~1 s, not the G5 fog-only 12 ticks, before the side sees the cluster.
+	for i in 24:
 		w.step()
 	check(w.entities.has(eye), "the spotter is alive")
 	var st: Dictionary = w.ai_state[1]

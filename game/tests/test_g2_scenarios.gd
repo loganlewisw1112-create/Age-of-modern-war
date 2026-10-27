@@ -93,6 +93,7 @@ func test_s1_mbt_mobility_kill_still_fires_then_repaired_and_drives() -> void:
 	_arena(w)
 	var mbt_id := _spawn(w, "mbt", 0, Vector2i(34, 10))
 	var mbt: Dictionary = w.entities[mbt_id]
+	mbt.facing = 0.0   # setup (ORCH ruling on need 2471): spawn_unit now faces the owner's front (need 2223); armour-facing scenario built on the old east-facing default
 	var at: Dictionary = w.entities[_spawn(w, "at_gunner", 1, Vector2i(28, 10))]
 	# inflate hp only so the volley cannot kill the tank before a component roll disables mobility
 	mbt.max_hp = 1000000.0
@@ -118,6 +119,7 @@ func test_s1_mbt_mobility_kill_still_fires_then_repaired_and_drives() -> void:
 	w.destroy(int(at.id), "test_cleanup", 0)
 	# the immobile tank still kills an IFV in range (its weapon is disabled so it cannot fight back)
 	var ifv_id := _spawn(w, "ifv", 1, Vector2i(40, 10))
+	w.entities[ifv_id].facing = 0.0   # setup: same as the MBT above (old east-facing default, the MBT hits its rear)
 	w.entities[ifv_id].comp.weapon = 0.0
 	var p0: Vector2 = mbt.pos
 	var shots := 0

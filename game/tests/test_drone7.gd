@@ -62,6 +62,7 @@ func _first(evs: Array, type: String):
 ## Side 0's drone team at arena (5.5, 15.5) launches `kind`; returns [team id, drone id].
 func _launch(w: SimWorld, o: Vector2i, kind: String) -> Array:
 	var team := _unit(w, "a_drone_team", 0, Vector2(o) + Vector2(5.5, 15.5))
+	w.entities[team].facing = 0.0   # setup (ORCH ruling on need 2471): spawn_unit now faces the owner's front (need 2223); launches (drone heading = team facing) were built on the old east-facing default
 	w.run_ticks(2)
 	var evs := do_cmd(w, 0, {"type": "drone_take", "unit_id": team, "launch": kind})
 	check_eq(rejected_reason(evs), "", "drone_take launch %s" % kind)

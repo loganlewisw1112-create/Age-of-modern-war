@@ -643,7 +643,7 @@ func spawn_unit(def_id: String, owner: int, pos: Vector2) -> int:
 		"pos": pos, "hp": float(d.hp), "max_hp": float(d.hp),
 		"order": {"type": "idle"},  # see CONTRACTS: idle|move|attack_move|attack|gather|build|hold
 		"path": [], "path_i": 0,
-		"target": -1, "cooldown": 0.0, "facing": 0.0,
+		"target": -1, "cooldown": 0.0, "facing": _spawn_facing(owner),
 		"carry": {"res": "", "amt": 0},
 		"squad": -1, "moving": false, "firing": 0,
 	}
@@ -665,6 +665,22 @@ func spawn_unit(def_id: String, owner: int, pos: Vector2) -> int:
 
 
 ## origin = top-left cell of the square footprint. complete=true for start packages.
+## G7 (REGRESS7-5, ORCH ruling on need seq 2223): a new unit faces its owner's front (from the owner's start
+## toward the map centre, as AiUtil.front_dir) instead of +x, so starting / scripted units watch the front
+## (Senses7 view cones). Neutral or start-less owners, or an empty map: 0 as before.
+func _spawn_facing(owner: int) -> float:
+	var f = factions.get(owner)
+	if typeof(f) != TYPE_DICTIONARY or not (f as Dictionary).has("spawn") or map.is_empty():
+		return 0.0
+	var sp = f.spawn
+	if typeof(sp) != TYPE_VECTOR2I and typeof(sp) != TYPE_VECTOR2:
+		return 0.0
+	var d := Vector2(float(map.get("w", 0)), float(map.get("h", 0))) * 0.5 - (Vector2(sp) + Vector2(0.5, 0.5))
+	if d.length() <= 0.01:
+		d = Vector2(1, 1)
+	return snappedf(d.angle(), 1.0 / 1024.0)   # the saved-float quantum (Movement.Q)
+
+
 func spawn_building(def_id: String, owner: int, origin: Vector2i, complete: bool) -> int:
 	var d := Content.building(def_id)
 	assert(not d.is_empty(), "unknown building def " + def_id)
