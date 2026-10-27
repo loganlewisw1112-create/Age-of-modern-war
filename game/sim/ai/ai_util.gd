@@ -226,6 +226,8 @@ static func scan_events(w: SimWorld, fid: int, st: Dictionary) -> void:
 		elif ty == "EntityDestroyed":
 			if int(ev.owner) == fid and String(ev.kind) != "resource":
 				st.losses = int(st.losses) + 1
+				if String(ev.kind) == "unit" and String(Content.unit(String(ev.get("def", ""))).get("armor", "")) == "infantry":
+					st["cas"] = int(st.get("cas", 0)) + 1   # G7: soldiers lost (ai_g5 casualty care)
 				if String(ev.cause) == "killed":
 					st.hit_tick = w.tick
 					st.hit_pos = Vector2(ev.pos)

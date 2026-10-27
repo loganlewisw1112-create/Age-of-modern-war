@@ -47,6 +47,12 @@ const TRUCK_BEHIND := 6.0
 const HOSP_FROM_TICK := 9000
 const HOSP_MIN_ARMY := 10
 const HOSP_HEADROOM := 80
+## G7 (REGRESS7-6, ORCH ruling on need 2735, G7 master scope section 2 "Casualty care, full chain"): with G7 wounds on,
+## a side without medical capability (Medical.has_medical) loses every soldier who goes down. Once such a side has
+## lost CARE_LOSSES soldiers (infantry, st.cas) it builds a field hospital at once (else a full hospital), ahead of the
+## G5 schedule, then fields its medic / ambulance roles early so the downed are evacuated and treated. PROVISIONAL.
+const CARE_LOSSES := 3
+const CARE_ROLES := ["medic", "ambulance"]
 
 
 static func new_g6() -> Dictionary:
@@ -131,6 +137,16 @@ static func _wounded(e: Dictionary) -> bool:
 	return bool(Medical.is_wounded(e))
 
 
+## G7: casualty care mode: wounds are on (rules g7_wounds.enabled) and this side has taken losses.
+static func care_needed(w: SimWorld, fid: int, st: Dictionary) -> bool:
+	if int(st.get("cas", 0)) < CARE_LOSSES:
+		return false
+	if not bool(SimWorld.Wounds.cfg().get("enabled", false)):
+		return false
+	var fd := U.fac(w, fid)
+	return Medical.HUMAN.has(fd)
+
+
 # ---------------------------------------------------------------- production
 ## AI6-2 (ORCH direction, river s1 a2 salvage exhaustion): roles that spend salvage without
 ## fighting. No salvage goes to them once the map's salvage is scarce, and on small maps their
@@ -172,9 +188,17 @@ static func support_ok(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, e
 ## affordability / pop / stage-bank rules as ai_g4b (U.submit checks the bank).
 static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
 	# every third think (staggered big armies run the economy on even thinks: 4, 10, 16 ...)
-	if String(st.objective) == "defend" or int(st.think_count) % 3 != 1:
+	if int(st.think_count) % 3 != 1 or int(w.factions[fid].credits) < PROD_MIN_CREDITS:
 		return
-	if w.tick < PROD_FROM_TICK or (int(st.get("launches", 0)) < 1 and w.tick < PROD_NO_LAUNCH_TICK) or int(w.factions[fid].credits) < PROD_MIN_CREDITS:
+	# G7: in casualty care mode the medic / ambulance roles are fielded ahead of the G5 schedule (and while defending)
+	var care_only := String(st.objective) == "defend" or w.tick < PROD_FROM_TICK 			or (int(st.get("launches", 0)) < 1 and w.tick < PROD_NO_LAUNCH_TICK)
+	var care := care_needed(w, fid, st)
+	if care and care_only:   # early care units only after the field hospital is placed (it alone saves the downed)
+		var placed := false
+		for h in hospital_defs(w, fid):
+			placed = placed or int(ctx.have.get(h, 0)) > 0
+		care = placed
+	if care_only and not care:
 		return
 	var ap: int = ctx.army_pop
 	var have := {}
@@ -188,7 +212,10 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 	var air_seen := int(st.get("g4", {}).get("enemy_air_seen", 0)) > 0
 	var f: Dictionary = w.factions[fid]
 	for row in PLAN_ROLES:
-		if ap < int(row[2]):
+		var care_role := CARE_ROLES.has(String(row[0]))
+		if care_only and not care_role:
+			continue
+		if ap < int(row[2]) and not (care and care_role):   # casualties, not army size, call for medics
 			continue
 		var item := U.role(w, fid, String(row[0]))
 		if item == "":
@@ -221,7 +248,12 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 			continue
 		if w.can_afford(fid, p.cost) != "":
 			continue
-		if SUPPORT_ROLES.has(String(row[0])) and not support_ok(w, fid, st, ctx, int(p.cost.get("salvage", 0))):
+		# G7 casualty care: the first medic / ambulance (the role's base count) is not held to the support salvage
+		# share (without it every downed soldier bleeds out); scarce salvage still stops it
+		var care_first := care and care_role and int(have.get(unit_def, 0)) < int(row[1])
+		if care_first and U.salvage_scarce(w, fid, st):
+			continue
+		if not care_first and SUPPORT_ROLES.has(String(row[0])) and not support_ok(w, fid, st, ctx, int(p.cost.get("salvage", 0))):
 			continue
 		if U.submit(w, fid, st, {"type": "queue_unit", "building_id": int(fac.id), "item": item}, "g6:%s" % item):
 			var q: Dictionary = g.queued
@@ -233,23 +265,48 @@ static func manage_production(w: SimWorld, fid: int, st: Dictionary, ctx: Dictio
 ## Builds one hospital (else a field hospital) at home once there is a real army. Never ahead of
 ## the base economy: only when no other site is open and the credits cover it with headroom.
 static func manage_hospital(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary) -> void:
-	if w.tick < HOSP_FROM_TICK or int(ctx.army_pop) < HOSP_MIN_ARMY or int(ctx.unfinished_total) > 0:
-		return
-	if int(st.think_count) % 4 != 0 or String(st.objective) == "defend":
+	if int(st.think_count) % 4 != 0:
 		return
 	var defs := hospital_defs(w, fid)
+	var have_any := false
+	var have_full := false
 	for h in defs:
 		if int(ctx.have.get(h, 0)) > 0:
+			have_any = true
+			have_full = have_full or bool(Content.building(h).get("hospital", false))
+	# G7 casualty care: no medical building yet and the side is losing soldiers -> a field hospital now (cheap,
+	# quick), even while defending or with other sites open; the full hospital the field one forwards serious
+	# casualties to then follows on the G5 schedule below
+	var cn := care_needed(w, fid, st)
+	var care := not have_any and cn
+	if not care:
+		if have_full or (have_any and not cn) or w.tick < HOSP_FROM_TICK or int(ctx.army_pop) < HOSP_MIN_ARMY 				or int(ctx.unfinished_total) > 0:
 			return
+		if String(st.objective) == "defend":
+			return
+	var order := defs
+	if have_any:   # care mode with a field hospital up: only a full hospital is still wanted
+		order = []
+		for h in defs:
+			if bool(Content.building(h).get("hospital", false)):
+				order.append(h)
+	elif care:
+		order = []
+		for h in defs:
+			if bool(Content.building(h).get("field_hospital", false)):
+				order.append(h)
+		for h in defs:
+			if not order.has(h):
+				order.append(h)
 	var want := ""
-	for h in defs:
+	for h in order:
 		if U.available(w, fid, h):
 			want = h
 			break
 	if want == "":
 		return
 	var cost: Dictionary = Content.building(want).get("cost", {})
-	if w.can_afford(fid, cost) != "" or int(w.factions[fid].credits) < int(cost.get("credits", 0)) + HOSP_HEADROOM:
+	if w.can_afford(fid, cost) != "" or int(w.factions[fid].credits) < int(cost.get("credits", 0)) + (0 if care else HOSP_HEADROOM):
 		return
 	if int(cost.get("salvage", 0)) > 0 and U.salvage_scarce(w, fid, st):
 		return  # AI6-2: no hospital salvage once the map's salvage is scarce

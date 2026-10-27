@@ -86,6 +86,22 @@ func test_command_vehicle_and_commander_aura() -> void:
 
 
 func test_propaganda_buffs_friends_drains_enemies() -> void:
+	# G7 (REGRESS7-6, ORCH ruling on need 2780): G7 master scope section 2 "Torso: bleeding and a short knock-out" and
+	# "Head: usually killed or knocked unconscious" - with G7 wounds the measured enemy rifleman (in a firefight with the
+	# militia) is shot dead at tick 7, before the aura measurement, and the test kept reading his stale dict. This test
+	# is about auras, not wounds: plain hp through the existing rule switch g7_wounds.enabled (same pattern as
+	# test_supply / test_terrain_classes / test_squad61::test_low_hp_member_falls_back), restored below. Checks and
+	# placements unchanged.
+	var wc: Dictionary = SimWorld.Wounds.cfg()
+	var was_on := bool(wc.get("enabled", false))
+	wc["enabled"] = false
+	SimWorld.Wounds._app.clear()
+	_propaganda_buffs_friends_drains_enemies()
+	wc["enabled"] = was_on
+	SimWorld.Wounds._app.clear()
+
+
+func _propaganda_buffs_friends_drains_enemies() -> void:
 	var s := _setup()
 	var w: SimWorld = s[0]
 	var o: Vector2i = s[1]

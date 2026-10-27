@@ -40,6 +40,7 @@ const RULES := {
 	"flank_max": 14.0, "infil_deg": 70.0, "hit_ticks": 400, "arrive": 3.5, "recon_ticks": 120, "fix_ticks": 1400,
 	"air_radius": 10.0, "air_ticks": 300, "screen_ticks": 1200, "defend_quiet": 300, "trail_max": 12,
 	"repeat_penalty": 0.25, "danger_close": 7.0,
+	"form_r": 8.0, "form_ticks": 1600,   # G7 (REGRESS7-6): an infil / supply raid forms up first (PROVISIONAL)
 	"style": {
 		"defensive": {"defend": 1.4, "screen": 1.3, "counter": 1.1, "refit": 1.1},
 		"aggressive": {"strike": 1.3, "attack": 1.1, "counter": 1.3, "recon_force": 1.1},
@@ -601,9 +602,7 @@ static func start(w: SimWorld, fid: int, s: Dictionary, cand: Dictionary, x: Dic
 			op.side = pick_side(w, x.bel, cen, tgt, float(G("flank_deg")), d)
 			op.wp_in = off_axis(w, cen, tgt, float(G("flank_deg")), int(op.side), d)
 		"infil", "raid_supply":
-			op.side = pick_side(w, x.bel, cen, tgt, float(G("infil_deg")), d)
-			op.wp_in = off_axis(w, cen, tgt, float(G("infil_deg")), int(op.side), d)
-			op.wp_out = off_axis(w, cen, tgt, float(G("infil_deg")), -int(op.side), d)
+			_infil_route(w, x.bel, op, cen)
 	g.op = op
 	g.ops[t] = int((g.ops as Dictionary).get(t, 0)) + 1
 	var spec: Dictionary = s.spec
@@ -611,7 +610,29 @@ static func start(w: SimWorld, fid: int, s: Dictionary, cand: Dictionary, x: Dic
 	var force := ("%d coys" % nco) if nco >= 2 else ("1 coy" if nco == 1 else "%d units" % (x.ids as Array).size())
 	var first := {"strike": "move", "attack": "scouting", "infil": "in", "raid_supply": "in", "defend": "hold",
 		"counter": "move", "recon_force": "probe", "screen": "hold", "refit": "fall_back"}
-	phase(w, fid, s, String(first.get(t, "move")), "%s, %s (score %.2f)" % [String(cand.why), force, float(cand.score)])
+	var ph := String(first.get(t, "move"))
+	if (t == "infil" or t == "raid_supply") and spread(w, x.ids, cen) > float(G("form_r")):
+		ph = "form"   # G7: a scattered force forms up at the rally point before it goes in (see _ex_infil)
+	phase(w, fid, s, ph, "%s, %s (score %.2f)" % [String(cand.why), force, float(cand.score)])
+
+
+## G7 (REGRESS7-6): infil / raid route from centroid cen: flank side, wp_in, wp_out (exfil by the other flank).
+static func _infil_route(w: SimWorld, bel: Array, op: Dictionary, cen: Vector2) -> void:
+	var tgt: Vector2 = op.tgt
+	var d := clampf(cen.distance_to(tgt) * 0.6, float(G("flank_min")), float(G("flank_max")))
+	op.side = pick_side(w, bel, cen, tgt, float(G("infil_deg")), d)
+	op.wp_in = off_axis(w, cen, tgt, float(G("infil_deg")), int(op.side), d)
+	op.wp_out = off_axis(w, cen, tgt, float(G("infil_deg")), -int(op.side), d)
+
+
+## Largest distance of a live unit of ids from p (0 when none).
+static func spread(w: SimWorld, ids: Array, p: Vector2) -> float:
+	var m := 0.0
+	for id in ids:
+		var e = w.entities.get(int(id))  # AI-FAIR: own force units only (spread)
+		if e != null:
+			m = maxf(m, Vector2(e.pos).distance_to(p))
+	return m
 
 
 # ================================================================ op execution
@@ -684,6 +705,19 @@ static func _ex_infil(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> vo
 	var cen: Vector2 = x.cen
 	var arr := float(G("arrive")) * 1.5
 	match String(op.phase):
+		"form":
+			# G7 (REGRESS7-6, ORCH ruling on need 2881): a spread force (e.g. one probe survivor at the enemy base,
+			# the rest at home) gathers at the rally point first; success no longer hinges on a lone man going in.
+			# The route is planned from where it formed; not formed within form_ticks -> the op is called off.
+			var r: Vector2 = op.rally
+			order(w, fid, s, x.badge, {"type": "move", "unit_ids": x.ids, "target": r})
+			if spread(w, x.ids, cen) <= float(G("form_r")):
+				op.from = cen
+				op.trail_in = [cen]
+				_infil_route(w, x.bel, op, cen)
+				phase(w, fid, s, "in", "formed up at (%d, %d), going in" % [int(cen.x), int(cen.y)])
+			elif w.tick - int(op.pt) > int(G("form_ticks")):
+				finish(w, fid, s, false, "could not form up for the %s" % OP_LABEL[String(op.type)])
 		"in":
 			_trail(op, "trail_in", cen)
 			order(w, fid, s, x.badge, {"type": "move", "unit_ids": x.ids, "target": Vector2(op.wp_in)})
@@ -777,7 +811,7 @@ static func _ex_recon(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> vo
 	var rest := ids.slice(n)
 	order(w, fid, s, x.badge, {"type": "attack_move", "unit_ids": probe, "target": tgt})
 	if not rest.is_empty():
-		order(w, fid, s, x.badge, {"type": "move", "unit_ids": rest, "target": Vector2(op.from)})
+		order(w, fid, s, x.badge, {"type": "move", "unit_ids": _away(w, rest, Vector2(op.from)), "target": Vector2(op.from)})
 	var pc := centroid_of(w, probe, Vector2(op.from))
 	var contact = nearest_bel(x.bel, pc, 12.0)
 	if contact != null and w.tick - int(op.t0) > 40:
@@ -787,6 +821,18 @@ static func _ex_recon(w: SimWorld, fid: int, s: Dictionary, x: Dictionary) -> vo
 		finish(w, fid, s, true, "area (%d, %d) clear" % [int(tgt.x), int(tgt.y)])
 	elif w.tick - int(op.t0) > int(G("op_timeout")):
 		finish(w, fid, s, false, "recon made no contact")
+
+
+## G7 (REGRESS7-6): the ids of `ids` farther than G("arrive") from p (already there: no re-order). A recon's rest
+## waits where it is; re-sending its fall-back move to a unit a passing probe had shoved aside turned it back head-on
+## into that probe (test_gen61 deliberate attack: the two deadlocked for the rest of the run).
+static func _away(w: SimWorld, ids: Array, p: Vector2) -> Array:
+	var out := []
+	for id in ids:
+		var e = w.entities.get(int(id))  # AI-FAIR: own recon rest units only (_away)
+		if e != null and Vector2(e.pos).distance_to(p) > float(G("arrive")):
+			out.append(id)
+	return out
 
 
 ## Screen / delay: hold a line toward the stronger enemy; bound back when it closes in.
