@@ -1,7 +1,9 @@
 # Campaign and Living World vision (brainstorm record)
 
 > **STATUS (2026-10-26):** brainstorm output, built from the owner's answers to 103 one-at-a-time questions
-> (62 on the campaign and Living World, 41 on space). This is a **vision record, not approved build scope**: nothing here
+> (62 on the campaign and Living World, 41 on space). **Updated 2026-10-27:** 18 more questions designed the Scepter,
+> and 22 closing questions settled every open decision. The one remaining item is a to-do: the space ship rosters.
+> This is a **vision record, not approved build scope**: nothing here
 > is planned into a G-slice, contracted or implemented. Where it conflicts with `G7_REFERENCE.md` (the G7/G8 scope
 > authority), that file wins until the owner says otherwise. Working titles and names are placeholders.
 
@@ -129,22 +131,35 @@ A history book written from your campaign; a family tree with ancestor portraits
 turn-based or seamless-zoom maps for the campaign; branching chapters; seeded worlds; playing as a single person on
 foot; finished worlds becoming the past of new ones; the campaign going to space.
 
-## Open decisions (Part 1)
-1. **A Dynasty-mode loss vs a fixed world with no branching chapters.** If a war is lost, how much can a fixed chapter
-   change: altered starting conditions only, or a few variant chapter states?
-2. **Playing every battle at 8–10 hours a chapter** risks fatigue, so the number of battles on the regional map needs
-   a cap.
-3. **Story-only diplomacy vs the Living World's systemic rivals.** The Living World probably needs real diplomacy.
-4. **The founder's pre-war facility in a fixed world** could also be one of the key's fragment sites, tying the
-   prologue to the hardest ending.
-5. **No family tree,** but heirs, bloodlines and succession still need a minimal lineage view somewhere.
-6. **No person zoom** changes the master design doc ("inhabit a physical survivor"); record it as a decision.
-7. **Skirmish parity for Stages 1–6:** does a Machine faction exist at Stages 1–6, when it is dormant in the story?
-   Same for the Shadow Coalition before Chapter 9.
-8. **Gore with no slider:** the master doc still requires a reduced-flash mode for accessibility; keep that separate.
-9. **Building Chapter 1 first** means Stages 1–6 content for every faction before the later systems are proven: the
-   largest scope in the project.
-10. **The Machine war in Chapters 10–11** must feel different from Last Protocol, since that mode stays separate.
+## Decisions closed (Part 1, owner's answers 2026-10-27)
+1. **Dynasty-mode losses: altered start states.** Each chapter keeps its story beats, but you start it worse off: lost
+   territory, dead officers, a scarred homeland, stronger rivals. No variant chapter states.
+2. **Battle fatigue: a cap plus a variety rule.** Each chapter caps how many regional-map battles can trigger (about
+   6–10 in late chapters). Battle types must vary (sieges, convoys, squad ops, drone missions), so no two in a row are
+   alike. The "play every battle" rule stands.
+3. **Living World diplomacy: systemic but war-first.** Treaties, ceasefires, alliances, tribute and vassals, trade
+   pacts and betrayals, all driven by memory and grudges. No deep trade sim and no council votes. The campaign keeps
+   story-only diplomacy.
+4. **The founder's facility is revisited late.** You escape it in the prologue; an heir returns there around Chapters
+   9–11 to recover a key fragment. It's a returning-battlefield moment that bookends the founder's story.
+5. **Lineage: a succession panel.** It shows the current ruler, the living heirs in line (with traits, wounds and
+   mentors) and a short text list of past rulers. No tree, no portrait gallery.
+6. **Person zoom: reinterpreted, not deleted.** The master doc's "inhabit a physical survivor" is met by the squad
+   zoom level and by named characters (founder, heirs, officers), not by direct control of one person. Add a
+   clarifying note to the master doc; don't strike the line.
+7. **Skirmish parity: early forms for both.**
+   - In Stages 1–6 skirmish, the Machine is a creeping early-growth faction with primitive nanite units.
+   - The Shadow Coalition appears as raider and warlord bands.
+   - Skirmish is a sandbox and isn't bound by the story's timeline.
+8. **Accessibility: reduced flash and reduced motion.** A mode that tones down flash and camera shake from orbital
+   strikes, Scepter impacts and explosions. It is separate from gore and never tones gore down.
+9. **Build order: Chapter 1 first, as planned.** Chapters are built in order and systems are proven as they're
+   needed. The owner accepts that this is the largest scope in the project.
+10. **The Machine war (Chapters 10–11): total war on many fronts.** Last Protocol is one tight duel. The campaign war
+    is regional:
+    - the Machine also fights Human B and the Coalition;
+    - you choose which fronts to hold, and cities fall;
+    - linked operations decide the big battles.
 
 ---
 
@@ -166,6 +181,78 @@ they finally arrive.
   - **In Chapter 13:** a massive orbital strike, built to look spectacular. It erases the whole battlefield (both armies
     and the Machine) except a perfect circle around your heir's command post. Saved or marked? Nobody knows.
 - **After the strike the eye goes silent until someone boards it.** Whoever takes it gains orbital strikes.
+- **A dormant weapon sleeps in the station's main computer:** the Scepter (see the next section).
+
+## The Scepter: the dormant rod weapon (owner's note and 18 follow-up questions, 2026-10-27)
+- **What it is:** a kinetic bombardment array that drops tungsten rods from orbit. There's no warhead, only mass and
+  speed, which fits the design doc's "nothing magical" rule. It's a weapon for planetary domination, a tier above the
+  eye's ordinary orbital strikes.
+- **Names:** "the Scepter" in the station files, which is the founder's own name for it; "the Quiet Rain" among the
+  people who live under it, after the silent streaks before impact.
+- **Who built it:** the original founder, as part of the alien deal. **It is the viceroy's scepter:** the founder was to
+  rule Earth for the makers, and the rods were how a viceroy keeps a planet in line. That's why it can't hurt the makers
+  at all; their seed-ships shrug off kinetic rods. It was only ever meant for ruling humans.
+- **It has never fired.** The Chapter 13 strike came from the eye (woken remotely by the makers), not the Scepter.
+  Nobody living has seen the rods fall.
+
+### Unlocking it
+- **Bloodline key.** The computer answers only to the founder's bloodline. To anyone else holding the station it is a
+  locked, unexplained file.
+- **Rivals have two ways in:**
+  - a slow, risky technical crack;
+  - a captured or defected member of your bloodline, which is faster. This makes kidnapped heirs, defectors and
+    marriages part of the fight for the sky.
+- **The unlock moment is a full playable scene:**
+  - a boarding team pushes through the station to the core;
+  - the key is used;
+  - a cold system prompt narrates as the array unfolds outside the hull ("AUTHORITY RECOGNISED. KINETIC ARRAY
+    ONLINE."). There's no explanation and no warm founder message, only the machine.
+
+### Firing it
+- **Three salvo sizes:**
+  - **One rod:** precision, for a bunker, a command post or a ship on the pad.
+  - **A salvo:** city-scale. It erases a city or a base complex and leaves a permanent crater.
+  - **A domination barrage:** all rods at once, enough to break a whole nation.
+- **Two-view presentation:**
+  - targets are picked on the orbital zoom level;
+  - the camera drops to the ground for a streak through the sky, a flash, the shockwave, then silence and a crater;
+  - the sequence is unskippable the first time.
+- **Ammo:**
+  - It starts with a finite pre-war magazine; every rod fired is gone.
+  - Once the magazine is empty, the holder can only restock by building orbital foundries (moon or asteroid mining),
+    which ties the Scepter to the space tiers.
+
+### What holds it back
+- **World reaction, scaled by salvo size and mixed between fear and resistance:**
+  - a single rod draws diplomatic anger;
+  - a city salvo turns neutral powers hostile, while some powers submit out of fear (vassals, tribute, and rebellions
+    against both);
+  - a domination barrage pushes the rest of the world into a coalition against the holder.
+- **The station can be taken.** Holding the Scepter makes the station the world's top siege and boarding target.
+  Thieves still have to crack it or use a stolen heir before they can fire it.
+
+### The hidden cost (the player must not know until the makers arrive)
+- **Every firing does two hidden things:**
+  - **It signals the makers.** A log of each strike is sent toward them as proof that the viceroy is "keeping order".
+  - **It seeds the crater.** Each crater slowly grows what looks like ordinary Machine nanite creep, so players blame the
+    Machine. It is really seed ground, loyal to the makers.
+- **Nothing in the game hints at this** before the arrival. The player fires believing it is their birthright.
+- **Restraint matters, but only in hindsight:**
+  - fewer firings mean fewer beachheads and a weaker signal, so the makers land with less footing;
+  - but restraint only helps if the station also stays out of rival hands. Someone always reaches for the Scepter, and
+    if a rival fires it, the makers name that rival as their viceroy.
+
+### The reveal, in layers, when the makers arrive
+1. **The craters wake.** Every strike site erupts into seed ground loyal to the makers. Your own strikes become their
+   beachheads.
+2. **The envoy names the viceroy** in front of every human power, thanking whoever fired the most for preparing the
+   way.
+3. **Later, the rebel cult explains the whole truth:** what the Scepter was for and what the founder agreed to.
+
+### After the reveal
+- **Scuttle it:** a costly boarding operation that destroys it for good.
+- **Turn it:** with the cult's help, rewire it so it stops signalling. It still can't touch the makers, but it can
+  strike their seed beachheads on the ground.
 
 ## The road to orbit
 - **Space comes after Apex.** The 13 stages stay fixed; space is the open frontier beyond them, marked by milestones
@@ -228,21 +315,58 @@ they finally arrive.
 - **The arrival war is a true finale** with its own outcomes and cinematic. After it, the world carries on as an
   endless crisis.
 
-## Open decisions (Part 2)
-1. **The prologue.** The founder now is a copy made by an original in orbital cryo. Where was the copy made, and what
-   is it escaping from? Suggestion: the copy is dropped from the station that day and believes it escaped a lab on the
-   ground.
-2. **Who fired the Chapter 13 strike, and why spare the heir?** The eye is silent until boarded and the original is
-   asleep. Suggestion: before cryo, the original set the eye to protect the bloodline, which is more insurance.
-3. **The Restore ending now reads darker.** Freeing a Healer that is torn toward its makers, built as a down payment,
-   changes that "good" ending; reword it on purpose.
-4. **Scope.** Two full factions, an orbital zoom level, boarding operations and capital-ship fleet battles, on top of
-   a Living World that doesn't exist yet. Fleet battles are also new for the isometric pixel-art camera and renderer.
-5. **Names.** "Draconian" is a generic word already used widely in fiction; the conquerors and the cult need original
-   names.
-6. **Balancing the eye.** An owner who can strike from orbit needs limits (recharge, cost, what it reveals) so it
-   doesn't end the Living World by itself.
-7. **"True finale, but endless":** define the arrival war's outcomes and the world after each one.
+## Decisions closed (Part 2, owner's answers 2026-10-27)
+1. **The prologue: the copy is dropped from the station.** It is made aboard and dropped to the ground facility on the
+   day the war starts. Its implanted memory says it worked there all along, so the escape is real but the past is
+   false.
+2. **The Chapter 13 strike: the makers fired the eye remotely.** Their long-range signal woke the eye to protect the
+   bloodline of their future viceroy. That's why your heir's circle survived. Once the Scepter's purpose is known, this
+   reads as chilling.
+3. **Restore is secretly the worst ending.**
+   - It looks like the best ending and is framed that way.
+   - Underneath, it sets up the strongest maker arrival: a freed Healer pulled toward its makers.
+   - Only the Living World reveals the trap.
+4. **Scope: space ships as one expansion** after the Living World, not in phases.
+5. **Names: from their own language, with human nicknames on top.**
+   - The conquerors take a name in their own tongue, something like "the Vhessar"; soldiers call them "scales".
+   - The cult calls itself something like "the Unbound".
+   - All of these are placeholders; the final names come later.
+6. **The eye's limits:**
+   - a long recharge, so it's a rare, decisive card;
+   - the same world backlash as the Scepter, scaled to how hard you strike.
+7. **The arrival war has four outcomes, each leading into its own endless crisis:**
+   - **Repel:** the makers are driven off, Earth is scarred, and the seed beachheads remain as a blight to clear.
+   - **Kneel:** you or a rival rule as viceroy, and a human resistance becomes the new crisis.
+   - **Alliance with the cult:** the makers are broken and the cult settles on Earth; the crisis is an uneasy
+     coexistence.
+   - **Lost:** Earth falls, and humanity holds out in orbit and on the moon, rebuilding.
+8. **The Scepter, closed:**
+   - **Numbers:**
+     - about 12 rods in the pre-war magazine: enough for a few precision shots, two or three city salvos, or one
+       domination barrage;
+     - several in-game months to reload between salvos;
+     - foundries add rods slowly.
+   - **AI use is set by personality:**
+     - ruthless powers race to crack it and fire freely;
+     - cautious powers hold it as a threat;
+     - honourable powers may refuse to use it;
+     - a stolen heir is the AI's favourite route in.
+   - **Fair-play clues, all readable only in hindsight:**
+     - "Machine creep" spreads from craters in places the Machine never reached, and the real Machine avoids it;
+     - the Scepter's files use words like "viceroy" and "keep order for them", which read at first as odd translation
+       errors.
+   - **Each campaign ending changes the seed:**
+     - **Purge:** the poisoned ground slows it, so craters wake weaker.
+     - **Restore:** the Healer secretly speeds it, which fits "secretly the worst".
+     - **Merge:** your network hides it best, so nobody notices.
+     - **Fall:** it grows freely.
+   - **If the original wakes first, the original takes it.** The original's key outranks the bloodline's, so a woken
+     founder seizes the Scepter as a rival viceroy-in-waiting. Your dynasty then fights its own ancestor for the sky.
+
+## To do (not yet designed)
+- **Full ship rosters with upgrade paths, for every faction** that reaches space: Human A, Human B, the Machine, the
+  Shadow Coalition, the conquerors and the cult. Plan every hull class, from shuttles and spaceplanes to capital ships,
+  plus each faction's upgrade tree. Requested by the owner 2026-10-27; to be planned in its own session.
 
 ---
 
