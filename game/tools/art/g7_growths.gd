@@ -13,6 +13,7 @@ extends SceneTree
 ## Prints "G7_GROWTHS files=<n> kinds=<n>".
 
 const L = preload("res://tools/art/faction_m_lib.gd")
+const C = preload("res://tools/art/g7_cn_lib.gd")   # ART7B: 32x32 menu icons (C.icon)
 
 const KINDS := ["spire", "lattice", "tendril", "rib_arch", "pod", "antenna", "shard_fan", "coil", "vent", "node_tree"]
 const SIZES := [0.5, 0.75, 1.0]
@@ -40,15 +41,18 @@ func _initialize() -> void:
 	atlas.save_png(ProjectSettings.globalize_path(out + "growths.png"))
 	files.append("growths.png")
 	var blds := {}
+	var icons := {}
 	for spec in [["g7_growth_spire", "spire", 96, 176, 1.75], ["g7_growth_heart", "pod", 112, 128, 2.0]]:
 		var states := {}
-		for state in ["built", "damaged"]:
+		for state in ["built", "damaged", "build_0", "build_1", "build_2"]:
 			var img := Image.create(int(spec[2]), int(spec[3]), false, Image.FORMAT_RGBA8)
 			var gl := Image.create(int(spec[2]), int(spec[3]), false, Image.FORMAT_RGBA8)
 			img.fill(Color(0, 0, 0, 0))
 			gl.fill(Color(0, 0, 0, 0))
 			var foot := Vector2(float(spec[2]) / 2.0, float(spec[3]) - 10.0)
-			draw_kind(String(spec[1]), img, gl, foot, float(spec[4]), 91)
+			# ART7B: build_<n> = the growth rising out of the ground (35 / 60 / 85 % of full size)
+			var gk := {"build_0": 0.35, "build_1": 0.6, "build_2": 0.85}.get(state, 1.0) as float
+			draw_kind(String(spec[1]), img, gl, foot, float(spec[4]) * gk, 91)
 			if state == "damaged":
 				_damage(img, gl, 17)
 			_merge_glow(img, gl)
@@ -60,11 +64,19 @@ func _initialize() -> void:
 			files.append(f)
 			files.append(fm)
 			states[state] = {"file": f, "mask": fm}
+		var io := {"images": {}, "manifest": {}}
+		var bi := Image.load_from_file(ProjectSettings.globalize_path(out + String(states.built.file)))
+		C.icon(io, String(spec[0]), bi, bi.get_width(), bi.get_height(), 0)
+		var fi := "icons/%s.png" % spec[0]
+		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out + "icons"))
+		(io.images[fi] as Image).save_png(ProjectSettings.globalize_path(out + fi))
+		files.append(fi)
+		icons[spec[0]] = fi
 		blds[spec[0]] = {"fw": int(spec[2]), "fh": int(spec[3]), "pivot": [int(spec[2]) / 2, int(spec[3]) - 10],
 			"size": 1, "states": states, "g7": {"class": "building", "sample": "growth", "kind": spec[1]}}
 	var man := {"version": 1, "group": "g7_growths", "tile": [64, 32], "kinds": KINDS, "cell": [CELL_W, CELL_H],
 		"foot": [CELL_W / 2, CELL_H - 4], "sizes": SIZES, "atlas": "growths.png",
-		"atlas_layout": "row = kind, col = size * 2 + layer (0 base, 1 glow)", "buildings": blds, "files": files}
+		"atlas_layout": "row = kind, col = size * 2 + layer (0 base, 1 glow)", "buildings": blds, "icons": icons, "files": files}
 	var fh := FileAccess.open(ProjectSettings.globalize_path(out + "manifest.json"), FileAccess.WRITE)
 	fh.store_string(JSON.stringify(man, " ", true))
 	fh.close()

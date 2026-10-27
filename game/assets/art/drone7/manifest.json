@@ -1,25 +1,125 @@
 {
   "files": {
-    "units/g7_a_fpv.png": "1f75259318ea22a8d10f0f1e95d0f46a",
-    "units/g7_a_fpv_mask.png": "81e54a7aa81baf7c158cfd01c299c72f",
-    "units/g7_a_strike_drone.png": "5102076da06d628a4909fd8f7a04286d",
-    "units/g7_a_strike_drone_mask.png": "b02e023d7271ffd0123ad7bb4ff43dc6",
-    "units/g7_b_fpv.png": "5733cc941915ef354a06ee1275158559",
-    "units/g7_b_fpv_mask.png": "81e54a7aa81baf7c158cfd01c299c72f",
-    "units/g7_b_strike_drone.png": "19baafdbbcddb860449f3ecd57a3524f",
-    "units/g7_b_strike_drone_mask.png": "053125812226767e63d35fe01a969dd5",
+    "icons/cn_gun_drone.png": "0a68f26120460fb8060c0b8555d7bb8a",
+    "icons/g7_a_fpv.png": "95da7dd7ef774dc29a4845d03e338c9a",
+    "icons/g7_a_strike_drone.png": "003c25677bdf32747077197971601859",
+    "icons/g7_b_fpv.png": "98b883652b2b298febb404f121d4c32b",
+    "icons/g7_b_strike_drone.png": "3992e9cde32a384d450fd979e161c282",
+    "icons/g7_cn_interceptor_drone.png": "ed31126df66823b2566e4261974e85d0",
+    "units/cn_gun_drone.png": "a6407ea4cb2e5776c358e2720189b0e4",
+    "units/cn_gun_drone_mask.png": "1eb982c0c425a4aaed5ae683075cea87",
+    "units/g7_a_fpv.png": "4692566e76d11d19fe0489731c1943ad",
+    "units/g7_a_fpv_mask.png": "d6c3a75b9faf76bfcb7699d20389392b",
+    "units/g7_a_strike_drone.png": "79a9ef9ca9b604fb431f89758164b4fa",
+    "units/g7_a_strike_drone_mask.png": "ae1e2cfae2fd3f51f294d486ef3874c7",
+    "units/g7_b_fpv.png": "2f3dcddb054a138a309dd0bc544eabd1",
+    "units/g7_b_fpv_mask.png": "d6c3a75b9faf76bfcb7699d20389392b",
+    "units/g7_b_strike_drone.png": "7fa29b785dd3369a87b8044c6d698e93",
+    "units/g7_b_strike_drone_mask.png": "ae1e2cfae2fd3f51f294d486ef3874c7",
+    "units/g7_cn_interceptor_drone.png": "bc8fd0b26e14ddb4af30170fee2b4168",
+    "units/g7_cn_interceptor_drone_mask.png": "e3a213a81dbfc79b6c87c144faf58bd8",
     "units/g7_drone_shadow.png": "a92d9943d94b835855f7168d477ef4c1",
-    "wrecks/g7_a_fpv_wreck.png": "f4313299406dd6094913455932c04f44",
-    "wrecks/g7_a_strike_drone_wreck.png": "f4313299406dd6094913455932c04f44",
-    "wrecks/g7_b_fpv_wreck.png": "f4313299406dd6094913455932c04f44",
-    "wrecks/g7_b_strike_drone_wreck.png": "f4313299406dd6094913455932c04f44"
+    "units/g7_drone_shadow_s.png": "9b5d39684465e7cc303a5727daa7116a",
+    "wrecks/cn_gun_drone_wreck.png": "797d190bdd1679d06b8ce0a7f45d232e",
+    "wrecks/g7_a_fpv_wreck.png": "b2a396134548c49c101195a60acf8b1a",
+    "wrecks/g7_a_strike_drone_wreck.png": "b2a396134548c49c101195a60acf8b1a",
+    "wrecks/g7_b_fpv_wreck.png": "ee030b5c27de59020904b555a6249217",
+    "wrecks/g7_b_strike_drone_wreck.png": "ee030b5c27de59020904b555a6249217",
+    "wrecks/g7_cn_interceptor_drone_wreck.png": "797d190bdd1679d06b8ce0a7f45d232e"
+  },
+  "g7_detail_level": {
+    "air": {
+      "facings": 8,
+      "max_frames": 12
+    },
+    "budget_basis": "packed atlas bytes (cells cropped to opaque rect, rows 2/6/7 mirrored when allowed)",
+    "budget_bytes": {
+      "air": 3145728,
+      "air_large": 7340032,
+      "building": 4194304,
+      "infantry": 524288,
+      "threat": 1048576,
+      "threat_big": 3145728,
+      "turret": 3145728,
+      "vehicle": 2097152
+    },
+    "building": {
+      "rotations": 4,
+      "states": "g6_lib rot set"
+    },
+    "icon": "32x32 menu icon per unit (icons/<id>.png)",
+    "infantry": {
+      "cell": [
+        32,
+        32
+      ],
+      "facings": 8,
+      "figure_px": 18,
+      "frames": 24,
+      "pivot": [
+        16,
+        27
+      ]
+    },
+    "mask": "soldiers: armband on both upper arms + leader helmet band; vehicles/air: roof ID panel + side chevrons + hull stripe; Machine: plating trim",
+    "outline": "selective: lit side = material deep tone, shadow side = pix.OUTLINE",
+    "page_max": [
+      2560,
+      2048
+    ],
+    "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left; muted military palettes",
+    "scale": "ONE real-world scale: 4 m per 64x32 tile, 9.8 px per metre of height (1.8 m soldier = 18 px)",
+    "scale_table": {
+      "m_per_tile": 4.0,
+      "px_per_m_ground_axis": 8.94,
+      "px_per_m_height": 9.8,
+      "px_per_m_screen_x": 11.31,
+      "soldier_m": 1.8,
+      "soldier_px": 18
+    },
+    "shading": "per-pixel lit volumes; hull bevels, panel seams, rivets, grime band, chipped-paint wear",
+    "threat": {
+      "facings": 8,
+      "max_frames": 14
+    },
+    "turret": {
+      "aim_states": 8,
+      "rotations": 4
+    },
+    "vehicle": {
+      "facings": 8,
+      "max_frames": 12,
+      "wreck": "vehicle_wrecks sheet (1 frame, 8 facings)"
+    },
+    "version": "DL7-3"
   },
   "group": "drone7",
+  "icons": {
+    "cn_gun_drone": "icons/cn_gun_drone.png",
+    "g7_a_fpv": "icons/g7_a_fpv.png",
+    "g7_a_strike_drone": "icons/g7_a_strike_drone.png",
+    "g7_b_fpv": "icons/g7_b_fpv.png",
+    "g7_b_strike_drone": "icons/g7_b_strike_drone.png",
+    "g7_cn_interceptor_drone": "icons/g7_cn_interceptor_drone.png"
+  },
   "tile": [
     64,
     32
   ],
   "vehicle_wrecks": {
+    "cn_gun_drone": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/cn_gun_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
+    },
     "g7_a_fpv": {
       "facings": 8,
       "fh": 34,
@@ -71,9 +171,65 @@
         19,
         21
       ]
+    },
+    "g7_cn_interceptor_drone": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/g7_cn_interceptor_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
     }
   },
   "vehicles": {
+    "cn_gun_drone": {
+      "air": true,
+      "altitude": 16,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/cn_gun_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 46672,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "gun",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/cn_gun_drone_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/g7_drone_shadow.png",
+        "fw": 13,
+        "pivot": [
+          6,
+          3
+        ]
+      }
+    },
     "g7_a_fpv": {
       "air": true,
       "altitude": 12,
@@ -92,18 +248,28 @@
         "trail"
       ],
       "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 16588,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "fpv",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
       "mask": "units/g7_a_fpv_mask.png",
       "pivot": [
         19,
         21
       ],
       "shadow": {
-        "fh": 7,
-        "file": "units/g7_drone_shadow.png",
-        "fw": 13,
+        "fh": 5,
+        "file": "units/g7_drone_shadow_s.png",
+        "fw": 8,
         "pivot": [
-          6,
-          3
+          4,
+          2
         ]
       }
     },
@@ -125,6 +291,16 @@
         "trail"
       ],
       "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 54836,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "strike",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
       "mask": "units/g7_a_strike_drone_mask.png",
       "pivot": [
         19,
@@ -158,18 +334,28 @@
         "trail"
       ],
       "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 16620,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "fpv",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
       "mask": "units/g7_b_fpv_mask.png",
       "pivot": [
         19,
         21
       ],
       "shadow": {
-        "fh": 7,
-        "file": "units/g7_drone_shadow.png",
-        "fw": 13,
+        "fh": 5,
+        "file": "units/g7_drone_shadow_s.png",
+        "fw": 8,
         "pivot": [
-          6,
-          3
+          4,
+          2
         ]
       }
     },
@@ -191,6 +377,16 @@
         "trail"
       ],
       "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 54836,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "strike",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
       "mask": "units/g7_b_strike_drone_mask.png",
       "pivot": [
         19,
@@ -203,6 +399,49 @@
         "pivot": [
           6,
           3
+        ]
+      }
+    },
+    "g7_cn_interceptor_drone": {
+      "air": true,
+      "altitude": 12,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/g7_cn_interceptor_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728,
+        "bytes": 25556,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "interceptor",
+        "raw_bytes": 330752,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_cn_interceptor_drone_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 5,
+        "file": "units/g7_drone_shadow_s.png",
+        "fw": 8,
+        "pivot": [
+          4,
+          2
         ]
       }
     }

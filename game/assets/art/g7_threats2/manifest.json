@@ -8,14 +8,14 @@
     "icons/g7_m_walker_topple.png": "b000c29642493b2338555f39f8b270ac",
     "units/g7_fx_walker_blast.png": "44e1f4cafd17c2b89c6009374c6cff92",
     "units/g7_fx_walker_blast_mask.png": "8f6f9a62adab5944089df9f8bd18254c",
-    "units/g7_m_burrower.png": "a57c6b2375cdaf71e06bfc6ed7c50c3a",
-    "units/g7_m_burrower_mask.png": "bb740bf4625d359e031a5c33c0df852b",
-    "units/g7_m_leech.png": "0238b6a056da7f38521038ff38a05cb2",
-    "units/g7_m_leech_mask.png": "91418b9c2557e2c7f718e38ba02161b3",
-    "units/g7_m_mimic.png": "9182061cdc76bd98925562af740e5099",
-    "units/g7_m_mimic_mask.png": "3dacc67429e5603f8291697e6ffdf40f",
-    "units/g7_m_spitter.png": "e8854e92003e1e4c333fd9f01f35d59a",
-    "units/g7_m_spitter_mask.png": "1cc487e3a98cc451b7c7874807843509",
+    "units/g7_m_burrower.png": "141b8fca788c6ee5c6653ce2cc3087ee",
+    "units/g7_m_burrower_mask.png": "1bdb1d776c6f743f6229be3a1581bf98",
+    "units/g7_m_leech.png": "93089d40641f0689553664b1a0f7d63e",
+    "units/g7_m_leech_mask.png": "509288d53f7a146b4a8cbce2f3a7b501",
+    "units/g7_m_mimic.png": "a03a7521384394bce2de6855d5c89d4f",
+    "units/g7_m_mimic_mask.png": "5107b883e7699fdec1dcf17fdeb1a499",
+    "units/g7_m_spitter.png": "990e04d2ee1558a4e4fd269c27cf2665",
+    "units/g7_m_spitter_mask.png": "955280b8fff9e8720e5fcb257b911e38",
     "units/g7_m_walker_topple.png": "2e21bc5ed7b72318e6f2a9d7331dc7e3",
     "units/g7_m_walker_topple_mask.png": "8bf91ca5e008c1f8c669f4c1509fbb21"
   },
@@ -42,15 +42,15 @@
     "icon": "32x32 menu icon per unit (icons/<id>.png)",
     "infantry": {
       "cell": [
-        48,
-        48
+        32,
+        32
       ],
       "facings": 8,
-      "figure_px": 30,
+      "figure_px": 18,
       "frames": 24,
       "pivot": [
-        24,
-        42
+        16,
+        27
       ]
     },
     "mask": "soldiers: armband on both upper arms + leader helmet band; vehicles/air: roof ID panel + side chevrons + hull stripe; Machine: plating trim",
@@ -60,7 +60,15 @@
       2048
     ],
     "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left; muted military palettes",
-    "scale": "1:1 at zoom 1 (tile 64x32); soldiers 1.75x the DL7-1 rig (~30 px figure, ~1.5x today's)",
+    "scale": "ONE real-world scale: 4 m per 64x32 tile, 9.8 px per metre of height (1.8 m soldier = 18 px)",
+    "scale_table": {
+      "m_per_tile": 4.0,
+      "px_per_m_ground_axis": 8.94,
+      "px_per_m_height": 9.8,
+      "px_per_m_screen_x": 11.31,
+      "soldier_m": 1.8,
+      "soldier_px": 18
+    },
     "shading": "per-pixel lit volumes; hull bevels, panel seams, rivets, grime band, chipped-paint wear",
     "threat": {
       "facings": 8,
@@ -75,7 +83,7 @@
       "max_frames": 12,
       "wreck": "vehicle_wrecks sheet (1 frame, 8 facings)"
     },
-    "version": "DL7-2"
+    "version": "DL7-3"
   },
   "group": "g7_threats2",
   "icons": {
@@ -99,18 +107,21 @@
         "walk_3",
         "strike",
         "reveal",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
       "fw": 32,
       "g7": {
         "budget": 524288,
-        "bytes": 37176,
+        "bytes": 51528,
         "class": "infantry",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "disguise": "rules.g7_threats.mimic.as_foot",
         "line": "machine",
         "mirror": 1,
-        "raw_bytes": 262144,
+        "raw_bytes": 360448,
         "set": "g7_threats2"
       },
       "legged": true,
@@ -143,7 +154,7 @@
         "budget": 3145728,
         "bytes": 323440,
         "class": "threat_big",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "event": "WalkerBlownUp",
         "fx": true,
         "line": "machine",
@@ -172,7 +183,10 @@
         "walk_2",
         "walk_3",
         "bite",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
       "fw": 52,
       "g7": {
@@ -187,15 +201,18 @@
           "walk_2",
           "walk_3",
           "bite",
-          "die"
+          "die",
+          "walk_a",
+          "walk_b",
+          "fire"
         ],
         "budget": 1048576,
-        "bytes": 220636,
+        "bytes": 278844,
         "class": "threat",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 732160,
+        "raw_bytes": 931840,
         "set": "g7_threats2"
       },
       "mask": "units/g7_m_burrower_mask.png",
@@ -215,17 +232,20 @@
         "latch",
         "drill_0",
         "drill_1",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
       "fw": 24,
       "g7": {
         "budget": 1048576,
-        "bytes": 17684,
+        "bytes": 25340,
         "class": "threat",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 107520,
+        "raw_bytes": 153600,
         "rides_hull": true,
         "set": "g7_threats2"
       },
@@ -247,18 +267,21 @@
         "walk_3",
         "spit_0",
         "spit_1",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
       "fw": 48,
       "g7": {
         "budget": 1048576,
-        "bytes": 172116,
+        "bytes": 236948,
         "class": "threat",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "legged": true,
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 540672,
+        "raw_bytes": 743424,
         "set": "g7_threats2"
       },
       "mask": "units/g7_m_spitter_mask.png",
@@ -285,7 +308,7 @@
         "budget": 3145728,
         "bytes": 287424,
         "class": "threat_big",
-        "detail_level": "DL7-2",
+        "detail_level": "DL7-3",
         "line": "machine",
         "mirror": -1,
         "overlay_for": [

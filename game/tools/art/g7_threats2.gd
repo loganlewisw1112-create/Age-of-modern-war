@@ -14,10 +14,10 @@ const GEN = preload("res://tools/gen_art.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const L = preload("res://tools/art/faction_m_lib.gd")
 
-const BUR := ["idle", "burrow_0", "burrow_1", "erupt_0", "erupt_1", "walk_0", "walk_1", "walk_2", "walk_3", "bite", "die"]
-const SPIT := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit_0", "spit_1", "die"]
-const MIM := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "strike", "reveal", "die"]
-const LEE := ["idle", "crawl_0", "crawl_1", "latch", "drill_0", "drill_1", "die"]
+const BUR := ["idle", "burrow_0", "burrow_1", "erupt_0", "erupt_1", "walk_0", "walk_1", "walk_2", "walk_3", "bite", "die", "walk_a", "walk_b", "fire"]
+const SPIT := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit_0", "spit_1", "die", "walk_a", "walk_b", "fire"]
+const MIM := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "strike", "reveal", "die", "walk_a", "walk_b", "fire"]
+const LEE := ["idle", "crawl_0", "crawl_1", "latch", "drill_0", "drill_1", "die", "walk_a", "walk_b", "fire"]
 const TOP := ["stagger", "fall_0", "fall_1", "down", "rise_0", "rise_1"]
 const BLAST := ["blast_0", "blast_1", "blast_2", "blast_3", "blast_4"]
 const DIRT := Color8(96, 82, 64)
@@ -191,12 +191,25 @@ static func blast(cv, _k: int, f: String, o: Vector2) -> void:
 			C.blob(cv, sp, 5.0 + n, [Color(FIRE[4], 0.8), Color(FIRE[4], 0.8), Color8(80, 76, 72, 200), Color8(104, 100, 96, 190), Color8(126, 122, 116, 170)])
 
 
+## Catalog frame names (ART7B, test_art faction coverage): walk_a / walk_b / fire are copies of a walk pair and
+## the unit's attack frame, appended at the end so the existing frame indices stay put.
+static func _al(f: String, walk: Array, fire: String) -> String:
+	match f:
+		"walk_a":
+			return String(walk[0])
+		"walk_b":
+			return String(walk[1])
+		"fire":
+			return fire
+	return f
+
+
 static func build(out: Dictionary) -> void:
 	var ex := {"line": "machine", "set": "g7_threats2"}
-	C.unit_sheet(out, "g7_m_burrower", "vehicles", "threat", 52, 40, Vector2i(26, 28), BUR, func(cv, k, f, o): burrower(cv, k, f, o), ex.merged({"anim_strip": BUR.duplicate()}))
-	C.unit_sheet(out, "g7_m_spitter", "vehicles", "threat", 48, 44, Vector2i(24, 32), SPIT, func(cv, k, f, o): spitter(cv, k, f, o), ex.merged({"legged": true}))
-	C.unit_sheet(out, "g7_m_mimic", "infantry", "infantry", 32, 32, Vector2i(16, 27), MIM, func(cv, k, f, o): mimic(cv, k, f, o), ex.merged({"disguise": "rules.g7_threats.mimic.as_foot"}))
-	C.unit_sheet(out, "g7_m_leech", "vehicles", "threat", 24, 20, Vector2i(12, 14), LEE, func(cv, k, f, o): leech(cv, k, f, o), ex.merged({"rides_hull": true}))
+	C.unit_sheet(out, "g7_m_burrower", "vehicles", "threat", 52, 40, Vector2i(26, 28), BUR, func(cv, k, f, o): burrower(cv, k, _al(f, ["walk_0", "walk_2"], "bite"), o), ex.merged({"anim_strip": BUR.duplicate()}))
+	C.unit_sheet(out, "g7_m_spitter", "vehicles", "threat", 48, 44, Vector2i(24, 32), SPIT, func(cv, k, f, o): spitter(cv, k, _al(f, ["walk_0", "walk_2"], "spit_0"), o), ex.merged({"legged": true}))
+	C.unit_sheet(out, "g7_m_mimic", "infantry", "infantry", 32, 32, Vector2i(16, 27), MIM, func(cv, k, f, o): mimic(cv, k, _al(f, ["walk_0", "walk_2"], "strike"), o), ex.merged({"disguise": "rules.g7_threats.mimic.as_foot"}))
+	C.unit_sheet(out, "g7_m_leech", "vehicles", "threat", 24, 20, Vector2i(12, 14), LEE, func(cv, k, f, o): leech(cv, k, _al(f, ["crawl_0", "crawl_1"], "drill_0"), o), ex.merged({"rides_hull": true}))
 	C.unit_sheet(out, "g7_m_walker_topple", "vehicles", "threat_big", 96, 72, Vector2i(48, 52), TOP, func(cv, k, f, o): topple(cv, k, f, o), ex.merged({"overlay_for": ["m_walker", "m_colossus", "g7_m_weaver"], "api": "cn.topple_api g7v topple/topple_dir"}))
 	C.unit_sheet(out, "g7_fx_walker_blast", "vehicles", "threat_big", 96, 80, Vector2i(48, 60), BLAST, func(cv, k, f, o): blast(cv, k, f, o), ex.merged({"fx": true, "event": "WalkerBlownUp"}))
 

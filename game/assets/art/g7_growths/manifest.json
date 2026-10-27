@@ -16,6 +16,18 @@
    ],
    "size": 1,
    "states": {
+    "build_0": {
+     "file": "buildings/g7_growth_heart_build_0.png",
+     "mask": "buildings/g7_growth_heart_build_0_mask.png"
+    },
+    "build_1": {
+     "file": "buildings/g7_growth_heart_build_1.png",
+     "mask": "buildings/g7_growth_heart_build_1_mask.png"
+    },
+    "build_2": {
+     "file": "buildings/g7_growth_heart_build_2.png",
+     "mask": "buildings/g7_growth_heart_build_2_mask.png"
+    },
     "built": {
      "file": "buildings/g7_growth_heart_built.png",
      "mask": "buildings/g7_growth_heart_built_mask.png"
@@ -40,6 +52,18 @@
    ],
    "size": 1,
    "states": {
+    "build_0": {
+     "file": "buildings/g7_growth_spire_build_0.png",
+     "mask": "buildings/g7_growth_spire_build_0_mask.png"
+    },
+    "build_1": {
+     "file": "buildings/g7_growth_spire_build_1.png",
+     "mask": "buildings/g7_growth_spire_build_1_mask.png"
+    },
+    "build_2": {
+     "file": "buildings/g7_growth_spire_build_2.png",
+     "mask": "buildings/g7_growth_spire_build_2_mask.png"
+    },
     "built": {
      "file": "buildings/g7_growth_spire_built.png",
      "mask": "buildings/g7_growth_spire_built_mask.png"
@@ -61,16 +85,34 @@
   "buildings/g7_growth_spire_built_mask.png",
   "buildings/g7_growth_spire_damaged.png",
   "buildings/g7_growth_spire_damaged_mask.png",
+  "buildings/g7_growth_spire_build_0.png",
+  "buildings/g7_growth_spire_build_0_mask.png",
+  "buildings/g7_growth_spire_build_1.png",
+  "buildings/g7_growth_spire_build_1_mask.png",
+  "buildings/g7_growth_spire_build_2.png",
+  "buildings/g7_growth_spire_build_2_mask.png",
+  "icons/g7_growth_spire.png",
   "buildings/g7_growth_heart_built.png",
   "buildings/g7_growth_heart_built_mask.png",
   "buildings/g7_growth_heart_damaged.png",
-  "buildings/g7_growth_heart_damaged_mask.png"
+  "buildings/g7_growth_heart_damaged_mask.png",
+  "buildings/g7_growth_heart_build_0.png",
+  "buildings/g7_growth_heart_build_0_mask.png",
+  "buildings/g7_growth_heart_build_1.png",
+  "buildings/g7_growth_heart_build_1_mask.png",
+  "buildings/g7_growth_heart_build_2.png",
+  "buildings/g7_growth_heart_build_2_mask.png",
+  "icons/g7_growth_heart.png"
  ],
  "foot": [
   24,
   92
  ],
  "group": "g7_growths",
+ "icons": {
+  "g7_growth_heart": "icons/g7_growth_heart.png",
+  "g7_growth_spire": "icons/g7_growth_spire.png"
+ },
  "kinds": [
   "spire",
   "lattice",
