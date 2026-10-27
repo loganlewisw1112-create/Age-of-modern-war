@@ -138,6 +138,7 @@ func _apply_autostart_g3(cfg: Dictionary) -> void:
 	var map_id := String(_args.get("autostart-map", _args.get("map", "")))
 	if map_id != "":
 		cfg.map = map_id
+		cfg.dev_map = true  # G7 (LPMAP7-2 CR): --autostart is a dev/bench path; it may start mode-only maps (menus never can)
 	if _args.has("autostart-stages"):
 		var st: PackedStringArray = String(_args["autostart-stages"]).split(",", false)
 		while cfg.sides.size() < st.size():
