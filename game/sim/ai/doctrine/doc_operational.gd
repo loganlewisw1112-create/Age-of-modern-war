@@ -195,7 +195,7 @@ static func _tag(w: SimWorld, fid: int, st: Dictionary, tag: String, us: Array, 
 ## {els: [[movers]], a: overwatch group, b: bounding group, sup, asl, flank, all, recon, sweep}.
 static func groups(w: SimWorld, fid: int, form: Dictionary) -> Dictionary:
 	var els := []
-	for ids in form.elems:
+	for ids in form.get("elems", []):   # REGRESS7-4: a dead / disbanded formation has no form (node_form -> {})
 		var us := D.movers(w, fid, ids)
 		if not us.is_empty():
 			els.append(us)

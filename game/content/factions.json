@@ -68,7 +68,10 @@
       "10": [
         "a_laser_tank",
         "a_exo_trooper",
-        "a_exo_aa"
+        "a_exo_aa",
+        "a_t7_emp",
+        "a_t7_microwave",
+        "a_t7_railgun"
       ]
     }
   },

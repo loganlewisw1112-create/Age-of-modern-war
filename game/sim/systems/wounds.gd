@@ -180,20 +180,25 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 		e.wb = snappedf(float(e.get("wb", 0.0)) + b, Q)
 		_state(w).bleed[int(e.id)] = 1
 	var res := "hit"
-	if zone == "head" and w.rng.chance(float(zc.get("kill", 0.6))):
+	var hr := 0   # head outcome: 0 none, 1 kill, 2 unconscious, 3 short knock-out
+	if zone == "head":
+		hr = head_roll(w.rng.frac(), md, max_hp(e))
+	if hr == 1:
 		e.wkill = true
 		e.hp = 0.0
 		res = "dead"
 	elif float(e.hp) <= 0.0:
 		res = "dead"
 	else:
-		if zone == "head" or float(e.hp) <= unc_hp(e):
+		if hr == 2 or float(e.hp) <= unc_hp(e):
 			res = "down"
 		var ooa := int(float(zc.get("ooa_s", 0.0)) * SimWorld.TICK_RATE)
+		if hr == 3:
+			ooa = maxi(ooa, int(float(zc.get("stun_s", 3.0)) * SimWorld.TICK_RATE))
 		if ooa > 0:
 			e.wooa = maxi(int(e.get("wooa", 0)), w.tick + ooa)
 			_hold_fire(e, ooa)
-			if bool(zc.get("ko", false)):
+			if bool(zc.get("ko", false)) or hr == 3:
 				_ko_hold(w, e)
 				Movement.stop_path(e)
 	HotState.touch(w, int(e.id))
@@ -204,6 +209,25 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 		vis_mark(w, int(e.id))
 	w.emit("Wound", {"id": int(e.id), "owner": int(e.owner), "zone": zone, "dmg": md, "result": res})
 	return {"zone": zone, "result": res}
+
+
+## G7 (REGRESS7-4, ORCH ruling, PROVISIONAL numbers in rules g7_wounds.zones.head): what a head hit does scales
+## with how hard it hits relative to the soldier (G7 master scope section 2: "Head: usually killed or knocked
+## unconscious"). sev = head damage (dmg x head mult) / max hp. kill chance = kill x clamp(sev / kill_full, 0, 1);
+## else unconscious with chance clamp(sev / unc_full, 0, 1); else a short knock-out (stun_s, path stopped, hp
+## kept). An ordinary rifle hit on a rifleman (9 x 2.5 / 100 = 0.225) keeps the full kill chance; a light hit
+## on a very tough target (a 100000-hp test unit) is a short knock-out. One draw r in [0, 1) (w.rng, caller).
+## Returns 1 kill, 2 unconscious, 3 short knock-out. Pure (the distribution report calls it too).
+static func head_roll(r: float, md: float, mh: float) -> int:
+	var hc := _zcfg("head")
+	var sev := md / maxf(mh, 1.0)
+	var pk := float(hc.get("kill", 0.6)) * clampf(sev / maxf(float(hc.get("kill_full", 0.225)), 1e-6), 0.0, 1.0)
+	if r < pk:
+		return 1
+	var pu := clampf(sev / maxf(float(hc.get("unc_full", 0.25)), 1e-6), 0.0, 1.0)
+	if r < pk + (1.0 - pk) * pu:
+		return 2
+	return 3
 
 
 ## G7 (REGRESS7): a torso knock-out is SHORT (G7 master scope section 2: "Torso: bleeding and a short knock-out").

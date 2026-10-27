@@ -11,9 +11,13 @@ const Gates = preload("res://sim/systems/progression_gates.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 
 ## PROGRESS item 7 Stage 10 roster + the AA suit (CONTRACTS_G6 3.2 / D32).
-const UNLOCKS := {"human_a": ["a_laser_tank", "a_exo_trooper", "a_exo_aa"], "human_b": [],
+## G7 (ORCH ruling, REGRESS7-4): the three Human A G7 turrets a_t7_emp, a_t7_microwave, a_t7_railgun are ordinary
+## Stage 10 buildables (factions.json stage_unlocks["10"]).
+const UNLOCKS := {"human_a": ["a_laser_tank", "a_exo_trooper", "a_exo_aa", "a_t7_emp", "a_t7_microwave", "a_t7_railgun"], "human_b": [],
 	"machine": ["m_mass_driver", "m_colossus", "m_hover_tank", "m_assimilator", "m_swarm_queen", "m_mimic_drone",
 		"m_stalker_synth", "m_stealth_drone", "m_overmind"]}
+## Spawned by the counter-nanite line itself (facility / teams), not unlocked by a stage (see test_stage10_unlocks_list).
+const CN_SPAWNED := ["g7_cn_sentry", "g7_cn_barrier", "g7_cn_interceptor_drone", "cn_stealth_dropship", "cn_gun_drone"]
 const GATE_RESEARCH := {"human_a": "g6_automation_doctrine", "human_b": "g6_automation_doctrine", "machine": "g6_overmind_protocols"}
 
 
@@ -172,6 +176,12 @@ func test_stage10_unlocks_list() -> void:
 			var d: Dictionary = Content.table(tbl)[id]
 			if typeof(d) == TYPE_DICTIONARY and int(d.get("stage_min", 7)) == 10:
 				if (d.get("requires_research", []) as Array).has("g7_counter_nanite"):
+					continue
+				# G7 (ORCH ruling, REGRESS7-4): not stage unlocks, so exempt. The counter-nanite line's own units are
+				# built / deployed by the CN facility and teams, not from a stage unlock (G7_REFERENCE 6.1), and the
+				# Machine escalation units g7_m_* are spawned by Threats7 escalation, never unlocked by a stage
+				# (G7_REFERENCE section 8).
+				if CN_SPAWNED.has(String(id)) or String(id).begins_with("g7_m_"):
 					continue
 				check(listed.has(String(id)), "Stage 10 def %s is in an unlock list" % id)
 	for id in listed:
