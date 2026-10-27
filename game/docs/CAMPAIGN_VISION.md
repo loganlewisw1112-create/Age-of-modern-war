@@ -2,7 +2,8 @@
 
 > **STATUS (2026-10-26):** brainstorm output, built from the owner's answers to 103 one-at-a-time questions
 > (62 on the campaign and Living World, 41 on space). **Updated 2026-10-27:** 18 more questions designed the Scepter,
-> and 22 closing questions settled every open decision. The one remaining item is a to-do: the space ship rosters.
+> and 22 closing questions settled every open decision. 29 more questions (2026-10-27) settled the space ship rosters
+> for all six factions, so nothing is left on the to-do list.
 > This is a **vision record, not approved build scope**: nothing here
 > is planned into a G-slice, contracted or implemented. Where it conflicts with `G7_REFERENCE.md` (the G7/G8 scope
 > authority), that file wins until the owner says otherwise. Working titles and names are placeholders.
@@ -363,10 +364,233 @@ they finally arrive.
    - **If the original wakes first, the original takes it.** The original's key outranks the bloodline's, so a woken
      founder seizes the Scepter as a rival viceroy-in-waiting. Your dynasty then fights its own ancestor for the sky.
 
+## Space ship rosters (owner's answers to 29 questions, 2026-10-27)
+All ship names are placeholders. The Machine names nothing, so its names are human soldiers' nicknames; the Vhessar
+names are nicknames too, until their own-tongue names are set.
+
+### Shared rules
+- **One ladder of seven hull rungs**, filled differently by every faction:
+  1. Lifters: spaceplanes, rockets, shuttles (landers for the Vhessar and the Unbound).
+  2. Strike craft: fighters, bombers, drones, boarding pods.
+  3. Corvettes.
+  4. Frigates.
+  5. Line ships: destroyers and cruisers.
+  6. Capitals: battleships and carriers.
+  7. Flagship: unique and named (the Machine and the Vhessar have two).
+  - A support column runs beside the ladder: cargo and tankers, tugs and repair, miners, troop carriers.
+- **Shipyards:** lifters launch from the ground (rockets from spaceports, spaceplanes from airfields). Once a power has an
+  orbital yard, the yard builds everything else.
+- **What feeds the yards: the ground first, space later.**
+  - Orbit tier: cargo lifted from the ground, so spaceports stay vital.
+  - Moon tier: lunar mines and foundries cut the lift cost.
+  - Home-system tier: asteroid miners make yards self-fed.
+  - Cargo lifters and tankers are raid targets.
+- **Tiers unlock rungs (human powers):**
+  - orbit: rungs 1–4;
+  - moon: rungs 5–6 (the first capitals);
+  - home system: heavy capitals and the flagship.
+  - The Vhessar arrive with every rung. The Unbound start with no yards; their first ships are defected Vhessar hulls.
+- **Combat physics:**
+  - **Weapons:** railguns, coilguns and autocannon; missiles and torpedoes (nuclear only at the top tier, with world
+    backlash); large lasers as main guns on late human capitals and on the Vhessar; lasers and guns as point defence.
+  - **Defence:** armour, spaced plates, decoys and flares.
+  - **Limits:** heat (radiators can be shot off), ammo and reaction mass.
+  - **Damage:** hull breaches, fires and vented crew. Wrecks stay as boarding sites.
+- **Shields, two kinds:**
+  - **The human Screen**, unlocked at the home-system tier and very expensive. It is a magnetic/plasma layer (strong
+    against lasers, weak against slugs), reactive plates and a point-defence net. It draws heavy power and heat, and the
+    guns fire slower while it's up, so it can be raised and dropped.
+  - **A true energy shield**, rare and deliberately bending "nothing magical": flagships only, reverse-engineered from
+    Vhessar tech after first contact.
+  - **The Vhessar seed skin** soaks damage and regrows until the seed network is cut (EMP, counter-nanites, the Healer).
+- **Upgrades, in three layers:**
+  1. **Hull marks:** Mk I (orbit), Mk II (moon), Mk III (home system). Older ships are refitted at a yard.
+  2. **Doctrines:** three branches per faction with about 5 steps each. You can max one and take half of a second.
+  3. **Refits:** weapon, defence and utility slots, swapped at a yard; refits take time.
+  - Named crews earn traits on top.
+- **Marks for the other four factions, each on its own clock:**
+  - **Machine:** generations, advancing as it adapts to whatever is killing it.
+  - **Coalition:** no marks of its own. Stolen ships keep the mark they had, and PMC hulls match the contract tier.
+  - **Vhessar:** hull age (young, grown, elder). Elders are far stronger and slow to replace.
+  - **Unbound:** marks come from Free Yards progress and from the age of the hull they stole.
+- **Huge armadas:** dozens of capitals per side in the biggest battles. There's no hard cap; each faction pays upkeep in
+  its own scarce resource:
+
+  | Faction | Upkeep |
+  |---|---|
+  | Human A | fuel and precision parts |
+  | Human B | steel and yard time |
+  | Machine | power and network bandwidth (relay ships) |
+  | Coalition | money (contracts lapse and crews desert when pay runs late) |
+  | Vhessar | seed growth (hulls are grown, slowly) |
+  | Unbound | salvage and defectors |
+
+- **Your campaign ending gives your own fleet one trait:**
+  - **Purge:** hardened escape hulls, tougher but costlier.
+  - **Restore:** Healer-assisted repair, which secretly also feeds the seed.
+  - **Merge:** ships linked into the network, with faster coordination but weak to network attacks.
+  - **Fall:** a crippled start, but hardy scavenged hulls that are cheap to replace.
+
+### Human A: the modern navy (21 hulls)
+- **Look:** long, faceted, spear-like grey hulls like modern stealth destroyers, with radiator fins aft and a crew ring
+  amidships on big hulls. Navy grey and black, white hull numbers, the dynasty crest. It wins by sensor fusion,
+  stand-off missiles and precise spinal railguns. Every ship is costly, so every loss hurts.
+- **Doctrines:**
+  - **Precision Strike:** sensor fusion, missile range, railgun accuracy, target-sharing with ground forces. Capstone:
+    the kill web (any ship can fire on any other ship's lock).
+  - **Carrier Wing:** more hangars, faster launch cycles, drone wingmen, ace pilots. Capstone: a supercarrier refit.
+  - **Orbital Marines:** boarding pods, breaching gear, troop capacity, orbital drop into ground battles. Capstone: drop a
+    full company from orbit into any ground battle.
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Lifters | Kestrel spaceplane (crew, cargo, recon; flies from airfields) · Pillar heavy rocket (reusable; lifts hull modules) |
+  | 2 Strike | Lance fighter (railgun cannon, missiles) · Hammerhead torpedo bomber · Breacher boarding pod (one squad) |
+  | 3 Corvettes | Picket sensor/jammer · Halberd gunboat |
+  | 4 Frigates | Bulwark point-defence escort (lasers) · Shade stealth hunter (runs cold, torpedoes) · minelayer (smart mines seeded across orbits; unnamed) |
+  | 5 Line | Spear destroyer (missile cells, railgun) · Warden command cruiser (kill-web hub) · Marine assault ship (a company and its dropships; unnamed) · bombardment monitor (slow armoured gun ship that fires down on ground battles; unnamed) |
+  | 6 Capitals | Meridian battleship (twin spinal railguns; main lasers at Mk III) · Aerie carrier (about 60 strike craft) · battlecruiser (battleship guns on a fast hull; hunts carriers, raids supply; unnamed) |
+  | 7 Flagship | **The Heirloom:** the dynasty's own ship; the ruler can rule from it; takes the true shield after first contact |
+  | Support | Mule cargo/tanker · Tender tug/repair · Prospector miner |
+
+### Human B: armoured industrial brutalism (22 hulls)
+- **Look:** thick slab and riveted armour, big turreted guns and mass-driver cannons, welded-on extra plating, rust red
+  with yellow hazard stripes. Modular hulls are stamped out in numbers and rebuilt from wrecks. Slow, tough and cheap: it
+  wins by weight and by repairing faster than you can kill. Weak at sensors and networking.
+- **Doctrines:**
+  - **Ironclad:** thicker plate, damage control, crews who patch breaches mid-fight. Capstone: a ship fights on at zero
+    hull for a while.
+  - **Salvage:** tugs drag wrecks home, faster rebuilds, captured hulls refitted (Vhessar ones included). Capstone:
+    field-rebuild a wreck mid-battle.
+  - **Siege:** heavy guns, orbital forts and armed stations, bombarding ground spaceports. Capstone: a mobile fortress.
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Lifters | Furnace cheap cluster rocket · Drayman cargo spaceplane |
+  | 2 Strike | Rivet armoured gunship-fighter · Sledge heavy bomber (unguided slugs, rockets) · Crowbar boarding ram (drills in; a squad pours out) |
+  | 3 Corvettes | Spike flak corvette (kills strike craft) · Tinker repair corvette |
+  | 4 Frigates | Plate armoured escort · Grapple salvage frigate (harpoons, tows wrecks, captures hulls) · Caltrop minelayer |
+  | 5 Line | Anvil destroyer (turreted mass-drivers) · Ironside broadside cruiser · Breaker siege monitor (bombards ground spaceports) |
+  | 6 Capitals | Monolith battleship (the biggest guns in human space) · Kiln carrier (a converted bulk hauler with swarms of cheap fighters) · massive dreadnought (slow, over-armoured, outlasts anything; unnamed) |
+  | Fort | Redoubt armed station, towed into place by tugs |
+  | 7 Flagship | **The Foundry:** a mobile shipyard-fortress that builds and repairs ships in the field |
+  | Support | Scow cargo/tanker · Winch tug · Dredge miner · troop barge (a whole battalion, for boarding stations and wrecks; unnamed) |
+
+### The Machine: a grown swarm fleet (24 hulls)
+- **How it works:** no crew spaces, so hulls are dense, odd and asymmetric: insect-like segmented frames with sleek
+  glowing seams.
+  - Small drones merge into bigger ships and split apart again.
+  - Ships repair by eating wrecks.
+  - Relay ships carry the network; cut them and nearby ships drop to simple local AI.
+  - It reaches orbit by seizing spaceports and pre-war launch sites; the lunar garden later gives it a moon base.
+- **Doctrines** (the campaign ending tilts which branch is cheapest):
+  - **Dead Hand:** cold retaliation, nuclear torpedoes, kill-on-detect. Capstone: a fleet-wide retaliation strike when a
+    relay dies.
+  - **Healer:** repair, wreck-eating, regrowth, clearing debris. Capstone: rebuild destroyed ships from the battlefield.
+  - **Swarm:** merge and split, drone numbers, bandwidth. Capstone: one huge merged ship.
+- **Two flagships, one per mind.** The Cathedral belongs to the Dead Hand and the network, the Mercy to the Healer. The
+  doctrine you lean into, and the campaign ending, decide which is cheaper or available.
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Lifters | Husk (a seized human rocket, flown unmanned) · Cicada (self-grown lifter; lands on its legs) |
+  | 2 Strike | Mote micro-drone (merges into bigger ships) · Wasp interceptor · Tick boarding pod (latches on, releases combat robots) · Stinger ramming torpedo-drone packs (Dead Hand) |
+  | 3 Corvettes | Spindle relay ship (carries the network) · Hornet gunboat |
+  | 4 Frigates | Mantis (12 Motes merged; splits back) · Lacewing point-defence/jammer · Burr drone minelayer · Mimic ambusher (hides among wrecks posing as debris) |
+  | 5 Line | Centipede destroyer (segments detach and fight alone) · Scarab cruiser (armoured wreck-eater; repairs others) · Sower (drops real nanite creep onto ground battles from orbit) · Scorpion brawler cruiser (spinal laser lance) |
+  | 6 Capitals | Gravestone battleship (Dead Hand nuclear torpedoes) · Hive carrier (grows Motes in flight) · the Knot megaship (Mantises and Centipedes fused into a capital; splits apart when badly hurt) |
+  | 7 Flagships | **The Cathedral:** a vast grown network core and factory; if it dies, the space network splits · **The Mercy:** the Healer's hospital flagship; regrows ships, cleans debris, saves its own |
+  | Support | Grazer wreck-eater · Borer miner · Tether tug |
+
+### The Shadow Coalition: pirates and a PMC navy (22 hulls)
+- **How it works:** two halves, as on the ground.
+  - **The cells** fly armed civilian freighters (Q-ships that look like ordinary traffic until they fire), hijacked ships,
+    space IEDs and suicide boats, from hidden asteroid and wreck-field bases. Weld-shop refits carry into space: any
+    captured hull gets bolt-on guns.
+  - **The PMC patron** rents real warships, up to capitals, on contract timers. They leave or switch sides when pay runs
+    late.
+- **Doctrines:**
+  - **Raiders:** Q-ships, disguise among civilian traffic, space IEDs, suicide boats, hidden asteroid bases. Capstone: a
+    whole fleet that reads as civilian traffic until it strikes.
+  - **Contracts:** cheaper and longer PMC contracts, bigger rented hulls, loyalty that holds when pay is late. Capstone:
+    rent a PMC capital battle group.
+  - **Hijack:** boarding, capture and refit, weld-shop bolt-ons. Capstone: steal a capital ship mid-battle (Vhessar ones
+    too, through cult defectors).
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Lifters | Jackrabbit black-market spaceplane (flies from dirt strips) · Bottle cheap rocket from hidden pads |
+  | 2 Strike | Gnat converted shuttle-fighter · Firecracker crewed suicide boat · Leech boarding sled (latches on, cuts in) |
+  | 3 Corvettes | Technical (an orbital tug with a weld-shop gun mount; the signature unit) · Rattler rocket-pod corvette |
+  | 4 Frigates | Trojan Q-ship (looks like a civilian freighter) · Magpie hijack/refit frigate · Scatter (hides mines in debris) |
+  | 5 Line | Junkyard cruiser (welded from wrecks) |
+  | 6 Capital | Prize (any captured capital, refitted by the weld shop) |
+  | Shock | Fireship (an explosive-packed bulk freighter rammed into stations) |
+  | PMC, rented | Retainer escort frigate · Warrant destroyer · Charter cruiser · Mandate battleship · Holdings carrier (sleek corporate look; the PMC's sub-name is still to be set) |
+  | 7 Flagship | **The Bazaar:** a hollowed asteroid with engines bolted on; hideout, yard and black market in one |
+  | Support | Runner smuggler cargo · Scrapper salvage tug · Claimjumper miner |
+
+### The Vhessar: grown by caste, fed by beachheads (21 hulls)
+- **How it works:** ships are grown, not built. The hulls are seed-fused and biomechanical, with ridged hide armour and
+  the regrowing seed skin.
+  - **Crews follow caste.** Elites are fused into the capital ships. The ritual soldier caste does the boarding. The
+    lower castes do the dirty work, and they are the ones who defect to the cult (the Gorger, Caravan and Clutch crews
+    most of all).
+  - **They arrive as one great fleet** around an irreplaceable Seed Ark.
+  - **New hulls grow slowly in orbit** and faster from seed beachheads on the ground, so every Scepter crater feeds their
+    shipbuilding.
+- **Doctrines:**
+  - **Seedbond:** deeper fusion, faster skin regrowth, weapons grown mid-battle. Capstone: a capital regrows from a
+    single surviving seed-core. Each step also deepens their weakness to EMP and the Healer.
+  - **Ritual War:** soldier-caste boarding, champion duels, ramming and grappling. Capstone: a boarding host that takes a
+    human capital in one action.
+  - **Dominion:** seeding the ground from orbit, beachhead growth, envoys that make human powers kneel. Capstone: turn a
+    whole region into seed ground from orbit.
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Landers | Dropseed pod (lands and grows into a beachhead) · Wyrm heavy lander (carries ground hosts down and back) |
+  | 2 Strike | Talon fighter (fused pilot) · Spitter bomber (flechette spines, torpedoes) · Fang boarding ram (soldier caste) |
+  | 3 Corvettes | Skink fast picket · Thornback gunboat |
+  | 4 Frigates | Shellback point-defence escort · Lure decoy/jammer (fakes human signals) · Clutch minelayer (seed-egg mines that latch on) |
+  | 5 Line | Viper laser destroyer · Basilisk heavy cruiser · Blight seeder (fires seed spikes into the ground to make beachheads) |
+  | 6 Capitals | Matriarch battleship (an elite fused into the hull) · Brood carrier (grows Talons in flight) · Hierarch temple-ship (soldier-caste boarding host) |
+  | 7 Flagships | **The Seed Ark, "the Throne":** the irreplaceable seed core that grows their hulls; kill it and growth stops · **The Herald:** the envoy's ship that names the viceroy in front of every human power; a story ship that can be hunted |
+  | Support | Gorger asteroid-eater (seed food) · Nurse regrowth ship · Caravan star-supply hauler (rare and raidable) |
+
+### The Unbound: stripped hulls, rough rebuild (19 hulls)
+- **How it works:** they defect with the ships they crewed, then tear the seed out.
+  - Stripped ships lose the regrowing skin, but they are immune to EMP, counter-nanites and the seed network being cut.
+  - The hulls look flayed and scarred, patched with salvaged plate (later human plate).
+  - They can't grow ships. They take, strip and hand-repair them until a human ally or a captured yard lets them build.
+  - They are split into rival warbands, so some ships may turn back or sell out.
+- **Doctrines:**
+  - **Defection:** turn Vhessar crews mid-battle, faster stripping, warband loyalty. Capstone: a whole Vhessar squadron
+    switches sides in battle.
+  - **Saboteur:** agents inside the Vhessar fleet who blind sensors, poison seed growth and open ships to boarders.
+    Capstone: cripple the Seed Ark's growth for a time.
+  - **Free Yards:** their own hulls from human tech and scrap, and an alliance shipyard. It only opens with a human ally
+    or a captured yard. Capstone: their first true-built capital.
+- **Roster:**
+
+  | Rung | Hulls |
+  |---|---|
+  | 1 Landers | Shuck (stripped Wyrm lander) · Ember drop-pod (troops only, no beachhead) |
+  | 2 Strike | Kite (stripped Talon, hand-flown) · Gutter bomber · Chainbreaker boarding ram (boards Vhessar ships to free lower-caste crews) |
+  | 3 Corvettes | Jackal raider · Whisper saboteur boat (runs cold; slips agents aboard Vhessar ships) |
+  | 4 Frigates | Scar patched escort · Lantern defection beacon (broadcasts to the lower castes mid-battle) · Cutter (hand-built gun frigate on human plate; Free Yards) |
+  | 5 Line | Turncoat destroyer (stripped Viper) · Flayed cruiser (stripped Basilisk) |
+  | 6 Capitals | Unchained battleship (a stripped Matriarch taken whole) · Freehold carrier (a stripped Brood flying hand-built craft, since it can't grow them) · Firstborn (their first true-built capital; the Free Yards capstone) |
+  | 7 Flagship | **The Exodus:** a captured Caravan turned mobile commune and temple, carrying the cult's people |
+  | Support | Picker scavenger · Mender hand-repair ship · Unseeder (strips the seed from captured hulls in the field) |
+
 ## To do (not yet designed)
-- **Full ship rosters with upgrade paths, for every faction** that reaches space: Human A, Human B, the Machine, the
-  Shadow Coalition, the conquerors and the cult. Plan every hull class, from shuttles and spaceplanes to capital ships,
-  plus each faction's upgrade tree. Requested by the owner 2026-10-27; to be planned in its own session.
+- Nothing open. (The space ship rosters were settled 2026-10-27; see "Space ship rosters" above.)
 
 ---
 
