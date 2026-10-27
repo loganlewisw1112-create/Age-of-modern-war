@@ -1,0 +1,286 @@
+{
+  "files": {
+    "life7/cupola.png": "51b9140bb5010b694043ea61a95def4e",
+    "life7/dog.png": "1c2a4313fa701b5168ce639479b35727",
+    "life7/drone.png": "2dc8ab05401a7a3e0abd360c4194e1ed",
+    "life7/fig_guard.png": "7ba0f08cd07693662a6a2e441f8120e2",
+    "life7/fig_staff.png": "36fc227728fb45bf5d0bead1276b5bfb",
+    "life7/fig_tech.png": "726aa63b3d07f7f52da3cf512251d442",
+    "life7/forklift.png": "626165e165e3074e99dcb3e507e50f07",
+    "life7/fuel_truck.png": "e4c5f4f73236838da146b2dede5170fa",
+    "life7/radar.png": "ce680c6a20508de4ab291d7604d091ca",
+    "life7/target.png": "544cc36e3d2e0b4e426293f5ca44dbaf",
+    "life7/tow_tractor.png": "35ca6fdd927e30e9f8914b319026f7fa"
+  },
+  "group": "g7_life7",
+  "life7": {
+    "cupola": {
+      "fh": 40,
+      "file": "life7/cupola.png",
+      "frames": [
+        "a0",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6",
+        "a7",
+        "a8",
+        "a9",
+        "a10",
+        "a11",
+        "a12",
+        "a13",
+        "a14",
+        "a15"
+      ],
+      "fw": 44,
+      "kind": "part",
+      "pivot": [
+        22,
+        28
+      ],
+      "rows": 1,
+      "steps": 16
+    },
+    "dog": {
+      "fh": 24,
+      "file": "life7/dog.png",
+      "frames": [
+        "idle",
+        "trot_0",
+        "trot_1",
+        "trot_2",
+        "trot_3",
+        "sniff",
+        "sit"
+      ],
+      "fw": 32,
+      "kind": "dog",
+      "pivot": [
+        16,
+        19
+      ],
+      "rows": 8
+    },
+    "drone": {
+      "fh": 20,
+      "file": "life7/drone.png",
+      "frames": [
+        "r0",
+        "r1"
+      ],
+      "fw": 28,
+      "kind": "air",
+      "len_m": 0.9,
+      "pivot": [
+        14,
+        12
+      ],
+      "rows": 8
+    },
+    "fig_guard": {
+      "fh": 32,
+      "file": "life7/fig_guard.png",
+      "frames": [
+        "idle",
+        "idle_1",
+        "walk_a",
+        "walk_1",
+        "walk_2",
+        "walk_b",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "act_0",
+        "act_1",
+        "crouch"
+      ],
+      "fw": 32,
+      "kind": "figure",
+      "pivot": [
+        16,
+        27
+      ],
+      "role": "security guard",
+      "rows": 8
+    },
+    "fig_staff": {
+      "fh": 32,
+      "file": "life7/fig_staff.png",
+      "frames": [
+        "idle",
+        "idle_1",
+        "walk_a",
+        "walk_1",
+        "walk_2",
+        "walk_b",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "act_0",
+        "act_1",
+        "crouch"
+      ],
+      "fw": 32,
+      "kind": "figure",
+      "pivot": [
+        16,
+        27
+      ],
+      "role": "ops-room staff",
+      "rows": 8
+    },
+    "fig_tech": {
+      "fh": 32,
+      "file": "life7/fig_tech.png",
+      "frames": [
+        "idle",
+        "idle_1",
+        "walk_a",
+        "walk_1",
+        "walk_2",
+        "walk_b",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "act_0",
+        "act_1",
+        "crouch"
+      ],
+      "fw": 32,
+      "kind": "figure",
+      "pivot": [
+        16,
+        27
+      ],
+      "role": "base technician",
+      "rows": 8
+    },
+    "forklift": {
+      "fh": 60,
+      "file": "life7/forklift.png",
+      "frames": [
+        "e0",
+        "e1",
+        "l0",
+        "l1"
+      ],
+      "fw": 72,
+      "kind": "vehicle",
+      "len_m": 3.4,
+      "pivot": [
+        36,
+        40
+      ],
+      "rows": 8
+    },
+    "fuel_truck": {
+      "fh": 84,
+      "file": "life7/fuel_truck.png",
+      "frames": [
+        "b0",
+        "b1"
+      ],
+      "fw": 112,
+      "kind": "vehicle",
+      "len_m": 8.2,
+      "pivot": [
+        56,
+        54
+      ],
+      "rows": 8
+    },
+    "radar": {
+      "fh": 52,
+      "file": "life7/radar.png",
+      "frames": [
+        "a0",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6",
+        "a7",
+        "a8",
+        "a9",
+        "a10",
+        "a11",
+        "a12",
+        "a13",
+        "a14",
+        "a15"
+      ],
+      "fw": 56,
+      "kind": "part",
+      "pivot": [
+        28,
+        40
+      ],
+      "rows": 1,
+      "steps": 16
+    },
+    "target": {
+      "fh": 32,
+      "file": "life7/target.png",
+      "frames": [
+        "up",
+        "half",
+        "down"
+      ],
+      "fw": 32,
+      "kind": "part",
+      "pivot": [
+        16,
+        26
+      ],
+      "rows": 2,
+      "rows_face": [
+        "+x",
+        "+y"
+      ]
+    },
+    "tow_tractor": {
+      "fh": 52,
+      "file": "life7/tow_tractor.png",
+      "frames": [
+        "b0",
+        "b1"
+      ],
+      "fw": 72,
+      "kind": "vehicle",
+      "len_m": 3.6,
+      "pivot": [
+        36,
+        34
+      ],
+      "rows": 8
+    }
+  },
+  "life7_meta": {
+    "detail_level": "DL7-3",
+    "scale": "ONE real-world scale: 4 m per 64x32 tile, 9.8 px per metre of height (1.8 m soldier = 18 px)"
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}

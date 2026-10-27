@@ -10,11 +10,12 @@ extends Control
 
 signal closed
 
+const TIMES_OF_DAY := ["auto", "day", "dusk", "night"]   # G7 ATMO7
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 
 const DEFAULTS := {
-	"graphics": {"window_mode": "windowed", "vsync": true, "max_fps": 0, "fx_quality": "medium"},
+	"graphics": {"window_mode": "windowed", "vsync": true, "max_fps": 0, "fx_quality": "medium", "time_of_day": "auto"},   # G7 ATMO7 CR 3758: auto = day, Last Protocol dusk
 	"game": {"speed": 1.0, "edge_pan": true, "edge_pan_speed": 1.0, "health_bars": "damaged"},
 	"protocol": {"advisor": "on"},  # G7 OPSUI7 CR 1403: PROTOCOL advisor on | muted | off
 	"last_protocol": {"skip_intro": false},  # G7 CINE7 CR 1544: skip the Last Protocol opening cinematic
@@ -217,6 +218,8 @@ func _graphics_tab() -> Control:
 		get_value("graphics", "max_fps"), func(x): _store("graphics", "max_fps", x, true))
 	_option(g, "Effects quality", "OptFxQuality", FX_QUALITIES, ["Low", "Medium", "High"],  # G6.1 VFX61 CR
 		get_value("graphics", "fx_quality"), func(x): _store("graphics", "fx_quality", x, false))
+	_option(g, "Time of day", "OptTimeOfDay", TIMES_OF_DAY, ["Auto", "Day", "Dusk", "Night"],
+		get_value("graphics", "time_of_day"), func(x): _store("graphics", "time_of_day", x, false))  # G7 ATMO7 CR 3758
 	return g
 
 

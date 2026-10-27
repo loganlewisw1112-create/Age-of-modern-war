@@ -3,6 +3,7 @@ extends RefCounted
 ## Commands: queue_unit, cancel_unit, set_rally. Contract: docs/CONTRACTS.md section 4.
 ## Cost is spent in full at queue time and stored in the queue entry as `paid`; cancel refunds it exactly.
 
+const Vanta7 = preload("res://sim/systems/vanta7.gd")  # G7 AIRV7 CR 4527
 const Movement = preload("res://sim/systems/movement.gd")
 const Airfield = preload("res://sim/systems/airfield.gd")  # G5 scaffold
 const Exo = preload("res://sim/systems/exo.gd")            # G6 scaffold (CONTRACTS_G6 section 4)
@@ -42,6 +43,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var g6_gate := Exo.can_produce(w, fid, item)  # G6 (CONTRACTS_G6 section 4): exo suits
 			if g6_gate == "":
 				g6_gate = Companies.can_produce(w, fid, item)  # G6: company-only defs (leaders)
+			if g6_gate == "":
+				g6_gate = Vanta7.can_produce(w, fid, item)  # G7 AIRV7 CR 4527: one Vanta per barracks roof pad
 			if g6_gate != "":
 				return "%s: %s." % [String(p.get("name", item)), g6_gate]
 			return w.can_afford(fid, p.cost)

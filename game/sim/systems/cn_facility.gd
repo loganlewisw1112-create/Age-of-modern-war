@@ -36,6 +36,7 @@ const ALIASES := {"gate": "gate_outer", "decon": "apc_wash"}
 const PKG_KINDS := ["purge", "seed_hunter", "barrier", "core_breaker"]
 const CN_PATH := "res://sim/systems/counter_nanite.gd"
 const APC7_PATH := "res://sim/systems/apc7.gd"
+const ENG7_PATH := "res://sim/systems/engineer7.gd"   # FACB7-3 (13.9c-11, ENG7 via ORCH): lazy, no preload cycle
 
 static var _conf: Dictionary = {}
 static var _api: Dictionary = {}
@@ -121,6 +122,19 @@ static func origin(F: Dictionary) -> Vector2i:
 static func zone(F: Dictionary, name: String) -> Rect2:
 	var z: Array = conf().get(name, conf().get(ALIASES.get(name, name), [0, 0, 0, 0]))
 	return Rect2(Vector2(origin(F)) + Vector2(float(z[0]), float(z[1])), Vector2(float(z[2]), float(z[3])))
+
+
+## FACB7-4 (owner 13.9c-14): the gunship landing pad on the Sentinel barracks roof: {rect: Rect2 (world tiles, the TLOF),
+## centre: Vector2, z: deck height in metres, heading_deg, ok: the barracks still stands}. {} when the conf has none.
+static func roof_pad(w: SimWorld, F: Dictionary) -> Dictionary:
+	var rp: Dictionary = conf().get("roof_pad", {})
+	var r: Array = rp.get("rect", [])
+	if F.is_empty() or r.size() != 4:
+		return {}
+	var rect := Rect2(Vector2(origin(F)) + Vector2(float(r[0]), float(r[1])), Vector2(float(r[2]), float(r[3])))
+	var b := int(F.get("bar", 0))
+	return {"rect": rect, "centre": rect.get_center(), "z": float(rp.get("deck_z", 0.0)), "heading_deg": float(rp.get("heading_deg", 0.0)),
+		"ok": b == 0 or w.entities.has(b)}
 
 
 ## Every zone of facility id as {name: Rect2} plus "garages": [Vector2] and "compound": Rect2 (render / UI).
@@ -226,9 +240,13 @@ static func render_entries(w: SimWorld) -> Array:
 		for l in conf().get("lanes", []):
 			ln.append([o.x + float(l[0]), o.y + float(l[1]), float(l[2]), float(l[3])])
 		var cs := float(conf().compound)
-		out.append({"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_rects": gr, "garage_team": (F.garages as Array).duplicate(),
+		var rpd := roof_pad(w, F)
+		out.append({"roof_pad": [] if rpd.is_empty() else [rpd.rect.position.x, rpd.rect.position.y, rpd.rect.size.x, rpd.rect.size.y, rpd.z, rpd.heading_deg, rpd.ok],
+			"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_rects": gr, "garage_team": (F.garages as Array).duplicate(),
 			"lanes": ln, "compound": [o.x, o.y, cs, cs], "links": _local_rects(o, conf().get("link_walls", [])),
 			"mantrap": _mantrap_state(w, F), "mag": int(F.get("mag", 0)) == 0 or w.entities.has(int(F.get("mag", 0))),
+				"cp": int(F.get("cp", 0)), "bar": int(F.get("bar", 0)) == 0 or w.entities.has(int(F.get("bar", 0))),
+				"faces": conf().get("faces", {}),
 			"lock": bool(F.lock), "evac": bool(F.evac), "state": secure_state(w, id), "heli": int(F.heli)})
 	return out
 
@@ -318,7 +336,11 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	var owner := int(b.owner)
 	b.unhackable = true
 	var parts := []
-	_clear_site(w, area)   # BASE7-3 (ORCH): the compound stands on flat, cleared ground in every match
+	var site := area
+	var apr: Array = c.get("approach", [])
+	if apr.size() == 4:   # FACB7-4: the gate apron + foot-entry approach (a cleared glacis outside the south wall) too
+		site = area.merge(Rect2i(O + Vector2i(int(apr[0]), int(apr[1])), Vector2i(int(apr[2]), int(apr[3]))))
+	_clear_site(w, site)   # BASE7-3 (ORCH): the compound stands on flat, cleared ground in every match (one TerrainChanged)
 	var reserved := [_crect(c.gate_outer)]
 	for t in c.towers:
 		reserved.append(Rect2i(Vector2i(int(t[0]), int(t[1])), Vector2i(2, 2)))
@@ -370,11 +392,26 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 		_part(w, parts, occ, "cn_magazine", O + Vector2i(int(mp[0]), int(mp[1])), owner, id)
 		if parts.size() > n1:
 			mag = int(parts[parts.size() - 1])
+	# FACB7-2 (13.9c-10/-11, -8): SENT7's Sentinel Barracks on the barracks zone, ready-ammo lockers at the tower bases /
+	# stairs / entry walkway, and the T-wall baffles of the serpentine approach outside the foot entry
+	var bar := 0
+	var bp: Array = c.get("barracks_part", [])
+	var bdef := String(c.get("barracks_def", ""))
+	if bp.size() == 2 and bdef != "" and not Content.building(bdef).is_empty():
+		var n2 := parts.size()
+		_part(w, parts, occ, bdef, O + Vector2i(int(bp[0]), int(bp[1])), owner, id)
+		if parts.size() > n2:
+			bar = int(parts[parts.size() - 1])
+	for kk in [["locker_def", "lockers"], ["baffle_def", "baffles"]]:
+		var dd := String(c.get(kk[0], ""))
+		if dd != "" and not Content.building(dd).is_empty():
+			for q in c.get(kk[1], []):
+				_part(w, parts, occ, dd, O + Vector2i(int(q[0]), int(q[1])), owner, id)
 	var cp := 0
 	for pid in parts:
 		if String(w.entities[int(pid)].def) == "cn_checkpoint":
 			cp = int(pid)
-	var F := {"id": id, "owner": owner, "origin": [O.x, O.y], "parts": parts, "queue": [], "mag": mag, "cp": cp,
+	var F := {"id": id, "owner": owner, "origin": [O.x, O.y], "parts": parts, "queue": [], "mag": mag, "cp": cp, "bar": bar,
 		"garages": [], "lab": {"queue": [], "tier": 0, "up": -1.0}, "stock": {}, "lock": false, "popups": [],
 		"evac": false, "heli": 0, "quiet": w.tick}
 	for g in (c.get("garages", []) as Array):
@@ -747,6 +784,9 @@ static func _svc_rects(w: SimWorld, F: Dictionary) -> Dictionary:
 	var SV := {"arm": zone(F, "armory"), "aid": zone(F, "aid_station"), "mag": zone(F, "magazine").grow(1.5),
 		"gh": Rect2(o + Vector2(float(cp[0]), float(cp[1])), Vector2(2, 2)),
 		"air": [zone(F, "helipad"), zone(F, "pad"), zone(F, "fuel_point")], "mag_ok": mag_ok(w, F), "sv": c.get("services", {})}
+	var rpd := roof_pad(w, F)
+	if not rpd.is_empty() and bool(rpd.ok):   # FACB7-4: the barracks roof pad refuels / rearms a landed aircraft too
+		(SV.air as Array).append(rpd.rect)
 	var box: Rect2 = SV.arm.merge(SV.aid).merge(SV.mag).merge(SV.gh)
 	for r in SV.air:
 		box = box.merge(r)
@@ -772,7 +812,9 @@ static func _service(w: SimWorld, F: Dictionary, e: Dictionary, p: Vector2, SV: 
 		for r in SV.air:
 			if (r as Rect2).has_point(p):
 				var did := false
-				if e.has("fuel") and float(e.fuel) < float(d.get("fuel_max", 0.0)):
+				# FACB7-3 (13.9c-11): the Facility Engineers refuel with the bowser while the facility is staffed; the pad
+				# refuels by itself only when no engineer of this facility is alive (the old behaviour)
+				if e.has("fuel") and float(e.fuel) < float(d.get("fuel_max", 0.0)) and not bool(_callf(ENG7_PATH, "staffed", [w, F], false)):
 					e.fuel = minf(float(d.get("fuel_max", 0.0)), float(e.fuel) + float(sv.get("fuel_s", 40.0)) * dt)
 					did = true
 				if int(d.get("ammo_max", 0)) > 0 and int(e.get("ammo", 0)) < int(d.ammo_max):

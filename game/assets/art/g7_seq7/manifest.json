@@ -1,0 +1,121 @@
+{
+  "files": {
+    "crew/g7_b_cn_deploy_dirty.png": "84a508bc191e87c32dd27aa25474b316",
+    "crew/g7_b_cn_ew_dirty.png": "2a58f2544cd0c3fc57913f5aabc1a043",
+    "crew/g7_b_cn_gunner_dirty.png": "ce7d723596d62e06daecb794e82f3812",
+    "crew/g7_b_cn_medic_dirty.png": "9b5da65b518b7de4239ed26a8909846f",
+    "crew/g7_b_cn_radio_dirty.png": "c3a91a40730bf2a1c5f4d9bdd62b5680",
+    "crew/g7_b_cn_scanner_dirty.png": "a4553196b3808a286b745047a195ee74",
+    "crew/g7_b_cn_team_leader_dirty.png": "efd713791aea1a2ef6505343ee0ad80c",
+    "crew/g7_b_op_antidrone_dirty.png": "9b77871bd6d162ba5bf4e10d2e96c2c9",
+    "crew/g7_b_op_emp_dirty.png": "cb808df8c03b4cb90f9f074e487e8951",
+    "crew/g7_b_op_hunter_dirty.png": "12361e99ed45d7e8fa0e3a52480aa22f",
+    "crew/g7_b_op_leader_dirty.png": "6b9b5a7cfe14bfc053fab871fc0c34bb",
+    "crew/g7_b_op_marksman_dirty.png": "742e00593a003dcf1f60b2331211abaa",
+    "crew/g7_b_op_medic_dirty.png": "e7252559ca164d67492f6192eddc8119",
+    "crew/g7_b_op_purge_dirty.png": "90d24af0fcc945b4cb4900ee4bbc533e",
+    "crew/g7_cn_deploy_dirty.png": "f6c9327e163ce4ecda4ca17cba7c1ec3",
+    "crew/g7_cn_ew_dirty.png": "48a670603113a56ba56a84c6670f1400",
+    "crew/g7_cn_gunner_dirty.png": "d69d8145176b60dcaa6a3f972946c9f1",
+    "crew/g7_cn_medic_dirty.png": "1ea516f65677eabb345e09de7183558d",
+    "crew/g7_cn_radio_dirty.png": "7e1af5b5bef0f0a1254e1bb2766e0c8f",
+    "crew/g7_cn_scanner_dirty.png": "47724d5d732cce48f7fd258ef9d2d37a",
+    "crew/g7_cn_team_leader_dirty.png": "279e196555cb2c80ebbf395c308facfe",
+    "crew/g7_op_antidrone_dirty.png": "e1155cfe62de68994e5e4db12db74bdb",
+    "crew/g7_op_emp_dirty.png": "f5ebb9b8b89d8a93da3a172c69b6bc9e",
+    "crew/g7_op_hunter_dirty.png": "eacb9264f151a1ebe9748f04d6702cf7",
+    "crew/g7_op_leader_dirty.png": "acdcd15b7b900e9b498078aa23d083cf",
+    "crew/g7_op_marksman_dirty.png": "4ad26b5f9306ffa96d132279f79829e3",
+    "crew/g7_op_medic_dirty.png": "3b356e035bece545952fc1532934f276",
+    "crew/g7_op_purge_dirty.png": "6fa1712561b76c0d0134e7b653f09c49",
+    "props/cart.png": "5684c4c4ab70ae68b44e6341c93e02c8",
+    "props/crate.png": "abc72a5149bd9a107f13083c07874b74",
+    "props/podpack.png": "89d0f6b3925afc2ddaec709dcb214d5c",
+    "props/stretcher.png": "4242d983bd651d6c001162db758656c8"
+  },
+  "group": "g7_seq7",
+  "seq7": {
+    "cart": {
+      "facings": 8,
+      "fh": 52,
+      "file": "props/cart.png",
+      "fw": 72,
+      "pivot": [
+        36,
+        34
+      ],
+      "rows": [
+        "full",
+        "pod_gone",
+        "empty"
+      ]
+    },
+    "crate": {
+      "facings": 8,
+      "fh": 16,
+      "file": "props/crate.png",
+      "fw": 16,
+      "pivot": [
+        8,
+        11
+      ]
+    },
+    "crew_dirty": {
+      "g7_b_cn_deploy": "crew/g7_b_cn_deploy_dirty.png",
+      "g7_b_cn_ew": "crew/g7_b_cn_ew_dirty.png",
+      "g7_b_cn_gunner": "crew/g7_b_cn_gunner_dirty.png",
+      "g7_b_cn_medic": "crew/g7_b_cn_medic_dirty.png",
+      "g7_b_cn_radio": "crew/g7_b_cn_radio_dirty.png",
+      "g7_b_cn_scanner": "crew/g7_b_cn_scanner_dirty.png",
+      "g7_b_cn_team_leader": "crew/g7_b_cn_team_leader_dirty.png",
+      "g7_b_op_antidrone": "crew/g7_b_op_antidrone_dirty.png",
+      "g7_b_op_emp": "crew/g7_b_op_emp_dirty.png",
+      "g7_b_op_hunter": "crew/g7_b_op_hunter_dirty.png",
+      "g7_b_op_leader": "crew/g7_b_op_leader_dirty.png",
+      "g7_b_op_marksman": "crew/g7_b_op_marksman_dirty.png",
+      "g7_b_op_medic": "crew/g7_b_op_medic_dirty.png",
+      "g7_b_op_purge": "crew/g7_b_op_purge_dirty.png",
+      "g7_cn_deploy": "crew/g7_cn_deploy_dirty.png",
+      "g7_cn_ew": "crew/g7_cn_ew_dirty.png",
+      "g7_cn_gunner": "crew/g7_cn_gunner_dirty.png",
+      "g7_cn_medic": "crew/g7_cn_medic_dirty.png",
+      "g7_cn_radio": "crew/g7_cn_radio_dirty.png",
+      "g7_cn_scanner": "crew/g7_cn_scanner_dirty.png",
+      "g7_cn_team_leader": "crew/g7_cn_team_leader_dirty.png",
+      "g7_op_antidrone": "crew/g7_op_antidrone_dirty.png",
+      "g7_op_emp": "crew/g7_op_emp_dirty.png",
+      "g7_op_hunter": "crew/g7_op_hunter_dirty.png",
+      "g7_op_leader": "crew/g7_op_leader_dirty.png",
+      "g7_op_marksman": "crew/g7_op_marksman_dirty.png",
+      "g7_op_medic": "crew/g7_op_medic_dirty.png",
+      "g7_op_purge": "crew/g7_op_purge_dirty.png"
+    },
+    "detail_level": "DL7-3",
+    "podpack": {
+      "facings": 8,
+      "fh": 26,
+      "file": "props/podpack.png",
+      "fw": 32,
+      "pivot": [
+        16,
+        18
+      ]
+    },
+    "scale": "4 m per tile, 9.8 px per metre of height",
+    "stretcher": {
+      "facings": 8,
+      "fh": 32,
+      "file": "props/stretcher.png",
+      "fw": 48,
+      "pivot": [
+        24,
+        22
+      ],
+      "rows": [
+        "casualty",
+        "empty"
+      ]
+    }
+  },
+  "version": "SEQ7-1"
+}

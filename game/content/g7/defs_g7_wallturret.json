@@ -1,0 +1,17 @@
+{
+ "_meta": "G7 fragment (owner: WTUR7). G7_REFERENCE 13.9c-9: unmanned AI wall turrets hung on the faces of the counter-nanite facility walls. Each def carries a 'wt7' block and NO def.weapon / t7 block: sim/systems/wallturret7.gd drives it (target preference as the G7 turret line, Turrets7 helpers) and fires only into the half-plane in front of the wall face it hangs on (arc_deg 180 = the whole half-plane, never back through its own wall). Mount: the turret's 1x1 footprint is a FACE cell of a facility wall segment (a cell of a cn_part listed in wt7.mount_parts, 2x2 cn_blast_wall: the row on the outer face or the row on the inner face); the facing follows from the cell (outer row faces out, inner row faces into the compound). Never on gates, towers, link walls or another side's wall; one turret per face cell. No salvage in the cost on purpose: a destroyed turret leaves no scrap pile inside the compound (13.9c-5). Every number is PROVISIONAL balance.",
+ "buildings": {
+  "a_wt7_wall_turret": {"name": "Wall Turret", "faction": "human_a", "stage_min": 10, "size": 1, "hp": 1100, "armor": "building", "sight": 10, "power": 0, "buildable": true, "requires": ["a_cn_facility"], "requires_power": false, "cost": {"credits": 380, "ore": 60}, "build_time": 16, "g7": true, "build_cat": "defence", "unhackable": true, "wall_mount": true,
+   "desc": "Unmanned remote weapon station bolted to a facility wall face. Fires only outward from its face. Build it on the outer or inner face of a counter-nanite facility wall.",
+   "wt7": {"weapon": "wt7_rws_a", "arc_deg": 180.0, "rebuild_delay_s": 15.0, "mount_parts": ["wall"], "air": true, "buildings": false, "fire_hint": 6,
+     "prefer": ["inf", "swarm", "walker_l", "leech", "pack", "drone", "light_v"], "only": []}},
+  "b_wt7_wall_turret": {"name": "Wall Turret", "faction": "human_b", "stage_min": 10, "size": 1, "hp": 1100, "armor": "building", "sight": 10, "power": 0, "buildable": true, "requires": ["b_cn_facility"], "requires_power": false, "cost": {"credits": 380, "ore": 60}, "build_time": 16, "g7": true, "build_cat": "defence", "unhackable": true, "wall_mount": true,
+   "desc": "Unmanned 14.5 mm remote weapon station bolted to a facility wall face. Fires only outward from its face. Build it on the outer or inner face of a counter-nanite facility wall.",
+   "wt7": {"weapon": "wt7_rws_b", "arc_deg": 180.0, "rebuild_delay_s": 15.0, "mount_parts": ["wall"], "air": true, "buildings": false, "fire_hint": 6,
+     "prefer": ["inf", "swarm", "walker_l", "leech", "pack", "drone", "light_v"], "only": []}}
+ },
+ "weapons": {
+  "wt7_rws_a": {"class": "small_arms", "damage": 22, "range": 10, "cooldown": 0.3, "accuracy": 0.75, "g7": true, "anti_air_low": true, "suppress": 1.2},
+  "wt7_rws_b": {"class": "small_arms", "damage": 28, "range": 10, "cooldown": 0.4, "accuracy": 0.72, "g7": true, "anti_air_low": true, "suppress": 1.4}
+ }
+}

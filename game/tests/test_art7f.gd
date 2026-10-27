@@ -189,12 +189,15 @@ func test_lp_walls_link() -> void:
 
 
 ## Interior doors open onto the lane that serves them (planning / lab east onto the spine, drone bay west onto it,
-## workshop and range north onto the cross lane).
+## workshop west onto the spine (FACB7 re-layout, 13.9c-6/-8), range north onto the cross lane).
 func test_door_sides() -> void:
 	var s := _setup()
 	var w: SimWorld = s[0]
 	var F: Dictionary = CnFacility.render_entries(w)[0]
-	var exp := {"planning": 0, "drone_bay": 2, "workshop": 3, "range": 3, "lab": 0}
+	# FACB7-3: workshop 3 -> 2. Authority: owner notes 13.9c-6 / 13.9c-8 (docs/G7_REFERENCE.md): the owner-ordered
+	# re-layout for the missing buildings moved the workshop into the old drone-bay slot [16,9,4,4] on the spine; its
+	# json door [15,10] opens west onto the x12..15 spine lane (side 2). The check's logic is unchanged.
+	var exp := {"planning": 0, "drone_bay": 2, "workshop": 2, "range": 3, "lab": 0}
 	for zn in exp:
 		var r: Array = (F.zones as Dictionary).get(zn, [])
 		if r.size() == 4:

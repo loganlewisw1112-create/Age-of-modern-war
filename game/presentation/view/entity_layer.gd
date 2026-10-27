@@ -116,7 +116,16 @@ const FAC7F_ZONES := [["planning", "g7_fac_planning", 0.0], ["drone_bay", "g7_fa
 	# ART7F-2 (13.9c-2): two-layer APC entry (outer gate -> wash zone -> inner gate) and the infantry decon hall;
 	# drawn when CnFacility carries these zones (BASE7 successor), closed / sprays off on lockdown
 	["gate_outer", "g7_fac_gate_outer", 0.0], ["apc_wash", "g7_fac_wash", 0.0], ["gate_inner", "g7_fac_gate_inner", 0.0],
-	["decon_hall", "g7_fac_deconhall", 0.0]]
+	["decon_hall", "g7_fac_deconhall", 0.0],
+	# FACB7-2 (13.9c-6): special ammo magazine (ruin once its armoured cell cooked off), armory + suit bay, aid station +
+	# quarantine bay, Sentinel barracks (ruin once SENT7's barracks entity is gone), wash runoff tank; the fuel / rearm
+	# apron is flat (drawn under everything, FAC7F_FLAT)
+	["magazine", "g7_fac_magazine", 0.0], ["armory", "g7_fac_armory", 0.0], ["aid_station", "g7_fac_aid", 0.0],
+	["barracks", "g7_fac_barracks", 0.0], ["runoff", "g7_fac_runoff", 0.0]]
+const FAC7F_FLAT := [["fuel_point", "g7_fac_fuel"]]
+## FACB7-2: facility parts drawn by their zone art (their own sprite is skipped).
+const FAC_ZONE_PARTS := {"cn_magazine": true, "cn_sentinel_barracks": true}
+var _lb_cells: Dictionary = {}             # FACB7-2: Vector2i -> "link" / "baffle" (cn_link_wall / cn_ecp_baffle cells)
 const WALL_LINK := {"cn_blast_wall": true, "cn_tower": true, "cn_checkpoint": true}
 var fac_cache_off := false                 # ART7F playtest A/B: true = the old per-frame read (skips busy frames)
 var fac_busy := 0                          # ART7F: refreshes that ran with a sim step in flight (evidence)
@@ -896,7 +905,9 @@ func refresh() -> void:
 					var le = ents.get(id)
 					if le != null:
 						vis_bld.append(le)
-				if roof_open_for(e.get("roof_open"), pf, mv._ally_fids):
+				# FACB7-3: the facility's hardened posts (gatehouse bunker, towers, walls) hold a standing Sentinel garrison
+				# (13.9c-10): they stay solid instead of see-through (the in-game shot showed the gatehouse as a ghost).
+				if roof_open_for(e.get("roof_open"), pf, mv._ally_fids) and not WALL_LINK.has(String(e.get("def", ""))):
 					mod = ROOF_CUT_MOD   # G7 (LOOK7): roof cut away while our troops clear it (they draw inside)
 					gc61.roof += 1
 			"resource":
@@ -936,6 +947,11 @@ func refresh() -> void:
 					continue
 		if kind == "building" and _vpad_px(e):   # ART7F: dropship landing site, flat under everything that stands on it
 			_push(0, 1.0 - float(Y_OFF), art.out_page, art.out_src, gd + art.out_off, art.out_src.size, mod)
+			continue
+		if kind == "building" and FAC_ZONE_PARTS.has(String(e.get("def", ""))) and not _fac_e.is_empty():
+			continue   # FACB7-2: the magazine cell / Sentinel barracks are drawn by their zone art
+		if kind == "building" and _facb_px(e):   # FACB7-2: gatehouse (ECP), wash link walls, ECP baffles
+			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 			continue
 		if kind == "building" and _wall_px(e):   # ART7F: facility wall autotile
 			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
@@ -1458,11 +1474,22 @@ func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 			_push_zone(man, "g7_cn_garage", gst, grs[gi], vr, false, float(grs[gi][2]) * 8.0)
 		# BASE7-3 (ORCH): the old single gate + blue spray box (g7_cn_gate / g7_cn_decon) are retired; the two-layer
 		# entry (gate_outer, apc_wash, gate_inner) and the decon_hall draw from FAC7F_ZONES below.
+		var faces: Dictionary = F.get("faces", {})
 		for zi in FAC7F_ZONES:   # ART7F: finished interior buildings (planning room, drone bay, workshop, range, lab)
 			var zr: Array = zs.get(zi[0], [])
 			if zr.size() == 4:
-				var zf := _door_side(zr, F)
-				_push_zone(man, zi[1], "rot_%d%s" % [zf, "_lockdown" if lock else ""], zr, vr, false, float(zi[2]) * (float(zr[2]) + float(zr[3])) * 4.0)
+				# FACB7-2 (13.9c-8/-9): the layout's own door sides win (the inner APC gate opens on the APC axis
+				# like the outer gate instead of facing the y20 lane sideways)
+				var zf := int(faces[zi[0]]) if faces.has(zi[0]) else _door_side(zr, F)
+				var sfx := "_lockdown" if lock else ""
+				if (zi[0] == "magazine" and not bool(F.get("mag", true))) or (zi[0] == "barracks" and not bool(F.get("bar", true))):
+					sfx = "_ruin"
+				_push_zone(man, zi[1], "rot_%d%s" % [zf, sfx], zr, vr, false, float(zi[2]) * (float(zr[2]) + float(zr[3])) * 4.0)
+		for zi in FAC7F_FLAT:
+			var zr: Array = zs.get(zi[0], [])
+			if zr.size() == 4:
+				var zf := int(faces[zi[0]]) if faces.has(zi[0]) else _door_side(zr, F)
+				_push_zone(man, zi[1], "rot_%d%s" % [zf, "_lockdown" if lock else ""], zr, vr, true)
 
 
 ## ART7F: door side of an interior building (0 +x, 1 +y, 2 -x, 3 -y): the side whose outside strip touches the most
@@ -1519,6 +1546,58 @@ func _wall_px(e: Dictionary) -> bool:
 	var m := wall_mask(_wall_cells, e.pos)
 	var spec := {"file": String(b.states.built.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}
 	return art.resolve_sheet(spec, m, 1 if float(e.get("hp", 1.0)) < 0.5 else 0)
+
+
+## FACB7-2 (13.9c-8/-9): facility parts with their own g7_fac7f art. cn_checkpoint -> g7_fac_gatehouse (state from the
+## facility's mantrap display state: open_out / open_in / lockdown / built, _damaged under 50% hp); cn_link_wall ->
+## g7_fac_linkwall sheet column side * 4 + N1 + S2 (side 0 when the outer gate's centre lies east of the cell);
+## cn_ecp_baffle -> g7_fac_baffle sheet column = conn mask over baffles + wall-line cells. false = not handled.
+func _facb_px(e: Dictionary) -> bool:
+	var d := String(e.get("def", ""))
+	if d != "cn_checkpoint" and d != "cn_link_wall" and d != "cn_ecp_baffle":
+		return false
+	var man: Dictionary = ArtCat.manifest().get("buildings", {})
+	var dmg := 1 if float(e.get("hp", 1.0)) < 0.5 else 0
+	if d == "cn_checkpoint":
+		var b: Dictionary = man.get("g7_fac_gatehouse", {})
+		if b.is_empty():
+			return false
+		var st := "built"
+		for F in _fac_e:
+			if int(F.get("cp", 0)) == int(e.get("id", -1)):
+				var mt: Array = F.get("mantrap", [])
+				if bool(F.get("lock", false)) or (mt.size() == 3 and bool(mt[2])):
+					st = "lockdown"
+				elif mt.size() == 3 and bool(mt[0]):
+					st = "open_out"
+				elif mt.size() == 3 and bool(mt[1]):
+					st = "open_in"
+		var s: Dictionary = (b.states as Dictionary).get(st + ("_damaged" if dmg == 1 else ""), b.states.get("built", {}))
+		return not s.is_empty() and art.resolve_sheet({"file": String(s.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}, 0, 0)
+	var sk := "g7_fac_linkwall" if d == "cn_link_wall" else "g7_fac_baffle"
+	var b2: Dictionary = man.get(sk, {})
+	if b2.is_empty():
+		return false
+	if _wall_dirty or int((mv.snap.get("statics", {}) as Dictionary).size()) != _wall_nstat:
+		_wall_rebuild()
+	var p: Vector2 = e.pos
+	var c := Vector2i(floori(p.x), floori(p.y))
+	var col := 0
+	if d == "cn_link_wall":
+		var side := 0
+		for F in _fac_e:
+			var cp: Array = F.get("compound", [0, 0, 0, 0])
+			if Rect2(float(cp[0]), float(cp[1]), float(cp[2]), float(cp[3])).has_point(p):
+				var gt: Array = (F.zones as Dictionary).get("gate_outer", [0, 0, 0, 0])
+				side = 0 if float(gt[0]) + float(gt[2]) * 0.5 > p.x else 1
+		col = side * 4 + (1 if _lb_cells.get(c + Vector2i(0, -1), "") == "link" else 0) + (2 if _lb_cells.get(c + Vector2i(0, 1), "") == "link" else 0)
+	else:
+		var nb := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+		for k in 4:
+			var q: Vector2i = c + nb[k]
+			if _lb_cells.get(q, "") == "baffle" or _wall_cells.has(q):
+				col |= 1 << k
+	return art.resolve_sheet({"file": String(b2.states.built.file), "fw": int(b2.fw), "fh": int(b2.fh), "pivot": b2.pivot}, col, dmg)
 
 
 ## ART7F: a_g7_vtol_pad art (rot_<facing_i> = approach side; _damaged under 50% hp; build stages).
@@ -1582,6 +1661,12 @@ func _wall_rebuild() -> void:
 	_wall_nstat = statics.size()
 	_wall_cells = wall_cells_of(statics, _fac_e)
 	_ww_cells = Motion.wall_walk_cells(statics) if not _fac_e.is_empty() else {}   # G7 (WALL7)
+	_lb_cells = {}
+	for id in statics:   # FACB7-2: link wall + baffle cells (1x1) for their piece / mask choice
+		var d := String(statics[id].get("def", ""))
+		if d == "cn_link_wall" or d == "cn_ecp_baffle":
+			var p: Vector2 = statics[id].pos
+			_lb_cells[Vector2i(floori(p.x), floori(p.y))] = "link" if d == "cn_link_wall" else "baffle"
 
 
 ## One zone sprite at the centre of rect r [x, y, w, h] (tiles). Flat art sorts under everything; the rest by depth.

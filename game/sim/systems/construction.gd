@@ -12,6 +12,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5):
 const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5): builder units
 const Companies = preload("res://sim/systems/companies.gd")  # G6 (ARMY6 CR): Company HQ cap (D31)
 const MachineG6 = preload("res://sim/systems/machine_g6.gd")  # G6 (MECH6b CR relay_build_range; preloads sim_index + hot_state only)
+const WallTurret7 = preload("res://sim/systems/wallturret7.gd")  # G7 WTUR7 CR 3637: facility wall-face placement
 
 const MAX_BUILD_RANGE := 20.0
 const BUILD_REACH := 1.0   # engineer must be within this distance of the footprint edge
@@ -133,6 +134,8 @@ static func placement_error(w: SimWorld, fid: int, def_id: String, origin: Vecto
 	var d := Content.building(def_id)
 	if d.is_empty():
 		return "Unknown building '%s'." % def_id
+	if d.has("wt7"):  # G7 WTUR7 CR 3637: wall turrets mount only on a facility wall face
+		return WallTurret7.placement_error(w, fid, def_id, origin)
 	var nm := String(d.get("name", def_id))
 	if not bool(d.get("buildable", false)):
 		return "%s cannot be constructed." % nm

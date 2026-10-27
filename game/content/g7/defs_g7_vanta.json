@@ -1,0 +1,74 @@
+{
+  "_meta": {
+    "owner": "AIRV7",
+    "spec": "docs/G7_REFERENCE.md 13.9c-14 (new rotorless stealth gunship for the counter-nanite teams) + 13.9c-15 (hardpoints: nose, mirrored side pair, rear) + 13.9c-13 (grounded numbers, no gimmicks)",
+    "note": "CN Vanta: name and every number PROVISIONAL (owner 13.9c-14). Trained at the Sentinel barracks (cn_sentinel_barracks, inside the CN facility) and based on its rooftop pad (CnFacility.roof_pad): one Vanta per pad, launches / lands / refuels / rearms there. Combat only ACQUIRES targets for it (fire-control 'weapon' g7_vanta_fc, e.ammo held at 0 so Combat never fires it); every shot comes from a hardpoint in sim/systems/vanta7.gd (rules.g7_vanta)."
+  },
+  "units": {
+    "cn_vanta_a": {
+      "name": "CN Vanta Gunship", "role": "air", "faction": "human_a", "stage_min": 10, "armor": "heavy",
+      "move_class": "air_low", "is_air": true, "aircraft": "vtol", "hp": 1500, "speed": 6.5, "sight": 11, "pop": 4,
+      "radius": 0.6, "lz_size": 3, "ammo_max": 0, "fuel_max": 600, "fuel_burn": 1.0, "fuel_per_tile": 0.0,
+      "weapon": "g7_vanta_fc", "stealth": {"radar_invisible": true, "reveal_range": 5.0},
+      "unhackable": true, "g7": true, "cn_vanta": true, "air_thermal": true,
+      "_note": "AIRV7 PROVISIONAL: 14 m faceted rotorless attack craft (four ducted lift / vector fans, two in the hull sides, two at the tail), 2 crew in tandem. Human A: cool grey-blue stealth finish."
+    },
+    "cn_vanta_b": {
+      "name": "CN Vanta Gunship", "role": "air", "faction": "human_b", "stage_min": 10, "armor": "heavy",
+      "move_class": "air_low", "is_air": true, "aircraft": "vtol", "hp": 1600, "speed": 6.2, "sight": 11, "pop": 4,
+      "radius": 0.6, "lz_size": 3, "ammo_max": 0, "fuel_max": 640, "fuel_burn": 1.0, "fuel_per_tile": 0.0,
+      "weapon": "g7_vanta_fc", "stealth": {"radar_invisible": true, "reveal_range": 5.0},
+      "unhackable": true, "g7": true, "cn_vanta": true, "air_thermal": true,
+      "_note": "AIRV7 PROVISIONAL: Human B variant: heavier armour, a little slower, olive-sand finish (same airframe and hardpoints)."
+    }
+  },
+  "weapons": {
+    "g7_vanta_fc": {
+      "name": "Vanta fire control", "class": "small_arms", "damage": 0, "range": 11, "cooldown": 1.0, "accuracy": 0.0,
+      "anti_air": true, "anti_air_low": true, "anti_drone": true,
+      "_note": "AIRV7: target acquisition only (Combat picks / chases the target; Vanta7 fires the hardpoints). Never fires: the Vanta's e.ammo stays 0."
+    },
+    "g7_vanta_cannon": {"name": "30 mm chin cannon", "class": "autocannon", "damage": 24, "range": 9, "cooldown": 0.3, "accuracy": 0.72, "anti_air_low": true, "fx_class": "cannon"},
+    "g7_vanta_missile": {"name": "Anti-armour missile", "class": "at", "damage": 150, "range": 11, "cooldown": 3.0, "accuracy": 0.9, "guided": true, "fx_class": "rocket"},
+    "g7_vanta_mg": {"name": "12.7 mm gun pod", "class": "small_arms", "damage": 11, "range": 8, "cooldown": 0.15, "accuracy": 0.62, "anti_air_low": true, "anti_drone": true},
+    "g7_vanta_ad": {"name": "Anti-drone suite (laser + RF defeat)", "class": "energy", "damage": 45, "range": 7, "cooldown": 0.9, "accuracy": 0.9, "anti_air": true, "anti_air_low": true, "anti_drone": true, "fx_class": "energy"},
+    "g7_vanta_flare": {"name": "Flare / decoy cartridge", "class": "artillery", "damage": 0, "range": 2, "cooldown": 0.2, "accuracy": 0.0, "indirect": true, "fx_class": "artillery"}
+  },
+  "production": {
+    "cn_vanta_a": {"name": "CN Vanta Gunship", "spawns": ["cn_vanta_a"], "facility": "cn_sentinel_barracks", "faction": "human_a",
+      "cost": {"credits": 2200, "salvage": 700, "ore": 500}, "train_time": 90, "g7": true},
+    "cn_vanta_b": {"name": "CN Vanta Gunship", "spawns": ["cn_vanta_b"], "facility": "cn_sentinel_barracks", "faction": "human_b",
+      "cost": {"credits": 2200, "salvage": 700, "ore": 500}, "train_time": 90, "g7": true}
+  },
+  "rules": {
+    "g7_vanta": {
+      "_note": "AIRV7 PROVISIONAL numbers. Hardpoints (owner 13.9c-15): nose (main) and rear chosen independently; the two side hardpoints are ONE mirrored choice (both sides carry and fire the same item). Mounts in metres on the airframe (f forward, r right, z up). Arcs in degrees from the nose (side arcs are for the right side; the left side mirrors).",
+      "slots": {"nose": ["cannon", "missiles", "anti_drone"], "side": ["missiles", "gun", "drones", "anti_drone"], "rear": ["flares", "deterrents", "anti_drone", "gun"]},
+      "default": {"nose": "cannon", "side": "missiles", "rear": "flares"},
+      "mounts": {"nose": [5.6, 0.0, 0.8], "side": [0.6, 1.75, 1.1], "rear": [-6.0, 0.0, 1.35]},
+      "arcs": {"nose": [0.0, 80.0], "side": [70.0, 95.0], "rear": [180.0, 80.0]},
+      "items": {
+        "cannon": {"weapon": "g7_vanta_cannon", "mag": 300, "burst": 1},
+        "missiles": {"weapon": "g7_vanta_missile", "mag": 4},
+        "gun": {"weapon": "g7_vanta_mg", "mag": 500, "auto": true},
+        "anti_drone": {"weapon": "g7_vanta_ad", "mag": 60, "drones_only": true},
+        "drones": {"drone_def": "cn_gun_drone", "mag": 2, "cooldown": 6.0, "life_s": 45.0, "range": 12.0},
+        "flares": {"charges": 8, "gap_s": 0.6},
+        "deterrents": {"cooldown": 3.0}
+      },
+      "stealth_lock_fail": 0.35,
+      "stealth_lock_frac": 0.6,
+      "rearm_s": 8.0,
+      "swap_s": 10.0,
+      "rtb_fuel_frac": 0.35,
+      "land_r": 0.6,
+      "turn_deg_s": 90.0,
+      "fire_every": 2,
+      "think_every": 10,
+      "ai_defend_r": 18.0,
+      "ai_calm_s": 20.0,
+      "deck_alt": 0.76,
+      "_deck_note": "display: render alt fraction for a craft standing on the 11.6 m barracks deck (114 px of the art's 150 px flight altitude, manifest 'altitude')"
+    }
+  }
+}

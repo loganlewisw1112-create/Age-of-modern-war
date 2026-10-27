@@ -1,6 +1,7 @@
 extends RefCounted
 ## Garrison (owner: MECH6a). CONTRACTS_G6 §4, §9.
 ## Commands: garrison {issuer, unit_ids, building_id}; ungarrison {issuer, building_id}.
+## G7 SENT7: Sentinel posts (rules.g7_sentinels.posts) set the slots and admit Sentinels only (admits / only_of).
 ## Slots: def garrison_slots, else rules.g6_ground.garrison.defs[id].slots (s_garrison_bld, b_pillbox,
 ##   a_fob). Who enters: the owner's foot infantry (move_class foot, armor not heavy).
 ## Entry: order {type:"garrison", building_id}; the unit walks to the footprint and, within enter_reach,
@@ -40,16 +41,50 @@ static func _rule(def_id: String) -> Dictionary:
 	return R().get("defs", {}).get(def_id, {})
 
 
+## G7 SENT7 (13.9c-10): Sentinel posts (rules.g7_sentinels.posts: facility tower 4, foot entry 15, Sentinel Barracks
+## 120) override the def / G6 slots; those posts admit Sentinels only (post_only / def garrison_only).
+static func _s7() -> Dictionary:
+	return Content.rules().get("g7_sentinels", {})
+
+
 static func slots_of(def_id: String) -> int:
 	var d := Content.building(def_id)
+	var sp = _s7().get("posts", {}).get(def_id)
+	if sp != null:
+		return int(sp)
 	if d.has("garrison_slots"):
 		return int(d.garrison_slots)
 	return int(_rule(def_id).get("slots", 0))
 
 
+## G7 SENT7: a building whose occupants never fire out (def garrison_fire false: the Sentinel Barracks quarters).
+## They get order "rest" (Combat only returns fire on unknown orders, and the attacker is cleared every tick).
+static func no_fire(def_id: String) -> bool:
+	return not bool(Content.building(def_id).get("garrison_fire", true))
+
+
 static func can_enter(def_id: String) -> bool:
 	var d := Content.unit(def_id)
 	return String(d.get("move_class", "")) == "foot" and String(d.get("armor", "")) != "heavy"
+
+
+## G7 SENT7: the unit-def field a building requires of its occupants ("" = anyone who can_enter): def garrison_only,
+## else rules.g7_sentinels.post_only for a Sentinel post.
+static func only_of(bdef: String) -> String:
+	var d := Content.building(bdef)
+	if d.has("garrison_only"):
+		return String(d.garrison_only)
+	if _s7().get("posts", {}).has(bdef):
+		return String(_s7().get("post_only", ""))
+	return ""
+
+
+## G7 SENT7: can a unit of def udef garrison a building of def bdef?
+static func admits(bdef: String, udef: String) -> bool:
+	if not can_enter(udef):
+		return false
+	var only := only_of(bdef)
+	return only == "" or String(Content.unit(udef).get(only, "")) != ""
 
 
 static func _state(w: SimWorld) -> Dictionary:
@@ -88,9 +123,10 @@ static func _bld(w: SimWorld, cmd: Dictionary):
 
 static func _entrants(w: SimWorld, cmd: Dictionary, bid: int) -> Array:
 	var out := []
+	var bd := String(w.entities[bid].def) if w.entities.has(bid) else ""
 	for raw in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(raw))
-		if e != null and e.kind == "unit" and int(e.owner) == int(cmd.issuer) and can_enter(String(e.def)) \
+		if e != null and e.kind == "unit" and int(e.owner) == int(cmd.issuer) and admits(bd, String(e.def)) \
 				and int(e.get("garrisoned_in", -1)) != bid:
 			out.append(e)
 	out.sort_custom(func(a, b): return int(a.id) < int(b.id))
@@ -110,6 +146,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			if free_slots(w, b) <= 0:
 				return "The building is full."
 			if _entrants(w, cmd, int(b.id)).is_empty():
+				if only_of(String(b.def)) == "sentinel":
+					return "Only Sentinels can garrison here."
 				return "Only infantry squads can garrison."
 			return ""
 		"ungarrison":
@@ -183,12 +221,17 @@ static func tick(w: SimWorld) -> void:
 			if e == null or int(e.get("garrisoned_in", -1)) != int(r.id):
 				continue
 			var ot := String(e.order.type)
-			if ot == "idle":
-				HotState.set_order(w, int(uid), {"type": "hold"})
-			elif ot != "hold":
+			var nf := no_fire(String(r.def))
+			if ot == "idle" or (nf and ot == "hold"):
+				HotState.set_order(w, int(uid), {"type": "rest" if nf else "hold"})
+			elif ot != "hold" and not (nf and ot == "rest"):
 				_place_out(w, e, r, units.size())
 				_left(w, e, int(r.id), "order")
 				continue
+			if nf:   # G7 SENT7: quartered troops (barracks, def garrison_fire false) never fire out, not even back
+				if int(e.target) >= 0:
+					HotState.set_target(w, int(uid), -1)
+				e.erase("last_attacker")
 			units.append(int(uid))
 			_pin(w, e, r, units.size() - 1)
 		r.units = units
@@ -260,8 +303,8 @@ static func place_inside(w: SimWorld, bid: int, uid: int) -> String:
 		return "That building cannot be garrisoned."
 	if not bool(b.get("built", false)):
 		return "The building is not finished."
-	if not can_enter(String(e.def)):
-		return "Only infantry squads can garrison."
+	if not admits(String(b.def), String(e.def)):
+		return "Only Sentinels can garrison here." if only_of(String(b.def)) == "sentinel" else "Only infantry squads can garrison."
 	if int(e.get("garrisoned_in", -1)) == bid:
 		return ""
 	if free_slots(w, b) <= 0:

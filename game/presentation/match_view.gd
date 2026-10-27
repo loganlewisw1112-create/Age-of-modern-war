@@ -15,6 +15,10 @@ extends Node2D
 ##   --sim-thread=off|on|force  G4 (THREAD): step the sim on a WorkerThreadPool task (default on
 ##                         when safe: native off, or a threads-enabled native DLL); off = inline
 
+const FacSeq7 = preload("res://presentation/view/fac_seq7.gd")  # G7 SEQ7: facility mission sequences
+const FacAtmo7 = preload("res://presentation/view/fac_atmo7.gd")  # G7 ATMO7: facility alarm, night, smoke, wear, signs, damage
+const WallTurret7 = preload("res://sim/systems/wallturret7.gd")  # G7 WTUR7 CR 3640
+const FacLife7 = preload("res://presentation/view/fac_life7.gd")  # G7 LIFE7 CR 3644
 const TILE_W := 64
 const TILE_H := 32
 const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dropping backlog
@@ -65,6 +69,9 @@ var world: SimWorld:
 		if _runner != null and v != null:
 			_runner.setup(v, sim_threaded)
 			snap = RenderSnap.latest(v)
+var fac_life7: Node2D   # G7 LIFE7
+var fac_atmo7: Node2D   # G7 ATMO7
+var fac_seq7: Node2D   # G7 SEQ7
 var snap: Dictionary = {}                # latest render snapshot (sim/render_snap.gd)
 var sim_threaded := false                # G4: true = steps run on a worker task
 var player_fid: int = 0
@@ -221,6 +228,9 @@ func _init_view() -> void:
 	baseprops_layer = BasePropsLayer.new()  # G7 BASE7 CR 1798: right after the creep layer, same z
 	baseprops_layer.z_index = 0
 	add_child(baseprops_layer)
+	fac_atmo7 = FacAtmo7.new()   # G7 ATMO7 CR 3757
+	fac_atmo7.z_index = 0
+	add_child(fac_atmo7)
 	ring_layer = OverlayLayer.new()
 	ring_layer.mode = "under"
 	ring_layer.z_index = 1
@@ -232,6 +242,13 @@ func _init_view() -> void:
 	vis7_layer.z_index = 2
 	add_child(vis7_layer)
 	vis7_layer.setup(self)
+	fac_seq7 = FacSeq7.new()   # G7 SEQ7 CR 3721
+	fac_seq7.z_index = 2
+	add_child(fac_seq7)
+	fac_life7 = FacLife7.new()   # G7 LIFE7 CR 3644
+	fac_life7.z_index = 2
+	add_child(fac_life7)
+	fac_life7.setup(self)
 	fx_layer = FxLayer.new()
 	fx_layer.z_index = 3
 	add_child(fx_layer)
@@ -274,6 +291,8 @@ func _init_view() -> void:
 		layer.setup(self)
 	world7_layer.setup(self)  # G7 LPMAP7
 	baseprops_layer.setup(self)  # G7 BASE7
+	fac_atmo7.setup(self)   # G7 ATMO7 CR 3757
+	fac_seq7.setup(self)   # G7 SEQ7 CR 3721
 	camera.setup(self)
 
 	# start centred on the player's HQ (or spawn)
@@ -522,6 +541,7 @@ func _process(delta: float) -> void:
 	world7_layer.refresh(snap)  # G7 LPMAP7: hidden and free with no creep and no map.lp
 	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
 	baseprops_layer.refresh(snap)  # G7 BASE7 CR 1798
+	fac_atmo7.refresh(snap)   # G7 ATMO7 CR 3757
 	ViewUtil.prof_add("p_terrain", tp)
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
@@ -529,6 +549,8 @@ func _process(delta: float) -> void:
 	vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
 	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
+	fac_life7.refresh(snap)   # G7 LIFE7 CR 3644
+	fac_seq7.refresh(snap)   # G7 SEQ7 CR 3721
 	_t_ent += Time.get_ticks_usec() - te
 	ViewUtil.prof_add("p_ent", te)
 	fx_layer.lod = entity_layer.lod
@@ -651,6 +673,8 @@ func anim_time() -> float:
 
 
 func _on_step_events(evs: Array) -> void:
+	fac_life7.on_events(evs)   # G7 LIFE7 CR 3644
+	fac_atmo7.on_events(evs)   # G7 ATMO7 CR 3757
 	vis7_layer.on_events(evs)  # G7 VIS7 CR 1393
 	for ev in evs:
 		match String(ev.type):
@@ -799,6 +823,8 @@ func get_view_corners_world() -> PackedVector2Array:
 
 ## Placement origin (top-left cell) for the ghost of def_id centred under world pos p.
 func placement_origin(def_id: String, p: Vector2) -> Vector2i:
+	if Content.building(def_id).has("wt7"):  # G7 WTUR7 CR 3640: snap to the nearest valid facility wall face
+		return WallTurret7.snap(world, player_fid, def_id, p)
 	var size := int(Content.building(def_id).get("size", 1))
 	var c := Vector2i(floori(p.x - size * 0.5 + 0.5), floori(p.y - size * 0.5 + 0.5))
 	return c
@@ -940,6 +966,7 @@ func entity_at(p: Vector2, only_actionable: bool = true):
 	if best != null:
 		return best
 	var c := Vector2i(floori(p.x), floori(p.y))
+	var bpick = null
 	for id in world.entities:
 		var e: Dictionary = world.entities[id]
 		if e.kind != "building":
@@ -947,8 +974,10 @@ func entity_at(p: Vector2, only_actionable: bool = true):
 		var o: Vector2i = e.cell
 		var s := int(e.size)
 		if c.x >= o.x and c.y >= o.y and c.x < o.x + s and c.y < o.y + s:
-			if entity_visible(e) or (not only_actionable and _remembered(int(e.id))):
-				return e
+			if (entity_visible(e) or (not only_actionable and _remembered(int(e.id)))) and (bpick == null or s < int(bpick.size)):
+				bpick = e   # G7 WTUR7 CR 3640: the smallest building on the cell (a wall turret over its wall)
+	if bpick != null:
+		return bpick
 	for id in world.entities:
 		var e: Dictionary = world.entities[id]
 		if e.kind == "resource" and (e.pos as Vector2).distance_to(p) < 0.8 and cell_explored(world.cell_of(e.pos)):

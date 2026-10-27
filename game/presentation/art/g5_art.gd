@@ -98,6 +98,11 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 			return base + "_build_%d" % n
 		if states.has("build_%d" % n):
 			return "build_%d" % n
+	var fi4 := int(e.get("facing_i", 0)) / 4  # G7 WTUR7 CR 3641: wall-turret head aim frames rot_<m>_a<n>[_fire]
+	if fi4 > 0 and base != "" and not dmg and bool(e.get("built", true)) and states.has(base + "_a%d" % fi4):
+		if int(e.get("firing", 0)) > 0 and states.has(base + "_a%d_fire" % fi4):
+			return base + "_a%d_fire" % fi4
+		return base + "_a%d" % fi4
 	if base != "":
 		# G6 (VIEW6): the 14 G6 turrets carry rot_<f>_fire (kit action art: muzzle flash / missile /
 		# beam), shown while the snapshot static has `firing` (the sim's shot counter) and hp >= 50%

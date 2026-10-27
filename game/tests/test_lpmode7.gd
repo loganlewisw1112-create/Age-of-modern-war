@@ -468,6 +468,15 @@ func test_base7_real_base_built() -> void:
 		var e: Dictionary = w.entities[id]
 		if e.kind != "unit" or int(e.owner) != fid or e.has("cn_team") or e.has("cn_fac") or bool(Content.unit(String(e.def)).get("is_air", false)):
 			continue
+		# SENT7-2 (ORCH directive; owner authority G7_REFERENCE 13.9c-10: Sentinels "man the walls ... as well as the
+		# interior of the facility on patrol"): the facility's own Sentinel garrison (e.s7) belongs inside the compound;
+		# any other defence unit parked there is still caught.
+		if e.has("s7"):
+			continue
+		# ORCH (owner authority G7_REFERENCE 13.9c-11 / -12: Facility Engineers work inside the facility, repairing,
+		# refilling lockers, refuelling): the facility's own engineer crew (e.eng7) belongs there too.
+		if e.has("eng7"):
+			continue
 		if comp.has_point(Vector2i(int(floor(e.pos.x)), int(floor(e.pos.y)))):
 			inside.append(String(e.def))
 	check_eq(inside, [], "no defence unit parked inside the facility compound")

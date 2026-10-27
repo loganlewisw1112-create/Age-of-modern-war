@@ -1,0 +1,88 @@
+{
+ "_meta": {
+  "owner": "ENG7",
+  "note": "G7 Facility Engineer (G7_REFERENCE 13.9c-11 / 13.9c-12): the counter-nanite facility's own work crew, Human A and Human B. Trained at the Sentinel Barracks (the facility's staff building), pistol only, no chain of command (no_command). Fully automatic through the shared facility job board (Sentinels7): repairs walls / towers / wall turrets / facility buildings with the normal Repair order (salvage paid as usual), builds the wall turrets the facility rebuys, refills ready-ammo lockers from the special ammo magazine by forklift (ammo drawn from the side's stock), refuels APCs and landed dropships with the fuel bowser from the fuel point (fuel drawn from the side's stock). Every number PROVISIONAL."
+ },
+ "units": {
+  "g7_fac_engineer": {
+   "name": "Facility Engineer",
+   "role": "builder",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 90,
+   "speed": 2.3,
+   "sight": 7,
+   "weapon": "pistol",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 24,
+   "morale": 110,
+   "can_build": true,
+   "build_power": 1.0,
+   "stage_min": 10,
+   "g7": true,
+   "no_command": true,
+   "fac_engineer": true,
+   "_role": "facility work crew: repairs, wall-turret rebuilds, locker refills by forklift, refuelling by fuel bowser (13.9c-11)"
+  },
+  "g7_b_fac_engineer": {
+   "name": "Facility Engineer",
+   "role": "builder",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 95,
+   "speed": 2.1,
+   "sight": 7,
+   "weapon": "pistol",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 24,
+   "morale": 110,
+   "can_build": true,
+   "build_power": 1.0,
+   "stage_min": 10,
+   "g7": true,
+   "no_command": true,
+   "fac_engineer": true,
+   "_role": "facility work crew: repairs, wall-turret rebuilds, locker refills by forklift, refuelling by fuel bowser (13.9c-11)"
+  }
+ },
+ "production": {
+  "g7_fac_engineer": {
+   "name": "Facility Engineer",
+   "spawns": ["g7_fac_engineer"],
+   "facility": "cn_sentinel_barracks",
+   "faction": "human_a",
+   "cost": {"credits": 110, "salvage": 40},
+   "train_time": 18,
+   "g7": true
+  },
+  "g7_b_fac_engineer": {
+   "name": "Facility Engineer",
+   "spawns": ["g7_b_fac_engineer"],
+   "facility": "cn_sentinel_barracks",
+   "faction": "human_b",
+   "cost": {"credits": 110, "salvage": 40},
+   "train_time": 18,
+   "g7": true
+  }
+ },
+ "rules": {
+  "g7_engineer": {
+   "_note": "ENG7 (13.9c-11 / 13.9c-12). Every number PROVISIONAL.",
+   "defs": {"human_a": "g7_fac_engineer", "human_b": "g7_b_fac_engineer"},
+   "start_count": 3,
+   "think_every": 10,
+   "scan_every": 100,
+   "ext_ttl_s": 8.0,
+   "arrive": 1.5,
+   "own_timeout_s": 45.0,
+   "repair": {"below": 0.9, "retry_s": 6.0},
+   "locker": {"ammo_per_load": 10, "load_s": 4.0, "unload_s": 3.0, "reach": 1.8, "short_event_s": 30.0},
+   "fuel": {"below": 0.85, "rate_s": 30.0, "reach": 2.2, "reach_air": 3.6, "zone_pad": 3.0, "prio": 2.0, "prio_empty": 2.5},
+   "build": {"retry_s": 4.0}
+  }
+ }
+}

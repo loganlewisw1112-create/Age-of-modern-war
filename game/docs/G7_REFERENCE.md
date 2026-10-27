@@ -706,6 +706,90 @@ ORCH decisions (still no officers / chain of command, per 13.9c-10; numbers PROV
 Owner: "for this endgoal protocol mode dont put a cap on the unit/population at all". In Last Protocol every side's
 supply cap is unlimited (Economy floor UNCAPPED); the HUD shows "POP n (NO CAP)". Skirmish keeps its caps.
 
+#### 13.9c-12 Facility staff run themselves (owner note, 2026-10-27)
+Owner: "factility engineer, sentinel ammo bearer, sentinel(s) ALL work automatically without need for player to
+position, move them, make them go to walls, nothing - they each have their own mind in a minor sense and coordinate max
+efficiency and accurately within their facility roles, jobs, current state, etc- EVERYTHING".
+- Sentinels, Sentinel Ammo Bearers and Facility Engineers are fully autonomous from the moment they exist: they take
+  posts, patrols, roster shifts, stand-to positions, garrisons, resupply runs, locker refills, repairs and refuelling on
+  their own, with no player orders needed. Each unit picks its next job from its role and its own state (ammo, health,
+  fatigue, exposure, distance, what is already covered) and the facility's state (threat, damage, empty lockers, low
+  stock, APCs / dropships needing fuel), through one shared facility job board so they coordinate (no two take the same
+  job; the most urgent job gets the nearest fit unit; re-planned every few seconds, staggered).
+- A newly trained one walks out of its building and joins the roster by itself.
+- The player MAY still give an order (player control first, G7 rule); a hand-ordered unit returns to automatic duty when
+  its order completes or after a short timeout. The AI commander's side uses the same automation.
+
+#### 13.9c-13 Sentinels: realism and expert tactics, no gimmicks (owner note, 2026-10-27)
+Owner: "sentinels coordination, movement, animation, everything should be very based in realism and expert tactical
+depth no gimmicks". Sentinel behaviour follows real infantry / security-force practice: buddy-team bounding and
+covering, cutting the pie at corners and doors, moving along walls and between hard cover, never standing in the open
+or skylined on a wall without a parapet, sector-of-fire discipline, interlocking fields of fire from the posts, ammo
+discipline (aimed fire, reload behind cover with the buddy covering, communicate "reloading"), casualty drill (buddy
+drags the wounded to cover, Mender comes forward), withdrawal by bounds, no instant turns or teleport-like moves,
+believable gait (walk on patrol, rush under fire, crouch in cover), animation matched to the action (aim, fire, reload,
+crouch, drag). Numbers and effects stay grounded: no glowing super-moves, no superhuman speed or accuracy; their
+strength comes from armour, training and position.
+
+#### 13.9c-14 Taller signature buildings and a new gunship (owner note, 2026-10-27)
+Owner: "make the training facility 2 stories ALL indoor high tech cqb and other type training + an outdoor
+rifle/explosive testing range next door --- barracks need to be at minim a 3 story builfing high tech design and
+secured/hardned with a roofttop landing pad for a stealth apache style but supermodernized and futuristic tech 'rotorless
+design' (NEW AIR VEHICLE designed specifically for the couter nanite team(s)) super mission adaptable can equip with
+drone launchers/missles/machine guns/antidrone tech/advance flares/detterents/etc ) /// fix the floating "RED LIGHT"
+warning lights placement so its realistically placed and not hovering at all /// /command center for facility should be
+a 4 story beautiful futurisct tactical buildign ??"
+- **Training facility:** a 2-storey, fully indoor, high-tech training building (CQB shoot house floors, simulators,
+  other training), plus an outdoor rifle / explosives testing range right next to it (replaces today's open range +
+  kill house).
+- **Sentinel barracks:** at least 3 storeys, high-tech, secured and hardened, with a rooftop landing pad for the new
+  gunship.
+- **New air vehicle (counter-nanite teams only):** a stealth attack gunship in the role of an attack helicopter, but a
+  futuristic ROTORLESS design (e.g. ducted / vectored fans or thrusters, faceted stealth hull); mission-adaptable
+  loadouts chosen per sortie: drone launchers, missiles, machine guns / cannon, anti-drone systems, advanced flares and
+  deterrents. Based on the barracks rooftop pad (rearm / refuel there). Name and numbers PROVISIONAL (ORCH: "CN Vanta").
+- **Command centre:** the facility's ops / planning building becomes a 4-storey, striking futuristic tactical
+  building (the facility's tallest), still on its current ground footprint unless it cannot fit.
+- **Red warning lights:** the alarm beacons / red lights must sit on real fixtures (parapets, posts, walls, roofs);
+  nothing hovers.
+- Taller buildings keep their footprints where possible (the owner does not want the facility much bigger); depth,
+  occlusion and every display layer (LIFE7 / ATMO7 / SEQ7 heights) updated to the new heights.
+
+#### 13.9c-15 CN Vanta hardpoints (owner note, 2026-10-27)
+Owner: "CN vanta should be able to be outfitted with weapons/atachment as discussed on the sides/rear/and main front nose
+of the airvehicle". The Vanta has hardpoints on the front nose (main), both sides (stub wings / side bays) and the rear;
+each hardpoint takes a weapon or attachment from the 13.9c-14 list (drone launcher, missiles, machine gun / cannon,
+anti-drone suite, advanced flares, deterrents), chosen per sortie, each visible on the art at its mount and firing
+from it (nose gun / missiles forward arc, side mounts their sides, rear mount covers the tail: flares / deterrents /
+anti-drone / rear gun).
+
+Owner follow-up (2026-10-27): "if you place any attachments on one side its also added to the other side (takes up
+those two slots obviously) then can pick independt rear and front nose attachmetns/weapons obviously". The two side
+hardpoints are a mirrored PAIR: one choice fills both sides with the same weapon / attachment; the front nose and the
+rear are chosen independently. So a loadout = nose + side pair + rear (3 choices).
+
+#### 13.9c-16 APC driving inside the facility (owner note, 2026-10-27)
+Owner: "fix the apcs driving animation/route within the facility (smoother) more realistic - 2 at a time at that top
+open staging area for the apcs for loading/etc when departing can select on or both together and they depart one after
+another not going over buildings/overlapping/nothing just smooth looking natural driving out of the facility or where i
+direct it (back to its specific garage/outside facility/etc)".
+- Smooth, realistic driving inside the compound: APCs follow the lanes (never cut across or drive over buildings),
+  turn with a real turning radius (no pivoting on the spot, no snapping headings), accelerate / brake smoothly, keep a
+  safe following gap, never overlap another vehicle.
+- The open staging area holds 2 APCs at a time for loading etc. (two marked bays); more wait their turn in order.
+- Departure: the player can select one APC or both and order them out; they leave one after another (convoy order,
+  spacing kept) through the gates, out of the facility or wherever the player directs: back to that APC's own garage,
+  to the staging bays, out of the facility to a map point.
+- Applies to the facility's automatic flows (launch, return, wash, garages) and to player orders alike.
+
+#### 13.9c-17 Lockdown only on a breach (owner note, 2026-10-27)
+Owner: "factility ONLy goes into full lockdown/harden mode when facility is breached". Full lockdown / harden mode (red
+alarm beacons and wall lamps, searchlight sweep, blast doors and shutters closing, decon mist flood, staff sheltering,
+range cold, lockdown states on every building) happens ONLY when the facility is breached (an enemy ground unit inside
+the compound: BaseState7 "breached"; the sim's CnFacility lockdown already follows this). "Contested" and "under fire"
+show an amber alert only (amber beacons; Sentinels stand to; normal facility life otherwise continues). Lockdown lifts
+when the breach is cleared.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).
@@ -1014,6 +1098,15 @@ Shown rev3 (`.plan/shots/ARTCN7/compare_today_vs_g7_rev3.png` + in-game shots), 
     like a clump or a parade, that's a bug.
 
 # G8 SCOPE (moved from G7 on 2026-10-26; every owner answer kept in the planning history below)
+
+## G8 HEADLINE: view rotation (owner, 2026-10-27)
+Owner: "add an easy way to rotate the view like in stronghold crusader -- make it seamless and easy". Asked how, the owner
+chose "Full rotation as G8's headline": finish and ship G7 first; G8 makes every building, prop, terrain edge and effect
+drawable from 4 sides (no mirrored or wrong-looking art), with rotation in smooth 90-degree steps on Q / E and a
+middle-mouse drag (rebindable), seamless: camera keeps its focus point, selection / orders / minimap / fog / every
+display layer and depth sort follow the view, UI hints show the facing. Today only 17 of 154 art generators have any
+multi-view states; the renderer assumes one fixed isometric angle.
+
 - **Strategy and economy:** dynamic single-player campaign on a dynamic map; deeper matches; richer evolutions and
   upgrades; research tree overhaul; civilians and territory; AoE3-style trade routes with location resources;
   black-market tier.

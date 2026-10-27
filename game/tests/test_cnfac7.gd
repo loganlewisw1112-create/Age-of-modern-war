@@ -5,6 +5,7 @@ const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const BaseState7 = preload("res://sim/systems/base_state7.gd")
 const Transport = preload("res://sim/systems/transport.gd")
 const Movement = preload("res://sim/systems/movement.gd")
+const WallTurret7 = preload("res://sim/systems/wallturret7.gd")
 const NOFIRE := 100000
 
 
@@ -1202,26 +1203,33 @@ func test_base73_wall_ring_closed_towers_tied_in() -> void:
 		rl = 0 if kind.call(ring[i % ring.size()]) == "cn_tower" else rl + 1
 		longest = maxi(longest, rl)
 	check(longest <= 5, "no wall run longer than 5 segments without a tower (%d)" % longest)
-	# 13.9c-4: sentry turrets on the inner face of every wall run of >= 2 segments, facing outward, owned by the owner
-	var sent := {}
+	# 13.9c-4 sentry coverage, re-pointed by owner 13.9c-9 (FACB7-3): the manned sentry nests are removed and WTUR7's
+	# unmanned wall turrets hang on the wall faces instead. Same bar as before: none of the old nests left, every listed
+	# start cell carries a real turret of the owner on a valid face of this facility's wall, and every wall run of >= 2
+	# segments has one.
+	var nests := 0
 	for pid in F.parts:
-		var p: Dictionary = w.entities[int(pid)]
-		if String(p.def) == String(C.sentry_def):
-			sent[Vector2i(p.cell) - O] = p
-	check_eq(sent.size(), (C.sentries as Array).size(), "every wall sentry stands (%d)" % sent.size())
-	var lo := 2
-	var hi := cs - 3
+		if String(w.entities[int(pid)].def) == "a_t7_hmg_nest":
+			nests += 1
+	check_eq(nests, 0, "no manned sentry nests left in the facility (13.9c-9)")
+	w.run_ticks(3)
+	var sent := {}
 	var wrong := []
+	for bid in w.entities:
+		var p: Dictionary = w.entities[bid]
+		if p.kind == "building" and int(p.get("cn_fac", -1)) == int(F.id) and Content.building(String(p.def)).has("wt7"):
+			sent[Vector2i(p.cell) - O] = p
+	check_eq(sent.size(), (C.wall_turrets as Array).size(), "every wall turret of the start set stands (%d)" % sent.size())
 	for q in sent:
 		var e: Dictionary = sent[q]
-		var ov := Vector2(-1, 0) if q.x == lo else (Vector2(1, 0) if q.x == hi else (Vector2(0, -1) if q.y == lo else (Vector2(0, 1) if q.y == hi else Vector2.ZERO)))
-		if ov == Vector2.ZERO:
-			wrong.append("%s off the inner wall face" % q)
-		elif absf(angle_difference(float(e.get("facing", 99.0)), ov.angle())) > 0.01:
-			wrong.append("%s not facing outward" % q)
-		if int(e.owner) != int(F.owner) or not bool(Content.building(String(e.def)).get("turret7", false)):
-			wrong.append("%s is not a real turret of the owner" % q)
-	check_eq(wrong, [], "sentries sit on the inner face, face outward and belong to the facility owner")
+		if int(e.owner) != int(F.owner):
+			wrong.append("%s is not the owner's" % q)
+		var fi: Dictionary = WallTurret7.face_info(w, int(e.owner), String(e.def), Vector2i(e.cell), int(e.id))
+		if fi.has("err"):
+			wrong.append("%s not on a valid wall face: %s" % [q, str(fi.err)])
+	check_eq(wrong, [], "wall turrets hang on a valid face of the facility wall and belong to the facility owner")
+	var lo := 2   # the inner wall face line (used by the open-face check below)
+	var hi := cs - 3
 	var bare := []
 	var run := []
 	for i in ring.size() + 1:
@@ -1238,7 +1246,7 @@ func test_base73_wall_ring_closed_towers_tied_in() -> void:
 			if not cover:
 				bare.append(run[0])
 		run = []
-	check_eq(bare, [], "every wall run of >= 2 segments has a sentry")
+	check_eq(bare, [], "every wall run of >= 2 segments has a wall turret")
 	# 13.9c-4 wall-walk: every tower keeps a free inner cell (stairs); no building lines a whole wall face
 	var fps := _fac_footprints(C)
 	var inner := Rect2i(2, 2, cs - 4, cs - 4)
@@ -1296,7 +1304,11 @@ func test_base73_compound_site_flat_and_clear() -> void:
 	var res_out := w.spawn_resource("salvage", 300, Vector2(area.position) - Vector2(5.5, 5.5))
 	w.map.resources = [{"res": "ore", "amount": 500, "cell": area.position + Vector2i(9, 18)}, {"res": "salvage", "amount": 300, "cell": area.position - Vector2i(6, 6)}]
 	w.map.decor = [{"id": "boulder_test", "cell": [area.position.x + 14, area.position.y + 18], "size": [1, 1]},
-		{"id": "keep_me", "cell": [area.position.x - 6, area.position.y - 6], "size": [1, 1]}]
+		{"id": "keep_me", "cell": [area.position.x - 6, area.position.y - 6], "size": [1, 1]},
+		{"id": "apron_boulder", "cell": [area.position.x + 13, area.position.y + cs + 1], "size": [1, 1]}]   # FACB7-4: on the gate apron
+	var apron_c := Vector2i(area.position.x + 13, area.position.y + cs + 2)
+	if w.in_bounds(apron_c):
+		t[apron_c.y * mw + apron_c.x] = Terrain.FOREST
 	Movement.on_terrain_changed(w)
 	var evs := []
 	var off: Array = CnFacility.conf().core_offset
@@ -1326,6 +1338,10 @@ func test_base73_compound_site_flat_and_clear() -> void:
 	check_eq(inside, 0, "no resource node or salvage pickup inside the wall")
 	check_eq((w.map.resources as Array).size(), 1, "the map's resource list keeps only the deposit outside")
 	check(evs.size() == 1 and (evs[0].cells as Array).size() >= 6, "one TerrainChanged{cause cn_facility} tells the display to re-bake")
+	var apr: Array = CnFacility.conf().get("approach", [])   # FACB7-4: the gate apron / foot-entry approach is cleared too
+	check(apr.size() == 4, "the conf carries the cleared approach outside the south wall")
+	if w.in_bounds(apron_c):
+		check(int(w.map.terrain[apron_c.y * mw + apron_c.x]) == Terrain.ROAD, "the gate apron is paved (no forest / boulder in front of the gate)")
 	var tid := _train(w, fid, "tactical_squad")
 	check(tid > 0, "the facility still trains on the cleared site")
 
@@ -1363,6 +1379,12 @@ func test_facb7_building_services() -> void:
 	_run(w, 3)
 	var ds = w.entities.get(int(F.heli))
 	if check(ds != null and ds.has("fuel"), "dropship parked with a fuel tank"):
+		# FACB7-3 (13.9c-11, ENG7 via ORCH): while Facility Engineers staff the facility they refuel with the bowser
+		# (ENG7's tests); the pad's own refuel is the fallback when none is alive, checked here with them gone.
+		for eid in w.entities.keys():
+			if int(w.entities[eid].get("eng7", -1)) == int(F.id):
+				w.destroy(int(eid), "test", 1)
+		_run(w, 2)
 		ds.fuel = 100.0
 		ds.cn_drone_ready = w.tick + 9999
 		_run(w, 40)
@@ -1424,9 +1446,12 @@ func test_facb7_foot_entry_mantrap() -> void:
 	check(Movement.is_passable(w, m0, "foot", 0) and Movement.is_passable(w, m1, "foot", 0), "the mantrap is open for the owner")
 	check(not Movement.is_passable(w, m0, "foot", 1) and not Movement.is_passable(w, m1, "foot", 1), "the mantrap is shut to anyone else")
 	check(int(Content.building("cn_checkpoint").get("garrison_slots", 0)) > 0, "the gatehouse bunker is a garrisonable fighting position")
-	var out := Vector2(m0) + Vector2(0.5, 3.5)
+	# FACB7-3 (13.9c-8 serpentine re-enabled): the soldiers start on the serpentine's outer leg (json ecp_start), not on
+	# the baffle row; the owner's soldier must walk the serpentine and then the mantrap (same path check as before).
+	var es0: Array = C.get("ecp_start", [int(C.mantrap[0][0]), int(C.mantrap[0][1]) + 3])
+	var out := Vector2(O) + Vector2(float(es0[0]) + 0.5, float(es0[1]) + 0.5)
 	var u: Dictionary = w.entities[_unit(w, "rifleman", 0, out)]
-	var en: Dictionary = w.entities[_unit(w, "rifleman", 1, out + Vector2(1.0, 0.0))]
+	var en: Dictionary = w.entities[_unit(w, "rifleman", 1, out + Vector2(-1.0, 0.0))]
 	var hall := CnFacility.zone(F, "decon_hall")
 	var stg := CnFacility.zone(F, "staging").get_center()
 	var walk := Vector2(m1) + Vector2(0.5, -1.5)   # first leg: through the gatehouse onto the walkway (the infantry way in)
@@ -1458,3 +1483,50 @@ func test_facb7_foot_entry_mantrap() -> void:
 	w.destroy(int(F.cp), "test", 1)
 	_run(w, 12)
 	check(Movement.gate_at(w, m0).is_empty() and Movement.gate_at(w, m1).is_empty(), "a fallen gatehouse takes its gates with it")
+
+
+## FACB7-4 (owner 13.9c-14): taller signature buildings on (about) the same ground and the gunship pad on the barracks
+## roof: the command centre keeps its 4x3 footprint, the compound keeps its size, the barracks grows at most 1 tile, its
+## roof pad (TLOF inside the barracks footprint, deck >= 3 storeys up) refuels / rearms a landed owner aircraft like the
+## ground pads, and stops doing so once the barracks is destroyed.
+func test_facb74_roof_pad_and_signature_buildings() -> void:
+	var C := CnFacility.conf()
+	check_eq(int(C.compound), 28, "the compound keeps its size")
+	check_eq([int(C.planning[0]), int(C.planning[1]), int(C.planning[2]), int(C.planning[3])], [8, 9, 4, 3], "the 4-storey command centre stands on the planning room's footprint")
+	var br: Array = C.barracks
+	check(int(br[2]) * int(br[3]) <= 8, "the barracks grew at most 1 tile row (%s)" % [br])
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var rp := CnFacility.roof_pad(w, F)
+	if not check(not rp.is_empty(), "the barracks carries a roof pad"):
+		return
+	var bz := CnFacility.zone(F, "barracks")
+	check(bz.grow(0.01).encloses(rp.rect), "the pad's TLOF lies on the barracks roof (%s in %s)" % [rp.rect, bz])
+	check(float(rp.z) >= 10.8 and bool(rp.ok), "the deck stands on a 3-storey roof (%.1f m) and is usable" % float(rp.z))
+	var es := CnFacility.render_entries(w)
+	check(not es.is_empty() and (es[0].roof_pad as Array).size() == 7, "render entries carry the roof pad for the display layers")
+	for eid in w.entities.keys():   # the pad's own refuel is the fallback when no Facility Engineer is alive
+		if int(w.entities[eid].get("eng7", -1)) == int(F.id):
+			w.destroy(int(eid), "test", 1)
+	var did := w.spawn_unit("cn_stealth_dropship", int(F.owner), rp.centre)   # a second aircraft, not the managed helipad craft
+	var ds = w.entities.get(did)
+	if not check(ds != null and ds.has("fuel"), "an aircraft with a fuel tank"):
+		return
+	# the service pass itself (the air system owns air_landed; AIRV7 lands the gunship there): a landed aircraft on the
+	# deck is refuelled while the barracks stands
+	var serve := func() -> void:
+		ds.pos = rp.centre
+		ds.air_landed = true
+		for k in 5:
+			CnFacility._service(w, F, ds, rp.centre, CnFacility._svc_rects(w, F))
+	ds.fuel = 100.0
+	serve.call()
+	check(float(ds.fuel) > 100.0, "the barracks roof pad refuels a landed aircraft standing on it (fuel %.0f)" % float(ds.fuel))
+	if int(F.get("bar", 0)) > 0 and w.entities.has(int(F.bar)):
+		w.destroy(int(F.bar), "test", 1)
+		_run(w, 2)
+		ds.fuel = 100.0
+		serve.call()
+		check(not bool(CnFacility.roof_pad(w, F).ok) and float(ds.fuel) <= 100.0, "a destroyed barracks has no pad (fuel %.0f)" % float(ds.fuel))

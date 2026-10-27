@@ -357,6 +357,10 @@ static func g7_cols(frames: Array) -> Dictionary:
 		if c < 0:
 			return {}
 		d[k] = c
+	for k in ["sa_aim", "sa_fire", "aim"]:   # G7 SENTART7 CR 4400: optional Sentinel columns (only sheets that carry them)
+		var c := frames.find(k)
+		if c >= 0:
+			d[k] = c
 	return d
 
 

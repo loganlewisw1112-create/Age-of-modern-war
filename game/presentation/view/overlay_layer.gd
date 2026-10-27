@@ -195,6 +195,21 @@ func _draw_g6_over() -> void:
 		var tcol: Color = mv.team_color(int(st.owner)) if mv.has_method("team_color") else Color(0.55, 1.0, 0.5)
 		var pe := ArtCatalog.fx_g6("garrison_pip", 0)
 		var pfull := ArtCatalog.fx_g6("garrison_pip", 1, tcol)
+		if n > PIP_MAX:
+			# G7 ORCH (POLISH7-2 need 4393): a big garrison (the 120-slot Sentinel barracks) drew one 9 px pip per slot, a
+			# ~1080 px row across the compound. Over PIP_MAX slots: one filled pip + "held/slots" count badge instead.
+			var label := "%d/%d" % [int(g[0]), n]
+			var fnt := ThemeDB.fallback_font
+			var tw := fnt.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var bx := top.x - (tw + 14.0) * 0.5
+			draw_rect(Rect2(Vector2(bx - 2.0, top.y - 1.0), Vector2(tw + 18.0, 13.0)), Color(0.02, 0.04, 0.03, 0.78))
+			if not pfull.is_empty():
+				draw_texture(pfull.texture, Vector2(bx, top.y + 4.0) + (pfull.offset as Vector2))
+			else:
+				draw_rect(Rect2(Vector2(bx, top.y + 2.0), Vector2(7, 7)), tcol)
+			draw_string(fnt, Vector2(bx + 11.0, top.y + 10.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.85, 0.95, 0.85))
+			pips += 1
+			continue
 		for i in n:
 			var spr: Dictionary = pfull if i < int(g[0]) else pe
 			if not spr.is_empty():
@@ -240,6 +255,7 @@ func _diamond(o: Vector2, s: float) -> PackedVector2Array:
 
 
 const _MotionW = preload("res://presentation/view/motion.gd")   # G7 WALL7
+const PIP_MAX := 16   # G7: garrisons with more slots show a count badge instead of one pip per slot
 
 
 func _draw_rings() -> void:

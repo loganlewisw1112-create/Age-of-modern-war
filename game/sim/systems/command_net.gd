@@ -311,7 +311,7 @@ static func squad_members(w: SimWorld, fid: int, sq: int) -> Array:
 
 ## Squad leader of e (first alive member of e.squad), 0 when e has no squad of 2+.
 static func squad_leader(w: SimWorld, e: Dictionary) -> int:
-	if not e.has("squad"):
+	if not e.has("squad") or e.has("s7"):   # G7 SENT7 CR 3787: Sentinels have no leader (owner 13.9c-10)
 		return 0
 	var m := squad_members(w, int(e.owner), int(e.squad))
 	return int(m[0]) if m.size() >= 2 else 0

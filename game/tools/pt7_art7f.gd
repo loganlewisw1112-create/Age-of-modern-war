@@ -8,7 +8,12 @@ extends RefCounted
 const H = preload("res://tests/test_machine_g6.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 
-const ZONES := ["planning", "lab", "drone_bay", "workshop", "range", "decon", "gate", "helipad", "pad", "staging", "core", "gate_outer", "apc_wash", "gate_inner", "decon_hall"]
+const ZONES := ["planning", "lab", "drone_bay", "workshop", "range", "decon", "gate", "helipad", "pad", "staging", "core", "gate_outer", "apc_wash", "gate_inner", "decon_hall",
+	"magazine", "armory", "aid_station", "barracks", "fuel_point", "runoff"]   # FACB7-3: + the 13.9c-6 buildings
+## FACB7-3: extra compound-local spots shot at zoom 1 / 1.75 / 2.5: the foot entry (gatehouse + mantrap + bunker + the
+## serpentine approach), the enclosed wash seen from outside, a tower-base locker, the entry-walkway lockers, wall turrets.
+const SPOTS := [["ecp", Vector2(19.0, 28.5)], ["wash_enclosed", Vector2(14.0, 24.0)], ["locker_w", Vector2(2.5, 11.5)],
+	["lockers_entry", Vector2(18.5, 25.0)], ["wturret_e", Vector2(27.0, 15.5)], ["wturret_n", Vector2(13.5, 1.0)]]
 ## ART7F-2: shot zoom levels named z1 / z2 / z3 (the camera clamps at ZOOM_MAX 2.5, so "3" is the closest it allows).
 const ZL := {1: 1.0, 2: 1.75, 3: 2.5}
 var _hidden: Array = []
@@ -170,6 +175,13 @@ func run(pt) -> void:
 			mv.center_camera_on(zc)
 			await pt._wait(0.4)
 			await pt._shot("art7f_%s_z%d" % [zn, z])
+	for sp in SPOTS:
+		var spc: Vector2 = Vector2(float(cr[0]), float(cr[1])) + (sp[1] as Vector2)
+		for z in [1, 2, 3]:
+			_zoom(mv, float(ZL[z]))
+			mv.center_camera_on(spc)
+			await pt._wait(0.4)
+			await pt._shot("art7f_%s_z%d" % [sp[0], z])
 	var g0: Array = F.get("garage_rects", [])
 	for gi in [0, g0.size() - 1]:   # ART7F-2: first garage of the west row and last of the east row, centred on the rect
 		if gi < 0 or gi >= g0.size():
@@ -211,6 +223,22 @@ func run(pt) -> void:
 	await pt._shot("art7f_compound_lockdown_z10")
 	mv.join_sim()
 	Fs.lock = false
+	# FACB7-3: the ruin states (the magazine's armoured cell cooked off, the Sentinel barracks destroyed), shot at 1.75 / 2.5
+	for rz in [["magazine", "mag"], ["barracks", "bar"]]:
+		mv.join_sim()
+		var rid := int(Fs.get(rz[1], 0))
+		if rid > 0 and w.entities.has(rid):
+			w.destroy(rid, "pt_ruin", 1 - me if me <= 1 else 0)
+		var rr: Array = zs.get(rz[0], [])
+		if rr.size() != 4:
+			continue
+		await pt._wait(1.5)
+		for z in [2, 3]:
+			_zoom(mv, float(ZL[z]))
+			mv.center_camera_on(Vector2(float(rr[0]) + float(rr[2]) * 0.5, float(rr[1]) + float(rr[3]) * 0.5))
+			await pt._wait(0.5)
+			await pt._shot("art7f_%s_ruin_z%d" % [rz[0], z])
+	pt._log("art7f_ruins", true, "magazine / barracks ruin shots taken")
 	# 5. dropship landing site (BASE7-2 def a_g7_vtol_pad), approach on +y
 	if not Content.building("a_g7_vtol_pad").is_empty():
 		mv.join_sim()

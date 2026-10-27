@@ -1,0 +1,745 @@
+{
+  "atmo7": {
+    "arrow0": {
+      "file": "fx/arrow0.png",
+      "h": 37,
+      "pivot": [
+        36,
+        18
+      ],
+      "w": 72
+    },
+    "arrow1": {
+      "file": "fx/arrow1.png",
+      "h": 37,
+      "pivot": [
+        36,
+        18
+      ],
+      "w": 72
+    },
+    "arrow2": {
+      "file": "fx/arrow2.png",
+      "h": 37,
+      "pivot": [
+        36,
+        18
+      ],
+      "w": 72
+    },
+    "arrow3": {
+      "file": "fx/arrow3.png",
+      "h": 37,
+      "pivot": [
+        36,
+        18
+      ],
+      "w": 72
+    },
+    "beacon": {
+      "fh": 14,
+      "file": "fx/beacon.png",
+      "frames": 8,
+      "fw": 12,
+      "h": 28,
+      "pivot": [
+        6,
+        13
+      ],
+      "w": 96
+    },
+    "board_aid": {
+      "file": "fx/board_aid.png",
+      "h": 19,
+      "pivot": [
+        25,
+        18
+      ],
+      "w": 51
+    },
+    "board_aid_station": {
+      "file": "fx/board_aid_station.png",
+      "h": 19,
+      "pivot": [
+        25,
+        18
+      ],
+      "w": 51
+    },
+    "board_apc_wash": {
+      "file": "fx/board_apc_wash.png",
+      "h": 19,
+      "pivot": [
+        19,
+        18
+      ],
+      "w": 39
+    },
+    "board_armory": {
+      "file": "fx/board_armory.png",
+      "h": 25,
+      "pivot": [
+        19,
+        24
+      ],
+      "w": 39
+    },
+    "board_checkpoint": {
+      "file": "fx/board_checkpoint.png",
+      "h": 25,
+      "pivot": [
+        23,
+        24
+      ],
+      "w": 47
+    },
+    "board_core": {
+      "file": "fx/board_core.png",
+      "h": 19,
+      "pivot": [
+        23,
+        18
+      ],
+      "w": 47
+    },
+    "board_decon_hall": {
+      "file": "fx/board_decon_hall.png",
+      "h": 19,
+      "pivot": [
+        23,
+        18
+      ],
+      "w": 47
+    },
+    "board_drone_bay": {
+      "file": "fx/board_drone_bay.png",
+      "h": 19,
+      "pivot": [
+        21,
+        18
+      ],
+      "w": 43
+    },
+    "board_fuel": {
+      "file": "fx/board_fuel.png",
+      "h": 19,
+      "pivot": [
+        27,
+        18
+      ],
+      "w": 55
+    },
+    "board_fuel_point": {
+      "file": "fx/board_fuel_point.png",
+      "h": 19,
+      "pivot": [
+        27,
+        18
+      ],
+      "w": 55
+    },
+    "board_gate_inner": {
+      "file": "fx/board_gate_inner.png",
+      "h": 19,
+      "pivot": [
+        15,
+        18
+      ],
+      "w": 31
+    },
+    "board_gate_outer": {
+      "file": "fx/board_gate_outer.png",
+      "h": 19,
+      "pivot": [
+        15,
+        18
+      ],
+      "w": 31
+    },
+    "board_helipad": {
+      "file": "fx/board_helipad.png",
+      "h": 25,
+      "pivot": [
+        27,
+        24
+      ],
+      "w": 55
+    },
+    "board_lab": {
+      "file": "fx/board_lab.png",
+      "h": 19,
+      "pivot": [
+        25,
+        18
+      ],
+      "w": 51
+    },
+    "board_magazine": {
+      "file": "fx/board_magazine.png",
+      "h": 25,
+      "pivot": [
+        27,
+        24
+      ],
+      "w": 55
+    },
+    "board_pad": {
+      "file": "fx/board_pad.png",
+      "h": 25,
+      "pivot": [
+        19,
+        24
+      ],
+      "w": 39
+    },
+    "board_planning": {
+      "file": "fx/board_planning.png",
+      "h": 25,
+      "pivot": [
+        35,
+        24
+      ],
+      "w": 71
+    },
+    "board_range": {
+      "file": "fx/board_range.png",
+      "h": 19,
+      "pivot": [
+        21,
+        18
+      ],
+      "w": 43
+    },
+    "board_ready_room": {
+      "file": "fx/board_ready_room.png",
+      "h": 19,
+      "pivot": [
+        23,
+        18
+      ],
+      "w": 47
+    },
+    "board_staging": {
+      "file": "fx/board_staging.png",
+      "h": 19,
+      "pivot": [
+        17,
+        18
+      ],
+      "w": 35
+    },
+    "board_suit_bay": {
+      "file": "fx/board_suit_bay.png",
+      "h": 19,
+      "pivot": [
+        19,
+        18
+      ],
+      "w": 39
+    },
+    "board_workshop": {
+      "file": "fx/board_workshop.png",
+      "h": 19,
+      "pivot": [
+        19,
+        18
+      ],
+      "w": 39
+    },
+    "cracks0": {
+      "file": "fx/cracks0.png",
+      "h": 28,
+      "pivot": [
+        18,
+        14
+      ],
+      "w": 36
+    },
+    "cracks1": {
+      "file": "fx/cracks1.png",
+      "h": 28,
+      "pivot": [
+        18,
+        14
+      ],
+      "w": 36
+    },
+    "cracks2": {
+      "file": "fx/cracks2.png",
+      "h": 28,
+      "pivot": [
+        18,
+        14
+      ],
+      "w": 36
+    },
+    "crest": {
+      "file": "fx/crest.png",
+      "h": 37,
+      "pivot": [
+        36,
+        18
+      ],
+      "w": 72
+    },
+    "fire": {
+      "fh": 20,
+      "file": "fx/fire.png",
+      "frames": 6,
+      "fw": 14,
+      "h": 20,
+      "pivot": [
+        7,
+        19
+      ],
+      "w": 84
+    },
+    "flag": {
+      "fh": 12,
+      "file": "fx/flag.png",
+      "frames": 6,
+      "fw": 16,
+      "h": 24,
+      "pivot": [
+        0,
+        2
+      ],
+      "w": 96
+    },
+    "glow": {
+      "file": "fx/glow.png",
+      "h": 64,
+      "pivot": [
+        64,
+        32
+      ],
+      "w": 128
+    },
+    "oil0": {
+      "file": "fx/oil0.png",
+      "h": 10,
+      "pivot": [
+        10,
+        5
+      ],
+      "w": 20
+    },
+    "oil1": {
+      "file": "fx/oil1.png",
+      "h": 10,
+      "pivot": [
+        10,
+        5
+      ],
+      "w": 20
+    },
+    "oil2": {
+      "file": "fx/oil2.png",
+      "h": 10,
+      "pivot": [
+        10,
+        5
+      ],
+      "w": 20
+    },
+    "puff0": {
+      "file": "fx/puff0.png",
+      "h": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "w": 16
+    },
+    "puff1": {
+      "file": "fx/puff1.png",
+      "h": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "w": 16
+    },
+    "puff2": {
+      "file": "fx/puff2.png",
+      "h": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "w": 16
+    },
+    "rubble0": {
+      "file": "fx/rubble0.png",
+      "h": 88,
+      "pivot": [
+        64,
+        56
+      ],
+      "w": 128
+    },
+    "rubble1": {
+      "file": "fx/rubble1.png",
+      "h": 88,
+      "pivot": [
+        64,
+        56
+      ],
+      "w": 128
+    },
+    "rubble2": {
+      "file": "fx/rubble2.png",
+      "h": 88,
+      "pivot": [
+        64,
+        56
+      ],
+      "w": 128
+    },
+    "scorch": {
+      "file": "fx/scorch.png",
+      "h": 64,
+      "pivot": [
+        64,
+        32
+      ],
+      "w": 128
+    },
+    "spot": {
+      "file": "fx/spot.png",
+      "h": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "w": 16
+    },
+    "st_cp": {
+      "file": "fx/st_cp.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_g1": {
+      "file": "fx/st_g1.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_g2": {
+      "file": "fx/st_g2.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n01": {
+      "file": "fx/st_n01.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n02": {
+      "file": "fx/st_n02.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n03": {
+      "file": "fx/st_n03.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n04": {
+      "file": "fx/st_n04.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n05": {
+      "file": "fx/st_n05.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n06": {
+      "file": "fx/st_n06.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n07": {
+      "file": "fx/st_n07.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_n08": {
+      "file": "fx/st_n08.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_p1": {
+      "file": "fx/st_p1.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_p2": {
+      "file": "fx/st_p2.png",
+      "h": 28,
+      "pivot": [
+        27,
+        14
+      ],
+      "w": 54
+    },
+    "st_slow": {
+      "file": "fx/st_slow.png",
+      "h": 44,
+      "pivot": [
+        43,
+        22
+      ],
+      "w": 86
+    },
+    "st_stop": {
+      "file": "fx/st_stop.png",
+      "h": 44,
+      "pivot": [
+        43,
+        22
+      ],
+      "w": 86
+    },
+    "vent": {
+      "file": "fx/vent.png",
+      "h": 8,
+      "pivot": [
+        6,
+        4
+      ],
+      "w": 12
+    },
+    "w_explosive": {
+      "file": "fx/w_explosive.png",
+      "h": 25,
+      "pivot": [
+        31,
+        24
+      ],
+      "w": 63
+    },
+    "w_force": {
+      "file": "fx/w_force.png",
+      "h": 31,
+      "pivot": [
+        33,
+        30
+      ],
+      "w": 67
+    },
+    "w_jet": {
+      "file": "fx/w_jet.png",
+      "h": 25,
+      "pivot": [
+        23,
+        24
+      ],
+      "w": 47
+    },
+    "w_livefire": {
+      "file": "fx/w_livefire.png",
+      "h": 19,
+      "pivot": [
+        21,
+        18
+      ],
+      "w": 43
+    },
+    "w_nanite": {
+      "file": "fx/w_nanite.png",
+      "h": 25,
+      "pivot": [
+        31,
+        24
+      ],
+      "w": 63
+    },
+    "w_nosmoke": {
+      "file": "fx/w_nosmoke.png",
+      "h": 19,
+      "pivot": [
+        23,
+        18
+      ],
+      "w": 47
+    },
+    "w_rotor": {
+      "file": "fx/w_rotor.png",
+      "h": 19,
+      "pivot": [
+        23,
+        18
+      ],
+      "w": 47
+    },
+    "w_speed": {
+      "file": "fx/w_speed.png",
+      "h": 25,
+      "pivot": [
+        13,
+        24
+      ],
+      "w": 27
+    },
+    "w_stop": {
+      "file": "fx/w_stop.png",
+      "h": 25,
+      "pivot": [
+        17,
+        24
+      ],
+      "w": 35
+    },
+    "w_suits": {
+      "file": "fx/w_suits.png",
+      "h": 25,
+      "pivot": [
+        33,
+        24
+      ],
+      "w": 67
+    },
+    "windsock": {
+      "dirs": 8,
+      "fh": 26,
+      "file": "fx/windsock.png",
+      "frames": 4,
+      "fw": 26,
+      "h": 208,
+      "pivot": [
+        12,
+        25
+      ],
+      "w": 104
+    }
+  },
+  "files": {
+    "fx/arrow0.png": "958693f938308b6d51810eb6dafe3708",
+    "fx/arrow1.png": "c4b75f9ca03b9a19f241073c9089bf82",
+    "fx/arrow2.png": "fe47ac25d2dcc915c7b082f2ca794e71",
+    "fx/arrow3.png": "e070077c3fdfffdc033616bae4af972a",
+    "fx/beacon.png": "cb6658657a6b75a7ed64e0849a57eab8",
+    "fx/board_aid.png": "79e0040e9518ced246c6273dafc2bbe9",
+    "fx/board_aid_station.png": "79e0040e9518ced246c6273dafc2bbe9",
+    "fx/board_apc_wash.png": "700391493aad4b519fd08411ff0ea3e7",
+    "fx/board_armory.png": "74ec93b068c418589689caca6a4fd629",
+    "fx/board_checkpoint.png": "efff2c0ffed84bcd2e836fa73c1e7f6f",
+    "fx/board_core.png": "89b66f4e3f56f38391b520ab2a03870f",
+    "fx/board_decon_hall.png": "5ef0340c0c5133b0e61fcb1128fabdbc",
+    "fx/board_drone_bay.png": "bef05e7360cf3911c090950e08eec89f",
+    "fx/board_fuel.png": "5da94469f822dce0a84bca1fff090373",
+    "fx/board_fuel_point.png": "5da94469f822dce0a84bca1fff090373",
+    "fx/board_gate_inner.png": "2a1f8e480092c3119b4f687dbf9823ea",
+    "fx/board_gate_outer.png": "5e5759f15420d09a2c8b5c15bbcb5e48",
+    "fx/board_helipad.png": "160b99e489561e433d553c7c035d35c1",
+    "fx/board_lab.png": "f4d0334dba8e7712c010f3582efbadf8",
+    "fx/board_magazine.png": "6114a4d0863c2750ca4dfb89839b716f",
+    "fx/board_pad.png": "fb71bb306cf1b608302a2c2cdb064273",
+    "fx/board_planning.png": "a4db5aadce75d1f9b23e4d7a65e47ca6",
+    "fx/board_range.png": "d0154c24e29866a3799cde082d7e9bd1",
+    "fx/board_ready_room.png": "59c2b29a77a7d80c227e04e1232c77b1",
+    "fx/board_staging.png": "282c078676ee7e1e4ac203c88e0f0252",
+    "fx/board_suit_bay.png": "0bd2412827ce3dfe3501423e40cb3b9f",
+    "fx/board_workshop.png": "3b424a1ebeacd6dc45fe928f5956ffbb",
+    "fx/cracks0.png": "497d6b554306011d5ce6403ddc720068",
+    "fx/cracks1.png": "765893a8953bb393fe58f538dfb5d4b5",
+    "fx/cracks2.png": "a593e3381b32234c2bd86c4037ff1a9d",
+    "fx/crest.png": "639f2b8249520eb694e193d4d2a00235",
+    "fx/fire.png": "c9994af73fa77a62c63507040e63e888",
+    "fx/flag.png": "3f90f6ee59b46044cf2a73ed4c11c7a8",
+    "fx/glow.png": "46f05674c46c89618986e491d5aed68e",
+    "fx/oil0.png": "fafc892837c5659c2998bc65a9e55f9a",
+    "fx/oil1.png": "d01fab49b1e4c46d8f8436fc16e9bacf",
+    "fx/oil2.png": "a121bc79aa319517eaf61f08028e589d",
+    "fx/puff0.png": "7e113439d187fd37fb9c1f3815c475fa",
+    "fx/puff1.png": "e075e4a03ec5f891ade06c901104f464",
+    "fx/puff2.png": "fd696465c7b773663b6b6da9fdada64c",
+    "fx/rubble0.png": "6f9423484274bc3e82683809b3780e29",
+    "fx/rubble1.png": "11998ddbfaf01084cf401bee75c64cc8",
+    "fx/rubble2.png": "c2f9ea719be1bf3e36e89f1784bca9b7",
+    "fx/scorch.png": "de015aa87a39e85f7d65d2bad343c0d4",
+    "fx/spot.png": "7cea5759f6396c643cd21afd9675ec58",
+    "fx/st_cp.png": "736f17163821016b05686b4c075860fc",
+    "fx/st_g1.png": "547847118020b5eb33cf77772c5926b7",
+    "fx/st_g2.png": "100bdc478add7dc0a27fb728a1eaf9cf",
+    "fx/st_n01.png": "b4760a93f44d4563eac86de7f917bc42",
+    "fx/st_n02.png": "c6dde8116ae3f1c9ebcf9f773c8dff8c",
+    "fx/st_n03.png": "30d39c4eb2201e69c5757e5ff23c0054",
+    "fx/st_n04.png": "8a601ede0f18ac0e924a89e28c655228",
+    "fx/st_n05.png": "947bcec12832bb382b4ba81c118e0544",
+    "fx/st_n06.png": "83526348f23abac053c196cd9bde745c",
+    "fx/st_n07.png": "9c5e4bc7690a9e96b9e7b0caf2217223",
+    "fx/st_n08.png": "8385c50aeb37c06f3370a194eb7ff69e",
+    "fx/st_p1.png": "1b19a43d2361b43fd38dab21aa24b743",
+    "fx/st_p2.png": "65e3c201869a6d876eab9e25cf8da661",
+    "fx/st_slow.png": "6185674ed4615b1d8f1a0d65aea717d3",
+    "fx/st_stop.png": "be5c2ec33efd70515ff51582bad060be",
+    "fx/vent.png": "70cd4e9b9277600eecba0d9a3bafe24a",
+    "fx/w_explosive.png": "a9457c0efa382e7667643bf0a6cd9102",
+    "fx/w_force.png": "eac54d63bcacdef34c21e02808daca70",
+    "fx/w_jet.png": "c79dd7d2f80c594d362421942f76aaa0",
+    "fx/w_livefire.png": "c7180afe350a2f34dba9ed80fcd016d9",
+    "fx/w_nanite.png": "eef06c50583a265432441b16cc829603",
+    "fx/w_nosmoke.png": "14769bd886cac899f32c3292c2e5e70b",
+    "fx/w_rotor.png": "bf1f286b8c60538d1f345c9f8190c22e",
+    "fx/w_speed.png": "f91e9c7a8ac3709608bd653a2c6221b3",
+    "fx/w_stop.png": "48366bb6fcbc4232aca6dac54e383008",
+    "fx/w_suits.png": "63e0be597163cf104b68dd150d155f14",
+    "fx/windsock.png": "74f28bb0ce4e041bd9d3e4bef640de2c"
+  },
+  "group": "g7_atmo7",
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}

@@ -313,6 +313,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 	var army_pop := 0
 	var pops := {}  # def -> pop (this think)
 	for e in units:
+		if e.has("eng7") or e.has("s7"):
+			continue  # G7 ENG7/SENT7 CR 3964 (owner 13.9c-12): facility staff run themselves (Engineer7 / Sentinels7)
 		var def_id := String(e.def)
 		var kc = _cls_cache.get(def_id)
 		var k: int = kc if kc != null else _cls(def_id)

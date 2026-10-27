@@ -2329,7 +2329,7 @@ func _tut_unmet_gates() -> Array:
 ## harness grant + peace window are the G5 ones (this process only, in memory).
 const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61", "flick61"]
 ## G7: flows live in tools/pt7_<flow>.gd (same `func run(pt) -> void` contract as the G6.1 pt61 flows).
-const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7"]
+const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7", "life7", "atmo7", "seq7", "wallturret7", "sent7", "eng7", "sentart7", "vanta7", "apcmov7"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")

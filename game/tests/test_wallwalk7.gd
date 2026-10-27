@@ -39,6 +39,9 @@ func _setup(seed_v: int = 0) -> Array:
 	Movement.rebuild_nav(w)
 	var off: Array = CnFacility.conf().core_offset
 	var fid := w.spawn_building("a_cn_facility", 0, o + Vector2i(2, 2) + Vector2i(int(off[0]), int(off[1])), true)
+	# SENT7-2 (ORCH directive): these tests check wall-walk mechanics with their own soldiers; the facility's starting
+	# Sentinel garrison (13.9c-10) is kept out so no Sentinel stands on the clicked wall cells (destination checks unchanged).
+	load("res://sim/systems/sentinels7.gd")._st(w).seeded.append(fid)
 	w.run_ticks(CnFacility.DISCOVER_EVERY + 1)
 	WallWalk7.tick(w)   # idempotent: the system does this itself once ORCH registers it
 	var F := CnFacility.fac(w, fid)

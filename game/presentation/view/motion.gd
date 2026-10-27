@@ -414,6 +414,11 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 		return int(a61.crawl[int(t * 2.0 + seed * 2.0) % 2])   # both legs hit: crawling only
 	if bool(gv.get("back", false)) and moving:
 		return int(a61.g7_back[int(t * 6.0 + seed * 2.0) % 2])
+	var s7 := int(gv.get("s7", 0))   # G7 SENTART7 CR 4400: Sentinel reload / sidearm (render_snap g7u s7 bits)
+	if s7 & 1 and not moving:
+		return int(a61.reload[int(t * 1.6 + seed) % 2])   # mag out / mag in (short; owner: "dont do too much")
+	if s7 & 2 and posture & P_FIRING and a61.has("g7_sa_fire"):
+		return int(a61.g7_sa_fire) if int(t * 8.0 + seed * 4.0) % 3 == 0 else int(a61.g7_sa_aim)
 	if posture & P_FIRING:
 		var ln := int(gv.get("lean", 0))
 		if ln != 0:
@@ -422,6 +427,8 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 			return int(a61.fire_s)
 		if posture & P_THROW or tick - int(gv.get("throw", -100000)) < 16:
 			return int(a61.throw[0 if tick - int(gv.get("throw", tick)) < 8 else 1])
+		if a61.has("g7_aim") and int(t * 6.0 + seed * 3.0) % 3 != 0:
+			return int(a61.g7_aim)   # G7 SENTART7 CR 4400: aimed fire (13.9c-13), not a constant muzzle flash (Sentinel sheets only)
 		return -1
 	if tick - int(gv.get("throw", -100000)) < 16:
 		return int(a61.throw[0 if tick - int(gv.get("throw", tick)) < 8 else 1])

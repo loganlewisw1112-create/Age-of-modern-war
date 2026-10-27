@@ -214,6 +214,10 @@ static func build(w) -> void:
 			if dfl2 & DEF_AIRCRAFT and e.has("drone_h"):
 				_g7_entry(g7u, id)["dh"] = float(e.drone_h)
 				_g7_entry(g7u, id)["dbank"] = float(e.get("drone_bank", 0.0))
+			if "s7" in e:   # G7 SENTART7 CR 4400: Sentinel display bits (unhashed read): 1 reloading, 2 on the sidearm
+				var s7b := (1 if int(w.tick) < int(e.get("s7_rl", 0)) else 0) | (2 if bool(e.get("s7_sa", false)) else 0)
+				if s7b != 0:
+					_g7_entry(g7u, id)["s7"] = s7b
 			ids[n] = id
 			pos[n] = p
 			prev[n] = pp
@@ -491,6 +495,8 @@ static func _g5_unit(e: Dictionary, id: int, dfl: int, g5: Dictionary) -> int:
 			ph = "landed"
 		if alt <= 0.0:
 			fl |= FLAG_LANDED
+			if e.has("vt_deck") and alt < float(e.vt_deck):
+				alt = float(e.vt_deck)  # G7 AIRV7 CR 4527: Vanta standing on the barracks roof deck (landed frame, lifted)
 		if FLOWN_PHASES.has(ph):
 			fl |= FLAG_MOVING  # Air / G5Mech move these themselves (e.moving stays false): move frame, trail
 		g5.air[id] = {"ph": ph, "alt": alt, "field": fld, "strip": stp}
@@ -837,7 +843,7 @@ static func _g6_def_bits(ud: Dictionary) -> int:
 static func _g6_inputs(w) -> Dictionary:
 	var ss: Dictionary = w.sys_state
 	var lo = ss.get("loadouts")
-	var art := lo is Dictionary and int(lo.get("nonstandard", 0)) > 0
+	var art := (lo is Dictionary and int(lo.get("nonstandard", 0)) > 0) or ss.has("vanta7")  # G7 AIRV7 CR 4527: Vanta loadout sheet = e.art_def
 	var gar := ss.get("garrison") is Dictionary and not ((ss.garrison as Dictionary).get("blds", []) as Array).is_empty()
 	var fw := ss.get("fieldworks") is Dictionary
 	var fids: Array = w.factions.keys()

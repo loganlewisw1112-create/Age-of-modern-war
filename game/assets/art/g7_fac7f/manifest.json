@@ -117,6 +117,269 @@
         }
       }
     },
+    "cn_ammo_locker": {
+      "fh": 74,
+      "fits": "cn_ammo_locker 1x1 armoured ready-ammo locker (SENT7 def), pivot = cell centre",
+      "fw": 76,
+      "pivot": [
+        38,
+        52
+      ],
+      "size": 1,
+      "states": {
+        "build_0": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "built": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/cn_ammo_locker_damaged.png",
+          "mask": "buildings/cn_ammo_locker_damaged_mask.png"
+        },
+        "empty": {
+          "file": "buildings/cn_ammo_locker_empty.png",
+          "mask": "buildings/cn_ammo_locker_empty_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/cn_ammo_locker_built.png",
+          "mask": "buildings/cn_ammo_locker_built_mask.png"
+        }
+      }
+    },
+    "g7_fac_aid": {
+      "fh": 182,
+      "fits": "aid zone 2x3 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 204,
+      "pivot": [
+        102,
+        128
+      ],
+      "size": 3,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_aid_rot_0.png",
+          "mask": "buildings/g7_fac_aid_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_aid_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_aid_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_aid_rot_0.png",
+          "mask": "buildings/g7_fac_aid_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_aid_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_aid_rot_0_lockdown_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_aid_rot_1.png",
+          "mask": "buildings/g7_fac_aid_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_aid_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_aid_rot_1_lockdown_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_aid_rot_2.png",
+          "mask": "buildings/g7_fac_aid_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_aid_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_aid_rot_2_lockdown_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_aid_rot_3.png",
+          "mask": "buildings/g7_fac_aid_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_aid_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_aid_rot_3_lockdown_mask.png"
+        }
+      },
+      "zone": [
+        2,
+        3
+      ]
+    },
+    "g7_fac_armory": {
+      "fh": 226,
+      "fits": "armory zone 4x3 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 268,
+      "pivot": [
+        134,
+        156
+      ],
+      "size": 4,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_armory_rot_0.png",
+          "mask": "buildings/g7_fac_armory_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_armory_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_armory_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_armory_rot_0.png",
+          "mask": "buildings/g7_fac_armory_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_armory_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_armory_rot_0_lockdown_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_armory_rot_1.png",
+          "mask": "buildings/g7_fac_armory_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_armory_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_armory_rot_1_lockdown_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_armory_rot_2.png",
+          "mask": "buildings/g7_fac_armory_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_armory_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_armory_rot_2_lockdown_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_armory_rot_3.png",
+          "mask": "buildings/g7_fac_armory_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_armory_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_armory_rot_3_lockdown_mask.png"
+        }
+      },
+      "zone": [
+        4,
+        3
+      ]
+    },
+    "g7_fac_baffle": {
+      "fh": 86,
+      "fits": "cn_ecp_baffle 1x1 T-wall baffle of the serpentine approach, pivot = cell centre",
+      "fw": 76,
+      "pivot": [
+        38,
+        64
+      ],
+      "sheet": {
+        "cols": "conn mask m = N1 E2 S4 W8 (baffles + gatehouse)",
+        "rows": [
+          "intact",
+          "damaged"
+        ]
+      },
+      "size": 1,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_baffle_sheet.png",
+          "mask": "buildings/g7_fac_baffle_sheet_mask.png"
+        },
+        "sheet": {
+          "file": "buildings/g7_fac_baffle_sheet.png",
+          "mask": "buildings/g7_fac_baffle_sheet_mask.png"
+        }
+      }
+    },
+    "g7_fac_barracks": {
+      "fh": 262,
+      "fits": "barracks zone 2x4 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 204,
+      "pivot": [
+        102,
+        208
+      ],
+      "size": 3,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_barracks_rot_0.png",
+          "mask": "buildings/g7_fac_barracks_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_barracks_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_barracks_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_barracks_rot_0.png",
+          "mask": "buildings/g7_fac_barracks_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_barracks_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_barracks_rot_0_lockdown_mask.png"
+        },
+        "rot_0_ruin": {
+          "file": "buildings/g7_fac_barracks_rot_0_ruin.png",
+          "mask": "buildings/g7_fac_barracks_rot_0_ruin_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_barracks_rot_1.png",
+          "mask": "buildings/g7_fac_barracks_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_barracks_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_barracks_rot_1_lockdown_mask.png"
+        },
+        "rot_1_ruin": {
+          "file": "buildings/g7_fac_barracks_rot_1_ruin.png",
+          "mask": "buildings/g7_fac_barracks_rot_1_ruin_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_barracks_rot_2.png",
+          "mask": "buildings/g7_fac_barracks_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_barracks_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_barracks_rot_2_lockdown_mask.png"
+        },
+        "rot_2_ruin": {
+          "file": "buildings/g7_fac_barracks_rot_2_ruin.png",
+          "mask": "buildings/g7_fac_barracks_rot_2_ruin_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_barracks_rot_3.png",
+          "mask": "buildings/g7_fac_barracks_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_barracks_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_barracks_rot_3_lockdown_mask.png"
+        },
+        "rot_3_ruin": {
+          "file": "buildings/g7_fac_barracks_rot_3_ruin.png",
+          "mask": "buildings/g7_fac_barracks_rot_3_ruin_mask.png"
+        }
+      },
+      "zone": [
+        2,
+        4
+      ]
+    },
     "g7_fac_deconhall": {
       "fh": 214,
       "fits": "hall zone 4x3 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
@@ -174,14 +437,14 @@
       ]
     },
     "g7_fac_dronebay": {
-      "fh": 250,
-      "fits": "dronebay zone 4x6 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
-      "fw": 332,
+      "fh": 186,
+      "fits": "dronebay zone 4x2 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 204,
       "pivot": [
-        166,
-        164
+        102,
+        132
       ],
-      "size": 5,
+      "size": 3,
       "states": {
         "built": {
           "file": "buildings/g7_fac_dronebay_rot_0.png",
@@ -226,7 +489,63 @@
       },
       "zone": [
         4,
-        6
+        2
+      ]
+    },
+    "g7_fac_fuel": {
+      "fh": 164,
+      "fits": "fuel zone 3x4 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 268,
+      "pivot": [
+        134,
+        94
+      ],
+      "size": 4,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_fuel_rot_0.png",
+          "mask": "buildings/g7_fac_fuel_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_fuel_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_fuel_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_fuel_rot_0.png",
+          "mask": "buildings/g7_fac_fuel_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_fuel_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_fuel_rot_0_lockdown_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_fuel_rot_1.png",
+          "mask": "buildings/g7_fac_fuel_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_fuel_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_fuel_rot_1_lockdown_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_fuel_rot_2.png",
+          "mask": "buildings/g7_fac_fuel_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_fuel_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_fuel_rot_2_lockdown_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_fuel_rot_3.png",
+          "mask": "buildings/g7_fac_fuel_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_fuel_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_fuel_rot_3_lockdown_mask.png"
+        }
+      },
+      "zone": [
+        3,
+        4
       ]
     },
     "g7_fac_gate_inner": {
@@ -341,6 +660,50 @@
         2
       ]
     },
+    "g7_fac_gatehouse": {
+      "fh": 174,
+      "fits": "cn_checkpoint 2x2 foot entry control point in the south wall line, pivot = centre; passage on the west column (mantrap cells), guard bunker east; states built / open_out / open_in / lockdown (+ _damaged)",
+      "fw": 140,
+      "pivot": [
+        70,
+        136
+      ],
+      "size": 2,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_gatehouse_built.png",
+          "mask": "buildings/g7_fac_gatehouse_built_mask.png"
+        },
+        "built_damaged": {
+          "file": "buildings/g7_fac_gatehouse_built_damaged.png",
+          "mask": "buildings/g7_fac_gatehouse_built_damaged_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_gatehouse_lockdown.png",
+          "mask": "buildings/g7_fac_gatehouse_lockdown_mask.png"
+        },
+        "lockdown_damaged": {
+          "file": "buildings/g7_fac_gatehouse_lockdown_damaged.png",
+          "mask": "buildings/g7_fac_gatehouse_lockdown_damaged_mask.png"
+        },
+        "open_in": {
+          "file": "buildings/g7_fac_gatehouse_open_in.png",
+          "mask": "buildings/g7_fac_gatehouse_open_in_mask.png"
+        },
+        "open_in_damaged": {
+          "file": "buildings/g7_fac_gatehouse_open_in_damaged.png",
+          "mask": "buildings/g7_fac_gatehouse_open_in_damaged_mask.png"
+        },
+        "open_out": {
+          "file": "buildings/g7_fac_gatehouse_open_out.png",
+          "mask": "buildings/g7_fac_gatehouse_open_out_mask.png"
+        },
+        "open_out_damaged": {
+          "file": "buildings/g7_fac_gatehouse_open_out_damaged.png",
+          "mask": "buildings/g7_fac_gatehouse_open_out_damaged_mask.png"
+        }
+      }
+    },
     "g7_fac_lab": {
       "fh": 230,
       "fits": "lab zone 4x3 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
@@ -397,13 +760,112 @@
         3
       ]
     },
+    "g7_fac_linkwall": {
+      "fh": 140,
+      "fits": "cn_link_wall 1x1 cell, pivot = cell centre; wall body on the gate bastion line 3.3 m toward the wash",
+      "fw": 140,
+      "pivot": [
+        70,
+        102
+      ],
+      "sheet": {
+        "cols": "side * 4 + N1 + S2 (side 0: wash on +x, 1: on -x)",
+        "rows": [
+          "intact",
+          "damaged"
+        ]
+      },
+      "size": 1,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_linkwall_sheet.png",
+          "mask": "buildings/g7_fac_linkwall_sheet_mask.png"
+        },
+        "sheet": {
+          "file": "buildings/g7_fac_linkwall_sheet.png",
+          "mask": "buildings/g7_fac_linkwall_sheet_mask.png"
+        }
+      }
+    },
+    "g7_fac_magazine": {
+      "fh": 178,
+      "fits": "magazine zone 2x4 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 204,
+      "pivot": [
+        102,
+        124
+      ],
+      "size": 3,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_magazine_rot_0.png",
+          "mask": "buildings/g7_fac_magazine_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_magazine_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_magazine_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_magazine_rot_0.png",
+          "mask": "buildings/g7_fac_magazine_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_magazine_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_magazine_rot_0_lockdown_mask.png"
+        },
+        "rot_0_ruin": {
+          "file": "buildings/g7_fac_magazine_rot_0_ruin.png",
+          "mask": "buildings/g7_fac_magazine_rot_0_ruin_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_magazine_rot_1.png",
+          "mask": "buildings/g7_fac_magazine_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_magazine_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_magazine_rot_1_lockdown_mask.png"
+        },
+        "rot_1_ruin": {
+          "file": "buildings/g7_fac_magazine_rot_1_ruin.png",
+          "mask": "buildings/g7_fac_magazine_rot_1_ruin_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_magazine_rot_2.png",
+          "mask": "buildings/g7_fac_magazine_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_magazine_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_magazine_rot_2_lockdown_mask.png"
+        },
+        "rot_2_ruin": {
+          "file": "buildings/g7_fac_magazine_rot_2_ruin.png",
+          "mask": "buildings/g7_fac_magazine_rot_2_ruin_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_magazine_rot_3.png",
+          "mask": "buildings/g7_fac_magazine_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_magazine_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_magazine_rot_3_lockdown_mask.png"
+        },
+        "rot_3_ruin": {
+          "file": "buildings/g7_fac_magazine_rot_3_ruin.png",
+          "mask": "buildings/g7_fac_magazine_rot_3_ruin_mask.png"
+        }
+      },
+      "zone": [
+        2,
+        4
+      ]
+    },
     "g7_fac_planning": {
-      "fh": 234,
+      "fh": 364,
       "fits": "planning zone 4x3 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
       "fw": 268,
       "pivot": [
         134,
-        164
+        294
       ],
       "size": 4,
       "states": {
@@ -454,12 +916,12 @@
       ]
     },
     "g7_fac_range": {
-      "fh": 274,
+      "fh": 328,
       "fits": "range zone 8x4 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
       "fw": 396,
       "pivot": [
         198,
-        172
+        226
       ],
       "size": 6,
       "states": {
@@ -507,6 +969,62 @@
       "zone": [
         8,
         4
+      ]
+    },
+    "g7_fac_runoff": {
+      "fh": 116,
+      "fits": "runoff zone 1x2 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 140,
+      "pivot": [
+        70,
+        78
+      ],
+      "size": 2,
+      "states": {
+        "built": {
+          "file": "buildings/g7_fac_runoff_rot_0.png",
+          "mask": "buildings/g7_fac_runoff_rot_0_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_fac_runoff_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_runoff_rot_0_lockdown_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_fac_runoff_rot_0.png",
+          "mask": "buildings/g7_fac_runoff_rot_0_mask.png"
+        },
+        "rot_0_lockdown": {
+          "file": "buildings/g7_fac_runoff_rot_0_lockdown.png",
+          "mask": "buildings/g7_fac_runoff_rot_0_lockdown_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_fac_runoff_rot_1.png",
+          "mask": "buildings/g7_fac_runoff_rot_1_mask.png"
+        },
+        "rot_1_lockdown": {
+          "file": "buildings/g7_fac_runoff_rot_1_lockdown.png",
+          "mask": "buildings/g7_fac_runoff_rot_1_lockdown_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_fac_runoff_rot_2.png",
+          "mask": "buildings/g7_fac_runoff_rot_2_mask.png"
+        },
+        "rot_2_lockdown": {
+          "file": "buildings/g7_fac_runoff_rot_2_lockdown.png",
+          "mask": "buildings/g7_fac_runoff_rot_2_lockdown_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_fac_runoff_rot_3.png",
+          "mask": "buildings/g7_fac_runoff_rot_3_mask.png"
+        },
+        "rot_3_lockdown": {
+          "file": "buildings/g7_fac_runoff_rot_3_lockdown.png",
+          "mask": "buildings/g7_fac_runoff_rot_3_lockdown_mask.png"
+        }
+      },
+      "zone": [
+        1,
+        2
       ]
     },
     "g7_fac_tower": {
@@ -717,6 +1235,70 @@
     "buildings/a_g7_vtol_pad_rot_3_damaged.png": "dee059827cd4f6d451397df9408f62bb",
     "buildings/a_g7_vtol_pad_rot_3_damaged_mask.png": "4364a1c5412e7809f6120e3259d33d7e",
     "buildings/a_g7_vtol_pad_rot_3_mask.png": "4364a1c5412e7809f6120e3259d33d7e",
+    "buildings/cn_ammo_locker_built.png": "d35c4b19805bff56c2e50c8b997b1100",
+    "buildings/cn_ammo_locker_built_mask.png": "5ac24eacf7223698402c5a584a5ccdda",
+    "buildings/cn_ammo_locker_damaged.png": "ab2248281c9d57f925aaf632afcee37b",
+    "buildings/cn_ammo_locker_damaged_mask.png": "5ac24eacf7223698402c5a584a5ccdda",
+    "buildings/cn_ammo_locker_empty.png": "c215c1d3d28ce830aef06c09d7be4ddb",
+    "buildings/cn_ammo_locker_empty_mask.png": "5ac24eacf7223698402c5a584a5ccdda",
+    "buildings/g7_fac_aid_rot_0.png": "6048966278e3f9bdc0d0dc4593b2938e",
+    "buildings/g7_fac_aid_rot_0_lockdown.png": "97850ac79e81af9b8edb38ea365f47e2",
+    "buildings/g7_fac_aid_rot_0_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_0_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_1.png": "a7401def7dcb2f2bf33fd268049777fb",
+    "buildings/g7_fac_aid_rot_1_lockdown.png": "399d00ec5c5e80811251f2e3c859be85",
+    "buildings/g7_fac_aid_rot_1_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_1_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_2.png": "2c7ed120d435415a4a0e17f41407ef2b",
+    "buildings/g7_fac_aid_rot_2_lockdown.png": "0c54457663d6673c94e3a170e75674d5",
+    "buildings/g7_fac_aid_rot_2_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_2_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_3.png": "7f667d2e838d7e849a20d4c3be13c217",
+    "buildings/g7_fac_aid_rot_3_lockdown.png": "f6d4e319ec8e6e314ecc0e407ad089f0",
+    "buildings/g7_fac_aid_rot_3_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_aid_rot_3_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_armory_rot_0.png": "57190f5e0fb25743b0ebd60fee2036b4",
+    "buildings/g7_fac_armory_rot_0_lockdown.png": "93ac291697468354a1534b844d19b2dd",
+    "buildings/g7_fac_armory_rot_0_lockdown_mask.png": "68315058c259d6bc0fdded25ed60f154",
+    "buildings/g7_fac_armory_rot_0_mask.png": "1d071096da6894fb416b60c5ed0cde2e",
+    "buildings/g7_fac_armory_rot_1.png": "2369be1b25497617ff297e6b9e27d44c",
+    "buildings/g7_fac_armory_rot_1_lockdown.png": "cb9e3d57fb701c00985b3b18829e663e",
+    "buildings/g7_fac_armory_rot_1_lockdown_mask.png": "89a5d9b9968d6c2d61a7891d40b55e4b",
+    "buildings/g7_fac_armory_rot_1_mask.png": "89a5d9b9968d6c2d61a7891d40b55e4b",
+    "buildings/g7_fac_armory_rot_2.png": "ef4d1889d6a1b939667b541f07341ebf",
+    "buildings/g7_fac_armory_rot_2_lockdown.png": "18ec567669c226503ab4abe325125516",
+    "buildings/g7_fac_armory_rot_2_lockdown_mask.png": "32e49a1e4b127b984617a1d4df9ca53b",
+    "buildings/g7_fac_armory_rot_2_mask.png": "32e49a1e4b127b984617a1d4df9ca53b",
+    "buildings/g7_fac_armory_rot_3.png": "8d2158e71881e681f021f46652fcf140",
+    "buildings/g7_fac_armory_rot_3_lockdown.png": "12122146a735727810e38a6d87eeea59",
+    "buildings/g7_fac_armory_rot_3_lockdown_mask.png": "2836b05219420abab9ce0c35b5c2cd34",
+    "buildings/g7_fac_armory_rot_3_mask.png": "2836b05219420abab9ce0c35b5c2cd34",
+    "buildings/g7_fac_baffle_sheet.png": "2ba801f41e1c583547a9b61a2334481b",
+    "buildings/g7_fac_baffle_sheet_mask.png": "1e96ac533db8821ab50f0d55581d896d",
+    "buildings/g7_fac_barracks_rot_0.png": "7d46d11dacdd4fd60c17f09359c3ef37",
+    "buildings/g7_fac_barracks_rot_0_lockdown.png": "0af3e6a7a90b5f0d587b2f5a04f3a437",
+    "buildings/g7_fac_barracks_rot_0_lockdown_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_0_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_0_ruin.png": "21dd60531f2590e7613be3a98915519e",
+    "buildings/g7_fac_barracks_rot_0_ruin_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_1.png": "8ae1575472e2fe8229aafba7b4868070",
+    "buildings/g7_fac_barracks_rot_1_lockdown.png": "7b87eed94e6295a179cb3d94f4e9f86e",
+    "buildings/g7_fac_barracks_rot_1_lockdown_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_1_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_1_ruin.png": "be0dbb4ce3059433ba04f500e2377b58",
+    "buildings/g7_fac_barracks_rot_1_ruin_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_2.png": "24ca7577d491a6312b07bb82d82b8553",
+    "buildings/g7_fac_barracks_rot_2_lockdown.png": "14fc1941014488e54f1f7e978d8dc34b",
+    "buildings/g7_fac_barracks_rot_2_lockdown_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_2_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_2_ruin.png": "cfaaad6487261ddf9d4d156febc22876",
+    "buildings/g7_fac_barracks_rot_2_ruin_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_3.png": "41275f3a6ae189614f553ea440e34951",
+    "buildings/g7_fac_barracks_rot_3_lockdown.png": "a88637d10b06234a7cc9e4a6749a21c4",
+    "buildings/g7_fac_barracks_rot_3_lockdown_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_3_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
+    "buildings/g7_fac_barracks_rot_3_ruin.png": "92079532442f553f468454402d6ab1b7",
+    "buildings/g7_fac_barracks_rot_3_ruin_mask.png": "2622dac7681b8bd9f46c889aa5f60fcd",
     "buildings/g7_fac_deconhall_rot_0.png": "cc2157abb001afc62f31deb0582cfbb9",
     "buildings/g7_fac_deconhall_rot_0_lockdown.png": "456f1451f797859b879fd0858bcb3ace",
     "buildings/g7_fac_deconhall_rot_0_lockdown_mask.png": "feed880d56fc686c48644f7dd8ce34e5",
@@ -725,30 +1307,46 @@
     "buildings/g7_fac_deconhall_rot_1_lockdown.png": "40509f25314d44eb9952ac89049d271a",
     "buildings/g7_fac_deconhall_rot_1_lockdown_mask.png": "0e117b58cc349cc94cd382c082363011",
     "buildings/g7_fac_deconhall_rot_1_mask.png": "0e117b58cc349cc94cd382c082363011",
-    "buildings/g7_fac_deconhall_rot_2.png": "11f92594c21a3e2e5f30ede3c486f60e",
-    "buildings/g7_fac_deconhall_rot_2_lockdown.png": "02dae4f388058736c4931ccd21e42ed5",
+    "buildings/g7_fac_deconhall_rot_2.png": "5004b24fb50cccc4dff057c357cba0df",
+    "buildings/g7_fac_deconhall_rot_2_lockdown.png": "6cbf33203b9219379fa93ed25a0cd94f",
     "buildings/g7_fac_deconhall_rot_2_lockdown_mask.png": "ad1910dcfa4e533ba93bcf46c2dcf133",
     "buildings/g7_fac_deconhall_rot_2_mask.png": "ad1910dcfa4e533ba93bcf46c2dcf133",
-    "buildings/g7_fac_deconhall_rot_3.png": "68d9bec0657428b2364febe41036925d",
-    "buildings/g7_fac_deconhall_rot_3_lockdown.png": "cd04dde69372367fcfdb70634e1caf21",
+    "buildings/g7_fac_deconhall_rot_3.png": "c5837c5f286a3b367182145f99cb9bc4",
+    "buildings/g7_fac_deconhall_rot_3_lockdown.png": "3339595c2cbd961bf55aa6666e5d029c",
     "buildings/g7_fac_deconhall_rot_3_lockdown_mask.png": "6b9396f9835a95c787359dc3033f345d",
     "buildings/g7_fac_deconhall_rot_3_mask.png": "665b082572a6b46d133e0bc278cd814a",
-    "buildings/g7_fac_dronebay_rot_0.png": "a33a488fe216fff8c51c3c7b5a28e1f3",
-    "buildings/g7_fac_dronebay_rot_0_lockdown.png": "b96a79eac13133029385eafa13c5f700",
-    "buildings/g7_fac_dronebay_rot_0_lockdown_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_0_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_1.png": "e788d77cca4acc0ef8480f711836ca59",
-    "buildings/g7_fac_dronebay_rot_1_lockdown.png": "e02579fb128ebf78072ee55ecf5b25db",
-    "buildings/g7_fac_dronebay_rot_1_lockdown_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_1_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_2.png": "13d653e2ba6296b7c44789cd2aee7e5f",
-    "buildings/g7_fac_dronebay_rot_2_lockdown.png": "f836d38d63f9d0d29ba97d67e6ef50bf",
-    "buildings/g7_fac_dronebay_rot_2_lockdown_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_2_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_3.png": "0ee4338620ed1649a4f9b6b8e21019e8",
-    "buildings/g7_fac_dronebay_rot_3_lockdown.png": "a13a7eec3f064a03ebab2a2b9a01c3de",
-    "buildings/g7_fac_dronebay_rot_3_lockdown_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
-    "buildings/g7_fac_dronebay_rot_3_mask.png": "f946a9eefa9a02d2421d065738c5e6d4",
+    "buildings/g7_fac_dronebay_rot_0.png": "36dfbdf9a33d3696ae6620fbb8bd7b17",
+    "buildings/g7_fac_dronebay_rot_0_lockdown.png": "417eb6704706bb918f3154fe5be04947",
+    "buildings/g7_fac_dronebay_rot_0_lockdown_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_0_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_1.png": "602e42e4a2b4652d262f600d3d9c3814",
+    "buildings/g7_fac_dronebay_rot_1_lockdown.png": "2af240945abb7afb89ddd43de6fc5606",
+    "buildings/g7_fac_dronebay_rot_1_lockdown_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_1_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_2.png": "673dd6359efd078056c47aac5caa44df",
+    "buildings/g7_fac_dronebay_rot_2_lockdown.png": "c6d42b58de7acc6b5792ec23f161694d",
+    "buildings/g7_fac_dronebay_rot_2_lockdown_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_2_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_3.png": "12c92e724939f9e60391aea550b32c73",
+    "buildings/g7_fac_dronebay_rot_3_lockdown.png": "839820ebf022c8a679e5588fb96e894e",
+    "buildings/g7_fac_dronebay_rot_3_lockdown_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_dronebay_rot_3_mask.png": "056ed41ee9e00e92b58068a91d74281d",
+    "buildings/g7_fac_fuel_rot_0.png": "5b6a1477d2b8d8bb4bfb99e8b0b05a51",
+    "buildings/g7_fac_fuel_rot_0_lockdown.png": "33699749552d867150a94707ed782e0b",
+    "buildings/g7_fac_fuel_rot_0_lockdown_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_0_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_1.png": "66b96644da002dfae75c6736e82cdc73",
+    "buildings/g7_fac_fuel_rot_1_lockdown.png": "8cde2f02e7fdbeff835099604df4d6f5",
+    "buildings/g7_fac_fuel_rot_1_lockdown_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_1_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_2.png": "35a548f8bdb663129cf3661e8949827d",
+    "buildings/g7_fac_fuel_rot_2_lockdown.png": "f593d158d962855f5eba22e5fb68741f",
+    "buildings/g7_fac_fuel_rot_2_lockdown_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_2_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_3.png": "2e66e24e70551e697b74bd2624568cdd",
+    "buildings/g7_fac_fuel_rot_3_lockdown.png": "15b341004fe2b25a19c12dd3434e20c9",
+    "buildings/g7_fac_fuel_rot_3_lockdown_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
+    "buildings/g7_fac_fuel_rot_3_mask.png": "6c748b64e56cf52114c7f4132ccd91ec",
     "buildings/g7_fac_gate_inner_rot_0.png": "abfe2bf481ed82c75529ba44a30e2b47",
     "buildings/g7_fac_gate_inner_rot_0_lockdown.png": "db75b8c57cb20c339b6bcecbf107d19e",
     "buildings/g7_fac_gate_inner_rot_0_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
@@ -781,6 +1379,22 @@
     "buildings/g7_fac_gate_outer_rot_3_lockdown.png": "7c7d1a7e6dbf3ca869a47ebf1084b7e9",
     "buildings/g7_fac_gate_outer_rot_3_lockdown_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
     "buildings/g7_fac_gate_outer_rot_3_mask.png": "35b860d930ed90bb0f93b911225b3c2e",
+    "buildings/g7_fac_gatehouse_built.png": "9a99d5297ee5eb47774f9e16a091b188",
+    "buildings/g7_fac_gatehouse_built_damaged.png": "9fa7cb54f6d622d46ece2054c7b12309",
+    "buildings/g7_fac_gatehouse_built_damaged_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_built_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_lockdown.png": "adf50cd6f1a00889a61c24740bed4e74",
+    "buildings/g7_fac_gatehouse_lockdown_damaged.png": "6134f5d33e3d73d6e5220caded9da763",
+    "buildings/g7_fac_gatehouse_lockdown_damaged_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_lockdown_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_open_in.png": "20a1102757e3eb5ff39588b0fda7c0ff",
+    "buildings/g7_fac_gatehouse_open_in_damaged.png": "88906e9a389dd9a4c8e0af66e03048be",
+    "buildings/g7_fac_gatehouse_open_in_damaged_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_open_in_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_open_out.png": "997d13b1a3f44eae49e4fc42b073cf58",
+    "buildings/g7_fac_gatehouse_open_out_damaged.png": "72d2d74182a8834fadca7a477b65b1d9",
+    "buildings/g7_fac_gatehouse_open_out_damaged_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
+    "buildings/g7_fac_gatehouse_open_out_mask.png": "9cd4d3f99e69479dc904ef92fdae69bb",
     "buildings/g7_fac_lab_rot_0.png": "704972004cb1fd6c5271f7c16aa7968a",
     "buildings/g7_fac_lab_rot_0_lockdown.png": "cf27de6682d244ad5562f5521c001090",
     "buildings/g7_fac_lab_rot_0_lockdown_mask.png": "d7fca6d66af8dcc5bcd0068ed867ea9d",
@@ -797,56 +1411,98 @@
     "buildings/g7_fac_lab_rot_3_lockdown.png": "b1978411c40ea8658acaa54bc0012f8b",
     "buildings/g7_fac_lab_rot_3_lockdown_mask.png": "d7fca6d66af8dcc5bcd0068ed867ea9d",
     "buildings/g7_fac_lab_rot_3_mask.png": "d7fca6d66af8dcc5bcd0068ed867ea9d",
-    "buildings/g7_fac_planning_rot_0.png": "8b6b8d3ae2f6096a6898003ab0af5cf7",
-    "buildings/g7_fac_planning_rot_0_lockdown.png": "3964ca3c6d132471cf37ee235eedf910",
-    "buildings/g7_fac_planning_rot_0_lockdown_mask.png": "24ef81d21c699b2d4988c8543b64d28d",
-    "buildings/g7_fac_planning_rot_0_mask.png": "f2e6613f5910d4c8cbaaf116f3886389",
-    "buildings/g7_fac_planning_rot_1.png": "9a53df28224a7ba38d29451c07e3043b",
-    "buildings/g7_fac_planning_rot_1_lockdown.png": "54d8c9f3aed2395702fa1faba895d43d",
-    "buildings/g7_fac_planning_rot_1_lockdown_mask.png": "05bac5b8c5baaa055b76eb2f30b48cee",
-    "buildings/g7_fac_planning_rot_1_mask.png": "05bac5b8c5baaa055b76eb2f30b48cee",
-    "buildings/g7_fac_planning_rot_2.png": "f4fb8b7f304a66217b0d2ecdeab88722",
-    "buildings/g7_fac_planning_rot_2_lockdown.png": "8e6329bfa50f3284ebf365f5b82b5188",
-    "buildings/g7_fac_planning_rot_2_lockdown_mask.png": "41258355b2b28287962211ea11fb3c0e",
-    "buildings/g7_fac_planning_rot_2_mask.png": "520afb8705ee0a638d761f67a0d1c264",
-    "buildings/g7_fac_planning_rot_3.png": "8d4faacc22b58ee574b0c58707a2ac65",
-    "buildings/g7_fac_planning_rot_3_lockdown.png": "9bb5833997cfe928e604e333ccadba6d",
-    "buildings/g7_fac_planning_rot_3_lockdown_mask.png": "63838f7071dd8498295ccd277023fd6f",
-    "buildings/g7_fac_planning_rot_3_mask.png": "4c7c62d367eff5bb4327ea758c293a36",
-    "buildings/g7_fac_range_rot_0.png": "4d006dafd37620371984bf7490ffe2c1",
-    "buildings/g7_fac_range_rot_0_lockdown.png": "9553fe80098d5d9ac478140f25a46cb8",
-    "buildings/g7_fac_range_rot_0_lockdown_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_0_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_1.png": "2f8083ec47f54c38795e943b797e52dd",
-    "buildings/g7_fac_range_rot_1_lockdown.png": "b18a66193a1b5ddbe8a55cf3e1aadbf3",
-    "buildings/g7_fac_range_rot_1_lockdown_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_1_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_2.png": "55e8fa51df1829d3e9e1ef05009c4eac",
-    "buildings/g7_fac_range_rot_2_lockdown.png": "e815d3b017dbd4992e268d2cb5ec3574",
-    "buildings/g7_fac_range_rot_2_lockdown_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_2_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_3.png": "9f1b2ed586380a2286467bd2508e9d2a",
-    "buildings/g7_fac_range_rot_3_lockdown.png": "8b96fe3529a031ce71a19ecf3ea1c574",
-    "buildings/g7_fac_range_rot_3_lockdown_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_range_rot_3_mask.png": "ba201b1aaf7466f4c67abc9feb53fe7e",
-    "buildings/g7_fac_tower_sheet.png": "ca751ac6e3bd245fc1c4be1c0ca49a7f",
+    "buildings/g7_fac_linkwall_sheet.png": "96a6d0730bfac9709c08c064585a7f5b",
+    "buildings/g7_fac_linkwall_sheet_mask.png": "9f54f695b43589c188ae869234307258",
+    "buildings/g7_fac_magazine_rot_0.png": "0b00c3d1c25108a1823f6c49dd5edec2",
+    "buildings/g7_fac_magazine_rot_0_lockdown.png": "baa4a35c54fa916eb57df14009d8f957",
+    "buildings/g7_fac_magazine_rot_0_lockdown_mask.png": "3222ba0c78a29a432f1575d6a832b1f8",
+    "buildings/g7_fac_magazine_rot_0_mask.png": "3222ba0c78a29a432f1575d6a832b1f8",
+    "buildings/g7_fac_magazine_rot_0_ruin.png": "6c000c07836447ccead5772e5b46a74f",
+    "buildings/g7_fac_magazine_rot_0_ruin_mask.png": "3d20aa71f81e3197d206335ce0bf108f",
+    "buildings/g7_fac_magazine_rot_1.png": "c7bc9ebeb30ca89f6b13b1404964e233",
+    "buildings/g7_fac_magazine_rot_1_lockdown.png": "dbc9e4a11180f4b7989ff428828d3620",
+    "buildings/g7_fac_magazine_rot_1_lockdown_mask.png": "11eab150e5dd1ec8dd234fe51371512a",
+    "buildings/g7_fac_magazine_rot_1_mask.png": "11eab150e5dd1ec8dd234fe51371512a",
+    "buildings/g7_fac_magazine_rot_1_ruin.png": "81f7a32fc41887a7fd5567eb47815052",
+    "buildings/g7_fac_magazine_rot_1_ruin_mask.png": "3d20aa71f81e3197d206335ce0bf108f",
+    "buildings/g7_fac_magazine_rot_2.png": "6d3bbacb185fe73d34658e428703dfa0",
+    "buildings/g7_fac_magazine_rot_2_lockdown.png": "1c1a0e1c639e2d90b33f8a43aff02fef",
+    "buildings/g7_fac_magazine_rot_2_lockdown_mask.png": "4aed41dc6b024c248f04ea4993438057",
+    "buildings/g7_fac_magazine_rot_2_mask.png": "4aed41dc6b024c248f04ea4993438057",
+    "buildings/g7_fac_magazine_rot_2_ruin.png": "84d3f6d384b41aa58d4793a96a64f8b2",
+    "buildings/g7_fac_magazine_rot_2_ruin_mask.png": "3d20aa71f81e3197d206335ce0bf108f",
+    "buildings/g7_fac_magazine_rot_3.png": "c29011e6171bc0e3b6c4229e8a476e1b",
+    "buildings/g7_fac_magazine_rot_3_lockdown.png": "55176d6e4be3c2ff4c6e40720a62c3be",
+    "buildings/g7_fac_magazine_rot_3_lockdown_mask.png": "764267de1e18110502aea35463871bb2",
+    "buildings/g7_fac_magazine_rot_3_mask.png": "764267de1e18110502aea35463871bb2",
+    "buildings/g7_fac_magazine_rot_3_ruin.png": "dd6e7a7c35b9037b19d14d0a7b220129",
+    "buildings/g7_fac_magazine_rot_3_ruin_mask.png": "3d20aa71f81e3197d206335ce0bf108f",
+    "buildings/g7_fac_planning_rot_0.png": "7a8679501b08ac9a01f8522f73b59397",
+    "buildings/g7_fac_planning_rot_0_lockdown.png": "54723feadaea9367f342183764eac09b",
+    "buildings/g7_fac_planning_rot_0_lockdown_mask.png": "fdb3e7e8cc262324da93ae0f83bbd342",
+    "buildings/g7_fac_planning_rot_0_mask.png": "fdb3e7e8cc262324da93ae0f83bbd342",
+    "buildings/g7_fac_planning_rot_1.png": "525dcca288114861a6a274aab568bd2f",
+    "buildings/g7_fac_planning_rot_1_lockdown.png": "5934cc16c299bd02951a980930544c64",
+    "buildings/g7_fac_planning_rot_1_lockdown_mask.png": "9f1ac8d4bf0afb93ac221a631ed17fcd",
+    "buildings/g7_fac_planning_rot_1_mask.png": "9f1ac8d4bf0afb93ac221a631ed17fcd",
+    "buildings/g7_fac_planning_rot_2.png": "459392ae020ea31f6975688d3625dfb7",
+    "buildings/g7_fac_planning_rot_2_lockdown.png": "5036ef93154a5589f003b14dabf1f69f",
+    "buildings/g7_fac_planning_rot_2_lockdown_mask.png": "2b44d50ca763e6637f074169ced5d569",
+    "buildings/g7_fac_planning_rot_2_mask.png": "2b44d50ca763e6637f074169ced5d569",
+    "buildings/g7_fac_planning_rot_3.png": "46af51c2cbedb5770c2f008bf926e8e3",
+    "buildings/g7_fac_planning_rot_3_lockdown.png": "c06fb9ffad1b969bb4d0aa319c07a0d8",
+    "buildings/g7_fac_planning_rot_3_lockdown_mask.png": "adacea167f3e3a41dd494f028ffa7c30",
+    "buildings/g7_fac_planning_rot_3_mask.png": "adacea167f3e3a41dd494f028ffa7c30",
+    "buildings/g7_fac_range_rot_0.png": "fdd708710f7ef210030ccbc934f3f41a",
+    "buildings/g7_fac_range_rot_0_lockdown.png": "c064035caee797bd7ff47071887e1321",
+    "buildings/g7_fac_range_rot_0_lockdown_mask.png": "26064df62f632737adc47c01f74ed4d8",
+    "buildings/g7_fac_range_rot_0_mask.png": "26064df62f632737adc47c01f74ed4d8",
+    "buildings/g7_fac_range_rot_1.png": "12cedfa5c791d10df230bb6991121f13",
+    "buildings/g7_fac_range_rot_1_lockdown.png": "d98c88c1be341241d6315cc33dac1a27",
+    "buildings/g7_fac_range_rot_1_lockdown_mask.png": "e4f3a35406a44543aa8049457feda897",
+    "buildings/g7_fac_range_rot_1_mask.png": "e4f3a35406a44543aa8049457feda897",
+    "buildings/g7_fac_range_rot_2.png": "0b4b5c08e443d25d71872f4abe1d18fd",
+    "buildings/g7_fac_range_rot_2_lockdown.png": "b97960bbddaa38140005c6e4d8943bfa",
+    "buildings/g7_fac_range_rot_2_lockdown_mask.png": "3214604a80622d4b7905ec10c8b77d1f",
+    "buildings/g7_fac_range_rot_2_mask.png": "3214604a80622d4b7905ec10c8b77d1f",
+    "buildings/g7_fac_range_rot_3.png": "1b54dfb2b7a2ecfb31ef4dd10b1432b4",
+    "buildings/g7_fac_range_rot_3_lockdown.png": "0b93b8c6833162a0ac23ee5dfc34bb2e",
+    "buildings/g7_fac_range_rot_3_lockdown_mask.png": "42c7a82cf7ba96c2a523b7aff1c6d8ab",
+    "buildings/g7_fac_range_rot_3_mask.png": "42c7a82cf7ba96c2a523b7aff1c6d8ab",
+    "buildings/g7_fac_runoff_rot_0.png": "e9862039b455500c891c06a6460ed867",
+    "buildings/g7_fac_runoff_rot_0_lockdown.png": "c43e15fb5c47b4104291fce2a1f3b4de",
+    "buildings/g7_fac_runoff_rot_0_lockdown_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_0_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_1.png": "2d8c861fd0025241d28a6d754ff00b62",
+    "buildings/g7_fac_runoff_rot_1_lockdown.png": "bb03843b34b1271398fa787272a193a8",
+    "buildings/g7_fac_runoff_rot_1_lockdown_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_1_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_2.png": "53f5686b5702191c3de6e9074c594e45",
+    "buildings/g7_fac_runoff_rot_2_lockdown.png": "122aab455f94c29797158fe617cb9ef2",
+    "buildings/g7_fac_runoff_rot_2_lockdown_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_2_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_3.png": "bc5d8d285463e680f5d4a5df582ab26e",
+    "buildings/g7_fac_runoff_rot_3_lockdown.png": "0319fd25a6327c2f330f39d549290e0a",
+    "buildings/g7_fac_runoff_rot_3_lockdown_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_runoff_rot_3_mask.png": "f0783146a3fa2e5b4a2c38ca7db7b2c3",
+    "buildings/g7_fac_tower_sheet.png": "307b415cb7a70ca2b8242ced29ed1fe2",
     "buildings/g7_fac_tower_sheet_mask.png": "30f751212f5aeb72346dfbad43679761",
     "buildings/g7_fac_wall_sheet.png": "f92507259a473d891daffd3e2afd6155",
     "buildings/g7_fac_wall_sheet_mask.png": "952487f50d519f34c7093ef26d0661bd",
-    "buildings/g7_fac_wash_rot_0.png": "8fdd554ba8e944172f232e5b4b820bbf",
-    "buildings/g7_fac_wash_rot_0_lockdown.png": "98deac1e0057208d7d1b53c04842b952",
+    "buildings/g7_fac_wash_rot_0.png": "c2edabfcb548d07203da1defae38fdaa",
+    "buildings/g7_fac_wash_rot_0_lockdown.png": "dbea4eceb11102db652359206b6778ee",
     "buildings/g7_fac_wash_rot_0_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
     "buildings/g7_fac_wash_rot_0_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_1.png": "2b5240512aff05e8b2482868b913b8e8",
-    "buildings/g7_fac_wash_rot_1_lockdown.png": "e87deb440e88cc0cbfc2f527ba28e6d0",
+    "buildings/g7_fac_wash_rot_1.png": "5cf6d7b1473145076a2f9a8b66614b38",
+    "buildings/g7_fac_wash_rot_1_lockdown.png": "8d8c3679db87d3f7dd07ab2c14a664ef",
     "buildings/g7_fac_wash_rot_1_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
     "buildings/g7_fac_wash_rot_1_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_2.png": "d11f3385d4f7e6d6bd652c1921a50cc5",
-    "buildings/g7_fac_wash_rot_2_lockdown.png": "057ed790e154c1896ed295aed51bcd7d",
+    "buildings/g7_fac_wash_rot_2.png": "bffbd090b7f60c910e70f4a9026d0e5e",
+    "buildings/g7_fac_wash_rot_2_lockdown.png": "e2e328bf4148ae07063984d2916a24fa",
     "buildings/g7_fac_wash_rot_2_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
     "buildings/g7_fac_wash_rot_2_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_3.png": "1a907b26bbaf9ff2f3475cafb3bfa0a4",
-    "buildings/g7_fac_wash_rot_3_lockdown.png": "5f33a84a011747d75577582e24eff0f7",
+    "buildings/g7_fac_wash_rot_3.png": "82d75ad267547102c1a517f7063d73a6",
+    "buildings/g7_fac_wash_rot_3_lockdown.png": "099700e4f647a1dfe15288ae15154ca1",
     "buildings/g7_fac_wash_rot_3_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
     "buildings/g7_fac_wash_rot_3_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
     "buildings/g7_fac_workshop_rot_0.png": "77e34964c70d39a5297170b8e59a9da5",
