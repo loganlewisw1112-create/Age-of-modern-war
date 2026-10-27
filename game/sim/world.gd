@@ -78,13 +78,14 @@ const CnFacility = preload("res://sim/systems/cn_facility.gd") # G7 Counter-Nani
 const BaseState7 = preload("res://sim/systems/base_state7.gd") # G7 base secure state (CNFAC7)
 const Threats7 = preload("res://sim/systems/threats7.gd") # G7 Machine threat units (THREAT7)
 const LastProtocol = preload("res://sim/systems/last_protocol.gd") # G7 Last Protocol mode rules (LPMODE7)
+const Turrets7 = preload("res://sim/systems/turrets7.gd") # G7 8 Human A turrets (TURRET7 CR seq 480)
 const CommandNet = preload("res://sim/systems/command_net.gd") # G6.1 chain of command + comms (CHAIN61)
 const Intel = preload("res://sim/systems/intel.gd")            # G6.1 per-side belief (CHAIN61)
 const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command layer (PLAN61)
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Apc7, Combat, Wounds, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Apc7, Combat, Turrets7, Wounds, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -260,6 +261,10 @@ static func validate_config(c: Dictionary) -> String:
 	var sides: Array = c.get("sides", [])
 	if sides.size() < 2:
 		return "A match needs at least 2 sides."
+	# G7 (owner): a map flagged skirmish:false (e.g. the Last Protocol map) only starts in its own mode.
+	var g7_mdef: Dictionary = MapGen.defs().get(String(c.get("map", "")), {})
+	if not bool(g7_mdef.get("skirmish", true)) and String(c.get("mode", "")) != String(g7_mdef.get("mode", "")) and not bool(c.get("dev_map", false)):
+		return "This map is only available in its own game mode."
 	if c.has("map_file"):
 		# G4 (MAPIO CR): a file map limits sides by its own player starts
 		var fr: Dictionary = MapIO.read(String(c.map_file))

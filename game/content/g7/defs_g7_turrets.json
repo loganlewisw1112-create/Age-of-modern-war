@@ -1,0 +1,40 @@
+{
+ "_meta": "G7 fragment (owner: TURRET7). G7_REFERENCE master scope section 7: eight new Human A turrets (normal matches and the Last Protocol outer ring). New ids only. Every number and every stage_min is PROVISIONAL balance (set in the plan). The turrets have no def.weapon on purpose: sim/systems/turrets7.gd drives them (target preference by class, spotting, EMP, thermite, microwave cone, rail penetration) from the def.t7 block, so Combat's tower path skips them. t7.weapon names the weapon row below (range, damage, class, cooldown). t7.prefer = target tags in priority order (inf, swarm, drone, air, leech, pack, walker_l, walker_h, light_v, heavy, big, core, machine, building); t7.only = the tags it may engage at all (empty = any ground target).",
+ "buildings": {
+  "a_t7_hmg_nest": {"name": "Heavy MG Nest", "faction": "human_a", "stage_min": 7, "size": 1, "hp": 1700, "armor": "fortification", "sight": 10, "power": 0, "buildable": true, "requires": ["barracks"], "requires_power": false, "cost": {"credits": 220, "salvage": 90, "ore": 20}, "build_time": 14, "g7": true, "turret7": true,
+   "desc": "Twin .50 behind sandbagged armour. Shreds infantry, swarms and light walkers.",
+   "t7": {"kind": "gun", "weapon": "g7_twin50", "air": true, "buildings": false, "prefer": ["inf", "swarm", "walker_l", "leech", "pack", "drone", "light_v"]}},
+  "a_t7_autocannon": {"name": "Autocannon Turret", "faction": "human_a", "stage_min": 8, "size": 1, "hp": 1500, "armor": "building", "sight": 11, "power": -10, "buildable": true, "requires": ["motor_pool"], "requires_power": false, "cost": {"credits": 320, "salvage": 130, "ore": 50}, "build_time": 18, "g7": true, "turret7": true,
+   "desc": "Rotating 30 mm. Light vehicles, drones and packhunters.",
+   "t7": {"kind": "gun", "weapon": "g7_ac30", "air": true, "buildings": false, "prefer": ["light_v", "drone", "pack", "walker_l", "swarm", "air", "inf"]}},
+  "a_t7_hulldown": {"name": "Hull-down Tank Turret", "faction": "human_a", "stage_min": 9, "size": 2, "hp": 3400, "armor": "fortification", "sight": 12, "power": -10, "buildable": true, "requires": ["motor_pool"], "requires_power": false, "cost": {"credits": 520, "salvage": 260, "ore": 140}, "build_time": 30, "g7": true, "turret7": true,
+   "desc": "120 mm gun in a buried armoured casemate. The main anti-armour wall gun.",
+   "t7": {"kind": "gun", "weapon": "g7_casemate120", "air": false, "buildings": true, "prefer": ["big", "heavy", "walker_h", "pack", "light_v", "core"], "only": ["heavy", "walker_h", "walker_l", "pack", "light_v", "big", "core", "building"]}},
+  "a_t7_automortar": {"name": "Auto-Mortar Pit", "faction": "human_a", "stage_min": 9, "size": 2, "hp": 1600, "armor": "fortification", "sight": 6, "power": -15, "buildable": true, "requires": ["research_station"], "requires_power": true, "cost": {"credits": 420, "salvage": 180, "ore": 100}, "build_time": 24, "g7": true, "turret7": true,
+   "desc": "Automated 120 mm firing over the walls. Fires only at targets spotted by a friendly tower or drone.",
+   "t7": {"kind": "mortar", "weapon": "g7_automortar120", "air": false, "buildings": true, "prefer": ["inf", "swarm", "pack", "light_v", "walker_l", "machine", "building"],
+     "spotters": ["guard_tower", "a_wall_tower", "a_air_tower", "a_radar_station", "comms_tower", "a_t7_hmg_nest", "a_t7_autocannon", "a_t7_railgun"], "spot_drones": true}},
+  "a_t7_emp": {"name": "EMP Projector", "faction": "human_a", "stage_min": 10, "size": 1, "hp": 1200, "armor": "building", "sight": 10, "power": -45, "buildable": true, "requires": ["research_station"], "requires_power": true, "cost": {"credits": 600, "salvage": 220, "ore": 160}, "build_time": 30, "g7": true, "turret7": true,
+   "desc": "Stuns Machine units and drops drones at the wall. Long recharge.",
+   "t7": {"kind": "emp", "weapon": "g7_emp_pulse", "radius": 7.0, "stun_s": 8.0, "min_targets": 2, "drones": true}},
+  "a_t7_thermite": {"name": "Thermite Flame Turret", "faction": "human_a", "stage_min": 9, "size": 1, "hp": 1400, "armor": "fortification", "sight": 8, "power": -10, "buildable": true, "requires": ["motor_pool"], "requires_power": false, "cost": {"credits": 340, "salvage": 150, "ore": 70}, "build_time": 20, "g7": true, "turret7": true,
+   "desc": "Burns creep, seeds and small Machine units on the approach. Stops creep following a breach.",
+   "t7": {"kind": "flame", "weapon": "g7_thermite", "air": false, "buildings": false, "burn_radius": 2.5, "creep_scan_s": 2.0, "prefer": ["swarm", "leech", "inf", "pack", "walker_l", "light_v"], "only": ["swarm", "leech", "inf", "pack", "walker_l", "light_v"]}},
+  "a_t7_microwave": {"name": "Microwave Anti-Swarm Turret", "faction": "human_a", "stage_min": 10, "size": 1, "hp": 1100, "armor": "building", "sight": 9, "power": -40, "buildable": true, "requires": ["research_station"], "requires_power": true, "cost": {"credits": 520, "salvage": 200, "ore": 140}, "build_time": 26, "g7": true, "turret7": true,
+   "desc": "Fries swarms, micro-drones and leeches in a cone (soft kill). Complements the Laser CIWS.",
+   "t7": {"kind": "cone", "weapon": "g7_microwave", "air": true, "cone_deg": 50.0, "prefer": ["swarm", "drone", "leech"], "only": ["swarm", "drone", "leech"]}},
+  "a_t7_railgun": {"name": "Rail Cannon", "faction": "human_a", "stage_min": 10, "size": 2, "hp": 2600, "armor": "fortification", "sight": 12, "power": -150, "buildable": true, "requires": ["a_radar_station"], "requires_power": true, "cost": {"credits": 1400, "salvage": 450, "ore": 500}, "build_time": 50, "g7": true, "turret7": true,
+   "desc": "Late game. Extreme range and penetration against the biggest Machine units and the walking core. Slow fire, heavy power draw.",
+   "t7": {"kind": "rail", "weapon": "g7_rail", "air": false, "buildings": true, "pierce": 4, "falloff": 0.7, "lane": 0.7, "prefer": ["core", "big", "walker_h", "heavy", "pack", "building", "light_v"], "only": ["core", "big", "walker_h", "heavy", "pack", "walker_l", "light_v", "building"]}}
+ },
+ "weapons": {
+  "g7_twin50": {"class": "small_arms", "damage": 24, "range": 9, "cooldown": 0.25, "accuracy": 0.75, "g7": true, "anti_air_low": true, "suppress": 1.5},
+  "g7_ac30": {"class": "autocannon", "damage": 38, "range": 11, "cooldown": 0.45, "accuracy": 0.8, "g7": true, "anti_air_low": true, "anti_drone": true},
+  "g7_casemate120": {"class": "at", "damage": 280, "range": 13, "cooldown": 4.5, "accuracy": 0.85, "g7": true},
+  "g7_automortar120": {"class": "artillery", "damage": 130, "range": 26, "cooldown": 6.0, "accuracy": 0.6, "g7": true, "splash": 2.2, "min_range": 6, "indirect": true},
+  "g7_emp_pulse": {"class": "energy", "damage": 0, "range": 7, "cooldown": 45.0, "accuracy": 1.0, "g7": true},
+  "g7_thermite": {"class": "flame", "damage": 45, "range": 6, "cooldown": 1.5, "accuracy": 0.9, "g7": true, "splash": 1.5},
+  "g7_microwave": {"class": "energy", "damage": 130, "range": 8, "cooldown": 1.2, "accuracy": 1.0, "g7": true},
+  "g7_rail": {"class": "at", "damage": 950, "range": 32, "cooldown": 12.0, "accuracy": 0.95, "g7": true}
+ }
+}

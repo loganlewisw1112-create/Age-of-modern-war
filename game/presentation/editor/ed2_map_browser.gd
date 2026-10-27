@@ -77,6 +77,8 @@ func refresh() -> void:
 	for m in G3bData.map_rows():
 		if not bool(m.get("present", true)):
 			continue
+		if not bool(m.get("skirmish", true)):
+			continue  # G7 (owner): mode-only maps (Last Protocol, scale test maps) never appear in skirmish
 		_add("   " + G3bData.map_label(m), {"kind": "builtin", "id": String(m.id), "name": String(m.get("name", m.id)),
 			"w": int(m.get("w", 0)), "h": int(m.get("h", 0)), "players": int(m.get("max_sides", 4))})
 	_header("Custom")

@@ -8,6 +8,7 @@ extends RefCounted
 
 const U = preload("res://sim/ai/ai_util.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
+const Turrets7 = preload("res://sim/systems/turrets7.gd")  # G7 TURRET7 CR seq 530 (preloads no AI files)
 
 const DEF_ARMY := 8                 # army pop before any G6 defence
 const FAN := [0.0, 0.6, -0.6, 1.1, -1.1, 0.3, -0.3]
@@ -80,9 +81,12 @@ static func _defences(w: SimWorld, fid: int, st: Dictionary, ctx: Dictionary, g:
 		plan.append(["radar", 1])
 		plan.append(["cdrone", 1])
 		plan.append(["sam", 1])
+	if U.fac(w, fid) == "human_a":  # G7 TURRET7 CR seq 530: the 8 new turrets by seen threat (rows name defs directly)
+		var tt := {"inf": 1, "armour": bool(t.get("armour", false)), "drone": bool(t.get("drone", false)), "air": bool(t.get("air", false)), "machine": bool(t.get("machine", false))}
+		plan.append_array(Turrets7.ai_rows(w, fid, tt, late))
 	var n := 0
 	for row in plan:
-		var d := L.rdef(w, fid, String(row[0]))
+		var d := String(row[0]) if String(row[0]).begins_with("a_t7_") else L.rdef(w, fid, String(row[0]))
 		if d == "" or (String(row[0]) == "sam" and d == L.rdef(w, fid, "radar") and L.count_def(ctx, d) > 0):
 			continue
 		if String(row[0]) == "sam" and L.raw_def(U.fac(w, fid), "radar") != "" and L.count_def(ctx, L.raw_def(U.fac(w, fid), "radar")) == 0:

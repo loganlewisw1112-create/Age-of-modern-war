@@ -204,6 +204,12 @@ team leader; if the leader falls, Squad A's second-in-command takes over.
   heavy rounds** (launcher tandem anti-armour / EMP salvos, limpets, harpoons). Flank and rear hits on a walker fixed
   frontally do markedly more damage; a straight-on fight stays very hard. The group's AI chooses this pincer on its own
   against heavy walkers, and the player can trigger it with one order.
+- **Tip them over and blow them up (owner addition 2026-10-26):** with the right approach, the head-on rush plus flanking
+  heavy rounds **physically tips heavy Machine walkers over**, then the group blows them up. Leg hits from the flanks/rear
+  while the walker is pinned frontally build up stagger; past a threshold it topples (can't move or aim for a window,
+  belly and rear exposed) and hits in that window do heavy bonus damage. If the group fails, it rights itself. Straight-on
+  fire builds almost no stagger. Art: the fall in the hit direction, lying exposed with legs flailing, getting back up,
+  and a big destruction blast.
 - **Defences:** a shield dome during deployment (recharge timer); active protection; an anti-drone laser or microwave
   emitter; a short-range EMP pulse that also knocks leeches off; side panels that pop open to fire interceptors,
   smoke and Anduril-style interceptor drones (fictional name in game); top-tier armour, chaff, a sealed cabin, a low
@@ -243,6 +249,10 @@ team leader; if the leader falls, Squad A's second-in-command takes over.
   full strike APC with its 10 soldiers plus an 8-operator squad). With no vehicle loaded it carries 20–25 soldiers.
   During extraction it launches 5 defence drones (3 kamikaze, 2 machine-gun). Long cooldown; the landing zone must be
   held.
+- **C-17-style loading (owner order 2026-10-26):** the stealth strike dropship loads like a C-17: a big rear cargo ramp
+  lowers to the ground and the strike APC **drives in through the back** up the ramp (its squad walks in). Everything is
+  **proportionate**: the dropship is enlarged so its bay visibly fits a strike APC plus a squad, and the facility helipad
+  (and the facility if needed) is enlarged to fit the dropship.
 - **Regular Human A VTOL Dropship (`a_vtol_dropship`), upgraded:** enlarged, with the same internal bay (one vehicle
   plus its occupants plus a squad, all inside); trained as now in normal matches.
 - **Both dropships:** exfil, insertion, moving vehicles and squads between forward bases, relief runs. Animation: ramp
@@ -321,6 +331,8 @@ effects. Stage gating set in the plan.
   fire. The state sets training speed.
 
 ## 10. Last Protocol (new game mode)
+- **Skirmish lock (owner order 2026-10-26):** the Last Protocol map is completely inaccessible in skirmish mode; it
+  only starts through Last Protocol.
 - **Format:** strictly 1v1, you against the Machine at maximum difficulty; Human A only; its own main-menu entry with
   best-time and score records.
 - **Map size (LOCKED by the owner, 2026-10-26): minimum 512×512 tiles**, 4× the area of today's largest map
