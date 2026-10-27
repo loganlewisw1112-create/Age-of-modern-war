@@ -291,6 +291,8 @@ func _build_ui() -> void:
 		_obj_labels.append(l)
 
 	g3_score.build(right, _obj_panel)
+	if preload("res://presentation/ui7/lp_hud.gd").wants(_world()):  # G7 LPMODE7 CR seq 939: no skirmish objectives/victory cards in Last Protocol
+		preload("res://presentation/ui7/lp_hud.gd").hide_skirmish_cards(self)
 	g3b_stage.build(left, self)
 
 	# ---- hover info (just above the bottom panel)

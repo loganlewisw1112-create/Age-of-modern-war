@@ -71,6 +71,8 @@ func test_start_state() -> void:
 	check(not (s.base.rings[0].turrets as Array).is_empty(), "outer ring turrets")
 	check(w.entities.has(int(s.facility)), "Counter-Nanite facility built")
 	check(bool(s.filled), "facility filled")
+	var fs: Dictionary = w.factions[int(s.fid)]
+	check(s.has("pop_floor") and int(fs.get("pop_cap_floor", 0)) >= int(fs.pop), "supply cap floor covers the pre-built army + crews (%d >= %d)" % [int(fs.get("pop_cap_floor", 0)), int(fs.pop)])
 	var cn := {}
 	var apcs := 0
 	var ds := 0

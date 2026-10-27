@@ -143,6 +143,12 @@ static func tick(w: SimWorld) -> void:
 		return
 	if not bool(s.filled):
 		_try_fill(w, s)
+	elif not s.has("pop_floor") and w.tick > int(s.get("fill_tick", w.tick)):
+		# base starts secure: the supply cap covers the pre-built army + facility crews (Economy recounted them last
+		# tick) plus start.pop_headroom. Economy keeps f.pop_cap >= f.pop_cap_floor (ORCH CR economy.pop_cap_floor).
+		var f: Dictionary = w.factions[int(s.fid)]
+		s.pop_floor = int(f.pop) + int(R().get("start", {}).get("pop_headroom", 60))
+		f.pop_cap_floor = int(s.pop_floor)
 	_events(w, s)
 	var ev := int(R().get("think_every", 20))
 	if (w.tick + 1) % ev == 0:

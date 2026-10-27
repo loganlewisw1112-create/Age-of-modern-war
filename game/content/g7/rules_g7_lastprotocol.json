@@ -27,6 +27,7 @@
         "vtols": 2,
         "hq_def": "a_company_hq",
         "power_def": "generator",
+        "pop_headroom": 60,
         "army": {
           "outer": {"rifle_squad": 16, "at_team": 8, "a_hmg_team": 6, "mbt": 6, "ifv": 6, "a_spaag": 2},
           "economy": {"rifle_squad": 8, "a_manpads": 4, "engineer": 8, "a_medic_team": 2},

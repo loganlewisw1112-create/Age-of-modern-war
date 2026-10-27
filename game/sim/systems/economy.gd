@@ -6,6 +6,7 @@ const STIPEND_INTERVAL_TICKS := 20
 const MAGNET_EVERY := 20         # G3a scrap magnet period (ticks): 1 salvage per pile per second
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 
 static var _pop: Dictionary = {}   # unit def -> pop (content is read-only)
 
@@ -39,7 +40,8 @@ static func tick(w: SimWorld) -> void:
 		pc[fid] = 0
 		pop[fid] = 0
 		hqs[fid] = 0
-	for e in SimIndex.of(w, "building"):
+	# G7 LPPERF7: only defs with power / pop_cap / is_hq / company_hq add anything here (walls add 0 to all)
+	for e in Inert7.blds(w, Inert7.ECO):
 		var fid: int = int(e.owner)
 		if not pp.has(fid) or not e.built or not w.entities.has(int(e.id)):
 			continue
@@ -68,7 +70,7 @@ static func tick(w: SimWorld) -> void:
 		f.power_prod = int(pp[fid])
 		f.power_use = int(pu[fid])
 		f.pop = int(pop[fid])
-		f.pop_cap = mini(int(pc[fid]), cap_hq if int(chq[fid]) > 0 else cap_max)
+		f.pop_cap = maxi(mini(int(pc[fid]), cap_hq if int(chq[fid]) > 0 else cap_max), int(f.get("pop_cap_floor", 0)))  # G7 LPMODE7 CR seq 940: only Last Protocol sets a floor
 		# G3b gate counter (STG4): consecutive ticks with power_prod >= power_use; any shortfall resets
 		f.stats.power_ok_ticks = int(f.stats.get("power_ok_ticks", 0)) + 1 if int(f.power_prod) >= int(f.power_use) else 0
 		if pay and f.alive and int(hqs[fid]) > 0 and rate > 0:
@@ -83,7 +85,7 @@ static func tick(w: SimWorld) -> void:
 ## (200) while fid owns a BUILT building whose def has company_hq: true, else rules.pop_cap_max (120).
 ## Reads the shared SimIndex building list (rebuilt by Economy at the start of each tick).
 static func cap_max_for(w: SimWorld, fid: int) -> int:
-	for e in SimIndex.of(w, "building"):
+	for e in Inert7.blds(w, Inert7.ECO):   # G7 LPPERF7: company_hq defs are in the ECO list
 		if int(e.owner) == fid and bool(e.get("built", false)) and w.entities.has(int(e.id)) 				and bool(Content.building(String(e.def)).get("company_hq", false)):
 			return _cap_max(true)
 	return _cap_max(false)
@@ -172,7 +174,7 @@ static func _refineries(w: SimWorld) -> void:
 	var period := maxi(1, int(round(float(cfg.get("period_s", 6)) / SimWorld.DT)))
 	var ore_in := int(cfg.get("ore_in", 0))
 	var cap := int(cfg.get("stock_cap", 0))   # 0 or absent: no cap (old behaviour)
-	for e in SimIndex.of(w, "building"):
+	for e in Inert7.blds(w, Inert7.REFINE):   # G7 LPPERF7: only `refines` defs (the loop skipped the rest)
 		if not w.entities.has(int(e.id)) or not bool(Content.building(e.def).get("refines", false)):  # G3a: flag, any faction
 			continue
 		var fid := int(e.owner)
@@ -214,7 +216,7 @@ static func _refineries(w: SimWorld) -> void:
 ## (w.credit cause "scrap_magnet"). Emptied piles are removed like a harvested-out deposit.
 static func _scrap_magnets(w: SimWorld) -> void:
 	var yards := []
-	for b in SimIndex.of(w, "building"):
+	for b in Inert7.blds(w, Inert7.MAGNET):   # G7 LPPERF7: only scrap_magnet > 0 defs
 		if w.entities.has(int(b.id)) and bool(b.built) and w.factions.has(int(b.owner)):
 			var r := float(Content.building(b.def).get("scrap_magnet", 0))
 			if r > 0.0:

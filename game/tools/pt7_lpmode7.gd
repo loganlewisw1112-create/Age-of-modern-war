@@ -48,6 +48,19 @@ func run(pt) -> void:
 		hp = LpHud.attach(pt.main.hud._left_scroll.get_child(0), mv, pt.main.hud.layer.root)
 	hp.set("records_path", REC)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(REC))
+	await pt._wait_until(func(): return pt._w().sys_state.lp.has("pop_floor"), 20.0)  # set the tick after the fill
+	mv.join_sim()
+	var fs: Dictionary = w.factions[int(s.fid)]
+	pt._log("lpmode7_power_pop", int(fs.power_prod) >= int(fs.power_use) and int(fs.get("pop_cap_floor", 0)) >= int(fs.pop),
+		"PWR %d/%d, POP %d, cap %d (floor %d; Economy honours the floor once ORCH applies CR economy.pop_cap_floor)" % [int(fs.power_use), int(fs.power_prod), int(fs.pop), int(fs.pop_cap), int(fs.get("pop_cap_floor", 0))])
+	var obp = pt.get_tree().root.find_child("ObjectivesPanel", true, false)
+	var vcp = pt.get_tree().root.find_child("VictoryPanel", true, false)
+	var hidden0: bool = (obp == null or not obp.visible) and (vcp == null or not vcp.visible)
+	if not hidden0:
+		LpHud.hide_skirmish_cards(pt.main.hud)
+	await pt._wait(0.3)
+	var hidden1: bool = (obp == null or not obp.is_visible_in_tree()) and (vcp == null or not vcp.is_visible_in_tree())
+	pt._log("lpmode7_skirmish_cards_hidden", hidden1, "objectives + victory cards hidden (%s)" % ("ORCH hud.gd hook present" if hidden0 else "hook not applied yet (CR change_request.lp_skirmish_cards): the flow called LpHud.hide_skirmish_cards"))
 	var C := Vector2(s.base.center) + Vector2(0.5, 0.5)
 	mv.center_camera_on(C)
 	await pt._wait(1.5)

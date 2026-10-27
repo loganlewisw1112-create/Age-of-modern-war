@@ -41,6 +41,22 @@ static func wants(w: SimWorld) -> bool:
 	return w != null and LastProtocol.active(w)
 
 
+## Last Protocol has its own goals: the skirmish OBJECTIVES card and the VICTORY / HQs-left card are hidden (hud.gd
+## calls this after g3_score.build when wants(); a no-op for anything that is missing).
+static func hide_skirmish_cards(hud: Object) -> void:
+	if hud == null:
+		return
+	var ob = hud.get("objectives")
+	if ob != null:
+		ob.set("dismissed", true)
+	var op = hud.get("_obj_panel")
+	if op is Control:
+		(op as Control).visible = false
+	var gs = hud.get("g3_score")
+	if gs != null and gs.get("panel") is Control:
+		(gs.get("panel") as Control).visible = false
+
+
 static func attach(stack: Control, match_view: Node, root: Control = null) -> Control:
 	var h = (load("res://presentation/ui7/lp_hud.gd") as GDScript).new()
 	h.mv = match_view
