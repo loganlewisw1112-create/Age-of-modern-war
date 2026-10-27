@@ -53,6 +53,11 @@ const BAY_OPEN := 6
 const BAY_FILE_FPS := 4.7   # boarding file: one 1.2 m spacing per 4-frame loop at ~1.4 m/s
 const FOOT_U := 2.45        # landed craft footprint half extents (tiles): nose..ramp foot, span incl. fans
 const FOOT_V := 2.1
+const CnFacility = preload("res://sim/systems/cn_facility.gd")  # G7 (CNFAC7-3): facility floors (read-only)
+const ArtCat = preload("res://presentation/art/art_catalog.gd")
+const BAY_HIDE_A := 0.6     # hull pixel alpha above this covers a soldier's feet (the sheet's ground shadow is ~0.36)
+const BAY_PROBE := [Vector2(0, -2), Vector2(-4, -2), Vector2(4, -2), Vector2(0, 1), Vector2(0, 4), Vector2(0, 7), Vector2(0, -5),
+	Vector2(0, -8), Vector2(0, -11), Vector2(0, -14), Vector2(0, -17), Vector2(0, -20)]  # a man's feet (+-4), body to 20 px, 7 px under him
 const ROOF_CUT_MOD := Color(1.0, 0.96, 0.9, 0.34)  # G7 (LOOK7): building drawn see-through, troops inside shown
 var _ghosts: Dictionary = {}       # remembered-building id -> ghost entity dict
 var _decor: Dictionary = {}        # Vector2i chunk -> Array [pos, page, src, off, ...]
@@ -95,6 +100,14 @@ var g4b_fx_drawn := 0                      # mines + charges drawn from effect a
 var g5_counts: Dictionary = {}             # shadows, lifted, wounded, markers, red_cross, trails, slung, strips, sinking
 var _burnt_src := PackedByteArray()        # last snap.burnt merged into `burnt`
 var _lift := 0.0                           # last _g5_lift result (px)
+var x7: Dictionary = {}  # G7 (VIS7): id -> [sheet spec ({} = hide), column, row (-1 = unit row), offset Vector2]; filled by vis7_layer before refresh()
+var _bay_fr: Dictionary = {}               # G7 (CNFAC7-3): craft id -> [sheet Image, frame origin, dst, frame size, sort depth]
+var _bay_hide: Array = []                  # G7 (CNFAC7-3): infantry near a landed craft [first push, end push, feet, depth]
+var _hc := -1
+var _inf_cache: Dictionary = {}
+var bay_hidden := 0                        # infantry hidden behind a landed dropship this frame (playtest evidence)
+var fac_drawn := 0                         # facility floor / zone sprites drawn this frame (playtest evidence)
+var _pad_key := ""
 var _crafts: Array = []                    # G7 (CNFAC7-2): landed large dropships this frame [pos, facing, depth, id]
 var bay_drawn := 0                         # G7 (CNFAC7-2): ramp-sequence frames drawn last refresh (playtest probe)
 # G6 (VIEW6): height lift table (terrain_layer.lift_px when ELEV-VIEW publishes it, else built from
@@ -462,13 +475,23 @@ func refresh() -> void:
 	# G7 (LOOK7): sparse per-unit display states (render_snap g7u: wounds, care, panic, gait, sectors, herringbone)
 	var g7u: Dictionary = sn.get("g7u", {})
 	var has_g7 := not g7u.is_empty()
+	var has_x7 := not x7.is_empty()
 	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
 	var pframe := Engine.get_process_frames()
 	_bay_crafts(n_u, far, defs, def_a, flg_a, pos_a, fac_a, ids)
 	var has_cr := not _crafts.is_empty()
 	bay_drawn = 0
+	bay_hidden = 0
+	_bay_fr.clear()
+	_bay_hide.clear()
+	_hc = -1
+	if live and not far:
+		_push_fac(mv._world, vr)
 	for i in n_u:
+		if _hc >= 0:
+			_bay_hide[_hc][1] = _n
+			_hc = -1
 		var id: int = ids[i]
 		if flg_a[i] & RenderSnap.FLAG_ABOARD:
 			gc5.aboard += 1
@@ -722,6 +745,14 @@ func refresh() -> void:
 			if art.resolve_sheet(wk, int(t * float(wk.get("fps", 6)) + id * 0.37) % maxi(1, int(wk.get("frames", 3))), row):
 				_push(layer, sp.y - 3.0, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color(1, 1, 1, 0.85))
 				gc5.wake_sheets += 1
+		if has_x7:   # G7 (VIS7): frame swap / hide from vis7_layer (no-op while x7 is empty)
+			var xv = x7.get(id)
+			if xv != null:
+				if (xv[0] as Dictionary).is_empty():
+					continue
+				elif art.resolve_sheet(xv[0], int(xv[1]), row if int(xv[2]) < 0 else int(xv[2])):
+					_push(layer, sp.y + hl, art.out_page, art.out_src, sp + art.out_off + (xv[3] as Vector2), art.out_src.size, mod6)
+					continue
 		# inlined _push (capacity reserved above; G5 extras per unit - shadow, trail, markers, sling - may outgrow it)
 		var ii := _n
 		if ii >= _page.size():
@@ -730,6 +761,9 @@ func refresh() -> void:
 		var ky := int(sp.y + hl)
 		if has_cr and layer == 0:
 			ky = _craft_y(id, ky) if BAY_ART.has(dname) else bay_sort_y(pos, ky, _crafts)  # G7 (CNFAC7-2, CR seq 1193)
+			if not BAY_ART.has(dname) and _is_inf(dname):
+				_hc = _bay_hide.size()   # G7 (CNFAC7-3): checked against the hull pixels once the craft is drawn
+				_bay_hide.append([ii, ii + 1, sp, ky])
 		_keys[ii] = layer * LAYER_MUL + (ky + Y_OFF) * IDX_MUL + ii
 		var tb61: Vector2 = Vector2(-1, -1) if fi < int(c[35]) else (c[38] as PackedVector2Array)[fi * 8 + row]
 		if tb61.x >= 0.0:
@@ -761,6 +795,11 @@ func refresh() -> void:
 		if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
 			_g5_markers(sp, fl, id, t, neutral, gc5)
 	_units_drawn = units_drawn
+	if _hc >= 0:
+		_bay_hide[_hc][1] = _n
+		_hc = -1
+	if not _bay_hide.is_empty() and not _bay_fr.is_empty():
+		_apply_bay_hide()
 	if not far:
 		_push_corpses(vr, t, gc61)
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
@@ -1246,6 +1285,120 @@ func _push_bay(id: int, dname: String, ow: int, facing: float, gb: Dictionary, s
 		return false
 	var row := posmod(int(round(facing * FACING_INV)), 8)
 	var fsz := Vector2(c[4], c[5])
-	_push(0, float(_craft_y(id, int(sp.y + hl))), int(c[2]), Rect2((c[3] as Vector2) + Vector2(col, row) * fsz, fsz), sp + (c[6] as Vector2), fsz, mod6)
+	var cy := _craft_y(id, int(sp.y + hl))
+	_push(0, float(cy), int(c[2]), Rect2((c[3] as Vector2) + Vector2(col, row) * fsz, fsz), sp + (c[6] as Vector2), fsz, mod6)
 	bay_drawn += 1
+	if not _crafts.is_empty():
+		var img: Image = ArtCat._image(String(art._unit_spec(sheet).get("file", "")))
+		if img != null:
+			_bay_fr[id] = [img, Vector2(col, row) * fsz, sp + (c[6] as Vector2), fsz, cy]
 	return true
+
+
+# ================================================================ G7 (CNFAC7-3): nobody shows from behind a dropship
+## Owner (look checkpoint rev3): "dont show a person thats behind the dropship(s)". A soldier sorted behind a landed
+## craft whose feet the hull's drawn pixels cover is not drawn at all (otherwise his head and chest stick out above the
+## tail and he reads as standing on the hull). Soldiers in front, or behind but clear of the silhouette, are untouched.
+func _is_inf(dname: String) -> bool:
+	var v = _inf_cache.get(dname)
+	if v == null:
+		v = (ArtCat.manifest().get("infantry", {}) as Dictionary).has(dname)
+		_inf_cache[dname] = v
+	return v
+
+
+func _apply_bay_hide() -> void:
+	for hc in _bay_hide:
+		var feet: Vector2 = hc[2]
+		for cid in _bay_fr:
+			var fr: Array = _bay_fr[cid]
+			if int(hc[3]) < int(fr[4]) and bay_feet_covered(fr[0], fr[1], fr[2], fr[3], feet):
+				for k in range(int(hc[0]), int(hc[1])):
+					_dsz[k] = Vector2.ZERO
+				bay_hidden += 1
+				break
+
+
+## True when the craft frame (sheet img, frame origin in the sheet, drawn top-left dst, frame size) has an opaque hull
+## pixel on a soldier standing at screen point g (world px): at his feet (+-4 px), his lower body, or right under his
+## feet (feet resting on the hull's outline read as "standing on the dropship").
+static func bay_feet_covered(img: Image, origin: Vector2, dst: Vector2, fsz: Vector2, g: Vector2) -> bool:
+	for o in BAY_PROBE:
+		var lp: Vector2 = g + (o as Vector2) - dst
+		if lp.x < 0.0 or lp.y < 0.0 or lp.x >= fsz.x or lp.y >= fsz.y:
+			continue
+		var px := Vector2i(origin + lp)
+		if px.x < img.get_width() and px.y < img.get_height() and img.get_pixel(px.x, px.y).a > BAY_HIDE_A:
+			return true
+	return false
+
+
+# ================================================================ G7 (CNFAC7-3): facility floors and zone buildings
+## The compound interior from CnFacility.render_entries (display only): concrete loading pad (placeholder tile),
+## ARTCN7 helipad (lit while a dropship sits on it), garages (lockdown art while sealed), decontamination line, gate.
+func _push_fac(w, vr: Rect2) -> void:
+	fac_drawn = 0
+	if w == null or not CnFacility.active(w):
+		return
+	var man: Dictionary = ArtCat.manifest().get("buildings", {})
+	for F in CnFacility.render_entries(w):
+		var zs: Dictionary = F.zones
+		var hp: Array = zs.get("helipad", [0, 0, 0, 0])
+		var ctr := Vector2(float(hp[0]) + float(hp[2]) * 0.5, float(hp[1]) + float(hp[3]) * 0.5)
+		if not mv.cell_explored(Vector2i(ctr)):
+			continue
+		var pad: Array = zs.get("pad", [])
+		if pad.size() == 4:
+			_push_pad(Rect2(float(pad[0]), float(pad[1]), float(pad[2]), float(pad[3])), vr)
+		var lock := bool(F.get("lock", false))
+		_push_zone(man, "g7_cn_helipad", "lit" if int(F.get("heli", 0)) != 0 and not lock else "built", hp, vr, true)
+		var gts: Array = F.get("garage_team", [])
+		var grs: Array = F.get("garage_rects", [])
+		for gi in grs.size():   # a closed shed: it sorts at its door face, so an APC parked inside is hidden by it
+			var occ := gi < gts.size() and int(gts[gi]) != 0
+			_push_zone(man, "g7_cn_garage", "lockdown" if lock else ("open" if occ else "built"), grs[gi], vr, false, float(grs[gi][2]) * 8.0)
+		_push_zone(man, "g7_cn_decon", "active" if not lock else "built", zs.get("decon", []), vr, false)
+		_push_zone(man, "g7_cn_gate", "built" if lock else "open", zs.get("gate", []), vr, false)
+
+
+## One zone sprite at the centre of rect r [x, y, w, h] (tiles). Flat art sorts under everything; the rest by depth.
+func _push_zone(man: Dictionary, key: String, st: String, r: Array, vr: Rect2, flat: bool, dk: float = 0.0) -> void:
+	var b: Dictionary = man.get(key, {})
+	if b.is_empty() or r.size() < 4:
+		return
+	var sts: Dictionary = b.get("states", {})
+	var s: Dictionary = sts.get(st, sts.get("built", {}))
+	if s.is_empty():
+		return
+	var g := Vector2(float(r[0]) + float(r[2]) * 0.5, float(r[1]) + float(r[3]) * 0.5)
+	var gs := Vector2((g.x - g.y) * 32.0, (g.x + g.y) * 16.0)
+	if not vr.grow(256.0).has_point(gs):
+		return
+	var spec := {"file": String(s.file), "fw": int(b.get("fw", 0)), "fh": int(b.get("fh", 0)), "pivot": b.get("pivot", [0, 0])}
+	if art.resolve_sheet(spec, 0, 0):
+		_push(0, (1.0 - float(Y_OFF)) if flat else gs.y + dk, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
+		fac_drawn += 1
+
+
+## Concrete loading pad: one placeholder iso tile per cell (no ARTCN7 sample drew the pad).
+func _push_pad(r: Rect2, vr: Rect2) -> void:
+	if _pad_key == "":
+		var img := Image.create(64, 32, false, Image.FORMAT_RGBA8)
+		for y in 32:
+			for x in 64:
+				var dd := absf(float(x) - 31.5) / 32.0 + absf(float(y) - 15.5) / 16.0
+				if dd <= 1.0:
+					var v := (0.50 if dd > 0.93 else 0.60) + float((x * 7 + y * 13) % 5) * 0.012
+					img.set_pixel(x, y, Color(v, v * 0.99, v * 0.95, 1.0))
+		_pad_key = "cnfac7|pad"
+		art.atlas.add(_pad_key, img)
+	var pg: int = art.atlas.page_of(_pad_key)
+	if pg < 0:
+		return
+	var src: Rect2 = art.atlas.rect_of(_pad_key)
+	for y in range(int(r.position.y), int(r.end.y)):
+		for x in range(int(r.position.x), int(r.end.x)):
+			var sp := Vector2(float(x - y) * 32.0 - 32.0, float(x + y) * 16.0)
+			if vr.has_point(sp):
+				_push(0, -float(Y_OFF), pg, src, sp, src.size, Color.WHITE)
+				fac_drawn += 1

@@ -734,3 +734,60 @@ func test_facility_sizes_proportionate() -> void:
 	var ds = w.entities.get(int(CnFacility.fac(w, fid).heli))
 	check(ds != null and Vector2(ds.pos).distance_to(CnFacility.zone(CnFacility.fac(w, fid), "helipad").get_center()) < 0.01 and absf(float(ds.facing) - f) < 0.001, "the parked dropship is centred on its pad, ramp toward the compound")
 	check(ds != null and Transport.ramp_clear(w, ds, Transport.snap_facing(ds), "vehicle"), "an APC can line up behind it on the pad")
+
+
+## CNFAC7-3 (ORCH shot review, owner "dont show a person thats behind the dropship(s)"): a soldier sorted behind a
+## landed craft whose feet the hull's drawn pixels cover is hidden (entity_layer.bay_feet_covered), in every facing.
+func test_soldier_behind_craft_hidden_every_facing() -> void:
+	var man: Dictionary = ArtCatalog.manifest().get("vehicles", {})
+	var cp := Vector2(50.5, 50.5)
+	var csp := Vector2((cp.x - cp.y) * 32.0, (cp.x + cp.y) * 16.0)
+	for sheet in ["g7_cn_stealth_dropship", "g7_a_vtol_dropship_xl"]:
+		var spec: Dictionary = man.get(sheet, {})
+		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
+		if not check(img != null, "%s sheet loads" % sheet):
+			continue
+		var fsz := Vector2(float(spec.fw), float(spec.fh))
+		var dst := csp - Vector2(float(spec.pivot[0]), float(spec.pivot[1]))
+		var tail_hidden := 0
+		var shown_behind_covered := 0
+		var behind := 0
+		for k in 8:
+			var f := PI / 4.0 * float(k)
+			var crafts := [[cp, f, int((cp.x + cp.y) * 16.0), 1]]
+			var cy: int = crafts[0][2]
+			var org := Vector2(3, k) * fsz   # landed column
+			for u10 in range(-40, 41, 5):
+				for v10 in range(-40, 41, 5):
+					var g := Transport.ramp_pt(cp, f, float(u10) * 0.1, float(v10) * 0.1)
+					var sp := Vector2((g.x - g.y) * 32.0, (g.x + g.y) * 16.0)
+					var ky := EntityLayer.bay_sort_y(g, int(sp.y), crafts)
+					var cov := EntityLayer.bay_feet_covered(img, org, dst, fsz, sp)
+					if ky < cy and cov:
+						tail_hidden += 1
+			# every man sorted behind the hull with any hull pixel on him (feet to 20 px up, or 7 px under his feet) is
+			# hidden: nothing pokes out above the tail or appears to stand on the hull (1 px column scan, all 8 facings)
+			for u10 in range(-45, 46, 3):
+				for v10 in range(-45, 46, 3):
+					var g2 := Transport.ramp_pt(cp, f, float(u10) * 0.1, float(v10) * 0.1)
+					var sp2 := Vector2((g2.x - g2.y) * 32.0, (g2.x + g2.y) * 16.0)
+					if EntityLayer.bay_sort_y(g2, int(sp2.y), crafts) >= cy:
+						continue
+					behind += 1
+					var hit := false
+					for dy in range(-20, 8):
+						var lp := sp2 + Vector2(0, dy) - dst
+						if lp.x >= 0.0 and lp.y >= 0.0 and lp.x < fsz.x and lp.y < fsz.y and img.get_pixelv(Vector2i(org + lp)).a > EntityLayer.BAY_HIDE_A:
+							hit = true
+							break
+					if hit and not EntityLayer.bay_feet_covered(img, org, dst, fsz, sp2):
+						shown_behind_covered += 1
+			if k == 2:   # the ORCH shot (facing 2): men waiting behind the tail at the ramp
+				for uv in [[-3.8, 2.0], [-3.2, 1.7], [-3.3, 2.2], [-3.7, 1.4]]:
+					var g3 := Transport.ramp_pt(cp, f, uv[0], uv[1])
+					var sp3 := Vector2((g3.x - g3.y) * 32.0, (g3.x + g3.y) * 16.0)
+					check(EntityLayer.bay_sort_y(g3, int(sp3.y), crafts) < cy and EntityLayer.bay_feet_covered(img, org, dst, fsz, sp3),
+						"%s f2: the man at u %.1f v %.1f behind the tail is not drawn" % [sheet, uv[0], uv[1]])
+		check(tail_hidden > 40, "%s: soldiers whose feet the hull covers from behind are hidden (%d sample points)" % [sheet, tail_hidden])
+		check(shown_behind_covered * 100 <= behind, "%s: men behind the hull with hull pixels on them are hidden (%d of %d sample points escape the 3 px probe; <= 1%% allowed for 1-2 px antennas)" % [sheet, shown_behind_covered, behind])
+

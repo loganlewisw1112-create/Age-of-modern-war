@@ -57,6 +57,9 @@ func run(pt) -> void:
 	for k in ["salvage", "ore"]:
 		w.factions[me].stock[k] = int(w.factions[me].stock.get(k, 0)) + 100000
 	mv.world_events.connect(_on_events)
+	if OS.get_environment("CNFAC7_RAMP_ONLY") == "1":  # iteration aid: only the ramp scenes
+		await _ramp_scenes(pt, w, h, me, c)
+		return
 	# 1. the facility: core completes, the compound rises with every defence
 	var off: Array = CnFacility.conf().core_offset
 	var o := c - Vector2i(16, 16)
@@ -72,6 +75,8 @@ func run(pt) -> void:
 	mv.center_camera_on(center)
 	await pt._wait(1.0)
 	pt._shot("cnfac7_facility")
+	var fd := int(mv.entity_layer.fac_drawn) if mv.entity_layer != null else 0
+	pt._log("cnfac7_floors_drawn", fd >= 20, "facility floor / zone sprites drawn %d (pad tiles, helipad, garages, decon, gate)" % fd)
 	# 2. train a strike team: it appears inside its APCs in the garages
 	var why := _cmd(pt, {"type": "cn_train", "building_id": fid, "kind": "strike_team"})
 	await pt._wait(0.3)
@@ -156,7 +161,10 @@ func run(pt) -> void:
 
 
 # ---------------------------------------------------------------- CNFAC7-2: C-17-style rear-ramp loading, 5 facings
-const SCENE := [["cn_stealth_dropship", 0], ["a_vtol_dropship", 1], ["cn_stealth_dropship", 2], ["a_vtol_dropship", 4], ["cn_stealth_dropship", 6]]
+const SCENE := [["cn_stealth_dropship", 0], ["a_vtol_dropship", 1], ["cn_stealth_dropship", 2], ["a_vtol_dropship", 3],
+	["a_vtol_dropship", 4], ["cn_stealth_dropship", 5], ["cn_stealth_dropship", 6], ["a_vtol_dropship", 7]]  # CNFAC7-3: all 8 facings
+## CNFAC7-3: bystanders on every side of each craft (u along the nose, v across); the rear lane stays open for the ramp
+const RING := [[3.4, 0.0], [2.6, 2.6], [2.6, -2.6], [0.0, 3.0], [0.0, -3.0], [-1.6, 3.0], [-1.6, -3.0], [-2.9, 2.4], [-2.9, -2.4], [-3.4, 1.7], [-3.4, -1.7], [1.4, 2.8]]
 const SLOTS := [Vector2(-15, -8), Vector2(0, -8), Vector2(15, -8), Vector2(-8, 9), Vector2(8, 9)]
 
 
@@ -207,12 +215,13 @@ func _shoot_all(pt, mv, w: SimWorld, crafts: Array, stage: String, facs: Array =
 		var e = w.entities.get(int(crafts[i]))
 		if e == null:
 			continue
-		var zs := [1.0, 2.0, 3.0] if int(facs[i]) % 2 == 0 else [2.0]
+		var zs := [1.0, 2.0, 3.0]  # CNFAC7-3: every facing at zoom 1, 2, 3
 		for z in zs:
 			_zoom(mv, z)
 			mv.center_camera_on(Vector2(e.pos) + Vector2(-0.5, -0.5))
 			await pt._wait(0.35)
 			drawn += int(mv.entity_layer.bay_drawn) if mv.entity_layer != null else 0
+			_hide_check(pt, mv, "%s_f%d_z%d" % [stage, int(facs[i]), int(z)])
 			await pt._shot("cnfac7_ramp_%s_f%d_z%d" % [stage, int(facs[i]), int(z)])
 	_zoom(mv, 1.0)
 	mv.paused = false
@@ -273,10 +282,14 @@ func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 		for j in 8:
 			ids.append(int(h._unit(w, ops[j % 4], me, Transport.ramp_pt(at, f, -7.0 - float(j / 4), 2.4 + float(j % 4) * 0.6)).id))
 		crafts.append(int(ds.id))
+		for rv in RING:   # bystanders standing around the craft (hold), not part of the load
+			var b: Dictionary = h._unit(w, "rifleman", me, Transport.ramp_pt(at, f, float(rv[0]), float(rv[1])))
+			b.order = {"type": "hold"}
+			ids.append(-int(b.id))
 		apcs.append(int(apc.id))
 		all_ids.append(ids)
 	for i in crafts.size():
-		w.submit({"type": "load", "issuer": me, "carrier": int(crafts[i]), "unit_ids": all_ids[i]})
+		w.submit({"type": "load", "issuer": me, "carrier": int(crafts[i]), "unit_ids": all_ids[i].filter(func(x): return int(x) > 0)})
 	var c0 := int(crafts[0])
 	var got: bool = await pt._wait_until(func(): return _ph(w, c0) == "apc_in" and int(w.entities[c0].bay_seq.t1) - w.tick <= 60, 40.0)
 	var d1: int = await _shoot_all(pt, mv, w, crafts, "apcin", facs)
@@ -316,9 +329,25 @@ func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 	mv.join_sim()
 	for i in crafts.size():   # clear the patch for the next wave
 		for id in [int(crafts[i])] + all_ids[i]:
-			var e = w.entities.get(int(id))
+			var e = w.entities.get(absi(int(id)))
 			if e != null:
 				for x in e.get("cargo", []):
 					w.entities.erase(int(x.id))
-				w.entities.erase(int(id))
+				w.entities.erase(absi(int(id)))
 	w.cache.clear()
+
+
+## CNFAC7-3: owner "dont show a person thats behind the dropship(s)": after the frame is built, every soldier the layer
+## sorted behind a landed craft whose body the hull pixels touch must have been dropped (zero-size push). Logs a fail
+## with the count otherwise; the hidden count is evidence that the rule ran.
+func _hide_check(pt, mv, tag: String) -> void:
+	var el = mv.entity_layer
+	if el == null:
+		return
+	var bad := 0
+	for hc in el._bay_hide:
+		for cid in el._bay_fr:
+			var fr: Array = el._bay_fr[cid]
+			if int(hc[3]) < int(fr[4]) and el.bay_feet_covered(fr[0], fr[1], fr[2], fr[3], hc[2]) and (el._dsz[int(hc[0])] as Vector2) != Vector2.ZERO:
+				bad += 1
+	pt._log("cnfac7_nobody_behind_hull_" + tag, bad == 0, "hidden %d, near-craft infantry %d, still drawn behind the hull %d" % [int(el.bay_hidden), el._bay_hide.size(), bad])
