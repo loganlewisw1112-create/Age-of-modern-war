@@ -16,6 +16,8 @@ const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 const DEFAULTS := {
 	"graphics": {"window_mode": "windowed", "vsync": true, "max_fps": 0, "fx_quality": "medium"},
 	"game": {"speed": 1.0, "edge_pan": true, "edge_pan_speed": 1.0, "health_bars": "damaged"},
+	"protocol": {"advisor": "on"},  # G7 OPSUI7 CR 1403: PROTOCOL advisor on | muted | off
+	"last_protocol": {"skip_intro": false},  # G7 CINE7 CR 1544: skip the Last Protocol opening cinematic
 }
 const WINDOW_MODES := ["windowed", "borderless", "fullscreen"]
 const FPS_CAPS := [0, 30, 60, 120, 144]
@@ -228,6 +230,10 @@ func _game_tab() -> Control:
 		get_value("game", "edge_pan_speed"), func(x): _store("game", "edge_pan_speed", x, false))
 	_option(g, "Health bars", "OptHealth", HEALTH_BARS, ["Always", "Damaged units", "Selected only", "Off"],
 		get_value("game", "health_bars"), func(x): _store("game", "health_bars", x, false))
+	_option(g, "PROTOCOL advisor", "OptProtocol", ["on", "muted", "off"], ["Voice on", "Muted (text only)", "Off"],
+		get_value("protocol", "advisor"), func(x): _store("protocol", "advisor", x, false))  # G7 OPSUI7 CR 1403
+	_check(g, "Skip the Last Protocol opening", "OptSkipIntro", bool(get_value("last_protocol", "skip_intro")),
+		func(on): _store("last_protocol", "skip_intro", on, false))  # G7 CINE7 CR 1544
 	return g
 
 

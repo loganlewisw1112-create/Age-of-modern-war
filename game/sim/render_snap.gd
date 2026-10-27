@@ -632,7 +632,8 @@ const G6_SYS := {"airfield": "res://sim/systems/airfield.gd", "machine_g6": "res
 	"hooks": "res://sim/systems/g6_hooks.gd", "sonar": "res://sim/systems/sonar.gd",
 	"companies": "res://sim/systems/companies.gd", "garrison": "res://sim/systems/garrison.gd",
 	"ai_command": "res://sim/systems/ai_command.gd", "intel": "res://sim/systems/intel.gd",
-	"senses7": "res://sim/systems/senses7.gd"}  # G7 SENSE7 CR seq 1270
+	"senses7": "res://sim/systems/senses7.gd",  # G7 SENSE7 CR seq 1270
+	"threats7": "res://sim/systems/threats7.gd"}  # G7 VIS7 (CR 577: Threats7.render_info)
 static var _g6_scripts: Dictionary = {}
 
 
@@ -847,7 +848,71 @@ static func _g7_squad(e: Dictionary, id: int, gt, hd, hb, g7u: Dictionary) -> vo
 		d["hull"] = deg_to_rad(float(hb))
 
 
+## G7 (VIS7, CR 558 / 577): display keys of the counter-nanite APCs and the Machine threat units, merged into g7u
+## (sparse; a match without w.sys_state.apc7 / threats7 adds nothing; read-only, the sim is never written).
+##   apc 1 = a CN APC (strike / tactical); dome 0..1 charge while its shield dome is up + dome_r (tiles);
+##   smk 1 = smoke screen up; t7w {part: 0..1} vehicle parts (leech / packhunter wrecking: mg_front, mg_rear,
+##   panel_l, panel_r, dome); web 1 = a web-slowed vehicle;
+##   t7 = Threats7.render_info(e) {k, st, on?, as?}; coc 0..1 = cut progress of a cocooned soldier (e.t7c).
+## (rl / rl_n / rl_k and topple / topple_dir / stagger come straight from w.sys_state.g7v, CNSIM7.)
+## Returns snap.v7: the ids carrying any of these keys (APCs, threat units, cocoons, slowed vehicles, toppling walkers).
+static func _g7_vis(w, g7u: Dictionary) -> PackedInt32Array:
+	var v7 := PackedInt32Array()
+	var ents: Dictionary = w.entities
+	var a7 = w.sys_state.get("apc7")
+	if a7 is Dictionary:
+		for id in a7.get("fx", []):   # Machine units under a CN effect: the toppling / staggered walkers among them
+			var g = g7u.get(int(id))
+			if g is Dictionary and (g as Dictionary).has("topple"):
+				v7.append(int(id))
+		for id in a7.get("ids", []):
+			var e = ents.get(int(id))
+			if e == null or not e.has("a7"):
+				continue
+			var d := _g7_entry(g7u, int(id))
+			v7.append(int(id))
+			d["apc"] = 1
+			var a: Dictionary = e.a7
+			if bool(a.get("dome_on", false)):
+				var dc = Content.unit(String(e.def)).get("apc7", {}).get("dome", {})
+				var full := float(dc.get("charge", 1000.0)) if dc is Dictionary else 1000.0
+				d["dome"] = snappedf(clampf(float(a.get("dome", 0.0)) / maxf(full, 1.0), 0.0, 1.0), 0.01)
+				d["dome_r"] = float(dc.get("radius", 4.0)) if dc is Dictionary else 4.0
+			if int(a.get("smoke_until", -1)) >= int(w.tick):
+				d["smk"] = 1
+			var tw = e.get("t7w")
+			if tw is Dictionary and not (tw as Dictionary).is_empty():
+				d["t7w"] = (tw as Dictionary).duplicate()
+	var t7 = w.sys_state.get("threats7")
+	if not (t7 is Dictionary):
+		return v7
+	var T = _sys("threats7")
+	for id in t7.get("ids", []):
+		var e = ents.get(int(id))
+		if e != null and e.has("t7"):
+			_g7_entry(g7u, int(id))["t7"] = T.render_info(e)
+			v7.append(int(id))
+	for id in t7.get("cocoons", []):
+		var e = ents.get(int(id))
+		if e != null and e.has("t7c"):
+			_g7_entry(g7u, int(id))["coc"] = clampf(float(e.t7c.get("cut", 0.0)), 0.0, 1.0)
+			v7.append(int(id))
+	for id in t7.get("slowed", []):   # web-slowed vehicles (t7mv_until) and vehicles with wrecked parts (t7w)
+		var e = ents.get(int(id))
+		if e == null:
+			continue
+		if int(e.get("t7mv_until", -1)) >= int(w.tick):
+			_g7_entry(g7u, int(id))["web"] = 1
+			v7.append(int(id))
+		var tw = e.get("t7w")
+		if tw is Dictionary and not (tw as Dictionary).is_empty() and not e.has("a7"):
+			_g7_entry(g7u, int(id))["t7w"] = (tw as Dictionary).duplicate()
+			v7.append(int(id))
+	return v7
+
+
 static func _g7_out(w, snap: Dictionary, g7u: Dictionary) -> void:
+	snap["v7"] = _g7_vis(w, g7u)   # G7 VIS7: ids carrying VIS7 keys (may repeat; vis7_layer dedups)
 	snap["g7u"] = g7u
 	var cache: Dictionary = w.cache
 	var it := int(cache.get("snap_intel_t", -1000))

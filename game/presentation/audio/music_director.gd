@@ -35,6 +35,28 @@ var stingers: Array = []         # [{at, id}]
 var _players: Dictionary = {}
 var _sting: AudioStreamPlayer = null
 var _now := 0.0
+## G7 CINE7 CR 1546: while a cinematic plays, its cue picks the stem levels (fact cine.cues); "cine_end" (or an
+## unknown cue) hands back to the adaptive selection. PROVISIONAL mix per cue.
+var cine_levels: Dictionary = {}
+const CINE := {
+	"cine_open_archive": {"ambient": 0.35, "tension": 0.0, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_open_network": {"ambient": 0.3, "tension": 0.7, "pulse": 0.45, "drums": 0.0, "tide": 0.0},
+	"cine_open_order": {"ambient": 0.0, "tension": 0.0, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_open_base": {"ambient": 0.85, "tension": 0.5, "pulse": 0.3, "drums": 0.0, "tide": 0.0},
+	"cine_handover": {"ambient": 0.85, "tension": 0.0, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_end_purge": {"ambient": 1.0, "tension": 0.25, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_end_pyrrhic": {"ambient": 0.5, "tension": 0.0, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_end_capture": {"ambient": 0.3, "tension": 0.6, "pulse": 0.0, "drums": 0.0, "tide": 0.0},
+	"cine_end_victory": {"ambient": 0.9, "tension": 0.0, "pulse": 0.5, "drums": 0.0, "tide": 0.0},
+	"cine_defeat_creep": {"ambient": 0.0, "tension": 0.0, "pulse": 0.0, "drums": 0.0, "tide": 0.7},
+	"cine_defeat_countdown": {"ambient": 0.0, "tension": 0.0, "pulse": 0.7, "drums": 0.0, "tide": 0.0},
+	"cine_defeat_facility": {"ambient": 0.0, "tension": 0.8, "pulse": 0.0, "drums": 0.3, "tide": 0.0},
+}
+
+
+func cine_cue(cue: String) -> void:
+	cine_levels = (CINE.get(cue, {}) as Dictionary).duplicate()
+	mlog.append({"at": snappedf(_now, 0.01), "mode": "cine" if not cine_levels.is_empty() else mode, "why": cue})
 
 
 func _init() -> void:
@@ -134,6 +156,8 @@ func update(now: float, dt: float, st: Dictionary) -> void:
 	s.tide = tide_hit
 	var sel := select(s)
 	target = sel.levels
+	if not cine_levels.is_empty():
+		target = cine_levels   # G7 CINE7: a cinematic owns the mix until cine_end
 	if String(sel.mode) != mode:
 		_mark(now, String(sel.mode), "")
 	var rate := float(RATE.normal)

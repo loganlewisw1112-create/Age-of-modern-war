@@ -21,6 +21,7 @@ const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dr
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
+const Vis7Layer = preload("res://presentation/view/vis7_layer.gd")  # G7 VIS7: topple, APC weapons/dome, threat states
 const SenseLayer = preload("res://presentation/view/sense_layer.gd")  # G7 SENSE7: view cones + heard contacts
 const World7Layer = preload("res://presentation/view/world7_layer.gd")  # G7 LPMAP7: creep-warped world, sky, traces
 const CreepLayer = preload("res://presentation/view/creep_layer.gd")  # G7 CREEP7: Machine creep on the ground
@@ -81,6 +82,7 @@ var terrain_layer: Node2D
 var creep_layer: Node2D  # G7 CREEP7
 var world7_layer: Node2D  # G7 LPMAP7
 var sense_layer: Node2D  # G7 SENSE7
+var vis7_layer: Node2D  # G7 VIS7
 var entity_layer: Node2D
 var fog_layer: Node2D
 var fx_layer: Node2D
@@ -221,6 +223,10 @@ func _init_view() -> void:
 	entity_layer = EntityLayer.new()
 	entity_layer.z_index = 2
 	add_child(entity_layer)
+	vis7_layer = Vis7Layer.new()  # G7 VIS7 CR 1393: right after the entity layer, same z
+	vis7_layer.z_index = 2
+	add_child(vis7_layer)
+	vis7_layer.setup(self)
 	fx_layer = FxLayer.new()
 	fx_layer.z_index = 3
 	add_child(fx_layer)
@@ -489,6 +495,7 @@ func _process(delta: float) -> void:
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
 	ViewUtil.prof_add("p_fog", tp)
+	vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
 	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
 	_t_ent += Time.get_ticks_usec() - te
@@ -613,6 +620,7 @@ func anim_time() -> float:
 
 
 func _on_step_events(evs: Array) -> void:
+	vis7_layer.on_events(evs)  # G7 VIS7 CR 1393
 	for ev in evs:
 		match String(ev.type):
 			"EntityDestroyed":

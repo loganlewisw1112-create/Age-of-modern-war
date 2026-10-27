@@ -4,17 +4,21 @@ extends VBoxContainer
 ## Hook (ORCH, main menu): `LpMenu.add_entry(menu_vbox, func(cfg): <start a match with cfg>)` adds the LAST PROTOCOL
 ## button; the button builds LastProtocol.make_config(seed) (cfg.mode = "last_protocol", so the skirmish:false map
 ## guard lets it through). Records live in user://lp_records.json.
+## G7 (CINE7): records also keep medal counts, each ending's best time / score, and every Remembered call sign
+## across runs (capped); bests_rows() feeds the end-of-run screen; add_entry adds the "Skip the opening cinematic"
+## toggle (settings last_protocol / skip_intro, read by presentation/cine7/cine_director.gd).
 
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const RECORDS_PATH := "user://lp_records.json"
 const STATS_MAX := ["creep_purged", "cores_destroyed", "extractions", "score"]
 const STATS_MIN := ["teams_lost"]
 const MEDAL_RANK := {"": 0, "bronze": 1, "silver": 2, "gold": 3}
+const REMEMBERED_CAP := 300
 
 
 static func empty_records() -> Dictionary:
 	return {"ver": 1, "runs": 0, "wins": 0, "best_time_s": -1.0, "best_score": 0, "best_medal": "", "best": {},
-		"endings": {}, "last": {}}
+		"endings": {}, "last": {}, "medals": {}, "by_ending": {}, "remembered_all": []}
 
 
 static func load_records(path: String = RECORDS_PATH) -> Dictionary:
@@ -63,12 +67,39 @@ static func save_run(result: Dictionary, path: String = RECORDS_PATH) -> Diction
 		if won and result.has(k) and (not best.has(k) or float(result[k]) < float(best[k])):
 			best[k] = result[k]
 			nb.append(k)
+	if md != "":
+		rec.medals[md] = int((rec.medals as Dictionary).get(md, 0)) + 1
+	var be: Dictionary = (rec.by_ending as Dictionary).get(ending, {})
+	if won and (not be.has("best_time_s") or float(result.get("time_s", 0.0)) < float(be.best_time_s)):
+		be.best_time_s = float(result.get("time_s", 0.0))
+	if sc > int(be.get("best_score", -1)):
+		be.best_score = sc
+	rec.by_ending[ending] = be
+	for cs in result.get("remembered", []):
+		(rec.remembered_all as Array).append({"cs": String(cs), "run": int(rec.runs), "ending": ending})
+	while (rec.remembered_all as Array).size() > REMEMBERED_CAP:
+		(rec.remembered_all as Array).pop_front()
 	rec.last = result.duplicate(true)
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(rec, "  "))
 		f.close()
 	return {"records": rec, "new_bests": nb}
+
+
+## Personal-best rows for the end-of-run screen: [label, value].
+static func bests_rows(rec: Dictionary) -> Array:
+	var b: Dictionary = rec.get("best", {})
+	var md := String(rec.get("best_medal", ""))
+	return [["Runs / wins", "%d / %d" % [int(rec.get("runs", 0)), int(rec.get("wins", 0))]],
+		["Best time (win)", fmt_time(float(rec.get("best_time_s", -1.0)))],
+		["Best score", str(int(rec.get("best_score", 0)))],
+		["Best medal", md.to_upper() if md != "" else "-"],
+		["Most creep purged", ("%.1f" % float(b.creep_purged)) if b.has("creep_purged") else "-"],
+		["Most cores destroyed", str(int(b.cores_destroyed)) if b.has("cores_destroyed") else "-"],
+		["Most extractions", str(int(b.extractions)) if b.has("extractions") else "-"],
+		["Fewest teams lost (win)", str(int(b.teams_lost)) if b.has("teams_lost") else "-"],
+		["Fallen, all runs", str((rec.get("remembered_all", []) as Array).size())]]
 
 
 static func fmt_time(secs: float) -> String:
@@ -101,6 +132,16 @@ static func add_entry(parent: Control, on_start: Callable, path: String = RECORD
 	rp.add_child(l)
 	if records_parent != null and parent.get_parent() == records_parent:
 		records_parent.move_child(l, parent.get_index() + 1)  # right under the button row
+	var cb := CheckBox.new()
+	cb.name = "LastProtocolSkipIntro"
+	cb.text = "Skip the opening cinematic"
+	cb.tooltip_text = "Always skip the Last Protocol opening cinematic (it can also be skipped with Space or Esc)."
+	cb.add_theme_font_size_override("font_size", 12)
+	cb.button_pressed = load("res://presentation/cine7/cine_director.gd").skip_intro_setting()
+	cb.toggled.connect(func(on: bool): load("res://presentation/cine7/cine_director.gd").set_skip_intro(on))
+	rp.add_child(cb)
+	if records_parent != null and parent.get_parent() == records_parent:
+		records_parent.move_child(cb, l.get_index() + 1)
 	return b
 
 

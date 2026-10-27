@@ -88,6 +88,7 @@ var extras = HudExtras.new()   # G5: control groups, idle button, F1 sheet
 var ui6a = Ui6aHub.new()       # G6 (UI6a): the four G6 panels (modal)
 var teams = TeamsPanel.new()   # G6.1 (SQUAD61)
 var cmd_layer = CommandLayer.new()   # G6.1 (PLAN61)
+var ops7 = null   # G7 OPSUI7: operations room hub (presentation/ui7/ops_panel.gd)
 var _card_title: Label
 var _card_grid: GridContainer
 var _queue_box: HBoxContainer
@@ -311,6 +312,7 @@ func _build_ui() -> void:
 	ui6a.build(self, root)   # G6 (UI6a): after everything else, so the modal panels draw on top
 	cmd_layer.build(self, root)   # G6.1 (PLAN61)
 	teams.build(self, root)       # G6.1 (SQUAD61)
+	ops7 = preload("res://presentation/ui7/ops_panel.gd").attach(self, root, left)   # G7 OPSUI7 CR 1401: ops room modal + PROTOCOL card
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)
@@ -1259,6 +1261,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if k.ctrl_pressed or k.alt_pressed or k.meta_pressed:
 		return
 	if extras.on_key(k):
+		get_viewport().set_input_as_handled()
+		return
+	if ops7 != null and ops7.on_key(k):   # G7 OPSUI7 CR 1401: ops room toggle (F4) / Esc closes
 		get_viewport().set_input_as_handled()
 		return
 	if teams.on_key(k) or cmd_layer.on_key(k):   # G6.1 (SQUAD61 Teams F2 / PLAN61 command mode)

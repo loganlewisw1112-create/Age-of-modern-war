@@ -23,7 +23,8 @@ const GLOBAL := {
 }
 
 ## G6.1 (SQUAD61): HUD-wide actions with a GLOBAL key (not rebindable here): action -> [key, label].
-const GLOBAL_ACTIONS := {"teams_panel": ["F2", "Teams panel"], "command_mode": ["F3", "Command mode (plans on the map)"]}
+const GLOBAL_ACTIONS := {"teams_panel": ["F2", "Teams panel"], "command_mode": ["F3", "Command mode (plans on the map)"],
+	"ops_room": ["F4", "Operations room (teams, deployments, team cam, map, war table, codex)"]}  # G7 OPSUI7 CR 1404
 ## Printable badge for a non-letter key name.
 const BADGE := {"COMMA": ",", "SEMICOLON": ";", "SLASH": "/", "APOSTROPHE": "'", "BRACKETLEFT": "[",
 	"BRACKETRIGHT": "]", "BACKSLASH": "\\", "MINUS": "-", "EQUAL": "=", "BACKSPACE": "Bksp"}

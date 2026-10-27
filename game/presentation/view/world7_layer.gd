@@ -37,11 +37,19 @@ uniform vec2 map_size = vec2(512.0, 512.0);
 float h1(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
 void fragment() {
-	float a = smoothstep(0.03, 1.0, texture(TEXTURE, UV).r);
+	vec4 st = texture(TEXTURE, UV);
+	float a = smoothstep(0.03, 1.0, st.r);
 	vec2 tile = UV * map_size;
 	int code = int(texture(terr_tex, UV).r * 255.0 + 0.5);
 	vec4 col = vec4(0.0);
-	if (a > 0.0) {
+	if (a > 0.0 && st.g < 0.5) {
+		// G7 VIS7: creep gone (purged / receded): the ground regains its own colour. Only a thin scar tint with
+		// patches of regrowth stays, fading out with the warp age (no grey slab).
+		float n = h1(floor(tile * 2.0));
+		float g = step(0.55, h1(floor(tile * 3.0) + 7.0));
+		col = mix(vec4(0.22, 0.18, 0.13, 0.30 * a), vec4(0.30, 0.44, 0.17, 0.26 * a), g * (1.0 - a * 0.6));
+		col.a *= 0.65 + 0.35 * n;
+	} else if (a > 0.0) {
 		if (code == 3) {
 			vec2 f = fract(tile * 3.0);
 			float line = step(min(min(f.x, f.y), abs(f.x - f.y)), 0.10);
@@ -193,12 +201,12 @@ func _ingest(c: Dictionary, tick: int) -> void:
 		_age.resize(cw * ch)
 		_age.fill(0.0)
 		_age8 = PackedByteArray()
-		_age8.resize(cw * ch)
+		_age8.resize(cw * ch * 2)   # G7 VIS7: RG8, r = warp age, g = creep on the cell now (else recovering)
 		_age8.fill(0)
 		_stripe_tick = PackedInt32Array()
 		_stripe_tick.resize(STRIPES)
 		_stripe_tick.fill(tick)
-		_tex = ImageTexture.create_from_image(Image.create_from_data(cw, ch, false, Image.FORMAT_L8, _age8))
+		_tex = ImageTexture.create_from_image(Image.create_from_data(cw, ch, false, Image.FORMAT_RG8, _age8))
 		_last_tick = tick
 	if tick == _last_tick or tick % STRIPE_EVERY != 0:
 		return
@@ -220,15 +228,17 @@ func _ingest(c: Dictionary, tick: int) -> void:
 		for x in cw:
 			var k := base + x
 			var a := _age[k]
-			if v[k] >= _on:
+			var on := v[k] >= _on
+			if on:
 				a = minf(a + grow, WARP_FULL_S)
 			elif a > 0.0:
 				a = maxf(a - (rec if fl[k] & 1 != 0 else fade), 0.0)
-			else:
+			elif _age8[k * 2 + 1] == 0:
 				continue
 			_age[k] = a
-			_age8[k] = int(a / WARP_FULL_S * 255.0)
-	_tex.update(Image.create_from_data(cw, ch, false, Image.FORMAT_L8, _age8))
+			_age8[k * 2] = int(a / WARP_FULL_S * 255.0)
+			_age8[k * 2 + 1] = 255 if on else 0
+	_tex.update(Image.create_from_data(cw, ch, false, Image.FORMAT_RG8, _age8))
 	passes += 1
 	queue_redraw()
 
@@ -354,6 +364,8 @@ func _draw_traces() -> void:
 	var vr := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vp.get_visible_rect().size).grow(64.0)
 	var z := absf(xf.get_scale().x)
 	var t := float(Time.get_ticks_msec()) / 1000.0
+	_draw_dam(vr, t)
+	var kz := clampf(0.9 / maxf(z, 0.1), 1.0, 3.0)   # G7 VIS7: beacons keep a readable screen size when zoomed out
 	for b in _beacons:
 		var p := _iso(Vector2(b.cell) + Vector2(0.5, 0.5))
 		if not vr.has_point(p):
@@ -364,10 +376,18 @@ func _draw_traces() -> void:
 			on = sin(t * 1.7) + sin(t * 4.3) > 1.1
 		else:
 			on = ph < 0.18
-		var k := 1.0 / maxf(z, 0.15)
-		traces.draw_circle(p, 2.5 * k, Color(1.0, 0.15, 0.1, 0.95 if on else 0.25))
+		# a tripod mast with a strobe on top (sprite scale: about 0.4 tile tall)
+		var top := p + Vector2(0, -16.0 * kz)
+		traces.draw_line(p + Vector2(-4, 2) * kz, top, Color(0.16, 0.16, 0.17), 1.5 * kz)
+		traces.draw_line(p + Vector2(4, 2) * kz, top, Color(0.16, 0.16, 0.17), 1.5 * kz)
+		traces.draw_line(p + Vector2(0, 3) * kz, top, Color(0.30, 0.30, 0.32), 1.0 * kz)
+		traces.draw_rect(Rect2(p + Vector2(-3, -2) * kz, Vector2(6, 4) * kz), Color(0.24, 0.27, 0.22))   # battery box
+		traces.draw_circle(top, 2.6 * kz, Color(0.25, 0.05, 0.04))
+		if on:
+			traces.draw_circle(top, 7.0 * kz, Color(1.0, 0.2, 0.12, 0.30))
+			traces.draw_circle(top, 2.6 * kz, Color(1.0, 0.35, 0.25))
 		if on or ph < 0.6:
-			traces.draw_arc(p, (4.0 + ph * 26.0) * k, 0.0, TAU, 18, Color(1.0, 0.2, 0.15, maxf(0.0, 0.5 - ph * 0.8)), 1.5 * k)
+			traces.draw_arc(top, (5.0 + ph * 30.0) * kz, 0.0, TAU, 20, Color(1.0, 0.2, 0.15, maxf(0.0, 0.55 - ph * 0.8)), 1.5 * kz)
 	if z < ANIMAL_MIN_ZOOM:
 		return
 	for vh in _vehicles:
@@ -375,14 +395,7 @@ func _draw_traces() -> void:
 		var p := _iso(c)
 		if not vr.has_point(p):
 			continue
-		var vlen := {"car": 9.0, "van": 10.0, "truck": 14.0, "bus": 18.0}.get(String(vh.kind), 10.0) as float
-		var col := Color(0.44, 0.31, 0.22) if _creep_v(c) < _on else Color(0.24, 0.19, 0.31)
-		traces.draw_set_transform(p, float(vh.rot), Vector2(1.0, 0.5))
-		traces.draw_rect(Rect2(-vlen * 0.5, -3.0, vlen, 6.0), col)
-		traces.draw_rect(Rect2(-vlen * 0.5 + 1.0, -2.0, vlen * 0.35, 4.0), col.darkened(0.35))
-		traces.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		if _creep_v(c) >= _on:
-			traces.draw_circle(p + Vector2(3.0, -3.0), 1.5, Color(0.35, 0.95, 1.0, 0.8))
+		_draw_wreck(c, String(vh.kind), float(vh.rot), _creep_v(c) >= _on, int(Vector2i(vh.cell).x * 31 + Vector2i(vh.cell).y))
 	for cp in _camps:
 		var c := Vector2(cp.cell) + Vector2(0.5, 0.5)
 		var p := _iso(c)
@@ -409,3 +422,126 @@ func _draw_traces() -> void:
 				traces.draw_polyline(PackedVector2Array([q + Vector2(-3, -lift - 2), q + Vector2(0, -lift), q + Vector2(3, -lift - 2)]), col, 1.0)
 			else:
 				traces.draw_circle(q, 2.0, col)
+
+
+# ================================================================ G7 VIS7: sprite-scale traces + the dam
+const WRECK_DIM := {"car": [0.62, 0.30, 7.0], "van": [0.72, 0.34, 10.0], "truck": [0.95, 0.38, 12.0], "bus": [1.25, 0.40, 13.0]}
+
+
+## Iso box on the traces canvas: centre c (tiles), length l / width wd (tiles) along rot, height h (px), base colour.
+## Returns the top face (screen points).
+func _box(c: Vector2, l: float, wd: float, h: float, rot: float, col: Color, lift := 0.0) -> PackedVector2Array:
+	var f := Vector2(cos(rot), sin(rot))
+	var r := Vector2(-f.y, f.x)
+	var g := [c + f * l * 0.5 + r * wd * 0.5, c + f * l * 0.5 - r * wd * 0.5, c - f * l * 0.5 - r * wd * 0.5, c - f * l * 0.5 + r * wd * 0.5]
+	var b := PackedVector2Array()
+	for q in g:
+		b.append(_iso(q) + Vector2(0, -lift))
+	var top := PackedVector2Array()
+	for q in b:
+		top.append(q + Vector2(0, -h))
+	var my := (b[0].y + b[1].y + b[2].y + b[3].y) * 0.25
+	for k in 4:   # side faces turned to the camera, the right-facing ones darker
+		var a0: Vector2 = b[k]
+		var a1: Vector2 = b[(k + 1) % 4]
+		if (a0.y + a1.y) * 0.5 >= my:
+			var sh := 0.62 if a1.x > a0.x else 0.78
+			traces.draw_colored_polygon(PackedVector2Array([a0, a1, top[(k + 1) % 4], top[k]]), Color(col.r * sh, col.g * sh, col.b * sh, col.a))
+	traces.draw_colored_polygon(top, col)
+	return top
+
+
+func _shadow(c: Vector2, l: float, wd: float, rot: float) -> PackedVector2Array:
+	var f := Vector2(cos(rot), sin(rot))
+	var r := Vector2(-f.y, f.x)
+	var o := Vector2(0.12, 0.12)
+	return PackedVector2Array([_iso(c + o + f * l * 0.55 + r * wd * 0.6), _iso(c + o + f * l * 0.55 - r * wd * 0.6),
+		_iso(c + o - f * l * 0.55 - r * wd * 0.6), _iso(c + o - f * l * 0.55 + r * wd * 0.6)])
+
+
+## Abandoned civilian vehicle at sprite scale: body, cabin with dark glass, wheels, rust; overgrown by creep (cyan
+## veins, purple film) while the creep sits on it.
+func _draw_wreck(c: Vector2, kind: String, rot: float, creep: bool, seed: int) -> void:
+	var dm: Array = WRECK_DIM.get(kind, WRECK_DIM.car)
+	var l: float = dm[0]
+	var wd: float = dm[1]
+	var h: float = dm[2]
+	var pal := [Color(0.52, 0.18, 0.14), Color(0.30, 0.36, 0.42), Color(0.62, 0.60, 0.52), Color(0.36, 0.40, 0.28)]
+	var col: Color = pal[posmod(seed, pal.size())]
+	if creep:
+		col = col.lerp(Color(0.24, 0.19, 0.31), 0.65)
+	var f := Vector2(cos(rot), sin(rot))
+	traces.draw_colored_polygon(_shadow(c, l, wd, rot), Color(0, 0, 0, 0.28))
+	for s in [-1.0, 1.0]:   # wheels peeking under the body
+		for e in [-0.32, 0.32]:
+			var wp := _iso(c + f * l * e + Vector2(-f.y, f.x) * wd * 0.5 * s)
+			traces.draw_circle(wp + Vector2(0, -2), 2.2, Color(0.08, 0.08, 0.08))
+	var top := _box(c, l, wd, h, rot, col, 2.0)
+	var cab := 0.25 if kind == "truck" else (0.0 if kind == "bus" or kind == "van" else 0.05)
+	var cl := l * (0.35 if kind == "truck" else (0.92 if kind == "bus" else 0.55))
+	var ch := h * 0.35 if kind == "bus" else h * 0.55
+	var ctop := _box(c + f * l * cab, cl, wd * 0.92, ch, rot, col.lightened(0.08), 2.0 + h)
+	var gl := Color(0.10, 0.13, 0.16) if not creep else Color(0.12, 0.30, 0.34)
+	traces.draw_line(ctop[0].lerp(ctop[1], 0.15), ctop[0].lerp(ctop[1], 0.85), gl, 2.0)   # windscreen
+	traces.draw_line(top[2].lerp(top[3], 0.3), top[1].lerp(top[0], 0.3), Color(0.35, 0.2, 0.12, 0.6), 1.0)   # rust streak
+	if creep:   # nanite veins crawling over the hull
+		for k in 3:
+			var a: Vector2 = top[k]
+			var b: Vector2 = top[(k + 2) % 4]
+			traces.draw_line(a.lerp(b, 0.2), a.lerp(b, 0.55) + Vector2(2, -1), Color(0.35, 0.95, 1.0, 0.75), 1.0)
+		traces.draw_circle(ctop[0].lerp(ctop[2], 0.5), 1.6, Color(0.35, 0.95, 1.0, 0.9))
+
+
+## The dam (map.lp.dam): a raised concrete deck over the water cells of the crossing, parapets on both edges, a tall
+## downstream face with the spillway sheeting white water into the valley, and lamp posts, so it reads as a dam.
+func _draw_dam(vr: Rect2, t: float) -> void:
+	var dam: Dictionary = map.get("lp", {}).get("dam", {})
+	var cells: Array = dam.get("cells", [])
+	if cells.is_empty():
+		return
+	var x0 := 1 << 30
+	var x1 := -(1 << 30)
+	var xs := 0.0
+	for c in cells:
+		x0 = mini(x0, Vector2i(c).x)
+		x1 = maxi(x1, Vector2i(c).x)
+		xs += float(Vector2i(c).x)
+	xs /= float(cells.size())
+	var down := 1.0
+	var fl = dam.get("flood")
+	if fl is Rect2i:
+		down = 1.0 if float((fl as Rect2i).get_center().x) >= xs else -1.0
+	var face_x := x1 + 1 if down > 0.0 else x0   # tile edge x of the downstream face
+	var deck := Color(0.70, 0.69, 0.64)
+	var face := Color(0.50, 0.50, 0.47)
+	var g := vr.grow(64.0)
+	for c in cells:
+		var ci := Vector2i(c)
+		if not g.has_point(_iso(Vector2(ci) + Vector2(0.5, 0.5))):
+			continue
+		var cx := float(ci.x)
+		var cy := float(ci.y)
+		var tp := PackedVector2Array()
+		for v in [Vector2(cx, cy), Vector2(cx + 1, cy), Vector2(cx + 1, cy + 1), Vector2(cx, cy + 1)]:
+			tp.append(_iso(v) + Vector2(0, -6))
+		if (down > 0.0 and ci.x == x1) or (down < 0.0 and ci.x == x0):   # downstream face + spillway
+			var e0 := _iso(Vector2(face_x, cy)) + Vector2(0, -6)
+			var e1 := _iso(Vector2(face_x, cy + 1)) + Vector2(0, -6)
+			var drop := Vector2(0, 26)
+			traces.draw_colored_polygon(PackedVector2Array([e0, e1, e1 + drop, e0 + drop]), face)
+			for k in 3:
+				var top := e0.lerp(e1, (float(k) + 0.5) / 3.0)
+				var ph := fmod(t * 1.6 + float(ci.y) * 0.37 + k * 0.3, 1.0)
+				traces.draw_line(top + Vector2(0, 2), top + drop, Color(0.86, 0.92, 0.96, 0.55), 2.0)
+				traces.draw_line(top + Vector2(0, 2 + ph * 20.0), top + Vector2(0, 6 + ph * 20.0), Color(1, 1, 1, 0.8), 2.0)
+			traces.draw_circle(e0.lerp(e1, 0.5) + drop + Vector2(0, 2), 9.0, Color(0.92, 0.96, 1.0, 0.35))   # spray at the foot
+		traces.draw_colored_polygon(tp, deck)
+		traces.draw_line(tp[0], tp[3], Color(0.55, 0.55, 0.52), 1.0)   # expansion joint
+		if ci.x == x0 or ci.x == x1:   # parapet walls on both edges of the deck
+			var a := tp[0] if ci.x == x0 else tp[1]
+			var b := tp[3] if ci.x == x0 else tp[2]
+			traces.draw_colored_polygon(PackedVector2Array([a, b, b + Vector2(0, -5), a + Vector2(0, -5)]), Color(0.78, 0.77, 0.72))
+			traces.draw_line(a + Vector2(0, -5), b + Vector2(0, -5), Color(0.9, 0.89, 0.85), 1.0)
+			if ci.y % 6 == 0:   # lamp posts
+				traces.draw_line(a, a + Vector2(0, -18), Color(0.2, 0.2, 0.22), 1.5)
+				traces.draw_circle(a + Vector2(0, -18), 1.6, Color(1.0, 0.9, 0.6))

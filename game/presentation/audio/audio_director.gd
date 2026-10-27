@@ -59,6 +59,13 @@ var _voice_player: AudioStreamPlayer = null
 
 func _init() -> void:
 	g7 = AudioG7.new(self)
+	add_to_group("cine7_music")   # G7 CINE7 CR 1546: cinematic music cues
+
+
+## G7 CINE7 CR 1546: called by the cinematic director (call_group "cine7_music"); "cine_end" resumes adaptive music.
+func cine_cue(cue: String) -> void:
+	if g7 != null and g7.music != null:
+		g7.music.cine_cue(cue)
 
 
 static func audio_available() -> bool:

@@ -5,6 +5,10 @@ extends PanelContainer
 ## end-of-run panel (time, creep purged, cores destroyed, teams lost, extractions, score, medal, personal bests and
 ## the Remembered list) and saves the run ONCE through LpMenu.save_run (records are presentation-side, never the sim).
 ## Reads only LastProtocol.hud(w); never writes the sim.
+## G7 (CINE7): the panel also starts the Last Protocol cinematics (presentation/cine7/cine_director.gd): the opening
+## once per run start (skippable; settings last_protocol/skip_intro), and on LpEnding the ending's cinematic, then the
+## full end-of-run screen (presentation/cine7/lp_end_screen.gd) on its own UI layer above the match summary. The run
+## is saved to the records once, when the ending is first seen. The match is paused while a cinematic plays.
 ## Placement: first card of the HUD's LeftStack (top-left under the top bar), so it sizes and scrolls with that column
 ## and never meets the Command-mode button or the centred PAUSED banner; the end-of-run panel is a centred modal on the
 ## HUD root.
@@ -16,6 +20,11 @@ extends PanelContainer
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const LpMenu = preload("res://presentation/ui7/lp_menu.gd")
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
+const CineDirector = preload("res://presentation/cine7/cine_director.gd")
+const CineData = preload("res://presentation/cine7/cine_data.gd")
+const EndScreen = preload("res://presentation/cine7/lp_end_screen.gd")
+const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
+const END_LAYER := 95
 const W := 300.0
 const REFRESH_S := 0.25
 const ENDING_TITLES := {"total_purge": "TOTAL PURGE", "capture_core": "THE CAPTURED CORE", "pyrrhic": "PYRRHIC VICTORY",
@@ -34,7 +43,14 @@ var _cd_lbl: Label
 var _flags: Label
 var _cores_lbl: Label
 var end_panel: PanelContainer = null
+var end_screen: Control = null       # G7 CINE7 end-of-run screen (lp_end_screen.gd)
 var saved: Dictionary = {}           # save_run result (new_bests) once the run is saved
+var cinematics := true               # false: endings go straight to the end-of-run screen (fit fixtures, tests)
+var cine: Node = null                # the cinematic playing now (CineDirector) or null
+var cine_log: Array = []             # [kind] cinematics started (tests / playtest)
+var _open_checked := false
+var _end_seen := false
+var _end_layer: CanvasLayer = null
 
 
 static func wants(w: SimWorld) -> bool:
@@ -135,7 +151,7 @@ static func lines(d: Dictionary) -> Dictionary:
 		fl.append("%d RING%s LOST" % [int(d.rings_fallen), "" if int(d.rings_fallen) == 1 else "S"])
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
-		"countdown": "PROTOCOL  %s   x%.2f" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate)],
+		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
 		"cores": "Cores %d/%d%s" % [int(d.cores_alive), int(d.cores_total), "  (one walks)" if bool(d.walker) else ""],
 		"flags": "  ".join(PackedStringArray(fl))}
 
@@ -154,18 +170,73 @@ func refresh() -> void:
 	_cd_lbl.add_theme_color_override("font_color", UiKit.RED if bool(d.final_stage) else UiKit.AMBER)
 	_cores_lbl.text = t.cores
 	_flags.text = t.flags
-	if bool(d.ended) and end_panel == null and not (d.result as Dictionary).is_empty():
-		show_end(d.result)
-	if end_panel != null and end_panel.visible and end_panel.get_parent() != null 			and end_panel.get_index() != end_panel.get_parent().get_child_count() - 1:
-		end_panel.move_to_front()
+	CineData.note_cores(w)
+	if not _open_checked and mv != null and mv.get("camera") != null and world_override == null:
+		_open_checked = true
+		if cinematics and CineDirector.want_opening(w):
+			play_cinematic("opening")
+	if bool(d.ended) and not _end_seen and not (d.result as Dictionary).is_empty():
+		_on_ended(d.result)
+	if end_screen != null and end_screen.visible and end_screen.get_parent() != null 			and end_screen.get_index() != end_screen.get_parent().get_child_count() - 1:
+		end_screen.move_to_front()
 
 
-## End-of-run panel (modal, centred). Saves the run once (records_path "" skips the save).
+## Starts a cinematic (opening or an ending id); on_done(skipped) runs when it ends or is skipped.
+func play_cinematic(kind: String, result: Dictionary = {}, on_done: Callable = Callable()) -> Node:
+	if cine != null and is_instance_valid(cine):
+		return cine
+	cine_log.append(kind)
+	cine = CineDirector.play(mv, modal_root, kind, result, func(sk):
+		cine = null
+		if on_done.is_valid():
+			on_done.call(sk))
+	return cine
+
+
+## LpEnding seen: save the run once, play the ending's cinematic, then open the end-of-run screen.
+func _on_ended(result: Dictionary) -> void:
+	_end_seen = true
+	if saved.is_empty() and records_path != "":
+		saved = LpMenu.save_run(result, records_path)
+	if cinematics and mv != null and world_override == null and CineDirector.auto_ok():
+		if cine != null and is_instance_valid(cine):
+			cine.skip()   # an opening still playing gives way to the ending
+			cine = null
+		play_cinematic(String(result.get("ending", "victory")), result, func(_sk): show_end(result))
+	else:
+		show_end(result)
+
+
+## End-of-run screen (G7 CINE7: presentation/cine7/lp_end_screen.gd). Saves the run once (records_path "" skips).
 func show_end(result: Dictionary) -> void:
-	if end_panel != null:
+	if end_screen != null:
+		end_screen.show()
 		return
 	if saved.is_empty() and records_path != "":
 		saved = LpMenu.save_run(result, records_path)
+	var parent: Node = modal_root if modal_root != null else get_parent()
+	if mv != null and world_override == null and mv.is_inside_tree():
+		if _end_layer == null:
+			_end_layer = ScaledLayer.new()
+			_end_layer.layer = END_LAYER
+			_end_layer.name = "LpEndLayer"
+			mv.add_child(_end_layer)
+			var th: Theme = modal_root.theme if modal_root != null else null
+			if th != null:
+				(_end_layer.get("root") as Control).theme = th   # the HUD's panel / button styles
+		parent = _end_layer.get("root")
+	var rows := CineData.remembered_rows(_world(), result.get("remembered", []))
+	var scr: Control = EndScreen.build(parent, result, saved, rows, cinematics and mv != null and world_override == null)
+	end_panel = scr.get("panel")
+	scr.continue_pressed.connect(func(): scr.hide())
+	scr.replay_pressed.connect(func():
+		scr.hide()
+		play_cinematic(String(result.get("ending", "victory")), result, func(_sk): scr.show()))
+	end_screen = scr
+
+
+## LPMODE7's original small panel (kept for reference callers; G7 CINE7 replaced it with the end-of-run screen).
+func _show_end_small(result: Dictionary) -> void:
 	end_panel = UiKit.panel("modal")
 	end_panel.name = "LpEnd"
 	UiKit.fit_register(end_panel, true)
@@ -234,6 +305,7 @@ static func fit_build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -
 	var h = (load("res://presentation/ui7/lp_hud.gd") as GDScript).new()
 	h.world_override = fit_world()
 	h.records_path = ""
+	h.cinematics = false
 	h.modal_root = hud.layer.root
 	var stack: Control = hud._left_scroll.get_child(0)
 	stack.add_child(h)

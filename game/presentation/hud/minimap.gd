@@ -13,7 +13,17 @@ const TERRAIN_COLORS := [
 	Color("8c6b46"), # bridge
 	Color("5d90a8"), # ford
 	Color("57534d"), # ridge
+	Color("6e6a66"), # building (G7 VIS7: codes 8-15 were all drawn in ridge colour)
+	Color("3f7a9c"), # shallow
+	Color("1f466b"), # deep
+	Color("c2b27c"), # beach
+	Color("3d3934"), # cliff
+	Color("6f8a48"), # hill
+	Color("5c5148"), # rail
+	Color("120c18"), # chasm (G7 FISSURE7 canyons: a dark rift, not a ridge)
 ]
+const CREEP_COL := Color(0.62, 0.24, 0.86)   # G7 VIS7: Machine creep on the minimap (under the fog, over the terrain)
+const CREEP_EVERY := 1.5
 
 var mv: Node = null
 var _terrain_tex: ImageTexture = null
@@ -143,6 +153,7 @@ func _process(delta: float) -> void:
 	var w := _world()
 	if w != _built_for:
 		_build_terrain()
+	_update_creep(delta)   # G7 VIS7
 	_fog_timer += delta
 	if _fog_timer >= 0.3 or _fog_row > 0:
 		_fog_timer = 0.0
@@ -322,6 +333,57 @@ func _rebuild_dots(w: SimWorld) -> void:
 	_dots_tick = int(w.tick)
 
 
+## G7 VIS7: creep coverage texture from the render snapshot's creep field (snap.creep v / on; cs-tile cells), rebuilt
+## every CREEP_EVERY s while the match has creep. Dense creep opaque, thin creep faint.
+var _creep_tex: ImageTexture = null
+var _creep_t := 0.0
+var _creep_bytes := PackedByteArray()
+var _creep_rect := Rect2()
+var creep_cells := 0   # cells drawn as creep at the last rebuild (tests / playtest probe)
+
+
+func _update_creep(delta: float) -> void:
+	_creep_t -= delta
+	if _creep_t > 0.0:
+		return
+	_creep_t = CREEP_EVERY
+	var sn = mv.get("snap") if mv != null else null
+	var c = sn.get("creep") if sn is Dictionary else null
+	if not (c is Dictionary) or (c as Dictionary).is_empty():
+		_creep_tex = null
+		creep_cells = 0
+		return
+	var cw := int(c.cw)
+	var ch := int(c.ch)
+	var v: PackedByteArray = c.v
+	if cw <= 0 or ch <= 0 or v.size() != cw * ch:
+		return
+	var on := int(c.get("on", 64))
+	var half := on / 2
+	if _creep_bytes.size() != cw * ch * 2:
+		_creep_bytes.resize(cw * ch * 2)
+	var n := 0
+	for k in cw * ch:
+		var x := v[k]
+		var a := 0
+		if x >= on:
+			a = 200
+			n += 1
+		elif x >= half:
+			a = 90
+		_creep_bytes[k * 2] = 255 if x >= on else 190
+		_creep_bytes[k * 2 + 1] = a
+	creep_cells = n
+	var img := Image.create_from_data(cw, ch, false, Image.FORMAT_LA8, _creep_bytes)
+	if _creep_tex == null or _creep_tex.get_size() != Vector2(cw, ch):
+		_creep_tex = ImageTexture.create_from_image(img)
+	else:
+		_creep_tex.update(img)
+	var cs := float(c.get("cs", 4))
+	var sc := _cell_scale()
+	_creep_rect = Rect2(Vector2.ZERO, Vector2(cw * cs, ch * cs) * sc)
+
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), Color("0c0f10"))
 	var w := _world()
@@ -331,6 +393,8 @@ func _draw() -> void:
 	draw_texture_rect(_terrain_tex, full, false)
 	if _res_tex != null:
 		draw_texture_rect(_res_tex, full, false)
+	if _creep_tex != null:   # G7 VIS7: creep under the fog (unexplored creep stays hidden)
+		draw_texture_rect(_creep_tex, _creep_rect, false, CREEP_COL)
 	# G3a: territory sectors tinted by owning team (only when the sim tracks territory).
 	if w.sys_state.has("territory"):
 		_draw_territory(w)
