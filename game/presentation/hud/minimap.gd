@@ -153,7 +153,8 @@ func _process(delta: float) -> void:
 	var w := _world()
 	if w != _built_for:
 		_build_terrain()
-	_update_creep(delta)   # G7 VIS7
+	if not _vis7_off:
+		_update_creep(delta)   # G7 VIS7
 	_fog_timer += delta
 	if _fog_timer >= 0.3 or _fog_row > 0:
 		_fog_timer = 0.0
@@ -339,7 +340,8 @@ var _creep_tex: ImageTexture = null
 var _creep_t := 0.0
 var _creep_bytes := PackedByteArray()
 var _creep_rect := Rect2()
-var creep_cells := 0   # cells drawn as creep at the last rebuild (tests / playtest probe)
+var creep_cells := 0
+var _vis7_off := OS.get_environment("VIS7_OFF") == "1"   # bench A/B only   # cells drawn as creep at the last rebuild (tests / playtest probe)
 
 
 func _update_creep(delta: float) -> void:

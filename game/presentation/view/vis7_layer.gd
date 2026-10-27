@@ -34,9 +34,13 @@ const GUN_RELOAD_S := 1.8
 const RK_RELOAD_S := 2.2
 const RK_RIPPLE_S := 0.14         # one tube per frame
 const PANEL_S := 1.6
+const EV_TYPES := {"ApcDome": true, "ApcDomeBroken": true, "ApcDomeStop": true, "ApcEmitter": true, "ApcEmp": true, "ApcPanel": true, "ApsIntercept": true, "BurrowerErupt": true, "BurrowerSurfaced": true, "BurrowerUnder": true, "CnDisruptorShot": true, "CnHarpoon": true, "CnLimpet": true, "CnLimpetPlanted": true, "CocoonCut": true, "CocoonLost": true, "Cocooned": true, "LeechDrill": true, "LeechLatched": true, "LeechPried": true, "MimicExposed": true, "NaniteSlug": true, "PackhunterSwipe": true, "PartWrecked": true, "RocketSalvo": true, "ShotFired": true, "WalkerBlownUp": true, "WalkerRighted": true, "WebSpit": true}   # events this layer draws (fast filter: a big fight emits thousands of others per step)
+const EV_TYPES_NO_APC := {"ApcDome": true, "ApcDomeBroken": true, "ApcDomeStop": true, "ApcEmitter": true, "ApcEmp": true, "ApcPanel": true, "ApsIntercept": true, "BurrowerErupt": true, "BurrowerSurfaced": true, "BurrowerUnder": true, "CnDisruptorShot": true, "CnHarpoon": true, "CnLimpet": true, "CnLimpetPlanted": true, "CocoonCut": true, "CocoonLost": true, "Cocooned": true, "LeechDrill": true, "LeechLatched": true, "LeechPried": true, "MimicExposed": true, "NaniteSlug": true, "PackhunterSwipe": true, "PartWrecked": true, "RocketSalvo": true, "WalkerBlownUp": true, "WalkerRighted": true, "WebSpit": true}   # ShotFired only matters for APC .50 pods
 const FRAME_ALIAS := {"rk_aim": "rk_raise_1", "rk_stow_0": "rk_raise_1", "rk_stow_1": "rk_raise_0"}
 
 var mv = null
+## Bench A/B only: env VIS7_OFF=1 makes the layer a no-op (the bench spawns its match as a child process, env inherits).
+var off := OS.get_environment("VIS7_OFF") == "1"
 var hm: Dictionary = {}
 var x7: Dictionary = {}           # id -> [spec, column, row (-1 = unit row), offset] for entity_layer (CR 1392)
 var t := 0.0
@@ -227,6 +231,8 @@ func _process(_delta: float) -> void:
 
 
 func refresh(snap: Dictionary) -> void:
+	if off:
+		return
 	if Engine.get_process_frames() != _self_frame:
 		_ext_frame = Engine.get_process_frames()
 	_snap = snap
@@ -251,6 +257,9 @@ func refresh(snap: Dictionary) -> void:
 	var v7 = snap.get("v7")
 	if v7 is PackedInt32Array and not (v7 as PackedInt32Array).is_empty():
 		_states(v7, snap.get("g7u", {}), dt)
+	elif not _ap.is_empty() or not _tp.is_empty():
+		_ap.clear()   # no APCs / toppling walkers left: back to the cheap event filter
+		_tp.clear()
 	var el = _el()
 	_hook = el != null and "x7" in el
 	if _hook:
@@ -290,10 +299,13 @@ func _ufacing(id: int) -> float:
 
 
 func _events(evs: Array) -> void:
+	if off:
+		return
+	var types: Dictionary = EV_TYPES if not _ap.is_empty() else EV_TYPES_NO_APC
 	for ev in evs:
-		if typeof(ev) != TYPE_DICTIONARY:
+		if not types.has(ev.get("type")):   # cheap reject first: sim events are always Dictionaries with a "type"
 			continue
-		var ty := String(ev.get("type", ""))
+		var ty := String(ev.type)
 		match ty:
 			"ShotFired":
 				var a = _ap.get(int(ev.get("shooter", -1)))
@@ -315,7 +327,7 @@ func _events(evs: Array) -> void:
 				for j in n:
 					_add({"k": "rocket", "p": Vector2(ev.get("from", Vector2.ZERO)), "to": Vector2(ev.get("to", Vector2.ZERO)),
 						"kind": String(kinds[j]), "fa": fa, "delay": j * RK_RIPPLE_S, "d": 1.5, "j": j})
-					_add({"k": "backblast", "p": Vector2(ev.get("from", Vector2.ZERO)), "fa": fa, "delay": j * RK_RIPPLE_S, "d": 1.6, "j": j})
+					_add({"k": "backblast", "p": Vector2(ev.get("from", Vector2.ZERO)), "fa": fa, "delay": j * RK_RIPPLE_S, "d": 2.4, "j": j})
 			"WalkerBlownUp":
 				var l = _last.get(int(ev.get("id", -1)))
 				if l != null:
@@ -455,6 +467,9 @@ func _states(v7: PackedInt32Array, g7u: Dictionary, dt: float) -> void:
 	for id in _tp.keys():   # walkers that left the table (righted and calm, or dead)
 		if not seen.has(id):
 			_tp.erase(id)
+	for id in _ap.keys():   # dead APCs
+		if not seen.has(id):
+			_ap.erase(id)
 
 
 # ---------------------------------------------------------------- walker topple
@@ -850,11 +865,16 @@ func _draw_fx(f: Dictionary, a: float, far: bool) -> bool:
 		"backblast":
 			var s0 := _pod(Vector2(f.p), float(f.fa))
 			var back := -sdir(float(f.fa))
-			if a < 0.12:   # tube flash and the blast cone out of the back of the pod
-				var side := Vector2(-back.y, back.x) * 9.0
-				draw_colored_polygon(PackedVector2Array([s0, s0 + back * 30.0 + side, s0 + back * 30.0 - side]), Color(1.0, 0.8, 0.45, 0.8))
-				draw_circle(s0, 5.0, Color(1, 1, 0.85, 0.95))
-			_puffs(s0 + back * (10.0 + 30.0 * q), 5, 14.0 + 14.0 * q, a, d, Color(0.72, 0.71, 0.69, 0.6), sd + int(f.j), 8.0)
+			if a < 0.2:   # tube flash and the blast cone out of the back of the pod
+				var side := Vector2(-back.y, back.x) * 12.0
+				var cq := 1.0 - a / 0.2
+				draw_colored_polygon(PackedVector2Array([s0, s0 + back * 44.0 + side, s0 + back * 44.0 - side]), Color(1.0, 0.8, 0.45, 0.85 * cq))
+				draw_colored_polygon(PackedVector2Array([s0, s0 + back * 26.0 + side * 0.4, s0 + back * 26.0 - side * 0.4]), Color(1, 1, 0.85, 0.9 * cq))
+				draw_circle(s0, 6.0, Color(1, 1, 0.85, 0.95 * cq))
+			var bq := clampf(a / d, 0.0, 1.0)   # dust and propellant smoke blown out behind the vehicle, lingering
+			for j in 7:
+				var o := back * (14.0 + 50.0 * sqrt(bq) * (0.5 + _r(sd + int(f.j), j))) + Vector2((_r(sd, j + 30) - 0.5) * 26.0, (_r(sd, j + 40) - 0.5) * 12.0 - 10.0 * bq)
+				draw_circle(s0 + Vector2(0, 16) + o, 6.0 + 12.0 * bq, Color(0.74, 0.72, 0.69, 0.6 * (1.0 - bq)))
 			counts["backblast"] = int(counts.get("backblast", 0)) + 1
 		"wblast":
 			_fx_wblast(f, a, q, sp, sd)

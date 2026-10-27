@@ -72,6 +72,24 @@ func _sample(pt, secs: float) -> void:
 			peak[k] = maxi(int(peak.get(k, 0)), int(L.counts[k]))
 
 
+var _bb0 := 0
+
+
+## Centre on the launcher that fired last (the newest backblast fx), so the pod, cone and smoke are in frame.
+func _frame_last_salvo(pt) -> void:
+	var best = null
+	for f in L._fx:
+		if String(f.k) == "backblast" and (best == null or float(f.t0) > float(best.t0)):
+			best = f
+	if best != null:
+		pt._mv().center_camera_on(Vector2(best.p) + Vector2(-0.6, -0.6))
+
+
+## True once this salvo's RocketSalvo reached the layer (the previous salvo's lingering backblast does not count).
+func _salvo_drawn() -> bool:
+	return int(L.totals.get("backblast", 0)) > _bb0
+
+
 func _pop_and_fire(pt, w: SimWorld, a: Dictionary, tgt: Dictionary, pref: Array) -> int:
 	a.a7.rl.eng = 99
 	a.a7.rl.st = 1
@@ -154,8 +172,10 @@ func run(pt) -> void:
 	pt._log("vis7_dome", int(peak.get("dome", 0)) >= 1 and dch >= 0.0, "dome bubble drawn (peak %d), charge %.2f, walker shots %d, dome stops %d" % [int(peak.get("dome", 0)), dch,
 		int(seen.get("ShotFired", 0)), int(seen.get("ApcDomeStop", 0))])
 	# salvos: strike APC raises the pod and ripple-fires; the second strike APC and the tactical APC follow
+	_bb0 = int(L.totals.get("backblast", 0))
 	var n1: int = await _pop_and_fire(pt, w, a, wk, ["tandem", "emp"])
-	await _sample(pt, 0.12)
+	await pt._wait_until(_salvo_drawn, 2.0)
+	await _sample(pt, 0.15)   # the RocketSalvo event reaches the view with the next sim step
 	await _snap(pt, "vis7_02_salvo_ripple_z12")
 	await _sample(pt, 0.25)
 	await _snap(pt, "vis7_03_salvo_trails_z12")
@@ -163,9 +183,17 @@ func run(pt) -> void:
 	_zoom(pt, 2.4)
 	mv.join_sim()
 	mv.center_camera_on(Vector2(a_2.pos))   # frame the APC that fires this salvo (pod up, backblast)
+	_bb0 = int(L.totals.get("backblast", 0))
 	var n2: int = await _pop_and_fire(pt, w, a_2, wk, ["thermite", "disruptor"])
-	await _sample(pt, 0.1)
+	await pt._wait_until(_salvo_drawn, 2.0)
+	_frame_last_salvo(pt)
+	await _sample(pt, 0.15)
 	await _snap(pt, "vis7_04_pod_backblast_z24")
+	var bbs: Array = []
+	for f in L._fx:
+		if String(f.k) == "backblast":
+			bbs.append("p=%s fa=%.2f age=%.2f pod_scr=%s" % [str(f.p), float(f.fa), L.t - float(f.t0), str(L._pod(Vector2(f.p), float(f.fa)))])
+	pt._log("vis7_bb_probe", true, "apc %s at %s scr %s; vr %s zoom %.2f; fx %d; backblasts: %s" % [str(a_2.id), str(a_2.pos), str(L.scr(Vector2(a_2.pos))), str(L._vr), L._zoom, L._fx.size(), " | ".join(bbs)])
 	mv.join_sim()
 	var n3: int = await _pop_and_fire(pt, w, b, wk, ["he_frag", "tandem"])
 	_zoom(pt, 0.6)
