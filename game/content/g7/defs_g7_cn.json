@@ -1,0 +1,1384 @@
+{
+ "_meta": "G7 fragment (owner: CNSIM7). Master scope 6.3-6.8: counter-nanite strike team (20 in 2 APCs), tactical operator squads (8 + APC), sentry / barrier / interceptor drone, weapons and rules. Human A and Human B only. Every number PROVISIONAL. No production entries: CNFAC7's facility spawns teams via CounterNanite.spawn_team. Art ids from ARTCN7 assets/art/g7_cn (def.art); Human B reuses the same sheets until the art roll-out.",
+ "units": {
+  "g7_cn_team_leader": {
+   "name": "CN Team Leader",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_team_leader",
+   "cn_line": "strike",
+   "cn_role": "leader",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio",
+    "fire_support"
+   ],
+   "no_production": true
+  },
+  "g7_cn_radio": {
+   "name": "CN Second-in-Command / Radio",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_radio",
+   "cn_line": "strike",
+   "cn_role": "second",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio"
+   ],
+   "no_production": true
+  },
+  "g7_cn_deploy": {
+   "name": "CN Deployment Specialist",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_deploy",
+   "cn_line": "strike",
+   "cn_role": "deploy",
+   "sealed_suit": true,
+   "cn_kit": [
+    "package_arming"
+   ],
+   "no_production": true
+  },
+  "g7_cn_scanner": {
+   "name": "CN Scanner Technician",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 130,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_scanner",
+   "cn_line": "strike",
+   "cn_role": "scanner",
+   "sealed_suit": true,
+   "cn_kit": [
+    "creep_scanner"
+   ],
+   "no_production": true
+  },
+  "g7_cn_ew": {
+   "name": "CN EW Specialist",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 130,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_ew",
+   "cn_line": "strike",
+   "cn_role": "ew",
+   "sealed_suit": true,
+   "cn_kit": [
+    "hive_jammer"
+   ],
+   "no_production": true
+  },
+  "g7_cn_gunner": {
+   "name": "CN Security Gunner",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_shotgun_ad",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_gunner",
+   "cn_line": "strike",
+   "cn_role": "gunner",
+   "sealed_suit": true,
+   "cn_kit": [
+    "emp_grenade",
+    "anti_drone_shotgun",
+    "limpet"
+   ],
+   "no_production": true
+  },
+  "g7_cn_medic": {
+   "name": "CN Combat Medic / Engineer",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_medic",
+   "cn_line": "strike",
+   "cn_role": "medic",
+   "sealed_suit": true,
+   "cn_kit": [
+    "medkit",
+    "barriers",
+    "sentry"
+   ],
+   "no_production": true
+  },
+  "g7_op_leader": {
+   "name": "Operator Leader",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_leader",
+   "cn_line": "op",
+   "cn_role": "op_leader",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio"
+   ],
+   "no_production": true
+  },
+  "g7_op_marksman": {
+   "name": "Operator Marksman",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_op_dmr",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_marksman",
+   "cn_line": "op",
+   "cn_role": "marksman",
+   "sealed_suit": true,
+   "cn_kit": [
+    "nanite_disruptor_rounds"
+   ],
+   "no_production": true
+  },
+  "g7_op_hunter": {
+   "name": "Hunter-Killer Assaulter",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 170,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_op_harpoon",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_hunter",
+   "cn_line": "op",
+   "cn_role": "hunter",
+   "sealed_suit": true,
+   "cn_kit": [
+    "limpet",
+    "net_gun",
+    "harpoon_gun"
+   ],
+   "no_production": true
+  },
+  "g7_op_emp": {
+   "name": "Operator EMP Grenadier",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_emp",
+   "cn_line": "op",
+   "cn_role": "emp",
+   "sealed_suit": true,
+   "cn_kit": [
+    "emp_grenade"
+   ],
+   "no_production": true
+  },
+  "g7_op_antidrone": {
+   "name": "Operator Anti-Drone Specialist",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_shotgun_ad",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_antidrone",
+   "cn_line": "op",
+   "cn_role": "antidrone",
+   "sealed_suit": true,
+   "cn_kit": [
+    "anti_drone_shotgun",
+    "jammer"
+   ],
+   "no_production": true
+  },
+  "g7_op_purge": {
+   "name": "Operator Purge / Demolitions",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_purge",
+   "cn_line": "op",
+   "cn_role": "purge",
+   "sealed_suit": true,
+   "cn_kit": [
+    "thermite",
+    "thermobaric"
+   ],
+   "no_production": true
+  },
+  "g7_op_medic": {
+   "name": "Operator Combat Medic",
+   "role": "infantry",
+   "faction": "human_a",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_medic",
+   "cn_line": "op",
+   "cn_role": "op_medic",
+   "sealed_suit": true,
+   "cn_kit": [
+    "medkit"
+   ],
+   "no_production": true
+  },
+  "g7_cn_strike_apc": {
+   "name": "Strike-Team APC",
+   "role": "apc",
+   "faction": "human_a",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 2600,
+   "speed": 3.2,
+   "sight": 10,
+   "weapon": "g7_cn_hmg50",
+   "main_weapon": "",
+   "pop": 0,
+   "radius": 0.9,
+   "leaves_wreck": true,
+   "ammo_max": 2400,
+   "fuel_max": 520,
+   "fuel_per_tile": 1,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_strike_apc",
+   "no_production": true,
+   "cargo_slots": 10,
+   "cargo_accepts": [
+    "foot"
+   ],
+   "cargo_caps": {
+    "foot": 10
+   },
+   "cargo_class": "vehicle_heavy",
+   "unhackable": true,
+   "sealed_cabin": true,
+   "chaff": true,
+   "heat_signature": 0.35,
+   "apc7": {
+    "kind": "strike",
+    "mounts": [
+     "front",
+     "rear"
+    ],
+    "manned_mounts": true,
+    "pkg_capacity": 4,
+    "dome": {
+     "charge": 1500,
+     "radius": 4,
+     "recharge_s": 45,
+     "regen_per_s": 25
+    },
+    "aps": {
+     "charges": 6,
+     "reload_s": 8,
+     "classes": [
+      "at",
+      "tank_cannon",
+      "artillery",
+      "missile",
+      "rocket",
+      "shell",
+      "drone"
+     ]
+    },
+    "emitter": {
+     "radius": 6,
+     "every_s": 1,
+     "damage": 30
+    },
+    "emp": {
+     "radius": 3.5,
+     "ticks": 140,
+     "cooldown_s": 40
+    },
+    "panels": {
+     "interceptors": 6,
+     "smoke": 4,
+     "idrones": 4
+    },
+    "gunner_shield": 0.3
+   }
+  },
+  "g7_op_tactical_apc": {
+   "name": "Tactical Operator APC",
+   "role": "apc",
+   "faction": "human_a",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 2200,
+   "speed": 3.6,
+   "sight": 10,
+   "weapon": "g7_op_twin50",
+   "main_weapon": "",
+   "pop": 0,
+   "radius": 0.9,
+   "leaves_wreck": true,
+   "ammo_max": 2400,
+   "fuel_max": 520,
+   "fuel_per_tile": 1,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_tactical_apc",
+   "no_production": true,
+   "cargo_slots": 8,
+   "cargo_accepts": [
+    "foot"
+   ],
+   "cargo_caps": {
+    "foot": 8
+   },
+   "cargo_class": "vehicle_heavy",
+   "unhackable": true,
+   "sealed_cabin": true,
+   "chaff": true,
+   "heat_signature": 0.35,
+   "apc7": {
+    "kind": "tactical",
+    "mounts": [
+     "remote_twin"
+    ],
+    "manned_mounts": false,
+    "pkg_capacity": 0,
+    "dome": {
+     "charge": 1500,
+     "radius": 4,
+     "recharge_s": 45,
+     "regen_per_s": 25
+    },
+    "aps": {
+     "charges": 6,
+     "reload_s": 8,
+     "classes": [
+      "at",
+      "tank_cannon",
+      "artillery",
+      "missile",
+      "rocket",
+      "shell",
+      "drone"
+     ]
+    },
+    "emitter": {
+     "radius": 6,
+     "every_s": 1,
+     "damage": 30
+    },
+    "emp": {
+     "radius": 3.5,
+     "ticks": 140,
+     "cooldown_s": 40
+    },
+    "panels": {
+     "interceptors": 6,
+     "smoke": 4,
+     "idrones": 4
+    },
+    "gunner_shield": 0.3
+   }
+  },
+  "g7_b_cn_team_leader": {
+   "name": "CN Team Leader (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_team_leader",
+   "cn_line": "strike",
+   "cn_role": "leader",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio",
+    "fire_support"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_radio": {
+   "name": "CN Second-in-Command / Radio (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_radio",
+   "cn_line": "strike",
+   "cn_role": "second",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_deploy": {
+   "name": "CN Deployment Specialist (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_deploy",
+   "cn_line": "strike",
+   "cn_role": "deploy",
+   "sealed_suit": true,
+   "cn_kit": [
+    "package_arming"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_scanner": {
+   "name": "CN Scanner Technician (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 130,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_scanner",
+   "cn_line": "strike",
+   "cn_role": "scanner",
+   "sealed_suit": true,
+   "cn_kit": [
+    "creep_scanner"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_ew": {
+   "name": "CN EW Specialist (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 130,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_ew",
+   "cn_line": "strike",
+   "cn_role": "ew",
+   "sealed_suit": true,
+   "cn_kit": [
+    "hive_jammer"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_gunner": {
+   "name": "CN Security Gunner (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_shotgun_ad",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_gunner",
+   "cn_line": "strike",
+   "cn_role": "gunner",
+   "sealed_suit": true,
+   "cn_kit": [
+    "emp_grenade",
+    "anti_drone_shotgun",
+    "limpet"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_medic": {
+   "name": "CN Combat Medic / Engineer (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_medic",
+   "cn_line": "strike",
+   "cn_role": "medic",
+   "sealed_suit": true,
+   "cn_kit": [
+    "medkit",
+    "barriers",
+    "sentry"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_leader": {
+   "name": "Operator Leader (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_leader",
+   "cn_line": "op",
+   "cn_role": "op_leader",
+   "sealed_suit": true,
+   "cn_kit": [
+    "radio"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_marksman": {
+   "name": "Operator Marksman (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_op_dmr",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_marksman",
+   "cn_line": "op",
+   "cn_role": "marksman",
+   "sealed_suit": true,
+   "cn_kit": [
+    "nanite_disruptor_rounds"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_hunter": {
+   "name": "Hunter-Killer Assaulter (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 170,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_op_harpoon",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_hunter",
+   "cn_line": "op",
+   "cn_role": "hunter",
+   "sealed_suit": true,
+   "cn_kit": [
+    "limpet",
+    "net_gun",
+    "harpoon_gun"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_emp": {
+   "name": "Operator EMP Grenadier (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_emp",
+   "cn_line": "op",
+   "cn_role": "emp",
+   "sealed_suit": true,
+   "cn_kit": [
+    "emp_grenade"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_antidrone": {
+   "name": "Operator Anti-Drone Specialist (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 150,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_shotgun_ad",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_antidrone",
+   "cn_line": "op",
+   "cn_role": "antidrone",
+   "sealed_suit": true,
+   "cn_kit": [
+    "anti_drone_shotgun",
+    "jammer"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_purge": {
+   "name": "Operator Purge / Demolitions (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 160,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_purge",
+   "cn_line": "op",
+   "cn_role": "purge",
+   "sealed_suit": true,
+   "cn_kit": [
+    "thermite",
+    "thermobaric"
+   ],
+   "no_production": true
+  },
+  "g7_b_op_medic": {
+   "name": "Operator Combat Medic (B)",
+   "role": "infantry",
+   "faction": "human_b",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 140,
+   "speed": 2.5,
+   "sight": 9,
+   "weapon": "g7_cn_carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 160,
+   "morale": 140,
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_medic",
+   "cn_line": "op",
+   "cn_role": "op_medic",
+   "sealed_suit": true,
+   "cn_kit": [
+    "medkit"
+   ],
+   "no_production": true
+  },
+  "g7_b_cn_strike_apc": {
+   "name": "Strike-Team APC (B)",
+   "role": "apc",
+   "faction": "human_b",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 2600,
+   "speed": 3.2,
+   "sight": 10,
+   "weapon": "g7_cn_hmg50",
+   "main_weapon": "",
+   "pop": 0,
+   "radius": 0.9,
+   "leaves_wreck": true,
+   "ammo_max": 2400,
+   "fuel_max": 520,
+   "fuel_per_tile": 1,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_cn_strike_apc",
+   "no_production": true,
+   "cargo_slots": 10,
+   "cargo_accepts": [
+    "foot"
+   ],
+   "cargo_caps": {
+    "foot": 10
+   },
+   "cargo_class": "vehicle_heavy",
+   "unhackable": true,
+   "sealed_cabin": true,
+   "chaff": true,
+   "heat_signature": 0.35,
+   "apc7": {
+    "kind": "strike",
+    "mounts": [
+     "front",
+     "rear"
+    ],
+    "manned_mounts": true,
+    "pkg_capacity": 4,
+    "dome": {
+     "charge": 1500,
+     "radius": 4,
+     "recharge_s": 45,
+     "regen_per_s": 25
+    },
+    "aps": {
+     "charges": 6,
+     "reload_s": 8,
+     "classes": [
+      "at",
+      "tank_cannon",
+      "artillery",
+      "missile",
+      "rocket",
+      "shell",
+      "drone"
+     ]
+    },
+    "emitter": {
+     "radius": 6,
+     "every_s": 1,
+     "damage": 30
+    },
+    "emp": {
+     "radius": 3.5,
+     "ticks": 140,
+     "cooldown_s": 40
+    },
+    "panels": {
+     "interceptors": 6,
+     "smoke": 4,
+     "idrones": 4
+    },
+    "gunner_shield": 0.3
+   }
+  },
+  "g7_b_op_tactical_apc": {
+   "name": "Tactical Operator APC (B)",
+   "role": "apc",
+   "faction": "human_b",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 2200,
+   "speed": 3.6,
+   "sight": 10,
+   "weapon": "g7_op_twin50",
+   "main_weapon": "",
+   "pop": 0,
+   "radius": 0.9,
+   "leaves_wreck": true,
+   "ammo_max": 2400,
+   "fuel_max": 520,
+   "fuel_per_tile": 1,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "stage_min": 10,
+   "requires_research": [
+    "g7_counter_nanite"
+   ],
+   "g7": true,
+   "art": "g7_op_tactical_apc",
+   "no_production": true,
+   "cargo_slots": 8,
+   "cargo_accepts": [
+    "foot"
+   ],
+   "cargo_caps": {
+    "foot": 8
+   },
+   "cargo_class": "vehicle_heavy",
+   "unhackable": true,
+   "sealed_cabin": true,
+   "chaff": true,
+   "heat_signature": 0.35,
+   "apc7": {
+    "kind": "tactical",
+    "mounts": [
+     "remote_twin"
+    ],
+    "manned_mounts": false,
+    "pkg_capacity": 0,
+    "dome": {
+     "charge": 1500,
+     "radius": 4,
+     "recharge_s": 45,
+     "regen_per_s": 25
+    },
+    "aps": {
+     "charges": 6,
+     "reload_s": 8,
+     "classes": [
+      "at",
+      "tank_cannon",
+      "artillery",
+      "missile",
+      "rocket",
+      "shell",
+      "drone"
+     ]
+    },
+    "emitter": {
+     "radius": 6,
+     "every_s": 1,
+     "damage": 30
+    },
+    "emp": {
+     "radius": 3.5,
+     "ticks": 140,
+     "cooldown_s": 40
+    },
+    "panels": {
+     "interceptors": 6,
+     "smoke": 4,
+     "idrones": 4
+    },
+    "gunner_shield": 0.3
+   }
+  },
+  "g7_cn_sentry": {
+   "name": "CN Sentry Turret",
+   "role": "static_defense",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "vehicle",
+   "hp": 320,
+   "speed": 0,
+   "sight": 9,
+   "weapon": "g7_cn_sentry_mg",
+   "pop": 0,
+   "radius": 0.35,
+   "ammo_max": 300,
+   "unhackable": true,
+   "g7": true,
+   "no_production": true,
+   "cn_deployable": "sentry",
+   "stage_min": 10
+  },
+  "g7_cn_barrier": {
+   "name": "CN Portable Barrier",
+   "role": "static_defense",
+   "faction": "human_a",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 900,
+   "speed": 0,
+   "sight": 2,
+   "weapon": "",
+   "pop": 0,
+   "radius": 0.5,
+   "g7": true,
+   "no_production": true,
+   "cn_deployable": "barrier",
+   "stage_min": 10
+  },
+  "g7_cn_interceptor_drone": {
+   "name": "Interceptor Drone",
+   "role": "drone",
+   "faction": "human_a",
+   "armor": "light",
+   "move_class": "air_low",
+   "is_air": true,
+   "hp": 45,
+   "speed": 12,
+   "sight": 8,
+   "weapon": "g7_cn_idrone_gun",
+   "pop": 0,
+   "radius": 0.2,
+   "g7": true,
+   "no_production": true,
+   "cn_life_s": 45,
+   "stage_min": 10
+  }
+ },
+ "weapons": {
+  "g7_cn_carbine": {
+   "class": "small_arms",
+   "damage": 11,
+   "range": 7,
+   "cooldown": 0.8,
+   "accuracy": 0.85,
+   "anti_air": true
+  },
+  "g7_cn_shotgun_ad": {
+   "class": "small_arms",
+   "damage": 13,
+   "range": 4.5,
+   "cooldown": 1.1,
+   "accuracy": 0.85,
+   "anti_air": true,
+   "anti_drone": true,
+   "anti_drone_mult": 3
+  },
+  "g7_op_dmr": {
+   "class": "small_arms",
+   "damage": 34,
+   "range": 11,
+   "cooldown": 2.2,
+   "accuracy": 0.92,
+   "anti_air": true,
+   "nanite_disruptor": true
+  },
+  "g7_op_harpoon": {
+   "class": "at",
+   "damage": 55,
+   "range": 5,
+   "cooldown": 3,
+   "accuracy": 0.8
+  },
+  "g7_cn_hmg50": {
+   "class": "small_arms",
+   "damage": 14,
+   "range": 9,
+   "cooldown": 0.3,
+   "accuracy": 0.72,
+   "anti_air": true,
+   "anti_drone": true,
+   "anti_drone_mult": 1.5
+  },
+  "g7_op_twin50": {
+   "class": "small_arms",
+   "damage": 15,
+   "range": 9,
+   "cooldown": 0.3,
+   "accuracy": 0.75,
+   "anti_air": true,
+   "anti_drone": true,
+   "anti_drone_mult": 1.5
+  },
+  "g7_cn_sentry_mg": {
+   "class": "small_arms",
+   "damage": 9,
+   "range": 8,
+   "cooldown": 0.35,
+   "accuracy": 0.75,
+   "anti_air": true
+  },
+  "g7_cn_idrone_gun": {
+   "class": "small_arms",
+   "damage": 10,
+   "range": 4,
+   "cooldown": 0.4,
+   "accuracy": 0.85,
+   "anti_air": true,
+   "anti_drone": true,
+   "anti_drone_mult": 3
+  }
+ },
+ "rules": {
+  "g7_cn": {
+   "_note": "CNSIM7 (G7 master scope 6.3-6.8). Every number PROVISIONAL.",
+   "research": "g7_counter_nanite",
+   "tac_cap": 3,
+   "loadout_leash": 12,
+   "facility_defs": [
+    "g7_cn_facility",
+    "g7_cn_garage",
+    "g7_cn_decon",
+    "g7_cn_gate",
+    "g7_cn_helipad"
+   ],
+   "decon_defs": [
+    "g7_cn_decon"
+   ],
+   "decon_radius": 2.5,
+   "team_names": [
+    "Halcyon",
+    "Warden",
+    "Lantern",
+    "Bastion",
+    "Aegis",
+    "Sentinel",
+    "Vigil",
+    "Ember"
+   ],
+   "op_names": [
+    "Reaper",
+    "Viper",
+    "Ghost",
+    "Raven",
+    "Talon",
+    "Saber"
+   ],
+   "packages": {
+    "purge": {
+     "size": 1,
+     "arm_s": 20,
+     "radius": 6
+    },
+    "seed_hunter": {
+     "size": 1,
+     "arm_s": 25,
+     "radius": 11
+    },
+    "barrier": {
+     "size": 1,
+     "arm_s": 15,
+     "radius": 5
+    },
+    "core_breaker": {
+     "size": 2,
+     "arm_s": 60,
+     "radius": 3
+    }
+   },
+   "default_loadout": [
+    "purge",
+    "purge",
+    "seed_hunter",
+    "barrier"
+   ],
+   "deploy": {
+    "site_radius": 7,
+    "scan_s": 6,
+    "jam_s": 4,
+    "think_every": 5,
+    "jam_radius": 9,
+    "jam_hold_s": 60,
+    "need_dome": true
+   },
+   "hero": {
+    "window_s": 6,
+    "blast_radius": 3.5,
+    "blast_damage": 600
+   },
+   "hold": {
+    "sentries": 2,
+    "barriers": 4,
+    "ring": 3.5
+   },
+   "exposure": {
+    "every": 10,
+    "creep_rate": 0.02,
+    "punct_rate": 0.03,
+    "hurt_at": 0.25,
+    "hurt_hp": 2,
+    "slow_per": 0.5,
+    "slow_min": 0.5,
+    "max": 1
+   },
+   "kit": {
+    "every": 10,
+    "emp_grenade": {
+     "radius": 2.5,
+     "ticks": 100,
+     "range": 5,
+     "cooldown_s": 30
+    }
+   },
+   "gunner": {
+    "hit_chance": 0.25
+   },
+   "pair_leash": 8
+  }
+ }
+}

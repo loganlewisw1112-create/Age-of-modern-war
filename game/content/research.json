@@ -475,5 +475,29 @@
     "owner": "CONTENT6",
     "g6": true,
     "desc": "Stage 9->10 gate research (Machine)."
+  },
+  "g7_counter_nanite": {
+    "name": "Counter-Nanite Protocol",
+    "cost": {
+      "credits": 6000,
+      "ore": 1500,
+      "salvage": 800
+    },
+    "time": 180,
+    "stage_min": 10,
+    "factions": [
+      "human_a",
+      "human_b"
+    ],
+    "requires_research": [
+      "g6_automation_doctrine",
+      "g6_jamming_1",
+      "electronic_resilience"
+    ],
+    "effect": "unlock_line",
+    "value": "counter_nanite",
+    "owner": "CNSIM7",
+    "g7": true,
+    "desc": "The last, very expensive research: unlocks the Counter-Nanite facility, strike team and tactical operators. PROVISIONAL."
   }
 }

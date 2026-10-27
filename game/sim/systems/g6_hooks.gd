@@ -20,13 +20,14 @@ const Exo = preload("res://sim/systems/exo.gd")
 const SimSystemsIndex = preload("res://sim/systems/sim_index.gd")
 const Airdef = preload("res://sim/systems/airdef.gd")              # AIRDEF6 CR airdef_hooks (preloads sim_index only)
 const Counterdrone = preload("res://sim/systems/counterdrone.gd")  # AIRDEF6 CR airdef_hooks (preloads airdef only)
+const Apc7 = preload("res://sim/systems/apc7.gd")  # G7 CNSIM7 CR: APC dome / APS / panels (no preloads, no cycle)
 
 
 ## Target-side damage factor for a hit or splash from src (weapon stats s) on t.
 static func damage_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
 	return Elevation.defence_mult(w, src, t) * Fieldworks.cover_mult(w, src, s, t) \
 		* Garrison.protect_mult(w, src, s, t) * Loadouts.armor_mult(w, src, s, t) \
-		* MachineG6.shield_mult(w, src, s, t) * Counterdrone.damage_mult(w, src, s, t) 		* Sonar.torpedo_mult(w, src, s, t)
+		* MachineG6.shield_mult(w, src, s, t) * Counterdrone.damage_mult(w, src, s, t) * Apc7.damage_mult(w, src, s, t) 		* Sonar.torpedo_mult(w, src, s, t)
 
 
 ## Shooter-side accuracy factor for src firing at t.
@@ -56,7 +57,7 @@ static func sight_bonus(w: SimWorld, e: Dictionary) -> float:
 ## True when a shot from src at t (resolving at `at`) is lost: a CIWS shoots down a shell / rocket, or a jam field
 ## drops a guided shot (AIRDEF6). PERF6 calls it in Combat._fire under the SHOT bit; no rng.
 static func shot_blocked(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary, at: Vector2) -> bool:
-	return Counterdrone.shot_blocked(w, src, s, t, at)
+	return Counterdrone.shot_blocked(w, src, s, t, at) or Apc7.shot_blocked(w, src, s, t, at)  # G7 CNSIM7 CR
 
 
 ## False when a G6 rule hides t from side fid (submerged, camouflaged, cloaked, garrisoned).
@@ -119,7 +120,7 @@ static func active(w: SimWorld) -> int:
 				if Fieldworks.kind_of(String(b.def)) == "wire":
 					m |= G6_SPEED
 					break
-	if Counterdrone.active(w):
+	if Counterdrone.active(w) or ss.has("apc7"):  # G7: CN APC active protection / panels / dome need the SHOT hook
 		m |= G6_SHOT
 	if not (ss.get("auras", {}).get("sources", []) as Array).is_empty() 			or not (ss.get("companies", {}).get("companies", {}) as Dictionary).is_empty():
 		m |= G6_MORALE

@@ -45,7 +45,7 @@ static func load_all() -> void:
 ## G6 (VIEW6, CR artcatalog_g6_groups): the ART-G6 / ART-G6b groups use the same schema and merge
 ## through the same path after the G5 groups (new ids only). g6_bld buildings carry `g6: {variants:
 ## "rot", fire}` (G5Art.variant_of reads g5 or g6); squads carry their own fw/fh (b_conscripts 64x44).
-const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval", "g6_units", "g6_bld", "g6_new", "g61_bearer", "drone7"]  # + G6.1 BEARER61 CR seq 331; + G7 DRONE7 CR
+const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval", "g6_units", "g6_bld", "g6_new", "g61_bearer", "drone7", "g7_cn", "g7_turrets", "g7_threats"]  # + G6.1 BEARER61 CR seq 331; + G7 DRONE7 CR
 const G5_SKIP := ["files", "version", "group", "tile"]
 static var g5_groups: Array = []   # groups merged this session (tests / playtest evidence; G6 groups too)
 
