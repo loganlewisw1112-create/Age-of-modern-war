@@ -104,6 +104,9 @@ static func restock(w: SimWorld, e: Dictionary) -> void:
 	if e.a7.has("rl"):   # launcher: the chosen canister loadout, tubes full
 		var ld: Dictionary = e.a7.rl.load
 		e.a7.rl = _rl_new(ld)
+	if e.has("cargo"):   # limpets carried by the soldiers aboard (CounterNanite ops_engage.limpet.carry)
+		for u in e.cargo:
+			u.erase("lim_n")
 	w.emit("ApcRestocked", {"id": int(e.id), "owner": int(e.owner)})
 
 
@@ -146,15 +149,33 @@ static func set_dome(w: SimWorld, e: Dictionary, on: bool) -> void:
 
 # ================================================================ damage hooks (ORCH wires into G6Hooks)
 ## Target-side damage factor: a hit on a unit under a friendly dome is absorbed by the dome charge (0.0).
-static func damage_mult(w: SimWorld, _src: Dictionary, s: Dictionary, t: Dictionary) -> float:
+static func damage_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
 	var st = w.sys_state.get("apc7")
-	if st == null or (st.domes as Array).is_empty() or String(t.get("kind", "")) != "unit":
+	if st == null or String(t.get("kind", "")) != "unit":
+		return 1.0
+	if is_heavy_walker(t) and is_cn_unit(src):   # rifles / .50s / harpoon guns barely scratch a heavy walker
+		var H := HV()
+		return float(H.get("direct_mult", 0.3)) * agility_hit(t) * (float(H.get("front_mult", 0.35)) if Dmg().hit_side(src.pos, t) == "front" else 1.0)
+	if (st.domes as Array).is_empty():
 		return 1.0
 	var a = dome_over(w, int(t.owner), Vector2(t.pos))
 	if a == null:
 		return 1.0
-	absorb(w, a, float(s.get("dmg", s.get("damage", 10.0))))
+	var hv := float(HV().get("dome_mult", 1.0)) if is_heavy_walker(_src_unit(src)) else 1.0   # a walker slug hammers the dome
+	absorb(w, a, float(s.get("dmg", s.get("damage", 10.0))) * hv)
 	return 0.0
+
+
+static func _src_unit(src) -> Variant:
+	return src if typeof(src) == TYPE_DICTIONARY else null
+
+
+## A counter-nanite APC or soldier (direct fire through Combat, not the launcher / kit path).
+static func is_cn_unit(u: Dictionary) -> bool:
+	if u.has("a7"):
+		return true
+	var dd := String(u.get("def", ""))
+	return dd != "" and Content.unit(dd).has("cn_role")
 
 
 ## Dome takes `amount`; breaks at 0 (recharge timer).
@@ -174,7 +195,8 @@ static func shot_blocked(w: SimWorld, src: Dictionary, s: Dictionary, t: Diction
 	if st == null:
 		return false
 	var heavy := bool(s.get("guided", false)) or bool(s.get("indirect", false))
-	if t.has("a7") and _aps_try(w, t, String(s.get("cls", "")), heavy, int(src.get("owner", -1))):
+	# a heavy walker's rail / core-cannon slug is too fast for the APS (the dome and the armour have to take it)
+	if t.has("a7") and not is_heavy_walker(src) and _aps_try(w, t, String(s.get("cls", "")), heavy, int(src.get("owner", -1))):
 		return true
 	if bool(s.get("indirect", false)) and dome_over(w, int(t.get("owner", -1)), at) != null:
 		w.emit("ApcDomeStop", {"pos": at, "owner": int(t.get("owner", -1))})
@@ -222,10 +244,9 @@ static func R() -> Dictionary:
 	return Content.rules().get("g7_cn", {})
 
 
-## Units within r of p, ascending id (combat grid when built, else a full scan).
+## Units within r of p, ascending id. Always an exact scan: Combat's neighbour-grid cache can differ right after a
+## load (THREAT7 finding), and this runs only while CN APCs exist (a few calls per think).
 static func near(w: SimWorld, p: Vector2, r: float) -> Array:
-	if w.cache.has("combat_ng") or w.cache.has("combat_grid"):
-		return SimWorld.G4bMech.near_units(w, p, r)
 	var out := []
 	var r2 := r * r
 	for u in SimWorld.SimIndex.of(w, "unit"):
@@ -246,10 +267,18 @@ static func kill_cargo(w: SimWorld, c: Dictionary, u: Dictionary, cause: String)
 		w.factions[int(u.owner)].stats.lost += 1
 
 
+## EMP / jam: holds fire for dur ticks. A heavy walker shakes it off: emp_scale of the time, then emp_immune_s
+## before the next stun takes (EMP rockets, grenades and pulses cannot chain-lock it).
 static func _disable(w: SimWorld, t: Dictionary, dur: int) -> void:
+	if is_heavy_walker(t):
+		if w.tick < int(t.get("emp_imm", -1)):
+			return
+		var H := HV()
+		dur = maxi(roundi(float(dur) * float(H.get("emp_scale", 1.0))), 1)
+		t.emp_imm = w.tick + dur + ticks(float(H.get("emp_immune_s", 0.0)))
 	t.emp_until = w.tick + dur
 	t.jammed_until = maxi(int(t.get("jammed_until", -1)), w.tick + dur)
-	SimWorld.HotState.set_cd(w, int(t.id), maxi(SimWorld.HotState.get_cd(w, int(t.id)), dur))
+	SimWorld.HotState.set_cd(w, int(t.id), maxi(int(t.get("cd_ticks", 0)), dur))   # e.cd_ticks: the hot array can lag
 
 
 # ================================================================ system tick
@@ -347,7 +376,7 @@ static func _man_mounts(w: SimWorld, e: Dictionary, c: Dictionary) -> void:
 		elif mg.has(slot):
 			mg.erase(slot)
 	e.a7.manned = manned
-	if manned == 0 and SimWorld.HotState.get_cd(w, int(e.id)) < 2:
+	if manned == 0 and int(e.get("cd_ticks", 0)) < 2:   # e.cd_ticks, not the hot array (it can lag: save round-trip)
 		SimWorld.HotState.set_cd(w, int(e.id), 2)   # no gunner aboard: the mounts hold fire
 
 
@@ -427,10 +456,13 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var k := String(cmd.get("kind", ""))
 			if not PANEL_KINDS.has(k):
 				return "Unknown panel kind '%s'." % k
+			var wrecked := true
 			for a in apcs:
-				if int(a.a7.st.get(k, 0)) > 0:
-					return ""
-			return "Out of %s: restock at the facility." % k
+				if panels_ok(a):
+					wrecked = false
+					if int(a.a7.st.get(k, 0)) > 0:
+						return ""
+			return "Side panels wrecked." if wrecked else "Out of %s: restock at the facility." % k
 	return "Unknown APC command."
 
 
@@ -476,7 +508,14 @@ static func emp_pulse(w: SimWorld, a: Dictionary) -> void:
 
 
 ## Side panels: interceptors (APS window + nearest enemy drones down), smoke, interceptor drones. Limited stock.
+## Side panels work while at least one of them is intact (THREAT7 leeches wreck panel_l / panel_r).
+static func panels_ok(a: Dictionary) -> bool:
+	return bool(callf(SimWorld.Threats7, "part_ok", [a, "panel_l"], true)) or bool(callf(SimWorld.Threats7, "part_ok", [a, "panel_r"], true))
+
+
 static func fire_panel(w: SimWorld, a: Dictionary, k: String) -> void:
+	if not panels_ok(a):
+		return
 	a.a7.st[k] = int(a.a7.st.get(k, 0)) - 1
 	var extra := {}
 	match k:
@@ -564,6 +603,11 @@ static func set_rockets(w: SimWorld, e: Dictionary, load: Dictionary) -> void:
 	_rl_render(w, e)
 
 
+## Rounds that can hurt a walker (everything but smoke).
+static func attack_rounds_left(e) -> int:
+	return rockets_left(e) - (int(e.a7.rl.rk.get("smoke", 0)) if rockets_left(e) > 0 else 0)
+
+
 static func rockets_left(e) -> int:
 	return _sum(e.a7.rl.rk) if typeof(e) == TYPE_DICTIONARY and e.has("a7") and e.a7.has("rl") else 0
 
@@ -583,6 +627,20 @@ static func is_heavy_walker(u) -> bool:
 			and float(d.get("hp", 0)) >= float(H.get("min_hp", 900)))
 	_hw[dd] = v
 	return v
+
+
+## Hit factor for a heavy walker's stride (rules heavy.agility_*, PROVISIONAL): micro rockets and direct fire land
+## less often on a fast-striding walker than on a lumbering colossus. (speed_ref / def speed) ^ exp, floored; 1.0 at
+## or below speed_ref, for anything that is not a heavy walker, and while it lies toppled (a sitting target).
+static func agility_hit(t) -> float:
+	if not is_heavy_walker(t) or is_down(t):
+		return 1.0
+	var H := HV()
+	var ref := float(H.get("agility_speed_ref", 0.0))
+	var sp := float(Content.unit(String(t.def)).get("speed", 0.0))
+	if ref <= 0.0 or sp <= ref:
+		return 1.0
+	return maxf(pow(ref / sp, float(H.get("agility_exp", 0.5))), float(H.get("agility_min", 0.5)))
 
 
 ## Launcher auto targets: heavy-armoured Machine units.
@@ -711,7 +769,7 @@ static func _round(w: SimWorld, e: Dictionary, tgt: Dictionary, k: String) -> vo
 	if k == "smoke":
 		e.a7.smoke_until = maxi(int(e.a7.smoke_until), w.tick + ticks(float(K.get("smoke_s", 12))))
 		return
-	if not is_down(tgt) and w.rng.randf() >= float(L().get("accuracy", 0.85)):
+	if not is_down(tgt) and w.rng.randf() >= float(L().get("accuracy", 0.85)) * agility_hit(tgt):
 		return
 	if k == "he_frag":
 		var at: Vector2 = tgt.pos
@@ -739,7 +797,8 @@ static func _round(w: SimWorld, e: Dictionary, tgt: Dictionary, k: String) -> vo
 static func mark(w: SimWorld, t: Dictionary, sec: float, sensors: float) -> void:
 	t.cn_mark = w.tick + ticks(sec)
 	if t.has("comp"):
-		t.comp.sensors = maxf(float(t.comp.get("sensors", 100)) - sensors, 0.0)
+		var fl := float(HV().get("sensors_floor", 0.0)) if is_heavy_walker(t) else 0.0   # it keeps some of its eyes
+		t.comp.sensors = maxf(float(t.comp.get("sensors", 100)) - sensors, minf(fl, float(t.comp.get("sensors", 100))))
 	_fx_add(w, t)
 
 
@@ -834,6 +893,18 @@ static func topple_threshold(t: Dictionary) -> float:
 		float(T.get("threshold_max", 18.0)))
 
 
+## Seconds a toppled walker lies down: topple.down_s x (hp / threshold_hp_ref) ^ down_exp, at most down_s_max
+## (a heavier machine takes longer to right itself; PROVISIONAL).
+static func down_secs(t: Dictionary) -> float:
+	var T := TP()
+	var base := float(T.get("down_s", 8.0))
+	var ex := float(T.get("down_exp", 0.0))
+	if ex <= 0.0:
+		return base
+	var hp := float(Content.unit(String(t.def)).get("hp", 950))
+	return minf(base * pow(maxf(hp, 1.0) / float(T.get("threshold_hp_ref", 950)), ex), float(T.get("down_s_max", base)))
+
+
 static func _fx_add(w: SimWorld, t: Dictionary) -> void:
 	var st := _st(w)
 	if not st.has("fx"):
@@ -881,7 +952,7 @@ static func topple(w: SimWorld, t: Dictionary) -> void:
 	tp.dir = snappedf(push.angle() if push.length() > 0.001 else float(t.get("facing", 0.0)) + PI, 0.01)
 	if t.has("comp") and float(tp.mob) < 0.0:
 		tp.mob = float(t.comp.get("mobility", 100))
-	_pin(w, t, ticks(float(T.get("fall_s", 1.0)) + float(T.get("down_s", 8.0)) + float(T.get("rise_s", 2.0))))
+	_pin(w, t, ticks(float(T.get("fall_s", 1.0)) + down_secs(t) + float(T.get("rise_s", 2.0))))
 	w.emit("WalkerToppled", {"id": int(t.id), "owner": int(t.owner), "def": String(t.def), "pos": t.pos, "dir": float(tp.dir)})
 	_tpl_render(w, t)
 
@@ -890,7 +961,7 @@ static func _pin(w: SimWorld, t: Dictionary, dur: int) -> void:
 	if t.has("comp"):
 		t.comp.mobility = 0.0
 	SimWorld.Movement.stop_path(t)
-	SimWorld.HotState.set_cd(w, int(t.id), maxi(SimWorld.HotState.get_cd(w, int(t.id)), dur))
+	SimWorld.HotState.set_cd(w, int(t.id), maxi(int(t.get("cd_ticks", 0)), dur))   # e.cd_ticks: the hot array can lag
 
 
 static func _tick_tpl(w: SimWorld, t: Dictionary, dt: float) -> bool:
@@ -913,7 +984,7 @@ static func _tick_tpl(w: SimWorld, t: Dictionary, dt: float) -> bool:
 		match ph:
 			"fall":
 				tp.ph = "down"
-				tp.until = w.tick + ticks(float(T.get("down_s", 8.0)))
+				tp.until = w.tick + ticks(down_secs(t))
 				w.emit("WalkerDown", {"id": int(t.id), "owner": int(t.owner), "pos": t.pos, "dir": float(tp.dir)})
 			"down":
 				tp.ph = "rise"

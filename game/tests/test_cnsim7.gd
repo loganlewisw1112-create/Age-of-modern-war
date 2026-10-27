@@ -519,7 +519,8 @@ func test_lone_apc_launcher_cannot_solo_a_heavy_walker() -> void:
 		salvos += 1 if String(ev.type) == "RocketSalvo" else 0
 	check(seen_pop, "the launcher popped up (g7v rl popped / firing)")
 	check(salvos >= 6, "it fired salvos (%d)" % salvos)
-	check(Apc7.rockets_left(a) < 18, "rockets spent (%d left)" % Apc7.rockets_left(a))
+	var stock := Apc7._sum(Apc7.L().get("default_load", {}))
+	check(Apc7.rockets_left(a) <= stock - 2 * int(Apc7.L().get("tubes", 6)), "rockets spent: at least two tube loads (%d of %d left)" % [Apc7.rockets_left(a), stock])
 	check(w.entities.has(int(k.id)), "a lone APC cannot solo a heavy walker")
 	if w.entities.has(int(k.id)):
 		print("CNSIM7_LONE walker hp %.0f / 950 after 180 s, salvos %d" % [float(k.hp), salvos])
@@ -533,7 +534,6 @@ func _five_apcs(sd: int, pincer: bool) -> Array:
 
 
 func _five_apcs_def(sd: int, pincer: bool, def: String) -> Array:
-	var dbg := {}
 	var s := _setup(sd)
 	var w: SimWorld = s[0]
 	var c: Vector2 = s[1] + Vector2(24, 18)
@@ -546,12 +546,7 @@ func _five_apcs_def(sd: int, pincer: bool, def: String) -> Array:
 	else:
 		for off in [Vector2(-6.5, -2), Vector2(-6.5, 0), Vector2(-6.5, 2), Vector2(-8.5, -1), Vector2(-8.5, 1)]:
 			_bare_apc(w, "g7_op_tactical_apc", c + off)   # all inside its front arc whichever of them it turns to
-	var r := _until_dead(w, int(k.id), 3600, ["WalkerToppled", "WalkerBlownUp", "RocketSalvo", "Damage"])
-	for ev in r[1]:
-		if String(ev.type) == "Damage" and int(ev.target) == int(k.id):
-			var key := "%d_%s" % [int(ev.shooter), String(ev.get("hit_side", ""))]
-			dbg[key] = snappedf(float(dbg.get(key, 0.0)) + float(ev.amount), 0.1)
-	print("CNSIM7_DBG %s pincer=%s dmg_by_shooter=%s hp_def=%s" % [def, pincer, dbg, Content.unit(def).get("hp")])
+	var r := _until_dead(w, int(k.id), 3600, ["WalkerToppled", "WalkerBlownUp", "RocketSalvo"])
 	return [r[0], r[1], w, k]
 
 
@@ -562,10 +557,17 @@ func test_pincer_kills_much_faster_than_head_on_and_topples() -> void:
 	print("CNSIM7_TTK m_colossus pincer=%d ticks (%s)" % [int(co[0]), "killed" if not co[2].entities.has(int(co[3].id)) else "ALIVE hp %.0f" % float(co[3].hp)])
 	print("CNSIM7_TTK head_on=%d ticks (%s) pincer=%d ticks" % [int(ho[0]), "killed" if not ho[2].entities.has(int(ho[3].id)) else "ALIVE hp %.0f" % float(ho[3].hp), int(pi[0])])
 	check(not pi[2].entities.has(int(pi[3].id)), "the pincer kills the heavy walker")
-	check(_has(pi[1], "WalkerToppled"), "flank / rear leg hits while it is fixed topple it")
+	# CNSIM7-5 (seeds 3/4/6/9/12/15): launcher-only pincer 1121-1646 ticks; launcher-only head-on leaves it at
+	# 769-791 hp after 3600 ticks. Launchers alone no longer topple it (stagger 26): the topple needs the whole group's limpets /
+	# harpoons, checked in test_group_pincer_auto_operators_engage_then_remount.
+	check(int(pi[0]) >= 900 and int(pi[0]) <= 2100, "launcher-only pincer: 45-105 s (got %d ticks)" % int(pi[0]))
 	check(not _has(ho[1], "WalkerToppled"), "straight-on fire builds almost no stagger: no topple")
-	check(int(pi[0]) * 3 <= int(ho[0]), "the pincer is at least 3x faster than the same 5 APCs head-on (%d vs %d ticks)" % [int(pi[0]), int(ho[0])])
+	# head-on usually does not finish in the 3600-tick cap: compare damage rates (equal to the ttk ratio when it does)
+	var ho_rate := (950.0 - maxf(float(ho[3].hp), 0.0)) / float(ho[0]) if ho[2].entities.has(int(ho[3].id)) else 950.0 / float(ho[0])
+	check(950.0 / float(pi[0]) >= 3.0 * ho_rate, "the pincer is at least 3x faster than the same 5 APCs head-on (%d ticks vs %.2f hp/tick head-on)" % [int(pi[0]), ho_rate])
 	check(int(ho[0]) >= 600, "head-on stays a sustained engagement (>= 30 s, got %d ticks)" % int(ho[0]))
+	check(ho[2].entities.has(int(ho[3].id)) and float(ho[3].hp) > 950.0 * 0.5,
+		"3 minutes head-on leave it above half hp (%.0f)" % float(ho[3].hp))
 
 
 func test_topple_window_bonus_damage_and_righting() -> void:
@@ -588,9 +590,14 @@ func test_topple_window_bonus_damage_and_righting() -> void:
 	var d_flank := hp0 - float(k.hp)
 	check(d_flank >= d_front * 3.0, "flank hit on a fixed walker does markedly more (%.1f vs %.1f front)" % [d_flank, d_front])
 	check(float(k.tpl.sg) > 1.0 and float(k.tpl.sg) < 1.2, "front hit built almost no stagger, flank hit built it (%.2f)" % float(k.tpl.sg))
+	var hit_up := float(Apc7.L().get("accuracy", 0.85)) * Apc7.agility_hit(k)
+	check(Apc7.agility_hit(k) < 1.0, "a striding heavy walker is harder to hit than a lumbering one (%.2f)" % Apc7.agility_hit(k))
 	var evs := []
-	for i in 8:
+	var n_hits := 0
+	while Apc7.topple_phase(k) == "" and n_hits < 80:
 		Apc7.hit_heavy(w, flank, k, 1.0, "at", 1.0)
+		n_hits += 1
+	check(n_hits >= int(Apc7.topple_threshold(k) * 0.8), "it takes many flank leg hits to topple (%d, threshold %.1f)" % [n_hits, Apc7.topple_threshold(k)])
 	check_eq(Apc7.topple_phase(k), "fall", "past the threshold it topples")
 	var g: Dictionary = w.sys_state.g7v[int(k.id)]
 	check(String(g.topple) == "fall" and absf(float(g.topple_dir) + PI * 0.5) < 0.3, "g7v topple phase + direction (pushed away from the flank: %.2f)" % float(g.topple_dir))
@@ -600,7 +607,11 @@ func test_topple_window_bonus_damage_and_righting() -> void:
 	check(float(k.comp.mobility) == 0.0 and SimWorld.HotState.get_cd(w, int(k.id)) > 0, "cannot move or fire while down")
 	hp0 = float(k.hp)
 	Apc7.hit_heavy(w, flank, k, 40.0, "at", 1.0)
-	check(hp0 - float(k.hp) >= d_flank * 2.0, "hits on a downed walker do heavy bonus damage (%.1f)" % (hp0 - float(k.hp)))
+	# CNSIM7-5: the window bonus is every round landing on a sitting target (no miss, no stride factor) x down_mult;
+	# per launcher round that is the expected damage on the downed walker vs a fixed, standing one.
+	check(hp0 - float(k.hp) > d_flank, "a hit on a downed walker does more than the same flank hit standing (%.1f vs %.1f)" % [hp0 - float(k.hp), d_flank])
+	check(Apc7.agility_hit(k) == 1.0, "a downed walker is a sitting target")
+	check(hp0 - float(k.hp) >= d_flank * hit_up * 2.0, "per launcher round the window does heavy bonus damage (%.1f vs %.1f expected standing)" % [hp0 - float(k.hp), d_flank * hit_up])
 	evs = _run(w, 200, ["WalkerRighted"])
 	check(_has(evs, "WalkerRighted") and Apc7.topple_phase(k) == "", "it rights itself after a failed window")
 	check(float(k.tpl.sg) == 0.0 and float(k.comp.mobility) > 0.0, "stagger reset, legs back")
@@ -612,7 +623,7 @@ func test_topple_window_bonus_damage_and_righting() -> void:
 
 
 ## Full group (strike team + 3 tactical squads as its escorts) meets a heavy walker.
-func _group_world(sd: int, walker_off: Vector2) -> Array:
+func _group_world(sd: int, walker_off: Vector2, def: String = "m_walker") -> Array:
 	var d := _deploy_world(sd)
 	var w: SimWorld = d[0]
 	var t: Dictionary = d[1]
@@ -620,12 +631,13 @@ func _group_world(sd: int, walker_off: Vector2) -> Array:
 	for i in 3:
 		esc.append(int(CN.spawn_team(w, 0, "tactical_squad", d[2] + Vector2(-2 + 3 * i, 5)).team))
 	t.esc = esc
-	var k := _walker(w, d[2] + walker_off, PI)
+	var k: Dictionary = w.entities[w.spawn_unit(def, 1, d[2] + walker_off)]
+	k.facing = PI
 	return [w, t, k, d[2], esc]
 
 
 func test_group_pincer_auto_operators_engage_then_remount() -> void:
-	var g := _group_world(6, Vector2(11, 1))
+	var g := _group_world(6, Vector2(11, -2))
 	var w: SimWorld = g[0]
 	var t: Dictionary = g[1]
 	var k: Dictionary = g[2]
@@ -647,6 +659,10 @@ func test_group_pincer_auto_operators_engage_then_remount() -> void:
 	check(tac_out, "tactical operators dismounted to fight the walker")
 	check(_has(evs, "CnHarpoon") or _has(evs, "CnLimpetPlanted") or _has(evs, "CnDisruptorShot"), "operators used their anti-Machine kit")
 	check(not w.entities.has(int(k.id)), "the group took the heavy walker down (%d ticks)" % int(r[0]))
+	# Target (ORCH, PROVISIONAL): full-group ideal pincer on m_walker 45-90 s with at least one topple.
+	# CNSIM7-5 measured 58-81 s on 5 of seeds 3/4/6/9/12/15, seed 9 38.7 s (this seed and offset: 69.5 s).
+	check(int(r[0]) >= 900 and int(r[0]) <= 1800, "full-group pincer on m_walker takes 45-90 s (%d ticks)" % int(r[0]))
+	check(_has(evs, "WalkerToppled"), "the head-on rush + flank leg hits toppled it")
 	print("CNSIM7_GROUP ttk=%d ticks toppled=%s kit harpoon=%s limpet=%s disruptor=%s" % [int(r[0]), _has(evs, "WalkerToppled"),
 		_has(evs, "CnHarpoon"), _has(evs, "CnLimpetPlanted"), _has(evs, "CnDisruptorShot")])
 	evs = _run(w, 500, ["CnPincerEnd"])
@@ -655,6 +671,91 @@ func test_group_pincer_auto_operators_engage_then_remount() -> void:
 	for tid in g[4]:
 		on_foot += _on_map(w, CN.team(w, int(tid)))
 	check_eq(on_foot, 0, "operators remounted")
+
+
+## Steps n ticks (or until wid is gone); counts toppled / break-contact events and the first break tick.
+func _watch(w: SimWorld, wid: int, n: int) -> Dictionary:
+	var m := {"ticks": n, "topples": 0, "broke": -1, "killed": false}
+	for i in n:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "WalkerToppled" and int(ev.id) == wid:
+				m.topples = int(m.topples) + 1
+			elif String(ev.type) == "CnBreakContact" and int(m.broke) < 0:
+				m.broke = i + 1
+		if not w.entities.has(wid):
+			m.ticks = i + 1
+			m.killed = true
+			break
+	return m
+
+
+func test_group_head_on_is_far_worse_and_breaks_contact() -> void:
+	var g := _group_world(6, Vector2(11, -2))
+	var w: SimWorld = g[0]
+	var t: Dictionary = g[1]
+	var k: Dictionary = g[2]
+	check_eq(_cmd(w, CN, 0, {"type": "cn_pincer", "team_id": int(t.id), "target_id": int(k.id), "mode": "head_on"}), "", "head-on order")
+	check(t.eng != null and String(t.eng.mode) == "head_on", "head-on engagement")
+	var m := _watch(w, int(k.id), 1800)   # 3x the 45 s floor of a full-group pincer, 2x its 68 s on this seed
+	check(not bool(m.killed), "a head-on group does not kill it in 90 s (pincer here: 68 s)")
+	check(int(m.broke) > 0, "the head-on attack stalls and the group breaks contact (tick %d)" % int(m.broke))
+	check(int(m.topples) == 0, "straight-on fire did not topple it (%d)" % int(m.topples))
+	check(w.entities.has(int(k.id)) and float(k.hp) > 950.0 * float(CN.P().get("stall_hp", 0.6)) * 0.9,
+		"it broke off with the walker still mostly intact (%.0f hp)" % float(k.hp))
+
+
+func test_group_pincer_on_colossus_takes_minutes_and_two_topples() -> void:
+	# Target (ORCH, PROVISIONAL): m_colossus 3-5 min, usually two topples. CNSIM7-5 measured 198-310 s over seeds
+	# 3/4/6/9/12/15: 214-232 s, 2-3 topples (this seed and offset: 228 s, 2 topples).
+	var g := _group_world(9, Vector2(12, 2), "m_colossus")
+	var w: SimWorld = g[0]
+	var k: Dictionary = g[2]
+	check(Apc7.is_heavy_walker(k) and Apc7.agility_hit(k) == 1.0, "a lumbering colossus gets no stride factor")
+	check(Apc7.down_secs(k) > Apc7.down_secs({"def": "m_walker"}), "a heavier machine lies down longer (%.1f s)" % Apc7.down_secs(k))
+	var m := _watch(w, int(k.id), 6600)
+	check(bool(m.killed), "the full group takes the colossus down (%d ticks)" % int(m.ticks))
+	check(int(m.ticks) >= 3600 and int(m.ticks) <= 6000, "it takes 3-5 minutes (%d ticks)" % int(m.ticks))
+	check(int(m.topples) >= 2, "two topples (%d)" % int(m.topples))
+	check(int(m.broke) < 0, "the pincer did not stall")
+
+
+func test_one_topple_window_cannot_kill_an_unhurt_walker() -> void:
+	var g := _group_world(6, Vector2(11, -2))   # measured window on an unhurt walker here: 134 hp
+	var w: SimWorld = g[0]
+	var k: Dictionary = g[2]
+	var kid := int(k.id)
+	var phase := 0
+	var dealt := 0.0
+	for i in 2400:
+		w.step()
+		for ev in w.events:
+			if int(ev.get("id", -1)) != kid:
+				continue
+			if String(ev.type) == "WalkerToppled" and phase == 0:
+				SimWorld.HotState.set_hp(w, kid, 950.0)   # unhurt as it goes down
+				phase = 1
+			elif String(ev.type) == "WalkerRighted" and phase == 1:
+				dealt = 950.0 - float(k.hp)
+				phase = 2
+		if phase == 2 or not w.entities.has(kid):
+			break
+	check_eq(phase, 2, "it toppled and rose again")
+	check(w.entities.has(kid), "one window alone did not kill an unhurt heavy walker")
+	check(dealt > 50.0 and dealt < 950.0, "the window hurt it badly but not fatally (%.0f)" % dealt)
+
+
+func test_save_roundtrip_mid_pincer() -> void:
+	var g := _group_world(6, Vector2(11, -2))
+	var a: SimWorld = g[0]
+	var t: Dictionary = g[1]
+	_run(a, 300)
+	check(t.eng != null and a.entities.has(int(g[2].id)), "mid-pincer at 300 ticks")
+	var c2 := SimWorld.from_dict(a.to_dict().duplicate(true))
+	check_eq(c2.state_hash(), a.state_hash(), "save round-trip keeps the hash mid-pincer")
+	_run(a, 100)
+	_run(c2, 100)
+	check_eq(c2.state_hash(), a.state_hash(), "a loaded pincer continues identically")
 
 
 func test_player_pincer_order_and_hold_respected() -> void:
@@ -758,10 +859,11 @@ func test_split_loadout_and_rocket_loadout() -> void:
 	check(CN.pkg_apc(w, t, "purge") != null and CN.pkg_apc(w, t, "seed_hunter") != null, "losing APC A keeps every package kind")
 	var tac := CN.spawn_team(w, 0, "tactical_squad", d[2] + Vector2(-6, 4))
 	var e: Dictionary = w.entities[int(tac.apcs[0])]
-	check_eq(Apc7.rockets_left(e), 18, "default launcher stock")
+	check_eq(Apc7.rockets_left(e), Apc7._sum(Apc7.clamp_load(Apc7.L().get("default_load", {}))), "default launcher stock")
+	check(Apc7.rockets_left(e) > 0 and Apc7.rockets_left(e) <= int(Apc7.L().get("capacity", 0)), "within capacity")
 	check_eq(_cmd(w, CN, 0, {"type": "cn_set_loadout", "team_id": int(tac.team), "rockets": {"tandem": 12, "emp": 6}}), "", "rocket loadout at the facility")
 	check(int(e.a7.rl.rk.tandem) == 12 and int(e.a7.rl.rk.emp) == 6 and int(e.a7.rl.tube) == 6, "chosen canister mix, tubes full")
-	check(_cmd(w, CN, 0, {"type": "cn_set_loadout", "team_id": int(tac.team), "rockets": {"tandem": 30}}).contains("holds"), "launcher capacity")
+	check(_cmd(w, CN, 0, {"type": "cn_set_loadout", "team_id": int(tac.team), "rockets": {"tandem": int(Apc7.L().get("capacity", 0)) + 1}}).contains("holds"), "launcher capacity")
 	check(_cmd(w, CN, 0, {"type": "cn_set_loadout", "team_id": int(tac.team), "packages": ["purge"]}).contains("strike"), "tactical APCs carry no packages")
 	e.a7.rl.rk = {"tandem": 1}
 	e.a7.rl.tube = 1

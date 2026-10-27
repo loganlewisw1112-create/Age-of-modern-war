@@ -689,6 +689,10 @@ static func _reinsert(w: SimWorld, units: Array) -> void:
 	for id in _sorted_keys(tail):
 		w.entities[id] = tail[id]
 	_invalidate(w)
+	# G7 (CNSIM7-5 finding): unloaded units come back under their old ids, which the SquadAI index only adds when it
+	# rebuilds; a loaded save rebuilds it, so without this bump a live match and its save could diverge.
+	if w.sys_state.has("squad_ai"):
+		SimWorld.SquadAI.touch(w)
 
 
 # ================================================================ carrier destroyed

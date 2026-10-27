@@ -169,7 +169,8 @@ func run(pt) -> void:
 		popped += 1 if int(w.sys_state.get("g7v", {}).get(int(aid), {}).get("rl", 0)) >= 2 else 0
 	pt._log("cnsim7_launcher", not _ev("RocketSalvo").is_empty() and popped >= 1,
 		"pop-out launchers up/firing on %d APCs (g7v rl), first salvo %s" % [popped, str(_ev("RocketSalvo").get("kinds", []))])
-	var tpl: bool = await pt._wait_until(func(): return not _ev("WalkerToppled").is_empty(), 25.0)
+	# CNSIM7-5 tuning: a full-group pincer takes ~45-90 s per heavy walker, the first topple ~20-70 s in
+	var tpl: bool = await pt._wait_until(func(): return not _ev("WalkerToppled").is_empty(), 90.0)
 	mv.join_sim()
 	var tev := _ev("WalkerToppled")
 	mv.center_camera_on(Vector2(tev.get("pos", _apc_pos(w, t))))
@@ -180,7 +181,7 @@ func run(pt) -> void:
 		for fid in foes:
 			if pt._w().entities.has(fid):
 				return false
-		return true, 60.0)
+		return true, 240.0)
 	mv.join_sim()
 	await pt._shot("cnsim7_10_walkers_down")
 	var ends := 0
