@@ -1492,6 +1492,8 @@
    "pincer": {
     "_note": "Anti-walker pincer (owner addition 2026-10-26): one element rushes head-on to fix the walker, the rest take flank/rear slots and fire synchronised volleys. PROVISIONAL.",
     "detect": 12.0,
+    "player_fresh_s": 10.0,
+    "_note_player_fresh": "CNSIM7-6: a player cn_move holds off (and ends) the auto pincer for this long (player control first). PROVISIONAL.",
     "fix_dist": 4.0,
     "flank_dist": 6.0,
     "slot_angles": [

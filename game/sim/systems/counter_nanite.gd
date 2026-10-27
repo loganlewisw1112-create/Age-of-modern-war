@@ -22,6 +22,7 @@ extends RefCounted
 ## Determinism: ascending ids/team ids, w.rng only, staggered cadence, integer ticks.
 
 const Apc7 = preload("res://sim/systems/apc7.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")
 const VER := 1
 const STRIKE_A := ["leader", "second", "deploy", "deploy", "scanner", "ew", "gunner", "gunner", "gunner", "medic"]
 const STRIKE_B := ["second", "deploy", "deploy", "scanner", "ew", "gunner", "gunner", "gunner", "gunner", "medic"]
@@ -292,11 +293,60 @@ static func unlock_loadout(w: SimWorld, tid: int) -> void:
 		w.emit("CnLoadoutUnlocked", {"team": tid, "owner": int(t.fid)})
 
 
+## LPPERF7 CR 1045 (CNSIM7-6): def-only bits of a building for the two per-tick building scans here (FAC = a
+## facility for the loadout leash, DECON = a decon spot). Content-static; cleared when Content.rules() changes.
+const BFAC := 1
+const BDECON := 2
+static var _bbits := {}
+static var _bref = null
+
+
+static func _bld_bits(def_id: String) -> int:
+	if not is_same(Content.rules(), _bref):
+		_bbits = {}
+		_bref = Content.rules()
+	var v = _bbits.get(def_id)
+	if v != null:
+		return int(v)
+	var d: Dictionary = Content.building(def_id)
+	var b := 0
+	if (R().get("facility_defs", []) as Array).has(def_id) or bool(d.get("cn_facility", false)):
+		b |= BFAC
+	if (R().get("decon_defs", []) as Array).has(def_id) or bool(d.get("cn_decon", false)):
+		b |= BDECON
+	_bbits[def_id] = b
+	return b
+
+
+## SimIndex.of(w, "building") restricted to defs with `bit` (same ascending-id order, same liveness rule: callers
+## keep the alive check), the Inert7 way: runtime cache w.cache.cn7b (never saved) follows the SimIndex array (new
+## array -> refilter, same array grown -> filter the tail). Inert7.enabled = false -> the unfiltered list (on/off
+## hash check: the callers then test the bit per building as before).
+static func _blds(w: SimWorld, bit: int) -> Array:
+	var src: Array = SimWorld.SimIndex.of(w, "building")
+	if not Inert7.enabled:
+		return src
+	var c = w.cache.get("cn7b")
+	var n := src.size()
+	if c == null or not is_same(c.src, src) or int(c.n) > n or not is_same(c.rref, Content.rules()):
+		c = {"src": src, "n": 0, "rref": Content.rules(), BFAC: [], BDECON: []}
+		w.cache["cn7b"] = c
+	if int(c.n) < n:
+		for i in range(int(c.n), n):
+			var e: Dictionary = src[i]
+			var bb := _bld_bits(String(e.def))
+			if bb & BFAC:
+				c[BFAC].append(e)
+			if bb & BDECON:
+				c[BDECON].append(e)
+		c.n = n
+	return c[bit]
+
+
 ## Any own building flagged cn_facility (or listed in rules.facility_defs) within r of pos.
 static func near_facility(w: SimWorld, fid: int, pos: Vector2, r: float) -> bool:
-	var defs: Array = R().get("facility_defs", [])
-	for b in w.buildings_of(fid):
-		if (defs.has(String(b.def)) or bool(Content.building(String(b.def)).get("cn_facility", false))) \
+	for b in _blds(w, BFAC):
+		if int(b.owner) == fid and w.entities.has(int(b.id)) and _bld_bits(String(b.def)) & BFAC \
 				and Vector2(b.pos).distance_to(pos) <= r:
 			return true
 	return false
@@ -469,14 +519,15 @@ static func need_ticks(w: SimWorld, t: Dictionary, phase: String) -> int:
 	var D: Dictionary = R().get("deploy", {})
 	match phase:
 		"scan":
-			return ticks(float(D.get("scan_s", 6)))
+			return ticks(float(D.get("scan_s", 6)) * float(Apc7.callf(SimWorld.CnProgress7, "role_mult", [w, t, "scanner", "scan"], 1.0)))  # G7 CNOPS7 CR 1205
 		"jam":
-			return ticks(float(D.get("jam_s", 4)))
+			return ticks(float(D.get("jam_s", 4)) * float(Apc7.callf(SimWorld.CnProgress7, "role_mult", [w, t, "ew", "jam"], 1.0)))  # G7 CNOPS7 CR 1205
 	var d: Dictionary = t.dep
 	var P: Dictionary = (R().get("packages", {}) as Dictionary).get(String(d.kind), {})
 	var n := on_foot_near(w, t, "deploy", d.site, float(D.get("site_radius", 7.0))).size()
-	var lvl := clampi(int(Apc7.callf(SimWorld.CnFacility, "team_level", [w, int(t.id)], 0)), 0, 3)
-	var f := 1.0 / (1.0 + 0.25 * float(maxi(n - 1, 0))) * (1.0 - 0.1 * float(lvl))
+	# G7 CNOPS7 CR 1205: team level (missions + facility drills - veterans lost) x quick_arm / lab path. This replaces
+	# CnFacility.team_level(w, t.id), which was keyed by the FACILITY team id but got the CN team id (wrong team).
+	var f := 1.0 / (1.0 + 0.25 * float(maxi(n - 1, 0))) * float(Apc7.callf(SimWorld.CnProgress7, "arm_mult", [w, t], 1.0))
 	return ticks(float(P.get("arm_s", 20)) * f)
 
 
@@ -495,7 +546,7 @@ static func _tick_deploy(w: SimWorld, t: Dictionary, every: int) -> void:
 			var a = w.entities.get(int(aid))
 			if a != null and (bool(a.get("moving", false)) or Vector2(a.pos).distance_to(site) > 4.0):
 				ready = false
-		if ready or w.tick - int(d.t0) > ticks(float(D.get("park_s", 25))):
+		if ready or w.tick - int(d.t0) > ticks(float(D.get("park_s", 25)) * float(Apc7.callf(SimWorld.CnProgress7, "level_mult", [w, int(t.id), "dismount"], 1.0))):
 			dismount(w, t)
 			_take_posts(w, t, site)
 			d.dis = true
@@ -867,6 +918,7 @@ static func _creep_on(w: SimWorld, pos: Vector2) -> bool:
 
 
 static func _expose(w: SimWorld, e: Dictionary, amt: float) -> void:
+	amt *= float(Apc7.callf(SimWorld.CnProgress7, "skill_mult", [w, int(e.id), "exposure"], 1.0))  # G7 CNOPS7 CR 1205: iron_lungs
 	if amt <= 0.0:
 		return
 	var st := _st(w)
@@ -954,9 +1006,8 @@ static func _tick_exposure(w: SimWorld) -> void:
 
 static func _decon_spots(w: SimWorld, fid: int) -> Array:
 	var out := []
-	var defs: Array = R().get("decon_defs", [])
-	for b in w.buildings_of(fid):
-		if defs.has(String(b.def)) or bool(Content.building(String(b.def)).get("cn_decon", false)):
+	for b in _blds(w, BDECON):
+		if int(b.owner) == fid and w.entities.has(int(b.id)) and _bld_bits(String(b.def)) & BDECON:
 			out.append(Vector2(b.pos))
 	return out
 
@@ -1113,6 +1164,12 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 		"cn_mount":
 			remount(w, t)
 		"cn_move":
+			# player control first (CNSIM7-6): a fresh move order beats the auto pincer for player_fresh_s (an auto
+			# engagement in progress ends, and none starts until the window runs out), so the motorcade drives on
+			t.pord = w.tick
+			if t.get("eng") != null and String(t.eng.get("by", "")) == "auto":
+				_end_eng(w, t, "ordered")
+			t.erase("resume_at")
 			move_team(w, t, _pt(cmd.target), cmd.get("escort_teams", []))
 
 
@@ -1383,6 +1440,8 @@ static func _tick_eng(w: SimWorld, t: Dictionary) -> void:
 			move_team(w, t, t.mv_to, t.get("esc", []))
 	if t.get("eng") == null:
 		if t.dep != null or _lead_of(w, t) != null:
+			return
+		if t.has("pord") and w.tick - int(t.pord) < ticks(float(P().get("player_fresh_s", 10.0))):
 			return
 		var cand = pincer_target(w, t, -1)
 		if cand != null:

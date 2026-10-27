@@ -104,16 +104,20 @@ func run(pt) -> void:
 	pt._log("cnsim7_unlock", PD.has_research(w, me, "g7_counter_nanite"),
 		"g7_counter_nanite researched (debug), faction %s, ground %s, %d enemy units cleared" % [String(w.factions[me].get("faction_def", "")), str(c), cleared])
 
-	# 1. the full group spawns inside its APCs
+	# 1. the full group spawns inside its APCs: the strike team (2 strike APCs) + the 3 tactical squads a normal match
+	# allows (the balance target is one heavy walker vs this full group)
 	var spawn := cf + Vector2(-14.0, 12.0)
 	var rs := CN.spawn_team(w, me, "strike_team", spawn)
 	var r1 := CN.spawn_team(w, me, "tactical_squad", spawn + Vector2(-4.0, -3.0))
 	var r2 := CN.spawn_team(w, me, "tactical_squad", spawn + Vector2(4.0, 3.0))
-	var ok_spawn := not rs.is_empty() and not r1.is_empty() and not r2.is_empty()
+	var r3 := CN.spawn_team(w, me, "tactical_squad", spawn + Vector2(-5.0, 4.0))
+	var ok_spawn := not rs.is_empty() and not r1.is_empty() and not r2.is_empty() and not r3.is_empty()
 	pt._log("cnsim7_spawn", ok_spawn and (rs.members as Array).size() == 20 and (rs.apcs as Array).size() == 2 and (r1.members as Array).size() == 8,
-		"strike team %s, tactical %s / %s" % [str(rs.get("members", []).size()), str(r1.get("members", []).size()), str(r2.get("members", []).size())])
+		"strike team %s, tactical %s / %s / %s" % [str(rs.get("members", []).size()), str(r1.get("members", []).size()), str(r2.get("members", []).size()),
+		str(r3.get("members", []).size())])
 	if not ok_spawn:
 		return
+	var esc := [int(r1.team), int(r2.team), int(r3.team)]
 	var t: Dictionary = CN.team(w, int(rs.team))
 	var inside := 0
 	for mid in t.members:
@@ -130,42 +134,54 @@ func run(pt) -> void:
 	await pt._wait(1.0)
 	await pt._shot("cnsim7_01_spawn")
 
-	# 2. motorcade meets two heavy Machine walkers: the group picks the anti-walker pincer by itself (CNSIM7-3:
-	# one APC rushes head-on to fix it, the rest flank, launcher volleys, operators out with limpets / harpoons,
-	# topple, blow it up), then the motorcade resumes to the site
+	# 2. one order moves everything: the motorcade (SQUAD7's Convoy) on open ground, no threat in reach; 10-shot strip
 	var site1 := cf + Vector2(6.0, -6.0)
-	var foes := []
-	for k in 2:
-		var fc := Movement.nearest_free_cell(w, Vector2i(floori(cf.x) - 4 + k * 6, floori(cf.y) + 6 - k * 4), "vehicle")
-		var fe: Dictionary = h._unit(w, "m_walker", foe, Vector2(fc) + Vector2(0.5, 0.5))
-		fe.order = {"type": "hold"}
-		foes.append(int(fe.id))
-	var hp0 := 0.0
-	for fid in foes:
-		hp0 += float(w.entities[fid].hp)
-	var mvr := _cmd(pt, {"type": "cn_move", "team_id": int(t.id), "target": site1, "escort_teams": [int(r1.team), int(r2.team)]})
+	var wp := spawn + (site1 - spawn) * 0.3
+	var mvr := _cmd(pt, {"type": "cn_move", "team_id": int(t.id), "target": wp, "escort_teams": esc})
 	await pt._wait(0.3)
 	mv.join_sim()
-	pt._log("cnsim7_convoy_order", mvr == "" and int(t.conv) >= 0, "cn_move '%s', convoy id %d" % [mvr, int(t.conv)])
+	var in_conv := 0
+	var all_apcs := _all_apcs(w, t, esc)
+	for aid in all_apcs:
+		in_conv += 1 if int(t.conv) >= 0 and int(Apc7.callf(SimWorld.Convoy, "of_unit", [w, int(aid)], -1)) == int(t.conv) else 0
+	pt._log("cnsim7_convoy_order", mvr == "" and int(t.conv) >= 0 and in_conv == all_apcs.size(), "cn_move '%s', convoy id %d, %d/%d APCs in the motorcade" % [mvr,
+		int(t.conv), in_conv, all_apcs.size()])
 	_zoom(pt, 0.85)
 	for k in 10:
 		mv.join_sim()
 		mv.center_camera_on(_apc_pos(w, t))
 		await pt._shot("cnsim7_strip_%02d" % k)
-		await pt._wait(0.3)
-	var engaged: bool = await pt._wait_until(func(): return not _ev("CnPincer").is_empty(), 25.0)
+		await pt._wait(0.8)
+	await pt._wait_until(func(): return _apc_pos(pt._w(), t).distance_to(wp) <= 4.0, 25.0)
+	await pt._wait(2.0)
+	mv.join_sim()
+
+	# 3. the motorcade drives on to the site and meets ONE heavy Machine walker standing on it: the group picks the
+	# anti-walker pincer by itself once the player's move order is no longer fresh (CNSIM7-3: one APC rushes head-on to
+	# fix it, the rest flank, launcher volleys, operators out with limpets / harpoons, topple, blow it up), then the
+	# motorcade resumes to the site
+	var foes := []
+	var fc := Movement.nearest_free_cell(w, Vector2i(floori(site1.x), floori(site1.y)), "vehicle")
+	var fe: Dictionary = h._unit(w, "m_walker", foe, Vector2(fc) + Vector2(0.5, 0.5))
+	fe.order = {"type": "hold"}
+	fe.facing = (wp - Vector2(fe.pos)).angle()
+	foes.append(int(fe.id))
+	var m1 := _cmd(pt, {"type": "cn_move", "team_id": int(t.id), "target": site1, "escort_teams": esc})
+	var engaged: bool = await pt._wait_until(func(): return not _ev("CnPincer").is_empty(), 40.0)
 	mv.join_sim()
 	var pev := _ev("CnPincer")
-	pt._log("cnsim7_pincer_auto", engaged and String(pev.get("by", "")) == "auto",
+	var tick_eng := int(w.tick)
+	pt._log("cnsim7_pincer_auto", m1 == "" and engaged and String(pev.get("by", "")) == "auto",
 		"the group chose the pincer by itself: %s (fixer APC %s, %s APCs)" % [str(pev.get("by", "none")), str(pev.get("fixer", -1)), str(pev.get("apcs", 0))])
 	await pt._wait_until(func(): return not _ev("RocketSalvo").is_empty(), 12.0)
 	mv.join_sim()
 	var wk0 = w.entities.get(int(pev.get("target", -1)))
 	mv.center_camera_on(Vector2(wk0.pos) if wk0 != null else _apc_pos(w, t))
 	_zoom(pt, 1.1)
+	await pt._wait(0.3)
 	await pt._shot("cnsim7_08_pincer_launchers")
 	var popped := 0
-	for aid in t.apcs + CN.team(w, int(r1.team)).apcs:
+	for aid in _all_apcs(w, t, esc):
 		popped += 1 if int(w.sys_state.get("g7v", {}).get(int(aid), {}).get("rl", 0)) >= 2 else 0
 	pt._log("cnsim7_launcher", not _ev("RocketSalvo").is_empty() and popped >= 1,
 		"pop-out launchers up/firing on %d APCs (g7v rl), first salvo %s" % [popped, str(_ev("RocketSalvo").get("kinds", []))])
@@ -174,24 +190,38 @@ func run(pt) -> void:
 	mv.join_sim()
 	var tev := _ev("WalkerToppled")
 	mv.center_camera_on(Vector2(tev.get("pos", _apc_pos(w, t))))
+	await pt._wait(0.6)
 	await pt._shot("cnsim7_09_walker_toppled")
 	pt._log("cnsim7_topple", tpl, "heavy walker toppled (dir %.2f rad), ops out %s, kit: harpoon %s limpet %s disruptor %s" % [float(tev.get("dir", 0.0)),
 		not _ev("CnOpsDismount").is_empty(), not _ev("CnHarpoon").is_empty(), not _ev("CnLimpetPlanted").is_empty(), not _ev("CnDisruptorShot").is_empty()])
+	mv.speed = 2.0
 	var killed: bool = await pt._wait_until(func():
 		for fid in foes:
 			if pt._w().entities.has(fid):
 				return false
 		return true, 240.0)
 	mv.join_sim()
-	await pt._shot("cnsim7_10_walkers_down")
+	mv.speed = 1.0
+	var kill_s := float(int(pt._w().tick) - tick_eng) / 20.0
+	var kev := _ev("CnPincerEnd", "result", "killed")
+	mv.center_camera_on(Vector2(kev.get("pos", Vector2(fc))) if kev.has("pos") else Vector2(fc))
+	await pt._wait(0.5)
+	await pt._shot("cnsim7_10_walker_down")
 	var ends := 0
 	for ev in evs:
 		ends += 1 if String(ev.type) == "CnPincerEnd" and String(ev.get("result", "")) == "killed" else 0
-	pt._log("cnsim7_pincer_kills", killed and ends >= 1, "both heavy walkers destroyed %s (pincer ends 'killed' %d, blown up while down %s), strike APCs %d/2" % [killed, ends,
-		not _ev("WalkerBlownUp").is_empty(), CN.live_apcs(w, t).size()])
+	pt._log("cnsim7_pincer_kills", killed and ends >= 1, "heavy walker destroyed %s (pincer ends 'killed' %d, about %.1f s after the pincer started, blown up while down %s), strike APCs %d/2" % [killed, ends,
+		kill_s, not _ev("WalkerBlownUp").is_empty(), CN.live_apcs(w, t).size()])
 	var smoke := _ev("ApcPanel", "kind", "smoke")
 	pt._log("cnsim7_convoy_contact", CN.live_apcs(w, t).size() == 2, "crew smoke on APC %s, volleys %s" % [str(smoke.get("id", "none")), str(_ev("CnVolley").get("apcs", 0))])
 	await _deploys(pt, t, foes, site1, cf + Vector2(10.0, 10.0))
+
+
+func _all_apcs(w: SimWorld, t: Dictionary, esc: Array) -> Array:
+	var out: Array = (t.apcs as Array).duplicate()
+	for tid in esc:
+		out.append_array(CN.team(w, int(tid)).apcs)
+	return out
 
 
 func _deploys(pt, t: Dictionary, foes: Array, site1: Vector2, site2: Vector2) -> void:

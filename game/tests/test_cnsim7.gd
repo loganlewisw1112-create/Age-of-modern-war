@@ -869,3 +869,60 @@ func test_split_loadout_and_rocket_loadout() -> void:
 	e.a7.rl.tube = 1
 	Apc7.restock(w, e)
 	check(int(e.a7.rl.rk.tandem) == 12 and int(e.a7.rl.rk.emp) == 6, "facility restock refills the chosen mix")
+
+
+## Player control first (CNSIM7-6): a player cn_move ends an auto pincer ("ordered") and holds off a new one for
+## pincer.player_fresh_s; the motorcade forms and drives on.
+func test_move_order_beats_auto_pincer() -> void:
+	var g := _group_world(6, Vector2(11, 1))
+	var w: SimWorld = g[0]
+	var t: Dictionary = g[1]
+	var evs := _run(w, 40, ["CnPincer"])
+	check(_has(evs, "CnPincer") and t.get("eng") != null, "a heavy walker in reach: the group starts the pincer by itself")
+	var goal: Vector2 = g[3] + Vector2(-20, 8)
+	var a: Dictionary = w.entities[int(t.apcs[0])]
+	var d0 := Vector2(a.pos).distance_to(goal)
+	check_eq(_cmd(w, CN, 0, {"type": "cn_move", "team_id": int(t.id), "target": goal, "escort_teams": t.esc}), "", "cn_move valid mid-pincer")
+	check(t.get("eng") == null and int(t.conv) >= 0, "the move order ends the auto pincer and forms the motorcade (convoy %d)" % int(t.conv))
+	var fresh := CN.ticks(float(CN.R().get("pincer", {}).get("player_fresh_s", 10.0)))
+	evs = _run(w, fresh - 20, ["CnPincer", "CnPincerEnd"])
+	var ordered := false
+	for ev in evs:
+		ordered = ordered or (String(ev.type) == "CnPincerEnd" and String(ev.result) == "ordered")
+	check(not _has(evs, "CnPincer"), "no auto pincer while the move order is fresh")
+	check(w.entities.has(int(a.id)) and Vector2(a.pos).distance_to(goal) < d0 - 3.0, "the strike APC drove toward the ordered goal")
+
+
+## LPPERF7 CR 1045: the facility (loadout leash) and decon building scans use def-filtered lists; on a real Last
+## Protocol match (1000+ plain walls, CN teams at the base) the result and the state hash are the same with the
+## filter on and off (Inert7.enabled).
+func test_lp_building_scans_skip_on_off() -> void:
+	var hs := []
+	var probes := []
+	var nteams := 0
+	for skip in [true, false]:
+		CN.Inert7.enabled = skip
+		var w := SimWorld.new_match(SimWorld.LastProtocol.make_config(7, "last_protocol"))
+		if not check(w != null, "Last Protocol match starts"):
+			CN.Inert7.enabled = true
+			return
+		for i in 120:
+			w.step()
+		nteams = CN.team_ids(w).size()
+		var pr := []
+		var fids: Array = w.factions.keys()
+		fids.sort()
+		for fid in fids:
+			var spots: Array = CN._decon_spots(w, int(fid))
+			pr.append(spots)
+			for b in SimWorld.SimIndex.of(w, "building"):
+				if CN._bld_bits(String(b.def)) & CN.BFAC:
+					pr.append(CN.near_facility(w, int(fid), Vector2(b.pos) + Vector2(3, 0), 6.0))
+					pr.append(CN.near_facility(w, int(fid), Vector2(b.pos) + Vector2(30, 0), 6.0))
+		probes.append(pr)
+		hs.append(w.state_hash())
+	CN.Inert7.enabled = true
+	print("CNSIM7_LP teams=%d probes=%d hash_on=%s hash_off=%s" % [nteams, (probes[0] as Array).size(), String(hs[0]).left(16), String(hs[1]).left(16)])
+	check(nteams > 0 and (probes[0] as Array).has(true), "the LP base has CN teams and a facility (%d teams)" % nteams)
+	check_eq(probes[0], probes[1], "facility / decon lookups identical with the filter on and off")
+	check_eq(String(hs[0]), String(hs[1]), "Last Protocol: same state hash with the filter on and off (120 ticks)")
