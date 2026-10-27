@@ -56,7 +56,12 @@ func _aim(pt, di, p: Vector2) -> void:
 	di._hdg = wrapf(rad_to_deg(atan2(to.x, -to.y)), 0.0, 360.0)
 	var r = DronePilot.record(w, di.flying)
 	var err := absf(wrapf(di._hdg - float(r.hdg), -180.0, 180.0)) if r != null else 0.0
-	di._held[KEY_W] = to.length() > 0.8 and err < 25.0   # turn on the spot first: no orbiting the target
+	# INTEG7: let go of W inside the braking distance (v^2 / 2a, plus ~2 steer periods of latency) so the drone
+	# coasts to a stop over the target instead of overshooting and circling (speed 7 tiles/s, accel 10: ~2.5 tiles)
+	var v := Vector2(r.vel).length() if r != null else 0.0
+	var acc := maxf(float(DronePilot.R().get("accel", 10.0)), 0.1)
+	var brake := v * v / (2.0 * acc) + v * 0.15
+	di._held[KEY_W] = to.length() > maxf(0.8, brake) and err < 25.0   # turn on the spot first: no orbiting the target
 
 
 func _dist(pt, di, p: Vector2) -> float:
@@ -131,6 +136,9 @@ func run(pt) -> void:
 	di._held.clear()
 	await pt._wait(0.8)
 	var sp := Vector2(squad.pos)
+	var de = pt._w().entities.get(di.flying)
+	var dpos: Vector2 = Vector2(de.pos) if de != null else Vector2(-1, -1)
+	var drec = DronePilot.record(pt._w(), di.flying)
 	_key(pt, KEY_SPACE)
 	await pt._wait(0.3)
 	if not _has("DroneMunitionAway"):
@@ -145,7 +153,7 @@ func run(pt) -> void:
 			surf = String(ev.surface)
 			bp = Vector2(ev.pos)
 	pt._log("drone7_strike_drop", st and over and away and blast and surf == "soldier",
-		"surface %s blast %s squad %s hp %s" % [surf, bp, sp, str(squad.get("hp"))])
+		"surface %s blast %s squad %s hp %s | took %s over %s away %s blast %s | drone at drop %s rec %s" % [surf, bp, sp, str(squad.get("hp")), str(st), str(over), str(away), str(blast), dpos, str(drec)])
 	mv.center_camera_on(sp)
 	await pt._shot("drone7_5_strike_blast")
 	di.hand_back()
