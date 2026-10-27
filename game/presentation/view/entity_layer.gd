@@ -386,6 +386,7 @@ func refresh() -> void:
 	var neutral: Color = mv.team_color(-1)
 	var my_team := int((facs.get(pf, {}) as Dictionary).get("team", pf))
 	var hid_spot: Dictionary = sn.get("hid_spot", {})
+	var allies: Array = mv._ally_fids   # G7 PERF7C: hoisted (a node property read per unit; Senses7 marks most enemy soldiers FLAG_HID)
 	var mw := int(sn.map_w)
 	var fog: Dictionary = mv.fog_of(pf)
 	var vis: PackedByteArray = fog.get("visible", PackedByteArray())
@@ -534,8 +535,10 @@ func refresh() -> void:
 					continue
 		var fl: int = flg_a[i]
 		# G4b: a concealed sniper is drawn for enemies only while their team spots it
-		if fl & RenderSnap.FLAG_HID and ow != pf and not mv._ally_fids.has(ow) and not (hid_spot.get(id, []) as Array).has(my_team):
-			continue
+		if fl & RenderSnap.FLAG_HID and ow != pf and not allies.has(ow):
+			var hsp = hid_spot.get(id)   # G7 PERF7C: no default [] allocated per hidden unit
+			if hsp == null or not (hsp as Array).has(my_team):
+				continue
 		var dname: String = defs[def_a[i]]
 		var mod6 := Color.WHITE
 		if fl & RenderSnap.FLAG_G6 and has_g6:
@@ -545,7 +548,7 @@ func refresh() -> void:
 			if G6Vis.hidden_inside(g6e):
 				# G7 (LOOK7): roof cut away (own / allied troops clearing inside): the men inside are drawn
 				var gb = statics.get(int(g6e.get("gar", -1))) if g6e is Dictionary else null
-				if gb is Dictionary and roof_open_for(gb.get("roof_open"), pf, mv._ally_fids) and (ow == pf or mv._ally_fids.has(ow)):
+				if gb is Dictionary and roof_open_for(gb.get("roof_open"), pf, allies) and (ow == pf or allies.has(ow)):
 					sp += Vector2(float((id * 37) % 25) - 12.0, float((id * 53) % 13) - 6.0)
 					gc61.roof_in += 1
 				else:
@@ -558,7 +561,7 @@ func refresh() -> void:
 				else:
 					gc6.art_override += 1
 				dname = an
-			mod6 = G6Vis.modulate(g6e, ow == pf or mv._ally_fids.has(ow))
+			mod6 = G6Vis.modulate(g6e, ow == pf or allies.has(ow))
 			if g6e != null and int(g6e.get("cloak", 0)) > 0:
 				gc6.cloaked += 1
 			elif g6e != null and g6e.has("sub"):

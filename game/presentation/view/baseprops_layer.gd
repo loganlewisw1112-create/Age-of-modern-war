@@ -25,6 +25,7 @@ var facs: Array = []           # CnFacility.render_entries (last read)
 var _fac_key := ""
 var _gloom_drawn := -1.0
 var _frame := 0
+var _fac_frame := 0   # G7 PERF7C: frame of the last facility read
 var drawn_lights := 0          # tests / playtest evidence
 var drawn_lanes := 0
 
@@ -52,7 +53,10 @@ func refresh(_snap: Dictionary) -> void:
 	if mv == null:
 		return
 	_frame += 1
-	if _frame % 15 == 1:   # facility state changes slowly (lockdown, dropship on the pad)
+	if _frame % 15 == 1 and mv.has_method("sim_busy") and mv.sim_busy() and _frame - _fac_frame < 60:
+		_frame -= 1   # G7 PERF7C: mv.world would join the in-flight sim step; retry next frame (<= 1 s late)
+	elif _frame % 15 == 1:   # facility state changes slowly (lockdown, dropship on the pad)
+		_fac_frame = _frame
 		var w = mv.get("world")
 		facs = CnFacility.render_entries(w) if w != null else []
 		var key := str(facs.size())

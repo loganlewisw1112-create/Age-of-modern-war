@@ -27,6 +27,7 @@ var _key := ""
 var _creep_t := 99.0
 var _drag := false
 var _t := 0.0
+var _mwh := Vector2.ZERO   # G7 PERF7C: map size cached at refresh; _draw never reads the world (no sim join)
 
 
 func _ready() -> void:
@@ -52,6 +53,7 @@ func refresh() -> void:
 		return
 	var mw := int(w.map.w)
 	var mh := int(w.map.h)
+	_mwh = Vector2(mw, mh)
 	var key := "%d:%d:%d" % [mw, mh, w.map.terrain.size()]
 	if key != _key:
 		_key = key
@@ -87,6 +89,10 @@ func project(p: Vector2, z: float, w: SimWorld) -> Vector2:
 	return _proj(u, v, z)
 
 
+func _pc(p: Vector2, z: float) -> Vector2:
+	return _proj((p.x / _mwh.x) * 2.0 - 1.0, (p.y / _mwh.y) * 2.0 - 1.0, z)
+
+
 func _proj(u: float, v: float, z: float) -> Vector2:
 	var cy := cos(yaw)
 	var sy := sin(yaw)
@@ -98,8 +104,7 @@ func _proj(u: float, v: float, z: float) -> Vector2:
 
 
 func _draw() -> void:
-	var w: SimWorld = hub.world() if hub != null else null
-	if w == null or _h.size() != N * N:
+	if _mwh.x <= 0.0 or _h.size() != N * N:
 		return
 	var flick := 0.85 + 0.15 * sin(_t * 7.0) * sin(_t * 2.3)
 	# table: rim ellipse + projector glow
@@ -134,25 +139,25 @@ func _draw() -> void:
 		var c4 := [Vector2(r.position), Vector2(r.end.x, r.position.y), Vector2(r.end), Vector2(r.position.x, r.end.y), Vector2(r.position)]
 		var poly := PackedVector2Array()
 		for q in c4:
-			poly.append(project(q, 1.4, w))
+			poly.append(_pc(q, 1.4))
 		draw_polyline(poly, Color(S.OWN, 0.7 * flick), 1.5)
 	for p in layers.get("nests", []):
-		S.unit_icon(self, project(p, 1.6, w), "nest", S.CREEP.lightened(0.35), 4.0)
+		S.unit_icon(self, _pc(p, 1.6), "nest", S.CREEP.lightened(0.35), 4.0)
 	for rt in layers.get("routes", []):
-		draw_dashed_line(project(rt[0], 2.6, w), project(rt[1], 2.6, w), S.AMBER, 2.0, 6.0)
-		draw_circle(project(rt[1], 2.6, w), 3.0, S.AMBER)
+		draw_dashed_line(_pc(rt[0], 2.6), _pc(rt[1], 2.6), S.AMBER, 2.0, 6.0)
+		draw_circle(_pc(rt[1], 2.6), 3.0, S.AMBER)
 	for c in layers.get("cores", []):
 		if not bool(c.alive):
 			continue
-		var b0 := project(c.pos, 1.0, w)
-		var b1 := project(c.pos, 9.0, w)
+		var b0 := _pc(c.pos, 1.0)
+		var b1 := _pc(c.pos, 9.0)
 		draw_line(b0, b1, Color(S.HOSTILE, 0.75 * flick), 4.0)
 		draw_line(b0, b1, Color(1, 1, 1, 0.5 * flick), 1.0)
 		draw_arc(b0, 7.0, 0.0, TAU, 16, S.HOSTILE, 1.5)
 		S.text(self, b1 + Vector2(6, 0), "CORE %d  %d%%" % [int(c.ix) + 1, int(round(float(c.plate) * 100.0))], S.HOSTILE, 12, true)
 	for t in layers.get("teams", []):
-		var q := project(t.pos, 2.6, w)
-		draw_line(project(t.pos, 1.0, w), q, Color(S.OWN, 0.5), 1.0)
+		var q := _pc(t.pos, 2.6)
+		draw_line(_pc(t.pos, 1.0), q, Color(S.OWN, 0.5), 1.0)
 		S.unit_icon(self, q, "strike" if String(t.kind) == "strike" else "tactical", S.OWN, 6.0)
 		S.text(self, q + Vector2(10, 4), String(t.name).to_upper(), S.OWN, 11, true)
 	S.text(self, Vector2(14, 18), String(layers.get("header", "")), S.AMBER, 14, true)

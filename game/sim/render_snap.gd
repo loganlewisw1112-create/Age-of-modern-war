@@ -98,10 +98,25 @@ static func build(w) -> void:
 	var last_di := -1
 	var g5: Dictionary = _g5_inputs(w)  # G5 (VIEW5): sim tables read once per snapshot
 	var g5_any: bool = g5.any
+	# G7 PERF7C: _g5_dyn inlined below (same bits, same aboard / evac insertion order); inputs hoisted
+	var g5_med: bool = g5.med
+	var g5_needy: Dictionary = g5.needy
+	var g5_nd: bool = not g5_needy.is_empty()
+	var g5_tr: bool = g5.trucks
+	var g5_aboard: Dictionary = g5.aboard
+	var g5_evac: Dictionary = g5.evac
 	var g6: Dictionary = _g6_inputs(w)  # G6 (VIEW6): per-unit G6 side table inputs
 	var g6_any: bool = g6.any
 	var s7_on: bool = w.sys_state.has("senses7")  # G7 SENSE7 CR seq 1270: senses-hidden soldiers drawn only for teams that spot them
+	# G7 PERF7B: the per-def infantry bit (Senses7._inf_def) and the per-faction spot sets are read once per snapshot
+	var def_inf: PackedByteArray = cache.get("snap_def_inf", PackedByteArray())
+	if s7_on and def_inf.size() != defs.size():
+		def_inf = _def_inf_table(defs)
+	var s7f: Array = _s7_inputs(w, g6) if s7_on else []
+	var s7o: Array = []   # G7 PERF7C: owner -> _s7_owner entry (constant results when no enemy spot set can matter)
+	s7o.resize(64)
 	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
+	var g7b_any := not g7u.is_empty()   # G7 PERF7C: before the unit loop g7u holds only g7v ids
 	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
@@ -123,6 +138,8 @@ static func build(w) -> void:
 					dfl |= _g5_def_bits(ud)
 					dfl |= _g6_def_bits(ud)
 					def_fl.append(dfl)
+					if s7_on:
+						def_inf.append(1 if _sys("senses7")._inf_def(dname) else 0)
 				di = dv
 				last_def = dname
 				last_di = di
@@ -139,10 +156,29 @@ static func build(w) -> void:
 					pp = o_pos[k]
 			var dfl2: int = def_fl[di]
 			var fl := dfl2 & DEF_PASS
+			var od_u = e.get("order")   # G7 PERF7B: read once (G4b work flag, SQUAD7 back-off, WOUND7 care)
 			if dfl2 & DEF_G5:
 				fl |= _g5_unit(e, id, dfl2, g5)
-			if g5_any:
-				fl |= _g5_dyn(e, id, g5)
+			if g5_any:   # G7 PERF7C: = _g5_dyn(e, id, g5), inlined
+				if g5_med:
+					if "wounded" in e and e["wounded"]:
+						fl |= FLAG_WOUNDED
+					if "evac_by" in e:
+						var cb = e["evac_by"]
+						if cb != null and int(cb) >= 0:
+							fl |= FLAG_ABOARD
+							g5_aboard[id] = int(cb)
+					if "evac_load" in e:
+						var el = e["evac_load"]
+						if el is Array and not (el as Array).is_empty():
+							fl |= FLAG_EVAC
+							g5_evac[id] = (el as Array).size()
+				if g5_nd and g5_needy.has(id):
+					fl |= FLAG_NEEDY
+				if g5_tr and "resup_by" in e:
+					var rb = e["resup_by"]
+					if rb != null and int(rb) >= 0:
+						fl |= FLAG_RESUP
 			if e.moving:
 				fl |= FLAG_MOVING
 			if e.firing > 0:
@@ -154,30 +190,67 @@ static func build(w) -> void:
 					hid_spot[id] = (sp_v as Array).duplicate() if sp_v is Array else []
 				if e.get("deployed", false):
 					fl |= FLAG_DEPLOYED
-				var od = e.get("order")
-				var ot = od.get("type") if od is Dictionary else null
-				if (ot == "lay_mine" or ot == "plant_charge") and int(od.get("t", 0)) > 0:
+				var ot = od_u.get("type") if od_u is Dictionary else null
+				if (ot == "lay_mine" or ot == "plant_charge") and int(od_u.get("t", 0)) > 0:
 					fl |= FLAG_WORK
 			if dfl2 & DEF_CARRIER:
 				fl |= _carrier_flags(e, id, int(w.tick), old, unl)
-			if dfl2 & DEF_G6 or (g6_any and (e.has("art_def") or e.has("garrisoned_in") or e.has("camo_net"))):
+			if dfl2 & DEF_G6 or (g6_any and ("art_def" in e or "garrisoned_in" in e or "camo_net" in e)):
 				fl |= _g6_unit(w, e, id, dfl2, g6, hid_spot)
-			if s7_on and not (fl & FLAG_HID) and e.has("morale"):
-				fl |= _s7_hid(w, e, id, g6, hid_spot)
+			if s7_on and not (fl & FLAG_HID) and def_inf[di] == 1 and "morale" in e:
+				var ow := int(e.owner)
+				var so = s7o[ow] if ow >= 0 and ow < 64 else null
+				if so == null:
+					so = _s7_owner(s7f, ow)
+					if ow >= 0 and ow < 64:
+						s7o[ow] = so
+				if so[1] != null:   # every enemy spot set empty: hidden from those teams whatever the id
+					hid_spot[id] = so[1]
+					fl |= FLAG_HID
+				elif not so[0]:
+					fl |= _s7_hid_fast(e, id, s7f, hid_spot)
+			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull) and the
+			# DRONE7 flown-drone height / bank, merged into g7u (three lookups per unit; drones only for aircraft defs)
+			# G7 PERF7B: _g7_squad inlined (same keys, same order)
+			var hd = e["f7_hd"] if "f7_hd" in e else null   # G7 PERF7C: `in` first (most units carry none of these)
+			if hd != null:
+				var d7 = g7u.get(id) if g7b_any else null
+				var gi := 0
+				if "gait" in e:
+					var gt0 = e["gait"]
+					gi = int(gt0) if gt0 != null else 0
+				if d7 == null:
+					d7 = {"gait": GAITS[gi], "sector": deg_to_rad(float(hd))} if gi > 0 and gi < GAITS.size() 							else {"sector": deg_to_rad(float(hd))}
+					g7u[id] = d7
+				else:
+					if gi > 0 and gi < GAITS.size() and not d7.has("gait"):
+						d7["gait"] = GAITS[gi]
+					d7["sector"] = deg_to_rad(float(hd))
+				if od_u is Dictionary and "bk" in od_u and bool(od_u.bk):
+					d7["back"] = true
+				if "f7_clr" in e:
+					var clr = e["f7_clr"]
+					if clr != null:
+						if int(clr) == 1:
+							d7["stack"] = true
+						elif int(clr) == 2:
+							d7["entry"] = true
+				if "f7_hb" in e:
+					var hb0 = e["f7_hb"]
+					if hb0 != null:
+						d7["hull"] = deg_to_rad(float(hb0))
+			elif "gait" in e or "f7_hb" in e:
+				var gt = e.get("gait")
+				var hb = e.get("f7_hb")
+				if gt != null or hb != null:
+					_g7_squad(e, id, gt, null, hb, g7u)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
-			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull) and the
-			# DRONE7 flown-drone height / bank, merged into g7u (three lookups per unit; drones only for aircraft defs)
-			var gt = e.get("gait")
-			var hd = e.get("f7_hd")
-			var hb = e.get("f7_hb")
-			if gt != null or hd != null or hb != null:
-				_g7_squad(e, id, gt, hd, hb, g7u)
 			if dfl2 & DEF_AIRCRAFT and e.has("drone_h"):
 				_g7_entry(g7u, id)["dh"] = float(e.drone_h)
 				_g7_entry(g7u, id)["dbank"] = float(e.get("drone_bank", 0.0))
-			if e.has("wz") or e.has("panic") or e.has("wdrg") or e.has("wounded") or (e.get("order") is Dictionary and (e.order as Dictionary).has("care")):
+			if "wz" in e or "panic" in e or "wdrg" in e or "wounded" in e or (od_u is Dictionary and "care" in od_u):
 				var we: Dictionary = SimWorld.Wounds.render_entry(e)
 				if not we.is_empty():
 					wnd[id] = we
@@ -198,6 +271,8 @@ static func build(w) -> void:
 	ids.resize(n); pos.resize(n); prev.resize(n); facing.resize(n)
 	defi.resize(n); owner.resize(n); hp.resize(n); flags.resize(n)
 	cache["snap_def_fl"] = def_fl
+	if s7_on:
+		cache["snap_def_inf"] = def_inf
 	cache["snap_unload"] = unl
 	cache["snap_defs"] = defs
 	cache["snap_def_idx"] = def_idx
@@ -656,6 +731,91 @@ static func _s7_hid(w, e: Dictionary, id: int, g6: Dictionary, hid_spot: Diction
 	if not hidden_any:
 		return 0
 	hid_spot[id] = spot
+	return FLAG_HID
+
+
+## G7 PERF7B: per-def Senses7 infantry bit (1 / 0), index-aligned with the snapshot def table.
+static func _def_inf_table(defs: PackedStringArray) -> PackedByteArray:
+	var s7 = _sys("senses7")
+	var out := PackedByteArray()
+	out.resize(defs.size())
+	for i in defs.size():
+		out[i] = 1 if s7._inf_def(defs[i]) else 0
+	return out
+
+
+## G7 PERF7B: [fid team array, fid spot-set array (null = no gate), {team: fid indices}, {mask: shared spot array}]
+## read once per snapshot for _s7_hid_fast (Senses7.hidden = spot set present, id not in it, infantry target).
+static func _s7_inputs(w, g6: Dictionary) -> Array:
+	var s7 = _sys("senses7")
+	var st = w.sys_state.get("senses7")
+	var tms := PackedInt32Array()
+	var sps: Array = []
+	for f in g6.fids:
+		tms.append(int(g6.teams[f]))
+		sps.append(st.spot.get(s7.tkey(w, int(f))) if st is Dictionary and st.has("spot") else null)
+	return [tms, sps, g6.teams, {}]
+
+
+## G7 PERF7B: per-owner Senses7 summary [all_seen, const_spot]: all_seen = no other team's spot set gates (every team
+## sees this owner's soldiers: _s7_hid returns 0); const_spot = the shared spot array when every gating spot set of
+## another team is empty (the soldier is hidden from exactly those teams whatever his id), else null (per-unit check).
+static func _s7_owner(s7f: Array, owner: int) -> Array:
+	var tms: PackedInt32Array = s7f[0]
+	var sps: Array = s7f[1]
+	var own_tm = (s7f[2] as Dictionary).get(owner, -1)
+	var mask := 0
+	var gated := false
+	var all_empty := true
+	for i in tms.size():
+		var sp = sps[i]
+		if tms[i] == own_tm or sp == null:
+			mask |= 1 << i
+		else:
+			gated = true
+			if not (sp as Dictionary).is_empty():
+				all_empty = false
+	if not gated:
+		return [true, null]
+	if not all_empty:
+		return [false, null]
+	var shared: Dictionary = s7f[3]
+	var arr = shared.get(mask)
+	if arr == null:
+		arr = []
+		for i in tms.size():
+			if mask & (1 << i) and not (arr as Array).has(tms[i]):
+				(arr as Array).append(tms[i])
+		shared[mask] = arr
+	return [false, arr]
+
+
+## G7 PERF7B: _s7_hid for an infantry target (def_inf bit + e.morale checked by the caller), with the per-faction
+## spot sets hoisted out of the unit loop. Same result and the same spot array content (teams in faction order,
+## deduplicated); units with the same seen-by pattern share one array per snapshot (read-only for the display).
+static func _s7_hid_fast(e: Dictionary, id: int, s7f: Array, hid_spot: Dictionary) -> int:
+	var tms: PackedInt32Array = s7f[0]
+	var sps: Array = s7f[1]
+	var own_tm = (s7f[2] as Dictionary).get(int(e.owner), -1)
+	var mask := 0
+	var hidden_any := false
+	for i in tms.size():
+		var sp = sps[i]
+		if tms[i] == own_tm or sp == null or (sp as Dictionary).has(id):
+			mask |= 1 << i
+		else:
+			hidden_any = true
+	if not hidden_any:
+		return 0
+	var shared: Dictionary = s7f[3]
+	var arr = shared.get(mask)
+	if arr == null:
+		arr = []
+		for i in tms.size():
+			if mask & (1 << i) and not (arr as Array).has(tms[i]):
+				(arr as Array).append(tms[i])
+		shared[mask] = arr
+	hid_spot[id] = arr
 	return FLAG_HID
 
 

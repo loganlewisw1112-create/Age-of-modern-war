@@ -129,8 +129,30 @@ func _process(delta: float) -> void:
 	_acc += delta
 	if _acc < REFRESH_S:
 		return
+	# G7 PERF7C: _world() joins an in-flight threaded sim step; refresh at the next hand-over instead
+	# (world_events is emitted inside MatchView._join_now), or after 1 s anyway.
+	if world_override == null and _acc < 1.0 and mv != null and mv.has_method("sim_busy") and mv.sim_busy() and _link_handover():
+		return
 	_acc = 0.0
 	refresh()
+
+
+var _linked := false
+
+
+func _link_handover() -> bool:
+	if not _linked:
+		if not mv.has_signal("world_events"):
+			return false
+		mv.connect("world_events", _on_handover)
+		_linked = true
+	return true
+
+
+func _on_handover(_evs) -> void:
+	if _acc >= REFRESH_S and is_inside_tree():
+		_acc = 0.0
+		refresh()
 
 
 ## Pure text for the meters (also used by tests and the playtest flow).

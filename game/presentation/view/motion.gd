@@ -344,6 +344,39 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 	if not a61.has("g7_unc"):
 		return _g7_fallback(a61, gv, posture, t, seed, tick)
 	var moving := (posture & P_MOVING) != 0
+	# G7 PERF7C: fast path for the common entry that carries only SQUAD7 keys (a soldier in formation: sector /
+	# gait / back / stack / entry / hull / herring, no wound / care / panic / hit / throw / lean / window key).
+	# Same frame as the full chain below for such an entry (every other branch reads an absent key there);
+	# ~1000 formation soldiers per frame at 2k went through ~15 dictionary reads each.
+	if int("sector" in gv) + int("gait" in gv) + int("back" in gv) + int("stack" in gv) + int("entry" in gv) \
+			+ int("hull" in gv) + int("herring" in gv) == gv.size():
+		if moving and "back" in gv and bool(gv.back):
+			return int(a61.g7_back[int(t * 6.0 + seed * 2.0) % 2])
+		if posture & P_FIRING:
+			return int(a61.throw[0]) if posture & P_THROW else -1
+		var gt := String(gv.gait) if "gait" in gv else ""
+		if moving:
+			if "entry" in gv and bool(gv.entry):
+				return int(a61.g7_duck[int(t * 8.0 + seed * 4.0) % 4])
+			match gt:
+				"crouch":
+					return int(a61.g7_cwalk[int(t * 7.0 + seed * 4.0) % 4])
+				"duck":
+					return int(a61.g7_duck[int(t * 11.0 + seed * 4.0) % 4])
+				"sprint":
+					return int(a61.run[int(t * 16.0 + seed * 6.0) % 6])
+				"crawl":
+					return int(a61.crawl[int(t * 3.0 + seed * 2.0) % 2])
+				"walk":
+					return int(a61.walk[int(t * 10.0 + seed * 6.0) % 6])
+			return -1
+		if "stack" in gv and bool(gv.stack):
+			return int(a61.crouch)
+		if gt == "crouch" or gt == "duck":
+			return int(a61.crouch)
+		if gt == "crawl":
+			return int(a61.prone)
+		return -1
 	var ph := int(t * 8.0 + seed * 4.0)
 	if bool(gv.get("unc", false)):
 		return int(a61.g7_unc)

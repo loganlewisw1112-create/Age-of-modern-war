@@ -112,8 +112,31 @@ func _process(delta: float) -> void:
 	_acc += delta
 	if _acc < SCAN_S:
 		return
+	# G7 PERF7C: hub.world() joins an in-flight threaded sim step (a frame stall each scan); scan at the next
+	# hand-over instead (world_events is emitted inside MatchView._join_now), or after 1 s more anyway.
+	if _acc < SCAN_S + 1.0 and hub != null and hub.has_method("sim_busy") and hub.sim_busy() and _link_handover():
+		return
 	_acc = 0.0
 	refresh()
+
+
+var _linked := false
+
+
+func _link_handover() -> bool:
+	if not _linked:
+		var v = hub.get("mv") if hub != null else null
+		if v == null or not (v as Object).has_signal("world_events"):
+			return false
+		(v as Object).connect("world_events", _on_handover)
+		_linked = true
+	return true
+
+
+func _on_handover(_evs) -> void:
+	if _acc >= SCAN_S and is_inside_tree():
+		_acc = 0.0
+		refresh()
 
 
 func refresh() -> void:

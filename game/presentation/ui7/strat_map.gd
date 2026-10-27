@@ -25,6 +25,7 @@ var _creep_img: Image = null
 var _map_key := ""
 var _creep_t := 99.0
 var _mrect := Rect2()
+var _mwh := Vector2.ZERO   # G7 PERF7C: map size cached at refresh; _draw never reads the world (no sim join)
 
 
 func _ready() -> void:
@@ -153,6 +154,7 @@ func refresh() -> void:
 	if w == null:
 		return
 	var fid := int(hub.pf())
+	_mwh = Vector2(int(w.map.w), int(w.map.h))
 	var key := "%d:%d:%d" % [int(w.map.w), int(w.map.h), w.map.terrain.size()]
 	if key != _map_key or _terr == null:
 		_map_key = key
@@ -167,12 +169,13 @@ func refresh() -> void:
 
 
 func _to_px(p: Vector2, w: SimWorld) -> Vector2:
-	return _mrect.position + Vector2(p.x / float(w.map.w), p.y / float(w.map.h)) * _mrect.size
+	var sz := Vector2(float(w.map.w), float(w.map.h)) if w != null else _mwh
+	return _mrect.position + Vector2(p.x / sz.x, p.y / sz.y) * _mrect.size
 
 
 func _draw() -> void:
-	var w: SimWorld = hub.world() if hub != null else null
-	if w == null or _terr == null:
+	var w: SimWorld = null   # G7 PERF7C: _to_px uses the cached map size (a world read here joined the sim step)
+	if _mwh.x <= 0.0 or _terr == null:
 		return
 	var head_h := 24.0
 	var side := minf(size.x - 40.0, size.y - head_h - 30.0)

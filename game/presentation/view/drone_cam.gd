@@ -19,6 +19,7 @@ var mv: Node = null
 var drone_id := -1
 var layout := "corner"
 var thermal := false
+var _last_pos = null   # G7 PERF7C: drone pos at the last readable frame (snapshot fallback while a step runs)
 var info: Dictionary = {}       # copy of the drone record (from the world when readable)
 var _sub: SubViewport
 var _cam: Camera2D
@@ -111,15 +112,20 @@ func _process(delta: float) -> void:
 		if _lost_t <= 0.0:
 			show_drone(-1)
 			return
-	var w: SimWorld = mv.world
+	# G7 PERF7C: mv.world joined the in-flight threaded sim step every frame (read before the readable check).
+	# While a step runs the camera follows the drone through the render snapshot (render_pos reads only kind/id).
 	var e = null
-	if w != null and mv.world_readable():
+	if mv.world_readable() and mv.world != null:
+		var w: SimWorld = mv.world
 		e = w.entities.get(drone_id)
 		var r = DronePilot.record(w, drone_id)
 		if r != null:
 			info = (r as Dictionary).duplicate()
 		if e != null:
 			_collect_hot(w, e)
+			_last_pos = Vector2(e.pos)
+	elif drone_id >= 0 and _last_pos != null:
+		e = {"kind": "unit", "id": drone_id, "pos": _last_pos}
 	if e != null:
 		var h := float(info.get("h", 40.0))
 		var z := lerpf(2.2, 0.7, clampf(h / 120.0, 0.0, 1.0))

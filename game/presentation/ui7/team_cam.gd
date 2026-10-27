@@ -113,9 +113,17 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree() or _cam == null:
 		return
 	_t += delta
-	var w: SimWorld = hub.world() if hub != null else null
-	if w != null and int(feed.get("id", -1)) > 0 and w.entities.has(int(feed.id)):
-		feed.pos = Vector2(w.entities[int(feed.id)].pos)
+	# G7 PERF7C: hub.world() here joined the in-flight threaded sim step every frame; follow the unit in the
+	# render snapshot instead (the world only when no step is in flight: tests, unthreaded runs).
+	var fid_ := int(feed.get("id", -1))
+	var mv_ = hub.mv if hub != null and hub.get("world_override") == null else null
+	var si: int = mv_.snap_index(fid_) if fid_ > 0 and mv_ != null and mv_.has_method("snap_index") else -1
+	if si >= 0:
+		feed.pos = Vector2((mv_.snap.pos as PackedVector2Array)[si])
+	elif fid_ > 0 and hub != null and not (hub.has_method("sim_busy") and hub.sim_busy()):
+		var w: SimWorld = hub.world()
+		if w != null and w.entities.has(fid_):
+			feed.pos = Vector2(w.entities[fid_].pos)
 	if hub != null and hub.mv != null and bool(feed.get("live", false)):
 		_cam.position = hub.mv.world_to_screen(Vector2(feed.pos))
 		_cam.zoom = Vector2.ONE * (1.5 if String(feed.source) == "overwatch" else 2.6)
@@ -124,6 +132,17 @@ func _process(delta: float) -> void:
 	_mat.set_shader_parameter("lost", 0.0 if bool(feed.get("live", false)) else 1.0)
 	_mat.set_shader_parameter("t", _t)
 	_over.queue_redraw()
+
+
+func _tick_now() -> int:
+	if hub == null:
+		return -1
+	if hub.get("world_override") == null and hub.mv != null and not (hub.mv.snap as Dictionary).is_empty():
+		return int(hub.mv.snap.get("tick", 0))
+	if hub.has_method("sim_busy") and hub.sim_busy():
+		return -1
+	var w: SimWorld = hub.world()
+	return w.tick if w != null else -1
 
 
 func _draw_overlay() -> void:
@@ -136,8 +155,8 @@ func _draw_overlay() -> void:
 	var title := "NO FEED" if src == "none" else ("OVERWATCH FEED" if src == "overwatch" else "HELMET CAM")
 	S.text(_over, Vector2(20, 30), title, S.AMBER, 15, true)
 	S.text(_over, Vector2(20, 48), String(feed.get("cs", "")), S.PHOS, 13, true)
-	var w: SimWorld = hub.world() if hub != null else null
-	var clock := D.fmt_s(float(w.tick) / float(SimWorld.TICK_RATE)) if w != null else "--"
+	var tk := _tick_now()   # G7 PERF7C: snapshot tick (no sim join while drawing)
+	var clock := D.fmt_s(float(tk) / float(SimWorld.TICK_RATE)) if tk >= 0 else "--"
 	var right := "GRID %s   T+%s" % [String(feed.get("grid", "--")), clock]
 	S.text(_over, Vector2(r.size.x - S.text_w(right, 13) - 20.0, 30), right, S.PHOS, 13)
 	if live and fmod(_t, 1.0) < 0.6:

@@ -54,6 +54,7 @@ var _strips: Dictionary = {}
 var _overlay = null
 var _acc := 0.0
 var _ev_tick := -1
+var _due := false   # G7 PERF7B: a timed refresh waits for the next sim hand-over
 var _cam_saved = null                  # main camera position while the team cam borrows it
 
 
@@ -356,14 +357,41 @@ func select_team(tid: int) -> void:
 
 
 func _process(delta: float) -> void:
-	var w := world()
-	if w != null and (mv == null or not mv.has_signal("world_events")) and w.tick != _ev_tick:
-		_ev_tick = w.tick
-		on_events(w.events)
+	var linked := mv != null and mv.has_signal("world_events")
+	if not linked:
+		var w0 := world()
+		if w0 != null and w0.tick != _ev_tick:
+			_ev_tick = w0.tick
+			on_events(w0.events)
 	_acc += delta
 	if _acc < REFRESH_S:
 		return
+	# G7 PERF7B: reading mv.world while a threaded sim step is in flight joins that step (at 2k units every
+	# frame waited for the whole step: 2k fps ~22). Refresh at the hand-over instead (on_events runs inside
+	# MatchView._join_now, no step in flight); after 1 s without one, refresh anyway.
+	if linked and _acc < 1.0 and _sim_busy():
+		_due = true
+		return
+	_timed_refresh()
+
+
+## G7 PERF7C: public form for the ops pages (protocol advisor, team cam): skip a frame instead of joining.
+func sim_busy() -> bool:
+	return _sim_busy()
+
+
+## G7 PERF7B: true while the match view's threaded sim step is running (world() would join it).
+func _sim_busy() -> bool:
+	if world_override != null or mv == null:
+		return false
+	var r = mv.get("_runner")
+	return r != null and int(r.get("task_id")) >= 0
+
+
+func _timed_refresh() -> void:
+	_due = false
 	_acc = 0.0
+	var w := world()
 	if top_btn != null:
 		top_btn.visible = D.has_ops(w, pf())
 	if visible:
@@ -549,6 +577,8 @@ func on_events(evs: Array) -> void:
 		radio.append(ln)
 	while radio.size() > RADIO_KEEP:
 		radio.pop_front()
+	if _due:
+		_timed_refresh()  # G7 PERF7B: the deferred 0.25 s refresh, at the hand-over
 
 
 func radio_for(tid: int) -> Array:

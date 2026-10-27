@@ -194,9 +194,14 @@ func _down(k: int) -> bool:
 func _process(delta: float) -> void:
 	if flying < 0 or mv == null:
 		return
-	var w: SimWorld = mv.world
-	if w == null:
-		return
+	# G7 PERF7C: mv.world here joined the in-flight threaded sim step every frame while flying; the steer
+	# throttle only needs the tick, which the render snapshot carries.
+	var tk := int(mv.snap.get("tick", -1)) if mv.get("snap") is Dictionary and not (mv.snap as Dictionary).is_empty() else -1
+	if tk < 0:
+		var w: SimWorld = mv.world if mv.world_readable() else null
+		if w == null:
+			return
+		tk = tk
 	var fwd := (1.0 if _down(KEY_W) else 0.0) - (1.0 if _down(KEY_S) else 0.0)
 	var side := (1.0 if _down(KEY_D) else 0.0) - (1.0 if _down(KEY_A) else 0.0)
 	if _kind == "fpv":
@@ -211,9 +216,9 @@ func _process(delta: float) -> void:
 		_hdg = wrapf(_hdg + turn * 90.0 * delta, 0.0, 360.0)
 	var want := {"hdg": snappedf(_hdg, 1.0), "fwd": fwd, "side": side, "h": snappedf(_h, 1.0)}
 	var every := int(DronePilot.R().get("steer_every", 2))
-	if want != _sent and int(w.tick) - _sent_tick >= every:
+	if want != _sent and tk - _sent_tick >= every:
 		_sent = want
-		_sent_tick = int(w.tick)
+		_sent_tick = tk
 		var c := want.duplicate()
 		c["type"] = "drone_steer"
 		c["unit_id"] = flying
