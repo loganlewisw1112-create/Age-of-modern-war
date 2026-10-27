@@ -43,7 +43,7 @@ const FORMAT := "rtsmap"
 const VERSION := 2
 const MIN_VERSION := 1   # G6: version-1 files load as plain (+ HILL -> level 2)
 const Elevation = preload("res://sim/systems/elevation.gd")
-const MAX_DIM := 512
+const MAX_DIM := 1024   # G7 (SCALE7): Last Protocol maps are 512x512 and up (tested at 512 and 768)
 const MAX_PLAYERS := 8
 const EXT_KEYS := ["source_id", "size", "max_sides", "fair_tol", "min_open_frac"]
 

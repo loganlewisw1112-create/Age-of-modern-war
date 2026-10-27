@@ -21,6 +21,7 @@ const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dr
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
+const CreepLayer = preload("res://presentation/view/creep_layer.gd")  # G7 CREEP7: Machine creep on the ground
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
 const FogLayer = preload("res://presentation/view/fog_layer.gd")
 const FxLayer = preload("res://presentation/view/fx_layer.gd")
@@ -75,6 +76,7 @@ var last_alert_pos: Variant = null       # Vector2 world pos of the last alert (
 # ------------------------------------------------------------ internals
 var camera: Camera2D
 var terrain_layer: Node2D
+var creep_layer: Node2D  # G7 CREEP7
 var entity_layer: Node2D
 var fog_layer: Node2D
 var fx_layer: Node2D
@@ -201,6 +203,9 @@ func _init_view() -> void:
 	terrain_layer = TerrainLayer.new()
 	terrain_layer.z_index = 0
 	add_child(terrain_layer)
+	creep_layer = CreepLayer.new()  # G7 CREEP7 CR: right after the terrain, same z (drawn after it)
+	creep_layer.z_index = 0
+	add_child(creep_layer)
 	ring_layer = OverlayLayer.new()
 	ring_layer.mode = "under"
 	ring_layer.z_index = 1
@@ -466,6 +471,7 @@ func _process(delta: float) -> void:
 	camera.tick(delta)
 	var tp := Time.get_ticks_usec()
 	terrain_layer.tick()
+	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
 	ViewUtil.prof_add("p_terrain", tp)
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()

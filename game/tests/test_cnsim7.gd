@@ -295,7 +295,13 @@ func test_deployment_stalls() -> void:
 	var w: SimWorld = d[0]
 	var t: Dictionary = d[1]
 	_cmd(w, CN, 0, {"type": "cn_deploy", "team_id": int(t.id), "target": d[2], "package": "purge"})
-	_run(w, 6)
+	var dis := false
+	for i in 400:   # the drill parks both APCs at the site first, then dismounts
+		if _has(_run(w, 1, ["CnDismount"]), "CnDismount"):
+			dis = true
+			break
+	_run(w, 2)
+	check(dis, "the team dismounts at the site after parking")
 	for id in t.members:
 		if w.entities.has(int(id)) and CN.role_of(w.entities[int(id)]) == "scanner":
 			w.destroy(int(id), "test")
@@ -416,3 +422,50 @@ func test_sim_cost_full_group() -> void:
 	print("CNSIM7_COST base_300=%.1fms group_300=%.1fms cn_apc7_systems_300=%.3fms (strike team + 3 tactical squads, 44 soldiers, 5 APCs)" % [
 		(t1 - t0) / 1000.0, (t2 - t1) / 1000.0, (t4 - t3) / 1000.0])
 	check(true, "cost reported")
+
+
+func test_deploy_drill_posts_withdrawal_and_crew_smoke() -> void:
+	var d := _deploy_world()
+	var w: SimWorld = d[0]
+	var t: Dictionary = d[1]
+	var site: Vector2 = d[2]
+	for aid in t.apcs:
+		w.entities[int(aid)].a7.dome = 0.0   # arming stalls (dome down) so the posts can be checked, then the hero
+		w.entities[int(aid)].a7.dome_cd = 1000000
+	check_eq(_cmd(w, CN, 0, {"type": "cn_deploy", "team_id": int(t.id), "target": site, "package": "purge"}), "", "deploy")
+	var dis := false
+	for i in 400:
+		if _has(_run(w, 1, ["CnDismount"]), "CnDismount"):
+			dis = true
+			break
+	check(dis, "dismounts after parking")
+	for aid in t.apcs:
+		check(Vector2(w.entities[int(aid)].pos).distance_to(site) <= 4.0, "strike APC parked at the site")
+	_run(w, 200)
+	var inner := 0
+	var ring := 0
+	for id in t.members:
+		var u = w.entities.get(int(id))
+		if u == null:
+			continue
+		var dd := Vector2(u.pos).distance_to(site)
+		match CN.role_of(u):
+			"scanner", "ew", "deploy":
+				inner += 1 if dd <= 2.5 else 0
+			"gunner":
+				ring += 1 if dd >= 3.8 and dd <= 6.8 else 0
+	check(inner >= 8, "specialists at the arming point (%d/10)" % inner)
+	check(ring >= 5, "security gunners in the perimeter ring (%d/7)" % ring)
+	var alive0 := CN.live_members(w, t).size()
+	check_eq(_cmd(w, CN, 0, {"type": "cn_hero_detonate", "team_id": int(t.id)}), "", "hero")
+	var evs := _run(w, 200, ["CnPurge"])
+	check(_has(evs, "CnPurge"), "blast")
+	check_eq(CN.live_members(w, t).size(), alive0 - 1, "only the hero dies: the rest withdrew out of the blast")
+	var a: Dictionary = w.entities[int(t.apcs[0])]
+	var s0 := int(a.a7.st.get("smoke", 0))
+	SimWorld.HotState.set_hp(w, int(a.id), float(a.hp) - 40.0)
+	evs = _run(w, 3, ["ApcPanel"])
+	check(_has(evs, "ApcPanel") and int(a.a7.st.smoke) == s0 - 1 and int(a.a7.smoke_until) > w.tick, "a hit APC pops smoke by itself")
+	SimWorld.HotState.set_hp(w, int(a.id), float(a.hp) - 40.0)
+	_run(w, 3)
+	check_eq(int(a.a7.st.smoke), s0 - 1, "no second smoke while the cloud stands")

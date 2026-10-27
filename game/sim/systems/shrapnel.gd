@@ -153,6 +153,7 @@ static func burst(w: SimWorld, pos: Vector2, prof_in, src = null, plain: bool = 
 			out.hits += 1
 			if not w.entities.has(int(id)):
 				continue
+			SimWorld.Wounds.vis_kd(w, c)   # LOOK7 display: blast knock-down pose (g7v.kd)
 		if d > radius:
 			continue
 		var cnt := n   # point blank: every ray

@@ -151,6 +151,18 @@ func test_at_gunner_prefers_vehicles() -> void:
 
 
 func test_low_hp_member_falls_back() -> void:
+	# G7 (WOUND7-2 triage): head hits roll a kill regardless of hp, so the attacker died before the squad thought.
+	# Plain hp for this test keeps its meaning (the fallback needs a live last_attacker); restored below.
+	var wc: Dictionary = SimWorld.Wounds.cfg()
+	var was_on := bool(wc.get("enabled", false))
+	wc["enabled"] = false
+	SimWorld.Wounds._app.clear()
+	_low_hp_member_falls_back()
+	wc["enabled"] = was_on
+	SimWorld.Wounds._app.clear()
+
+
+func _low_hp_member_falls_back() -> void:
 	var w := _world()
 	var ids := _squad(w, ["rifleman", "rifleman", "rifleman"], 0, Vector2i(40, 10), 9008)
 	var en := _spawn(w, "rifleman", 1, Vector2i(40, 15))
@@ -160,6 +172,7 @@ func test_low_hp_member_falls_back() -> void:
 	e.last_attacker = en
 	e.last_hit_tick = w.tick
 	var p0: Vector2 = e.pos
+	var pe: Vector2 = w.entities[en].pos   # G7: hit zones can kill the enemy during the test (WOUND7 triage)
 	var fell := false
 	for i in 30:
 		w.step()
@@ -168,7 +181,7 @@ func test_low_hp_member_falls_back() -> void:
 			fell = true
 	_run(w, 60)
 	check(fell, "the low-HP member got a fallback move")
-	check(Vector2(e.pos).distance_to(Vector2(w.entities[en].pos)) > p0.distance_to(Vector2(w.entities[en].pos)), "it moved away from the threat")
+	check(Vector2(e.pos).distance_to(pe) > p0.distance_to(pe), "it moved away from the threat")
 
 
 func test_new_formations_give_distinct_slots() -> void:

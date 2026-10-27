@@ -1,0 +1,18 @@
+{
+  "_meta": "G7 fragment (owner: SQUAD7). Squad tactics, formations and convoy tunables read by sim/systems/formations7.gd (Formations7.cfg). Every value is PROVISIONAL (set by SQUAD7 where the plan did not settle it). Scale ~7 m per tile: foot_sp 1.1 tiles ~8 m; staggered column nearest neighbour ~9 m foot, veh_col_sp 7.5 tiles ~52 m vehicles; veh_sp 3.5 tiles ~25 m in combat shapes. default_player_formation = shape for player group moves without a chosen formation: auto picks wedge / staggered column (road, short column) / file (close terrain) by terrain and threat (Formations7.auto_form), a formation name forces it, an empty string keeps the G1 grid; auto_col_len = longest auto column in tiles. gait_mult = speed factor for walk, crouch-walk, duck-run, sprint (WOUND7 folds it into e.mvm). Distances in tiles, times in ticks (20 per second).",
+  "rules": {
+    "g7_tactics": {
+      "foot_sp": 1.1, "veh_sp": 3.5, "veh_col_sp": 7.5, "foot_min_sp": 0.8, "foot_col_step": 0.75, "stagger_foot": 0.5, "stagger_veh": 1.2,
+      "threat_mult": 1.5, "close_mult": 0.75, "close_frac": 0.4, "low_vis": 0.6, "chunk": 12, "chunk_gap": 1.5,
+      "gait_mult": [1.0, 0.7, 1.1, 1.4], "gait_far": 40.0, "gait_near": 12.0, "gait_supp": 50.0,
+      "tech_possible": 40.0, "tech_expected": 18.0, "bound_dist": 5.0,
+      "halt_ticks": 60, "coil_ticks": 400, "herring_off": 1.2, "ring_sp": 1.4, "coil_sp": 5.0,
+      "twoopt_passes": 8, "twoopt_passes_big": 2, "big_full_units": 600, "grid_cell": 16, "grid_every": 20,
+      "grenade_range": 3.5, "grenade_cd": 200, "ambush_kill_frac": 0.6, "ambush_fire_ticks": 160,
+      "clear_stack_ticks": 40, "clear_room_ticks": 60, "suppress_r": 2.5, "suppress_pts": 6.0,
+      "convoy_sp": 4.0, "convoy_choke_sp": 2.5, "convoy_shield_r": 14.0, "convoy_shield_off": 2.5,
+      "convoy_hold_ticks": 300, "convoy_every": 10, "convoy_walk_speed": 1.0,
+      "default_player_formation": "auto", "auto_col_len": 24.0, "auto_close_frac": 0.4
+    }
+  }
+}

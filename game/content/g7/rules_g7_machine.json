@@ -1,0 +1,90 @@
+{
+  "_meta": "G7 fragment (owner: CREEP7). rules.g7_machine: creep layer, dormant seeds, purges, Machine EW (hack/EMP), living cores, escalation phases, learned reactions (G7 master scope sections 8, 6.3, 10). Every number is PROVISIONAL (untuned balance fixture). Creep runs only when enabled: cfg.creep == true, cfg.mode == 'last_protocol', Creep.enable(w), or a seed/core is placed; a match without creep keeps its pre-G7 state hash.",
+  "rules": {
+    "g7_machine": {
+      "ver": 1,
+      "creep": {
+        "_note": "coarse grid: one creep cell = cell x cell tiles; value 0..255; a cell counts as creep at >= on; update stripes: every cell is visited once per stripe_ticks ticks (rows with row % stripe_ticks == tick % stripe_ticks)",
+        "cell": 4,
+        "stripe_ticks": 20,
+        "on": 64,
+        "source_value": 255,
+        "falloff": 12,
+        "grow": 8,
+        "decay": 8,
+        "seed_value": 170,
+        "nest_value": 255,
+        "machine_kinds": ["machine"],
+        "repair_every_ticks": 20,
+        "repair_hp_per_sec_unit": 2.0,
+        "repair_hp_per_sec_building": 6.0,
+        "repair_out_of_combat_ticks": 60,
+        "purge": {
+          "standard": {"seed_kill_mult": 1.0, "cores": false},
+          "seed_hunter": {"seed_kill_mult": 3.0, "cores": true},
+          "barrier": {"width_cells": 1}
+        },
+        "regrow": {
+          "_note": "a dormant seed with no living Machine building within clear_radius tiles regrows a structure after regrow_s (nests: nest_regrow_s); revealed seeds regrow too, they just stop being hidden",
+          "clear_radius": 24.0,
+          "regrow_s": 90.0,
+          "nest_regrow_s": 45.0,
+          "building": "m_hive_node",
+          "nest_building": "m_hive_node"
+        }
+      },
+      "ew": {
+        "_note": "Machine EW: hackers jam the nearest hackable human vehicle/drone in range (weapons and movement held for jam_s); drones are taken over (pulled toward the hacker) for takeover_s. Units flagged unhackable (e.unhackable or def.unhackable) are immune. EMP stuns Machine units (held in place, weapons held).",
+        "hackers": {"m_jammer_obelisk": 12.0, "m_ew_node": 9.0},
+        "every_ticks": 80,
+        "jam_s": 4.0,
+        "takeover_s": 6.0,
+        "takeover_speed": 2.5,
+        "cooldown_s": 10.0
+      },
+      "cores": {
+        "def": "m_core",
+        "pulse_every_s": 3.0,
+        "plate_every_s": 30.0,
+        "plate_hp": 250.0,
+        "plate_max": 12,
+        "hit_event_min": 1.0,
+        "phase2_hp_frac": 0.3,
+        "walker_def": "m_colossus",
+        "walker_hp_mult": 1.0,
+        "walker_speed": 0.9,
+        "walker_leg_slow_min": 0.35,
+        "walker_target_roles": ["cn_facility", "hq"],
+        "countdown": {"base": 1.0, "per_coverage": 2.0, "per_core_lost": 0.25, "min": 0.25}
+      },
+      "phases": [
+        {"n": 0, "creep_mult": 1.0, "unit_tier": 1, "wave_every_s": 0, "wave_size": 0},
+        {"n": 1, "creep_mult": 1.25, "unit_tier": 1, "wave_every_s": 240, "wave_size": 6},
+        {"n": 2, "creep_mult": 1.5, "unit_tier": 2, "wave_every_s": 180, "wave_size": 10},
+        {"n": 3, "creep_mult": 2.0, "unit_tier": 3, "wave_every_s": 150, "wave_size": 14},
+        {"n": 4, "creep_mult": 3.0, "unit_tier": 3, "wave_every_s": 90, "wave_size": 24}
+      ],
+      "wave_units": {
+        "1": ["m_scout_crawler", "m_walker", "m_drone"],
+        "2": ["m_walker", "m_tracked", "m_stalker_synth", "m_lancer"],
+        "3": ["m_tracked", "m_hover_tank", "m_stalker_synth", "m_colossus"]
+      },
+      "react": {
+        "_note": "learned strictly in order 1..4; 1 = first successful counter-nanite deployment (a standard/seed_hunter/barrier purge by a non-Machine side); 2 = creep cells lost >= lost_cells; 3 = a core or major structure (hq role, core, or max_hp >= major_hp) falls; 4 = tick >= late_tick (or phase >= late_phase)",
+        "lost_cells": 120,
+        "major_hp": 2500.0,
+        "late_tick": 48000,
+        "late_phase": 3,
+        "think_every": 100,
+        "defend_radius": 40.0,
+        "defend_units": 6,
+        "hunter_pack": [4, 6],
+        "hunter_defs": ["m_stalker_synth", "m_walker", "m_scout_crawler", "m_lancer"],
+        "raid_units": 10,
+        "ambush_units": 5,
+        "route_cell": 16,
+        "text": "THE NETWORK HAS ADAPTED"
+      }
+    }
+  }
+}

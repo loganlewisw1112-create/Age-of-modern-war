@@ -42,6 +42,7 @@ extends RefCounted
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const HotState = preload("res://sim/hot_state.gd")
+const MachineEW7 = preload("res://sim/systems/machine_ew7.gd")  # G7 (CREEP7): hack / EMP hold
 
 const VER := 1
 const Q := 1.0 / 1024.0
@@ -190,6 +191,7 @@ static func _live(w: SimWorld, st: Dictionary, bit: int) -> Array:
 
 # ================================================================ tick
 static func tick(w: SimWorld) -> void:
+	MachineEW7.tick(w)  # G7 (CREEP7): no state and no work unless a creep match / EMP / hack happened
 	var st := _sub(w)
 	if not bool(st.any):
 		return

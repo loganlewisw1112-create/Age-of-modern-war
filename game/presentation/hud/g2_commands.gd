@@ -13,9 +13,17 @@ const G2 = preload("res://presentation/view/g2_data.gd")
 const Orders = preload("res://sim/systems/orders.gd")
 const Hotkeys = preload("res://presentation/ui5/panels/hotkeys.gd")
 const FORM_NAMES := {"line": "Line", "wedge": "Wedge", "column": "Column", "box": "Box", "echelon_left": "Echelon left",
-	"echelon_right": "Echelon right", "file": "File", "spread": "Spread (skirmish)"}
+	"echelon_right": "Echelon right", "file": "File", "spread": "Spread (skirmish)",
+	"staggered_column": "Staggered column", "diamond": "Diamond"}   # G7 SQUAD7
 const FORM_KEYS := {"line": "L", "wedge": "E", "column": "C", "box": "B", "echelon_left": "J", "echelon_right": "K",
-	"file": "I", "spread": "X"}
+	"file": "I", "spread": "X", "staggered_column": "V", "diamond": "N"}
+## G7 (SQUAD7): movement technique + tactic buttons on the formation page, keys rebindable in Hotkeys (group squad7).
+const TECH_BTNS := [["auto", "tech_auto", "Technique: automatic by threat (traveling / overwatch / bounding)."],
+	["traveling", "tech_traveling", "Traveling: everyone moves (contact unlikely)."],
+	["traveling_overwatch", "tech_overwatch", "Traveling overwatch: the trailing team hangs back to cover."],
+	["bounding_overwatch", "tech_bounding", "Bounding overwatch: teams A and B cover and move in turns."]]
+const GarrisonSys = preload("res://sim/systems/garrison.gd")
+var _w: SimWorld = null
 const STANCES := [["aggressive", "Aggressive", "Z", "Pursue and engage at max range."],
 	["defensive", "Defensive", "X", "Hold the area, return fire, chase only a short way."],
 	["hold_fire", "Hold fire", "C", "Only shoot back when shot at."],
@@ -106,6 +114,7 @@ func add_buttons(mode: String, ids: Array) -> void:
 		sp.btn.pressed.connect(_open_page.bind("stance"))
 		var rg = _btn2("Regroup", "on leader", "regroup", "regroup", "Selected squads and platoons reform on their leader.")
 		rg.btn.pressed.connect(func(): hud._issue({"type": "regroup", "unit_ids": _combat.duplicate()}))
+	_add_casualty_buttons()
 	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. Join arms a click on an own squad member;
 	# right-clicking one with only bearers selected does the same (G2Input.smart).
 	_bearers = _ids.filter(func(x): return AB.is_bearer(_ent(int(x))))
@@ -114,6 +123,62 @@ func add_buttons(mode: String, ids: Array) -> void:
 		jb.btn.pressed.connect(func(): _mv().g2.arm("bearer_join", {"unit_ids": _bearers.duplicate()}))
 		var lb = _btn2("Leave squad", "", "bearer_leave", "bearer_leave", "The selected ammo bearers leave their squad.")
 		lb.btn.pressed.connect(func(): hud._issue({"type": "leave_squad", "unit_ids": _bearers.duplicate()}))
+
+
+## G7 (WOUND7 CR via ORCH): First aid [Shift+T] for any selected soldier who can give care, Evacuate casualty [Shift+E] for a
+## selected carrier (ambulance / APC / helicopter / stretcher team: Medical.capacity > 0). Each picks the nearest
+## own casualty the sim accepts (Wounds.validate_command), one per carer; the sim validates again on submit.
+## (A click-to-target mode needs a G2Input arm mode: change request to ORCH.)
+const WoundsSys = preload("res://sim/systems/wounds.gd")
+const MedicalSys = preload("res://sim/systems/medical.gd")
+const CARE_R := 25.0
+
+
+func _add_casualty_buttons() -> void:
+	var carers: Array = []
+	var carriers: Array = []
+	for id in _ids:
+		var e = _ent(int(id))
+		if e == null or e.kind != "unit":
+			continue
+		if MedicalSys.capacity(String(e.def)) > 0:
+			carriers.append(int(id))
+		elif WoundsSys._can_care(e):
+			carers.append(int(id))
+	if not carers.is_empty():
+		var tb = _btn2("First aid", "nearest wounded", "treat_casualty", "treat_casualty", "First aid: the selected soldiers treat the nearest wounded own soldier (stops bleeding; a downed one is stabilised).")
+		tb.btn.pressed.connect(_casualty_orders.bind("treat_casualty", carers))
+	if not carriers.is_empty():
+		var eb = _btn2("Evacuate", "nearest downed", "evacuate_casualty", "evacuate_casualty", "Evacuate casualty: the selected ambulance / APC / helicopter / stretcher team picks up the nearest downed own soldier.")
+		eb.btn.pressed.connect(_casualty_orders.bind("evacuate_casualty", carriers))
+
+
+func _casualty_orders(typ: String, who: Array) -> void:
+	var w: SimWorld = hud._world()
+	var taken := {}
+	var n := 0
+	for uid in who:
+		var u = w.entities.get(int(uid))
+		if u == null:
+			continue
+		var best := -1
+		var bd := CARE_R
+		for c in w.entities.values():
+			if c.kind != "unit" or int(c.owner) != int(u.owner) or taken.has(int(c.id)) or int(c.id) == int(uid):
+				continue
+			var d := Vector2(u.pos).distance_to(Vector2(c.pos))
+			if d >= bd:
+				continue
+			var cmd := {"type": typ, "issuer": int(u.owner), "unit_id": int(uid), "target": int(c.id)}
+			if WoundsSys.validate_command(w, cmd) == "":
+				bd = d
+				best = int(c.id)
+		if best >= 0:
+			taken[best] = true
+			hud._issue({"type": typ, "unit_id": int(uid), "target": best})
+			n += 1
+	if n == 0 and _mv().get("g2") != null:
+		_mv().g2.flash("No wounded own soldier in reach." if typ == "treat_casualty" else "No downed own soldier to evacuate in reach.")
 
 
 ## G6.1: a card button whose key comes from the Hotkeys table (badge shows the printable character).
@@ -163,6 +228,15 @@ func add_page(ids: Array) -> bool:
 			r.btn.pressed.connect(func(): hud._issue({"type": "set_formation", "unit_ids": _combat.duplicate(), "formation": String(f)}))
 		var pc = _btn("Group pace", "off", "Z", "pace", "Move as a group at the slowest unit's speed (toggle).")
 		pc.btn.pressed.connect(_toggle_pace)
+		for t in TECH_BTNS:
+			var tr = _btn(Hotkeys.label(String(t[1])), "", Hotkeys.key(String(t[1])), "tech_" + String(t[0]), String(t[2]))
+			tr.btn.pressed.connect(func(): hud._issue({"type": "set_technique", "unit_ids": _combat.duplicate(), "technique": String(t[0])}))
+		var fb = _btn("Fall back", "", Hotkeys.key("fall_back"), "fall_back", "Fall back 10 tiles: walk backwards facing the enemy and keep firing.")
+		fb.btn.pressed.connect(_fall_back)
+		var su = _btn("Suppress", "", Hotkeys.key("suppress"), "suppress", "Suppressive fire on the last known enemy position.")
+		su.btn.pressed.connect(_suppress)
+		var cb = _btn("Clear building", "", Hotkeys.key("clear_building"), "clear_building", "Stack up, grenade first, clear the nearest building room by room.")
+		cb.btn.pressed.connect(_clear_building)
 	else:
 		hud._card_title.text = "STANCE"
 		for s in STANCES:
@@ -175,6 +249,62 @@ func add_page(ids: Array) -> bool:
 	var bk = _btn("Back", "", "BACKSPACE", "back", "Back to the orders card.")
 	bk.btn.pressed.connect(_close_page)
 	return true
+
+
+## G7 (SQUAD7) tactic buttons: the group's centre and facing (formation facing of the first unit).
+func _group_frame() -> Array:
+	var cen := Vector2.ZERO
+	var n := 0
+	var fwd := Vector2(0, -1)
+	for id in _combat:
+		var e = _ent(int(id))
+		if e != null:
+			cen += Vector2(e.pos)
+			n += 1
+			if e.has("f7_f"):
+				fwd = Vector2.RIGHT.rotated(deg_to_rad(float(e.f7_f)))
+	return [cen / float(maxi(n, 1)), fwd]
+
+
+func _fall_back() -> void:
+	var fr := _group_frame()
+	hud._issue({"type": "fall_back", "unit_ids": _combat.duplicate(), "target": Vector2(fr[0]) - Vector2(fr[1]) * 10.0})
+
+
+func _last_known() -> Variant:
+	for id in _combat:
+		var e = _ent(int(id))
+		if e != null and e.has("f7_lk"):
+			return Vector2(e.f7_lk[0])
+	return null
+
+
+func _suppress() -> void:
+	var p = _last_known()
+	if p != null:
+		hud._issue({"type": "suppress_area", "unit_ids": _combat.duplicate(), "target": p})
+
+
+func _nearest_building() -> Variant:
+	if _w == null:
+		return null
+	var cen: Vector2 = _group_frame()[0]
+	var best = null
+	var bd := 15.0
+	for b in _w.entities.values():
+		if b.kind != "building" or GarrisonSys.slots_of(String(b.def)) <= 0:
+			continue
+		var d := cen.distance_to(Vector2(b.pos))
+		if d < bd:
+			bd = d
+			best = b
+	return best
+
+
+func _clear_building() -> void:
+	var b = _nearest_building()
+	if b != null:
+		hud._issue({"type": "clear_building", "unit_ids": _combat.duplicate(), "building_id": int(b.id)})
 
 
 func _pace_on() -> bool:
@@ -240,6 +370,7 @@ func _cycle_formation() -> void:
 
 ## Refresh labels / disabled state (called from hud._update_card_state every refresh).
 func update_state(w: SimWorld) -> void:
+	_w = w
 	var pf: int = hud._pf()
 	for rec in _recs:
 		var b: Button = rec.btn
@@ -254,6 +385,14 @@ func update_state(w: SimWorld) -> void:
 				b.text = "Stance\n%s" % String(STANCE_NAME.get(_current_stance(), _current_stance()))
 			"pace":
 				b.text = "Group pace\n%s" % ("ON" if _pace_on() else "off")
+			"tech_auto", "tech_traveling", "tech_traveling_overwatch", "tech_bounding_overwatch":
+				reason = w.preview_command({"type": "set_technique", "issuer": pf, "unit_ids": _combat, "technique": String(rec.g2).trim_prefix("tech_")})
+			"fall_back":
+				reason = w.preview_command({"type": "fall_back", "issuer": pf, "unit_ids": _combat, "target": _group_frame()[0]})
+			"suppress":
+				reason = "No known enemy position." if _last_known() == null else ""
+			"clear_building":
+				reason = "No building nearby." if _nearest_building() == null else ""
 			"regroup":
 				reason = w.preview_command({"type": "regroup", "issuer": pf, "unit_ids": _combat})
 			"bearer_leave":

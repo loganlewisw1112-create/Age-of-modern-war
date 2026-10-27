@@ -20,7 +20,8 @@ extends RefCounted
 ## State (saved, hashed): entity fields wz {zone: hits}, wb (bleed hp/s), wooa (tick out of action ends),
 ##   wunc (unconscious), wdn (tick went down), wstab (stabilised), wtr (treater id), wdrg (dragging id),
 ##   wdby (dragged by id), wkill (head kill), scars [zones], wpunct (suit punctured), panic (morale.gd).
-##   w.sys_state.wounds = {bleed: {id: 1}, care: {treater id: {c, k, t, to?}}, ver}.
+##   w.sys_state.wounds = {bleed: {id: 1}, care: {treater id: {c, k, t, to?}}, ver, vw: {id: 1} (display watch)}.
+## Display (LOOK7 fact snap.g7_fields): WOUND7 keys in the sparse table w.sys_state.g7v[id] (see "display table").
 ## RNG: w.rng only inside apply_hit (zone, head kill) and the survival roll at first treatment. Ascending ids.
 
 const Movement = preload("res://sim/systems/movement.gd")
@@ -162,6 +163,8 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 	var from = null
 	if typeof(src) == TYPE_DICTIONARY and (src as Dictionary).has("pos"):
 		from = Vector2(src.pos)
+	if dmg > 0.0 and bool(e.get("suit", false)) and not bool(e.get("wpunct", false)):
+		puncture(w, e, src)   # G7 (CNSIM7 ask): a hit on a sealed-suit soldier punctures the suit at once
 	var zone := _hint_zone(w, zone_hint)
 	if zone == "":
 		zone = pick_zone(w, e, from)
@@ -193,6 +196,11 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 			if bool(zc.get("ko", false)):
 				Movement.stop_path(e)
 	HotState.touch(w, int(e.id))
+	if res != "dead":
+		var ve := _vis_entry(w, int(e.id))
+		ve["hz"] = 1 << ZONES.find(zone)
+		ve["ht"] = w.tick
+		vis_mark(w, int(e.id))
 	w.emit("Wound", {"id": int(e.id), "owner": int(e.owner), "zone": zone, "dmg": md, "result": res})
 	return {"zone": zone, "result": res}
 
@@ -224,6 +232,7 @@ static func go_down(w: SimWorld, e: Dictionary) -> void:
 	e.wunc = true
 	e.wdn = w.tick
 	HotState.touch(w, int(e.id))
+	vis_mark(w, int(e.id))
 	w.emit("Unconscious", {"id": int(e.id), "owner": int(e.owner), "pos": e.pos})
 
 
@@ -335,6 +344,134 @@ static func puncture(w: SimWorld, e: Dictionary, src) -> bool:
 	return true
 
 
+# ================================================================ display table
+## LOOK7 (fact snap.g7_fields, motion.gd g7_col) draws poses from the sparse table w.sys_state.g7v {id: {key: v}}.
+## WOUND7 writes only its own keys there: wz (zone bits, render_entry order), hz + ht (zone bit + tick of the latest
+## hit, kept VIS_HIT ticks), kd (tick of a blast knock-down, kept VIS_HIT ticks), unc, bleed, care + cw (this
+## soldier treats / drags casualty cw: aid | medic | drag), cared + cb (this casualty is treated / dragged / carried
+## by cb: aid | medic | drag | carry), panic (cower | freeze | flee | drop). Ids are watched in st.vw from the first
+## wound / panic / care event; the watch re-derives the keys from entity state at once on every such event and every
+## VIS_EVERY ticks (staggered by id), erases them on death or when back to default, and unwatches the id then.
+## Deterministic (pure function of saved state + tick), no rng. Display only: nothing in the sim reads g7v.
+const VIS_KEYS := ["wz", "hz", "ht", "kd", "unc", "bleed", "care", "cw", "cared", "cb", "panic"]
+const VIS_CARE := {"buddy": "aid", "medic": "medic", "drag": "drag"}
+const VIS_EVERY := 4
+const VIS_HIT := 40   # ticks hz/ht and kd stay (motion shows 12 / 30)
+
+
+static func _vis_entry(w: SimWorld, id: int) -> Dictionary:
+	var g = w.sys_state.get("g7v")
+	if g == null:
+		g = {}
+		w.sys_state["g7v"] = g
+	var d = g.get(id)
+	if d == null:
+		d = {}
+		g[id] = d
+	return d
+
+
+## Watches soldier `id` and re-derives its WOUND7 display keys now.
+static func vis_mark(w: SimWorld, id: int) -> void:
+	var st := _state(w)
+	if not st.has("vw"):
+		st["vw"] = {}
+	st.vw[id] = 1
+	_vis_sync(w, st, id)
+
+
+## Blast knock-down (Shrapnel blast core) on a soldier that survived it.
+static func vis_kd(w: SimWorld, e: Dictionary) -> void:
+	if not applies(e):
+		return
+	_vis_entry(w, int(e.id))["kd"] = w.tick
+	vis_mark(w, int(e.id))
+
+
+static func _vis_pass(w: SimWorld, st: Dictionary) -> void:
+	for id in (st.vw as Dictionary).keys():
+		if not w.entities.has(id) or (w.tick + int(id)) % VIS_EVERY == 0:
+			_vis_sync(w, st, int(id))
+
+
+static func _vis_set(d: Dictionary, k: String, v, on: bool) -> void:
+	if on:
+		d[k] = v
+	else:
+		d.erase(k)
+
+
+static func _vis_sync(w: SimWorld, st: Dictionary, id: int) -> void:
+	var g = w.sys_state.get("g7v")
+	var e = w.entities.get(id)
+	if e == null:
+		st.vw.erase(id)
+		if g != null and g.has(id):
+			var dd: Dictionary = g[id]
+			for k in VIS_KEYS:
+				dd.erase(k)
+			if dd.is_empty():
+				g.erase(id)
+		return
+	var d: Dictionary = g.get(id, {}) if g != null else {}
+	var z := 0
+	var wz = e.get("wz")
+	if wz != null:
+		for i in ZONES.size():
+			if int(wz.get(ZONES[i], 0)) > 0:
+				z |= 1 << i
+	_vis_set(d, "wz", z, z != 0)
+	_vis_set(d, "unc", true, is_down(e))
+	_vis_set(d, "bleed", true, float(e.get("wb", 0.0)) > 0.0 and not bool(e.get("wstab", false)))
+	var job = st.care.get(id)
+	var ck := String(VIS_CARE.get(String(job.k), "aid")) if job != null else ""
+	_vis_set(d, "care", ck, ck != "")
+	_vis_set(d, "cw", int(job.c) if job != null else -1, ck != "")
+	var cd := ""
+	var cb := -1
+	if e.has("evac_by"):
+		cd = "carry"
+		cb = int(e.evac_by)
+	elif e.has("wdby"):
+		cd = "drag"
+		cb = int(e.wdby)
+	elif e.has("wtr"):
+		cb = int(e.wtr)
+		var tj = st.care.get(cb)
+		cd = String(VIS_CARE.get(String(tj.k), "aid")) if tj != null else "aid"
+	_vis_set(d, "cared", cd, cd != "")
+	_vis_set(d, "cb", cb, cd != "")
+	var pn := String(e.get("panic", ""))
+	_vis_set(d, "panic", pn, pn != "")
+	var fresh := false
+	if d.has("ht"):
+		if w.tick - int(d.ht) >= VIS_HIT:
+			d.erase("hz")
+			d.erase("ht")
+		else:
+			fresh = true
+	if d.has("kd"):
+		if w.tick - int(d.kd) >= VIS_HIT:
+			d.erase("kd")
+		else:
+			fresh = true
+	var mine := false
+	for k in VIS_KEYS:
+		if d.has(k):
+			mine = true
+			break
+	if d.is_empty():
+		if g != null:
+			g.erase(id)
+	else:
+		if g == null:
+			g = {}
+			w.sys_state["g7v"] = g
+		g[id] = d
+	if not mine and not fresh:
+		st.vw.erase(id)
+
+
 # ================================================================ system tick
 ## Bleeding (staggered), care jobs (every tick, few), auto care (every auto.every ticks). Nothing to do and
 ## no state when no soldier was ever wounded (a match without infantry hits costs one dict lookup).
@@ -352,6 +489,8 @@ static func tick(w: SimWorld) -> void:
 	var every := maxi(int(au.get("every", 10)), 1)
 	if w.tick % every == 3:
 		_auto_pass(w, st, au)
+	if st.has("vw") and not (st.vw as Dictionary).is_empty():
+		_vis_pass(w, st)
 
 
 ## Visible panic (morale.gd): a frozen soldier flees when the freeze ends (still broken), ascending id.
@@ -367,6 +506,7 @@ static func _freeze_pass(w: SimWorld, fz: Dictionary) -> void:
 			fz.erase(id)
 			e.panic = "flee"
 			SimWorld.Morale._flee(w, e)
+			vis_mark(w, int(id))
 
 
 static func _bleed_pass(w: SimWorld, st: Dictionary) -> void:
@@ -437,6 +577,8 @@ static func start_care(w: SimWorld, t: Dictionary, c: Dictionary, kind: String, 
 	if kind == "drag" and drag_to != null:
 		job["to"] = [float(drag_to.x), float(drag_to.y)]
 	st.care[tid] = job
+	vis_mark(w, tid)
+	vis_mark(w, int(c.id))
 	w.emit("CareStarted", {"id": tid, "casualty": int(c.id), "kind": kind, "owner": int(t.owner)})
 
 
@@ -457,6 +599,9 @@ static func _end(w: SimWorld, st: Dictionary, tid: int) -> void:
 			c.erase("wtr")
 		if int(c.get("wdby", -1)) == tid:
 			c.erase("wdby")
+	vis_mark(w, tid)
+	if cid >= 0:
+		vis_mark(w, cid)
 
 
 static func _care_pass(w: SimWorld, st: Dictionary) -> void:
@@ -537,6 +682,7 @@ static func _treat_done(w: SimWorld, t: Dictionary, c: Dictionary, k: String) ->
 			c.wb = nb
 	_med_clock(w, c, float(kc.get("extend_s", 30)))
 	HotState.touch(w, int(c.id))
+	vis_mark(w, int(c.id))
 	w.emit("CasualtyTreated", {"id": int(c.id), "by": int(t.id), "kind": k, "owner": int(c.owner)})
 
 

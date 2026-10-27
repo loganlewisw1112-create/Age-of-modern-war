@@ -1267,7 +1267,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_paused(not bool(mv.get("paused")))
 		get_viewport().set_input_as_handled()
 		return
-	var key := OS.get_keycode_string(k.keycode).to_upper()
+	var key: String = preload("res://presentation/ui5/panels/hotkeys.gd").event_key(k, _hotkeys)  # G7 SQUAD7 CR seq 249: Shift chords (casualty keys)
 	if _hotkeys.has(key):
 		var btn: Button = _hotkeys[key]
 		if is_instance_valid(btn):
@@ -1405,6 +1405,8 @@ func _on_events(events: Array) -> void:
 			"MatchEnded":
 				var wt := int(ev.get("winner_team", G3.team_of(w, int(ev.get("winner", -1)))))
 				_push_alert("Match ended: Team %d wins." % (wt + 1) if wt >= 0 else "Match ended.", HT.AMBER)
+			"NetworkAdapted":  # G7 CREEP7: the Machine learned a new reaction
+				_push_alert("THE NETWORK HAS ADAPTED", HT.RED)
 			_:
 				if G4bAlerts.on_event(self, w, pf, ev):
 					pass  # G4b mechanics alerts (UI4B)

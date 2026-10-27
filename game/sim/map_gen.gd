@@ -25,7 +25,10 @@ const MODULES := {
 	"coastal_front_m": preload("res://sim/maps/coastal_front.gd"),  # G5 (NAVAL)
 	"ridge_bastion_m": preload("res://sim/maps/ridge_bastion.gd"),  # G6 (MODES6) survival
 	"river_dam_m": preload("res://sim/maps/river_dam.gd"),  # G6 (MODES6) survival
+	"lp_test512": preload("res://sim/maps/lp_test512.gd"),  # G7 (SCALE7) Last Protocol scale test map
 }
+## G7 (SCALE7): the same generator at another size (id -> [module, side]); generate() calls module.gen().
+const SIZED := {"lp_test768": ["lp_test512", 768]}
 const MapCheck = preload("res://sim/maps/map_check.gd")
 ## G6 (owner ELEV, CONTRACTS_G6 section 7): authored height for River Crossing (_rc_height, its own rng
 ## stream, so the terrain bytes and re-roll decisions stay exactly as before), height noise + ramp
@@ -51,11 +54,11 @@ static func defs() -> Dictionary:
 
 
 static func ids() -> Array:
-	return [DEFAULT_ID] + MODULES.keys()
+	return [DEFAULT_ID] + MODULES.keys() + SIZED.keys()
 
 
 static func has_map(map_id: String) -> bool:
-	return map_id == DEFAULT_ID or MODULES.has(map_id)
+	return map_id == DEFAULT_ID or MODULES.has(map_id) or SIZED.has(map_id)
 
 
 ## Spawn cell for side i of n (CONTRACTS_G3b section 4): map.spawns[map.spawn_sets[str(n)][i]].
@@ -72,8 +75,12 @@ static func spawn_for(m: Dictionary, i: int, n: int) -> Vector2i:
 static func generate(seed_value: int, map_id: String = "river_crossing_s") -> Dictionary:
 	var m := {}
 	var mod = MODULES.get(map_id)
+	var sized: Array = SIZED.get(map_id, [])
 	for attempt in MAX_ATTEMPTS:
-		m = _try(seed_value, attempt) if mod == null else mod.try_gen(seed_value, attempt)
+		if not sized.is_empty():
+			m = MODULES[String(sized[0])].gen(seed_value, attempt, int(sized[1]))
+		else:
+			m = _try(seed_value, attempt) if mod == null else mod.try_gen(seed_value, attempt)
 		var reason := validate(m)
 		if reason == "":
 			m.gen_attempt = attempt

@@ -25,9 +25,9 @@ const EVERY := 5            # each unit is re-evaluated every EVERY ticks (stagg
 const ARRIVE := 2.5         # tiles from a patrol waypoint that count as arrived
 const GUARD_DIST := 2.0     # tiles from the ward's edge
 const GUARD_SLACK := 1.0    # re-path only when the guard spot moved more than this
-const FORMATIONS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "echelon"]  # G6.1 SQUAD61: +5, + "echelon" alias (OFF61)
+const FORMATIONS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "echelon", "staggered_column", "diamond"]  # G6.1 SQUAD61: +5, + "echelon" alias (OFF61); G7 SQUAD7: + staggered_column, diamond
 ## The formations the player cycles through on the card / Teams panel (FORMATIONS minus aliases).
-const PLAYER_FORMATIONS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread"]
+const PLAYER_FORMATIONS := ["staggered_column", "wedge", "diamond", "line", "column", "box", "echelon_left", "echelon_right", "file", "spread"]
 ## G6.1 (OFF61 CR): aliases resolved when the order is applied ("echelon" = echelon right).
 const FORMATION_ALIASES := {"echelon": "echelon_right"}
 ## set_formation {spacing}: multiplier on formation slot spacing, stored as e.formation_spacing (1.0 = default, erased).
@@ -91,7 +91,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			if (cmd.has("pace") or cmd.has("spacing")) and not cmd.has("formation"):
 				return ""
 			if not FORMATIONS.has(String(cmd.get("formation", ""))):
-				return "Formation must be line, wedge, column, box, echelon left/right, file or spread."
+				return "Formation must be staggered column, wedge, diamond, line, column, box, echelon left/right, file or spread."
 			return ""
 	return "Unknown order."
 

@@ -351,9 +351,85 @@ static func deploy_reason(w: SimWorld, t: Dictionary, site: Vector2, kind: Strin
 	return "Move the strike APCs to the site first."
 
 
+## Unit vector from the site towards the nearest enemy mass within 16 tiles (else along the approach from spawn).
+static func _threat_dir(w: SimWorld, t: Dictionary, site: Vector2) -> Vector2:
+	var dir := Vector2.ZERO
+	for u in Apc7.near(w, site, 16.0):
+		if w.is_enemy(int(t.fid), int(u.owner)):
+			dir += Vector2(u.pos) - site
+	if dir.length() < 0.01:
+		dir = site - Vector2(t.spawn)
+	return Vector2.RIGHT if dir.length() < 0.01 else dir.normalized()
+
+
+static func _post(w: SimWorld, p: Vector2) -> Vector2:
+	return Vector2(clampf(p.x, 1.0, float(w.map.w) - 2.0), clampf(p.y, 1.0, float(w.map.h) - 2.0))
+
+
+## Deployment drill, vehicles: the motorcade breaks up at the site; the two strike APCs bracket the site across the
+## threat axis (their domes overlap the arming point), the escorting tactical APCs take overwatch on the threat side
+## and the flanks.
+static func _deploy_posts(w: SimWorld, t: Dictionary, site: Vector2) -> void:
+	var cid := int(t.conv)
+	if cid >= 0:
+		Apc7.callf(SimWorld.Convoy, "disband", [w, cid], null)
+		t.conv = -1
+	var dir := _threat_dir(w, t, site)
+	var side := dir.orthogonal()
+	var k := 0
+	for aid in t.apcs:
+		var a = w.entities.get(int(aid))
+		if a != null:
+			SimWorld.Movement.order_move(w, a, _post(w, site + side * (2.2 if k == 0 else -2.2) - dir * 0.8))
+		k += 1
+	var j := 0
+	for tt in _teams(w, int(t.fid), t.get("esc", [])):
+		for aid in tt.apcs:
+			var a = w.entities.get(int(aid))
+			if a == null:
+				continue
+			var ang: float = [0.0, 70.0, -70.0, 140.0, -140.0][j % 5]
+			SimWorld.Movement.order_move(w, a, _post(w, site + dir.rotated(deg_to_rad(ang)) * 7.5))
+			j += 1
+
+
+## Deployment drill, on foot: scanner technicians, EW specialists and deployment specialists go to the arming point
+## under the dome; the leader, radio man and medic-engineers just behind it; the security gunners spread into a
+## perimeter ring (an arc of 250 degrees centred on the threat). System moves carry order.sq = "cn".
+static func _take_posts(w: SimWorld, t: Dictionary, site: Vector2) -> void:
+	var dir := _threat_dir(w, t, site)
+	var inner := []
+	var guns := []
+	var back := []
+	for id in t.members:
+		var u = w.entities.get(int(id))
+		if u == null or bool(u.get("cn_hero", false)):
+			continue
+		match role_of(u):
+			"scanner", "ew", "deploy":
+				inner.append(u)
+			"gunner":
+				guns.append(u)
+			_:
+				back.append(u)
+	for i in inner.size():
+		var p := site + Vector2.RIGHT.rotated(TAU * float(i) / float(maxi(inner.size(), 1))) * (0.9 + 0.5 * float(i % 2))
+		SimWorld.Movement.order_move(w, inner[i], _post(w, p))
+		inner[i].order.sq = "cn"
+	for i in guns.size():
+		var f := (float(i) + 0.5) / float(maxi(guns.size(), 1)) - 0.5
+		SimWorld.Movement.order_move(w, guns[i], _post(w, site + dir.rotated(f * deg_to_rad(250.0)) * 5.2))
+		guns[i].order.sq = "cn"
+	for i in back.size():
+		var a := deg_to_rad(-40.0 + 80.0 * float(i) / float(maxi(back.size() - 1, 1)))
+		SimWorld.Movement.order_move(w, back[i], _post(w, site - dir.rotated(a) * 2.4))
+		back[i].order.sq = "cn"
+
+
 static func start_deploy(w: SimWorld, t: Dictionary, site: Vector2, kind: String) -> void:
 	t.dep = {"site": site, "kind": kind, "phase": "scan", "prog": 0, "stalled": "", "hero": -1, "hero_at": -1,
 		"t0": w.tick, "dis": false}
+	_deploy_posts(w, t, site)
 	w.emit("CnDeployStarted", {"team": int(t.id), "owner": int(t.fid), "site": site, "kind": kind})
 
 
@@ -383,10 +459,14 @@ static func _tick_deploy(w: SimWorld, t: Dictionary, every: int) -> void:
 			_detonate(w, t, true)
 		return
 	if not bool(d.dis):
-		var cid := int(t.conv)
-		var ready := cid < 0 or bool(Apc7.callf(SimWorld.Convoy, "perimeter_ready", [w, cid], true))
-		if ready or w.tick - int(d.t0) > ticks(8.0):
+		var ready := true   # dismount once both strike APCs are parked at the site (or after rules.deploy.park_s)
+		for aid in t.apcs:
+			var a = w.entities.get(int(aid))
+			if a != null and (bool(a.get("moving", false)) or Vector2(a.pos).distance_to(site) > 4.0):
+				ready = false
+		if ready or w.tick - int(d.t0) > ticks(float(D.get("park_s", 25))):
 			dismount(w, t)
+			_take_posts(w, t, site)
 			d.dis = true
 		return
 	if (t.hold as Array).is_empty() and not on_foot_near(w, t, "medic", site, r).is_empty():
@@ -479,8 +559,7 @@ static func _detonate(w: SimWorld, t: Dictionary, hero: bool) -> void:
 	t.dep = null
 	t.xp = int(t.xp) + 1
 	_pack_hold(w, t)
-	if not hero:
-		remount(w, t)
+	remount(w, t)   # after a hero blast the survivors board too (they withdrew during the window)
 
 
 ## Index of the nearest live doomsday core (CREEP7 Cores.list) within r of site, or -1.
@@ -523,7 +602,25 @@ static func hero_reason(w: SimWorld, t: Dictionary, uid: int) -> String:
 	return ""
 
 
-## One operator stays and arms by hand: instant arming, the rest withdraw to the APCs, then it goes off.
+## Hero window: everyone else leaves the blast radius by the shortest way (straight out from the site, to
+## blast_radius + 2.5 tiles); APCs parked inside it drive out too. They remount after the blast.
+static func _withdraw(w: SimWorld, t: Dictionary, hid: int, site: Vector2) -> void:
+	var br := float(R().get("hero", {}).get("blast_radius", 3.5))
+	var back := -_threat_dir(w, t, site)
+	for id in t.apcs + t.members:
+		var u = w.entities.get(int(id))
+		if u == null or int(id) == hid:
+			continue
+		var off := Vector2(u.pos) - site
+		var need := br + (3.0 if u.has("a7") else 2.5)
+		if off.length() >= need:
+			continue
+		var out := back if off.length() < 0.2 else off.normalized()
+		SimWorld.Movement.order_move(w, u, _post(w, site + out * need))
+		u.order.sq = "cn"
+
+
+## One operator stays and arms by hand: instant arming, the rest withdraw out of the blast, then it goes off.
 static func start_hero(w: SimWorld, t: Dictionary, uid: int) -> void:
 	var hid := hero_pick(w, t, uid)
 	var d: Dictionary = t.dep
@@ -543,7 +640,7 @@ static func start_hero(w: SimWorld, t: Dictionary, uid: int) -> void:
 	if not v.has(hid):
 		v[hid] = {}
 	v[hid].hero = true
-	remount(w, t, hid)
+	_withdraw(w, t, hid, d.site)
 	w.emit("CnHeroDetonation", {"team": int(t.id), "owner": int(t.fid), "id": hid, "call_sign": String(h.get("call_sign", "")),
 		"site": d.site, "at": int(d.hero_at)})
 
@@ -994,6 +1091,11 @@ static func _has_lab(w: SimWorld, fid: int) -> bool:
 ## One order moves everything: SQUAD7's motorcade convoy (strike APCs = core, tactical APCs and on-foot
 ## members = escorts / moving cover); without the Convoy API each APC drives on its own.
 static func move_team(w: SimWorld, t: Dictionary, target: Vector2, escort_teams: Array = []) -> void:
+	var esc := []   # remembered so the deployment drill can post the escorts at the site
+	for tt in _teams(w, int(t.fid), escort_teams):
+		esc.append(int(tt.id))
+	if not esc.is_empty() or not t.has("esc"):
+		t.esc = esc
 	var ids := []
 	var core := []
 	for tt in [t] + _teams(w, int(t.fid), escort_teams):

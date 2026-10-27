@@ -16,6 +16,13 @@ const DEPTH := 18      # tiles per side along x
 const GAP := 10        # tiles between the two fronts
 const HEIGHT := 30     # tiles along y
 var g2 := false
+## G7 (SCALE7): --map=<id> runs the scenario on that map (lp_test512 / lp_test768 / valley_conquest_l ...);
+## --spread places each side as 20 groups spread over its half of the map (each group attack-moves 40 tiles
+## toward the enemy) instead of one fight; --ticks-warm=<n> untimed ticks first (nav build, first paths).
+var map_id := ""
+var spread := false
+var warm := 0
+var breakdown := false   # G7 (SCALE7) --breakdown: per-system ms (bench-local copy of SimWorld.step) + slowest ticks
 const MIX := [["mbt", 0.10], ["ifv", 0.15], ["at_gunner", 0.15], ["rifleman", 0.60]]
 
 
@@ -39,6 +46,14 @@ func _init() -> void:
 			write = false
 		elif a == "--g2":
 			g2 = true
+		elif a.begins_with("--map="):
+			map_id = a.substr(6)
+		elif a == "--spread":
+			spread = true
+		elif a == "--breakdown":
+			breakdown = true
+		elif a.begins_with("--ticks-warm="):
+			warm = int(a.substr(13))
 	var rows := []
 	for n in sizes:
 		rows.append(_run_one(int(n), ticks))
@@ -46,7 +61,8 @@ func _init() -> void:
 	print(report)
 	if write:
 		var date := Time.get_date_string_from_system()
-		var path := ProjectSettings.globalize_path("res://perf/BENCH_%s%s.md" % ["G2_" if g2 else "", date])
+		var tag := ("G2_" if g2 else "") + ((map_id + "_") if map_id != "" else "") + ("spread_" if spread else "")
+		var path := ProjectSettings.globalize_path("res://perf/BENCH_%s%s.md" % [tag, date])
 		DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 		var f := FileAccess.open(path, FileAccess.WRITE)
 		if f == null:
@@ -76,8 +92,15 @@ func _find_window(w: SimWorld) -> Dictionary:
 				blocked[Vector2i(e.cell) + Vector2i(dx, dy)] = true
 	var best := {"x0": 1, "y0": 1, "score": -1}
 	var max_x0 := maxi(1, int(w.map.w) / 2 - width)
-	for x0 in range(1, max_x0 + 1):
-		for y0 in range(1, int(w.map.h) - HEIGHT - 1):
+	var min_x0 := 1
+	var y_lo := 1
+	var y_hi := int(w.map.h) - HEIGHT - 1
+	if int(w.map.w) > 256:   # G7 (SCALE7): big maps search a band west of centre (full scan is minutes)
+		min_x0 = maxi(1, max_x0 - 48)
+		y_lo = maxi(1, int(w.map.h) / 2 - 120)
+		y_hi = mini(y_hi, int(w.map.h) / 2 + 120)
+	for x0 in range(min_x0, max_x0 + 1):
+		for y0 in range(y_lo, y_hi):
 			var score := 0
 			for y in range(y0, y0 + HEIGHT, 2):
 				for x in range(x0, x0 + width, 2):
@@ -123,6 +146,8 @@ func _slots(w: SimWorld, win: Dictionary, side: int, n_vehicles: int, n_total: i
 
 func _run_one(n_total: int, ticks: int) -> Dictionary:
 	var c := SimWorld.default_config()
+	if map_id != "":
+		c.map = map_id
 	c.victory = "endless"
 	c.sides[0].ai = false
 	c.sides[1].ai = false
@@ -131,6 +156,8 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 	for fid in [0, 1]:
 		for e in w.units_of(fid):
 			w.destroy(int(e.id), "bench_clear")
+	if spread:
+		return _run_spread(w, n_total, ticks)
 	var win := _find_window(w)
 	if g2:
 		_forest_patches(w, win)
@@ -178,26 +205,143 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 	w.submit({"type": "attack_move", "issuer": 1, "unit_ids": ids[1], "target": tgt1})
 	var start_units := [w.units_of(0).size(), w.units_of(1).size()]
 	var start_entities := w.entities.size()
-	var times := PackedFloat64Array()
-	times.resize(ticks)
-	var t_total0 := Time.get_ticks_usec()
-	for i in ticks:
-		var t0 := Time.get_ticks_usec()
-		w.step()
-		times[i] = float(Time.get_ticks_usec() - t0) / 1000.0
-	var wall := float(Time.get_ticks_usec() - t_total0) / 1000.0
+	var tm := _time_steps(w, ticks)
+	var times: PackedFloat64Array = tm.times
+	var wall: float = tm.wall
 	var sorted := times.duplicate()
 	sorted.sort()
 	var sum := 0.0
 	for t in times:
 		sum += t
 	return {
+		"map": String(w.map.get("id", "?")), "mem_mb": tm.mem_mb,
 		"n": n_total, "placed": placed, "start_units": start_units, "start_entities": start_entities,
 		"end_entities": w.entities.size(),
 		"avg": sum / float(ticks), "p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1],
 		"survivors": [w.units_of(0).size(), w.units_of(1).size()],
 		"wall_ms": wall, "window": "x0=%d y0=%d open=%d/%d" % [win.x0, win.y0, win.score, (2 * DEPTH + GAP + 1) / 2 * (HEIGHT / 2)],
 		"stopped": w.match_state.ended, "extras": extras,
+	}
+
+
+## Times `ticks` steps after `warm` untimed ones: {times, wall, mem_mb (static memory after the run)}.
+func _time_steps(w: SimWorld, ticks: int) -> Dictionary:
+	for i in warm:
+		w.step()
+	var times := PackedFloat64Array()
+	times.resize(ticks)
+	var t_total0 := Time.get_ticks_usec()
+	var acc := {}
+	var per := []
+	for i in ticks:
+		var t0 := Time.get_ticks_usec()
+		if breakdown:
+			var one := {}
+			_step_timed(w, one)
+			per.append(one)
+			for k in one:
+				acc[k] = float(acc.get(k, 0.0)) + float(one[k])
+		else:
+			w.step()
+		times[i] = float(Time.get_ticks_usec() - t0) / 1000.0
+	if breakdown:
+		var keys := acc.keys()
+		keys.sort_custom(func(x, y): return float(acc[x]) > float(acc[y]))
+		var parts := []
+		for k in keys.slice(0, 12):
+			parts.append("%s %.2f" % [k, float(acc[k]) / float(ticks)])
+		print("BREAKDOWN avg ms: ", ", ".join(parts))
+		var order := range(ticks)
+		order.sort_custom(func(x, y): return times[x] > times[y])
+		for r in mini(8, ticks):
+			var i: int = order[r]
+			var sp := []
+			for k in per[i]:
+				if float(per[i][k]) >= 2.0:
+					sp.append("%s %.1f" % [k, float(per[i][k])])
+			print("SLOW tick+%d %.1f ms: %s" % [i, times[i], ", ".join(sp)])
+	return {"times": times, "wall": float(Time.get_ticks_usec() - t_total0) / 1000.0,
+		"mem_mb": float(OS.get_static_memory_usage()) / 1048576.0}
+
+
+## Bench-local copy of SimWorld.step() timing each system (as tools/scale_bench.gd; keep in sync with world.gd).
+## "cmds" = applying due commands (path requests start there), "rest" = AI / commanders / log.
+func _step_timed(w: SimWorld, acc: Dictionary) -> void:
+	if w.match_state.ended:
+		w.events = []
+		return
+	w.tick += 1
+	w.events = []
+	var t0 := Time.get_ticks_usec()
+	w._apply_due_commands()
+	acc["cmds"] = float(Time.get_ticks_usec() - t0) / 1000.0
+	for sys in SimWorld.SYSTEM_ORDER:
+		t0 = Time.get_ticks_usec()
+		sys.tick(w)
+		acc[String(sys.resource_path.get_file().get_basename())] = float(Time.get_ticks_usec() - t0) / 1000.0
+	t0 = Time.get_ticks_usec()
+	SimWorld.Ops.prune(w)
+	for ev in w.events:
+		w.event_log.append(ev)
+	if w.event_log.size() > SimWorld.EVENT_LOG_MAX:
+		w.event_log = w.event_log.slice(w.event_log.size() - SimWorld.EVENT_LOG_MAX)
+	acc["rest"] = float(Time.get_ticks_usec() - t0) / 1000.0
+
+
+## G7 (SCALE7) --spread: each side = 20 groups on open ground spread over its own half (north / south,
+## seeded positions), each group attack-moves 40 tiles toward the map's horizontal centre line.
+func _run_spread(w: SimWorld, n_total: int, ticks: int) -> Dictionary:
+	var rng := SimRng.new(4242)
+	var per_side := n_total / 2
+	var groups := 20
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var placed := [0, 0]
+	for side in [0, 1]:
+		var made := 0
+		for g in groups:
+			var cnt := per_side / groups + (1 if g < per_side % groups else 0)
+			var ctr := Vector2i(-1, -1)
+			for tries in 200:
+				var x := rng.randi_range(12, mw - 13)
+				var y := rng.randi_range(12, mh / 2 - 24) if side == 0 else rng.randi_range(mh / 2 + 24, mh - 13)
+				if _good_cell(w, x, y):
+					ctr = Vector2i(x, y)
+					break
+			if ctr.x < 0:
+				continue
+			var ids := []
+			var r := 0
+			while ids.size() < cnt and r < 14:
+				for dy in range(-r, r + 1):
+					for dx in range(-r, r + 1):
+						if maxi(absi(dx), absi(dy)) != r or ids.size() >= cnt:
+							continue
+						var q := ctr + Vector2i(dx, dy)
+						if _good_cell(w, q.x, q.y):
+							var def: String = String(MIX[(made + ids.size()) % MIX.size()][0]) if (made + ids.size()) % 5 == 0 else "rifleman"
+							ids.append(w.spawn_unit(def, side, Vector2(q) + Vector2(0.5, 0.5)))
+				r += 1
+			made += ids.size()
+			var dir := 1.0 if side == 0 else -1.0
+			w.submit({"type": "attack_move", "issuer": side, "unit_ids": ids, "target": Vector2(ctr) + Vector2(0.5, 40.5 * dir)})
+		placed[side] = made
+	var start_entities := w.entities.size()
+	var tm := _time_steps(w, ticks)
+	var times: PackedFloat64Array = tm.times
+	var sorted := times.duplicate()
+	sorted.sort()
+	var sum := 0.0
+	for t in times:
+		sum += t
+	return {
+		"map": String(w.map.get("id", "?")), "mem_mb": tm.mem_mb,
+		"n": n_total, "placed": placed, "start_units": placed, "start_entities": start_entities,
+		"end_entities": w.entities.size(),
+		"avg": sum / float(ticks), "p95": sorted[int(float(ticks) * 0.95)], "max": sorted[ticks - 1],
+		"survivors": [w.units_of(0).size(), w.units_of(1).size()],
+		"wall_ms": tm.wall, "window": "spread: %d groups per side over each half" % groups,
+		"stopped": w.match_state.ended, "extras": {"officers": 0, "trucks": 0},
 	}
 
 
@@ -286,12 +430,13 @@ func _report(rows: Array, ticks: int) -> String:
 		lines.append("- Variant: **G2** (`--g2`): + one officer per 16 units per side running secure_point at the centre, 2x2 forest patches in the gap, one logistics truck per 32 units per side; ammo/fuel/suppression/morale/components all live. Compare with the G1 baseline 3.2 / 5.2 / 11.9 / 75.3 ms avg (64/128/256/512).")
 	lines.append("- Scenario: N units split evenly, mix 10%% MBT / 15%% IFV / 15%% AT gunner / 60%% rifleman, open ground west of centre, attack_move toward each other, %d ticks (%.0f s of game time), both sides non-AI, endless victory." % [ticks, ticks / 20.0])
 	lines.append("")
-	lines.append("| N (total) | placed (A/B) | entities start | avg ms/tick | p95 ms | max ms | survivors A/B after %d ticks | entities end | wall ms | headroom vs 50 ms budget (p95) |" % ticks)
-	lines.append("|---|---|---|---|---|---|---|---|---|---|")
+	lines.append("- Map: %s%s; untimed warm-up ticks: %d; CPU load / godot procs at end: %s" % [map_id if map_id != "" else "river_crossing_s (default)", " (--spread)" if spread else "", warm, _load_str()])
+	lines.append("| N (total) | map | placed (A/B) | entities start | avg ms/tick | p95 ms | max ms | survivors A/B after %d ticks | entities end | wall ms | headroom vs 50 ms budget (p95) | static mem MB |" % ticks)
+	lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
 	for r in rows:
-		lines.append("| %d | %d/%d | %d | %.3f | %.3f | %.3f | %d/%d | %d | %.0f | %.1fx |" % [
-			r.n, r.placed[0], r.placed[1], r.start_entities, r.avg, r.p95, r.max,
-			r.survivors[0], r.survivors[1], r.end_entities, r.wall_ms, 50.0 / maxf(r.p95, 0.001)])
+		lines.append("| %d | %s | %d/%d | %d | %.3f | %.3f | %.3f | %d/%d | %d | %.0f | %.1fx | %.0f |" % [
+			r.n, r.get("map", "?"), r.placed[0], r.placed[1], r.start_entities, r.avg, r.p95, r.max,
+			r.survivors[0], r.survivors[1], r.end_entities, r.wall_ms, 50.0 / maxf(r.p95, 0.001), float(r.get("mem_mb", 0.0))])
 	lines.append("")
 	for r in rows:
 		lines.append("- N=%d window: %s%s" % [r.n, r.window, (", extras: %d officers, %d trucks" % [r.extras.officers, r.extras.trucks]) if g2 else ""])
@@ -316,6 +461,11 @@ func _report(rows: Array, ticks: int) -> String:
 const FPS_CASES := {
 	"2k": {"map": "river_crossing_s", "units": 2000, "zoom": 1.0, "gate": 60.0, "what": "2k on screen"},
 	"10k": {"map": "valley_conquest_l", "units": 10000, "zoom": 0.15, "gate": 30.0, "what": "10k zoomed out"},
+	# G7 (SCALE7): the same gates on the Last Protocol scale test maps (--fps-cases=2k512,10k512,2k768,10k768)
+	"2k512": {"map": "lp_test512", "units": 2000, "zoom": 1.0, "gate": 60.0, "what": "2k on screen (512 map)"},
+	"10k512": {"map": "lp_test512", "units": 10000, "zoom": 0.15, "gate": 30.0, "what": "10k zoomed out (512 map)"},
+	"2k768": {"map": "lp_test768", "units": 2000, "zoom": 1.0, "gate": 60.0, "what": "2k on screen (768 map)"},
+	"10k768": {"map": "lp_test768", "units": 10000, "zoom": 0.15, "gate": 30.0, "what": "10k zoomed out (768 map)"},
 }
 
 

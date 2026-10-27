@@ -181,7 +181,10 @@ func _exit_tree() -> void:
 
 func _draw() -> void:
 	# dark backdrop around the map diamond
-	draw_rect(Rect2(Vector2(-16000, -8000), Vector2(32000, 24000)), Color(0.03, 0.035, 0.04))
+	# G7 (SCALE7): sized from the map (the old fixed +-16000 px rect ended inside a 512 map's diamond)
+	var bw := maxf(16000.0, float(maxi(_w, _h)) * 32.0 + 4000.0)
+	var bh := maxf(16000.0, float(_w + _h) * 16.0 + 4000.0)
+	draw_rect(Rect2(Vector2(-bw, -8000), Vector2(2.0 * bw, bh + 8000.0)), Color(0.03, 0.035, 0.04))
 	if _show_base and _base_tex != null:
 		draw_set_transform_matrix(Transform2D(Vector2(32, 16), Vector2(-32, 16), Vector2.ZERO))
 		draw_texture_rect(_base_tex, Rect2(Vector2.ZERO, Vector2(_base_img.get_size())), false)

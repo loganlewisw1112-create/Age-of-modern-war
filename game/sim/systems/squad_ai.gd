@@ -39,7 +39,7 @@ const LOW_AMMO := 0.2
 const SMART_CD := 60              # ticks between two smart repositions of one unit
 const SUPPORT_R := 14.0           # idle squad/platoon mates within this move up to an engaged mate
 const PACE_AHEAD := 1.5           # paced group: a member this far ahead of the slowest waits
-const STANCES := ["aggressive", "defensive", "hold_fire", "hold_position"]
+const STANCES := ["aggressive", "defensive", "hold_fire", "hold_position", "ambush"]  # G7 SQUAD7: + ambush
 
 
 # ================================================================ public API (OFF61 / CHAIN61 / UI)
@@ -177,7 +177,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		"set_stance":
 			var s := String(cmd.get("stance", ""))
 			if not STANCES.has(s) and s != "default":
-				return "Stance must be aggressive, defensive, hold fire, hold position or default."
+				return "Stance must be aggressive, defensive, hold fire, hold position, ambush or default."
 			if (cmd.get("unit_ids", []) as Array).is_empty():
 				return "Select units first."
 			return ""
@@ -189,6 +189,17 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				if e != null and (int(e.get("squad", -1)) >= 0 or int(e.get("platoon", -1)) >= 0):
 					return ""
 			return "Only squads and platoons can regroup."
+		"set_technique":
+			if not TECH_NAMES.has(String(cmd.get("technique", ""))):
+				return "Technique must be auto, traveling, traveling overwatch or bounding overwatch."
+			return "" if not (cmd.get("unit_ids", []) as Array).is_empty() else "Select units first."
+		"fall_back", "suppress_area":
+			var t = cmd.get("target")
+			if typeof(t) == TYPE_VECTOR2I:
+				t = Vector2(t) + Movement.CENTER
+			if typeof(t) != TYPE_VECTOR2 or not w.in_bounds(w.cell_of(t)):
+				return "Pick a point on the map."
+			return "" if not (cmd.get("unit_ids", []) as Array).is_empty() else "Select units first."
 	return "Unknown order."
 
 
@@ -204,6 +215,30 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			set_stance_internal(w, ids, String(cmd.stance))
 		"regroup":
 			_regroup(w, ids, true)
+			on_direct_order(w, {"issuer": cmd.issuer, "unit_ids": ids})
+		"set_technique":
+			var ti := TECH_NAMES.find(String(cmd.technique)) - 1
+			for id in ids:
+				if ti < 0:
+					w.entities[id].erase("f7_tech_o")
+				else:
+					w.entities[id].f7_tech_o = ti
+		"fall_back", "suppress_area":
+			var t = cmd.target
+			if typeof(t) == TYPE_VECTOR2I:
+				t = Vector2(t) + Movement.CENTER
+			var us := []
+			for id in ids:
+				us.append(w.entities[id])
+			if String(cmd.type) == "fall_back":
+				fall_back(w, us, _clamp(w, t))
+			else:
+				for e in us:
+					e.f7_sup = [_clamp(w, t), w.tick + 200]
+					if String(e.order.get("type", "")) != "hold":
+						e.order = {"type": "hold"}
+						e.target = -1
+						Movement.stop_path(e)
 			on_direct_order(w, {"issuer": cmd.issuer, "unit_ids": ids})
 
 
@@ -394,6 +429,7 @@ static func tick(w: SimWorld) -> void:
 	if w.entities.is_empty():
 		return
 	var c := _cache(w)
+	_g7_grid(w, c)
 	var k := posmod(-w.tick, EVERY)
 	var b: Array = c.buckets[k]
 	var dead := false
@@ -439,6 +475,11 @@ static func _unit_think(w: SimWorld, c: Dictionary, e: Dictionary) -> void:
 
 static func _stance_think(w: SimWorld, e: Dictionary, st: String, ot: String) -> void:
 	match st:
+		"ambush":   # G7: hold fire until the squad's kill zone fills (_g7_ambush sets f7_amb), then fire freely
+			if not e.has("f7_amb") and (ot == "idle" or ot == "hold"):
+				e.order = {"type": "hold_fire"}
+				e.target = -1
+				Movement.stop_path(e)
 		"hold_position":
 			if ot == "idle" or ot == "hold_fire":
 				e.order = {"type": "hold"}
@@ -514,6 +555,7 @@ static func _squad_think(w: SimWorld, c: Dictionary, sq: int, lst: Array) -> voi
 			var a = _valid_enemy(w, e, int(e.get("last_attacker", -1)))
 			if a != null and not pool.has(int(a.id)):
 				pool[int(a.id)] = 0
+	_g7_squad(w, mem, le, pool.is_empty())
 	if pool.is_empty():
 		_cohesion(w, mem, le)
 		return
@@ -571,6 +613,7 @@ static func _squad_think(w: SimWorld, c: Dictionary, sq: int, lst: Array) -> voi
 			var pp: Vector2 = p.pos
 			if pp.distance_to(le.pos) <= SUPPORT_R:
 				_ai_move(w, p, Vector2(le.pos).lerp(pp, 0.3), "attack_move", "support")
+	_g7_grenade(w, mem, lst)
 
 
 ## Quiet squad: stragglers more than LEASH tiles from the leader catch up (only units nobody else is driving).
@@ -793,3 +836,469 @@ static func _take_cover(w: SimWorld, e: Dictionary, t: Dictionary, rng: float) -
 				best = cell
 	if best.x >= 0:
 		_reposition(w, e, Vector2(best) + Movement.CENTER, "cover")
+
+
+# ================================================================ G7 (SQUAD7): tactics, technique, gait, halts
+## Per squad on its think: movement technique by threat (traveling / traveling overwatch / bounding overwatch, or the
+## player's set_technique override e.f7_tech_o), gait by threat distance + route cover + suppression (e.gait, absent =
+## walk), bounding fire teams A/B (leader with A; the overwatch team halts with its order kept, e.f7_bw), the 360
+## degree security ring (infantry) / herringbone then coil (vehicles) after a halt, grenade decisions, suppressive
+## fire on last-known positions, ambush trigger and break contact. Fields (saved, hashed; only where used): f7_tech,
+## f7_tech_o, gait, f7_bw, f7_bt / f7_bp (leader: moving team, bound start), f7_ht (leader: halt seen since tick),
+## f7_ring (leader: halt layout done 1 ring/herringbone, 2 coil), f7_gr (last grenade tick), f7_amb (ambush fired tick),
+## f7_sup [pos, until] (suppress_area), f7_hd / f7_sec (sector), f7_hb (vehicle heading at a halt).
+const F7 = preload("res://sim/systems/formations7.gd")
+const Morale = preload("res://sim/systems/morale.gd")
+const L = preload("res://sim/ai/ai_g6_lib.gd")
+const TECH_NAMES := ["auto", "traveling", "traveling_overwatch", "bounding_overwatch"]
+static var _shrapnel: Script = null
+## A/B switch for tests and the sim-cost bench (never set in a match): true skips every G7 squad behaviour.
+static var g7_off := false
+
+
+static func _set_or_erase_i(e: Dictionary, k: String, v: int) -> void:
+	if v == 0:
+		e.erase(k)
+	elif int(e.get(k, 0)) != v:
+		e[k] = v
+
+
+## Sector code of a heading (deg) relative to the formation facing fwd.
+static func _sec_of(hd: int, fwd: Vector2) -> int:
+	var d := angle_difference(fwd.angle(), deg_to_rad(float(hd)))
+	if absf(d) < PI * 0.25:
+		return F7.SEC_FRONT
+	if absf(d) > PI * 0.75:
+		return F7.SEC_REAR
+	return F7.SEC_RIGHT if d > 0.0 else F7.SEC_LEFT
+
+
+## Threat grid upkeep, called from tick(): rebuilt on tick % grid_every == 0 when any squad or convoy exists.
+static func _g7_grid(w: SimWorld, c: Dictionary) -> void:
+	if g7_off or w.tick % int(F7.cfg().grid_every) != 0:
+		return
+	var cv = w.sys_state.get("convoy")
+	if (c.squads as Dictionary).is_empty() and (cv == null or (cv.list as Array).is_empty()):
+		return
+	var units := []
+	for e in SimIndex.of(w, "unit"):
+		if SimIndex.alive(w, e):
+			units.append(e)
+	F7.build_grid(w, units)
+
+
+## Team split: A = leader + even-indexed members, B = odd (ascending ids, the leader excluded from the count).
+static func _teams(mem: Array, le: Dictionary) -> Array:
+	var a := [le]
+	var b := []
+	var i := 0
+	for e in mem:
+		if int(e.id) == int(le.id):
+			continue
+		if i % 2 == 0:
+			a.append(e)
+		else:
+			b.append(e)
+		i += 1
+	return [a, b]
+
+
+static func _hold_team(_w: SimWorld, team: Array) -> void:
+	for e in team:
+		var ot := String(e.order.get("type", ""))
+		if (ot == "move" or ot == "attack_move") and bool(e.moving) and not e.has("f7_bw") and not e.has("sq_wait"):
+			Movement.stop_path(e)
+			e.f7_bw = ot
+			if ot == "attack_move":
+				e.order = {"type": "move", "target": e.order.target, "sq": "overwatch"}
+
+
+static func _release_team(w: SimWorld, team: Array) -> void:
+	for e in team:
+		if not e.has("f7_bw"):
+			continue
+		var t0 := String(e.f7_bw)
+		e.erase("f7_bw")
+		if typeof(e.order.get("target")) != TYPE_VECTOR2:
+			continue
+		if t0 == "attack_move":
+			e.order = {"type": "attack_move", "target": e.order.target, "engaged": false}
+		if not Movement.order_path(w, e, e.order.target):
+			e.order = {"type": "idle"}
+
+
+static func _centroid(team: Array) -> Vector2:
+	var s := Vector2.ZERO
+	for e in team:
+		s += Vector2(e.pos)
+	return s / float(maxi(team.size(), 1))
+
+
+## Called by _squad_think with the live members and the leader; quiet = no enemy in the squad's pool.
+static func _g7_squad(w: SimWorld, mem: Array, le: Dictionary, quiet: bool) -> void:
+	if g7_off:
+		return
+	var lp := Vector2(le.pos)
+	var thr := F7.threat_dist(w, int(le.owner), lp)
+	var hit := false
+	var supp := 0.0
+	for e in mem:
+		var t = w.entities.get(int(e.target))
+		if t != null:
+			thr = minf(thr, lp.distance_to(t.pos))
+			le.f7_lk = [Vector2(t.pos), w.tick, int(t.id)]
+		if w.tick - int(e.get("last_hit_tick", -100000)) <= HIT_RECENT:
+			hit = true
+		supp += float(e.get("supp", 0.0))
+	supp /= float(mem.size())
+	var tech := F7.technique_for(thr, hit)
+	if le.has("f7_tech_o"):
+		tech = int(le.f7_tech_o)
+	var goal = le.order.get("target")
+	var moving := typeof(goal) == TYPE_VECTOR2 and (bool(le.moving) or le.has("f7_bw")) and String(le.order.get("sq", "")) != "halt"
+	var gait := 0
+	if moving or not quiet:
+		gait = F7.gait_for(thr, supp, F7.open_route(w, lp, goal if typeof(goal) == TYPE_VECTOR2 else lp))
+	for e in mem:
+		_set_or_erase_i(e, "f7_tech", tech)
+		_set_or_erase_i(e, "gait", 3 if bool(e.get("broken", false)) else gait)
+	if moving:
+		_f7_keep(w, mem)
+	_g7_bounding(w, mem, le, tech, thr, moving)
+	if quiet:
+		_g7_halt(w, mem, le, moving)
+	else:
+		le.erase("f7_ht")
+	_g7_suppress(w, mem)
+	if stance_of(le) == "ambush":
+		_g7_ambush(w, mem, le)
+
+
+## Bounding overwatch: one team moves while the other halts and covers, swapping every bound (shorter as contact
+## nears). Traveling overwatch: team B trails team A by 4 tiles. Only on moves this side's AI issued, or on any move
+## once the player picked the technique (set_technique): a fresh player move is never paused by the automatic choice.
+static func _g7_bounding(w: SimWorld, mem: Array, le: Dictionary, tech: int, thr: float, moving: bool) -> void:
+	var tm := _teams(mem, le)
+	var allowed := le.has("f7_tech_o") or not player_fresh(w, le)
+	if tech == 0 or not moving or not allowed or (tm[1] as Array).is_empty():
+		_release_team(w, tm[0])
+		_release_team(w, tm[1])
+		le.erase("f7_bt")
+		le.erase("f7_bp")
+		return
+	if tech == 1:
+		_release_team(w, tm[0])
+		if _centroid(tm[0]).distance_to(_centroid(tm[1])) < 4.0 and bool(le.moving):
+			_hold_team(w, tm[1])
+		else:
+			_release_team(w, tm[1])
+		return
+	var bt := int(le.get("f7_bt", 0))
+	var mover: Array = tm[bt]
+	var cover: Array = tm[1 - bt]
+	if not le.has("f7_bp"):
+		le.f7_bp = _centroid(mover)
+		le.f7_bt = bt
+	var bound := maxf(2.0, float(F7.cfg().bound_dist) * clampf(thr / float(F7.cfg().tech_expected), 0.4, 1.0))
+	var done := true
+	for e in mover:
+		if bool(e.moving):
+			done = false
+	if _centroid(mover).distance_to(le.f7_bp) >= bound or done:
+		le.f7_bt = 1 - bt
+		le.f7_bp = _centroid(cover)
+		_hold_team(w, mover)
+		_release_team(w, cover)
+	else:
+		_hold_team(w, cover)
+		_release_team(w, mover)
+
+
+## Halt drill once the squad has stood idle for halt_ticks: infantry 360 degree security ring, vehicles herringbone
+## (then a coil after coil_ticks). Members under a fresh player order or on hold keep their spot.
+static func _g7_halt(w: SimWorld, mem: Array, le: Dictionary, moving: bool) -> void:
+	for e in mem:
+		if bool(e.moving) or String(e.order.get("type", "idle")) != "idle":
+			if String(e.order.get("sq", "")) == "halt":
+				return   # still walking to its halt post
+			le.erase("f7_ht")
+			if moving:
+				le.erase("f7_ring")
+				for m in mem:   # the halt is over: no herringbone hull angle on the move (LOOK7 reads f7_hb)
+					m.erase("f7_hb")
+			return
+	if not le.has("f7_ht"):
+		le.f7_ht = w.tick
+		return
+	var idle_for := w.tick - int(le.f7_ht)
+	var cf := F7.cfg()
+	var veh := F7.is_veh(le)
+	var want := 0
+	if idle_for >= int(cf.coil_ticks):
+		want = 2
+	elif idle_for >= int(cf.halt_ticks):
+		want = 1
+	if want <= int(le.get("f7_ring", 0)) or mem.size() < 3:
+		return
+	le.f7_ring = want
+	var fwd := F7.dir_of(int(le.get("f7_f", -90)))
+	var posts := []
+	var perm := []
+	if veh and want == 1:
+		var pts := []
+		for e in mem:
+			pts.append(Vector2(e.pos))
+			perm.append(perm.size())
+		posts = F7.herringbone(pts, fwd)
+	else:
+		posts = F7.coil(mem.size(), _centroid(mem), F7.ring_radius(mem.size(), veh), fwd)
+		var pp := []
+		var roles := []
+		for p in posts:
+			pp.append(p[0])
+			roles.append(F7.ROLE_RIFLE)
+		perm = F7.assign(mem, pp, roles)
+	for j in mem.size():
+		var e: Dictionary = mem[j]
+		if stance_of(e) == "hold_position":
+			continue
+		var post: Array = posts[perm[j]]
+		e.f7_hd = int(post[1])
+		e.f7_sec = _sec_of(int(post[1]), fwd)
+		if veh:
+			e.f7_hb = int(post[1])
+		# a unit the player just placed (its move is finished: everyone is idle here) only turns to its halt
+		# heading in place: the drill never moves it off the player's spot inside the override window
+		if not player_fresh(w, e) and Vector2(e.pos).distance_to(post[0]) > 0.6:
+			_ai_move(w, e, post[0], "move", "halt")
+
+
+## Formation keeping on the march: a long move (A* / flow path) runs every member down the same cell-centre route,
+## so a staggered column folds into one file and a wedge into a snake until the last waypoint. Once per order
+## (e.f7_po = the slot it was done for) each member's remaining interior waypoints are shifted sideways by its
+## lateral offset in the formation (slot minus the slots' centre, across the march), along the local path normal;
+## a shifted point on an impassable cell (or with a blocked midpoint) keeps the original point. A new e.path Array
+## + HotState.touch (the held native mirrors re-read a path only when the Array changes).
+static func _f7_keep(w: SimWorld, mem: Array) -> void:
+	var movers := []
+	var cs := Vector2.ZERO
+	var cp := Vector2.ZERO
+	for e in mem:
+		var od: Dictionary = e.order
+		if not bool(e.moving) or bool(e.get("broken", false)) or od.has("sq") or typeof(od.get("target")) != TYPE_VECTOR2:
+			continue
+		if not (String(od.type) == "move" or String(od.type) == "attack_move"):
+			continue
+		movers.append(e)
+		cs += Vector2(od.target)
+		cp += Vector2(e.pos)
+	if movers.size() < 2:
+		return
+	cs /= float(movers.size())
+	cp /= float(movers.size())
+	if cs.distance_to(cp) < 3.0:
+		return
+	var fwd := (cs - cp).normalized()
+	var side := Vector2(-fwd.y, fwd.x)
+	for e in movers:
+		var slot := Vector2(e.order.target)
+		var po = e.get("f7_po")
+		if po is Array and absf(float(po[0]) - slot.x) < 0.001 and absf(float(po[1]) - slot.y) < 0.001:
+			continue
+		var path: Array = e.path
+		var pi := int(e.get("path_i", 0))
+		if path.size() - pi < 2:
+			continue   # straight-line move (or a queued path): each walks its own line already
+		e.f7_po = [slot.x, slot.y]
+		var lat := clampf((slot - cs).dot(side), -3.0, 3.0)
+		if absf(lat) < 0.2:
+			lat = 0.0   # on the centre line: only the backward first waypoint is dropped
+		var mc := Movement.move_class(e)
+		var here := Vector2(e.pos)
+		var np := path.slice(pi)
+		var changed := false
+		# the A* route starts at the start cell's centre: one behind the soldier would walk him back first (the
+		# column's men fall out of step); drop it when the next waypoint is reachable straight from here
+		if np.size() >= 3 and (Vector2(np[0]) - here).dot(Vector2(np[1]) - here) < 0.0 				and Movement.is_passable(w, Vector2i(floori((here.x + np[1].x) * 0.5), floori((here.y + np[1].y) * 0.5)), mc):
+			np.remove_at(0)
+			changed = true
+		var prev := here
+		for k in np.size() - 1:
+			var p := Vector2(np[k])
+			var d := (Vector2(np[k + 1]) - prev)
+			if d.length_squared() < 0.0001:
+				continue
+			var n := Vector2(-d.y, d.x).normalized()
+			if n.dot(side) < 0.0:
+				n = -n
+			var q := p + n * lat
+			var qc := Vector2i(floori(q.x), floori(q.y))
+			var mid := (q + prev) * 0.5
+			if w.in_bounds(qc) and Movement.is_passable(w, qc, mc) and Movement.is_passable(w, Vector2i(floori(mid.x), floori(mid.y)), mc):
+				np[k] = q
+				changed = true
+			prev = Vector2(np[k])
+		if changed:
+			e.path = np
+			e.path_i = 0
+			Movement.HotState.touch(w, int(e.id))
+
+
+## WOUND7's shrapnel (guarded: a no-op until shrapnel.gd exposes burst).
+static func _shrapnel_script() -> Script:
+	if _shrapnel == null and ResourceLoader.exists("res://sim/systems/shrapnel.gd"):
+		_shrapnel = load("res://sim/systems/shrapnel.gd")
+	return _shrapnel
+
+
+## A soldier throws a grenade at `at` (Shrapnel.burst profile "grenade"). False when shrapnel is not available.
+static func throw_grenade(w: SimWorld, e: Dictionary, at: Vector2) -> bool:
+	var s := _shrapnel_script()
+	if s == null or not L.api(s, "burst"):
+		return false
+	e.f7_gr = w.tick
+	w.emit("GrenadeThrown", {"unit": int(e.id), "pos": at})
+	L.callf(s, "burst", [w, at, "grenade", e], null)
+	return true
+
+
+## Soldiers decide grenade throws: a foot enemy in cover, garrisoned or prone within grenade_range draws one grenade
+## per squad think; a thrower waits grenade_cd ticks between throws.
+static func _g7_grenade(w: SimWorld, mem: Array, lst: Array = []) -> void:
+	if g7_off:
+		return
+	var cf := F7.cfg()
+	var own := []   # every squadmate (broken ones too): nobody throws where a friend would catch fragments
+	for id in lst:
+		var f = w.entities.get(int(id))
+		if f != null:
+			own.append(Vector2(f.pos))
+	for e in mem:
+		if w.tick - int(e.get("f7_gr", -100000)) < int(cf.grenade_cd) or F7.is_veh(e):
+			continue
+		var t = w.entities.get(int(e.target))
+		if t == null or t.kind != "unit" or F7.is_veh(t):
+			continue
+		var d := Vector2(e.pos).distance_to(t.pos)
+		if d > float(cf.grenade_range) or d < 2.0:
+			continue
+		var safe := true
+		for fp in own:
+			if (fp as Vector2).distance_to(t.pos) < 2.5:
+				safe = false
+				break
+		if not safe:
+			continue
+		if Morale.cover_level(w, t) >= 1 or bool(t.get("prone", false)):
+			if throw_grenade(w, e, Vector2(t.pos)):
+				return
+
+
+## Enemies within suppress_r of pos (huge fights: only the last known target, the cheap approximation).
+static func _victims(w: SimWorld, fid: int, pos: Vector2, tid: int) -> Array:
+	var r := float(F7.cfg().suppress_r)
+	var out := []
+	if SimIndex.of(w, "unit").size() > int(F7.cfg().big_full_units):
+		var t = w.entities.get(tid)
+		if t != null and Vector2(t.pos).distance_to(pos) <= r:
+			out.append(t)
+		return out
+	for t in SimIndex.of(w, "unit"):
+		if SimIndex.alive(w, t) and w.is_enemy(fid, int(t.owner)) and Vector2(t.pos).distance_to(pos) <= r:
+			out.append(t)
+	return out
+
+
+## Suppressive fire on an ordered area (e.f7_sup) or on the squad's last-known enemy position (leader f7_lk, 5 s):
+## members in range with no target pin the area (Morale.add_supp per firing member), event SuppressFire for the view.
+static func _g7_suppress(w: SimWorld, mem: Array) -> void:
+	var le: Dictionary = mem[0]
+	for e in mem:
+		if e.has("f7_lk"):
+			le = e
+	var lk = le.get("f7_lk")
+	var shooters := {}
+	for e in mem:
+		var pos = null
+		var sp = e.get("f7_sup")
+		if sp != null:
+			if w.tick > int(sp[1]):
+				e.erase("f7_sup")
+				continue
+			pos = Vector2(sp[0])
+		elif lk != null and int(e.target) < 0 and w.tick - int(lk[1]) <= 100:
+			pos = Vector2(lk[0])
+		if pos == null:
+			continue
+		var s := Combat.stats(e)
+		if String(s.weapon) == "" or Vector2(e.pos).distance_to(pos) > float(s.range):
+			continue
+		var key := Vector2i(int(pos.x * 4.0), int(pos.y * 4.0))
+		if not shooters.has(key):
+			shooters[key] = [pos, 0]
+		shooters[key][1] = int(shooters[key][1]) + 1
+		w.emit("SuppressFire", {"unit": int(e.id), "pos": pos})
+	var keys := shooters.keys()
+	keys.sort()
+	for k in keys:
+		var pos: Vector2 = shooters[k][0]
+		var tid := int(lk[2]) if lk != null else -1
+		for t in _victims(w, int(le.owner), pos, tid):
+			Morale.add_supp(w, t, float(F7.cfg().suppress_pts) * float(shooters[k][1]))
+
+
+## Ambush: hold fire until an enemy enters the kill zone (ambush_kill_frac x weapon range of the squad), then fire
+## for ambush_fire_ticks and break contact (fall back away from the kill zone, bounding).
+static func _g7_ambush(w: SimWorld, mem: Array, le: Dictionary) -> void:
+	var cf := F7.cfg()
+	var cen := _centroid(mem)
+	if le.has("f7_amb"):
+		if w.tick - int(le.f7_amb) < int(cf.ambush_fire_ticks):
+			return
+		var lk = le.get("f7_lk")
+		var ep: Vector2 = Vector2(lk[0]) if lk != null else cen + F7.dir_of(int(le.get("f7_f", -90))) * 5.0
+		var away := (cen - ep).normalized() if cen.distance_to(ep) > 0.1 else Vector2(0, 1)
+		for e in mem:
+			e.erase("f7_amb")
+			_set_stance(w, e, "")
+		fall_back(w, mem, _clamp(w, cen + away * 10.0))
+		return
+	var rng := 0.0
+	for e in mem:
+		rng = maxf(rng, float(Combat.stats(e).range))
+	var kz := rng * float(cf.ambush_kill_frac)
+	for t in SimIndex.of(w, "unit"):
+		if SimIndex.alive(w, t) and w.is_enemy(int(le.owner), int(t.owner)) and Vector2(t.pos).distance_to(cen) <= kz:
+			for e in mem:
+				e.f7_amb = w.tick
+				if String(e.order.get("type", "")) == "hold_fire":
+					e.order = {"type": "idle"}
+			le.f7_lk = [Vector2(t.pos), w.tick, int(t.id)]
+			w.emit("AmbushSprung", {"unit": int(le.id), "pos": Vector2(t.pos)})
+			return
+
+
+## Ordered fall-back: walk backwards facing the enemy and keep firing (order.bk; Combat fires on the move, WOUND7 CR),
+## in the units' formation at the rally point. Broken units are left to Morale (they turn and run).
+static func fall_back(w: SimWorld, units: Array, target: Vector2) -> void:
+	var live := []
+	for e in units:
+		if not bool(e.get("broken", false)) and not _immobile(e) and not e.has("garrisoned_in"):
+			live.append(e)
+	if live.is_empty():
+		return
+	var slots := Movement.formation_slots(w, live, target)
+	for i in live.size():
+		var e: Dictionary = live[i]
+		var goal := _clamp(w, slots[i])
+		var face := Vector2(e.pos) - goal
+		e.erase("f7_bw")
+		e.order = {"type": "move", "target": goal, "sq": "fall_back", "bk": true}
+		if not Movement.order_path(w, e, goal):
+			e.order = {"type": "idle"}
+			continue
+		Combat.note_bk(w, int(e.id))   # WOUND7-2 (board seq 225): fire on the move from the next tick
+		if face.length() > 0.01:
+			e.f7_hd = F7.deg(face)
+			e.f7_sec = F7.SEC_FRONT
+		e.sq_cd = w.tick

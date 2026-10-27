@@ -192,6 +192,18 @@ team leader; if the leader falls, Squad A's second-in-command takes over.
 - **Unhackable:** immune to hacking, takeover, viruses and EMP.
 - **Guns:** two manned .50 cals, front and rear, on rotating shielded mounts; gunners man them while moving and are
   replaced from inside if hit. **No main weapon.**
+- **Pop-out micro rocket launcher (owner amendment 2026-10-26):** every counter-nanite APC (strike and tactical) gets a
+  **pop-out 6-tube micro rocket launcher** on the roof, **top rear right, right behind the gunner pod**, outfitted with
+  **up to 6 different round/canister types**. Its job: let the teams and convoys **put some hurt on heavy Machine walkers
+  over time**; heavy walkers stay very difficult to take down, slightly easier with strong coordination and concentrated
+  firepower. This amends "no main weapon": the launcher is a pop-out secondary, not a turret main gun. Proposed canister
+  types (PROVISIONAL, the owner may change them): tandem anti-armour, EMP, thermite, HE-fragmentation,
+  nanite-disruptor, smoke/obscurant.
+- **Anti-walker pincer (owner addition 2026-10-26):** the counter-nanite teams/convoys take down heavy Machine walkers
+  with "the right heavy strategic hit": one element **rushes the walker head-on** to fix it while others **flank it with
+  heavy rounds** (launcher tandem anti-armour / EMP salvos, limpets, harpoons). Flank and rear hits on a walker fixed
+  frontally do markedly more damage; a straight-on fight stays very hard. The group's AI chooses this pincer on its own
+  against heavy walkers, and the player can trigger it with one order.
 - **Defences:** a shield dome during deployment (recharge timer); active protection; an anti-drone laser or microwave
   emitter; a short-range EMP pulse that also knocks leeches off; side panels that pop open to fire interceptors,
   smoke and Anduril-style interceptor drones (fictional name in game); top-tier armour, chaff, a sealed cabin, a low
@@ -202,7 +214,8 @@ team leader; if the leader falls, Squad A's second-in-command takes over.
 - Roles: leader; designated marksman (nanite-disruptor rounds); 2 hunter-killer assaulters (limpets, net and harpoon
   guns); EMP grenadier; anti-drone specialist (shotgun and jammer); purge and demolitions specialist (thermite and
   thermobaric charges); combat medic.
-- Their APC holds 8, with one remote-operated rotating twin .50; same defences as the strike APC.
+- Their APC holds 8, with one remote-operated rotating twin .50; same defences as the strike APC; plus the same
+  pop-out 6-tube micro rocket launcher (owner amendment 2026-10-26).
 - Job: escort, screen the flanks, clear ahead, hold the perimeter, cover the withdrawal.
 
 ### 6.7 Group movement (built on the section 3 formation system)
@@ -446,6 +459,14 @@ packhunter territory", "Core 2 plating at 60%"). It suggests and never acts; it 
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).
 - **Not wanted:** slow-motion beats, meta-progression between runs, doctrine cards, commander briefing, map-editor
   support for Last Protocol (official map only).
+
+## Look checkpoint decision (owner, 2026-10-26)
+Shown a side-by-side of today's units vs the first G7 samples (`.plan/shots/ARTCN7/compare_today_vs_g7.png`), the owner
+chose **"Rework: bigger, more detailed"**: the first samples' soldiers came out smaller and harder to read than today's,
+and the vehicles were big but flat and blocky. Direction for the rework: soldiers about 1.5x today's on-screen size with
+real kit detail and shading; vehicles, dropships and the facility with proper panel lines, wear and depth; a grounded
+military look closer to Signalborne; memory budgets re-sized so the fps gates still hold. The owner reviews the reworked
+samples (same side-by-side format) before any full roll-out.
 
 ## G7 brainstorm answers (owner's record, B1–B20; all merged into the master scope above)
 (appended as the owner answers)

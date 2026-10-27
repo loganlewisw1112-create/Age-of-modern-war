@@ -33,6 +33,13 @@ var _fog_bytes := PackedByteArray()
 var _fog_row := 0
 var _redraw_acc := 0.0
 var _cam_overlay: Control = null
+## G7 (SCALE7): on maps over TEX_MAX a side, the terrain and fog textures sample every _k-th cell
+## (texture _tw x _th <= TEX_MAX), so the per-frame fog rebuild costs the same as on a 256 map (a 768
+## map was 147k GDScript cell writes per frame while the fog refreshed). Maps <= 256: _k = 1, as before.
+const TEX_MAX := 256
+var _k := 1
+var _tw := 96
+var _th := 96
 
 
 func _init() -> void:
@@ -66,18 +73,21 @@ func _build_terrain() -> void:
 	_built_for = w
 	_map_w = int(w.map.w)
 	_map_h = int(w.map.h)
-	var img := Image.create(_map_w, _map_h, false, Image.FORMAT_RGBA8)
+	_k = maxi(1, ceili(float(maxi(_map_w, _map_h)) / float(TEX_MAX)))
+	_tw = ceili(float(_map_w) / float(_k))
+	_th = ceili(float(_map_h) / float(_k))
+	var img := Image.create(_tw, _th, false, Image.FORMAT_RGBA8)
 	var ter: PackedByteArray = w.map.terrain
-	for y in _map_h:
-		for x in _map_w:
-			var code: int = ter[y * _map_w + x]
+	for y in _th:
+		for x in _tw:
+			var code: int = ter[mini(y * _k, _map_h - 1) * _map_w + mini(x * _k, _map_w - 1)]
 			img.set_pixel(x, y, TERRAIN_COLORS[clampi(code, 0, TERRAIN_COLORS.size() - 1)])
 	_terrain_tex = ImageTexture.create_from_image(img)
 	_fog_bytes = PackedByteArray()
-	_fog_bytes.resize(_map_w * _map_h * 2)
-	for i in _map_w * _map_h:
+	_fog_bytes.resize(_tw * _th * 2)
+	for i in _tw * _th:
 		_fog_bytes[i * 2 + 1] = 235
-	_fog_img = Image.create_from_data(_map_w, _map_h, false, Image.FORMAT_LA8, _fog_bytes)
+	_fog_img = Image.create_from_data(_tw, _th, false, Image.FORMAT_LA8, _fog_bytes)
 	_fog_tex = ImageTexture.create_from_image(_fog_img)
 	_fog_row = 0
 
@@ -103,15 +113,23 @@ func _update_fog() -> bool:
 	var n := _map_w * _map_h
 	if vis.size() < n or exp.size() < n:
 		return true
-	var rows := int(ceil(float(_map_h) / FOG_CHUNKS))
-	var y1 := mini(_map_h, _fog_row + rows)
-	for i in range(_fog_row * _map_w, y1 * _map_w):
-		_fog_bytes[i * 2 + 1] = 0 if vis[i] != 0 else (128 if exp[i] != 0 else 237)
+	var rows := int(ceil(float(_th) / FOG_CHUNKS))
+	var y1 := mini(_th, _fog_row + rows)
+	if _k == 1:
+		for i in range(_fog_row * _map_w, y1 * _map_w):
+			_fog_bytes[i * 2 + 1] = 0 if vis[i] != 0 else (128 if exp[i] != 0 else 237)
+	else:
+		for ty in range(_fog_row, y1):
+			var row := mini(ty * _k, _map_h - 1) * _map_w
+			var o := ty * _tw
+			for tx in _tw:
+				var i := row + mini(tx * _k, _map_w - 1)
+				_fog_bytes[(o + tx) * 2 + 1] = 0 if vis[i] != 0 else (128 if exp[i] != 0 else 237)
 	_fog_row = y1
-	if _fog_row < _map_h:
+	if _fog_row < _th:
 		return false
 	_fog_row = 0
-	_fog_img.set_data(_map_w, _map_h, false, Image.FORMAT_LA8, _fog_bytes)
+	_fog_img.set_data(_tw, _th, false, Image.FORMAT_LA8, _fog_bytes)
 	_fog_tex.update(_fog_img)
 	return true
 

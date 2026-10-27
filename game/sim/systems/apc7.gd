@@ -266,13 +266,26 @@ static func tick(w: SimWorld) -> void:
 					w.destroy(int(k), "expired")
 
 
+## Crew drill under fire: a hit APC pops its smoke panel by itself (limited stock, at most once per smoke cloud +
+## apc7.auto_smoke_gap_s); smoke spoils the enemy's aim (shot_blocked) while the motorcade pushes through.
+static func _auto_smoke(w: SimWorld, e: Dictionary, c: Dictionary) -> void:
+	var a: Dictionary = e.a7
+	if not bool(c.get("auto_smoke", true)) or int(a.st.get("smoke", 0)) <= 0:
+		return
+	if w.tick < int(a.smoke_until) + ticks(float(c.get("auto_smoke_gap_s", 6.0))):
+		return
+	fire_panel(w, e, "smoke")
+
+
 static func _tick_apc(w: SimWorld, e: Dictionary) -> void:
 	var a: Dictionary = e.a7
 	var c := cfg_of(String(e.def))
 	var id := int(e.id)
 	var hp := float(e.hp)
-	if hp < float(a.hp_last) - 0.01 and bool(c.get("manned_mounts", false)):
-		_gunner_hit(w, e, float(a.hp_last) - hp, c)
+	if hp < float(a.hp_last) - 0.01:
+		if bool(c.get("manned_mounts", false)):
+			_gunner_hit(w, e, float(a.hp_last) - hp, c)
+		_auto_smoke(w, e, c)
 	a.hp_last = hp
 	var dc: Dictionary = c.get("dome", {})
 	if bool(a.dome_on) and bool(e.get("moving", false)):

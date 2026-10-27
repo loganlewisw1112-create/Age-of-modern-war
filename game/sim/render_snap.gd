@@ -213,6 +213,8 @@ static func build(w) -> void:
 	_g6_out(w, snap, g6)
 	_g7_out(w, snap, g7u)
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
+	if w.sys_state.has("creep"):
+		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
 

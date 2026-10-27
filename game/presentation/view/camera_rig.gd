@@ -10,6 +10,8 @@ extends Camera2D
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 2.5
+## G7 (SCALE7): zoom-out floor on maps over 256 a side (512: 0.094, 768: 0.08); <= 256 keep the 0.15 floor.
+const ZOOM_MIN_HUGE := 0.08
 
 var mv
 var _bounds := Rect2()
@@ -27,7 +29,7 @@ func setup(view: Node2D) -> void:
 		var up := ViewUtil.lift_px(ViewUtil.MAX_LEVEL)
 		_bounds = Rect2(_bounds.position - Vector2(0.0, up), _bounds.size + Vector2(0.0, up))
 	_map_span = maxf(w, h)
-	zoom_min = clampf(ZOOM_MIN * 96.0 / maxf(1.0, _map_span), 0.15, ZOOM_MIN)
+	zoom_min = clampf(ZOOM_MIN * 96.0 / maxf(1.0, _map_span), 0.15 if _map_span <= 256.0 else ZOOM_MIN_HUGE, ZOOM_MIN)
 	position_smoothing_enabled = false
 	anchor_mode = Camera2D.ANCHOR_MODE_DRAG_CENTER
 	zoom = Vector2.ONE

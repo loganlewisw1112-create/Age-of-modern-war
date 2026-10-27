@@ -461,6 +461,9 @@ static func tick(w: SimWorld) -> void:
 	# order, return fire only) wakes when it is itself in it; code 1 exits read nothing others write.
 	var ev := {}
 	w.cache["cmb_ev"] = ev
+	var bkr = w.sys_state.get("combat_bk")
+	if bkr != null:
+		_bk_wake(w, bkr, ev)   # G7: fire-on-the-move units are never act-skipped (code 3 wakes on ev)
 	var use_nr := not nores.is_empty()
 	var bi := 0
 	var by_ix := not act_id.is_empty()
@@ -1054,6 +1057,29 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 				_fire_on_move(w, e, s, grid, blds)
 			else:
 				_return_fire(w, e, s)
+
+
+## G7: registry of units on a move order with order.bk (SquadAI ordered fall-back), w.sys_state.combat_bk {id: 1}
+## (saved + hashed; absent until the first bk order). Morale's realism pass registers them (staggered, within one
+## fatigue update period); an order writer may call note_bk at once. Combat.tick puts the live ones into the
+## act-skip wake set each tick and drops ids whose order lost bk or that died.
+static func note_bk(w: SimWorld, id: int) -> void:
+	var r = w.sys_state.get("combat_bk")
+	if r == null:
+		r = {}
+		w.sys_state["combat_bk"] = r
+	r[id] = 1
+
+
+static func _bk_wake(w: SimWorld, r: Dictionary, ev: Dictionary) -> void:
+	for id in r.keys():
+		var e = w.entities.get(id)
+		if e == null or not bool(e.order.get("bk", false)):
+			r.erase(id)
+		else:
+			ev[id] = true
+	if r.is_empty():
+		w.sys_state.erase("combat_bk")
 
 
 ## G7 (SQUAD7 ask, WOUND7): a move order with order.bk (ordered fall-back: walk backwards facing the enemy) keeps

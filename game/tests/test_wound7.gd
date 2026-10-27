@@ -330,3 +330,122 @@ func test_cost_report() -> void:
 	var t2 := Time.get_ticks_usec()
 	print("WOUND7 cost: 16-rifle fight 300 ticks: wounds off %.1f ms, on %.1f ms" % [(t1 - t0) / 1000.0, (t2 - t1) / 1000.0])
 	check(true, "")
+
+
+## SQUAD7 ask: an ordered fall-back (move order with bk) keeps firing while it walks, without stopping the path.
+func test_bk_move_fires_while_moving() -> void:
+	var shots := {}
+	for bk in [true, false]:
+		var w := _world()
+		var e := _spawn(w, "rifleman", 0, Vector2i(30, 10))
+		var en := _spawn(w, "rifleman", 1, Vector2i(30, 14))
+		en.order = {"type": "hold_fire"}
+		var goal := Vector2(44.5, 10.5)
+		e.order = {"type": "move", "target": goal}
+		if bk:
+			e.order["bk"] = true
+		Movement.order_path(w, e, goal)
+		var n := 0
+		var moving_shot := false
+		for i in 60:
+			w.step()
+			for ev in w.events:
+				if ev.type == "ShotFired" and int(ev.shooter) == int(e.id):
+					n += 1
+					if w.entities.has(int(e.id)) and bool(e.moving):
+						moving_shot = true
+		shots[bk] = n
+		if bk:
+			check(n > 0 and moving_shot, "bk move: fires while moving (%d shots)" % n)
+			check(String(e.order.get("type", "")) == "move" and bool(e.order.get("bk", false)), "bk move: the move order is kept")
+			check(Vector2(e.pos).distance_to(Vector2(30.5, 10.5)) > 1.0, "bk move: kept walking (no stop to fire)")
+	check_eq(int(shots[false]), 0, "a plain move order still only returns fire")
+
+
+## SQUAD7 ask: SquadAI's gait (e.gait) multiplies the movement factor the realism pass writes (e.mvm).
+func test_gait_scales_mvm() -> void:
+	var t: Array = Movement.Formations7.cfg().gait_mult
+	var gi := -1
+	for i in t.size():
+		if absf(float(t[i]) - 1.0) > 0.05:
+			gi = i
+			break
+	check(gi >= 0, "a gait with a non-1 multiplier exists")
+	var w := _world()
+	var e := _spawn(w, "rifleman", 0, Vector2i(30, 10))
+	var ref := _spawn(w, "rifleman", 0, Vector2i(33, 10))
+	for i in 40:
+		e.gait = gi
+		w.step()
+	var m0 := float(ref.get("mvm", 1.0))
+	var m1 := float(e.get("mvm", 1.0))
+	check(absf(m1 - m0 * float(t[gi])) < 0.01, "mvm %.3f = base %.3f x gait %.2f" % [m1, m0, float(t[gi])])
+
+
+## ORCH ask (LOOK7 fact snap.g7_fields): WOUND7 keys in w.sys_state.g7v, set on events and cleared when over.
+func test_display_table_keys() -> void:
+	var w := _world()
+	_medic_far(w)
+	var e := _spawn(w, "rifleman", 0, Vector2i(30, 10))
+	Wounds.apply_hit(w, e, "leg_l", 10.0, null)
+	var g: Dictionary = w.sys_state.get("g7v", {})
+	var d: Dictionary = g.get(int(e.id), {})
+	check_eq(int(d.get("wz", 0)), 16, "wz = leg_l bit")
+	check(int(d.get("hz", 0)) == 16 and int(d.get("ht", -1)) == w.tick, "hz / ht = latest hit zone + tick")
+	check(bool(d.get("bleed", false)) == (float(e.get("wb", 0.0)) > 0.0), "bleed mirrors e.wb")
+	for i in Wounds.VIS_HIT + Wounds.VIS_EVERY:
+		w.step()
+	d = w.sys_state.g7v.get(int(e.id), {})
+	check(not d.has("hz") and not d.has("ht") and int(d.get("wz", 0)) == 16, "hit reaction expires, the wound stays")
+	var b := _spawn(w, "rifleman", 0, Vector2i(31, 10))
+	Wounds.go_down(w, e)
+	Wounds.start_care(w, b, e, "buddy")
+	d = w.sys_state.g7v.get(int(e.id), {})
+	var db: Dictionary = w.sys_state.g7v.get(int(b.id), {})
+	check(bool(d.get("unc", false)), "unc on the downed soldier")
+	check(String(db.get("care", "")) == "aid" and int(db.get("cw", -1)) == int(e.id), "helper: care aid + cw")
+	e.wtr = int(b.id)
+	Wounds.vis_mark(w, int(e.id))
+	d = w.sys_state.g7v.get(int(e.id), {})
+	check(String(d.get("cared", "")) == "aid" and int(d.get("cb", -1)) == int(b.id), "casualty: cared aid + cb")
+	Wounds._end(w, Wounds._state(w), int(b.id))
+	check(not w.sys_state.g7v.has(int(b.id)), "helper back to default: id erased")
+	var p := _spawn(w, "rifleman", 0, Vector2i(34, 12))
+	Morale._break(w, p)
+	check_eq(String(w.sys_state.g7v.get(int(p.id), {}).get("panic", "")), String(p.get("panic", "?")), "panic key")
+	w.destroy(int(e.id), "test")
+	for i in Wounds.VIS_EVERY:
+		w.step()
+	check(not w.sys_state.g7v.has(int(e.id)), "dead soldier: entry erased")
+
+
+## Both legs hit: the soldier still obeys a move order, crawling (slow), and shows the crawl in g7v (wz legs).
+func test_crawler_obeys_move_order() -> void:
+	var w := _world()
+	var e := _spawn(w, "rifleman", 0, Vector2i(30, 10))
+	Wounds.apply_hit(w, e, "leg_l", 8.0, null)
+	Wounds.apply_hit(w, e, "leg_r", 8.0, null)
+	var p0: Vector2 = e.pos
+	var evs := do_cmd(w, 0, {"type": "move", "unit_ids": [int(e.id)], "target": p0 + Vector2(6.0, 0.0)})
+	check_eq(rejected_reason(evs), "", "move accepted")
+	var trace := []
+	for i in 200:
+		w.step()
+		if i % 20 == 0:
+			trace.append("%d:%s/%s/%.2f" % [w.tick, String(e.order.get("type", "")), str(e.get("moving", false)), Vector2(e.pos).distance_to(p0)])
+	var d := Vector2(e.pos).distance_to(p0)
+	check(d > 0.3 and d < 4.0, "crawls slowly: %.2f tiles in 10 s, trace %s" % [d, str(trace)])
+
+
+## CNSIM7 ask: a hit on a sealed-suit soldier punctures the suit at once (e.wpunct + SuitPunctured), once.
+func test_hit_punctures_suit() -> void:
+	var w := _world()
+	var e := _spawn(w, "rifleman", 0, Vector2i(30, 10))
+	e.suit = true
+	Wounds.apply_hit(w, e, "arm_l", 5.0, null)
+	Wounds.apply_hit(w, e, "arm_r", 5.0, null)
+	var n := 0
+	for ev in w.events:
+		if ev.type == "SuitPunctured" and int(ev.id) == int(e.id):
+			n += 1
+	check(bool(e.get("wpunct", false)) and n == 1, "punctured once (events %d)" % n)

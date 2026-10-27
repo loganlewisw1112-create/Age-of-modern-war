@@ -18,6 +18,12 @@ func _sub(w: SimWorld, cmd: Dictionary) -> bool:
 	return bool(r.get("ok", false))
 
 
+## The unit's LOOK7 display entry (w.sys_state.g7v, copied to snap.g7u; motion.gd g7_col draws the poses).
+func _gv(w: SimWorld, id: int) -> Dictionary:
+	var g = w.sys_state.get("g7v")
+	return (g.get(id, {}) as Dictionary) if g != null else {}
+
+
 func run(pt) -> void:
 	var mv = pt._mv()
 	mv.join_sim()
@@ -54,11 +60,15 @@ func run(pt) -> void:
 	Wounds.apply_hit(w, cr, "leg_l", 8.0, null)
 	Wounds.apply_hit(w, cr, "leg_r", 8.0, null)
 	var p0: Vector2 = cr.pos
-	_sub(w, {"type": "move", "unit_ids": [int(cr.id)], "target": [p0.x + 6.0, p0.y]})
+	_sub(w, {"type": "move", "unit_ids": [int(cr.id)], "target": p0 + Vector2(6.0, 0.0)})
 	mv.center_camera_on(p0)
-	await pt._wait(4.0)
+	await pt._wait(1.0)
+	var gcr0 := _gv(w, int(cr.id)).duplicate()
+	var m1: float = Vector2(cr.pos).distance_to(p0)   # a walking rifleman covers the 6 tiles in ~2 sim s
+	await pt._wait(3.0)
 	var moved: float = Vector2(cr.pos).distance_to(p0)
-	pt._log("wound7_leg_crawl", Wounds.crawling(cr) and moved < 3.0, "crawling %s, moved %.2f tiles in 4 s, mvm %s" % [str(Wounds.crawling(cr)), moved, str(cr.get("mvm", 1.0))])
+	pt._log("wound7_leg_crawl", Wounds.crawling(cr) and m1 > 0.2 and m1 < 3.0 and moved > m1, "crawling %s, moved %.2f tiles after 1 s, %.2f of 6 after 4 s (game speed 3x), mvm %s" % [str(Wounds.crawling(cr)), m1, moved, str(cr.get("mvm", 1.0))])
+	pt._log("wound7_display_crawl", (int(gcr0.get("wz", 0)) & 48) == 48, "g7v while crawling %s" % str(gcr0))
 	await pt._shot("wound7_crawl")
 	# 3. a medic treats a bleeding soldier
 	var cas: Dictionary = h._unit(w, "rifleman", 0, cf + Vector2(-5.0, 5.0))
@@ -67,6 +77,10 @@ func run(pt) -> void:
 	_sub(w, {"type": "treat_casualty", "unit_id": int(med.id), "target": int(cas.id)})
 	mv.center_camera_on(Vector2(cas.pos))
 	await pt._wait(1.5)
+	var gmd := _gv(w, int(med.id))
+	var gcs := _gv(w, int(cas.id))
+	pt._log("wound7_display_care", String(gmd.get("care", "")) != "" and int(gmd.get("cw", -1)) == int(cas.id) and String(gcs.get("cared", "")) != "",
+		"medic g7v %s, casualty g7v %s" % [str(gmd), str(gcs)])
 	await pt._shot("wound7_medic_treating")
 	var stab: bool = await pt._wait_until(func(): return bool(cas.get("wstab", false)), 20.0)
 	pt._log("wound7_medic_stabilises", stab, "bleed %.2f stable %s" % [float(cas.get("wb", 0.0)), str(cas.get("wstab", false))])
@@ -79,11 +93,24 @@ func run(pt) -> void:
 	var goal: Vector2 = Vector2(dn.pos) + Vector2(0.0, -4.0)
 	_sub(w, {"type": "treat_casualty", "unit_id": int(dg.id), "target": int(dn.id), "drag_to": [goal.x, goal.y]})
 	mv.center_camera_on(Vector2(dn.pos))
-	await pt._wait(2.0)
+	await pt._wait_until(func(): return String(_gv(w, int(dn.id)).get("cared", "")) == "drag" or not w.entities.has(int(dn.id)), 10.0)
+	var gdg := _gv(w, int(dg.id))
+	var gdn := _gv(w, int(dn.id))
+	pt._log("wound7_display_drag", String(gdg.get("care", "")) == "drag" and String(gdn.get("cared", "")) == "drag" and bool(gdn.get("unc", false)),
+		"dragger g7v %s, casualty g7v %s" % [str(gdg), str(gdn)])
 	await pt._shot("wound7_dragging")
 	var dragged: bool = await pt._wait_until(func(): return not w.entities.has(int(dn.id)) or (not dn.has("wdby") and Vector2(dn.pos).distance_to(goal) < 1.6), 40.0)
 	pt._log("wound7_drag", dragged and w.entities.has(int(dn.id)), "casualty at %s, goal %s" % [str(dn.pos), str(goal)])
 	await pt._shot("wound7_dragged")
+	# 4b. visible panic: a hit-zone soldier breaks (cower / freeze / flee / drop pose)
+	var pn: Dictionary = h._unit(w, "rifleman", 0, cf + Vector2(8.0, 2.0))
+	SimWorld.Morale._break(w, pn)
+	var gpn := _gv(w, int(pn.id)).duplicate()   # read at once: an unhurt soldier out of fire rallies within seconds
+	mv.center_camera_on(Vector2(pn.pos))
+	await pt._wait(0.1)
+	pt._log("wound7_display_panic", String(gpn.get("panic", "")) != "" and String(gpn.get("panic", "")) == String(pn.get("panic", "?")),
+		"panic %s g7v %s" % [str(pn.get("panic", "")), str(gpn)])
+	await pt._shot("wound7_panic")
 	# 5. evacuation by ambulance to a hospital
 	var hq: Dictionary = w.buildings_of(0, "hq")[0]
 	var hosp_id := -1

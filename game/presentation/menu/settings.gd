@@ -316,7 +316,7 @@ func _input(event: InputEvent) -> void:
 			_refresh_keys()
 			_msg.text = ""
 		else:
-			capture_key(k.keycode)
+			capture_key(k.get_keycode_with_modifiers() if k.shift_pressed else k.keycode)  # G7 SQUAD7 CR seq 249
 		get_viewport().set_input_as_handled()
 	elif k.keycode == KEY_ESCAPE:
 		_close()

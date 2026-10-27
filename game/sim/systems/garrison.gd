@@ -20,6 +20,15 @@ extends RefCounted
 const Construction = preload("res://sim/systems/construction.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const HotState = preload("res://sim/hot_state.gd")
+const SquadAI = preload("res://sim/systems/squad_ai.gd")   # G7 (SQUAD7): building clearing grenades
+const F7 = preload("res://sim/systems/formations7.gd")
+
+## G7 (SQUAD7) building clearing: clear_building {issuer, unit_ids, building_id}. The squad stacks in a file along the
+## wall at the door nearest it (e.f7_clr = 1, e.f7_bld = bid), throws a grenade first when enemies hold it, then
+## clears room by room (every clear_room_ticks one defender is driven out into the open; e.f7_clr = 2), and finally
+## enters (own building, Garrison entry) and fires from the windows. b.roof_open = owner faction while troops are
+## inside (LOOK7 cuts the roof away for that faction). State: w.sys_state.garrison.clears [{bid, owner, units, phase,
+## t, door}] ascending bid (saved, hashed).
 
 
 static func R() -> Dictionary:
@@ -108,10 +117,22 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			if occupants(w, int(b.id)).is_empty():
 				return "Nobody is inside."
 			return ""
+		"clear_building":
+			var t = w.entities.get(int(cmd.get("building_id", -1)))
+			if t == null or t.kind != "building" or slots_of(String(t.def)) <= 0:
+				return "Pick a building that troops can enter."
+			for raw in cmd.get("unit_ids", []):
+				var e = w.entities.get(int(raw))
+				if e != null and e.kind == "unit" and int(e.owner) == int(cmd.get("issuer", -1)) and Movement.move_class(e) == "foot":
+					return ""
+			return "Only your infantry can clear a building."
 	return "Unknown garrison command."
 
 
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	if String(cmd.type) == "clear_building":
+		clear_building(w, int(cmd.issuer), cmd.get("unit_ids", []), int(cmd.building_id))
+		return
 	var b: Dictionary = _bld(w, cmd)
 	var bid := int(b.id)
 	if String(cmd.type) == "ungarrison":
@@ -138,6 +159,8 @@ static func tick(w: SimWorld) -> void:
 	var st = w.sys_state.get("garrison")
 	if st == null:
 		return
+	if not (st.get("clears", []) as Array).is_empty():
+		_clears(w, st)
 	if not (st.entering as Array).is_empty():
 		var still := []
 		for uid in st.entering:
@@ -170,6 +193,10 @@ static func tick(w: SimWorld) -> void:
 		r.units = units
 		if not units.is_empty():
 			keep.append(r)
+			if int(b.get("roof_open", -1)) != int(r.owner):
+				b.roof_open = int(r.owner)
+		else:
+			b.erase("roof_open")
 	st.blds = keep
 
 
@@ -363,3 +390,119 @@ static func visible_to(w: SimWorld, fid: int, t: Dictionary) -> bool:
 	if not t.has("garrisoned_in") or int(t.owner) == fid or w.is_ally(fid, int(t.owner)):
 		return true
 	return w.tick - int(t.get("last_fired_tick", -1000000)) <= int(round(float(R().get("reveal_s", 3.0)) / SimWorld.DT))
+
+
+# ================================================================ G7 (SQUAD7): building clearing
+static func clear_building(w: SimWorld, fid: int, unit_ids: Array, bid: int) -> void:
+	var b = w.entities.get(bid)
+	if b == null:
+		return
+	var ids := []
+	var cen := Vector2.ZERO
+	for raw in unit_ids:
+		var e = w.entities.get(int(raw))
+		if e != null and e.kind == "unit" and int(e.owner) == fid and Movement.move_class(e) == "foot" and not ids.has(int(raw)):
+			ids.append(int(raw))
+			cen += Vector2(e.pos)
+	if ids.is_empty():
+		return
+	ids.sort()
+	cen /= float(ids.size())
+	var st := _state(w)
+	if not st.has("clears"):
+		st["clears"] = []
+	for c in st.clears:
+		for id in ids:
+			(c.units as Array).erase(id)
+	var cell := Vector2i(b.cell) if b.has("cell") else Vector2i(floori(float(b.pos.x)), floori(float(b.pos.y)))
+	var size := int(b.get("size", 1))
+	var door := Vector2(cell) + Vector2(0.5, 0.5)
+	var bd := INF
+	for c in Construction.ring_cells(cell, size, 1):
+		if Movement.is_passable(w, c, "foot") and (Vector2(c) + Vector2(0.5, 0.5)).distance_to(cen) < bd:
+			bd = (Vector2(c) + Vector2(0.5, 0.5)).distance_to(cen)
+			door = Vector2(c) + Vector2(0.5, 0.5)
+	var bc := Vector2(cell) + Vector2(float(size), float(size)) * 0.5
+	var out := (door - bc).normalized() if door.distance_to(bc) > 0.01 else Vector2(0, 1)
+	var along := Vector2(-out.y, out.x)
+	for k in ids.size():
+		var e: Dictionary = w.entities[ids[k]]
+		var post := door + along * 0.6 * float(k) + out * 0.2
+		e.f7_clr = 1
+		e.f7_bld = bid
+		e.target = -1
+		e.order = {"type": "move", "target": post, "sq": "clear"}
+		if not Movement.order_path(w, e, post):
+			e.order = {"type": "idle"}
+	st.clears.append({"bid": bid, "owner": fid, "units": ids, "phase": "stack", "t": w.tick, "door": door})
+	st.clears.sort_custom(func(a, c) -> bool: return int(a.bid) < int(c.bid))
+
+
+static func _clr_done(w: SimWorld, ids: Array) -> void:
+	for uid in ids:
+		var e = w.entities.get(int(uid))
+		if e != null:
+			e.erase("f7_clr")
+			e.erase("f7_bld")
+
+
+static func _clears(w: SimWorld, st: Dictionary) -> void:
+	var cf := F7.cfg()
+	var keep := []
+	for c in st.clears:
+		var b = w.entities.get(int(c.bid))
+		var live := []
+		for uid in c.units:
+			var e = w.entities.get(int(uid))
+			if e != null and int(e.get("f7_bld", -1)) == int(c.bid):
+				live.append(int(uid))
+		c.units = live
+		if b == null or b.kind != "building" or live.is_empty():
+			_clr_done(w, live)
+			continue
+		keep.append(c)
+		if (w.tick + int(c.bid)) % 10 != 0:
+			continue
+		var enemy := []
+		if w.is_enemy(int(c.owner), int(b.owner)):
+			enemy = occupants(w, int(c.bid))
+		match String(c.phase):
+			"stack":
+				var ready := w.tick - int(c.t) >= int(cf.clear_stack_ticks)
+				for uid in live:
+					if bool(w.entities[uid].moving):
+						ready = false
+				if ready:
+					if not enemy.is_empty():
+						SquadAI.throw_grenade(w, w.entities[live[0]], Vector2(b.pos) if b.has("pos") else Vector2(c.door))
+					c.phase = "clear"
+					c.t = w.tick
+					for uid in live:
+						w.entities[uid].f7_clr = 2
+			"clear":
+				if not enemy.is_empty():
+					if w.tick - int(c.t) >= int(cf.clear_room_ticks):
+						c.t = w.tick
+						var d = w.entities.get(int(enemy[0]))
+						var r = _rec(w, int(c.bid))
+						if d != null and r != null:
+							r.units.erase(int(d.id))
+							_place_out(w, d, r, 0)
+							_left(w, d, int(c.bid), "cleared")
+							d.order = {"type": "idle"}
+					continue
+				if int(b.owner) == int(c.owner) and bool(b.get("built", false)) and free_slots(w, b) > 0:
+					apply_command(w, {"type": "garrison", "issuer": int(c.owner), "unit_ids": live, "building_id": int(c.bid)})
+					c.phase = "enter"
+				else:
+					_clr_done(w, live)
+					keep.erase(c)
+			"enter":
+				var busy := false
+				for uid in live:
+					if String(w.entities[uid].order.get("type", "")) == "garrison":
+						busy = true
+				if not busy:
+					_clr_done(w, live)
+					keep.erase(c)
+	st.clears = keep

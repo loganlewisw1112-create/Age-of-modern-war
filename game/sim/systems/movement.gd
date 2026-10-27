@@ -162,6 +162,11 @@ const SEP_BUCKET := 1.5          # >= largest unit diameter (MBT 1.4)
 const LOS_MAX := 14.0            # straight-line paths (no A*) up to this length when clear
 const Q := 1.0 / 1024.0          # quantum for saved floats (exact in var_to_str text)
 const SEP_STRENGTH := 0.5
+## G7 (SCALE7): GDScript separation bucket key = bx + by * SEP_ROW + layer_key * SEP_BLOCK. The old
+## bx + by * 1024 + layer_key folded rows >= 256 (y >= 384 tiles) into the air layer on 512+ maps;
+## buckets are only compared for equality, so maps up to 256 group exactly as before (same hash).
+const SEP_ROW := 2048
+const SEP_BLOCK := 4194304   # SEP_ROW * SEP_ROW: room for maps up to 3072 tiles a side
 const SEP_MAX_PUSH := 0.15
 const STUCK_REPATH_TICKS := 40
 const SLOT_FOOT := 1.1
@@ -173,6 +178,8 @@ const AIR_HIGH_LAYER := 524288   # G4: air_high (jets) separate only among thems
 const NATIVE_PATH_BUDGET := PATH_BUDGET  # same queue semantics on both paths (saved queue, tests)
 const WP_TOL := 0.45             # intermediate waypoint reached within this many tiles
 const FLOW_MIN := 6              # group orders this big share a flow field (native path)
+const FLOW_BIG_MAP := 256        # G7 (SCALE7): maps over this side use flows only for far group moves
+const FLOW_NEAR := 96.0          # G7 (SCALE7): ... i.e. when some unit is at least this far from the target
 const SEG_MAX := 0.5             # longest single collision-checked step (PERF4 stride steps)
 const REPATH_PER_TICK := 8       # N1-core-4: stuck / blocked repaths started per tick (rest retry next tick)
 
@@ -1957,7 +1964,7 @@ static func _separate(w: SimWorld) -> void:
 		rad.append(float(udef(e.def).radius))
 		mov.append(1 if e.moving else 0)
 		okeys.append(ok)
-		var key := int(floor(p.x / SEP_BUCKET)) + int(floor(p.y / SEP_BUCKET)) * 1024 + ok
+		var key := int(floor(p.x / SEP_BUCKET)) + int(floor(p.y / SEP_BUCKET)) * SEP_ROW + ok * SEP_BLOCK
 		var arr = grid.get(key)
 		if arr == null:
 			grid[key] = [n]
@@ -1977,7 +1984,7 @@ static func _separate(w: SimWorld) -> void:
 		var ok := okeys[i]
 		# half neighbourhood: own bucket (j > i) + 4 forward buckets, so each pair is visited once
 		for nb in 5:
-			var arr = grid.get(bx + HALF_NB[nb].x + (by + HALF_NB[nb].y) * 1024 + ok)
+			var arr = grid.get(bx + HALF_NB[nb].x + (by + HALF_NB[nb].y) * SEP_ROW + ok * SEP_BLOCK)
 			if arr == null:
 				continue
 			for j in arr:
@@ -2085,9 +2092,17 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 	# centroid -> target (the group faces its move direction). line / wedge / column keep their G2 slots;
 	# G6.1 adds box, echelon_left / echelon_right, file and spread. A mixed selection (vehicles and foot)
 	# puts the armour in front in that formation and the infantry in the same formation behind it.
-	# No formation keeps the G1 grid below.
-	var form := String(units[0].get("formation", ""))
-	if _g61_form_ok(form):
+	# No formation keeps the G1 grid below. G7 (SQUAD7): a player group move without a chosen formation carries
+	# the default picked by Formations7.auto_form on its units (e.f7_auto); form_of falls back to it.
+	var form := Formations7.form_of(units[0])
+	if Formations7.is_form(form):
+		# G7 (SQUAD7): formations rebuilt like a real military (real spacing, fire-team wedges, staggered column,
+		# terrain fit, sectors of fire, crossing-free slot assignment). See sim/systems/formations7.gd.
+		var team := _qteam(w, units[0])
+		var pass_fn := func(c: Vector2i, veh: bool) -> bool: return is_passable(w, c, "vehicle" if veh else "foot", team)
+		var near_fn := func(c: Vector2i, veh: bool) -> Vector2i: return nearest_free_cell(w, c, "vehicle" if veh else "foot", team)
+		return Formations7.slots(w, units, target, pass_fn, near_fn)
+	if _g61_form_ok(form):   # G6.1 shapes: unreachable since G7 (every G6.1 form is a G7 form); kept for A/B
 		var cen := Vector2.ZERO
 		for e in units:
 			cen += e.pos
@@ -2109,6 +2124,31 @@ static func formation_slots(w: SimWorld, units: Array, target: Vector2) -> Array
 		p.y = clampf(p.y, 0.5, float(w.map.h) - 0.5)
 		out.append(p)
 	return out
+
+
+## G7 (SQUAD7): the formation geometry lives in formations7.gd (owned with formation_slots and these helpers).
+const Formations7 = preload("res://sim/systems/formations7.gd")
+
+
+## G7 (SQUAD7): ordinary player group moves use a real formation by default. A player (non-AI issuer) move of two
+## or more units stamps e.f7_auto with rules default_player_formation ("auto": Formations7.auto_form by terrain
+## and threat; a formation name: that shape; "": the G1 grid, old behaviour). A chosen e.formation still wins
+## (form_of). cmd.grid = true keeps the G1 grid for that move (tests / replays that need the exact old slots).
+## AI sides keep their own formation choices (doctrine set_formation) and are not touched.
+static func _player_default_form(w: SimWorld, units: Array, target: Vector2, cmd: Dictionary) -> void:
+	if units.size() < 2 or w.ai_state.has(int(cmd.get("issuer", -1))):
+		return
+	var dpf := Formations7.player_default()
+	var f := ""
+	if dpf != "" and not bool(cmd.get("grid", false)):
+		f = Formations7.auto_form(w, units, target) if dpf == "auto" else Formations7.canon(dpf)
+		if not Formations7.is_form(f):
+			f = ""
+	for e in units:
+		if f == "":
+			e.erase("f7_auto")
+		else:
+			e.f7_auto = f
 
 
 ## G6.1 (SQUAD61) formation helpers for formation_slots.
@@ -2257,6 +2297,16 @@ static func _group_flows(w: SimWorld, units: Array, target: Vector2) -> Dictiona
 	var native = _native(w)
 	if native == null or units.size() < FLOW_MIN:
 		return {}
+	# G7 (SCALE7): a native flow field is a whole-map Dijkstra (2k-unit bench: 7 ms on 256, 30 ms on 512, 77 ms
+	# on 768 per build, and the 24-flow LRU rebuilds evicted ones while the queue drains). On maps over 256 a
+	# group close to its target takes per-unit A* instead (~0.1 ms per short path); far moves keep the shared
+	# flow. Maps <= 256 are untouched (same paths, same hash).
+	if maxi(int(w.map.w), int(w.map.h)) > FLOW_BIG_MAP:
+		var far := 0.0
+		for e in units:
+			far = maxf(far, Vector2(e.pos).distance_to(target))
+		if far < FLOW_NEAR:
+			return {}
 	var by_mc := {}
 	for e in units:
 		var mc := move_class(e)
@@ -2296,6 +2346,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				if pa.x != pb.x:
 					return pa.x < pb.x
 				return int(a.id) < int(b.id))
+			_player_default_form(w, units, target, cmd)
 			var slots := formation_slots(w, units, target)
 			var breach: bool = cmd.type == "attack_move" and not w.ai_state.has(int(cmd.get("issuer", -1)))
 			_group_flow = _group_flows(w, units, target)

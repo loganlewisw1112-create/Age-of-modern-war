@@ -330,8 +330,12 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 			mv *= _mv_s
 		if e.has("wz") or e.has("wdrg"):
 			mv *= SimWorld.Wounds.move_mult(e)   # G7 (WOUND7): leg wounds, crawling, dragging a casualty
+		if e.order.has("bk"):
+			SimWorld.Combat.note_bk(w, int(e.id))   # G7: ordered fall-back fires on the move (Combat act-skip wake)
 		if e.has("gait"):
 			mv *= Movement.Formations7.gait_mult(e)   # G7 (SQUAD7 ask): SquadAI gait (walk / rush / crawl ...)
+		if e.has("cn_slow"):
+			mv *= float(e.cn_slow)   # G7 (CNSIM7 ask): suit-breach exposure slowing
 		_set_or_erase(e, "mvm", mv)
 		var rz := 1.0
 		if int(e.get("vet", 0)) > 0 or e.has("rank_role"):
@@ -579,6 +583,7 @@ static func _break(w: SimWorld, e: Dictionary) -> void:
 	if SimWorld.Wounds.applies(e):   # G7 (WOUND7): visible panic for hit-zone soldiers
 		var pn := panic_pick(w, e)
 		e.panic = pn
+		SimWorld.Wounds.vis_mark(w, int(e.id))   # LOOK7 display table (g7v.panic)
 		if pn == "cower" or pn == "freeze":
 			e.order = {"type": "retreat", "target": e.pos}
 			Movement.stop_path(e)
@@ -651,6 +656,7 @@ static func _rally(w: SimWorld, e: Dictionary) -> void:
 				e.cd_ticks = hold
 				e.cooldown = float(hold) / SimWorld.TICK_RATE
 		e.erase("panic")
+		SimWorld.Wounds.vis_mark(w, int(e.id))
 	if String(e.order.get("type", "idle")) == "retreat":
 		e.order = {"type": "idle"}
 		e.target = -1

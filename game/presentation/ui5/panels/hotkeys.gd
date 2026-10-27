@@ -97,6 +97,33 @@ const ACTIONS := {
 	"bearer_join": ["BRACKETLEFT", "Join squad", "bearer61", "join_squad"],
 	"bearer_leave": ["BRACKETRIGHT", "Leave squad", "bearer61", "leave_squad"],
 }
+## G7 actions (rebindable, same row format as ACTIONS; key() / label() / group() / collisions() cover them; kept out
+## of ACTIONS so the G5 card probe in test_ui_panels does not demand a G5-style card button for each).
+##   squad7: the formation page (it replaces the unit card, so only the page's own FORM_KEYS L E C B J K I X V N,
+##           Z pace and Backspace share it: PAGE_GROUPS share with nothing else).
+##   drone7: DRONE7's Drone Team card actions (shares the card with the drone and loadout6 groups and the fixed keys;
+##           Space is a GLOBAL key and C/U were taken there, so drop = J, detonate = K, fullscreen = N).
+const G7_ACTIONS := {
+	"tech_auto": ["Y", "Auto technique", "squad7", "set_technique"],
+	"tech_traveling": ["U", "Traveling", "squad7", "set_technique"],
+	"tech_overwatch": ["T", "Traveling overwatch", "squad7", "set_technique"],
+	"tech_bounding": ["R", "Bounding overwatch", "squad7", "set_technique"],
+	"fall_back": ["M", "Fall back", "squad7", "fall_back"],
+	"suppress": ["Q", "Suppress", "squad7", "suppress_area"],
+	"clear_building": ["H", "Clear building", "squad7", "clear_building"],
+	"drone_take": ["Y", "Take control (fly)", "drone7", "drone_take"],
+	"drone_fullscreen": ["N", "Drone camera fullscreen", "drone7", "drone_view"],
+	"drone_handback": ["B", "Hand back to AI", "drone7", "drone_release"],
+	"drone_thermal": ["T", "Thermal view", "drone7", "drone_view"],
+	"drone_drop": ["J", "Drop munition", "drone7", "drone_drop"],
+	"drone_detonate": ["K", "Detonate", "drone7", "drone_detonate"],
+	# G7 (WOUND7 CR seq 102, ORCH): casualty care on every infantry / medic / carrier card. Every plain letter is
+	# taken on infantry cards, so these are Shift chords ("SHIFT+<key>"); hud.gd resolves them with event_key().
+	"treat_casualty": ["SHIFT+T", "First aid: nearest wounded own soldier", "wound7", "treat_casualty"],
+	"evacuate_casualty": ["SHIFT+E", "Evacuate casualty: ambulance / APC / helicopter / stretcher team, then a downed soldier", "wound7", "evacuate_casualty"],
+}
+const PAGE_GROUPS := ["squad7"]
+const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"]]
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
 const SHARE := [["air", "naval"], ["drone", "truck"], ["drone", "medic"], ["drone", "eng_air"],
@@ -144,7 +171,7 @@ static var _loaded := false
 static func set_user_bindings(b: Dictionary) -> void:
 	_user = {}
 	for a in b:
-		if ACTIONS.has(String(a)):
+		if ACTIONS.has(String(a)) or G7_ACTIONS.has(String(a)):   # G7: the G7 rows are rebindable too
 			_user[String(a)] = String(b[a]).to_upper()
 	_loaded = true
 
@@ -168,6 +195,9 @@ static func key(action: String) -> String:
 		return String(FIXED[action][0])
 	if GLOBAL_ACTIONS.has(action):
 		return String(GLOBAL_ACTIONS[action][0])
+	if G7_ACTIONS.has(action):
+		_ensure()
+		return String(_user.get(action, G7_ACTIONS[action][0]))
 	if not ACTIONS.has(action):
 		return ""
 	_ensure()
@@ -175,7 +205,19 @@ static func key(action: String) -> String:
 
 
 static func badge(k: String) -> String:
+	if k.to_upper().begins_with("SHIFT+"):   # G7: Shift chords (treat_casualty / evacuate_casualty)
+		return "Sh+" + badge(k.substr(6))
 	return String(BADGE.get(k.to_upper(), k))
+
+
+## G7: the hotkey string for a key event as the card map stores it: "SHIFT+T" when Shift is held and that chord
+## is registered in `registered` (the hud's key -> button map), else the plain key ("T"), so Shift+<letter>
+## still reaches a plain-letter button when no chord owns it (the G1-G6.1 behaviour).
+static func event_key(k: InputEventKey, registered: Dictionary = {}) -> String:
+	var base := OS.get_keycode_string(k.keycode).to_upper()
+	if k.shift_pressed and registered.has("SHIFT+" + base):
+		return "SHIFT+" + base
+	return base
 
 
 static func label(action: String) -> String:
@@ -183,10 +225,14 @@ static func label(action: String) -> String:
 		return String(FIXED[action][1])
 	if GLOBAL_ACTIONS.has(action):
 		return String(GLOBAL_ACTIONS[action][1])
+	if G7_ACTIONS.has(action):
+		return String(G7_ACTIONS[action][1])
 	return String(ACTIONS[action][1]) if ACTIONS.has(action) else action
 
 
 static func group(action: String) -> String:
+	if G7_ACTIONS.has(action):
+		return String(G7_ACTIONS[action][2])
 	return String(ACTIONS[action][2]) if ACTIONS.has(action) else "fixed"
 
 
@@ -208,9 +254,14 @@ static func fallback_key(taken: Dictionary) -> String:
 
 
 static func shares(ga: String, gb: String) -> bool:
+	if PAGE_GROUPS.has(ga) or PAGE_GROUPS.has(gb):
+		return ga == gb   # G7: a page replaces the card, so it shares with nothing else
 	if ga == gb or ga == "fixed" or gb == "fixed":
 		return true
-	if ga == "squad61" or gb == "squad61" or ga == "bearer61" or gb == "bearer61":
+	for p in G7_SHARE:
+		if (p[0] == ga and p[1] == gb) or (p[0] == gb and p[1] == ga):
+			return true
+	if ga == "squad61" or gb == "squad61" or ga == "bearer61" or gb == "bearer61" or ga == "wound7" or gb == "wound7":
 		return true   # G6.1: on every combat unit card (bearers mix with any infantry selection)
 	for p in SHARE:
 		if (p[0] == ga and p[1] == gb) or (p[0] == gb and p[1] == ga):
@@ -230,6 +281,7 @@ static func _same_card_kind(ga: String, gb: String) -> bool:
 static func all_actions() -> Array:
 	var out: Array = FIXED.keys()
 	out.append_array(ACTIONS.keys())
+	out.append_array(G7_ACTIONS.keys())
 	out.sort()
 	return out
 
@@ -262,10 +314,10 @@ static func collisions(bindings: Dictionary = {}) -> Array:
 
 ## Why `k` cannot be bound to `action` ("" = ok). Used by the settings rebinding UI.
 static func rebind_error(action: String, k: String) -> String:
-	if not ACTIONS.has(action):
+	if not ACTIONS.has(action) and not G7_ACTIONS.has(action):
 		return "This key is fixed."
 	k = k.to_upper()
-	if group(action) == "squad61":
+	if group(action) == "squad61" or group(action) == "wound7":
 		if not PUNCT_KEYS.has(k):
 			return "Use , ; / ' [ ] \\ - or =."
 	elif k.length() != 1 or k < "A" or k > "Z":
@@ -289,9 +341,10 @@ static func sheet_rows() -> Array:
 		"aerostat6": "aerostat", "assim6": "Assimilator", "tow6": "salvage crane / dozer", "airdrop6": "airlifter",
 		"sub6": "submarine", "seamine6": "mine barge", "garrison_bld6": "garrisoned building selected",
 		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected",
-		"squad61": "combat units"}
+		"squad61": "combat units", "squad7": "formation page", "drone7": "Drone Team (flying)",
+		"wound7": "infantry / medics / carriers"}
 	var out: Array = []
-	var acts: Array = ACTIONS.keys()
+	var acts: Array = ACTIONS.keys() + G7_ACTIONS.keys()
 	acts.sort_custom(func(a, b): return _order(a) < _order(b))
 	for a in acts:
 		out.append([key(a), "%s (%s)" % [label(a), names.get(group(a), group(a))]])

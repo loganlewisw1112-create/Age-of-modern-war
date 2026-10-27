@@ -65,6 +65,12 @@ in your content JSON, and say so in your report.
 | CREEP7 Machine creep, cores, escalation (wave 2) | sim/systems/creep.gd, sim/systems/cores.gd, sim/systems/machine_g6.gd, new sim/systems/machine_ew7.gd, new sim/ai/machine_react7.gd, new presentation/view/creep_layer.gd, new content/g7/rules_g7_machine.json, tests/test_creep7.gd, tools/pt7_creep7.gd |
 | CNSIM7 counter-nanite units (wave 2) | sim/systems/counter_nanite.gd, sim/systems/apc7.gd, new content/g7/defs_g7_cn.json, tests/test_cnsim7.gd, tools/pt7_cnsim7.gd |
 | CNFAC7 facility, dropships, base state (wave 2) | sim/systems/cn_facility.gd, sim/systems/base_state7.gd, sim/systems/transport.gd, new content/g7/defs_g7_facility.json, tests/test_cnfac7.gd, tools/pt7_cnfac7.gd |
+| TURRET7 8 Human A turrets (wave 3) | new content/g7/defs_g7_turrets.json, new sim/systems/turrets7.gd, new tools/art/g7_turrets2.gd (+ its assets/art/g7_turrets2/), tests/test_turret7.gd, tools/pt7_turret7.gd |
+| THREAT7 Machine threat units (wave 3) | sim/systems/threats7.gd, new content/g7/defs_g7_threats.json, new tools/art/g7_threats2.gd (+ assets/art/g7_threats2/), sim/systems/cores.gd (walker pathing only), tests/test_threat7.gd, tools/pt7_threat7.gd |
+| LPMODE7 Last Protocol rules (wave 3) | sim/systems/last_protocol.gd, new content/g7/rules_g7_lastprotocol.json, new presentation/ui7/lp_hud.gd, new presentation/ui7/lp_menu.gd, tests/test_lpmode7.gd, tools/pt7_lpmode7.gd |
+| LPMAP7 Last Protocol map (wave 3) | new sim/maps/last_protocol.gd, new presentation/view/world7_layer.gd, tests/test_lpmap7.gd, tools/pt7_lpmap7.gd |
+| CNSIM7-3 counter-nanite combat (wave 3) | CNSIM7's files (counter_nanite.gd, apc7.gd, defs_g7_cn.json, test_cnsim7.gd, pt7_cnsim7.gd) |
+| ARTCN7-2 art rework | ARTCN7's files |
 | ORCH | sim/world.gd, tools/ui_playtest.gd, content/*.json registries outside your own new fragment, research.json, factions.json, README/PROGRESS/PLAY_ME, packaging, commits |
 
 Layering: WOUND7 resolves what a hit does to a soldier; SQUAD7 decides how soldiers and squads move and act (gait,
