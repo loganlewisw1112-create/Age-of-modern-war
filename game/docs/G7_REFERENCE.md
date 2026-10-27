@@ -466,6 +466,25 @@ packhunter territory", "Core 2 plating at 60%"). It suggests and never acts; it 
   map and react to fighting and creep.
 - All of it is display-side (or derived from the creep state), within the fps targets, at full realism depth.
 
+### 13.9a Creep fissures, canyons and growths (owner amendment, 2026-10-26: "add it in rn")
+Owner: "the creep should open up large fissures/valleys/canyons in the ground with varying different complex
+'growths' sprouting and rising from the creep and the fissures/openings."
+- **The ground breaks open:** where creep has sat long and dense, the land splits. Thin cracks open first, widen
+  into fissures, and the oldest creep tears open into long branching valleys and canyons with a glowing nanite floor.
+  They are real terrain, not paint: cracks slow ground units, fissures block vehicles (infantry climb across slowly),
+  canyons block all ground movement until bridged, so the creep reshapes the map's routes as it spreads. Air is
+  unaffected.
+- **Growths rise from the creep and out of the openings:** many different complex shapes (spires, crystal
+  lattices, tendril stalks, rib arches, pulsing pods, antenna masts and others), rising slowly out of the creep
+  and the fissures, bigger and denser in the canyons. The largest growths are destructible targets that feed the
+  spread and the cracking around them; the rest are scenery.
+- **Fighting it:** purging, burning or sealing stops a fissure growing and kills its growths; engineers can lay a
+  span across a fissure or canyon; purged ground scars over and, held long enough, closes back to rough
+  ground, so the map is never permanently cut. Fissures never open under buildings, walls, bridges or sterile and
+  barrier ground. They can never cut a player's base off from the map.
+- Numbers are PROVISIONAL (set by FISSURE7, reported). A match with no creep stays hash-identical; perf stays
+  inside the fps targets on the 512 map.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).
@@ -479,6 +498,21 @@ and the vehicles were big but flat and blocky. Direction for the rework: soldier
 real kit detail and shading; vehicles, dropships and the facility with proper panel lines, wear and depth; a grounded
 military look closer to Signalborne; memory budgets re-sized so the fps gates still hold. The owner reviews the reworked
 samples (same side-by-side format) before any full roll-out.
+
+## Look checkpoint rev2 decision (owner, 2026-10-26; supersedes the "1.5x" size line above)
+Shown rev2 (`.plan/shots/ARTCN7/compare_today_vs_g7_rev2.png` + an in-game shot), the owner did NOT approve roll-out:
+- **Stealth dropship: complete redesign.** "shits a fucking box --- make it feel like a true vtol". It must read as a
+  real VTOL aircraft (sleek faceted stealth fuselage, tilting/ducted lift rotors or fans, wings, tail, cockpit), not a
+  box. The owner's C-17-style rear-ramp loading (APC drives in through the rear ramp, everything proportionate) still
+  stands. The regular XL VTOL dropship gets the same treatment (it was the same flat slab).
+- **APCs: complete design overhaul.** "they look like shit give them a dynamic and realistic look". Realistic modern
+  wheeled APC proportions and silhouette (think real 8x8 armoured vehicles), dynamic shapes, believable armour, wheels,
+  suspension, optics, mounts, with the shielded .50 gunner pods and the pop-out 6-tube rocket pod (6.5) kept.
+- **Scale: shrink the soldiers to the correct size.** "the units are too big compared to the vehicles and tiles shrink
+  them correctly but keep their high detail and quality". Soldiers, vehicles, aircraft and buildings follow ONE real-world
+  scale against the 64x32 tile grid (a soldier is ~1.8 m next to a ~8 m long, ~2.7 m tall APC). Keep the rev2 kit detail
+  and quality at the smaller size. The rev2 "about 1.5x today's on-screen size" target is withdrawn.
+- Roll-out still waits for the owner's review of the rev3 side-by-side.
 
 ## G7 brainstorm answers (owner's record, B1–B20; all merged into the master scope above)
 (appended as the owner answers)

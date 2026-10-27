@@ -449,6 +449,10 @@ static func spawn_team(w: SimWorld, F: Dictionary, kind: String) -> int:
 	var used := slots.slice(0, mini(slots.size(), apcs.size()))
 	for i in used:
 		F.garages[i] = tid
+	# G7 (LPMODE7-3): the crews were spawned and boarded in this same tick, so their new ids are already gone from
+	# w.entities and Economy's carried pop count (cache eco_pop: new ids still alive + a size check) never sees them.
+	# Drop the carried count so the next Economy pass does its full recount (which adds every carrier's cargo).
+	w.cache.erase("eco_pop")
 	S.teams[str(tid)] = {"id": tid, "fac": int(F.id), "owner": owner, "kind": kind, "apcs": apcs, "slots": used,
 		"phase": "garage", "t": 0, "xp": 0.0, "drill": false, "target": [], "ext": ext}
 	w.emit("CnTeamReady", {"team": tid, "fac": int(F.id), "owner": owner, "kind": kind, "apcs": apcs.duplicate()})

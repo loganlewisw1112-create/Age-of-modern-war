@@ -21,6 +21,7 @@ const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dr
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
+const World7Layer = preload("res://presentation/view/world7_layer.gd")  # G7 LPMAP7: creep-warped world, sky, traces
 const CreepLayer = preload("res://presentation/view/creep_layer.gd")  # G7 CREEP7: Machine creep on the ground
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
 const FogLayer = preload("res://presentation/view/fog_layer.gd")
@@ -77,6 +78,7 @@ var last_alert_pos: Variant = null       # Vector2 world pos of the last alert (
 var camera: Camera2D
 var terrain_layer: Node2D
 var creep_layer: Node2D  # G7 CREEP7
+var world7_layer: Node2D  # G7 LPMAP7
 var entity_layer: Node2D
 var fog_layer: Node2D
 var fx_layer: Node2D
@@ -195,6 +197,7 @@ func _init_view() -> void:
 	if map_arg != "" and world.tick == 0 and String(world.cfg.get("map", "")) != map_arg:
 		var cfg: Dictionary = world.cfg.duplicate(true)
 		cfg.map = map_arg
+		cfg.dev_map = true  # G7: the --map debug/perf flag may start mode-only maps (never reachable from the menus)
 		var nw = SimWorld.new_match(cfg)
 		if nw != null:
 			world = nw
@@ -203,6 +206,9 @@ func _init_view() -> void:
 	terrain_layer = TerrainLayer.new()
 	terrain_layer.z_index = 0
 	add_child(terrain_layer)
+	world7_layer = World7Layer.new()  # G7 LPMAP7 CR: after the terrain, before the creep
+	world7_layer.z_index = 0
+	add_child(world7_layer)
 	creep_layer = CreepLayer.new()  # G7 CREEP7 CR: right after the terrain, same z (drawn after it)
 	creep_layer.z_index = 0
 	add_child(creep_layer)
@@ -250,6 +256,7 @@ func _init_view() -> void:
 
 	for layer in [terrain_layer, ring_layer, entity_layer, fx_layer, fog_layer, overlay_layer, g2_ground, g2_over]:
 		layer.setup(self)
+	world7_layer.setup(self)  # G7 LPMAP7
 	camera.setup(self)
 
 	# start centred on the player's HQ (or spawn)
@@ -471,6 +478,7 @@ func _process(delta: float) -> void:
 	camera.tick(delta)
 	var tp := Time.get_ticks_usec()
 	terrain_layer.tick()
+	world7_layer.refresh(snap)  # G7 LPMAP7: hidden and free with no creep and no map.lp
 	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
 	ViewUtil.prof_add("p_terrain", tp)
 	tp = Time.get_ticks_usec()

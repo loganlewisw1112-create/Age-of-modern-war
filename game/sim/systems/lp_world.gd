@@ -171,6 +171,7 @@ static func _secret(w: SimWorld, s: Dictionary, k: String, sc: Dictionary, kr: D
 			info.prototype = String(kr.get("prototype", "orbital_designator"))
 		"lost_squad":
 			var res = CounterNanite.spawn_team(w, fid, String(kr.get("kind", "tactical_squad")), p + Vector2(2, 0))
+			w.cache.erase("eco_pop")  # crews spawned + boarded this tick: Economy's full recount counts the cargo
 			if res is Dictionary:
 				for id in res.get("members", []):
 					var e = w.entities.get(int(id))

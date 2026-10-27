@@ -43,7 +43,19 @@ func _match(map_id: String, sides: Array, seed_value := 7) -> SimWorld:
 
 func test_maps_json_matches_generators() -> void:
 	var defs := MapGen.defs()
-	check_eq(defs.size(), 6, "maps.json lists 6 maps (G5: + coastal_front_m; G6 MODES6: + ridge_bastion_m, river_dam_m survival)")
+	# G7 (owner, "the last protocal map should be unaccessible in skirmish mode completely"): mode-only maps
+	# (skirmish false) are counted apart; the 6 skirmish maps are unchanged and keep every check below.
+	var skirm := 0
+	var mode_only := []
+	for id in defs:
+		if bool(defs[id].get("skirmish", true)):
+			skirm += 1
+		else:
+			mode_only.append(String(id))
+			check(String(defs[id].get("mode", "")) != "", "%s (skirmish false) names its own mode" % id)
+	check_eq(skirm, 6, "maps.json lists 6 skirmish maps (G5: + coastal_front_m; G6 MODES6: + ridge_bastion_m, river_dam_m survival)")
+	mode_only.sort()
+	check_eq(mode_only, ["last_protocol", "lp_test512", "lp_test768"], "mode-only maps: G7 SCALE7 test maps + the Last Protocol map")
 	for id in MapGen.ids():
 		check(defs.has(id), "maps.json has %s" % id)
 		if not defs.has(id):
@@ -59,7 +71,9 @@ func test_maps_json_matches_generators() -> void:
 		for s in d.spawns:
 			jsp.append([int(s[0]), int(s[1])])
 		check_eq(sp, jsp, "%s spawns match maps.json" % id)
-		for k in ["2", "3", "4"]:
+		# G7: a mode-only map lists only the side counts its mode can field (Last Protocol is strictly 1v1).
+		var sets_k: Array = ["2", "3", "4"] if bool(d.get("skirmish", true)) else (d.spawn_sets as Dictionary).keys()
+		for k in sets_k:
 			var a := []
 			for v in d.spawn_sets[k]:
 				a.append(int(v))
@@ -128,6 +142,10 @@ func test_river_crossing_bytes_unchanged() -> void:
 func test_3_and_4_side_starts_on_every_map() -> void:
 	var f4 := ["human_a", "human_b", "machine", "human_a"]
 	for id in MapGen.ids():
+		# G7: mode-only maps never host a 3/4-side skirmish (validate_config refuses them outside their mode;
+		# the owner made the Last Protocol map skirmish-inaccessible and its mode strictly 1v1).
+		if not bool(MapGen.defs().get(id, {}).get("skirmish", true)):
+			continue
 		for n in [3, 4]:
 			var sides := []
 			for i in n:
@@ -252,7 +270,12 @@ func test_g6_builtin_height_symmetric_and_deterministic() -> void:
 			continue
 		check_eq(_sha(a.height), _sha(b.height), "%s: same seed -> same height bytes" % id)
 		check_eq(_sha(a.ramps), _sha(b.ramps), "%s: same seed -> same ramp bytes" % id)
-		check_eq(MapCheck.height_issue(a, true), "", "%s: height valid and point-symmetric" % id)
+		# G7: the Last Protocol map is asymmetric by design (1v1, your base west vs the Machine east; LPMAP7), so it must
+		# be valid but not point-symmetric. Every other map, the SCALE7 test maps included, keeps the symmetry check.
+		if String(MapGen.defs().get(id, {}).get("mode", "")) == "last_protocol":
+			check_eq(MapCheck.height_issue(a, false), "", "%s: height valid (asymmetric 1v1 map)" % id)
+		else:
+			check_eq(MapCheck.height_issue(a, true), "", "%s: height valid and point-symmetric" % id)
 		check_eq(MapGen.validate_height(a), [], "%s: validate_height clean" % id)
 
 

@@ -42,7 +42,7 @@ func _build() -> void:
 	W.button(self, "Create blank map", create_new, "Replaces the current map (undo history is cleared)")
 	add_child(HSeparator.new())
 	W.header(self, "Generate base map")
-	var ids: Array = MapGen.ids()
+	var ids: Array = MapGen.ids().filter(func(i): return bool(MapGen.defs().get(i, {}).get("skirmish", true)))  # G7 (owner): no Last Protocol layout in the editor
 	gen_id = String(ids[0])
 	var names := []
 	for id in ids:

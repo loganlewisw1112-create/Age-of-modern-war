@@ -1,0 +1,49 @@
+{
+ "_meta": "G7 fragment (owner: FISSURE7). Creep fissures, canyons and growths (G7_REFERENCE master scope 13.9a, owner amendment 2026-10-26). Sim: sim/systems/fissures7.gd (called from Creep.tick). Every number is PROVISIONAL (untuned balance fixture). Stages: crack (terrain FORD: ground slow), fissure (FOREST: vehicles blocked, infantry slow), canyon (RIDGE: all ground blocked); air unaffected. Codes are content values (stage_codes) so a later dedicated terrain code is a data change. Big growths are Machine buildings (creep sources) that are destructible; the rest are display-only scenery derived from sim state.",
+ "rules": {
+  "g7_fissures": {
+   "every": 10,
+   "age_stripes": 8,
+   "dense_v": 190,
+   "age_decay": 4,
+   "crack_age": 40,
+   "fissure_age": 55,
+   "canyon_age": 80,
+   "seed_chance": 0.05,
+   "seed_spacing_cells": 3,
+   "max_veins": 180,
+   "max_points": 7000,
+   "max_canyon_tiles": 16000,
+   "upgrade_budget": 12,
+   "seed_budget": 3,
+   "grow_every": 40,
+   "max_len": 70,
+   "max_len_jitter": 40,
+   "steer_rad": 0.45,
+   "branch_chance": 0.07,
+   "branch_min_len": 6,
+   "branch_depth": 3,
+   "stop_age_mult": 0.6,
+   "fissure_after_s": 60,
+   "canyon_after_s": 180,
+   "tip_crack": 3,
+   "tip_fissure": 8,
+   "radius": {"fissure": [0.9, 0.6, 0.5, 0.5], "canyon": [2.1, 1.5, 1.1, 1.0], "wobble": 0.5},
+   "stage_codes": {"crack": 6, "fissure": 3, "canyon": 7, "span": 5, "closed": 1},
+   "commit_every": 600,
+   "connect_r": 110,
+   "connect_budget": 40000,
+   "close_after_s": 180,
+   "span_max": 16,
+   "span_s": 12,
+   "span_s_per_tile": 1.5,
+   "span_reach": 3.0,
+   "big": {"every": 11, "max": 28, "spacing": 12, "kinds": ["g7_growth_spire", "g7_growth_heart"], "feed_cells": 2, "feed_age": 3},
+   "scenery": {"point_every": 2, "creep_age": 30, "creep_chance": 0.4, "rise_s": 25}
+  }
+ },
+ "buildings": {
+  "g7_growth_spire": {"name": "Nanite Spire", "faction": "machine", "stage_min": 1, "size": 1, "hp": 1800, "armor": "building", "sight": 6, "power": 0, "buildable": false, "no_build": true, "cost": {"credits": 0}, "build_time": 1, "g7": true, "g7_growth": "spire", "unhackable": true, "leaves_wreck": false, "blurb": "A towering nanite spire grown out of a creep canyon. Feeds the creep and the cracking around it."},
+  "g7_growth_heart": {"name": "Brood Heart", "faction": "machine", "stage_min": 1, "size": 1, "hp": 1200, "armor": "building", "sight": 6, "power": 0, "buildable": false, "no_build": true, "cost": {"credits": 0}, "build_time": 1, "g7": true, "g7_growth": "heart", "unhackable": true, "leaves_wreck": false, "blurb": "A pulsing cluster of nanite pods rising out of a creep canyon. Feeds the creep and the cracking around it."}
+ }
+}

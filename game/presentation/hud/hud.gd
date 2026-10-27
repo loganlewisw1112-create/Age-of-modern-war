@@ -236,6 +236,8 @@ func _build_ui() -> void:
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left.add_theme_constant_override("separation", 6)
 	_left_scroll.add_child(left)
+	if preload("res://presentation/ui7/lp_hud.gd").wants(_world()):  # G7 LPMODE7 CR: Last Protocol meters card + end panel
+		preload("res://presentation/ui7/lp_hud.gd").attach(left, mv, root)
 	_alert_box = VBoxContainer.new()
 	_alert_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_alert_box.custom_minimum_size = Vector2(0, 0)   # width comes from the visible lines only

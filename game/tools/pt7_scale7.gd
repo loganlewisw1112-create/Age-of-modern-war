@@ -30,6 +30,7 @@ func _worst(pt, frames: int) -> float:
 func run(pt) -> void:
 	var cfg := SimWorld.default_config()
 	cfg.map = "lp_test512"
+	cfg.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 	cfg.sides[1].ai = false
 	var t0 := Time.get_ticks_msec()
 	var started: bool = pt.main.start_match(cfg)

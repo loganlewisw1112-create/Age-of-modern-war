@@ -119,8 +119,8 @@ static func recharge_radius(def_id: String) -> float:
 
 ## G5 (UI5b): the build card is split into category pages (Base / Military / Air / Naval / Support,
 ## Tab cycles them). A def's page is its `build_cat` field when set, else derived from its flags.
-const BUILD_CATS := ["base", "military", "air", "naval", "support"]
-const BUILD_CAT_NAMES := {"base": "Base", "military": "Military", "air": "Air", "naval": "Naval", "support": "Support"}
+const BUILD_CATS := ["base", "military", "defence", "air", "naval", "support"]  # G7: "defence" = the 8 G7 turrets (Military page was out of keys)
+const BUILD_CAT_NAMES := {"base": "Base", "military": "Military", "defence": "Defences", "air": "Air", "naval": "Naval", "support": "Support"}
 ## Letters a generated build key avoids (pan W/D, Deploy E, Lay mine M, Plant charge O sit on the
 ## engineer card too); a data hotkey keeps its letter.
 ## G6 (UI6b): J / U / X / Z are the engineer-card G6 keys (minefield, sweep, rail, garrison / tow), so a

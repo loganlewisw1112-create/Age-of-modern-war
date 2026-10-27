@@ -20,6 +20,7 @@ extends RefCounted
 const HotState = preload("res://sim/hot_state.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")
+const Fissures7 = preload("res://sim/systems/fissures7.gd")  # G7 FISSURE7: fissures / canyons / growths
 
 const VER := 1
 const F_STERILE := 1
@@ -187,6 +188,7 @@ static func purge(w: SimWorld, center: Vector2, radius: float, kind: String = "s
 		cells = _cells_in(s, center, radius)
 	var lost := _clear_cells(s, cells, bit)
 	s.lost = int(s.lost) + lost
+	Fissures7.on_cleared(w, center, radius, kind)  # G7 FISSURE7: purge / seal stops fissures, kills growths
 	var nseeds := 0
 	if kind != "barrier":
 		var kr := radius * float(pr.get("seed_kill_mult", 1.0))
@@ -237,6 +239,7 @@ static func burn(w: SimWorld, center: Vector2, radius: float) -> int:
 	var s := enable(w)
 	var cells := _cells_in(s, center, radius)
 	_clear_cells(s, cells, F_BREAK)
+	Fissures7.on_cleared(w, center, radius, "burn")  # G7 FISSURE7: burning stops fissures, kills growths
 	return cells.size()
 
 
@@ -394,6 +397,7 @@ static func tick(w: SimWorld) -> void:
 	var every := maxi(int(rc.get("repair_every_ticks", 20)), 1)
 	if w.tick % every == 0:
 		_repair(w, s, sc, every)
+	Fissures7.tick(w)  # G7 FISSURE7: cracks -> fissures -> canyons, growths (no-op until creep ages)
 
 
 ## One stripe: rows r with r % S == ph. Skips rows with no creep, no source and no creep in the rows next to them.
@@ -624,7 +628,7 @@ static func snap(w: SimWorld) -> Dictionary:
 		if not (sd.rev as Array).is_empty():
 			sl.append({"pos": sd.pos, "kind": sd.kind, "rev": (sd.rev as Array).duplicate()})
 	return {"cs": s.cs, "cw": s.cw, "ch": s.ch, "v": s.v, "fl": s.fl, "dv": s.dv, "on": int(RC().get("on", 64)),
-		"seeds": sl, "coverage": coverage(w)}
+		"seeds": sl, "coverage": coverage(w), "fis": Fissures7.snap(w)}  # G7 FISSURE7: fissure field for the view
 
 
 static func validate_command(_w: SimWorld, cmd: Dictionary) -> String:

@@ -1,0 +1,96 @@
+{
+ "atlas": "growths.png",
+ "atlas_layout": "row = kind, col = size * 2 + layer (0 base, 1 glow)",
+ "buildings": {
+  "g7_growth_heart": {
+   "fh": 128,
+   "fw": 112,
+   "g7": {
+    "class": "building",
+    "kind": "pod",
+    "sample": "growth"
+   },
+   "pivot": [
+    56,
+    118
+   ],
+   "size": 1,
+   "states": {
+    "built": {
+     "file": "buildings/g7_growth_heart_built.png",
+     "mask": "buildings/g7_growth_heart_built_mask.png"
+    },
+    "damaged": {
+     "file": "buildings/g7_growth_heart_damaged.png",
+     "mask": "buildings/g7_growth_heart_damaged_mask.png"
+    }
+   }
+  },
+  "g7_growth_spire": {
+   "fh": 176,
+   "fw": 96,
+   "g7": {
+    "class": "building",
+    "kind": "spire",
+    "sample": "growth"
+   },
+   "pivot": [
+    48,
+    166
+   ],
+   "size": 1,
+   "states": {
+    "built": {
+     "file": "buildings/g7_growth_spire_built.png",
+     "mask": "buildings/g7_growth_spire_built_mask.png"
+    },
+    "damaged": {
+     "file": "buildings/g7_growth_spire_damaged.png",
+     "mask": "buildings/g7_growth_spire_damaged_mask.png"
+    }
+   }
+  }
+ },
+ "cell": [
+  48,
+  96
+ ],
+ "files": [
+  "growths.png",
+  "buildings/g7_growth_spire_built.png",
+  "buildings/g7_growth_spire_built_mask.png",
+  "buildings/g7_growth_spire_damaged.png",
+  "buildings/g7_growth_spire_damaged_mask.png",
+  "buildings/g7_growth_heart_built.png",
+  "buildings/g7_growth_heart_built_mask.png",
+  "buildings/g7_growth_heart_damaged.png",
+  "buildings/g7_growth_heart_damaged_mask.png"
+ ],
+ "foot": [
+  24,
+  92
+ ],
+ "group": "g7_growths",
+ "kinds": [
+  "spire",
+  "lattice",
+  "tendril",
+  "rib_arch",
+  "pod",
+  "antenna",
+  "shard_fan",
+  "coil",
+  "vent",
+  "node_tree"
+ ],
+ "sizes": [
+  0.5,
+  0.75,
+  1.0
+ ],
+ "tile": [
+  64,
+  32
+ ],
+ "version": 1
+}

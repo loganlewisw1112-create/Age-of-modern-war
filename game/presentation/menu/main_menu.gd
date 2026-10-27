@@ -140,6 +140,8 @@ func _build() -> void:
 	editor_b.pressed.connect(func(): editor_requested.emit())
 	var tut_b := _menu_button("Tutorial", _btn_flow)   # G5 (ED5 CR)
 	tut_b.pressed.connect(func(): tutorial_requested.emit())
+	var lp_b := _menu_button("Last Protocol", _btn_flow)   # G7 LPMODE7 CR: Last Protocol mode entry + records line
+	preload("res://presentation/ui7/lp_menu.gd").add_entry(_btn_flow, func(cfg): start_requested.emit(cfg), "user://lp_records.json", _left, lp_b)
 	var how := _menu_button("How to Play", _btn_flow)
 	how.pressed.connect(_toggle_howto)
 	var quit := _menu_button("Quit", _btn_flow)

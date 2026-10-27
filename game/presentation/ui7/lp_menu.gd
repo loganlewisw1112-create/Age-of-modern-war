@@ -79,21 +79,34 @@ static func fmt_time(secs: float) -> String:
 
 
 ## Adds the LAST PROTOCOL button (+ a one-line records summary) to a main-menu container.
-static func add_entry(parent: Control, on_start: Callable, path: String = RECORDS_PATH) -> Button:
-	var b := Button.new()
+static func add_entry(parent: Control, on_start: Callable, path: String = RECORDS_PATH, records_parent: Control = null,
+		btn: Button = null) -> Button:
+	var b := btn if btn != null else Button.new()
 	b.name = "LastProtocolButton"
-	b.text = "LAST PROTOCOL"
-	b.tooltip_text = "You against the Machine at maximum difficulty. Destroy all 3 cores and push the creep back."
+	if btn == null:
+		b.text = "LAST PROTOCOL"
+	b.tooltip_text = "Last Protocol: you against the Machine at maximum difficulty. Destroy all 3 cores and push the creep back."
 	b.pressed.connect(func():
 		var seed := int(Time.get_ticks_usec() % 1000000)
 		on_start.call(LastProtocol.make_config(seed)))
-	parent.add_child(b)
+	if b.get_parent() == null:
+		parent.add_child(b)
 	var rec := load_records(path)
 	var l := Label.new()
 	l.name = "LastProtocolRecords"
-	l.text = "Runs %d  Wins %d  Best time %s  Best score %d %s" % [int(rec.runs), int(rec.wins),
-		fmt_time(float(rec.best_time_s)), int(rec.best_score), String(rec.best_medal).to_upper()]
+	l.text = records_line(rec)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.add_theme_font_size_override("font_size", 12)
-	parent.add_child(l)
+	var rp: Control = records_parent if records_parent != null else parent
+	rp.add_child(l)
+	if records_parent != null and parent.get_parent() == records_parent:
+		records_parent.move_child(l, parent.get_index() + 1)  # right under the button row
 	return b
+
+
+static func records_line(rec: Dictionary) -> String:
+	if int(rec.runs) == 0:
+		return "Last Protocol: no runs yet"
+	return "Last Protocol: runs %d  wins %d  best time %s  best score %d%s" % [int(rec.runs), int(rec.wins),
+		fmt_time(float(rec.best_time_s)) if float(rec.best_time_s) >= 0.0 else "-", int(rec.best_score),
+		("  best medal " + String(rec.best_medal).to_upper()) if String(rec.best_medal) != "" else ""]

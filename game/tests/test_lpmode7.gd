@@ -116,7 +116,7 @@ func test_countdown_math() -> void:
 
 func test_lose_creep_critical() -> void:
 	var w := _lp()
-	_set_cov(w, 0.7)
+	_set_cov(w, float(LastProtocol.R().creep.critical) + 0.05)  # past the (tuned) critical line
 	var evs := _evs(w, 25, ["LpEnding", "MatchEnded"])
 	check(_has(evs, "LpEnding") and bool(w.match_state.ended), "creep critical ends the run")
 	check_eq(String(_s(w).result.ending), "defeat_creep", "defeat ending: creep")
@@ -140,9 +140,12 @@ func test_lose_facility_falls() -> void:
 	w.destroy(int(s.facility), "test", int(s.mfid))
 	_evs(w, 25, [])
 	check(not bool(s.ended), "facility down but teams in the field: the run goes on")
-	for e in w.units_of(int(s.fid)):
-		if e.has("cn_team"):
-			w.destroy(int(e.id), "test", int(s.mfid))
+	for k in 4:  # an APC's death can put its embarked operators on the ground: repeat until none are left
+		for e in w.units_of(int(s.fid)):
+			if e.has("cn_team"):
+				w.destroy(int(e.id), "test", int(s.mfid))
+		_evs(w, 3, [])
+	check_eq(LastProtocol.teams_in_field(w, s), 0, "no counter-nanite team left in the field")
 	_evs(w, 25, [])
 	check_eq(String(s.get("result", {}).get("ending", "")), "defeat_facility", "facility fallen with no teams: defeat")
 
@@ -228,13 +231,14 @@ func test_breach_fallback_and_raid() -> void:
 	var r0: Rect2i = s.base.rings[0].rect
 	var r1: Rect2i = s.base.rings[1].rect
 	var p := Vector2((r0.position.x + r1.position.x) / 2, r0.get_center().y) + Vector2(0.5, 0.5)
-	for i in 5:
-		w.spawn_unit("m_walker", int(s.mfid), p + Vector2(0, i))
+	var br: Dictionary = LastProtocol.R().breach
+	for i in int(br.hostile_min) + 2:
+		w.spawn_unit("m_walker", int(s.mfid), p + Vector2(float(i % 2), float(i / 2)))
 	var before := 0
 	for e in w.units_of(int(s.fid)):
 		if e.has("lp_ring") and int(e.lp_ring) == 0:
 			before += 1
-	var evs := _evs(w, 200, ["LpRingBreached", "LpGatesSealed"])
+	var evs := _evs(w, int((float(br.hold_s) + 5.0) * SimWorld.TICK_RATE), ["LpRingBreached", "LpGatesSealed"])
 	check(_has(evs, "LpRingBreached") and bool(s.base.rings[0].fallen), "Machine inside the outer ring: breach")
 	check(_has(evs, "LpGatesSealed"), "the next ring's gates seal")
 	var locked := 0
@@ -267,7 +271,7 @@ func test_outside_walls_punished() -> void:
 	var cp: Vector2 = cl[0].pos
 	var u := -1
 	for e in w.units_of(int(s.fid)):
-		if e.has("lp_ring") and not e.has("cn_team") and String(e.def) == "rifle_squad":
+		if e.has("lp_ring") and not e.has("cn_team") and String(e.def) == "rifleman":
 			u = int(e.id)
 			break
 	check(u >= 0, "a rifle squad to send out")
@@ -371,3 +375,35 @@ func test_normal_match_untouched() -> void:
 	check(not w.sys_state.has("lp"), "a normal match never creates Last Protocol state")
 	check(LastProtocol.hud(w).is_empty(), "no HUD data outside the mode")
 	check(LastProtocol.validate_command(w, {"type": "lp_posture", "issuer": 0, "posture": "alert"}) != "", "LP commands refused in normal matches")
+
+
+## LPMODE7-3: the real last_protocol layout (map.lp): gates stand on the road cells through each wall, towers come
+## from map.lp towers, a breach seals the next ring's gates (Fortify lock), the Tide sets maximum posture at once.
+func test_real_map_layout_breach_and_tide() -> void:
+	if not preload("res://sim/map_gen.gd").has_map("last_protocol"):
+		check(true, "last_protocol map not registered: skipped")
+		return
+	var w := SimWorld.new_match(LastProtocol.make_config(77, "last_protocol"))
+	w.run_ticks(2)
+	var s := _s(w)
+	var lp: Dictionary = w.map.lp
+	for i in 3:
+		var r: Dictionary = s.base.rings[i]
+		check_eq((r.gates as Array).size(), (lp.base.rings[i].gates as Array).size(), "%s ring: every map gate cell has a gate" % r.name)
+		check((r.towers as Array).size() > 0, "%s ring: map towers built (%d)" % [r.name, (r.towers as Array).size()])
+	var f: Dictionary = w.factions[int(s.fid)]
+	check(int(f.power_prod) >= int(f.power_use), "pre-built base powered (%d / %d): powered air defence works" % [int(f.power_prod), int(f.power_use)])
+	LpDefence_fall(w, s)
+	var locked := 0
+	for g in s.base.rings[1].gates:
+		var gb = w.entities.get(int(g))
+		if gb != null and bool(gb.get("locked", false)):
+			locked += 1
+	check_eq(locked, (s.base.rings[1].gates as Array).size(), "outer ring falls: every economy gate sealed")
+	check(String(s.posture) != "maximum", "posture below maximum before the Tide")
+	LastProtocol.start_tide(w, s, "countdown")
+	check_eq(String(s.posture), "maximum", "THE TIDE sets maximum posture inside start_tide")
+
+
+func LpDefence_fall(w: SimWorld, s: Dictionary) -> void:
+	preload("res://sim/systems/lp_defence.gd").fall(w, s, 0, Vector2(s.base.center) + Vector2(-40, 0))

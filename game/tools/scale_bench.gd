@@ -132,6 +132,7 @@ func _mv_flag(name: String) -> String:
 static func config(map_id: String, facs: Array) -> Dictionary:
 	var c := SimWorld.default_config()
 	c.map = map_id
+	c.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 	c.victory = "endless"
 	var sides := []
 	for i in facs.size():

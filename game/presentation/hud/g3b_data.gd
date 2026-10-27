@@ -66,6 +66,8 @@ static func map_rows() -> Array:
 			ids.append(k)
 	var rows: Array = []
 	for id in ids:
+		if listed.has(id) and not bool(listed[id].get("skirmish", true)):
+			continue  # G7 (owner): mode-only maps (Last Protocol, SCALE7 test maps) never appear in skirmish
 		var base: Dictionary = MAP_FALLBACK.get(id, {"id": id, "name": String(id).capitalize(), "size": "s", "w": 96, "h": 96, "max_sides": 4}).duplicate()
 		var present: bool = listed.has(id) or id == "river_crossing_s"
 		if listed.has(id):

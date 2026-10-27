@@ -78,6 +78,7 @@ const CnFacility = preload("res://sim/systems/cn_facility.gd") # G7 Counter-Nani
 const BaseState7 = preload("res://sim/systems/base_state7.gd") # G7 base secure state (CNFAC7)
 const Threats7 = preload("res://sim/systems/threats7.gd") # G7 Machine threat units (THREAT7)
 const LastProtocol = preload("res://sim/systems/last_protocol.gd") # G7 Last Protocol mode rules (LPMODE7)
+const Fissures7 = preload("res://sim/systems/fissures7.gd")  # G7 FISSURE7: creep fissures, canyons, growths (ticked from Creep)
 const Turrets7 = preload("res://sim/systems/turrets7.gd") # G7 8 Human A turrets (TURRET7 CR seq 480)
 const CommandNet = preload("res://sim/systems/command_net.gd") # G6.1 chain of command + comms (CHAIN61)
 const Intel = preload("res://sim/systems/intel.gd")            # G6.1 per-side belief (CHAIN61)
@@ -195,6 +196,7 @@ const COMMANDS := {
 	"cn_pincer": CounterNanite,  # G7 CNSIM7-3 CR: anti-walker pincer on one order
 	"t7_pry": Threats7,  # G7 THREAT7 CR: pry a leech off a vehicle
 	"t7_cut": Threats7,  # G7 THREAT7 CR: cut a soldier out of a Weaver cocoon
+	"fissure_span": Fissures7,  # G7 FISSURE7 CR: engineers span a fissure/canyon {issuer, unit_ids, cell:[x,y]}
 	"cn_break_contact": CounterNanite,  # G7 CNSIM7-3 CR: formed withdrawal
 	"cn_deploy": CounterNanite,
 	"cn_hero_detonate": CounterNanite,

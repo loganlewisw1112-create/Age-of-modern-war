@@ -20,6 +20,7 @@ const NAMES := ["main_menu", "main_menu_howto", "main_menu_load", "hud_idle", "h
 	"settings", "ui5b_airfield", "ui5b_air_mixed", "ui5b_drone_tactical", "ui5b_build_air",  # G5 UI5b (ORCH CR)
 	"ui6a_market", "ui6a_army", "ui6a_forces", "ui6a_commanders", "ui6a_hud_company", "ui6a_hud_company_hq",
 	"ui6a_menu_survival",  # G6 UI6a (presentation/ui6/a/fit_ui6a.gd)
+	"ui7_lp_hud", "ui7_lp_end",  # G7 LPMODE7 (presentation/ui7/lp_hud.gd)
 	"ui5b_g6_infantry", "ui5b_g6_vehicles", "ui5b_g6_engineer", "ui5b_g6_garage", "ui5b_g6_research",  # G6 UI6b (presentation/ui6/b/g6_scen.gd via fit_panels)
 	"cmd61_mode", "cmd61_plans", "sq61_teams", "sq61_formations", "sq61_stance"]  # + G6.1 SQUAD61 Teams panel + card pages  # G6.1 command layer (PLAN61 CR seq 185)
 
@@ -60,6 +61,8 @@ static func _hud(vp: Node, sc: float, key: String = "s8") -> Array:
 
 ## Async: returns false when the screen does not exist yet (e.g. another agent's panel).
 static func build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -> bool:
+	if nm.begins_with("ui7_lp"):  # G7 LPMODE7
+		return await load("res://presentation/ui7/lp_hud.gd").fit_build(nm, vp, sc, tree)
 	if nm.begins_with("sq61_"):  # G6.1 SQUAD61
 		return await load("res://presentation/ui6/teams_panel.gd").fit_build(nm, vp, sc, tree)
 	if nm.begins_with("cmd61_"):  # G6.1 command layer (PLAN61)

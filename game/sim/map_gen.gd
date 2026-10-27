@@ -26,6 +26,7 @@ const MODULES := {
 	"ridge_bastion_m": preload("res://sim/maps/ridge_bastion.gd"),  # G6 (MODES6) survival
 	"river_dam_m": preload("res://sim/maps/river_dam.gd"),  # G6 (MODES6) survival
 	"lp_test512": preload("res://sim/maps/lp_test512.gd"),  # G7 (SCALE7) Last Protocol scale test map
+	"last_protocol": preload("res://sim/maps/last_protocol.gd"),  # G7 (LPMAP7) the Last Protocol map (mode only)
 }
 ## G7 (SCALE7): the same generator at another size (id -> [module, side]); generate() calls module.gen().
 const SIZED := {"lp_test768": ["lp_test512", 768]}
@@ -287,6 +288,8 @@ static func validate(m: Dictionary) -> String:
 		return MODULES["coastal_front_m"].validate(m)
 	if String(m.get("id", "")) in ["ridge_bastion_m", "river_dam_m"]:  # G6 (MODES6): gate / lane / barrier checks
 		return MODULES[String(m.id)].validate(m)
+	if String(m.get("id", "")) == "last_protocol":  # G7 (LPMAP7): asymmetric 1v1 vs the Machine, its own checks
+		return MODULES["last_protocol"].validate(m)
 	if String(m.get("id", DEFAULT_ID)) != DEFAULT_ID:
 		return MapCheck.validate(m)
 	var t: PackedByteArray = m.terrain

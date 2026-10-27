@@ -8,8 +8,8 @@
       "length_target_s": [3600, 5400],
       "nominal_run_s": 4500,
       "think_every": 20,
-      "creep": {"critical": 0.62, "warn": [0.4, 0.5, 0.58], "win_below": 0.12, "total_purge_below": 0.03, "prespread_value": 200},
-      "countdown": {"total_s": 4800, "final_stage_frac": 0.15, "warn_s": [1800, 900, 300, 60]},
+      "creep": {"critical": 0.7, "warn": [0.55, 0.62, 0.67], "win_below": 0.12, "total_purge_below": 0.03, "prespread_value": 200, "_tuned": "LPMODE7-3: on last_protocol the start state settles at ~0.455 coverage within a minute (27 Machine buildings + 50 nest seeds: reach is set by the sources, not the pre-spread), so the critical line sits 0.245 above it"},
+      "countdown": {"total_s": 9000, "final_stage_frac": 0.15, "warn_s": [3600, 1800, 900, 300, 60], "_tuned": "LPMODE7-3: Cores.countdown_rate = 1 + 2 x coverage runs at ~1.9-2.0 on last_protocol, so 9000 protocol-seconds = ~75 real minutes"},
       "phases": [
         {"n": 1, "at_frac": 0.1},
         {"n": 2, "at_frac": 0.3},
@@ -26,6 +26,7 @@
         "vtol_def": "a_vtol_dropship",
         "vtols": 2,
         "hq_def": "a_company_hq",
+        "power_def": "generator",
         "army": {
           "outer": {"rifle_squad": 16, "at_team": 8, "a_hmg_team": 6, "mbt": 6, "ifv": 6, "a_spaag": 2},
           "economy": {"rifle_squad": 8, "a_manpads": 4, "engineer": 8, "a_medic_team": 2},
@@ -40,7 +41,7 @@
       },
       "layout_fallback": {"outer": 70, "economy": 55, "core": 35, "gate_every": 0, "tower_every": 10, "turret_every": 14, "margin": 8},
       "defence": {"think_every_s": 3.0, "reserve_frac": 0.25, "threat_radius": 14.0, "rotate_hp_frac": 0.4, "posture": ["normal", "alert", "maximum"], "alert_threat": 6, "repair_every_s": 5.0, "repair_hp": 40.0, "rebuild_after_s": 20.0},
-      "breach": {"check_every_s": 2.0, "hostile_min": 3, "hold_s": 6.0, "economy_income_mult": 0.5, "creep_seed": true},
+      "breach": {"check_every_s": 2.0, "hostile_min": 4, "hold_s": 10.0, "_tuned": "LPMODE7-3: ground units only (aircraft overhead never hold a ring); 3 for 6 s let the first stray group take a ring in the natural soak", "economy_income_mult": 0.5, "creep_seed": true},
       "outside": {"check_every_s": 2.0, "creep_dps": 1.5, "pack_after_s": 45.0, "pack_min_units": 3, "pack_defs": ["g7_m_packhunter", "m_stalker_synth"], "pack_size": 4, "pack_cooldown_s": 90.0},
       "air": {"leash": 12.0, "support_s": 60.0},
       "setpieces": {

@@ -148,6 +148,7 @@ func _run_one(n_total: int, ticks: int) -> Dictionary:
 	var c := SimWorld.default_config()
 	if map_id != "":
 		c.map = map_id
+		c.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 	c.victory = "endless"
 	c.sides[0].ai = false
 	c.sides[1].ai = false

@@ -45,6 +45,7 @@ func _world512() -> SimWorld:
 	if _w512 == null:
 		var c := SimWorld.default_config()
 		c.map = "lp_test512"
+		c.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 		c.sides[1].ai = false
 		_w512 = SimWorld.new_match(c)
 		_w512.ai_state = {}
@@ -158,6 +159,7 @@ func test_scale7_fog_far_corner() -> void:
 func test_scale7_index_and_combat_far_corner() -> void:
 	var c0 := SimWorld.default_config()
 	c0.map = "lp_test512"
+	c0.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 	c0.sides[1].ai = false
 	var w := SimWorld.new_match(c0)
 	w.ai_state = {}
@@ -182,6 +184,7 @@ func test_scale7_same_seed_same_hash_lp512() -> void:
 	for run in 2:
 		var c := SimWorld.default_config()
 		c.map = "lp_test512"
+		c.dev_map = true  # G7: lp_test maps are skirmish:false (owner); dev_map lets this dev/test path start them
 		c.seed = 4242
 		c.sides[1].ai = false
 		var w := SimWorld.new_match(c)

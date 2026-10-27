@@ -88,22 +88,25 @@ static func _occ(w: SimWorld) -> Dictionary:
 	return occ
 
 
-static func _free(w: SimWorld, occ: Dictionary, o: Vector2i, size: int) -> bool:
+static func _free(w: SimWorld, occ: Dictionary, o: Vector2i, size: int, road_ok: bool = false) -> bool:
 	for dy in size:
 		for dx in size:
 			var c := o + Vector2i(dx, dy)
-			if not w.in_bounds(c) or occ.has(c) or not Terrain.buildable(w.terrain_at(c)):
+			if not w.in_bounds(c) or occ.has(c):
+				return false
+			var t := w.terrain_at(c)
+			if not Terrain.buildable(t) and not (road_ok and (t == Terrain.ROAD or t == Terrain.BRIDGE)):
 				return false
 	return true
 
 
 ## Spawns def at origin when the footprint is free and the def exists. Returns the id or -1.
-static func place(w: SimWorld, occ: Dictionary, def: String, fid: int, o: Vector2i) -> int:
+static func place(w: SimWorld, occ: Dictionary, def: String, fid: int, o: Vector2i, road_ok: bool = false) -> int:
 	var d := Content.building(def)
 	if d.is_empty():
 		return -1
 	var size := int(d.get("size", 1))
-	if not _free(w, occ, o, size):
+	if not _free(w, occ, o, size, road_ok):
 		return -1
 	var id := w.spawn_building(def, fid, o, true)
 	for dy in size:
@@ -221,6 +224,8 @@ static func build_rings(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) 
 		for t in towers:
 			tset[_v2i(t)] = true
 		var cells: Array = md.get("wall", perimeter(rect))
+		if md.has("wall"):
+			cells = cells + towers  # map.lp lists tower cells apart from the wall cells
 		var every := int(lf.get("tower_every", 10))
 		var rec := {"walls": [], "gates": [], "towers": [], "turrets": [], "bunkers": []}
 		var k := 0
@@ -234,7 +239,7 @@ static func build_rings(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) 
 				(rec.towers if tower else rec.walls).append(id)
 			k += 1
 		for g in gset:
-			var gid := place(w, occ, "a_gate", fid, g)
+			var gid := place(w, occ, "a_gate", fid, g, true)  # gates sit on the road through the wall
 			if gid >= 0:
 				rec.gates.append(gid)
 		var tslots: Array = md.get("turrets", [])
@@ -293,24 +298,37 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 		var spec: Dictionary = army.get(key, {})
 		var names := spec.keys()
 		names.sort()
-		var list := []
+		var list := []  # one entry per group: [member defs] (a squad item like rifle_squad = its production spawns)
 		for n in names:
+			var grp: Array = [String(n)]
 			if Content.unit(String(n)).is_empty():
+				grp = (Content.production(String(n)).get("spawns", []) as Array).duplicate()
+			if grp.is_empty() or Content.unit(String(grp[0])).is_empty():
 				continue
 			for k in int(spec[n]):
-				list.append(String(n))
+				list.append(grp)
 		var ri: int = mini(int(ring_ix[key]), (L0.rings as Array).size() - 1)
 		var h: int = (L0.rings[ri].rect as Rect2i).size.x / 2 - (3 if key != "air" else 6)
 		if key == "core" or key == "air":
 			h = maxi(h / 2, 3)
 		var pts := square_points(c, maxi(h, 2), list.size())
 		for j in list.size():
-			var p := Vector2(pts[j]) + Vector2(0.5, 0.5)
-			var id := w.spawn_unit(String(list[j]), fid, p)
-			var e: Dictionary = w.entities[id]
-			e.lp_ring = ri
-			e.lp_home = Vector2(p)
-			ids.append(id)
+			var grp: Array = list[j]
+			var squad := -1
+			if grp.size() > 1:  # same squad numbering as Production._complete
+				var pst: Dictionary = w.sys_state.get("production", {"next_squad": 1})
+				squad = int(pst.next_squad)
+				pst.next_squad = squad + 1
+				w.sys_state["production"] = pst
+			for m in grp.size():
+				var p := Vector2(pts[j]) + Vector2(0.5, 0.5) + Vector2(float(m % 2) - 0.5, float(m / 2) - 0.5) * 0.9
+				var id := w.spawn_unit(String(grp[m]), fid, p)
+				var e: Dictionary = w.entities[id]
+				if squad >= 0:
+					e.squad = squad
+				e.lp_ring = ri
+				e.lp_home = Vector2(p)
+				ids.append(id)
 	return ids
 
 
@@ -356,9 +374,17 @@ static func build_machine(w: SimWorld, occ: Dictionary, L0: Dictionary, mfid: in
 		var o := _v2i(cc)
 		var size := int(Content.building(cdef).get("size", 3))
 		var bid := -1
-		for r in 8:
-			if _free(w, occ, o + Vector2i(r, 0), size):
-				bid = Cores.place(w, mfid, o + Vector2i(r, 0), cdef)
+		for r in 12:  # nearest free spot on growing square rings around the planned cell (fixed scan order)
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if bid >= 0 or maxi(absi(dx), absi(dy)) != r:
+						continue
+					var oo := o + Vector2i(dx, dy)
+					if oo.x < 2 or oo.y < 2 or oo.x + size > int(w.map.w) - 2 or oo.y + size > int(w.map.h) - 2:
+						continue
+					if _free(w, occ, oo, size):
+						bid = Cores.place(w, mfid, oo, cdef)
+			if bid >= 0:
 				break
 		if bid >= 0:
 			var b: Dictionary = w.entities[bid]
@@ -449,6 +475,43 @@ static func research_all(w: SimWorld, fid: int) -> int:
 	return done.size()
 
 
+## Power for the pre-built base (LPMODE7-3): the rings, turrets and plots draw ~4400 power against the plots' few
+## generators, and a side in power deficit loses its powered air defence (Airdef requires_power) and supply recharge.
+## Generators (rules start.power_def, 10% headroom) line the inside of the core-ring wall (4 cells in, a 2-cell lane
+## between neighbours, then the next square inward), so the centre, the facility and the gate roads stay open.
+static func power_up(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> int:
+	var gdef := String(R().get("start", {}).get("power_def", "generator"))
+	var gp := int(Content.building(gdef).get("power", 0))
+	if gp <= 0:
+		return 0
+	var use := 0
+	var prod := 0
+	var ids: Array = w.entities.keys()
+	ids.sort()
+	for id in ids:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "building" or int(e.owner) != fid:
+			continue
+		var pw := int(Content.building(String(e.def)).get("power", 0))
+		if pw < 0:
+			use -= pw
+		else:
+			prod += pw
+	var need := ceili(float(use) * 1.1 / float(gp)) - prod / gp
+	var c: Vector2i = L0.center
+	var top: int = (L0.rings[(L0.rings as Array).size() - 1].rect as Rect2i).size.x / 2 - 4
+	var placed := 0
+	var h := top
+	while placed < need and h >= 8:
+		for pt in square_points(c, h, maxi(perimeter(_sq(c, h)).size() / 4, 4)):
+			if placed >= need:
+				break
+			if place(w, occ, gdef, fid, pt) >= 0:
+				placed += 1
+		h -= 5
+	return placed
+
+
 ## Pre-builds the whole start state. Returns a summary stored in the mode state.
 static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var L0 := layout(w)
@@ -459,6 +522,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var hq := place_near(w, occ, String(st.get("hq_def", "a_company_hq")), fid, L0.center + Vector2i(8, 8), 8)
 	var rings := build_rings(w, occ, L0, fid)
 	var plots := build_plots(w, occ, L0, fid)
+	var gens := power_up(w, occ, L0, fid)
 	var army := build_army(w, L0, fid)
 	var vtols := build_vtols(w, L0, fid)
 	var mach := build_machine(w, occ, L0, mfid)
@@ -471,7 +535,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 			"gates": rings[i].gates if i < rings.size() else [], "towers": rings[i].towers if i < rings.size() else [],
 			"turrets": rings[i].turrets if i < rings.size() else [], "fallen": false, "breach_t": 0})
 	return {"center": L0.center, "rings": rr, "facility": fac, "hq": hq, "plots": plots, "army": army, "vtols": vtols,
-		"cores": mach.cores, "nests": mach.nests, "creep_cells": on_n, "scale": L0.scale, "from_map": L0.from_map}
+		"cores": mach.cores, "nests": mach.nests, "generators": gens, "creep_cells": on_n, "scale": L0.scale, "from_map": L0.from_map}
 
 
 ## Fills the raised facility: strike teams, tactical squads and the stealth dropship on its helipad (CNFAC7's own

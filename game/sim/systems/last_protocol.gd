@@ -117,6 +117,7 @@ static func setup(w: SimWorld) -> Dictionary:
 	s.weaver_frac = weaver_frac(w.seed_value)
 	s.sites = LpWorld.sites_from(w)
 	s.creep_peak = Creep.coverage(w)
+	s.cd_rate = Cores.countdown_rate(w)  # the HUD shows the real rate from the first frame
 	# reserves: a quarter of the army, taken from the core-ring ground units
 	var core_units := []
 	for id in b.army:
@@ -173,6 +174,7 @@ static func tick(w: SimWorld) -> void:
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
 	if LpSetup.fill_facility(w, int(s.fid)):
 		s.filled = true
+		s.fill_tick = w.tick  # the fill's own CnTeamReady events land in this tick's list: not counted twice
 		var st0: Dictionary = R().get("start", {})
 		s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))
 		w.emit("LpFacilityReady", {"teams": s.teams_total})
@@ -191,7 +193,7 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				if int(ev.get("owner", fid)) == fid:
 					s.teams_lost = int(s.teams_lost) + 1
 			"CnTeamReady":
-				if int(ev.get("owner", fid)) == fid and bool(s.filled):
+				if int(ev.get("owner", fid)) == fid and bool(s.filled) and w.tick != int(s.get("fill_tick", -1)):
 					s.teams_total = int(s.teams_total) + 1
 			"CnTeamParked":
 				s.extractions = int(s.extractions) + 1
@@ -262,6 +264,12 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 	var td: Dictionary = R().get("tide", {})
 	s.phase = int(td.get("max_phase", 4))
 	Cores.set_phase(w, int(s.phase))
+	# the defence AI Commander goes to maximum posture now (the player's lp_posture override still wins)
+	var post := String(s.get("posture_override", ""))
+	post = "maximum" if post == "" else post
+	if post != String(s.posture):
+		s.posture = post
+		w.emit("LpPosture", {"posture": post, "sector": -1, "tide": true})
 	var c := Vector2(s.base.center)
 	var m := Vector2(w.factions[int(s.mfid)].spawn)
 	var n := int(td.get("surge_seeds", 8))

@@ -19,6 +19,7 @@ const Creep = preload("res://sim/systems/creep.gd")
 const HotState = preload("res://sim/hot_state.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
 const Air = preload("res://sim/systems/air.gd")
+const Fortify = preload("res://sim/systems/fortify.gd")
 const THREATS_PATH := "res://sim/systems/threats7.gd"
 const OVERRIDE_TICKS := 400
 
@@ -82,7 +83,10 @@ static func order(w: SimWorld, fid: int, us: Array, ty: String, p: Vector2) -> i
 	if ids.is_empty():
 		return 0
 	ids.sort()
-	w.submit({"type": ty, "issuer": fid, "unit_ids": ids, "target": p, "ai_cmd": "lp"})
+	var cmd := {"type": ty, "issuer": fid, "unit_ids": ids, "target": p, "ai_cmd": "lp"}
+	if w.preview_command(cmd) != "":
+		return 0  # e.g. a home cell behind a sealed gate: no order (and no rejected-command toast for the player)
+	w.submit(cmd)
 	return ids.size()
 
 
@@ -99,7 +103,7 @@ static func scan(w: SimWorld, s: Dictionary) -> Dictionary:
 		var p: Vector2 = e.pos
 		if not near.has_point(Vector2i(int(p.x), int(p.y))):
 			continue
-		var ri := _ring_at(s, p)
+		var ri := _ring_at(s, p) if not Air.is_aircraft(e) else -1  # aircraft overhead never "hold" a ring
 		if ri >= 0:
 			per[ri] += 1
 			(at[ri] as Array).append(p)
@@ -224,6 +228,9 @@ static func fall(w: SimWorld, s: Dictionary, i: int, at: Vector2) -> void:
 		for gid in rings[nxt].gates:
 			var g = w.entities.get(int(gid))
 			if g != null:
+				if not bool(g.get("locked", false)):
+					# Fortify's own gate lock (also closes the gate cell in the nav grid for the Machine)
+					Fortify.apply_command(w, {"type": "set_gate_lock", "issuer": int(g.owner), "building_id": int(g.id), "locked": true})
 				g.locked = true
 				sealed += 1
 	if bool(R().get("breach", {}).get("creep_seed", true)):
