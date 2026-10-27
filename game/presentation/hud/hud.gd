@@ -603,8 +603,12 @@ func _refresh() -> void:
 	_power.add_theme_color_override("font_color", HT.RED if pu > pp else HT.YELLOW)
 	var pop := int(f.pop)
 	var cap := int(f.pop_cap)
-	_pop.text = "POP %d/%d" % [pop, cap]
-	_pop.add_theme_color_override("font_color", HT.RED if pop >= cap and cap > 0 else HT.BLUE)
+	if cap >= 1000000:   # G7 owner 13.9d: Last Protocol has no population cap
+		_pop.text = "POP %d (NO CAP)" % pop
+		_pop.add_theme_color_override("font_color", HT.BLUE)
+	else:
+		_pop.text = "POP %d/%d" % [pop, cap]
+		_pop.add_theme_color_override("font_color", HT.RED if pop >= cap and cap > 0 else HT.BLUE)
 	_stage.text = "STAGE %d" % int(f.stage)
 	_clock.text = HT.clock_text(w.tick)
 	var paused: bool = bool(mv.get("paused"))

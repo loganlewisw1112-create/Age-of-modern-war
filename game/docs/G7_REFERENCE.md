@@ -573,6 +573,139 @@ Owner: "NO ores, salv, etc should be found inside nanite facility at ALL". No or
 deposit / node / pickup inside the counter-nanite facility compound (every map, every match); the site is cleared of
 them along with terrain and props. A test checks it.
 
+#### 13.9c-6 Missing facility buildings (owner choice, 2026-10-27)
+Owner asked "is there any buildings we're might be missing inside the counter nanite facility?? Maybe an Ammo depot for
+specialized rounds ... don't necessarily want to make the facility much bigger if we don't have to" and chose all of:
+**special ammo magazine** (hardened, earth-covered bunker for counter-nanite rounds: disruptor charges, limpets,
+harpoons, rocket-pod reloads; far corner, away from the ops room, blast walls), **armory + suit bay** (weapons issue,
+hazmat/CBRN suit fitting, suit-breach repair; on the infantry path between the decon hall and staging), **aid station**
+(triage + nanite-exposure treatment, attached to the infantry decon hall), **fuel/rearm point + ready room** (hot
+refuel/rearm at the dropship pads and garages, alert-team ready room, backup generator), and asked "Anything else?".
+ORCH added, folded into existing pieces (no new ground): a contaminated-runoff tank at the APC wash, a quarantine bay in
+the aid station, a comms / EW mast on the ops building. Keep the compound about the same size (grow at most 2 tiles a
+side only if it cannot fit). Each building has a real purpose in the sim where cheap (magazine = the teams' special
+ammo resupply point and a priority target; armory/suit bay = suit repair; aid station = treats exposure/wounds; fuel
+point = refuels/rearms dropships and APCs), finished art at the approved detail level, and the no-overlap rules.
+
+#### 13.9c-7 A living facility: activity, atmosphere, sequences, detail (owner choice, 2026-10-27)
+Owner: "any other small details that could add great depth, visuals, animations to our facility?? ask questions as
+necessary for scope and my answers get directly implimented". Chosen (all options, plus "More fucking phenomenal depth"):
+- **Activity:** staff moving around (technicians and guards on real routes, gate guards checking arrivals, a guard dog
+  on the inner wall); vehicles at work (forklifts carrying ammo crates magazine -> APCs / pads, a fuel truck servicing
+  the pads, a tow tractor moving dropships); training on the range (drills, pop-up targets, kill-house lights during
+  live fire); drones and hangar doors (a perimeter drone circling, drone-bay and garage doors rolling open / shut).
+- **Atmosphere:** alarm state (attack / lockdown: red rotating beacons, flashing wall lights, tower searchlights
+  sweeping, blast doors closing); night lighting (floodlight pools, blinking pad / runway edge lights, lit windows,
+  light spilling from open garages); smoke, steam, mist (generator exhaust, steaming vents, drifting decon mist,
+  windsock and flags in the wind); wear and ground detail (tyre tracks and wet asphalt after the wash, oil stains on
+  pads, hazard stripes, unit insignia and numbers on garages).
+- **Mission sequences on screen:** launch (alarm, crews run to the APCs, garages open, APCs roll up the ramp, ramp
+  closes, rotor spool-up with dust, take-off); return + decon (dropship lands, APCs through the wash with spray, crews
+  walk the decon hall and come out clean); casualty flow (medics carry stretchers pad -> aid station, quarantine-bay
+  lights for exposed soldiers); resupply flow (ammo carts load the APC rocket pods and special rounds before launch).
+- **Building detail:** damage states (cracks, fires, smoke, ruins); moving parts (radar dish, blinking comms-mast
+  lights, glowing ops screens, tower cupolas tracking targets); ops-room activity (staff at screens, a map table showing
+  live strike-team positions); signage and markings (building signs, lane arrows, gate numbers, warning boards).
+- **More depth:** each agent adds further touches of its own in the same spirit and lists them.
+All display-only (state hash identical with it on / off), fps gates hold, follows the approved art detail level.
+
+#### 13.9c-8 Inner APC gate turned; a hardened foot entry (owner note, 2026-10-27)
+Owner: "honestly almpst everyting is perfect on this base --- one sugeestion: the first level (decontamination zone for
+apcs is perfect ; BUT that big sideways blocky section seems to cut off where the apcs come out of the (decontamination
+zone) ?? maybe turn it and redesign it so it makes more sense?? ... + the entry point on foot is MUCH to unguarded and
+not even fortified -- redesign that entry/decontamination point for ground units on foot WAY better -- more secure is
+the key."
+- **Keep** the outer APC gate and the APC wash exactly as they are (the owner: "perfect").
+- **Inner APC gate:** the block after the wash stands sideways across the APC lane, so it reads as cutting off the exit.
+  Turn it to the same orientation as the outer gate (its opening on the APC travel axis, the APC visibly drives
+  straight out of the wash through it) and redesign it to match the outer gate as the second reinforced layer.
+- **Foot entry:** replace the small booth + barrier arm with a fortified pedestrian entry control point built into the
+  wall line: a hardened gatehouse, a serpentine / blast-walled approach outside, a two-door mantrap (airlock: only one
+  door open at a time), an ID / scan station, a guard bunker with firing ports covering the approach, overwatch from the
+  flanking towers, then the infantry decon hall, then a reinforced inner door into the compound. Lockdown seals every
+  door. It must look and play secure (the defenders fight from it; attackers cannot walk straight in).
+
+#### 13.9c-9 Unmanned wall turrets; an enclosed APC wash (owner note, 2026-10-27)
+Owner: "all of the new manned sentry guns you added around the facility are wrong: i need unmaned AI turrets attached to
+the sides of some of the walls (can be selected and destroyed + rebought and placed elswhere along the outer or inner
+walls of facility only) ** ALSO + the wash/decontam zone for apcs is perfect just add outer walls so thats a secure zone
+to wsah apcs off securely before entering ; second inner gate that will match the design and thickness walls as the
+outer gate - is linked together with that new 'link' wall same thickness at each gate to sorround the apc wash zone".
+- **Remove** the manned sentry nests (a_t7_hmg_nest) from the facility.
+- **Wall turrets:** unmanned AI turrets mounted on the face of the facility walls (some walls, outer and inner faces),
+  facing out from the face they hang on. Each is a real entity: selectable, can be destroyed, can be bought again and
+  placed, but ONLY on an outer or inner face of a facility wall segment (placement rule; no other spot). The facility
+  starts with a sensible set of them.
+- **Enclosed APC wash:** the wash itself stays as it is ("perfect"). Add walls on both sides of the wash so it is a
+  closed, secure zone: outer gate -> wash -> inner gate, the inner gate redesigned to match the outer gate's design and
+  wall thickness (supersedes the "turn it" part of 13.9c-8), and new "link" walls of the same thickness joining each
+  gate on both sides, surrounding the wash zone.
+
+#### 13.9c-10 Sentinels: the facility's own guard force (owner note, 2026-10-27)
+Owner: "all of the hardend towers sorrounding the facility should be able to hold up to 4 specialized NEW units only
+available from the right building that trains /houses these units (that building must be able to garrison up to a
+company of these units at any given time) ; these new units are specialized near hybrid human sentry guards - think slim
+nanotech self heal armour with specialized weapons from the facility of course (up to 7 different types specialty units
+within this unit structure - but NO command strucure just capabilites and weapons types *youre in charge* or your ai
+commander obviously) --- they man the walls (the guards youre animating in for the walls) as well as the interior or the
+facility on patrol + they can garrision at the infantry walk in new designed booth/scan point (max 15 in that one) //
+they are very strong and incredible on defense againts humans AND machine --- dont make them invincible thouhg..."
+ORCH decisions (owner: "youre in charge"; all numbers PROVISIONAL):
+- **Sentinels** (Human A and Human B variants): near-hybrid human sentry guards, slim nanotech armour that self-heals
+  (regenerates out of combat; stops while under fire / suppressed / EMP'd), weapons from the facility. No officers, no
+  squads-with-leaders: each is commanded directly (or by the AI commander). Seven types:
+  1. **Sentinel Warden** - disruptor carbine (anti-personnel + anti-nanite), the line guard.
+  2. **Sentinel Marksman** - long disruptor rifle, thermal optics; tower / wall overwatch.
+  3. **Sentinel Gunner** - rotary disruptor gun; suppression, kills Machine swarms.
+  4. **Sentinel Bulwark** - nanoweave shield + breaching shotgun; holds doors, gates and the mantrap.
+  5. **Sentinel Lancer** - harpoon / limpet launcher; anti-walker and anti-vehicle.
+  6. **Sentinel Arc** - EMP / EW specialist; EMP grenades, drone and Machine-link jamming.
+  7. **Sentinel Mender** - nanite field kit; heals Sentinels and repairs walls, towers and wall turrets.
+- **Sentinel Barracks** (the "ready room" of 13.9c-6 becomes this): the only building that trains them; houses
+  (garrisons) up to a company, 120 Sentinels. Inside the facility.
+- **Garrisons:** every hardened facility tower holds up to 4 Sentinels (Sentinels only); the new foot entry
+  booth / scan point holds up to 15 (Sentinels only).
+- **Duties:** they man the facility walls (wall-walk) and patrol the interior: the wall guards LIFE7 animates become
+  these real units. The facility starts with a Sentinel garrison (walls, towers, entry, interior patrol).
+- **Strength:** very strong on defence against humans AND the Machine: a defence bonus inside / on the facility
+  (walls, towers, garrisons) and resistance to nanite exposure; NOT invincible: expensive, slow to train, high pop
+  cost, weaker away from the facility (bonus only inside its radius), EMP-vulnerable armour (self-heal stops), and
+  anti-armour / artillery still kill them.
+
+#### 13.9c-11 Sentinel coordination, ammo, bearers and facility engineers (owner note + choice, 2026-10-27)
+Owner: "give these new specialzied facility guard units better coordination, structure, organization, patrol
+capabilites, tactical efficiency and profficiency capabailites, etc ** when their main weapon is empty they switch to
+secondary pistol or something and when THAT is empty they have to go grab more ammo (idk from where yet.. ideas?) and
+then reload (dont do too much with their reload animation)". Asked where ammo comes from, the owner chose: "Ready-ammo
+lockers" and "new ammo bearer unit for this specialized unit -- + we need to add an additional unit that act as
+engineers fixing things automatically around the base or assisting in reloading lockers and working forklifts, filling
+up gas in apcs and stealth dropship".
+ORCH decisions (still no officers / chain of command, per 13.9c-10; numbers PROVISIONAL):
+- **Watch structure:** Sentinels work in buddy pairs (two-man teams that move and fight together; one reloads while the
+  other covers), each pair assigned a post or sector (a wall run, a tower, the entry, an interior zone) on a duty roster
+  (on post / patrol / rest in the barracks, rotating). A facility guard net shares targets seen by any Sentinel, tower,
+  camera or wall turret with every Sentinel.
+- **Alarm drill:** on attack every off-duty Sentinel runs to a pre-assigned stand-to position; a quick reaction force
+  (6-8 from the barracks) goes to any breach; pairs bound along the wall-walk to reinforce the threatened face.
+- **Patrols:** deterministic routes with varied timing and direction that cover the cameras' blind spots, inner wall,
+  interior lanes and the entry; patrols check in at posts.
+- **Tactical proficiency:** use cover and firing slits, prefer elevated positions, focus fire on the biggest threat,
+  pull back wounded pairs to the Mender, hold doors with Bulwarks, Lancers prioritise walkers/vehicles, Arc prioritises
+  drones and Machine links.
+- **Ammo:** primary empty -> switch to a sidearm (machine pistol); sidearm empty -> run to the nearest stocked
+  **ready-ammo locker** (armoured lockers at every tower base, at the wall-walk stairs and in the entry booth), take ammo,
+  reload (simple, short reload animation), return to post. Lockers hold a limited stock and run dry.
+- **Sentinel Ammo Bearer** (new unit, trained at the Sentinel Barracks): carries ammo to Sentinels on post (restocks
+  them where they stand, like the G6.1 ammo bearer) and refills lockers.
+- **Facility Engineer** (new unit, trained at the facility; no weapons beyond a pistol): automatically repairs damaged
+  walls, towers, wall turrets and buildings; refills ready-ammo lockers from the special ammo magazine (driving a
+  forklift); refuels APCs and the stealth / VTOL dropships at the fuel point and pads. The forklifts and fuel truck LIFE7
+  animates are driven by these engineers when they do these jobs.
+
+### 13.9d Last Protocol has no population cap (owner note, 2026-10-27)
+Owner: "for this endgoal protocol mode dont put a cap on the unit/population at all". In Last Protocol every side's
+supply cap is unlimited (Economy floor UNCAPPED); the HUD shows "POP n (NO CAP)". Skirmish keeps its caps.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).

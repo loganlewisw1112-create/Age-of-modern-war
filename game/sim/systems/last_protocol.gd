@@ -21,6 +21,7 @@ extends RefCounted
 ## Commands: lp_posture {issuer, posture auto|normal|alert|maximum}, lp_defence_ai {issuer, on}, lp_blow_dam,
 ##   lp_drop_bridge {bridge}, lp_orbital_strike {cell}, lp_fire_support {cell} (ORCH registers them in world.gd COMMANDS).
 
+const UNCAPPED := 1000000   # G7 owner 13.9d: Last Protocol has no population cap (Economy floor)
 const LpSetup = preload("res://sim/systems/lp_setup.gd")
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const LpWorld = preload("res://sim/systems/lp_world.gd")
@@ -147,9 +148,11 @@ static func tick(w: SimWorld) -> void:
 	elif not s.has("pop_floor") and w.tick > int(s.get("fill_tick", w.tick)):
 		# base starts secure: the supply cap covers the pre-built army + facility crews (Economy recounted them last
 		# tick) plus start.pop_headroom. Economy keeps f.pop_cap >= f.pop_cap_floor (ORCH CR economy.pop_cap_floor).
-		var f: Dictionary = w.factions[int(s.fid)]
-		s.pop_floor = int(f.pop) + int(R().get("start", {}).get("pop_headroom", 60))
-		f.pop_cap_floor = int(s.pop_floor)
+		# G7 owner note 13.9d (2026-10-27): "for this endgoal protocol mode dont put a cap on the unit/population at
+		# all": every side's supply floor is UNCAPPED, so f.pop_cap never limits training in Last Protocol.
+		s.pop_floor = UNCAPPED
+		for fid in w.factions:
+			w.factions[fid].pop_cap_floor = UNCAPPED
 	_events(w, s)
 	var ev := int(R().get("think_every", 20))
 	if (w.tick + 1) % ev == 0:
