@@ -473,3 +473,97 @@ func test_base7_real_base_built() -> void:
 	check_eq(inside, [], "no defence unit parked inside the facility compound")
 	var f: Dictionary = w.factions[fid]
 	check(int(f.power_prod) >= int(f.power_use), "compact base powered (%d / %d)" % [int(f.power_prod), int(f.power_use)])
+
+
+
+## BASE7-2 (owner 13.9c): the fortress is pre-built as planned - VTOL dropships parked centred on their 6x6 pads with
+## the rear ramp over the approach lane (ramp clear for an APC), the airfield's hangars adopted into its apron slots,
+## the gate obstacles built, gate guards in every entry control yard, and the wall patrols really walk their routes
+## on the ring roads (outer walls, economy and core loops) without the defence commander calling them home.
+func test_base7_2_fortress_built_and_patrols_walk() -> void:
+	if not preload("res://sim/map_gen.gd").has_map("last_protocol"):
+		check(true, "last_protocol map not registered: skipped")
+		return
+	var Garr = preload("res://sim/systems/lp_garrison7.gd")
+	var Transport = preload("res://sim/systems/transport.gd")
+	var Airfield = preload("res://sim/systems/airfield.gd")
+	var w := SimWorld.new_match(LastProtocol.make_config(77, "last_protocol"))
+	w.run_ticks(25)
+	var s := _s(w)
+	var fid := int(s.fid)
+	var base: Dictionary = w.map.lp.base
+	var air: Dictionary = base.airfield
+	var C: Vector2i = base.center
+	# dropships on the pads
+	var vt: Array = s.vtols
+	check_eq(vt.size(), 2, "two VTOL dropships")
+	for i in vt.size():
+		var e = w.entities.get(int(vt[i]))
+		if not check(e != null, "dropship %d alive" % i):
+			continue
+		check(Vector2(e.pos).distance_to(air.pad_centres[i]) < 0.6, "dropship %d centred on its pad (%s vs %s)" % [i, e.pos, air.pad_centres[i]])
+		check(Transport.ramp_clear(w, e, Transport.snap_facing(e), "vehicle"), "dropship %d: rear ramp + APC line-up clear (pad + lane)" % i)
+	var pads := 0
+	var hangars := 0
+	var field := -1
+	var obst := 0
+	for id in w.entities:
+		var b: Dictionary = w.entities[id]
+		if b.kind != "building" or int(b.owner) != fid:
+			continue
+		match String(b.def):
+			"a_g7_vtol_pad":
+				pads += 1
+				check_eq(int(b.get("facing_i", -1)), 1, "pad %s approach side +y" % b.cell)
+			"a_airfield":
+				field = int(id)
+			"a_hangar_heavy":
+				if b.has("air_parent"):
+					hangars += 1
+			"s_tank_traps", "s_barbed_wire":
+				obst += 1
+	check_eq(pads, 2, "two dropship pads built")
+	check(field >= 0, "airfield built")
+	check_eq(hangars, 3, "3 heavy hangars adopted by the airfield (apron slots)")
+	if field >= 0:
+		var rw: Array = Airfield.layout(w, field).runways
+		check(not rw.is_empty() and (rw[0][0] as Vector2).distance_to(air.runway[0]) < 0.01, "the built airfield's runway is the planned one")
+	check(obst >= int(0.9 * float((base.obstacles as Array).size())), "gate obstacles built (%d / %d)" % [obst, (base.obstacles as Array).size()])
+	# gate guards
+	for gp in base.gate_posts:
+		var c := Vector2(gp.cell) + Vector2(0.5, 0.5)
+		var n := 0
+		for e in w.units_of(fid):
+			if Vector2(e.pos).distance_to(c) <= 2.5:
+				n += 1
+		check(n >= 1, "gate post %s manned (%d)" % [gp.cell, n])
+	# patrols walk (the LP tick hook calls Garr.tick once ORCH wires it; call it here when it is not wired)
+	var wired := FileAccess.get_file_as_string("res://sim/systems/last_protocol.gd").contains("LpGarrison7.tick")
+	var G: Dictionary = w.sys_state.get(Garr.KEY, {})
+	check(Garr.patrol_count(w) >= 30, "wall patrollers registered (%d)" % Garr.patrol_count(w))
+	if G.is_empty():
+		return
+	var wp0 := {}
+	for rec in G.pat:
+		wp0[int(rec[0])] = int(rec[2])
+	var legs := {}
+	for t in 1800:
+		w.step()
+		if not wired and (w.tick + 13) % SimWorld.TICK_RATE == 0:
+			Garr.tick(w)
+		for rec in G.pat:
+			if int(rec[2]) != int(wp0.get(int(rec[0]), -1)):
+				legs[int(rec[0])] = true
+	var moved := legs.size()
+	check(moved >= int(0.8 * float((G.pat as Array).size())), "patrollers reached their next waypoint in 90 s (%d / %d)" % [moved, (G.pat as Array).size()])
+	var off_road := 0
+	for rec in G.pat:
+		var e = w.entities.get(int(rec[0]))
+		if e == null:
+			continue
+		var k := int(G.ring[int(rec[1])])
+		var rr: Vector2i = preload("res://sim/maps/last_protocol.gd").ring_road(k)
+		var d := maxf(absf(e.pos.x - float(C.x) - 0.5), absf(e.pos.y - float(C.y) - 0.5))
+		if d < float(rr.x) - 3.0 or d > float(rr.y) + 3.0:
+			off_road += 1
+	check(off_road <= 2, "patrollers stay on their wall's ring road (%d off)" % off_road)

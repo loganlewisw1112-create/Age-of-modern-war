@@ -15,8 +15,9 @@ extends RefCounted
 ##    3 core zones, 10 seed nests, the 4 secret sites.
 ## map.lp = the layout contract agreed with LPMODE7 on the board (interface.lp_layout): LPMAP7 writes data only,
 ## LastProtocol (LPMODE7) places every entity from it. Rings are squares around base.center:
-##   outer (defence) half 41 (83 across), economy half 34 (69), core (military) half 24 (49); facility 28x28 inside its
-##   32x32 site (compound + service road). BASE7 (13.9b) compacted the rings; see the block above _base.
+##   outer (defence) half 43 (87 across), economy half 36 (73), core (military) half 26 (53); facility 28x28 inside its
+##   32x32 site (compound + service road) 3 tiles north of C. BASE7 (13.9b) compacted the rings, BASE7-2 (13.9c) laid
+##   them out for the fight; see the block above _base.
 ## No class_name: const LastProtocolMap = preload("res://sim/maps/last_protocol.gd").
 
 const MapUtil = preload("res://sim/maps/map_util.gd")
@@ -31,15 +32,15 @@ const SPAWN_SETS := {"2": [0, 1]}
 const MIN_OPEN := 0.55
 ## Base centre, ring half-sizes (outer, economy, core), facility site.
 const C := Vector2i(104, 256)
-const RING_HALF := [41, 34, 24]   # BASE7 (13.9b): was [70, 55, 37]; sized to what each ring holds
+const RING_HALF := [43, 36, 26]   # BASE7-2 (13.9c): was [41, 34, 24] (BASE7) / [70, 55, 37]; room for the runway + pads
 const RING_NAMES := ["outer", "economy", "core"]
 const FAC := 28
-const FAC_O := Vector2i(90, 242)          # = C - (14, 14): the cn_facility 28x28 compound (BASE7 repack)
+const FAC_O := Vector2i(90, 239)          # = C - (14, 17): the cn_facility 28x28 compound, 3 north of C (BASE7-2)
 ## The 40x40 reservation (owner order 2026-10-27, "until ARTCN7-2 posts fact art.dropship_sizes") is resolved: the C-17
 ## dropship sits on the compound's own 6x6 helipad (CNFAC7-2), so BASE7 (13.9b) shrank the site to the 28x28 compound
 ## plus its 2-wide service road (32x32, C - 16 .. C + 15); nothing else is planned inside it.
 const FAC_SITE := 32
-const FAC_SITE_O := Vector2i(88, 240)   # = C - (16, 16): compound + its 2-wide service road (BASE7)
+const FAC_SITE_O := Vector2i(88, 237)   # = C - (16, 19): compound + its 2-wide service road (BASE7-2: room for the airfield)
 const PLAYER_SPAWN := Vector2i(85, 256)   # HQ plot in the core ring's west (command) band (start package HQ lands here)
 const MACHINE_SPAWN := Vector2i(480, 356)
 ## Core zones (origins of the 3x3 m_core); index order = core index, the LAST one walks (toward the facility).
@@ -363,41 +364,64 @@ static func _machine_bases() -> Array:
 
 
 # ================================================================ base layout (map.lp.base)
-## G7 BASE7 (13.9b, owner 2026-10-27: "too many open spaces ... make it make more logistical sense"). PROVISIONAL.
-## Every ring is sized to what it holds; bands are cut into rows that front a road (Chebyshev distance d from C):
-##   core     wall 24: facility site d<=16 (28x28 compound + its 2-wide service road), plot rows d 17..21,
-##            ring road 22..23. North = artillery park (12 pits + 4 ammo depots on the gate road), west = command
-##            (HQ plot, company HQ, barracks, exo garage, radar), south = airfield (hangars, strip, tower, 2 VTOL pads,
-##            helipad, fuel) then repair bay + motor pool, east = air defence (2 SAM).
-##   economy  wall 34: row A d 26..28 (3x3 + resource piles), row B d 30..31 (2x2), ring road 32..33. North and south
-##            = logistics (refineries on their piles, depots, the power yard), west = services (hospitals, research,
-##            exo garages), east = barracks + motor pools behind the main (east) gate.
-##   outer    wall 41: row d 35..36 (gate bunkers, corner bunkers, SAM / radar, the outer armour's hull-down
-##            stations), ring road 37..38, turret row 39..40 right behind the wall (infantry posts between turrets) (G7 turret line by role: anti-armour + MG at gates, autocannon + microwave at
-##            corners, rail / mortar / thermite / EMP along the walls, rail guns only on the east wall).
-## Gate roads (3 wide) run from every outer gate to the facility site; cameras watch every gate and outer corner.
+## G7 BASE7-2 (13.9c, owner 2026-10-27: "a fortress laid out for this fight"; builds on BASE7's 13.9b compact rings).
+## PROVISIONAL. Layout rules (sources in the BASE7-2 report; Chebyshev distance d from C):
+##  1. Defence in depth: three walls; every band can fight on when the ring outside it falls (the core keeps its own
+##     fallback battery, SAMs, CIWS and inner patrols; LpDefence falls defenders back and seals the gates).
+##  2. Standoff + kill zones: the ground outside the outer wall is cleared (fields of fire, _places); every outer gate
+##     gets a barbed-wire belt and a tank-trap line out front and a serpentine of tank traps on its road (approach
+##     zone of the entry control point), covered by the gate's hull-down + MG turrets, ATGM bunkers and pits.
+##  3. Entry control: inside every outer gate the outer row keeps a holding / search yard clear (|t| <= HOLD) with gate
+##     guard posts (gate_posts), cameras both sides and floodlights; ATGM bunkers and laser CIWS flank the yard.
+##  4. Artillery covers every approach: the pit range (20) cannot reach past the outer wall from the core, so the guns
+##     sit in dispersed 2-gun sections in the outer row (d 37..38): one section per corner (covers both faces), one
+##     each side of every face's centre line, two more on the east (Machine) face; each section has its own
+##     ammunition bunker 3..6 tiles away (dispersed small stocks, none beside barracks). The core keeps a 4-gun
+##     fallback battery with its two ammunition bunkers.
+##  5. Interlocking turrets by threat axis: turret row d 41..42, step 5 on the east wall, 6 north / south, 8 west, so
+##     neighbouring arcs overlap; anti-armour + MG at gates, autocannon + microwave at corners, rail cannon east only.
+##  6. Air defence spread: 8 outer SAM / radar sites round the ring, 5 core SAMs (every face + the airfield), laser
+##     CIWS at every gate yard, every outer corner and over the airfield, pads and command.
+##  7. Airfield (south-west core band): a_airfield base + apron (3 heavy hangars in the slot row away from the runway,
+##     an open apron row beside it); the runway (Airfield.layout_for, facing 0, strip 12) runs 3.5 tiles inside the
+##     core ring road and its clear zone (2 tiles past each end, 1.5 each side) is never built on; tower, 2 helipads
+##     and the fuel point beside it; motor pool + repair bay on the gate road. The facility sits 3 north of C for it.
+##  8. Dropship landing sites: two 6x6 a_g7_vtol_pad (24 m, for the 19.6 x 16.7 m dropships) east of the gate road,
+##     dispersed 3 tiles apart, each with a 3-tile approach lane on its south side (rear ramp + APC line-up).
+##  9. Garrison: wall patrols on the outer, economy and core ring roads (patrols), gate guards (gate_posts).
+##  Bands: core wall 26, ring road 24..25, plots d <= 23 outside the facility site; economy wall 36, row A 28..30,
+##  row B 32..33, ring road 34..35; outer wall 43, outer row 37..38, ring road 39..40, turret row 41..42.
 const KIND_SIZE := {"refinery": 3, "barracks": 3, "motor_pool": 3, "hospital": 3, "company_hq": 3, "repair_bay": 3,
-	"airfield": 4, "generator": 2, "depot": 2, "research_station": 2, "exo_garage": 2, "artillery": 2, "hangar": 2,
-	"helipad": 2, "sam": 2, "radar": 2, "tower": 2, "ore": 3, "salvage": 3}
-## Core ring plots: [kind, offset from C] (origins; all inside d 17..21).
+	"airfield": 2, "generator": 2, "depot": 2, "research_station": 2, "exo_garage": 2, "artillery": 2, "hangar": 2,
+	"helipad": 2, "sam": 2, "radar": 2, "tower": 2, "ore": 3, "salvage": 3, "vtol_pad": 6, "ciws": 1}
+## Core ring plots: [kind, offset from C] (origins; d <= 23, outside the facility site C-16..C+15 x C-19..C+12).
 const CORE_PLOTS := [
-	# north: artillery park, ammunition in the middle on the gate road
-	["artillery", Vector2i(-14, -21)], ["artillery", Vector2i(-11, -21)], ["artillery", Vector2i(-8, -21)],
-	["artillery", Vector2i(-5, -21)], ["artillery", Vector2i(2, -21)], ["artillery", Vector2i(5, -21)],
-	["artillery", Vector2i(8, -21)], ["artillery", Vector2i(11, -21)], ["artillery", Vector2i(-14, -18)],
-	["artillery", Vector2i(-11, -18)], ["artillery", Vector2i(8, -18)], ["artillery", Vector2i(11, -18)],
-	["depot", Vector2i(-8, -18)], ["depot", Vector2i(-5, -18)], ["depot", Vector2i(2, -18)], ["depot", Vector2i(5, -18)],
-	# west: command
-	["company_hq", Vector2i(-20, -8)], ["exo_garage", Vector2i(-20, -13)], ["radar", Vector2i(-20, 5)],
-	["barracks", Vector2i(-20, 9)],
-	# south: airfield with its fuel, then repair + motor pool
-	["hangar", Vector2i(-21, 17)], ["hangar", Vector2i(-18, 17)], ["hangar", Vector2i(-15, 17)],
-	["airfield", Vector2i(-12, 17)], ["tower", Vector2i(-7, 17)], ["helipad", Vector2i(-4, 17)],
-	["helipad", Vector2i(-20, 20)], ["helipad", Vector2i(-15, 20)], ["depot", Vector2i(-7, 20)],
-	["repair_bay", Vector2i(3, 17)], ["motor_pool", Vector2i(7, 17)],
-	# east: air defence facing the Machine
-	["sam", Vector2i(18, -12)], ["sam", Vector2i(18, 10)]]
-## Economy rows per side: [side, row (0 = A d26..28, 1 = B d30..31), queue].
+	# north: the fallback battery (2 sections, an ammunition bunker beside each), CIWS, SAM, vehicle reserve
+	["artillery", Vector2i(-14, -22)], ["artillery", Vector2i(-11, -22)], ["depot", Vector2i(-7, -22)],
+	["ciws", Vector2i(-3, -21)], ["depot", Vector2i(4, -22)], ["artillery", Vector2i(8, -22)],
+	["artillery", Vector2i(11, -22)], ["sam", Vector2i(15, -22)], ["motor_pool", Vector2i(19, -23)],
+	["depot", Vector2i(-22, -22)],
+	# west: command (HQ plot at C-21..C-17 x C-2..C+2), company HQ, exo garage, barracks, radar, SAM
+	["sam", Vector2i(-22, -17)], ["exo_garage", Vector2i(-21, -13)], ["company_hq", Vector2i(-21, -8)],
+	["barracks", Vector2i(-21, 4)], ["radar", Vector2i(-21, 9)],
+	# south-west: airfield (base, 3 hangars in apron row 0, runway y C+20.5), fuel, helipads, tower, CIWS
+	["airfield", Vector2i(-22, 13)], ["hangar", Vector2i(-22, 15)], ["hangar", Vector2i(-20, 15)],
+	["hangar", Vector2i(-18, 15)], ["depot", Vector2i(-15, 13)], ["ciws", Vector2i(-15, 17)],
+	["helipad", Vector2i(-12, 13)], ["helipad", Vector2i(-9, 13)], ["tower", Vector2i(-12, 16)],
+	["motor_pool", Vector2i(-6, 14)], ["repair_bay", Vector2i(-6, 19)],
+	# south-east: the two dropship landing sites (approach lanes y C+20..22), CIWS between them, fuel, SAM
+	["vtol_pad", Vector2i(3, 14)], ["ciws", Vector2i(10, 16)], ["vtol_pad", Vector2i(12, 14)],
+	["depot", Vector2i(19, 14)], ["motor_pool", Vector2i(19, 18)], ["sam", Vector2i(21, 22)],
+	# east: air defence + the quick-reaction barracks behind the main (east) gate
+	["sam", Vector2i(19, -15)], ["barracks", Vector2i(18, -9)], ["ciws", Vector2i(22, -4)],
+	["barracks", Vector2i(18, 4)], ["sam", Vector2i(19, 9)]]
+const AIRFIELD_O := Vector2i(-22, 13)     # a_airfield base (facing 0: apron +y, runway +x)
+const RUNWAY := [Vector2(-22.0, 20.5), Vector2(-10.0, 20.5)]   # = Airfield.layout_for runway (offsets from C)
+const RUNWAY_CLEAR := Rect2i(-24, 19, 17, 4)   # runway + 2 tiles past each end + 1.5 each side (offsets from C)
+const PADS := [Vector2i(3, 14), Vector2i(12, 14)]
+const PAD_SIZE := 6
+const PAD_LANE := 3   # approach lane depth on the pad's +y side
+## Economy rows per side: [side, row (0 = A d28..30, 1 = B d32..33), queue].
 const ECON_ROWS := [
 	["n", 0, ["ore", "refinery", "refinery", "ore", "refinery", "ore", "refinery", "depot", "barracks", "depot", "depot", "depot"]],
 	["n", 1, ["generator", "generator", "generator", "generator", "generator", "generator", "depot", "depot", "generator", "generator", "generator", "generator"]],
@@ -407,14 +431,24 @@ const ECON_ROWS := [
 	["w", 1, ["research_station", "exo_garage", "exo_garage", "generator", "generator", "generator", "generator"]],
 	["e", 0, ["barracks", "barracks", "motor_pool", "motor_pool", "barracks", "motor_pool", "depot", "depot", "depot", "depot"]],
 	["e", 1, ["depot", "depot", "exo_garage", "depot", "depot", "depot", "depot", "depot", "depot", "research_station", "research_station"]]]
-const ECON_ROW_A := 26
-const ECON_ROW_B := 30
-const OUTER_ROW := 35
-const OUTER_TURRET_STEP := 7
+const ECON_ROW_A := 28
+const ECON_ROW_B := 32
+const OUTER_ROW := 37
+const OUTER_STEP := {"n": 6, "e": 5, "s": 6, "w": 8}   # turret row spacing by threat axis (east = the Machine)
+const HOLD := 4   # entry control: outer-row yard |t| <= HOLD kept clear inside every outer gate
 const T_GATE := ["a_t7_hulldown", "a_t7_hmg_nest"]
 const T_CORNER := ["a_t7_autocannon", "a_t7_microwave"]
 const T_EAST := ["a_t7_railgun", "a_t7_automortar", "a_t7_thermite", "a_t7_emp", "a_t7_autocannon", "a_t7_hmg_nest"]
 const T_WALL := ["a_t7_automortar", "a_t7_thermite", "a_t7_emp", "a_t7_autocannon", "a_t7_hmg_nest"]
+## Outer artillery sections: [side, t of the first pit (second pit at t + 3), t of its ammunition bunker or 99 = the
+## neighbouring section's]. Gate faces read, from the centre line out: yard |t| <= 4, CIWS t 5, ATGM bunker t 6..7,
+## pits t 9..13, ammunition t 15..16, SAM / radar t 21..25, then the corner section.
+const ART_SECTIONS := [["n", -13, -16], ["n", 9, 15], ["s", -13, -16], ["s", 9, 15], ["w", -13, -16], ["w", 9, 15],
+	["e", -13, -16], ["e", 9, 15]]
+## Outer SAM / radar sites [side, t, kind] and the outer ATGM bunkers flanking each gate yard [t].
+const OUTER_AD := [["n", -25, "sam"], ["n", 21, "radar"], ["s", -25, "sam"], ["s", 21, "sam"], ["e", -29, "sam"],
+	["e", 28, "sam"], ["w", -25, "radar"], ["w", 21, "sam"]]
+const GATE_BUNKERS := [-7, 6]   # cells -7..-6 and 6..7
 
 
 static func _cheb(c: Vector2i) -> int:
@@ -430,6 +464,13 @@ static func ring_rect(k: int) -> Rect2i:
 static func ring_road(k: int) -> Vector2i:
 	var h: int = RING_HALF[k]
 	return Vector2i(h - 4, h - 3) if k == 0 else Vector2i(h - 2, h - 1)
+
+
+## Offsets from C (one axis) of ring k's road centre line on the - side (x) and the + side (y), in world units.
+static func ring_road_line(k: int) -> Vector2:
+	var rr := ring_road(k)
+	var half := float(rr.x + rr.y + 1) * 0.5
+	return Vector2(-half + 1.0, half)
 
 
 ## Footprint o..o+sz-1 inside the Chebyshev band [dmin, dmax], on no `occ` cell; with gap, no other building
@@ -495,6 +536,19 @@ static func _base(t: PackedByteArray, resources: Array) -> Dictionary:
 		for x in range(PLAYER_SPAWN.x - 2, PLAYER_SPAWN.x + 3):
 			occ[Vector2i(x, y)] = true
 			bld[Vector2i(x, y)] = true
+	# the runway and its clear zone: paved, never built on (aircraft roll there); the open apron row beside it
+	var rc := Rect2i(C + RUNWAY_CLEAR.position, RUNWAY_CLEAR.size)
+	for y in range(rc.position.y, rc.end.y):
+		for x in range(rc.position.x, rc.end.x):
+			_paint_road(t, occ, Vector2i(x, y))
+	for y in range(C.y + AIRFIELD_O.y + 4, C.y + AIRFIELD_O.y + 6):
+		for x in range(C.x + AIRFIELD_O.x, C.x + AIRFIELD_O.x + 6):
+			_paint_road(t, occ, Vector2i(x, y))
+	# the dropship approach lanes (rear ramp + APC line-up), paved
+	for p in PADS:
+		for y in range(PAD_SIZE, PAD_SIZE + PAD_LANE):
+			for x in PAD_SIZE:
+				_paint_road(t, occ, C + Vector2i(p) + Vector2i(x, y))
 	var h0: int = RING_HALF[0]
 	# gate roads: every outer gate to the facility site (3 wide)
 	var roads := [[Vector2i(C.x, C.y - h0), Vector2i(C.x, site.position.y - 1)],
@@ -503,12 +557,17 @@ static func _base(t: PackedByteArray, resources: Array) -> Dictionary:
 		for p in _walk(r):
 			for d in range(-1, 2):
 				_paint_road(t, occ, p + (Vector2i(d, 0) if r[0].x == r[1].x else Vector2i(0, d)))
-	# ring roads behind every wall (2 wide), for moving reserves
+	# ring roads behind every wall (2 wide), for moving reserves and for the wall patrols
 	for k in 3:
 		var rr := ring_road(k)
 		for hh in range(rr.x, rr.y + 1):
 			for q in _perimeter(hh):
 				_paint_road(t, occ, q)
+	# entry control yards inside the outer gates (kept clear; the gate guards stand here)
+	for s in ["n", "e", "s"]:
+		for tt in range(-HOLD, HOLD + 1):
+			for a in [OUTER_ROW, OUTER_ROW + 1]:
+				occ[_side_o(s, a, 1, tt)] = true
 	var rings := []
 	for k in 3:
 		var h: int = RING_HALF[k]
@@ -535,67 +594,142 @@ static func _base(t: PackedByteArray, resources: Array) -> Dictionary:
 		rings.append({"name": RING_NAMES[k], "half": h, "rect": ring_rect(k), "wall": walls, "gates": gates,
 			"towers": towers, "turrets": [], "turret_defs": [], "bunkers": [], "plots": []})
 	var cams := []
-	_cameras(cams, occ, bld)
+	_cameras(cams, occ, bld, 0)   # gate / HQ / airfield / pad / facility masts first
 	_core_plots(rings, occ, bld)
 	_econ_plots(rings, occ, bld, resources)
 	_defences(rings, occ, bld)
+	_cameras(cams, occ, bld, 1)   # wall and corner masts after the defences: nearest free cell beside the spot
 	var power_yard := []
 	for s in ["n", "w", "s"]:   # spare 2x2 slots in economy row B for the generators power_up adds (power yard)
-		for tt in range(-27, 27, 3):
+		for tt in range(-33, 33, 3):
 			var o := _side_o(s, ECON_ROW_B, 2, tt)
 			if _fit(occ, bld, o, 2, ECON_ROW_B, ECON_ROW_B + 1):
 				power_yard.append(o)
-	var air := {"origin": C + Vector2i(-12, 17), "strip": C + Vector2i(-12, 17), "tower": C + Vector2i(-7, 17),
-		"hangars": [C + Vector2i(-21, 17), C + Vector2i(-18, 17), C + Vector2i(-15, 17)],
-		"pads": [C + Vector2i(-20, 20), C + Vector2i(-15, 20)]}
-	# army posts (lp_setup.build_army): the free strip between each band's rows, never on a road or a footprint
+	var pads := []
+	var pad_centres := []
+	var lanes := []
+	for p in PADS:
+		pads.append(C + Vector2i(p) + Vector2i(PAD_SIZE / 2, PAD_SIZE / 2))
+		pad_centres.append(Vector2(C + Vector2i(p)) + Vector2(PAD_SIZE, PAD_SIZE) * 0.5)
+		lanes.append(Rect2i(C + Vector2i(p) + Vector2i(0, PAD_SIZE), Vector2i(PAD_SIZE, PAD_LANE)))
+	var air := {"origin": C + AIRFIELD_O, "strip": C + Vector2i(-18, 18), "tower": C + Vector2i(-12, 16),
+		"facing_i": 0, "runway": [Vector2(C) + RUNWAY[0], Vector2(C) + RUNWAY[1]], "clear": rc,
+		"hangars": [C + Vector2i(-22, 15), C + Vector2i(-20, 15), C + Vector2i(-18, 15)],
+		"pads": pads, "pad_centres": pad_centres, "pad_size": PAD_SIZE, "pad_facing_i": 1, "pad_lanes": lanes}
+	# army posts (lp_setup.build_army): the free strips between each band's rows, never on a road or a footprint
 	var posts := {"outer": [], "economy": [], "core": [], "air": []}
-	for pk in [["outer", RING_HALF[0] - 2], ["outer", OUTER_ROW + 1], ["economy", ECON_ROW_B - 1], ["core", 19]]:
+	for pk in [["outer", RING_HALF[0] - 2], ["outer", OUTER_ROW + 1], ["economy", ECON_ROW_B - 1], ["economy", ECON_ROW_A - 1], ["core", 22]]:
 		for q in _perimeter(int(pk[1])):
 			if not occ.has(q):
 				(posts[pk[0]] as Array).append(q)
-	for x in range(C.x - 21, C.x - 4):
-		if not occ.has(Vector2i(x, C.y + 19)):
-			posts.air.append(Vector2i(x, C.y + 19))
+	for x in range(C.x - 22, C.x - 16, 2):   # the open apron row beside the runway
+		posts.air.append(Vector2i(x, C.y + 17))
+	for x in range(C.x - 6, C.x - 2):
+		posts.air.append(Vector2i(x, C.y + 23))
 	var out := {"center": C, "rings": rings, "facility": FAC_O, "facility_size": FAC, "posts": posts,
 		"facility_site": site, "facility_gate": FAC_O + Vector2i(13, FAC - 1), "airfield": air, "roads": roads,
-		"hq": PLAYER_SPAWN, "cameras": cams, "power_yard": power_yard}
+		"hq": PLAYER_SPAWN, "cameras": cams, "power_yard": power_yard, "patrols": _patrols(),
+		"gate_posts": _gate_posts(), "obstacles": _obstacles()}
 	out["lights"] = _lights(out)
 	return out
 
 
-## Security cameras (1x1 masts with real sight): both sides of every outer gate, the outer corners, beside the
-## economy and core gates, the HQ, the airfield and the facility gate. [{cell, dir}] (dir = outward unit vector).
-static func _cameras(cams: Array, occ: Dictionary, bld: Dictionary) -> void:
+## Wall patrol routes (lp_garrison7): world points on the ring road centre lines. Outer: one route per wall, corner ->
+## middle -> corner (two squads walk it from opposite ends); economy and core: a loop round the four corners.
+static func _patrols() -> Array:
+	var out := []
+	var o := ring_road_line(0)
+	var cv := Vector2(C)
+	var nw := cv + Vector2(o.x, o.x)
+	var ne := cv + Vector2(o.y, o.x)
+	var se := cv + Vector2(o.y, o.y)
+	var sw := cv + Vector2(o.x, o.y)
+	for seg in [[nw, ne], [ne, se], [se, sw], [sw, nw]]:
+		out.append({"ring": 0, "pts": [seg[0], (seg[0] + seg[1]) * 0.5, seg[1]], "starts": [0, 2]})
+	for k in [1, 2]:
+		var l := ring_road_line(k)
+		out.append({"ring": k, "pts": [cv + Vector2(l.x, l.x), cv + Vector2(l.y, l.x), cv + Vector2(l.y, l.y), cv + Vector2(l.x, l.y)],
+			"starts": [0, 2]})
+	return out
+
+
+## Gate guard posts in the entry control yard inside every outer gate: [{cell, side}], 4 per gate.
+static func _gate_posts() -> Array:
+	var out := []
+	for s in ["n", "e", "s"]:
+		for tv in [[OUTER_ROW, -3], [OUTER_ROW, 3], [OUTER_ROW + 1, -4], [OUTER_ROW + 1, 4]]:
+			out.append({"cell": _side_o(s, int(tv[0]), 1, int(tv[1])), "side": s})
+	return out
+
+
+## Obstacles in front of every outer gate (lp_setup builds them; outside the wall, so in no ring): a barbed-wire belt
+## (d h0+5, |t| 3..14), a tank-trap line (d h0+3, every other cell, |t| 4..12) and a serpentine of tank traps on the
+## approach road (alternating sides; the 3-wide road keeps a 2-wide chicane). [{cell, def, road}].
+static func _obstacles() -> Array:
+	var out := []
+	var h0: int = RING_HALF[0]
+	for s in ["n", "e", "s"]:
+		for tt in range(-14, 15):
+			if absi(tt) >= 3:
+				out.append({"cell": _side_o(s, h0 + 5, 1, tt), "def": "s_barbed_wire", "road": false})
+			if absi(tt) >= 4 and absi(tt) <= 12 and tt % 2 == 0:
+				out.append({"cell": _side_o(s, h0 + 3, 1, tt), "def": "s_tank_traps", "road": false})
+		for i in 4:
+			out.append({"cell": _side_o(s, h0 + 3 + 2 * i, 1, 1 if i % 2 == 0 else -1), "def": "s_tank_traps", "road": true})
+	return out
+
+
+## Security cameras (1x1 masts with real sight): both sides of every outer gate, every outer / economy / core corner,
+## beside the economy and core gates, along every outer wall (every 10 cells in the turret row), the HQ, the
+## airfield, the dropship pads and the facility gate. [{cell, dir}] (dir = outward unit vector).
+static func _cameras(cams: Array, occ: Dictionary, bld: Dictionary, phase: int) -> void:
 	var h0: int = RING_HALF[0]
 	var want := []
 	for s in ["n", "e", "s"]:
-		for tt in [-2, 2]:
-			want.append([_side_o(s, h0 - 1, 1, tt), s])
-		want.append([_side_o(s, RING_HALF[1] - 3, 1, 2), s])   # economy gate (row B, beside the gate road)
-		want.append([_side_o(s, RING_HALF[2] - 3, 1, -2), s])  # core gate
-	for cx in [-1, 1]:
+		if phase == 0:
+			want.append([_side_o(s, RING_HALF[1] - 3, 1, 2), s])   # economy gate (beside the gate road)
+			want.append([_side_o(s, RING_HALF[2] - 3, 1, -2), s])  # core gate
+		else:
+			for tt in [-2, 2]:
+				want.append([_side_o(s, h0 - 1, 1, tt), s])
+	if phase == 0:
+		want.append([PLAYER_SPAWN + Vector2i(0, -4), "w"])
+		want.append([C + Vector2i(-7, 19), "s"])    # airfield, watching the runway
+		want.append([C + Vector2i(10, 22), "s"])    # dropship pads and their lanes
+		want.append([C + Vector2i(2, 13), "n"])     # facility gate + the core south gate road
+	for cx in [-1, 1] if phase == 1 else []:
 		for cy in [-1, 1]:
-			want.append([C + Vector2i(cx * (h0 - 1), cy * (h0 - 1)), "n" if cy < 0 else "s"])
-	want.append([PLAYER_SPAWN + Vector2i(0, -4), "w"])
-	want.append([C + Vector2i(-8, 21), "s"])
-	want.append([C + Vector2i(2, 17), "n"])   # facility gate + core south gate
+			for hh in [h0 - 1, RING_HALF[1] - 3, RING_HALF[2] - 3]:
+				want.append([C + Vector2i(cx * hh, cy * hh), "n" if cy < 0 else "s"])
+	for s in ["n", "e", "s", "w"] if phase == 1 else []:
+		for tt in range(-35, 36, 10):
+			want.append([_side_o(s, h0 - 1, 1, tt), s])
+	var dv := {"n": Vector2(0, -1), "e": Vector2(1, 0), "s": Vector2(0, 1), "w": Vector2(-1, 0)}
 	for wv in want:
 		var c: Vector2i = wv[0]
+		for o in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			if not occ.has(c + o):
+				c += o
+				break
 		if occ.has(c):
 			continue
 		occ[c] = true   # a thin mast: no 1-cell gap needed around it (turrets may stand beside it)
-		var dv := {"n": Vector2(0, -1), "e": Vector2(1, 0), "s": Vector2(0, 1), "w": Vector2(-1, 0)}
 		cams.append({"cell": c, "dir": dv[String(wv[1])]})
 
 
 static func _core_plots(rings: Array, occ: Dictionary, bld: Dictionary) -> void:
-	var lo := FAC_SITE / 2 + 1
 	for p in CORE_PLOTS:
-		var sz: int = KIND_SIZE[String(p[0])]
+		var kind := String(p[0])
+		var sz: int = KIND_SIZE[kind]
 		var o: Vector2i = C + Vector2i(p[1])
-		if _fit(occ, bld, o, sz, lo, RING_HALF[2] - 3):
-			(rings[2].plots as Array).append({"cell": o, "kind": String(p[0]), "size": sz})
+		# apron hangars stand shoulder to shoulder in their slots (no 1-cell gap between them)
+		if _fit(occ, bld, o, sz, 1, RING_HALF[2] - 3, kind != "hangar"):
+			var pl := {"cell": o, "kind": kind, "size": sz}
+			if kind == "vtol_pad":
+				pl["facing_i"] = 1
+			elif kind == "airfield":
+				pl["facing_i"] = 0
+			(rings[2].plots as Array).append(pl)
 
 
 ## Economy rows: each queue packed along its side from the west/north end, skipping the gate road; resource piles
@@ -623,51 +757,88 @@ static func _econ_plots(rings: Array, occ: Dictionary, bld: Dictionary, resource
 				tt += sz + 1 if placed else 1
 
 
-## Outer turret row (d 42..43, every OUTER_TURRET_STEP), gate and corner bunkers and the outer SAM / radar plots
-## (row d 36..38); economy and core: a turret pair beside every gate.
+## Outer ring: artillery sections + their ammunition bunkers, gate ATGM bunkers, SAM / radar and laser CIWS in the
+## outer row (d 37..38); the role-assigned turret row (d 41..42) at the threat-axis step; infantry ammunition points in
+## what is left of the outer row; economy and core: a turret pair beside every gate.
 static func _defences(rings: Array, occ: Dictionary, bld: Dictionary) -> void:
 	var h0: int = RING_HALF[0]
 	var r0: Dictionary = rings[0]
-	for s in ["n", "e", "s", "w"]:
-		var wi := 0
-		for tt in range(-39, 39, OUTER_TURRET_STEP):
-			var o := _side_o(s, h0 - 2, 2, tt)
-			if not _fit(occ, bld, o, 2, h0 - 2, h0 - 1):
-				continue
-			var def: String
-			if s != "w" and absi(tt) <= 6:
-				def = T_GATE[0 if tt < 0 else 1]
-			elif absi(tt) >= 35:
-				def = T_CORNER[0 if tt < 0 else 1]
-			elif s == "e":
-				def = T_EAST[wi % T_EAST.size()]
-				wi += 1
-			else:
-				def = T_WALL[(wi + ["n", "s", "w"].find(s)) % T_WALL.size()]
-				wi += 1
-			r0.turrets.append(o)
-			r0.turret_defs.append(def)
-	for s in ["n", "e", "s"]:
-		for tt in [-5, 4]:
-			var o := _side_o(s, OUTER_ROW, 2, tt)
-			if _fit(occ, bld, o, 2, OUTER_ROW, h0 - 1):
-				r0.bunkers.append(o)
+	var art := []
+	# artillery: a 2-gun section on every corner (corner pit + one along the north / south face), ammunition 5 along
+	# the east / west face
 	for cx in [-1, 1]:
 		for cy in [-1, 1]:
-			var o := C + Vector2i(OUTER_ROW if cx > 0 else -(OUTER_ROW + 1), OUTER_ROW if cy > 0 else -(OUTER_ROW + 1))
-			if _fit(occ, bld, o, 2, OUTER_ROW, h0 - 1):
-				r0.bunkers.append(o)
-	var i := 0
-	for sp in [["n", -24], ["n", 20], ["s", -24], ["s", 20], ["e", -20], ["e", 18], ["w", -16], ["w", 14]]:
-		var o := _side_o(String(sp[0]), OUTER_ROW, 2, int(sp[1]))
-		var kind := "radar" if i % 3 == 2 else "sam"
-		if _fit(occ, bld, o, 2, OUTER_ROW, h0 - 1):
-			(r0.plots as Array).append({"cell": o, "kind": kind, "size": 2})
-		i += 1
-	for s in ["n", "e", "s", "w"]:   # ammunition points along the outer row, between the bunkers and SAM sites
-		for tt in range(-33, 33, 6):
+			var a := Vector2i(C.x + (OUTER_ROW if cx > 0 else -(OUTER_ROW + 1)), C.y + (OUTER_ROW if cy > 0 else -(OUTER_ROW + 1)))
+			var b := a + Vector2i(-3 * cx, 0)
+			var am := a + Vector2i(0, -5 * cy)
+			for q in [a, b]:
+				if _fit(occ, bld, q, 2, OUTER_ROW, OUTER_ROW + 1):
+					art.append(q)
+			if _fit(occ, bld, am, 2, OUTER_ROW, OUTER_ROW + 1):
+				(r0.plots as Array).append({"cell": am, "kind": "depot", "size": 2, "ammo": true})
+	for sec in ART_SECTIONS:
+		var s := String(sec[0])
+		for q in [_side_o(s, OUTER_ROW, 2, int(sec[1])), _side_o(s, OUTER_ROW, 2, int(sec[1]) + 3)]:
+			if _fit(occ, bld, q, 2, OUTER_ROW, OUTER_ROW + 1):
+				art.append(q)
+		var am := _side_o(s, OUTER_ROW, 2, int(sec[2]))
+		if int(sec[2]) != 99 and _fit(occ, bld, am, 2, OUTER_ROW, OUTER_ROW + 1):
+			(r0.plots as Array).append({"cell": am, "kind": "depot", "size": 2, "ammo": true})
+	for q in art:
+		(r0.plots as Array).append({"cell": q, "kind": "artillery", "size": 2})
+	# ATGM bunkers flanking every gate yard
+	for s in ["n", "e", "s"]:
+		for tt in GATE_BUNKERS:
 			var o := _side_o(s, OUTER_ROW, 2, tt)
-			if _fit(occ, bld, o, 2, OUTER_ROW, h0 - 1):
+			if _fit(occ, bld, o, 2, OUTER_ROW, OUTER_ROW + 1):
+				r0.bunkers.append(o)
+	# air defence spread round the ring
+	for sp in OUTER_AD:
+		var o := _side_o(String(sp[0]), OUTER_ROW, 2, int(sp[1]))
+		if _fit(occ, bld, o, 2, OUTER_ROW, OUTER_ROW + 1):
+			(r0.plots as Array).append({"cell": o, "kind": String(sp[2]), "size": 2})
+	# laser CIWS: both sides of every gate yard, and near every outer corner (first free cell along the face)
+	for s in ["n", "e", "s"]:
+		for tt in [-HOLD - 1, HOLD + 1]:
+			var o := _side_o(s, OUTER_ROW + 1, 1, tt)
+			if _fit(occ, bld, o, 1, OUTER_ROW, OUTER_ROW + 1, false):
+				(r0.plots as Array).append({"cell": o, "kind": "ciws", "size": 1})
+	for cx in [-1, 1]:
+		for cy in [-1, 1]:
+			for k in 8:
+				var q := C + Vector2i(cx * OUTER_ROW - (1 if cx < 0 else 0), cy * (OUTER_ROW + 1) - (1 if cy < 0 else 0)) + Vector2i(-cx * (6 + k), 0)
+				if _fit(occ, bld, q, 1, OUTER_ROW, OUTER_ROW + 1, false):
+					(r0.plots as Array).append({"cell": q, "kind": "ciws", "size": 1})
+					break
+	# turret row by threat axis
+	for s in ["n", "e", "s", "w"]:
+		var wi := 0
+		var step: int = OUTER_STEP[s]
+		var tt := -(h0 - 2)
+		while tt <= h0 - 3:
+			var o := _side_o(s, h0 - 2, 2, tt)
+			if _fit(occ, bld, o, 2, h0 - 2, h0 - 1):
+				var def: String
+				if s != "w" and absi(tt) <= 6:
+					def = T_GATE[0 if tt < 0 else 1]
+				elif absi(tt) >= h0 - 6:
+					def = T_CORNER[0 if tt < 0 else 1]
+				elif s == "e":
+					def = T_EAST[wi % T_EAST.size()]
+					wi += 1
+				else:
+					def = T_WALL[(wi + ["n", "s", "w"].find(s)) % T_WALL.size()]
+					wi += 1
+				r0.turrets.append(o)
+				r0.turret_defs.append(def)
+				tt += step
+			else:
+				tt += 1
+	# infantry ammunition points in the rest of the outer row
+	for s in ["n", "e", "s", "w"]:
+		for tt in range(-33, 33, 9):
+			var o := _side_o(s, OUTER_ROW, 2, tt)
+			if _fit(occ, bld, o, 2, OUTER_ROW, OUTER_ROW + 1):
 				(r0.plots as Array).append({"cell": o, "kind": "depot", "size": 2})
 	for k in [1, 2]:
 		var h: int = RING_HALF[k]
@@ -680,8 +851,8 @@ static func _defences(rings: Array, occ: Dictionary, bld: Dictionary) -> void:
 
 
 ## Display lights (presentation/view/baseprops_layer.gd; never read by the sim): street lights along every ring road
-## and gate road, floodlights on every outer wall tower and both sides of every gate, pad lights around the
-## airfield strip and every helipad. [{cell (Vector2, tile coords), kind}].
+## and gate road, floodlights on every outer wall tower and both sides of every gate, pad lights round the airfield,
+## the runway edges, every helipad and dropship pad and along each approach lane. [{cell (Vector2, tiles), kind}].
 static func _lights(base: Dictionary) -> Array:
 	var out := []
 	for k in 3:
@@ -707,11 +878,24 @@ static func _lights(base: Dictionary) -> Array:
 			out.append({"cell": Vector2(mid) + Vector2(0.5, 0.5) + d * 2.4, "kind": "flood"})
 			out.append({"cell": Vector2(mid) + Vector2(0.5, 0.5) - d * 2.4, "kind": "flood"})
 	for p in base.rings[2].plots:
-		if String(p.kind) == "helipad" or String(p.kind) == "airfield":
+		if String(p.kind) in ["helipad", "airfield", "vtol_pad"]:
 			var c := Vector2(p.cell)
 			var sz := float(p.size)
 			for o in [Vector2(0, 0), Vector2(sz, 0), Vector2(0, sz), Vector2(sz, sz)]:
 				out.append({"cell": c + o, "kind": "pad"})
+	var air: Dictionary = base.airfield
+	var ra: Vector2 = air.runway[0]
+	var rb: Vector2 = air.runway[1]
+	var n := int(ra.distance_to(rb) / 2.0)
+	for i in n + 1:   # runway edge lights, both sides
+		var p := ra.lerp(rb, float(i) / float(maxi(n, 1)))
+		out.append({"cell": p + Vector2(0, -1.2), "kind": "pad"})
+		out.append({"cell": p + Vector2(0, 1.2), "kind": "pad"})
+	for ln in air.pad_lanes:   # approach lane edge lights
+		var r: Rect2i = ln
+		for y in range(r.position.y, r.end.y + 1, 2):
+			out.append({"cell": Vector2(r.position.x, y), "kind": "pad"})
+			out.append({"cell": Vector2(r.end.x, y), "kind": "pad"})
 	return out
 
 
@@ -1013,7 +1197,7 @@ static func layout_issue(m: Dictionary) -> String:
 	for k in 3:
 		var ring: Dictionary = base.rings[k]
 		var hh := int(ring.half)
-		var lo := (int(base.rings[k + 1].half) + 1) if k < 2 else FAC_SITE / 2 + 1
+		var lo := (int(base.rings[k + 1].half) + 1) if k < 2 else 1   # BASE7-2: the core band = everything outside the site
 		var foots := []
 		for c in ring.wall + ring.towers:
 			foots.append([c, 1, hh, hh, "wall"])

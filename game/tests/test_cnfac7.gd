@@ -876,3 +876,77 @@ func test_base7_baseprops_layer_reads_facility() -> void:
 	check(L.visible and (L.facs[0].lanes as Array).size() >= 8, "layer visible with the facility lanes")
 	check_eq(w.state_hash(), h0, "display layer leaves the sim untouched")
 	v.free()
+
+
+# ================================================================ G7 BASE7-2: the pt7_cnfac7 ramp wave, headless
+## Same scene as tools/pt7_cnfac7.gd _ramp_wave: two crafts 20 tiles apart, each with a strike APC (4 gunners aboard)
+## lined up 8.5 behind the tail, 8 operators beside the ramp line and 12 bystanders on hold around the craft; one
+## load command per craft. Every pair of facings the playtest uses must end with APC + 8 operators in every craft.
+const PT_RING := [[3.4, 0.0], [2.6, 2.6], [2.6, -2.6], [0.0, 3.0], [0.0, -3.0], [-1.6, 3.0], [-1.6, -3.0], [-2.9, 2.4], [-2.9, -2.4], [-3.4, 1.7], [-3.4, -1.7], [1.4, 2.8]]
+const PT_SCENE := [["cn_stealth_dropship", 0], ["a_vtol_dropship", 1], ["cn_stealth_dropship", 2], ["a_vtol_dropship", 3],
+	["a_vtol_dropship", 4], ["cn_stealth_dropship", 5], ["cn_stealth_dropship", 6], ["a_vtol_dropship", 7]]
+
+
+func _pt_wave(pair: Array) -> String:
+	var s0 := _setup()
+	var w: SimWorld = s0[0]
+	var o: Vector2i = s0[1]
+	var sites := [Vector2(o) + Vector2(20.5, 30.5), Vector2(o) + Vector2(40.5, 30.5)]
+	var ops := ["g7_op_leader", "g7_op_marksman", "g7_op_hunter", "g7_op_medic"]
+	var crafts := []
+	var fails := []
+	for i in pair.size():
+		var sc: Array = PT_SCENE[int(pair[i])]
+		var at: Vector2 = sites[i]
+		var f := PI / 4.0 * float(sc[1])
+		var ds: Dictionary = w.entities[_unit(w, String(sc[0]), 0, at)]
+		ds.facing = f
+		ds.order = {"type": "idle"}
+		Air.land_now(w, ds)
+		var apc: Dictionary = w.entities[_unit(w, "g7_cn_strike_apc", 0, Transport.ramp_pt(at, f, -8.5, 0.0))]
+		apc.facing = f
+		for j in 4:
+			Transport.load_now(w, apc, w.entities[_unit(w, "g7_cn_gunner", 0, Vector2(apc.pos))])
+		var ids := [int(apc.id)]
+		for j in 8:
+			ids.append(_unit(w, ops[j % 4], 0, Transport.ramp_pt(at, f, -7.0 - float(j / 4), 2.4 + float(j % 4) * 0.6)))
+		for rv in PT_RING:
+			_unit(w, "rifleman", 0, Transport.ramp_pt(at, f, float(rv[0]), float(rv[1])))
+		do_cmd(w, 0, {"type": "load", "issuer": 0, "carrier": int(ds.id), "unit_ids": ids})
+		crafts.append([int(ds.id), ids])
+	for t in 2400:
+		w.step()
+		for ev in w.events:
+			if String(ev.type) == "LoadFailed":
+				fails.append("%s: %s" % [ev.get("id"), ev.get("reason")])
+		var all_done := true
+		for cr in crafts:
+			var c: Dictionary = w.entities[int(cr[0])]
+			if c.has("bay_seq") or int(Transport.group_load(c).vehicle) != 1:
+				all_done = false
+		if all_done:
+			break
+	var bad := []
+	for cr in crafts:
+		var c: Dictionary = w.entities[int(cr[0])]
+		var g: Dictionary = Transport.group_load(c)
+		if int(g.vehicle) != 1 or int(g.foot) != 8:
+			var left := []
+			for id in cr[1]:
+				var u = w.entities.get(int(id))
+				if u != null and not Transport.in_cargo(w, int(id)):
+					left.append("%s %s at u/v %s order %s" % [u.def, id, _uv(Vector2(c.pos), float(c.facing), Vector2(u.pos)), u.order.get("type", "")])
+			bad.append("craft %s f%.0f veh %d foot %d seq %s; outside: %s" % [c.def, float(c.facing) / (PI / 4.0), int(g.vehicle), int(g.foot), (c.get("bay_seq", {}) as Dictionary).get("ph", "-"), left])
+	return "" if bad.is_empty() else "%s | fails %s" % [bad, fails]
+
+
+func _uv(at: Vector2, f: float, p: Vector2) -> String:
+	var d := p - at
+	var a := Vector2(cos(f), sin(f))
+	return "(%.2f, %.2f)" % [d.dot(a), d.dot(Vector2(-a.y, a.x))]
+
+
+func test_ramp_pt_wave_every_facing_pair_loads_full() -> void:
+	for pr in [[0, 1], [2, 3], [4, 5], [6, 7]]:
+		var r := _pt_wave(pr)
+		check(r == "", "pt7_cnfac7 wave facings %s: every craft holds APC + crew + 8 operators %s" % [pr, r])

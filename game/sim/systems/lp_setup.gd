@@ -44,7 +44,8 @@ static func layout(w: SimWorld) -> Dictionary:
 			rings.append({"name": String(r.get("name", RING_NAMES[mini(i, 2)])), "rect": rr if rr is Rect2i else Rect2i()})
 		return {"center": _v2i(b.get("center")), "rings": rings, "facility": _v2i(b.get("facility")),
 			"airfield": b.get("airfield", {}), "scale": 1.0, "from_map": true, "posts": b.get("posts", {}),
-			"cameras": b.get("cameras", []), "power_yard": b.get("power_yard", []), "compound": true}
+			"cameras": b.get("cameras", []), "power_yard": b.get("power_yard", []), "compound": true,
+			"patrols": b.get("patrols", []), "gate_posts": b.get("gate_posts", []), "obstacles": b.get("obstacles", [])}
 	var lf: Dictionary = R().get("layout_fallback", {})
 	var mw := int(w.map.w)
 	var mh := int(w.map.h)
@@ -157,8 +158,10 @@ const L = preload("res://sim/ai/ai_g6_lib.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 const Air = preload("res://sim/systems/air.gd")
 const T7_PATH := "res://sim/systems/turrets7.gd"
+const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")
 const PLOT_DEFS := {"company_hq": "a_company_hq", "artillery": "a_howitzer_pit", "airfield": "a_airfield",
 	"hangar": "a_hangar_heavy", "helipad": "a_helipad", "sam": "a_sam_site", "radar": "a_radar_station",
+	"vtol_pad": "a_g7_vtol_pad", "ciws": "a_laser_ciws",
 	"repair_bay": "a_repair_bay", "hospital": "a_hospital", "exo_garage": "a_exo_garage"}
 
 
@@ -233,6 +236,17 @@ static func build_cameras(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int
 		if id >= 0:
 			var d: Vector2 = cm.get("dir", Vector2.RIGHT)
 			w.entities[id].facing = d.angle()
+			ids.append(id)
+	return ids
+
+
+## BASE7-2: the entry control approach in front of every outer gate (map.lp base.obstacles): wire belt, tank-trap
+## line, and the serpentine of tank traps on the road (road cells allowed for those). Returns the ids.
+static func build_obstacles(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> Array:
+	var ids := []
+	for ob in L0.get("obstacles", []):
+		var id := place(w, occ, String(ob.get("def", "")), fid, _v2i(ob.get("cell")), bool(ob.get("road", false)))
+		if id >= 0:
 			ids.append(id)
 	return ids
 
@@ -325,6 +339,8 @@ static func build_plots(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int, 
 				continue  # BASE7: the company HQ was placed on this plot by build()
 			var id := place_near(w, occ, _plot_def(String(p.get("kind", ""))), fid, _v2i(p.get("cell")), 4)
 			if id >= 0:
+				if p.has("facing_i"):  # BASE7-2: airfield runway axis / dropship pad approach side
+					w.entities[id].facing_i = int(p.facing_i)
 				ids.append(id)
 	return ids
 
@@ -336,11 +352,13 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 	var c: Vector2i = L0.center
 	var ids := []
 	var ring_ix := {"outer": 0, "economy": 1, "core": 2, "air": 2}
+	var garrison := []
 	for key in ["outer", "economy", "core", "air"]:
 		var spec: Dictionary = army.get(key, {})
 		var names := spec.keys()
 		names.sort()
 		var list := []  # one entry per group: [member defs] (a squad item like rifle_squad = its production spawns)
+		var gnames := []  # BASE7-2: the group's name (lp_garrison7 jobs)
 		for n in names:
 			var grp: Array = [String(n)]
 			if Content.unit(String(n)).is_empty():
@@ -349,6 +367,7 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 				continue
 			for k in int(spec[n]):
 				list.append(grp)
+				gnames.append(String(n))
 		var ri: int = mini(int(ring_ix[key]), (L0.rings as Array).size() - 1)
 		var h: int = (L0.rings[ri].rect as Rect2i).size.x / 2 - (3 if key != "air" else 6)
 		if key == "core" or key == "air":
@@ -357,8 +376,12 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 		var posts: Dictionary = L0.get("posts", {})
 		if posts.has(key):  # BASE7: map.lp posts (wall stations, gate pickets, vehicle parks, the airfield apron)
 			pts = _spread(posts[key], list.size())
+		var plan := LpGarrison7.plan(key, gnames, L0)  # BASE7-2: wall patrols start on their route, gate guards at the gates
 		for j in list.size():
 			var grp: Array = list[j]
+			if plan.has(j):
+				pts[j] = plan[j].cell
+			var mids := []
 			var squad := -1
 			if grp.size() > 1:  # same squad numbering as Production._complete
 				var pst: Dictionary = w.sys_state.get("production", {"next_squad": 1})
@@ -374,6 +397,10 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 				e.lp_ring = ri
 				e.lp_home = Vector2(p)
 				ids.append(id)
+				mids.append(id)
+			if plan.has(j):
+				garrison.append([String(plan[j].job), int(plan[j].route), int(plan[j].wp), mids])
+	LpGarrison7.register(w, fid, L0, garrison)
 	return ids
 
 
@@ -384,12 +411,18 @@ static func build_vtols(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 	if Content.unit(def).is_empty():
 		return []
 	var pads: Array = (L0.airfield as Dictionary).get("pads", []) if L0.airfield is Dictionary else []
+	var centres: Array = (L0.airfield as Dictionary).get("pad_centres", []) if L0.airfield is Dictionary else []
+	var pf := int((L0.airfield as Dictionary).get("pad_facing_i", -1)) if L0.airfield is Dictionary else -1
 	var ids := []
 	var c: Vector2i = L0.center
 	for i in int(st.get("vtols", 2)):
 		var p := Vector2(_v2i(pads[i])) + Vector2(0.5, 0.5) if i < pads.size() else Vector2(c) + Vector2(-8.0 + 4.0 * i, 8.0)
+		if i < centres.size():  # BASE7-2: the centre of its 6x6 pad
+			p = Vector2(centres[i])
 		var id := w.spawn_unit(def, fid, p)
 		var e: Dictionary = w.entities[id]
+		if pf >= 0:  # nose away from the approach lane: the rear ramp opens onto it (C-17 loading)
+			e.facing = [PI, -PI / 2.0, 0.0, PI / 2.0][pf % 4]
 		Air.land_now(w, e)
 		e.lp_ring = 2
 		e.lp_home = p
@@ -582,6 +615,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	if hq < 0:
 		hq = place_near(w, occ, String(st.get("hq_def", "a_company_hq")), fid, L0.center + Vector2i(8, 8), 8)
 	var rings := build_rings(w, occ, L0, fid)
+	var obst := build_obstacles(w, occ, L0, fid)
 	var cams := build_cameras(w, occ, L0, fid)
 	var plots := build_plots(w, occ, L0, fid, hq)
 	var gens := power_up(w, occ, L0, fid)
@@ -598,7 +632,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 			"turrets": rings[i].turrets if i < rings.size() else [], "fallen": false, "breach_t": 0})
 	return {"center": L0.center, "rings": rr, "facility": fac, "hq": hq, "plots": plots, "army": army, "vtols": vtols,
 		"cores": mach.cores, "nests": mach.nests, "generators": gens, "creep_cells": on_n, "scale": L0.scale, "from_map": L0.from_map,
-		"cameras": cams}
+		"cameras": cams, "obstacles": obst, "patrols": LpGarrison7.patrol_count(w)}
 
 
 ## Fills the raised facility: strike teams, tactical squads and the stealth dropship on its helipad (CNFAC7's own

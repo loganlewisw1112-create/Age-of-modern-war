@@ -32,6 +32,12 @@
       "buildable": false, "requires_power": false, "g7": true, "camera": true,
       "_note": "BASE7 (13.9b): a pan-tilt camera mast that watches its sector (real sight for the base, no weapon). PROVISIONAL."
     },
+    "a_g7_vtol_pad": {
+      "name": "Dropship Landing Pad", "faction": "human_a", "stage_min": 1, "size": 6, "hp": 2500, "armor": "building",
+      "sight": 6, "buildable": false, "requires_power": false, "g7": true, "vtol_pad": true,
+      "passable_for": ["foot", "vehicle", "amphibious", "hover"],
+      "_note": "BASE7-2 (13.9c): 24 m landing site for the 19.6 x 16.7 m VTOL / stealth dropships (Last Protocol airfield). Flat: units walk and drive onto it (rear-ramp loading). Entity field facing_i = the side of its 3-tile approach lane (0 +x, 1 +y, 2 -x, 3 -y). Art: ART7F. PROVISIONAL."
+    },
     "cn_popup": {
       "name": "Lockdown Pop-up Turret", "faction": "shared", "stage_min": 1, "size": 1, "hp": 1200, "armor": "building",
       "sight": 9, "buildable": false, "requires_power": false, "weapon": "g6_popup_rws", "g7": true, "cn_part": "popup",
@@ -68,7 +74,7 @@
   },
   "_g7_facility": {
     "compound": 28,
-    "_layout_note": "BASE7 (13.9b, PROVISIONAL): packed in the order a team moves - south gate -> decon right behind it -> staging yard -> garage rows W/E on their lanes -> loading pad at the head of the 4-wide central spine (x12..15) -> helipad NE with its apron (x15..18) and the drone bay under it; core (command) NW, planning room beside the pad, range SW, workshop SE beside the east garages. Lanes: x6..7, x20..21, x12..15 spine, rows y14, y19..20, y25.",
+    "_layout_note": "BASE7 (13.9b, PROVISIONAL): packed in the order a team moves - south gate -> decon right behind it -> staging yard -> garage rows W/E on their lanes -> loading pad at the head of the 4-wide central spine (x12..15) -> helipad NE with its apron (x15..18) and the drone bay under it; core (command) NW, planning room and (BASE7-2) the package lab beside the loading pad (packages go straight onto it), range SW, workshop SE beside the east garages. Lanes: x6..7, x20..21, x12..15 spine, rows y14, y19..20, y25.",
     "core_offset": [2, 2],
     "gate": [12, 26, 4, 2],
     "staging": [8, 15, 12, 4],
@@ -76,7 +82,8 @@
     "pad": [8, 2, 7, 6],
     "helipad": [19, 2, 6, 6],
     "drone_bay": [16, 8, 4, 6],
-    "planning": [8, 8, 4, 6],
+    "planning": [8, 8, 4, 3],
+    "lab": [8, 11, 4, 3],
     "range": [2, 20, 7, 6],
     "workshop": [20, 20, 6, 6],
     "garages": [[4, 9], [4, 12], [4, 15], [4, 18], [23, 9], [23, 12], [23, 15], [23, 18]],

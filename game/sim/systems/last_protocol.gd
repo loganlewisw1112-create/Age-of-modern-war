@@ -24,6 +24,7 @@ extends RefCounted
 const LpSetup = preload("res://sim/systems/lp_setup.gd")
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const LpWorld = preload("res://sim/systems/lp_world.gd")
+const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 (CR seq 3297): wall patrols
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -171,6 +172,8 @@ static func tick(w: SimWorld) -> void:
 		LpDefence.air_step(w, s)
 	if (w.tick + 11) % _t(1.0) == 0:
 		LpWorld.tick(w, s)
+	if (w.tick + 13) % _t(1.0) == 0:
+		LpGarrison7.tick(w)  # BASE7-2: wall patrols (once a second, staggered inside; no-op without its state)
 	if bool(s.tide):
 		var every := _t(float(R().get("tide", {}).get("assault_every_s", 30.0)))
 		if (w.tick - int(s.tide_t)) % every == 0:

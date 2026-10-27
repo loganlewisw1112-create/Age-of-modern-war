@@ -286,7 +286,10 @@ func test_base7_logistics_layout() -> void:
 			check(pc.distance_to(strip) <= 14.0, "%s at %s grouped with the airfield strip" % [p.kind, p.cell])
 		if String(p.kind) == "artillery":
 			art.append(pc)
-	check_eq(art.size(), 12, "12 artillery pits")
+	# BASE7-2 oracle change, authority = owner 13.9c ("base defenses howitzers ... evenly distributed around the base"):
+	# the single 12-pit core park becomes a 4-gun core fallback battery plus dispersed outer sections; the stricter
+	# coverage / dispersal / ammunition checks are in test_base7_2_artillery_covers_every_approach.
+	check(art.size() >= 4, "core fallback battery (%d pits)" % art.size())
 	var ammo := 0
 	for p in base.rings[2].plots:
 		if String(p.kind) == "depot":
@@ -294,7 +297,7 @@ func test_base7_logistics_layout() -> void:
 				if (Vector2(p.cell) + Vector2.ONE).distance_to(a) <= 4.0:
 					ammo += 1
 					break
-	check(ammo >= 2, "the artillery park has its ammunition depots (%d)" % ammo)
+	check(ammo >= 2, "the core battery has its ammunition depots (%d)" % ammo)
 	# cameras: every gate of every ring and every outer corner watched
 	var cams: Array = base.cameras
 	check(cams.size() >= 15, "security cameras placed (%d)" % cams.size())
@@ -376,3 +379,214 @@ func test_base7_logistics_layout() -> void:
 		var frac := float(used) / float(all)
 		print("BASE7 band %s: %d / %d cells built or road = %.2f" % [base.rings[k].name, used, all, frac])
 		check(frac >= 0.5, "%s band: no dead open ground (%.2f of the band built on or road)" % [base.rings[k].name, frac])
+
+
+# ================================================================ BASE7-2 (owner 13.9c): a fortress laid out for this fight
+const PIT_RANGE := 20.0   # g6_pit_howitzer range (content/g6); min range 5
+const PIT_MIN := 5.0
+
+
+func _plots_of(base: Dictionary, k: int, kind: String) -> Array:
+	var out := []
+	for p in base.rings[k].plots:
+		if String(p.kind) == kind:
+			out.append(Vector2(p.cell) + Vector2(float(p.size), float(p.size)) * 0.5)
+	return out
+
+
+## Artillery covers every approach: every point 6 tiles outside the outer wall (sampled every 2 tiles) is within range
+## of at least one pit (two on the east, the Machine's side); the pits are spread (no face holds more than 35%) and
+## every outer pit has an ammunition bunker 3..7 tiles away, none beside a barracks.
+func test_base7_2_artillery_covers_every_approach() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var C := Vector2(base.center) + Vector2(0.5, 0.5)
+	var h0 := float(base.rings[0].half)
+	var pits := _plots_of(base, 0, "artillery") + _plots_of(base, 2, "artillery")
+	var outer := _plots_of(base, 0, "artillery")
+	check(outer.size() >= 16, "outer artillery sections (%d pits)" % outer.size())
+	var r := h0 + 6.0
+	var gaps := []
+	var east_thin := []
+	var t := -r
+	while t <= r:
+		for q in [C + Vector2(t, -r), C + Vector2(t, r), C + Vector2(-r, t), C + Vector2(r, t)]:
+			var n := 0
+			for a in pits:
+				var d: float = (a as Vector2).distance_to(q)
+				if d <= PIT_RANGE and d >= PIT_MIN:
+					n += 1
+			if n == 0:
+				gaps.append(q - C)
+			if q.x - C.x >= r - 0.01 and n < 2:
+				east_thin.append(q - C)
+		t += 2.0
+	check_eq(gaps, [], "no blind sector: every approach point 6 outside the outer wall is in howitzer range")
+	check_eq(east_thin, [], "the east (Machine) face is covered by two or more howitzers everywhere")
+	var faces := {"n": 0, "e": 0, "s": 0, "w": 0}
+	for a in outer:
+		var d: Vector2 = (a as Vector2) - C
+		var f := ("e" if d.x > 0 else "w") if absf(d.x) > absf(d.y) else ("s" if d.y > 0 else "n")
+		faces[f] = int(faces[f]) + 1
+	for f in faces:
+		check(float(faces[f]) <= 0.35 * float(outer.size()) and int(faces[f]) >= 2, "artillery not bunched: face %s holds %d of %d" % [f, faces[f], outer.size()])
+	var ammo := []
+	for p in base.rings[0].plots:
+		if String(p.kind) == "depot" and bool(p.get("ammo", false)):
+			ammo.append(Vector2(p.cell) + Vector2.ONE)
+	var bar := _plots_of(base, 0, "barracks") + _plots_of(base, 1, "barracks") + _plots_of(base, 2, "barracks")
+	for a in outer:
+		var best := 99.0
+		for b in ammo:
+			best = minf(best, (a as Vector2).distance_to(b))
+		check(best >= 2.9 and best <= 7.5, "pit %s has its own ammunition bunker 3..7 away (%.1f)" % [a - C, best])
+	for b in ammo:
+		for k in bar:
+			check((b as Vector2).distance_to(k) >= 8.0, "ammunition bunker %s away from barracks" % [b - C])
+
+
+## Interlocking turrets and spread air defence: turret neighbours along each outer face at most 12 tiles apart (arcs
+## overlap, no gap in the wall line), the east face denser; SAM / radar on all four faces; CIWS at every gate.
+func test_base7_2_turrets_interlock_and_air_defence_spread() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var C: Vector2i = base.center
+	var r0: Dictionary = base.rings[0]
+	var per := {"n": [], "e": [], "s": [], "w": []}
+	for tt in r0.turrets:
+		var d: Vector2i = Vector2i(tt) - C
+		var f := ("e" if d.x > 0 else "w") if absi(d.x) > absi(d.y) else ("s" if d.y > 0 else "n")
+		(per[f] as Array).append(float(d.y if f == "e" or f == "w" else d.x))
+	for f in per:
+		var a: Array = per[f]
+		a.sort()
+		var worst := 0.0
+		for i in range(1, a.size()):
+			worst = maxf(worst, float(a[i]) - float(a[i - 1]))
+		check(a.size() >= 9 and worst <= 12.0, "face %s: %d turrets, widest gap %.0f tiles (<= 12)" % [f, a.size(), worst])
+	check(per.e.size() > per.w.size(), "east (threat axis) denser than west (%d vs %d)" % [per.e.size(), per.w.size()])
+	var ad_faces := {}
+	for p in r0.plots:
+		if String(p.kind) == "sam" or String(p.kind) == "radar":
+			var d: Vector2i = Vector2i(p.cell) - C
+			ad_faces[("e" if d.x > 0 else "w") if absi(d.x) > absi(d.y) else ("s" if d.y > 0 else "n")] = true
+	check_eq(ad_faces.size(), 4, "outer air defence on every face %s" % [ad_faces.keys()])
+	check(_plots_of(base, 2, "sam").size() >= 4, "core SAM layer (%d)" % _plots_of(base, 2, "sam").size())
+	for gi in range(3, 6):
+		var g := Vector2(r0.gates[gi])
+		var n := 0
+		for p in r0.plots:
+			if String(p.kind) == "ciws" and Vector2(p.cell).distance_to(g) <= 9.0:
+				n += 1
+		check(n >= 2, "outer gate %s: laser CIWS both sides (%d)" % [g, n])
+
+
+## Airfield: the runway of sim and map agree, lies 3+ tiles inside the core wall, and its clear zone (2 past each end,
+## 1.5 each side) holds no footprint, camera or wall; the hangars sit in the field's own apron slots.
+func test_base7_2_airfield_runway_clear_of_the_wall() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var air: Dictionary = base.airfield
+	var C: Vector2i = base.center
+	var h2 := int(base.rings[2].half)
+	var Airfield = load("res://sim/systems/airfield.gd")
+	var lo: Dictionary = Airfield.layout_for("a_airfield", Vector2i(air.origin), int(air.facing_i))
+	check(not lo.is_empty() and (lo.runways as Array).size() == 1, "a_airfield has one runway")
+	if lo.is_empty() or (lo.runways as Array).is_empty():
+		return
+	var ra: Vector2 = lo.runways[0][0]
+	var rb: Vector2 = lo.runways[0][1]
+	check(ra.distance_to(air.runway[0]) < 0.01 and rb.distance_to(air.runway[1]) < 0.01, "map runway = Airfield.layout_for runway (%s %s)" % [ra, rb])
+	for p in [ra, rb]:
+		var d := maxf(absf(p.x - float(C.x) - 0.5), absf(p.y - float(C.y) - 0.5))
+		check(d <= float(h2) - 3.0, "runway end %s at least 3 tiles inside the core wall (d %.1f, wall %d)" % [p, d, h2])
+	var foot := {}
+	for k in 3:
+		for c in base.rings[k].wall + base.rings[k].towers:
+			foot[Vector2i(c)] = "wall"
+		for p in base.rings[k].plots:
+			for y in int(p.size):
+				for x in int(p.size):
+					foot[Vector2i(p.cell) + Vector2i(x, y)] = String(p.kind)
+		for tt in base.rings[k].turrets + base.rings[k].bunkers:
+			for y in 2:
+				for x in 2:
+					foot[Vector2i(tt) + Vector2i(x, y)] = "turret"
+	for cm in base.cameras:
+		foot[Vector2i(cm.cell)] = "camera"
+	var axis := (rb - ra).normalized()
+	var bad := []
+	for y in range(int(ra.y) - 4, int(ra.y) + 5):
+		for x in range(int(minf(ra.x, rb.x)) - 4, int(maxf(ra.x, rb.x)) + 5):
+			var q := Vector2(x, y) + Vector2(0.5, 0.5)
+			var u := (q - ra).dot(axis)
+			var v := absf((q - ra).dot(Vector2(-axis.y, axis.x)))
+			if u >= -2.0 and u <= ra.distance_to(rb) + 2.0 and v <= 1.5 and foot.has(Vector2i(x, y)):
+				bad.append("%s %s" % [foot[Vector2i(x, y)], Vector2i(x, y)])
+	check_eq(bad, [], "runway clear zone free of footprints and walls")
+	var slots: Array = lo.slots
+	var in_slot := 0
+	for hc in air.hangars:
+		if slots.has(Vector2i(hc)):
+			in_slot += 1
+	check_eq(in_slot, 3, "the 3 heavy hangars stand in the airfield's own apron slots")
+
+
+## Dropship landing sites: two 6x6 pads (24 m for the 19.6 x 16.7 m craft), each with a paved 3-tile approach lane on
+## its ramp side; the craft (nose away from the lane) has its ramp foot on the pad and its APC line-up on pad + lane.
+func test_base7_2_dropship_pads_fit_the_dropship() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var air: Dictionary = base.airfield
+	var pads := []
+	for p in base.rings[2].plots:
+		if String(p.kind) == "vtol_pad":
+			pads.append(p)
+	check_eq(pads.size(), 2, "two dropship landing pads")
+	var Transport = load("res://sim/systems/transport.gd")
+	for i in pads.size():
+		var p: Dictionary = pads[i]
+		check(int(p.size) >= 6 and float(p.size) * 4.0 >= 19.6 + 4.0, "pad %d is %dx%d tiles (%d m) for a 19.6 m dropship" % [i, p.size, p.size, int(p.size) * 4])
+		var lane: Rect2i = air.pad_lanes[i]
+		var paved := 0
+		for y in range(lane.position.y, lane.end.y):
+			for x in range(lane.position.x, lane.end.x):
+				if m.terrain[y * 512 + x] == Terrain.ROAD:
+					paved += 1
+		check_eq(paved, lane.get_area(), "pad %d approach lane paved and open" % i)
+		var cc: Vector2 = air.pad_centres[i]
+		var f := -PI / 2.0
+		var pr := Rect2(Vector2(p.cell), Vector2(p.size, p.size))
+		var all := pr.merge(Rect2(lane))
+		check(pr.has_point(Transport.ramp_pt(cc, f, -2.45)) and all.has_point(Transport.ramp_pt(cc, f, -5.8)), "pad %d: ramp foot on the pad, APC line-up on the lane" % i)
+	if pads.size() == 2:
+		var gap := absf(float(pads[1].cell.x) - float(pads[0].cell.x)) - 6.0
+		check(gap >= 3.0, "pads dispersed (%.0f tiles apart)" % gap)
+
+
+## Entry control + garrison data: every outer gate has 4 guard posts, a serpentine of 4 tank traps on its road and a
+## wire belt; wall patrol routes run on the ring roads (outer 4 walls, economy and core loops); cameras on every wall.
+func test_base7_2_entry_control_and_patrol_routes() -> void:
+	var m := _map()
+	var base: Dictionary = m.lp.base
+	var t: PackedByteArray = m.terrain
+	check_eq((base.gate_posts as Array).size(), 12, "4 guard posts at each of the 3 outer gates")
+	var serp := 0
+	var wire := 0
+	for ob in base.obstacles:
+		var c: Vector2i = ob.cell
+		if bool(ob.road):
+			serp += 1
+			check(t[c.y * 512 + c.x] == Terrain.ROAD, "serpentine trap %s on the approach road" % c)
+		elif String(ob.def) == "s_barbed_wire":
+			wire += 1
+	check_eq(serp, 12, "a 4-trap serpentine on every outer gate approach")
+	check(wire >= 60, "wire belts in front of the gates (%d)" % wire)
+	var rings := {}
+	for r in base.patrols:
+		rings[int(r.ring)] = int(rings.get(int(r.ring), 0)) + 1
+		for p in r.pts:
+			var c := Vector2i(int(floor(p.x)), int(floor(p.y)))
+			check(t[c.y * 512 + c.x] == Terrain.ROAD, "patrol waypoint %s on a ring road" % c)
+	check(int(rings.get(0, 0)) == 4 and int(rings.get(1, 0)) >= 1 and int(rings.get(2, 0)) >= 1, "patrol routes: outer walls %d, economy %d, core %d" % [rings.get(0, 0), rings.get(1, 0), rings.get(2, 0)])
+	check((base.cameras as Array).size() >= 40, "cameras along every wall (%d)" % (base.cameras as Array).size())
