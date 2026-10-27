@@ -14,11 +14,32 @@ shader_type canvas_item;
 uniform sampler2D vis_tex : filter_nearest;
 uniform sampler2D exp_tex : filter_nearest;
 uniform float explored_a = 0.470588;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform float grey_on = 1.0;
+uniform float grey_dim = 0.62;
+float unexp_at(ivec2 c, ivec2 sz) {
+	c = clamp(c, ivec2(0), sz - ivec2(1));
+	return texelFetch(exp_tex, c, 0).r > 0.0 ? 0.0 : 1.0;
+}
 float fog_at(ivec2 c, ivec2 sz) {
 	c = clamp(c, ivec2(0), sz - ivec2(1));
 	float v = texelFetch(vis_tex, c, 0).r;
 	float e = texelFetch(exp_tex, c, 0).r;
 	return v > 0.0 ? 0.0 : (e > 0.0 ? explored_a : 1.0);
+}
+// G7 (LOOK7): grey fog. Seen-before cells show what is under them (the terrain and the remembered buildings
+// drawn below) desaturated and dimmed; never-explored cells stay black; visible cells clear. a = old black
+// alpha (0 visible .. explored_a .. 1 unexplored), u = unexplored share 0..1. grey_on = 0 restores the dark fog.
+vec4 grey_fog(float a, float u, vec2 suv) {
+	if (grey_on < 0.5) {
+		return vec4(0.0, 0.0, 0.0, a);
+	}
+	float fogged = clamp(a / explored_a, 0.0, 1.0);
+	vec3 bg = texture(screen_tex, suv).rgb;
+	float l = dot(bg, vec3(0.299, 0.587, 0.114));
+	vec3 g = vec3(l * grey_dim) + vec3(0.015, 0.02, 0.03);
+	vec3 col = mix(g, vec3(0.0), u);
+	return vec4(col, max(fogged, u));
 }
 void fragment() {
 	ivec2 sz = textureSize(vis_tex, 0);
@@ -27,7 +48,8 @@ void fragment() {
 	vec2 f = fract(p);
 	float a = mix(mix(fog_at(i, sz), fog_at(i + ivec2(1, 0), sz), f.x),
 		mix(fog_at(i + ivec2(0, 1), sz), fog_at(i + ivec2(1, 1), sz), f.x), f.y);
-	COLOR = vec4(0.0, 0.0, 0.0, a);
+	COLOR = grey_fog(a, mix(mix(unexp_at(i, sz), unexp_at(i + ivec2(1, 0), sz), f.x),
+		mix(unexp_at(i + ivec2(0, 1), sz), unexp_at(i + ivec2(1, 1), sz), f.x), f.y), SCREEN_UV);
 }
 """
 
@@ -42,13 +64,34 @@ uniform sampler2D vis_tex : filter_nearest;
 uniform sampler2D exp_tex : filter_nearest;
 uniform sampler2D h_tex : filter_nearest;
 uniform float explored_a = 0.470588;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform float grey_on = 1.0;
+uniform float grey_dim = 0.62;
 uniform float level_px;   // set from ViewUtil.level_px in _sync_height (no literal lift here)
 varying vec2 cpos;
+float unexp_at(ivec2 c, ivec2 sz) {
+	c = clamp(c, ivec2(0), sz - ivec2(1));
+	return texelFetch(exp_tex, c, 0).r > 0.0 ? 0.0 : 1.0;
+}
 float fog_at(ivec2 c, ivec2 sz) {
 	c = clamp(c, ivec2(0), sz - ivec2(1));
 	float v = texelFetch(vis_tex, c, 0).r;
 	float e = texelFetch(exp_tex, c, 0).r;
 	return v > 0.0 ? 0.0 : (e > 0.0 ? explored_a : 1.0);
+}
+// G7 (LOOK7): grey fog. Seen-before cells show what is under them (the terrain and the remembered buildings
+// drawn below) desaturated and dimmed; never-explored cells stay black; visible cells clear. a = old black
+// alpha (0 visible .. explored_a .. 1 unexplored), u = unexplored share 0..1. grey_on = 0 restores the dark fog.
+vec4 grey_fog(float a, float u, vec2 suv) {
+	if (grey_on < 0.5) {
+		return vec4(0.0, 0.0, 0.0, a);
+	}
+	float fogged = clamp(a / explored_a, 0.0, 1.0);
+	vec3 bg = texture(screen_tex, suv).rgb;
+	float l = dot(bg, vec3(0.299, 0.587, 0.114));
+	vec3 g = vec3(l * grey_dim) + vec3(0.015, 0.02, 0.03);
+	vec3 col = mix(g, vec3(0.0), u);
+	return vec4(col, max(fogged, u));
 }
 void vertex() {
 	cpos = VERTEX;
@@ -79,7 +122,8 @@ void fragment() {
 		vec2 f = fract(p);
 		float a = mix(mix(fog_at(i, sz), fog_at(i + ivec2(1, 0), sz), f.x),
 			mix(fog_at(i + ivec2(0, 1), sz), fog_at(i + ivec2(1, 1), sz), f.x), f.y);
-		COLOR = vec4(0.0, 0.0, 0.0, a);
+		COLOR = grey_fog(a, mix(mix(unexp_at(i, sz), unexp_at(i + ivec2(1, 0), sz), f.x),
+			mix(unexp_at(i + ivec2(0, 1), sz), unexp_at(i + ivec2(1, 1), sz), f.x), f.y), SCREEN_UV);
 	}
 }
 """
@@ -99,6 +143,37 @@ var _exp_tex: ImageTexture
 var _last_vis := PackedByteArray()
 var _last_exp := PackedByteArray()
 var rebuilds := 0
+# G7 (LOOK7): grey fog (shader reads the screen under it) + fading last-known enemy markers (snap.intel)
+const MARK_LIFE := 90.0        # s until a last-known marker has faded out completely
+const MARK_MIN_A := 0.06       # markers fainter than this are not drawn
+var grey := not OS.get_cmdline_user_args().has("--g7-look-off")   # debug A/B: dark G6.1 fog
+var markers: Node2D = null
+var markers_drawn := 0
+var _mark_tick := -1
+
+
+class LastKnown:
+	extends Node2D
+	var fl
+
+	func _draw() -> void:
+		if fl != null:
+			fl._draw_markers(self)
+
+
+## Marker alpha from the contact's confidence (0..1) and age (s): fades with both.
+static func marker_alpha(conf: float, age: float) -> float:
+	return clampf(conf, 0.0, 1.0) * clampf(1.0 - age / MARK_LIFE, 0.0, 1.0)
+
+
+func set_grey(on: bool) -> void:
+	grey = on
+	_apply_grey()
+
+
+func _apply_grey() -> void:
+	if material is ShaderMaterial:
+		(material as ShaderMaterial).set_shader_parameter("grey_on", 1.0 if grey else 0.0)
 
 
 func setup(view) -> void:
@@ -117,12 +192,22 @@ func setup(view) -> void:
 	m.set_shader_parameter("exp_tex", _exp_tex)
 	m.set_shader_parameter("explored_a", float(EXPLORED_A) / 255.0)
 	material = m
+	_apply_grey()
+	markers = LastKnown.new()
+	markers.name = "LastKnown"
+	markers.fl = self
+	markers.use_parent_material = false
+	add_child(markers)
 	_sync_height()
 	refresh(true)
 
 
 func refresh(force: bool = false) -> void:
 	_sync_height()
+	var sn = mv.get("snap") if mv != null else null
+	if markers != null and sn is Dictionary and int(sn.get("tick", -1)) != _mark_tick:
+		_mark_tick = int(sn.get("tick", -1))
+		markers.queue_redraw()
 	var f: Dictionary = mv.fog_of(mv.player_fid)  # G4: snapshot fog (safe during a step)
 	if f.is_empty():
 		return
@@ -177,6 +262,7 @@ func _sync_height(force: bool = false) -> void:
 			m.set_shader_parameter("h_tex", _h_tex)
 			m.set_shader_parameter("level_px", ViewUtil.level_px)
 		material = m
+		_apply_grey()
 	elif on:
 		(material as ShaderMaterial).set_shader_parameter("h_tex", _h_tex)
 	queue_redraw()
@@ -212,3 +298,40 @@ func _draw_body() -> void:
 	draw_set_transform_matrix(Transform2D(Vector2(32, 16), Vector2(-32, 16), Vector2.ZERO))
 	draw_texture_rect(_vis_tex, Rect2(Vector2.ZERO, Vector2(_w, _h)), false)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
+
+## G7: last-known enemy markers (believed contacts of the player's side, snap.intel) on cells not visible now; each
+## fades with age and confidence. Vehicles a hollow square, infantry / other a cross, buildings a diamond.
+func _draw_markers(ci: CanvasItem) -> void:
+	markers_drawn = 0
+	var sn = mv.get("snap") if mv != null else null
+	if not (sn is Dictionary):
+		return
+	var lst = (sn.get("intel", {}) as Dictionary).get(int(mv.player_fid))
+	if not (lst is Array):
+		return
+	for c in lst:
+		var p: Vector2 = c[0]
+		var cell := Vector2i(floori(p.x), floori(p.y))
+		if cell.x < 0 or cell.y < 0 or cell.x >= _w or cell.y >= _h:
+			continue
+		if not _last_vis.is_empty() and _last_vis[cell.y * _w + cell.x] != 0:
+			continue
+		var a := marker_alpha(float(c[1]), float(c[2]))
+		if a < MARK_MIN_A:
+			continue
+		var s := Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
+		if height_on:
+			s.y -= ViewUtil.lift_px(float(ViewUtil.cell_level(_hm, cell)))
+		var col := Color(0.95, 0.32, 0.25, a)
+		var kind := String(c[3])
+		if kind == "vehicle" or kind == "air":
+			ci.draw_rect(Rect2(s - Vector2(6, 4), Vector2(12, 8)), col, false, 1.5)
+		elif kind == "building":
+			ci.draw_polyline(PackedVector2Array([s + Vector2(0, -7), s + Vector2(10, 0), s + Vector2(0, 7), s + Vector2(-10, 0), s + Vector2(0, -7)]), col, 1.5)
+		else:
+			ci.draw_line(s + Vector2(-5, -3), s + Vector2(5, 3), col, 1.5)
+			ci.draw_line(s + Vector2(-5, 3), s + Vector2(5, -3), col, 1.5)
+		ci.draw_circle(s, 1.5, Color(col.r, col.g, col.b, a * 0.8))
+		markers_drawn += 1

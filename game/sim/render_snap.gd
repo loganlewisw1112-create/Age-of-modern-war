@@ -53,7 +53,8 @@ const DEF_PASS := FLAG_AIR | FLAG_SHIP | FLAG_DRONE  # def-table bits copied str
 const STATIC_FIELDS := ["cell", "size", "built", "progress", "facing", "res", "amount",
 	"from_owner", "conn", "status", "locked", "tag", "detected", "hidden", "seen", "fuse", "target",  # seen/fuse/target: G4b mines / charges (UI4B)
 	"level", "class", "facing_i", "air_build", "air_parent", "extra_strips", "sinking",  # G5 (VIEW5): hangars, fields, sinking wrecks
-	"firing"]  # G6 (VIEW6): turret shot hint (rot_<f>_fire art)
+	"firing",  # G6 (VIEW6): turret shot hint (rot_<f>_fire art)
+	"roof_open"]  # G7 (LOOK7): own troops inside (SQUAD7 garrison clearing): the roof cuts away
 
 
 ## Builds the snapshot for the world's current state. Safe to call every tick; the cost is one
@@ -99,6 +100,7 @@ static func build(w) -> void:
 	var g5_any: bool = g5.any
 	var g6: Dictionary = _g6_inputs(w)  # G6 (VIEW6): per-unit G6 side table inputs
 	var g6_any: bool = g6.any
+	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
 		if e.kind == "unit":
@@ -161,6 +163,16 @@ static func build(w) -> void:
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
+			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull) and the
+			# DRONE7 flown-drone height / bank, merged into g7u (three lookups per unit; drones only for aircraft defs)
+			var gt = e.get("gait")
+			var hd = e.get("f7_hd")
+			var hb = e.get("f7_hb")
+			if gt != null or hd != null or hb != null:
+				_g7_squad(e, id, gt, hd, hb, g7u)
+			if dfl2 & DEF_AIRCRAFT and e.has("drone_h"):
+				_g7_entry(g7u, id)["dh"] = float(e.drone_h)
+				_g7_entry(g7u, id)["dbank"] = float(e.get("drone_bank", 0.0))
 			ids[n] = id
 			pos[n] = p
 			prev[n] = pp
@@ -194,6 +206,7 @@ static func build(w) -> void:
 	}
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
+	_g7_out(w, snap, g7u)
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
 
@@ -607,7 +620,7 @@ const DEF_G6 := 1 << 24   # def table only: cloak / disguise / submersible / son
 const G6_SYS := {"airfield": "res://sim/systems/airfield.gd", "machine_g6": "res://sim/systems/machine_g6.gd",
 	"hooks": "res://sim/systems/g6_hooks.gd", "sonar": "res://sim/systems/sonar.gd",
 	"companies": "res://sim/systems/companies.gd", "garrison": "res://sim/systems/garrison.gd",
-	"ai_command": "res://sim/systems/ai_command.gd"}
+	"ai_command": "res://sim/systems/ai_command.gd", "intel": "res://sim/systems/intel.gd"}
 static var _g6_scripts: Dictionary = {}
 
 
@@ -738,3 +751,89 @@ static func _g6_out(w, snap: Dictionary, g6: Dictionary) -> void:
 		for f in adf.picture:
 			pic[int(f)] = (adf.picture[f] as Array).duplicate()
 	snap["airdef"] = pic
+
+
+# ================================================================ G7 (LOOK7)
+# Snapshot additions (fact snap.g7_fields):
+#   g7u {id: {..}}: a deep copy of the sparse display-state table w.sys_state.g7v {id: {key: value}} that the G7 sim
+#     systems keep for units in a non-default state (WOUND7 / SQUAD7 / DRONE7 write their own keys; an id with no
+#     entry = default). Keys LOOK7 draws (all optional):
+#       wz int  wound-zone bits (W_HEAD 1, W_TORSO 2, W_ARM_L 4, W_ARM_R 8, W_LEG_L 16, W_LEG_R 32)
+#       hz int + ht int  zone bits + tick of the latest hit (hit reaction); kd int  tick of a blast knock-down
+#       unc bool  unconscious;  bleed bool  bleeding
+#       care String  what this soldier is doing to a casualty: "aid" | "medic" | "drag" | "carry"; cw int  partner id
+#       cared String  what is being done to this casualty (same values); cb int  partner id
+#       panic String  "cower" | "freeze" | "flee" | "drop"
+#       gait String  "walk" | "crouch" | "duck" | "sprint" | "crawl";  back bool  backing off facing the enemy
+#       sector float  watched sector facing (rad);  stack bool  stacked at a door;  entry bool  entering a room
+#       lean int  -1 / 1 peek side;  window bool  firing from a window;  throw int  tick a grenade throw started
+#       herring float  vehicle halt angle offset (rad) from its travel facing (herringbone / coil)
+#       drone String  "takeoff" | "bank_l" | "bank_r" | "release" | "dive" (DRONE7)
+#   intel {fid: [[pos Vector2, conf 0..1, age s, kind String], ...]}: believed enemy contacts of the viewing sides
+#     (w.cache.snap_fids, else every faction), refreshed every INTEL_EVERY ticks (last-known markers; display only).
+const W_HEAD := 1
+const W_TORSO := 2
+const W_ARM_L := 4
+const W_ARM_R := 8
+const W_LEG_L := 16
+const W_LEG_R := 32
+const INTEL_EVERY := 10
+
+
+static func _g7_base(w) -> Dictionary:
+	var gv = w.sys_state.get("g7v")
+	return (gv as Dictionary).duplicate(true) if gv is Dictionary and not (gv as Dictionary).is_empty() else {}
+
+
+static func _g7_entry(g7u: Dictionary, id: int) -> Dictionary:
+	var d = g7u.get(id)
+	if d == null:
+		d = {}
+		g7u[id] = d
+	return d
+
+
+## SQUAD7 fields (change_request.snapshot_squad7): e.gait int 0 walk 1 crouch-walk 2 duck-run 3 sprint, e.f7_hd watched
+## heading (deg), e.order.bk backing off, e.f7_clr 1 stacked / 2 entering, e.f7_hb vehicle hull heading at a halt (deg).
+const GAITS := ["walk", "crouch", "duck", "sprint"]
+static func _g7_squad(e: Dictionary, id: int, gt, hd, hb, g7u: Dictionary) -> void:
+	var d := _g7_entry(g7u, id)
+	if gt != null and int(gt) > 0 and int(gt) < GAITS.size() and not d.has("gait"):
+		d["gait"] = GAITS[int(gt)]
+	if hd != null:
+		d["sector"] = deg_to_rad(float(hd))
+		var od = e.get("order")
+		if od is Dictionary and bool(od.get("bk", false)):
+			d["back"] = true
+		var clr := int(e.get("f7_clr", 0))
+		if clr == 1:
+			d["stack"] = true
+		elif clr == 2:
+			d["entry"] = true
+	if hb != null:
+		d["hull"] = deg_to_rad(float(hb))
+
+
+static func _g7_out(w, snap: Dictionary, g7u: Dictionary) -> void:
+	snap["g7u"] = g7u
+	var cache: Dictionary = w.cache
+	var it := int(cache.get("snap_intel_t", -1000))
+	if int(w.tick) - it < INTEL_EVERY and cache.has("snap_intel"):
+		snap["intel"] = cache.snap_intel
+		return
+	cache["snap_intel_t"] = int(w.tick)
+	var out := {}
+	var ist = w.sys_state.get("intel")
+	if ist is Dictionary and not (ist as Dictionary).is_empty():
+		var intel = _sys("intel")
+		var only = cache.get("snap_fids")
+		for fid in w.factions:
+			if only != null and not (only as Array).has(fid):
+				continue
+			var lst: Array = []
+			for c in intel.contacts(w, int(fid), Vector2.ZERO, 0.0):
+				lst.append([Vector2(c.pos), float(c.conf), float(c.age), String(c.kind)])
+			if not lst.is_empty():
+				out[int(fid)] = lst
+	cache["snap_intel"] = out
+	snap["intel"] = out

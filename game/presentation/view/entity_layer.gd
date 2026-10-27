@@ -43,6 +43,7 @@ var lod := 0                 # 0 close, 1 mid, 2 far
 var decor_count := 0
 var drawn := 0               # items drawn last frame (perf evidence)
 var _seen_wrecks: Dictionary = {}
+const ROOF_CUT_MOD := Color(1.0, 0.96, 0.9, 0.34)  # G7 (LOOK7): building drawn see-through, troops inside shown
 var _ghosts: Dictionary = {}       # remembered-building id -> ghost entity dict
 var _decor: Dictionary = {}        # Vector2i chunk -> Array [pos, page, src, off, ...]
 var _decor_rect: Dictionary = {}   # Vector2i chunk -> Rect2 (screen bounds)
@@ -444,8 +445,12 @@ func refresh() -> void:
 	g5_counts = gc5
 	# G6.1 (ANIMA61): motion layer on while the last frame drew <= MOTION_CAP units (2k-on-screen stays cheap)
 	motion_on = not far and not g61_off and _units_drawn <= MOTION_CAP
-	var gc61 := {"motion": 0, "a61": 0, "flipped": 0, "corpses": 0, "chevrons": 0, "pips": 0, "veh": 0, "turret": 0, "track": 0, "bank": 0, "recoil": 0}
+	var gc61 := {"motion": 0, "a61": 0, "flipped": 0, "corpses": 0, "chevrons": 0, "pips": 0, "veh": 0, "turret": 0, "track": 0, "bank": 0, "recoil": 0, "g7": 0, "roof": 0, "roof_in": 0}
 	g61_counts = gc61
+	# G7 (LOOK7): sparse per-unit display states (render_snap g7u: wounds, care, panic, gait, sectors, herringbone)
+	var g7u: Dictionary = sn.get("g7u", {})
+	var has_g7 := not g7u.is_empty()
+	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
 	var pframe := Engine.get_process_frames()
 	for i in n_u:
@@ -500,8 +505,14 @@ func refresh() -> void:
 			# the mimic disguise for this viewer; own cloaked / submerged units translucent
 			var g6e = g6u.get(id)
 			if G6Vis.hidden_inside(g6e):
-				gc6.garrisoned += 1
-				continue
+				# G7 (LOOK7): roof cut away (own / allied troops clearing inside): the men inside are drawn
+				var gb = statics.get(int(g6e.get("gar", -1))) if g6e is Dictionary else null
+				if gb is Dictionary and roof_open_for(gb.get("roof_open"), pf, mv._ally_fids) and (ow == pf or mv._ally_fids.has(ow)):
+					sp += Vector2(float((id * 37) % 25) - 12.0, float((id * 53) % 13) - 6.0)
+					gc61.roof_in += 1
+				else:
+					gc6.garrisoned += 1
+					continue
 			var an := G6Vis.art_def(g6e, pf, dname)
 			if an != dname:
 				if g6e.has("dis") and (g6e.dis as Dictionary).has(pf):
@@ -536,6 +547,7 @@ func refresh() -> void:
 		units_drawn += 1
 		var a61: Dictionary = c[31] if not g61_off else _no61
 		var bits := 0
+		var gv = g7u.get(id) if has_g7 else null
 		if fl & RenderSnap.FLAG_MOVING:
 			bits |= Motion.P_MOVING
 		if fl & RenderSnap.FLAG_FIRING:
@@ -554,7 +566,7 @@ func refresh() -> void:
 				_mcls[dname] = mcls
 			if mcls == Motion.CLS_INF and motion.speed(id) >= RUN_SPEED:
 				bits |= Motion.P_RUN
-			motion.step(id, mcls, pos, fac_a[i], bits, t)
+			motion.step(id, mcls, pos, fac_a[i] if gv == null else Motion.g7_facing(gv, fac_a[i], (fl & RenderSnap.FLAG_MOVING) != 0), bits, t)
 			var mo: Vector2 = motion.out_off
 			var mpx: Vector2 = motion.out_px
 			if c[30] >= 0 and fl & RenderSnap.FLAG_MOVING:
@@ -567,6 +579,9 @@ func refresh() -> void:
 				var fk: float = motion.out_flash
 				mod6 = Color(mod6.r * (1.0 + 0.9 * fk), mod6.g * (1.0 + 0.6 * fk), mod6.b * (1.0 + 0.5 * fk), mod6.a)
 			gc61.motion += 1
+		var g7c := -1
+		if gv != null and not a61.is_empty():
+			g7c = Motion.g7_col(a61, gv, bits, t, Motion.seed_of(id), stick)
 		var pg: int = c[2]
 		var ad = g5air.get(id) if has_air else null
 		if pg == -2:
@@ -581,7 +596,7 @@ func refresh() -> void:
 			if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
 				_g5_markers(sp, fl, id, t, neutral, gc5)
 			continue
-		if fl & RenderSnap.FLAG_WOUNDED and c[17] < 0:
+		if fl & RenderSnap.FLAG_WOUNDED and c[17] < 0 and g7c < 0:
 			# G1-G4 human infantry: the wounded pose comes from effects g5_wounded_a/b (team mask)
 			if art.resolve_fx(G5Art.wounded_fx(String(_fac.get(ow, ""))), _team.get(ow, neutral), String(_ck.get(ow, "x")), int(t * 3.0 + id * 0.3)):
 				_push(0, sp.y, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color.WHITE)
@@ -589,7 +604,10 @@ func refresh() -> void:
 			_g5_markers(sp, fl, id, t, neutral, gc5)
 			continue
 		var fi := 0
-		if fl & RenderSnap.FLAG_WOUNDED:
+		if g7c >= 0:
+			fi = g7c   # G7 (LOOK7): wound / care / panic / gait / back-off / peek pose
+			gc61.g7 += 1
+		elif fl & RenderSnap.FLAG_WOUNDED:
 			fi = c[17]
 			gc5.wounded += 1
 		elif fl & RenderSnap.FLAG_FIRING:
@@ -748,6 +766,9 @@ func refresh() -> void:
 					var le = ents.get(id)
 					if le != null:
 						vis_bld.append(le)
+				if roof_open_for(e.get("roof_open"), pf, mv._ally_fids):
+					mod = ROOF_CUT_MOD   # G7 (LOOK7): roof cut away while our troops clear it (they draw inside)
+					gc61.roof += 1
 			"resource":
 				if not mv.cell_explored(gc):
 					continue
@@ -1087,3 +1108,15 @@ func _g5_air_fx(dname: String, ad: Dictionary, fl: int, facing: float, t: float,
 			var tp := sp - sd * 20.0 - Vector2(0, _lift)
 			_push(1, sp.y - _lift - 1.0, art.out_page, art.out_src, tp + art.out_off, art.out_src.size, Color.WHITE)
 			gc5["burner"] = int(gc5.get("burner", 0)) + 1
+
+
+
+## G7 (LOOK7): is a building's roof cut away for viewer pf? roof_open = the faction id whose troops are inside
+## (SQUAD7 garrison clearing; bool true also accepted); cut away for that side and its allies only.
+static func roof_open_for(ro, pf: int, allies: Array) -> bool:
+	if ro == null or (ro is bool and not ro):
+		return false
+	if ro is bool:
+		return true
+	var f := int(ro)
+	return f >= 0 and (f == pf or allies.has(f))

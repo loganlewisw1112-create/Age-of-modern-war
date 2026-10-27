@@ -1,0 +1,2735 @@
+{
+  "buildings": {
+    "g7_cn_decon": {
+      "fh": 136,
+      "fw": 204,
+      "g6": {
+        "faction": "g",
+        "variants": "rot"
+      },
+      "g7": {
+        "anim_strip": [
+          "build_0",
+          "build_1",
+          "build_2",
+          "built",
+          "active",
+          "built",
+          "active",
+          "rot_1",
+          "rot_2",
+          "damaged"
+        ],
+        "budget": 4194304,
+        "bytes": 2330496,
+        "class": "building",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "built",
+          "active"
+        ],
+        "sample": "facility"
+      },
+      "pivot": [
+        102,
+        82
+      ],
+      "size": 3,
+      "states": {
+        "active": {
+          "file": "buildings/g7_cn_decon_active.png",
+          "mask": "buildings/g7_cn_decon_active_mask.png"
+        },
+        "build_0": {
+          "file": "buildings/g7_cn_decon_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/g7_cn_decon_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/g7_cn_decon_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/g7_cn_decon_rot_0.png",
+          "mask": "buildings/g7_cn_decon_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/g7_cn_decon_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_decon_rot_0_damaged_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_cn_decon_rot_0.png",
+          "mask": "buildings/g7_cn_decon_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/g7_cn_decon_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/g7_cn_decon_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/g7_cn_decon_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_decon_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/g7_cn_decon_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_decon_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_cn_decon_rot_1.png",
+          "mask": "buildings/g7_cn_decon_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/g7_cn_decon_rot_1_build_0.png",
+          "mask": "buildings/g7_cn_decon_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/g7_cn_decon_rot_1_build_1.png",
+          "mask": "buildings/g7_cn_decon_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/g7_cn_decon_rot_1_build_2.png",
+          "mask": "buildings/g7_cn_decon_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/g7_cn_decon_rot_1_damaged.png",
+          "mask": "buildings/g7_cn_decon_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_cn_decon_rot_2.png",
+          "mask": "buildings/g7_cn_decon_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/g7_cn_decon_rot_2_build_0.png",
+          "mask": "buildings/g7_cn_decon_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/g7_cn_decon_rot_2_build_1.png",
+          "mask": "buildings/g7_cn_decon_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/g7_cn_decon_rot_2_build_2.png",
+          "mask": "buildings/g7_cn_decon_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/g7_cn_decon_rot_2_damaged.png",
+          "mask": "buildings/g7_cn_decon_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_cn_decon_rot_3.png",
+          "mask": "buildings/g7_cn_decon_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/g7_cn_decon_rot_3_build_0.png",
+          "mask": "buildings/g7_cn_decon_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/g7_cn_decon_rot_3_build_1.png",
+          "mask": "buildings/g7_cn_decon_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/g7_cn_decon_rot_3_build_2.png",
+          "mask": "buildings/g7_cn_decon_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/g7_cn_decon_rot_3_damaged.png",
+          "mask": "buildings/g7_cn_decon_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "g7_cn_garage": {
+      "fh": 106,
+      "fw": 140,
+      "g6": {
+        "faction": "g",
+        "variants": "rot"
+      },
+      "g7": {
+        "anim_strip": [
+          "build_0",
+          "build_1",
+          "build_2",
+          "built",
+          "open",
+          "built",
+          "lockdown",
+          "rot_1",
+          "rot_3",
+          "damaged"
+        ],
+        "budget": 4194304,
+        "bytes": 1305920,
+        "class": "building",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "built",
+          "open",
+          "lockdown"
+        ],
+        "sample": "facility"
+      },
+      "pivot": [
+        70,
+        68
+      ],
+      "size": 2,
+      "states": {
+        "build_0": {
+          "file": "buildings/g7_cn_garage_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/g7_cn_garage_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/g7_cn_garage_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/g7_cn_garage_rot_0.png",
+          "mask": "buildings/g7_cn_garage_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/g7_cn_garage_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_garage_rot_0_damaged_mask.png"
+        },
+        "lockdown": {
+          "file": "buildings/g7_cn_garage_lockdown.png",
+          "mask": "buildings/g7_cn_garage_lockdown_mask.png"
+        },
+        "open": {
+          "file": "buildings/g7_cn_garage_open.png",
+          "mask": "buildings/g7_cn_garage_open_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_cn_garage_rot_0.png",
+          "mask": "buildings/g7_cn_garage_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/g7_cn_garage_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/g7_cn_garage_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/g7_cn_garage_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_garage_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/g7_cn_garage_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_garage_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_cn_garage_rot_1.png",
+          "mask": "buildings/g7_cn_garage_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/g7_cn_garage_rot_1_build_0.png",
+          "mask": "buildings/g7_cn_garage_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/g7_cn_garage_rot_1_build_1.png",
+          "mask": "buildings/g7_cn_garage_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/g7_cn_garage_rot_1_build_2.png",
+          "mask": "buildings/g7_cn_garage_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/g7_cn_garage_rot_1_damaged.png",
+          "mask": "buildings/g7_cn_garage_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_cn_garage_rot_2.png",
+          "mask": "buildings/g7_cn_garage_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/g7_cn_garage_rot_2_build_0.png",
+          "mask": "buildings/g7_cn_garage_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/g7_cn_garage_rot_2_build_1.png",
+          "mask": "buildings/g7_cn_garage_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/g7_cn_garage_rot_2_build_2.png",
+          "mask": "buildings/g7_cn_garage_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/g7_cn_garage_rot_2_damaged.png",
+          "mask": "buildings/g7_cn_garage_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_cn_garage_rot_3.png",
+          "mask": "buildings/g7_cn_garage_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/g7_cn_garage_rot_3_build_0.png",
+          "mask": "buildings/g7_cn_garage_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/g7_cn_garage_rot_3_build_1.png",
+          "mask": "buildings/g7_cn_garage_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/g7_cn_garage_rot_3_build_2.png",
+          "mask": "buildings/g7_cn_garage_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/g7_cn_garage_rot_3_damaged.png",
+          "mask": "buildings/g7_cn_garage_rot_3_damaged_mask.png"
+        }
+      }
+    },
+    "g7_cn_gate": {
+      "fh": 146,
+      "fw": 204,
+      "g6": {
+        "faction": "g",
+        "variants": "rot"
+      },
+      "g7": {
+        "anim_strip": [
+          "build_0",
+          "build_1",
+          "build_2",
+          "built",
+          "open",
+          "fire",
+          "rot_1",
+          "rot_2",
+          "rot_3",
+          "damaged"
+        ],
+        "budget": 4194304,
+        "bytes": 2978400,
+        "class": "building",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "built",
+          "open",
+          "fire",
+          "damaged"
+        ],
+        "sample": "facility"
+      },
+      "pivot": [
+        102,
+        92
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/g7_cn_gate_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/g7_cn_gate_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/g7_cn_gate_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/g7_cn_gate_rot_0.png",
+          "mask": "buildings/g7_cn_gate_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/g7_cn_gate_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_gate_rot_0_damaged_mask.png"
+        },
+        "fire": {
+          "file": "buildings/g7_cn_gate_rot_0_fire.png",
+          "mask": "buildings/g7_cn_gate_rot_0_fire_mask.png"
+        },
+        "open": {
+          "file": "buildings/g7_cn_gate_open.png",
+          "mask": "buildings/g7_cn_gate_open_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_cn_gate_rot_0.png",
+          "mask": "buildings/g7_cn_gate_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/g7_cn_gate_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/g7_cn_gate_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/g7_cn_gate_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_gate_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/g7_cn_gate_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_gate_rot_0_damaged_mask.png"
+        },
+        "rot_0_fire": {
+          "file": "buildings/g7_cn_gate_rot_0_fire.png",
+          "mask": "buildings/g7_cn_gate_rot_0_fire_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_cn_gate_rot_1.png",
+          "mask": "buildings/g7_cn_gate_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/g7_cn_gate_rot_1_build_0.png",
+          "mask": "buildings/g7_cn_gate_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/g7_cn_gate_rot_1_build_1.png",
+          "mask": "buildings/g7_cn_gate_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/g7_cn_gate_rot_1_build_2.png",
+          "mask": "buildings/g7_cn_gate_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/g7_cn_gate_rot_1_damaged.png",
+          "mask": "buildings/g7_cn_gate_rot_1_damaged_mask.png"
+        },
+        "rot_1_fire": {
+          "file": "buildings/g7_cn_gate_rot_1_fire.png",
+          "mask": "buildings/g7_cn_gate_rot_1_fire_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_cn_gate_rot_2.png",
+          "mask": "buildings/g7_cn_gate_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/g7_cn_gate_rot_2_build_0.png",
+          "mask": "buildings/g7_cn_gate_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/g7_cn_gate_rot_2_build_1.png",
+          "mask": "buildings/g7_cn_gate_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/g7_cn_gate_rot_2_build_2.png",
+          "mask": "buildings/g7_cn_gate_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/g7_cn_gate_rot_2_damaged.png",
+          "mask": "buildings/g7_cn_gate_rot_2_damaged_mask.png"
+        },
+        "rot_2_fire": {
+          "file": "buildings/g7_cn_gate_rot_2_fire.png",
+          "mask": "buildings/g7_cn_gate_rot_2_fire_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_cn_gate_rot_3.png",
+          "mask": "buildings/g7_cn_gate_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/g7_cn_gate_rot_3_build_0.png",
+          "mask": "buildings/g7_cn_gate_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/g7_cn_gate_rot_3_build_1.png",
+          "mask": "buildings/g7_cn_gate_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/g7_cn_gate_rot_3_build_2.png",
+          "mask": "buildings/g7_cn_gate_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/g7_cn_gate_rot_3_damaged.png",
+          "mask": "buildings/g7_cn_gate_rot_3_damaged_mask.png"
+        },
+        "rot_3_fire": {
+          "file": "buildings/g7_cn_gate_rot_3_fire.png",
+          "mask": "buildings/g7_cn_gate_rot_3_fire_mask.png"
+        }
+      }
+    },
+    "g7_cn_helipad": {
+      "fh": 154,
+      "fw": 268,
+      "g6": {
+        "faction": "g",
+        "variants": "rot"
+      },
+      "g7": {
+        "anim_strip": [
+          "build_0",
+          "build_1",
+          "build_2",
+          "built",
+          "lit",
+          "built",
+          "lit",
+          "rot_1",
+          "rot_2",
+          "damaged"
+        ],
+        "budget": 4194304,
+        "bytes": 3466848,
+        "class": "building",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "built",
+          "lit"
+        ],
+        "sample": "facility"
+      },
+      "pivot": [
+        134,
+        84
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/g7_cn_helipad_rot_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/g7_cn_helipad_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_damaged_mask.png"
+        },
+        "lit": {
+          "file": "buildings/g7_cn_helipad_lit.png",
+          "mask": "buildings/g7_cn_helipad_lit_mask.png"
+        },
+        "rot_0": {
+          "file": "buildings/g7_cn_helipad_rot_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_mask.png"
+        },
+        "rot_0_build_0": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_0_mask.png"
+        },
+        "rot_0_build_1": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_1_mask.png"
+        },
+        "rot_0_build_2": {
+          "file": "buildings/g7_cn_helipad_rot_0_build_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_build_2_mask.png"
+        },
+        "rot_0_damaged": {
+          "file": "buildings/g7_cn_helipad_rot_0_damaged.png",
+          "mask": "buildings/g7_cn_helipad_rot_0_damaged_mask.png"
+        },
+        "rot_1": {
+          "file": "buildings/g7_cn_helipad_rot_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_1_mask.png"
+        },
+        "rot_1_build_0": {
+          "file": "buildings/g7_cn_helipad_rot_1_build_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_1_build_0_mask.png"
+        },
+        "rot_1_build_1": {
+          "file": "buildings/g7_cn_helipad_rot_1_build_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_1_build_1_mask.png"
+        },
+        "rot_1_build_2": {
+          "file": "buildings/g7_cn_helipad_rot_1_build_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_1_build_2_mask.png"
+        },
+        "rot_1_damaged": {
+          "file": "buildings/g7_cn_helipad_rot_1_damaged.png",
+          "mask": "buildings/g7_cn_helipad_rot_1_damaged_mask.png"
+        },
+        "rot_2": {
+          "file": "buildings/g7_cn_helipad_rot_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_2_mask.png"
+        },
+        "rot_2_build_0": {
+          "file": "buildings/g7_cn_helipad_rot_2_build_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_2_build_0_mask.png"
+        },
+        "rot_2_build_1": {
+          "file": "buildings/g7_cn_helipad_rot_2_build_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_2_build_1_mask.png"
+        },
+        "rot_2_build_2": {
+          "file": "buildings/g7_cn_helipad_rot_2_build_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_2_build_2_mask.png"
+        },
+        "rot_2_damaged": {
+          "file": "buildings/g7_cn_helipad_rot_2_damaged.png",
+          "mask": "buildings/g7_cn_helipad_rot_2_damaged_mask.png"
+        },
+        "rot_3": {
+          "file": "buildings/g7_cn_helipad_rot_3.png",
+          "mask": "buildings/g7_cn_helipad_rot_3_mask.png"
+        },
+        "rot_3_build_0": {
+          "file": "buildings/g7_cn_helipad_rot_3_build_0.png",
+          "mask": "buildings/g7_cn_helipad_rot_3_build_0_mask.png"
+        },
+        "rot_3_build_1": {
+          "file": "buildings/g7_cn_helipad_rot_3_build_1.png",
+          "mask": "buildings/g7_cn_helipad_rot_3_build_1_mask.png"
+        },
+        "rot_3_build_2": {
+          "file": "buildings/g7_cn_helipad_rot_3_build_2.png",
+          "mask": "buildings/g7_cn_helipad_rot_3_build_2_mask.png"
+        },
+        "rot_3_damaged": {
+          "file": "buildings/g7_cn_helipad_rot_3_damaged.png",
+          "mask": "buildings/g7_cn_helipad_rot_3_damaged_mask.png"
+        }
+      }
+    }
+  },
+  "files": {
+    "buildings/g7_cn_decon_active.png": "6e93a1242b09bec9b1334e9682fba100",
+    "buildings/g7_cn_decon_active_mask.png": "bb901c79573e816ac966013014054a84",
+    "buildings/g7_cn_decon_rot_0.png": "ee0aaf1fe1cb72c74d463fe921705115",
+    "buildings/g7_cn_decon_rot_0_build_0.png": "bf7c0aa3c9ca5ac2af0574d01fd830a1",
+    "buildings/g7_cn_decon_rot_0_build_0_mask.png": "b93c6fe5ebeddb3a4842794f0b7a0f00",
+    "buildings/g7_cn_decon_rot_0_build_1.png": "0d9bcbedb3679248d744027f413ca888",
+    "buildings/g7_cn_decon_rot_0_build_1_mask.png": "10318b9bec35edf7570466b40fae8ec0",
+    "buildings/g7_cn_decon_rot_0_build_2.png": "5fec12e5c491829f163f5ea294f1d655",
+    "buildings/g7_cn_decon_rot_0_build_2_mask.png": "a6b7c5b0e2086c4221bd6290214af6dd",
+    "buildings/g7_cn_decon_rot_0_damaged.png": "3754abf36e31b76facf9414bdef756c9",
+    "buildings/g7_cn_decon_rot_0_damaged_mask.png": "bb901c79573e816ac966013014054a84",
+    "buildings/g7_cn_decon_rot_0_mask.png": "bb901c79573e816ac966013014054a84",
+    "buildings/g7_cn_decon_rot_1.png": "b15ebe103ab97ac70ea89a58684021fc",
+    "buildings/g7_cn_decon_rot_1_build_0.png": "bf7c0aa3c9ca5ac2af0574d01fd830a1",
+    "buildings/g7_cn_decon_rot_1_build_0_mask.png": "b93c6fe5ebeddb3a4842794f0b7a0f00",
+    "buildings/g7_cn_decon_rot_1_build_1.png": "b2ffe61fbdb2ca81afd83776e5818bb6",
+    "buildings/g7_cn_decon_rot_1_build_1_mask.png": "10318b9bec35edf7570466b40fae8ec0",
+    "buildings/g7_cn_decon_rot_1_build_2.png": "83ada6a841c6997cdc78ff92a205f7ba",
+    "buildings/g7_cn_decon_rot_1_build_2_mask.png": "a6b7c5b0e2086c4221bd6290214af6dd",
+    "buildings/g7_cn_decon_rot_1_damaged.png": "d44e5b7ca595ea4a6d4905b8339c26e3",
+    "buildings/g7_cn_decon_rot_1_damaged_mask.png": "c771891d4b30f1cd3bf13ea6d65638b8",
+    "buildings/g7_cn_decon_rot_1_mask.png": "c771891d4b30f1cd3bf13ea6d65638b8",
+    "buildings/g7_cn_decon_rot_2.png": "05fa107bdd89c5daff19d73a718f7946",
+    "buildings/g7_cn_decon_rot_2_build_0.png": "bf7c0aa3c9ca5ac2af0574d01fd830a1",
+    "buildings/g7_cn_decon_rot_2_build_0_mask.png": "b93c6fe5ebeddb3a4842794f0b7a0f00",
+    "buildings/g7_cn_decon_rot_2_build_1.png": "8ad280ea4d4ee596637a3021fe3bb197",
+    "buildings/g7_cn_decon_rot_2_build_1_mask.png": "10318b9bec35edf7570466b40fae8ec0",
+    "buildings/g7_cn_decon_rot_2_build_2.png": "be21e629bfcd45752001957309768eea",
+    "buildings/g7_cn_decon_rot_2_build_2_mask.png": "a6b7c5b0e2086c4221bd6290214af6dd",
+    "buildings/g7_cn_decon_rot_2_damaged.png": "9fceef56d92c16c607a69a094d5dcc12",
+    "buildings/g7_cn_decon_rot_2_damaged_mask.png": "87d78a653b2c16f9b5ae0350de816f29",
+    "buildings/g7_cn_decon_rot_2_mask.png": "8d5bf77ba07de4740f91a6595a5577d5",
+    "buildings/g7_cn_decon_rot_3.png": "4b9dc2334276681ea9d67929d1932b1e",
+    "buildings/g7_cn_decon_rot_3_build_0.png": "bf7c0aa3c9ca5ac2af0574d01fd830a1",
+    "buildings/g7_cn_decon_rot_3_build_0_mask.png": "b93c6fe5ebeddb3a4842794f0b7a0f00",
+    "buildings/g7_cn_decon_rot_3_build_1.png": "ff332dcd3d310902468d9834d94b7818",
+    "buildings/g7_cn_decon_rot_3_build_1_mask.png": "10318b9bec35edf7570466b40fae8ec0",
+    "buildings/g7_cn_decon_rot_3_build_2.png": "275578248c71bb0d6814fdf01ad09b17",
+    "buildings/g7_cn_decon_rot_3_build_2_mask.png": "a6b7c5b0e2086c4221bd6290214af6dd",
+    "buildings/g7_cn_decon_rot_3_damaged.png": "eb91810d14cbaf280445329f35c9d205",
+    "buildings/g7_cn_decon_rot_3_damaged_mask.png": "6e1953984931d1287fa34041741e1bb5",
+    "buildings/g7_cn_decon_rot_3_mask.png": "f7d41e55154ca0865efad1006086d765",
+    "buildings/g7_cn_garage_lockdown.png": "145c8153ea5480ce46dff4613ccd5cd1",
+    "buildings/g7_cn_garage_lockdown_mask.png": "64401219c80bd5549a0546a37228d525",
+    "buildings/g7_cn_garage_open.png": "4450510a6cf415a21cd8e9971e951c56",
+    "buildings/g7_cn_garage_open_mask.png": "64401219c80bd5549a0546a37228d525",
+    "buildings/g7_cn_garage_rot_0.png": "dcac1c960715ae7ef4d1115cd5ce8ed2",
+    "buildings/g7_cn_garage_rot_0_build_0.png": "d57442065a6e73c311fc7a47b77836b3",
+    "buildings/g7_cn_garage_rot_0_build_0_mask.png": "e6de4ae9897339abb96721fd4926b4d5",
+    "buildings/g7_cn_garage_rot_0_build_1.png": "80e512d532fd0f3912fd06a6c56961e1",
+    "buildings/g7_cn_garage_rot_0_build_1_mask.png": "3dc051725f4f9d6b53970dc06b5c9128",
+    "buildings/g7_cn_garage_rot_0_build_2.png": "3dd7a074c5363b18bcb419fc84fd51d0",
+    "buildings/g7_cn_garage_rot_0_build_2_mask.png": "f1d79aa63b502abc181b346242cb8507",
+    "buildings/g7_cn_garage_rot_0_damaged.png": "a50f0f39180d3655bdcb520824c5b944",
+    "buildings/g7_cn_garage_rot_0_damaged_mask.png": "64401219c80bd5549a0546a37228d525",
+    "buildings/g7_cn_garage_rot_0_mask.png": "64401219c80bd5549a0546a37228d525",
+    "buildings/g7_cn_garage_rot_1.png": "9576a98e2a5c15b61a62b93db651f5cc",
+    "buildings/g7_cn_garage_rot_1_build_0.png": "d57442065a6e73c311fc7a47b77836b3",
+    "buildings/g7_cn_garage_rot_1_build_0_mask.png": "e6de4ae9897339abb96721fd4926b4d5",
+    "buildings/g7_cn_garage_rot_1_build_1.png": "13b4ff0cd1ea1b6d4d41aedf07be0051",
+    "buildings/g7_cn_garage_rot_1_build_1_mask.png": "3dc051725f4f9d6b53970dc06b5c9128",
+    "buildings/g7_cn_garage_rot_1_build_2.png": "915413ad6f0707258ded6294fe84607d",
+    "buildings/g7_cn_garage_rot_1_build_2_mask.png": "f1d79aa63b502abc181b346242cb8507",
+    "buildings/g7_cn_garage_rot_1_damaged.png": "49e177abb896a28bc597a8bb0f04e0bd",
+    "buildings/g7_cn_garage_rot_1_damaged_mask.png": "3cfb1afa2ab76906be79758101761ed4",
+    "buildings/g7_cn_garage_rot_1_mask.png": "3cfb1afa2ab76906be79758101761ed4",
+    "buildings/g7_cn_garage_rot_2.png": "cde1b21d40cc6f043cec3a2ef03b8232",
+    "buildings/g7_cn_garage_rot_2_build_0.png": "d57442065a6e73c311fc7a47b77836b3",
+    "buildings/g7_cn_garage_rot_2_build_0_mask.png": "e6de4ae9897339abb96721fd4926b4d5",
+    "buildings/g7_cn_garage_rot_2_build_1.png": "8dec707a3b9f29cf75c485be0e6790b9",
+    "buildings/g7_cn_garage_rot_2_build_1_mask.png": "3dc051725f4f9d6b53970dc06b5c9128",
+    "buildings/g7_cn_garage_rot_2_build_2.png": "b94a02c029d75315d60a8f8abb23df73",
+    "buildings/g7_cn_garage_rot_2_build_2_mask.png": "f1d79aa63b502abc181b346242cb8507",
+    "buildings/g7_cn_garage_rot_2_damaged.png": "9966a9b72192799221972b92db4c94fe",
+    "buildings/g7_cn_garage_rot_2_damaged_mask.png": "95300c43191296b0a3e6ad40458dec1a",
+    "buildings/g7_cn_garage_rot_2_mask.png": "9d8f6e1f4a16aeb1ac01acc7963dd2f4",
+    "buildings/g7_cn_garage_rot_3.png": "d9c61f6c2316c4b718db6651d4140ede",
+    "buildings/g7_cn_garage_rot_3_build_0.png": "d57442065a6e73c311fc7a47b77836b3",
+    "buildings/g7_cn_garage_rot_3_build_0_mask.png": "e6de4ae9897339abb96721fd4926b4d5",
+    "buildings/g7_cn_garage_rot_3_build_1.png": "27962f0add38ae6691ad41e5d33cdf32",
+    "buildings/g7_cn_garage_rot_3_build_1_mask.png": "3dc051725f4f9d6b53970dc06b5c9128",
+    "buildings/g7_cn_garage_rot_3_build_2.png": "cf63e37ebaf8efd542d5ddd8df3a6c10",
+    "buildings/g7_cn_garage_rot_3_build_2_mask.png": "f1d79aa63b502abc181b346242cb8507",
+    "buildings/g7_cn_garage_rot_3_damaged.png": "32988dbe29adc490b306f46e2f171bcb",
+    "buildings/g7_cn_garage_rot_3_damaged_mask.png": "e4a0d5fe50f9011f340aad83ec86da25",
+    "buildings/g7_cn_garage_rot_3_mask.png": "e4a0d5fe50f9011f340aad83ec86da25",
+    "buildings/g7_cn_gate_open.png": "b40c7caaed570f006c333665ee0672c6",
+    "buildings/g7_cn_gate_open_mask.png": "a47a6ac53b241b99db8a068326db523b",
+    "buildings/g7_cn_gate_rot_0.png": "b2904364eef066667ad1d78c644b57b8",
+    "buildings/g7_cn_gate_rot_0_build_0.png": "8f189ea8603ab490da4729c9b3ec411a",
+    "buildings/g7_cn_gate_rot_0_build_0_mask.png": "9c93926b0c0e5e9de2953fd89fb63cfd",
+    "buildings/g7_cn_gate_rot_0_build_1.png": "f4e722c74bff16f87f08d3a9c16f33b4",
+    "buildings/g7_cn_gate_rot_0_build_1_mask.png": "a41361ae147b0292f65937b3b0fc87c8",
+    "buildings/g7_cn_gate_rot_0_build_2.png": "5e915595343775c6f874c08f48a4683c",
+    "buildings/g7_cn_gate_rot_0_build_2_mask.png": "3215e18c0239193e5fb1e6bb4421d324",
+    "buildings/g7_cn_gate_rot_0_damaged.png": "90bdc35e4dce923d5670cac9267ea442",
+    "buildings/g7_cn_gate_rot_0_damaged_mask.png": "a47a6ac53b241b99db8a068326db523b",
+    "buildings/g7_cn_gate_rot_0_fire.png": "b0a372d2f2ae527e6aceaea1a9942e24",
+    "buildings/g7_cn_gate_rot_0_fire_mask.png": "a47a6ac53b241b99db8a068326db523b",
+    "buildings/g7_cn_gate_rot_0_mask.png": "a47a6ac53b241b99db8a068326db523b",
+    "buildings/g7_cn_gate_rot_1.png": "89c6189c630aaba8c3f906cfa1361a14",
+    "buildings/g7_cn_gate_rot_1_build_0.png": "8f189ea8603ab490da4729c9b3ec411a",
+    "buildings/g7_cn_gate_rot_1_build_0_mask.png": "9c93926b0c0e5e9de2953fd89fb63cfd",
+    "buildings/g7_cn_gate_rot_1_build_1.png": "0c13c2d0d81dd552379ad0d0e39d4e06",
+    "buildings/g7_cn_gate_rot_1_build_1_mask.png": "a41361ae147b0292f65937b3b0fc87c8",
+    "buildings/g7_cn_gate_rot_1_build_2.png": "a0c88b7716e0d0c8ce1fc707c3860faa",
+    "buildings/g7_cn_gate_rot_1_build_2_mask.png": "3215e18c0239193e5fb1e6bb4421d324",
+    "buildings/g7_cn_gate_rot_1_damaged.png": "281534b0fe726aca909441aa41ebbfb3",
+    "buildings/g7_cn_gate_rot_1_damaged_mask.png": "3ec3b367b347cbea9e142eda07d02846",
+    "buildings/g7_cn_gate_rot_1_fire.png": "269c50bc3cedc447b1a055deb6b7e02a",
+    "buildings/g7_cn_gate_rot_1_fire_mask.png": "3ec3b367b347cbea9e142eda07d02846",
+    "buildings/g7_cn_gate_rot_1_mask.png": "3ec3b367b347cbea9e142eda07d02846",
+    "buildings/g7_cn_gate_rot_2.png": "556d94f0760c3e4fbe6f9542674f6977",
+    "buildings/g7_cn_gate_rot_2_build_0.png": "8f189ea8603ab490da4729c9b3ec411a",
+    "buildings/g7_cn_gate_rot_2_build_0_mask.png": "9c93926b0c0e5e9de2953fd89fb63cfd",
+    "buildings/g7_cn_gate_rot_2_build_1.png": "a09c8b15f7350b54fd034b2a363944b1",
+    "buildings/g7_cn_gate_rot_2_build_1_mask.png": "a41361ae147b0292f65937b3b0fc87c8",
+    "buildings/g7_cn_gate_rot_2_build_2.png": "3c092d7af16ed7378f611395ebef48b9",
+    "buildings/g7_cn_gate_rot_2_build_2_mask.png": "3215e18c0239193e5fb1e6bb4421d324",
+    "buildings/g7_cn_gate_rot_2_damaged.png": "82f828d0201c49c4d0131d46fee18137",
+    "buildings/g7_cn_gate_rot_2_damaged_mask.png": "346e5debd1dd9360a1a6331c70153fa6",
+    "buildings/g7_cn_gate_rot_2_fire.png": "59579e014834006e7062ffce9fe6da34",
+    "buildings/g7_cn_gate_rot_2_fire_mask.png": "346e5debd1dd9360a1a6331c70153fa6",
+    "buildings/g7_cn_gate_rot_2_mask.png": "346e5debd1dd9360a1a6331c70153fa6",
+    "buildings/g7_cn_gate_rot_3.png": "09f9d2204f31f2dcb552b5857177aaec",
+    "buildings/g7_cn_gate_rot_3_build_0.png": "8f189ea8603ab490da4729c9b3ec411a",
+    "buildings/g7_cn_gate_rot_3_build_0_mask.png": "9c93926b0c0e5e9de2953fd89fb63cfd",
+    "buildings/g7_cn_gate_rot_3_build_1.png": "3540e9dc60483fe65b54f592d30d0ad8",
+    "buildings/g7_cn_gate_rot_3_build_1_mask.png": "a41361ae147b0292f65937b3b0fc87c8",
+    "buildings/g7_cn_gate_rot_3_build_2.png": "121b8cf97e5c1459c5979394a1021194",
+    "buildings/g7_cn_gate_rot_3_build_2_mask.png": "3215e18c0239193e5fb1e6bb4421d324",
+    "buildings/g7_cn_gate_rot_3_damaged.png": "750ae4b6eba11ee8dc22eca39176450e",
+    "buildings/g7_cn_gate_rot_3_damaged_mask.png": "a16815d4ca39e073a9b86334435a1c13",
+    "buildings/g7_cn_gate_rot_3_fire.png": "1270d0cbbb8e43defb887976570f04d2",
+    "buildings/g7_cn_gate_rot_3_fire_mask.png": "a16815d4ca39e073a9b86334435a1c13",
+    "buildings/g7_cn_gate_rot_3_mask.png": "a16815d4ca39e073a9b86334435a1c13",
+    "buildings/g7_cn_helipad_lit.png": "2901d264e46a7d67c3ba1dad0003a320",
+    "buildings/g7_cn_helipad_lit_mask.png": "722b08ed3f6a615b20fe8745dc6e301e",
+    "buildings/g7_cn_helipad_rot_0.png": "bb9d946da73e0fd14c78ba2003fbd50f",
+    "buildings/g7_cn_helipad_rot_0_build_0.png": "4447ac069e14d37ebd8702a7e8f80457",
+    "buildings/g7_cn_helipad_rot_0_build_0_mask.png": "8f3d9adaeb0d9265afd028f1a193b621",
+    "buildings/g7_cn_helipad_rot_0_build_1.png": "4163ea0b14e30a4d443bda9189299b3b",
+    "buildings/g7_cn_helipad_rot_0_build_1_mask.png": "b7526cd1f07acd07d5116e9c83dae24d",
+    "buildings/g7_cn_helipad_rot_0_build_2.png": "c907102820dd8a908ce2476d612e99dd",
+    "buildings/g7_cn_helipad_rot_0_build_2_mask.png": "d98bf1cdde69444ca7f17d4d5e3eaee6",
+    "buildings/g7_cn_helipad_rot_0_damaged.png": "79f0f59fd4f9c5b9f7b10993471d48db",
+    "buildings/g7_cn_helipad_rot_0_damaged_mask.png": "722b08ed3f6a615b20fe8745dc6e301e",
+    "buildings/g7_cn_helipad_rot_0_mask.png": "722b08ed3f6a615b20fe8745dc6e301e",
+    "buildings/g7_cn_helipad_rot_1.png": "b85394e973e7e6f18adf17e4911f9e3e",
+    "buildings/g7_cn_helipad_rot_1_build_0.png": "4447ac069e14d37ebd8702a7e8f80457",
+    "buildings/g7_cn_helipad_rot_1_build_0_mask.png": "8f3d9adaeb0d9265afd028f1a193b621",
+    "buildings/g7_cn_helipad_rot_1_build_1.png": "4e35150587a76e841d1ea4ac7d84474d",
+    "buildings/g7_cn_helipad_rot_1_build_1_mask.png": "b7526cd1f07acd07d5116e9c83dae24d",
+    "buildings/g7_cn_helipad_rot_1_build_2.png": "f7d78e0eb194020858e27531f4af22c0",
+    "buildings/g7_cn_helipad_rot_1_build_2_mask.png": "d98bf1cdde69444ca7f17d4d5e3eaee6",
+    "buildings/g7_cn_helipad_rot_1_damaged.png": "473c31c551c296dfd6c453920b58d202",
+    "buildings/g7_cn_helipad_rot_1_damaged_mask.png": "8341251fce42833d63aeb4af10aafd54",
+    "buildings/g7_cn_helipad_rot_1_mask.png": "8341251fce42833d63aeb4af10aafd54",
+    "buildings/g7_cn_helipad_rot_2.png": "3a5277be985eee4e0898e5140ff93fa1",
+    "buildings/g7_cn_helipad_rot_2_build_0.png": "4447ac069e14d37ebd8702a7e8f80457",
+    "buildings/g7_cn_helipad_rot_2_build_0_mask.png": "8f3d9adaeb0d9265afd028f1a193b621",
+    "buildings/g7_cn_helipad_rot_2_build_1.png": "eb476da02ae8caa9acef7a6cba6af133",
+    "buildings/g7_cn_helipad_rot_2_build_1_mask.png": "b7526cd1f07acd07d5116e9c83dae24d",
+    "buildings/g7_cn_helipad_rot_2_build_2.png": "bd9e9bafbe35d63933eb0828b9e56f1b",
+    "buildings/g7_cn_helipad_rot_2_build_2_mask.png": "d98bf1cdde69444ca7f17d4d5e3eaee6",
+    "buildings/g7_cn_helipad_rot_2_damaged.png": "a12ac17c82679db014e8a95b4dd0dc1b",
+    "buildings/g7_cn_helipad_rot_2_damaged_mask.png": "bdf6d6833db549f14a2acdfaf2bde89f",
+    "buildings/g7_cn_helipad_rot_2_mask.png": "8b4b9433048c15406ed7795ef9fd7749",
+    "buildings/g7_cn_helipad_rot_3.png": "ec99ad0e9d10c6eed648d735b5533887",
+    "buildings/g7_cn_helipad_rot_3_build_0.png": "4447ac069e14d37ebd8702a7e8f80457",
+    "buildings/g7_cn_helipad_rot_3_build_0_mask.png": "8f3d9adaeb0d9265afd028f1a193b621",
+    "buildings/g7_cn_helipad_rot_3_build_1.png": "727a68cb4992685b61de08820b5292c1",
+    "buildings/g7_cn_helipad_rot_3_build_1_mask.png": "b7526cd1f07acd07d5116e9c83dae24d",
+    "buildings/g7_cn_helipad_rot_3_build_2.png": "2b5311b698df8949c107d1f4aad90189",
+    "buildings/g7_cn_helipad_rot_3_build_2_mask.png": "d98bf1cdde69444ca7f17d4d5e3eaee6",
+    "buildings/g7_cn_helipad_rot_3_damaged.png": "84fe34978ec52ec5599ae0ca254c0e30",
+    "buildings/g7_cn_helipad_rot_3_damaged_mask.png": "eaaf4ed3ba9f3c4428b2e86c9d649e27",
+    "buildings/g7_cn_helipad_rot_3_mask.png": "eaaf4ed3ba9f3c4428b2e86c9d649e27",
+    "units/g7_a_vtol_dropship_xl.png": "5039167fa6e11c3b3148ac7b7c610c9e",
+    "units/g7_a_vtol_dropship_xl_mask.png": "47def003cd07c886a99cb865b0a8bc25",
+    "units/g7_cn_deploy.png": "4e4652f0cabe97d88a39bf9a64d0d174",
+    "units/g7_cn_deploy_mask.png": "e2171c44548e7c2afcc53a37be542b90",
+    "units/g7_cn_ew.png": "ce404e7d7d6efaacff00283a28767b8a",
+    "units/g7_cn_ew_mask.png": "8d62b513ea1f504d1e3267aa7bc8e583",
+    "units/g7_cn_gunner.png": "61c01d026593729cf844219bbfb475de",
+    "units/g7_cn_gunner_mask.png": "ba46f540eee9c073dac6f8957d2c3d1c",
+    "units/g7_cn_medic.png": "253745334cdbe6331423bfa785cf6145",
+    "units/g7_cn_medic_mask.png": "2145ed65ae4f13aa6e1984e92836b3ff",
+    "units/g7_cn_radio.png": "36b217d20f3bc9be24036a4859ab414e",
+    "units/g7_cn_radio_mask.png": "e77424b8fbb7b95befd6aef002bd6763",
+    "units/g7_cn_scanner.png": "06cd3b674fc4122221aba72eecf45c5b",
+    "units/g7_cn_scanner_mask.png": "0e31934cc50b4c5ead13e2a87d0cb147",
+    "units/g7_cn_stealth_dropship.png": "83b4bf7c33c7c58947fe7d107f037568",
+    "units/g7_cn_stealth_dropship_mask.png": "cc9171d9108ce38bc137f6c035f4a6b3",
+    "units/g7_cn_strike_apc.png": "3cd8fd5e572d9f192e116182f98ac717",
+    "units/g7_cn_strike_apc_mask.png": "6df6cff6207275473cc2f7fd17e727ec",
+    "units/g7_cn_team_leader.png": "4178f926f4414c0ff61898ed67bf9fc1",
+    "units/g7_cn_team_leader_mask.png": "57cf685621cd485099ede54e658dc51d",
+    "units/g7_op_antidrone.png": "a74f4891b53d5727c296fae7229fb290",
+    "units/g7_op_antidrone_mask.png": "4b872e184e34af1fc41cd0fce165badc",
+    "units/g7_op_emp.png": "2b0f89496c919ac32a44a267f68103be",
+    "units/g7_op_emp_mask.png": "bc3e0afc04629406731fba31dbe9dbce",
+    "units/g7_op_hunter.png": "cacef202462bff466aa3e02a730081d6",
+    "units/g7_op_hunter_mask.png": "4eb11776161e9b540eee06194652f730",
+    "units/g7_op_leader.png": "5e0ee80d6be899e932db48ad032c0d0d",
+    "units/g7_op_leader_mask.png": "f708bc7f11350ebec8e764f2e78282dd",
+    "units/g7_op_marksman.png": "4536a60a807624d5d720afbce10b966b",
+    "units/g7_op_marksman_mask.png": "a94c69662da7447b6ea08fc9f7fe84d6",
+    "units/g7_op_medic.png": "3956db0a8197a1326a6bd980d1571bc7",
+    "units/g7_op_medic_mask.png": "d55c2864dbb9019a64d6a2be795a9960",
+    "units/g7_op_purge.png": "c6c49e1b93e6b5292885d9f0371a1a8d",
+    "units/g7_op_purge_mask.png": "d55c2864dbb9019a64d6a2be795a9960",
+    "units/g7_op_tactical_apc.png": "3fc8ed8894a296e2d868bf3f27944c90",
+    "units/g7_op_tactical_apc_mask.png": "dcab31e650ef2042a069d7dfdb4f200d"
+  },
+  "g7_detail_level": {
+    "air": {
+      "facings": 8,
+      "max_frames": 12
+    },
+    "budget_bytes": {
+      "air": 4194304,
+      "building": 4194304,
+      "infantry": 838860,
+      "threat": 1572864,
+      "threat_big": 4194304,
+      "turret": 3145728,
+      "vehicle": 3145728
+    },
+    "building": {
+      "rotations": 4,
+      "states": "g6_lib rot set"
+    },
+    "infantry": {
+      "cell": [
+        32,
+        32
+      ],
+      "facings": 8,
+      "figure_px": 17,
+      "frames": 24,
+      "pivot": [
+        16,
+        27
+      ]
+    },
+    "mask": "soldiers: armband 2x2 left upper arm + leader helmet stripe; vehicles/air: roof ID panel + side chevrons; Machine: plating trim",
+    "outline": "selective: lit side = material deep tone, shadow side = pix.OUTLINE",
+    "page_max": [
+      2560,
+      2048
+    ],
+    "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left",
+    "scale": "1:1 at zoom 1 (tile 64x32), same world size as G6 units",
+    "threat": {
+      "facings": 8,
+      "max_frames": 14
+    },
+    "turret": {
+      "aim_states": 8,
+      "rotations": 4
+    },
+    "vehicle": {
+      "facings": 8,
+      "max_frames": 12
+    },
+    "version": "DL7-1"
+  },
+  "g7_samples": {
+    "g7_a_vtol_dropship_xl": {
+      "altitude_px": {
+        "apc_in": 0.0,
+        "descend": 8.0,
+        "drones": 18.0,
+        "fly": 20.0,
+        "hover": 16.0,
+        "landed": 0.0,
+        "ramp_open": 0.0,
+        "takeoff": 5.0
+      },
+      "anim_strip": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "hover",
+        "fly",
+        "drones"
+      ],
+      "bay": "1 vehicle + occupants + 1 squad",
+      "budget": 4194304,
+      "bytes": 3981312,
+      "class": "air",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "drones"
+      ],
+      "line": "human_a",
+      "sample": "air",
+      "section": "vehicles",
+      "upgrades": "a_vtol_dropship"
+    },
+    "g7_cn_decon": {
+      "anim_strip": [
+        "build_0",
+        "build_1",
+        "build_2",
+        "built",
+        "active",
+        "built",
+        "active",
+        "rot_1",
+        "rot_2",
+        "damaged"
+      ],
+      "budget": 4194304,
+      "bytes": 2330496,
+      "class": "building",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "built",
+        "active"
+      ],
+      "sample": "facility",
+      "section": "buildings"
+    },
+    "g7_cn_deploy": {
+      "act": "arming a strike package (kneel, lights)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "deployment specialist",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_ew": {
+      "act": "hive-link jamming rings",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "EW specialist",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_garage": {
+      "anim_strip": [
+        "build_0",
+        "build_1",
+        "build_2",
+        "built",
+        "open",
+        "built",
+        "lockdown",
+        "rot_1",
+        "rot_3",
+        "damaged"
+      ],
+      "budget": 4194304,
+      "bytes": 1305920,
+      "class": "building",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "built",
+        "open",
+        "lockdown"
+      ],
+      "sample": "facility",
+      "section": "buildings"
+    },
+    "g7_cn_gate": {
+      "anim_strip": [
+        "build_0",
+        "build_1",
+        "build_2",
+        "built",
+        "open",
+        "fire",
+        "rot_1",
+        "rot_2",
+        "rot_3",
+        "damaged"
+      ],
+      "budget": 4194304,
+      "bytes": 2978400,
+      "class": "building",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "built",
+        "open",
+        "fire",
+        "damaged"
+      ],
+      "sample": "facility",
+      "section": "buildings"
+    },
+    "g7_cn_gunner": {
+      "act": "EMP grenade throw (wind-up, release)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "security gunner",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_helipad": {
+      "anim_strip": [
+        "build_0",
+        "build_1",
+        "build_2",
+        "built",
+        "lit",
+        "built",
+        "lit",
+        "rot_1",
+        "rot_2",
+        "damaged"
+      ],
+      "budget": 4194304,
+      "bytes": 3466848,
+      "class": "building",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "built",
+        "lit"
+      ],
+      "sample": "facility",
+      "section": "buildings"
+    },
+    "g7_cn_medic": {
+      "act": "treating / welding (kneel)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "combat medic / engineer",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_radio": {
+      "act": "radio handset",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "second-in-command / radio",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_scanner": {
+      "act": "scanner sweep cone",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "scanner technician",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_cn_stealth_dropship": {
+      "altitude_px": {
+        "apc_in": 0.0,
+        "descend": 8.0,
+        "drones": 18.0,
+        "fly": 20.0,
+        "hover": 16.0,
+        "landed": 0.0,
+        "ramp_open": 0.0,
+        "takeoff": 5.0
+      },
+      "anim_strip": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "hover",
+        "fly",
+        "drones"
+      ],
+      "bay": "1 vehicle <= strike APC + occupants + 1 squad",
+      "budget": 4194304,
+      "bytes": 3981312,
+      "class": "air",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "drones"
+      ],
+      "line": "strike_team",
+      "sample": "air",
+      "section": "vehicles"
+    },
+    "g7_cn_strike_apc": {
+      "anim_strip": [
+        "idle",
+        "move_0",
+        "move_1",
+        "traverse",
+        "fire_f",
+        "fire_r",
+        "panels_open",
+        "launch",
+        "dome",
+        "doors_open"
+      ],
+      "budget": 3145728,
+      "bytes": 3082240,
+      "capacity": "10 + packages (PROVISIONAL)",
+      "class": "vehicle",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "idle",
+        "move_0",
+        "move_1",
+        "fire_f",
+        "fire_r",
+        "traverse",
+        "panels_open",
+        "launch",
+        "dome",
+        "doors_open"
+      ],
+      "line": "strike_team",
+      "sample": "vehicle",
+      "section": "vehicles"
+    },
+    "g7_cn_team_leader": {
+      "act": "signal (arm raised)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "strike_team",
+      "role": "team leader",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_antidrone": {
+      "act": "drone jammer rings",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "anti-drone specialist",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_emp": {
+      "act": "EMP launcher shot",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "EMP grenadier",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_hunter": {
+      "act": "harpoon fired with cable",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "hunter-killer (x2)",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_leader": {
+      "act": "signal (arm raised)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "operator leader",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_marksman": {
+      "act": "scoped shot",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "designated marksman",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_medic": {
+      "act": "treating a casualty (kneel)",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "combat medic",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_purge": {
+      "act": "placing a thermite charge",
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "fire_s",
+        "act_0",
+        "act_1",
+        "die_2"
+      ],
+      "budget": 838860,
+      "bytes": 786432,
+      "class": "infantry",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "act_0",
+        "act_1",
+        "fire_s",
+        "walk_0",
+        "die_2"
+      ],
+      "line": "operators",
+      "role": "purge / demolitions",
+      "sample": "soldier",
+      "section": "infantry"
+    },
+    "g7_op_tactical_apc": {
+      "anim_strip": [
+        "idle",
+        "move_0",
+        "move_1",
+        "traverse",
+        "fire",
+        "fire",
+        "panels_open",
+        "dome",
+        "doors_open",
+        "idle"
+      ],
+      "budget": 3145728,
+      "bytes": 2236416,
+      "capacity": 8,
+      "class": "vehicle",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "idle",
+        "move_0",
+        "move_1",
+        "fire",
+        "traverse",
+        "panels_open",
+        "dome",
+        "doors_open"
+      ],
+      "line": "operators",
+      "sample": "vehicle",
+      "section": "vehicles"
+    }
+  },
+  "group": "g7_cn",
+  "infantry": {
+    "g7_cn_deploy": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_deploy.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "arming a strike package (kneel, lights)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "deployment specialist",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_deploy_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_ew": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_ew.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "hive-link jamming rings",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "EW specialist",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_ew_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_gunner": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_gunner.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "EMP grenade throw (wind-up, release)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "security gunner",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_gunner_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_medic": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_medic.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "treating / welding (kneel)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "combat medic / engineer",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_medic_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_radio": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_radio.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "radio handset",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "second-in-command / radio",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_radio_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_scanner": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_scanner.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "scanner sweep cone",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "scanner technician",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_scanner_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_cn_team_leader": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_cn_team_leader.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "signal (arm raised)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "strike_team",
+        "role": "team leader",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_cn_team_leader_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_antidrone": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_antidrone.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "drone jammer rings",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "anti-drone specialist",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_antidrone_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_emp": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_emp.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "EMP launcher shot",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "EMP grenadier",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_emp_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_hunter": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_hunter.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "harpoon fired with cable",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "hunter-killer (x2)",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_hunter_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_leader": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_leader.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "signal (arm raised)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "operator leader",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_leader_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_marksman": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_marksman.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "scoped shot",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "designated marksman",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_marksman_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_medic": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_medic.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "treating a casualty (kneel)",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "combat medic",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_medic_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    },
+    "g7_op_purge": {
+      "facings": 8,
+      "fh": 32,
+      "file": "units/g7_op_purge.png",
+      "frames": [
+        "idle_0",
+        "idle_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "fire_s",
+        "fire_c",
+        "reload_0",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "wounded",
+        "die_0",
+        "die_1",
+        "die_2",
+        "act_0",
+        "act_1"
+      ],
+      "fw": 32,
+      "g7": {
+        "act": "placing a thermite charge",
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "fire_s",
+          "act_0",
+          "act_1",
+          "die_2"
+        ],
+        "budget": 838860,
+        "bytes": 786432,
+        "class": "infantry",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "act_0",
+          "act_1",
+          "fire_s",
+          "walk_0",
+          "die_2"
+        ],
+        "line": "operators",
+        "role": "purge / demolitions",
+        "sample": "soldier"
+      },
+      "legged": true,
+      "mask": "units/g7_op_purge_mask.png",
+      "pivot": [
+        16,
+        27
+      ],
+      "squad_size": 1
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicles": {
+    "g7_a_vtol_dropship_xl": {
+      "facings": 8,
+      "fh": 108,
+      "file": "units/g7_a_vtol_dropship_xl.png",
+      "frames": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "drones"
+      ],
+      "fw": 144,
+      "g7": {
+        "altitude_px": {
+          "apc_in": 0.0,
+          "descend": 8.0,
+          "drones": 18.0,
+          "fly": 20.0,
+          "hover": 16.0,
+          "landed": 0.0,
+          "ramp_open": 0.0,
+          "takeoff": 5.0
+        },
+        "anim_strip": [
+          "hover",
+          "fly",
+          "descend",
+          "landed",
+          "ramp_open",
+          "apc_in",
+          "takeoff",
+          "hover",
+          "fly",
+          "drones"
+        ],
+        "bay": "1 vehicle + occupants + 1 squad",
+        "budget": 4194304,
+        "bytes": 3981312,
+        "class": "air",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "hover",
+          "fly",
+          "descend",
+          "landed",
+          "ramp_open",
+          "apc_in",
+          "takeoff",
+          "drones"
+        ],
+        "line": "human_a",
+        "sample": "air",
+        "upgrades": "a_vtol_dropship"
+      },
+      "mask": "units/g7_a_vtol_dropship_xl_mask.png",
+      "pivot": [
+        72,
+        82
+      ]
+    },
+    "g7_cn_stealth_dropship": {
+      "facings": 8,
+      "fh": 108,
+      "file": "units/g7_cn_stealth_dropship.png",
+      "frames": [
+        "hover",
+        "fly",
+        "descend",
+        "landed",
+        "ramp_open",
+        "apc_in",
+        "takeoff",
+        "drones"
+      ],
+      "fw": 144,
+      "g7": {
+        "altitude_px": {
+          "apc_in": 0.0,
+          "descend": 8.0,
+          "drones": 18.0,
+          "fly": 20.0,
+          "hover": 16.0,
+          "landed": 0.0,
+          "ramp_open": 0.0,
+          "takeoff": 5.0
+        },
+        "anim_strip": [
+          "hover",
+          "fly",
+          "descend",
+          "landed",
+          "ramp_open",
+          "apc_in",
+          "takeoff",
+          "hover",
+          "fly",
+          "drones"
+        ],
+        "bay": "1 vehicle <= strike APC + occupants + 1 squad",
+        "budget": 4194304,
+        "bytes": 3981312,
+        "class": "air",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "hover",
+          "fly",
+          "descend",
+          "landed",
+          "ramp_open",
+          "apc_in",
+          "takeoff",
+          "drones"
+        ],
+        "line": "strike_team",
+        "sample": "air"
+      },
+      "mask": "units/g7_cn_stealth_dropship_mask.png",
+      "pivot": [
+        72,
+        82
+      ]
+    },
+    "g7_cn_strike_apc": {
+      "facings": 8,
+      "fh": 86,
+      "file": "units/g7_cn_strike_apc.png",
+      "frames": [
+        "idle",
+        "move_0",
+        "move_1",
+        "fire_f",
+        "fire_r",
+        "traverse",
+        "panels_open",
+        "launch",
+        "dome",
+        "doors_open"
+      ],
+      "fw": 112,
+      "g7": {
+        "anim_strip": [
+          "idle",
+          "move_0",
+          "move_1",
+          "traverse",
+          "fire_f",
+          "fire_r",
+          "panels_open",
+          "launch",
+          "dome",
+          "doors_open"
+        ],
+        "budget": 3145728,
+        "bytes": 3082240,
+        "capacity": "10 + packages (PROVISIONAL)",
+        "class": "vehicle",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "idle",
+          "move_0",
+          "move_1",
+          "fire_f",
+          "fire_r",
+          "traverse",
+          "panels_open",
+          "launch",
+          "dome",
+          "doors_open"
+        ],
+        "line": "strike_team",
+        "sample": "vehicle"
+      },
+      "mask": "units/g7_cn_strike_apc_mask.png",
+      "pivot": [
+        56,
+        56
+      ]
+    },
+    "g7_op_tactical_apc": {
+      "facings": 8,
+      "fh": 84,
+      "file": "units/g7_op_tactical_apc.png",
+      "frames": [
+        "idle",
+        "move_0",
+        "move_1",
+        "fire",
+        "traverse",
+        "panels_open",
+        "dome",
+        "doors_open"
+      ],
+      "fw": 104,
+      "g7": {
+        "anim_strip": [
+          "idle",
+          "move_0",
+          "move_1",
+          "traverse",
+          "fire",
+          "fire",
+          "panels_open",
+          "dome",
+          "doors_open",
+          "idle"
+        ],
+        "budget": 3145728,
+        "bytes": 2236416,
+        "capacity": 8,
+        "class": "vehicle",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "idle",
+          "move_0",
+          "move_1",
+          "fire",
+          "traverse",
+          "panels_open",
+          "dome",
+          "doors_open"
+        ],
+        "line": "operators",
+        "sample": "vehicle"
+      },
+      "mask": "units/g7_op_tactical_apc_mask.png",
+      "pivot": [
+        52,
+        54
+      ]
+    }
+  },
+  "version": 1
+}

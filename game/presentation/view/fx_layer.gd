@@ -133,6 +133,9 @@ func _fx61_impact(ev: Dictionary, to: Vector2, b: Vector2, hit: bool, cls: Strin
 				e.impact("armor", b, 1.6)
 		else:
 			e.impact(kind, b, 1.2 if cls == "autocannon" else 0.7)
+			# G7 (LOOK7): a hit on a soldier leaves a small blood splat on the ground (not every hit)
+			if kind == "soft" and t != null and String(t.kind) == "unit" and _rng.randf() < 0.4:
+				e.blood(b + Vector2(_rng.randf_range(-5, 5), _rng.randf_range(2, 6)), _rng.randf_range(3.0, 5.0), true)
 	else:
 		var g: Vector2 = _w2s(to) + Vector2(_rng.randf_range(-14, 14), _rng.randf_range(-7, 7))
 		var code := _terrain_at(to)
@@ -265,7 +268,9 @@ func _shell_landed(f: Dictionary) -> void:
 	if Fx61Core.is_water(_terrain_at(f.get("wto", Vector2(-1, -1)))):
 		e.impact("water", b, 1.5 + float(f.get("splash", 1.0)))
 		return
-	_fx.append({"kind": "explosion_large", "t": 0.0, "life": 0.7, "a": b + Vector2(0, -6), "b": b, "size": r * 0.8, "color": Color(1, 0.55, 0.15)})
+	# G7 (LOOK7): no bright fireball sprite for a ground blast; fx61 draws a dust column blast instead
+	if bool(f.get("energy", false)):
+		_fx.append({"kind": "explosion_large", "t": 0.0, "life": 0.7, "a": b + Vector2(0, -6), "b": b, "size": r * 0.8, "color": Color(1, 0.55, 0.15)})
 	e.explosion(b, r * 0.55, "crater", 0.0, bool(f.get("energy", false)))
 
 
@@ -286,6 +291,7 @@ func on_destroyed(ev: Dictionary) -> void:
 	var dname := String(ev.get("def", ""))
 	if kind == "unit" and not _is_vehicle(dname):
 		e.impact("dirt", s + Vector2(0, -4), 0.8)   # G6.1: infantry fall without a fireball
+		e.blood(s + Vector2(_rng.randf_range(-3, 3), 1), _rng.randf_range(7.0, 10.0), false)   # G7 (LOOK7): blood pool
 		return
 	var big: bool = kind == "building" or Content.unit(dname).get("leaves_wreck", false)
 	_fx.append({"kind": "explosion_large" if big else "explosion_small", "t": 0.0, "life": 0.8 if big else 0.45,
@@ -668,6 +674,8 @@ func _on_world_events(evs: Array) -> void:
 	for ev in evs:
 		if String(ev.get("type", "")) == "AirStrike":
 			on_air_strike(ev)
+		elif String(ev.get("type", "")) == "DroneBlast" or String(ev.get("type", "")) == "DroneMunitionAway":
+			_drone_fx(ev)
 		elif String(ev.get("type", "")) == "AiDecision":
 			if String(ev.get("tag", "")) == "smoke":
 				_fx61_smoke(ev)
@@ -970,6 +978,8 @@ func _fx61_scan() -> void:
 			continue
 		var code := _terrain_at(bp)
 		e.dust(sp, Fx61Core.dust_color(code), Fx61Core.is_water(code))
+	if _fx61_tick % 20 == 0:
+		_g7_drips(sn, e, vr)
 	if _fx61_tick % 4 != 0:   # fires: every 4th snapshot is enough (emitter ttl 1.5 s)
 		return
 	var st: Dictionary = sn.get("statics", {})
@@ -989,3 +999,65 @@ func _fx61_scan() -> void:
 				var fp: Vector2 = _w2s(Vector2(c) + Vector2(0.5, 0.5))
 				if vr.has_point(fp):
 					e.fire("c%d" % ci, fp, 6.0, 1.5)
+
+
+
+## G7 (LOOK7): bleeding (snap.g7u bleed) or dragged casualties leave a blood trail; once a second, visible ones only.
+var g7_drips := 0
+func _g7_drips(sn: Dictionary, e, vr: Rect2) -> void:
+	var gu: Dictionary = sn.get("g7u", {})
+	if gu.is_empty():
+		return
+	var ids: PackedInt32Array = sn.ids
+	var pos: PackedVector2Array = sn.pos
+	for id in gu:
+		var gv: Dictionary = gu[id]
+		if not bool(gv.get("bleed", false)) and String(gv.get("cared", "")) != "drag":
+			continue
+		var k := ids.bsearch(int(id))
+		if k >= int(sn.n) or ids[k] != int(id):
+			continue
+		var p: Vector2 = pos[k]
+		var sp: Vector2 = _w2s(p)
+		if not vr.has_point(sp) or not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
+			continue
+		e.blood(sp + Vector2(0, 2), _rng.randf_range(2.5, 4.0), true)
+		g7_drips += 1
+
+
+
+## G7 (LOOK7, DRONE7 change_request.drone_fx): a distinct blast per surface for DroneBlast {pos, surface, weapon} and a
+## small release puff for DroneMunitionAway {pos}. Visible cells only (own side always).
+var drone_fx: Dictionary = {}   # surface / "release" -> effects started (tests / playtest)
+func _drone_fx(ev: Dictionary) -> void:
+	var p = ev.get("pos")
+	if not (p is Vector2):
+		return
+	var own: bool = int(ev.get("owner", -1)) == int(mv.player_fid)
+	if not own and not mv.cell_visible(Vector2i(floori(p.x), floori(p.y))):
+		return
+	var e = _e()
+	e.lod = lod
+	var s: Vector2 = _w2s(p)
+	var kind := "release" if String(ev.get("type", "")) == "DroneMunitionAway" else String(ev.get("surface", "ground"))
+	drone_fx[kind] = int(drone_fx.get(kind, 0)) + 1
+	match kind:
+		"release":
+			e.part("puff", s + Vector2(0, -26), Vector2(0, -6), 0.6, 2.0, 6.0, Color(0.8, 0.8, 0.78, 0.5))
+		"soldier":
+			e.impact("dirt", s, 1.2)
+			e.part("puff", s + Vector2(0, -4), Vector2(0, -10), 1.6, 4.0, 12.0, Color(0.45, 0.4, 0.34, 0.5))
+			e.blood(s + Vector2(0, 2), 6.0, false)
+		"wall":
+			e.impact("building", s, 1.6)
+			e.debris(s, 10.0, 2)
+		"roof":
+			e.impact("building", s + Vector2(0, -14), 1.4)
+			e.part("puff", s + Vector2(0, -16), Vector2(0, -14), 2.5, 6.0, 18.0, Color(0.5, 0.47, 0.42, 0.45))
+			e.debris(s, 12.0, 2)
+		"air":
+			e.part("glow", s + Vector2(0, -40), Vector2.ZERO, 0.1, 10.0, 16.0, Color(1, 0.9, 0.7, 0.9))
+			e.part("ring", s + Vector2(0, -40), Vector2.ZERO, 0.5, 4.0, 22.0, Color(0.7, 0.7, 0.7, 0.6))
+			e.part("puff", s + Vector2(0, -40), Vector2(0, -4), 3.0, 6.0, 16.0, Color(0.3, 0.3, 0.3, 0.45))
+		_:
+			e.explosion(s, 9.0, "scorch")

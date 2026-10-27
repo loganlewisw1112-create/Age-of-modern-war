@@ -94,10 +94,9 @@ static func _a61_block(s: Dictionary, spec: Dictionary, frames: Array) -> Dictio
 	if fsrc >= 0 and fsrc < b:
 		a["fire_s"] = fsrc
 	var keep: Array = []
-	for k in a:
-		for v in (a[k] if a[k] is Array else [a[k]]):
-			if int(v) >= b and not keep.has(int(v)):
-				keep.append(int(v))
+	for v in flat_cols(a):
+		if int(v) >= b and not keep.has(int(v)):
+			keep.append(int(v))
 	if int(s.wnd) >= b and not keep.has(int(s.wnd)):
 		keep.append(int(s.wnd))
 	keep.sort()
@@ -333,7 +332,46 @@ static func inf_cols(frames: Array) -> Dictionary:
 				return {}
 		elif int(d[k]) < 0:
 			return {}
+	var g7 := g7_cols(frames)
+	for k in g7:
+		d["g7_" + k] = g7[k]   # G7 (LOOK7): flat keys (values stay int / Array like the G6.1 set)
 	return d
+
+
+## G7 (LOOK7): pose columns appended by tools/art/g61_anim.gd build7 (human soldiers only): {cwalk[4], duck[4], back[2],
+## stumble, limp[2], knock, kdown, unc, aid[2], drag[2], carry[2], peek_l, peek_r, cower, drop}; {} unless all present.
+const G7_ARR := [["cwalk", 4], ["duck", 4], ["back", 2], ["limp", 2], ["aid", 2], ["drag", 2], ["carry", 2]]
+const G7_ONE := ["stumble", "knock", "kdown", "unc", "peek_l", "peek_r", "cower", "drop"]
+static func g7_cols(frames: Array) -> Dictionary:
+	var d := {}
+	for k in G7_ARR:
+		var a: Array = []
+		for i in int(k[1]):
+			var c := frames.find("%s_%d" % [k[0], i])
+			if c < 0:
+				return {}
+			a.append(c)
+		d[k[0]] = a
+	for k in G7_ONE:
+		var c := frames.find(k)
+		if c < 0:
+			return {}
+		d[k] = c
+	return d
+
+
+## Every column index in an inf_cols dict (nested arrays and the g7 sub-dict included).
+static func flat_cols(a: Dictionary) -> Array:
+	var out: Array = []
+	for k in a:
+		var v = a[k]
+		if v is Dictionary:
+			out.append_array(flat_cols(v))
+		elif v is Array:
+			out.append_array(v)
+		else:
+			out.append(int(v))
+	return out
 
 
 ## G6.1: ANIMB61 vehicle selectors from vehicles[def].anim61 {track:[names], move:[names], recoil, bank_l, bank_r,

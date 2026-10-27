@@ -73,6 +73,8 @@ static func build(out: Dictionary) -> void:
 				ok = false
 		if not ok:
 			continue
+		if human(String(def), spec):
+			armband_sheets(out, sheets, fw, fh, frames.size(), String(def).begins_with("b_"), spec)
 		var add := added(frames)
 		for sh in sheets:
 			if done.has(sh[0]):
@@ -85,6 +87,7 @@ static func build(out: Dictionary) -> void:
 				out.images[sh[1]] = res[1]
 		spec["frames"] = frames + add
 		spec["anim61"] = {"base": frames.size(), "v": 1}
+	build7(out)
 
 
 static func _rgba(img: Image) -> Image:
@@ -97,7 +100,7 @@ static func _rgba(img: Image) -> Image:
 
 
 ## Returns [sheet, mask-or-null] widened by add.size() columns (8 facing rows).
-static func extend(img: Image, mask: Image, fw: int, fh: int, frames: Array, add: Array) -> Array:
+static func extend(img: Image, mask: Image, fw: int, fh: int, frames: Array, add: Array, poses: Dictionary = POSE) -> Array:
 	var n0 := frames.size()
 	var nw := fw * (n0 + add.size())
 	var hh := fh * 8
@@ -118,7 +121,7 @@ static func extend(img: Image, mask: Image, fw: int, fh: int, frames: Array, add
 	for r in 8:
 		var labs := {}  # source frame name -> [labels PackedInt32Array, comps Array]
 		for k in add.size():
-			var p: Array = POSE[add[k]]
+			var p: Array = poses[add[k]]
 			var sname: String = p[0]
 			if not frames.has(sname):
 				sname = "idle"
@@ -258,6 +261,8 @@ static func _render(sd: PackedByteArray, sw: int, md: PackedByteArray, mw: int, 
 		var vl := Vector2(float(p[2]), 0)
 		var vu := Vector2(1, 0)
 		var uu := Vector2(0, -1.0 - float(p[5]) / maxf(1.0, hh - h0)) + Vector2(dl.x, dl.y * 0.6) * float(p[4])
+		if p.size() > 8:  # G7 (LOOK7): sideways lean (peek left / right) across the facing
+			uu += Vector2(pv.x, pv.y * 0.6) * float(p[8])
 		var shift := Vector2.ZERO
 		if kind == "lie" or kind == "back":
 			# head toward (prone) / away from (fallen) the facing; a body seen end-on keeps 65% of its length
@@ -314,3 +319,186 @@ static func _render(sd: PackedByteArray, sw: int, md: PackedByteArray, mw: int, 
 					var mi := ((oy + sy) * mw + sx0 + sx) * 4
 					for c in 4:
 						mdd[di + c] = md[mi + c]
+
+
+
+# ================================================================ G7 (LOOK7)
+## G7 pose set appended after the G6.1 set on every HUMAN soldier sheet (Machine bots / walkers / legged defs skip it).
+## Same rig and parameters as POSE, plus an optional 9th value: sideways lean (peek). Frame selection is
+## presentation/view/motion.gd g7_col (batch_art g7_cols resolves the columns).
+const SET7 := ["cwalk_0", "cwalk_1", "cwalk_2", "cwalk_3", "duck_0", "duck_1", "duck_2", "duck_3", "back_0", "back_1",
+	"stumble", "limp_0", "limp_1", "knock", "kdown", "unc", "aid_0", "aid_1", "drag_0", "drag_1", "carry_0", "carry_1",
+	"peek_l", "peek_r", "cower", "drop"]
+const POSE7 := {
+	"cwalk_0": ["walk_a", "stand", 1.3, 0.55, 0.25, 0, 1.0, 0.0], "cwalk_1": ["walk_a", "stand", 0.9, 0.55, 0.28, 1, 1.0, 0.0],
+	"cwalk_2": ["walk_b", "stand", 1.3, 0.55, 0.25, 0, 1.0, 0.0], "cwalk_3": ["walk_b", "stand", 0.9, 0.55, 0.28, 1, 1.0, 0.0],
+	"duck_0": ["walk_a", "stand", 1.45, 0.75, 0.55, 0, 1.0, 0.0], "duck_1": ["walk_a", "stand", 0.8, 0.8, 0.55, 1, 1.0, 0.0],
+	"duck_2": ["walk_b", "stand", 1.45, 0.75, 0.55, 0, 1.0, 0.0], "duck_3": ["walk_b", "stand", 0.8, 0.8, 0.55, 1, 1.0, 0.0],
+	"back_0": ["fire", "stand", 0.7, 1.0, -0.12, 0, 1.0, 0.0], "back_1": ["fire", "stand", 1.25, 0.95, -0.14, 1, 1.0, 0.0],
+	"stumble": ["walk_a", "stand", 1.4, 0.85, 0.6, 0, 0.95, 0.0],
+	"limp_0": ["walk_a", "stand", 0.5, 0.9, 0.15, 0, 0.95, 0.0], "limp_1": ["idle", "stand", 0.3, 0.8, 0.28, 1, 0.95, 0.0],
+	"knock": ["wounded", "fall", 1.0, 1.0, 0.0, 0, 0.97, 0.4], "kdown": ["wounded", "back", 1.0, 1.0, 0.0, 0, 0.95, 1.0],
+	"unc": ["wounded", "back", 0.8, 1.0, 0.0, 0, 0.86, 1.0],
+	"aid_0": ["idle", "stand", 1.3, 0.4, 0.55, 0, 1.0, 0.0], "aid_1": ["idle", "stand", 1.3, 0.4, 0.72, 1, 1.0, 0.0],
+	"drag_0": ["walk_a", "stand", 1.2, 0.8, -0.45, 0, 1.0, 0.0], "drag_1": ["walk_b", "stand", 1.2, 0.8, -0.5, 1, 1.0, 0.0],
+	"carry_0": ["walk_a", "stand", 1.0, 0.95, -0.15, 0, 1.0, 0.0], "carry_1": ["walk_b", "stand", 1.0, 0.95, -0.15, 1, 1.0, 0.0],
+	"peek_l": ["fire", "stand", 1.1, 0.9, 0.05, 0, 1.0, 0.0, -0.45], "peek_r": ["fire", "stand", 1.1, 0.9, 0.05, 0, 1.0, 0.0, 0.45],
+	"cower": ["idle", "stand", 1.3, 0.4, -0.3, -1, 0.95, 0.0], "drop": ["idle", "stand", 1.0, 0.95, 0.4, 0, 1.0, 0.0]}
+# armband / helmet band (relative figure height above the feet) and the camo that replaces the rest of the old mask
+const BAND_HELMET := [0.80, 0.87]
+const BAND_ARM := [0.56, 0.63]
+const CAMO_A := [Color(0.33, 0.38, 0.22), Color(0.23, 0.27, 0.16), Color(0.43, 0.41, 0.28)]   # Human A woodland
+const CAMO_B := [Color(0.46, 0.41, 0.30), Color(0.35, 0.32, 0.24), Color(0.30, 0.31, 0.27)]   # Human B khaki / grey
+
+
+## Human soldier sheet (gets armbands + the G7 set): not a Machine def, not a legged walker / bot.
+static func human(def: String, spec: Dictionary) -> bool:
+	return not def.begins_with("m_") and not spec.has("legged") and not bool(spec.get("machine", false))
+
+
+## Appends SET7 to every human infantry sheet that has the G6.1 set and lacks it (re-run safe: anim7 marker).
+static func build7(out: Dictionary) -> void:
+	var inf = out.get("manifest", {}).get("infantry")
+	if not (inf is Dictionary):
+		return
+	var keys: Array = (inf as Dictionary).keys()
+	keys.sort()
+	var done := {}
+	for def in keys:
+		var spec: Dictionary = inf[def]
+		var frames: Array = spec.get("frames", [])
+		if spec.has("anim7") or not spec.has("anim61") or not human(String(def), spec):
+			continue
+		var add: Array = []
+		for nm in SET7:
+			if not frames.has(nm):
+				add.append(nm)
+		if add.is_empty():
+			continue
+		var fw := int(spec.get("fw", 0))
+		var fh := int(spec.get("fh", 0))
+		var sheets: Array = [[String(spec.get("file", "")), String(spec.get("mask", ""))]]
+		var al = spec.get("alive_sheets", {})
+		if al is Dictionary:
+			var ak: Array = (al as Dictionary).keys()
+			ak.sort()
+			for k in ak:
+				if al[k] is Dictionary:
+					sheets.append([String(al[k].get("file", "")), String(al[k].get("mask", ""))])
+		var ok := fw > 0 and fh > 0
+		for sh in sheets:
+			var im = out.images.get(sh[0])
+			if not (im is Image) or (im as Image).get_width() < fw * frames.size() or (im as Image).get_height() < fh * 8:
+				ok = false
+		if not ok:
+			continue
+		for sh in sheets:
+			if done.has(sh[0]):
+				continue
+			done[sh[0]] = true
+			var mk = out.images.get(sh[1]) if sh[1] != "" else null
+			var res := extend(out.images[sh[0]], mk if mk is Image else null, fw, fh, frames, add, POSE7)
+			out.images[sh[0]] = res[0]
+			if res[1] != null:
+				out.images[sh[1]] = res[1]
+		spec["frames"] = frames + add
+		spec["anim7"] = {"base": frames.size(), "v": 1}
+
+
+static func _camo(pal: Array, x: int, y: int, lum: float) -> Color:
+	var h := (((x >> 1) * 7919) ^ ((y >> 1) * 104729) ^ ((x / 3) * (y / 2) * 31)) % 3
+	var c: Color = pal[absi(h)]
+	var k := 0.62 + lum * 0.75
+	return Color(minf(1.0, c.r * k), minf(1.0, c.g * k), minf(1.0, c.b * k))
+
+
+## Shrinks the team mask of human soldier sheets to an armband (shoulder band at the figure's outer columns) plus
+## a helmet band; every other formerly-masked figure pixel is repainted in camo (shade kept). Band pixels get a
+## light neutral base so the team tint reads clearly. Columns [0, ncols) x 8 facing rows; once per file.
+static func armband_sheets(out: Dictionary, sheets: Array, fw: int, fh: int, ncols: int, side_b: bool, spec: Dictionary) -> void:
+	if spec.has("armband7"):
+		return
+	var seen: Dictionary = out.get("_armband7", {})
+	out["_armband7"] = seen
+	for sh in sheets:
+		if String(sh[1]) == "" or seen.has(sh[0]):
+			continue
+		var im = out.images.get(sh[0])
+		var mk = out.images.get(sh[1])
+		if not (im is Image) or not (mk is Image):
+			continue
+		seen[sh[0]] = true
+		var res := armband(im, mk, fw, fh, ncols, CAMO_B if side_b else CAMO_A)
+		out.images[sh[0]] = res[0]
+		out.images[sh[1]] = res[1]
+	spec["armband7"] = {"v": 1}
+
+
+## [sheet, mask] with the armband mask (see armband_sheets). Pure function of the inputs.
+static func armband(img: Image, mask: Image, fw: int, fh: int, ncols: int, pal: Array) -> Array:
+	var src := _rgba(img)
+	var msk := _rgba(mask)
+	var sw := src.get_width()
+	var mw := msk.get_width()
+	var sd := src.get_data()
+	var md := msk.get_data()
+	var cols := mini(ncols, sw / fw)
+	for col in cols:
+		for r in 8:
+			var ox := col * fw
+			var oy := r * fh
+			if ox + fw > mw or oy + fh > msk.get_height():
+				continue
+			var lp := _components(sd, sw, ox, oy, fw, fh)
+			var lab: PackedInt32Array = lp[0]
+			var comps: Array = lp[1]
+			# per figure and row: opaque x extent (for the armband's outer columns)
+			var rmin := {}
+			var rmax := {}
+			for k in lab.size():
+				var t := lab[k]
+				if t < 0:
+					continue
+				var key := t * 1024 + k / fw
+				rmin[key] = mini(int(rmin.get(key, fw)), k % fw)
+				rmax[key] = maxi(int(rmax.get(key, -1)), k % fw)
+			for k in lab.size():
+				var t := lab[k]
+				var x := k % fw
+				var y := k / fw
+				var si := ((oy + y) * sw + ox + x) * 4
+				var mi := ((oy + y) * mw + ox + x) * 4
+				var was := md[mi + 3] > 0
+				if t < 0:
+					if was:   # mask on a non-figure pixel (shadow edge / spill): drop it
+						for c in 4:
+							md[mi + c] = 0
+					continue
+				var hh := float(comps[t][2])
+				var hr := float(int(comps[t][1]) - y) / maxf(1.0, hh - 1.0)
+				var band := false
+				if hr >= BAND_HELMET[0] and hr <= BAND_HELMET[1]:
+					band = true
+				elif hr >= BAND_ARM[0] and hr <= BAND_ARM[1] and hh >= 10.0:
+					var key2 := t * 1024 + y
+					band = x <= int(rmin[key2]) or x >= int(rmax[key2])
+				if band:
+					var lum := (sd[si] + sd[si + 1] + sd[si + 2]) / 765.0
+					var v := int(clampf(0.5 + lum * 0.35, 0.0, 1.0) * 255.0)
+					sd[si] = v
+					sd[si + 1] = v
+					sd[si + 2] = v
+					md[mi] = 255
+					md[mi + 1] = 255
+					md[mi + 2] = 255
+					md[mi + 3] = 255
+				elif was:
+					var cc := _camo(pal, ox + x, oy + y, sd[si] / 255.0)
+					sd[si] = int(cc.r * 255.0)
+					sd[si + 1] = int(cc.g * 255.0)
+					sd[si + 2] = int(cc.b * 255.0)
+					for c in 4:
+						md[mi + c] = 0
+	var out_img := Image.create_from_data(sw, src.get_height(), false, Image.FORMAT_RGBA8, sd)
+	var out_m := Image.create_from_data(mw, msk.get_height(), false, Image.FORMAT_RGBA8, md)
+	return [out_img, out_m]

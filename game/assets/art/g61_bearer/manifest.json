@@ -1,12 +1,12 @@
 {
   "files": {
-    "icons/a_ammo_bearer.png": "48a1417431044cde84d3696a8d849ebc",
-    "icons/b_supply_carrier.png": "50736d396e57de3c340bf85681c37245",
+    "icons/a_ammo_bearer.png": "8755386061797b45d7148e59b8535774",
+    "icons/b_supply_carrier.png": "2ef6ba3303ba37b81dad91e7213a7e68",
     "icons/m_munitions_drone.png": "31d8304f4bd51c5b4a9ba665d3331c7b",
-    "units/a_ammo_bearer.png": "743cdf83f49645ece6364e1f75f522a8",
-    "units/a_ammo_bearer_mask.png": "94182fa4d32d6290b54fea657316f9d6",
-    "units/b_supply_carrier.png": "af74308294ddc7787803c3ac574a8dff",
-    "units/b_supply_carrier_mask.png": "c9d26b9c1b1169519e0b8f6914e60652",
+    "units/a_ammo_bearer.png": "919c3345f1272f9bc429b9ff3f967003",
+    "units/a_ammo_bearer_mask.png": "3e9ea732a71fcca5d2b1e31fcfaf9939",
+    "units/b_supply_carrier.png": "ace4dfed55eab763c52bfb07e1a59e45",
+    "units/b_supply_carrier_mask.png": "befde83b2422a05bf6ae7cc6c0db8e22",
     "units/m_munitions_drone.png": "d08fc4d2951811c20887e314c676d7db",
     "units/m_munitions_drone_mask.png": "c2cbf8358ba902e4ceef83e5a2c4d6e6",
     "wrecks/m_munitions_drone_wreck.png": "b9b5bcc57dd9b4c3fb40d5417d87ae13"
@@ -29,6 +29,13 @@
       "alive_sheets": {},
       "anim61": {
         "base": 6,
+        "v": 1
+      },
+      "anim7": {
+        "base": 34,
+        "v": 1
+      },
+      "armband7": {
         "v": 1
       },
       "facings": 8,
@@ -68,7 +75,33 @@
         "die_1",
         "die_2",
         "idle_0",
-        "idle_1"
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
       ],
       "fw": 48,
       "mask": "units/a_ammo_bearer_mask.png",
@@ -82,6 +115,13 @@
       "alive_sheets": {},
       "anim61": {
         "base": 6,
+        "v": 1
+      },
+      "anim7": {
+        "base": 34,
+        "v": 1
+      },
+      "armband7": {
         "v": 1
       },
       "facings": 8,
@@ -121,7 +161,33 @@
         "die_1",
         "die_2",
         "idle_0",
-        "idle_1"
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
       ],
       "fw": 48,
       "mask": "units/b_supply_carrier_mask.png",

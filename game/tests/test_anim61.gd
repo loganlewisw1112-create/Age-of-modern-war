@@ -189,14 +189,14 @@ func test_postures_pick_frames() -> void:
 
 func test_death_plays_then_fades() -> void:
 	check_eq([Motion.corpse_frame(0.0), Motion.corpse_frame(0.25), Motion.corpse_frame(0.45), Motion.corpse_frame(6.0)], [0, 1, 2, 2], "die_0..2")
-	check(is_equal_approx(Motion.corpse_alpha(5.0), 1.0) and is_equal_approx(Motion.corpse_alpha(12.0), 0.5) and Motion.corpse_alpha(14.0) <= 0.0, "corpse lingers then fades")
+	check(is_equal_approx(Motion.corpse_alpha(5.0), 1.0) and is_equal_approx(Motion.corpse_alpha(Motion.CORPSE_LIFE - Motion.FADE * 0.5), 0.5) and Motion.corpse_alpha(Motion.CORPSE_LIFE) <= 0.0, "corpse lingers then fades")  # G7 LOOK7 CR: life from Motion, not 14 s
 	var m = Motion.new()
 	m.step(5, Motion.CLS_INF, Vector2(3, 3), 0.0, 0, 1.0)
 	m.mark_screen(5, Vector2(40, 50))
 	m.kill(5, [], 1.0)
 	check_eq(m.corpses.size(), 1, "corpse added")
 	check(not m.vs.has(5), "dead id's visual state dropped")
-	m.prune(16.0)
+	m.prune(1.0 + Motion.CORPSE_LIFE + 1.0)  # G7 LOOK7 CR
 	check_eq(m.corpses.size(), 0, "corpse removed after its life")
 	for k in Motion.CORPSE_CAP + 20:
 		m.step(1000 + k, Motion.CLS_INF, Vector2(1, 1), 0.0, 0, 20.0)

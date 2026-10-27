@@ -1,0 +1,344 @@
+{
+  "files": {
+    "units/g7_m_living_core.png": "a280952b10a4a568c515f7d1a1ab6ddb",
+    "units/g7_m_living_core_mask.png": "8c46f7451166d5e5905cfdac1c6cac12",
+    "units/g7_m_packhunter.png": "53cf644443c7c6a7cb5964d57176c03a",
+    "units/g7_m_packhunter_mask.png": "26968ae3def0874d669564e46036bb80",
+    "units/g7_m_weaver.png": "401933804884e641840ab1fbdf7a424c",
+    "units/g7_m_weaver_mask.png": "5f56914facbf9d397bedd643e588a721"
+  },
+  "g7_detail_level": {
+    "air": {
+      "facings": 8,
+      "max_frames": 12
+    },
+    "budget_bytes": {
+      "air": 4194304,
+      "building": 4194304,
+      "infantry": 838860,
+      "threat": 1572864,
+      "threat_big": 4194304,
+      "turret": 3145728,
+      "vehicle": 3145728
+    },
+    "building": {
+      "rotations": 4,
+      "states": "g6_lib rot set"
+    },
+    "infantry": {
+      "cell": [
+        32,
+        32
+      ],
+      "facings": 8,
+      "figure_px": 17,
+      "frames": 24,
+      "pivot": [
+        16,
+        27
+      ]
+    },
+    "mask": "soldiers: armband 2x2 left upper arm + leader helmet stripe; vehicles/air: roof ID panel + side chevrons; Machine: plating trim",
+    "outline": "selective: lit side = material deep tone, shadow side = pix.OUTLINE",
+    "page_max": [
+      2560,
+      2048
+    ],
+    "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left",
+    "scale": "1:1 at zoom 1 (tile 64x32), same world size as G6 units",
+    "threat": {
+      "facings": 8,
+      "max_frames": 14
+    },
+    "turret": {
+      "aim_states": 8,
+      "rotations": 4
+    },
+    "vehicle": {
+      "facings": 8,
+      "max_frames": 12
+    },
+    "version": "DL7-1"
+  },
+  "g7_samples": {
+    "g7_m_living_core": {
+      "anim_strip": [
+        "pulse_0",
+        "pulse_1",
+        "pulse_2",
+        "plated",
+        "hit",
+        "emerge_0",
+        "emerge_1",
+        "walk_0",
+        "walk_1",
+        "walk_2"
+      ],
+      "budget": 4194304,
+      "bytes": 3801600,
+      "class": "threat_big",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "pulse_0",
+        "pulse_1",
+        "pulse_2",
+        "plated",
+        "hit",
+        "emerge_0",
+        "emerge_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3"
+      ],
+      "line": "machine",
+      "sample": "threat",
+      "section": "vehicles"
+    },
+    "g7_m_packhunter": {
+      "anim_strip": [
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die"
+      ],
+      "budget": 1572864,
+      "bytes": 867328,
+      "class": "threat",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "idle",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die"
+      ],
+      "legged": true,
+      "line": "machine",
+      "sample": "threat",
+      "section": "vehicles"
+    },
+    "g7_m_weaver": {
+      "anim_strip": [
+        "idle",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "spit",
+        "cocoon",
+        "haul",
+        "walk_0",
+        "die"
+      ],
+      "budget": 4194304,
+      "bytes": 3953664,
+      "class": "threat_big",
+      "detail_level": "DL7-1",
+      "key_frames": [
+        "idle",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "spit",
+        "cocoon",
+        "haul",
+        "die"
+      ],
+      "legged": true,
+      "line": "machine",
+      "sample": "threat",
+      "section": "vehicles"
+    }
+  },
+  "group": "g7_threats",
+  "tile": [
+    64,
+    32
+  ],
+  "vehicles": {
+    "g7_m_living_core": {
+      "facings": 8,
+      "fh": 100,
+      "file": "units/g7_m_living_core.png",
+      "frames": [
+        "pulse_0",
+        "pulse_1",
+        "pulse_2",
+        "plated",
+        "hit",
+        "emerge_0",
+        "emerge_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3"
+      ],
+      "fw": 108,
+      "g7": {
+        "anim_strip": [
+          "pulse_0",
+          "pulse_1",
+          "pulse_2",
+          "plated",
+          "hit",
+          "emerge_0",
+          "emerge_1",
+          "walk_0",
+          "walk_1",
+          "walk_2"
+        ],
+        "budget": 4194304,
+        "bytes": 3801600,
+        "class": "threat_big",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "pulse_0",
+          "pulse_1",
+          "pulse_2",
+          "plated",
+          "hit",
+          "emerge_0",
+          "emerge_1",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3"
+        ],
+        "line": "machine",
+        "sample": "threat"
+      },
+      "mask": "units/g7_m_living_core_mask.png",
+      "pivot": [
+        54,
+        70
+      ]
+    },
+    "g7_m_packhunter": {
+      "facings": 8,
+      "fh": 44,
+      "file": "units/g7_m_packhunter.png",
+      "frames": [
+        "idle",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die"
+      ],
+      "fw": 56,
+      "g7": {
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "budget": 1572864,
+        "bytes": 867328,
+        "class": "threat",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "idle",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "legged": true,
+        "line": "machine",
+        "sample": "threat"
+      },
+      "mask": "units/g7_m_packhunter_mask.png",
+      "pivot": [
+        28,
+        32
+      ]
+    },
+    "g7_m_weaver": {
+      "facings": 8,
+      "fh": 104,
+      "file": "units/g7_m_weaver.png",
+      "frames": [
+        "idle",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "spit",
+        "cocoon",
+        "haul",
+        "die"
+      ],
+      "fw": 132,
+      "g7": {
+        "anim_strip": [
+          "idle",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "spit",
+          "cocoon",
+          "haul",
+          "walk_0",
+          "die"
+        ],
+        "budget": 4194304,
+        "bytes": 3953664,
+        "class": "threat_big",
+        "detail_level": "DL7-1",
+        "key_frames": [
+          "idle",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "spit",
+          "cocoon",
+          "haul",
+          "die"
+        ],
+        "legged": true,
+        "line": "machine",
+        "sample": "threat"
+      },
+      "mask": "units/g7_m_weaver_mask.png",
+      "pivot": [
+        66,
+        76
+      ]
+    }
+  },
+  "version": 1
+}

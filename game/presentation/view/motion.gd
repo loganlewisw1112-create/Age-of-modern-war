@@ -20,8 +20,10 @@ const BACK := 0.35              # offset relaxes back toward the sim position wi
 const KICK_T := 0.09            # recoil kick duration (s)
 const FLINCH_T := 0.16          # hit flinch duration (s)
 const KICK_EVERY := 0.55        # s between cosmetic recoil kicks while the snapshot firing flag is up
-const CORPSE_CAP := 160         # lingering corpses (oldest fade first)
-const CORPSE_LIFE := 14.0       # s a corpse lingers (fades over the last FADE s)
+const CORPSE_CAP := 240         # G7 (LOOK7): lingering corpses, hard cap (was 160)
+const CORPSE_SOFT := 216        # over this the oldest start their fade-out first (oldest fade first)
+const CORPSE_HARD := CORPSE_CAP
+const CORPSE_LIFE := 45.0       # s a corpse lingers (G7: was 14; fades over the last FADE s)
 const FADE := 4.0
 const DIE_STEP := 0.2           # s per die_0..die_2 frame
 const FACING_STEP := PI / 4.0
@@ -259,7 +261,11 @@ func kill(id: int, art, t: float) -> void:
 	var s = vs.get(id)
 	if s != null and art is Array:
 		corpses.append([id, art, Vector2(s[S_SX], s[S_SY]), posmod(int(round(float(s[S_FACE]) / FACING_STEP)), 8), t])
-		while corpses.size() > CORPSE_CAP:
+		# G7: over the cap the oldest bodies start their fade-out (no pop); past the hard cap they go at once
+		var over := corpses.size() - CORPSE_SOFT
+		for k in maxi(0, over):
+			corpses[k][4] = minf(float(corpses[k][4]), t - (CORPSE_LIFE - FADE))
+		while corpses.size() > CORPSE_HARD:
 			corpses.pop_front()
 	vs.erase(id)
 
@@ -272,6 +278,8 @@ func forget(id: int) -> void:
 func prune(t: float) -> void:
 	while not corpses.is_empty() and t - float(corpses[0][4]) > CORPSE_LIFE:
 		corpses.pop_front()
+	if not corpses.is_empty() and t - float(corpses[corpses.size() - 1][4]) > CORPSE_LIFE:
+		corpses = corpses.filter(func(cp): return t - float(cp[4]) <= CORPSE_LIFE)
 	# stale visual state (units scrolled off screen / hidden): drop entries not stepped for 5 s, every 5 s
 	if t - _gc_t > 5.0 or t < _gc_t:
 		_gc_t = t
@@ -323,3 +331,114 @@ static func inf_col(cols: Dictionary, posture: int, t: float, seed: float, fire_
 		return int(cols.crouch)
 	# idle breathing: slower when rested, faster when fatigued (REAL61 Fatigue.level 0..1)
 	return int(cols.idle[int(t * (0.9 + fat * 1.6) + seed * 2.0) % 2])
+
+
+
+# ================================================================ G7 (LOOK7) poses
+## G7 pose columns (batch_art inf_cols flat "g7_*" keys: cwalk[4], duck[4], back[2], stumble, limp[2], knock, kdown, unc,
+## aid[2], drag[2], carry[2], peek_l, peek_r, cower, drop); {} on sheets without the set (machines, old art).
+## gv = the unit's snap.g7u entry (render_snap G7 keys). Returns -1 when the G6.1 selection should stand.
+const HIT_SHOW := 12     # ticks a hit reaction shows (0.6 s at 20 tps)
+const KD_SHOW := 30      # ticks a blast knock-down lies before getting up
+static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed: float, tick: int) -> int:
+	if not a61.has("g7_unc"):
+		return _g7_fallback(a61, gv, posture, t, seed, tick)
+	var moving := (posture & P_MOVING) != 0
+	var ph := int(t * 8.0 + seed * 4.0)
+	if bool(gv.get("unc", false)):
+		return int(a61.g7_unc)
+	var cared := String(gv.get("cared", ""))
+	if cared == "drag" or cared == "carry":
+		return int(a61.g7_unc)   # the casualty lies limp while dragged / carried (drawn at its sim position)
+	if tick - int(gv.get("kd", -100000)) < KD_SHOW:
+		return int(a61.g7_kdown)
+	var care := String(gv.get("care", ""))
+	match care:
+		"aid", "medic":
+			return int(a61.g7_aid[int(t * (2.0 if care == "aid" else 3.0) + seed * 2.0) % 2])
+		"drag":
+			return int(a61.g7_drag[ph % 2]) if moving else int(a61.g7_drag[0])
+		"carry":
+			return int(a61.g7_carry[ph % 2]) if moving else int(a61.g7_carry[0])
+	var hz := int(gv.get("hz", 0))
+	if hz != 0 and tick - int(gv.get("ht", -100000)) < HIT_SHOW:
+		if hz & (16 | 32):
+			return int(a61.g7_stumble)
+		if hz & (1 | 2):
+			return int(a61.g7_knock)
+		return int(a61.g7_stumble)
+	match String(gv.get("panic", "")):
+		"cower":
+			return int(a61.g7_cower)
+		"drop":
+			return int(a61.g7_drop)
+		"freeze":
+			return int(a61.idle[0])
+		"flee":
+			return int(a61.run[int(t * 14.0 + seed * 6.0) % 6]) if moving else int(a61.g7_cower)
+	var wz := int(gv.get("wz", 0))
+	if moving and (wz & (16 | 32)) == (16 | 32):
+		return int(a61.crawl[int(t * 2.0 + seed * 2.0) % 2])   # both legs hit: crawling only
+	if bool(gv.get("back", false)) and moving:
+		return int(a61.g7_back[int(t * 6.0 + seed * 2.0) % 2])
+	if posture & P_FIRING:
+		var ln := int(gv.get("lean", 0))
+		if ln != 0:
+			return int(a61.g7_peek_l) if ln < 0 else int(a61.g7_peek_r)
+		if bool(gv.get("window", false)):
+			return int(a61.fire_s)
+		if posture & P_THROW or tick - int(gv.get("throw", -100000)) < 16:
+			return int(a61.throw[0 if tick - int(gv.get("throw", tick)) < 8 else 1])
+		return -1
+	if tick - int(gv.get("throw", -100000)) < 16:
+		return int(a61.throw[0 if tick - int(gv.get("throw", tick)) < 8 else 1])
+	if moving:
+		if wz & (16 | 32):
+			return int(a61.g7_limp[int(t * 4.0 + seed * 2.0) % 2])
+		if bool(gv.get("entry", false)):
+			return int(a61.g7_duck[ph % 4])
+		match String(gv.get("gait", "")):
+			"crouch":
+				return int(a61.g7_cwalk[int(t * 7.0 + seed * 4.0) % 4])
+			"duck":
+				return int(a61.g7_duck[int(t * 11.0 + seed * 4.0) % 4])
+			"sprint":
+				return int(a61.run[int(t * 16.0 + seed * 6.0) % 6])
+			"crawl":
+				return int(a61.crawl[int(t * 3.0 + seed * 2.0) % 2])
+			"walk":
+				return int(a61.walk[int(t * 10.0 + seed * 6.0) % 6])
+		return -1
+	if bool(gv.get("stack", false)):
+		return int(a61.crouch)
+	if String(gv.get("gait", "")) == "crouch" or String(gv.get("gait", "")) == "duck":
+		return int(a61.crouch)
+	if String(gv.get("gait", "")) == "crawl":
+		return int(a61.prone)
+	return -1
+
+
+## Sheets with the G6.1 set but no G7 columns: map the G7 states onto the nearest G6.1 frames.
+static func _g7_fallback(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed: float, tick: int) -> int:
+	if a61.is_empty():
+		return -1
+	var cared := String(gv.get("cared", ""))
+	if bool(gv.get("unc", false)) or cared == "drag" or cared == "carry" or tick - int(gv.get("kd", -100000)) < KD_SHOW:
+		return int(a61.die[2])
+	if String(gv.get("care", "")) != "" or String(gv.get("panic", "")) == "cower":
+		return int(a61.crouch)
+	if (posture & P_MOVING) and (int(gv.get("wz", 0)) & 48) == 48:
+		return int(a61.crawl[int(t * 2.0 + seed * 2.0) % 2])
+	return -1
+
+
+## Drawn facing for a G7 state: halted soldiers watch their sector, backing-off soldiers face the enemy (sector),
+## halted vehicles angle into the herringbone (travel facing + herring).
+static func g7_facing(gv: Dictionary, sim_facing: float, moving: bool) -> float:
+	if gv.has("hull") and not moving:
+		return float(gv.hull)   # SQUAD7 e.f7_hb: absolute hull heading at a halt (herringbone / coil)
+	if gv.has("herring") and not moving:
+		return sim_facing + float(gv.herring)
+	if gv.has("sector") and (not moving or bool(gv.get("back", false))):
+		return float(gv.sector)
+	return sim_facing

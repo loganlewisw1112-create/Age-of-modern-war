@@ -5,6 +5,8 @@ extends RefCounted
 
 const Core = preload("res://presentation/view/fx61_core.gd")
 const Tex = preload("res://presentation/view/fx61_tex.gd")
+const DecalLayer = preload("res://presentation/view/decal_layer.gd")   # G7 (LOOK7): ground mark kinds + caps
+static var LOOK_OFF: bool = OS.get_cmdline_user_args().has("--g7-look-off")   # debug A/B: G6.1 fireball blasts
 
 var q := Core.DEFAULT_QUALITY
 var cap := 700
@@ -152,9 +154,12 @@ func impact(kind: String, b: Vector2, sc: float = 1.0) -> void:
 # ------------------------------------------------------------------ explosions
 ## Layered blast at ground point b, radius r px: flash, fireball, shockwave ring, debris, lingering smoke column,
 ## ground light, crater / scorch decal.
-func explosion(b: Vector2, r: float, decal: String = "crater", delay: float = 0.0, energy: bool = false) -> void:
+func explosion(b: Vector2, r: float, decal: String = "crater", delay: float = 0.0, energy: bool = false, fire: bool = false) -> void:
 	_made("explosion")
 	heat = minf(1.0, heat + 0.1 + r * 0.004)
+	if not energy and not fire and decal != "" and not LOOK_OFF:
+		_ground_blast(b, r, decal, delay)
+		return
 	var fc := Color(0.55, 0.95, 1.0) if energy else Color(1.0, 0.62, 0.22)
 	part("glow", b + Vector2(0, -r * 0.3), Vector2.ZERO, 0.14, r * 2.2, r * 3.0, Color(1, 0.95, 0.8, 1.0), 0.0, delay)
 	for i in n(6):
@@ -173,28 +178,65 @@ func explosion(b: Vector2, r: float, decal: String = "crater", delay: float = 0.
 		add_decal(b, r * (1.1 if decal == "crater" else 1.5), decal)
 
 
-func add_decal(b: Vector2, r: float, tx: String) -> void:
-	decals.append({"p": b, "r": r, "tx": tx, "fade": -1.0})
+func add_decal(b: Vector2, r: float, tx: String, rot: float = 0.0) -> void:
+	# G7 (LOOK7): per-kind caps (decal_layer.gd); over its cap the oldest marks of that kind fade out
+	DecalLayer.add(decals, b, r, tx, q, rot)
 	_made("decal_" + tx)
-	var live := 0
-	for d in decals:
-		if float(d.fade) < 0.0:
-			live += 1
-	# over the cap: the oldest persistent decals start fading out (removed when done)
-	var over := live - dcap
-	for d in decals:
-		if over <= 0:
-			break
-		if float(d.fade) < 0.0:
-			d.fade = 0.0
-			over -= 1
+
+
+## G7 (LOOK7): blood under a fallen soldier (pool), on a hit (small splat) or a bleeding casualty's drip.
+func blood(b: Vector2, r: float, small: bool) -> void:
+	add_decal(b + _rv(2, 1), r, "blood_s" if small else "blood", rng.randf() * TAU)
+
+
+## G7 (LOOK7): rubble scattered around point b (radius r px), k marks.
+func debris(b: Vector2, r: float, k: int) -> void:
+	for i in k:
+		add_decal(b + _rv(r, r * 0.5), rng.randf_range(5.0, 9.0), "debris", rng.randf() * TAU)
+
+
+## G7 (LOOK7): ground blast = a brief dull flash, then layered brown dust columns that rise, drift with the wind and
+## fade slowly, debris arcs, a low lingering haze, the crater / scorch and some rubble (no bright fireball).
+const DUST := [Color(0.42, 0.34, 0.24, 0.62), Color(0.35, 0.29, 0.21, 0.55), Color(0.50, 0.42, 0.31, 0.5)]
+func _ground_blast(b: Vector2, r: float, decal: String, delay: float) -> void:
+	_made("dust_blast")
+	part("glow", b + Vector2(0, -r * 0.25), Vector2.ZERO, 0.08, r * 1.2, r * 1.8, Color(1, 0.85, 0.6, 0.8), 0.0, delay)
+	for i in n(2):
+		part("flame", b + _rv(r * 0.25, r * 0.1) + Vector2(0, -r * 0.15), Vector2(rng.randf_range(-10, 10), -rng.randf_range(20, 40)),
+			0.18, r * 0.5, r * 0.8, Color(1.0, 0.55, 0.2), -20.0, delay + i * 0.02, INF, 0.0, 1.5)
+	part("ring", b, Vector2.ZERO, 0.35, r * 0.3, r * 1.6, Color(0.75, 0.65, 0.5, 0.55), 0.0, delay)
+	var wd := wind()
+	# dust columns: 2-3 stacks of puffs, lower ones dense, upper ones lighter, rising then drifting
+	for c in clampi(n(3), 1, 3):
+		var base := b + _rv(r * 0.35, r * 0.12)
+		var col: Color = DUST[c % DUST.size()]
+		for k in n(4):
+			var hgt := float(k) / 3.0
+			part("puff", base + Vector2(0, -r * 0.3 * hgt), Vector2(rng.randf_range(-6, 6), -rng.randf_range(14, 26) * (0.6 + hgt)) + wd * (0.4 + hgt * 0.6),
+				rng.randf_range(4.0, 7.0), r * (0.5 + 0.2 * hgt), r * (1.8 + 0.9 * hgt), Color(col.r, col.g, col.b, col.a * (1.0 - 0.3 * hgt)),
+				-3.0, delay + 0.03 * k + 0.05 * c, INF, 0.0, 1.6)
+	# debris arcs (dirt clods and stones thrown out on ballistic arcs, bouncing once)
+	if lod < 2:
+		for i in n(roundi(clampf(r / 3.0, 4.0, 12.0))):
+			var a := rng.randf_range(-PI * 0.95, -PI * 0.05)
+			var sp := rng.randf_range(r * 3.0, r * 7.5)
+			part("chunk", b + _rv(3, 2), Vector2(cos(a) * sp, sin(a) * sp * 1.1), rng.randf_range(0.8, 1.4), 2.5, 2.5,
+				Color(0.33, 0.27, 0.19), 360.0, delay, b.y + rng.randf_range(-r * 0.3, r * 0.4), 14.0)
+	# haze: wide, low and faint; lingers longest
+	for i in n(2):
+		part("puff", b + _rv(r * 0.6, r * 0.2), wd * 0.5 + Vector2(0, -3), rng.randf_range(8.0, 11.0), r * 1.6, r * 3.6,
+			Color(0.55, 0.49, 0.40, 0.22), 0.0, delay + 0.4)
+	light(b, r * 2.2, Color(1.0, 0.7, 0.4), 0.25, delay)
+	add_decal(b, r * (1.1 if decal == "crater" else 1.5), decal)
 
 
 ## Vehicle / building destruction: big blast, 2-3 delayed secondaries, then a burning wreck emitter (key = entity id).
 func destruction(b: Vector2, big: bool, key, burn_s: float) -> void:
 	_made("destruction")
 	var r := 26.0 if big else 14.0
-	explosion(b + Vector2(0, -6), r, "scorch")
+	explosion(b + Vector2(0, -6), r, "scorch", 0.0, false, true)   # cook-off keeps its fireball
+	if lod < 2:
+		debris(b + Vector2(0, 4), r * 1.2, 3 if big else 2)
 	for i in (n(3) if big else n(1)):
 		explosion(b + _rv(r * 0.6, r * 0.3) + Vector2(0, -8), r * rng.randf_range(0.4, 0.65), "", rng.randf_range(0.3, 1.4))
 		_made("secondary")
@@ -411,16 +453,7 @@ func draw_lights(ci: CanvasItem, vr: Rect2) -> int:
 
 ## Ground decals (drawn under units and selection rings): craters and scorch marks; oldest beyond the cap fade.
 func draw_decals(ci: CanvasItem, vr: Rect2) -> int:
-	var cnt := 0
-	for d in decals:
-		var p: Vector2 = d.p
-		if not vr.has_point(p):
-			continue
-		var r: float = d.r
-		var a: float = 1.0 if float(d.fade) < 0.0 else 1.0 - float(d.fade) / 2.0
-		ci.draw_texture_rect(Tex.tex(String(d.tx)), Rect2(p - Vector2(r, r * 0.5), Vector2(r * 2.0, r)), false, Color(1, 1, 1, a))
-		cnt += 1
-	return cnt
+	return DecalLayer.draw(ci, decals, vr)
 
 
 ## Subtle battle vignette over the view rect (fades in with recent fire in view; off on Low).
