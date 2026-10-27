@@ -146,7 +146,14 @@ func test_save_load_with_air_cargo() -> void:
 	_load(w, v, cargo, 4)
 	var dest: Vector2i = ha._open_cell(w, Vector2i(10, 30))
 	w.submit({"type": "unload", "issuer": 0, "carrier": v, "target": Vector2(dest) + Vector2(0.5, 0.5)})
+	# G7 (owner, G7_REFERENCE 6.9 C-17-style loading: "ramp lowers, vehicles drive in and out, the squad boards, the bay
+	# closes"): a loaded VTOL lifts off only after its rear ramp has closed, so wait for take-off (bounded) instead of
+	# a fixed 20 ticks. Every check below is unchanged.
 	w.run_ticks(20)
+	for _i in 400:
+		if not Air.is_landed(w.entities[v]):
+			break
+		w.step()
 	check(not Air.is_landed(w.entities[v]), "in flight with cargo")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TMP_DIR))
 	var path := TMP_DIR + "/cargo.sav"

@@ -418,3 +418,319 @@ func test_match_without_facility_untouched() -> void:
 	w.run_ticks(400)
 	check(not w.sys_state.has(CnFacility.KEY), "no facility state without a facility")
 	check(not w.sys_state.has(BaseState7.KEY), "no base-state state without a registered base")
+
+
+# ================================================================ G7 CNFAC7-2: C-17-style rear-ramp loading (scope 6.9)
+const Air = preload("res://sim/systems/air.gd")
+const EntityLayer = preload("res://presentation/view/entity_layer.gd")
+
+
+## A landed bay dropship at pos facing f (snapped), with an a_apc + 2 crew and an 8-man rifle squad behind it.
+func _ramp_scene(w: SimWorld, ddef: String, pos: Vector2, f: float) -> Dictionary:
+	var ds: Dictionary = w.entities[_unit(w, ddef, 0, pos)]
+	ds.facing = f
+	ds.order = {"type": "idle"}
+	check(Air.land_now(w, ds), "%s lands" % ddef)
+	var back := Transport.ramp_pt(pos, f, -9.0)
+	var apc: Dictionary = w.entities[_unit(w, "a_apc", 0, back)]
+	for id in _crew(w, 0, 2, back + Vector2(1, 1)):
+		Transport.load_now(w, apc, w.entities[int(id)])
+	var sq := _crew(w, 0, 8, Transport.ramp_pt(pos, f, -8.0, 3.0))
+	return {"ds": ds, "apc": apc, "sq": sq}
+
+
+## Steps until ds has no ramp sequence (or limit); returns {ph: [phases in order], dur: {ph: ticks}, ticks}.
+func _watch_seq(w: SimWorld, ds: Dictionary, limit: int, on_tick: Callable = Callable()) -> Dictionary:
+	var phs := []
+	var dur := {}
+	var n := 0
+	var started := false
+	for i in limit:
+		w.step()
+		n += 1
+		if on_tick.is_valid():
+			on_tick.call(i)
+		var s = ds.get("bay_seq")
+		if s == null:
+			if started:
+				break
+			continue
+		started = true
+		var ph := String(s.ph)
+		if phs.is_empty() or phs[phs.size() - 1] != ph:
+			phs.append(ph)
+		dur[ph] = int(dur.get(ph, 0)) + 1
+	return {"ph": phs, "dur": dur, "ticks": n}
+
+
+func test_ramp_load_and_unload_sequence() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2 = Vector2(s[1]) + Vector2(30.5, 30.5)
+	var k := 0
+	for ddef in ["cn_stealth_dropship", "a_vtol_dropship"]:
+		var f := PI * 0.5 * float(k)   # two different facings
+		k += 1
+		var sc := _ramp_scene(w, ddef, o, f)
+		var ds: Dictionary = sc.ds
+		var apc: Dictionary = sc.apc
+		var ids: Array = [int(apc.id)] + sc.sq
+		do_cmd(w, 0, {"type": "load", "carrier": int(ds.id), "unit_ids": ids})
+		var at: Vector2 = ds.pos
+		var last_apc := [Vector2.ZERO]
+		var r := _watch_seq(w, ds, 2400, func(_i):
+			if w.entities.has(int(apc.id)):
+				last_apc[0] = w.entities[int(apc.id)].pos)
+		var phs: Array = r.ph
+		check_eq(phs[0] if not phs.is_empty() else "", "ramp_down", "%s: ramp lowers first" % ddef)
+		check(phs.has("apc_in") and phs.has("squad_in") and phs.find("apc_in") < phs.find("squad_in"), "%s: APC drives in, then the squad walks in (%s)" % [ddef, str(phs)])
+		check_eq(phs[phs.size() - 1] if not phs.is_empty() else "", "ramp_up", "%s: ramp closes last" % ddef)
+		check(absi(int(r.dur.get("ramp_down", 0)) - 60) <= 1, "%s: ramp lowers in 3 s (%d ticks seen; it starts inside the command step)" % [ddef, int(r.dur.get("ramp_down", 0))])
+		check_eq(int(r.dur.get("apc_in", 0)), 120, "%s: the APC drive-in takes 6 s" % ddef)
+		check(int(r.dur.get("squad_in", 0)) >= 8 * 17, "%s: 8 men file in one after another (%d ticks)" % [ddef, int(r.dur.get("squad_in", 0))])
+		check(int(r.ticks) >= 60 + 120 + 136 + 60, "%s: loading takes real time (%d ticks)" % [ddef, int(r.ticks)])
+		var lineup := Transport.ramp_pt(at, f, -3.09)
+		check(last_apc[0].distance_to(lineup) <= 0.5, "%s: APC hidden only once lined up at the ramp foot (%.2f tiles off)" % [ddef, last_apc[0].distance_to(lineup)])
+		check(not ds.has("bay_seq") and not w.entities.has(int(apc.id)), "%s: all aboard, ramp up" % ddef)
+		check_eq(Transport.group_load(ds), {"foot": 8, "vehicle": 1}, "%s: APC + its crew + 8 men inside" % ddef)
+		var g7v: Dictionary = w.sys_state.get("g7v", {})
+		check(not (g7v.get(int(ds.id), {}) as Dictionary).has("bay"), "%s: display keys cleared after the sequence" % ddef)
+		# unload: squad out first, then the APC backs down the ramp; everything comes out behind the tail
+		do_cmd(w, 0, {"type": "unload_all", "carrier": int(ds.id)})
+		var r2 := _watch_seq(w, ds, 2400)
+		var p2: Array = r2.ph
+		check(p2.has("squad_out") and p2.has("apc_out") and p2.rfind("squad_out") < p2.find("apc_out"), "%s: unload is the reverse (%s)" % [ddef, str(p2)])
+		check_eq(int(r2.dur.get("apc_out", 0)), 120, "%s: the APC backs out in 6 s" % ddef)
+		check((ds.get("cargo", []) as Array).is_empty(), "%s: bay empty" % ddef)
+		var na := Vector2(cos(f), sin(f))
+		var behind := 0
+		for id in ids:
+			var u = w.entities.get(int(id))
+			if u != null and (Vector2(u.pos) - at).dot(na) < -2.0:
+				behind += 1
+		check_eq(behind, ids.size(), "%s: every unit came out behind the tail" % ddef)
+		check(w.entities.has(int(apc.id)) and (w.entities[int(apc.id)].cargo as Array).size() == 2, "%s: APC out with its crew" % ddef)
+		for id in ids:
+			if w.entities.has(int(id)):
+				w.entities.erase(int(id))
+		w.entities.erase(int(ds.id))
+		w.cache.clear()
+		o += Vector2(0, 14)
+
+
+func test_ramp_commits_craft_and_lz_matters() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2 = Vector2(s[1]) + Vector2(30.5, 20.5)
+	var sc := _ramp_scene(w, "cn_stealth_dropship", o, 0.0)
+	var ds: Dictionary = sc.ds
+	do_cmd(w, 0, {"type": "load", "carrier": int(ds.id), "unit_ids": [int(sc.apc.id)] + sc.sq})
+	_run(w, 5)
+	check(ds.has("bay_seq"), "sequence running")
+	var goal := o + Vector2(0, 15)
+	do_cmd(w, 0, {"type": "move", "unit_ids": [int(ds.id)], "target": goal})
+	_run(w, 40)
+	check(bool(ds.get("air_landed", false)) and Vector2(ds.pos).distance_to(o) < 0.01, "committed: no lift-off while the ramp is down")
+	_watch_seq(w, ds, 2400)
+	_run(w, 30)
+	check(not ds.has("bay_seq") and Vector2(ds.pos).distance_to(o) > 0.3, "the held move order resumes once the ramp is up")
+	# landing zone: water right behind the tail blocks the ramp
+	var o2 := Vector2(s[1]) + Vector2(12.5, 44.5)
+	var t: PackedByteArray = w.map.terrain
+	var mw := int(w.map.w)
+	for u in range(3, 7):
+		for v in range(-1, 2):
+			var c := w.cell_of(Transport.ramp_pt(o2, 0.0, -float(u), float(v)))
+			t[c.y * mw + c.x] = Terrain.WATER
+	w.map.terrain = t
+	w.cache.clear()
+	Movement.rebuild_nav(w)
+	var d2: Dictionary = w.entities[_unit(w, "cn_stealth_dropship", 0, o2)]
+	d2.facing = 0.0
+	d2.order = {"type": "idle"}
+	Air.land_now(w, d2)
+	var men := _crew(w, 0, 2, o2 + Vector2(0, 5))
+	var evs := []
+	for ev in do_cmd(w, 0, {"type": "load", "carrier": int(d2.id), "unit_ids": men}):
+		if String(ev.type) == "LoadFailed":
+			evs.append(ev)
+	evs.append_array(_run(w, 200, ["LoadFailed"]))
+	var why := String(evs[0].reason) if not evs.is_empty() else ""
+	check_eq(why, Transport.RAMP_BLOCKED, "a landing zone with no open ground behind the tail refuses loading")
+	check(not d2.has("bay_seq"), "no ramp sequence there")
+
+
+func test_ramp_capacity_rules() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2 = Vector2(s[1]) + Vector2(30.5, 30.5)
+	for ddef in ["cn_stealth_dropship", "a_vtol_dropship"]:
+		var sc := _ramp_scene(w, ddef, o, 0.0)
+		var ds: Dictionary = sc.ds
+		var apc2: Dictionary = w.entities[_unit(w, "a_apc", 0, Transport.ramp_pt(o, 0.0, -9.0, -4.0))]
+		var extra := _crew(w, 0, 3, Transport.ramp_pt(o, 0.0, -8.0, -6.0))
+		var ids: Array = [int(sc.apc.id), int(apc2.id)] + sc.sq + extra
+		var fails := []
+		for ev in do_cmd(w, 0, {"type": "load", "carrier": int(ds.id), "unit_ids": ids}):
+			if String(ev.type) == "LoadFailed":
+				fails.append(int(ev.id))
+		_watch_seq(w, ds, 3000, func(_i):
+			for ev in w.events:
+				if String(ev.type) == "LoadFailed":
+					fails.append(int(ev.id)))
+		check_eq(Transport.group_load(ds), {"foot": 10, "vehicle": 1}, "%s: one vehicle + its occupants + one 10-man squad" % ddef)
+		check(fails.has(int(apc2.id)) != fails.has(int(sc.apc.id)), "%s: a second vehicle is refused (%s)" % [ddef, str(fails)])
+		check_eq(fails.size(), 2, "%s: the 11th man and the second APC are refused" % ddef)
+		ds.cargo = []
+		for id in ids:
+			w.entities.erase(int(id))
+		w.entities.erase(int(ds.id))
+		w.cache.clear()
+		o += Vector2(0, 14)
+	var st: Dictionary = w.entities[_unit(w, "cn_stealth_dropship", 0, o)]
+	st.facing = 0.0
+	st.order = {"type": "idle"}
+	Air.land_now(w, st)
+	var men := _crew(w, 0, 26, Transport.ramp_pt(o, 0.0, -9.0, -3.0))
+	do_cmd(w, 0, {"type": "load", "carrier": int(st.id), "unit_ids": men})
+	_watch_seq(w, st, 6000)
+	check_eq(int(Transport.group_load(st).foot), 25, "stealth dropship: 25 soldiers walk up the ramp with no vehicle")
+
+
+func test_ramp_save_mid_loading_round_trip() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2 = Vector2(s[1]) + Vector2(30.5, 30.5)
+	var sc := _ramp_scene(w, "a_vtol_dropship", o, PI)
+	var ds: Dictionary = sc.ds
+	do_cmd(w, 0, {"type": "load", "carrier": int(ds.id), "unit_ids": [int(sc.apc.id)] + sc.sq})
+	var guard := 0
+	while guard < 2000 and String((ds.get("bay_seq", {}) as Dictionary).get("ph", "")) != "apc_in":
+		w.step()
+		guard += 1
+	check(ds.has("bay_seq") and String(ds.bay_seq.ph) == "apc_in", "saved while the APC drives up the ramp")
+	var b := SimWorld.from_dict(w.to_dict().duplicate(true))
+	check_eq(b.state_hash(), w.state_hash(), "loaded hash = live hash mid-loading")
+	for i in 600:
+		w.step()
+		b.step()
+	check_eq(b.state_hash(), w.state_hash(), "live and loaded stay identical through the rest of the sequence")
+	var bd = b.entities.get(int(ds.id))
+	check(bd != null and not bd.has("bay_seq") and int(Transport.group_load(bd).vehicle) == 1, "the loaded game finishes the loading")
+
+
+func _ramp_hash(seed_v: int) -> String:
+	var w := make_world({"seed": seed_v})
+	_ensure_g7()
+	w.ai_state = {}
+	var n := mini(40, mini(int(w.map.w), int(w.map.h)) - 2)
+	var o := Vector2i(int(w.map.w) / 2 - n / 2, int(w.map.h) / 2 - n / 2)
+	var t: PackedByteArray = w.map.terrain
+	for y in range(o.y, o.y + n):
+		for x in range(o.x, o.x + n):
+			t[y * int(w.map.w) + x] = Terrain.GRASS
+	w.map.terrain = t
+	for id in w.entities.keys():
+		if Rect2i(o, Vector2i(n, n)).has_point(w.cell_of(w.entities[id].pos)) and w.entities[id].kind != "building":
+			w.entities.erase(id)
+	w.cache.clear()
+	Movement.rebuild_nav(w)
+	var c := Vector2(o) + Vector2(20.5, 20.5)
+	var sc := _ramp_scene(w, "cn_stealth_dropship", c, PI * 0.25)
+	do_cmd(w, 0, {"type": "load", "carrier": int(sc.ds.id), "unit_ids": [int(sc.apc.id)] + sc.sq})
+	w.run_ticks(500)
+	do_cmd(w, 0, {"type": "unload_all", "carrier": int(sc.ds.id)})
+	w.run_ticks(300)
+	return w.state_hash()
+
+
+func test_ramp_same_seed_same_hash() -> void:
+	check_eq(_ramp_hash(11), _ramp_hash(11), "loading + unloading: same seed twice = same hash")
+
+
+func test_no_dropship_no_bay_state() -> void:
+	var w := make_world()
+	_ensure_g7()
+	w.run_ticks(300)
+	var any := false
+	for id in w.entities:
+		any = any or (w.entities[id] as Dictionary).has("bay_seq")
+	var g7v: Dictionary = w.sys_state.get("g7v", {})
+	for id in g7v:
+		any = any or (g7v[id] as Dictionary).has("bay")
+	check(not any, "a match without bay dropships never creates ramp state or display keys")
+	check((Transport._cache(w).bays as Dictionary).is_empty(), "no craft held")
+
+
+func test_ysort_nothing_drawn_over_craft_from_behind() -> void:
+	var cp := Vector2(50.5, 50.5)
+	for k in 8:
+		var f := PI / 4.0 * float(k)
+		var crafts := [[cp, f, int((cp.x + cp.y) * 16.0), 1]]
+		var cy: int = crafts[0][2]
+		var bad := 0
+		var n := 0
+		var n2 := Vector2(cos(f), sin(f))
+		for gy in range(-6, 7):
+			for gx in range(-6, 7):
+				var g := cp + Vector2(gx, gy) * 0.5
+				var out := EntityLayer.bay_sort_y(g, int((g.x + g.y) * 16.0), crafts)
+				var d := g - cp
+				if absf(d.dot(n2)) <= 2.45 and absf(d.y * n2.x - d.x * n2.y) <= 2.1:
+					n += 1
+					if out >= cy:
+						bad += 1
+		check_eq(bad, 0, "facing %d: no soldier standing in the footprint is drawn over the hull (%d points)" % [k, n])
+		var foot := Transport.ramp_pt(cp, f, -2.6)
+		var kyf := EntityLayer.bay_sort_y(foot, int((foot.x + foot.y) * 16.0), crafts)
+		if foot.x + foot.y < cp.x + cp.y - 0.5:
+			check(kyf < cy, "facing %d: a soldier at the ramp foot behind the craft is hidden by it" % k)
+		var front := cp + Vector2(4.0, 4.0)
+		check(EntityLayer.bay_sort_y(front, int((front.x + front.y) * 16.0), crafts) > cy, "facing %d: a soldier in front is drawn over the craft" % k)
+		var back := cp - Vector2(4.0, 4.0)
+		check(EntityLayer.bay_sort_y(back, int((back.x + back.y) * 16.0), crafts) < cy, "facing %d: a soldier straight behind stays under the craft" % k)
+
+
+func test_facility_sizes_proportionate() -> void:
+	var C := CnFacility.conf()
+	var cs := int(C.compound)
+	var hp: Array = C.helipad
+	check_eq([int(hp[2]), int(hp[3])], [6, 6], "helipad is 6x6")
+	var gz: Array = C.garage_size
+	check_eq([int(gz[0]), int(gz[1])], [3, 3], "garages are 3x3")
+	var rects := []
+	for n in ["gate", "decon", "pad", "helipad", "drone_bay", "range", "workshop"]:
+		var z: Array = C[n]
+		rects.append([n, Rect2i(int(z[0]), int(z[1]), int(z[2]), int(z[3]))])
+	for g in C.garages:
+		rects.append(["garage", Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3)])
+	var bad := []
+	for i in rects.size():
+		var a: Rect2i = rects[i][1]
+		if not Rect2i(0, 0, cs, cs).encloses(a):
+			bad.append("%s outside" % rects[i][0])
+		for j in range(i + 1, rects.size()):
+			if a.intersects(rects[j][1]):
+				bad.append("%s x %s" % [rects[i][0], rects[j][0]])
+	check_eq(bad, [], "garages and zones fit the 32x32 compound without overlaps")
+	var hc := Vector2(float(hp[0]) + float(hp[2]) * 0.5, float(hp[1]) + float(hp[3]) * 0.5)
+	var f := deg_to_rad(float(C.helipad_craft.facing_deg))
+	var nose := Transport.ramp_pt(hc, f, 2.45)
+	var foot := Transport.ramp_pt(hc, f, -2.45)
+	var hr := Rect2(float(hp[0]), float(hp[1]), float(hp[2]), float(hp[3]))
+	check(hr.has_point(nose) and hr.has_point(foot) and hr.has_point(Transport.ramp_pt(hc, f, 0.0, 2.1)) and hr.has_point(Transport.ramp_pt(hc, f, 0.0, -2.1)), "the craft (4.9 x 4.2 tiles) sits centred inside the pad")
+	var stage := Transport.ramp_pt(hc, f, -5.8)
+	var hit := ""
+	for r in rects:
+		if Rect2(r[1]).has_point(stage) or Rect2(r[1]).has_point(Transport.ramp_pt(hc, f, -3.09)):
+			hit = r[0]
+	check(hit == "" or hit == "helipad", "the APC line-up behind the ramp is open compound ground (%s)" % hit)
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	check_eq(_cmd(w, {"type": "cn_train", "building_id": fid, "kind": "stealth_dropship"}), "", "dropship ordered")
+	CnFacility.fac(w, fid).queue[0].left = 1.0
+	_run(w, 3)
+	var ds = w.entities.get(int(CnFacility.fac(w, fid).heli))
+	check(ds != null and Vector2(ds.pos).distance_to(CnFacility.zone(CnFacility.fac(w, fid), "helipad").get_center()) < 0.01 and absf(float(ds.facing) - f) < 0.001, "the parked dropship is centred on its pad, ramp toward the compound")
+	check(ds != null and Transport.ramp_clear(w, ds, Transport.snap_facing(ds), "vehicle"), "an APC can line up behind it on the pad")

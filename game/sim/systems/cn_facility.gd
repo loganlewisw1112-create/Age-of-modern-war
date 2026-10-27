@@ -210,9 +210,12 @@ static func render_entries(w: SimWorld) -> Array:
 			var r := zone(F, n)
 			zs[n] = [r.position.x, r.position.y, r.size.x, r.size.y]
 		var gs := []
+		var gr := []
+		var gz: Array = conf().get("garage_size", [3, 3])
 		for g in garage_spots(F):
 			gs.append([g.x, g.y])
-		out.append({"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_team": (F.garages as Array).duplicate(),
+			gr.append([g.x - float(gz[0]) * 0.5, g.y - float(gz[1]) * 0.5, float(gz[0]), float(gz[1])])  # CNFAC7-2: 3x3 garages
+		out.append({"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_rects": gr, "garage_team": (F.garages as Array).duplicate(),
 			"lock": bool(F.lock), "evac": bool(F.evac), "state": secure_state(w, id), "heli": int(F.heli)})
 	return out
 
@@ -224,6 +227,7 @@ static func team_of(e) -> int:
 
 # ================================================================ system hooks
 static func tick(w: SimWorld) -> void:
+	Transport.hold_bays(w)  # G7 (CNFAC7-2): dropships in a ramp sequence stay on the ground (runs before Movement / Air)
 	if w.tick % DISCOVER_EVERY == 0:
 		_discover(w)
 	if not active(w):
@@ -391,9 +395,13 @@ static func _finish_train(w: SimWorld, F: Dictionary, kind: String) -> bool:
 		var hp := zone(F, "helipad").get_center()
 		var did := w.spawn_unit(String(tc.unit), int(F.owner), hp)
 		var d: Dictionary = w.entities[did]
+		d.facing = deg_to_rad(float((conf().get("helipad_craft", {}) as Dictionary).get("facing_deg", 0)))  # CNFAC7-2: ramp toward the compound
 		d.cn_fac = int(F.id)
 		d.unhackable = true
 		Air.land_now(w, d)  # parked on its helipad: vehicles and squads can board it
+		if bool(d.get("air_landed", false)) and Vector2(d.pos) != hp:
+			d.pos = hp  # CNFAC7-2: centred on the 6x6 pad (its centre is a tile corner; land_now snaps to a tile centre)
+			Air._ensure(w, d).pin = hp
 		F.heli = did
 		w.emit("CnDropshipReady", {"fac": int(F.id), "owner": int(F.owner), "id": did})
 		return true

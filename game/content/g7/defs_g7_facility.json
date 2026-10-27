@@ -49,6 +49,11 @@
       "no_production": true, "stage_min": 10
     }
   },
+  "_g7_bay_seq": {
+    "_note": "CNFAC7-2 C-17-style rear-ramp loading (scope 6.9, art.dropship_sizes rev4 geometry, tiles along the nose axis). PROVISIONAL timings.",
+    "ramp_s": 3.0, "apc_s": 6.0, "man_s": 0.85, "close_s": 1.5, "wait_r": 5.0,
+    "foot_u": -2.6, "apc_u": -3.09, "stage_u": -5.8, "clear_u": -5.6, "side_v": 1.8, "out_u": 2.5, "enter_r": 0.6, "enter_r_veh": 0.3
+  },
   "_g7_bays": {
     "a_vtol_dropship": {"vehicle": 1, "foot": 10, "foot_empty": 16, "carry_occupants": true}
   },
@@ -67,7 +72,9 @@
     "drone_bay": [2, 2, 5, 4],
     "range": [2, 22, 7, 6],
     "workshop": [24, 22, 6, 6],
-    "garages": [[4, 8], [4, 12], [4, 16], [4, 20], [28, 10], [28, 14], [28, 18], [28, 22]],
+    "garages": [[4, 8], [4, 12], [4, 16], [4, 20], [28, 9], [28, 12], [28, 15], [28, 18]],
+    "garage_size": [3, 3],
+    "helipad_craft": {"centred": true, "facing_deg": 0, "note": "art.dropship_sizes rev3/rev4: 6x6 pad, craft pivot on the pad centre, nose +u (east), rear ramp toward the compound interior (open ground to u -5.8 for the APC line-up)"},
     "towers": [[15, 0], [0, 15], [30, 15], [10, 30]],
     "checkpoint": [18, 30],
     "popups": [[8, 8], [23, 8], [8, 23], [23, 23], [12, 27], [19, 27]],

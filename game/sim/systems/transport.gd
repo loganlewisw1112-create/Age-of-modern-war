@@ -90,6 +90,212 @@ static func _bay_ok(c, u) -> bool:
 	return f + _count_of(String(u.def)) <= lim
 
 
+# ================================================================ G7 C-17-style rear-ramp loading (CNFAC7-2, scope 6.9)
+## A landed bay aircraft loads and unloads only through its rear ramp (fact art.dropship_sizes rev4; tiles along the
+## nose axis u, v to the right): ramp foot u -2.45, APC line-up centre u -3.09 (apc_load_0), soldiers enter / come out
+## at u -2.6 (f -10.4 m). Saved state on the carrier (plain data):
+##   c.bay_seq = {mode "load"|"unload", ph, t0, t1 (ticks), at Vector2 (anchor), f (facing, snapped to 45 deg),
+##                q [cargo ids still to come out: foot first, then the vehicle], cur (id coming out now), n (units out),
+##                idle (tick the bay went idle), pend [ids asked to unload while loading], resume Vector2 (held move goal)}
+##   phases: ramp_down -> open <-> apc_in / squad_in (load) | squad_out / apc_out (unload) -> ramp_up -> (erased)
+##   boarder u.order adds st (APC staged on the axis) and g (current walk goal).
+## While a sequence runs the craft is committed (hold_bays, called before Movement / Air: no move, no lift-off; a move
+## order is kept and resumed when the ramp is up). Display: LOOK7's g7v table, own keys only:
+##   g7v[cid] = {bay ph, bm mode, b0 t0, b1 t1, bv 1 = a vehicle is aboard}. No bay aircraft = no state, same hash.
+const SEQ_DEF := {"ramp_s": 3.0, "apc_s": 6.0, "man_s": 0.85, "close_s": 1.5, "wait_r": 5.0, "foot_u": -2.6,
+	"apc_u": -3.09, "stage_u": -5.8, "clear_u": -5.6, "side_v": 1.8, "out_u": 2.5, "enter_r": 0.6, "enter_r_veh": 0.3}
+const RAMP_BLOCKED := "The dropship's rear ramp is blocked: land it with open ground behind the tail."
+static var _seq_conf: Dictionary = {}
+
+
+static func seq_conf() -> Dictionary:
+	if _seq_conf.is_empty():
+		_seq_conf = SEQ_DEF.duplicate()
+		if FileAccess.file_exists(BAY_PATH):
+			var parsed = JSON.parse_string(FileAccess.get_file_as_string(BAY_PATH))
+			if typeof(parsed) == TYPE_DICTIONARY and typeof(parsed.get("_g7_bay_seq")) == TYPE_DICTIONARY:
+				for k in parsed["_g7_bay_seq"]:
+					_seq_conf[k] = parsed["_g7_bay_seq"][k]
+	return _seq_conf
+
+
+static func _ticks(k: String) -> int:
+	return maxi(1, int(round(float(seq_conf().get(k, 1.0)) * SimWorld.TICK_RATE)))
+
+
+## Ticks a squad of def_id takes to file up (or down) the ramp, one man after another.
+static func _file_ticks(def_id: String) -> int:
+	return maxi(1, int(round(float(seq_conf().man_s) * _count_of(def_id) * SimWorld.TICK_RATE)))
+
+
+## True for an aircraft with an internal bay (loads through its rear ramp while landed).
+static func is_bay_air(c) -> bool:
+	return c != null and is_air_carrier(c) and not bay(String(c.def)).is_empty()
+
+
+## Tile point at u (along the nose) and v (to the right) of a craft at p facing f.
+static func ramp_pt(p: Vector2, f: float, u: float, v: float = 0.0) -> Vector2:
+	var n := Vector2(cos(f), sin(f))
+	return p + n * u + Vector2(-n.y, n.x) * v
+
+
+## Facing snapped to the 8 drawn facings (the sprite row), so the sim ramp matches the drawn ramp.
+static func snap_facing(c: Dictionary) -> float:
+	return float(roundi(float(c.get("facing", 0.0)) / (PI / 4.0))) * (PI / 4.0)
+
+
+## Open ground of class cls from the ramp foot back to clear_u on the craft's axis (the landing zone matters).
+static func ramp_clear(w: SimWorld, c: Dictionary, f: float, cls: String) -> bool:
+	var p: Vector2 = c.pos
+	var u := -2.45
+	var end := float(seq_conf().clear_u)
+	while u >= end - 0.001:
+		var cell := w.cell_of(ramp_pt(p, f, u))
+		if not w.in_bounds(cell) or not Movement.is_passable(w, cell, cls):
+			return false
+		u -= 0.5
+	return true
+
+
+static func _is_veh(c, u) -> bool:
+	return _group(_class_for(c, String(u.def))) == "vehicle"
+
+
+## LOOK7 g7v keys of a bay aircraft (own keys only; erased when the sequence ends).
+static func _seq_render(w: SimWorld, c: Dictionary) -> void:
+	var cid := int(c.id)
+	var v = w.sys_state.get("g7v")
+	if not c.has("bay_seq"):
+		if v != null and (v as Dictionary).has(cid):
+			var g0: Dictionary = v[cid]
+			for k in ["bay", "bm", "b0", "b1", "bv"]:
+				g0.erase(k)
+			if g0.is_empty():
+				v.erase(cid)
+		return
+	if v == null:
+		v = {}
+		w.sys_state["g7v"] = v
+	if not v.has(cid):
+		v[cid] = {}
+	var s: Dictionary = c.bay_seq
+	var g: Dictionary = v[cid]
+	g.bay = String(s.ph)
+	g.bm = String(s.mode)
+	g.b0 = int(s.t0)
+	g.b1 = int(s.t1)
+	g.bv = 1 if int(group_load(c).vehicle) > 0 else 0
+
+
+static func _seq_set(w: SimWorld, c: Dictionary, ph: String, dur: int) -> void:
+	var s: Dictionary = c.bay_seq
+	s.ph = ph
+	s.t0 = w.tick
+	s.t1 = w.tick + dur
+	if ph == "open":
+		s.idle = w.tick
+	_seq_render(w, c)
+
+
+static func _seq_start(w: SimWorld, c: Dictionary, mode: String) -> Dictionary:
+	var f := snap_facing(c)
+	c.facing = f
+	var s := {"mode": mode, "ph": "ramp_down", "t0": w.tick, "t1": w.tick + _ticks("ramp_s"), "at": Vector2(c.pos), "f": f,
+		"q": [], "n": 0, "idle": w.tick}
+	c.bay_seq = s
+	var tc := _cache(w)
+	tc.carriers[int(c.id)] = c
+	tc.bays[int(c.id)] = true
+	_seq_render(w, c)
+	HotState.touch(w, int(c.id))
+	w.emit("BayRamp", {"id": int(c.id), "owner": int(c.owner), "open": true, "mode": mode})
+	return s
+
+
+static func _seq_end(w: SimWorld, c: Dictionary) -> void:
+	var s: Dictionary = c.bay_seq
+	c.erase("bay_seq")
+	_cache(w).bays.erase(int(c.id))
+	_seq_render(w, c)
+	w.emit("BayRamp", {"id": int(c.id), "owner": int(c.owner), "open": false, "mode": String(s.mode)})
+	if s.has("resume"):
+		var goal: Vector2 = s.resume
+		c.order = {"type": "move", "target": goal}
+		if not Movement.order_path(w, c, goal):
+			c.order = {"type": "idle"}
+
+
+## Called every tick before Movement and Air (CnFacility.tick): a craft in a ramp sequence stays put on the ground.
+static func hold_bays(w: SimWorld) -> void:
+	var bays: Dictionary = _cache(w).bays
+	if bays.is_empty():
+		return
+	for cid in _sorted_keys(bays):
+		var c = w.entities.get(int(cid))
+		if c == null or not c.has("bay_seq"):
+			continue
+		var s: Dictionary = c.bay_seq
+		var path: Array = c.get("path", [])
+		if bool(c.get("moving", false)) or not path.is_empty():
+			if not path.is_empty():
+				s.resume = path[path.size() - 1]
+			Movement.stop_path(c)
+			c.order = {"type": "idle"}
+			w.emit("BayBusy", {"id": int(cid), "owner": int(c.owner), "reason": "Loading through the rear ramp: it lifts off when the ramp is up."})
+		if not bool(c.get("air_landed", false)):
+			Air.land_now(w, c)
+		if Vector2(c.pos) != (s.at as Vector2) or float(c.facing) != float(s.f):
+			c.pos = s.at
+			c.facing = float(s.f)
+			HotState.touch(w, int(cid))
+
+
+static func _cargo_unit(c: Dictionary, id: int):
+	for x in c.get("cargo", []):
+		if int(x.id) == id:
+			return x
+	return null
+
+
+## Unload order out of the bay: squads first (they boarded last), then the vehicle; ascending id inside each.
+static func _unload_order(c: Dictionary, ids: Array) -> Array:
+	var foot := []
+	var veh := []
+	for x in c.get("cargo", []):
+		if ids.has(int(x.id)) or ids.has(float(x.id)):
+			(veh if _is_veh(c, x) else foot).append(int(x.id))
+	return foot + veh
+
+
+## Unload ids of a landed bay aircraft through its ramp (starts, extends or queues the sequence).
+static func bay_unload(w: SimWorld, c: Dictionary, ids: Array) -> void:
+	var want := _unload_order(c, ids)
+	if want.is_empty():
+		return
+	var s = c.get("bay_seq")
+	if s == null:
+		var veh := false
+		for id in want:
+			veh = veh or _is_veh(c, _cargo_unit(c, int(id)))
+		if not ramp_clear(w, c, snap_facing(c), "vehicle" if veh else "foot"):
+			w.emit("UnloadFailed", {"carrier": int(c.id), "owner": int(c.owner), "reason": RAMP_BLOCKED})
+			return
+		s = _seq_start(w, c, "unload")
+		s.q = want
+	elif String(s.mode) == "unload":
+		var q: Array = s.q
+		for id in want:
+			if not q.has(id) and int(s.get("cur", -1)) != int(id):
+				q.append(id)
+		s.q = _unload_order(c, q)
+	else:
+		var pend: Array = s.get("pend", [])
+		for id in want:
+			if not pend.has(id):
+				pend.append(id)
+		s.pend = pend
+
+
 # ================================================================ def queries
 static func capacity(def_id: String) -> int:
 	return int(Content.unit(def_id).get("cargo_slots", 0))
@@ -267,11 +473,14 @@ static func _cache(w: SimWorld) -> Dictionary:
 	var c = w.cache.get("transport")
 	if c != null:
 		return c
-	c = {"cargo_of": {}, "carriers": {}, "boarding": {}}
+	c = {"cargo_of": {}, "carriers": {}, "boarding": {}, "bays": {}}
 	for e in SimIndex.of(w, "unit"):
 		if not SimIndex.alive(w, e):
 			continue
 		var id := int(e.id)
+		if e.has("bay_seq"):
+			c.carriers[id] = e  # G7 (CNFAC7-2): a craft in a ramp sequence
+			c.bays[id] = true
 		if e.has("cargo") and not (e.cargo as Array).is_empty():
 			c.carriers[id] = e
 			for u in e.cargo:
@@ -461,6 +670,8 @@ static func tick(w: SimWorld) -> void:
 		var c = w.entities.get(int(cid))
 		if c == null:
 			continue  # died: sweep() handles it at the end of the step
+		if c.has("bay_seq"):
+			_tick_seq(w, tc, c)  # G7 (CNFAC7-2): ramp sequence
 		if c.has("pickup"):
 			_tick_pickup(w, tc, c)
 		if c.has("unload_order"):
@@ -480,8 +691,193 @@ static func tick(w: SimWorld) -> void:
 				c.erase("unload_order")
 				if _beach_ok(w, c, p):
 					unload(w, c, uo.ids, p, "unload")
-		if (c.get("cargo", []) as Array).is_empty() and not c.has("pickup") and not c.has("unload_order"):
+		if (c.get("cargo", []) as Array).is_empty() and not c.has("pickup") and not c.has("unload_order") and not c.has("bay_seq"):
 			carriers.erase(cid)
+
+
+# ---------------------------------------------------------------- G7 ramp sequence (CNFAC7-2)
+static func _board_fail(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dictionary, why: String) -> void:
+	tc.boarding.erase(int(u.id))
+	u.order = {"type": "idle"}
+	Movement.stop_path(u)
+	w.emit("LoadFailed", {"id": int(u.id), "carrier": int(c.id), "reason": why})
+
+
+## Walks boarder u toward goal (re-paths only when the goal moved or it stopped short).
+static func _bay_goto(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dictionary, goal: Vector2) -> void:
+	var p: Vector2 = u.pos
+	if p.distance_to(goal) <= 0.3:
+		if bool(u.moving):
+			Movement.stop_path(u)
+		return
+	var og = u.order.get("g")
+	if og is Vector2 and (og as Vector2).distance_to(goal) <= 0.3:
+		if bool(u.moving) or (w.tick + int(u.id)) % REPATH_EVERY != 0:
+			return
+	u.order["g"] = goal
+	if not Movement.order_path(w, u, goal):
+		_board_fail(w, tc, u, c, "Cannot reach the dropship's rear ramp.")
+
+
+## A vehicle is still on its way into carrier cid (squads wait beside the ramp until it is aboard).
+static func _vehicle_coming(w: SimWorld, tc: Dictionary, c: Dictionary) -> bool:
+	var cid := int(c.id)
+	for uid in tc.boarding:
+		if int(tc.boarding[uid]) == cid:
+			var x = w.entities.get(int(uid))
+			if x != null and _is_veh(c, x):
+				return true
+	return false
+
+
+static func _tick_bay_boarder(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dictionary) -> void:
+	var uid := int(u.id)
+	var cfg := seq_conf()
+	var p: Vector2 = u.pos
+	if not bool(c.get("air_landed", false)):
+		if p.distance_to(c.pos) <= float(cfg.wait_r):
+			if bool(u.moving):
+				Movement.stop_path(u)
+			return   # wait near the aircraft until it is on the ground
+		_bay_goto(w, tc, u, c, c.pos)
+		return
+	var veh := _is_veh(c, u)
+	var s = c.get("bay_seq")
+	if s == null:
+		var r := can_carry(c, u)
+		if r == "" and not fits(c, u):
+			r = "The transport is full."
+		if r == "" and not ramp_clear(w, c, snap_facing(c), "vehicle" if veh else "foot"):
+			r = RAMP_BLOCKED
+		if r != "":
+			_board_fail(w, tc, u, c, r)
+			return
+		s = _seq_start(w, c, "load")
+	var at: Vector2 = s.at
+	var f := float(s.f)
+	var ph := String(s.ph)
+	var entry := ramp_pt(at, f, float(cfg.apc_u if veh else cfg.foot_u))
+	var can_enter := String(s.mode) == "load" and (ph == "open" or (not veh and ph == "squad_in"))
+	if can_enter and not veh and _vehicle_coming(w, tc, c):
+		can_enter = false
+	var side := float(cfg.side_v) * (1.0 if uid % 2 == 0 else -1.0)
+	var goal := entry
+	if veh:
+		var stage := ramp_pt(at, f, float(cfg.stage_u))
+		if int(u.order.get("st", 0)) == 0:
+			goal = stage
+			if p.distance_to(stage) <= 0.7:
+				u.order["st"] = 1
+				goal = entry
+		if not can_enter and int(u.order.get("st", 0)) == 1:
+			goal = stage   # lined up on the axis, waits for the bay
+	elif not can_enter:
+		goal = ramp_pt(at, f, float(cfg.foot_u) - 0.8, side)   # waits beside the ramp
+	if goal == entry and p.distance_to(entry) <= float(cfg.enter_r_veh if veh else cfg.enter_r):
+		var r := "" if fits(c, u) else "The transport is full."
+		if r != "":
+			_board_fail(w, tc, u, c, r)
+			return
+		tc.boarding.erase(uid)
+		u.pos = entry
+		u.facing = f   # lined up on the craft's axis, nose to the ramp (apc_load_0)
+		_load(w, tc, c, u)
+		if veh:
+			_seq_set(w, c, "apc_in", _ticks("apc_s"))
+		else:
+			var from := maxi(int(s.t1), w.tick) if ph == "squad_in" else w.tick
+			var t0 := int(s.t0) if ph == "squad_in" else w.tick
+			_seq_set(w, c, "squad_in", from - w.tick + _file_ticks(String(u.def)))
+			s.t0 = t0
+			_seq_render(w, c)
+		return
+	_bay_goto(w, tc, u, c, goal)
+
+
+## The unit coming out (s.cur) reaches the ramp foot: back in the world, then it clears the ramp.
+static func _seq_emerge(w: SimWorld, c: Dictionary) -> bool:
+	var s: Dictionary = c.bay_seq
+	var id := int(s.get("cur", -1))
+	s.erase("cur")
+	var u = _cargo_unit(c, id)
+	if u == null:
+		return true
+	var cfg := seq_conf()
+	var veh := _is_veh(c, u)
+	var at := ramp_pt(s.at, float(s.f), float(cfg.apc_u if veh else cfg.foot_u))
+	var keep := []
+	for x in c.cargo:
+		if int(x.id) != id:
+			keep.append(x)
+	var stay := _place(w, c, [u], at, "unload", -1.0)
+	if not stay.is_empty():
+		w.emit("UnloadFailed", {"carrier": int(c.id), "owner": int(c.owner), "reason": RAMP_BLOCKED})
+		return false
+	c.cargo = keep
+	if w.cell_of(at) == w.cell_of(u.pos):
+		u.pos = at
+	u.facing = float(s.f) if veh else float(s.f) + PI   # the APC backs down the ramp (apc_unload_5 = apc_load_0)
+	var n := int(s.get("n", 0))
+	s.n = n + 1
+	var out := ramp_pt(s.at, float(s.f), float(cfg.apc_u if veh else cfg.foot_u) - float(cfg.out_u), 0.0 if veh else float((n % 3) - 1) * 1.2)
+	u.order = {"type": "move", "target": out}
+	if not Movement.order_path(w, u, out):
+		u.order = {"type": "idle"}
+	HotState.touch(w, id)
+	return true
+
+
+static func _seq_next_out(w: SimWorld, c: Dictionary) -> void:
+	var s: Dictionary = c.bay_seq
+	var q: Array = s.q
+	while not q.is_empty():
+		var id := int(q[0])
+		q.remove_at(0)
+		var u = _cargo_unit(c, id)
+		if u == null:
+			continue
+		s.cur = id
+		if _is_veh(c, u):
+			_seq_set(w, c, "apc_out", _ticks("apc_s"))
+		else:
+			_seq_set(w, c, "squad_out", _file_ticks(String(u.def)))
+		return
+	_seq_set(w, c, "ramp_up", _ticks("ramp_s"))
+
+
+static func _tick_seq(w: SimWorld, tc: Dictionary, c: Dictionary) -> void:
+	var s: Dictionary = c.bay_seq
+	var ph := String(s.ph)
+	if ph != "open" and w.tick < int(s.t1):
+		return
+	match ph:
+		"ramp_down", "apc_in", "squad_in":
+			_seq_set(w, c, "open", 0)
+		"squad_out", "apc_out":
+			if _seq_emerge(w, c):
+				_seq_set(w, c, "open", 0)
+			else:
+				s.q = []
+				_seq_set(w, c, "ramp_up", _ticks("ramp_s"))
+		"ramp_up":
+			_seq_end(w, c)
+			return
+	if String(s.ph) != "open":
+		return
+	if String(s.mode) == "load" and s.has("pend"):
+		s.mode = "unload"
+		s.q = _unload_order(c, s.pend)
+		s.erase("pend")
+	if String(s.mode) == "unload":
+		_seq_next_out(w, c)
+		return
+	var cid := int(c.id)
+	for uid in tc.boarding:
+		if int(tc.boarding[uid]) == cid:
+			s.idle = w.tick
+			return
+	if w.tick - int(s.idle) >= _ticks("close_s"):
+		_seq_set(w, c, "ramp_up", _ticks("ramp_s"))
 
 
 static func _tick_boarder(w: SimWorld, tc: Dictionary, uid: int) -> void:
@@ -494,6 +890,9 @@ static func _tick_boarder(w: SimWorld, tc: Dictionary, uid: int) -> void:
 		tc.boarding.erase(uid)
 		u.order = {"type": "idle"}
 		Movement.stop_path(u)
+		return
+	if is_bay_air(c):
+		_tick_bay_boarder(w, tc, u, c)  # G7 (CNFAC7-2): in through the rear ramp
 		return
 	var p: Vector2 = u.pos
 	var cp: Vector2 = c.pos
@@ -601,6 +1000,9 @@ static func load_now(w: SimWorld, c: Dictionary, u: Dictionary) -> bool:
 static func unload(w: SimWorld, c: Dictionary, ids: Array, center: Vector2, cause: String) -> void:
 	if not c.has("cargo"):
 		return
+	if cause == "unload" and is_bay_air(c) and bool(c.get("air_landed", false)):
+		bay_unload(w, c, ids)  # G7 (CNFAC7-2): out through the rear ramp, one after another
+		return
 	var keep := []
 	var out := []
 	for u in c.cargo:
@@ -706,6 +1108,10 @@ static func sweep(w: SimWorld) -> void:
 			continue
 		var c: Dictionary = tc.carriers[cid]
 		tc.carriers.erase(cid)
+		if c.has("bay_seq"):  # G7 (CNFAC7-2): a craft lost mid-sequence drops its display keys
+			tc.bays.erase(cid)
+			c.erase("bay_seq")
+			_seq_render(w, c)
 		on_carrier_destroyed(w, c, _killer_of(w, c))
 
 

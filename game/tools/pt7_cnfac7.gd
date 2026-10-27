@@ -9,6 +9,8 @@ extends RefCounted
 const H = preload("res://tests/test_machine_g6.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const Transport = preload("res://sim/systems/transport.gd")
+const Movement = preload("res://sim/systems/movement.gd")
+const Air = preload("res://sim/systems/air.gd")
 
 var evs: Array = []
 
@@ -129,12 +131,14 @@ func run(pt) -> void:
 			via = "load_now (the load command did not complete in 30 s)"
 			loaded = Transport.load_now(w, ds, apc)
 		var sq := []
+		var foot := Transport.ramp_pt(Vector2(ds.pos), float(ds.facing), -5.0, 3.0)
 		for i in 8:
-			sq.append(h._unit(w, "rifleman", me, Vector2(ds.pos) + Vector2(-3 + i % 4, 3 + i / 4)))
-		for u in sq:
-			Transport.load_now(w, ds, u)
+			sq.append(int(h._unit(w, "rifleman", me, foot + Vector2(i % 4, i / 4) * 0.7).id))
+		w.submit({"type": "load", "issuer": me, "carrier": int(ds.id), "unit_ids": sq})
+		await pt._wait_until(func(): return (ds.get("cargo", []) as Array).size() >= 9 and not ds.has("bay_seq"), 45.0)
+		mv.join_sim()
 	var bay := (ds.get("cargo", []) as Array).size() if ds != null else 0
-	pt._log("cnfac7_dropship_bay", ds_ok and loaded and bay == 9, "%s, bay entries %d, slung %d" % [via, bay, Transport.slung(ds).size() if ds != null else -1])
+	pt._log("cnfac7_dropship_bay", ds_ok and loaded and bay == 9, "%s (rear ramp), bay entries %d, slung %d" % [via, bay, Transport.slung(ds).size() if ds != null else -1])
 	await pt._wait(0.6)
 	pt._shot("cnfac7_dropship_loaded")
 	# 5. breach -> lockdown
@@ -148,3 +152,173 @@ func run(pt) -> void:
 	mv.center_camera_on(center)
 	await pt._wait(1.0)
 	pt._shot("cnfac7_lockdown")
+	await _ramp_scenes(pt, w, h, me, c)
+
+
+# ---------------------------------------------------------------- CNFAC7-2: C-17-style rear-ramp loading, 5 facings
+const SCENE := [["cn_stealth_dropship", 0], ["a_vtol_dropship", 1], ["cn_stealth_dropship", 2], ["a_vtol_dropship", 4], ["cn_stealth_dropship", 6]]
+const SLOTS := [Vector2(-15, -8), Vector2(0, -8), Vector2(15, -8), Vector2(-8, 9), Vector2(8, 9)]
+
+
+func _zoom(mv, z: float) -> void:
+	var cam = mv.camera
+	if cam == null:
+		return
+	if cam.has_method("set_zoom_level"):
+		cam.set_zoom_level(z)
+	else:
+		cam.zoom = Vector2(z, z)
+
+
+## An open 19 x 19 patch (vehicle-passable) at least 24 tiles from the facility and 20 from the others, or (-1, -1).
+func _open_patch(w: SimWorld, from: Vector2i, taken: Array) -> Vector2i:
+	for rad in range(24, 140, 3):
+		for k in 24:
+			var a := TAU * float(k) / 24.0
+			var cc := from + Vector2i(int(cos(a) * rad), int(sin(a) * rad))
+			var ok := true
+			for t in taken:
+				if Vector2(cc).distance_to(Vector2(t)) < 20.0:
+					ok = false
+			for y in range(cc.y - 9, cc.y + 10):
+				if not ok:
+					break
+				for x in range(cc.x - 9, cc.x + 10):
+					if not w.in_bounds(Vector2i(x, y)) or not Movement.is_passable(w, Vector2i(x, y), "vehicle"):
+						ok = false
+						break
+				if not ok:
+					break
+			if ok:
+				return cc
+	return Vector2i(-1, -1)
+
+
+func _ph(w: SimWorld, id: int) -> String:
+	var e = w.entities.get(id)
+	return String((e.get("bay_seq", {}) as Dictionary).get("ph", "")) if e != null else ""
+
+
+## Pauses, frames every craft at zoom 2 (even slots also at zoom 1 and 3), unpauses.
+func _shoot_all(pt, mv, w: SimWorld, crafts: Array, stage: String, facs: Array = []) -> int:
+	mv.paused = true
+	var drawn := 0
+	for i in crafts.size():
+		var e = w.entities.get(int(crafts[i]))
+		if e == null:
+			continue
+		var zs := [1.0, 2.0, 3.0] if int(facs[i]) % 2 == 0 else [2.0]
+		for z in zs:
+			_zoom(mv, z)
+			mv.center_camera_on(Vector2(e.pos) + Vector2(-0.5, -0.5))
+			await pt._wait(0.35)
+			drawn += int(mv.entity_layer.bay_drawn) if mv.entity_layer != null else 0
+			await pt._shot("cnfac7_ramp_%s_f%d_z%d" % [stage, int(facs[i]), int(z)])
+	_zoom(mv, 1.0)
+	mv.paused = false
+	return drawn
+
+
+func _all_done(w: SimWorld, crafts: Array, want_vehicle: int) -> bool:
+	for id in crafts:
+		var e = w.entities.get(int(id))
+		if e == null or e.has("bay_seq") or int(Transport.group_load(e).vehicle) != want_vehicle:
+			return false
+	return true
+
+
+func _ramp_scenes(pt, w: SimWorld, h, me: int, from: Vector2i) -> void:
+	var mv = pt._mv()
+	mv.join_sim()
+	var sites := []
+	for i in SCENE.size():
+		var p := _open_patch(w, from, sites)
+		if p.x < 0:
+			break
+		sites.append(p)
+	pt._log("cnfac7_ramp_site", sites.size() >= 2, "open patches %s" % str(sites))
+	if sites.size() < 2:
+		return
+	var at0 := 0
+	while at0 < SCENE.size():
+		var idx := []
+		for k in range(at0, mini(at0 + sites.size(), SCENE.size())):
+			idx.append(k)
+		await _ramp_wave(pt, w, h, me, sites, idx)
+		at0 += idx.size()
+
+
+func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
+	var mv = pt._mv()
+	mv.join_sim()
+	var facs := []
+	for k in idx:
+		facs.append(int(SCENE[k][1]))
+	var crafts := []
+	var apcs := []
+	var all_ids := []
+	var ops := ["g7_op_leader", "g7_op_marksman", "g7_op_hunter", "g7_op_medic"]
+	for i in idx.size():
+		var at: Vector2 = Vector2(sites[i]) + Vector2(0.5, 0.5)
+		var f := PI / 4.0 * float(facs[i])
+		var ds: Dictionary = h._unit(w, String(SCENE[int(idx[i])][0]), me, at)
+		ds.facing = f
+		ds.order = {"type": "idle"}
+		Air.land_now(w, ds)
+		var apc: Dictionary = h._unit(w, "g7_cn_strike_apc", me, Transport.ramp_pt(at, f, -8.5, 0.0))
+		apc.facing = f
+		for j in 4:
+			Transport.load_now(w, apc, h._unit(w, "g7_cn_gunner", me, Vector2(apc.pos)))
+		var ids := [int(apc.id)]
+		for j in 8:
+			ids.append(int(h._unit(w, ops[j % 4], me, Transport.ramp_pt(at, f, -7.0 - float(j / 4), 2.4 + float(j % 4) * 0.6)).id))
+		crafts.append(int(ds.id))
+		apcs.append(int(apc.id))
+		all_ids.append(ids)
+	for i in crafts.size():
+		w.submit({"type": "load", "issuer": me, "carrier": int(crafts[i]), "unit_ids": all_ids[i]})
+	var c0 := int(crafts[0])
+	var got: bool = await pt._wait_until(func(): return _ph(w, c0) == "apc_in" and int(w.entities[c0].bay_seq.t1) - w.tick <= 60, 40.0)
+	var d1: int = await _shoot_all(pt, mv, w, crafts, "apcin", facs)
+	var tag := "_f" + "_".join(facs.map(func(x): return str(x)))
+	pt._log("cnfac7_ramp_apc_drives_in" + tag, got and d1 > 0, "bay frames drawn %d" % d1)
+	got = await pt._wait_until(func(): return _ph(w, c0) == "squad_in", 30.0)
+	await pt._wait(1.0)
+	var d2: int = await _shoot_all(pt, mv, w, crafts, "squadin", facs)
+	pt._log("cnfac7_ramp_squad_walks_in" + tag, got and d2 > 0, "bay frames drawn %d" % d2)
+	got = await pt._wait_until(func(): return _all_done(w, crafts, 1), 60.0)
+	mv.join_sim()
+	var full := 0
+	for id in crafts:
+		var g: Dictionary = Transport.group_load(w.entities[int(id)])
+		full += 1 if int(g.vehicle) == 1 and int(g.foot) == 8 else 0
+	pt._log("cnfac7_ramp_all_loaded" + tag, got and full == crafts.size(), "%d of %d craft hold APC + crew + 8 operators" % [full, crafts.size()])
+	await _shoot_all(pt, mv, w, crafts, "closed", facs)
+	for id in crafts:
+		w.submit({"type": "unload_all", "issuer": me, "carrier": int(id)})
+	got = await pt._wait_until(func(): return _ph(w, c0) == "squad_out", 20.0)
+	await pt._wait(0.6)
+	var d3: int = await _shoot_all(pt, mv, w, crafts, "squadout", facs)
+	var got2: bool = await pt._wait_until(func(): return _ph(w, c0) == "apc_out" and int(w.entities[c0].bay_seq.t1) - w.tick <= 70, 40.0)
+	var d4: int = await _shoot_all(pt, mv, w, crafts, "apcout", facs)
+	pt._log("cnfac7_ramp_unload_reverse" + tag, got and got2 and d3 > 0 and d4 > 0, "bay frames drawn %d / %d" % [d3, d4])
+	got = await pt._wait_until(func(): return _all_done(w, crafts, 0), 60.0)
+	mv.join_sim()
+	var behind := 0
+	for i in crafts.size():
+		var e: Dictionary = w.entities[int(crafts[i])]
+		var a = w.entities.get(int(apcs[i]))
+		if a != null and (Vector2(a.pos) - Vector2(e.pos)).dot(Vector2(cos(float(e.facing)), sin(float(e.facing)))) < -2.5:
+			behind += 1
+	pt._log("cnfac7_ramp_unloaded" + tag, got and behind == crafts.size(), "%d APCs out behind the tail" % behind)
+	await pt._wait(1.5)
+	await _shoot_all(pt, mv, w, crafts, "out", facs)
+	mv.join_sim()
+	for i in crafts.size():   # clear the patch for the next wave
+		for id in [int(crafts[i])] + all_ids[i]:
+			var e = w.entities.get(int(id))
+			if e != null:
+				for x in e.get("cargo", []):
+					w.entities.erase(int(x.id))
+				w.entities.erase(int(id))
+	w.cache.clear()

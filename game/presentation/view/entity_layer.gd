@@ -43,6 +43,16 @@ var lod := 0                 # 0 close, 1 mid, 2 far
 var decor_count := 0
 var drawn := 0               # items drawn last frame (perf evidence)
 var _seen_wrecks: Dictionary = {}
+# G7 (CNFAC7-2): C-17-style ramp loading playback (fact art.dropship_sizes rev4) + footprint y-sort (ARTCN7-5 CR seq 1193)
+const BAY_ART := {"cn_stealth_dropship": "g7_cn_stealth_dropship", "a_vtol_dropship": "g7_a_vtol_dropship_xl",
+	"g7_cn_stealth_dropship": "g7_cn_stealth_dropship", "g7_a_vtol_dropship_xl": "g7_a_vtol_dropship_xl"}
+const XL_REMAP := true      # a_vtol_dropship draws as the enlarged g7_a_vtol_dropship_xl (scope 6.9 "upgraded, enlarged")
+const BAY_LANDED := 3       # main-sheet columns: hover flight transition landed ramp_down apc_ramp bay_open squad_in drones
+const BAY_RAMP := 4
+const BAY_OPEN := 6
+const BAY_FILE_FPS := 4.7   # boarding file: one 1.2 m spacing per 4-frame loop at ~1.4 m/s
+const FOOT_U := 2.45        # landed craft footprint half extents (tiles): nose..ramp foot, span incl. fans
+const FOOT_V := 2.1
 const ROOF_CUT_MOD := Color(1.0, 0.96, 0.9, 0.34)  # G7 (LOOK7): building drawn see-through, troops inside shown
 var _ghosts: Dictionary = {}       # remembered-building id -> ghost entity dict
 var _decor: Dictionary = {}        # Vector2i chunk -> Array [pos, page, src, off, ...]
@@ -85,6 +95,8 @@ var g4b_fx_drawn := 0                      # mines + charges drawn from effect a
 var g5_counts: Dictionary = {}             # shadows, lifted, wounded, markers, red_cross, trails, slung, strips, sinking
 var _burnt_src := PackedByteArray()        # last snap.burnt merged into `burnt`
 var _lift := 0.0                           # last _g5_lift result (px)
+var _crafts: Array = []                    # G7 (CNFAC7-2): landed large dropships this frame [pos, facing, depth, id]
+var bay_drawn := 0                         # G7 (CNFAC7-2): ramp-sequence frames drawn last refresh (playtest probe)
 # G6 (VIEW6): height lift table (terrain_layer.lift_px when ELEV-VIEW publishes it, else built from
 # snap.height x terrain_layer.level_px) and last frame's counts (probe / tests)
 var _hlift := PackedFloat32Array()
@@ -453,6 +465,9 @@ func refresh() -> void:
 	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
 	var pframe := Engine.get_process_frames()
+	_bay_crafts(n_u, far, defs, def_a, flg_a, pos_a, fac_a, ids)
+	var has_cr := not _crafts.is_empty()
+	bay_drawn = 0
 	for i in n_u:
 		var id: int = ids[i]
 		if flg_a[i] & RenderSnap.FLAG_ABOARD:
@@ -537,6 +552,14 @@ func refresh() -> void:
 			var isz: Vector2 = (ic[1] as Vector2) * inv_z
 			_push(2, sp.y, art.atlas.page_of(ic[0]), art.atlas.rect_of(ic[0]), sp + (ic[2] as Vector2) * inv_z, isz, _team.get(ow, neutral))
 			continue
+		if XL_REMAP and dname == "a_vtol_dropship":
+			dname = "g7_a_vtol_dropship_xl"  # G7 (CNFAC7-2): the upgraded, enlarged VTOL dropship
+		if BAY_ART.has(dname):
+			var gb = g7u.get(id) if has_g7 else null
+			if not (gb is Dictionary and (gb as Dictionary).has("bay")):
+				gb = {"bay": "closed"} if (fl & RenderSnap.FLAG_LANDED) != 0 else null   # landed, ramp up
+			if gb != null and _push_bay(id, dname, ow, fac_a[i], gb, sp, hl, float(stick) + alpha, t, mod6, neutral):
+				continue
 		# hot path: inline frame choice from the per-id art cache (see BatchArt.resolve_unit)
 		var sq_al: int = int(squad.get(id, 0)) if has_sq else 0
 		var c = ec.get(id)
@@ -704,7 +727,10 @@ func refresh() -> void:
 		if ii >= _page.size():
 			_reserve(ii * 2 + 16)
 		# G6: sort by ground depth (sp.y + height lift) so units on a ridge order correctly against the valley
-		_keys[ii] = layer * LAYER_MUL + (int(sp.y + hl) + Y_OFF) * IDX_MUL + ii
+		var ky := int(sp.y + hl)
+		if has_cr and layer == 0:
+			ky = _craft_y(id, ky) if BAY_ART.has(dname) else bay_sort_y(pos, ky, _crafts)  # G7 (CNFAC7-2, CR seq 1193)
+		_keys[ii] = layer * LAYER_MUL + (ky + Y_OFF) * IDX_MUL + ii
 		var tb61: Vector2 = Vector2(-1, -1) if fi < int(c[35]) else (c[38] as PackedVector2Array)[fi * 8 + row]
 		if tb61.x >= 0.0:
 			# G6.1: anim61 column in the split block B: cropped cell (ANIMC61), mirrored rows drawn with a negative width
@@ -1120,3 +1146,106 @@ static func roof_open_for(ro, pf: int, allies: Array) -> bool:
 		return true
 	var f := int(ro)
 	return f >= 0 and (f == pf or allies.has(f))
+
+
+# ================================================================ G7 (CNFAC7-2): dropship rear-ramp loading
+## Landed large dropships this frame (for the footprint y-sort). Nothing to do in a match without them.
+func _bay_crafts(n_u: int, far: bool, defs: PackedStringArray, def_a: PackedInt32Array, flg_a: PackedInt32Array,
+		pos_a: PackedVector2Array, fac_a: PackedFloat32Array, ids: PackedInt32Array) -> void:
+	_crafts.clear()
+	if far:
+		return
+	var ldi := PackedInt32Array()
+	for di in defs.size():
+		if BAY_ART.has(defs[di]):
+			ldi.append(di)
+	if ldi.is_empty():
+		return
+	for j in n_u:
+		if (flg_a[j] & RenderSnap.FLAG_LANDED) != 0 and ldi.has(def_a[j]):
+			var cp: Vector2 = pos_a[j]
+			_crafts.append([cp, snappedf(fac_a[j], PI / 4.0), int((cp.x + cp.y) * 16.0), ids[j]])
+
+
+func _craft_y(id: int, ky: int) -> int:
+	for cr in _crafts:
+		if int(cr[3]) == id:
+			return int(cr[2])
+	return ky
+
+
+## Sort depth of a ground unit at tile point g (depth ky) against landed large dropships (ARTCN7-5 CR seq 1193).
+## The screen column through g is the ground line g + t (1, 1); if it crosses a craft's footprint anywhere in front of
+## (or at) g, that hull stands between the unit and the camera: the unit is drawn first (hidden by the hull). If the
+## footprint lies only behind g, the unit is drawn after the craft. Units whose column misses the footprint keep ky.
+static func bay_sort_y(g: Vector2, ky: int, crafts: Array) -> int:
+	for cr in crafts:
+		var d: Vector2 = g - (cr[0] as Vector2)
+		if absf(d.x) + absf(d.y) > 7.5:
+			continue
+		var f: float = cr[1]
+		var n := Vector2(cos(f), sin(f))
+		var p := [d.dot(n), d.y * n.x - d.x * n.y]   # u along the nose, v across
+		var dp := [n.x + n.y, n.x - n.y]              # (1, 1) in the craft frame
+		var lim := [FOOT_U, FOOT_V]
+		var t0 := -INF
+		var t1 := INF
+		for ax in 2:
+			if absf(float(dp[ax])) < 0.0001:
+				if absf(float(p[ax])) > float(lim[ax]):
+					t0 = INF
+				continue
+			var a := (-float(lim[ax]) - float(p[ax])) / float(dp[ax])
+			var b := (float(lim[ax]) - float(p[ax])) / float(dp[ax])
+			t0 = maxf(t0, minf(a, b))
+			t1 = minf(t1, maxf(a, b))
+		if t0 > t1:
+			continue
+		var cy: int = cr[2]
+		ky = mini(ky, cy - 1) if t1 > 0.0 else maxi(ky, cy + 1)
+	return ky
+
+
+## Draws a dropship in a ramp sequence from the rev4 sheets: main (landed / ramp_down / bay_open), <id>_apcload
+## (APC drives up the ramp: apc_load_0..5, unload = reverse), <id>_squadload / _squadunload (boarding file loop, only
+## with a vehicle aboard: those sheets show it parked in the bay). False = no sheet (normal drawing goes on).
+func _push_bay(id: int, dname: String, ow: int, facing: float, gb: Dictionary, sp: Vector2, hl: float, tt: float,
+		t: float, mod6: Color, neutral: Color) -> bool:
+	var base: String = BAY_ART[dname]
+	var ph := String(gb.get("bay", ""))
+	var b0 := float(gb.get("b0", 0))
+	var b1 := float(gb.get("b1", 0))
+	var k := clampf((tt - b0) / maxf(b1 - b0, 1.0), 0.0, 0.999)
+	var bv := int(gb.get("bv", 0)) > 0
+	var open_col := BAY_OPEN if bv else BAY_RAMP
+	var sk := 0
+	var col := open_col
+	match ph:
+		"closed":
+			col = BAY_LANDED
+		"ramp_down":
+			col = BAY_LANDED if k < 0.5 else open_col
+		"ramp_up":
+			col = open_col if k < 0.5 else BAY_LANDED
+		"apc_in":
+			sk = 1
+			col = int(k * 6.0)
+		"apc_out":
+			sk = 1
+			col = 5 - int(k * 6.0)
+		"squad_in", "squad_out":
+			if bv:
+				sk = 2 if ph == "squad_in" else 3
+				col = int(t * BAY_FILE_FPS + float(id) * 0.37) % 4
+	var sheet: String = base + ["", "_apcload", "_squadload", "_squadunload"][sk]
+	var pid := -3000000 - id * 4 - sk
+	var c = art._ec.get(pid)
+	if c == null or c[1] != ow or c[0] != sheet:
+		c = art.cache_unit(_proxy(pid, sheet, ow, facing, 0), _team.get(ow, neutral), String(_ck.get(ow, "x")))
+	if int(c[2]) < 0 or col >= int(c[35]):
+		return false
+	var row := posmod(int(round(facing * FACING_INV)), 8)
+	var fsz := Vector2(c[4], c[5])
+	_push(0, float(_craft_y(id, int(sp.y + hl))), int(c[2]), Rect2((c[3] as Vector2) + Vector2(col, row) * fsz, fsz), sp + (c[6] as Vector2), fsz, mod6)
+	bay_drawn += 1
+	return true
