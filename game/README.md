@@ -208,7 +208,7 @@ Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 1
   see and hear), threat units (burrowers, mimics, leeches, cocoons, webs), turret line, squads redrawn at true scale.
 - **Bases:** compact, function-grouped rings, gate / ring / service roads, floodlights and street lights, cameras with
   real sight, auto turrets at gates and corners.
-- **Status (2026-10-27, cut short by the owner's 20-minute limit):** suite 996 pass / 1 fail (a timing probe under load) /
+- **Status (2026-10-27, cut short by the owner's 20-minute limit):** suite 999 pass / 1 fail (a timing probe under load) /
   0 script errors; hash goldens not yet re-baselined; sim 2k is 1.65x G6.1 on a busy PC (gate 1.2x, NOT MET); Last
   Protocol reaches THE TIDE in a forced run without crashing but did not finish within 18 min; packaged build smoke 4 flows,
   2 checks miss (one dropship pair loading, drone strike drop). Full evidence and what's left: PROGRESS.md "G7 Done-when

@@ -40,7 +40,7 @@ G7 is complete (owner).** Wave 1 relaunching on C:.
 ## G7 Done-when evidence (2026-10-27, INTEG7 fast path, ~13:46-14:08 UTC) — DELIVERED, PARTIAL
 Owner, 2026-10-27: "complete in next 15-20 min TOPS no excuses or running over that time". All runs were in parallel on a
 busy PC (up to 18 Godot processes), so no timing number below is an idle-PC number. Raw logs: C:/CODING/integ7_fast/.
-1. Full suite — NOT MET (1 fail, 1 file not run). 125 test files run one per process, 6 lanes (suite/*.log): 996 pass,
+1. Full suite — NOT MET (1 fail, 1 file not run). 126 test files run one per process, 6 lanes (suite/*.log): 999 pass,
    1 fail, 0 SCRIPT ERROR / Parse Error. Fail: test_perf_g6 elevation probe "hook + elevation overhead 9.72 ms/tick at 2k
    <= 5" (timing under load; re-run on an idle PC). test_ui_fit: 308 screens at 7 resolutions, issues=0. test_maps 13/0,
    test_gen61 15/0 (REGRESS7-7 raid fix, 220fa03), test_ai 18/0. test_hot_state NOT RUN: the G7 re-baseline (two capture
