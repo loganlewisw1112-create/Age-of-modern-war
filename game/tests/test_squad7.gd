@@ -536,6 +536,52 @@ func test_company_wedge_in_ranks_and_inside_the_map() -> void:
 	check(float(_nn(slots)[0]) >= 0.5, "no two slots stacked (nn %.2f)" % float(_nn(slots)[0]))
 
 
+## G7 REGRESS7-2 (test_native arena): 30 riflemen + 8 IFVs ordered through a 4-cell gap in a ridge wall to a point
+## 24 tiles beyond it, next to an HQ. The infantry (following the armour) did not fit 3 wedges abreast there and fell
+## to a 30-man file that strung back through the gap: 20 slots and the men on them stopped on the far side of the wall
+## (up to 43 tiles from the click). Now: fewer wedges abreast (ranks) before a file, and no slot across an obstacle
+## from the formation's anchor.
+func test_mixed_group_never_stops_across_a_wall() -> void:
+	var w := _world()
+	var t: PackedByteArray = w.map.terrain
+	var mw := int(w.map.w)
+	for y in range(4, 41):
+		if y < 20 or y > 23:
+			t[y * mw + 47] = Terrain.RIDGE
+			t[y * mw + 48] = Terrain.RIDGE
+	w.map.terrain = t
+	Movement.rebuild_nav(w)
+	w.spawn_building(Content.role("human_a", "hq"), 0, Vector2i(60, 10), true)
+	var ids := []
+	for i in 30:
+		ids.append(w.spawn_unit("rifleman", 0, Vector2(14 + i % 10, 8 + i / 10) + C))
+	for i in 8:
+		ids.append(w.spawn_unit("ifv", 0, Vector2(14 + (i % 6) * 2, 30 + (i / 6) * 2) + C))
+	var goal := Vector2(72.5, 22.5)
+	var slots := _move_ids(w, 0, ids, goal)
+	check_eq(String(w.entities[ids[0]].get("f7_auto", "")), "wedge", "open ground: the default wedge")
+	var west := 0
+	var blocked := 0
+	for s in slots:
+		var p: Vector2 = s
+		if p.x < 49.0:
+			west += 1
+		if not Movement.is_passable(w, Vector2i(floori(p.x), floori(p.y)), "foot"):
+			blocked += 1
+	check_eq(west, 0, "no slot on the far side of the wall")
+	check_eq(blocked, 0, "every slot on open ground")
+	w.run_ticks(800)
+	var stuck := 0
+	var far := 0.0
+	for id in ids:
+		var e: Dictionary = w.entities[id]
+		if Vector2(e.pos).x < 49.0:
+			stuck += 1
+		far = maxf(far, Vector2(e.pos).distance_to(goal))
+	check_eq(stuck, 0, "nobody stopped on the far side of the wall")
+	check(far <= 26.0, "everyone within the formation's footprint of the click (max %.1f tiles)" % far)
+
+
 ## G7 SQUAD7-4: a staggered column on a 1-tile road: both files on road cells (they sat on the cell edges, one man on
 ## the road and his file-mate just off it at the grass pace) and the march keeps its spacing (a pair closed to 0.58
 ## tiles; the uncross pass had also sent a rear man to a front slot through the file).

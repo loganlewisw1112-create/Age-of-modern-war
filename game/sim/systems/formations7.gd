@@ -186,7 +186,8 @@ static func local_one(n: int, form: String, sp: float, stag: float) -> Array:
 ## back" for a platoon, squads of a company in two echelons): G7 SQUAD7-4 found a 60-man default wedge built as 5
 ## wedges abreast, ~70 tiles of front (~100 under the threat spread), so its flank slots clamped onto the map edge and
 ## piled onto the same cells. Returns [pts, roles] in local coords; slot 0 is the overall leader.
-static func local_slots(n: int, form: String, sp: float, stag: float) -> Array:
+## ab_over > 0 overrides chunk_abreast (REGRESS7-2: _group tries fewer groups abreast, more ranks, before a file).
+static func local_slots(n: int, form: String, sp: float, stag: float, ab_over: int = 0) -> Array:
 	var ch := int(cfg().chunk)
 	if n <= ch:
 		return local_one(n, form, sp, stag)
@@ -223,7 +224,7 @@ static func local_slots(n: int, form: String, sp: float, stag: float) -> Array:
 				roles.append(r if (gi == 0 or r != ROLE_LEADER) else ROLE_RIFLE)
 			cur -= float(pt[2]) - float(pt[1]) + gap
 		return [pts, roles]
-	var ab := maxi(1, int(cfg().get("chunk_abreast", 3)))
+	var ab := maxi(1, ab_over if ab_over > 0 else int(cfg().get("chunk_abreast", 3)))
 	var back := 0.0    # depth offset of the current rank of groups (<= 0)
 	var g0 := 0
 	while g0 < parts.size():
@@ -487,13 +488,19 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 	var stag := float(c.stagger_veh if veh else c.stagger_foot) * maxf(mult, 1.0)
 	var f := form
 	var loc := local_slots(m, f, sp, stag)
-	if m > 1 and not COLUMN_FORMS.has(f):
-		var lo := INF
-		var hi := -INF
-		for q in loc[0]:
-			lo = minf(lo, (q as Vector2).x)
-			hi = maxf(hi, (q as Vector2).x)
-		if free_width(w, target, side, veh, pass_fn, (hi - lo) * 0.5 + 1.0) + 0.5 < hi - lo:
+	if m > 1 and not COLUMN_FORMS.has(f) and not _fits(w, loc[0], target, side, veh, pass_fn):
+		# REGRESS7-2: a big group first tries fewer groups abreast (more ranks) before squeezing into one file: a
+		# 30-man file strings ~30 tiles back from the target (test_native: back through a wall gap, stopping on the
+		# far side of the wall).
+		var fitted := false
+		if m > int(c.chunk):
+			for a in range(maxi(1, int(c.get("chunk_abreast", 3))) - 1, 0, -1):
+				var l2 := local_slots(m, f, sp, stag, a)
+				if _fits(w, l2[0], target, side, veh, pass_fn):
+					loc = l2
+					fitted = true
+					break
+		if not fitted:
 			f = "file"                                   # squeeze into file through the gap (reopens next order)
 			loc = local_slots(m, f, sp, stag)
 	var pts := []
@@ -507,6 +514,8 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 		for q in loc[0]:
 			pts.append(_clampv(w, tg + side * (q as Vector2).x + fwd * (q as Vector2).y))
 			heads.append(fwd)
+		if m > 1:
+			_pull_forward(w, pts, tg, fwd, veh, pass_fn)
 	fit(w, pts, veh, fwd, pass_fn, near_fn, m <= 24)
 	var secs := sectors(loc[0], f)
 	var perm := assign(mem, pts, loc[1])
@@ -525,6 +534,65 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 static func is_road(w: SimWorld, p: Vector2) -> bool:
 	var code := w.terrain_at(_cell(p))
 	return code == Terrain.ROAD or code == Terrain.BRIDGE
+
+
+## Does the local layout's front (lateral extent) fit the passable width across `side` at p?
+static func _fits(w: SimWorld, loc: Array, p: Vector2, side: Vector2, veh: bool, pass_fn: Callable) -> bool:
+	var lo := INF
+	var hi := -INF
+	for q in loc:
+		lo = minf(lo, (q as Vector2).x)
+		hi = maxf(hi, (q as Vector2).x)
+	return free_width(w, p, side, veh, pass_fn, (hi - lo) * 0.5 + 1.0) + 0.5 >= hi - lo
+
+
+## REGRESS7-2: a slot behind the formation's anchor a (the leader's slot) never lands across an obstacle from it.
+## If the straight line a -> slot crosses an impassable cell (wall, ridge, building) and the slot itself is on
+## passable ground beyond it, the whole shape moves forward along fwd until every slot behind the anchor is on the
+## anchor's side (at most the shape's own depth; the shape is kept, fit() then de-crowds). Before, a deep shape
+## (a 30-man file, ranks of wedges behind armour) strung back through a wall gap and its rear stopped on the far
+## side of the wall, ~30 tiles from the clicked point. Slots inside an obstacle are left to fit() (near_fn).
+static func _pull_forward(w: SimWorld, pts: Array, a: Vector2, fwd: Vector2, veh: bool, pass_fn: Callable) -> void:
+	if not bool(pass_fn.call(_cell(a), veh)):
+		return
+	var depth := 0.0
+	for p in pts:
+		depth = maxf(depth, (a - (p as Vector2)).dot(fwd))
+	if depth <= 1.0:
+		return
+	var moved := 0.0
+	for it in 3:
+		var need := 0.0
+		for p in pts:
+			var q: Vector2 = p
+			if (a - q).dot(fwd) <= 0.5 or not bool(pass_fn.call(_cell(q), veh)):
+				continue
+			var cut := _cut_at(a, q, veh, pass_fn)
+			if cut < 0.0:
+				continue
+			var b := a + (q - a) * (cut / maxf(a.distance_to(q), 0.001))   # first blocked point on the way back
+			need = maxf(need, (b - q).dot(fwd) + 0.75)
+		need = minf(need, depth - moved)
+		if need <= 0.0:
+			return
+		moved += need
+		for i in pts.size():
+			pts[i] = _clampv(w, (pts[i] as Vector2) + fwd * need)
+
+
+## Distance from a toward b of the first impassable cell (0.5-tile samples), or -1 when the line is clear.
+static func _cut_at(a: Vector2, b: Vector2, veh: bool, pass_fn: Callable) -> float:
+	var d := a.distance_to(b)
+	var s := 0.5
+	var last := _cell(a)
+	while s < d:
+		var c := _cell(a + (b - a) * (s / d))
+		if c != last:
+			last = c
+			if not bool(pass_fn.call(c, veh)):
+				return s
+		s += 0.5
+	return -1.0
 
 
 ## Passable width across `side` through p (tiles), searched out to `half` each way.

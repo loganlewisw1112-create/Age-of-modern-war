@@ -211,11 +211,41 @@ static func tick(w: SimWorld) -> void:
 		_hit_check(w, c, b, float(b.hp), rk)
 		if alive == 1 and float(b.hp) <= float(rk.get("phase2_hp_frac", 0.3)) * float(b.max_hp):
 			_uproot(w, s, c, b, rk)
+	var rre = s.get("react")
+	if rre is Dictionary and not bool(rre.get("fell", false)) and (rre.get("learned", []) as Array).size() < 4:
+		if _machine_fell(w, Creep.machine_fids(w), float(MachineReact7.RR().get("major_hp", 2500.0))):
+			rre.fell = true
 	MachineReact7.learn_step(w, s)
 	if not w.ai_state.is_empty():
 		for fid in Creep.machine_fids(w):
 			if w.ai_state.has(fid) and w.factions[fid].alive:
 				MachineReact7.think(w, fid)
+
+
+## Learned reaction 3 trigger (moved here from sim/ai/machine_react7.gd by REGRESS7-2: an AI file may not read the world
+## event history, AI-02): did a major structure of a Machine side (HQ role, or hp >= major) fall LAST tick, other than
+## a core uprooting itself? Reads last tick's EntityDestroyed events from w.event_log.
+static func _machine_fell(w: SimWorld, mfs: Array, major: float) -> bool:
+	var elog: Array = w.event_log
+	var i := elog.size() - 1
+	while i >= 0:
+		var ev: Dictionary = elog[i]
+		var t := int(ev.get("tick", 0))
+		if t < w.tick - 1:
+			break
+		i -= 1
+		if t != w.tick - 1 or String(ev.type) != "EntityDestroyed" or String(ev.get("kind", "")) != "building":
+			continue
+		if not mfs.has(int(ev.owner)) or String(ev.get("cause", "")) == "core_uprooted":
+			continue
+		var d := Content.building(String(ev.def))
+		var hq := ""
+		var f = w.factions.get(int(ev.owner))
+		if f != null:
+			hq = String(Content.faction(String(f.get("faction_def", ""))).get("roles", {}).get("hq", ""))
+		if float(d.get("hp", 0.0)) >= major or String(ev.def) == hq:
+			return true
+	return false
 
 
 static func _hit_check(w: SimWorld, c: Dictionary, e: Dictionary, hp: float, rk: Dictionary) -> void:

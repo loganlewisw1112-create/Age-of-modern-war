@@ -6,8 +6,8 @@ extends RefCounted
 ##   3 raid_facility after a core or a major structure (HQ role, core, hp >= major_hp) falls;
 ##   4 adapt_routes  late: tick >= late_tick or escalation phase >= late_phase (ambushes on the enemy's habitual routes).
 ## Triggers latch even when an earlier reaction is not learned yet; at most one reaction is learned per tick.
-## learn_step runs every tick from Cores.tick (it reads LAST tick's events from w.event_log, so events emitted after
-## Cores in the system order are seen too); think(w, fid) acts for AI-run Machine sides on a staggered cadence and uses
+## learn_step runs every tick from Cores.tick (Cores latches react.fell from LAST tick's world events, sim-side, so
+## this AI file never reads the event history); think(w, fid) acts for AI-run Machine sides on a staggered cadence and uses
 ## only fog-legal knowledge (visible_enemies, w.memory). State lives in w.sys_state.cores.react.
 
 const Creep = preload("res://sim/systems/creep.gd")
@@ -41,11 +41,8 @@ static func learn_step(w: SimWorld, s: Dictionary) -> void:
 		for site in cs.sites:
 			if not mfs.has(int(site.by)):
 				re.dep = true
-	if not bool(re.get("fell", false)):
-		if int(s.get("lost", 0)) > 0:
-			re.fell = true
-		else:
-			_scan_falls(w, re, mfs, float(rr.get("major_hp", 2500.0)))
+	if not bool(re.get("fell", false)) and int(s.get("lost", 0)) > 0:
+		re.fell = true   # (a major Machine structure falling is latched sim-side by Cores.tick: REGRESS7-2, AI-02 fairness)
 	var nxt := lr.size() + 1
 	var ok := false
 	match nxt:
@@ -58,34 +55,11 @@ static func learn_step(w: SimWorld, s: Dictionary) -> void:
 		w.emit("NetworkAdapted", {"n": nxt, "name": NAMES[nxt], "text": String(rr.get("text", "THE NETWORK HAS ADAPTED"))})
 
 
-static func _scan_falls(w: SimWorld, re: Dictionary, mfs: Array, major: float) -> void:
-	var elog: Array = w.event_log
-	var i := elog.size() - 1
-	while i >= 0:
-		var ev: Dictionary = elog[i]
-		var t := int(ev.get("tick", 0))
-		if t < w.tick - 1:
-			break
-		i -= 1
-		if t != w.tick - 1 or String(ev.type) != "EntityDestroyed" or String(ev.get("kind", "")) != "building":
-			continue
-		if not mfs.has(int(ev.owner)) or String(ev.get("cause", "")) == "core_uprooted":
-			continue
-		var d := Content.building(String(ev.def))
-		var hq := ""
-		var f = w.factions.get(int(ev.owner))
-		if f != null:
-			hq = String(Content.faction(String(f.get("faction_def", ""))).get("roles", {}).get("hq", ""))
-		if float(d.get("hp", 0.0)) >= major or String(ev.def) == hq:
-			re.fell = true
-			return
-
-
 # ================================================================ acting (AI-run Machine sides)
 static func _idle_fighters(w: SimWorld, fid: int, defs: Array = []) -> Array:
 	var out := []
 	for e in SimIndex.units_by_owner(w).get(fid, []):
-		if not w.entities.has(int(e.id)) or String(e.order.get("type", "idle")) != "idle" or e.has("core7"):
+		if not w.entities.has(int(e.id)) or String(e.order.get("type", "idle")) != "idle" or e.has("core7"):   # AI-FAIR: own
 			continue
 		var d := Content.unit(String(e.def))
 		if String(d.get("weapon", "")) == "":
@@ -167,7 +141,7 @@ static func _visible_cn(w: SimWorld, fid: int) -> Array:
 
 
 static func _known_facility(w: SimWorld, fid: int) -> Variant:
-	var mem: Dictionary = w.memory.get(fid, {})
+	var mem: Dictionary = w.memory[fid]
 	var keys := mem.keys()
 	keys.sort()
 	for k in keys:
@@ -217,7 +191,7 @@ static func _waves(w: SimWorld, fid: int, s: Dictionary) -> void:
 	var defs: Array = Content.rules().get("g7_machine", {}).get("wave_units", {}).get(str(int(pi.get("unit_tier", 1))), [])
 	var blds := []
 	for b in SimIndex.of(w, "building"):
-		if int(b.owner) == fid and w.entities.has(int(b.id)):
+		if int(b.owner) == fid and w.entities.has(int(b.id)):   # AI-FAIR: own
 			blds.append(b)
 	if defs.is_empty() or blds.is_empty():
 		return

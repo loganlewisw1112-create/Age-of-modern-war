@@ -290,6 +290,10 @@ func test_forest_infantry_concealed_until_it_fires() -> void:
 	_paint(w, Rect2i(48, 7, 6, 7), Terrain.FOREST)
 	var hid := _spawn(w, "rifleman", 1, Vector2i(50, 10))
 	do_cmd(w, 1, {"type": "hold", "unit_ids": [hid]})
+	# G7 senses (G7_REFERENCE section 2, owner: "a view cone from the head (peripheral vision spots movement only)"):
+	# a soldier spawned facing east (facing 0) cannot see the still bait straight behind him, so he watches the
+	# clearing to the west the bait comes from. The G2 checks below are unchanged.
+	w.entities[hid].facing = PI
 	var recon := _spawn(w, "recon", 0, Vector2i(41, 10))    # 9 tiles away, sight 12
 	for i in 8:
 		w.step()

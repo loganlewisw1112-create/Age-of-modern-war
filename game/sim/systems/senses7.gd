@@ -10,7 +10,7 @@ extends RefCounted
 ##   AI (visible_enemies), Intel and the player's fog/markers all honour the senses through the one existing gate.
 ##   Firing reveals (the G2 muzzle rule, reveal_ticks). Vehicles, aircraft and buildings as TARGETS keep the fog
 ##   grid rule (big, loud: their simple profile is "seen inside sight").
-## - Observers. Infantry: a view cone from the head (e.facing): full range inside cone_deg; peripheral up to
+## - Observers. Infantry: a view cone from the head (head(): e.facing; backwards on an ordered fall-back): full range inside cone_deg; peripheral up to
 ##   periph_deg spots MOVEMENT only (periph_mult range); nothing behind except within `near` (footsteps). Scopes
 ##   (optics_defs / def.optics): optics_deg cone at optics_mult range. Thermals / NVG (thermal_defs, def.thermal,
 ##   def.nvg, e.nvg; aircraft when air_thermal) ignore smoke and darkness. Vehicles / aircraft / buildings: 360
@@ -154,6 +154,32 @@ static func hidden(w: SimWorld, fid: int, e: Dictionary) -> bool:
 		return false
 	var sp = st.spot.get(tkey(w, fid))
 	return sp != null and not sp.has(int(e.id)) and is_inf_target(e)
+
+
+## REGRESS7-2: exact "does a soldier of fid's team see enemy soldier e right now?" for an explicit order's validation
+## (Combat attack). The spot set is refreshed every spot_every ticks and fails closed between passes (a reaction
+## time for what the team NOTICES), but a deliberate attack order on a man one of ours is looking at this tick is not
+## refused for up to 0.8 s (test_perf attack_order_promotes_at_once: "Target not visible." on a rifleman 5 tiles in
+## front of the shooter). Keeps every other rule: fog cell, G2 forest concealment, sniper conceal_still.
+static func seen_now(w: SimWorld, fid: int, e: Dictionary) -> bool:
+	var st = w.sys_state.get("senses7")
+	if st == null or not is_inf_target(e) or bool(e.get("hid", false)):
+		return false
+	var p: Vector2 = e.pos
+	if not SimWorld.Fog.is_visible(w, fid, p):
+		return false
+	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == SimWorld.Fog.FOREST_CODE and not SimWorld.Fog._spotted(w, fid, p):
+		return false
+	var sil := _silhouette(w, e)
+	var mv := bool(e.get("moving", false))
+	var cl := _clouds(w, st)
+	var mr := cf("max_range", 24.0)
+	var uown: Dictionary = SimIndex.units_by_owner(w)
+	for fm in _members(w, tkey(w, fid)):
+		for o: Dictionary in uown.get(fm, []):
+			if Vector2(o.pos).distance_to(p) <= mr and _sees(w, st, o, e, sil, mv, cl):
+				return true
+	return false
 
 
 ## Squad key of a unit: e.squad when in a squad, else -id.
@@ -322,7 +348,7 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 			return false
 	if code == P_INF:
 		var to := (tp - op) / d
-		var cosa := Vector2.from_angle(float(o.get("facing", 0.0))).dot(to)
+		var cosa := Vector2.from_angle(head(w, o)).dot(to)
 		if (pr[2] or bool(o.get("optics", false))) and cosa >= cos(deg_to_rad(cf("optics_deg", 25.0))) and d <= R * cf("optics_mult", 1.6) * s:
 			return true
 		if cosa >= cos(deg_to_rad(cf("cone_deg", 60.0))):
@@ -336,6 +362,26 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 	elif code == P_BLD:
 		m = cf("building_mult", 0.9)
 	return d <= R * s * m
+
+
+## Head heading (radians) of infantry observer o: where the view cone points. Normally the body facing (movement
+## writes it each step, a shot turns it to the target). REGRESS7-2: a soldier on an ordered fall-back (order.bk)
+## "walks backwards facing the enemy" (G7_REFERENCE section 2, Backing off), but his body facing is the direction he
+## walks, so his eyes looked away from the enemy he backs off from and he never fired on the move. On a bk order the
+## head points at his live target, else at the watched heading SquadAI gave him (f7_hd: fall_back sets it back toward
+## the enemy), else back along his path (away from his goal) while he walks.
+static func head(w: SimWorld, o: Dictionary) -> float:
+	var od = o.get("order")
+	if od is Dictionary and bool(od.get("bk", false)):
+		var op: Vector2 = o.pos
+		var t = w.entities.get(int(o.get("target", -1)))
+		if t != null and Vector2(t.pos) != op:
+			return (Vector2(t.pos) - op).angle()
+		if o.has("f7_hd"):
+			return deg_to_rad(float(o.f7_hd))
+		if bool(o.get("moving", false)):
+			return float(o.get("facing", 0.0)) + PI
+	return float(o.get("facing", 0.0))
 
 
 ## Exact one-pair check (tests, targeting change_requests): would observer o spot target t right now? Ignores the
@@ -587,10 +633,23 @@ static func _hear(w: SimWorld, st: Dictionary, tk: int, members: Array, idx: Dic
 	for k in hb:
 		if w.tick - int(hb[k].t) > keep_t:
 			drop.append(k)
+	# REGRESS7-2: a heard shooter the team now SEES is no longer a separate unidentified contact: drop the heard
+	# entry and its Intel contact, so Intel.strength_at does not count the same man twice (sight + "heard").
+	# Before, an advancing company that heard the enemy first believed it twice as strong at contact and broke
+	# contact instead of fixing and flanking (test_officers61 fix_flank / exhausted).
+	for k in hb:
+		var sid := int(hb[k].get("sid", -1))
+		if sid >= 0 and not drop.has(k):
+			var se0 = w.entities.get(sid)
+			if se0 == null or SimWorld.Fog.entity_visible(w, tk, se0):
+				drop.append(k)
 	for k in drop:
 		hb.erase(k)
 		for fm in members:
 			if st.hc.has(fm):
+				var cid = st.hc[fm].get(k)
+				if cid != null and int(cid) != 0:
+					SimWorld.Intel.forget(w, int(fm), int(cid))
 				st.hc[fm].erase(k)
 	var se := maxi(2, int(cf("spot_every", 8)))
 	var maxh := int(cf("max_heard_per_pass", 32))
@@ -629,7 +688,7 @@ static func _hear(w: SimWorld, st: Dictionary, tk: int, members: Array, idx: Dic
 		var kind := "blast" if loud == 2 else "gunfire"
 		var lsq := squad_key(lis) if lis.kind == "unit" else 0
 		hb[cl] = {"pos": guess, "t": w.tick, "err": snappedf(err, 0.01), "dir": snappedf((sp - lp).angle(), 0.001),
-			"dist": snappedf(d, 1.0), "from": lp, "sq": lsq, "fid": int(lis.owner), "kind": kind}
+			"dist": snappedf(d, 1.0), "from": lp, "sq": lsq, "fid": int(lis.owner), "kind": kind, "sid": sid if loud < 2 else -1}
 		var snap = _snap(st, int(lis.owner), lsq)
 		if snap != null:
 			snap.c[-HK + cl] = [guess, w.tick, "heard"]

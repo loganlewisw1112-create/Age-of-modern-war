@@ -92,7 +92,12 @@ func test_group_move_parity_reaches_goal_and_respects_blocks() -> void:
 	for on in _modes():
 		var w := _arena_world(on)
 		var ids := _spawn_group(w, 30, 8)
-		do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal})
+		# cmd.grid: the G1 grid this parity test was built on (it checks the native vs GDScript paths, not the shape).
+		# The G7 default player shape (owner, G7_REFERENCE B20: "wedge and diamond done right ... true spacing",
+		# "never the current bunched clump") spaces 8 IFVs ~3.5 tiles apart (wings ~12-17 tiles out) with the infantry
+		# following the armour, so 38 units cannot all end within 9 tiles; that path is covered by
+		# test_squad7::test_mixed_group_never_stops_across_a_wall.
+		do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal, "grid": true})
 		var bad := []
 		for k in 40:
 			w.run_ticks(20)
@@ -260,7 +265,8 @@ func test_reduced_tier_stride_parity() -> void:
 	for on in _modes():
 		var w := _arena_world(on)
 		var ids := _spawn_group(w, 20, 6)
-		do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal})
+		# cmd.grid: G1 grid premise of this stride test (see test_group_move_parity_reaches_goal_and_respects_blocks).
+		do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal, "grid": true})
 		var bad := []
 		var reduced_seen := 0
 		for k in 40:

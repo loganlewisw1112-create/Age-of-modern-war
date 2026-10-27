@@ -158,7 +158,8 @@ func test_airdrop_supply_pallet() -> void:
 	check_eq(int(w.entities[mortar].ammo), int(Content.unit("a_mortar").get("ammo_max", 0)), "friendly in the 3x3 area rearmed")
 	if fmax > 0.0:
 		check(is_equal_approx(float(w.entities[apc].fuel), fmax), "friendly vehicle in the area refuelled")
-	check_eq(int(w.entities[foe].ammo), 0, "the enemy gets nothing from the pallet")
+	# G7 (REGRESS7-2): the foe can now die in the window (wounds); a dead foe got nothing either (same oracle)
+	check(not w.entities.has(foe) or int(w.entities[foe].ammo) == 0, "the enemy gets nothing from the pallet")
 	check_eq(int(w.entities[outside].ammo), 0, "units outside the 3x3 area get nothing")
 	var left := Mobility.pallets(w)
 	check(left.size() == 1 and int(left[0].ammo) < int(Content.rules().g6_support.mobility.pallet_ammo), "the pallet stock went down")

@@ -1450,7 +1450,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		return "Cannot attack your own forces."
 	if not w.is_enemy(fid, int(t.owner)):
 		return "That is not a valid attack target."
-	if not _seen(w, fid, t):
+	if not _seen(w, fid, t) and not Fog.Senses7.seen_now(w, fid, t):   # REGRESS7-2: exact sight for an explicit order
 		return "Target not visible."
 	var armed := false
 	for id in cmd.get("unit_ids", []):
