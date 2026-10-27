@@ -158,7 +158,9 @@ func test_hmg_deploy_pack() -> void:
 	check(bool(w.entities[hmg].deployed), "deployed")
 	evs = _run(w, 60, ["ShotFired"])
 	check(_count(evs, "ShotFired", "shooter", hmg) > 0, "deployed HMG fires at long range")
-	check(float(w.entities[foe].hp) < 100.0 or not w.entities.has(foe), "HMG hits")
+	# G7 (REGRESS7): same oracle, existence checked first. With G7 hit zones (head kill roll) the foe can now die inside
+	# the 60 ticks, and the old order read w.entities[foe] after its removal (SCRIPT ERROR: Out of bounds get index).
+	check(not w.entities.has(foe) or float(w.entities[foe].hp) < 100.0, "HMG hits")
 	evs = do_cmd(w, 0, {"type": "deploy", "unit_ids": [hmg], "pack": true})
 	check_eq(_count(evs, "Packed", "id", hmg), 1, "Packed")
 	check(not bool(w.entities[hmg].deployed), "packed")

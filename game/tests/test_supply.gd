@@ -61,6 +61,20 @@ func _run(w: SimWorld, n: int, log: Dictionary = {}) -> void:
 
 # ---------------------------------------------------------------- ammo
 func test_shots_consume_ammo_and_empty_cannot_fire() -> void:
+	# G7 (REGRESS7): G7 master scope section 2 "Head: usually killed or knocked unconscious" - a head hit rolls a kill
+	# regardless of hp, so the 100000-hp target (the test's "never dies" setup) died on shot 3. This test is about
+	# ammo accounting, not wounds: plain hp through the existing rule switch g7_wounds.enabled (same pattern as
+	# test_squad61::test_low_hp_member_falls_back), restored below.
+	var wc: Dictionary = SimWorld.Wounds.cfg()
+	var was_on := bool(wc.get("enabled", false))
+	wc["enabled"] = false
+	SimWorld.Wounds._app.clear()
+	_shots_consume_ammo_and_empty_cannot_fire()
+	wc["enabled"] = was_on
+	SimWorld.Wounds._app.clear()
+
+
+func _shots_consume_ammo_and_empty_cannot_fire() -> void:
 	var w := make_world()
 	_empty_stock(w, 0, "ammo")   # no resupply interference near the HQ
 	var shooter := _spawn(w, "rifleman", 0, Vector2(0, 5))

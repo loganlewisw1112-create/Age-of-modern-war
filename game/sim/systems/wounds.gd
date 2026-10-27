@@ -194,6 +194,7 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 			e.wooa = maxi(int(e.get("wooa", 0)), w.tick + ooa)
 			_hold_fire(e, ooa)
 			if bool(zc.get("ko", false)):
+				_ko_hold(w, e)
 				Movement.stop_path(e)
 	HotState.touch(w, int(e.id))
 	if res != "dead":
@@ -203,6 +204,52 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 		vis_mark(w, int(e.id))
 	w.emit("Wound", {"id": int(e.id), "owner": int(e.owner), "zone": zone, "dmg": md, "result": res})
 	return {"zone": zone, "result": res}
+
+
+## G7 (REGRESS7): a torso knock-out is SHORT (G7 master scope section 2: "Torso: bleeding and a short knock-out").
+## The path stops for the knock-out; the destination is kept in sys_state.wounds.ko {id: [resume tick, gx, gy]}
+## and the soldier walks on when it ends (_ko_pass), unless he got a new order / path, went down or broke.
+static func _ko_hold(w: SimWorld, e: Dictionary) -> void:
+	var st := _state(w)
+	if not st.has("ko"):
+		st["ko"] = {}
+	var ko: Dictionary = st.ko
+	var id := int(e.id)
+	var t := int(e.get("wooa", w.tick))
+	if ko.has(id):
+		var k: Array = ko[id]
+		k[0] = maxi(int(k[0]), t)
+		return
+	if not bool(e.get("moving", false)):
+		return
+	var p: Array = e.get("path", [])
+	var goal = null
+	if not p.is_empty():
+		goal = p[p.size() - 1]
+	elif typeof((e.get("order", {}) as Dictionary).get("target")) == TYPE_VECTOR2:
+		goal = e.order.target
+	if typeof(goal) != TYPE_VECTOR2:
+		return
+	ko[id] = [t, snappedf(goal.x, Q), snappedf(goal.y, Q)]
+
+
+## Knocked-out soldiers whose knock-out ended walk on to the destination they had (ascending id).
+static func _ko_pass(w: SimWorld, ko: Dictionary) -> void:
+	var ids: Array = ko.keys()
+	ids.sort()
+	for id in ids:
+		var k: Array = ko[id]
+		if w.tick < int(k[0]):
+			continue
+		ko.erase(id)
+		var e = w.entities.get(id)
+		if e == null or is_down(e) or bool(e.get("moving", false)) or int(e.get("path_req", -1)) >= 0:
+			continue
+		var ot := String((e.get("order", {}) as Dictionary).get("type", "idle"))
+		if ot == "idle" or ot == "hold" or bool(e.get("broken", false)):
+			continue
+		Movement.order_path(w, e, Vector2(float(k[1]), float(k[2])))
+		HotState.touch(w, int(id))
 
 
 static func _hold_fire(e: Dictionary, ticks: int) -> void:
@@ -481,6 +528,8 @@ static func tick(w: SimWorld) -> void:
 		return
 	if st.has("fz") and not (st.fz as Dictionary).is_empty():
 		_freeze_pass(w, st.fz)
+	if st.has("ko") and not (st.ko as Dictionary).is_empty():
+		_ko_pass(w, st.ko)
 	if not (st.bleed as Dictionary).is_empty():
 		_bleed_pass(w, st)
 	if not (st.care as Dictionary).is_empty():

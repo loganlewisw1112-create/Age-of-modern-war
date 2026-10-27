@@ -125,6 +125,21 @@ func test_naval_channel_rule_and_class_nav() -> void:
 
 # ---------------------------------------------------------------- gates
 func test_gate_blocks_enemy_team_lets_owner_through() -> void:
+	# G7 (REGRESS7): the enemy rifleman b (there for the can_reach checks) shoots a from 4 tiles while a walks to the
+	# gate. G7 master scope section 2 "Torso: bleeding and a short knock-out": three torso hits kept a knocked out
+	# (path stopped, 4 s each) for most of the 220 ticks, so the walk-through check measured wounds, not gates.
+	# This test is about gate passability: plain hp through the existing rule switch g7_wounds.enabled (same
+	# pattern as test_squad61::test_low_hp_member_falls_back), restored below.
+	var wc: Dictionary = SimWorld.Wounds.cfg()
+	var was_on := bool(wc.get("enabled", false))
+	wc["enabled"] = false
+	SimWorld.Wounds._app.clear()
+	_gate_blocks_enemy_team_lets_owner_through()
+	wc["enabled"] = was_on
+	SimWorld.Wounds._app.clear()
+
+
+func _gate_blocks_enemy_team_lets_owner_through() -> void:
 	for native_on in _modes():
 		var tag := "native" if native_on else "fallback"
 		var w := _gate_world(native_on)

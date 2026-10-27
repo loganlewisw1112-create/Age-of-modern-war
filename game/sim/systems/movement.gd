@@ -2364,6 +2364,11 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					# blocking enemy wall / gate / tower (Fortify breach). AI sides breach via ai_g4b.
 					if not (breach and Fortify.on_attack_move_blocked(w, e, slot)):
 						e.order = {"type": "idle"}
+				elif breach and not can_reach(w, e, target) and Fortify.on_attack_move_blocked(w, e, target):
+					# G7 (REGRESS7): a G7 formation slot (SQUAD7 real spacing / terrain fit) can land, or snap, on the
+					# near side of the enemy wall that seals the group's target. The unit then breaches like the rest
+					# of the group (G5/G6.1 behaviour with the tight G1 grid) instead of parking outside the wall.
+					stop_path(e)
 			_group_flow = {}
 			_q_size = 1
 		"stop":
