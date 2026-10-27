@@ -1,0 +1,211 @@
+{
+  "files": {
+    "units/g7_a_fpv.png": "1f75259318ea22a8d10f0f1e95d0f46a",
+    "units/g7_a_fpv_mask.png": "81e54a7aa81baf7c158cfd01c299c72f",
+    "units/g7_a_strike_drone.png": "5102076da06d628a4909fd8f7a04286d",
+    "units/g7_a_strike_drone_mask.png": "b02e023d7271ffd0123ad7bb4ff43dc6",
+    "units/g7_b_fpv.png": "5733cc941915ef354a06ee1275158559",
+    "units/g7_b_fpv_mask.png": "81e54a7aa81baf7c158cfd01c299c72f",
+    "units/g7_b_strike_drone.png": "19baafdbbcddb860449f3ecd57a3524f",
+    "units/g7_b_strike_drone_mask.png": "053125812226767e63d35fe01a969dd5",
+    "units/g7_drone_shadow.png": "a92d9943d94b835855f7168d477ef4c1",
+    "wrecks/g7_a_fpv_wreck.png": "f4313299406dd6094913455932c04f44",
+    "wrecks/g7_a_strike_drone_wreck.png": "f4313299406dd6094913455932c04f44",
+    "wrecks/g7_b_fpv_wreck.png": "f4313299406dd6094913455932c04f44",
+    "wrecks/g7_b_strike_drone_wreck.png": "f4313299406dd6094913455932c04f44"
+  },
+  "group": "drone7",
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "g7_a_fpv": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/g7_a_fpv_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
+    },
+    "g7_a_strike_drone": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/g7_a_strike_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
+    },
+    "g7_b_fpv": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/g7_b_fpv_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
+    },
+    "g7_b_strike_drone": {
+      "facings": 8,
+      "fh": 34,
+      "file": "wrecks/g7_b_strike_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38,
+      "pivot": [
+        19,
+        21
+      ]
+    }
+  },
+  "vehicles": {
+    "g7_a_fpv": {
+      "air": true,
+      "altitude": 12,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/g7_a_fpv.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "mask": "units/g7_a_fpv_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/g7_drone_shadow.png",
+        "fw": 13,
+        "pivot": [
+          6,
+          3
+        ]
+      }
+    },
+    "g7_a_strike_drone": {
+      "air": true,
+      "altitude": 16,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/g7_a_strike_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "mask": "units/g7_a_strike_drone_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/g7_drone_shadow.png",
+        "fw": 13,
+        "pivot": [
+          6,
+          3
+        ]
+      }
+    },
+    "g7_b_fpv": {
+      "air": true,
+      "altitude": 12,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/g7_b_fpv.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "mask": "units/g7_b_fpv_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/g7_drone_shadow.png",
+        "fw": 13,
+        "pivot": [
+          6,
+          3
+        ]
+      }
+    },
+    "g7_b_strike_drone": {
+      "air": true,
+      "altitude": 16,
+      "bob": 1,
+      "facings": 8,
+      "fh": 34,
+      "file": "units/g7_b_strike_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "fire",
+        "trail"
+      ],
+      "fw": 38,
+      "mask": "units/g7_b_strike_drone_mask.png",
+      "pivot": [
+        19,
+        21
+      ],
+      "shadow": {
+        "fh": 7,
+        "file": "units/g7_drone_shadow.png",
+        "fw": 13,
+        "pivot": [
+          6,
+          3
+        ]
+      }
+    }
+  },
+  "version": 1
+}

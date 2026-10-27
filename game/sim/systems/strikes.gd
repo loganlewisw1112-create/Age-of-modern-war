@@ -25,6 +25,14 @@ extends RefCounted
 ##   goal, target, phase "fly"|"loiter"|"dive", t}}}.
 ## Events: StrikeLaunched, StrikeImpact, StrikeIntercepted, LoiterLost, LoiterJammed.
 ## Determinism: ascending ids / shot order, w.rng only for the MLRS scatter (fixed draw order), floats snapped.
+## G7 (owner: DRONE7, G7_REFERENCE section 1): player-flown drone munitions.
+##   drop_munition(w, src, at, ticks, weapon): a ballistic drop (kind "drone_drop") queued as a shot; it lands after
+##     `ticks` (CIWS may intercept it like a shell) and resolves through _drone_blast.
+##   detonate(w, src, at, weapon, mult, h): an FPV warhead going off now (mult < 1 for an air burst).
+##   _drone_blast: _impact + DroneBlast {pos, owner, src, kind, surface "ground"|"soldier"|"wall"|"roof"|"air", hits}
+##     + WOUND7 shrapnel through a guarded call (shrapnel.gd `burst(w, pos, profile, src)`, profile = the weapon's
+##     `shrapnel` field; skipped while that API is absent). Surface: air above air_burst_h, else a wall
+##     / roof the point lands on or in, else soldier when an infantry unit was hit, else ground.
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const HotState = preload("res://sim/hot_state.gd")
@@ -35,6 +43,9 @@ const Callins = preload("res://sim/systems/callins.gd")             # MECH6c: JT
 const VER := 1
 const Q := 1.0 / 1024.0
 const KINDS := ["loiter", "mlrs", "mass_driver", "cruise"]
+const DROP_KIND := "drone_drop"   # G7 DRONE7
+const SHRAPNEL_PATH := "res://sim/systems/shrapnel.gd"
+static var _shr = null   # G7: WOUND7 shrapnel script once it exists (guarded call)
 
 static func R() -> Dictionary:
 	return Content.rules().get("g6_machine", {}).get("strikes", {})
@@ -406,6 +417,9 @@ static func _shots_step(w: SimWorld, st: Dictionary) -> void:
 			st.intercepted = int(st.intercepted) + 1
 			w.emit("StrikeIntercepted", {"kind": kind, "owner": int(s.owner), "src": int(s.src), "pos": at, "n": int(s.n)})
 			continue
+		if kind == DROP_KIND:   # G7 DRONE7: drone-dropped munition (blast type + shrapnel)
+			_drone_blast(w, int(s.owner), int(s.src), at, String(s.weapon), 1.0, 0.0, kind)
+			continue
 		var hits := _impact(w, int(s.owner), int(s.src), at, _wpn(String(s.weapon)))
 		w.emit("StrikeImpact", {"kind": kind, "src": int(s.src), "owner": int(s.owner), "pos": at, "hits": hits, "n": int(s.n)})
 	st.shots = keep
@@ -417,3 +431,75 @@ static func _shots_step(w: SimWorld, st: Dictionary) -> void:
 ## emits CiwsIntercept).
 static func _intercepted(w: SimWorld, at: Vector2, fid: int, kind: String) -> bool:
 	return Counterdrone.intercept_strike(w, fid, at, kind)
+
+
+# ================================================================ G7 (DRONE7): drone munitions
+## Queue a drone-dropped munition landing at `at` after `ticks` (StrikeLaunched kind "drone_drop").
+static func drop_munition(w: SimWorld, src: Dictionary, at: Vector2, ticks: int, weapon: String) -> void:
+	_launch_shot(w, src, at, DROP_KIND, maxi(ticks, 1), weapon)
+
+
+## An FPV warhead going off at `at` now; returns the hit count.
+static func detonate(w: SimWorld, src: Dictionary, at: Vector2, weapon: String, mult: float, h: float) -> int:
+	return _drone_blast(w, int(src.owner), int(src.id), _snap(at), weapon, mult, h, "fpv")
+
+
+## Surface a blast at `at` (height h m) shows: "air" | "wall" | "roof" | "soldier" | "ground" (soldier set by caller).
+static func surface_at(w: SimWorld, at: Vector2, h: float, air_h: float) -> String:
+	if h > air_h:
+		return "air"
+	var c := Vector2i(floori(at.x), floori(at.y))
+	for b in SimIndex.of(w, "building"):
+		if not w.entities.has(int(b.id)):
+			continue
+		var o: Vector2i = b.cell
+		var sz := int(b.get("size", 1))
+		if c.x >= o.x - 1 and c.y >= o.y - 1 and c.x <= o.x + sz and c.y <= o.y + sz:
+			var bd := Content.building(String(b.def))
+			if bool(bd.get("wall", false)):
+				return "wall"
+			if c.x >= o.x and c.y >= o.y and c.x < o.x + sz and c.y < o.y + sz:
+				return "roof"
+	return "ground"
+
+
+static func _drone_blast(w: SimWorld, fid: int, src: int, at: Vector2, weapon: String, mult: float, h: float, kind: String) -> int:
+	var s := _wpn(weapon)
+	s.damage = float(s.damage) * mult
+	var air_h := float(Content.rules().get("g7_drones", {}).get("air_burst_h", 6.0))
+	var surface := surface_at(w, at, h, air_h)
+	var soldiers := 0
+	if surface != "air":
+		for t in _ground_targets(w, fid, at, maxf(float(s.splash), 0.05) + 0.3):
+			if t.kind == "unit" and String(Content.unit(String(t.def)).get("armor", "")) == "infantry":
+				soldiers += 1
+	var hits := _impact(w, fid, src, at, s)
+	if surface == "ground" and soldiers > 0:
+		surface = "soldier"
+	var prof := String(Content.weapon(weapon).get("shrapnel", ""))
+	if prof != "":
+		_shrapnel(w, fid, src, at, prof)
+	w.emit("DroneBlast", {"pos": at, "owner": fid, "src": src, "kind": kind, "surface": surface, "hits": hits,
+		"weapon": weapon})
+	return hits
+
+
+## Guarded WOUND7 call (fact shrapnel.burst): Shrapnel.burst(w, pos, profile, src) when shrapnel.gd has it
+## (no-op until then). profile = the weapon's `shrapnel` field ("grenade" | "drone" | "mortar" | "shell").
+static func _shrapnel(w: SimWorld, fid: int, src: int, at: Vector2, profile: String) -> void:
+	if _shr == null:
+		if not ResourceLoader.exists(SHRAPNEL_PATH):
+			return
+		_shr = load(SHRAPNEL_PATH)
+	if _shr == null:
+		return
+	var ok := false
+	for m in _shr.get_script_method_list():
+		if String(m.name) == "burst" and (m.args as Array).size() >= 4:
+			ok = true
+			break
+	if not ok:
+		return
+	var se = w.entities.get(src)
+	var shooter: Dictionary = se if se != null else {"id": src, "owner": fid, "pos": at, "kind": "unit", "def": ""}
+	_shr.call("burst", w, at, profile, shooter)

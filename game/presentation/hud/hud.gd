@@ -28,6 +28,7 @@ const Ui6aHub = preload("res://presentation/ui6/a/ui6a_hub.gd")          # G6 (U
 const TeamsPanel = preload("res://presentation/ui6/teams_panel.gd")      # G6.1 (SQUAD61): Teams panel (F2)
 const CommandLayer = preload("res://presentation/ui6/command_layer/command_layer.gd")  # G6.1 (PLAN61): plans on the map
 const CompanyCard = preload("res://presentation/ui6/a/company_card.gd")
+const DroneInput = preload("res://presentation/hud/drone_input.gd")  # G7 (DRONE7): player-flown drones + drone cam
 const Companies = preload("res://sim/systems/companies.gd")
 const RealismInfo = preload("res://presentation/ui6/realism_info.gd")  # G6.1 (REAL61)
 const Progression = preload("res://sim/systems/progression.gd")       # G6 (UI6a): research_list (side's faction only)
@@ -119,6 +120,10 @@ func setup(match_view: Node, ui_scale: float = 1.0) -> void:
 	layer.root.theme = HT.make_theme()
 	layer.set_ui_scale(ui_scale)
 	_build_ui()
+	var drone_in = DroneInput.new()  # G7 DRONE7 CR hud_drone_input
+	drone_in.name = "DroneInput"
+	add_child(drone_in)
+	drone_in.setup(mv)
 	if mv.has_signal("world_events"):
 		mv.world_events.connect(_on_events)
 		_connected = true
