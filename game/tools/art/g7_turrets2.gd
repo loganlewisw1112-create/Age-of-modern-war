@@ -19,6 +19,8 @@ const GR = preload("res://tools/art/g7_cn_gear.gd")
 const V = preload("res://tools/art/g7_cn_vehicles.gd")
 const FIG = preload("res://tools/art/g7_cn_fig.gd")
 const SO = preload("res://tools/art/g7_cn_soldiers.gd")
+const H = preload("res://tools/art/g6_lib.gd")
+const K = preload("res://tools/art/g5_bld_lib.gd")
 
 const SAND := Color8(160, 142, 104)
 const ARMOR := Color8(98, 106, 84)
@@ -37,8 +39,10 @@ const CAN := Color8(92, 98, 64)
 const GLASS := Color8(70, 120, 140)
 
 
+## Rest heading of rot_<f>: along the building axis (f * 90 deg), so the barrel lies across the screen in a 3/4 view
+## (ART7C: the old f * 90 + 45 pointed every barrel straight at the camera and foreshortened it to a stub).
 static func _yaw(f: int, opt: Dictionary) -> float:
-	return float(opt.aim) * PI / 4.0 if opt.has("aim") else float(f) * PI / 2.0 + PI / 4.0
+	return float(opt.aim) * PI / 4.0 if opt.has("aim") else float(f) * PI / 2.0
 
 
 static func _rc(opt: Dictionary) -> float:
@@ -47,7 +51,7 @@ static func _rc(opt: Dictionary) -> float:
 
 static func _fin(cv, S: Array, o: Vector2, seed: int) -> void:
 	M.shadow(cv, S, o)
-	M.render(cv, S, o, seed)
+	M.render_z(cv, S, o, seed)
 
 
 ## Team ID marking (mask pixels): the thin plate as geometry + a flat team decal on its outer face, painted after
@@ -182,21 +186,34 @@ static func hmg(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	var pt := M.part(S, 0)
 	var dk: Array = C.ramp(DARK)
 	var arm: Array = C.ramp(ARMOR)
-	M.cyl(pt, Tg, Vector3(0.1, 0, 0.45), Vector3(0, 0, 1), 0.06, 0.45, 6, dk)
+	# ART7C: a real twin .50 mount - tripod pintle, a wide angled gun shield with a vision slot, two long barrels
+	# with flash hiders, belts from twin ammo cans: reads as "twin MG behind a shield in a sandbag ring" at zoom 1.
+	for i in 3:   # tripod legs
+		var a := TAU * i / 3.0 + PI
+		var foot := Vector3(0.1 + cos(a) * 0.42, sin(a) * 0.42, 0.02)
+		var top := Vector3(0.1, 0, 0.62)
+		M.cyl(pt, Tg, (foot + top) * 0.5, top - foot, 0.03, (top - foot).length() * 0.5, 4, dk, {"edge": false})
+	M.cyl(pt, Tg, Vector3(0.1, 0, 0.75), Vector3(0, 0, 1), 0.06, 0.15, 6, dk)
 	var Th := M.sub(Tg, Vector3(0.1, 0, 0.92))
 	var rc := _rc(opt) * 0.5
-	M.box(pt, Th, Vector3(0.32, 0, 0.12), Vector3(0.03, 0.4, 0.3), arm)
-	for s in [-1.0, 1.0]:
-		M.box(pt, M.sub(Th, Vector3(0.22, s * 0.5, 0.1), s * 0.6), Vector3.ZERO, Vector3(0.03, 0.14, 0.26), arm)
-	team_patch(pt, Th, Vector3(0.32, 0, 0.44), Vector3(0.035, 0.22, 0.025), arm)
-	M.dline(pt, Th, Vector3(0.36, -0.1, 0.22), Vector3(0.36, 0.1, 0.22), Color8(24, 26, 26), Vector3(1, 0, 0))
-	for s in [-0.08, 0.08]:
-		M.box(pt, Th, Vector3(0.0 - rc, s, 0.18), Vector3(0.26, 0.05, 0.06), dk)
-		var mz := barrel(pt, Th, 0.25, 1.15, s, 0.18, 0.03, rc, DARK, false)
+	M.box(pt, Th, Vector3(0.36, 0, 0.14), Vector3(0.035, 0.46, 0.34), arm, Vector3(0.0, 0.0, 0.08))
+	for s in [-1.0, 1.0]:   # angled wing plates
+		M.box(pt, M.sub(Th, Vector3(0.24, s * 0.58, 0.1), s * 0.55), Vector3.ZERO, Vector3(0.03, 0.16, 0.3), arm)
+	team_patch(pt, Th, Vector3(0.36, 0, 0.42), Vector3(0.04, 0.2, 0.03), arm)
+	M.dline(pt, Th, Vector3(0.4, -0.16, 0.26), Vector3(0.4, 0.16, 0.26), Color8(20, 22, 22), Vector3(1, 0, 0))
+	M.dline(pt, Th, Vector3(0.4, -0.42, -0.18), Vector3(0.4, 0.42, -0.18), C.ca(arm[0], 0.8), Vector3(1, 0, 0))
+	for s in [-0.12, 0.12]:
+		M.box(pt, Th, Vector3(0.05 - rc, s, 0.16), Vector3(0.3, 0.055, 0.07), dk)   # receiver
+		M.box(pt, Th, Vector3(-0.3 - rc, s, 0.2), Vector3(0.05, 0.03, 0.05), dk)   # spade grips
+		M.cyl(pt, Th, Vector3(0.62 - rc, s, 0.16), Vector3(1, 0, 0), 0.07, 0.16, 6, dk, {"edge": false})   # barrel jacket
+		var mz := barrel(pt, Th, 0.7, 1.75, s, 0.16, 0.048, rc, DARK, false)
+		M.cyl(pt, Th, Vector3(1.66 - rc, s, 0.16), Vector3(1, 0, 0), 0.065, 0.07, 6, dk, {"edge": false})   # flash hider
 		if bool(opt.get("fire", false)):
-			flash(S, Th, mz)
-	M.box(pt, Th, Vector3(-0.05, 0.22, 0.08), Vector3(0.12, 0.07, 0.08), C.ramp(CAN))
-	crew(S, Tg, Vector3(-0.55, 0, 0.0), yaw, "crouch")
+			flash(S, Th, mz, 1.2)
+	for s in [-1.0, 1.0]:   # ammo cans + belts
+		M.box(pt, Th, Vector3(-0.05, s * 0.3, 0.02), Vector3(0.13, 0.07, 0.09), C.ramp(CAN))
+		M.dline(pt, Th, Vector3(0.0, s * 0.24, 0.1), Vector3(0.05, s * 0.14, 0.2), Color8(176, 148, 70))
+	crew(S, Tg, Vector3(-0.6, 0, 0.0), yaw, "crouch")
 	_fin(cv, S, o, 41 + f)
 
 
@@ -208,21 +225,33 @@ static func autocannon(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	var yaw := _yaw(f, opt)
 	var S: Array = []
 	pad(S, M.pose(o, float(f) * PI / 2.0), 1.35, 1.35, 0.22, CONC, 2, true)
-	var Tg := M.pose(o, yaw, Vector3(0, 0, 0.44))
-	var pt := M.part(S, 0)
+	# ART7C: a raised remote turret on an armoured pedestal (tallest silhouette of the size-1 guns), wedge turret with
+	# an EO/IR sight head, a long thin 30 mm barrel with a muzzle brake and a side ammo bin.
+	var T0 := M.pose(o, float(f) * PI / 2.0)
+	var pp := M.part(S, 0)
+	var st: Array = C.ramp(STEEL)
+	M.cyl(pp, T0, Vector3(0, 0, 0.9), Vector3(0, 0, 1), 0.42, 0.5, 8, st, {"cap_t": 2}, 0.0, 0.34)   # pedestal
+	M.dline(pp, T0, Vector3(0.38, -0.12, 0.6), Vector3(0.38, 0.12, 0.6), C.ca(st[0], 0.9), Vector3(1, 0, 0))
+	M.dpx(pp, T0, Vector3(0.39, 0, 0.9), GR.LED_G, Vector3(1, 0, 0))
+	M.box(pp, T0, Vector3(-0.7, -0.7, 0.75), Vector3(0.25, 0.2, 0.32), st, Vector3(0.02, 0.02, 0.02))   # power box
+	M.dline(pp, T0, Vector3(-0.45, -0.7, 0.9), Vector3(-0.45, -0.7, 0.6), HAZ, Vector3(1, 0, 0))
+	var Tg := M.pose(o, yaw, Vector3(0, 0, 1.4))
+	var pt := M.part(S, 1)
 	var arm: Array = C.ramp(ARMOR)
 	var dk: Array = C.ramp(DARK)
-	M.cyl(pt, Tg, Vector3(0, 0, 0.12), Vector3(0, 0, 1), 0.75, 0.12, 12, dk, {"cap_t": 1})
-	M.box(pt, Tg, Vector3(-0.05, 0, 0.62), Vector3(0.85, 0.68, 0.38), arm, Vector3(0.45, 0.12, 0.16))
-	team_patch(pt, Tg, Vector3(-0.15, 0, 1.01), Vector3(0.3, 0.3, 0.012), arm)
-	M.dline(pt, Tg, Vector3(-0.6, -0.5, 1.0), Vector3(-0.6, 0.5, 1.0), C.ca(arm[0], 0.9), Vector3(0, 0, 1))
-	M.box(pt, Tg, Vector3(0.1, -0.78, 0.82), Vector3(0.18, 0.1, 0.13), dk)
-	M.dpx(pt, Tg, Vector3(0.29, -0.78, 0.84), GLASS, Vector3(1, 0, 0))
-	M.dpx(pt, Tg, Vector3(0.29, -0.74, 0.86), C.ramp(GLASS)[4], Vector3(1, 0, 0))
+	M.cyl(pt, Tg, Vector3(0, 0, 0.06), Vector3(0, 0, 1), 0.55, 0.06, 10, dk, {"cap_t": 1})
+	M.box(pt, Tg, Vector3(-0.1, 0, 0.42), Vector3(0.75, 0.52, 0.32), arm, Vector3(0.5, 0.1, 0.14))
+	team_patch(pt, Tg, Vector3(-0.3, 0, 0.75), Vector3(0.24, 0.24, 0.012), arm)
+	M.dline(pt, Tg, Vector3(-0.7, -0.4, 0.74), Vector3(-0.7, 0.4, 0.74), C.ca(arm[0], 0.9), Vector3(0, 0, 1))
+	M.box(pt, Tg, Vector3(0.05, -0.36, 0.95), Vector3(0.16, 0.12, 0.13), dk)   # sight head
+	M.dpx(pt, Tg, Vector3(0.22, -0.39, 0.97), GLASS, Vector3(1, 0, 0))
+	M.dpx(pt, Tg, Vector3(0.22, -0.33, 0.97), C.ramp(GLASS)[4], Vector3(1, 0, 0))
 	var rc := _rc(opt)
-	M.box(pt, Tg, Vector3(0.82, 0, 0.62), Vector3(0.14, 0.2, 0.17), arm)
-	var mz := barrel(pt, Tg, 0.9, 2.9, 0, 0.62, 0.06, rc)
-	M.box(pt, Tg, Vector3(-0.55, 0.62, 0.45), Vector3(0.25, 0.08, 0.16), C.ramp(CAN))
+	M.box(pt, Tg, Vector3(0.7, 0, 0.42), Vector3(0.12, 0.17, 0.15), arm)   # mantlet
+	M.cyl(pt, Tg, Vector3(1.15 - rc, 0, 0.42), Vector3(1, 0, 0), 0.085, 0.35, 6, dk, {"edge": false})   # recoil sleeve
+	var mz := barrel(pt, Tg, 1.4, 3.6, 0, 0.42, 0.05, rc)
+	M.box(pt, Tg, Vector3(-0.35, 0.62, 0.36), Vector3(0.3, 0.1, 0.2), C.ramp(CAN))   # ammo bin
+	M.dline(pt, Tg, Vector3(0.0, 0.55, 0.45), Vector3(0.55, 0.15, 0.45), Color8(176, 148, 70))
 	if bool(opt.get("fire", false)):
 		flash(S, Tg, mz, 1.4)
 	_fin(cv, S, o, 43 + f)
@@ -239,29 +268,41 @@ static func hulldown(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	var T0 := M.pose(o, by)
 	var dirt: Array = C.ramp(DIRT)
 	var conc: Array = C.ramp(CONC)
-	for s in [-1.0, 1.0]:   # side berms
-		var pb := M.part(S, -1)
-		M.box(pb, T0, Vector3(-0.2, s * 2.85, 0.5), Vector3(2.4, 0.8, 0.5), dirt, Vector3(0.5, 0.5, 0.55))
-	var pf := M.part(S, 0)   # front berm (the hull hides behind it)
-	M.box(pf, T0, Vector3(2.75, 0, 0.6), Vector3(0.8, 3.4, 0.6), dirt, Vector3(0.6, 0.25, 0.25))
-	for i in 7:
-		M.dpx(pf, T0, Vector3(2.4 + 0.3 * P.hn(i, f, 3), -3.0 + i, 1.05), C.ramp(Color8(96, 110, 60))[2 + i % 2], Vector3(0, 0, 1))
-	var pr := M.part(S, -1)   # rear revetment + hull deck
-	M.box(pr, T0, Vector3(-2.9, 0, 0.45), Vector3(0.18, 2.4, 0.45), conc)
-	M.box(pr, T0, Vector3(0, 0, 0.35), Vector3(2.6, 1.7, 0.35), C.ramp(ARMOR_D), Vector3(0.3, 0.2, 0.1))
-	var Tg := M.pose(o, yaw, Vector3(0, 0, 0.7))
+	# ART7C: no more open "sandbox" pit. A round earth mound (sloped frustum, grass and stones) carries a buried
+	# octagonal concrete casemate collar; a low wedge tank turret sits in the collar with the longest barrel of the
+	# turret line (120 mm, 5.2 m, bore evacuator + muzzle brake): the main-gun silhouette nothing else shares.
+	var pb := M.part(S, -1)
+	M.cyl(pb, T0, Vector3(0, 0, 0.45), Vector3(0, 0, 1), 3.55, 0.45, 16, dirt, {"cap_t": 2}, PI / 16.0, 2.75)
+	for i in 22:   # grass tufts + stones on the mound
+		var a := TAU * P.hn(i, f, 3)
+		var r := 2.85 + 0.6 * P.hn(i, f, 5)
+		var z := 0.9 - (r - 2.75) * 1.1
+		M.dpx(pb, T0, Vector3(cos(a) * r, sin(a) * r, z), C.ramp(Color8(96, 110, 60))[1 + i % 3] if i % 4 != 0 else C.ramp(Color8(120, 116, 104))[3])
+	var pc := M.part(S, 0)
+	M.cyl(pc, T0, Vector3(0, 0, 1.0), Vector3(0, 0, 1), 2.45, 0.12, 8, conc, {"cap_t": 2}, PI / 8.0, 2.25)   # collar
+	M.cyl(pc, T0, Vector3(0, 0, 1.13), Vector3(0, 0, 1), 1.85, 0.02, 12, C.ramp(Color8(52, 54, 52)), {"cap_t": 0})
+	for i in 8:
+		var a := TAU * (i + 0.5) / 8.0
+		M.dpx(pc, T0, Vector3(cos(a) * 2.3, sin(a) * 2.3, 1.12), C.ramp(CONC)[1], Vector3(0, 0, 1))
+	var Tg := M.pose(o, yaw, Vector3(0, 0, 1.12))
 	var pt := M.part(S, 1)
 	var arm: Array = C.ramp(ARMOR)
-	M.box(pt, Tg, Vector3(-0.2, 0, 0.42), Vector3(1.6, 1.25, 0.42), arm, Vector3(0.9, 0.25, 0.25))
-	M.box(pt, Tg, Vector3(-1.35, 0, 0.45), Vector3(0.45, 1.0, 0.32), arm, Vector3(0, 0.15, 0.1))   # bustle
-	team_patch(pt, Tg, Vector3(-0.6, 0.0, 0.85), Vector3(0.45, 0.45, 0.012), arm)
-	M.cyl(pt, Tg, Vector3(-0.35, 0.5, 0.95), Vector3(0, 0, 1), 0.28, 0.12, 8, arm, {"cap_t": 3})
-	M.box(pt, Tg, Vector3(-0.1, -0.6, 0.95), Vector3(0.2, 0.14, 0.14), C.ramp(DARK))
-	M.dpx(pt, Tg, Vector3(0.1, -0.6, 0.97), GLASS, Vector3(1, 0, 0))
-	M.box(pt, Tg, Vector3(1.35, 0, 0.45), Vector3(0.18, 0.4, 0.25), arm)   # mantlet
+	M.cyl(pt, Tg, Vector3(0, 0, 0.08), Vector3(0, 0, 1), 1.6, 0.08, 12, C.ramp(ARMOR_D), {"cap_t": 1})   # turret ring
+	M.box(pt, Tg, Vector3(-0.15, 0, 0.45), Vector3(1.55, 1.3, 0.35), arm, Vector3(1.0, 0.2, 0.3))
+	M.box(pt, Tg, Vector3(-1.55, 0, 0.45), Vector3(0.45, 1.05, 0.28), arm, Vector3(0.0, 0.2, 0.12))   # bustle
+	for i in 3:   # bustle rack
+		M.dline(pt, Tg, Vector3(-2.02, -0.9 + i * 0.9, 0.2), Vector3(-2.02, -0.9 + i * 0.9, 0.7), C.ca(arm[0], 1.0), Vector3(-1, 0, 0))
+	team_patch(pt, Tg, Vector3(-0.7, 0.0, 0.81), Vector3(0.42, 0.42, 0.012), arm)
+	M.cyl(pt, Tg, Vector3(-0.3, 0.55, 0.88), Vector3(0, 0, 1), 0.3, 0.08, 8, arm, {"cap_t": 3})   # hatch
+	M.box(pt, Tg, Vector3(0.0, -0.62, 0.95), Vector3(0.22, 0.16, 0.16), C.ramp(DARK))   # sight
+	M.dpx(pt, Tg, Vector3(0.23, -0.62, 0.97), GLASS, Vector3(1, 0, 0))
+	M.dpx(pt, Tg, Vector3(0.23, -0.56, 0.99), C.ramp(GLASS)[4], Vector3(1, 0, 0))
+	M.cyl(pt, Tg, Vector3(-1.2, -0.75, 1.3), Vector3(0, 0, 1), 0.02, 0.55, 4, C.ramp(DARK), {"edge": false})   # antenna
+	M.box(pt, Tg, Vector3(1.4, 0, 0.45), Vector3(0.2, 0.45, 0.27), arm, Vector3(0.1, 0.0, 0.06))   # mantlet
 	var rc := _rc(opt) * 1.5
-	var mz := barrel(pt, Tg, 1.5, 6.0, 0, 0.45, 0.1, rc, ARMOR_D)
-	M.cyl(pt, Tg, Vector3(3.2 - rc, 0, 0.45), Vector3(1, 0, 0), 0.16, 0.35, 8, arm, {"edge": false})   # fume extractor
+	var mz := barrel(pt, Tg, 1.5, 6.7, 0, 0.45, 0.1, rc, ARMOR_D)
+	M.cyl(pt, Tg, Vector3(3.6 - rc, 0, 0.45), Vector3(1, 0, 0), 0.16, 0.35, 8, arm, {"edge": false})   # bore evacuator
+	M.dline(pt, Tg, Vector3(2.0 - rc, 0, 0.56), Vector3(5.8 - rc, 0, 0.56), C.ca(C.ramp(ARMOR_D)[4], 0.5))
 	if bool(opt.get("fire", false)):
 		flash(S, Tg, mz, 2.2)
 	_fin(cv, S, o, 47 + f)
@@ -287,13 +328,14 @@ static func mortar(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	team_patch(pt, Tg, Vector3(-0.5, 0, 0.91), Vector3(0.35, 0.35, 0.012), arm)
 	var rc := _rc(opt)
 	for s in [-0.38, 0.38]:
-		var Tt := M.sub(Tg, Vector3(0.1, s, 0.95), 0.0, 0.95)
+		var Tt := M.sub(Tg, Vector3(0.1, s, 0.95), 0.0, 1.05)   # ART7C: 60 deg, fatter + longer 120 mm tubes
 		var pp := M.part(S, 1)
-		M.box(pp, Tt, Vector3(-0.1, 0, 0), Vector3(0.25, 0.2, 0.18), arm)
-		M.cyl(pp, Tt, Vector3(1.0 - rc, 0, 0), Vector3(1, 0, 0), 0.11, 1.1, 8, dk, {"edge": false})
-		M.cyl(pp, Tt, Vector3(2.05 - rc, 0, 0), Vector3(1, 0, 0), 0.13, 0.06, 8, dk)
+		M.box(pp, Tt, Vector3(-0.1, 0, 0), Vector3(0.28, 0.22, 0.2), arm)
+		M.cyl(pp, Tt, Vector3(1.05 - rc, 0, 0), Vector3(1, 0, 0), 0.13, 1.15, 8, dk, {"edge": false})
+		M.cyl(pp, Tt, Vector3(0.55 - rc, 0, 0), Vector3(1, 0, 0), 0.17, 0.12, 8, arm, {"edge": false})   # recoil collar
+		M.cyl(pp, Tt, Vector3(2.15 - rc, 0, 0), Vector3(1, 0, 0), 0.16, 0.07, 8, dk)
 		if bool(opt.get("fire", false)):
-			flash(S, Tt, Vector3(2.15 - rc, 0, 0), 1.8)
+			flash(S, Tt, Vector3(2.3 - rc, 0, 0), 1.8)
 	for i in 3:   # ammo crates
 		var pc := M.part(S, 0)
 		M.box(pc, T0, Vector3(-1.6 + i * 0.1, -1.4 + i * 0.6, 0.15), Vector3(0.3, 0.22, 0.15), C.ramp(CAN))
@@ -374,21 +416,34 @@ static func thermite(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 		M.dline(pt, Tg, Vector3(-0.97, s * 0.28, 0.5), Vector3(-0.97, s * 0.28, 0.8), HAZ, Vector3(-1, 0, 0))
 	M.cyl(pt, Tg, Vector3(-0.3, 0, 0.98), Vector3(1, 0, 0), 0.04, 0.45, 4, C.ramp(CABLE), {"edge": false})
 	var rc := _rc(opt) * 0.5
-	var mz := barrel(pt, Tg, 0.6, 1.75, 0, 0.6, 0.09, rc, STEEL)
+	var mz := barrel(pt, Tg, 0.6, 2.1, 0, 0.6, 0.08, rc, STEEL)
 	M.cyl(pt, Tg, Vector3(1.0 - rc, 0, 0.6), Vector3(1, 0, 0), 0.13, 0.25, 8, dk, {"edge": false})
+	M.cyl(pt, Tg, Vector3(2.12 - rc, 0, 0.6), Vector3(1, 0, 0), 0.12, 0.05, 8, dk, {"edge": false})   # nozzle cowl
+	M.dpx(pt, Tg, Vector3(2.0 - rc, 0, 0.72), Color8(120, 200, 255))   # pilot light
 	if bool(opt.get("fire", false)):
-		var a := M.wm(Tg, mz)
-		var b := M.wm(Tg, mz + Vector3(5.5, 0, -0.6))
-		M.sprite(S, b, func(cv2):
-			var p0 := M.scr_w(o, a)
-			var p1 := M.scr_w(o, b)
-			for i in 18:   # molten stream arcing down, white-hot core, sparks
-				var t := float(i) / 17.0
-				var p := p0.lerp(p1, t) + Vector2(0, -sin(t * PI) * 5.0)
-				C.blob(cv2, p, 0.9 + t * 1.4, [Color8(120, 30, 10), GR.THERM, GR.THERM, GR.FLASH_O, GR.FLASH])
-				if i % 3 == 0:
+		# ART7C: a long ballistic stream (7 m, was 5.5 m and clipped by the cell) in a true 3D arc: rises off the nozzle,
+		# falls onto the approach and splashes into a burning pool; drawn on the widened thermite canvas.
+		var pts: Array = []
+		for i in 25:
+			var t := float(i) / 24.0
+			pts.append(M.wm(Tg, mz + Vector3(7.0 * t, 0, 0.55 * sin(t * PI * 0.8) - mz.z * t * t)))
+		var end: Vector3 = M.wm(Tg, mz + Vector3(7.1, 0, -mz.z))
+		M.sprite(S, end, func(cv2):
+			var ep := M.scr_w(o, end)
+			for j in 9:   # burning pool + smoke on the impact point
+				C.blob(cv2, ep + Vector2(sin(j * 2.1) * 5.0, cos(j * 1.7) * 2.0), 1.6 + 0.3 * (j % 3), [Color8(120, 30, 10), GR.THERM, GR.THERM, GR.FLASH_O, GR.FLASH])
+			C.blob(cv2, ep + Vector2(-1, -7), 3.0, C.ramp(Color8(70, 66, 60)))
+			C.blob(cv2, ep + Vector2(3, -12), 2.4, C.ramp(Color8(96, 92, 86)))
+			for i in pts.size() - 1:   # molten stream, thickening and breaking up as it falls, white-hot core
+				var t := float(i) / float(pts.size() - 1)
+				var p := M.scr_w(o, pts[i])
+				var q := M.scr_w(o, pts[i + 1])
+				C.blob(cv2, p, 0.7 + t * 1.3, [Color8(120, 30, 10), GR.THERM, GR.THERM, GR.FLASH_O, GR.FLASH])
+				if t < 0.75:
+					cv2.line_v(p, q, GR.FLASH)
+				if i % 3 == 1:
 					cv2.px(int(p.x + sin(i * 2.1) * 3.0), int(p.y - 2.0 - cos(i * 1.3) * 2.0), GR.FLASH)
-			C.blob(cv2, p1, 3.0, [Color8(120, 30, 10), GR.THERM, GR.FLASH_O, GR.FLASH, Color(1, 1, 0.9)]), 4.0)
+			C.blob(cv2, M.scr_w(o, pts[0]), 1.8, [GR.THERM, GR.FLASH_O, GR.FLASH, GR.FLASH, Color(1, 1, 0.9)]), 4.0)
 	crew(S, Tg, Vector3(-0.7, 0.75, 0.0), yaw, "crouch")
 	_fin(cv, S, o, 61 + f)
 
@@ -407,21 +462,31 @@ static func microwave(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	M.box(pg, T0, Vector3(-0.8, 0.6, 0.65), Vector3(0.38, 0.5, 0.3), C.ramp(STEEL), Vector3(0.03, 0.03, 0.03))
 	M.cyl(pg, T0, Vector3(-0.95, 0.85, 1.15), Vector3(0, 0, 1), 0.07, 0.25, 6, C.ramp(DARK))
 	team_patch(pg, T0, Vector3(-0.8, 0.6, 0.96), Vector3(0.2, 0.25, 0.012), C.ramp(STEEL))
+	# ART7C: a big tilted phased-array face (1.8 x 1.4 m) in a heavy yoke on a turntable, with a back frame and
+	# cooling fins: the only "flat panel" silhouette of the line, readable from the back too.
 	var Tg := M.pose(o, yaw)
 	var pt := M.part(S, 1)
 	var arm: Array = C.ramp(ARMOR)
-	M.cyl(pt, Tg, Vector3(0.1, 0, 0.75), Vector3(0, 0, 1), 0.2, 0.4, 8, C.ramp(DARK))
+	M.cyl(pt, Tg, Vector3(0.0, 0, 0.45), Vector3(0, 0, 1), 0.55, 0.1, 10, C.ramp(DARK), {"cap_t": 1})   # turntable
+	M.cyl(pt, Tg, Vector3(0.0, 0, 0.85), Vector3(0, 0, 1), 0.22, 0.32, 8, C.ramp(DARK))
 	for s in [-1.0, 1.0]:
-		M.box(pt, Tg, Vector3(0.1, s * 0.8, 1.35), Vector3(0.1, 0.06, 0.35), arm)
-	var Tp := M.sub(Tg, Vector3(0.25, 0, 1.5), 0.0, 0.25)
+		M.box(pt, Tg, Vector3(0.0, s * 1.02, 1.3), Vector3(0.12, 0.07, 0.5), arm, Vector3(0.04, 0.04, 0.0))
+		M.cyl(pt, Tg, Vector3(0.0, s * 0.98, 1.65), Vector3(0, 1, 0), 0.12, 0.06, 8, C.ramp(DARK))
+	M.box(pt, Tg, Vector3(0.0, 0, 0.85), Vector3(0.1, 0.95, 0.06), arm)   # yoke cross-beam
+	var Tp := M.sub(Tg, Vector3(0.1, 0, 1.65), 0.0, 0.32)
 	var pp := M.part(S, 1)
 	var pn: Array = C.ramp(Color8(112, 118, 104))
-	M.box(pp, Tp, Vector3(0, 0, 0), Vector3(0.1, 0.75, 0.6), pn)
-	for i in 5:   # emitter tiles on the face
-		for j in 4:
-			var c := Vector3(0.11, -0.6 + i * 0.3, -0.45 + j * 0.3)
-			M.dpx(pp, Tp, c, MW if fire and (i + j) % 2 == 0 else C.ramp(Color8(150, 140, 110))[3], Vector3(1, 0, 0))
-	M.dline(pp, Tp, Vector3(0.11, -0.74, 0.0), Vector3(0.11, 0.74, 0.0), C.ca(pn[0], 0.9), Vector3(1, 0, 0))
+	M.box(pp, Tp, Vector3(0, 0, 0), Vector3(0.12, 0.9, 0.7), pn, Vector3(0.0, 0.0, 0.0))
+	M.box(pp, Tp, Vector3(-0.22, 0, 0), Vector3(0.1, 0.55, 0.45), arm)   # back frame / electronics
+	for i in 5:   # cooling fins on the back
+		M.dline(pp, Tp, Vector3(-0.33, -0.45 + i * 0.22, -0.35), Vector3(-0.33, -0.45 + i * 0.22, 0.35), C.ca(arm[0], 1.0), Vector3(-1, 0, 0))
+	for i in 7:   # emitter tile grid on the face
+		for j in 5:
+			var c := Vector3(0.125, -0.78 + i * 0.26, -0.56 + j * 0.28)
+			M.dpx(pp, Tp, c, MW if fire and (i + j) % 2 == 0 else C.ramp(Color8(150, 140, 110))[3 if (i + j) % 2 == 0 else 2], Vector3(1, 0, 0))
+	M.dline(pp, Tp, Vector3(0.125, -0.88, 0.68), Vector3(0.125, 0.88, 0.68), C.ca(pn[4], 0.8), Vector3(1, 0, 0))
+	M.dline(pp, Tp, Vector3(0.125, -0.88, -0.68), Vector3(0.125, 0.88, -0.68), C.ca(pn[0], 0.9), Vector3(1, 0, 0))
+	M.dline(pp, Tp, Vector3(-0.12, -0.88, 0.0), Vector3(-0.12, 0.88, 0.0), HAZ, Vector3(-1, 0, 0))
 	if fire:
 		var a := M.wm(Tp, Vector3(0.2, 0, 0))
 		var d := M.wdir(Tp, Vector3(1, 0, 0))
@@ -449,7 +514,11 @@ static func rail(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	pad(S, T0, 3.3, 3.3, 0.24, CONC, 4, true)
 	var arm: Array = C.ramp(ARMOR)
 	var pc := M.part(S, 0)   # sloped casemate
-	M.box(pc, M.sub(T0, Vector3.ZERO, PI / 4.0), Vector3(0, 0, 0.85), Vector3(1.9, 1.9, 0.38), arm, Vector3(0.35, 0.35, 0.35))
+	M.box(pc, T0, Vector3(0, 0, 0.85), Vector3(1.9, 1.9, 0.38), arm, Vector3(0.45, 0.45, 0.45))   # ART7C: axis-aligned glacis
+	for i in 3:
+		M.dline(pc, T0, Vector3(1.75, -1.2 + i * 1.2, 0.55), Vector3(1.55, -1.2 + i * 1.2, 1.15), C.ca(arm[0], 0.9), Vector3(1, 0, 0.6))
+		M.dline(pc, T0, Vector3(-1.2 + i * 1.2, 1.75, 0.55), Vector3(-1.2 + i * 1.2, 1.55, 1.15), C.ca(arm[0], 0.9), Vector3(0, 1, 0.6))
+	M.dline(pc, T0, Vector3(1.88, -1.7, 0.52), Vector3(1.88, 1.7, 0.52), HAZ, Vector3(1, 0, 0))
 	for s in [-1.0, 1.0]:   # capacitor banks + power trunk
 		var pk := M.part(S, 0)
 		var cap: Array = C.ramp(Color8(80, 86, 92))
@@ -494,15 +563,17 @@ static func rail(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 
 
 # ------------------------------------------------------------------ build + generator
+## [id, size, top, drawer, extras, [extra px each side, extra px below]] - ART7C: the long-reach guns get a wider
+## canvas so a barrel or the thermite stream aimed across the screen is never clipped at the cell edge.
 const SPECS := [
-	["a_t7_hmg_nest", 1, 30, "hmg", []],
-	["a_t7_autocannon", 1, 30, "autocannon", []],
-	["a_t7_hulldown", 2, 34, "hulldown", []],
-	["a_t7_automortar", 2, 40, "mortar", []],
-	["a_t7_emp", 1, 40, "emp", [["charge_0", {"charge": 0}], ["charge_1", {"charge": 1}]]],
-	["a_t7_thermite", 1, 30, "thermite", []],
-	["a_t7_microwave", 1, 34, "microwave", []],
-	["a_t7_railgun", 2, 40, "rail", [["charge_0", {"charge": 0}], ["charge_1", {"charge": 1}]]],
+	["a_t7_hmg_nest", 1, 30, "hmg", [], [6, 0]],
+	["a_t7_autocannon", 1, 36, "autocannon", [], [10, 6]],
+	["a_t7_hulldown", 2, 34, "hulldown", [], [18, 10]],
+	["a_t7_automortar", 2, 44, "mortar", [], [0, 0]],
+	["a_t7_emp", 1, 40, "emp", [["charge_0", {"charge": 0}], ["charge_1", {"charge": 1}]], [0, 0]],
+	["a_t7_thermite", 1, 36, "thermite", [], [44, 24]],
+	["a_t7_microwave", 1, 40, "microwave", [], [0, 0]],
+	["a_t7_railgun", 2, 40, "rail", [["charge_0", {"charge": 0}], ["charge_1", {"charge": 1}]], [6, 4]],
 ]
 
 
@@ -525,6 +596,56 @@ static func _draw(nm: String) -> Callable:
 	return func(cv, o, f, opt): rail(cv, o, f, opt)
 
 
+## C.bld (same states, rot schema, bytes accounting and DL7 g7 block) on a canvas widened by pad = [px each
+## side, px below]; the pivot moves with it and is recorded in the manifest, so the catalog places it unchanged.
+static func _cv(size: int, top: int, pad: Array) -> Array:
+	var w := size * 64 + 12 + 2 * int(pad[0])
+	var o := Vector2(w / 2, top + size * 16)
+	return [P.Canvas.new(w, int(o.y) + size * 16 + 6 + int(pad[1])), o]
+
+
+static func bldx(out: Dictionary, id: String, size: int, top: int, pad: Array, draw: Callable, extra: Array, g7x: Dictionary) -> void:
+	var man: Dictionary = out.manifest.get("buildings", {})
+	var co0: Array = _cv(size, top, pad)
+	var o: Vector2 = co0[1]
+	var entry := {"size": size, "pivot": [int(o.x), int(o.y)], "fw": int(co0[0].w), "fh": int(co0[0].h),
+		"states": {}, "g6": {"variants": "rot", "faction": id.substr(0, 1)}}
+	var seed := 7100 + absi(id.hash()) % 7919
+	var bytes := 0
+	for f in 4:
+		var cv = _cv(size, top, pad)[0]
+		draw.call(cv, o, f, {})
+		var base = H.copy(cv)
+		C.selout(cv)
+		bytes += C._bput(out, entry, id, "rot_%d" % f, cv)
+		var cf = _cv(size, top, pad)[0]
+		draw.call(cf, o, f, {"fire": true})
+		C.selout(cf)
+		if (cf.img as Image).get_data() != (cv.img as Image).get_data():
+			bytes += C._bput(out, entry, id, "rot_%d_fire" % f, cf)
+		var dm = H.copy(base)
+		K.damage(dm, o, size, seed + f * 13)
+		C.selout(dm)
+		bytes += C._bput(out, entry, id, "rot_%d_damaged" % f, dm)
+		for st in 3:
+			bytes += C._bput(out, entry, id, "rot_%d_build_%d" % [f, st], H.stage(base, o, f, size, "a", st, seed + f))
+	for e in extra:
+		var cx = _cv(size, top, pad)[0]
+		draw.call(cx, o, 0, e[1])
+		C.selout(cx)
+		bytes += C._bput(out, entry, id, String(e[0]), cx)
+	for nm in ["built:rot_0", "damaged:rot_0_damaged", "fire:rot_0_fire", "build_0:rot_0_build_0",
+			"build_1:rot_0_build_1", "build_2:rot_0_build_2"]:
+		var pr: PackedStringArray = nm.split(":")
+		if entry.states.has(pr[1]):
+			entry.states[pr[0]] = (entry.states[pr[1]] as Dictionary).duplicate()
+	var g7 := {"detail_level": C.VERSION, "class": "turret", "bytes": bytes, "budget": int(C.BUDGET.turret)}
+	g7.merge(g7x)
+	entry["g7"] = g7
+	man[id] = entry
+	out.manifest["buildings"] = man
+
+
 static func build(out: Dictionary) -> void:
 	for sp in SPECS:
 		var size := int(sp[1])
@@ -536,8 +657,8 @@ static func build(out: Dictionary) -> void:
 		ex.append(["recoil", {"aim": 0, "recoil": true}])
 		ex.append(["impact_0", {"impact": 0}])
 		ex.append(["impact_1", {"impact": 1}])
-		C.bld(out, String(sp[0]), size, int(sp[2]), "turret", _draw(String(sp[3])), ex,
-			{"turret7": String(sp[3]), "scale": "4 m/tile, 9.8 px/m (fact art.scale), rev3 DL7-3", "art": "ART7B",
+		bldx(out, String(sp[0]), size, int(sp[2]), sp[5] as Array, _draw(String(sp[3])), ex,
+			{"turret7": String(sp[3]), "scale": "4 m/tile, 9.8 px/m (fact art.scale), rev3 DL7-3", "art": "ART7B + ART7C readability pass",
 			"key_frames": ["aim_0", "aim_2", "aim_0_fire", "impact_1"],
 			"anim_strip": ["aim_0", "aim_1", "aim_2", "aim_2_fire", "aim_3", "aim_4", "aim_4_fire", "recoil", "impact_0", "impact_1"]})
 		var man: Dictionary = out.manifest.buildings

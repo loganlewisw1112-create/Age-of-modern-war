@@ -1,0 +1,16 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 24.30.74.02.250929 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon TM Graphics
+
+PLAYTEST g6_slot0_stage9_click ok=true items=4
+NATIVE rts_core loaded (rts_core 0.5.2)
+TERRAIN baked 36 chunks (96x96) height in 575 ms
+SIM_THREAD mode=on why=ok native=on
+PLAYTEST menu_start_button ok=true 
+PLAYTEST match_started ok=true 
+PLAYTEST player_faction ok=true faction=human_a sides=2
+PLAYTEST g6_harness_grant ok=true stage=9 credits=62506 stock={ "salvage": 20300, "ore": 20100, "fuel": 20400, "ammo": 20600 }
+PLAYTEST speed_3x_button ok=true 
+PLAYTEST art7b_sheets_resolve ok=true 0 of 30 rolled-out defs fall back to the placeholder
+PLAYTEST art7b_scene_spawned ok=true 0 buildings failed to spawn
+PLAYTEST RESULT pass=8 fail=0
