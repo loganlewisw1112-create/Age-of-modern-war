@@ -485,6 +485,27 @@ Owner: "the creep should open up large fissures/valleys/canyons in the ground wi
 - Numbers are PROVISIONAL (set by FISSURE7, reported). A match with no creep stays hash-identical; perf stays
   inside the fps targets on the 512 map.
 
+### 13.9b Base layout that makes logistical sense (owner amendment, 2026-10-27)
+Owner: "base has too many open spaces and dont need all that extra space -- make it make more logistical sense - the
+layout -- the spacing -- roads -- lighting, camers, auto turrets, etc ** also fix the spacing inside the
+counter-nanite facility".
+- **Compact, purposeful layout:** the Last Protocol 3-ring base (and any pre-built base) loses its dead open ground.
+  Rings sized to what they hold; buildings grouped by function (power and logistics together, production near the
+  gates it feeds, the airfield and helipads with their fuel and repair, artillery parks with ammunition, barracks near
+  the walls they man); short, sensible distances between the things that work together.
+- **Roads:** a real road network: main roads from every gate to the core, ring roads behind each wall for moving
+  reserves, service roads to every plot, the airfield and the facility; vehicles use them.
+- **Lighting:** floodlights on walls and gates, street lights along roads, lit pads and aprons (display; costs no
+  sim time).
+- **Cameras and sensors:** security cameras on walls, gates and key buildings that watch their sector (real sight for
+  the base) and towers / masts where they make sense.
+- **Auto turrets:** automated turrets (pop-up turrets, the G7 turret line) covering gates, wall corners and approaches,
+  placed where their fields of fire make sense.
+- **Counter-nanite facility interior:** the compound's zones (gate, staging, decon, pad, helipad, drone bay, range,
+  workshop, garages) packed tightly in the order a team actually moves through them (gate -> decon -> staging ->
+  garages -> pad / helipad), with roads between them and no empty yard; applies to the facility in normal matches too.
+- Numbers PROVISIONAL (BASE7). Perf targets on the 512 map still hold.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).
@@ -513,6 +534,22 @@ Shown rev2 (`.plan/shots/ARTCN7/compare_today_vs_g7_rev2.png` + an in-game shot)
   scale against the 64x32 tile grid (a soldier is ~1.8 m next to a ~8 m long, ~2.7 m tall APC). Keep the rev2 kit detail
   and quality at the smaller size. The rev2 "about 1.5x today's on-screen size" target is withdrawn.
 - Roll-out still waits for the owner's review of the rev3 side-by-side.
+
+## Look checkpoint rev3 decision (owner, 2026-10-27)
+Shown rev3 (`.plan/shots/ARTCN7/compare_today_vs_g7_rev3.png` + in-game shots), the owner approved the direction:
+- **Approved as is:** "infantry and nanite counter strike and operators all look fucking solid". The rev3 scale (4 m per
+  tile, 18 px soldier, 8 m strike APC) stands; the rest of the G7 art follows it.
+- **Both VTOL dropships (stealth + regular):** "fucking fire just clean them up and make sure the drawings make perfect
+  sense depth wise and everything - no flaws".
+- **Dropship loading:** "make sure dropship loading looks accurate and realistically correct from every angle (dont show
+  a person thats behind the dropship(s))". The transparent cutaway must become cleaner and more cohesive, or go
+  entirely in favour of animating units loading up the lowered rear ramp. ORCH decision: drop the see-through cutaway;
+  show the bay only through the open rear ramp (lit interior), with the APC driving and soldiers walking up the ramp
+  and disappearing into the bay, every figure correctly hidden by the hull wherever the hull is in front of it.
+- **APCs:** "fucking tough (make the guns / weapons look better though - make their weapons firing / loading animations
+  even better)".
+- "fix the weak spots you see and can find in totality": the nose-on stealth VTOL tail fins reading as ears, pale APC
+  roofs, soldiers hidden on the ramp when it faces away, and anything else found.
 
 ## G7 brainstorm answers (owner's record, B1–B20; all merged into the master scope above)
 (appended as the owner answers)
