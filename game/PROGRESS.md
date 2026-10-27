@@ -37,6 +37,34 @@ it changed anything, the project was copied to C: (28,241/28,246 files; git fsck
 from git, the 4 lost untracked art-kit review renders are regenerable). **G7 runs on the C: copy; push back to D: only when
 G7 is complete (owner).** Wave 1 relaunching on C:.
 
+## G7 Done-when evidence (2026-10-27, INTEG7 fast path, ~13:46-14:08 UTC) — DELIVERED, PARTIAL
+Owner, 2026-10-27: "complete in next 15-20 min TOPS no excuses or running over that time". All runs were in parallel on a
+busy PC (up to 18 Godot processes), so no timing number below is an idle-PC number. Raw logs: C:/CODING/integ7_fast/.
+1. Full suite — NOT MET (1 fail, 1 file not run). 125 test files run one per process, 6 lanes (suite/*.log): 996 pass,
+   1 fail, 0 SCRIPT ERROR / Parse Error. Fail: test_perf_g6 elevation probe "hook + elevation overhead 9.72 ms/tick at 2k
+   <= 5" (timing under load; re-run on an idle PC). test_ui_fit: 308 screens at 7 resolutions, issues=0. test_maps 13/0,
+   test_gen61 15/0 (REGRESS7-7 raid fix, 220fa03), test_ai 18/0. test_hot_state NOT RUN: the G7 re-baseline (two capture
+   runs of .plan/gold61.gd) reached only 11 of 16 hashes each by the deadline (gold_run1.log / gold_run2.log; the 11 match).
+   tests/test_hot_state.gd still holds the G6.1 goldens; INTEG7 regold script ready at C:/CODING/integ7_fast/regold.py.
+2. Determinism — UNVERIFIED as a set: per-system twice-same-hash tests pass inside the suite (test_drone7 etc.), but the
+   recorded drone flight replay and the raw collection were not run.
+3. Perf — NOT MET / UNVERIFIED. 2k fight 600t native, river_crossing_s, alternating trees (.plan/sim_ab7.gd, G6.1 =
+   C:/CODING/g7_regress2_wt at 55b4e04), busy PC (CPU 47-77%, 18 Godot): G6.1 39.35 / 42.30 / 42.40 ms, G7 63.99 / 75.08 /
+   69.63 ms -> 1.65x (gate 1.2x). fps 2k/10k not re-measured (last shared-PC: 2k p10 63.5-71, 10k ~145-172).
+4. Last Protocol soak — PARTIAL. Forced-Tide run (seed 77, --tide-at=600, wall cap 1080 s): THE TIDE started at 601 s,
+   reached phase 4, 2 rings fallen, cores 3/3, 0 SCRIPT ERROR, exit 0, but ending=none at the wall cap:
+   "LP SOAK RESULT seed=77 map=last_protocol time_s=1059 ticks=21171 phase=4 tide=true tide_at_s=601 ending=none ...
+   ms_per_tick=51.01". Natural (unforced) run not done.
+5. Package — MET with 2 playtest misses. Exported from 220fa03 (.plan/package_g7.sh): import 0 errors, export exit 0,
+   .pck 48M md5 9b5cb4cd799d5b66dbd3ad70b5e73d33. Clean-folder smoke (build/_clean_G7_test): lpmode7 18/0, cnfac7 172/1
+   ("cnfac7_ramp_all_loaded_f6_7 1 of 2 craft hold APC + crew + 8 operators"), drone7 13/1 (known: strike_drop blast
+   ~6 tiles off the squad), h 33/0; 0 SCRIPT ERROR in all. Copied to C:/Users/logan/Downloads/Age of Modern War/
+   RTS_Age_of_Modern_War_G7 (+ _2026-10-27.zip). README G7 section + PLAY_ME say PARTIAL.
+6. Owner look checkpoint — MET (rev3/rev4 approved, see docs/G7_REFERENCE.md).
+What's left: regold test_hot_state (finish 2 capture runs) and run it; idle-PC perf (sim is 1.65x G6.1: profile wounds /
+senses7 / squads7); natural LP soak to an ending; drone replay determinism; fix cnfac7 f6_7 loading and drone7 strike
+drop; remaining pt7 flows windowed; copy to D: after a D: health check.
+
 ## Previous goal (G6.1 "Field Command", owner-scoped 2026-10-26 via 5 questions; one big drop; branch `g6`)
 GOAL — G6.1: massive new depth in AI and command, plus owner-reported fixes
 For whom / what changes:  the owner, playing: every level of command thinks (general > commander > captain > lieutenant > squad > soldier);

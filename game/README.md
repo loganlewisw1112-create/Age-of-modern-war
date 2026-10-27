@@ -1,4 +1,4 @@
-# RTS: Age of Modern War: playable slice (G0 through G6.1)
+# RTS: Age of Modern War: playable slice (G0 through G7)
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
@@ -194,6 +194,25 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   without stacking up first (timing-dependent; it stacks in the run from source). The full 42-flow packaged run was not
   repeated for this build. The enemy general stays off by default (in AI-vs-AI matches the AI fields no companies).
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
+
+## G7 "Signalborne / Last Protocol" (2026-10-27) — delivered PARTIAL (see PROGRESS G7 evidence)
+Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout).
+- **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a 3-ring fortress around the
+  Counter-Nanite facility against the Machine's nanite creep, which escalates in phases, opens fissures and canyons with
+  growths rising out of them, sends Weavers and ends in THE TIDE. Strike teams hit nanite cores; ops room on F4;
+  protocol advisor card; cinematic intro (skippable in Settings).
+- **Counter-nanite line:** operators; APCs with dome shield, side panels, .50 pods and a pop-out 6-tube rocket pod;
+  limpet / harpoon / disruptor weapons; the anti-walker pincer that topples heavy walkers and blows them up; stealth and
+  regular VTOL dropships with rear-ramp loading; the facility (gate > decon > staging > garages > pad / helipad).
+- **Signalborne ports:** player-flown drone with exact replay, wounds and casualty care, senses (units act on what they
+  see and hear), threat units (burrowers, mimics, leeches, cocoons, webs), turret line, squads redrawn at true scale.
+- **Bases:** compact, function-grouped rings, gate / ring / service roads, floodlights and street lights, cameras with
+  real sight, auto turrets at gates and corners.
+- **Status (2026-10-27, cut short by the owner's 20-minute limit):** suite 996 pass / 1 fail (a timing probe under load) /
+  0 script errors; hash goldens not yet re-baselined; sim 2k is 1.65x G6.1 on a busy PC (gate 1.2x, NOT MET); Last
+  Protocol reaches THE TIDE in a forced run without crashing but did not finish within 18 min; packaged build smoke 4 flows,
+  2 checks miss (one dropship pair loading, drone strike drop). Full evidence and what's left: PROGRESS.md "G7 Done-when
+  evidence".
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.
