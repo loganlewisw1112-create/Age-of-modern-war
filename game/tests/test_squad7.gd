@@ -720,3 +720,37 @@ func test_cnops_hotkeys_and_cn_convoy_gap() -> void:
 	w.sys_state[CnP.KEY] = {"teams": {"7": {"id": 7, "lvl": 2, "xp": 0.0}}}
 	var m := Convoy._level_mult(w, c)
 	check(m < 1.0 and m > 0.8, "a level-2 CN team drives a tighter column (x%.2f)" % m)
+
+
+## INTEG7 (perf): a big group (over assign_split) is assigned block by block: still a full permutation, the leader
+## takes slot 0, few crossing paths, and fast (the old all-pairs passes took ~3.9 s for 1000 men).
+func test_big_group_assignment_split() -> void:
+	var mem := []
+	var pts := []
+	var roles := []
+	for k in 400:
+		mem.append({"id": 1000 + k, "pos": Vector2(float(k % 20) * 1.1 + 10.0, float(k / 20) * 1.1 + 10.0), "rank_role": "lead" if k == 37 else "", "def": "rifleman"})
+		pts.append(Vector2(float(k % 25) * 1.1 + 60.0, float(k / 25) * 1.1 + 40.0))
+		roles.append(F7.ROLE_RIFLE)
+	var t := Time.get_ticks_usec()
+	var perm := F7.assign(mem, pts, roles)
+	var ms := (Time.get_ticks_usec() - t) / 1000.0
+	var seen := {}
+	for s in perm:
+		seen[int(s)] = true
+	check_eq(seen.size(), 400, "every slot used exactly once")
+	check_eq(int(perm[37]), 0, "the leader takes slot 0")
+	var cross := 0
+	for a in 400:
+		for b in range(a + 1, 400):
+			if F7._crosses(mem[a].pos, pts[perm[a]], mem[b].pos, pts[perm[b]]):
+				cross += 1
+	# reference: the all-pairs assignment (what every group used before; passes capped for big groups)
+	var pe := F7._assign_exact(mem, pts, roles, true)
+	var cross_e := 0
+	for a in 400:
+		for b in range(a + 1, 400):
+			if F7._crosses(mem[a].pos, pts[pe[a]], mem[b].pos, pts[pe[b]]):
+				cross_e += 1
+	check(cross <= 3 * maxi(cross_e, 50), "crossing paths stay near the all-pairs result (%d vs %d of 79800 pairs)" % [cross, cross_e])
+	check(ms < 500.0, "400-man assignment under 0.5 s (%.0f ms)" % ms)

@@ -837,6 +837,9 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 
 
 ## Target search dispatch: native-backed when this tick's RtsGrid holds e, else find_target().
+static var _scan_vis := -1   # G7 INTEG7: 1 = RtsGrid.scan_vis available (rts_core >= 0.5.3)
+
+
 static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, blds: Array):
 	var tq0 := Time.get_ticks_usec() if SimIndex.profiling else 0
 	var ng = w.cache.get("combat_ng")
@@ -893,7 +896,11 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				var nvis := vis.size()
 				var ents: Dictionary = w.entities
 				var mt := int(myt)
-				for cid in rg.query_radius(p, radius):
+				# G7 INTEG7 (perf): rts_core >= 0.5.3 pre-filters to visible items of another team (the tests below
+				# repeat, so the legal set and the (distance, id) argmin are the same as with query_radius)
+				if _scan_vis == -1:
+					_scan_vis = 1 if rg.has_method("scan_vis") else 0
+				for cid in (rg.scan_vis(p, radius, mt, vis, mw) if _scan_vis == 1 else rg.query_radius(p, radius)):
 					var ci := nix[cid] if cid < nsz else -1
 					if ci < 0 or nteam[ci] == mt:
 						continue

@@ -39,6 +39,7 @@ const DEFAULTS := {
 	"tech_possible": 40.0, "tech_expected": 18.0, "bound_dist": 5.0,
 	"halt_ticks": 60, "coil_ticks": 400, "herring_off": 1.2, "ring_sp": 1.4, "coil_sp": 5.0,
 	"twoopt_passes": 8, "twoopt_passes_big": 2, "big_full_units": 600, "grid_cell": 16, "grid_every": 20,
+	"assign_split": 48, "assign_leaf": 24, "polish_cell": 5.0, "polish_passes": 3,   # INTEG7 perf: big-group assignment
 	"grenade_range": 3.5, "grenade_cd": 200, "ambush_kill_frac": 0.6, "ambush_fire_ticks": 160,
 	"clear_stack_ticks": 40, "clear_room_ticks": 60, "suppress_r": 2.5, "suppress_pts": 6.0,
 	"convoy_sp": 4.0, "convoy_choke_sp": 2.5, "convoy_shield_r": 14.0, "convoy_shield_off": 2.5,
@@ -563,13 +564,14 @@ static func _pull_forward(w: SimWorld, pts: Array, a: Vector2, fwd: Vector2, veh
 	if depth <= 1.0:
 		return
 	var moved := 0.0
+	var memo := {}   # INTEG7 (perf): cell -> passable for this call (pass_fn is pure during one command)
 	for it in 3:
 		var need := 0.0
 		for p in pts:
 			var q: Vector2 = p
-			if (a - q).dot(fwd) <= 0.5 or not bool(pass_fn.call(_cell(q), veh)):
+			if (a - q).dot(fwd) <= 0.5 or not _pass_m(_cell(q), veh, pass_fn, memo):
 				continue
-			var cut := _cut_at(a, q, veh, pass_fn)
+			var cut := _cut_at(a, q, veh, pass_fn, memo)
 			if cut < 0.0:
 				continue
 			var b := a + (q - a) * (cut / maxf(a.distance_to(q), 0.001))   # first blocked point on the way back
@@ -583,7 +585,7 @@ static func _pull_forward(w: SimWorld, pts: Array, a: Vector2, fwd: Vector2, veh
 
 
 ## Distance from a toward b of the first impassable cell (0.5-tile samples), or -1 when the line is clear.
-static func _cut_at(a: Vector2, b: Vector2, veh: bool, pass_fn: Callable) -> float:
+static func _cut_at(a: Vector2, b: Vector2, veh: bool, pass_fn: Callable, memo = null) -> float:
 	var d := a.distance_to(b)
 	var s := 0.5
 	var last := _cell(a)
@@ -591,10 +593,18 @@ static func _cut_at(a: Vector2, b: Vector2, veh: bool, pass_fn: Callable) -> flo
 		var c := _cell(a + (b - a) * (s / d))
 		if c != last:
 			last = c
-			if not bool(pass_fn.call(c, veh)):
+			if not (_pass_m(c, veh, pass_fn, memo) if memo != null else bool(pass_fn.call(c, veh))):
 				return s
 		s += 0.5
 	return -1.0
+
+
+static func _pass_m(c: Vector2i, veh: bool, pass_fn: Callable, memo: Dictionary) -> bool:
+	var v = memo.get(c)
+	if v == null:
+		v = bool(pass_fn.call(c, veh))
+		memo[c] = v
+	return v
 
 
 ## Passable width across `side` through p (tiles), searched out to `half` each way.
@@ -710,6 +720,7 @@ static func fit(w: SimWorld, pts: Array, veh: bool, fwd: Vector2, pass_fn: Calla
 	var gap := 1.2 if veh else 0.55
 	var side := Vector2(-fwd.y, fwd.x)
 	var tries := [-fwd * 0.6, side * 0.6, -side * 0.6, -fwd * 1.2, side * 1.2, -side * 1.2, fwd * 0.6, -fwd * 1.8]
+	var grid := {}   # INTEG7 (perf): earlier final points by gap-sized cell; same answer as _crowded's full scan
 	for i in pts.size():
 		var p := _clampv(w, pts[i])
 		var c := _cell(p)
@@ -718,13 +729,34 @@ static func fit(w: SimWorld, pts: Array, veh: bool, fwd: Vector2, pass_fn: Calla
 			p = Vector2(nc) + Vector2(0.5, 0.5)
 		elif hug and not veh:
 			p = _hug(w, p, c)
-		if _crowded(p, pts, i, gap):
+		if _crowded_g(p, pts, grid, gap):
 			for t in tries:
 				var q := _clampv(w, p + (t as Vector2) * (2.0 if veh else 1.0))
-				if bool(pass_fn.call(_cell(q), veh)) and not _crowded(q, pts, i, gap):
+				if bool(pass_fn.call(_cell(q), veh)) and not _crowded_g(q, pts, grid, gap):
 					p = q
 					break
 		pts[i] = p
+		var gk := Vector2i(floori(p.x / gap), floori(p.y / gap))
+		if grid.has(gk):
+			(grid[gk] as Array).append(i)
+		else:
+			grid[gk] = [i]
+
+
+## _crowded over the points already placed, through fit's cell grid (cells of size gap: any point closer than gap is
+## in the 3 x 3 cells around p).
+static func _crowded_g(p: Vector2, pts: Array, grid: Dictionary, gap: float) -> bool:
+	var cx := floori(p.x / gap)
+	var cy := floori(p.y / gap)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var l = grid.get(Vector2i(cx + dx, cy + dy))
+			if l == null:
+				continue
+			for j in l:
+				if p.distance_to(pts[j]) < gap:
+					return true
+	return false
 
 
 static func _crowded(p: Vector2, pts: Array, upto: int, gap: float) -> bool:
@@ -756,18 +788,143 @@ static func _hug(w: SimWorld, p: Vector2, c: Vector2i) -> Vector2:
 ## through anybody (smooth reforming).
 static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 	var m := mem.size()
+	if m <= int(cfg().get("assign_split", 48)):
+		return _assign_exact(mem, pts, roles, true)
+	# G7 INTEG7 (perf): a big group (a 1000-man attack-move took ~3.9 s here: every pass is m x m) is cut into blocks
+	# of at most assign_leaf by recursive median splits of slots and units along the wider axis (both sorted the same
+	# way, so blocks never swap sides), then each block runs the exact assignment above. The leader keeps slot 0.
 	var perm := []
 	perm.resize(m)
 	perm.fill(-1)
-	var taken := {}
-	var li := 0
+	var li := _leader(mem)
+	perm[li] = 0
+	var ui := []
 	for j in m:
+		if j != li:
+			ui.append(j)
+	var si := []
+	for s in range(1, m):
+		si.append(s)
+	_assign_split(mem, pts, roles, ui, si, perm, int(cfg().get("assign_leaf", 24)))
+	_polish_near(mem, pts, perm, li)
+	return perm
+
+
+## Big-group polish across block borders: each man is compared only with the men that start near him (start-position
+## cells of polish_cell tiles, 3 x 3 around his), swapping a pair whose paths cross or whose squared travel shortens
+## without crossing; a few passes, then crossing-only passes. Leader excluded (keeps slot 0).
+static func _polish_near(mem: Array, pts: Array, perm: Array, li: int) -> void:
+	var cs := float(cfg().get("polish_cell", 5.0))
+	var grid := {}
+	var cells := []
+	var st := PackedVector2Array()   # start positions (no Dictionary reads in the pair loops)
+	st.resize(mem.size())
+	for j in mem.size():
+		var p: Vector2 = mem[j].pos
+		st[j] = p
+		var k := Vector2i(floori(p.x / cs), floori(p.y / cs))
+		cells.append(k)
+		if j == li:
+			continue
+		if grid.has(k):
+			(grid[k] as Array).append(j)
+		else:
+			grid[k] = [j]
+	var passes := int(cfg().get("polish_passes", 3))
+	for it in passes * 2:
+		var cost_too := it < passes
+		var changed := false
+		for ja in mem.size():
+			if ja == li:
+				continue
+			var pa: Vector2 = st[ja]
+			var ca: Vector2i = cells[ja]
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var l = grid.get(Vector2i(ca.x + dx, ca.y + dy))
+					if l == null:
+						continue
+					for jb in l:
+						if jb <= ja:
+							continue
+						var pb: Vector2 = st[jb]
+						var sa: Vector2 = pts[perm[ja]]
+						var sb: Vector2 = pts[perm[jb]]
+						# inline sign pre-test (exact): _crosses needs pb and sb on opposite sides of pa->sa
+						var u := sa - pa
+						var sw := u.cross(pb - pa) * u.cross(sb - pa) < 0.0 and _crosses(pa, sa, pb, sb)
+						if not sw and cost_too and pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001:
+							var u2 := sb - pa
+							sw = not (u2.cross(pb - pa) * u2.cross(sa - pa) < 0.0 and _crosses(pa, sb, pb, sa))
+						if sw:
+							var t: int = perm[ja]
+							perm[ja] = perm[jb]
+							perm[jb] = t
+							changed = true
+		if not changed:
+			if cost_too:
+				continue
+			break
+
+
+static func _leader(mem: Array) -> int:
+	var li := 0
+	for j in mem.size():
 		if String(mem[j].get("rank_role", "")) != "" and String(mem[li].get("rank_role", "")) == "":
 			li = j
 		elif (String(mem[j].get("rank_role", "")) != "") == (String(mem[li].get("rank_role", "")) != "") and int(mem[j].id) < int(mem[li].id):
 			li = j
-	perm[li] = 0
-	taken[0] = true
+	return li
+
+
+static func _assign_split(mem: Array, pts: Array, roles: Array, ui: Array, si: Array, perm: Array, leaf: int) -> void:
+	var n := ui.size()
+	if n <= leaf:
+		var sm := []
+		var sp := []
+		var sr := []
+		for j in ui:
+			sm.append(mem[j])
+		for s in si:
+			sp.append(pts[s])
+			sr.append(roles[s])
+		var sub := _assign_exact(sm, sp, sr, false)
+		for k in n:
+			perm[ui[k]] = si[sub[k]]
+		return
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for s in si:
+		lo = lo.min(pts[s])
+		hi = hi.max(pts[s])
+	var ax := 0 if hi.x - lo.x >= hi.y - lo.y else 1
+	var ss := si.duplicate()
+	ss.sort_custom(func(a, b) -> bool:
+		var pa: float = (pts[a] as Vector2)[ax]
+		var pb: float = (pts[b] as Vector2)[ax]
+		return pa < pb if pa != pb else int(a) < int(b))
+	var us := ui.duplicate()
+	us.sort_custom(func(a, b) -> bool:
+		var pa: float = Vector2(mem[a].pos)[ax]
+		var pb: float = Vector2(mem[b].pos)[ax]
+		return pa < pb if pa != pb else int(mem[a].id) < int(mem[b].id))
+	var k := n / 2
+	_assign_split(mem, pts, roles, us.slice(0, k), ss.slice(0, k), perm, leaf)
+	_assign_split(mem, pts, roles, us.slice(k), ss.slice(k), perm, leaf)
+
+
+## The exact assignment (every group of up to assign_split, and each block of a big one; lead = false: no leader slot).
+static func _assign_exact(mem: Array, pts: Array, roles: Array, lead: bool) -> Array:
+	var m := mem.size()
+	var perm := []
+	perm.resize(m)
+	perm.fill(-1)
+	var taken := {}
+	var li := -1
+	if lead:
+		li = _leader(mem)
+		perm[li] = 0
+		taken[0] = true
 	for j in m:
 		if j == li or not is_ar(mem[j]):
 			continue
@@ -828,7 +985,12 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 			var ja: int = free[a]
 			for b in range(a + 1, free.size()):
 				var jb: int = free[b]
-				if _crosses(Vector2(mem[ja].pos), pts[perm[ja]], Vector2(mem[jb].pos), pts[perm[jb]]):
+				var qa: Vector2 = mem[ja].pos
+				var qb: Vector2 = mem[jb].pos
+				var ta: Vector2 = pts[perm[ja]]
+				var tb: Vector2 = pts[perm[jb]]
+				var tu := ta - qa
+				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
 					var t: int = perm[ja]
 					perm[ja] = perm[jb]
 					perm[jb] = t
@@ -848,7 +1010,8 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 				var pb := Vector2(mem[jb].pos)
 				var sa: Vector2 = pts[perm[ja]]
 				var sb: Vector2 = pts[perm[jb]]
-				if pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001 						and not _crosses(pa, sb, pb, sa):
+				var u2 := sb - pa
+				if pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001 						and not (u2.cross(pb - pa) * u2.cross(sa - pa) < 0.0 and _crosses(pa, sb, pb, sa)):
 					var t: int = perm[ja]
 					perm[ja] = perm[jb]
 					perm[jb] = t
@@ -857,7 +1020,12 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 			var ja: int = free[a]
 			for b in range(a + 1, free.size()):
 				var jb: int = free[b]
-				if _crosses(Vector2(mem[ja].pos), pts[perm[ja]], Vector2(mem[jb].pos), pts[perm[jb]]):
+				var qa: Vector2 = mem[ja].pos
+				var qb: Vector2 = mem[jb].pos
+				var ta: Vector2 = pts[perm[ja]]
+				var tb: Vector2 = pts[perm[jb]]
+				var tu := ta - qa
+				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
 					var t: int = perm[ja]
 					perm[ja] = perm[jb]
 					perm[jb] = t
@@ -871,7 +1039,12 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 			var ja: int = free[a]
 			for b in range(a + 1, free.size()):
 				var jb: int = free[b]
-				if _crosses(Vector2(mem[ja].pos), pts[perm[ja]], Vector2(mem[jb].pos), pts[perm[jb]]):
+				var qa: Vector2 = mem[ja].pos
+				var qb: Vector2 = mem[jb].pos
+				var ta: Vector2 = pts[perm[ja]]
+				var tb: Vector2 = pts[perm[jb]]
+				var tu := ta - qa
+				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
 					var t: int = perm[ja]
 					perm[ja] = perm[jb]
 					perm[jb] = t

@@ -162,6 +162,7 @@ static func hidden(w: SimWorld, fid: int, e: Dictionary) -> bool:
 ## refused for up to 0.8 s (test_perf attack_order_promotes_at_once: "Target not visible." on a rifleman 5 tiles in
 ## front of the shooter). Keeps every other rule: fog cell, G2 forest concealment, sniper conceal_still.
 static func seen_now(w: SimWorld, fid: int, e: Dictionary) -> bool:
+	_kfresh()
 	var st = w.sys_state.get("senses7")
 	if st == null or not is_inf_target(e) or bool(e.get("hid", false)):
 		return false
@@ -229,7 +230,24 @@ static func heard(w: SimWorld, fid: int) -> Array:
 
 # ================================================================ observer / target profiles
 ## [code, sight, optics, thermal] of an observer (cached per kind:def; e.nvg / e.thermal checked per call).
+static var _prof_kd := {}   # INTEG7 (perf): kind -> {def -> profile}: same cache as _prof without a string concat per call
+
+
 static func _profile(w: SimWorld, o: Dictionary) -> Array:
+	var kd = _prof_kd.get(o.kind)
+	if kd == null or _prof.is_empty():
+		kd = {}
+		_prof_kd[o.kind] = kd
+	var p = kd.get(o.def)
+	if p == null:
+		p = _profile_full(o)
+		kd[o.def] = p
+	if int(o.get("owner", -1)) >= 0 and _is_machine(w, int(o.owner)):
+		return [P_MACH, p[1], false, true]
+	return p
+
+
+static func _profile_full(o: Dictionary) -> Array:
 	var key := String(o.kind) + ":" + String(o.def)
 	var p = _prof.get(key)
 	if p == null:
@@ -250,8 +268,6 @@ static func _profile(w: SimWorld, o: Dictionary) -> Array:
 			thermal = true
 		p = [code, float(d.get("sight", 0)), optics, thermal]
 		_prof[key] = p
-	if int(o.get("owner", -1)) >= 0 and _is_machine(w, int(o.owner)):
-		return [P_MACH, p[1], false, true]
 	return p
 
 
@@ -325,11 +341,25 @@ static func _opos(o: Dictionary) -> Vector2:
 
 
 ## Does observer o spot target t now? sil = _silhouette(t), clouds = _clouds().
+## INTEG7 (perf): _sees' tunables read once per entry point (_pass, seen_now, can_see, _own_update) instead of
+## ~10 cfg lookups and 3 cos() per observer check; same values, so the same answers.
+static var _K := []
+
+
+static func _kfresh() -> void:
+	_K = [cf("near", 1.5), cf("move_mult", 1.5), cos(deg_to_rad(cf("optics_deg", 25.0))), cf("optics_mult", 1.6),
+		cos(deg_to_rad(cf("cone_deg", 60.0))), cos(deg_to_rad(cf("periph_deg", 100.0))), cf("periph_mult", 0.6),
+		cf("vehicle_mult", 0.85), cf("air_mult", 1.0), cf("building_mult", 0.9)]
+
+
 static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil: float, moving: bool, clouds: Array) -> bool:
+	if _K.is_empty():
+		_kfresh()
+	var K := _K
 	var op := _opos(o)
 	var tp: Vector2 = t.pos
 	var d := op.distance_to(tp)
-	if d <= cf("near", 1.5):
+	if d <= float(K[0]):
 		return not bool(o.get("wunc", false))
 	var pr := _profile(w, o)
 	var code: int = pr[0]
@@ -341,7 +371,7 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 	var thermal: bool = pr[3] or bool(o.get("nvg", false)) or bool(o.get("thermal", false))
 	var s := sil
 	if moving:
-		s = minf(1.0, s * cf("move_mult", 1.5))
+		s = minf(1.0, s * float(K[1]))
 	if not thermal:
 		s *= float(st.light)
 		if not clouds.is_empty() and _smoke_blocks(clouds, op, tp):
@@ -349,18 +379,18 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 	if code == P_INF:
 		var to := (tp - op) / d
 		var cosa := Vector2.from_angle(head(w, o)).dot(to)
-		if (pr[2] or bool(o.get("optics", false))) and cosa >= cos(deg_to_rad(cf("optics_deg", 25.0))) and d <= R * cf("optics_mult", 1.6) * s:
+		if (pr[2] or bool(o.get("optics", false))) and cosa >= float(K[2]) and d <= R * float(K[3]) * s:
 			return true
-		if cosa >= cos(deg_to_rad(cf("cone_deg", 60.0))):
+		if cosa >= float(K[4]):
 			return d <= R * s
-		if cosa >= cos(deg_to_rad(cf("periph_deg", 100.0))):
-			return moving and d <= R * s * cf("periph_mult", 0.6)
+		if cosa >= float(K[5]):
+			return moving and d <= R * s * float(K[6])
 		return false
-	var m := cf("vehicle_mult", 0.85)
+	var m := float(K[7])
 	if code == P_AIR:
-		m = cf("air_mult", 1.0)
+		m = float(K[8])
 	elif code == P_BLD:
-		m = cf("building_mult", 0.9)
+		m = float(K[9])
 	return d <= R * s * m
 
 
@@ -387,6 +417,7 @@ static func head(w: SimWorld, o: Dictionary) -> float:
 ## Exact one-pair check (tests, targeting change_requests): would observer o spot target t right now? Ignores the
 ## fog grid; a non-infantry target is seen inside the observer's sight.
 static func can_see(w: SimWorld, o: Dictionary, t: Dictionary) -> bool:
+	_kfresh()
 	var st = w.sys_state.get("senses7")
 	if st == null:
 		st = {"smoke": [], "light": 1.0}
@@ -461,6 +492,7 @@ static func _loud_def(def_id: String) -> int:
 ## One team pass: walk the enemies once (spot candidates + shooters heard from the fog), build the observer
 ## buckets only when something needs them, then hidden set, hearing, and (1 pass in squad_check_every) squads.
 static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
+	_kfresh()
 	var f = w.fog.get(tk)
 	if f == null:
 		return
@@ -541,10 +573,12 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 	else:
 		var spot := {}
 		var maxc := int(cf("max_checks", 24)) if nobs <= int(cf("big_n", 1500)) else int(cf("max_checks_big", 6))
+		var ts := Time.get_ticks_usec()
 		for t: Dictionary in need:
 			if _spotted_any(w, st, idx, B, t, maxc, clouds):
 				spot[int(t.id)] = 1
 		st.spot[tk] = spot
+		prof.spot += Time.get_ticks_usec() - ts
 	var t1 := Time.get_ticks_usec()
 	_hear(w, st, tk, members, idx, B, vis, mw, mh, snd)
 	var t2 := Time.get_ticks_usec()
@@ -738,6 +772,7 @@ static func _squads(w: SimWorld, st: Dictionary, members: Array, reps: Dictionar
 
 ## A cut-off squad adds what its own soldiers see now; old entries are forgotten after kn_forget_s.
 static func _own_update(w: SimWorld, st: Dictionary, fid: int, sq: int, clouds: Array) -> void:
+	_kfresh()
 	var k: Dictionary = st.kn[fid][sq]
 	var mem := []
 	for o: Dictionary in SimIndex.units_by_owner(w).get(fid, []):

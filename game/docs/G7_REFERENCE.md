@@ -506,6 +506,58 @@ counter-nanite facility".
   garages -> pad / helipad), with roads between them and no empty yard; applies to the facility in normal matches too.
 - Numbers PROVISIONAL (BASE7). Perf targets on the 512 map still hold.
 
+### 13.9c Base and facility, second pass: a fortress laid out for this fight (owner amendment, 2026-10-27)
+Owner: "buildings inside counter nanite facility are flickering during gameplay // the walls for the facility need to
+link together fix that issues -- base defenses howitzers, turretcs, etc need to be evenly distrubeted around the base as
+necessary ----- the air field on base needs more space so the runway isnt under the wall + the landing sites for the
+regular drop ships need to be enhance, upgraded, and made bigger to fit the new size of the dropship -------- what else
+needs to be resized to properly match the new sizez, pixels??? *** base should preload with units that patrol the outer
+inner wall --- better security + more cameras + better layout for the counter nanite strike facility (the size is about
+right) make things more prportionate and make more millitary realism sense for how our facility + entire base would
+ACTUALLY be laid out for a batle of this intensity and depth ----(research actuallbase building as necessary and take the
+most mercilous and defensible positioning and base setup stance as necessary --- get it done right --- ask me questions
+as necesssary *** a few interor buildings at the counter nanite facility dont make sense or arent fully
+edited/updated/finalized/given true art"
+- **Bugs:** facility buildings flicker in play (fix the cause); facility walls join into one continuous wall (corners,
+  T-joins, gates), no gaps or overlaps.
+- **Defences:** howitzers, turrets, auto turrets, AA and the rest spread around the whole perimeter by threat axis:
+  interlocking fields of fire, no blind sector, artillery covering every approach, nothing bunched on one side.
+- **Airfield:** room for the full runway and its clear zones inside the walls (no runway under a wall); aprons, taxiways.
+- **Dropship landing sites:** regular (and stealth) dropship pads rebuilt bigger for the current dropship size: pad,
+  markings, lighting, approach lane.
+- **Scale audit:** list everything whose size no longer matches the new unit / vehicle / dropship scale and fix it
+  (pads, garages, doors, bays, roads, gates, props).
+- **Garrison:** the base starts with units that patrol the outer and inner walls (routes along the walls, real AI
+  patrols), plus guards at gates; more cameras; better security (entry control at gates, layered rings).
+- **Doctrine:** lay the base and the facility out the way a real fortified base would be for a siege of this intensity:
+  defence in depth, standoff from the walls, entry control points, dispersal and hardening of high-value targets,
+  protected ammunition storage away from barracks, kill zones on the approaches, the most merciless, defensible
+  setup. Research real base / FOB / airbase design and cite what you used.
+- **Counter-nanite facility:** about the right size; make it proportionate and militarily sensible; every interior
+  building finished with true art and a purpose that makes sense.
+- Numbers PROVISIONAL (BASE7-2 / ART7F). Perf and every Last Protocol / facility test still hold.
+
+#### 13.9c-2 Facility entry and no overlaps (owner note, 2026-10-27)
+Owner: "ensure for the counter-manure facility and all of its building — should be no overlap or conflict with the
+layout amongst buildings, garages, the main stealth launchpads, desanitization cleaning hall for infantry, cleaning
+entry for apcs right inside first layer of enforced gates (2 layer entry for apcs to get desanitzed in that entry zone),
+training facilities, etc." ("counter-manure" = the counter-nanite facility.)
+- **No overlap, no conflict:** every facility building, garage, stealth launch pad, the infantry decon hall, the APC
+  decon entry and the training facilities have their own footprint and clearance; no footprint, door or lane overlaps
+  another; a test checks it.
+- **Two-layer reinforced entry for APCs:** outer reinforced gate -> APC decontamination wash zone -> inner reinforced
+  gate. APCs are decontaminated inside the entry zone between the two gate layers.
+- **Infantry decontamination hall:** its own cleaning hall on the infantry path.
+- **Main stealth launch pads** and **training facilities** have clear places of their own.
+
+#### 13.9c-3 Facility defences (owner note, 2026-10-27)
+Owner: "the counter nanite facility needs better defenses - more hardened towers — better hardened walls that all
+connect + sorround the towers and don't leave them unsecured".
+- More hardened towers around the facility (corners, gates, along long wall runs) with real fields of fire.
+- Hardened walls that join into one closed ring and wrap every tower: each tower sits inside / within the wall line,
+  tied into it on both sides, never standing outside the wall or in a gap; no unsecured tower, no wall gap.
+- A test checks the ring is closed and every tower is wall-joined.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).

@@ -114,6 +114,36 @@ impl RtsGrid {
         self.ids.len() as i32
     }
 
+    /// G7 INTEG7 (perf): the ids query_radius(center, r) would return, keeping only items of another team whose
+    /// cell (floor(y) * mw + floor(x)) is visible (vis[cell] == 1). Combat's exact enemy scan then walks only these
+    /// (it repeats the same team / distance / visibility tests, so its legal set and argmin are unchanged).
+    #[func]
+    fn scan_vis(&self, center: Vector2, r: f32, my_team: i32, vis: PackedByteArray, mw: i32) -> PackedInt32Array {
+        let r2 = r * r;
+        let v = vis.as_slice();
+        let nv = v.len() as i64;
+        let mut out: Vec<i32> = Vec::new();
+        if nv == 0 {
+            return PackedInt32Array::from(out.as_slice());
+        }
+        self.for_each_near(center, r, |i| {
+            if self.team[i] == my_team {
+                return;
+            }
+            let p = self.pos[i];
+            let d = p - center;
+            if d.x * d.x + d.y * d.y > r2 {
+                return;
+            }
+            let vi = (p.y.floor() as i64) * (mw as i64) + (p.x.floor() as i64);
+            if vi < 0 || vi >= nv || v[vi as usize] != 1 {
+                return;
+            }
+            out.push(self.ids[i]);
+        });
+        PackedInt32Array::from(out.as_slice())
+    }
+
     /// Ids of items whose centre is within r of center, ascending.
     #[func]
     fn query_radius(&self, center: Vector2, r: f32) -> PackedInt32Array {
