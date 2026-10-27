@@ -240,7 +240,7 @@ func _keys_tab() -> Control:
 	tip.custom_minimum_size = Vector2(420, 0)
 	v.add_child(tip)
 	var g := _grid()
-	var acts: Array = Hotkeys.ACTIONS.keys()
+	var acts: Array = Hotkeys.ACTIONS.keys() + Hotkeys.G7_ACTIONS.keys()  # G7 SQUAD7 CR: formations, techniques, drone keys
 	acts.sort_custom(func(a, b): return Hotkeys._order(a) < Hotkeys._order(b))
 	for a in acts:
 		g.add_child(UiKit.label(Hotkeys.label(String(a))))

@@ -52,7 +52,7 @@ in your content JSON, and say so in your report.
 - **UI fit:** any new panel must pass tools/ui_fit_test.gd at all resolutions (check yours once with `--only=test_ui_fit`).
 - **Report:** AGENT_RULES final report format. No commits. No GENESIS/postflight offer.
 
-## Who owns what (G7, wave 1; later waves get their files when they start)
+## Who owns what (G7; later waves get their files when they start)
 | Agent | Owns (write) |
 |---|---|
 | SCALE7 512×512+ maps | sim/map_io.gd, sim/terrain.gd, sim/map_gen.gd, sim/systems/sim_index.gd, sim/systems/fog.gd (sim grid only; moves to SENSE7 in wave 2), every part of sim/systems/movement.gd EXCEPT `formation_slots` and the helpers right below it (SQUAD7), presentation/view/terrain_layer.gd, presentation/hud/minimap.gd, presentation/view/camera_rig.gd, new sim/maps/lp_test512.gd, tools/bench.gd, native/ via tools/build_native.sh (stage/swap), tests/test_scale7.gd, tools/pt7_scale7.gd |
@@ -61,6 +61,10 @@ in your content JSON, and say so in your report.
 | DRONE7 drone piloting | sim/systems/drone_pilot.gd, sim/systems/strikes.gd, new content/g7/defs_g7_drones.json, new presentation/view/drone_cam.gd (+ .gdshader), new presentation/hud/drone_input.gd, new tools/art/g7_drones.gd, tests/test_drone7.gd, tools/pt7_drone7.gd |
 | LOOK7 battlefield look + port animations | presentation/view/fog_layer.gd, fx_layer.gd, fx61_*.gd, entity_layer.gd, batch_art.gd, batch_atlas.gd, motion.gd, veh_anim61.gd, lod_icons.gd, sim/render_snap.gd (others request snapshot fields by change_request), new presentation/view/decal_layer.gd, the infantry drawers and anim builders in tools/art (g61_anim.gd, g6_infantry.gd, g5_units_inf_a.gd, g5_units_inf_b.gd, g4_units_inf.gd, faction_b_inf.gd, g3b_human_a.gd, g3b_human_b.gd; claim by name), tests/test_look7.gd, tools/pt7_look7.gd |
 | ARTCN7 look-checkpoint samples | new tools/art/g7_cn_*.gd, new tools/art/g7_turrets.gd, new tools/art/g7_threats.gd, new tools/art/g7_lookcheck.gd, new assets/art/g7_*/, .plan/shots/ARTCN7/, tests/test_artcn7.gd |
+| SQUAD7-2 | successor of SQUAD7: same files |
+| CREEP7 Machine creep, cores, escalation (wave 2) | sim/systems/creep.gd, sim/systems/cores.gd, sim/systems/machine_g6.gd, new sim/systems/machine_ew7.gd, new sim/ai/machine_react7.gd, new presentation/view/creep_layer.gd, new content/g7/rules_g7_machine.json, tests/test_creep7.gd, tools/pt7_creep7.gd |
+| CNSIM7 counter-nanite units (wave 2) | sim/systems/counter_nanite.gd, sim/systems/apc7.gd, new content/g7/defs_g7_cn.json, tests/test_cnsim7.gd, tools/pt7_cnsim7.gd |
+| CNFAC7 facility, dropships, base state (wave 2) | sim/systems/cn_facility.gd, sim/systems/base_state7.gd, sim/systems/transport.gd, new content/g7/defs_g7_facility.json, tests/test_cnfac7.gd, tools/pt7_cnfac7.gd |
 | ORCH | sim/world.gd, tools/ui_playtest.gd, content/*.json registries outside your own new fragment, research.json, factions.json, README/PROGRESS/PLAY_ME, packaging, commits |
 
 Layering: WOUND7 resolves what a hit does to a soldier; SQUAD7 decides how soldiers and squads move and act (gait,
