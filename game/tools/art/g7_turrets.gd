@@ -8,6 +8,8 @@ const P = preload("res://tools/art/pix.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const GR = preload("res://tools/art/g7_cn_gear.gd")
 const V = preload("res://tools/art/g7_cn_vehicles.gd")
+const FIG = preload("res://tools/art/g7_cn_fig.gd")
+const SO = preload("res://tools/art/g7_cn_soldiers.gd")
 
 const SAND := Color8(166, 148, 108)
 const ARMOR := Color8(98, 106, 84)
@@ -48,14 +50,18 @@ static func _hmg_gun(cv, o: Vector2, yaw: float, fire: bool) -> void:
 	for q in parts:
 		match String(q[1]):
 			"shield":
-				V.vbox(cv, o, yaw, 0.12, 0.0, 7.0, 0.035, 0.24, 9.0, rp, 3)
+				var rs := V.vbox(cv, o, yaw, 0.12, 0.0, 7.0, 0.035, 0.24, 9.0, rp, 3)
+				C.hull_detail(cv, rs, rp, 61, {"seams": 2, "rivets": false, "wear": 0.9})
 				var s0 := V.lp(o, yaw, 0.16, -0.05, 13.0)
 				cv.px(int(s0.x), int(s0.y), Color8(170, 220, 255))   # vision block
 			"gunner":
-				var g := V.lp(o, yaw, -0.12, 0.0, 15.0)
-				C.blob(cv, g + Vector2(0, 2), 2.0, C.ramp(Color8(108, 112, 86)))
-				C.blob(cv, g + Vector2(0, -1), 1.7, C.ramp(Color8(86, 92, 70)))
-				C.blob(cv, g + Vector2(-1, 1), 0.9, C.ramp(Color8(150, 150, 150)), true)   # armband
+				# rev2 (ARTCN7-3): a real DL7 operator figure (same drawer and scale as the soldier samples,
+				# both armbands) crouched behind the shield, facing along the gun, instead of a blob gunner
+				var fk := posmod(int(round(yaw / (PI / 4.0))), 8)
+				var gk := SO.kit("op_leader")
+				gk["pack"] = "small"     # no radio mast sticking out of the nest
+				gk["stripe"] = false
+				FIG.draw(cv, gk, fk, "crouch", V.lp(o, yaw, -0.17, 0.0, 1.5))
 			"guns":
 				for s in [-0.06, 0.06]:
 					var p0 := V.lp(o, yaw, 0.05, s, 12.5)
@@ -77,15 +83,20 @@ static func rail(cv, o: Vector2, f: int, opt: Dictionary) -> void:
 	var charge := int(opt.get("charge", -1))
 	C.ground_shadow(cv, o + Vector2(6, 4), 58.0, 25.0, 0.30)
 	var conc := C.ramp(CONC)
-	V.vbox(cv, o, by, 0.0, 0.0, 0.0, 0.82, 0.82, 6.0, conc, 3)          # concrete pad
-	V.vbox(cv, o, by + PI / 4.0, 0.0, 0.0, 6.0, 0.55, 0.55, 7.0, C.ramp(ARMOR), 3)   # armoured casemate
+	var rpad := V.vbox(cv, o, by, 0.0, 0.0, 0.0, 0.82, 0.82, 6.0, conc, 3)          # concrete pad
+	C.hull_detail(cv, rpad, conc, 71 + f, {"seams": 4, "top_seams": 4, "rivets": false, "wear": 0.8, "grime": 0.9})
+	var arm := C.ramp(ARMOR)
+	var rcas := V.vbox(cv, o, by + PI / 4.0, 0.0, 0.0, 6.0, 0.55, 0.55, 7.0, arm, 3, false, Vector2(0.06, 0.06))   # sloped casemate
+	C.hull_detail(cv, rcas, arm, 73 + f, {"seams": 3, "top_seams": 3, "wear": 0.6})
 	for s in [-1.0, 1.0]:   # capacitor banks + power trunk
-		V.vbox(cv, o, by, -0.55, s * 0.55, 6.0, 0.14, 0.14, 10.0, C.ramp(Color8(80, 86, 92)), 3)
+		var cap := C.ramp(Color8(80, 86, 92))
+		C.hull_detail(cv, V.vbox(cv, o, by, -0.55, s * 0.55, 6.0, 0.14, 0.14, 10.0, cap, 3), cap, 77, {"seams": 2, "rivets": true})
 		var led := V.lp(o, by, -0.55, s * 0.55, 16.5)
 		cv.px(int(led.x), int(led.y), COIL_HOT if charge >= 0 or fire else COIL)
 		cv.line_v(V.lp(o, by, -0.55, s * 0.55, 7.0), V.lp(o, by, -0.2, s * 0.2, 13.0), CABLE)
 	# rotating housing
-	V.vbox(cv, o, yaw, -0.1, 0.0, 13.0, 0.36, 0.3, 9.0, C.ramp(ARMOR), 3)
+	var rh := V.vbox(cv, o, yaw, -0.1, 0.0, 13.0, 0.36, 0.3, 9.0, arm, 3, false, Vector2(0.05, 0.04))
+	C.hull_detail(cv, rh, arm, 79, {"seams": 3, "top_seams": 2, "wear": 0.6})
 	V.vbox(cv, o, yaw, -0.25, 0.0, 22.0, 0.1, 0.1, 0.5, C.ramp(Color8(150, 150, 150)), 3, true)
 	var parts: Array = []
 	for s in [-1.0, 1.0]:

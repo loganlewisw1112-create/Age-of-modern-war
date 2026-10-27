@@ -87,7 +87,12 @@ func test_every_sample_has_facings_key_frames_masks() -> void:
 		for n in kf:
 			check(fr.has(n), "%s key frame %s in frames" % [id, n])
 		if String(s.section) == "infantry":
-			check(fr == C.FRAMES_INF and fw == 32 and fh == 32, "%s DL7 infantry set (24 frames, 32x32)" % id)
+			check(fr == C.FRAMES_INF and fw == C.INF_CELL.x and fh == C.INF_CELL.y, "%s DL7-3 infantry set (24 frames, 32x32)" % id)
+			for n in ["idle", "walk_a", "walk_b", "fire"]:
+				check(fr.has(n), "%s catalog frame %s" % [id, n])
+		else:
+			for n in ["idle", "move", "fire"] if String(s.get("sample", "")) == "vehicle" else []:
+				check(fr.has(n), "%s catalog frame %s" % [id, n])
 		var im := _img(g, e.file)
 		var mk := _img(g, e.mask)
 		check(im != null and im.get_size() == Vector2i(fw * fr.size(), fh * 8), "%s sheet size" % id)
@@ -127,8 +132,10 @@ func test_memory_within_posted_budget() -> void:
 					var im := _img(g, f)
 					bytes += im.get_width() * im.get_height() * 4
 		else:
-			var im := _img(g, man[s.section][id].file)
-			bytes = im.get_width() * im.get_height() * 4
+			var e: Dictionary = man[s.section][id]
+			var im := _img(g, e.file)
+			bytes = C.packed_bytes(im, int(e.fw), int(e.fh), int(s.get("mirror", 1)))
+			check(im.get_width() * im.get_height() * 4 == int(s.get("raw_bytes", -1)), "%s raw bytes == manifest" % id)
 			check(im.get_width() <= C.PAGE_W and im.get_height() <= C.PAGE_H, "%s fits one atlas page" % id)
 		check(bytes == int(s.bytes), "%s measured %d == manifest %d" % [id, bytes, int(s.bytes)])
 		check(bytes <= budget, "%s %d bytes <= budget %d" % [id, bytes, budget])
@@ -169,3 +176,70 @@ func test_generators_deterministic() -> void:
 	var shipped: Dictionary = _man("g7_cn").get("files", {})
 	for rel in a.images:
 		check(GEN.md5((a.images[rel] as Image).save_png_to_buffer()) == String(shipped.get(rel, "")), "%s == shipped" % rel)
+
+
+## Figure height in px of one cell: rows holding an opaque (a > 0.6) pixel, so the soft ground shadow is ignored.
+func _fig_h(im: Image, r: Rect2i) -> int:
+	var n := 0
+	for y in range(r.position.y, r.end.y):
+		for x in range(r.position.x, r.end.x):
+			if im.get_pixel(x, y).a > 0.6:
+				n += 1
+				break
+	return n
+
+
+## Owner rev2 decision (2026-10-26, G7_REFERENCE "Look checkpoint rev2 decision"; supersedes the rev1 "1.5x" size
+## line): "the units are too big compared to the vehicles and tiles shrink them correctly but keep their high detail
+## and quality" -> ONE real-world scale against the 64x32 tile grid (fact art.scale: 4 m per tile, 9.8 px per metre
+## of height): a ~1.8 m soldier is ~18 px next to a ~8 m APC. Plus: icons for every sample unit (and the Human B /
+## content aliases); wreck sheets for both APCs; the APC rocket pod frames; the dropship VTOL / bay / ramp frames.
+func test_rework_owner_feedback() -> void:
+	var man := _man("g7_cn")
+	var px_m: float = C.SCALE.px_per_m_height
+	for id in ["g7_cn_gunner", "g7_op_hunter", "g7_cn_team_leader", "g7_cn_medic"]:
+		var e: Dictionary = man.infantry[id]
+		var im := _img("g7_cn", e.file)
+		var h := _fig_h(im, Rect2i(0, 0, int(e.fw), int(e.fh)))
+		check(absf(float(h) - 1.8 * px_m) <= 2.5, "%s figure %d px ~= 1.8 m x %.1f px/m (owner: one real-world scale)" % [id, h, px_m])
+	for pr in [["g7_cn_strike_apc", 8.0], ["g7_op_tactical_apc", 7.0]]:   # side-on facing (row 3): length on screen
+		var e: Dictionary = man.vehicles[pr[0]]
+		var im := _img("g7_cn", e.file)
+		var x0 := 99999
+		var x1 := -1
+		for y in int(e.fh):   # opaque body only (the soft ground shadow is ignored)
+			for x in int(e.fw):
+				if im.get_pixel(x, 3 * int(e.fh) + y).a > 0.6:
+					x0 = mini(x0, x)
+					x1 = maxi(x1, x)
+		var want: float = float(pr[1]) * C.SCALE.px_per_m_screen_x
+		check(absf(float(x1 - x0 + 1) - want) <= 0.12 * want, "%s side-on length %d px ~= %.1f m x %.2f px/m" % [pr[0], x1 - x0 + 1, pr[1], C.SCALE.px_per_m_screen_x])
+	for id in ["g7_cn_stealth_dropship", "g7_a_vtol_dropship_xl"]:   # the bay fits the 8 m strike APC (C-17 loading)
+		var bay: Dictionary = man.g7_samples[id].get("bay", {})
+		var bay_m := (float(bay.get("u0", 0.0)) - float(bay.get("u1", 0.0))) * float(C.SCALE.m_per_tile)
+		check(bay_m >= 9.0, "%s bay %.1f m long fits the 8 m strike APC" % [id, bay_m])
+		for n in ["flight", "transition", "hover"]:
+			check((man.vehicles[id].frames as Array).has(n), "%s VTOL frame %s" % [id, n])
+	var icons: Dictionary = man.get("icons", {})
+	for id in SAMPLES:
+		if SAMPLES[id] == "g7_cn" and String(man.g7_samples[id].section) != "buildings":
+			var ids := [id]
+			if not String(id).contains("dropship"):   # dropships get no Human B alias (the generator rule; B has its own)
+				ids.append("g7_b_" + String(id).substr(3))
+			for x in ids:
+				var ic := _img("g7_cn", String(icons.get(x, "")))
+				check(ic != null and ic.get_size() == Vector2i(32, 32) and _count(ic, Rect2i(1, 1, 30, 30), 0.6) > 100, "icon 32x32 for %s" % x)
+				check(man.get("infantry", {}).has(x) or man.get("vehicles", {}).has(x), "sheet entry for %s" % x)
+	check(icons.has("cn_stealth_dropship") and man.vehicles.has("cn_stealth_dropship"), "content id cn_stealth_dropship aliased")
+	for id in ["g7_cn_strike_apc", "g7_op_tactical_apc", "g7_b_cn_strike_apc", "g7_b_op_tactical_apc"]:
+		var w: Dictionary = man.get("vehicle_wrecks", {}).get(id, {})
+		var wi := _img("g7_cn", String(w.get("file", "")))
+		check(wi != null and wi.get_size() == Vector2i(int(w.fw), int(w.fh) * 8), "wreck sheet for %s" % id)
+	for id in ["g7_cn_strike_apc", "g7_op_tactical_apc"]:
+		var fr: Array = man.vehicles[id].frames
+		check(fr.has("rockets_up") and fr.has("rockets_fire"), "%s rocket pod frames" % id)
+	for id in ["g7_cn_stealth_dropship", "g7_a_vtol_dropship_xl"]:
+		var fr: Array = man.vehicles[id].frames
+		for n in ["landed", "ramp_down", "bay_open", "apc_ramp", "squad_in"]:
+			check(fr.has(n), "%s frame %s" % [id, n])
+		check(man.g7_samples[id].has("bay") and man.g7_samples[id].has("ramp"), "%s bay / ramp geometry in manifest" % id)

@@ -10,8 +10,13 @@ const P = preload("res://tools/art/pix.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const L = preload("res://tools/art/faction_m_lib.gd")
 
-const HUNT_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die"]
-const WEAVE_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit", "cocoon", "haul", "die"]
+## ARTCN7-3: THREAT7 wired these sheets as foot units, so the catalog frames idle/walk_a/walk_b/fire (test_art) are
+## appended, drawn as the named pose in HUNT_ALIAS / WEAVE_ALIAS (same rule as the soldiers' POSE_ALIAS).
+const HUNT_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die",
+	"walk_a", "walk_b", "fire"]
+const HUNT_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_2", "fire": "claw_0"}
+const WEAVE_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit", "cocoon", "haul", "die", "walk_a", "walk_b", "fire"]
+const WEAVE_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_2", "fire": "spit"}
 const CORE_FRAMES := ["pulse_0", "pulse_1", "pulse_2", "plated", "hit", "emerge_0", "emerge_1", "walk_0", "walk_1",
 	"walk_2", "walk_3"]
 const SILK := Color8(214, 220, 210)
@@ -42,8 +47,8 @@ static func _draw_sorted(parts: Array) -> void:
 
 
 static func packhunter(cv, k: int, fname: String, o: Vector2) -> void:
-	var R := {"a": k * PI / 4.0, "o": o, "tilt": 0.0, "bob": 0.0, "sc": 1.45}
-	var S := 1.45
+	var R := {"a": k * PI / 4.0, "o": o, "tilt": 0.0, "bob": 0.0, "sc": 2.15}
+	var S := 2.15
 	var ph := 0.0
 	var sw := 0.0
 	var lunge := 0.0
@@ -65,7 +70,7 @@ static func packhunter(cv, k: int, fname: String, o: Vector2) -> void:
 		"claw_1":
 			lunge = 2.0
 	var bz := 8.0 - crouch - (5.0 if dead else 0.0)
-	C.ground_shadow(cv, o + Vector2(0, 1), 16.0, 6.5)
+	C.ground_shadow(cv, o + Vector2(0, 1), 24.0, 9.5)
 	var parts: Array = []
 	var i := 0
 	for hp in [Vector2(4, -2.4), Vector2(4, 2.4), Vector2(-4, -2.4), Vector2(-4, 2.4)]:
@@ -82,19 +87,35 @@ static func packhunter(cv, k: int, fname: String, o: Vector2) -> void:
 		parts.append({"d": C.fdep(R, hp.x, s * 4.6), "fn": _leg.bind(cv, R, hip, knee, foot, 1.15 * S, true, true)})
 		i += 1
 	var body := func():
-		C.tube(cv, C.fpt(R, -5.5 + lunge, 0, bz + 1.0), C.fpt(R, 4.5 + lunge, 0, bz + 1.6), 3.1 * S, C.ramp(L.GRAPH))
-		C.tube(cv, C.fpt(R, -3.5 + lunge, 0, bz + 3.6), C.fpt(R, 3.0 + lunge, 0, bz + 4.0), 1.7 * S, C.ramp(L.PANEL))
-		C.tube(cv, C.fpt(R, -3.0 + lunge, -1.4, bz + 3.0), C.fpt(R, 2.5 + lunge, -1.4, bz + 3.2), 0.5 * S, C.ramp(TRIM), true)
-		C.tube(cv, C.fpt(R, -6.0 + lunge, 0, bz + 2.0), C.fpt(R, -9.5 + lunge, 0, bz + 4.0 - (3.0 if dead else 0.0)), 0.8 * S, C.ramp(L.GRAPH_D))
-		var hc := C.fpt(R, 7.5 + lunge * 1.3, 0, bz + 2.6 - crouch)
-		C.blob(cv, hc, 2.3 * S, C.ramp(L.GRAPH))
-		C.tube(cv, hc, C.fpt(R, 10.0 + lunge * 1.4, 0, bz + 1.0 - crouch), 1.0 * S, C.ramp(L.PANEL))
+		C.tube(cv, C.fpt(R, -5.5 + lunge, 0, bz + 1.0), C.fpt(R, 4.5 + lunge, 0, bz + 1.8), 2.9 * S, C.ramp(L.GRAPH))
+		for j in 4:   # segmented dorsal armour plates
+			var u := -4.0 + j * 2.4 + lunge
+			C.tube(cv, C.fpt(R, u - 0.8, 0, bz + 3.9), C.fpt(R, u + 0.8, 0, bz + 4.3), 1.45 * S, C.ramp(L.PANEL))
+		for sd in [-1.0, 1.0]:   # team trim along both flanks (Machine plating trim)
+			C.tube(cv, C.fpt(R, -4.0 + lunge, sd * 1.7, bz + 2.6), C.fpt(R, 3.2 + lunge, sd * 1.7, bz + 3.0), 0.55 * S, C.ramp(TRIM), true)
+		for j in 3:   # backswept dorsal spines
+			var u := -3.4 + j * 2.6 + lunge
+			cv.line_v(C.fpt(R, u, 0, bz + 5.2), C.fpt(R, u - 2.2, 0, bz + 8.6 - j * 0.4), C.ramp(L.PANEL)[4])
+			cv.line_v(C.fpt(R, u + 0.4, 0, bz + 5.2), C.fpt(R, u - 1.8, 0, bz + 8.6 - j * 0.4), C.ramp(L.GRAPH_D)[1])
+		C.tube(cv, C.fpt(R, -6.0 + lunge, 0, bz + 2.0), C.fpt(R, -10.5 + lunge, 0, bz + 5.0 - (3.0 if dead else 0.0)), 0.7 * S, C.ramp(L.GRAPH_D))
+		C.blob(cv, C.fpt(R, -10.8 + lunge, 0, bz + 5.4 - (3.0 if dead else 0.0)), 0.6 * S, C.ramp(L.PANEL))   # tail barb
+		var hc := C.fpt(R, 7.2 + lunge * 1.3, 0, bz + 2.4 - crouch)
+		C.blob(cv, hc, 2.1 * S, C.ramp(L.GRAPH))
+		C.tube(cv, hc + Vector2(0, -0.8 * S), C.fpt(R, 9.0 + lunge * 1.4, 0, bz + 3.6 - crouch), 1.1 * S, C.ramp(L.PANEL))   # brow plate
+		var open := 1.6 if fname in ["pounce", "claw_0", "claw_1", "run_0"] else 0.6
+		for sd in [-1.0, 1.0]:   # mandibles / jaw talons
+			var j0 := C.fpt(R, 8.6 + lunge * 1.4, sd * 1.0, bz + 1.0 - crouch)
+			var j1 := C.fpt(R, 11.6 + lunge * 1.5, sd * (0.4 + open), bz + 0.2 - crouch)
+			C.tube(cv, j0, j1, 0.45 * S, C.ramp(L.PANEL))
+			cv.px(int(j1.x), int(j1.y), C.ramp(L.PANEL)[4])
 		if C.depth(float(R.a), 1.0, 0.0) > -0.4 and not dead:
 			var side := C.sdir(float(R.a) + PI / 2.0)
-			cv.px(int(hc.x + side.x), int(hc.y + side.y - 1), L.CYAN_HOT)
-			cv.px(int(hc.x - side.x), int(hc.y - side.y - 1), L.CYAN)
-		for j in 3:
-			var sc := C.fpt(R, -3.0 + j * 2.6 + lunge, 0, bz + 4.4)
+			for sd in [-1.0, 1.0]:   # paired sensor eyes
+				var e: Vector2 = hc + side * float(sd) * 2.0 + Vector2(0, -1.5)
+				cv.px(int(e.x), int(e.y), L.CYAN_HOT)
+				cv.px(int(e.x) + 1, int(e.y), L.CYAN)
+		for j in 4:
+			var sc := C.fpt(R, -3.6 + j * 2.4 + lunge, 0, bz + 4.9)
 			cv.px(int(sc.x), int(sc.y), L.DEAD_SEAM if dead else L.CYAN)
 	parts.append({"d": C.fdep(R, 0.0, 0.0), "fn": body})
 	_draw_sorted(parts)
@@ -126,8 +147,10 @@ static func weaver(cv, k: int, fname: String, o: Vector2) -> void:
 			var pc := C.fpt(R, -18.0 + j * 4.0, 0, bz + 15.0 - absf(j - 1.5) * 2.0)
 			C.blob(cv, pc, 4.2 - absf(j - 1.5), C.ramp(L.PANEL))
 			cv.line_v(pc + Vector2(-3, 2), pc + Vector2(3, 2), L.CYAN if not dead else L.DEAD_SEAM)
-		C.tube(cv, C.fpt(R, -20.0, -5.0, bz + 9.0), C.fpt(R, -6.0, -5.0, bz + 12.0), 0.6, C.ramp(TRIM), true)
-		C.tube(cv, C.fpt(R, -20.0, 5.0, bz + 9.0), C.fpt(R, -6.0, 5.0, bz + 12.0), 0.6, C.ramp(TRIM), true)
+		for sd in [-1.0, 1.0]:   # stronger team trim: double band along both flanks + a dorsal chevron
+			C.tube(cv, C.fpt(R, -20.0, sd * 5.0, bz + 9.0), C.fpt(R, -6.0, sd * 5.0, bz + 12.0), 1.3, C.ramp(TRIM), true)
+			C.tube(cv, C.fpt(R, -18.0, sd * 5.6, bz + 6.5), C.fpt(R, -8.0, sd * 5.6, bz + 9.0), 0.9, C.ramp(TRIM), true)
+			C.tube(cv, C.fpt(R, -16.0, 0.0, bz + 15.5), C.fpt(R, -11.0, sd * 3.0, bz + 14.0), 1.0, C.ramp(TRIM), true)
 		C.blob(cv, C.fpt(R, -25.0, 0, bz + 3.0), 2.4, C.ramp(L.JOINT))   # spinnerets
 		C.blob(cv, C.fpt(R, 4.0, 0, bz + 3.0), 7.5, C.ramp(L.GRAPH))
 		C.blob(cv, C.fpt(R, 4.0, 0, bz + 7.0), 4.5, C.ramp(L.PANEL))
@@ -223,13 +246,13 @@ static func living_core(cv, k: int, fname: String, o: Vector2) -> void:
 
 
 static func build(out: Dictionary) -> void:
-	C.unit_sheet(out, "g7_m_packhunter", "vehicles", "threat", 56, 44, Vector2i(28, 32), HUNT_FRAMES,
-		func(cv, k, f, o): packhunter(cv, k, f, o),
-		{"sample": "threat", "line": "machine", "legged": true, "key_frames": HUNT_FRAMES.duplicate(),
+	C.unit_sheet(out, "g7_m_packhunter", "vehicles", "threat", 84, 66, Vector2i(42, 47), HUNT_FRAMES,
+		func(cv, k, f, o): packhunter(cv, k, String(HUNT_ALIAS.get(f, f)), o),
+		{"sample": "threat", "line": "machine", "legged": true, "key_frames": HUNT_FRAMES.slice(0, 11), "frame_alias": HUNT_ALIAS,
 		"anim_strip": ["walk_0", "walk_1", "walk_2", "walk_3", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die"]})
 	C.unit_sheet(out, "g7_m_weaver", "vehicles", "threat_big", 132, 104, Vector2i(66, 76), WEAVE_FRAMES,
-		func(cv, k, f, o): weaver(cv, k, f, o),
-		{"sample": "threat", "line": "machine", "legged": true, "key_frames": WEAVE_FRAMES.duplicate(),
+		func(cv, k, f, o): weaver(cv, k, String(WEAVE_ALIAS.get(f, f)), o),
+		{"sample": "threat", "line": "machine", "legged": true, "key_frames": WEAVE_FRAMES.slice(0, 9), "frame_alias": WEAVE_ALIAS,
 		"anim_strip": ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit", "cocoon", "haul", "walk_0", "die"]})
 	C.unit_sheet(out, "g7_m_living_core", "vehicles", "threat_big", 108, 100, Vector2i(54, 70), CORE_FRAMES,
 		func(cv, k, f, o): living_core(cv, k, f, o),

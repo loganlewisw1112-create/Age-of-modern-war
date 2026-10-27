@@ -33,6 +33,11 @@ static func generate(group: String) -> Dictionary:
 			g7["section"] = sec
 			samples[id] = g7
 	out.manifest["g7_samples"] = samples
+	if group == "g7_cn":   # content ids that reuse the sample sheets (manifest-only aliases, no new images)
+		for id in samples:
+			if String(samples[id].section) != "buildings" and (String(id).begins_with("g7_cn_") or String(id).begins_with("g7_op_")) 					and not String(id).ends_with("dropship"):
+				C.alias(out, id, "g7_b_" + String(id).substr(3))
+		C.alias(out, "g7_cn_stealth_dropship", "cn_stealth_dropship")
 	return out
 
 
@@ -51,7 +56,7 @@ func _init() -> void:
 		var r := generate(g)
 		var dir := ("res://assets/art/%s/" % g) if out_dir == "" else out_dir.path_join(g) + "/"
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
-		_clear(ProjectSettings.globalize_path(dir), ["units", "buildings"])
+		_clear(ProjectSettings.globalize_path(dir), ["units", "buildings", "wrecks", "icons"])
 		files += GEN.save(r, dir)
 		var ids: Array = r.manifest.g7_samples.keys()
 		ids.sort()

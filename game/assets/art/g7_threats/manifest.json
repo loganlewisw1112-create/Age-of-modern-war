@@ -1,51 +1,66 @@
 {
   "files": {
-    "units/g7_m_living_core.png": "a280952b10a4a568c515f7d1a1ab6ddb",
+    "icons/g7_m_living_core.png": "ced253718293aadf2d667b682a489468",
+    "icons/g7_m_packhunter.png": "5c159f9cbd28fc334e2332dcb9fd0fb1",
+    "icons/g7_m_weaver.png": "fa9dde5a579da2b34ee71102cf5c9167",
+    "units/g7_m_living_core.png": "f24e7187988776cc70941f712166108f",
     "units/g7_m_living_core_mask.png": "8c46f7451166d5e5905cfdac1c6cac12",
-    "units/g7_m_packhunter.png": "53cf644443c7c6a7cb5964d57176c03a",
-    "units/g7_m_packhunter_mask.png": "26968ae3def0874d669564e46036bb80",
-    "units/g7_m_weaver.png": "401933804884e641840ab1fbdf7a424c",
-    "units/g7_m_weaver_mask.png": "5f56914facbf9d397bedd643e588a721"
+    "units/g7_m_packhunter.png": "53e571444cd540c24398ca3be46a3511",
+    "units/g7_m_packhunter_mask.png": "5c0a4c9291b1691a0e74839b616d72a8",
+    "units/g7_m_weaver.png": "7d00cce2e5621019330c865626702507",
+    "units/g7_m_weaver_mask.png": "fb610be3d09413724acad5e27f8a80f3"
   },
   "g7_detail_level": {
     "air": {
       "facings": 8,
       "max_frames": 12
     },
+    "budget_basis": "packed atlas bytes (cells cropped to opaque rect, rows 2/6/7 mirrored when allowed)",
     "budget_bytes": {
-      "air": 4194304,
+      "air": 3145728,
+      "air_large": 7340032,
       "building": 4194304,
-      "infantry": 838860,
-      "threat": 1572864,
-      "threat_big": 4194304,
+      "infantry": 524288,
+      "threat": 1048576,
+      "threat_big": 3145728,
       "turret": 3145728,
-      "vehicle": 3145728
+      "vehicle": 2097152
     },
     "building": {
       "rotations": 4,
       "states": "g6_lib rot set"
     },
+    "icon": "32x32 menu icon per unit (icons/<id>.png)",
     "infantry": {
       "cell": [
         32,
         32
       ],
       "facings": 8,
-      "figure_px": 17,
+      "figure_px": 18,
       "frames": 24,
       "pivot": [
         16,
         27
       ]
     },
-    "mask": "soldiers: armband 2x2 left upper arm + leader helmet stripe; vehicles/air: roof ID panel + side chevrons; Machine: plating trim",
+    "mask": "soldiers: armband on both upper arms + leader helmet band; vehicles/air: roof ID panel + side chevrons + hull stripe; Machine: plating trim",
     "outline": "selective: lit side = material deep tone, shadow side = pix.OUTLINE",
     "page_max": [
       2560,
       2048
     ],
-    "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left",
-    "scale": "1:1 at zoom 1 (tile 64x32), same world size as G6 units",
+    "palette": "5-tone hue-shifted ramp per material [deep, shade, mid, lit, glint]; light upper-left; muted military palettes",
+    "scale": "ONE real-world scale: 4 m per 64x32 tile, 9.8 px per metre of height (1.8 m soldier = 18 px)",
+    "scale_table": {
+      "m_per_tile": 4.0,
+      "px_per_m_ground_axis": 8.94,
+      "px_per_m_height": 9.8,
+      "px_per_m_screen_x": 11.31,
+      "soldier_m": 1.8,
+      "soldier_px": 18
+    },
+    "shading": "per-pixel lit volumes; hull bevels, panel seams, rivets, grime band, chipped-paint wear",
     "threat": {
       "facings": 8,
       "max_frames": 14
@@ -56,9 +71,10 @@
     },
     "vehicle": {
       "facings": 8,
-      "max_frames": 12
+      "max_frames": 12,
+      "wreck": "vehicle_wrecks sheet (1 frame, 8 facings)"
     },
-    "version": "DL7-1"
+    "version": "DL7-3"
   },
   "g7_samples": {
     "g7_m_living_core": {
@@ -74,10 +90,10 @@
         "walk_1",
         "walk_2"
       ],
-      "budget": 4194304,
-      "bytes": 3801600,
+      "budget": 3145728,
+      "bytes": 1119492,
       "class": "threat_big",
-      "detail_level": "DL7-1",
+      "detail_level": "DL7-3",
       "key_frames": [
         "pulse_0",
         "pulse_1",
@@ -92,6 +108,8 @@
         "walk_3"
       ],
       "line": "machine",
+      "mirror": -1,
+      "raw_bytes": 3801600,
       "sample": "threat",
       "section": "vehicles"
     },
@@ -108,10 +126,15 @@
         "claw_1",
         "die"
       ],
-      "budget": 1572864,
-      "bytes": 867328,
+      "budget": 1048576,
+      "bytes": 678360,
       "class": "threat",
-      "detail_level": "DL7-1",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "fire": "claw_0",
+        "walk_a": "walk_0",
+        "walk_b": "walk_2"
+      },
       "key_frames": [
         "idle",
         "walk_0",
@@ -127,6 +150,8 @@
       ],
       "legged": true,
       "line": "machine",
+      "mirror": -1,
+      "raw_bytes": 2483712,
       "sample": "threat",
       "section": "vehicles"
     },
@@ -143,10 +168,15 @@
         "walk_0",
         "die"
       ],
-      "budget": 4194304,
-      "bytes": 3953664,
+      "budget": 3145728,
+      "bytes": 1186304,
       "class": "threat_big",
-      "detail_level": "DL7-1",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "fire": "spit",
+        "walk_a": "walk_0",
+        "walk_b": "walk_2"
+      },
       "key_frames": [
         "idle",
         "walk_0",
@@ -160,11 +190,18 @@
       ],
       "legged": true,
       "line": "machine",
+      "mirror": -1,
+      "raw_bytes": 5271552,
       "sample": "threat",
       "section": "vehicles"
     }
   },
   "group": "g7_threats",
+  "icons": {
+    "g7_m_living_core": "icons/g7_m_living_core.png",
+    "g7_m_packhunter": "icons/g7_m_packhunter.png",
+    "g7_m_weaver": "icons/g7_m_weaver.png"
+  },
   "tile": [
     64,
     32
@@ -201,10 +238,10 @@
           "walk_1",
           "walk_2"
         ],
-        "budget": 4194304,
-        "bytes": 3801600,
+        "budget": 3145728,
+        "bytes": 1119492,
         "class": "threat_big",
-        "detail_level": "DL7-1",
+        "detail_level": "DL7-3",
         "key_frames": [
           "pulse_0",
           "pulse_1",
@@ -219,6 +256,8 @@
           "walk_3"
         ],
         "line": "machine",
+        "mirror": -1,
+        "raw_bytes": 3801600,
         "sample": "threat"
       },
       "mask": "units/g7_m_living_core_mask.png",
@@ -229,7 +268,7 @@
     },
     "g7_m_packhunter": {
       "facings": 8,
-      "fh": 44,
+      "fh": 66,
       "file": "units/g7_m_packhunter.png",
       "frames": [
         "idle",
@@ -242,9 +281,12 @@
         "pounce",
         "claw_0",
         "claw_1",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
-      "fw": 56,
+      "fw": 84,
       "g7": {
         "anim_strip": [
           "walk_0",
@@ -258,10 +300,15 @@
           "claw_1",
           "die"
         ],
-        "budget": 1572864,
-        "bytes": 867328,
+        "budget": 1048576,
+        "bytes": 678360,
         "class": "threat",
-        "detail_level": "DL7-1",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "fire": "claw_0",
+          "walk_a": "walk_0",
+          "walk_b": "walk_2"
+        },
         "key_frames": [
           "idle",
           "walk_0",
@@ -277,12 +324,14 @@
         ],
         "legged": true,
         "line": "machine",
+        "mirror": -1,
+        "raw_bytes": 2483712,
         "sample": "threat"
       },
       "mask": "units/g7_m_packhunter_mask.png",
       "pivot": [
-        28,
-        32
+        42,
+        47
       ]
     },
     "g7_m_weaver": {
@@ -298,7 +347,10 @@
         "spit",
         "cocoon",
         "haul",
-        "die"
+        "die",
+        "walk_a",
+        "walk_b",
+        "fire"
       ],
       "fw": 132,
       "g7": {
@@ -314,10 +366,15 @@
           "walk_0",
           "die"
         ],
-        "budget": 4194304,
-        "bytes": 3953664,
+        "budget": 3145728,
+        "bytes": 1186304,
         "class": "threat_big",
-        "detail_level": "DL7-1",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "fire": "spit",
+          "walk_a": "walk_0",
+          "walk_b": "walk_2"
+        },
         "key_frames": [
           "idle",
           "walk_0",
@@ -331,6 +388,8 @@
         ],
         "legged": true,
         "line": "machine",
+        "mirror": -1,
+        "raw_bytes": 5271552,
         "sample": "threat"
       },
       "mask": "units/g7_m_weaver_mask.png",
