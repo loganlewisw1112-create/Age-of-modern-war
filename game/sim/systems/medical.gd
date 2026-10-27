@@ -244,6 +244,8 @@ static func _bleed(w: SimWorld, st: Dictionary) -> void:
 		if e.pos != e.wnd_pos:
 			e.pos = e.wnd_pos
 			HotState.touch(w, id)
+		if bool(e.get("wstab", false)):
+			continue   # G7 (WOUND7): stabilised by a medic: the bleed-out clock is held
 		var t: int = wd[id] - 1
 		if t > 0:
 			wd[id] = t
@@ -513,6 +515,7 @@ static func _revive(w: SimWorld, st: Dictionary, u: Dictionary, b: Dictionary) -
 	st.wounded.erase(id)
 	for k in ["wounded", "wnd_pos", "evac_by"]:
 		u.erase(k)
+	_g7_scars(u)
 	var d := Content.unit(String(u.def))
 	u.hp = float(u.get("max_hp", d.get("hp", 1)))
 	if d.has("ammo_max") and u.has("ammo"):
@@ -535,6 +538,24 @@ static func _revive(w: SimWorld, st: Dictionary, u: Dictionary, b: Dictionary) -
 	u.supply_prev_pos = u.pos
 	HotState.touch(w, id)
 	w.emit("Reinforcement", {"id": id, "owner": int(u.owner), "def": String(u.def), "building": int(b.id), "free": true})
+
+
+## G7 (WOUND7): healed soldiers return to duty with their wound zones kept as scars (newest last, capped at
+## rules.g7_wounds.scars_max); every other G7 wound field is cleared.
+static func _g7_scars(u: Dictionary) -> void:
+	var wz = u.get("wz")
+	if wz != null:
+		var sc: Array = (u.get("scars", []) as Array).duplicate()
+		var zs: Array = (wz as Dictionary).keys()
+		zs.sort()
+		for z in zs:
+			sc.append(String(z))
+		var mx := int(SimWorld.Wounds.cfg().get("scars_max", 6))
+		while sc.size() > mx:
+			sc.remove_at(0)
+		u.scars = sc
+	for k in ["wz", "wb", "wooa", "wunc", "wdn", "wstab", "wtr", "wdby", "wdrg", "wsv", "wkill"]:
+		u.erase(k)
 
 
 static func _drop_all(w: SimWorld, st: Dictionary, cid: int) -> void:

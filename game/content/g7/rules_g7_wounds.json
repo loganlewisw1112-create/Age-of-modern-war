@@ -1,0 +1,54 @@
+{
+  "_meta": "G7 fragment (owner: WOUND7). rules.g7_wounds: hit zones, bleeding, casualty care, shrapnel, visible panic (G7 master scope section 2). All numbers PROVISIONAL balance fixtures (untuned). wounds.gd reads this file directly when content/g7 is not merged into Content.rules().",
+  "rules": {
+    "g7_wounds": {
+      "ver": 1,
+      "enabled": true,
+      "_note_zones": "w = base weight per zone (arm/leg weights are per limb). dmg = damage multiplier. bleed = hp per second added per wound (x clamp(dmg / 25, 0.5, 2)). ooa_s = out-of-action seconds (no fire). kill = head only: chance a head hit kills outright (else unconscious).",
+      "zones": {
+        "head": {"w": 0.08, "dmg": 2.5, "bleed": 1.0, "ooa_s": 0, "kill": 0.6},
+        "torso": {"w": 0.42, "dmg": 1.0, "bleed": 1.2, "ooa_s": 4, "ko": true},
+        "arm": {"w": 0.1, "dmg": 0.5, "bleed": 0.35, "ooa_s": 1, "acc": 0.75, "reload": 1.3},
+        "leg": {"w": 0.15, "dmg": 0.6, "bleed": 0.5, "ooa_s": 2, "move": 0.6}
+      },
+      "_note_mods": "posture.prone (pinned, cowering, crawling) and cover levels (Morale.cover_level 1 light / 2 heavy) multiply zone weights: cover hides lower zones. facing = Damage.hit_side of the shooter.",
+      "posture": {"prone": {"head": 1.6, "torso": 0.8, "arm": 1.0, "leg": 0.3}},
+      "cover": {"1": {"leg": 0.25, "torso": 0.75}, "2": {"leg": 0.1, "torso": 0.5, "arm": 0.7}},
+      "facing": {"side": {"arm": 1.6}, "rear": {"torso": 1.25, "head": 0.8}},
+      "crawl_move": 0.15,
+      "unconscious_frac": 0.2,
+      "bleed_every": 10,
+      "down_bleed_out_s": 90,
+      "buddy": {"time_s": 12, "bleed_mult": 0.5, "extend_s": 30},
+      "medic": {"time_s": 5, "extend_s": 180},
+      "drag": {"move": 0.45, "reach": 1.3},
+      "survival": {"_note": "chance a down casualty survives when first treated: 1 - loss_per_min x minutes since going down, floor `floor`", "loss_per_min": 0.35, "floor": 0.25},
+      "scars_max": 6,
+      "auto": {"every": 10, "medic_r": 12, "buddy_r": 6, "evac_r": 18, "max_per_pass": 6, "repath": 20},
+      "panic": {
+        "_note": "On break (morale < break_at) a soldier picks a visible panic state. Weights x trait / rank / fatigue factors. freeze lasts freeze_s then becomes flee. drop: drops the weapon (no fire) and flees.",
+        "w": {"cower": 0.35, "freeze": 0.15, "flee": 0.4, "drop": 0.1},
+        "steady": {"flee": 0.5, "drop": 0.3, "cower": 1.3},
+        "veteran": {"drop": 0.5, "freeze": 0.6},
+        "tired": {"freeze": 1.5, "cower": 1.2},
+        "freeze_s": 3
+      }
+    },
+    "g7_shrapnel": {
+      "ver": 1,
+      "_note": "Shrapnel.burst profiles. frags = rays in a full circle (scaled by the sim detail level), radius = fragment reach (tiles), dmg = damage per connecting fragment at the centre (x (1 - 0.5 d / radius)), blast_r / blast_dmg = concussion core, supp = flinch suppression inside radius x 1.2. Shells use shell_scale on the weapon's damage and splash.",
+      "profiles": {
+        "grenade": {"frags": 48, "radius": 5.0, "dmg": 30.0, "blast_r": 1.2, "blast_dmg": 60.0, "supp": 40.0},
+        "drone": {"frags": 40, "radius": 4.0, "dmg": 35.0, "blast_r": 1.0, "blast_dmg": 80.0, "supp": 35.0},
+        "mortar": {"frags": 72, "radius": 8.0, "dmg": 35.0, "blast_r": 1.6, "blast_dmg": 100.0, "supp": 55.0},
+        "shell": {"frags": 96, "radius": 10.0, "dmg": 40.0, "blast_r": 2.0, "blast_dmg": 120.0, "supp": 60.0}
+      },
+      "shell_scale": {"frags_per_tile": 16, "frags_max": 128, "radius_mult": 1.5, "frag_dmg_mult": 0.3, "blast_r_mult": 0.3, "supp": 50.0},
+      "hit_r": 0.35,
+      "cover_block": {"1": 0.35, "2": 0.75},
+      "_note_detail": "detail = [[max FULL units, ray factor]]: full rays in close fights, fewer in huge fights (same rules).",
+      "detail": [[200, 1.0], [800, 0.5], [1000000, 0.25]],
+      "min_frags": 8
+    }
+  }
+}

@@ -35,6 +35,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const Fog = preload("res://sim/systems/fog.gd")
 const Status = preload("res://sim/systems/status.gd")
 const Damage = preload("res://sim/systems/damage.gd")
+const Shrapnel = preload("res://sim/systems/shrapnel.gd")  # G7 (WOUND7): fragments
 const Supply = preload("res://sim/systems/supply.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
@@ -1006,8 +1007,8 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 		return
 	var ot := String(e.order.get("type", "idle"))
 	# PERF4-2 fast paths (exact: they skip only calls that cannot change anything)
-	if tgt < 0 and ot != "attack" and ot != "idle" and ot != "hold" and ot != "attack_move" 			and w.tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS:
-		return  # move/other orders only return fire, and nothing hit it recently
+	if tgt < 0 and ot != "attack" and ot != "idle" and ot != "hold" and ot != "attack_move" 			and w.tick - int(e.get("last_hit_tick", -100000)) > RETURN_FIRE_TICKS and not bool(e.order.get("bk", false)):
+		return  # move/other orders only return fire, and nothing hit it recently (G7: bk moves fire on the move)
 	if tgt < 0 and ot == "attack_move" and e.moving and not s.builder and (w.tick + int(e.id)) % SCAN_EVERY != 0 			and not e.order.get("engaged", false):
 		return  # marching, nothing tracked, not its scan slot: _pick would return null and change nothing
 	if ot == "attack":
@@ -1049,7 +1050,34 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 			elif not e.moving:
 				e.order = {"type": "idle"}  # arrived
 		_:
-			_return_fire(w, e, s)
+			if bool(e.order.get("bk", false)):
+				_fire_on_move(w, e, s, grid, blds)
+			else:
+				_return_fire(w, e, s)
+
+
+## G7 (SQUAD7 ask, WOUND7): a move order with order.bk (ordered fall-back: walk backwards facing the enemy) keeps
+## firing at the nearest valid target in range without stopping or replacing the path (never chases). Keeps a live
+## tracked target; re-picks only on its scan slot, so the cost is the same cadence as an idle unit's scan.
+static func _fire_on_move(w: SimWorld, e: Dictionary, s: Dictionary, grid: Dictionary, blds: Array) -> void:
+	var rng_t := float(s.range) * _rm(w, e, s)
+	var t = null
+	var tgt := int(e.target)
+	if tgt >= 0:
+		t = _valid_target(w, int(e.owner), tgt, s)
+		if t != null and dist_to(e.pos, t) > rng_t:
+			t = null
+	if t == null:
+		if (w.tick + int(e.id)) % SCAN_EVERY != 0:
+			if tgt >= 0:
+				e.target = -1
+			return
+		t = _pick(w, e, rng_t, grid, blds)
+	if t == null:
+		e.target = -1
+		return
+	e.target = int(t.id)
+	_fire(w, e, s, t)
 
 
 static func _return_fire(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
@@ -1166,7 +1194,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		if gm != 1.0:
 			s = s.duplicate()
 			s.damage = float(s.damage) * gm
-	var cd := maxi(roundi(float(s.cooldown) * SimWorld.Morale.reload_mult(e) * SimWorld.TICK_RATE), 1)  # G6.1 rank reload
+	var rlm := SimWorld.Morale.reload_mult(e)
+	if e.has("wz"):
+		rlm *= SimWorld.Wounds.reload_mult(e)   # G7 (WOUND7): arm wounds reload slower
+	var cd := maxi(roundi(float(s.cooldown) * rlm * SimWorld.TICK_RATE), 1)  # G6.1 rank reload
 	if int(s.get("salvo", 1)) > 1:   # G4b UNITS: rocket salvo, salvo_gap between rockets, then reload
 		var left := int(e.get("salvo_left", 0))
 		if left <= 0:
@@ -1180,6 +1211,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	var acc := float(s.accuracy) * Status.accuracy_mult(w, e)
 	if SimIndex.g6m(w) & SimIndex.G6_ACC:
 		acc *= SimIndex.g6h().accuracy_mult(w, e, s, t)  # G6: same single rng draw
+	if e.has("wz"):
+		acc *= SimWorld.Wounds.acc_mult(e)   # G7 (WOUND7): arm wounds aim worse (same single rng draw)
 	var hit := w.rng.chance(acc)
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
@@ -1279,18 +1312,39 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 	if hits.is_empty():
 		var sup: Dictionary = Content.rules().get("suppression", {})
 		Damage.near_miss(w, int(e.owner), at, float(sup.get("per_near_miss", 8)), SimWorld.Morale.weapon_supp(s))
+		if _frag_near(w, at, rad):
+			Shrapnel.burst(w, at, Shrapnel.from_weapon(s), e, false, true)   # G7: fragments reach past the splash
 		return
 	var ids := hits.keys()
 	ids.sort()
+	var frag := false   # G7 (WOUND7): hit-zone soldiers take fragments (Shrapnel, walls / cover block) instead of splash
 	for id in ids:
 		var v = w.entities.get(id)
 		if v == null:
+			continue
+		if v.kind == "unit" and v.has("morale") and SimWorld.Wounds.applies(v):
+			frag = true
 			continue
 		var s2 := s.duplicate()
 		s2.damage = float(s.damage) * (1.0 - 0.5 * float(hits[id]) / rad) * _g4_mult(w, e, s, v)
 		if SimIndex.g6m(w) & SimIndex.G6_DMG:
 			s2.damage = float(s2.damage) * SimIndex.g6h().damage_mult(w, e, s, v)  # G6 splash
 		Damage.apply_hit(w, e, v, s2, true)
+	if frag or _frag_near(w, at, rad):
+		Shrapnel.burst(w, at, Shrapnel.from_weapon(s), e, false, true)
+
+
+## G7: a zone soldier inside the fragment reach (1.5 x splash) but outside the splash radius still gets a burst.
+static func _frag_near(w: SimWorld, at: Vector2, rad: float) -> bool:
+	var st = w.sys_state.get("wounds")
+	if st == null and not bool(SimWorld.Wounds.cfg().get("enabled", false)):
+		return false
+	var r := rad * float((SimWorld.Wounds.shrapnel_cfg().get("shell_scale", {}) as Dictionary).get("radius_mult", 1.5))
+	for c in Shrapnel._near(w, at, r, true):
+		var u = w.entities.get(c)
+		if u != null and SimWorld.Wounds.applies(u):
+			return true
+	return false
 
 
 # ================================================================ commands

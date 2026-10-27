@@ -99,7 +99,11 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			if cover:
 				dmg *= float((R.get("cover", {}) as Dictionary).get(cls, 1.0))
 	dmg = snappedf(dmg, Q)
-	target.hp = snappedf(float(target.hp) - dmg, Q)
+	var zr = null   # G7 (WOUND7): hit zones for single-soldier infantry (Wounds.applies); else plain hp as before
+	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
+		zr = SimWorld.Wounds.apply_hit(w, target, "", dmg, shooter)
+	else:
+		target.hp = snappedf(float(target.hp) - dmg, Q)
 	var cev = w.cache.get("cmb_ev")   # SIM10K: Combat.tick wakes skipped shooters hit / aiming at this
 	if cev != null:
 		cev[int(target.id)] = true
@@ -114,6 +118,8 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			oi.call(w, cwd, target.pos)
 	w.emit("Damage", {"shooter": int(shooter.id), "target": int(target.id), "amount": dmg,
 		"hit_side": side, "in_cover": cover})
+	if zr != null and _zone_after(w, shooter, target, zr):
+		return   # G7: head kill (final) or knocked unconscious
 	if float(target.hp) <= 0.0:
 		# G5 (CORE10K, CONTRACTS_G5 section 5 core.zero_hp_hook_ready): SUPPORT's Medical may keep a
 		# unit alive as Wounded (true = do not destroy). The stub returns false: G4 results unchanged.
@@ -134,6 +140,64 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	if target.has("comp") and (cls == "at" or cls == "autocannon"):
 		_component_roll(w, target, dmg, R)
 	if target.has("morale"):
+		suppress(w, target, float(sup.get("per_hit", 18)), sf)
+
+
+## G7 (WOUND7): after Wounds.apply_hit. true = handled here (head kill: destroyed without the Medical
+## Wounded save; "down": Wounds.go_down). false = the caller continues (hp <= 0 death path, suppression).
+static func _zone_after(w: SimWorld, shooter: Dictionary, target: Dictionary, zr: Dictionary) -> bool:
+	var res := String(zr.get("result", "hit"))
+	if res == "dead" and bool(target.get("wkill", false)):
+		_kill(w, shooter, target)
+		return true
+	if res == "down" and float(target.hp) > 0.0:
+		if SimWorld.Medical.has_medical(w, int(target.owner)):
+			SimWorld.Wounds.go_down(w, target)
+		else:   # ORCH G5 design rule kept: no medics / hospitals -> an unconscious soldier dies
+			target.hp = 0.0
+			_kill(w, shooter, target)
+		return true
+	return false
+
+
+## The 0 hp path of apply_hit (Medical Wounded save, G6 destroy hook, morale death queue, destroy).
+static func _kill(w: SimWorld, shooter: Dictionary, target: Dictionary) -> void:
+	if target.kind == "unit" and not bool(target.get("wkill", false)) and SimWorld.Medical.on_zero_hp(w, target):
+		return
+	if SimIndex.g6m(w) & SimIndex.G6_DESTROY:
+		SimIndex.g6h().on_destroyed(w, target)
+	_note_death(w, target)
+	w.destroy(int(target.id), "killed", int(shooter.get("owner", -1)))
+
+
+## G7 (WOUND7, Shrapnel): one fragment / blast hit of `dmg` on a ground unit, LOS and cover already resolved by
+## the caller. Zone soldiers take a hit-zone wound (zone_hint "" = drawn); everything else takes plain hp damage
+## (x armor table for class "frag"). Same event, death path and suppression as apply_hit.
+static func wound_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, dmg: float, zone_hint: String = "", sf: float = 1.0) -> void:
+	if not w.entities.has(int(target.id)):
+		return
+	var zr = null
+	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
+		dmg = snappedf(dmg, Q)
+		zr = SimWorld.Wounds.apply_hit(w, target, zone_hint, dmg, shooter)
+	else:
+		dmg = snappedf(dmg * Content.armor_mult("frag", armor_of(target)), Q)
+		target.hp = snappedf(float(target.hp) - dmg, Q)
+	var cev = w.cache.get("cmb_ev")
+	if cev != null:
+		cev[int(target.id)] = true
+	if target.kind == "unit" and int(shooter.get("id", -1)) >= 0:
+		target.last_attacker = int(shooter.id)
+		target.last_hit_tick = w.tick
+	w.emit("Damage", {"shooter": int(shooter.get("id", -1)), "target": int(target.id), "amount": dmg,
+		"hit_side": "", "in_cover": false, "frag": true})
+	if zr != null and _zone_after(w, shooter, target, zr):
+		return
+	if float(target.hp) <= 0.0:
+		_kill(w, shooter, target)
+		return
+	if target.has("morale"):
+		var sup: Dictionary = Content.rules().get("suppression", {})
 		suppress(w, target, float(sup.get("per_hit", 18)), sf)
 
 

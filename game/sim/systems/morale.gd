@@ -328,6 +328,10 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 			continue
 		if float(e.get("supp", 0.0)) >= _supp_at and not bool(e.get("pinned", false)):
 			mv *= _mv_s
+		if e.has("wz") or e.has("wdrg"):
+			mv *= SimWorld.Wounds.move_mult(e)   # G7 (WOUND7): leg wounds, crawling, dragging a casualty
+		if e.has("gait"):
+			mv *= Movement.Formations7.gait_mult(e)   # G7 (SQUAD7 ask): SquadAI gait (walk / rush / crawl ...)
 		_set_or_erase(e, "mvm", mv)
 		var rz := 1.0
 		if int(e.get("vet", 0)) > 0 or e.has("rank_role"):
@@ -572,6 +576,57 @@ static func _update_unit(w: SimWorld, e: Dictionary, p: Dictionary) -> void:
 static func _break(w: SimWorld, e: Dictionary) -> void:
 	e.broken = true
 	e.target = -1
+	if SimWorld.Wounds.applies(e):   # G7 (WOUND7): visible panic for hit-zone soldiers
+		var pn := panic_pick(w, e)
+		e.panic = pn
+		if pn == "cower" or pn == "freeze":
+			e.order = {"type": "retreat", "target": e.pos}
+			Movement.stop_path(e)
+			if pn == "freeze":
+				var fz := int(float((SimWorld.Wounds.cfg().get("panic", {}) as Dictionary).get("freeze_s", 3)) * SimWorld.TICK_RATE)
+				var ws: Dictionary = SimWorld.Wounds._state(w)
+				if not ws.has("fz"):
+					ws["fz"] = {}
+				ws.fz[int(e.id)] = w.tick + fz   # Wounds.tick turns the freeze into flight when it ends
+			w.emit("UnitBroken", {"id": int(e.id), "owner": int(e.owner), "panic": pn})
+			return
+	_flee(w, e)
+
+
+## G7 (WOUND7): panic state on break, one w.rng draw: cower / freeze / flee / drop (weapon dropped: no fire
+## for a while after rallying). Odds: rules.g7_wounds.panic weights x G6.1 trait "steady", rank (vet >= 2) and
+## fatigue (fat >= 60) factors. Cower / freeze only under fire (suppressed or shot at within RECENT_FIRE_TICKS).
+## Only hit-zone soldiers (Wounds.applies) get a panic state; squads and others break exactly as in G2.
+static func panic_pick(w: SimWorld, e: Dictionary) -> String:
+	var pc: Dictionary = SimWorld.Wounds.cfg().get("panic", {})
+	var wt: Dictionary = (pc.get("w", {"flee": 1.0}) as Dictionary).duplicate()
+	var mods: Array = []
+	if e.has("vet") and Veterancy.has_trait(w, int(e.id), "steady"):
+		mods.append(pc.get("steady", {}))
+	if int(e.get("vet", 0)) >= 2:
+		mods.append(pc.get("veteran", {}))
+	if float(e.get("fat", 0.0)) >= 60.0:
+		mods.append(pc.get("tired", {}))
+	for m in mods:
+		for k in m:
+			if wt.has(k):
+				wt[k] = float(wt[k]) * float(m[k])
+	var keys := ["cower", "freeze", "flee", "drop"]
+	if float(e.get("supp", 0.0)) < _supp_at and w.tick - int(e.get("supp_tick", -100000)) > RECENT_FIRE_TICKS:
+		keys = ["flee", "drop"]   # not under fire (broken by losses): nothing to cower from, the soldier runs
+	var tot := 0.0
+	for k in keys:
+		tot += float(wt.get(k, 0.0))
+	var r := w.rng.randf() * tot
+	for k in keys:
+		r -= float(wt.get(k, 0.0))
+		if r < 0.0:
+			return k
+	return "flee"
+
+
+## The G2 break retreat: path to the nearest own HQ / depot (G7: also a frozen soldier when the freeze ends).
+static func _flee(w: SimWorld, e: Dictionary) -> void:
 	var home = _home_of(w, e)
 	if home == null:
 		e.order = {"type": "retreat", "target": e.pos}
@@ -581,11 +636,21 @@ static func _break(w: SimWorld, e: Dictionary) -> void:
 		e.order = {"type": "retreat", "target": hp}
 		if not Movement.order_path(w, e, hp):
 			Movement.stop_path(e)
+	if e.has("panic"):
+		w.emit("UnitBroken", {"id": int(e.id), "owner": int(e.owner), "panic": String(e.panic)})
+		return
 	w.emit("UnitBroken", {"id": int(e.id), "owner": int(e.owner)})
 
 
 static func _rally(w: SimWorld, e: Dictionary) -> void:
 	e.broken = false
+	if e.has("panic"):   # G7 (WOUND7): a soldier who dropped his weapon needs time to pick one up
+		if String(e.panic) == "drop":
+			var hold := 10 * SimWorld.TICK_RATE
+			if hold > int(e.get("cd_ticks", 0)):
+				e.cd_ticks = hold
+				e.cooldown = float(hold) / SimWorld.TICK_RATE
+		e.erase("panic")
 	if String(e.order.get("type", "idle")) == "retreat":
 		e.order = {"type": "idle"}
 		e.target = -1
