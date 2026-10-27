@@ -1,0 +1,61 @@
+{
+ "_meta": "G7 fragment (owner: CNOPS7). G7_REFERENCE master scope 6.9 (overwatch drone, fire support on call, relief convoy), 6.10 (progression), 13.4 (operators who feel alive). New ids only. The overwatch drone reuses the existing recon drone defs (a_drone_recon / b_drone_recon: art, icons, flyable as recon) with overwatch hp / sight from rules.g7_cnops.overwatch. EVERY number here is PROVISIONAL (set in the plan; not settled by the brief). Systems: sim/systems/cn_ops7.gd, sim/systems/cn_progress7.gd.",
+ "weapons": {
+  "g7_cnops_shell": {"class": "artillery", "damage": 120, "splash": 2.2, "shrapnel": "shell"},
+  "g7_cnops_rocket": {"class": "artillery", "damage": 70, "splash": 1.8},
+  "g7_cnops_bomb": {"class": "artillery", "damage": 260, "splash": 2.6}
+ },
+ "rules": {
+  "g7_cnops": {
+   "_note": "PROVISIONAL (CNOPS7). Seconds unless named _ticks; distances in tiles.",
+   "overwatch": {"defs": {"human_a": "a_drone_recon", "human_b": "b_drone_recon"}, "hp": 120, "every": 10, "orbit_r": 6.0, "speed": 6.0, "sight": 14.0, "warn_r": 18.0, "warn_cd_s": 20, "share_ttl_s": 30, "relaunch_s": 60, "strength": 1.0},
+   "fire_support": {"calls_per_mission": 3, "cooldown_s": 15, "pos_snap": 2.5,
+    "kinds": {
+     "artillery": {"weapon": "g7_cnops_shell", "shots": 6, "scatter": 2.2, "flight_s": 6.0, "gap_ticks": 4, "strike_kind": "shell"},
+     "rockets": {"weapon": "g7_cnops_rocket", "shots": 12, "scatter": 3.2, "flight_s": 4.0, "gap_ticks": 2, "strike_kind": "rocket"},
+     "air": {"weapon": "g7_cnops_bomb", "shots": 4, "scatter": 1.4, "flight_s": 9.0, "gap_ticks": 3, "strike_kind": "cruise"}
+    }},
+   "relief": {"cooldown_s": 90, "cost": {"credits": 600}, "arrive_r": 4.5, "repath_every": 40, "max_s": 300},
+   "progress": {
+    "every": 10,
+    "team_levels": [0, 60, 150, 300],
+    "xp": {"mission": 40, "kill": 2, "drill_mult": 1.0},
+    "vet_missions": 2, "vet_kills": 6, "vet_loss_xp": 35,
+    "bond_close": 2, "bond_near": 10.0, "bond_morale": 25.0, "callout_cd_s": 8, "bark_cd_s": 6,
+    "scars_max": 4,
+    "level_fx": {"arm": 0.08, "convoy": 0.06, "dismount": 0.12},
+    "personalities": {
+     "calm_veteran": {"weight": 3, "morale_loss": 0.7, "voices": 3},
+     "nervous_rookie": {"weight": 3, "morale_loss": 1.4, "voices": 3},
+     "joker": {"weight": 2, "morale_loss": 1.0, "voices": 2},
+     "hardliner": {"weight": 2, "morale_loss": 0.5, "voices": 2}
+    },
+    "skills": {
+     "quick_arm": {"label": "Quick arming", "arm": 0.85},
+     "quick_sweep": {"label": "Quicker scanner sweep", "scan": 0.75},
+     "jam_master": {"label": "Fast jammer lock", "jam": 0.75},
+     "steady_gunner": {"label": "Steadier gunner", "gunner_acc": 1.15},
+     "cocoon_cutter": {"label": "Faster cocoon cutting", "cut": 0.6},
+     "field_surgeon": {"label": "Field surgeon", "heal_hp": 3.0, "heal_r": 2.5, "heal_every": 20},
+     "eagle_eye": {"label": "Eagle eye", "sight_add": 3.0},
+     "iron_lungs": {"label": "Iron lungs", "exposure": 0.6},
+     "quick_hands": {"label": "Quick dismount", "dismount": 0.8}
+    },
+    "skills_by_role": {
+     "leader": ["eagle_eye", "quick_hands"], "second": ["quick_hands", "eagle_eye"], "deploy": ["quick_arm", "iron_lungs"],
+     "scanner": ["quick_sweep", "iron_lungs"], "ew": ["jam_master", "quick_hands"], "gunner": ["steady_gunner", "cocoon_cutter"],
+     "medic": ["field_surgeon", "cocoon_cutter"], "op_leader": ["eagle_eye", "quick_hands"], "marksman": ["eagle_eye", "steady_gunner"],
+     "hunter": ["cocoon_cutter", "steady_gunner"], "emp": ["quick_hands", "iron_lungs"], "antidrone": ["steady_gunner", "eagle_eye"],
+     "purge": ["iron_lungs", "quick_arm"], "op_medic": ["field_surgeon", "cocoon_cutter"]
+    },
+    "spec_paths": {
+     "lab": {"label": "Package lab", "roles": ["deploy", "scanner", "ew", "purge"], "tiers": [{"cost": {"credits": 400}, "lab_tier": 0, "arm": 0.92, "scan": 0.9, "jam": 0.9}, {"cost": {"credits": 800}, "lab_tier": 1, "arm": 0.85, "scan": 0.8, "jam": 0.8}]},
+     "workshop": {"label": "Workshop", "roles": ["gunner", "hunter", "marksman", "antidrone", "emp", "leader", "second", "op_leader"], "tiers": [{"cost": {"credits": 400}, "gunner_acc": 1.08, "dismount": 0.92}, {"cost": {"credits": 800}, "gunner_acc": 1.15, "dismount": 0.85}]},
+     "medical": {"label": "Field medicine", "roles": ["medic", "op_medic"], "tiers": [{"cost": {"credits": 400}, "cut": 0.85, "heal_mult": 1.25}, {"cost": {"credits": 800}, "cut": 0.7, "heal_mult": 1.5}]}
+    },
+    "first_names": ["Ash", "Bram", "Cole", "Dana", "Eli", "Fen", "Gray", "Hale", "Ira", "Jude", "Kade", "Lena", "Mara", "Nico", "Owen", "Pia", "Quinn", "Rhea", "Sam", "Tess", "Uma", "Vic", "Wren", "Xan", "Yara", "Zed", "Abel", "Bea", "Cyrus", "Dax", "Elin", "Faye", "Gus", "Hana", "Ivo", "Jory", "Kit", "Lio", "Moss", "Nell"],
+    "last_names": ["Archer", "Brandt", "Castell", "Drayton", "Ellery", "Falk", "Garrow", "Holt", "Imre", "Jansen", "Kessler", "Lorne", "Marsh", "Novak", "Orrin", "Pryce", "Quill", "Reyes", "Strand", "Thorne", "Ulric", "Vance", "Wilder", "Yates", "Zorn", "Ashby", "Bishop", "Crane", "Dunmore", "Everly", "Frost", "Graves", "Hawke", "Ives", "Kane", "Lund", "Mercer", "North", "Pike", "Rowe"]
+   }
+  }
+ }
+}
