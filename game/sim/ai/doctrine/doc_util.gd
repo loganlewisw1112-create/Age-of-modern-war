@@ -306,7 +306,21 @@ static func belief_power(w: SimWorld, fid: int, vis: Array, pos: Vector2, r: flo
 		else:
 			seen += 2.0
 	var s = _sys("intel")
-	if s != null and _has(s, "strength_at"):
+	if s != null and _has(s, "contacts"):
+		# REGRESS7-3: Intel's own `strength` is hp-scaled (a rifleman = 2.0) while power() and the sight count
+		# above are pop-weighted (a rifleman = 1): comparing the two made an equal fight read as 2:1 whenever
+		# the side's belief covered the whole enemy (G7 senses keep a seen soldier believed for look_drop_s, so
+		# an advancing company that had seen an equal-sized block "broke contact" instead of fixing and
+		# flanking; test_officers61). Belief is now counted in the same pop units: a believed unit = its pop x
+		# confidence, a believed building = 2 x confidence (as seen above), decoys / heard (strength 0) = 0.
+		var b := 0.0
+		for c in s.callv("contacts", [w, fid, pos, r]):
+			if float(c.strength) <= 0.0:
+				continue
+			var u := 2.0 if String(c.kind) == "building" else float(maxi(U.pop_of(String(c.def)), 1))
+			b += u * float(c.conf)
+		seen = maxf(seen, b)
+	elif s != null and _has(s, "strength_at"):
 		seen = maxf(seen, float(s.callv("strength_at", [w, fid, pos, r])))
 	return seen
 

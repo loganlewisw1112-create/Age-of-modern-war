@@ -6,6 +6,7 @@ const Territory = preload("res://sim/systems/territory.gd")
 const Fog = preload("res://sim/systems/fog.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const SaveSystem = preload("res://sim/save_system.gd")
+const SquadAI = preload("res://sim/systems/squad_ai.gd")
 
 
 # ---------------------------------------------------------------- helpers
@@ -178,6 +179,11 @@ func test_vict01_territory_sticky_and_recapture() -> void:
 	check_eq(Territory.sector_owner(w, s), 0, "ownership is sticky when the sector empties")
 	var foe := _unit(w, 1, mid)
 	var other := _unit(w, 0, mid + Vector2i(2, 0))
+	# G7 (REGRESS7-3): the owner's hit zones ("Head: usually killed or knocked unconscious", G7_REFERENCE section 2)
+	# kill a soldier on a head roll whatever his hp, so the 100000-hp "tough" pair no longer survives its own firefight
+	# (team 0's man fell to a head roll and the sector flipped early). The contest is about presence, not combat:
+	# both hold fire (only self-defence, nobody shoots first).
+	SquadAI.set_stance_internal(w, [foe, other], "hold_fire")
 	w.run_ticks(300)
 	check_eq(Territory.sector_owner(w, s), 0, "contested sector never flips")
 	check_eq(int(Territory.sector_capture(w, s).team), -1, "contested: no candidate")

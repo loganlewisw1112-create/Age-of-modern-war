@@ -163,10 +163,16 @@ func test_stage10_unlocks_list() -> void:
 			check(id == "" or not Content.unit(id).is_empty() or not Content.production(id).is_empty() or not Content.building(id).is_empty(),
 				"%s stage 10 role %s -> %s exists" % [fac, role, id])
 	# completeness: every Stage 10 def in content is listed, and nothing else is
+	# G7 (ORCH ruling, REGRESS7-3): G7_REFERENCE 6.1 makes the counter-nanite line "The last, very expensive
+	# research item. Prerequisites set in the plan (Stage 10 plus an EMP/EW line)." Defs gated by that research
+	# (requires_research has g7_counter_nanite) open with the research, not with Stage 10, so they are exempt here;
+	# every other Stage 10 def is still checked.
 	for tbl in ["units", "buildings"]:
 		for id in Content.ids(tbl):
 			var d: Dictionary = Content.table(tbl)[id]
 			if typeof(d) == TYPE_DICTIONARY and int(d.get("stage_min", 7)) == 10:
+				if (d.get("requires_research", []) as Array).has("g7_counter_nanite"):
+					continue
 				check(listed.has(String(id)), "Stage 10 def %s is in an unlock list" % id)
 	for id in listed:
 		var d := Content.unit(String(id)) if not Content.unit(String(id)).is_empty() else Content.building(String(id))

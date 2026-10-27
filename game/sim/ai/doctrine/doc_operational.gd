@@ -651,6 +651,19 @@ static func _contact_start(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary
 	return true
 
 
+## The contact is gone: nobody of it is seen now and (G7 senses on) Intel no longer believes anyone is there.
+## REGRESS7-3: with realistic senses a still or prone enemy on a visible cell can go unspotted, so "not seen this
+## tick" no longer means "gone" (Intel keeps such a contact for look_drop_s, intel.gd). Before, an exhausted platoon
+## holding on a contact lost sight of two still riflemen and resumed its advance straight onto them after 3 s
+## (test_officers61 exhausted_do_not_assault). Senses off: unchanged (not seen = gone).
+static func _lost(w: SimWorld, fid: int, foes: Array, cp: Vector2) -> bool:
+	if not foes.is_empty():
+		return false
+	if not w.sys_state.has("senses7"):
+		return true
+	return D.belief_power(w, fid, [], cp, D.num("contact_range")) <= 0.0
+
+
 ## React to contact: return fire at once from where they stand (element 0) or from the nearest cover
 ## (the rest), report up, then the leader decides by belief: assault if weak, fix-and-flank if equal,
 ## break contact (bound back) if strong.
@@ -711,7 +724,7 @@ static func _contact(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g: D
 			_drill(w, fid, fs, g, "assault_contact", "Assaulting the contact at (%d, %d)." % [int(cp.x), int(cp.y)], out)
 			_form(w, fid, st, fs, "all", g.all, "line", out)
 			_go(w, fid, st, fs, "ca", D.fresh(w, g.all), "attack_move", cp, out)
-			if (foes.is_empty() and w.tick - int(c.dt) > 60) or w.tick - int(c.dt) > int(D.num("flank_timeout") * 2.0 * tempo):
+			if (_lost(w, fid, foes, cp) and w.tick - int(c.dt) > 60) or w.tick - int(c.dt) > int(D.num("flank_timeout") * 2.0 * tempo):
 				_resume(w, fid, st, fs, g, intel, out)
 		"fix_flank":
 			_fix_flank(w, fid, st, fs, g, intel, cp, foes, tempo, out)
@@ -719,7 +732,7 @@ static func _contact(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g: D
 			# too tired or pinned to assault: fire from cover until the men recover, then decide again
 			_drill(w, fid, fs, g, "fix", "Holding at (%d, %d) and returning fire: only %d%% fit to assault." % [int(cp.x), int(cp.y), int(float(c.get("fit", 0.0)) * 100.0)], out)
 			# no new orders: the men keep firing from the cover they took on contact
-			if foes.is_empty() and w.tick - int(c.dt) > 60:
+			if _lost(w, fid, foes, cp) and w.tick - int(c.dt) > 60:
 				_resume(w, fid, st, fs, g, intel, out)
 			elif w.tick - int(c.dt) > int(D.num("flank_timeout") * tempo):
 				c.dec = ""
@@ -785,7 +798,7 @@ static func _fix_flank(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g:
 	_drill(w, fid, fs, g, "fix_flank", "Flank signal given: the %s assaults (%d, %d)." % [String(c.kind), int(cp.x), int(cp.y)], out)
 	for i in range(1, els.size()):
 		_go(w, fid, st, fs, "fa%d" % i, D.fresh(w, els[i]), "attack_move", cp, out)
-	if (foes.is_empty() and w.tick - int(c.st) > 60) or w.tick - int(c.st) > int(D.num("flank_timeout") * tempo):
+	if (_lost(w, fid, foes, cp) and w.tick - int(c.st) > 60) or w.tick - int(c.st) > int(D.num("flank_timeout") * tempo):
 		_resume(w, fid, st, fs, g, intel, out)
 
 

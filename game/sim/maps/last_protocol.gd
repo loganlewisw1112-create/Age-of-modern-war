@@ -742,9 +742,10 @@ static func gen(seed_value: int, attempt: int) -> Dictionary:
 		t[_i(c)] = Terrain.DIRT
 		resources.append({"res": "ore", "amount": 5000, "cell": c})
 	var bridges: Array = geo.bridges
-	var bcells := []
+	# REGRESS7-3: map.bridge_cells is the HOLD bridge's cells (bridges.gd contract; map_io writes / reads only
+	# bridges[hold_bridge].cells, so the exported file did not round-trip: 24 vs 156 cells); every bridge is in `bridges`.
+	var bcells := (bridges[0].cells as Array).duplicate() if not bridges.is_empty() else []
 	for b in bridges:
-		bcells.append_array(b.cells)
 		pois.append({"type": "bridge", "name": String(b.name), "cell": b.cell})
 	var dam: Array = geo.dam_cells
 	pois.append({"type": "dam", "name": "Kessel Dam", "cell": dam[dam.size() / 2] if not dam.is_empty() else Vector2i(335, 120)})

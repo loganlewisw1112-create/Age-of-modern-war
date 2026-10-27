@@ -235,6 +235,11 @@ func test_mapio_seed_repeat_every_builtin_and_file() -> void:
 				c.map = id
 				c.seed = sd
 				c.sides[0].ai = true
+				# G7 (owner order 2026-10-26, G7_REFERENCE "Skirmish lock": "the Last Protocol map is completely inaccessible
+				# in skirmish mode; it only starts through Last Protocol"): a skirmish:false map is started here with
+				# dev_map (the test-only switch test_lpmap7 uses), so its hash repeat is still checked.
+				if not bool(MapGen.defs().get(id, {}).get("skirmish", true)):
+					c.dev_map = true
 				var w := SimWorld.new_match(c)
 				w.run_ticks(150)
 				hs.append(w.state_hash())

@@ -413,12 +413,18 @@ func test_research_progress_pause_resume_cancel() -> void:
 	var rl := Progression.research_list(w, 0)
 	var g3b := 0
 	var g6_for_a := 0
+	var g7 := []
 	for it in rl:
 		if String(it.id).begins_with("g6_"):
 			g6_for_a += 1
+		elif String(it.id) == "g7_counter_nanite":
+			# G7 (ORCH ruling, REGRESS7-3): G7_REFERENCE 6.1 adds the counter-nanite line, "The last, very expensive
+			# research item", for Human A / B; it is counted by name, the G3b count stays 5.
+			g7.append(String(it.id))
 		else:
 			g3b += 1
 	check_eq(g3b, 5, "5 G3b research projects listed")
+	check_eq(g7, ["g7_counter_nanite"], "the G7 counter-nanite project is listed for Human A")
 	check_eq(g6_for_a, 20, "G6 projects listed for Human A: 24 minus the 4 other-faction ones (CONTRACTS_G6 3.3)")
 
 
