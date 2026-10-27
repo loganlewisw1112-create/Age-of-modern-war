@@ -74,6 +74,7 @@ var _minimap: Control
 var _insp_icon: TextureRect
 var _insp_name: Label
 var _insp_hp: ProgressBar
+var _insp_wound: Control  # G7 (WOUND7 CR hud_wound_card): body diagram replaces the infantry hp bar
 var _insp_info: Label
 var _insp_counts: Container
 var _card_cv: VBoxContainer
@@ -365,6 +366,9 @@ func _build_bottom(root: Control) -> void:
 	_insp_hp = UiKit.bar("hp")
 	_insp_hp.custom_minimum_size = Vector2(0, 14)
 	iv.add_child(_insp_hp)
+	_insp_wound = preload("res://presentation/ui7/wound_card.gd").new()
+	iv.add_child(_insp_wound)
+	_insp_wound.visible = false
 	_insp_info = HT.make_label("", HT.TEXT, 14)
 	_insp_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	iv.add_child(_insp_info)
@@ -688,6 +692,7 @@ func _refresh_selection(w: SimWorld) -> void:
 		_insp_icon.texture = null
 		_insp_name.text = "No selection"
 		_insp_hp.visible = false
+		_insp_wound.set_unit({})
 		var fac := G3.faction_def(w, _pf())
 		_insp_info.text = "Click or drag to select. %s units build; the %s and %s train units." % [
 			G3.role_name(fac, "builder", "Engineer"), G3.role_name(fac, "hq", "HQ"), G3.role_name(fac, "barracks", "Barracks")]
@@ -704,6 +709,9 @@ func _refresh_selection(w: SimWorld) -> void:
 		_insp_name.text = "%s  (%s)" % [_def_name(e), oname]
 		_insp_hp.max_value = maxf(1.0, float(e.max_hp))
 		_insp_hp.value = float(e.hp)
+		var wcard: bool = e.kind == "unit" and preload("res://presentation/ui7/wound_card.gd").wants(e)  # G7 WOUND7
+		_insp_hp.visible = not wcard
+		_insp_wound.set_unit(e if wcard else {})
 		var info := "HP %d / %d" % [int(e.hp), int(e.max_hp)]
 		if e.kind == "unit":
 			info += "\n" + _order_text(e)
@@ -750,6 +758,8 @@ func _refresh_selection(w: SimWorld) -> void:
 		_insp_name.text = "%d selected" % ents.size()
 		_insp_hp.max_value = maxf(1.0, mhp)
 		_insp_hp.value = hp
+		_insp_hp.visible = true
+		_insp_wound.set_unit({})
 		_insp_info.text = "Total HP %d / %d" % [int(hp), int(mhp)]
 		_insp_counts.visible = true
 		for d in counts:
@@ -1010,6 +1020,8 @@ func _inspect_company(w: SimWorld, ents: Array) -> bool:
 	_insp_name.text = String(cm.title)
 	_insp_hp.max_value = maxf(1.0, float(cm.max_hp))
 	_insp_hp.value = float(cm.hp)
+	_insp_hp.visible = true
+	_insp_wound.set_unit({})
 	_insp_info.text = "HP %d / %d\n%s" % [int(cm.hp), int(cm.max_hp), String(cm.status)]
 	for ch in _insp_counts.get_children():
 		_insp_counts.remove_child(ch)

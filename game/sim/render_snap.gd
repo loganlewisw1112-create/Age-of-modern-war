@@ -101,6 +101,7 @@ static func build(w) -> void:
 	var g6: Dictionary = _g6_inputs(w)  # G6 (VIEW6): per-unit G6 side table inputs
 	var g6_any: bool = g6.any
 	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
+	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
 		if e.kind == "unit":
@@ -173,6 +174,10 @@ static func build(w) -> void:
 			if dfl2 & DEF_AIRCRAFT and e.has("drone_h"):
 				_g7_entry(g7u, id)["dh"] = float(e.drone_h)
 				_g7_entry(g7u, id)["dbank"] = float(e.get("drone_bank", 0.0))
+			if e.has("wz") or e.has("panic") or e.has("wdrg") or e.has("wounded") or (e.get("order") is Dictionary and (e.order as Dictionary).has("care")):
+				var we: Dictionary = SimWorld.Wounds.render_entry(e)
+				if not we.is_empty():
+					wnd[id] = we
 			ids[n] = id
 			pos[n] = p
 			prev[n] = pp
@@ -207,6 +212,7 @@ static func build(w) -> void:
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
 	_g7_out(w, snap, g7u)
+	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
 
