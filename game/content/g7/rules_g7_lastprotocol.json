@@ -1,0 +1,64 @@
+{
+  "_meta": "G7 fragment (owner: LPMODE7). rules.g7_lastprotocol: Last Protocol mode rules (G7 master scope section 10, 13.3, 13.5, 13.8; brainstorm B6, B7, B10, B11, B16, B17). Every number is PROVISIONAL (set in the plan, untuned). Only read when cfg.mode == last_protocol.",
+  "rules": {
+    "g7_lastprotocol": {
+      "ver": 1,
+      "provisional": true,
+      "config": {"map": "last_protocol", "fallback_map": "lp_test512", "victory": "endless", "ai_difficulty": "hard", "economy": "standard", "advancement": "standard", "stage": 10, "credits": 25000, "start_stock": 20000},
+      "length_target_s": [3600, 5400],
+      "nominal_run_s": 4500,
+      "think_every": 20,
+      "creep": {"critical": 0.62, "warn": [0.4, 0.5, 0.58], "win_below": 0.12, "total_purge_below": 0.03, "prespread_value": 200},
+      "countdown": {"total_s": 4800, "final_stage_frac": 0.15, "warn_s": [1800, 900, 300, 60]},
+      "phases": [
+        {"n": 1, "at_frac": 0.1},
+        {"n": 2, "at_frac": 0.3},
+        {"n": 3, "at_frac": 0.5},
+        {"n": 4, "at_frac": 0.8}
+      ],
+      "phase_per_core_lost": 1,
+      "weavers": {"from_frac_min": 0.6, "from_frac_max": 0.75},
+      "tide": {"surge_seeds": 8, "max_phase": 4, "assault_every_s": 30},
+      "start": {
+        "facility_def": "a_cn_facility",
+        "strike_teams": 2,
+        "tactical_squads": 4,
+        "vtol_def": "a_vtol_dropship",
+        "vtols": 2,
+        "hq_def": "a_company_hq",
+        "army": {
+          "outer": {"rifle_squad": 16, "at_team": 8, "a_hmg_team": 6, "mbt": 6, "ifv": 6, "a_spaag": 2},
+          "economy": {"rifle_squad": 8, "a_manpads": 4, "engineer": 8, "a_medic_team": 2},
+          "core": {"a_laser_tank": 4, "a_exo_trooper": 6, "a_sp_howitzer": 4, "a_mlrs": 2, "rifle_squad": 6, "engineer": 4},
+          "air": {"a_attack_heli": 4, "a_strike_jet": 2, "a_interceptor": 2}
+        },
+        "turrets_g7": ["a_t7_hmg_nest", "a_t7_autocannon", "a_t7_hulldown", "a_t7_automortar", "a_t7_emp", "a_t7_thermite", "a_t7_microwave", "a_t7_railgun"],
+        "turret_placeholders": ["guard_tower", "a_atgm_bunker", "a_laser_ciws", "a_sam_site", "a_popup_turret", "a_howitzer_pit"],
+        "economy_plots": ["refinery", "refinery", "refinery", "depot", "depot", "generator", "generator", "generator", "research_station", "a_hospital", "a_exo_garage", "barracks", "motor_pool"],
+        "core_plots": ["a_howitzer_pit", "a_howitzer_pit", "a_sam_site", "a_sam_site", "a_radar_station", "a_repair_bay"],
+        "machine": {"core_def": "m_core", "bases": ["m_hive_node", "m_nanite_forge", "m_spire", "m_assembler"], "garrison": {"m_walker": 6, "m_scout_crawler": 8, "m_tracked": 3}}
+      },
+      "layout_fallback": {"outer": 70, "economy": 55, "core": 35, "gate_every": 0, "tower_every": 10, "turret_every": 14, "margin": 8},
+      "defence": {"think_every_s": 3.0, "reserve_frac": 0.25, "threat_radius": 14.0, "rotate_hp_frac": 0.4, "posture": ["normal", "alert", "maximum"], "alert_threat": 6, "repair_every_s": 5.0, "repair_hp": 40.0, "rebuild_after_s": 20.0},
+      "breach": {"check_every_s": 2.0, "hostile_min": 3, "hold_s": 6.0, "economy_income_mult": 0.5, "creep_seed": true},
+      "outside": {"check_every_s": 2.0, "creep_dps": 1.5, "pack_after_s": 45.0, "pack_min_units": 3, "pack_defs": ["g7_m_packhunter", "m_stalker_synth"], "pack_size": 4, "pack_cooldown_s": 90.0},
+      "air": {"leash": 12.0, "support_s": 60.0},
+      "setpieces": {
+        "dam": {"radius": 5.0, "needs": "cn", "route": "east_convoy"},
+        "bridge": {"radius": 4.0, "needs": "engineer"},
+        "power": {"radius": 6.0, "hostile_radius": 9.0, "check_every_s": 5.0, "research_bonus": 0.5, "production_bonus": 0.5}
+      },
+      "secrets": {
+        "radius": 4.0,
+        "cache": {"needs": "cn", "hold_s": 20.0, "prototype": "orbital_designator", "strike_radius": 7.0, "strike_dmg": 2500.0},
+        "lost_squad": {"needs": "air", "kind": "tactical_squad", "vet": 3},
+        "origin": {"needs": "any"},
+        "mech": {"needs": "engineer", "hold_s": 30.0, "def": "a_laser_tank", "hp_mult": 3.0}
+      },
+      "capture": {"hold_s": 20.0, "barrier_radius": 3.0, "barrier_cells_min": 6},
+      "pyrrhic": {"teams_lost_frac": 0.5},
+      "score": {"per_core": 1500, "per_creep_point_purged": 25, "per_min_left": 20, "per_team_lost": -400, "per_extraction": 150, "per_secret": 300, "ending_bonus": {"total_purge": 3000, "capture_core": 2500, "victory": 1500, "pyrrhic": 500}},
+      "medals": {"bronze": 3000, "silver": 6000, "gold": 9000}
+    }
+  }
+}

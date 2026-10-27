@@ -177,6 +177,12 @@ const COMMANDS := {
 	# G6.1 (owner directive 2026-10-26)
 	"set_stance": SquadAI,
 	"set_technique": SquadAI,  # G7 SQUAD7 CR
+	"lp_posture": LastProtocol,  # G7 LPMODE7 CR
+	"lp_defence_ai": LastProtocol,
+	"lp_blow_dam": LastProtocol,
+	"lp_drop_bridge": LastProtocol,
+	"lp_orbital_strike": LastProtocol,
+	"lp_fire_support": LastProtocol,
 	"cn_train": CnFacility,  # G7 CNFAC7 CR
 	"cn_cancel_train": CnFacility,
 	"cn_rollout": CnFacility,
@@ -186,6 +192,8 @@ const COMMANDS := {
 	"cn_drill": CnFacility,
 	"cn_evacuate": CnFacility,
 	"cn_set_loadout": CounterNanite,  # G7 CNSIM7 CR
+	"cn_pincer": CounterNanite,  # G7 CNSIM7-3 CR: anti-walker pincer on one order
+	"cn_break_contact": CounterNanite,  # G7 CNSIM7-3 CR: formed withdrawal
 	"cn_deploy": CounterNanite,
 	"cn_hero_detonate": CounterNanite,
 	"cn_dismount": CounterNanite,

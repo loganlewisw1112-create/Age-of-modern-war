@@ -12,6 +12,15 @@ extends RefCounted
 ##    per every_s), short-range EMP pulse (cn_emp: enemy machines/electronics hold fire, enemy drones go down, leeches
 ##    knocked off via CREEP7's Creep.detach_leeches), side panels (cn_panels kind interceptors|smoke|idrones; limited
 ##    stock refilled by restock at CNFAC7's facility).
+##  - pop-out 6-tube micro rocket launcher (owner amendment 2026-10-26; strike and tactical APCs, top rear right
+##    behind the gunner pod): canisters tandem / emp / thermite / he_frag / disruptor / smoke (rules.g7_cn.launcher,
+##    chosen with the mission loadout, refilled by restock). Pops up (pop_s), fires salvos, reloads the tubes from
+##    the rack, stows when no target is left. Auto-fires at heavy Machine units in range unless a CounterNanite
+##    engagement (pincer) drives it (rl.eng). Render: g7v[id].rl 0 stowed / 1 popping / 2 popped / 3 firing.
+##  - heavy walkers (is_heavy_walker): hit_heavy applies front armour, the pincer bonus (flank / rear hits while
+##    another of our units fixes it frontally), stun / mark windows and the topple: stagger from flank / rear leg
+##    hits -> topple (fall, down, rise: cannot move or fire, x down_mult damage) -> rights itself, stagger reset.
+##    Render: g7v[id].topple ("stagger" | "fall" | "down" | "rise"), topple_dir (radians), stagger (0..1).
 ## Damage hooks for ORCH to wire into G6Hooks (cheap when no CN APC exists: one dict lookup):
 ##   damage_mult(w, src, s, t) (dome absorption), shot_blocked(w, src, s, t, at) (APS / interceptor panel / smoke),
 ##   intercept_strike(w, fid, at, kind) (APS vs strikes).
@@ -80,7 +89,8 @@ static func init_apc(w: SimWorld, e: Dictionary) -> void:
 		st.ids.sort()
 	e.a7 = {"dome": float(c.get("dome", {}).get("charge", 1000.0)), "dome_on": false, "dome_cd": 0,
 		"aps": int(c.get("aps", {}).get("charges", 0)), "aps_cd": 0, "emp_cd": 0, "icpt_until": -1, "smoke_until": -1,
-		"st": (c.get("panels", {}) as Dictionary).duplicate(), "mg": {}, "hp_last": float(e.hp), "pk": []}
+		"st": (c.get("panels", {}) as Dictionary).duplicate(), "mg": {}, "hp_last": float(e.hp), "pk": [],
+		"rl": _rl_new(L().get("default_load", {}))}
 	e.unhackable = true
 
 
@@ -91,6 +101,9 @@ static func restock(w: SimWorld, e: Dictionary) -> void:
 	var c := cfg_of(String(e.def))
 	e.a7.st = (c.get("panels", {}) as Dictionary).duplicate()
 	e.a7.aps = int(c.get("aps", {}).get("charges", 0))
+	if e.a7.has("rl"):   # launcher: the chosen canister loadout, tubes full
+		var ld: Dictionary = e.a7.rl.load
+		e.a7.rl = _rl_new(ld)
 	w.emit("ApcRestocked", {"id": int(e.id), "owner": int(e.owner)})
 
 
@@ -256,6 +269,8 @@ static func tick(w: SimWorld) -> void:
 		keep.append(int(id))
 		_tick_apc(w, e)
 	st.ids = keep
+	if st.has("fx") and not (st.fx as Array).is_empty() and w.tick % 5 == 0:
+		_tick_fx(w, st)
 	if not (st.drones as Dictionary).is_empty():
 		var dk: Array = st.drones.keys()
 		dk.sort()
@@ -301,6 +316,8 @@ static func _tick_apc(w: SimWorld, e: Dictionary) -> void:
 	var ec: Dictionary = c.get("emitter", {})
 	if not ec.is_empty() and (w.tick + id) % ticks(float(ec.get("every_s", 1.0))) == 0:
 		_emitter(w, e, ec)
+	if (w.tick + id) % int(L().get("think", 5)) == 0:
+		_tick_launcher(w, e)
 
 
 ## Security gunners riding inside man the mounts (ascending id); a missing gunner is replaced from inside.
@@ -487,3 +504,506 @@ static func fire_panel(w: SimWorld, a: Dictionary, k: String) -> void:
 	var ev := {"id": int(a.id), "owner": int(a.owner), "kind": k, "left": int(a.a7.st[k]), "pos": a.pos}
 	ev.merge(extra)
 	w.emit("ApcPanel", ev)
+
+
+# ================================================================ pop-out micro rocket launcher (owner amendment 2026-10-26)
+static var _dmg: Script = null
+static var _hw := {}
+
+
+## damage.gd loaded at runtime (damage.gd -> g6_hooks.gd -> this file: a preload here would be a cycle).
+static func Dmg() -> Script:
+	if _dmg == null:
+		_dmg = load("res://sim/systems/damage.gd")
+	return _dmg
+
+
+static func L() -> Dictionary:
+	return R().get("launcher", {})
+
+
+static func HV() -> Dictionary:
+	return R().get("heavy", {})
+
+
+static func TP() -> Dictionary:
+	return R().get("topple", {})
+
+
+static func _sum(d: Dictionary) -> int:
+	var n := 0
+	for k in d:
+		n += int(d[k])
+	return n
+
+
+## A canister loadout {kind: count} clipped to the launcher capacity (rules-table kind order).
+static func clamp_load(load: Dictionary) -> Dictionary:
+	var cap := int(L().get("capacity", 18))
+	var out := {}
+	var used := 0
+	for k in (L().get("kinds", {}) as Dictionary):
+		var n := clampi(int(load.get(k, 0)), 0, cap - used)
+		if n > 0:
+			out[k] = n
+			used += n
+	return out
+
+
+static func _rl_new(load: Dictionary) -> Dictionary:
+	var ld := clamp_load(load)
+	return {"st": 0, "t": 0, "tube": mini(int(L().get("tubes", 6)), _sum(ld)), "rk": ld.duplicate(), "load": ld, "cd": 0,
+		"rel": -1, "tgt": -1, "seen": -100000, "eng": -1, "fire_until": -1, "k": ""}
+
+
+## Mission loadout (CounterNanite cn_set_loadout at the facility): new canister mix, tubes and rack full.
+static func set_rockets(w: SimWorld, e: Dictionary, load: Dictionary) -> void:
+	if not e.has("a7"):
+		return
+	e.a7.rl = _rl_new(load)
+	_rl_render(w, e)
+
+
+static func rockets_left(e) -> int:
+	return _sum(e.a7.rl.rk) if typeof(e) == TYPE_DICTIONARY and e.has("a7") and e.a7.has("rl") else 0
+
+
+## Heavy Machine walker: def flag heavy_walker, rules heavy.defs, or a heavy-armoured walking Machine unit.
+static func is_heavy_walker(u) -> bool:
+	if typeof(u) != TYPE_DICTIONARY or String(u.get("kind", "")) != "unit":
+		return false
+	var dd := String(u.def)
+	if _hw.has(dd):
+		return bool(_hw[dd])
+	var d := Content.unit(dd)
+	var H := HV()
+	var v := bool(d.get("heavy_walker", false)) or (H.get("defs", []) as Array).has(dd) \
+		or (String(d.get("faction", "")) == "machine" and String(d.get("armor", "")) == "heavy" \
+			and (H.get("walk_classes", []) as Array).has(String(d.get("move_class", ""))) \
+			and float(d.get("hp", 0)) >= float(H.get("min_hp", 900)))
+	_hw[dd] = v
+	return v
+
+
+## Launcher auto targets: heavy-armoured Machine units.
+static func is_heavy_target(u) -> bool:
+	if not (typeof(u) == TYPE_DICTIONARY and String(u.get("kind", "")) == "unit"):
+		return false
+	var d := Content.unit(String(u.def))
+	return String(d.get("faction", "")) == "machine" and String(d.get("armor", "")) == "heavy"
+
+
+static func auto_target(w: SimWorld, e: Dictionary, r: float):
+	var best = null
+	var bd := INF
+	for u in near(w, e.pos, r):
+		if not w.is_enemy(int(e.owner), int(u.owner)) or not is_heavy_target(u):
+			continue
+		var d := Vector2(u.pos).distance_to(e.pos)
+		if d < bd and d >= float(L().get("min_range", 1.5)):
+			bd = d
+			best = u
+	return best
+
+
+static func _tick_launcher(w: SimWorld, e: Dictionary) -> void:
+	var a: Dictionary = e.a7
+	if not a.has("rl"):
+		a.rl = _rl_new(L().get("default_load", {}))
+	var rl: Dictionary = a.rl
+	var C := L()
+	var rng := float(C.get("range", 9.0))
+	var total := _sum(rl.rk)
+	if int(rl.tube) <= 0 and int(rl.rel) < 0 and total > 0:
+		rl.rel = w.tick + ticks(float(C.get("reload_s", 15)))
+	if int(rl.rel) >= 0 and w.tick >= int(rl.rel):
+		rl.tube = mini(int(C.get("tubes", 6)), total)
+		rl.rel = -1
+		w.emit("ApcLauncher", {"id": int(e.id), "owner": int(e.owner), "state": "reloaded", "tube": int(rl.tube)})
+	var tgt = null
+	if int(rl.eng) >= 0:   # a CounterNanite engagement picks the target and the volley timing
+		tgt = w.entities.get(int(rl.tgt)) if int(rl.tgt) >= 0 else null
+		if tgt != null and Vector2(tgt.pos).distance_to(e.pos) > rng + 3.0:
+			tgt = null
+	else:
+		tgt = auto_target(w, e, rng)
+		rl.tgt = int(tgt.id) if tgt != null else -1
+	if tgt != null:
+		rl.seen = w.tick
+	var st0 := int(rl.st)
+	match st0:
+		0:
+			if tgt != null and total > 0:
+				rl.st = 1
+				rl.t = w.tick + ticks(float(C.get("pop_s", 1.5)))
+		1:
+			if w.tick >= int(rl.t):
+				rl.st = 2
+		2:
+			if w.tick - int(rl.seen) >= ticks(float(C.get("stow_s", 6))) or total <= 0:
+				rl.st = 0
+	if int(rl.st) != st0:
+		w.emit("ApcLauncher", {"id": int(e.id), "owner": int(e.owner), "state": ["stowed", "popping", "popped"][int(rl.st)],
+			"tube": int(rl.tube), "left": total})
+		_rl_render(w, e)
+	if int(rl.eng) < 0 and tgt != null and int(rl.st) == 2:
+		var pref := ["tandem", "thermite", "disruptor"]
+		if int(tgt.get("emp_until", -1)) < w.tick and not is_down(tgt):
+			pref.push_front("emp")   # open a stun window first
+		fire_salvo(w, e, tgt, pref)
+	if int(rl.fire_until) >= 0 and w.tick >= int(rl.fire_until):
+		rl.fire_until = -1
+		_rl_render(w, e)
+
+
+## true when the launcher is up, loaded, off cooldown and tgt is in range.
+static func can_fire(w: SimWorld, e: Dictionary, tgt) -> bool:
+	if tgt == null or not e.has("a7") or not e.a7.has("rl"):
+		return false
+	var rl: Dictionary = e.a7.rl
+	var d := Vector2(tgt.pos).distance_to(e.pos)
+	return int(rl.st) == 2 and w.tick >= int(rl.cd) and int(rl.tube) > 0 \
+		and d <= float(L().get("range", 9.0)) and d >= float(L().get("min_range", 1.5))
+
+
+static func _pick_kind(rl: Dictionary, pref: Array) -> String:
+	for k in pref + ["tandem", "thermite", "disruptor", "emp", "he_frag"]:
+		if int(rl.rk.get(k, 0)) > 0:
+			return String(k)
+	return ""
+
+
+## One salvo (rules launcher.salvo rounds, canister by preference). Returns the rounds fired.
+static func fire_salvo(w: SimWorld, e: Dictionary, tgt: Dictionary, pref: Array) -> int:
+	if not can_fire(w, e, tgt):
+		return 0
+	var rl: Dictionary = e.a7.rl
+	var C := L()
+	var n := mini(int(C.get("salvo", 2)), int(rl.tube))
+	var used := []
+	var to: Vector2 = tgt.pos
+	for i in n:
+		var k := _pick_kind(rl, pref)
+		if k == "":
+			break
+		rl.rk[k] = int(rl.rk[k]) - 1
+		if int(rl.rk[k]) <= 0:
+			rl.rk.erase(k)
+		rl.tube = int(rl.tube) - 1
+		used.append(k)
+		_round(w, e, tgt, k)
+		if not w.entities.has(int(tgt.id)):
+			break
+	if used.is_empty():
+		return 0
+	rl.cd = w.tick + ticks(float(C.get("salvo_gap_s", 2.0)))
+	rl.fire_until = w.tick + ticks(float(C.get("firing_show_s", 0.6)))
+	rl.k = String(used[0])
+	w.emit("RocketSalvo", {"id": int(e.id), "owner": int(e.owner), "target": int(tgt.id), "from": e.pos, "to": to,
+		"kinds": used, "tube": int(rl.tube), "left": _sum(rl.rk)})
+	_rl_render(w, e)
+	return used.size()
+
+
+## One canister on tgt (hit roll w.rng; a downed walker is a sitting target).
+static func _round(w: SimWorld, e: Dictionary, tgt: Dictionary, k: String) -> void:
+	var K: Dictionary = L().get("kinds", {}).get(k, {})
+	if k == "smoke":
+		e.a7.smoke_until = maxi(int(e.a7.smoke_until), w.tick + ticks(float(K.get("smoke_s", 12))))
+		return
+	if not is_down(tgt) and w.rng.randf() >= float(L().get("accuracy", 0.85)):
+		return
+	if k == "he_frag":
+		var at: Vector2 = tgt.pos
+		var r := float(K.get("radius", 2.0))
+		for u in near(w, at, r):
+			if w.entities.has(int(u.id)) and w.is_enemy(int(e.owner), int(u.owner)):
+				var f := 1.0 - 0.5 * Vector2(u.pos).distance_to(at) / r
+				Dmg().apply_hit(w, e, u, {"damage": float(K.get("damage", 30)) * f, "cls": String(K.get("cls", "autocannon")), "weapon": ""}, true)
+		return
+	hit_heavy(w, e, tgt, float(K.get("damage", 10)), String(K.get("cls", "at")), float(K.get("stagger", 0.0)))
+	if not w.entities.has(int(tgt.id)):
+		return
+	match k:
+		"emp":
+			if not unhackable(tgt):
+				_disable(w, tgt, ticks(float(K.get("stun_s", 3.0))))
+		"thermite":
+			tgt.cn_burn = {"until": w.tick + ticks(float(K.get("burn_s", 6))), "dps": float(K.get("burn_dps", 5)), "by": int(e.owner)}
+			_fx_add(w, tgt)
+		"disruptor":
+			mark(w, tgt, float(K.get("mark_s", 10)), float(K.get("sensors", 30)))
+
+
+## Nanite-disruptor on the sensor eyes: sensors component down, marked (x mark_mult damage taken) for mark_s.
+static func mark(w: SimWorld, t: Dictionary, sec: float, sensors: float) -> void:
+	t.cn_mark = w.tick + ticks(sec)
+	if t.has("comp"):
+		t.comp.sensors = maxf(float(t.comp.get("sensors", 100)) - sensors, 0.0)
+	_fx_add(w, t)
+
+
+static func _g7v(w: SimWorld, id: int) -> Dictionary:
+	var v = w.sys_state.get("g7v")
+	if v == null:
+		v = {}
+		w.sys_state["g7v"] = v
+	if not v.has(id):
+		v[id] = {}
+	return v[id]
+
+
+## LOOK7 / ARTCN7 render keys of a CN APC: rl 0 stowed, 1 popping, 2 popped, 3 firing; rl_n rounds in the tubes;
+## rl_k last canister fired.
+static func _rl_render(w: SimWorld, e: Dictionary) -> void:
+	var rl: Dictionary = e.a7.rl
+	var g := _g7v(w, int(e.id))
+	g.rl = 3 if int(rl.fire_until) >= w.tick else int(rl.st)
+	g.rl_n = int(rl.tube)
+	g.rl_k = String(rl.k)
+
+
+# ================================================================ heavy walkers: pincer bonus, stun / mark windows, topple
+## Fixed frontally: the walker is busy with ANOTHER unit of src's side (its combat target, or a unit of ours closer
+## to it than src standing in its front arc, within heavy.fix_range).
+static func fixed_by(w: SimWorld, t: Dictionary, src: Dictionary) -> bool:
+	var fr := float(HV().get("fix_range", 7.0))
+	var sid := int(src.get("id", -1))
+	var tg := int(t.get("target", -1))
+	if tg >= 0 and tg != sid:
+		var u = w.entities.get(tg)
+		if u != null and int(u.owner) == int(src.owner) and Vector2(u.pos).distance_to(t.pos) <= fr:
+			return true
+	var ds := minf(Vector2(src.pos).distance_to(t.pos), fr)
+	for u in near(w, t.pos, ds):
+		if int(u.id) != sid and int(u.owner) == int(src.owner) and Dmg().hit_side(u.pos, t) == "front":
+			return true
+	return false
+
+
+## Every CN hit on a heavy Machine unit goes through here (launcher canisters, limpets, harpoons, disruptor rounds).
+## Damage pipeline (armour table, facing) via Damage.apply_hit, plus: heavy-walker front armour (front_mult, almost
+## no stagger), the pincer bonus on flank / rear hits while it is fixed frontally, stun (EMP) and mark (disruptor)
+## windows, x down_mult while it lies toppled. Then the stagger build-up (topple).
+static func hit_heavy(w: SimWorld, src: Dictionary, t: Dictionary, dmg: float, cls: String, stagger: float) -> void:
+	var H := HV()
+	var T := TP()
+	var mult := 1.0
+	var sg := stagger
+	if is_heavy_walker(t):
+		var side: String = Dmg().hit_side(src.pos, t) if t.has("comp") else "front"
+		if side == "front":
+			mult *= float(H.get("front_mult", 0.5))
+			sg *= float(T.get("front_gain", 0.1))
+		elif fixed_by(w, t, src):
+			mult *= float(H.get("rear_fixed_mult" if side == "rear" else "flank_fixed_mult", 1.5))
+			sg *= float(T.get("rear_gain" if side == "rear" else "side_gain", 1.0))
+		else:
+			sg *= float(T.get("unfixed_gain", 0.35))
+		if int(t.get("emp_until", -1)) >= w.tick:
+			mult *= float(H.get("stun_mult", 1.25))
+			sg *= float(T.get("stun_gain", 1.5))
+	else:
+		sg = 0.0
+	if int(t.get("cn_mark", -1)) >= w.tick:
+		mult *= float(L().get("kinds", {}).get("disruptor", {}).get("mark_mult", 1.2))
+	if is_down(t):
+		mult *= float(H.get("down_mult", 2.5))
+		sg = 0.0
+	Dmg().apply_hit(w, src, t, {"damage": dmg * mult, "cls": cls, "weapon": ""}, true)
+	if sg > 0.0 and w.entities.has(int(t.id)):
+		add_stagger(w, t, sg, Vector2(src.pos))
+
+
+static func topple_phase(t) -> String:
+	if typeof(t) != TYPE_DICTIONARY or not t.has("tpl"):
+		return ""
+	return String(t.tpl.ph)
+
+
+## Lying on the ground (fall / down): cannot move or fire, every hit x down_mult.
+static func is_down(t) -> bool:
+	var p := topple_phase(t)
+	return p == "fall" or p == "down"
+
+
+static func topple_threshold(t: Dictionary) -> float:
+	var T := TP()
+	var hp := float(Content.unit(String(t.def)).get("hp", 950))
+	return minf(float(T.get("threshold", 8.0)) * sqrt(maxf(hp, 1.0) / float(T.get("threshold_hp_ref", 950))),
+		float(T.get("threshold_max", 18.0)))
+
+
+static func _fx_add(w: SimWorld, t: Dictionary) -> void:
+	var st := _st(w)
+	if not st.has("fx"):
+		st.fx = []
+	if not (st.fx as Array).has(int(t.id)):
+		st.fx.append(int(t.id))
+		st.fx.sort()
+
+
+static func _tpl(w: SimWorld, t: Dictionary) -> Dictionary:
+	if not t.has("tpl"):
+		t.tpl = {"sg": 0.0, "ph": "", "until": 0, "imm": 0, "px": 0.0, "py": 0.0, "last": w.tick, "mob": -1.0, "dir": 0.0}
+	_fx_add(w, t)
+	return t.tpl
+
+
+## Stagger from a hit at `from` (the push direction decides which way it falls).
+static func add_stagger(w: SimWorld, t: Dictionary, sg: float, from: Vector2) -> void:
+	if sg <= 0.0 or not is_heavy_walker(t):
+		return
+	var tp := _tpl(w, t)
+	if String(tp.ph) != "" or w.tick < int(tp.imm):
+		return
+	tp.sg = snappedf(float(tp.sg) + sg, 0.001)
+	var v := Vector2(t.pos) - from
+	if v.length_squared() > 1e-6:
+		v = v.normalized() * sg
+		tp.px = snappedf(float(tp.px) + v.x, 0.001)
+		tp.py = snappedf(float(tp.py) + v.y, 0.001)
+	tp.last = w.tick
+	if float(tp.sg) >= topple_threshold(t):
+		topple(w, t)
+	else:
+		_tpl_render(w, t)
+
+
+## Knocked down: fall (fall_s) -> down (down_s) -> rise (rise_s); no movement (mobility 0) and no fire (cooldown)
+## for the whole window; then it rights itself with the stagger reset and a short immunity.
+static func topple(w: SimWorld, t: Dictionary) -> void:
+	var tp := _tpl(w, t)
+	var T := TP()
+	tp.ph = "fall"
+	tp.until = w.tick + ticks(float(T.get("fall_s", 1.0)))
+	var push := Vector2(float(tp.px), float(tp.py))
+	tp.dir = snappedf(push.angle() if push.length() > 0.001 else float(t.get("facing", 0.0)) + PI, 0.01)
+	if t.has("comp") and float(tp.mob) < 0.0:
+		tp.mob = float(t.comp.get("mobility", 100))
+	_pin(w, t, ticks(float(T.get("fall_s", 1.0)) + float(T.get("down_s", 8.0)) + float(T.get("rise_s", 2.0))))
+	w.emit("WalkerToppled", {"id": int(t.id), "owner": int(t.owner), "def": String(t.def), "pos": t.pos, "dir": float(tp.dir)})
+	_tpl_render(w, t)
+
+
+static func _pin(w: SimWorld, t: Dictionary, dur: int) -> void:
+	if t.has("comp"):
+		t.comp.mobility = 0.0
+	SimWorld.Movement.stop_path(t)
+	SimWorld.HotState.set_cd(w, int(t.id), maxi(SimWorld.HotState.get_cd(w, int(t.id)), dur))
+
+
+static func _tick_tpl(w: SimWorld, t: Dictionary, dt: float) -> bool:
+	var tp: Dictionary = t.tpl
+	var T := TP()
+	var ph := String(tp.ph)
+	if ph == "":
+		if w.tick - int(tp.last) >= ticks(float(T.get("decay_after_s", 4.0))):
+			tp.sg = snappedf(maxf(float(tp.sg) - float(T.get("decay_per_s", 0.35)) * dt, 0.0), 0.001)
+			if float(tp.sg) <= 0.0:
+				tp.px = 0.0
+				tp.py = 0.0
+		if float(tp.sg) <= 0.0 and w.tick >= int(tp.imm):
+			t.erase("tpl")
+			_tpl_render(w, t)
+			return false
+		_tpl_render(w, t)
+		return true
+	if w.tick >= int(tp.until):
+		match ph:
+			"fall":
+				tp.ph = "down"
+				tp.until = w.tick + ticks(float(T.get("down_s", 8.0)))
+				w.emit("WalkerDown", {"id": int(t.id), "owner": int(t.owner), "pos": t.pos, "dir": float(tp.dir)})
+			"down":
+				tp.ph = "rise"
+				tp.until = w.tick + ticks(float(T.get("rise_s", 2.0)))
+			"rise":
+				tp.ph = ""
+				tp.sg = 0.0
+				tp.px = 0.0
+				tp.py = 0.0
+				tp.imm = w.tick + ticks(float(T.get("immune_s", 6.0)))
+				if t.has("comp") and float(tp.mob) >= 0.0:
+					t.comp.mobility = float(tp.mob)
+				tp.mob = -1.0
+				w.emit("WalkerRighted", {"id": int(t.id), "owner": int(t.owner), "pos": t.pos})
+	if String(tp.ph) != "":
+		_pin(w, t, maxi(int(tp.until) - w.tick, 1) + (ticks(float(T.get("rise_s", 2.0))) if String(tp.ph) != "rise" else 0))
+	_tpl_render(w, t)
+	return true
+
+
+## Machine units under a CN effect (burn, mark, harpoon tether, stagger / topple), every 5 ticks.
+static func _tick_fx(w: SimWorld, st: Dictionary) -> void:
+	var keep := []
+	var dt := 5.0 / float(SimWorld.TICK_RATE)
+	var v = w.sys_state.get("g7v")
+	for id in st.fx:
+		var t = w.entities.get(int(id))
+		if t == null:
+			if v != null and v.has(int(id)):
+				var was := String(v[int(id)].get("topple", ""))
+				if was == "fall" or was == "down" or was == "rise":
+					w.emit("WalkerBlownUp", {"id": int(id), "dir": float(v[int(id)].get("topple_dir", 0.0))})
+				v.erase(int(id))
+			continue
+		var live := false
+		if t.has("cn_burn"):
+			var b: Dictionary = t.cn_burn
+			if w.tick >= int(b.until):
+				t.erase("cn_burn")
+			else:
+				live = true
+				var fake := {"id": -1, "kind": "unit", "owner": int(b.by), "pos": t.pos}
+				Dmg().apply_hit(w, fake, t, {"damage": float(b.dps) * dt, "cls": "at", "weapon": ""}, true)
+				if not w.entities.has(int(id)):
+					continue
+		if t.has("cn_mark"):
+			if w.tick >= int(t.cn_mark):
+				t.erase("cn_mark")
+			else:
+				live = true
+		if t.has("cn_harp"):
+			var hp: Dictionary = t.cn_harp
+			if w.tick >= int(hp.until):
+				t.erase("cn_harp")
+			else:
+				live = true
+				var lp := Vector2(float(hp.lx), float(hp.ly))
+				var cur: Vector2 = t.pos
+				if cur.distance_squared_to(lp) > 1e-6:   # tethered: only part of each step gets through
+					var np := lp + (cur - lp) * float(hp.slow)
+					SimWorld.HotState.set_pos(w, int(id), np)
+					cur = np
+				hp.lx = snappedf(cur.x, 0.001)
+				hp.ly = snappedf(cur.y, 0.001)
+		if t.has("tpl"):
+			live = _tick_tpl(w, t, dt) or live
+		if live:
+			keep.append(int(id))
+	st.fx = keep
+
+
+## Net / harpoon tether: the walker keeps only `slow` of its movement for sec seconds.
+static func tether(w: SimWorld, t: Dictionary, slow: float, sec: float) -> void:
+	t.cn_harp = {"until": w.tick + ticks(sec), "slow": slow, "lx": snappedf(Vector2(t.pos).x, 0.001), "ly": snappedf(Vector2(t.pos).y, 0.001)}
+	_fx_add(w, t)
+
+
+## g7v[id].topple "stagger" | "fall" | "down" | "rise", topple_dir (radians, the way it falls), stagger 0..1.
+static func _tpl_render(w: SimWorld, t: Dictionary) -> void:
+	var id := int(t.id)
+	if not t.has("tpl"):
+		var v = w.sys_state.get("g7v")
+		if v != null and v.has(id):
+			for k in ["topple", "topple_dir", "stagger"]:
+				v[id].erase(k)
+			if (v[id] as Dictionary).is_empty():
+				v.erase(id)
+		return
+	var tp: Dictionary = t.tpl
+	var g := _g7v(w, id)
+	g.topple = String(tp.ph) if String(tp.ph) != "" else "stagger"
+	g.topple_dir = float(tp.dir) if String(tp.ph) != "" else snappedf(Vector2(float(tp.px), float(tp.py)).angle(), 0.01)
+	g.stagger = snappedf(clampf(float(tp.sg) / topple_threshold(t), 0.0, 1.0), 0.05) if String(tp.ph) == "" else 1.0

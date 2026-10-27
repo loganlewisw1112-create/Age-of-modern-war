@@ -20,7 +20,7 @@ var evs: Array = []
 func _on_events(e: Array) -> void:
 	for ev in e:
 		var t := String(ev.get("type", ""))
-		if t.begins_with("Cn") or t.begins_with("Apc") or t.begins_with("Aps") or t.begins_with("Mount"):
+		if t.begins_with("Cn") or t.begins_with("Apc") or t.begins_with("Aps") or t.begins_with("Mount") or t.begins_with("Walker") 				or t == "RocketSalvo":
 			evs.append(ev)
 
 
@@ -130,11 +130,13 @@ func run(pt) -> void:
 	await pt._wait(1.0)
 	await pt._shot("cnsim7_01_spawn")
 
-	# 2. motorcade past a Machine walker group (contact on the flank)
+	# 2. motorcade meets two heavy Machine walkers: the group picks the anti-walker pincer by itself (CNSIM7-3:
+	# one APC rushes head-on to fix it, the rest flank, launcher volleys, operators out with limpets / harpoons,
+	# topple, blow it up), then the motorcade resumes to the site
 	var site1 := cf + Vector2(6.0, -6.0)
 	var foes := []
-	for k in 4:
-		var fc := Movement.nearest_free_cell(w, Vector2i(floori(cf.x) + (k % 2) * 2, floori(cf.y) + 6 + (k / 2) * 2), "vehicle")
+	for k in 2:
+		var fc := Movement.nearest_free_cell(w, Vector2i(floori(cf.x) - 4 + k * 6, floori(cf.y) + 6 - k * 4), "vehicle")
 		var fe: Dictionary = h._unit(w, "m_walker", foe, Vector2(fc) + Vector2(0.5, 0.5))
 		fe.order = {"type": "hold"}
 		foes.append(int(fe.id))
@@ -151,35 +153,50 @@ func run(pt) -> void:
 		mv.center_camera_on(_apc_pos(w, t))
 		await pt._shot("cnsim7_strip_%02d" % k)
 		await pt._wait(0.3)
-	var contact: bool = await pt._wait_until(func():
-		var hp := 0.0
-		for fid in foes:
-			var fe = pt._w().entities.get(fid)
-			hp += 0.0 if fe == null else float(fe.hp)
-		return hp < hp0 - 1.0 and not _ev("ApcPanel", "kind", "smoke").is_empty(), 25.0)
+	var engaged: bool = await pt._wait_until(func(): return not _ev("CnPincer").is_empty(), 25.0)
 	mv.join_sim()
-	mv.center_camera_on(_apc_pos(w, t))
-	await pt._shot("cnsim7_02_convoy_contact")
-	var hp1 := 0.0
-	var dead := 0
-	for fid in foes:
-		var fe = w.entities.get(fid)
-		hp1 += 0.0 if fe == null else float(fe.hp)
-		dead += 1 if fe == null else 0
-	var manned := 0
-	for aid in t.apcs:
-		var a = w.entities.get(int(aid))
-		manned += 0 if a == null else int(a.a7.get("manned", 0))
+	var pev := _ev("CnPincer")
+	pt._log("cnsim7_pincer_auto", engaged and String(pev.get("by", "")) == "auto",
+		"the group chose the pincer by itself: %s (fixer APC %s, %s APCs)" % [str(pev.get("by", "none")), str(pev.get("fixer", -1)), str(pev.get("apcs", 0))])
+	await pt._wait_until(func(): return not _ev("RocketSalvo").is_empty(), 12.0)
+	mv.join_sim()
+	var wk0 = w.entities.get(int(pev.get("target", -1)))
+	mv.center_camera_on(Vector2(wk0.pos) if wk0 != null else _apc_pos(w, t))
+	_zoom(pt, 1.1)
+	await pt._shot("cnsim7_08_pincer_launchers")
+	var popped := 0
+	for aid in t.apcs + CN.team(w, int(r1.team)).apcs:
+		popped += 1 if int(w.sys_state.get("g7v", {}).get(int(aid), {}).get("rl", 0)) >= 2 else 0
+	pt._log("cnsim7_launcher", not _ev("RocketSalvo").is_empty() and popped >= 1,
+		"pop-out launchers up/firing on %d APCs (g7v rl), first salvo %s" % [popped, str(_ev("RocketSalvo").get("kinds", []))])
+	var tpl: bool = await pt._wait_until(func(): return not _ev("WalkerToppled").is_empty(), 25.0)
+	mv.join_sim()
+	var tev := _ev("WalkerToppled")
+	mv.center_camera_on(Vector2(tev.get("pos", _apc_pos(w, t))))
+	await pt._shot("cnsim7_09_walker_toppled")
+	pt._log("cnsim7_topple", tpl, "heavy walker toppled (dir %.2f rad), ops out %s, kit: harpoon %s limpet %s disruptor %s" % [float(tev.get("dir", 0.0)),
+		not _ev("CnOpsDismount").is_empty(), not _ev("CnHarpoon").is_empty(), not _ev("CnLimpetPlanted").is_empty(), not _ev("CnDisruptorShot").is_empty()])
+	var killed: bool = await pt._wait_until(func():
+		for fid in foes:
+			if pt._w().entities.has(fid):
+				return false
+		return true, 60.0)
+	mv.join_sim()
+	await pt._shot("cnsim7_10_walkers_down")
+	var ends := 0
+	for ev in evs:
+		ends += 1 if String(ev.type) == "CnPincerEnd" and String(ev.get("result", "")) == "killed" else 0
+	pt._log("cnsim7_pincer_kills", killed and ends >= 1, "both heavy walkers destroyed %s (pincer ends 'killed' %d, blown up while down %s), strike APCs %d/2" % [killed, ends,
+		not _ev("WalkerBlownUp").is_empty(), CN.live_apcs(w, t).size()])
 	var smoke := _ev("ApcPanel", "kind", "smoke")
-	pt._log("cnsim7_convoy_contact", contact and CN.live_apcs(w, t).size() == 2 and manned >= 2,
-		"mounts engaged: walkers hp %.0f -> %.0f (%d/4 destroyed; .50 small_arms vs heavy armour x0.05), crew smoke on APC %s, strike APCs alive %d/2, manned .50 mounts %d/4" % [hp0, hp1, dead, str(smoke.get("id", "none")), CN.live_apcs(w, t).size(), manned])
+	pt._log("cnsim7_convoy_contact", CN.live_apcs(w, t).size() == 2, "crew smoke on APC %s, volleys %s" % [str(smoke.get("id", "none")), str(_ev("CnVolley").get("apcs", 0))])
 	await _deploys(pt, t, foes, site1, cf + Vector2(10.0, 10.0))
 
 
 func _deploys(pt, t: Dictionary, foes: Array, site1: Vector2, site2: Vector2) -> void:
 	var mv = pt._mv()
 	var w: SimWorld = pt._w()
-	var through: bool = await pt._wait_until(func(): return _apc_pos(pt._w(), t).distance_to(site1) <= 6.0, 30.0)
+	var through: bool = await pt._wait_until(func(): return _apc_pos(pt._w(), t).distance_to(site1) <= 6.0, 50.0)
 	mv.join_sim()
 	pt._log("cnsim7_convoy_through", through and CN.live_apcs(w, t).size() == 2, "motorcade reached the site past the contact: %s, strike APCs %d/2" % [through, CN.live_apcs(w, t).size()])
 	for fid in foes:   # contact over: the walkers left on the flank are removed so the deployment scene is readable
@@ -240,6 +257,7 @@ func _deploys(pt, t: Dictionary, foes: Array, site1: Vector2, site2: Vector2) ->
 	mv.join_sim()
 	var hev := _ev("CnHeroDetonation")
 	await pt._shot("cnsim7_06_hero_window")
+	pt._log("cnsim7_formed_withdrawal", not _ev("CnFormedWithdraw").is_empty(), "hero window: formed withdrawal %s (APC line + soldiers behind, smoke)" % str(_ev("CnFormedWithdraw").get("back", "none")))
 	var boom: bool = await pt._wait_until(func(): return not _ev("CnPurge", "hero", true).is_empty(), 20.0)
 	mv.join_sim()
 	await pt._wait(0.4)

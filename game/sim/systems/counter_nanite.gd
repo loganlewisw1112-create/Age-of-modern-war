@@ -170,8 +170,7 @@ static func spawn_team(w: SimWorld, fid: int, kind: String, pos: Vector2) -> Dic
 	st.teams[tid] = t
 	if strike:
 		var dl: Array = R().get("default_loadout", [])
-		for aid in t.apcs:
-			_fill(w, w.entities[aid], dl.duplicate())
+		_split(w, t, dl + dl)   # the default kit for each APC, interleaved
 	w.emit("CnTeamSpawned", {"team": tid, "kind": t.kind, "owner": fid, "name": t.name, "apcs": t.apcs.duplicate(),
 		"members": t.members.size(), "pos": pos})
 	return {"team": tid, "apcs": t.apcs.duplicate(), "members": t.members.duplicate()}
@@ -239,6 +238,38 @@ static func _fill(w: SimWorld, a: Dictionary, kinds: Array) -> Array:
 		else:
 			rest.append(k)
 	a.a7.pk = pk
+	return rest
+
+
+## Split loadout: each package goes to the APC holding the fewest of its kind (then the least loaded, then A), so
+## losing one strike APC never loses every package of a kind. Returns what did not fit.
+static func _split(w: SimWorld, t: Dictionary, kinds: Array) -> Array:
+	var apcs := []
+	for aid in t.apcs:
+		var a = find(w, int(aid))
+		if a != null:
+			a.a7.pk = []
+			apcs.append(a)
+	var rest := []
+	for k in kinds:
+		var best = null
+		var bk := 1 << 30
+		for a in apcs:
+			var used := 0
+			var same := 0
+			for p in a.a7.pk:
+				used += pkg_size(String(p))
+				same += 1 if String(p) == String(k) else 0
+			if used + pkg_size(String(k)) > int(Apc7.cfg_of(String(a.def)).get("pkg_capacity", 0)):
+				continue
+			var score := same * 1000 + used
+			if score < bk:
+				bk = score
+				best = a
+		if best == null:
+			rest.append(k)
+		else:
+			best.a7.pk.append(String(k))
 	return rest
 
 
@@ -602,22 +633,11 @@ static func hero_reason(w: SimWorld, t: Dictionary, uid: int) -> String:
 	return ""
 
 
-## Hero window: everyone else leaves the blast radius by the shortest way (straight out from the site, to
-## blast_radius + 2.5 tiles); APCs parked inside it drive out too. They remount after the blast.
+## Hero window: everyone else pulls back as a formed group (formed_withdraw: APC line between the blast and the
+## soldiers, smoke on the threat side, soldiers in a block behind the hulls). They remount after the blast.
 static func _withdraw(w: SimWorld, t: Dictionary, hid: int, site: Vector2) -> void:
 	var br := float(R().get("hero", {}).get("blast_radius", 3.5))
-	var back := -_threat_dir(w, t, site)
-	for id in t.apcs + t.members:
-		var u = w.entities.get(int(id))
-		if u == null or int(id) == hid:
-			continue
-		var off := Vector2(u.pos) - site
-		var need := br + (3.0 if u.has("a7") else 2.5)
-		if off.length() >= need:
-			continue
-		var out := back if off.length() < 0.2 else off.normalized()
-		SimWorld.Movement.order_move(w, u, _post(w, site + out * need))
-		u.order.sq = "cn"
+	formed_withdraw(w, [t], site, -_threat_dir(w, t, site), br, [hid])
 
 
 ## One operator stays and arms by hand: instant arming, the rest withdraw out of the blast, then it goes off.
@@ -836,6 +856,8 @@ static func tick(w: SimWorld) -> void:
 		if (w.tick + int(tid)) % 10 == 0:
 			_tick_team(w, t)
 			_tick_kit(w, t)
+		if (w.tick + int(tid)) % int(R().get("pincer", {}).get("think", 5)) == 0:
+			_tick_eng(w, t)
 
 
 # ================================================================ suits and exposure (every rules.exposure.every ticks)
@@ -1003,8 +1025,22 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		return "That team is gone."
 	match ty:
 		"cn_set_loadout":
-			if String(t.kind) != "strike":
+			if String(t.kind) != "strike" and not (cmd.get("packages", []) as Array).is_empty():
 				return "Only strike APCs carry packages."
+			if bool(t.locked) and cmd.has("rockets"):
+				return "The loadout is locked in the field: return to the facility to re-equip."
+			if cmd.has("rockets") and typeof(cmd.rockets) != TYPE_DICTIONARY:
+				return "Rockets: {canister: count}."
+			if cmd.has("rockets"):
+				var nr := 0
+				for k in cmd.rockets:
+					if not (Apc7.L().get("kinds", {}) as Dictionary).has(String(k)):
+						return "Unknown canister '%s'." % String(k)
+					nr += int(cmd.rockets[k])
+				if nr > int(Apc7.L().get("capacity", 18)):
+					return "The launcher holds %d rounds." % int(Apc7.L().get("capacity", 18))
+				if String(t.kind) != "strike":
+					return ""
 			if bool(t.locked):
 				return "The loadout is locked in the field: return to the facility to re-equip."
 			var cap := 0
@@ -1037,6 +1073,14 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			return ""
 		"cn_move":
 			return "" if _pt(cmd.get("target")) != null else "Pick a destination."
+		"cn_pincer":
+			if t.dep != null:
+				return "The team is deploying a package."
+			if _group_apcs(w, t).is_empty():
+				return "No APC left."
+			return "" if pincer_target(w, t, int(cmd.get("target_id", -1))) != null else "No heavy Machine walker in reach."
+		"cn_break_contact":
+			return ""
 	return "Unknown counter-nanite command."
 
 
@@ -1044,7 +1088,19 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var t = _cmd_team(w, cmd)
 	match String(cmd.get("type", "")):
 		"cn_set_loadout":
-			_set_loadout(w, t, cmd.get("packages", []))
+			if String(t.kind) == "strike" and cmd.has("packages"):
+				_set_loadout(w, t, cmd.get("packages", []))
+			if cmd.has("rockets"):
+				for aid in t.apcs:
+					var ra = find(w, int(aid))
+					if ra != null:
+						Apc7.set_rockets(w, ra, cmd.rockets)
+				w.emit("CnRocketsSet", {"team": int(t.id), "owner": int(t.fid), "rockets": Apc7.clamp_load(cmd.rockets)})
+		"cn_pincer":
+			start_eng(w, t, pincer_target(w, t, int(cmd.get("target_id", -1))), "player")
+		"cn_break_contact":
+			var bw = w.entities.get(int(t.eng.tgt)) if t.get("eng") != null else null
+			break_contact(w, t, Vector2(bw.pos) if bw != null else _threat_pos(w, t))
 		"cn_deploy":
 			start_deploy(w, t, _pt(cmd.target), String(cmd.get("package", "purge")))
 		"cn_hero_detonate":
@@ -1074,10 +1130,7 @@ static func _set_loadout(w: SimWorld, t: Dictionary, kinds: Array) -> void:
 		if int(got.get(String(k), 0)) > 0:
 			got[String(k)] = int(got[String(k)]) - 1
 			want.append(String(k))
-	for aid in t.apcs:
-		var a = find(w, int(aid))
-		if a != null:
-			want = _fill(w, a, want)
+	_split(w, t, want)
 	w.emit("CnLoadoutSet", {"team": int(t.id), "owner": int(t.fid), "loadout": loadout(w, int(t.id))})
 
 
@@ -1110,6 +1163,7 @@ static func move_team(w: SimWorld, t: Dictionary, target: Vector2, escort_teams:
 	ids.sort()
 	if ids.is_empty():
 		return
+	t.mv_to = target
 	var cid := int(Apc7.callf(SimWorld.Convoy, "form", [w, int(t.fid), ids, core], -1))
 	if cid >= 0:
 		t.conv = cid
@@ -1131,3 +1185,498 @@ static func _teams(w: SimWorld, fid: int, tids: Array) -> Array:
 		if tt != null and int(tt.fid) == fid and not bool(tt.get("dead", false)):
 			out.append(tt)
 	return out
+
+
+# ================================================================ anti-walker pincer (owner addition 2026-10-26)
+## One element (the fixer, a tactical APC when there is one) rushes the walker head-on and stops in its face (dome up);
+## the other APCs take flank / rear slots (rules pincer.slot_angles around the walker->fixer axis) and fire
+## synchronised volleys (EMP opens a stun window, a disruptor marks it, tandem / thermite into the flanks; everything
+## into the belly once it is down). Tactical operators dismount when the walker is fixed and go for it with their
+## kit; strike gunners run out with limpets while it lies toppled. Auto (the group handles contact itself, also under
+## an AI Commander) or one player order (cn_pincer). State t.eng (lead team: the strike team, or a lone tactical squad).
+static func P() -> Dictionary:
+	return R().get("pincer", {})
+
+
+static func _frac(e: Dictionary) -> float:
+	return float(e.hp) / maxf(float(Content.unit(String(e.def)).get("hp", 1)), 1.0)
+
+
+## The strike team this tactical squad escorts (then that team leads the group), or null.
+static func _lead_of(w: SimWorld, t: Dictionary):
+	if String(t.kind) == "strike":
+		return null
+	for tid in team_ids(w):
+		var o: Dictionary = w.sys_state.cn7.teams[tid]
+		if String(o.kind) == "strike" and not bool(o.get("dead", false)) and (o.get("esc", []) as Array).has(int(t.id)):
+			return o
+	return null
+
+
+static func _group_teams(w: SimWorld, t: Dictionary) -> Array:
+	return [t] + _teams(w, int(t.fid), t.get("esc", []))
+
+
+static func _group_apcs(w: SimWorld, t: Dictionary) -> Array:
+	var out := []
+	for tt in _group_teams(w, t):
+		for aid in tt.apcs:
+			var a = w.entities.get(int(aid))
+			if a != null and a.has("a7"):
+				out.append(a)
+	return out
+
+
+static func pincer_target(w: SimWorld, t: Dictionary, tid: int):
+	var fid := int(t.fid)
+	if tid >= 0:
+		var u = w.entities.get(tid)
+		return u if u != null and w.is_enemy(fid, int(u.owner)) and Apc7.is_heavy_walker(u) else null
+	var best = null
+	var bd := INF
+	for a in _group_apcs(w, t):
+		for u in Apc7.near(w, a.pos, float(P().get("detect", 12.0))):
+			if not w.is_enemy(fid, int(u.owner)) or not Apc7.is_heavy_walker(u):
+				continue
+			var d := Vector2(u.pos).distance_to(a.pos)
+			if d < bd:
+				bd = d
+				best = u
+	return best
+
+
+static func _threat_pos(w: SimWorld, t: Dictionary) -> Vector2:
+	var apcs := _group_apcs(w, t)
+	var c := Vector2(t.spawn) if apcs.is_empty() else Vector2(apcs[0].pos)
+	return c + _threat_dir(w, t, c) * 6.0
+
+
+## Player control first: an auto pincer never moves a unit on Hold Position or with a fresh player order.
+static func _held(w: SimWorld, e: Dictionary) -> bool:
+	return String(e.order.get("type", "")) == "hold" or bool(Apc7.callf(SimWorld.AiCommand, "player_fresh", [w, e], false))
+
+
+static func start_eng(w: SimWorld, t: Dictionary, wk, by: String) -> void:
+	if wk == null:
+		return
+	if int(t.get("conv", -1)) >= 0:
+		Apc7.callf(SimWorld.Convoy, "disband", [w, int(t.conv)], null)
+		t.conv = -1
+	t.wd = null
+	t.eng = {"tgt": int(wk.id), "fix": -1, "ax": 0.0, "by": by, "t0": w.tick, "volley": w.tick, "volleys": 0,
+		"reslot": w.tick, "gunners": []}
+	var apcs := _group_apcs(w, t)
+	_assign(w, t, wk, apcs, null)
+	_place(w, t, wk, apcs)
+	w.emit("CnPincer", {"team": int(t.id), "owner": int(t.fid), "target": int(wk.id), "by": by, "fixer": int(t.eng.fix),
+		"apcs": apcs.size(), "pos": wk.pos})
+
+
+## Fixer: the healthiest-nearest tactical APC (strike APCs only when no tactical one is fit).
+static func _assign(w: SimWorld, t: Dictionary, wk: Dictionary, apcs: Array, old) -> void:
+	var E: Dictionary = t.eng
+	var best = null
+	var bs := INF
+	var swap := float(P().get("fixer_swap_hp", 0.3))
+	for a in apcs:
+		if old != null and int(a.id) == int(old.id) and apcs.size() > 1:
+			continue
+		var sc := Vector2(a.pos).distance_to(wk.pos) + (0.0 if String(Apc7.cfg_of(String(a.def)).get("kind", "")) == "tactical" else 6.0) \
+			+ (20.0 if _frac(a) < swap else 0.0)
+		if sc < bs:
+			bs = sc
+			best = a
+	if best == null:
+		return
+	E.fix = int(best.id)
+	var v := Vector2(best.pos) - Vector2(wk.pos)
+	E.ax = snappedf((v if v.length() > 0.1 else Vector2.RIGHT).angle(), 0.001)
+	E.reslot = w.tick
+	if old != null:
+		w.emit("CnPincerSwap", {"team": int(t.id), "owner": int(t.fid), "from": int(old.id), "to": int(best.id)})
+
+
+static func _go(w: SimWorld, u: Dictionary, goal: Vector2, tol: float = 1.0) -> void:
+	goal = _post(w, goal)
+	var cur = u.order.get("target")
+	if Vector2(u.pos).distance_to(goal) <= tol:
+		return
+	if String(u.order.get("type", "")) == "move" and typeof(cur) == TYPE_VECTOR2 and Vector2(cur).distance_to(goal) <= tol:
+		return
+	SimWorld.Movement.order_move(w, u, goal)
+	u.order.sq = "cn"
+
+
+## Slots around the walker; the axis follows the fixer, who stays in its face.
+static func _place(w: SimWorld, t: Dictionary, wk: Dictionary, apcs: Array) -> void:
+	var E: Dictionary = t.eng
+	var W: Vector2 = wk.pos
+	var fxe = w.entities.get(int(E.fix))
+	if fxe != null and Vector2(fxe.pos).distance_to(W) > 0.5:
+		E.ax = snappedf((Vector2(fxe.pos) - W).angle(), 0.001)
+	var a := Vector2.from_angle(float(E.ax))
+	var slots := {}
+	if fxe != null:
+		slots[int(fxe.id)] = _post(w, W + a * float(P().get("fix_dist", 4.0)))
+	var free := []
+	for e in apcs:
+		if int(e.id) != int(E.fix):
+			free.append(e)
+	var angs: Array = P().get("slot_angles", [110, -110, 150, -150, 180])
+	var i := 0
+	while not free.is_empty() and i < angs.size():
+		var sp := _post(w, W + a.rotated(deg_to_rad(float(angs[i]))) * float(P().get("flank_dist", 6.0)))
+		var bj := 0
+		var bd := INF
+		for j in free.size():
+			var d := Vector2(free[j].pos).distance_to(sp)
+			if d < bd:
+				bd = d
+				bj = j
+		slots[int(free[bj].id)] = sp
+		free.remove_at(bj)
+		i += 1
+	var drift := float(P().get("reslot_drift", 2.0))
+	for e in apcs:
+		e.a7.rl.eng = int(t.id)
+		e.a7.rl.tgt = int(wk.id)
+		if not slots.has(int(e.id)) or (String(E.by) == "auto" and _held(w, e)):
+			continue
+		_go(w, e, slots[int(e.id)], minf(drift, 1.2) if Vector2(e.pos).distance_to(slots[int(e.id)]) > drift else drift)
+	E.slots = slots
+	if fxe != null and slots.has(int(fxe.id)) and Vector2(fxe.pos).distance_to(slots[int(fxe.id)]) <= 1.6 \
+			and not bool(fxe.get("moving", false)) and Apc7._dome_ok(w, fxe):
+		Apc7.set_dome(w, fxe, true)
+
+
+static func _tick_eng(w: SimWorld, t: Dictionary) -> void:
+	_limpets(w, t)
+	if t.get("wd") != null:
+		_tick_wd(w, t)
+		return
+	if t.get("resume_at") != null and w.tick >= int(t.resume_at):
+		t.erase("resume_at")
+		if t.has("mv_to") and t.get("eng") == null:
+			move_team(w, t, t.mv_to, t.get("esc", []))
+	if t.get("eng") == null:
+		if t.dep != null or _lead_of(w, t) != null:
+			return
+		var cand = pincer_target(w, t, -1)
+		if cand != null:
+			start_eng(w, t, cand, "auto")
+		return
+	var E: Dictionary = t.eng
+	var wk = w.entities.get(int(E.tgt))
+	var apcs := _group_apcs(w, t)
+	if wk == null:
+		_end_eng(w, t, "killed")
+		return
+	if apcs.is_empty():
+		t.eng = null
+		return
+	var far := true
+	for a in apcs:
+		if Vector2(a.pos).distance_to(wk.pos) <= float(P().get("detect", 12.0)) * 2.0:
+			far = false
+	if far:
+		_end_eng(w, t, "lost")
+		return
+	var hpf := 0.0
+	var ammo := 0
+	for a in apcs:
+		hpf += _frac(a)
+		ammo += Apc7.rockets_left(a)
+	hpf /= float(apcs.size())
+	if hpf < float(P().get("break_hp", 0.35)) or (ammo == 0 and _frac(wk) > 0.5 and not Apc7.is_down(wk)):
+		break_contact(w, t, wk.pos)
+		return
+	var fxe = w.entities.get(int(E.fix))
+	if fxe == null or (_frac(fxe) < float(P().get("fixer_swap_hp", 0.3)) and apcs.size() > 1):
+		_assign(w, t, wk, apcs, fxe)
+	if w.tick >= int(E.reslot):
+		E.reslot = w.tick + ticks(float(P().get("reslot_s", 2.0)))
+		_place(w, t, wk, apcs)
+	_volley(w, t, wk, apcs)
+	if w.entities.has(int(wk.id)):
+		_ops(w, t, wk)
+
+
+## Time on target: every popped launcher of the group fires on the same tick, every pincer.volley_s.
+static func _volley(w: SimWorld, t: Dictionary, wk: Dictionary, apcs: Array) -> void:
+	var E: Dictionary = t.eng
+	if w.tick < int(E.volley):
+		return
+	var down := Apc7.is_down(wk)
+	var stun := int(wk.get("emp_until", -1)) >= w.tick
+	var marked := int(wk.get("cn_mark", -1)) >= w.tick
+	var fired := 0
+	for e in apcs:
+		if not Apc7.can_fire(w, e, wk):
+			continue
+		var pref := ["tandem", "thermite"]
+		if not down:
+			if int(e.id) == int(E.fix):
+				pref = ["tandem"] if stun else ["emp", "tandem"]
+			elif not marked and int(e.a7.rl.rk.get("disruptor", 0)) > 0:
+				pref.push_front("disruptor")
+				marked = true
+			elif not stun and int(e.a7.rl.rk.get("emp", 0)) > 0 and w.entities.get(int(E.fix)) == null:
+				pref.push_front("emp")
+		if pref[0] == "emp":
+			stun = true
+		if Apc7.fire_salvo(w, e, wk, pref) > 0:
+			fired += 1
+		if not w.entities.has(int(wk.id)):
+			break
+	if fired > 0:
+		E.volley = w.tick + ticks(float(P().get("volley_s", 4.0)))
+		E.volleys = int(E.volleys) + 1
+		w.emit("CnVolley", {"team": int(t.id), "owner": int(t.fid), "target": int(wk.id), "apcs": fired, "down": down})
+
+
+## Operators fight armour: they dismount once the walker is fixed (fixer in its face) and their APC is in reach;
+## hunters tether it (net / harpoon: slowed + stagger) and plant limpets on the legs from the flank, the EMP
+## grenadier closes to grenade range (stun window), the marksman puts nanite-disruptor rounds into the sensor eyes
+## (sensors down + marked), the rest keep to the sheltered side of their APC. Strike security gunners run out with
+## limpets while the walker lies toppled and get back in when it rises.
+static func _ops(w: SimWorld, t: Dictionary, wk: Dictionary) -> void:
+	var E: Dictionary = t.eng
+	var O: Dictionary = R().get("ops_engage", {})
+	var W: Vector2 = wk.pos
+	var a := Vector2.from_angle(float(E.ax))
+	var fxe = w.entities.get(int(E.fix))
+	var fixed_ok := fxe != null and Vector2(fxe.pos).distance_to(W) <= float(P().get("fix_dist", 4.0)) + 2.5
+	var down := Apc7.is_down(wk)
+	for tt in _group_teams(w, t):
+		var tac := String(tt.kind) == "tactical"
+		for aid in tt.apcs:
+			var c = w.entities.get(int(aid))
+			if c == null or not c.has("cargo") or (c.cargo as Array).is_empty():
+				continue
+			if Vector2(c.pos).distance_to(W) > float(O.get("range", 10.0)) or (String(E.by) == "auto" and _held(w, c)):
+				continue
+			var ids := []
+			for u in c.cargo:
+				if tac or (down and role_of(u) == "gunner" and Vector2(c.pos).distance_to(W) <= float(O.get("gunner_limpet_r", 6.0))):
+					ids.append(int(u.id))
+			if ids.is_empty() or (tac and (not fixed_ok or bool(tt.get("ops_out", false)))):
+				continue
+			SimWorld.Transport.unload(w, c, ids, Vector2(c.pos), "cn_engage")
+			if tac:
+				tt.ops_out = true
+			else:
+				E.gunners.append_array(ids)
+			w.emit("CnOpsDismount", {"team": int(tt.id), "owner": int(tt.fid), "apc": int(c.id), "ids": ids, "target": int(wk.id)})
+	if not down and not (E.gunners as Array).is_empty():   # it got up: the gunners get back in
+		for gid in E.gunners:
+			var g = w.entities.get(int(gid))
+			if g != null:
+				_board_own(w, t, g)
+		E.gunners = []
+	for tt in _group_teams(w, t):
+		var out := String(tt.kind) == "tactical" and bool(tt.get("ops_out", false))
+		for id in tt.members:
+			var u = w.entities.get(int(id))
+			if u == null:
+				continue
+			var role := role_of(u)
+			if (out or (E.gunners as Array).has(int(id))) and not (String(E.by) == "auto" and _held(w, u)):
+				_op_act(w, t, u, role, wk, a, O)
+
+
+static func _board_own(w: SimWorld, t: Dictionary, u: Dictionary) -> void:
+	var idx := 1 if String(u.get("cn_sq", "A")) == "B" and t.apcs.size() > 1 else 0
+	var c = w.entities.get(int(t.apcs[idx]))
+	if c == null or SimWorld.Transport.free_slots(c) <= 0:
+		for aid in t.apcs:
+			var o = w.entities.get(int(aid))
+			if o != null and SimWorld.Transport.free_slots(o) > 0:
+				c = o
+				break
+	if c != null:
+		SimWorld.Transport.order_board(w, u, c)
+
+
+static func _op_act(w: SimWorld, t: Dictionary, u: Dictionary, role: String, wk: Dictionary, a: Vector2, O: Dictionary) -> void:
+	var W: Vector2 = wk.pos
+	var s := 1.0 if int(u.id) % 2 == 0 else -1.0   # both flanks
+	var d := Vector2(u.pos).distance_to(W)
+	match role:
+		"hunter", "gunner":
+			var hp: Dictionary = O.get("harpoon", {})
+			if role == "hunter" and w.tick >= int(u.get("harp_cd", 0)) and d <= float(hp.get("range", 5.0)):
+				u.harp_cd = w.tick + ticks(float(hp.get("cooldown_s", 18)))
+				Apc7.tether(w, wk, float(hp.get("slow", 0.5)), float(hp.get("slow_s", 6)))
+				Apc7.hit_heavy(w, u, wk, 4.0, "at", float(hp.get("stagger", 1.5)))
+				w.emit("CnHarpoon", {"id": int(u.id), "owner": int(u.owner), "target": int(wk.id), "from": u.pos, "to": W})
+				if not w.entities.has(int(wk.id)):
+					return
+			var lm: Dictionary = O.get("limpet", {})
+			var flank := a.rotated(deg_to_rad(120.0 * s))
+			if w.tick >= int(u.get("lim_cd", 0)):
+				var reach := float(lm.get("reach", 1.6))
+				if d <= reach:
+					u.lim_cd = w.tick + ticks(float(lm.get("cooldown_s", 25)))
+					var off := Vector2(u.pos) - W
+					if not t.has("limp"):
+						t.limp = []
+					t.limp.append({"at": w.tick + ticks(float(lm.get("fuse_s", 3.0))), "tgt": int(wk.id), "ox": snappedf(off.x, 0.001),
+						"oy": snappedf(off.y, 0.001), "own": int(u.owner), "by": int(u.id)})
+					w.emit("CnLimpetPlanted", {"id": int(u.id), "owner": int(u.owner), "target": int(wk.id), "pos": u.pos})
+					_go(w, u, W + flank * 6.0)
+				else:
+					_go(w, u, W + flank * (reach - 0.5), 0.4)
+			else:
+				_go(w, u, W + flank * 5.5)
+		"marksman":
+			var dr: Dictionary = O.get("disruptor", {})
+			_go(w, u, W + a.rotated(deg_to_rad(70.0 * s)) * (float(dr.get("range", 11.0)) - 2.0), 1.5)
+			if w.tick >= int(u.get("dsr_cd", 0)) and d <= float(dr.get("range", 11.0)):
+				u.dsr_cd = w.tick + ticks(float(dr.get("cooldown_s", 12)))
+				Apc7.hit_heavy(w, u, wk, float(dr.get("damage", 12)), "at", float(dr.get("stagger", 0.2)))
+				if w.entities.has(int(wk.id)):
+					Apc7.mark(w, wk, float(dr.get("mark_s", 10)), float(dr.get("sensors", 25)))
+				w.emit("CnDisruptorShot", {"id": int(u.id), "owner": int(u.owner), "target": int(wk.id), "from": u.pos, "to": W})
+		"emp":
+			_go(w, u, W + a.rotated(deg_to_rad(95.0 * s)) * 4.0, 1.0)
+		_:
+			var c = null
+			for aid in t.apcs + _team_apcs_of(w, u):
+				c = w.entities.get(int(aid))
+				if c != null:
+					break
+			if c != null:
+				var away := Vector2(c.pos) - W
+				_go(w, u, Vector2(c.pos) + (away.normalized() if away.length() > 0.1 else Vector2.RIGHT) * 1.6, 1.0)
+
+
+static func _team_apcs_of(w: SimWorld, u: Dictionary) -> Array:
+	var tt = team(w, team_of(u))
+	return [] if tt == null else tt.apcs
+
+
+## Limpets stick to the walker and go off after the fuse (the hit side is where they were planted).
+static func _limpets(w: SimWorld, t: Dictionary) -> void:
+	if not t.has("limp") or (t.limp as Array).is_empty():
+		return
+	var lm: Dictionary = R().get("ops_engage", {}).get("limpet", {})
+	var keep := []
+	for L in t.limp:
+		if w.tick < int(L.at):
+			keep.append(L)
+			continue
+		var wk = w.entities.get(int(L.tgt))
+		if wk == null:
+			continue
+		var src := {"id": -1, "kind": "unit", "owner": int(L.own), "pos": Vector2(wk.pos) + Vector2(float(L.ox), float(L.oy))}
+		Apc7.hit_heavy(w, src, wk, float(lm.get("damage", 180)), String(lm.get("cls", "at")), float(lm.get("stagger", 3.0)))
+		w.emit("CnLimpet", {"owner": int(L.own), "target": int(L.tgt), "pos": src.pos, "by": int(L.by)})
+	t.limp = keep
+
+
+static func _end_eng(w: SimWorld, t: Dictionary, result: String) -> void:
+	var E: Dictionary = t.eng
+	for a in _group_apcs(w, t):
+		if a.a7.has("rl"):
+			a.a7.rl.eng = -1
+			a.a7.rl.tgt = -1
+	for tt in _group_teams(w, t):
+		if bool(tt.get("ops_out", false)):
+			tt.ops_out = false
+			remount(w, tt)
+	for gid in E.gunners:
+		var g = w.entities.get(int(gid))
+		if g != null:
+			_board_own(w, t, g)
+	t.eng = null
+	w.emit("CnPincerEnd", {"team": int(t.id), "owner": int(t.fid), "target": int(E.tgt), "result": result,
+		"volleys": int(E.volleys), "ticks": w.tick - int(E.t0)})
+	if result == "killed" and String(E.by) == "auto" and t.has("mv_to"):
+		t.resume_at = w.tick + ticks(6.0)   # back on the road once everyone is aboard
+
+
+## Break contact: everyone mounts under smoke, then the group pulls back as a formed group (formed_withdraw).
+static func break_contact(w: SimWorld, t: Dictionary, from: Vector2) -> void:
+	if t.get("eng") != null:
+		_end_eng(w, t, "broke")
+	t.erase("resume_at")
+	for tt in _group_teams(w, t):
+		remount(w, tt)
+	for a in _group_apcs(w, t):
+		if int(a.a7.st.get("smoke", 0)) > 0 and int(a.a7.smoke_until) < w.tick:
+			Apc7.fire_panel(w, a, "smoke")
+	t.wd = {"x": snappedf(from.x, 0.001), "y": snappedf(from.y, 0.001), "ph": "mount", "until": w.tick + ticks(6.0),
+		"end": w.tick + ticks(float(R().get("withdraw", {}).get("break_s", 30)))}
+	w.emit("CnBreakContact", {"team": int(t.id), "owner": int(t.fid), "from": from})
+
+
+static func _tick_wd(w: SimWorld, t: Dictionary) -> void:
+	var D: Dictionary = t.wd
+	if String(D.ph) == "mount":
+		var foot := 0
+		for tt in _group_teams(w, t):
+			for id in tt.members:
+				foot += 1 if w.entities.has(int(id)) else 0
+		if foot > 0 and w.tick < int(D.until):
+			return
+		var from := Vector2(float(D.x), float(D.y))
+		var c := Vector2.ZERO
+		var apcs := _group_apcs(w, t)
+		for a in apcs:
+			c += Vector2(a.pos)
+		var back := (c / float(maxi(apcs.size(), 1))) - from if not apcs.is_empty() else -_threat_dir(w, t, from)
+		formed_withdraw(w, _group_teams(w, t), from, back, float(R().get("withdraw", {}).get("break_dist", 12.0)), [], true)
+		D.ph = "move"
+	elif w.tick >= int(D.end):
+		t.wd = null
+		w.emit("CnWithdrawn", {"team": int(t.id), "owner": int(t.fid)})
+
+
+## Formed withdrawal away from `from` along `back`: the APCs in a line across the axis (base + apc_back out), smoke
+## on the threat side, the soldiers on foot in a block of rules.withdraw.cols columns right behind the hulls (the
+## sheltered side), slots assigned in their current left-right order so nobody crosses the line. bk = fall back
+## facing the enemy and keep firing (SquadAI ordered fall-back flag).
+static func formed_withdraw(w: SimWorld, teams: Array, from: Vector2, back: Vector2, base: float, skip: Array, bk: bool = false) -> void:
+	var D: Dictionary = R().get("withdraw", {})
+	back = back.normalized() if back.length() > 0.01 else Vector2.RIGHT
+	var perp := back.orthogonal()
+	var apcs := []
+	var foot := []
+	for tt in teams:
+		for aid in tt.apcs:
+			var a = w.entities.get(int(aid))
+			if a != null:
+				apcs.append(a)
+		for id in tt.members:
+			var u = w.entities.get(int(id))
+			if u != null and not skip.has(int(id)):
+				foot.append(u)
+	var by_perp := func(x, y):
+		var px := Vector2(x.pos).dot(perp)
+		var py := Vector2(y.pos).dot(perp)
+		return px < py or (px == py and int(x.id) < int(y.id))
+	apcs.sort_custom(by_perp)
+	foot.sort_custom(by_perp)
+	var n := apcs.size()
+	var ab := base + float(D.get("apc_back", 2.5))
+	for i in n:
+		var a: Dictionary = apcs[i]
+		SimWorld.Movement.order_move(w, a, _post(w, from + back * ab + perp * ((float(i) - float(n - 1) * 0.5) * float(D.get("apc_gap", 2.5)))))
+		a.order.sq = "cn"
+		if int(a.a7.st.get("smoke", 0)) > 0 and int(a.a7.smoke_until) < w.tick:
+			Apc7.fire_panel(w, a, "smoke")
+	var cols := maxi(int(D.get("cols", 5)), 1)
+	var fb := ab + float(D.get("foot_back", 1.6))
+	for i in foot.size():
+		var row := i / cols
+		var in_row := mini(cols, foot.size() - row * cols)
+		var col := i % cols
+		var p := from + back * (fb + float(row) * float(D.get("row_gap", 0.9))) \
+			+ perp * ((float(col) - float(in_row - 1) * 0.5) * float(D.get("col_gap", 1.0)))
+		var u: Dictionary = foot[i]
+		SimWorld.Movement.order_move(w, u, _post(w, p))
+		u.order.sq = "cn"
+		if bk:
+			u.order.bk = true
+	w.emit("CnFormedWithdraw", {"owner": int(teams[0].fid) if not teams.is_empty() else -1, "from": from, "back": back,
+		"apcs": n, "foot": foot.size()})

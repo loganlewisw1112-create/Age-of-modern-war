@@ -1230,10 +1230,11 @@
   },
   "g7_op_harpoon": {
    "class": "at",
-   "damage": 55,
+   "damage": 24,
    "range": 5,
    "cooldown": 3,
-   "accuracy": 0.8
+   "accuracy": 0.8,
+   "_note": "PROVISIONAL (CNSIM7-3): the harpoon is a tether (kit: slows + staggers walkers), not an AT gun; limpets and the APC launcher do the heavy damage."
   },
   "g7_cn_hmg50": {
    "class": "small_arms",
@@ -1378,7 +1379,164 @@
    "gunner": {
     "hit_chance": 0.25
    },
-   "pair_leash": 8
+   "pair_leash": 8,
+   "launcher": {
+    "_note": "Owner amendment 2026-10-26: pop-out 6-tube micro rocket launcher on every CN APC, top rear right behind the gunner pod. Up to 6 canister types. All numbers PROVISIONAL.",
+    "tubes": 6,
+    "range": 9.0,
+    "min_range": 1.5,
+    "pop_s": 1.5,
+    "stow_s": 6,
+    "salvo": 2,
+    "salvo_gap_s": 2.0,
+    "reload_s": 15,
+    "accuracy": 0.85,
+    "think": 5,
+    "auto_targets": "heavy",
+    "firing_show_s": 0.6,
+    "capacity": 18,
+    "default_load": {
+     "tandem": 8,
+     "emp": 3,
+     "thermite": 2,
+     "he_frag": 2,
+     "disruptor": 2,
+     "smoke": 1
+    },
+    "kinds": {
+     "tandem": {
+      "cls": "at",
+      "damage": 25,
+      "stagger": 1.0
+     },
+     "emp": {
+      "cls": "at",
+      "damage": 4,
+      "stun_s": 3.0,
+      "stagger": 0.3
+     },
+     "thermite": {
+      "cls": "at",
+      "damage": 10,
+      "burn_dps": 4,
+      "burn_s": 6,
+      "stagger": 0.2
+     },
+     "he_frag": {
+      "cls": "autocannon",
+      "damage": 30,
+      "radius": 2.0,
+      "stagger": 0.1
+     },
+     "disruptor": {
+      "cls": "at",
+      "damage": 8,
+      "mark_s": 10,
+      "mark_mult": 1.2,
+      "sensors": 30,
+      "stagger": 0.2
+     },
+     "smoke": {
+      "smoke_s": 12
+     }
+    }
+   },
+   "heavy": {
+    "_note": "Heavy Machine walkers: front armour, pincer bonus, stun/mark windows, topple. PROVISIONAL.",
+    "defs": [
+     "m_walker",
+     "m_colossus"
+    ],
+    "min_hp": 900,
+    "walk_classes": [
+     "foot",
+     "walker",
+     "legged"
+    ],
+    "front_mult": 0.35,
+    "flank_fixed_mult": 1.5,
+    "rear_fixed_mult": 1.8,
+    "stun_mult": 1.25,
+    "down_mult": 2.2,
+    "fix_range": 7.0
+   },
+   "topple": {
+    "_note": "Owner addition 2026-10-26: flank/rear leg hits while fixed frontally build stagger; past the threshold the walker topples (cannot move or fire), hits do heavy bonus damage; it rights itself and resets if not killed. PROVISIONAL.",
+    "threshold": 8.0,
+    "threshold_hp_ref": 950,
+    "threshold_max": 18.0,
+    "front_gain": 0.1,
+    "unfixed_gain": 0.35,
+    "side_gain": 1.0,
+    "rear_gain": 1.3,
+    "stun_gain": 1.5,
+    "decay_per_s": 0.35,
+    "decay_after_s": 4.0,
+    "fall_s": 1.0,
+    "down_s": 6.0,
+    "rise_s": 2.0,
+    "immune_s": 6.0
+   },
+   "pincer": {
+    "_note": "Anti-walker pincer (owner addition 2026-10-26): one element rushes head-on to fix the walker, the rest take flank/rear slots and fire synchronised volleys. PROVISIONAL.",
+    "detect": 12.0,
+    "fix_dist": 4.0,
+    "flank_dist": 6.0,
+    "slot_angles": [
+     110,
+     -110,
+     150,
+     -150,
+     180,
+     80,
+     -80
+    ],
+    "volley_s": 4.0,
+    "reslot_s": 2.0,
+    "reslot_drift": 2.0,
+    "fixer_swap_hp": 0.3,
+    "break_hp": 0.35,
+    "think": 5
+   },
+   "ops_engage": {
+    "_note": "Operators (and strike gunners on a downed walker) dismount and fight armour with their kit, then remount. PROVISIONAL.",
+    "range": 10.0,
+    "limpet": {
+     "damage": 140,
+     "cls": "at",
+     "fuse_s": 3.0,
+     "reach": 1.6,
+     "cooldown_s": 25,
+     "stagger": 3.0
+    },
+    "harpoon": {
+     "range": 5.0,
+     "cooldown_s": 18,
+     "slow": 0.5,
+     "slow_s": 6,
+     "stagger": 1.5
+    },
+    "disruptor": {
+     "range": 11.0,
+     "cooldown_s": 12,
+     "damage": 12,
+     "sensors": 25,
+     "mark_s": 10,
+     "stagger": 0.2
+    },
+    "gunner_limpet_r": 6.0
+   },
+   "withdraw": {
+    "_note": "Formed withdrawal (hero window, break contact): APC line facing the threat, soldiers in a block on the sheltered side, smoke on the threat side. PROVISIONAL.",
+    "apc_gap": 2.5,
+    "cols": 5,
+    "col_gap": 1.0,
+    "row_gap": 0.9,
+    "apc_back": 2.5,
+    "foot_back": 1.6,
+    "break_dist": 12.0,
+    "break_s": 30
+   }
   }
  }
 }
