@@ -107,6 +107,24 @@ var _hc := -1
 var _inf_cache: Dictionary = {}
 var bay_hidden := 0                        # infantry hidden behind a landed dropship this frame (playtest evidence)
 var fac_drawn := 0                         # facility floor / zone sprites drawn this frame (playtest evidence)
+# ART7F: facility draw cache (flicker fix), interior buildings, wall autotile
+const FAC7F_ZONES := [["planning", "g7_fac_planning", 0.0], ["drone_bay", "g7_fac_dronebay", 0.0],
+	["workshop", "g7_fac_workshop", 0.0], ["range", "g7_fac_range", 0.0], ["lab", "g7_fac_lab", 0.0],
+	# ART7F-2 (13.9c-2): two-layer APC entry (outer gate -> wash zone -> inner gate) and the infantry decon hall;
+	# drawn when CnFacility carries these zones (BASE7 successor), closed / sprays off on lockdown
+	["gate_outer", "g7_fac_gate_outer", 0.0], ["apc_wash", "g7_fac_wash", 0.0], ["gate_inner", "g7_fac_gate_inner", 0.0],
+	["decon_hall", "g7_fac_deconhall", 0.0]]
+const WALL_LINK := {"cn_blast_wall": true, "cn_tower": true, "cn_checkpoint": true}
+var fac_cache_off := false                 # ART7F playtest A/B: true = the old per-frame read (skips busy frames)
+var fac_busy := 0                          # ART7F: refreshes that ran with a sim step in flight (evidence)
+var fac_sig := 0                           # ART7F: hash of this frame's facility draw list (flicker capture)
+var walls_linked := 0                      # ART7F: wall segments drawn with the conn sheet this frame
+var _fac_e: Array = []                     # last CnFacility.render_entries (reused while the sim step is in flight)
+var _fac_e_tick := -2
+var _wall_cells: Dictionary = {}           # Vector2i cell -> true (walls, towers, checkpoint, gate zones)
+var _wall_dirty := true
+var _wall_nfac := -1
+var _wall_nstat := -1
 var _pad_key := ""
 var _crafts: Array = []                    # G7 (CNFAC7-2): landed large dropships this frame [pos, facing, depth, id]
 var bay_drawn := 0                         # G7 (CNFAC7-2): ramp-sequence frames drawn last refresh (playtest probe)
@@ -255,6 +273,7 @@ func on_destroyed(id: int) -> void:
 	else:
 		motion.forget(id)
 	_post.erase(id)
+	_wall_dirty = true   # ART7F: a wall-line part may be gone (re-pick its neighbours' joins)
 	_fat.erase(id)
 	_chev.erase(id)
 	_pips.erase(id)
@@ -487,6 +506,7 @@ func refresh() -> void:
 	var has_x7 := not x7.is_empty()
 	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
+	walls_linked = 0
 	var pframe := Engine.get_process_frames()
 	_bay_crafts(n_u, far, defs, def_a, flg_a, pos_a, fac_a, ids)
 	var has_cr := not _crafts.is_empty()
@@ -495,8 +515,8 @@ func refresh() -> void:
 	_bay_fr.clear()
 	_bay_hide.clear()
 	_hc = -1
-	if live and not far:
-		_push_fac(mv._world, vr)
+	if not far:   # ART7F flicker fix: the facility draws from its cached entries on frames the sim step is in flight
+		_push_fac(mv._world if live else null, vr, stick)
 	for i in n_u:
 		if _hc >= 0:
 			_bay_hide[_hc][1] = _n
@@ -893,6 +913,13 @@ func refresh() -> void:
 					_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off, art.out_src.size, Color.WHITE)
 					g4b_fx_drawn += 1
 					continue
+		if kind == "building" and _vpad_px(e):   # ART7F: dropship landing site, flat under everything that stands on it
+			_push(0, 1.0 - float(Y_OFF), art.out_page, art.out_src, gd + art.out_off, art.out_src.size, mod)
+			continue
+		if kind == "building" and _wall_px(e):   # ART7F: facility wall autotile
+			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+			walls_linked += 1
+			continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
@@ -1360,12 +1387,26 @@ static func bay_feet_covered(img: Image, origin: Vector2, dst: Vector2, fsz: Vec
 # ================================================================ G7 (CNFAC7-3): facility floors and zone buildings
 ## The compound interior from CnFacility.render_entries (display only): concrete loading pad (placeholder tile),
 ## ARTCN7 helipad (lit while a dropship sits on it), garages (lockdown art while sealed), decontamination line, gate.
-func _push_fac(w, vr: Rect2) -> void:
+## ART7F (13.9c "buildings inside counter nanite facility are flickering"): the old code read the world only on
+## frames where mv.world_readable() (no threaded sim step in flight) and drew NOTHING of the compound on the others,
+## so pad, helipad, garages, decon and gate blinked out on every busy frame. Now the entries are re-read once per
+## new snapshot tick while the world is readable and reused on every other frame. fac_cache_off = old behaviour
+## (playtest A/B only); fac_sig = hash of this frame's facility draw list (frame-by-frame flicker capture).
+func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 	fac_drawn = 0
-	if w == null or not CnFacility.active(w):
-		return
+	fac_sig = 0
+	if w == null:
+		fac_busy += 1   # this frame's refresh ran while a sim step was in flight (world not readable)
+	if fac_cache_off:
+		if w == null or not CnFacility.active(w):
+			return
+		_fac_e = CnFacility.render_entries(w)
+	elif w != null and (stick != _fac_e_tick or stick < 0):
+		_fac_e_tick = stick
+		_fac_e = CnFacility.render_entries(w) if CnFacility.active(w) else []
+		_wall_dirty = _wall_dirty or _fac_e.size() != _wall_nfac
 	var man: Dictionary = ArtCat.manifest().get("buildings", {})
-	for F in CnFacility.render_entries(w):
+	for F in _fac_e:
 		var zs: Dictionary = F.zones
 		var hp: Array = zs.get("helipad", [0, 0, 0, 0])
 		var ctr := Vector2(float(hp[0]) + float(hp[2]) * 0.5, float(hp[1]) + float(hp[3]) * 0.5)
@@ -1388,6 +1429,129 @@ func _push_fac(w, vr: Rect2) -> void:
 			_push_zone(man, "g7_cn_garage", gst, grs[gi], vr, false, float(grs[gi][2]) * 8.0)
 		_push_zone(man, "g7_cn_decon", "active" if not lock else "built", zs.get("decon", []), vr, false)
 		_push_zone(man, "g7_cn_gate", "built" if lock else "open", zs.get("gate", []), vr, false)
+		for zi in FAC7F_ZONES:   # ART7F: finished interior buildings (planning room, drone bay, workshop, range, lab)
+			var zr: Array = zs.get(zi[0], [])
+			if zr.size() == 4:
+				var zf := _door_side(zr, F)
+				_push_zone(man, zi[1], "rot_%d%s" % [zf, "_lockdown" if lock else ""], zr, vr, false, float(zi[2]) * (float(zr[2]) + float(zr[3])) * 4.0)
+
+
+## ART7F: door side of an interior building (0 +x, 1 +y, 2 -x, 3 -y): the side whose outside strip touches the most
+## lane cells x lane width (the road it is served from); no lane -> toward the compound centre. Cached per zone rect.
+var _door_f: Dictionary = {}
+func _door_side(r: Array, F: Dictionary) -> int:
+	var k := str(r)
+	if not _door_f.has(k):
+		_door_f[k] = door_side_of(r, F)
+	return int(_door_f[k])
+
+
+static func door_side_of(r: Array, F: Dictionary) -> int:
+	var x0 := int(r[0])
+	var y0 := int(r[1])
+	var x1 := x0 + int(r[2])
+	var y1 := y0 + int(r[3])
+	var strips := [Rect2i(x1, y0, 1, y1 - y0), Rect2i(x0, y1, x1 - x0, 1), Rect2i(x0 - 1, y0, 1, y1 - y0), Rect2i(x0, y0 - 1, x1 - x0, 1)]
+	var best := -1
+	var bn := 0
+	for f in 4:
+		var n := 0
+		for l in F.get("lanes", []):
+			var li := Rect2i(int(l[0]), int(l[1]), int(l[2]), int(l[3])).intersection(strips[f])
+			n += li.get_area() * mini(int(l[2]), int(l[3]))   # weighted by lane width: the main road wins a tie
+		if n > bn:
+			bn = n
+			best = f
+	if best < 0:
+		var cp: Array = F.get("compound", [0, 0, 0, 0])
+		var d := Vector2(float(cp[0]) + float(cp[2]) * 0.5 - (float(x0 + x1) * 0.5), float(cp[1]) + float(cp[3]) * 0.5 - (float(y0 + y1) * 0.5))
+		best = (0 if d.x > 0.0 else 2) if absf(d.x) > absf(d.y) else (1 if d.y > 0.0 else 3)
+	return best
+
+
+# ================================================================ ART7F: facility wall autotile
+## Facility blast walls (2x2 segments) pick conn_<m> (N1 E2 S4 W8) from their neighbours: other wall segments, the
+## hardened towers, the gate checkpoint and the gate zone, so the ring reads as one continuous wall with corners,
+## T-joins, ends and gate pieces. Display only (the sim keeps one cn_blast_wall def). Falls back to the old art when
+## the g7_fac_wall sheet is missing.
+## ART7F-2 (13.9c-3): hardened towers use the g7_fac_tower sheet the same way (bastion + wall arms on linked sides).
+const WALL_SHEET := {"cn_blast_wall": "g7_fac_wall", "cn_tower": "g7_fac_tower"}
+
+
+func _wall_px(e: Dictionary) -> bool:
+	var sk: String = WALL_SHEET.get(String(e.get("def", "")), "")
+	if sk == "":
+		return false
+	var b: Dictionary = ArtCat.manifest().get("buildings", {}).get(sk, {})
+	if b.is_empty():
+		return false
+	if _wall_dirty or int((mv.snap.get("statics", {}) as Dictionary).size()) != _wall_nstat:
+		_wall_rebuild()
+	var m := wall_mask(_wall_cells, e.pos)
+	var spec := {"file": String(b.states.built.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}
+	return art.resolve_sheet(spec, m, 1 if float(e.get("hp", 1.0)) < 0.5 else 0)
+
+
+## ART7F: a_g7_vtol_pad art (rot_<facing_i> = approach side; _damaged under 50% hp; build stages).
+func _vpad_px(e: Dictionary) -> bool:
+	if String(e.get("def", "")) != "a_g7_vtol_pad":
+		return false
+	var b: Dictionary = ArtCat.manifest().get("buildings", {}).get("a_g7_vtol_pad", {})
+	if b.is_empty():
+		return false
+	var st := "rot_%d" % posmod(int(e.get("facing_i", 0)), 4)
+	if not bool(e.get("built", true)):
+		st += "_build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
+	elif float(e.get("hp", 1.0)) < 0.5:
+		st += "_damaged"
+	var s: Dictionary = (b.states as Dictionary).get(st, b.states.get("built", {}))
+	return not s.is_empty() and art.resolve_sheet({"file": String(s.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}, 0, 0)
+
+
+## Conn mask (N1 E2 S4 W8) of a 2x2 wall segment centred at p, from the wall-line cell set.
+static func wall_mask(cells: Dictionary, p: Vector2) -> int:
+	var o := Vector2i(floori(p.x - 1.0 + 0.01), floori(p.y - 1.0 + 0.01))
+	var m := 0
+	if cells.has(o + Vector2i(0, -1)):
+		m |= 1
+	if cells.has(o + Vector2i(2, 0)):
+		m |= 2
+	if cells.has(o + Vector2i(0, 2)):
+		m |= 4
+	if cells.has(o + Vector2i(-1, 0)):
+		m |= 8
+	return m
+
+
+## Cells covered by facility wall-line parts (walls, towers, checkpoint: 2x2, keyed by centre pos) and gate zones.
+static func wall_cells_of(statics: Dictionary, facs: Array) -> Dictionary:
+	var cells := {}
+	for id in statics:
+		var e: Dictionary = statics[id]
+		if not WALL_LINK.has(String(e.get("def", ""))) or String(e.get("kind", "building")) != "building":
+			continue
+		var p: Vector2 = e.pos
+		var o := Vector2i(floori(p.x - 1.0 + 0.01), floori(p.y - 1.0 + 0.01))
+		for dy in 2:
+			for dx in 2:
+				cells[o + Vector2i(dx, dy)] = true
+	for F in facs:
+		for gk in ["gate", "gate_outer", "gate_inner"]:   # ART7F-2: either gate layer ends the wall run on it
+			var g: Array = (F.zones as Dictionary).get(gk, [])
+			if g.size() == 4:
+				for y in range(int(g[1]), int(g[1]) + int(g[3])):
+					for x in range(int(g[0]), int(g[0]) + int(g[2])):
+						cells[Vector2i(x, y)] = true
+	return cells
+
+
+func _wall_rebuild() -> void:
+	_wall_dirty = false
+	_wall_nfac = _fac_e.size()
+	var sn: Dictionary = mv.snap if mv != null else {}
+	var statics: Dictionary = sn.get("statics", {})
+	_wall_nstat = statics.size()
+	_wall_cells = wall_cells_of(statics, _fac_e)
 
 
 ## One zone sprite at the centre of rect r [x, y, w, h] (tiles). Flat art sorts under everything; the rest by depth.
@@ -1407,6 +1571,7 @@ func _push_zone(man: Dictionary, key: String, st: String, r: Array, vr: Rect2, f
 	if art.resolve_sheet(spec, 0, 0):
 		_push(0, (1.0 - float(Y_OFF)) if flat else gs.y + dk, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
 		fac_drawn += 1
+		fac_sig = (fac_sig * 31 + (key + st).hash() + int(gs.x) * 7 + int(gs.y + dk) * 13 + art.out_page) & 0x3fffffff
 
 
 ## ART7E loading pad: one flat tile per cell from the g7_cn_pad tile sheet (fw 64, fh 44, pivot = cell centre).
@@ -1428,6 +1593,7 @@ func _push_pad(r: Rect2, vr: Rect2, lock: bool) -> void:
 			if g.has_point(gs) and art.resolve_sheet(spec, _pad_col(x, y, x0, y0, x1, y1), 1 if lock else 0):
 				_push(0, -float(Y_OFF), art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color.WHITE)
 				fac_drawn += 1
+				fac_sig = (fac_sig * 31 + int(art.out_src.position.x) + int(gs.x) * 7 + int(gs.y) * 13) & 0x3fffffff
 
 
 ## Pad tile column: corners 9..12 (NW NE SE SW), edges 5..8 (N E S W), bay dividers 4 (west edge) / 13 (centre)

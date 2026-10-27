@@ -9,6 +9,10 @@ extends Node2D
 ## setup(self) and refresh(snap) every frame. Free when there is neither a facility nor map.lp.
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
+const ArtCat = preload("res://presentation/art/art_catalog.gd")
+## ART7F: zones whose finished building art entity_layer draws (depth-sorted); the slab placeholder is only drawn
+## when that art is missing.
+const ZONE_ART := {"planning": "g7_fac_planning", "drone_bay": "g7_fac_dronebay", "workshop": "g7_fac_workshop", "range": "g7_fac_range"}
 const ART := "res://assets/art/g7_baseprops/"
 const ASPHALT := Color(0.20, 0.21, 0.22, 0.92)
 const LANE_LINE := Color(0.85, 0.78, 0.35, 0.85)
@@ -122,8 +126,47 @@ func _box(r: Array, hz: float, pal: Array) -> void:
 	draw_polyline(PackedVector2Array([q[0] + up, q[1] + up, q[2] + up, q[3] + up, q[0] + up]), Color(0.08, 0.09, 0.1), 1.0)
 
 
+## ART7F-2: the compound floor inside the blast walls is a gravel hardstand (no grass patches between the lanes), the
+## staging yard a marked concrete marshalling slab. Display only; drawn once per facility rebuild.
+const GRAVEL := Color(0.40, 0.385, 0.35, 0.96)
+const GRAVEL_DOTS := [Color(0.30, 0.29, 0.26, 0.7), Color(0.52, 0.50, 0.46, 0.7), Color(0.35, 0.33, 0.29, 0.6)]
+const YARD := Color(0.47, 0.47, 0.45, 0.96)
+const BAY_LINE := Color(0.88, 0.88, 0.82, 0.8)
+var drawn_ground := 0
+
+
+func _ground(F: Dictionary) -> void:
+	var cr: Array = F.get("compound", [])
+	if cr.size() != 4:
+		return
+	var x0 := float(cr[0]) + 2.0
+	var y0 := float(cr[1]) + 2.0
+	var cw := float(cr[2]) - 4.0
+	var chh := float(cr[3]) - 4.0
+	draw_colored_polygon(_quad(x0, y0, cw, chh), GRAVEL)
+	for ty in int(chh):
+		for tx in int(cw):
+			for k in 3:
+				var hsh := absi(hash(Vector3i(int(x0) + tx, int(y0) + ty, k)))
+				var p := Vector2(x0 + tx + float(hsh % 97) / 97.0, y0 + ty + float((hsh / 97) % 89) / 89.0)
+				draw_rect(Rect2(_iso(p), Vector2(1, 1)), GRAVEL_DOTS[(hsh / 8633) % 3])
+	drawn_ground += 1
+	var sg: Array = (F.zones as Dictionary).get("staging", [])
+	if sg.size() == 4:
+		draw_colored_polygon(_quad(float(sg[0]), float(sg[1]), float(sg[2]), float(sg[3])), YARD)
+		for i in range(1, int(sg[2]) / 3):   # vehicle bays, 3 tiles (12 m) wide: an 8 m APC each with walk-round room
+			var bx := float(sg[0]) + float(i) * 3.0
+			draw_line(_iso(Vector2(bx, float(sg[1]) + 0.3)), _iso(Vector2(bx, float(sg[1]) + float(sg[3]) - 0.3)), BAY_LINE, 1.0)
+		draw_polyline(PackedVector2Array([_iso(Vector2(sg[0], sg[1])), _iso(Vector2(float(sg[0]) + float(sg[2]), float(sg[1]))),
+			_iso(Vector2(float(sg[0]) + float(sg[2]), float(sg[1]) + float(sg[3]))), _iso(Vector2(sg[0], float(sg[1]) + float(sg[3]))), _iso(Vector2(sg[0], sg[1]))]),
+			Color(0.95, 0.78, 0.2, 0.85), 1.0)
+
+
 func _draw() -> void:
 	drawn_lanes = 0
+	drawn_ground = 0
+	for F in facs:
+		_ground(F)
 	for F in facs:
 		for l in F.get("lanes", []):
 			draw_colored_polygon(_quad(float(l[0]), float(l[1]), float(l[2]), float(l[3])), ASPHALT)
@@ -138,7 +181,7 @@ func _draw() -> void:
 		var zs: Dictionary = F.zones
 		for zn in ["planning", "drone_bay", "workshop", "range"]:
 			var r: Array = zs.get(zn, [])
-			if r.size() != 4:
+			if r.size() != 4 or (ArtCat.manifest().get("buildings", {}) as Dictionary).has(ZONE_ART[zn]):
 				continue
 			draw_colored_polygon(_quad(float(r[0]), float(r[1]), float(r[2]), float(r[3])), SLAB)
 			match zn:
