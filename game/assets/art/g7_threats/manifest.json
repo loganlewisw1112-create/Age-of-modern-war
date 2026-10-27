@@ -2,13 +2,13 @@
   "files": {
     "icons/g7_m_living_core.png": "ced253718293aadf2d667b682a489468",
     "icons/g7_m_packhunter.png": "5c159f9cbd28fc334e2332dcb9fd0fb1",
-    "icons/g7_m_weaver.png": "fa9dde5a579da2b34ee71102cf5c9167",
-    "units/g7_m_living_core.png": "f24e7187988776cc70941f712166108f",
-    "units/g7_m_living_core_mask.png": "8c46f7451166d5e5905cfdac1c6cac12",
-    "units/g7_m_packhunter.png": "53e571444cd540c24398ca3be46a3511",
-    "units/g7_m_packhunter_mask.png": "5c0a4c9291b1691a0e74839b616d72a8",
-    "units/g7_m_weaver.png": "7d00cce2e5621019330c865626702507",
-    "units/g7_m_weaver_mask.png": "fb610be3d09413724acad5e27f8a80f3"
+    "icons/g7_m_weaver.png": "2f02e4c2d05e6068fbe33c1eb2ccdb62",
+    "units/g7_m_living_core.png": "8354f771e40debaa27a9e5f3344bb5b0",
+    "units/g7_m_living_core_mask.png": "53c1d5cf42ee0ca79f5b934257c9314a",
+    "units/g7_m_packhunter.png": "084ba71cdd4e7752733492a04122a064",
+    "units/g7_m_packhunter_mask.png": "fef74d2cf1c32eebf09b8c7e18180925",
+    "units/g7_m_weaver.png": "6cde5f4942e5a7fd9b7977173e873255",
+    "units/g7_m_weaver_mask.png": "53fe44d64951e372a0ddfc7536a96fa9"
   },
   "g7_detail_level": {
     "air": {
@@ -91,7 +91,7 @@
         "walk_2"
       ],
       "budget": 3145728,
-      "bytes": 1119492,
+      "bytes": 1339492,
       "class": "threat_big",
       "detail_level": "DL7-3",
       "key_frames": [
@@ -109,7 +109,7 @@
       ],
       "line": "machine",
       "mirror": -1,
-      "raw_bytes": 3801600,
+      "raw_bytes": 4492800,
       "sample": "threat",
       "section": "vehicles"
     },
@@ -119,6 +119,8 @@
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "run_0",
         "run_1",
         "pounce",
@@ -127,20 +129,25 @@
         "die"
       ],
       "budget": 1048576,
-      "bytes": 678360,
+      "bytes": 873500,
       "class": "threat",
       "detail_level": "DL7-3",
       "frame_alias": {
         "fire": "claw_0",
         "walk_a": "walk_0",
-        "walk_b": "walk_2"
+        "walk_b": "walk_3"
       },
       "key_frames": [
         "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
         "walk_0",
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "run_0",
         "run_1",
         "pounce",
@@ -151,7 +158,7 @@
       "legged": true,
       "line": "machine",
       "mirror": -1,
-      "raw_bytes": 2483712,
+      "raw_bytes": 3193344,
       "sample": "threat",
       "section": "vehicles"
     },
@@ -162,27 +169,33 @@
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "spit",
         "cocoon",
         "haul",
-        "walk_0",
         "die"
       ],
       "budget": 3145728,
-      "bytes": 1186304,
+      "bytes": 1592704,
       "class": "threat_big",
       "detail_level": "DL7-3",
       "frame_alias": {
         "fire": "spit",
         "walk_a": "walk_0",
-        "walk_b": "walk_2"
+        "walk_b": "walk_3"
       },
       "key_frames": [
         "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
         "walk_0",
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "spit",
         "cocoon",
         "haul",
@@ -191,7 +204,7 @@
       "legged": true,
       "line": "machine",
       "mirror": -1,
-      "raw_bytes": 5271552,
+      "raw_bytes": 6815744,
       "sample": "threat",
       "section": "vehicles"
     }
@@ -208,6 +221,79 @@
   ],
   "vehicles": {
     "g7_m_living_core": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            48,
+            6
+          ],
+          [
+            11,
+            22
+          ],
+          [
+            -50,
+            4
+          ],
+          [
+            -50,
+            4
+          ],
+          [
+            -49,
+            -7
+          ],
+          [
+            -6,
+            -32
+          ],
+          [
+            49,
+            -5
+          ],
+          [
+            49,
+            -5
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ],
+          [
+            0,
+            -30
+          ]
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 100,
       "file": "units/g7_m_living_core.png",
@@ -222,7 +308,9 @@
         "walk_0",
         "walk_1",
         "walk_2",
-        "walk_3"
+        "walk_3",
+        "recoil",
+        "damaged"
       ],
       "fw": 108,
       "g7": {
@@ -239,7 +327,7 @@
           "walk_2"
         ],
         "budget": 3145728,
-        "bytes": 1119492,
+        "bytes": 1339492,
         "class": "threat_big",
         "detail_level": "DL7-3",
         "key_frames": [
@@ -257,7 +345,7 @@
         ],
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 3801600,
+        "raw_bytes": 4492800,
         "sample": "threat"
       },
       "mask": "units/g7_m_living_core_mask.png",
@@ -267,24 +355,101 @@
       ]
     },
     "g7_m_packhunter": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22,
+            -2
+          ],
+          [
+            -13,
+            7
+          ],
+          [
+            -23,
+            -2
+          ],
+          [
+            -27,
+            -12
+          ],
+          [
+            -23,
+            -17
+          ],
+          [
+            -1,
+            -31
+          ],
+          [
+            22,
+            -17
+          ],
+          [
+            26,
+            -12
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1,
+            -39
+          ],
+          [
+            0,
+            -41
+          ],
+          [
+            -1,
+            -39
+          ],
+          [
+            -1,
+            -35
+          ],
+          [
+            -1,
+            -34
+          ],
+          [
+            0,
+            -36
+          ],
+          [
+            1,
+            -34
+          ],
+          [
+            1,
+            -35
+          ]
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 66,
       "file": "units/g7_m_packhunter.png",
       "frames": [
         "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
         "walk_0",
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "run_0",
         "run_1",
         "pounce",
         "claw_0",
         "claw_1",
         "die",
-        "walk_a",
-        "walk_b",
-        "fire"
+        "recoil",
+        "damaged"
       ],
       "fw": 84,
       "g7": {
@@ -293,6 +458,8 @@
           "walk_1",
           "walk_2",
           "walk_3",
+          "walk_4",
+          "walk_5",
           "run_0",
           "run_1",
           "pounce",
@@ -301,20 +468,25 @@
           "die"
         ],
         "budget": 1048576,
-        "bytes": 678360,
+        "bytes": 873500,
         "class": "threat",
         "detail_level": "DL7-3",
         "frame_alias": {
           "fire": "claw_0",
           "walk_a": "walk_0",
-          "walk_b": "walk_2"
+          "walk_b": "walk_3"
         },
         "key_frames": [
           "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
           "walk_0",
           "walk_1",
           "walk_2",
           "walk_3",
+          "walk_4",
+          "walk_5",
           "run_0",
           "run_1",
           "pounce",
@@ -325,7 +497,7 @@
         "legged": true,
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 2483712,
+        "raw_bytes": 3193344,
         "sample": "threat"
       },
       "mask": "units/g7_m_packhunter_mask.png",
@@ -335,24 +507,101 @@
       ]
     },
     "g7_m_weaver": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            27,
+            4
+          ],
+          [
+            -15,
+            13
+          ],
+          [
+            -28,
+            4
+          ],
+          [
+            -40,
+            -17
+          ],
+          [
+            -29,
+            -30
+          ],
+          [
+            -11,
+            -45
+          ],
+          [
+            28,
+            -31
+          ],
+          [
+            40,
+            -18
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            -2,
+            -44
+          ],
+          [
+            0,
+            -44
+          ],
+          [
+            2,
+            -44
+          ],
+          [
+            2,
+            -45
+          ],
+          [
+            2,
+            -45
+          ],
+          [
+            0,
+            -43
+          ],
+          [
+            -2,
+            -45
+          ],
+          [
+            -2,
+            -45
+          ]
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 104,
       "file": "units/g7_m_weaver.png",
       "frames": [
         "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
         "walk_0",
         "walk_1",
         "walk_2",
         "walk_3",
+        "walk_4",
+        "walk_5",
         "spit",
         "cocoon",
         "haul",
         "die",
-        "walk_a",
-        "walk_b",
-        "fire"
+        "recoil",
+        "damaged"
       ],
-      "fw": 132,
+      "fw": 128,
       "g7": {
         "anim_strip": [
           "idle",
@@ -360,27 +609,33 @@
           "walk_1",
           "walk_2",
           "walk_3",
+          "walk_4",
+          "walk_5",
           "spit",
           "cocoon",
           "haul",
-          "walk_0",
           "die"
         ],
         "budget": 3145728,
-        "bytes": 1186304,
+        "bytes": 1592704,
         "class": "threat_big",
         "detail_level": "DL7-3",
         "frame_alias": {
           "fire": "spit",
           "walk_a": "walk_0",
-          "walk_b": "walk_2"
+          "walk_b": "walk_3"
         },
         "key_frames": [
           "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
           "walk_0",
           "walk_1",
           "walk_2",
           "walk_3",
+          "walk_4",
+          "walk_5",
           "spit",
           "cocoon",
           "haul",
@@ -389,12 +644,12 @@
         "legged": true,
         "line": "machine",
         "mirror": -1,
-        "raw_bytes": 5271552,
+        "raw_bytes": 6815744,
         "sample": "threat"
       },
       "mask": "units/g7_m_weaver_mask.png",
       "pivot": [
-        66,
+        64,
         76
       ]
     }

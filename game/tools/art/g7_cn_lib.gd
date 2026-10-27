@@ -35,7 +35,10 @@ const INF_CELL := Vector2i(32, 32)
 const INF_PIVOT := Vector2i(16, 27)
 const FRAMES_INF := ["idle", "walk_a", "walk_b", "fire", "idle_1", "walk_1", "walk_2", "walk_4", "walk_5", "run_0",
 	"run_1", "run_2", "fire_c", "reload_0", "crouch", "prone", "crawl_0", "crawl_1", "wounded", "die_0",
-	"die_1", "die_2", "act_0", "act_1"]
+	"die_1", "die_2", "act_0", "act_1",
+	# ART7D: the rest of the G6.1 set, rendered by the same rig (walk_0 / walk_3 / fire_s / idle_0 are the catalog
+	# idle / walk_a / walk_b / fire poses, POSE_ALIAS; batch_art reads those columns from block A instead).
+	"walk_0", "walk_3", "run_3", "run_4", "run_5", "fire_s", "fire_p", "reload_1", "throw_0", "throw_1", "idle_0"]
 ## Classic catalog names -> the rig pose they are.
 const POSE_ALIAS := {"idle": "idle_0", "walk_a": "walk_0", "walk_b": "walk_3", "fire": "fire_s"}
 const WALK_STRIP := ["walk_a", "walk_1", "walk_2", "walk_b", "walk_4", "walk_5"]

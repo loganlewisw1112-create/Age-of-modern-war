@@ -12,12 +12,15 @@ const GEN = preload("res://tools/gen_art.gd")
 const P = preload("res://tools/art/pix.gd")
 const SL = preload("res://tools/art/g5_units_lib.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
+const G7Anim = preload("res://tools/art/g7_anim.gd")
 const M = preload("res://tools/art/g7_cn_mesh.gd")
 const GR = preload("res://tools/art/g7_cn_gear.gd")
 
 const OUT_DIR := "res://assets/art/drone7/"
 const SPEC := {"fw": 38, "fh": 34, "pivot": [19, 21]}
-const FRAMES := ["idle", "move", "bank_l", "bank_r", "release", "dive", "fire", "trail"]
+## ART7D: catalog frames idle / move / fire first (G3/G4 art checks); the drawer still gets its original frame index.
+const FRAMES := ["idle", "move", "fire", "bank_l", "bank_r", "release", "dive", "trail"]
+const FRAMES_DRAW := ["idle", "move", "bank_l", "bank_r", "release", "dive", "fire", "trail"]
 ## id -> [faction look, kind]. kinds: strike (heavy hex, bomb rack), fpv (racing quad + warhead), gun (CN defence
 ## quad, MG under the nose), interceptor (CN dart with pusher prop and seeker).
 const DEFS := {"g7_a_strike_drone": ["a", "strike"], "g7_b_strike_drone": ["b", "strike"],
@@ -67,7 +70,7 @@ static func generate() -> Dictionary:
 		var kind: String = DEFS[def][1]
 		var small := kind == "fpv" or kind == "interceptor"
 		SL.veh_sheet(out, def, SPEC, func(cv, rot: float, f: int, wreck: bool, o: Vector2) -> void:
-			draw(cv, rot, f, wreck, o, fac, kind), FRAMES,
+			draw(cv, rot, FRAMES_DRAW.find(FRAMES[f]) if f >= 0 and f < FRAMES.size() else f, wreck, o, fac, kind), FRAMES,
 			{"air": true, "altitude": 16 if not small else 12, "bob": 1, "shadow": (shs if small else sh).duplicate()})
 		var e: Dictionary = out.manifest.vehicles[def]
 		var img: Image = out.images[String(e.file)]
@@ -75,6 +78,7 @@ static func generate() -> Dictionary:
 			"raw_bytes": img.get_width() * img.get_height() * 4, "budget": int(C.BUDGET.air), "art": "ART7B",
 			"scale": "4 m/tile, 9.8 px/m (fact art.scale)", "kind": kind}
 		C.icon(out, def, img, 38, 34, 1)
+	G7Anim.apply(out)   # ART7D: G6.1 air frames (damaged) + anim61 muzzle / smoke, re-measured bytes
 	return out
 
 

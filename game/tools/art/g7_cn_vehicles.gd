@@ -54,6 +54,8 @@ const RKT_ALIAS := {"rk_aim": "rk_raise_1", "rk_stow_0": "rk_raise_1", "rk_stow_
 const SPEC := {
 	true: {"L": 8.0, "W": 2.9, "roof": 2.3, "wr": 0.64, "axles": [2.55, 1.15, -0.85, -2.25], "track": 1.18},
 	false: {"L": 7.0, "W": 2.7, "roof": 2.05, "wr": 0.56, "axles": [2.3, 0.95, -0.8, -2.05], "track": 1.08}}
+## ART7D: G6.1 vehicle frames rendered by the model itself (appended after the frozen columns; g7_anim adds anim61).
+const ANIM61 := ["track_1", "track_2", "recoil", "damaged"]
 const FW := {true: 128, false: 120}
 const FH := {true: 112, false: 104}
 const PIV := {true: Vector2i(64, 80), false: Vector2i(60, 74)}
@@ -463,16 +465,18 @@ static func wpn_state(fname: String) -> Dictionary:
 ## The whole vehicle into scene S at ground pose T. fname picks the state; wreck = burnt hull.
 static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := false, stowed := false) -> void:
 	var sp: Dictionary = SPEC[big]
-	var hull: Array = C.ramp(BURNT if wreck else (HULL_CN if big else HULL_OP))
+	var dmg := fname == "damaged"   # ART7D: G6.1 damaged state (hp < 50 %): scorched, smoking, still running
+	var hull: Array = C.ramp(BURNT if wreck else ((HULL_CN if big else HULL_OP).lerp(BURNT, 0.38) if dmg else (HULL_CN if big else HULL_OP)))
 	var low: Array = C.ramp(P.mul(BURNT, 0.8) if wreck else (LOW_CN if big else LOW_OP))
 	var dk: Array = C.ramp(DARK)
 	var roof: float = sp.roof
 	var wr: float = sp.wr
-	var ph := {"move": 1.0, "move_1": 2.0}.get(fname, 0.0) as float
+	# ART7D: track_1 / track_2 = G6.1 wheel phases after "move" (spin, suspension bob); recoil = hull kick after a shot
+	var ph := {"move": 1.0, "move_1": 2.0, "track_1": 1.5, "track_2": 2.5}.get(fname, 0.0) as float
 	var spin := ph * TAU / 12.0
-	var bob := {"move": 0.06, "move_1": -0.04}.get(fname, 0.0) as float
-	var pitch := {"move": 0.02, "move_1": -0.015}.get(fname, 0.0) as float
-	var roll := {"move": 0.015, "move_1": -0.02}.get(fname, 0.0) as float
+	var bob := {"move": 0.06, "move_1": -0.04, "track_1": 0.0, "track_2": -0.06, "recoil": -0.04}.get(fname, 0.0) as float
+	var pitch := {"move": 0.02, "move_1": -0.015, "track_1": -0.01, "track_2": 0.025, "recoil": 0.045}.get(fname, 0.0) as float
+	var roll := {"move": 0.015, "move_1": -0.02, "track_1": -0.01, "track_2": 0.02}.get(fname, 0.0) as float
 	if wreck:
 		bob = -0.2
 		pitch = -0.035
@@ -483,7 +487,7 @@ static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := fa
 		for s in [-1.0, 1.0]:
 			if wreck and ((i == 0 and s > 0) or (i == 3 and s < 0)):
 				continue
-			var bump := 0.08 if (fname == "move" and i == 1 and s > 0) or (fname == "move_1" and i == 2 and s < 0) else 0.0
+			var bump := 0.08 if (fname == "move" and i == 1 and s > 0) or (fname == "move_1" and i == 2 and s < 0) 				or (fname == "track_1" and i == 3 and s > 0) or (fname == "track_2" and i == 0 and s < 0) else 0.0
 			wheel(S, T, float(ax[i]), s * float(sp.track), wr + bump, wr, spin + i * 0.7, wreck)
 	if big and not wreck:   # driver's hatch cupola on the glacis (front left)
 		var cu := M.part(S, 2)
@@ -521,7 +525,17 @@ static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := fa
 		_panels(S, Th, big, hull, fname == "launch")
 	if fname == "doors_open":
 		_ramp(S, Th, big, low)
-	if fname.begins_with("move"):
+	if dmg:   # scorch blotches on the roof and flanks, smoke curling off the engine deck
+		var sc := M.part(S, 3)
+		for i in 14:
+			var q := Vector3((P.hn(i, 3, 7) - 0.5) * float(sp.L) * 0.8, (P.hn(i, 11, 2) - 0.5) * float(sp.W) * 0.9, roof + 0.02)
+			sc.dec.append({"k": "px", "a": M.wm(Th, q), "col": Color(0.10, 0.09, 0.08, 0.85), "n": Vector3.ZERO})
+		var du2 := M.part(S, 4)
+		for i in 9:
+			var q := Vector3(-float(sp.L) * 0.3 + P.hn(i, 4, 1) * 0.6, 0.4 + (P.hn(i, 8, 5) - 0.5) * 0.6, roof + 0.3 + i * 0.32)
+			du2.dec.append({"k": "px", "a": M.wm(Th, q), "col": Color(0.30, 0.29, 0.27, 0.75 - i * 0.06), "n": Vector3.ZERO})
+			du2.dec.append({"k": "px", "a": M.wm(Th, q + Vector3(0.12, 0.1, 0.05)), "col": Color(0.42, 0.40, 0.37, 0.6 - i * 0.05), "n": Vector3.ZERO})
+	if fname.begins_with("move") or fname.begins_with("track"):
 		var du := M.part(S, -1)
 		for i in 7:
 			var q := Vector3(float(ax[3]) - wr - 0.2 - P.hn(i, int(ph), 3) * 1.2, (P.hn(i, 5, int(ph)) - 0.5) * 3.0, P.hn(i, 9, 2) * 0.3)
@@ -639,9 +653,20 @@ static func _ramp(S: Array, T: Dictionary, big: bool, low: Array) -> void:
 		M.dline(pt, Tr, Vector3(0.25 + i * 0.3, -0.7, 0.012), Vector3(0.25 + i * 0.3, 0.7, 0.012), C.ca(low[0], 0.8), Vector3(0, 0, 1))
 
 
+## ART7D (ORCH / CNFAC7-3 finding): rows 1 and 5 face straight down / up the screen, where the 30 deg camera saw only
+## the roof and the long glacis (wheels tucked under the sponsons): "a grey box". Those two rows turn the hull by
+## HEAD_TWIST inside their 45 deg facing bin, so the head-on / tail-on view shows the nose or rear face, one flank
+## and its wheels (a three-quarter view). Cells, pivots and frame names are unchanged.
+const HEAD_TWIST := 0.36
+
+
+static func row_yaw(k: int) -> float:
+	return k * PI / 4.0 + (HEAD_TWIST if k == 1 or k == 5 else 0.0)
+
+
 static func apc(cv, k: int, fname: String, o: Vector2, big: bool, wreck := false) -> void:
 	var S: Array = []
-	var T := M.pose(o, k * PI / 4.0)
+	var T := M.pose(o, row_yaw(k))
 	model(S, T, big, fname, wreck)
 	M.shadow(cv, S, o)
 	M.render_z(cv, S, o, 31 + k)
@@ -652,7 +677,7 @@ static func apc(cv, k: int, fname: String, o: Vector2, big: bool, wreck := false
 static func build(out: Dictionary) -> void:
 	for big in [true, false]:
 		var id := "g7_cn_strike_apc" if big else "g7_op_tactical_apc"
-		var frames: Array = STRIKE_FRAMES if big else TAC_FRAMES
+		var frames: Array = (STRIKE_FRAMES if big else TAC_FRAMES) + ANIM61   # ART7D: + native G6.1 frames (appended)
 		var b: bool = big
 		C.unit_sheet(out, id, "vehicles", "vehicle", int(FW[b]), int(FH[b]), PIV[b], frames,
 			func(cv, k, f, o): apc(cv, k, f, o, b),

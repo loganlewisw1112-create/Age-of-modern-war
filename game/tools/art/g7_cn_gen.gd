@@ -11,6 +11,7 @@ extends SceneTree
 ## Prints one "G7_ART <id> bytes=<n> budget=<n> ok|OVER" line per sample, then "G7_ART groups=<n> files=<n> ms=<t>".
 const GEN = preload("res://tools/gen_art.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
+const G7Anim = preload("res://tools/art/g7_anim.gd")
 const GROUPS := {
 	"g7_cn": ["res://tools/art/g7_cn_soldiers.gd", "res://tools/art/g7_cn_vehicles.gd", "res://tools/art/g7_cn_air.gd",
 		"res://tools/art/g7_cn_facility.gd"],
@@ -25,6 +26,7 @@ static func generate(group: String) -> Dictionary:
 		"g7_detail_level": C.DL.duplicate(true)}}
 	for path in GROUPS[group]:
 		load(path).build(out)
+	G7Anim.apply(out)   # ART7D: G6.1 animation contract (anim61 marks, vehicle / walker frames, aux tags, bytes)
 	var samples := {}
 	for sec in ["infantry", "vehicles", "buildings"]:
 		var man: Dictionary = out.manifest.get(sec, {})
@@ -53,7 +55,11 @@ func _init() -> void:
 	var files := 0
 	var over := 0
 	for g in groups:
-		var r := generate(g)
+		var r = generate(g)
+		if not (r is Dictionary) or (r.get("images", {}) as Dictionary).is_empty():   # ART7D: a module failed to load / build
+			push_error("G7_ART group %s failed to generate; nothing cleared or written" % g)
+			quit(1)
+			return
 		var dir := ("res://assets/art/%s/" % g) if out_dir == "" else out_dir.path_join(g) + "/"
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 		_clear(ProjectSettings.globalize_path(dir), ["units", "buildings", "wrecks", "icons"])

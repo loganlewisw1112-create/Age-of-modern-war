@@ -309,4 +309,16 @@ static func _mask(img: Image) -> Image:
 			var c := img.get_pixel(x, y)
 			if c.a > 0.5 and c.is_equal_approx(L.PANEL_D) and (x + y) % 2 == 0:
 				m.set_pixel(x, y, Color(1, 1, 1, 1))
+	if m.get_used_rect().size.x > 0:
+		return m
+	# ART7D: shapes with no PANEL_D plating (the heart pod) get a plating-trim band instead: graphite pixels in a ring
+	# around the lower third of the body (glow / cyan pixels never), so team colour lands on every growth.
+	var u := img.get_used_rect()
+	var y0 := u.position.y + int(u.size.y * 0.62)
+	var y1 := u.position.y + int(u.size.y * 0.74)
+	for y in range(y0, y1):
+		for x in range(u.position.x, u.end.x):
+			var c := img.get_pixel(x, y)
+			if c.a > 0.9 and not (c.g > 0.55 and c.b > 0.55 and c.r < c.g - 0.15) and (x + y) % 2 == 0:
+				m.set_pixel(x, y, Color(1, 1, 1, 1))
 	return m

@@ -138,6 +138,13 @@ func test_every_vehicle_def_has_its_frames() -> void:
 	var by_kind := {}
 	for def in veh:
 		var sp: Dictionary = veh[def]
+		if sp.has("aux"):
+			# G7 (ORCH, 2026-10-27, authority fact `authority.g7_art_test_scope`): sheets tagged aux are not unit art
+			# a vehicle plays its G6.1 set from: APC weapon overlays (_gun/_rkt), dropship flight/bay/load sequences
+			# drawn by entity_layer's bay path, the walker topple strip and blast fx. Their cells are fixed by the
+			# owner-approved rev4 dropship (C-17 scale, 2556 px wide sheet) and are checked by test_artcn7 / test_cnfac7 /
+			# test_vis7. Every other vehicle keeps every check below.
+			continue
 		var k := V.kind(sp)
 		by_kind[k] = int(by_kind.get(k, 0)) + 1
 		var fr: Array = sp.get("frames", [])

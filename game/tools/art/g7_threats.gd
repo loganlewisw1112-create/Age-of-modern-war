@@ -12,11 +12,14 @@ const L = preload("res://tools/art/faction_m_lib.gd")
 
 ## ARTCN7-3: THREAT7 wired these sheets as foot units, so the catalog frames idle/walk_a/walk_b/fire (test_art) are
 ## appended, drawn as the named pose in HUNT_ALIAS / WEAVE_ALIAS (same rule as the soldiers' POSE_ALIAS).
-const HUNT_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die",
-	"walk_a", "walk_b", "fire"]
-const HUNT_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_2", "fire": "claw_0"}
-const WEAVE_FRAMES := ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit", "cocoon", "haul", "die", "walk_a", "walk_b", "fire"]
-const WEAVE_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_2", "fire": "spit"}
+## ART7D: catalog frames first (test_art_machine: legged foot units start idle / walk_a / walk_b / fire) and a native
+## 6-frame walk cycle (walk_0..5, the G6.1 walker set); every frame is looked up by name, never by index.
+const HUNT_FRAMES := ["idle", "walk_a", "walk_b", "fire", "walk_0", "walk_1", "walk_2", "walk_3", "walk_4", "walk_5",
+	"run_0", "run_1", "pounce", "claw_0", "claw_1", "die"]
+const HUNT_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_3", "fire": "claw_0"}
+const WEAVE_FRAMES := ["idle", "walk_a", "walk_b", "fire", "walk_0", "walk_1", "walk_2", "walk_3", "walk_4", "walk_5",
+	"spit", "cocoon", "haul", "die"]
+const WEAVE_ALIAS := {"walk_a": "walk_0", "walk_b": "walk_3", "fire": "spit"}
 const CORE_FRAMES := ["pulse_0", "pulse_1", "pulse_2", "plated", "hit", "emerge_0", "emerge_1", "walk_0", "walk_1",
 	"walk_2", "walk_3"]
 const SILK := Color8(214, 220, 210)
@@ -55,7 +58,7 @@ static func packhunter(cv, k: int, fname: String, o: Vector2) -> void:
 	var crouch := 0.0
 	var dead := fname == "die"
 	if fname.begins_with("walk_"):
-		ph = TAU * float(int(fname.substr(5))) / 4.0
+		ph = TAU * float(int(fname.substr(5))) / 6.0
 		sw = 2.4
 	elif fname.begins_with("run_"):
 		ph = PI * float(int(fname.substr(4)))
@@ -125,7 +128,7 @@ static func weaver(cv, k: int, fname: String, o: Vector2) -> void:
 	var R := {"a": k * PI / 4.0, "o": o, "tilt": 0.0, "bob": 0.0}
 	var ph := 0.0
 	if fname.begins_with("walk_"):
-		ph = TAU * float(int(fname.substr(5))) / 4.0
+		ph = TAU * float(int(fname.substr(5))) / 6.0
 	var dead := fname == "die"
 	var bz := 20.0 - (14.0 if dead else 0.0)
 	C.ground_shadow(cv, o + Vector2(0, 2), 40.0, 15.0, 0.30)
@@ -248,12 +251,12 @@ static func living_core(cv, k: int, fname: String, o: Vector2) -> void:
 static func build(out: Dictionary) -> void:
 	C.unit_sheet(out, "g7_m_packhunter", "vehicles", "threat", 84, 66, Vector2i(42, 47), HUNT_FRAMES,
 		func(cv, k, f, o): packhunter(cv, k, String(HUNT_ALIAS.get(f, f)), o),
-		{"sample": "threat", "line": "machine", "legged": true, "key_frames": HUNT_FRAMES.slice(0, 11), "frame_alias": HUNT_ALIAS,
-		"anim_strip": ["walk_0", "walk_1", "walk_2", "walk_3", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die"]})
-	C.unit_sheet(out, "g7_m_weaver", "vehicles", "threat_big", 132, 104, Vector2i(66, 76), WEAVE_FRAMES,
+		{"sample": "threat", "line": "machine", "legged": true, "key_frames": HUNT_FRAMES.slice(0, 16), "frame_alias": HUNT_ALIAS,
+		"anim_strip": ["walk_0", "walk_1", "walk_2", "walk_3", "walk_4", "walk_5", "run_0", "run_1", "pounce", "claw_0", "claw_1", "die"]})
+	C.unit_sheet(out, "g7_m_weaver", "vehicles", "threat_big", 128, 104, Vector2i(64, 76), WEAVE_FRAMES,   # ART7D: 128 (was 132; art spans x 26..115)
 		func(cv, k, f, o): weaver(cv, k, String(WEAVE_ALIAS.get(f, f)), o),
-		{"sample": "threat", "line": "machine", "legged": true, "key_frames": WEAVE_FRAMES.slice(0, 9), "frame_alias": WEAVE_ALIAS,
-		"anim_strip": ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "spit", "cocoon", "haul", "walk_0", "die"]})
+		{"sample": "threat", "line": "machine", "legged": true, "key_frames": WEAVE_FRAMES.slice(0, 14), "frame_alias": WEAVE_ALIAS,
+		"anim_strip": ["idle", "walk_0", "walk_1", "walk_2", "walk_3", "walk_4", "walk_5", "spit", "cocoon", "haul", "die"]})
 	C.unit_sheet(out, "g7_m_living_core", "vehicles", "threat_big", 108, 100, Vector2i(54, 70), CORE_FRAMES,
 		func(cv, k, f, o): living_core(cv, k, f, o),
 		{"sample": "threat", "line": "machine", "key_frames": CORE_FRAMES.duplicate(),

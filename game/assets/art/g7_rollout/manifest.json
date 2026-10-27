@@ -1128,10 +1128,10 @@
     "icons/cn_tower.png": "77e898dd5618a3ddf513fcd37220fea9",
     "icons/g7_cn_barrier.png": "7a1a72cb93d4924649eb1d76fb600d76",
     "icons/g7_cn_sentry.png": "745d750eb81bade68c24e74df6e80a70",
-    "units/g7_cn_barrier.png": "36fdefbf447f20c2f5553899b4d9d138",
-    "units/g7_cn_barrier_mask.png": "78ceba4f20403bfce88661402cd0b4c1",
-    "units/g7_cn_sentry.png": "1234453880962194b36667b3a956277a",
-    "units/g7_cn_sentry_mask.png": "bd538a9f7e4d65c5f59bb8de4a0be004"
+    "units/g7_cn_barrier.png": "380a49dcc0ec1d5ddfa5c8b011de10c8",
+    "units/g7_cn_barrier_mask.png": "8bd8bdf209e5897e416214440e8b5ba6",
+    "units/g7_cn_sentry.png": "b8e25ef4f8af9878e6f6b3af794dfea6",
+    "units/g7_cn_sentry_mask.png": "8e93aa7a79c578debac77edd8984aefa"
   },
   "g7_detail_level": {
     "air": {
@@ -1216,6 +1216,84 @@
   ],
   "vehicles": {
     "g7_cn_barrier": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            18,
+            -6
+          ],
+          [
+            -5,
+            3
+          ],
+          [
+            -19,
+            -6
+          ],
+          [
+            -10,
+            -24
+          ],
+          [
+            -19,
+            -15
+          ],
+          [
+            -17,
+            -23
+          ],
+          [
+            18,
+            -15
+          ],
+          [
+            9,
+            -24
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            3,
+            -20
+          ],
+          [
+            0,
+            -15
+          ],
+          [
+            -3,
+            -20
+          ],
+          [
+            -1,
+            -25
+          ],
+          [
+            -3,
+            -25
+          ],
+          [
+            0,
+            -21
+          ],
+          [
+            3,
+            -25
+          ],
+          [
+            1,
+            -25
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 48,
       "file": "units/g7_cn_barrier.png",
@@ -1224,18 +1302,22 @@
         "move",
         "fire",
         "deploy_0",
-        "deploy_1"
+        "deploy_1",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
       ],
       "fw": 56,
       "g7": {
         "art": "ART7B",
         "budget": 2097152,
-        "bytes": 87540,
+        "bytes": 153876,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "kit": "cn",
         "mirror": -1,
-        "raw_bytes": 430080,
+        "raw_bytes": 774144,
         "size_m": [
           0.9,
           3.3,
@@ -1249,6 +1331,84 @@
       ]
     },
     "g7_cn_sentry": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            13,
+            -5
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            -14,
+            -5
+          ],
+          [
+            -15,
+            -11
+          ],
+          [
+            -14,
+            -18
+          ],
+          [
+            0,
+            -21
+          ],
+          [
+            12,
+            -18
+          ],
+          [
+            14,
+            -11
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1,
+            -13
+          ],
+          [
+            0,
+            -13
+          ],
+          [
+            -1,
+            -13
+          ],
+          [
+            -1,
+            -12
+          ],
+          [
+            -1,
+            -14
+          ],
+          [
+            0,
+            -16
+          ],
+          [
+            1,
+            -14
+          ],
+          [
+            1,
+            -13
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1
+      },
       "facings": 8,
       "fh": 40,
       "file": "units/g7_cn_sentry.png",
@@ -1258,18 +1418,22 @@
         "fire",
         "fire_1",
         "deploy_0",
-        "deploy_1"
+        "deploy_1",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
       ],
       "fw": 40,
       "g7": {
         "art": "ART7B",
         "budget": 2097152,
-        "bytes": 49592,
+        "bytes": 75048,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "kit": "cn",
         "mirror": -1,
-        "raw_bytes": 307200,
+        "raw_bytes": 512000,
         "size_m": [
           1.9,
           1.6,

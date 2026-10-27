@@ -14,6 +14,11 @@ const G3B = preload("res://tools/art/g3b.gd")
 static func _g5_art(def: String) -> bool:
 	if bool(Content.unit(def).get("g6", false)):
 		return true  # G6 (CONTENT6 CR): G6 art is checked by tests/test_art_g6.gd
+	if bool(Content.unit(def).get("g7", false)):
+		# G7 (ORCH, 2026-10-27, authority fact `authority.g7_art_test_scope`; owner look decisions rev3/rev4 in
+		# docs/G7_REFERENCE.md: one real-world scale, a C-17-class stealth dropship): G7 art is checked by
+		# tests/test_artcn7.gd, test_art.gd and test_anim61.gd; its aircraft cannot meet this test's <= 128 px G3b frame.
+		return true
 	var m: Dictionary = AC.manifest()
 	for sec in ["infantry", "vehicles"]:
 		var s = m.get(sec, {}).get(def)

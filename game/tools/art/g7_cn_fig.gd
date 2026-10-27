@@ -11,13 +11,13 @@ const GR = preload("res://tools/art/g7_cn_gear.gd")
 static func pose(fname: String) -> Dictionary:
 	fname = String(C.POSE_ALIAS.get(fname, fname))
 	var p := {"ph": 0.0, "sw": 0.0, "bob": 0.0, "crouch": 0.0, "lean": 0.0, "tilt": 0.0, "arms": "carry",
-		"flash": false, "dark": 1.0, "act": -1, "breath": 0.0}
+		"flash": false, "dark": 1.0, "act": -1, "breath": 0.0, "nade": -1}
 	if fname.begins_with("walk_"):
 		p.ph = TAU * float(int(fname.substr(5))) / 6.0
 		p.sw = 2.3
 		p.bob = absf(sin(p.ph)) * 0.6
 	elif fname.begins_with("run_"):
-		p.ph = TAU * float(int(fname.substr(4))) / 3.0
+		p.ph = TAU * float(int(fname.substr(4))) / 6.0   # ART7D: 6-frame run cycle (G6.1 run_0..5)
 		p.sw = 3.4
 		p.lean = 1.4
 		p.bob = absf(sin(p.ph)) * 0.9
@@ -34,6 +34,25 @@ static func pose(fname: String) -> Dictionary:
 				p.crouch = 0.45
 			"reload_0":
 				p.arms = "reload"
+			"reload_1":   # ART7D: fresh magazine seated, weapon coming back up
+				p.arms = "reload2"
+				p.lean = 0.2
+			"fire_p":   # ART7D: prone, aimed shot
+				p.tilt = 1.5
+				p.arms = "paim"
+				p.flash = true
+			"throw_0":   # ART7D: wind-up, weight on the back foot, grenade behind the head
+				p.arms = "throw0"
+				p.lean = -0.6
+				p.ph = PI
+				p.sw = 1.4
+				p.nade = 0
+			"throw_1":   # ART7D: release, stepping through, grenade leaving the hand
+				p.arms = "throw1"
+				p.lean = 1.1
+				p.ph = 0.0
+				p.sw = 1.8
+				p.nade = 1
 			"crouch":
 				p.crouch = 0.45
 			"prone":
@@ -184,6 +203,9 @@ static func draw(cv, kit: Dictionary, k: int, fname: String, o: Vector2) -> void
 				GR.weapon(cv, kit, C.fpt(R2, q.wb.x, q.wb.y, q.wb.z), C.fpt(R2, q.wt.x, q.wt.y, q.wt.z), bool(p.flash), Z)
 	if p.act >= 0:
 		act_fx(cv, R, kit, int(p.act), h)
+	if int(p.nade) >= 0:   # ART7D: the grenade in / just out of the throwing hand
+		var g: Vector3 = h.rh + (Vector3(1.6, 0.0, 0.6) if int(p.nade) == 1 else Vector3(-0.3, 0.0, 0.4))
+		C.blob(cv, C.fpt(R, g.x, g.y, g.z), 0.75 * Z, C.ramp(Color8(78, 88, 64)))
 
 
 static func s_phase(p: Dictionary) -> float:
@@ -199,6 +221,15 @@ static func _hands(mode: String, L: float, hz: float, wl: float, sp: float) -> D
 		"reload":
 			return {"rh": Vector3(L + 2.0, 0.9, hz + 3.4), "lh": Vector3(L + 1.6, -0.4, hz + 2.2),
 				"wb": Vector3(L + 0.6, 0.8, hz + 3.0), "wt": Vector3(L + 0.6 + wl * 0.8, 0.6, hz + 5.6)}
+		"reload2":   # ART7D: left hand slaps the magazine home at the magwell, muzzle lowering toward the aim line
+			return {"rh": Vector3(L + 2.0, 0.9, hz + 3.8), "lh": Vector3(L + 2.6, 0.1, hz + 3.0),
+				"wb": Vector3(L + 0.6, 0.8, hz + 3.8), "wt": Vector3(L + 0.6 + wl * 0.9, 0.6, hz + 5.0)}
+		"throw0":   # ART7D: throwing arm cocked behind the head, weapon slung muzzle-down on the other side
+			return {"rh": Vector3(L - 2.0, 1.8, hz + 7.2), "lh": Vector3(L + 3.0, -1.0, hz + 5.2),
+				"wb": Vector3(L + 0.4, -1.9, hz + 4.0), "wt": Vector3(L + 0.4 + wl * 0.75, -2.3, hz + 0.9)}
+		"throw1":   # ART7D: arm whipped forward and high, off hand pulled back to the chest
+			return {"rh": Vector3(L + 4.2, 0.9, hz + 6.6), "lh": Vector3(L + 0.6, -1.4, hz + 3.6),
+				"wb": Vector3(L + 0.4, -1.9, hz + 4.0), "wt": Vector3(L + 0.4 + wl * 0.75, -2.3, hz + 0.9)}
 		"paim":
 			return {"rh": Vector3(0.6, 1.0, hz + 6.8), "lh": Vector3(0.6, -0.8, hz + 9.0),
 				"wb": Vector3(0.9, 0.8, hz + 5.6), "wt": Vector3(0.9, 0.6, hz + 5.6 + wl)}

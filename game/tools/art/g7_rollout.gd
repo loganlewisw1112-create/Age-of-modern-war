@@ -9,6 +9,7 @@ extends SceneTree
 ## Deterministic.   godot --headless --path . -s tools/art/g7_rollout.gd   (writes assets/art/g7_rollout/)
 ## Prints "G7_ART <id> bytes=<n> budget=<n> ok|OVER" and "G7_ART group=g7_rollout files=<n> over=<n>".
 
+const G7Anim = preload("res://tools/art/g7_anim.gd")
 const GEN = preload("res://tools/gen_art.gd")
 const P = preload("res://tools/art/pix.gd")
 const K = preload("res://tools/art/g5_bld_lib.gd")
@@ -781,6 +782,7 @@ func _init() -> void:
 	var out := {"images": {}, "manifest": {"version": 1, "tile": [64, 32], "group": "g7_rollout",
 		"g7_detail_level": C.DL.duplicate(true)}}
 	build(out)
+	G7Anim.apply(out)   # ART7D: G6.1 vehicle frames (track phases, recoil, damaged) + anim61, re-measured bytes
 	var dir := ProjectSettings.globalize_path(OUT)
 	DirAccess.make_dir_recursive_absolute(dir)
 	for sub in ["units", "buildings", "icons"]:
