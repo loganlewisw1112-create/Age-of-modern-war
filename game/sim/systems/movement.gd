@@ -3,6 +3,7 @@ const Status = preload("res://sim/systems/status.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 PERF7A: on/off switch of the _fp_cmask cache
 const Fortify = preload("res://sim/systems/fortify.gd")   # G5 (CORE10K): player breach hook
 const HotState = preload("res://sim/hot_state.gd")       # G5 (CORE10K): pos mirror + dirty marks for the gather
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): tick() first refreshes the per-tick G6 hook mask (SimIndex.g6_set from
@@ -51,12 +52,33 @@ class EdgeGrid extends AStarGrid2D:
 
 
 ## G6: class bitmask (NativeCore.mc_index) for which building def_id's footprint is passable.
+## G7 PERF7A: cached per def id. G6Hooks.passable = Fieldworks.passable(def, mc) reads only the def's
+## passable_for and Content.rules().g6_ground.fieldworks.defs (content, read-only during a match), so the mask is
+## a pure function of (content, hooks script): the cache is dropped when Content.rules() or SimIndex.g6h()
+## changes, and never used while a test spy stands in (SimIndex.g6_spy). Inert7.enabled = false computes it
+## uncached (the on/off check). Was ~80 % of rebuild_nav on Last Protocol (1143 walls).
+static var _fpc := {}
+static var _fpc_rules = null
+static var _fpc_hooks = null
+
+
 static func _fp_cmask(def_id: String) -> int:
+	var cache := Inert7.enabled and SimIndex.g6_spy == null
+	if cache:
+		if not is_same(Content.rules(), _fpc_rules) or not is_same(SimIndex.g6h(), _fpc_hooks):
+			_fpc = {}
+			_fpc_rules = Content.rules()
+			_fpc_hooks = SimIndex.g6h()
+		var v = _fpc.get(def_id)
+		if v != null:
+			return int(v)
 	var d: Dictionary = Content.building(def_id)
 	var m := 0
 	for mc in NativeCore.MC:
 		if not is_air(String(mc)) and SimIndex.g6h().passable(d, String(mc)):
 			m |= 1 << NativeCore.mc_index(String(mc))
+	if cache:
+		_fpc[def_id] = m
 	return m
 
 

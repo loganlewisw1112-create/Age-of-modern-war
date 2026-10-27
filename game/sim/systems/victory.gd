@@ -28,6 +28,7 @@ extends RefCounted
 
 const Territory = preload("res://sim/systems/territory.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Inert7 = preload("res://sim/systems/inert7.gd")  # G7 PERF7A: def-filtered building lists (HQ)
 const MapGen = preload("res://sim/map_gen.gd")
 const Waves = preload("res://sim/systems/waves.gd")  # G6 (MODES6): survival waves
 
@@ -115,17 +116,30 @@ static func tick(w: SimWorld) -> void:
 
 static func _eliminate(w: SimWorld) -> void:
 	var has_hq := {}
-	for e in SimIndex.of(w, "building"):
+	# G7 PERF7A: only HQ defs (Inert7.HQ, same order and liveness as the building list; Last Protocol has ~1500
+	# walls/towers). The result is a set of owners, so skipping non-HQ buildings changes nothing.
+	for e in Inert7.blds(w, Inert7.HQ):
 		if _is_hq(String(e.def)) and SimIndex.alive(w, e):
 			has_hq[int(e.owner)] = true
 	var hqless: Array = _vstate(w).get("hqless", [])
 	if not hqless.is_empty():
-		for e in SimIndex.of(w, "unit"):
-			if SimIndex.alive(w, e):
-				has_hq[int(e.owner)] = true if hqless.has(int(e.owner)) else has_hq.get(int(e.owner), false)
-		for e in SimIndex.of(w, "building"):
-			if hqless.has(int(e.owner)) and SimIndex.alive(w, e):
-				has_hq[int(e.owner)] = true
+		# G7 PERF7A: these scans only answer "has each hqless side a live unit or building": stop once every
+		# hqless side is found (Inert7.enabled = false: full scans, the on/off check). Non-hqless owners get no
+		# key here (the old `has_hq.get(o, false)` write stored false, which reads the same below).
+		var want := {}
+		for fid in hqless:
+			if not bool(has_hq.get(int(fid), false)):
+				want[int(fid)] = true
+		var full := not Inert7.enabled
+		for kind in ["unit", "building"]:
+			if want.is_empty() and not full:
+				break
+			for e in SimIndex.of(w, kind):
+				if want.has(int(e.owner)) and SimIndex.alive(w, e):
+					has_hq[int(e.owner)] = true
+					want.erase(int(e.owner))
+					if want.is_empty() and not full:
+						break
 	if Waves.active(w):   # G6 survival: the wave attacker has no base and is never eliminated
 		has_hq[Waves.attacker(w)] = true
 	var changed := false
@@ -501,7 +515,7 @@ static func progress(w: SimWorld, team: int) -> Dictionary:
 						enemies += 1
 				var own := 0
 				var foe := 0
-				for e in SimIndex.of(w, "building"):
+				for e in Inert7.blds(w, Inert7.HQ):   # G7 PERF7A: HQ defs only
 					if _is_hq(String(e.def)) and w.factions.has(int(e.owner)) and SimIndex.alive(w, e):
 						if team_of(w, int(e.owner)) == team:
 							own += 1

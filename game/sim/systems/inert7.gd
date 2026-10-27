@@ -23,17 +23,33 @@ const SUPPLY_PT := 32 # Supply._sources: is_hq or supply_point
 const RECHARGE := 64  # Supply._recharge / _hubs: recharge > 0
 const REST := 128     # Fatigue.rest_points: home, field_hospital or hospital
 const HOME := 256     # Morale._home_of: home
-const ALL_BITS := [ECO, REFINE, MAGNET, ARMED, PRODUCE, SUPPLY_PT, RECHARGE, REST, HOME]
+const HQ := 512       # G7 PERF7A: Victory._eliminate / progress: is_hq
+const SPOTTER := 1024 # G7 PERF7A: Turrets7.spotted: the def is in some turret def's t7.spotters (content-static)
+const WIRE := 2048    # G7 PERF7A: G6Hooks.active wire scan: Fieldworks.kind_of(def) == "wire" (content-static)
+const ALL_BITS := [ECO, REFINE, MAGNET, ARMED, PRODUCE, SUPPLY_PT, RECHARGE, REST, HOME, HQ, SPOTTER, WIRE]
 
 static var enabled := true
 static var _bits := {}       # def id -> predicate bits (content-static)
 static var _rref = null      # Content.rules() the bits were read from (a content reload clears them)
+static var _spot = null      # G7 PERF7A: def id -> true for every t7.spotters entry of every building def
+static var _fw = null        # G7 PERF7A: Fieldworks script (loaded lazily: no preload cycle through its owners)
 
 
 static func _sync() -> void:
 	if not is_same(Content.rules(), _rref):
 		_bits = {}
+		_spot = null
 		_rref = Content.rules()
+
+
+## G7 PERF7A: the union of every building def's t7.spotters (Turrets7 mortar spotting), read once per content.
+static func _spotters() -> Dictionary:
+	if _spot == null:
+		_spot = {}
+		for id in Content.ids("buildings"):
+			for s in Content.building(String(id)).get("t7", {}).get("spotters", []):
+				_spot[String(s)] = true
+	return _spot
 
 
 static func bits_of(def_id: String) -> int:
@@ -62,6 +78,14 @@ static func bits_of(def_id: String) -> int:
 		b |= REST
 	if bool(d.get("home", false)):
 		b |= HOME
+	if bool(d.get("is_hq", false)):
+		b |= HQ
+	if _spotters().has(def_id):
+		b |= SPOTTER
+	if _fw == null:
+		_fw = load("res://sim/systems/fieldworks.gd")
+	if String(_fw.kind_of(def_id)) == "wire":
+		b |= WIRE
 	_bits[def_id] = b
 	return b
 

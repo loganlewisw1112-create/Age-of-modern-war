@@ -116,7 +116,8 @@ static func active(w: SimWorld) -> int:
 		if int(ss.get("loadouts", {}).get("nonstandard", 0)) > 0:
 			m |= G6_SPEED
 		else:
-			for b in SimSystemsIndex.of(w, "building"):
+			var i7 = load("res://sim/systems/inert7.gd")  # G7 PERF7A CR 1602: wire defs only (~8 ms -> ~0.03 ms on Last Protocol); lazy load avoids a preload cycle
+			for b in i7.blds(w, i7.WIRE):
 				if Fieldworks.kind_of(String(b.def)) == "wire":
 					m |= G6_SPEED
 					break

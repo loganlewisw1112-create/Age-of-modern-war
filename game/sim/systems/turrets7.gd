@@ -27,6 +27,8 @@ const HotState = preload("res://sim/hot_state.gd")
 const Airdef = preload("res://sim/systems/airdef.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 PERF7A: spotter-def building list, on/off switch
+const BBK := 16.0   # G7 PERF7A: building bucket size (tiles) for the enemy-building candidate scans
 
 const TAGS := ["inf", "swarm", "drone", "air", "leech", "pack", "walker_l", "walker_h", "light_v", "heavy", "big", "core", "machine", "building"]
 
@@ -261,6 +263,68 @@ static func _near(w: SimWorld, fid: int, p: Vector2, r: float, ground_only := fa
 	return out
 
 
+## G7 PERF7A: buildings bucketed by center (BBK tiles) as [list index, entity]; follows SimIndex's building array
+## like Inert7 (a new array -> rebuilt, the same array grown -> only the tail added). Runtime cache only
+## (w.cache.t7_bgrid): a building's cell and size never change, so it derives from state.
+static func _bgrid(w: SimWorld) -> Dictionary:
+	var src: Array = SimIndex.of(w, "building")
+	var n := src.size()
+	var g = w.cache.get("t7_bgrid")
+	if g == null or not is_same(g.src, src) or int(g.n) > n:
+		g = {"src": src, "n": 0, "b": {}, "ms": 0.0}
+		w.cache["t7_bgrid"] = g
+	if int(g.n) < n:
+		var b: Dictionary = g.b
+		for i in range(int(g.n), n):
+			var e: Dictionary = src[i]
+			var c := center(e)
+			var k := floori(c.x / BBK) + floori(c.y / BBK) * 4096
+			var arr = b.get(k)
+			if arr == null:
+				b[k] = [[i, e]]
+			else:
+				arr.append([i, e])
+			g.ms = maxf(float(g.ms), float(e.size))
+		g.n = n
+	return g
+
+
+## G7 PERF7A: the buildings of SimIndex.of(w, "building") that are live enemies of fid with their center within
+## r + their size of p, in list order. Every caller keeps exactly these tests (or stricter ones) itself, so its
+## candidate list is unchanged; only buckets near p are visited. Inert7.enabled = false: the whole list (the on/off
+## hash check).
+static func _blds_near(w: SimWorld, fid: int, p: Vector2, r: float) -> Array:
+	if not Inert7.enabled:
+		return SimIndex.of(w, "building")
+	var g := _bgrid(w)
+	var rr := r + float(g.ms)
+	var b: Dictionary = g.b
+	var en := {}   # owner -> is_enemy(fid, owner), per query
+	var idx := []
+	for by in range(floori((p.y - rr) / BBK), floori((p.y + rr) / BBK) + 1):
+		for bx in range(floori((p.x - rr) / BBK), floori((p.x + rr) / BBK) + 1):
+			var arr = b.get(bx + by * 4096)
+			if arr == null:
+				continue
+			for q in arr:
+				var e: Dictionary = q[1]
+				var o := int(e.owner)
+				var ev = en.get(o)
+				if ev == null:
+					ev = w.is_enemy(fid, o)
+					en[o] = ev
+				if ev and w.entities.has(int(e.id)) and center(e).distance_to(p) <= r + float(e.size):
+					idx.append(int(q[0]))
+	if idx.is_empty():
+		return idx
+	idx.sort()
+	var src: Array = g.src
+	var out := []
+	for i in idx:
+		out.append(src[i])
+	return out
+
+
 # ================================================================ targeting
 static func _visible(w: SimWorld, fid: int, t: Dictionary) -> bool:
 	return SimWorld.Fog.entity_visible(w, fid, t)
@@ -272,7 +336,7 @@ static func spotted(w: SimWorld, fid: int, c: Dictionary, t: Dictionary) -> bool
 	var tp := pos_of(w, t)
 	var sp: Array = c.get("spotters", [])
 	if not sp.is_empty():
-		for s in SimIndex.of(w, "building"):
+		for s in Inert7.blds(w, Inert7.SPOTTER):   # G7 PERF7A: spotter defs only (was every building)
 			if not sp.has(String(s.def)) or not w.entities.has(int(s.id)) or not bool(s.get("built", false)):
 				continue
 			if int(s.owner) != fid and not w.is_ally(fid, int(s.owner)):
@@ -321,14 +385,19 @@ static func pick(w: SimWorld, b: Dictionary, c: Dictionary, wd: Dictionary):
 	var bk := INF
 	var cands := _near(w, fid, bp, float(wd.get("range", 0)))
 	if bool(c.get("buildings", false)):
-		for s in SimIndex.of(w, "building"):
+		for s in _blds_near(w, fid, bp, float(wd.get("range", 0))):   # G7 PERF7A: nearby buckets only
 			if w.entities.has(int(s.id)) and w.is_enemy(fid, int(s.owner)) and center(s).distance_to(bp) <= float(wd.get("range", 0)) + float(s.size):
 				cands.append(s)
+	# G7 PERF7A: the key (pure: tags, position, id) first; a candidate whose key cannot beat the best so far is
+	# never picked, so its can_engage (fog, LOS, spotting) is skipped. Same pick as testing can_engage first.
+	var lazy := Inert7.enabled
 	for t in cands:
-		if not can_engage(w, b, c, wd, t):
+		if not lazy and not can_engage(w, b, c, wd, t):
 			continue
 		var k := float(rank(w, c, t)) * 100000.0 + bp.distance_to(pos_of(w, t)) * 10.0 + float(int(t.id)) * 1e-6
 		if k < bk:
+			if lazy and not can_engage(w, b, c, wd, t):
+				continue
 			bk = k
 			best = t
 	return best
@@ -422,7 +491,7 @@ static func _splash(w: SimWorld, b: Dictionary, wd: Dictionary, at: Vector2, rad
 	var fid := int(b.owner)
 	var hits := _near(w, fid, at, rad, true)
 	if bld:
-		for s in SimIndex.of(w, "building"):
+		for s in _blds_near(w, fid, at, rad):   # G7 PERF7A: nearby buckets only
 			if w.entities.has(int(s.id)) and w.is_enemy(fid, int(s.owner)) and center(s).distance_to(at) <= rad + float(s.size) * 0.5:
 				hits.append(s)
 	var n := 0

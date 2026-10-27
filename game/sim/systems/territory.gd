@@ -17,6 +17,7 @@ const PHASE := 7
 const COUNT_MIN_FRAC := 0.3
 const NONE := -1000000   # recompute(): no team seen in the sector yet
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Inert7 = preload("res://sim/systems/inert7.gd")  # G7 PERF7A: on/off switch of the fast counted pass
 
 
 static func _cfg() -> Dictionary:
@@ -41,6 +42,27 @@ static func state(w: SimWorld) -> Dictionary:
 	var cand := []
 	var held := []
 	var total := 0
+	var t: PackedByteArray = w.map.terrain
+	if Inert7.enabled and t.size() >= mw * mh:
+		counted = _counted_fast(t, size, cols, rows, mw, mh)
+	else:
+		counted = _counted_ref(w, size, cols, rows, mw, mh)
+	for c in counted:
+		if c:
+			total += 1
+		owner.append(-1)
+		cand.append(-1)
+		held.append(0)
+	var st := {"size": size, "cols": cols, "rows": rows, "counted": counted, "total": total,
+		"owner": owner, "cand": cand, "held": held}
+	w.sys_state["territory"] = st
+	return st
+
+
+## The G3a per-cell pass (Terrain.passable(w.terrain_at(cell), "foot") for every cell): counted flags, row-major.
+## Kept as the reference (tests) and the Inert7.enabled = false path. ~0.6-1 s on a 768 map.
+static func _counted_ref(w: SimWorld, size: int, cols: int, rows: int, mw: int, mh: int) -> Array:
+	var counted := []
 	for sy in rows:
 		for sx in cols:
 			var cells := 0
@@ -50,17 +72,80 @@ static func state(w: SimWorld) -> Dictionary:
 					cells += 1
 					if Terrain.passable(w.terrain_at(Vector2i(x, y)), "foot"):
 						ok += 1
-			var c := cells > 0 and float(ok) >= COUNT_MIN_FRAC * float(cells)
-			counted.append(c)
-			if c:
-				total += 1
-			owner.append(-1)
-			cand.append(-1)
-			held.append(0)
-	var st := {"size": size, "cols": cols, "rows": rows, "counted": counted, "total": total,
-		"owner": owner, "cand": cand, "held": held}
-	w.sys_state["territory"] = st
-	return st
+			counted.append(cells > 0 and float(ok) >= COUNT_MIN_FRAC * float(cells))
+	return counted
+
+
+## G7 PERF7A (SCALE7 CR 278): the same counted flags as _counted_ref, cheaper. The foot rule per terrain code is
+## a 256-entry table (Terrain.passable(code, "foot")). A band of sector rows (or one row) holding none of the
+## impassable codes (PackedByteArray.count, native) adds its full width without a per-cell loop; other rows walk
+## a sector's cells only while the sector is undecided: the flag is ok >= COUNT_MIN_FRAC * cells, so once ok
+## reaches it (or can no longer reach it with every unseen cell passable) the answer is final. Same results.
+static func _counted_fast(t: PackedByteArray, size: int, cols: int, rows: int, mw: int, mh: int) -> Array:
+	var lut := PackedByteArray()
+	lut.resize(256)
+	var imp := []
+	for code in 256:
+		var p := Terrain.passable(code, "foot")
+		lut[code] = 1 if p else 0
+		if not p:
+			imp.append(code)
+	var counted := []
+	for sy in rows:
+		var y0 := sy * size
+		var y1 := mini(y0 + size, mh)
+		var bh := y1 - y0
+		var ok := PackedInt32Array()
+		ok.resize(cols)
+		ok.fill(0)
+		var seen := PackedInt32Array()
+		seen.resize(cols)
+		seen.fill(0)
+		var dec := PackedByteArray()   # 0 undecided, 1 counted, 2 not counted
+		dec.resize(cols)
+		dec.fill(0)
+		var band := t.slice(y0 * mw, y1 * mw)
+		var bimp := 0
+		for code in imp:
+			bimp += band.count(code)
+		if bimp == 0:
+			for sx in cols:
+				var cw := mini((sx + 1) * size, mw) - sx * size
+				ok[sx] = cw * bh
+				seen[sx] = cw * bh
+		else:
+			for y in range(y0, y1):
+				var base := y * mw
+				var row := t.slice(base, base + mw)
+				var rimp := 0
+				for code in imp:
+					rimp += row.count(code)
+				for sx in cols:
+					if dec[sx] != 0:
+						continue
+					var x0 := sx * size
+					var x1 := mini(x0 + size, mw)
+					var k := x1 - x0
+					if rimp != 0:
+						k = 0
+						for i in range(base + x0, base + x1):
+							k += lut[t[i]]
+					ok[sx] += k
+					seen[sx] += x1 - x0
+					var cells := (x1 - x0) * bh
+					if float(ok[sx]) >= COUNT_MIN_FRAC * float(cells):
+						dec[sx] = 1
+					elif float(ok[sx] + cells - seen[sx]) < COUNT_MIN_FRAC * float(cells):
+						dec[sx] = 2
+		for sx in cols:
+			var cells2 := (mini((sx + 1) * size, mw) - sx * size) * bh
+			if dec[sx] == 1:
+				counted.append(true)
+			elif dec[sx] == 2:
+				counted.append(false)
+			else:
+				counted.append(cells2 > 0 and float(ok[sx]) >= COUNT_MIN_FRAC * float(cells2))
+	return counted
 
 
 static func tick(w: SimWorld) -> void:
