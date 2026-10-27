@@ -23,6 +23,7 @@ extends RefCounted
 
 const Apc7 = preload("res://sim/systems/apc7.gd")
 const Inert7 = preload("res://sim/systems/inert7.gd")
+const Sq7D = preload("res://sim/systems/sq7_display.gd")  # G7 PERF7E CR 2352: render display table
 const VER := 1
 const STRIKE_A := ["leader", "second", "deploy", "deploy", "scanner", "ew", "gunner", "gunner", "gunner", "medic"]
 const STRIKE_B := ["second", "deploy", "deploy", "scanner", "ew", "gunner", "gunner", "gunner", "gunner", "medic"]
@@ -1800,5 +1801,6 @@ static func formed_withdraw(w: SimWorld, teams: Array, from: Vector2, back: Vect
 		u.order.sq = "cn"
 		if bk:
 			u.order.bk = true
+			Sq7D.note_bk(w, u)  # G7 PERF7E CR 2352
 	w.emit("CnFormedWithdraw", {"owner": int(teams[0].fid) if not teams.is_empty() else -1, "from": from, "back": back,
 		"apcs": n, "foot": foot.size()})

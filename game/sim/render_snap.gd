@@ -17,6 +17,7 @@ extends RefCounted
 ##   fires PackedInt32Array (burning cell indices y*map_w+x, ascending; G4b g4b_mech fire, UI4B-3),
 ##   memory {fid: shallow copy of w.memory[fid]}, ended, winner, entity_count, build_us.
 
+const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed SQUAD7 display table (w.cache.sq7d)
 const FLAG_MOVING := 1
 const FLAG_FIRING := 2
 const FLAG_AIR := 4
@@ -115,15 +116,6 @@ static func build(w) -> void:
 	var s7f: Array = _s7_inputs(w, g6) if s7_on else []
 	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
 	# G7 PERF7D (orch.ruling CR 2047): SQUAD7 fields and Senses7 hiding as arrays aligned with ids (no per-unit dicts)
-	var sq7f := PackedByteArray()      # SQ7_* bits per unit (0 = no SQUAD7 field)
-	var sq7a := PackedFloat64Array()   # sector (degrees, e.f7_hd) where SQ7_SECTOR
-	var sq7h := PackedFloat64Array()   # hull heading (degrees, e.f7_hb) where SQ7_HULL
-	sq7f.resize(cap)
-	sq7f.fill(0)
-	sq7a.resize(cap)
-	sq7a.fill(0.0)
-	sq7h.resize(cap)
-	sq7h.fill(0.0)
 	var s7_gate := false   # some faction has a Senses7 spot set (else every soldier is seen: no FLAG_S7)
 	if s7_on:
 		for sp7 in (s7f[1] as Array):
@@ -213,42 +205,9 @@ static func build(w) -> void:
 			# from the per-tick spot sets in snap.s7v (RenderSnap.s7_sees), not by a hid_spot entry per hidden soldier
 			if s7_gate and def_inf[di] == 1 and not (fl & FLAG_HID) and "morale" in e:
 				fl |= FLAG_S7
-			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull) and the
-			# DRONE7 flown-drone height / bank, merged into g7u (three lookups per unit; drones only for aircraft defs)
-			# G7 PERF7B: _g7_squad inlined (same keys, same order)
-			# G7 PERF7D: written straight into the id-aligned arrays (degrees as the sim keeps them; readers convert)
-			if "f7_hd" in e:
-				var hd = e["f7_hd"]
-				if hd != null:
-					var sqb := SQ7_ON | SQ7_SECTOR   # `in` + [] (cheaper than e.get() in this loop)
-					if "gait" in e:
-						var gt0 = e["gait"]
-						if gt0 != null:
-							var gi := int(gt0)
-							if gi > 0 and gi < 4:
-								sqb |= gi << SQ7_GAIT_SHIFT
-					if "order" in e:
-						var od7 = e["order"]
-						if od7 is Dictionary and "bk" in od7 and bool(od7.bk):
-							sqb |= SQ7_BACK
-					if "f7_clr" in e:
-						var clr = e["f7_clr"]
-						if clr != null:
-							if int(clr) == 1:
-								sqb |= SQ7_STACK
-							elif int(clr) == 2:
-								sqb |= SQ7_ENTRY
-					if "f7_hb" in e:
-						var hb0 = e["f7_hb"]
-						if hb0 != null:
-							sqb |= SQ7_HULL
-							sq7h[n] = float(hb0)
-					sq7a[n] = float(hd)
-					sq7f[n] = sqb
-				elif "gait" in e or "f7_hb" in e:
-					_sq7_other(e, n, sq7f, sq7h)
-			elif "gait" in e or "f7_hb" in e:
-				_sq7_other(e, n, sq7f, sq7h)
+			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull): G7 PERF7E
+			# (orch.ruling seq 2322) fills them after this loop from the unhashed w.cache.sq7d table (_sq7_fill);
+			# DRONE7 flown-drone height / bank merged into g7u (aircraft defs only)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
@@ -291,9 +250,11 @@ static func build(w) -> void:
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
 	_g7_out(w, snap, g7u)
-	sq7f.resize(n)
+	var sq7: Array = _sq7_fill(w, ids, n)   # G7 PERF7E: sq7f SQ7_* bits / sq7a sector / sq7h hull, aligned with ids
+	var sq7f: PackedByteArray = sq7[0]
+	var sq7a: PackedFloat64Array = sq7[1]
+	var sq7h: PackedFloat64Array = sq7[2]
 	if sq7f.count(0) < n:   # G7 PERF7D: SQUAD7 fields aligned with ids (see SQ7_*; RenderSnap.sq7_merge rebuilds the old g7u keys)
-		sq7a.resize(n); sq7h.resize(n)
 		snap["sq7f"] = sq7f
 		snap["sq7a"] = sq7a
 		snap["sq7h"] = sq7h
@@ -1041,6 +1002,114 @@ const SQ7_STACK := 8
 const SQ7_ENTRY := 16
 const SQ7_HULL := 32
 const SQ7_GAIT_SHIFT := 6   # bits 6..7: GAITS index (0 = no gait key)
+
+
+## G7 PERF7E (orch.ruling seq 2322, option A): sq7f / sq7a / sq7h from the unhashed display table w.cache.sq7d that
+## the SQUAD7 writers keep (sim/systems/sq7_display.gd; built by a full scan when absent: new world, load, dropped
+## cache). Same bits / values the per-unit reads gave (SNAPEQ7E); SQ7_BACK is checked live for the order.bk
+## candidates only (w.sys_state.combat_bk + w.cache.sq7bk). Only the cache is written (dead entries dropped).
+static var sq7_stats := [0, 0]   # [incremental snapshots, full fills] (tests / perf probes)
+
+
+static func _sq7_fill(w: SimWorld, ids: PackedInt32Array, n: int) -> Array:
+	var sqd = w.cache.get(Sq7D.KEY)
+	# a snapshot gap (snapshots were off for some ticks) also rebuilds: events of the missed ticks are gone
+	var lt = w.cache.get(Sq7D.KEY_TICK)
+	if sqd == null or not Sq7D.HOOKED or lt == null or (int(lt) != int(w.tick) and int(lt) != int(w.tick) - 1):
+		sqd = Sq7D.rebuild(w)
+	elif w.sys_state.has("cn7") and int(lt) != int(w.tick):
+		# counter_nanite formed_withdraw puts bk into orders without a hook (CR open): its event this tick -> rescan bk
+		for ev in w.events:
+			if ev.type == "CnFormedWithdraw":
+				Sq7D.rescan_bk(w)
+				break
+	w.cache[Sq7D.KEY_TICK] = int(w.tick)
+	var dirty: Dictionary = w.cache.get(Sq7D.KEY_DIRTY, {})
+	var m = w.cache.get(Sq7D.KEY_MEMO)
+	var sq7f: PackedByteArray
+	var sq7a: PackedFloat64Array
+	var sq7h: PackedFloat64Array
+	if m != null and m[0] == ids:
+		# incremental: same unit ids as the last snapshot, so start from its arrays and redo only the changed entries
+		sq7f = (m[1] as PackedByteArray).duplicate()
+		sq7a = (m[2] as PackedFloat64Array).duplicate()
+		sq7h = (m[3] as PackedFloat64Array).duplicate()
+		sq7_stats[0] += 1
+		for sid: int in dirty:
+			var k := ids.bsearch(sid)
+			if k >= n or ids[k] != sid:
+				k = ids.find(sid)
+				if k < 0 or k >= n:
+					continue
+			var r = sqd.get(sid)
+			if r == null:
+				sq7f[k] = 0
+				sq7a[k] = 0.0
+				sq7h[k] = 0.0
+			else:
+				sq7f[k] = r[0]
+				sq7a[k] = r[1]
+				sq7h[k] = r[2]
+	else:
+		sq7f.resize(n)
+		sq7f.fill(0)
+		sq7a.resize(n)
+		sq7a.fill(0.0)
+		sq7h.resize(n)
+		sq7h.fill(0.0)
+		sq7_stats[1] += 1
+		if not (sqd as Dictionary).is_empty():
+			var dead := []
+			for r: Array in (sqd as Dictionary).values():   # r = [bits, sector, hull, e, id, k hint]; sector / hull 0.0 when unset
+				var sid: int = r[4]
+				var k: int = r[5]
+				if k >= n or ids[k] != sid:
+					k = ids.bsearch(sid)
+					if k >= n or ids[k] != sid:
+						k = Sq7D.index_slow(w, ids, n, sid, r, dead)
+						if k < 0:
+							continue
+						r = sqd[sid]
+					r[5] = k
+				sq7f[k] = r[0]
+				sq7a[k] = r[1]
+				sq7h[k] = r[2]
+			for sid in dead:
+				(sqd as Dictionary).erase(sid)
+	dirty.clear()
+	w.cache[Sq7D.KEY_MEMO] = [ids, sq7f, sq7a, sq7h]   # never written again: the next snapshot duplicates them
+	# SQ7_BACK (live order.bk) on a copy, so the memo stays without it
+	var cbk = w.sys_state.get("combat_bk")
+	var obk = w.cache.get(Sq7D.KEY_BK)
+	if (cbk is Dictionary and not (cbk as Dictionary).is_empty()) or (obk is Dictionary and not (obk as Dictionary).is_empty()):
+		sq7f = sq7f.duplicate()
+		if cbk is Dictionary:
+			_sq7_back(w, ids, n, sq7f, cbk, false)
+		if obk is Dictionary:
+			_sq7_back(w, ids, n, sq7f, obk, true)
+	return [sq7f, sq7a, sq7h]
+
+
+## SQ7_BACK for the candidates in c whose live order carries bk (the old per-unit rule: only with SQ7_SECTOR);
+## prune drops candidates that lost bk or left w.entities (w.cache.sq7bk only, never the hashed combat_bk).
+static func _sq7_back(w: SimWorld, ids: PackedInt32Array, n: int, sq7f: PackedByteArray, c: Dictionary, prune: bool) -> void:
+	var gone := []
+	for sid: int in c:
+		var e = w.entities.get(sid)
+		var od = e.get("order") if e != null else null
+		if not (od is Dictionary and "bk" in od and bool(od.bk)):
+			if prune:
+				gone.append(sid)
+			continue
+		var k := ids.bsearch(sid)
+		if k >= n or ids[k] != sid:
+			k = ids.find(sid)
+			if k < 0 or k >= n:
+				continue
+		if sq7f[k] & SQ7_SECTOR:
+			sq7f[k] |= SQ7_BACK
+	for sid in gone:
+		c.erase(sid)
 
 
 ## SQUAD7 fields of a unit with no e.f7_hd (gait / herringbone hull only); the PERF7C _g7_squad(.., hd = null, ..) case.

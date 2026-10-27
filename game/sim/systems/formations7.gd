@@ -15,6 +15,7 @@ extends RefCounted
 ## Slot 0 is the leader's slot (front centre); the automatic rifle takes the flank slot of each fire team.
 
 const Terrain = preload("res://sim/terrain.gd")
+const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed display table (render snapshot)
 
 const TILE_M := 7.0
 const FORMS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "staggered_column", "diamond"]
@@ -527,6 +528,7 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 		var hf: Vector2 = heads[s]
 		e.f7_sec = int(secs[s])
 		e.f7_hd = deg(sector_dir(int(secs[s]), hf, Vector2(-hf.y, hf.x)))
+		Sq7D.put(w, e)
 		e.f7_f = deg(fwd)
 	return res
 

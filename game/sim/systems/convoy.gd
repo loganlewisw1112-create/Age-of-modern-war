@@ -21,6 +21,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const SquadAI = preload("res://sim/systems/squad_ai.gd")
 const F7 = preload("res://sim/systems/formations7.gd")
+const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed display table (render snapshot)
 const Combat = preload("res://sim/systems/combat.gd")
 const CnProgress7 = preload("res://sim/systems/cn_progress7.gd")
 
@@ -195,6 +196,7 @@ static func move(w: SimWorld, cid: int, target: Vector2) -> void:
 		var e = w.entities.get(id)
 		if e != null:
 			e.erase("f7_hb")
+			Sq7D.put(w, e)
 	SquadAI._ai_move(w, lead, target, "move", "convoy")
 
 
@@ -208,6 +210,7 @@ static func disband(w: SimWorld, cid: int) -> void:
 		if e != null:
 			e.erase("convoy")
 			e.erase("f7_hb")
+			Sq7D.put(w, e)
 	st.list.erase(c)
 
 
@@ -217,6 +220,7 @@ static func _drop(w: SimWorld, cid: int, uid: int) -> void:
 	if e != null:
 		e.erase("convoy")
 		e.erase("f7_hb")
+		Sq7D.put(w, e)
 	if c.is_empty():
 		return
 	for k in ["col", "flank", "foot", "core"]:
@@ -598,6 +602,7 @@ static func _halt_posts(w: SimWorld, c: Dictionary, coil: bool) -> void:
 	for p in posts:
 		var e: Dictionary = w.entities[int(p[0])]
 		e.f7_hb = int(p[1][1])
+		Sq7D.put(w, e)
 		_steer(w, e, p[1][0], "convoy_halt")
 	c.posts = posts.map(func(p): return [int(p[0]), p[1][0]])
 

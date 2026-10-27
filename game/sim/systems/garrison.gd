@@ -22,6 +22,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const HotState = preload("res://sim/hot_state.gd")
 const SquadAI = preload("res://sim/systems/squad_ai.gd")   # G7 (SQUAD7): building clearing grenades
 const F7 = preload("res://sim/systems/formations7.gd")
+const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed display table (render snapshot)
 
 ## G7 (SQUAD7) building clearing: clear_building {issuer, unit_ids, building_id}. The squad stacks in a file along the
 ## wall at the door nearest it (e.f7_clr = 1, e.f7_bld = bid), throws a grenade first when enemies hold it, then
@@ -430,6 +431,7 @@ static func clear_building(w: SimWorld, fid: int, unit_ids: Array, bid: int) -> 
 		var post := door + along * 0.6 * float(k) + out * 0.2
 		e.f7_clr = 1
 		e.f7_bld = bid
+		Sq7D.put(w, e)
 		e.target = -1
 		e.order = {"type": "move", "target": post, "sq": "clear"}
 		if not Movement.order_path(w, e, post):
@@ -444,6 +446,7 @@ static func _clr_done(w: SimWorld, ids: Array) -> void:
 		if e != null:
 			e.erase("f7_clr")
 			e.erase("f7_bld")
+			Sq7D.put(w, e)
 
 
 static func _clears(w: SimWorld, st: Dictionary) -> void:
@@ -479,6 +482,7 @@ static func _clears(w: SimWorld, st: Dictionary) -> void:
 					c.t = w.tick
 					for uid in live:
 						w.entities[uid].f7_clr = 2
+						Sq7D.put(w, w.entities[uid])
 			"clear":
 				if not enemy.is_empty():
 					if w.tick - int(c.t) >= int(cf.clear_room_ticks):

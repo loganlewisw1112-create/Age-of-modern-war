@@ -848,6 +848,7 @@ static func _take_cover(w: SimWorld, e: Dictionary, t: Dictionary, rng: float) -
 ## f7_ring (leader: halt layout done 1 ring/herringbone, 2 coil), f7_gr (last grenade tick), f7_amb (ambush fired tick),
 ## f7_sup [pos, until] (suppress_area), f7_hd / f7_sec (sector), f7_hb (vehicle heading at a halt).
 const F7 = preload("res://sim/systems/formations7.gd")
+const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed display table (render snapshot)
 const Morale = preload("res://sim/systems/morale.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
 const TECH_NAMES := ["auto", "traveling", "traveling_overwatch", "bounding_overwatch"]
@@ -962,6 +963,7 @@ static func _g7_squad(w: SimWorld, mem: Array, le: Dictionary, quiet: bool) -> v
 	for e in mem:
 		_set_or_erase_i(e, "f7_tech", tech)
 		_set_or_erase_i(e, "gait", 3 if bool(e.get("broken", false)) else gait)
+		Sq7D.put(w, e)
 	if moving:
 		_f7_keep(w, mem)
 	_g7_bounding(w, mem, le, tech, thr, moving)
@@ -1026,6 +1028,7 @@ static func _g7_halt(w: SimWorld, mem: Array, le: Dictionary, moving: bool) -> v
 				le.erase("f7_ring")
 				for m in mem:   # the halt is over: no herringbone hull angle on the move (LOOK7 reads f7_hb)
 					m.erase("f7_hb")
+					Sq7D.put(w, m)
 			return
 	if not le.has("f7_ht"):
 		le.f7_ht = w.tick
@@ -1067,6 +1070,7 @@ static func _g7_halt(w: SimWorld, mem: Array, le: Dictionary, moving: bool) -> v
 		e.f7_sec = _sec_of(int(post[1]), fwd)
 		if veh:
 			e.f7_hb = int(post[1])
+		Sq7D.put(w, e)
 		# a unit the player just placed (its move is finished: everyone is idle here) only turns to its halt
 		# heading in place: the drill never moves it off the player's spot inside the override window
 		if not player_fresh(w, e) and Vector2(e.pos).distance_to(post[0]) > 0.6:
@@ -1303,4 +1307,5 @@ static func fall_back(w: SimWorld, units: Array, target: Vector2) -> void:
 		if face.length() > 0.01:
 			e.f7_hd = F7.deg(face)
 			e.f7_sec = F7.SEC_FRONT
+			Sq7D.put(w, e)
 		e.sq_cd = w.tick
