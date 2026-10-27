@@ -35,7 +35,7 @@ static func generate(group: String) -> Dictionary:
 	out.manifest["g7_samples"] = samples
 	if group == "g7_cn":   # content ids that reuse the sample sheets (manifest-only aliases, no new images)
 		for id in samples:
-			if String(samples[id].section) != "buildings" and (String(id).begins_with("g7_cn_") or String(id).begins_with("g7_op_")) 					and not String(id).ends_with("dropship"):
+			if String(samples[id].section) != "buildings" and (String(id).begins_with("g7_cn_") or String(id).begins_with("g7_op_")) 					and not String(id).contains("dropship"):
 				C.alias(out, id, "g7_b_" + String(id).substr(3))
 		C.alias(out, "g7_cn_stealth_dropship", "cn_stealth_dropship")
 	return out

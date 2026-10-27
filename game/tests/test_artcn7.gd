@@ -18,7 +18,12 @@ const SAMPLES := {
 	"g7_cn_strike_apc": "g7_cn", "g7_op_tactical_apc": "g7_cn", "g7_cn_stealth_dropship": "g7_cn",
 	"g7_a_vtol_dropship_xl": "g7_cn", "g7_cn_gate": "g7_cn", "g7_cn_decon": "g7_cn", "g7_cn_garage": "g7_cn",
 	"g7_cn_helipad": "g7_cn", "g7_a_hmg_nest": "g7_turrets", "g7_a_rail_cannon": "g7_turrets",
-	"g7_m_packhunter": "g7_threats", "g7_m_weaver": "g7_threats", "g7_m_living_core": "g7_threats"}
+	"g7_m_packhunter": "g7_threats", "g7_m_weaver": "g7_threats", "g7_m_living_core": "g7_threats",
+	# rev4 (ARTCN7-5): weapon animation sheets and dropship load sheets
+	"g7_cn_strike_apc_gun": "g7_cn", "g7_cn_strike_apc_rkt": "g7_cn", "g7_op_tactical_apc_gun": "g7_cn",
+	"g7_op_tactical_apc_rkt": "g7_cn", "g7_cn_stealth_dropship_apcload": "g7_cn", "g7_cn_stealth_dropship_squadload": "g7_cn",
+	"g7_cn_stealth_dropship_squadunload": "g7_cn", "g7_a_vtol_dropship_xl_apcload": "g7_cn",
+	"g7_a_vtol_dropship_xl_squadload": "g7_cn", "g7_a_vtol_dropship_xl_squadunload": "g7_cn"}
 const BLD_STATES := ["built", "damaged", "build_0", "build_1", "build_2", "rot_0", "rot_1", "rot_2", "rot_3",
 	"rot_0_damaged", "rot_3_build_2"]
 
@@ -243,3 +248,72 @@ func test_rework_owner_feedback() -> void:
 		for n in ["landed", "ramp_down", "bay_open", "apc_ramp", "squad_in"]:
 			check(fr.has(n), "%s frame %s" % [id, n])
 		check(man.g7_samples[id].has("bay") and man.g7_samples[id].has("ramp"), "%s bay / ramp geometry in manifest" % id)
+
+
+## Interior opaque (a > 0.9, all 4 neighbours opaque) pixels of cell A (sheet a, cell origin ao, pivot ap, size asz) whose colour differs in cell B
+## (sheet b, origin bo, pivot bp, size bsz) when both cells are aligned on their pivots (the craft origin).
+func _hull_changed(a: Image, ao: Vector2i, ap: Vector2i, asz: Vector2i, b: Image, bo: Vector2i, bp: Vector2i, bsz: Vector2i) -> int:
+	var n := 0
+	for y in asz.y:
+		for x in asz.x:
+			var ca := a.get_pixel(ao.x + x, ao.y + y)
+			if ca.a <= 0.9 or x == 0 or y == 0 or x == asz.x - 1 or y == asz.y - 1:
+				continue
+			# the sheet's 1-px sel-out ring is drawn on empty space, so it is not hull: only interior hull pixels count
+			if a.get_pixel(ao.x + x - 1, ao.y + y).a <= 0.9 or a.get_pixel(ao.x + x + 1, ao.y + y).a <= 0.9 					or a.get_pixel(ao.x + x, ao.y + y - 1).a <= 0.9 or a.get_pixel(ao.x + x, ao.y + y + 1).a <= 0.9:
+				continue
+			var q := Vector2i(x, y) - ap + bp
+			if q.x < 0 or q.y < 0 or q.x >= bsz.x or q.y >= bsz.y:
+				n += 1
+				continue
+			var cb := b.get_pixel(bo.x + q.x, bo.y + q.y)
+			if absf(ca.r - cb.r) + absf(ca.g - cb.g) + absf(ca.b - cb.b) > 0.03:
+				n += 1
+	return n
+
+
+## Owner rev3 notes (G7_REFERENCE "Look checkpoint rev3 decision") -> rev4: no see-through cutaway; loading is shown
+## only through the open rear door, with real depth: "dont show a person thats behind the dropship(s)". Facing 1 has
+## the tail pointing away from the camera: cargo inside or behind the craft must never paint over the hull, so every
+## opaque hull pixel of the empty ramp_down frame is unchanged in every load frame (APC driving in, parked, the
+## boarding / leaving file) and in bay_open / squad_in. Facing 5 has the door toward the camera: there the APC and
+## the file ARE seen through the door (the frames differ from the empty ramp_down). Plus the weapon sheets (rev4).
+func test_rev4_loading_depth() -> void:
+	var man := _man("g7_cn")
+	for id in ["g7_cn_stealth_dropship", "g7_a_vtol_dropship_xl"]:
+		var e: Dictionary = man.vehicles[id]
+		var base := _img("g7_cn", e.file)
+		var fr: Array = e.frames
+		var bsz := Vector2i(int(e.fw), int(e.fh))
+		var bp := Vector2i(int(e.pivot[0]), int(e.pivot[1]))
+		var rd := fr.find("ramp_down")
+		for n in ["bay_open", "squad_in"]:
+			var bad := _hull_changed(base, Vector2i(rd * bsz.x, bsz.y), bp, bsz, base, Vector2i(fr.find(n) * bsz.x, bsz.y), bp, bsz)
+			check(bad <= 3, "%s %s facing 1: %d hull pixels painted over by cargo behind it" % [id, n, bad])
+		var ls: Dictionary = man.g7_samples[id].get("load_sheets", {})
+		check(ls.size() == 3, "%s names its 3 load sheets" % id)
+		for key in ls:
+			var le: Dictionary = man.vehicles.get(String(ls[key]), {})
+			check(not le.is_empty(), "%s load sheet %s present" % [id, ls[key]])
+			if le.is_empty():
+				continue
+			var li := _img("g7_cn", le.file)
+			var lsz := Vector2i(int(le.fw), int(le.fh))
+			var lp := Vector2i(int(le.pivot[0]), int(le.pivot[1]))
+			check(li != null and li.get_width() <= C.PAGE_W and li.get_height() <= C.PAGE_H, "%s fits one atlas page" % ls[key])
+			var shown := 0
+			for i in (le.frames as Array).size():
+				var bad := _hull_changed(base, Vector2i(rd * bsz.x, bsz.y), bp, bsz, li, Vector2i(i * lsz.x, lsz.y), lp, lsz)
+				check(bad <= 3, "%s %s facing 1: %d hull pixels painted over by cargo behind it" % [ls[key], le.frames[i], bad])
+				shown = maxi(shown, _hull_changed(base, Vector2i(rd * bsz.x, 5 * bsz.y), bp, bsz, li, Vector2i(i * lsz.x, 5 * lsz.y), lp, lsz))
+			check(shown >= 30, "%s facing 5: cargo seen through the open door (%d px)" % [ls[key], shown])
+		var al: Dictionary = man.g7_samples[id + "_apcload"].get("frame_alias", {})
+		check(String(al.get("apc_unload_0", "")) == "apc_load_5", "%s apc_unload aliases (reverse of apc_load)" % id)
+	for id in ["g7_cn_strike_apc", "g7_op_tactical_apc"]:
+		var g: Array = man.vehicles[id + "_gun"].frames
+		for n in ["fire_0", "fire_1", "fire_2", "fire_3", "reload_0", "reload_1", "reload_2"]:
+			check(g.has(n), "%s_gun frame %s" % [id, n])
+		var r: Array = man.vehicles[id + "_rkt"].frames
+		for n in ["rk_raise_0", "rk_raise_1", "rk_fire_0", "rk_fire_5", "rk_reload_0", "rk_reload_3"]:
+			check(r.has(n), "%s_rkt frame %s" % [id, n])
+		check((man.g7_samples[id + "_rkt"].get("frame_alias", {}) as Dictionary).has("rk_stow_0"), "%s_rkt stow aliases" % id)

@@ -86,10 +86,12 @@ static func sprite(S: Array, w: Vector3, draw: Callable, layer := 1.0, bias := 0
 
 
 ## Moves every part of scene S2 into S at layer base + its own layer * 0.1 (keeps its inner order).
-static func merge(S: Array, S2: Array, base: float, bias := 0.0) -> void:
+static func merge(S: Array, S2: Array, base: float, bias := 0.0, obj := -1) -> void:
 	for p in S2:
 		p.layer = base + float(p.layer) * 0.1
 		p.bias = float(p.bias) + bias
+		if obj >= 0:   # rev4: object id for render_z's depth edges (cargo vs craft)
+			p["obj"] = obj
 		S.append(p)
 
 
@@ -264,6 +266,11 @@ static func shadow(cv, S: Array, o: Vector2, a := SHADOW.a, sd := Vector2(0.42, 
 			var pts := PackedVector2Array()
 			for q in fc.w:
 				pts.append(scr_w(o, Vector3(q.x + q.z * sd.x, q.y + q.z * sd.y, 0.0)))
+			var ar := 0.0
+			for i in pts.size():
+				ar += pts[i].cross(pts[(i + 1) % pts.size()])
+			if absf(ar) < 1.0:   # rev4: an edge-on face casts no shadow (its sliver could scan into a stray line)
+				continue
 			cv.poly(pts, Color.WHITE, Callable(), true)
 	cv.flush_shadow(Color(SHADOW.r, SHADOW.g, SHADOW.b, a))
 
@@ -341,3 +348,325 @@ static func _fill(cv, fc: Dictionary, o: Vector2, sp: Callable) -> void:
 			cv.line_v(a, b, C.ca(rp[mini(t + 1, rp.size() - 1)], 0.75))
 		elif up < -0.6:
 			cv.line_v(a, b, C.ca(rp[maxi(t - 1, 0)], 0.6))
+
+
+# ------------------------------------------------------------------ z-buffered render (rev4, ARTCN7-5)
+const ZE := 0.03     # depth tolerance (m): a coplanar face drawn later still wins
+const ZDEC := 0.07   # decals lie on their surface: tested this far toward the camera
+const ZFIG := 0.3    # soldier sprites: half the body depth (m), so feet on a deck are never cut
+const ZEDGE := 0.6   # depth step (m) between two objects that gets a dark separating edge
+static var _ids := PackedInt32Array()   # per-pixel object id of the nearest surface (render_z only)
+static var _zid := 0
+
+## Real per-pixel depth (rev4; opt-in, render() above is unchanged for older callers such as ART7B). Each face is
+## rasterised with its exact depth (orthographic: depth is affine in screen x, y over a flat face), so whatever is
+## behind a hull, wing, fan, nacelle or ramp side is hidden wherever the nearer surface covers it, in every facing.
+## Parts with layer < 0 are ground marks (dust) drawn first without depth. Sprite parts (soldier figures) are drawn
+## to a scratch canvas and composited per pixel as an upright billboard standing at their world point. Translucent
+## decals (alpha < 0.98: rotor discs, smoke, glow) are deferred and blended last, far to near, tested, not written.
+static func render_z(cv, S: Array, o: Vector2, seed := 1) -> void:
+	for pt in S:
+		pt["c"] = pt.sum / float(maxi(1, pt.n))
+	var order := S.duplicate()
+	order.sort_custom(func(x, y):
+		if float(x.layer) != float(y.layer):
+			return float(x.layer) < float(y.layer)
+		return _depth(x.c) + float(x.bias) < _depth(y.c) + float(y.bias))
+	var zb := PackedFloat32Array()
+	zb.resize(int(cv.w) * int(cv.h))
+	zb.fill(-1.0e9)
+	# speckle anchored to the pivot, not the cell corner: sheets with different cells (main / load / weapon) give
+	# the same pixels for the same surface, so swapping sheets in game never shimmers
+	var sp0 := P.speckle(0.03, seed)
+	var ox := int(o.x)
+	var oy := int(o.y)
+	var sp := func(x: int, y: int, c: Color) -> Color: return sp0.call(x - ox + 4096, y - oy + 4096, c)
+	var late: Array = []
+	_ids = PackedInt32Array()
+	_ids.resize(zb.size())
+	_ids.fill(-1)
+	var multi := false
+	for pt in order:   # ground marks: no depth
+		if float(pt.layer) >= 0.0 or pt.has("draw"):
+			continue
+		for fc in pt.f:
+			_fill(cv, fc, o, sp)
+		for d in pt.dec:
+			_dec(cv, d, o)
+	for pt in order:
+		if float(pt.layer) < 0.0 and not pt.has("draw"):
+			continue
+		_zid = int(pt.get("obj", 0))
+		if pt.has("draw"):
+			_zid = 1000 + order.find(pt)
+			multi = true
+			_sprite_z(cv, zb, pt, o)
+			continue
+		if _zid != 0:
+			multi = true
+		var fs: Array = []
+		for fc in pt.f:
+			if (fc.n as Vector3).dot(VIEW) > 0.015:
+				fs.append(fc)
+		fs.sort_custom(func(x, y): return _depth(x.c) < _depth(y.c))
+		for fc in fs:
+			_fill_z(cv, zb, fc, o, sp)
+		for d in pt.dec:
+			if d.n != Vector3.ZERO and (d.n as Vector3).dot(VIEW) <= 0.015:
+				continue
+			if (d.col as Color).a < 0.98:
+				late.append(d)
+			else:
+				_dec_z(cv, zb, d, o, true)
+	if multi:
+		_edges(cv, zb)
+	late.sort_custom(func(x, y): return _dmid(x) < _dmid(y))
+	_zid = 0
+	for d in late:
+		_dec_z(cv, zb, d, o, false)
+
+
+## Separate objects in depth (cargo / soldiers vs the craft): where two different objects meet and the neighbour is
+## more than ZEDGE nearer, the farther pixel becomes a dark edge, like the sheet's sel-out outline against empty space.
+static func _edges(cv, zb: PackedFloat32Array) -> void:
+	var w: int = cv.w
+	var h: int = cv.h
+	var mark: Array = []
+	for y in range(1, h - 1):
+		for x in range(1, w - 1):
+			var i := y * w + x
+			var id := _ids[i]
+			if id < 0:
+				continue
+			var d := zb[i]
+			for j in [i - 1, i + 1, i - w, i + w]:
+				if _ids[j] >= 0 and _ids[j] != id and zb[j] > d + ZEDGE:
+					mark.append(i)
+					break
+	for i in mark:
+		cv.px(i % w, i / w, C.OUTLINE)
+
+
+## One decal without depth (render() and ground marks).
+static func _dec(cv, d: Dictionary, o: Vector2) -> void:
+	if d.n != Vector3.ZERO and (d.n as Vector3).dot(VIEW) <= 0.015:
+		return
+	cv.team = bool(d.get("team", false))
+	match String(d.k):
+		"line":
+			cv.line_v(scr_w(o, d.a), scr_w(o, d.b), d.col)
+		"px":
+			var p := scr_w(o, d.a)
+			cv.px(int(floor(p.x)), int(floor(p.y)), d.col)
+		"poly":
+			var pts := PackedVector2Array()
+			for q in d.w:
+				pts.append(scr_w(o, q))
+			cv.poly(pts, d.col)
+	cv.team = false
+
+
+static func _dmid(d: Dictionary) -> float:
+	match String(d.k):
+		"line":
+			return (_depth(d.a) + _depth(d.b)) * 0.5
+		"px":
+			return _depth(d.a)
+	var s := 0.0
+	for q in d.w:
+		s += _depth(q)
+	return s / float(maxi(1, (d.w as PackedVector3Array).size()))
+
+
+## Depth plane over screen space from a polygon's projected points: Vector3(a, b, c) with depth = a x + b y + c.
+## Degenerate (edge-on) polygons get a flat plane at their mean depth.
+static func _plane(pts: PackedVector2Array, ds: PackedFloat32Array) -> Vector3:
+	var best := 0.0
+	var bi := -1
+	for i in range(1, pts.size() - 1):
+		var ar := absf((pts[i] - pts[0]).cross(pts[i + 1] - pts[0]))
+		if ar > best:
+			best = ar
+			bi = i
+	if bi < 0 or best < 0.05:
+		var m := 0.0
+		for q in ds:
+			m += q
+		return Vector3(0, 0, m / float(maxi(1, ds.size())))
+	var e1 := pts[bi] - pts[0]
+	var e2 := pts[bi + 1] - pts[0]
+	var d1 := ds[bi] - ds[0]
+	var d2 := ds[bi + 1] - ds[0]
+	var det := e1.x * e2.y - e1.y * e2.x
+	var a := (d1 * e2.y - d2 * e1.y) / det
+	var b := (e1.x * d2 - e2.x * d1) / det
+	return Vector3(a, b, ds[0] - a * pts[0].x - b * pts[0].y)
+
+
+## Depth-tested scanline fill (same pixel coverage rule as Canvas.poly).
+static func _scan(cv, zb: PackedFloat32Array, pts: PackedVector2Array, pl: Vector3, col: Color, shade: Callable,
+		tol: float, write: bool) -> void:
+	if pts.size() < 3:
+		return
+	var w: int = cv.w
+	var h: int = cv.h
+	var miny := INF
+	var maxy := -INF
+	for p in pts:
+		miny = minf(miny, p.y)
+		maxy = maxf(maxy, p.y)
+	var n := pts.size()
+	for y in range(maxi(0, int(floor(miny))), mini(h - 1, int(ceil(maxy))) + 1):
+		var sy := y + 0.5
+		var xs: Array = []
+		for i in n:
+			var a := pts[i]
+			var b := pts[(i + 1) % n]
+			if (a.y <= sy and b.y > sy) or (b.y <= sy and a.y > sy):
+				xs.append(a.x + (sy - a.y) / (b.y - a.y) * (b.x - a.x))
+		xs.sort()
+		var k := 0
+		while k + 1 < xs.size():
+			for x in range(maxi(0, int(ceil(xs[k] - 0.5))), mini(w, int(ceil(xs[k + 1] - 0.5)))):
+				var d := pl.x * (x + 0.5) + pl.y * sy + pl.z
+				var i := y * w + x
+				if d >= zb[i] - tol:
+					if write and d > zb[i]:
+						zb[i] = d
+						_ids[i] = _zid
+					cv.px(x, y, shade.call(x, y, col) if shade.is_valid() else col)
+			k += 2
+
+
+## Depth-tested line (Bresenham like Canvas.line), depth interpolated between the end depths.
+static func _line_z(cv, zb: PackedFloat32Array, a: Vector2, b: Vector2, col: Color, da: float, db: float, tol: float,
+		write: bool) -> void:
+	var x0 := int(floor(a.x))
+	var y0 := int(floor(a.y))
+	var x1 := int(floor(b.x))
+	var y1 := int(floor(b.y))
+	var dx := absi(x1 - x0)
+	var dy := -absi(y1 - y0)
+	var sx := 1 if x0 < x1 else -1
+	var sy := 1 if y0 < y1 else -1
+	var err := dx + dy
+	var n := maxi(1, maxi(dx, -dy))
+	var s := 0
+	var w: int = cv.w
+	while true:
+		if x0 >= 0 and y0 >= 0 and x0 < w and y0 < int(cv.h):
+			var d := lerpf(da, db, float(s) / float(n))
+			var i := y0 * w + x0
+			if d >= zb[i] - tol:
+				if write and d > zb[i]:
+					zb[i] = d
+					_ids[i] = _zid
+				cv.px(x0, y0, col)
+		if x0 == x1 and y0 == y1:
+			break
+		var e2 := 2 * err
+		if e2 >= dy:
+			err += dy
+			x0 += sx
+		if e2 <= dx:
+			err += dx
+			y0 += sy
+		s += 1
+
+
+static func _fill_z(cv, zb: PackedFloat32Array, fc: Dictionary, o: Vector2, sp: Callable) -> void:
+	var rp: Array = fc.rp
+	var t: int = fc.t if int(fc.t) >= 0 else tone(fc.n)
+	if int(fc.t) < 0 and (fc.c as Vector3).z < 0.95 and (fc.c as Vector3).z > 0.05:
+		t -= 1
+	t = clampi(t + int(fc.dt), 0, rp.size() - 1)
+	var pts := PackedVector2Array()
+	var ds := PackedFloat32Array()
+	for q in fc.w:
+		pts.append(scr_w(o, q))
+		ds.append(_depth(q))
+	var pl := _plane(pts, ds)
+	var area := 0.0
+	var cen := Vector2.ZERO
+	for i in pts.size():
+		area += pts[i].cross(pts[(i + 1) % pts.size()])
+		cen += pts[i]
+	cen /= float(pts.size())
+	area = absf(area) * 0.5
+	cv.team = fc.team
+	_scan(cv, zb, pts, pl, rp[t], sp if not fc.glass else Callable(), ZE, true)
+	cv.team = false
+	if not fc.edge or area < 10.0:
+		return
+	for i in pts.size():
+		var a := pts[i]
+		var b := pts[(i + 1) % pts.size()]
+		if a.distance_to(b) < 1.5:
+			continue
+		var e := b - a
+		var nn := Vector2(e.y, -e.x).normalized()
+		if nn.dot((a + b) * 0.5 - cen) < 0.0:
+			nn = -nn
+		var up := nn.dot(Vector2(-0.55, -0.83))
+		var da := ds[i]
+		var db := ds[(i + 1) % pts.size()]
+		if up > 0.45:
+			_line_z(cv, zb, a, b, C.ca(rp[mini(t + 1, rp.size() - 1)], 0.75), da, db, ZE + 0.02, false)
+		elif up < -0.6:
+			_line_z(cv, zb, a, b, C.ca(rp[maxi(t - 1, 0)], 0.6), da, db, ZE + 0.02, false)
+
+
+static func _dec_z(cv, zb: PackedFloat32Array, d: Dictionary, o: Vector2, write: bool) -> void:
+	cv.team = bool(d.get("team", false))
+	match String(d.k):
+		"line":
+			_line_z(cv, zb, scr_w(o, d.a), scr_w(o, d.b), d.col, _depth(d.a), _depth(d.b), ZDEC, write)
+		"px":
+			var p := scr_w(o, d.a)
+			var x := int(floor(p.x))
+			var y := int(floor(p.y))
+			if x >= 0 and y >= 0 and x < int(cv.w) and y < int(cv.h):
+				var dd := _depth(d.a)
+				var i := y * int(cv.w) + x
+				if dd >= zb[i] - ZDEC:
+					if write and dd > zb[i]:
+						zb[i] = dd
+						_ids[i] = _zid
+					cv.px(x, y, d.col)
+		"poly":
+			var pts := PackedVector2Array()
+			var ds := PackedFloat32Array()
+			for q in d.w:
+				pts.append(scr_w(o, q))
+				ds.append(_depth(q))
+			_scan(cv, zb, pts, _plane(pts, ds), d.col, Callable(), ZDEC, write)
+	cv.team = false
+
+
+## A sprite part (soldier figure) composited as an upright billboard at its world point: a pixel h px above the
+## foot is the point h / ZP metres up, so its depth is the foot depth + 0.5 per metre (VIEW.z) + the body depth.
+static func _sprite_z(cv, zb: PackedFloat32Array, pt: Dictionary, o: Vector2) -> void:
+	var tmp = P.Canvas.new(int(cv.w), int(cv.h))
+	(pt.draw as Callable).call(tmp)
+	var u: Rect2i = (tmp.img as Image).get_used_rect()
+	if u.size.x <= 0:
+		return
+	var w0: Vector3 = pt.sum
+	var foot := scr_w(o, w0)
+	var d0 := _depth(w0) + ZFIG
+	var w: int = cv.w
+	for y in range(u.position.y, u.end.y):
+		var d := d0 + VIEW.z * maxf(0.0, (foot.y - (y + 0.5)) / ZP)
+		for x in range(u.position.x, u.end.x):
+			var c: Color = tmp.img.get_pixel(x, y)
+			if c.a <= 0.0:
+				continue
+			var i := y * w + x
+			if d < zb[i] - ZE:
+				continue
+			if c.a > 0.9 and d > zb[i]:
+				zb[i] = d
+				_ids[i] = _zid
+			cv.team = tmp.mask.get_pixel(x, y).a > 0.5
+			cv.px(x, y, c)
+	cv.team = false

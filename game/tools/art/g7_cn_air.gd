@@ -8,9 +8,14 @@ extends RefCounted
 ##                           through 45 deg (transition) to horizontal thrust (flight). Retractable gear.
 ##   g7_a_vtol_dropship_xl   the regular Human A heavy VTOL: rounded fuselage with a big glazed nose, cabin windows,
 ##                           a high straight wing with two tilting proprotor nacelles, gear sponsons and a T-tail.
-## Both: a 10 m x 4.2 m cargo bay (deck 1.3 m) behind a C-17-style rear ramp that lowers to the ground; the strike
-## APC (g7_cn_vehicles model, 8 m) drives up it and parks inside with 10 seated soldiers along the walls. The
-## bay_open frame is a cutaway (roof and near wall removed over the bay) so the aircraft still reads as an aircraft.
+## Both: a 10 m x 4.2 m cargo bay (deck 1.3 m) behind a C-17-style rear door: the fuselage ends in a tall rear
+## aperture under an upswept tail boom, closed in flight, open with the ramp lowered to the ground.
+## rev4 (ARTCN7-5, owner rev3 notes): no see-through cutaway. Loading is shown only through the open rear door: a lit
+## bay, the strike APC (g7_cn_vehicles model, 8 m) driving up the ramp and in, soldiers walking up in a file and in.
+## Every frame is drawn with real per-pixel depth (M.render_z): any part of a vehicle or soldier behind the hull, a
+## wing, a fan, a nacelle or the door frame is hidden, in all 8 facings. Load sequences live on their own sheets
+## (<id>_apcload: apc_load_0..5; <id>_squadload: squad_load_0..3; <id>_squadunload: squad_unload_0..3), see build().
+## Each sheet fits one atlas page (<= 2560 x 2048).
 const P = preload("res://tools/art/pix.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const M = preload("res://tools/art/g7_cn_mesh.gd")
@@ -31,8 +36,18 @@ const TILT := {"flight": PI / 2.0, "transition": PI / 4.0}
 const STEALTH := Color8(74, 80, 90)
 const VTOL := Color8(100, 108, 82)
 const GLASS := Color8(40, 58, 70)
-const INTERIOR := Color8(78, 82, 80)
-const DECK := Color8(60, 62, 60)
+const INTERIOR := Color8(122, 116, 100)   # lit bay walls (warm work lights)
+const DECK := Color8(84, 82, 74)
+const GLOW := Color(1.0, 0.84, 0.52, 0.20)
+## rev4 load sheets: wider cell so the APC lined up behind the ramp foot fits in every facing.
+const LFW := 412
+const LFH := 256
+const LPIV := Vector2i(206, 144)
+const APC_LOAD_FA := [-9.8, -8.0, -6.0, -3.6, -1.2, 0.95]   # front-axle f per apc_load frame (0.95 = parked)
+const WALK4 := ["walk_a", "walk_2", "walk_b", "walk_5"]
+const FILE_SP := 1.2          # soldier spacing in the file (m); one spacing per 4-frame loop
+const FILE_F0 := -10.4        # where a walking soldier enters / leaves the sheet (just behind the ramp foot)
+const FILE_F1 := -2.6         # deep in the bay: hidden behind the door frame from every facing
 const HAZ := Color8(226, 184, 40)
 const BAY_LIT := Color8(250, 214, 140)
 const TEAMG := Color8(152, 152, 152)
@@ -42,7 +57,9 @@ const DUST := Color(0.58, 0.52, 0.42, 0.32)
 const DECK_Z := 1.3
 const BAY_F0 := 4.6
 const HINGE_F := -6.0
+const DOOR_F := -6.6          # top of the rear aperture (tail boom starts here, 4.5 m up: clears the APC's pods)
 const FOOT_F := -9.8
+const TAIL_F := -8.4          # short upswept tail cone: a long boom would hide the open door from behind
 const RAMP_HW := 1.8
 const APC_F := -1.6
 const SEATS := [3.4, 2.0, 0.6, -0.8, -2.2]
@@ -60,16 +77,16 @@ static func _secs(stealth: bool) -> Array:
 			[8.0, [Vector2(0.9, 1.4), Vector2(1.6, 2.1), Vector2(1.1, 2.9), Vector2(0.5, 3.25)]],
 			[6.2, [Vector2(1.6, 1.1), Vector2(2.5, 2.15), Vector2(1.9, 3.5), Vector2(0.95, 4.3)]],
 			[4.6, mid], [HINGE_F, mid],
-			[-7.8, [Vector2(1.6, 2.8), Vector2(2.4, 3.2), Vector2(1.9, 4.0), Vector2(1.1, 4.7)]],
-			[-9.8, [Vector2(0.6, 3.9), Vector2(0.9, 4.0), Vector2(0.7, 4.3), Vector2(0.4, 4.45)]]]
+			[DOOR_F, [Vector2(1.75, 4.62), Vector2(2.15, 4.7), Vector2(1.75, 4.82), Vector2(1.0, 4.95)]],
+			[TAIL_F, [Vector2(0.5, 4.78), Vector2(0.8, 4.85), Vector2(0.6, 5.0), Vector2(0.3, 5.08)]]]
 	else:
 		var mid := [Vector2(1.6, 1.0), Vector2(2.25, 1.6), Vector2(2.45, 3.0), Vector2(2.15, 4.4), Vector2(1.2, 5.0)]
 		src = [[9.8, [Vector2(0.2, 2.2), Vector2(0.3, 2.5), Vector2(0.32, 2.9), Vector2(0.25, 3.2), Vector2(0.1, 3.3)]],
 			[8.6, [Vector2(0.9, 1.5), Vector2(1.4, 2.0), Vector2(1.5, 2.9), Vector2(1.3, 3.7), Vector2(0.6, 4.0)]],
 			[6.8, [Vector2(1.5, 1.05), Vector2(2.1, 1.6), Vector2(2.35, 2.9), Vector2(2.05, 4.3), Vector2(1.1, 4.9)]],
 			[5.0, mid], [HINGE_F, mid],
-			[-7.8, [Vector2(1.35, 2.7), Vector2(1.85, 3.0), Vector2(1.95, 3.6), Vector2(1.7, 4.5), Vector2(1.0, 4.95)]],
-			[-9.8, [Vector2(0.5, 4.1), Vector2(0.65, 4.25), Vector2(0.68, 4.5), Vector2(0.55, 4.75), Vector2(0.3, 4.85)]]]
+			[DOOR_F, [Vector2(1.55, 4.62), Vector2(1.85, 4.68), Vector2(1.95, 4.8), Vector2(1.75, 4.97), Vector2(1.0, 5.1)]],
+			[TAIL_F, [Vector2(0.5, 4.8), Vector2(0.65, 4.86), Vector2(0.68, 4.98), Vector2(0.55, 5.1), Vector2(0.3, 5.16)]]]
 	var out: Array = []
 	for s in src:
 		out.append([float(s[0]), V.mir(s[1])])
@@ -156,12 +173,16 @@ static func airframe(S: Array, T: Dictionary, stealth: bool, rp: Array, tilt: fl
 				Vector3(4.4, s * 2.3, 2.1)], Vector3(0, 0, -0.22), rp)
 			fan(S, T, Vector3(5.3, s * 4.45, 2.2), 1.0, tilt, rp, true, k, s * 3.4)
 			fan(S, T, Vector3(-2.4, s * 7.1, 2.5), 1.25, tilt, rp, true, k + 2, s * 5.8)
-			var fn := M.part(S, 2)   # V-tail fin, canted out
-			var Tf := M.sub(T, Vector3(-8.0, s * 0.6, 4.45), 0.0, 0.0, -s * 0.62)
-			M.prism(fn, Tf, [Vector3(1.0, -0.06, 0.0), Vector3(-0.9, -0.06, 2.2), Vector3(-1.9, -0.06, 2.2),
-				Vector3(-1.5, -0.06, 0.0)], Vector3(0, 0.12, 0), rp)
-			M.dpoly(fn, Tf, [Vector3(-0.85, s * 0.07, 1.6), Vector3(-1.75, s * 0.07, 1.6), Vector3(-1.8, s * 0.07, 2.0),
-				Vector3(-0.95, s * 0.07, 2.0)], TEAMG, Vector3(0, s, 0), true)
+			# V-tail (rev4): ruddervators canted 68 deg from vertical with clipped (not pointed) tips, rooted on the
+			# short tail cone: nose-on they read as small swept tail surfaces beside the cone, not two upright "ears".
+			var fn := M.part(S, 2)
+			var Tf := M.sub(T, Vector3(-7.0, s * 0.45, 4.85), 0.0, 0.0, -s * 1.19)
+			M.prism(fn, Tf, [Vector3(1.0, -0.05, 0.0), Vector3(-0.75, -0.05, 1.55), Vector3(-2.05, -0.05, 1.55),
+				Vector3(-1.75, -0.05, 0.0)], Vector3(0, 0.1, 0), rp)
+			M.dpoly(fn, Tf, [Vector3(-0.8, s * 0.06, 0.95), Vector3(-1.85, s * 0.06, 0.95), Vector3(-1.95, s * 0.06, 1.35),
+				Vector3(-0.95, s * 0.06, 1.35)], TEAMG, Vector3(0, s, 0), true)
+			M.dline(fn, Tf, Vector3(0.9, s * 0.06, 0.04), Vector3(-0.72, s * 0.06, 1.5), C.ca(rp[4], 0.45), Vector3(0, s, 0))
+			M.dline(fn, Tf, Vector3(-1.75, s * 0.06, 0.3), Vector3(-2.0, s * 0.06, 1.5), C.ca(rp[0], 0.6), Vector3(0, s, 0))
 	else:
 		var w := M.part(S, 2)   # high straight wing across the roof
 		M.prism(w, T, [Vector3(1.3, -5.5, 5.35), Vector3(1.3, 5.5, 5.35), Vector3(-1.1, 5.5, 5.3), Vector3(-1.1, -5.5, 5.3)],
@@ -175,14 +196,14 @@ static func airframe(S: Array, T: Dictionary, stealth: bool, rp: Array, tilt: fl
 			var sp := M.part(S, 1)   # gear sponsons
 			M.box(sp, T, Vector3(-1.9, s * 2.35, 1.6), Vector3(2.3, 0.38, 0.6), rp, Vector3(0.6, 0.6, 0.18))
 		var fn := M.part(S, 2)   # T-tail
-		M.prism(fn, T, [Vector3(-7.6, -0.07, 4.8), Vector3(-8.9, -0.07, 7.1), Vector3(-9.7, -0.07, 7.1), Vector3(-9.6, -0.07, 4.7)],
+		M.prism(fn, T, [Vector3(-6.2, -0.07, 4.95), Vector3(-7.5, -0.07, 7.1), Vector3(-8.3, -0.07, 7.1), Vector3(-8.3, -0.07, 4.95)],
 			Vector3(0, 0.14, 0), rp)
-		M.prism(fn, T, [Vector3(-8.7, -2.7, 7.25), Vector3(-8.7, 2.7, 7.25), Vector3(-9.8, 2.7, 7.2), Vector3(-9.8, -2.7, 7.2)],
+		M.prism(fn, T, [Vector3(-7.3, -2.7, 7.25), Vector3(-7.3, 2.7, 7.25), Vector3(-8.4, 2.7, 7.2), Vector3(-8.4, -2.7, 7.2)],
 			Vector3(0, 0, -0.16), rp)
 	if flying:   # engine glow at the tail exhausts
 		var g := M.part(S, 2)
 		for s in [-1.0, 1.0]:
-			M.dpx(g, T, Vector3(-9.0, s * 0.45, 4.35 if stealth else 4.7), Color8(255, 170, 90))
+			M.dpx(g, T, Vector3(TAIL_F - 0.05, s * 0.4, 4.9 if stealth else 5.0), Color8(255, 170, 90))
 
 
 ## Hull furniture on the fuselage part: intakes, canopy frame, windows, doors, ID panel, panel lines.
@@ -210,20 +231,57 @@ static func hull_marks(pt: Dictionary, T: Dictionary, stealth: bool, rp: Array) 
 
 
 # ------------------------------------------------------------------ bay, cargo, ramp
-## Bay interior (seen through the open ramp or the cutaway): inner walls, deck slab with tie-down rails, lights.
+## Height of the loading surface at local f: ground behind the ramp foot, the ramp, then the bay deck.
+static func deck_h(f: float) -> float:
+	if f <= FOOT_F:
+		return 0.0
+	if f >= HINGE_F:
+		return DECK_Z
+	return DECK_Z * (f - FOOT_F) / (HINGE_F - FOOT_F)
+
+
+## Pose of the strike APC (g7_cn_vehicles model, axles at +2.55 / -2.25 m) with its front axle at local f = fa:
+## both axles sit on the loading surface, so it pitches up the ramp and levels out on the deck.
+static func apc_at(G: Dictionary, fa: float) -> Dictionary:
+	var ra := fa - 4.8
+	var hf := deck_h(fa)
+	var hr := deck_h(ra)
+	var pitch := atan2(hf - hr, 4.8)
+	return M.sub(G, Vector3(fa - 2.55, 0, hr + 2.25 * tan(pitch)), 0.0, pitch)
+
+
+## Lateral offset of the boarding file at local f: up the right half of the ramp, then along the right wall of
+## the bay beside the parked APC.
+static func file_r(f: float, stealth: bool) -> float:
+	var r_in := 1.9 if stealth else 1.82
+	if f <= HINGE_F:
+		return 0.85
+	return lerpf(0.85, r_in, clampf((f - HINGE_F) / 1.2, 0.0, 1.0))
+
+
+## Bay interior, lit by work lights: inner walls, roof, front bulkhead and door frame (a flipped loft over the bay
+## and door segments, seen only through the open rear door), the deck slab with tie-down rails, wall light strips,
+## warm light pools on the deck and amber door-frame lights.
 static func interior(S: Array, T: Dictionary, stealth: bool) -> void:
 	var pt := M.part(S, 0.4)
-	var secs := _secs(stealth).slice(3)
-	M.loft(pt, T, secs, C.ramp(INTERIOR), {"flip": true, "cap0": true, "cap1": false,
-		"skip": [[0, _bottom(stealth)], [1, _bottom(stealth)], [2, _bottom(stealth)]], "edge": false})
+	var b := _bottom(stealth)
+	M.loft(pt, T, _secs(stealth).slice(3, 6), C.ramp(INTERIOR), {"flip": true, "cap0": true, "cap1": true,
+		"skip": [[0, b], [1, b]], "edge": false})
+	var wr := 2.3 if stealth else 2.28
+	for s in [-1.0, 1.0]:
+		M.dline(pt, T, Vector3(3.8, s * wr, 3.6), Vector3(HINGE_F + 0.3, s * wr, 3.6), BAY_LIT, Vector3(0, -s, 0))
+		for f in [3.0, 1.5, 0.0, -1.5, -3.0, -4.5]:   # wall ribs
+			M.dline(pt, T, Vector3(f, s * (wr + 0.05), 2.0), Vector3(f, s * (wr - 0.1), 4.2), C.ca(C.ramp(INTERIOR)[0], 0.5), Vector3(0, -s, 0))
+		M.dpx(pt, T, Vector3(HINGE_F + 0.1, s * 1.85, DECK_Z + 0.25), HAZ, Vector3(0, -s, 0))
+		M.dpx(pt, T, Vector3(DOOR_F + 0.1, s * 1.55, 4.35), HAZ)
 	var dk := M.part(S, 0.45)
 	M.prism(dk, T, [Vector3(BAY_F0, -1.9, DECK_Z), Vector3(BAY_F0, 1.9, DECK_Z), Vector3(HINGE_F, 1.9, DECK_Z),
 		Vector3(HINGE_F, -1.9, DECK_Z)], Vector3(0, 0, -0.3), C.ramp(DECK), {"edge": false})
 	for r in [-1.2, -0.4, 0.4, 1.2]:
 		M.dline(dk, T, Vector3(BAY_F0 - 0.2, r, DECK_Z + 0.004), Vector3(HINGE_F + 0.1, r, DECK_Z + 0.004), C.ca(C.ramp(DECK)[3], 0.6), Vector3(0, 0, 1))
-	for f in [3.0, 0.0, -3.0]:
-		for s in [-1.0, 1.0]:
-			M.dpx(pt, T, Vector3(f, s * 2.0, 4.0), BAY_LIT)
+	for f in [3.0, 0.0, -3.0, -5.2]:
+		M.dpoly(dk, T, [Vector3(f + 0.9, -1.6, DECK_Z + 0.006), Vector3(f + 0.9, 1.6, DECK_Z + 0.006),
+			Vector3(f - 0.9, 1.6, DECK_Z + 0.006), Vector3(f - 0.9, -1.6, DECK_Z + 0.006)], GLOW, Vector3(0, 0, 1))
 
 
 ## A soldier sprite (the DL7-3 18 px figure) at local point p facing local yaw ya, in pose fname.
@@ -240,14 +298,30 @@ static func trooper(S: Array, T: Dictionary, kit_id: String, p: Vector3, ya: flo
 	M.sprite(S, w, func(cv): FIG.draw(cv, kt, kk, fname, M.scr_w(o, w).floor()), layer, bias)
 
 
-static func seated(S: Array, T: Dictionary, near_right: bool) -> void:
+## The ten soldiers seated along the bay walls (5 a side, facing in), beside the parked APC.
+static func seated(S: Array, T: Dictionary, stealth: bool) -> void:
 	for i in 10:
 		var s := -1.0 if i < 5 else 1.0
-		var near := (s > 0.0) == near_right
-		trooper(S, T, String(SQUAD[i]), Vector3(SEATS[i % 5], s * 1.55, DECK_Z), -s * PI / 2.0, "crouch", 0.7 if not near else 0.9)
+		trooper(S, T, String(SQUAD[i]), Vector3(SEATS[i % 5], s * (2.0 if stealth else 1.85), DECK_Z), -s * PI / 2.0, "crouch", 0.7)
 
 
-## Rear ramp plank from the hinge (deck height) down to the ground (or half open in flight), hazard chevrons.
+## The boarding file for loop frame i (0..3): one spacing per loop, all in step, so frame 3 -> 0 is seamless.
+## A soldier enters the sheet at FILE_F0 (just behind the ramp foot, where the sim hands its walking unit over) and
+## leaves it at FILE_F1, deep in the bay where the door frame hides it from every facing. out = walking down.
+static func file(S: Array, G: Dictionary, i: int, out: bool, stealth: bool) -> void:
+	var j := 0
+	while true:
+		var d := (float(j) + float(i) / 4.0) * FILE_SP
+		var f := (FILE_F1 - d) if out else (FILE_F0 + d)
+		if (out and f < FILE_F0) or (not out and f > FILE_F1):
+			break
+		trooper(S, G, "cn_deploy", Vector3(f, file_r(f, stealth) * (1.0 if not out else 1.0), deck_h(f)), PI if out else 0.0,
+			String(WALK4[i % 4]), 1.0)
+		j += 1
+
+
+## Rear ramp from the hinge (deck height) down to the ground (or half open in flight): hazard chevrons, side curbs,
+## hydraulic jacks to the door frame, light spilling out of the bay onto its upper half.
 static func ramp(S: Array, T: Dictionary, rp: Array, pitch: float) -> void:
 	var pt := M.part(S, 1, 0.3)
 	var Tr := M.sub(T, Vector3(HINGE_F, 0, DECK_Z), PI, -pitch)
@@ -256,8 +330,14 @@ static func ramp(S: Array, T: Dictionary, rp: Array, pitch: float) -> void:
 		var f := 0.5 + i * 0.75
 		M.dline(pt, Tr, Vector3(f, -1.5, 0.004), Vector3(f + 0.3, 0.0, 0.004), C.ca(HAZ, 0.85), Vector3(0, 0, 1))
 		M.dline(pt, Tr, Vector3(f + 0.3, 0.0, 0.004), Vector3(f, 1.5, 0.004), C.ca(HAZ, 0.85), Vector3(0, 0, 1))
+	var dk: Array = C.ramp(Color8(40, 42, 44))
 	for s in [-1.0, 1.0]:
-		M.dline(pt, Tr, Vector3(0.1, s * (RAMP_HW - 0.1), 0.004), Vector3(3.9, s * (RAMP_HW - 0.1), 0.004), C.ca(rp[4], 0.6), Vector3(0, 0, 1))
+		M.box(pt, Tr, Vector3(2.0, s * (RAMP_HW - 0.06), 0.05), Vector3(1.95, 0.06, 0.05), rp)
+		var a := Vector3(HINGE_F - 1.7 * cos(pitch), s * 1.7, DECK_Z - 1.7 * sin(pitch) + 0.08)
+		var b := Vector3(HINGE_F - 0.12, s * 2.0, 2.5)
+		M.cyl(pt, T, (a + b) * 0.5, b - a, 0.05, a.distance_to(b) * 0.5, 4, dk, {"edge": false})
+	M.dpoly(pt, Tr, [Vector3(0.1, -1.6, 0.006), Vector3(0.1, 1.6, 0.006), Vector3(1.6, 1.3, 0.006), Vector3(1.6, -1.3, 0.006)],
+		GLOW, Vector3(0, 0, 1))
 
 
 ## Five defence drones launched during an extraction (3 kamikaze, 2 machine-gun).
@@ -287,7 +367,14 @@ static func _dust(S: Array, T: Dictionary, k: int) -> void:
 		pt.dec.append({"k": "px", "a": Vector3(w.x, w.y, 0.0), "col": DUST, "n": Vector3.ZERO})
 
 
+static func _apc(S: Array, Tp: Dictionary, fname: String) -> void:
+	var S2: Array = []
+	V.model(S2, Tp, true, fname, false, true)
+	M.merge(S, S2, 0.6, 0.0, 1)
+
+
 # ------------------------------------------------------------------ the frame
+## One frame. Main-sheet frames: FRAMES. Load-sheet frames: apc_load_0..5, squad_load_0..3, squad_unload_0..3.
 static func craft(cv, k: int, fname: String, o: Vector2, stealth: bool) -> void:
 	fname = String(FRAME_ALIAS.get(fname, fname))
 	var a := k * PI / 4.0
@@ -298,23 +385,23 @@ static func craft(cv, k: int, fname: String, o: Vector2, stealth: bool) -> void:
 	var S: Array = []
 	var rp: Array = C.ramp(STEALTH if stealth else VTOL)
 	var gl: Array = C.ramp(GLASS)
-	var near_right := Vector2(-sin(a), cos(a)).dot(Vector2(1, 1)) > 0.0
-	var open := fname in ["ramp_down", "apc_ramp", "bay_open", "squad_in", "drones"]
-	var cut := fname == "bay_open"
+	var load_n := int(fname.get_slice("_", fname.get_slice_count("_") - 1)) if fname.contains("_load_") or fname.contains("_unload_") else -1
+	var open := fname in ["ramp_down", "apc_ramp", "bay_open", "squad_in", "drones"] or load_n >= 0
 	var flying := fname in ["flight", "transition"]
 	var skip: Array = []
 	if open:
-		skip += [[4, _bottom(stealth)], [5, _bottom(stealth)]]
+		skip.append([4, _bottom(stealth)])
 		interior(S, T, stealth)
-	if cut:
-		skip.append([3, _roof(stealth)])
-		for j in _near_wall(stealth, near_right):
-			skip.append([3, j])
-		var Tc := M.sub(T, Vector3(APC_F, 0, DECK_Z))
-		var S2: Array = []
-		V.model(S2, Tc, true, "idle")
-		M.merge(S, S2, 0.6)
-		seated(S, T, near_right)
+	if fname == "apc_ramp":
+		_apc(S, apc_at(G, float(APC_LOAD_FA[3])), "move")   # = apc_load_3 (fits the main cell)
+	elif fname.begins_with("apc_load_"):
+		_apc(S, apc_at(G, float(APC_LOAD_FA[load_n])), "idle" if load_n == APC_LOAD_FA.size() - 1 else ("move" if load_n % 2 == 0 else "move_1"))
+	elif fname == "bay_open":
+		_apc(S, apc_at(G, float(APC_LOAD_FA[-1])), "idle")
+		seated(S, G, stealth)
+	elif fname == "squad_in" or fname.begins_with("squad_load_") or fname.begins_with("squad_unload_"):
+		_apc(S, apc_at(G, float(APC_LOAD_FA[-1])), "idle")
+		file(S, G, maxi(0, load_n), fname.begins_with("squad_unload_"), stealth)
 	var mats := {}
 	var nv := 8 if stealth else 10
 	for j in ([0, 6, 7] if stealth else [0, 1, 7, 8, 9]):
@@ -327,28 +414,52 @@ static func craft(cv, k: int, fname: String, o: Vector2, stealth: bool) -> void:
 	var fus := M.part(S, 1)
 	M.loft(fus, T, _secs(stealth), rp, {"skip": skip, "mats": mats})
 	hull_marks(fus, T, stealth, rp)
+	if not open:   # closed rear door: frame, clamshell seam, hinge line, two position lights
+		var bw := 2.0 if stealth else 1.6
+		var tw := 1.75 if stealth else 1.55
+		var dn := Vector3(-(4.62 - 1.0), 0, -(HINGE_F - DOOR_F)).normalized()
+		var q := [Vector3(HINGE_F - 0.01, -bw + 0.12, 1.05), Vector3(HINGE_F - 0.01, bw - 0.12, 1.05),
+			Vector3(DOOR_F + 0.01, tw - 0.1, 4.55), Vector3(DOOR_F + 0.01, -tw + 0.1, 4.55)]
+		for i in 4:
+			M.dline(fus, T, q[i], q[(i + 1) % 4], C.ca(rp[0], 0.8), dn)
+		M.dline(fus, T, Vector3(HINGE_F - 0.01, 0, 1.05), Vector3(DOOR_F + 0.01, 0, 4.55), C.ca(rp[0], 0.6), dn)
+		M.dline(fus, T, Vector3(HINGE_F - 0.03, -bw + 0.3, 1.35), Vector3(HINGE_F - 0.03, bw - 0.3, 1.35), C.ca(rp[3], 0.5), dn)
+		for sd in [-1.0, 1.0]:
+			M.dpx(fus, T, Vector3(DOOR_F + 0.02, sd * (tw - 0.25), 4.4), Color8(255, 70, 50) if sd < 0 else Color8(80, 255, 120), dn)
 	airframe(S, T, stealth, rp, tilt, k, flying)
 	if not flying:
 		gear(S, T, stealth)
 	if open:
 		ramp(S, T, rp, 0.15 if fname == "drones" else asin(DECK_Z / 4.0))
-	if fname == "apc_ramp":
-		var S3: Array = []
-		V.model(S3, M.sub(G, Vector3(-5.6, 0, 0.66), 0.0, 0.155), true, "move")
-		M.merge(S, S3, 1.0, 0.2)
-	if fname == "squad_in":
-		for i in 6:
-			var f := HINGE_F - 0.6 - i * 0.62
-			var z := DECK_Z * clampf((f - FOOT_F) / (HINGE_F - FOOT_F), 0.0, 1.0)
-			trooper(S, G, String(SQUAD[i]), Vector3(f, (i % 2 - 0.5) * 1.1, z), 0.0, ["walk_a", "walk_2", "walk_b", "walk_5"][i % 4], 1.0, 0.4)
-		trooper(S, G, "cn_gunner", Vector3(FOOT_F - 1.2, -2.2, 0.0), PI * 0.75, "idle", 1.0, 0.4)
-		trooper(S, G, "cn_team_leader", Vector3(FOOT_F - 0.8, 2.4, 0.0), PI, "act_0", 1.0, 0.4)
 	if fname == "drones":
 		drones(S, T)
 	if fname in ["hover", "transition", "drones"]:
 		_dust(S, G, k)
 	M.shadow(cv, S, o, 0.36, Vector2(0.25, -0.06))
-	M.render(cv, S, o, 53 + k)
+	M.render_z(cv, S, o, 53 + k)
+
+
+static func apc_frames() -> Array:
+	var r: Array = []
+	for i in APC_LOAD_FA.size():
+		r.append("apc_load_%d" % i)
+	return r
+
+
+static func squad_frames(out := false) -> Array:
+	var r: Array = []
+	for i in 4:
+		r.append(("squad_unload_%d" if out else "squad_load_%d") % i)
+	return r
+
+
+## Unload aliases: the APC reverses down the ramp (apc_load played backwards); squads have their own walk-out loop.
+static func load_alias() -> Dictionary:
+	var al := {}
+	var n := APC_LOAD_FA.size()
+	for i in n:
+		al["apc_unload_%d" % i] = "apc_load_%d" % (n - 1 - i)
+	return al
 
 
 static func build(out: Dictionary) -> void:
@@ -356,11 +467,30 @@ static func build(out: Dictionary) -> void:
 	var fx := {"footprint_tiles": [4.9, 4.2], "size_m": [19.6, 16.7, 6.4], "bay": BAY, "ramp": RAMP, "deck_px": DECK_Z * M.ZP,
 		"roof_px": 4.6 * M.ZP, "apc_u": APC_F / M.MT, "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
 		"cargo": "1 strike APC (g7_cn_strike_apc, 8.0 x 2.9 m = 2.0 x 0.73 tiles) + 10 seated soldiers", "frame_alias": FRAME_ALIAS,
-		"altitude_m": ALT, "fan_tilt_rad": {"flight": PI / 2.0, "transition": PI / 4.0, "other": 0.0}}
-	C.unit_sheet(out, "g7_cn_stealth_dropship", "vehicles", "air_large", FW, FH, PIV, FRAMES,
-		func(cv, k, f, o): craft(cv, k, f, o, true),
-		{"sample": "air", "line": "strike_team", "key_frames": FRAMES.duplicate(), "anim_strip": strip}.merged(fx))
-	C.unit_sheet(out, "g7_a_vtol_dropship_xl", "vehicles", "air_large", FW, FH, PIV, FRAMES,
-		func(cv, k, f, o): craft(cv, k, f, o, false),
-		{"sample": "air", "line": "human_a", "upgrades": "a_vtol_dropship", "key_frames": FRAMES.duplicate(),
-		"anim_strip": strip, "size_m": [19.6, 15.6, 7.25]}.merged(fx, false))
+		"altitude_m": ALT, "fan_tilt_rad": {"flight": PI / 2.0, "transition": PI / 4.0, "other": 0.0},
+		"depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+		"bay_open": "rev4: APC parked in the lit bay seen through the open rear door (no cutaway)"}
+	for st in [true, false]:
+		var stealth: bool = st
+		var id := "g7_cn_stealth_dropship" if stealth else "g7_a_vtol_dropship_xl"
+		var e := {"sample": "air", "line": "strike_team" if stealth else "human_a", "key_frames": FRAMES.duplicate(),
+			"anim_strip": strip, "load_sheets": {"apc": id + "_apcload", "squad": id + "_squadload", "squad_out": id + "_squadunload"}}
+		if not stealth:
+			e["upgrades"] = "a_vtol_dropship"
+			e["size_m"] = [19.6, 15.6, 7.25]
+		C.unit_sheet(out, id, "vehicles", "air_large", FW, FH, PIV, FRAMES,
+			func(cv, k, f, o): craft(cv, k, f, o, stealth), e.merged(fx))
+		var lfx := {"sample": "air", "line": e.line, "load_sheet_of": id, "scale": fx.scale, "bay": BAY, "ramp": RAMP,
+			"depth": fx.depth, "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp"}
+		C.unit_sheet(out, id + "_apcload", "vehicles", "air_large", LFW, LFH, LPIV, apc_frames(),
+			func(cv, k, f, o): craft(cv, k, f, o, stealth),
+			lfx.merged({"key_frames": apc_frames(), "anim_strip": apc_frames(), "loop": false, "frame_alias": load_alias(),
+			"apc_front_axle_f_m": APC_LOAD_FA, "note": "apc_load_0: APC on the ground lined up behind the craft, front wheels at the ramp foot; _5: parked in the bay (= bay_open). Unload: apc_unload_i = apc_load_(5-i) (reverses down the ramp)"}))
+		for o2 in [false, true]:
+			var sf := squad_frames(o2)
+			C.unit_sheet(out, id + ("_squadunload" if o2 else "_squadload"), "vehicles", "air_large", LFW, LFH, LPIV, sf,
+				func(cv, k, f, o): craft(cv, k, f, o, stealth),
+				lfx.merged({"key_frames": sf.duplicate(), "anim_strip": sf.duplicate(), "loop": true,
+				"file": {"spacing_m": FILE_SP, "enter_f_m": FILE_F0, "leave_f_m": FILE_F1, "per_loop_m": FILE_SP},
+				"note": ("squad_unload_0..3 loops while a squad leaves: one soldier walks down the ramp per loop and is handed to the sim at the ramp foot (leave at enter_f)." if o2 else
+				"squad_load_0..3 loops while a squad boards (APC already aboard): one soldier walks up the ramp per loop. The sim hides each walking unit when it reaches the ramp foot (enter_f).")}))

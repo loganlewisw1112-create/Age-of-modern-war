@@ -69,6 +69,44 @@ func _pad(mv, at: Vector2) -> bool:
 	return true
 
 
+## rev4 (ARTCN7-5): a display-only craft sprite cut from any G7 sheet (main or load sheet), frame fname, facing row k,
+## team-tinted like _pad's parked craft; drawn just below the entity layer at world tile `at`.
+func _craft(mv, at: Vector2, id: String, fname: String, k: int) -> bool:
+	var layer = mv.get("entity_layer")
+	if layer == null:
+		return false
+	var man = JSON.parse_string(FileAccess.get_file_as_string("res://assets/art/g7_cn/manifest.json"))
+	var e: Dictionary = man.vehicles.get(id, {})
+	if e.is_empty() or not (e.frames as Array).has(fname):
+		return false
+	var fw := int(e.fw)
+	var fh := int(e.fh)
+	var col := (e.frames as Array).find(fname)
+	var sheet := Image.load_from_file(ProjectSettings.globalize_path("res://assets/art/g7_cn/" + String(e.file)))
+	var msk := Image.load_from_file(ProjectSettings.globalize_path("res://assets/art/g7_cn/" + String(e.mask)))
+	sheet.convert(Image.FORMAT_RGBA8)
+	msk.convert(Image.FORMAT_RGBA8)
+	var cell := sheet.get_region(Rect2i(col * fw, k * fh, fw, fh))
+	var mc := msk.get_region(Rect2i(col * fw, k * fh, fw, fh))
+	var team := Color("#4f7db0")
+	for y in fh:
+		for x in fw:
+			if mc.get_pixel(x, y).a > 0.0:
+				var c := cell.get_pixel(x, y)
+				var kk := 0.45 + c.r * 0.9
+				cell.set_pixel(x, y, Color(team.r * kk, team.g * kk, team.b * kk, c.a))
+	var cs := Sprite2D.new()
+	cs.texture = ImageTexture.create_from_image(cell)
+	cs.centered = false
+	cs.offset = -Vector2(float(e.pivot[0]), float(e.pivot[1]))
+	cs.position = mv.world_to_screen(at)
+	cs.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var par: Node = layer.get_parent()
+	par.add_child(cs)
+	par.move_child(cs, layer.get_index())
+	return true
+
+
 func run(pt) -> void:
 	var mv = pt._mv()
 	mv.join_sim()
@@ -113,4 +151,21 @@ func run(pt) -> void:
 	mv.center_camera_on(lz + Vector2(-0.8, 0.0))
 	await pt._wait(1.0)
 	await pt._shot("artcn7_dropship_pad_zoom3")
+	# rev4: loading through the open rear door, real depth (load sheets): APC driving up the ramp into the lit bay
+	# (door toward the camera), a squad walking up behind a second craft (XL, side-on), and a craft whose door faces
+	# away (the file behind it is hidden by the hull)
+	var ld := base + Vector2(-2.0, 10.0)
+	var ok1 := _craft(mv, ld, "g7_cn_stealth_dropship_apcload", "apc_load_3", 5)
+	var ok2 := _craft(mv, ld + Vector2(7.0, -1.0), "g7_a_vtol_dropship_xl_squadload", "squad_load_1", 6)
+	var ok3 := _craft(mv, ld + Vector2(1.0, -6.0), "g7_cn_stealth_dropship_squadload", "squad_load_2", 1)
+	pt._log("artcn7_loading_shown", ok1 and ok2 and ok3, "display-only load-sheet sprites (apc_load_3 f5, XL squad_load_1 f6, squad_load_2 f1)")
+	for z in [1.0, 2.0, 3.0]:
+		_zoom(mv, z)
+		mv.center_camera_on(ld + (Vector2(3.0, -2.5) if z < 2.5 else Vector2(0.3, -0.6)))
+		await pt._wait(1.0)
+		await pt._shot("artcn7_loading_zoom%d" % int(z))
+	_zoom(mv, 3.0)
+	mv.center_camera_on(ld + Vector2(6.0, -2.2))
+	await pt._wait(1.0)
+	await pt._shot("artcn7_loading_squad_zoom3")
 	pt._log("artcn7_units_spawned", w.entities.size() > n, "entities %d" % w.entities.size())

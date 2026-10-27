@@ -746,15 +746,23 @@
     "buildings/g7_cn_helipad_rot_0_damaged.png": "2a4ccfd7be7c4b2e918e1d80823441ad",
     "buildings/g7_cn_helipad_rot_0_damaged_mask.png": "5c7f28e1fcc73fcf7ae3b0adb63e72d8",
     "buildings/g7_cn_helipad_rot_0_mask.png": "5c7f28e1fcc73fcf7ae3b0adb63e72d8",
-    "icons/g7_a_vtol_dropship_xl.png": "8fa2771ef2b1822e05418f50004d9dc8",
+    "icons/g7_a_vtol_dropship_xl.png": "fddb64a9c8e47905122f7d3ed49219c9",
+    "icons/g7_a_vtol_dropship_xl_apcload.png": "800c08fa1fea979349bfae5de39ec3a1",
+    "icons/g7_a_vtol_dropship_xl_squadload.png": "b58b815fe75d401e14ae088459006704",
+    "icons/g7_a_vtol_dropship_xl_squadunload.png": "b58b815fe75d401e14ae088459006704",
     "icons/g7_cn_deploy.png": "8f1783327bf3ce57793bd528d27f87d7",
     "icons/g7_cn_ew.png": "d093f525dda665c9c295fbc18663409a",
     "icons/g7_cn_gunner.png": "261d78345b71069c2c4a11015c55e7b0",
     "icons/g7_cn_medic.png": "593928cccf5364c2910afa1ba7bf9f8b",
     "icons/g7_cn_radio.png": "e2b38632f9c51b1473714c33de4c23a6",
     "icons/g7_cn_scanner.png": "da256f25c4f9661802ac57dd25649ec1",
-    "icons/g7_cn_stealth_dropship.png": "7d9f9014c83bd98f651750ccc3b60245",
-    "icons/g7_cn_strike_apc.png": "d9b6219999d3fc1e9139474fcabfd0c8",
+    "icons/g7_cn_stealth_dropship.png": "5fb15c1f8cbd8298ff14c34d639df537",
+    "icons/g7_cn_stealth_dropship_apcload.png": "9e7f4e4ff3a63cc89b9df105aedd7502",
+    "icons/g7_cn_stealth_dropship_squadload.png": "d45df4279230a08dab9ad453821a4be1",
+    "icons/g7_cn_stealth_dropship_squadunload.png": "d45df4279230a08dab9ad453821a4be1",
+    "icons/g7_cn_strike_apc.png": "bbfa14df172538abc2c3247014284ba6",
+    "icons/g7_cn_strike_apc_gun.png": "de8e00fbd80c32897c56c2d8dfb7e7b8",
+    "icons/g7_cn_strike_apc_rkt.png": "3744a4ebd2a314a1972f5f995cacdd20",
     "icons/g7_cn_team_leader.png": "c28138a00d80dc83f808cce7f1158893",
     "icons/g7_op_antidrone.png": "abd7e16795529eafeb1aa518cc2b423e",
     "icons/g7_op_emp.png": "70cea3c7d8e79557e1f6e16e5b6ba9fe",
@@ -763,9 +771,17 @@
     "icons/g7_op_marksman.png": "2fffdbdc83c1c945f7587f7f64ee60b4",
     "icons/g7_op_medic.png": "d4193fd9069ac5968eaf9a3a41117f58",
     "icons/g7_op_purge.png": "dae7a52fb5b27ad20a50f074f8d3ee77",
-    "icons/g7_op_tactical_apc.png": "5eb5a14d684d83d346cfc9d59df14373",
-    "units/g7_a_vtol_dropship_xl.png": "1c8f881e1e1c69971df608611094bfbe",
-    "units/g7_a_vtol_dropship_xl_mask.png": "b303627ce04bb44b9fab95d5325dbdab",
+    "icons/g7_op_tactical_apc.png": "d87f8aca1810473bdecfa2a375df1249",
+    "icons/g7_op_tactical_apc_gun.png": "bdf81da4251c0b99c43f5c5874cd1aaa",
+    "icons/g7_op_tactical_apc_rkt.png": "338f0450ba667c4dc9540fe86d58bc47",
+    "units/g7_a_vtol_dropship_xl.png": "c8154ca83bae70c5bf2795dda1c2d28f",
+    "units/g7_a_vtol_dropship_xl_apcload.png": "4cd6861c7aaff872595d9389272b8337",
+    "units/g7_a_vtol_dropship_xl_apcload_mask.png": "dff4dc40b343c63320a578a7844ef78c",
+    "units/g7_a_vtol_dropship_xl_mask.png": "e70015b0ab6f761a4fc3158cddf1375e",
+    "units/g7_a_vtol_dropship_xl_squadload.png": "2cb09495f2318f4c43071950fa30773a",
+    "units/g7_a_vtol_dropship_xl_squadload_mask.png": "158500370fca4ef5d5c0348e071f3753",
+    "units/g7_a_vtol_dropship_xl_squadunload.png": "65c54a260313517fe6a934649678df04",
+    "units/g7_a_vtol_dropship_xl_squadunload_mask.png": "bbef884f116786b0c570ebf0b808e1b4",
     "units/g7_cn_deploy.png": "2a2a2ee92faa761eb5343111fae61404",
     "units/g7_cn_deploy_mask.png": "1f54fe96b218acd933b5009ffe53f527",
     "units/g7_cn_ew.png": "4b259dcbfc7e623d6ec56b10b59a47e9",
@@ -778,10 +794,20 @@
     "units/g7_cn_radio_mask.png": "e125465eebb744a7bfc3e6e7fa5894f5",
     "units/g7_cn_scanner.png": "b464849c7fb866e63d067d5d36de375a",
     "units/g7_cn_scanner_mask.png": "ede73b59340fd5399ba3c959a8cfaa59",
-    "units/g7_cn_stealth_dropship.png": "2e4cd2be17315ee8f57353a2530def7f",
-    "units/g7_cn_stealth_dropship_mask.png": "edcb6505689d9d0c2e2a10a81c9d72cf",
-    "units/g7_cn_strike_apc.png": "bc8c30109e04b92aecbebfea11ccd855",
-    "units/g7_cn_strike_apc_mask.png": "2320ec6c2df632962dac8f05681f1538",
+    "units/g7_cn_stealth_dropship.png": "308441a5eb55f287a6e513ae7ef58920",
+    "units/g7_cn_stealth_dropship_apcload.png": "8529289560612a0e266d7cb6d2ccd979",
+    "units/g7_cn_stealth_dropship_apcload_mask.png": "dfc5402735ac7eccaf514afac59c9241",
+    "units/g7_cn_stealth_dropship_mask.png": "6d6a44b4c301c112d20809a6e74dbd3a",
+    "units/g7_cn_stealth_dropship_squadload.png": "a17fe2bb2717f39623c75f3a9732b2fd",
+    "units/g7_cn_stealth_dropship_squadload_mask.png": "26e70dbba039a72b4cfdc5fafe8f109c",
+    "units/g7_cn_stealth_dropship_squadunload.png": "195e4794798f5f5bc6b905015e2a1ef8",
+    "units/g7_cn_stealth_dropship_squadunload_mask.png": "a116a9a18d493172bf3497c4d6d78004",
+    "units/g7_cn_strike_apc.png": "c0e6e33fdef45b2ec81f7586fc8329ca",
+    "units/g7_cn_strike_apc_gun.png": "5ecc7c035af6b68c9229493a4542d575",
+    "units/g7_cn_strike_apc_gun_mask.png": "806b68ab228fb877c03e821d760b8ca5",
+    "units/g7_cn_strike_apc_mask.png": "d9e0ab7f4bb70b6435148f5ec160b2e5",
+    "units/g7_cn_strike_apc_rkt.png": "6f1c099eb9e7544add554b23e5583324",
+    "units/g7_cn_strike_apc_rkt_mask.png": "cb71a1127973470a035c58d0e68cb9a4",
     "units/g7_cn_team_leader.png": "b9a91f3147881fd93b243f51fdb28a98",
     "units/g7_cn_team_leader_mask.png": "8a6d9faba2fdb43a36544c061658518f",
     "units/g7_op_antidrone.png": "90a1a82638b28a4b8d43f8dda6eb1443",
@@ -798,10 +824,14 @@
     "units/g7_op_medic_mask.png": "daa43ac9f8b0d608b270a88709e3c59b",
     "units/g7_op_purge.png": "cfe7ab1398fbd81e42d5a71ce61f6bd2",
     "units/g7_op_purge_mask.png": "1622502d01206fcd113f8f49ca182962",
-    "units/g7_op_tactical_apc.png": "d691cf1ec86f97059509b67ac38e7716",
-    "units/g7_op_tactical_apc_mask.png": "f5ce12606672d75ca31575b8f58a62fb",
-    "wrecks/g7_cn_strike_apc_wreck.png": "9ff62dd79ac49185d8302842a07739c5",
-    "wrecks/g7_op_tactical_apc_wreck.png": "679d258cf53dee34dc10cae241aeff8c"
+    "units/g7_op_tactical_apc.png": "a7cb93a580d7c8dd7ee7f03e628d6810",
+    "units/g7_op_tactical_apc_gun.png": "7956a219c381e4dea12b4ecdff130679",
+    "units/g7_op_tactical_apc_gun_mask.png": "a047c523014939272bfb7597add0d9c2",
+    "units/g7_op_tactical_apc_mask.png": "80be1d1d9ad33ef4fe6a4eff625201d7",
+    "units/g7_op_tactical_apc_rkt.png": "1f9d3601e1b354f22cdced22e79587e9",
+    "units/g7_op_tactical_apc_rkt_mask.png": "5fc3c146795842a73b21c966a14b241b",
+    "wrecks/g7_cn_strike_apc_wreck.png": "ae1ea86ae324d8e18b992b18a8db218f",
+    "wrecks/g7_op_tactical_apc_wreck.png": "0a808cfcb798682b8e84a294a64f7bc1"
   },
   "g7_detail_level": {
     "air": {
@@ -902,11 +932,13 @@
         "u0": 1.15,
         "u1": -1.5
       },
+      "bay_open": "rev4: APC parked in the lit bay seen through the open rear door (no cutaway)",
       "budget": 7340032,
-      "bytes": 6915184,
+      "bytes": 6631692,
       "cargo": "1 strike APC (g7_cn_strike_apc, 8.0 x 2.9 m = 2.0 x 0.73 tiles) + 10 seated soldiers",
       "class": "air_large",
       "deck_px": 12.74,
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
       "detail_level": "DL7-3",
       "fan_tilt_rad": {
         "flight": 1.5707963267949,
@@ -934,6 +966,11 @@
         "drones"
       ],
       "line": "human_a",
+      "load_sheets": {
+        "apc": "g7_a_vtol_dropship_xl_apcload",
+        "squad": "g7_a_vtol_dropship_xl_squadload",
+        "squad_out": "g7_a_vtol_dropship_xl_squadunload"
+      },
       "mirror": -1,
       "ramp": {
         "foot": -2.45,
@@ -952,6 +989,164 @@
         7.25
       ],
       "upgrades": "a_vtol_dropship"
+    },
+    "g7_a_vtol_dropship_xl_apcload": {
+      "anim_strip": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "apc_front_axle_f_m": [
+        -9.8,
+        -8.0,
+        -6.0,
+        -3.6,
+        -1.2,
+        0.95
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 4043024,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "apc_unload_0": "apc_load_5",
+        "apc_unload_1": "apc_load_4",
+        "apc_unload_2": "apc_load_3",
+        "apc_unload_3": "apc_load_2",
+        "apc_unload_4": "apc_load_1",
+        "apc_unload_5": "apc_load_0"
+      },
+      "key_frames": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "line": "human_a",
+      "load_sheet_of": "g7_a_vtol_dropship_xl",
+      "loop": false,
+      "mirror": -1,
+      "note": "apc_load_0: APC on the ground lined up behind the craft, front wheels at the ramp foot; _5: parked in the bay (= bay_open). Unload: apc_unload_i = apc_load_(5-i) (reverses down the ramp)",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 20250624,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
+    },
+    "g7_a_vtol_dropship_xl_squadload": {
+      "anim_strip": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 2484604,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "file": {
+        "enter_f_m": -10.4,
+        "leave_f_m": -2.6,
+        "per_loop_m": 1.2,
+        "spacing_m": 1.2
+      },
+      "key_frames": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "line": "human_a",
+      "load_sheet_of": "g7_a_vtol_dropship_xl",
+      "loop": true,
+      "mirror": -1,
+      "note": "squad_load_0..3 loops while a squad boards (APC already aboard): one soldier walks up the ramp per loop. The sim hides each walking unit when it reaches the ramp foot (enter_f).",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 13500416,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
+    },
+    "g7_a_vtol_dropship_xl_squadunload": {
+      "anim_strip": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 2489092,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "file": {
+        "enter_f_m": -10.4,
+        "leave_f_m": -2.6,
+        "per_loop_m": 1.2,
+        "spacing_m": 1.2
+      },
+      "key_frames": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "line": "human_a",
+      "load_sheet_of": "g7_a_vtol_dropship_xl",
+      "loop": true,
+      "mirror": -1,
+      "note": "squad_unload_0..3 loops while a squad leaves: one soldier walks down the ramp per loop and is handed to the sim at the ramp foot (leave at enter_f).",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 13500416,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
     },
     "g7_cn_decon": {
       "anim_strip": [
@@ -1277,11 +1472,13 @@
         "u0": 1.15,
         "u1": -1.5
       },
+      "bay_open": "rev4: APC parked in the lit bay seen through the open rear door (no cutaway)",
       "budget": 7340032,
-      "bytes": 6299420,
+      "bytes": 5996680,
       "cargo": "1 strike APC (g7_cn_strike_apc, 8.0 x 2.9 m = 2.0 x 0.73 tiles) + 10 seated soldiers",
       "class": "air_large",
       "deck_px": 12.74,
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
       "detail_level": "DL7-3",
       "fan_tilt_rad": {
         "flight": 1.5707963267949,
@@ -1309,6 +1506,11 @@
         "drones"
       ],
       "line": "strike_team",
+      "load_sheets": {
+        "apc": "g7_cn_stealth_dropship_apcload",
+        "squad": "g7_cn_stealth_dropship_squadload",
+        "squad_out": "g7_cn_stealth_dropship_squadunload"
+      },
       "mirror": -1,
       "ramp": {
         "foot": -2.45,
@@ -1327,6 +1529,164 @@
         6.4
       ]
     },
+    "g7_cn_stealth_dropship_apcload": {
+      "anim_strip": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "apc_front_axle_f_m": [
+        -9.8,
+        -8.0,
+        -6.0,
+        -3.6,
+        -1.2,
+        0.95
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 3668152,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "apc_unload_0": "apc_load_5",
+        "apc_unload_1": "apc_load_4",
+        "apc_unload_2": "apc_load_3",
+        "apc_unload_3": "apc_load_2",
+        "apc_unload_4": "apc_load_1",
+        "apc_unload_5": "apc_load_0"
+      },
+      "key_frames": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "line": "strike_team",
+      "load_sheet_of": "g7_cn_stealth_dropship",
+      "loop": false,
+      "mirror": -1,
+      "note": "apc_load_0: APC on the ground lined up behind the craft, front wheels at the ramp foot; _5: parked in the bay (= bay_open). Unload: apc_unload_i = apc_load_(5-i) (reverses down the ramp)",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 20250624,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
+    },
+    "g7_cn_stealth_dropship_squadload": {
+      "anim_strip": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 2237272,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "file": {
+        "enter_f_m": -10.4,
+        "leave_f_m": -2.6,
+        "per_loop_m": 1.2,
+        "spacing_m": 1.2
+      },
+      "key_frames": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "line": "strike_team",
+      "load_sheet_of": "g7_cn_stealth_dropship",
+      "loop": true,
+      "mirror": -1,
+      "note": "squad_load_0..3 loops while a squad boards (APC already aboard): one soldier walks up the ramp per loop. The sim hides each walking unit when it reaches the ramp foot (enter_f).",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 13500416,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
+    },
+    "g7_cn_stealth_dropship_squadunload": {
+      "anim_strip": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "bay": {
+        "deck_m": 1.3,
+        "height_m": 3.4,
+        "hw": 0.475,
+        "u0": 1.15,
+        "u1": -1.5
+      },
+      "budget": 7340032,
+      "bytes": 2240744,
+      "class": "air_large",
+      "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+      "detail_level": "DL7-3",
+      "file": {
+        "enter_f_m": -10.4,
+        "leave_f_m": -2.6,
+        "per_loop_m": 1.2,
+        "spacing_m": 1.2
+      },
+      "key_frames": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "line": "strike_team",
+      "load_sheet_of": "g7_cn_stealth_dropship",
+      "loop": true,
+      "mirror": -1,
+      "note": "squad_unload_0..3 loops while a squad leaves: one soldier walks down the ramp per loop and is handed to the sim at the ramp foot (leave at enter_f).",
+      "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+      "ramp": {
+        "foot": -2.45,
+        "hinge": -1.5,
+        "hw": 0.45,
+        "len_m": 4.0
+      },
+      "raw_bytes": 13500416,
+      "sample": "air",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles"
+    },
     "g7_cn_strike_apc": {
       "anim_strip": [
         "idle",
@@ -1341,7 +1701,7 @@
         "doors_open"
       ],
       "budget": 2097152,
-      "bytes": 1369032,
+      "bytes": 1368536,
       "capacity": "10 + packages (PROVISIONAL)",
       "class": "vehicle",
       "detail_level": "DL7-3",
@@ -1370,6 +1730,106 @@
         2.9,
         2.3
       ]
+    },
+    "g7_cn_strike_apc_gun": {
+      "anim_strip": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "fire_r_0",
+        "fire_r_1",
+        "fire_r_2",
+        "fire_r_3",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "reload_r_0",
+        "reload_r_1",
+        "reload_r_2"
+      ],
+      "budget": 2097152,
+      "bytes": 1460296,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "key_frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "fire_r_0",
+        "fire_r_1",
+        "fire_r_2",
+        "fire_r_3",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "reload_r_0",
+        "reload_r_1",
+        "reload_r_2"
+      ],
+      "line": "strike_team",
+      "loops": {
+        "fire": "fire_0..3 (burst loop, 12 fps)",
+        "fire_r": "fire_r_0..3",
+        "reload": "reload_0..2 then idle (box change)",
+        "reload_r": "reload_r_0..2"
+      },
+      "mirror": -1,
+      "pivot_note": "same cell and pivot as the main sheet",
+      "raw_bytes": 6422528,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "weapon_sheet_of": "g7_cn_strike_apc"
+    },
+    "g7_cn_strike_apc_rkt": {
+      "anim_strip": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "budget": 2097152,
+      "bytes": 1249060,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "rk_aim": "rk_raise_1",
+        "rk_stow_0": "rk_raise_1",
+        "rk_stow_1": "rk_raise_0"
+      },
+      "key_frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "line": "strike_team",
+      "mirror": -1,
+      "pivot_note": "same cell and pivot as the main sheet",
+      "raw_bytes": 5505024,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle",
+      "weapon_sheet_of": "g7_cn_strike_apc"
     },
     "g7_cn_team_leader": {
       "act": "signal (arm raised)",
@@ -1641,7 +2101,7 @@
         "doors_open"
       ],
       "budget": 2097152,
-      "bytes": 959040,
+      "bytes": 951464,
       "capacity": 8,
       "class": "vehicle",
       "detail_level": "DL7-3",
@@ -1668,12 +2128,99 @@
         2.7,
         2.05
       ]
+    },
+    "g7_op_tactical_apc_gun": {
+      "anim_strip": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "reload_0",
+        "reload_1",
+        "reload_2"
+      ],
+      "budget": 2097152,
+      "bytes": 589404,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "key_frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "reload_0",
+        "reload_1",
+        "reload_2"
+      ],
+      "line": "operators",
+      "loops": {
+        "fire": "fire_0..3 (barrels alternate)",
+        "reload": "reload_0..2 then idle (crewman swaps a bin from the hatch)"
+      },
+      "mirror": -1,
+      "pivot_note": "same cell and pivot as the main sheet",
+      "raw_bytes": 2795520,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "weapon_sheet_of": "g7_op_tactical_apc"
+    },
+    "g7_op_tactical_apc_rkt": {
+      "anim_strip": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "budget": 2097152,
+      "bytes": 1007256,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "frame_alias": {
+        "rk_aim": "rk_raise_1",
+        "rk_stow_0": "rk_raise_1",
+        "rk_stow_1": "rk_raise_0"
+      },
+      "key_frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "line": "operators",
+      "mirror": -1,
+      "pivot_note": "same cell and pivot as the main sheet",
+      "raw_bytes": 4792320,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle",
+      "weapon_sheet_of": "g7_op_tactical_apc"
     }
   },
   "group": "g7_cn",
   "icons": {
     "cn_stealth_dropship": "icons/g7_cn_stealth_dropship.png",
     "g7_a_vtol_dropship_xl": "icons/g7_a_vtol_dropship_xl.png",
+    "g7_a_vtol_dropship_xl_apcload": "icons/g7_a_vtol_dropship_xl_apcload.png",
+    "g7_a_vtol_dropship_xl_squadload": "icons/g7_a_vtol_dropship_xl_squadload.png",
+    "g7_a_vtol_dropship_xl_squadunload": "icons/g7_a_vtol_dropship_xl_squadunload.png",
     "g7_b_cn_deploy": "icons/g7_cn_deploy.png",
     "g7_b_cn_ew": "icons/g7_cn_ew.png",
     "g7_b_cn_gunner": "icons/g7_cn_gunner.png",
@@ -1681,6 +2228,8 @@
     "g7_b_cn_radio": "icons/g7_cn_radio.png",
     "g7_b_cn_scanner": "icons/g7_cn_scanner.png",
     "g7_b_cn_strike_apc": "icons/g7_cn_strike_apc.png",
+    "g7_b_cn_strike_apc_gun": "icons/g7_cn_strike_apc_gun.png",
+    "g7_b_cn_strike_apc_rkt": "icons/g7_cn_strike_apc_rkt.png",
     "g7_b_cn_team_leader": "icons/g7_cn_team_leader.png",
     "g7_b_op_antidrone": "icons/g7_op_antidrone.png",
     "g7_b_op_emp": "icons/g7_op_emp.png",
@@ -1690,6 +2239,8 @@
     "g7_b_op_medic": "icons/g7_op_medic.png",
     "g7_b_op_purge": "icons/g7_op_purge.png",
     "g7_b_op_tactical_apc": "icons/g7_op_tactical_apc.png",
+    "g7_b_op_tactical_apc_gun": "icons/g7_op_tactical_apc_gun.png",
+    "g7_b_op_tactical_apc_rkt": "icons/g7_op_tactical_apc_rkt.png",
     "g7_cn_deploy": "icons/g7_cn_deploy.png",
     "g7_cn_ew": "icons/g7_cn_ew.png",
     "g7_cn_gunner": "icons/g7_cn_gunner.png",
@@ -1697,7 +2248,12 @@
     "g7_cn_radio": "icons/g7_cn_radio.png",
     "g7_cn_scanner": "icons/g7_cn_scanner.png",
     "g7_cn_stealth_dropship": "icons/g7_cn_stealth_dropship.png",
+    "g7_cn_stealth_dropship_apcload": "icons/g7_cn_stealth_dropship_apcload.png",
+    "g7_cn_stealth_dropship_squadload": "icons/g7_cn_stealth_dropship_squadload.png",
+    "g7_cn_stealth_dropship_squadunload": "icons/g7_cn_stealth_dropship_squadunload.png",
     "g7_cn_strike_apc": "icons/g7_cn_strike_apc.png",
+    "g7_cn_strike_apc_gun": "icons/g7_cn_strike_apc_gun.png",
+    "g7_cn_strike_apc_rkt": "icons/g7_cn_strike_apc_rkt.png",
     "g7_cn_team_leader": "icons/g7_cn_team_leader.png",
     "g7_op_antidrone": "icons/g7_op_antidrone.png",
     "g7_op_emp": "icons/g7_op_emp.png",
@@ -1706,7 +2262,9 @@
     "g7_op_marksman": "icons/g7_op_marksman.png",
     "g7_op_medic": "icons/g7_op_medic.png",
     "g7_op_purge": "icons/g7_op_purge.png",
-    "g7_op_tactical_apc": "icons/g7_op_tactical_apc.png"
+    "g7_op_tactical_apc": "icons/g7_op_tactical_apc.png",
+    "g7_op_tactical_apc_gun": "icons/g7_op_tactical_apc_gun.png",
+    "g7_op_tactical_apc_rkt": "icons/g7_op_tactical_apc_rkt.png"
   },
   "infantry": {
     "g7_b_cn_deploy": {
@@ -3382,11 +3940,13 @@
           "u0": 1.15,
           "u1": -1.5
         },
+        "bay_open": "rev4: APC parked in the lit bay seen through the open rear door (no cutaway)",
         "budget": 7340032,
-        "bytes": 6915184,
+        "bytes": 6631692,
         "cargo": "1 strike APC (g7_cn_strike_apc, 8.0 x 2.9 m = 2.0 x 0.73 tiles) + 10 seated soldiers",
         "class": "air_large",
         "deck_px": 12.74,
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
         "detail_level": "DL7-3",
         "fan_tilt_rad": {
           "flight": 1.5707963267949,
@@ -3414,6 +3974,11 @@
           "drones"
         ],
         "line": "human_a",
+        "load_sheets": {
+          "apc": "g7_a_vtol_dropship_xl_apcload",
+          "squad": "g7_a_vtol_dropship_xl_squadload",
+          "squad_out": "g7_a_vtol_dropship_xl_squadunload"
+        },
         "mirror": -1,
         "ramp": {
           "foot": -2.45,
@@ -3436,6 +4001,214 @@
       "pivot": [
         142,
         166
+      ]
+    },
+    "g7_a_vtol_dropship_xl_apcload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_a_vtol_dropship_xl_apcload.png",
+      "frames": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "apc_load_0",
+          "apc_load_1",
+          "apc_load_2",
+          "apc_load_3",
+          "apc_load_4",
+          "apc_load_5"
+        ],
+        "apc_front_axle_f_m": [
+          -9.8,
+          -8.0,
+          -6.0,
+          -3.6,
+          -1.2,
+          0.95
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 4043024,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "apc_unload_0": "apc_load_5",
+          "apc_unload_1": "apc_load_4",
+          "apc_unload_2": "apc_load_3",
+          "apc_unload_3": "apc_load_2",
+          "apc_unload_4": "apc_load_1",
+          "apc_unload_5": "apc_load_0"
+        },
+        "key_frames": [
+          "apc_load_0",
+          "apc_load_1",
+          "apc_load_2",
+          "apc_load_3",
+          "apc_load_4",
+          "apc_load_5"
+        ],
+        "line": "human_a",
+        "load_sheet_of": "g7_a_vtol_dropship_xl",
+        "loop": false,
+        "mirror": -1,
+        "note": "apc_load_0: APC on the ground lined up behind the craft, front wheels at the ramp foot; _5: parked in the bay (= bay_open). Unload: apc_unload_i = apc_load_(5-i) (reverses down the ramp)",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 20250624,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_a_vtol_dropship_xl_apcload_mask.png",
+      "pivot": [
+        206,
+        144
+      ]
+    },
+    "g7_a_vtol_dropship_xl_squadload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_a_vtol_dropship_xl_squadload.png",
+      "frames": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "squad_load_0",
+          "squad_load_1",
+          "squad_load_2",
+          "squad_load_3"
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 2484604,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "file": {
+          "enter_f_m": -10.4,
+          "leave_f_m": -2.6,
+          "per_loop_m": 1.2,
+          "spacing_m": 1.2
+        },
+        "key_frames": [
+          "squad_load_0",
+          "squad_load_1",
+          "squad_load_2",
+          "squad_load_3"
+        ],
+        "line": "human_a",
+        "load_sheet_of": "g7_a_vtol_dropship_xl",
+        "loop": true,
+        "mirror": -1,
+        "note": "squad_load_0..3 loops while a squad boards (APC already aboard): one soldier walks up the ramp per loop. The sim hides each walking unit when it reaches the ramp foot (enter_f).",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 13500416,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_a_vtol_dropship_xl_squadload_mask.png",
+      "pivot": [
+        206,
+        144
+      ]
+    },
+    "g7_a_vtol_dropship_xl_squadunload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_a_vtol_dropship_xl_squadunload.png",
+      "frames": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "squad_unload_0",
+          "squad_unload_1",
+          "squad_unload_2",
+          "squad_unload_3"
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 2489092,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "file": {
+          "enter_f_m": -10.4,
+          "leave_f_m": -2.6,
+          "per_loop_m": 1.2,
+          "spacing_m": 1.2
+        },
+        "key_frames": [
+          "squad_unload_0",
+          "squad_unload_1",
+          "squad_unload_2",
+          "squad_unload_3"
+        ],
+        "line": "human_a",
+        "load_sheet_of": "g7_a_vtol_dropship_xl",
+        "loop": true,
+        "mirror": -1,
+        "note": "squad_unload_0..3 loops while a squad leaves: one soldier walks down the ramp per loop and is handed to the sim at the ramp foot (leave at enter_f).",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 13500416,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_a_vtol_dropship_xl_squadunload_mask.png",
+      "pivot": [
+        206,
+        144
       ]
     },
     "g7_b_cn_strike_apc": {
@@ -3464,6 +4237,60 @@
         80
       ]
     },
+    "g7_b_cn_strike_apc_gun": {
+      "alias_of": "g7_cn_strike_apc_gun",
+      "facings": 8,
+      "fh": 112,
+      "file": "units/g7_cn_strike_apc_gun.png",
+      "frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "fire_r_0",
+        "fire_r_1",
+        "fire_r_2",
+        "fire_r_3",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "reload_r_0",
+        "reload_r_1",
+        "reload_r_2"
+      ],
+      "fw": 128,
+      "mask": "units/g7_cn_strike_apc_gun_mask.png",
+      "pivot": [
+        64,
+        80
+      ]
+    },
+    "g7_b_cn_strike_apc_rkt": {
+      "alias_of": "g7_cn_strike_apc_rkt",
+      "facings": 8,
+      "fh": 112,
+      "file": "units/g7_cn_strike_apc_rkt.png",
+      "frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "fw": 128,
+      "mask": "units/g7_cn_strike_apc_rkt_mask.png",
+      "pivot": [
+        64,
+        80
+      ]
+    },
     "g7_b_op_tactical_apc": {
       "alias_of": "g7_op_tactical_apc",
       "facings": 8,
@@ -3483,6 +4310,53 @@
       ],
       "fw": 120,
       "mask": "units/g7_op_tactical_apc_mask.png",
+      "pivot": [
+        60,
+        74
+      ]
+    },
+    "g7_b_op_tactical_apc_gun": {
+      "alias_of": "g7_op_tactical_apc_gun",
+      "facings": 8,
+      "fh": 104,
+      "file": "units/g7_op_tactical_apc_gun.png",
+      "frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "reload_0",
+        "reload_1",
+        "reload_2"
+      ],
+      "fw": 120,
+      "mask": "units/g7_op_tactical_apc_gun_mask.png",
+      "pivot": [
+        60,
+        74
+      ]
+    },
+    "g7_b_op_tactical_apc_rkt": {
+      "alias_of": "g7_op_tactical_apc_rkt",
+      "facings": 8,
+      "fh": 104,
+      "file": "units/g7_op_tactical_apc_rkt.png",
+      "frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "fw": 120,
+      "mask": "units/g7_op_tactical_apc_rkt_mask.png",
       "pivot": [
         60,
         74
@@ -3536,11 +4410,13 @@
           "u0": 1.15,
           "u1": -1.5
         },
+        "bay_open": "rev4: APC parked in the lit bay seen through the open rear door (no cutaway)",
         "budget": 7340032,
-        "bytes": 6299420,
+        "bytes": 5996680,
         "cargo": "1 strike APC (g7_cn_strike_apc, 8.0 x 2.9 m = 2.0 x 0.73 tiles) + 10 seated soldiers",
         "class": "air_large",
         "deck_px": 12.74,
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
         "detail_level": "DL7-3",
         "fan_tilt_rad": {
           "flight": 1.5707963267949,
@@ -3568,6 +4444,11 @@
           "drones"
         ],
         "line": "strike_team",
+        "load_sheets": {
+          "apc": "g7_cn_stealth_dropship_apcload",
+          "squad": "g7_cn_stealth_dropship_squadload",
+          "squad_out": "g7_cn_stealth_dropship_squadunload"
+        },
         "mirror": -1,
         "ramp": {
           "foot": -2.45,
@@ -3589,6 +4470,214 @@
       "pivot": [
         142,
         166
+      ]
+    },
+    "g7_cn_stealth_dropship_apcload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_cn_stealth_dropship_apcload.png",
+      "frames": [
+        "apc_load_0",
+        "apc_load_1",
+        "apc_load_2",
+        "apc_load_3",
+        "apc_load_4",
+        "apc_load_5"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "apc_load_0",
+          "apc_load_1",
+          "apc_load_2",
+          "apc_load_3",
+          "apc_load_4",
+          "apc_load_5"
+        ],
+        "apc_front_axle_f_m": [
+          -9.8,
+          -8.0,
+          -6.0,
+          -3.6,
+          -1.2,
+          0.95
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 3668152,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "apc_unload_0": "apc_load_5",
+          "apc_unload_1": "apc_load_4",
+          "apc_unload_2": "apc_load_3",
+          "apc_unload_3": "apc_load_2",
+          "apc_unload_4": "apc_load_1",
+          "apc_unload_5": "apc_load_0"
+        },
+        "key_frames": [
+          "apc_load_0",
+          "apc_load_1",
+          "apc_load_2",
+          "apc_load_3",
+          "apc_load_4",
+          "apc_load_5"
+        ],
+        "line": "strike_team",
+        "load_sheet_of": "g7_cn_stealth_dropship",
+        "loop": false,
+        "mirror": -1,
+        "note": "apc_load_0: APC on the ground lined up behind the craft, front wheels at the ramp foot; _5: parked in the bay (= bay_open). Unload: apc_unload_i = apc_load_(5-i) (reverses down the ramp)",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 20250624,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_cn_stealth_dropship_apcload_mask.png",
+      "pivot": [
+        206,
+        144
+      ]
+    },
+    "g7_cn_stealth_dropship_squadload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_cn_stealth_dropship_squadload.png",
+      "frames": [
+        "squad_load_0",
+        "squad_load_1",
+        "squad_load_2",
+        "squad_load_3"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "squad_load_0",
+          "squad_load_1",
+          "squad_load_2",
+          "squad_load_3"
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 2237272,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "file": {
+          "enter_f_m": -10.4,
+          "leave_f_m": -2.6,
+          "per_loop_m": 1.2,
+          "spacing_m": 1.2
+        },
+        "key_frames": [
+          "squad_load_0",
+          "squad_load_1",
+          "squad_load_2",
+          "squad_load_3"
+        ],
+        "line": "strike_team",
+        "load_sheet_of": "g7_cn_stealth_dropship",
+        "loop": true,
+        "mirror": -1,
+        "note": "squad_load_0..3 loops while a squad boards (APC already aboard): one soldier walks up the ramp per loop. The sim hides each walking unit when it reaches the ramp foot (enter_f).",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 13500416,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_cn_stealth_dropship_squadload_mask.png",
+      "pivot": [
+        206,
+        144
+      ]
+    },
+    "g7_cn_stealth_dropship_squadunload": {
+      "facings": 8,
+      "fh": 256,
+      "file": "units/g7_cn_stealth_dropship_squadunload.png",
+      "frames": [
+        "squad_unload_0",
+        "squad_unload_1",
+        "squad_unload_2",
+        "squad_unload_3"
+      ],
+      "fw": 412,
+      "g7": {
+        "anim_strip": [
+          "squad_unload_0",
+          "squad_unload_1",
+          "squad_unload_2",
+          "squad_unload_3"
+        ],
+        "bay": {
+          "deck_m": 1.3,
+          "height_m": 3.4,
+          "hw": 0.475,
+          "u0": 1.15,
+          "u1": -1.5
+        },
+        "budget": 7340032,
+        "bytes": 2240744,
+        "class": "air_large",
+        "depth": "per-pixel z-buffer (M.render_z): cargo / soldiers hidden wherever the hull is in front",
+        "detail_level": "DL7-3",
+        "file": {
+          "enter_f_m": -10.4,
+          "leave_f_m": -2.6,
+          "per_loop_m": 1.2,
+          "spacing_m": 1.2
+        },
+        "key_frames": [
+          "squad_unload_0",
+          "squad_unload_1",
+          "squad_unload_2",
+          "squad_unload_3"
+        ],
+        "line": "strike_team",
+        "load_sheet_of": "g7_cn_stealth_dropship",
+        "loop": true,
+        "mirror": -1,
+        "note": "squad_unload_0..3 loops while a squad leaves: one soldier walks down the ramp per loop and is handed to the sim at the ramp foot (leave at enter_f).",
+        "pivot_note": "same world point as the main sheet pivot (craft origin); wider cell for the APC behind the ramp",
+        "ramp": {
+          "foot": -2.45,
+          "hinge": -1.5,
+          "hw": 0.45,
+          "len_m": 4.0
+        },
+        "raw_bytes": 13500416,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "mask": "units/g7_cn_stealth_dropship_squadunload_mask.png",
+      "pivot": [
+        206,
+        144
       ]
     },
     "g7_cn_strike_apc": {
@@ -3624,7 +4713,7 @@
           "doors_open"
         ],
         "budget": 2097152,
-        "bytes": 1369032,
+        "bytes": 1368536,
         "capacity": "10 + packages (PROVISIONAL)",
         "class": "vehicle",
         "detail_level": "DL7-3",
@@ -3654,6 +4743,156 @@
         ]
       },
       "mask": "units/g7_cn_strike_apc_mask.png",
+      "pivot": [
+        64,
+        80
+      ]
+    },
+    "g7_cn_strike_apc_gun": {
+      "facings": 8,
+      "fh": 112,
+      "file": "units/g7_cn_strike_apc_gun.png",
+      "frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "fire_r_0",
+        "fire_r_1",
+        "fire_r_2",
+        "fire_r_3",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "reload_r_0",
+        "reload_r_1",
+        "reload_r_2"
+      ],
+      "fw": 128,
+      "g7": {
+        "anim_strip": [
+          "fire_0",
+          "fire_1",
+          "fire_2",
+          "fire_3",
+          "fire_r_0",
+          "fire_r_1",
+          "fire_r_2",
+          "fire_r_3",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "reload_r_0",
+          "reload_r_1",
+          "reload_r_2"
+        ],
+        "budget": 2097152,
+        "bytes": 1460296,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "key_frames": [
+          "fire_0",
+          "fire_1",
+          "fire_2",
+          "fire_3",
+          "fire_r_0",
+          "fire_r_1",
+          "fire_r_2",
+          "fire_r_3",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "reload_r_0",
+          "reload_r_1",
+          "reload_r_2"
+        ],
+        "line": "strike_team",
+        "loops": {
+          "fire": "fire_0..3 (burst loop, 12 fps)",
+          "fire_r": "fire_r_0..3",
+          "reload": "reload_0..2 then idle (box change)",
+          "reload_r": "reload_r_0..2"
+        },
+        "mirror": -1,
+        "pivot_note": "same cell and pivot as the main sheet",
+        "raw_bytes": 6422528,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "weapon_sheet_of": "g7_cn_strike_apc"
+      },
+      "mask": "units/g7_cn_strike_apc_gun_mask.png",
+      "pivot": [
+        64,
+        80
+      ]
+    },
+    "g7_cn_strike_apc_rkt": {
+      "facings": 8,
+      "fh": 112,
+      "file": "units/g7_cn_strike_apc_rkt.png",
+      "frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "fw": 128,
+      "g7": {
+        "anim_strip": [
+          "rk_raise_0",
+          "rk_raise_1",
+          "rk_fire_0",
+          "rk_fire_1",
+          "rk_fire_2",
+          "rk_fire_3",
+          "rk_fire_4",
+          "rk_fire_5",
+          "rk_reload_0",
+          "rk_reload_1",
+          "rk_reload_2",
+          "rk_reload_3"
+        ],
+        "budget": 2097152,
+        "bytes": 1249060,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "rk_aim": "rk_raise_1",
+          "rk_stow_0": "rk_raise_1",
+          "rk_stow_1": "rk_raise_0"
+        },
+        "key_frames": [
+          "rk_raise_0",
+          "rk_raise_1",
+          "rk_fire_0",
+          "rk_fire_1",
+          "rk_fire_2",
+          "rk_fire_3",
+          "rk_fire_4",
+          "rk_fire_5",
+          "rk_reload_0",
+          "rk_reload_1",
+          "rk_reload_2",
+          "rk_reload_3"
+        ],
+        "line": "strike_team",
+        "mirror": -1,
+        "pivot_note": "same cell and pivot as the main sheet",
+        "raw_bytes": 5505024,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle",
+        "weapon_sheet_of": "g7_cn_strike_apc"
+      },
+      "mask": "units/g7_cn_strike_apc_rkt_mask.png",
       "pivot": [
         64,
         80
@@ -3690,7 +4929,7 @@
           "doors_open"
         ],
         "budget": 2097152,
-        "bytes": 959040,
+        "bytes": 951464,
         "capacity": 8,
         "class": "vehicle",
         "detail_level": "DL7-3",
@@ -3718,6 +4957,133 @@
         ]
       },
       "mask": "units/g7_op_tactical_apc_mask.png",
+      "pivot": [
+        60,
+        74
+      ]
+    },
+    "g7_op_tactical_apc_gun": {
+      "facings": 8,
+      "fh": 104,
+      "file": "units/g7_op_tactical_apc_gun.png",
+      "frames": [
+        "fire_0",
+        "fire_1",
+        "fire_2",
+        "fire_3",
+        "reload_0",
+        "reload_1",
+        "reload_2"
+      ],
+      "fw": 120,
+      "g7": {
+        "anim_strip": [
+          "fire_0",
+          "fire_1",
+          "fire_2",
+          "fire_3",
+          "reload_0",
+          "reload_1",
+          "reload_2"
+        ],
+        "budget": 2097152,
+        "bytes": 589404,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "key_frames": [
+          "fire_0",
+          "fire_1",
+          "fire_2",
+          "fire_3",
+          "reload_0",
+          "reload_1",
+          "reload_2"
+        ],
+        "line": "operators",
+        "loops": {
+          "fire": "fire_0..3 (barrels alternate)",
+          "reload": "reload_0..2 then idle (crewman swaps a bin from the hatch)"
+        },
+        "mirror": -1,
+        "pivot_note": "same cell and pivot as the main sheet",
+        "raw_bytes": 2795520,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "weapon_sheet_of": "g7_op_tactical_apc"
+      },
+      "mask": "units/g7_op_tactical_apc_gun_mask.png",
+      "pivot": [
+        60,
+        74
+      ]
+    },
+    "g7_op_tactical_apc_rkt": {
+      "facings": 8,
+      "fh": 104,
+      "file": "units/g7_op_tactical_apc_rkt.png",
+      "frames": [
+        "rk_raise_0",
+        "rk_raise_1",
+        "rk_fire_0",
+        "rk_fire_1",
+        "rk_fire_2",
+        "rk_fire_3",
+        "rk_fire_4",
+        "rk_fire_5",
+        "rk_reload_0",
+        "rk_reload_1",
+        "rk_reload_2",
+        "rk_reload_3"
+      ],
+      "fw": 120,
+      "g7": {
+        "anim_strip": [
+          "rk_raise_0",
+          "rk_raise_1",
+          "rk_fire_0",
+          "rk_fire_1",
+          "rk_fire_2",
+          "rk_fire_3",
+          "rk_fire_4",
+          "rk_fire_5",
+          "rk_reload_0",
+          "rk_reload_1",
+          "rk_reload_2",
+          "rk_reload_3"
+        ],
+        "budget": 2097152,
+        "bytes": 1007256,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "rk_aim": "rk_raise_1",
+          "rk_stow_0": "rk_raise_1",
+          "rk_stow_1": "rk_raise_0"
+        },
+        "key_frames": [
+          "rk_raise_0",
+          "rk_raise_1",
+          "rk_fire_0",
+          "rk_fire_1",
+          "rk_fire_2",
+          "rk_fire_3",
+          "rk_fire_4",
+          "rk_fire_5",
+          "rk_reload_0",
+          "rk_reload_1",
+          "rk_reload_2",
+          "rk_reload_3"
+        ],
+        "line": "operators",
+        "mirror": -1,
+        "pivot_note": "same cell and pivot as the main sheet",
+        "raw_bytes": 4792320,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle",
+        "weapon_sheet_of": "g7_op_tactical_apc"
+      },
+      "mask": "units/g7_op_tactical_apc_rkt_mask.png",
       "pivot": [
         60,
         74
