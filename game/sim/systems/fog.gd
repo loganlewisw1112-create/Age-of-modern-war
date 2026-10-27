@@ -21,6 +21,7 @@ const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 ## full hook runs as before (hash-exact: the callin term is +0.0 when no aerostat exists). g6_hooks_on =
 ## false turns it off too. ORCH can then drop height from the SIGHT rule in G6Hooks.active.
 const Elevation = preload("res://sim/systems/elevation.gd")
+const Senses7 = preload("res://sim/systems/senses7.gd")   # G7 SENSE7: spot gate + hearing + per-squad knowledge
 static var sight_split := true   # tests: false = the pre-split path (bonus only with the SIGHT bit)
 ## G3b PERF4-3: with the native core live, stamping uses RtsFog.stamp/explored_out (same circle rule:
 ## r = floor(sight), dx*dx + dy*dy <= sight*sight, clipped); the Image-blit path below is the
@@ -108,6 +109,7 @@ static func tick(w: SimWorld) -> void:
 		recompute(w, 0)
 	elif ph == 3:
 		recompute(w, 1)
+	Senses7.tick(w)   # G7 SENSE7 (no-op and no state when rules g7_senses is off)
 
 
 ## G3a allied vision (agent V3): sides are grouped by team. Every member of a team gets the SAME
@@ -507,6 +509,8 @@ static func concealed(w: SimWorld, fid: int, e: Dictionary) -> bool:
 		return not (e.get("spot", []) as Array).has(int(f.get("team", fid)) if f != null else fid)
 	if w.tick - int(e.get("last_fired_tick", -9999)) < REVEAL_TICKS:
 		return false
+	if Senses7.hidden(w, fid, e):   # G7 SENSE7: on a visible cell but no soldier of the team spots him
+		return true
 	var p: Vector2 = e.pos
 	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) != FOREST_CODE:
 		return false

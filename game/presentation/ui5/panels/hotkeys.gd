@@ -125,9 +125,23 @@ const G7_ACTIONS := {
 	# Shift chord SHIFT+P (hud.gd resolves chords with event_key(); plain P still pauses).
 	"cn_pincer": ["SHIFT+P", "Anti-walker pincer", "cn7", "cn_pincer"],
 	"cn_break_contact": ["SHIFT+B", "Break contact (formed withdrawal)", "cn7", "cn_break_contact"],
+	# G7 (CNOPS7 CR seq 1206, SQUAD7-6): CNOPS7 proposed Alt+F / Alt+R / Alt+U, but hud._unhandled_input drops every
+	# key event with Alt / Ctrl / Meta held before the card lookup, so Alt chords can never fire; same letters as
+	# Shift chords instead (free in cn7: only SHIFT+P / SHIFT+B there, wound7 SHIFT+T / SHIFT+E on every card).
+	"cn_fire_support": ["SHIFT+F", "Call fire support (team leader)", "cn7", "cn_fire_support"],
+	"cn_relief": ["SHIFT+R", "Send relief convoy", "cn7", "cn_relief"],
+	"cn_specialize": ["SHIFT+U", "Specialist upgrade", "cn7", "cn_specialize"],
+	# G7 (FISSURE7 CR 710, SQUAD7-6): engineers span a fissure / canyon (click a tile). FISSURE7 proposed J, but the
+	# engineer card already holds J / U / X / Z (minefield, sweep, rail, garrison: the only letters the generated build
+	# keys never take), so it is the Shift chord SHIFT+J (same mnemonic; plain J stays the minefield).
+	"fissure_span": ["SHIFT+J", "Span fissure (engineers bridge a fissure / canyon)", "fissure7", "fissure_span"],
 }
 const PAGE_GROUPS := ["squad7"]
-const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"]]
+const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"],
+	# fissure7 (Span fissure) sits on the engineer / repair-unit card next to their G6 actions
+	["fissure7", "mines6"], ["fissure7", "rail6"], ["fissure7", "garrison6"], ["fissure7", "loadout6"],
+	["fissure7", "breach6"], ["fissure7", "tow6"], ["fissure7", "bridge6"], ["fissure7", "eng_air"],
+	["fissure7", "truck"], ["fissure7", "medic"], ["fissure7", "cn7"]]
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
 const SHARE := [["air", "naval"], ["drone", "truck"], ["drone", "medic"], ["drone", "eng_air"],
@@ -348,7 +362,8 @@ static func sheet_rows() -> Array:
 		"sub6": "submarine", "seamine6": "mine barge", "garrison_bld6": "garrisoned building selected",
 		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected",
 		"squad61": "combat units", "squad7": "formation page", "drone7": "Drone Team (flying)",
-		"wound7": "infantry / medics / carriers", "cn7": "counter-nanite strike / tactical team"}
+		"wound7": "infantry / medics / carriers", "cn7": "counter-nanite strike / tactical team",
+		"fissure7": "engineers"}
 	var out: Array = []
 	var acts: Array = ACTIONS.keys() + G7_ACTIONS.keys()
 	acts.sort_custom(func(a, b): return _order(a) < _order(b))

@@ -336,6 +336,16 @@ func run(pt) -> void:
 		ee.max_hp = 1000000.0
 		en = int(ee.id)
 		mv.center_camera_on(Vector2(core.pos))
+	# SQUAD7-6: run8 showed the motorcade piled up ~1 tile apart (the lowest-id escort, spawned at the rear, led it
+	# backwards); the convoy now drives out in its real order, so no two vehicles are closer than 2 tiles here
+	var cnn := INF
+	for i in cv.size():
+		for j in range(i + 1, cv.size()):
+			var ea = w.entities.get(int(cv[i]))
+			var eb = w.entities.get(int(cv[j]))
+			if ea != null and eb != null:
+				cnn = minf(cnn, Vector2(ea.pos).distance_to(Vector2(eb.pos)))
+	pt._log("squad7_convoy_spacing", cnn >= 2.0 and cnn < INF, "closest two convoy vehicles %.2f tiles apart on the move (>= 2)" % cnn)
 	await pt._shot("squad7_07_convoy_move")
 	var best := INF
 	var shot8 := false

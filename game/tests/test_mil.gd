@@ -239,7 +239,10 @@ func test_ai02_fog_hides_enemies_and_rejects_attack() -> void:
 	check_eq(String(w.entities[shooter].order.type), "idle", "rejected attack did not mutate the order")
 	# a scout reveals it
 	var recon := w.spawn_unit("recon", 0, Vector2(55.5, 10.5))
-	w.run_ticks(4)
+	# G7 (owner, G7_REFERENCE section 2 "Realistic senses": spotting by view cone, movement and silhouette): a team
+	# notices a newly visible soldier at its next spot pass (<= 16 ticks, a 0.8 s reaction time), not on the next
+	# fog tick. The checks below are unchanged; only the wait covers one spot pass.
+	w.run_ticks(20)
 	check(_ids_of(w.visible_enemies(0)).has(enemy), "enemy visible once scouted")
 	check(_ids_of(w.visible_enemies(0)).has(depot), "enemy building visible once scouted")
 	check(w.memory[0].has(depot), "enemy building remembered")

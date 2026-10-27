@@ -22,6 +22,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const SquadAI = preload("res://sim/systems/squad_ai.gd")
 const F7 = preload("res://sim/systems/formations7.gd")
 const Combat = preload("res://sim/systems/combat.gd")
+const CnProgress7 = preload("res://sim/systems/cn_progress7.gd")
 
 const HIT_RECENT := 60
 
@@ -123,10 +124,61 @@ static func form(w: SimWorld, fid: int, unit_ids: Array, core_ids: Array = []) -
 	return cid
 
 
+## Puts the column in its real order for a move to `target` (SQUAD7-6): the escort nearest the destination leads,
+## the core follows in the order it already stands along the road, the escort furthest back is the rear guard and
+## any other escorts ride the flanks. form() orders by unit id, so a convoy whose lowest-id escort stood at the back
+## used to send its "lead" through the whole column and every follower chased a track that ran backwards (the
+## pt7_squad7 run8 pile-up, vehicles 0.2 tiles apart). Ties break on the unit id (deterministic).
+static func _order_for(w: SimWorld, c: Dictionary, target: Vector2) -> void:
+	var col: Array = c.col
+	if col.size() + (c.flank as Array).size() < 2:
+		return
+	var cen := Vector2.ZERO
+	for id in col:
+		cen += Vector2(w.entities[int(id)].pos)
+	cen /= float(col.size())
+	if cen.distance_to(target) < 0.01:
+		return
+	var fwd := (target - cen).normalized()
+	var by_fwd := func(a, b) -> bool:
+		var pa := Vector2(w.entities[int(a)].pos).dot(fwd)
+		var pb := Vector2(w.entities[int(b)].pos).dot(fwd)
+		return pa > pb if absf(pa - pb) > 0.001 else int(a) < int(b)
+	var core := []
+	var esc := []
+	for id in col:
+		if (c.core as Array).has(id):
+			core.append(int(id))
+		else:
+			esc.append(int(id))
+	if core.is_empty():
+		col.sort_custom(by_fwd)   # an all-escort or all-foot column: simply front to back
+		return
+	var n_col_esc := esc.size()
+	esc.append_array(c.flank)
+	core.sort_custom(by_fwd)
+	esc.sort_custom(by_fwd)
+	var ncol := []
+	var nfl := []
+	if n_col_esc >= 1 and not esc.is_empty():
+		ncol.append(esc[0])
+	ncol.append_array(core)
+	var rear := -1
+	if n_col_esc >= 2 and esc.size() >= 2:
+		rear = int(esc[esc.size() - 1])
+		ncol.append(rear)
+	for k in range(1 if n_col_esc >= 1 else 0, esc.size()):
+		if int(esc[k]) != rear:
+			nfl.append(int(esc[k]))
+	c.col = ncol
+	c.flank = nfl
+
+
 static func move(w: SimWorld, cid: int, target: Vector2) -> void:
 	var c := _conv(w, cid)
 	if c.is_empty() or (c.col as Array).is_empty():
 		return
+	_order_for(w, c, target)
 	var lead: Dictionary = w.entities[int(c.col[0])]
 	c.target = target
 	c.state = "moving"
@@ -353,6 +405,16 @@ static func _think(w: SimWorld, c: Dictionary) -> void:
 			_halted(w, c, th)
 
 
+## Column-gap factor for a counter-nanite convoy (CNOPS7 CR seq 1206): CnProgress7.level_mult(w, team, "convoy") of
+## the first core vehicle with e.cn_team (1.0 for any other convoy: no lookup, no change).
+static func _level_mult(w: SimWorld, c: Dictionary) -> float:
+	for id in c.core:
+		var e = w.entities.get(int(id))
+		if e != null and int(e.get("cn_team", -1)) >= 0:
+			return CnProgress7.level_mult(w, int(e.cn_team), "convoy")
+	return 1.0
+
+
 static func _moving(w: SimWorld, c: Dictionary, lead: Dictionary, th, contact: bool) -> void:
 	var cf := F7.cfg()
 	var col: Array = c.col
@@ -375,6 +437,7 @@ static func _moving(w: SimWorld, c: Dictionary, lead: Dictionary, th, contact: b
 	var sp := float(cf.convoy_sp)
 	if F7.free_width(w, lp, side, true, pass_fn, 3.0) < 3.0:
 		sp = float(cf.convoy_choke_sp)   # tighter column at a chokepoint
+	sp *= _level_mult(w, c)   # CNOPS7 CR 1206: a seasoned counter-nanite team drives a tighter column
 	var shield := -1
 	if th != null:
 		var cp := _core_centre(w, c, lp)

@@ -100,6 +100,7 @@ static func build(w) -> void:
 	var g5_any: bool = g5.any
 	var g6: Dictionary = _g6_inputs(w)  # G6 (VIEW6): per-unit G6 side table inputs
 	var g6_any: bool = g6.any
+	var s7_on: bool = w.sys_state.has("senses7")  # G7 SENSE7 CR seq 1270: senses-hidden soldiers drawn only for teams that spot them
 	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
 	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units
 	for e: Dictionary in w.entities.values():
@@ -161,6 +162,8 @@ static func build(w) -> void:
 				fl |= _carrier_flags(e, id, int(w.tick), old, unl)
 			if dfl2 & DEF_G6 or (g6_any and (e.has("art_def") or e.has("garrisoned_in") or e.has("camo_net"))):
 				fl |= _g6_unit(w, e, id, dfl2, g6, hid_spot)
+			if s7_on and not (fl & FLAG_HID) and e.has("morale"):
+				fl |= _s7_hid(w, e, id, g6, hid_spot)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
@@ -628,11 +631,33 @@ const DEF_G6 := 1 << 24   # def table only: cloak / disguise / submersible / son
 const G6_SYS := {"airfield": "res://sim/systems/airfield.gd", "machine_g6": "res://sim/systems/machine_g6.gd",
 	"hooks": "res://sim/systems/g6_hooks.gd", "sonar": "res://sim/systems/sonar.gd",
 	"companies": "res://sim/systems/companies.gd", "garrison": "res://sim/systems/garrison.gd",
-	"ai_command": "res://sim/systems/ai_command.gd", "intel": "res://sim/systems/intel.gd"}
+	"ai_command": "res://sim/systems/ai_command.gd", "intel": "res://sim/systems/intel.gd",
+	"senses7": "res://sim/systems/senses7.gd"}  # G7 SENSE7 CR seq 1270
 static var _g6_scripts: Dictionary = {}
 
 
 ## Lazily loaded system script (no preload: world.gd preloads this file and g6_hooks must not be in a cycle).
+## G7 SENSE7 CR seq 1270: a soldier the senses hide from a team gets FLAG_HID with hid_spot[id] = the teams that see
+## him (his own team always does), the same path as G4b snipers / G6 concealment, so entity_layer draws him only for
+## teams that spotted him. Returns 0 when every team sees him.
+static func _s7_hid(w, e: Dictionary, id: int, g6: Dictionary, hid_spot: Dictionary) -> int:
+	var s7 = _sys("senses7")
+	var own_tm = g6.teams.get(int(e.get("owner", -1)), -1)
+	var spot: Array = []
+	var hidden_any := false
+	for f in g6.fids:
+		var tm: int = g6.teams[f]
+		if tm == own_tm or not s7.hidden(w, int(f), e):
+			if not spot.has(tm):
+				spot.append(tm)
+		else:
+			hidden_any = true
+	if not hidden_any:
+		return 0
+	hid_spot[id] = spot
+	return FLAG_HID
+
+
 static func _sys(k: String):
 	var s = _g6_scripts.get(k)
 	if s == null:

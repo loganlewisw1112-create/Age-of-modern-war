@@ -1,0 +1,74 @@
+{
+  "_meta": "G7 fragment (owner: SENSE7). Realistic senses + per-squad knowledge, read by sim/systems/senses7.gd (Senses7.cfg). Every number is PROVISIONAL (set by SENSE7; the plan did not settle them). Ranges are multipliers of the observer's def sight (tiles, ~7 m per tile); angles are half-angles in degrees from the head facing (e.facing). enabled=false gives the pre-G7 behaviour (no spot gate, no heard contacts, no squad snapshots). Match override: cfg.g7_senses (bool); rules.json override: rules.g7_senses.enabled.",
+  "rules": {
+    "g7_senses": {
+      "enabled": true,
+      "spot_every": 16,
+      "bucket": 8.0,
+      "max_range": 24.0,
+      "max_checks": 24,
+      "max_checks_big": 6,
+      "big_n": 1500,
+      "near": 1.5,
+      "cone_deg": 60.0,
+      "periph_deg": 100.0,
+      "periph_mult": 0.75,
+      "optics_deg": 25.0,
+      "optics_mult": 1.6,
+      "optics_defs": [
+        "a_sniper",
+        "b_marksman",
+        "g7_op_marksman",
+        "g7_b_op_marksman"
+      ],
+      "thermal_defs": [
+        "a_sniper",
+        "g7_op_marksman",
+        "g7_b_op_marksman",
+        "a_drone_recon",
+        "b_drone_recon",
+        "b_recon_plane"
+      ],
+      "air_thermal": true,
+      "vehicle_mult": 0.85,
+      "building_mult": 0.9,
+      "air_mult": 1.0,
+      "min_building_sight": 4.0,
+      "move_mult": 1.5,
+      "prone_mult": 0.45,
+      "crouch_mult": 0.7,
+      "forest_mult": 0.6,
+      "prone_keys": [
+        "pinned",
+        "wunc",
+        "prone",
+        "crawl",
+        "cower"
+      ],
+      "reveal_ticks": 60,
+      "hear_range": 36.0,
+      "hear_range_loud": 80.0,
+      "heard_err_frac": 0.2,
+      "heard_err_min": 1.5,
+      "heard_keep_s": 30.0,
+      "max_heard_per_pass": 32,
+      "heard_cluster": 6.0,
+      "noise_events": [
+        "StrikeImpact",
+        "DroneBlast",
+        "DroneImpact",
+        "ChargeDetonated"
+      ],
+      "smoke_radius": 3.0,
+      "apc_smoke_radius": 4.0,
+      "squad_check_every": 4,
+      "snap_radius": 60.0,
+      "know_radius": 60.0,
+      "fresh_s": 4.0,
+      "kn_forget_s": 120.0,
+      "kn_decay_s": 90.0,
+      "supp_max_age_s": 30.0,
+      "look_drop_s": 10.0
+    }
+  }
+}

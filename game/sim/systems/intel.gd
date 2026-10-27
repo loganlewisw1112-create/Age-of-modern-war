@@ -18,6 +18,7 @@ extends RefCounted
 const MachineG6 = preload("res://sim/systems/machine_g6.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Fog = preload("res://sim/systems/fog.gd")
+const Senses7 = preload("res://sim/systems/senses7.gd")   # G7 SENSE7
 
 const VER := 1
 const TPS := 20.0
@@ -145,13 +146,21 @@ static func refresh(w: SimWorld, fid: int) -> void:
 		seen[id] = true
 	var drop: Array = []
 	var min_conf := rf("intel_min_conf", 0.05)
+	# G7 SENSE7: with senses on, a visible cell no longer proves a unit is gone (a still, prone soldier can lie
+	# unspotted there): "look and it is not there" needs look_drop_s of age; heard contacts expire after heard_keep_s.
+	var sen := w.sys_state.has("senses7")
+	var look_t := int(Senses7.cf("look_drop_s", 10.0) * TPS) if sen else 1
+	var heard_t := int(Senses7.cf("heard_keep_s", 30.0) * TPS)
 	for id in book:
 		if seen.has(id):
 			continue
 		var c: Dictionary = book[id]
 		if _conf(w, c) < min_conf:
 			drop.append(id)
-		elif w.tick - int(c.t) > 0 and w.is_visible(fid, Vector2(c.pos)) and String(c.kind) == "unit":
+		elif String(c.src) == "heard":
+			if w.tick - int(c.t) > heard_t:
+				drop.append(id)
+		elif w.tick - int(c.t) >= look_t and w.is_visible(fid, Vector2(c.pos)) and String(c.kind) == "unit":
 			drop.append(id)  # we look at the spot and it is not there (moved or dead)
 		elif String(c.kind) == "building" and w.is_visible(fid, Vector2(c.pos)) and not w.entities.has(int(id)):
 			drop.append(id)

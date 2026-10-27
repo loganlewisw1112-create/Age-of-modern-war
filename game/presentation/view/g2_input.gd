@@ -16,6 +16,11 @@ var officer_id := -1
 var risk := "medium"
 var hint_text := ""
 var hint_until := 0
+## G7 (SQUAD7-6, FISSURE7 CR 710): generic click-a-tile mode "cell_cmd", armed by presentation/hud/g2_commands.gd
+## (Span fissure). on_cell(p: Vector2) -> bool (true = issued, the mode ends); preview(ci, mouse_world) draws.
+var on_cell: Callable = Callable()
+var cell_status := ""
+var cell_preview: Callable = Callable()
 
 
 func active() -> bool:
@@ -29,6 +34,9 @@ func arm(m: String, params: Dictionary = {}) -> void:
 	mission = String(params.get("mission", ""))
 	officer_id = int(params.get("officer_id", -1))
 	risk = String(params.get("risk", risk))
+	on_cell = params.get("on_cell", Callable())
+	cell_status = String(params.get("status", ""))
+	cell_preview = params.get("preview", Callable())
 	mv.attack_move_armed = false
 	mv.cancel_placement()
 
@@ -53,6 +61,8 @@ func status_text() -> String:
 			return "REPAIR: click a damaged vehicle/building or the ruined bridge. Esc cancels."
 		"bearer_join":
 			return "JOIN SQUAD: click a member of an own squad. Esc cancels."
+		"cell_cmd":
+			return cell_status
 		"mission":
 			if mission == "patrol_route":
 				return "%s (%s risk): Shift+click route points, Enter confirms, Esc cancels [%d]" % [G2.mission_name(mission), risk, points.size()]
@@ -97,6 +107,9 @@ func on_left(p: Vector2, shift: bool) -> bool:
 				cancel()
 			else:
 				flash("Join squad needs a member of an own squad.")
+		"cell_cmd":
+			if on_cell.is_valid() and bool(on_cell.call(p)):
+				cancel()
 	return true
 
 
@@ -248,6 +261,8 @@ func draw_preview(ci: CanvasItem) -> void:
 		ci.draw_polyline(poly, Color(col.r, col.g, col.b, 0.8), 1.5)
 		ci.draw_line(cs + Vector2(-8, 0), cs + Vector2(8, 0), col, 1.5)
 		ci.draw_line(cs + Vector2(0, -5), cs + Vector2(0, 5), col, 1.5)
+	elif mode == "cell_cmd" and cell_preview.is_valid():
+		cell_preview.call(ci, cur)
 	elif mode == "guard" or mode == "repair":
 		ci.draw_arc(cs, 9.0, 0, TAU, 20, col if mode == "guard" else Color(0.5, 1.0, 0.7), 2.0)
 	var txt := status_text() if mode != "" else _hover_hint(cur)

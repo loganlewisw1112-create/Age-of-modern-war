@@ -6,6 +6,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const SquadAI = preload("res://sim/systems/squad_ai.gd")
 const F7 = preload("res://sim/systems/formations7.gd")
 const Convoy = preload("res://sim/systems/convoy.gd")
+const CnP = preload("res://sim/systems/cn_progress7.gd")
 const C := Vector2(0.5, 0.5)
 const M := 7.0   # metres per tile
 
@@ -573,3 +574,103 @@ func test_column_on_road_keeps_step() -> void:
 			samples += 1
 	check(samples >= 8, "the column marched (%d samples)" % samples)
 	check(lo >= 0.9, "nobody closes up on the march (nearest %.2f tiles, >= 0.9 = 6 m)" % lo)
+
+
+## Convoy spacing on the move (SQUAD7-6, pt7_squad7 run8 regression): spawned like the playtest (the lowest-id
+## escort physically at the REAR of the travel direction), the motorcade still drives out in its real order at its
+## real spacing: no two vehicles closer than 2 tiles once moving, consecutive gaps 2..8 tiles, and the lead is the
+## vehicle nearest the destination. Checked both ways round (target north and target south).
+func _convoy_gaps(w: SimWorld, ids: Array) -> Array:   # [min nearest-neighbour, max consecutive gap along y]
+	var pts := []
+	for id in ids:
+		if w.entities.has(id):
+			pts.append(Vector2(w.entities[id].pos))
+	var nn: Array = _nn(pts)
+	pts.sort_custom(func(a, b): return a.y < b.y)
+	var hi := 0.0
+	for k in range(1, pts.size()):
+		hi = maxf(hi, (pts[k] as Vector2).distance_to(pts[k - 1]))
+	return [float(nn[0]), hi]
+
+
+func test_convoy_keeps_real_spacing_either_way_round() -> void:
+	for dir in [-1, 1]:
+		var w := _world()
+		var ids := []
+		var defs := ["ifv", "logistics_truck", "logistics_truck", "logistics_truck", "ifv"]
+		for k in defs.size():
+			# k = 0 (lowest id, picked as the lead escort) sits at the end AWAY from the target, as in the playtest
+			ids.append(_spawn(w, defs[k], 0, Vector2i(50, 60 - dir * (8 - k * 4))))
+		var cid := Convoy.form(w, 0, ids)
+		Convoy.move(w, cid, Vector2(50.5, 60.5 + float(dir) * 40.0))
+		var c := Convoy._conv(w, cid)
+		var lead := Vector2(w.entities[int(c.col[0])].pos)
+		var far := INF
+		for id in ids:
+			far = minf(far, Vector2(w.entities[id].pos).distance_to(Vector2(50.5, 60.5 + float(dir) * 40.0)))
+		check(absf(lead.distance_to(Vector2(50.5, 60.5 + float(dir) * 40.0)) - far) < 0.01, "dir %d: the lead is the vehicle nearest the destination" % dir)
+		var lo := INF
+		var hi := 0.0
+		var samples := 0
+		for s in 20:
+			w.run_ticks(10)
+			if s < 3:
+				continue
+			var g := _convoy_gaps(w, ids)
+			lo = minf(lo, float(g[0]))
+			hi = maxf(hi, float(g[1]))
+			samples += 1
+		check(lo >= 2.0, "dir %d: no two convoy vehicles close up on the move (nearest %.2f tiles, >= 2)" % [dir, lo])
+		check(hi <= 8.0, "dir %d: no gap opens past 8 tiles (widest %.2f)" % [dir, hi])
+		var moved := absf(Vector2(w.entities[int(c.col[0])].pos).y - lead.y)
+		check(moved >= 10.0, "dir %d: the convoy actually drove (%.1f tiles)" % [dir, moved])
+
+
+## FISSURE7 CR 710 (SQUAD7-6): Span fissure is a rebindable G7 action on the engineer card. J / U / X / Z (the only
+## letters the generated build keys never take) are minefield / sweep / rail / garrison there, so its default is the
+## Shift chord SHIFT+J; plain J is refused as a rebind (minefield). The card module loads and its click mode maps a
+## world point to its tile; the sim refuses a span where the map has no fissures.
+func test_fissure_span_hotkey_and_card() -> void:
+	var HK = load("res://presentation/ui5/panels/hotkeys.gd")
+	check(HK.G7_ACTIONS.has("fissure_span"), "fissure_span is a G7 (rebindable) action")
+	check_eq(HK.key("fissure_span"), "SHIFT+J", "fissure_span default Shift+J")
+	check(not HK.GLOBAL.has(HK.key("fissure_span")), "not a global key")
+	check(HK.shares("fissure7", "mines6") and HK.shares("fissure7", "rail6"), "the span action shares the engineer card")
+	check_eq(HK.collisions(), [], "the whole hotkey map stays collision-free")
+	check(HK.rebind_error("fissure_span", "J").contains("already used"), "plain J would clash on the engineer card (%s)" % HK.rebind_error("fissure_span", "J"))
+	check_eq(HK.badge("SHIFT+J"), "Sh+J", "badge Sh+J")
+	var G2C = load("res://presentation/hud/g2_commands.gd")
+	check(G2C != null and G2C.can_instantiate(), "g2_commands.gd compiles")
+	check_eq(G2C.span_cell(Vector2(3.7, 4.2)), Vector2i(3, 4), "a click maps to its tile")
+	var w := _world()
+	var eng := _spawn(w, "engineer", 0, Vector2i(40, 40))
+	var r := w.preview_command({"type": "fissure_span", "issuer": 0, "unit_ids": [eng], "cell": [41, 40]})
+	check(r != "", "no span without fissures (%s)" % r)
+
+
+## CNOPS7 CR seq 1206 (SQUAD7-6): the CN ops orders are Shift chords in cn7 (hud.gd drops Alt / Ctrl key events before
+## the card lookup, so the proposed Alt chords could never fire); a seasoned counter-nanite team drives a tighter
+## convoy (column gap x CnProgress7.level_mult(team, "convoy")), any other convoy keeps its gap (factor exactly 1).
+func test_cnops_hotkeys_and_cn_convoy_gap() -> void:
+	var HK = load("res://presentation/ui5/panels/hotkeys.gd")
+	for a in [["cn_fire_support", "SHIFT+F"], ["cn_relief", "SHIFT+R"], ["cn_specialize", "SHIFT+U"]]:
+		check(HK.G7_ACTIONS.has(a[0]), "%s is a G7 (rebindable) action" % a[0])
+		check_eq(HK.key(a[0]), a[1], "%s default %s" % a)
+		check_eq(HK.rebind_error(a[0], "SHIFT+Y"), "", "%s can be rebound to another Shift chord" % a[0])
+	check_eq(HK.collisions(), [], "the whole hotkey map stays collision-free")
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_F
+	ev.shift_pressed = true
+	check_eq(HK.event_key(ev, {"SHIFT+F": 1, "F": 1}), "SHIFT+F", "Shift+F reaches fire support, plain F stays Formation")
+	var w := _world()
+	var ids := []
+	for k in 3:
+		ids.append(_spawn(w, "logistics_truck" if k == 1 else "ifv", 0, Vector2i(50, 60 + k * 4)))
+	var cid := Convoy.form(w, 0, ids)
+	var c := Convoy._conv(w, cid)
+	check_eq(Convoy._level_mult(w, c), 1.0, "an ordinary convoy keeps its gap")
+	w.entities[int(c.core[0])].cn_team = 7
+	check_eq(Convoy._level_mult(w, c), 1.0, "a CN team without a record keeps its gap")
+	w.sys_state[CnP.KEY] = {"teams": {"7": {"id": 7, "lvl": 2, "xp": 0.0}}}
+	var m := Convoy._level_mult(w, c)
+	check(m < 1.0 and m > 0.8, "a level-2 CN team drives a tighter column (x%.2f)" % m)

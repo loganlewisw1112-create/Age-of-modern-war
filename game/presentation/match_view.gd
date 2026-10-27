@@ -21,6 +21,7 @@ const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dr
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
+const SenseLayer = preload("res://presentation/view/sense_layer.gd")  # G7 SENSE7: view cones + heard contacts
 const World7Layer = preload("res://presentation/view/world7_layer.gd")  # G7 LPMAP7: creep-warped world, sky, traces
 const CreepLayer = preload("res://presentation/view/creep_layer.gd")  # G7 CREEP7: Machine creep on the ground
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")
@@ -79,6 +80,7 @@ var camera: Camera2D
 var terrain_layer: Node2D
 var creep_layer: Node2D  # G7 CREEP7
 var world7_layer: Node2D  # G7 LPMAP7
+var sense_layer: Node2D  # G7 SENSE7
 var entity_layer: Node2D
 var fog_layer: Node2D
 var fx_layer: Node2D
@@ -228,6 +230,9 @@ func _init_view() -> void:
 	fog_layer = FogLayer.new()
 	fog_layer.z_index = 4
 	add_child(fog_layer)
+	sense_layer = SenseLayer.new()  # G7 SENSE7 CR seq 1269: cones of selected soldiers + heard-contact rings (display only)
+	add_child(sense_layer)
+	sense_layer.setup(self)
 	overlay_layer = OverlayLayer.new()
 	overlay_layer.mode = "over"
 	overlay_layer.z_index = 5

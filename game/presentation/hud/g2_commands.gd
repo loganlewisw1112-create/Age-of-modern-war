@@ -83,6 +83,7 @@ func add_buttons(mode: String, ids: Array) -> void:
 		if _officer >= 0 and not _others.is_empty():
 			var ab2 = _btn("Assign to officer", "%d units" % _others.size(), "", "assign", "Put the selected combat units under this officer's command (builders keep working).")
 			ab2.btn.pressed.connect(func(): hud._issue({"type": "assign_officer", "officer_id": _officer, "unit_ids": _others.duplicate()}))
+		_add_span_button(ids)   # G7 (FISSURE7 CR 710)
 		return
 	if _officer >= 0 and _others.is_empty():
 		hud._card_title.text = "OFFICER  -  MISSION   (pick a mission, then click the target)"
@@ -115,6 +116,8 @@ func add_buttons(mode: String, ids: Array) -> void:
 		var rg = _btn2("Regroup", "on leader", "regroup", "regroup", "Selected squads and platoons reform on their leader.")
 		rg.btn.pressed.connect(func(): hud._issue({"type": "regroup", "unit_ids": _combat.duplicate()}))
 	_add_casualty_buttons()
+	_add_span_button(_ids)   # G7 (FISSURE7 CR 710): repair units (can_repair) on a units card
+	_add_cn_buttons()        # G7 (CNSIM7-3 CR 557): counter-nanite team orders
 	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. Join arms a click on an own squad member;
 	# right-clicking one with only bearers selected does the same (G2Input.smart).
 	_bearers = _ids.filter(func(x): return AB.is_bearer(_ent(int(x))))
@@ -179,6 +182,146 @@ func _casualty_orders(typ: String, who: Array) -> void:
 			n += 1
 	if n == 0 and _mv().get("g2") != null:
 		_mv().g2.flash("No wounded own soldier in reach." if typ == "treat_casualty" else "No downed own soldier to evacuate in reach.")
+
+
+## G7 (FISSURE7 CR 710, SQUAD7-6): Span fissure [Shift+J] for selected engineers (Fissures7.is_engineer: can_build or
+## can_repair) on a map with fissures. Arms the G2Input click-a-tile mode "cell_cmd": hovering previews the span the
+## engineers would build (Fissures7.span_plan: green tiles and the bank-to-bank line; a red cross where nothing can be
+## spanned), a click on a valid tile submits {type: fissure_span, unit_ids, cell: [x, y]} (the sim validates again).
+const Fissures7 = preload("res://sim/systems/fissures7.gd")
+var _span_ids: Array = []
+
+
+func _add_span_button(ids: Array) -> void:
+	var w: SimWorld = hud._world()
+	if w == null or Fissures7.st(w) == null:
+		return   # no fissures on this map: no button
+	_span_ids = []
+	for id in ids:
+		var e = _ent(int(id))
+		if e != null and int(e.owner) == int(hud._pf()) and Fissures7.is_engineer(e):
+			_span_ids.append(int(id))
+	if _span_ids.is_empty():
+		return
+	var sb = _btn2("Span fissure", "click a fissure", "fissure_span", "fissure_span", "Engineers bridge a fissure or canyon: click an open tile; they build the shortest straight 2-wide span across it (bank to bank), which fissures never reopen.")
+	sb.btn.pressed.connect(_arm_span)
+
+
+func _arm_span() -> void:
+	var g2 = _mv().get("g2")
+	if g2 == null:
+		return
+	if not (g2.get("on_cell") is Callable):
+		g2.flash("Span fissure: click-target mode unavailable in this build.")
+		return
+	g2.arm("cell_cmd", {"unit_ids": _span_ids.duplicate(), "on_cell": _span_click,
+		"status": "SPAN FISSURE: click an open fissure / canyon tile. Esc cancels.", "preview": _span_preview})
+
+
+static func span_cell(p: Vector2) -> Vector2i:
+	return Vector2i(floori(p.x), floori(p.y))
+
+
+## Click handler (world joined by MatchView before click handlers). true = issued (the mode ends).
+func _span_click(p: Vector2) -> bool:
+	var w: SimWorld = hud._world()
+	var c := span_cell(p)
+	if w == null or Fissures7.span_plan(w, c).is_empty():
+		if _mv().get("g2") != null:
+			_mv().g2.flash("No fissure to span here (or too wide).")
+		return false
+	var live: Array = _span_ids.filter(func(x): return w.entities.has(int(x)))
+	if live.is_empty():
+		return true
+	hud._issue({"type": "fissure_span", "unit_ids": live, "cell": [c.x, c.y]})
+	var fx = _mv().get("fx_layer")
+	if fx != null:
+		fx.add_marker(Vector2(c) + Vector2(0.5, 0.5), Color(0.45, 0.85, 1.0))
+	return true
+
+
+## Preview while the mode is armed (drawn by the G2 overlay; reads the world only when it is readable).
+func _span_preview(ci: CanvasItem, cur: Vector2) -> void:
+	var mv = _mv()
+	if not mv.world_readable():
+		return
+	var w: SimWorld = hud._world()
+	var c := span_cell(cur)
+	var plan: Dictionary = Fissures7.span_plan(w, c) if w != null else {}
+	if plan.is_empty():
+		var cs: Vector2 = mv.world_to_screen(Vector2(c) + Vector2(0.5, 0.5))
+		ci.draw_line(cs + Vector2(-7, -4), cs + Vector2(7, 4), Color(1.0, 0.3, 0.2), 2.0)
+		ci.draw_line(cs + Vector2(-7, 4), cs + Vector2(7, -4), Color(1.0, 0.3, 0.2), 2.0)
+		return
+	var mw := int(w.map.w)
+	for i in plan.tiles:
+		var tc := Vector2(int(i) % mw, int(i) / mw)
+		var poly := PackedVector2Array([mv.world_to_screen(tc), mv.world_to_screen(tc + Vector2(1, 0)),
+			mv.world_to_screen(tc + Vector2(1, 1)), mv.world_to_screen(tc + Vector2(0, 1))])
+		ci.draw_colored_polygon(poly, Color(0.3, 1.0, 0.35, 0.35))
+	var a: Vector2 = mv.world_to_screen(Vector2(plan.a) + Vector2(0.5, 0.5))
+	var b: Vector2 = mv.world_to_screen(Vector2(plan.b) + Vector2(0.5, 0.5))
+	ci.draw_line(a, b, Color(0.3, 1.0, 0.35), 2.0)
+	ci.draw_circle(a, 4.0, Color(0.3, 1.0, 0.35))
+	ci.draw_circle(b, 4.0, Color(0.3, 1.0, 0.35))
+
+
+## G7 (CNSIM7-3 CR seq 557, SQUAD7-6): counter-nanite team card buttons. Pincer [Shift+P] sends the selected teams
+## on the anti-walker pincer against the nearest heavy Machine walker in reach (CounterNanite.pincer_target, target_id
+## -1); Break contact [Shift+B] orders the formed withdrawal. One command per selected team (a team is resolved from
+## any of its members' cn_team); the sim validates each again.
+const CounterNanite = preload("res://sim/systems/counter_nanite.gd")
+var _cn_teams: Dictionary = {}   # team id -> [selected member ids]
+
+
+func _add_cn_buttons() -> void:
+	_cn_teams = {}
+	for id in _ids:
+		var e = _ent(int(id))
+		if e == null or e.kind != "unit":
+			continue
+		var tid := CounterNanite.team_of(e)
+		if tid < 0:
+			continue
+		if not _cn_teams.has(tid):
+			_cn_teams[tid] = []
+		_cn_teams[tid].append(int(id))
+	if _cn_teams.is_empty():
+		return
+	var pb = _btn2("Pincer", "nearest walker", "cn_pincer", "cn_pincer", "Anti-walker pincer: the selected counter-nanite team splits its APCs round the nearest heavy Machine walker in reach and hits it from both sides.")
+	pb.btn.pressed.connect(_cn_orders.bind("cn_pincer"))
+	var bb = _btn2("Break contact", "formed withdrawal", "cn_break_contact", "cn_break_contact", "Break contact: the selected counter-nanite team withdraws in bounds, covering itself, away from the threat.")
+	bb.btn.pressed.connect(_cn_orders.bind("cn_break_contact"))
+
+
+func _cn_cmd(typ: String, tid: int) -> Dictionary:
+	var c := {"type": typ, "unit_ids": (_cn_teams[tid] as Array).duplicate()}
+	if typ == "cn_pincer":
+		c["target_id"] = -1
+	return c
+
+
+func _cn_orders(typ: String) -> void:
+	var tids: Array = _cn_teams.keys()
+	tids.sort()
+	for tid in tids:
+		hud._issue(_cn_cmd(typ, int(tid)))
+
+
+## "" when at least one selected team would accept typ, else the first refusal.
+func _cn_reason(w: SimWorld, typ: String) -> String:
+	var first := ""
+	var tids: Array = _cn_teams.keys()
+	tids.sort()
+	for tid in tids:
+		var c := _cn_cmd(typ, int(tid))
+		c["issuer"] = int(hud._pf())
+		var r := w.preview_command(c)
+		if r == "":
+			return ""
+		if first == "":
+			first = r
+	return first
 
 
 ## G6.1: a card button whose key comes from the Hotkeys table (badge shows the printable character).
@@ -395,6 +538,8 @@ func update_state(w: SimWorld) -> void:
 				reason = "No building nearby." if _nearest_building() == null else ""
 			"regroup":
 				reason = w.preview_command({"type": "regroup", "issuer": pf, "unit_ids": _combat})
+			"cn_pincer", "cn_break_contact":
+				reason = _cn_reason(w, String(rec.g2))
 			"bearer_leave":
 				reason = w.preview_command({"type": "leave_squad", "issuer": pf, "unit_ids": _bearers})
 			"risk":
