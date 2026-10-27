@@ -235,7 +235,30 @@ func _prefill() -> void:
 		pad = maxi(pad, _raise[code])
 		for v in nv:
 			_below = maxi(_below, _tile_image(code, v).get_height() - _raise[code])
+	if ViewUtil.is_placeholder(ArtCatalog.terrain_texture(Terrain.CHASM, 0)):
+		_tile_cache["%d_0" % Terrain.CHASM] = _chasm_tile()   # G7 LPPERF7: no manifest art for CHASM yet
+		_variants[Terrain.CHASM] = 1
 	_load_rules(g4)
+
+
+## G7 (LPPERF7): base tile of Terrain.CHASM (FISSURE7 canyons): dark scorched ground with a few hairline cracks, so
+## the cell reads as a dark gap under fissure_layer's canyon opening (which draws the depth on top). 64x32 diamond.
+func _chasm_tile() -> Image:
+	var img := Image.create(64, 32, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in 32:
+		var hw := (y + 1) * 2 if y < 16 else (32 - y) * 2
+		for x in range(32 - hw, 32 + hw):
+			var h := ((x * 73856093) ^ (y * 19349663) ^ 0x5a17) & 255
+			var n := (float(h) / 255.0 - 0.5) * 0.035
+			var edge := minf(float(x - (32 - hw)), float(32 + hw - 1 - x))
+			var c := Color(0.085 + n, 0.075 + n, 0.07 + n, 1.0)
+			if edge < 2.0:
+				c = Color(0.16 + n, 0.13 + n, 0.11 + n, 1.0)   # lighter crumbling rim
+			elif (x + 2 * y) % 23 == 0 or (x - 3 * y + 64) % 29 == 0:
+				c = Color(0.04, 0.035, 0.035, 1.0)              # hairline cracks
+			img.set_pixel(x, y, c)
+	return img
 
 
 func _variant_for(code: int, x: int, y: int) -> int:

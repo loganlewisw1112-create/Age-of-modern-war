@@ -1,5 +1,5 @@
 {
- "_meta": "G7 fragment (owner: FISSURE7). Creep fissures, canyons and growths (G7_REFERENCE master scope 13.9a, owner amendment 2026-10-26). Sim: sim/systems/fissures7.gd (called from Creep.tick). Every number is PROVISIONAL (untuned balance fixture). Stages: crack (terrain FORD: ground slow), fissure (FOREST: vehicles blocked, infantry slow), canyon (RIDGE: all ground blocked); air unaffected. Codes are content values (stage_codes) so a later dedicated terrain code is a data change. Big growths are Machine buildings (creep sources) that are destructible; the rest are display-only scenery derived from sim state.",
+ "_meta": "G7 fragment (owner: FISSURE7). Creep fissures, canyons and growths (G7_REFERENCE master scope 13.9a, owner amendment 2026-10-26). Sim: sim/systems/fissures7.gd (called from Creep.tick). Every number is PROVISIONAL (untuned balance fixture). Stages: crack (terrain FORD: ground slow), fissure (FOREST: vehicles blocked, infantry slow), canyon (CHASM 15, LPPERF7 2026-10-27: all ground blocked, line of fire / sight passes across; was RIDGE, which also blocked fire); air unaffected. Codes are content values (stage_codes) so a later dedicated terrain code is a data change. Big growths are Machine buildings (creep sources) that are destructible; the rest are display-only scenery derived from sim state.",
  "rules": {
   "g7_fissures": {
    "every": 10,
@@ -29,7 +29,7 @@
    "tip_crack": 3,
    "tip_fissure": 8,
    "radius": {"fissure": [0.9, 0.6, 0.5, 0.5], "canyon": [2.1, 1.5, 1.1, 1.0], "wobble": 0.5},
-   "stage_codes": {"crack": 6, "fissure": 3, "canyon": 7, "span": 5, "closed": 1},
+   "stage_codes": {"crack": 6, "fissure": 3, "canyon": 15, "span": 5, "closed": 1},
    "commit_every": 600,
    "connect_r": 110,
    "connect_budget": 40000,

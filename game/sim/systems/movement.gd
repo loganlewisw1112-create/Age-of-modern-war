@@ -2390,6 +2390,130 @@ static func on_terrain_changed(w: SimWorld) -> void:
 				stop_path(e)
 
 
+## G7 (LPPERF7, FISSURE7 CR 755): only the terrain codes of `cells` (tile indices y * w + x) changed since the last
+## nav build or update (no building, gate or height change in between). Gives the nav rebuild_nav would give, without
+## its per-building pass (G6Hooks.passable per footprint, ~80 ms with the Last Protocol base) and the cliff-edge pass:
+## - GDScript nav: the changed cells of every built class are re-set exactly as _build_fallback_class sets them;
+## - native nav: a new RtsNav from the kept footprint counts / passable footprints / edges / gates (the DLL has no
+##   per-cell terrain setter; its setup is a few ms of Rust);
+## - the naval channel mask is dropped (rebuilt on demand) when a changed cell is or was in a channel or is water.
+## Then only the active paths that cross a changed cell are re-requested (on_terrain_changed re-requests all).
+static func on_cells_changed(w: SimWorld, cells: Array) -> void:
+	if cells.is_empty():
+		return
+	if not _nav_ready(w) or bool(w.nav.get("is_native", false)) != NativeCore.enabled(w):
+		on_terrain_changed(w)
+		return
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var n := mw * mh
+	var terrain: PackedByteArray = w.map.terrain
+	var ch_set := {}
+	for c in cells:
+		var i := int(c)
+		if i >= 0 and i < n:
+			ch_set[i] = true
+	if ch_set.is_empty():
+		return
+	var old_ch = w.nav.get("channel")
+	var ch_drop := false
+	if old_ch != null:
+		for i in ch_set:
+			if (old_ch as PackedByteArray)[i] != 0 or Terrain.is_water(terrain[i]):
+				ch_drop = true
+				break
+	var native = _native(w)
+	if native == null:
+		var touched: Dictionary = ch_set
+		if ch_drop:
+			w.nav.erase("channel")
+			var nch := _channel(w)
+			touched = ch_set.duplicate()
+			for i in n:
+				if nch[i] != old_ch[i]:
+					touched[i] = true
+		for mc in w.nav.solid.keys():
+			var sb: PackedByteArray = w.nav.solid[mc]
+			var cl: Dictionary = touched if mc == "naval" else ch_set
+			for i in cl:
+				sb[i] = _apply_cell(w.nav[mc], _cell_sm(w, mc, i), _base_solid(w, mc, i) != 0, Vector2i(i % mw, i / mw))
+			w.nav.solid[mc] = sb
+		w.nav.tg = {}
+		w.nav.comp = {}
+		w.nav.comp_dirty = true
+	else:
+		# passable footprints (rebuild_nav's pfl, in w.entities order) from the kept per-origin masks
+		var blocked: PackedByteArray = w.nav.blocked
+		var pfp: Dictionary = w.nav.get("pfp", {})
+		var pfl := []
+		if not pfp.is_empty():
+			for id in w.entities:
+				var e: Dictionary = w.entities[id]
+				if e.kind != "building":
+					continue
+				var o: Vector2i = e.cell
+				if not pfp.has(o.y * 65536 + o.x):
+					continue
+				var cm := _fp_cmask(String(e.def))
+				if cm != 0:
+					pfl.append([o, int(e.size), cm])
+		var blocked0 := blocked.duplicate()
+		for p in pfl:
+			var po: Vector2i = p[0]
+			for y in range(maxi(po.y, 0), mini(po.y + int(p[1]), mh)):
+				for x in range(maxi(po.x, 0), mini(po.x + int(p[1]), mw)):
+					blocked0[y * mw + x] = maxi(blocked0[y * mw + x] - 1, 0)
+		var prev_classes: Array = (w.nav.solid as Dictionary).keys()
+		var gates: Dictionary = w.nav.gates
+		var keep_ch = null if ch_drop else old_ch
+		w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": true,
+			"solid": {}, "gates": gates, "tg": {}, "pblk": w.nav.get("pblk", {}), "pfp": pfp, "edge": w.nav.get("edge", PackedByteArray())}
+		if keep_ch != null:
+			w.nav["channel"] = keep_ch
+		var nav = NativeCore.new_nav()
+		nav.setup(mw, mh, terrain, blocked0, PackedFloat32Array(_lut("foot")), PackedFloat32Array(_lut("vehicle")))
+		for p in pfl:
+			if nav.has_method("apply_footprint_pass"):
+				nav.apply_footprint_pass(p[0].x, p[0].y, int(p[1]), true, int(p[2]))
+			else:
+				nav.apply_footprint(p[0].x, p[0].y, int(p[1]), true)
+		if not (w.nav.edge as PackedByteArray).is_empty() and nav.has_method("set_edges"):
+			nav.set_edges(w.nav.edge)
+		w.nav["native"] = nav
+		w.nav["steer"] = NativeCore.new_steer()
+		if not gates.is_empty() and nav.has_method("set_gate"):
+			for idx in gates:
+				nav.set_gate(PackedInt32Array([idx]), _gate_code(gates[idx]))
+		for mc in CLASSES:
+			w.nav.solid[mc] = nav.solid_bytes(_key(mc, -1))
+		for mc in prev_classes:
+			_ensure_class(w, String(mc))
+	# re-request only the active paths that cross a changed cell (each leg walked in quarter-tile steps)
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" or not bool(e.get("moving", false)) or (e.path as Array).is_empty():
+			continue
+		var hit := false
+		var a: Vector2 = e.pos
+		for q in e.path:
+			var b: Vector2 = q
+			var steps := maxi(1, ceili(a.distance_to(b) * 4.0))
+			for k in steps + 1:
+				var pt := a.lerp(b, float(k) / float(steps))
+				var cx := floori(pt.x)
+				var cy := floori(pt.y)
+				if cx >= 0 and cy >= 0 and cx < mw and cy < mh and ch_set.has(cy * mw + cx):
+					hit = true
+					break
+			if hit:
+				break
+			a = b
+		if hit:
+			var goal: Vector2 = e.path[e.path.size() - 1]
+			if not order_path(w, e, goal):
+				stop_path(e)
+
+
 # ================================================================ G4 gates (NAT, CONTRACTS_G4 section 3)
 ## Sets (or with owner_team < 0 removes) a gate on each cell. A gate cell is open only for
 ## owner_team while unlocked; for every other team (and team-less queries) it is solid. Overrides

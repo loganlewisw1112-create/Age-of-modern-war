@@ -142,7 +142,7 @@ func test_cracks_fissures_canyons_with_age() -> void:
 	var kt := _first_tile(w, 3)
 	check_eq(w.terrain_at(ct), Terrain.FORD, "crack tiles are slow ground")
 	check_eq(w.terrain_at(ft), Terrain.FOREST, "fissure tiles block vehicles")
-	check_eq(w.terrain_at(kt), Terrain.RIDGE, "canyon tiles block all ground")
+	check_eq(w.terrain_at(kt), Terrain.CHASM, "canyon tiles are CHASM (all ground blocked, fire passes)")
 	_restore()
 
 
@@ -161,7 +161,124 @@ func test_stage_movement_rules() -> void:
 	check(not Movement.is_passable(w, kt, "foot") and not Movement.is_passable(w, kt, "vehicle")
 		and not Movement.is_passable(w, kt, "hover"), "canyon: all ground blocked")
 	check(Movement.is_passable(w, kt, "air") and Movement.is_passable(w, ft, "air_low"), "air unaffected")
+	# G7 LPPERF7 (CR 711): canyons are CHASM: every ground class blocked, line of fire / sight across stays open
+	check_eq(w.terrain_at(kt), Terrain.CHASM, "canyon tile is CHASM")
+	for mc in ["foot", "vehicle", "amphibious", "hover", "rail", "naval", "naval_small"]:
+		check(not Movement.is_passable(w, kt, mc), "canyon blocks %s" % mc)
+	check(Damage.line_clear(w, Vector2(kt) + Vector2(-2.5, 0.5), Vector2(kt) + Vector2(3.5, 0.5))
+		or w.terrain_at(kt + Vector2i(-2, 0)) == Terrain.RIDGE or w.terrain_at(kt + Vector2i(3, 0)) == Terrain.RIDGE,
+		"line of fire passes across a canyon tile")
 	_restore()
+
+
+## G7 LPPERF7 (FISSURE7 CR 711): a CHASM strip across the whole map. No ground unit gets across (rules + a real move
+## order), line of fire crosses it (Damage.line_clear and a real shot), and RIDGE in the same place blocks the shot.
+func test_chasm_blocks_ground_not_fire() -> void:
+	var w := _setup(false)
+	var mw := int(w.map.w)
+	var mh := int(w.map.h)
+	var cx := mw / 2
+	var t: PackedByteArray = w.map.terrain
+	for y in mh:
+		for dx in 3:
+			t[y * mw + cx - 1 + dx] = Terrain.CHASM
+	w.map.terrain = t
+	Movement.on_terrain_changed(w)
+	var c := Vector2i(cx, 20)
+	for mc in Terrain.CLASSES:
+		if Terrain.is_air(mc):
+			check(Movement.is_passable(w, c, mc), "CHASM: %s passes" % mc)
+		else:
+			check(not Movement.is_passable(w, c, mc), "CHASM: %s blocked" % mc)
+			check_eq(Terrain.speed_mult(Terrain.CHASM, mc), 0.0, "CHASM: %s speed 0" % mc)
+	check(not Terrain.blocks_los(Terrain.CHASM), "CHASM does not block line of sight / fire")
+	check(not Terrain.buildable(Terrain.CHASM), "CHASM is not buildable")
+	check_eq(String(Terrain.NAMES[Terrain.CHASM]), "chasm", "CHASM has a name")
+	var a := Vector2(cx - 2.5, 20.5)
+	var b := Vector2(cx + 3.5, 20.5)
+	check(Damage.line_clear(w, a, b), "line of fire crosses the chasm")
+	# ground units ordered across never cross
+	var tank := _unit(w, "mbt", H, Vector2(cx - 6.5, 30.5))
+	var eng := _unit(w, "engineer", H, Vector2(cx - 6.5, 32.5))
+	w.submit({"type": "move", "issuer": H, "unit_ids": [tank, eng], "target": Vector2(cx + 6.5, 31.5)})
+	_run(w, 400)
+	check(float(w.entities[tank].pos.x) < float(cx - 1), "tank stays on its side (x %.1f)" % float(w.entities[tank].pos.x))
+	check(float(w.entities[eng].pos.x) < float(cx - 1), "infantry stays on its side (x %.1f)" % float(w.entities[eng].pos.x))
+	# a real shot across
+	var sh := _unit(w, "mbt", H, a)
+	var tg := _unit(w, "mbt", M, b)
+	w.entities[sh].cd_ticks = 0
+	w.entities[sh].order = {"type": "attack", "target_id": tg}
+	var hp0 := float(w.entities[tg].hp)
+	_run(w, 120)
+	check(not w.entities.has(tg) or float(w.entities[tg].hp) < hp0, "a tank hits a target across the chasm")
+	# the same strip as RIDGE blocks the line of fire (the old canyon code)
+	t = w.map.terrain
+	for y in mh:
+		for dx in 3:
+			t[y * mw + cx - 1 + dx] = Terrain.RIDGE
+	w.map.terrain = t
+	Movement.on_terrain_changed(w)
+	check(not Damage.line_clear(w, a, b), "RIDGE in the same place blocks the line of fire")
+
+
+## G7 LPPERF7 (CR 755): nav signature for the equivalence test: solid bytes + components of four classes and the
+## paths order_path gives two units to three goals.
+func _nav_sig(w: SimWorld, units: Array, goals: Array) -> Dictionary:
+	var out := {}
+	for mc in ["foot", "vehicle", "naval", "hover"]:
+		out["solid_" + mc] = Movement._solid_of(w, mc).duplicate()
+		out["comp_" + mc] = Movement._comp(w, mc).duplicate()
+	for u in units:
+		var e: Dictionary = w.entities[u]
+		for g in goals:
+			Movement.order_path(w, e, g)
+			out["path_%d_%s" % [u, str(g)]] = (e.path as Array).duplicate()
+			Movement.stop_path(e)
+	return out
+
+
+## G7 LPPERF7 (FISSURE7 CR 755): Movement.on_cells_changed gives the same nav as a full rebuild_nav (native and
+## GDScript nav), including a cell cut out of a naval channel, wall footprints and the classes built on demand.
+func test_cells_changed_equals_full_rebuild() -> void:
+	for nat in [true, false]:
+		var w := _setup(false)
+		w.set("native_enabled", nat)
+		var mw := int(w.map.w)
+		var mh := int(w.map.h)
+		var t: PackedByteArray = w.map.terrain
+		for y in range(4, mh - 4):
+			for x in range(30, 37):
+				t[y * mw + x] = Terrain.WATER
+		w.map.terrain = t
+		Movement.rebuild_nav(w)
+		for y in range(5, 15):
+			w.spawn_building("a_wall", H, Vector2i(10, y), true)
+		var u1 := _unit(w, "mbt", H, Vector2(5.5, 20.5))
+		var u2 := _unit(w, "engineer", H, Vector2(6.5, 22.5))
+		var goals := [Vector2(20.5, 8.5), Vector2(45.5, 20.5), Vector2(14.5, 30.5)]
+		_nav_sig(w, [u1, u2], goals)   # builds naval / hover so they are kept classes
+		var cells := []
+		var codes := [Terrain.CHASM, Terrain.FOREST, Terrain.FORD, Terrain.DIRT, Terrain.CHASM]
+		t = w.map.terrain
+		for k in 160:
+			var i := (k * 7919 + 13) % (mw * mh)
+			t[i] = codes[k % codes.size()]
+			cells.append(i)
+		for y in range(10, 20):
+			t[y * mw + 33] = Terrain.CHASM   # cut the channel
+			cells.append(y * mw + 33)
+		w.map.terrain = t
+		Movement.on_cells_changed(w, cells)
+		var a := _nav_sig(w, [u1, u2], goals)
+		Movement.rebuild_nav(w)
+		var b := _nav_sig(w, [u1, u2], goals)
+		var same := 0
+		for k in b:
+			if check(a.has(k) and a[k] == b[k], "native=%s %s: on_cells_changed == rebuild_nav" % [nat, k]):
+				same += 1
+		check_eq(same, b.size(), "native=%s every nav part equal (%d)" % [nat, b.size()])
+		check(not Movement.is_passable(w, Vector2i(33, 12), "naval"), "native=%s chasm cell cuts the channel" % nat)
 
 
 # ================================================================ protection

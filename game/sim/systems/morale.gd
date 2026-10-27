@@ -18,6 +18,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")  # G6 PERF6: morale_delta
 const NativeCore = preload("res://sim/native_core.gd")  # G6 PERF6-4: morale_scan
 ## G3b PERF4: loops read the shared SimIndex. REDUCED-tier units (Tiers: no enemy near) update on
@@ -274,7 +275,7 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 			units.append(all[i])
 	if units.is_empty():
 		return
-	var rest := Fatigue.rest_points(w, SimIndex.of(w, "building"))
+	var rest := Fatigue.rest_points(w, Inert7.blds(w, Inert7.REST))   # G7 LPPERF7: home / hospital defs only
 	var ents: Dictionary = w.entities
 	var lr := float(_sr.get("leader_radius", 6.0))
 	var lr2 := lr * lr
@@ -671,7 +672,7 @@ static func _home_of(w: SimWorld, e: Dictionary):
 	var pos: Vector2 = e.pos
 	var best = null
 	var best_d := INF
-	for b in SimIndex.of(w, "building"):
+	for b in Inert7.blds(w, Inert7.HOME):   # G7 LPPERF7: only `home` defs
 		if int(b.owner) != int(e.owner) or not bool(b.get("built", false)) or not w.entities.has(int(b.id)):
 			continue
 		if not bool(Content.building(b.def).get("home", false)):  # G3a: flag replaces HOME_DEFS

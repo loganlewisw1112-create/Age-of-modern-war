@@ -22,6 +22,7 @@ extends RefCounted
 const Construction = preload("res://sim/systems/construction.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 const Subsets = preload("res://sim/systems/unit_subsets.gd")
 ## G3b PERF4: loops read the shared SimIndex (units / buildings lists) and a per-def cache instead
 ## of full passes with Content lookups. REDUCED-tier units (Tiers) burn fuel on their stride tick
@@ -248,7 +249,7 @@ static func _state(w: SimWorld) -> Dictionary:
 static func _sources(w: SimWorld) -> Dictionary:
 	var out := {}
 	var pts := []   # [id, point] in entity order (buildings and trucks interleaved as before)
-	for e in SimIndex.of(w, "building"):
+	for e in Inert7.blds(w, Inert7.SUPPLY_PT):   # G7 LPPERF7: only is_hq / supply_point defs
 		if not w.factions.has(int(e.owner)) or not bool(e.built) or not w.entities.has(int(e.id)):
 			continue
 		var d := Content.building(e.def)
@@ -345,7 +346,7 @@ static func _recharge(w: SimWorld) -> void:
 	if rate <= 0.0:
 		return
 	var hubs := {}   # fid -> [{cell, size, r}]
-	for b in SimIndex.of(w, "building"):
+	for b in Inert7.blds(w, Inert7.RECHARGE):   # G7 LPPERF7: only recharge > 0 defs
 		if not bool(b.built) or not w.entities.has(int(b.id)):
 			continue
 		var r := float(Content.building(b.def).get("recharge", 0))
@@ -381,7 +382,7 @@ static func _recharge(w: SimWorld) -> void:
 ## G3a recharge hubs per faction (built, recharge > 0): fid -> [{cell, size, r}].
 static func _hubs(w: SimWorld) -> Dictionary:
 	var hubs := {}
-	for b in SimIndex.of(w, "building"):
+	for b in Inert7.blds(w, Inert7.RECHARGE):   # G7 LPPERF7: only recharge > 0 defs
 		if not bool(b.built) or not w.entities.has(int(b.id)):
 			continue
 		var r := float(Content.building(b.def).get("recharge", 0))

@@ -10,6 +10,7 @@ const Companies = preload("res://sim/systems/companies.gd")  # G6 scaffold (CONT
 const Construction = preload("res://sim/systems/construction.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 
 const QUEUE_MAX := 5
 
@@ -85,7 +86,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 ## Buildings only, ascending id (PERF5: the index instead of a full w.entities scan). Units spawned
 ## by _complete() are never buildings, so the list (fixed before the loop) misses nothing.
 static func tick(w: SimWorld) -> void:
-	for b in SimIndex.of(w, "building").duplicate():
+	for b in Inert7.blds(w, Inert7.PRODUCE).duplicate():   # G7 LPPERF7: only defs with "produces"
 		if not SimIndex.alive(w, b):
 			continue
 		var bd := Content.building(b.def)

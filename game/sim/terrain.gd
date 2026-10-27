@@ -22,9 +22,13 @@ const HILL := 13      # passable, +sight, light cover for foot (G6: old-format f
 # G6 (CONTRACTS_G6 section 3.2 / 7 4a, owner ELEV): laid by MECH6a (Rail). Foot and vehicle pass it like
 # ROAD (same speed); the `rail` move class (armored train) may move ONLY on RAIL tiles.
 const RAIL := 14
+# G7 (LPPERF7, FISSURE7 CR 711): an open canyon. Only air classes cross it (speed 0 for every ground class); it does
+# NOT block line of sight / fire (shots and sight pass over the gap) and is not buildable. Laid by Fissures7
+# (content/g7/defs_g7_fissures.json stage_codes.canyon); presentation/view/fissure_layer.gd draws the opening on top.
+const CHASM := 15
 
 const NAMES := ["grass", "dirt", "road", "forest", "water", "bridge", "ford", "ridge",
-	"building", "shallow", "deep", "beach", "cliff", "hill", "rail"]
+	"building", "shallow", "deep", "beach", "cliff", "hill", "rail", "chasm"]
 
 ## Movement classes (CONTRACTS_G4 section 3). "air" (G3a drones) is an alias of air_low.
 ## G6 (ELEV, CONTRACTS_G6 section 7 4a): "rail" = RAIL tiles only; "hover" = land, beach, shallow,
@@ -52,6 +56,8 @@ static func is_water(code: int) -> bool:
 static func passable(code: int, move_class: String) -> bool:
 	if is_air(move_class):
 		return true
+	if code == CHASM:
+		return false   # G7: no ground class crosses an open canyon
 	match move_class:
 		"foot":
 			return code != WATER and code != RIDGE and code != BUILDING and code != DEEP and code != CLIFF
@@ -75,7 +81,7 @@ static func uses_height(move_class: String) -> bool:
 
 static func _vehicle_ok(code: int) -> bool:
 	match code:
-		WATER, RIDGE, FOREST, BUILDING, DEEP, CLIFF:
+		WATER, RIDGE, FOREST, BUILDING, DEEP, CLIFF, CHASM:
 			return false
 	return true
 
@@ -84,6 +90,8 @@ static func _vehicle_ok(code: int) -> bool:
 static func speed_mult(code: int, move_class: String) -> float:
 	if is_air(move_class):
 		return 1.0
+	if code == CHASM:
+		return 0.0   # G7: ground classes cannot move on an open canyon
 	if move_class == "naval" or move_class == "naval_small" or move_class == "rail" or move_class == "hover":
 		return 1.0
 	match code:
@@ -112,7 +120,7 @@ static func buildable(code: int) -> bool:
 	return code == GRASS or code == DIRT or code == BEACH or code == HILL
 
 
-## CLIFF, RIDGE and BUILDING block line of sight / fire (Damage.line_clear, RtsCombat.line_clear).
+## CLIFF, RIDGE and BUILDING block line of sight / fire (Damage.line_clear, RtsCombat.line_clear). CHASM does not.
 static func blocks_los(code: int) -> bool:
 	return code == RIDGE or code == CLIFF or code == BUILDING
 

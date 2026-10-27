@@ -729,6 +729,7 @@ static func _commit(w: SimWorld, s: Dictionary, r: Dictionary) -> void:
 	var newly := {}
 	var opened: Array = s.opened
 	var codes := PackedByteArray([_code(r, 0), _code(r, 1), _code(r, 2), _code(r, 3), _code(r, 0), _code(r, 5), 0, 0])
+	var chg := []   # G7 LPPERF7: tiles whose terrain code changed (Movement.on_cells_changed)
 	for i in keys:
 		var nb: int = pend[i]
 		var stg := nb & ST_MASK
@@ -739,6 +740,7 @@ static func _commit(w: SimWorld, s: Dictionary, r: Dictionary) -> void:
 		var code := codes[stg]
 		if t[i] != code:
 			t[i] = code
+			chg.append(int(i))
 		if stg == ST_FISSURE or stg == ST_CANYON:
 			nblock += 1
 			newly[i] = true
@@ -755,7 +757,7 @@ static func _commit(w: SimWorld, s: Dictionary, r: Dictionary) -> void:
 	s.last_commit = w.tick
 	s.dv = int(s.dv) + 1
 	s.commits = int(s.commits) + 1
-	Movement.on_terrain_changed(w)
+	Movement.on_cells_changed(w, chg)   # G7 LPPERF7 (CR 755): changed cells only (was on_terrain_changed: ~130 ms on LP)
 	if not newly.is_empty():
 		for u in SimIndex.of(w, "unit"):
 			if not SimIndex.alive(w, u):

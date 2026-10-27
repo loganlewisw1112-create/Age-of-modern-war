@@ -40,6 +40,7 @@ const Supply = preload("res://sim/systems/supply.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 const Fortify = preload("res://sim/systems/fortify.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")  # G4b UNITS: concealment, ignite
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): hit/splash damage_mult (next to _g4_mult), hit-roll accuracy_mult,
@@ -388,6 +389,12 @@ static func tick(w: SimWorld) -> void:
 			cd -= 1
 			b.cd_ticks = cd
 			b.cooldown = float(cd) / SimWorld.TICK_RATE
+	# G7 LPPERF7: only armed buildings act (_bld_act -> _tower_tick returns at once for a def without a weapon,
+	# writing nothing); every alive building stays in blds (targets, splash, scan bounds, cooldown countdown above)
+	var ablds := []
+	for b in Inert7.blds(w, Inert7.ARMED):
+		if ents.has(int(b.id)):
+			ablds.append(b)
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("cmb.prep", t0)
 	w.cache["combat_grid"] = grid
@@ -415,10 +422,16 @@ static func tick(w: SimWorld) -> void:
 				# owner within its scan radius gets null from _find (the unit search is skipped on -1;
 				# positions, fog and the building list are fixed for the tick; deaths only remove).
 				var brs := PackedFloat32Array()
+				brs.resize(blds.size() * 4)   # G7 LPPERF7: indexed writes (same values) instead of a temp array per building
+				var bj := 0
 				for b in blds:
 					var o: Vector2i = b.cell
 					var bsz := float(b.size)
-					brs.append_array(PackedFloat32Array([float(o.x), float(o.y), float(o.x) + bsz, float(o.y) + bsz]))
+					brs[bj] = float(o.x)
+					brs[bj + 1] = float(o.y)
+					brs[bj + 2] = float(o.x) + bsz
+					brs[bj + 3] = float(o.y) + bsz
+					bj += 4
 				nores.resize(nidx.size())
 				var nb := brs.size()
 				for i in scan_ids.size():
@@ -469,8 +482,8 @@ static func tick(w: SimWorld) -> void:
 	var by_ix := not act_id.is_empty()
 	for i in (act_id.size() if by_ix else act.size()):
 		var eid: int = act_id[i] if by_ix else int(act[i].id)
-		while bi < blds.size() and int(blds[bi].id) < eid:
-			_bld_act(w, blds[bi], grid, blds)
+		while bi < ablds.size() and int(ablds[bi].id) < eid:
+			_bld_act(w, ablds[bi], grid, blds)
 			bi += 1
 		if not ents.has(eid):
 			continue  # destroyed earlier this tick: dead entities never act
@@ -501,8 +514,8 @@ static func tick(w: SimWorld) -> void:
 			SimIndex.pt(lab, tu)
 		else:
 			_unit_tick(w, e, grid, blds)
-	while bi < blds.size():
-		_bld_act(w, blds[bi], grid, blds)
+	while bi < ablds.size():
+		_bld_act(w, ablds[bi], grid, blds)
 		bi += 1
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("cmb.act", t0)
@@ -915,35 +928,81 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	if SimIndex.profiling:
 		tq = SimIndex.pt("f.units", tq0)
 	# enemy buildings of fid, filtered once per tick (PERF4-2): [b, x0, y0, x1, y1]
+	# G7 LPPERF7: bucketed by EB_CS-tile cells (an entry sits in every cell its rect touches); a query walks only
+	# the cells of its radius box (+1 tile margin), which hold every building with d <= radius. The pick is the
+	# (distance, id) minimum over the same legal set, independent of visit order (a repeat visit changes nothing).
 	var ebs: Dictionary = ng.eb
 	var eb = ebs.get(fid)
 	if eb == null:
-		eb = []
-		for b in blds:
-			if w.is_enemy(fid, int(b.owner)):
-				var o: Vector2i = b.cell
-				var sz := float(b.size)
-				eb.append([b, float(o.x), float(o.y), float(o.x) + sz, float(o.y) + sz])
+		eb = _eb_grid(w, fid, blds, int(ng.mw), int(ng.mh))
 		ebs[fid] = eb
-	for q in eb:
-		var b: Dictionary = q[0]
-		var qx := clampf(p.x, q[1], q[3])
-		var qy := clampf(p.y, q[2], q[4])
-		var d := p.distance_to(Vector2(qx, qy))
-		var d2b := d * d
-		if d2b > r2 or d2b < mr2:
-			continue
-		var bid := int(b.id)
-		if d2b > best_d or (d2b == best_d and bid > best_id):
-			continue
-		if not w.entities.has(bid) or not Fog.entity_visible(w, fid, b):
-			continue
-		best = b
-		best_d = d2b
-		best_id = bid
+	var ebc: Array = eb.c
+	var egw: int = eb.gw
+	var egh: int = eb.gh
+	var cx0 := clampi(floori((p.x - radius - 1.0) / EB_CS), 0, egw - 1)
+	var cx1 := clampi(floori((p.x + radius + 1.0) / EB_CS), 0, egw - 1)
+	var cy0 := clampi(floori((p.y - radius - 1.0) / EB_CS), 0, egh - 1)
+	var cy1 := clampi(floori((p.y + radius + 1.0) / EB_CS), 0, egh - 1)
+	if not is_finite(radius) or radius > 65536.0 or not Inert7.enabled:   # Inert7 off (tests): every cell
+		cx0 = 0
+		cy0 = 0
+		cx1 = egw - 1
+		cy1 = egh - 1
+	for cy in range(cy0, cy1 + 1):
+		for cx in range(cx0, cx1 + 1):
+			var cell = ebc[cy * egw + cx]
+			if cell == null:
+				continue
+			for q in cell:
+				var b: Dictionary = q[0]
+				var qx := clampf(p.x, q[1], q[3])
+				var qy := clampf(p.y, q[2], q[4])
+				var d := p.distance_to(Vector2(qx, qy))
+				var d2b := d * d
+				if d2b > r2 or d2b < mr2:
+					continue
+				var bid := int(b.id)
+				if d2b > best_d or (d2b == best_d and bid > best_id):
+					continue
+				if not w.entities.has(bid) or not Fog.entity_visible(w, fid, b):
+					continue
+				best = b
+				best_d = d2b
+				best_id = bid
 	if SimIndex.profiling:
-		SimIndex.pt("f.eb%d" % eb.size(), tq)
+		SimIndex.pt("f.eb%d" % int(eb.n), tq)
 	return best
+
+
+const EB_CS := 16.0   # G7 LPPERF7: enemy-building bucket size (tiles)
+
+
+## G7 LPPERF7: fid's enemy buildings of this tick's blds as [b, x0, y0, x1, y1] entries in a bucket grid
+## ({c: Array of cells (null or [entries] in blds order), gw, gh, n}); an entry is in every cell its rect touches.
+static func _eb_grid(w: SimWorld, fid: int, blds: Array, mw: int, mh: int) -> Dictionary:
+	var gw := maxi(1, ceili(float(mw) / EB_CS) + 1)
+	var gh := maxi(1, ceili(float(mh) / EB_CS) + 1)
+	var c := []
+	c.resize(gw * gh)
+	var n := 0
+	for b in blds:
+		if w.is_enemy(fid, int(b.owner)):
+			var o: Vector2i = b.cell
+			var sz := float(b.size)
+			var q := [b, float(o.x), float(o.y), float(o.x) + sz, float(o.y) + sz]
+			n += 1
+			var bx0 := clampi(floori(float(o.x) / EB_CS), 0, gw - 1)
+			var bx1 := clampi(floori((float(o.x) + sz) / EB_CS), 0, gw - 1)
+			var by0 := clampi(floori(float(o.y) / EB_CS), 0, gh - 1)
+			var by1 := clampi(floori((float(o.y) + sz) / EB_CS), 0, gh - 1)
+			for by in range(by0, by1 + 1):
+				for bx in range(bx0, bx1 + 1):
+					var k := by * gw + bx
+					if c[k] == null:
+						c[k] = [q]
+					else:
+						c[k].append(q)
+	return {"c": c, "gw": gw, "gh": gh, "n": n}
 
 
 ## The per-candidate filters of find_target (range, visible cell, alive, concealment, air, min_range).
