@@ -369,6 +369,27 @@ func _kick_sim() -> void:
 		_join_now()
 
 
+## G7 PERF7D (orch.ruling on CR 2047): hand-over latency. A finished step used to be joined at the next _process and
+## the next one started only at that frame's frame_pre_draw (about one frame idle per step: ~25% of tps at 2k). Now
+## the next step starts right at the hand-over, except when no frame has had the world free for READ_WINDOW_US: that
+## frame keeps the old order (world readable until frame_pre_draw) so the overlays that redraw only on free frames,
+## the panels that wait for one and live posture reads still get >= 1 / READ_WINDOW_US. Same step sequence (k from
+## _acc as before); commands given while a chained step runs are queued and go in at its hand-over (SimRunner).
+const READ_WINDOW_US := 100000
+var _last_window_us := 0
+var _handover_frame := -1   # 1 = --handover=frame (the G4-G7 order, A/B perf runs only), 0 = chained
+
+
+func _chain_kick() -> void:
+	if _handover_frame < 0:
+		_handover_frame = 1 if OS.get_cmdline_user_args().has("--handover=frame") else 0
+	if _handover_frame == 1 or _runner == null or not _runner.threaded or paused or _runner.task_id >= 0 			or _acc < SimWorld.DT:
+		return
+	if Time.get_ticks_usec() - _last_window_us >= READ_WINDOW_US:
+		return   # this frame is the read window: _kick_pending starts the step at frame_pre_draw
+	_kick_sim()
+
+
 ## Hand-over: join the in-flight step (blocking if needed), take its snapshot, dispatch its
 ## events and submit the commands queued meanwhile.
 func _join_now() -> void:
@@ -475,6 +496,9 @@ func _process(delta: float) -> void:
 	# SIM_FRAME_BUDGET_US of sim time (>= 1 step), backlog dropped. Same step sequence either way.
 	if _runner.task_id >= 0 and _runner.finished():
 		_join_now()
+		_chain_kick()  # G7 PERF7D: start the next step at the hand-over (not at this frame's frame_pre_draw)
+	if _runner.task_id < 0:
+		_last_window_us = Time.get_ticks_usec()  # the world is readable for the rest of this frame
 	if _kick_pending and _runner.task_id < 0:
 		_kick_sim()  # frame_pre_draw did not fire (headless / minimized window): start it now
 	if not paused:

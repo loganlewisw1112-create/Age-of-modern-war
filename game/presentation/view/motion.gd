@@ -451,6 +451,51 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 	return -1
 
 
+## G7 PERF7D (orch.ruling CR 2047): g7_col for a unit whose only G7 display state is its SQUAD7 fields, read from the
+## snapshot arrays (snap.sq7f bits b = RenderSnap.SQ7_*) instead of a g7u dict: the same frame g7_col returns for the
+## entry RenderSnap.sq7_merge(null, b, ..) builds (the PERF7C squad-only fast path; _g7_fallback reads only keys such an
+## entry lacks, so it returns -1 there). No allocation per soldier.
+const _SQ_SECTOR := 2   # = RenderSnap.SQ7_* (motion.gd does not preload the sim script)
+const _SQ_BACK := 4
+const _SQ_STACK := 8
+const _SQ_ENTRY := 16
+const _SQ_HULL := 32
+static func g7_col_sq(a61: Dictionary, b: int, posture: int, t: float, seed: float) -> int:
+	if not a61.has("g7_unc"):
+		return -1
+	var moving := (posture & P_MOVING) != 0
+	if moving and b & _SQ_BACK:
+		return int(a61.g7_back[int(t * 6.0 + seed * 2.0) % 2])
+	if posture & P_FIRING:
+		return int(a61.throw[0]) if posture & P_THROW else -1
+	var gi := (b >> 6) & 3   # 1 crouch, 2 duck, 3 sprint (RenderSnap.GAITS), 0 no gait key
+	if moving:
+		if b & _SQ_ENTRY:
+			return int(a61.g7_duck[int(t * 8.0 + seed * 4.0) % 4])
+		match gi:
+			1:
+				return int(a61.g7_cwalk[int(t * 7.0 + seed * 4.0) % 4])
+			2:
+				return int(a61.g7_duck[int(t * 11.0 + seed * 4.0) % 4])
+			3:
+				return int(a61.run[int(t * 16.0 + seed * 6.0) % 6])
+		return -1
+	if b & _SQ_STACK:
+		return int(a61.crouch)
+	if gi == 1 or gi == 2:
+		return int(a61.crouch)
+	return -1
+
+
+## G7 PERF7D: g7_facing for the same squad-only state (bits b, sector / hull in degrees from snap.sq7a / sq7h).
+static func g7_facing_sq(b: int, sector_deg: float, hull_deg: float, sim_facing: float, moving: bool) -> float:
+	if b & _SQ_HULL and not moving:
+		return deg_to_rad(hull_deg)
+	if b & _SQ_SECTOR and (not moving or b & _SQ_BACK):
+		return deg_to_rad(sector_deg)
+	return sim_facing
+
+
 ## Sheets with the G6.1 set but no G7 columns: map the G7 states onto the nearest G6.1 frames.
 static func _g7_fallback(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed: float, tick: int) -> int:
 	if a61.is_empty():

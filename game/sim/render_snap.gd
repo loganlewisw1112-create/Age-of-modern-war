@@ -113,11 +113,23 @@ static func build(w) -> void:
 	if s7_on and def_inf.size() != defs.size():
 		def_inf = _def_inf_table(defs)
 	var s7f: Array = _s7_inputs(w, g6) if s7_on else []
-	var s7o: Array = []   # G7 PERF7C: owner -> _s7_owner entry (constant results when no enemy spot set can matter)
-	s7o.resize(64)
 	var g7u: Dictionary = _g7_base(w)  # G7 (LOOK7): sparse display table + SQUAD7 / DRONE7 entity fields
-	var g7b_any := not g7u.is_empty()   # G7 PERF7C: before the unit loop g7u holds only g7v ids
-	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units
+	# G7 PERF7D (orch.ruling CR 2047): SQUAD7 fields and Senses7 hiding as arrays aligned with ids (no per-unit dicts)
+	var sq7f := PackedByteArray()      # SQ7_* bits per unit (0 = no SQUAD7 field)
+	var sq7a := PackedFloat64Array()   # sector (degrees, e.f7_hd) where SQ7_SECTOR
+	var sq7h := PackedFloat64Array()   # hull heading (degrees, e.f7_hb) where SQ7_HULL
+	sq7f.resize(cap)
+	sq7f.fill(0)
+	sq7a.resize(cap)
+	sq7a.fill(0.0)
+	sq7h.resize(cap)
+	sq7h.fill(0.0)
+	var s7_gate := false   # some faction has a Senses7 spot set (else every soldier is seen: no FLAG_S7)
+	if s7_on:
+		for sp7 in (s7f[1] as Array):
+			if sp7 != null:
+				s7_gate = true
+	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units (_wnd)
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
 		if e.kind == "unit":
@@ -156,7 +168,6 @@ static func build(w) -> void:
 					pp = o_pos[k]
 			var dfl2: int = def_fl[di]
 			var fl := dfl2 & DEF_PASS
-			var od_u = e.get("order")   # G7 PERF7B: read once (G4b work flag, SQUAD7 back-off, WOUND7 care)
 			if dfl2 & DEF_G5:
 				fl |= _g5_unit(e, id, dfl2, g5)
 			if g5_any:   # G7 PERF7C: = _g5_dyn(e, id, g5), inlined
@@ -190,6 +201,7 @@ static func build(w) -> void:
 					hid_spot[id] = (sp_v as Array).duplicate() if sp_v is Array else []
 				if e.get("deployed", false):
 					fl |= FLAG_DEPLOYED
+				var od_u = e.get("order")
 				var ot = od_u.get("type") if od_u is Dictionary else null
 				if (ot == "lay_mine" or ot == "plant_charge") and int(od_u.get("t", 0)) > 0:
 					fl |= FLAG_WORK
@@ -197,63 +209,52 @@ static func build(w) -> void:
 				fl |= _carrier_flags(e, id, int(w.tick), old, unl)
 			if dfl2 & DEF_G6 or (g6_any and ("art_def" in e or "garrisoned_in" in e or "camo_net" in e)):
 				fl |= _g6_unit(w, e, id, dfl2, g6, hid_spot)
-			if s7_on and not (fl & FLAG_HID) and def_inf[di] == 1 and "morale" in e:
-				var ow := int(e.owner)
-				var so = s7o[ow] if ow >= 0 and ow < 64 else null
-				if so == null:
-					so = _s7_owner(s7f, ow)
-					if ow >= 0 and ow < 64:
-						s7o[ow] = so
-				if so[1] != null:   # every enemy spot set empty: hidden from those teams whatever the id
-					hid_spot[id] = so[1]
-					fl |= FLAG_HID
-				elif not so[0]:
-					fl |= _s7_hid_fast(e, id, s7f, hid_spot)
+			# G7 PERF7D (orch.ruling CR 2047): Senses7 target soldiers get FLAG_S7; who sees them is decided by the drawer
+			# from the per-tick spot sets in snap.s7v (RenderSnap.s7_sees), not by a hid_spot entry per hidden soldier
+			if s7_gate and def_inf[di] == 1 and not (fl & FLAG_HID) and "morale" in e:
+				fl |= FLAG_S7
 			# G7 (LOOK7): SQUAD7 formation fields (gait / sector / back-off / stacking / herringbone hull) and the
 			# DRONE7 flown-drone height / bank, merged into g7u (three lookups per unit; drones only for aircraft defs)
 			# G7 PERF7B: _g7_squad inlined (same keys, same order)
-			var hd = e["f7_hd"] if "f7_hd" in e else null   # G7 PERF7C: `in` first (most units carry none of these)
-			if hd != null:
-				var d7 = g7u.get(id) if g7b_any else null
-				var gi := 0
-				if "gait" in e:
-					var gt0 = e["gait"]
-					gi = int(gt0) if gt0 != null else 0
-				if d7 == null:
-					d7 = {"gait": GAITS[gi], "sector": deg_to_rad(float(hd))} if gi > 0 and gi < GAITS.size() 							else {"sector": deg_to_rad(float(hd))}
-					g7u[id] = d7
-				else:
-					if gi > 0 and gi < GAITS.size() and not d7.has("gait"):
-						d7["gait"] = GAITS[gi]
-					d7["sector"] = deg_to_rad(float(hd))
-				if od_u is Dictionary and "bk" in od_u and bool(od_u.bk):
-					d7["back"] = true
-				if "f7_clr" in e:
-					var clr = e["f7_clr"]
-					if clr != null:
-						if int(clr) == 1:
-							d7["stack"] = true
-						elif int(clr) == 2:
-							d7["entry"] = true
-				if "f7_hb" in e:
-					var hb0 = e["f7_hb"]
-					if hb0 != null:
-						d7["hull"] = deg_to_rad(float(hb0))
+			# G7 PERF7D: written straight into the id-aligned arrays (degrees as the sim keeps them; readers convert)
+			if "f7_hd" in e:
+				var hd = e["f7_hd"]
+				if hd != null:
+					var sqb := SQ7_ON | SQ7_SECTOR   # `in` + [] (cheaper than e.get() in this loop)
+					if "gait" in e:
+						var gt0 = e["gait"]
+						if gt0 != null:
+							var gi := int(gt0)
+							if gi > 0 and gi < 4:
+								sqb |= gi << SQ7_GAIT_SHIFT
+					if "order" in e:
+						var od7 = e["order"]
+						if od7 is Dictionary and "bk" in od7 and bool(od7.bk):
+							sqb |= SQ7_BACK
+					if "f7_clr" in e:
+						var clr = e["f7_clr"]
+						if clr != null:
+							if int(clr) == 1:
+								sqb |= SQ7_STACK
+							elif int(clr) == 2:
+								sqb |= SQ7_ENTRY
+					if "f7_hb" in e:
+						var hb0 = e["f7_hb"]
+						if hb0 != null:
+							sqb |= SQ7_HULL
+							sq7h[n] = float(hb0)
+					sq7a[n] = float(hd)
+					sq7f[n] = sqb
+				elif "gait" in e or "f7_hb" in e:
+					_sq7_other(e, n, sq7f, sq7h)
 			elif "gait" in e or "f7_hb" in e:
-				var gt = e.get("gait")
-				var hb = e.get("f7_hb")
-				if gt != null or hb != null:
-					_g7_squad(e, id, gt, null, hb, g7u)
+				_sq7_other(e, n, sq7f, sq7h)
 			if any_req and req.has(id):
 				fl |= FLAG_DETAIL
 				detail[id] = e.duplicate(true)
 			if dfl2 & DEF_AIRCRAFT and e.has("drone_h"):
 				_g7_entry(g7u, id)["dh"] = float(e.drone_h)
 				_g7_entry(g7u, id)["dbank"] = float(e.get("drone_bank", 0.0))
-			if "wz" in e or "panic" in e or "wdrg" in e or "wounded" in e or (od_u is Dictionary and "care" in od_u):
-				var we: Dictionary = SimWorld.Wounds.render_entry(e)
-				if not we.is_empty():
-					wnd[id] = we
 			ids[n] = id
 			pos[n] = p
 			prev[n] = pp
@@ -290,6 +291,15 @@ static func build(w) -> void:
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
 	_g7_out(w, snap, g7u)
+	sq7f.resize(n)
+	if sq7f.count(0) < n:   # G7 PERF7D: SQUAD7 fields aligned with ids (see SQ7_*; RenderSnap.sq7_merge rebuilds the old g7u keys)
+		sq7a.resize(n); sq7h.resize(n)
+		snap["sq7f"] = sq7f
+		snap["sq7a"] = sq7a
+		snap["sq7h"] = sq7h
+	if s7_gate:  # G7 PERF7D: Senses7 spot sets of this tick for FLAG_S7 soldiers (RenderSnap.s7_sees / s7_spot)
+		snap["s7v"] = _s7_view(s7f)
+	_wnd(w, wnd)
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	if w.sys_state.has("creep"):
 		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
@@ -744,8 +754,8 @@ static func _def_inf_table(defs: PackedStringArray) -> PackedByteArray:
 	return out
 
 
-## G7 PERF7B: [fid team array, fid spot-set array (null = no gate), {team: fid indices}, {mask: shared spot array}]
-## read once per snapshot for _s7_hid_fast (Senses7.hidden = spot set present, id not in it, infantry target).
+## G7 PERF7B: [fid team array, fid spot-set array (null = no gate), {fid: team}] read once per snapshot (G7 PERF7D:
+## copied into snap.s7v by _s7_view; Senses7.hidden = spot set present, id not in it, infantry target).
 static func _s7_inputs(w, g6: Dictionary) -> Array:
 	var s7 = _sys("senses7")
 	var st = w.sys_state.get("senses7")
@@ -754,69 +764,99 @@ static func _s7_inputs(w, g6: Dictionary) -> Array:
 	for f in g6.fids:
 		tms.append(int(g6.teams[f]))
 		sps.append(st.spot.get(s7.tkey(w, int(f))) if st is Dictionary and st.has("spot") else null)
-	return [tms, sps, g6.teams, {}]
+	return [tms, sps, g6.teams]
 
 
-## G7 PERF7B: per-owner Senses7 summary [all_seen, const_spot]: all_seen = no other team's spot set gates (every team
-## sees this owner's soldiers: _s7_hid returns 0); const_spot = the shared spot array when every gating spot set of
-## another team is empty (the soldier is hidden from exactly those teams whatever his id), else null (per-unit check).
-static func _s7_owner(s7f: Array, owner: int) -> Array:
-	var tms: PackedInt32Array = s7f[0]
-	var sps: Array = s7f[1]
-	var own_tm = (s7f[2] as Dictionary).get(owner, -1)
-	var mask := 0
-	var gated := false
-	var all_empty := true
-	for i in tms.size():
-		var sp = sps[i]
-		if tms[i] == own_tm or sp == null:
-			mask |= 1 << i
-		else:
-			gated = true
-			if not (sp as Dictionary).is_empty():
-				all_empty = false
-	if not gated:
-		return [true, null]
-	if not all_empty:
-		return [false, null]
-	var shared: Dictionary = s7f[3]
-	var arr = shared.get(mask)
-	if arr == null:
-		arr = []
-		for i in tms.size():
-			if mask & (1 << i) and not (arr as Array).has(tms[i]):
-				(arr as Array).append(tms[i])
-		shared[mask] = arr
-	return [false, arr]
+## G7 PERF7D (orch.ruling CR 2047): FLAG_S7 marks a Senses7 infantry target (Senses7.is_inf_target) that no G4b / G6
+## concealment already hides. snap.s7v = {tm: PackedInt32Array team per faction (faction order), sp: Array per faction
+## of a copy of its team's spot set {id: ..} or null (no gate), ot: {fid: team}}. The PERF7C format put FLAG_HID +
+## hid_spot[id] = s7_spot(..) on every such soldier hidden from some team; s7_sees gives the same draw decision.
+const FLAG_S7 := 1 << 7
 
 
-## G7 PERF7B: _s7_hid for an infantry target (def_inf bit + e.morale checked by the caller), with the per-faction
-## spot sets hoisted out of the unit loop. Same result and the same spot array content (teams in faction order,
-## deduplicated); units with the same seen-by pattern share one array per snapshot (read-only for the display).
-static func _s7_hid_fast(e: Dictionary, id: int, s7f: Array, hid_spot: Dictionary) -> int:
-	var tms: PackedInt32Array = s7f[0]
-	var sps: Array = s7f[1]
-	var own_tm = (s7f[2] as Dictionary).get(int(e.owner), -1)
-	var mask := 0
+static func _s7_view(s7f: Array) -> Dictionary:
+	var sps: Array = []
+	var src: Array = []
+	var cps: Array = []
+	for sp in (s7f[1] as Array):
+		if sp == null:
+			sps.append(null)
+			continue
+		var c = null
+		for j in src.size():   # factions of one team share their team's set: one copy
+			if is_same(src[j], sp):
+				c = cps[j]
+				break
+		if c == null:
+			c = (sp as Dictionary).duplicate()
+			src.append(sp)
+			cps.append(c)
+		sps.append(c)
+	return {"tm": (s7f[0] as PackedInt32Array).duplicate(), "sp": sps, "ot": (s7f[2] as Dictionary).duplicate()}
+
+
+## The teams that see FLAG_S7 soldier `id` of team own_tm (the old hid_spot[id] content: faction order, deduplicated),
+## or null when every team sees him (the old format left him without FLAG_HID).
+static func s7_spot(s7v: Dictionary, id: int, own_tm: int):
+	var tms: PackedInt32Array = s7v.tm
+	var sps: Array = s7v.sp
+	var arr: Array = []
 	var hidden_any := false
 	for i in tms.size():
 		var sp = sps[i]
 		if tms[i] == own_tm or sp == null or (sp as Dictionary).has(id):
-			mask |= 1 << i
+			if not arr.has(tms[i]):
+				arr.append(tms[i])
 		else:
 			hidden_any = true
-	if not hidden_any:
-		return 0
-	var shared: Dictionary = s7f[3]
-	var arr = shared.get(mask)
-	if arr == null:
-		arr = []
-		for i in tms.size():
-			if mask & (1 << i) and not (arr as Array).has(tms[i]):
-				(arr as Array).append(tms[i])
-		shared[mask] = arr
-	hid_spot[id] = arr
-	return FLAG_HID
+	return arr if hidden_any else null
+
+
+## Draw decision for FLAG_S7 soldier `id` (owner team own_tm) seen by team my_team: true unless some team's senses
+## hide him and my_team is not among the teams that see him (= the old FLAG_HID + hid_spot rule). No allocation.
+static func s7_sees(s7v: Dictionary, id: int, own_tm: int, my_team: int) -> bool:
+	var tms: PackedInt32Array = s7v.tm
+	var sps: Array = s7v.sp
+	var hidden_any := false
+	for i in tms.size():
+		var sp = sps[i]
+		if tms[i] == own_tm or sp == null or (sp as Dictionary).has(id):
+			if tms[i] == my_team:
+				return true
+		else:
+			hidden_any = true
+	return not hidden_any
+
+
+## G7 PERF7D: snap.wnd built from the ids WOUND7 / Medical track (Wounds st.vw watch list + st.care caregivers +
+## Medical st.wounded) instead of five key checks on every unit; same gate and Wounds.render_entry per id.
+static func _wnd(w, wnd: Dictionary) -> void:
+	var ss: Dictionary = w.sys_state
+	var cand := {}
+	var ws = ss.get("wounds")
+	if ws is Dictionary:
+		for k in ["vw", "care"]:
+			var d = ws.get(k)
+			if d is Dictionary:
+				for id in d:
+					cand[int(id)] = true
+	var md = ss.get("medical")
+	if md is Dictionary and md.get("wounded") is Dictionary:
+		for id in md.wounded:
+			cand[int(id)] = true
+	if cand.is_empty():
+		return
+	var ids: Array = cand.keys()
+	ids.sort()
+	for id in ids:
+		var e = w.entities.get(id)
+		if e == null or e.kind != "unit":
+			continue
+		var od = e.get("order")
+		if "wz" in e or "panic" in e or "wdrg" in e or "wounded" in e or (od is Dictionary and "care" in od):
+			var we: Dictionary = SimWorld.Wounds.render_entry(e)
+			if not we.is_empty():
+				wnd[id] = we
 
 
 static func _sys(k: String):
@@ -990,6 +1030,53 @@ static func _g7_entry(g7u: Dictionary, id: int) -> Dictionary:
 ## SQUAD7 fields (change_request.snapshot_squad7): e.gait int 0 walk 1 crouch-walk 2 duck-run 3 sprint, e.f7_hd watched
 ## heading (deg), e.order.bk backing off, e.f7_clr 1 stacked / 2 entering, e.f7_hb vehicle hull heading at a halt (deg).
 const GAITS := ["walk", "crouch", "duck", "sprint"]
+## G7 PERF7D (orch.ruling CR 2047): the SQUAD7 fields no longer go into g7u; snap.sq7f[i] (PackedByteArray aligned with
+## ids, present only when some unit has one) holds SQ7_* bits, snap.sq7a[i] the sector (degrees = e.f7_hd, SQ7_SECTOR)
+## and snap.sq7h[i] the hull heading (degrees = e.f7_hb, SQ7_HULL); readers apply deg_to_rad as the old build did. sq7_merge(g7u entry or null, ...) rebuilds the exact g7u entry the
+## G7 PERF7C format carried (gait / sector / back / stack / entry / hull keys merged into the g7v copy).
+const SQ7_ON := 1
+const SQ7_SECTOR := 2
+const SQ7_BACK := 4
+const SQ7_STACK := 8
+const SQ7_ENTRY := 16
+const SQ7_HULL := 32
+const SQ7_GAIT_SHIFT := 6   # bits 6..7: GAITS index (0 = no gait key)
+
+
+## SQUAD7 fields of a unit with no e.f7_hd (gait / herringbone hull only); the PERF7C _g7_squad(.., hd = null, ..) case.
+static func _sq7_other(e: Dictionary, n: int, sq7f: PackedByteArray, sq7h: PackedFloat64Array) -> void:
+	var gt = e.get("gait")
+	var hb = e.get("f7_hb")
+	if gt == null and hb == null:
+		return
+	var b := SQ7_ON
+	if gt != null and int(gt) > 0 and int(gt) < GAITS.size():
+		b |= int(gt) << SQ7_GAIT_SHIFT
+	if hb != null:
+		b |= SQ7_HULL
+		sq7h[n] = float(hb)
+	sq7f[n] = b
+
+
+## sector / hull in degrees (snap.sq7a / sq7h); the rebuilt entry holds radians like the PERF7C g7u keys.
+static func sq7_merge(gv, b: int, sector: float, hull: float) -> Dictionary:
+	var d: Dictionary = (gv as Dictionary).duplicate() if gv is Dictionary else {}
+	var gi := (b >> SQ7_GAIT_SHIFT) & 3
+	if gi > 0 and not d.has("gait"):
+		d["gait"] = GAITS[gi]
+	if b & SQ7_SECTOR:
+		d["sector"] = deg_to_rad(sector)
+	if b & SQ7_BACK:
+		d["back"] = true
+	if b & SQ7_STACK:
+		d["stack"] = true
+	if b & SQ7_ENTRY:
+		d["entry"] = true
+	if b & SQ7_HULL:
+		d["hull"] = deg_to_rad(hull)
+	return d
+
+
 static func _g7_squad(e: Dictionary, id: int, gt, hd, hb, g7u: Dictionary) -> void:
 	var d := _g7_entry(g7u, id)
 	if gt != null and int(gt) > 0 and int(gt) < GAITS.size() and not d.has("gait"):

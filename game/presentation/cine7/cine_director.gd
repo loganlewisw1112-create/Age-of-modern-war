@@ -207,6 +207,12 @@ func advance(dt: float) -> void:
 	if done:
 		return
 	if waiting:
+		# G7 PERF7D (PERF7C need seq 1956): mv.world joins an in-flight threaded step (the frame waits for the whole
+		# step); while a step runs keep the waiting frame and look again on a frame with the world free (hand-over)
+		if mv != null and mv.has_method("sim_busy") and bool(mv.sim_busy()):
+			if ui != null:
+				ui.waiting_frame(dt)
+			return
 		var w := _world()
 		var s = LastProtocol.st(w) if w != null else null
 		if s is Dictionary and (s as Dictionary).has("base"):

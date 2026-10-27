@@ -386,6 +386,9 @@ func refresh() -> void:
 	var neutral: Color = mv.team_color(-1)
 	var my_team := int((facs.get(pf, {}) as Dictionary).get("team", pf))
 	var hid_spot: Dictionary = sn.get("hid_spot", {})
+	var s7v: Dictionary = sn.get("s7v", {})   # G7 PERF7D: Senses7 spot sets of this tick (FLAG_S7 soldiers)
+	var has_s7 := not s7v.is_empty()
+	var s7ot: Dictionary = s7v.get("ot", {})
 	var allies: Array = mv._ally_fids   # G7 PERF7C: hoisted (a node property read per unit; Senses7 marks most enemy soldiers FLAG_HID)
 	var mw := int(sn.map_w)
 	var fog: Dictionary = mv.fog_of(pf)
@@ -476,6 +479,11 @@ func refresh() -> void:
 	# G7 (LOOK7): sparse per-unit display states (render_snap g7u: wounds, care, panic, gait, sectors, herringbone)
 	var g7u: Dictionary = sn.get("g7u", {})
 	var has_g7 := not g7u.is_empty()
+	# G7 PERF7D (orch.ruling CR 2047): SQUAD7 fields as arrays aligned with ids (RenderSnap.SQ7_* bits, sector, hull)
+	var sq7f: PackedByteArray = sn.get("sq7f", PackedByteArray())
+	var sq7a: PackedFloat64Array = sn.get("sq7a", PackedFloat64Array())
+	var sq7h: PackedFloat64Array = sn.get("sq7h", PackedFloat64Array())
+	var sq7_n := sq7f.size()
 	var has_x7 := not x7.is_empty()
 	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
@@ -539,6 +547,8 @@ func refresh() -> void:
 			var hsp = hid_spot.get(id)   # G7 PERF7C: no default [] allocated per hidden unit
 			if hsp == null or not (hsp as Array).has(my_team):
 				continue
+		elif fl & RenderSnap.FLAG_S7 and has_s7 and ow != pf and not allies.has(ow) 				and not RenderSnap.s7_sees(s7v, id, int(s7ot.get(ow, -1)), my_team):
+			continue   # G7 PERF7D: hidden by Senses7 from this team (= the old FLAG_HID + hid_spot rule)
 		var dname: String = defs[def_a[i]]
 		var mod6 := Color.WHITE
 		if fl & RenderSnap.FLAG_G6 and has_g6:
@@ -597,6 +607,10 @@ func refresh() -> void:
 		var a61: Dictionary = c[31] if not g61_off else _no61
 		var bits := 0
 		var gv = g7u.get(id) if has_g7 else null
+		var sqb: int = sq7f[i] if i < sq7_n else 0
+		if sqb != 0 and gv != null:
+			gv = RenderSnap.sq7_merge(gv, sqb, sq7a[i], sq7h[i])   # rare: a formation soldier with other G7 states
+			sqb = 0
 		if fl & RenderSnap.FLAG_MOVING:
 			bits |= Motion.P_MOVING
 		if fl & RenderSnap.FLAG_FIRING:
@@ -615,7 +629,12 @@ func refresh() -> void:
 				_mcls[dname] = mcls
 			if mcls == Motion.CLS_INF and motion.speed(id) >= RUN_SPEED:
 				bits |= Motion.P_RUN
-			motion.step(id, mcls, pos, fac_a[i] if gv == null else Motion.g7_facing(gv, fac_a[i], (fl & RenderSnap.FLAG_MOVING) != 0), bits, t)
+			var mfac: float = fac_a[i]
+			if gv != null:
+				mfac = Motion.g7_facing(gv, mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
+			elif sqb != 0:
+				mfac = Motion.g7_facing_sq(sqb, sq7a[i], sq7h[i], mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
+			motion.step(id, mcls, pos, mfac, bits, t)
 			var mo: Vector2 = motion.out_off
 			var mpx: Vector2 = motion.out_px
 			if c[30] >= 0 and fl & RenderSnap.FLAG_MOVING:
@@ -631,6 +650,8 @@ func refresh() -> void:
 		var g7c := -1
 		if gv != null and not a61.is_empty():
 			g7c = Motion.g7_col(a61, gv, bits, t, Motion.seed_of(id), stick)
+		elif sqb != 0 and not a61.is_empty():
+			g7c = Motion.g7_col_sq(a61, sqb, bits, t, Motion.seed_of(id))   # G7 PERF7D: no dict per formation soldier
 		var pg: int = c[2]
 		var ad = g5air.get(id) if has_air else null
 		if pg == -2:
