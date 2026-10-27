@@ -454,6 +454,29 @@ func test_casualty_hotkeys_are_shift_chords() -> void:
 	check_eq(HK.event_key(ev, {"SHIFT+T": 1, "T": 1}), "T", "plain T stays T")
 
 
+## Counter-nanite team orders (CNSIM7-3 CR seq 557): rebindable Shift chords that clash with nothing; plain P stays
+## the global pause key (a card action may never take a GLOBAL key, so the pincer is Shift+P, not P).
+func test_cn_hotkeys_are_rebindable_chords() -> void:
+	var HK = load("res://presentation/ui5/panels/hotkeys.gd")
+	check(HK.G7_ACTIONS.has("cn_pincer") and HK.G7_ACTIONS.has("cn_break_contact"), "cn_* actions are G7 (rebindable) rows")
+	check_eq(HK.key("cn_pincer"), "SHIFT+P", "cn_pincer default Shift+P")
+	check_eq(HK.key("cn_break_contact"), "SHIFT+B", "cn_break_contact default Shift+B")
+	check(HK.GLOBAL.has("P") and not HK.GLOBAL.has("SHIFT+P"), "P stays the global pause key")
+	check_eq(HK.collisions().filter(func(c): return String(c).contains("cn_")), [], "no cn_* key collision")
+	check_eq(HK.collisions(), [], "the whole hotkey map stays collision-free")
+	check(HK.rebind_error("cn_pincer", "P").contains("global key"), "rebinding the pincer to the pause key P is refused (%s)" % HK.rebind_error("cn_pincer", "P"))
+	check_eq(HK.rebind_error("cn_pincer", "SHIFT+X"), "", "a Shift chord is a valid rebind")
+	check_eq(HK.rebind_error("treat_casualty", "SHIFT+T"), "", "the casualty keys can be rebound back to their Shift chords")
+	check(HK.rebind_error("cn_pincer", "SHIFT+1") != "", "Shift + a digit is refused")
+	var ev := InputEventKey.new()
+	ev.keycode = KEY_P
+	ev.shift_pressed = true
+	check_eq(HK.event_key(ev, {"SHIFT+P": 1}), "SHIFT+P", "Shift+P resolves to the pincer chord on its card")
+	ev.shift_pressed = false
+	check_eq(HK.event_key(ev, {"SHIFT+P": 1}), "P", "plain P stays P (pause)")
+	check_eq(HK.badge("SHIFT+B"), "Sh+B", "badge for the break-contact chord")
+
+
 ## A halt after a player move: the vehicles still angle into a herringbone (f7_hb heading) but in place, since the
 ## player's spots stand inside the override window (player control first).
 func test_player_halt_turns_in_place() -> void:
@@ -480,3 +503,73 @@ func test_player_halt_turns_in_place() -> void:
 	for k in vids.size():
 		moved = maxf(moved, Vector2(w.entities[vids[k]].pos).distance_to(at[k]))
 	check(moved <= 0.3, "the halt drill did not move the player's vehicles (max %.2f tiles)" % moved)
+
+
+## G7 SQUAD7-4: a 60-man default wedge was 5 fire-team wedges abreast (~70 tiles of front, ~100 under threat), so
+## near the map edge its flank slots clamped onto the edge and piled up. Now at most chunk_abreast (3) groups per rank,
+## the rest behind, and the footprint is shifted inside the map.
+func test_company_wedge_in_ranks_and_inside_the_map() -> void:
+	var loc: Array = F7.local_slots(60, "wedge", 1.1, 0.5)[0]
+	var lo := INF
+	var hi := -INF
+	var dmin := 0.0
+	for q in loc:
+		lo = minf(lo, (q as Vector2).x)
+		hi = maxf(hi, (q as Vector2).x)
+		dmin = minf(dmin, (q as Vector2).y)
+	check(hi - lo <= 42.0, "60-man wedge front <= 3 wedges abreast (%.1f tiles)" % (hi - lo))
+	check(dmin < -9.0, "the other wedges follow in a second rank (depth %.1f)" % dmin)
+	var w := _world()
+	var ids := []
+	for k in 60:
+		var id := _spawn(w, "rifleman", 0, Vector2i(14 + k % 12, 14 + k / 12))
+		w.entities[id].formation = "wedge"
+		ids.append(id)
+	var slots := _move_ids(w, 0, ids, Vector2(20.5, 3.5))
+	var edge := 0
+	for s in slots:
+		var p: Vector2 = s
+		if p.x < 0.9 or p.y < 0.9 or p.x > float(w.map.w) - 0.9 or p.y > float(w.map.h) - 0.9:
+			edge += 1
+	check_eq(edge, 0, "no slot clamped onto the map edge")
+	check(float(_nn(slots)[0]) >= 0.5, "no two slots stacked (nn %.2f)" % float(_nn(slots)[0]))
+
+
+## G7 SQUAD7-4: a staggered column on a 1-tile road: both files on road cells (they sat on the cell edges, one man on
+## the road and his file-mate just off it at the grass pace) and the march keeps its spacing (a pair closed to 0.58
+## tiles; the uncross pass had also sent a rear man to a front slot through the file).
+func test_column_on_road_keeps_step() -> void:
+	var w := _world()
+	var t: PackedByteArray = w.map.terrain
+	var mw := int(w.map.w)
+	for y in range(20, 85):
+		t[y * mw + 60] = Terrain.ROAD
+	w.map.terrain = t
+	Movement.rebuild_nav(w)
+	var ids := []
+	for k in 9:
+		ids.append(_spawn(w, "rifleman", 0, Vector2i(54 + k % 3, 70 + k / 3), 7701))
+	_move_ids(w, 0, ids, Vector2(60.5, 62.5))
+	w.run_ticks(300)
+	var slots := _move_ids(w, 0, ids, Vector2(60.5, 45.5))
+	check_eq(String(w.entities[ids[0]].get("f7_auto", "")), "staggered_column", "auto picks the staggered column on a road")
+	var off := 0
+	for s in slots:
+		if w.terrain_at(Vector2i(floori((s as Vector2).x), floori((s as Vector2).y))) != Terrain.ROAD:
+			off += 1
+	check_eq(off, 0, "every column slot is on the road")
+	var lo := INF
+	var samples := 0
+	for k in 16:
+		w.run_ticks(10)
+		var pts := []
+		var moving := 0
+		for id in ids:
+			pts.append(Vector2(w.entities[id].pos))
+			if bool(w.entities[id].moving):
+				moving += 1
+		if moving == ids.size():
+			lo = minf(lo, float(_nn(pts)[0]))
+			samples += 1
+	check(samples >= 8, "the column marched (%d samples)" % samples)
+	check(lo >= 0.9, "nobody closes up on the march (nearest %.2f tiles, >= 0.9 = 6 m)" % lo)

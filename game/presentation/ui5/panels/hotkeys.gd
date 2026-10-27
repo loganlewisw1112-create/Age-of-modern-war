@@ -121,6 +121,10 @@ const G7_ACTIONS := {
 	# taken on infantry cards, so these are Shift chords ("SHIFT+<key>"); hud.gd resolves them with event_key().
 	"treat_casualty": ["SHIFT+T", "First aid: nearest wounded own soldier", "wound7", "treat_casualty"],
 	"evacuate_casualty": ["SHIFT+E", "Evacuate casualty: ambulance / APC / helicopter / stretcher team, then a downed soldier", "wound7", "evacuate_casualty"],
+	# G7 (CNSIM7-3 CR seq 557, SQUAD7-5): counter-nanite team orders. P is the GLOBAL pause key, so the pincer is the
+	# Shift chord SHIFT+P (hud.gd resolves chords with event_key(); plain P still pauses).
+	"cn_pincer": ["SHIFT+P", "Anti-walker pincer", "cn7", "cn_pincer"],
+	"cn_break_contact": ["SHIFT+B", "Break contact (formed withdrawal)", "cn7", "cn_break_contact"],
 }
 const PAGE_GROUPS := ["squad7"]
 const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"]]
@@ -317,11 +321,13 @@ static func rebind_error(action: String, k: String) -> String:
 	if not ACTIONS.has(action) and not G7_ACTIONS.has(action):
 		return "This key is fixed."
 	k = k.to_upper()
+	# G7: G7 actions may also take a Shift+<letter> chord (their defaults are chords: casualty and counter-nanite keys)
+	var chord := G7_ACTIONS.has(action) and k.length() == 7 and k.begins_with("SHIFT+") and k[6] >= "A" and k[6] <= "Z"
 	if group(action) == "squad61" or group(action) == "wound7":
-		if not PUNCT_KEYS.has(k):
-			return "Use , ; / ' [ ] \\ - or =."
-	elif k.length() != 1 or k < "A" or k > "Z":
-		return "Use a letter key."
+		if not PUNCT_KEYS.has(k) and not (chord and group(action) == "wound7"):
+			return "Use , ; / ' [ ] \\ - or =." if group(action) == "squad61" else "Use , ; / ' [ ] \\ - = or Shift+<letter>."
+	elif not chord and (k.length() != 1 or k < "A" or k > "Z"):
+		return "Use a letter key." if not G7_ACTIONS.has(action) else "Use a letter key or Shift+<letter>."
 	var trial := _user.duplicate()
 	trial[action] = k
 	for c in collisions(trial):
@@ -342,7 +348,7 @@ static func sheet_rows() -> Array:
 		"sub6": "submarine", "seamine6": "mine barge", "garrison_bld6": "garrisoned building selected",
 		"battery6": "strike battery selected", "garage6": "Exo-Suit Garage selected",
 		"squad61": "combat units", "squad7": "formation page", "drone7": "Drone Team (flying)",
-		"wound7": "infantry / medics / carriers"}
+		"wound7": "infantry / medics / carriers", "cn7": "counter-nanite strike / tactical team"}
 	var out: Array = []
 	var acts: Array = ACTIONS.keys() + G7_ACTIONS.keys()
 	acts.sort_custom(func(a, b): return _order(a) < _order(b))

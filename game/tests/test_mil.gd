@@ -61,6 +61,18 @@ func test_mil01_group_move_across_bridge_arrives() -> void:
 	var goal := Vector2(56.5, 56.5)
 	var ev := do_cmd(w, 0, {"type": "move", "unit_ids": ids, "target": goal})
 	check_eq(rejected_reason(ev), "", "move accepted")
+	# G7 (SQUAD7-4): a player group move now takes a real formation by default (G7_REFERENCE section 3, owner order
+	# "formations rebuilt like a real military"; here a staggered column ~6 tiles long), so the old "every man within 3
+	# tiles of the click" oracle measured the G1 clump. Each man must instead reach HIS OWN slot, and the slots
+	# themselves must be the formation anchored at the goal (front within 1 tile of it, no slot over 8 tiles away).
+	var slot := {}
+	for id in ids:
+		slot[id] = Vector2(w.entities[id].order.target)
+	var front := INF
+	for id in ids:
+		front = minf(front, (slot[id] as Vector2).distance_to(goal))
+		check((slot[id] as Vector2).distance_to(goal) <= 8.0, "slot of %d belongs to the formation at the goal (d=%.2f)" % [id, (slot[id] as Vector2).distance_to(goal)])
+	check(front <= 1.0, "the formation front is at the goal (%.2f)" % front)
 	var bad := []
 	var on_bridge := false
 	for t in 600:
@@ -73,7 +85,7 @@ func test_mil01_group_move_across_bridge_arrives() -> void:
 	check_eq(bad.size(), 0, "no unit ever in an impassable cell %s" % str(bad.slice(0, 5)))
 	for id in ids:
 		var e: Dictionary = w.entities[id]
-		check(e.pos.distance_to(goal) <= 3.0, "rifleman %d within 3 tiles of goal (d=%.2f)" % [id, e.pos.distance_to(goal)])
+		check(e.pos.distance_to(slot[id]) <= 1.5, "rifleman %d within 1.5 tiles of his formation slot (d=%.2f)" % [id, e.pos.distance_to(slot[id])])
 		check_eq(String(e.order.type), "idle", "arrived unit %d is idle" % id)
 		check(not e.moving, "arrived unit %d stopped" % id)
 
@@ -319,11 +331,20 @@ func test_save_restore_mid_fight_hash_equal() -> void:
 	var w := _world()
 	_arena(w)
 	_fight(w, 24, 26)
+	# G7 (SQUAD7-4): the movers stand in a cliff pen (exit at its top-left corner). The G7 default formation (a
+	# 60-man wedge of 5 fire-team wedges abreast, G7_REFERENCE section 3) put most slots within straight-line reach on
+	# open grass, so no move needed A* and the queue was already empty at save time. Out of the pen every one of the
+	# 60 paths is an A* request (budget 40 + 8 drained a tick), so the save provably holds a non-empty path queue
+	# whatever formation the default picks.
+	_paint(w, Rect2i(48, 2, 1, 9), Terrain.CLIFF)    # west wall x 48, y 2..10 (gap at y 0..1)
+	_paint(w, Rect2i(63, 0, 1, 11), Terrain.CLIFF)   # east wall x 63
+	_paint(w, Rect2i(48, 9, 16, 2), Terrain.CLIFF)   # south wall y 9..10
 	w.run_ticks(30)
 	var movers := []
 	for i in 60:
 		movers.append(w.spawn_unit("rifleman", 0, Vector2(50 + i % 12, 3 + i / 12) + C))
 	do_cmd(w, 0, {"type": "move", "unit_ids": movers, "target": Vector2(60.5, 20.5)})
+	check(String(w.entities[movers[0]].get("f7_auto", "")) != "", "the move took the G7 default formation")
 	var q: Array = w.sys_state.movement.queue
 	check(q.size() > 0, "path queue non-empty at save time (%d)" % q.size())
 	var w2 := SimWorld.from_dict(bytes_to_var(var_to_bytes(w.to_dict())))

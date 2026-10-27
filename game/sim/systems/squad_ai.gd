@@ -1132,6 +1132,8 @@ static func _f7_keep(w: SimWorld, mem: Array) -> void:
 			if n.dot(side) < 0.0:
 				n = -n
 			var q := p + n * lat
+			if not F7.is_veh(e):
+				q = F7.road_keep(w, p, q)   # both files of a foot column stay on the road (one pace)
 			var qc := Vector2i(floori(q.x), floori(q.y))
 			var mid := (q + prev) * 0.5
 			if w.in_bounds(qc) and Movement.is_passable(w, qc, mc) and Movement.is_passable(w, Vector2i(floori(mid.x), floori(mid.y)), mc):

@@ -50,6 +50,19 @@ func _idle(w: SimWorld, ids: Array) -> bool:
 	return true
 
 
+## Centres the camera on the live centroid of `ids` (render side only).
+func _focus(pt, mv, ids: Array) -> void:
+	var cen := Vector2.ZERO
+	var n := 0
+	for id in ids:
+		var e = pt._w().entities.get(int(id))
+		if e != null:
+			cen += Vector2(e.pos)
+			n += 1
+	if n > 0:
+		mv.center_camera_on(cen / float(n))
+
+
 func _zoom(pt, z: float) -> void:
 	var cam = pt._mv().get("camera")
 	if cam != null and cam.has_method("set_zoom_level"):
@@ -252,8 +265,10 @@ func run(pt) -> void:
 				held[0 if (k == 0 or (k - 1) % 2 == 0) else 1] = true
 		if not shot_mid and held[0] and held[1]:
 			shot_mid = true
+			_focus(pt, mv, bq)   # SQUAD7-5: the squad, not the spot it was sent to (run7 had it under the HUD panel)
 			await pt._shot("squad7_04_bounding")
 	if not shot_mid:
+		_focus(pt, mv, bq)
 		await pt._shot("squad7_04_bounding")
 	pt._log("squad7_bounding", held[0] and held[1], "team A held %s, team B held %s" % [held[0], held[1]])
 
@@ -323,6 +338,7 @@ func run(pt) -> void:
 		mv.center_camera_on(Vector2(core.pos))
 	await pt._shot("squad7_07_convoy_move")
 	var best := INF
+	var shot8 := false
 	for i in 40:
 		await pt._wait(0.25)
 		mv.join_sim()
@@ -341,6 +357,13 @@ func run(pt) -> void:
 			var p := Vector2(ww.entities[int(id)].pos)
 			var tt := clampf((p - cp).dot(tp - cp) / maxf((tp - cp).length_squared(), 0.01), 0.0, 1.0)
 			best = minf(best, p.distance_to(cp.lerp(tp, tt)))
+		if not shot8 and best <= 2.5:
+			# SQUAD7-5: shoot the moment an escort stands on the core-threat line (run7 shot after the loop, when the
+			# escort had already gone back into the column), framed on the core and the threat together
+			shot8 = true
+			mv.center_camera_on(cp.lerp(tp, 0.5))
+			await pt._shot("squad7_08_convoy_contact")
 	pt._log("squad7_convoy_contact", cid > 0 and best <= 2.5, "convoy %d, escort closest to the threat line %.2f tiles" % [cid, best])
-	await pt._shot("squad7_08_convoy_contact")
+	if not shot8:
+		await pt._shot("squad7_08_convoy_contact")
 	_zoom(pt, 1.1)

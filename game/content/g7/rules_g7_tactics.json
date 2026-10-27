@@ -3,7 +3,7 @@
   "rules": {
     "g7_tactics": {
       "foot_sp": 1.1, "veh_sp": 3.5, "veh_col_sp": 7.5, "foot_min_sp": 0.8, "foot_col_step": 0.75, "stagger_foot": 0.5, "stagger_veh": 1.2,
-      "threat_mult": 1.5, "close_mult": 0.75, "close_frac": 0.4, "low_vis": 0.6, "chunk": 12, "chunk_gap": 1.5,
+      "threat_mult": 1.5, "close_mult": 0.75, "close_frac": 0.4, "low_vis": 0.6, "chunk": 12, "chunk_gap": 1.5, "chunk_abreast": 3,
       "gait_mult": [1.0, 0.7, 1.1, 1.4], "gait_far": 40.0, "gait_near": 12.0, "gait_supp": 50.0,
       "tech_possible": 40.0, "tech_expected": 18.0, "bound_dist": 5.0,
       "halt_ticks": 60, "coil_ticks": 400, "herring_off": 1.2, "ring_sp": 1.4, "coil_sp": 5.0,

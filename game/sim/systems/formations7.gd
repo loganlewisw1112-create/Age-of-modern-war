@@ -33,7 +33,7 @@ const ROLE_RIFLE := 2
 
 const DEFAULTS := {
 	"foot_sp": 1.1, "veh_sp": 3.5, "veh_col_sp": 7.5, "foot_min_sp": 0.8, "foot_col_step": 0.75, "stagger_foot": 0.5, "stagger_veh": 1.2,
-	"threat_mult": 1.5, "close_mult": 0.75, "close_frac": 0.4, "low_vis": 0.6, "chunk": 12, "chunk_gap": 1.5,
+	"threat_mult": 1.5, "close_mult": 0.75, "close_frac": 0.4, "low_vis": 0.6, "chunk": 12, "chunk_gap": 1.5, "chunk_abreast": 3,
 	"gait_mult": [1.0, 0.7, 1.1, 1.4], "gait_far": 40.0, "gait_near": 12.0, "gait_supp": 50.0,
 	"tech_possible": 40.0, "tech_expected": 18.0, "bound_dist": 5.0,
 	"halt_ticks": 60, "coil_ticks": 400, "herring_off": 1.2, "ring_sp": 1.4, "coil_sp": 5.0,
@@ -182,7 +182,10 @@ static func local_one(n: int, form: String, sp: float, stag: float) -> Array:
 
 
 ## n members: groups of at most cfg.chunk, abreast (combat shapes) or one behind the other (column shapes).
-## Returns [pts, roles] in local coords; slot 0 is the overall leader.
+## Combat shapes put at most cfg.chunk_abreast groups side by side per rank and the rest in ranks behind ("two up, one
+## back" for a platoon, squads of a company in two echelons): G7 SQUAD7-4 found a 60-man default wedge built as 5
+## wedges abreast, ~70 tiles of front (~100 under the threat spread), so its flank slots clamped onto the map edge and
+## piled onto the same cells. Returns [pts, roles] in local coords; slot 0 is the overall leader.
 static func local_slots(n: int, form: String, sp: float, stag: float) -> Array:
 	var ch := int(cfg().chunk)
 	if n <= ch:
@@ -192,47 +195,90 @@ static func local_slots(n: int, form: String, sp: float, stag: float) -> Array:
 	var gap := sp * float(cfg().chunk_gap)
 	var pts := []
 	var roles := []
-	var cur := 0.0
 	var k0 := 0
 	var col := COLUMN_FORMS.has(form)
-	var parts := []
-	var total := 0.0
+	var parts := []    # [[pts, roles], lateral lo, lateral hi, depth lo (most negative y), depth hi]
 	for g in groups:
 		var m := mini(per, n - k0)
 		k0 += m
 		var one := local_one(m, form, sp, stag)
 		var lo := INF
 		var hi := -INF
+		var dlo := INF
+		var dhi := -INF
 		for q in one[0]:
 			var a: float = (q as Vector2).y if col else (q as Vector2).x
 			lo = minf(lo, a)
 			hi = maxf(hi, a)
-		parts.append([one, lo, hi])
-		total += hi - lo
-	total += gap * float(groups - 1)
-	cur = 0.0 if col else -total * 0.5
-	for gi in parts.size():
-		var pt: Array = parts[gi]
-		for qi in (pt[0][0] as Array).size():
-			var q: Vector2 = pt[0][0][qi]
-			if col:
-				pts.append(q + Vector2(0.0, cur - float(pt[2])))
-			else:
-				pts.append(q + Vector2(cur - float(pt[1]), 0.0))
-			var r: int = pt[0][1][qi]
-			roles.append(r if (gi == 0 or r != ROLE_LEADER) else ROLE_RIFLE)
-		cur += (-(float(pt[2]) - float(pt[1]) + gap)) if col else (float(pt[2]) - float(pt[1]) + gap)
-	if not col:
-		# keep the overall leader's slot (group 0, slot 0) at the front centre: shift so it sits on u = 0
-		var lead: Vector2 = pts[0]
-		var mid := 0.0
-		for q in pts:
-			mid += (q as Vector2).x
-		mid /= float(pts.size())
-		for i in pts.size():
-			pts[i] = Vector2((pts[i] as Vector2).x - mid, (pts[i] as Vector2).y)
-		lead = pts[0]
+			dlo = minf(dlo, (q as Vector2).y)
+			dhi = maxf(dhi, (q as Vector2).y)
+		parts.append([one, lo, hi, dlo, dhi])
+	if col:
+		var cur := 0.0
+		for gi in parts.size():
+			var pt: Array = parts[gi]
+			for qi in (pt[0][0] as Array).size():
+				pts.append((pt[0][0][qi] as Vector2) + Vector2(0.0, cur - float(pt[2])))
+				var r: int = pt[0][1][qi]
+				roles.append(r if (gi == 0 or r != ROLE_LEADER) else ROLE_RIFLE)
+			cur -= float(pt[2]) - float(pt[1]) + gap
+		return [pts, roles]
+	var ab := maxi(1, int(cfg().get("chunk_abreast", 3)))
+	var back := 0.0    # depth offset of the current rank of groups (<= 0)
+	var g0 := 0
+	while g0 < parts.size():
+		var g1 := mini(g0 + ab, parts.size())
+		var total := gap * float(g1 - g0 - 1)
+		var rdepth := 0.0
+		for gi in range(g0, g1):
+			total += float(parts[gi][2]) - float(parts[gi][1])
+			rdepth = minf(rdepth, float(parts[gi][3]) - maxf(float(parts[gi][4]), 0.0))
+		var cur := -total * 0.5
+		for gi in range(g0, g1):
+			var pt: Array = parts[gi]
+			for qi in (pt[0][0] as Array).size():
+				pts.append((pt[0][0][qi] as Vector2) + Vector2(cur - float(pt[1]), back))
+				var r: int = pt[0][1][qi]
+				roles.append(r if (gi == 0 or r != ROLE_LEADER) else ROLE_RIFLE)
+			cur += float(pt[2]) - float(pt[1]) + gap
+		back += rdepth - gap
+		g0 = g1
+	# keep the formation centred on u = 0 across the front rank (the overall leader leads group 0 there)
+	var mid := 0.0
+	var nf := 0
+	for i in pts.size():
+		if i < per * mini(ab, groups):
+			mid += (pts[i] as Vector2).x
+			nf += 1
+	mid /= float(maxi(nf, 1))
+	for i in pts.size():
+		pts[i] = Vector2((pts[i] as Vector2).x - mid, (pts[i] as Vector2).y)
 	return [pts, roles]
+
+
+## Shifts target so every local slot (target + side * x + fwd * y) lies inside the map with a 1-tile margin, instead
+## of clamping the overflowing slots onto the edge one on top of the other. A footprint wider than the map is centred.
+static func fit_in_map(w: SimWorld, loc: Array, target: Vector2, fwd: Vector2, side: Vector2) -> Vector2:
+	if loc.is_empty():
+		return target
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for q in loc:
+		var p: Vector2 = target + side * (q as Vector2).x + fwd * (q as Vector2).y
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	var mx := Vector2(float(w.map.w) - 1.0, float(w.map.h) - 1.0)
+	var sh := Vector2.ZERO
+	for ax in 2:
+		var l: float = lo[ax]
+		var h: float = hi[ax]
+		if h - l > mx[ax] - 1.0:
+			sh[ax] = (mx[ax] + 1.0) * 0.5 - (l + h) * 0.5
+		elif l < 1.0:
+			sh[ax] = 1.0 - l
+		elif h > mx[ax]:
+			sh[ax] = mx[ax] - h
+	return target + sh
 
 
 ## Sector of fire per local slot: column shapes alternate flanks (front for the lead, rear for the tail); other
@@ -453,12 +499,13 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 	var pts := []
 	var heads := []
 	if COLUMN_FORMS.has(f) and m > 1 and is_road(w, target):
-		var rf := road_follow(w, loc[0], target, fwd)
+		var rf := road_follow(w, loc[0], target, fwd, not veh)
 		pts = rf[0]
 		heads = rf[1]
 	else:
+		var tg := fit_in_map(w, loc[0], target, fwd, side)
 		for q in loc[0]:
-			pts.append(_clampv(w, target + side * (q as Vector2).x + fwd * (q as Vector2).y))
+			pts.append(_clampv(w, tg + side * (q as Vector2).x + fwd * (q as Vector2).y))
 			heads.append(fwd)
 	fit(w, pts, veh, fwd, pass_fn, near_fn, m <= 24)
 	var secs := sectors(loc[0], f)
@@ -496,7 +543,7 @@ static func free_width(w: SimWorld, p: Vector2, side: Vector2, veh: bool, pass_f
 ## Column shapes on a road bend along it: trace road cells back from the target (never reversing), then place
 ## each slot at its arc distance along the trace with its lateral offset taken across the local road heading.
 ## Returns [points, local forward headings].
-static func road_follow(w: SimWorld, loc: Array, target: Vector2, fwd: Vector2) -> Array:
+static func road_follow(w: SimWorld, loc: Array, target: Vector2, fwd: Vector2, keep_on: bool = false) -> Array:
 	var need := 2.0
 	for q in loc:
 		need = maxf(need, -(q as Vector2).y + 1.0)
@@ -557,9 +604,33 @@ static func road_follow(w: SimWorld, loc: Array, target: Vector2, fwd: Vector2) 
 			t = (p1 - p0) / L
 		var hf := -t
 		var sd := Vector2(-hf.y, hf.x)
-		pts.append(_clampv(w, p + sd * (q as Vector2).x))
+		var sp: Vector2 = p + sd * (q as Vector2).x
+		pts.append(_clampv(w, road_keep(w, p, sp) if keep_on else sp))
 		heads.append(hf)
 	return [pts, heads]
+
+
+## A foot file offset sideways from a point on a road stays on the road: the shifted point is pulled back toward
+## the centre line until it is inside a road / bridge cell (0.05 tile clear of its edge). G7 SQUAD7-4: the staggered
+## column's two files sat at +-0.5 tile from the road cell centre, i.e. exactly on the cell edges, so men of one file
+## walked on the road and their file-mates just off it at the grass pace (20% slower): the file fell out of step and
+## a pair closed to 0.58 tiles mid-march. Off a road (or when the centre is not on one) q is returned unchanged.
+static func road_keep(w: SimWorld, c: Vector2, q: Vector2) -> Vector2:
+	var cc := w.terrain_at(_cell(c))
+	if cc != Terrain.ROAD and cc != Terrain.BRIDGE:
+		return q
+	var d := q - c
+	var l := d.length()
+	if l < 0.001:
+		return q
+	var u := d / l
+	for f in [1.0, 0.9, 0.8, 0.7, 0.5, 0.3]:
+		var p: Vector2 = c + d * float(f)
+		var k1 := w.terrain_at(_cell(p))
+		var k2 := w.terrain_at(_cell(p + u * 0.05))
+		if (k1 == Terrain.ROAD or k1 == Terrain.BRIDGE) and (k2 == Terrain.ROAD or k2 == Terrain.BRIDGE):
+			return p
+	return c + d * 0.1
 
 
 ## Terrain fit, in place: a slot on a blocked cell (building, water, cliff) moves to the nearest passable cell;
@@ -694,16 +765,71 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 					swapped = true
 		if not swapped:
 			break
+	# G7 SQUAD7-4: the uncross swaps can leave a worse, non-crossing state that plain 2-opt would have improved (a
+	# column re-marching left a man assigned two slots behind the one he stood in front of: the man behind walked past
+	# him at 0.5 tiles). Polish: squared-cost swaps that do not make that pair cross, then uncross again, until stable.
+	for _p in passes:
+		var changed := false
+		for a in free.size():
+			var ja: int = free[a]
+			var pa := Vector2(mem[ja].pos)
+			for b in range(a + 1, free.size()):
+				var jb: int = free[b]
+				var pb := Vector2(mem[jb].pos)
+				var sa: Vector2 = pts[perm[ja]]
+				var sb: Vector2 = pts[perm[jb]]
+				if pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001 						and not _crosses(pa, sb, pb, sa):
+					var t: int = perm[ja]
+					perm[ja] = perm[jb]
+					perm[jb] = t
+					changed = true
+		for a in free.size():
+			var ja: int = free[a]
+			for b in range(a + 1, free.size()):
+				var jb: int = free[b]
+				if _crosses(Vector2(mem[ja].pos), pts[perm[ja]], Vector2(mem[jb].pos), pts[perm[jb]]):
+					var t: int = perm[ja]
+					perm[ja] = perm[jb]
+					perm[jb] = t
+					changed = true
+		if not changed:
+			break
+	# the uncross pass gets the last word: a converged assignment never leaves two straight lines crossing
+	for _p in passes * 2:
+		var swapped2 := false
+		for a in free.size():
+			var ja: int = free[a]
+			for b in range(a + 1, free.size()):
+				var jb: int = free[b]
+				if _crosses(Vector2(mem[ja].pos), pts[perm[ja]], Vector2(mem[jb].pos), pts[perm[jb]]):
+					var t: int = perm[ja]
+					perm[ja] = perm[jb]
+					perm[jb] = t
+					swapped2 = true
+		if not swapped2:
+			break
 	return perm
 
 
-## Proper crossing of segments ab and cd (touching or collinear overlap is not a crossing).
+## Proper crossing of segments ab and cd (touching or collinear overlap is not a crossing). Each endpoint must lie
+## more than CROSS_EPS tiles off the other segment's line (numerical noise, not a real crossing): G7 SQUAD7-4 found two men of one file whose straight lines
+## met end-to-end on the same file line (one ended 0.00004 tile across the other's) counted as "crossing"; the
+## uncross swap then sent the 7th man of the column to the 2nd slot, through the file (a pair closed to 0.5 tiles).
+const CROSS_EPS := 0.001
+
+
 static func _crosses(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> bool:
-	var d1 := (b - a).cross(c - a)
-	var d2 := (b - a).cross(d - a)
-	var d3 := (d - c).cross(a - c)
-	var d4 := (d - c).cross(b - c)
-	return d1 * d2 < 0.0 and d3 * d4 < 0.0
+	var u := b - a
+	var v := d - c
+	var lu := u.length()
+	var lv := v.length()
+	if lu < 0.0001 or lv < 0.0001:
+		return false
+	var d1 := u.cross(c - a) / lu
+	var d2 := u.cross(d - a) / lu
+	var d3 := v.cross(a - c) / lv
+	var d4 := v.cross(b - c) / lv
+	return d1 * d2 < 0.0 and d3 * d4 < 0.0 and minf(absf(d1), absf(d2)) > CROSS_EPS and minf(absf(d3), absf(d4)) > CROSS_EPS
 
 
 # ================================================================ halts

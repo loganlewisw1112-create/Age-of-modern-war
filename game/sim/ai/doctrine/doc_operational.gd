@@ -748,11 +748,24 @@ static func _fix_flank(w: SimWorld, fid: int, st: Dictionary, fs: Dictionary, g:
 			var sd := side if (i % 2 == 1 or els.size() < 3) else -side
 			fp.append(T.flank_at(w, cp, from, sd, deg, D.num("contact_flank_dist")))
 		c.fp = fp
+		c.fpc = cp
 		c.sig = false
 		var kind := "pincer" if els.size() >= 3 else ("L-shape" if deg >= 89.0 else "flank")
 		c.kind = kind
 		_drill(w, fid, fs, g, "fix_flank", "Fix and flank (%s): element 1 fixes, %d element(s) to (%d, %d) %d deg off the axis." % [
 			kind, els.size() - 1, int(fp[0].x), int(fp[0].y), int(deg)], out)
+	# G7 SQUAD7-5 (ORCH CR 689): the contact estimate moves as front foes fall or more of the enemy is seen; until the
+	# signal the flank point is re-aimed (same side, same angle) on the current estimate, so the flank still comes in
+	# >= 60 deg off the axis to where the enemy is now (it was fixed at plan time: 65 deg became 54.5 as the centroid
+	# drifted 1.7 tiles deeper)
+	if not bool(c.sig) and Vector2(c.get("fpc", cp)).distance_to(cp) > 0.5:
+		var fp2 := []
+		var side2 := int(fs.side)
+		for i in range(1, els.size()):
+			var sd2 := side2 if (i % 2 == 1 or els.size() < 3) else -side2
+			fp2.append(T.flank_at(w, cp, from, sd2, deg, D.num("contact_flank_dist")))
+		c.fp = fp2
+		c.fpc = cp
 	var fpa: Array = c.fp
 	if not bool(c.sig):
 		var arrived := true
