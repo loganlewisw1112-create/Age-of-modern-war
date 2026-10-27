@@ -8,12 +8,23 @@ extends RefCounted
 ##   stream(res_path, loop) -> AudioStream (cached; imported resource if present, else parsed from the raw .wav)
 
 const MANIFEST := "res://assets/generated/audio/audio_manifest.json"
+## G7 (AUDIO7): the G7 sounds / voice / music have their own manifest (tools/audio/build_manifest_g7.py), merged
+## into this one at load: sfx ids, voice lines (under "radio"), durations; music stems under "music".
+const MANIFEST7 := "res://assets/generated/audio7/audio7_manifest.json"
 const LINES := "res://content/g6/audio_lines_g61.json"
 
 ## Sound id -> mixer category (voice limits per category live in audio_mixer.gd).
 const CATEGORY := {
 	"shot_": "gun", "impact_": "impact", "explosion_": "explosion", "engine_": "engine", "ui_": "ui",
 	"alert_": "alert", "radio_": "radio", "machine_": "radio", "foot_": "impact", "gear_": "impact",
+	"creep_": "creep", "threat_": "threat", "core_": "core",
+}
+## G7 (AUDIO7): weapon id -> shot sound for the G7 weapons whose class alone would pick the wrong sound.
+const G7_SHOT := {
+	"g7_cn_hmg50": "shot_hmg50", "g7_op_twin50": "shot_hmg50", "g7_twin50": "shot_hmg50", "g7_op_harpoon": "shot_harpoon",
+	"g7_rail": "shot_rail", "g7_thermite": "shot_thermite", "g7_emp_pulse": "explosion_emp", "g7_microwave": "shot_microwave",
+	"g7_cn_sentry_mg": "shot_mg", "g7_cn_idrone_gun": "shot_mg", "g7_cnops_rocket": "shot_rocket", "g7_cnops_shell": "shot_artillery",
+	"g7_cnops_bomb": "shot_artillery",
 }
 ## Far-variant swap: near sound id -> distant sound id.
 const FAR := {
@@ -21,6 +32,11 @@ const FAR := {
 	"shot_cannon": "explosion_far", "shot_rocket": "shot_far", "shot_artillery": "shot_artillery_far",
 	"shot_energy": "shot_far", "shot_flame": "", "explosion_near": "explosion_far", "explosion_small": "explosion_far",
 	"impact_bullet": "", "impact_heavy": "",
+	"shot_hmg50": "shot_far", "shot_rocketpod": "shot_far", "shot_rail": "explosion_far", "shot_disruptor": "",
+	"shot_harpoon": "", "shot_microwave": "", "shot_thermite": "", "explosion_emp": "explosion_far",
+	"explosion_hero": "explosion_far", "explosion_purge": "", "impact_aps": "", "impact_stomp": "",
+	"creep_spread": "", "creep_growth": "", "creep_purged": "", "threat_packhunter": "", "threat_leech": "",
+	"threat_weaver": "", "threat_slug": "", "threat_cocoon": "", "threat_spawn": "",
 }
 
 static var _man: Dictionary = {}
@@ -39,6 +55,13 @@ static func _json(path: String) -> Dictionary:
 static func manifest() -> Dictionary:
 	if _man.is_empty():
 		_man = _json(MANIFEST)
+		var m7 := _json(MANIFEST7)   # G7 (AUDIO7): merged; G6.1 ids win on a clash (there is none by design)
+		for k in ["sfx", "radio", "dur", "rms", "music"]:
+			var into: Dictionary = _man.get(k, {})
+			for id in m7.get(k, {}):
+				if not into.has(id):
+					into[id] = m7[k][id]
+			_man[k] = into
 	return _man
 
 
@@ -94,6 +117,8 @@ static func shot_sound(weapon_id: String) -> String:
 
 
 static func _shot_sound(weapon_id: String) -> String:
+	if G7_SHOT.has(weapon_id):
+		return String(G7_SHOT[weapon_id])
 	var d := weapon_def(weapon_id)
 	var cls := String(d.get("class", ""))
 	var w := weapon_id.to_lower()
@@ -165,6 +190,10 @@ static func engine_sound(def_id: String) -> String:
 	var id := def_id.to_lower()
 	var mc := String(u.get("move_class", "")).to_lower()
 	if bool(u.get("is_air", false)) or mc.contains("air"):
+		if id.contains("dropship"):
+			return "engine_dropship"   # G7 (AUDIO7): ducted-fan VTOL dropships
+		if id.contains("drone") and not id.contains("mothership"):
+			return "engine_drone"
 		return "engine_heli" if (id.contains("heli") or id.contains("gunship") or id.contains("rotor")) else "engine_jet"
 	if mc.contains("naval") or mc.contains("boat") or mc.contains("ship") or mc.contains("sea"):
 		return "engine_ship"
@@ -191,7 +220,9 @@ static func stream(res_path: String, loop: bool = false) -> AudioStream:
 		var wv := s as AudioStreamWAV
 		wv.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		wv.loop_begin = 0
-		wv.loop_end = wv.data.size() / 2
+		# G7 (AUDIO7): frames from the stream length, not data bytes / 2: imported WAVs are QOA-compressed
+		# (compress/mode=2), where data.size() / 2 looped only the first ~20% of the clip.
+		wv.loop_end = int(roundf(wv.get_length() * float(wv.mix_rate))) if wv.format == AudioStreamWAV.FORMAT_QOA 				else wv.data.size() / (2 * (2 if wv.stereo else 1))
 	_streams[key] = s
 	return s
 

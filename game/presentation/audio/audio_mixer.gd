@@ -3,7 +3,8 @@ extends RefCounted
 ## drive it headless: request(id, cat, now, dur) -> true when a voice may start (and reserves it until now + dur).
 ## Limits: per category (MAX), per sound id per frame (PER_ID_FRAME, avoids phasing stacks), plus a global cap.
 
-const MAX := {"gun": 10, "impact": 6, "explosion": 6, "engine": 4, "ui": 4, "alert": 2, "radio": 1}
+const MAX := {"gun": 10, "impact": 6, "explosion": 6, "engine": 4, "ui": 4, "alert": 2, "radio": 1,
+	"creep": 3, "threat": 5, "core": 3}   # G7 (AUDIO7): creep_ / threat_ / core_ sounds
 const GLOBAL_MAX := 28
 const PER_ID_FRAME := 3
 

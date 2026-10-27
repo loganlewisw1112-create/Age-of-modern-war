@@ -8,7 +8,8 @@ const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const Buses = preload("res://presentation/audio/audio_buses.gd")
 
 const ROWS := [["Master volume", "OptVolMaster", "master"], ["Battle", "OptVolBattle", "battle"],
-	["Radio chatter", "OptVolRadio", "radio"], ["Interface", "OptVolUI", "ui"], ["Music", "OptVolMusic", "music"]]
+	["Radio chatter", "OptVolRadio", "radio"], ["Interface", "OptVolUI", "ui"], ["Music", "OptVolMusic", "music"],
+	["Command / PROTOCOL voice", "OptVolVoice", "voice"]]   # G7 (AUDIO7): Voice bus
 
 
 static func build() -> Control:
@@ -43,5 +44,14 @@ static func build() -> Control:
 	m.button_pressed = bool(Buses.get_setting("mute"))
 	m.toggled.connect(func(on: bool) -> void: Buses.set_setting("mute", on))
 	g.add_child(m)
+	g.add_child(Control.new())
+	# G7 (AUDIO7): PROTOCOL advisor voice on / muted (text only). Same key as OPSUI7's advisor card (protocol.advisor);
+	# "off" (no advisor at all) is set on the card and shows here as unpressed.
+	g.add_child(UiKit.label("PROTOCOL voice"))
+	var pv := CheckButton.new()
+	pv.name = "OptProtocolVoice"
+	pv.button_pressed = Buses.protocol_mode() == "on"
+	pv.toggled.connect(func(on: bool) -> void: Buses.set_protocol_mode("on" if on else "muted"))
+	g.add_child(pv)
 	g.add_child(Control.new())
 	return g

@@ -17,6 +17,11 @@ const Mixer = preload("res://presentation/audio/audio_mixer.gd")
 const RadioQueue = preload("res://presentation/audio/radio_queue.gd")
 const Buses = preload("res://presentation/audio/audio_buses.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const AudioG7 = preload("res://presentation/audio/audio_g7.gd")   # G7 (AUDIO7): G7 sounds, voices, music
+
+## G7 (AUDIO7): a voice line started (radio chatter, operator bark, command ack, PROTOCOL): {channel radio|operator|
+## command|protocol, speaker, text, team, op, cat, line, dur, at, voiced}. OPSUI7's team cam / advisor read it.
+signal subtitle(info: Dictionary)
 
 const POOL := 24
 const FAR_START := 1.25      # camera-distance (1 = edge of the view) where the far variant takes over
@@ -48,6 +53,12 @@ var _eng_prev: Dictionary = {}
 var _duck := 0.0
 var _line_rot := 0
 var _alert_t: Dictionary = {}
+var g7 = null                    # G7 (AUDIO7) layer: audio_g7.gd
+var _voice_player: AudioStreamPlayer = null
+
+
+func _init() -> void:
+	g7 = AudioG7.new(self)
 
 
 static func audio_available() -> bool:
@@ -72,6 +83,7 @@ func setup(view, force_enabled: Variant = null) -> void:
 		if mv.has_signal("world_events") and not mv.world_events.is_connected(handle_events):
 			mv.world_events.connect(handle_events)
 	Engine.set_meta(META, self)
+	g7.setup(enabled)
 	if enabled:
 		Buses.apply()
 		if is_inside_tree():
@@ -96,8 +108,11 @@ func handle_events(evs: Array) -> void:
 
 
 func _event(ev: Dictionary) -> void:
+	g7.event(ev)
 	match String(ev.get("type", "")):
 		"ShotFired":
+			if AudioG7.skip_shot(ev):
+				return  # G7 turret special kinds: the T7Rail / T7Emp / T7Burn / T7Cone event plays the sound
 			var wid := String(ev.get("weapon", ""))
 			var from: Vector2 = ev.get("from", Vector2.ZERO)
 			var to: Vector2 = ev.get("to", from)
@@ -186,7 +201,7 @@ func play_at(id: String, tile: Vector2, vis: bool = true, gain_db: float = 0.0) 
 		gain_db -= 6.0 if not vis else clampf((dn - FAR_START) * 2.5, 0.0, 12.0)
 		if id == "":
 			return ""
-	var boom := id.begins_with("explosion") or id.begins_with("shot_artillery") or id == "shot_cannon"
+	var boom := id.begins_with("explosion") or id.begins_with("shot_artillery") or id == "shot_cannon" 			or id.begins_with("core_") or id == "shot_rail" or id == "creep_fissure"
 	if dn > (BOOM_DN if boom else MAX_DN):
 		return ""
 	var vars := Cat.variants(id)
@@ -300,15 +315,23 @@ func tick(dt: float) -> void:
 		if radio_log.size() > 200:
 			radio_log.pop_front()
 		counts["radio:" + String(it.cat)] = int(counts.get("radio:" + String(it.cat), 0)) + 1
+		var bus: String = g7.on_line_started(it)   # G7: subtitle + Radio or Voice bus
 		if enabled:
 			if _radio_player == null:
 				_radio_player = AudioStreamPlayer.new()
 				_radio_player.bus = "Radio"
 				add_child(_radio_player)
 				players_created += 1
-			_radio_player.stream = Cat.stream(Cat.radio_path(String(it.line)))
-			_radio_player.play()
+			if _voice_player == null:
+				_voice_player = AudioStreamPlayer.new()
+				_voice_player.bus = "Voice"
+				add_child(_voice_player)
+				players_created += 1
+			var vp: AudioStreamPlayer = _voice_player if bus == "Voice" else _radio_player
+			vp.stream = Cat.stream(Cat.radio_path(String(it.line)))
+			vp.play()
 	_duck = move_toward(_duck, 1.0 if radio.busy(_now) else 0.0, dt * (6.0 if radio.busy(_now) else 1.5))
+	g7.tick(dt)
 	if enabled:
 		Buses.set_duck(_duck)
 		_eng_t += dt
@@ -320,6 +343,23 @@ func tick(dt: float) -> void:
 
 func now() -> float:
 	return _now
+
+
+# ------------------------------------------------------------------ G7 (AUDIO7) public API
+## PROTOCOL advisor line (OPSUI7): key in AudioCatalog7.PROTOCOL_KEYS, text = full subtitle. True when voiced.
+func protocol_say(key: String, text: String = "") -> bool:
+	return g7.protocol_say(key, text)
+
+
+## The last n subtitles (newest last): same dicts as the `subtitle` signal.
+func recent_subtitles(n: int = 8) -> Array:
+	var s: Array = g7.subtitles
+	return s.slice(maxi(0, s.size() - n))
+
+
+## Music state for HUD / playtest: {mode, levels {stem: 0..1}, log}.
+func music_state() -> Dictionary:
+	return {"mode": g7.music.mode, "levels": g7.music.levels.duplicate(), "log": g7.music.mlog.duplicate()}
 
 
 # ------------------------------------------------------------------ engine loops
