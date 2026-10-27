@@ -21,7 +21,8 @@
     "cn_checkpoint": {
       "name": "Armoured Gate Checkpoint", "faction": "shared", "stage_min": 1, "size": 2, "hp": 3600, "armor": "building",
       "sight": 10, "buildable": false, "requires_power": false, "weapon": "g6_popup_rws", "g7": true, "cn_part": "checkpoint",
-      "unhackable": true
+      "unhackable": true, "garrison_slots": 4, "name_g7": "Foot Entry Control Point",
+      "_note": "FACB7 (owner 13.9c-8): hardened pedestrian gatehouse in the wall line: two-door mantrap (team gates at _g7_facility.mantrap, owner only, sealed on lockdown), ID / scan station (mimics exposed), guard bunker with firing ports (garrisonable, remote weapon station). PROVISIONAL."
     },
     "cn_blast_wall": {
       "name": "Blast Wall", "faction": "shared", "stage_min": 1, "size": 2, "hp": 3000, "armor": "building", "sight": 2,
@@ -37,6 +38,16 @@
       "sight": 6, "buildable": false, "requires_power": false, "g7": true, "vtol_pad": true,
       "passable_for": ["foot", "vehicle", "amphibious", "hover"],
       "_note": "BASE7-2 (13.9c): 24 m landing site for the 19.6 x 16.7 m VTOL / stealth dropships (Last Protocol airfield). Flat: units walk and drive onto it (rear-ramp loading). Entity field facing_i = the side of its 3-tile approach lane (0 +x, 1 +y, 2 -x, 3 -y). Art: ART7F. PROVISIONAL."
+    },
+    "cn_link_wall": {
+      "name": "Wash Link Wall", "faction": "shared", "stage_min": 1, "size": 1, "hp": 3000, "armor": "building", "sight": 2,
+      "buildable": false, "requires_power": false, "g7": true, "cn_part": "link_wall", "unhackable": true,
+      "_note": "FACB7 (owner 13.9c-9): 1-tile hardened T-wall run joining the outer gate layer to the inner gate layer on both sides of the APC wash (enclosed wash). Drawn as one g7_fac_linkwall zone sprite per run (entity_layer skips the cells). PROVISIONAL."
+    },
+    "cn_magazine": {
+      "name": "Special Ammunition Magazine", "faction": "shared", "stage_min": 1, "size": 2, "hp": 5200, "armor": "building", "sight": 3,
+      "buildable": false, "requires_power": false, "g7": true, "cn_part": "magazine", "unhackable": true, "target_priority": 3,
+      "_note": "FACB7 (owner 13.9c-6): the armoured cell of the earth-covered magazine (zone magazine, art g7_fac_magazine). The teams' special ammo resupply point (CnFacility services) and a priority target: destroyed, it cooks off (services.cookoff) and resupply stops. PROVISIONAL."
     },
     "cn_popup": {
       "name": "Lockdown Pop-up Turret", "faction": "shared", "stage_min": 1, "size": 1, "hp": 1200, "armor": "building",
@@ -80,24 +91,38 @@
     "apc_wash": [12, 22, 4, 4],
     "gate_inner": [12, 20, 4, 2],
     "decon_hall": [17, 21, 4, 3],
-    "staging": [8, 17, 12, 3],
+    "staging": [8, 17, 8, 3],
     "pad": [8, 2, 7, 6],
-    "helipad": [19, 2, 6, 6],
-    "drone_bay": [16, 9, 4, 6],
+    "helipad": [18, 2, 6, 6],
+    "drone_bay": [16, 14, 4, 2],
     "planning": [8, 9, 4, 3],
     "lab": [8, 13, 4, 3],
+    "_fac6_note": "FACB7 (owner 13.9c-6, PROVISIONAL): magazine = hardened earth-covered igloo (2x4 = 8x16 m) in the SE corner, farthest from the core / ops room, door north onto the y20 lane behind a traverse; its 2x2 armoured cell (magazine_part) is a real sim building (the priority target; cooks off when destroyed). armory = armory + suit bay on the infantry path (decon hall north door -> armory south door -> west door into the staging yard). aid_station (+ quarantine bay) is attached to the decon hall's east wall (one building, listed in 'attached'). barracks = the Sentinel barracks (owner 13.9c-10, was the 13.9c-6 ready room; trains / houses the facility guard company, backup generator on its roof slab) in the NE corner by the helipad. fuel_point = flush hot-refuel / rearm pits on the helipad apron (a marking on the apron lane, no footprint); the garages rearm too. runoff = contaminated-runoff tank beside the APC wash (equipment, no building). The workshop moved into the old drone-bay slot (APC repair on the spine), the drone bay shrank to 4x2 below it, the staging yard to 8x3, the helipad one tile west (ready room room). 13.9c-8: gate_inner turned to the outer gate's axis (faces); mantrap = the foot entry control point's two door cells (outer, inner) in the checkpoint gatehouse: team gates open only for the owner, both sealed on lockdown.",
+    "magazine": [24, 21, 2, 4],
+    "magazine_part": [24, 23],
+    "armory": [16, 17, 4, 3],
+    "aid_station": [21, 21, 2, 3],
+    "barracks": [24, 3, 2, 3],
+    "fuel_point": [15, 3, 3, 4],
+    "runoff": [10, 22, 1, 2],
+    "link_walls": [[11, 21, 1, 5], [16, 21, 1, 5]],
+    "link_def": "cn_link_wall",
+    "attached": {"aid_station": "decon_hall"},
+    "faces": {"gate_outer": 3, "gate_inner": 3, "armory": 1, "aid_station": 3, "magazine": 3, "barracks": 1, "runoff": 3, "link_walls": 0},
+    "mantrap": [[18, 27], [18, 26]],
+    "services": {"every": 10, "suit_s": 3, "issue_s": 2, "aid_hp_s": 6.0, "aid_exp_s": 0.25, "quarantine_exp": 0.5, "quarantine_s": 12, "mag_r": 2.5, "fuel_s": 40.0, "cookoff": {"radius": 4.0, "dmg": 900.0}},
     "range": [2, 21, 8, 4],
-    "workshop": [22, 21, 4, 4],
+    "workshop": [16, 9, 4, 4],
     "garages": [[4, 9], [4, 12], [4, 15], [4, 18], [23, 9], [23, 12], [23, 15], [23, 18]],
     "garage_size": [3, 3],
-    "lanes": [[2, 7, 6, 1], [6, 8, 2, 13], [15, 2, 4, 7], [8, 8, 12, 1], [20, 8, 2, 13], [12, 9, 4, 8], [8, 12, 4, 1], [6, 16, 16, 1], [2, 20, 10, 1], [16, 20, 10, 1], [17, 24, 4, 2]],
-    "doors": {"core": [[4, 7]], "planning": [[12, 10]], "lab": [[12, 14]], "drone_bay": [[15, 11]], "range": [[5, 20]], "workshop": [[23, 20]], "decon_hall": [[18, 24], [18, 20]]},
+    "lanes": [[2, 7, 6, 1], [6, 8, 2, 13], [15, 2, 3, 7], [8, 8, 12, 1], [20, 8, 2, 13], [12, 9, 4, 8], [8, 12, 4, 1], [6, 16, 16, 1], [2, 20, 10, 1], [16, 20, 10, 1], [17, 24, 4, 2], [24, 6, 1, 2]],
+    "doors": {"core": [[4, 7]], "planning": [[12, 10]], "lab": [[12, 14]], "drone_bay": [[15, 14], [17, 16]], "range": [[5, 20]], "workshop": [[15, 10], [20, 10]], "armory": [[17, 20], [15, 18]], "aid_station": [[22, 20]], "magazine": [[24, 20]], "barracks": [[24, 6]], "decon_hall": [[18, 24], [18, 20]]},
     "helipad_craft": {"centred": true, "facing_deg": 0, "note": "art.dropship_sizes rev3/rev4: 6x6 pad, craft pivot on the pad centre, nose +u (east), rear ramp west onto the apron lane x15..18 (open ground to u -5.8 for the APC line-up)"},
     "towers": [[0, 0], [4, 0], [8, 0], [16, 0], [26, 0], [0, 6], [0, 12], [0, 18], [26, 6], [26, 12], [26, 18], [0, 26], [6, 26], [10, 26], [20, 26], [26, 26]],
     "sentry_def": "a_t7_hmg_nest",
-    "sentries": [[4, 2], [15, 2], [18, 2], [25, 4], [25, 9], [25, 15], [25, 20], [2, 4], [2, 9], [2, 15], [2, 20], [3, 25], [23, 25]],
+    "sentries": [[4, 2], [15, 2], [24, 2], [25, 6], [25, 9], [25, 15], [25, 20], [2, 4], [2, 9], [2, 15], [2, 20], [3, 25], [23, 25]],
     "checkpoint": [18, 26],
-    "popups": [[7, 7], [25, 8], [7, 19], [20, 19], [11, 25], [16, 25]],
+    "popups": [[7, 7], [25, 8], [7, 19], [20, 19], [10, 25], [21, 24]],
     "train": {
       "strike_team": {"time": 120, "cost": {"credits": 2400, "salvage": 600, "ore": 400}, "garages": 2},
       "tactical_squad": {"time": 75, "cost": {"credits": 1200, "salvage": 300, "ore": 200}, "garages": 1, "cap": 3},

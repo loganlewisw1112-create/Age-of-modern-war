@@ -29,7 +29,8 @@ const KEY := "cn_facility"
 const CONF_PATH := "res://content/g7/defs_g7_facility.json"
 const DISCOVER_EVERY := 10
 const FLOW_EVERY := 5          # team phase checks (staggered by team id)
-const ZONES := ["gate_outer", "apc_wash", "gate_inner", "decon_hall", "staging", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab"]  # BASE7: + mission planning room; BASE7-2: + package lab; BASE7-3 (13.9c-2): two-layer APC entry (gate_outer -> apc_wash -> gate_inner) + infantry decon hall; the old single "gate" / "decon" are code aliases only (ALIASES), no longer drawn
+const ZONES := ["gate_outer", "apc_wash", "gate_inner", "decon_hall", "staging", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab",
+	"magazine", "armory", "aid_station", "barracks", "fuel_point", "runoff"]  # FACB7 (owner 13.9c-6): + special ammo magazine, armory + suit bay, aid station (+ quarantine bay), Sentinel barracks (13.9c-10, was the ready room), fuel / rearm apron, wash runoff tank  # BASE7: + mission planning room; BASE7-2: + package lab; BASE7-3 (13.9c-2): two-layer APC entry (gate_outer -> apc_wash -> gate_inner) + infantry decon hall; the old single "gate" / "decon" are code aliases only (ALIASES), no longer drawn
 ## BASE7-3: legacy zone names kept for callers (tests, other systems): "gate" = the outer gate layer, "decon" = the APC wash.
 const ALIASES := {"gate": "gate_outer", "decon": "apc_wash"}
 const PKG_KINDS := ["purge", "seed_hunter", "barrier", "core_breaker"]
@@ -226,9 +227,39 @@ static func render_entries(w: SimWorld) -> Array:
 			ln.append([o.x + float(l[0]), o.y + float(l[1]), float(l[2]), float(l[3])])
 		var cs := float(conf().compound)
 		out.append({"id": id, "owner": int(F.owner), "zones": zs, "garages": gs, "garage_rects": gr, "garage_team": (F.garages as Array).duplicate(),
-			"lanes": ln, "compound": [o.x, o.y, cs, cs],
+			"lanes": ln, "compound": [o.x, o.y, cs, cs], "links": _local_rects(o, conf().get("link_walls", [])),
+			"mantrap": _mantrap_state(w, F), "mag": int(F.get("mag", 0)) == 0 or w.entities.has(int(F.get("mag", 0))),
 			"lock": bool(F.lock), "evac": bool(F.evac), "state": secure_state(w, id), "heli": int(F.heli)})
 	return out
+
+
+static func _local_rects(o: Vector2, rs: Array) -> Array:
+	var out := []
+	for l in rs:
+		out.append([o.x + float(l[0]), o.y + float(l[1]), float(l[2]), float(l[3])])
+	return out
+
+
+## FACB7 (13.9c-8): display state of the foot-entry mantrap: [outer door open, inner door open, sealed]. Only one door is
+## shown open at a time (airlock): the inner one while an owner soldier stands on the inner cell, else the outer one
+## while someone is on the outer cell, else both shut. Display only (the sim gates are open for the owner either way).
+static func _mantrap_state(w: SimWorld, F: Dictionary) -> Array:
+	var mt: Array = conf().get("mantrap", [])
+	if mt.size() < 2:
+		return []
+	if bool(F.lock):
+		return [false, false, true]
+	var o := origin(F)
+	var occ := [false, false]
+	var c0 := o + Vector2i(int(mt[0][0]), int(mt[0][1]))
+	var c1 := o + Vector2i(int(mt[1][0]), int(mt[1][1]))
+	var box := Rect2(Vector2(c0).min(Vector2(c1)), (Vector2(c0) - Vector2(c1)).abs() + Vector2.ONE)
+	for e in SimIndex.of(w, "unit"):
+		if box.has_point(e.pos) and int(e.owner) == int(F.owner):
+			var c := w.cell_of(e.pos)
+			occ[0] = occ[0] or c == c0
+			occ[1] = occ[1] or c == c1
+	return [occ[0] and not occ[1], occ[1], false]
 
 
 ## Team id of a unit spawned by the facility (APC or crew), or 0.
@@ -324,7 +355,26 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 				var ov := Vector2(-1, 0) if sc.x <= 2 else (Vector2(1, 0) if sc.x >= cs - 3 else (Vector2(0, -1) if sc.y <= 2 else Vector2(0, 1)))
 				se.facing = ov.angle()
 				se.cn_sentry = true
-	var F := {"id": id, "owner": owner, "origin": [O.x, O.y], "parts": parts, "queue": [],
+	# FACB7 (owner 13.9c-9): hardened link walls on both sides of the APC wash (outer gate -> enclosed wash -> inner gate)
+	var ldef := String(c.get("link_def", ""))
+	if ldef != "" and not Content.building(ldef).is_empty():
+		for l in c.get("link_walls", []):
+			for yy in int(l[3]):
+				for xx in int(l[2]):
+					_part(w, parts, occ, ldef, O + Vector2i(int(l[0]) + xx, int(l[1]) + yy), owner, id)
+	# FACB7 (owner 13.9c-6): the magazine's armoured cell is a real building (priority target, cooks off)
+	var mag := 0
+	var mp: Array = c.get("magazine_part", [])
+	if mp.size() == 2 and not Content.building("cn_magazine").is_empty():
+		var n1 := parts.size()
+		_part(w, parts, occ, "cn_magazine", O + Vector2i(int(mp[0]), int(mp[1])), owner, id)
+		if parts.size() > n1:
+			mag = int(parts[parts.size() - 1])
+	var cp := 0
+	for pid in parts:
+		if String(w.entities[int(pid)].def) == "cn_checkpoint":
+			cp = int(pid)
+	var F := {"id": id, "owner": owner, "origin": [O.x, O.y], "parts": parts, "queue": [], "mag": mag, "cp": cp,
 		"garages": [], "lab": {"queue": [], "tier": 0, "up": -1.0}, "stock": {}, "lock": false, "popups": [],
 		"evac": false, "heli": 0, "quiet": w.tick}
 	for g in (c.get("garages", []) as Array):
@@ -332,6 +382,8 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	for k in PKG_KINDS:
 		F.stock[k] = 0
 	st(w).facs[str(id)] = F
+	if cp != 0:   # FACB7 (13.9c-8): the foot-entry mantrap doors are team gates through the gatehouse (owner only)
+		_mantrap(w, F, false)
 	BaseState7.register(w, base_key(id), owner, area)
 	w.emit("CnFacilityRaised", {"id": id, "owner": owner, "origin": Vector2(O), "parts": parts.duplicate()})
 
@@ -416,6 +468,18 @@ static func _clear_site(w: SimWorld, area: Rect2i) -> void:
 	w.emit("TerrainChanged", {"cells": cells, "cause": "cn_facility"})
 
 
+## FACB7 (13.9c-8): sets the two mantrap door cells as gates of the owner's team (locked = sealed), or removes them.
+static func _mantrap(w: SimWorld, F: Dictionary, locked: bool, remove: bool = false) -> void:
+	var cells := []
+	for m in conf().get("mantrap", []):
+		cells.append(origin(F) + Vector2i(int(m[0]), int(m[1])))
+	if cells.is_empty():
+		return
+	var f = w.factions.get(int(F.owner))
+	var tm := -1 if remove else (int(f.get("team", int(F.owner))) if f != null else int(F.owner))
+	Movement.set_gate(w, cells, tm, locked)
+
+
 static func _crect(a: Array) -> Rect2i:
 	return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
 
@@ -480,6 +544,7 @@ static func _tick_fac(w: SimWorld, F: Dictionary) -> void:
 			evacuate(w, F)
 		_hold_seals(w, F)
 	if (w.tick + id) % 10 == 0:
+		_parts_lost(w, F)
 		_sweep_zone(w, F)
 		var ds = w.entities.get(int(F.heli))
 		if ds != null:
@@ -575,6 +640,8 @@ static func spawn_team(w: SimWorld, F: Dictionary, kind: String) -> int:
 static func _lockdown(w: SimWorld, F: Dictionary, on: bool) -> void:
 	F.lock = on
 	var owner := int(F.owner)
+	if int(F.get("cp", 0)) != 0 and w.entities.has(int(F.cp)):
+		_mantrap(w, F, on)   # FACB7 (13.9c-8): lockdown seals both mantrap doors (even the owner's own soldiers)
 	if on:
 		var occ := {}
 		for p in conf().get("popups", []):
@@ -633,8 +700,11 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 	var mist := float(conf().get("mist_dps", 0.0)) * 0.5 if bool(F.lock) else 0.0
 	var mach := String(conf().get("machine_faction", "machine"))
 	var dead := []
+	var SV := _svc_rects(w, F)
 	for e in SimIndex.of(w, "unit"):
 		var p: Vector2 = e.pos
+		if not SV.is_empty() and int(e.owner) == owner and SV.box.has_point(p):
+			_service(w, F, e, p, SV)
 		var in_hall := hall.has_point(p)
 		if not in_hall and not rect.has_point(p):
 			continue
@@ -664,6 +734,140 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 			w.emit("CnDecon", {"id": int(e.id), "fac": int(F.id), "kind": "walkway" if foot else "rinse"})
 	for d in dead:
 		w.destroy(int(d[0]), "cn_mist", owner)
+
+
+# ================================================================ FACB7 (owner 13.9c-6): facility services
+## Service areas of facility F (world rects; {} when the conf has none of them). box = their union (one cheap test).
+static func _svc_rects(w: SimWorld, F: Dictionary) -> Dictionary:
+	if not conf().has("armory"):
+		return {}
+	var c := conf()
+	var o := Vector2(origin(F))
+	var cp: Array = c.get("checkpoint", [0, 0])
+	var SV := {"arm": zone(F, "armory"), "aid": zone(F, "aid_station"), "mag": zone(F, "magazine").grow(1.5),
+		"gh": Rect2(o + Vector2(float(cp[0]), float(cp[1])), Vector2(2, 2)),
+		"air": [zone(F, "helipad"), zone(F, "pad"), zone(F, "fuel_point")], "mag_ok": mag_ok(w, F), "sv": c.get("services", {})}
+	var box: Rect2 = SV.arm.merge(SV.aid).merge(SV.mag).merge(SV.gh)
+	for r in SV.air:
+		box = box.merge(r)
+	SV.box = box
+	return SV
+
+
+## The magazine still stands (true for a facility raised before the magazine existed).
+static func mag_ok(w: SimWorld, F: Dictionary) -> bool:
+	var m := int(F.get("mag", 0))
+	return m == 0 or (m > 0 and w.entities.has(m))
+
+
+## One owner unit inside a service area (every 10 ticks): armory / suit bay, aid station + quarantine, magazine,
+## fuel / rearm apron, gatehouse ID scan. Deterministic, saved entity fields (cn_sb, cn_quar, cn_magrs).
+static func _service(w: SimWorld, F: Dictionary, e: Dictionary, p: Vector2, SV: Dictionary) -> void:
+	var sv: Dictionary = SV.sv
+	var dt := 10.0 / float(SimWorld.TICK_RATE)
+	var d := Content.unit(String(e.def))
+	if bool(d.get("is_air", false)):
+		if not bool(e.get("air_landed", false)):
+			return
+		for r in SV.air:
+			if (r as Rect2).has_point(p):
+				var did := false
+				if e.has("fuel") and float(e.fuel) < float(d.get("fuel_max", 0.0)):
+					e.fuel = minf(float(d.get("fuel_max", 0.0)), float(e.fuel) + float(sv.get("fuel_s", 40.0)) * dt)
+					did = true
+				if int(d.get("ammo_max", 0)) > 0 and int(e.get("ammo", 0)) < int(d.ammo_max):
+					e.ammo = int(d.ammo_max)
+					did = true
+				if int(e.get("cn_drone_ready", 0)) > w.tick and SV.mag_ok:   # drone racks re-armed on the pad
+					e.cn_drone_ready = w.tick
+					did = true
+				if did:
+					w.emit("CnRefuel", {"id": int(e.id), "fac": int(F.id), "fuel": float(e.get("fuel", 0.0))})
+				return
+		return
+	var foot := Transport.cargo_class_of(String(e.def)) == "foot"
+	if not foot:
+		if e.has("a7") and SV.mag_ok and SV.mag.has_point(p) and not bool(e.get("moving", false)) and w.tick >= int(e.get("cn_magrs", 0)):
+			e.cn_magrs = w.tick + secs(30)
+			_callf(APC7_PATH, "restock", [w, e], null)
+			w.emit("CnMagazineIssue", {"id": int(e.id), "fac": int(F.id), "kind": "apc"})
+		return
+	if SV.mag_ok and SV.mag.has_point(p) and e.has("lim_n"):
+		e.erase("lim_n")   # limpets / special charges drawn back to the full carry
+		w.emit("CnMagazineIssue", {"id": int(e.id), "fac": int(F.id), "kind": "foot"})
+	if SV.arm.has_point(p):   # armory + suit bay: weapons issue, punctured suit resealed after suit_s
+		if bool(e.get("wpunct", false)):
+			e.cn_sb = int(e.get("cn_sb", 0)) + 10
+			if int(e.cn_sb) >= secs(sv.get("suit_s", 3)):
+				e.erase("cn_sb")
+				e.erase("wpunct")
+				_callf(CN_PATH, "_render", [w, e], null)
+				w.emit("CnSuitRepaired", {"id": int(e.id), "fac": int(F.id)})
+		if SV.mag_ok and e.has("lim_n"):
+			e.erase("lim_n")
+	elif SV.aid.has_point(p):   # aid station: bleeding stopped, hp restored, nanite exposure treated; quarantine bay
+		var hit := false
+		if float(e.get("wb", 0.0)) > 0.0 and not bool(e.get("wstab", false)):
+			e.wstab = true
+			hit = true
+		var mh := float(e.get("max_hp", d.get("hp", 100)))
+		if float(e.hp) < mh:
+			e.hp = minf(mh, float(e.hp) + float(sv.get("aid_hp_s", 6.0)) * dt)
+			hit = true
+		var x := float(e.get("cn_exp", 0.0))
+		if x >= float(sv.get("quarantine_exp", 0.5)) and not e.has("cn_quar"):
+			e.cn_quar = w.tick + secs(sv.get("quarantine_s", 12))
+			if bool(e.get("mimic", false)) and not bool(e.get("mimic_exposed", false)):
+				e.mimic_exposed = true
+				w.emit("MimicExposed", {"id": int(e.id), "fac": int(F.id), "owner": int(F.owner)})
+			w.emit("CnQuarantine", {"id": int(e.id), "fac": int(F.id), "on": true})
+		if x > 0.0:
+			x -= float(sv.get("aid_exp_s", 0.25)) * dt
+			if x <= 0.0:
+				e.erase("cn_exp")
+				e.erase("cn_slow")
+				_callf(CN_PATH, "_render", [w, e], null)
+			else:
+				e.cn_exp = snappedf(x, 1.0 / 1024.0)
+			hit = true
+		if e.has("cn_quar") and w.tick >= int(e.cn_quar) and float(e.get("cn_exp", 0.0)) <= 0.0:
+			e.erase("cn_quar")
+			w.emit("CnQuarantine", {"id": int(e.id), "fac": int(F.id), "on": false})
+		if hit:
+			e.cn_aid = w.tick
+	elif SV.gh.has_point(p) and bool(e.get("mimic", false)) and not bool(e.get("mimic_exposed", false)):
+		e.mimic_exposed = true   # gatehouse ID / scan station
+		w.emit("MimicExposed", {"id": int(e.id), "fac": int(F.id), "owner": int(F.owner)})
+
+
+## FACB7: the gatehouse fell (its mantrap gates go with it) / the magazine was destroyed (it cooks off, resupply stops).
+static func _parts_lost(w: SimWorld, F: Dictionary) -> void:
+	var cp := int(F.get("cp", 0))
+	if cp > 0 and not w.entities.has(cp):
+		F.cp = -1
+		_mantrap(w, F, false, true)
+		w.emit("CnEntryBreached", {"fac": int(F.id), "owner": int(F.owner)})
+	var mg := int(F.get("mag", 0))
+	if mg > 0 and not w.entities.has(mg):
+		F.mag = -1
+		var mp: Array = conf().get("magazine_part", [0, 0])
+		var at := Vector2(origin(F)) + Vector2(float(mp[0]) + 1.0, float(mp[1]) + 1.0)
+		var ck: Dictionary = conf().get("services", {}).get("cookoff", {})
+		var r := float(ck.get("radius", 4.0))
+		var dmg := float(ck.get("dmg", 900.0))
+		var dead := []
+		for kind in ["unit", "building"]:
+			for e in SimIndex.of(w, kind):
+				var dd := Vector2(e.pos).distance_to(at)
+				if dd <= r and w.entities.has(int(e.id)):
+					e.hp = float(e.hp) - dmg * (1.0 - 0.6 * dd / r)
+					if float(e.hp) <= 0.0:
+						dead.append(int(e.id))
+		dead.sort()
+		for id in dead:
+			if w.entities.has(id):
+				w.destroy(id, "cn_cookoff", SimWorld.NEUTRAL)
+		w.emit("CnMagazineLost", {"fac": int(F.id), "owner": int(F.owner), "at": at, "killed": dead.size()})
 
 
 ## Clears exposure and repairs a punctured suit (CNSIM7's CounterNanite.decontaminate when it exists).
@@ -881,7 +1085,8 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 			if _arrived(w, T, aps, "garage", 1.2):
 				T.phase = "garage"
 				for a in aps:
-					_callf(APC7_PATH, "restock", [w, a], null)
+					if mag_ok(w, F):   # FACB7: special rounds come from the magazine; none once it is destroyed
+						_callf(APC7_PATH, "restock", [w, a], null)
 				w.emit("CnTeamParked", {"team": tid, "fac": int(T.fac), "owner": int(T.owner)})
 
 

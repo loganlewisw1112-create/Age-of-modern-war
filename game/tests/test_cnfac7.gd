@@ -836,6 +836,11 @@ func test_base7_facility_flow_packed() -> void:
 				cov[Vector2i(x, y)] = true
 	for n in ["gate", "staging", "decon", "pad", "helipad", "drone_bay", "range", "workshop", "planning", "lab", "gate_inner", "decon_hall"]:   # BASE7-3: + the lab, the inner gate layer and the infantry decon hall
 		mark.call(R.call(n))
+	for n in ["magazine", "armory", "aid_station", "barracks", "runoff"]:   # FACB7 (13.9c-6 / -10): the new buildings + the runoff tank
+		if Cf.has(n):
+			mark.call(R.call(n))
+	for l in Cf.get("link_walls", []):   # FACB7 (13.9c-9): the wash link walls
+		mark.call(Rect2i(int(l[0]), int(l[1]), int(l[2]), int(l[3])))
 	for g in Cf.garages:
 		mark.call(Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3))
 	for l in lanes:
@@ -963,8 +968,9 @@ func _fac_footprints(C: Dictionary) -> Array:
 	var R := func(a: Array) -> Rect2i: return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
 	var fps := []
 	fps.append(["core", Rect2i(int(C.core_offset[0]), int(C.core_offset[1]), 4, 4), "bld"])
-	for n in ["planning", "lab", "drone_bay", "range", "workshop", "decon_hall"]:
-		fps.append([n, R.call(C[n]), "bld"])
+	for n in ["planning", "lab", "drone_bay", "range", "workshop", "decon_hall", "magazine", "armory", "aid_station", "barracks"]:   # FACB7: + the 13.9c-6 / 13.9c-10 buildings
+		if C.has(n):
+			fps.append([n, R.call(C[n]), "bld"])
 	for i in (C.garages as Array).size():
 		var g: Array = C.garages[i]
 		fps.append(["garage%d" % i, Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3), "bld"])
@@ -973,6 +979,10 @@ func _fac_footprints(C: Dictionary) -> Array:
 	for t in C.towers:
 		fps.append(["tower%s" % [t], Rect2i(int(t[0]), int(t[1]), 2, 2), "ring"])
 	fps.append(["checkpoint", Rect2i(int(C.checkpoint[0]), int(C.checkpoint[1]), 2, 2), "ring"])
+	for i in (C.get("link_walls", []) as Array).size():   # FACB7 (13.9c-9): the wash link walls (solid wall cells)
+		fps.append(["link_wall%d" % i, R.call(C.link_walls[i]), "wall"])
+	if C.has("runoff"):
+		fps.append(["runoff", R.call(C.runoff), "prop"])   # FACB7: the wash runoff tank (equipment, no clearance rule)
 	return fps
 
 
@@ -1004,7 +1014,14 @@ func test_base73_no_footprint_door_or_lane_overlap() -> void:
 				bad.append("%s overlaps %s" % [fps[i][0], fps[j][0]])
 			elif fps[i][2] == "bld" and fps[j][2] == "bld" and a.grow(1).intersects(b) \
 					and not (String(fps[i][0]).begins_with("garage") and String(fps[j][0]).begins_with("garage")):
-				bad.append("%s has no clearance to %s" % [fps[i][0], fps[j][0]])
+				# FACB7 (owner 13.9c-6 "aid station attached to the infantry decon hall"): a declared attached pair is one
+				# building and must share a wall (touch along a side); every other pair keeps its clearance
+				var att: Dictionary = C.get("attached", {})
+				var pair: bool = String(att.get(fps[i][0], "")) == fps[j][0] or String(att.get(fps[j][0], "")) == fps[i][0]
+				var touch: bool = ((a.end.x == b.position.x or b.end.x == a.position.x) and a.position.y < b.end.y and b.position.y < a.end.y) \
+					or ((a.end.y == b.position.y or b.end.y == a.position.y) and a.position.x < b.end.x and b.position.x < a.end.x)
+				if not (pair and touch):
+					bad.append("%s has no clearance to %s" % [fps[i][0], fps[j][0]])
 	var lanes := []
 	for l in C.lanes:
 		var lr: Rect2i = R.call(l)
@@ -1311,3 +1328,133 @@ func test_base73_compound_site_flat_and_clear() -> void:
 	check(evs.size() == 1 and (evs[0].cells as Array).size() >= 6, "one TerrainChanged{cause cn_facility} tells the display to re-bake")
 	var tid := _train(w, fid, "tactical_squad")
 	check(tid > 0, "the facility still trains on the cleared site")
+
+
+## FACB7 (owner 13.9c-6): each new facility building does its job in the sim: the suit bay reseals a punctured suit,
+## the aid station stops bleeding / heals / treats nanite exposure (quarantine bay for heavy exposure), the magazine
+## issues special rounds (and cooks off when destroyed, then issues nothing), the fuel apron refuels / rearms a landed
+## dropship.
+func test_facb7_building_services() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var sv: Dictionary = CnFacility.conf().services
+	var a: Dictionary = w.entities[_unit(w, "rifleman", 0, CnFacility.zone(F, "armory").get_center())]
+	a.suit = true
+	a.wpunct = true
+	var b: Dictionary = w.entities[_unit(w, "rifleman", 0, CnFacility.zone(F, "aid_station").get_center())]
+	var mh := float(b.max_hp)
+	b.hp = mh * 0.5
+	b.wb = 2.0
+	b.cn_exp = 0.8
+	var c: Dictionary = w.entities[_unit(w, "rifleman", 0, Vector2(CnFacility.origin(F)) + Vector2(24.5, 20.5))]
+	c.lim_n = 0
+	var evs := _run(w, CnFacility.secs(float(sv.suit_s) + 1.0))
+	check(not bool(a.get("wpunct", false)) and _has(evs, "CnSuitRepaired"), "a punctured suit is resealed at the suit bay")
+	check(not c.has("lim_n") and _has(evs, "CnMagazineIssue"), "a soldier at the magazine door draws his special charges")
+	check(bool(b.get("wstab", false)) and float(b.hp) > mh * 0.5 and _has(evs, "CnQuarantine"), "the aid station stops the bleeding, heals and quarantines heavy exposure (hp %.0f)" % float(b.hp))
+	evs = _run(w, CnFacility.secs(float(sv.quarantine_s) + 4.0))
+	check(float(b.get("cn_exp", 0.0)) <= 0.0 and not b.has("cn_quar"), "exposure treated, released from quarantine")
+	check(not b.has("cn_quar") and _has(evs, "CnQuarantine"), "quarantine ends")
+	# fuel / rearm apron: the stealth dropship on its helipad
+	check_eq(_cmd(w, {"type": "cn_train", "building_id": fid, "kind": "stealth_dropship"}), "", "dropship ordered")
+	F.queue[0].left = 1.0
+	_run(w, 3)
+	var ds = w.entities.get(int(F.heli))
+	if check(ds != null and ds.has("fuel"), "dropship parked with a fuel tank"):
+		ds.fuel = 100.0
+		ds.cn_drone_ready = w.tick + 9999
+		_run(w, 40)
+		check(float(ds.fuel) > 100.0 and int(ds.cn_drone_ready) <= w.tick, "the fuel / rearm apron refuels the dropship (fuel %.0f) and re-arms its drone racks" % float(ds.fuel))
+	# the magazine: a real building, a cook-off when destroyed, no more special rounds afterwards
+	var mag := int(F.get("mag", 0))
+	check(mag > 0 and w.entities.has(mag) and String(w.entities[mag].def) == "cn_magazine", "the magazine's armoured cell is a real building")
+	var near: Dictionary = w.entities[_unit(w, "rifleman", 1, w.entities[mag].pos + Vector2(1.5, 0))]
+	w.destroy(mag, "test", 1)
+	evs = _run(w, 12)
+	check(_has(evs, "CnMagazineLost") and not CnFacility.mag_ok(w, F), "the magazine cooks off when destroyed")
+	check(not w.entities.has(int(near.id)) or float(near.hp) < float(near.max_hp), "the cook-off hurts what stands next to it")
+	c.lim_n = 0
+	_run(w, 20)
+	check(c.has("lim_n"), "a destroyed magazine issues nothing")
+
+
+## FACB7 (owner 13.9c-9): the APC wash is a closed secure zone: link walls on both sides from the inner gate layer to the
+## outer one (no foot or vehicle way in except through the two gates), both gates on the same travel axis (13.9c-8).
+func test_facb7_enclosed_wash() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var C := CnFacility.conf()
+	var O := CnFacility.origin(F)
+	var wa := Rect2i(int(C.apc_wash[0]), int(C.apc_wash[1]), int(C.apc_wash[2]), int(C.apc_wash[3]))
+	var gi := Rect2i(int(C.gate_inner[0]), int(C.gate_inner[1]), int(C.gate_inner[2]), int(C.gate_inner[3]))
+	var open := []
+	for y in range(gi.end.y - 1, wa.end.y):
+		for x in [wa.position.x - 1, wa.end.x]:
+			for mc in ["foot", "vehicle"]:
+				for tm in [-1, 0, 1]:
+					if Movement.is_passable(w, O + Vector2i(x, y), mc, tm):
+						open.append([x, y, mc, tm])
+	check_eq(open, [], "both sides of the wash are wall from the inner gate layer to the outer one (no way in but the gates)")
+	var links := 0
+	for pid in F.parts:
+		if String(w.entities[int(pid)].def) == String(C.link_def):
+			links += 1
+	check(links == 2 * (wa.end.y - gi.end.y + 1), "link wall pieces stand on both sides (%d)" % links)
+	check(int(C.faces.gate_inner) == int(C.faces.gate_outer) and int(C.faces.gate_outer) % 2 == 1, "the inner gate opens on the same (travel) axis as the outer gate")
+	var es: Array = CnFacility.render_entries(w)
+	check((es[0].links as Array).size() == 2, "render entries carry the link walls")
+
+
+## FACB7 (owner 13.9c-8): the foot entry is a mantrap through the gatehouse: its two door cells are team gates (the
+## owner walks through, enemies never), the owner's soldier walks gatehouse -> decon hall -> compound, lockdown seals
+## both doors, the gatehouse is garrisonable, and if it falls its gates go with it.
+func test_facb7_foot_entry_mantrap() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var C := CnFacility.conf()
+	var O := CnFacility.origin(F)
+	var m0 := O + Vector2i(int(C.mantrap[0][0]), int(C.mantrap[0][1]))
+	var m1 := O + Vector2i(int(C.mantrap[1][0]), int(C.mantrap[1][1]))
+	check(Movement.is_passable(w, m0, "foot", 0) and Movement.is_passable(w, m1, "foot", 0), "the mantrap is open for the owner")
+	check(not Movement.is_passable(w, m0, "foot", 1) and not Movement.is_passable(w, m1, "foot", 1), "the mantrap is shut to anyone else")
+	check(int(Content.building("cn_checkpoint").get("garrison_slots", 0)) > 0, "the gatehouse bunker is a garrisonable fighting position")
+	var out := Vector2(m0) + Vector2(0.5, 3.5)
+	var u: Dictionary = w.entities[_unit(w, "rifleman", 0, out)]
+	var en: Dictionary = w.entities[_unit(w, "rifleman", 1, out + Vector2(1.0, 0.0))]
+	var hall := CnFacility.zone(F, "decon_hall")
+	var stg := CnFacility.zone(F, "staging").get_center()
+	var walk := Vector2(m1) + Vector2(0.5, -1.5)   # first leg: through the gatehouse onto the walkway (the infantry way in)
+	Movement.order_move(w, u, walk)
+	Movement.order_move(w, en, Vector2(m1) + Vector2(0.5, -1.5))
+	var seq := []
+	var en_in := false
+	var leg2 := false
+	for i in 2400:
+		w.step()
+		if not leg2 and Vector2(u.pos).distance_to(walk + Vector2(0, -1.0)) < 1.2:
+			leg2 = true   # second leg: on into the compound (through the decon hall)
+			Movement.order_move(w, u, stg)
+		var cc := w.cell_of(u.pos)
+		var tag := "m0" if cc == m0 else ("m1" if cc == m1 else ("hall" if hall.has_point(u.pos) else ""))
+		if tag != "" and (seq.is_empty() or seq[seq.size() - 1] != tag):
+			seq.append(tag)
+		if w.entities.has(int(en.id)) and (w.cell_of(en.pos) == m0 or w.cell_of(en.pos) == m1):
+			en_in = true
+		if Vector2(u.pos).distance_to(stg) < 1.5:
+			break
+	check_eq(seq, ["m0", "m1", "hall"], "the owner's soldier walks outer door -> inner door -> decon hall")
+	check(Vector2(u.pos).distance_to(stg) < 1.5, "and on into the compound")
+	check(not en_in, "an enemy soldier never gets into the mantrap")
+	CnFacility._lockdown(w, F, true)
+	check(not Movement.is_passable(w, m0, "foot", 0) and not Movement.is_passable(w, m1, "foot", 0), "lockdown seals both doors")
+	CnFacility._lockdown(w, F, false)
+	check(Movement.is_passable(w, m1, "foot", 0), "lifted lockdown reopens them")
+	w.destroy(int(F.cp), "test", 1)
+	_run(w, 12)
+	check(Movement.gate_at(w, m0).is_empty() and Movement.gate_at(w, m1).is_empty(), "a fallen gatehouse takes its gates with it")
