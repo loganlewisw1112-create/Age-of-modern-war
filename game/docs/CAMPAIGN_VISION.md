@@ -10,6 +10,82 @@
 
 ---
 
+# Part 0: How this fits RTS: Age of Modern War (added 2026-10-28)
+Everything in this file is **the campaign and expansion for the existing game**, not a separate project. It runs on the
+same Godot 4.7.2 + Rust `rts_core` engine, the same three factions (plus the G8 Shadow Coalition), the same stages,
+units, maps and battle simulation. Campaign battles are ordinary matches of the shipped RTS; the campaign adds the
+layers around and above them.
+
+## What the campaign reuses from the shipped game (G0–G7)
+| Vision piece | Already in the game | What the campaign adds |
+|---|---|---|
+| Battles in every chapter | The full skirmish sim: economy, power, supply cap, build and train, armour classes, wrecks (G0–G1) | Battles launched from the regional map, with scars and units carried over |
+| Supply (item 7) | Ammo and fuel, depots, supply trucks, refinery (G2); ammo bearers (G6.1) | 2–3 new gathered resources; rare finds by era |
+| Orders delayed by distance (item 6) | Chain of command, radio-delayed orders, cut-off units on last orders (G6.1) | The same rule on the regional map, between armies |
+| Fog and intel (item 5) | Belief-based fog: fading last-known positions, decoys (G6.1) | Nothing extra on the regional map (no spy war) |
+| Officers, companies, generals | Officers on missions (G2); companies, armies, Commanders (G6); AI generals and battle drills (G6.1) | Generated officers who rise from named soldiers, ambitious officers, coups |
+| Soldiers stay tactical (item 3) | Suppression, fatigue, veterancy, leader traits (G6.1); wounds and casualty care (G7) | Named veterans carried across chapters |
+| Enemy doctrine AI (item 9) | Military doctrine AI: overwatch, flank, raids, exfil, hold high ground (G6) | Per-faction doctrine for all four factions; exo memory across generations |
+| Stages 1–13 | Stages 7–10 playable; research and advance (G3b, G6) | Stages 1–6 and 11–13 |
+| Water (items 19–20) | Naval war, shipyards, amphibious landings (G5); subs, carriers (G6) | River front lines; navies arriving by era |
+| Air | Airfields, helicopters, VTOLs (G5); compact airfields (G6); stealth VTOL dropships (G7) | Exo silent rotor and stealth transport |
+| Ghost exo squads | Exo-suits and loadouts (G6); counter-nanite operators (G7) | Syndicate active-camo exos, Mk I–III, the exo complex |
+| Black markets | Marketplace (G6); black-market tier (G8 scope) | Syndicate black markets and mercenary hiring |
+| Machine threats | Nanite creep, fissures, Weavers, THE TIDE; burrowers, mimics, leeches (G7) | The Healer/Dead Hand story; creep as the cover for seed ground |
+| Black site size reference | The Counter-Nanite facility (G7) | The prison black site, smaller than it |
+| Hospitals, medics | Medics, ambulances, hospitals (G5) | Medic bloodline runs them; black-site medical wards |
+| Walls, mines, fortifications | Walls, gates, towers (G4); mines and fieldworks (G6) | Bunker floors, disguised safehouses, tunnels |
+| Elevation | 4 height levels (G6) | Hand-built story maps that use it |
+| The dam (Chapter 4 set-piece) | Valley Conquest's central dam; the River Dam survival map (G3b, G6) | The authored flood-and-storm battle |
+| Battle sound and radio | Generated battle sound and radio chatter (G6.1) | Distance-real sound, regional-map soundscape, voiced cast |
+| Scenario editor | Map and scenario editor with triggers (G4) | Nothing: the campaign isn't moddable, and the editor stays maps and scenarios |
+| Tutorial | 16-step tutorial (G5) | Chapters 1–3 teach the campaign; the skirmish tutorial stays |
+| Last Protocol | Its own mode (G7) | Stays separate; the Chapter 10–11 Machine war must feel different |
+
+## Where it sits in the roadmap
+- **G8 already scopes several pieces this file deepens:**
+  - a single-player campaign on a dynamic map;
+  - the Shadow Coalition as the 4th faction (here it becomes the Syndicate Shadow Coalition);
+  - weather and day/night;
+  - named rival generals, diplomacy, and an AI that adapts to the player;
+  - training facilities, named soldiers, a black-market tier;
+  - the full Machine overhaul;
+  - view rotation, which all campaign art will need.
+- **Still to be placed in a G-slice:** Stages 1–6 and 11–13 content for every faction; the regional map; the Living
+  World; the space expansion. None of it is contracted yet.
+
+## Conflicts resolved (owner's answers, 2026-10-28)
+These eight were found by checking this file against the shipped game, the G8 scope and itself. All are now settled,
+and the text below has been updated to match.
+1. **The campaign map is fixed, and play on it is dynamic.**
+   - The campaign's regional map is hand-crafted and the same every time.
+   - It's made dynamic by the war director, carry-over and your choices.
+   - The Living World is the fully dynamic map.
+   - G8's "dynamic single-player campaign on a dynamic map" should be read that way; `G7_REFERENCE.md` itself was not
+     edited.
+2. **Fog: battles keep the shipped fog, and the regional map adds nothing.** Battles keep G6.1's belief-based fog
+   (fading last-known positions, decoys) unchanged. The regional map uses plain fog: you see what your armies see, with
+   no spy network and no aging intel estimates.
+3. **The exo tunnelling pod is renamed "the Mole".** The G7 Machine burrower keeps its name. "Mimic" stays as both a G7
+   Machine threat unit and a Machine ship, since both belong to the Machine.
+4. **The Shadow Coalition is built in two steps.**
+   - G8 ships its full Stage 7→10 roster as planned.
+   - Its other forms are added when those stages are built for every faction: the early raider bands (Stages 1–6) and
+     the late syndicate (Mk III exos, 100+ squads, Stages 11–13).
+   - G8 is not widened.
+5. **The Healer speaks at a few earned moments,** not once. Part 1 now says so.
+6. **The hunter lasts by syndicate cryo cycling.** Like the chairman, the hunter sleeps in bunker cryo between hunts and
+   wakes for each generation of your heirs (item 84).
+7. **The syndicate works in secret from Chapter 1 and goes public in Chapter 9.**
+   - Before Chapter 9: agents, the merchant, quiet deals and rumoured ghosts.
+   - In Chapter 9 it gathers the people you crushed into the Coalition and goes public, fielding its first 4–6 exo
+     squads openly (item 70).
+8. **The founder background is the implanted false past.** It's the life the original wrote into the copy. The skills
+   are real, because the original gave them, but the memories are fake, and the late reveal recasts the choice you made
+   (item 18).
+
+---
+
 # Part 1: Campaign and Living World
 
 ## The pitch
@@ -34,7 +110,8 @@ Working title to react to: **Inheritance** (the dynasty, the secret and the key)
   - **Story:** retry freely.
   - **Dynasty (Ironman):** every loss is permanent and the campaign carries on in a worse state.
 - **The world is fixed.** The homeland is hand-crafted and the same on every playthrough. Replays differ through
-  choices and endings.
+  choices and endings. The war director and carry-over make play on it dynamic, and the Living World is the fully
+  dynamic map (Part 0, resolution 1).
 
 ## The story spine
 - **Opening:** the last day before the war. The founder escapes a pre-war facility, shot so you only understand much
@@ -66,8 +143,8 @@ Working title to react to: **Inheritance** (the dynasty, the secret and the key)
   - **Conduct gate.** The Healer judges how you fought.
   - **Final test.** One brutal operation inside the Machine's heart. Failing it becomes the Fall.
   - **Hints are whispers only.**
-  - **Voice:** the Healer speaks in the founder's voice once, at the key moment, and that voice haunts the broadcasts
-    all along.
+  - **Voice:** the Healer speaks in the founder's voice at a few earned moments (key fragments, the confession, the final
+    test; item 21), and that voice haunts the broadcasts all along.
 - **Last Protocol stays a separate mode.**
 - **You only ever play the dynasty.** No interludes from the Machine's side or a rival's.
 
@@ -607,7 +684,9 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
    - **Day and night:** night fighting matters, with night vision, flares, ambushes, and tech that changes who owns the
      dark.
    - Not chosen: pollution and fallout as a simulated system.
-5. **Intelligence: simple fog of war.** You see what your units see. There's no aging intel, decoy system or spy war.
+5. **Intelligence: no extra layer on the regional map.** There, you see what your armies see, with no aging intel
+   estimates and no spy war. Battles keep the shipped G6.1 belief-based fog (fading last-known positions, decoys)
+   unchanged (Part 0, resolution 2).
 6. **Orders are delayed by distance.** On the regional map, orders travel by courier or radio (faster as eras
    advance), so far-off fronts react late. If a line is cut, that army keeps acting on its last orders.
 7. **Supply: keep the current setup, and widen the materials.**
@@ -684,7 +763,9 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - Not chosen: voiced soldier callouts.
 18. **Replay value:**
     - **Different founders:** at the start, you choose a founder background (soldier, engineer, medic, scavenger). It
-      changes your starting companions, early tech and how some story scenes play, while the world stays fixed.
+      changes your starting companions, early tech and how some story scenes play, while the world stays fixed. In the
+      story, the background is the false past the original implanted in the copy: the skills are real, the memories
+      are not (Part 0, resolution 8).
     - **Endings and key hunts:** the four endings and the hidden key path carry the rest.
     - Not chosen: campaigns for other factions; challenge modifiers.
 19. **War on the water, at every scale:**
@@ -939,7 +1020,8 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - **Silent rotor:** a stealth helicopter that inserts and extracts squads behind the lines. It's quiet and flies
       low, with no heavy guns.
     - **Ghost runner:** a light, camo-coated fast-attack buggy for four operators, with a quiet electric drive.
-    - **Burrower:** a pre-war tunnelling pod that brings a squad up underneath a base or bunker.
+    - **The Mole:** a pre-war tunnelling pod that brings a squad up underneath a base or bunker. Renamed from
+      "Burrower" so it doesn't clash with the G7 Machine burrower.
     - **Stealth APC:** an armoured carrier with a reduced signature, carrying a 6-operator squad and its gear.
     - **Drop pod:** a high-altitude drop capsule fired from the stealth transport plane, for the deepest strikes.
       Late eras only.
@@ -980,8 +1062,9 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
       - a final duel.
       This commander is the syndicate's face in the field.
 70. **The ghost-exo force grows from a handful to an army (owner's rule, 2026-10-28):**
-    - **When it first appears in the campaign,** the syndicate has only 4–6 exo squads in total. Every one is precious,
-      and losing one matters.
+    - **When the Coalition goes public in Chapter 9,** the syndicate fields only 4–6 exo squads in total. Every one is
+      precious, and losing one matters. Before that, it works in secret from Chapter 1: agents, the merchant, quiet
+      deals and rumoured ghosts (Part 0, resolution 7).
     - **Over the middle chapters it builds up** by refurbishing, reverse-engineering, unsealing vaults and training
       recruits (items 61, 66 and 68).
     - **By Chapters 12–13 it has 100+ squads** across every specialization and formation, maxed out: Mk III suits,
@@ -1015,7 +1098,7 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - **Losing the leader** cuts off call-ins until another operator takes over.
     - **Splitting:** on command, the squad splits into two buddy pairs that act as separate micro-teams.
 73. **Every operation runs insertion, approach, action, exfiltration:**
-    1. **Insertion:** by vehicle, burrower, drop or on foot.
+    1. **Insertion:** by vehicle, Mole, drop or on foot.
     2. **Approach:** under camo, watching the battery.
     3. **Action:** the strike, sabotage or snatch.
     4. **Exfiltration:** out to a pickup point.
@@ -1050,7 +1133,7 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - **They read your defences:** recon probes first, learning where your sensors and dogs are, then routing around
       them.
     - **They adapt across battles:** if you keep beating one tactic (say, thermal towers everywhere), they switch to
-      another (EW squads to blind them, burrowers under them).
+      another (EW squads to blind them, Moles under them).
     - **They pick priority targets:** whatever hurts you most, such as heirs, named officers, artillery, supply and
       command posts.
     - **Even more brains and memory (owner's addition):** they keep a long memory of your dynasty, carried across
@@ -1090,7 +1173,9 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - **Named legends:** long-surviving operators become named, with personal traits and a reputation your soldiers
       fear. Top-rank operators become squad leaders or solo operators.
 84. **The hunter commander is a cover-up orphan.** They are the child of a witness your founder silenced in Chapters
-    4–6, raised by the syndicate and given a suit. The hunt is personal, and it pulls on the cover-up threads.
+    4–6, raised by the syndicate and given a suit. The hunt is personal, and it pulls on the cover-up threads. Like the
+    chairman, the hunter sleeps in bunker cryo between hunts and wakes for each generation of your heirs, so they last
+    from Chapter 9 to 13 (Part 0, resolution 6).
 85. **How the hunter's story ends depends on conduct, and the hunter can win.**
     - **Kill them** in the final duel.
     - **Capture them** for the black site.
