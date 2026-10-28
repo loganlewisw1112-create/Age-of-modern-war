@@ -18,8 +18,8 @@ extends Node2D
 ##     open when a vehicle comes to their door (sim APC or a forklift) and shut behind it.
 ##  5. Moving parts: the ops radar turning, blinking obstruction / comms lights, glowing ops-room windows, tower
 ##     cupolas tracking the nearest enemy from the snapshot (slow sector sweep when there is none).
-##  6. Ops room: zoom >= 1.6 (or hover the ops building) opens an inset over the building: staff at the screens, a map
-##     table with the compound, every strike team's live APC positions (snapshot) and their track.
+##  6. (removed, owner 13.9c-19: no ops-room inset over the command centre; it reads as a building only: lit windows,
+##     radome, mast lights. The live strike-team map is the F4 Ops Room panel.)
 ##  Alarm (lockdown / breached only, owner 13.9c-17): technicians and staff run for the nearest door, vehicles stop, the
 ##  range goes cold, guards crouch facing out, the dog handler runs the route, the drone tightens its orbit.
 ## Deterministic: actor clocks advance per sim tick (not per frame) and only while their way is clear, so the same
@@ -29,6 +29,8 @@ extends Node2D
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const ArtCat = preload("res://presentation/art/art_catalog.gd")
+const FacAtmo7 = preload("res://presentation/view/fac_atmo7.gd")   # POLISH7-5: light anchors shared with ATMO7 (13.9c-24)
+const Engineer7 = preload("res://sim/systems/engineer7.gd")   # POLISH7-4: BOWSER_BAY (13.9c-21), a static rect (no sim reads)
 const ART := "res://assets/art/g7_life7/"
 const TR := 20.0
 const DT := 1.0 / 20.0
@@ -37,12 +39,27 @@ const RUN := ["run_0", "run_1", "run_2", "run_3", "run_4", "run_5"]
 const TROT := ["trot_0", "trot_1", "trot_2", "trot_3"]
 ## Footprint heights (px at zoom 1) used to hide an actor that walks behind a building (no figure ever drawn over the
 ## building in front of it). PROVISIONAL estimates from the ART7F sprites; unknown (new) zones use DEFAULT_H.
-const ZONE_H := {"planning": 46.0, "lab": 54.0, "drone_bay": 44.0, "workshop": 58.0, "decon_hall": 44.0,
+const ZONE_H := {"planning": 152.0, "lab": 54.0, "drone_bay": 44.0, "workshop": 114.0, "decon_hall": 44.0,
 	"gate_outer": 46.0, "gate_inner": 46.0, "apc_wash": 30.0,
 	# POLISH7: FACB7-2 fact facb7.zone_heights (board seq 3875, metres x 9.8 px/m, the tallest roof of the zone):
 	# magazine headwall 3.9 (mound 2.9; the box starts at the headwall, see MAG_FORECOURT), armory suit bay 5.4,
-	# aid station quarantine roof 4.4, barracks roof 7.2
-	"magazine": 38.0, "armory": 53.0, "aid_station": 43.0, "barracks": 71.0}
+	# aid station quarantine roof 4.4; POLISH7-3: FACB7-4 board seq 4583: planning = the 4-storey command centre (roof brim
+	# 15.5 m = 152 px), barracks = 3 storeys + roof pad (helideck 11.6 m = 114 px); POLISH7-4: FACB7-5 seq 4783 (13.9c-18):
+	# barracks now [16,14,4,2] (same key, helideck 11.6 m), workshop [16,9,4,4] carries the drone-bay storey (deck rail
+	# 11.6 m = 114 px; was the 6.5 m high bay = 58 px, so the tow tractor parked behind it was drawn on the launch deck);
+	# the drone_bay zone is stacked on the workshop (no box / building of its own)
+	"magazine": 38.0, "armory": 114.0, "aid_station": 43.0, "barracks": 114.0}
+## POLISH7-3 (FACB7-4 seq 4583): the range zone [2,21,8,4] holds a 2-storey training building (world x 2.1..5.7,
+## y 21.25..24.8, parapet 8.9 m = 87 px) west of the open range: covered firing line (canopy 2.9 m, x 6.05..6.9),
+## 4 rifle lanes y 21.15..23.6 firing east, steel targets at x 9.1, berm x 9.5..10.0. Offsets from the zone origin.
+const RANGE_BLD := Rect2(0.1, 0.25, 3.6, 3.55)
+const RANGE_BLD_H := 87.0
+const RANGE_LANE_Y0 := 0.15        # first rifle lane edge (y 21.15)
+const RANGE_LANE_W := 0.6125       # (23.6 - 21.15) / 4
+const RANGE_FIRE_X := 4.55         # firing point under the canopy (x 6.55)
+const RANGE_READY_X := 3.95        # waiting line between the training building and the canopy (x 5.95)
+const RANGE_TARGET_X := 7.1        # steel targets (x 9.1)
+const RANGE_CANOPY_Z := 28.4       # canopy roof 2.9 m
 ## POLISH7: the magazine's door side is an open forecourt: the headwall stands 3.9 m (0.975 tile) inside the zone edge
 ## (facb7.zone_heights), so a forklift loading at the door is not hidden by a box over the whole zone.
 const MAG_FORECOURT := 0.975
@@ -58,12 +75,19 @@ const TOWER_TOP := 112.0       # tower roof centre (above the 2x2 tower centre; 
 const CUPOLA_OFF := Vector2(9, -104)
 const RADAR_AT := Vector2(0.35, 0.78)  # radar on the clear front-left of the ops roof (FACB7's lattice mast + dish
                                        # stand at its centre, vents back-right), fraction of the planning rect
-const ROOF_H_OPS := 44.0               # ops roof surface (measured: roof front vertex 110 px above the ground at z2.5)
+const ROOF_H_OPS := 152.0              # ops roof brim (POLISH7-3: 4-storey command centre, FACB7-4 seq 4583: 15.5 m)
 ## FACB7's three red-tipped comms poles on the ops roof (px from the planning-rect centre ground point, zoom 1,
 ## measured on life7_ops_z3): the comms-mast lights blink on their tips.
-const MAST_TIPS := [Vector2(-71, -87), Vector2(-60, -89), Vector2(-50, -90)]
+## LIGHT7-5 (CR 5927): the command centre roof (brim 15.52 m, FACB7-4) carries the EW mast (its red lamp at roof + 8.4 m = 23.92 m) and an
+## antenna farm of 4 whips (tips roof + 2.6 + 0.6 k m): tools/art/g7_fac7f.gd planning(), metres from the zone centre (door side +x, f 0)
+## -> px from _iso(zone centre): EW lamp (3.8, 4.3) m, whip k 3 (-0.98, -3.53) m 19.92 m, whip k 1 (1.22, -3.53) m 18.72 m.
+const MAST_TIPS := [Vector2(-4, -202), Vector2(20, -213), Vector2(38, -193)]
 const DOOR_W := 0.62           # garage shutter width (fraction of the face) and height (px)
-const DOOR_HPX := 26.0
+const DOOR_HPX := 30.0   # LIGHT7-2 CR 5926: art door height (FacAtmo7.DOOR_Z)
+## POLISH7-4 (FACB7-5 seq 4783): the drone bay is the workshop's 2nd storey; the drone lands on the launch deck
+## (10.57 m) on the deck spot DECK_SPOT (fraction of the workshop rect: the north spot, local y -2.35 m).
+const DECK_Z := 10.57
+const DECK_SPOT := Vector2(0.5, 0.35)
 const SPEED := {"walk": 0.36, "run": 0.85, "forklift": 0.55, "fuel": 0.6, "tug": 0.5, "dog": 0.36}
 const LOD_MIN := 0.7           # below this zoom only the moving parts (radar, cupolas, drone) are drawn
 
@@ -81,9 +105,6 @@ var _tick := -1
 var _alpha := 0.0
 var _near_cells: Dictionary = {}   # Vector2i -> true: cells holding a sim unit this tick (near any compound)
 var _near: Array = []              # [Vector2 pos, owner] near the compounds (cupola aim, arrivals)
-var _team_apcs: Dictionary = {}    # apc id -> team id (CnTeamReady events + render entry "teams" when present)
-var _team_pos: Dictionary = {}     # apc id -> Vector2 (this tick)
-var _team_trail: Dictionary = {}   # apc id -> Array[Vector2] (last positions, map-table track)
 var _sentinels: Array = []         # [id, Vector2] Sentinel units near a compound this tick (the dog heels beside one)
 var _sent_prev: Dictionary = {}    # id -> Vector2 last tick
 var _eng_job: Dictionary = {}      # 13.9c-11 engineer hook: unit id -> "forklift" | "forklift_empty" | "fuel"
@@ -91,15 +112,16 @@ var _eng_pos: Dictionary = {}      # unit id -> Vector2 (this tick, from the sna
 var _eng_prev: Dictionary = {}     # unit id -> Vector2 (last tick)
 var _sent_def: Dictionary = {}     # snapshot def index -> true for Sentinel defs (cached per snapshot defs size)
 var _sent_defs_n := -1
+var _veh_def: Dictionary = {}      # POLISH7-4: snapshot def index -> true for fuel-using ground / air vehicles (fuel_max > 0)
+var _vehs: Array = []              # [Vector2 pos, owner] of those near a compound this tick (the bowser leaves its bay for one)
 var on := true                     # A/B switch (tests / playtest): off = nothing drawn, nothing read
 var zoom := 1.0
 var _onscreen := false
-var _hover_ops := false
 # evidence (tests / playtest)
 var drawn := {}
 var occluded := 0
 var waits := 0
-var inset_shown := false
+var inset_shown := false   # 13.9c-19: always false (the ops-room inset is gone; tests assert it)
 var scans := 0
 var rebuilds := 0
 var _gone := {}   # POLISH7-2: facility id -> the entry of a facility missing from the last rebuild (kept state if it comes back)
@@ -207,10 +229,7 @@ func refresh(snap: Dictionary) -> void:
 func on_events(evs: Array) -> void:
 	for ev in evs:
 		var ty := String(ev.get("type", ""))
-		if ty == "CnTeamReady":
-			for a in ev.get("apcs", []):
-				_team_apcs[int(a)] = int(ev.get("team", 0))
-		elif ty == "Eng7Job":   # 13.9c-11: a Facility Engineer starts / ends a driving job (ENG7 emits it)
+		if ty == "Eng7Job":   # 13.9c-11: a Facility Engineer starts / ends a driving job (ENG7 emits it)
 			attach_engineer(int(ev.get("unit", -1)), String(ev.get("job", "")))
 		elif ty == "EntityDestroyed" and _eng_job.has(int(ev.get("id", -1))):
 			attach_engineer(int(ev.id), "")
@@ -319,10 +338,6 @@ func _rebuild() -> void:
 		if not alarm and old.has(int(F.id)) and bool(old[int(F.id)].get("alarm", false)):
 			Lf.calm_t = now()
 		Lf.alarm = alarm
-		for t in F.get("teams", []):   # FACB7 render entry teams [[tid, phase, [apc ids]]] when present
-			if t is Array and (t as Array).size() >= 3:
-				for a in t[2]:
-					_team_apcs[int(a)] = int(t[0])
 		life.append(Lf)
 	if life.is_empty():
 		visible = false
@@ -358,8 +373,9 @@ func _layout(F: Dictionary) -> Dictionary:
 		var gr := _r(g)
 		bx.append(_box(gr, GARAGE_H))
 		(Lf.garages as Array).append(gr)
+	var stacked: Dictionary = F.get("stacked", c.get("stacked", {}))   # FACB7-5: {drone_bay: workshop} = an upper storey
 	for zn in zs:
-		if FLOOR_ZONES.has(zn) or (zs[zn] as Rect2).size == Vector2.ZERO:
+		if FLOOR_ZONES.has(zn) or (zs[zn] as Rect2).size == Vector2.ZERO or stacked.has(zn):
 			continue
 		var zb: Rect2 = zs[zn]
 		if zn == "magazine":   # POLISH7: no box over the forecourt in front of the headwall
@@ -369,6 +385,8 @@ func _layout(F: Dictionary) -> Dictionary:
 				2: zb = zb.grow_individual(-MAG_FORECOURT, 0, 0, 0)
 				_: zb = zb.grow_individual(0, -MAG_FORECOURT, 0, 0)
 		bx.append(_box(zb, float(ZONE_H.get(zn, DEFAULT_H))))
+	if zs.has("range") and (zs.range as Rect2).size != Vector2.ZERO:   # POLISH7-3: the 2-storey training building
+		bx.append(_box(Rect2((zs.range as Rect2).position + RANGE_BLD.position, RANGE_BLD.size), RANGE_BLD_H))
 	# nav grid over the compound floor: 0 blocked, else step cost (lanes 2, paved floors 3, gravel 5)
 	var grid := PackedByteArray()
 	grid.resize(cs * cs)
@@ -388,7 +406,17 @@ func _layout(F: Dictionary) -> Dictionary:
 			_paint(grid, cs, O, zs[zn], 0)
 	if zs.has("range"):
 		_paint(grid, cs, O, zs.range, 0)   # the range is fenced off: only the trainees use it
+	# POLISH7-4 (13.9c-21): the fuel bowser's marked parking bay (Engineer7.BOWSER_BAY, the sim bowser parks there too):
+	# no other actor walks or drives through it (cells whose centre lies in the bay are blocked)
+	var bay := Rect2(O + Engineer7.bay_local().position, Engineer7.bay_local().size)
+	Lf["fuel_bay"] = bay
+	for y in range(int(floor(bay.position.y - O.y)), int(ceil(bay.end.y - O.y))):
+		for x in range(int(floor(bay.position.x - O.x)), int(ceil(bay.end.x - O.x))):
+			if x >= 0 and y >= 0 and x < cs and y < cs and bay.has_point(O + Vector2(x + 0.5, y + 0.5)):
+				grid[y * cs + x] = 0
 	Lf["grid"] = grid
+	var host := String(stacked.get("drone_bay", ""))
+	Lf["deck"] = zs.get(host, Rect2()) if host != "" else Rect2()
 	# doors: content json doors (compound-relative cells just outside the building), else the nearest free cell
 	var dr := {}
 	var cd: Dictionary = c.get("doors", {})
@@ -572,14 +600,15 @@ func _actor(Lf: Dictionary, kind: String, sheet: String, stops: Array, speed: fl
 	var n := stops.size()
 	var hz := 40.0 if kind == "fuel" else (24.0 if kind in ["forklift", "tug"] else 18.0)
 	for st in stops:   # a dwell (working, parked) happens where the camera can see it, never behind a building
-		if String(st.get("pose", "")) != "hide" and kind != "gate":
+		if String(st.get("pose", "")) != "hide" and kind != "gate" and not bool(st.get("fixed", false)):
 			st.p = _vis_spot(Lf, st.p, hz)
 	for i in n:
 		var s: Dictionary = stops[i]
 		var dw := float(s.get("dwell", 0.0))
 		if dw > 0.0:
 			segs.append({"t0": t, "t1": t + dw, "m": false, "p": s.p, "pose": String(s.get("pose", "idle")),
-				"face": float(s.get("face", -99.0)), "load": bool(s.get("load", false)), "at": String(s.get("at", ""))})
+				"face": float(s.get("face", -99.0)), "load": bool(s.get("load", false)), "at": String(s.get("at", "")),
+				"job": s.get("job", null)})
 			t += dw
 		if n < 2:
 			continue
@@ -591,7 +620,7 @@ func _actor(Lf: Dictionary, kind: String, sheet: String, stops: Array, speed: fl
 		var ln := cum[cum.size() - 1]
 		if ln > 0.01:
 			segs.append({"t0": t, "t1": t + ln / speed, "m": true, "pts": pts, "cum": cum, "len": ln,
-				"load": bool(s.get("load_out", false))})
+				"load": bool(s.get("load_out", false)), "rev": bool(s.get("rev_out", false))})
 			t += ln / speed
 	var a := {"kind": kind, "sheet": sheet, "segs": segs, "T": maxf(t, 0.1), "clock": phase * maxf(t, 0.1), "face": 0.0,
 		"civil": kind in ["tech", "staff", "forklift", "fuel", "tug"], "p": Vector2.ZERO, "moving": false, "pose": "idle",
@@ -631,7 +660,6 @@ func _actors(Lf: Dictionary) -> void:
 	var shop := "workshop" if zs.has("workshop") else "planning"
 	var ops := "planning" if zs.has("planning") else shop
 	var mag := _find_zone(Lf, ["magazine", "ammo"], shop)
-	var fuel := _find_zone(Lf, ["fuel", "rearm"], shop)
 	var west := []
 	var east := []
 	for i in gd.size():
@@ -679,30 +707,43 @@ func _actors(Lf: Dictionary) -> void:
 		{"p": _door(Lf, mag), "dwell": 8.0, "pose": "load", "load_out": true},
 		{"p": gp.call(ge.call(2)) + Vector2(-0.9 if gp.call(ge.call(2)).x > ctr.x else 0.9, 0), "dwell": 6.0, "pose": "unload", "load": true, "at": "g%d" % ge.call(2)}],
 		SPEED.forklift, 0.55)
-	# fuel bowser: fuel point -> pad -> helipad (hose out while parked)
-	# POLISH7-2 (SEQ7-3): every stop on the north strip of the fuel point (wall side), clear of the dropship's APC
-	# line-up (pad centre row) and of the crews' / rearm rigs' routes along the apron's south half
-	var fz: Rect2 = zs.get("fuel_point", Rect2())
-	var fpark := Vector2(fz.get_center().x, fz.position.y + 0.6) if fz.size != Vector2.ZERO else _door(Lf, fuel)
-	_actor(Lf, "fuel", "fuel_truck", [{"p": fpark, "dwell": 10.0, "pose": "park"},
+	# fuel bowser (POLISH7-4, owner 13.9c-21; POLISH7-5, 13.9c-21a): ONE marked parking bay (Engineer7.BOWSER_BAY, a
+	# lay-by in the service alley between the workshop and the barracks' back wall, its mouth on the spine lane, nothing
+	# opening onto it); it parks there nose out (Engineer7.bay_heading(), toward the mouth) and only leaves to refuel an
+	# own vehicle actually standing on the pad / helipad (the bay dwell holds until one is there, see _on_tick): it
+	# drives straight out onto the lane, hoses the vehicle from the fuel point's strip (POLISH7-2 / SEQ7-3 spots, clear of
+	# the APC line-up), and reverses back into the bay from the mouth. An engineer's real refuelling run carries it
+	# instead (13.9c-11 hook; the sim bowser parks in the same bay, engineer7.gd).
+	var bay: Rect2 = Lf.fuel_bay
+	var bpark := bay.get_center()
+	var bdir := Vector2.from_angle(Engineer7.bay_heading())
+	var bface := Engineer7.bay_heading()
+	var mouth := bpark + bdir * (absf(bdir.x) * bay.size.x * 0.5 + absf(bdir.y) * bay.size.y * 0.5 + 0.65)
+	_actor(Lf, "fuel", "fuel_truck", [{"p": bpark, "dwell": 30.0, "pose": "park", "face": bface, "fixed": true, "direct": true, "job": padr},
+		{"p": mouth},
 		{"p": Vector2(padr.end.x + 0.3, padr.position.y + 1.2), "dwell": 16.0, "pose": "hose", "hose": pad},
-		{"p": Vector2(hr.position.x - 0.3, hr.position.y + 1.6), "dwell": 16.0, "pose": "hose", "hose": heli}],
-		SPEED.fuel, 0.25)
-	# tow tractor: apron parking by the helipad; hooks onto the dropship nose while one is on the pad
-	var park := Vector2(hr.position.x - 1.0, hr.end.y + 0.6)
+		{"p": mouth, "direct": true, "rev_out": true},
+		{"p": bpark, "dwell": 30.0, "pose": "park", "face": bface, "fixed": true, "direct": true, "job": hr},
+		{"p": mouth},
+		{"p": Vector2(hr.position.x - 0.3, hr.position.y + 1.6), "dwell": 16.0, "pose": "hose", "hose": heli},
+		{"p": mouth, "direct": true, "rev_out": true}],
+		SPEED.fuel, 0.0, {"bay": bpark})
+	# tow tractor: parks in the helipad's north-west corner, in plain sight (POLISH7-4: was (hr.x - 1, hr.end.y + 0.6) on
+	# the y8 lane right behind the workshop, whose real 11.6 m drone-bay storey then drew it "on the launch deck"); hooks
+	# onto the dropship nose while one is on the pad
+	var park := hr.position + Vector2(0.6, 0.55)
 	var nose := heli + Vector2(hr.size.x * 0.5 + 0.9, 0)
 	if int(Lf.heli) > 0:
 		_actor(Lf, "tug", "tow_tractor", [{"p": park, "dwell": 18.0, "pose": "park", "face": PI * 0.5},
 			{"p": nose, "dwell": 22.0, "pose": "tow", "face": PI, "tow": heli + Vector2(hr.size.x * 0.32, 0)}], SPEED.tug, 0.0)
-	else:
-		_actor(Lf, "tug", "tow_tractor", [{"p": park, "dwell": 24.0, "pose": "park", "face": PI * 0.5},
-			{"p": Vector2(padr.end.x + 0.5, padr.end.y + 0.5), "dwell": 12.0, "pose": "park"}], SPEED.tug, 0.0)
+	else:   # nothing to tow: it stays parked (POLISH7-4: no idle shuttle to a second "park" spot behind the workshop)
+		_actor(Lf, "tug", "tow_tractor", [{"p": park, "dwell": 24.0, "pose": "park", "face": PI * 0.5}], SPEED.tug, 0.0)
 	# guard dog (13.9c-10: the wall guards and interior patrols are SENT7's real Sentinel units): the dog heels beside
 	# the first Sentinel patrolling inside the compound (snapshot), else it waits at its kennel by the ready room.
 	var kennel := _door(Lf, _find_zone(Lf, ["ready"], shop)) + Vector2(0.6, 0.4)
-	if zs.has("barracks"):   # POLISH7-2: by the Sentinel barracks' front (+y) corner, in the open (the old fallback, the
-		var br: Rect2 = zs.barracks   # workshop's door, put the kennel behind the workshop from the camera), east of
-		kennel = Vector2(br.end.x - 0.45, br.end.y + 0.55)   # the door so the crews running out never cross it
+	if zs.has("barracks"):   # POLISH7-5 (13.9c-21a): against the barracks' back wall at the east end of the service alley
+		var br: Rect2 = zs.barracks   # (POLISH7-2 had it at the front corner, which stood on the y16 lane), off every
+		kennel = Vector2(br.end.x - 0.5, br.position.y - 0.5)   # lane, door front and the fuel bay (west end of the alley)
 	_actor(Lf, "dog", "dog", [{"p": kennel, "dwell": 30.0, "pose": "kennel", "face": PI * 0.75}], SPEED.dog, 0.0,
 		{"kennel": kennel, "dp": kennel, "civil": false})
 	# gate guards: two outside the outer vehicle gate (facing the approach), one at the foot entry, one inside
@@ -727,13 +768,13 @@ func _on_tick(snap: Dictionary, steps: int) -> void:
 	var scan := _onscreen and zoom >= LOD_MIN * 0.85
 	_near_cells.clear()
 	_near.clear()
-	_team_pos.clear()
 	_sent_prev.clear()
 	for sx in _sentinels:
 		_sent_prev[int(sx[0])] = sx[1]
 	_sentinels.clear()
+	_vehs.clear()
 	_eng_prev = _eng_pos.duplicate()
-	if scan or not _team_apcs.is_empty() or not _eng_job.is_empty():
+	if scan or not _eng_job.is_empty():
 		_scan(snap, scan)
 	for Lf in life:
 		var alarm: bool = Lf.alarm
@@ -743,6 +784,8 @@ func _on_tick(snap: Dictionary, steps: int) -> void:
 				continue
 			if alarm and bool(a.civil):
 				continue   # frozen where they were; drawn running for cover (see _eval)
+			if String(a.kind) == "fuel" and _bay_hold(Lf, a, steps):
+				continue   # POLISH7-4 (13.9c-21): parked in its bay, nothing to refuel
 			var blocked := false
 			if scan:
 				blocked = _blocked(Lf, a)
@@ -754,6 +797,22 @@ func _on_tick(snap: Dictionary, steps: int) -> void:
 			a.clock = float(a.clock) + DT * float(steps) * k
 		_gate_arrivals(Lf)
 		_aim_towers(Lf, steps)
+
+
+## POLISH7-4 (owner 13.9c-21): the bowser's bay dwell does not run out while its next job (the pad / helipad rect in
+## the dwell's "job") has no own fuel-using vehicle on it: it stays parked in the bay until there is one to refuel.
+func _bay_hold(Lf: Dictionary, a: Dictionary, steps: int) -> bool:
+	var tt := fposmod(float(a.clock), float(a.T))
+	for sg in a.segs:
+		if tt >= float(sg.t0) and tt < float(sg.t1):
+			if bool(sg.m) or not (sg.get("job") is Rect2) or tt + DT * float(steps) < float(sg.t1) - 0.05:
+				return false
+			var jr: Rect2 = (sg.job as Rect2).grow(0.5)
+			for v in _vehs:
+				if int(v[1]) == int(Lf.owner) and jr.has_point(v[0]):
+					return false
+			return true
+	return false
 
 
 ## One pass over the snapshot units: cells near a compound (+ positions for aim / arrivals) and strike-team APCs.
@@ -768,16 +827,18 @@ func _scan(snap: Dictionary, near: bool) -> void:
 	if defs.size() != _sent_defs_n:   # SENT7 units carry a content "sentinel" type field (g7_sent_*); bearers excluded
 		_sent_defs_n = defs.size()
 		_sent_def = {}
+		_veh_def = {}
 		for di in defs.size():
 			var ud: Dictionary = Content.unit(String(defs[di]))
 			if ud.has("sentinel") and String(ud.sentinel) != "bearer":
 				_sent_def[di] = true
+			if float(ud.get("fuel_max", 0.0)) > 0.0:
+				_veh_def[di] = true
 	var sent_def: Dictionary = _sent_def
 	n = mini(n, mini(ids.size(), pos.size()))
 	var rects := []
 	for Lf in life:
 		rects.append((Lf.cr as Rect2).grow(16.0))
-	var teams := not _team_apcs.is_empty()
 	var engs := not _eng_job.is_empty()
 	for i in n:
 		if engs and _eng_job.has(ids[i]):
@@ -790,16 +851,9 @@ func _scan(snap: Dictionary, near: bool) -> void:
 					_near.append([p, own[i] if i < own.size() else -1])
 					if not sent_def.is_empty() and i < dfi.size() and sent_def.has(dfi[i]):
 						_sentinels.append([ids[i], p, own[i] if i < own.size() else -1])
+					if i < dfi.size() and _veh_def.has(dfi[i]):
+						_vehs.append([p, own[i] if i < own.size() else -1])
 					break
-		if teams and _team_apcs.has(ids[i]):
-			_team_pos[ids[i]] = p
-	for id in _team_pos:
-		var tr: Array = _team_trail.get(id, [])
-		if tr.is_empty() or (tr[tr.size() - 1] as Vector2).distance_to(_team_pos[id]) > 1.5:
-			tr.append(_team_pos[id])
-			if tr.size() > 24:
-				tr.remove_at(0)
-		_team_trail[id] = tr
 
 
 ## A moving actor waits while a sim unit stands on or just ahead of its next step (they never block sim units).
@@ -911,8 +965,8 @@ func _eval(Lf: Dictionary, a: Dictionary) -> void:
 		var l0 := cum[j - 1]
 		var l1 := cum[j]
 		var p := pts[j - 1].lerp(pts[j], clampf((d - l0) / maxf(l1 - l0, 0.0001), 0.0, 1.0))
-		if pts[j].distance_to(pts[j - 1]) > 0.01:
-			a.face = (pts[j] - pts[j - 1]).angle()
+		if pts[j].distance_to(pts[j - 1]) > 0.01:   # rev: reversing into the bowser bay (faces away from its travel)
+			a.face = (pts[j] - pts[j - 1]).angle() + (PI if bool(seg.get("rev", false)) else 0.0)
 		a.p = p
 		a.moving = not bool(a.wait)
 		a.pose = "run" if bool(Lf.alarm) and kind in ["guard", "dog"] else ("walk" if not bool(a.wait) else "idle")
@@ -958,7 +1012,7 @@ func _eval(Lf: Dictionary, a: Dictionary) -> void:
 
 ## The dog heels 0.7 tiles to the left-rear of the lowest-id friendly Sentinel inside the compound; trots while it moves,
 ## sits / sniffs while it stands; with no Sentinel inside it lies at its kennel. Smoothed per frame (display only).
-func _dog_at(Lf: Dictionary, a: Dictionary) -> void:
+func _dog_at(Lf: Dictionary, a: Dictionary, step_dt := -1.0) -> void:
 	var inner: Rect2 = (Lf.cr as Rect2).grow(-1.5)
 	var lead = null
 	for sx in _sentinels:
@@ -975,7 +1029,7 @@ func _dog_at(Lf: Dictionary, a: Dictionary) -> void:
 			moving = true
 		want = lp + Vector2.from_angle(hd + PI * 0.75) * 0.7
 	var dp: Vector2 = a.dp
-	var dt := clampf(get_process_delta_time(), 0.0, 0.1)
+	var dt := clampf(get_process_delta_time() if step_dt < 0.0 else step_dt, 0.0, 0.1)   # step_dt: a fixed step (tests)
 	var d := dp.distance_to(want)
 	if d > 6.0:
 		dp = want
@@ -1053,7 +1107,11 @@ func _gate_at(Lf: Dictionary, a: Dictionary) -> void:
 
 
 ## Perimeter drone: an orbit 4 tiles outside the walls at 9 m; every 160 s it returns to the drone bay for 24 s.
-const DRONE_ALT := 9.0
+## POLISH7-4: the orbit (radius half the compound + 4) crosses the corner towers (12.4 m) and the wall ring: it flies at
+## 14 m (was 9 m: through the towers); to / from the launch deck it climbs to DRONE_CRUISE, clear of the 15.5 m command
+## centre, and only descends onto the deck over the last part of the leg.
+const DRONE_ALT := 14.0
+const DRONE_CRUISE := 18.0
 const DRONE_CYCLE := 160.0
 const DRONE_HOME := 24.0
 func _drone_at(Lf: Dictionary, a: Dictionary) -> void:
@@ -1064,7 +1122,11 @@ func _drone_at(Lf: Dictionary, a: Dictionary) -> void:
 	var w := (0.05 if bool(Lf.alarm) else 0.035)
 	var ang := t * w
 	var orbit := ctr + Vector2(cos(ang), sin(ang)) * rad
-	var home: Vector2 = _door(Lf, "drone_bay")
+	# POLISH7-4 (FACB7-5): the drone bay is the workshop's 2nd storey: it recovers on the launch-deck spot (10.57 m)
+	var dk: Rect2 = Lf.get("deck", Rect2())
+	var home: Vector2 = dk.position + dk.size * DECK_SPOT if dk.size != Vector2.ZERO else _door(Lf, "drone_bay")
+	var home_z := DECK_Z if dk.size != Vector2.ZERO else 0.0
+	a.floor = 0.0
 	var c := fposmod(t, DRONE_CYCLE)
 	var alt := DRONE_ALT
 	var p := orbit
@@ -1079,20 +1141,23 @@ func _drone_at(Lf: Dictionary, a: Dictionary) -> void:
 		var ang_back := (t - k + 16.0 + DRONE_HOME) * w
 		var orb1 := ctr + Vector2(cos(ang_back), sin(ang_back)) * rad
 		if k < 8.0:
-			p = orb0.lerp(home, smoothstep(0.0, 1.0, k / 8.0))
-			alt = lerpf(DRONE_ALT, 1.2, smoothstep(0.0, 1.0, k / 8.0))
+			var u := k / 8.0
+			p = orb0.lerp(home, smoothstep(0.0, 1.0, u))
+			alt = lerpf(DRONE_ALT, DRONE_CRUISE, smoothstep(0.0, 0.3, u)) if u < 0.65 else lerpf(DRONE_CRUISE, home_z + 1.2, smoothstep(0.65, 1.0, u))
 			a.face = (home - orb0).angle()
 		elif k < 8.0 + DRONE_HOME:
 			p = home
-			alt = 0.6
-			a.hidden = k > 10.0 and k < 6.0 + DRONE_HOME
+			alt = home_z + 0.3   # sits on its deck spot (the lift hatch opens / shuts: door "drone_bay")
+			a.hidden = home_z <= 0.0 and k > 10.0 and k < 6.0 + DRONE_HOME
 			a.home = true
 		else:
 			var q := (k - 8.0 - DRONE_HOME) / 8.0
 			p = home.lerp(orb1, smoothstep(0.0, 1.0, q))
-			alt = lerpf(1.2, DRONE_ALT, smoothstep(0.0, 1.0, q))
+			alt = lerpf(home_z + 1.2, DRONE_CRUISE, smoothstep(0.0, 0.35, q)) if q < 0.7 else lerpf(DRONE_CRUISE, DRONE_ALT, smoothstep(0.7, 1.0, q))
 			a.face = (orb1 - home).angle()
 		a.home_k = k
+		if dk.size != Vector2.ZERO and dk.grow(0.3).has_point(p):
+			a.floor = home_z   # over the workshop: its shadow falls on the deck, not on the ground under the building
 	a.p = p
 	a.alt = alt
 	a.moving = true
@@ -1208,12 +1273,6 @@ func _compound_on_screen() -> bool:
 		var bb := Rect2(a, Vector2.ZERO).expand(ViewUtil.iso(Vector2(cr.end.x, cr.position.y))).expand(ViewUtil.iso(cr.end)).expand(ViewUtil.iso(Vector2(cr.position.x, cr.end.y)))
 		bb = bb.grow(220.0)
 		if bb.intersects(view):
-			_hover_ops = false
-			var zr: Rect2 = (Lf.zones as Dictionary).get("planning", Rect2())
-			if zr.size != Vector2.ZERO:
-				var mp := get_local_mouse_position()
-				var c := ViewUtil.iso(zr.get_center()) - Vector2(0, 20)
-				_hover_ops = mp.distance_to(c) < 60.0
 			return true
 	return false
 
@@ -1250,8 +1309,17 @@ func _draw() -> void:
 			else:
 				_draw_range_item(Lf, it, t)
 		_draw_parts(Lf, t)
-	for Lf in life:
-		_draw_inset(Lf, t)
+		# POLISH7-5: the LIVE FIRE lamp's housing on the range canopy roof is drawn here, on this node (it used to be
+		# drawn from _draw_glows, the Life7Glows child's draw callback: ~1,500 "Drawing is only allowed inside this
+		# node's _draw()" errors per windowed run); its glow stays in _draw_glows
+		var rr: Rect2 = (Lf.zones as Dictionary).get("range", Rect2())
+		if rr.size != Vector2.ZERO and bool(Lf.get("live_fire", false)) and zoom >= LOD_MIN:
+			draw_rect(Rect2(_range_lamp(Lf, rr) + Vector2(-1.5, 0.0), Vector2(3, 3)), Color(0.16, 0.16, 0.17))
+
+
+## Screen point of the range's LIVE FIRE lamp (POLISH7-3: on the firing-line canopy roof, north end).
+func _range_lamp(Lf: Dictionary, r: Rect2) -> Vector2:
+	return _iso(Lf, r.position + Vector2(RANGE_FIRE_X - 0.1, RANGE_LANE_Y0 + 0.1)) - Vector2(0, RANGE_CANOPY_Z + 3.0)
 
 
 func _draw_actor(Lf: Dictionary, a: Dictionary, t: float) -> void:
@@ -1316,7 +1384,8 @@ func _draw_actor(Lf: Dictionary, a: Dictionary, t: float) -> void:
 		"drone":
 			var g := s
 			var ar := Vector2(1.0, 0.5) * 3.0
-			draw_set_transform(g, 0.0, Vector2(1, 1))
+			var fl := float(a.get("floor", 0.0)) * 9.8   # POLISH7-4: on / over the launch deck the shadow sits on the deck
+			draw_set_transform(g - Vector2(0, fl), 0.0, Vector2(1, 1))
 			draw_circle(Vector2.ZERO, 3.0, Color(0.03, 0.04, 0.03, 0.30))
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			if not bool(Lf.alarm) and zoom >= LOD_MIN and float(a.alt) > 4.0:   # camera footprint swept on the ground
@@ -1346,8 +1415,8 @@ func _range_items(Lf: Dictionary, items: Array, t: float) -> void:
 	var c := fposmod(t, DRILL)
 	Lf.live_fire = live and c >= 6.0 and c < 28.0
 	for i in LANES:
-		var ly := r.position.y + 0.55 + float(i) * (r.size.y - 1.1) / float(LANES - 1)
-		var tp := Vector2(r.position.x + r.size.x * 0.52, ly)
+		var ly := r.position.y + RANGE_LANE_Y0 + RANGE_LANE_W * (float(i) + 0.5)
+		var tp := Vector2(r.position.x + RANGE_TARGET_X, ly)
 		var st := "up"
 		if live:
 			var up0 := 6.5 + fmod(float(i) * 5.3, 15.0)
@@ -1363,21 +1432,21 @@ func _range_items(Lf: Dictionary, items: Array, t: float) -> void:
 		items.append([tp.x + tp.y, "target", tp, st])
 		if not live:
 			continue
-		var fire := Vector2(r.end.x - 0.9, ly)
-		var ready := Vector2(r.end.x - 0.35, r.position.y + 0.4 + float(i) * 0.35)
+		var fire := Vector2(r.position.x + RANGE_FIRE_X, ly)   # POLISH7-3: firing line under the canopy, firing east
+		var ready := Vector2(r.position.x + RANGE_READY_X, ly)
 		var p := fire
 		var pose := "fire_c"
-		var face := PI
+		var face := 0.0
 		if c < 6.0:
 			p = ready.lerp(fire, c / 6.0)
 			pose = "walk"
 			face = (fire - ready).angle()
 		elif c >= 28.0 and c < 36.0:   # walk forward and check the targets
 			var k := (c - 28.0) / 8.0
-			var chk := tp + Vector2(0.8, 0.0)
+			var chk := tp - Vector2(0.45, 0.0)
 			p = fire.lerp(chk, minf(k * 2.0, 1.0)) if k < 0.5 else chk.lerp(fire, (k - 0.5) * 2.0)
 			pose = "walk" if absf(k - 0.5) > 0.12 else "idle"
-			face = PI if k < 0.5 else 0.0
+			face = 0.0 if k < 0.5 else PI
 		elif c >= 36.0:
 			var k2 := (c - 36.0) / 8.0
 			p = fire.lerp(ready, k2)
@@ -1390,11 +1459,12 @@ func _range_items(Lf: Dictionary, items: Array, t: float) -> void:
 		items.append([p.x + p.y, "trainee", p, pose, face, i])
 	# kill house: a pair stacking and clearing the rooms of the west half (bang / muzzle flashes, lamp)
 	if live and c >= 6.0 and c < 28.0:
-		var kx := r.position.x
-		var ky := r.position.y
-		var kw := r.size.x * 0.45
-		var route := [Vector2(kx + kw + 0.3, ky + 0.6), Vector2(kx + kw * 0.65, ky + 0.9), Vector2(kx + kw * 0.25, ky + 0.9),
-			Vector2(kx + kw * 0.25, ky + r.size.y * 0.7), Vector2(kx + kw * 0.7, ky + r.size.y * 0.7), Vector2(kx + kw + 0.3, ky + r.size.y * 0.75)]
+		# POLISH7-3: the kill house is FACB7-4's 2-storey training building (door N at [5,20]): the pair stacks at the
+		# door, goes in (hidden by the building, 13.9c-18: no cut-away) and comes back out
+		var bo2 := r.position + RANGE_BLD.position
+		var dr := Vector2(r.position.x + 3.5, r.position.y - 0.45)
+		var route := [dr + Vector2(0.6, -0.2), dr, Vector2(dr.x, bo2.y + 0.6), Vector2(bo2.x + 1.0, bo2.y + 1.2),
+			Vector2(bo2.x + 1.0, bo2.y + 2.8), Vector2(dr.x, bo2.y + 0.6), dr, dr + Vector2(0.6, -0.2)]
 		var k3 := (c - 6.0) / 22.0 * float(route.size() - 1)
 		for m in 2:
 			var kk := clampf(k3 - float(m) * 0.18, 0.0, float(route.size() - 1) - 0.001)
@@ -1404,6 +1474,9 @@ func _range_items(Lf: Dictionary, items: Array, t: float) -> void:
 
 
 func _draw_range_item(Lf: Dictionary, it: Array, t: float) -> void:
+	if String(it[1]) != "target" and _occluded(Lf, it[2], 18.0):   # POLISH7-3: inside / behind the training building
+		occluded += 1
+		return
 	match String(it[1]):
 		"target":
 			_spr("target", String(it[3]), 0, _iso(Lf, it[2]))
@@ -1436,14 +1509,14 @@ func _draw_doors(Lf: Dictionary) -> void:
 		var gr: Rect2 = Lf.garages[i]
 		if gr.get_center().x > ctr.x:
 			continue   # shutter on the west face (away from the camera): only its light spill shows (glows)
-		var x := gr.end.x
-		var y0 := gr.get_center().y - gr.size.y * DOOR_W * 0.5
-		var y1 := gr.get_center().y + gr.size.y * DOOR_W * 0.5
+		var x := gr.end.x - 0.42   # LIGHT7-2 CR 5926: FacAtmo7.INSET, the art facade (was a slab 0.42 tile in front of it)
+		var y0 := gr.get_center().y - 0.56
+		var y1 := gr.get_center().y + 0.56   # the art garage door is 1.12 tiles wide (FacAtmo7 _shutter hw 0.56)
 		var b0 := _iso(Lf, Vector2(x, y0))
 		var b1 := _iso(Lf, Vector2(x, y1))
 		var hh := DOOR_HPX * f
 		# opening grows from the floor up as the shutter rolls into its drum: dark bay, lit floor, a vehicle shape
-		draw_colored_polygon(PackedVector2Array([b0, b1, b1 + Vector2(0, -hh), b0 + Vector2(0, -hh)]), Color(0.06, 0.07, 0.07, 0.96))
+		draw_colored_polygon(PackedVector2Array([b0, b1, b1 + Vector2(0, -hh), b0 + Vector2(0, -hh)]), Color(0.06, 0.07, 0.07, 1.0))   # opaque (13.9c-18)
 		draw_colored_polygon(PackedVector2Array([b0, b1, b1 + Vector2(-4, -3), b0 + Vector2(-4, -3)]), Color(0.55, 0.50, 0.36, 0.55 * f))
 		draw_line(b0 + Vector2(0, -hh), b1 + Vector2(0, -hh), Color(0.28, 0.30, 0.30), 1.0)   # shutter bottom rail
 
@@ -1474,7 +1547,7 @@ func _draw_glows() -> void:
 		# obstruction lights on every tower top: 1 s period, 0.25 s on, staggered pairs
 		for i in (Lf.towers as Array).size():
 			if fposmod(t + float(i % 2) * 0.5, 1.6) < 0.3:
-				_glow(_iso(Lf, Lf.towers[i]) - Vector2(0, TOWER_TOP + 12.0), 12.0, Color(1.0, 0.15, 0.08, 0.85))
+				_glow(obstruction_lamp(Lf, i), 12.0, Color(1.0, 0.15, 0.08, 0.85))
 			if bool((Lf.aims as Dictionary).get("t%d" % i, false)) and fposmod(t * 3.0, 1.0) < 0.5:   # tracking: amber lamp
 				_glow(_iso(Lf, Lf.towers[i]) + CUPOLA_OFF + Vector2(6, -12), 8.0, Color(1.0, 0.65, 0.1, 0.8))
 		var pr: Rect2 = zs.get("planning", Rect2())
@@ -1493,13 +1566,14 @@ func _draw_glows() -> void:
 					glows.draw_texture_rect(_glow_tex, Rect2(_iso(Lf, wp) - Vector2(9, 22), Vector2(18, 10)), false, Color(0.35, 0.75, 1.0, 0.22 * fl))
 		# garage / drone bay light spill on the apron while a door is open
 		var gd: Array = Lf.garage_door
-		for i in gd.size():
-			var f := float((Lf.doors as Dictionary).get("g%d" % i, 0.0))
-			if f > 0.02:
-				glows.draw_texture_rect(_glow_tex, Rect2(_iso(Lf, gd[i]) - Vector2(30, 12), Vector2(60, 24)), false, Color(1.0, 0.85, 0.55, 0.30 * f))
+		# LIGHT7-2 CR 5926: the garage door spill is drawn (clipped) by fac_atmo7._draw_glow only; this one doubled it
 		var fdb := float((Lf.doors as Dictionary).get("drone_bay", 0.0))
 		if fdb > 0.02:
-			glows.draw_texture_rect(_glow_tex, Rect2(_iso(Lf, _door(Lf, "drone_bay")) - Vector2(30, 12), Vector2(60, 24)), false, Color(0.7, 0.9, 1.0, 0.35 * fdb))
+			var dk: Rect2 = Lf.get("deck", Rect2())   # POLISH7-4: the lift hatch on the launch deck (drone bay = workshop 2nd storey)
+			if dk.size != Vector2.ZERO:
+				glows.draw_texture_rect(_glow_tex, Rect2(_iso(Lf, dk.position + dk.size * DECK_SPOT) - Vector2(16, 6 + DECK_Z * 9.8), Vector2(32, 12)), false, Color(0.7, 0.9, 1.0, 0.45 * fdb))
+			else:
+				glows.draw_texture_rect(_glow_tex, Rect2(_iso(Lf, _door(Lf, "drone_bay")) - Vector2(30, 12), Vector2(60, 24)), false, Color(0.7, 0.9, 1.0, 0.35 * fdb))
 		# vehicle beacons, drone nav strobe
 		for a in Lf.actors:
 			if bool(a.get("hidden", false)) or zoom < LOD_MIN and String(a.kind) != "drone":
@@ -1514,7 +1588,8 @@ func _draw_glows() -> void:
 		# range: red LIVE FIRE lamp on the range tower, muzzle flashes, kill-house bangs
 		var r: Rect2 = zs.get("range", Rect2())
 		if r.size != Vector2.ZERO and bool(Lf.get("live_fire", false)) and zoom >= LOD_MIN:
-			var lamp := _iso(Lf, Vector2(r.end.x - 0.5, r.position.y + 0.4)) - Vector2(0, 30)
+			# POLISH7-3: the LIVE FIRE lamp sits on the firing-line canopy roof (north end), not floating over the berm
+			var lamp := _range_lamp(Lf, r)   # (its dark housing is drawn by _draw: only glows.draw_* may run in here)
 			if fposmod(t, 0.8) < 0.45:
 				_glow(lamp, 14.0, Color(1.0, 0.1, 0.05, 0.9))
 			var c := fposmod(t, DRILL)
@@ -1522,97 +1597,23 @@ func _draw_glows() -> void:
 				var up0 := 6.5 + fmod(float(i) * 5.3, 15.0)
 				var hit := up0 + 2.2 + fmod(float(i) * 1.9, 1.4)
 				if c > up0 + 0.4 and c < hit and int(t * 9.0) % 3 == 0:
-					var ly := r.position.y + 0.55 + float(i) * (r.size.y - 1.1) / float(LANES - 1)
-					_glow(_iso(Lf, Vector2(r.end.x - 1.25, ly)) - Vector2(0, 10), 7.0, Color(1.0, 0.85, 0.4, 0.9))
-			var kx := r.position.x + r.size.x * 0.22
-			for m in 3:   # rooms of the kill house light up as the pair clears them (strobe / flashbang)
-				var roomc := Vector2(r.position.x + r.size.x * (0.1 + 0.13 * float(m)), r.position.y + r.size.y * (0.3 + 0.2 * float(m % 2)))
-				var on_k := fposmod(t * 1.7 + float(m) * 0.9, 3.0) < 0.12
-				if on_k:
-					_glow(_iso(Lf, roomc) - Vector2(0, 8), 20.0, Color(1.0, 0.95, 0.85, 0.7))
-			kx = kx
+					var ly := r.position.y + RANGE_LANE_Y0 + RANGE_LANE_W * (float(i) + 0.5)
+					_glow(_iso(Lf, Vector2(r.position.x + RANGE_FIRE_X + 0.3, ly)) - Vector2(0, 10), 7.0, Color(1.0, 0.85, 0.4, 0.9))
+			# the pair clearing the training building: flashes in its windows (east / south faces, both storeys);
+			# never a cut-away (13.9c-18): only the window light shows
+			var bo := r.position + RANGE_BLD.position
+			var wins := [[Vector2(bo.x + RANGE_BLD.size.x, bo.y + 1.0), 18.0], [Vector2(bo.x + 1.4, bo.y + RANGE_BLD.size.y), 18.0],
+				[Vector2(bo.x + RANGE_BLD.size.x, bo.y + 2.6), 58.0]]
+			for m in 3:
+				if fposmod(t * 1.7 + float(m) * 0.9, 3.0) < 0.12:
+					_glow(_iso(Lf, wins[m][0]) - Vector2(0, float(wins[m][1])), 9.0, Color(1.0, 0.95, 0.85, 0.75))
+
+
+## POLISH7-5 (owner 13.9c-24 "nothing floating"): tower i's red obstruction lamp, on the tip of the mast ATMO7 draws on
+## the tower roof (FacAtmo7.MAST_OFF / MAST_TOP_Z; was the tower centre + 124 px, beside the mast in the air).
+func obstruction_lamp(Lf: Dictionary, i: int) -> Vector2:
+	return _iso(Lf, (Lf.towers[i] as Vector2) + FacAtmo7.MAST_OFF) - Vector2(0, FacAtmo7.MAST_TOP_Z)
 
 
 func _glow(at: Vector2, rad: float, col: Color) -> void:
 	glows.draw_texture_rect(_glow_tex, Rect2(at - Vector2(rad, rad * 0.75), Vector2(rad * 2.0, rad * 1.5)), false, col)
-
-
-# ---------------------------------------------------------------- ops room inset
-const INSET := Vector2(176, 112)
-func _draw_inset(Lf: Dictionary, t: float) -> void:
-	var pr: Rect2 = (Lf.zones as Dictionary).get("planning", Rect2())
-	if pr.size == Vector2.ZERO or not (zoom >= 1.6 or _hover_ops):
-		return
-	inset_shown = true
-	var anchor := _iso(Lf, pr.get_center()) - Vector2(0, ROOF_H_OPS + 62.0)   # above the roof masts: never hides the radar
-	var sc := 1.0 / maxf(zoom, 0.5)
-	var o := anchor + Vector2(-INSET.x * 0.5, -INSET.y - 18.0) * sc
-	draw_set_transform(o, 0.0, Vector2(sc, sc))
-	var R := Rect2(Vector2.ZERO, INSET)
-	draw_line(Vector2(INSET.x * 0.5, INSET.y), Vector2(INSET.x * 0.5, INSET.y + 18.0), Color(0.55, 0.85, 1.0, 0.8), 1.0)
-	draw_rect(R.grow(2), Color(0.05, 0.06, 0.07, 0.95))
-	draw_rect(R, Color(0.11, 0.12, 0.13, 1.0))
-	draw_rect(Rect2(0, 0, INSET.x, 30), Color(0.15, 0.16, 0.17))           # back wall
-	# screen wall: 5 consoles, each its own content (radar sweep, feeds, status bars), flicker
-	for k in 5:
-		var sr := Rect2(6 + k * 34, 5, 30, 18)
-		draw_rect(sr.grow(1), Color(0.04, 0.05, 0.05))
-		draw_rect(sr, Color(0.05, 0.16, 0.20))
-		match k:
-			0:   # radar PPI with the same sweep as the roof antenna
-				var cc := sr.get_center()
-				draw_circle(cc, 8.0, Color(0.05, 0.30, 0.2), false, 1.0)
-				draw_line(cc, cc + Vector2.from_angle(t * 0.42) * 8.0, Color(0.4, 1.0, 0.6), 1.0)
-			1, 3:   # drone / gate camera feeds: noisy grey with a moving bar
-				draw_rect(sr.grow(-2), Color(0.25, 0.28, 0.27))
-				draw_rect(Rect2(sr.position.x + 2, sr.position.y + 2 + fposmod(t * 6.0 + k * 5.0, 14.0), 26, 1), Color(0.45, 0.48, 0.47))
-			2:   # threat board: the base state
-				var sc2 := Color(0.3, 0.9, 0.4) if bool(Lf.secure) else Color(1.0, 0.25, 0.15)
-				draw_rect(Rect2(sr.position + Vector2(3, 3), Vector2(24, 4)), sc2)
-				for b in 3:
-					draw_rect(Rect2(sr.position + Vector2(3, 9 + b * 3), Vector2(6 + int(fposmod(t * 3.0 + b * 7.0, 18.0)), 1)), Color(0.4, 0.8, 1.0))
-			4:   # comms: blinking text rows
-				for b in 4:
-					if int(t * 2.0 + b) % 3 != 0:
-						draw_rect(Rect2(sr.position + Vector2(3, 3 + b * 4), Vector2(10 + (b * 7) % 14, 1)), Color(0.5, 0.9, 1.0))
-	# map table (centre) with the compound and live strike-team positions from the snapshot
-	var tb := Rect2(48, 44, 80, 44)
-	draw_rect(tb.grow(2), Color(0.06, 0.07, 0.07))
-	draw_rect(tb, Color(0.04, 0.12, 0.09))
-	for gx in range(1, 8):
-		draw_line(Vector2(tb.position.x + gx * 10, tb.position.y), Vector2(tb.position.x + gx * 10, tb.end.y), Color(0.1, 0.3, 0.2, 0.6), 1.0)
-	for gy in range(1, 4):
-		draw_line(Vector2(tb.position.x, tb.position.y + gy * 11), Vector2(tb.end.x, tb.position.y + gy * 11), Color(0.1, 0.3, 0.2, 0.6), 1.0)
-	var ctr: Vector2 = (Lf.cr as Rect2).get_center()
-	var ext := 48.0
-	var mine := []
-	for id in _team_pos:
-		ext = maxf(ext, (_team_pos[id] as Vector2).distance_to(ctr) * 1.15)
-		mine.append(id)
-	var tc := tb.get_center()
-	var k2 := minf(tb.size.x, tb.size.y) * 0.5 / ext
-	draw_rect(Rect2(tc - Vector2(2, 2), Vector2(4, 4)), Color(0.9, 0.9, 0.85))   # the facility
-	mine.sort()
-	for id in mine:
-		var tr: Array = _team_trail.get(id, [])
-		var prev := Vector2.INF
-		for q in tr:
-			var mp := tc + ((q as Vector2) - ctr) * k2
-			if prev != Vector2.INF:
-				draw_line(prev, mp, Color(0.3, 0.8, 1.0, 0.5), 1.0)
-			prev = mp
-		var bp := tc + ((_team_pos[id] as Vector2) - ctr) * k2
-		var blink := fposmod(t * 2.0, 1.0) < 0.6
-		draw_rect(Rect2(bp - Vector2(1.5, 1.5), Vector2(3, 3)), Color(0.35, 0.85, 1.0) if blink else Color(0.2, 0.5, 0.7))
-	draw_string(ThemeDB.fallback_font, Vector2(tb.position.x + 2, tb.end.y - 2), "TEAMS %d" % mine.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color(0.5, 0.95, 0.7))
-	# staff: two at the consoles (backs to us), one leaning over the map table, one walking between them
-	var st := [[Vector2(30, 40), 6, "idle"], [Vector2(118, 40), 6, "idle_1"], [Vector2(96, 98), 5, "act_0" if int(t * 1.5) % 2 == 0 else "idle"]]
-	for q in st:
-		_spr("fig_staff", String(q[2]), int(q[1]), q[0])
-	var wx := 30.0 + fposmod(t * 9.0, 120.0)
-	var dirl := fposmod(t * 9.0, 240.0) < 120.0
-	if not dirl:
-		wx = 150.0 - fposmod(t * 9.0, 120.0)
-	_spr("fig_staff", WALK[int(t * 7.0) % 6], 0 if dirl else 4, Vector2(wx, 104))
-	draw_string(ThemeDB.fallback_font, Vector2(4, INSET.y - 3), "OPS", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.55, 0.85, 1.0, 0.9))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

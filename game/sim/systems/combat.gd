@@ -50,6 +50,9 @@ const G4bMech = preload("res://sim/systems/g4b_mech.gd")  # G4b UNITS: concealme
 ## Each hook is called only when its bit is set in SimIndex.g6m(w).
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 const Elevation = preload("res://sim/systems/elevation.gd")   # G6: MAX_LEVEL for the native height LOS
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")   # G7 WALL7-3 CR 5500: idle defenders hold the wall-walk
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")   # G7 CNROLE7 CR 6046 (13.9c-29): CN teams parked at home never chase
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B CR 6354 (13.9c-30): turret / mount traverse before fire
 ## G6 PERF6: height LOS through RtsCombat.height_los (rts_core >= 0.5.0, exact port of Elevation.los_map) while
 ## G6Hooks.los_ok == Elevation.los (its only delegate) and no test spy is set. Off = the GDScript hook.
 static var native_elev := true
@@ -434,23 +437,52 @@ static func tick(w: SimWorld) -> void:
 					bj += 4
 				nores.resize(nidx.size())
 				var nb := brs.size()
-				for i in scan_ids.size():
-					if res[i] != -1:
-						continue
-					var sp: Vector2 = npos[scan_src[i]]
-					var rr := float(scan_r[i]) + 0.01
-					rr *= rr
-					var near := false
-					var j := 0
-					while j < nb:
-						var dx := sp.x - clampf(sp.x, brs[j], brs[j + 2])
-						var dy := sp.y - clampf(sp.y, brs[j + 1], brs[j + 3])
-						if dx * dx + dy * dy <= rr:
-							near = true
-							break
-						j += 4
-					if not near:
-						nores[scan_ids[i]] = 1
+				if bscan_bucket and nb > BSCAN_BUCKET_MIN * 4:
+					_nores_bucketed(scan_ids, scan_src, scan_r, res, npos, brs, nores)
+					if bscan_debug:
+						var chk := PackedByteArray()
+						chk.resize(nidx.size())
+						for i in scan_ids.size():
+							if res[i] != -1:
+								continue
+							var sp: Vector2 = npos[scan_src[i]]
+							var rr := float(scan_r[i]) + 0.01
+							rr *= rr
+							var near := false
+							var j := 0
+							while j < nb:
+								var dx := sp.x - clampf(sp.x, brs[j], brs[j + 2])
+								var dy := sp.y - clampf(sp.y, brs[j + 1], brs[j + 3])
+								if dx * dx + dy * dy <= rr:
+									near = true
+									break
+								j += 4
+							if not near:
+								chk[scan_ids[i]] = 1
+						var bad := 0
+						for q in chk.size():
+							if chk[q] != nores[q]:
+								bad += 1
+						if bad > 0:
+							print("BSCAN mismatch tick=%d bad=%d nores_sum=%d chk_sum=%d" % [w.tick, bad, Array(nores).count(1), Array(chk).count(1)])
+				else:
+					for i in scan_ids.size():
+						if res[i] != -1:
+							continue
+						var sp: Vector2 = npos[scan_src[i]]
+						var rr := float(scan_r[i]) + 0.01
+						rr *= rr
+						var near := false
+						var j := 0
+						while j < nb:
+							var dx := sp.x - clampf(sp.x, brs[j], brs[j + 2])
+							var dy := sp.y - clampf(sp.y, brs[j + 1], brs[j + 3])
+							if dx * dx + dy * dy <= rr:
+								near = true
+								break
+							j += 4
+						if not near:
+							nores[scan_ids[i]] = 1
 		var lc = null
 		if native_los:
 			lc = w.cache.get("combat_lc")
@@ -659,6 +691,57 @@ static func _search_rm(w: SimWorld, e: Dictionary, s: Dictionary) -> float:
 
 ## G6: rescales this tick's scan radii (hold: range x rm, indirect: max(sight, range x rm)), the
 ## values _unit_tick passes to _pick, so the native nearest-enemy pre-batch searches the same circle.
+## G7 PERF7F: the SIM10K "no building within the scan radius" pre-scan above, with the building rects (the same
+## float32 brs values) bucketed by BSCAN_BK tiles, so a shooter tests only the buildings around it instead of every
+## building (a counter-nanite facility adds ~115). Same distance test; "any building near" does not depend on the
+## order the buildings are tested in, so the result (nores) is identical. Used above BSCAN_BUCKET_MIN buildings.
+const BSCAN_BK := 8.0
+const BSCAN_BUCKET_MIN := 16
+static var bscan_bucket := true
+static var bscan_debug := false   # bench / tests: false = the plain loop over every building (A/B proof)
+
+
+static func _nores_bucketed(scan_ids: PackedInt32Array, scan_src: PackedInt32Array, scan_r: PackedFloat32Array, res: PackedInt32Array, npos: PackedVector2Array, brs: PackedFloat32Array, nores: PackedByteArray) -> void:
+	var nb := brs.size()
+	var bk := {}
+	var j := 0
+	while j < nb:
+		for by in range(floori(brs[j + 1] / BSCAN_BK), floori(brs[j + 3] / BSCAN_BK) + 1):
+			for bx in range(floori(brs[j] / BSCAN_BK), floori(brs[j + 2] / BSCAN_BK) + 1):
+				var key := (bx + 8) + (by + 8) * 8192
+				var arr = bk.get(key)
+				if arr == null:
+					bk[key] = [j]
+				else:
+					arr.append(j)
+		j += 4
+	for i in scan_ids.size():
+		if res[i] != -1:
+			continue
+		var sp: Vector2 = npos[scan_src[i]]
+		var r0 := float(scan_r[i]) + 0.01
+		var rr := r0 * r0
+		var near := false
+		# every building within r0 of sp overlaps the square sp +- r0; one extra bucket each side covers rounding
+		for by in range(floori((sp.y - r0) / BSCAN_BK) - 1, floori((sp.y + r0) / BSCAN_BK) + 2):
+			for bx in range(floori((sp.x - r0) / BSCAN_BK) - 1, floori((sp.x + r0) / BSCAN_BK) + 2):
+				var arr = bk.get((bx + 8) + (by + 8) * 8192)
+				if arr == null:
+					continue
+				for q: int in arr:
+					var dx := sp.x - clampf(sp.x, brs[q], brs[q + 2])
+					var dy := sp.y - clampf(sp.y, brs[q + 1], brs[q + 3])
+					if dx * dx + dy * dy <= rr:
+						near = true
+						break
+				if near:
+					break
+			if near:
+				break
+		if not near:
+			nores[scan_ids[i]] = 1
+
+
 static func _scan_rm(w: SimWorld, ids: PackedInt32Array, rr: PackedFloat32Array) -> void:
 	var ents: Dictionary = w.entities
 	for k in ids.size():
@@ -1090,6 +1173,14 @@ static func _unit_tick(w: SimWorld, e: Dictionary, grid: Dictionary, blds: Array
 		return
 	match ot:
 		"idle":
+			if (w.sys_state.has("wallwalk7") and WallWalk7.on_wall(w, e)) or CnRole7.parked(w, e):   # + CNROLE7 CR 6046: CN teams at home hold   # G7 WALL7-3 CR 5500 (owner 13.9c-23): an idle soldier on the wall-walk holds the wall: fires at what is in range, never chases off it
+				var th = _pick(w, e, float(s.range) * _rm(w, e, s), grid, blds)
+				if th == null:
+					e.target = -1
+					return
+				e.target = int(th.id)
+				_fire(w, e, s, th)
+				return
 			var t = _pick(w, e, _search_rm(w, e, s), grid, blds)
 			if t == null:
 				if int(e.target) >= 0:
@@ -1267,6 +1358,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		return
 	if int(s.get("setup", 0)) > 0 and (not bool(e.get("deployed", false)) or bool(e.get("moving", false))):
 		return  # G4b UNITS: mortar fires only deployed (G4bMech set-up)
+	if not Traverse7.lay(w, e, t.pos, float(s.cooldown), bool(s.indirect), int(t.id)):   # + TURRET7B CR 6480: no free swing onto a new target
+		return   # G7 TURRET7B CR 6354 (13.9c-30): the turret / mount traverses onto the target first (holds fire until laid)
 	var indirect: bool = s.indirect
 	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t) or not _hlos(w, e, t)):
 		return
@@ -1313,7 +1406,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		to += Vector2(w.rng.randf_range(-disp, disp), w.rng.randf_range(-disp, disp))
 	if e.kind == "unit":
 		e.firing = FIRING_HINT_TICKS
-		e.facing = snappedf((to - from).angle(), Q)
+		e.facing = Traverse7.face(e, snappedf((to - from).angle(), Q))   # G7 TURRET7B CR 6354 (ORCH ruling): a mounted weapon never swings the hull
 	w.emit("ShotFired", {"shooter": int(e.id), "target": int(t.id), "weapon": s.weapon, "hit": hit, "from": from, "to": to, "indirect": indirect})
 	if bool(s.get("ignite", false)):
 		G4bMech.ignite(w, w.cell_of(to), int(e.owner))  # G4b UNITS: flame landing on FOREST starts a fire

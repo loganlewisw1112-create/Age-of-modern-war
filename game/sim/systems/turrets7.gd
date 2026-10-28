@@ -23,6 +23,7 @@ extends RefCounted
 const VER := 1
 const SCAN := 10
 const BK := 8.0
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B (13.9c-30): lay before fire
 const HotState = preload("res://sim/hot_state.gd")
 const Airdef = preload("res://sim/systems/airdef.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
@@ -449,6 +450,9 @@ static func _tick2(w: SimWorld, ids: Array) -> void:
 			continue
 		if aim != int(t.id):
 			st.aim[bid] = int(t.id)
+		# G7 TURRET7B (13.9c-30): the head traverses onto the target (aimed from the turret centre) before it fires
+		if not Traverse7.lay(w, b, pos_of(w, t) - center(b) + Vector2(b.pos), float(wd.get("cooldown", 1.0)), kind == "mortar", int(t.id)):
+			continue
 		_spend(w, st, int(bid), wd)
 		match kind:
 			"mortar":

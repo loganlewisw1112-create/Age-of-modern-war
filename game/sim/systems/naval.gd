@@ -44,6 +44,7 @@ extends RefCounted
 ##   rescan from id 1 after a load; registering a carrier twice is a no-op).
 
 const Movement = preload("res://sim/systems/movement.gd")
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B (13.9c-30)
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Damage = preload("res://sim/systems/damage.gd")
 const Status = preload("res://sim/systems/status.gd")
@@ -404,13 +405,15 @@ static func _bombard_tick(w: SimWorld) -> void:
 		var d := from.distance_to(at)
 		if d > float(s.range) or d < float(s.min_range):
 			continue
+		if not Traverse7.lay(w, e, at, float(s.cooldown), true):
+			continue   # G7 TURRET7B (13.9c-30): the ship's guns lay onto the bombardment point before they fire
 		e.bombard_cd = maxi(roundi(float(s.cooldown) * SimWorld.TICK_RATE), 1)
 		var hit := w.rng.chance(float(s.accuracy) * Status.accuracy_mult(w, e))
 		var to := at
 		if not hit:
 			to += Vector2(w.rng.randf_range(-1.5, 1.5), w.rng.randf_range(-1.5, 1.5))
 		e.firing = 6
-		e.facing = snappedf((to - from).angle(), Movement.Q)
+		e.facing = Traverse7.face(e, snappedf((to - from).angle(), Movement.Q))   # G7 TURRET7B: laid, no snap
 		e.last_fired_tick = w.tick
 		w.emit("ShotFired", {"shooter": int(e.id), "target": -1, "weapon": s.weapon, "hit": hit, "from": from,
 			"to": to, "indirect": true, "bombard": true})

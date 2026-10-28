@@ -33,7 +33,7 @@ const FONT := {
 const BOARDS := {
 	"planning": ["OPS", "MISSION PLANNING"], "lab": ["PACKAGE LAB"], "drone_bay": ["DRONE BAY"], "workshop": ["WORKSHOP"],
 	"range": ["SIM RANGE"], "decon_hall": ["DECON HALL"], "apc_wash": ["APC WASH"], "magazine": ["MAGAZINE", "SPECIAL AMMO"],
-	"armory": ["ARMORY", "SUIT BAY"], "suit_bay": ["SUIT BAY"], "aid_station": ["AID STATION"], "aid": ["AID STATION"],
+	"armory": ["SUIT FOUNDRY"], "suit_bay": ["SUIT BAY"], "aid_station": ["AID STATION"], "aid": ["AID STATION"],
 	"fuel_point": ["FUEL - REARM"], "fuel": ["FUEL - REARM"], "ready_room": ["READY ROOM"], "core": ["CN COMMAND"],
 	"helipad": ["PAD 2", "STEALTH VTOL"], "pad": ["PAD 1", "DROPSHIP"], "staging": ["STAGING"], "gate_outer": ["GATE 1"],
 	"gate_inner": ["GATE 2"], "checkpoint": ["CHECKPOINT", "ID CHECK"]}
@@ -156,6 +156,167 @@ static func _beacon() -> Image:
 	_outline(im)
 	return im
 
+
+
+# ------------------------------------------------------------------ LIGHT7-2 fixtures (13.9c-24 / 24a): real luminaires
+## 5-tone steel ramp (deep, shade, mid, lit, glint): light from the upper left, shadows lean blue, highlights warm.
+const FX_STEEL := [Color(0.09, 0.10, 0.13), Color(0.19, 0.21, 0.25), Color(0.33, 0.36, 0.40), Color(0.52, 0.55, 0.57), Color(0.80, 0.80, 0.78)]
+const FX_LENS := Color(0.90, 0.95, 1.0)
+const FX_LENS_W := Color(1.0, 0.86, 0.60)
+const FX_RED := [Color(0.30, 0.03, 0.04), Color(0.62, 0.06, 0.06), Color(0.86, 0.14, 0.10), Color(1.0, 0.48, 0.38)]
+
+
+## One aim frame per camera-facing direction: 0 aims +x (screen right-down), 1 +y (left-down), 2 -x (left-up, away from the
+## camera), 3 -y (right-up, away). A flood luminaire: base plate, yoke bracket, finned housing, visor hood, lens.
+static func _fx_flood() -> Image:
+	var fw := 12
+	var fh := 12
+	var im := _img(fw * 4, fh)
+	for f in 4:
+		var o := f * fw
+		_rect(im, o + 4, 10, 4, 1, FX_STEEL[2])                 # base plate on the mount
+		_rect(im, o + 4, 10, 1, 1, FX_STEEL[3])
+		_rect(im, o + 6, 8, 1, 2, FX_STEEL[1])                   # yoke stem
+		_rect(im, o + 3, 8, 7, 1, FX_STEEL[1])                   # yoke arm under the housing
+		var x0 := 3
+		var hw := 7
+		_rect(im, o + x0, 3, hw, 5, FX_STEEL[2])                 # housing
+		_rect(im, o + x0, 3, hw, 1, FX_STEEL[3])                 # lit top edge
+		_rect(im, o + x0, 3, 1, 5, FX_STEEL[3])                  # lit left edge
+		_rect(im, o + x0, 7, hw, 1, FX_STEEL[1])                 # shaded underside
+		_rect(im, o + x0 + hw - 1, 4, 1, 4, FX_STEEL[1])         # shaded right edge
+		if f < 2:                                                # facing the camera: the lens in the aimed half, a visor over it
+			var lx := o + (x0 + hw - 4 if f == 0 else x0 + 1)
+			_rect(im, lx, 4, 3, 3, FX_LENS)
+			_rect(im, lx, 4, 1, 1, Color(1, 1, 1))
+			_rect(im, lx, 3, 3, 1, FX_STEEL[0])                  # visor hood
+		else:                                                    # facing away: the cooling fins and the gland box
+			for k in range(0, hw - 1, 2):
+				_rect(im, o + x0 + 1 + k, 4, 1, 3, FX_STEEL[1])
+			_rect(im, o + 5, 2, 2, 1, FX_STEEL[0])
+	_outline(im)
+	return im
+
+
+## A cobra-head pole luminaire (pivot = the pole top): arm 0 +x, 1 +y, 2 -x, 3 -y (screen +/-10 px, +/-5 px), the head
+## 6 x 3 at its end with the lens underneath (lit), a collar on the pole.
+static func _fx_pole() -> Image:
+	var fw := 28
+	var fh := 17
+	var im := _img(fw * 6, fh)
+	var dirs := [Vector2i(1, 1), Vector2i(-1, 1), Vector2i(-1, -1), Vector2i(1, -1)]
+	for f in 6:
+		var o := f * fw
+		var px := 14
+		var py := 8
+		if f >= 4:   # frame 4: the arm runs straight at the camera (hangs down the screen), 5: straight away (up)
+			var dn := 1 if f == 4 else -1
+			_rect(im, o + px - 1, py - 1, 3, 2, FX_STEEL[2])
+			_rect(im, o + px - 1, py - 1, 3, 1, FX_STEEL[3])
+			for k in 5:
+				_put(im, o + px, py + dn * k, FX_STEEL[2])
+				_put(im, o + px - 1, py + dn * k, FX_STEEL[3])
+			var hy := py + 5 if dn > 0 else py - 7
+			_rect(im, o + px - 3, hy, 7, 3, FX_STEEL[2])
+			_rect(im, o + px - 3, hy, 7, 1, FX_STEEL[3])
+			_rect(im, o + px - 3, hy + 2, 7, 1, FX_STEEL[1])
+			if f == 4:
+				_rect(im, o + px - 2, hy + 3, 5, 1, FX_LENS_W)
+			continue
+		var d: Vector2i = dirs[f]
+		_rect(im, o + px - 1, py - 1, 3, 2, FX_STEEL[2])         # collar / arm socket on the pole top
+		_rect(im, o + px - 1, py - 1, 3, 1, FX_STEEL[3])
+		var ex := px + d.x * 10
+		var ey := py + d.y * 5
+		for k in 11:                                             # the arm: a 1 px tube with a lit upper edge
+			var ax := px + d.x * k
+			var ay := py + int(round(float(d.y) * float(k) * 0.5))
+			_put(im, o + ax, ay, FX_STEEL[2])
+			_put(im, o + ax, ay - 1, FX_STEEL[3])
+		_rect(im, o + ex - 3, ey, 7, 3, FX_STEEL[2])             # head housing
+		_rect(im, o + ex - 3, ey, 7, 1, FX_STEEL[3])
+		_rect(im, o + ex - 3, ey + 2, 7, 1, FX_STEEL[1])
+		_rect(im, o + ex - 2, ey + 3, 5, 1, FX_LENS_W if f < 2 else Color(0.9, 0.9, 0.8))   # the lens under the head
+		_rect(im, o + ex - 3, ey - 1, 2, 1, FX_STEEL[1])         # driver pod
+	_outline(im)
+	return im
+
+
+## The wall-top alarm strobe: a steel base and one dome, frame 0 dark (red lens off), 1 lit.
+static func _fx_strobe() -> Image:
+	var im := _img(12, 8)
+	for f in 2:
+		var o := f * 6
+		_rect(im, o + 1, 5, 4, 2, FX_STEEL[2])
+		_rect(im, o + 1, 5, 4, 1, FX_STEEL[3])
+		_rect(im, o + 1, 6, 4, 1, FX_STEEL[1])
+		var c: Array = [FX_RED[1], FX_RED[2], FX_RED[3]] if f == 1 else [FX_RED[0], FX_RED[1], FX_RED[2].darkened(0.3)]
+		_rect(im, o + 1, 2, 4, 3, c[1])
+		_rect(im, o + 2, 1, 2, 1, c[1])
+		_rect(im, o + 1, 2, 1, 2, c[2])
+		_rect(im, o + 4, 2, 1, 3, c[0])
+	_outline(im)
+	return im
+
+
+## A bulkhead wall lamp over a door: frame 0 on a +x facade (plate along the screen's down-right slope), 1 on a +y facade.
+## Back plate, cast hood over a warm lens, a guard cage (dark bars) on the lens.
+static func _fx_bulk() -> Image:
+	var fw := 8
+	var fh := 7
+	var im := _img(fw * 2, fh)
+	for f in 2:
+		var o := f * fw
+		_rect(im, o + 1, 2, 6, 4, FX_STEEL[1])                   # back plate
+		_rect(im, o + 1, 2, 6, 1, FX_STEEL[3])                   # lit hood top
+		_rect(im, o + 1, 2, 1, 4, FX_STEEL[3])
+		_rect(im, o + 2, 3, 4, 3, FX_LENS_W)                     # lens
+		_put(im, o + 2, 3, Color(1, 1, 0.9))
+		for k in [2, 4]:                                         # cage bars
+			_rect(im, o + k + (1 if f == 1 else 0), 3, 1, 3, Color(FX_STEEL[0], 0.8))
+		_rect(im, o + 1, 1, 6, 1, FX_STEEL[0])                   # hood shadow line
+	_outline(im)
+	return im
+
+
+## Red steady obstruction lamp (twin domes on a base block).
+static func _fx_obst() -> Image:
+	var im := _img(8, 8)
+	_rect(im, 1, 5, 6, 2, FX_STEEL[2])
+	_rect(im, 1, 5, 6, 1, FX_STEEL[3])
+	_rect(im, 1, 6, 6, 1, FX_STEEL[1])
+	for dx in [1, 4]:
+		_rect(im, dx, 2, 3, 3, FX_RED[2])
+		_rect(im, dx, 2, 3, 1, FX_RED[3])
+		_rect(im, dx + 2, 2, 1, 3, FX_RED[1])
+	_outline(im)
+	return im
+
+
+## A flush ground / deck edge light: a steel ring with a lens puck.
+static func _fx_puck() -> Image:
+	var im := _img(7, 4)
+	_rect(im, 1, 1, 5, 2, FX_STEEL[2])
+	_rect(im, 1, 1, 5, 1, FX_STEEL[3])
+	_rect(im, 2, 2, 3, 1, Color(0.55, 0.9, 0.62))
+	_rect(im, 0, 2, 1, 1, FX_STEEL[1])
+	_rect(im, 6, 2, 1, 1, FX_STEEL[1])
+	return im
+
+
+## A concrete pole footing with its anchor-bolt nuts and a steel base plate.
+static func _fx_plinth() -> Image:
+	var im := _img(12, 6)
+	var conc := [Color(0.30, 0.31, 0.34), Color(0.43, 0.44, 0.46), Color(0.55, 0.56, 0.56)]
+	_rect(im, 1, 2, 10, 3, conc[1])
+	_rect(im, 1, 2, 10, 1, conc[2])
+	_rect(im, 1, 4, 10, 1, conc[0])
+	_rect(im, 4, 1, 4, 2, FX_STEEL[2])                           # base plate
+	_rect(im, 4, 1, 4, 1, FX_STEEL[3])
+	for bx in [3, 8]:
+		_put(im, bx, 2, FX_STEEL[0])
+	_outline(im)
+	return im
 
 # ------------------------------------------------------------------ fire (6 frames) and soft puffs / glows
 static func _fire() -> Image:
@@ -535,4 +696,12 @@ static func build() -> Dictionary:
 		add.call("arrow%d" % r, _arrow(r), [36, 18])
 	var cr := _crest()
 	add.call("crest", cr, [cr.get_width() / 2, cr.get_height() / 2])
+	# LIGHT7-2: the facility's real luminaires (pivots at their mount point)
+	add.call("fx_flood", _fx_flood(), [6, 11], {"fw": 12, "fh": 12, "frames": 4})
+	add.call("fx_pole", _fx_pole(), [14, 8], {"fw": 28, "fh": 17, "frames": 6})
+	add.call("fx_strobe", _fx_strobe(), [3, 7], {"fw": 6, "fh": 8, "frames": 2})
+	add.call("fx_bulk", _fx_bulk(), [4, 6], {"fw": 8, "fh": 7, "frames": 2})
+	add.call("fx_obst", _fx_obst(), [4, 7])
+	add.call("fx_puck", _fx_puck(), [3, 3])
+	add.call("fx_plinth", _fx_plinth(), [6, 3])
 	return out

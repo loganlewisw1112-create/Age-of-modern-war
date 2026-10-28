@@ -178,7 +178,8 @@ static func seen_now(w: SimWorld, fid: int, e: Dictionary) -> bool:
 	var uown: Dictionary = SimIndex.units_by_owner(w)
 	for fm in _members(w, tkey(w, fid)):
 		for o: Dictionary in uown.get(fm, []):
-			if Vector2(o.pos).distance_to(p) <= mr and _sees(w, st, o, e, sil, mv, cl):
+			# DET7: a destroyed observer still listed in the index (until the 1/8 rebuild) sees nothing
+			if Vector2(o.pos).distance_to(p) <= mr and w.entities.has(int(o.id)) and _sees(w, st, o, e, sil, mv, cl):
 				return true
 	return false
 
@@ -518,6 +519,8 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 		for t: Dictionary in uown[o]:
 			if tiers_on and int(t.get("tier", 0)) == Tiers.REDUCED:
 				continue
+			if not w.entities.has(int(t.id)):
+				continue   # DET7: destroyed index entry (kept until the 1/8 rebuild; a loaded world starts clean)
 			var lf := int(t.get("last_fired_tick", -9999))
 			var p: Vector2 = t.pos
 			var cx := floori(p.x)

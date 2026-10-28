@@ -42,6 +42,10 @@ func _setup(seed_v: int = 0, owner := 0, clear := true) -> Array:
 	var w := make_world({"seed": seed_v}) if seed_v != 0 else make_world()
 	_ensure_g7()
 	w.ai_state = {}
+	# POLISH7-3: the facility sits in the map centre within reach of the other side's HQ; since SENT7's guard net its
+	# Sentinels (and its towers) kill that HQ, the match ends by hq_elimination and step() freezes the world, so every
+	# later check ran on a stopped world (test_auto_rebuild_ai_side: tick frozen at 2329). The match never ends here.
+	w.cfg["victory"] = "endless"
 	var mw := int(w.map.w)
 	var mh := int(w.map.h)
 	var n := mini(60, mini(mw, mh) - 2)
@@ -260,14 +264,9 @@ func _auto_rebuild(side: int) -> void:
 	_run(w, 1)
 	var P: Dictionary = w.sys_state[WallTurret7.KEY].posts.get(str(int(F.id)), {})
 	var mk := "%d:%d" % [more.x, more.y]
+	check(not w.match_state.ended, "side %d: the world kept running through the scenario (%s)" % [side, str(w.match_state)])
 	check(P.has(mk) and int(P[mk].bid) == t3, "side %d: a turret the owner places is a facility post (%s; face %s; posts %s)" % [side,
 		str(t3), str(WallTurret7.face_info(w, -1, def_id, more, t3)), str(P)])
-	if not P.has(mk):   # DBG POLISH7-3
-		var st7: Dictionary = w.sys_state[WallTurret7.KEY]
-		print("DBGWT side ", side, " tick ", w.tick, " ms ", w.match_state, " mounts ", st7.mounts, " ids ", WallTurret7.turret_ids(w), " posts ", st7.posts, " facs ", (CnFacility.st(w).get("facs", {}) as Dictionary).keys(), " raised ", st7.raised)
-		for ev in w.event_log:
-			if ["SideEliminated", "MatchEnded"].has(String(ev.type)) or (String(ev.type) == "EntityDestroyed" and int(ev.get("owner", ev.get("faction", -9))) != side):
-				print("DBGEV ", ev)
 
 
 func test_auto_rebuild_player_side() -> void:
@@ -421,7 +420,7 @@ func test_save_load_round_trip() -> void:
 	_place(w, O + Vector2i(13, 0))
 	_unit(w, "rifleman", 1, Vector2(O + Vector2i(12, -5)) + Vector2(0.5, 0.5))
 	_run(w, 30)
-	var w2 := SimWorld.from_dict(w.to_dict())
+	var w2 := SimWorld.from_dict(bytes_to_var(var_to_bytes(w.to_dict())))   # ORCH: a real (deep) save / load; the bare to_dict shared the entities dict with w, so units spawned after the copy (drone-bay drones) collided
 	check_eq(w2.state_hash(), w.state_hash(), "loaded world hashes the same")
 	_run(w, 100)
 	_run(w2, 100)
@@ -443,6 +442,12 @@ func test_assault_destroys_outer_turret() -> void:
 	var s := _setup(0, 0, false)
 	var w: SimWorld = s[0]
 	var O: Vector2i = s[2]
+	# ORCH (DET7 diagnosis, board seq 7187): the facility drone bay (13.9c-27a, added after this test) is not the turret
+	# under test; its hive kamikazes killed both MBTs before they reached the turret. Its auto-release is switched off
+	# here (the bay now exists from the tick the facility is raised); the checks below are unchanged.
+	var dcmd := {"type": "dronebay_auto", "on": false, "issuer": 0}
+	check_eq(SimWorld.DroneBay7.validate_command(w, dcmd), "", "the facility drone bay exists and takes the switch-off")
+	SimWorld.DroneBay7.apply_command(w, dcmd)
 	var tid := _place(w, O + Vector2i(27, 10))
 	_run(w, 2)
 	check_eq(float(w.entities[tid].hp), float(Content.building(DEF).hp), "full health at the start of the fight")
@@ -469,6 +474,7 @@ func test_assault_destroys_outer_turret() -> void:
 				killer = int(ev.get("killer_owner", -1))
 		if not w.entities.has(tid):
 			break
+	check(not w.match_state.ended, "the world kept running through the assault (%s)" % str(w.match_state))
 	check(not w.entities.has(tid), "the outer turret is destroyed in the assault")
 	check_eq(killer, 1, "killed by the attackers' fire")
 	check(shots > 0, "it fired back before it fell (%d shots)" % shots)

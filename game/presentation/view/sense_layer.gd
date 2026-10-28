@@ -69,9 +69,15 @@ func _wedge(c: Vector2, a0: float, a1: float, r: float, col: Color) -> void:
 	for i in STEPS + 1:
 		var a := lerpf(a0, a1, float(i) / STEPS)
 		pts.append(_iso(c + Vector2.from_angle(a) * r))
-	draw_colored_polygon(pts, col)
-	pts.append(_iso(c))
-	draw_polyline(pts, Color(col, minf(1.0, col.a * 2.5)), 1.0)
+	# ORCH (owner 13.9c-18, LIGHT7 CR 5244): no filled see-through fan over the base: outer arc + two short edge ticks only
+	var ln := Color(col, 0.45)
+	draw_polyline(pts.slice(1), ln, 1.0)
+	var e0: Vector2 = c + Vector2.from_angle(a0) * minf(r, 0.6)
+	var e1: Vector2 = c + Vector2.from_angle(a1) * minf(r, 0.6)
+	draw_line(_iso(c + Vector2.from_angle(a0) * r), _iso(c + Vector2.from_angle(a0) * maxf(0.0, r - 0.6)), ln, 1.0)
+	draw_line(_iso(c + Vector2.from_angle(a1) * r), _iso(c + Vector2.from_angle(a1) * maxf(0.0, r - 0.6)), ln, 1.0)
+	draw_line(_iso(c), _iso(e0), ln, 1.0)
+	draw_line(_iso(c), _iso(e1), ln, 1.0)
 
 
 func _ring(c: Vector2, r: float, col: Color, width := 1.0) -> void:
@@ -121,8 +127,7 @@ func _draw() -> void:
 			_ring(p, R, Color(0.55, 0.85, 1.0, 0.35))
 			continue
 		var f: float = c[3]
-		_wedge(p, f - peri, f - cone, R * pm, Color(0.6, 0.85, 1.0, 0.06))
-		_wedge(p, f + cone, f + peri, R * pm, Color(0.6, 0.85, 1.0, 0.06))
+		# peripheral bands no longer drawn (ORCH, owner 13.9c-18: the overlapping bands painted the base)
 		_wedge(p, f - cone, f + cone, R, Color(0.75, 0.95, 1.0, 0.13))
 		if bool(c[4]):
 			_wedge(p, f - od, f + od, R * om, Color(1.0, 0.95, 0.55, 0.12))

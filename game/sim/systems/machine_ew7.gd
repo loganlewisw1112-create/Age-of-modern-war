@@ -172,7 +172,7 @@ static func _hack_step(w: SimWorld) -> void:
 		var best = null
 		var bd := rng * rng
 		for u in units:
-			if mfs.has(int(u.owner)) or not w.is_enemy(int(h.owner), int(u.owner)) or held(w, int(u.id)) != "":
+			if mfs.has(int(u.owner)) or not w.is_enemy(int(h.owner), int(u.owner)) or held(w, int(u.id)) != "" or not w.entities.has(int(u.id)):   # DET7: stale index entry
 				continue
 			var d2 := (u.pos as Vector2).distance_squared_to(h.pos)
 			if d2 <= bd and can_hack(u, w):

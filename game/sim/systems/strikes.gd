@@ -430,7 +430,7 @@ static func _shots_step(w: SimWorld, st: Dictionary) -> void:
 ## lands at `at`: AIRDEF6's Counterdrone.intercept_strike (it owns the CIWS radius, power and rate limit, and
 ## emits CiwsIntercept).
 static func _intercepted(w: SimWorld, at: Vector2, fid: int, kind: String) -> bool:
-	return Counterdrone.intercept_strike(w, fid, at, kind) or SimWorld.Apc7.intercept_strike(w, fid, at, kind)  # G7 CNSIM7 CR
+	return Counterdrone.intercept_strike(w, fid, at, kind) or SimWorld.Apc7.intercept_strike(w, fid, at, kind) or SimWorld.DroneBay7.intercept_strike(w, fid, at, kind)  # G7 CNSIM7 CR + DRONEBAY7 CR 5574 (13.9c-27)
 
 
 # ================================================================ G7 (DRONE7): drone munitions

@@ -839,8 +839,9 @@
     "icons/g7_cn_stealth_dropship_squadload.png": "d45df4279230a08dab9ad453821a4be1",
     "icons/g7_cn_stealth_dropship_squadunload.png": "d45df4279230a08dab9ad453821a4be1",
     "icons/g7_cn_strike_apc.png": "661740f90c9b568dc0ba3c27dba22a83",
-    "icons/g7_cn_strike_apc_gun.png": "608092df6f4b57b111d3000b2d64d79b",
-    "icons/g7_cn_strike_apc_rkt.png": "be0749a112da58fff8fdd0728da08288",
+    "icons/g7_cn_strike_apc_gun.png": "ed5909bfed8744e4d7c413cd94c78ada",
+    "icons/g7_cn_strike_apc_pod.png": "dd2626eccff95e9412eb2cbe9b8cd7b7",
+    "icons/g7_cn_strike_apc_rkt.png": "8fbb450e6b4a24475fe582b5ea5082b7",
     "icons/g7_cn_team_leader.png": "c28138a00d80dc83f808cce7f1158893",
     "icons/g7_op_antidrone.png": "abd7e16795529eafeb1aa518cc2b423e",
     "icons/g7_op_emp.png": "70cea3c7d8e79557e1f6e16e5b6ba9fe",
@@ -850,8 +851,9 @@
     "icons/g7_op_medic.png": "d4193fd9069ac5968eaf9a3a41117f58",
     "icons/g7_op_purge.png": "dae7a52fb5b27ad20a50f074f8d3ee77",
     "icons/g7_op_tactical_apc.png": "d9080f0ca704e025afccb9391d0fb84f",
-    "icons/g7_op_tactical_apc_gun.png": "3d1b26841c6f43814f60bc473752f099",
-    "icons/g7_op_tactical_apc_rkt.png": "238b122d0dd98e503133c92129b001f1",
+    "icons/g7_op_tactical_apc_gun.png": "df48933ff2a1458ecee2510efe126920",
+    "icons/g7_op_tactical_apc_rkt.png": "3f78bec8dd33c1d8888cab2618ab219e",
+    "icons/g7_op_tactical_apc_rws.png": "013e6cdb9391ee2766b32aee6353048e",
     "units/g7_a_vtol_dropship_xl.png": "c8154ca83bae70c5bf2795dda1c2d28f",
     "units/g7_a_vtol_dropship_xl_apcload.png": "4cd6861c7aaff872595d9389272b8337",
     "units/g7_a_vtol_dropship_xl_apcload_mask.png": "dff4dc40b343c63320a578a7844ef78c",
@@ -880,12 +882,14 @@
     "units/g7_cn_stealth_dropship_squadload_mask.png": "26e70dbba039a72b4cfdc5fafe8f109c",
     "units/g7_cn_stealth_dropship_squadunload.png": "195e4794798f5f5bc6b905015e2a1ef8",
     "units/g7_cn_stealth_dropship_squadunload_mask.png": "a116a9a18d493172bf3497c4d6d78004",
-    "units/g7_cn_strike_apc.png": "dc8096968cadb103bafe242eea211426",
-    "units/g7_cn_strike_apc_gun.png": "c9d342f2951ea7fca4df83d4e7030bc3",
-    "units/g7_cn_strike_apc_gun_mask.png": "6b6845b2ee62d34c8dcd44db4fc94415",
-    "units/g7_cn_strike_apc_mask.png": "477e6bc0d39bfa6842fc6edba1fcb6e1",
-    "units/g7_cn_strike_apc_rkt.png": "0a9162107ed2a9c1f666121ea119cf36",
-    "units/g7_cn_strike_apc_rkt_mask.png": "b6c79fec09dd7c05fbff3d7239f53945",
+    "units/g7_cn_strike_apc.png": "c66c7c8cdb75038dd069002916aa541e",
+    "units/g7_cn_strike_apc_gun.png": "f06be59260326e1d9dfe9866c62082b9",
+    "units/g7_cn_strike_apc_gun_mask.png": "5d4950b849afd0365d6df9035c9a30cb",
+    "units/g7_cn_strike_apc_mask.png": "4b939cc3ee3f7121b71fa98db2b89c21",
+    "units/g7_cn_strike_apc_pod.png": "7a733ac82d32a492cfdca7cf7dded6fa",
+    "units/g7_cn_strike_apc_pod_mask.png": "fb534b8dacf322c400cd693dc9a57fa8",
+    "units/g7_cn_strike_apc_rkt.png": "79778b64920fccdaab82e028ca13465a",
+    "units/g7_cn_strike_apc_rkt_mask.png": "e872ef7c79e1db37a1dd63cba19849cf",
     "units/g7_cn_team_leader.png": "d5be043c8e065c1022dea8092d9a8ba2",
     "units/g7_cn_team_leader_mask.png": "7eb221db3723c893f8739de4b99e60bd",
     "units/g7_op_antidrone.png": "acfc1cebc8dfffa9bbfe6fdabac4fcc2",
@@ -902,12 +906,14 @@
     "units/g7_op_medic_mask.png": "57d5f6e97dc6a77299d4aea60e67534f",
     "units/g7_op_purge.png": "9f8fb2c0f47f72915af86b412addb9a1",
     "units/g7_op_purge_mask.png": "9d000fca8be4a1e4baf2b31fe1ca2928",
-    "units/g7_op_tactical_apc.png": "fcdd1028381787ae4cfd704aa32ecb32",
-    "units/g7_op_tactical_apc_gun.png": "e3e94aebb7a72f61d007e6fb1c8e21af",
-    "units/g7_op_tactical_apc_gun_mask.png": "2fdc94e8acc806550d54d9f1081cd1f9",
-    "units/g7_op_tactical_apc_mask.png": "e83b3c0c48b75fb6cf2ee717dfe57aa1",
-    "units/g7_op_tactical_apc_rkt.png": "056f8a3432f476fc1d63349f84d30204",
+    "units/g7_op_tactical_apc.png": "4c63445d5a35ec5f22fe7b232433e8b0",
+    "units/g7_op_tactical_apc_gun.png": "cc76c30dc8ee7acee57cfe8caa25f439",
+    "units/g7_op_tactical_apc_gun_mask.png": "1197970766282e323e87afbd2ad14c76",
+    "units/g7_op_tactical_apc_mask.png": "dfa000ad580fcc9022802e99ba3b8b85",
+    "units/g7_op_tactical_apc_rkt.png": "d98c10ac60464fa235ff561c9032da91",
     "units/g7_op_tactical_apc_rkt_mask.png": "d1aa01fb03c3806be92eed2f406ebc5c",
+    "units/g7_op_tactical_apc_rws.png": "576be56f257b4465670ee76fd67bc8c4",
+    "units/g7_op_tactical_apc_rws_mask.png": "b4703481a2928f164b447ed4af9560d7",
     "wrecks/g7_cn_strike_apc_wreck.png": "b2432888c9ad0bd22be781eff416c43c",
     "wrecks/g7_op_tactical_apc_wreck.png": "3bc5867cb2054018102f66ff0fe70c4a"
   },
@@ -1825,10 +1831,92 @@
         "doors_open"
       ],
       "budget": 2097152,
-      "bytes": 2037108,
+      "bytes": 2019800,
       "capacity": "10 + packages (PROVISIONAL)",
       "class": "vehicle",
       "detail_level": "DL7-3",
+      "gun_mounts": [
+        {
+          "anchor": [
+            [
+              9.2,
+              -17.94
+            ],
+            [
+              -4.58,
+              -16.45
+            ],
+            [
+              -9.2,
+              -17.94
+            ],
+            [
+              -13.01,
+              -22.54
+            ],
+            [
+              -9.2,
+              -27.14
+            ],
+            [
+              4.58,
+              -28.63
+            ],
+            [
+              9.2,
+              -27.14
+            ],
+            [
+              13.01,
+              -22.54
+            ]
+          ],
+          "blind": 3.14159265358979,
+          "blind_w": 0.42,
+          "sheet": "g7_cn_strike_apc_pod",
+          "travel": 0.0
+        },
+        {
+          "anchor": [
+            [
+              -12.96,
+              -32.06
+            ],
+            [
+              11.99,
+              -32.37
+            ],
+            [
+              19.04,
+              -29.02
+            ],
+            [
+              22.63,
+              -20.39
+            ],
+            [
+              12.96,
+              -13.02
+            ],
+            [
+              -11.99,
+              -12.71
+            ],
+            [
+              -19.04,
+              -16.06
+            ],
+            [
+              -22.63,
+              -24.69
+            ]
+          ],
+          "blind": 0.0,
+          "blind_w": 0.42,
+          "sheet": "g7_cn_strike_apc_pod",
+          "travel": 3.14159265358979
+        }
+      ],
       "key_frames": [
         "idle",
         "move",
@@ -1877,7 +1965,7 @@
         "reload_r_2"
       ],
       "budget": 2097152,
-      "bytes": 1710336,
+      "bytes": 1685040,
       "class": "vehicle",
       "detail_level": "DL7-3",
       "key_frames": [
@@ -1911,6 +1999,151 @@
       "section": "vehicles",
       "weapon_sheet_of": "g7_cn_strike_apc"
     },
+    "g7_cn_strike_apc_pod": {
+      "aim_steps": 16,
+      "anim_strip": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "budget": 2097152,
+      "bytes": 98908,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "gun_overlay_of": "g7_cn_strike_apc",
+      "key_frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "line": "strike_team",
+      "loops": {
+        "aim": "row k = world facing k * 45 deg, *_h columns + 22.5 deg",
+        "fire": "fire_0 / fire_1 (alternate) then fire_t",
+        "reload": "reload_0..2 (belt / bin change)"
+      },
+      "mirror": -1,
+      "pivot_note": "pivot = turret-ring centre (gun_mounts anchor)",
+      "raw_bytes": 1892352,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "tips16": [
+        [
+          [
+            11.51,
+            -0.78
+          ]
+        ],
+        [
+          [
+            6,
+            0
+          ]
+        ],
+        [
+          [
+            0.0,
+            1.61
+          ]
+        ],
+        [
+          [
+            -6.23,
+            0.99
+          ]
+        ],
+        [
+          [
+            -11.51,
+            -0.78
+          ]
+        ],
+        [
+          [
+            -15.04,
+            -3.42
+          ]
+        ],
+        [
+          [
+            -16.28,
+            -6.53
+          ]
+        ],
+        [
+          [
+            -15.04,
+            -9.65
+          ]
+        ],
+        [
+          [
+            -11.51,
+            -12.29
+          ]
+        ],
+        [
+          [
+            -6.23,
+            -14.06
+          ]
+        ],
+        [
+          [
+            0,
+            -13
+          ]
+        ],
+        [
+          [
+            6.23,
+            -14.06
+          ]
+        ],
+        [
+          [
+            11.51,
+            -12.29
+          ]
+        ],
+        [
+          [
+            15.04,
+            -9.65
+          ]
+        ],
+        [
+          [
+            16.28,
+            -6.53
+          ]
+        ],
+        [
+          [
+            15.04,
+            -3.42
+          ]
+        ]
+      ],
+      "weapon_sheet_of": "g7_cn_strike_apc"
+    },
     "g7_cn_strike_apc_rkt": {
       "anim_strip": [
         "rk_raise_0",
@@ -1927,7 +2160,7 @@
         "rk_reload_3"
       ],
       "budget": 2097152,
-      "bytes": 1456088,
+      "bytes": 1452824,
       "class": "vehicle",
       "detail_level": "DL7-3",
       "frame_alias": {
@@ -2229,10 +2462,52 @@
         "doors_open"
       ],
       "budget": 2097152,
-      "bytes": 1450340,
+      "bytes": 1422376,
       "capacity": 8,
       "class": "vehicle",
       "detail_level": "DL7-3",
+      "gun_mounts": [
+        {
+          "anchor": [
+            [
+              6.4,
+              -17.69
+            ],
+            [
+              -1.73,
+              -16.18
+            ],
+            [
+              -4.8,
+              -16.89
+            ],
+            [
+              -7.92,
+              -19.52
+            ],
+            [
+              -6.4,
+              -22.49
+            ],
+            [
+              1.73,
+              -24.0
+            ],
+            [
+              4.8,
+              -23.29
+            ],
+            [
+              7.92,
+              -20.66
+            ]
+          ],
+          "blind": 0.0,
+          "blind_w": 0.0,
+          "sheet": "g7_op_tactical_apc_rws",
+          "travel": 0.0
+        }
+      ],
       "key_frames": [
         "idle",
         "move",
@@ -2272,7 +2547,7 @@
         "reload_2"
       ],
       "budget": 2097152,
-      "bytes": 680592,
+      "bytes": 651532,
       "class": "vehicle",
       "detail_level": "DL7-3",
       "key_frames": [
@@ -2313,7 +2588,7 @@
         "rk_reload_3"
       ],
       "budget": 2097152,
-      "bytes": 1155172,
+      "bytes": 1141868,
       "class": "vehicle",
       "detail_level": "DL7-3",
       "frame_alias": {
@@ -2344,6 +2619,215 @@
       "section": "vehicles",
       "sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle",
       "weapon_sheet_of": "g7_op_tactical_apc"
+    },
+    "g7_op_tactical_apc_rws": {
+      "aim_steps": 16,
+      "anim_strip": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "budget": 2097152,
+      "bytes": 98048,
+      "class": "vehicle",
+      "detail_level": "DL7-3",
+      "gun_overlay_of": "g7_op_tactical_apc",
+      "key_frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "line": "operators",
+      "loops": {
+        "aim": "row k = world facing k * 45 deg, *_h columns + 22.5 deg",
+        "fire": "fire_0 / fire_1 (alternate) then fire_t",
+        "reload": "reload_0..2 (belt / bin change)"
+      },
+      "mirror": -1,
+      "pivot_note": "pivot = turret-ring centre (gun_mounts anchor)",
+      "raw_bytes": 1892352,
+      "sample": "vehicle_anim",
+      "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+      "section": "vehicles",
+      "tips16": [
+        [
+          [
+            11.43,
+            0.32
+          ],
+          [
+            9.67,
+            1.2
+          ]
+        ],
+        [
+          [
+            6.86,
+            2.14
+          ],
+          [
+            4.56,
+            2.62
+          ]
+        ],
+        [
+          [
+            1.24,
+            2.95
+          ],
+          [
+            -1.24,
+            2.95
+          ]
+        ],
+        [
+          [
+            -4.56,
+            2.62
+          ],
+          [
+            -6.86,
+            2.14
+          ]
+        ],
+        [
+          [
+            -9.67,
+            1.2
+          ],
+          [
+            -11.43,
+            0.32
+          ]
+        ],
+        [
+          [
+            -13.31,
+            -1.09
+          ],
+          [
+            -14.27,
+            -2.23
+          ]
+        ],
+        [
+          [
+            -14.92,
+            -3.89
+          ],
+          [
+            -14.92,
+            -5.14
+          ]
+        ],
+        [
+          [
+            -14.27,
+            -6.8
+          ],
+          [
+            -13.31,
+            -7.95
+          ]
+        ],
+        [
+          [
+            -11.43,
+            -9.35
+          ],
+          [
+            -9.67,
+            -10.23
+          ]
+        ],
+        [
+          [
+            -6.86,
+            -11.17
+          ],
+          [
+            -4.56,
+            -11.65
+          ]
+        ],
+        [
+          [
+            -1.24,
+            -11.98
+          ],
+          [
+            1.24,
+            -11.98
+          ]
+        ],
+        [
+          [
+            4.56,
+            -11.65
+          ],
+          [
+            6.86,
+            -11.17
+          ]
+        ],
+        [
+          [
+            9.67,
+            -10.23
+          ],
+          [
+            11.43,
+            -9.35
+          ]
+        ],
+        [
+          [
+            13.31,
+            -7.95
+          ],
+          [
+            14.27,
+            -6.8
+          ]
+        ],
+        [
+          [
+            14.92,
+            -5.14
+          ],
+          [
+            14.92,
+            -3.89
+          ]
+        ],
+        [
+          [
+            14.27,
+            -2.23
+          ],
+          [
+            13.31,
+            -1.09
+          ]
+        ]
+      ],
+      "weapon_sheet_of": "g7_op_tactical_apc"
     }
   },
   "group": "g7_cn",
@@ -2361,6 +2845,7 @@
     "g7_b_cn_scanner": "icons/g7_cn_scanner.png",
     "g7_b_cn_strike_apc": "icons/g7_cn_strike_apc.png",
     "g7_b_cn_strike_apc_gun": "icons/g7_cn_strike_apc_gun.png",
+    "g7_b_cn_strike_apc_pod": "icons/g7_cn_strike_apc_pod.png",
     "g7_b_cn_strike_apc_rkt": "icons/g7_cn_strike_apc_rkt.png",
     "g7_b_cn_team_leader": "icons/g7_cn_team_leader.png",
     "g7_b_op_antidrone": "icons/g7_op_antidrone.png",
@@ -2373,6 +2858,7 @@
     "g7_b_op_tactical_apc": "icons/g7_op_tactical_apc.png",
     "g7_b_op_tactical_apc_gun": "icons/g7_op_tactical_apc_gun.png",
     "g7_b_op_tactical_apc_rkt": "icons/g7_op_tactical_apc_rkt.png",
+    "g7_b_op_tactical_apc_rws": "icons/g7_op_tactical_apc_rws.png",
     "g7_cn_deploy": "icons/g7_cn_deploy.png",
     "g7_cn_ew": "icons/g7_cn_ew.png",
     "g7_cn_gunner": "icons/g7_cn_gunner.png",
@@ -2385,6 +2871,7 @@
     "g7_cn_stealth_dropship_squadunload": "icons/g7_cn_stealth_dropship_squadunload.png",
     "g7_cn_strike_apc": "icons/g7_cn_strike_apc.png",
     "g7_cn_strike_apc_gun": "icons/g7_cn_strike_apc_gun.png",
+    "g7_cn_strike_apc_pod": "icons/g7_cn_strike_apc_pod.png",
     "g7_cn_strike_apc_rkt": "icons/g7_cn_strike_apc_rkt.png",
     "g7_cn_team_leader": "icons/g7_cn_team_leader.png",
     "g7_op_antidrone": "icons/g7_op_antidrone.png",
@@ -2396,7 +2883,8 @@
     "g7_op_purge": "icons/g7_op_purge.png",
     "g7_op_tactical_apc": "icons/g7_op_tactical_apc.png",
     "g7_op_tactical_apc_gun": "icons/g7_op_tactical_apc_gun.png",
-    "g7_op_tactical_apc_rkt": "icons/g7_op_tactical_apc_rkt.png"
+    "g7_op_tactical_apc_rkt": "icons/g7_op_tactical_apc_rkt.png",
+    "g7_op_tactical_apc_rws": "icons/g7_op_tactical_apc_rws.png"
   },
   "infantry": {
     "g7_b_cn_deploy": {
@@ -4802,36 +5290,36 @@
         "damaged": "damaged",
         "muzzle": [
           [
-            27,
-            -16
+            43,
+            4
           ],
           [
-            -15,
-            -12
+            -6,
+            17
           ],
           [
-            -28,
+            -44,
+            1
+          ],
+          [
+            -47,
             -17
           ],
           [
-            -40,
-            -30
+            -44,
+            -21
           ],
           [
-            -27,
-            -44
+            -2,
+            -43
           ],
           [
-            13,
-            -47
+            43,
+            -22
           ],
           [
-            28,
-            -44
-          ],
-          [
-            40,
-            -29
+            46,
+            -17
           ]
         ],
         "recoil": "recoil",
@@ -4858,7 +5346,7 @@
           ],
           [
             0,
-            -42
+            -41
           ],
           [
             -1,
@@ -4933,6 +5421,32 @@
         80
       ]
     },
+    "g7_b_cn_strike_apc_pod": {
+      "alias_of": "g7_cn_strike_apc_pod",
+      "aux": "weapon overlay of g7_cn_strike_apc (vis7_layer)",
+      "facings": 8,
+      "fh": 56,
+      "file": "units/g7_cn_strike_apc_pod.png",
+      "frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "fw": 96,
+      "mask": "units/g7_cn_strike_apc_pod_mask.png",
+      "pivot": [
+        48,
+        32
+      ]
+    },
     "g7_b_cn_strike_apc_rkt": {
       "alias_of": "g7_cn_strike_apc_rkt",
       "aux": "weapon overlay of g7_cn_strike_apc (vis7_layer)",
@@ -4966,36 +5480,36 @@
         "damaged": "damaged",
         "muzzle": [
           [
-            23,
+            37,
+            3
+          ],
+          [
+            3,
+            16
+          ],
+          [
+            -38,
+            0
+          ],
+          [
+            -41,
             -15
           ],
           [
-            -9,
-            -12
+            -38,
+            -19
           ],
           [
-            -22,
+            -1,
+            -32
+          ],
+          [
+            37,
+            -19
+          ],
+          [
+            40,
             -14
-          ],
-          [
-            -33,
-            -25
-          ],
-          [
-            -25,
-            -37
-          ],
-          [
-            9,
-            -40
-          ],
-          [
-            21,
-            -37
-          ],
-          [
-            33,
-            -26
           ]
         ],
         "recoil": "recoil",
@@ -5018,15 +5532,15 @@
           ],
           [
             1,
-            -32
+            -30
           ],
           [
             -1,
-            -35
+            -30
           ],
           [
             -1,
-            -33
+            -29
           ],
           [
             -1,
@@ -5113,6 +5627,32 @@
       "pivot": [
         60,
         74
+      ]
+    },
+    "g7_b_op_tactical_apc_rws": {
+      "alias_of": "g7_op_tactical_apc_rws",
+      "aux": "weapon overlay of g7_op_tactical_apc (vis7_layer)",
+      "facings": 8,
+      "fh": 56,
+      "file": "units/g7_op_tactical_apc_rws.png",
+      "frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "fw": 96,
+      "mask": "units/g7_op_tactical_apc_rws_mask.png",
+      "pivot": [
+        48,
+        32
       ]
     },
     "g7_cn_stealth_dropship": {
@@ -5442,36 +5982,36 @@
         "damaged": "damaged",
         "muzzle": [
           [
-            27,
-            -16
+            43,
+            4
           ],
           [
-            -15,
-            -12
+            -6,
+            17
           ],
           [
-            -28,
+            -44,
+            1
+          ],
+          [
+            -47,
             -17
           ],
           [
-            -40,
-            -30
+            -44,
+            -21
           ],
           [
-            -27,
-            -44
+            -2,
+            -43
           ],
           [
-            13,
-            -47
+            43,
+            -22
           ],
           [
-            28,
-            -44
-          ],
-          [
-            40,
-            -29
+            46,
+            -17
           ]
         ],
         "recoil": "recoil",
@@ -5498,7 +6038,7 @@
           ],
           [
             0,
-            -42
+            -41
           ],
           [
             -1,
@@ -5552,10 +6092,92 @@
           "doors_open"
         ],
         "budget": 2097152,
-        "bytes": 2037108,
+        "bytes": 2019800,
         "capacity": "10 + packages (PROVISIONAL)",
         "class": "vehicle",
         "detail_level": "DL7-3",
+        "gun_mounts": [
+          {
+            "anchor": [
+              [
+                9.2,
+                -17.94
+              ],
+              [
+                -4.58,
+                -16.45
+              ],
+              [
+                -9.2,
+                -17.94
+              ],
+              [
+                -13.01,
+                -22.54
+              ],
+              [
+                -9.2,
+                -27.14
+              ],
+              [
+                4.58,
+                -28.63
+              ],
+              [
+                9.2,
+                -27.14
+              ],
+              [
+                13.01,
+                -22.54
+              ]
+            ],
+            "blind": 3.14159265358979,
+            "blind_w": 0.42,
+            "sheet": "g7_cn_strike_apc_pod",
+            "travel": 0.0
+          },
+          {
+            "anchor": [
+              [
+                -12.96,
+                -32.06
+              ],
+              [
+                11.99,
+                -32.37
+              ],
+              [
+                19.04,
+                -29.02
+              ],
+              [
+                22.63,
+                -20.39
+              ],
+              [
+                12.96,
+                -13.02
+              ],
+              [
+                -11.99,
+                -12.71
+              ],
+              [
+                -19.04,
+                -16.06
+              ],
+              [
+                -22.63,
+                -24.69
+              ]
+            ],
+            "blind": 0.0,
+            "blind_w": 0.42,
+            "sheet": "g7_cn_strike_apc_pod",
+            "travel": 3.14159265358979
+          }
+        ],
         "key_frames": [
           "idle",
           "move",
@@ -5631,7 +6253,7 @@
           "reload_r_2"
         ],
         "budget": 2097152,
-        "bytes": 1710336,
+        "bytes": 1685040,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "key_frames": [
@@ -5670,6 +6292,175 @@
         80
       ]
     },
+    "g7_cn_strike_apc_pod": {
+      "aux": "weapon overlay of g7_cn_strike_apc (vis7_layer)",
+      "facings": 8,
+      "fh": 56,
+      "file": "units/g7_cn_strike_apc_pod.png",
+      "frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "fw": 96,
+      "g7": {
+        "aim_steps": 16,
+        "anim_strip": [
+          "rest",
+          "fire_0",
+          "fire_1",
+          "fire_t",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "rest_h",
+          "fire_0_h",
+          "fire_1_h",
+          "fire_t_h"
+        ],
+        "budget": 2097152,
+        "bytes": 98908,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "gun_overlay_of": "g7_cn_strike_apc",
+        "key_frames": [
+          "rest",
+          "fire_0",
+          "fire_1",
+          "fire_t",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "rest_h",
+          "fire_0_h",
+          "fire_1_h",
+          "fire_t_h"
+        ],
+        "line": "strike_team",
+        "loops": {
+          "aim": "row k = world facing k * 45 deg, *_h columns + 22.5 deg",
+          "fire": "fire_0 / fire_1 (alternate) then fire_t",
+          "reload": "reload_0..2 (belt / bin change)"
+        },
+        "mirror": -1,
+        "pivot_note": "pivot = turret-ring centre (gun_mounts anchor)",
+        "raw_bytes": 1892352,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "tips16": [
+          [
+            [
+              11.51,
+              -0.78
+            ]
+          ],
+          [
+            [
+              6,
+              0
+            ]
+          ],
+          [
+            [
+              0.0,
+              1.61
+            ]
+          ],
+          [
+            [
+              -6.23,
+              0.99
+            ]
+          ],
+          [
+            [
+              -11.51,
+              -0.78
+            ]
+          ],
+          [
+            [
+              -15.04,
+              -3.42
+            ]
+          ],
+          [
+            [
+              -16.28,
+              -6.53
+            ]
+          ],
+          [
+            [
+              -15.04,
+              -9.65
+            ]
+          ],
+          [
+            [
+              -11.51,
+              -12.29
+            ]
+          ],
+          [
+            [
+              -6.23,
+              -14.06
+            ]
+          ],
+          [
+            [
+              0,
+              -13
+            ]
+          ],
+          [
+            [
+              6.23,
+              -14.06
+            ]
+          ],
+          [
+            [
+              11.51,
+              -12.29
+            ]
+          ],
+          [
+            [
+              15.04,
+              -9.65
+            ]
+          ],
+          [
+            [
+              16.28,
+              -6.53
+            ]
+          ],
+          [
+            [
+              15.04,
+              -3.42
+            ]
+          ]
+        ],
+        "weapon_sheet_of": "g7_cn_strike_apc"
+      },
+      "mask": "units/g7_cn_strike_apc_pod_mask.png",
+      "pivot": [
+        48,
+        32
+      ]
+    },
     "g7_cn_strike_apc_rkt": {
       "aux": "weapon overlay of g7_cn_strike_apc (vis7_layer)",
       "facings": 8,
@@ -5706,7 +6497,7 @@
           "rk_reload_3"
         ],
         "budget": 2097152,
-        "bytes": 1456088,
+        "bytes": 1452824,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "frame_alias": {
@@ -5748,36 +6539,36 @@
         "damaged": "damaged",
         "muzzle": [
           [
-            23,
+            37,
+            3
+          ],
+          [
+            3,
+            16
+          ],
+          [
+            -38,
+            0
+          ],
+          [
+            -41,
             -15
           ],
           [
-            -9,
-            -12
+            -38,
+            -19
           ],
           [
-            -22,
+            -1,
+            -32
+          ],
+          [
+            37,
+            -19
+          ],
+          [
+            40,
             -14
-          ],
-          [
-            -33,
-            -25
-          ],
-          [
-            -25,
-            -37
-          ],
-          [
-            9,
-            -40
-          ],
-          [
-            21,
-            -37
-          ],
-          [
-            33,
-            -26
           ]
         ],
         "recoil": "recoil",
@@ -5800,15 +6591,15 @@
           ],
           [
             1,
-            -32
+            -30
           ],
           [
             -1,
-            -35
+            -30
           ],
           [
             -1,
-            -33
+            -29
           ],
           [
             -1,
@@ -5856,10 +6647,52 @@
           "doors_open"
         ],
         "budget": 2097152,
-        "bytes": 1450340,
+        "bytes": 1422376,
         "capacity": 8,
         "class": "vehicle",
         "detail_level": "DL7-3",
+        "gun_mounts": [
+          {
+            "anchor": [
+              [
+                6.4,
+                -17.69
+              ],
+              [
+                -1.73,
+                -16.18
+              ],
+              [
+                -4.8,
+                -16.89
+              ],
+              [
+                -7.92,
+                -19.52
+              ],
+              [
+                -6.4,
+                -22.49
+              ],
+              [
+                1.73,
+                -24.0
+              ],
+              [
+                4.8,
+                -23.29
+              ],
+              [
+                7.92,
+                -20.66
+              ]
+            ],
+            "blind": 0.0,
+            "blind_w": 0.0,
+            "sheet": "g7_op_tactical_apc_rws",
+            "travel": 0.0
+          }
+        ],
         "key_frames": [
           "idle",
           "move",
@@ -5919,7 +6752,7 @@
           "reload_2"
         ],
         "budget": 2097152,
-        "bytes": 680592,
+        "bytes": 651532,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "key_frames": [
@@ -5985,7 +6818,7 @@
           "rk_reload_3"
         ],
         "budget": 2097152,
-        "bytes": 1155172,
+        "bytes": 1141868,
         "class": "vehicle",
         "detail_level": "DL7-3",
         "frame_alias": {
@@ -6020,6 +6853,239 @@
       "pivot": [
         60,
         74
+      ]
+    },
+    "g7_op_tactical_apc_rws": {
+      "aux": "weapon overlay of g7_op_tactical_apc (vis7_layer)",
+      "facings": 8,
+      "fh": 56,
+      "file": "units/g7_op_tactical_apc_rws.png",
+      "frames": [
+        "rest",
+        "fire_0",
+        "fire_1",
+        "fire_t",
+        "reload_0",
+        "reload_1",
+        "reload_2",
+        "rest_h",
+        "fire_0_h",
+        "fire_1_h",
+        "fire_t_h"
+      ],
+      "fw": 96,
+      "g7": {
+        "aim_steps": 16,
+        "anim_strip": [
+          "rest",
+          "fire_0",
+          "fire_1",
+          "fire_t",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "rest_h",
+          "fire_0_h",
+          "fire_1_h",
+          "fire_t_h"
+        ],
+        "budget": 2097152,
+        "bytes": 98048,
+        "class": "vehicle",
+        "detail_level": "DL7-3",
+        "gun_overlay_of": "g7_op_tactical_apc",
+        "key_frames": [
+          "rest",
+          "fire_0",
+          "fire_1",
+          "fire_t",
+          "reload_0",
+          "reload_1",
+          "reload_2",
+          "rest_h",
+          "fire_0_h",
+          "fire_1_h",
+          "fire_t_h"
+        ],
+        "line": "operators",
+        "loops": {
+          "aim": "row k = world facing k * 45 deg, *_h columns + 22.5 deg",
+          "fire": "fire_0 / fire_1 (alternate) then fire_t",
+          "reload": "reload_0..2 (belt / bin change)"
+        },
+        "mirror": -1,
+        "pivot_note": "pivot = turret-ring centre (gun_mounts anchor)",
+        "raw_bytes": 1892352,
+        "sample": "vehicle_anim",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "tips16": [
+          [
+            [
+              11.43,
+              0.32
+            ],
+            [
+              9.67,
+              1.2
+            ]
+          ],
+          [
+            [
+              6.86,
+              2.14
+            ],
+            [
+              4.56,
+              2.62
+            ]
+          ],
+          [
+            [
+              1.24,
+              2.95
+            ],
+            [
+              -1.24,
+              2.95
+            ]
+          ],
+          [
+            [
+              -4.56,
+              2.62
+            ],
+            [
+              -6.86,
+              2.14
+            ]
+          ],
+          [
+            [
+              -9.67,
+              1.2
+            ],
+            [
+              -11.43,
+              0.32
+            ]
+          ],
+          [
+            [
+              -13.31,
+              -1.09
+            ],
+            [
+              -14.27,
+              -2.23
+            ]
+          ],
+          [
+            [
+              -14.92,
+              -3.89
+            ],
+            [
+              -14.92,
+              -5.14
+            ]
+          ],
+          [
+            [
+              -14.27,
+              -6.8
+            ],
+            [
+              -13.31,
+              -7.95
+            ]
+          ],
+          [
+            [
+              -11.43,
+              -9.35
+            ],
+            [
+              -9.67,
+              -10.23
+            ]
+          ],
+          [
+            [
+              -6.86,
+              -11.17
+            ],
+            [
+              -4.56,
+              -11.65
+            ]
+          ],
+          [
+            [
+              -1.24,
+              -11.98
+            ],
+            [
+              1.24,
+              -11.98
+            ]
+          ],
+          [
+            [
+              4.56,
+              -11.65
+            ],
+            [
+              6.86,
+              -11.17
+            ]
+          ],
+          [
+            [
+              9.67,
+              -10.23
+            ],
+            [
+              11.43,
+              -9.35
+            ]
+          ],
+          [
+            [
+              13.31,
+              -7.95
+            ],
+            [
+              14.27,
+              -6.8
+            ]
+          ],
+          [
+            [
+              14.92,
+              -5.14
+            ],
+            [
+              14.92,
+              -3.89
+            ]
+          ],
+          [
+            [
+              14.27,
+              -2.23
+            ],
+            [
+              13.31,
+              -1.09
+            ]
+          ]
+        ],
+        "weapon_sheet_of": "g7_op_tactical_apc"
+      },
+      "mask": "units/g7_op_tactical_apc_rws_mask.png",
+      "pivot": [
+        48,
+        32
       ]
     }
   },

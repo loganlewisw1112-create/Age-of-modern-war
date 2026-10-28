@@ -1,0 +1,46 @@
+{
+ "_meta": {"owner": "CIWS7", "note": "G7_REFERENCE 13.9c-32 (owner: 'phalanx style turret(s) on top of main command building inside facility / future modified anti machine version ... Gatling style turret belt fed'; owner answers via ORCH 2026-10-28: 2 mounts on opposite corners of the command centre roof; air first (drones, missiles, rockets, shells), then Machine crawlers / swarms / light walkers inside the compound; when the drum runs dry the mount goes silent and a Facility Engineer walks up and swaps the drum). Original design 'Thresher' (no copied real model): a squat armoured training mount, a faceted search / track radome over a 7-barrel rotary cannon in a ventilated shroud, a side drum magazine with a belt chute, a flat-panel search array on the radome crown. sim/systems/ciws7.gd drives it (no def.weapon: Combat's tower path skips it); the counterdrone intercept path (def.ciws) hands it shells / rockets / strikes / guided missiles. ALL NUMBERS PROVISIONAL."},
+ "buildings": {
+  "cn_ciws7": {"name": "Thresher Rotary CIWS", "faction": "shared", "stage_min": 1, "size": 1, "hp": 2400, "armor": "fortification", "sight": 13, "power": 0, "buildable": false, "requires_power": false, "g7": true, "cn_part": "ciws7", "unhackable": true,
+   "desc": "Roof-mounted rotary point-defence cannon on the command centre. Shoots down drones, missiles, rockets and shells first, then hoses Machine crawlers, swarms and light walkers inside the compound with armour-piercing anti-nanite rounds. Drum fed: a Facility Engineer swaps the empty drum.",
+   "ciws": {"radius": 10.0, "shots_per_min": 40},
+   "ciws7": {
+    "_note": "slots: compound-local [cell x, cell y, mount x, mount y] on the planning (command centre) roof: the cell is the 1x1 sim footprint inside the planning zone, the mount point is the roof corner the gun stands on (tiles, measured from tools/art/g7_fac7f.gd planning(): roof brim x 8.1..11.3, y 9.08..11.92; east corner clear of the antenna farm, west corner clear of the penthouse / radome; the south corner carries the EW mast). sort_shift: e.pos sits this far (tiles, +x and +y) in front of the mount point so the view draws the mount over the roof (the command centre sprite sorts at its zone centre); the art pivot carries the same shift + the roof height. Range and bearing are measured from the mount point (e.c7m).",
+    "slots": [[10, 9, 11.0, 9.42], [8, 11, 8.42, 11.58]],
+    "roof_z": 15.5,
+    "sort_shift": 0.6,
+    "air_radius": 10.0,
+    "track_radius": 15.0,
+    "ground_range": 15.0,
+    "ground_tags": ["swarm", "leech", "pack", "walker_l", "inf"],
+    "ground_pad": 0.5,
+    "rate_rpm": 3000,
+    "spin_up_s": 0.5,
+    "spin_down_s": 2.0,
+    "burst_min_s": 0.4,
+    "burst_max_s": 1.5,
+    "pause_s": 0.25,
+    "drum": 1200,
+    "drone_p_tick": 0.32,
+    "drone_falloff": 0.5,
+    "ground_weapon": "g7_ciws7_ap",
+    "intercept_rounds": 60,
+    "intercept_pk": {"shell": 0.85, "rocket": 0.8, "missile": 0.75, "cruise": 0.7, "loiter": 0.8, "default": 0.75},
+    "scan_s": 0.5,
+    "host_check_s": 0.5,
+    "job_prio": 3.5,
+    "job_every_s": 2.0,
+    "job_ttl_s": 8.0,
+    "door": [12.5, 10.5],
+    "climb_s": 10.0,
+    "swap_s": 8.0,
+    "down_s": 4.0,
+    "drum_ammo_cost": 40,
+    "retry_s": 3.0
+   }
+  }
+ },
+ "weapons": {
+  "g7_ciws7_ap": {"class": "autocannon", "damage": 6, "range": 15, "cooldown": 0.05, "accuracy": 0.6, "g7": true, "anti_air_low": true, "anti_drone": true, "_note": "CIWS7: one armour-piercing anti-nanite round of the Thresher (damage per round; sim/systems/ciws7.gd resolves a tick's rounds as one hit). PROVISIONAL."}
+ }
+}

@@ -118,6 +118,7 @@ func add_buttons(mode: String, ids: Array) -> void:
 	_add_casualty_buttons()
 	_add_span_button(_ids)   # G7 (FISSURE7 CR 710): repair units (can_repair) on a units card
 	_add_cn_buttons()        # G7 (CNSIM7-3 CR 557): counter-nanite team orders
+	_add_vanta_buttons()     # G7 (AIRV7, CR 4527 part 5): CN Vanta hardpoints + return to pad
 	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. Join arms a click on an own squad member;
 	# right-clicking one with only bearers selected does the same (G2Input.smart).
 	_bearers = _ids.filter(func(x): return AB.is_bearer(_ent(int(x))))
@@ -322,6 +323,34 @@ func _cn_reason(w: SimWorld, typ: String) -> String:
 		if first == "":
 			first = r
 	return first
+
+
+## G7 (AIRV7): CN Vanta card. Hardpoint buttons cycle that slot's item (nose, the mirrored side pair, rear; applied
+## on the roof pad after the swap time); the sub line shows the current / queued item. The sim validates each order.
+const Vanta7 = preload("res://sim/systems/vanta7.gd")
+const VANTA_NAMES := {"cannon": "30 mm cannon", "missiles": "Missiles", "gun": "Gun pods", "anti_drone": "Anti-drone",
+	"drones": "Drone launchers", "flares": "Flares", "deterrents": "Deterrents"}
+var _vantas: Array = []
+
+
+func _add_vanta_buttons() -> void:
+	_vantas = []
+	var w = hud._world()
+	for id in _ids:
+		var e = _ent(int(id))
+		if e != null and Vanta7.is_vanta(e) and int(e.owner) == int(hud._pf()):
+			_vantas.append(int(id))
+	if _vantas.is_empty() or w == null:
+		return
+	var r: Dictionary = Vanta7.rec(w, int(_vantas[0]))
+	var cur: Dictionary = r.get("pend", {"n": r.get("n", ""), "s": r.get("s", ""), "r": r.get("r", "")})
+	var hb = _btn2("Return to pad", "land on the roof", "vanta_rtb", "vanta_rtb", "Fly back to its barracks roof pad and land: refuel, rearm, change hardpoints there.")
+	hb.btn.pressed.connect(func(): hud._issue({"type": "vanta_rtb", "unit_ids": _vantas.duplicate()}))
+	for sl in [["nose", "n", "Nose"], ["side", "s", "Sides"], ["rear", "r", "Rear"]]:
+		var nm := String(VANTA_NAMES.get(String(cur.get(sl[1], "")), String(cur.get(sl[1], ""))))
+		var b = _btn2(String(sl[2]), nm, "vanta_cycle_" + String(sl[0]), "vanta_loadout",
+			"Next item for the %s hardpoint%s (only while landed on its roof pad; fitted after the swap time)." % [String(sl[0]), "s - both sides carry the same item" if sl[0] == "side" else ""])
+		b.btn.pressed.connect(func(): hud._issue({"type": "vanta_loadout", "unit_ids": _vantas.duplicate(), "cycle": String(sl[0])}))
 
 
 ## G6.1: a card button whose key comes from the Hotkeys table (badge shows the printable character).

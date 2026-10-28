@@ -289,6 +289,9 @@ static func _tick_one(w: SimWorld, s: Dictionary, e: Dictionary, r: Dictionary) 
 ## On the pad: rearm after rearm_s, apply a queued loadout after swap_s.
 static func _service(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 	var tr := SimWorld.TICK_RATE
+	var fm := float(Content.unit(String(e.def)).get("fuel_max", 0.0))
+	if e.has("fuel") and float(e.fuel) < fm:   # rooftop hot-refuel line (the facility bowser cannot reach the roof)
+		e.fuel = minf(fm, float(e.fuel) + rf("roof_fuel_s", 30.0) * SimWorld.DT)
 	if r.has("pend") and w.tick >= int(r.sw):
 		var p: Dictionary = r.pend
 		r.n = String(p.n)
@@ -339,6 +342,9 @@ static func _fly(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 					return
 				var f: Dictionary = _d("air")._ensure(w, e)
 				f.land_cell = w.cell_of(c)   # keeps Air's low-fuel pad search from diverting it to another pad
+				if String(f.get("phase", "")) == "ret":
+					f.phase = "air"
+					f.erase("dest")
 				if not bool(e.moving):
 					e.order = {"type": "move", "target": c}
 					_d("mov").order_path(w, e, c)
@@ -360,6 +366,11 @@ static func _start_rtb(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 		return
 	r.rtb = true
 	var c: Vector2 = p.centre
+	var f: Dictionary = _d("air")._ensure(w, e)
+	f.land_cell = w.cell_of(c)   # Air's low-fuel search for another pad stays off while it heads home
+	if String(f.get("phase", "")) == "ret":
+		f.phase = "air"
+		f.erase("dest")
 	e.order = {"type": "move", "target": c}
 	e.target = -1
 	_d("mov").order_path(w, e, c)
@@ -438,7 +449,7 @@ static func _fire_all(w: SimWorld, s: Dictionary, e: Dictionary, r: Dictionary) 
 		var ws := _wstats(String(spec.weapon))
 		var tg = null
 		if bool(spec.get("drones_only", false)):
-			tg = _nearest_drone(w, e, float(ws.range))
+			tg = _nearest_drone(w, e, m, float(ws.range))
 		else:
 			if t != null and Vector2(t.pos).distance_to(mount_pos(e, m)) <= float(ws.range) and in_arc(e, m, Vector2(t.pos)) and cbt.can_target(ws, t):
 				tg = t
@@ -461,8 +472,8 @@ static func _shoot(w: SimWorld, e: Dictionary, r: Dictionary, m: String, ws: Dic
 	_d("dmg").apply_hit(w, e, tg, ws, hit)
 
 
-## Nearest enemy drone within rng of e (Airdef's drone list, ascending ids).
-static func _nearest_drone(w: SimWorld, e: Dictionary, rng: float):
+## Nearest enemy drone within rng of e inside mount m's arc (Airdef's drone list, ascending ids).
+static func _nearest_drone(w: SimWorld, e: Dictionary, m: String, rng: float):
 	var cd = _d("cd")
 	var sub: Dictionary = _d("ad").sub_state(w)
 	var best = null
@@ -472,7 +483,7 @@ static func _nearest_drone(w: SimWorld, e: Dictionary, rng: float):
 		if d == null or not w.is_enemy(int(e.owner), int(d.owner)) or not cd.is_drone(w, d):
 			continue
 		var dd := Vector2(d.pos).distance_to(e.pos)
-		if dd <= bd:
+		if dd <= bd and in_arc(e, m, Vector2(d.pos)):
 			bd = dd
 			best = d
 	return best

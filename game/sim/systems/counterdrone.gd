@@ -15,22 +15,46 @@ extends RefCounted
 ##       (shot_blocked -> GuidedJammed). jammed(w, pos, fid) is the query.
 ##   weapon anti_drone_mult (g6_scrap_shotgun 2.0): an anti_drone weapon deals x mult to drones (damage_mult).
 ## G6Hooks delegates (ORCH wires): damage_mult -> damage_mult, shot hook -> shot_blocked, mask bit -> active.
-## State w.sys_state.counterdrone {ready: {bid: tick}, ver}: first tick each CIWS / net post may act again.
+## G7 TURRET7C (13.9c-30): the CIWS head traverses (traverse7 mount, a_laser_ciws 120 deg/s) before anything is intercepted.
+##   Drones: the head tracks the nearest enemy drone from track_mult x radius out (radar cue) and the laser fires only
+##   once the head is laid on it inside the radius. Strikes / shells / rockets (decided in one call by the shot hook):
+##   accepted when the head can lay onto the landing point within window_s from where it points now; the head then
+##   swings onto it (pending lay, advanced every tick) and CiwsIntercept carries lay_ticks (the beam is drawn that late);
+##   a threat the head cannot lay onto in time gets through, the head starts swinging toward it and the CIWS stays ready.
+##   Numbers PROVISIONAL: content/g7/rules_g7_traverse.json _traverse7.ciws {track_mult, window_s}.
+## State w.sys_state.counterdrone {ready: {bid: tick}, lay: {bid: [x, y, until tick]} (created on first use), ver}:
+## first tick each CIWS / net post may act again; the point a CIWS head is still swinging onto.
 ## Created on first use (G5 matches never get it); saved and hashed.
 ## Determinism: ascending ids, integer ticks, no rng. Never preload g6_hooks.gd, Damage, G5Mech or Movement here:
 ## g6_hooks preloads this file (cycle). Damage is loaded lazily for non-launched drone kills.
 
 const Airdef = preload("res://sim/systems/airdef.gd")
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7C (13.9c-30): a CIWS head lays onto a threat before it intercepts
 
 const VER := 1
+const C7_PATH := "res://sim/systems/ciws7.gd"   # G7 CIWS7 (13.9c-32): roof rotary CIWS mounts (def.ciws7), lazy (no preload cycle)
 
 static var _damage = null
+static var _c7 = null
+
+
+## G7 CIWS7: the Ciws7 script (lazy), or null while missing.
+static func _ciws7():
+	if _c7 == null and ResourceLoader.exists(C7_PATH):
+		_c7 = load(C7_PATH)
+	return _c7
+
+
+## G7 CIWS7: true when building b is a rotary CIWS mount (def.ciws7): Ciws7 drives its fire, ammo and drum.
+static func _is_c7(b: Dictionary) -> bool:
+	return Content.building(String(b.def)).has("ciws7") and _ciws7() != null
 
 
 static func tick(w: SimWorld) -> void:
 	var sub := Airdef.sub_state(w)
 	if (sub.ciws as Array).is_empty() and (sub.net as Array).is_empty() and (sub.jam as Array).is_empty():
 		return
+	_advance_lays(w)
 	if Airdef.sub_list(w, "drone").is_empty():
 		return
 	var drones: Array = Airdef.sub_list(w, "drone").duplicate()
@@ -51,10 +75,16 @@ static func tick(w: SimWorld) -> void:
 		var b = w.entities.get(bid)
 		if b == null or not Airdef.source_active(w, b) or not _ready(w, int(bid)):
 			continue
+		if _is_c7(b):
+			continue   # G7 CIWS7: a rotary CIWS mount engages drones in Ciws7.tick (bursts from its drum), not here
 		var c: Dictionary = Content.building(String(b.def)).get("ciws", {})
-		var t = _nearest_drone(w, b, float(c.get("radius", 6.0)))
+		var rad := float(c.get("radius", 6.0))
+		var t = _nearest_drone(w, b, rad * _track_mult())   # G7 TURRET7C: tracked (head laying) before it is in laser range
 		if t == null:
 			continue
+		var laid := Traverse7.lay(w, b, Vector2(t.pos), float(_ciws_interval(c)) / SimWorld.TICK_RATE, false, int(t.id))
+		if not laid or Vector2(b.pos).distance_squared_to(Vector2(t.pos)) > rad * rad:
+			continue   # still swinging onto it, or not yet in range: the laser holds fire
 		_spend(w, int(bid), _ciws_interval(c))
 		w.emit("CiwsKill", {"ciws": int(bid), "owner": int(b.owner), "id": int(t.id), "def": String(t.def), "pos": t.pos, "kind": "drone"})
 		_down(w, t, b, "ciws")
@@ -123,21 +153,50 @@ static func shot_blocked(w: SimWorld, src: Dictionary, s: Dictionary, t: Diction
 			return true
 	if bool(s.get("indirect", false)) and (cd.get("intercept_classes", ["artillery"]) as Array).has(String(s.get("cls", ""))):
 		return intercept_strike(w, fid, at, "rocket" if int(s.get("salvo", 1)) > 1 else "shell")
+	if bool(s.get("guided", false)) and _c7_any(w):
+		return intercept_strike(w, fid, at, "missile", true)   # G7 CIWS7: guided missiles into a rotary CIWS's radius
 	return false
+
+
+## G7 CIWS7: true when any rotary CIWS mount exists (guided-missile intercepts are theirs only).
+static func _c7_any(w: SimWorld) -> bool:
+	var st = w.sys_state.get("ciws7")
+	return st != null and not (st.m as Dictionary).is_empty()
 
 
 ## Interception query for strikes (MECH6b: cruise strike, MLRS rockets, loitering munitions on impact): true when
 ## an active, ready CIWS of an enemy of attacker_fid covers `at` (that CIWS then reloads; CiwsIntercept emitted).
-static func intercept_strike(w: SimWorld, attacker_fid: int, at: Vector2, kind: String) -> bool:
+## G7 CIWS7: rotary CIWS mounts (def.ciws7) are measured from their roof mount point (e.c7m), need rounds in the drum
+## and their spin-up inside the lay window, spend a burst from the drum and kill with the def's intercept_pk (a miss
+## lets this threat through to the next CIWS); only_c7 = guided missiles (the laser CIWS never took those).
+static func intercept_strike(w: SimWorld, attacker_fid: int, at: Vector2, kind: String, only_c7: bool = false) -> bool:
 	for bid in Airdef.sub_list(w, "ciws"):
 		var b: Dictionary = w.entities[bid]
-		if not w.is_enemy(attacker_fid, int(b.owner)) or not Airdef.source_active(w, b) or not _ready(w, int(bid)):
+		var c7 := _is_c7(b)
+		if only_c7 and not c7:
+			continue
+		if not w.is_enemy(attacker_fid, int(b.owner)) or not Airdef.source_active(w, b):
+			continue
+		if (not c7 and not _ready(w, int(bid))) or (c7 and not _ciws7().can_intercept(w, b)):
 			continue
 		var c: Dictionary = Content.building(String(b.def)).get("ciws", {})
-		if Vector2(b.pos).distance_to(at) > float(c.get("radius", 6.0)):
+		if Vector2(b.get("c7m", b.pos)).distance_to(at) > float(c.get("radius", 6.0)):
 			continue
+		var lt := _lay_ticks(w, b, at)   # G7 TURRET7C: the head must lay onto the threat first
+		if c7 and lt >= 0:
+			lt = maxi(lt, _ciws7().spin_left(w, b))   # G7 CIWS7: lays while the barrels spin up
+			var window := roundi(float(Traverse7.cfg().get("ciws", {}).get("window_s", 0.75)) * SimWorld.TICK_RATE)
+			if lt > window:
+				lt = -1
+		_start_lay(w, b, at, lt)
+		if lt < 0:
+			continue   # too far round to lay in time: it starts swinging, this one gets through, the CIWS stays ready
+		if c7:
+			if _ciws7().intercept(w, b, at, lt, kind):
+				return true
+			continue   # G7 CIWS7: the burst missed: the threat flies on (the next CIWS may still take it)
 		_spend(w, int(bid), _ciws_interval(c))
-		w.emit("CiwsIntercept", {"ciws": int(bid), "owner": int(b.owner), "attacker": attacker_fid, "kind": kind, "pos": at})
+		w.emit("CiwsIntercept", {"ciws": int(bid), "owner": int(b.owner), "attacker": attacker_fid, "kind": kind, "pos": at, "lay_ticks": lt})
 		return true
 	return false
 
@@ -158,6 +217,61 @@ static func is_drone(w: SimWorld, e: Dictionary) -> bool:
 
 static func ccfg() -> Dictionary:
 	return Airdef.cfg().get("counter_drone", {})
+
+
+static func _track_mult() -> float:
+	return maxf(float(Traverse7.cfg().get("ciws", {}).get("track_mult", 3.0)), 1.0)
+
+
+## Ticks the CIWS head needs to lay onto `at` from where it points now (0 = already within tolerance).
+static func _full_lay_ticks(w: SimWorld, b: Dictionary, at: Vector2) -> int:
+	var m := Traverse7.mount(b)
+	if int(m[0]) == Traverse7.MOUNT_NONE or float(m[1]) <= 0.0:
+		return 0
+	var v: Vector2 = at - Vector2(b.pos)
+	if v.length_squared() < 0.0001:
+		return 0
+	var diff := absf(wrapf(v.angle() - Traverse7.bearing(w, b, int(w.tick)), -PI, PI))
+	return ceili(maxf(diff - float(m[2]), 0.0) / float(m[1]) - 0.0001)
+
+
+## The lay time to intercept at `at`, or -1 when that is more than the engagement window (a threat the head cannot get
+## round to in time).
+static func _lay_ticks(w: SimWorld, b: Dictionary, at: Vector2) -> int:
+	var ticks := _full_lay_ticks(w, b, at)
+	var window := roundi(float(Traverse7.cfg().get("ciws", {}).get("window_s", 0.75)) * SimWorld.TICK_RATE)
+	return ticks if ticks <= window else -1
+
+
+## Records the point CIWS head b is to swing onto (advanced one tick of slew per tick by _advance_lays). A threat out of
+## reach (lt < 0) still gets the head swung onto it (cued toward it), so the next one there is met laid.
+static func _start_lay(w: SimWorld, b: Dictionary, at: Vector2, lt: int) -> void:
+	if lt == 0:
+		return
+	var st := _state(w)
+	if not st.has("lay"):
+		st["lay"] = {}
+	var span := lt if lt > 0 else _full_lay_ticks(w, b, at)
+	(st.lay as Dictionary)[int(b.id)] = [snappedf(at.x, 1.0 / 1024.0), snappedf(at.y, 1.0 / 1024.0), int(w.tick) + span + 2]
+
+
+## Slews every CIWS head that is still swinging onto an intercepted / unreachable threat (ascending ids).
+static func _advance_lays(w: SimWorld) -> void:
+	var st = w.sys_state.get("counterdrone")
+	if st == null or not st.has("lay") or (st.lay as Dictionary).is_empty():
+		return
+	var ld: Dictionary = st.lay
+	var ids := ld.keys()
+	ids.sort()
+	for k in ids:
+		var rec: Array = ld[k]
+		var b = w.entities.get(int(k))
+		if b == null or int(w.tick) > int(rec[2]) or not Airdef.source_active(w, b):
+			ld.erase(k)
+			continue
+		var c: Dictionary = Content.building(String(b.def)).get("ciws", {})
+		if Traverse7.lay(w, b, Vector2(float(rec[0]), float(rec[1])), float(_ciws_interval(c)) / SimWorld.TICK_RATE, false, -1):
+			ld.erase(k)
 
 
 static func _ciws_interval(c: Dictionary) -> int:

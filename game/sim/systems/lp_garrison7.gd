@@ -15,6 +15,7 @@ extends RefCounted
 ## Numbers PROVISIONAL.
 
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never given automatic jobs
 const Transport = preload("res://sim/systems/transport.gd")
 
 const KEY := "lp_garrison7"
@@ -136,7 +137,7 @@ static func tick(w: SimWorld) -> void:
 	for rec in G.pat:
 		var id := int(rec[0])
 		var e = w.entities.get(id)
-		if e == null or e.kind != "unit" or int(e.get("lp_ring", -1)) != int(G.ring[int(rec[1])]):
+		if e == null or e.kind != "unit" or int(e.get("lp_ring", -1)) != int(G.ring[int(rec[1])]) or CnRole7.is_cn(e):   # G7 CNROLE7 (13.9c-29): a CN unit never walks a wall patrol
 			dirty = true
 			continue
 		keep.append(rec)

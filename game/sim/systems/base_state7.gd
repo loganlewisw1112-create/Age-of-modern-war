@@ -107,6 +107,8 @@ static func _eval(w: SimWorld, side: int, rect: Rect2i) -> String:
 	var inner := Rect2(rect)
 	var threat := 0.0
 	for e in SimIndex.of(w, "unit"):
+		if not w.entities.has(int(e.id)):
+			continue   # ORCH (DRONEBAY7 warn 5754): stale index entry; a loaded world has none, so skipping keeps save / load identical
 		var o := int(e.owner)
 		if o == side or o == SimWorld.NEUTRAL or not w.is_enemy(side, o):
 			continue
@@ -120,8 +122,8 @@ static func _eval(w: SimWorld, side: int, rect: Rect2i) -> String:
 	var defence := 0.0
 	for kind in ["building", "unit"]:
 		for e in SimIndex.of(w, kind):
-			if int(e.owner) != side:
-				continue
+			if not w.entities.has(int(e.id)) or int(e.owner) != side:
+				continue   # ORCH (warn 5754): skip stale index entries
 			var p: Vector2 = e.pos
 			if not inner.has_point(p):
 				continue

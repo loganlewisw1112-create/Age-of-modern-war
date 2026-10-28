@@ -65,6 +65,10 @@ func _unit_spec(def: String) -> Dictionary:
 			"cmd": frames.find("command"),
 			# G6.1 (ANIMA61): infantry animation set columns ({} = none) / ANIMB61 vehicle anim61 selectors
 			"a61": inf_cols(frames), "v61": veh_cols(spec, frames)}
+		if (s.a61 as Dictionary).has("swalk"):   # EXO7-3 CR 6346: walk cadence matched to ground speed (cycles / s at full speed)
+			var g7s = spec.get("g7", {})
+			var stl := float(g7s.get("stride_tiles", 0.8)) if g7s is Dictionary else 0.8
+			s.a61["swalk_hz"] = float(Content.unit(def).get("speed", 2.0)) / maxf(0.2, stl)
 		if s.dep < 0:
 			s.dep = G5Art.special_col(def, frames, "deployed")
 		s["blk"] = _a61_block(s, spec, frames)
@@ -332,6 +336,13 @@ static func inf_cols(frames: Array) -> Dictionary:
 				return {}
 		elif int(d[k]) < 0:
 			return {}
+	# EXO7-3 CR 6346 (13.9c-20b): the CN suits' 12-frame walk; only sheets that carry swalk_0..11
+	if frames.has("swalk_0"):
+		var sw: Array = []
+		for i in 12:
+			sw.append(frames.find("swalk_%d" % i))
+		if not sw.has(-1):
+			d["swalk"] = sw
 	var g7 := g7_cols(frames)
 	for k in g7:
 		d["g7_" + k] = g7[k]   # G7 (LOOK7): flat keys (values stay int / Array like the G6.1 set)
@@ -373,6 +384,8 @@ static func flat_cols(a: Dictionary) -> Array:
 			out.append_array(flat_cols(v))
 		elif v is Array:
 			out.append_array(v)
+		elif v is float:
+			continue   # EXO7-3 CR 6346: swalk_hz is a cadence, not a column
 		else:
 			out.append(int(v))
 	return out
@@ -612,7 +625,8 @@ func _state_code(e: Dictionary, kind: String) -> int:
 		var g5v := _g5_variant(String(e.get("def", "")))
 		if g5v != "":
 			# G5 (VIEW5): ART-BLD variants (hangar level, field facing, shore side, damaged, build)
-			return -1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
+			var tb7 := 0 if e.get("tb") == null else (1 + posmod(roundi(float(e.tb) / (PI / 8.0)), 16)) * 1048576   # G7 TURRET7B CR 6354 (13.9c-30): turret head bearing (16 steps) in the stamp
+			return -tb7 - 1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
 				+ posmod(int(e.get("water_d", 0)), 4) * 4 + (2 if _damaged(e) else 0)
 				+ (1 if float(e.get("air_build", 0.0)) > 0.0 else 0)) - (4096 if not bool(e.get("built", true)) else 0) 				- 8192 * clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2) 				- (32768 if int(e.get("firing", 0)) > 0 else 0)  # G6 (VIEW6): rot_<f>_fire
 		if bool(e.get("built", true)):

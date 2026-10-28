@@ -136,13 +136,20 @@ const G7_ACTIONS := {
 	# engineer card already holds J / U / X / Z (minefield, sweep, rail, garrison: the only letters the generated build
 	# keys never take), so it is the Shift chord SHIFT+J (same mnemonic; plain J stays the minefield).
 	"fissure_span": ["SHIFT+J", "Span fissure (engineers bridge a fissure / canyon)", "fissure7", "fissure_span"],
+	# G7 (AIRV7, ORCH CR 4527 part 5): CN Vanta gunship card (shares the air card). Alt chords never reach the card
+	# lookup (hud drops Alt), so Shift chords: H home pad, N nose, W wing / side pair, Q rear hardpoint.
+	"vanta_rtb": ["SHIFT+H", "Return to roof pad", "vanta7", "vanta_rtb"],
+	"vanta_cycle_nose": ["SHIFT+N", "Nose hardpoint (next item)", "vanta7", "vanta_loadout"],
+	"vanta_cycle_side": ["SHIFT+W", "Side hardpoints, both sides (next item)", "vanta7", "vanta_loadout"],
+	"vanta_cycle_rear": ["SHIFT+Q", "Rear hardpoint (next item)", "vanta7", "vanta_loadout"],
 }
 const PAGE_GROUPS := ["squad7"]
 const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"],
 	# fissure7 (Span fissure) sits on the engineer / repair-unit card next to their G6 actions
 	["fissure7", "mines6"], ["fissure7", "rail6"], ["fissure7", "garrison6"], ["fissure7", "loadout6"],
 	["fissure7", "breach6"], ["fissure7", "tow6"], ["fissure7", "bridge6"], ["fissure7", "eng_air"],
-	["fissure7", "truck"], ["fissure7", "medic"], ["fissure7", "cn7"]]
+	["fissure7", "truck"], ["fissure7", "medic"], ["fissure7", "cn7"],
+	["vanta7", "air"]]   # G7 AIRV7: the Vanta card sits on the air card
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
 const SHARE := [["air", "naval"], ["drone", "truck"], ["drone", "medic"], ["drone", "eng_air"],

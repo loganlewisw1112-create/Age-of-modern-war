@@ -45,6 +45,7 @@ const DRAW_OUT := 0.35        # tiles: e.pos sits this far out of the face cell 
                               # view sorts the turret in front of its wall on the near faces and behind it on the far
                               # ones (tools/art/g7_wallturret.gd draws with this pivot); the cell is unchanged
 const Turrets7 = preload("res://sim/systems/turrets7.gd")
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B (13.9c-30): lay before fire
 const PData = preload("res://sim/systems/progression_data.gd")
 const HotState = preload("res://sim/hot_state.gd")
 
@@ -460,6 +461,9 @@ static func tick(w: SimWorld) -> void:
 			continue
 		if aim != int(t.id):
 			st.aim[bid] = int(t.id)
+		# G7 TURRET7B (13.9c-30): the head traverses onto the target (aimed from the turret centre) before it fires
+		if not Traverse7.lay(w, b, Turrets7.pos_of(w, t) - Turrets7.center(b) + Vector2(b.pos), float(wd.get("cooldown", 1.0)), false, int(t.id)):
+			continue
 		_fire(w, st, b, c, wd, t)
 
 
@@ -518,7 +522,7 @@ static func _fire(w: SimWorld, st: Dictionary, b: Dictionary, c: Dictionary, wd:
 	var m := int(b.get("wt_m", 0))
 	var tp := Turrets7.pos_of(w, t)
 	var bp := Turrets7.center(b)
-	b.facing_i = m + 4 * (aim_step(m, tp - bp) + 1)
+	b.facing_i = m + 4 * (aim_step(m, Vector2.from_angle(float(b.tf)) if b.has("tf") else tp - bp) + 1)   # G7 TURRET7B: the laid head
 	b.firing = int(c.get("fire_hint", 6))
 	var hit := w.rng.chance(float(wd.get("accuracy", 1.0)))
 	var wid := String(c.get("weapon", ""))

@@ -154,7 +154,7 @@ func test_intended_target_classes() -> void:
 	var h0 := _hp(w, rf4)
 	var sw := _unit(w, "m_swarm", M, Vector2(63.5, 20.5))
 	var s0 := _hp(w, sw)
-	_run(w, 25)
+	_run(w, 25 + _lay_ticks(w, mw, Vector2(63.5, 20.5)))   # G7 TURRET7B (13.9c-30): + the head's lay time
 	check(_hp(w, sw) < s0, "microwave fries the swarm (%s -> %s)" % [s0, _hp(w, sw)])
 	check_eq(_hp(w, rf4), h0, "microwave soft-kill leaves the rifleman in the cone unhurt")
 	check(w.entities.has(wk) and w.entities.has(rf2) and w.entities.has(rf3), "setup units still present")
@@ -209,7 +209,7 @@ func test_rail_penetration_and_power() -> void:
 	var off := _unit(w, "m_walker", M, Vector2(37.0, 66.0))
 	var hp := [_hp(w, big), _hp(w, w1), _hp(w, w2), _hp(w, off)]
 	_unit(w, "recon", H, Vector2(40.0, 58.0))   # eyes on the colossus
-	var evs := _run(w, 12)
+	var evs := _run(w, 12 + _lay_ticks(w, rail, Vector2(45.0, 61.0)))   # G7 TURRET7B (13.9c-30): + the head's lay time
 	check_eq(_aim(w, rail), big, "rail cannon picks the biggest Machine unit")
 	check_eq(_count(evs, "T7Rail"), 1, "one rail shot")
 	check(_hp(w, w1) < float(hp[1]) and _hp(w, w2) < float(hp[2]), "the slug pierces both walkers in its lane")
@@ -279,3 +279,337 @@ func test_determinism_and_no_turret_identity() -> void:
 	check(not c.sys_state.has("turrets7"), "no turret: no Turrets7 state")
 	check_eq(c.state_hash(), d.state_hash(), "a match without turrets is hash-identical with or without Turrets7")
 	_restore()
+
+
+# ============================================================ G7 TURRET7B: traverse before fire (13.9c-30)
+const Trav = preload("res://sim/systems/traverse7.gd")
+
+
+func _adiff(a: float, b: float) -> float:
+	return absf(wrapf(a - b, -PI, PI))
+
+
+## G7 TURRET7B: worst-case ticks for turret bid's head to traverse from its (scanning) rest onto point p (13.9c-30:
+## a turret fires only once laid). Older timing windows add exactly this, nothing more.
+func _lay_ticks(w: SimWorld, bid: int, p: Vector2) -> int:
+	var b: Dictionary = w.entities[bid]
+	var m := Trav.mount(b)
+	if float(m[1]) <= 0.0:
+		return 0
+	var d := _adiff(Trav.bearing(w, b, int(w.tick)), (p - T.center(b)).angle()) + 2.0 * float(m[4])
+	return int(ceil(maxf(d - float(m[2]), 0.0) / float(m[1]))) + 1
+
+
+func _combat_hooked() -> bool:
+	return FileAccess.get_file_as_string("res://sim/systems/combat.gd").contains("Traverse7.lay(")
+
+
+## One Turrets7 turret with a target straight behind its rest bearing. Returns [w, bid, tid].
+func _behind(def_id: String, target_def: String, dist: float, seed_v: int = 7) -> Array:
+	var w := _setup(10, false, seed_v)
+	var bid: int = T.place(w, H, def_id, Vector2i(40, 40))
+	var b: Dictionary = w.entities[bid]
+	var rest := Trav.bearing(w, b, int(w.tick))
+	var tid := _unit(w, target_def, M, T.center(b) + Vector2.from_angle(rest + PI) * dist)
+	return [w, bid, tid]
+
+
+## A target straight behind: the head swings at its rate (no jump), holds fire until laid, and the first shot leaves
+## with the head on the target.
+func test_traverse_takes_time_and_no_shot_before_laid() -> void:
+	var tgt := {"a_t7_autocannon": "m_hauler", "a_t7_hmg_nest": "rifleman", "a_t7_railgun": "m_walker"}
+	for d in tgt:
+		var r := _behind(String(d), String(tgt[d]), 5.0)
+		var w: SimWorld = r[0]
+		var bid: int = r[1]
+		var b: Dictionary = w.entities[bid]
+		var m := Trav.mount(b)
+		var c: Vector2 = T.center(b)
+		var first := -1
+		var prev := Trav.bearing(w, b, int(w.tick))
+		var max_step := 0.0
+		var swung := 0.0
+		var off_at_shot := -1.0
+		for i in 240:
+			var t0 = w.entities.get(int(r[2]))
+			var tp0: Vector2 = T.pos_of(w, t0) if t0 != null else Vector2.ZERO
+			var evs := _run(w, 1)
+			var bb := Trav.bearing(w, b, int(w.tick))
+			max_step = maxf(max_step, _adiff(bb, prev))
+			swung += _adiff(bb, prev)
+			prev = bb
+			for ev in evs:
+				if first < 0 and String(ev.type) == "ShotFired" and int(ev.shooter) == bid:
+					first = i
+					off_at_shot = _adiff(float(b.tf), (tp0 - c).angle())
+			if first >= 0:
+				break
+		var need := (PI * 0.75) / float(m[1])   # at least ~135 deg of slew (scan sweep +-20 deg, tolerance 5 deg)
+		check(first >= 0, "%s fires once laid (first shot tick %d)" % [d, first])
+		check(float(first) >= need, "%s holds fire while it traverses (first shot %d >= %.1f ticks at %.0f deg/s)" % [d, first, need, rad_to_deg(float(m[1])) * 20.0])
+		check(max_step <= float(m[1]) * 10.0 + 0.001, "%s swings at its rate, never a jump (max %.3f rad/tick)" % [d, max_step])
+		check(swung >= PI * 0.7, "%s visibly swung %.0f deg onto the target" % [d, rad_to_deg(swung)])
+		check(off_at_shot >= 0.0 and off_at_shot <= float(m[2]) + 0.002, "%s head on the target at the shot (%.1f deg off)" % [d, rad_to_deg(off_at_shot)])
+	_restore()
+
+
+func test_traverse_tracks_a_mover() -> void:
+	var w := _setup()
+	var bid: int = T.place(w, H, "a_t7_hmg_nest", Vector2i(40, 40))
+	var b: Dictionary = w.entities[bid]
+	var c: Vector2 = T.center(b)
+	var tid := _unit(w, "rifleman", M, c + Vector2(-3.0, -4.5))
+	w.entities[tid].hp = 1.0e9
+	w.entities[tid].max_hp = 1.0e9
+	var shots := 0
+	var worst := 0.0
+	var b0 := -99.0
+	var b1 := -99.0
+	for i in 160:
+		HotState.set_pos(w, tid, c + Vector2(-3.0, -4.5 + 0.07 * float(i)))   # crossing at 1.4 tiles/s
+		w.entities[tid].pos = c + Vector2(-3.0, -4.5 + 0.07 * float(i))
+		var evs := _run(w, 1)
+		var tt = w.entities.get(tid)
+		if tt == null:
+			break
+		for ev in evs:
+			if String(ev.type) == "ShotFired" and int(ev.shooter) == bid:
+				shots += 1
+				worst = maxf(worst, _adiff(float(b.tf), (T.pos_of(w, tt) - c).angle()))
+				if b0 < -9.0:
+					b0 = float(b.tf)
+				b1 = float(b.tf)
+	check(shots >= 3, "the MG nest keeps firing at the crossing target (%d shots)" % shots)
+	check(worst <= float(Trav.mount(b)[2]) + 0.06, "every shot left with the head on the mover (worst %.1f deg)" % rad_to_deg(worst))
+	check(_adiff(b0, b1) >= deg_to_rad(30.0), "the head tracked the mover across %.0f deg" % rad_to_deg(_adiff(b0, b1)))
+	_restore()
+
+
+func test_traverse_idle_returns_to_rest() -> void:
+	var r := _behind("a_t7_autocannon", "m_hauler", 5.0)
+	var w: SimWorld = r[0]
+	var bid: int = r[1]
+	var b: Dictionary = w.entities[bid]
+	var rest0 := Trav.rest_of(w, b, Trav.mount(b), int(w.tick))
+	_run(w, 120)
+	check(b.has("tf") and _adiff(float(b.tf), rest0) > PI * 0.5, "laid round onto the target behind it")
+	w.destroy(int(r[2]), "test", SimWorld.NEUTRAL)
+	var tf := float(b.get("tf", 0.0))
+	_run(w, 20)
+	check_eq(float(b.get("tf", 0.0)), tf, "idle: no per-tick state writes (bearing is lazy)")
+	check(_adiff(Trav.bearing(w, b, int(w.tick)), tf) < 0.01, "holds its last lay for hold_s")
+	_run(w, 200)
+	var now := int(w.tick)
+	check(_adiff(Trav.bearing(w, b, now), Trav.rest_of(w, b, Trav.mount(b), now)) < 0.01, "back on its (scanning) rest bearing after the hold")
+	var lo := 99.0
+	var hi := -99.0
+	var far := 0.0
+	for k in 16:   # one full scan period (16 s) sampled every second
+		var sb := Trav.bearing(w, b, now + k * 20)
+		var rel := wrapf(sb - rest0, -PI, PI)
+		lo = minf(lo, rel)
+		hi = maxf(hi, rel)
+		far = maxf(far, absf(rel))
+	check(hi - lo >= deg_to_rad(20.0) and far <= deg_to_rad(41.0), "idle head scans slowly around the rest bearing (sweep %.1f deg, max %.1f deg off)" % [rad_to_deg(hi - lo), rad_to_deg(far)])
+	_restore()
+
+
+func test_traverse_deterministic_and_saved() -> void:
+	var a := _wall(13)
+	var b := _wall(13)
+	_run(a, 150)
+	_run(b, 150)
+	var laid := 0
+	var same := true
+	for id in a.entities:
+		var ea: Dictionary = a.entities[id]
+		if ea.has("tf"):
+			laid += 1
+			var eb = b.entities.get(id)
+			same = same and eb != null and float(eb.tf) == float(ea.tf) and int(eb.tft) == int(ea.tft) and int(eb.tfh) == int(ea.tfh)
+	check(laid >= 4, "the turret wall laid %d heads" % laid)
+	check(same, "same seed: identical turret bearings")
+	check_eq(a.state_hash(), b.state_hash(), "same seed: same hash with traverse state")
+	var d: Dictionary = a.to_dict()
+	var found := false
+	var ents = d.get("entities", {})
+	for k in ents:
+		var ed = ents[k]
+		if ed is Dictionary and ed.has("tf"):
+			found = true
+			break
+	check(found, "turret bearing is part of the saved / hashed state")
+	_restore()
+
+
+func test_traverse_no_mount_unchanged() -> void:
+	var w := _setup()
+	var rf := _unit(w, "rifleman", H, Vector2(30.5, 30.5))
+	var e: Dictionary = w.entities[rf]
+	check_eq(Trav.mode_of(e), Trav.MOUNT_NONE, "infantry has no mount")
+	check(Trav.lay(w, e, Vector2(35.5, 20.5), 1.0), "an unmounted shooter is always laid")
+	check(not e.has("tf") and not e.has("tft"), "and gets no traverse state")
+	check_eq(Trav.face(e, 1.25), 1.25, "infantry still turns to face its shot")
+	var tk := _unit(w, "mbt", H, Vector2(40.5, 30.5))
+	var te: Dictionary = w.entities[tk]
+	te.facing = 0.0
+	check_eq(Trav.mode_of(te), Trav.MOUNT_TURRET, "the MBT has a separate turret")
+	check_eq(Trav.face(te, 2.0), 0.0, "a turreted tank never swings its hull to fire")
+	check(not Trav.lay(w, te, Vector2(te.pos) + Vector2(-5, 0), 4.0), "MBT: target behind -> not laid on the first tick")
+	check(_adiff(float(te.tf), 0.0) <= float(Trav.mount(te)[1]) + 0.001, "MBT turret moved one tick of traverse from hull-forward")
+	check_eq(float(te.facing), 0.0, "hull untouched by the turret lay")
+	var ac := _unit(w, "b_armored_car", H, Vector2(50.5, 30.5))
+	var ae: Dictionary = w.entities[ac]
+	ae.facing = 0.0
+	ae.moving = false
+	check(not Trav.lay(w, ae, Vector2(ae.pos) + Vector2(0, 5), 1.0), "armoured car (no turret art): hull lays over time")
+	check(float(ae.facing) > 0.0 and float(ae.facing) < PI * 0.5 - 0.01 and not ae.has("tf"), "its hull turned one step (%.3f), no snap" % float(ae.facing))
+	_restore()
+
+
+## Combat-path turrets (tanks): needs ORCH's combat.gd CR (Traverse7.lay in _fire); until it lands this FAILS on the
+## first check (reported, not passed silently).
+func test_traverse_combat_tank() -> void:
+	if not check(_combat_hooked(), "combat.gd carries the Traverse7 hook (ORCH CR change_request.traverse7_hooks)"):
+		return
+	var w := _setup()
+	var tk := _unit(w, "mbt", H, Vector2(40.5, 40.5))
+	var te: Dictionary = w.entities[tk]
+	te.facing = 0.0
+	te.cd_ticks = 0
+	_unit(w, "m_walker", M, Vector2(34.5, 40.5))
+	var first := -1
+	var hull_moved := false
+	for i in 200:
+		var evs := _run(w, 1, false)
+		hull_moved = hull_moved or float(te.get("facing", 0.0)) != 0.0
+		for ev in evs:
+			if first < 0 and String(ev.type) == "ShotFired" and int(ev.shooter) == tk:
+				first = i
+		if first >= 0:
+			break
+	var m := Trav.mount(te)
+	check(first >= int((PI - float(m[2])) / float(m[1])) - 1, "MBT holds fire while its turret swings 180 deg (first shot tick %d)" % first)
+	check(not hull_moved, "the MBT hull never swung toward the target")
+	check(_adiff(float(te.get("tf", 0.0)), PI) <= float(m[2]) + 0.002, "MBT turret laid on the target behind")
+	_restore()
+
+
+# ---- G7 TURRET7C: CIWS / point-defence lay before they intercept (13.9c-30) ----
+const Counterdrone = preload("res://sim/systems/counterdrone.gd")
+
+
+## A powered-free Laser CIWS (Human A) in the clear. Returns [w, bid, centre].
+func _ciws_world() -> Array:
+	var w := _setup()
+	Content.building("a_laser_ciws").requires_power = false
+	var bid := w.spawn_building("a_laser_ciws", H, Vector2i(40, 40), true)
+	w.entities[bid].cd_ticks = NOFIRE   # its own Combat weapon silenced: the Counterdrone layer alone
+	w.run_ticks(2)
+	return [w, bid, Vector2(w.entities[bid].pos)]
+
+
+func _ciws_restore() -> void:
+	Content.building("a_laser_ciws").requires_power = true
+
+
+## A drone straight behind the resting head, inside the laser radius: it is tracked and the head swings round at its
+## rate; the kill comes only once the head is laid on it (never on the first ticks).
+func test_ciws_lays_before_it_kills_a_drone() -> void:
+	var s := _ciws_world()
+	var w: SimWorld = s[0]
+	var bid: int = s[1]
+	var c: Vector2 = s[2]
+	var b: Dictionary = w.entities[bid]
+	var rest := Trav.bearing(w, b, int(w.tick))
+	var did := _unit(w, "m_micro_drone", M, c + Vector2.from_angle(rest + PI) * 5.0)
+	var want := (Vector2(w.entities[did].pos) - c).angle()
+	var m := Trav.mount(b)
+	var need := _adiff(rest, want)
+	var min_ticks := int((need - float(m[2])) / float(m[1])) - 2
+	var kill := -1
+	var b_at_kill := 99.0
+	for i in 120:
+		var evs := _run(w, 1, false)
+		for ev in evs:
+			if String(ev.type) == "CiwsKill" and int(ev.ciws) == bid:
+				kill = i
+				b_at_kill = _adiff(Trav.bearing(w, b, int(w.tick)), want)
+		if kill >= 0:
+			break
+	check(kill >= 0, "the CIWS kills the drone in the end")
+	check(kill >= min_ticks, "no kill before the head could swing round: tick %d, >= %d at %.0f deg/s over %.0f deg" % [kill, min_ticks, rad_to_deg(float(m[1])) * 20.0, rad_to_deg(need)])
+	check(b_at_kill <= float(m[2]) + 0.002, "the head was laid on the drone at the kill (%.1f deg off)" % rad_to_deg(b_at_kill))
+	_ciws_restore()
+
+
+## A drone outside the laser radius but inside the tracking radius is followed by the head, not shot.
+func test_ciws_tracks_a_drone_before_it_is_in_range() -> void:
+	var s := _ciws_world()
+	var w: SimWorld = s[0]
+	var bid: int = s[1]
+	var c: Vector2 = s[2]
+	var b: Dictionary = w.entities[bid]
+	var rest := Trav.bearing(w, b, int(w.tick))
+	var did := _unit(w, "m_micro_drone", M, c + Vector2.from_angle(rest + PI * 0.75) * 11.0)
+	var want := (Vector2(w.entities[did].pos) - c).angle()
+	var kills := 0
+	for i in 80:
+		for ev in _run(w, 1, false):
+			if String(ev.type) == "CiwsKill":
+				kills += 1
+	check_eq(kills, 0, "a drone 11 tiles out (radius 6) is tracked, not shot")
+	check(_adiff(Trav.bearing(w, b, int(w.tick)), want) <= float(Trav.mount(b)[2]) + 0.002, "the head follows it round (%.1f deg off)" % rad_to_deg(_adiff(Trav.bearing(w, b, int(w.tick)), want)))
+	_ciws_restore()
+
+
+## A strike / shell landing behind the head: out of the engagement window it gets through (the head starts swinging and
+## the CIWS stays ready); a landing within the window is intercepted with a lay time and the head swings onto it.
+func test_ciws_strike_intercept_needs_a_lay() -> void:
+	var s := _ciws_world()
+	var w: SimWorld = s[0]
+	var bid: int = s[1]
+	var c: Vector2 = s[2]
+	var b: Dictionary = w.entities[bid]
+	var m := Trav.mount(b)
+	var cur := Trav.bearing(w, b, int(w.tick))
+	var behind := c + Vector2.from_angle(cur + PI) * 4.0
+	check(not Counterdrone.intercept_strike(w, M, behind, "cruise"), "a strike straight behind the head gets through (out of the lay window)")
+	_run(w, 3, false)
+	check(_adiff(Trav.bearing(w, b, int(w.tick)), (behind - c).angle()) < PI - 0.05, "...but the head has started swinging toward it")
+	_run(w, 40, false)
+	check(_adiff(Trav.bearing(w, b, int(w.tick)), (behind - c).angle()) <= float(m[2]) + 0.002, "...and is laid on that point 40 ticks later")
+	check(Counterdrone.intercept_strike(w, M, behind, "cruise"), "the CIWS (never spent) intercepts the next one there: it is laid")
+	var ev0: Dictionary = {}
+	for ev in w.events:
+		if String(ev.type) == "CiwsIntercept":
+			ev0 = ev
+	check_eq(int(ev0.get("lay_ticks", -1)), 0, "an already-laid head intercepts with no lay time")
+	_run(w, 110, false)
+	# 60 deg off the head: inside the window: accepted with a lay time, the head then swings onto the point
+	cur = Trav.bearing(w, b, int(w.tick))
+	var side := c + Vector2.from_angle(cur + deg_to_rad(60.0)) * 4.0
+	check(Counterdrone.intercept_strike(w, M, side, "cruise"), "a strike 60 deg off the head is within its lay window")
+	var lt := -1
+	for ev in w.events:
+		if String(ev.type) == "CiwsIntercept":
+			lt = int(ev.get("lay_ticks", -1))
+	check(lt > 0 and lt <= 15, "CiwsIntercept carries the lay time (%d ticks)" % lt)
+	_run(w, lt + 2, false)
+	check(_adiff(Trav.bearing(w, b, int(w.tick)), (side - c).angle()) <= float(m[2]) + 0.002, "the head swung onto the point within the lay time (%.1f deg off)" % rad_to_deg(_adiff(Trav.bearing(w, b, int(w.tick)), (side - c).angle())))
+	_ciws_restore()
+
+
+## Same seed, same run: the CIWS lay state is hashed and replays.
+func test_ciws_lay_deterministic() -> void:
+	var hs := []
+	for k in 2:
+		var s := _ciws_world()
+		var w: SimWorld = s[0]
+		var c: Vector2 = s[2]
+		_unit(w, "m_micro_drone", M, c + Vector2(-5.0, 1.0))
+		Counterdrone.intercept_strike(w, M, c + Vector2(3.0, 3.0), "cruise")
+		_run(w, 90, false)
+		hs.append(w.state_hash())
+		_ciws_restore()
+	check_eq(hs[0], hs[1], "two identical CIWS runs hash the same")

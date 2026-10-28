@@ -335,6 +335,12 @@ func _silence(w: SimWorld, fac: int) -> void:
 			var b: Dictionary = w.entities[id]
 			if b.kind == "building" and int(b.owner) == 0 and String(b.def).contains("_wt7_"):
 				st.ready[int(id)] = w.tick + 40
+	# ORCH: the facility drone bay (DRONEBAY7 / 13.9c-27a, added after this drill was written) is the facility's own
+	# defence too: its swarm killed the 8 drill riflemen before the Sentinels emptied a magazine (rounds used 30 -> 7).
+	# Silence it with the other facility guns so the drill still exercises the Sentinels; the checks are unchanged.
+	var dcmd := {"type": "dronebay_auto", "on": false, "issuer": int(CnFacility.fac(w, fac).get("owner", 0))}
+	if SimWorld.DroneBay7.validate_command(w, dcmd) == "":
+		SimWorld.DroneBay7.apply_command(w, dcmd)
 
 
 ## Headless balance fight (brief item 4). The seeded starting garrison (24 incl. one ammo bearer) holds facility fac
@@ -385,6 +391,7 @@ func _fight(mix: Array, mult: float, secs: float, quiet: bool = false) -> Dictio
 			bd = Vector2(b.pos).distance_to(axis)
 			breach = int(pid)
 	var stage := axis + Vector2(9, 0)
+	var gap: Vector2 = w.entities[breach].pos if breach >= 0 else axis
 	var ev := {}
 	var T := int(secs * SimWorld.TICK_RATE)
 	for t in T:
@@ -405,32 +412,16 @@ func _fight(mix: Array, mult: float, secs: float, quiet: bool = false) -> Dictio
 					if ot == "idle":
 						e.order = {"type": "attack_move", "target": stage}
 						Movement.order_path(w, e, stage)
-				elif ot == "idle" or (ot == "attack" and int(e.order.get("target_id", -1)) == breach) 						or (ot == "attack_move" and Vector2(e.order.get("target", core)) == stage):
+				elif not cr.grow(-1.0).has_point(e.pos) and Vector2(e.pos).distance_to(gap) > 1.5:
+					# through the breach: a rush (move) into the gap, else attack-move stalls them on wall sections
+					if ot != "move" or Vector2(e.order.get("target", Vector2.ZERO)) != gap:
+						e.order = {"type": "move", "target": gap}
+						Movement.order_path(w, e, gap)
+				elif ot == "idle" or ot == "move" or (ot == "attack" and int(e.order.get("target_id", -1)) == breach) 						or (ot == "attack_move" and Vector2(e.order.get("target", core)) == stage):
 					e.order = {"type": "attack_move", "target": core}
 					Movement.order_path(w, e, core)
 		_step(w)
 		_events(w, ev)
-		if OS.get_environment("S7_DBG") != "" and t % 400 == 0:   # DBG SENT7-4
-			var dd := {}
-			for id in att:
-				var e = w.entities.get(int(id))
-				if e == null or Wounds.is_down(e):
-					continue
-				var k := "%s/%s/t%s" % [String(e.def), String(e.order.get("type", "?")), "Y" if int(e.get("target", -1)) >= 0 else "n"]
-				dd[k] = int(dd.get(k, 0)) + 1
-			var php := 0.0
-			var pmx := 0.0
-			for pid in CnFacility.fac(w, fac).get("parts", []):
-				var b = w.entities.get(int(pid))
-				if b != null:
-					php += float(b.hp)
-					pmx += float(b.max_hp)
-			var sa := 0
-			for id in sids:
-				var e = w.entities.get(int(id))
-				if e != null and not Wounds.is_down(e):
-					sa += 1
-			print("  FIGHTDBG t%d sent %d parts hp %.0f/%.0f att %s" % [t / 20, sa, php, pmx, str(dd)])
 	var s_alive := 0
 	var s_val := 0.0
 	for id in sids:
@@ -463,15 +454,10 @@ func _report(tag: String, r: Dictionary) -> void:
 
 
 func test_balance_fight() -> void:
-	if OS.get_environment("S7_ONLY") != "" and OS.get_environment("S7_ONLY") != "balance":   # DBG SENT7-4
-		return
 	if not _hooks_wired():
 		print("  (skip: Sentinels7 hooks not wired)")
 		return
 	var at := "at_gunner" if not Content.unit("at_gunner").is_empty() else "rifleman"
-	if OS.get_environment("S7_DBG") == "ca":   # DBG SENT7-4
-		_report("combined arms DBG", _fight([["a_old_tank", 0.4], ["a_guided_arty", 0.2], ["rifleman", 0.4]], 2.5, 240.0))
-		return
 	var r1 := _fight([["rifleman", 0.8], [at, 0.2]], 2.0, 240.0)
 	_report("human infantry x2", r1)
 	var r2 := _fight([["rifleman", 0.8], [at, 0.2]], 3.0, 240.0)
@@ -494,8 +480,6 @@ func test_balance_fight() -> void:
 ## 13.9c-13: buddy pairs, bounding (one moves while the other covers), cover + sectors, gait, guard net, stand-to,
 ## the reloading call, casualty drill and the Mender coming forward.
 func test_tactics_drill() -> void:
-	if OS.get_environment("S7_ONLY") != "" and OS.get_environment("S7_ONLY") != "tactics":   # DBG SENT7-4
-		return
 	var a := _setup(60)
 	var w: SimWorld = a[0]
 	var o: Vector2i = a[1]
@@ -523,6 +507,13 @@ func test_tactics_drill() -> void:
 	var both := 0
 	var one := 0
 	var settled := 0
+	# SENT7-5 casualty drill: the drill's man goes down where it matters, hit while rushing in the open during a
+	# bound (moving, duck-run / sprint, cover below open_v), with his buddy still beside him (a pair is a unit).
+	var cas := -1
+	var cas_t := -1
+	var ev2 := {}
+	var ov := float(S7._tac().get("open_v", 0.35))
+	var near_r := 2.0 * float(S7._tac().get("bound_len", 5.0)) + 1.0
 	for t in 900:
 		_silence(w, fac)
 		if t % 200 == 0:
@@ -533,6 +524,28 @@ func test_tactics_drill() -> void:
 					Movement.order_path(w, fe, core)
 		_step(w)
 		_events(w, ev)
+		if cas >= 0:
+			_events(w, ev2)
+		elif t >= 150 and t % 5 == 0 and S7.threat(w, fac) != null:
+			for id in S.ids:
+				var e = w.entities.get(int(id))
+				if e == null or e.has("garrisoned_in") or String(e.s7) == "mender" or Wounds.is_down(e):
+					continue
+				if not bool(e.get("moving", false)) or int(e.get("gait", 0)) < 2:
+					continue
+				if S7._cover_v(w, w.cell_of(e.pos), S7._team(w, 0)) >= ov:
+					continue
+				var bd := int(S.jobs.get(str(id), {}).get("bud", -1))
+				var b = w.entities.get(bd)
+				if b == null or b.has("garrisoned_in") or Wounds.is_down(b) or Vector2(b.pos).distance_to(e.pos) > near_r:
+					continue
+				cas = int(id)
+				cas_t = t
+				print("  CASUALTY PICK: %d hit at t=%d rushing in the open (gait %d, cover %.2f), buddy %d %.1f tiles away" % [
+					cas, t, int(e.gait), S7._cover_v(w, w.cell_of(e.pos), S7._team(w, 0)), bd, Vector2(b.pos).distance_to(e.pos)])
+				SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(e) * 0.9)
+				Wounds.go_down(w, e)
+				break
 		if t % 10 == 0:
 			for id in S.ids:
 				var e = w.entities.get(int(id))
@@ -565,12 +578,6 @@ func test_tactics_drill() -> void:
 		if e != null and e.has("ammo"):
 			am_used += int(Content.unit(String(e.def)).get("ammo_max", 0)) - int(e.ammo)
 	print("  TACTICS: attackers left %d of %d, Sentinel rounds used %d" % [alive, foes.size(), am_used])
-	var mgs := []   # DBG SENT7-4
-	for id in S.ids:
-		var e = w.entities.get(int(id))
-		if e != null and e.has("s7_mg") and int(e.s7_mg) < S7._mag(e):
-			mgs.append("%s:%d/%d" % [String(e.s7), int(e.s7_mg), S7._mag(e)])
-	print("  TACTICS MAGS: %s" % str(mgs))
 	var nst := 0
 	for j in S7.job_board(w, fac):
 		if String(j.kind) == "standto":
@@ -583,50 +590,41 @@ func test_tactics_drill() -> void:
 	check(one > both, "bounding: one of a pair moves while the other covers (%d vs %d)" % [one, both])
 	check(int(ev.get("SentinelReloading", 0)) > 0, "magazines run dry: the reloading call")
 	# casualty drill: one of a field pair goes down
-	var cas := -1
-	for id in S.ids:
+	# SENT7-4: the man hit is one caught in the open (on a rush between cover) when there is one: a man who falls
+	# in cover is treated where he lies (care under fire), so only a casualty in the open exercises the drag.
+	# SENT7-5: normally picked above, during a rush; this post-fight pick is only the fallback.
+	var cas_open := -1
+	for id in (S.ids if cas < 0 else []):
 		var e = w.entities.get(int(id))
 		var j: Dictionary = S.jobs.get(str(id), {})
 		if e != null and not e.has("garrisoned_in") and int(j.get("bud", -1)) >= 0 and String(e.s7) != "mender" \
 				and w.entities.has(int(j.bud)) and not w.entities[int(j.bud)].has("garrisoned_in"):
-			cas = int(id)
-			break
+			if cas < 0:
+				cas = int(id)
+			if cas_open < 0 and S7._cover_v(w, w.cell_of(e.pos), S7._team(w, 0)) < float(S7._tac().get("open_v", 0.35)):
+				cas_open = int(id)
+	if cas_t < 0:
+		if cas_open >= 0:
+			cas = cas_open
+		print("  CASUALTY PICK (fallback, after the fight): %d (in the open: %s)" % [cas, str(cas_open >= 0)])
 	check(cas >= 0, "a field pair exists for the casualty drill")
 	if cas < 0:
 		return
-	var cj0: Dictionary = S.jobs.get(str(cas), {})
-	var be0 = w.entities.get(int(cj0.get("bud", -1)))
-	print("  CASUALTY PICK: cas %d at %s order %s job bud %d; buddy at %s job bud %d order %s" % [cas, str(w.entities[cas].pos), str(w.entities[cas].order), int(cj0.get("bud", -1)), str(be0.pos), int(S.jobs.get(str(be0.id), {}).get("bud", -1)), str(be0.order)])
+	check(w.entities.has(cas), "the casualty is still there for the drill")
+	if not w.entities.has(cas):
+		return
 	for id in foes:
 		if w.entities.has(int(id)):
 			w.destroy(int(id), "test", 0)
 	var ce: Dictionary = w.entities[cas]
-	SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(ce) * 0.9)
-	Wounds.go_down(w, ce)
-	var ev2 := {}
+	if cas_t < 0:
+		SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(ce) * 0.9)
+		Wounds.go_down(w, ce)
 	for t in 600:
 		_step(w)
 		_events(w, ev2)
-		if t % 60 == 0:   # DBG SENT7-4
-			var dl := "  CASDBG t%d cas %s" % [t, str(ce.pos)]
-			for id in S.ids:
-				var me = w.entities.get(int(id))
-				if me != null and (String(me.s7) == "mender" or int(id) == int(cj0.get("bud", -1))):
-					dl += " | %d %s %s mv %s ord %s gait %s k %s" % [int(id), String(me.s7), str(me.pos), str(me.get("moving")), str(me.order.get("type")), str(me.get("gait")), str(S.jobs.get(str(id), {}).get("k"))]
-			print(dl)
 	var cj: Dictionary = S.jobs.get(str(cas), {})
 	var bj: Dictionary = S.jobs.get(str(int(cj.get("bud", -1))), {})
-	var bde = w.entities.get(int(cj.get("bud", -1)))
-	print("  CASUALTY END: cas at %s" % str(ce.pos))
-	for id in S.ids:
-		var me = w.entities.get(int(id))
-		if me != null and String(me.s7) == "mender":
-			print("  MENDER %d at %s moving %s path %d cell %s gar %s order %s job %s" % [int(id), str(me.pos), str(me.get("moving")), (me.get("path", []) as Array).size(), "-", str(me.get("garrisoned_in")), str(me.order), str(S.jobs.get(str(id)))])
-	for j in S7.job_board(w, fac):
-		if String(j.kind) == "casualty":
-			print("  CAS JOB %s taken %s" % [str(j.id), str(j.taken)])
-	print("  CASUALTY DBG2: cas %d in ids %s, down_bud %d, treated %s, dist %.1f, S same %s" % [cas, str((S.ids as Array).has(cas)), S7._down_bud(w, S, bde, bj), str(S7._being_treated(w, cas)), Vector2(bde.pos).distance_to(ce.pos), str(S == S7.state(w))])
-	print("  CASUALTY DBG: buddy morale %s can_care %s, cas wdby %s evac_by %s, care %s, buddy order %s" % [str(bde.has("morale") if bde != null else null), str(Wounds._can_care(bde)), str(ce.get("wdby")), str(ce.get("evac_by")), str(w.sys_state.get("wounds", {}).get("care")), str(bde.order if bde != null else null)])
 	print("  CASUALTY DRILL: down %s, casualty job %s, buddy %d job %s, events %s" % [str(Wounds.is_down(ce)), str(cj), int(cj.get("bud", -1)), str(bj), str(ev2)])
 	check(int(ev2.get("SentinelCasualtyDrill", 0)) > 0, "the buddy drags the casualty to cover")
 	check(int(ev2.get("SentinelMenderTreats", 0)) > 0 or not Wounds.is_down(ce), "the Mender comes forward and treats him")

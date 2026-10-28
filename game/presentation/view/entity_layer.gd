@@ -20,6 +20,7 @@ const Fatigue = preload("res://sim/systems/fatigue.gd")
 const RealInfo = preload("res://presentation/ui6/realism_info.gd")
 const AmmoBearer = preload("res://sim/systems/ammo_bearer.gd")            # G6.1 BEARER61 load pips
 const VehAnim61 = preload("res://presentation/view/veh_anim61.gd")        # G6.1 (ANIMC61) vehicle frame selection
+const ApcGun7 = preload("res://presentation/view/apc_gun7.gd")          # G7 MUZZLE7-2 CR 5911 (13.9c-28a) CN APC roof-gun overlays
 const MOTION_CAP := 700      # G6.1: motion layer (smooth facing, ease, bob, reactions) only while <= this many units drew
 const RUN_SPEED := 2.3       # G6.1: drawn speed (tiles/s) above which infantry use the run cycle
 
@@ -54,11 +55,19 @@ const BAY_FILE_FPS := 4.7   # boarding file: one 1.2 m spacing per 4-frame loop 
 const FOOT_U := 2.45        # landed craft footprint half extents (tiles): nose..ramp foot, span incl. fans
 const FOOT_V := 2.1
 const CnFacility = preload("res://sim/systems/cn_facility.gd")  # G7 (CNFAC7-3): facility floors (read-only)
+const FacGate7 = preload("res://presentation/view/fac_gate7.gd")  # G7 GATE7 CR 5743: blast-door frames from the sim gate state (13.9c-26)
 const ArtCat = preload("res://presentation/art/art_catalog.gd")
 const BAY_HIDE_A := 0.6     # hull pixel alpha above this covers a soldier's feet (the sheet's ground shadow is ~0.36)
 const BAY_PROBE := [Vector2(0, -2), Vector2(-4, -2), Vector2(4, -2), Vector2(0, 1), Vector2(0, 4), Vector2(0, 7), Vector2(0, -5),
 	Vector2(0, -8), Vector2(0, -11), Vector2(0, -14), Vector2(0, -17), Vector2(0, -20)]  # a man's feet (+-4), body to 20 px, 7 px under him
-const ROOF_CUT_MOD := Color(1.0, 0.96, 0.9, 0.34)  # G7 (LOOK7): building drawn see-through, troops inside shown
+# FACB7-5 (owner 13.9c-18 "NO transparent anything - no see through"): the LOOK7 roof cut-away (building drawn at alpha
+# 0.34 while our troops clear it) is gone: buildings always draw solid; our men inside are hidden and the building gets
+# an opaque "troops inside" badge (_badges, drawn after the sprites).
+const BADGE_EDGE := Color(0.07, 0.08, 0.09)
+const BADGE_FIG := Color(0.96, 0.96, 0.9)
+var _roof_n: Dictionary = {}                # building id -> own / allied men inside it (this frame)
+var _badges: Array = []                     # [screen point, men inside, team colour] (this frame)
+var bld_see_through := 0                    # building / wreck sprites pushed with alpha < 1 this frame (must stay 0)
 var _ghosts: Dictionary = {}       # remembered-building id -> ghost entity dict
 var _decor: Dictionary = {}        # Vector2i chunk -> Array [pos, page, src, off, ...]
 var _decor_rect: Dictionary = {}   # Vector2i chunk -> Rect2 (screen bounds)
@@ -124,7 +133,7 @@ const FAC7F_ZONES := [["planning", "g7_fac_planning", 0.0], ["drone_bay", "g7_fa
 	["barracks", "g7_fac_barracks", 0.0], ["runoff", "g7_fac_runoff", 0.0]]
 const FAC7F_FLAT := [["fuel_point", "g7_fac_fuel"]]
 ## FACB7-2: facility parts drawn by their zone art (their own sprite is skipped).
-const FAC_ZONE_PARTS := {"cn_magazine": true, "cn_sentinel_barracks": true}
+const FAC_ZONE_PARTS := {"cn_magazine": true, "cn_sentinel_barracks": true, "cn_armory": true}  # + EXO7 CR 4866
 var _lb_cells: Dictionary = {}             # FACB7-2: Vector2i -> "link" / "baffle" (cn_link_wall / cn_ecp_baffle cells)
 const WALL_LINK := {"cn_blast_wall": true, "cn_tower": true, "cn_checkpoint": true}
 var fac_cache_off := false                 # ART7F playtest A/B: true = the old per-frame read (skips busy frames)
@@ -136,6 +145,10 @@ var _fac_e_tick := -2
 var _wall_cells: Dictionary = {}           # Vector2i cell -> true (walls, towers, checkpoint, gate zones)
 var _ww_cells: Dictionary = {}             # G7 (WALL7): wall-walk cell -> Motion.wall_walk_cells value (soldiers on the wall top)
 var ww_drawn := 0                          # G7 (WALL7): soldiers drawn on a wall top last frame (probe / playtest)
+var ww_crouch := 0                         # G7 (WALL7-2): of those, drawn crouched behind the parapet (probe / playtest)
+var ww_front := 0                          # G7 (WALL7-2): parapet occluder strips drawn over wall-walkers last frame
+var _ww_occ: Dictionary = {}               # G7 (WALL7-2): piece centre (Vector2) -> true while a soldier stands on it
+var _ww_centres: Array = []                # G7 (WALL7-2): facility compound centres (outer quadrant of a ring piece)
 var _wall_dirty := true
 var _wall_nfac := -1
 var _wall_nstat := -1
@@ -155,6 +168,8 @@ var _atlas_at: float = float(OS.get_environment("ANIM61_ATLAS_AT")) if OS.has_en
 var _units_drawn := 0
 var _mcls: Dictionary = {}    # def -> Motion class
 var _post: Dictionary = {}    # id -> Motion posture bits from REAL61 Morale (pinned / suppressed / broken)
+var drawn7: Dictionary = {}   # G7 MUZZLE7 CR 5592: id -> [sheet column, facing row, drawn anchor (after air lift), anim time] (fx_layer barrel-tip flashes)
+var apc_gun7 = ApcGun7.new()   # G7 MUZZLE7-2 CR 5911: CN APC pods / RWS drawn over the hull (traverse, recoil, flash); fx_layer reads it
 var _fat: Dictionary = {}     # id -> REAL61 Fatigue level 0..1
 var _chev: Dictionary = {}    # id -> rank chevron 0..4 (REAL61 realism_info.chevron)
 var _pips: Dictionary = {}    # id -> 1 + filled ammo pips (BEARER61 bearers), absent = not a bearer
@@ -282,11 +297,14 @@ func _build_coast_decor(d: Dictionary, list: Array) -> void:
 func on_destroyed(id: int) -> void:
 	# G6.1: an infantry unit with the anim61 set leaves a corpse (die_0..2, lingers, fades)
 	var dc = art._ec.get(id)
-	if dc is Array and (dc as Array).size() > 37 and not (dc[31] as Dictionary).is_empty() and mv != null:
+	# EXO7-3 CR 6360: a CN armoured suit (the only infantry-sheet unit with a 12-frame swalk and a sim wreck entity) leaves
+	# its wreck only, never a second infantry corpse beside it
+	if dc is Array and (dc as Array).size() > 37 and not (dc[31] as Dictionary).is_empty() and mv != null 			and not (dc[31] as Dictionary).has("swalk"):
 		motion.kill(id, dc, mv.anim_time())
 	else:
 		motion.forget(id)
 	_post.erase(id)
+	drawn7.erase(id)
 	_wall_dirty = true   # ART7F: a wall-line part may be gone (re-pick its neighbours' joins)
 	_fat.erase(id)
 	_chev.erase(id)
@@ -509,6 +527,9 @@ func refresh() -> void:
 	g5_counts = gc5
 	# G6.1 (ANIMA61): motion layer on while the last frame drew <= MOTION_CAP units (2k-on-screen stays cheap)
 	motion_on = not far and not g61_off and _units_drawn <= MOTION_CAP
+	_roof_n.clear()
+	_badges.clear()
+	bld_see_through = 0
 	var gc61 := {"motion": 0, "a61": 0, "flipped": 0, "corpses": 0, "chevrons": 0, "pips": 0, "veh": 0, "turret": 0, "track": 0, "bank": 0, "recoil": 0, "g7": 0, "roof": 0, "roof_in": 0}
 	g61_counts = gc61
 	# G7 (LOOK7): sparse per-unit display states (render_snap g7u: wounds, care, panic, gait, sectors, herringbone)
@@ -538,6 +559,10 @@ func refresh() -> void:
 		_wall_rebuild()
 	var has_ww := not _ww_cells.is_empty() and not far
 	ww_drawn = 0
+	ww_crouch = 0
+	ww_front = 0
+	if not _ww_occ.is_empty():
+		_ww_occ.clear()
 	for i in n_u:
 		if _hc >= 0:
 			_bay_hide[_hc][1] = _n
@@ -571,12 +596,14 @@ func refresh() -> void:
 				if hl != 0.0:
 					gc6.lifted += 1
 		var ww_ky := -1
+		var wwv = null
 		if has_ww and (flg_a[i] & RenderSnap.FLAG_AIR) == 0:
-			var wwv = _ww_cells.get(Vector2i(floori(pos.x), floori(pos.y)))
+			wwv = _ww_cells.get(Vector2i(floori(pos.x), floori(pos.y)))
 			if wwv != null:   # G7 (WALL7): only the owner's soldiers can stand on a wall-walk cell
 				sp += Motion.wall_top_offset(wwv, pos)
 				ww_ky = Motion.wall_top_depth(wwv)
 				ww_drawn += 1
+				_ww_occ[Vector2(wwv[0], wwv[1])] = true   # WALL7-2: this piece draws its parapet strip over him
 		if ow != pf:
 			var ci := floori(raw.y) * mw + floori(raw.x)
 			if not vis.is_empty() and (ci < 0 or ci >= vis.size()):
@@ -607,11 +634,13 @@ func refresh() -> void:
 				# G7 (LOOK7): roof cut away (own / allied troops clearing inside): the men inside are drawn
 				var gb = statics.get(int(g6e.get("gar", -1))) if g6e is Dictionary else null
 				if gb is Dictionary and roof_open_for(gb.get("roof_open"), pf, allies) and (ow == pf or allies.has(ow)):
-					sp += Vector2(float((id * 37) % 25) - 12.0, float((id * 53) % 13) - 6.0)
+					# FACB7-5 (13.9c-18): hidden inside the solid building; counted on its opaque badge
+					var gbi := int(g6e.get("gar", -1))
+					_roof_n[gbi] = int(_roof_n.get(gbi, 0)) + 1
 					gc61.roof_in += 1
 				else:
 					gc6.garrisoned += 1
-					continue
+				continue
 			var an := G6Vis.art_def(g6e, pf, dname)
 			if an != dname:
 				if g6e.has("dis") and (g6e.dis as Dictionary).has(pf):
@@ -684,6 +713,8 @@ func refresh() -> void:
 				mfac = Motion.g7_facing_sq(sqb, sq7a[i], sq7h[i], mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
 			motion.step(id, mcls, pos, mfac, bits, t)
 			var mo: Vector2 = motion.out_off
+			if ww_ky >= 0:
+				mo = Motion.wall_motion_off(wwv, mo)   # WALL7-2: spread along the walk only, never off the firing step
 			var mpx: Vector2 = motion.out_px
 			if c[30] >= 0 and fl & RenderSnap.FLAG_MOVING:
 				# G6.1: officers / leaders walk slightly ahead of their men
@@ -774,6 +805,12 @@ func refresh() -> void:
 				gc6.command += 1
 		if fi < 0:
 			fi = 0
+		if ww_ky >= 0 and not a61.is_empty():   # G7 (WALL7-2, 13.9c-23): crouch behind the parapet / rise to fire
+			var wc := Motion.wall_col(a61, int(gv.get("s7", 0)) if gv != null else 0, bits, t, Motion.seed_of(id), fi)
+			if wc >= 0:
+				fi = wc
+			if fi == int(a61.get("crouch", -2)) or fi == int(a61.get("fire_c", -2)):
+				ww_crouch += 1
 		# G6.1 (ANIMC61): vehicle anim61 frames (track cycle, recoil, bank, burner, pulse, damaged) and the separate
 		# mbt / ifv turret aimed at the last shot target. Only while the motion layer runs (<= MOTION_CAP drawn).
 		var tur: Array = []
@@ -798,19 +835,29 @@ func refresh() -> void:
 				var ts: Array = art.turret_src(v61.turret, _team.get(ow, neutral), String(_ck.get(ow, "x")))
 				if hc >= 0 and not ts.is_empty():
 					fi = hc
-					var hrow := posmod(int(round(motion.out_face * FACING_INV)), 8)
+					var hrow := motion.row_h(id, motion.out_face)   # PATH7-2 CR 6994: hysteresis
 					var tcol := 2 if motion.recoil(id) > VehAnim61.RECOIL else (1 if vfire else 0)
 					var tsz := Vector2(ts[2], ts[3])
-					tur = [ts[0], (ts[1] as Vector2) + Vector2(tcol, motion.aim_row(id, sp, hrow)) * tsz, ts[4], tsz]
-		var row := posmod(int(round((motion.out_face if mcls >= 0 else fac_a[i]) * FACING_INV)), 8)
+					var tb7 = (g7u.get(id) as Dictionary).get("tb") if has_g7 and g7u.has(id) else null   # G7 TURRET7B CR 6354 (13.9c-30): drawn on the SIMULATED turret bearing
+					var trow: int = posmod(int(round(float(tb7) * FACING_INV)), 8) if tb7 != null else hrow   # never laid: hull-forward
+					tur = [ts[0], (ts[1] as Vector2) + Vector2(tcol, trow) * tsz, ts[4], tsz]
+		var row := motion.row_h(id, motion.out_face) if mcls >= 0 else posmod(int(round(fac_a[i] * FACING_INV)), 8)   # PATH7-2 CR 6994: hysteresis
 		var fsz := Vector2(c[4], c[5])
 		var layer := 0
+		var lift_now := 0.0
 		if ad != null:
 			layer = _g5_lift(dname, id, ad, fl, fac_a[i], t, gc5, sp)  # G5: altitude by flight phase + shadow
 			sp.y -= _lift
+			lift_now = _lift
 		elif c[12]:
-			sp.y -= G3View.air_lift({"def": dname, "id": id}, t)  # G3a: air units fly above their ground point
+			lift_now = G3View.air_lift({"def": dname, "id": id}, t)
+			sp.y -= lift_now  # G3a: air units fly above their ground point
 			layer = 1
+		if gv != null and gv.has("bz") and float(gv.bz) > lift_now:   # G7 DRONEBAY7 CR 5833: bay drone on / rising from the workshop launch deck
+			sp.y -= float(gv.bz) - lift_now
+			layer = 1
+		if mcls >= 0:
+			drawn7[id] = [fi, row, sp, t]   # G7 MUZZLE7 CR 5592: what the muzzle flash is matched to
 		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not (c[26] as Dictionary).is_empty() and (c[27] < 0 or G5Art.on_water(terr_w, pos, mw)):
 			# G5 (VIEW5-2, ART-NAV): wake sheet under the hull (fx_layer skips its line wake for these defs)
 			var wk: Dictionary = c[26]
@@ -824,6 +871,9 @@ func refresh() -> void:
 					continue
 				elif art.resolve_sheet(xv[0], int(xv[1]), row if int(xv[2]) < 0 else int(xv[2])):
 					_push(layer, sp.y + hl, art.out_page, art.out_src, sp + art.out_off + (xv[3] as Vector2), art.out_src.size, mod6)
+					if not v61.is_empty() and ApcGun7.DEFS.has(dname):   # G7 MUZZLE7-2 CR 5911: the roof guns stay on over VIS7's frame swaps
+						for gs in apc_gun7.sprites(self, id, dname, row if int(xv[2]) < 0 else int(xv[2]), motion.out_face if mcls >= 0 else fac_a[i], t, _team.get(ow, neutral), String(_ck.get(ow, "x")), sp + (xv[3] as Vector2)):
+							_push(layer, sp.y + hl, gs[0], gs[1], sp + (xv[3] as Vector2) + (gs[2] as Vector2), gs[3], mod6)
 					continue
 		# inlined _push (capacity reserved above; G5 extras per unit - shadow, trail, markers, sling - may outgrow it)
 		var ii := _n
@@ -862,6 +912,9 @@ func refresh() -> void:
 		if not tur.is_empty():  # G6.1 (ANIMC61): turret over its hull (same depth, later index sorts after)
 			_push(layer, sp.y + hl, tur[0], Rect2(tur[1], tur[3]), sp + (tur[2] as Vector2), tur[3], mod6)
 			gc61.turret += 1
+		if not v61.is_empty() and ApcGun7.DEFS.has(dname):   # G7 MUZZLE7-2 CR 5911 (13.9c-28a): APC pods / RWS over the hull, same depth key
+			for gs in apc_gun7.sprites(self, id, dname, row, motion.out_face if mcls >= 0 else fac_a[i], t, _team.get(ow, neutral), String(_ck.get(ow, "x")), sp):
+				_push(layer, float(ky), gs[0], gs[1], sp + (gs[2] as Vector2), gs[3], mod6)
 		if lod == 0 and motion_on:
 			_push_marks(id, sp, c, layer, hl, gc61)
 		if fl & RenderSnap.FLAG_SLUNG:
@@ -900,7 +953,7 @@ func refresh() -> void:
 				if ow != pf and not mv.entity_visible(e):
 					if not mem.has(id):
 						continue
-					mod = GHOST_MOD
+					mod = bld_mod(true)
 				elif live:
 					var le = ents.get(id)
 					if le != null:
@@ -908,7 +961,10 @@ func refresh() -> void:
 				# FACB7-3: the facility's hardened posts (gatehouse bunker, towers, walls) hold a standing Sentinel garrison
 				# (13.9c-10): they stay solid instead of see-through (the in-game shot showed the gatehouse as a ghost).
 				if roof_open_for(e.get("roof_open"), pf, mv._ally_fids) and not WALL_LINK.has(String(e.get("def", ""))):
-					mod = ROOF_CUT_MOD   # G7 (LOOK7): roof cut away while our troops clear it (they draw inside)
+					# FACB7-5 (13.9c-18): the building stays solid while our troops clear it; an opaque badge over it shows
+					# them inside (was LOOK7's see-through roof cut-away)
+					var bsz := float(Content.building(String(e.get("def", ""))).get("size", 1))
+					_badges.append([gd - Vector2(0.0, 18.0 + 16.0 * bsz), int(_roof_n.get(int(id), 0)), _team.get(pf, neutral)])
 					gc61.roof += 1
 			"resource":
 				if not mv.cell_explored(gc):
@@ -922,14 +978,14 @@ func refresh() -> void:
 				if sk != null:
 					# G5 (NAVAL): a sinking ship wreck settles and fades as its sink timer runs out
 					var kk: float = sk.k
-					mod = Color(1, 1, 1, 0.3 + 0.7 * kk)
+					mod = bld_mod(false, kk)   # FACB7-5 (13.9c-18): settles and darkens, never fades see-through
 					sdy = (1.0 - kk) * 10.0  # (water is never lifted, so this replaces the height term)
 					gc5.sinking += 1
 					# G5 (VIEW5-2, ART-NAV): vehicles[def].sink columns sink_0..3 from the timer (1 - k)
 					var sks = G5Art.unit_spec(String(e.get("def", ""))).get("sink")
 					if sks is Dictionary and art.resolve_sheet(sks, G5Art.sink_col(kk, (sks.get("frames", []) as Array).size()),
 							posmod(int(round(float(e.get("facing", 0.0)) * FACING_INV)), 8)):
-						_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, Color(1, 1, 1, 0.55 + 0.45 * kk))
+						_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, mod)
 						gc5.sink_sheets += 1
 						continue
 			"mine", "charge":
@@ -945,6 +1001,8 @@ func refresh() -> void:
 					_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off, art.out_src.size, Color.WHITE)
 					g4b_fx_drawn += 1
 					continue
+		if (kind == "building" or kind == "wreck") and mod.a < 1.0:
+			bld_see_through += 1
 		if kind == "building" and _vpad_px(e):   # ART7F: dropship landing site, flat under everything that stands on it
 			_push(0, 1.0 - float(Y_OFF), art.out_page, art.out_src, gd + art.out_off, art.out_src.size, mod)
 			continue
@@ -956,6 +1014,9 @@ func refresh() -> void:
 		if kind == "building" and _wall_px(e):   # ART7F: facility wall autotile
 			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 			walls_linked += 1
+			if not _ww_occ.is_empty() and _ww_occ.has(e.pos) and _wall_front_px(e):   # WALL7-2: parapet over its soldiers
+				_push(0, float(int((e.pos.x + e.pos.y) * 16.0) + Motion.WALL_DEPTH_PAD + 1), art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+				ww_front += 1
 			continue
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
@@ -1123,7 +1184,7 @@ func _push_ghosts(statics: Dictionary, mem: Dictionary, vr: Rect2, neutral: Colo
 		var ow := int(g.owner)
 		art.resolve_static(g, _team.get(ow, neutral), String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
-			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, GHOST_MOD)
+			_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, bld_mod(true))
 	for eid in _ghosts.keys():
 		if not mem.has(eid) or statics.has(eid):
 			_ghosts.erase(eid)
@@ -1145,6 +1206,36 @@ func _draw_body() -> void:
 	for k in _sorted:
 		var i := k % IDX_MUL
 		draw_texture_rect_region(texs[_page[i]], Rect2(_dst[i], _dsz[i]), Rect2(_src[i], _size[i]), _mod[i])
+	for b in _badges:
+		_draw_badge(b[0], int(b[1]), b[2])
+
+
+## FACB7-5 (13.9c-18): opaque "troops inside" badge over a building our troops are clearing (no see-through walls):
+## a dark-edged plate in the team colour with one white figure per man inside (up to 4, then a "+").
+func _draw_badge(p: Vector2, n: int, col: Color) -> void:
+	var w := 8.0 + 5.0 * float(clampi(n, 1, 4)) + (4.0 if n > 4 else 0.0)
+	var r := Rect2(p - Vector2(w * 0.5, 6.0), Vector2(w, 12.0))
+	draw_rect(r.grow(1.0), BADGE_EDGE)
+	draw_rect(r, Color(col.r, col.g, col.b, 1.0))
+	draw_rect(Rect2(r.position + Vector2(1, 1), Vector2(w - 2.0, 2.0)), Color(minf(col.r + 0.25, 1.0), minf(col.g + 0.25, 1.0), minf(col.b + 0.25, 1.0), 1.0))
+	draw_colored_polygon(PackedVector2Array([p + Vector2(-3, 6), p + Vector2(3, 6), p + Vector2(0, 10)]), BADGE_EDGE)
+	for k in clampi(n, 1, 4):
+		var x := r.position.x + 5.0 + 5.0 * float(k)
+		draw_rect(Rect2(Vector2(x - 1.0, r.position.y + 3.0), Vector2(2.0, 2.0)), BADGE_FIG)   # head
+		draw_rect(Rect2(Vector2(x - 1.5, r.position.y + 5.5), Vector2(3.0, 4.0)), BADGE_FIG)   # body
+	if n > 4:
+		draw_rect(Rect2(Vector2(r.end.x - 6.0, r.position.y + 5.5), Vector2(3.0, 1.0)), BADGE_FIG)
+		draw_rect(Rect2(Vector2(r.end.x - 5.0, r.position.y + 4.5), Vector2(1.0, 3.0)), BADGE_FIG)
+
+
+## FACB7-5 (owner 13.9c-18 "NO transparent anything"): the modulate of a building / wreck sprite, always opaque: a
+## remembered enemy building out of sight is greyed (GHOST_MOD, alpha 1); a sinking wreck darkens as it settles (sink_k
+## 1 -> 0) instead of fading; a building our troops are clearing stays solid (they show on an opaque badge).
+static func bld_mod(remembered: bool, sink_k: float = 1.0) -> Color:
+	if remembered:
+		return Color(GHOST_MOD.r, GHOST_MOD.g, GHOST_MOD.b, 1.0)
+	var k := clampf(sink_k, 0.0, 1.0)
+	return Color(0.5 + 0.5 * k, 0.5 + 0.5 * k, 0.54 + 0.46 * k, 1.0)
 
 
 # ---------------------------------------------------------------- G5 (VIEW5)
@@ -1446,9 +1537,11 @@ func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 		if w == null or not CnFacility.active(w):
 			return
 		_fac_e = CnFacility.render_entries(w)
+		FacGate7.sync(w, _fac_e, stick)
 	elif w != null and (stick != _fac_e_tick or stick < 0):
 		_fac_e_tick = stick
 		_fac_e = CnFacility.render_entries(w) if CnFacility.active(w) else []
+		FacGate7.sync(w, _fac_e, stick)
 		_wall_dirty = _wall_dirty or _fac_e.size() != _wall_nfac
 	var man: Dictionary = ArtCat.manifest().get("buildings", {})
 	for F in _fac_e:
@@ -1475,13 +1568,16 @@ func _push_fac(w, vr: Rect2, stick: int = -1) -> void:
 		# BASE7-3 (ORCH): the old single gate + blue spray box (g7_cn_gate / g7_cn_decon) are retired; the two-layer
 		# entry (gate_outer, apc_wash, gate_inner) and the decon_hall draw from FAC7F_ZONES below.
 		var faces: Dictionary = F.get("faces", {})
+		var stk: Dictionary = F.get("stacked", {})   # FACB7-5 (13.9c-18): an upper storey is drawn by its host's art
 		for zi in FAC7F_ZONES:   # ART7F: finished interior buildings (planning room, drone bay, workshop, range, lab)
 			var zr: Array = zs.get(zi[0], [])
-			if zr.size() == 4:
+			if zr.size() == 4 and not stk.has(zi[0]):
 				# FACB7-2 (13.9c-8/-9): the layout's own door sides win (the inner APC gate opens on the APC axis
 				# like the outer gate instead of facing the y20 lane sideways)
 				var zf := int(faces[zi[0]]) if faces.has(zi[0]) else _door_side(zr, F)
 				var sfx := "_lockdown" if lock else ""
+				if zi[0] == "gate_outer" or zi[0] == "gate_inner":   # GATE7 CR 5743 (13.9c-26): blast-door travel / lock-bar frames from the sim gate state
+					sfx = FacGate7.suffix(F, zi[0], lock, stick)
 				if (zi[0] == "magazine" and not bool(F.get("mag", true))) or (zi[0] == "barracks" and not bool(F.get("bar", true))):
 					sfx = "_ruin"
 				_push_zone(man, zi[1], "rot_%d%s" % [zf, sfx], zr, vr, false, float(zi[2]) * (float(zr[2]) + float(zr[3])) * 4.0)
@@ -1545,7 +1641,26 @@ func _wall_px(e: Dictionary) -> bool:
 		_wall_rebuild()
 	var m := wall_mask(_wall_cells, e.pos)
 	var spec := {"file": String(b.states.built.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}
-	return art.resolve_sheet(spec, m, 1 if float(e.get("hp", 1.0)) < 0.5 else 0)
+	return art.resolve_sheet(spec, m, _wall_row(b, e))
+
+
+## WALL7-2: sheet row of a ring piece: outer quadrant * 2 + damaged on the 8-row WALL7-2 sheets, damaged alone on
+## the older 2-row sheets.
+func _wall_row(b: Dictionary, e: Dictionary) -> int:
+	var dmg := 1 if float(e.get("hp", 1.0)) < 0.5 else 0
+	if not (b.states as Dictionary).has("front"):
+		return dmg
+	return Motion.wall_quadrant(e.pos, _ww_centres) * 2 + dmg
+
+
+## WALL7-2 (13.9c-23): the camera-side parapet / rail strip of ring piece e (sheet state "front"), resolved into art.out_*.
+func _wall_front_px(e: Dictionary) -> bool:
+	var b: Dictionary = ArtCat.manifest().get("buildings", {}).get(WALL_SHEET.get(String(e.get("def", "")), ""), {})
+	var fs: Dictionary = (b.get("states", {}) as Dictionary).get("front", {})
+	if fs.is_empty():
+		return false
+	var spec := {"file": String(fs.file), "fw": int(b.fw), "fh": int(b.fh), "pivot": b.pivot}
+	return art.resolve_sheet(spec, wall_mask(_wall_cells, e.pos), _wall_row(b, e))
 
 
 ## FACB7-2 (13.9c-8/-9): facility parts with their own g7_fac7f art. cn_checkpoint -> g7_fac_gatehouse (state from the
@@ -1660,7 +1775,12 @@ func _wall_rebuild() -> void:
 	var statics: Dictionary = sn.get("statics", {})
 	_wall_nstat = statics.size()
 	_wall_cells = wall_cells_of(statics, _fac_e)
-	_ww_cells = Motion.wall_walk_cells(statics) if not _fac_e.is_empty() else {}   # G7 (WALL7)
+	_ww_centres = []   # WALL7-2: compound centres -> each ring piece's outer side (parapet side / inset)
+	for F in _fac_e:
+		var cp: Array = F.get("compound", [])
+		if cp.size() == 4:
+			_ww_centres.append(Vector2(float(cp[0]) + float(cp[2]) * 0.5, float(cp[1]) + float(cp[3]) * 0.5))
+	_ww_cells = Motion.wall_walk_cells(statics, _ww_centres) if not _fac_e.is_empty() else {}   # G7 (WALL7)
 	_lb_cells = {}
 	for id in statics:   # FACB7-2: link wall + baffle cells (1x1) for their piece / mask choice
 		var d := String(statics[id].get("def", ""))

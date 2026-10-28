@@ -235,3 +235,71 @@ func test_view_never_writes_sim() -> void:
 	var a := _run(false)
 	var b := _run(true)
 	check_eq(b, a, "state hash identical with the ATMO7 layer on / off")
+
+
+## POLISH7-5 (owner 13.9c-24 "proper realistic placement nothing floating"): every facility light anchor sits on a
+## drawn surface at that surface's height: wall lamps on a wall segment's centre line at the capping-beam top, tower
+## beacons / searchlights / obstruction-lamp masts on the 4.3 m tower roof slab, the obstruction lamp (LIFE7) on the
+## mast tip, entry beacons on a gate bastion / the checkpoint parapet, flood pools on the ground inside the wall, door
+## lamps on a building face; and no translucent light volume over a building (13.9c-18): the facade light is a ground
+## pool only.
+func test_light_anchors_on_surfaces() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	_facility(w, s[1])
+	var lm := _layer(w)
+	var L = lm[0]
+	_frame(L, lm[1], w)
+	var g: Dictionary = L.geo[0]
+	var c: Dictionary = CnFacility.conf()
+	var cs := float(c.compound)
+	var O: Vector2 = Vector2(g.towers[0]) - Vector2(float(c.towers[0][0]) + 1.0, float(c.towers[0][1]) + 1.0)
+	var roof := 2.15 / 4.0   # tower roof slab half width (tiles)
+	var bad := []
+	for off in [["beacon", L.BEACON_OFF], ["searchlight", L.SEARCH_OFF], ["mast", L.MAST_OFF]]:
+		var v: Vector2 = off[1]
+		if absf(v.x) > roof or absf(v.y) > roof:
+			bad.append("%s %s off the tower roof slab" % [off[0], str(v)])
+	check(L.TOWER_ROOF_Z > 10.0 * L.PX_M and L.SEARCH_Z >= L.TOWER_ROOF_Z and L.MAST_TOP_Z > L.TOWER_ROOF_Z, "tower lights at / above the roof slab top")
+	for l in g.lamps:
+		var q: Vector2 = (l[0] as Vector2) - O
+		var on_wall := (q.x > 0.0 and q.x < 2.0) or (q.y > 0.0 and q.y < 2.0) or (q.x > cs - 2.0 and q.x < cs) or (q.y > cs - 2.0 and q.y < cs)
+		var mid := is_equal_approx(fposmod(q.x, 2.0), 1.0) and is_equal_approx(fposmod(q.y, 2.0), 1.0)
+		if not (on_wall and mid):
+			bad.append("wall lamp %s not on a wall segment's centre line" % str(q))
+	for q in L._gate_posts(g):
+		var p: Vector2 = (q[0] as Vector2) - O
+		var ok := false
+		for zn in ["gate_outer", "gate_inner"]:
+			var r: Array = c.get(zn, [])
+			if r.size() == 4 and Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3])).grow(0.01).has_point(p):
+				ok = ok or is_equal_approx(float(q[1]), L.GATE_CAP_Z)
+		var cp: Array = c.checkpoint
+		if Rect2(float(cp[0]), float(cp[1]), 2, 2).has_point(p):
+			ok = ok or is_equal_approx(float(q[1]), L.CP_PARAPET_Z)
+		if not ok:
+			bad.append("entry beacon %s not on a gate bastion / the checkpoint parapet at its height" % str(p))
+	for l in g.lights:
+		var p: Vector2 = (l[0] as Vector2) - O
+		if String(l[1]) == "flood" and not Rect2(2, 2, cs - 4, cs - 4).has_point(p):
+			bad.append("flood pool %s not on the ground inside the wall" % str(p))
+	check(bad.is_empty(), "every light anchor on a drawn surface at its height: %s" % str(bad))
+	# LIFE7's red obstruction lamp: exactly on the ATMO7 mast tip of every tower
+	var LS = load("res://presentation/view/fac_life7.gd")
+	var lf = LS.new()
+	var VU = load("res://presentation/view/view_util.gd")
+	var Lf := {"O": Vector2.ZERO, "towers": g.towers, "lift": 0.0}
+	var off_mast := []
+	for i in (g.towers as Array).size():
+		var want: Vector2 = VU.iso((g.towers[i] as Vector2) + L.MAST_OFF) - Vector2(0, L.MAST_TOP_Z)   # same ground lift
+		var got: Vector2 = lf.obstruction_lamp(Lf, i)
+		if got.distance_to(want) > 0.5:
+			off_mast.append("t%d %s vs mast tip %s" % [i, str(got), str(want)])
+	check(off_mast.is_empty(), "every tower obstruction lamp sits on its mast tip: %s" % str(off_mast))
+	lf.free()
+	# no translucent light volume over a building: the facade light draws ground pools only (counted as lights)
+	var src := FileAccess.get_file_as_string("res://presentation/view/fac_atmo7.gd")
+	var a := src.find("func _facade_light(")
+	var b := src.find("\nfunc ", a + 10)
+	check(a > 0 and not src.substr(a, b - a).contains("draw_polygon"), "facade light: no polygon wash over the building faces")
+	lm[0].free()

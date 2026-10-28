@@ -37,6 +37,7 @@ const PKG_KINDS := ["purge", "seed_hunter", "barrier", "core_breaker"]
 const CN_PATH := "res://sim/systems/counter_nanite.gd"
 const APC7_PATH := "res://sim/systems/apc7.gd"
 const ENG7_PATH := "res://sim/systems/engineer7.gd"   # FACB7-3 (13.9c-11, ENG7 via ORCH): lazy, no preload cycle
+const FD7_PATH := "res://sim/systems/fac_drive7.gd"   # APCMOV7 (13.9c-16): facility APC traffic controller, lazy (no preload cycle)
 
 static var _conf: Dictionary = {}
 static var _api: Dictionary = {}
@@ -247,6 +248,8 @@ static func render_entries(w: SimWorld) -> Array:
 			"mantrap": _mantrap_state(w, F), "mag": int(F.get("mag", 0)) == 0 or w.entities.has(int(F.get("mag", 0))),
 				"cp": int(F.get("cp", 0)), "bar": int(F.get("bar", 0)) == 0 or w.entities.has(int(F.get("bar", 0))),
 				"faces": conf().get("faces", {}),
+				"stacked": conf().get("stacked", {}),   # FACB7-5 (13.9c-18): upper-storey zones drawn by their host's art
+			"gates": _callf(FD7_PATH, "gate_view", [F], ["open", "open", false]),   # APCMOV7-2 (13.9c-22): [outer, inner, hardened]
 			"lock": bool(F.lock), "evac": bool(F.evac), "state": secure_state(w, id), "heli": int(F.heli)})
 	return out
 
@@ -273,6 +276,8 @@ static func _mantrap_state(w: SimWorld, F: Dictionary) -> Array:
 	var c1 := o + Vector2i(int(mt[1][0]), int(mt[1][1]))
 	var box := Rect2(Vector2(c0).min(Vector2(c1)), (Vector2(c0) - Vector2(c1)).abs() + Vector2.ONE)
 	for e in SimIndex.of(w, "unit"):
+		if not w.entities.has(int(e.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+			continue
 		if box.has_point(e.pos) and int(e.owner) == int(F.owner):
 			var c := w.cell_of(e.pos)
 			occ[0] = occ[0] or c == c0
@@ -287,9 +292,14 @@ static func team_of(e) -> int:
 
 # ================================================================ system hooks
 static func tick(w: SimWorld) -> void:
+	var tq := Time.get_ticks_usec() if SimIndex.profiling else 0   # bench only (PERF7F); never touches state
 	Transport.hold_bays(w)  # G7 (CNFAC7-2): dropships in a ramp sequence stay on the ground (runs before Movement / Air)
+	if SimIndex.profiling:
+		tq = SimIndex.pt("cnf.hold_bays", tq)
 	if w.tick % DISCOVER_EVERY == 0:
 		_discover(w)
+	if SimIndex.profiling:
+		tq = SimIndex.pt("cnf.discover", tq)
 	if not active(w):
 		return
 	var S: Dictionary = w.sys_state[KEY]
@@ -305,12 +315,18 @@ static func tick(w: SimWorld) -> void:
 			_on_lost(w, F)
 			continue
 		_tick_fac(w, F)
+	if SimIndex.profiling:
+		tq = SimIndex.pt("cnf.tick_fac", tq)
 	for tid in _sorted(S.teams):
 		_tick_team(w, S.teams[str(tid)])
+	if SimIndex.profiling:
+		SimIndex.pt("cnf.tick_team", tq)
 
 
 static func _discover(w: SimWorld) -> void:
 	for b in SimIndex.of(w, "building"):
+		if not w.entities.has(int(b.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+			continue
 		if not bool(b.get("built", false)) or not bool(Content.building(String(b.def)).get("cn_facility", false)):
 			continue
 		if active(w) and w.sys_state[KEY].facs.has(str(int(b.id))):
@@ -326,6 +342,8 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	var area := Rect2i(O, Vector2i(cs, cs))
 	var occ := {}
 	for o in SimIndex.of(w, "building"):
+		if not w.entities.has(int(o.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+			continue
 		var oc := Vector2i(o.cell)
 		var sz := int(o.size)
 		if Rect2i(oc, Vector2i(sz, sz)).intersects(area):
@@ -407,6 +425,18 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 		if dd != "" and not Content.building(dd).is_empty():
 			for q in c.get(kk[1], []):
 				_part(w, parts, occ, dd, O + Vector2i(int(q[0]), int(q[1])), owner, id)
+	# EXO7 (13.9c-20): the armory + suit bay is a real part on the armory zone (zone art draws it): it builds the
+	# counter-nanite armoured suits (content/g7/defs_g7_cnsuits.json, production facility cn_armory). Spawned last.
+	var ap: Array = c.get("armory_part", [])
+	var adef := String(c.get("armory_def", ""))
+	if ap.size() == 2 and adef != "" and not Content.building(adef).is_empty():
+		var na := parts.size()
+		_part(w, parts, occ, adef, O + Vector2i(int(ap[0]), int(ap[1])), owner, id)
+		# FACB7-6 (13.9c-20c): the Suit Foundry rolls its ~4 m suits out of its east bay doors onto the vehicle lane
+		# (armory_exit, compound-local): the production rally, so a new suit appears on the bay floor by the doors
+		var ax: Array = c.get("armory_exit", [])
+		if parts.size() > na and ax.size() == 2:
+			w.entities[int(parts[parts.size() - 1])].rally = Vector2(O) + Vector2(float(ax[0]), float(ax[1]))
 	var cp := 0
 	for pid in parts:
 		if String(w.entities[int(pid)].def) == "cn_checkpoint":
@@ -421,6 +451,7 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	st(w).facs[str(id)] = F
 	if cp != 0:   # FACB7 (13.9c-8): the foot-entry mantrap doors are team gates through the gatehouse (owner only)
 		_mantrap(w, F, false)
+	_foot_hall(w, F)   # FACB7-7 (13.9c-20c): the decon hall is foot only (no CN suits)
 	BaseState7.register(w, base_key(id), owner, area)
 	w.emit("CnFacilityRaised", {"id": id, "owner": owner, "origin": Vector2(O), "parts": parts.duplicate()})
 
@@ -514,7 +545,45 @@ static func _mantrap(w: SimWorld, F: Dictionary, locked: bool, remove: bool = fa
 		return
 	var f = w.factions.get(int(F.owner))
 	var tm := -1 if remove else (int(f.get("team", int(F.owner))) if f != null else int(F.owner))
-	Movement.set_gate(w, cells, tm, locked)
+	_foot_gate(w, cells, tm, locked)   # FACB7-7 (13.9c-20c): foot only (the owner's CN suits never enter the mantrap)
+
+
+## FACB7-7 (owner 13.9c-20c: CN suits "never the infantry mantrap / decon hall"): the decon hall cells are foot-only
+## gates of the owner's team (never locked: lockdown seals the mantrap doors, not the hall). The owner's soldiers walk
+## the hall as before; suits / vehicles of every team and enemy soldiers cannot stand in it.
+static func _foot_hall(w: SimWorld, F: Dictionary) -> void:
+	if not _foot_gates_ok():
+		return
+	var r := zone(F, "decon_hall")
+	var cells := []
+	for y in range(int(r.position.y), int(r.end.y)):
+		for x in range(int(r.position.x), int(r.end.x)):
+			cells.append(Vector2i(x, y))
+	var f = w.factions.get(int(F.owner))
+	_foot_gate(w, cells, int(f.get("team", int(F.owner))) if f != null else int(F.owner), false)
+
+
+## FACB7-7: Movement.set_gate with its foot-only flag (6th argument, movement.gd change_request to ORCH) once the
+## loaded movement.gd has it; until then the plain team gate (the old behaviour).
+static var _fo_ok = null
+
+
+static func _foot_gates_ok() -> bool:
+	if _fo_ok == null:
+		_fo_ok = false
+		var mv: Object = Movement
+		for m in mv.get_script_method_list():
+			if String(m.get("name", "")) == "set_gate" and (m.get("args", []) as Array).size() >= 6:
+				_fo_ok = true
+	return bool(_fo_ok)
+
+
+static func _foot_gate(w: SimWorld, cells: Array, tm: int, locked: bool) -> void:
+	if tm >= 0 and _foot_gates_ok():
+		var mv: Object = Movement   # runtime dispatch: compiles against the current 5-argument set_gate
+		mv.callv("set_gate", [w, cells, tm, locked, false, true])
+	else:
+		Movement.set_gate(w, cells, tm, locked)
 
 
 static func _crect(a: Array) -> Rect2i:
@@ -739,6 +808,8 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 	var dead := []
 	var SV := _svc_rects(w, F)
 	for e in SimIndex.of(w, "unit"):
+		if not w.entities.has(int(e.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+			continue
 		var p: Vector2 = e.pos
 		if not SV.is_empty() and int(e.owner) == owner and SV.box.has_point(p):
 			_service(w, F, e, p, SV)
@@ -930,7 +1001,7 @@ static func _emp_field(w: SimWorld, F: Dictionary, emp: Dictionary) -> void:
 	var owner := int(F.owner)
 	for e in SimIndex.of(w, "unit"):
 		var o := int(e.owner)
-		if o == owner or not w.is_enemy(owner, o) or not r.has_point(e.pos):
+		if o == owner or not w.is_enemy(owner, o) or not r.has_point(e.pos) or not w.entities.has(int(e.id)):
 			continue
 		if bool(emp.get("machine_only", true)) and String(w.factions[o].faction_def) != mach:
 			continue
@@ -978,7 +1049,7 @@ static func extraction_drones(w: SimWorld, ds: Dictionary, F: Dictionary = {}) -
 	var p0: Vector2 = ds.pos
 	var near := []
 	for e in SimIndex.of(w, "unit"):
-		if w.is_enemy(owner, int(e.owner)) and p0.distance_to(e.pos) <= r:
+		if w.is_enemy(owner, int(e.owner)) and p0.distance_to(e.pos) <= r and w.entities.has(int(e.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
 			near.append(e)
 	if near.is_empty():
 		return launched
@@ -1045,6 +1116,8 @@ static func _order_slots(w: SimWorld, T: Dictionary, where: String) -> void:
 	if F.is_empty():
 		return
 	var aps := _apcs(w, T)
+	if _callf(FD7_PATH, "order_team", [w, T, aps, where], false) == true:
+		return   # APCMOV7 (13.9c-16): the facility traffic controller drives them on the lanes (smooth, no overlaps)
 	for i in aps.size():
 		Movement.order_move(w, aps[i], _slot_pos(F, T, where, i))
 

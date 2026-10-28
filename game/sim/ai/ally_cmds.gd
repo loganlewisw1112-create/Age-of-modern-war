@@ -16,6 +16,7 @@ const Commanders = preload("res://sim/ai/commanders.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const DU = preload("res://sim/ai/doctrine/doc_util.gd")
 const U = preload("res://sim/ai/ai_util.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never given automatic jobs
 
 
 ## An allied AI side acts on a player ally_request (req = {from, kind, tick, cell?}).
@@ -79,7 +80,7 @@ static func pick(w: SimWorld, fid: int, kind: String, cell: Vector2) -> Array:
 		var u := Content.unit(String(e.def))
 		var mc := String(u.get("move_class", "foot"))
 		if String(u.get("weapon", "")) == "" or mc.begins_with("air") or mc.begins_with("naval") or e.has("company") \
-				or e.has("ai_cmd") or bool(e.get("wounded", false)) or bool(u.get("can_build", false)) \
+				or CnRole7.is_cn(e) or e.has("ai_cmd") or bool(e.get("wounded", false)) or bool(u.get("can_build", false)) \
 				or bool(u.get("can_gather", false)) or bool(u.get("is_supply", false)) or bool(u.get("is_officer", false)):
 			continue
 		loose.append(e)

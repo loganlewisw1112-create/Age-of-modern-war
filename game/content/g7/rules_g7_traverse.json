@@ -1,0 +1,102 @@
+{
+  "_note": "G7 TURRET7B (G7_REFERENCE 13.9c-30): turret / mount traverse. ALL NUMBERS PROVISIONAL. Rates in deg/s (light RWS fast, heavy guns slow); a mount fires only once laid within tol_deg (tol_indirect_deg for indirect fire) of its target; after its last lay a mount holds hold_s (at least the weapon cooldown + 0.5 s), then returns to its rest bearing at the same rate (buildings: toward the map centre, wall turrets: the mount normal, vehicles: hull forward) and direct-fire building mounts scan +-scan_deg around it over scan_period_s. Modes: units.turret = separate turret / mount (the hull never swings to fire; turret drawn from the simulated bearing), units.hull = turreted vehicle / ship whose art has no separate turret (the whole sprite traverses at the gun rate instead of snapping; on the move unchanged). Buildings: every armed building (Combat weapon) is a mount; buildings overrides by def id, else the rate is derived from its weapon (derive_*). A unit def not listed keeps the old instant turn (infantry, turretless vehicles, aircraft). Everything lives under \"_traverse7\" (Content skips \"_\" keys: this file is not a content table fragment). rot_aim: G6 turrets whose art has only the 4 placement rotations rot_<f> (no head frames): the display turns the whole emplacement sprite to the nearest quarter of the simulated bearing (coarse, PROVISIONAL until head art exists); bunkers / pits / gates are not listed (their gun traverses in the sim only).",
+  "_traverse7": {
+    "tol_deg": 5.0,
+    "tol_indirect_deg": 10.0,
+    "hold_s": 2.5,
+    "max_catch_ticks": 10,
+    "ciws": {
+      "track_mult": 3.0,
+      "window_s": 0.75
+    },
+    "scan_deg": 20.0,
+    "scan_period_s": 16.0,
+    "derive": {
+      "aa": 110.0,
+      "guided": 60.0,
+      "indirect": 25.0,
+      "heavy_dmg": 80.0,
+      "heavy": 35.0,
+      "mid_dmg": 25.0,
+      "mid": 60.0,
+      "light": 110.0
+    },
+    "units": {
+      "turret": {
+        "mbt": 40.0,
+        "ifv": 60.0,
+        "g7_cn_strike_apc": 138.0,
+        "g7_b_cn_strike_apc": 138.0,
+        "g7_op_tactical_apc": 138.0,
+        "g7_b_op_tactical_apc": 138.0
+      },
+      "hull": {
+        "b_rebuilt_mbt": 40.0,
+        "a_old_tank": 30.0,
+        "a_laser_tank": 45.0,
+        "m_hover_tank": 45.0,
+        "b_landship": 25.0,
+        "m_tracked": 50.0,
+        "m_siege_crawler": 25.0,
+        "a_recon_car": 70.0,
+        "b_armored_car": 80.0,
+        "a_spaag": 90.0,
+        "b_radar_aa": 80.0,
+        "b_flak_halftrack": 70.0,
+        "a_ugv": 120.0,
+        "a_apc": 140.0,
+        "a_command_vehicle": 140.0,
+        "a_mine_clearer": 140.0,
+        "a_sp_howitzer": 20.0,
+        "a_mlrs": 25.0,
+        "b_armored_train": 30.0,
+        "g7_cn_sentry": 120.0,
+        "a_destroyer": 25.0,
+        "b_monitor": 20.0,
+        "m_lance_cruiser": 25.0,
+        "a_aa_frigate": 60.0,
+        "a_carrier": 120.0,
+        "a_patrol_boat": 120.0,
+        "b_river_gunboat": 50.0,
+        "m_hydro_skiff": 120.0,
+        "a_landing_craft": 120.0,
+        "a_minesweeper": 60.0,
+        "a_hovercraft": 120.0,
+        "b_mine_barge": 120.0,
+        "b_aa_barge": 70.0
+      }
+    },
+    "buildings": {
+      "a_t7_hmg_nest": 120.0,
+      "a_t7_autocannon": 80.0,
+      "a_t7_hulldown": 40.0,
+      "a_t7_automortar": 45.0,
+      "a_t7_thermite": 70.0,
+      "a_t7_microwave": 60.0,
+      "a_t7_railgun": 25.0,
+      "a_wt7_wall_turret": 100.0,
+      "b_wt7_wall_turret": 100.0,
+      "a_laser_ciws": 120.0,
+      "cn_ciws7": 150.0,
+      "a_sam_site": 60.0,
+      "b_flak_battery": 90.0,
+      "a_howitzer_pit": 20.0,
+      "b_mortar_pit": 40.0
+    },
+    "no_lay_buildings": [
+      "a_t7_emp"
+    ],
+    "rot_aim": [
+      "a_popup_turret",
+      "a_sam_site",
+      "b_flak_battery",
+      "a_laser_ciws",
+      "cn_tower",
+      "b_net_post",
+      "m_pulse_spire2",
+      "m_arc_pylon",
+      "m_mass_driver"
+    ],
+    "rot_aim_offset_deg": 0.0
+  }
+}

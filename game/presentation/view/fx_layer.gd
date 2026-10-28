@@ -106,13 +106,165 @@ func _ent(eid: int):
 func _fx61_muzzle(ev: Dictionary, from: Vector2, to: Vector2, cls: String) -> Vector2:
 	var e = _e()
 	e.lod = lod
+	var mz: Array = muzzle_point(ev, from, to, cls)
+	var a: Vector2 = mz[0]
+	var ground: Vector2 = mz[1]
+	var dir: Vector2 = (_w2s(to) - _w2s(from)).normalized()
+	e.muzzle(cls, a, dir if dir != Vector2.ZERO else Vector2.RIGHT, ground)
+	return a
+
+
+# ---------------------------------------------------------------- G7 (MUZZLE7, spec 13.9c-28) barrel tips
+## "everything that fires: the flash comes directly from its barrel(s)". The flash, tracer start, barrel smoke,
+## casings, backblast, shell arc and flame jet all leave the measured barrel tip (presentation/art/muzzle_g61.gd,
+## assets/art/muzzle7.json) of the sprite AS DRAWN: anchored at the drawn ground point (motion layer: interpolation,
+## officer lead, wall-walk firing step, hill lift; minus the air lift), on the drawn facing row (separate turret
+## sheets: the aim row toward the target), in the drawn pose (stand / crouch / prone / sidearm / peek, from the entity
+## layer's drawn column when it records one, else posture bits: pinned prone, suppressed crouched, on a wall never
+## prone); buildings / turrets / wall turrets on their drawn art state (rot_<f>_fire, aim_<k>_fire, rot_<m>_a<n>_fire).
+## Barrels alternate per shooter (twin guns, squads: each soldier's rifle in turn). Display only: reads the snapshot,
+## the live entity's def / facing and the entity layer's draw state, writes nothing back.
+const Muzzle7 = preload("res://presentation/art/muzzle_g61.gd")
+var _m7n: Dictionary = {}          # shooter id -> shots drawn (barrel alternation)
+var muzzle7 := {"tip": 0, "fallback": 0, "bld": 0, "air": 0, "apc": 0}   # counters (tests / playtest evidence)
+var muzzle7_last: Array = []       # [shooter id, muzzle screen point, drawn anchor, pose] of the last measured flash
+var muzzle7_fb: Dictionary = {}     # def -> centre / height-guess fallbacks (evidence: which shooters lack tips)
+
+
+## [muzzle screen point, drawn ground point, true when a measured barrel tip was used].
+func muzzle_point(ev: Dictionary, from: Vector2, to: Vector2, cls: String) -> Array:
 	var sid := int(ev.get("shooter", -1))
 	var se = _ent(sid)
 	var ground: Vector2 = _w2s(from)
-	var a: Vector2 = ground + Fx61Core.muzzle_offset(String(se.def) if se != null else "", cls, (to - from).angle(), _height_for(sid))
-	var dir: Vector2 = (_w2s(to) - ground).normalized()
-	e.muzzle(cls, a, dir if dir != Vector2.ZERO else Vector2.RIGHT, ground)
-	return a
+	var n: int = int(_m7n.get(sid, 0))
+	_m7n[sid] = n + 1
+	if _m7n.size() > 4096:
+		_m7n.clear()
+	if se != null:
+		var tips: Array = []
+		var anchor := ground
+		var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+		if String(se.kind) == "building":
+			var st = (sn.get("statics", {}) as Dictionary).get(sid)
+			var sp: Vector2 = st.pos if st is Dictionary and st.has("pos") else se.pos
+			anchor = _w2s(sp)
+			tips = _bld_tips(String(se.def), st if st is Dictionary else se, _w2s(to) - anchor)
+			if not tips.is_empty():
+				muzzle7.bld += 1
+		else:
+			var dn := _art_name(se)
+			var el = mv.get("entity_layer") if mv != null else null
+			var mo = el.get("motion") if el != null else null
+			var row := -1
+			var pose := "stand"
+			var rec = null
+			var d7 = el.get("drawn7") if el != null else null
+			if d7 is Dictionary:
+				rec = (d7 as Dictionary).get(sid)
+			if rec is Array and (rec as Array).size() >= 4 and mo != null and float(mo._now) - float(rec[3]) > 0.25:
+				rec = null   # not drawn lately (scrolled away / LOD): use the motion layer or the sim point
+			if rec is Array and (rec as Array).size() >= 3:
+				row = int(rec[1])
+				anchor = rec[2]
+				pose = _pose_of_col(dn, int(rec[0]))
+			elif mo != null:
+				var vs = (mo.vs as Dictionary).get(sid)
+				if vs != null and float(mo._now) - float(vs[1]) < 0.5:   # drawn this / last frame
+					anchor = Vector2(float(vs[16]), float(vs[17]))
+					row = mo.row(sid)
+				if el != null:
+					pose = _pose_of_bits(int((el._post as Dictionary).get(sid, 0)), (el._ww_cells as Dictionary).has(Vector2i(floori(from.x), floori(from.y))))
+			var lift: float = float(_snap_lift(sid)[0])
+			if lift > 0.0 and not (rec is Array):
+				anchor.y -= lift
+				muzzle7.air += 1
+			var ag = el.get("apc_gun7") if el != null else null
+			if ag != null and ag.has_guns(dn):
+				# G7 MUZZLE7-2 (13.9c-28a): CN APC pods / RWS are their own traversing sprites (apc_gun7.gd): the shot
+				# goes to the gun that bears (pods alternate) and leaves ITS barrel as drawn (aim step, barrel, anchor)
+				var gp: Array = ag.on_shot(sid, dn, (to - from).angle(), float(mv.anim_time()) if mv.has_method("anim_time") else 0.0)
+				if not gp.is_empty():
+					muzzle7.tip += 1
+					muzzle7.apc = int(muzzle7.get("apc", 0)) + 1
+					muzzle7_last = [sid, gp[0], gp[1], n]
+					return [gp[0], gp[1], true]
+			var aim := ArtCatalog.facing_index((to - from).angle())   # turret / fallback row: toward the target
+			if row < 0:
+				row = aim
+			if Muzzle7.has_turret7(dn):
+				var tt: Array = Muzzle7.unit_tips(dn, "t", aim)
+				if not tt.is_empty():
+					tips = tt
+			if tips.is_empty():
+				tips = Muzzle7.unit_tips(dn, pose, row)
+		if not tips.is_empty():
+			muzzle7.tip += 1
+			muzzle7_last = [sid, anchor + Muzzle7.pick(tips, n), anchor, n]
+			return [anchor + Muzzle7.pick(tips, n), anchor, true]
+		ground = anchor
+	elif sid >= 0:
+		ground.y -= float(_snap_lift(sid)[0])   # no live entity (replays / tests): still at the aircraft's altitude
+	muzzle7.fallback += 1
+	muzzle7_fb[String(se.def) if se != null else "gone"] = int(muzzle7_fb.get(String(se.def) if se != null else "gone", 0)) + 1
+	return [ground + Fx61Core.muzzle_offset(String(se.def) if se != null else "", cls, (to - from).angle(), _height_for(sid)), ground, false]
+
+
+## Art sheet a live unit is drawn with (entity_layer: e.art_def override, XL dropship remap).
+func _art_name(se) -> String:
+	var dn := String(se.get("art_def", "")) if se is Dictionary else ""
+	if dn == "":
+		dn = String(se.def)
+	if dn == "a_vtol_dropship" and Muzzle7.data7().get("u", {}).has("g7_a_vtol_dropship_xl"):
+		var el = mv.get("entity_layer") if mv != null else null
+		if el != null and bool(el.get("XL_REMAP")):
+			dn = "g7_a_vtol_dropship_xl"
+	return dn
+
+
+## Pose of a drawn sheet column (frame name): crouched / prone / sidearm / peek frames, else standing.
+static func _pose_of_col(dn: String, col: int) -> String:
+	var spec: Dictionary = ArtCatalog.manifest().get("infantry", {}).get(dn, {})
+	var fr: Array = spec.get("frames", [])
+	if col < 0 or col >= fr.size():
+		return "stand"
+	var nm := String(fr[col])
+	if nm == "peek_l" or nm == "peek_r":
+		return nm
+	if nm.begins_with("sa_"):
+		return "side"
+	if nm == "fire_p" or nm == "prone" or nm.begins_with("crawl"):
+		return "prone"
+	if nm == "fire_c" or nm == "crouch" or nm.begins_with("cwalk") or nm.begins_with("duck") or nm == "cower":
+		return "crouch"
+	return "stand"
+
+
+## Pose from Motion posture bits (pinned prone, suppressed crouched; on the wall-walk never prone: crouched fire).
+static func _pose_of_bits(bits: int, on_wall: bool) -> String:
+	if bits & 8:   # Motion.P_PINNED
+		return "crouch" if on_wall else "prone"
+	if bits & 16:  # Motion.P_SUPPRESSED
+		return "crouch"
+	return "stand"
+
+
+## Barrel tips of a building in the art state it is drawn with while firing (G5Art.building_state with firing up).
+func _bld_tips(def: String, st: Dictionary, sdir: Vector2) -> Array:
+	var b: Dictionary = ArtCatalog.manifest().get("buildings", {}).get(def, {})
+	var row := posmod(int(round(_screen_to_tile_angle(sdir) / (PI / 4.0))), 8)
+	if b.is_empty():
+		return []
+	var state := "built"
+	var v := G5Art.variant_of(b)
+	if v != "":
+		state = G5Art.building_state(b.get("states", {}), {"facing_i": int(st.get("facing_i", 0)), "hp": 1.0, "built": true,
+			"firing": 1, "level": int(st.get("level", 0)), "water_d": int(st.get("water_d", 0)), "tb": st.get("tb"), "def": def}, v)   # G7 TURRET7B CR 6370 + 6457: head (or rot-only quarter turn) drawn on the sim bearing
+	return Muzzle7.building_tips(def, state, row)
+
+
+## Screen direction -> world (tile) angle under the 2:1 iso projection.
+static func _screen_to_tile_angle(d: Vector2) -> float:
+	return atan2(d.y / 16.0 - d.x / 32.0, d.x / 32.0 + d.y / 16.0)
 
 
 ## Impact effects where a direct shot lands (b = drawn hit point, to = world target point).
@@ -191,20 +343,20 @@ func on_shot(ev: Dictionary) -> void:
 	if _fx.size() >= MAX_FX:
 		return
 	if bool(ev.get("indirect", false)):
-		_add_shell(ev, from, to)
-		if lod < 2:
-			_fx61_muzzle(ev, from, to, "artillery")
+		# G7 MUZZLE7: the shell leaves the barrel tip (was the unit centre + a height guess)
+		var sa: Vector2 = _fx61_muzzle(ev, from, to, "artillery") if lod < 2 else muzzle_point(ev, from, to, "artillery")[0]
+		_add_shell(ev, from, to, sa)
 		return
 	if _air_shot(ev, from, to):
 		return
 	var wid := String(ev.get("weapon", ""))
 	if _is_flame(wid):
-		_add_flame(ev)
-		_fx61_muzzle(ev, from, to, "flame")
+		_add_flame(ev, _fx61_muzzle(ev, from, to, "flame"))   # G7 MUZZLE7: jet from the nozzle
 		return
 	if _is_laser(wid):
-		_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))  # G6: beam, not a tracer
-		_fx61_muzzle(ev, from, to, "energy")
+		# G6: beam, not a tracer. G7 MUZZLE7-2 (13.9c-28): the beam leaves the emitter's barrel tip, not the sim point
+		var la: Vector2 = _fx61_muzzle(ev, from, to, "energy")
+		_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids), from, la)
 		return
 	if lod >= 2:
 		return
@@ -236,10 +388,10 @@ func _is_flame(wid: String) -> bool:
 
 ## G4b (UI4B-3, ART-U-3 CR seq 1937): flamer fire draws flame_jet (4 frames, pivot at the nozzle,
 ## pointing screen +x) from the muzzle, rotated toward the target and stretched to reach it.
-func _add_flame(ev: Dictionary) -> void:
+func _add_flame(ev: Dictionary, start = null) -> void:
 	if lod >= 2:
 		return
-	var a: Vector2 = _w2s(ev.get("from", Vector2.ZERO)) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+	var a: Vector2 = start if start is Vector2 else _w2s(ev.get("from", Vector2.ZERO)) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
 	var b: Vector2 = _w2s(ev.get("to", Vector2.ZERO)) + Vector2(0, -8.0)
 	_fx.append({"kind": "flame", "t": 0.0, "life": 0.4, "a": a, "b": b, "size": 1.0, "color": Color(1.0, 0.6, 0.2)})
 	flames += 1
@@ -247,8 +399,8 @@ func _add_flame(ev: Dictionary) -> void:
 
 ## G3a artillery: a shell flies a ballistic arc from the gun to the impact point, then an impact
 ## blast sized by the weapon's splash radius (tiles) plus a short smoke puff.
-func _add_shell(ev: Dictionary, from: Vector2, to: Vector2) -> void:
-	var a: Vector2 = _w2s(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
+func _add_shell(ev: Dictionary, from: Vector2, to: Vector2, start = null) -> void:
+	var a: Vector2 = start if start is Vector2 else _w2s(from) + Vector2(0, -_height_for(int(ev.get("shooter", -1))))
 	var b: Vector2 = _w2s(to)
 	var dist := from.distance_to(to)
 	var splash := float(Content.weapon(String(ev.get("weapon", ""))).get("splash", 1.0))
@@ -637,9 +789,10 @@ func _air_shot(ev: Dictionary, from: Vector2, to: Vector2) -> bool:
 	if not bool(ls[1]) and not bool(lt[1]):
 		return false
 	var hit := bool(ev.get("hit", true))
-	var ha: float = (float(ls[0]) + 6.0) if bool(ls[1]) else _height_for(sid)
 	var hb: float = (float(lt[0]) + 4.0) if bool(lt[1]) else _height_for(tid)
-	var a: Vector2 = _w2s(from) + Vector2(0, -ha)
+	# G7 MUZZLE7: air-to-air / air-to-ground / ground-to-air shots leave the shooter's barrel tip (lifted with the
+	# aircraft as drawn) with the class muzzle flash there (was the sim point + lift, no shooter flash at all)
+	var a: Vector2 = _fx61_muzzle(ev, from, to, Fx61Core.weapon_class(String(ev.get("weapon", "")))) if lod < 2 else muzzle_point(ev, from, to, "mg")[0]
 	var jit := Vector2(_rng.randf_range(-5, 5), _rng.randf_range(-4, 4)) * (1.0 if hit else 4.0)
 	var b: Vector2 = _w2s(to) + Vector2(0, -hb) + jit
 	var wc := _weapon_cls(String(ev.get("weapon", "")))
@@ -710,7 +863,9 @@ func _is_laser(wid: String) -> bool:
 	return v
 
 
-func _add_g6_list(specs: Array) -> void:
+## from_w / from_s (MUZZLE7-2): specs starting at the shooter (world point within 0.6 tiles of from_w) start at the
+## drawn barrel tip from_s (screen px) instead.
+func _add_g6_list(specs: Array, from_w = null, from_s := Vector2.ZERO) -> void:
 	for sp in specs:
 		if _fx.size() >= MAX_FX:
 			return
@@ -723,8 +878,11 @@ func _add_g6_list(specs: Array) -> void:
 		if lod >= 2 and kd in ["nanite", "shimmer", "train_smoke", "jam"]:
 			continue
 		g6_made[kd] = int(g6_made.get(kd, 0)) + 1
+		var sa: Vector2 = from_s if from_w is Vector2 and a.distance_to(from_w) < 0.6 else _w2s(a)
+		if from_w is Vector2 and sa == from_s:
+			muzzle7["beam"] = int(muzzle7.get("beam", 0)) + 1
 		_fx.append({"kind": "g6", "g6": kd, "t": -float(sp.get("delay", 0.0)), "life": float(sp.life),
-			"a": _w2s(a), "b": _w2s(b), "size": float(sp.get("size", 1.0)), "color": sp.color})
+			"a": sa, "b": _w2s(b), "size": float(sp.get("size", 1.0)), "color": sp.color})
 
 
 ## Once per sim tick: smoke puffs over moving armoured trains.

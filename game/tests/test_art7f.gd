@@ -61,7 +61,10 @@ func test_interior_art_fits_zones() -> void:
 	var wl: Dictionary = man.get("g7_fac_wall", {})
 	check(not wl.is_empty() and int(wl.size) == 2, "wall autotile sheet registered (2x2)")
 	var img: Image = ArtCat._image(String(wl.states.built.file)) if not wl.is_empty() else null
-	check(img != null and img.get_width() == int(wl.fw) * 16 and img.get_height() == int(wl.fh) * 2, "wall sheet = 16 masks x (intact, damaged)")
+	# WALL7-2 CR 5146 (owner 13.9c-23: castle-style parapet on the OUTER face -> rows per outer quadrant; check widened, not loosened)
+	check(img != null and img.get_width() == int(wl.fw) * 16 and img.get_height() == int(wl.fh) * 8, "wall sheet = 16 masks x 4 outer quadrants x (intact, damaged)")
+	var fimg: Image = ArtCat._image(String(wl.states.front.file)) if not wl.is_empty() and (wl.states as Dictionary).has("front") else null
+	check(fimg != null and fimg.get_width() == img.get_width() and fimg.get_height() == img.get_height(), "wall parapet occluder sheet (front) has the same layout")
 	var vp: Dictionary = man.get("a_g7_vtol_pad", {})
 	check(not vp.is_empty() and int(vp.size) == 6 and (vp.states as Dictionary).has("rot_3_damaged"), "6x6 dropship pad art with 4 approach sides")
 
@@ -115,8 +118,14 @@ func test_no_sprite_overlap() -> void:
 		return
 	var F: Dictionary = es[0]
 	var rects := {}
+	var stk: Dictionary = F.get("stacked", {})
 	for zn in F.zones:
 		var r: Array = F.zones[zn]
+		if stk.has(zn):
+			# FACB7-5 (owner 13.9c-18): an upper storey (the drone bay on the workshop) draws no sprite of its own (the
+			# host's art carries it); it must stand exactly on its host, everything else keeps the no-overlap rule
+			check_eq(r, F.zones.get(String(stk[zn]), []), "%s stands exactly on %s" % [zn, stk[zn]])
+			continue
 		if r.size() == 4 and float(r[2]) > 0.0:
 			rects[String(zn)] = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
 	var gi := 0
@@ -226,3 +235,34 @@ func test_view_hash_identical() -> void:
 				if r.size() == 4:
 					EntityLayer.door_side_of(r, F)
 	check_eq(wb.state_hash(), wa.state_hash(), "state hash identical with the ART7F facility reads on / off")
+
+
+## FACB7-5 (owner 13.9c-18 "NO transparent anything - no see through"): no building is ever drawn see-through. The
+## LOOK7 roof cut-away modulate (alpha 0.34) is gone; the building / wreck modulate is opaque in every case (remembered
+## enemy building, sinking wreck at any depth); the facility zone art is pushed opaque; the base-prop ground surfaces
+## are opaque; the stacked drone bay is one building with the workshop (one art, drawn once).
+func test_no_see_through_buildings() -> void:
+	_ensure_g7()
+	var consts: Dictionary = (EntityLayer as Script).get_script_constant_map()
+	check(not consts.has("ROOF_CUT_MOD"), "no see-through roof cut-away modulate")
+	check_eq(EntityLayer.GHOST_MOD.a, 1.0, "remembered buildings are greyed, not faded")
+	var bad := []
+	for rem in [true, false]:
+		for k in 11:
+			var m: Color = EntityLayer.bld_mod(rem, float(k) / 10.0)
+			if m.a < 1.0:
+				bad.append([rem, k, m])
+	check_eq(bad, [], "every building / wreck modulate is opaque (alpha 1)")
+	var src := FileAccess.get_file_as_string("res://presentation/view/entity_layer.gd")
+	check(src.find("_push_zone") >= 0 and src.find("art.out_src.size, Color.WHITE)\n\t\tfac_drawn += 1") >= 0, "facility zone art is pushed opaque (Color.WHITE)")
+	var BP = load("res://presentation/view/baseprops_layer.gd")
+	for nm in ["ASPHALT", "SLAB", "GRAVEL", "YARD", "LANE_LINE", "BAY_LINE"]:
+		check_eq((BP.get_script_constant_map()[nm] as Color).a, 1.0, "base-prop ground %s opaque" % nm)
+	var man: Dictionary = ArtCat.manifest().get("buildings", {})
+	var db: Dictionary = man.get("g7_fac_dronebay", {})
+	var ws: Dictionary = man.get("g7_fac_workshop", {})
+	if (CnFacility.conf().get("stacked", {}) as Dictionary).has("drone_bay"):
+		check(String(db.get("stacked_on", "")) == "g7_fac_workshop" and String(db.states.rot_2.file) == String(ws.states.rot_2.file), "the drone bay storey is the workshop's art (one seamless building)")
+		var s := _setup()
+		var F: Dictionary = CnFacility.render_entries(s[0])[0]
+		check((F.get("stacked", {}) as Dictionary).has("drone_bay"), "the display is told not to draw the drone bay twice")

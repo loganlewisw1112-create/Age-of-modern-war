@@ -77,12 +77,12 @@
     },
     "board_armory": {
       "file": "fx/board_armory.png",
-      "h": 25,
+      "h": 19,
       "pivot": [
-        19,
-        24
+        27,
+        18
       ],
-      "w": 39
+      "w": 55
     },
     "board_checkpoint": {
       "file": "fx/board_checkpoint.png",
@@ -305,6 +305,81 @@
         2
       ],
       "w": 96
+    },
+    "fx_bulk": {
+      "fh": 7,
+      "file": "fx/fx_bulk.png",
+      "frames": 2,
+      "fw": 8,
+      "h": 7,
+      "pivot": [
+        4,
+        6
+      ],
+      "w": 16
+    },
+    "fx_flood": {
+      "fh": 12,
+      "file": "fx/fx_flood.png",
+      "frames": 4,
+      "fw": 12,
+      "h": 12,
+      "pivot": [
+        6,
+        11
+      ],
+      "w": 48
+    },
+    "fx_obst": {
+      "file": "fx/fx_obst.png",
+      "h": 8,
+      "pivot": [
+        4,
+        7
+      ],
+      "w": 8
+    },
+    "fx_plinth": {
+      "file": "fx/fx_plinth.png",
+      "h": 6,
+      "pivot": [
+        6,
+        3
+      ],
+      "w": 12
+    },
+    "fx_pole": {
+      "fh": 17,
+      "file": "fx/fx_pole.png",
+      "frames": 6,
+      "fw": 28,
+      "h": 17,
+      "pivot": [
+        14,
+        8
+      ],
+      "w": 168
+    },
+    "fx_puck": {
+      "file": "fx/fx_puck.png",
+      "h": 4,
+      "pivot": [
+        3,
+        3
+      ],
+      "w": 7
+    },
+    "fx_strobe": {
+      "fh": 8,
+      "file": "fx/fx_strobe.png",
+      "frames": 2,
+      "fw": 6,
+      "h": 8,
+      "pivot": [
+        3,
+        7
+      ],
+      "w": 12
     },
     "glow": {
       "file": "fx/glow.png",
@@ -671,7 +746,7 @@
     "fx/board_aid.png": "79e0040e9518ced246c6273dafc2bbe9",
     "fx/board_aid_station.png": "79e0040e9518ced246c6273dafc2bbe9",
     "fx/board_apc_wash.png": "700391493aad4b519fd08411ff0ea3e7",
-    "fx/board_armory.png": "74ec93b068c418589689caca6a4fd629",
+    "fx/board_armory.png": "66417e189cb0d5967fdca3a7ae67f3b4",
     "fx/board_checkpoint.png": "efff2c0ffed84bcd2e836fa73c1e7f6f",
     "fx/board_core.png": "89b66f4e3f56f38391b520ab2a03870f",
     "fx/board_decon_hall.png": "5ef0340c0c5133b0e61fcb1128fabdbc",
@@ -696,6 +771,13 @@
     "fx/crest.png": "639f2b8249520eb694e193d4d2a00235",
     "fx/fire.png": "c9994af73fa77a62c63507040e63e888",
     "fx/flag.png": "3f90f6ee59b46044cf2a73ed4c11c7a8",
+    "fx/fx_bulk.png": "9ea288f7b7a58d8be5e01762e72d4d28",
+    "fx/fx_flood.png": "ecc8e0af070b49f39dca3bdaf1e0cb46",
+    "fx/fx_obst.png": "12f8edf94ef7a575bea2cf4a4689080d",
+    "fx/fx_plinth.png": "3751a0f163d3d34386cc3b51b319b790",
+    "fx/fx_pole.png": "2db1ddaac066e80fd479f0e5ef70985a",
+    "fx/fx_puck.png": "6c0766c44e2e45c6503af23eb24939e1",
+    "fx/fx_strobe.png": "57431fad567db54dfe61fa5ca34808bf",
     "fx/glow.png": "46f05674c46c89618986e491d5aed68e",
     "fx/oil0.png": "fafc892837c5659c2998bc65a9e55f9a",
     "fx/oil1.png": "d01fab49b1e4c46d8f8436fc16e9bacf",

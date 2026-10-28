@@ -190,6 +190,9 @@ const SEP_STRENGTH := 0.5
 const SEP_ROW := 2048
 const SEP_BLOCK := 4194304   # SEP_ROW * SEP_ROW: room for maps up to 3072 tiles a side
 const SEP_MAX_PUSH := 0.15
+## G7 PATH7 (13.9c-31): separation knobs as static vars (defaults = the constants above) so probes can A/B them.
+static var sep_strength := SEP_STRENGTH
+static var sep_max_push := SEP_MAX_PUSH
 const STUCK_REPATH_TICKS := 40
 const SLOT_FOOT := 1.1
 const SLOT_VEHICLE := 1.8
@@ -213,6 +216,15 @@ static var held_paths := false         # N1-core-4: native-held paths (RtsSteer.
 static var held_state := true
 ## G5 CORE10K: the held gather loop as one RtsSteer.gather_held call (rts_core >= 0.4.0, exact port;
 ## the GDScript loop stays the fallback and the oracle). Off = GDScript loop.
+## G7 PERF7F: with a garrison anywhere, the native gather gets the unit list minus garrisoned units (false = the
+## pre-G7 behaviour: any garrison sends the whole tick to the GDScript gather loop). A/B on == off.
+static var held_gar_filter := true
+## G7 PERF7F: the native gather falls back to the GDScript loop whenever a foot / vehicle unit stands on a solid
+## cell of its class grid; a soldier on his own facility gate / wall-walk cell (passable for his team) did that every
+## tick. When EVERY such unit is passable there (the GDScript loop's `bad` is false for all of them), the native
+## gather gets class grids with exactly those cells cleared: it no longer falls back for them and computes what the
+## loop computes. Any unit that would be `bad` keeps the real grids (the native falls back, as before). A/B on == off.
+static var held_gate_cells := true
 static var native_gather := true   # CORE10K-2: rts_core 0.4.1 fixes the 0.4.0 gather.rs:229 panic (empty mflags with gather_trust off); A/B on == off 8/8
 ## G5 CORE10K: with native_gather, skip the dict read of a synced, clean, non-moving foot/vehicle unit
 ## (HotState.pos mirror). Needs every pos/path/moving writer outside movement.gd to call HotState.touch /
@@ -361,7 +373,7 @@ static func rebuild_nav(w: SimWorld) -> void:
 	var prev_classes: Array = (w.nav.get("solid", {}) as Dictionary).keys() if w.nav is Dictionary else []
 	var gates := {}
 	for g in _state(w).get("gates", []):
-		gates[int(g[0])] = [int(g[1]), int(g[2])] if (g as Array).size() < 4 else [int(g[1]), int(g[2]), int(g[3])]
+		gates[int(g[0])] = [int(g[1]), int(g[2])] if (g as Array).size() < 4 else ([int(g[1]), int(g[2]), int(g[3])] if (g as Array).size() < 5 else ([int(g[1]), int(g[2]), int(g[3]), int(g[4])] if (g as Array).size() < 6 else [int(g[1]), int(g[2]), int(g[3]), int(g[4]), int(g[5])]))   # G7 APCMOV7-3: 5 fields = vehicle-only gate; FACB7-7: 6 fields = foot-only gate
 	var edge0 := _build_edges(w, mw, mh)
 	w.nav = {"w": mw, "h": mh, "blocked": blocked, "comp": {}, "comp_dirty": true, "is_native": native,
 		"solid": {}, "gates": gates, "tg": {}, "pblk": {}, "pfp": pfp, "edge": _ww_edges(w, edge0, mw, mh)}
@@ -394,6 +406,7 @@ static func rebuild_nav(w: SimWorld) -> void:
 			for idx in gates:
 				nav.set_gate(PackedInt32Array([idx]), _gate_code(gates[idx]))
 		_ww_native_allow(w, nav)
+		_vg_native_allow(w, nav)
 		for mc in CLASSES:
 			w.nav.solid[mc] = nav.solid_bytes(_key(mc, -1))
 	else:
@@ -650,7 +663,7 @@ static func _solid_view(w: SimWorld, mc: String, team: int) -> PackedByteArray:
 		return sb
 	var out := sb.duplicate()
 	for i in gates:
-		out[i] = 0 if _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i])) else 1
+		out[i] = 0 if _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i])) and not (mc == "foot" and _is_vg(gates[i])) and (mc == "foot" or not _is_fo(gates[i])) else 1
 	return out
 
 
@@ -673,7 +686,7 @@ static func is_passable(w: SimWorld, cell: Vector2i, mc: String, team: int = -1)
 		var i := cell.y * int(w.nav.w) + cell.x
 		var gates: Dictionary = w.nav.gates
 		if not gates.is_empty() and gates.has(i):   # G7 WALL7: a wall-walk cell is open for the owner's foot only
-			return _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i]))
+			return _gate_open(gates[i], team) and _cell_sm(w, mc, i) > 0.0 and (mc == "foot" or not _is_ww(gates[i])) and not (mc == "foot" and _is_vg(gates[i])) and (mc == "foot" or not _is_fo(gates[i]))
 		var sb = w.nav.solid.get(mc)
 		if sb == null:
 			sb = _solid_of(w, mc)
@@ -743,11 +756,113 @@ static func _resolve(w: SimWorld, e: Dictionary, goal: Vector2) -> Dictionary:
 		var c := gc + o
 		if w.in_bounds(c) and lab[c.y * mw + c.x] == label:
 			return {"ok": true, "start": start, "cell": c, "pos": Vector2(c) + CENTER}
+	if mc != "foot" and tm >= 0:   # G7 APCMOV7-4: a shut own vehicle-only gate is passable for planning (see _gate_plan)
+		var gp := _gate_plan(w, lab, label, gc, tm)
+		if not gp.is_empty():
+			var gcell: Vector2i = gp.cell
+			return {"ok": true, "start": start, "cell": gcell, "pos": goal if gcell == gc else Vector2(gcell) + CENTER, "via": gp.via}
 	return {"ok": false}
 
 
 static func can_reach(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	return _resolve(w, e, goal).ok
+
+
+## G7 APCMOV7-4 (13.9c-22 / 13.9c-25): a SHUT (locked) vehicle-only gate of the unit's own team still counts as passable
+## for path PLANNING: a hardened outer APC gate must not turn an own vehicle's / armoured suit's order into the compound
+## into idle (FacDrive7 holds the actual traffic at the gate and asks it to cycle). Only the lock is ignored here: the
+## cells stay solid for the step itself, foot units of every team never plan through them (_resolve skips foot), other
+## teams never match the gate's team. Labels of the real nav that touch one connected cluster of locked own-team
+## vehicle-only cells are merged (union-find over labels); the goal is reachable when its (snapped) label merges with the
+## start's. Returns {} (not reachable) or {"cell": goal cell, "via": the start-side cell next to the first cluster the start
+## label touches, ascending index}. Deterministic (sorted indices, state only); runs only after the plain check failed.
+static func _gate_plan(w: SimWorld, lab: PackedInt32Array, label: int, gc: Vector2i, tm: int) -> Dictionary:
+	if tm < 0 or label < 0:
+		return {}
+	var gates: Dictionary = w.nav.gates
+	var locked := []
+	for i in gates:
+		var g = gates[i]
+		if _is_vg(g) and int(g[0]) == tm and int(g[1]) != 0:
+			locked.append(int(i))
+	if locked.is_empty():
+		return {}
+	locked.sort()
+	var lset := {}
+	for i in locked:
+		lset[i] = true
+	var mw := int(w.nav.w)
+	var mh := int(w.nav.h)
+	var seen := {}
+	var uf := {}
+	var clusters := []
+	for s in locked:
+		if seen.has(s):
+			continue
+		seen[s] = true
+		var q := [s]
+		var qi := 0
+		var adj := []
+		while qi < q.size():
+			var i: int = q[qi]
+			qi += 1
+			var x := i % mw
+			var y := i / mw
+			for d in [[1, 0], [-1, 0], [0, 1], [0, -1]]:
+				var nx: int = x + int(d[0])
+				var ny: int = y + int(d[1])
+				if nx < 0 or ny < 0 or nx >= mw or ny >= mh:
+					continue
+				var n := ny * mw + nx
+				if lset.has(n):
+					if not seen.has(n):
+						seen[n] = true
+						q.append(n)
+				elif lab[n] >= 0:
+					adj.append(n)
+		adj.sort()
+		clusters.append(adj)
+		if not adj.is_empty():
+			var r0 := _uf_find(uf, int(lab[int(adj[0])]))
+			for n in adj:
+				var rn := _uf_find(uf, int(lab[int(n)]))
+				if rn != r0:
+					uf[rn] = r0
+	var root := _uf_find(uf, label)
+	var cell := Vector2i(-1, -1)
+	if w.in_bounds(gc) and lab[gc.y * mw + gc.x] >= 0 and _uf_find(uf, int(lab[gc.y * mw + gc.x])) == root:
+		cell = gc
+	else:
+		for off in _search_offsets():
+			var o: Vector2i = off
+			if o.x * o.x + o.y * o.y > SNAP_RADIUS * SNAP_RADIUS:
+				break
+			var c := gc + o
+			if w.in_bounds(c) and lab[c.y * mw + c.x] >= 0 and _uf_find(uf, int(lab[c.y * mw + c.x])) == root:
+				cell = c
+				break
+	if cell.x < 0:
+		return {}
+	for adj in clusters:
+		for n in adj:
+			if int(lab[int(n)]) == label:
+				return {"cell": cell, "via": Vector2i(int(n) % mw, int(n) / mw)}
+	return {}
+
+
+static func _uf_find(uf: Dictionary, l: int) -> int:
+	while uf.has(l):
+		l = int(uf[l])
+	return l
+
+
+## Path of a unit whose goal lies beyond a shut own vehicle-only gate: to the cell in front of the gate, then the goal
+## (the last leg is the straight line the gate stops; the unit parks at the door until it opens or the order is replaced).
+static func _via_path(w: SimWorld, mc: String, r: Dictionary, tm: int) -> Array:
+	var vc: Vector2i = r.via
+	var out := _compute(w, mc, r.start, vc, Vector2(vc) + CENTER, tm)
+	out.append(r.pos)
+	return out
 
 
 static func _budget(w: SimWorld) -> int:
@@ -888,9 +1003,9 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 		front = q0.is_empty() or _qk(q0[0]) != 0   # only AI requests queued: a player request goes first
 	if front and _take_budget(w):
 		var fp := []
-		if _group_flow.has(move_class(e)):
+		if _group_flow.has(move_class(e)) and not r.has("via"):
 			fp = _flow_path(w, move_class(e), int(_group_flow[move_class(e)].h), r.start, r.cell, r.pos, tm)
-		e.path = fp if not fp.is_empty() else _compute(w, move_class(e), r.start, r.cell, r.pos, tm)
+		e.path = fp if not fp.is_empty() else (_via_path(w, move_class(e), r, tm) if r.has("via") else _compute(w, move_class(e), r.start, r.cell, r.pos, tm))   # G7 APCMOV7-4: via = shut own gate
 		e.path_req = -1
 	else:
 		st.req_seq = int(st.req_seq) + 1
@@ -1064,12 +1179,12 @@ static func _drain_queue(w: SimWorld) -> void:
 		else:
 			var fp := []
 			var native = _native(w)
-			if native != null and req.has("fx"):
+			if native != null and req.has("fx") and not r.has("via"):
 				# group request: descend the group's flow field (LRU cached; rebuilt identically
 				# from nav state after a load), A* only if the flow cannot serve it
 				var h: int = native.flow(Vector2i(int(req.fx), int(req.fy)), _key(mc, tm))
 				fp = _flow_path(w, mc, h, r.start, r.cell, r.pos, tm)
-			e.path = fp if not fp.is_empty() else _compute(w, mc, r.start, r.cell, r.pos, tm)
+			e.path = fp if not fp.is_empty() else (_via_path(w, mc, r, tm) if r.has("via") else _compute(w, mc, r.start, r.cell, r.pos, tm))   # G7 APCMOV7-4: via = shut own gate
 		e.path_i = 0
 		e.path_req = -1
 		HotState.mark(w, int(e.id))
@@ -1241,7 +1356,7 @@ static func _separate_native_only(w: SimWorld, steer) -> void:
 		_ensure_class(w, u.mc)
 		mcs.append(_key(u.mc, team_of(w, e)))
 	var out: PackedVector2Array = steer.separate(w.nav.native, pos, rad, mov, keys, ids, mcs,
-		PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q]))
+		PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q]))
 	for i in out.size():
 		if out[i] != pos[i]:
 			units[i].pos = out[i]
@@ -1427,7 +1542,7 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	if profile:
 		t0 = _pt("gather", t0)
 	_g6_speed(w, spd, nm, movers, [], PackedInt32Array(), mvi, 4 if held else 6, pos)
-	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
+	var prm := PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array
 	if held:
 		out = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
@@ -1474,6 +1589,86 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 ## dict reads and a waypoint copy. Outcomes go back to the dicts exactly as _tick_native writes
 ## them (stuck only when it changes, or when the key is missing / not an int), so dict state, saves
 ## and state_hash() are identical (tests/test_perf.gd: A/B hash + held_verify mirror check).
+## G7 PERF7F (see held_gar_filter / held_gate_cells): [unit list without garrisoned units or null (none found),
+## their ids in parallel, [foot, vehicle] grids with every gate / wall-walk cell cleared or null]. The grids are null
+## (the real ones are used) when gate is off, when a unit on a gate cell that is solid in its grid is not passable
+## there (the GDScript loop would rescue it: the native must fall back as before), or when a unit standing in the
+## gate cells' box has no table entry yet. A unit off the gate cells meets the same grid value either way.
+static func _held_prepass(w: SimWorld, all: Array, sols: Array, tmc: PackedByteArray, trad: PackedFloat32Array, tn: int, mw: int, gar: bool, gate: bool) -> Array:
+	var gates: Dictionary = w.nav.gates
+	var bx0 := 1 << 30
+	var by0 := 1 << 30
+	var bx1 := -1
+	var by1 := -1
+	if gate:
+		for gi in gates:
+			var gx: int = int(gi) % mw
+			var gy: int = int(gi) / mw
+			bx0 = mini(bx0, gx)
+			by0 = mini(by0, gy)
+			bx1 = maxi(bx1, gx)
+			by1 = maxi(by1, gy)
+	var fx0 := float(bx0)
+	var fy0 := float(by0)
+	var fx1 := float(bx1 + 1)
+	var fy1 := float(by1 + 1)
+	var gidx := PackedInt32Array()
+	var box := []
+	var i := 0
+	for e: Dictionary in all:
+		if gar and e.has("garrisoned_in"):
+			gidx.append(i)
+		elif gate:
+			var p: Vector2 = e.pos
+			if p.x >= fx0 and p.x < fx1 and p.y >= fy0 and p.y < fy1:
+				box.append(e)
+		i += 1
+	var out := [null, null, null]
+	if not gidx.is_empty():
+		var keep := all.duplicate()
+		var ku: PackedInt32Array = SimIndex.unit_ids(w).duplicate()
+		for k in range(gidx.size() - 1, -1, -1):
+			keep.remove_at(gidx[k])
+			ku.remove_at(gidx[k])
+		out[0] = keep
+		out[1] = ku
+	if not gate:
+		return out
+	var ents: Dictionary = w.entities
+	for e: Dictionary in box:
+		var id: int = e.id
+		if not ents.has(id):
+			continue
+		if id >= tn or id >= tmc.size() or trad[id] <= 0.0:
+			return out
+		var mi := tmc[id] & 15
+		if mi > 1:
+			continue
+		var p: Vector2 = e.pos
+		var cx := floori(p.x)
+		var cy := floori(p.y)
+		var c := cy * mw + cx
+		if not gates.has(c):
+			continue
+		var sb: PackedByteArray = sols[mi]
+		if sb.is_empty() or sb[c] == 0:
+			continue
+		if not is_passable(w, Vector2i(cx, cy), udef(String(e.def)).mc, team_of(w, e)):
+			return out
+	var f2: PackedByteArray = (sols[0] as PackedByteArray).duplicate()
+	var v2: PackedByteArray = (sols[1] as PackedByteArray).duplicate()
+	var nf := f2.size()
+	var nv := v2.size()
+	for gi in gates:
+		var c: int = gi
+		if c < nf:
+			f2[c] = 0
+		if c < nv:
+			v2[c] = 0
+	out[2] = [f2, v2]
+	return out
+
+
 static func _held(w: SimWorld) -> Dictionary:
 	var h = w.nav.get("held")
 	if h == null:
@@ -1547,14 +1742,32 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	var uix := PackedInt32Array()   # G5: native gather: n index -> index into all
 	var ng_done := false
 	var gar_any := _garrison_any(w)
+	var uidsf = null
+	var gsol = null
+	var gates_on := not (w.nav.gates as Dictionary).is_empty()
+	var pre_gar := gar_any and held_gar_filter
+	var pre_gate := gates_on and held_gate_cells and (pre_gar or not gar_any)
+	if native_gather and steer.has_method("gather_held") and (pre_gar or pre_gate):
+		# G7 PERF7F: one pass for both (see held_gar_filter / held_gate_cells): garrisoned units leave the list the
+		# native gather gets (ascending id kept, ids in parallel; every later all[...] index refers to that list), and
+		# the facility gate / wall-walk cells are cleared from its grids when every unit standing on one is passable
+		# there.
+		var pp: Array = _held_prepass(w, all, sols, tmc, trad, tn, mw, pre_gar, pre_gate)
+		if pp[0] != null:
+			all = pp[0]
+			na = all.size()
+			uidsf = pp[1]
+		if pre_gar:
+			gar_any = false
+		gsol = pp[2]
 	if native_gather and steer.has_method("gather_held") and not gar_any:
-		var ns := [sols[0], sols[1], PackedByteArray()]
+		var ns := [sols[0], sols[1], PackedByteArray()] if gsol == null else [gsol[0], gsol[1], PackedByteArray()]
 		for mcn in ["amphibious", "naval_small", "naval"]:
 			var sb = w.nav.solid.get(mcn)
 			ns.append(sb if sb != null else PackedByteArray())
 		var hot = HotState.of(w)
 		hot._grow(int(w.next_id))
-		var uids: PackedInt32Array = SimIndex.unit_ids(w)
+		var uids: PackedInt32Array = SimIndex.unit_ids(w) if uidsf == null else uidsf
 		var r: Array = steer.gather_held(all, ents, ref, tick, mw, mh, ns, [trad, tmc, tsp, SimWorld.Morale.pin_move], [hpi, hst, hps, hmv, hot.pos, hot.mflags if gather_trust else PackedByteArray()], uids)
 		if r.size() == 1:
 			for nid in r[0]:
@@ -1732,7 +1945,7 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	if profile:
 		t0 = _pt("gather", t0)
 	_g6_speed(w, spd, nm, [] if ng_done else movers, all, uix, mvi, 4, pos)
-	var prm := PackedFloat32Array([SEP_STRENGTH, SEP_MAX_PUSH, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
+	var prm := PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
 	if profile:
 		t0 = _pt("native_step", t0)
@@ -2031,7 +2244,7 @@ static func _separate(w: SimWorld) -> void:
 					dir = Vector2.RIGHT.rotated(float((ida * 37 + idb * 17) % 360) * PI / 180.0)
 				else:
 					dir = d / dist
-				var overlap := (min_d - dist) * SEP_STRENGTH
+				var overlap := (min_d - dist) * sep_strength
 				var wa := 0.5
 				if mov[i] != mov[j]:
 					wa = 0.25 if mov[i] == 1 else 0.75
@@ -2047,8 +2260,8 @@ static func _separate(w: SimWorld) -> void:
 		var l := v.length()
 		if l < 0.002:
 			continue
-		if l > SEP_MAX_PUSH:
-			v = v / l * SEP_MAX_PUSH
+		if l > sep_max_push:
+			v = v / l * sep_max_push
 		var e: Dictionary = units[i]
 		var p := pos[i]
 		var to := p + v
@@ -2523,6 +2736,7 @@ static func on_cells_changed(w: SimWorld, cells: Array) -> void:
 			for idx in gates:
 				nav.set_gate(PackedInt32Array([idx]), _gate_code(gates[idx]))
 		_ww_native_allow(w, nav)
+		_vg_native_allow(w, nav)
 		for mc in CLASSES:
 			w.nav.solid[mc] = nav.solid_bytes(_key(mc, -1))
 		for mc in prev_classes:
@@ -2558,22 +2772,34 @@ static func on_cells_changed(w: SimWorld, cells: Array) -> void:
 ## owner_team while unlocked; for every other team (and team-less queries) it is solid. Overrides
 ## the building footprint under it. Saved in sys_state.movement.gates; FORT calls this whenever a
 ## gate is completed (set), destroyed (owner_team -1) or locked/unlocked.
-static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool) -> void:
+## G7 APCMOV7-3 (13.9c-25): vonly = a vehicle-only gate (the facility's APC gates and wash): open only for the owner
+## team's non-foot ground classes while unlocked, solid for every foot unit of any team (gates[i] = [team, locked, 0, 1],
+## saved as [idx, team, locked, 0, 1]; native: the foot class gets allow 0 on those cells, _vg_native_allow).
+## G7 FACB7-7 (13.9c-20c): fonly = a foot-only gate (the facility's mantrap doors and decon hall): open only for the owner
+## team's foot class while unlocked, solid for every non-foot ground class of any team (CN suits, vehicles)
+## (gates[i] = [team, locked, 0, 0, 1], saved as [idx, team, locked, 0, 0, 1]; native: non-foot classes get allow 0).
+static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool, vonly := false, fonly := false) -> void:
 	_ensure_nav(w)
 	var gates: Dictionary = w.nav.gates
 	var mw := int(w.nav.w)
 	var touched := []
+	var vg_changed := false
+	var fo_changed := false
 	for c in cells:
 		var cv := Vector2i(c) if typeof(c) == TYPE_VECTOR2I or typeof(c) == TYPE_VECTOR2 else Vector2i(int(c[0]), int(c[1]))
 		if not w.in_bounds(cv):
 			continue
 		var i := cv.y * mw + cv.x
+		var was_vg := _is_vg(gates.get(i))
+		var was_fo := _is_fo(gates.get(i))
 		if owner_team < 0:
 			if not gates.has(i):
 				continue
 			gates.erase(i)
 		else:
-			gates[i] = [owner_team, 1 if locked else 0]
+			gates[i] = [owner_team, 1 if locked else 0, 0, 0, 1] if fonly else ([owner_team, 1 if locked else 0, 0, 1] if vonly else [owner_team, 1 if locked else 0])
+		vg_changed = vg_changed or was_vg != (vonly and not fonly and owner_team >= 0)
+		fo_changed = fo_changed or was_fo != (fonly and owner_team >= 0)
 		touched.append(i)
 	if touched.is_empty():
 		return
@@ -2582,6 +2808,10 @@ static func set_gate(w: SimWorld, cells: Array, owner_team: int, locked: bool) -
 	if native != null and native.has_method("set_gate"):
 		for i in touched:
 			native.set_gate(PackedInt32Array([i]), _gate_code(gates[i]) if gates.has(i) else 0)
+		if vg_changed:
+			_vg_native_allow(w, native)
+		if fo_changed:
+			_fo_native_allow(w, native)
 	for mc in w.nav.solid.keys():
 		var sb: PackedByteArray = w.nav.solid[mc]
 		for i in touched:
@@ -2647,6 +2877,53 @@ static func _grid(w: SimWorld, mc: String, team: int) -> AStarGrid2D:
 const WW_DIRS := [[1, 0, 1, 4], [0, 1, 2, 8], [-1, 0, 4, 1], [0, -1, 8, 2]]
 
 
+## G7 APCMOV7-3 (13.9c-25): vehicle-only gate entry (4th field 1): see set_gate.
+static func _is_vg(g) -> bool:
+	return g != null and (g as Array).size() > 3 and int(g[3]) != 0
+
+
+## G7 FACB7-7 (13.9c-20c): foot-only gate entry (5th field 1): see set_gate.
+static func _is_fo(g) -> bool:
+	return g != null and (g as Array).size() > 4 and int(g[4]) != 0
+
+
+static func _fo_any(w: SimWorld) -> bool:
+	var gates: Dictionary = w.nav.gates
+	for i in gates:
+		if _is_fo(gates[i]):
+			return true
+	return false
+
+
+## Native: every non-foot ground class gets the wall-walk + foot-only allow mask again (foot-only cells changed).
+static func _fo_native_allow(w: SimWorld, nav) -> void:
+	if nav == null or not nav.has_method("add_class"):
+		return
+	for mc in w.nav.solid.keys():
+		var ms := String(mc)
+		if ms != "foot" and not is_air(ms):
+			nav.add_class(NativeCore.mc_index(ms), PackedFloat32Array(_lut(ms)), _ww_allow(w, ms, _base_allow(w, ms)))
+			w.nav.solid[mc] = nav.solid_bytes(_key(ms, -1))
+
+
+## Native: the foot class gets allow 0 on every vehicle-only gate cell (none: the plain foot class again, once).
+static func _vg_native_allow(w: SimWorld, nav) -> void:
+	if nav == null or not nav.has_method("add_class"):
+		return
+	var gates: Dictionary = w.nav.gates
+	var allow := PackedByteArray()
+	for i in gates:
+		if _is_vg(gates[i]):
+			if allow.is_empty():
+				allow.resize(int(w.nav.w) * int(w.nav.h))
+				allow.fill(1)
+			allow[int(i)] = 0
+	if allow.is_empty() and not bool(w.nav.get("vg_allow", false)):
+		return
+	nav.add_class(NativeCore.mc_index("foot"), PackedFloat32Array(_lut("foot")), allow)
+	w.nav["vg_allow"] = not allow.is_empty()
+
+
 static func _is_ww(g) -> bool:
 	return g != null and (g as Array).size() > 2 and int(g[2]) != 0
 
@@ -2683,7 +2960,7 @@ static func _ww_edges(w: SimWorld, edge0: PackedByteArray, mw: int, mh: int) -> 
 
 ## Allow mask of ground class mc: `base` (empty = every cell) with every wall-walk cell 0 (foot and air: base).
 static func _ww_allow(w: SimWorld, mc: String, base: PackedByteArray) -> PackedByteArray:
-	if mc == "foot" or is_air(mc) or not wallwalk_any(w):
+	if mc == "foot" or is_air(mc) or (not wallwalk_any(w) and not _fo_any(w)):   # FACB7-7: + foot-only gate cells
 		return base
 	var n := int(w.nav.w) * int(w.nav.h)
 	var out := base.duplicate()
@@ -2692,7 +2969,7 @@ static func _ww_allow(w: SimWorld, mc: String, base: PackedByteArray) -> PackedB
 		out.fill(1)
 	var gates: Dictionary = w.nav.gates
 	for i in gates:
-		if _is_ww(gates[i]):
+		if _is_ww(gates[i]) or _is_fo(gates[i]):
 			out[i] = 0
 	return out
 
@@ -2711,7 +2988,7 @@ static func _base_allow(w: SimWorld, mc: String) -> PackedByteArray:
 
 ## Native: the vehicle class gets the wall-walk allow mask (rebuild paths; extra classes get it in _ensure_class).
 static func _ww_native_allow(w: SimWorld, nav) -> void:
-	if not wallwalk_any(w) or not nav.has_method("add_class"):
+	if (not wallwalk_any(w) and not _fo_any(w)) or not nav.has_method("add_class"):
 		return
 	nav.add_class(NativeCore.mc_index("vehicle"), PackedFloat32Array(_lut("vehicle")), _ww_allow(w, "vehicle", PackedByteArray()))
 
@@ -2729,6 +3006,10 @@ static func _save_gates(w: SimWorld) -> void:
 		if _is_ww(g):
 			arr.append([int(i), int(g[0]), int(g[1]), 1])
 			n += 1
+		elif _is_vg(g):   # G7 APCMOV7-3: vehicle-only gate
+			arr.append([int(i), int(g[0]), int(g[1]), 0, 1])
+		elif _is_fo(g):   # G7 FACB7-7: foot-only gate
+			arr.append([int(i), int(g[0]), int(g[1]), 0, 0, 1])
 		else:
 			arr.append([int(i), int(g[0]), int(g[1])])
 	if arr.is_empty():

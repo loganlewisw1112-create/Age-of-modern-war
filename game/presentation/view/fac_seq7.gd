@@ -38,7 +38,7 @@ const WALL_H := 57.0          # SEQ7-3: link-wall top 5.85 m (FACB7 fact facb7.z
 const NOZ := 1.12             # SEQ7-3: wash nozzle bars inboard of the link walls (tiles from the hull centre line)
 const HULL := 0.40            # half hull width the jets hit
 ## SEQ7-3: occluder heights (px) from FACB7's fact facb7.zone_heights (m x 9.8 px/m); every other zone 34 px
-const ZONE_H := {"barracks": 71.0, "armory": 53.0, "aid_station": 43.0, "magazine": 38.0, "range": 14.0}
+const ZONE_H := {"barracks": 71.0, "armory": 114.0, "aid_station": 43.0, "magazine": 38.0, "range": 14.0}
 const WALK_SPD := 1.3
 const CARRY_SPD := 1.1
 const CART_SPD := 2.2
@@ -1398,7 +1398,7 @@ func _draw_glow() -> void:
 		var pad = (L.get("zones", {}) as Dictionary).get("pad")
 		if pad is Rect2:
 			for c in [pad.position, pad.position + Vector2(pad.size.x, 0), pad.end, pad.position + Vector2(0, pad.size.y)]:
-				pts.append([c, 6.0])
+				pts.append([c, 1.0])   # ORCH (LIGHT7-2 CR 5928): flush pad-edge light, not 6 px in the air
 		for i in pts.size():
 			_beacon(pts[i][0], float(pts[i][1]), t * 5.5 + float(i) * 1.3, AMBER)
 		# pad floor chasers round each loading APC slot while the team is at the pad
@@ -1509,12 +1509,7 @@ func _beacon(c: Vector2, h: float, ang: float, col: Color, beam: bool = true) ->
 	glow.draw_circle(s, 1.6 + 1.6 * face, Color(col.r, col.g, col.b, 0.65 + 0.35 * face))
 	if not beam:
 		return
-	# the beam's sweep on the ground: starts clear of the mount, faint (SEQ7-3: was a bright wedge from the base)
-	var dir := Vector2.from_angle(ang)
-	var g := _scr(c + dir * 0.5)
-	var tip := _scr(c + dir * 2.4)
-	var sd := _scr(c + dir.rotated(0.3) * 2.4)
-	glow.draw_colored_polygon(PackedVector2Array([g, tip, sd]), Color(col.r, col.g, col.b, 0.08 * face + 0.02))
+	# LIGHT7-2 CR 5928 (13.9c-18): the translucent ground wedge is gone; lens flash + halo only
 
 
 ## World tile position a "follow the launch" camera could centre on (most recent sequence), Vector2.INF when none

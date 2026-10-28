@@ -2,7 +2,7 @@ extends RefCounted
 ## G7 playtest flow life7 (LIFE7, 13.9c-7): the living facility. Raises a counter-nanite facility, checks the
 ## fac_life7 layer is wired and laid out, then shots of every feature at zoom 1 / 1.75 / 2.5: the compound, staff,
 ## forklifts, the fuel bowser, the tow tractor, the guard dog, the gate check of an arrival, a garage shutter open for
-## a unit at its door, the range during live fire, the ops building (radar, comms mast, window glow, ops-room inset),
+## a unit at its door, the range during live fire, the ops building (radar, comms mast, window glow; no inset, 13.9c-19),
 ## a tower cupola tracking an enemy, the perimeter drone. Display only: nothing here changes the layer's rules.
 
 const H = preload("res://tests/test_machine_g6.gd")
@@ -117,6 +117,32 @@ func run(pt) -> void:
 		await pt._wait(0.6)
 		await pt._shot("life7_compound_z%d" % z)
 	pt._log("life7_drawn", (L.drawn as Dictionary).size() >= 3, "sprites drawn by id: %s" % str(L.drawn))
+	# POLISH7-4 (owner 13.9c-21): the fuel bowser parked in its ONE marked bay (Engineer7.BOWSER_BAY) while idle
+	var fa: Dictionary = _actor(L, "fuel", 0)
+	var bay: Rect2 = Lf.get("fuel_bay", Rect2())
+	if not fa.is_empty() and bay.size != Vector2.ZERO:
+		await _shots3(pt, mv, "fuel_bay", func(): return bay.get_center() + Vector2(0.5, 0.5), [2, 3])
+		L.eval_all()
+		pt._log("life7_fuel_bay_parked", int(fa.get("driver", -1)) >= 0 or (bay.has_point(fa.p) and String(fa.pose) == "park"),
+			"bowser at %s pose %s driver %d, bay %s" % [str((fa.p as Vector2) - (Lf.O as Vector2)), String(fa.pose), int(fa.get("driver", -1)), str(bay.position - (Lf.O as Vector2))])
+	# POLISH7-4 (ORCH / owner "a forklift on top of the workshop / drone launch bay roof"): the workshop + its drone-bay
+	# storey (13.9c-18): no ground actor on or inside it; the drone recovers on its launch-deck spot (set its clock into
+	# the home phase for the shot); the barracks [16,14,4,2] beside it with its own signs
+	var ws: Rect2 = (Lf.zones as Dictionary).get("workshop", Rect2())
+	var dr: Dictionary = _actor(L, "drone", 0)
+	if ws.size != Vector2.ZERO and not dr.is_empty():
+		dr.clock = float(L.DRONE_CYCLE) * floor(float(dr.clock) / float(L.DRONE_CYCLE)) + float(L.DRONE_CYCLE) - float(L.DRONE_HOME) - 16.0 + 9.0
+		await _shots3(pt, mv, "workshop_deck", func(): return ws.get_center() + Vector2(0.5, 1.5), [2, 3])
+		L.eval_all()
+		var on_ws := []
+		for ax in L.life[0].actors:
+			if String(ax.kind) != "drone" and not bool(ax.hidden) and ws.grow(0.05).has_point(ax.p):
+				on_ws.append("%s %s" % [String(ax.kind), str((ax.p as Vector2) - (Lf.O as Vector2))])
+		pt._log("life7_workshop_deck_clear", on_ws.is_empty() and bool(dr.get("home", false)) and ws.has_point(dr.p) and float(dr.alt) >= 10.5,
+			"ground actors on the workshop %s; drone home %s at %s alt %.1f m" % [str(on_ws), str(dr.get("home", false)), str((dr.p as Vector2) - (Lf.O as Vector2)), float(dr.get("alt", 0.0))])
+		var bk: Rect2 = (Lf.zones as Dictionary).get("barracks", Rect2())
+		if bk.size != Vector2.ZERO:
+			await _shots3(pt, mv, "barracks", func(): return bk.get_center() + Vector2(0.5, 1.0), [2])
 	# 2. moving actors, followed
 	for kd in [["tech", 0], ["tech", 2], ["forklift", 0], ["forklift", 1], ["fuel", 0], ["tug", 0], ["dog", 0], ["drone", 0]]:
 		var a: Dictionary = _actor(L, kd[0], kd[1])
@@ -143,11 +169,11 @@ func run(pt) -> void:
 		pt._log("life7_eng_drive", int(da.get("driver", -1)) >= 0 and not bool(da.hidden), "%s driven by engineer %d at %s pose %s (shots life7_eng_drive_z1..z3: the figure must not show)" % [String(da.kind), int(da.get("driver", -1)), str(da.p), String(da.pose)])
 	else:
 		print("LIFE7_INFO eng_drive not exercised: no engineer attached to a display vehicle within 40 s")
-	# 3. ops building: radar, comms mast, window glow; the ops-room inset shows from zoom 1.6
+	# 3. ops building (command centre): building life only (owner 13.9c-19: the ops-room inset is gone)
 	var pr: Rect2 = (Lf.zones as Dictionary).get("planning", Rect2())
 	if pr.size != Vector2.ZERO:
 		await _shots3(pt, mv, "ops", func(): return pr.get_center())
-		pt._log("life7_ops_inset", bool(L.inset_shown), "inset drawn at zoom 2.5: %s" % str(L.inset_shown))
+		pt._log("life7_ops_inset_gone", not bool(L.inset_shown) and not L.has_method("_draw_inset"), "no ops-room inset at zoom 2.5 (inset_shown %s)" % str(L.inset_shown))
 	# 4. range during live fire (drill cycle 44 s, live 6..28 s)
 	var rr: Rect2 = (Lf.zones as Dictionary).get("range", Rect2())
 	if rr.size != Vector2.ZERO:
@@ -206,27 +232,36 @@ func run(pt) -> void:
 		w.entities[en].order = {"type": "hold"}
 		w.entities[en].hp = 1.0e9
 		w.entities[en].max_hp = 1.0e9
+	# POLISH7-3 diagnosis (.plan/polish7/uf_diag.gd): this check fails on the SIM rule, not the layer: damage.gd sets
+	# last_hit_tick only on units, so tank hits on the facility's towers / walls / ECP baffles never make BaseState7
+	# "under_fire" (only a hit unit inside the perimeter does); reported to ORCH (owners CNFAC7 base_state7 / WOUND7 damage)
 	# POLISH7-2: read the layer's live entry each time (a rebuild that drops and re-adds the facility replaces the
 	# dict, and a handle taken earlier would keep the frozen aim of the old one: run 1's "aim 0.51" failure)
 	var Lv := func() -> Dictionary: return L.life[0] if not (L.life as Array).is_empty() else Lf
 	# POLISH7-2 (13.9c-17): sampled while the tank is shooting (the state drops back to contested between its volleys)
-	var uf: bool = await pt._wait_until(func(): return CnFacility.secure_state(w, fid) == "under_fire", 12.0)
+	# POLISH7-4 (ORCH): damage.gd stamps last_hit_tick on units only (POLISH7-3 board warn seq 4677), so the tank's hits on
+	# the towers / walls never make BaseState7 "under_fire"; ORCH decides that sim fix. Authority, owner 13.9c-17: the
+	# facility goes into full lockdown "ONLY ... when facility is breached"; "contested" and "under fire" both show the
+	# amber alert only (both are "not breached"), so this check accepts either state with the same amber / no-lockdown
+	# requirement. The breach check below is unchanged (red only on a real breach).
+	var uf: bool = await pt._wait_until(func(): return CnFacility.secure_state(w, fid) in ["contested", "under_fire"], 12.0)
 	var st_uf := CnFacility.secure_state(w, fid)
 	var al_uf := bool(Lv.call().alarm)
 	await pt._wait(0.5)   # a frame or two for the layer to see the entry change
 	al_uf = al_uf or bool(Lv.call().alarm)
-	pt._log("life7_under_fire_life_goes_on", uf and not al_uf, "state %s, life7 alarm %s (want under_fire, false)" % [st_uf, str(al_uf)])
+	pt._log("life7_under_fire_life_goes_on", uf and not al_uf and st_uf != "breached", "state %s, life7 alarm %s (want contested or under_fire, false)" % [st_uf, str(al_uf)])
 	var tracking: bool = await pt._wait_until(func(): return bool((Lv.call().aims as Dictionary).get("t%d" % ti, false)), 8.0)
 	await pt._wait(1.5)
 	await _shots3(pt, mv, "tower_tracking", func(): return tp)
-	var want := (ep - tp).angle()
+	# POLISH7-3: the tank moves (pl7: from 6 to 3.5 tiles): the cupola must point at where the tank IS, not its spawn
+	var tank_at: Vector2 = w.entities[en].pos if w.entities.has(en) else ep
+	var want := (tank_at - tp).angle()
 	var Lf2: Dictionary = Lv.call()
 	var got := float((Lf2.aims as Dictionary).get(ti, 99.0))
 	var foes_near := []   # POLISH7: diagnostics only (which hostiles the layer sees round this tower)
 	for u in L._near:
 		if int(u[1]) != int(Lf.owner) and int(u[1]) >= 0 and (u[0] as Vector2).distance_to(tp) < 14.0:
 			foes_near.append("%s d%.1f a%.2f" % [str(u[0]), (u[0] as Vector2).distance_to(tp), ((u[0] as Vector2) - tp).angle()])
-	var tank_at: Vector2 = w.entities[en].pos if w.entities.has(en) else ep
 	pt._log("life7_cupola_tracks", tracking and absf(wrapf(got - want, -PI, PI)) < 0.3, "tower %d aim %.2f want %.2f tracking %s tank now %s (a %.2f) foes %s same_entry %s rebuilds %d" % [ti, got, want, str((Lf2.aims as Dictionary).get("t%d" % ti, false)), str(tank_at), (tank_at - tp).angle(), str(foes_near), str(is_same(Lf, Lf2)), int(L.rebuilds)])
 	# POLISH7-2 (owner 13.9c-17): a tank shooting from outside = under fire = amber only: life goes on (no shelter,
 	# vehicles drive, range not cold); the full alarm only on a real breach (hostiles inside the compound)

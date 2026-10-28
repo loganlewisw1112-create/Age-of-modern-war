@@ -14,9 +14,9 @@ const ArtCat = preload("res://presentation/art/art_catalog.gd")
 ## when that art is missing.
 const ZONE_ART := {"planning": "g7_fac_planning", "drone_bay": "g7_fac_dronebay", "workshop": "g7_fac_workshop", "range": "g7_fac_range"}
 const ART := "res://assets/art/g7_baseprops/"
-const ASPHALT := Color(0.20, 0.21, 0.22, 0.92)
-const LANE_LINE := Color(0.85, 0.78, 0.35, 0.85)
-const SLAB := Color(0.52, 0.52, 0.50, 0.95)
+const ASPHALT := Color(0.21, 0.22, 0.23)   # FACB7-5 (13.9c-18): opaque (was alpha 0.92)
+const LANE_LINE := Color(0.76, 0.70, 0.33)   # FACB7-5: opaque
+const SLAB := Color(0.52, 0.52, 0.50)   # FACB7-5: opaque
 const ROOF := [Color(0.46, 0.49, 0.47), Color(0.36, 0.38, 0.37), Color(0.27, 0.29, 0.29)]
 
 var mv = null
@@ -128,10 +128,10 @@ func _box(r: Array, hz: float, pal: Array) -> void:
 
 ## ART7F-2: the compound floor inside the blast walls is a gravel hardstand (no grass patches between the lanes), the
 ## staging yard a marked concrete marshalling slab. Display only; drawn once per facility rebuild.
-const GRAVEL := Color(0.40, 0.385, 0.35, 0.96)
+const GRAVEL := Color(0.40, 0.385, 0.35)   # FACB7-5: opaque
 const GRAVEL_DOTS := [Color(0.30, 0.29, 0.26, 0.7), Color(0.52, 0.50, 0.46, 0.7), Color(0.35, 0.33, 0.29, 0.6)]
-const YARD := Color(0.47, 0.47, 0.45, 0.96)
-const BAY_LINE := Color(0.88, 0.88, 0.82, 0.8)
+const YARD := Color(0.47, 0.47, 0.45)   # FACB7-5: opaque
+const BAY_LINE := Color(0.80, 0.80, 0.75)   # FACB7-5: opaque
 var drawn_ground := 0
 
 

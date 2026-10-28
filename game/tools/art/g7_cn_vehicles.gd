@@ -291,7 +291,10 @@ static func rws(S: Array, T: Dictionary, at: Vector3, yaw: float, hull: Array, s
 		M.cyl(pt, Tg, Vector3(0.6, 0, 0), Vector3(1, 0, 0), 0.026, 0.38, 4, gm, {"edge": false})
 		M.cyl(pt, Tg, Vector3(1.0, 0, 0), Vector3(1, 0, 0), 0.04, 0.04, 6, gm, {"edge": false, "cap_t": 0})
 		if fire >= 0 and (fire % 2) == i:
-			_burst(pt, Tg, Tp, Vector3(1.05, 0, 0), [0, 1, 2, 3][fire], Vector3(0.1, s * 0.3, 0.42))
+			var ph: int = [0, 1, 2, 3][fire]
+			if typeof(st) == TYPE_DICTIONARY and (st as Dictionary).has("ph"):
+				ph = int(st.ph)   # MUZZLE7-2: the overlay sheet's full flash on barrel 1 (fire 1, ph 0)
+			_burst(pt, Tg, Tp, Vector3(1.05, 0, 0), ph, Vector3(0.1, s * 0.3, 0.42))
 		elif fire >= 0:
 			_burst(pt, Tg, Tp, Vector3(1.05, 0, 0), 3, Vector3(0.1, s * 0.3, 0.42))
 	var bins := {0: Vector3(-0.2, 0.33, 0.33), 1: Vector3(-0.55, 0.62, 0.62), 2: Vector3(-0.42, 0.5, 0.5)}
@@ -463,7 +466,9 @@ static func wpn_state(fname: String) -> Dictionary:
 
 
 ## The whole vehicle into scene S at ground pose T. fname picks the state; wreck = burnt hull.
-static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := false, stowed := false) -> void:
+## guns = false (MUZZLE7-2, 13.9c-28a): the hull without its gun pods / RWS; those are drawn in game as separate
+## overlay sprites (<id>_pod / <id>_rws sheets, presentation/view/apc_gun7.gd) that traverse on their own.
+static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := false, stowed := false, guns := true) -> void:
 	var sp: Dictionary = SPEC[big]
 	var dmg := fname == "damaged"   # ART7D: G6.1 damaged state (hp < 50 %): scorched, smoking, still running
 	var hull: Array = C.ramp(BURNT if wreck else ((HULL_CN if big else HULL_OP).lerp(BURNT, 0.38) if dmg else (HULL_CN if big else HULL_OP)))
@@ -513,11 +518,12 @@ static func model(S: Array, T: Dictionary, big: bool, fname: String, wreck := fa
 	_details(up, S, Th, big, hull, dk, wreck, stowed)
 	var at_r: Vector3
 	if big:
-		pod(S, Th, Vector3(1.15, 0, roof), 0.9 if fname == "traverse" else 0.0, hull, ws.pod, wreck)
-		pod(S, Th, Vector3(-2.0, -0.38, roof), PI - (1.3 if fname == "traverse" else 0.0), hull, ws.pod_r, wreck)
+		if guns:
+			pod(S, Th, Vector3(1.15, 0, roof), 0.9 if fname == "traverse" else 0.0, hull, ws.pod, wreck)
+			pod(S, Th, Vector3(-2.0, -0.38, roof), PI - (1.3 if fname == "traverse" else 0.0), hull, ws.pod_r, wreck)
 		at_r = Vector3(-3.1, 0.72, roof)
 	else:
-		if not wreck:
+		if not wreck and guns:
 			rws(S, Th, Vector3(0.7, -0.1, roof), 0.9 if fname == "traverse" else 0.0, hull, ws.pod)
 		at_r = Vector3(-2.55, 0.62, roof)
 	rocket_pod(S, Th, at_r, hull, 0 if wreck else ws.rk)
@@ -664,11 +670,16 @@ static func row_yaw(k: int) -> float:
 	return k * PI / 4.0 + (HEAD_TWIST if k == 1 or k == 5 else 0.0)
 
 
-static func apc(cv, k: int, fname: String, o: Vector2, big: bool, wreck := false) -> void:
+static func apc(cv, k: int, fname: String, o: Vector2, big: bool, wreck := false, guns := true) -> void:
 	var S: Array = []
 	var T := M.pose(o, row_yaw(k))
-	model(S, T, big, fname, wreck)
-	M.shadow(cv, S, o)
+	model(S, T, big, fname, wreck, false, guns)
+	if guns:
+		M.shadow(cv, S, o)
+	else:   # MUZZLE7-2: the gun pods still cast their (travel-position) shadow; the pods themselves are overlays
+		var Ss: Array = []
+		model(Ss, T, big, fname, wreck, false, true)
+		M.shadow(cv, Ss, o)
 	M.render_z(cv, S, o, 31 + k)
 	if fname == "dome":
 		dome(cv, o + Vector2(0, -4), 60.0 if big else 56.0, 28.0, 54.0)
@@ -680,12 +691,14 @@ static func build(out: Dictionary) -> void:
 		var frames: Array = (STRIKE_FRAMES if big else TAC_FRAMES) + ANIM61   # ART7D: + native G6.1 frames (appended)
 		var b: bool = big
 		C.unit_sheet(out, id, "vehicles", "vehicle", int(FW[b]), int(FH[b]), PIV[b], frames,
-			func(cv, k, f, o): apc(cv, k, f, o, b),
+			func(cv, k, f, o): apc(cv, k, f, o, b, false, false),
 			{"sample": "vehicle", "line": "strike_team" if b else "operators",
 			"capacity": "10 + packages (PROVISIONAL)" if b else 8, "key_frames": frames.duplicate(),
 			"size_m": [SPEC[b].L, SPEC[b].W, SPEC[b].roof], "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
-			"anim_strip": ["idle", "move", "move_1", "traverse", "fire", "panels_open", "rockets_up", "rockets_fire", "dome", "doors_open"]},
+			"anim_strip": ["idle", "move", "move_1", "traverse", "fire", "panels_open", "rockets_up", "rockets_fire", "dome", "doors_open"],
+			"gun_mounts": gun_mounts(b)},
 			func(cv, k, o): apc(cv, k, "idle", o, b, true))
+		_gun_icon(out, id, b)
 		var gun: Array = GUN_STRIKE if b else GUN_TAC
 		var ex := {"sample": "vehicle_anim", "line": "strike_team" if b else "operators", "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
 			"weapon_sheet_of": id, "pivot_note": "same cell and pivot as the main sheet"}
@@ -694,9 +707,150 @@ static func build(out: Dictionary) -> void:
 		if not b:
 			loops = {"fire": "fire_0..3 (barrels alternate)", "reload": "reload_0..2 then idle (crewman swaps a bin from the hatch)"}
 		C.unit_sheet(out, id + "_gun", "vehicles", "vehicle", int(FW[b]), int(FH[b]), PIV[b], gun,
-			func(cv, k, f, o): apc(cv, k, f, o, b),
+			func(cv, k, f, o): apc(cv, k, f, o, b, false, false),
 			ex.merged({"key_frames": gun.duplicate(), "anim_strip": gun.duplicate(), "loops": loops}))
 		C.unit_sheet(out, id + "_rkt", "vehicles", "vehicle", int(FW[b]), int(FH[b]), PIV[b], RKT,
-			func(cv, k, f, o): apc(cv, k, f, o, b),
+			func(cv, k, f, o): apc(cv, k, f, o, b, false, false),
 			ex.merged({"key_frames": RKT.duplicate(), "anim_strip": RKT.duplicate(), "frame_alias": RKT_ALIAS,
 			"sequence": "idle -> rk_raise_0, rk_raise_1 -> rk_fire_0..5 (ripple, one tube per frame) -> rk_reload_0..3 (canister swap) -> rk_raise_1 ... -> rk_stow_0, rk_stow_1 -> idle"}))
+		gun_sheet(out, b)
+
+
+# ---------------------------------------------------------------- MUZZLE7-2 (G7_REFERENCE 13.9c-28a) gun overlays
+## Owner: "donte forget the mounted gun on the back of the apc -- thats needs to be animated correctly when shooting
+## too". The strike APC's front + rear manned .50 pods and the tactical APC's remote twin .50 station are no longer
+## baked into the hull sheets (main / _gun / _rkt; wrecks and dropship loads keep them): each is its own small sheet
+## <id>_pod / <id>_rws drawn over the hull by presentation/view/apc_gun7.gd, which traverses it to the target on its
+## own (independent of the hull heading), plays recoil + flash + brass per shot, belt changes, and returns it to the
+## travel position when idle. Rows = 8 world aim facings (k * 45 deg), the *_h columns the half steps (+22.5 deg),
+## so the gun turns in 16 steps. Cell pivot = the gun's turret-ring centre on the roof.
+## gun_mounts (main sheet g7): per mount the sheet, the ring centre in px from the hull pivot per hull row (anchor),
+## the travel yaw (rad, relative to the hull), and the blind arc (centre / half width, relative to the hull) where the
+## other pod / the rocket pod is in the way. g7.tips16 (gun sheet): barrel tips (px from the cell pivot, per barrel)
+## for the 16 aim steps (j * 22.5 deg); computed from the same pose chain as pod() / m2() / rws().
+const GUN7 := ["rest", "fire_0", "fire_1", "fire_t", "reload_0", "reload_1", "reload_2", "rest_h", "fire_0_h", "fire_1_h",
+	"fire_t_h"]
+const GFW := 96
+const GFH := 56
+const GPIV := Vector2i(48, 32)
+
+
+## Mount points on the roof (hull-local metres) = the pod() / rws() call sites in model().
+static func mounts(big: bool) -> Array:
+	var roof: float = SPEC[big].roof
+	if big:
+		return [{"at": Vector3(1.15, 0, roof), "travel": 0.0, "blind": PI, "blind_w": 0.42},
+			{"at": Vector3(-2.0, -0.38, roof), "travel": PI, "blind": 0.0, "blind_w": 0.42}]
+	return [{"at": Vector3(0.7, -0.1, roof), "travel": 0.0, "blind": 0.0, "blind_w": 0.0}]
+
+
+static func gun_id(big: bool) -> String:
+	return "g7_cn_strike_apc_pod" if big else "g7_op_tactical_apc_rws"
+
+
+static func gun_mounts(big: bool) -> Array:
+	var o := Vector2(PIV[big])
+	var out: Array = []
+	for m in mounts(big):
+		var at: Array = []
+		for k in 8:
+			var q := M.scr_w(o, M.wm(M.pose(o, row_yaw(k)), m.at)) - o
+			at.append([snappedf(q.x, 0.01), snappedf(q.y, 0.01)])
+		out.append({"sheet": gun_id(big), "anchor": at, "travel": m.travel, "blind": m.blind, "blind_w": m.blind_w})
+	return out
+
+
+## Barrel tips of the overlay gun aimed at world yaw j * PI / 8 (px from the cell pivot; RWS: barrel 0 = left).
+static func gun_tips(big: bool) -> Array:
+	var o := Vector2(GPIV)
+	var out: Array = []
+	for j in 16:
+		var Tp := M.sub(M.pose(o, j * PI / 8.0), Vector3.ZERO, 0.0)
+		var b: Array = []
+		if big:   # m2(): gun at (0.27, 0, 0.62), elevation 0.04, muzzle brake ends at x 1.17
+			var q := M.scr_w(o, M.wm(M.sub(Tp, Vector3(0.27, 0, 0.62), 0.0, 0.04), Vector3(1.17, 0, 0))) - o
+			b.append([snappedf(q.x, 0.01), snappedf(q.y, 0.01)])
+		else:     # rws(): barrels at (0.3, -+0.11, 0.42), elevation 0.04, brake ends at x 1.02
+			for s in [-1.0, 1.0]:
+				var q := M.scr_w(o, M.wm(M.sub(Tp, Vector3(0.3, s * 0.11, 0.42), 0.0, 0.04), Vector3(1.02, 0, 0))) - o
+				b.append([snappedf(q.x, 0.01), snappedf(q.y, 0.01)])
+		out.append(b)
+	return out
+
+
+## The pod / RWS alone at the cell pivot, aimed at world yaw (row k, + half step for *_h columns), in state fname:
+## rest; fire_0 / fire_1 = the flash frames (pod: full / second flash with recoil; RWS: barrel 0 / barrel 1 firing);
+## fire_t = the tail (smoke + brass, gun run out again); reload_0..2 = belt / bin change.
+static func gun_cell(cv, k: int, fname: String, o: Vector2, big: bool) -> void:
+	var half := fname.ends_with("_h")
+	var f := fname.trim_suffix("_h")
+	var st = {}
+	match f:
+		"fire_0":
+			st = {"fire": 0}
+		"fire_1":
+			st = {"fire": 2} if big else {"fire": 1, "ph": 0}
+		"fire_t":
+			st = {"fire": 3}
+		"reload_0", "reload_1", "reload_2":
+			st = {"reload": int(f.right(1))}
+	var S: Array = []
+	var T := M.pose(o, k * PI / 4.0 + (PI / 8.0 if half else 0.0))
+	var hull: Array = C.ramp(HULL_CN if big else HULL_OP)
+	if big:
+		pod(S, T, Vector3.ZERO, 0.0, hull, st)
+	else:
+		rws(S, T, Vector3.ZERO, 0.0, hull, st)
+	M.render_z(cv, S, o, 31 + k)
+
+
+static func gun_sheet(out: Dictionary, big: bool) -> void:
+	var id := "g7_cn_strike_apc" if big else "g7_op_tactical_apc"
+	var b: bool = big
+	C.unit_sheet(out, gun_id(b), "vehicles", "vehicle", GFW, GFH, GPIV, GUN7,
+		func(cv, k, f, o): gun_cell(cv, k, f, o, b),
+		{"sample": "vehicle_anim", "line": "strike_team" if b else "operators", "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+		"weapon_sheet_of": id, "gun_overlay_of": id, "pivot_note": "pivot = turret-ring centre (gun_mounts anchor)",
+		"key_frames": GUN7.duplicate(), "anim_strip": GUN7.duplicate(), "tips16": gun_tips(b), "aim_steps": 16,
+		"loops": {"fire": "fire_0 / fire_1 (alternate) then fire_t", "reload": "reload_0..2 (belt / bin change)",
+		"aim": "row k = world facing k * 45 deg, *_h columns + 22.5 deg"}})
+	_snap_tips(out, gun_id(b))
+
+
+## The analytic tip of a barrel seen end-on can fall a pixel or two past its last drawn pixel: snap each tip onto the
+## nearest opaque pixel of the drawn rest frame within 3 px (the measuring rule of tools/art/muzzle7.gd).
+static func _snap_tips(out: Dictionary, gid: String) -> void:
+	var e: Dictionary = out.manifest.vehicles[gid]
+	var img: Image = out.images["units/%s.png" % gid]
+	var fr: Array = e.frames
+	for j in 16:
+		var col := fr.find("rest_h" if j % 2 == 1 else "rest")
+		var ox := col * GFW + GPIV.x
+		var oy := (j >> 1) * GFH + GPIV.y
+		var row: Array = e.g7.tips16[j]
+		for bi in row.size():
+			var t := Vector2(float(row[bi][0]), float(row[bi][1]))
+			var best := Vector2i(-999, -999)
+			var bd := 1.0e9
+			for dy in range(-3, 4):
+				for dx in range(-3, 4):
+					var x := ox + int(round(t.x)) + dx
+					var y := oy + int(round(t.y)) + dy
+					var d := Vector2(x - ox, y - oy).distance_squared_to(t)
+					if d < bd and x >= 0 and y >= 0 and x < img.get_width() and y < img.get_height() and img.get_pixel(x, y).a > 0.6:
+						bd = d
+						best = Vector2i(x - ox, y - oy)
+			if best.x > -999 and bd > 1.0:
+				row[bi] = [best.x, best.y]
+
+
+## Menu icon of the hull sheet with its guns fitted (the hull sheet itself has none since MUZZLE7-2).
+static func _gun_icon(out: Dictionary, id: String, big: bool) -> void:
+	var fw: int = FW[big]
+	var fh: int = FH[big]
+	var img := Image.create(fw, fh * 8, false, Image.FORMAT_RGBA8)
+	var cv = P.Canvas.new(fw, fh)
+	apc(cv, 1, "idle", Vector2(PIV[big]), big)
+	C.selout(cv)
+	img.blit_rect(cv.img, Rect2i(0, 0, fw, fh), Vector2i(0, fh))
+	C.icon(out, id, img, fw, fh, 1)

@@ -69,6 +69,11 @@ static func squad_sheet(spec: Dictionary, alive: int) -> Dictionary:
 
 ## ART-BLD variant family of a building def ("" | lvl | rot | water). G6 (VIEW6): g6_bld defs carry the
 ## same family under `g6` (every G6 building is "rot": rot_<f>, _damaged, _build_<n>, optional _fire).
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B: rot-only turret quarter turns
+## G7 TURRET7B: wall-turret mount normals (WallTurret7.DIRS: E, S, W, N) as world angles for the head aim step.
+const WT_N := [0.0, PI * 0.5, PI, -PI * 0.5]
+
+
 static func variant_of(b: Dictionary) -> String:
 	var g = b.get("g5")
 	if not (g is Dictionary):
@@ -98,6 +103,48 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 			return base + "_build_%d" % n
 		if states.has("build_%d" % n):
 			return "build_%d" % n
+	# G7 TURRET7B (13.9c-30): turret heads are drawn on the SIMULATED turret bearing (render_snap static "tb", world
+	# radians, sim/systems/traverse7.gd) so the barrel visibly swings onto its target before it fires: aim_<k>[_fire]
+	# heads (yaw k * 45 deg) and wall-turret heads rot_<m>_a<n> (n - 1 = aim step across the 180 deg front of mount
+	# normal m). Shown damaged or not (a hurt turret still traverses); build states above keep priority.
+	var tb = e.get("tb")
+	if tb != null and bool(e.get("built", true)):
+		var fire := int(e.get("firing", 0)) > 0
+		# G7 CIWS7 (13.9c-32): rotary CIWS frames cw<k>_<el>[_s|_fire], cw<k>_r (drum swap), cw<k>_x (dry): yaw k from tb,
+		# elevation band el / phase ph from the sim frame code facing_i = el * 8 + ph (sim/systems/ciws7.gd)
+		if states.has("cw0_1"):
+			var kc := posmod(roundi(float(tb) / (PI / 4.0)), 8)
+			var vc := int(e.get("facing_i", 0))
+			var el := clampi(vc / 8, 0, 2)
+			var ph := posmod(vc, 8)
+			if ph == 3 and states.has("cw%d_r" % kc):
+				return "cw%d_r" % kc
+			if ph == 4 and states.has("cw%d_x" % kc):
+				return "cw%d_x" % kc
+			if fire and states.has("cw%d_%d_fire" % [kc, el]):
+				return "cw%d_%d_fire" % [kc, el]
+			if ph == 1 and states.has("cw%d_%d_s" % [kc, el]):
+				return "cw%d_%d_s" % [kc, el]
+			if states.has("cw%d_%d" % [kc, el]):
+				return "cw%d_%d" % [kc, el]
+		if states.has("aim_0"):
+			var k := posmod(roundi(float(tb) / (PI / 4.0)), 8)
+			if fire and states.has("aim_%d_fire" % k):
+				return "aim_%d_fire" % k
+			if states.has("aim_%d" % k):
+				return "aim_%d" % k
+		elif base != "" and states.has(base + "_a1"):
+			var m := posmod(int(e.get("facing_i", 0)), 4)
+			var rel := wrapf(float(tb) - float(WT_N[m]), -PI, PI)
+			var a := clampi(roundi((rel + PI * 0.5) / (PI / 8.0)), 0, 8) + 1
+			if fire and states.has(base + "_a%d_fire" % a):
+				return base + "_a%d_fire" % a
+			if states.has(base + "_a%d" % a):
+				return base + "_a%d" % a
+		elif variant == "rot":
+			var ri: int = Traverse7.rot_aim_index(String(e.get("def", "")), float(tb))   # rot-only G6 turrets: coarse quarter turns
+			if ri >= 0 and states.has("rot_%d" % ri):
+				base = "rot_%d" % ri
 	var fi4 := int(e.get("facing_i", 0)) / 4  # G7 WTUR7 CR 3641: wall-turret head aim frames rot_<m>_a<n>[_fire]
 	if fi4 > 0 and base != "" and not dmg and bool(e.get("built", true)) and states.has(base + "_a%d" % fi4):
 		if int(e.get("firing", 0)) > 0 and states.has(base + "_a%d_fire" % fi4):

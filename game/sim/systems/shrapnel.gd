@@ -52,12 +52,20 @@ static func from_weapon(s: Dictionary) -> Dictionary:
 
 
 ## Ray factor for the sim detail level: FULL units now (Tiers lists, else all units) against rules detail.
+## DET7: counts LIVE units only (once per tick, cached): the index / Tiers lists keep destroyed units until their next
+## rebuild while a loaded world starts clean, so a bare .size() gave a save / load copy another ray count.
 static func detail(w: SimWorld) -> float:
 	var n := 0
-	if Tiers.enabled(w):
-		n = (Tiers.lists(w).get("full", []) as Array).size()
+	var c = w.cache.get("shr_n")
+	if c != null and int(c[0]) == w.tick:
+		n = int(c[1])
 	else:
-		n = SimIndex.of(w, "unit").size()
+		var src: Array = (Tiers.lists(w).get("full", []) as Array) if Tiers.enabled(w) else SimIndex.of(w, "unit")
+		var ents: Dictionary = w.entities
+		for e in src:
+			if ents.has(int(e.id)):
+				n += 1
+		w.cache["shr_n"] = [w.tick, n]
 	for row in _cfg().get("detail", [[1000000, 1.0]]):
 		if n <= int(row[0]):
 			return float(row[1])

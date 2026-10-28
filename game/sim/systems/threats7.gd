@@ -786,8 +786,9 @@ static func _seen(w: SimWorld, fid: int) -> Array:
 
 
 static func _is_cn(u: Dictionary) -> bool:
-	var d := String(u.def)
-	return d.begins_with("g7_cn") or d.begins_with("g7_op") or d.begins_with("g7_b_") or u.has("cn_team")
+	# ORCH (CNROLE7 audit): the old g7_b_ prefix also caught Human B Sentinels, drones and facility engineers;
+	# CnRole7.is_cn is the one definition of a counter-nanite strike / tactical unit (13.9c-29)
+	return preload("res://sim/systems/cn_role7.gd").is_cn(u)
 
 
 ## Closest visible enemy within r preferring CN units, then the filter (veh / sol / any).

@@ -34,6 +34,7 @@ const GUN_RELOAD_S := 1.8
 const RK_RELOAD_S := 2.2
 const RK_RIPPLE_S := 0.14         # one tube per frame
 const PANEL_S := 1.6
+const DOME_STILL_S := 0.8   # PATH7-2 CR 6995: the dome hull frame shows only after the APC stood still this long
 const EV_TYPES := {"ApcDome": true, "ApcDomeBroken": true, "ApcDomeStop": true, "ApcEmitter": true, "ApcEmp": true, "ApcPanel": true, "ApsIntercept": true, "BurrowerErupt": true, "BurrowerSurfaced": true, "BurrowerUnder": true, "CnDisruptorShot": true, "CnHarpoon": true, "CnLimpet": true, "CnLimpetPlanted": true, "CocoonCut": true, "CocoonLost": true, "Cocooned": true, "LeechDrill": true, "LeechLatched": true, "LeechPried": true, "MimicExposed": true, "NaniteSlug": true, "PackhunterSwipe": true, "PartWrecked": true, "RocketSalvo": true, "ShotFired": true, "WalkerBlownUp": true, "WalkerRighted": true, "WebSpit": true}   # events this layer draws (fast filter: a big fight emits thousands of others per step)
 const EV_TYPES_NO_APC := {"ApcDome": true, "ApcDomeBroken": true, "ApcDomeStop": true, "ApcEmitter": true, "ApcEmp": true, "ApcPanel": true, "ApsIntercept": true, "BurrowerErupt": true, "BurrowerSurfaced": true, "BurrowerUnder": true, "CnDisruptorShot": true, "CnHarpoon": true, "CnLimpet": true, "CnLimpetPlanted": true, "CocoonCut": true, "CocoonLost": true, "Cocooned": true, "LeechDrill": true, "LeechLatched": true, "LeechPried": true, "MimicExposed": true, "NaniteSlug": true, "PackhunterSwipe": true, "PartWrecked": true, "RocketSalvo": true, "WalkerBlownUp": true, "WalkerRighted": true, "WebSpit": true}   # ShotFired only matters for APC .50 pods
 const FRAME_ALIAS := {"rk_aim": "rk_raise_1", "rk_stow_0": "rk_raise_1", "rk_stow_1": "rk_raise_0"}
@@ -541,13 +542,15 @@ func _apc_state(id: int) -> Dictionary:
 	if a == null:
 		a = {"fire_t": -10.0, "rear": false, "burst": 0.0, "rel_t": -10.0, "rl": 0, "rl_t0": -10.0, "stow_t": -10.0,
 			"rln": -1, "rk_rel_t": -10.0, "salvo_t": -10.0, "salvo_k0": 0, "salvo_n": 0, "pan_t": -10.0, "dome": -1.0,
-			"dome_t": -10.0}
+			"dome_t": -10.0, "mv_t": -10.0}
 		_ap[id] = a
 	return a
 
 
 func _apc(id: int, g: Dictionary, i: int, sp: Vector2, dname: String, ow: int, fl: int, dt: float, vis: bool) -> void:
 	var a := _apc_state(id)
+	if fl & RenderSnap.FLAG_MOVING:   # PATH7-2 CR 6995
+		a.mv_t = t
 	var rl := int(g.get("rl", 0))
 	var rln := int(g.get("rl_n", 6))
 	if rl != int(a.rl):
@@ -607,7 +610,7 @@ func _apc(id: int, g: Dictionary, i: int, sp: Vector2, dname: String, ow: int, f
 		elif t - float(a.stow_t) < 0.7:
 			spec = rk
 			fr = "rk_stow_0" if t - float(a.stow_t) < 0.35 else "rk_stow_1"
-	if spec.is_empty() and gfr != "":
+	if spec.is_empty() and gfr != "" and (fl & RenderSnap.FLAG_MOVING) == 0:   # PATH7-2 CR 6996: never freeze the track cycle while rolling
 		spec = gun
 		fr = gfr
 	if spec.is_empty():
@@ -615,7 +618,7 @@ func _apc(id: int, g: Dictionary, i: int, sp: Vector2, dname: String, ow: int, f
 		if t - float(a.pan_t) < PANEL_S and col_of(ms, "panels_open") >= 0:
 			spec = ms
 			fr = "panels_open"
-		elif dome >= 0.0 and col_of(ms, "dome") >= 0 and (fl & RenderSnap.FLAG_MOVING) == 0:
+		elif dome >= 0.0 and col_of(ms, "dome") >= 0 and t - float(a.mv_t) >= DOME_STILL_S:   # PATH7-2 CR 6995
 			spec = ms
 			fr = "dome"
 	if not spec.is_empty():

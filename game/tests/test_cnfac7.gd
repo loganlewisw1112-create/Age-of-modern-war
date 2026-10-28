@@ -6,6 +6,7 @@ const BaseState7 = preload("res://sim/systems/base_state7.gd")
 const Transport = preload("res://sim/systems/transport.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const WallTurret7 = preload("res://sim/systems/wallturret7.gd")
+const Production = preload("res://sim/systems/production.gd")   # FACB7-6: the suit spawn cells of the Suit Foundry
 const NOFIRE := 100000
 
 
@@ -178,7 +179,7 @@ func test_decon_clears_exposure_and_repairs_suits() -> void:
 	var fid := _facility(w, s[1])
 	var F := CnFacility.fac(w, fid)
 	var dz := CnFacility.zone(F, "decon")
-	var sid := _unit(w, "rifleman", 0, dz.get_center())
+	var sid := _unit(w, "rifleman", 0, CnFacility.zone(F, "decon_hall").get_center() + Vector2(-1, 0))   # APCMOV7-3 CR 5272, owner 13.9c-25 ("NO infantry or ground units can enter through the facilities apc entrance/wash area"): infantry decon in the decon hall; assertions unchanged
 	w.entities[sid].exposure = 40.0
 	w.entities[sid].suit_punctured = true
 	var mid := _unit(w, "rifleman", 0, CnFacility.zone(F, "decon_hall").get_center())   # BASE7-3: the infantry decon hall (13.9c-2) exposes it
@@ -231,7 +232,12 @@ func test_range_xp_only_while_secure() -> void:
 	var xp1 := float(CnFacility.team(w, tid).xp)
 	check(xp1 > 10.0, "range drills build team XP while secure (%.1f)" % xp1)
 	var F := CnFacility.fac(w, fid)
-	_unit(w, "rifleman", 1, CnFacility.zone(F, "pad").get_center())
+	# FACB7-7 (ORCH change_request.test_cnfac7_breach_fixture, seq 6023): the intruder must stay alive for the whole
+	# breach window. The defenders kill a plain rifleman at about tick 12; the old pass relied on the dead unit lingering in
+	# a stale SimIndex entry, which ORCH removed in base_state7 (save/load determinism). Fixture only: the checks are unchanged.
+	var rid := _unit(w, "rifleman", 1, CnFacility.zone(F, "pad").get_center())
+	w.entities[rid].hp = 1.0e6
+	w.entities[rid].max_hp = 1.0e6
 	_run(w, 20)
 	check_eq(CnFacility.secure_state(w, fid), "breached", "enemy inside = breached")
 	var xp2 := float(CnFacility.team(w, tid).xp)
@@ -705,8 +711,15 @@ func test_facility_sizes_proportionate() -> void:
 	var gz: Array = C.garage_size
 	check_eq([int(gz[0]), int(gz[1])], [3, 3], "garages are 3x3")
 	var rects := []
+	var stk: Dictionary = C.get("stacked", {})
 	for n in ["gate", "decon", "pad", "helipad", "drone_bay", "range", "workshop"]:
 		var z: Array = C[n]
+		if stk.has(n):
+			# FACB7-5 (owner 13.9c-18): the drone bay is the workshop's second storey: it must stand exactly on the
+			# workshop (no ground of its own), every other zone keeps the no-overlap rule below
+			var hz: Array = C[String(stk[n])]
+			check_eq([int(z[0]), int(z[1]), int(z[2]), int(z[3])], [int(hz[0]), int(hz[1]), int(hz[2]), int(hz[3])], "%s stands exactly on %s" % [n, stk[n]])
+			continue
 		rects.append([n, Rect2i(int(z[0]), int(z[1]), int(z[2]), int(z[3]))])
 	for g in C.garages:
 		rects.append(["garage", Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3)])
@@ -969,9 +982,10 @@ func _fac_footprints(C: Dictionary) -> Array:
 	var R := func(a: Array) -> Rect2i: return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
 	var fps := []
 	fps.append(["core", Rect2i(int(C.core_offset[0]), int(C.core_offset[1]), 4, 4), "bld"])
+	var stk: Dictionary = C.get("stacked", {})   # FACB7-5 (13.9c-18): an upper storey ("upper") stands on its host's footprint
 	for n in ["planning", "lab", "drone_bay", "range", "workshop", "decon_hall", "magazine", "armory", "aid_station", "barracks"]:   # FACB7: + the 13.9c-6 / 13.9c-10 buildings
 		if C.has(n):
-			fps.append([n, R.call(C[n]), "bld"])
+			fps.append([n, R.call(C[n]), "upper" if stk.has(n) else "bld"])
 	for i in (C.garages as Array).size():
 		var g: Array = C.garages[i]
 		fps.append(["garage%d" % i, Rect2i(int(g[0]) - 1, int(g[1]) - 1, 3, 3), "bld"])
@@ -1011,6 +1025,17 @@ func test_base73_no_footprint_door_or_lane_overlap() -> void:
 			bad.append("%s outside the wall ring" % fps[i][0])
 		for j in range(i + 1, fps.size()):
 			var b: Rect2i = fps[j][1]
+			if fps[i][2] == "upper" or fps[j][2] == "upper":
+				# FACB7-5 (owner 13.9c-18 "drone bay ... a second story above the workshop"): an upper storey has no ground
+				# footprint of its own; it must sit EXACTLY on its declared host (checked below), so it is exempt only from
+				# the pair test against that host; against everything else it is held to the host's own checks
+				var up: int = i if fps[i][2] == "upper" else j
+				var other: int = j if up == i else i
+				if String((C.get("stacked", {}) as Dictionary).get(fps[up][0], "")) == fps[other][0]:
+					continue
+				if a.intersects(b):
+					bad.append("%s overlaps %s" % [fps[i][0], fps[j][0]])
+				continue
 			if a.intersects(b):
 				bad.append("%s overlaps %s" % [fps[i][0], fps[j][0]])
 			elif fps[i][2] == "bld" and fps[j][2] == "bld" and a.grow(1).intersects(b) \
@@ -1077,6 +1102,10 @@ func test_base73_no_footprint_door_or_lane_overlap() -> void:
 		for pp in C.popups:
 			if Vector2i(int(pp[0]), int(pp[1])) == q:
 				bad.append("sentry %s on a pop-up cell" % [p])
+	for up in (C.get("stacked", {}) as Dictionary):   # FACB7-5: an upper storey stands exactly on its host
+		var host := String(C.stacked[up])
+		if not (named.has(up) and named.has(host) and named[up] == named[host]):
+			bad.append("upper storey %s is not exactly on its host %s" % [up, host])
 	check_eq(bad, [], "no footprint, door or lane overlaps another")
 	check(named.pad.get_area() >= 42 and named.helipad.get_area() >= 36, "the stealth launch pad and the helipad keep their full pads")
 	check((named.range as Rect2i).get_area() >= 30, "the training range has its own place (%d tiles)" % (named.range as Rect2i).get_area())
@@ -1530,3 +1559,208 @@ func test_facb74_roof_pad_and_signature_buildings() -> void:
 		ds.fuel = 100.0
 		serve.call()
 		check(not bool(CnFacility.roof_pad(w, F).ok) and float(ds.fuel) <= 100.0, "a destroyed barracks has no pad (fuel %.0f)" % float(ds.fuel))
+
+
+## FACB7-5 (owner 13.9c-18): the multi-storey Sentinel barracks with its rooftop gunship pad stands where the drone bay
+## was ([16,14,4,2]); the drone bay is a second storey on the workshop (one building: same footprint, declared stacked,
+## drawn once by the workshop art); the roof pad lies on the barracks roof at its new site and still refuels / rearms
+## (covered by test_facb74_roof_pad_and_signature_buildings); the barracks door and the Sentinel barracks part are on
+## the new site; the old barracks site holds no building.
+func test_facb75_barracks_on_dronebay_site_dronebay_on_workshop() -> void:
+	var C := CnFacility.conf()
+	var R := func(a: Array) -> Rect2i: return Rect2i(int(a[0]), int(a[1]), int(a[2]), int(a[3]))
+	check_eq(R.call(C.barracks), Rect2i(16, 14, 4, 2), "the barracks stands on the drone bay's old site")
+	check_eq(String((C.get("stacked", {}) as Dictionary).get("drone_bay", "")), "workshop", "the drone bay is declared a storey of the workshop")
+	check_eq(R.call(C.drone_bay), R.call(C.workshop), "the drone bay storey has exactly the workshop's footprint")
+	var bz := Rect2(R.call(C.barracks))
+	var rp: Array = C.roof_pad.rect
+	var pr := Rect2(float(rp[0]), float(rp[1]), float(rp[2]), float(rp[3]))
+	check(bz.grow(0.01).encloses(pr) and pr.size.x >= 3.5 and pr.size.y >= 1.5, "the 15 x 7 m TLOF lies on the barracks roof at its new site (%s)" % pr)
+	check(float(C.roof_pad.deck_z) >= 10.8, "the pad is still on the 3-storey roof (deck %.1f m)" % float(C.roof_pad.deck_z))
+	var bp: Array = C.barracks_part
+	check(R.call(C.barracks).encloses(Rect2i(int(bp[0]), int(bp[1]), 2, 2)), "the Sentinel barracks part stands inside the barracks")
+	var bd: Array = C.doors.barracks
+	check(bd.size() >= 1 and R.call(C.barracks).grow(1).has_point(Vector2i(int(bd[0][0]), int(bd[0][1]))) and not R.call(C.barracks).has_point(Vector2i(int(bd[0][0]), int(bd[0][1]))), "the barracks door is on its wall")
+	var old := Rect2i(24, 3, 2, 4)
+	var hit := []
+	for f in _fac_footprints(C):
+		# FACB7-6: "building" = every footprint but the wall ring and the open yards; the helipad (a yard, open ground)
+		# moved 1 tile east onto x24 by owner 13.9c-21b ("expand that area as needed") + ORCH approval (board, fuel bay)
+		if f[2] != "ring" and f[2] != "yard" and (f[1] as Rect2i).intersects(old):
+			hit.append(f[0])
+	check_eq(hit, [], "the old barracks site holds no building")
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var es: Array = CnFacility.render_entries(w)
+	check(not es.is_empty() and (es[0].get("stacked", {}) as Dictionary).has("drone_bay"), "render entries tell the display the drone bay is stacked (drawn once)")
+	var b := int(F.get("bar", 0))
+	if check(b != 0 and w.entities.has(b), "the Sentinel barracks part is raised"):
+		check(CnFacility.zone(F, "barracks").grow(0.01).has_point(Vector2(w.entities[b].pos)), "the Sentinel barracks part is raised on the new site")
+	var rpd := CnFacility.roof_pad(w, F)
+	check(not rpd.is_empty() and CnFacility.zone(F, "barracks").grow(0.01).encloses(rpd.rect) and absf(float(rpd.heading_deg)) < 0.01, "CnFacility.roof_pad is on the barracks at its new site, long axis +x")
+
+
+## FACB7-6 (owner 13.9c-20c "almost avatar movie size suits ... resize its building accordingly and redesign the
+## building for the armoured suits foundry"; suits "use the vehicle routes ... never the infantry mantrap / decon
+## hall"): the Suit Foundry (armory zone) is big enough for the ~4 m suits (CN suit radius from defs_g7_cnsuits.json):
+## a >= 4x4-tile hall, a bay door at least 2 tiles (and 2 x radius + 0.5) wide on its door face, opening onto a
+## vehicle lane >= 2 tiles wide that is not the infantry walkway; the production part leaves the bay floor clear; in
+## the sim a suit made there appears inside, >= radius clear of the part, rolls out through the bay door onto the lane
+## and drives back in through it, never closer than its radius to the part.
+func test_facb76_suit_foundry_fits_suits() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var C := CnFacility.conf()
+	var fz: Array = C.get("armory", [])
+	if not check(fz.size() == 4, "the facility has a Suit Foundry (armory zone)"):
+		return
+	var Zr := Rect2i(int(fz[0]), int(fz[1]), int(fz[2]), int(fz[3]))
+	var sdef := "g7_cns_bastion"
+	var ud: Dictionary = Content.unit(sdef)
+	if not check(not ud.is_empty(), "CN suit def %s loaded" % sdef):
+		return
+	var r := float(ud.get("radius", 0.0))
+	check(r >= 0.6, "the suit is a big amplified suit (radius %.2f tiles)" % r)
+	check(Zr.size.x >= 4 and Zr.size.y >= 4, "the Suit Foundry hall is >= 4x4 tiles (16 x 16 m): %s" % [fz])
+	var face := int((C.get("faces", {}) as Dictionary).get("armory", -1))
+	check_eq(face, 0, "its bay doors face +x (east), toward the vehicle lane")
+	var ys := []
+	for d in C.doors.armory:
+		if int(d[0]) == Zr.end.x:
+			ys.append(int(d[1]))
+	ys.sort()
+	var run := 0
+	var best := [0, 0]
+	for i in ys.size():
+		run = run + 1 if i > 0 and int(ys[i]) == int(ys[i - 1]) + 1 else 1
+		if run > best[0]:
+			best = [run, int(ys[i]) - run + 1]
+	var open := int(best[0])
+	var y0 := int(best[1])
+	check(open >= 2 and float(open) >= 2.0 * r + 0.5, "bay door %d tiles wide on the east face (suit 2r = %.1f)" % [open, 2.0 * r])
+	var cp := Rect2i(int(C.checkpoint[0]), int(C.checkpoint[1]), 2, 2)
+	var lane_ok := open > 0
+	for k in open:
+		var c := Vector2i(Zr.end.x, y0 + k)
+		var hit := false
+		for l in C.lanes:
+			var lr := Rect2i(int(l[0]), int(l[1]), int(l[2]), int(l[3]))
+			if lr.has_point(c) and lr.size.x >= 2 and not lr.grow(1).intersects(cp):
+				hit = true
+		lane_ok = lane_ok and hit
+	check(lane_ok, "the bay door opens onto a >= 2-wide vehicle lane, not the infantry walkway")
+	var ap: Array = C.get("armory_part", [])
+	var psz := int(Content.building(String(C.get("armory_def", ""))).get("size", 2))
+	var pr := Rect2(float(ap[0]), float(ap[1]), float(psz), float(psz))
+	var corridor := Rect2(float(Zr.position.x), float(y0), float(Zr.size.x), float(open))
+	check(not pr.intersects(corridor), "the production part stands clear of the bay floor in front of the doors")
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var O := Vector2(CnFacility.origin(F))
+	var aid := -1
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if String(e.kind) == "building" and String(e.def) == String(C.armory_def) and int(e.owner) == 0:
+			aid = int(id)
+	if not check(aid > 0, "the Suit Foundry part is raised"):
+		return
+	var b: Dictionary = w.entities[aid]
+	var ex: Array = C.get("armory_exit", [])
+	check(ex.size() == 2 and Vector2(b.rally).distance_to(O + Vector2(float(ex[0]), float(ex[1]))) < 0.01, "its rally is the lane point outside the bay door (%s)" % str(Vector2(b.rally) - O))
+	var zw := Rect2(O + Vector2(Zr.position), Vector2(Zr.size))
+	var pw := Rect2(O + pr.position, pr.size)
+	var dist := func(p: Vector2) -> float:
+		var q := Vector2(clampf(p.x, pw.position.x, pw.end.x), clampf(p.y, pw.position.y, pw.end.y))
+		return p.distance_to(q)
+	var cells: Array = Production._spawn_cells(w, b, String(ud.get("move_class", "vehicle")), 1, b.rally)
+	var p0: Vector2 = Vector2(cells[0]) + Vector2(0.5, 0.5)
+	check(zw.has_point(p0) and float(dist.call(p0)) >= r, "a new suit appears inside the foundry, %.2f >= r clear of the part (%s)" % [float(dist.call(p0)), str(p0 - O)])
+	var sid := w.spawn_unit(sdef, 0, p0)
+	var u: Dictionary = w.entities[sid]
+	u.cd_ticks = NOFIRE
+	var gate_y := Vector2(O.y + float(y0), O.y + float(y0 + open))
+	for leg in [["out", Vector2(b.rally)], ["in", O + Vector2(float(Zr.end.x) - 1.5, float(y0) + float(open) * 0.5)]]:
+		var tgt: Vector2 = leg[1]
+		u.order = {"type": "move", "target": tgt}
+		Movement.order_path(w, u, tgt)
+		var was_in := zw.has_point(Vector2(u.pos))
+		var cross := []
+		var near := 99.0
+		var arrived := false
+		for i in 900:
+			w.step()
+			var p: Vector2 = u.pos
+			near = minf(near, float(dist.call(p)))
+			var now_in := zw.has_point(p)
+			if now_in != was_in:
+				cross.append(p)
+			was_in = now_in
+			if p.distance_to(tgt) < 0.6:
+				arrived = true
+				break
+		var through := not cross.is_empty()
+		for q in cross:
+			through = through and absf(float(q.x) - zw.end.x) < 0.6 and float(q.y) >= gate_y.x - 0.05 and float(q.y) <= gate_y.y + 0.05
+		check(arrived, "suit drives %s (%s -> %s)" % [leg[0], str(Vector2(u.pos) - O), str(tgt - O)])
+		check(through, "%s through the bay door rows y %d..%d: crossings %s" % [leg[0], y0, y0 + open - 1, str(cross.map(func(q): return q - O))])
+		check(near >= r, "%s: the suit stays >= its radius from the part (closest %.2f)" % [leg[0], near])
+
+
+## FACB7-7 (owner 13.9c-20c: CN suits "use the vehicle routes (gates, lanes, the APC wash), never the infantry mantrap /
+## decon hall"; ORCH seq 5361): the foot-entry mantrap and the decon hall are foot only. A CN suit (vehicle class) of the
+## facility owner can never stand on the two mantrap door cells or in the decon hall, open or not; the owner's foot
+## soldiers still can (test_facb7_foot_entry_mantrap walks the whole way). A Bastion suit outside the foot entry ordered
+## into the staging yard paths around (through the APC gates and the wash), never through the mantrap or the hall.
+func test_facb77_suits_never_use_the_mantrap_or_decon_hall() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fid := _facility(w, s[1])
+	var F := CnFacility.fac(w, fid)
+	var C := CnFacility.conf()
+	var O := CnFacility.origin(F)
+	var sdef := "g7_cns_bastion"
+	if not check(not Content.unit(sdef).is_empty(), "CN suit def %s loaded" % sdef):
+		return
+	var m0 := O + Vector2i(int(C.mantrap[0][0]), int(C.mantrap[0][1]))
+	var m1 := O + Vector2i(int(C.mantrap[1][0]), int(C.mantrap[1][1]))
+	var es0: Array = C.get("ecp_start", [int(C.mantrap[0][0]), int(C.mantrap[0][1]) + 3])
+	var out := Vector2(O) + Vector2(float(es0[0]) + 0.5, float(es0[1]) + 0.5)
+	var u: Dictionary = w.entities[_unit(w, sdef, 0, out)]
+	var mc := Movement.move_class(u)
+	check(mc != "foot", "a CN suit moves on the vehicle routes (move class %s)" % mc)
+	check(Movement.is_passable(w, m0, "foot", 0) and Movement.is_passable(w, m1, "foot", 0), "the mantrap stays open for the owner's soldiers")
+	check(not Movement.is_passable(w, m0, mc, 0) and not Movement.is_passable(w, m1, mc, 0), "the mantrap door cells are shut to the owner's suits")
+	var hall := CnFacility.zone(F, "decon_hall")
+	var hr := Rect2i(Vector2i(hall.position.round()), Vector2i(hall.size.round()))
+	var open_hall := []
+	for y in range(hr.position.y, hr.end.y):
+		for x in range(hr.position.x, hr.end.x):
+			if Movement.is_passable(w, Vector2i(x, y), mc, 0):
+				open_hall.append(Vector2i(x, y) - O)
+	check(open_hall.is_empty(), "no decon hall cell is open to the owner's suits (open: %s)" % str(open_hall))
+	var foot_hall := 0
+	for y in range(hr.position.y, hr.end.y):
+		for x in range(hr.position.x, hr.end.x):
+			if Movement.is_passable(w, Vector2i(x, y), "foot", 0):
+				foot_hall += 1
+	check(foot_hall > 0, "the owner's soldiers still walk the decon hall (%d foot cells)" % foot_hall)
+	var stg := CnFacility.zone(F, "staging").get_center()
+	u.order = {"type": "move", "target": stg}
+	Movement.order_path(w, u, stg)
+	var bad := []
+	var arrived := false
+	for i in 3000:
+		w.step()
+		if not w.entities.has(int(u.id)):
+			break
+		var cc := w.cell_of(u.pos)
+		if cc == m0 or cc == m1 or hall.has_point(Vector2(u.pos)):
+			if bad.size() < 6:
+				bad.append(Vector2(u.pos) - Vector2(O))
+		if Vector2(u.pos).distance_to(stg) < 1.5:
+			arrived = true
+			break
+	check(bad.is_empty(), "the suit never enters the mantrap or the decon hall (at %s)" % str(bad))
+	check(arrived, "the suit reaches the staging yard by the vehicle route (at %s)" % str(Vector2(u.pos) - Vector2(O)))

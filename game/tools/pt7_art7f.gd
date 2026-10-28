@@ -7,6 +7,7 @@ extends RefCounted
 
 const H = preload("res://tests/test_machine_g6.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
+const EntityLayerRef = preload("res://presentation/view/entity_layer.gd")
 
 const ZONES := ["planning", "lab", "drone_bay", "workshop", "range", "decon", "gate", "helipad", "pad", "staging", "core", "gate_outer", "apc_wash", "gate_inner", "decon_hall",
 	"magazine", "armory", "aid_station", "barracks", "fuel_point", "runoff"]   # FACB7-3: + the 13.9c-6 buildings
@@ -165,9 +166,11 @@ func run(pt) -> void:
 		await pt._wait(0.6)
 		await pt._shot("art7f_compound_z%d" % int(z * 10))
 	var zs: Dictionary = F.zones
+	await _facb75(pt, mv, w, F, fid, me, centre)   # FACB7-5 (13.9c-18): barracks + pad, workshop + drone-bay storey, no see-through
+	var stk: Dictionary = F.get("stacked", {})
 	for zn in ZONES:
 		var r: Array = zs.get(zn, [])
-		if r.size() != 4:
+		if r.size() != 4 or stk.has(zn):   # FACB7-5: an upper storey is shot with its host
 			continue
 		var zc := Vector2(float(r[0]) + float(r[2]) * 0.5, float(r[1]) + float(r[3]) * 0.5)
 		for z in [1, 2, 3]:
@@ -256,3 +259,66 @@ func run(pt) -> void:
 		pt._log("art7f_vtol_pad", true, "a_g7_vtol_pad def not in content yet (BASE7-2): pad shot skipped")
 	_clean_view(mv, false)
 	_zoom(mv, 1.0)
+
+
+## FACB7-5 (owner 13.9c-18): the barracks at the drone bay's old site with a CN Vanta landed on its rooftop pad, the
+## workshop with the drone-bay second storey, the whole compound, and our troops clearing a facility building: the
+## building stays solid (opaque badge; no building / wreck sprite with alpha < 1 in any frame).
+func _facb75(pt, mv, w: SimWorld, F: Dictionary, fid: int, me: int, centre: Vector2) -> void:
+	var el = mv.entity_layer
+	var zs: Dictionary = F.zones
+	var br: Array = zs.get("barracks", [])
+	var wr: Array = zs.get("workshop", [])
+	mv.join_sim()
+	var vid := -1
+	for vd in ["cn_vanta_a", "cn_vanta_b"]:
+		if vid < 0 and not Content.unit(vd).is_empty():
+			var rp := CnFacility.roof_pad(w, CnFacility.fac(w, fid))
+			vid = w.spawn_unit(vd, me, Vector2(rp.get("centre", centre)) + Vector2(0.0, 3.0))
+	await pt._wait(1.5)
+	mv.join_sim()
+	var rp2 := CnFacility.roof_pad(w, CnFacility.fac(w, fid))
+	var landed: bool = vid >= 0 and w.entities.has(vid) and not rp2.is_empty() and (rp2.rect as Rect2).grow(0.05).has_point(Vector2(w.entities[vid].pos))
+	pt._log("facb75_vanta_on_barracks_pad", landed or vid < 0, "Vanta %d on the barracks roof pad at its new site %s" % [vid, str(rp2.get("rect", ""))])
+	var bc := Vector2(float(br[0]) + float(br[2]) * 0.5, float(br[1]) + float(br[3]) * 0.5)
+	var wc := Vector2(float(wr[0]) + float(wr[2]) * 0.5, float(wr[1]) + float(wr[3]) * 0.5)
+	for sh in [["facb75_barracks_pad", bc, [1.75, 2.5]], ["facb75_workshop_dronebay", wc, [1.75, 2.5]], ["facb75_barracks_workshop_pair", (bc + wc) * 0.5, [1.0, 1.4]]]:
+		for z in sh[2]:
+			_zoom(mv, float(z))
+			mv.center_camera_on(sh[1])
+			await pt._wait(0.5)
+			await pt._shot("%s_z%d" % [sh[0], int(float(z) * 10)])
+	for z in [0.6, 1.0]:
+		_zoom(mv, z)
+		mv.center_camera_on(centre)
+		await pt._wait(0.5)
+		await pt._shot("facb75_compound_z%d" % int(z * 10))
+	# troops clearing inside: the facility core and the armory part of the compound with roof_open for us
+	mv.join_sim()
+	var opened: Array = []
+	var bids: Array = w.entities.keys()
+	bids.sort()
+	for id in bids:
+		var e: Dictionary = w.entities[id]
+		if String(e.kind) == "building" and int(e.owner) == me and Vector2(e.pos).distance_to(centre) < 18.0 \
+				and not EntityLayerRef.WALL_LINK.has(String(e.def)) and opened.size() < 3 and int(Content.building(String(e.def)).get("size", 1)) >= 2:
+			e["roof_open"] = me
+			opened.append(int(id))
+	var worst := 0
+	var badges := 0
+	for i in 40:
+		await mv.get_tree().process_frame
+		worst = maxi(worst, int(el.bld_see_through))
+		badges = maxi(badges, int(el.g61_counts.get("roof", 0)))
+	pt._log("facb75_no_see_through", worst == 0 and badges >= 1, "buildings being cleared: %d, badges drawn %d, building sprites with alpha < 1 in 40 frames: %d" % [opened.size(), badges, worst])
+	if not opened.is_empty():
+		var oc: Vector2 = Vector2(w.entities[int(opened[0])].pos) if w.entities.has(int(opened[0])) else centre
+		for z in [1.75, 2.5]:
+			_zoom(mv, z)
+			mv.center_camera_on(oc)
+			await pt._wait(0.5)
+			await pt._shot("facb75_clearing_opaque_z%d" % int(z * 10))
+	mv.join_sim()
+	for id in opened:
+		if w.entities.has(int(id)):
+			w.entities[int(id)].erase("roof_open")

@@ -313,6 +313,7 @@ func _build_ui() -> void:
 	cmd_layer.build(self, root)   # G6.1 (PLAN61)
 	teams.build(self, root)       # G6.1 (SQUAD61)
 	ops7 = preload("res://presentation/ui7/ops_panel.gd").attach(self, root, left)   # G7 OPSUI7 CR 1401: ops room modal + PROTOCOL card
+	preload("res://presentation/ui7/dronebay_card.gd").attach(self, left)   # G7 DRONEBAY7 CR 5737: drone bay card (Drones n/12, LAUNCH / FPV / RECALL / AUTO)
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)

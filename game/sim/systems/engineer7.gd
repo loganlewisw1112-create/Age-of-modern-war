@@ -38,11 +38,20 @@ const Repair = preload("res://sim/systems/repair.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const DRIVE_PHASES := ["haul", "unload", "ret", "drive", "pump"]
+const C7_PATH := "res://sim/systems/ciws7.gd"   # G7 CIWS7 (13.9c-32): roof CIWS drum swap jobs (kind "ciws7"), lazy
 
 static var _s7 = null
 ## A/B switch for perf / fallout checks (tools and scratch scripts only; never saved, never set by the sim).
 static var enabled := true
 static var _cf = null
+static var _c7 = null
+
+
+## G7 CIWS7: the Ciws7 script (lazy), or null while missing.
+static func C7():
+	if _c7 == null and ResourceLoader.exists(C7_PATH):
+		_c7 = load(C7_PATH)
+	return _c7
 
 
 static func S7():
@@ -276,7 +285,8 @@ static func _post_ext(w: SimWorld, S: Dictionary, F: Dictionary) -> void:
 		parts[int(pid)] = true
 	var below := float(r.get("repair", {}).get("below", 0.9))
 	for b in SimWorld.SimIndex.of(w, "building"):
-		if int(b.get("cn_fac", -1)) != fac or int(b.owner) != fid or parts.has(int(b.id)) or not bool(b.get("built", true)):
+		# DET7: skip destroyed index entries (kept until the 1/8 rebuild; a loaded world starts clean)
+		if int(b.get("cn_fac", -1)) != fac or int(b.owner) != fid or parts.has(int(b.id)) or not bool(b.get("built", true)) or not w.entities.has(int(b.id)):
 			continue
 		var fr := float(b.hp) / maxf(float(b.max_hp), 1.0)
 		if fr >= below:
@@ -290,7 +300,7 @@ static func _post_ext(w: SimWorld, S: Dictionary, F: Dictionary) -> void:
 	var rect: Rect2 = CF().compound_rect(F).grow(float(FU.get("zone_pad", 3.0)))
 	var mine: Array = SimWorld.SimIndex.units_by_owner(w).get(fid, [])
 	for u in mine:
-		if not u.has("fuel") or not rect.has_point(u.pos):
+		if not u.has("fuel") or not rect.has_point(u.pos) or not w.entities.has(int(u.id)):   # DET7: stale index entries
 			continue
 		var d := Content.unit(String(u.def))
 		var fmax := float(d.get("fuel_max", 0.0))
@@ -387,7 +397,7 @@ static func _player_took(e: Dictionary, run: Dictionary) -> bool:
 
 static func _start(rec: Dictionary) -> Dictionary:
 	var kind := String(rec.get("k", "auto"))
-	if not ["repair", "build", "locker", "fuel", "rest"].has(kind):
+	if not ["repair", "build", "locker", "fuel", "rest", "ciws7"].has(kind):
 		return {}
 	var ph := "go"
 	if kind == "locker":
@@ -417,6 +427,8 @@ static func _step(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) ->
 			_fuel(w, S, e, run)
 		"rest":
 			_rest(w, e, run)
+		"ciws7":
+			_ciws7(w, S, e, run)
 
 
 # ---------------------------------------------------------------- jobs
@@ -438,6 +450,46 @@ static func _repair(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) 
 		return
 	Repair.apply_command(w, cmd)
 	run.t = w.tick + ticks(float(R().get("repair", {}).get("retry_s", 6.0)))
+
+
+## G7 CIWS7 (13.9c-32, owner: "an Engineer walks up to the roof and swaps the drum"): walk to the command centre stair
+## door (the job position), climb (climb_s), swap the drum on the roof (swap_s: the mount shows its swap frames;
+## drum_ammo_cost from the side's ammo stock, retried while short), come back down (down_s). Timings: the cn_ciws7
+## def's ciws7 block. The job ends when the mount is gone or no longer dry.
+static func _ciws7(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) -> void:
+	var c7 = C7()
+	var bid := int(run.bid)
+	var ph := String(run.ph)
+	if c7 == null or (ph != "down" and not c7.needs_swap(w, bid)):
+		_finish(w, S, e, run)
+		return
+	var c: Dictionary = c7.cfg()
+	match ph:
+		"go":
+			var door: Vector2 = c7.stair_door(w, bid)
+			if Vector2(e.pos).distance_to(door) > 1.0:
+				_go_if(w, e, run, door)
+				return
+			_halt(e)
+			run.ph = "up"
+			run.t = w.tick + ticks(float(c.get("climb_s", 10.0)))
+		"up":
+			if w.tick < int(run.t):
+				return
+			c7.begin_swap(w, bid, int(e.id))
+			run.ph = "swap"
+			run.t = w.tick + ticks(float(c.get("swap_s", 8.0)))
+		"swap":
+			if w.tick < int(run.t):
+				return
+			if not c7.swap_drum(w, bid, int(e.id)):
+				run.t = w.tick + ticks(float(c.get("retry_s", 3.0)))
+				return
+			run.ph = "down"
+			run.t = w.tick + ticks(float(c.get("down_s", 4.0)))
+		"down":
+			if w.tick >= int(run.t):
+				_finish(w, S, e, run)
 
 
 static func _build(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) -> void:
@@ -538,9 +590,11 @@ static func _locker(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) 
 static func _fuel(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) -> void:
 	var FU: Dictionary = R().get("fuel", {})
 	var F: Dictionary = CF().fac(w, int(run.fac))
+	# POLISH7-4 (owner 13.9c-21): the bowser lives in its one marked parking bay (BOWSER_BAY, out of every lane / pad /
+	# APC bay / route): the engineer walks there to take it and always drives it back there to park.
 	var fp := Rect2()
 	if not F.is_empty():
-		fp = CF().zone(F, "fuel_point")
+		fp = bowser_bay(F)
 	var has_fp := fp.size.x > 0.0
 	var arrive := float(R().get("arrive", 1.5))
 	var v = w.entities.get(int(run.bid))
@@ -560,8 +614,8 @@ static func _fuel(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) ->
 			if not has_fp:
 				run.ph = "drive"
 				return
-			if Vector2(e.pos).distance_to(fp.get_center()) <= arrive:
-				_halt(e)
+			if Vector2(e.pos).distance_to(fp.get_center()) <= arrive * 0.4 or (fp.grow(0.25).has_point(e.pos) and String(e.order.get("type", "idle")) == "idle"):
+				_halt(e)   # at the bowser in its bay: take it from there (the display truck attaches where it stands)
 				run.ph = "drive"
 				_drive(w, e, "fuel")
 			else:
@@ -596,8 +650,13 @@ static func _fuel(w: SimWorld, S: Dictionary, e: Dictionary, run: Dictionary) ->
 					w.emit("Eng7Shortage", {"unit": int(e.id), "owner": fid, "res": "fuel", "target": int(run.bid)})
 				return
 			v.fuel = minf(fmax, float(v.fuel) + float(take))
-		"ret":
-			if not has_fp or Vector2(e.pos).distance_to(fp.get_center()) <= arrive:
+			if float(v.fuel) >= fmax - 0.001:   # POLISH7-4: done this think (the event lands the tick the tank is full, not
+				w.emit("Eng7Refuel", {"unit": int(e.id), "owner": fid, "target": int(run.bid), "fuel": float(v.fuel)})   # one
+				w.emit("Eng7Pump", {"unit": int(e.id), "target": int(run.bid), "on": false})   # think later, after the
+				run.ph = "ret"   # longer bay run let a test's "both full" break land between the fill and the event)
+		"ret":   # parked when on the bay centre (or as close as the path got, inside the bay)
+			var db := Vector2(e.pos).distance_to(fp.get_center())
+			if not has_fp or db <= BAY_ARRIVE or (fp.grow(0.25).has_point(e.pos) and String(e.order.get("type", "idle")) == "idle"):
 				_halt(e)
 				_finish(w, S, e, run)
 			else:
@@ -656,6 +715,44 @@ static func _bdist(p: Vector2, b: Dictionary) -> float:
 	var lo := Vector2(b.cell)
 	var q := Vector2(clampf(p.x, lo.x, lo.x + sz), clampf(p.y, lo.y, lo.y + sz))
 	return p.distance_to(q)
+
+
+## POLISH7-4 (owner 13.9c-21 "a specified parking spot within the facility it will always park at unless actively
+## working") + POLISH7-5 (owner 13.9c-21a "should not be placed in front of any door, garage, etc its placement HAS to
+## make sense"): the fuel bowser's one parking bay, compound-local tiles. A lay-by in the service alley between the
+## workshop's south side and the barracks' back wall (FACB7-5 layout: workshop [16,9,4,4], barracks [16,14,4,2], the
+## free row y13 between them), at its WEST end: the bay's mouth opens straight onto the spine lane x12..15, whose
+## northbound lane runs 4 tiles straight up to the fuel point / helipad apron (x15..17); the east garages are 3 tiles
+## east. Nothing opens onto it: no door / garage door / gate / pad or helipad edge / lane mouth / other bay is within a
+## tile of it (the workshop doors face west at [15,10] / east at [20,10], the stair-core door east at [20,12], the
+## barracks door south at [17,16]); no fac_drive7 route enters it (tests/test_life7.gd test_fuel_bay_makes_sense checks
+## all of this against content/g7/defs_g7_facility.json). 9.6 x 3.6 m: the 7.5 x 2.4 m truck fits inside with room.
+## Parked nose west (BOWSER_HEADING = PI, toward the mouth): it drives straight out onto the spine and reverses back
+## in. (The old spot x7 y2..4 stood across the core block's east shutter and against the loading pad's west edge.)
+## LIFE7 draws the bay markings (ATMO7 ground pass) and parks its display truck here.
+const BOWSER_BAY := Rect2(16.0, 13.05, 2.4, 0.9)
+const BOWSER_HEADING := PI
+const BAY_ARRIVE := 0.35
+## The bay as the layout gives it: _g7_facility "fuel_bay": [x, y, w, h, heading_deg] (compound-local; heading = the
+## parked nose = the drive-out side onto its lane), else BOWSER_BAY / BOWSER_HEADING.
+static func bay_local() -> Rect2:
+	var b = CF().conf().get("fuel_bay")
+	if b is Array and (b as Array).size() >= 4:
+		return Rect2(float(b[0]), float(b[1]), float(b[2]), float(b[3]))
+	return BOWSER_BAY
+
+
+static func bay_heading() -> float:
+	var b = CF().conf().get("fuel_bay")
+	if b is Array and (b as Array).size() >= 5:
+		return deg_to_rad(float(b[4]))
+	return BOWSER_HEADING
+
+
+static func bowser_bay(F: Dictionary) -> Rect2:
+	var o: Vector2i = CF().origin(F)
+	var b := bay_local()
+	return Rect2(Vector2(o) + b.position, b.size)
 
 
 ## Stand-by point: the workshop (else the fuel point, else the compound centre).

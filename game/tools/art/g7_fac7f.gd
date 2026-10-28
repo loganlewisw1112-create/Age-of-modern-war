@@ -89,6 +89,9 @@ static func build() -> Dictionary:
 	build_wall(out)
 	build_tower(out)
 	var c := conf()
+	# FACB7-5 (owner 13.9c-18): the drone bay is the workshop's second storey (json "stacked"): the workshop art carries
+	# both storeys + the launch deck; g7_fac_dronebay becomes an alias of it (same files, nothing drawn twice)
+	_stack = String((c.get("stacked", {}) as Dictionary).get("drone_bay", "")) == "workshop"
 	for z in [["planning", "g7_fac_planning", "planning"], ["drone_bay", "g7_fac_dronebay", "dronebay"],
 			["workshop", "g7_fac_workshop", "workshop"], ["range", "g7_fac_range", "range"], ["lab", "g7_fac_lab", "lab"],
 			["gate_outer", "g7_fac_gate_outer", "gate"], ["gate_inner", "g7_fac_gate_inner", "gate"],
@@ -98,17 +101,26 @@ static func build() -> Dictionary:
 			["magazine", "g7_fac_magazine", "magazine"], ["armory", "g7_fac_armory", "armory"], ["aid_station", "g7_fac_aid", "aid"],
 			["barracks", "g7_fac_barracks", "barracks"], ["fuel_point", "g7_fac_fuel", "fuel"], ["runoff", "g7_fac_runoff", "runoff"]]:
 		var r: Array = c.get(z[0], [])
+		if z[0] == "drone_bay" and _stack:
+			continue   # FACB7-5: aliased below once the workshop is built
 		if r.size() == 4:
 			build_zone(out, String(z[1]), int(r[2]), int(r[3]), String(z[2]))
 		elif ENTRY_DEFAULT.has(z[0]):   # 13.9c-2 zones not in the json yet: PROVISIONAL default size (re-run after BASE7-3)
 			var d: Array = ENTRY_DEFAULT[z[0]]
 			build_zone(out, String(z[1]), int(d[0]), int(d[1]), String(z[2]))
 			out.manifest.buildings[String(z[1])]["provisional"] = true
+	if _stack and (out.manifest.buildings as Dictionary).has("g7_fac_workshop"):
+		var al: Dictionary = (out.manifest.buildings["g7_fac_workshop"] as Dictionary).duplicate(true)
+		al["stacked_on"] = "g7_fac_workshop"
+		al["fits"] = "drone bay = second storey of the workshop (same art, drawn once by the workshop zone)"
+		out.manifest.buildings["g7_fac_dronebay"] = al
+	_stack = false
 	build_vtol_pad(out)
 	build_gatehouse(out)   # FACB7-2 (13.9c-8): foot entry control point (cn_checkpoint)
 	build_linkwall(out)    # FACB7-2 (13.9c-9): enclosed APC wash link walls (cn_link_wall)
 	build_baffle(out)      # FACB7-2 (13.9c-8): ECP serpentine baffles (cn_ecp_baffle)
 	build_locker(out)      # FACB7-2 (13.9c-11): ready-ammo lockers (cn_ammo_locker)
+	build_gate_frames(out)  # GATE7 (13.9c-26): blast-door travel / lock-bar frames of both APC gate layers
 	return out
 
 
@@ -121,8 +133,174 @@ static func _put(out: Dictionary, entry: Dictionary, id: String, nm: String, cv)
 
 
 # ================================================================ wall autotile (2 x 2 tiles = 8 x 8 m)
-const WALL_TOP := 44
+## WALL7-2 (13.9c-23, owner: "all the facilty walls need a walkway at the top thats secure/hardened/ and sentinels can
+## crocuh behind when reloading ... like a castle has just futuristic and modernized"): every wall piece is a hardened
+## rampart 2.9 m wide with a wall-walk on top: a steel-grated deck at DECK_Z behind an armoured parapet on the OUTER
+## face (a 0.55 m armoured sill + composite battlement panels to 1.15 m over the deck: 1.2 m panels with 0.4 m gaps on
+## a 1.6 m grid that runs on seamlessly from piece to piece, a firing slot through every full panel), composite armour
+## cladding with a sensor strip, sensor pods and an anti-climb overhang on the outer face, a kerb lip and a two-rail
+## guard rail on the inner edge, walkway lamps under the inner deck edge. Junctions (corners, T, ends) are a square
+## deck block with the parapet on their outer faces and a floodlight / camera mast on the outer corner.
+## Sheet layout: column = neighbour mask m (N1 E2 S4 W8); row = q * 2 + (1 if damaged), q = outer quadrant (bit 0: the
+## outside lies to +x, bit 1: to +y; entity_layer picks it from the facility centre). The "front" state is a second
+## sheet with the same layout holding only the camera-side (+x / +y) parapet and rail pixels: entity_layer draws it
+## after the soldiers standing on that piece, so the parapet hides their legs (an opaque occluder, never transparency).
+const WALL_TOP := 50
 const ARM := [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]   # N E S W (bit 0..3), tile axes
+const DECK_Z := 3.66       # wall-walk deck surface (m): feet DECK_Z * 9.8 = 36 px over the pivot (Motion.WALL_TOP_PX)
+const BODY := 1.45         # rampart half width (m): a 2.9 m wall-walk
+const SILL_Z := 4.11       # armoured sill top (0.45 m over the deck)
+const MERL_Z := 4.66       # battlement panel top (1.0 m over the deck, breast height: a crouched man shows his helmet)
+const FRONT := 77          # render_z object id of the camera-side parapet / rail parts (the occluder sheet)
+const ARMR := Color8(96, 104, 98)     # composite armour (olive grey)
+const ARMR_D := Color8(64, 70, 68)
+const DECKC := Color8(72, 76, 78)     # steel deck grating
+
+
+static func _hx(al: Vector3, ha: float, hn: float, hz: float) -> Vector3:
+	var nl := Y if al == X else X
+	return (al * ha + nl * hn + Z * hz).abs()
+
+
+## Outer side signs of quadrant q: x = +1 when bit 0 (outside to +x), y = +1 when bit 1.
+static func qsign(q: int) -> Vector2:
+	return Vector2(1.0 if q & 1 else -1.0, 1.0 if q & 2 else -1.0)
+
+
+static func _bit_of(nl: Vector3) -> int:
+	if nl.y < -0.5:
+		return 0
+	if nl.x > 0.5:
+		return 1
+	if nl.y > 0.5:
+		return 2
+	return 3
+
+
+## A part that is the camera-side occluder when its outward normal points to +x or +y.
+static func _side_part(S: Array, on: Vector3) -> Dictionary:
+	var p := M.part(S, 0)
+	if on.x > 0.5 or on.y > 0.5:
+		p["obj"] = FRONT
+	return p
+
+
+## Rampart core over [a0, a1] along al (cross-centre on the piece axis, half width hn): footing, body, deck + grating.
+static func _rbody(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, hn: float) -> void:
+	var nl := Y if al == X else X
+	var ha := (a1 - a0) * 0.5
+	var c := al * ((a0 + a1) * 0.5)
+	var pb := M.part(S, 0)
+	M.box(pb, T, c + Z * 0.2, _hx(al, ha, hn + 0.3, 0.2), C.ramp(CONC_D), Vector3(0.0, 0.0, 0.05))
+	M.box(pb, T, c + Z * ((DECK_Z - 0.06 + 0.4) * 0.5), _hx(al, ha, hn, (DECK_Z - 0.06 - 0.4) * 0.5), C.ramp(CONC))
+	var dk: Array = C.ramp(DECKC)
+	M.box(pb, T, c + Z * (DECK_Z - 0.03), _hx(al, ha, hn - 0.02, 0.03), dk)
+	var dz := Z * (DECK_Z + 0.002)
+	var u := ceilf(a0 / 0.8) * 0.8
+	while u < a1 - 0.05:   # grating bars across the walk
+		M.dline(pb, T, al * u - nl * (hn - 0.08) + dz, al * u + nl * (hn - 0.08) + dz, C.ca(dk[0], 0.7), Z)
+		u += 0.8
+	for s in [-1.0, 1.0]:   # tread edge strips
+		M.dline(pb, T, al * a0 + nl * (s * (hn - 0.14)) + dz, al * a1 + nl * (s * (hn - 0.14)) + dz, C.ca(dk[3], 0.55), Z)
+
+
+## Outer face over [a0, a1] (outward normal on, face at distance at): composite armour cladding with panel seams and
+## bolts, the sensor strip, sensor pods on the 4 m grid, the anti-climb overhang under the deck edge, rain streaks.
+static func _rclad(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, on: Vector3, seed: int, at := BODY) -> void:
+	var ha := (a1 - a0) * 0.5
+	var c := al * ((a0 + a1) * 0.5)
+	var ar: Array = C.ramp(ARMR)
+	var pc := M.part(S, 0)
+	M.box(pc, T, c + on * (at + 0.07) + Z * 1.85, _hx(al, ha, 0.07, 1.4), ar)   # cladding z 0.45..3.25
+	M.box(pc, T, c + on * (at + 0.15) + Z * 3.42, _hx(al, ha, 0.15, 0.12), C.ramp(ARMR_D))   # anti-climb overhang
+	var fo := on * (at + 0.142)
+	M.dline(pc, T, al * a0 + fo + Z * 1.85, al * a1 + fo + Z * 1.85, C.ca(ar[0], 0.85), on)
+	var u := ceilf((a0 - 0.8) / 1.6) * 1.6 + 0.8
+	while u < a1 - 0.02:
+		M.dline(pc, T, al * u + fo + Z * 0.5, al * u + fo + Z * 3.2, C.ca(ar[0], 0.85), on)   # panel seam
+		M.dpx(pc, T, al * (u + 0.14) + fo + Z * 3.05, C.ca(ar[4], 0.9), on)   # bolt heads
+		M.dpx(pc, T, al * (u + 0.14) + fo + Z * 0.62, C.ca(ar[4], 0.9), on)
+		u += 1.6
+	M.dline(pc, T, al * a0 + fo + Z * 2.95, al * a1 + fo + Z * 2.95, C.ca(CN_BLUE, 0.8), on)   # sensor strip
+	u = ceilf(a0 / 4.0) * 4.0
+	while u <= a1 + 0.001:
+		if u > a0 + 0.3 and u < a1 - 0.3:
+			M.box(pc, T, al * u + on * (at + 0.2) + Z * 2.7, _hx(al, 0.15, 0.06, 0.1), C.ramp(DARK))   # sensor pod
+			M.dpx(pc, T, al * u + on * (at + 0.262) + Z * 2.7, Color8(60, 200, 255), on)
+		u += 4.0
+	for j in 3:
+		var r := a0 + (a1 - a0) * P.hn(j, seed, 17)
+		M.dline(pc, T, al * r + fo + Z * 3.2, al * r + fo + Z * (2.1 - P.hn(seed, j, 5)), Color(0.22, 0.22, 0.2, 0.3), on)
+
+
+## Armoured parapet on the outer edge over [a0, a1] (outward normal on): continuous sill + battlement panels on the
+## global 1.6 m grid (1.2 m panels, 0.4 m gaps to fire through), a firing slot through each full panel, lit cap edge.
+static func _rparapet(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, on: Vector3, at := BODY) -> void:
+	var ar: Array = C.ramp(ARMR)
+	var pp := _side_part(S, on)
+	var pn := on * (at - 0.2)
+	M.box(pp, T, al * ((a0 + a1) * 0.5) + pn + Z * ((DECK_Z + SILL_Z) * 0.5), _hx(al, (a1 - a0) * 0.5, 0.2, (SILL_Z - DECK_Z) * 0.5), ar)
+	M.dline(pp, T, al * a0 + pn + on * 0.202 + Z * (SILL_Z - 0.06), al * a1 + pn + on * 0.202 + Z * (SILL_Z - 0.06), C.ca(ar[0], 0.8), on)
+	var u := ceilf((a0 - 0.6) / 1.6) * 1.6
+	while u - 0.6 < a1:
+		var p0 := maxf(u - 0.6, a0)
+		var p1 := minf(u + 0.6, a1)
+		if p1 - p0 >= 0.3:
+			var pm := al * ((p0 + p1) * 0.5) + pn
+			M.box(pp, T, pm + Z * ((SILL_Z + MERL_Z) * 0.5), _hx(al, (p1 - p0) * 0.5, 0.22, (MERL_Z - SILL_Z) * 0.5), ar)
+			for s in [1.0, -1.0]:   # lit cap edge
+				M.dline(pp, T, al * (p0 + 0.05) + pn + on * (0.222 * s) + Z * (MERL_Z - 0.04), al * (p1 - 0.05) + pn + on * (0.222 * s) + Z * (MERL_Z - 0.04), C.ca(ar[4], 0.75), on * s)
+			if p1 - p0 > 0.9:
+				for s in [1.0, -1.0]:   # firing slot through the panel
+					RO.quad(pp, T, pm + on * (0.223 * s) + Z * 4.4, al * 0.17, Z * 0.035, Color8(16, 18, 20), on * s)
+				M.dpx(pp, T, al * (p0 + 0.1) + pn + on * 0.223 + Z * 4.56, C.ca(ar[4], 0.9), on)
+				M.dpx(pp, T, al * (p1 - 0.1) + pn + on * 0.223 + Z * 4.56, C.ca(ar[4], 0.9), on)
+		u += 1.6
+
+
+## Inner edge over [a0, a1] (normal on, into the compound): kerb lip with a yellow kick stripe, posts on the 1.6 m grid,
+## two guard rails; gap = an open span (stair landing).
+static func _rrail(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, on: Vector3, at := BODY, gap := Vector2(1.0e9, 1.0e9)) -> void:
+	var st: Array = C.ramp(STEEL)
+	var pr := _side_part(S, on)
+	var rn := on * (at - 0.08)
+	var segs := [[a0, a1]]
+	if gap.x < a1 and gap.y > a0:
+		segs = [[a0, gap.x], [gap.y, a1]]
+	for sg in segs:
+		var s0: float = sg[0]
+		var s1: float = sg[1]
+		if s1 - s0 < 0.1:
+			continue
+		M.box(pr, T, al * ((s0 + s1) * 0.5) + rn + Z * (DECK_Z + 0.09), _hx(al, (s1 - s0) * 0.5, 0.08, 0.09), C.ramp(ARMR_D))
+		M.dline(pr, T, al * s0 + rn + on * 0.082 + Z * (DECK_Z + 0.09), al * s1 + rn + on * 0.082 + Z * (DECK_Z + 0.09), YEL, on)
+		var ps := [s0 + 0.04, s1 - 0.04]
+		var u := ceilf((s0 - 0.8) / 1.6) * 1.6 + 0.8
+		while u < s1 - 0.3:
+			if u > s0 + 0.3:
+				ps.append(u)
+			u += 1.6
+		for pu in ps:
+			M.dline(pr, T, al * float(pu) + rn + Z * (DECK_Z + 0.18), al * float(pu) + rn + Z * (DECK_Z + 1.02), st[1], Vector3.ZERO)
+		M.dline(pr, T, al * s0 + rn + Z * (DECK_Z + 0.55), al * s1 + rn + Z * (DECK_Z + 0.55), st[2], Vector3.ZERO)
+		M.dline(pr, T, al * s0 + rn + Z * (DECK_Z + 1.02), al * s1 + rn + Z * (DECK_Z + 1.02), st[4], Vector3.ZERO)
+
+
+## Inner face under the walk (normal on): lift-joint seams, walkway lamps on the 4 m grid.
+static func _rinner(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, on: Vector3, at := BODY) -> void:
+	var pl := M.part(S, 0)
+	var f := on * (at + 0.004)
+	var u := ceilf((a0 - 0.8) / 1.6) * 1.6 + 0.8
+	while u < a1 - 0.02:
+		M.dline(pl, T, al * u + f + Z * 0.45, al * u + f + Z * (DECK_Z - 0.1), C.ca(C.ramp(CONC)[1], 0.8), on)
+		u += 1.6
+	M.dline(pl, T, al * a0 + f + Z * (DECK_Z - 0.12), al * a1 + f + Z * (DECK_Z - 0.12), C.ca(C.ramp(CONC_D)[1], 0.9), on)
+	u = ceilf((a0 - 2.0) / 4.0) * 4.0 + 2.0
+	while u < a1 - 0.2:
+		if u > a0 + 0.2:
+			M.box(pl, T, al * u + on * (at + 0.05) + Z * 3.2, _hx(al, 0.12, 0.05, 0.05), C.ramp(STEEL))
+			M.dpx(pl, T, al * u + on * (at + 0.102) + Z * 3.17, LAMP_W, on)
+		u += 4.0
 
 
 ## One T-wall slab centred at c (local metres) running along `al` (X or Y), width 1.6 m, 3.6 m tall.
@@ -149,69 +327,71 @@ static func _slab(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, i: int
 		RO.quad(pt, T, c + nl * 0.182 + Z * 1.6, al * 0.3, Z * 0.2, YEL, nl)   # warning plate (outer face)
 
 
-## Wall piece for neighbour mask m: arms to every linked edge, a pillar wherever the run turns, ends or branches.
-static func wall_piece(cv, o: Vector2, m: int, seed: int) -> void:
+## One rampart over [a0, a1] along al with its outside toward on.
+static func _rampart(S: Array, T: Dictionary, al: Vector3, a0: float, a1: float, on: Vector3, seed: int) -> void:
+	_rbody(S, T, al, a0, a1, BODY)
+	_rclad(S, T, al, a0, a1, on, seed)
+	_rparapet(S, T, al, a0, a1, on)
+	_rrail(S, T, al, a0, a1, -on)
+	_rinner(S, T, al, a0, a1, -on)
+
+
+## Wall piece for neighbour mask m and outer quadrant q: straight runs are one rampart cell edge to cell edge; every
+## other mask is a square deck block (parapet on its free outer faces, rail on its free inner faces) plus an arm to
+## every linked edge.
+static func wall_piece(cv, o: Vector2, m: int, seed: int, q: int = 3) -> void:
 	var S: Array = []
 	var T := M.pose(o, 0.0)
-	var straight_ns := m == 5
-	var straight_ew := m == 10
-	var arms: Array = []
-	for b in 4:
-		if m & (1 << b):
-			arms.append(b)
-	var k := 0
-	if straight_ns or straight_ew:
-		var al := Y if straight_ns else X
-		for i in 5:
-			_slab(M.part(S, 0), T, al * (-3.2 + i * 1.6), al, i, seed)
-		_wall_kit(M.part(S, 0), T, Vector3.ZERO, al, 4.0)   # ART7F-2: continuous footing + capping beam
-		RO.wire(M.part(S, 1), T, al * -4.0, al * 4.0, 3.8)
+	var sq := qsign(q)
+	if m == 5 or m == 10:
+		var al := Y if m == 5 else X
+		_rampart(S, T, al, -4.0, 4.0, (X * sq.x) if m == 5 else (Y * sq.y), seed)
 		_fin_piece(cv, S, o, seed + m)
 		return
-	for b in arms:   # arm slabs from the pillar face (1.0 m) to the cell edge (4 m): centres 1.8 (w 1.6) + 3.2 trimmed
+	var n := 0
+	for b in 4:
+		if not (m & (1 << b)):
+			continue
+		n += 1
 		var d := Vector3(ARM[b].x, ARM[b].y, 0)
 		var al := X if absf(d.x) > 0.5 else Y
-		for c in [1.8, 3.2]:
-			_slab(M.part(S, 0), T, d * c, al, k, seed)
-			k += 1
-		_wall_kit(M.part(S, 0), T, d * 2.5, al, 1.5)
-		RO.wire(M.part(S, 1), T, d * 1.0, d * 4.0, 3.8)
-	if m == 0:   # free-standing segment (neighbours lost): three slabs N-S
-		for i in 3:
-			_slab(M.part(S, 0), T, Y * (-1.6 + i * 1.6), Y, i, seed)
-		RO.wire(M.part(S, 1), T, Y * -2.4, Y * 2.4, 3.62)
-	else:
-		_pillar(S, T, m, arms.size(), seed)
+		var pos := d.x + d.y > 0.0
+		_rampart(S, T, al, BODY if pos else -4.0, 4.0 if pos else -BODY, (Y * sq.y) if al == X else (X * sq.x), seed + b)
+	_junction(S, T, m, sq, n, seed)
 	_fin_piece(cv, S, o, seed + m)
 
 
-## Hardened junction pillar (2 x 2 m, 4.2 m): cap, hazard band on ends, floodlight + camera on corners / T-joins.
-static func _pillar(S: Array, T: Dictionary, m: int, n: int, seed: int) -> void:
-	var pp := M.part(S, 0)
-	var cd: Array = C.ramp(CONC_D)
-	M.box(pp, T, Vector3(0, 0, 0.35), Vector3(1.1, 1.1, 0.35), cd, Vector3(0.05, 0.05, 0.05))
-	M.box(pp, T, Vector3(0, 0, 2.3), Vector3(0.95, 0.95, 1.6), C.ramp(CONC), Vector3(0.03, 0.03, 0.03))
-	M.box(pp, T, Vector3(0, 0, 4.0), Vector3(1.05, 1.05, 0.12), cd)
-	for nl in [X, Y, -X, -Y]:
-		M.dline(pp, T, nl * 0.952 + Z * 0.75 - RO._along(nl) * 0.9, nl * 0.952 + Z * 0.75 + RO._along(nl) * 0.9, C.ca(cd[0], 0.8), nl)
-		M.dline(pp, T, nl * 0.952 + Z * 3.2 + RO._along(nl) * (0.5 - P.hn(seed, m, 3)), nl * 0.952 + Z * 2.2, Color(0.22, 0.21, 0.18, 0.3), nl)
-	if n == 1:   # wall end: hazard chevrons on the open face
-		var b := 0
-		for i in 4:
-			if m & (1 << i):
-				b = i
-		var face := -Vector3(ARM[b].x, ARM[b].y, 0)
-		FAC._jamb(pp, T, face * 0.95, face, 0.7, 0.4, 3.6)
-	var pl := M.part(S, 1)
-	M.cyl(pl, T, Vector3(0, 0, 4.45), Z, 0.12, 0.35, 6, C.ramp(STEEL), {"cap_t": 2})
-	if n >= 2:   # floodlight on the outer corner + a pan-tilt camera
-		M.box(pl, T, Vector3(0.0, 0.0, 4.9), Vector3(0.3, 0.18, 0.12), C.ramp(STEEL))
-		M.dpx(pl, T, Vector3(0.32, 0.0, 4.86), LAMP_W, X)
-		M.dpx(pl, T, Vector3(0.0, 0.2, 4.86), LAMP_W, Y)
-		M.box(pl, T, Vector3(-0.5, -0.5, 4.3), Vector3(0.18, 0.1, 0.09), C.ramp(Color8(210, 210, 200)))
-		M.dpx(pl, T, Vector3(-0.31, -0.5, 4.3), Color8(60, 200, 255), X)
+static func _outer(on: Vector3, sq: Vector2) -> bool:
+	return (absf(on.x) > 0.5 and signf(on.x) == sq.x) or (absf(on.y) > 0.5 and signf(on.y) == sq.y)
+
+
+## Junction deck block (corners, T, ends, lone pieces): parapet on free outer faces, rail on free inner faces, a
+## floodlight + camera mast on the outer corner (corners / T), a red end lamp on wall ends.
+static func _junction(S: Array, T: Dictionary, m: int, sq: Vector2, n: int, seed: int) -> void:
+	_rbody(S, T, X, -BODY, BODY, BODY)
+	for b in 4:
+		if m & (1 << b):
+			continue
+		var on := Vector3(ARM[b].x, ARM[b].y, 0)
+		var al := RO._along(on)
+		if _outer(on, sq):
+			_rclad(S, T, al, -BODY - 0.14, BODY + 0.14, on, seed + b)
+			_rparapet(S, T, al, -BODY, BODY, on)
+		else:
+			_rrail(S, T, al, -BODY, BODY, on)
+			_rinner(S, T, al, -BODY, BODY, on)
+	var pm := M.part(S, 0)
+	var cp := Vector3(sq.x * 1.08, sq.y * 1.08, 0)
+	if n >= 2:
+		M.cyl(pm, T, cp + Z * (MERL_Z + 0.35), Z, 0.07, 0.35, 6, C.ramp(STEEL), {"cap_t": 2})
+		M.box(pm, T, cp + Z * (MERL_Z + 0.78), Vector3(0.26, 0.18, 0.1), C.ramp(STEEL))   # floodlight head
+		M.dpx(pm, T, cp + Vector3(0.28, 0, 0) + Z * (MERL_Z + 0.75), LAMP_W, X)
+		M.dpx(pm, T, cp + Vector3(0, 0.2, 0) + Z * (MERL_Z + 0.75), LAMP_W, Y)
+		M.box(pm, T, cp + Vector3(-0.2 * sq.x, 0.0, 0.0) + Z * (MERL_Z + 0.5), Vector3(0.16, 0.09, 0.08), C.ramp(Color8(210, 210, 200)))
+		M.dpx(pm, T, cp + Vector3(-0.2 * sq.x + 0.17, 0.0, 0.0) + Z * (MERL_Z + 0.5), Color8(60, 200, 255), X)
 	else:
-		M.dpx(pl, T, Vector3(0, 0, 4.82), LAMP_R)
+		M.cyl(pm, T, cp + Z * (MERL_Z + 0.15), Z, 0.06, 0.15, 6, C.ramp(STEEL), {"cap_t": 2})
+		M.dpx(pm, T, cp + Z * (MERL_Z + 0.34), LAMP_R)
 
 
 static func _fin_piece(cv, S: Array, o: Vector2, seed: int) -> void:
@@ -219,41 +399,85 @@ static func _fin_piece(cv, S: Array, o: Vector2, seed: int) -> void:
 	M.render_z(cv, S, o, seed)
 
 
-static func build_wall(out: Dictionary) -> void:
-	var co: Array = K.canvas(2, WALL_TOP)
+## Copies the camera-side parapet / rail pixels (render_z object FRONT, plus their sel-out outline) of src into dst at.
+static func _front_cut(dst, src, ids: PackedInt32Array, fw: int, fh: int, at: Vector2i) -> void:
+	var si: Image = src.img
+	var sm: Image = src.mask
+	var di: Image = dst.img
+	var dmk: Image = dst.mask
+	for y in fh:
+		for x in fw:
+			var i := y * fw + x
+			var keep := ids[i] == FRONT
+			if not keep and ids[i] < 0:
+				keep = (x > 0 and ids[i - 1] == FRONT) or (x + 1 < fw and ids[i + 1] == FRONT) or (y + 1 < fh and ids[i + fw] == FRONT) or (y > 0 and ids[i - fw] == FRONT)
+			if not keep:
+				continue
+			var c := si.get_pixel(x, y)
+			if c.a <= 0.0:
+				continue
+			di.set_pixel(at.x + x, at.y + y, c)
+			dmk.set_pixel(at.x + x, at.y + y, sm.get_pixel(x, y))
+
+
+## A ring autotile sheet (walls or towers): 16 masks x 4 outer quadrants x (intact, damaged) + the "front" occluder.
+static func _ring_sheet(out: Dictionary, id: String, top: int, tower: bool, s0: int, d0: int, fits: String) -> void:
+	var co: Array = K.canvas(2, top)
 	var o: Vector2 = co[1]
 	var fw: int = co[0].w
 	var fh: int = co[0].h
-	var sheet := P.Canvas.new(fw * 16, fh * 2)
-	for m in 16:
-		var cv = K.canvas(2, WALL_TOP)[0]
-		wall_piece(cv, o, m, 4100 + m * 7)
-		var base = H.copy(cv)
-		C.selout(cv)
-		var dm = H.copy(base)
-		K.damage(dm, o, 2, 9100 + m * 13)
-		C.selout(dm)
-		for row in 2:
-			var src = cv if row == 0 else dm
-			(sheet.img as Image).blit_rect(src.img, Rect2i(0, 0, fw, fh), Vector2i(m * fw, row * fh))
-			(sheet.mask as Image).blit_rect(src.mask, Rect2i(0, 0, fw, fh), Vector2i(m * fw, row * fh))
-	var entry := {"size": 2, "pivot": [int(o.x), int(o.y)], "fw": fw, "fh": fh, "states": {},
-		"sheet": {"cols": "conn mask m = N1 E2 S4 W8 (tile axes)", "rows": ["intact", "damaged"]},
-		"fits": "cn_blast_wall 2x2 segment, pivot = segment centre; arms reach the cell edge so linked segments join"}
-	_put(out, entry, "g7_fac_wall", "sheet", sheet)
+	var sheet := P.Canvas.new(fw * 16, fh * 8)
+	var front := P.Canvas.new(fw * 16, fh * 8)
+	for q in 4:
+		for m in 16:
+			var cv = K.canvas(2, top)[0]
+			if tower:
+				tower_piece(cv, o, m, s0 + m * 7, q)
+			else:
+				wall_piece(cv, o, m, s0 + m * 7, q)
+			var ids: PackedInt32Array = M._ids.duplicate()
+			var base = H.copy(cv)
+			C.selout(cv)
+			var dm = H.copy(base)
+			K.damage(dm, o, 2, d0 + m * 13 + q * 101)
+			C.selout(dm)
+			for dmg in 2:
+				var src = cv if dmg == 0 else dm
+				var at := Vector2i(m * fw, (q * 2 + dmg) * fh)
+				(sheet.img as Image).blit_rect(src.img, Rect2i(0, 0, fw, fh), at)
+				(sheet.mask as Image).blit_rect(src.mask, Rect2i(0, 0, fw, fh), at)
+				_front_cut(front, src, ids, fw, fh, at)
+	var rows := []
+	for q in 4:
+		rows.append("q%d intact" % q)
+		rows.append("q%d damaged" % q)
+	var entry := {"size": 2, "pivot": [int(o.x), int(o.y)], "fw": fw, "fh": fh, "states": {}, "deck_px": int(round(DECK_Z * M.ZP)), "parapet_px": int(round((MERL_Z - DECK_Z) * M.ZP)),
+		"sheet": {"cols": "conn mask m = N1 E2 S4 W8 (tile axes)", "rows": rows,
+			"quadrant": "q bit 0: outside toward +x, bit 1: outside toward +y (row = q * 2 + damaged)",
+			"front": "camera-side parapet / rail pixels only, same layout: drawn after soldiers on the piece"},
+		"fits": fits}
+	_put(out, entry, id, "sheet", sheet)
 	entry.states["built"] = (entry.states["sheet"] as Dictionary).duplicate()
-	out.manifest.buildings["g7_fac_wall"] = entry
+	_put(out, entry, id, "front", front)
+	out.manifest.buildings[id] = entry
+
+
+static func build_wall(out: Dictionary) -> void:
+	_ring_sheet(out, "g7_fac_wall", WALL_TOP, false, 4100, 9100,
+		"cn_blast_wall 2x2 rampart segment with a wall-walk (deck_px over the pivot), pivot = segment centre; arms reach the cell edge so linked segments join")
 
 
 # ================================================================ hardened tower autotile (2 x 2 tiles = 8 x 8 m)
-## ART7F-2 (13.9c-3): the cn_tower drawn as part of the wall ring. Column = neighbour mask m (N1 E2 S4 W8), row 0
-## intact / 1 damaged. A 4.8 m square reinforced-concrete bastion (chamfered footing, corner pilasters, firing slits
-## on every face, armoured blast door on a free face) fills the middle of the cell; on every linked side a T-wall slab
-## with the same footing and capping beam runs from the bastion face to the cell edge, so the wall meets the tower
-## flush on both sides. Above: a thick shaft with slits and a caged ladder, an armoured cab with vision blocks under
-## an overhanging roof slab, an armoured cupola with a remote weapon station, searchlight, camera, red obstruction lamp.
+## ART7F-2 (13.9c-3) + WALL7-2 (13.9c-23): the cn_tower drawn as part of the wall ring. Column = neighbour mask m (N1 E2
+## S4 W8), row = q * 2 + damaged (q = outer quadrant, as the wall). A 4.8 m reinforced-concrete bastion (chamfered
+## footing, firing slits) whose roof is a fighting deck level with the wall-walk: armoured battlements on its outer faces
+## and where it flanks the wall, armoured corner merlons, a guard rail on the inner faces. On every linked side the
+## wall rampart runs from the bastion face to the cell edge, so the wall-walk runs straight onto the tower deck. Access:
+## a steel stair on a free inner face (landing level with the deck, blast door under it), or on corner towers a caged
+## ladder + side door on the inner corner. Above the deck: a shaft with slits, a deck door and a caged ladder, an
+## armoured cab with vision blocks under an overhanging roof slab, cupola race, searchlight, camera, obstruction lamp.
 const TOWER_TOP := 140
-const TB := 2.4    # bastion half width (m): arm slabs fill TB..4.0 exactly
+const TB := 2.4    # bastion half width (m): the wall arm runs TB..4.0
 
 
 static func _wall_kit(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, hl: float) -> void:
@@ -263,69 +487,121 @@ static func _wall_kit(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, hl
 	M.box(pt, T, c + Z * 3.68, (al * hl + nl * 0.32 + Z * 0.1).abs(), cd)   # capping beam
 
 
-static func tower_piece(cv, o: Vector2, m: int, seed: int) -> void:
+static func tower_piece(cv, o: Vector2, m: int, seed: int, q: int = 3) -> void:
 	var S: Array = []
 	var T := M.pose(o, 0.0)
+	var sq := qsign(q)
 	var conc: Array = C.ramp(CONC)
 	var cd: Array = C.ramp(CONC_D)
 	var st: Array = C.ramp(STEEL)
 	var arm: Array = C.ramp(Color8(98, 104, 98))
-	var k := 0
-	for b in 4:   # wall arms to the cell edge
+	var ar: Array = C.ramp(ARMR)
+	for b in 4:   # wall arms: the rampart from the bastion face to the cell edge (one wall-walk level)
 		if not (m & (1 << b)):
 			continue
 		var d := Vector3(ARM[b].x, ARM[b].y, 0)
 		var al := X if absf(d.x) > 0.5 else Y
-		_slab(M.part(S, 0), T, d * 3.2, al, k, seed)
-		_wall_kit(M.part(S, 0), T, d * 3.2, al, 0.8)
-		RO.wire(M.part(S, 1), T, d * TB, d * 4.0, 3.8)
-		k += 1
+		var pos := d.x + d.y > 0.0
+		_rampart(S, T, al, (TB - 0.05) if pos else -4.0, 4.0 if pos else (-TB + 0.05), (Y * sq.y) if al == X else (X * sq.x), seed + b)
+	var inner := [Vector3(0, -sq.y, 0), Vector3(-sq.x, 0, 0)]
+	var sface := -1   # stair on the first free inner face
+	for k in 2:
+		if not (m & (1 << _bit_of(inner[k]))):
+			sface = k
+			break
 	var pb := M.part(S, 0)   # bastion
 	M.box(pb, T, Vector3(0, 0, 0.3), Vector3(TB + 0.25, TB + 0.25, 0.3), cd, Vector3(0.2, 0.2, 0.0))
-	M.box(pb, T, Vector3(0, 0, 2.55), Vector3(TB, TB, 1.95), conc, Vector3(0.04, 0.04, 0.04))
+	M.box(pb, T, Vector3(0, 0, (0.6 + DECK_Z - 0.06) * 0.5), Vector3(TB, TB, (DECK_Z - 0.06 - 0.6) * 0.5), conc)
+	M.box(pb, T, Vector3(0, 0, DECK_Z - 0.03), Vector3(TB - 0.02, TB - 0.02, 0.03), C.ramp(DECKC))
 	for nl in [X, Y, -X, -Y]:
 		var al := RO._along(nl)
-		FAC._wall(pb, T, nl * TB, al, TB * 2.0, 4.5, nl, conc, seed + int(nl.x * 3.0 + nl.y * 7.0))
-		for s in [-1.0, 1.0]:   # firing slits clear of the arm slab
-			RO.quad(pb, T, nl * (TB + 0.012) + al * (s * 1.55) + Z * 2.9, al * 0.38, Z * 0.07, Color8(20, 22, 24), nl)
-			M.dline(pb, T, nl * (TB + 0.016) + al * (s * 1.55 - 0.42) + Z * 3.0, nl * (TB + 0.016) + al * (s * 1.55 + 0.42) + Z * 3.0, C.ca(cd[0], 0.9), nl)
-	for cx in [-1.0, 1.0]:   # corner pilasters
+		FAC._wall(pb, T, nl * TB, al, TB * 2.0, DECK_Z, nl, conc, seed + int(nl.x * 3.0 + nl.y * 7.0))
+		for s in [-1.0, 1.0]:   # ground-floor firing slits clear of the arm
+			RO.quad(pb, T, nl * (TB + 0.012) + al * (s * 1.9) + Z * 2.3, al * 0.22, Z * 0.07, Color8(20, 22, 24), nl)
+			M.dline(pb, T, nl * (TB + 0.016) + al * (s * 1.9 - 0.26) + Z * 2.4, nl * (TB + 0.016) + al * (s * 1.9 + 0.26) + Z * 2.4, C.ca(cd[0], 0.9), nl)
+	for cx in [-1.0, 1.0]:   # corner pilasters: concrete up to the deck, armoured corner merlons above it
 		for cy in [-1.0, 1.0]:
-			M.box(pb, T, Vector3(cx * (TB - 0.05), cy * (TB - 0.05), 2.4), Vector3(0.3, 0.3, 2.1), cd)
-	var dface := -1   # armoured blast door on the first free face the camera sees (S, E, then W, N)
-	for b in [2, 1, 3, 0]:
-		if not (m & (1 << b)):
-			dface = b
-			break
-	if dface >= 0:
-		var nl := Vector3(ARM[dface].x, ARM[dface].y, 0)
-		var al := RO._along(nl)
-		RO.quad(pb, T, nl * (TB + 0.014) + Z * 1.15, al * 0.6, Z * 1.05, st[1], nl)
-		for i in 5:
-			M.dline(pb, T, nl * (TB + 0.018) + al * -0.55 + Z * (0.3 + i * 0.4), nl * (TB + 0.018) + al * 0.55 + Z * (0.3 + i * 0.4), C.ca(st[3], 0.9), nl)
-		FAC._jamb(pb, T, nl * TB + al * 0.75, nl, 0.1, 0.1, 2.2)
-		FAC._jamb(pb, T, nl * TB - al * 0.75, nl, 0.1, 0.1, 2.2)
-		M.dpx(pb, T, nl * (TB + 0.02) + Z * 2.45, LAMP_W, nl)
-	var pr := M.part(S, 1)   # bastion parapet
-	for e in [[Vector3(0, -TB + 0.15, 4.62), Vector3(TB, 0.15, 0.12)], [Vector3(0, TB - 0.15, 4.62), Vector3(TB, 0.15, 0.12)],
-			[Vector3(-TB + 0.15, 0, 4.62), Vector3(0.15, TB - 0.3, 0.12)], [Vector3(TB - 0.15, 0, 4.62), Vector3(0.15, TB - 0.3, 0.12)]]:
-		M.box(pr, T, e[0], e[1], cd)
-	var ps := M.part(S, 1)   # shaft z 4.5..8.8
-	M.box(ps, T, Vector3(-0.2, -0.2, 6.65), Vector3(1.4, 1.4, 2.15), conc, Vector3(0.03, 0.03, 0.03))
+			M.box(pb, T, Vector3(cx * (TB - 0.05), cy * (TB - 0.05), 1.85), Vector3(0.3, 0.3, 1.8), cd)
+			var pk := _side_part(S, Vector3(cx, cy, 0))
+			M.box(pk, T, Vector3(cx * (TB - 0.22), cy * (TB - 0.22), (DECK_Z + MERL_Z + 0.1) * 0.5), Vector3(0.24, 0.24, (MERL_Z + 0.1 - DECK_Z) * 0.5), ar)
+	for b in 4:   # bastion deck edges
+		var on := Vector3(ARM[b].x, ARM[b].y, 0)
+		var al := RO._along(on)
+		if m & (1 << b):   # flank battlements where the bastion stands proud of the wall
+			_rparapet(S, T, al, -TB + 0.4, -BODY - 0.05, on, TB)
+			_rparapet(S, T, al, BODY + 0.05, TB - 0.4, on, TB)
+		elif _outer(on, sq):
+			_rparapet(S, T, al, -TB + 0.4, TB - 0.4, on, TB)
+		elif sface >= 0 and on == inner[sface]:
+			_rrail(S, T, al, -TB + 0.4, TB - 0.4, on, TB, Vector2(-1.75, -0.55))
+		else:
+			_rrail(S, T, al, -TB + 0.4, TB - 0.4, on, TB)
+	if sface >= 0:   # steel stair along the free inner face: ground at a = +2.3, landing level with the deck
+		var nf: Vector3 = inner[sface]
+		var al := RO._along(nf)
+		var ps := M.part(S, 0)
+		var sn := TB + 0.55
+		for i in 9:
+			M.box(ps, T, al * (2.2 - (i + 0.5) * 0.31) + nf * sn + Z * (0.4 * (i + 1) - 0.03), _hx(al, 0.16, 0.5, 0.03), st)
+		M.box(ps, T, al * -1.15 + nf * sn + Z * (DECK_Z - 0.04), _hx(al, 0.6, 0.5, 0.04), st)   # landing
+		for s in [-0.48, 0.48]:   # stringers
+			M.dline(ps, T, al * 2.3 + nf * (sn + s), al * -0.55 + nf * (sn + s) + Z * (DECK_Z - 0.05), st[0], Vector3.ZERO)
+		var hr := nf * (sn + 0.5)
+		M.dline(ps, T, al * 2.3 + hr + Z * 1.0, al * -0.55 + hr + Z * (DECK_Z + 1.0), YEL, Vector3.ZERO)   # handrail
+		M.dline(ps, T, al * -0.55 + hr + Z * (DECK_Z + 1.0), al * -1.75 + hr + Z * (DECK_Z + 1.0), YEL, Vector3.ZERO)
+		for a in [2.3, 0.85]:
+			var zt: float = (2.3 - float(a)) / 2.85 * DECK_Z
+			M.dline(ps, T, al * float(a) + hr + Z * zt, al * float(a) + hr + Z * (zt + 1.0), st[1], Vector3.ZERO)
+		for a in [-0.55, -1.75]:
+			M.dline(ps, T, al * float(a) + hr, al * float(a) + hr + Z * (DECK_Z + 1.0), st[1], Vector3.ZERO)   # landing legs + posts
+		RO.quad(pb, T, nf * (TB + 0.014) + al * -1.15 + Z * 1.05, al * 0.5, Z * 1.0, st[1], nf)   # blast door under the landing
+		for i in 4:
+			M.dline(pb, T, nf * (TB + 0.018) + al * -1.6 + Z * (0.3 + i * 0.5), nf * (TB + 0.018) + al * -0.7 + Z * (0.3 + i * 0.5), C.ca(st[3], 0.9), nf)
+		FAC._jamb(pb, T, nf * TB + al * -0.55, nf, 0.1, 0.1, 2.1)
+		FAC._jamb(pb, T, nf * TB + al * -1.75, nf, 0.1, 0.1, 2.1)
+		M.dpx(pb, T, nf * (TB + 0.02) + al * -1.15 + Z * 2.3, LAMP_W, nf)
+	else:   # corner tower: caged ladder on the inner y face, side door on the inner x face (both toward the inner corner)
+		var nf: Vector3 = inner[0]
+		var al := RO._along(nf)
+		var a := (-sq.x if absf(al.x) > 0.5 else -sq.y) * 1.92
+		var pl0 := M.part(S, 0)
+		for k in 12:
+			var z := 0.3 + k * 0.3
+			M.dline(pl0, T, al * (a - 0.24) + nf * (TB + 0.18) + Z * z, al * (a + 0.24) + nf * (TB + 0.18) + Z * z, st[2], nf)
+		for s in [-0.26, 0.26]:
+			M.dline(pl0, T, al * (a + s) + nf * (TB + 0.18), al * (a + s) + nf * (TB + 0.18) + Z * (DECK_Z + 1.0), st[1], Vector3.ZERO)
+		for k in 4:   # safety cage hoops
+			var z := 2.2 + k * 0.55
+			M.dline(pl0, T, al * (a - 0.3) + nf * (TB + 0.6) + Z * z, al * (a + 0.3) + nf * (TB + 0.6) + Z * z, st[3], Vector3.ZERO)
+			M.dline(pl0, T, al * (a - 0.3) + nf * (TB + 0.05) + Z * z, al * (a - 0.3) + nf * (TB + 0.6) + Z * z, st[3], Vector3.ZERO)
+			M.dline(pl0, T, al * (a + 0.3) + nf * (TB + 0.05) + Z * z, al * (a + 0.3) + nf * (TB + 0.6) + Z * z, st[3], Vector3.ZERO)
+		var nf2: Vector3 = inner[1]
+		var al2 := RO._along(nf2)
+		var a2 := (-sq.x if absf(al2.x) > 0.5 else -sq.y) * 1.92
+		RO.quad(pb, T, nf2 * (TB + 0.014) + al2 * a2 + Z * 1.0, al2 * 0.36, Z * 0.95, st[1], nf2)
+		for i in 3:
+			M.dline(pb, T, nf2 * (TB + 0.018) + al2 * (a2 - 0.32) + Z * (0.35 + i * 0.6), nf2 * (TB + 0.018) + al2 * (a2 + 0.32) + Z * (0.35 + i * 0.6), C.ca(st[3], 0.9), nf2)
+		M.dpx(pb, T, nf2 * (TB + 0.02) + al2 * a2 + Z * 2.15, LAMP_W, nf2)
+	var ps2 := M.part(S, 1)   # shaft z DECK_Z..8.8, set back toward the outer corner so the deck stays walkable
+	var sc := Vector3(-0.5, -0.5, 0)
+	M.box(ps2, T, sc + Z * ((DECK_Z + 8.8) * 0.5), Vector3(1.1, 1.1, (8.8 - DECK_Z) * 0.5), conc, Vector3(0.03, 0.03, 0.03))
 	for nl in [X, Y]:
 		var al := RO._along(nl)
-		var c1: Vector3 = Vector3(-0.2, -0.2, 0) + nl * 1.412
+		var c1: Vector3 = sc + nl * 1.112
 		for i in 3:
-			M.dline(ps, T, c1 + Z * (5.2 + i * 1.3) - al * 1.4, c1 + Z * (5.2 + i * 1.3) + al * 1.4, C.ca(conc[1], 0.9), nl)
-		RO.quad(ps, T, c1 + Z * 7.0 + al * 0.6, al * 0.3, Z * 0.06, Color8(20, 22, 24), nl)
+			M.dline(ps2, T, c1 + Z * (DECK_Z + 1.2 + i * 1.3) - al * 1.1, c1 + Z * (DECK_Z + 1.2 + i * 1.3) + al * 1.1, C.ca(conc[1], 0.9), nl)
+		RO.quad(ps2, T, c1 + Z * 7.4 + al * 0.5, al * 0.26, Z * 0.06, Color8(20, 22, 24), nl)
+		if nl == X:   # armoured deck door into the shaft
+			RO.quad(ps2, T, c1 + nl * 0.004 + al * -0.3 + Z * (DECK_Z + 1.0), al * 0.4, Z * 0.95, st[1], nl)
+			M.dline(ps2, T, c1 + nl * 0.008 + al * -0.68 + Z * (DECK_Z + 1.4), c1 + nl * 0.008 + al * 0.08 + Z * (DECK_Z + 1.4), C.ca(st[3], 0.9), nl)
 		for j in 3:
-			var u := P.hn(j, seed, 13) * 2.4 - 1.2
-			M.dline(ps, T, c1 + al * u + Z * 8.7, c1 + al * u + Z * (7.4 - P.hn(j, 1, 7) * 2.0), Color(0.22, 0.21, 0.18, 0.28), nl)
-	var pl := M.part(S, 2)   # caged ladder on +y
-	for k2 in 8:
-		M.dline(pl, T, Vector3(-0.9, 1.25, 4.9 + k2 * 0.5), Vector3(-0.3, 1.25, 4.9 + k2 * 0.5), C.ca(st[0], 1.0), Y)
+			var u := P.hn(j, seed, 13) * 1.8 - 0.9
+			M.dline(ps2, T, c1 + al * u + Z * 8.7, c1 + al * u + Z * (7.4 - P.hn(j, 1, 7) * 2.0), Color(0.22, 0.21, 0.18, 0.28), nl)
+	var pl := M.part(S, 2)   # caged ladder on the shaft's +y face
+	for k2 in 10:
+		M.dline(pl, T, Vector3(-0.9, 0.64, DECK_Z + 0.3 + k2 * 0.5), Vector3(-0.3, 0.64, DECK_Z + 0.3 + k2 * 0.5), C.ca(st[0], 1.0), Y)
 	for s in [-0.95, -0.25]:
-		M.dline(pl, T, Vector3(s, 1.3, 4.7), Vector3(s, 1.3, 8.8), st[2], Y)
+		M.dline(pl, T, Vector3(s, 0.68, DECK_Z), Vector3(s, 0.68, 8.8), st[2], Y)
 	var pc := M.part(S, 2)   # armoured cab z 8.8..10.6, overhanging roof
 	M.box(pc, T, Vector3(0, 0, 8.85), Vector3(2.05, 2.05, 0.1), cd)
 	M.box(pc, T, Vector3(0, 0, 9.75), Vector3(1.75, 1.75, 0.85), arm, Vector3(0.1, 0.1, 0.0))
@@ -341,52 +617,33 @@ static func tower_piece(cv, o: Vector2, m: int, seed: int) -> void:
 			M.dline(pc, T, c1 + al * (-1.3 + i * 0.87) + Z * 9.0, c1 + al * (-1.3 + i * 0.87) + Z * 9.75, C.ca(arm[1], 0.8), nl)
 	M.box(pc, T, Vector3(0, 0, 10.72), Vector3(2.15, 2.15, 0.12), cd)   # roof slab
 	M.box(pc, T, Vector3(-0.9, 0.8, 10.85), Vector3(0.5, 0.5, 0.012), C.ramp(CONC), Vector3.ZERO, {"team": true})
-	var pq := M.part(S, 3)   # armoured cupola + remote weapon station
+	var pq := M.part(S, 3)   # armoured cupola + remote weapon station race
 	var Tr := M.sub(T, Vector3(0.6, -0.5, 10.84), 0.0)
 	M.cyl(pq, Tr, Vector3(0, 0, 0.3), Z, 0.8, 0.3, 12, arm, {"cap_t": 2})
 	for i in 4:
-		var a := TAU * i / 4.0 + PI / 4.0
-		M.dpx(pq, Tr, Vector3(cos(a) * 0.81, sin(a) * 0.81, 0.36), Color8(26, 34, 40), Vector3(cos(a), sin(a), 0))
+		var a3 := TAU * i / 4.0 + PI / 4.0
+		M.dpx(pq, Tr, Vector3(cos(a3) * 0.81, sin(a3) * 0.81, 0.36), Color8(26, 34, 40), Vector3(cos(a3), sin(a3), 0))
 	# FACB7-2 (LIFE7-2): the static roof RWS is gone; LIFE7's tracking cupola gun draws on this ring (fac_life7.gd)
 	M.cyl(pq, Tr, Vector3(0, 0, 0.62), Z, 0.42, 0.03, 10, C.ramp(DARK), {"cap_t": 0})   # turret race
 	M.cyl(pq, T, Vector3(1.75, 1.45, 11.05), Vector3(1, 0.4, -0.3), 0.2, 0.18, 8, st, {"cap_t": 4})   # searchlight
 	M.dpx(pq, T, Vector3(1.97, 1.53, 11.0), LAMP_W)
 	M.box(pq, T, Vector3(-1.75, -1.75, 10.6), Vector3(0.18, 0.1, 0.09), C.ramp(Color8(210, 210, 200)))   # camera
 	M.dpx(pq, T, Vector3(-1.55, -1.75, 10.6), Color8(60, 200, 255), X)
-	M.cyl(pq, T, Vector3(-1.2, -1.2, 11.8), Z, 0.03, 0.95, 4, C.ramp(DARK), {"edge": false})
-	M.dpx(pq, T, Vector3(-1.2, -1.2, 12.8), LAMP_R)
+	# WALL7-2 (13.9c-14 "no floating red light"): the obstruction lamp sits on a visible mast from the roof slab
+	M.dline(pq, T, Vector3(-1.2, -1.2, 10.84), Vector3(-1.2, -1.2, 12.7), C.ramp(DARK)[1], Vector3.ZERO)
+	M.dline(pq, T, Vector3(-1.15, -1.2, 10.84), Vector3(-1.15, -1.2, 12.7), C.ramp(DARK)[3], Vector3.ZERO)
+	M.dpx(pq, T, Vector3(-1.2, -1.2, 12.78), LAMP_R)
 	_fin_piece(cv, S, o, seed + m)
 
 
 static func build_tower(out: Dictionary) -> void:
-	var co: Array = K.canvas(2, TOWER_TOP)
-	var o: Vector2 = co[1]
-	var fw: int = co[0].w
-	var fh: int = co[0].h
-	var sheet := P.Canvas.new(fw * 16, fh * 2)
-	for m in 16:
-		var cv = K.canvas(2, TOWER_TOP)[0]
-		tower_piece(cv, o, m, 5100 + m * 7)
-		var base = H.copy(cv)
-		C.selout(cv)
-		var dm = H.copy(base)
-		K.damage(dm, o, 2, 9300 + m * 13)
-		C.selout(dm)
-		for row in 2:
-			var src = cv if row == 0 else dm
-			(sheet.img as Image).blit_rect(src.img, Rect2i(0, 0, fw, fh), Vector2i(m * fw, row * fh))
-			(sheet.mask as Image).blit_rect(src.mask, Rect2i(0, 0, fw, fh), Vector2i(m * fw, row * fh))
-	var entry := {"size": 2, "pivot": [int(o.x), int(o.y)], "fw": fw, "fh": fh, "states": {},
-		"sheet": {"cols": "conn mask m = N1 E2 S4 W8 (tile axes)", "rows": ["intact", "damaged"]},
-		"fits": "cn_tower 2x2 hardened tower in the wall ring, pivot = cell centre; 4.8 m bastion + wall arms to the cell edge on linked sides"}
-	_put(out, entry, "g7_fac_tower", "sheet", sheet)
-	entry.states["built"] = (entry.states["sheet"] as Dictionary).duplicate()
-	out.manifest.buildings["g7_fac_tower"] = entry
+	_ring_sheet(out, "g7_fac_tower", TOWER_TOP, true, 5100, 9300,
+		"cn_tower 2x2 hardened tower in the wall ring, pivot = cell centre; 4.8 m bastion whose roof deck is level with the wall-walk, wall arms to the cell edge on linked sides")
 
 
 # ================================================================ zone buildings (any w x h tiles)
-const TOPS := {"planning": 230, "dronebay": 84, "workshop": 96, "range": 130, "lab": 96, "gate": 80, "wash": 66, "hall": 80,
-	"magazine": 76, "armory": 92, "aid": 80, "barracks": 160, "fuel": 30, "runoff": 46}
+const TOPS := {"planning": 230, "dronebay": 84, "workshop": 96, "range": 130, "lab": 96, "gate": 96, "wash": 66, "hall": 80,
+	"magazine": 76, "armory": 160, "aid": 80, "barracks": 160, "fuel": 30, "runoff": 46}
 ## ART7F-2: 13.9c-2 entry zones (w, h tiles) used until defs_g7_facility.json carries them. PROVISIONAL.
 const ENTRY_DEFAULT := {"gate_outer": [4, 2], "gate_inner": [4, 2], "apc_wash": [4, 4], "decon_hall": [5, 3]}
 
@@ -394,6 +651,8 @@ const ENTRY_DEFAULT := {"gate_outer": [4, 2], "gate_inner": [4, 2], "apc_wash": 
 static func build_zone(out: Dictionary, id: String, w: int, h: int, kind: String) -> void:
 	var s := int(ceil(float(w + h) * 0.5))
 	var top: int = TOPS.get(kind, 90)
+	if kind == "workshop" and _stack:
+		top = 196   # FACB7-5: + drone-bay storey (10.4 m), stair penthouse (12.6 m) and relay mast (15.4 m)
 	var co: Array = K.canvas(s, top)
 	var o: Vector2 = co[1]
 	var entry := {"size": s, "pivot": [int(o.x), int(o.y)], "fw": int(co[0].w), "fh": int(co[0].h), "states": {},
@@ -933,6 +1192,9 @@ static func workshop(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 		M.cyl(pc, T, Vector3(cx + hx * 0.85 - float(k % 2) * 0.62, ny + 0.4 - float(k / 2) * 0.62, 0.55), Z, 0.3, 0.42, 8, C.ramp(dcol[k]), {"cap_t": 3})
 	for sd in [Y, -Y]:
 		_side(pm, T, Vector3(cx + hx * 0.55, 0, 0) + sd * hy, X, sd, lock)
+	if _stack:   # FACB7-5 (13.9c-18): the drone bay storey + launch deck on top (one seamless building)
+		_dronebay_storey(S, T, pa, cx, hx, hy, hz, lock, seed)
+		return
 	var pr: Dictionary = parts[2]   # clerestory ridge, vents, beacon
 	M.box(pr, T, Vector3(cx, 0, hz + 0.45), Vector3(hx * 0.7, 0.9, 0.45), C.ramp(Color8(120, 124, 120)))
 	for s in [-1.0, 1.0]:
@@ -944,57 +1206,372 @@ static func workshop(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 	M.box(parts[1], T, Vector3(cx + hx * 0.3, hy * 0.3, hz + 0.01), Vector3(1.2, 1.2, 0.012), C.ramp(CONC), Vector3.ZERO, {"team": true})
 
 
+## FACB7-5 (owner 13.9c-18): the drone bay as the workshop's SECOND STOREY, one seamless building. The workshop walls
+## carry on up (full-height concrete corner pilasters tie both storeys), a cyan-lit floor-edge band marks the floor
+## line, the upper storey is clad in dark composite panels with the drone-ops ribbon window, a DRONE BAY sign + team
+## stripe; its roof is the launch deck (non-slip deck plate, yellow safety edge, two marked launch / recovery spots
+## with quadcopters, a drone lift hatch, charging cabinets, deck-edge lamps, a guard rail on posts, windsock, HVAC).
+## A concrete stair core on the back corner (stair-light slits) rises from its own ground door (json door on the east
+## lane) to a roof-access penthouse with a door onto the deck; the relay mast and its red obstruction lamp stand on
+## the penthouse roof (13.9c-14: nothing hovers). Lockdown: shutters, red band and deck lamps, drones stowed.
+static func _dronebay_storey(S: Array, T: Dictionary, pa: Dictionary, cx: float, hx: float, hy: float, z0: float, lock: bool, seed: int) -> void:
+	var z1 := z0 + 3.9
+	var clad := Color8(76, 84, 90)
+	var pu := M.part(S, 0)
+	M.box(pu, T, Vector3(cx, 0, (z0 + z1) * 0.5), Vector3(hx, hy, (z1 - z0) * 0.5), C.ramp(clad), Vector3(0.04, 0.04, 0.04))
+	_band(M.part(S, 0), T, Vector3(cx, 0, 0), hx, hy, z0 + 0.07, lock, Color8(168, 170, 164))
+	var pil: Array = C.ramp(Color8(146, 148, 142))
+	for sx in [-1.0, 1.0]:   # full-height corner pilasters: one structure, ground to deck
+		for sy in [-1.0, 1.0]:
+			M.box(pu, T, Vector3(cx + sx * hx, sy * hy, (z1 + 0.35) * 0.5), Vector3(0.24, 0.24, (z1 + 0.35) * 0.5), pil, Vector3(0.03, 0.03, 0.03))
+	var sc := Vector3(cx - hx - 1.0, -hy + 0.85, 0)   # stair core on the back corner (x: back alley, y: flush with -y)
+	for nl in [X, Y, -X, -Y]:
+		var al := RO._along(nl)
+		var hl: float = hy if absf(nl.x) > 0.5 else hx
+		var fc: Vector3 = Vector3(cx, 0, 0) + nl * (hx if absf(nl.x) > 0.5 else hy)
+		var u0 := -hl + 0.5
+		var u1 := hl - 0.5
+		if nl == -X:   # the stair core stands against this face's -y end
+			var cu := (sc.y + 0.95) * (1.0 if al.y > 0.0 else -1.0)
+			if al.y > 0.0:
+				u0 = maxf(u0, cu)
+			else:
+				u1 = minf(u1, cu)
+		for k in int((u1 - u0) / 1.2) + 1:   # composite panel joints
+			var u := u0 + k * 1.2
+			M.dline(pu, T, fc + nl * 0.012 + al * u + Z * (z0 + 0.25), fc + nl * 0.012 + al * u + Z * (z1 - 0.1), C.ca(C.ramp(clad)[0], 0.9), nl)
+		_ribbon(pu, T, fc + al * ((u0 + u1) * 0.5), al, nl, (u1 - u0) - 0.6, z0 + 0.9, z0 + 2.3, lock, seed + int(nl.x * 5.0 + nl.y * 11.0))
+		RO.quad(pu, T, fc + nl * 0.014 + al * ((u0 + u1) * 0.5) + Z * (z1 - 0.62), al * 1.7, Z * 0.24, SIGN, nl)   # DRONE BAY
+		FAC._stencil(pu, T, fc + nl * 0.018 + al * ((u0 + u1) * 0.5) + Z * (z1 - 0.6), al, nl, 9, 0.17)
+		M.dline(pu, T, fc + nl * 0.018 + al * ((u0 + u1) * 0.5 - 1.6) + Z * (z1 - 0.9), fc + nl * 0.018 + al * ((u0 + u1) * 0.5 + 1.6) + Z * (z1 - 0.9), CN_BLUE, nl)
+		M.box(pu, T, fc + nl * 0.05 + al * (u1 - 0.9) + Z * (z0 + 2.95), (al * 0.5 + nl * 0.04 + Z * 0.14).abs(), C.ramp(CONC), Vector3.ZERO, {"team": true})
+	# roof = launch deck
+	var pr := M.part(S, 2)
+	M.box(pr, T, Vector3(cx, 0, z1 + 0.08), Vector3(hx + 0.12, hy + 0.12, 0.08), C.ramp(Color8(150, 152, 148)))
+	var pdk := M.part(S, 3)
+	var dz := z1 + 0.165
+	M.dpoly(pdk, T, [Vector3(cx - hx + 0.1, -hy + 0.1, dz), Vector3(cx + hx - 0.1, -hy + 0.1, dz), Vector3(cx + hx - 0.1, hy - 0.1, dz), Vector3(cx - hx + 0.1, hy - 0.1, dz)], Color8(62, 66, 68), Z)
+	for j in 40:   # non-slip grit
+		M.dpx(pdk, T, Vector3(cx + (P.hn(j, seed, 41) - 0.5) * 2.0 * (hx - 0.4), (P.hn(j, seed, 43) - 0.5) * 2.0 * (hy - 0.4), dz + 0.001), Color8(52, 55, 54), Z)
+	var e := [Vector3(cx - hx + 0.4, -hy + 0.4, dz + 0.002), Vector3(cx + hx - 0.4, -hy + 0.4, dz + 0.002), Vector3(cx + hx - 0.4, hy - 0.4, dz + 0.002), Vector3(cx - hx + 0.4, hy - 0.4, dz + 0.002)]
+	for i in 4:
+		M.dline(pdk, T, e[i], e[(i + 1) % 4], YEL, Z)   # safety edge
+	for sy in [-1.0, 1.0]:   # two launch / recovery spots
+		var pc := Vector3(cx - 0.6, sy * 2.35, dz + 0.003)
+		for k in 20:
+			var a0 := TAU * k / 20.0
+			var a1 := TAU * (k + 1) / 20.0
+			M.dline(pdk, T, pc + Vector3(cos(a0), sin(a0), 0) * 1.45, pc + Vector3(cos(a1), sin(a1), 0) * 1.45, YEL if k % 2 == 0 else STENCIL, Z)
+		M.dline(pdk, T, pc + Vector3(-0.7, 0, 0), pc + Vector3(0.7, 0, 0), STENCIL, Z)
+		M.dline(pdk, T, pc + Vector3(0, -0.7, 0), pc + Vector3(0, 0.7, 0), STENCIL, Z)
+		if not lock:
+			_qdrone(M.part(S, 3), T, pc - Z * 0.003)
+	var hc := Vector3(cx + hx - 1.5, 0, dz)   # drone lift hatch (hazard frame)
+	M.box(pdk, T, hc + Z * 0.04, Vector3(0.75, 1.0, 0.04), C.ramp(Color8(96, 100, 102)))
+	FAC._hz(pdk, T, hc + Vector3(-0.75, -1.0, 0.085), hc + Vector3(0.75, 1.0, 0.085), Z, 8)
+	M.box(pdk, T, hc + Z * 0.1, Vector3(0.58, 0.82, 0.02), C.ramp(Color8(80, 84, 86)))
+	for k in 3:   # charging cabinets on the back edge
+		var cc := Vector3(cx - hx + 0.55, -0.85 + k * 0.85, dz)
+		M.box(pdk, T, cc + Z * 0.5, Vector3(0.28, 0.36, 0.5), C.ramp(Color8(110, 116, 112)), Vector3(0.02, 0.02, 0.02))
+		M.dpx(pdk, T, cc + Vector3(0.29, 0.0, 0.8), LAMP_R if lock else LAMP_G, X)
+		M.dline(pdk, T, cc + Vector3(0.29, -0.2, 0.55), cc + Vector3(0.29, 0.2, 0.55), DARK, X)
+	_hvac(pdk, T, Vector3(cx + hx - 1.2, hy - 1.3, dz))
+	var per := 4.0 * (hx + hy)   # deck-edge lamps (in the edge kerb) + guard rail on posts
+	for k in 18:
+		var d := (k + 0.5) / 18.0 * per
+		M.dpx(pdk, T, _rim(cx, hx - 0.2, hy - 0.2, d, per) + Z * (dz + 0.05), LAMP_R if lock else LAMP_G)
+	var prl := M.part(S, 3)
+	var np := 22
+	var last := Vector3.ZERO
+	for k in np + 1:
+		var q := _rim(cx, hx + 0.05, hy + 0.05, float(k) / np * per, per)
+		M.dline(prl, T, q + Z * dz, q + Z * (dz + 1.0), Color8(70, 74, 78))
+		if k > 0:
+			M.dline(prl, T, last + Z * (dz + 1.0), q + Z * (dz + 1.0), Color8(196, 170, 52))
+			M.dline(prl, T, last + Z * (dz + 0.5), q + Z * (dz + 0.5), Color8(80, 84, 88))
+		last = q
+	var wc := Vector3(cx + hx - 0.3, -hy + 0.3, dz)   # windsock on a post at the front corner
+	M.cyl(prl, T, wc + Z * 1.2, Z, 0.045, 1.2, 4, C.ramp(Color8(210, 210, 204)), {"edge": false})
+	M.dpoly(prl, T, [wc + Vector3(0, 0, 2.35), wc + Vector3(-0.2, 0.75, 2.2), wc + Vector3(-0.2, 0.75, 2.06), wc + Vector3(0, 0, 2.0)], Color8(240, 120, 40), X)
+	_olamp(prl, T, wc + Z * 2.4, 0.02, AMBER if not lock else LAMP_R)
+	# stair core: back corner, ground door on the back alley, stair-light slits, roof-access penthouse + relay mast
+	var ch := z1 + 2.3
+	var core := _block(S, T, sc, 0.95, 0.85, ch, CONC, seed + 41)
+	var pk: Dictionary = core[0]
+	for k in 4:   # stair-light slits climbing the two outer faces
+		var zz := 1.9 + k * 2.6
+		RO.quad(pk, T, sc - Y * 0.862 + X * (0.35 if k % 2 == 0 else -0.35) + Z * zz, X * 0.12, Z * 0.7, Color8(40, 64, 78) if lock else Color8(230, 214, 160), -Y)
+		RO.quad(pk, T, sc - X * 0.962 + Y * (0.3 if k % 2 == 0 else -0.3) + Z * (zz + 1.3), Y * 0.12, Z * 0.7, Color8(40, 64, 78) if lock else Color8(230, 214, 160), -X)
+	_rdoor(M.part(S, 1), T, sc - X * 0.95, Y, -X, 0.48, 2.2, lock, false)   # ground door (json drone_bay door)
+	RO.quad(pk, T, sc - X * 0.964 + Z * 3.05, Y * 0.62, Z * 0.18, SIGN, -X)
+	FAC._stencil(pk, T, sc - X * 0.968 + Z * 3.06, Y, -X, 5, 0.13)
+	_rdoor(M.part(S, 3), T, sc + X * 0.95 + Z * dz, Y, X, 0.45, 2.0, lock, false)   # penthouse door onto the deck
+	var mp := sc + Z * (ch + 0.25)
+	M.cyl(core[2], T, mp + Z * 1.4, Z, 0.07, 1.4, 4, C.ramp(STEEL), {"edge": false})
+	for k in 2:
+		M.box(core[2], T, mp + Vector3(0.14, 0.0, 1.5 + k * 0.8), Vector3(0.05, 0.22, 0.32), C.ramp(Color8(200, 200, 194)))
+	M.cyl(core[2], T, mp + Vector3(-0.35, 0.3, 0.35), Z, 0.32, 0.06, 10, C.ramp(Color8(214, 214, 208)), {"cap_t": 4})   # dish base
+	_olamp(core[2], T, mp + Z * 2.8, 0.02, LAMP_R)
+
+
+## Point at distance d along the perimeter of the rectangle centred (cx, 0) with half extents hx, hy (perimeter per).
+static func _rim(cx: float, hx: float, hy: float, d: float, per: float) -> Vector3:
+	d = fposmod(d, per)
+	if d < 2.0 * hx:
+		return Vector3(cx - hx + d, -hy, 0)
+	d -= 2.0 * hx
+	if d < 2.0 * hy:
+		return Vector3(cx + hx, -hy + d, 0)
+	d -= 2.0 * hy
+	if d < 2.0 * hx:
+		return Vector3(cx + hx - d, hy, 0)
+	d -= 2.0 * hx
+	return Vector3(cx - hx, hy - d, 0)
+
+
+## The overwatch quadcopter (~1.6 m span) standing on a deck / pad at pc (opaque rotor discs: 13.9c-18).
+static func _qdrone(pq: Dictionary, T: Dictionary, pc: Vector3) -> void:
+	var gr: Array = C.ramp(Color8(70, 76, 72))
+	M.box(pq, T, pc + Z * 0.42, Vector3(0.36, 0.24, 0.12), gr, Vector3(0.04, 0.04, 0.04))
+	M.box(pq, T, pc + Vector3(0.28, 0, 0.3), Vector3(0.08, 0.1, 0.08), C.ramp(DARK))
+	M.dpx(pq, T, pc + Vector3(0.37, 0, 0.3), Color8(60, 200, 255), X)
+	for a in [Vector3(0.6, 0.6, 0), Vector3(0.6, -0.6, 0), Vector3(-0.6, 0.6, 0), Vector3(-0.6, -0.6, 0)]:
+		M.dline(pq, T, pc + Z * 0.48, pc + a + Z * 0.5, Color8(40, 42, 44))
+		M.cyl(pq, T, pc + a + Z * 0.56, Z, 0.42, 0.01, 10, C.ramp(Color8(58, 62, 64)), {"cap_t": 0})
+	for s in [-1.0, 1.0]:
+		M.dline(pq, T, pc + Vector3(-0.3, s * 0.2, 0.3), pc + Vector3(-0.35, s * 0.32, 0.01), Color8(36, 38, 38))
+		M.dline(pq, T, pc + Vector3(0.3, s * 0.2, 0.3), pc + Vector3(0.35, s * 0.32, 0.01), Color8(36, 38, 38))
+
+
 # ---------------------------------------------------------------- 13.9c-2: two-layer APC entry + infantry decon hall
 ## Local frame for these three: +x / -x = the travel axis through the entry (rot_<f> puts +x on the zone's door side),
 ## +-y across it. ex / ey = half extents (m).
 
-## Reinforced gate layer (outer or inner): two hardened gate bastions, an overhead armoured beam with the lifting
-## blast door housing (door up = open; lockdown = door down, ribbed steel with a hazard foot), a rising wedge barrier
-## in the lane (flush when open, raised on lockdown), stop line + rumble strip, floodlights and cameras on the posts.
-static func gate_layer(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, seed: int) -> void:
-	var pa := _apron(S, T, ex, ey, seed, Color8(112, 112, 108))
+## GATE7 (owner 13.9c-26: "redesign the blast doors -- better design more details for the door --- better open and close
+## animation ---- make the mf feel secure as hell"): APC gate layer (outer or inner) with heavy armoured blast doors.
+## Two hardened bastions (portal towers) tied into the wall line carry an armoured header; the door is bi-parting and
+## telescopic: on each side three stacked armour leaves (A front, B, C back, 0.3 m each on parallel rails, ~1 m of
+## steel in all) slide out of a pocket in the bastion and meet in the middle (A's astragal covers the seam). Lock bars
+## on both faces of the A leaves slide across the seam into keepers, a wedge barrier rises on the outward side. Two
+## hydraulic rams on the header deck drive the leaves (rods out as the door closes), a power pack on a bastion cap feeds
+## them; rotating beacons on the caps and a status lamp row on the header (green open, amber moving, red sealed).
+## Floor: steel rail trench with three rails, hazard sills, floor sockets. Everything opaque (13.9c-18): no light pools
+## or other translucent fills in the sprite (the lighting layer draws the light).
+## fr (animation frame, empty = the zone's base state): t = leaf travel 0 open .. 1 met, b = lock bars / wedge 0 .. 1,
+## warn = beacons / lamps amber. Base states: open idle (t 0) and lockdown = sealed (t 1, b 1, red).
+const GATE_TRAVEL := 16   # = presentation/view/fac_gate7.gd N_TRAVEL
+const GATE_BOLT := 3      # = fac_gate7.gd N_BOLT
+const GATE_LEAF := [Color8(98, 104, 106), Color8(86, 92, 96), Color8(76, 82, 86)]
+
+
+static func gate_layer(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, seed: int, fr: Dictionary = {}) -> void:
+	var tr := float(fr.get("t", 1.0 if lock else 0.0))
+	var bo := float(fr.get("b", 1.0 if lock else 0.0))
+	var warn := bool(fr.get("warn", false))
+	var sealed := lock and fr.is_empty()
+	var sd := seed - (5 if lock and fr.is_empty() else 0)   # same grime in every frame of one gate (no flicker)
+	var lamp: Color = LAMP_R if sealed else (AMBER if warn or bo > 0.0 else LAMP_G)
+	var pa := _apron(S, T, ex, ey, sd, Color8(112, 112, 108))
 	var zt := ZS + 0.004
-	var py := ey - 1.3   # bastion centre (across)
-	var lw := py - 1.3   # clear lane half width
+	var py := ey - 1.3        # bastion centre (across)
+	var lw := py - 1.3        # clear lane half width
+	var bl := minf(ex, 3.2)   # bastion half length (along the travel axis)
+	var jf := lw + 0.05       # bastion lane face
+	var zh := 5.05            # door head (header soffit)
+	# ---- floor: rail trench across the lane (three rails, one per leaf stage), hazard sills, floor sockets
+	RO.quad(pa, T, Vector3(0, 0, zt), X * 0.62, Y * jf, Color8(40, 42, 44), Z)
+	for xr in [-0.36, 0.0, 0.36]:
+		M.dline(pa, T, Vector3(xr, -jf, zt + 0.002), Vector3(xr, jf, zt + 0.002), Color8(150, 154, 156), Z)
+	for sx in [-1.0, 1.0]:
+		RO.quad(pa, T, Vector3(sx * 0.74, 0, zt + 0.001), X * 0.1, Y * jf, Color8(120, 124, 126), Z)
+		FAC._hz(pa, T, Vector3(sx * 0.74, -jf, zt + 0.003), Vector3(sx * 0.74, jf, zt + 0.003), Z, maxi(4, int(jf * 3.0)))
+	for yk in [-0.8, 0.8]:
+		M.dpx(pa, T, Vector3(-0.36, yk, zt + 0.003), Color8(14, 14, 14), Z)
+		M.dpx(pa, T, Vector3(0.36, yk, zt + 0.003), Color8(14, 14, 14), Z)
+	# ---- bastions: hardened portal towers with the leaf pockets
 	for s in [-1.0, 1.0]:
-		var c := Vector3(0, s * py, 0)
+		var c: Vector3 = Vector3(0, s * py, 0)
 		var pb := M.part(S, 0)
-		M.box(pb, T, c + Z * 0.3, Vector3(minf(ex, 3.2), 1.45, 0.3), C.ramp(CONC_D), Vector3(0.15, 0.15, 0.0))
-		M.box(pb, T, c + Z * 2.9, Vector3(minf(ex, 3.2) - 0.25, 1.25, 2.6), C.ramp(CONC), Vector3(0.04, 0.04, 0.04))
+		M.box(pb, T, c + Z * 0.3, Vector3(bl, 1.45, 0.3), C.ramp(CONC_D), Vector3(0.15, 0.15, 0.0))
+		M.box(pb, T, c + Z * 2.9, Vector3(bl - 0.25, 1.25, 2.6), C.ramp(CONC), Vector3(0.04, 0.04, 0.04))
 		for nl in [X, -X]:
-			FAC._wall(pb, T, c + nl * (minf(ex, 3.2) - 0.25), Y, 2.5, 5.5, nl, C.ramp(CONC), seed + int(s * 5.0))
-			RO.quad(pb, T, c + nl * (minf(ex, 3.2) - 0.236) + Z * 3.2 - Y * s * 0.6, Y * 0.3, Z * 0.06, Color8(20, 22, 24), nl)   # firing slit
-		var inner: Vector3 = c - Y * s * 1.25
-		FAC._jamb(pb, T, inner + X * 0.0, -Y * s, minf(ex, 3.2) - 0.4, 0.3, 4.8)   # hazard chevrons on the lane faces
+			FAC._wall(pb, T, c + nl * (bl - 0.25), Y, 2.5, 5.5, nl, C.ramp(CONC), seed + int(s * 5.0))
+			RO.quad(pb, T, c + nl * (bl - 0.236) + Z * 3.2 - Y * s * 0.6, Y * 0.3, Z * 0.06, Color8(20, 22, 24), nl)   # firing slit
+			# armoured access-control box (card reader + intercom) on each long face at the lane end, status lamp
+			var cb: Vector3 = c + nl * (bl - 0.25) - Y * s * 0.8 + Z * 1.45
+			M.box(pb, T, cb + nl * 0.08, Vector3(0.08, 0.2, 0.26), C.ramp(STEEL))
+			M.dpx(pb, T, cb + nl * 0.17 + Z * 0.14, lamp, nl)
+			M.dline(pb, T, cb + nl * 0.17 - Y * 0.1 - Z * 0.05, cb + nl * 0.17 + Y * 0.1 - Z * 0.05, Color8(30, 32, 34), nl)
+			M.dline(pb, T, cb + nl * 0.17 - Y * 0.1 - Z * 0.12, cb + nl * 0.17 + Y * 0.1 - Z * 0.12, Color8(30, 32, 34), nl)
+		# lane face: dark pocket mouth between two steel jamb columns, hazard chevrons on the rest of the face
+		var nlf: Vector3 = -Y * s
+		var lf: Vector3 = Vector3(0, s * jf, 0)
+		RO.quad(pb, T, lf + nlf * 0.012 + Z * (zh * 0.5 + 0.03), X * 0.62, Z * (zh * 0.5 - 0.03), Color8(20, 22, 24), nlf)
+		for xs in [-1.0, 1.0]:
+			M.box(pb, T, lf + nlf * 0.1 + X * xs * 0.8 + Z * (zh * 0.5 + 0.1), Vector3(0.16, 0.1, zh * 0.5 + 0.1), C.ramp(STEEL), Vector3(0.02, 0.02, 0.02))
+			FAC._hz(pb, T, lf + nlf * 0.205 + X * xs * 0.8 + Z * 0.2, lf + nlf * 0.205 + X * xs * 0.8 + Z * (zh - 0.1), nlf, 12)
+			var cw: float = (bl - 0.25 - 0.96) * 0.5
+			if cw > 0.15:
+				FAC._jamb(pb, T, lf + X * xs * (0.96 + cw), nlf, cw - 0.05, 0.4, 4.9)
+		M.box(pb, T, lf + nlf * 0.1 + Z * (zh + 0.12), Vector3(0.96, 0.1, 0.12), C.ramp(STEEL))   # pocket head plate
+		# cap: rotating beacon in a cage, camera, floodlight fixture (no pool), hydraulic power pack on one cap
 		var pt := M.part(S, 1)
-		M.box(pt, T, c + Z * 5.7, Vector3(minf(ex, 3.2) - 0.15, 1.35, 0.15), C.ramp(CONC_D))
-		RO.flood(pt, pa, T, c + X * (minf(ex, 3.2) - 0.25) + Z * 5.0, X)
-		M.box(pt, T, c + Vector3(-minf(ex, 3.2) + 0.4, 0, 5.95), Vector3(0.18, 0.1, 0.09), C.ramp(Color8(210, 210, 200)))   # camera
-		M.dpx(pt, T, c + Vector3(-minf(ex, 3.2) + 0.2, 0, 5.95), Color8(60, 200, 255), -X)
-		M.dpx(pt, T, c + Z * 5.95, LAMP_R if lock else AMBER)
-	var pg := M.part(S, 2)   # overhead armoured beam + door housing
-	M.box(pg, T, Vector3(0, 0, 5.75), Vector3(0.75, lw + 0.2, 0.45), C.ramp(Color8(98, 104, 98)), Vector3(0.05, 0.05, 0.05))
-	RO.quad(pg, T, Vector3(0.762, 0, 5.75), Y * 2.0, Z * 0.22, SIGN, X)
-	FAC._stencil(pg, T, Vector3(0.766, 0, 5.77), Y, X, 5, 0.18)
-	M.dline(pg, T, Vector3(0.766, -lw, 5.4), Vector3(0.766, lw, 5.4), CN_BLUE, X)
-	var st: Array = C.ramp(Color8(92, 98, 100))
-	var pd := M.part(S, 1)
-	if lock:   # blast door down
-		M.box(pd, T, Vector3(0, 0, 2.65), Vector3(0.22, lw, 2.65), st)
-		for i in 8:
-			M.dline(pd, T, Vector3(0.23, -lw + 0.1, 0.5 + i * 0.6), Vector3(0.23, lw - 0.1, 0.5 + i * 0.6), C.ca(st[0], 0.9), X)
-		FAC._hz(pd, T, Vector3(0.235, -lw + 0.1, 0.3), Vector3(0.235, lw - 0.1, 0.3), X, 12)
-		for s in [-1.0, 1.0]:   # raised wedge barrier in front of it
-			M.box(pd, T, Vector3(2.0, 0, 0.45), Vector3(0.6, lw - 0.3, 0.4), C.ramp(GR.HAZ), Vector3(0.4, 0.0, 0.0))
-	else:   # door up in its housing: the bottom edge shows under the beam
-		M.box(pd, T, Vector3(0, 0, 5.05), Vector3(0.2, lw, 0.28), st)
-		FAC._hz(pd, T, Vector3(0.21, -lw + 0.1, 4.82), Vector3(0.21, lw - 0.1, 4.82), X, 12)
-		RO.quad(pa, T, Vector3(2.0, 0, zt + 0.001), X * 0.6, Y * (lw - 0.3), Color8(70, 70, 66), Z)   # flush wedge plate
-		FAC._hz(pa, T, Vector3(2.6, -lw + 0.3, zt + 0.002), Vector3(2.6, lw - 0.3, zt + 0.002), Z, 10)
+		M.box(pt, T, c + Z * 5.7, Vector3(bl - 0.15, 1.35, 0.15), C.ramp(CONC_D))
+		var lens: Color = LAMP_R if sealed else (AMBER if warn or bo > 0.0 else Color8(122, 88, 44))
+		M.cyl(pt, T, c + Z * 5.95, Z, 0.2, 0.1, 8, C.ramp(DARK))
+		M.cyl(pt, T, c + Z * 6.17, Z, 0.14, 0.12, 8, C.ramp(lens))
+		M.cyl(pt, T, c + Z * 6.32, Z, 0.16, 0.03, 8, C.ramp(DARK))
+		for a in 4:
+			var q: Vector3 = Vector3(cos(a * PI * 0.5 + 0.4), sin(a * PI * 0.5 + 0.4), 0) * 0.19
+			M.dline(pt, T, c + q + Z * 6.05, c + q + Z * 6.3, Color8(40, 42, 44))
+		M.box(pt, T, c + Vector3(-bl + 0.4, 0, 5.95), Vector3(0.18, 0.1, 0.09), C.ramp(Color8(210, 210, 200)))   # camera
+		M.dpx(pt, T, c + Vector3(-bl + 0.2, 0, 5.95), Color8(60, 200, 255), -X)
+		for nl in [X, -X]:
+			M.box(pt, T, c + nl * (bl - 0.1) + Y * s * 0.7 + Z * 5.0, Vector3(0.15, 0.15, 0.1), C.ramp(STEEL))
+			M.dpx(pt, T, c + nl * (bl + 0.06) + Y * s * 0.7 + Z * 4.95, LAMP_W, nl)
+		if s > 0.0:   # hydraulic power pack + accumulator bottles on the cap
+			M.box(pt, T, c + Vector3(bl * 0.45, 0.2, 6.05), Vector3(0.45, 0.4, 0.2), C.ramp(OLIVE), Vector3(0.03, 0.03, 0.03))
+			M.cyl(pt, T, c + Vector3(bl * 0.45 - 0.2, -0.45, 6.15), Z, 0.12, 0.3, 8, C.ramp(Color8(150, 40, 34)))
+			M.cyl(pt, T, c + Vector3(bl * 0.45 + 0.15, -0.45, 6.15), Z, 0.12, 0.3, 8, C.ramp(Color8(150, 40, 34)))
+			M.dpx(pt, T, c + Vector3(bl * 0.45 - 0.46, 0.2, 6.1), lamp, -X)
+	# ---- armoured header: lintel with hazard band, sign, status lamps; rams on the deck
+	var pg := M.part(S, 2)
+	var hw := jf + 0.35
+	M.box(pg, T, Vector3(0, 0, zh + 0.5), Vector3(0.95, hw, 0.5), C.ramp(Color8(98, 104, 98)), Vector3(0.05, 0.05, 0.05))
+	for nl in [X, -X]:
+		var fx: Vector3 = nl * 0.962
+		_gband(pg, T, fx + Z * (zh + 0.13), Y * (hw - 0.12), Z * 0.09, nl)
+		RO.quad(pg, T, fx + Z * (zh + 0.52), Y * 1.7, Z * 0.2, SIGN, nl)
+		FAC._stencil(pg, T, fx + nl * 0.004 + Z * (zh + 0.54), Y, nl, 6, 0.18)
+		M.dline(pg, T, fx + nl * 0.004 - Y * (hw - 0.2) + Z * (zh + 0.3), fx + nl * 0.004 + Y * (hw - 0.2) + Z * (zh + 0.3), CN_BLUE, nl)
+		for i in 6:   # status lamp row
+			var ly: float = (-2.5 + float(i)) * minf(1.0, hw / 3.4) * 1.1
+			if absf(ly) > 1.85:
+				M.dpx(pg, T, fx + nl * 0.006 + Y * ly + Z * (zh + 0.8), lamp, nl)
+				M.dpx(pg, T, fx + nl * 0.006 + Y * (ly + 0.08) + Z * (zh + 0.8), lamp, nl)
+		for i in int(hw * 2.0):   # bolt heads along the lintel
+			M.dpx(pg, T, fx + nl * 0.006 + Y * (-hw + 0.25 + i * 1.0) + Z * (zh + 0.93), Color8(160, 166, 160), nl)
+	var pr := M.part(S, 2)
+	M.box(pr, T, Vector3(-0.45, 0, zh + 1.05), Vector3(0.24, hw - 0.5, 0.05), C.ramp(STEEL))   # drive track housing
+	for s in [-1.0, 1.0]:
+		var yb: float = s * (jf - 1.0)
+		M.cyl(pr, T, Vector3(0.38, yb, zh + 1.22), Y, 0.17, 0.95, 8, C.ramp(OLIVE))   # ram barrel
+		M.box(pr, T, Vector3(0.38, s * (jf + 0.0), zh + 1.12), Vector3(0.14, 0.1, 0.12), C.ramp(DARK))   # anchor lug
+		M.box(pr, T, Vector3(0.38, s * (jf - 1.95), zh + 1.12), Vector3(0.12, 0.08, 0.14), C.ramp(DARK))   # gland
+		var r0: float = jf - 2.0
+		var rl: float = maxf(0.0, (r0 - 0.3) * tr)
+		if rl > 0.05:   # rod out as the leaves close
+			M.cyl(pr, T, Vector3(0.38, s * (r0 - rl * 0.5), zh + 1.22), Y, 0.07, rl * 0.5, 6, C.ramp(Color8(204, 208, 210)))
+		M.box(pr, T, Vector3(0.38, s * (r0 - rl), zh + 1.18), Vector3(0.15, 0.12, 0.15), C.ramp(STEEL))   # crosshead
+		M.dline(pr, T, Vector3(0.38, s * (jf + 0.1), zh + 1.3), Vector3(0.6, s * (jf + 0.9), zh + 1.25), Color8(30, 30, 30))   # hoses
+		M.dline(pr, T, Vector3(0.3, s * (jf + 0.1), zh + 1.3), Vector3(0.5, s * (jf + 0.9), zh + 1.2), Color8(30, 30, 30))
+	# ---- blast leaves: 3 telescopic stages per side, closed inner edges 0, lw / 3, 2 lw / 3
+	var wst := lw * 0.38
+	var ztop := zh + 0.15   # leaf tops run up into the header (no daylight slit over a travelling leaf)
+	for s in [-1.0, 1.0]:
+		for i in 3:
+			var xc: float = [-0.36, 0.0, 0.36][i]
+			var e: float = lerpf(jf - 0.07 + 0.025 * i, lw * float(i) / 3.0, tr)
+			var yc: float = s * (e + wst * 0.5)
+			var col: Color = GATE_LEAF[i]
+			var rp: Array = C.ramp(col)
+			var hx := 0.14
+			var pl := M.part(S, 1)
+			M.box(pl, T, Vector3(xc, yc, (ztop + 0.06) * 0.5), Vector3(hx, wst * 0.5, (ztop - 0.06) * 0.5), rp, Vector3(0.02, 0.02, 0.02))
+			for nl in [X, -X]:
+				var fx: Vector3 = Vector3(xc + nl.x * (hx + 0.008), yc, 0)
+				for zr in [1.65, 3.3]:   # stiffener ribs
+					M.box(pl, T, Vector3(xc + nl.x * (hx + 0.04), yc, zr), Vector3(0.04, wst * 0.5 - 0.1, 0.08), C.ramp(P.mul(col, 1.1)))
+				for zr in [0.85, 2.5, 4.1]:   # armour plate seams + bolt heads
+					M.dline(pl, T, fx + Y * (wst * 0.5 - 0.08) + Z * (zr - 0.62), fx - Y * (wst * 0.5 - 0.08) + Z * (zr - 0.62), rp[0], nl)
+					for yk in [-1.0, 1.0]:
+						M.dpx(pl, T, fx + Y * yk * (wst * 0.5 - 0.16) + Z * zr, rp[4], nl)
+				M.dline(pl, T, fx + Z * 0.6, fx + Z * (zh - 0.25), rp[0], nl)
+				_gband(pl, T, fx + Z * 0.3, Y * (wst * 0.5 - 0.03), Z * 0.2, nl)
+				if i == 0:
+					FAC._stencil(pl, T, fx + Z * 4.45, Y, nl, 3, 0.2)
+			var le: Vector3 = Vector3(xc, s * e, 0)   # leading edge: chevrons, black seal
+			FAC._jamb(pl, T, le, -Y * s, hx - 0.03, 0.3, zh - 0.15)
+			M.dline(pl, T, le - Y * s * 0.012 + Z * 0.12, le - Y * s * 0.012 + Z * (zh - 0.02), Color8(18, 18, 18), -Y * s)
+			if i == 0 and s > 0.0:   # astragal: steel cover strip over the meeting seam, both faces
+				for xs in [-1.0, 1.0]:
+					M.box(pl, T, Vector3(xc + xs * (hx + 0.04), e - 0.02, zh * 0.5), Vector3(0.04, 0.12, zh * 0.5 - 0.08), C.ramp(STEEL))
+	# ---- lock bars across the seam (on both faces of the A leaves): bars on the -y leaf, keepers on the +y leaf
+	var eA := lerpf(jf - 0.07, 0.0, tr)
+	var pk := M.part(S, 1)
+	for xs in [-1.0, 1.0]:
+		var xf: float = -0.36 + xs * (0.14 + 0.11)
+		for zb in [0.95, 2.5, 4.05]:
+			var y0: float = -eA - 1.5 + 0.9 * bo
+			M.box(pk, T, Vector3(xf, y0 + 0.6, zb), Vector3(0.09, 0.6, 0.13), C.ramp(Color8(178, 182, 180)))
+			M.dline(pk, T, Vector3(xf + xs * 0.095, y0 + 1.0, zb), Vector3(xf + xs * 0.095, y0 + 1.18, zb), GR.HAZ, X * xs)
+			for yb in [-eA - 1.3, -eA - 0.5]:
+				M.box(pk, T, Vector3(xf + xs * 0.03, yb, zb), Vector3(0.11, 0.09, 0.19), C.ramp(STEEL))
+			M.box(pk, T, Vector3(xf + xs * 0.02, eA + 0.55, zb), Vector3(0.12, 0.22, 0.2), C.ramp(DARK))
+			M.dpx(pk, T, Vector3(xf + xs * 0.145, eA + 0.55, zb + 0.1), LAMP_R if bo >= 1.0 else Color8(70, 40, 30), X * xs)
+	# ---- wedge barrier on the outward side: flush plate when down, rises with the lock bars
+	var hb := 0.55 * clampf(bo, 0.0, 1.0)
+	var xw := -minf(ex - 1.0, 2.6)
+	RO.quad(pa, T, Vector3(xw, 0, zt + 0.001), X * 0.6, Y * (lw - 0.3), Color8(52, 52, 50), Z)   # pit / plate
+	if hb > 0.04:
+		var pd := M.part(S, 1)
+		M.box(pd, T, Vector3(xw, 0, ZS + hb * 0.5), Vector3(0.55, lw - 0.35, hb * 0.5), C.ramp(GR.HAZ), Vector3(0.35 * hb / 0.55, 0.0, 0.0))
+		for i in int((lw - 0.5) * 2.0):
+			var yy: float = -lw + 0.6 + i * 1.0
+			M.dline(pd, T, Vector3(xw - 0.56, yy, ZS + 0.05), Vector3(xw - 0.56, yy + 0.4, ZS + hb - 0.05), GR.HAZ_D, -X)
+	else:
+		FAC._hz(pa, T, Vector3(xw - 0.6, -lw + 0.3, zt + 0.002), Vector3(xw - 0.6, lw - 0.3, zt + 0.002), Z, 10)
 	RO.quad(pa, T, Vector3(ex - 0.6, 0, zt), X * 0.12, Y * lw, Color8(230, 230, 220), Z)   # stop line
 	for i in int(lw * 2.0):   # rumble strip
-		RO.quad(pa, T, Vector3(-ex + 0.8, -lw + 0.5 + i * 1.0, zt), X * 0.35, Y * 0.18, YEL, Z)
-	FAC._stains(pa, T, Vector3(0, 0, ZS), Vector2(ex - 0.5, lw * 0.6), 6, seed)
+		RO.quad(pa, T, Vector3(-ex + 0.5, -lw + 0.5 + i * 1.0, zt), X * 0.3, Y * 0.18, YEL, Z)
+	FAC._stains(pa, T, Vector3(0, 0, ZS), Vector2(ex - 0.5, lw * 0.6), 6, sd)
+
+
+## Hazard band (yellow with black diagonals) centred at c on a face (normal nl), half extents u (along) and v (up).
+static func _gband(pt: Dictionary, T: Dictionary, c: Vector3, u: Vector3, v: Vector3, nl: Vector3) -> void:
+	RO.quad(pt, T, c + nl * 0.004, u, v, GR.HAZ, nl)
+	var ul := u.length()
+	var ud := u / maxf(ul, 0.001)
+	var x := -ul + 0.05
+	while x + 0.2 <= ul:
+		M.dline(pt, T, c + nl * 0.006 + ud * x - v * 0.9, c + nl * 0.006 + ud * (x + 0.2) + v * 0.9, GR.HAZ_D, nl)
+		x += 0.36
+
+
+## GATE7: blast-door animation frames for both APC gate layers, every door side: rot_<f>_gm_<k> (leaves travelling,
+## beacons amber) and rot_<f>_gb_<k> (leaves met, lock bars driving home). Same canvas / pivot / seed as the zone's
+## base states (build_zone), so every frame lines up pixel for pixel.
+static func build_gate_frames(out: Dictionary) -> void:
+	for id in ["g7_fac_gate_outer", "g7_fac_gate_inner"]:
+		if not (out.manifest.buildings as Dictionary).has(id):
+			continue
+		var entry: Dictionary = out.manifest.buildings[id]
+		var w := int(entry.zone[0])
+		var h := int(entry.zone[1])
+		var s := int(entry.size)
+		var top: int = TOPS.gate
+		var o := Vector2(float(entry.pivot[0]), float(entry.pivot[1]))
+		for f in 4:
+			var ex := float(w if f % 2 == 0 else h) * 2.0
+			var ey := float(h if f % 2 == 0 else w) * 2.0
+			var rs := 300 + f * 17 + absi("gate".hash()) % 97   # build_zone's render seed of the open state
+			var seed := rs + (31 if id.ends_with("inner") else 0)
+			var frames := []
+			for k in GATE_TRAVEL:
+				frames.append(["rot_%d_gm_%d" % [f, k], {"t": float(k) / float(GATE_TRAVEL - 1), "b": 0.0, "warn": true}])
+			for k in GATE_BOLT:
+				frames.append(["rot_%d_gb_%d" % [f, k], {"t": 1.0, "b": float(k + 1) / float(GATE_BOLT + 1), "warn": true}])
+			for fm in frames:
+				var cv = K.canvas(s, top)[0]
+				var S: Array = []
+				var T := M.pose(o, float(f) * PI / 2.0)
+				gate_layer(S, T, ex, ey, false, seed, fm[1])
+				M.shadow(cv, S, o)
+				M.render_z(cv, S, o, rs)
+				C.selout(cv)
+				_put(out, entry, id, String(fm[0]), cv)
+		entry["anim"] = {"travel": GATE_TRAVEL, "bolt": GATE_BOLT, "by": "presentation/view/fac_gate7.gd",
+			"states": "rot_<f> open | rot_<f>_gm_<k> travel k/(travel-1) | rot_<f>_gb_<k> lock bars | rot_<f>_lockdown sealed"}
 
 
 ## APC decontamination wash zone between the gate layers: drained wash bay, two spray gantries across the lane
@@ -1433,6 +2010,7 @@ static func build_vtol_pad(out: Dictionary) -> void:
 ## cooks off, SENT7's Sentinel Barracks can be destroyed); entity_layer picks them from render_entries mag / bar.
 const RUIN_KINDS := ["magazine", "barracks"]
 static var _ruin := false
+static var _stack := false   # FACB7-5 (13.9c-18): the drone bay is built as the workshop's second storey
 const MED_W := Color8(200, 202, 196)
 const MED_R := Color8(206, 44, 40)
 
@@ -1606,85 +2184,597 @@ static func magazine(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 	M.box(pf, T, fp + Vector3(0.0, 0.75, 0.35), Vector3(0.3, 0.25, 0.35), C.ramp(Color8(176, 44, 38)), Vector3(0.02, 0.02, 0.02))
 
 
-# ---------------------------------------------------------------- armory + suit bay (13.9c-6)
-## Weapons issue + hazmat / CBRN suit fitting and suit-breach repair on the infantry path. Door side +x: the
-## personnel entry from the decon hall (blast vestibule) and the issue window with its steel shutter; the long +y
-## side: the issue door to the staging yard under an awning; the -y end: the taller suit bay with a roll-up door,
-## open on rows of hanging suits (shut on lockdown), window band, breathing-air cylinder cage and compressor skid;
-## roof: suit pressure-test chamber, HVAC, filter stacks, mast. Lockdown: doors sealed, shutters down.
+# ---------------------------------------------------------------- Suit Foundry (13.9c-20c / 13.9c-20e; was the armory + suit bay of 13.9c-6)
+## FACB7-6 (owner 13.9c-20c) resized the armory into the Suit Foundry for the ~4 m amplified CN suits; FACB7-7 (owner
+## 13.9c-20e "for suit foundry push everything even more") makes it a signature building on the same 4x4 zone (16 x 16 m).
+## Door side +x (json faces.armory 0: the bay opens east onto the x20..21 vehicle lane, never the infantry path); the issue
+## wing on +y is attached to the infantry decon hall.
+##   - the hall: an 11.6 m armoured hangar, every face clad in layered armour plates (two plate depths, bolted), sloped
+##     concrete buttresses, a sloped blast skirt round the base, armoured blast shutters over the clerestory, a hardened
+##     parapet; cable trays, vents, a caged maintenance ladder, warning stencils;
+##   - the bay: a real open bay 4.4 m deep (jambs + header, not a painted door): a heavy steel portal with hazard
+##     chevrons, track rails, the door-head housing the multi-panel door lifts into (its hazard edge showing), a status
+##     lamp column and a beacon; inside (lit): two suits in charging cradles, one being fitted (its gun arm on the crane
+##     hoist, a technician beside it), the overhead crane runway and bridge, arming / charging racks, light strip, epoxy
+##     floor with bay markings. Lockdown: the door is down (five armoured panels, hazard band, red lamps), shutters shut;
+##     the interior is not drawn;
+##   - roof: crane monitor, sensor mast (lattice, radar bar, sensor dome, red obstruction lamp on top), whip antennas,
+##     satcom dish, two heat-exchanger banks with fans, HVAC, team panel, roof hatch;
+##   - the nanotech / power annex (-x end of the wing, 7.4 m): capacitor banks with cyan charge bands and a cooling unit on
+##     its roof, a bus duct into the hall, HIGH VOLTAGE placard;
+##   - the issue wing (+y, 5.2 m): weapons issue + hazmat fitting (13.9c-6), personnel door, issue window, lit sign;
+##   - the test apron: hazard border, walk-test line, tie-down rings, an outdoor gantry crane with downlights, a suit
+##     cradle with the pilot boarding gantry, two charging pedestals, an arming rack.
+## Lit signage (SUIT FOUNDRY, BAY 01) under mounted sign lamps; every light sits on a fixture (13.9c-24). Everything is
+## opaque (13.9c-18). Heights (m): hall 11.6, parapet 12.15, monitor 12.6, mast lamp 15.6, annex 7.4, wing 5.2, gantry 8.6.
+const SF_FONT := {
+	"S": ["###", "#..", "###", "..#", "###"], "U": ["#.#", "#.#", "#.#", "#.#", "###"], "I": ["###", ".#.", ".#.", ".#.", "###"],
+	"T": ["###", ".#.", ".#.", ".#.", ".#."], "F": ["###", "#..", "##.", "#..", "#.."], "O": [".#.", "#.#", "#.#", "#.#", ".#."],
+	"N": ["##.", "#.#", "#.#", "#.#", "#.#"], "D": ["##.", "#.#", "#.#", "#.#", "##."], "R": ["##.", "#.#", "##.", "#.#", "#.#"],
+	"Y": ["#.#", "#.#", ".#.", ".#.", ".#."], "B": ["##.", "#.#", "##.", "#.#", "##."], "A": [".#.", "#.#", "###", "#.#", "#.#"],
+	"0": ["###", "#.#", "#.#", "#.#", "###"], "1": [".#.", "##.", ".#.", ".#.", "###"], "H": ["#.#", "#.#", "###", "#.#", "#.#"],
+	"V": ["#.#", "#.#", "#.#", "#.#", ".#."], "E": ["###", "#..", "##.", "#..", "###"], "G": ["###", "#..", "#.#", "#.#", "###"],
+	"L": ["#..", "#..", "#..", "#..", "###"], " ": ["...", "...", "...", "...", "..."]}
+const SF_HALL := Color8(118, 124, 122)
+const SF_PLATE := Color8(104, 112, 112)
+const SF_WING := Color8(140, 146, 138)
+const SF_SUIT := Color8(108, 120, 116)
+const SF_IN := Color8(178, 176, 164)     # lit bay walls
+const SF_HZ := 11.6
+const SF_WZ := 5.2
+const SF_AZ := 7.4
+
+
+## Lettering on a wall (3x5 glyphs, glyph pixel px metres) centred at c (glyph row 2 at c.z), along al, normal nl.
+static func _sf_text(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, s: String, px: float, col: Color) -> void:
+	var cw := px * 4.0
+	var x0 := -0.5 * (float(s.length()) * cw - px)
+	for i in s.length():
+		var g: Array = SF_FONT.get(s[i], SF_FONT[" "])
+		for r in g.size():
+			var row: String = g[r]
+			for k in row.length():
+				if row[k] == "#":
+					var a := c + nl * 0.026 + al * (x0 + i * cw + (k + 0.5) * px) + Z * ((2.0 - r) * px)
+					RO.quad(pt, T, a, al * px * 0.5, Z * px * 0.5, col, nl)
+
+
+## Lit sign: a proud dark panel box (front `off` m off the face at c), steel trim, bright lettering, a cyan LED line under
+## it and n gooseneck sign lamps on brackets above it (13.9c-24: mounted, nothing floats).
+static func _sf_lsign(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, s: String, px: float, off: float, lock: bool) -> void:
+	var hl := 0.5 * float(s.length()) * px * 4.0 + 0.35
+	var hh := px * 2.5 + 0.22
+	M.box(pt, T, c + nl * (off * 0.5), (al * hl + nl * (off * 0.5) + Z * hh).abs(), C.ramp(SIGN))
+	var f := c + nl * off
+	M.dline(pt, T, f + nl * 0.004 - al * hl + Z * hh, f + nl * 0.004 + al * hl + Z * hh, C.ramp(STEEL)[3], nl)
+	M.dline(pt, T, f + nl * 0.004 - al * hl - Z * hh, f + nl * 0.004 + al * hl - Z * hh, C.ramp(STEEL)[1], nl)
+	_sf_text(pt, T, f - nl * 0.02, al, nl, s, px, Color8(150, 154, 150) if lock else Color8(244, 246, 236))
+	M.dline(pt, T, f + nl * 0.006 - al * (hl - 0.2) - Z * (hh - 0.1), f + nl * 0.006 + al * (hl - 0.2) - Z * (hh - 0.1), LAMP_R if lock else CN_BLUE, nl)
+	var n := maxi(2, int(hl / 1.2))
+	for k in n:
+		var u := -hl + 0.4 + float(k) * (2.0 * hl - 0.8) / float(n - 1)
+		var b := c + al * u + Z * (hh + 0.25)
+		M.dline(pt, T, b + nl * 0.02, b + nl * (off + 0.3) + Z * 0.1, C.ramp(DARK)[1])
+		M.box(pt, T, b + nl * (off + 0.32) + Z * 0.06, Vector3(0.08, 0.08, 0.05), C.ramp(DARK))
+		if not lock:
+			M.dpx(pt, T, b + nl * (off + 0.32), LAMP_W)
+
+
+## Layered armour plates over a face (c = face centre at ground, al along, nl outward, ln long, rows z0..z1): plates of
+## two depths (alternating) with dark joints and corner bolts. skip: Rect2(u0, z0, w, h) areas left bare (openings).
+static func _sf_plates(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, ln: float, z0: float, z1: float, seed: int, skip: Array = []) -> void:
+	var nc := maxi(1, int(round(ln / 2.3)))
+	var pw := ln / float(nc)
+	var nr := maxi(1, int(round((z1 - z0) / 1.9)))
+	var ph := (z1 - z0) / float(nr)
+	for j in nr:
+		for i in nc:
+			var u := -ln * 0.5 + (float(i) + 0.5) * pw
+			var zc := z0 + (float(j) + 0.5) * ph
+			var r := Rect2(u - pw * 0.5, zc - ph * 0.5, pw, ph)
+			var bare := false
+			for q in skip:
+				bare = bare or (q as Rect2).grow(-0.01).intersects(r)
+			if bare:
+				continue
+			var h := P.hn(i + j * 31, seed, 61)
+			var dp := 0.05 if (i + j) % 2 == 0 else 0.1
+			var col := P.mul(SF_PLATE if dp > 0.07 else Color8(86, 94, 98), 0.95 + 0.1 * h)
+			M.box(pt, T, c + al * u + nl * dp + Z * zc, (al * (pw * 0.5 - 0.06) + nl * dp + Z * (ph * 0.5 - 0.06)).abs(), C.ramp(col))
+			var fz := c + nl * (dp * 2.0 + 0.004)
+			M.dline(pt, T, fz + al * (u - pw * 0.5 + 0.08) + Z * (zc + ph * 0.5 - 0.09), fz + al * (u + pw * 0.5 - 0.08) + Z * (zc + ph * 0.5 - 0.09), C.ramp(col)[4], nl)
+			for s: Vector2 in [Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1), Vector2(1, 1)]:
+				M.dpx(pt, T, fz + al * (u + s.x * (pw * 0.5 - 0.22)) + Z * (zc + s.y * (ph * 0.5 - 0.22)), C.ramp(col)[0], nl)
+			if h < 0.22:   # weathering streak under a plate
+				M.dline(pt, T, fz + al * (u + 0.3) + Z * (zc - ph * 0.5 + 0.1), fz + al * (u + 0.3) + Z * (zc - ph * 0.1), Color8(84, 86, 82), nl)
+
+
+## Sloped concrete blast skirt along a face (c = face centre at ground), length ln, height zh, depth dp.
+static func _sf_skirt(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, ln: float, zh: float, dp: float) -> void:
+	var b0 := [c - al * ln * 0.5, c + al * ln * 0.5, c + al * ln * 0.5 + nl * dp, c - al * ln * 0.5 + nl * dp]
+	var t0 := [c - al * ln * 0.5 + Z * zh, c + al * ln * 0.5 + Z * zh, c + al * ln * 0.5 + nl * 0.12 + Z * zh, c - al * ln * 0.5 + nl * 0.12 + Z * zh]
+	var rp: Array = C.ramp(Color8(132, 130, 122))
+	var ref := c + nl * 0.05 + Z * zh * 0.4
+	M.face(pt, T, [b0[2], b0[3], t0[3], t0[2]], ref, rp)
+	M.face(pt, T, t0, ref, rp)
+	M.face(pt, T, [b0[0], b0[3], t0[3], t0[0]], ref, rp)
+	M.face(pt, T, [b0[1], b0[2], t0[2], t0[1]], ref, rp)
+	M.dline(pt, T, c + nl * 0.13 - al * (ln * 0.5) + Z * (zh + 0.004), c + nl * 0.13 + al * (ln * 0.5) + Z * (zh + 0.004), C.ramp(Color8(132, 130, 122))[4])
+
+
+## Armoured blast shutters along a face at height z (each 1.2 x 0.64 m in a steel frame); open = louvres tilted showing
+## a warm glow line, lock = shut flat.
+static func _sf_shutters(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, ln: float, z: float, off: float, lock: bool) -> void:
+	var n := maxi(1, int(ln / 1.7))
+	for k in n:
+		var u := -ln * 0.5 + (float(k) + 0.5) * ln / float(n)
+		var p := c + al * u + Z * z
+		M.box(pt, T, p + nl * (off * 0.5), (al * 0.68 + nl * (off * 0.5) + Z * 0.4).abs(), C.ramp(STEEL))
+		var f := p + nl * (off + 0.004)
+		RO.quad(pt, T, f, al * 0.6, Z * 0.32, Color8(30, 34, 38), nl)
+		for j in 4:
+			var zz := -0.24 + float(j) * 0.16
+			M.dline(pt, T, f + nl * 0.004 - al * 0.58 + Z * zz, f + nl * 0.004 + al * 0.58 + Z * zz, Color8(96, 102, 106), nl)
+			if not lock:
+				M.dline(pt, T, f + nl * 0.003 - al * 0.56 + Z * (zz + 0.06), f + nl * 0.003 + al * 0.56 + Z * (zz + 0.06), Color8(236, 206, 140), nl)
+
+
+## Caged maintenance ladder up a face from z0 to z1 at face point c (ground), along al, outward nl.
+static func _sf_ladder(pt: Dictionary, T: Dictionary, c: Vector3, al: Vector3, nl: Vector3, z0: float, z1: float, off: float) -> void:
+	var dk: Array = C.ramp(Color8(70, 74, 78))
+	for s: float in [-1.0, 1.0]:
+		M.dline(pt, T, c + nl * off + al * (s * 0.22) + Z * z0, c + nl * off + al * (s * 0.22) + Z * (z1 + 1.0), dk[3])
+	var nrg := int((z1 - z0) / 0.32)
+	for k in nrg:
+		M.dline(pt, T, c + nl * off - al * 0.22 + Z * (z0 + 0.2 + k * 0.32), c + nl * off + al * 0.22 + Z * (z0 + 0.2 + k * 0.32), dk[2])
+	var nh := int((z1 - z0 - 2.4) / 1.1)
+	for k in nh:
+		var zz := z0 + 2.4 + float(k) * 1.1
+		M.dline(pt, T, c + nl * off - al * 0.3 + Z * zz, c + nl * (off + 0.62) - al * 0.3 + Z * zz, dk[1])
+		M.dline(pt, T, c + nl * (off + 0.62) - al * 0.3 + Z * zz, c + nl * (off + 0.62) + al * 0.3 + Z * zz, dk[3])
+		M.dline(pt, T, c + nl * (off + 0.62) + al * 0.3 + Z * zz, c + nl * off + al * 0.3 + Z * zz, dk[1])
+	for s: float in [-1.0, 1.0]:
+		M.dline(pt, T, c + nl * (off + 0.62) + al * (s * 0.3) + Z * (z0 + 2.4), c + nl * (off + 0.62) + al * (s * 0.3) + Z * z1, dk[2])
+
+
+## Cable tray along a face at height z: tray edges, brackets every metre, coloured cable runs.
+static func _sf_tray(pt: Dictionary, T: Dictionary, a: Vector3, b: Vector3, nl: Vector3, off: float) -> void:
+	var st: Array = C.ramp(STEEL)
+	M.dline(pt, T, a + nl * off, b + nl * off, st[3])
+	M.dline(pt, T, a + nl * off - Z * 0.12, b + nl * off - Z * 0.12, st[1])
+	M.dline(pt, T, a + nl * (off - 0.02) - Z * 0.05, b + nl * (off - 0.02) - Z * 0.05, Color8(40, 44, 46))
+	M.dline(pt, T, a + nl * (off - 0.03) - Z * 0.08, b + nl * (off - 0.03) - Z * 0.08, Color8(96, 70, 52))
+	var n := maxi(1, int(a.distance_to(b)))
+	for k in n + 1:
+		var p := a.lerp(b, float(k) / float(n))
+		M.dline(pt, T, p + nl * 0.01 - Z * 0.14, p + nl * off - Z * 0.14, st[1])
+
+
+## A ~4 m amplified counter-nanite suit (EXO7-2 fact cnsuits.radius: 4 m tall, 2 m shoulder span, stance 1.6 x 1.8 m)
+## standing at ground point c, facing +x, at low ready: plated limbs, slim waist, V torso holding the sealed cockpit
+## (cyan sensor visor band, no glass), sensor head, back power / feed module, rotary gun on the right forearm.
+## fit: the right forearm + gun are off (on the crane hoist: the suit is being fitted).
+static func _sf_suit(S: Array, T: Dictionary, c: Vector3, seed: int, fit := false) -> void:
+	var ps := M.part(S, 1)
+	var pl: Array = C.ramp(SF_SUIT)
+	var pd: Array = C.ramp(P.mul(SF_SUIT, 0.72))
+	var pk: Array = C.ramp(DARK)
+	for s: float in [-1.0, 1.0]:
+		M.box(ps, T, c + Vector3(0.16, s * 0.42, 0.13), Vector3(0.38, 0.2, 0.13), pk)                         # armoured foot
+		M.box(ps, T, c + Vector3(0.02, s * 0.42, 0.86), Vector3(0.19, 0.16, 0.6), pl, Vector3(0, 0, -0.03))   # shin
+		M.box(ps, T, c + Vector3(0.17, s * 0.42, 1.47), Vector3(0.1, 0.15, 0.15), pd)                         # knee guard
+		M.box(ps, T, c + Vector3(-0.02, s * 0.37, 1.97), Vector3(0.24, 0.2, 0.44), pl, Vector3(0, 0, -0.04))  # thigh
+		M.dline(ps, T, c + Vector3(0.22, s * 0.42, 0.5), c + Vector3(0.22, s * 0.42, 1.25), pl[4], X)
+	M.box(ps, T, c + Vector3(0, 0, 2.43), Vector3(0.26, 0.52, 0.15), pd)                                     # pelvis
+	M.box(ps, T, c + Vector3(0, 0, 2.68), Vector3(0.21, 0.34, 0.13), pk)                                     # slim waist
+	M.box(ps, T, c + Vector3(0.02, 0, 3.18), Vector3(0.42, 0.56, 0.4), pl, Vector3(0, 0, -0.16))            # V torso / cockpit
+	RO.quad(ps, T, c + Vector3(0.445, 0, 3.3), Y * 0.4, Z * 0.085, Color8(20, 26, 30), X)                    # visor recess
+	M.dline(ps, T, c + Vector3(0.452, -0.36, 3.31), c + Vector3(0.452, 0.36, 3.31), CN_BLUE, X)               # sensor visor band
+	M.dline(ps, T, c + Vector3(0.45, -0.3, 2.95), c + Vector3(0.45, 0.3, 2.95), pl[4], X)
+	for s: float in [-1.0, 1.0]:
+		M.box(ps, T, c + Vector3(0.0, s * 0.84, 3.42), Vector3(0.3, 0.22, 0.19), pl, Vector3(0, 0, 0.06))   # pauldron
+		M.dpx(ps, T, c + Vector3(0.31, s * 0.84, 3.45), CN_BLUE, X)
+		M.box(ps, T, c + Vector3(0.0, s * 0.9, 2.98), Vector3(0.15, 0.14, 0.3), pd)                         # upper arm
+		if not (fit and s > 0.0):
+			M.box(ps, T, c + Vector3(0.3, s * 0.88, 2.6), Vector3(0.3, 0.15, 0.13), pl)                      # forearm
+	if not fit:
+		M.cyl(ps, T, c + Vector3(0.78, 0.88, 2.56), X, 0.11, 0.34, 6, pk, {"cap_t": 1})                     # rotary gun
+		M.dpx(ps, T, c + Vector3(1.13, 0.88, 2.56), Color8(20, 20, 20), X)
+	else:
+		M.dpx(ps, T, c + Vector3(0.05, 0.9, 2.66), AMBER, X)   # open elbow coupling
+	M.box(ps, T, c + Vector3(0.05, 0, 3.78), Vector3(0.2, 0.18, 0.16), pd, Vector3(0, 0, 0.05))             # sensor head
+	M.dline(ps, T, c + Vector3(0.26, -0.1, 3.8), c + Vector3(0.26, 0.1, 3.8), CN_BLUE, X)
+	M.box(ps, T, c + Vector3(-0.54, 0, 3.08), Vector3(0.16, 0.42, 0.46), pd)                               # back module
+	M.cyl(ps, T, c + Vector3(-0.56, -0.3, 3.75), Z, 0.03, 0.2, 4, pk, {"edge": false})                      # antenna stub
+	M.dpx(ps, T, c + Vector3(-0.38, 0.3, 3.4), AMBER if seed % 2 == 0 else LAMP_G, -X)
+
+
+## Charging cradle frame (posts, top beam, charging spine, umbilicals) round a suit standing at c, facing +x; hw = half
+## width between the posts.
+static func _sf_frame(S: Array, T: Dictionary, c: Vector3, hw: float, lock: bool, with_suit: bool) -> void:
+	var pf := M.part(S, 0)
+	var hz: Array = C.ramp(GR.HAZ)
+	M.box(pf, T, c + Vector3(0, 0, 0.07), Vector3(1.0, hw + 0.15, 0.07), C.ramp(STEEL))                     # base plate
+	for s: float in [-1.0, 1.0]:
+		M.box(pf, T, c + Vector3(-0.62, s * hw, 2.35), Vector3(0.12, 0.12, 2.35), hz)                       # frame posts
+		M.dline(pf, T, c + Vector3(-0.62, s * hw, 3.05), c + Vector3(-0.2, s * (hw - 0.36), 3.2), C.ramp(DARK)[2])
+		M.dline(pf, T, c + Vector3(-0.62, s * hw, 1.6), c + Vector3(-0.25, s * 0.62, 1.9), C.ramp(DARK)[2])
+	M.box(M.part(S, 2), T, c + Vector3(-0.62, 0, 4.78), Vector3(0.15, hw + 0.14, 0.13), hz)                  # top beam
+	M.box(pf, T, c + Vector3(-0.86, 0, 2.5), Vector3(0.07, 0.55, 1.6), C.ramp(STEEL))                       # charging spine
+	M.dpx(pf, T, c + Vector3(-0.78, 0.3, 3.6), LAMP_R if lock else CN_BLUE, X)
+	M.dpx(pf, T, c + Vector3(-0.78, 0.3, 3.4), LAMP_R if lock else LAMP_G, X)
+	if with_suit:
+		for k in 3:   # umbilicals from the top beam to the back module
+			M.dline(M.part(S, 1), T, c + Vector3(-0.62, -0.4 + k * 0.4, 4.65), c + Vector3(-0.66, -0.3 + k * 0.3, 3.5), Color8(30, 34, 36))
+	else:
+		for k in 2:   # slack cables
+			M.dline(pf, T, c + Vector3(-0.62, -0.3 + k * 0.6, 4.65), c + Vector3(-0.5, -0.4 + k * 0.8, 1.2), Color8(30, 34, 36))
+
+
+## Suit cradle on the apron (charging / arming frame), with the suit unless lock, and the pilot boarding gantry at the
+## suit's rear hatch. c = cradle centre on the ground (suit faces +x); the gantry stands at x gx, its stair runs to -y.
+static func _sf_cradle(S: Array, T: Dictionary, pa: Dictionary, c: Vector3, gx: float, lock: bool, seed: int) -> void:
+	FAC._hz(pa, T, c + Vector3(1.05, -1.6, zt_()), c + Vector3(1.05, 1.6, zt_()), Z, 10)
+	_sf_frame(S, T, c, 1.38, lock, not lock)
+	if not lock:
+		_sf_suit(S, T, c, seed)
+	var hz: Array = C.ramp(GR.HAZ)
+	var pg := M.part(S, 1)   # pilot boarding gantry: platform at the rear hatch (2.75 m), rails, stair toward -y
+	var pz := 2.75
+	var y0 := c.y - 1.0
+	var y1 := c.y + 1.0
+	M.box(pg, T, Vector3((gx + c.x - 0.95) * 0.5, c.y, pz), Vector3((c.x - 0.95 - gx) * 0.5, 1.0, 0.06), C.ramp(Color8(70, 76, 80)))
+	for yy in [y0, c.y, y1]:
+		M.dline(pg, T, Vector3(gx + 0.1, yy, pz), Vector3(gx + 0.1, yy, 0.1), C.ramp(DARK)[2])
+	M.dline(pg, T, Vector3(gx + 0.1, y1, pz + 1.0), Vector3(c.x - 1.0, y1, pz + 1.0), hz[3])
+	M.dline(pg, T, Vector3(c.x - 1.0, y0, pz + 1.0), Vector3(c.x - 1.0, y1, pz + 1.0), hz[3])
+	M.dline(pg, T, Vector3(c.x - 1.0, y1, pz + 1.0), Vector3(c.x - 1.0, y1, pz), hz[2])
+	var nst := 9
+	for i in nst:   # stair treads from the platform down toward -y
+		var t := float(i + 1) / float(nst + 1)
+		M.box(pg, T, Vector3(gx + 0.45, y0 - t * 2.6, pz * (1.0 - t)), Vector3(0.38, 0.14, 0.03), C.ramp(Color8(78, 84, 88)))
+	M.dline(pg, T, Vector3(gx + 0.85, y0, pz + 0.95), Vector3(gx + 0.85, y0 - 2.6, 0.95), hz[3])
+	M.dline(pg, T, Vector3(gx + 0.85, y0 - 2.6, 0.95), Vector3(gx + 0.85, y0 - 2.6, 0.1), hz[2])
+	M.cyl(pg, T, Vector3(gx + 0.12, c.y, pz + 1.15), Z, 0.03, 0.15, 4, C.ramp(DARK), {"edge": false})   # platform lamp on its post
+	M.dpx(pg, T, Vector3(gx + 0.12, c.y, pz + 1.34), LAMP_W)
+
+
+## A technician (1.8 m, hi-vis vest, white helmet) standing at c facing +y (scale reference next to a 4 m suit).
+static func _sf_tech(pt: Dictionary, T: Dictionary, c: Vector3) -> void:
+	for s: float in [-1.0, 1.0]:
+		M.box(pt, T, c + Vector3(0, s * 0.1, 0.42), Vector3(0.08, 0.07, 0.42), C.ramp(Color8(54, 60, 66)))
+	M.box(pt, T, c + Vector3(0, 0, 1.17), Vector3(0.12, 0.2, 0.34), C.ramp(Color8(236, 120, 30)))
+	M.dline(pt, T, c + Vector3(0.125, -0.18, 1.1), c + Vector3(0.125, 0.18, 1.1), Color8(230, 230, 210), X)
+	M.box(pt, T, c + Vector3(0.08, 0.28, 1.2), Vector3(0.18, 0.05, 0.05), C.ramp(Color8(54, 60, 66)))   # arm with tablet
+	M.box(pt, T, c + Vector3(0, 0, 1.62), Vector3(0.1, 0.1, 0.1), C.ramp(Color8(200, 160, 130)))
+	M.box(pt, T, c + Vector3(0, 0, 1.76), Vector3(0.12, 0.12, 0.06), C.ramp(Color8(232, 232, 226)))
+
+
 static func armory(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, seed: int) -> void:
 	var pa := _apron(S, T, ex, ey, seed)
 	var zt := zt_()
-	var x0 := -ex + 0.6
-	var x1 := ex - 2.0
-	var cx := (x0 + x1) * 0.5
-	var hx := (x1 - x0) * 0.5
-	var ys := -ey + 1.2                 # suit bay -y end
-	var ym := -ey * 0.25                # split
-	var ya := ey - 1.3                  # armory +y end
-	var ar := _block(S, T, Vector3(cx, (ym + ya) * 0.5, 0), hx, (ya - ym) * 0.5, 4.2, Color8(146, 150, 140), seed)
-	var sb := _block(S, T, Vector3(cx, (ys + ym) * 0.5, 0), hx, (ym - ys) * 0.5, 5.4, Color8(156, 160, 158), seed + 3)
-	var pm: Dictionary = ar[0]
-	var ps: Dictionary = sb[0]
-	var py := ya - 2.0   # personnel entry (blast vestibule) on the door side
-	_block(S, T, Vector3(x1 + 0.8, py, 0), 0.8, 1.2, 3.0, CONC_D, seed + 7)
-	_rdoor(M.part(S, 1), T, Vector3(x1 + 1.6, py, 0), Y, X, 0.6, 2.3, lock, not lock)
-	var iy := ym + 1.9   # issue window with counter + steel shutter
-	RO.quad(pm, T, Vector3(x1 + 0.012, iy, 1.6), Y * 1.1, Z * 0.5, Color8(30, 33, 36) if lock else Color8(196, 186, 150), X)
-	if lock:
-		for i in 4:
-			M.dline(pm, T, Vector3(x1 + 0.02, iy - 1.1, 1.2 + i * 0.25), Vector3(x1 + 0.02, iy + 1.1, 1.2 + i * 0.25), Color8(84, 90, 94), X)
-	else:
-		for k in 5:   # weapons racked behind the counter
-			M.dline(pm, T, Vector3(x1 + 0.016, iy - 0.9 + k * 0.42, 1.25), Vector3(x1 + 0.016, iy - 0.75 + k * 0.42, 2.0), Color8(46, 50, 52), X)
-	M.box(pm, T, Vector3(x1 + 0.25, iy, 1.05), Vector3(0.25, 1.2, 0.06), C.ramp(STEEL))
-	RO.quad(pm, T, Vector3(x1 + 0.012, iy, 3.45), Y * 1.6, Z * 0.26, SIGN, X)
-	FAC._stencil(pm, T, Vector3(x1 + 0.016, iy, 3.48), Y, X, 6, 0.18)
-	M.dline(pm, T, Vector3(x1 + 0.016, ym + 0.3, 3.0), Vector3(x1 + 0.016, ya - 0.3, 3.0), CN_BLUE, X)
-	RO.flood(pm, pa, T, Vector3(x1, ya - 0.6, 3.6), X)
-	for k in 2:   # suit bay window band on the door side
-		RO.window(ps, T, Vector3(x1, ys + 1.3 + k * 2.0, 4.1), 1.4, 0.5, X, not lock, lock)
-	RO.quad(ps, T, Vector3(x1 + 0.012, (ys + ym) * 0.5, 2.6), Y * 1.4, Z * 0.24, SIGN, X)
-	FAC._stencil(ps, T, Vector3(x1 + 0.016, (ys + ym) * 0.5, 2.62), Y, X, 5, 0.17, Color8(240, 200, 60))
-	var bw := minf(hx - 0.8, 2.2)
-	var bc := Vector3(cx, ys, 0)   # suit bay roll-up door on the -y end
-	_rdoor(M.part(S, 1), T, bc, X, -Y, bw, 3.4, lock, not lock)
-	if not lock:
-		_suits(M.part(S, 1), T, bc - Y * 0.03, X, -Y, bw - 0.2, seed)
-		M.dpoly(pa, T, [bc + Vector3(-bw, -0.1, zt), bc + Vector3(bw, -0.1, zt), bc + Vector3(bw + 0.5, -1.0, zt), bc + Vector3(-bw - 0.5, -1.0, zt)], POOL, Z)
-	var ay := ya   # issue door on the +y side under an awning
-	_rdoor(M.part(S, 1), T, Vector3(cx + hx * 0.2, ay, 0), X, Y, 1.0, 2.6, lock, not lock)
-	var paw := M.part(S, 2)
-	M.box(paw, T, Vector3(cx + hx * 0.2, ay + 0.55, 3.3), Vector3(1.7, 0.55, 0.05), C.ramp(OLIVE))
-	for s in [-1.0, 1.0]:
-		M.dline(paw, T, Vector3(cx + hx * 0.2 + s * 1.6, ay + 1.0, 3.25), Vector3(cx + hx * 0.2 + s * 1.6, ay + 1.0, ZS), Color8(60, 64, 66))
-	_side(ps, T, Vector3(x0, (ys + ym) * 0.5, 0), Y, -X, lock)
-	var pc := M.part(S, 0)   # breathing-air cylinder cage + compressor skid beside the suit bay
-	var cc := Vector3(x1 + 1.0, ys + 0.9, 0)
-	if cc.x + 0.6 < ex:
-		M.box(pc, T, cc + Z * 0.06, Vector3(0.55, 0.8, 0.06), C.ramp(CONC))
+	var hz := SF_HZ
+	var x0 := -ex + 0.3                 # hall / wing back (-x, the staging-yard side)
+	var xf := ex - 3.4                  # hall front (+x): the bay door face; x xf..ex = the test apron
+	var yn := -ey + 0.2                 # hall north end
+	var yw := ey * 0.375                # hall / issue wing split (wing on +y, against the decon hall)
+	var ye := ey - 0.1
+	var cx := (x0 + xf) * 0.5
+	var hx := (xf - x0) * 0.5
+	var cy := (yn + yw) * 0.5
+	var hy := (yw - yn) * 0.5
+	var dy0 := -ey * 0.5                # bay door centre (json doors [20,17] / [20,18] = the zone's north half)
+	var dhw := minf(3.2, hy - 1.6)
+	var dhz := 7.2
+	var dn := dy0 - dhw                 # opening north / south edges
+	var ds := dy0 + dhw
+	var xb := xf - 4.4                  # back wall of the open bay
+	var rp: Array = C.ramp(SF_HALL)
+	# ---- massing: rear hall + the two bay jambs + the header over the bay (a real open bay, not a painted door)
+	var rear := _block(S, T, Vector3((x0 + xb) * 0.5, cy, 0), (xb - x0) * 0.5, hy, hz, SF_HALL, seed)
+	var jn := _block(S, T, Vector3((xb + xf) * 0.5, (yn + dn) * 0.5, 0), (xf - xb) * 0.5, (dn - yn) * 0.5, hz, SF_HALL, seed + 1)
+	var js := _block(S, T, Vector3((xb + xf) * 0.5, (ds + yw) * 0.5, 0), (xf - xb) * 0.5, (yw - ds) * 0.5, hz, SF_HALL, seed + 2)
+	var pm: Dictionary = rear[0]
+	var ph := M.part(S, 0)
+	M.box(ph, T, Vector3((xb + xf) * 0.5, dy0, (dhz + hz) * 0.5), Vector3((xf - xb) * 0.5, dhw + 0.02, (hz - dhz) * 0.5), rp)
+	var pr: Dictionary = rear[2]
+	for e in [[Vector3(cx, yn + 0.18, hz + 0.27), Vector3(hx, 0.18, 0.27)], [Vector3(cx, yw - 0.18, hz + 0.27), Vector3(hx, 0.18, 0.27)],
+			[Vector3(x0 + 0.18, cy, hz + 0.27), Vector3(0.18, hy, 0.27)], [Vector3(xf - 0.18, cy, hz + 0.27), Vector3(0.18, hy, 0.27)]]:
+		M.box(pr, T, e[0], e[1], C.ramp(P.mul(SF_HALL, 0.86)), Vector3(0.05, 0.05, 0.05))   # hardened parapet
+	M.dline(pr, T, Vector3(xf + 0.004, yn, hz + 0.5), Vector3(xf + 0.004, yw, hz + 0.5), C.ramp(P.mul(SF_HALL, 0.86))[4], X)
+	M.dline(pr, T, Vector3(x0, yw + 0.004, hz + 0.5), Vector3(xf, yw + 0.004, hz + 0.5), C.ramp(P.mul(SF_HALL, 0.86))[4], Y)
+	# ---- the armour: layered plates on every face, sloped buttresses, blast skirt, blast shutters
+	var pp := M.part(S, 1)
+	_sf_plates(pp, T, Vector3(xf, (ds + yw) * 0.5, 0), Y, X, yw - ds, 0.9, hz - 0.2, seed + 5)
+	_sf_plates(pp, T, Vector3(xf, dy0, 0), Y, X, 2.0 * dhw, dhz + 1.75, hz - 0.2, seed + 6)
+	_sf_plates(pp, T, Vector3(cx, yw, 0), X, Y, xf - x0, SF_WZ + 0.3, hz - 0.2, seed + 7, [Rect2(-hx - 0.1, SF_WZ, 4.7, SF_AZ - SF_WZ + 0.2)])
+	_sf_plates(pp, T, Vector3(x0, cy, 0), Y, -X, yw - yn, 0.9, hz - 0.2, seed + 8)
+	_sf_plates(pp, T, Vector3(cx, yn, 0), X, -Y, xf - x0, 0.9, hz - 0.2, seed + 9)
+	var pb := M.part(S, 0)
+	var rb: Array = C.ramp(P.mul(SF_HALL, 0.92))
+	for q in [[Vector3(xf - 0.2, yn + 0.5, 0), 0.7], [Vector3(xf - 0.6, yw, SF_WZ), 0.55], [Vector3(x0 + 0.5, yn + 0.5, 0), 0.7],
+			[Vector3(x0 + 0.6, yw, SF_AZ), 0.55]]:   # sloped corner buttresses (inside the zone edge, on the roofs they stand on)
+		var p: Vector3 = q[0]
+		var b := float(q[1])
+		_frustum(pb, T, Vector3(p.x, p.y, 0), Vector2(b, b), Vector2(0.3, 0.3), p.z, hz - 0.6, rb)
+	var xa := x0 + 4.6                  # power annex / issue wing split
+	for k in 3:   # buttresses on the +y face, standing on the wing roof
+		var bx := xa + 0.9 + float(k) * 2.4
+		_frustum(pb, T, Vector3(bx, yw, 0), Vector2(0.32, 0.9), Vector2(0.26, 0.22), SF_WZ, 8.0, rb)
+	_frustum(pb, T, Vector3(xf, yw - 1.4, 0), Vector2(0.95, 0.32), Vector2(0.26, 0.28), 0.0, 6.4, rb)   # mid buttress on the door face
+	_sf_skirt(pb, T, Vector3(xf, (ds + 0.55 + yw) * 0.5, 0), Y, X, yw - ds - 0.55, 1.05, 0.55)
+	_sf_skirt(pb, T, Vector3(x0, cy, 0), Y, -X, yw - yn, 1.05, 0.55)
+	_sf_skirt(pb, T, Vector3(cx, yn, 0), X, -Y, xf - x0, 1.05, 0.55)
+	var psh := M.part(S, 2)
+	_sf_shutters(psh, T, Vector3(cx - 0.4, yw, 0), X, Y, xf - x0 - 3.4, 10.6, 0.26, lock)
+	_sf_shutters(psh, T, Vector3(x0, cy, 0), Y, -X, yw - yn - 1.6, 10.25, 0.26, lock)
+	_sf_shutters(psh, T, Vector3(cx, yn, 0), X, -Y, xf - x0 - 1.6, 10.25, 0.26, lock)
+	# ---- small details: cable trays, vents, the caged ladder, stencils, wall lamps
+	_sf_tray(psh, T, Vector3(xf, ds + 0.5, 6.3), Vector3(xf, yw - 0.3, 6.3), X, 0.32)
+	_sf_ladder(psh, T, Vector3(xf, yw - 0.5, 0), Y, X, 0.2, hz, 0.24)
+	for k in 2:   # louvre vents high on the door face
+		var vp := Vector3(xf + 0.22, ds + 0.9 + k * 1.1, 8.3)
+		RO.quad(psh, T, vp, Y * 0.42, Z * 0.32, Color8(44, 48, 52), X)
+		for j in 4:
+			M.dline(psh, T, vp + X * 0.004 + Y * -0.4 + Z * (-0.22 + j * 0.15), vp + X * 0.004 + Y * 0.4 + Z * (-0.22 + j * 0.15), Color8(100, 106, 110), X)
+	RO.quad(psh, T, Vector3(xf + 0.22, ds + 1.55, 2.0), Y * 0.5, Z * 0.32, Color8(232, 186, 40), X)   # warning placard
+	FAC._hz(psh, T, Vector3(xf + 0.226, ds + 1.1, 1.75), Vector3(xf + 0.226, ds + 2.0, 1.75), X, 6)
+	_sf_text(psh, T, Vector3(xf + 0.2, ds + 1.55, 2.08), -Y, X, "HV", 0.07, Color8(24, 24, 22))
+	RO.flood(psh, pa, T, Vector3(xf + 0.12, ds + 1.0, 5.3), X)   # wall pack over the issue-side apron
+	# ---- the bay door: steel portal, track rails, door-head housing, status lamps, beacon
+	var pd := M.part(S, 2)
+	var dk: Array = C.ramp(Color8(66, 72, 76))
+	for s: float in [-1.0, 1.0]:
+		var jy := dy0 + s * (dhw + 0.22)
+		M.box(pd, T, Vector3(xf + 0.24, jy, (dhz + 1.7) * 0.5), Vector3(0.24, 0.22, (dhz + 1.7) * 0.5), dk)
+		FAC._jamb(pd, T, Vector3(xf + 0.48, jy, 0), X, 0.2, 0.3, dhz)
+		M.box(pd, T, Vector3(xf + 0.1, dy0 + s * (dhw - 0.07), dhz * 0.5), Vector3(0.1, 0.06, dhz * 0.5), C.ramp(STEEL))   # track rail
 		for k in 6:
-			M.cyl(pc, T, cc + Vector3(-0.25 + (k % 2) * 0.5, -0.55 + (k / 2) * 0.55, 0.75), Z, 0.14, 0.62, 6, C.ramp(Color8(60, 120, 170) if k % 3 else Color8(220, 220, 214)), {"cap_t": 3})
-		for k in 4:
-			M.dline(pc, T, cc + Vector3(0.55, -0.8 + k * 0.53, 0.12), cc + Vector3(0.55, -0.8 + k * 0.53, 1.5), Color8(64, 68, 70), X)
-		M.dline(pc, T, cc + Vector3(0.55, -0.8, 1.5), cc + Vector3(0.55, 0.8, 1.5), Color8(64, 68, 70), X)
-		var kc := cc + Y * 2.0
-		M.box(pc, T, kc + Z * 0.55, Vector3(0.5, 0.7, 0.5), C.ramp(Color8(60, 92, 120)), Vector3(0.03, 0.03, 0.03))
-		for k in 4:
-			M.dline(pc, T, kc + Vector3(0.51, -0.5 + k * 0.32, 0.25), kc + Vector3(0.51, -0.5 + k * 0.32, 0.85), C.ca(DARK, 0.8), X)
-		M.dpx(pc, T, kc + Vector3(0.52, 0.55, 0.9), LAMP_R if lock else LAMP_G, X)
-	var pr: Dictionary = sb[2]   # suit pressure-test chamber + filter stacks on the suit bay roof
-	var sc := Vector3(cx - hx * 0.3, (ys + ym) * 0.5, 0)
-	M.cyl(pr, T, sc + Z * 6.15, Y, 0.7, minf(1.3, (ym - ys) * 0.5 - 0.4), 12, C.ramp(Color8(200, 204, 206)), {"cap_t": 3})
-	M.cyl(pr, T, sc + Z * 6.15, Y, 0.74, 0.05, 12, C.ramp(CN_BLUE), {"cap_t": 0})
-	M.dpx(pr, T, sc + Vector3(0.71, 0, 6.2), AMBER if lock else LAMP_G, X)
+			M.dpx(pd, T, Vector3(xf + 0.205, dy0 + s * (dhw - 0.07), 0.6 + k * 1.15), C.ramp(STEEL)[4], X)
+	M.box(pd, T, Vector3(xf + 0.34, dy0, dhz + 0.85), Vector3(0.34, dhw + 0.46, 0.85), dk)   # door-head housing
+	FAC._hz(pd, T, Vector3(xf + 0.69, dn - 0.4, dhz + 0.12), Vector3(xf + 0.69, ds + 0.4, dhz + 0.12), X, 16)
+	for s: float in [-1.0, 1.0]:
+		M.dline(pd, T, Vector3(xf + 0.69, dy0 + s * (dhw - 0.2), dhz + 0.3), Vector3(xf + 0.69, dy0 + s * (dhw - 0.2), dhz + 1.5), dk[1], X)
+	_olamp(pd, T, Vector3(xf + 0.5, ds + 0.2, dhz + 1.7), 0.12, AMBER if not lock else LAMP_R)   # door beacon on the housing
+	var sl := Vector3(xf + 0.3, ds + 0.6, 3.4)   # status lamp column on the jamb face
+	M.box(pd, T, sl, Vector3(0.08, 0.14, 0.62), C.ramp(DARK))
+	for k in 3:
+		var on := (k == 0 and lock) or (k == 2 and not lock)
+		var lc: Color = [LAMP_R, AMBER, LAMP_G][k]
+		M.dpx(pd, T, sl + X * 0.09 + Z * (0.4 - k * 0.4), lc if on else P.mul(lc, 0.35), X)
+	_sf_text(pd, T, Vector3(xf + 0.7, dy0, dhz + 0.85), -Y, X, "BAY 01", 0.13, Color8(236, 236, 224))
+	if lock:   # the door is down: five armoured panels, hazard band on the bottom panel
+		var pdn := M.part(S, 2)
+		for k in 5:
+			var zc := 0.72 + float(k) * 1.44
+			M.box(pdn, T, Vector3(xf + 0.18, dy0, zc), Vector3(0.14, dhw - 0.05, 0.7), C.ramp(Color8(96, 102, 104)))
+			M.dline(pdn, T, Vector3(xf + 0.325, dn + 0.1, zc + 0.69), Vector3(xf + 0.325, ds - 0.1, zc + 0.69), Color8(52, 56, 58), X)
+			for j in 6:
+				M.dpx(pdn, T, Vector3(xf + 0.325, dn + 0.4 + j * (2.0 * dhw - 0.8) / 5.0, zc + 0.5), Color8(70, 74, 76), X)
+			M.dline(pdn, T, Vector3(xf + 0.325, dn + 0.3, zc - 0.25), Vector3(xf + 0.325, ds - 0.3, zc - 0.25), Color8(124, 130, 132), X)
+		FAC._jamb(pdn, T, Vector3(xf + 0.33, dy0, 0), X, dhw - 0.2, 0.15, 1.2)
+		_sf_text(pdn, T, Vector3(xf + 0.33, dy0, 3.6), -Y, X, "SEALED", 0.16, LAMP_R)
+	else:
+		M.box(pd, T, Vector3(xf + 0.3, dy0, dhz - 0.12), Vector3(0.12, dhw - 0.05, 0.12), C.ramp(Color8(96, 102, 104)))   # door bottom edge
+		FAC._hz(pd, T, Vector3(xf + 0.425, dn + 0.1, dhz - 0.12), Vector3(xf + 0.425, ds - 0.1, dhz - 0.12), X, 14)
+		_sf_bay(S, T, pa, xb, xf, dn, ds, dy0, dhz, seed)
+	M.dline(pa, T, Vector3(xf + 0.05, dn, zt + 0.002), Vector3(xf + 0.05, ds, zt + 0.002), C.ramp(STEEL)[3], Z)   # threshold rail
+	# ---- signs
+	_sf_lsign(pd, T, Vector3(xf, cy, 10.25), -Y, X, "SUIT FOUNDRY", 0.17, 0.26, lock)
+	_sf_lsign(psh, T, Vector3(cx, yw, 8.95), X, Y, "SUIT FOUNDRY", 0.18, 0.26, lock)
+	M.box(psh, T, Vector3(xf + 0.2, (ds + yw) * 0.5 - 0.6, 7.6), Vector3(0.04, 0.7, 0.45), C.ramp(CONC), Vector3.ZERO, {"team": true})
+	# ---- roof: crane monitor, sensor mast, antennas, satcom, heat exchangers, HVAC, hatch
+	var mz := hz + 0.5
+	var mcx := (x0 + xb) * 0.5
+	M.box(pr, T, Vector3(mcx, cy, mz), Vector3(1.2, hy - 1.4, 0.5), C.ramp(Color8(112, 118, 116)))
+	for s: float in [-1.0, 1.0]:
+		_sf_shutters(pr, T, Vector3(mcx + s * 1.2, cy, 0), Y, X * s, 2.0 * hy - 3.4, mz + 0.05, 0.02, lock)
+	var hxp: Dictionary = rear[2]
+	for k in 2:   # heat-exchanger banks (dry coolers): finned body, two fans each, legs
+		var hc := Vector3(x0 + 1.6, yn + 2.2 + float(k) * 3.2, hz)
+		M.box(hxp, T, hc + Z * 0.62, Vector3(1.0, 1.3, 0.42), C.ramp(Color8(150, 156, 156)), Vector3(0.03, 0.03, 0.03))
+		for j in 7:
+			M.dline(hxp, T, hc + Vector3(1.005, -1.2 + j * 0.4, 0.3), hc + Vector3(1.005, -1.2 + j * 0.4, 0.95), Color8(92, 98, 100), X)
+		for j in 2:
+			M.cyl(hxp, T, hc + Vector3(0, -0.62 + j * 1.24, 1.07), Z, 0.5, 0.03, 10, C.ramp(DARK), {"cap_t": 0})
+			M.dline(hxp, T, hc + Vector3(-0.42, -0.62 + j * 1.24, 1.11), hc + Vector3(0.42, -0.62 + j * 1.24, 1.11), Color8(80, 86, 88), Z)
+		M.cyl(hxp, T, hc + Vector3(1.3, 0.9, 0.3), X, 0.09, 0.32, 6, C.ramp(Color8(80, 110, 140)), {"cap_t": 2})   # coolant line
+	_hvac(pr, T, Vector3(xb - 1.0, yw - 1.2, hz))
+	M.box(rear[1], T, Vector3(xb - 1.2, cy - 2.0, hz + 0.01), Vector3(0.9, 0.9, 0.012), C.ramp(CONC), Vector3.ZERO, {"team": true})
+	M.box(pr, T, Vector3(xb + 1.0, yw - 1.0, hz + 0.25), Vector3(0.45, 0.45, 0.25), C.ramp(Color8(96, 102, 104)))   # roof hatch
+	var pms := M.part(S, 3)   # sensor mast on the front-north roof corner: lattice, radar bar, sensor dome, obstruction lamp
+	var mb := Vector3(xf - 1.2, yn + 1.25, hz)
+	var mt := 15.0
+	for a: Vector3 in [Vector3(-0.45, -0.45, 0), Vector3(0.45, -0.45, 0), Vector3(0.45, 0.45, 0), Vector3(-0.45, 0.45, 0)]:
+		M.dline(pms, T, mb + a, mb + a * 0.25 + Z * (mt - hz), C.ramp(DARK)[3])
+	for k in 5:
+		var z := 0.5 + k * 0.6
+		var s := 0.45 - 0.33 * (z / (mt - hz))
+		M.dline(pms, T, mb + Vector3(-s, -s, z), mb + Vector3(s, s, z + 0.6), C.ramp(DARK)[1])
+		M.dline(pms, T, mb + Vector3(s, -s, z), mb + Vector3(-s, s, z + 0.6), C.ramp(DARK)[1])
+	M.box(pms, T, mb + Z * (mt - hz + 0.12), Vector3(0.2, 0.2, 0.12), C.ramp(STEEL))
+	M.box(pms, T, mb + Z * (mt - hz + 0.32), Vector3(0.08, 0.7, 0.07), C.ramp(Color8(170, 174, 172)))   # radar bar
+	M.cyl(pms, T, mb + Vector3(0.3, 0, mt - hz - 0.5), Z, 0.2, 0.16, 8, C.ramp(Color8(214, 216, 210)), {"cap_t": 4})   # sensor dome
+	_olamp(pms, T, mb + Z * (mt - hz + 0.4), 0.3, LAMP_R)
+	for k in 2:   # whip antennas + satcom dish
+		M.cyl(pms, T, Vector3(xf - 2.6 - k * 0.8, yn + 0.6, hz + 1.1), Z, 0.025, 1.1, 4, C.ramp(DARK), {"edge": false})
+	var dc := Vector3(x0 + 1.4, yw - 1.4, hz)
+	M.cyl(pms, T, dc + Z * 0.35, Z, 0.08, 0.35, 6, C.ramp(STEEL), {"edge": false})
+	M.cyl(pms, T, dc + Vector3(0.12, 0.12, 0.85), Vector3(1, 1, 0.9), 0.48, 0.06, 12, C.ramp(Color8(176, 180, 176)), {"cap_t": 4})
+	_olamp(pr, T, Vector3(x0 + 0.35, yn + 0.35, hz + 0.54), 0.1, LAMP_R)   # parapet corner lamps
+	_olamp(pr, T, Vector3(xf - 0.35, yw - 0.35, hz + 0.54), 0.1, LAMP_R)
+	# ---- the nanotech / power annex (-x end of the wing) and the issue wing
+	var ann := _block(S, T, Vector3((x0 + xa) * 0.5, (yw + ye) * 0.5, 0), (xa - x0) * 0.5, (ye - yw) * 0.5, SF_AZ, Color8(98, 106, 110), seed + 9)
+	var wing := _block(S, T, Vector3((xa + xf) * 0.5, (yw + ye) * 0.5, 0), (xf - xa) * 0.5, (ye - yw) * 0.5, SF_WZ, SF_WING, seed + 3)
+	var pw: Dictionary = wing[0]
+	var pan: Dictionary = ann[0]
+	var ay := (yw + ye) * 0.5
+	FAC._hz(pan, T, Vector3(x0 + 0.2, ye + 0.014, 6.6), Vector3(xa - 0.2, ye + 0.014, 6.6), Y, 16)
+	RO.quad(pan, T, Vector3((x0 + xa) * 0.5, ye + 0.014, 4.4), X * 1.35, Z * 0.36, Color8(232, 186, 40), Y)   # HIGH VOLTAGE placard
+	_sf_text(pan, T, Vector3((x0 + xa) * 0.5, ye, 4.42), X, Y, "HIGH VOLTAGE", 0.05, Color8(24, 24, 22))
+	for k in 3:   # louvre vents on the annex
+		var vp := Vector3(x0 + 0.9 + k * 1.4, ye + 0.014, 2.4)
+		RO.quad(pan, T, vp, X * 0.45, Z * 0.5, Color8(46, 50, 54), Y)
+		for j in 5:
+			M.dline(pan, T, vp + Y * 0.004 + X * -0.42 + Z * (-0.4 + j * 0.2), vp + Y * 0.004 + X * 0.42 + Z * (-0.4 + j * 0.2), Color8(104, 110, 114), Y)
+	_rdoor(M.part(S, 1), T, Vector3(xa - 0.9, ye, 0), X, Y, 0.55, 2.3, lock, false)
+	var par: Dictionary = ann[2]   # annex roof: capacitor banks with cyan charge bands, cooling unit, bus duct into the hall
+	M.box(par, T, Vector3(x0 + 1.9, ay, SF_AZ + 0.12), Vector3(1.5, 1.6, 0.12), C.ramp(Color8(84, 90, 94)))
+	for i in 3:
+		for j in 2:
+			var cb := Vector3(x0 + 0.95 + i * 0.95, ay - 0.75 + j * 1.5, SF_AZ + 0.24)
+			M.cyl(par, T, cb + Z * 0.75, Z, 0.34, 0.75, 8, C.ramp(Color8(74, 94, 112)), {"cap_t": 4})
+			M.cyl(par, T, cb + Z * 1.56, Z, 0.16, 0.06, 6, C.ramp(STEEL), {"cap_t": 3})
+			for b in 2:
+				var bz := 0.55 + b * 0.55
+				var lc := Color8(70, 76, 80) if lock else CN_BLUE
+				M.dline(par, T, cb + Vector3(0.24, -0.24, bz), cb + Vector3(0.345, 0.0, bz), lc)
+				M.dline(par, T, cb + Vector3(0.345, 0.0, bz), cb + Vector3(0.24, 0.24, bz), lc)
+				M.dline(par, T, cb + Vector3(0.24, 0.24, bz), cb + Vector3(0.0, 0.345, bz), lc)
+	for i in 3:   # bus bars over the bank
+		M.dline(par, T, Vector3(x0 + 0.95 + i * 0.95, ay - 0.75, SF_AZ + 1.86), Vector3(x0 + 0.95 + i * 0.95, ay + 0.75, SF_AZ + 1.86), Color8(176, 120, 60))
+	var cu := Vector3(xa - 0.75, ay, SF_AZ)
+	M.box(par, T, cu + Z * 0.55, Vector3(0.55, 1.2, 0.55), C.ramp(Color8(150, 156, 156)), Vector3(0.03, 0.03, 0.03))
+	for j in 2:
+		M.cyl(par, T, cu + Vector3(0, -0.6 + j * 1.2, 1.12), Z, 0.42, 0.03, 10, C.ramp(DARK), {"cap_t": 0})
+	M.box(par, T, Vector3(x0 + 2.3, yw + 0.45, 8.2), Vector3(0.6, 0.45, 0.3), C.ramp(Color8(80, 86, 90)))   # bus duct into the hall
+	M.box(par, T, Vector3(x0 + 2.3, yw + 0.75, SF_AZ + 0.4), Vector3(0.3, 0.15, 0.6), C.ramp(Color8(80, 86, 90)))
+	_olamp(par, T, Vector3(xa - 0.25, ye - 0.25, SF_AZ), 0.4, AMBER if not lock else LAMP_R)
+	var wy := (yw + ye) * 0.5   # issue wing: personnel door, issue window, lit sign, windows
+	_rdoor(M.part(S, 1), T, Vector3(xf, ye - 0.9, 0), Y, X, 0.55, 2.4, lock, false)
+	RO.window(pw, T, Vector3(xf, yw + 1.1, 2.6), 0.9, 0.6, X, not lock, lock)
+	RO.quad(pw, T, Vector3(xf + 0.012, wy, 4.3), Y * 1.1, Z * 0.2, SIGN, X)
+	FAC._stencil(pw, T, Vector3(xf + 0.016, wy, 4.32), Y, X, 5, 0.14, Color8(240, 200, 60))
+	M.box(pw, T, Vector3(xf + 0.2, wy, 4.62), Vector3(0.2, 0.04, 0.04), C.ramp(DARK))
+	M.dpx(pw, T, Vector3(xf + 0.38, wy, 4.56), LAMP_W)
 	for k in 2:
-		M.cyl(pr, T, Vector3(cx + hx * 0.5, ys + 0.8 + k * 1.2, 5.4 + 0.9), Z, 0.2, 0.9, 8, C.ramp(STEEL), {"cap_t": 2})
-	_hvac(ar[2], T, Vector3(cx - hx * 0.3, (ym + ya) * 0.5 + 0.8, 4.2))
-	_hvac(ar[2], T, Vector3(cx + hx * 0.35, (ym + ya) * 0.5 - 0.6, 4.2))
-	M.box(ar[1], T, Vector3(cx, (ym + ya) * 0.5, 4.21), Vector3(0.9, 0.9, 0.012), C.ramp(CONC), Vector3.ZERO, {"team": true})
-	M.cyl(ar[2], T, Vector3(x0 + 0.5, ya - 0.5, 4.2 + 2.0), Z, 0.05, 2.0, 4, C.ramp(DARK), {"edge": false})
-	M.dpx(ar[2], T, Vector3(x0 + 0.5, ya - 0.5, 8.3), LAMP_R)
+		RO.window(pw, T, Vector3(xa + 1.4 + k * 2.6, ye, 2.6), 0.9, 0.7, Y, not lock, lock)
+	_sf_tray(pw, T, Vector3(xa + 0.3, ye, 4.0), Vector3(xf - 0.3, ye, 4.0), Y, 0.2)
+	_side(pm, T, Vector3(x0, cy + hy * 0.3, 0), Y, -X, lock)   # staging-yard personnel door (json door [15,18])
+	_side(pm, T, Vector3(cx - hx * 0.3, yn, 0), X, -Y, lock)
+	_hvac(wing[2], T, Vector3(xa + 1.2, wy, SF_WZ))
+	M.cyl(wing[2], T, Vector3(xf - 1.2, wy - 0.5, SF_WZ + 0.6), Z, 0.18, 0.6, 8, C.ramp(STEEL), {"cap_t": 2})
+	# ---- the test apron: hazard border, keep-clear box, walk-test line, tie-down rings, wear
+	var ax0 := xf + 0.15
+	var ax1 := ex - 0.15
+	FAC._hz(pa, T, Vector3(ax1, -ey + 0.2, zt), Vector3(ax1, ey - 0.2, zt), Z, 26)
+	FAC._hz(pa, T, Vector3(ax0, -ey + 0.2, zt), Vector3(ax1, -ey + 0.2, zt), Z, 6)
+	FAC._hz(pa, T, Vector3(ax0, ey - 0.2, zt), Vector3(ax1, ey - 0.2, zt), Z, 6)
+	for e in [[Vector3(ax0 + 0.6, dn, zt), Vector3(ax1 - 0.3, dn, zt)], [Vector3(ax0 + 0.6, ds, zt), Vector3(ax1 - 0.3, ds, zt)]]:
+		M.dline(pa, T, e[0], e[1], YEL, Z)
+	for k in 4:
+		var t := dn + 0.6 + float(k) * (2.0 * dhw - 1.2) / 3.0
+		M.dline(pa, T, Vector3(ax0 + 0.7, t - 0.5, zt), Vector3(ax1 - 0.4, t + 0.5, zt), YEL, Z)
+	for k in 5:
+		M.dline(pa, T, Vector3(ax0 + 0.6 + k * 0.55, dy0, zt + 0.001), Vector3(ax0 + 0.85 + k * 0.55, dy0, zt + 0.001), STENCIL, Z)
+	for q in [Vector2(ax0 + 1.0, dy0 - 1.8), Vector2(ax0 + 1.0, dy0 + 1.8), Vector2(ax1 - 0.8, dy0 - 1.8), Vector2(ax1 - 0.8, dy0 + 1.8)]:
+		M.cyl(pa, T, Vector3(q.x, q.y, zt + 0.02), Z, 0.14, 0.02, 6, C.ramp(DARK), {"cap_t": 1})
+	FAC._stains(pa, T, Vector3((ax0 + ax1) * 0.5, dy0, ZS), Vector2(1.2, 2.6), 9, seed + 11)
+	for k in 5:
+		M.dpx(pa, T, Vector3(ax0 + 0.8 + k * 0.5, dy0 + (0.35 if k % 2 == 0 else -0.35), zt + 0.002), Color8(40, 40, 38), Z)
+	if not lock:
+		M.dpoly(pa, T, [Vector3(xf + 0.5, dn, zt), Vector3(xf + 0.5, ds, zt), Vector3(xf + 2.1, ds + 0.5, zt), Vector3(xf + 2.1, dn - 0.5, zt)], POOL, Z)
+	var pgl := M.part(S, 1)   # outdoor gantry crane: slim portal legs, runway beams out of the bay, bridge, hoist, downlights
+	var pgb := M.part(S, 2)
+	var gz := 8.6
+	var lx := ex - 0.4
+	var gy: Array = C.ramp(P.mul(GR.HAZ, 0.86))
+	for g: float in [dn - 0.55, ds + 0.55]:
+		M.box(pgl, T, Vector3(lx, float(g), gz * 0.5), Vector3(0.12, 0.12, gz * 0.5), gy)
+		M.dline(pgl, T, Vector3(lx, float(g), 0.3), Vector3(lx - 1.0, float(g), 2.2), C.ramp(DARK)[2])
+		M.box(pgl, T, Vector3(lx, float(g), 0.12), Vector3(0.3, 0.3, 0.12), C.ramp(CONC_D))   # leg footing
+		M.box(pgb, T, Vector3((xf + 0.6 + lx) * 0.5, float(g), gz + 0.16), Vector3((lx - xf - 0.6) * 0.5 + 0.14, 0.11, 0.16), gy)
+	var bx := xf + 0.6 + (lx - xf - 0.6) * 0.6
+	M.box(pgb, T, Vector3(bx, dy0, gz + 0.42), Vector3(0.17, dhw + 0.65, 0.16), gy)
+	for s: float in [-1.0, 1.0]:   # downlights under the bridge (fixtures on the girder, pools on the apron)
+		var lp := Vector3(bx, dy0 + s * 1.9, gz + 0.2)
+		M.box(pgb, T, lp, Vector3(0.12, 0.12, 0.06), C.ramp(DARK))
+		M.dpx(pgb, T, lp - Z * 0.08, LAMP_W)
+		if not lock:
+			M.dpoly(pa, T, [Vector3(bx - 0.9, lp.y - 0.9, zt), Vector3(bx + 0.9, lp.y - 0.9, zt), Vector3(bx + 0.9, lp.y + 0.9, zt), Vector3(bx - 0.9, lp.y + 0.9, zt)], POOL, Z)
+	var hyy := dy0 - dhw * 0.35
+	M.box(pgb, T, Vector3(bx, hyy, gz + 0.05), Vector3(0.3, 0.32, 0.2), C.ramp(DARK))
+	var cz := 7.0 if lock else 4.4
+	M.dline(pgb, T, Vector3(bx, hyy, gz - 0.15), Vector3(bx, hyy, cz + 0.55), Color8(30, 30, 30))
+	var pcl := M.part(S, 1)   # hoisted missile cell
+	M.box(pcl, T, Vector3(bx, hyy, cz), Vector3(0.45, 0.32, 0.5), C.ramp(Color8(92, 100, 88)), Vector3(0.03, 0.03, 0.03))
+	for k in 4:
+		M.cyl(pcl, T, Vector3(bx + 0.46, hyy - 0.18 + (k % 2) * 0.36, cz - 0.2 + (k >> 1) * 0.4), X, 0.1, 0.01, 6, C.ramp(DARK), {"cap_t": 0})
+	var cc := Vector3(ex - 1.55, yw + 1.2, 0)   # suit cradle + pilot boarding gantry on the apron's +y half
+	_sf_cradle(S, T, pa, cc, xf + 0.05, lock, seed)
+	var pq := M.part(S, 0)
+	for k in 2:   # charging pedestals with cables to the cradle
+		var chg := Vector3(ex - 0.75, cc.y - 2.35 - k * 1.3, 0)
+		M.box(pq, T, chg + Z * 0.7, Vector3(0.28, 0.34, 0.7), C.ramp(Color8(60, 92, 120)), Vector3(0.03, 0.03, 0.03))
+		M.box(pq, T, chg + Z * 1.46, Vector3(0.3, 0.36, 0.06), C.ramp(DARK))
+		M.dpx(pq, T, chg + Vector3(0.29, 0.15, 1.15), LAMP_R if lock else CN_BLUE, X)
+		M.dpx(pq, T, chg + Vector3(0.29, -0.15, 1.15), LAMP_R if lock else LAMP_G, X)
+		M.dline(pq, T, chg + Vector3(0.29, -0.2, 0.9), chg + Vector3(0.29, 0.2, 0.9), Color8(232, 186, 40), X)
+		if k == 0:
+			M.dline(pq, T, chg + Vector3(-0.2, 0.3, 0.9), cc + Vector3(-0.86, -0.5, 1.4), Color8(28, 30, 32))
+	var ar := Vector3(ex - 0.7, ye - 0.85, 0)   # arming rack: ammo cassettes + missile cells
+	M.box(pq, T, ar + Z * 0.08, Vector3(0.45, 0.6, 0.08), C.ramp(STEEL))
+	for k in 3:
+		M.box(pq, T, ar + Vector3(0, -0.38 + k * 0.38, 0.42), Vector3(0.32, 0.16, 0.26), C.ramp(Color8(70, 84, 64)), Vector3(0.02, 0.02, 0.02))
+		M.dpx(pq, T, ar + Vector3(0.33, -0.38 + k * 0.38, 0.5), YEL, X)
+	M.box(pq, T, ar + Vector3(0, 0, 0.98), Vector3(0.36, 0.5, 0.26), C.ramp(Color8(92, 100, 88)), Vector3(0.02, 0.02, 0.02))
+	for k in 4:
+		M.cyl(pq, T, ar + Vector3(0.37, -0.36 + k * 0.24, 0.98), X, 0.07, 0.01, 6, C.ramp(DARK), {"cap_t": 0})
+
+
+## The lit open bay (drawn only while the door is up): epoxy floor with bay markings, lit back and side walls, the crane
+## runway + bridge with a hoist holding a suit's gun arm, two suits in charging cradles (one being fitted, a technician
+## beside it), arming / charging racks along the north wall, a light strip under the header.
+static func _sf_bay(S: Array, T: Dictionary, pa: Dictionary, xb: float, xf: float, dn: float, ds: float, dy0: float, dhz: float, seed: int) -> void:
+	var zt := zt_()
+	RO.quad(pa, T, Vector3((xb + xf) * 0.5, dy0, zt + 0.003), X * (xf - xb) * 0.5, Y * (ds - dn) * 0.5, Color8(132, 134, 128), Z)
+	for e in [[Vector3(xb + 0.3, dn + 0.3, 0), Vector3(xf - 0.2, dn + 0.3, 0)], [Vector3(xb + 0.3, ds - 0.3, 0), Vector3(xf - 0.2, ds - 0.3, 0)]]:
+		M.dline(pa, T, (e[0] as Vector3) + Z * (zt + 0.005), (e[1] as Vector3) + Z * (zt + 0.005), YEL, Z)
+	M.dpoly(pa, T, [Vector3(xf - 0.1, dn + 0.4, zt + 0.004), Vector3(xf - 0.1, ds - 0.4, zt + 0.004), Vector3(xf - 2.6, ds - 0.6, zt + 0.004), Vector3(xf - 2.6, dn + 0.6, zt + 0.004)], C.ca(Color8(255, 244, 214), 0.16), Z)
+	var pi := M.part(S, 1)
+	var wi: Array = C.ramp(SF_IN)
+	RO.quad(pi, T, Vector3(xb + 0.02, dy0, dhz * 0.5), Y * (ds - dn) * 0.5, Z * dhz * 0.5, wi[3], X)   # back wall
+	RO.quad(pi, T, Vector3((xb + xf) * 0.5, dn + 0.02, dhz * 0.5), X * (xf - xb) * 0.5, Z * dhz * 0.5, wi[2], Y)   # north wall
+	for k in 6:
+		M.dline(pi, T, Vector3(xb + 0.03, dn + 0.2, 0.9 + k * 0.5), Vector3(xb + 0.03, ds - 0.2, 0.9 + k * 0.5), wi[1], X)
+	M.dline(pi, T, Vector3(xb + 0.035, dn + 0.2, 3.2), Vector3(xb + 0.035, ds - 0.2, 3.2), Color8(255, 246, 220), X)   # wall light strip
+	_sf_text(pi, T, Vector3(xb + 0.01, dn + 1.2, 2.2), -Y, X, "01", 0.16, Color8(44, 48, 50))
+	for k in 4:   # wall ribs on the north wall
+		M.dline(pi, T, Vector3(xb + 0.5 + k * 1.1, dn + 0.03, 0.2), Vector3(xb + 0.5 + k * 1.1, dn + 0.03, dhz - 0.1), wi[1], Y)
+	M.dline(pi, T, Vector3(xb, dn + 0.03, 0.55), Vector3(xf, dn + 0.03, 0.55), GR.HAZ, Y)
+	var hzr: Array = C.ramp(GR.HAZ)
+	for y: float in [dn + 0.16, ds - 0.16]:   # crane runway on both side walls + bridge girder near the door + hoist
+		M.box(pi, T, Vector3((xb + xf) * 0.5, y, 5.7), Vector3((xf - xb) * 0.5, 0.12, 0.14), hzr)
+	var gx := xf - 1.0
+	M.box(M.part(S, 2), T, Vector3(gx, dy0, 5.5), Vector3(0.16, (ds - dn) * 0.5 - 0.2, 0.16), hzr)
+	var sa := Vector3(xf - 1.35, dy0 - 1.6, 0)   # suit being fitted (north cradle), its gun arm on the hoist
+	var sb := Vector3(xf - 1.35, dy0 + 1.2, 0)
+	var hp := Vector3(gx, sa.y + 0.95, 5.2)
+	M.box(M.part(S, 2), T, hp, Vector3(0.24, 0.26, 0.18), C.ramp(DARK))
+	M.dline(M.part(S, 2), T, hp - Z * 0.15, Vector3(gx, hp.y, 3.2), Color8(30, 30, 30))
+	var arm := M.part(S, 1)
+	M.box(arm, T, Vector3(gx - 0.1, hp.y, 2.95), Vector3(0.3, 0.15, 0.13), C.ramp(SF_SUIT))
+	M.cyl(arm, T, Vector3(gx + 0.38, hp.y, 2.9), X, 0.11, 0.3, 6, C.ramp(DARK), {"cap_t": 1})
+	M.dline(arm, T, Vector3(gx - 0.1, hp.y, 3.1), Vector3(gx, hp.y, 3.2), Color8(30, 30, 30))
+	_sf_frame(S, T, sa, 1.22, false, true)
+	_sf_suit(S, T, sa, seed + 1, true)
+	_sf_frame(S, T, sb, 1.22, false, true)
+	_sf_suit(S, T, sb, seed + 2)
+	_sf_tech(M.part(S, 1), T, Vector3(xf - 0.45, sa.y + 1.15, zt))
+	var pk := M.part(S, 1)   # racks along the north wall: ammo cassettes, missile cells, a charging cabinet
+	for i in 2:
+		var rx := xb + 0.7 + i * 1.3
+		M.box(pk, T, Vector3(rx, dn + 0.32, 1.2), Vector3(0.5, 0.3, 1.2), C.ramp(Color8(70, 76, 80)))
+		for j in 3:
+			M.box(pk, T, Vector3(rx, dn + 0.42, 0.45 + j * 0.75), Vector3(0.42, 0.24, 0.25), C.ramp(Color8(78, 92, 66) if (i + j) % 2 == 0 else Color8(92, 100, 88)))
+			M.dpx(pk, T, Vector3(rx + 0.3, dn + 0.67, 0.55 + j * 0.75), YEL, Y)
+	var cab := Vector3(xf - 0.55, dn + 0.3, 0)
+	M.box(pk, T, cab + Z * 0.95, Vector3(0.35, 0.28, 0.95), C.ramp(Color8(60, 92, 120)))
+	for j in 4:
+		M.dpx(pk, T, cab + Vector3(-0.2 + j * 0.13, 0.29, 1.5), CN_BLUE, Y)
+	M.dline(pk, T, cab + Vector3(-0.25, 0.29, 1.2), cab + Vector3(0.25, 0.29, 1.2), LAMP_G, Y)
+	for k in 6:   # light strip under the header (fixtures on its soffit edge)
+		M.dpx(M.part(S, 2), T, Vector3(xf - 0.1, dn + 0.5 + k * (ds - dn - 1.0) / 5.0, dhz - 0.06), LAMP_W)
 
 
 # ---------------------------------------------------------------- aid station + quarantine bay (13.9c-6)
@@ -1851,17 +2941,18 @@ static func barracks(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 	# roof: parapet, roof hatch + stair up to the deck
 	M.box(pp, T, c + Z * (zr + 0.25), Vector3(ux, uy, 0.25), C.ramp(Color8(150, 152, 148)), Vector3(0.05, 0.05, 0.05))
 	var zd := 11.6   # helideck on stub columns (json roof_pad deck_z)
-	var dhx := minf(ex - 0.3, 7.6)
-	var dhy := minf(ey - 0.2, 3.8)
+	var lx := ex >= ey   # FACB7-5 (13.9c-18): the deck's long axis follows the building's (long face on the door side at the new site)
+	var dhx := minf(ex - 0.3, 7.6 if lx else 3.8)
+	var dhy := minf(ey - 0.2, 3.8 if lx else 7.6)
 	var dc := Vector3(-0.1, 0.0, 0)
 	var pc := M.part(S, 2)
 	for i in 3:
 		for j in 2:
-			var sc := dc + Vector3(-dhx + 1.6 + i * (2.0 * dhx - 3.2) * 0.5, (j * 2 - 1) * (dhy - 1.0), zr + 0.5)
+			var sc := dc + (Vector3(-dhx + 1.6 + i * (2.0 * dhx - 3.2) * 0.5, (j * 2 - 1) * (dhy - 1.0), zr + 0.5) if lx else Vector3((j * 2 - 1) * (dhx - 1.0), -dhy + 1.6 + i * (2.0 * dhy - 3.2) * 0.5, zr + 0.5))
 			if sc.x < cx + ux - 0.3:
 				M.box(pc, T, sc + Z * 0.0, Vector3(0.18, 0.18, 0.3), C.ramp(STEEL))
-	var front := cx + ux   # the deck overhangs the door face on two raking steel struts
-	for s in [-1.0, 1.0]:
+	var front := cx + ux   # the deck overhangs the door face on raking steel struts
+	for s in ([-1.0, 1.0] if lx else [-1.0, 0.0, 1.0]):
 		M.dline(pc, T, Vector3(front, s * (dhy - 0.6), zr - 1.6), Vector3(dc.x + dhx - 0.3, s * (dhy - 0.6), zd - 0.25), Color8(70, 74, 78), X)
 		M.box(pc, T, Vector3(front + 0.06, s * (dhy - 0.6), zr - 1.6), Vector3(0.08, 0.14, 0.14), C.ramp(STEEL))
 	var pdk := M.part(S, 3)
@@ -1872,7 +2963,7 @@ static func barracks(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 			[Vector3(dhx - 0.35, dhy - 0.35, zt + 0.001), Vector3(-dhx + 0.35, dhy - 0.35, zt + 0.001)], [Vector3(-dhx + 0.35, dhy - 0.35, zt + 0.001), Vector3(-dhx + 0.35, -dhy + 0.35, zt + 0.001)]]:
 		M.dline(pdk, T, dc + e[0], dc + e[1], YEL, Z)   # TLOF edge
 		M.dline(pdk, T, dc + e[0] * 0.97, dc + e[1] * 0.97, YEL, Z)
-	var tr := minf(dhy - 0.9, 2.6)
+	var tr := minf(minf(dhx, dhy) - 0.9, 2.6)
 	for k in 24:   # touchdown / positioning circle
 		var a0 := TAU * k / 24.0
 		var a1 := TAU * (k + 1) / 24.0
@@ -1880,28 +2971,25 @@ static func barracks(S: Array, T: Dictionary, ex: float, ey: float, lock: bool, 
 		if k % 2 == 0:
 			M.dline(pdk, T, dc + Vector3(cos(a0) * (tr - 0.25), sin(a0) * (tr - 0.25), zt + 0.002), dc + Vector3(cos(a1) * (tr - 0.25), sin(a1) * (tr - 0.25), zt + 0.002), YEL, Z)
 	_gtext(pdk, T, dc + Vector3(0, 0, zt + 0.003), Y, 2, 1.1, STENCIL)   # "CN" in the circle
-	for s in [-1.0, 1.0]:   # nose / tail alignment bars
-		M.dline(pdk, T, dc + Vector3(s * (tr + 0.4), 0, zt + 0.002), dc + Vector3(s * (dhx - 0.8), 0, zt + 0.002), STENCIL, Z)
-	for k in 16:   # deck rim lights (green / red on lockdown), sitting in the rim
-		var t := float(k) / 16.0
-		var pr: Vector3
-		if k < 6:
-			pr = Vector3(-dhx + 0.12 + t * 16.0 / 6.0 * (2.0 * dhx - 0.24), -dhy + 0.12, zd + 0.03)
-		elif k < 8:
-			pr = Vector3(dhx - 0.12, -dhy + 0.12 + (k - 6 + 0.5) / 2.0 * (2.0 * dhy - 0.24), zd + 0.03)
-		elif k < 14:
-			pr = Vector3(dhx - 0.12 - (k - 8) / 6.0 * (2.0 * dhx - 0.24), dhy - 0.12, zd + 0.03)
+	for s in [-1.0, 1.0]:   # nose / tail alignment bars (along the long axis)
+		if lx:
+			M.dline(pdk, T, dc + Vector3(s * (tr + 0.4), 0, zt + 0.002), dc + Vector3(s * (dhx - 0.8), 0, zt + 0.002), STENCIL, Z)
 		else:
-			pr = Vector3(-dhx + 0.12, dhy - 0.12 - (k - 14 + 0.5) / 2.0 * (2.0 * dhy - 0.24), zd + 0.03)
+			M.dline(pdk, T, dc + Vector3(0, s * (tr + 0.4), zt + 0.002), dc + Vector3(0, s * (dhy - 0.8), zt + 0.002), STENCIL, Z)
+	var dper := 4.0 * (dhx + dhy)
+	for k in 16:   # deck rim lights (green / red on lockdown), sitting in the rim, evenly round the deck
+		var pr: Vector3 = _rim(0.0, dhx - 0.12, dhy - 0.12, (k + 0.5) / 16.0 * dper, dper) + Z * (zd + 0.03)
 		M.box(pdk, T, dc + pr, Vector3(0.07, 0.07, 0.03), C.ramp(DARK))
 		M.dpx(pdk, T, dc + pr + Z * 0.05, LAMP_R if lock else LAMP_G)
 	if true:   # safety-net brackets under the deck rim on the two camera edges
-		for k in 7:
-			var ny := -dhy + 0.5 + k * (2.0 * dhy - 1.0) / 6.0
+		var nby := int(dhy * 2.0 / 1.25) + 1
+		for k in nby:
+			var ny := -dhy + 0.5 + k * (2.0 * dhy - 1.0) / float(nby - 1)
 			M.dline(pdk, T, dc + Vector3(dhx, ny, zd - 0.28), dc + Vector3(dhx + 0.55, ny, zd - 0.05), Color8(60, 64, 66), X)
 		M.dline(pdk, T, dc + Vector3(dhx + 0.55, -dhy + 0.5, zd - 0.05), dc + Vector3(dhx + 0.55, dhy - 0.5, zd - 0.05), Color8(80, 84, 86), X)
-	for k in 5:
-		var nx := -dhx + 0.6 + k * (2.0 * dhx - 1.2) / 4.0
+	var nbx := int(dhx * 2.0 / 1.9) + 1
+	for k in nbx:
+		var nx := -dhx + 0.6 + k * (2.0 * dhx - 1.2) / float(nbx - 1)
 		M.dline(pdk, T, dc + Vector3(nx, -dhy, zd - 0.28), dc + Vector3(nx, -dhy - 0.5, zd - 0.05), Color8(60, 64, 66), -Y)
 	var pq := M.part(S, 3)   # deck furniture on the rear corner: windsock mast + lamp, floodlight posts, refuel cabinet
 	var wc := dc + Vector3(-dhx + 0.35, -dhy + 0.35, zd)

@@ -20,6 +20,7 @@ const Companies = preload("res://sim/systems/companies.gd")
 const DU = preload("res://sim/ai/doctrine/doc_util.gd")
 const U = preload("res://sim/ai/ai_util.gd")
 const General = preload("res://sim/ai/general.gd")  # G6.1 GEN61: objective {type: "auto"} = full general
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never given automatic jobs
 
 ## PROVISIONAL balance fixtures; content/rules.json "ai_cmd" overrides any key (CR to ORCH).
 const RULES := {
@@ -110,6 +111,8 @@ static func role_ids(w: SimWorld, fid: int, s: Dictionary, claimed: Dictionary, 
 		var id := int(e.id)
 		if claimed.has(id) or bool(e.get("wounded", false)):
 			continue
+		if CnRole7.is_cn(e):
+			continue  # G7 CNROLE7 (13.9c-29 / B16): strike teams and spec ops are never on base defence, nor in an air / naval / logistics slot: they run missions
 		var u := Content.unit(String(e.def))
 		var mc := String(u.get("move_class", "foot"))
 		if bool(u.get("launched_drone", false)):
@@ -183,7 +186,7 @@ static func drive_role(w: SimWorld, fid: int, s: Dictionary, ids: Array, badge: 
 			for e in w.units_of(fid):
 				var u := Content.unit(String(e.def))
 				if String(u.get("weapon", "")) != "" and not String(u.get("move_class", "foot")).begins_with("air") \
-						and (e.pos as Vector2).distance_to(home) > br:
+						and (e.pos as Vector2).distance_to(home) > br and not CnRole7.is_cn(e):  # G7 CNROLE7: a mission team is no front line to follow
 					line.append(e)
 			var front := DU.centroid(line, home)
 			var dest := front + (home - front).normalized() * 4.0 if front.distance_to(home) > 4.0 else home

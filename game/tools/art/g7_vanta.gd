@@ -49,9 +49,10 @@ static func _secs() -> Array:
 		[5.7, [Vector2(0.42, 0.85), Vector2(0.72, 1.3), Vector2(0.52, 1.9), Vector2(0.2, 2.1)]],
 		[4.2, [Vector2(0.6, 0.7), Vector2(1.0, 1.3), Vector2(0.72, 2.25), Vector2(0.3, 2.7)]],
 		[2.3, [Vector2(0.7, 0.62), Vector2(1.12, 1.3), Vector2(0.82, 2.5), Vector2(0.34, 3.1)]],
-		[0.8, [Vector2(0.9, 0.6), Vector2(1.38, 1.35), Vector2(1.12, 2.45), Vector2(0.6, 2.95)]],
-		[-1.8, [Vector2(0.92, 0.7), Vector2(1.4, 1.42), Vector2(1.15, 2.4), Vector2(0.62, 2.8)]],
-		[-4.0, [Vector2(0.48, 1.15), Vector2(0.78, 1.55), Vector2(0.6, 2.15), Vector2(0.3, 2.4)]],
+		[0.8, [Vector2(0.78, 0.62), Vector2(1.08, 1.35), Vector2(0.9, 2.45), Vector2(0.5, 2.9)]],
+		[-1.6, [Vector2(0.8, 0.72), Vector2(1.1, 1.42), Vector2(0.92, 2.4), Vector2(0.52, 2.72)]],
+		[-3.0, [Vector2(0.5, 1.15), Vector2(0.7, 1.55), Vector2(0.58, 2.15), Vector2(0.3, 2.42)]],
+		[-4.6, [Vector2(0.34, 1.35), Vector2(0.5, 1.62), Vector2(0.4, 2.05), Vector2(0.2, 2.22)]],
 		[-6.6, [Vector2(0.26, 1.5), Vector2(0.42, 1.72), Vector2(0.32, 2.0), Vector2(0.15, 2.12)]],
 		[-7.2, [Vector2(0.1, 1.65), Vector2(0.18, 1.76), Vector2(0.13, 1.9), Vector2(0.05, 1.95)]]]
 	var out: Array = []
@@ -102,10 +103,10 @@ static func airframe(S: Array, T: Dictionary, rp: Array, tilt: float, k: int, fn
 		M.dpx(w, T, Vector3(1.1, s * 2.42, 1.76), Color8(255, 70, 50) if s < 0 else Color8(80, 255, 120))
 		A.fan(S, T, Vector3(0.3, s * 3.0, 1.74), 0.74, tilt, rp, true, k, s * 2.35)
 		var nz := M.part(S, 1)   # vectored thrust nozzle
-		M.box(nz, T, Vector3(-4.3, s * 0.62, 1.6), Vector3(0.45, 0.16, 0.16), dk)
+		M.box(nz, T, Vector3(-2.6, s * 0.78, 1.55), Vector3(0.45, 0.16, 0.16), dk)
 		if fname.begins_with("flight"):
-			M.dpx(nz, T, Vector3(-4.78, s * 0.62, 1.6), Color8(255, 170, 90))
-			M.dpx(nz, T, Vector3(-4.9, s * 0.62, 1.6), Color8(255, 120, 60))
+			M.dpx(nz, T, Vector3(-3.08, s * 0.78, 1.55), Color8(255, 170, 90))
+			M.dpx(nz, T, Vector3(-3.2, s * 0.78, 1.55), Color8(255, 120, 60))
 		var hs := M.part(S, 1.5)   # canted horizontal stabiliser
 		M.prism(hs, T, [Vector3(-5.5, s * 0.3, 1.98), Vector3(-6.0, s * 1.45, 2.2), Vector3(-6.6, s * 1.45, 2.2),
 			Vector3(-6.5, s * 0.3, 1.98)], Vector3(0, 0, -0.08), rp)
@@ -337,7 +338,7 @@ static func sheet(out: Dictionary, id: String, nfac: int, frames: Array, lo: Arr
 	out.images["units/%s_mask.png" % id] = msk
 	var man: Dictionary = out.manifest.get("vehicles", {})
 	var g7 := {"detail_level": C.VERSION, "class": "air", "bytes": C.packed_bytes(img, FW, FH, -1) if nfac == 8 else img.get_width() * img.get_height() * 4,
-		"raw_bytes": img.get_width() * img.get_height() * 4, "budget": int(C.BUDGET.air), "mirror": -1}
+		"raw_bytes": img.get_width() * img.get_height() * 4, "budget": int(C.BUDGET.air) if nfac == 8 else img.get_width() * img.get_height() * 4, "mirror": -1}
 	g7.merge(extra)
 	man[id] = {"file": "units/%s.png" % id, "mask": "units/%s_mask.png" % id, "fw": FW, "fh": FH, "pivot": [PIV.x, PIV.y],
 		"frames": frames.duplicate(), "facings": nfac, "g7": g7, "altitude": 150.0, "bob": 1.0,
@@ -412,4 +413,13 @@ func _init() -> void:
 					d.remove(f)
 	var files: int = GEN.save(r, dir)
 	var over := 0
-	var ids: Array = (r.
+	var ids: Array = (r.manifest.vehicles as Dictionary).keys()
+	ids.sort()
+	for id in ids:
+		var g7: Dictionary = r.manifest.vehicles[id].g7
+		var ok := int(g7.bytes) <= int(g7.budget)
+		if not ok:
+			over += 1
+		print("G7_VANTA %s bytes=%d budget=%d %s" % [id, int(g7.bytes), int(g7.budget), "ok" if ok else "OVER"])
+	print("G7_VANTA sheets=%d files=%d over=%d ms=%d" % [ids.size(), files, over, Time.get_ticks_msec() - t0])
+	quit(0)

@@ -149,6 +149,15 @@ static func _or_bytes(a: PackedByteArray, b: PackedByteArray) -> PackedByteArray
 	return out
 
 
+## G7 PERF7F: bench / tests toggle for the lean wall-walk sight bonus in the GDScript gather (false = the hook chain).
+static var lean_wall_sight := true
+
+
+static func _no_aerostats(w: SimWorld) -> bool:
+	var st = w.sys_state.get("callins")
+	return st == null or not (st as Dictionary).has("aerostats") or (st.aerostats as Dictionary).is_empty()
+
+
 ## G6 PERF6-4: tests / bench toggle for the native source gather (RtsCombat.fog_gather, rts_core >= 0.5.1).
 static var native_gather := true
 static var _uair: Dictionary = {}   # unit def -> Elevation.is_air (fog_gather input)
@@ -253,6 +262,25 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 	if sight_split and not g6s and SimIndex.g6_spy == null and SimIndex.g6_hooks_on and w.map.has("height"):
 		hb = w.map.height
 	var has_hb := not hb.is_empty()
+	# G7 PERF7F: the SIGHT bit set only by the facility wall-walk (no deployed aerostat, so Callins adds 0.0 for
+	# every entity): the same per-entity bonus as G6Hooks.sight_bonus (height term + wall-walk term) without the
+	# per-entity hook chain. The height term is looked up only on a raised cell (map_level > PLAIN, as the sight
+	# split above) and the wall-walk term only for a unit on a gate cell (WallWalk7.on_wall needs one); both then
+	# call the real functions, so every value and every float addition is the one the hook would make.
+	var lean := false
+	var hgt := PackedByteArray()
+	var wgates = null
+	var nvw := 0
+	var nvh := 0
+	if g6s and sight_split and lean_wall_sight and SimIndex.g6_spy == null and _no_aerostats(w):
+		lean = true
+		if w.map.has("height"):
+			hgt = w.map.height
+		var nav = w.nav
+		if w.sys_state.has(SimWorld.WallWalk7.KEY) and nav is Dictionary and nav.has("gates") and not (nav.gates as Dictionary).is_empty():
+			wgates = nav.gates
+			nvw = int(nav.w)
+			nvh = int(nav.h)
 	# G6 PERF6-4: the same gather as one native batch when the SIGHT hook does not run (exact port)
 	var nsrc := {}   # root -> [cells, sights] (first-wins order) from the native gather
 	var nat := native_gather and not g6s and not native_off and _native_gather(w, lists, root, srcs, hb, mw, mh, nsrc)
@@ -266,7 +294,18 @@ static func recompute(w: SimWorld, phase := -1) -> void:
 			var s: float = sv if sv != null else sight_of(e)
 			if e.has("comp") or e.has("jammed_until"):
 				s *= Status.sight_mult(w, e)
-			if g6s and s > 0.0:
+			if g6s and s > 0.0 and lean:
+				var lq: Vector2 = e.pos
+				var lx := floori(lq.x)
+				var ly := floori(lq.y)
+				var lb := 0.0
+				if not hgt.is_empty() and lx >= 0 and ly >= 0 and lx < mw and ly < mh and hgt[ly * mw + lx] > Elevation.PLAIN:
+					lb = Elevation.sight_bonus(w, e)
+				var lw := 0.0
+				if wgates != null and lx >= 0 and ly >= 0 and lx < nvw and ly < nvh and e.kind == "unit" and wgates.has(ly * nvw + lx):
+					lw = SimWorld.WallWalk7.sight_bonus(w, e)
+				s += lb + lw
+			elif g6s and s > 0.0:
 				s += SimIndex.g6h().sight_bonus(w, e)  # G6: height / spotter bonus (+0.0 when neutral)
 			elif has_hb and s > 0.0:
 				var q: Vector2 = e.pos

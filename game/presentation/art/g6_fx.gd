@@ -113,7 +113,7 @@ static func from_event(ev: Dictionary, sn: Dictionary, pf: int, allies: Array) -
 			var src2 = pos_of(sn, int(ev.get("ciws", -1)))
 			var at2 := _v(ev.get("pos"))
 			if at2.x >= 0.0:
-				out.append(_fx("ciws", src2 if src2 != null else at2, at2, 0.35, C_LASER, 1.0))
+				out.append(_fx("ciws", src2 if src2 != null else at2, at2, 0.35, C_LASER, 1.0, float(int(ev.get("lay_ticks", 0))) / 20.0))   # G7 TURRET7C: the beam waits for the head to lay
 		"StrikeImpact":
 			var p8 := _v(ev.get("pos"))
 			out.append(_fx("strike", p8, p8, 1.0, C_FIRE, 1.6))

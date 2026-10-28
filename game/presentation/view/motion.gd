@@ -60,7 +60,9 @@ const S_MV := 18     # G6.1 (ANIMC61): moving flag last frame (suspension start 
 const S_SUSP := 19   # signed suspension timer: < 0 squat on start (-1 px), > 0 dip on stop (+1 px)
 const S_AIM := 20    # last shot target id (turret aim), -1 none
 const S_AIMT := 21   # time of that shot
-const S_N := 22
+const S_ROW := 22   # PATH7-2 CR 6994: drawn facing row + 1 (0 = unset)
+const S_N := 23
+const ROW_HYS := 0.12   # rad past the 22.5 deg boundary before the drawn row changes
 const SUSP_T := 0.15 # s of suspension offset after a start / stop
 const AIM_HOLD := 3.0 # s a turret keeps aiming at its last target
 
@@ -182,6 +184,21 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 
 
 ## Records the drawn ground screen position (px) of id this frame (the corpse spot on death).
+## PATH7-2 CR 6994 (13.9c-16a): the drawn 8-way facing row with hysteresis, so a facing hovering on a 22.5 deg boundary
+## does not flip the sprite back and forth. Display only. Idempotent for the same face in the same frame.
+func row_h(id: int, face: float) -> int:
+	var s = vs.get(id)
+	var r := posmod(int(round(face * (4.0 / PI))), 8)
+	if s == null:
+		return r
+	var cur := int(s[S_ROW]) - 1
+	if cur < 0 or absf(wrapf(face - float(cur) * (PI / 4.0), -PI, PI)) >= PI / 8.0 + ROW_HYS:
+		cur = r
+	s[S_ROW] = float(cur + 1)
+	vs[id] = s
+	return cur
+
+
 func mark_screen(id: int, sp: Vector2) -> void:
 	var s = vs.get(id)
 	if s != null:
@@ -324,6 +341,8 @@ static func inf_col(cols: Dictionary, posture: int, t: float, seed: float, fire_
 			return int(cols.crawl[int(t * 3.0 + seed * 2.0) % 2])
 		if posture & (P_RUN | P_BROKEN):
 			return int(cols.run[int(t * 14.0 + seed * 6.0) % 6])
+		if cols.has("swalk"):   # EXO7-3 CR 6346: CN suits, 12 in-betweens, cycle matched to ground speed
+			return int(cols.swalk[int(t * float(cols.get("swalk_hz", 2.5)) * 12.0 + seed * 12.0) % 12])
 		return int(cols.walk[int(t * 10.0 + seed * 6.0) % 6])
 	if down:
 		return int(cols.prone)
@@ -368,6 +387,8 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 				"crawl":
 					return int(a61.crawl[int(t * 3.0 + seed * 2.0) % 2])
 				"walk":
+					if a61.has("swalk"):   # EXO7-3 CR 6346
+						return int(a61.swalk[int(t * float(a61.get("swalk_hz", 2.5)) * 12.0 + seed * 12.0) % 12])
 					return int(a61.walk[int(t * 10.0 + seed * 6.0) % 6])
 			return -1
 		if "stack" in gv and bool(gv.stack):
@@ -447,6 +468,8 @@ static func g7_col(a61: Dictionary, gv: Dictionary, posture: int, t: float, seed
 			"crawl":
 				return int(a61.crawl[int(t * 3.0 + seed * 2.0) % 2])
 			"walk":
+				if a61.has("swalk"):   # EXO7-3 CR 6346
+					return int(a61.swalk[int(t * float(a61.get("swalk_hz", 2.5)) * 12.0 + seed * 12.0) % 12])
 				return int(a61.walk[int(t * 10.0 + seed * 6.0) % 6])
 		return -1
 	if bool(gv.get("stack", false)):
@@ -529,12 +552,20 @@ static func g7_facing(gv: Dictionary, sim_facing: float, moving: bool) -> float:
 	return sim_facing
 
 
-# ---------------------------------------------------------------- G7 (WALL7, 13.9c-4): soldiers on the wall top
-## Feet height (px above the piece's ground point) of the walkable top per wall-walk def, measured on the ART7F
-## sheets (g7_fac_wall crest 40 px over the pivot, g7_fac_tower bastion deck ~47 px). Other wall-walk defs: WALL_TOP_DEF.
-const WALL_TOP_PX := {"cn_blast_wall": 39.0, "cn_tower": 46.0}
-const WALL_TOP_DEF := 39.0
+# ---------------------------------------------------------------- G7 (WALL7, 13.9c-4 / WALL7-2, 13.9c-23): soldiers on the wall-walk
+## Feet height (px above the piece's ground point) of the wall-walk deck per wall-walk def: the WALL7-2 g7_fac_wall /
+## g7_fac_tower sheets put the deck of the wall AND the tower bastion at DECK_Z 3.66 m x 9.8 px/m = 36 px (one level
+## all round the ring, manifest "deck_px"). Other wall-walk defs: WALL_TOP_DEF.
+const WALL_TOP_PX := {"cn_blast_wall": 36.0, "cn_tower": 36.0}
+const WALL_TOP_DEF := 36.0
 const WALL_DEPTH_PAD := 33   # sort a wall-walker after its own piece and the next piece along the run (+32 px)
+const WALL_FIRE_STEP := 0.1   # tiles: feet stand this far OUTSIDE the wall axis: 0.4 m, at the firing step right behind the
+                             # outer parapet (its inner face is 1.05 m out), so they fire over it and duck behind it
+const TOWER_SHAFT := Vector2(-0.125, -0.125)   # tower shaft centre (tiles from the cell centre; g7_fac7f sc -0.5 m)
+const TOWER_CLEAR := 0.4     # tiles: feet keep this far (max-norm) from the shaft centre
+const TOWER_DECK := 0.48     # tiles: feet stay this close to the tower centre (bastion deck 2.4 m - parapet)
+const WALL_DUCK := 3.2       # s: one rise-fire / duck cycle of a soldier firing from the wall
+const WALL_UP := 2.0         # s of the cycle up at the parapet (aim + fire); the rest crouched behind it
 
 
 ## True for a def the sim makes walkable (same content rule as WallWalk7.ring_cells).
@@ -546,8 +577,21 @@ static func wall_walk_def(def_id: String) -> bool:
 	return bool(ww)
 
 
-## Wall-walk cells from the snapshot statics: Vector2i cell -> [centre x, centre y, lift px, run bits (1 E-W, 2 N-S)].
-static func wall_walk_cells(statics: Dictionary) -> Dictionary:
+## Outer quadrant q of a ring piece centred at p (bit 0: the outside lies toward +x, bit 1: toward +y), from the
+## nearest facility compound centre in `centres` (Vector2 tiles). No centre: 3 (outside to +x +y).
+static func wall_quadrant(p: Vector2, centres: Array) -> int:
+	if centres.is_empty():
+		return 3
+	var best: Vector2 = centres[0]
+	for c in centres:
+		if (c as Vector2).distance_squared_to(p) < best.distance_squared_to(p):
+			best = c
+	return (1 if p.x >= best.x else 0) | (2 if p.y >= best.y else 0)
+
+
+## Wall-walk cells from the snapshot statics: Vector2i cell -> [centre x, centre y, lift px, run bits (1 E-W, 2 N-S),
+## outer quadrant q, tower]. centres = facility compound centres (for q; [] = q 3).
+static func wall_walk_cells(statics: Dictionary, centres: Array = []) -> Dictionary:
 	var pieces := {}
 	for id in statics:
 		var e: Dictionary = statics[id]
@@ -562,38 +606,101 @@ static func wall_walk_cells(statics: Dictionary) -> Dictionary:
 		var pc: Array = pieces[o]
 		var sz: int = pc[2]
 		var run := 0
-		if bool(pc[3]):   # a slab: feet snap onto its crest line (towers: anywhere on the deck)
+		if bool(pc[3]):   # a rampart: feet on its deck line (towers: anywhere on the bastion deck clear of the shaft)
 			if pieces.has(o + Vector2i(sz, 0)) or pieces.has(o - Vector2i(sz, 0)):
 				run |= 1
 			if pieces.has(o + Vector2i(0, sz)) or pieces.has(o - Vector2i(0, sz)):
 				run |= 2
 		var c: Vector2 = pc[0]
+		var v := [c.x, c.y, float(pc[1]), run, wall_quadrant(c, centres), not bool(pc[3])]
 		for dy in sz:
 			for dx in sz:
-				out[o + Vector2i(dx, dy)] = [c.x, c.y, float(pc[1]), run]
+				out[o + Vector2i(dx, dy)] = v
 	return out
 
 
-## Screen offset (px) that puts a soldier at tile pos `p` on the wall top of piece `ww` (a wall_walk_cells value):
-## snapped onto the slab crest across the run, then lifted by the top height.
+## Screen offset (px) that puts a soldier at tile pos `p` on the wall-walk deck of piece `ww` (a wall_walk_cells
+## value): on a rampart the feet snap onto the firing step WALL_FIRE_STEP outside the axis (right behind the outer parapet); on a
+## tower they stay on the bastion deck clear of the shaft; then lifted by the deck height.
 static func wall_top_offset(ww: Array, p: Vector2) -> Vector2:
 	var q := p
 	var cx: float = ww[0]
 	var cy: float = ww[1]
 	var run: int = ww[3]
+	var qd := int(ww[4]) if ww.size() > 4 else 3
+	var ix := WALL_FIRE_STEP * (1.0 if qd & 1 else -1.0)   # toward the outside (the parapet)
+	var iy := WALL_FIRE_STEP * (1.0 if qd & 2 else -1.0)
 	if run == 1:
-		q.y = cy
+		q.y = cy + iy
 	elif run == 2:
-		q.x = cx
+		q.x = cx + ix
 	elif run == 3:
 		if absf(p.x - cx) < absf(p.y - cy):
-			q.x = cx
+			q.x = cx + ix
 		else:
-			q.y = cy
-	var d := q - p
-	return Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0 - float(ww[2]))
+			q.y = cy + iy
+	elif ww.size() > 5 and bool(ww[5]):
+		var d := p - Vector2(cx, cy)
+		d = Vector2(clampf(d.x, -TOWER_DECK, TOWER_DECK), clampf(d.y, -TOWER_DECK, TOWER_DECK))
+		var s := d - TOWER_SHAFT
+		if absf(s.x) < TOWER_CLEAR and absf(s.y) < TOWER_CLEAR:   # inside the shaft: step out onto the open deck (+x / +y)
+			if s.x >= s.y:
+				s.x = TOWER_CLEAR
+			else:
+				s.y = TOWER_CLEAR
+			d = s + TOWER_SHAFT
+		q = Vector2(cx, cy) + d
+	var dd := q - p
+	return Vector2((dd.x - dd.y) * 32.0, (dd.x + dd.y) * 16.0 - float(ww[2]))
+
+
+## Motion-layer display offset (tiles) of a soldier on wall piece `ww`: only its component along the run survives (a
+## soldier spreads out along the walk but never drifts off the firing step into the parapet or over the inner edge);
+## junction blocks and tower decks take none.
+static func wall_motion_off(ww: Array, mo: Vector2) -> Vector2:
+	match int(ww[3]):
+		1:
+			return Vector2(mo.x, 0.0)
+		2:
+			return Vector2(0.0, mo.y)
+	return Vector2.ZERO
 
 
 ## Sort depth (screen y, px) of a soldier on wall piece `ww`: after its own piece and the next one along the run.
 static func wall_top_depth(ww: Array) -> int:
 	return int((float(ww[0]) + float(ww[1])) * 16.0) + WALL_DEPTH_PAD
+
+
+## Sort depth of the piece's camera-side parapet / rail strip (the "front" sheet): just after the soldiers on it.
+static func wall_front_depth(ww: Array) -> int:
+	return wall_top_depth(ww) + 1
+
+
+## Pose column for a soldier standing on the wall-walk (13.9c-23: "crouch behind it to reload, when suppressed, and
+## between shots, and rise to fire through / over it"), or -1 = keep the column already chosen. a61 = the sheet's
+## anim61 columns, s7 = Sentinel display bits (1 reloading, 2 sidearm), posture = P_* bits, fi = the chosen column.
+## Moving soldiers and the wounded keep their frame; reloading / pinned / suppressed (not firing) -> crouched behind
+## the parapet (never prone: the head stays over the parapet line so the soldier stays visible and clickable); firing
+## -> up at the parapet for WALL_UP s of every WALL_DUCK s cycle (phase per soldier), crouched the rest; pinned while
+## firing -> crouched fire, not prone fire.
+static func wall_col(a61: Dictionary, s7: int, posture: int, t: float, seed: float, fi: int) -> int:
+	if a61.is_empty() or not a61.has("crouch"):
+		return -1
+	if posture & (P_MOVING | P_WOUNDED):
+		return -1
+	var crouch := int(a61.crouch)
+	if s7 & 1:
+		return crouch
+	if posture & P_FIRING:
+		if fposmod(t + seed * 7.3, WALL_DUCK) >= WALL_UP:
+			return crouch
+		if posture & P_PINNED and a61.has("fire_c"):
+			return int(a61.fire_c)
+		if a61.has("fire_p") and fi == int(a61.fire_p):
+			return int(a61.fire_c) if a61.has("fire_c") else crouch
+		return -1
+	if posture & (P_PINNED | P_SUPPRESSED):
+		return crouch
+	if a61.has("prone") and fi == int(a61.prone):
+		return crouch
+	return -1

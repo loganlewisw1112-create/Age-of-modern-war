@@ -26,6 +26,7 @@ const Combat = preload("res://sim/systems/combat.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Terrain = preload("res://sim/terrain.gd")
 const Elevation = preload("res://sim/systems/elevation.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never given automatic jobs
 
 const EVERY := 10                 # think period per unit (0.5 s)
 const PLAYER_TICKS := 400         # 20 s player-order override window
@@ -450,6 +451,8 @@ static func tick(w: SimWorld) -> void:
 static func _unit_think(w: SimWorld, c: Dictionary, e: Dictionary) -> void:
 	if bool(e.get("broken", false)) or e.has("garrisoned_in"):
 		return
+	if CnRole7.parked(w, e):
+		return   # G7 CNROLE7 (13.9c-29): a strike-team / spec-ops unit at its facility holds its post: no support moves, no cover hops, no kiting, no sally (Combat only returns fire in range)
 	# PERF61 CR 568 (hash-identical): a lone unit with nothing to do. Exactly the inputs on which the code below
 	# changes nothing: no squad / pace group / stance / pending resume, not pinned or prone, no target, not hit lately.
 	if int(e.target) < 0 and not e.has("sq_resume") and not e.has("prone") and String(e.get("stance", "")) == "" 			and int(e.get("squad", -1)) < 0 and int(e.get("pace_grp", -1)) < 0 and not bool(e.get("pinned", false)) 			and float(e.get("supp", 0.0)) < 60.0 and w.tick - int(e.get("last_hit_tick", -100000)) > HIT_RECENT:

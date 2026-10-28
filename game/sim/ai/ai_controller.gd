@@ -29,6 +29,7 @@ const G6 = preload("res://sim/ai/ai_g6.gd")  # G6 scaffold (owner AI7-USE): ever
 const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")  # G6 scaffold (owner AI7-DOC)
 const Triggers = preload("res://sim/systems/triggers.gd")
 const Waves = preload("res://sim/systems/waves.gd")  # G6: survival attacker (MODES6)
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never in any AI roster
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
@@ -282,6 +283,8 @@ static func _context(w: SimWorld, fid: int, st: Dictionary) -> Dictionary:
 		if int(en.owner) != fid:
 			continue
 		if en.kind == "unit":
+			if CnRole7.is_cn(en):
+				continue  # G7 CNROLE7 (owner 13.9c-29 / B16): counter-nanite strike teams and spec ops never join an AI army, defence, garrison or escort job; only missions and the player move them
 			units.append(en)
 		elif en.kind == "building":
 			buildings.append(en)

@@ -20,6 +20,7 @@ const HotState = preload("res://sim/hot_state.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
 const Air = preload("res://sim/systems/air.gd")
 const Fortify = preload("res://sim/systems/fortify.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never on base defence
 const THREATS_PATH := "res://sim/systems/threats7.gd"
 const OVERRIDE_TICKS := 400
 
@@ -57,7 +58,7 @@ static func sector_point(s: Dictionary, i: int, k: int) -> Vector2:
 
 
 static func is_main(e: Dictionary) -> bool:
-	return e.kind == "unit" and e.has("lp_ring") and not e.has("cn_team")
+	return e.kind == "unit" and e.has("lp_ring") and not CnRole7.is_cn(e)   # G7 CNROLE7: by def too, not only e.cn_team
 
 
 static func player_owns(w: SimWorld, e: Dictionary) -> bool:

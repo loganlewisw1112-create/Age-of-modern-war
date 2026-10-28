@@ -782,6 +782,14 @@ direct it (back to its specific garage/outside facility/etc)".
   to the staging bays, out of the facility to a map point.
 - Applies to the facility's automatic flows (launch, return, wash, garages) and to player orders alike.
 
+#### 13.9c-16a CN APC movement: smooth, crisp, realistic everywhere (owner note, 2026-10-27)
+Owner: "counternanite team(s) apcs need smoother driving/movement animatoins more crisp and realistic -- its kinda jumpy
+now and flashy not holding true to the realistic depth they need with their movement". For the strike / tactical APCs
+inside AND outside the facility: no jumps (position pops between ticks, heading snapping between the 8 sprite facings),
+no flashing (frame / sheet swaps flickering: track, gun, panel, VIS7 frame swaps, overlay on / off, damage frames),
+smooth acceleration / braking, turning on a radius with intermediate headings, body pitch / suspension feel at
+starts and stops, track / wheel animation matched to ground speed, dust / tracks consistent; reads as a heavy vehicle.
+
 #### 13.9c-17 Lockdown only on a breach (owner note, 2026-10-27)
 Owner: "factility ONLy goes into full lockdown/harden mode when facility is breached". Full lockdown / harden mode (red
 alarm beacons and wall lamps, searchlight sweep, blast doors and shutters closing, decon mist flood, staff sheltering,
@@ -789,6 +797,302 @@ range cold, lockdown states on every building) happens ONLY when the facility is
 the compound: BaseState7 "breached"; the sim's CnFacility lockdown already follows this). "Contested" and "under fire"
 show an amber alert only (amber beacons; Sentinels stand to; normal facility life otherwise continues). Lockdown lifts
 when the breach is cleared.
+
+#### 13.9c-18 Barracks where the drone bay was; drone bay on the workshop; nothing see-through (owner note, 2026-10-27)
+Owner: "place the multi story barracks with a helipad at the top in place where the drone bay is currently and move the
+drone bay so its a second story above the workshop seamlessl -- make it beautiful (also NO transparent anything - no see
+through )".
+- The multi-storey Sentinel barracks with its rooftop helipad / gunship pad moves to the drone bay's current site.
+- The drone bay becomes a second storey built on top of the workshop, one seamless building (shared walls / structure,
+  launch deck on the drone-bay roof), beautiful at the approved detail level.
+- **No transparency anywhere:** nothing in the facility is drawn see-through: no roof cut / ghosted building when
+  units are inside or behind it, no translucent walls, glass x-ray or cut-away views, no ghost overlays. Units hidden
+  behind a building are simply hidden (or shown by an opaque marker / outline, not by making the building transparent).
+  The earlier owner rule against the transparent dropship version stands too.
+
+#### 13.9c-19 Ops-room inset removed (owner choice, 2026-10-27)
+Owner: "maybe lets just get rid of the 'ops room' view?? it looks shitty and doesnt add anything at all"; asked, chose
+"Remove it": the floating ops-room inset drawn over the command centre (LIFE7: staff at screens, map table) is deleted
+entirely. The command centre reads as a building only (lit windows, radome, mast lights). The live strike-team map stays
+in the F4 Ops Room panel.
+
+#### 13.9c-20 Counter-nanite armoured suits from the armory + suit bay (owner note, 2026-10-27)
+Owner: "way beter designed - less weird looking more tactical and properly millitrayily thought out and
+re-engineered/designed in totality (all the different few variations available to the conter nanite facility and teams)*
+* [the ones that get produced from the armory suit bay]"; asked which units: "the armoured suits ones that get produced
+from the armory suit bay (each is manned by one gunner )".
+- The armory + suit bay produces the counter-nanite teams' armoured suits: one-man powered armour, each crewed by one
+  gunner (the G6 Exo mechanics: pilot inside, the pilot survives / ejects when the suit is destroyed), Human A and B.
+- A small family of variants, each with a clear military role for counter-nanite work (e.g. rifle / heavy-gun suit,
+  anti-armour / anti-walker missile suit, anti-air / anti-drone suit, an anti-nanite suit with the facility's disruptor
+  weapons); ORCH / the agent pick the final 3-5 with the owner's "properly militarily thought out" bar.
+- Redesigned in totality: believable powered-armour engineering (load paths, armour plates, joints, sensors, weapon
+  mounts, ammo feed, hatch / pilot access), less odd-looking, more tactical; at the approved art detail level with
+  realistic, grounded animation (13.9c-13).
+- The generic G6 exo suits (a_exo_*, built at the exo garage) stay as they are unless the agent finds a shared art fix
+  that improves them without changing their stats.
+
+#### 13.9c-20a CN suits: complete redesign, slim nanotech armour (owner note, 2026-10-27)
+Owner, on the first suit sheets (bulky, boxy, toy-like): "those suit designs are trash and lok like toys --- should feel
+like nanotech stark tech thats slim and form fitting -- very tactical -- operation capable -- completely redesign all of
+these suits". Replaces the art direction of 13.9c-20 (roles / mechanics stay):
+- Slim, form-fitting powered armour on a human frame: barely bigger than the gunner (about 1.1x a soldier), human
+  proportions and posture, no boxy torso, no stubby mech legs, no toy-like blocks.
+- High-tech nanotech look: close-fitting segmented armour plates over a sealed under-layer, a sleek sealed helmet with a
+  visor slit / sensor band, clean panel lines, small accent lights; original design (no copy of any film / comic suit).
+- Very tactical, operation-capable: muted military finish, kit that makes sense (mag / cell pouches, comms antenna stub,
+  low-profile back module), weapons integrated or carried like a soldier's (forearm / shoulder mounts that are compact;
+  the Bastion carries its rotary gun, not a giant arm block).
+- Each of the 4 roles still readable at game size by silhouette (Bastion heavy gun + back feed, Breaker shoulder missile
+  cells, Aegis back radar / sensor array, Purifier forearm projector + back cell bank), and distinct from the Sentinels
+  (heavier plates, sealed helmet, role kit, suit colour).
+- Animation grounded and human: walk / run / aim / fire / reload like a trained operator in armour.
+
+#### 13.9c-20b CN suits: stances, animation and movement overhaul (owner note, 2026-10-27)
+Owner: "suit bearers also need tactical aggressive stances and better stances when firing, moving, etc - full overhaul
+on that plus their animations and movemnt ** smoother,". For every CN suit (13.9c-20a):
+- Aggressive, tactical stances: weapon up and ready at idle (low-ready / high-ready, not arms hanging), bladed stance,
+  knees bent, weight forward; firing stance braced (rear foot back, shoulders into the weapon, recoil absorbed);
+  moving in a tactical walk / run with the weapon kept on target (no arm swing with the weapon down).
+- Full animation overhaul: more in-between frames for walk / run / aim / fire / reload / turn so the motion is fluid;
+  readable recoil and muzzle; reload done like a trained operator (short, as 13.9c-11 asked for the Sentinels).
+- Smoother movement on screen: stride matched to ground speed (no foot sliding), smooth turning between facings and
+  accel / decel (display-side; no sim change unless needed).
+
+#### 13.9c-20c CN suits are big amplified exosuits; the suit foundry resized and redesigned (owner note, 2026-10-27)
+Owner: "think of these armour suits as extensoions of the users giving them more capabulites and strengh and wepons and
+movement and adaption --- almost avatar movie size suits ** (noticebly larger than the sentinels, counterstrike team
+and spec ops, + all other basic units) resize its building accordingly and redesign the building for the armoured suits
+foundry". Supersedes the "about 1.1x a soldier" size in 13.9c-20a; the rest of 13.9c-20a/-20b stands.
+- Size: a large amplified exosuit, about 2-2.3x a soldier's height (about 4 m), clearly bigger than Sentinels, CN
+  operators, spec ops and every basic infantry unit, smaller than a walker / tank. The pilot sits inside an armoured,
+  sealed cockpit in the torso (opaque: no glass canopy, 13.9c-18), seen through a sensor visor band; the suit is an
+  extension of the pilot: it moves like an athletic human (mirrors the pilot), with strength, weapons and mobility a
+  soldier lacks.
+- Design language from 13.9c-20a still applies at this scale: sleek, athletic, high-tech nanotech plating, tactical
+  military finish, original design; never boxy or toy-like. Stances / animation per 13.9c-20b, with weight: heavy
+  footfalls, planted stance when firing big weapons.
+- Sim: footprint / radius grows to match; suits use the vehicle routes (gates, lanes, the APC wash), never the infantry
+  mantrap / decon hall, never the wall-walk or garrison slots for men; the gunner ejects as before.
+- The armory + suit bay becomes the **Suit Foundry**: resized and redesigned for suits this size: tall bay doors, gantry
+  cranes, suit cradles / charging and arming racks, a pilot entry gantry, test apron; still inside the facility (no growth
+  of the wall ring; re-plan neighbours if it needs space), no overlap, doors onto lanes the suits can use.
+
+#### 13.9c-20d CN suits: a distinct design per role (owner note, 2026-10-27)
+Owner, on the 4 m redesign board: "for the aormoured suits need to push for more defined roles/specializations (maybe a
+different design for each dependant on role/specialty?) ** make them DOPE". Each role gets its own suit design, not one
+body with a different weapon: its own frame build, armour layout, helmet / sensor head, back module and stance, all
+shaped by the job, readable by silhouette at game size and in the icon:
+- Bastion (heavy gun): the heaviest build: broad shoulders, thick chest and forearm armour, braced wide stance, big
+  rotary gun on a support arm with a visible belt feed from a large back drum.
+- Breaker (anti-armour): a launcher frame: tall shoulder missile rack / tubes rising above the head, armoured cheek /
+  side plates against backblast, targeting sight head, kneeling-brace launch pose.
+- Aegis (counter-air): a sensor-heavy, lighter build: raised folding radar / sensor array on the back, high-elevation
+  cannon that tilts up, upward-tracking head, quick-turning stance.
+- Purifier (anti-nanite): sealed hazard look: heavier sealed collar / rebreather, forearm disruptor projector with
+  emitter coils, glowing capacitor bank on the back, shielded hands; deliberate advancing stance.
+Same scale (13.9c-20c), same tactical finish and quality bar ("make them DOPE"), same stances / animation rules (13.9c-20b).
+
+#### 13.9c-20e Suit Foundry: push everything further (owner note, 2026-10-27)
+Owner, on the first Suit Foundry pass (it still read like a plain warehouse): "for suit foundry push everything even
+more". The Foundry becomes a signature building at the approved detail level: heavy armoured hangar (layered armour
+panels, buttresses, blast shutters, hardened roofline with parapet / antenna / sensor mast / heat exchangers), a
+massive armoured bay door (multi-panel, track rails, hazard framing, status lights), the inside visible through the
+open door (suit cradles, overhead crane rails, arming / charging racks, a suit being fitted), an outdoor test apron with
+a gantry, pilot boarding gantry and charging pedestals, a nanotech / power plant annex (capacitor banks, cooling),
+lit signage, believable small details (cable trays, vents, maintenance ladders, warning stencils), proper night lights
+mounted on it (13.9c-24); opaque (13.9c-18); same footprint as now (re-plan only if the owner asks).
+
+#### 13.9c-21 Fuel truck parking spot (owner note, 2026-10-27)
+Owner: "fix the oil tanker positionoing and give it a specified parking spot withint facility it will alwasy park at
+unless actively working". The fuel bowser (Facility Engineer's sim bowser and LIFE7's display truck) has one marked
+parking bay inside the facility (out of every lane, pad, bay and route); it always returns there and parks there
+whenever it is not actively refuelling.
+
+#### 13.9c-21b Fuel bay beside the dropship helipad (owner choice, 2026-10-27)
+FACB7-6's exhaustive search found no spot both visible and outside every margin. Owner, asked: "besides the dropship
+helipad (expand that area as needed nothing crazy thouguth so its parking bay/station can proportionately fit there with
+no issue and still give the drop ship/loading apcs/PLENTY of operational rom w NO conflicts ---- make sense??". So: the
+fuel bay / refuel station is a marked bay beside the dropship helipad; the helipad apron may grow modestly to fit it;
+the dropship's landing area and the APC loading flow keep plenty of room with no conflicts (bay outside the dropship's
+landing / rotor-wash footprint and the APC lanes / bays, never in front of a door, garage or gate, in the camera's
+sight). Authority record for test_life7::test_fuel_bay_makes_sense: the "pad / helipad edge +1" margin no longer applies
+to this one bay ON the helipad apron side (it still applies to the loading pad, and to the dropship's own footprint).
+
+#### 13.9c-22 Outer APC gate hardens when enemies are near (owner note, 2026-10-27)
+Owner: "outer apc entrance gate into the wash station needs to have a hardened mode when enemies are close by that seals
+it up (unless you explicetly allow apcs to leave/enter as needed obviously ** stays hardedn and locked on that outer
+heavy gate until enemies arent near the base any longer ----- dont make this gimicky".
+- The outer APC gate (gate_outer) goes to HARDENED (closed, locked, heavy door down) whenever enemies are near the base
+  (a real threat radius around the facility / base, not only a breach; this is separate from the breach-only full
+  lockdown of 13.9c-17).
+- While hardened it opens ONLY for an explicit player order (or an automatic facility launch / return the player has
+  allowed) for own APCs to pass: it cycles open, the APC(s) pass, it closes again behind them. The wash works as a
+  sally port: the outer and inner gates are never open at the same time.
+- It stays hardened until no enemies have been near the base for a short time, then returns to normal.
+- No gimmicks: realistic gate timing (opening / closing take real seconds), a visible closed / open state, and it is a
+  real obstacle (enemies cannot pass a closed gate; they must breach it).
+
+#### 13.9c-23 Castle-style hardened wall-walk, futuristic (owner note, 2026-10-27)
+Owner: "all the facilty walls need a walkway at the top thats secure/hardened/ and sentinels can crocuh behind when
+reloading, etc --- like a castle has just futuristic and modernized for human faction obvioulsy".
+- Every facility wall gets a real walkway on top (a wall-walk deck wide enough for a man) behind a hardened, armoured
+  parapet on the outer face: a modern crenellation (armoured battlement panels with firing slots / gaps), like a castle
+  but futuristic Human-faction engineering; the towers join it.
+- Sentinels on the wall stand behind the parapet: they crouch behind it to reload, when suppressed, and between shots,
+  and rise to fire through / over it; they are drawn ON the walkway (correct depth, never floating), never transparent.
+- The parapet is the cover the sim already grants on the wall (heavy cover); visible, solid, believable.
+
+#### 13.9c-21a Fuel bay placement must make sense (owner note, 2026-10-27)
+Owner: "fuel tanker marked parking bay should not be placed in front of any door, garage, etc its placement HAS to make
+sense". The bowser bay (13.9c-21) is never in front of (or in the swing / approach of) any door, garage door, gate,
+blast door, pad / helipad edge, lane mouth or another bay; it is a lay-by off a lane, against a building side or the
+wall's inner face, near where refuelling happens (the helipad / loading pad apron, the garages), with a clear drive-out
+onto the lane. The whole truck fits inside the marked bay.
+
+#### 13.9c-24 Facility lights placed for real, nothing floating (owner note, 2026-10-27)
+Owner: "fix the lighint/fog lights/facility lights have all proper realistic placement nothing floating". Every
+facility light (beacons, searchlights, flood / fog lights, pad / edge lights, door lamps, mast lights, window glow)
+is mounted on something real (a wall top, tower roof, mast, pole, building face / roof edge, pad edge) at that thing's
+drawn height, with its fixture drawn; nothing hangs in the air; light pools fall on the ground where the fixture points;
+no translucent light volumes over buildings (13.9c-18).
+
+#### 13.9c-24b Outward floodlights much brighter (owner note, 2026-10-27)
+Owner: "outer facing floodlights in facility need to be much brighter (light up the night as a real bases floodlight
+would be )". The wall-top / tower / gate floods aimed out over the clear zone light it like a real base perimeter at
+night: a bright, wide, even wash on the ground outside the walls (the glacis / approach / clear zone), strong enough
+that units out there are plainly visible at night, with a hot core near each fixture and soft falloff; still ground
+light only (no translucent volume over buildings, 13.9c-18), fixtures as placed in 13.9c-24a.
+
+#### 13.9c-24c Lit windows read as lit interior rooms (owner note, 2026-10-27)
+Owner, on the first lit-window pass (solid bright blocks over the windows): "fix the lit up window panes so the are more
+proportionate and look like actual lit up interior rooms nOT just lit up blocks over the windows". Each lit window sits
+inside its drawn frame at the right proportion (frame, mullions, sill visible; glass inset, not a block covering the
+window), and reads as a room behind glass: a soft interior gradient (ceiling light falloff), hints of interior (a
+ceiling strip light, a partition, a screen glow, blinds half-drawn, a silhouette now and then), varied warm / cool
+rooms, many dark or dim, nothing pure-white; opaque art, no see-through overlays.
+
+#### 13.9c-24d Compound interior lit properly at night (owner note, 2026-10-27)
+Owner: "interior lighting shouldnt be so dark add more lighting and/or upgrade to brighter floodlights design similar to
+outside facing ligtings/floodlights/spotloghts". Inside the walls at night: lanes, aprons, pads, staging, garage fronts,
+the APC wash, the decon hall approach and the Suit Foundry apron are lit like a working military compound: mast / pole
+floodlights and wall-mounted floods aimed inward (same fixture design and brightness class as the perimeter floods,
+13.9c-24b), continuous coverage with no dark pockets where units work, units clearly visible; ground light only (no
+translucent volumes over buildings, 13.9c-18); fixtures on real mounts (13.9c-24); light count within the cap.
+
+#### 13.9c-25 APC entrance / wash: vehicles and CN suits only (owner note, 2026-10-27)
+Owner: "NO infantry or ground units can enter through the facilities apc entrance/wash area [except the armoured suits
+obvioulsy who can use it leave + decontaminate up to 4 at a time when entering]". The two-gate APC entry and the wash
+between them pass only the facility's APCs / vehicles and the CN armoured suits; infantry and every other ground unit
+(own, allied or enemy) must use the foot entry (mantrap + decon hall) and are never routed through the APC gates even when
+open. CN suits leave and enter through it; entering, they decontaminate in the wash up to 4 at a time (more wait outside
+the outer gate in order), like the APC cycle.
+
+#### 13.9c-24a Lighting overhaul (owner note, 2026-10-27)
+Owner, after the glow-box fix: "lighting and light fixtures still need upgrading and more realistic approach/placement/
+everything". A full lighting pass over the facility (and the base lighting it shares), day and night: real fixture
+types where a military compound has them (wall-top flood lights angled out at the clear zone, tower searchlights,
+mast / pole area lights over lanes and pads, bulkhead lamps over doors, pad edge / approach lights, obstruction
+beacons on the tallest roofs, red / amber alarm beacons only where a real alarm light sits), each fixture drawn and
+mounted (13.9c-24), consistent light direction and colour temperature, believable light pools and falloff on the
+ground and on wall faces, no translucent volumes (13.9c-18), no floating light dots.
+
+#### 13.9c-26 APC gate blast doors redesigned (owner note, 2026-10-27)
+Owner: "for the inner and outer gates for the apc entrance and wash area -- redesign the blast doors -- better design
+more details for the door --- better open and close animation ---- make the mf feel secure as hell fr". Both APC gates
+(outer and inner) get heavy armoured blast doors: thick multi-layer door leaves (sliding or bi-parting on rails, with
+locking bars / bolts, hydraulic rams, guide rails, hazard striping, warning beacons, a hardened door frame / portal tied
+into the wall), detailed at the approved art level; a real open / close animation (warning light + bolts retract, leaves
+travel at a heavy, steady speed, bolts drive home) driven by the sim gate state (open / closing / hardened / opening,
+13.9c-22); a closed gate reads unmistakably sealed; opaque.
+
+#### 13.9c-27 Drone bay: defence drone garrison (owner note, 2026-10-27)
+Owner: "how many drones does the drone bay have?? ... should it have a max amount it can garrison in its "garage" inside
+the building?? could add in as part of the base defense it releases the garrison as necessary??". Answer given: today
+it launches one overwatch recon drone per strike team on a mission and holds no defence drones. Adopted (ORCH default
+from the owner's own suggestion; the owner did not pick from the offered options, so these numbers are PROVISIONAL and
+change on his word): the drone bay garrisons up to 12 defence drones in its hangar (interceptors vs drones / rockets,
+gun drones and kamikaze drones vs ground attackers); it releases what the threat needs when the base is threatened,
+recovers them to its launch deck, rearms, and rebuilds losses slowly; the player can also launch / recall from the bay;
+it keeps its recon overwatch job.
+Owner confirmed (2026-10-27): "drone bay should also hold a defense garrison yes btw ---  should be launchable either
+maually or automatically as a default": automatic release is ON by default (a toggle on the bay turns it off); manual
+launch / recall always available. Garrison size 12 stays ORCH's PROVISIONAL number until the owner names one.
+
+#### 13.9c-27a Defence drones fight as a hive mind (owner note, 2026-10-27)
+Owner: "make defense drones have better tactical capabilites/functionalities/formations/etc -- they should operate likea
+hive mind to defend the facility at all cost". The drone bay garrison (13.9c-27) acts as one networked swarm:
+- Shared picture: every drone, the facility sensors (towers, cameras, radar) and the Sentinels feed one threat board;
+  the swarm assigns drones to threats by priority (what most endangers the facility first: breaching units, anti-air,
+  heavy armour at the walls, enemy drones / missiles inbound) and re-balances as threats appear or die.
+- Formations and tactics: interceptors fly a layered screen (outer picket, inner close-in ring over the facility) and
+  intercept inbound drones / missiles; gun drones work in pairs / fire teams, orbit and strafe from different angles,
+  converge on one target to focus fire, never stack on one spot; kamikazes strike the highest-value threat, coordinated
+  with the gun drones' suppression; drones screen damaged / reloading drones, rotate back to the deck to rearm while
+  others hold the line (never all down at once), and relaunch.
+- At all cost: when the facility is breached the whole garrison commits, the bay rebuilds and relaunches as fast as it
+  can, and drones will ram (kamikaze-style last resort) to stop a breach of the core.
+- Readable on screen: visible formations / orbits, and the hive card shows its tasking (screen / strike / rearm counts).
+Deterministic, saved, hashed; numbers PROVISIONAL; no facility = no cost.
+
+#### 13.9c-28 Muzzle flashes from the barrels, everything that fires (owner note, 2026-10-27)
+Owner: "fix where the muzzle flash comes from for all sentry guns, guns, turrets, wepons systems, everything that fires
+__should come directly from its barrel(s)--- realistic approach asf". Every unit, turret, wall turret, tower weapon,
+vehicle, aircraft, drone, suit and soldier that fires shows its muzzle flash (and tracer start, smoke, casings) at the
+tip of the barrel that fired, per facing / turret facing and per pose (standing, crouched, prone, on a wall, in a
+garrison port), alternating barrels on multi-barrel weapons; no flash from a unit's centre or feet.
+
+#### 13.9c-28a The APC's rear mounted gun animated when it fires (owner note, 2026-10-27)
+Owner: "donte forget the mounted gun on the back of the apc -- thats needs to be animated correctly when shooting too".
+The counter-nanite strike / tactical APCs' rear roof-mounted gun (g7_cn_strike_apc / g7_op_tactical_apc and B
+versions; frames fire_r / traverse today, no separate turret sprite) traverses on its own to the target (independent of
+the hull heading), shows recoil and a muzzle flash / tracer / casings from ITS barrel tip (13.9c-28), at a believable
+rate; when both guns fire, each flashes at its own barrel; an idle gun returns to its travel position.
+
+#### 13.9c-29 CN strike teams and spec ops never on base defence (owner note, 2026-10-27)
+Owner: "counternanite strike team and spec ops team(s) are NEVER to be on base defense -- strictly to go run their
+missions (as weve already discussed and planned out for how they operate/function)". Restates B16 (the main army
+defends; the counter-nanite strike teams and tactical / spec-ops squads run missions). Rules:
+- No automatic system ever gives a CN strike-team / tactical-squad unit (cn_team, g7_cn_* / g7_op_* operators, their
+  APCs) a defence job: the LP defence commander, the LP garrison, the AI controllers / commanders of any side, Sentinel
+  job boards / QRF, wall-walk manning, garrison / turret crewing, base-state lockdown, squad AI sallies.
+- Between missions they stay in their garages / barracks / staging, mounted or stood down; inside the base they do not
+  chase or sally at attackers (they may return fire if hit where they stand, never leave their post to engage).
+- They leave the base only on missions (launch flow, planning room, the player's mission orders). The player keeps
+  direct control (B16 override), but nothing automatic puts them on defence.
+
+#### 13.9c-30 Every turret turns to its target before it fires (owner note, 2026-10-27)
+Owner: "ensure all turret types actually turn towards enemies and fire towards them -- it currently reads as they shoot
+at enemies but never actually turn their barrel(s) to face them before shooting -- make it realistic". Every turret
+type (base defence turrets and gun / missile / AA / SAM / CIWS emplacements, G7 tower weapons and wall turrets, tank /
+IFV / APC turrets and remote weapon stations, ship guns): the turret / barrel visibly traverses toward its target at a
+believable rate for its size (light RWS fast, heavy guns slow), fires only once it is laid on the target (within a small
+tolerance), tracks a moving target, and its drawn barrel, muzzle flash and tracer all point at the target; idle turrets
+scan / return to a rest bearing. Deterministic; numbers PROVISIONAL; balance kept (a short lay time, not a nerf).
+
+#### 13.9c-31 Nothing walks through anything; smooth movement everywhere (owner note, 2026-10-27)
+Owner: "ensure NO units walk throuhg buildings/walls/other units/etc in the facility and elswhere ** smooth animations
+and walking and movement at all times". In every mode and map, inside the facility and outside it: no unit's drawn body
+overlaps a building / wall / tower / gate footprint or another unit (infantry keep a small personal gap, vehicles their
+hull, aircraft excepted in flight); paths go round obstacles; crowds queue / flow at doors, gates, mantraps and lanes
+instead of stacking; no jitter, teleport, snap or sliding: smooth accel / decel, turns with a believable rate, walk / run
+cycles matched to ground speed, display interpolation between sim ticks without pops. Deterministic; perf budget kept.
+
+#### 13.9c-32 Rotary CIWS turrets on the command centre roof (owner note, 2026-10-27)
+Owner: "add in phalanx style turret(s) on top of main command building inside facility / future modified anti machine
+version of the us phlanx Gatling style turret belt fed". The 4-storey command centre carries close-in weapon systems on
+its roof (2, PROVISIONAL, on opposite corners for all-round cover): a self-contained rotary-cannon mount in the style of
+a naval CIWS (search / track radar dome over a multi-barrel Gatling gun, belt / drum feed, the whole mount trains and
+elevates), modernised for the Machine war: anti-drone / anti-missile / anti-rocket point defence first, and able to
+engage Machine units (crawlers, swarms, light walkers) that reach the inner compound; armour-piercing anti-nanite rounds.
+Behaviour: it traverses and elevates onto the threat before firing (13.9c-30), fires short high-rate bursts with the
+flash / tracer stream / brass from the barrel cluster (13.9c-28), spins the barrels up and down, belt / drum runs dry and
+reloads (an engineer / ammo resupply, PROVISIONAL), idle radar sweep. Part of the facility (not buildable elsewhere),
+destroyable with the building, opaque art at the approved detail level, an original design (no copied real model).
+Numbers PROVISIONAL; balanced against the facility's existing CIWS / counter-drone layer, no gimmick.
+Owner answers (2026-10-27): **2 mounts, opposite corners**; **air first, ground too** (drones / missiles / rockets /
+shells first, also Machine crawlers / swarms / light walkers inside the compound); **Facility Engineers reload it** (a
+drum swap by an engineer who goes up to the roof; the mount is silent until done).
 
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.

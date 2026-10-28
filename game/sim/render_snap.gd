@@ -18,6 +18,8 @@ extends RefCounted
 ##   memory {fid: shallow copy of w.memory[fid]}, ended, winner, entity_count, build_us.
 
 const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed SQUAD7 display table (w.cache.sq7d)
+const DroneBay7 = preload("res://sim/systems/drone_bay7.gd")   # G7 DRONEBAY7 CR 5833: bay drones drawn at the launch-deck height
+const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B CR 6354 (13.9c-30): simulated turret bearings for the display
 const FLAG_MOVING := 1
 const FLAG_FIRING := 2
 const FLAG_AIR := 4
@@ -218,6 +220,8 @@ static func build(w) -> void:
 				var s7b := (1 if int(w.tick) < int(e.get("s7_rl", 0)) else 0) | (2 if bool(e.get("s7_sa", false)) else 0)
 				if s7b != 0:
 					_g7_entry(g7u, id)["s7"] = s7b
+			if "tf" in e:   # G7 TURRET7B CR 6354 (13.9c-30): turret bearing (world rad) the separate turret is drawn on
+				_g7_entry(g7u, id)["tb"] = Traverse7.bearing(w, e, int(w.tick))
 			ids[n] = id
 			pos[n] = p
 			prev[n] = pp
@@ -230,6 +234,9 @@ static func build(w) -> void:
 			n += 1
 			continue
 		statics[id] = _static(e)
+		var tb7 = Traverse7.snap_bearing(w, e)   # G7 TURRET7B CR 6354 (13.9c-30): armed buildings' turret head bearing
+		if tb7 != null:
+			statics[id]["tb"] = tb7
 		if any_req and req.has(id):
 			detail[id] = e.duplicate(true)
 	ids.resize(n); pos.resize(n); prev.resize(n); facing.resize(n)
@@ -253,6 +260,10 @@ static func build(w) -> void:
 	}
 	_g5_out(w, snap, g5)
 	_g6_out(w, snap, g6)
+	if w.sys_state.has("dronebay7"):   # G7 DRONEBAY7 CR 5833: bay drones on / rising from the workshop launch deck (g7u bz = min lift px)
+		var dbl: Dictionary = DroneBay7.display_lifts(w)
+		for dbid in dbl:
+			_g7_entry(g7u, int(dbid))["bz"] = float(dbl[dbid])
 	_g7_out(w, snap, g7u)
 	var sq7: Array = _sq7_fill(w, ids, n)   # G7 PERF7E: sq7f SQ7_* bits / sq7a sector / sq7h hull, aligned with ids
 	var sq7f: PackedByteArray = sq7[0]

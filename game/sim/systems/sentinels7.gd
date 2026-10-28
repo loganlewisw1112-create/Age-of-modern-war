@@ -191,6 +191,8 @@ static func prefix(w: SimWorld, fid: int) -> String:
 
 ## Makes unit e a Sentinel under job (no squad, no leader; sealed armour).
 static func enlist(w: SimWorld, e: Dictionary, job: Dictionary) -> void:
+	if e.has("cn_team"):
+		return   # G7 CNROLE7 (13.9c-29): a strike-team / spec-ops unit never joins the Sentinel job board (guard post, tower, QRF, stand-to)
 	var S := _st(w)
 	e.s7 = type_of_def(String(e.def))
 	e.squad = -1
@@ -440,9 +442,23 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 	var used := {}
 	var dw := float(P.get("duty_w", 4.0))
 	var xw := float(T.get("exp_w", 3.0))
+	# SENT7-5 13.9c-11/13: a buddy pair is a unit of work. Fixed two-man teams (S.pr, mutual) survive rest, the QRF
+	# turn-out and re-planning: when the board takes one man for a paired job it takes his partner too, and a job
+	# with a single free slot prefers a man without a partner, so the board never splits a team to fill a gap.
+	if not S.has("pr"):
+		S["pr"] = {}
+	var pr: Dictionary = S.pr
+	var cset := {}
+	for uid in cands:
+		cset[uid] = true
+	var mate := func(uid: int) -> int:
+		var m := int(pr.get(str(uid), -1))
+		return m if m >= 0 and cset.has(m) and int(pr.get(str(m), -1)) == uid else -1
+	var spen := float(T.get("pair_split_pen", 1000.0))
 	for j in jobs:
 		var roles: Array = j.roles
 		var care := String(j.kind) == "repair" or String(j.kind) == "restock" or String(j.kind) == "casualty"
+		var pj := not care and String(j.kind) != "rest" and String(j.kind) != "standto" and int(j.slots) >= 2
 		if keep_old:
 			for uid in cands:
 				if used.has(uid) or (j.taken as Array).size() >= int(j.slots):
@@ -452,7 +468,9 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 					j.taken.append(uid)
 					used[uid] = true
 		while (j.taken as Array).size() < int(j.slots):
+			var room := int(j.slots) - (j.taken as Array).size()
 			var best := -1
+			var bm := -1
 			var bs := INF
 			for uid in cands:
 				if used.has(uid) or not _fits(roles, _role(w, S, uid)):
@@ -462,13 +480,24 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 					continue   # wounded / just withdrawn: rests (barracks / Mender) instead of taking a post
 				var sc := Vector2(e.pos).distance_to(j.pos) + dw * float(e.get("s7_duty", 0)) / float(SimWorld.TICK_RATE * 60) \
 					+ xw * clampf(float(e.get("cn_exp", 0.0)), 0.0, 1.0)
+				var m := -1
+				if not care:
+					m = int(mate.call(uid))
+					if m >= 0 and (used.has(m) or not _fits(roles, _role(w, S, m)) or _unfit(w, w.entities[m], P)):
+						m = -1   # his partner cannot come (busy, wrong role, wounded): he goes alone
+					if m >= 0 and (not pj or room < 2):
+						sc += spen   # taking him alone would split a team: only when nobody else fits
 				if sc < bs:
 					bs = sc
 					best = uid
+					bm = m
 			if best < 0:
 				break
 			j.taken.append(best)
 			used[best] = true
+			if pj and bm >= 0 and room >= 2:
+				j.taken.append(bm)   # his partner comes with him
+				used[bm] = true
 	var bk := _parts_of(w, F, "cn_sentinel_barracks")
 	var rest := _job("rest", "rest", _home(w, F), 0.0, ["*"], 9999, int(bk[0].id) if not bk.is_empty() else -1)
 	var pts := _standto_pts(F) if alarm else []
@@ -489,6 +518,8 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 		var tk: Array = j.taken
 		var pair := String(j.kind) != "rest" and String(j.kind) != "standto" and int(j.slots) >= 2
 		var buds := _pairs(S, tk, String(j.id)) if pair else {}
+		for u in buds:
+			pr[str(u)] = int(buds[u])   # the team record (kept through rest and re-plans)
 		for i in tk.size():
 			var uid := int(tk[i])
 			_assign(w, S, uid, j, fac)
@@ -506,6 +537,13 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 static func _pairs(S: Dictionary, tk: Array, jid: String) -> Dictionary:
 	var out := {}
 	var rest := []
+	var pr: Dictionary = S.get("pr", {})
+	for u in tk:
+		var uid := int(u)
+		var m := int(pr.get(str(uid), -1))
+		if m >= 0 and not out.has(uid) and not out.has(m) and tk.has(m) and int(pr.get(str(m), -1)) == uid:
+			out[uid] = m   # SENT7-5: a fixed team on the same job stays a pair
+			out[m] = uid
 	for u in tk:
 		var uid := int(u)
 		if out.has(uid):
@@ -696,6 +734,7 @@ static func tick(w: SimWorld) -> void:
 	var cn = w.sys_state.get("cn_facility")
 	if S == null and cn == null:
 		return
+	var tq0 := Time.get_ticks_usec() if SimWorld.SimIndex.profiling else 0
 	if cn != null:
 		if w.tick % 10 == 3:
 			var ks := []
@@ -708,6 +747,8 @@ static func tick(w: SimWorld) -> void:
 					S = state(w)
 		_enlist_trained(w)
 		S = state(w)
+	if SimWorld.SimIndex.profiling:
+		SimWorld.SimIndex.pt("s7.seed_enlist", tq0)
 	if S == null or (S.ids as Array).is_empty():
 		return
 	var r := R()
@@ -723,6 +764,8 @@ static func tick(w: SimWorld) -> void:
 		if e == null or e.kind != "unit":
 			dirty = true
 			S.jobs.erase(str(id))
+			if S.has("pr"):
+				S.pr.erase(str(id))
 			continue
 		keep.append(int(id))
 		if zone_t:
@@ -739,8 +782,12 @@ static func tick(w: SimWorld) -> void:
 					w.emit("SentinelManDown", {"id": int(id), "owner": int(e.owner)})
 				else:
 					e.erase("s7_dn")
+					e.erase("s7_dg")
 		if (w.tick + int(id)) % think == 0:
+			var tq := Time.get_ticks_usec() if SimWorld.SimIndex.profiling else 0
 			_think(w, S, e)
+			if SimWorld.SimIndex.profiling:
+				SimWorld.SimIndex.pt("s7.think." + String(e.s7), tq)
 	if dirty:
 		S.ids = keep
 	if cn != null:
@@ -750,19 +797,27 @@ static func tick(w: SimWorld) -> void:
 		S.erase("call")
 		for k in cn.facs:
 			var F: Dictionary = cn.facs[k]
+			var tq := Time.get_ticks_usec() if SimWorld.SimIndex.profiling else 0
 			if (w.tick + int(k)) % ne == 0 and not sentinels_of(w, int(F.owner)).is_empty():
 				_alarm_scan(w, S, F)
+			if SimWorld.SimIndex.profiling:
+				tq = SimWorld.SimIndex.pt("s7.alarm_scan", tq)
 			if call and (w.tick + int(k)) % pe != 0 and not sentinels_of(w, int(F.owner)).is_empty():
 				plan(w, F)
 			if (w.tick + int(k)) % pe == 0 and not sentinels_of(w, int(F.owner)).is_empty():
 				plan(w, F)
+			if SimWorld.SimIndex.profiling:
+				SimWorld.SimIndex.pt("s7.plan", tq)
 
 
 # ================================================================ thinking (staggered: (tick + id) % think_every)
 static func _go(w: SimWorld, e: Dictionary, job: Dictionary, goal: Vector2, ty: String = "attack_move") -> void:
 	e.order = {"type": ty, "target": goal}
 	job["g"] = goal
+	var tqp := Time.get_ticks_usec() if SimWorld.SimIndex.profiling else 0
 	_movement().order_path(w, e, goal)
+	if SimWorld.SimIndex.profiling:
+		SimWorld.SimIndex.pt("s7x.go_path", tqp)
 	SimWorld.HotState.touch(w, int(e.id))
 
 
@@ -792,6 +847,17 @@ static func _player_took(e: Dictionary, job: Dictionary) -> bool:
 	return Vector2(tg).distance_to(Vector2(g)) > 0.01
 
 
+## PERF7F: the SimIndex unit lists of every owner hostile to fid (same liveness rule as SimIndex.of(w, "unit")).
+## Callers must not depend on iteration order (they take an order-free minimum or sort their result).
+static func _enemy_lists(w: SimWorld, fid: int) -> Array:
+	var out := []
+	var uo: Dictionary = SimWorld.SimIndex.units_by_owner(w)
+	for o in uo:
+		if w.is_enemy(fid, int(o)):
+			out.append(uo[o])
+	return out
+
+
 ## Nearest enemy inside facility fac's zone while the facility is not secure (cached per tick), else null.
 static func threat(w: SimWorld, fac: int):
 	var c = w.cache.get("s7_thr")
@@ -809,13 +875,14 @@ static func threat(w: SimWorld, fac: int):
 		var zr: Rect2 = _cnfac().compound_rect(F).grow(float(R().get("zone_pad", 6)) + 4.0)
 		var ctr := zr.get_center()
 		var best := INF
-		for u in SimWorld.SimIndex.of(w, "unit"):
-			if not w.is_enemy(int(F.owner), int(u.owner)) or not zr.has_point(u.pos):
-				continue
-			var d := Vector2(u.pos).distance_squared_to(ctr)
-			if d < best or (d == best and out != null and int(u.id) < int(out[1])):
-				best = d
-				out = [Vector2(u.pos), int(u.id)]
+		for ul in _enemy_lists(w, int(F.owner)):   # PERF7F: enemy owners only; the (distance, id) minimum is order-free
+			for u in ul:
+				if not zr.has_point(u.pos) or not w.entities.has(int(u.id)):
+					continue   # ORCH (DRONEBAY7 warn 5735): skip stale index entries, else a save / load copy picks another attacker
+				var d := Vector2(u.pos).distance_squared_to(ctr)
+				if d < best or (d == best and out != null and int(u.id) < int(out[1])):
+					best = d
+					out = [Vector2(u.pos), int(u.id)]
 	c[1][key] = out
 	return out
 
@@ -848,13 +915,14 @@ static func _alarm_scan(w: SimWorld, S: Dictionary, F: Dictionary) -> void:
 	var best := INF
 	var hit = null
 	var Fg = SimWorld.Fog
-	for u in SimWorld.SimIndex.of(w, "unit"):
-		if not w.is_enemy(fid, int(u.owner)) or not zr.has_point(u.pos) or not Fg.is_visible(w, fid, u.pos):
-			continue
-		var d := Vector2(u.pos).distance_squared_to(ctr)
-		if d < best or (d == best and hit != null and int(u.id) < int(hit.id)):
-			best = d
-			hit = u
+	for ul in _enemy_lists(w, fid):   # PERF7F: enemy owners only; the (distance, id) minimum is order-free
+		for u in ul:
+			if not zr.has_point(u.pos) or not w.entities.has(int(u.id)) or not Fg.is_visible(w, fid, u.pos):
+				continue   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+			var d := Vector2(u.pos).distance_squared_to(ctr)
+			if d < best or (d == best and hit != null and int(u.id) < int(hit.id)):
+				best = d
+				hit = u
 	if hit == null:   # fired on from out of sight: the attacker of a hit Sentinel / facility building
 		var rec := ticks(float(T.get("hit_recent_s", 3.0)))
 		var srcs := []
@@ -891,19 +959,22 @@ static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 	var kind := String(e.s7)
 	if SimWorld.Wounds.is_down(e):
 		return   # a casualty does nothing; its buddy and the Mender run the casualty drill
+	var tqx := Time.get_ticks_usec() if SimWorld.SimIndex.profiling else 0
 	if kind == "mender":
 		_mender(w, S, e)
 	elif kind == "arc":
 		_arc(w, e)
+	if SimWorld.SimIndex.profiling:
+		tqx = SimWorld.SimIndex.pt("s7x.mender_arc", tqx)
 	var k := String(job.get("k", "free"))
-	if k == "free" or k == "auto":
-		return
 	if k == "player":   # 13.9c-12: back on automatic duty when the order is done or after own_timeout_s
 		var ot := String(e.order.get("type", "idle"))
 		if (ot == "idle" and not e.has("garrisoned_in")) or w.tick - int(job.get("t", 0)) > ticks(float(R().get("own_timeout_s", 45.0))):
 			S.jobs[str(uid)] = {"k": "auto", "fac": int(job.get("fac", -1))}
 		return
 	if _caring(w, uid):
+		if _care_under_fire(w, S, e, job):
+			return
 		# SENT7-4 13.9c-13 gait in the care chain: sprint to the casualty, hunched duck-run while dragging him,
 		# kneel while treating (the Wounds care chain owns the order; this only sets how he moves).
 		if e.has("wdrg"):
@@ -919,6 +990,8 @@ static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 				job["tr"] = true
 				w.emit("SentinelMenderTreats", {"id": int(job.uid), "by": uid, "owner": int(e.owner)})
 		return   # dragging / treating a casualty: the Wounds care chain drives the order
+	if k == "free" or k == "auto":
+		return
 	if job.has("hand"):   # a new job from the board: the old job's order / post was this system's, hand it over
 		job.erase("hand")
 		if e.has("garrisoned_in") and int(e.garrisoned_in) != int(job.get("bid", -1)):
@@ -939,16 +1012,30 @@ static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 		elif k == "rest":
 			_post(w, S, e, job)
 		return
+	if SimWorld.SimIndex.profiling:
+		tqx = SimWorld.SimIndex.pt("s7x.pre_drill", tqx)
 	if _casualty_drill(w, S, e, job):
 		return
+	if SimWorld.SimIndex.profiling:
+		tqx = SimWorld.SimIndex.pt("s7x.drill", tqx)
 	var F := _fac_of(w, job)
 	var th = threat(w, int(F.id)) if not F.is_empty() else null
+	if SimWorld.SimIndex.profiling:
+		tqx = SimWorld.SimIndex.pt("s7x.threat", tqx)
 	if bool(job.get("wd", false)):
 		_withdraw(w, S, e, job, F, th[0] if th != null else null)
 		return
 	if th != null:
 		_reload_check(w, S, e, job, th[0])
+		if SimWorld.SimIndex.profiling:
+			tqx = SimWorld.SimIndex.pt("s7x.reload", tqx)
 		_aim(w, S, e, job, F)
+		if SimWorld.SimIndex.profiling:
+			tqx = SimWorld.SimIndex.pt("s7x.aim", tqx)
+	if SimWorld.SimIndex.profiling:
+		SimWorld.SimIndex.prof["s7x.job_" + k] = SimWorld.SimIndex.prof.get("s7x.job_" + k, [0, 0])
+		var pj = SimWorld.SimIndex.prof["s7x.job_" + k]
+		pj[1] += 1
 	match k:
 		"wall", "int", "patrol":
 			_patrol(w, S, e, job)
@@ -960,6 +1047,8 @@ static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 			_casualty_job(w, S, e, job)
 		"repair":
 			_repair(w, S, e, job)
+	if SimWorld.SimIndex.profiling:
+		SimWorld.SimIndex.prof["s7x.job_" + k][0] += Time.get_ticks_usec() - tqx
 
 
 static func _repair(w: SimWorld, S: Dictionary, e: Dictionary, job: Dictionary) -> void:
@@ -1711,9 +1800,10 @@ static func _net(w: SimWorld, S: Dictionary, F: Dictionary) -> Array:
 	var zr: Rect2 = _cnfac().compound_rect(F).grow(float(T.get("net_r", 22.0)))
 	var Fg = SimWorld.Fog
 	var out := []
-	for u in SimWorld.SimIndex.of(w, "unit"):
-		if w.is_enemy(fid, int(u.owner)) and zr.has_point(u.pos) and Fg.is_visible(w, fid, u.pos):
-			out.append(int(u.id))
+	for ul in _enemy_lists(w, fid):   # PERF7F: enemy owners only (sorted below, as before)
+		for u in ul:
+			if zr.has_point(u.pos) and w.entities.has(int(u.id)) and Fg.is_visible(w, fid, u.pos):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
+				out.append(int(u.id))
 	out.sort()
 	S.net[key] = {"at": w.tick, "c": out}
 	return out
@@ -1781,10 +1871,10 @@ static func _aim(w: SimWorld, S: Dictionary, e: Dictionary, _job: Dictionary, F:
 	var bs := 0.0
 	for tid in net:
 		var t = w.entities.get(int(tid))
-		if t == null or not Cb.can_target(s, t):
+		if t == null:
 			continue
-		var d: float = Cb.dist_to(e.pos, t)
-		if d > rng or d < float(s.get("min_range", 0.0)):
+		var d: float = Cb.dist_to(e.pos, t)   # PERF7F: range first (both pure filters), then can_target
+		if d > rng or d < float(s.get("min_range", 0.0)) or not Cb.can_target(s, t):
 			continue
 		var c := _tclass(w, t)
 		var sc := float(pr.get(c, 1.0)) * float(pf.get(c, 1.0))
@@ -1826,11 +1916,13 @@ static func _reload(w: SimWorld, e: Dictionary, mag: int, tactical: bool) -> voi
 ## Under alarm: a man reloading in the open first gets into cover; a low magazine with nothing to shoot and the
 ## buddy not reloading gets a tactical reload.
 static func _reload_check(w: SimWorld, S: Dictionary, e: Dictionary, job: Dictionary, tp) -> void:
-	if e.has("garrisoned_in") or bool(e.get("moving", false)):
+	if bool(e.get("moving", false)):
 		return
 	if w.tick < int(e.get("s7_rl", 0)):
-		_settle(w, S, e, job, tp)
+		if not e.has("garrisoned_in"):
+			_settle(w, S, e, job, tp)
 		return
+	# SENT7-4: a man in a tower / the booth is already behind hard cover: he tops up there too (was skipped)
 	var mag := _mag(e)
 	if mag <= 1:
 		return
@@ -1901,20 +1993,69 @@ static func _casualty_drill(w: SimWorld, S: Dictionary, e: Dictionary, job: Dict
 	var F := _fac_of(w, job)
 	var th = threat(w, int(F.id)) if not F.is_empty() else null
 	var tp = th[0] if th != null else null
-	var bp: Vector2 = b.pos
-	var dr := float(_tac().get("drag_r", 4.0))
-	var away := bp
-	if tp != null and Vector2(tp).distance_to(bp) > 0.1:
-		away = bp + (bp - Vector2(tp)).normalized() * dr
-	elif not F.is_empty():
-		away = bp + (_home(w, F) - bp).limit_length(dr)
-	var p := _cover_near(w, b, away, 2, null)
+	var p := _drag_spot(w, b, F, tp)
 	job["drg"] = bd
+	b.s7_dg = 1   # moved to cover once (care under fire)
 	job.erase("hold")
 	_set_gait(w, e, 3)   # "man down": he sprints to his partner
 	Wd.start_care(w, e, b, "drag", p)
 	w.emit("SentinelCasualtyDrill", {"id": bd, "by": int(e.id), "owner": int(e.owner), "to": p})
 	return true
+
+
+## SENT7-4 care under fire: whoever reached a downed Sentinel first (the Wounds care chain's nearest man, often not
+## his own buddy when the pair got split) does not treat him where he fell while the facility is under attack and he
+## lies in the open: he drags him to the nearest cover away from the threat first (once), then treats him there.
+static func _care_under_fire(w: SimWorld, S: Dictionary, e: Dictionary, job: Dictionary) -> bool:
+	var st = w.sys_state.get("wounds")
+	var cv = st.care.get(int(e.id), st.care.get(str(int(e.id)))) if st != null else null
+	if cv == null or String(cv.get("k", "")) == "drag" or int(cv.get("t", -1)) >= 0:
+		return false   # dragging already, or treatment under way
+	var c = w.entities.get(int(cv.get("c", -1)))
+	var Wd = SimWorld.Wounds
+	if c == null or not c.has("s7") or c.has("s7_dg") or not Wd.is_down(c) or c.has("wdby"):
+		return false
+	var F := _fac_of(w, job)
+	var th = threat(w, int(F.id)) if not F.is_empty() else null
+	if th == null:
+		return false
+	if _cover_v(w, w.cell_of(c.pos), _team(w, int(e.owner))) >= float(_tac().get("open_v", 0.35)):
+		return false   # already in cover: treat him where he is
+	var p := _drag_spot(w, c, F, th[0])
+	c.s7_dg = 1
+	job["drg"] = int(c.id)
+	_set_gait(w, e, 3)
+	Wd.start_care(w, e, c, "drag", p)
+	w.emit("SentinelCasualtyDrill", {"id": int(c.id), "by": int(e.id), "owner": int(e.owner), "to": p})
+	return true
+
+
+## Where a downed Sentinel b is dragged: the best cover within drag_r away from the threat tp (or towards the
+## facility when there is no threat). SENT7-5: when there is no cover there (a man hit in the open field), he is
+## dragged further, up to drag_far, away from the threat or back towards the facility (walls, buildings), to the
+## first real cover; only when there is none at all within drag_far does he end up at the near spot.
+static func _drag_spot(w: SimWorld, b: Dictionary, F: Dictionary, tp) -> Vector2:
+	var bp: Vector2 = b.pos
+	var T := _tac()
+	var dr := float(T.get("drag_r", 4.0))
+	var df := float(T.get("drag_far", 8.0))
+	var ov := float(T.get("open_v", 0.35))
+	var team := _team(w, int(b.owner))
+	var dirs := []
+	if tp != null and Vector2(tp).distance_to(bp) > 0.1:
+		dirs.append((bp - Vector2(tp)).normalized())
+	if not F.is_empty() and _home(w, F).distance_to(bp) > 0.1:
+		dirs.append((_home(w, F) - bp).normalized())
+	if dirs.is_empty():
+		return bp
+	var p := _cover_near(w, b, bp + dirs[0] * dr, 2, null)
+	if _cover_v(w, w.cell_of(p), team) >= ov:
+		return p
+	for d in dirs:
+		var q := _cover_near(w, b, bp + Vector2(d) * df, 3, null)
+		if _cover_v(w, w.cell_of(q), team) >= ov and q.distance_to(bp) <= df + 3.0:
+			return q
+	return p
 
 
 ## Mender on a "casualty" job: comes forward (duck-run, sprint under fire) and treats the casualty.

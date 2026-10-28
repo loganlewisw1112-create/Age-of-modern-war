@@ -267,7 +267,7 @@ func test_save_load_round_trip() -> void:
 	var a := _unit(w, "rifleman", 0, Vector2(O.x + 6, O.y + 6) + Vector2(0.5, 0.5))
 	_move(w, [a], Vector2(_north_wall(w, F, O, 6)) + Vector2(0.5, 0.5))
 	w.run_ticks(40)
-	var w2 := SimWorld.from_dict(w.to_dict())
+	var w2 := SimWorld.from_dict(bytes_to_var(var_to_bytes(w.to_dict())))   # ORCH: a real (deep) save / load; the bare to_dict shared the entities dict with w, so units spawned after the copy (drone-bay drones) collided
 	check_eq(w2.state_hash(), w.state_hash(), "loaded world hashes the same")
 	w.run_ticks(120)
 	w2.run_ticks(120)

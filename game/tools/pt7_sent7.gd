@@ -123,6 +123,9 @@ func run(pt) -> void:
 			foes.append(int(en.id))
 	var acc := {}
 	var alarm := false
+	var bshot := false
+	var cas := -1
+	var dshot := false
 	for k in 120:
 		await pt._wait(0.1)
 		mv.join_sim()
@@ -130,6 +133,28 @@ func run(pt) -> void:
 		_merge(acc, _tally(w, me))
 		if k == 40:
 			await _shots(pt, mv, O + Vector2(cs * 0.5, 0.0), "human_assault", [1.0, 1.75])
+			mv.join_sim()
+		if not bshot and k >= 10 and alarm:   # SENT7-5: one of a pair rushes while his buddy covers
+			var bp = _bounding_pair(w, me)
+			if bp != null:
+				bshot = true
+				pt._log("sent7_bounding_seen", true, "pair %d (rushing, gait %d) / %d (covering)" % [int(bp[1]), int(w.entities[int(bp[1])].gait), int(bp[2])])
+				await _shots(pt, mv, bp[0], "bounding", [1.75, 2.5])
+				mv.join_sim()
+		if cas < 0 and k >= 20 and alarm:   # SENT7-5 casualty drill: a man is hit rushing in the open beside his buddy
+			cas = _rush_casualty(w, me)
+			if cas >= 0:
+				var ce0: Dictionary = w.entities[cas]
+				pt._log("sent7_man_down_on_rush", true, "Sentinel %d hit in the open (buddy %d)" % [cas, int(S7.job_of(w, cas).get("bud", -1))])
+				SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(ce0) * 0.9)
+				Wounds.go_down(w, ce0)
+		if cas >= 0 and not dshot and w.entities.has(cas) and (w.entities[cas].has("wdby") or w.entities[cas].has("s7_dg")):
+			dshot = true
+			await pt._wait(0.6)
+			mv.join_sim()
+			if w.entities.has(cas):
+				await _shots(pt, mv, Vector2(w.entities[cas].pos), "casualty_drag", [1.75, 2.5])
+				mv.join_sim()
 	await _shots(pt, mv, O + Vector2(cs * 0.5, 2.0), "human_assault_late", [2.5])
 	pt._log("sent7_alarm_raised", alarm, "facility not secure during the assault")
 	pt._log("sent7_tactics_seen", int(acc.get("hold", 0)) > 0 and int(acc.get("crouch", 0)) > 0, "max at once: holding in cover %d, rushing %d, crouched %d, reloading %d, with targets %d, at stand-to %d" % [
@@ -180,9 +205,12 @@ func run(pt) -> void:
 			await _shots(pt, mv, Vector2(w.entities[runner].pos), "reload_run", [1.75])
 		var done: bool = await pt._wait_until(func(): mv.join_sim(); var e = pt._w().entities.get(runner); return e != null and not bool(e.get("s7_sa", false)) and int(e.get("ammo", 0)) > 0, 25.0)
 		pt._log("sent7_rearmed_at_locker", done, "ammo %d, back on job %s" % [int(w.entities[runner].get("ammo", 0)) if w.entities.has(runner) else -1, str(S7.job_of(w, runner).get("k", ""))])
-	# ---- casualty drill: one of a field pair goes down
-	var cas := -1
-	for id in S7.sentinels_of(w, me):
+	# ---- casualty drill: one of a field pair goes down (SENT7-5: normally already hit on a rush during the assault;
+	# this after-the-fight pick is the fallback)
+	var on_rush := cas >= 0 and w.entities.has(cas)
+	if not on_rush:
+		cas = -1
+	for id in (S7.sentinels_of(w, me) if not on_rush else []):
 		var e: Dictionary = w.entities[int(id)]
 		var j: Dictionary = S.jobs.get(str(id), {})
 		var bd := int(j.get("bud", -1))
@@ -193,18 +221,63 @@ func run(pt) -> void:
 	pt._log("sent7_casualty_pair", cas >= 0, "casualty %d" % cas)
 	if cas >= 0:
 		var ce: Dictionary = w.entities[cas]
-		SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(ce) * 0.9)
-		Wounds.go_down(w, ce)
-		var dragged: bool = await pt._wait_until(func(): mv.join_sim(); var e = pt._w().entities.get(cas); return e != null and e.has("wdby"), 10.0)
-		mv.join_sim()
-		pt._log("sent7_buddy_drags", dragged, "casualty down %s, dragged by %s" % [str(Wounds.is_down(ce)), str(ce.get("wdby", -1))])
-		if dragged:
-			await _shots(pt, mv, Vector2(ce.pos), "casualty_drag", [1.75, 2.5])
+		var dragged := dshot
+		if not on_rush:
+			SimWorld.HotState.set_hp(w, cas, Wounds.unc_hp(ce) * 0.9)
+			Wounds.go_down(w, ce)
+		if not dragged:
+			dragged = await pt._wait_until(func(): mv.join_sim(); var e = pt._w().entities.get(cas); return e != null and (e.has("wdby") or e.has("s7_dg")), 10.0)
+			mv.join_sim()
+			if dragged:
+				await _shots(pt, mv, Vector2(ce.pos), "casualty_drag", [1.75, 2.5])
+		var cbd := int(S.jobs.get(str(cas), {}).get("bud", -1))
+		var cb = w.entities.get(cbd)
+		var wst = w.sys_state.get("wounds")
+		pt._log("sent7_drill_state", true, "casualty %d at %s cover %.2f s7_dg %s; buddy %d alive %s down %s job %s caring %s; threat %s" % [cas, str(ce.pos),
+			S7._cover_v(w, w.cell_of(ce.pos), S7._team(w, me)), str(ce.has("s7_dg")), cbd, str(cb != null), str(cb != null and Wounds.is_down(cb)),
+			str(S.jobs.get(str(cbd), {}).get("k", "")) + "/" + str(S.jobs.get(str(cbd), {}).get("drg", -1)), str(wst != null and (wst.care as Dictionary).has(cbd)), str(S7.threat(w, int(F.id)) != null)])
+		var cov := S7._cover_v(w, w.cell_of(ce.pos), S7._team(w, me))
+		pt._log("sent7_casualty_in_cover", not dragged or cov >= float(S7._tac().get("open_v", 0.35)), "cover %.2f where he was dragged" % cov)
+		pt._log("sent7_buddy_drags", dragged, "casualty %d (hit on a rush: %s) down %s, dragged by %s" % [cas, str(on_rush), str(Wounds.is_down(ce)), str(ce.get("wdby", -1))])
 		var mender: bool = await pt._wait_until(func(): mv.join_sim(); return _mender_near(pt._w(), cas, me), 30.0)
 		mv.join_sim()
 		pt._log("sent7_mender_forward", mender, "Mender at the casualty")
 		if mender:
 			await _shots(pt, mv, Vector2(ce.pos), "mender_treats", [2.5])
+
+
+## A pair under alarm with one man rushing (moving, gait >= 2) and his buddy stationary: [midpoint, rusher, buddy].
+func _bounding_pair(w: SimWorld, me: int):
+	var S = S7.state(w)
+	for id in S7.sentinels_of(w, me):
+		var e: Dictionary = w.entities[int(id)]
+		var bd := int(S.jobs.get(str(id), {}).get("bud", -1))
+		var b = w.entities.get(bd)
+		if b == null or e.has("garrisoned_in") or b.has("garrisoned_in") or Wounds.is_down(b):
+			continue
+		if bool(e.get("moving", false)) and int(e.get("gait", 0)) >= 2 and not bool(b.get("moving", false)) 				and Vector2(b.pos).distance_to(e.pos) <= 12.0:
+			return [(Vector2(e.pos) + Vector2(b.pos)) * 0.5, int(id), bd]
+	return null
+
+
+## A field-pair man rushing in the open (gait >= 2, cover below open_v) with his buddy within two bounds, else -1.
+func _rush_casualty(w: SimWorld, me: int) -> int:
+	var S = S7.state(w)
+	var ov := float(S7._tac().get("open_v", 0.35))
+	var r := 2.0 * float(S7._tac().get("bound_len", 5.0)) + 1.0
+	for id in S7.sentinels_of(w, me):
+		var e: Dictionary = w.entities[int(id)]
+		if e.has("garrisoned_in") or String(e.s7) == "mender" or Wounds.is_down(e):
+			continue
+		if not bool(e.get("moving", false)) or int(e.get("gait", 0)) < 2:
+			continue
+		if S7._cover_v(w, w.cell_of(e.pos), S7._team(w, me)) >= ov:
+			continue
+		var b = w.entities.get(int(S.jobs.get(str(id), {}).get("bud", -1)))
+		if b == null or b.has("garrisoned_in") or Wounds.is_down(b) or Vector2(b.pos).distance_to(e.pos) > r:
+			continue
+		return int(id)
+	return -1
 
 
 func _mender_near(w: SimWorld, cas: int, me: int) -> bool:
