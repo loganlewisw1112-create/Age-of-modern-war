@@ -589,6 +589,622 @@ names are nicknames too, until their own-tongue names are set.
   | 7 Flagship | **The Exodus:** a captured Caravan turned mobile commune and temple, carrying the cult's people |
   | Support | Picker scavenger · Mender hand-repair ship · Unseeder (strips the seed from captured hulls in the field) |
 
+## Expansion round (owner's answers, 2026-10-28)
+Ideas for more depth, dynamism, AI and realism, added one answer at a time.
+
+1. **A war director is the core "living" engine.** It's an unseen AI that reads how you're doing and how you fight,
+   then shapes the pressure on you: counter-offensives, refugee waves, betrayals, weather windows and quiet stretches.
+   This gives every campaign a different rhythm inside the fixed world.
+2. **The director works between the beats.** It controls pressure, events, timing and enemy moves, but never changes
+   an authored story beat, a death scene or a chapter's ending.
+3. **Soldiers stay tactical.** Named soldiers carry experience and wounds only. There's no combat-stress or
+   psychology layer.
+4. **The land changes the war:**
+   - **Seasons and weather:** winter freezes rivers into crossings and kills unsupplied troops; mud season stalls
+     armour; storms ground aircraft. The director times offensives around them.
+   - **Lasting destruction:** shelled ground stays cratered, bridges stay down until rebuilt, forests burn, and cities
+     become ruins you fight through for generations.
+   - **Day and night:** night fighting matters, with night vision, flares, ambushes, and tech that changes who owns the
+     dark.
+   - Not chosen: pollution and fallout as a simulated system.
+5. **Intelligence: simple fog of war.** You see what your units see. There's no aging intel, decoy system or spy war.
+6. **Orders are delayed by distance.** On the regional map, orders travel by courier or radio (faster as eras
+   advance), so far-off fronts react late. If a line is cut, that army keeps acting on its last orders.
+7. **Supply: keep the current setup, and widen the materials.**
+   - **More gathered resources:** add 2–3 new resources (for example fuel and rare metals) that are gathered in every
+     era, so the economy is wider in every battle.
+   - **Rare finds by era:** a few era-specific rare materials found on the regional map (pre-war caches and fuel early;
+     rare earths and oil fields mid-campaign; exotic materials late). They're worth fighting over and unlock special
+     units or tech.
+8. **Threats from inside the dynasty:**
+   - **Succession fights:** when a ruler dies, rival heirs, generals or companion bloodlines can contest the succession,
+     sometimes as a civil war you play.
+   - **Ambitious officers:** famous generated generals may defy you, demand power or attempt a coup if you neglect or
+     humiliate them.
+   - **Factions of your people:** groups such as the army, workers, the faithful and the pro-Machine want different
+     things, and can strike, riot or rebel.
+9. **Enemy AI in battle:**
+   - **Real doctrine per faction:**
+     - Human A: combined arms and recon-by-fire.
+     - Human B: massed armour and artillery.
+     - The Machine: swarms and adapts.
+     - The Coalition: ambushes and runs.
+   - **Retreat and regroup:** enemies break, fall back to better ground, call reinforcements and counter-attack,
+     instead of fighting to the last unit.
+   - **Uses the terrain:** it seeks cover, high ground, night and weather, sets ambushes, and avoids kill zones it has
+     seen before.
+   - Not chosen: interceptable enemy radio chatter.
+10. **How the war is remembered (all four):**
+    - **Memorials in the world:** famous battles leave monuments, cemeteries and named places on the map ("Harlow's
+      Stand"), and later generations fight around them.
+    - **Battle replays:** any battle can be saved and rewatched with a free camera.
+    - **People remember:** characters and enemy generals bring up past events in dialogue and radio ("your grandfather
+      burned this valley").
+    - **A statistics ledger:** casualties, battles won and lost, and cities taken, per chapter and per ruler.
+11. **Offline and private.** The game stays fully offline and single-player, with no shared stats or leaderboards.
+    Your dynasty is yours alone.
+12. **Conduct has consequences:**
+    - **Enemies answer in kind:** if you execute prisoners, enemies stop surrendering and fight to the death; mercy
+      earns surrenders and defectors.
+    - **Civilians remember:** regions you brutalised spawn partisans and refuse to supply you for generations; regions
+      you protected send volunteers.
+    - **Surrender and POWs (owner's addition):** overwhelmed enemies can surrender and be taken as prisoners of war.
+      They are held in a new **prison black site**, a large campus-style facility, smaller than the counter-nanite
+      facility.
+13. **What you can do with POWs at the black site:**
+    - **Interrogate:** reveals enemy positions, plans or tech on the regional map. Harsh methods are faster but count
+      against your conduct.
+    - **Turn them:** some prisoners can be recruited as defectors, bringing their own units and knowledge, at a loyalty
+      risk.
+    - **Labour:** forced work for resources. It's a dark option that counts heavily against conduct and civilian
+      memory.
+    - Not chosen: prisoner exchanges and ransom.
+14. **The black site is part of the war (all four):**
+    - **Rescue raids:** enemies raid your site to free their people, and you can raid theirs. Sites are targets in
+      battle and on the regional map.
+    - **Breakouts:** under-guarded or overcrowded sites can riot and break out, releasing angry prisoners behind your
+      lines.
+    - **A story site:** one authored campaign operation takes place at a black site, for example where the heirs hid
+      witnesses from the cover-ups.
+    - **Capacity limits:** each site holds a fixed number. When it's full, you must refuse surrenders, release
+      prisoners, or worse.
+15. **Time between dynasty chapters: a played-out interlude.**
+    - Between chapters, a short "years pass" sequence runs on the regional map.
+    - You set a few long-term policies: build up, expand, raise the heir.
+    - A summary of events, deaths, births and border changes then plays out before the next chapter.
+16. **Research has three layers:**
+    - **Rediscovery:** much tech is recovered from pre-war ruins and caches, as objectives.
+    - **Exclusive choices:** at key points you pick one branch and lock out another, so each dynasty's arsenal differs.
+    - **Captured tech:** you can capture and reverse-engineer enemy equipment, including Machine and later alien tech.
+17. **Audio beyond the score:**
+    - **Distance-real sound:** gunfire and artillery sound different by distance and terrain (a far crump, a near
+      crack), so you hear a battle over the hill before you see it.
+    - **World soundscape:** the regional map has living ambience: refugee columns, factory noise, and Machine hum that
+      spreads as the creep grows.
+    - Not chosen: voiced soldier callouts.
+18. **Replay value:**
+    - **Different founders:** at the start, you choose a founder background (soldier, engineer, medic, scavenger). It
+      changes your starting companions, early tech and how some story scenes play, while the world stays fixed.
+    - **Endings and key hunts:** the four endings and the hidden key path carry the rest.
+    - Not chosen: campaigns for other factions; challenge modifiers.
+19. **War on the water, at every scale:**
+    - **Rivers** are front lines and highways: boats, ferries, bridges and river crossings under fire.
+    - **Coastal war** comes in later chapters: gunboats, landings and shore batteries.
+    - **A full blue-water navy** with carriers and submarines is its own layer of the war.
+20. **Navies arrive by era:** river boats from the early chapters; coastal craft from Industrial Revival (Chapter 6);
+    the full blue-water navy from Modern Nations (Chapter 8) onward.
+21. **The Healer speaks rarely, and you have to earn it.** At a handful of moments (key fragments, the confession, the
+    final test) it speaks in the founder's voice. It is always ambiguous and never explains itself fully. *This widens
+    the earlier rule that it speaks only once, at the key moment.*
+22. **Cities grow visibly.** Each settlement grows through the eras: camp, town, city, arcology. Its look reflects
+    what you built and what it suffered (war scars, factories, memorials). Big cities become battle maps.
+23. **Long-term goals in the Living World (all three):**
+    - **Ambitions:** big goals you set yourself, with milestones, rewards and story events. Examples: unite the
+      continent, reach the moon, wipe out the Machine, restore every ruined city.
+    - **World crises:** generated crises that every power must answer (plague, famine, a Machine resurgence, the
+      arrivals), which reshuffle alliances.
+    - **A legacy score:** monuments, deeds and stains built up over generations. It's compared only against your own
+      past runs.
+24. **The story is the tutorial.** Chapters 1–3 introduce one system at a time inside the story: scavenging, then the
+    camp, then squads, then the regional map. There's no separate tutorial, and each later system is introduced in the
+    first chapter that uses it.
+25. **Difficulty uses split settings:** one for battle difficulty (the enemy AI) and one for strategic pressure (how
+    hard the war director pushes). These sit on top of the Story and Dynasty modes.
+26. **Saving depends on the mode:**
+    - **Story mode:** save anywhere, in many slots.
+    - **Dynasty mode:** one autosave, taken at every chapter, battle and interlude, with no reloading.
+    - Several separate dynasties can exist side by side.
+27. **The Editor makes skirmish maps only.** It has no campaign or operation tools, and the main campaign is not
+    moddable.
+28. **The UI is in-world and changes by era.** Menus are physical objects in the world: a map table, a field radio, a
+    war room. Their look climbs with the stages:
+    - early: scrawled paper and maps;
+    - industrial era: typewriter and teletype;
+    - modern era: green CRT;
+    - late game: clean holographic.
+29. **Voice tone, three layers:**
+    - **Grounded and clipped by default:** real radio procedure and tired, under-acted voices. Most of the horror lands
+      through restraint.
+    - **Cinematic at key moments:** bigger, dramatic performances and the occasional speech, kept for the story's
+      peaks.
+    - **Shifts by era:** rough and improvised early; formal radio procedure in the modern era; cold and clinical in the
+      late synthetic eras.
+30. **Four companion bloodlines start with the founder in Chapter 1:**
+    - the soldier (the army);
+    - the engineer (industry and tech);
+    - the medic (people and mercy);
+    - the scavenger (scouts and smugglers).
+
+    Each companion starts a family line whose descendants hold that role for generations, and their loyalty can split.
+31. **The founder's background replaces one companion.** The founder backgrounds from item 18 match the companion
+    roles. Whichever role your founder takes, that companion is replaced by a fifth bloodline, the preacher or the
+    merchant. Every run has four companions, but which four changes.
+32. **Era villains are mirrors and grudges.** Some villains reflect what your dynasty could become: a warlord who rules
+    by fear (early), an industrialist who works people to death (mid), a technocrat who'd merge with the Machine
+    (late). Others carry grudges against your bloodline, often as descendants of people your ancestors wronged,
+    including cover-up witnesses. Some villains are both.
+33. **Each ending's cinematic goes from personal to wide.** It opens on your last heir in a quiet personal moment,
+    pulls back across the world you made (memorials, scars, cities), and ends on the sky, setting up space.
+34. **The Shadow Coalition is several movements under one name, with conflicting goals:**
+    - **The victims' cells:** survivors of your dynasty's wars and cover-ups, out for revenge. They're the first to
+      learn your secret, and they use it against you in Chapter 12.
+    - **A Machine-cult wing:** they worship the Machine as humanity's next stage and aid it in Chapters 10–11.
+    - **Profiteers:** the PMC patron sells war to every side and keeps the chaos going for profit.
+    - **The patron's hidden goal:** reaching the station first.
+35. **The patron holds the Coalition together, and its secret breaks it.** The PMC patron secretly funds every wing
+    for its own ends. When the victims' cells learn that the patron is also arming the Machine cult, the coalition
+    fractures. In Chapter 12 or 13, the victims can become reluctant allies against the patron.
+36. **The patron is a war-profiteering syndicate with pre-war roots.** At its core is a pre-war corporation that
+    survived intact in hidden bunkers. It was one of the station's three original builders, and it wants back what it
+    helped make, above all the eye. Around that core, a ruthless war company grew in the ashes. Together they deal in
+    war profit and advanced tech.
+37. **The syndicate's tech (all four):**
+    - **Pre-war prototypes:** weapons hoarded in the bunkers, such as experimental drones, stealth craft and
+      exoskeleton troops. They're few, but they outclass anything of their era.
+    - **Sold to everyone, including you:** the price is debts, favours, or a backdoor in every unit they sell.
+    - **Machine samples:** captured nanite samples they experiment on, producing dangerous, unstable hybrid weapons.
+    - **A secret pre-war launch site that doesn't work (owner's twist):** they hold it but can't make it work, and they
+      don't know why.
+38. **It's dead because of the bloodline lock.** The original founder locked every pre-war launch system to the
+    bloodline key, the same way the Scepter is locked. The syndicate needs your heirs, which is why it hunts them, and
+    why stolen heirs matter so much. Launch systems built after the war aren't locked, so rivals can still reach orbit
+    the slow, costly way.
+39. **The syndicate is run by a board in the bunkers, under a hidden chairman.**
+    - A pre-war board of directors rules from the bunkers; some are kept alive by cryo or crude augmentation.
+    - Below the board are field divisions (contractors, arms dealers, labs), each run by a named executive with their
+      own ambitions.
+    - The board answers to a chairman nobody has seen.
+40. **The chairman is the founder's pre-war rival, now working for the cult.**
+    - Before the war, the founder and this rival answered the alien signal together, and then the founder cut the rival
+      out of the deal.
+    - The rival found the makers' rebel cult and became its agent on Earth.
+    - The rival has been secretly arming humanity to resist the makers. It isn't kindness: humans are tools for the
+      cult's liberation, and for the chairman's revenge on the founder's line.
+41. **The chairman survives in two stages:**
+    - **First, cryo cycling.** Like the founder, they sleep in cryo and wake only for key decisions, so each generation
+      of your heirs meets the "same" chairman.
+    - **Then, a cult-made body.** When cryo stops being enough, the cult rebuilds them with seed-stripped alien
+      biotech: long-lived, scarred and part reptilian. It's a living preview of the arrivals, hidden until the reveal.
+42. **How your dynasty deals with the syndicate (all four):**
+    - **Tempting contracts:** at key moments it offers you prototypes, mercenaries or intel. Accepting helps now, but
+      every deal adds a debt, a backdoor or a favour they'll call in later, sometimes at the worst moment.
+    - **Executives as characters:** named division executives approach you separately. One may defect, another may
+      betray the board, and you can play them against each other.
+    - **War on the syndicate:** you can hunt its bunkers on the regional map. Each one you crack yields prototypes and
+      secrets, but provokes the board.
+    - **The chairman's offer:** late on, the chairman reveals themselves to your heir and offers an alliance against
+      the makers. The price is the founder's legacy.
+43. **The chairman steps out right after the Chapter 12 truth.** After the confession or broadcast, when the world has
+    turned on you and you're most alone, the chairman offers the only hand left. Accepting or refusing shapes Chapter 13.
+44. **What the offer does:**
+    - **Accept:**
+      - syndicate prototypes and troops fight beside you in the finale;
+      - but the chairman gains access to your bloodline key, so the dead launch site wakes;
+      - the Restore path closes, and a unique syndicate-backed Merge variant opens.
+    - **Refuse:**
+      - you fight alone, and the syndicate becomes an enemy in Chapter 13;
+      - the key stays yours, and every ending stays open.
+45. **The syndicate and the Shadow Coalition are one full faction: the Syndicate Shadow Coalition.** In battle and in
+    skirmish, the syndicate's prototypes, exoskeleton troops and stealth drones fight alongside the insurgent cells.
+    This fits G8's "insurgent cells plus a PMC patron", with the patron now being the syndicate.
+46. **The bunkers come in two kinds, plus one last bunker:**
+    - **Archive vaults:** pre-war time capsules with clean corridors, working lights, sleeping board members in cryo,
+      and archives that hold pieces of the founder's and the chairman's shared past. You take them in deep underground
+      squad operations, boarding-style.
+    - **Fortress factories:** huge underground arms plants still running, defended by automated pre-war turrets and
+      prototype guards.
+    - **The chairman's bunker** is the last and the worst.
+47. **When the makers arrive, the syndicate splits:**
+    - **The core becomes the cult's army on Earth.** When the cult reveals itself inside the makers' fleet, the
+      syndicate turns out to be its prepared ground force. Whether that helps you depends on whether you accepted the
+      chairman's offer or burned his bunkers.
+    - **Defecting executives break away.** Some kneel to the makers, and some sell to the highest bidder.
+48. **The soldier companion is the loyal hard man.** A pre-war sergeant, older than the founder and utterly loyal, he
+    carries out the worst of the cover-ups. His line becomes your army's backbone and the keeper of the darkest secrets,
+    which makes it the most dangerous if it turns.
+49. **The engineer companion is the one who suspects.** She's a brilliant self-taught mechanic who recognises pre-war
+    nanite tech in the dead zones and slowly realises the founder knows more than they say. Her line drives your
+    industry and keeps digging, and it's her descendant who finds the founder's files in Chapter 9.
+50. **The medic companion heals everyone.** She treats friend, enemy and civilian alike and refuses to pick sides. Her
+    line runs your hospitals and the black sites' medical wards, and clashes with you over conduct. They're the voice
+    the Healer listens to most.
+51. **The scavenger companion is the survivor who sells.** He's a quick, funny, unreliable kid who knows every ruin
+    and trades with everyone. His line becomes your scouts and smugglers, and the first to do business with the
+    syndicate. That makes them your best link to it, and your likeliest leak.
+52. **The two possible fifth bloodlines:**
+    - **The preacher** leads a faith that grows up around the dead zones. That faith later splits, and its
+      Machine-worshipping wing feeds the Coalition's cult wing.
+    - **The merchant** builds your first economy and quietly works for the syndicate from day one.
+53. **Signature set-pieces:**
+    - **The dam (Chapter 4):** retake the dam and power plant in a flood and a storm. The first nanite flare-up hits
+      the turbines, and the first cover-up follows straight after.
+    - **The city that falls (Chapters 10–11):** a huge urban last stand as the Machine takes one of your growing
+      cities. It ends with an evacuation by river and rail.
+    - **The broadcast night (Chapter 12):** the night the truth comes out. Your capital riots, your own units split
+      live in battle, and the Coalition strikes at the same time.
+    - Not chosen: a set-piece return to the founder's old trench lines in Chapter 7.
+
+### The Syndicate Shadow Coalition in depth (6 questions)
+54. **Doctrine: three layers working together.**
+    - **Cells bleed you:** cheap insurgent cells pin and wear you down with IEDs, ambushes, hit-and-run raids,
+      sabotage and civilian cover.
+    - **The elite strike:** once you're pinned, small syndicate elite units hit the weak point:
+      - exoskeleton squads;
+      - stealth drones;
+      - smart munitions;
+      - pre-war prototypes.
+      They're few and deadly, and every elite loss really hurts them.
+    - **Mercenaries fill the gaps:** units hired per battle from many eras and sources, so their army is never the
+      same twice. Money buys whatever the battle needs.
+    - **In play:** cells are the screen and the bait, mercenaries are the flexible middle, and the elite are the
+      knife. Kill the money or the elite, and the rest falls apart.
+55. **Tech: buy, steal, unseal.** There is no normal research tree. Tech comes from three sources:
+    - **Buy:** units bought with money from war profits.
+    - **Steal:** enemy tech taken through raids, captured gear and bribed engineers.
+    - **Unseal:** pre-war vaults opened to release prototypes.
+56. **Buildings (all four kinds):**
+    - **Hidden and disguised:** cells build safehouses inside civilian buildings and workshops in ruins, linked by
+      tunnels. A base looks like ordinary ruins until it's scouted.
+    - **Bunker hatches:** syndicate structures sit underground, with only hardened hatches, lifts and vents on the
+      surface. Destroying the surface doesn't kill what's below.
+    - **Black markets:** market and broker buildings where mercenaries are hired and stolen tech is traded. They're the
+      faction's economic heart.
+    - **Vault cores:** a rare, unsealed pre-war vault that unlocks prototypes. It's their most valuable and most
+      defended structure.
+57. **Bunkers are fought level by level.** Each major bunker has floors you take one at a time:
+    1. surface hatches;
+    2. barracks and factory floor;
+    3. labs;
+    4. the cryo and archive vault at the bottom.
+
+    Each level is a squad operation, and alarms wake the defences further down.
+58. **Territory is held in the shadows.** The Coalition has no clean borders. Instead it infests regions that others
+    own, spreading influence through towns, black markets and cells. On the map it shows as a creeping stain. Rooting
+    it out takes patrols, policing and winning the locals over.
+59. **Signature units.**
+    - **Chosen:**
+      - **Ghost exo squad:** pre-war exoskeleton troops with active camouflage. Their elite infantry, rare and
+        terrifying.
+      - **Backdoor hacker:** seizes enemy units or turrets that were bought from the syndicate, using the backdoors it
+        sold.
+      - **Hybrid nanite weapon:** an unstable vehicle or weapon built from Machine samples. It's devastating, but it can
+        turn on its own side.
+      - Not chosen: a swarm of armed technicals as the cells' cavalry.
+    - **The owner asked for more.** These are candidates to react to, not yet chosen:
+      - **Mercenary ace:** a hired named commander with their own veteran unit and a price that rises every battle.
+      - **Sleeper cell:** units that sit disguised as civilians inside your towns until activated.
+      - **Prototype walker:** a pre-war heavy walker from a vault core, one per army, and the faction's centrepiece.
+      - **Broker:** a support unit that buys off enemy squads mid-battle, turning them neutral or mercenary.
+      - **Silent rotor:** a stealth helicopter for inserting the ghost exos behind your lines.
+
+#### The ghost exo squad in depth (owner's answers, 2026-10-28)
+60. **Role is chosen by loadout before deploying:**
+    - **Strike:** deep strike and decapitation. Commanders, artillery, radar, depots, and heirs on the field.
+    - **Assault:** breaking fortified positions head-on.
+    - **Recon:** unseen scouting, spotting and sabotage.
+61. **Size, rarity and how the suits last:**
+    - **Three formations:**
+      - the standard 4-operator squad (the per-army cap grows over the campaign; see item 70);
+      - a larger 6-operator squad, limited by cost;
+      - named solo operators, used alone or in pairs, hero-style.
+    - **Suits are pre-war prototypes,** so losses hurt. A damaged or recovered suit can be:
+      - refurbished;
+      - reverse-engineered;
+      - then upgraded.
+    - **Operators can be retrained** into another loadout or formation.
+62. **How the camouflage works (all four rules):**
+    - **Moving breaks it:** operators are near-invisible while still or walking. Sprinting, firing or taking hits makes
+      the camo flicker, so speed costs concealment.
+    - **Limited power:** the camo drains a battery that recharges slowly.
+    - **It can be countered by:**
+      - thermal sights;
+      - sensor towers;
+      - dogs;
+      - recon drones;
+      - rain and smoke, which show their outlines;
+      - the Machine's nanite sense.
+    - **Upgradable:** refurbished or reverse-engineered suits get better camo.
+63. **Armour depends on loadout:**
+    - **Recon:** light and fragile.
+    - **Strike:** medium. It stops rifle fire and shrapnel, but heavy guns cut through.
+    - **Assault:** heavy plating that shrugs off most small arms and light cannon. Only dedicated anti-armour weapons
+      kill it.
+64. **Weapons:**
+    - **Suppressed smart rifles:** integrally suppressed, with smart optics and target tracking. There are no
+      guided rounds that curve around corners; the rounds fly straight.
+    - **Breaching and demolition:** shaped charges, thermite and EMP charges for doors, armour and bunker hatches.
+    - **Close-quarters blades:** powered blades or hydraulic fists for silent kills and boarding actions.
+    - Not chosen: arm-mounted heavy weapons.
+65. **Vehicles (all four chosen, and the owner asked for more):**
+    - **Silent rotor:** a stealth helicopter that inserts and extracts squads behind the lines. It's quiet and flies
+      low, with no heavy guns.
+    - **Ghost runner:** a light, camo-coated fast-attack buggy for four operators, with a quiet electric drive.
+    - **Burrower:** a pre-war tunnelling pod that brings a squad up underneath a base or bunker.
+    - **Stealth APC:** an armoured carrier with a reduced signature, carrying a 6-operator squad and its gear.
+    - **Drop pod:** a high-altitude drop capsule fired from the stealth transport plane, for the deepest strikes.
+      Late eras only.
+    - **River ghost:** a low-profile stealth boat for river and coastal insertions.
+    - **Exo mule:** an unmanned walker that carries ammo, power cells and spare suit parts, so squads can stay out
+      longer.
+    - **Stealth transport plane:** a high-altitude, low-signature plane for long-range drops and extractions.
+    - **Mini-sub:** a swimmer-delivery sub for harbour raids on blue-water navies and ports.
+    - **Ghost drone carrier:** a ground vehicle that launches a swarm of small stealth drones to act as the squad's
+      eyes and decoys.
+    - **Exo recovery truck:** a disguised civilian truck that recovers downed suits and operators from the field.
+    - Not chosen: a disguised rail crawler.
+66. **The operators are a mix:**
+    - **Cryo veterans lead:** pre-war operators woken from bunker cryo, who know little of the world above.
+    - **Mercenaries fill out the ranks:** the syndicate's best, contracted for life.
+    - **Vengeful recruits** from the victims' cells are trained up over time.
+67. **Capturing their suits:**
+    - **Recovering downed suits:** any side can grab a downed suit from the field, and the exo recovery truck races
+      your teams for it. Captured suits feed the "captured tech" research layer.
+    - **A remote kill switch:** syndicate suits carry one. A captured suit may shut down or self-destruct unless your
+      engineers strip the switch out first.
+    - **Your own exos:** late on, Human A can field its own reverse-engineered ghost-exo variant, weaker and less
+      stealthy than the originals.
+    - Not chosen: a dedicated counter-exo unit for every faction. The camo counters from item 62 cover that role.
+68. **Upgrades: suit generations by era, each with module slots.**
+    - **Mk I (Stages 6–8):** crude camo and a short battery.
+    - **Mk II (Stages 9–10):** better camo and a neural link.
+    - **Mk III (Stages 11–13):** near-perfect camo and hybrid parts made from Machine samples, which carry a risk.
+
+    Each Mk comes from refurbishing, reverse-engineering or a vault unsealing. Every suit also has module slots
+    (camo, armour, power, sensors) that can be swapped and upgraded.
+69. **In the story, the ghosts are a rumour first and a named hunter later.**
+    - **Early chapters:** rumours of "ghosts" killing officers. Nobody sees one clearly.
+    - **From Chapter 9:** once the syndicate shows its hand, one named ghost-exo commander stalks your dynasty through
+      Chapters 9–13:
+      - assassination attempts on your heirs;
+      - a raid to steal an heir;
+      - a final duel.
+      This commander is the syndicate's face in the field.
+70. **The ghost-exo force grows from a handful to an army (owner's rule, 2026-10-28):**
+    - **When it first appears in the campaign,** the syndicate has only 4–6 exo squads in total. Every one is precious,
+      and losing one matters.
+    - **Over the middle chapters it builds up** by refurbishing, reverse-engineering, unsealing vaults and training
+      recruits (items 61, 66 and 68).
+    - **By Chapters 12–13 it has 100+ squads** across every specialization and formation, maxed out: Mk III suits,
+      full module slots, veteran operators.
+    - **This makes the syndicate a real threat in the finale.** It lands at the same moment as the broadcast night and
+      the chairman's offer (items 43–44).
+    - **The war director tracks the build-up.** Cracking bunkers, killing the money and recovering suits (items 42, 54
+      and 67) slows it, so a dynasty that fought the syndicate early faces a smaller army at the end.
+    - **This replaces the earlier per-army cap of 2–3 squads.** The cap now scales with the campaign.
+
+#### Exo operations in depth (owner's answers, 2026-10-28)
+71. **Specialist squads.** These sit on top of the strike, assault and recon loadouts (item 60), and the late-game
+    100+ force draws on all of them:
+    - **Sniper/overwatch:** long-range marksman pairs with spotters, holding high ground and covering other squads'
+      approaches and escapes.
+    - **Electronic warfare:** jam radios, blind sensors and drones, spoof radar, and cut command links across an area.
+    - **Snatch team:** captures heirs, officers, engineers or suits alive, and gets them out.
+    - **Combat engineer / sapper:** mines, booby traps, demolishing bridges and depots, and breaching bunkers.
+    - **Combat medic team:** field-repairs suits and stabilises downed operators, so a wounded squad can keep going or
+      be extracted.
+    - **Drone controllers:** run swarms of small attack and recon drones from cover while the operators stay hidden.
+    - **Anti-armour hunters:** carry portable guided anti-tank weapons and mines, and stalk tanks and vehicles.
+    - **Infiltrator / deep cover:** disguised, with no visible suit. They blend in with civilians or enemy troops and
+      plant bugs and charges before a strike.
+72. **Inside a squad: fire-team roles that can split into pairs.**
+    - **The four roles:**
+      - **Leader:** holds the command link and calls in support.
+      - **Point:** leads the way and breaches.
+      - **Gunner:** keeps up sustained fire.
+      - **Specialist:** carries whatever the squad type needs (EW kit, medic kit, anti-tank launcher).
+    - **Losing the leader** cuts off call-ins until another operator takes over.
+    - **Splitting:** on command, the squad splits into two buddy pairs that act as separate micro-teams.
+73. **Every operation runs insertion, approach, action, exfiltration:**
+    1. **Insertion:** by vehicle, burrower, drop or on foot.
+    2. **Approach:** under camo, watching the battery.
+    3. **Action:** the strike, sabotage or snatch.
+    4. **Exfiltration:** out to a pickup point.
+
+    A squad that can't get out is trapped behind your lines and hunted down.
+74. **Suit sensors:**
+    - **Thermal and night vision:** exos see in the dark and through smoke, so they own the night (ties to item 4).
+    - **Acoustic sensing:** they hear footsteps and engines through walls, and locate shooters by sound.
+    - Not chosen: a shared squad picture, and tapping enemy comms. Squads see only what each operator sees.
+75. **What limits time in the field (all four):**
+    - **Suit power:** the camo battery (item 62) plus overall suit power. An operator who runs dry is slow, visible and
+      heavy. Power cells are swapped from the exo mule or from caches.
+    - **Ammo and charges:** squads carry a limited number of rounds, breaching charges and drones. Resupply comes from
+      the mule, air drops or caches.
+    - **Operator fatigue:** long missions tire operators, so aim, camo discipline and reactions all degrade until they
+      rest. This is physical fatigue only; it doesn't add the combat-stress layer turned down in item 3.
+    - **Suit wear:** every mission wears down joints and camo panels, so suits need workshop time between operations.
+76. **A badly hit operator is downed, not dead.**
+    - The suit locks up and protects a badly wounded operator for a short time.
+    - During that time, the squad or a medic team can drag them out, or the enemy can capture both operator and suit.
+    - If the operator is left too long, the kill switch fires to protect the syndicate's secrets.
+77. **How exos fight alongside the rest of the faction (all four patterns):**
+    - **Cells as the distraction:** a cell attack or riot pulls your forces one way while the exos strike somewhere
+      else. This is the faction's signature combined move.
+    - **Exos call in fire:** recon and sniper squads paint targets for syndicate artillery, drones or mercenary
+      strikes.
+    - **Exos open the door:** exos take out gates, radar and AA first, and then mercenaries and cells pour through.
+    - **Covering the escape:** cells and mercenaries hold an exit corridor so the exos can get out.
+78. **Exo AI: the smartest enemy in the game.**
+    - **Patient hunters:** they wait for gaps such as shift changes, night, storms or your army moving out. They pick
+      isolated targets and break off if they're detected, rather than fighting fair.
+    - **They read your defences:** recon probes first, learning where your sensors and dogs are, then routing around
+      them.
+    - **They adapt across battles:** if you keep beating one tactic (say, thermal towers everywhere), they switch to
+      another (EW squads to blind them, burrowers under them).
+    - **They pick priority targets:** whatever hurts you most, such as heirs, named officers, artillery, supply and
+      command posts.
+    - **Even more brains and memory (owner's addition):** they keep a long memory of your dynasty, carried across
+      chapters and generations:
+      - your favourite base layouts, patrol habits and reaction times;
+      - which heirs and officers are careless;
+      - which tricks have already failed against you.
+      They also coordinate several squads on one plan, use feints to test your responses, and set traps for the
+      rescue teams you send.
+79. **On the regional map (all four):**
+    - **No marker until detected:** exo squads don't appear on your map unless detected. You see their effects
+      instead: a depot blown, an officer dead, a bridge down.
+    - **Raids as mini-ops:** some raids trigger a short defensive squad operation for you to fight; others resolve as
+      events.
+    - **Counter-hunts:** you can send hunt operations into regions with signs of exo activity, to find and kill a squad
+      before it strikes.
+    - **Hidden lairs:** exos work from hidden forward caches and safehouses. Finding one ends their reach in that
+      area.
+80. **What keeps them grounded: a maintenance bottleneck.** Suits need specialist techs and parts. A broken workshop
+    or a dead tech grounds squads, which makes syndicate workshops and techs high-value targets.
+    - Not chosen: weight and noise limits, heat signature, or the human-inside limits. Exos are not slowed by mud,
+      noise or heat beyond the camo rules in item 62.
+81. **How they look and sound on the battlefield:**
+    - **A heat-shimmer silhouette:** camouflaged exos show as a faint shimmer, easy to miss but readable to a careful
+      eye. It flickers visibly when they move fast or fire.
+    - **Their own audio cues:** a quiet servo whine and suppressed shots, so sharp-eared players hear them before they
+      see them.
+    - **A reveal moment:** when the camo drops, there's a sharp "decloak" effect and a sting in the score.
+    - Not chosen: a distinct look for each Mk.
+82. **Human A's exos follow a different doctrine.** Human A fields its reverse-engineered suits (item 67) as elite
+    bodyguards for heirs and officers: counter-assassination teams that hunt syndicate ghosts. That keeps the
+    syndicate's offensive stealth unique.
+83. **How operators grow (all three):**
+    - **Ranks:** missions raise rank, improving camo discipline, aim and endurance.
+    - **Specialist certifications:** operators earn certifications that let them switch specialization (the
+      retraining in item 61).
+    - **Named legends:** long-surviving operators become named, with personal traits and a reputation your soldiers
+      fear. Top-rank operators become squad leaders or solo operators.
+84. **The hunter commander is a cover-up orphan.** They are the child of a witness your founder silenced in Chapters
+    4–6, raised by the syndicate and given a suit. The hunt is personal, and it pulls on the cover-up threads.
+85. **How the hunter's story ends depends on conduct, and the hunter can win.**
+    - **Kill them** in the final duel.
+    - **Capture them** for the black site.
+    - **Turn them:** if your dynasty has been merciful and confessed in Chapter 12, they can stand down, or even turn
+      against the syndicate.
+    - **They can win:** in Dynasty mode, the hunter can really kill an heir, which changes your succession for good.
+86. **Where exos come from: one central complex, plus forward outposts.**
+    - **The exo complex:** one huge hidden bunker, with its parts on different levels:
+      - **workshop:** refurbishing, module refits and repairs, the bottleneck from item 80;
+      - **training range:** where recruits train and operators earn certifications;
+      - **cryo wake hall:** where cryo veterans are woken and reconditioned;
+      - **reverse-engineering lab:** studies captured or wrecked suits and Machine samples to build new Mks.
+    - **Forward workshops:** small workshops in the field that handle repairs.
+    - **A campaign-scale target:** finding and cracking the complex cripples the whole exo programme and slows the
+      build-up in item 70.
+87. **Comms depend on the Mk:**
+    - **Mk I: burst radio.** Squads keep radio silence and send short, encrypted bursts. Each burst risks being picked
+      up by your EW or signal towers. Cut their relay (a hidden mast or the silent rotor) and the squads keep acting on
+      their last orders (item 6).
+    - **Mk II and III: a neural link** to command. The squads are never cut off, but the link can be hijacked by a
+      backdoor hacker, and that works in both directions.
+88. **What a hacker can do through the neural link:**
+    - **Available once the link exists:**
+      - **Blind the squad:** cut its sensors or camo for a short window, so your troops can strike.
+      - **Track them:** ride the link to see where the squad is and where it's heading.
+    - **Unlocked only very late:**
+      - **Fire the kill switch:** set off a suit's kill switch remotely.
+      - **Turn an operator:** briefly seize a suit and make it attack its own squad.
+89. **Exos against the Machine and the makers:**
+    - **Against the Machine: fairly effective, with known weaknesses.** Exos can fight it, but they have known
+      vulnerabilities, chief among them the nanite sense that sees through camo (item 62).
+    - **Against the makers: capable, but not enough on their own.** Exos are useful in the arrival war, but they can't
+      beat the makers alone. They need the rest of humanity, or the cult, alongside them.
+90. **Controlling exos as the player (skirmish):**
+    - **Direct control:** you select and order exos like any other unit, with extra tools:
+      - a camo on/off toggle;
+      - a battery gauge;
+      - a route planner that shows the enemy sensor ranges you know about;
+      - one-click exfil to the nearest pickup.
+    - **An optional mission planner** for multi-squad operations. You set insertion, route, target and exfil before
+      launch, then watch it run, stepping in when needed.
+
+#### The exo support corps (owner's answers, 2026-10-28)
+91. **Exo engineers work at two levels:**
+    - **Senior techs at the complex** are rare pre-war suit techs woken from cryo, who train apprentices over the
+      campaign. Each tech raises how many suits can be maintained, so killing or capturing techs is the surest way to
+      choke the build-up in item 70.
+    - **Field techs** go out with squads to do quick repairs. They're soft targets for snipers.
+92. **Training officers, at two levels:**
+    - **Cryo instructors:** a few named pre-war instructors run the training range. Their quality sets how fast
+      recruits rank up and how many certifications are possible. Losing one slows the whole pipeline.
+    - **Veterans rotating in:** named-legend operators (item 83) can leave the field to train recruits. That boosts
+      training at the cost of field strength, so the syndicate has to choose between strength now and growth later.
+93. **Backdoor hackers:**
+    - **Line of sight or a relay:** a hacker has to be near the target, or patched through a relay or an EW squad.
+      Hacks take time, and you can interrupt one by killing or jamming the hacker.
+    - **Hackers grow:** they rank up, getting faster and able to hold more units at once, and the best become named.
+    - **Their targets** are still the backdoors in syndicate-sold gear (item 59) and the neural link (item 88).
+    - Not chosen: a counter-hacking system for stripping backdoors.
+94. **Hybrid nanite weapons: what they are.**
+    - **Nanite grenade or charge:** releases a short-lived nanite cloud that eats armour and electronics in an area,
+      then burns out. It can drift onto your own side.
+    - **Hybrid tank:** a tank with a nanite-grown armour skin that slowly repairs itself, but grows more unstable the
+      more damage it heals.
+    - **Nanite launcher:** artillery that fires seeded shells, creating temporary creep zones that block movement and
+      corrode units.
+    - **Small arms and crewed weapons (owner's addition):**
+      - assault rifles and other guns that fire nanite-laced rounds;
+      - crewed mobile turrets;
+      - other infantry weapons.
+      See item 95.
+    - Not chosen: hybrid exo modules as their own category. The Mk III hybrid parts in item 68 still stand.
+95. **Hybrid small arms and crewed weapons (all four):**
+    - **Corroding rifle rounds:** assault rifles whose nanite-laced rounds keep eating into armour after impact. They're
+      strong against vehicles and suits, but magazines degrade and jam if stored too long.
+    - **Nanite LMG:** a squad machine gun whose rounds leave corroding residue on cover, wearing walls and sandbags
+      away.
+    - **Crewed mobile turret:** a wheeled turret with a crew of two, firing nanite-laced autocannon rounds. It's
+      devastating, but its barrels slowly grow out of shape and need constant tending.
+    - **Nanite shotgun / breacher:** a close-range weapon that dissolves doors, hatches and armour plates, for bunker
+      and boarding fights.
+96. **The cost of hybrid weapons:**
+    - **Handlers get sick:** crews exposed for long periods develop slow nanite sickness, tracked through the wound
+      system.
+    - **Conduct and civilians:** using them near civilians counts against your conduct and against how civilians
+      remember you (item 12).
+    - Not chosen: an instability meter, or drawing the Machine's attention. The weapon-specific quirks in items 94–95
+      (drift, jamming, barrel growth, unstable self-repair) still apply.
+
+#### The cells and the mercenaries (owner's answers, 2026-10-28)
+97. **How insurgent cells operate (all four):**
+    - **They hide among civilians:** cell fighters look like civilians until they act. Attacking them risks civilian
+      casualties and your conduct, and that is their main shield.
+    - **They recruit from grievance:** cells grow fastest in regions you brutalised or neglected (ties to item 12).
+    - **They're cheap and expendable:** light weapons, IEDs and technicals, all low-cost. Losing cells barely hurts
+      the syndicate.
+    - **Each cell has a named local leader.** Killing the leader scatters the cell; capturing them gives you intel.
+98. **The cell toolkit:**
+    - **IEDs and ambushes:** roadside bombs, command-wire triggers and ambushes on convoys, which make supply routes
+      dangerous.
+    - **Suicide drones:** cheap, commercial-style drones rigged with explosives. Cells build them and use them in swarms
+      in later eras.
+    - Not chosen: technicals and shoot-and-scoot mortar or rocket teams.
+99. **Mercenaries (all four):**
+    - **Hired per battle:** before or during a battle, the black market offers a rotating selection of mercenary units
+      for money. They leave when the contract ends.
+    - **Mixed eras and origins:** ex-Human B tank crews, deserters, foreign companies, even ex-Human A veterans, each
+      with their own gear.
+    - **Loyalty is for sale:** they can be outbid. If their employer runs out of money or loses badly, they may switch
+      sides or walk off mid-battle.
+    - **Named companies:** a few mercenary companies have names, reputations, leaders and grudges. They remember who
+      paid them and who betrayed them.
+100. **Your dynasty can hire only the independent named companies,** never the mercenaries the syndicate controls.
+
 ## To do (not yet designed)
 - Nothing open. (The space ship rosters were settled 2026-10-27; see "Space ship rosters" above.)
 
