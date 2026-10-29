@@ -22,8 +22,9 @@ E=./RTS_Age_of_Modern_War.exe
 W="$(cygpath -m "$CLEAN")"
 run() { local n="$1"; shift; mkdir -p "pt_$n"; timeout --kill-after=30 900 $E -- --ui-playtest="$W/pt_$n" "$@" > "pt_$n.log" 2>&1; }
 run lpmode7 --ui-playtest-lpmode7 & run cnfac7 --ui-playtest-cnfac7 & wait
+run lpmenu7 --ui-playtest-lpmenu7 & run lpmap7 --ui-playtest-lpmap7 & wait
 run drone7 --ui-playtest-drone7 & run h & wait
-for f in lpmode7 cnfac7 drone7 h; do
-  echo "== $f | $(grep -E 'NATIVE rts_core' pt_$f.log | head -1) | $(grep -E 'PLAYTEST RESULT' pt_$f.log | tail -1) | errs=$(grep -c 'SCRIPT ERROR' pt_$f.log)"
+for f in lpmode7 lpmenu7 lpmap7 cnfac7 drone7 h; do
+  echo "== $f | $(grep -E 'NATIVE rts_core' pt_$f.log | head -1) | $(grep -E 'PLAYTEST RESULT' pt_$f.log | tail -1) | errs=$(grep -c 'SCRIPT ERROR' pt_$f.log) | load_errs=$(grep -cE 'Error opening file|Failed to load image|Failed loading resource' pt_$f.log)"
 done
 echo PACKAGE_DONE

@@ -960,9 +960,9 @@ func _tex(path: String) -> Texture2D:
 		return _texc[path]
 	var t: Texture2D = null
 	if path != "":
-		if FileAccess.file_exists(path) and path.ends_with(".png"):
-			var img := Image.load_from_file(ProjectSettings.globalize_path(path))
-			if img != null:
+		if path.ends_with(".png"):
+			var img := _load_img(path)   # ORCH: works in exported builds too
+			if img != null and not img.is_empty():
 				t = ImageTexture.create_from_image(img)
 		elif ResourceLoader.exists(path):
 			t = load(path)
@@ -1516,3 +1516,25 @@ func _beacon(c: Vector2, h: float, ang: float, col: Color, beam: bool = true) ->
 ## ran in the last 20 s of game time.
 func seq_focus() -> Vector2:
 	return _focus if stime - _focus_t < 20.0 else Vector2.INF
+
+
+## ORCH (G7 packaged fix): load an image in the editor AND in an exported build. Exported builds have no raw PNG in the
+## .pck (only the imported texture), so Image.load_from_file / FileAccess fail there; fall back to the imported texture.
+static func _load_img(path: String) -> Image:
+	var p := path if path.begins_with("res://") else "res://" + path
+	if FileAccess.file_exists(p):
+		var bytes := FileAccess.get_file_as_bytes(p)
+		if not bytes.is_empty():
+			var im := Image.new()
+			if im.load_png_from_buffer(bytes) == OK:
+				return im
+	if ResourceLoader.exists(p):
+		var t = load(p)
+		if t is Texture2D:
+			var ti := (t as Texture2D).get_image()
+			if ti != null and ti.is_compressed():
+				ti.decompress()
+			if ti != null and not ti.is_empty() and ti.get_format() != Image.FORMAT_RGBA8:
+				ti.convert(Image.FORMAT_RGBA8)
+			return ti
+	return null

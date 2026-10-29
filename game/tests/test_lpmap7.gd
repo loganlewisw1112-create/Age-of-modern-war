@@ -1,5 +1,5 @@
 extends "res://tests/test_base.gd"
-## G7 LPMAP7: the Last Protocol map (sim/maps/last_protocol.gd). Size >= 512; validates on several seeds; same seed =
+## G7 LPMAP7: the Last Protocol map (sim/maps/last_protocol.gd). Size 768 (MAPBIG7, 13.9c-41); validates on several seeds; same seed =
 ## same bytes; layout (rings, walls, gates, plots, facility site, airfield) consistent; every feature reachable by foot
 ## and vehicle; cores / nests / creep placeable through the CREEP7 APIs; map.lp survives var_to_bytes (save + hash);
 ## existing maps unchanged; registration through MapGen once ORCH lands the CR.
@@ -38,12 +38,13 @@ func _map() -> Dictionary:
 
 func test_lpmap7_size_and_valid() -> void:
 	var m := _map()
-	check(int(m.w) >= 512 and int(m.h) >= 512, "map at least 512x512 (is %dx%d)" % [int(m.w), int(m.h)])
+	# MAPBIG7 (13.9c-41, owner "768 x 768"): was "at least 512x512"
+	check(int(m.w) == 768 and int(m.h) == 768, "map is 768x768 (is %dx%d)" % [int(m.w), int(m.h)])
 	check_eq((m.terrain as PackedByteArray).size(), int(m.w) * int(m.h), "terrain bytes = w*h")
 	check_eq(LPM.validate(m), "", "seed 1 validates")
 	for sd in [2, 9, 4242]:
 		check_eq(LPM.validate(LPM.gen(sd, 0)), "", "seed %d validates" % sd)
-	print("  lpmap7 open vehicle cells %d of %d (%.1f%%)" % [int(m.open_cells), 512 * 512, 100.0 * float(m.open_cells) / 262144.0])
+	print("  lpmap7 open vehicle cells %d of %d (%.1f%%)" % [int(m.open_cells), LPM.N * LPM.N, 100.0 * float(m.open_cells) / float(LPM.N * LPM.N)])
 
 
 func test_lpmap7_same_seed_same_bytes() -> void:
@@ -85,7 +86,7 @@ func test_lpmap7_layout_consistent() -> void:
 	var sroad := 0
 	for y in range(site.position.y, site.end.y):
 		for x in range(site.position.x, site.end.x):
-			if not comp.has_point(Vector2i(x, y)) and m.terrain[y * 512 + x] == Terrain.ROAD:
+			if not comp.has_point(Vector2i(x, y)) and m.terrain[y * LPM.N + x] == Terrain.ROAD:
 				sroad += 1
 	check_eq(sroad, site.get_area() - comp.get_area(), "the service road rings the compound")
 	check(LPM.ring_rect(1).grow(-1).encloses(site), "facility site inside the core ring")
@@ -134,7 +135,7 @@ func test_lpmap7_features_present_and_reachable() -> void:
 	var p0: Vector2i = Vector2i(m.spawns[0]) + Vector2i(0, 3)
 	var tg := LPM.targets(m)
 	for mc in ["foot", "vehicle"]:
-		var reach := MapCheck.bfs(MapCheck.passmask(t, mc), 512, 512, p0.y * 512 + p0.x, lay[0], lay[1])
+		var reach := MapCheck.bfs(MapCheck.passmask(t, mc), LPM.N, LPM.N, p0.y * LPM.N + p0.x, lay[0], lay[1])
 		var bad := []
 		for x in tg:
 			if not LPM._near(reach, x[1], int(x[2])):
@@ -260,16 +261,16 @@ func test_base7_logistics_layout() -> void:
 			var bad := 0
 			for hh in range(rr.x, rr.y + 1):
 				for q in LPM._perimeter(hh):
-					if t[q.y * 512 + q.x] != Terrain.ROAD:
+					if t[q.y * LPM.N + q.x] != Terrain.ROAD:
 						bad += 1
 			check_eq(bad, 0, "ring road behind the %s wall is road all the way round" % base.rings[k].name)
 		for g in base.rings[k].gates:
-			check(t[g.y * 512 + g.x] == Terrain.ROAD, "%s gate %s on the gate road" % [base.rings[k].name, g])
+			check(t[g.y * LPM.N + g.x] == Terrain.ROAD, "%s gate %s on the gate road" % [base.rings[k].name, g])
 	for r in base.roads:
 		var nr := 0
 		var pts: Array = LPM._walk(r)
 		for p in pts:
-			if t[p.y * 512 + p.x] == Terrain.ROAD:
+			if t[p.y * LPM.N + p.x] == Terrain.ROAD:
 				nr += 1
 		check_eq(nr, pts.size(), "gate road %s -> %s is road end to end" % [r[0], r[1]])
 	# functional groups
@@ -390,7 +391,7 @@ func test_base7_logistics_layout() -> void:
 				if maxi(absi(q.x - C.x), absi(q.y - C.y)) < lo:
 					continue
 				all += 1
-				if foot.has(q) or t[y * 512 + x] == Terrain.ROAD:
+				if foot.has(q) or t[y * LPM.N + x] == Terrain.ROAD:
 					used += 1
 		var frac := float(used) / float(all)
 		print("BASE7 band %s: %d / %d cells built or road = %.2f" % [base.rings[k].name, used, all, frac])
@@ -568,7 +569,7 @@ func test_base7_2_dropship_pads_fit_the_dropship() -> void:
 		var paved := 0
 		for y in range(lane.position.y, lane.end.y):
 			for x in range(lane.position.x, lane.end.x):
-				if m.terrain[y * 512 + x] == Terrain.ROAD:
+				if m.terrain[y * LPM.N + x] == Terrain.ROAD:
 					paved += 1
 		check_eq(paved, lane.get_area(), "pad %d approach lane paved and open" % i)
 		var cc: Vector2 = air.pad_centres[i]
@@ -594,7 +595,7 @@ func test_base7_2_entry_control_and_patrol_routes() -> void:
 		var c: Vector2i = ob.cell
 		if bool(ob.road):
 			serp += 1
-			check(t[c.y * 512 + c.x] == Terrain.ROAD, "serpentine trap %s on the approach road" % c)
+			check(t[c.y * LPM.N + c.x] == Terrain.ROAD, "serpentine trap %s on the approach road" % c)
 		elif String(ob.def) == "s_barbed_wire":
 			wire += 1
 	check_eq(serp, 12, "a 4-trap serpentine on every outer gate approach")
@@ -604,6 +605,89 @@ func test_base7_2_entry_control_and_patrol_routes() -> void:
 		rings[int(r.ring)] = int(rings.get(int(r.ring), 0)) + 1
 		for p in r.pts:
 			var c := Vector2i(int(floor(p.x)), int(floor(p.y)))
-			check(t[c.y * 512 + c.x] == Terrain.ROAD, "patrol waypoint %s on a ring road" % c)
+			check(t[c.y * LPM.N + c.x] == Terrain.ROAD, "patrol waypoint %s on a ring road" % c)
 	check(int(rings.get(0, 0)) == 4 and int(rings.get(1, 0)) >= 1, "patrol routes: outer walls %d, core %d (13.9c-36: no economy ring)" % [rings.get(0, 0), rings.get(1, 0)])
 	check((base.cameras as Array).size() >= 20, "cameras along every wall (%d; 13.9c-36: about half)" % (base.cameras as Array).size())
+
+
+## MAPBIG7 (13.9c-41, owner 2026-10-28: "768 x 768, base near to top corner of map"; "it should be flat no elevation no
+## rivers"; "the facility isnt centered properly in middle"; "the wall rings arent all secured and generated correctly").
+func test_mapbig7_base_top_corner_flat_centred_closed() -> void:
+	var m := _map()
+	var b: Dictionary = m.lp.base
+	var C: Vector2i = b.center
+	var hf: int = LPM.RING_HALF[0] + LPM.FOOT_PAD
+	check(C.x <= 128 and C.y <= 128, "base near the top (0, 0) corner (C %s)" % [C])
+	check(C.x - hf >= 30 and C.y - hf >= 30, "footprint fully on the map with a 30+ tile margin (C %s, pad %d)" % [C, hf])
+	check_eq(LPM.footprint_issue(m), "", "base footprint flat (one level, no ramps, no water / rock / forest)")
+	check_eq(LPM.ring_issue(b), "", "both rings closed (every perimeter cell a wall, tower or gate) and facility centred")
+	for k in (b.rings as Array).size():
+		var r: Dictionary = b.rings[k]
+		var per := 8 * int(r.half)
+		check_eq((r.wall as Array).size() + (r.towers as Array).size() + (r.gates as Array).size(), per,
+			"ring %s: wall + towers + gates = the %d-cell perimeter" % [r.name, per])
+	var fc := Vector2(b.facility) + Vector2(14.0, 14.0)
+	check(fc.distance_to(Vector2(C) + Vector2(0.5, 0.5)) <= 0.75, "facility centre %s on the base centre" % [fc])
+	var site: Rect2i = b.facility_site
+	check_eq(site.get_center(), C, "facility site centred on C")
+	# the ring-gap check bites: drop one wall cell and it must fail
+	var bb: Dictionary = b.duplicate(true)
+	(bb.rings[0].wall as Array).remove_at(17)
+	check(LPM.ring_issue(bb).find("gap") >= 0, "ring_issue reports a removed wall cell as a gap")
+	var mm: Dictionary = m.duplicate()
+	var hg: PackedByteArray = (m.height as PackedByteArray).duplicate()
+	hg[(C.y + 31) * LPM.N + C.x + 5] = 2
+	mm["height"] = hg
+	check(LPM.footprint_issue(mm) != "", "footprint_issue reports a raised cell")
+	# every core plot of the plan is placed (the re-plan around the centred facility lost nothing)
+	check_eq((b.rings[1].plots as Array).size(), LPM.CORE_PLOTS.size(), "every core plot placed")
+
+
+## MAPBIG7: the Machine side sits away from the base: cores and spawn toward the far corner / far edges.
+func test_mapbig7_machine_far_side() -> void:
+	var m := _map()
+	var C := Vector2(m.lp.base.center)
+	var far := Vector2(LPM.N, LPM.N)
+	check(Vector2(m.lp.machine_spawn).distance_to(far) < 100.0, "Machine spawn near the far corner")
+	for c in m.lp.cores:
+		check(Vector2(c).distance_to(C) > 500.0, "core %s over 500 tiles from the base" % [c])
+	var walker: Vector2 = Vector2(m.lp.cores[int(m.lp.walker_core)])
+	check(walker.x + walker.y > 1100.0, "the walking Heart core toward the far corner (%s)" % [walker])
+	for f in m.lp.fobs:
+		check(not Rect2i(f.rect).intersects(LPM.ring_rect(0).grow(LPM.FOOT_PAD)), "FOB %s off the base footprint" % f.id)
+
+
+## MAPBIG7 (13.9c-41, "the wall rings arent all secured and generated correctly"): on a real Last Protocol start, every
+## perimeter cell of both rings holds a built wall, tower or gate entity (lp_setup.build_rings placed every one).
+func test_mapbig7_rings_built_closed_in_game() -> void:
+	if not MapGen.has_map("last_protocol"):
+		return
+	var LastProtocol = load("res://sim/systems/last_protocol.gd")
+	var w := SimWorld.new_match(LastProtocol.make_config(77, "last_protocol"))
+	if not check(w != null and String(w.map.get("id", "")) == "last_protocol", "LP match on last_protocol starts"):
+		return
+	check_eq(int(w.map.w), LPM.N, "LP match runs on the 768 map")
+	w.run_ticks(2)
+	var at := {}
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		var d := String(e.get("def", ""))
+		if d == "a_wall" or d == "a_wall_tower" or d == "a_gate":
+			at[Vector2i(e.cell)] = d
+	var b: Dictionary = w.map.lp.base
+	for r in b.rings:
+		var miss := []
+		var h := int(r.half)
+		var C: Vector2i = b.center
+		for k in 8 * h:
+			var c: Vector2i
+			var side := k / (2 * h)
+			var o := k % (2 * h)
+			match side:
+				0: c = Vector2i(C.x - h + o, C.y - h)
+				1: c = Vector2i(C.x + h, C.y - h + o)
+				2: c = Vector2i(C.x + h - o, C.y + h)
+				_: c = Vector2i(C.x - h, C.y + h - o)
+			if not at.has(c):
+				miss.append(c)
+		check(miss.is_empty(), "ring %s built closed in game (%d perimeter cells without wall / tower / gate: %s)" % [r.name, miss.size(), str(miss.slice(0, 8))])

@@ -1224,6 +1224,23 @@ mode ... give me that packaged asap in full totality ... leave the rest for next
 its 120 cap for now. The facint7 all-in-one facility flow (skirmish-hosted, last run 97/10: night-assault phase, facility
 security cameras, tactical APC garage return unverified) is parked with it.
 
+#### 13.9c-41 Last Protocol map: 768x768, base near the top corner, flat, centred facility (owner, 2026-10-28)
+Owner, after playing the packaged build: "base isnt correctly mapped out -- it should be flat no elevation no rivers ---
+the facility isnt centered properly in middle -- and the wall rings arent all secured and generated correctly ... our
+last protocal map is fucking tiny (base/facility take up 2/3rds of it --- needs to be wayyyyy bigger". (The run logged a
+128x128 map; the LP map was 512x512 - see PROGRESS. A guard now keeps any skirmish-lobby map out of an LP start and a
+real-menu playtest, lpmenu7, starts LP from the LAST PROTOCOL button.) Owner choice for the map: **"768 x 768, base near
+to top corner of map"**:
+- The Last Protocol map grows 512x512 -> **768x768**.
+- The base sits **near the top corner** (the map's (0,0) corner = the top vertex of the isometric view), with a margin
+  so the outer wall, its cleared field of fire and the approaches are fully on the map.
+- The whole base footprint (both rings, the cleared field of fire, the approaches) is **flat** (no elevation, no ramps)
+  with **no rivers, water, ridges, forest or chasms** inside it.
+- The **facility sits in the exact centre of the base**; both wall rings are **closed and complete** (every wall run,
+  tower and gate generated, no gaps except gates).
+- The Machine side (spawn, the 3 cores, the creep, the river / dam / ridge features, FOBs, traces) is re-laid out over
+  the larger map away from the base (cores toward the far corner), keeping the 60-90 min target run length.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).

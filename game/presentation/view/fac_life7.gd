@@ -174,9 +174,7 @@ func _load_art() -> void:
 
 
 func _add_sheet(id: String, path: String, e: Dictionary) -> void:
-	if not FileAccess.file_exists(path) and not ResourceLoader.exists(path):
-		return
-	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	var img := _load_img(path)   # ORCH: works in exported builds too
 	if img == null or img.is_empty():
 		return
 	var fi := {}
@@ -1617,3 +1615,25 @@ func obstruction_lamp(Lf: Dictionary, i: int) -> Vector2:
 
 func _glow(at: Vector2, rad: float, col: Color) -> void:
 	glows.draw_texture_rect(_glow_tex, Rect2(at - Vector2(rad, rad * 0.75), Vector2(rad * 2.0, rad * 1.5)), false, col)
+
+
+## ORCH (G7 packaged fix): load an image in the editor AND in an exported build. Exported builds have no raw PNG in the
+## .pck (only the imported texture), so Image.load_from_file / FileAccess fail there; fall back to the imported texture.
+static func _load_img(path: String) -> Image:
+	var p := path if path.begins_with("res://") else "res://" + path
+	if FileAccess.file_exists(p):
+		var bytes := FileAccess.get_file_as_bytes(p)
+		if not bytes.is_empty():
+			var im := Image.new()
+			if im.load_png_from_buffer(bytes) == OK:
+				return im
+	if ResourceLoader.exists(p):
+		var t = load(p)
+		if t is Texture2D:
+			var ti := (t as Texture2D).get_image()
+			if ti != null and ti.is_compressed():
+				ti.decompress()
+			if ti != null and not ti.is_empty() and ti.get_format() != Image.FORMAT_RGBA8:
+				ti.convert(Image.FORMAT_RGBA8)
+			return ti
+	return null

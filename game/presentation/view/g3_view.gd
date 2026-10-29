@@ -30,8 +30,7 @@ static func _spec(def_id: String) -> Dictionary:
 	if sh is Dictionary and String(sh.get("file", "")) != "":
 		var p := "res://assets/generated/" + String(sh.file)
 		var img: Image = null
-		if FileAccess.file_exists(p):
-			img = Image.load_from_file(p)
+		img = ArtCatalog._image(p)   # ORCH (G7 packaged fix): raw PNGs are not in an exported .pck
 		if img != null and not img.is_empty():
 			spec.shadow = ImageTexture.create_from_image(img)
 			var pv: Array = sh.get("pivot", [img.get_width() / 2, img.get_height() / 2])

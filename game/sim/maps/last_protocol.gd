@@ -1,15 +1,22 @@
 extends RefCounted
-## G7 (LPMAP7): the Last Protocol map (id "last_protocol", 512x512, master scope sections 10, 13.3, 13.8, 13.9; B10, B16).
+## G7 (LPMAP7): the Last Protocol map (id "last_protocol", 768x768, master scope sections 10, 13.3, 13.8, 13.9; B10, B16).
 ## Hand-authored layout, generated deterministically (same seed = same bytes; the seed only moves the meanders, the
 ## forest / dirt scatter and the world traces, never a ring, plot, core, nest, FOB, relay, set piece or secret).
-## NOT point-symmetric (1v1 against the Machine): the player's walled base sits on the west side, the Machine owns the
-## east. map_gen dispatches validate() here (CR change_request.lp_map_register), MapCheck's mirror/fairness checks
+## NOT point-symmetric (1v1 against the Machine): the player's walled base sits near the top corner (the map's (0, 0)
+## corner = the top vertex of the isometric view), the Machine owns the rest of the map toward the far (768, 768) corner. map_gen dispatches validate() here (CR change_request.lp_map_register), MapCheck's mirror/fairness checks
 ## do not apply; validate() proves reach instead.
-## Geography (512 layout):
-##  - main river N-S at x ~215 (firebreak between home side and Machine land) with 3 bridges + the valley bridge;
-##  - tributary from the NE reservoir west to the main river; the DAM at the reservoir's west end; the flood VALLEY
-##    between dam and main river carries a convoy road (blowing the dam floods it: the route is lost);
-##  - south river from the main river east to the map edge (2 bridges);
+## MAPBIG7 (13.9c-41, owner 2026-10-28: "our last protocal map is fucking tiny ... needs to be wayyyyy bigger"; "768 x 768,
+## base near to top corner of map"; the base "should be flat no elevation no rivers", "the facility isnt centered", "the
+## wall rings arent all secured"): 512 -> 768, the base moved from the west side (104, 256) to C (80, 80) near the top
+## corner, its whole footprint (both rings, the cleared field, the approach roads: Chebyshev <= RING_HALF[0] + 12) flat
+## at the plain level (PLAIN_LEVEL 1, the height CnFacility paves its compound at) with no water / rock / forest / ramps; the facility centred on C; every
+## other feature re-laid out over the bigger map (Machine toward the far corner). Every cell below is on the 768 layout.
+## Geography (768 layout):
+##  - main river on the diagonal x + y ~ 400 (firebreak between the home corner and Machine land), 4 bridges over it
+##    (North, Centre, South + the valley bridge);
+##  - tributary from the NE reservoir west along y ~ 150 to the main river; the DAM at the reservoir's west end; the
+##    flood VALLEY between dam and main river carries a convoy road (blowing the dam floods it: the route is lost);
+##  - south river from the main river south along x ~ 150 to the map edge (2 bridges);
 ##  - 4 ridge ranges (RIDGE rock) with tunnels (roads through the rock), urban areas (city Halden, towns, an
 ##    industrial zone), forest, dead zones (scorched ground), 5 FOBs, 7 scanner relays, the derelict power station,
 ##    3 core zones, 10 seed nests, the 4 secret sites.
@@ -26,35 +33,47 @@ const MapCheck = preload("res://sim/maps/map_check.gd")
 const Elevation = preload("res://sim/systems/elevation.gd")
 
 const ID := "last_protocol"
-const N := 512
+const N := 768
 const LP_VER := 1
 const MAX_SIDES := 2
 const SPAWN_SETS := {"2": [0, 1]}
 const MIN_OPEN := 0.55
 ## Base centre, ring half-sizes (outer, core), facility site.
-const C := Vector2i(104, 256)
+## MAPBIG7 (13.9c-41): near the top corner; margin C - FOOT = 38 tiles to the north / west map edge (the approach roads,
+## obstacle belts and cleared field are fully on the map; the Machine can come round the north and west faces too).
+const C := Vector2i(80, 80)
+## Flat base footprint (13.9c-41): Chebyshev <= RING_HALF[0] + FOOT_PAD from C = both rings, the cleared field (+8), the
+## obstacle belts (+5..+9) and the approach roads (+12). One level (PLAIN_LEVEL), no water / rock / forest / ramps.
+const FOOT_PAD := 12
+## The footprint's single height level: the plain (1). Not 0: CnFacility._clear_site paves the compound at plain height 1,
+## so a level-0 base would sit in a pit with the compound a raised block cut off from its own approach (MAPBIG7 found it:
+## test_path7's APCs could not leave the compound). No river valley (0) or hill (2) comes within 28 tiles of it.
+const PLAIN_LEVEL := 1
 ## LPSHRINK7 (13.9c-36): two rings, was [43, 36, 26] (BASE7-2) / [41, 34, 24] (BASE7) / [70, 55, 37]. PROVISIONAL.
-## The inner half 23 is the floor: the unchanged 32x32 facility site sits off-centre (C-19 .. C+12 in y), the HQ plot
-## west of it, the runway + clear zone (10 rows) and the dropship pad + lane (9 rows) south of it.
+## The inner half 23 is the floor. MAPBIG7 (13.9c-41): the 32x32 facility site is centred on C (C-16 .. C+15 both axes,
+## was C-19 .. C+12 in y), the core ring keeps half 23 (no growth): the HQ plot west of it, the runway + clear zone south-
+## west, the dropship pad + lane south-east, the airfield / quick-reaction strip re-planned into the rows that are left.
 ## LPSHRINK7-2 (13.9c-36 follow-up "Squeeze to ~59"): outer ring road dropped, defence row merged into the turret row;
 ## outer band = economy row 24..26, service lane 27, turret + defence row 28..29, wall 30 -> 61x61 (34 -> 30).
 const RING_HALF := [30, 23]
 const RING_NAMES := ["outer", "core"]
 const FAC := 28
-const FAC_O := Vector2i(90, 239)          # = C - (14, 17): the cn_facility 28x28 compound, 3 north of C (BASE7-2)
+const FAC_O := Vector2i(66, 66)           # = C - (14, 14): the cn_facility 28x28 compound, centred (MAPBIG7, 13.9c-41)
 ## The 40x40 reservation (owner order 2026-10-27, "until ARTCN7-2 posts fact art.dropship_sizes") is resolved: the C-17
 ## dropship sits on the compound's own 6x6 helipad (CNFAC7-2), so BASE7 (13.9b) shrank the site to the 28x28 compound
 ## plus its 2-wide service road (32x32, C - 16 .. C + 15); nothing else is planned inside it.
 const FAC_SITE := 32
-const FAC_SITE_O := Vector2i(88, 237)   # = C - (16, 19): compound + its 2-wide service road (BASE7-2: room for the airfield)
+const FAC_SITE_O := Vector2i(64, 64)    # = C - (16, 16): compound + its 2-wide service road, centred (MAPBIG7, 13.9c-41)
 ## LPFIN7: the facility's own approach glacis (defs_g7_facility.json g7_facility.approach [0, 28, 28, 5], compound-local:
 ## the gate apron + foot-entry serpentine outside its south wall). CnFacility.build paves it at match start, so the map
-## keeps it paved and never plans a building, mast or light on it (rows C+11..C+15, x C-14..C+13; 3 rows past the site).
+## keeps it paved and never plans a building, mast or light on it (MAPBIG7: rows C+14..C+18, x C-14..C+13).
 const FAC_APPROACH := Rect2i(0, 28, 28, 5)
-const PLAYER_SPAWN := Vector2i(85, 256)   # HQ plot in the core ring's west (command) band (start package HQ lands here)
-const MACHINE_SPAWN := Vector2i(480, 356)
+const PLAYER_SPAWN := Vector2i(61, 80)    # = C + (-19, 0): HQ plot in the core ring's west (command) band (start package HQ lands here)
+## MAPBIG7 (13.9c-41): the Machine spawn in the far corner; the North / South cores out on the far east / south edges,
+## the Heart core (the walker) toward the far corner (was 350 tiles from the base, now ~750: walk_path finds the way).
+const MACHINE_SPAWN := Vector2i(715, 715)
 ## Core zones (origins of the 3x3 m_core); index order = core index, the LAST one walks (toward the facility).
-const CORES := [Vector2i(404, 44), Vector2i(420, 468), Vector2i(454, 254)]
+const CORES := [Vector2i(700, 300), Vector2i(300, 700), Vector2i(610, 610)]
 const CORE_NAMES := ["North Core", "South Core", "Heart Core"]
 
 
@@ -137,43 +156,54 @@ static func _pad(t: PackedByteArray, prot: PackedByteArray, c: Vector2i, r: int)
 
 
 # ================================================================ geography
-## Main river (N-S, hw 4), tributary (hw 3) from the NE reservoir to the main river, south river (hw 3.5) to the east
-## edge. Phases come from the seed (meanders move, crossings stay on the authored road lines).
+## Main river (diagonal x + y ~ MAIN_D, hw 4 across the flow), tributary (hw 3) from the NE reservoir west to the main
+## river, south river (hw 3.5) from the main river south to the map edge. Phases come from the seed (meanders move,
+## crossings stay on the authored road lines). MAPBIG7 (13.9c-41): re-laid out for 768 around the top-corner base.
+const MAIN_D := 400
+
+
+static func _main_xc(y: int, p1: float, p2: float) -> float:
+	return float(MAIN_D - y) + 10.0 * sin(float(y) * 0.021 + p1) + 4.0 * sin(float(y) * 0.057 + p2)
+
+
 static func _rivers(t: PackedByteArray, rng: SimRng, geo: Dictionary) -> void:
 	var p1 := rng.randf_range(0.0, TAU)
 	var p2 := rng.randf_range(0.0, TAU)
 	var p3 := rng.randf_range(0.0, TAU)
 	var p4 := rng.randf_range(0.0, TAU)
+	var hw := 4.0 * 1.4142   # hw 4 across a 45-degree flow, measured along a row
 	for y in N:
-		var xc := 215.0 + 9.0 * sin(float(y) * 0.021 + p1) + 3.5 * sin(float(y) * 0.057 + p2)
-		for x in range(int(xc) - 5, int(xc) + 6):
-			if absf(float(x) - xc) <= 4.0:
+		var xc := _main_xc(y, p1, p2)
+		for x in range(maxi(int(xc) - 7, 0), mini(int(xc) + 8, N)):
+			if absf(float(x) - xc) <= hw:
 				t[y * N + x] = Terrain.WATER
-	for x in range(200, N):
-		var yc := 126.0 - float(x - 215) * 0.05 + 3.5 * sin(float(x) * 0.043 + p3)
+	var tx0 := int(_main_xc(150, p1, p2))   # the tributary starts inside the main river
+	for x in range(tx0, 560):
+		var yc := 150.0 + 4.0 * sin(float(x) * 0.043 + p3)
 		for y in range(int(yc) - 4, int(yc) + 5):
 			if absf(float(y) - yc) <= 3.0:
 				t[y * N + x] = Terrain.WATER
-	for y in range(84, 133):
-		for x in range(340, 418):
-			var dx := (float(x) - 378.0) / 36.0
-			var dy := (float(y) - 108.0) / 20.0
+	for y in range(110, 191):   # the reservoir behind the dam
+		for x in range(540, 680):
+			var dx := (float(x) - 610.0) / 64.0
+			var dy := (float(y) - 150.0) / 34.0
 			if dx * dx + dy * dy <= 1.0:
 				t[y * N + x] = Terrain.WATER
-	for x in range(205, N):
-		var yc := 384.0 + float(x - 215) * 0.045 + 5.0 * sin(float(x) * 0.031 + p4)
-		for y in range(int(yc) - 5, int(yc) + 6):
-			if absf(float(y) - yc) <= 3.5:
+	var sy0 := MAIN_D - 150 - 20   # the south river starts inside the main river
+	for y in range(sy0, N):
+		var xc := 150.0 + 5.0 * sin(float(y) * 0.031 + p4)
+		for x in range(int(xc) - 5, int(xc) + 6):
+			if absf(float(x) - xc) <= 3.5:
 				t[y * N + x] = Terrain.WATER
 	geo["river_params"] = [p1, p2, p3, p4]
 
 
-## Ridge ranges (impassable rock, only over grass so rivers stay open).
+## Ridge ranges (impassable rock, only over grass so rivers stay open). MAPBIG7: none inside the base footprint.
 const RIDGES := [
-	[[Vector2i(30, 118), Vector2i(80, 108), Vector2i(150, 114), Vector2i(180, 104)], 3.0],   # home north
-	[[Vector2i(30, 402), Vector2i(90, 396), Vector2i(160, 406), Vector2i(192, 398)], 3.0],   # home south
-	[[Vector2i(300, 300), Vector2i(350, 312), Vector2i(410, 306)], 3.5],                      # Machine middle
-	[[Vector2i(452, 8), Vector2i(448, 40), Vector2i(456, 82)], 3.0],                          # NE, guards the origin site
+	[[Vector2i(210, 18), Vector2i(204, 70), Vector2i(212, 140)], 3.0],                        # home east (t_home_n)
+	[[Vector2i(18, 210), Vector2i(70, 204), Vector2i(140, 212)], 3.0],                        # home south (t_home_s)
+	[[Vector2i(430, 560), Vector2i(500, 574), Vector2i(580, 566)], 3.5],                      # Machine middle (t_mid)
+	[[Vector2i(690, 10), Vector2i(686, 60), Vector2i(694, 120)], 3.0],                        # NE, guards the origin site
 ]
 
 
@@ -203,53 +233,61 @@ static func _bridge(t: PackedByteArray, prot: PackedByteArray, bridges: Array, i
 	bridges.append({"id": id, "name": name, "cell": mid, "cells": cells})
 
 
-## Road net: base gate roads (N/S through the home tunnels, E over the centre bridge to the city and the heart core),
-## the north and south cross roads, the east-bank roads, the valley convoy road and the dam crossing.
+## Road net (MAPBIG7, 768): the east gate road east along y 80 (home-east tunnel, North Bridge, NE tunnel), the south
+## gate road south along x 80 (home-south tunnel, South Bridge), the north gate road round to the east road, the
+## diagonal Centre road from the base's south-east over the Centre Bridge to Halden and the far corner, the valley
+## convoy road (y 172) and the dam crossing, the tributary road, the two south-river crossings, the middle tunnel.
 static func _roads(t: PackedByteArray, prot: PackedByteArray, geo: Dictionary) -> void:
 	var bridges := []
 	var tunnels := []
-	_tunnel(t, prot, "t_home_n", [Vector2i(104, 215), Vector2i(104, 72), Vector2i(104, 50)], tunnels)
-	_tunnel(t, prot, "t_home_s", [Vector2i(104, 297), Vector2i(104, 440), Vector2i(120, 452)], tunnels)
-	_bridge(t, prot, bridges, "b_main_c", "Centre Bridge", [Vector2i(145, 256), Vector2i(430, 256)])
-	_bridge(t, prot, bridges, "b_main_n", "North Bridge", [Vector2i(104, 72), Vector2i(335, 72)])
-	_bridge(t, prot, bridges, "b_main_s", "South Bridge", [Vector2i(104, 440), Vector2i(260, 440), Vector2i(300, 452)])
-	_bridge(t, prot, bridges, "b_trib", "Tributary Bridge", [Vector2i(270, 72), Vector2i(270, 256)])
-	_bridge(t, prot, bridges, "b_valley", "Valley Bridge", [Vector2i(150, 160), Vector2i(335, 160)])
-	_bridge(t, prot, bridges, "b_south_w", "Halden Bridge", [Vector2i(300, 256), Vector2i(300, 470)])
-	_bridge(t, prot, bridges, "b_south_e", "East Bridge", [Vector2i(430, 180), Vector2i(430, 256), Vector2i(430, 480)])
+	_tunnel(t, prot, "t_home_n", [Vector2i(170, 80), Vector2i(250, 80)], tunnels)
+	_tunnel(t, prot, "t_home_s", [Vector2i(80, 170), Vector2i(80, 250)], tunnels)
+	_tunnel(t, prot, "t_mid", [Vector2i(500, 450), Vector2i(500, 700)], tunnels)
+	_tunnel(t, prot, "t_ne", [Vector2i(640, 80), Vector2i(750, 80), Vector2i(750, 40)], tunnels)
+	_bridge(t, prot, bridges, "b_main_c", "Centre Bridge", [Vector2i(160, 80), Vector2i(160, 160), Vector2i(600, 600)])
+	_bridge(t, prot, bridges, "b_main_n", "North Bridge", [Vector2i(122, 80), Vector2i(640, 80)])
+	_bridge(t, prot, bridges, "b_main_s", "South Bridge", [Vector2i(80, 122), Vector2i(80, 700)])
+	_bridge(t, prot, bridges, "b_trib", "Tributary Bridge", [Vector2i(420, 80), Vector2i(420, 420)])
+	_bridge(t, prot, bridges, "b_valley", "Valley Bridge", [Vector2i(160, 172), Vector2i(535, 172)])
+	_bridge(t, prot, bridges, "b_south_w", "Halden Bridge", [Vector2i(80, 520), Vector2i(500, 520)])
+	_bridge(t, prot, bridges, "b_south_e", "Marsh Bridge", [Vector2i(80, 690), Vector2i(705, 690), Vector2i(705, 705)])
 	var dam := []
-	_road(t, prot, [Vector2i(335, 72), Vector2i(335, 200)], 1, Terrain.ROAD, dam)
-	_tunnel(t, prot, "t_mid", [Vector2i(360, 256), Vector2i(360, 350)], tunnels)
-	_tunnel(t, prot, "t_ne", [Vector2i(380, 36), Vector2i(500, 36)], tunnels)
+	_road(t, prot, [Vector2i(535, 80), Vector2i(535, 240)], 1, Terrain.ROAD, dam)
 	var none := []
-	_road(t, prot, [Vector2i(300, 452), Vector2i(430, 452)], 1, -1, none)
-	_road(t, prot, [Vector2i(104, 446), Vector2i(56, 462), Vector2i(42, 474)], 1, -1, none)   # overgrown track to the mech factory
+	_road(t, prot, [Vector2i(80, 38), Vector2i(160, 38), Vector2i(160, 80)], 1, -1, none)   # north gate road round to the east road
+	_road(t, prot, [Vector2i(600, 600), Vector2i(705, 705)], 1, -1, none)                     # on to the Machine spawn (stops short of its pad)
+	_road(t, prot, [Vector2i(80, 700), Vector2i(48, 730), Vector2i(42, 736)], 1, -1, none)    # overgrown track to the mech factory
 	geo["bridges"] = bridges
 	geo["tunnels"] = tunnels
 	geo["dam_cells"] = dam
 
 
-# ================================================================ places (cells on the 512 layout)
-## Forward bases you can retake: [id, name, a_fob origin]. rect = 13x13 outpost area around it.
-const FOBS := [["fob_north", "North Outpost", Vector2i(110, 44)], ["fob_river", "River Outpost", Vector2i(240, 262)],
-	["fob_south", "South Outpost", Vector2i(126, 448)], ["fob_east", "Halden East Outpost", Vector2i(400, 196)],
-	["fob_se", "Foundry Outpost", Vector2i(346, 424)]]
+# ================================================================ places (cells on the 768 layout, MAPBIG7 13.9c-41)
+## Forward bases you can retake: [id, name, a_fob origin]. rect = 13x13 outpost area around it. Two on the home side
+## of the main river, one just over the Centre Bridge, two Machine-held deep in Machine land (machine_held: x + y > 600).
+const FOBS := [["fob_north", "North Outpost", Vector2i(250, 30)], ["fob_river", "River Outpost", Vector2i(240, 240)],
+	["fob_south", "South Outpost", Vector2i(30, 250)], ["fob_east", "Halden East Outpost", Vector2i(560, 330)],
+	["fob_se", "Foundry Outpost", Vector2i(440, 610)]]
+const FOB_MACHINE_HELD := 600   # x + y above this: Machine-held at the start
 ## Scanner relays (old human towers engineers repair).
-const RELAYS := [Vector2i(40, 160), Vector2i(252, 40), Vector2i(276, 206), Vector2i(176, 352), Vector2i(440, 330),
-	Vector2i(470, 436), Vector2i(384, 150)]
-const POWER := Vector2i(262, 464)             # derelict power station (10x8 site from here)
-const SECRETS := {"cache": Vector2i(372, 322), "lost_squad": Vector2i(492, 200), "origin": Vector2i(488, 22),
-	"mech": Vector2i(40, 478)}
+const RELAYS := [Vector2i(30, 300), Vector2i(300, 40), Vector2i(380, 300), Vector2i(250, 450), Vector2i(640, 420),
+	Vector2i(700, 560), Vector2i(560, 240)]
+const POWER := Vector2i(330, 560)             # derelict power station (10x8 site from here)
+const SECRETS := {"cache": Vector2i(480, 420), "lost_squad": Vector2i(740, 400), "origin": Vector2i(740, 30),
+	"mech": Vector2i(40, 740)}
 const SECRET_NAMES := {"cache": "Black-site Bunker", "lost_squad": "Lost Squad Beacon", "origin": "Machine Origin Site",
 	"mech": "Overgrown Mech Factory"}
-const DEAD_ZONES := [[Vector2i(262, 328), 18.0], [Vector2i(468, 150), 16.0], [Vector2i(392, 418), 14.0]]
-const NESTS := [Vector2i(364, 288), Vector2i(364, 332), Vector2i(322, 236), Vector2i(262, 328), Vector2i(468, 150),
-	Vector2i(396, 420), Vector2i(480, 190), Vector2i(300, 60), Vector2i(176, 40), Vector2i(60, 470)]
+const DEAD_ZONES := [[Vector2i(400, 500), 24.0], [Vector2i(700, 220), 22.0], [Vector2i(560, 690), 20.0],
+	[Vector2i(330, 640), 18.0]]
+## Seed nests. MAPBIG7: 10 -> 20 over the 2.25x map (the creep meter is a share of the land: same density, same run).
+const NESTS := [Vector2i(546, 432), Vector2i(546, 498), Vector2i(483, 354), Vector2i(400, 500), Vector2i(700, 220),
+	Vector2i(594, 630), Vector2i(720, 285), Vector2i(450, 90), Vector2i(400, 40), Vector2i(90, 705),
+	Vector2i(300, 380), Vector2i(620, 520), Vector2i(740, 640), Vector2i(640, 740), Vector2i(380, 740),
+	Vector2i(200, 600), Vector2i(560, 40), Vector2i(740, 120), Vector2i(480, 280), Vector2i(250, 300)]
 ## Urban areas: [name, x0, y0, x1, y1, factory share].
-const URBAN := [["Halden", 284, 214, 366, 300, 0.25], ["Northfield", 140, 30, 176, 54, 0.0],
-	["Southmere", 40, 426, 84, 446, 0.0], ["Old Kessel", 436, 204, 476, 238, 0.15],
-	["Foundry Works", 330, 458, 404, 494, 0.8]]
-
+const URBAN := [["Halden", 300, 300, 400, 400, 0.25], ["Northfield", 150, 20, 190, 44, 0.0],
+	["Southmere", 20, 150, 64, 170, 0.0], ["Old Kessel", 600, 280, 640, 314, 0.15],
+	["Foundry Works", 520, 630, 600, 680, 0.8]]
 
 ## Dirt pad of radius r around c (clears rock / forest / water, keeps roads and bridges), protected from the scatter.
 static func _site(t: PackedByteArray, prot: PackedByteArray, c: Vector2i, r: int) -> void:
@@ -313,7 +351,9 @@ static func _places(t: PackedByteArray, prot: PackedByteArray, rng: SimRng, deco
 	for dz in DEAD_ZONES:
 		_disc(t, Vector2(dz[0]), float(dz[1]), Terrain.DIRT, [Terrain.GRASS, Terrain.FOREST])
 		pois.append({"type": "dead_zone", "name": "Dead Zone", "cell": dz[0]})
-	var h0: int = RING_HALF[0] + 8   # BASE7: cleared fields of fire around the outer wall
+	# BASE7: cleared fields of fire around the outer wall; MAPBIG7 (13.9c-41): the whole flat footprint (field, obstacle
+	# belts, approach roads) is open grass + roads, protected from every scatter
+	var h0: int = RING_HALF[0] + FOOT_PAD
 	for y in range(C.y - h0, C.y + h0 + 1):
 		for x in range(C.x - h0, C.x + h0 + 1):
 			if t[y * N + x] != Terrain.ROAD:
@@ -339,12 +379,12 @@ static func _places(t: PackedByteArray, prot: PackedByteArray, rng: SimRng, deco
 	for c in _machine_bases():
 		_site(t, prot, Vector2i(c) + Vector2i(1, 1), 2)
 	_site(t, prot, MACHINE_SPAWN, 5)
-	for k in 300:
+	for k in 675:   # MAPBIG7: 300 / 140 blobs on 512 -> x 2.25 on 768 (same density)
 		var c := Vector2i(rng.randi_range(4, N - 5), rng.randi_range(4, N - 5))
 		var r := rng.randf_range(2.0, 7.0)
 		if prot[_i(c)] == 0:
 			_blob(t, prot, c, r, Terrain.FOREST)
-	for k in 140:
+	for k in 315:
 		var c := Vector2i(rng.randi_range(4, N - 5), rng.randi_range(4, N - 5))
 		var r := rng.randf_range(1.5, 4.0)
 		if prot[_i(c)] == 0:
@@ -367,11 +407,13 @@ static func _machine_bases() -> Array:
 	for c in CORES:
 		for o in [Vector2i(-12, -6), Vector2i(12, -4), Vector2i(-6, 12), Vector2i(10, 10)]:
 			out.append(Vector2i(c) + o)
-	out.append_array([Vector2i(408, 206), Vector2i(354, 432), Vector2i(330, 278), Vector2i(270, 336),
-		Vector2i(460, 160), Vector2i(384, 426), Vector2i(470, 340), Vector2i(318, 96), Vector2i(476, 90),
-		Vector2i(280, 110)])
+	# MAPBIG7 (13.9c-41): 10 -> 22 outlying structures spread over the 2.25x Machine land
+	out.append_array([Vector2i(612, 309), Vector2i(531, 648), Vector2i(495, 417), Vector2i(405, 504),
+		Vector2i(690, 240), Vector2i(576, 639), Vector2i(705, 510), Vector2i(477, 110), Vector2i(714, 135),
+		Vector2i(420, 165), Vector2i(330, 480), Vector2i(470, 690), Vector2i(650, 450), Vector2i(560, 560),
+		Vector2i(380, 620), Vector2i(260, 560), Vector2i(600, 200), Vector2i(740, 380), Vector2i(450, 330),
+		Vector2i(200, 740), Vector2i(330, 350), Vector2i(640, 680)])
 	return out
-
 
 # ================================================================ base layout (map.lp.base)
 ## G7 BASE7-2 (13.9c, owner 2026-10-27: "a fortress laid out for this fight"; builds on BASE7's 13.9b compact rings),
@@ -408,7 +450,12 @@ static func _machine_bases() -> Array:
 const KIND_SIZE := {"refinery": 3, "barracks": 3, "motor_pool": 3, "hospital": 3, "company_hq": 3, "repair_bay": 3,
 	"airfield": 2, "generator": 2, "depot": 2, "research_station": 2, "exo_garage": 2, "artillery": 2, "hangar": 2,
 	"helipad": 2, "sam": 2, "radar": 2, "tower": 2, "ore": 3, "salvage": 3, "vtol_pad": 6, "ciws": 1}
-## Core ring plots: [kind, offset from C] (origins; d <= 22, outside the facility site C-16..C+15 x C-19..C+12).
+## Core ring plots: [kind, offset from C] (origins; d <= 22, outside the facility site C-16..C+15 both axes).
+## MAPBIG7 (13.9c-41): the centred facility moved its site and approach 3 rows south (approach now C+14..C+18), so the
+## old airfield / quick-reaction strip at C+16..18 is gone: the airfield tower stands beside the radar north of the
+## airfield, the fuel point and its CIWS at the runway's east end (C+19..22), the quick-reaction barracks, motor pool and
+## repair bay in the strip south of the approach (C+19..21), the dropship pad 2 east (clear of the site), the SE SAM
+## between the helipad row and the pad. Same kinds and counts as LPSHRINK7; the core ring keeps half 23.
 ## LPSHRINK7: about half of BASE7-2's core (4 -> 2 pits, 3 -> 2 hangars, 3 -> 2 barracks, 2 -> 1 dropship pad,
 ## 3 -> 1 motor pool) plus the 6-pad helipad row (was 2 pads).
 const CORE_PLOTS := [
@@ -418,15 +465,15 @@ const CORE_PLOTS := [
 	# west: command (HQ plot at C-21..C-17 x C-2..C+2), company HQ, exo garage, barracks, radar, SAM, CIWS
 	["sam", Vector2i(-21, -18)], ["exo_garage", Vector2i(-21, -14)], ["company_hq", Vector2i(-21, -9)],
 	["ciws", Vector2i(-20, -4)], ["barracks", Vector2i(-21, 5)], ["radar", Vector2i(-21, 9)],
-	# south-west: airfield (base, 2 hangars in apron row 0, runway y C+20.5), fuel, tower, repair bay, CIWS
-	# (LPFIN7: fuel / tower / repair bay / CIWS one row strip C+16..18, south of the facility approach FAC_APPROACH)
+	# south-west: airfield (base, 2 hangars in apron row 0, runway y C+20.5), its tower beside the radar, the fuel
+	# point and CIWS at the runway's east end (MAPBIG7: clear of FAC_APPROACH C+14..18)
+	["tower", Vector2i(-18, 9)],
 	["airfield", Vector2i(-20, 13)], ["hangar", Vector2i(-20, 15)], ["hangar", Vector2i(-18, 15)],
-	["depot", Vector2i(-14, 16)], ["tower", Vector2i(-11, 16)], ["repair_bay", Vector2i(-8, 16)],
-	["ciws", Vector2i(-4, 17)],
-	# south-east: the dropship landing site east of the facility approach (its lane y C+20..22), the quick-reaction
-	# barracks, the motor pool and SAM in the strip C+16..18 (LPFIN7: all clear of FAC_APPROACH)
-	["vtol_pad", Vector2i(14, 14)], ["barracks", Vector2i(3, 16)], ["motor_pool", Vector2i(7, 16)],
-	["sam", Vector2i(11, 16)],
+	["depot", Vector2i(-5, 19)], ["ciws", Vector2i(-3, 22)],
+	# south-east: the dropship landing site (its lane y C+20..22), the quick-reaction barracks, motor pool and repair
+	# bay in the strip C+19..21 south of the facility approach, the SE SAM above the pad
+	["vtol_pad", Vector2i(16, 14)], ["barracks", Vector2i(3, 19)], ["motor_pool", Vector2i(7, 19)],
+	["repair_bay", Vector2i(11, 19)], ["sam", Vector2i(20, 11)],
 	# east: the helipad row behind the main (east) gate, with its fuel point and tower
 	["helipad", Vector2i(17, -14)], ["helipad", Vector2i(17, -11)], ["helipad", Vector2i(17, -8)],
 	["helipad", Vector2i(17, 3)], ["helipad", Vector2i(17, 6)], ["helipad", Vector2i(17, 9)],
@@ -435,7 +482,7 @@ const AIRFIELD_O := Vector2i(-20, 13)     # a_airfield base (facing 0: apron +y,
 const RUNWAY := [Vector2(-20.0, 20.5), Vector2(-8.0, 20.5)]   # = Airfield.layout_for runway (offsets from C)
 const RUNWAY_CLEAR := Rect2i(-22, 19, 17, 4)   # runway + 2 tiles past each end + 1.5 each side (offsets from C)
 const HANGARS := [Vector2i(-20, 15), Vector2i(-18, 15)]
-const PADS := [Vector2i(14, 14)]
+const PADS := [Vector2i(16, 14)]   # MAPBIG7: was (14, 14), 2 east to clear the centred site
 const PAD_SIZE := 6
 const PAD_LANE := 3   # approach lane depth on the pad's +y side
 ## Economy row (d 24..26) per side: [side, queue]. LPSHRINK7: about half of BASE7-2's economy ring (refineries 8 -> 4,
@@ -648,7 +695,7 @@ static func _base(t: PackedByteArray, resources: Array) -> Dictionary:
 	var hangars := []
 	for hg in HANGARS:
 		hangars.append(C + Vector2i(hg))
-	var air := {"origin": C + AIRFIELD_O, "strip": C + AIRFIELD_O + Vector2i(4, 5), "tower": C + Vector2i(-11, 16),
+	var air := {"origin": C + AIRFIELD_O, "strip": C + AIRFIELD_O + Vector2i(4, 5), "tower": C + Vector2i(-18, 9),
 		"facing_i": 0, "runway": [Vector2(C) + RUNWAY[0], Vector2(C) + RUNWAY[1]], "clear": rc,
 		"hangars": hangars, "pads": pads, "pad_centres": pad_centres, "pad_size": PAD_SIZE, "pad_facing_i": 1,
 		"pad_lanes": lanes}
@@ -748,8 +795,8 @@ static func _cameras(cams: Array, occ: Dictionary, bld: Dictionary, phase: int) 
 	if phase == 0:
 		want.append([PLAYER_SPAWN + Vector2i(0, -4), "w"])
 		want.append([C + Vector2i(-4, 21), "s"])    # airfield, watching the runway
-		want.append([C + Vector2i(13, 22), "s"])    # dropship pad and its lane (LPFIN7: pad moved east, was (10, 22))
-		want.append([C + Vector2i(2, 16), "n"])     # facility gate + the core south gate road (LPFIN7: off the approach)
+		want.append([C + Vector2i(15, 22), "s"])    # dropship pad and its lane (MAPBIG7: pad at (16, 14), was (13, 22))
+		want.append([C + Vector2i(2, 19), "n"])     # facility gate + the core south gate road (MAPBIG7: approach C+14..18)
 	for cx in [-1, 1] if phase == 0 else []:   # LPSHRINK7-2: corner masts before the corner pits (merged row)
 		for cy in [-1, 1]:
 			want.append([C + Vector2i(cx * (h0 - 1), cy * (h0 - 1)), "n" if cy < 0 else "s"])
@@ -965,7 +1012,7 @@ static func gen(seed_value: int, attempt: int) -> Dictionary:
 	for b in bridges:
 		pois.append({"type": "bridge", "name": String(b.name), "cell": b.cell})
 	var dam: Array = geo.dam_cells
-	pois.append({"type": "dam", "name": "Kessel Dam", "cell": dam[dam.size() / 2] if not dam.is_empty() else Vector2i(335, 120)})
+	pois.append({"type": "dam", "name": "Kessel Dam", "cell": dam[dam.size() / 2] if not dam.is_empty() else Vector2i(535, 150)})
 	var m := {
 		"id": ID, "name": "Last Protocol", "size": "xxl", "w": N, "h": N,
 		"terrain": t, "spawns": [PLAYER_SPAWN, MACHINE_SPAWN], "spawn_sets": SPAWN_SETS.duplicate(true),
@@ -1000,7 +1047,7 @@ static func _lp(m: Dictionary, base: Dictionary, geo: Dictionary, rng: SimRng) -
 	for f in FOBS:
 		var c: Vector2i = f[2]
 		fobs.append({"id": String(f[0]), "name": String(f[1]), "cell": c, "rect": Rect2i(c - Vector2i(5, 5), Vector2i(13, 13)),
-			"machine_held": c.x > 300})
+			"machine_held": c.x + c.y > FOB_MACHINE_HELD})
 	var relays := []
 	for i in RELAYS.size():
 		relays.append({"id": "relay_%d" % i, "cell": RELAYS[i]})
@@ -1020,8 +1067,8 @@ static func _lp(m: Dictionary, base: Dictionary, geo: Dictionary, rng: SimRng) -
 	return {"ver": LP_VER, "player_spawn": PLAYER_SPAWN, "machine_spawn": MACHINE_SPAWN, "base": base,
 		"cores": cores, "core_zones": zones, "walker_core": CORES.size() - 1, "nests": nests, "creep": creep,
 		"machine_bases": mb, "fobs": fobs, "relays": relays,
-		"dam": {"cell": dam[dam.size() / 2] if not dam.is_empty() else Vector2i(335, 120), "cells": dam.duplicate(),
-			"flood": Rect2i(222, 132, 110, 40), "route": "b_valley"},
+		"dam": {"cell": dam[dam.size() / 2] if not dam.is_empty() else Vector2i(535, 150), "cells": dam.duplicate(),
+			"flood": DAM_FLOOD, "route": "b_valley"},
 		"bridges": geo.bridges, "power": {"cell": POWER, "rect": Rect2i(POWER, Vector2i(10, 8))},
 		"secrets": secrets, "secrets_info": sinfo, "dead_zones": dead, "tunnels": geo.tunnels, "urban": urban,
 		"world": _world(m.terrain, rng)}
@@ -1030,7 +1077,7 @@ static func _lp(m: Dictionary, base: Dictionary, geo: Dictionary, rng: SimRng) -
 ## Display-side traces (presentation/view/world7_layer.gd): herds, abandoned vehicles, empty camps, distress beacons.
 ## Outside the base square only; seeded (positions move with the seed, counts never do).
 static func _world(t: PackedByteArray, rng: SimRng) -> Dictionary:
-	var h0: int = RING_HALF[0] + 6
+	var h0: int = RING_HALF[0] + FOOT_PAD   # MAPBIG7: no traces anywhere on the flat base footprint
 	var roads := PackedInt32Array()
 	for i in t.size():
 		if t[i] == Terrain.ROAD and _cheb(Vector2i(i % N, i / N)) > h0:
@@ -1055,8 +1102,8 @@ static func _world(t: PackedByteArray, rng: SimRng) -> Dictionary:
 		elif camps.size() < 12 and (code == Terrain.GRASS or code == Terrain.DIRT):
 			camps.append({"cell": c, "tents": rng.randi_range(2, 5)})
 	var beacons := [{"cell": SECRETS.lost_squad, "lost_squad": true}]
-	for c in [Vector2i(250, 300), Vector2i(380, 230), Vector2i(470, 100), Vector2i(330, 480), Vector2i(160, 470),
-			Vector2i(60, 30), Vector2i(500, 300)]:
+	for c in [Vector2i(380, 450), Vector2i(560, 350), Vector2i(700, 160), Vector2i(500, 720), Vector2i(240, 700),
+			Vector2i(330, 20), Vector2i(740, 450)]:   # MAPBIG7: re-laid out for 768 (outside the base footprint)
 		beacons.append({"cell": c, "lost_squad": false})
 	return {"animals": animals, "vehicles": vehicles, "camps": camps, "beacons": beacons}
 
@@ -1064,8 +1111,13 @@ static func _world(t: PackedByteArray, rng: SimRng) -> Dictionary:
 ## Height: level 1 plain; level 0 river valleys (within 5 cells of water) and the dam's flood valley; 6 hills
 ## (level 2); every placed site flattened to its centre's level; ramps on every 0-1 boundary cell, every 3rd 1-2
 ## cell and every path tile, then connect_ramps joins anything left (non-symmetric).
-const HILLS := [[Vector2i(60, 60), 10.0], [Vector2i(250, 196), 8.0], [Vector2i(392, 250), 9.0],
-	[Vector2i(380, 362), 8.0], [Vector2i(482, 470), 8.0], [Vector2i(20, 340), 8.0]]
+## MAPBIG7 (13.9c-41): 6 -> 9 hills over the 768 map, none near the base; the flat footprint is forced to PLAIN_LEVEL
+## after every site, so the base has no elevation change and no ramps.
+const HILLS := [[Vector2i(260, 60), 12.0], [Vector2i(60, 280), 12.0], [Vector2i(380, 240), 10.0],
+	[Vector2i(560, 420), 11.0], [Vector2i(470, 330), 10.0], [Vector2i(700, 470), 10.0], [Vector2i(640, 740), 10.0],
+	[Vector2i(260, 620), 10.0], [Vector2i(740, 180), 9.0]]
+## The dam's flood valley (between the main river and the dam, carrying the valley road y 172).
+const DAM_FLOOD := Rect2i(255, 158, 275, 36)
 
 
 static func _hflat(hg: PackedByteArray, c: Vector2i, r: int) -> void:
@@ -1113,10 +1165,6 @@ static func _height(m: Dictionary) -> void:
 				var p := c + Vector2i(dx, dy)
 				if dx * dx + dy * dy <= r * r and _in(p) and hg[_i(p)] == 1:
 					hg[_i(p)] = 2
-	var h0: int = RING_HALF[0] + 8   # BASE7: cleared fields of fire around the outer wall
-	for y in range(C.y - h0, C.y + h0 + 1):
-		for x in range(C.x - h0, C.x + h0 + 1):
-			hg[y * N + x] = 1
 	var lp: Dictionary = m.lp
 	var sites := [[MACHINE_SPAWN, 6]]
 	for c in lp.cores:
@@ -1135,6 +1183,10 @@ static func _height(m: Dictionary) -> void:
 	for i in N * N:   # water is authored flat at the valley floor
 		if Terrain.is_water(t[i]):
 			hg[i] = 0
+	var hf: int = RING_HALF[0] + FOOT_PAD   # MAPBIG7: the whole base footprint flat at the plain level
+	for y in range(C.y - hf, C.y + hf + 1):
+		for x in range(C.x - hf, C.x + hf + 1):
+			hg[y * N + x] = PLAIN_LEVEL
 	m.height = hg
 	m.ramps = MapUtil.derive_ramps(hg, t, N, N, [1, 3, 3])
 	MapUtil.connect_ramps(m, false)
@@ -1143,8 +1195,8 @@ static func _height(m: Dictionary) -> void:
 static func validate(m: Dictionary) -> String:
 	if not m.has("terrain"):
 		return "Map not generated."
-	if int(m.w) < 512 or int(m.h) < 512:
-		return "Last Protocol map must be at least 512x512 (is %dx%d)." % [int(m.w), int(m.h)]
+	if int(m.w) != N or int(m.h) != N:   # MAPBIG7 (13.9c-41): 768x768 (was: at least 512x512)
+		return "Last Protocol map must be %dx%d (is %dx%d)." % [N, N, int(m.w), int(m.h)]
 	var w := int(m.w)
 	var h := int(m.h)
 	var t: PackedByteArray = m.terrain
@@ -1255,6 +1307,12 @@ static func layout_issue(m: Dictionary) -> String:
 		for g in ring.gates:
 			if not Terrain.passable(t[_i(g)], "vehicle"):
 				return "Ring %s gate %s not passable." % [ring.name, g]
+	var rc := ring_issue(base)
+	if rc != "":
+		return rc
+	var fc := footprint_issue(m)
+	if fc != "":
+		return fc
 	var site: Rect2i = base.facility_site
 	for q in used:
 		if site.has_point(q):
@@ -1265,4 +1323,58 @@ static func layout_issue(m: Dictionary) -> String:
 			econ += 1
 	if econ < 20 or (base.rings[nr - 1].plots as Array).size() < 20:
 		return "Too few plots: economy %d core %d." % [econ, (base.rings[nr - 1].plots as Array).size()]
+	return ""
+
+
+## MAPBIG7 (13.9c-41, owner: "the wall rings arent all secured and generated correctly"): "" or the first gap. Walks
+## every ring's perimeter clockwise: each cell must be exactly one of wall / tower / gate (no gap, no stray cell off the
+## perimeter, no duplicate), gates only in the triples on the gate faces, and the facility compound centred on the rings
+## (its centre within half a tile of the ring centre; 28 is even, the ring is odd).
+static func ring_issue(base: Dictionary) -> String:
+	var ctr := Vector2(base.center) + Vector2(0.5, 0.5)
+	for ring in base.rings:
+		var h := int(ring.half)
+		var kind := {}
+		for key in ["wall", "towers", "gates"]:
+			for c0 in ring[key]:
+				var c: Vector2i = c0
+				if kind.has(c):
+					return "Ring %s cell %s listed twice (%s and %s)." % [ring.name, c, kind[c], key]
+				kind[c] = key
+		var per := _perimeter(h)
+		for c in per:
+			if not kind.has(c):
+				return "Ring %s has a gap at %s (no wall, tower or gate)." % [ring.name, c]
+		if kind.size() != per.size():
+			return "Ring %s lists %d wall cells for a %d-cell perimeter." % [ring.name, kind.size(), per.size()]
+		var gn := (ring.gates as Array).size()
+		if gn == 0 or gn % 3 != 0:
+			return "Ring %s has %d gate cells (want triples)." % [ring.name, gn]
+	var fac := Vector2(base.facility) + Vector2(float(base.facility_size), float(base.facility_size)) * 0.5
+	if fac.distance_to(ctr) > 0.75:
+		return "Facility centre %s is not the base centre %s." % [fac, ctr]
+	return ""
+
+
+## MAPBIG7 (13.9c-41, owner: "it should be flat no elevation no rivers"): "" or the first footprint cell (Chebyshev <=
+## RING_HALF[0] + FOOT_PAD from C: both rings, the cleared field, the obstacle belts, the approach roads) that is off the
+## map, not at PLAIN_LEVEL, a ramp, or water / bridge / rock / forest.
+static func footprint_issue(m: Dictionary) -> String:
+	var t: PackedByteArray = m.terrain
+	var hg: PackedByteArray = m.get("height", PackedByteArray())
+	var rp: PackedByteArray = m.get("ramps", PackedByteArray())
+	var hf: int = RING_HALF[0] + FOOT_PAD
+	for y in range(C.y - hf, C.y + hf + 1):
+		for x in range(C.x - hf, C.x + hf + 1):
+			var q := Vector2i(x, y)
+			if x < 2 or y < 2 or x > N - 3 or y > N - 3:
+				return "Base footprint cell %s off the map." % [q]
+			var i := _i(q)
+			var code := int(t[i])
+			if Terrain.is_water(code) or code == Terrain.BRIDGE or code == Terrain.RIDGE or code == Terrain.FOREST:
+				return "Base footprint cell %s is not open ground (terrain %d)." % [q, code]
+			if not hg.is_empty() and int(hg[i]) != PLAIN_LEVEL:
+				return "Base footprint cell %s at height %d (the base is flat at level %d)." % [q, int(hg[i]), PLAIN_LEVEL]
+			if not rp.is_empty() and int(rp[i]) != 0:
+				return "Base footprint cell %s is a ramp." % [q]
 	return ""

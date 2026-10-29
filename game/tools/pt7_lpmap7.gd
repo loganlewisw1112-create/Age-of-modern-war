@@ -1,5 +1,5 @@
 extends RefCounted
-## G7 LPMAP7 playtest: start Last Protocol on the last_protocol map (512x512), check the layout, the pre-built base,
+## G7 LPMAP7 playtest: start Last Protocol on the last_protocol map (768x768, MAPBIG7), check the layout, the pre-built base,
 ## the cores / nests / creep, then shoot: the overview at full zoom-out, each ring, each core zone, the dam valley,
 ## a creep-warped area next to a purged (recovering) one, the sky at a high creep meter. Frame times are logged
 ## (windowed; not a gate). The warp age is a view-side clock (180 s of creep to full warp): for the warped / recovering
@@ -90,7 +90,10 @@ func run(pt) -> void:
 	pt._log("lpmap7_world_layer_wired", wl != null, "match_view.world7_layer %s (CR change_request.world7_layer)" % ("present" if wl != null else "MISSING"))
 	var cam = mv.get("camera")
 	var C: Vector2 = Vector2(lp.base.center) + Vector2(0.5, 0.5)
-	await _stop(pt, mv, cam, "overview", Vector2(256, 256), 0.04)
+	# MAPBIG7 (13.9c-41): the 768 map's centre, zoomed out to fit it (0.04 framed the 512 map)
+	var mc := Vector2(float(w.map.w), float(w.map.h)) * 0.5
+	var oz := 0.04 * 512.0 / float(w.map.w)
+	await _stop(pt, mv, cam, "overview", mc, oz)
 	# BASE7-3: stops aimed at the BASE7-2 layout (rings 87 / 73 / 53 across = half 43 / 36 / 26, facility 3 north of C,
 	# airfield inside the core ring): the whole base, each wall, the outer gate yard, the airfield and the facility.
 	# LPSHRINK7-2 (13.9c-36): two rings (61x61 outer, 47x47 core), read from the map
@@ -103,6 +106,8 @@ func run(pt) -> void:
 		atmo.set_time_of_day("day")
 		await pt._wait(1.0)
 		await _stop(pt, mv, cam, "base_day", C, 0.32)
+		# MAPBIG7 (13.9c-41): the base's south-east edge by day - outer wall corner, cleared field, flat ground beyond
+		await _stop(pt, mv, cam, "base_edge_flat", C + Vector2(rh[0] + 6.0, rh[0] + 6.0), 0.55)
 		var hps0: Array = (lp.base.get("airfield", {}) as Dictionary).get("helipads", [])
 		if not hps0.is_empty():
 			await _stop(pt, mv, cam, "helipads_day", (Vector2(hps0[1]) + Vector2(hps0[hps0.size() - 2])) * 0.5 + Vector2.ONE, 0.75)
@@ -173,8 +178,8 @@ func run(pt) -> void:
 		await _stop(pt, mv, cam, "beacon_lost_squad", Vector2(lp.secrets.lost_squad) + Vector2(0.5, 0.5), 0.7)
 		var b0: Dictionary = (lp.world.vehicles as Array)[0]
 		await _stop(pt, mv, cam, "abandoned_vehicle", Vector2(b0.cell) + Vector2(0.5, 0.5), 1.2)
-	mv.center_camera_on(Vector2(256, 256))
-	cam.zoom = Vector2(0.04, 0.04)
+	mv.center_camera_on(mc)
+	cam.zoom = Vector2(oz, oz)
 	cam.tick(0.0)
 	var out_worst: float = await _worst(pt, 90)
 	pt._log("lpmap7_zoom_out_frames", true, "worst frame %.1f ms fps %d (full map, pre-built base)" % [out_worst, Engine.get_frames_per_second()])

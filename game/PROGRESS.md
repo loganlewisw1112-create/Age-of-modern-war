@@ -37,6 +37,25 @@ it changed anything, the project was copied to C: (28,241/28,246 files; git fsck
 from git, the 4 lost untracked art-kit review renders are regenerable). **G7 runs on the C: copy; push back to D: only when
 G7 is complete (owner).** Wave 1 relaunching on C:.
 
+## G7 owner play-test follow-up (2026-10-29) — 768 map rebuild + packaging fixes — DELIVERED
+Owner after playing d57bd8d: base not flat (hills, rivers), facility off-centre, rings not closed, map tiny. Their 19:52 game
+log showed a 128x128 map (only skirmish maps are that size; the LP map was 512); not reproduced from the LAST PROTOCOL
+button in source or the packaged build. Fixes:
+- 13.9c-41 (owner choice "768 x 768, base near top corner"): sim/maps/last_protocol.gd N 768, base C (80, 80), facility
+  centred (FAC_O = C - 14), footprint flat (level 1, no water/rock/forest/ramps), map validate() fails on any ring gap,
+  off-centre facility or uneven footprint; Machine spawn (715, 715), cores far side; creep sources scaled for ~85 min.
+- Skirmish lobby map can no longer replace the LP map (skirmish_setup.finalize skips mode last_protocol); new windowed
+  flow lpmenu7 starts LP from the real LAST PROTOCOL button and checks the 768 map.
+- Packaged builds failed to load ~15 PNGs (fac_life7 sprites, 4 CN unit sheets, base props/lights, aircraft shadows:
+  raw Image.load_from_file has no file in a .pck) -> export-safe loads; smoke now counts load errors (0).
+- Sentinels7.seed_facility spread the starting Sentinels over free cells (was one stacked muster point; separation pushed
+  one 0.07 tiles into the barracks: test_path7).
+Evidence (final code): suite 155 files, 1,283 checks, 0 SCRIPT ERROR, 1 red = test_thread snapshot timing probe under
+6-lane load (4/0 x2 alone); test_hot_state 17/17. LP flows lpmenu7 14/0, lpmode7 18/0, lpres7 24/0, lpmap7 45/0. Soak
+seed 77 tide 600 on 768: ending=defeat_countdown at 1,252 s, cores 3/3, 0 errors, 0 invariant failures, 42.59 ms/tick.
+Idle perf: sim 1.132x G6.1 (16.53 vs 18.71 ms), fps 2k p10 72.5, 10k p10 261.0. Package md5 c5db62fe..., clean-folder
+smoke 6 flows all /0, 0 script errors, 0 load errors; Downloads RTS_Age_of_Modern_War_G7 + _2026-10-29.zip.
+
 ## G7 Done-when evidence — FINAL (2026-10-28/29, C: tree, final code) — DELIVERED
 Owner, 2026-10-28: "STOP focusing on the skirmish - I mainly want the end protocol game mode ** give me that packaged asap
 in full totality with everything we've added in DEPTH--- leave the rest for next slice".

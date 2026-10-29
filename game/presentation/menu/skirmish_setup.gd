@@ -395,6 +395,10 @@ func _apply_custom(cfg: Dictionary, sides: Array, reason: String) -> String:
 ## Runs on main_menu.start_requested before main.gd starts the match: scenario rules take the
 ## victory block from the file (the victory builder only knows the skirmish presets).
 func finalize(cfg: Dictionary) -> void:
+	# ORCH (G7 owner bug): Last Protocol has its own map and rules; a custom map picked in the skirmish lobby must never
+	# be swapped into it (it put the LP base on a 128x128 custom map: hills, rivers, broken rings).
+	if String(cfg.get("mode", "")) == "last_protocol":
+		return
 	if not is_custom():
 		return
 	cfg.map_file = custom_path()

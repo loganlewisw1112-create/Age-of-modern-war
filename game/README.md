@@ -198,8 +198,8 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
 ## G7 "Signalborne / Last Protocol" (2026-10-28) — delivered (see PROGRESS G7 evidence)
 Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout, 13.9c-2 … 13.9c-38
 facility, Sentinels, defences and Last Protocol base).
-- **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a tight two-ring base (61x61)
-  around the Counter-Nanite facility against the Machine's nanite creep, which escalates in phases, opens fissures and
+- **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a tight two-ring base (61x61) in
+  the top corner of a 768x768 map, flat, with the Counter-Nanite facility in its exact centre, against the Machine's nanite creep, which escalates in phases, opens fissures and
   canyons with growths rising out of them, sends Weavers and ends in THE TIDE. Strike teams hit nanite cores; ops room on
   F4; protocol advisor card; cinematic intro (skippable in Settings). Six helipads (4 Attack Helicopters, 2 transport
   gunships; the Airlift in a heavy hangar). A 100-Sentinel barracks reserve released in tiers as pressure rises (posts,
@@ -221,21 +221,22 @@ facility, Sentinels, defences and Last Protocol base).
 - **Bases:** compact, function-grouped rings, gate / ring / service roads, floodlights and street lights, cameras with
   real sight, auto turrets at gates and corners.
 - **Status (2026-10-28):**
-  - Tests: full suite 155 files, 1,281 checks, 0 fail, 0 script errors (one clean 6-lane run on the final code).
+  - Tests: full suite 155 files, 1,283 checks, 0 script errors; the one file red in the 6-lane run is test_thread's
+    snapshot timing probe under 6-lane load (passes 4/0 twice alone, as on every earlier run).
   - Determinism: hash goldens re-baselined for G7 (two identical capture runs), test_hot_state 17/17, test_det7 6/6
     (incl. the drone-bay fight replay), test_determinism 5/5.
   - Idle-PC performance (final code):
-    - sim at 2k is 1.14x G6.1 (median of 6 alternating pairs, 21.14 vs 18.55 ms/tick; gate 1.2x);
-    - fps p10 at 2k is 74.3 (gate 60);
-    - fps p10 at 10k zoomed out is 223.9 (gate 30).
-  - Last Protocol soak (seed 77, THE TIDE at 600 s) ran to an ending: defeat on the countdown at 1,269 s, 3/3 cores
-    alive, 1 ring fallen, 0 script errors, 0 invariant failures.
+    - sim at 2k is 1.13x G6.1 (median of 6 alternating pairs, 18.71 vs 16.53 ms/tick; gate 1.2x);
+    - fps p10 at 2k is 72.5 (gate 60);
+    - fps p10 at 10k zoomed out is 261.0 (gate 30).
+  - Last Protocol soak on the 768 map (seed 77, THE TIDE at 600 s) ran to an ending: defeat on the countdown at 1,252 s,
+    3/3 cores alive, 0 script errors, 0 invariant failures, 42.6 ms/tick.
   - Last Protocol windowed playtests (final code): lpmode7 18/0, lpmap7 44/0, lpres7 24/0, ciws7 33/0, dronebay7 33/0,
     sent7 25/0, gate7 20/0, wallturret7 28/0, seq7 22/0, muzzle7 21/0.
-  - Packaged build: exported from the final code (import 0 errors; .pck 79 MB, md5 4d99f6c99c72986f6555f4e5ad1a7689);
-    clean-folder smoke from build/_clean_G7_test with the bundled rts_core 0.5.5: lpmode7 18/0, cnfac7 174/0,
-    drone7 14/0, h 33/0, 0 script errors. Copied to Downloads/Age of Modern War/RTS_Age_of_Modern_War_G7
-    (+ RTS_Age_of_Modern_War_G7_2026-10-28.zip).
+  - Packaged build (2026-10-29, 768 map): import 0 errors; .pck 79 MB, md5 c5db62fe8b6fc78b0e31151bec4c820d. Clean-folder
+    smoke (build/_clean_G7_test, rts_core 0.5.5): lpmode7 18/0, lpmenu7 14/0 (real LAST PROTOCOL button), lpmap7 45/0,
+    cnfac7 174/0, drone7 14/0, h 33/0; 0 script errors, 0 art load errors. Copied to Downloads/Age of Modern War/
+    RTS_Age_of_Modern_War_G7 (+ RTS_Age_of_Modern_War_G7_2026-10-29.zip).
   - Parked for the next slice (owner, 2026-10-28: "STOP focusing on the skirmish"): no population cap in skirmish
     (13.9c-40), the skirmish-hosted all-in-one facility flow facint7 (last run 97/10: night-assault phase, facility
     security cameras, tactical APC garage return unverified).

@@ -288,8 +288,41 @@ static func seed_facility(w: SimWorld, F: Dictionary) -> Array:
 				if not _movement().is_passable(w, c, "foot", _team(w, fid)):
 					c = _movement().nearest_free_cell(w, c, "foot", _team(w, fid))
 				SimWorld.HotState.set_pos(w, uid, Vector2(c) + Vector2(0.5, 0.5))
+	_spread_muster(w, out, home, _team(w, fid))
 	w.emit("SentinelsMustered", {"fac": fac, "owner": fid, "units": out.duplicate()})
 	return out
+
+
+## PATH8: the starting Sentinels that stay outside after seed_facility (the QRF, anyone a full post could not take)
+## were all spawned on the one muster point, 0.6 tiles off the barracks wall; separation then scattered the stack in
+## id-dependent directions and could shove a body into the barracks footprint. Each one gets its own free foot cell
+## nearest the muster point instead (cell centre: 0.5 tiles clear of any blocked neighbour), in unit order; cells
+## already taken by the patrol starts are skipped. Works for any facility placement / barracks orientation.
+static func _spread_muster(w: SimWorld, ids: Array, home: Vector2, team: int) -> void:
+	var mv = _movement()
+	var used := {}
+	var left := []
+	for uid in ids:
+		var e = w.entities.get(int(uid))
+		if e == null or e.has("garrisoned_in"):
+			continue
+		var job: Dictionary = _st(w).jobs.get(str(uid), {})
+		var jk := String(job.get("k", ""))
+		if jk == "wall" or jk == "int":
+			used[w.cell_of(e.pos)] = true
+		else:
+			left.append(int(uid))
+	var hc: Vector2i = w.cell_of(home)
+	var offs: Array = mv._search_offsets()
+	var k := 0
+	for uid in left:
+		while k < offs.size():
+			var c: Vector2i = hc + Vector2i(offs[k])
+			k += 1
+			if not used.has(c) and mv.is_passable(w, c, "foot", team):
+				used[c] = true
+				SimWorld.HotState.set_pos(w, uid, Vector2(c) + Vector2(0.5, 0.5))
+				break
 
 
 static func _home(w: SimWorld, F: Dictionary) -> Vector2:

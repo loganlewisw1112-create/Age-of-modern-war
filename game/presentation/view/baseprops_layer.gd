@@ -40,8 +40,8 @@ func setup(view) -> void:
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	for k in ["street_light", "flood_mast", "glow_warm", "glow_cold", "pad_light"]:
 		var p := ART + "props/%s.png" % k
-		var img := Image.load_from_file(ProjectSettings.globalize_path(p)) if FileAccess.file_exists(p) else null
-		if img != null:
+		var img := _load_img(p)   # ORCH: works in exported builds too
+		if img != null and not img.is_empty():
 			tex[k] = ImageTexture.create_from_image(img)
 	glows = Node2D.new()
 	glows.name = "BasePropGlows"
@@ -225,3 +225,25 @@ func _draw_glows() -> void:
 			"pad":
 				if tex.has("glow_warm"):
 					glows.draw_texture_rect(tex.glow_warm, Rect2(p - Vector2(24, 12), Vector2(48, 24)), false, Color(0.5, 1.0, 0.6, a * 0.5))
+
+
+## ORCH (G7 packaged fix): load an image in the editor AND in an exported build. Exported builds have no raw PNG in the
+## .pck (only the imported texture), so Image.load_from_file / FileAccess fail there; fall back to the imported texture.
+static func _load_img(path: String) -> Image:
+	var p := path if path.begins_with("res://") else "res://" + path
+	if FileAccess.file_exists(p):
+		var bytes := FileAccess.get_file_as_bytes(p)
+		if not bytes.is_empty():
+			var im := Image.new()
+			if im.load_png_from_buffer(bytes) == OK:
+				return im
+	if ResourceLoader.exists(p):
+		var t = load(p)
+		if t is Texture2D:
+			var ti := (t as Texture2D).get_image()
+			if ti != null and ti.is_compressed():
+				ti.decompress()
+			if ti != null and not ti.is_empty() and ti.get_format() != Image.FORMAT_RGBA8:
+				ti.convert(Image.FORMAT_RGBA8)
+			return ti
+	return null
