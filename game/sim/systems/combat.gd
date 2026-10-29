@@ -52,7 +52,9 @@ const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 const Elevation = preload("res://sim/systems/elevation.gd")   # G6: MAX_LEVEL for the native height LOS
 const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")   # G7 WALL7-3 CR 5500: idle defenders hold the wall-walk
 const CnRole7 = preload("res://sim/systems/cn_role7.gd")   # G7 CNROLE7 CR 6046 (13.9c-29): CN teams parked at home never chase
+const WallFire7 = preload("res://sim/systems/wallfire7.gd")   # G7 WALLFIRE7 (13.9c-35): facility walls stop direct fire both ways
 const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B CR 6354 (13.9c-30): turret / mount traverse before fire
+const Roof7 = preload("res://sim/systems/roof7.gd")   # G7 ROOF7 (13.9c-39): roof mounts out of reach of ground melee / demolition
 ## G6 PERF6: height LOS through RtsCombat.height_los (rts_core >= 0.5.0, exact port of Elevation.los_map) while
 ## G6Hooks.los_ok == Elevation.los (its only delegate) and no test spy is set. Off = the GDScript hook.
 static var native_elev := true
@@ -118,6 +120,10 @@ static func stats(e: Dictionary) -> Dictionary:
 		"salvo_gap": float(wd.get("salvo_gap", 0.25)),
 		"front_mult": float(d.get("front_armor_mult", 1.0)),
 	}
+	# G7 ROOF7 (13.9c-39): "roof" = this building is a roof mount; "roof_out" = this shooter's weapon cannot reach one
+	# (melee / demolition from the ground). Pure content, cached per def like the rest.
+	s["roof"] = e.kind == "building" and bool(d.get("roof_mount", false))
+	s["roof_out"] = e.kind == "unit" and Roof7.class_out(String(s.cls)) and not Roof7.shooter_air(e)
 	_stats[key] = s
 	return s
 
@@ -679,7 +685,24 @@ static func _g6_hidden(w: SimWorld, fid: int, c: Dictionary) -> bool:
 static func _rm(w: SimWorld, e: Dictionary, s: Dictionary) -> float:
 	if SimIndex.g6m(w) & SimIndex.G6_RANGE == 0:
 		return 1.0
-	return SimIndex.g6h().range_mult(w, e, s)
+	if SimIndex.g6_spy != null or e.has("s7"):
+		return SimIndex.g6h().range_mult(w, e, s)
+	# PERFSIM7 (perf, exact): G6Hooks.range_mult = Elevation x WallWalk7 x Sentinels7, inlined; Sentinels7's factor is
+	# exactly 1.0 without e.s7 and WallWalk7's without its state, and a x 1.0 changes no float.
+	# Elevation.range_mult is exactly 1.0 off raised ground (level <= PLAIN) or for an is_air weapon: call it only on
+	# a raised cell (same map_level lookup), so every value is the one it returns.
+	var m := 1.0
+	var mp: Dictionary = w.map
+	if mp.has("height") and not bool(s.get("is_air", false)):
+		var ep: Vector2 = e.pos
+		var ex := floori(ep.x)
+		var ey := floori(ep.y)
+		var emw := int(mp.w)
+		if ex >= 0 and ey >= 0 and ex < emw and ey < int(mp.h) and (mp.height as PackedByteArray)[ey * emw + ex] > Elevation.PLAIN:
+			m = Elevation.range_mult(w, e, s)
+	if w.sys_state.has(WallWalk7.KEY):
+		m *= WallWalk7.range_mult(w, e, s)
+	return m
 
 
 ## G6: auto-acquisition radius with the range factor (sight, or max(sight, range x rm) for indirect).
@@ -761,10 +784,15 @@ static func _scan_rm(w: SimWorld, ids: PackedInt32Array, rr: PackedFloat32Array)
 static func _hlos(w: SimWorld, e: Dictionary, t: Dictionary) -> bool:
 	if SimIndex.g6m(w) & SimIndex.G6_LOS == 0:
 		return true
-	if e.kind == "unit" and bool(stats(e).is_air):
-		return true
-	if t.kind == "unit" and bool(stats(t).is_air) and not _landed(t):
-		return true
+	# PERFSIM7 (perf, exact): stats() read through the _stats cache first (the same dict stats() returns)
+	if e.kind == "unit":
+		var se = _stats.get(e.def)
+		if bool((se if se != null else stats(e)).is_air):
+			return true
+	if t.kind == "unit":
+		var sx = _stats.get(t.def)
+		if bool((sx if sx != null else stats(t)).is_air) and not _landed(t):
+			return true
 	if native_elev and SimIndex.g6_spy == null:
 		var ng = w.cache.get("combat_ng")
 		if ng != null and bool(ng.get("hl", false)):
@@ -811,7 +839,8 @@ static func _g5_ok(s: Dictionary, t: Dictionary) -> bool:
 	if s.get("naval_only", false) and not (t.kind == "unit" and bool(Content.unit(String(t.def)).get("naval_ship", false))):
 		return false
 	if t.kind != "unit":
-		return true
+		# G7 ROOF7 (13.9c-39): a melee / demolition ground shooter never picks, keeps or is ordered onto a roof mount
+		return not (bool(s.get("roof_out", false)) and t.kind == "building" and bool(stats(t).get("roof", false)))
 	if t.has("wounded") and bool(t.wounded):
 		return false
 	if bool(stats(t).is_air):
@@ -832,10 +861,22 @@ static func _valid_target(w: SimWorld, fid: int, tid: int, s = null):
 		return t if String(t.get("state", "")) != "ruined" and Fog.is_visible(w, fid, t.pos) else null  # explicit attack on the bridge only (C2: a ruin is never a target)
 	if t == null or (t.kind != "unit" and t.kind != "building") or not w.is_enemy(fid, int(t.owner)):
 		return null
-	if not _seen(w, fid, t):
+	if not Fog.enemy_visible(w, fid, t) or (t.has("hid") and G4bMech.hidden_from(w, fid, t)):   # == _seen (PERFSIM7: enemy known)
 		return null
-	if s != null and not can_target(s, t):
-		return null
+	if s != null:
+		# PERFSIM7 (perf, exact): can_target(s, t) with t's stats read once (the _stats cache dict stats() returns)
+		if t.kind == "unit":
+			var sx = _stats.get(t.def)
+			var ts: Dictionary = sx if sx != null else stats(t)
+			if bool(ts.is_air):
+				if not bool(s.aa) and not _landed(t):
+					return null
+				if not _g5_ok(s, t):
+					return null
+			elif (s.get("naval_only", false) and not bool(Content.unit(String(t.def)).get("naval_ship", false))) or (t.has("wounded") and bool(t.wounded)):
+				return null   # == _g5_ok for a ground unit
+		elif not can_target(s, t):
+			return null
 	return t
 
 
@@ -857,6 +898,7 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 		vis = w.fog[fid].visible
 	var mw := int(w.map.w)
 	var nvis := vis.size()
+	var wf := WallFire7.any(w) and not WallFire7.shooter_exempt(w, e, s)   # G7 WALLFIRE7: never pick a target behind a facility wall
 	var enemy_grids := []
 	for o in grid:
 		if w.is_enemy(fid, int(o)):
@@ -895,12 +937,15 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 								continue  # G2: infantry hidden in forest (A2)
 							if (not aa and bool(stats(c).is_air) and not _landed(c)) or d2 < mr2 or not _g5_ok(s, c):
 								continue  # G3a: air needs anti_air; artillery min_range; G5 air rule / wounded
+							if wf and not WallFire7.cand_ok(w, e, c):
+								continue  # G7 WALLFIRE7 (13.9c-35): behind a facility wall
 							best = c
 							best_d = d2
 							best_id = cid
 					if k == 0:
 						break
 					xx += step
+	var ro := bool(s.get("roof_out", false))   # G7 ROOF7
 	for b in blds:
 		if not w.is_enemy(fid, int(b.owner)):
 			continue
@@ -913,6 +958,10 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 			continue
 		if not w.entities.has(bid) or not Fog.entity_visible(w, fid, b):
 			continue
+		if wf and not WallFire7.cand_ok(w, e, b):
+			continue
+		if ro and bool(stats(b).roof):
+			continue   # G7 ROOF7 (13.9c-39): a roof mount is out of this melee / demolition shooter's reach
 		best = b
 		best_d = d2
 		best_id = bid
@@ -921,6 +970,10 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 
 ## Target search dispatch: native-backed when this tick's RtsGrid holds e, else find_target().
 static var _scan_vis := -1   # G7 INTEG7: 1 = RtsGrid.scan_vis available (rts_core >= 0.5.3)
+static var native_sorted_scan := true   # G7 PERF7L: A/B toggle for RtsGrid.scan_vis_sorted (rts_core >= 0.5.5)
+static var scan_ab := false   # bench: also run the unsorted reference scan and count differing picks
+static var scan_ab_n := 0
+static var scan_ab_diff := 0
 
 
 static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, blds: Array):
@@ -943,6 +996,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var best = null
 	var best_d := INF
 	var best_id := 0
+	var wfe = e if WallFire7.any(w) and not WallFire7.shooter_exempt(w, e, s) else null   # G7 WALLFIRE7 (13.9c-35)
 	var rg = ng.grid
 	var cand := -1
 	var pv = ng.pre.get(int(e.id))
@@ -961,7 +1015,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 		var d2 := INF
 		if c != null:
 			d2 = p.distance_squared_to(Vector2(c.pos))
-		if c != null and _cand_ok(w, fid, c, d2, r2, mr2, aa, vis, mw, s):
+		if c != null and _cand_ok(w, fid, c, d2, r2, mr2, aa, vis, mw, s, wfe):
 			best = c
 			best_d = d2
 			best_id = cand
@@ -982,8 +1036,11 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				# G7 INTEG7 (perf): rts_core >= 0.5.3 pre-filters to visible items of another team (the tests below
 				# repeat, so the legal set and the (distance, id) argmin are the same as with query_radius)
 				if _scan_vis == -1:
-					_scan_vis = 1 if rg.has_method("scan_vis") else 0
-				for cid in (rg.scan_vis(p, radius, mt, vis, mw) if _scan_vis == 1 else rg.query_radius(p, radius)):
+					_scan_vis = (2 if rg.has_method("scan_vis_sorted") else 1) if rg.has_method("scan_vis") else 0
+				# G7 PERF7L: rts_core >= 0.5.5 returns the same ids sorted by (f32 distance_squared_to, id), so the
+				# first legal one is the (distance, id) argmin and the walk stops there (same pick, A/B: scan_ab)
+				var srt := _scan_vis == 2 and native_sorted_scan
+				for cid in (rg.scan_vis_sorted(p, radius, mt, vis, mw) if srt else (rg.scan_vis(p, radius, mt, vis, mw) if _scan_vis >= 1 else rg.query_radius(p, radius))):
 					var ci := nix[cid] if cid < nsz else -1
 					if ci < 0 or nteam[ci] == mt:
 						continue
@@ -995,11 +1052,20 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					if vi < 0 or vi >= nvis or vis[vi] != 1:
 						continue
 					var c3 = ents.get(cid)
-					if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or _g6_hidden(w, fid, c3) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
+					if c3 == null or Fog.concealed_enemy(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or _g6_hidden(w, fid, c3) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
 						continue
+					if wfe != null and not WallFire7.cand_ok(w, wfe, c3):
+						continue   # G7 WALLFIRE7 (13.9c-35): behind a facility wall
 					best = c3
 					best_d = dd
 					best_id = cid
+					if srt:
+						break
+				if scan_ab:
+					var ref := _scan_ref(w, e, s, p, radius, r2, mr2, aa, vis, mw, mt, ng, wfe)
+					scan_ab_n += 1
+					if ref != (best_id if best != null else -1):
+						scan_ab_diff += 1
 				cand = -3   # scanned
 			if SimIndex.profiling:
 				SimIndex.pt("f.scan", tsc)
@@ -1010,7 +1076,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				var dd := p.distance_squared_to(Vector2(c2.pos))
 				if dd > best_d or (dd == best_d and cid > best_id):
 					continue
-				if _cand_ok(w, fid, c2, dd, r2, mr2, aa, vis, mw, s):
+				if _cand_ok(w, fid, c2, dd, r2, mr2, aa, vis, mw, s, wfe):
 					best = c2
 					best_d = dd
 					best_id = cid
@@ -1021,6 +1087,7 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	# G7 LPPERF7: bucketed by EB_CS-tile cells (an entry sits in every cell its rect touches); a query walks only
 	# the cells of its radius box (+1 tile margin), which hold every building with d <= radius. The pick is the
 	# (distance, id) minimum over the same legal set, independent of visit order (a repeat visit changes nothing).
+	var ro := bool(s.get("roof_out", false))   # G7 ROOF7
 	var ebs: Dictionary = ng.eb
 	var eb = ebs.get(fid)
 	if eb == null:
@@ -1056,12 +1123,49 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					continue
 				if not w.entities.has(bid) or not Fog.entity_visible(w, fid, b):
 					continue
+				if wfe != null and not WallFire7.cand_ok(w, wfe, b):
+					continue   # G7 WALLFIRE7 (13.9c-35)
+				if ro and bool(stats(b).roof):
+					continue   # G7 ROOF7 (13.9c-39): a roof mount is out of this melee / demolition shooter's reach
 				best = b
 				best_d = d2b
 				best_id = bid
 	if SimIndex.profiling:
 		SimIndex.pt("f.eb%d" % int(eb.n), tq)
 	return best
+
+
+## G7 PERF7L bench: the pre-PERF7L unsorted scan (scan_vis order, full walk); returns the picked id or -1.
+static func _scan_ref(w: SimWorld, e: Dictionary, s: Dictionary, p: Vector2, radius: float, r2: float, mr2: float, aa: bool, vis: PackedByteArray, mw: int, mt: int, ng: Dictionary, wfe) -> int:
+	var fid := int(e.owner)
+	var nix: PackedInt32Array = ng.idx
+	var npos: PackedVector2Array = ng.npos
+	var nteam: PackedInt32Array = ng.nteam
+	var nsz := nix.size()
+	var nvis := vis.size()
+	var ents: Dictionary = w.entities
+	var rg = ng.grid
+	var best_d := INF
+	var best_id := -1
+	for cid in rg.scan_vis(p, radius, mt, vis, mw):
+		var ci := nix[cid] if cid < nsz else -1
+		if ci < 0 or nteam[ci] == mt:
+			continue
+		var cp: Vector2 = npos[ci]
+		var dd := p.distance_squared_to(cp)
+		if dd > best_d or (dd == best_d and cid > best_id) or dd > r2 or dd < mr2:
+			continue
+		var vi := floori(cp.y) * mw + floori(cp.x)
+		if vi < 0 or vi >= nvis or vis[vi] != 1:
+			continue
+		var c3 = ents.get(cid)
+		if c3 == null or Fog.concealed(w, fid, c3) or (c3.has("hid") and G4bMech.hidden_from(w, fid, c3)) or _g6_hidden(w, fid, c3) or (not aa and bool(stats(c3).is_air) and not _landed(c3)) or not _g5_ok(s, c3):
+			continue
+		if wfe != null and not WallFire7.cand_ok(w, wfe, c3):
+			continue
+		best_d = dd
+		best_id = cid
+	return best_id
 
 
 const EB_CS := 16.0   # G7 LPPERF7: enemy-building bucket size (tiles)
@@ -1096,7 +1200,7 @@ static func _eb_grid(w: SimWorld, fid: int, blds: Array, mw: int, mh: int) -> Di
 
 
 ## The per-candidate filters of find_target (range, visible cell, alive, concealment, air, min_range).
-static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float, mr2: float, aa: bool, vis: PackedByteArray, mw: int, s: Dictionary = {}) -> bool:
+static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float, mr2: float, aa: bool, vis: PackedByteArray, mw: int, s: Dictionary = {}, wfe = null) -> bool:
 	if d2 > r2 or d2 < mr2:
 		return false
 	var cp: Vector2 = c.pos
@@ -1105,7 +1209,7 @@ static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float,
 		return false
 	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)) or _g6_hidden(w, fid, c):
 		return false
-	return (aa or not bool(stats(c).is_air) or _landed(c)) and _g5_ok(s, c)
+	return (aa or not bool(stats(c).is_air) or _landed(c)) and _g5_ok(s, c) and (wfe == null or WallFire7.cand_ok(w, wfe, c))   # G7 WALLFIRE7: wfe = shooter, set while a facility wall can block it
 
 
 static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:
@@ -1118,17 +1222,21 @@ static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:
 static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, blds: Array):
 	if _no_search:
 		return null  # REDUCED unit: no enemy can be within radius (Tiers contact bound)
-	var s := stats(e)
+	var sv = _stats.get(e.def)
+	var s: Dictionary = sv if sv != null else stats(e)
 	var cur = _valid_target(w, int(e.owner), int(e.target), s)
 	if cur != null:
 		var d := dist_to(e.pos, cur)
 		if d > radius or d < float(s.min_range):
 			cur = null
-		elif d <= float(stats(e).range) * _rm(w, e, s):
-			if not _scan_due(w, e, SCAN_EVERY_ENGAGED):
+		else:
+			# PERFSIM7 (perf, exact): SCAN_EVERY_ENGAGED is a multiple of SCAN_EVERY, so off the SCAN_EVERY slot
+			# both branches keep cur and on the engaged slot both rescan; only in between does the in-range
+			# test (and its _rm, a pure read) decide.
+			if not _scan_due(w, e, SCAN_EVERY):
 				return cur
-		elif not _scan_due(w, e, SCAN_EVERY):
-			return cur
+			if not _scan_due(w, e, SCAN_EVERY_ENGAGED) and d <= float(s.range) * _rm(w, e, s):
+				return cur
 	elif int(e.target) < 0 and not _scan_due(w, e, SCAN_EVERY):
 		return null  # nothing tracked: wait for this shooter's scan slot
 	if SimIndex.profiling:
@@ -1307,7 +1415,7 @@ static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, ca
 	var mr: float = s.min_range
 	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
 	# G3a: indirect fire ignores the ridge check but needs d >= min_range.
-	if d <= float(s.range) * _rm(w, e, s) and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not Fortify.fire_blocked(w, e, t) and _hlos(w, e, t))):
+	if d <= float(s.range) * _rm(w, e, s) and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not WallFire7.blocked(w, e, s, t) and _hlos(w, e, t))):
 		if e.moving:
 			Movement.stop_path(e)
 		_fire(w, e, s, t, true)  # line of fire just checked (positions unchanged since)
@@ -1361,7 +1469,7 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if not Traverse7.lay(w, e, t.pos, float(s.cooldown), bool(s.indirect), int(t.id)):   # + TURRET7B CR 6480: no free swing onto a new target
 		return   # G7 TURRET7B CR 6354 (13.9c-30): the turret / mount traverses onto the target first (holds fire until laid)
 	var indirect: bool = s.indirect
-	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or Fortify.fire_blocked(w, e, t) or not _hlos(w, e, t)):
+	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or WallFire7.blocked(w, e, s, t) or not _hlos(w, e, t)):
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
 		return
@@ -1497,8 +1605,13 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 	if hits.is_empty():
 		var sup: Dictionary = Content.rules().get("suppression", {})
 		Damage.near_miss(w, int(e.owner), at, float(sup.get("per_near_miss", 8)), SimWorld.Morale.weapon_supp(s))
+		var tnb := Time.get_ticks_usec() if SimIndex.profiling else 0
 		if _frag_near(w, at, rad):
+			if SimIndex.profiling:
+				tnb = SimIndex.pt("spl.frag_near0", tnb)
 			Shrapnel.burst(w, at, Shrapnel.from_weapon(s), e, false, true)   # G7: fragments reach past the splash
+			if SimIndex.profiling:
+				SimIndex.pt("spl.burst0", tnb)
 		return
 	var ids := hits.keys()
 	ids.sort()
@@ -1515,8 +1628,13 @@ static func _splash(w: SimWorld, e: Dictionary, s: Dictionary, at: Vector2) -> v
 		if SimIndex.g6m(w) & SimIndex.G6_DMG:
 			s2.damage = float(s2.damage) * SimIndex.g6h().damage_mult(w, e, s, v)  # G6 splash
 		Damage.apply_hit(w, e, v, s2, true)
+	var tsb := Time.get_ticks_usec() if SimIndex.profiling else 0
 	if frag or _frag_near(w, at, rad):
+		if SimIndex.profiling:
+			tsb = SimIndex.pt("spl.frag_near", tsb)
 		Shrapnel.burst(w, at, Shrapnel.from_weapon(s), e, false, true)
+		if SimIndex.profiling:
+			SimIndex.pt("spl.burst", tsb)
 
 
 ## G7: a zone soldier inside the fragment reach (1.5 x splash) but outside the splash radius still gets a burst.

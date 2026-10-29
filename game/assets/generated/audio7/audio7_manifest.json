@@ -48,6 +48,12 @@
   "res://assets/generated/audio7/sfx/impact_stomp_0.wav": 0.6,
   "res://assets/generated/audio7/sfx/impact_stomp_1.wav": 0.6,
   "res://assets/generated/audio7/sfx/impact_stomp_2.wav": 0.6,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_0.wav": 1.0,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_1.wav": 1.0,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_far_0.wav": 1.0,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_0.wav": 1.8,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_1.wav": 1.8,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spinup_0.wav": 0.55,
   "res://assets/generated/audio7/sfx/shot_disruptor_0.wav": 0.35,
   "res://assets/generated/audio7/sfx/shot_disruptor_1.wav": 0.35,
   "res://assets/generated/audio7/sfx/shot_disruptor_2.wav": 0.35,
@@ -314,6 +320,12 @@
   "res://assets/generated/audio7/sfx/impact_stomp_0.wav": 0.8499,
   "res://assets/generated/audio7/sfx/impact_stomp_1.wav": 0.8499,
   "res://assets/generated/audio7/sfx/impact_stomp_2.wav": 0.8499,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_0.wav": 0.9,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_1.wav": 0.9,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_far_0.wav": 0.8,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_0.wav": 0.75,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_1.wav": 0.75,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spinup_0.wav": 0.7,
   "res://assets/generated/audio7/sfx/shot_disruptor_0.wav": 0.8,
   "res://assets/generated/audio7/sfx/shot_disruptor_1.wav": 0.8,
   "res://assets/generated/audio7/sfx/shot_disruptor_2.wav": 0.8,
@@ -748,6 +760,12 @@
   "res://assets/generated/audio7/sfx/impact_stomp_0.wav": 0.1344,
   "res://assets/generated/audio7/sfx/impact_stomp_1.wav": 0.1207,
   "res://assets/generated/audio7/sfx/impact_stomp_2.wav": 0.1374,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_0.wav": 0.3554,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_1.wav": 0.3618,
+  "res://assets/generated/audio7/sfx/shot_ciws7_brrt_far_0.wav": 0.356,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_0.wav": 0.0931,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spindown_1.wav": 0.0785,
+  "res://assets/generated/audio7/sfx/shot_ciws7_spinup_0.wav": 0.2365,
   "res://assets/generated/audio7/sfx/shot_disruptor_0.wav": 0.1216,
   "res://assets/generated/audio7/sfx/shot_disruptor_1.wav": 0.115,
   "res://assets/generated/audio7/sfx/shot_disruptor_2.wav": 0.1266,
@@ -1041,6 +1059,20 @@
    "res://assets/generated/audio7/sfx/impact_stomp_0.wav",
    "res://assets/generated/audio7/sfx/impact_stomp_1.wav",
    "res://assets/generated/audio7/sfx/impact_stomp_2.wav"
+  ],
+  "shot_ciws7_brrt": [
+   "res://assets/generated/audio7/sfx/shot_ciws7_brrt_0.wav",
+   "res://assets/generated/audio7/sfx/shot_ciws7_brrt_1.wav"
+  ],
+  "shot_ciws7_brrt_far": [
+   "res://assets/generated/audio7/sfx/shot_ciws7_brrt_far_0.wav"
+  ],
+  "shot_ciws7_spindown": [
+   "res://assets/generated/audio7/sfx/shot_ciws7_spindown_0.wav",
+   "res://assets/generated/audio7/sfx/shot_ciws7_spindown_1.wav"
+  ],
+  "shot_ciws7_spinup": [
+   "res://assets/generated/audio7/sfx/shot_ciws7_spinup_0.wav"
   ],
   "shot_disruptor": [
    "res://assets/generated/audio7/sfx/shot_disruptor_0.wav",

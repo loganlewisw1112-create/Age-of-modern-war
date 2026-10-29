@@ -288,6 +288,11 @@ func test_xp_levels_and_veteran_loss() -> void:
 	check(vet > 0, "a veteran on foot")
 	check(CnProgress7._is_vet(CnProgress7.op(w, vet)), "two missions make a veteran")
 	# kill credit: an enemy last hit by the veteran dies
+	# REGFIX7-4: the team holds fire while this is staged (the rifleman 3 tiles off was shot dead by a team mate 4
+	# ticks in, so the kill below never happened and the veteran was never his last attacker)
+	for id in (t.members as Array) + (t.apcs as Array):
+		if w.entities.has(int(id)):
+			w.entities[int(id)].cd_ticks = NOFIRE
 	var eid := _enemy(w, Vector2(w.entities[vet].pos) + Vector2(3, 0), false)
 	w.entities[eid].last_attacker = vet
 	_step(w, 12)
@@ -299,6 +304,36 @@ func test_xp_levels_and_veteran_loss() -> void:
 	check(float(CnProgress7.team_rec(w, int(t.id)).xp) < xp0, "losing a veteran costs XP")
 	check_eq(CnProgress7.level(w, int(t.id)), 0, "and the level")
 	check(_has(evs, "CnTeamLevel", "level", 0), "level drop event")
+
+
+## REGFIX7-4: an enemy shot dead within a few ticks of its first hit (before any 10-tick hit sample) is still credited,
+## to the team member whose hit killed it (the Damage event, not the sample).
+func test_quick_kill_credited_to_the_shooter() -> void:
+	var S := _setup()
+	var w: SimWorld = S[0]
+	var t := _team(w, Vector2(S[1]) + Vector2(20, 20))
+	_step(w, 2)
+	_dismount(w, t)
+	var vet := -1
+	for id in t.members:
+		if w.entities.has(int(id)) and int(id) != int(t.leader):
+			vet = int(id)
+			break
+	var eid := _enemy(w, Vector2(w.entities[vet].pos) + Vector2(3, 0), false)
+	var killer := -1
+	var died := -1
+	for i in 9:
+		for ev in _step(w, 1):
+			if String(ev.type) == "Damage" and int(ev.target) == eid:
+				killer = int(ev.shooter)
+			if String(ev.type) == "EntityDestroyed" and int(ev.id) == eid:
+				died = i
+		if died >= 0:
+			break
+	check(died >= 0 and died < 9, "the team drops the rifleman within 9 ticks (died at %d)" % died)
+	check(killer >= 0 and not CnProgress7.op(w, killer).is_empty(), "a team operator hit him last (%d)" % killer)
+	check_eq(int(CnProgress7.op(w, killer).kills) if killer >= 0 else -1, 1, "the kill is credited to that operator")
+	check_eq(int(CnProgress7.team_rec(w, int(t.id)).kills), 1, "and to the team")
 
 
 func test_bond_reactions() -> void:

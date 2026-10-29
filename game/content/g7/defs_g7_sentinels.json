@@ -1,911 +1,956 @@
 {
- "_meta": {
-  "owner": "SENT7",
-  "note": "G7 Sentinels (G7_REFERENCE 13.9c-10, 13.9c-11): the counter-nanite facility's guard force, 7 types + ammo bearer for Human A and Human B, their weapons, the Sentinel Barracks, ready-ammo lockers and rules.g7_sentinels. No rank_role / officers (no_command). Every number PROVISIONAL."
- },
- "units": {
-  "g7_sent_warden": {
-   "name": "Sentinel Warden",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 230,
-   "speed": 2.4,
-   "sight": 10,
-   "weapon": "g7_sent_carbine",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 150,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_warden",
-   "sentinel": "warden",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "disruptor carbine (anti-personnel + anti-nanite), the line guard"
+  "_meta": {
+    "owner": "SENT7",
+    "note": "G7 Sentinels (G7_REFERENCE 13.9c-10, 13.9c-11): the counter-nanite facility's guard force, 7 types + ammo bearer for Human A and Human B, their weapons, the Sentinel Barracks, ready-ammo lockers and rules.g7_sentinels. No rank_role / officers (no_command). Every number PROVISIONAL."
   },
-  "g7_sent_marksman": {
-   "name": "Sentinel Marksman",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 190,
-   "speed": 2.3,
-   "sight": 13,
-   "weapon": "g7_sent_rifle",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 60,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_marksman",
-   "sentinel": "marksman",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "long disruptor rifle, thermal optics; tower / wall overwatch"
-  },
-  "g7_sent_gunner": {
-   "name": "Sentinel Gunner",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 250,
-   "speed": 2.1,
-   "sight": 10,
-   "weapon": "g7_sent_rotary",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 360,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_gunner",
-   "sentinel": "gunner",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "rotary disruptor gun; suppression, shreds Machine swarms"
-  },
-  "g7_sent_bulwark": {
-   "name": "Sentinel Bulwark",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 330,
-   "speed": 2.0,
-   "sight": 9,
-   "weapon": "g7_sent_breacher",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 60,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_bulwark",
-   "sentinel": "bulwark",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "nanoweave shield + breaching shotgun; holds doors, gates, the mantrap"
-  },
-  "g7_sent_lancer": {
-   "name": "Sentinel Lancer",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 220,
-   "speed": 2.2,
-   "sight": 10,
-   "weapon": "g7_sent_harpoon",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 16,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_lancer",
-   "sentinel": "lancer",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "harpoon / limpet launcher; anti-walker and anti-vehicle"
-  },
-  "g7_sent_arc": {
-   "name": "Sentinel Arc",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 210,
-   "speed": 2.3,
-   "sight": 11,
-   "weapon": "g7_sent_arc_smg",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 140,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_arc",
-   "sentinel": "arc",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "EMP / EW specialist; EMP grenades, drone and Machine-link jamming"
-  },
-  "g7_sent_mender": {
-   "name": "Sentinel Mender",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 210,
-   "speed": 2.3,
-   "sight": 10,
-   "weapon": "g7_sent_pdw",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 120,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_mender",
-   "sentinel": "mender",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "nanite field kit; heals Sentinels, repairs walls / towers / wall turrets"
-  },
-  "g7_sent_bearer": {
-   "name": "Sentinel Ammo Bearer",
-   "role": "infantry",
-   "faction": "human_a",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 200,
-   "speed": 2.4,
-   "sight": 9,
-   "weapon": "g7_sent_pdw",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 120,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_sent_bearer",
-   "sentinel": "bearer",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "carries ammo to Sentinels on post and refills ready-ammo lockers (13.9c-11)"
-  },
-  "g7_b_sent_warden": {
-   "name": "Sentinel Warden (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 230,
-   "speed": 2.4,
-   "sight": 10,
-   "weapon": "g7_sent_carbine",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 150,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_warden",
-   "sentinel": "warden",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "disruptor carbine (anti-personnel + anti-nanite), the line guard"
-  },
-  "g7_b_sent_marksman": {
-   "name": "Sentinel Marksman (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 190,
-   "speed": 2.3,
-   "sight": 13,
-   "weapon": "g7_sent_rifle",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 60,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_marksman",
-   "sentinel": "marksman",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "long disruptor rifle, thermal optics; tower / wall overwatch"
-  },
-  "g7_b_sent_gunner": {
-   "name": "Sentinel Gunner (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 250,
-   "speed": 2.1,
-   "sight": 10,
-   "weapon": "g7_sent_rotary",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 360,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_gunner",
-   "sentinel": "gunner",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "rotary disruptor gun; suppression, shreds Machine swarms"
-  },
-  "g7_b_sent_bulwark": {
-   "name": "Sentinel Bulwark (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 330,
-   "speed": 2.0,
-   "sight": 9,
-   "weapon": "g7_sent_breacher",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 60,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_bulwark",
-   "sentinel": "bulwark",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "nanoweave shield + breaching shotgun; holds doors, gates, the mantrap"
-  },
-  "g7_b_sent_lancer": {
-   "name": "Sentinel Lancer (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 220,
-   "speed": 2.2,
-   "sight": 10,
-   "weapon": "g7_sent_harpoon",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 16,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_lancer",
-   "sentinel": "lancer",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "harpoon / limpet launcher; anti-walker and anti-vehicle"
-  },
-  "g7_b_sent_arc": {
-   "name": "Sentinel Arc (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 210,
-   "speed": 2.3,
-   "sight": 11,
-   "weapon": "g7_sent_arc_smg",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 140,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_arc",
-   "sentinel": "arc",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "EMP / EW specialist; EMP grenades, drone and Machine-link jamming"
-  },
-  "g7_b_sent_mender": {
-   "name": "Sentinel Mender (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 210,
-   "speed": 2.3,
-   "sight": 10,
-   "weapon": "g7_sent_pdw",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 120,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_mender",
-   "sentinel": "mender",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "nanite field kit; heals Sentinels, repairs walls / towers / wall turrets"
-  },
-  "g7_b_sent_bearer": {
-   "name": "Sentinel Ammo Bearer (B)",
-   "role": "infantry",
-   "faction": "human_b",
-   "armor": "infantry",
-   "move_class": "foot",
-   "hp": 200,
-   "speed": 2.4,
-   "sight": 9,
-   "weapon": "g7_sent_pdw",
-   "pop": 2,
-   "radius": 0.3,
-   "ammo_max": 120,
-   "morale": 240,
-   "stage_min": 10,
-   "g7": true,
-   "art": "g7_b_sent_bearer",
-   "sentinel": "bearer",
-   "no_command": true,
-   "sealed_suit": true,
-   "_role": "carries ammo to Sentinels on post and refills ready-ammo lockers (13.9c-11)"
-  }
- },
- "production": {
-  "g7_sent_warden": {
-   "name": "Sentinel Warden",
-   "spawns": [
-    "g7_sent_warden"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 240,
-    "salvage": 120,
-    "ore": 40
-   },
-   "train_time": 35,
-   "g7": true
-  },
-  "g7_sent_marksman": {
-   "name": "Sentinel Marksman",
-   "spawns": [
-    "g7_sent_marksman"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 260,
-    "salvage": 130,
-    "ore": 40
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_sent_gunner": {
-   "name": "Sentinel Gunner",
-   "spawns": [
-    "g7_sent_gunner"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 270,
-    "salvage": 130,
-    "ore": 50
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_sent_bulwark": {
-   "name": "Sentinel Bulwark",
-   "spawns": [
-    "g7_sent_bulwark"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 260,
-    "salvage": 140,
-    "ore": 50
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_sent_lancer": {
-   "name": "Sentinel Lancer",
-   "spawns": [
-    "g7_sent_lancer"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 300,
-    "salvage": 150,
-    "ore": 60
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_sent_arc": {
-   "name": "Sentinel Arc",
-   "spawns": [
-    "g7_sent_arc"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 280,
-    "salvage": 140,
-    "ore": 50
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_sent_mender": {
-   "name": "Sentinel Mender",
-   "spawns": [
-    "g7_sent_mender"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 260,
-    "salvage": 140,
-    "ore": 40
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_sent_bearer": {
-   "name": "Sentinel Ammo Bearer",
-   "spawns": [
-    "g7_sent_bearer"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_a",
-   "cost": {
-    "credits": 160,
-    "salvage": 80,
-    "ore": 20
-   },
-   "train_time": 25,
-   "g7": true
-  },
-  "g7_b_sent_warden": {
-   "name": "Sentinel Warden (B)",
-   "spawns": [
-    "g7_b_sent_warden"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 240,
-    "salvage": 120,
-    "ore": 40
-   },
-   "train_time": 35,
-   "g7": true
-  },
-  "g7_b_sent_marksman": {
-   "name": "Sentinel Marksman (B)",
-   "spawns": [
-    "g7_b_sent_marksman"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 260,
-    "salvage": 130,
-    "ore": 40
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_b_sent_gunner": {
-   "name": "Sentinel Gunner (B)",
-   "spawns": [
-    "g7_b_sent_gunner"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 270,
-    "salvage": 130,
-    "ore": 50
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_b_sent_bulwark": {
-   "name": "Sentinel Bulwark (B)",
-   "spawns": [
-    "g7_b_sent_bulwark"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 260,
-    "salvage": 140,
-    "ore": 50
-   },
-   "train_time": 40,
-   "g7": true
-  },
-  "g7_b_sent_lancer": {
-   "name": "Sentinel Lancer (B)",
-   "spawns": [
-    "g7_b_sent_lancer"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 300,
-    "salvage": 150,
-    "ore": 60
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_b_sent_arc": {
-   "name": "Sentinel Arc (B)",
-   "spawns": [
-    "g7_b_sent_arc"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 280,
-    "salvage": 140,
-    "ore": 50
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_b_sent_mender": {
-   "name": "Sentinel Mender (B)",
-   "spawns": [
-    "g7_b_sent_mender"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 260,
-    "salvage": 140,
-    "ore": 40
-   },
-   "train_time": 45,
-   "g7": true
-  },
-  "g7_b_sent_bearer": {
-   "name": "Sentinel Ammo Bearer (B)",
-   "spawns": [
-    "g7_b_sent_bearer"
-   ],
-   "facility": "cn_sentinel_barracks",
-   "faction": "human_b",
-   "cost": {
-    "credits": 160,
-    "salvage": 80,
-    "ore": 20
-   },
-   "train_time": 25,
-   "g7": true
-  }
- },
- "weapons": {
-  "g7_sent_carbine": {
-   "class": "small_arms",
-   "damage": 13,
-   "range": 7.5,
-   "cooldown": 0.8,
-   "accuracy": 0.86,
-   "anti_air": true,
-   "nanite_disruptor": true
-  },
-  "g7_sent_rifle": {
-   "class": "small_arms",
-   "damage": 40,
-   "range": 12.5,
-   "cooldown": 2.4,
-   "accuracy": 0.93,
-   "anti_air": true,
-   "nanite_disruptor": true
-  },
-  "g7_sent_rotary": {
-   "class": "small_arms",
-   "damage": 8,
-   "range": 8,
-   "cooldown": 0.22,
-   "accuracy": 0.72,
-   "anti_air": true,
-   "anti_drone": true,
-   "anti_drone_mult": 2,
-   "nanite_disruptor": true
-  },
-  "g7_sent_breacher": {
-   "class": "small_arms",
-   "damage": 26,
-   "range": 4.5,
-   "cooldown": 1.3,
-   "accuracy": 0.88,
-   "anti_garrison": 1.5
-  },
-  "g7_sent_harpoon": {
-   "class": "at",
-   "damage": 95,
-   "range": 8,
-   "cooldown": 4.0,
-   "accuracy": 0.78,
-   "_note": "harpoon / limpet launcher: tether round + shaped limpet (anti-walker, anti-vehicle). PROVISIONAL."
-  },
-  "g7_sent_arc_smg": {
-   "class": "small_arms",
-   "damage": 10,
-   "range": 6.5,
-   "cooldown": 0.6,
-   "accuracy": 0.82,
-   "anti_air": true,
-   "anti_drone": true,
-   "anti_drone_mult": 3,
-   "nanite_disruptor": true
-  },
-  "g7_sent_pdw": {
-   "class": "small_arms",
-   "damage": 9,
-   "range": 6,
-   "cooldown": 0.7,
-   "accuracy": 0.82,
-   "anti_air": true
-  }
- },
- "buildings": {
-  "cn_sentinel_barracks": {
-   "name": "Sentinel Barracks",
-   "faction": "shared",
-   "stage_min": 1,
-   "size": 2,
-   "hp": 4800,
-   "armor": "building",
-   "sight": 9,
-   "buildable": false,
-   "requires_power": false,
-   "g7": true,
-   "cn_part": "barracks",
-   "unhackable": true,
-   "garrison_slots": 120,
-   "garrison_only": "sentinel",
-   "garrison_fire": false,
-   "produces": [],
-   "_note": "SENT7 (13.9c-10): the facility's Sentinel Barracks (the 13.9c-6 ready room; FACB7 places it as a facility part). Only building that trains Sentinels; houses up to a company (120), Sentinels only. PROVISIONAL."
-  },
-  "cn_ammo_locker": {
-   "name": "Ready-Ammo Locker",
-   "faction": "shared",
-   "stage_min": 1,
-   "size": 1,
-   "hp": 900,
-   "armor": "building",
-   "sight": 3,
-   "buildable": false,
-   "requires_power": false,
-   "g7": true,
-   "cn_part": "locker",
-   "unhackable": true,
-   "s7_locker": true,
-   "_note": "SENT7 (13.9c-11): armoured ready-ammo locker (tower bases, wall-walk stairs, entry booth; FACB7 places it). Stock: Sentinels7.locker_stock / locker_add. PROVISIONAL."
-  }
- },
- "rules": {
-  "g7_sentinels": {
-   "_note": "SENT7 (13.9c-10 / 13.9c-11). Every number PROVISIONAL.",
-   "posts": {
-    "cn_tower": 4,
-    "cn_checkpoint": 15,
-    "cn_sentinel_barracks": 120
-   },
-   "post_only": "sentinel",
-   "zone_pad": 6,
-   "zone_every": 20,
-   "defence_mult": 0.55,
-   "heavy_classes": [
-    "at",
-    "artillery"
-   ],
-   "heavy_defence_mult": 1.0,
-   "_heavy_note": "SENT7-4: armour / shield reduction only vs small arms and nanite; anti-tank rounds and shells hit a Sentinel like any soldier (13.9c-10: anti-armour / artillery still kill them). PROVISIONAL.",
-   "garrison_extra": 1.0,
-   "emp_mult": 1.3,
-   "shield_mult": 0.7,
-   "shield_types": [
-    "bulwark"
-   ],
-   "anti_nanite_mult": 2.4,
-   "machine_factions": [
-    "machine"
-   ],
-   "regen": {
-    "every": 10,
-    "hp_s": 5.0,
-    "zone_hp_s": 9.0,
-    "quiet_s": 6.0,
-    "reseal": true
-   },
-   "sidearm": {
-    "rounds": 45,
-    "dmg_mult": 0.45,
-    "range_mult": 0.75
-   },
-   "locker": {
-    "stock": 14,
-    "cap": 14,
-    "reach": 1.6,
-    "reload_s": 2.0,
-    "search_r": 40
-   },
-   "bearer": {
-    "carry": 10,
-    "reach": 1.6,
-    "low_frac": 0.5,
-    "search_r": 30,
-    "refill_r": 2.5
-   },
-   "mender": {
-    "every": 20,
-    "heal_hp_s": 10.0,
-    "repair_hp_s": 40.0,
-    "radius": 3.5
-   },
-   "arc": {
-    "every": 20,
-    "radius": 7.0,
-    "cooldown_s": 22.0,
-    "stun_ticks": 120,
-    "blast_r": 2.5
-   },
-   "think_every": 20,
-   "arrive": 1.4,
-   "start": {
-    "force": [
-     "bulwark",
-     "bulwark",
-     "warden",
-     "marksman",
-     "marksman",
-     "gunner",
-     "marksman",
-     "gunner",
-     "marksman",
-     "lancer",
-     "warden",
-     "warden",
-     "warden",
-     "gunner",
-     "lancer",
-     "warden",
-     "warden",
-     "arc",
-     "warden",
-     "mender",
-     "lancer",
-     "arc",
-     "mender",
-     "bearer"
-    ]
-   },
-   "plan": {
-    "every": 100,
-    "entry": 4,
-    "towers": 3,
-    "towers_alarm": 6,
-    "per_tower": 2,
-    "qrf": 4,
-    "shift_s": 240,
-    "duty_w": 4.0,
-    "wounded_frac": 0.35,
-    "repair_below": 0.9
-   },
-   "own_timeout_s": 45,
-   "tactics": {
-    "_note": "SENT7-2 13.9c-13 (realism, no gimmicks). PROVISIONAL.",
-    "bound_len": 5.0,
-    "pair_split_pen": 1000.0,
-    "drag_far": 8.0,
-    "_drag_far": "SENT7-5: a man down in the open with no cover within drag_r (4) is dragged up to drag_far tiles away from the threat or back towards the facility, to real cover. PROVISIONAL.",
-    "_pair_split_pen": "SENT7-5: a buddy pair is a unit of work: the board takes a man's partner with him, and a job with one free slot only takes a man who has a partner when nobody else fits (score penalty, tiles). PROVISIONAL.",
-    "arrive": 1.2,
-    "cover_r": 2,
-    "open_v": 0.35,
-    "pie_r": 1.5,
-    "hit_recent_s": 3.0,
-    "rush_supp": 12.0,
-    "sector_half_deg": 60,
-    "pair_spread_deg": 25,
-    "in_sector": 1.5,
-    "out_sector": 0.6,
-    "focus": 0.25,
-    "net_every": 10,
-    "net_r": 22.0,
-    "alarm_r": 22.0,
-    "alarm_hold_s": 45.0,
-    "_alarm_note": "SENT7-3: guard-net stand-to: any enemy the owner sees inside compound + alarm_r, or an enemy firing on a Sentinel / facility building, raises the alarm before a breach; holds alarm_hold_s after the last contact. PROVISIONAL.",
-    "prio": {
-     "vehicle": 3.0,
-     "drone": 1.5,
-     "heavy_inf": 2.0,
-     "inf": 1.0
+  "units": {
+    "g7_sent_warden": {
+      "name": "Sentinel Warden",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 230,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "g7_sent_carbine",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 150,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_warden",
+      "sentinel": "warden",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "disruptor carbine (anti-personnel + anti-nanite), the line guard"
     },
-    "pref": {
-     "lancer": {
-      "vehicle": 3.0,
-      "inf": 0.3,
-      "heavy_inf": 0.5
-     },
-     "arc": {
-      "drone": 3.0,
-      "machine": 2.0
-     },
-     "marksman": {
-      "heavy_inf": 2.0,
-      "vehicle": 0.3
-     },
-     "gunner": {
-      "inf": 1.5,
-      "vehicle": 0.2
-     },
-     "warden": {
-      "vehicle": 0.4
-     },
-     "bulwark": {
-      "vehicle": 0.3
-     },
-     "mender": {
-      "vehicle": 0.3
-     }
+    "g7_sent_marksman": {
+      "name": "Sentinel Marksman",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 190,
+      "speed": 2.3,
+      "sight": 13,
+      "weapon": "g7_sent_rifle",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_marksman",
+      "sentinel": "marksman",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "long disruptor rifle, thermal optics; tower / wall overwatch"
     },
-    "mag": {
-     "warden": 30,
-     "marksman": 10,
-     "gunner": 100,
-     "bulwark": 8,
-     "arc": 30,
-     "mender": 30,
-     "bearer": 30
+    "g7_sent_gunner": {
+      "name": "Sentinel Gunner",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 250,
+      "speed": 2.1,
+      "sight": 10,
+      "weapon": "g7_sent_rotary",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 360,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_gunner",
+      "sentinel": "gunner",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "rotary disruptor gun; suppression, shreds Machine swarms"
     },
-    "reload_s": {
-     "warden": 2.5,
-     "marksman": 3.0,
-     "gunner": 6.0,
-     "bulwark": 4.0,
-     "arc": 2.5,
-     "mender": 2.5,
-     "bearer": 2.5
+    "g7_sent_bulwark": {
+      "name": "Sentinel Bulwark",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 330,
+      "speed": 2.0,
+      "sight": 9,
+      "weapon": "g7_sent_breacher",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_bulwark",
+      "sentinel": "bulwark",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "nanoweave shield + breaching shotgun; holds doors, gates, the mantrap"
     },
-    "sidearm_mag": 15,
-    "sidearm_reload_s": 2.0,
-    "tac_reload_frac": 0.8,
-    "_tac_reload_note": "SENT7-4: reload when you can, not when you must: in a lull (no target, buddy not reloading, under alarm) a magazine with a fifth or more spent is topped up with retention, also behind a tower / booth wall (was 0.34: men went into the next contact on a third of a magazine). PROVISIONAL.",
-    "withdraw_hp": 0.4,
-    "withdraw_ratio": 3.0,
-    "withdraw_min": 4,
-    "local_r": 10.0,
-    "withdraw_rest_s": 30.0,
-    "stack_s": 1.5,
-    "checkin_s": 4.0,
-    "pause_s": [
-     2,
-     6
-    ],
-    "exp_w": 3.0,
-    "cas_prio": 7.0,
-    "drag_r": 4.0
-   }
+    "g7_sent_lancer": {
+      "name": "Sentinel Lancer",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 220,
+      "speed": 2.2,
+      "sight": 10,
+      "weapon": "g7_sent_harpoon",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 16,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_lancer",
+      "sentinel": "lancer",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "harpoon / limpet launcher; anti-walker and anti-vehicle"
+    },
+    "g7_sent_arc": {
+      "name": "Sentinel Arc",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 210,
+      "speed": 2.3,
+      "sight": 11,
+      "weapon": "g7_sent_arc_smg",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 140,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_arc",
+      "sentinel": "arc",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "EMP / EW specialist; EMP grenades, drone and Machine-link jamming"
+    },
+    "g7_sent_mender": {
+      "name": "Sentinel Mender",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 210,
+      "speed": 2.3,
+      "sight": 10,
+      "weapon": "g7_sent_pdw",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 120,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_mender",
+      "sentinel": "mender",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "nanite field kit; heals Sentinels, repairs walls / towers / wall turrets"
+    },
+    "g7_sent_bearer": {
+      "name": "Sentinel Ammo Bearer",
+      "role": "infantry",
+      "faction": "human_a",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 200,
+      "speed": 2.4,
+      "sight": 9,
+      "weapon": "g7_sent_pdw",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 120,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_sent_bearer",
+      "sentinel": "bearer",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "carries ammo to Sentinels on post and refills ready-ammo lockers (13.9c-11)"
+    },
+    "g7_b_sent_warden": {
+      "name": "Sentinel Warden (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 230,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "g7_sent_carbine",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 150,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_warden",
+      "sentinel": "warden",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "disruptor carbine (anti-personnel + anti-nanite), the line guard"
+    },
+    "g7_b_sent_marksman": {
+      "name": "Sentinel Marksman (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 190,
+      "speed": 2.3,
+      "sight": 13,
+      "weapon": "g7_sent_rifle",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_marksman",
+      "sentinel": "marksman",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "long disruptor rifle, thermal optics; tower / wall overwatch"
+    },
+    "g7_b_sent_gunner": {
+      "name": "Sentinel Gunner (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 250,
+      "speed": 2.1,
+      "sight": 10,
+      "weapon": "g7_sent_rotary",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 360,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_gunner",
+      "sentinel": "gunner",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "rotary disruptor gun; suppression, shreds Machine swarms"
+    },
+    "g7_b_sent_bulwark": {
+      "name": "Sentinel Bulwark (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 330,
+      "speed": 2.0,
+      "sight": 9,
+      "weapon": "g7_sent_breacher",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_bulwark",
+      "sentinel": "bulwark",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "nanoweave shield + breaching shotgun; holds doors, gates, the mantrap"
+    },
+    "g7_b_sent_lancer": {
+      "name": "Sentinel Lancer (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 220,
+      "speed": 2.2,
+      "sight": 10,
+      "weapon": "g7_sent_harpoon",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 16,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_lancer",
+      "sentinel": "lancer",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "harpoon / limpet launcher; anti-walker and anti-vehicle"
+    },
+    "g7_b_sent_arc": {
+      "name": "Sentinel Arc (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 210,
+      "speed": 2.3,
+      "sight": 11,
+      "weapon": "g7_sent_arc_smg",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 140,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_arc",
+      "sentinel": "arc",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "EMP / EW specialist; EMP grenades, drone and Machine-link jamming"
+    },
+    "g7_b_sent_mender": {
+      "name": "Sentinel Mender (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 210,
+      "speed": 2.3,
+      "sight": 10,
+      "weapon": "g7_sent_pdw",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 120,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_mender",
+      "sentinel": "mender",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "nanite field kit; heals Sentinels, repairs walls / towers / wall turrets"
+    },
+    "g7_b_sent_bearer": {
+      "name": "Sentinel Ammo Bearer (B)",
+      "role": "infantry",
+      "faction": "human_b",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 200,
+      "speed": 2.4,
+      "sight": 9,
+      "weapon": "g7_sent_pdw",
+      "pop": 2,
+      "radius": 0.3,
+      "ammo_max": 120,
+      "morale": 240,
+      "stage_min": 10,
+      "g7": true,
+      "art": "g7_b_sent_bearer",
+      "sentinel": "bearer",
+      "no_command": true,
+      "sealed_suit": true,
+      "_role": "carries ammo to Sentinels on post and refills ready-ammo lockers (13.9c-11)"
+    }
+  },
+  "production": {
+    "g7_sent_warden": {
+      "name": "Sentinel Warden",
+      "spawns": [
+        "g7_sent_warden"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 240,
+        "salvage": 120,
+        "ore": 40
+      },
+      "train_time": 35,
+      "g7": true
+    },
+    "g7_sent_marksman": {
+      "name": "Sentinel Marksman",
+      "spawns": [
+        "g7_sent_marksman"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 260,
+        "salvage": 130,
+        "ore": 40
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_sent_gunner": {
+      "name": "Sentinel Gunner",
+      "spawns": [
+        "g7_sent_gunner"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 270,
+        "salvage": 130,
+        "ore": 50
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_sent_bulwark": {
+      "name": "Sentinel Bulwark",
+      "spawns": [
+        "g7_sent_bulwark"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 260,
+        "salvage": 140,
+        "ore": 50
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_sent_lancer": {
+      "name": "Sentinel Lancer",
+      "spawns": [
+        "g7_sent_lancer"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 300,
+        "salvage": 150,
+        "ore": 60
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_sent_arc": {
+      "name": "Sentinel Arc",
+      "spawns": [
+        "g7_sent_arc"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 280,
+        "salvage": 140,
+        "ore": 50
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_sent_mender": {
+      "name": "Sentinel Mender",
+      "spawns": [
+        "g7_sent_mender"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 260,
+        "salvage": 140,
+        "ore": 40
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_sent_bearer": {
+      "name": "Sentinel Ammo Bearer",
+      "spawns": [
+        "g7_sent_bearer"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_a",
+      "cost": {
+        "credits": 160,
+        "salvage": 80,
+        "ore": 20
+      },
+      "train_time": 25,
+      "g7": true
+    },
+    "g7_b_sent_warden": {
+      "name": "Sentinel Warden (B)",
+      "spawns": [
+        "g7_b_sent_warden"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 240,
+        "salvage": 120,
+        "ore": 40
+      },
+      "train_time": 35,
+      "g7": true
+    },
+    "g7_b_sent_marksman": {
+      "name": "Sentinel Marksman (B)",
+      "spawns": [
+        "g7_b_sent_marksman"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 260,
+        "salvage": 130,
+        "ore": 40
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_b_sent_gunner": {
+      "name": "Sentinel Gunner (B)",
+      "spawns": [
+        "g7_b_sent_gunner"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 270,
+        "salvage": 130,
+        "ore": 50
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_b_sent_bulwark": {
+      "name": "Sentinel Bulwark (B)",
+      "spawns": [
+        "g7_b_sent_bulwark"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 260,
+        "salvage": 140,
+        "ore": 50
+      },
+      "train_time": 40,
+      "g7": true
+    },
+    "g7_b_sent_lancer": {
+      "name": "Sentinel Lancer (B)",
+      "spawns": [
+        "g7_b_sent_lancer"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 300,
+        "salvage": 150,
+        "ore": 60
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_b_sent_arc": {
+      "name": "Sentinel Arc (B)",
+      "spawns": [
+        "g7_b_sent_arc"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 280,
+        "salvage": 140,
+        "ore": 50
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_b_sent_mender": {
+      "name": "Sentinel Mender (B)",
+      "spawns": [
+        "g7_b_sent_mender"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 260,
+        "salvage": 140,
+        "ore": 40
+      },
+      "train_time": 45,
+      "g7": true
+    },
+    "g7_b_sent_bearer": {
+      "name": "Sentinel Ammo Bearer (B)",
+      "spawns": [
+        "g7_b_sent_bearer"
+      ],
+      "facility": "cn_sentinel_barracks",
+      "faction": "human_b",
+      "cost": {
+        "credits": 160,
+        "salvage": 80,
+        "ore": 20
+      },
+      "train_time": 25,
+      "g7": true
+    }
+  },
+  "weapons": {
+    "g7_sent_carbine": {
+      "class": "small_arms",
+      "damage": 13,
+      "range": 7.5,
+      "cooldown": 0.8,
+      "accuracy": 0.86,
+      "anti_air": true,
+      "nanite_disruptor": true
+    },
+    "g7_sent_rifle": {
+      "class": "small_arms",
+      "damage": 40,
+      "range": 12.5,
+      "cooldown": 2.4,
+      "accuracy": 0.93,
+      "anti_air": true,
+      "nanite_disruptor": true
+    },
+    "g7_sent_rotary": {
+      "class": "small_arms",
+      "damage": 8,
+      "range": 8,
+      "cooldown": 0.22,
+      "accuracy": 0.72,
+      "anti_air": true,
+      "anti_drone": true,
+      "anti_drone_mult": 2,
+      "nanite_disruptor": true
+    },
+    "g7_sent_breacher": {
+      "class": "small_arms",
+      "damage": 26,
+      "range": 4.5,
+      "cooldown": 1.3,
+      "accuracy": 0.88,
+      "anti_garrison": 1.5
+    },
+    "g7_sent_harpoon": {
+      "class": "at",
+      "damage": 150,
+      "range": 8,
+      "cooldown": 4.0,
+      "accuracy": 0.78,
+      "_note": "harpoon / limpet launcher: tether round + shaped limpet (anti-walker, anti-vehicle). PROVISIONAL. WATCH7-2 (13.9c-38 follow-up 'Scale the defences up too'): damage 95 -> 150 (the anti-armour layer; Sentinels alone still lose at 2.5x combined arms)."
+    },
+    "g7_sent_arc_smg": {
+      "class": "small_arms",
+      "damage": 10,
+      "range": 6.5,
+      "cooldown": 0.6,
+      "accuracy": 0.82,
+      "anti_air": true,
+      "anti_drone": true,
+      "anti_drone_mult": 3,
+      "nanite_disruptor": true
+    },
+    "g7_sent_pdw": {
+      "class": "small_arms",
+      "damage": 9,
+      "range": 6,
+      "cooldown": 0.7,
+      "accuracy": 0.82,
+      "anti_air": true
+    }
+  },
+  "buildings": {
+    "cn_sentinel_barracks": {
+      "name": "Sentinel Barracks",
+      "faction": "shared",
+      "stage_min": 1,
+      "size": 2,
+      "hp": 4800,
+      "armor": "building",
+      "sight": 9,
+      "buildable": false,
+      "requires_power": false,
+      "g7": true,
+      "cn_part": "barracks",
+      "unhackable": true,
+      "garrison_slots": 120,
+      "garrison_only": "sentinel",
+      "garrison_fire": false,
+      "produces": [],
+      "_note": "SENT7 (13.9c-10): the facility's Sentinel Barracks (the 13.9c-6 ready room; FACB7 places it as a facility part). Only building that trains Sentinels; houses up to a company (120), Sentinels only. PROVISIONAL."
+    },
+    "cn_ammo_locker": {
+      "name": "Ready-Ammo Locker",
+      "faction": "shared",
+      "stage_min": 1,
+      "size": 1,
+      "hp": 900,
+      "armor": "building",
+      "sight": 3,
+      "buildable": false,
+      "requires_power": false,
+      "g7": true,
+      "cn_part": "locker",
+      "unhackable": true,
+      "s7_locker": true,
+      "_note": "SENT7 (13.9c-11): armoured ready-ammo locker (tower bases, wall-walk stairs, entry booth; FACB7 places it). Stock: Sentinels7.locker_stock / locker_add. PROVISIONAL."
+    }
+  },
+  "rules": {
+    "g7_sentinels": {
+      "_note": "SENT7 (13.9c-10 / 13.9c-11). Every number PROVISIONAL.",
+      "posts": {
+        "cn_tower": 4,
+        "cn_checkpoint": 15,
+        "cn_sentinel_barracks": 120
+      },
+      "post_only": "sentinel",
+      "zone_pad": 6,
+      "zone_every": 20,
+      "defence_mult": 0.55,
+      "heavy_classes": [
+        "at",
+        "artillery"
+      ],
+      "heavy_defence_mult": 1.0,
+      "_heavy_note": "SENT7-4: armour / shield reduction only vs small arms and nanite; anti-tank rounds and shells hit a Sentinel like any soldier (13.9c-10: anti-armour / artillery still kill them). PROVISIONAL.",
+      "garrison_extra": 1.0,
+      "emp_mult": 1.3,
+      "shield_mult": 0.7,
+      "shield_types": [
+        "bulwark"
+      ],
+      "anti_nanite_mult": 2.4,
+      "machine_factions": [
+        "machine"
+      ],
+      "regen": {
+        "every": 10,
+        "hp_s": 5.0,
+        "zone_hp_s": 9.0,
+        "quiet_s": 6.0,
+        "reseal": true
+      },
+      "sidearm": {
+        "rounds": 45,
+        "dmg_mult": 0.45,
+        "range_mult": 0.75
+      },
+      "locker": {
+        "stock": 14,
+        "cap": 14,
+        "reach": 1.6,
+        "reload_s": 2.0,
+        "search_r": 40
+      },
+      "bearer": {
+        "carry": 10,
+        "reach": 1.6,
+        "low_frac": 0.5,
+        "search_r": 30,
+        "refill_r": 2.5
+      },
+      "mender": {
+        "every": 20,
+        "heal_hp_s": 10.0,
+        "repair_hp_s": 40.0,
+        "radius": 3.5
+      },
+      "arc": {
+        "every": 20,
+        "radius": 7.0,
+        "cooldown_s": 22.0,
+        "stun_ticks": 120,
+        "blast_r": 2.5
+      },
+      "think_every": 20,
+      "arrive": 1.4,
+      "start": {
+        "_note": "WATCH7 (13.9c-38 owner choice 'Double the watch'): 24 -> 48 in every mode. Mix PROVISIONAL: bulwark 4 (entry / gate), warden 9, marksman 9 + gunner 8 (towers, walls), lancer 9, arc 4, mender 3, ammo bearer 2. WATCH7-2 (13.9c-38 follow-up 'Scale the defences up too'): warden 12 -> 9, lancer 6 -> 9 (anti-armour). Quiet watch = entry 4 + gate 2 + 16 towers x1 + 5 wall runs x2 + 1 interior pair = 34, QRF 4 on call in the barracks, the rest off watch (rotation).",
+        "force": [
+          "warden",
+          "marksman",
+          "gunner",
+          "lancer",
+          "bulwark",
+          "warden",
+          "arc",
+          "marksman",
+          "mender",
+          "gunner",
+          "warden",
+          "lancer",
+          "bearer",
+          "marksman",
+          "lancer",
+          "gunner",
+          "bulwark",
+          "warden",
+          "arc",
+          "marksman",
+          "lancer",
+          "gunner",
+          "warden",
+          "marksman",
+          "mender",
+          "warden",
+          "gunner",
+          "lancer",
+          "marksman",
+          "lancer",
+          "bulwark",
+          "arc",
+          "gunner",
+          "warden",
+          "marksman",
+          "lancer",
+          "bearer",
+          "warden",
+          "gunner",
+          "marksman",
+          "mender",
+          "lancer",
+          "bulwark",
+          "arc",
+          "lancer",
+          "gunner",
+          "marksman",
+          "warden"
+        ]
+      },
+      "plan": {
+        "every": 100,
+        "entry": 4,
+        "towers": 99,
+        "towers_alarm": 6,
+        "per_tower": 4,
+        "per_tower_quiet": 1,
+        "gate": 2,
+        "int_pairs": 0,
+        "walls_alarm": 2,
+        "watch_stint_s": 480,
+        "tired_pen": 2500.0,
+        "relief_max_s": 90,
+        "_watch_note": "WATCH7 (13.9c-38): towers = every tower manned (per_tower_quiet each; under alarm the towers_alarm towers nearest the threat take per_tower); gate = the vehicle-gate pair (staging side of the inner gate); entry = the 4-man checkpoint team; int_pairs interior patrol pairs (was 2). walls_alarm (WATCH7-2, 13.9c-11 'pairs bound along the wall-walk to reinforce the threatened face'): under alarm only the walls_alarm wall runs nearest the threat keep their pair; the far runs' pairs join the stand-to on the threatened face. Rotation: a man who has stood watch_stint_s takes a watch job at a shift change only when nobody else fits (+tired_pen); relief in place: a man going off watch stays on his post until his relief is on it (at most relief_max_s). The QRF waits in the barracks (no duty fatigue while quiet). All PROVISIONAL.",
+        "qrf": 4,
+        "shift_s": 240,
+        "duty_w": 4.0,
+        "wounded_frac": 0.35,
+        "repair_below": 0.9,
+        "wall_split": 2,
+        "wall_split_min": 16.0,
+        "_wall_note": "WATCH7-3 (13.9c-38 owner: 'heavier sentinel patrol force on the walls and near entrances'): while quiet each long wall run (>= wall_split_min tiles: the N, E and W faces) is split into wall_split beats with a patrol pair each (2 pairs per long face; the two short south runs either side of the gate keep 1 pair); under alarm the runs are whole again (walls_alarm). Tower men stand on the tower deck and are drawn there. To keep the rotation ('nobody stands forever') with 48 men: the interior pair moved to the walls (int_pairs 1 -> 0; the cameras watch the interior), wall_roles adds bulwark and mender, tired_pen 500 -> 2500 (above the pair-split penalty, so a tired man is relieved even when every fresh man is half of a team). PROVISIONAL.",
+        "wall_roles": [
+          "warden",
+          "gunner",
+          "lancer",
+          "marksman",
+          "arc",
+          "bulwark",
+          "mender"
+        ]
+      },
+      "own_timeout_s": 45,
+      "tactics": {
+        "_note": "SENT7-2 13.9c-13 (realism, no gimmicks). PROVISIONAL.",
+        "bound_len": 5.0,
+        "pair_split_pen": 1000.0,
+        "drag_far": 8.0,
+        "_drag_far": "SENT7-5: a man down in the open with no cover within drag_r (4) is dragged up to drag_far tiles away from the threat or back towards the facility, to real cover. PROVISIONAL.",
+        "_pair_split_pen": "SENT7-5: a buddy pair is a unit of work: the board takes a man's partner with him, and a job with one free slot only takes a man who has a partner when nobody else fits (score penalty, tiles). PROVISIONAL.",
+        "arrive": 1.2,
+        "cover_r": 2,
+        "open_v": 0.35,
+        "pie_r": 1.5,
+        "hit_recent_s": 3.0,
+        "rush_supp": 12.0,
+        "sector_half_deg": 60,
+        "pair_spread_deg": 25,
+        "in_sector": 1.5,
+        "out_sector": 0.6,
+        "focus": 0.25,
+        "net_every": 10,
+        "net_r": 22.0,
+        "alarm_r": 22.0,
+        "alarm_hold_s": 45.0,
+        "_alarm_note": "SENT7-3: guard-net stand-to: any enemy the owner sees inside compound + alarm_r, or an enemy firing on a Sentinel / facility building, raises the alarm before a breach; holds alarm_hold_s after the last contact. PROVISIONAL.",
+        "prio": {
+          "vehicle": 3.0,
+          "drone": 1.5,
+          "heavy_inf": 2.0,
+          "inf": 1.0
+        },
+        "pref": {
+          "lancer": {
+            "vehicle": 3.0,
+            "inf": 0.3,
+            "heavy_inf": 0.5
+          },
+          "arc": {
+            "drone": 3.0,
+            "machine": 2.0
+          },
+          "marksman": {
+            "heavy_inf": 2.0,
+            "vehicle": 0.3
+          },
+          "gunner": {
+            "inf": 1.5,
+            "vehicle": 0.2
+          },
+          "warden": {
+            "vehicle": 0.4
+          },
+          "bulwark": {
+            "vehicle": 0.3
+          },
+          "mender": {
+            "vehicle": 0.3
+          }
+        },
+        "mag": {
+          "warden": 30,
+          "marksman": 10,
+          "gunner": 100,
+          "bulwark": 8,
+          "arc": 30,
+          "mender": 30,
+          "bearer": 30
+        },
+        "reload_s": {
+          "warden": 2.5,
+          "marksman": 3.0,
+          "gunner": 6.0,
+          "bulwark": 4.0,
+          "arc": 2.5,
+          "mender": 2.5,
+          "bearer": 2.5
+        },
+        "sidearm_mag": 15,
+        "sidearm_reload_s": 2.0,
+        "tac_reload_frac": 0.8,
+        "_tac_reload_note": "SENT7-4: reload when you can, not when you must: in a lull (no target, buddy not reloading, under alarm) a magazine with a fifth or more spent is topped up with retention, also behind a tower / booth wall (was 0.34: men went into the next contact on a third of a magazine). PROVISIONAL.",
+        "withdraw_hp": 0.4,
+        "withdraw_ratio": 3.0,
+        "withdraw_min": 4,
+        "local_r": 10.0,
+        "withdraw_rest_s": 30.0,
+        "stack_s": 1.5,
+        "checkin_s": 4.0,
+        "pause_s": [
+          2,
+          6
+        ],
+        "exp_w": 3.0,
+        "cas_prio": 7.0,
+        "drag_r": 4.0
+      }
+    }
   }
- }
 }

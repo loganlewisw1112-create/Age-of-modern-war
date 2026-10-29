@@ -346,14 +346,20 @@ static func measure_building(spec: Dictionary) -> Dictionary:
 	var out := {"st": {}, "e": [], "s": ""}
 	var names: Array = states.keys()
 	names.sort()
-	var src := ""
+	var srcs := {}   # state -> "f" measured flash / "e" edge fallback / "d" derived (CIWS7-4) / "a" analytic (CIWS7-5)
+	var ny := int((spec.get("g7", {}) as Dictionary).get("yaws", 8)) if spec.get("g7") is Dictionary else 8
 	for st in names:
 		var n := String(st)
 		if not (n == "fire" or n.ends_with("_fire")):
 			continue
 		var base := n.trim_suffix("_fire") if n != "fire" else "built"
-		if not states.has(base):
+		if states.has(base + "_s"):
+			base = base + "_s"   # CIWS7-5: the spinning frame of the same yaw / band (same crop, same blur, no flash)
+		elif not states.has(base):
 			base = "built"
+		# CIWS7-5: cropped states carry their own pivot (points stay relative to the drawn ground point)
+		var sp = (states[n] as Dictionary).get("pivot")
+		var spv := piv if not (sp is Array) else Vector2(float(sp[0]), float(sp[1]))
 		var fi := _rgba(ArtCatalog._image(String((states[n] as Dictionary).get("file", ""))))
 		var ri := _rgba(ArtCatalog._image(String((states.get(base, {}) as Dictionary).get("file", ""))))
 		if fi == null:
@@ -365,32 +371,104 @@ static func measure_building(spec: Dictionary) -> Dictionary:
 			rd = ri.get_data()
 		var fd := fi.get_data()
 		# aim direction of the state: aim_<k> / rot_<m>_a<n> art is drawn toward its own facing; use the flash itself
-		var t := tips(fd, w, 0, 0, rd, w, 0, 0, w, h, _state_dir(n))
+		var t := tips(fd, w, 0, 0, rd, w, 0, 0, w, h, _state_dir(n, ny))
 		var row: Array = []
-		if t.is_empty():
-			row.append(_pt(edge(fd, w, 0, 0, w, h, _state_dir(n), 0.5), piv))
-			src += "e"
+		var amz = (states[n] as Dictionary).get("mz")
+		if t.is_empty() and amz is Array:
+			# CIWS7-5: no flash pixels (muzzle hidden behind the mount, barrels trained away from the camera): from the
+			# generator's analytic muzzle of this frame, along the barrel's yaw on screen, to the first silhouette edge
+			# pixel (where the bore line comes out from behind the mount)
+			var hp := _hidden_tip(fd, w, h, Vector2(float(amz[0]), float(amz[1])) + spv, _state_dir(n, ny))
+			row.append(_pt(hp, spv))
+			srcs[n] = "a"
+		elif t.is_empty():
+			row.append(_pt(edge(fd, w, 0, 0, w, h, _state_dir(n, ny), 0.5), spv))
+			srcs[n] = "e"
 		else:
 			for v in t:
-				row.append(_pt(v, piv))
-			src += "f"
+				row.append(_pt(v, spv))
+			srcs[n] = "f"
 		out.st[n] = row
+	_derive_cw(out.st, srcs, ny)
 	var bi := _rgba(ArtCatalog._image(String((states.get("built", {}) as Dictionary).get("file", ""))))
+	var bp = (states.get("built", {}) as Dictionary).get("pivot")
+	if bp is Array:
+		piv = Vector2(float(bp[0]), float(bp[1]))
 	if bi != null:
 		var d := bi.get_data()
 		for k in 8:
 			out.e.append([_pt(edge(d, bi.get_width(), 0, 0, bi.get_width(), bi.get_height(), screen_dir(k), 0.5), piv)])
+	var src := ""
+	for st in names:
+		src += String(srcs.get(st, ""))
 	out.s = src
 	return out
+
+
+## G7 CIWS7-4: a CIWS7 mount state cw<k>_<el>_fire whose flash is hidden (barrels trained away and depressed behind
+## the radome: no flash pixels, so the edge fallback) gets its tip DERIVED instead: the same yaw's nearest measured
+## elevation plus the mean elevation offset (el2 -> el) of the neighbouring yaws k-1 / k+1 (cw5_0 = cw5_1 + the
+## cw4 / cw6 el1 -> el0 step). Marked "d" in the source string.
+## CIWS7-5: ny = the mount's yaw frame count (manifest g7.yaws; 8 before CIWS7-5); states with an analytic muzzle never
+## reach this (source "a").
+static func _derive_cw(st: Dictionary, srcs: Dictionary, ny := 8) -> void:
+	var ks: Array = srcs.keys()
+	ks.sort()
+	for n in ks:
+		if String(srcs[n]) != "e":
+			continue
+		var p := String(n).split("_")
+		if p.size() != 3 or not p[0].begins_with("cw") or not p[0].substr(2).is_valid_int() or not p[1].is_valid_int():
+			continue
+		var k := int(p[0].substr(2))
+		var el := int(p[1])
+		for el2 in [el + 1, el - 1, el + 2, el - 2]:
+			var own := "cw%d_%d_fire" % [k, el2]
+			if String(srcs.get(own, "")) != "f":
+				continue
+			var o := Vector2.ZERO
+			var c := 0
+			for dk in [-1, 1]:
+				var k2 := posmod(k + dk, ny)
+				var a := "cw%d_%d_fire" % [k2, el]
+				var b := "cw%d_%d_fire" % [k2, el2]
+				if String(srcs.get(a, "")) == "f" and String(srcs.get(b, "")) == "f":
+					o += Vector2(float(st[a][0][0]), float(st[a][0][1])) - Vector2(float(st[b][0][0]), float(st[b][0][1]))
+					c += 1
+			if c == 0:
+				continue
+			var t := Vector2(float(st[own][0][0]), float(st[own][0][1])) + o / float(c)
+			st[n] = [[roundi(t.x), roundi(t.y)]]
+			srcs[n] = "d"
+			break
+
+
+## CIWS7-5: first opaque pixel with a transparent 4-neighbour (a silhouette edge) walking from p along dir (image px);
+## p itself when none is met.
+static func _hidden_tip(d: PackedByteArray, w: int, h: int, p: Vector2, dir: Vector2) -> Vector2:
+	for i in 240:
+		var q := Vector2i(roundi(p.x + dir.x * i * 0.5), roundi(p.y + dir.y * i * 0.5))
+		if q.x < 0 or q.y < 0 or q.x >= w or q.y >= h:
+			break
+		if d[(q.y * w + q.x) * 4 + 3] <= OPAQUE:
+			continue
+		for nb in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var r: Vector2i = q + nb
+			if r.x < 0 or r.y < 0 or r.x >= w or r.y >= h or d[(r.y * w + r.x) * 4 + 3] <= OPAQUE:
+				return Vector2(q)
+	return p
 
 
 ## Facing direction a building fire state is drawn toward (screen), for the backblast filter / edge fallback.
 ## aim_<k>: facing row k; rot_<m>[_a<n>]: rot_<m> = facing_i % 4 quarter (k = 2m) unless an a<n> head aim is given
 ## (wall turrets: mount side m, head across the half-plane, 5 = straight out); else facing 0.
-static func _state_dir(n: String) -> Vector2:
+static func _state_dir(n: String, ny := 8) -> Vector2:
 	var p := n.split("_")
 	if p.size() >= 2 and p[0] == "aim" and p[1].is_valid_int():
 		return screen_dir(int(p[1]))
+	if p.size() >= 2 and p[0].begins_with("cw") and p[0].substr(2).is_valid_int():   # CIWS7 mount cw<k>_<el>_fire: yaw k * 360 / ny deg
+		var ca := int(p[0].substr(2)) * TAU / float(maxi(ny, 1))
+		return Vector2((cos(ca) - sin(ca)) * 32.0, (cos(ca) + sin(ca)) * 16.0).normalized()
 	if p.size() >= 2 and p[0] == "rot" and p[1].is_valid_int():
 		var m := int(p[1])
 		if p.size() >= 3 and p[2].begins_with("a") and p[2].substr(1).is_valid_int():

@@ -333,6 +333,9 @@ static func fit_build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -
 	stack.add_child(h)
 	stack.move_child(h, 0)
 	h.refresh()
+	if nm == "ui7_lp_drone":   # G7 DFEED7: a real Last Protocol HUD has no OBJECTIVES / VICTORY cards; the player flies a drone
+		hide_skirmish_cards(hud)
+		await Screens.drone_feed(hud, tree)
 	if nm == "ui7_lp_end":
 		var r := LastProtocol.result(fit_world(), fit_world().sys_state.lp, "pyrrhic")
 		r.remembered = ["Viper 2-1", "Hammer 3", "Ghost 6", "Lancer 1-4", "Saber 2", "Nomad 7", "Rook 1-1", "Atlas 4"]

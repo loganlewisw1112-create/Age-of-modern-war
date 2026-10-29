@@ -282,6 +282,116 @@ def core_destroyed(r):
     return mix(s6.boom(r, 3.2, 700, 38, deb=18), (0.5, env_adsr(core_scream(r), 0.0, 0.5, 0.6, 1.5)))
 
 
+# ------------------------------------------------------------------ CIWS7-4 rotary cannon (G7_REFERENCE 13.9c-32a)
+# Owner: "that signatture phlanx BBRRRRTTTTTTTTTT shooting sound". Original synthesis (no recording): a train of
+# CIWS_RATE short reports a second (each its own noise crack + low thump + mechanism tick, timing / level jitter) so
+# close together they fuse into one tearing buzz whose fundamental IS the rate (70 Hz), a sawtooth body on the same
+# fundamental for the "BRRRT" tone, the drive motor whine and belt rattle underneath, soft-clipped for harsh upper
+# harmonics, plus a short slap echo. brrt is a seamless 1.0 s loop (the reports and the echo wrap round the loop end):
+# the audio layer starts it at the burst's first round and stops it at its last. spinup / spindown are the barrel
+# cluster's electric-hydraulic whine and rotation clicks before and after the rounds.
+CIWS_RATE = 70.0      # reports per second (~4200 rpm): the buzz fundamental
+CIWS_LOOP = 1.0       # loop length, s (exactly CIWS_RATE reports: the loop point falls between two reports)
+CIWS_SPINUP = 0.55    # s
+CIWS_SPINDOWN = 1.8   # s
+
+
+def _ciws_report(r, far=False):
+    crack = env_exp(highpass(noise(0.014, r), 900 if far else 1700), 0.011, 0.0003)
+    body = env_exp(sine(0.024, r.uniform(140, 165), 85), 0.02, 0.0005)
+    mech = env_exp(bandpass(noise(0.01, r), 2400, 6500), 0.006)
+    if far:
+        return mix((0.5, lowpass(crack, 700)), (1.0, body))
+    return mix((0.9, crack), (0.75, body), (0.3, mech))
+
+
+def _ciws_train(r, far=False):
+    """CIWS_LOOP seconds of reports at CIWS_RATE (wrapped: loops seamlessly)."""
+    out = silence(CIWS_LOOP)
+    n = int(round(CIWS_RATE * CIWS_LOOP))
+    for i in range(n):
+        t = i / CIWS_RATE + r.uniform(-0.00035, 0.00035)
+        place(out, _ciws_report(r, far), t % CIWS_LOOP, r.uniform(0.82, 1.0), wrap=True)
+    return out
+
+
+def _echo2(x, delay, g, damp):
+    """Slap echo (no feedback) over a two-period buffer: the second period carries the first period's tail."""
+    tap = lowpass(x, damp)
+    d = int(delay * SR)
+    out = list(x)
+    for i in range(len(x) - d):
+        out[i + d] += tap[i] * g
+    return out
+
+
+def ciws_brrt(r):
+    # every input is periodic in CIWS_LOOP (wrapped reports, whole cycles of the 70 Hz saw and the whine sines, a
+    # repeated noise block); the filters, drive and echo run over two periods and the second (steady-state) period is
+    # kept, so the loop point is seamless
+    sec = CIWS_LOOP
+    n = n_samples(sec)
+    train = _ciws_train(r)
+    tone = lowpass(saw(sec, CIWS_RATE) * 2, 2200)                  # the fused buzz on the rate fundamental
+    whine = mix(sine(sec, 1180), (0.4, sine(sec, 2360)), (0.15, sine(sec, 3540))) * 2
+    rattle = bandpass(noise(sec, r) * 2, 3000, 8000)                # belt feed / links / spent cases
+    x = mix((1.0, train * 2), (0.32, tone), (0.05, whine), (0.07, rattle))
+    x = drive(x, 2.6)                                               # harsh upper harmonics (soft clip)
+    x = _echo2(x, 0.047, 0.22, 2600)                                # slap off the roof / walls
+    return x[n:]
+
+
+def ciws_brrt_far(r):
+    sec = CIWS_LOOP
+    n = n_samples(sec)
+    train = _ciws_train(r, True)
+    tone = lowpass(saw(sec, CIWS_RATE) * 2, 450)
+    rumble = lowpass(noise(sec, r) * 2, 260)
+    x = mix((1.0, train * 2), (0.45, tone), (0.25, rumble))
+    x = drive(lowpass(x, 900), 1.6)
+    x = _echo2(x, 0.13, 0.38, 900)
+    x = _echo2(x, 0.29, 0.22, 600)
+    return x[n:]
+
+
+def _clicks(r, sec, f0, f1, g0, g1, shape=1.0):
+    """Barrel-cluster rotation clicks whose rate glides f0 -> f1 (Hz) and level g0 -> g1."""
+    out = silence(sec)
+    ph, n = 0.0, n_samples(sec)
+    step = 64
+    for i in range(0, n, step):
+        u = i / float(n)
+        f = f0 + (f1 - f0) * (u ** shape)
+        ph += f * step / SR
+        if ph >= 1.0:
+            ph -= 1.0
+            clk = env_exp(bandpass(noise(0.004, r), 1800, 5200), 0.004, 0.0002)
+            place(out, clk, i / SR, (g0 + (g1 - g0) * u) * r.uniform(0.8, 1.0))
+    return out
+
+
+def ciws_spinup(r):
+    sec = CIWS_SPINUP
+    whine = mix(sine(sec, 180, 1180), (0.4, sine(sec, 360, 2360)), (0.12, sine(sec, 540, 3540)))
+    whine = env_adsr(whine, sec * 0.8, 0.01, 1.0, 0.03)            # rises with the motor speed
+    hiss = env_adsr(bandpass(noise(sec, r), 700, 3200), sec * 0.7, 0.05, 0.8, 0.05)
+    clunk = env_exp(lowpass(noise(0.08, r), 400), 0.07)              # clutch / hydraulics engage
+    return mix((0.55, whine), (0.25, hiss), (0.5, clunk), (0.7, _clicks(r, sec, 6.0, CIWS_RATE, 0.3, 0.8, 1.6)))
+
+
+def ciws_spindown(r):
+    sec = CIWS_SPINDOWN
+    tail = silence(0.3)                                              # the last rounds ringing out
+    for i in range(4):
+        place(tail, _ciws_report(r), i / CIWS_RATE, 0.9 * (0.55 ** i))
+    tail = echo(tail, 0.047, 0.3, 3, 2600)
+    whine = mix(sine(sec, 1180, 120), (0.35, sine(sec, 2360, 240)))
+    whine = env_exp(whine, sec * 1.1, 0.002)
+    clicks = _clicks(r, sec, CIWS_RATE * 0.85, 4.0, 0.7, 0.1, 0.55)
+    stop = offset(env_exp(lowpass(noise(0.12, r), 700), 0.1), sec * 0.82)   # cluster brake / stop clack
+    return mix((0.8, tail), (0.4, whine), (0.6, clicks), (0.25, stop))
+
+
 # id -> (recipe, variants, peak)
 RECIPES = {
     "shot_hmg50": (hmg50, 3, 0.88), "shot_rocketpod": (rocketpod, 2, 0.85), "shot_rail": (rail, 2, 0.92),
@@ -301,8 +411,10 @@ RECIPES = {
     "threat_spawn": (spawn, 2, 0.75),
     "core_scream": (core_scream, 3, 0.95), "core_pulse": (core_pulse, 2, 0.85), "core_hit": (core_hit, 3, 0.8),
     "core_destroyed": (core_destroyed, 1, 0.97),
+    "shot_ciws7_brrt": (ciws_brrt, 2, 0.9), "shot_ciws7_brrt_far": (ciws_brrt_far, 1, 0.8),   # CIWS7-4 13.9c-32a
+    "shot_ciws7_spinup": (ciws_spinup, 1, 0.7), "shot_ciws7_spindown": (ciws_spindown, 2, 0.75),
 }
-LOOPS = ("engine_", "ui_drone_feed")
+LOOPS = ("engine_", "ui_drone_feed", "shot_ciws7_brrt")
 
 
 # ------------------------------------------------------------------ adaptive music (D minor, 96 BPM, 8 bars)

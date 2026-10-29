@@ -1,13 +1,13 @@
 {
-  "_meta": "G7 fragment (owner: DRONEBAY7). Master scope 13.9c-27: the facility drone bay (the workshop's 2nd storey, launch deck on its roof) garrisons defence drones. Reuses existing drone defs: g7_cn_interceptor_drone (vs drones / rockets), cn_gun_drone (MG, vs ground attackers), the G5 FPV strike drone a_drone_strike / b_drone_strike as the kamikaze (vs vehicles / heavy targets). EVERY NUMBER PROVISIONAL (garrison size 12 is ORCH's PROVISIONAL default until the owner names one). DRONEBAY7-2 (13.9c-27a): the garrison fights as one hive (rules.g7_dronebay.hive), every hive number PROVISIONAL.",
+  "_meta": "G7 fragment (owner: DRONEBAY7). Master scope 13.9c-27: the facility drone bay (the workshop's 2nd storey, launch deck on its roof) garrisons defence drones. Reuses existing drone defs: g7_cn_interceptor_drone (vs drones / rockets), cn_gun_drone (MG, vs ground attackers), the G5 FPV strike drone a_drone_strike / b_drone_strike as the kamikaze (vs vehicles / heavy targets). EVERY NUMBER PROVISIONAL (garrison size 12 is ORCH's PROVISIONAL default until the owner names one). DRONEBAY7-2 (13.9c-27a): the garrison fights as one hive (rules.g7_dronebay.hive), every hive number PROVISIONAL. BAL7 (13.9c-33, owner: \"Fortress: needs ~4x\"): rebuild_s 45 -> 30, rebuild_order interceptor/gun/kamikaze -> kamikaze/gun/interceptor (the anti-armour layer comes back first), hive.commit.rebuild_mult 0.4 -> 0.25 (a breach rebuilds a loss in 7.5 s): the full facility now holds a combined-arms assault up to ~3.5x its Sentinel garrison and breaks in at ~4x (test_sent7 test_balance_fight); still PROVISIONAL. WATCH7-2 (13.9c-38 follow-up, owner: \"Scale the defences up too\", measured against the 48-man garrison value): cap 12 -> 24, mix interceptor/gun/kamikaze 4/5/3 -> 4/8/12 (the assault is 40% armour), rebuild_s 30 -> 20 (breach rebuild 5 s); with the Lancer harpoon 95 -> 150 and lancers 6 -> 9 the full facility holds at 2.5x (~319 attackers) and breaks in at ~4x (~509); still PROVISIONAL.",
   "rules": {
     "g7_dronebay": {
       "_note": "PROVISIONAL. cap = hangar size; mix = the composition the bay rebuilds toward (sums to cap). auto = automatic release default (owner: ON). think_every ticks (staggered by facility id). defence_pad = tiles beyond the compound wall the bay defends; leash = how far past that a drone may chase before it is recalled. launch_gap_s = one drone off the deck every gap. sortie_s = battery: a drone recovers after this long aloft. rearm_s = turnaround on the deck (+ repair_s x missing hp fraction). rebuild_s / rebuild_cost per lost drone, one at a time. clear_s = the base must be quiet this long before the guard drones recover. need: drones per threat (air per drone, ground hp per gun drone, kamikaze per heavy target). heavy = armor classes / min hp that draw a kamikaze. intercept: an airborne interceptor within r of a rocket / shell / strike landing point shoots it down (cooldown_s per drone).",
-      "cap": 12,
+      "cap": 24,
       "mix": {
         "interceptor": 4,
-        "gun": 5,
-        "kamikaze": 3
+        "gun": 8,
+        "kamikaze": 12
       },
       "kinds": [
         "interceptor",
@@ -33,7 +33,7 @@
       "sortie_s": 120,
       "rearm_s": 20,
       "repair_s": 30,
-      "rebuild_s": 45,
+      "rebuild_s": 20,
       "rebuild_cost": {
         "credits": 60,
         "salvage": 25
@@ -78,9 +78,9 @@
         ]
       ],
       "rebuild_order": [
-        "interceptor",
+        "kamikaze",
         "gun",
-        "kamikaze"
+        "interceptor"
       ],
       "hive": {
         "_note": "PROVISIONAL (13.9c-27a hive mind). prio: threat-board class priorities (what most endangers the facility first: an attacker at the core, breaching units inside the wall, anti-air, heavy armour at the walls, inbound munitions / drones, other heavy, other ground); board: near_bonus (up to, by closeness to the compound centre), outside_pen (beyond the defence ring), wall_r (tiles: heavy 'at the walls'), heard_s (an attacker who hit the core / a facility building is on the board this long even from beyond sight), max entries, shells (incoming rockets / shells tracked), scan_max (only the nearest scan_max enemies in the ring are sight-checked and classified: huge fights cost the same as a raid). screen: interceptor screen: outer picket outer_d tiles beyond the wall on the threat axis (spread_deg apart, sweeping sweep_deg), inner ring at inner_frac of the half-compound over the facility rotating inner_dps; lead_s = how far ahead on its path a drone is aimed; min_screen interceptors always hold the screen; deck_cover = one ring slot hovers over the deck while drones come home. team: gun-drone fire teams of size, one team per hp_per_team of target hp (spare teams converge on the top threat), orbit at standoff x weapon range, strafing orbit_dps (teams alternate direction); guard ring at guard_frac of the half-compound (guard_dps) with no threat. kamikaze: launched once the gun drones have the target under fire supp_s (or after wait_s; at once on a breach), heavy_bonus to the target value of heavy armour. rotate: a drone past at x battery or below hp rotates home while at most down_frac of the drones in play are down and keep_frac stay aloft; must_hp = always comes home. commit (breach): rebuild / rearm / launch-gap multipliers. ram: last resort at the core: an attacker within core_r tiles of the core building with no kamikaze on it draws a rammer (at most max at once), hit within hit_r for damage / splash (payload weapon class).",
@@ -125,7 +125,9 @@
         "kamikaze": {
           "supp_s": 1.5,
           "wait_s": 8.0,
-          "heavy_bonus": 250
+          "heavy_bonus": 250,
+          "commit_per_heavy": 4,
+          "commit_per": 2
         },
         "rotate": {
           "at": 0.45,
@@ -135,7 +137,7 @@
           "down_frac": 0.334
         },
         "commit": {
-          "rebuild_mult": 0.4,
+          "rebuild_mult": 0.25,
           "rearm_mult": 0.5,
           "gap_mult": 0.5
         },

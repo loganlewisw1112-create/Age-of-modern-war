@@ -597,6 +597,63 @@ static func on_footprint_changed(w: SimWorld, origin: Vector2i, size: int, solid
 				var free := nearest_free_cell(w, cell, move_class(e), _qteam(w, e))
 				e.pos = Vector2(free) + CENTER
 				HotState.mark(w, int(id))
+		_repath_through(w, rect)
+
+
+## SUITSIM7 (test_path7 facility pen): a footprint that turns solid under a unit's planned path makes that unit plan
+## again for the same goal (same order). Before, the path was kept until the stuck rescue (~70 ticks) and the unit
+## leaned on the new building meanwhile (e.g. a Last Protocol wall patrol ordered at tick 7 across the ground where
+## the facility's ECP baffles rise at tick 10). Only moving ground units with a served path whose remaining legs
+## (from the unit through path_i..end) cross the footprint grown by a body radius are touched; nothing else changes.
+static func _repath_through(w: SimWorld, rect: Rect2i) -> void:
+	var rf := Rect2(Vector2(rect.position), Vector2(rect.size)).grow(0.2)
+	var hits := []
+	for id in w.entities:
+		var e: Dictionary = w.entities[id]
+		if e.kind != "unit" or not bool(e.get("moving", false)) or int(e.get("path_req", -1)) >= 0:
+			continue
+		var path = e.get("path")
+		if not (path is Array) or (path as Array).is_empty() or is_air(move_class(e)):
+			continue
+		# ORCH: a unit walking INTO the footprint on purpose (boarding a landed craft up its ramp, entering a building)
+		# keeps its route: its goal is inside the new footprint, or its order is board / load. Re-planning it to the same
+		# goal sent dropship boarders off the ramp (cnfac7 f6_7: 0 of 2 craft loaded).
+		if rf.has_point((path as Array).back()) or (e.get("order") is Dictionary and String(e.order.get("type", "")) in ["board", "load"]):
+			continue
+		var p: Vector2 = e.pos
+		for j in range(int(e.get("path_i", 0)), (path as Array).size()):
+			var q: Vector2 = path[j]
+			if _seg_hits_rect(p, q, rf):
+				hits.append(e)
+				break
+			p = q
+	for e in hits:
+		var goal: Vector2 = (e.path as Array).back()
+		order_path(w, e, goal)
+
+
+## Segment a-b touches rect r (Liang-Barsky clip).
+static func _seg_hits_rect(a: Vector2, b: Vector2, r: Rect2) -> bool:
+	if r.has_point(a) or r.has_point(b):
+		return true
+	var d := b - a
+	var t0 := 0.0
+	var t1 := 1.0
+	for k in 4:
+		var pk: float = [-d.x, d.x, -d.y, d.y][k]
+		var qk: float = [a.x - r.position.x, r.end.x - a.x, a.y - r.position.y, r.end.y - a.y][k]
+		if absf(pk) < 1e-9:
+			if qk < 0.0:
+				return false
+			continue
+		var t := qk / pk
+		if pk < 0.0:
+			t0 = maxf(t0, t)
+		else:
+			t1 = minf(t1, t)
+		if t0 > t1:
+			return false
+	return true
 
 
 ## Connected-component labels (4-connected; diagonals never connect what orthogonals cannot).

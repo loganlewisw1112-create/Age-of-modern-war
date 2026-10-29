@@ -101,10 +101,28 @@ static func _prone(e: Dictionary) -> bool:
 
 ## Zone weights for a hit from `from` (Vector2 or null). Pure; the caller draws once.
 static func zone_weights(w: SimWorld, e: Dictionary, from) -> Dictionary:
-	var c := cfg()
+	var a := _zw(w, e, from)
 	var wt := {}
-	for z in ZONES:
-		wt[z] = float(_zcfg(z).get("w", 0.1))
+	for i in ZONES.size():
+		wt[ZONES[i]] = a[i]
+	return wt
+
+
+const ZK := ["head", "torso", "arm", "arm", "leg", "leg"]   # PERF7H: ZONES[i].get_slice("_", 0)
+
+
+## PERF7H (perf, exact): zone_weights as an Array in ZONES order. Same reads of the live rules (nothing cached, so
+## a test patching cfg() in place still counts) and the same products in the same order (base x prone x cover x
+## facing, a factor only where the mod names the zone), without a get_slice / _zcfg per zone or a Dictionary build.
+static func _zw(w: SimWorld, e: Dictionary, from) -> Array:
+	return _zw_c(w, e, from, cfg())
+
+
+static func _zw_c(w: SimWorld, e: Dictionary, from, c: Dictionary) -> Array:
+	var zs: Dictionary = c.get("zones", {})
+	var wt := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	for i in 6:
+		wt[i] = float((zs.get(ZK[i], {}) as Dictionary).get("w", 0.1))
 	var mods: Array = []
 	if _prone(e):
 		mods.append((c.get("posture", {}) as Dictionary).get("prone", {}))
@@ -114,10 +132,13 @@ static func zone_weights(w: SimWorld, e: Dictionary, from) -> Dictionary:
 	if from != null:
 		mods.append((c.get("facing", {}) as Dictionary).get(_side(from, e), {}))
 	for m in mods:
-		for z in ZONES:
-			var k: String = String(z).get_slice("_", 0)
-			if (m as Dictionary).has(k):
-				wt[z] = float(wt[z]) * float(m[k])
+		var md: Dictionary = m
+		if md.is_empty():
+			continue
+		for i in 6:
+			var k: String = ZK[i]
+			if md.has(k):
+				wt[i] = float(wt[i]) * float(md[k])
 	return wt
 
 
@@ -134,15 +155,20 @@ static func _side(from: Vector2, t: Dictionary) -> String:
 
 
 static func pick_zone(w: SimWorld, e: Dictionary, from) -> String:
-	var wt := zone_weights(w, e, from)
+	return _pick_zone_c(w, e, from, cfg())
+
+
+## PERF7J: pick_zone with the rules dict passed in (apply_hit reads cfg() once).
+static func _pick_zone_c(w: SimWorld, e: Dictionary, from, c: Dictionary) -> String:
+	var wt := _zw_c(w, e, from, c)   # PERF7H: same weights, same sums in ZONES order
 	var tot := 0.0
-	for z in ZONES:
-		tot += float(wt[z])
+	for i in 6:
+		tot += float(wt[i])
 	var r := w.rng.randf() * tot
-	for z in ZONES:
-		r -= float(wt[z])
+	for i in 6:
+		r -= float(wt[i])
 		if r < 0.0:
-			return z
+			return ZONES[i]
 	return "torso"
 
 
@@ -166,10 +192,12 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 		from = Vector2(src.pos)
 	if dmg > 0.0 and bool(e.get("suit", false)) and not bool(e.get("wpunct", false)):
 		puncture(w, e, src)   # G7 (CNSIM7 ask): a hit on a sealed-suit soldier punctures the suit at once
+	var c := cfg()   # PERF7J (perf, exact): the live rules read once per hit (the same dict every helper read)
 	var zone := _hint_zone(w, zone_hint)
 	if zone == "":
-		zone = pick_zone(w, e, from)
-	var zc := _zcfg(zone)
+		zone = _pick_zone_c(w, e, from, c)
+	var zc: Dictionary = (c.get("zones", {}) as Dictionary).get(zone.get_slice("_", 0), {})   # == _zcfg(zone)
+	var mh := max_hp(e)
 	var md := snappedf(dmg * float(zc.get("dmg", 1.0)), Q)
 	e.hp = snappedf(float(e.hp) - md, Q)
 	var wz: Dictionary = e.get("wz", {})
@@ -186,7 +214,7 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 	var res := "hit"
 	var hr := 0   # head outcome: 0 none, 1 kill, 2 unconscious, 3 short knock-out
 	if zone == "head":
-		hr = head_roll(w.rng.frac(), md, max_hp(e), _graze(e, dmg))
+		hr = head_roll(w.rng.frac(), md, mh, dmg / maxf(mh, 1.0) < float((c.get("clot", {}) as Dictionary).get("light", 0.0)))   # == _graze
 	if hr == 1:
 		e.wkill = true
 		e.hp = 0.0
@@ -194,12 +222,12 @@ static func apply_hit(w: SimWorld, e: Dictionary, zone_hint: String, dmg: float,
 	elif float(e.hp) <= 0.0:
 		res = "dead"
 	else:
-		if hr == 2 or float(e.hp) <= unc_hp(e):
+		if hr == 2 or float(e.hp) <= mh * float(c.get("unconscious_frac", 0.2)):   # == unc_hp(e)
 			res = "down"
 		var ooa := int(float(zc.get("ooa_s", 0.0)) * SimWorld.TICK_RATE)
 		var ko := bool(zc.get("ko", false))
 		if ko and ooa > 0:
-			var kr := torso_ko(w.rng.frac() if _ko_rolls(md, max_hp(e)) else 0.0, md, max_hp(e))
+			var kr := torso_ko(w.rng.frac() if _ko_rolls(md, mh) else 0.0, md, mh)
 			ooa = int(float(ooa) * kr)
 			ko = ooa > 0
 		if hr == 3:
@@ -362,7 +390,9 @@ static func _hold_fire(e: Dictionary, ticks: int) -> void:
 
 
 static func max_hp(e: Dictionary) -> float:
-	return float(e.get("max_hp", Content.unit(String(e.def)).get("hp", 100)))
+	if e.has("max_hp"):   # PERF7H: the content lookup only when the entity has no max_hp (same value as get's default)
+		return float(e.max_hp)
+	return float(Content.unit(String(e.def)).get("hp", 100))
 
 
 static func unc_hp(e: Dictionary) -> float:
@@ -539,9 +569,16 @@ static func vis_kd(w: SimWorld, e: Dictionary) -> void:
 
 
 static func _vis_pass(w: SimWorld, st: Dictionary) -> void:
-	for id in (st.vw as Dictionary).keys():
-		if not w.entities.has(id) or (w.tick + int(id)) % VIS_EVERY == 0:
-			_vis_sync(w, st, int(id))
+	# PERF7J (perf, exact): the due ids first (same test, same key order), then the syncs: a sync only erases its own
+	# id from st.vw, so the set and order of synced ids equal the keys()-copy loop's, without copying every key.
+	var due := []
+	var ents: Dictionary = w.entities
+	var tk: int = w.tick
+	for id in st.vw:
+		if not ents.has(id) or (tk + int(id)) % VIS_EVERY == 0:
+			due.append(id)
+	for id in due:
+		_vis_sync(w, st, int(id))
 
 
 static func _vis_set(d: Dictionary, k: String, v, on: bool) -> void:
@@ -629,20 +666,31 @@ static func tick(w: SimWorld) -> void:
 	var st = w.sys_state.get("wounds")
 	if st == null:
 		return
+	var tp := Time.get_ticks_usec() if SimIndex.profiling else 0
 	if st.has("fz") and not (st.fz as Dictionary).is_empty():
 		_freeze_pass(w, st.fz)
 	if st.has("ko") and not (st.ko as Dictionary).is_empty():
 		_ko_pass(w, st.ko)
+	if SimIndex.profiling:
+		tp = SimIndex.pt("wd.fz_ko", tp)
 	if not (st.bleed as Dictionary).is_empty():
 		_bleed_pass(w, st)
+	if SimIndex.profiling:
+		tp = SimIndex.pt("wd.bleed", tp)
 	if not (st.care as Dictionary).is_empty():
 		_care_pass(w, st)
+	if SimIndex.profiling:
+		tp = SimIndex.pt("wd.care", tp)
 	var au: Dictionary = cfg().get("auto", {})
 	var every := maxi(int(au.get("every", 10)), 1)
 	if w.tick % every == 3:
 		_auto_pass(w, st, au)
+	if SimIndex.profiling:
+		tp = SimIndex.pt("wd.auto", tp)
 	if st.has("vw") and not (st.vw as Dictionary).is_empty():
 		_vis_pass(w, st)
+	if SimIndex.profiling:
+		SimIndex.pt("wd.vis", tp)
 
 
 ## Visible panic (morale.gd): a frozen soldier flees when the freeze ends (still broken), ascending id.
@@ -665,11 +713,12 @@ static func _bleed_pass(w: SimWorld, st: Dictionary) -> void:
 	var be := maxi(int(cfg().get("bleed_every", 10)), 1)
 	var dt := float(be) / SimWorld.TICK_RATE
 	var bl: Dictionary = st.bleed
-	var ids: Array = bl.keys()
+	var ids: Array = []   # PERF7H (exact): only this tick's due ids, sorted (the same ids in the same order as before)
+	for id in bl:
+		if (w.tick + int(id)) % be == 0:
+			ids.append(id)
 	ids.sort()
 	for id in ids:
-		if (w.tick + int(id)) % be != 0:
-			continue
 		var e = w.entities.get(id)
 		if e == null:
 			bl.erase(id)
@@ -781,7 +830,10 @@ static func _care_pass(w: SimWorld, st: Dictionary) -> void:
 				c.wnd_pos = tp
 				HotState.set_pos(w, int(c.id), tp)
 			var to := Vector2(float(job.to[0]), float(job.to[1]))
-			if (not bool(t.get("moving", false)) and (t.path as Array).is_empty()) or tp.distance_to(to) <= 0.6:
+			# WATCH7-3: "near the spot" only counts on the spot's own level: a drag to a wall-walk cell whose path runs along
+			# the foot of the wall (to the stairs) passed within 0.6 of it from the ground and ended there, out of cover.
+			var lvl_ok := (Movement.wallwalk_team(w, w.cell_of(tp)) >= 0) == (Movement.wallwalk_team(w, w.cell_of(to)) >= 0)
+			if (not bool(t.get("moving", false)) and (t.path as Array).is_empty()) or (tp.distance_to(to) <= 0.6 and lvl_ok):
 				w.emit("CasualtyDragged", {"id": int(c.id), "by": int(tid), "pos": tp})
 				_end(w, st, int(tid))
 			continue
@@ -875,7 +927,13 @@ static func _auto_pass(w: SimWorld, st: Dictionary, au: Dictionary) -> void:
 	for c in cas:
 		var o := int(c.owner)
 		if not pools.has(o):
-			pools[o] = _idle_carers(w, st, o)
+			# PERF7H (exact): a carer out of reach (d2 > mr2 and d2 > br2) of every casualty of owner o in cas is
+			# skipped by every pick below, so the pool keeps only the men within reach of one of them (same order)
+			var cps := PackedVector2Array()
+			for c2 in cas:
+				if int(c2.owner) == o:
+					cps.append(Vector2(c2.pos))
+			pools[o] = _idle_carers(w, st, o, cps, maxf(mr2, br2))
 		var pool: Array = pools[o]
 		var cp: Vector2 = c.pos
 		var best = null
@@ -885,6 +943,8 @@ static func _auto_pass(w: SimWorld, st: Dictionary, au: Dictionary) -> void:
 			if int(t.id) == int(c.id):
 				continue
 			var d2 := cp.distance_squared_to(Vector2(t.pos))
+			if d2 > mr2 and d2 > br2:
+				continue   # G7 PERF7G: out of both reaches neither branch below can pick him (is_medic is pure): same pick
 			var med := is_medic(w, t)
 			if med and d2 <= mr2:
 				if not best_med or d2 < bd:
@@ -900,9 +960,32 @@ static func _auto_pass(w: SimWorld, st: Dictionary, au: Dictionary) -> void:
 	_auto_evac(w, cas, float(au.get("evac_r", 18)))
 
 
-static func _idle_carers(w: SimWorld, st: Dictionary, o: int) -> Array:
+static func _idle_carers(w: SimWorld, st: Dictionary, o: int, near := PackedVector2Array(), r2 := -1.0) -> Array:
 	var out: Array = []
+	# PERF7J (perf, exact): a man outside the box of `near` grown by sqrt(r2) + 1 tile is farther than sqrt(r2) from
+	# every point of it (the 1-tile margin dwarfs float error), so the loop below would skip him: skipped first.
+	var bx := r2 >= 0.0 and not near.is_empty()
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	if bx:
+		for q in near:
+			lo = lo.min(q)
+			hi = hi.max(q)
+		var g := sqrt(r2) + 1.0
+		lo -= Vector2(g, g)
+		hi += Vector2(g, g)
 	for t in SimIndex.units_by_owner(w).get(o, []):
+		if r2 >= 0.0:   # PERF7H: within r2 of one of `near` (squared distance, the same call as the pick's)
+			var tp: Vector2 = t.pos
+			if bx and (tp.x < lo.x or tp.y < lo.y or tp.x > hi.x or tp.y > hi.y):
+				continue
+			var ok := false
+			for q in near:
+				if q.distance_squared_to(tp) <= r2:
+					ok = true
+					break
+			if not ok:
+				continue
 		if not w.entities.has(int(t.id)) or st.care.has(int(t.id)) or not _can_care(t):
 			continue
 		if String(t.order.get("type", "idle")) != "idle" or bool(t.get("moving", false)) or bool(t.get("pinned", false)):

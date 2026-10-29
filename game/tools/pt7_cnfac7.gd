@@ -49,6 +49,14 @@ func run(pt) -> void:
 	if Content.building("a_cn_facility").is_empty():
 		Content._merge_fragment_dir("res://content/g7")
 	var w: SimWorld = pt._w()
+	# UNLOAD7: this flow is a ~6-minute fixture on a live skirmish (100k credits, a full facility with its defences,
+	# hostiles near the ramp patches removed). Around match time 04:48-05:24 the player's side took the enemy HQ:
+	# VICTORY, match_state.ended, World.step stops ticking, and whatever ramp phase was running froze (f6_7: load
+	# "ticks 0" / unload never reached squad_out / apc_out; shots show the VICTORY overlay). The flow tests the
+	# facility and the ramp, not the win condition, so the match runs endless (eliminations still happen, no end).
+	if not bool(w.match_state.get("ended", false)):
+		w.cfg["victory"] = "endless"
+	pt._log("cnfac7_match_running", not bool(w.match_state.get("ended", false)), "victory mode %s, tick %d" % [String(w.cfg.get("victory", "")), w.tick])
 	var h = H.new()
 	var me := int(mv.player_fid)
 	var foe := 1 if me == 0 else 0
@@ -236,6 +244,9 @@ func _log_outside(pt, w: SimWorld, crafts: Array, all_ids: Array, t0: int) -> vo
 		if c == null:
 			pt._log("cnfac7_ramp_miss_detail", false, "craft %d gone" % int(crafts[i]))
 			continue
+		var gl: Dictionary = Transport.group_load(c)
+		if int(gl.vehicle) == 1 and int(gl.foot) == 8:
+			continue   # WATCH7-4: only the short craft are reported
 		var f := float(c.facing)
 		var fwd := Vector2(cos(f), sin(f))
 		var g: Dictionary = Transport.group_load(c)
@@ -291,9 +302,26 @@ func _ramp_scenes(pt, w: SimWorld, h, me: int, from: Vector2i) -> void:
 		at0 += idx.size()
 
 
+## WATCH7-4: the flow map is a live skirmish; a hostile rifleman in range shot operators standing on the pad
+## (craft 213 "224 dead", loads of 5 / 7 of 8 in consecutive runs). The wave is a loading fixture, not a firefight, so
+## hostile units within radius tiles of the patches are removed (before the wave and again once the squad is boarding).
+func _clear_hostiles(w: SimWorld, me: int, sites: Array, radius: float) -> int:
+	var n := 0
+	for e in w.entities.values().duplicate():
+		if String(e.get("kind", "")) != "unit" or int(e.owner) == me or not w.is_enemy(me, int(e.owner)):
+			continue
+		for s in sites:
+			if Vector2(e.pos).distance_to(Vector2(s)) <= radius:
+				w.destroy(int(e.id), "cnfac7 loading fixture")
+				n += 1
+				break
+	return n
+
+
 func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 	var mv = pt._mv()
 	mv.join_sim()
+	_clear_hostiles(w, me, sites, 45.0)
 	var facs := []
 	for k in idx:
 		facs.append(int(SCENE[k][1]))
@@ -335,6 +363,8 @@ func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 	pt._log("cnfac7_ramp_squad_walks_in" + tag, got and d2 > 0, "bay frames drawn %d" % d2)
 	# BASE7-3: wait on SIM ticks (2400 = 2 sim minutes at 20 Hz), not wall-clock: a slow / busy frame rate no longer
 	# cuts the load short (wall cap 180 s only so a stuck flow still ends). The check below is unchanged.
+	mv.join_sim()
+	_clear_hostiles(w, me, sites, 45.0)
 	var t_load := w.tick
 	got = await pt._wait_until(func(): return _all_done(w, crafts, 1) or w.tick - t_load >= 2400, 180.0)
 	mv.join_sim()
@@ -342,11 +372,24 @@ func _ramp_wave(pt, w: SimWorld, h, me: int, sites: Array, idx: Array) -> void:
 	if not got:
 		_log_outside(pt, w, crafts, all_ids, t_load)
 	var full := 0
+	var shortn := false
 	for id in crafts:
 		var g: Dictionary = Transport.group_load(w.entities[int(id)])
 		full += 1 if int(g.vehicle) == 1 and int(g.foot) == 8 else 0
+		if not (int(g.vehicle) == 1 and int(g.foot) == 8):
+			var cd := {}
+			for x in w.entities[int(id)].get("cargo", []):
+				cd[String(x.def)] = int(cd.get(String(x.def), 0)) + 1
+			shortn = true
+			print("PLAYTEST cnfac7 load short: craft %d load %s cargo %s ph %s" % [int(id), str(g), str(cd), _ph(w, int(id))])
+	if shortn and got:
+		_log_outside(pt, w, crafts, all_ids, t_load)
 	pt._log("cnfac7_ramp_all_loaded" + tag, got and full == crafts.size(), "%d of %d craft hold APC + crew + 8 operators" % [full, crafts.size()])
 	await _shoot_all(pt, mv, w, crafts, "closed", facs)
+	# UNLOAD7: _shoot_all unpaused the sim, so a step may be running on the sim thread; a bare w.submit then races
+	# World._apply_due_commands (pending = later) and the unload_all can be lost (cnfac7 f6_7: no craft unloaded,
+	# 0 APCs out). Join first, like every other world write in this flow (the game UI goes through mv.issue's queue).
+	mv.join_sim()
 	for id in crafts:
 		w.submit({"type": "unload_all", "issuer": me, "carrier": int(id)})
 	got = await pt._wait_until(func(): return _ph(w, c0) == "squad_out", 20.0)

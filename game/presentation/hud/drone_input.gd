@@ -15,6 +15,10 @@ const ViewUtil = preload("res://presentation/view/view_util.gd")
 
 const KEYS := {"take": KEY_Y, "full": KEY_U, "thermal": KEY_T, "back": KEY_B, "drop": KEY_SPACE, "detonate": KEY_C}
 const FLY_KEYS := [KEY_W, KEY_A, KEY_S, KEY_D, KEY_Q, KEY_E]
+## G7 DFEED7: HUD panels (children of the HUD root, by node name) the corner feed is placed around, besides the PAUSED
+## banner: the top bar, both side stacks (RightScroll holds OBJECTIVES + VICTORY), the bottom panel and group bar,
+## the F3 command button and its card, the cargo strip.
+const AVOID_NODES := ["TopBar", "LeftScroll", "RightScroll", "BottomPanel", "GroupBar", "CommandModeButton", "CommandCard", "G4bCargoStrip"]
 
 var mv: Node = null
 var cam: Control = null
@@ -40,8 +44,28 @@ func setup(match_view: Node) -> void:
 	cam.name = "DroneCam"
 	layer.add_child(cam)
 	cam.setup(mv)
+	cam.avoid_fn = hud_avoid
 	if mv.has_signal("world_events"):
 		mv.world_events.connect(_on_events)
+
+
+## G7 DFEED7: screen-pixel rects of the visible HUD panels in the map area (drone_cam.gd place_corner() avoids them).
+## Empty when this node is not under a HUD (playtest flows that add it to the match view): the feed keeps its old spot.
+func hud_avoid() -> Array:
+	var hud = get_parent()
+	var lay = hud.get("layer") if hud != null else null
+	if not (lay is CanvasLayer) or not ((lay as CanvasLayer).get("root") is Control):
+		return []
+	var root: Control = (lay as CanvasLayer).get("root")
+	var ctls: Array = []
+	for nm in AVOID_NODES:
+		ctls.append(root.get_node_or_null(nm))
+	ctls.append(hud.get("_paused_banner"))
+	var out: Array = []
+	for c in ctls:
+		if c is Control and (c as Control).is_visible_in_tree() and (c as Control).size.x > 1.0 and (c as Control).size.y > 1.0:
+			out.append((c as Control).get_global_transform_with_canvas() * Rect2(Vector2.ZERO, (c as Control).size))
+	return out
 
 
 func _key(action: String) -> int:
@@ -201,7 +225,7 @@ func _process(delta: float) -> void:
 		var w: SimWorld = mv.world if mv.world_readable() else null
 		if w == null:
 			return
-		tk = tk
+		tk = w.tick   # DROP7: was `tk = tk` (no-op), which left tk at -1 and stalled the steer throttle without a snapshot
 	var fwd := (1.0 if _down(KEY_W) else 0.0) - (1.0 if _down(KEY_S) else 0.0)
 	var side := (1.0 if _down(KEY_D) else 0.0) - (1.0 if _down(KEY_A) else 0.0)
 	if _kind == "fpv":

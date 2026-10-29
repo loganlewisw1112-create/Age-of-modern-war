@@ -69,6 +69,26 @@ func _dist(pt, di, p: Vector2) -> float:
 	return Vector2(e.pos).distance_to(p) if e != null else -1.0
 
 
+## DROP7: flies the drone onto target.call() steering EVERY FRAME (as a player's hand on W does) and returns true once
+## it hovers within `tol` tiles of the point at under `vstop` tiles/s. The old approach steered inside pt._wait_until,
+## which polls every 0.25 s: at the playtest's 3x game speed that is ~16 sim ticks, in which the drone (7 tiles/s)
+## covers ~5.6 tiles, so the 1.6-tile "within 0.8" window over the squad was never sampled and the drone shuttled past
+## it (traced 42.6 <-> 53.1 on x) until the 20 s timeout, then dropped wherever it was: ~6 tiles from the squad.
+func _fly_to(pt, di, target: Callable, tol: float, vstop: float, timeout_s: float) -> bool:
+	var t0 := Time.get_ticks_msec()
+	while float(Time.get_ticks_msec() - t0) < timeout_s * 1000.0:
+		if di.flying <= 0:
+			return false
+		var p: Vector2 = target.call()
+		_aim(pt, di, p)
+		var r = DronePilot.record(pt._w(), di.flying)
+		var d := _dist(pt, di, p)
+		if r != null and d >= 0.0 and d < tol and Vector2(r.vel).length() < vstop:
+			return true
+		await pt.get_tree().process_frame
+	return false
+
+
 func run(pt) -> void:
 	var mv = pt._mv()
 	mv.join_sim()
@@ -130,9 +150,8 @@ func run(pt) -> void:
 	di.take(int(team.id), "strike")
 	var st: bool = await pt._wait_until(func(): return di.flying > 0, 3.0)
 	squad.order = {"type": "hold"}   # a still target (the enemy AI may move it)
-	var over: bool = await pt._wait_until(func():
-		_aim(pt, di, Vector2(squad.pos))
-		return _dist(pt, di, Vector2(squad.pos)) >= 0.0 and _dist(pt, di, Vector2(squad.pos)) < 0.8, 20.0)
+	# DROP7: steer every frame and wait until the drone hovers (stopped) over the squad, so the bomb falls straight down
+	var over: bool = await _fly_to(pt, di, func(): return Vector2(squad.pos), 0.8, 0.05, 20.0)
 	di._held.clear()
 	await pt._wait(0.8)
 	var sp := Vector2(squad.pos)
@@ -144,8 +163,15 @@ func run(pt) -> void:
 	if not _has("DroneMunitionAway"):
 		di.drop()
 	var away: bool = await pt._wait_until(func(): return _has("DroneMunitionAway"), 3.0)
+	mv.center_camera_on(sp)   # DROP7: frame the squad so the falling bomb and the blast are in the shots
 	await pt._shot("drone7_4_munition_away")
-	var blast: bool = await pt._wait_until(func(): return _has("DroneBlast"), 8.0)
+	var blast := false
+	var bt0 := Time.get_ticks_msec()
+	while not blast and Time.get_ticks_msec() - bt0 < 8000:   # per frame: shoot the blast while it is on screen
+		blast = _has("DroneBlast")
+		if not blast:
+			await pt.get_tree().process_frame
+	await pt._shot("drone7_5a_strike_blast_fx")
 	var surf := ""
 	var bp := Vector2(-1, -1)
 	for ev in evs:
@@ -153,7 +179,7 @@ func run(pt) -> void:
 			surf = String(ev.surface)
 			bp = Vector2(ev.pos)
 	pt._log("drone7_strike_drop", st and over and away and blast and surf == "soldier",
-		"surface %s blast %s squad %s hp %s | took %s over %s away %s blast %s | drone at drop %s rec %s" % [surf, bp, sp, str(squad.get("hp")), str(st), str(over), str(away), str(blast), dpos, str(drec)])
+		"surface %s blast %s squad %s (%.2f tiles) hp %s | took %s over %s away %s blast %s | drone at drop %s rec %s" % [surf, bp, sp, bp.distance_to(sp), str(squad.get("hp")), str(st), str(over), str(away), str(blast), dpos, str(drec)])
 	mv.center_camera_on(sp)
 	await pt._shot("drone7_5_strike_blast")
 	di.hand_back()

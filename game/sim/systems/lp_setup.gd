@@ -1,6 +1,7 @@
 extends RefCounted
 ## G7 (LPMODE7): Last Protocol start state. Reads LPMAP7's map.lp layout (agreed on the board, seq 475) or builds a
-## scaled fallback layout around map.spawns[0], then pre-builds the 3-ring base, the army, the Machine cores, nests,
+## scaled fallback layout around map.spawns[0], then pre-builds the 2-ring base (LPSHRINK7, 13.9c-36: was 3 rings), the
+## army, the loaded helipads, the Machine cores, nests,
 ## Machine structures and pre-spread creep. Everything here runs once (LastProtocol.setup) and only in Last Protocol.
 ## Rules: rules.g7_lastprotocol (content/g7/rules_g7_lastprotocol.json), all PROVISIONAL.
 
@@ -9,7 +10,7 @@ const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const CounterNanite = preload("res://sim/systems/counter_nanite.gd")
 
-const RING_NAMES := ["outer", "economy", "core"]
+const RING_NAMES := ["outer", "core"]   # LPSHRINK7 (13.9c-36): two rings; the kept economy sits between the walls
 
 
 static func R() -> Dictionary:
@@ -41,7 +42,7 @@ static func layout(w: SimWorld) -> Dictionary:
 		for i in (b.get("rings", []) as Array).size():
 			var r: Dictionary = b.rings[i]
 			var rr = r.get("rect")
-			rings.append({"name": String(r.get("name", RING_NAMES[mini(i, 2)])), "rect": rr if rr is Rect2i else Rect2i()})
+			rings.append({"name": String(r.get("name", RING_NAMES[mini(i, RING_NAMES.size() - 1)])), "rect": rr if rr is Rect2i else Rect2i()})
 		return {"center": _v2i(b.get("center")), "rings": rings, "facility": _v2i(b.get("facility")),
 			"airfield": b.get("airfield", {}), "scale": 1.0, "from_map": true, "posts": b.get("posts", {}),
 			"cameras": b.get("cameras", []), "power_yard": b.get("power_yard", []), "compound": true,
@@ -58,14 +59,24 @@ static func layout(w: SimWorld) -> Dictionary:
 	var ho := mini(want, maxi(mini(mini(mw, mh) / 2 - margin, int(far * 0.35)), 6))
 	var sc := float(ho) / float(want)
 	var c := Vector2i(clampi(sp.x, ho + 2, mw - ho - 3), clampi(sp.y, ho + 2, mh - ho - 3))
-	var he := maxi(int(round(float(lf.get("economy", 55)) * sc)), 4)
-	var hc := maxi(int(round(float(lf.get("core", 35)) * sc)), 3)
-	return {"center": c, "rings": [{"name": "outer", "rect": _sq(c, ho)}, {"name": "economy", "rect": _sq(c, he)},
-		{"name": "core", "rect": _sq(c, hc)}], "facility": c - Vector2i(2, 2),
-		"airfield": {}, "scale": sc, "from_map": false}
+	var hc := maxi(int(round(float(lf.get("core", 23)) * sc)), 3)
+	return {"center": c, "rings": [{"name": "outer", "rect": _sq(c, ho)}, {"name": "core", "rect": _sq(c, hc)}],
+		"facility": c - Vector2i(2, 2), "airfield": {}, "scale": sc, "from_map": false}
 
 
-## Ring index of a position: 0 outer, 1 economy, 2 core, -1 outside the base.
+## Ring of an army key (LPSHRINK7: "economy" lives between the walls, in the outer ring; "core" / "air" = the innermost
+## ring). By ring name when the layout has one, so an older 3-ring layout still maps economy -> its own ring.
+static func ring_index(L0: Dictionary, key: String) -> int:
+	var rings: Array = L0.get("rings", [])
+	for i in rings.size():
+		if String(rings[i].get("name", "")) == key:
+			return i
+	if key == "core" or key == "air":
+		return maxi(rings.size() - 1, 0)
+	return 0
+
+
+## Ring index of a position: 0 outer, the last one the core, -1 outside the base.
 static func ring_of(L: Dictionary, p: Vector2) -> int:
 	var cell := Vector2i(int(floor(p.x)), int(floor(p.y)))
 	var out := -1
@@ -320,17 +331,17 @@ static func build_plots(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int, 
 	var mrings: Array = lp.base.get("rings", []) if lp is Dictionary and lp.has("base") else []
 	var ids := []
 	var c: Vector2i = L0.center
-	for i in [0, 1, 2]:  # BASE7: the outer ring's map plots (SAM / radar / ammunition points) are built too
-		if i >= (L0.rings as Array).size():
-			break
+	var nr: int = (L0.rings as Array).size()
+	for i in nr:  # BASE7: the outer ring's map plots (SAM / radar / ammunition points + LPSHRINK7's economy) are built too
 		var md: Dictionary = mrings[i] if i < mrings.size() else {}
-		var plots: Array = md.get("plots", [])
-		if plots.is_empty() and i == 0:
+		var plots: Array = (md.get("plots", []) as Array).duplicate()
+		if plots.is_empty() and i == 0 and bool(L0.get("from_map", false)):
 			continue
 		if plots.is_empty():
-			var defs: Array = st.get("economy_plots" if i == 1 else "core_plots", [])
+			# fallback layout: the economy between the walls (ring 0's band), the core plots inside the core
+			var defs: Array = st.get("core_plots" if i == nr - 1 and nr > 1 else "economy_plots", [])
 			var hi: int = (L0.rings[i].rect as Rect2i).size.x / 2
-			var lo: int = (L0.rings[i + 1].rect as Rect2i).size.x / 2 if i + 1 < (L0.rings as Array).size() else 6
+			var lo: int = (L0.rings[i + 1].rect as Rect2i).size.x / 2 if i + 1 < nr else 6
 			var pts := square_points(c, (hi + lo) / 2, defs.size())
 			for j in defs.size():
 				plots.append({"cell": pts[j], "kind": String(defs[j])})
@@ -351,7 +362,9 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 	var army: Dictionary = R().get("start", {}).get("army", {})
 	var c: Vector2i = L0.center
 	var ids := []
-	var ring_ix := {"outer": 0, "economy": 1, "core": 2, "air": 2}
+	var ring_ix := {}
+	for key in ["outer", "economy", "core", "air"]:
+		ring_ix[key] = ring_index(L0, key)
 	var garrison := []
 	for key in ["outer", "economy", "core", "air"]:
 		var spec: Dictionary = army.get(key, {})
@@ -370,6 +383,8 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 				gnames.append(String(n))
 		var ri: int = mini(int(ring_ix[key]), (L0.rings as Array).size() - 1)
 		var h: int = (L0.rings[ri].rect as Rect2i).size.x / 2 - (3 if key != "air" else 6)
+		if key == "economy" and ri + 1 < (L0.rings as Array).size():   # between the walls
+			h = ((L0.rings[ri].rect as Rect2i).size.x / 2 + (L0.rings[ri + 1].rect as Rect2i).size.x / 2) / 2
 		if key == "core" or key == "air":
 			h = maxi(h / 2, 3)
 		var pts := square_points(c, maxi(h, 2), list.size())
@@ -424,8 +439,51 @@ static func build_vtols(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 		if pf >= 0:  # nose away from the approach lane: the rear ramp opens onto it (C-17 loading)
 			e.facing = [PI, -PI / 2.0, 0.0, PI / 2.0][pf % 4]
 		Air.land_now(w, e)
-		e.lp_ring = 2
+		e.lp_ring = maxi((L0.rings as Array).size() - 1, 0)
 		e.lp_home = p
+		ids.append(id)
+	return ids
+
+
+## LPSHRINK7 (13.9c-36, ORCH: 6 helipads, each loaded at the start): rules start.helipad_air in helipad order, each
+## spawned on the centre of its pad (map.lp airfield.helipads) so Air binds that pad as its home and parks it there
+## (Air._register: bind_home within 8 tiles, then _park). A fixed-wing entry (a_airlift: hangar "heavy") cannot sit on
+## a pad: it spawns on the free airfield heavy hangar nearest its pad and parks in it. Every craft gets lp_ring (the
+## core) and lp_home, so the defence commander's air rules (base airspace leash, fire-support calls) cover them, and
+## they stay the player's to fly. Returns the ids.
+static func build_helipads(w: SimWorld, L0: Dictionary, fid: int) -> Array:
+	var defs: Array = R().get("start", {}).get("helipad_air", [])
+	var air: Dictionary = L0.airfield if L0.airfield is Dictionary else {}
+	var pads: Array = air.get("helipads", [])
+	var hangars: Array = (air.get("hangars", []) as Array).duplicate()
+	var ids := []
+	# LPSHRINK7-2 (13.9c-36 follow-up): every pad holds a helicopter; the fixed-wing start.hangar_air (the Airlift) parks
+	# in the heavy hangar nearest the helipad row
+	var n_pad := mini(defs.size(), pads.size())
+	defs = defs.slice(0, n_pad) + (R().get("start", {}).get("hangar_air", []) as Array)
+	for i in defs.size():
+		if pads.is_empty():
+			break
+		var def := String(defs[i])
+		var ud := Content.unit(def)
+		if ud.is_empty():
+			continue
+		var p := Vector2(_v2i(pads[mini(i, pads.size() - 1)])) + Vector2(1.0, 1.0)   # centre of the 2x2 pad
+		if String(ud.get("hangar", "pad")) != "pad":
+			if hangars.is_empty():
+				continue
+			var best := 0
+			for j in hangars.size():
+				if Vector2(_v2i(hangars[j])).distance_to(p) < Vector2(_v2i(hangars[best])).distance_to(p):
+					best = j
+			p = Vector2(_v2i(hangars[best])) + Vector2(1.0, 1.0)
+			hangars.remove_at(best)
+		var id := w.spawn_unit(def, fid, p)
+		var e: Dictionary = w.entities[id]
+		e.lp_ring = maxi((L0.rings as Array).size() - 1, 0)
+		e.lp_home = p
+		if i < n_pad:   # the hangar craft (start.hangar_air) has no pad
+			e.lp_pad = i
 		ids.append(id)
 	return ids
 
@@ -609,7 +667,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var hq := -1
 	var lp = w.map.get("lp")
 	if lp is Dictionary and lp.has("base"):
-		for p in (lp.base.rings[2].plots if (lp.base.rings as Array).size() > 2 else []):
+		for p in ((lp.base.rings as Array).back().plots if not (lp.base.rings as Array).is_empty() else []):
 			if String(p.kind) == "company_hq" and hq < 0:
 				hq = place(w, occ, String(st.get("hq_def", "a_company_hq")), fid, _v2i(p.cell))
 	if hq < 0:
@@ -619,6 +677,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var cams := build_cameras(w, occ, L0, fid)
 	var plots := build_plots(w, occ, L0, fid, hq)
 	var gens := power_up(w, occ, L0, fid)
+	var helis := build_helipads(w, L0, fid)   # LPSHRINK7: before the army, so the airlift binds a hangar before the jets
 	var army := build_army(w, L0, fid)
 	var vtols := build_vtols(w, L0, fid)
 	var mach := build_machine(w, occ, L0, mfid)
@@ -630,7 +689,7 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 		rr.append({"name": String(L0.rings[i].name), "rect": r, "walls": rings[i].walls if i < rings.size() else [],
 			"gates": rings[i].gates if i < rings.size() else [], "towers": rings[i].towers if i < rings.size() else [],
 			"turrets": rings[i].turrets if i < rings.size() else [], "fallen": false, "breach_t": 0})
-	return {"center": L0.center, "rings": rr, "facility": fac, "hq": hq, "plots": plots, "army": army, "vtols": vtols,
+	return {"center": L0.center, "rings": rr, "facility": fac, "hq": hq, "plots": plots, "army": army, "vtols": vtols, "helipad_air": helis,
 		"cores": mach.cores, "nests": mach.nests, "generators": gens, "creep_cells": on_n, "scale": L0.scale, "from_map": L0.from_map,
 		"cameras": cams, "obstacles": obst, "patrols": LpGarrison7.patrol_count(w)}
 
@@ -652,4 +711,5 @@ static func fill_facility(w: SimWorld, fid: int) -> bool:
 	for i in int(st.get("tactical_squads", 4)):
 		CnF.callv("_finish_train", [w, F, "tactical_squad"])
 	CnF.callv("_finish_train", [w, F, "stealth_dropship"])
+	load("res://sim/systems/lp_reserve7.gd").seed(w, F)   # LPRES7 (13.9c-34): the 100-Sentinel barracks reserve (LP only)
 	return true

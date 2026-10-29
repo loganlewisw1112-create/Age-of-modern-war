@@ -147,6 +147,40 @@ func test_strike_drop_ballistics() -> void:
 	check_eq(int(w.entities[ids[0]].drone_charges), charges + 1, "charge back")
 
 
+## DROP7 (pt7_drone7 drone7_strike_drop miss): the impact point is the drone's CURRENT position (+ velocity x fall
+## time + drift), never a stale one. Fly out, stop, hover; the bomb lands under the drone on the soldier below it.
+func test_strike_hover_drop_lands_under() -> void:
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var o: Vector2i = s[1]
+	var ids := _launch(w, o, "strike")
+	var id: int = ids[1]
+	var r: Dictionary = DronePilot.record(w, id)
+	_steer(w, id, 90.0, 1.0, 40.0)
+	w.run_ticks(30)
+	_steer(w, id, 90.0, 0.0, 40.0)   # let go of W: the drone brakes to a hover
+	w.run_ticks(30)
+	var e: Dictionary = w.entities[id]
+	var p := Vector2(e.pos)
+	check(Vector2(r.vel).length() < 0.01 and p.distance_to(Vector2(r.home)) > 5.0, "hovering away from home (vel %s, pos %s)" % [r.vel, p])
+	var foe := _unit(w, "rifleman", 1, p)
+	var hp0 := float(w.entities[foe].hp)
+	var evs := do_cmd(w, 0, {"type": "drone_release", "unit_id": id})
+	var away = _first(evs, "DroneMunitionAway")
+	check(away != null, "MUNITION AWAY")
+	if away == null:
+		return
+	var drift := DronePilot.rf("drift_per_100m", 0.8) * float(r.h) / 100.0
+	check(Vector2(away.at).distance_to(Vector2(away.pos)) <= drift * 1.5 + 0.01, "hover drop aims under the drone (at %s, drone %s)" % [away.at, away.pos])
+	check(Vector2(away.pos).distance_to(p) <= 0.01, "release position = the drone's position at release")
+	var blasts := _run(w, int(away.eta) + 2, ["DroneBlast"])
+	check(not blasts.is_empty(), "munition went off")
+	if not blasts.is_empty():
+		check(Vector2(blasts[0].pos).distance_to(p) <= drift * 1.5 + 0.01, "blast under the hover point (%.3f tiles)" % Vector2(blasts[0].pos).distance_to(p))
+		check_eq(String(blasts[0].surface), "soldier", "blast type soldier")
+	check(not w.entities.has(foe) or float(w.entities[foe].hp) < hp0, "soldier under the drone hit")
+
+
 func test_fpv_detonation() -> void:
 	var s := _setup()
 	var w: SimWorld = s[0]

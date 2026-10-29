@@ -214,10 +214,27 @@ func run(pt) -> void:
 			w.sys_state["g7v"] = gv
 		gv[int(crew[0])] = {"unc": true, "bleed": true}
 		gv[int(crew[1])] = {"ex": 0.5}
-	_cmd(pt, {"type": "cn_return", "team": tid})
+	var why_ret := _cmd(pt, {"type": "cn_return", "team": tid})
 	mv.join_sim()
+	print("PLAYTEST seq7 return: cmd '%s', phase %s" % [why_ret, String(CnFacility.team(w, tid).get("phase", "?"))])
 	CnFacility._order_slots(w, CnFacility.team(w, tid), "decon")
 	var sprayed: bool = await pt._wait_until(func(): return int(L.n_spray) >= 1, 60.0)
+	mv.join_sim()
+	var dbg := []
+	for aid in CnFacility.team(w, tid).get("apcs", []):
+		var a = w.entities.get(int(aid))
+		if a != null:
+			var V: Dictionary = load("res://sim/systems/fac_drive7.gd").vstate(w, int(aid))
+			var near := []
+			for oid in w.entities:
+				var oe: Dictionary = w.entities[oid]
+				if int(oid) != int(aid) and Vector2(oe.pos).distance_to(Vector2(a.pos)) < 3.0:
+					near.append("%s/%s@%s" % [String(oe.def), String(oe.kind), str(oe.pos)])
+			var pas := ""
+			for dy in range(-2, 7):
+				pas += "1" if load("res://sim/systems/movement.gd").is_passable_e(w, a, w.cell_of(Vector2(a.pos)) + Vector2i(0, dy)) else "0"
+			dbg.append("%d at %s order %s rinsed %d V{st %s to %s ap %s seq %s} near %s pass(-2..6) %s" % [int(aid), str(a.pos), str(a.order), int(a.get("cn_rinsed", -1)), str(V.get("st", "")), str(V.get("to", "")), str(V.get("ap", "")), str(V.get("seq", "")), str(near), pas])
+	print("PLAYTEST seq7 return_state: phase %s t %d tick %d apcs %s" % [String(CnFacility.team(w, tid).get("phase", "?")), int(CnFacility.team(w, tid).get("t", -1)), w.tick, str(dbg)])
 	var wash := CnFacility.zone(F, "apc_wash").get_center()
 	await _ticks(pt, w, 12)
 	await _shots(pt, mv, L, "wash_spray", wash)

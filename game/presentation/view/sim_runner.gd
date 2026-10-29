@@ -58,6 +58,7 @@ func start(k: int) -> void:
 ## Sim thread body (or inline). Touches only `world` and this runner's result fields.
 func _run() -> void:
 	var t0 := Time.get_ticks_usec()
+	var shown: Dictionary = RenderSnap.latest(world)   # G7 LPPERF7C: the snapshot the view shows meanwhile (read only)
 	var evs: Array = []
 	var done := 0
 	var snap_us := 0
@@ -70,10 +71,42 @@ func _run() -> void:
 		done += 1
 		if bool(world.match_state.get("ended", false)) or Time.get_ticks_usec() - t0 >= budget_us:
 			break
+	if done > 1 and BRIDGE_PREV:
+		_bridge_prev(shown)
 	_events = evs
 	_done_steps = done
 	_snap_us = snap_us
 	_step_us = Time.get_ticks_usec() - t0
+
+
+## G7 LPPERF7C: after a multi-step task the last snapshot's prev (positions one tick earlier) is replaced by the
+## positions in the snapshot the view showed during the task, so the view interpolates the whole move since its last
+## snapshot instead of jumping k-1 ticks at the hand-over and gliding one. Units new since then keep their prev.
+## Display data only (the sim never reads the snapshot); single-step tasks are unchanged.
+static var BRIDGE_PREV := true   # A/B switch for perf probes
+
+
+func _bridge_prev(shown: Dictionary) -> void:
+	var s: Dictionary = RenderSnap.latest(world)
+	if s.is_empty() or shown.is_empty() or is_same(s, shown):
+		return
+	var ids: PackedInt32Array = s.get("ids", PackedInt32Array())
+	var prev: PackedVector2Array = s.get("prev", PackedVector2Array())
+	var o_ids: PackedInt32Array = shown.get("ids", PackedInt32Array())
+	var o_pos: PackedVector2Array = shown.get("pos", PackedVector2Array())
+	var o_n := mini(o_ids.size(), o_pos.size())
+	var j := 0
+	for i in mini(ids.size(), prev.size()):
+		var id := ids[i]
+		while j < o_n and o_ids[j] < id:
+			j += 1
+		if j < o_n and o_ids[j] == id:
+			prev[i] = o_pos[j]
+		else:
+			var k := o_ids.bsearch(id)
+			if k < o_n and o_ids[k] == id:
+				prev[i] = o_pos[k]
+	s["prev"] = prev
 
 
 ## Hand-over point (main thread). Blocks until the in-flight task (if any) is done.

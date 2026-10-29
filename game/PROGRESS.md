@@ -37,6 +37,46 @@ it changed anything, the project was copied to C: (28,241/28,246 files; git fsck
 from git, the 4 lost untracked art-kit review renders are regenerable). **G7 runs on the C: copy; push back to D: only when
 G7 is complete (owner).** Wave 1 relaunching on C:.
 
+## G7 Done-when evidence — FINAL (2026-10-28/29, C: tree, final code) — DELIVERED
+Owner, 2026-10-28: "STOP focusing on the skirmish - I mainly want the end protocol game mode ** give me that packaged asap
+in full totality with everything we've added in DEPTH--- leave the rest for next slice".
+1. Full suite — MET. `bash .plan/suite_g7.sh 6` on the final code: `files=155 fail_files=0 err_files=0`, 1,281 checks pass,
+   0 SCRIPT ERROR / Parse Error (.plan/suite7/SUMMARY.txt). Includes every tests/test_*7.gd.
+2. Determinism — MET. test_hot_state 17/17 against the G7 goldens (re-baselined 2026-10-28 from two identical capture runs,
+   .plan/regold7/run1.log == run2.log, 16 hashes); test_det7 6/6 (wall turret, drone-bay fight, APC traffic, LP compound
+   attack, LP AI-on: same future after a deep save); test_determinism 5/5; test_drone7 recorded-flight replay in the suite.
+   Gate scene hash 14f1c23c6ffd1d42 at tick 600 unchanged by all perf work.
+3. Perf (idle PC, 0 other Godot processes) — MET.
+   - Sim 2k vs G6.1 (55b4e04 worktree), 6 alternating pairs (.plan/perf7g_runs/final8_pairs.txt): median G6.1 18.55,
+     G7 21.14 ms/tick -> 1.14x (gate 1.2x); pairs 1.106-1.185. Earlier same-day confirm run 1.117x.
+   - fps (`tools/bench.gd -- --fps --fps-secs=30`): 2k on screen p10 74.3 (gate 60); 10k zoomed out p10 223.9 (gate 30).
+   - Work that got there: PERFSIM7 exact fast paths (combat range factor / target checks, fog enemy-only visibility,
+     morale cover) 1.219x -> 1.125x; PERFFPS7 (drone bay / reserve cards no longer force a sim join; motion/entity
+     layer per-unit cost) 2k p10 50.8 -> 69-74.
+4. Last Protocol soak — MET. `tools/lp_soak7.gd --seed=77 --tide-at=600` (.plan/lp_soak8.log): `LP SOAK RESULT seed=77
+   map=last_protocol time_s=1269 ticks=25378 phase=4 tide=true tide_at_s=601 ending=defeat_countdown cores_alive=3/3
+   rings_fallen=1 ... ms_per_tick=41.95`, 0 SCRIPT ERROR, 0 invariant failures.
+5. Package — MET. .plan/package_g7.sh: import 0 errors, export 0, .pck 79 MB md5 4d99f6c99c72986f6555f4e5ad1a7689.
+   Clean-folder smoke (build/_clean_G7_test, rts_core 0.5.5 loaded): lpmode7 18/0, cnfac7 174/0, drone7 14/0, h 33/0,
+   0 SCRIPT ERROR. Copied to C:/Users/logan/Downloads/Age of Modern War/RTS_Age_of_Modern_War_G7 (+ _2026-10-28.zip).
+   README G7 section and build/PLAY_ME_G7.txt rewritten for the final build (limits included).
+6. Owner look checkpoint — MET (rev3/rev4, docs/G7_REFERENCE.md).
+Extra checks: Last Protocol windowed flows on the final code (.plan/pt_lp8): lpmode7 18/0, lpmap7 44/0, lpres7 24/0,
+ciws7 33/0, dronebay7 33/0, sent7 25/0, gate7 20/0 (x3; one earlier 15/1 under load -> the hardened-for-sally wait now
+counts sim ticks, same 20 sim-s window), wallturret7 28/0, seq7 22/0, muzzle7 21/0. All 40 G7 flows were run earlier the
+same day; the 8 red ones were fixed (art7f 17/0, ciws7 33/0, wallwalk7 19/0, wallturret7 28/0, eng7 19/0, apcmov7
+23/0, gate7 20/0) except facint7 (parked, below).
+Game bugs fixed in this last stretch: test_path7 (repath when a footprint rises across a planned path; boarders and
+units entering a footprint keep their route), cargo-bay draw cache reset per world, gate deadlock during a sally
+(airborne / wall-walk units no longer hold a gate; sally follow-stop), strike APC pair head-on deadlock
+(counter_nanite._pair_follow), dropship boarding of a parked APC (fac_drive7 load release), decon walkway cleaning
+(cn_facility._sweep_zone), 13.9c-39 roof mounts out of reach of ground melee / demolition (new; owner choice).
+Parked for the next slice (owner): 13.9c-40 no population cap in skirmish; the skirmish-hosted all-in-one facility flow
+facint7 (last run 97/10: night-assault phase fires nothing for 60 s before a save/load, facility security cameras not
+placed (spec 13.9b asks for them), tactical APC garage-return lane-join fix unverified); same-owner separation lets a
+soldier shove a driven APC sideways (SUITSIM7 note).
+D: copy and push: pending (D: health check first; ask before any push).
+
 ## G7 Done-when evidence (2026-10-27, INTEG7 fast path, ~13:46-14:08 UTC) — DELIVERED, PARTIAL
 Owner, 2026-10-27: "complete in next 15-20 min TOPS no excuses or running over that time". All runs were in parallel on a
 busy PC (up to 18 Godot processes), so no timing number below is an idle-PC number. Raw logs: C:/CODING/integ7_fast/.

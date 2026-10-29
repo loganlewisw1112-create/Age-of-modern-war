@@ -123,6 +123,14 @@ static func build(w) -> void:
 		for sp7 in (s7f[1] as Array):
 			if sp7 != null:
 				s7_gate = true
+	# G7 LPPERF7C: building statics reuse (see the static branch below); STATIC_REUSE off = rebuild every static
+	var st_on: bool = STATIC_REUSE
+	var st_rec: Dictionary = cache.get("snap_st_rec", {}) if st_on else {}
+	var st_rec_n: Dictionary = {}
+	var st_fresh: Dictionary = {}
+	var st_reused := 0
+	var st_tb := 0
+	var tr_on: bool = Traverse7.enabled
 	var wnd: Dictionary = {}  # G7 (WOUND7 CR render_snap_wounds): {id: Wounds.render_entry(e)} for wounded / panicking / in-care units (_wnd)
 	for e: Dictionary in w.entities.values():
 		var id: int = e.id
@@ -233,15 +241,74 @@ static func build(w) -> void:
 			flags[n] = fl
 			n += 1
 			continue
-		statics[id] = _static(e)
-		var tb7 = Traverse7.snap_bearing(w, e)   # G7 TURRET7B CR 6354 (13.9c-30): armed buildings' turret head bearing
-		if tb7 != null:
-			statics[id]["tb"] = tb7
+		# G7 LPPERF7C: dirty tracking by content. A static is a pure function of the entity's base fields and copied
+		# STATIC_FIELDS (+ tb, + water_d which is constant per id). The record keeps the entity's keys and values from
+		# when the dict was built; with the same keys (same order) and the same values (Array == is type-strict and
+		# deep), or the same values at the static-relevant key positions (type-strict), that dict is reused (snapshot
+		# dicts are read-only). tb: a head-less mount (null tb) is a pure function of def / kind (in the values) and
+		# Traverse7.enabled, so it is only recomputed when the record had a head or the switch changed; heads are
+		# recomputed every tick. A static holding a container is never recorded (rebuilt every tick as before).
+		var sd: Dictionary
+		var rc = st_rec.get(id) if st_on else null
+		var ks: Array = []
+		var vs: Array = []
+		var tb7 = null
+		var hit := false
+		var tb_done := false
+		var fast := false
+		var tb_only := false
+		if rc != null:
+			ks = e.keys()
+			if rc[0] == ks:
+				vs = e.values()
+				if rc[1] == vs:
+					hit = true
+					fast = true
+				else:
+					hit = _rel_same(rc[1], vs, rc[3])
+				if hit:
+					if rc[4] or tr_on != bool(rc[5]):
+						tb7 = Traverse7.snap_bearing(w, e)
+						tb_done = true
+						hit = _tb_same((rc[2] as Dictionary).get("tb"), tb7)
+						tb_only = not hit and tb7 != null and (rc[2] as Dictionary).get("tb") != null
+		if tb_only:
+			# only the head bearing moved (scanning / slewing turrets): a copy of that dict (same keys, same order:
+			# tb then water_d) with the new tb equals a rebuild
+			sd = (rc[2] as Dictionary).duplicate()
+			sd["tb"] = tb7
+			st_tb += 1
+			st_rec_n[id] = [ks, vs, sd, rc[3], true, tr_on]
+		elif hit:
+			sd = rc[2]
+			st_reused += 1
+			st_rec_n[id] = rc if fast else [ks, vs, sd, rc[3], rc[4], rc[5]]
+		else:
+			if not tb_done:
+				tb7 = Traverse7.snap_bearing(w, e)   # G7 TURRET7B CR 6354 (13.9c-30): armed buildings' turret head bearing
+			sd = _static(e)
+			if tb7 != null:
+				sd["tb"] = tb7
+			st_fresh[id] = sd
+			if st_on and _static_flat(sd):
+				if ks.is_empty():
+					ks = e.keys()
+				if vs.is_empty():
+					vs = e.values()
+				st_rec_n[id] = [ks, vs, sd, _rel_idx(ks), tb7 != null, tr_on]
+		statics[id] = sd
 		if any_req and req.has(id):
 			detail[id] = e.duplicate(true)
 	ids.resize(n); pos.resize(n); prev.resize(n); facing.resize(n)
 	defi.resize(n); owner.resize(n); hp.resize(n); flags.resize(n)
 	cache["snap_def_fl"] = def_fl
+	if st_on:
+		cache["snap_st_rec"] = st_rec_n
+	else:
+		cache.erase("snap_st_rec")
+	cache["snap_st_reused"] = st_reused
+	cache["snap_st_tb"] = st_tb
+	g5["st_fresh"] = st_fresh   # _g5_out: water_d only on the statics built this tick (reused ones keep theirs)
 	if s7_on:
 		cache["snap_def_inf"] = def_inf
 	cache["snap_unload"] = unl
@@ -367,6 +434,49 @@ static func _static(e: Dictionary) -> Dictionary:
 			else:
 				s[k] = v
 	return s
+
+
+## G7 LPPERF7C: on/off switch for the building-static reuse (the equivalence probe compares both every tick).
+static var STATIC_REUSE := true
+
+
+## G7 LPPERF7C: same turret bearing (null = no head), type-strict.
+static func _tb_same(a, b) -> bool:
+	if a == null or b == null:
+		return a == null and b == null
+	return typeof(a) == typeof(b) and a == b
+
+
+## G7 LPPERF7C: entity keys _static reads (base fields + STATIC_FIELDS); positions found once per record.
+static var _REL := {}
+static func _rel_idx(ks: Array) -> PackedInt32Array:
+	if _REL.is_empty():
+		for k in ["id", "kind", "def", "owner", "pos", "hp", "max_hp"] + STATIC_FIELDS:
+			_REL[k] = true
+	var out := PackedInt32Array()
+	for i in ks.size():
+		if _REL.has(ks[i]):
+			out.append(i)
+	return out
+
+
+## G7 LPPERF7C: same values (type-strict) at the static-relevant positions of two value arrays of the same keys.
+static func _rel_same(a: Array, b: Array, idx: PackedInt32Array) -> bool:
+	for i in idx:
+		var x = a[i]
+		var y = b[i]
+		if typeof(x) != typeof(y) or x != y:
+			return false
+	return true
+
+
+## G7 LPPERF7C: true when no value of the static is a container (only those may be reused).
+static func _static_flat(sd: Dictionary) -> bool:
+	for v in sd.values():
+		var t := typeof(v)
+		if t == TYPE_ARRAY or t == TYPE_DICTIONARY:
+			return false
+	return true
 
 
 static func _factions(w) -> Dictionary:
@@ -565,7 +675,7 @@ static func _g5_out(w, snap: Dictionary, g5: Dictionary) -> void:
 		bcp = bsrc.duplicate()
 		w.cache["snap_burnt"] = bcp
 	snap["burnt"] = bcp
-	_water_sides(w, snap.statics)
+	_water_sides(w, g5.get("st_fresh", snap.statics))   # G7 LPPERF7C: reused statics already carry their water_d
 
 
 static func _airfields(w) -> Dictionary:
@@ -926,7 +1036,7 @@ static func _g6_out(w, snap: Dictionary, g6: Dictionary) -> void:
 	if g6.gar:
 		var gs = _sys("garrison")
 		for rec in ss.garrison.blds:
-			gar[int(rec.id)] = [(rec.get("units", []) as Array).size(), int(gs.slots_of(String(rec.get("def", ""))))]
+			gar[int(rec.id)] = [(rec.get("units", []) as Array).size(), int(gs.slots_of(String(rec.get("def", "")))) + int(w.entities.get(int(rec.id), {}).get("g7_xs", 0))]   # LPRES7: + per-building extra slots
 	snap["garrison"] = gar
 	var mf: Array = []
 	var mn = ss.get("mines")

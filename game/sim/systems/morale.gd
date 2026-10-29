@@ -139,7 +139,7 @@ static func weapon_supp(s: Dictionary) -> float:
 static func cover_level(w: SimWorld, e: Dictionary) -> int:
 	if int(e.get("garrisoned_in", -1)) >= 0:
 		return 2
-	if WallWalk7.on_wall(w, e):   # G7 WALL7 CR 3393: behind the parapet = heavy cover
+	if w.sys_state.has(WallWalk7.KEY) and WallWalk7.on_wall(w, e):   # PERFSIM7: on_wall is false without its state  # G7 WALL7 CR 3393: behind the parapet = heavy cover
 		return 2
 	var p: Vector2 = e.pos
 	if Fieldworks.cover_at(w, Vector2i(floori(p.x), floori(p.y))) <= float(_sr.get("heavy_cover_at", 0.6)):

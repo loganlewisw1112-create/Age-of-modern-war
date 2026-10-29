@@ -18,6 +18,7 @@ const Trav = preload("res://sim/systems/traverse7.gd")
 const T7 = preload("res://sim/systems/turrets7.gd")
 const G5Art = preload("res://presentation/art/g5_art.gd")
 const VU = preload("res://presentation/view/view_util.gd")
+const Movement = preload("res://sim/systems/movement.gd")
 const Z := 2.2
 const BLD := ["a_t7_hmg_nest", "a_t7_autocannon", "a_t7_hulldown", "a_t7_railgun", "cn_popup", "a_popup_turret"]
 const VEH := ["mbt", "ifv"]
@@ -69,6 +70,23 @@ func _target_of(w: SimWorld, e: Dictionary):
 	return w.entities.get(tid)
 
 
+## REGFIX7-5: the targets stay where the flow put them. The enemy side's AI re-orders an idle / hold unit
+## (turret7_r6d: the APC's foe got {move -> (76.6, 76.6)} at tick 989 and drove past the APC to its FRONT, so the
+## front pod rightly took the shots = the apc_rear_gun "other guns 200" failure; a turret's target walking off
+## between the shot and the frame read is the popup "6 deg off" one). Like a fresh player Hold order: the hold is
+## re-stated every frame and stamped as the player's (AiCommand.player_fresh), so no AI moves it.
+func _pin(w: SimWorld, ids: Array) -> void:
+	for id in ids:
+		var e = w.entities.get(id)
+		if e == null:
+			continue
+		e.player_order_tick = int(w.tick)
+		if String((e.order as Dictionary).get("type", "")) != "hold":
+			e.order = {"type": "hold"}
+			e.target = -1
+			Movement.stop_path(e)
+
+
 func _hold(w: SimWorld, ids: Array) -> void:
 	for id in ids:
 		var e = w.entities.get(id)
@@ -115,6 +133,7 @@ func run(pt) -> void:
 	await pt._wait(1.0)
 	mv.center_camera_on(mid)
 	await pt._shot("turret7_1_before_rest")
+	mv.join_sim()   # REGFIX7-5: no world writes while a sim step is in flight on the worker thread
 	var start := {}
 	for id in ids:
 		start[id] = _bear(w, w.entities[id])
@@ -128,6 +147,7 @@ func run(pt) -> void:
 		var p := _centre(se) + Vector2.from_angle(float(start[ids[i]]) + PI) * 4.0
 		var fu: Dictionary = h._unit(w, fdefs[mini(i, fdefs.size() - 1)], 1, p)
 		fu.order = {"type": "hold"}
+		fu.player_order_tick = int(w.tick)
 		foes.append(int(fu.id))
 	var first := {}      # id -> [frame, bearing at the shot, off target, swung]
 	var swing_shot := false
@@ -148,7 +168,32 @@ func run(pt) -> void:
 	var no_head: Array = []
 	var shots_taken := 0
 	var waited := 0.0
+	# REGFIX7-4: the target of each shooter's first shot, from the sim's own ShotFired event (tick exact). A frame can
+	# hold several sim ticks (slow frames): the target read once per frame (tpos) could be a foe the mount had already
+	# left for another (r4e: a_popup_turret "6.0 deg off" at a 5 deg lay tolerance).
+	var shot_tgt := {}   # shooter id -> [target id, target position at the hand-over]
+	var tset := {}
+	for id in ids:
+		tset[int(id)] = true
+	var on_ev := func(evs: Array) -> void:
+		for ev in evs:
+			if String(ev.get("type", "")) != "ShotFired":
+				continue
+			var sid := int(ev.get("shooter", -1))
+			if not tset.has(sid) or shot_tgt.has(sid):
+				continue
+			var tg = w.entities.get(int(ev.get("target", -1)))
+			var tp = null
+			if tg != null:
+				tp = T7.pos_of(w, tg) if String(tg.kind) == "unit" else T7.center(tg)
+			elif ev.get("to") is Vector2:
+				tp = ev.to
+			if tp != null:
+				shot_tgt[sid] = [int(ev.get("target", -1)), tp]
+	mv.world_events.connect(on_ev)
 	while waited < 30.0 and first.size() < ids.size():
+		mv.join_sim()
+		_pin(w, foes)
 		_hold(w, foes)
 		_hold(w, ids)
 		await pt.get_tree().process_frame
@@ -173,8 +218,14 @@ func run(pt) -> void:
 			if not first.has(id) and fired_now:
 				var off := -1.0
 				var need := 0.0
-				if tpos.has(id):
-					var ta: float = ((tpos[id] as Vector2) - _centre(e)).angle()
+				var tp0 = tpos.get(id)
+				if shot_tgt.has(id):
+					var tt0 = _target_of(w, e)
+					if tt0 == null or int(tt0.id) != int(shot_tgt[id][0]):
+						print("PLAYTEST turret7 first_shot_target: %s shot at %d, frame-read target %s (tick %d)" % [String(e.def), int(shot_tgt[id][0]), str(int(tt0.id)) if tt0 != null else "none", int(w.tick)])
+					tp0 = shot_tgt[id][1]
+				if tp0 != null:
+					var ta: float = ((tp0 as Vector2) - _centre(e)).angle()
 					off = _adiff(bb, ta)
 					need = _adiff(float(start[id]), ta)
 				var mt := Trav.mount(e)
@@ -217,6 +268,8 @@ func run(pt) -> void:
 		if not swing_shot and moving >= 2:
 			swing_shot = true
 			await pt._shot("turret7_2_swinging")
+	if mv.world_events.is_connected(on_ev):
+		mv.world_events.disconnect(on_ev)
 	pt._log("turret7_swing_seen", swing_shot, "a frame with >= 2 heads part-way round (>= 40 deg) that have not fired yet")
 	pt._log("turret7_swung_round_behind", behind >= 3, "%d shooters swung >= 120 deg onto targets behind them before their first shot" % behind)
 	pt._log("turret7_all_fired_laid", first.size() == ids.size(), "%d of %d shooters fired, each only once laid" % [first.size(), ids.size()])
@@ -225,6 +278,7 @@ func run(pt) -> void:
 	pt._log("turret7_hulls_never_swung", hull_moved == 0, "MBT / IFV hull moved on %d frames" % hull_moved)
 	pt._log("turret7_counters", Trav.counters.slew > 0 and Trav.counters.laid > 0, "lay calls %d, laid %d, still slewing %d" % [Trav.counters.lay, Trav.counters.laid, Trav.counters.slew])
 	# targets gone: heads hold, then return to rest and scan
+	mv.join_sim()
 	for id in foes:
 		if w.entities.has(id):
 			w.destroy(id, "test", SimWorld.NEUTRAL)
@@ -265,6 +319,11 @@ func _clear_enemies(w: SimWorld, me: int, at: Vector2, keep: int) -> void:
 func _apc_rear(pt, mv, w: SimWorld, h, me: int, at: Vector2) -> void:
 	var fx = mv.fx_layer
 	var el = mv.entity_layer
+	# REGFIX7-5: the sim steps on a worker thread between frames; every write below (spawn, facing, hold, clearing)
+	# waits for the step in flight first (as the other pt7 flows do), or a unit added / destroyed mid-step can be
+	# moved by that step's stale arrays (r5e: the foe ended up 2 tiles IN FRONT of the APC, so the front pod rightly
+	# took every shot)
+	mv.join_sim()
 	var st: Dictionary = CN.spawn_team(w, me, "strike_team", at)
 	var apcs: Array = st.get("apcs", [])
 	if apcs.is_empty():
@@ -275,6 +334,7 @@ func _apc_rear(pt, mv, w: SimWorld, h, me: int, at: Vector2) -> void:
 	ae.facing = 0.0
 	var foe: Dictionary = h._unit(w, "m_tracked", 1, Vector2(ae.pos) + Vector2(-5.0, 0.3))
 	foe.order = {"type": "hold"}
+	foe.player_order_tick = int(w.tick)
 	_clear_enemies(w, me, Vector2(ae.pos), int(foe.id))
 	mv.issue({"type": "attack", "unit_ids": [apc], "target_id": int(foe.id)})
 	mv.center_camera_on(Vector2(ae.pos) + Vector2(-2.0, 0.0))
@@ -285,8 +345,17 @@ func _apc_rear(pt, mv, w: SimWorld, h, me: int, at: Vector2) -> void:
 	var rear_cos := -1.0
 	var hull_max := 0.0
 	var a0 := int(fx.muzzle7.get("apc", 0))
+	var sim_fires := 0
+	var cd_prev := 0
+	var foe_at := Vector2(foe.pos)
+	var drift := false
 	while waited < 25.0 and rear < 2:
+		mv.join_sim()
+		_pin(w, [int(foe.id)])
 		_hold(w, [apc, int(foe.id)])
+		if not drift and w.entities.has(int(foe.id)) and Vector2(foe.pos).distance_to(foe_at) > 1.0:
+			drift = true   # REGFIX7-5 diagnostic (no check changed): the target left its spot behind the APC
+			print("PLAYTEST turret7 apc_foe_drift: foe %s -> %s order %s stance %s tick %d" % [str(foe_at), str(foe.pos), str(foe.order), str(foe.get("stance")), int(w.tick)])
 		_clear_enemies(w, me, Vector2(ae.pos), int(foe.id))   # nothing else of the enemy near: every tracer is the rear gun's
 		await pt.get_tree().process_frame
 		waited += pt.get_process_delta_time() if pt.has_method("get_process_delta_time") else 0.016
@@ -294,10 +363,17 @@ func _apc_rear(pt, mv, w: SimWorld, h, me: int, at: Vector2) -> void:
 		if e == null:
 			break
 		hull_max = maxf(hull_max, _adiff(float(e.facing), 0.0))
+		var cdn := int(e.get("cd_ticks", 0))
+		if cdn > cd_prev:
+			sim_fires += 1   # the sim fired (cooldown restarted): drawn or not
+		cd_prev = cdn
 		var ls: Array = el.apc_gun7.last_shot
 		if int(fx.muzzle7.get("apc", 0)) > a0 and ls.size() >= 6 and int(ls[0]) == apc:
 			a0 = int(fx.muzzle7.get("apc", 0))
 			front += 1 if int(ls[1]) != 1 else 0
+			if int(ls[1]) != 1 and front <= 2:   # REGFIX7-3 diagnostic (no check changed): why a non-rear gun took the shot
+				var gs = el.apc_gun7._st.get(apc)
+				print("PLAYTEST turret7 apc_front_shot: gun %d, sim facing %.2f, drawn face %s, shot ang %s, drawn hull row %s, foe at %s apc at %s, target %s" % [int(ls[1]), float(e.facing), str(gs.face) if gs != null else "?", str(gs.ta) if gs != null else "?", str(gs.row) if gs != null else "?", str(foe.pos), str(e.pos), str(e.get("target", e.order.get("target_id", "?")))])
 			if int(ls[1]) == 1:
 				rear += 1
 				if rear == 1:
@@ -317,6 +393,10 @@ func _apc_rear(pt, mv, w: SimWorld, h, me: int, at: Vector2) -> void:
 					rear_cos = cs
 				if rear <= 2:
 					await pt._shot("turret7_5_apc_rear_gun_fires_aft_%d" % rear)
+	if rear == 0 or front > 0:   # REGFIX7-4 diagnostic (no check changed): sim side vs drawn side of a missing rear shot
+		var e2 = w.entities.get(apc)
+		var gs2 = el.apc_gun7._st.get(apc)
+		print("PLAYTEST turret7 apc_rear_diag: sim fires %d, drawn apc shots %d, order %s, target %s, moving %s, cd %s, foe alive %s hp %s dist %.1f, gun seen %s face %s, fx tip %s fallback %s" % [sim_fires, int(fx.muzzle7.get("apc", 0)) - int(a0), str(e2.order) if e2 != null else "-", str(e2.get("target")) if e2 != null else "-", str(e2.get("moving")) if e2 != null else "-", str(e2.get("cd_ticks")) if e2 != null else "-", str(w.entities.has(int(foe.id))), str(foe.get("hp")), (Vector2(e2.pos).distance_to(Vector2(foe.pos)) if e2 != null else -1.0), str(gs2.seen) if gs2 != null else "?", str(gs2.face) if gs2 != null else "?", str(fx.muzzle7.get("tip", 0)), str(fx.muzzle7)])
 	pt._log("turret7_apc_rear_gun", rear >= 1 and front == 0, "rear pod shots %d (other guns %d) at the only target, which is behind the APC" % [rear, front])
 	pt._log("turret7_apc_muzzle_on_foe_side", rear_cos > 0.3, "the drawn barrel tip is on the foe's side of the hull (cos %.2f)" % rear_cos)
 	pt._log("turret7_apc_hull_kept", hull_max < 0.6, "APC hull turned at most %.0f deg while its guns fought aft" % rad_to_deg(hull_max))

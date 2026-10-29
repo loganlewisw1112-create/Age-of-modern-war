@@ -195,12 +195,24 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   repeated for this build. The enemy general stays off by default (in AI-vs-AI matches the AI fields no companies).
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
 
-## G7 "Signalborne / Last Protocol" (2026-10-27) — delivered PARTIAL (see PROGRESS G7 evidence)
-Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout).
-- **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a 3-ring fortress around the
-  Counter-Nanite facility against the Machine's nanite creep, which escalates in phases, opens fissures and canyons with
-  growths rising out of them, sends Weavers and ends in THE TIDE. Strike teams hit nanite cores; ops room on F4;
-  protocol advisor card; cinematic intro (skippable in Settings).
+## G7 "Signalborne / Last Protocol" (2026-10-28) — delivered (see PROGRESS G7 evidence)
+Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout, 13.9c-2 … 13.9c-38
+facility, Sentinels, defences and Last Protocol base).
+- **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a tight two-ring base (61x61)
+  around the Counter-Nanite facility against the Machine's nanite creep, which escalates in phases, opens fissures and
+  canyons with growths rising out of them, sends Weavers and ends in THE TIDE. Strike teams hit nanite cores; ops room on
+  F4; protocol advisor card; cinematic intro (skippable in Settings). Six helipads (4 Attack Helicopters, 2 transport
+  gunships; the Airlift in a heavy hangar). A 100-Sentinel barracks reserve released in tiers as pressure rises (posts,
+  quick-reaction squads of 4-8, breach surge, ~20% last stand), automatic or from the barracks card, finite with a slow
+  paid trickle.
+- **The facility as a fortress (~4x to break):** Sentinels (48 always on watch at the gate, towers and every wall run, on
+  rotation, reinforced from the garrison as attacks grow; bearers, menders, facility engineers run themselves);
+  walkable castle-style wall-walks; no direct fire through walls from inside (artillery, raised mounts and air excepted;
+  an open gate is a gap); unmanned wall turrets; an outer APC gate that hardens when enemies close; rotary CIWS on the
+  command centre roof (BRRRT, straight stream spreading with range, ~25 deg depression limit); a drone-bay hive of
+  defence drones; counter-nanite armoured suits per role from the armory + suit bay; the CN Vanta gunship from the
+  barracks rooftop pad; muzzle flashes from barrels and turrets that turn before firing. Drone bay and barracks reserve
+  cards show only when that building is selected.
 - **Counter-nanite line:** operators; APCs with dome shield, side panels, .50 pods and a pop-out 6-tube rocket pod;
   limpet / harpoon / disruptor weapons; the anti-walker pincer that topples heavy walkers and blows them up; stealth and
   regular VTOL dropships with rear-ramp loading; the facility (gate > decon > staging > garages > pad / helipad).
@@ -208,11 +220,26 @@ Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 1
   see and hear), threat units (burrowers, mimics, leeches, cocoons, webs), turret line, squads redrawn at true scale.
 - **Bases:** compact, function-grouped rings, gate / ring / service roads, floodlights and street lights, cameras with
   real sight, auto turrets at gates and corners.
-- **Status (2026-10-27, cut short by the owner's 20-minute limit):** suite 999 pass / 1 fail (a timing probe under load) /
-  0 script errors; hash goldens not yet re-baselined; sim 2k is 1.65x G6.1 on a busy PC (gate 1.2x, NOT MET); Last
-  Protocol reaches THE TIDE in a forced run without crashing but did not finish within 18 min; packaged build smoke 4 flows,
-  2 checks miss (one dropship pair loading, drone strike drop). Full evidence and what's left: PROGRESS.md "G7 Done-when
-  evidence".
+- **Status (2026-10-28):**
+  - Tests: full suite 155 files, 1,281 checks, 0 fail, 0 script errors (one clean 6-lane run on the final code).
+  - Determinism: hash goldens re-baselined for G7 (two identical capture runs), test_hot_state 17/17, test_det7 6/6
+    (incl. the drone-bay fight replay), test_determinism 5/5.
+  - Idle-PC performance (final code):
+    - sim at 2k is 1.14x G6.1 (median of 6 alternating pairs, 21.14 vs 18.55 ms/tick; gate 1.2x);
+    - fps p10 at 2k is 74.3 (gate 60);
+    - fps p10 at 10k zoomed out is 223.9 (gate 30).
+  - Last Protocol soak (seed 77, THE TIDE at 600 s) ran to an ending: defeat on the countdown at 1,269 s, 3/3 cores
+    alive, 1 ring fallen, 0 script errors, 0 invariant failures.
+  - Last Protocol windowed playtests (final code): lpmode7 18/0, lpmap7 44/0, lpres7 24/0, ciws7 33/0, dronebay7 33/0,
+    sent7 25/0, gate7 20/0, wallturret7 28/0, seq7 22/0, muzzle7 21/0.
+  - Packaged build: exported from the final code (import 0 errors; .pck 79 MB, md5 4d99f6c99c72986f6555f4e5ad1a7689);
+    clean-folder smoke from build/_clean_G7_test with the bundled rts_core 0.5.5: lpmode7 18/0, cnfac7 174/0,
+    drone7 14/0, h 33/0, 0 script errors. Copied to Downloads/Age of Modern War/RTS_Age_of_Modern_War_G7
+    (+ RTS_Age_of_Modern_War_G7_2026-10-28.zip).
+  - Parked for the next slice (owner, 2026-10-28: "STOP focusing on the skirmish"): no population cap in skirmish
+    (13.9c-40), the skirmish-hosted all-in-one facility flow facint7 (last run 97/10: night-assault phase, facility
+    security cameras, tactical APC garage return unverified).
+  - Balance numbers are provisional. Full evidence: PROGRESS.md "G7 Done-when evidence".
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.

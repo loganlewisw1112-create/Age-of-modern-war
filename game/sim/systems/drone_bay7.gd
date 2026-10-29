@@ -2,7 +2,7 @@ extends RefCounted
 ## G7 (DRONEBAY7, DRONEBAY7-2): the counter-nanite facility drone bay's defence drone garrison (master scope 13.9c-27)
 ## fighting as one networked hive (13.9c-27a: "operate like a hive mind to defend the facility at all cost").
 ## The drone bay is the workshop's 2nd storey (13.9c-18); its launch deck is the workshop roof (zone "drone_bay").
-##  - Garrison: up to rules.g7_dronebay.cap (12, PROVISIONAL) defence drones in the hangar, composition `mix`:
+##  - Garrison: up to rules.g7_dronebay.cap (24, PROVISIONAL; 12 -> 24 per 13.9c-38 follow-up) defence drones in the hangar, composition `mix`:
 ##    interceptors (g7_cn_interceptor_drone: anti-drone gun, vs enemy drones / aircraft, and they shoot down rockets /
 ##    shells / strikes landing near them), gun drones (cn_gun_drone: MG, vs ground attackers) and kamikaze drones (the
 ##    G5 FPV strike drone a_drone_strike / b_drone_strike, flown by G5Mech: one-way, vs vehicles / heavy targets).
@@ -22,7 +22,8 @@ extends RefCounted
 ##            sides at a standoff inside weapon range and strafe around it (teams alternate direction; several teams
 ##            on one target share the circle evenly and turn the same way, so they never stack), firing on the move.
 ##            Kamikazes go for the highest-value threat (heavy / anti-air / at the core), launched once the gun drones
-##            have it under fire for kamikaze.supp_s (or after kamikaze.wait_s), at once on a breach.
+##            have it under fire for kamikaze.supp_s (or after kamikaze.wait_s). On a breach they commit together: the
+##            whole stock queued at once, round-robin over the threats, up to kamikaze.commit_per_heavy on a heavy one.
 ##    REARM   drones rotate home to rearm / recharge while others hold the line: a worn drone (battery past rotate.at
 ##            or hurt below rotate.hp) rotates only while at most a third of the drones in play are down and at least a
 ##            third stay aloft; ready drones relaunch to relieve them. A drone at its battery limit or badly hurt
@@ -72,7 +73,7 @@ const KEY := "dronebay7"
 const VER := 2
 const DISCOVER_EVERY := 20
 const KINDS := ["interceptor", "gun", "kamikaze"]
-const DEFAULTS := {"cap": 12, "mix": {"interceptor": 4, "gun": 5, "kamikaze": 3}, "auto": true, "think_every": 10,
+const DEFAULTS := {"cap": 24, "mix": {"interceptor": 4, "gun": 8, "kamikaze": 12}, "auto": true, "think_every": 10,
 	"defence_pad": 14, "leash": 8, "launch_gap_s": 0.35, "sortie_s": 120, "rearm_s": 20, "repair_s": 30, "rebuild_s": 45,
 	"rebuild_cost": {"credits": 60, "salvage": 25}, "clear_s": 6, "guard_r": 9.0, "land_r": 0.45,
 	"defs": {"interceptor": "g7_cn_interceptor_drone", "gun": "cn_gun_drone"},
@@ -89,7 +90,7 @@ const DEFAULTS := {"cap": 12, "mix": {"interceptor": 4, "gun": 5, "kamikaze": 3}
 			"lead_s": 1.0, "min_screen": 1, "deck_cover": true},
 		"team": {"size": 2, "hp_per_team": 800.0, "standoff": 0.7, "orbit_dps": 50.0, "lead_s": 1.2, "guard_frac": 0.85,
 			"guard_dps": 12.0},
-		"kamikaze": {"supp_s": 1.5, "wait_s": 8.0, "heavy_bonus": 250},
+		"kamikaze": {"supp_s": 1.5, "wait_s": 8.0, "heavy_bonus": 250, "commit_per_heavy": 4, "commit_per": 2},
 		"rotate": {"at": 0.45, "hp": 0.4, "must_hp": 0.2, "keep_frac": 0.334, "down_frac": 0.334},
 		"commit": {"rebuild_mult": 0.4, "rearm_mult": 0.5, "gap_mult": 0.5},
 		"ram": {"core_r": 3.0, "hit_r": 0.7, "damage": 150.0, "splash": 0.8, "max": 2, "payload": "g5_drone_strike"}}}
@@ -760,7 +761,7 @@ static func _kam_targets(w: SimWorld, brd: Array, commit: bool) -> Array:
 			continue
 		if not commit and int(b[5]) == 0 and cls != "aa" and cls != "core":
 			continue
-		out.append([float(b[1]) + hb * float(b[5]), int(b[0]), int(b[3])])
+		out.append([float(b[1]) + hb * float(b[5]), int(b[0]), int(b[3]), int(b[5])])
 	out.sort_custom(func(a, b): return float(a[0]) > float(b[0]) or (float(a[0]) == float(b[0]) and int(a[1]) < int(b[1])))
 	return out
 
@@ -772,6 +773,31 @@ static func _release_kamikazes(w: SimWorld, B: Dictionary, brd: Array, commit: b
 	var per := maxi(1, int((R().need as Dictionary).get("kamikaze_per_heavy", 1)))
 	var on := _kamikaze_on(B)
 	var supp: Dictionary = B.supp
+	if commit:
+		# WATCH7-3 (13.9c-27a "hive mind ... defend the facility at all cost"): on a breach the kamikazes commit TOGETHER:
+		# the whole stock is queued at once, dealt round-robin over the threats best first (every threat gets one before
+		# any gets a second), up to commit_per_heavy on a heavy / big target and commit_per on the rest; the launch
+		# gap is already halved under commit, so they leave the deck as one wave instead of one per target over time.
+		# Once every target holds its cap the rest still go, round-robin (every drone in the hangar launches).
+		var kt := _kam_targets(w, brd, true)
+		var cph := maxi(per, int(K.get("commit_per_heavy", 4)))
+		var cpl := maxi(per, int(K.get("commit_per", 2)))
+		var more := true
+		var capped := true   # first up to the per-target caps, then the rest of the stock round-robin (all of it goes)
+		while (more or capped) and int(B.stock.get("kamikaze", 0)) > 0 and not kt.is_empty():
+			if not more:
+				capped = false
+			more = false
+			for c in kt:
+				if int(B.stock.get("kamikaze", 0)) <= 0:
+					break
+				var tid := int(c[1])
+				if capped and int(on.get(tid, 0)) >= (cph if int(c[3]) > 0 else cpl):
+					continue
+				if _queue(B, "kamikaze", tid, "auto"):
+					on[tid] = int(on.get(tid, 0)) + 1
+					more = true
+		return
 	for c in _kam_targets(w, brd, commit):
 		if int(B.stock.get("kamikaze", 0)) <= 0:
 			break
@@ -1459,13 +1485,17 @@ static func n_launch(w: SimWorld, B: Dictionary, kind: String, cnt: int, at, kt:
 
 
 # ================================================================ tick
+## Test / A-B switch only (DET7-2: before / after comparison of the raise-tick bay discovery). Never saved; true in a real match.
+static var eager_discover := true
+
+
 static func tick(w: SimWorld) -> void:
 	if not w.sys_state.has("cn_facility"):
 		return
 	# DET7: a facility gets its bay the tick it is raised (CnFacility runs earlier in the tick), not at the next
 	# tick % DISCOVER_EVERY: until then dronebay_* commands were rejected ("Needs a Counter-Nanite facility drone bay")
 	# and an "auto off" given right after the facility rose never took. Facilities are few: a key check per tick.
-	if w.tick % DISCOVER_EVERY == 0 or _bay_missing(w):
+	if w.tick % DISCOVER_EVERY == 0 or (eager_discover and _bay_missing(w)):
 		_discover(w)
 	var st = state(w)
 	if st == null:

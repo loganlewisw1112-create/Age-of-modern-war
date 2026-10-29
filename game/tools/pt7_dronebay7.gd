@@ -1,7 +1,7 @@
 extends RefCounted
 ## G7 playtest flow dronebay7 (DRONEBAY7 / DRONEBAY7-2, G7_REFERENCE 13.9c-27 + 13.9c-27a): the facility drone bay's
-## defence garrison fighting as a hive in the real game. The player's counter-nanite facility rises with 12 defence
-## drones in the drone bay (the workshop's 2nd storey); the card shows "Drones 12/12".
+## defence garrison fighting as a hive in the real game. The player's counter-nanite facility rises with 24 defence
+## drones in the drone bay (the workshop's 2nd storey); the card shows "Drones 24/24" (13.9c-38 follow-up: 12 -> 24).
 ##  1. A mixed attack comes at the south wall (enemy drones, riflemen, a heavy mech, an anti-air vehicle): with
 ##     automatic release ON (default) the bay launches from the workshop-roof deck; the hive puts up its interceptor
 ##     screen (outer picket on the threat axis + inner ring over the facility) and gun-drone fire teams orbit their
@@ -16,6 +16,7 @@ extends RefCounted
 const H = preload("res://tests/test_machine_g6.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const DroneBay7 = preload("res://sim/systems/drone_bay7.gd")
+const Ciws7 = preload("res://sim/systems/ciws7.gd")
 const Card = preload("res://presentation/ui7/dronebay_card.gd")
 
 var fac := -1
@@ -157,14 +158,31 @@ func run(pt) -> void:
 	var sm := _sm(pt)
 	var deck: Rect2 = sm.deck
 	var dc := deck.get_center()
-	pt._log("dronebay7_garrison", int(sm.total) == 12 and int(sm.cap) == 12 and bool(sm.auto),
+	pt._log("dronebay7_garrison", int(sm.total) == 24 and int(sm.cap) == 24 and bool(sm.auto),
 		"Drones %d/%d in the hangar, auto release %s, deck = workshop roof %s" % [int(sm.total), int(sm.cap), "ON" if bool(sm.auto) else "OFF", str(deck)])
 	var card = _card(pt)
+	# 13.9c-37 (CARDSEL7): hidden until the player clicks the workshop / drone bay; a real click on that zone shows it
+	mv.select_ids([])
 	if card != null:
+		card.refresh()
+	pt._log("dronebay7_card_hidden_unselected", card != null and not card.visible, "no selection: drone bay card hidden")
+	var Fz: Dictionary = CnFacility.fac(w, fac)
+	var zc: Vector2 = CnFacility.zone(Fz, "drone_bay").get_center()
+	mv.center_camera_on(zc)
+	await pt._wait(0.4)
+	var zs: Vector2 = mv.get_viewport().get_canvas_transform() * mv.world_to_screen(zc)
+	await pt._click(zs)
+	await pt._wait(0.4)
+	if card != null:
+		card.refresh()
+	pt._log("dronebay7_click_selects_bay", card != null and card.visible and mv.part_selected(fac, "drone_bay"),
+		"real click on the workshop zone at %s: selection %s part '%s', card visible %s" % [str(zs.round()), str(mv.selection), mv.sel_part, str(card.visible if card != null else false)])
+	if card != null and not card.visible:
+		mv.select_ids([fac], "drone_bay")
 		card.refresh()
 	await pt._wait(0.5)
 	var ctext := String(card._count.text) if card != null else ""
-	pt._log("dronebay7_card", card != null and card.visible and ctext == "Drones 12/12", "card shows '%s' / '%s'" % [ctext, String(card._line.text).replace("\n", " | ") if card != null else ""])
+	pt._log("dronebay7_card", card != null and card.visible and ctext == "Drones 24/24", "card shows '%s' / '%s'" % [ctext, String(card._line.text).replace("\n", " | ") if card != null else ""])
 	await _shots(pt, mv, "deck_full", dc, [1.75, 2.5])
 	# --- 1. mixed attack at the south wall: enemy drones, riflemen, a heavy mech, an anti-air vehicle
 	var foe := _enemy(w, me)
@@ -234,8 +252,13 @@ func run(pt) -> void:
 		for i in 8:
 			var at := cc + Vector2(-3.0 + float(i % 4) * 2.0, -2.0 + float(i / 4) * 4.0)
 			SimWorld.Strikes._launch_shot(w, src, at, "rocket", 40 + i * 8, "g6_mlrs_salvo_rocket")
-	var icpt: bool = await pt._wait_until(func(): return int(_sm(pt).get("intercepts", 0)) > i0, 8.0)
-	pt._log("dronebay7_rockets_intercepted", icpt, "rockets at the facility: %d shot down by the screen interceptors" % (int(_sm(pt).get("intercepts", 0)) - i0))
+	# REGFIX7: the facility's rocket defence is layered: the bay's interceptor screen (13.9c-27: "interceptors vs drones /
+	# rockets") AND the command-centre roof CIWS (13.9c-32: "anti-drone / anti-missile / anti-rocket point defence
+	# first"). Since CIWS7 the roof mounts often shoot the salvo down before the screen gets a chance: a rocket shot
+	# down by either defender counts; both numbers are logged.
+	var c0 := int(Ciws7.counters.get("icpt_hit", 0))
+	var icpt: bool = await pt._wait_until(func(): return int(_sm(pt).get("intercepts", 0)) > i0 or int(Ciws7.counters.get("icpt_hit", 0)) > c0, 8.0)
+	pt._log("dronebay7_rockets_intercepted", icpt, "rockets at the facility: %d shot down by the screen interceptors, %d by the roof CIWS" % [int(_sm(pt).get("intercepts", 0)) - i0, int(Ciws7.counters.get("icpt_hit", 0)) - c0])
 	await _shots(pt, mv, "fight_south", Vector2(cc.x + 2, cr.end.y + 4), [1.75], 60.0)
 	# --- 3. breach: infantry inside the wall -> the hive commits (ALL IN)
 	mv.join_sim()
@@ -301,6 +324,17 @@ func run(pt) -> void:
 	var off_now: bool = await pt._wait_until(func(): return not bool(_sm(pt).auto), 3.0)
 	pt._log("dronebay7_auto_off", ok_auto and off_now, "AUTO button clicked: automatic release off (%s)" % last_press)
 	card.refresh()
+	# AUTO was still on while the gun drone finished rearming, so automatic release may already have launched it (the single
+	# ready drone) and LAUNCH is disabled. With AUTO off nothing launches again: wait on the real state for a ready drone,
+	# and if the auto-released one is aloft, RECALL it and wait for it to land and rearm. The LAUNCH check itself is unchanged.
+	var had_ready: bool = await pt._wait_until(func(): return int(_sm(pt).ready) > 0, 2.0)
+	var recalled := false
+	if not had_ready:
+		recalled = await _press(pt, card, "RecallButton")
+		await pt._wait_until(func(): return int(_sm(pt).ready) > 0, 90.0)
+	var ready_ok: bool = int(_sm(pt).ready) > 0
+	pt._log("dronebay7_ready_after_auto_off", ready_ok, "AUTO off: a drone is ready in the bay to launch (ready %d, had ready at once %s, recalled the auto-released one %s)" % [int(_sm(pt).ready), str(had_ready), str(recalled)])
+	card.refresh()
 	var ok_l: bool = await _press(pt, card, "LaunchButton")
 	var man: bool = await pt._wait_until(func(): return int(_sm(pt).aloft) >= 2, 8.0)
 	pt._log("dronebay7_manual_launch", ok_l and man, "LAUNCH clicked: %d drones up in a guard formation with no threat (%s)" % [int(_sm(pt).aloft), last_press])
@@ -316,3 +350,18 @@ func run(pt) -> void:
 	pt._log("dronebay7_auto_on", ok_a2 and on_now, "AUTO clicked again: automatic release back on (%s)" % last_press)
 	card.refresh()
 	await _shots(pt, mv, "card_final", dc, [1.75])
+	# ICONS7: select one of each facility part that used to draw the magenta placeholder icon: the selection panel lists them
+	mv.join_sim()
+	var want := ["cn_armory", "cn_magazine", "cn_ammo_locker", "cn_link_wall", "cn_ecp_baffle", "a_g7_camera", "a_g7_vtol_pad"]
+	var pick: Array = []
+	var got: Array = []
+	var ww: SimWorld = pt._w()
+	for id in ww.entities.keys():
+		var d := String(ww.entities[id].get("def", ""))
+		if want.has(d) and not got.has(d):
+			got.append(d)
+			pick.append(int(id))
+	mv.select_ids(pick)
+	await pt._wait(0.6)
+	pt._log("dronebay7_icons_selection", got.size() >= 3, "selection panel shot with %d new-icon defs selected: %s" % [got.size(), str(got)])
+	await pt._shot("dronebay7_icons7_selection")

@@ -814,6 +814,18 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 		if not SV.is_empty() and int(e.owner) == owner and SV.box.has_point(p):
 			_service(w, F, e, p, SV)
 		var in_hall := hall.has_point(p)
+		if not in_hall and e.has("cn_dwh"):
+			# FLOWC7 (facint7; 6.2 / 13.9c-7 "walk the decon hall and come out clean"): walking through the 4x3 hall takes
+			# ~1 s, under walk_time, so a soldier who walked straight through was never cleaned. One who walked the hall
+			# and stepped out into the compound has done the walkway: clean now. Backing out of the hall (outside the
+			# compound) does not count.
+			e.erase("cn_dwh")
+			e.erase("cn_dw")
+			if int(e.owner) == owner and compound_rect(F).has_point(p):
+				_clean(w, e)
+				e.cn_rinsed = w.tick
+				w.emit("CnDecon", {"id": int(e.id), "fac": int(F.id), "kind": "walkway"})
+			continue
 		if not in_hall and not rect.has_point(p):
 			continue
 		var o := int(e.owner)
@@ -833,8 +845,11 @@ static func _sweep_zone(w: SimWorld, F: Dictionary) -> void:
 		if not foot and bool(e.get("moving", false)):
 			continue
 		e[k] = int(e.get(k, 0)) + 10
+		if foot and in_hall:
+			e.cn_dwh = true   # FLOWC7: walked into the hall (finished on the way out, see above)
 		if int(e[k]) >= (walk if foot else rinse):
 			e.erase(k)
+			e.erase("cn_dwh")
 			_clean(w, e)
 			for u in e.get("cargo", []):
 				_clean(w, u)

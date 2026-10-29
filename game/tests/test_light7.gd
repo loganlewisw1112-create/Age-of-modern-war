@@ -183,6 +183,45 @@ func test_fixtures_mounted_on_surfaces() -> void:
 							bad.append("pole %s stands in a lane's drive line" % str(q))
 				if at.distance_to(F.pool) > 1.0:
 					bad.append("pole %s pool not under its head" % str(q))
+			"yard":   # LIGHT7-4: the inward flood on the inner guard-rail post: RAIL_Z, 1.37 m inside the wall axis, aimed into the yard, wash inside the footprint
+				var ydn := minf(minf(q.y, cs - q.y), minf(q.x, cs - q.x))
+				var yns := minf(q.y, cs - q.y) < minf(q.x, cs - q.x)
+				var ysec := fposmod(q.x if yns else q.y, 2.0)
+				var yin := Vector2(cs * 0.5, cs * 0.5) - q
+				var aim_in := (F.aim as Vector2).dot(yin) > 0.0 and absf((F.aim as Vector2).length() - 1.0) < 0.001
+				if not is_equal_approx(z, L.RAIL_Z) or absf((ydn - 1.0) - L.RAIL_OFF) > 0.011 or not (absf(ysec - 0.8) < 0.02 or absf(ysec - 1.2) < 0.02) or not aim_in:
+					bad.append("yard flood %s not on the inner guard-rail post (z %.1f, %.3f from the axis, section phase %.2f, aim %s)" % [str(q), z, ydn - 1.0, ysec, str(F.aim)])
+				if not Geometry2D.is_point_in_polygon(L._iso(F.pool), g.foot) or not bool(F.get("inside", false)) or bool(F.get("lift", true)):
+					bad.append("yard flood %s pool not inside the compound footprint" % str(q))
+			"mast":   # LIGHT7-5: a 9 m area mast on a free verge / kerb line, its pool under it; zv (what a building in front hides of the shaft) below the crossbar
+				if not is_equal_approx(z, L.MAST_Z):
+					bad.append("mast %s not at the crossbar height (z %.1f)" % [str(q), z])
+				if not L._verge_ok(g, C, at, [], Rect2(), 3.0, L.MAST_Z, true, false):
+					bad.append("mast %s stands on a building / zone / lane drive line / door front" % str(q))
+				if not (float(F.zv) >= 0.0 and float(F.zv) < L.MAST_Z) or at.distance_to(F.pool) > 0.01:
+					bad.append("mast %s foot hidden above its crossbar (zv %.1f) / pool not under it" % [str(q), float(F.zv)])
+			"wallf":   # LIGHT7-6: a wall-pack flood on a +x / +y face of a drawn block (or garage shed), under its roof line, in view, wash on the open ground in front
+				var host := false
+				var hz := 0.0
+				var hosts: Array = (L._bld_boxes(g) as Array).duplicate()
+				for ga in g.garages:
+					hosts.append([(ga[0] as Rect2).grow(-0.1), L.GARAGE_Z, 0.0, false])
+				for b in hosts:
+					var br: Rect2 = b[0]
+					if float(b[2]) > 0.0:
+						continue
+					var on_x := absf(at.x - (br.end.x + 0.04)) < 0.011 and at.y >= br.position.y and at.y <= br.end.y and (F.aim as Vector2).is_equal_approx(Vector2(1, 0))
+					var on_y := absf(at.y - (br.end.y + 0.04)) < 0.011 and at.x >= br.position.x and at.x <= br.end.x and (F.aim as Vector2).is_equal_approx(Vector2(0, 1))
+					if on_x or on_y:
+						host = true
+						hz = float(b[1])
+				if not host or z > hz or z > L.WALLF_Z + 0.001 or bool(F.hid):
+					bad.append("wall flood %s not on a visible +x / +y face of a drawn block (z %.1f, block height %.1f, hid %s)" % [str(q), z, hz, str(F.hid)])
+				if not Geometry2D.is_point_in_polygon(L._iso(F.pool), g.foot) or not bool(F.get("inside", false)):
+					bad.append("wall flood %s pool not inside the compound footprint" % str(q))
+				for r in hosts:
+					if (r[0] as Rect2).has_point(F.pool):
+						bad.append("wall flood %s pool inside a building" % str(q))
 			"door":
 				var on_face := false
 				var f := int(F.f)
@@ -210,8 +249,15 @@ func test_fixtures_mounted_on_surfaces() -> void:
 				if not edge or not is_equal_approx(z, float(rp.deck_z) * L.PX_M):
 					bad.append("roof-pad lamp %s not on the deck edge at deck height" % str(q))
 	check(bad.is_empty(), "every fixture mounted on a drawn surface at its height: %s" % str(bad))
-	for k in ["wall", "wall_in", "alarm", "walk", "gate", "tower", "pole", "door", "obst", "deck"]:
+	for k in ["wall", "wall_in", "alarm", "walk", "gate", "tower", "pole", "door", "obst", "deck", "yard"]:
 		check(int(kinds.get(k, 0)) > 0, "the plan has %s fixtures (%d)" % [k, int(kinds.get(k, 0))])
+	# LIGHT7-7: masts and wall-pack floods exist only where a work cell needs them: report which branches this layout exercised
+	var khid := {}
+	var kempty := {}
+	for F in g.fix:
+		khid[String(F.k)] = int(khid.get(String(F.k), 0)) + (1 if F.hid else 0)
+		kempty[String(F.k)] = int(kempty.get(String(F.k), 0)) + (1 if (F.P as Dictionary).is_empty() or (F.P.polys as Array).is_empty() else 0)
+	print("LIGHT7 fixtures by kind %s hid %s emptypool %s" % [str(kinds), str(khid), str(kempty)])
 	check(int(kinds.get("pole", 0)) >= 4, "lane area-light poles (%d)" % int(kinds.get("pole", 0)))
 	# WALL7-2 fact wall7.heights (board seq 5356): battlement top 4.66 m = 46 px, guard rail 4.68 m, walkway lamps 3.17 m,
 	# tower obstruction lamp 12.78 m, rampart half width 1.45 m; the wall's occluder strip follows (a light never lies on it)
@@ -299,15 +345,60 @@ func test_light_count_bounded() -> void:
 	var lg := _geo()
 	var L = lg[0]
 	var g: Dictionary = lg[1]
-	var n: int = (g.fix as Array).size() + (g.fpool as Array).size() + (g.edge as Array).size() + (g.garages as Array).size() \
-		+ 2 * (g.towers as Array).size() + (L._gate_posts(g) as Array).size() + (g.lamps as Array).size()
+	# LIGHT7-7: every light a night + lockdown redraw can count: each fixture (1) with its wash pool (1) and hot core (1 when it has one), a mast's
+	# second lens, the facade / alarm pools, pad edge lights, garage spill, tower pulse + beacon (2 each), gate posts, wall lamps, the bay's lights
+	var cores := 0
+	var masts := 0
+	var pools := 0
+	var fixed := 0
+	for F in g.fix:
+		cores += 1 if F.has("core") else 0
+		masts += 1 if String(F.k) == "mast" else 0
+		pools += 0 if (F.P as Dictionary).is_empty() else 1
+		fixed += 0 if String(F.k) in ["mast", "wallf"] else 1
+	var bay := 0
+	if g.has("bay"):
+		bay = (g.bay.pools as Array).size() + (g.bay.lamps as Array).size() + (g.bay.strips as Array).size() + (g.bay.surf as Array).size() + 1
+	var n: int = (g.fix as Array).size() + pools + cores + masts + (g.fpool as Array).size() + (g.edge as Array).size() + (g.garages as Array).size() \
+		+ 2 * (g.towers as Array).size() + (L._gate_posts(g) as Array).size() + (g.lamps as Array).size() + bay
 	check((g.fix as Array).size() <= 140, "fixtures per facility bounded (%d)" % (g.fix as Array).size())
-	check(n <= L.LIGHT_CAP, "worst-case lights per redraw (night + lockdown) %d <= cap %d" % [n, L.LIGHT_CAP])
+	check(n <= L.LIGHT_CAP, "worst-case lights per redraw (night + lockdown) %d <= cap %d (fixtures %d, pools %d, cores %d, mast lenses %d, bay %d)" % [n, L.LIGHT_CAP, (g.fix as Array).size(), pools, cores, masts, bay])
 	var poly_n := 0
 	for F in g.fix:
 		if not (F.P as Dictionary).is_empty():
 			poly_n += (F.P.polys as Array).size()
+		if F.has("P2") and not (F.P2 as Dictionary).is_empty():
+			poly_n += (F.P2.polys as Array).size()
 	check(poly_n <= 400, "pool polygons cached per facility bounded (%d)" % poly_n)
+	check((g.win as Array).size() <= 160, "window panes per facility bounded (%d)" % (g.win as Array).size())
+	check(fixed <= 140, "the fixtures every facility has leave the masts / wall floods a budget (%d fixed of 140)" % fixed)
+	L.free()
+
+
+## LIGHT7-7 (owner 13.9c-24d "interior lighting shouldnt be so dark"): every lane / apron cell where units work and the camera sees the ground
+## (the planner's own work set) gets at least IL_MIN of interior tint lift from the fixtures that are actually fitted. Recomputed here from the
+## final fixture list (not the planner's cached sum), so a mast the budget trimmed cannot leave a dark pocket unreported.
+func test_work_cells_lit() -> void:
+	var lg := _geo()
+	var L = lg[0]
+	var g: Dictionary = lg[1]
+	var C: Dictionary = CnFacility.conf()
+	var work: Array = L._work_cells(g, C)
+	check(work.size() >= 100, "the work set covers the lanes / pads / staging / wash (%d visible cells)" % work.size())
+	var lv: PackedFloat32Array = L._work_lift(work, g.fix)
+	var dark := []
+	var lo := 9.0
+	for i in work.size():
+		lo = minf(lo, lv[i])
+		if lv[i] < L.IL_MIN:
+			dark.append("%s:%.2f" % [str((work[i] as Vector2) - g.O), lv[i]])
+	check(dark.is_empty(), "no dark pocket where units work: %d of %d cells below IL_MIN %.2f (min %.3f): %s" % [dark.size(), work.size(), L.IL_MIN, lo, " ".join(dark.slice(0, 80))])
+	var cached: PackedFloat32Array = g.get("work_lv", PackedFloat32Array())
+	check(cached.size() == lv.size(), "the planner's coverage record covers the same cells")
+	var same := cached.size() == lv.size()
+	for i in mini(cached.size(), lv.size()):
+		same = same and absf(cached[i] - lv[i]) < 0.0005
+	check(same, "the planner's coverage record is the fitted fixtures' (trimmed masts do not count)")
 	L.free()
 
 

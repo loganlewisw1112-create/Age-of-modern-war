@@ -191,6 +191,15 @@ func _seen(w: SimWorld, f: Dictionary, p: Vector2) -> bool:
 	return _cell_visible(f, p)
 
 
+## G7 LPPERF7B: the sector tints are painted into one SIZE x SIZE image (rebuilt only when the owners change; same pixels
+## as the per-sector draw_rect: a pixel belongs to the sector its centre lies in) and the sector outlines go out as one
+## draw_multiline. It used to be 2 draw calls per sector: ~1900 a frame on a 512 x 512 map (43 x 43 sectors).
+var _terr_img: Image = null
+var _terr_tex: ImageTexture = null
+var _terr_sig := 0
+var _terr_lines := PackedVector2Array()
+
+
 func _draw_territory(w: SimWorld) -> void:
 	var st: Dictionary = w.sys_state.territory
 	var owners: Array = st.get("owner", [])
@@ -198,16 +207,48 @@ func _draw_territory(w: SimWorld) -> void:
 	var size := int(st.get("size", 12))
 	var cols := int(st.get("cols", 1))
 	var sc := _cell_scale()
-	for i in owners.size():
-		if i >= counted.size() or not bool(counted[i]):
-			continue
-		var r := Rect2(Vector2((i % cols) * size, (i / cols) * size) * sc, Vector2(size, size) * sc)
-		var t := int(owners[i])
-		if t >= 0:
-			var fids: Array = G3.teams(w).get(t, [])
-			var c: Color = G3.side_color(w, int(fids[0])) if not fids.is_empty() else Color.GRAY
-			draw_rect(r, Color(c.r, c.g, c.b, 0.28))
-		draw_rect(r, Color(1, 1, 1, 0.10), false, 1.0)
+	var cols_t: Array = []
+	var tm: Dictionary = G3.teams(w)
+	var tks: Array = tm.keys()
+	tks.sort()
+	for t in tks:
+		var fids: Array = tm[t]
+		cols_t.append([t, G3.side_color(w, int(fids[0])) if not fids.is_empty() else Color.GRAY])
+	var sig := hash([owners, counted, size, cols, sc, cols_t])
+	if sig != _terr_sig or _terr_tex == null:
+		_terr_sig = sig
+		var tcol := {}
+		for tc in cols_t:
+			tcol[tc[0]] = tc[1]
+		if _terr_img == null:
+			_terr_img = Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+		_terr_img.fill(Color(0, 0, 0, 0))
+		_terr_lines = PackedVector2Array()
+		for i in owners.size():
+			if i >= counted.size() or not bool(counted[i]):
+				continue
+			var r := Rect2(Vector2((i % cols) * size, (i / cols) * size) * sc, Vector2(size, size) * sc)
+			var t := int(owners[i])
+			if t >= 0:
+				var c: Color = tcol.get(t, Color.GRAY)
+				var x0 := clampi(ceili(r.position.x - 0.5), 0, SIZE)
+				var y0 := clampi(ceili(r.position.y - 0.5), 0, SIZE)
+				var x1 := clampi(ceili(r.end.x - 0.5), 0, SIZE)
+				var y1 := clampi(ceili(r.end.y - 0.5), 0, SIZE)
+				if x1 > x0 and y1 > y0:
+					_terr_img.fill_rect(Rect2i(x0, y0, x1 - x0, y1 - y0), Color(c.r, c.g, c.b, 0.28))
+			var a := r.position
+			var b := Vector2(r.end.x, r.position.y)
+			var c2 := r.end
+			var d := Vector2(r.position.x, r.end.y)
+			_terr_lines.append_array([a, b, b, c2, c2, d, d, a])
+		if _terr_tex == null:
+			_terr_tex = ImageTexture.create_from_image(_terr_img)
+		else:
+			_terr_tex.update(_terr_img)
+	draw_texture_rect(_terr_tex, Rect2(Vector2.ZERO, Vector2(SIZE, SIZE)), false)
+	if not _terr_lines.is_empty():
+		draw_multiline(_terr_lines, Color(1, 1, 1, 0.10), 1.0)
 
 
 func _cell_visible(f: Dictionary, p: Vector2) -> bool:

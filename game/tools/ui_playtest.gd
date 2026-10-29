@@ -363,9 +363,15 @@ func _pick_option(node_name: String, idx: int) -> bool:
 		return false
 	if ob.selected == idx:
 		return true
-	await _click(ob.get_global_rect().get_center())
-	await _wait(0.4)
 	var pm := ob.get_popup()
+	# G7 REGFIX7-4: the first click of a run (1.5 s after start, menu still settling on a slow first frame) was
+	# sometimes lost (muzzle7: g6_slot0_stage9_click ok=false, no popup): click the button again, at most 3 times
+	for attempt in 3:
+		await _click(ob.get_global_rect().get_center())
+		await _wait(0.4)
+		if pm.visible:
+			break
+		print("PLAYTEST-DBG pick_option_no_popup %s attempt=%d rect=%s" % [node_name, attempt, ob.get_global_rect()])
 	if not pm.visible:
 		return false
 	var top := 0.0
@@ -1462,6 +1468,22 @@ func _lz_ok(def_id: String) -> Callable:
 	return func(q: Vector2i) -> bool: return Air.landing_ok(_w(), q, d)
 
 
+## AIRFIX7: a landing zone for a bay dropship (G7 CNFAC7-2 rear-ramp loading, Transport.ramp_clear): landing_ok AND open ground
+## behind the tail for foot and vehicle at every one of the 8 drawn facings (the craft lands facing its approach heading, so
+## the ramp side is not known when the zone is picked). The old zone (20,8) sat 2 tiles from the motor pool: ramp blocked.
+func _lz_ramp_ok(def_id: String) -> Callable:
+	var base := _lz_ok(def_id)
+	return func(q: Vector2i) -> bool:
+		if not base.call(q):
+			return false
+		var fake := {"pos": Vector2(q) + Vector2(0.5, 0.5)}
+		for k in 8:
+			for cls in ["foot", "vehicle"]:
+				if not Transport.ramp_clear(_w(), fake, float(k) * PI / 4.0, cls):
+					return false
+		return true
+
+
 ## Select ids by clicking the first and shift-clicking the rest (camera on each).
 func _g5_select_many(ids: Array) -> int:
 	if ids.is_empty():
@@ -1512,7 +1534,7 @@ func _air_vtol(fid: int) -> void:
 	var tp: Vector2 = _ent(tank_ids[0]).pos if not tank_ids.is_empty() else _ent(vid).pos
 	_mv().center_camera_on(tp)
 	await _wait(0.3)
-	var lz := _g5_cell_near(_g5_cell(tp), 3, 14, _lz_ok("a_vtol_dropship"))
+	var lz := _g5_cell_near(_g5_cell(tp), 3, 14, _lz_ramp_ok("a_vtol_dropship"))
 	_log("air_vtol_lz_found", lz.x >= 0, str(lz))
 	if lz.x < 0:
 		return
@@ -1524,9 +1546,28 @@ func _air_vtol(fid: int) -> void:
 	await _shot("air_08_vtol_landed")
 	# troops then tanks: select every one (click + shift-click; G6.1 double-click now selects one SQUAD, not every
 	# unit of the type, so it took 4 of 8 riflemen), right-click the VTOL = load
-	var full := {"foot": 8, "vehicle": 2}
-	for grp in [troop_ids, tank_ids]:
+	# AIRFIX7: G7 CNFAC7-2 (owner 13.9c, content/g7/defs_g7_facility.json _g7_bays) gave the dropship one internal bay: ONE vehicle
+	# plus up to 10 men; the second tank is refused by design. Full = 8 riflemen + 1 tank (the check id keeps its old name).
+	var full := {"foot": 8, "vehicle": 1}
+	for grp0 in [troop_ids, tank_ids]:
+		# AIRFIX7: the riflemen box can cover the tanks standing among them (the right-click then loads those too); men already
+		# aboard have no world entity: take only those still outside, nothing left = nothing to select / load
+		var grp: Array = grp0.filter(func(i): return _ent(int(i)) != null)
+		if grp.is_empty():
+			continue
 		var cen := Vector2.ZERO
+		for id in grp:
+			cen += Vector2(_ent(int(id)).pos)
+		cen /= maxf(1.0, float(grp.size()))
+		_mv().center_camera_on(cen)
+		await _wait(0.3)
+		# AIRFIX7: a man still walking (squad settling after training) leaves the box before the drag lands: wait until the
+		# whole group stands still, then box it (the fallback shift-click path replaced a 7-of-8 box with 3)
+		await _wait_until(func(): return grp.all(func(i): return _ent(int(i)) == null or not bool(_ent(int(i)).get("moving", false))), 20.0)
+		grp = grp.filter(func(i): return _ent(int(i)) != null)   # may have boarded while we waited
+		if grp.is_empty():
+			continue
+		cen = Vector2.ZERO
 		for id in grp:
 			cen += Vector2(_ent(int(id)).pos)
 		cen /= maxf(1.0, float(grp.size()))
@@ -1554,16 +1595,19 @@ func _air_vtol(fid: int) -> void:
 		await _wait(0.5)
 	var loaded := await _wait_until(func(): return Transport.group_load(_ent(vid)) == full, 120.0)
 	_log("air_vtol_loaded_2v_8f", loaded, "load=%s" % str(Transport.group_load(_ent(vid))))
+	# AIRFIX7: the craft is committed while its rear-ramp sequence runs (Transport.hold_bays: no lift-off, a take-off order is
+	# refused with BayBusy): wait for the ramp to be up before clicking Take off
+	_log("air_vtol_ramp_up", await _wait_until(func(): return _ent(vid) != null and not _ent(vid).has("bay_seq"), 60.0), "bay_seq=%s" % str(_ent(vid).get("bay_seq", "none")))
 	await _g5_select(vid)
 	await _shot("air_09_vtol_loaded")
 	_log("air_vtol_take_off_click", await _click_named("G5_take_off"), _g5_last_cmd())
 	_log("air_vtol_airborne", await _g5_wait_phase(vid, ["air"], 30.0), Air.phase(_w(), vid))
 	var c0 := _g5_cell(_ent(vid).pos)
-	var lz2 := _g5_cell_near(c0, 10, 16, _lz_ok("a_vtol_dropship"))
+	var lz2 := _g5_cell_near(c0, 10, 16, _lz_ramp_ok("a_vtol_dropship"))
 	if lz2.x < 0:
 		_mv().center_camera_on(Vector2(c0))
 		await _wait(0.3)
-		lz2 = _g5_cell_near(c0, 9, 14, _lz_ok("a_vtol_dropship"))
+		lz2 = _g5_cell_near(c0, 9, 14, _lz_ramp_ok("a_vtol_dropship"))
 	_log("air_vtol_far_lz_found", lz2.x >= 0, str(lz2))
 	if lz2.x < 0:
 		return
@@ -2329,7 +2373,7 @@ func _tut_unmet_gates() -> Array:
 ## harness grant + peace window are the G5 ones (this process only, in memory).
 const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61", "flick61"]
 ## G7: flows live in tools/pt7_<flow>.gd (same `func run(pt) -> void` contract as the G6.1 pt61 flows).
-const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7", "life7", "atmo7", "seq7", "wallturret7", "sent7", "eng7", "sentart7", "vanta7", "apcmov7", "cnsuits7", "muzzle7", "gate7", "dronebay7", "turret7", "ciws7"]
+const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7", "life7", "atmo7", "seq7", "wallturret7", "sent7", "eng7", "sentart7", "vanta7", "apcmov7", "cnsuits7", "muzzle7", "gate7", "dronebay7", "turret7", "ciws7", "facint7", "lpres7", "wallfire7"]
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")

@@ -144,7 +144,9 @@ func test_last_protocol_hash_skip_on_off() -> void:
 		hs.append(w.state_hash())
 	Inert7.enabled = true
 	print("LPPERF7_LP buildings=%d hash_on=%s hash_off=%s" % [nb, String(hs[0]).left(16), String(hs[1]).left(16)])
-	check(nb > 1000, "the Last Protocol base is pre-built (%d buildings)" % nb)
+	# 13.9c-36 authority record (owner: "TOO mf big ... shrink it down drastically"; two rings, about half): the old
+	# 3-ring base had > 1000 buildings, the squeezed 61x61 one about 850
+	check(nb > 600, "the Last Protocol base is pre-built (%d buildings)" % nb)
 	check_eq(String(hs[0]), String(hs[1]), "Last Protocol: same state hash with the skip on and off (60 ticks)")
 
 

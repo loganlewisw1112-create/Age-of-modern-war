@@ -110,7 +110,13 @@ static func occupants(w: SimWorld, bid: int) -> Array:
 
 
 static func free_slots(w: SimWorld, b: Dictionary) -> int:
-	return slots_of(String(b.def)) - occupants(w, int(b.id)).size()
+	return cap_of(b) - occupants(w, int(b.id)).size()
+
+
+## LPRES7 (13.9c-34): slots of building b = its def's slots + b.g7_xs (per-building extra slots: the Last Protocol
+## barracks that also quarters the 100-Sentinel reserve, 120 -> 140; absent everywhere else).
+static func cap_of(b: Dictionary) -> int:
+	return slots_of(String(b.def)) + int(b.get("g7_xs", 0))
 
 
 # ================================================================ commands

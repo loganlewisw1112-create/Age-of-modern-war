@@ -17,10 +17,17 @@ extends RefCounted
 ##  - Ammo (13.9c-11): primary empty -> sidearm (e.s7_sa, sidearm rounds); sidearm empty -> nearest stocked ready-ammo
 ##    locker (cn_ammo_locker), take one load, short reload, back to the job. Bearers restock Sentinels where they
 ##    stand and refill lockers, refilling themselves at the barracks / magazine.
-##  - Starting garrison: when a facility is raised, its owner gets rules.start (entry booth, tower pairs, wall-walk
-##    pairs, interior patrol pairs, a quick reaction force). Patrols walk deterministic loops (staggered thinking);
-##    on alarm (BaseState7 not secure) patrol pairs and the QRF move on the threat. A fresh player order frees a unit
-##    from its job (it is never pulled back while the player owns it).
+##  - Starting garrison: when a facility is raised, its owner gets rules.start.force (13.9c-38 "Double the watch":
+##    48 Sentinels in every mode, PROVISIONAL mix incl. 9 Lancers after the 13.9c-38 follow-up "Scale the defences up
+##    too"). Patrols walk deterministic loops (staggered thinking); on alarm (BaseState7 not secure) patrol pairs and
+##    the QRF move on the threat. A fresh player order frees a unit from its job (it is never pulled back while the
+##    player owns it).
+##  - Job board (13.9c-38 always-on watch, rules.plan): quiet = the 4-man entry checkpoint team, the vehicle-gate
+##    pair, every tower manned (per_tower_quiet), a patrol pair on each of the 5 wall runs, int_pairs interior pairs,
+##    the QRF on call in the barracks, the rest off watch; shifts rotate (watch_stint_s, tired_pen, relief in place up
+##    to relief_max_s) so no post ever empties. Alarm = the towers_alarm towers nearest the threat take per_tower,
+##    only the walls_alarm wall runs nearest the threat keep their pair (the far pairs reinforce the threatened face),
+##    everyone off duty stands to (threatened face first).
 ## State (saved, hashed): w.sys_state.sent7 = {ver, seeded [fac ids], ids [uid], lockers {"bid": stock}, jobs
 ## {"uid": job}}; created only when a facility with Sentinels exists or a Sentinel is trained. No facility and no
 ## Sentinel: tick returns after one dictionary lookup and every hook is neutral (one has() per hit).
@@ -317,28 +324,69 @@ static func _jobs_for(w: SimWorld, S: Dictionary, F: Dictionary) -> Array:
 	var cp = w.entities.get(int(F.get("cp", 0)))
 	if cp != null:
 		jobs.append(_job("entry", "entry", _bpos(cp), 5.0, ["bulwark", "warden", "marksman", "gunner", "lancer"], int(P.get("entry", 4)), int(cp.id)))
-	var gc: Vector2 = _cnfac().zone(F, "gate_outer").get_center()
+	var gz: Rect2 = _cnfac().zone(F, "gate_outer")
+	var gc: Vector2 = gz.get_center()
+	if P.get("gate", 0) != null and int(P.get("gate", 0)) > 0:   # WATCH7 13.9c-38: the vehicle-gate pair (staging side of the inner gate)
+		var gi: Rect2 = _cnfac().zone(F, "gate_inner")
+		var gp := Vector2(gi.get_center().x, gi.position.y - 1.5) if gi.size.x > 0.0 else gc - Vector2(0.0, 6.0)
+		jobs.append(_job("gate", "gate", gp, 4.5, ["bulwark", "warden", "gunner", "lancer", "marksman"], int(P.get("gate", 0))))
 	var towers := _parts_of(w, F, "cn_tower")
+	var tc: Vector2 = th[0] if alarm else gc   # under alarm the towers nearest the threat come first (second man)
 	towers.sort_custom(func(a, b) -> bool:
-		var da := Vector2(a.cell).distance_squared_to(gc)
-		var db := Vector2(b.cell).distance_squared_to(gc)
+		var da := Vector2(a.cell).distance_squared_to(tc)
+		var db := Vector2(b.cell).distance_squared_to(tc)
 		return da < db if da != db else int(a.id) < int(b.id))
-	var nt := int(P.get("towers_alarm", 6)) if alarm else int(P.get("towers", 3))
-	for i in mini(nt, towers.size()):
+	# WATCH7 13.9c-38: every tower (up to plan.towers) is manned at all times (per_tower_quiet each); under alarm the
+	# towers_alarm towers nearest the threat take per_tower.
+	var nt := mini(int(P.get("towers", 3)), towers.size())
+	var na := int(P.get("towers_alarm", 6)) if alarm else 0
+	for i in nt:
 		var t: Dictionary = towers[i]
-		jobs.append(_job("tower:%d" % int(t.id), "post", _bpos(t), 4.0, ["marksman", "gunner", "lancer", "warden"], int(P.get("per_tower", 2)), int(t.id)))
+		var sl := int(P.get("per_tower", 2)) if i < na else int(P.get("per_tower_quiet", P.get("per_tower", 2)))
+		jobs.append(_job("tower:%d" % int(t.id), "post", _bpos(t), 4.0, ["marksman", "gunner", "lancer", "warden"], sl, int(t.id)))
 	var walls := _wall_routes(F)
+	# WATCH7-2 13.9c-38 follow-up (13.9c-11 "pairs bound along the wall-walk to reinforce the threatened face"): under
+	# alarm only the walls_alarm wall runs nearest the threat keep their patrol pair; the far runs' pairs are released
+	# to the stand-to, which fills the threatened face first. Quiet: every run keeps its pair.
+	var wa := int(P.get("walls_alarm", -1)) if alarm else -1
+	var keep_w := {}
+	if wa >= 0:
+		var wi := range(walls.size())
+		wi.sort_custom(func(a, b) -> bool:
+			var da := Vector2(walls[a][1]).distance_squared_to(th[0])
+			var db := Vector2(walls[b][1]).distance_squared_to(th[0])
+			return da < db if da != db else a < b)
+		for q in mini(wa, wi.size()):
+			keep_w[wi[q]] = true
+	# WATCH7-3 13.9c-38 (owner: "I should be seeing heavier sentinel patrol force on the walls"): while quiet, a long
+	# run (>= wall_split_min tiles) is split into wall_split beats, each walked by its own pair (2 pairs per long face);
+	# under alarm the runs are whole again (one pair each, walls_alarm above), so the stand-to rules are unchanged.
+	var wsp := maxi(int(P.get("wall_split", 1)), 1) if not alarm else 1
+	var wmin := float(P.get("wall_split_min", 16.0))
+	var wroles: Array = P.get("wall_roles", ["warden", "gunner", "lancer", "marksman", "arc"])
 	for i in walls.size():
-		var j := _job("wall:%d" % i, "wall", walls[i][1], 3.0, ["warden", "gunner", "lancer", "marksman", "arc"], 2)
-		j["route"] = walls[i]
-		j["ck"] = [0, 2]   # check in at the towers at both ends of the run
-		jobs.append(j)
+		if wa >= 0 and not keep_w.has(i):
+			continue
+		var rt: Array = walls[i]
+		var ns := wsp if Vector2(rt[0]).distance_to(rt[rt.size() - 1]) >= wmin else 1
+		for q in ns:
+			var sub := rt
+			var jid := "wall:%d" % i
+			if ns > 1:
+				var a0w: Vector2 = _stand_pt(rt, float(q) / float(ns))
+				var a1w: Vector2 = _stand_pt(rt, float(q + 1) / float(ns))
+				sub = [a0w, a0w.lerp(a1w, 0.5), a1w]
+				jid = "wall:%d:%d" % [i, q]
+			var j := _job(jid, "wall", sub[1], 3.0, wroles, 2)
+			j["route"] = sub
+			j["ck"] = [0, 2]   # check in at the towers at both ends of the run (of the beat, when split)
+			jobs.append(j)
 	var a0 := 4.5
 	var a1 := cs - 5.5
 	var base := [_loc(F, a0, a0), _loc(F, a1, a0), _loc(F, a1, a1), _loc(F, a0, a1)]
 	var loop := _with_blind(w, F, base)   # 13.9c-11: the interior loop also walks the cameras' blind spots
 	var flip := 1 if (w.tick / ticks(float(P.get("shift_s", 240.0)))) % 2 == 0 else -1   # direction varies by shift
-	for i in 2:
+	for i in int(P.get("int_pairs", 2)):
 		var j := _job("int:%d" % i, "int", base[i * 2], 2.0, guards, 2)
 		j["route"] = loop
 		j["loop"] = true
@@ -399,6 +447,9 @@ static func _role(w: SimWorld, S: Dictionary, uid: int) -> String:
 	var k := String(job.get("k", "free"))
 	if k == "free" or k == "player" or k == "ammo" or bool(job.get("wd", false)):
 		return ""   # withdrawing by bounds: finishes the withdrawal before it is re-planned
+	var lr = w.sys_state.get("lpres7")   # LPRES7 (13.9c-34): a Last Protocol barracks reserve man is released by LpReserve7, never planned here
+	if lr != null and (lr.m as Dictionary).has(str(uid)):
+		return ""
 	if S.get("workers", {}).has(str(uid)):
 		return String(S.workers[str(uid)])
 	var e = w.entities.get(uid)
@@ -428,10 +479,15 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 		ids.append(int(k))
 	ids.sort()
 	var Wd = SimWorld.Wounds
+	if not S.has("rl"):
+		S["rl"] = {}
+	var rl: Dictionary = S.rl   # WATCH7 relief in place: "<uid>": {j, t} = going off watch, stays on post j until relieved
 	for uid in ids:
 		var e = w.entities.get(int(uid))
 		if e == null or int(e.owner) != fid or _role(w, S, int(uid)) == "" or Wd.is_down(e):
 			continue
+		if rl.has(str(uid)):
+			continue   # still on his old post until his relief is on it (released below)
 		var jf := int(S.jobs.get(str(uid), {}).get("fac", -1))
 		if jf >= 0 and jf != fac:
 			continue
@@ -455,18 +511,58 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 		var m := int(pr.get(str(uid), -1))
 		return m if m >= 0 and cset.has(m) and int(pr.get(str(m), -1)) == uid else -1
 	var spen := float(T.get("pair_split_pen", 1000.0))
+	# WATCH7 13.9c-38: rotation. At a shift change (quiet) a man who has stood watch for watch_stint_s takes a watch job
+	# only when nobody else fits (tired_pen), so the rested men from the barracks take the posts.
+	var stint := ticks(float(P.get("watch_stint_s", 1e9)))
+	var tpen := float(P.get("tired_pen", 0.0))
+	var rot := not keep_old and not alarm
+	# WATCH7: every job keeps its holders first (a later, higher-priority job never strips a post). At a shift change
+	# (rot) only the men who stood their stint on a watch post and the QRF (on call in the barracks) are re-dealt, so
+	# the posts change hands by rotation, not by a re-shuffle of the whole roster.
 	for j in jobs:
+		var care0 := String(j.kind) == "repair" or String(j.kind) == "restock" or String(j.kind) == "casualty"
+		if rot and String(j.kind) == "qrf":
+			continue
+		var wk := WATCH.has(String(j.kind))
+		for uid in cands:
+			if used.has(uid) or (j.taken as Array).size() >= int(j.slots):
+				continue
+			var cur: Dictionary = S.jobs.get(str(uid), {})
+			if String(cur.get("j", "")) != String(j.id) or not _fits(j.roles, _role(w, S, uid)) or (not care0 and _unfit(w, w.entities[uid], P)):
+				continue
+			var ue: Dictionary = w.entities[uid]
+			if rot and wk and ue.has("s7_on") and w.tick - int(ue.s7_on) >= stint:
+				continue   # stood his stint: re-dealt (rest unless nobody else fits)
+			j.taken.append(uid)
+			used[uid] = true
+	var fill := jobs
+	if rot:   # WATCH7: fresh men relieve the longest-standing posts first (fair rotation, not by post priority)
+		var age := {}
+		for uid in cands:
+			var ue: Dictionary = w.entities[uid]
+			if not used.has(uid) and ue.has("s7_on"):
+				var oj := String(S.jobs.get(str(uid), {}).get("j", ""))
+				age[oj] = maxi(int(age.get(oj, 0)), w.tick - int(ue.s7_on))
+		var head := []
+		var wl := []
+		var tail := []
+		for j in jobs:
+			if WATCH.has(String(j.kind)):
+				wl.append(j)
+			elif float(j.prio) > 5.0:
+				head.append(j)
+			else:
+				tail.append(j)
+		wl.sort_custom(func(a, b) -> bool:
+			var x := int(age.get(String(a.id), 0))
+			var y := int(age.get(String(b.id), 0))
+			return x > y if x != y else (float(a.prio) > float(b.prio) if float(a.prio) != float(b.prio) else String(a.id) < String(b.id)))
+		fill = head + wl + tail
+	for j in fill:
 		var roles: Array = j.roles
 		var care := String(j.kind) == "repair" or String(j.kind) == "restock" or String(j.kind) == "casualty"
 		var pj := not care and String(j.kind) != "rest" and String(j.kind) != "standto" and int(j.slots) >= 2
-		if keep_old:
-			for uid in cands:
-				if used.has(uid) or (j.taken as Array).size() >= int(j.slots):
-					continue
-				var cur: Dictionary = S.jobs.get(str(uid), {})
-				if String(cur.get("j", "")) == String(j.id) and _fits(roles, _role(w, S, uid)) and (care or not _unfit(w, w.entities[uid], P)):
-					j.taken.append(uid)
-					used[uid] = true
+		var wj := not alarm and WATCH.has(String(j.kind))   # WATCH7-3: also between shift changes (a just-relieved man is not re-posted to fill a gap)
 		while (j.taken as Array).size() < int(j.slots):
 			var room := int(j.slots) - (j.taken as Array).size()
 			var best := -1
@@ -480,11 +576,17 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 					continue   # wounded / just withdrawn: rests (barracks / Mender) instead of taking a post
 				var sc := Vector2(e.pos).distance_to(j.pos) + dw * float(e.get("s7_duty", 0)) / float(SimWorld.TICK_RATE * 60) \
 					+ xw * clampf(float(e.get("cn_exp", 0.0)), 0.0, 1.0)
+				if wj and e.has("s7_on") and w.tick - int(e.s7_on) >= stint:
+					sc += tpen   # stood his stint: off to rest unless nobody else can take the post
+					if String(S.jobs.get(str(uid), {}).get("j", "")) == String(j.id):
+						sc -= tpen * 0.5   # ... and then his own post rather than another tired man's
 				var m := -1
 				if not care:
 					m = int(mate.call(uid))
 					if m >= 0 and (used.has(m) or not _fits(roles, _role(w, S, m)) or _unfit(w, w.entities[m], P)):
 						m = -1   # his partner cannot come (busy, wrong role, wounded): he goes alone
+					elif m >= 0 and wj and (w.entities[m] as Dictionary).has("s7_on") and w.tick - int(w.entities[m].s7_on) >= stint:
+						m = -1   # WATCH7-3: his partner stood his stint: he rests, the fresh man goes alone (no one stands forever)
 					if m >= 0 and (not pj or room < 2):
 						sc += spen   # taking him alone would split a team: only when nobody else fits
 				if sc < bs:
@@ -498,15 +600,82 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 			if pj and bm >= 0 and room >= 2:
 				j.taken.append(bm)   # his partner comes with him
 				used[bm] = true
+	# WATCH7 relief in place (13.9c-38: the watch never empties): a man taken off his watch post at a shift change stays
+	# on it (keeps his job, off the board) until every holder of that post is on it, at most relief_max_s; a held man
+	# whose post is relieved (or gone, or under alarm, or timed out) is released to rest / stand-to below.
+	var byid := {}
+	for j in jobs:
+		byid[String(j.id)] = j
+	var rmax := ticks(float(P.get("relief_max_s", 90.0)))
+	if rot:
+		var newj := {}
+		for j in jobs:
+			for u in j.taken:
+				newj[int(u)] = j
+		for uid in cands:
+			var cur: Dictionary = S.jobs.get(str(uid), {})
+			var oj := String(cur.get("j", ""))
+			if not WATCH.has(String(cur.get("k", ""))) or not byid.has(oj) or _unfit(w, w.entities[uid], P):
+				continue
+			var nj = newj.get(uid)
+			if nj != null and String(nj.id) == oj:
+				continue
+			var J: Dictionary = byid[oj]
+			var waiting := false
+			for u in J.taken:
+				if not _on_post_j(w, w.entities[int(u)], J):
+					waiting = true
+					break
+			if not waiting:
+				continue
+			if nj != null:
+				(nj.taken as Array).erase(uid)
+			used[uid] = true
+			rl[str(uid)] = {"j": oj, "t": w.tick}
+	var freed := []
+	var rk := rl.keys()
+	rk.sort()
+	for k in rk:
+		var e = w.entities.get(int(k))
+		var cur: Dictionary = S.jobs.get(k, {})
+		var J = byid.get(String(rl[k].j))
+		var ok := e != null and int(e.owner) == fid and not Wd.is_down(e) and _role(w, S, int(k)) != "" \
+			and int(cur.get("fac", fac)) == fac
+		var hold := ok and J != null and not alarm and String(cur.get("j", "")) == String(rl[k].j) and w.tick - int(rl[k].t) < rmax
+		if hold and (J.taken as Array).size() < int(J.slots):
+			J.taken.append(int(k))   # his post has room (no relief dealt to it): he simply keeps it
+			used[int(k)] = true
+			rl.erase(k)
+			continue
+		if hold:
+			for u in J.taken:
+				if not _on_post_j(w, w.entities[int(u)], J):
+					hold = true
+					break
+				hold = false
+		if hold:
+			used[int(k)] = true
+			continue
+		rl.erase(k)
+		if ok:
+			freed.append(int(k))
 	var bk := _parts_of(w, F, "cn_sentinel_barracks")
 	var rest := _job("rest", "rest", _home(w, F), 0.0, ["*"], 9999, int(bk[0].id) if not bk.is_empty() else -1)
 	var pts := _standto_pts(F) if alarm else []
-	for uid in cands:
+	if not pts.is_empty():   # WATCH7 13.9c-38: the stand-to fills the threatened face first (nearest points first)
+		var tp: Vector2 = threat(w, fac)[0]
+		pts.sort_custom(func(a, b) -> bool:
+			var da := Vector2(a).distance_squared_to(tp)
+			var db := Vector2(b).distance_squared_to(tp)
+			return da < db if da != db else (a.x < b.x if a.x != b.x else a.y < b.y))
+	var nst := 0
+	for uid in cands + freed:
 		if used.has(uid):
 			continue
 		var role := _role(w, S, uid)
 		if not pts.is_empty() and role != "bearer" and role != "engineer" and role != "mender" and not _unfit(w, w.entities[uid], P):
-			var idx := maxi((S.ids as Array).find(uid), 0)
+			var idx := nst
+			nst += 1
 			var sj := _job("standto:%d" % uid, "standto", pts[idx % pts.size()], 0.5, ["*"], 1)
 			sj.taken.append(uid)
 			jobs.append(sj)
@@ -527,8 +696,13 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 			var e: Dictionary = w.entities[uid]
 			if String(j.kind) == "rest":
 				e.s7_duty = maxi(0, int(e.get("s7_duty", 0)) - 2 * dt)
-			else:
+			elif String(j.kind) != "qrf" or alarm:   # WATCH7: the QRF waits in the barracks: no fatigue while quiet
 				e.s7_duty = int(e.get("s7_duty", 0)) + dt
+			if WATCH.has(String(j.kind)):
+				if not e.has("s7_on"):
+					e.s7_on = w.tick   # WATCH7: his watch stint began
+			elif e.has("s7_on"):
+				e.erase("s7_on")
 	S.board[key] = {"at": w.tick, "shift": shift, "jobs": jobs}
 
 
@@ -566,12 +740,53 @@ static func _unfit(w: SimWorld, e: Dictionary, P: Dictionary) -> bool:
 	return float(e.hp) < float(P.get("wounded_frac", 0.35)) * float(e.max_hp) or int(e.get("s7_wd", -1)) > w.tick
 
 
-## The three wall-walk runs (north, east, west faces) of facility F: [start, middle, end] each.
+## The wall-walk runs of facility F: [start, middle, end] each. North, east, west faces, and (WATCH7 13.9c-38: a
+## patrol pair on every wall face) the south face's two runs either side of the gate: west of the vehicle gate and
+## east of the foot-entry checkpoint (the gate and the checkpoint gatehouse cut the south wall-walk).
 static func _wall_routes(F: Dictionary) -> Array:
-	var cs := float(_cnfac().conf().get("compound", 28))
-	return [[_loc(F, 1.0, 1.0), _loc(F, cs * 0.5, 1.0), _loc(F, cs - 1.0, 1.0)],
+	var C: Dictionary = _cnfac().conf()
+	var cs := float(C.get("compound", 28))
+	var out := [[_loc(F, 1.0, 1.0), _loc(F, cs * 0.5, 1.0), _loc(F, cs - 1.0, 1.0)],
 		[_loc(F, cs - 1.0, 1.0), _loc(F, cs - 1.0, cs * 0.5), _loc(F, cs - 1.0, cs - 3.0)],
 		[_loc(F, 1.0, cs - 3.0), _loc(F, 1.0, cs * 0.5), _loc(F, 1.0, 1.0)]]
+	var g: Array = C.get("gate_outer", [])
+	var cp: Array = C.get("checkpoint", [])
+	if g.size() >= 2 and cp.size() >= 2:
+		var y := cs - 1.5
+		var gx := float(g[0]) - 0.5
+		var cx := float(cp[0]) + 2.5
+		out.append([_loc(F, 1.0, y), _loc(F, (1.0 + gx) * 0.5, y), _loc(F, gx, y)])
+		out.append([_loc(F, cx, y), _loc(F, (cx + cs - 1.0) * 0.5, y), _loc(F, cs - 1.0, y)])
+	return out
+
+
+## WATCH7: distance from p to a route polyline (closed when loop).
+static func _route_d(p: Vector2, route: Array, loop: bool) -> float:
+	var best := INF
+	var n := route.size()
+	if n == 1:
+		return p.distance_to(route[0])
+	for i in (n if loop else n - 1):
+		var a: Vector2 = route[i]
+		var b: Vector2 = route[(i + 1) % n]
+		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, a, b)))
+	return best
+
+
+## WATCH7: the watch jobs (posts that must never empty, 13.9c-38).
+const WATCH := ["entry", "gate", "post", "wall", "int"]
+
+
+## WATCH7: unit e is on board job j's post (inside its tower / booth; on its route; at its point).
+static func _on_post_j(w: SimWorld, e: Dictionary, j: Dictionary) -> bool:
+	var bid := int(j.get("bid", -1))
+	if bid >= 0 and w.entities.has(bid) and (String(j.kind) == "post" or String(j.kind) == "entry"):
+		return int(e.get("garrisoned_in", -1)) == bid
+	if j.has("route"):
+		if String(j.kind) == "wall" and not SimWorld.WallWalk7.on_wall(w, e):
+			return false
+		return _route_d(Vector2(e.pos), j.route, bool(j.get("loop", false))) <= 1.6
+	return Vector2(e.pos).distance_to(Vector2(j.pos)) <= 2.5
 
 
 ## Stand-to positions (alarm drill): evenly spaced along the wall-walk runs; unit i of the roster always gets point
@@ -1039,7 +1254,7 @@ static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 	match k:
 		"wall", "int", "patrol":
 			_patrol(w, S, e, job)
-		"post", "entry", "qrf", "rest", "tower":
+		"post", "entry", "qrf", "rest", "tower", "gate":
 			_post(w, S, e, job)
 		"standto":
 			_standto(w, S, e, job)
@@ -1181,7 +1396,11 @@ static func _post(w: SimWorld, S: Dictionary, e: Dictionary, job: Dictionary) ->
 		return
 	if b == null or b.kind != "building" or int(b.owner) != int(e.owner):
 		var hp = job.get("pos", job.get("home"))
-		if hp is Vector2 and Vector2(e.pos).distance_to(hp) > 2.0 and String(e.order.get("type", "idle")) == "idle":
+		var gate := String(job.k) == "gate"
+		if hp is Vector2 and gate:   # WATCH7: the gate pair stands either side of the lane
+			var bd := int(job.get("bud", -1))
+			hp = Vector2(hp) + Vector2(-0.9 if bd < 0 or int(e.id) < bd else 0.9, 0.0)
+		if hp is Vector2 and Vector2(e.pos).distance_to(hp) > (0.6 if gate else 2.0) and String(e.order.get("type", "idle")) == "idle":
 			_go(w, e, job, hp, "move")
 		return
 	if String(e.order.get("type", "")) == "garrison" or _garrison().free_slots(w, b) <= 0:
@@ -1990,6 +2209,13 @@ static func _casualty_drill(w: SimWorld, S: Dictionary, e: Dictionary, job: Dict
 			Wd.start_care(w, e, b, "buddy")
 			return true
 		return false
+	if _cover_v(w, w.cell_of(b.pos), _team(w, int(e.owner))) >= float(_tac().get("open_v", 0.35)):
+		job["drg"] = bd   # REGFIX7-3: he already lies in cover (dragged there before, or fell there): treat him where he is;
+		b.s7_dg = 1       # dragging him on moved men out of good cover into worse (pt7_sent7: 0.60 -> 0.15)
+		if Wd._needs_care(b):
+			Wd.start_care(w, e, b, "buddy")
+			return true
+		return false
 	var F := _fac_of(w, job)
 	var th = threat(w, int(F.id)) if not F.is_empty() else null
 	var tp = th[0] if th != null else null
@@ -2055,6 +2281,30 @@ static func _drag_spot(w: SimWorld, b: Dictionary, F: Dictionary, tp) -> Vector2
 		var q := _cover_near(w, b, bp + Vector2(d) * df, 3, null)
 		if _cover_v(w, w.cell_of(q), team) >= ov and q.distance_to(bp) <= df + 3.0:
 			return q
+	# WATCH7-3: the probes above missed (they only look around two aim points): take the nearest real cover cell
+	# (cover >= open_v, passable on foot) anywhere within drag_far that is not nearer the threat than where he lies.
+	var mvw = _movement()
+	var c0: Vector2i = w.cell_of(bp)
+	var rr := int(ceil(df))
+	var dth := Vector2(tp).distance_to(bp) if tp != null else 0.0
+	var bestq := Vector2.INF
+	var bsc := INF
+	for dy in range(-rr, rr + 1):
+		for dx in range(-rr, rr + 1):
+			var c := c0 + Vector2i(dx, dy)
+			var cp := Vector2(float(c.x) + 0.5, float(c.y) + 0.5)
+			var dd := cp.distance_to(bp)
+			if dd > df or dd >= bsc or not w.in_bounds(c) or not mvw.is_passable(w, c, "foot", team):
+				continue
+			if tp != null and Vector2(tp).distance_to(cp) < dth - 1.0:
+				continue
+			if _cover_v(w, c, team) >= ov:
+				bsc = dd
+				bestq = cp
+	if bsc < INF:
+		return bestq
+	if _cover_v(w, w.cell_of(p), team) < _cover_v(w, w.cell_of(bp), team):
+		return bp   # REGFIX7-3: no real cover within reach and the near spot is worse than where he lies: he stays
 	return p
 
 

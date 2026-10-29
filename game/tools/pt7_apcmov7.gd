@@ -108,6 +108,13 @@ func run(pt) -> void:
 	if Content.building("a_cn_facility").is_empty():
 		Content._merge_fragment_dir("res://content/g7")
 	var w: SimWorld = pt._w()
+	# FLOWB7 (suite 2026-10-28): with the 13.9c-38 48-man Sentinel watch the facility's side wiped out the test map's AI
+	# and took its HQ at match time ~03:07: VICTORY, match_state.ended, World.step stops ticking, and every step from
+	# the suits' wash on froze (rinsed 0/5, outer gate stuck "closing" with ot 24; the shots show the VICTORY overlay).
+	# The flow tests APC / suit movement through the facility, not the win condition, so the match runs endless
+	# (eliminations still happen, no end), as pt7_cnfac7 does. The checks below are unchanged.
+	if not bool(w.match_state.get("ended", false)):
+		w.cfg["victory"] = "endless"
 	var h = H.new()
 	var me := int(mv.player_fid)
 	var c: Vector2i = h._open(w, 18)

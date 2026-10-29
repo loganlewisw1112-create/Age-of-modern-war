@@ -392,6 +392,8 @@ static func _spot(w: SimWorld, e: Dictionary, r: float) -> Array:
 		var tb := _team(w, int(b.owner))
 		if tb == my or int(b.owner) == SimWorld.NEUTRAL or out.has(tb):
 			continue
+		if not w.entities.has(int(b.id)):
+			continue   # DET7-2: a destroyed building still in the stale index is no team present (a loaded world never lists it)
 		var o2: Vector2i = b.cell
 		var sz := float(b.size)
 		var q := Vector2(clampf(p.x, float(o2.x), float(o2.x) + sz), clampf(p.y, float(o2.y), float(o2.y) + sz))

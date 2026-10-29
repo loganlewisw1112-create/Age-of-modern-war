@@ -8,7 +8,7 @@ extends PanelContainer
 ##   RECALL  every reusable drone back to the launch deck (dronebay_recall);
 ##   AUTO    automatic release on / off (dronebay_auto; ON by default, owner).
 ## Reads the world only at the sim hand-over (MatchView.world_events) and at most every REFRESH_S; never writes the
-## sim: commands go through MatchView.issue. Shown only while the player has a drone bay.
+## sim: commands go through MatchView.issue. Shown only while the player has the drone bay selected (13.9c-37: click the workshop).
 ## Hook (ORCH, presentation/hud/hud.gd, after the OPSUI7 attach line):
 ##   preload("res://presentation/ui7/dronebay_card.gd").attach(self, left)   # G7 DRONEBAY7 CR: drone bay card
 
@@ -22,6 +22,7 @@ const KIND_TEXT := {"interceptor": "AIR", "gun": "GUN", "kamikaze": "FPV"}
 var mv = null
 var world_override: SimWorld = null    # tests / fit
 var fid_override := -1
+var force_show := false                 # tests / fit screens: show regardless of the selection
 var fac := -1
 var _acc := 99.0
 var _dirty := true
@@ -42,6 +43,8 @@ static func attach(h, left_stack: Control) -> Control:
 		left_stack.add_child(c)
 	if c.mv != null and (c.mv as Object).has_signal("world_events"):
 		c.mv.world_events.connect(c._on_world_events)
+	if c.mv != null and (c.mv as Object).has_signal("selection_changed"):
+		c.mv.selection_changed.connect(c._on_selection_changed)   # G7 CARDSEL7 (13.9c-37)
 	return c
 
 
@@ -106,6 +109,27 @@ func pf() -> int:
 	return int(mv.get("player_fid")) if mv != null and mv.get("player_fid") != null else 0
 
 
+func _on_selection_changed() -> void:
+	if _sim_busy():
+		_dirty = true
+		_acc = 99.0   # G7 PERFFPS7: refresh at the next frame the world is free (no forced join)
+		return
+	refresh()
+
+
+## G7 PERFFPS7: true while a sim step is in flight. Reading mv.world then joins the step on the main thread (a forced
+## join: 40 ms on average, up to 110 ms, three times a second in a 2k fight), so the card waits for a free frame.
+func _sim_busy() -> bool:
+	return world_override == null and mv != null and (mv as Object).has_method("sim_busy") and bool(mv.sim_busy())
+
+
+## 13.9c-37: shown only while the player has clicked the drone bay (the workshop's 2nd storey) of bay fac.
+func _selected(f: int) -> bool:
+	if force_show:
+		return true
+	return mv != null and mv.has_method("part_selected") and bool(mv.part_selected(f, "drone_bay"))
+
+
 func _on_world_events(_evs = null) -> void:
 	_dirty = true
 
@@ -114,6 +138,8 @@ func _process(delta: float) -> void:
 	_acc += delta
 	if _acc < REFRESH_S or (not _dirty and _acc < REFRESH_S * 4.0):
 		return
+	if _sim_busy():
+		return   # G7 PERFFPS7: try again next frame (the world is free at least every READ_WINDOW_US)
 	_acc = 0.0
 	_dirty = false
 	refresh()
@@ -169,6 +195,9 @@ func refresh() -> void:
 		fac = -1
 		return
 	fac = int(l[0])
+	if not _selected(fac):
+		visible = false
+		return
 	var sm := DroneBay7.summary(w, fac)
 	last = sm
 	visible = true

@@ -51,7 +51,9 @@ const EXTRA := ["aim"]
 ## to the manifest so the display can match the cycle to ground speed (no foot sliding).
 const SWALK := ["swalk_0", "swalk_1", "swalk_2", "swalk_3", "swalk_4", "swalk_5", "swalk_6", "swalk_7", "swalk_8",
 	"swalk_9", "swalk_10", "swalk_11"]
-const ALIAS := {"idle": "idle_0", "walk_a": "walk_0", "walk_b": "walk_3", "fire": "fire_s"}
+## SUITART7: "move" = the mid-stride walk_1 pose. The suits are move_class "vehicle" (sim), so the unit-art contract
+## (test_art faction coverage: idle / move / fire for non-foot units) wants a move column next to the catalog columns.
+const ALIAS := {"idle": "idle_0", "walk_a": "walk_0", "walk_b": "walk_3", "fire": "fire_s", "move": "walk_1"}
 const FW := 76
 const FH := 68
 const PIV := Vector2i(38, 54)
@@ -94,7 +96,7 @@ const SEAT := Color8(70, 62, 52)
 const RED := Color8(196, 60, 46)
 
 static func frames() -> Array:
-	return ["idle", "walk_a", "walk_b", "fire"] + SET61 + SET7 + EXTRA + SWALK
+	return ["idle", "walk_a", "walk_b", "fire", "move"] + SET61 + SET7 + EXTRA + SWALK
 
 
 ## Sheet id of a type / side = the content def id (content/g7/defs_g7_cnsuits.json).
@@ -557,6 +559,13 @@ static func model(S: Array, T: Dictionary, kt: Dictionary, typ: String, p: Dicti
 		var y := s * (sh + 0.02 + pw - 0.005)
 		M.dpoly(sp, Tt, [Vector3(0.12, y, 0.96), Vector3(-0.02, y, 1.03), Vector3(-0.16, y, 0.96), Vector3(-0.16, y, 0.91),
 			Vector3(-0.02, y, 0.98), Vector3(0.12, y, 0.91)], TEAMG, Vector3(0, s, 0), true)
+		# SUITART7: the same chevron on the plate top (seen from every facing; the side chevron hides in some stances,
+		# e.g. Human B bastion / aegis idle facing 0 had no team pixel at all)
+		var zt: float = 1.0 + 0.14 + 0.25 * (pw - 0.13) + 0.004
+		var yc: float = s * (sh + 0.02)
+		var hw: float = pw * 0.55
+		M.dpoly(sp, Tt, [Vector3(0.12, yc, zt), Vector3(-0.02, yc + hw, zt), Vector3(-0.12, yc + hw, zt), Vector3(0.02, yc, zt),
+			Vector3(-0.12, yc - hw, zt), Vector3(-0.02, yc - hw, zt)], TEAMG, Vector3(0, 0, 1), true)
 	# ---- low-profile back module (the pilot access), hinged at the waist
 	var bp := M.part(S, 0)
 	var Tk := M.sub(Tt, Vector3(-0.27, 0, 0.32), 0.0, float(p.hatch) * 0.62)

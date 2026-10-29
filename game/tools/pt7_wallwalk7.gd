@@ -212,9 +212,25 @@ func _sentinel_wall(pt, mv, w: SimWorld, me: int, foe: int, O: Vector2i) -> void
 	if foe >= 0:
 		# the first attackers usually fall to the tower guns while the wall is being manned (r1: nobody left to shoot
 		# at): a second group closes on the east wall now that it is manned, inside rifle range of the wall-walk
+		# FLOWB7B (probe 2026-10-28): the Sentinels who man the east wall stand where the alarm drill / job board put
+		# them (r: y 59..62), but this group stood at compound y 0.35..0.55 (~11-12 tiles north of them, outside every
+		# Sentinel's range 4.5..8); they only engaged after walking up the wall-walk, and the suite run's softer group
+		# was dead to the towers by then ("up to 0 Sentinels ... engaging"). Sentinel targeting itself was fine: every
+		# Sentinel on Hold with a foe in range had a target; ones on a move order only return fire. The group now
+		# closes on the stretch of wall the Sentinels actually hold (their mean y, kept off the corner towers), inside
+		# rifle range of the wall-walk; the check below is unchanged.
+		var sy := 0.0
+		for id in sents:
+			sy += float(w.entities[int(id)].pos.y)
+		sy = clampf(sy / float(sents.size()), float(O.y) + 5.0, float(O.y) + cs - 5.0)
 		for i in 5:
-			var en2: Dictionary = hh._unit(w, "rifleman", foe, Vector2(O) + Vector2(cs + 3.5, cs * 0.35 + i * 1.4))
+			var en2: Dictionary = hh._unit(w, "rifleman", foe, Vector2(float(O.x) + cs + 3.5, sy + (i - 2) * 1.4))
 			en2.order = {"type": "hold"}
+			# FLOWB7 (suite 2026-10-28): with the 13.9c-38 watch (a manned deck on every tower, wall turrets on the east
+			# face, patrol pairs) the attackers die fast; hardened attackers (as pt7_wallturret7's AT team) live long
+			# enough for the men on the wall to engage.
+			en2.max_hp = 3000.0
+			hh._hp(w, en2, 3000.0)
 	var el = mv.entity_layer
 	var crouch := 0
 	var front := 0

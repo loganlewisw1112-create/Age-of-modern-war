@@ -5,6 +5,9 @@ extends Control
 ## Overlay: compass tape + heading, ALT, dashed reticle with range, prompts ARMED / MUNITION AWAY / RNG nn M LIVE /
 ## LINK LOST, link bar, battery; in thermal, soldiers and engines are drawn as glowing hot spots.
 ## Layout: "corner" (top-right window) or "full" (whole screen; the HUD layer above keeps minimap + alerts).
+## G7 DFEED7: the corner window sits in the free spot nearest the top-right that no HUD panel covers (the right
+## stack with OBJECTIVES / VICTORY, the top bar, the F3 button, the PAUSED banner ...): place_corner() works it out
+## from the panels' real screen rects (avoid_fn, set by drone_input.gd) and is re-run every RELAYOUT_S while shown.
 ## Driven by drone_input.gd: show_drone(id), set_layout(), set_thermal(), flash(), link_lost().
 
 const ShaderRes = preload("res://presentation/view/drone_cam.gdshader")
@@ -12,12 +15,18 @@ const DronePilot = preload("res://sim/systems/drone_pilot.gd")
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")
 
 const CORNER := Vector2(420, 250)
+const EDGE := 12.0         # G7 DFEED7: corner window margin to the screen edge (screen px)
+const GAP := 8.0           # ... and to any HUD panel
+const SHRINK := [1.0, 0.85, 0.72, 0.6]   # corner window size steps when full size has no free spot
+const RELAYOUT_S := 0.2    # HUD panels grow / shrink (objectives done, pause banner): look again this often
 const AMBER := Color(1.0, 0.78, 0.25)
 const GREEN := Color(0.55, 1.0, 0.6)
 
 var mv: Node = null
 var drone_id := -1
 var layout := "corner"
+var avoid_fn := Callable()      # G7 DFEED7: () -> Array of Rect2 (screen px) the corner window must not cover
+var _relayout_t := 0.0
 var thermal := false
 var _last_pos = null   # G7 PERF7C: drone pos at the last readable frame (snapshot fallback while a step runs)
 var info: Dictionary = {}       # copy of the drone record (from the world when readable)
@@ -37,6 +46,7 @@ var shots := 0                  # frames drawn (playtest evidence)
 func setup(match_view: Node) -> void:
 	mv = match_view
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_meta("ui_feed", true)   # tools/ui_fit_test.gd: this window must stay clear of every HUD frame
 	_sub = SubViewport.new()
 	_sub.size = Vector2i(CORNER)
 	_sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -91,8 +101,13 @@ func is_lost() -> bool:
 
 
 func _relayout() -> void:
+	_relayout_t = RELAYOUT_S
 	var vs := get_viewport_rect().size
-	var r := Rect2(Vector2.ZERO, vs) if layout == "full" else Rect2(Vector2(vs.x - CORNER.x - 12, 64), CORNER)
+	var r := Rect2(Vector2.ZERO, vs)
+	if layout != "full":
+		r = place_corner(vs, avoid_fn.call() if avoid_fn.is_valid() else [])
+	if r.position == position and r.size == size:
+		return
 	position = r.position
 	size = r.size
 	_tex.position = Vector2.ZERO
@@ -102,11 +117,60 @@ func _relayout() -> void:
 	_sub.size = Vector2i(maxi(int(r.size.x), 16), maxi(int(r.size.y), 16))
 
 
+## G7 DFEED7: the rect (screen px) of the corner window: of the spots touching the screen edge or a HUD panel
+## (candidate corners), the free one nearest the top, then nearest the right edge. `avoid` = Rect2s of HUD panels
+## (screen px). When no spot is free at full size (a small screen, a big UI scale, the PAUSED banner mid-screen) the
+## window shrinks step by step (SHRINK) rather than slide under a panel. Nothing to avoid (no HUD) or no free spot even
+## at the smallest size: the old fixed top-right spot.
+static func place_corner(vs: Vector2, avoid: Array, sz: Vector2 = CORNER) -> Rect2:
+	if avoid.is_empty():
+		return Rect2(Vector2(vs.x - sz.x - EDGE, 64.0), sz)
+	for k in SHRINK:
+		var r := _free_spot(vs, avoid, sz * float(k))
+		if r.size.x > 0.0:
+			return r
+	return Rect2(Vector2(vs.x - sz.x - EDGE, 64.0), sz)
+
+
+## The best free rect of size sz (see place_corner), or an empty Rect2 when there is none.
+static func _free_spot(vs: Vector2, avoid: Array, sz: Vector2) -> Rect2:
+	var xs: Array = [vs.x - EDGE - sz.x]
+	var ys: Array = [GAP]
+	for a in avoid:
+		var ar: Rect2 = a
+		xs.append(ar.position.x - GAP - sz.x)
+		xs.append(ar.end.x + GAP)
+		ys.append(ar.end.y + GAP)
+	var best := Rect2()
+	var best_score := INF
+	for y in ys:
+		for x in xs:
+			var r := Rect2(Vector2(float(x), float(y)), sz)
+			if r.position.x < 0.0 or r.position.y < 0.0 or r.end.x > vs.x or r.end.y > vs.y:
+				continue
+			var hit := false
+			for a in avoid:
+				if r.intersects(a as Rect2):
+					hit = true
+					break
+			if hit:
+				continue
+			var score := r.position.y * 2.0 + (vs.x - r.end.x)
+			if score < best_score:
+				best_score = score
+				best = r
+	return best
+
+
 func _process(delta: float) -> void:
 	if not visible or mv == null:
 		return
 	_t += delta
 	_flash_t = maxf(_flash_t - delta, 0.0)
+	if layout != "full":
+		_relayout_t -= delta
+		if _relayout_t <= 0.0:
+			_relayout()
 	if _lost_t > 0.0:
 		_lost_t -= delta
 		if _lost_t <= 0.0:

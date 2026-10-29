@@ -110,73 +110,107 @@ func _state(id: int, cls: int, pos: Vector2, facing: float, t: float) -> PackedF
 
 
 ## Advances id's visual state to time t. pos = interpolated sim tile position, facing = sim facing (rad).
+## G7 PERFFPS7: same arithmetic as before (bit-identical outputs), cheaper: the state lookup is inlined, the per-class
+## exp() factors are cached for the frame's dt (every unit of a frame shares t, so dt repeats), and out_s / out_row hand
+## the entity layer this unit's state and its hysteresis row candidate (see commit_row) without more dictionary reads.
+var out_s := PackedFloat32Array()   # the state array step() just advanced (a reference into vs)
+var out_row := 0                    # row_h(id, out_face) as of this step (commit with out_s[S_ROW] = out_row + 1)
+var _cdt := -1.0                    # dt the cached factors below belong to
+var _ck := PackedFloat64Array([0.0, 0.0, 0.0, 0.0, 0.0])   # 1 - exp(-dt / LAG[cls])
+var _cb := 0.0                      # exp(-dt / BACK)
 func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) -> void:
-	var s := _state(id, cls, pos, facing, t)
-	var dt := clampf(t - float(s[S_T]), 0.0, 0.1)
+	var sv = vs.get(id)
+	var s: PackedFloat32Array
+	if sv == null or t - float(sv[S_T]) > 0.5 or (Vector2(sv[S_PX], sv[S_PY]) - pos).length_squared() > 4.0:
+		s = _state(id, cls, pos, facing, t)
+		vs[id] = s
+	else:
+		s = sv
+	s[S_CLS] = cls
+	var dt := clampf(t - s[S_T], 0.0, 0.1)
 	_now = t
 	# smooth facing: turn toward the sim facing at the class max angular speed (no 8-way pops)
-	var cur := float(s[S_FACE])
+	var cur := s[S_FACE]
 	var d := wrapf(facing - cur, -PI, PI)
 	var mx: float = float(TURN[cls]) * dt
 	var stp := clampf(d, -mx, mx)
 	s[S_FACE] = wrapf(cur + stp, -PI, PI)
-	s[S_TURN] = lerpf(float(s[S_TURN]), stp / maxf(dt, 0.001), 0.25) if dt > 0.0 else float(s[S_TURN])
 	# acceleration feel: the drawn velocity eases toward the sim velocity; the difference accumulates into
 	# a drawn offset that relaxes back and is clamped to MAX_OFF
 	if dt > 0.0:
+		s[S_TURN] = lerpf(s[S_TURN], stp / maxf(dt, 0.001), 0.25)
+		if dt != _cdt:
+			_cdt = dt
+			for c in 5:
+				_ck[c] = 1.0 - exp(-dt / float(LAG[c]))
+			_cb = exp(-dt / BACK)
 		var vsim := (pos - Vector2(s[S_PX], s[S_PY])) / dt
-		var k := 1.0 - exp(-dt / float(LAG[cls]))
-		var vx := lerpf(float(s[S_VX]), vsim.x, k)
-		var vy := lerpf(float(s[S_VY]), vsim.y, k)
-		var off := Vector2(float(s[S_OX]) + (vx - vsim.x) * dt, float(s[S_OY]) + (vy - vsim.y) * dt) * exp(-dt / BACK)
+		var k: float = _ck[cls]
+		var vx := lerpf(s[S_VX], vsim.x, k)
+		var vy := lerpf(s[S_VY], vsim.y, k)
+		var off := Vector2(s[S_OX] + (vx - vsim.x) * dt, s[S_OY] + (vy - vsim.y) * dt) * _cb
 		off = off.limit_length(MAX_OFF)
 		s[S_VX] = vx
 		s[S_VY] = vy
 		s[S_OX] = off.x
 		s[S_OY] = off.y
 		s[S_SPD] = Vector2(vx, vy).length()
-		s[S_DIST] = fmod(float(s[S_DIST]) + vsim.length() * dt, 1024.0)
-		s[S_KICK] = maxf(0.0, float(s[S_KICK]) - dt)
-		s[S_FLINCH] = maxf(0.0, float(s[S_FLINCH]) - dt)
-		var f0 := float(s[S_FIRE])
-		s[S_FIRE] = f0 + dt if flags & P_FIRING else 0.0
-		# while the firing flag is up, a recoil kick every KICK_EVERY s (on_shot adds the exact shots once wired)
-		if flags & P_FIRING and floori((f0 + float(s[S_SEED])) / KICK_EVERY) != floori((f0 + dt + float(s[S_SEED])) / KICK_EVERY):
-			s[S_KICK] = KICK_T
+		s[S_DIST] = fmod(s[S_DIST] + vsim.length() * dt, 1024.0)
+		var kick := maxf(0.0, s[S_KICK] - dt)
+		s[S_FLINCH] = maxf(0.0, s[S_FLINCH] - dt)
+		var f0 := s[S_FIRE]
+		if flags & P_FIRING:
+			s[S_FIRE] = f0 + dt
+			# while the firing flag is up, a recoil kick every KICK_EVERY s (on_shot adds the exact shots once wired)
+			var sd := s[S_SEED]
+			if floori((f0 + sd) / KICK_EVERY) != floori((f0 + dt + sd) / KICK_EVERY):
+				kick = KICK_T
+		else:
+			s[S_FIRE] = 0.0
+		s[S_KICK] = kick
 		# G6.1 (ANIMC61): suspension bob on start / stop (vehicles)
 		var mvg := 1.0 if flags & P_MOVING else 0.0
-		if mvg != float(s[S_MV]) and cls != CLS_INF:
+		if mvg != s[S_MV] and cls != CLS_INF:
 			s[S_SUSP] = -SUSP_T if mvg > 0.0 else SUSP_T
 		s[S_MV] = mvg
-		var su := float(s[S_SUSP])
-		s[S_SUSP] = maxf(0.0, su - dt) if su > 0.0 else minf(0.0, su + dt)
+		var su := s[S_SUSP]
+		if su != 0.0:
+			s[S_SUSP] = maxf(0.0, su - dt) if su > 0.0 else minf(0.0, su + dt)
 	s[S_PX] = pos.x
 	s[S_PY] = pos.y
 	s[S_T] = t
-	vs[id] = s
-	out_face = float(s[S_FACE])
+	out_s = s
+	out_face = s[S_FACE]
 	out_off = Vector2(s[S_OX], s[S_OY])
+	# PATH7-2 hysteresis row candidate (= row_h(id, out_face) before its commit)
+	var rr := int(s[S_ROW]) - 1
+	if rr < 0 or absf(wrapf(out_face - float(rr) * (PI / 4.0), -PI, PI)) >= PI / 8.0 + ROW_HYS:
+		rr = posmod(int(round(out_face * (4.0 / PI))), 8)
+	out_row = rr
 	# pixel reactions: walking bob / running sway (infantry), recoil kick, hit flinch
+	var kk := s[S_KICK] / KICK_T
+	var fk := s[S_FLINCH] / FLINCH_T
+	out_flash = fk
+	var su2 := s[S_SUSP] if cls == CLS_VEH or cls == CLS_HEAVY else 0.0
+	var mv_inf := cls == CLS_INF and flags & P_MOVING and not (flags & P_PINNED)
+	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf:
+		out_px = Vector2.ZERO
+		return
 	var px := Vector2.ZERO
-	var seed := float(s[S_SEED])
+	var seed := s[S_SEED]
 	var dir := Vector2(cos(out_face) - sin(out_face), (cos(out_face) + sin(out_face)) * 0.5).normalized()
-	if cls == CLS_INF and flags & P_MOVING and not (flags & P_PINNED):
+	if mv_inf:
 		var run := (flags & P_RUN) != 0
 		var ph := t * (2.4 if run else 1.7) + seed
 		px.y -= absf(sin(ph * PI)) * (1.5 if run else 1.0)
 		if run:
 			px.x += sin(ph * PI) * 0.6
-	var kk := float(s[S_KICK]) / KICK_T
 	if kk > 0.0:
 		px -= dir * kk * (1.2 if cls == CLS_INF else 2.2)
 		if cls == CLS_VEH or cls == CLS_HEAVY:
 			px.y += 1.0  # G6.1 (ANIMC61): 1 px hull rock on a shot
-	if cls == CLS_VEH or cls == CLS_HEAVY:
-		var su2 := float(s[S_SUSP])
-		if su2 != 0.0:
-			px.y += -1.0 if su2 < 0.0 else 1.0
-	var fk := float(s[S_FLINCH]) / FLINCH_T
-	out_flash = fk
+	if su2 != 0.0:
+		px.y += -1.0 if su2 < 0.0 else 1.0
 	if fk > 0.0:
 		var side := 1.0 if seed > 0.5 else -1.0
 		px += Vector2(-dir.y, dir.x) * side * fk * 1.5 - dir * fk * 0.8

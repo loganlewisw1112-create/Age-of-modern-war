@@ -657,6 +657,7 @@ static func build_zone(out: Dictionary, id: String, w: int, h: int, kind: String
 	var o: Vector2 = co[1]
 	var entry := {"size": s, "pivot": [int(o.x), int(o.y)], "fw": int(co[0].w), "fh": int(co[0].h), "states": {},
 		"zone": [w, h], "fits": "%s zone %dx%d tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y" % [kind, w, h]}
+	var base0 = null   # SUITART7: rot_0 pre-outline drawing (construction stages of the zone's part def)
 	for f in 4:
 		var ex := float(w if f % 2 == 0 else h) * 2.0
 		var ey := float(h if f % 2 == 0 else w) * 2.0
@@ -698,12 +699,38 @@ static func build_zone(out: Dictionary, id: String, w: int, h: int, kind: String
 					runoff(S, T, ex, ey, lock, seed)
 			M.shadow(cv, S, o)
 			M.render_z(cv, S, o, seed)
+			if f == 0 and mode == 0:
+				base0 = H.copy(cv)
 			C.selout(cv)
 			_put(out, entry, id, "rot_%d%s" % [f, ["", "_lockdown", "_ruin"][mode]], cv)
 	_ruin = false
 	entry.states["built"] = (entry.states["rot_0"] as Dictionary).duplicate()
 	entry.states["lockdown"] = (entry.states["rot_0_lockdown"] as Dictionary).duplicate()
 	out.manifest.buildings[id] = entry
+	if ZONE_PART_DEF.has(id) and base0 != null:
+		_zone_part(out, entry, id, String(ZONE_PART_DEF[id]), base0, o, s)
+
+
+## SUITART7: facility part defs whose sprite IS their zone art (entity_layer FAC_ZONE_PARTS skips the part's own
+## sprite while the facility draws). The def id gets its own buildings entry = the zone's states (same files) plus
+## three construction stages (H.stage, as every other facility part: cn_tower / cn_checkpoint / a_g7_vtol_pad), so the
+## def-id art path (AC.entity_sprite: build_<n> while raised, built after) shows the real building.
+const ZONE_PART_DEF := {"g7_fac_magazine": "cn_magazine", "g7_fac_barracks": "cn_sentinel_barracks", "g7_fac_armory": "cn_armory"}
+
+
+static func _zone_part(out: Dictionary, zentry: Dictionary, zid: String, def: String, base, o: Vector2, s: int) -> void:
+	var e := {"size": s, "pivot": (zentry.pivot as Array).duplicate(), "fw": int(zentry.fw), "fh": int(zentry.fh), "states": {},
+		"zone_art": zid, "fits": "%s: facility part drawn by its zone art %s (pivot = zone centre); construction stages over the zone footprint" % [def, zid]}
+	for nm in zentry.states:
+		e.states[nm] = (zentry.states[nm] as Dictionary).duplicate()
+	if (zentry.states as Dictionary).has("rot_0_ruin"):
+		e.states["destroyed"] = (zentry.states["rot_0_ruin"] as Dictionary).duplicate()
+	for st in 3:
+		_put(out, e, def, "build_%d" % st, H.stage(base, o, 0, s, "a", st, 5600 + absi(def.hash()) % 97))
+	out.manifest.buildings[def] = e
+	if def == "cn_sentinel_barracks":   # its icon (other zone parts get theirs from tools/art/g7_icons7.gd)
+		var zi: Image = out.images[String(zentry.states.rot_0.file)]
+		C.icon(out, def, zi, zi.get_width(), zi.get_height(), 0)
 
 
 ## Zone apron: concrete slab over the whole zone, expansion joints, wear. Returns the ground part.
@@ -3321,6 +3348,7 @@ static func build_linkwall(out: Dictionary) -> void:
 	var fw: int = co[0].w
 	var fh: int = co[0].h
 	var sheet := P.Canvas.new(fw * 8, fh * 2)
+	var one: Array = []   # SUITART7: the standalone piece (col 0) for the cn_link_wall def entry
 	for col in 8:
 		var cv = K.canvas(2, LW_TOP)[0]
 		link_piece(cv, o, col / 4, (col % 4) & 1 != 0, (col % 4) & 2 != 0, 7100 + col * 11)
@@ -3329,6 +3357,8 @@ static func build_linkwall(out: Dictionary) -> void:
 		var dm = H.copy(base)
 		K.damage(dm, o, 1, 9700 + col * 13)
 		C.selout(dm)
+		if col == 0:
+			one = [base, cv, dm]
 		for row in 2:
 			var src = cv if row == 0 else dm
 			(sheet.img as Image).blit_rect(src.img, Rect2i(0, 0, fw, fh), Vector2i(col * fw, row * fh))
@@ -3339,6 +3369,18 @@ static func build_linkwall(out: Dictionary) -> void:
 	_put(out, entry, "g7_fac_linkwall", "sheet", sheet)
 	entry.states["built"] = (entry.states["sheet"] as Dictionary).duplicate()
 	out.manifest.buildings["g7_fac_linkwall"] = entry
+	_piece_def(out, "cn_link_wall", one, o, fw, fh, "cn_link_wall 1x1 cell (standalone piece = g7_fac_linkwall col 0; the facility draws the sheet), pivot = cell centre")
+
+
+## SUITART7: def-id entry for a 1x1 facility piece drawn from an autotile sheet in the facility (entity_layer
+## _facb_px): built / damaged = the standalone piece, build_0..2 = construction stages (H.stage) of the same drawing.
+static func _piece_def(out: Dictionary, def: String, one: Array, o: Vector2, fw: int, fh: int, fits: String) -> void:
+	var e := {"size": 1, "pivot": [int(o.x), int(o.y)], "fw": fw, "fh": fh, "states": {}, "fits": fits}
+	_put(out, e, def, "built", one[1])
+	_put(out, e, def, "damaged", one[2])
+	for st in 3:
+		_put(out, e, def, "build_%d" % st, H.stage(one[0], o, 0, 1, "a", st, 5700 + absi(def.hash()) % 97))
+	out.manifest.buildings[def] = e
 
 
 # ================================================================ ECP serpentine baffles (13.9c-8): cn_ecp_baffle
@@ -3399,6 +3441,7 @@ static func build_baffle(out: Dictionary) -> void:
 	var fw: int = co[0].w
 	var fh: int = co[0].h
 	var sheet := P.Canvas.new(fw * 16, fh * 2)
+	var one: Array = []   # SUITART7: the standalone slab (m 0) for the cn_ecp_baffle def entry
 	for m in 16:
 		var cv = K.canvas(1, BF_TOP)[0]
 		baffle_piece(cv, o, m, 7300 + m * 7)
@@ -3407,6 +3450,8 @@ static func build_baffle(out: Dictionary) -> void:
 		var dm = H.copy(base)
 		K.damage(dm, o, 1, 9900 + m * 13)
 		C.selout(dm)
+		if m == 0:
+			one = [base, cv, dm]
 		for row in 2:
 			var src = cv if row == 0 else dm
 			(sheet.img as Image).blit_rect(src.img, Rect2i(0, 0, fw, fh), Vector2i(m * fw, row * fh))
@@ -3417,6 +3462,7 @@ static func build_baffle(out: Dictionary) -> void:
 	_put(out, entry, "g7_fac_baffle", "sheet", sheet)
 	entry.states["built"] = (entry.states["sheet"] as Dictionary).duplicate()
 	out.manifest.buildings["g7_fac_baffle"] = entry
+	_piece_def(out, "cn_ecp_baffle", one, o, fw, fh, "cn_ecp_baffle 1x1 T-wall slab (standalone = g7_fac_baffle col 0; the facility draws the conn sheet), pivot = cell centre")
 
 
 # ================================================================ ready-ammo locker (13.9c-11): cn_ammo_locker
@@ -3467,6 +3513,8 @@ static func build_locker(out: Dictionary) -> void:
 			K.damage(dm, o, 1, 9950)
 			C.selout(dm)
 			_put(out, entry, "cn_ammo_locker", "damaged", dm)
-	for nm in ["rot_0", "rot_1", "rot_2", "rot_3", "build_0", "build_1", "build_2"]:
+			for st in 3:   # SUITART7: real construction stages (were copies of built)
+				_put(out, entry, "cn_ammo_locker", "build_%d" % st, H.stage(base, o, 0, 1, "a", st, 7510))
+	for nm in ["rot_0", "rot_1", "rot_2", "rot_3"]:
 		entry.states[nm] = (entry.states["built"] as Dictionary).duplicate()
 	out.manifest.buildings["cn_ammo_locker"] = entry

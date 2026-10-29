@@ -77,6 +77,26 @@ func _capture(pt, mv, n: int) -> Array:
 	return [n, zero, seen.size(), changes, busy]
 
 
+## FLOWA7: the open 29x29 spot (block 28 x 25 + the 8-tile side split) farthest from the compound rect cr.
+func _far_open(w: SimWorld, h, cr: Array) -> Vector2i:
+	var rc := Rect2(float(cr[0]), float(cr[1]), float(cr[2]), float(cr[3]))
+	var best: Vector2i = h._open(w, 22)
+	var bd := -1.0
+	var y := 14
+	while y < int(w.map.h) - 14:
+		var x := 14
+		while x < int(w.map.w) - 14:
+			var c := Vector2i(x, y)
+			var cp := Vector2(c) + Vector2(0.5, 0.5)
+			var d: float = cp.distance_to(Vector2(clampf(cp.x, rc.position.x, rc.end.x), clampf(cp.y, rc.position.y, rc.end.y)))
+			if d > bd and h._clear(w, c, 14):
+				bd = d
+				best = c
+			x += 2
+		y += 2
+	return best
+
+
 func _has_fac(pt) -> bool:
 	pt._mv().join_sim()
 	return not CnFacility.render_entries(pt._w()).is_empty()
@@ -114,7 +134,14 @@ func run(pt) -> void:
 	var k0 := _fac_key(F)
 	# a real fight elsewhere on the map (two 700-man blocks), so sim steps run longer than a frame like in a big match
 	mv.join_sim()
-	var lc: Vector2i = h._open(w, 22)
+	# FLOWA7 (G7 final verification, 2026-10-28): the load fight is placed as FAR from the compound as the map allows.
+	# h._open(w, 22) put it at the map centre (48, 48), its blocks spanning y 36..61: right against the north wall
+	# (compound y 61..89). Since 13.9c-38 ("Double the watch": 48 Sentinels manning every wall and tower) and the
+	# 24-drone hive, the facility engages that block and the block shoots back into the compound, so the facility
+	# went "secure" -> "under_fire" mid-capture (diagnosis run: k0 false|secure|0|[..] -> false|under_fire|0|[..]) and
+	# the "state unchanged" precondition of the flicker check failed. The fight is only CPU load for the capture; the
+	# checks are unchanged.
+	var lc: Vector2i = _far_open(w, h, cr)
 	var foe := 1 if me == 0 else 0
 	var nload := 0
 	var load_ids: Array = []
@@ -125,7 +152,7 @@ func run(pt) -> void:
 			if uid >= 0:
 				nload += 1
 				load_ids.append(uid)
-	print("ART7F_LOAD units=%d at %s" % [nload, str(lc)])
+	print("ART7F_LOAD units=%d at %s compound %s" % [nload, str(lc), str(cr)])
 	var ok_all := true
 	var old_empty := 0
 	for spd in [1.0, 3.0]:   # 3x: a step is in flight at most frames' entity refresh (PERF7D chain kick), like a heavy fight
@@ -143,7 +170,7 @@ func run(pt) -> void:
 		mv.join_sim()
 		var k1 := _fac_key(CnFacility.render_entries(w)[0])
 		var line := "speed %dx OLD frames=%d busy_refresh=%d empty=%d distinct=%d sig_changes=%d | FIXED frames=%d busy_refresh=%d empty=%d distinct=%d sig_changes=%d | state %s" % [
-			int(spd), a[0], a[4], a[1], a[2], a[3], b[0], b[4], b[1], b[2], b[3], "unchanged" if k0 == k1 else "CHANGED"]
+			int(spd), a[0], a[4], a[1], a[2], a[3], b[0], b[4], b[1], b[2], b[3], "unchanged" if k0 == k1 else "CHANGED %s -> %s" % [k0, k1]]
 		print("ART7F_FLICKER " + line)
 		old_empty += int(a[1])
 		ok_all = ok_all and k0 == k1 and int(b[1]) == 0 and int(b[3]) == 0 and int(b[2]) == 1

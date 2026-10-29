@@ -72,6 +72,9 @@ static func squad_sheet(spec: Dictionary, alive: int) -> Dictionary:
 const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B: rot-only turret quarter turns
 ## G7 TURRET7B: wall-turret mount normals (WallTurret7.DIRS: E, S, W, N) as world angles for the head aim step.
 const WT_N := [0.0, PI * 0.5, PI, -PI * 0.5]
+## G7 CIWS7-5: CIWS mount art layout (tools/art/g7_ciws7.gd NY / EL_REST).
+const CW_YAWS := 32
+const CW_REST := 4
 
 
 static func variant_of(b: Dictionary) -> String:
@@ -111,22 +114,26 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 	if tb != null and bool(e.get("built", true)):
 		var fire := int(e.get("firing", 0)) > 0
 		# G7 CIWS7 (13.9c-32): rotary CIWS frames cw<k>_<el>[_s|_fire], cw<k>_r (drum swap), cw<k>_x (dry): yaw k from tb,
-		# elevation band el / phase ph from the sim frame code facing_i = el * 8 + ph (sim/systems/ciws7.gd)
-		if states.has("cw0_1"):
-			var kc := posmod(roundi(float(tb) / (PI / 4.0)), 8)
+		# elevation band el / phase ph from the sim frame code facing_i = el * 8 + ph (sim/systems/ciws7.gd).
+		# CIWS7-5 (13.9c-32a): CW_YAWS yaw frames (11.25 deg) x 6 bands; drum swap / dry every 2nd yaw; idle at rest
+		# band CW_REST (an idle mount in another band shows the rest frame)
+		if states.has("cw0_%d" % CW_REST):
+			var kc := posmod(roundi(float(tb) / (TAU / float(CW_YAWS))), CW_YAWS)
+			var kp := posmod(roundi(float(tb) / (TAU / float(CW_YAWS / 2))), CW_YAWS / 2) * 2
 			var vc := int(e.get("facing_i", 0))
-			var el := clampi(vc / 8, 0, 2)
+			var el := clampi(vc / 8, 0, 5)
 			var ph := posmod(vc, 8)
-			if ph == 3 and states.has("cw%d_r" % kc):
-				return "cw%d_r" % kc
-			if ph == 4 and states.has("cw%d_x" % kc):
-				return "cw%d_x" % kc
+			if ph == 3 and states.has("cw%d_r" % kp):
+				return "cw%d_r" % kp
+			if ph == 4 and states.has("cw%d_x" % kp):
+				return "cw%d_x" % kp
 			if fire and states.has("cw%d_%d_fire" % [kc, el]):
 				return "cw%d_%d_fire" % [kc, el]
 			if ph == 1 and states.has("cw%d_%d_s" % [kc, el]):
 				return "cw%d_%d_s" % [kc, el]
 			if states.has("cw%d_%d" % [kc, el]):
 				return "cw%d_%d" % [kc, el]
+			return "cw%d_%d" % [kc, CW_REST]
 		if states.has("aim_0"):
 			var k := posmod(roundi(float(tb) / (PI / 4.0)), 8)
 			if fire and states.has("aim_%d_fire" % k):

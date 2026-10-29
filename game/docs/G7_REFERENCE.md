@@ -1094,6 +1094,136 @@ Owner answers (2026-10-27): **2 mounts, opposite corners**; **air first, ground 
 shells first, also Machine crawlers / swarms / light walkers inside the compound); **Facility Engineers reload it** (a
 drum swap by an engineer who goes up to the roof; the mount is silent until done).
 
+#### 13.9c-32a CIWS signature sound, straight-line fire, spread with range (owner note, 2026-10-28)
+Owner: "CIWS turrets need to have that signatture phlanx BBRRRRTTTTTTTTTT shooting sound + shooting in a strait line
+wherever the barrel is point w realistic bullet spread the further they shoot". (1) Sound: the rotary-cannon signature,
+a continuous tearing "BRRRRT" burst (very high rate of fire, the individual shots fuse into one buzz), with barrel spin-up
+before and spin-down after the burst; positional like every other weapon, original synthesis (no sampled real recording).
+(2) The tracer / round stream leaves the barrel tips and flies in a straight line along the way the barrel points (bearing
+and elevation of the mount at that moment), never curving to the target. (3) Realistic dispersion: the rounds spread in
+a cone, so the group is tight close in and wider the farther they fly; at long range more rounds miss (they fly past or
+strike the ground), close in almost all hit. The sim hit share follows the same cone (deterministic), so range matters in
+play, not just in the picture. Numbers PROVISIONAL.
+
+#### 13.9c-32b CIWS depression limit: realistic ~25 deg (owner choice, 2026-10-28)
+Asked (CIWS7-5 drew aim bands down to -60 deg so the barrels followed the stream onto crawlers right next to the
+building; a real naval CIWS depresses only to about -25 deg), the owner chose **"Realistic: ~25 deg limit"**: the roof
+mount cannot aim lower than about 25 deg below level. From the 15.5 m command-centre roof that leaves a blind ring for
+ground targets about 8-9 tiles around the building (the mount simply cannot engage there; Sentinels, towers and wall
+turrets cover it); ground targets beyond it out to ground range and everything in the air stay covered. The drawn
+barrels never point below the limit. Air targets stay engageable inside the ring (they fly above the depression
+line; ORCH, 2026-10-28). Numbers PROVISIONAL.
+
+#### 13.9c-33 The facility is a fortress: ~4x to break (owner choice, 2026-10-28)
+Asked (the new drone hive + CIWS + traverse made the facility hold against a combined-arms assault worth 2.5x its
+Sentinel garrison, which before narrowly broke in), the owner chose **"Fortress: needs ~4x"**: the full facility
+(Sentinels + towers + wall turrets + drone hive + roof CIWS) holds against a well-built combined-arms push at 2.5x and
+only a much larger assault (about 4x the garrison value) breaks in. The Sentinels themselves stay "very strong, not
+invincible" (13.9c-10): the Sentinel balance checks measure them with the drone hive off; the facility checks measure
+the whole facility at 2.5x (holds) and ~4x (breaks in). Numbers PROVISIONAL.
+Authority record for test_sent7 test_balance_fight: the old "Sentinels lose vs combined arms x2.5" check predates the
+drone hive / CIWS; it becomes "the full facility holds at 2.5x" + "a ~4x combined-arms assault breaks in" (owner quote
+above), and the Sentinel-only balance runs with the drone bay off.
+
+#### 13.9c-34 Last Protocol: an 80+ Sentinel reserve in the barracks (owner note, 2026-10-28)
+Owner: "last protocol game mode your facility should start with at min the sentinels and units already within the
+facility + an extra 80+sentinels in the barracks garrison *** (make a tactically strategic way that they filter out as
+necessary and conflict gets more heavy in defending the facility from being breached/takenover --ask me quesionts".
+In Last Protocol the pre-built counter-nanite facility keeps its normal starting garrison and units, PLUS a reserve of
+80 or more Sentinels held in the Sentinel Barracks (barracks garrison slots 120). The reserve is not dumped on the field
+at the start: it filters out in a deliberate, tactical way as the fighting grows heavier, so the facility gets harder
+to breach or take over the longer and harder it is pushed. Owner answers (2026-10-28):
+- **Size: 100 Sentinels** in reserve, on top of the normal starting garrison and units (barracks 120: about 20 slots stay
+  free for wounded who come back in to rest and refill).
+- **Release: tiered by pressure.** Step 1: replace casualties at wall / tower posts one-for-one. Step 2: when a wall
+  sector or gate is under heavy attack, quick-reaction squads of 4-8 go there, bounding from cover. Step 3: on a real
+  breach (enemies inside the walls), a big counter-attack surge to throw them out. A last-stand group (about 20% of the
+  reserve) is always held back to guard the command centre and the core rooms.
+- **Control: automatic by default + manual**, like the drone bay (13.9c-27): from the barracks card the player can
+  release a squad, recall, or switch auto off.
+- **Replenish: finite pool, slow trickle.** The reserve is what the facility starts with; the barracks trains a few
+  replacements slowly (costs resources), so a long siege grinds the defence down but never empties it at once.
+Numbers PROVISIONAL. Last Protocol only (skirmish facilities keep the normal garrison).
+
+#### 13.9c-35 No firing through walls from inside (owner note, 2026-10-28)
+Owner: "in the facility the sentinal units that quick react when theres a side/area being hit hard by the machines - NO
+unit can shoot from inside outside the walls UNLESS they are on the wall walkways our outside the wall(s)". A unit
+standing inside a walled compound cannot fire at a target outside that wall (and the reverse: the wall stops direct
+fire both ways); only units up on the wall-walk or outside the wall can engage across it. Applies to the quick-reaction
+squads, the surge and every other unit. Exemptions (owner answer 2026-10-28, **"Realistic exemptions"**): what really
+can fire over a wall still can: indirect fire that arcs over (mortars, howitzers, artillery), raised mounts (towers, the
+roof CIWS, rooftop guns) and anything flying (drones, helicopters, dropships). Everyone else (rifles, machine guns,
+tanks, APC guns) must be on the wall-walk or outside the wall to fire across it. An open gate is a gap: direct fire may
+pass through the open gate cell; a closed gate blocks like the wall.
+
+#### 13.9c-36 Last Protocol base is too big: shrink it drastically (owner note, 2026-10-28)
+Owner: "i feel like the base now is TOO mf big for the last protocol game mode help me decide HOW and what to remove to
+shrink it down drastically so its more realistically difficult -- obviously facility stays same in center with all of
+its upgrades/etc". Today (census 2026-10-28, map last_protocol 512x512): three walled rings, outer 87x87 tiles, economy
+73x73, core 53x53; 874 wall segments; outer ring ~160 defensive buildings (24 howitzer pits, 39 cameras, 12 autocannons,
+11 HMG nests, 8 automortars, 8 EMP, 8 laser CIWS, 7 thermite, 6 ATGM bunkers, 6 SAM, 3 microwave, 3 hull-down, 2 railguns,
+2 radars, 17 depots); economy ring 45 generators, 29 depots, 8 refineries, 7 barracks, 6 research, 3 hospitals, 3 exo
+garages, 3 motor pools; core ring the counter-nanite facility (unchanged) plus HQ, company HQ, airfield, 3 heavy hangars,
+2 VTOL pads, 2 helipads, 4 howitzer pits, 5 SAM, 4 laser CIWS, 3 barracks, repair bay. The facility stays exactly as it is
+in the centre with all its upgrades. Owner answers (2026-10-28):
+- **Layout: two tight rings.** The middle economy ring is deleted. An inner wall around the facility + HQ + air pads and
+  ONE outer defensive wall close around it, about 55x55 tiles across (roughly 60% less ground); the kept economy sits in
+  the gap between the two walls.
+- **Defences and army: cut to about half** (about 80 defences, keeping the turret mix; about half the starting army).
+- **Economy: about half** of everything (generators, depots, refineries, barracks, research, hospitals, suit garages,
+  motor pools, airfield / hangars / VTOL pads), **plus more helipads, each with a helicopter loaded at the start**.
+  ORCH decision on the helipads (owner: "decide how many and what type"): **6 helipads** (2 existing + 4 new): **3 Attack
+  Helicopters** (rocket fire support for a hard-pressed wall), **2 Transport Gunships** (door guns; lift a squad to a
+  threatened sector), **1 Airlift Transport** (heavy lift / evacuation). PROVISIONAL.
+- The counter-nanite facility in the centre is unchanged (with the 100-Sentinel reserve of 13.9c-34).
+- Follow-up answers (2026-10-28, after LPSHRINK7 built it at 69x69 because the facility + HQ + runway + dropship pad need a
+  47-wide core): **"Squeeze to ~59"**: drop the outer ring road and merge the defence row into the turret row (outer band
+  about 6 tiles, base about 59x59, ~54% less ground than the old 87x87; vehicles use the service lane). The Airlift
+  Transport is a fixed-wing plane (needs a heavy hangar), so the **6th helipad holds a 4th Attack Helicopter**: pads =
+  4 Attack Helicopters + 2 Transport Gunships; the Airlift parks in a heavy hangar.
+Authority record: tests that assert the three-ring layout, ring counts or the old building / army totals change with
+this note (owner quote above); every other check stays.
+
+#### 13.9c-37 Drone bay / barracks reserve cards only when their building is selected (owner note, 2026-10-28)
+Owner: "the drone bay, and barrack reserve panel should only be shown when I (player) clicks either of their respective
+buildings". The DRONE BAY card shows only while the player has the drone bay (the workshop's 2nd storey, 13.9c-18)
+selected; the BARRACKS RESERVE card only while the Sentinel Barracks is selected. Otherwise both stay hidden.
+
+#### 13.9c-38 Heavier always-on Sentinel watch on walls, towers and the entrance (owner note, 2026-10-28)
+Owner: "the sentinels should always be manning the entrance/all walls/towers on rotation basis ALWAYS --- w the obvious
+dispatch more to walls from garrison as attacks increase , etc etc as we've already planned out --- I should be seeing
+heavier sentinel patrol force on the walls and near entrances". Owner choice: **"Double the watch"**: the starting
+Sentinel garrison goes 24 -> 48 in every mode. At all times: a patrol pair walking every wall face on the wall-walk,
+every tower manned, a 4-man team at the entrance checkpoint and the gates; shifts rotate with the barracks (rest /
+refill) so the watch never empties and nobody stands forever. As attacks grow, more go to the walls from the garrison
+(13.9c-10/-11 stand-to) and, in Last Protocol, from the 100-man reserve (13.9c-34). The fortress balance (13.9c-33:
+holds 2.5x, breaks in ~4x) is re-checked and kept with PROVISIONAL tuning. Numbers PROVISIONAL.
+Follow-up (2026-10-28): with 48 men the 13.9c-33 assault (a multiple of the garrison value) doubled and the facility
+fell at 2.5x. Owner choice: **"Scale the defences up too"**: keep measuring against the new 48-man value (2.5x = ~313
+attackers holds, ~4x = ~500 breaks in); grow the drone hive (12 -> 24 drones) and add anti-armour lancers to the mix
+(PROVISIONAL), Sentinels alone (drone bay off) still lose at 2.5x.
+Infantry checks (owner choice 2026-10-28, **"Full facility vs infantry"**): the infantry x2 / x3 balance checks run with
+the whole facility (drone hive on, as in a real game) at the new 48-man value; the "Sentinels alone are beatable" rule
+stays on the combined-arms 2.5x check (drone bay off loses). Authority record for test_sent7 test_balance_fight.
+
+#### 13.9c-39 Roof mounts out of reach of ground melee and demolition (owner choice, 2026-10-28)
+Found by FLOWA7 (ciws7 flow): a Machine breacher crawler at the command centre's foot blew up a roof CIWS mount in one
+hit, because combat measured reach to the mount's ground footprint, not to the roof (~15.5 m up). Owner choice: **"Yes,
+out of reach"**: melee, demolition / shaped charges and other short-range ground attacks cannot hit roof-mounted guns
+(the CIWS and any other roof mount). Guns, rockets, artillery and aircraft still can. Small sim change; hashes
+re-checked.
+
+#### 13.9c-40 No population cap in skirmish either (owner choice, 2026-10-28)
+Found by FLOWC7 (facint7 flow): in skirmish the facility's free 48-man Sentinel watch (pop 2 each) used 96 of the 120
+cap, so the player could barely train anything once the facility was up. Asked how the garrison should count, the owner
+answered: **"Remove the 120 population cap"**. Skirmish now has no population cap, the same as Last Protocol (13.9d):
+every side's supply cap is unlimited and the HUD shows "POP n (NO CAP)". Supply buildings keep their other roles. The
+AI sides get the same rule. Authority record for any test that asserted the skirmish cap of 120.
+**Moved to the next slice (owner, 2026-10-28):** "STOP focusing on the skirmish - I mainly want the end protocol game
+mode ... give me that packaged asap in full totality ... leave the rest for next slice". Not built in G7; skirmish keeps
+its 120 cap for now. The facint7 all-in-one facility flow (skirmish-hosted, last run 97/10: night-assault phase, facility
+security cameras, tactical APC garage return unverified) is parked with it.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).

@@ -21,6 +21,7 @@ const P = preload("res://tools/art/pix.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const M = preload("res://tools/art/g7_cn_mesh.gd")
 const A = preload("res://tools/art/g7_cn_air.gd")
+const G7Anim = preload("res://tools/art/g7_anim.gd")
 
 const FW := 208
 const FH := 144
@@ -30,6 +31,11 @@ const ALT := {"hover": 0.7, "hover_b": 0.7, "flight": 0.9, "flight_b": 0.9, "lan
 const SLOTS := {"nose": ["cannon", "missiles", "anti_drone"], "side": ["missiles", "gun", "drones", "anti_drone"],
 	"rear": ["flares", "deterrents", "anti_drone", "gun"]}
 const DEFAULT := ["cannon", "missiles", "flares"]
+## G7 SUITART7: manifest column names follow the G5 VTOL convention (a_vtol_dropship: idle / move / fire, idle_b /
+## move_b, anim air / move) so the sheets meet the unit-art contract (test_art idle / move / fire) and the G6.1 pass
+## (g7_anim -> g61_anim_veh, kind "air": bank_l / bank_r appended, anim61 muzzle / smoke) runs on them. The drawer
+## keeps its own pose names (hover = idle, flight = move).
+const OUT_NAME := {"hover": "idle", "hover_b": "idle_b", "flight": "move", "flight_b": "move_b"}
 ## Mounts (metres, f / r / z) - the same numbers as rules.g7_vanta.mounts (sim muzzle points).
 const NOSE_M := Vector3(5.6, 0.0, 0.8)
 const SIDE_M := Vector3(0.6, 1.75, 1.1)
@@ -337,12 +343,15 @@ static func sheet(out: Dictionary, id: String, nfac: int, frames: Array, lo: Arr
 	out.images["units/%s.png" % id] = img
 	out.images["units/%s_mask.png" % id] = msk
 	var man: Dictionary = out.manifest.get("vehicles", {})
+	var names: Array = []
+	for f in frames:
+		names.append(String(OUT_NAME.get(f, f)))
 	var g7 := {"detail_level": C.VERSION, "class": "air", "bytes": C.packed_bytes(img, FW, FH, -1) if nfac == 8 else img.get_width() * img.get_height() * 4,
 		"raw_bytes": img.get_width() * img.get_height() * 4, "budget": int(C.BUDGET.air) if nfac == 8 else img.get_width() * img.get_height() * 4, "mirror": -1}
 	g7.merge(extra)
 	man[id] = {"file": "units/%s.png" % id, "mask": "units/%s_mask.png" % id, "fw": FW, "fh": FH, "pivot": [PIV.x, PIV.y],
-		"frames": frames.duplicate(), "facings": nfac, "g7": g7, "altitude": 150.0, "bob": 1.0,
-		"anim": {"air": ["hover", "hover_b"], "move": ["flight", "flight_b"]}, "anim_fps": 6}
+		"frames": names, "facings": nfac, "g7": g7, "altitude": 150.0, "bob": 1.0, "air": true,
+		"anim": {"air": ["idle", "idle_b"], "move": ["move", "move_b"]}, "anim_fps": 6}
 	out.manifest["vehicles"] = man
 	var sp: Dictionary = out.manifest.get("specials", {})
 	sp[id] = {"parked": "landed"}
@@ -380,8 +389,14 @@ static func generate(which: String) -> Dictionary:
 		sheet(out, id, 8, FRAMES, lo, fx.merged({"loadout": {"nose": lo[0], "side": lo[1], "rear": lo[2]}}))
 	var did := "g7_vanta_%s_%s_%s" % DEFAULT
 	sheet(out, "g7_vanta_16", 16, ["hover", "flight", "landed"], DEFAULT, fx.merged({"note": "16-facing showcase of the default loadout (the renderer draws 8 facings today)"}))
+	# SUITART7: the 16-facing showcase is not a unit sprite (the renderer draws 8 facing rows): it lives under
+	# manifest.showcase, outside manifest.vehicles, so no unit-art pass or 8-row unit check applies to it.
+	out.manifest["showcase"] = {"g7_vanta_16": out.manifest.vehicles["g7_vanta_16"]}
+	(out.manifest.vehicles as Dictionary).erase("g7_vanta_16")
+	(out.manifest.specials as Dictionary).erase("g7_vanta_16")
 	var wid := "g7_vanta_bare"
-	sheet(out, wid, 8, ["hover", "landed"], ["", "", ""], fx.merged({"note": "bare airframe (no hardpoint items): reference"}), true)
+	sheet(out, wid, 8, FRAMES, ["", "", ""], fx.merged({"note": "bare airframe (no hardpoint items): reference"}), true)
+	G7Anim.apply(out)   # SUITART7: G6.1 frames (bank_l / bank_r) + anim61, before the content-def copies share a sheet
 	var man: Dictionary = out.manifest.vehicles
 	var vw := {}
 	for cid in ["cn_vanta_a", "cn_vanta_b"]:   # content defs draw the default loadout until e.art_def is set
@@ -390,6 +405,21 @@ static func generate(which: String) -> Dictionary:
 		out.manifest.specials[cid] = {"parked": "landed"}
 		vw[cid] = {"file": "wrecks/%s_wreck.png" % wid, "fw": FW, "fh": FH, "pivot": [PIV.x, PIV.y], "frames": ["wreck"], "facings": 8}
 	out.manifest["vehicle_wrecks"] = vw
+	# SUITART7: production icons of the content defs (were hand-added to the manifest after generation and lost on
+	# every re-run): cn_vanta_a = the bare-airframe icon; cn_vanta_b = the same icon recoloured to the Human B
+	# olive-sand finish (no separate Human B sprite exists; same recolour as tools/art/g7_icons7.gd _vanta_b).
+	var icons: Dictionary = out.manifest.icons
+	icons["cn_vanta_a"] = icons[wid]
+	var ib: Image = (out.images[String(icons[wid])] as Image).duplicate()
+	var tint := Color(0.80, 0.72, 0.42)
+	for y in ib.get_height():
+		for x in ib.get_width():
+			var c := ib.get_pixel(x, y)
+			var l := c.r * 0.3 + c.g * 0.59 + c.b * 0.11
+			var t := Color(minf(1.0, l * tint.r * 1.5), minf(1.0, l * tint.g * 1.5), minf(1.0, l * tint.b * 1.5), c.a)
+			ib.set_pixel(x, y, c.lerp(t, 0.85))
+	out.images["icons/g7_vanta_bare_b.png"] = ib
+	icons["cn_vanta_b"] = "icons/g7_vanta_bare_b.png"
 	return out
 
 

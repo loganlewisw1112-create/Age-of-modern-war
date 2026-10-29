@@ -82,7 +82,7 @@ func test_each_ending_maps_to_its_cinematic() -> void:
 func test_opening_shape() -> void:
 	var w := _lp()
 	var d := CineData.gather(w, {})
-	check(bool(d.base_ok) and (d.cores as Array).size() == 3 and (d.rings as Array).size() == 3, "data: base, 3 cores, 3 rings")
+	check(bool(d.base_ok) and (d.cores as Array).size() == 3 and (d.rings as Array).size() == 2, "data: base, 3 cores, 2 rings (13.9c-36 authority record: two rings)")
 	var sh: Array = CineData.module("opening").call("shots", d)
 	var tot := CineShot.total(sh)
 	check(tot >= 60.0 and tot <= 90.0, "opening lasts %.1f s (60-90)" % tot)

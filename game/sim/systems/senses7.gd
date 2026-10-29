@@ -45,6 +45,7 @@ extends RefCounted
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
+const NativeCore = preload("res://sim/native_core.gd")   # G7 PERF7L: RtsSpot (rts_core >= 0.5.5)
 
 const CFG_PATH := "res://content/g7/rules_g7_senses.json"
 const VER := 1
@@ -234,6 +235,12 @@ static func heard(w: SimWorld, fid: int) -> Array:
 static var _prof_kd := {}   # INTEG7 (perf): kind -> {def -> profile}: same cache as _prof without a string concat per call
 
 
+## PERF7J (perf, exact): _is_machine per faction, filled at the start of a team pass's spot loop (the loop never
+## changes w.factions), so _profile skips a factions lookup + String compare per observer check.
+static var _mf := {}
+static var _mf_on := false
+
+
 static func _profile(w: SimWorld, o: Dictionary) -> Array:
 	var kd = _prof_kd.get(o.kind)
 	if kd == null or _prof.is_empty():
@@ -243,8 +250,13 @@ static func _profile(w: SimWorld, o: Dictionary) -> Array:
 	if p == null:
 		p = _profile_full(o)
 		kd[o.def] = p
-	if int(o.get("owner", -1)) >= 0 and _is_machine(w, int(o.owner)):
-		return [P_MACH, p[1], false, true]
+	var ow := int(o.get("owner", -1))
+	if ow >= 0:
+		var mf = _mf.get(ow) if _mf_on else null   # PERF7J: the pass's per-faction answer (factions do not change in it)
+		if mf == null:
+			mf = _is_machine(w, ow)
+		if mf:
+			return [P_MACH, p[1], false, true]
 	return p
 
 
@@ -306,6 +318,27 @@ static func _silhouette(w: SimWorld, t: Dictionary) -> float:
 	return s
 
 
+## PERF7J (perf, exact): _silhouette with its tunables from _K (read by _kfresh at the start of the same pass:
+## the same cf() values), for the spot loop.
+static func _sil_k(w: SimWorld, t: Dictionary) -> float:
+	var s := 1.0
+	var prone := false
+	for k in _K[14]:
+		if bool(t.get(String(k), false)):
+			prone = true
+			break
+	if prone:
+		s *= float(_K[10])
+	else:
+		var g := int(t.get("gait", 0))
+		if g == 1 or g == 2:
+			s *= float(_K[11])
+	var p: Vector2 = t.pos
+	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == 3:   # Terrain.FOREST
+		s *= float(_K[12])
+	return s
+
+
 ## Active smoke clouds [[center Vector2, r]] (add_smoke clouds + Apc7 smoke panels).
 static func _clouds(w: SimWorld, st: Dictionary) -> Array:
 	var out := []
@@ -350,14 +383,15 @@ static var _K := []
 static func _kfresh() -> void:
 	_K = [cf("near", 1.5), cf("move_mult", 1.5), cos(deg_to_rad(cf("optics_deg", 25.0))), cf("optics_mult", 1.6),
 		cos(deg_to_rad(cf("cone_deg", 60.0))), cos(deg_to_rad(cf("periph_deg", 100.0))), cf("periph_mult", 0.6),
-		cf("vehicle_mult", 0.85), cf("air_mult", 1.0), cf("building_mult", 0.9)]
+		cf("vehicle_mult", 0.85), cf("air_mult", 1.0), cf("building_mult", 0.9),
+		cf("prone_mult", 0.45), cf("crouch_mult", 0.7), cf("forest_mult", 0.6), cf("max_range", 24.0), cfg().get("prone_keys", [])]
 
 
 static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil: float, moving: bool, clouds: Array) -> bool:
 	if _K.is_empty():
 		_kfresh()
 	var K := _K
-	var op := _opos(o)
+	var op: Vector2 = _opos(o) if o.kind == "building" else o.pos   # PERF7J: _opos inlined for units (same value)
 	var tp: Vector2 = t.pos
 	var d := op.distance_to(tp)
 	if d <= float(K[0]):
@@ -379,7 +413,9 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 			return false
 	if code == P_INF:
 		var to := (tp - op) / d
-		var cosa := Vector2.from_angle(head(w, o)).dot(to)
+		var od = o.get("order")   # PERF7J: head() inlined for the common case (no bk order: the body facing)
+		var hd := head(w, o) if (od is Dictionary and bool(od.get("bk", false))) else float(o.get("facing", 0.0))
+		var cosa := Vector2.from_angle(hd).dot(to)
 		if (pr[2] or bool(o.get("optics", false))) and cosa >= float(K[2]) and d <= R * float(K[3]) * s:
 			return true
 		if cosa >= float(K[4]):
@@ -533,15 +569,37 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 					continue   # still revealed by his own fire until the next pass
 			if not on_vis or all_machine or not t.has("morale") or not _inf_def(String(t.def)):
 				continue
-			if w.entities.has(int(t.id)):
-				need.append(t)
+			need.append(t)   # PERF7J: alive (checked above in this iteration; nothing in between destroys)
 	for sid in st.hq:
 		var h: Array = st.hq[sid]
 		if int(h[2]) > w.tick - se:
 			snd.append([int(sid), h[0], int(h[1]), int(h[2]), 2, ""])
 	var B := maxf(2.0, cf("bucket", 8.0))
 	var idx := {}
+	var obs := []   # G7 PERF7L: the observers in idx insertion order (native spot pass)
 	var nobs := 0
+	# G7 PERF7L: obs keeps only observers whose bucket the ring search of some target can visit (bucket box of
+	# the targets grown by kmax rings). Exact: a key is one (bx, by) while bx is in [0, KST); an observer outside
+	# that range is always kept, and a target outside it keeps them all.
+	var ob := [0, -1, 0, -1, false]   # bx0, bx1, by0, by1, filter on
+	if not need.is_empty():
+		var km := ceili(float(_K[13]) / B)
+		var inj := true
+		var fx0 := 1 << 40
+		var fx1 := -(1 << 40)
+		var fy0 := 1 << 40
+		var fy1 := -(1 << 40)
+		for t: Dictionary in need:
+			var tp: Vector2 = t.pos
+			var tbx := floori(tp.x / B)
+			var tby := floori(tp.y / B)
+			if tbx < 0 or tbx >= KST:
+				inj = false
+			fx0 = mini(fx0, tbx - km)
+			fx1 = maxi(fx1, tbx + km)
+			fy0 = mini(fy0, tby - km)
+			fy1 = maxi(fy1, tby + km)
+		ob = [fx0, fx1, fy0, fy1, inj]
 	if not need.is_empty() or not snd.is_empty():
 		for fm in members:
 			for o: Dictionary in uown.get(fm, []):
@@ -550,12 +608,16 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 				if not w.entities.has(int(o.id)):
 					continue
 				var p: Vector2 = o.pos
-				var key := floori(p.x / B) + floori(p.y / B) * KST
+				var obx := floori(p.x / B)
+				var oby := floori(p.y / B)
+				var key := obx + oby * KST
 				var a = idx.get(key)
 				if a == null:
 					idx[key] = [o]
 				else:
 					a.append(o)
+				if not ob[4] or obx < 0 or obx >= KST or (obx >= ob[0] and obx <= ob[1] and oby >= ob[2] and oby <= ob[3]):
+					obs.append(o)
 				nobs += 1
 		if not need.is_empty():
 			var mbs := cf("min_building_sight", 4.0)
@@ -563,12 +625,16 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 				if not members.has(int(b.owner)) or not w.entities.has(int(b.id)) or float(_profile(w, b)[1]) < mbs:
 					continue
 				var bp := _opos(b)
-				var key := floori(bp.x / B) + floori(bp.y / B) * KST
+				var obx := floori(bp.x / B)
+				var oby := floori(bp.y / B)
+				var key := obx + oby * KST
 				var a = idx.get(key)
 				if a == null:
 					idx[key] = [b]
 				else:
 					a.append(b)
+				if not ob[4] or obx < 0 or obx >= KST or (obx >= ob[0] and obx <= ob[1] and oby >= ob[2] and oby <= ob[3]):
+					obs.append(b)
 				nobs += 1
 	var clouds := _clouds(w, st)
 	if all_machine:
@@ -577,9 +643,31 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 		var spot := {}
 		var maxc := int(cf("max_checks", 24)) if nobs <= int(cf("big_n", 1500)) else int(cf("max_checks_big", 6))
 		var ts := Time.get_ticks_usec()
-		for t: Dictionary in need:
-			if _spotted_any(w, st, idx, B, t, maxc, clouds):
-				spot[int(t.id)] = 1
+		_mf = {}
+		for fk in w.factions:
+			_mf[int(fk)] = _is_machine(w, int(fk))
+		_mf_on = true
+		var nres := PackedByteArray()
+		if native_spot and clouds.is_empty() and not need.is_empty() and NativeCore.available() and not NativeCore.force_off 				and ClassDB.class_exists("RtsSpot"):
+			nres = _native_spot(w, st, obs, need, B, maxc)
+		if nres.size() == need.size() and not need.is_empty():
+			for i in need.size():
+				if nres[i] == 1:
+					spot[int(need[i].id)] = 1
+			if spot_ab:
+				var ref := {}
+				for t: Dictionary in need:
+					if _spotted_any(w, st, idx, B, t, maxc, clouds):
+						ref[int(t.id)] = 1
+				spot_ab_n += need.size()
+				for t: Dictionary in need:
+					if ref.has(int(t.id)) != spot.has(int(t.id)):
+						spot_ab_diff += 1
+		else:
+			for t: Dictionary in need:
+				if _spotted_any(w, st, idx, B, t, maxc, clouds):
+					spot[int(t.id)] = 1
+		_mf_on = false
 		st.spot[tk] = spot
 		prof.spot += Time.get_ticks_usec() - ts
 	var t1 := Time.get_ticks_usec()
@@ -600,14 +688,74 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 	prof.squads += Time.get_ticks_usec() - t2
 
 
+## G7 PERF7L: the spot loop in rts_core (RtsSpot.spotted, exact port of _spotted_any + _sees for the no-smoke case;
+## same observer order, same f32 vector / f64 scalar math). Every Dictionary read happens here, once per observer.
+static var native_spot := true   # A/B toggle
+static var spot_ab := false   # bench: also run the script loop and count differing answers
+static var spot_ab_n := 0
+static var spot_ab_diff := 0
+static var _spot_obj = null
+
+
+static func _native_spot(w: SimWorld, st: Dictionary, obs: Array, need: Array, B: float, maxc: int) -> PackedByteArray:
+	if _spot_obj == null:
+		_spot_obj = ClassDB.instantiate("RtsSpot")
+	var n := obs.size()
+	var opos := PackedVector2Array()
+	var ocode := PackedInt32Array()
+	var orr := PackedFloat64Array()
+	var ofl := PackedInt32Array()
+	var odir := PackedVector2Array()
+	opos.resize(n)
+	ocode.resize(n)
+	orr.resize(n)
+	ofl.resize(n)
+	odir.resize(n)
+	for i in n:
+		var o: Dictionary = obs[i]
+		var pr := _profile(w, o)
+		var code: int = pr[0]
+		opos[i] = _opos(o) if o.kind == "building" else o.pos
+		ocode[i] = code
+		orr[i] = float(pr[1])
+		var fl := 0
+		if bool(o.get("wunc", false)):
+			fl |= 1
+		if pr[3] or bool(o.get("nvg", false)) or bool(o.get("thermal", false)):
+			fl |= 2
+		if pr[2] or bool(o.get("optics", false)):
+			fl |= 4
+		ofl[i] = fl
+		if code == P_INF:
+			var od = o.get("order")
+			var hd := head(w, o) if (od is Dictionary and bool(od.get("bk", false))) else float(o.get("facing", 0.0))
+			odir[i] = Vector2.from_angle(hd)
+	var nt := need.size()
+	var tpos := PackedVector2Array()
+	var tsil := PackedFloat64Array()
+	var tmov := PackedByteArray()
+	tpos.resize(nt)
+	tsil.resize(nt)
+	tmov.resize(nt)
+	for j in nt:
+		var t: Dictionary = need[j]
+		tpos[j] = t.pos
+		tsil[j] = _sil_k(w, t)
+		tmov[j] = 1 if bool(t.get("moving", false)) else 0
+	var k := PackedFloat64Array()
+	for q in 14:
+		k.append(float(_K[q]))
+	return _spot_obj.spotted(opos, ocode, orr, ofl, odir, tpos, tsil, tmov, k, float(st.light), B, KST, maxc)
+
+
 ## Ring search (nearest buckets first) for any observer that spots t; fails open after maxc checks.
 static func _spotted_any(w: SimWorld, st: Dictionary, idx: Dictionary, B: float, t: Dictionary, maxc: int, clouds: Array) -> bool:
 	var p: Vector2 = t.pos
-	var sil := _silhouette(w, t)
+	var sil := _sil_k(w, t)
 	var moving := bool(t.get("moving", false))
 	var bx := floori(p.x / B)
 	var by := floori(p.y / B)
-	var kmax := ceili(cf("max_range", 24.0) / B)
+	var kmax := ceili(float(_K[13]) / B)
 	var n := 0
 	for k in range(0, kmax + 1):
 		for yy in range(by - k, by + k + 1):

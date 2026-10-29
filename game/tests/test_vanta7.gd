@@ -285,7 +285,21 @@ func test_ai_defends_facility() -> void:
 	var r := Vanta7.rec(w, int(e.id))
 	var rp := Vanta7.pad_of(w, int(r.fac))
 	var foe := w.spawn_unit("a_apc", 1, Vector2(rp.centre) + Vector2(8, 6))
-	w.run_ticks(12)
+	# SUITSIM7 (suite 2026-10-28): the facility's Sentinel garrison (13.9c-38 "Double the watch": 48 men incl. 9 Lancers,
+	# every tower manned) is seeded at tick 13 (Sentinels7.tick, tick % 10 == 3, once per facility) and its gunners,
+	# marksman and Lancers killed this APC at tick 17, so _think below saw no enemy and stayed idle (the Vanta's defend
+	# logic was not at fault: with a live foe it lifts). The garrison is not what this test checks: it is removed once
+	# seeded (same 12 ticks in all); the checks below are unchanged.
+	w.run_ticks(2)
+	var sent := 0
+	for id in w.entities.keys():
+		var se: Dictionary = w.entities[id]
+		if se.kind == "unit" and int(se.owner) == 0 and String(se.def).begins_with("g7_sent_"):
+			w.destroy(id, "test", SimWorld.NEUTRAL)
+			sent += 1
+	check(sent > 0, "the Sentinel garrison was seeded and is removed from this fixture (%d)" % sent)
+	w.run_ticks(10)
+	check(w.entities.has(foe), "the enemy APC is still alive when the AI looks")
 	Vanta7._think(w, e, r, true)
 	check(String(e.order.get("type", "")) != "attack", "a player's Vanta is never flown by the AI")
 	w.ai_state[0] = {}

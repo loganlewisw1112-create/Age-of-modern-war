@@ -184,7 +184,14 @@ func run(pt) -> void:
 	await pt._wait(2.0)
 	pt._shot("cnops7_relief_convoy")
 	await pt._wait(0.8)
-	var arrived: bool = await pt._wait_until(func(): return _has("CnReliefArrived") or _has("CnReliefLost"), 90.0)
+	var arrived := false
+	for wi in 9:   # 90 s in all; the relief vehicle's trip is logged every 10 s (REGFIX7-3 diagnostic, no check changed)
+		arrived = await pt._wait_until(func(): return _has("CnReliefArrived") or _has("CnReliefLost"), 10.0)
+		if arrived:
+			break
+		mv.join_sim()
+		var ru = w.entities.get(rid)
+		print("PLAYTEST cnops7 relief_trip t%d unit %d %s" % [w.tick, rid, ("pos %s order %s moving %s path %d anchor %s" % [str(ru.pos), str(ru.order), str(ru.get("moving", false)), (ru.get("path", []) as Array).size(), str(CnOps7.anchor(w, t))]) if ru != null else "gone"])
 	pt._log("cnops7_relief_arrived", arrived and _has("CnReliefArrived"), "lost" if _has("CnReliefLost") else "")
 	mv.center_camera_on(base)
 	await pt._wait(1.0)

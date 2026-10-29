@@ -1,5 +1,5 @@
 extends "res://tests/test_base.gd"
-## G7 DRONEBAY7 acceptance (docs/G7_REFERENCE.md 13.9c-27): the facility drone bay garrisons 12 defence drones,
+## G7 DRONEBAY7 acceptance (docs/G7_REFERENCE.md 13.9c-27): the facility drone bay garrisons 24 defence drones (12 -> 24, 13.9c-38 follow-up),
 ## releases them automatically (default ON) when the base is threatened, launches them one after another from the
 ## workshop-roof launch deck, fights, recovers them to the deck, rearms, rebuilds losses slowly; manual launch / recall
 ## and the auto toggle; interceptors stop strikes; player orders respected; no facility = no state; save / load + hash.
@@ -154,11 +154,11 @@ func test_garrison_of_twelve_on_the_workshop_deck() -> void:
 	check(not sm.is_empty(), "the facility has a drone bay")
 	if sm.is_empty():
 		return
-	check_eq(int(sm.cap), 12, "garrison cap 12 (PROVISIONAL)")
-	check_eq(int(sm.total), 12, "starts with a full garrison: Drones %d/%d" % [int(sm.total), int(sm.cap)])
-	check_eq(int(sm.ready), 12, "all 12 ready in the hangar")
+	check_eq(int(sm.cap), 24, "garrison cap 24 (PROVISIONAL; 13.9c-38 follow-up \"Scale the defences up too\": 12 -> 24)")
+	check_eq(int(sm.total), 24, "starts with a full garrison: Drones %d/%d" % [int(sm.total), int(sm.cap)])
+	check_eq(int(sm.ready), 24, "all 24 ready in the hangar")
 	check(bool(sm.auto), "automatic release defaults ON (owner)")
-	check_eq(int(sm.kinds.interceptor.total) + int(sm.kinds.gun.total) + int(sm.kinds.kamikaze.total), 12, "interceptors + gun + kamikaze = 12")
+	check_eq(int(sm.kinds.interceptor.total) + int(sm.kinds.gun.total) + int(sm.kinds.kamikaze.total), 24, "interceptors + gun + kamikaze = 24")
 	var F := CnFacility.fac(w, fac)
 	var deck: Rect2 = sm.deck
 	check(deck.size.x > 0.0 and deck == CnFacility.zone(F, "workshop"), "the launch deck is the workshop roof (drone_bay zone %s, workshop %s)" % [str(deck), str(CnFacility.zone(F, "workshop"))])
@@ -200,7 +200,7 @@ func test_auto_release_on_attack_from_the_deck() -> void:
 	check(on_deck, "every drone took off from the workshop-roof deck")
 	check_eq(ticks_seen.size(), L.size(), "one drone off the deck at a time (staggered launches)")
 	var sm := DroneBay7.summary(w, fac)
-	check_eq(int(sm.total), 12 - (0 if int(sm.lost) == 0 else int(sm.lost)) , "garrison accounting holds (total %d, lost %d)" % [int(sm.total), int(sm.lost)])
+	check_eq(int(sm.total), 24 - (0 if int(sm.lost) == 0 else int(sm.lost)) , "garrison accounting holds (total %d, lost %d)" % [int(sm.total), int(sm.lost)])
 	check(int(sm.kinds.kamikaze.aloft) + int(sm.lost) >= 1, "the kamikaze is out or spent")
 	# fighting: the defence drones shoot at the attackers
 	var fired := false
@@ -299,7 +299,7 @@ func test_losses_rebuilt_slowly_at_a_cost() -> void:
 	var sm := DroneBay7.summary(w, fac)
 	check_eq(int(sm.lost), 1, "loss counted")
 	check_eq(String(sm.building), "gun", "the lost gun drone is being rebuilt")
-	check_eq(int(sm.total), 11, "Drones 11/12 while it is rebuilt")
+	check_eq(int(sm.total), 23, "Drones 23/24 while it is rebuilt")
 	var paid := {}
 	for ent in (w.factions[0].journal as Array).slice(j0):
 		if String(ent.get("cause", "")) == "dronebay_rebuild":
@@ -309,7 +309,7 @@ func test_losses_rebuilt_slowly_at_a_cost() -> void:
 	check_eq(int(paid.get("salvage", 0)), -int(rc.get("salvage", 0)), "rebuild cost paid: salvage")
 	_run(w, DroneBay7.ticks(float(DroneBay7.R().rebuild_s)) + 2)
 	sm = DroneBay7.summary(w, fac)
-	check_eq(int(sm.total), 12, "rebuilt: Drones 12/12")
+	check_eq(int(sm.total), 24, "rebuilt: Drones 24/24")
 	check_eq(String(sm.building), "", "no further rebuild")
 
 
@@ -713,10 +713,15 @@ func test_hive_breach_full_commit() -> void:
 	var fac := _facility(w, s[1])
 	var cr := CnFacility.compound_rect(CnFacility.fac(w, fac))
 	var c := cr.get_center()
-	_foe_unit(w, "b_militia", _foe(w), c + Vector2(4, 6), 6000.0)
+	# BAL7 fixture fix: a 6000-hp breacher died to the facility defences (~tick 112) before the whole garrison had
+	# launched, so the hive dropped out of commit mid-check. The breacher must survive the check window (as the other
+	# breach test's 1e6-hp foe does); every full-commit check below is unchanged.
+	_foe_unit(w, "b_militia", _foe(w), c + Vector2(4, 6), 1000000.0)
 	var t_commit := -1
 	var all_out := false
 	var kam_at := -1
+	# WATCH7-3 (13.9c-27a): on a breach the kamikazes now commit together (the whole stock queued at once), so the
+	# window is back to the original 240 ticks (WATCH7-2 had widened it to 900 while they went one per target).
 	for i in 240:
 		for e in _run_ev(w, 1):
 			if String(e.type) == "DroneBayHive" and String(e.mode) == "commit" and t_commit < 0:

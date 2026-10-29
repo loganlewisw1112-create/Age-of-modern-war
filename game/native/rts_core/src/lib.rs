@@ -11,6 +11,8 @@
 //!   RtsSteer - batch movement tick (path advance + separation) against an RtsNav grid
 //!   RtsFog   - stateless fog circle stamping (fog.gd, PERF4-2 CR 890)
 //!   RtsCombat - stateless line-of-fire (damage.gd line_clear) + batch helpers for combat.gd
+//!   RtsFormation - exact formations7.gd big-group assignment polish (G7 PERF7K, 0.5.4)
+//!   RtsSpot - exact senses7.gd spot pass ring search + _sees without smoke (G7 PERF7L, 0.5.5)
 
 use godot::prelude::*;
 
@@ -20,8 +22,10 @@ mod combat_prep;
 mod fastdict;
 mod fog;
 mod fog_gather;
+mod formation;
 mod gather;
 mod grid;
+mod spot;
 mod morale_scan;
 mod nav;
 mod steer;

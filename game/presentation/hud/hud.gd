@@ -314,6 +314,7 @@ func _build_ui() -> void:
 	teams.build(self, root)       # G6.1 (SQUAD61)
 	ops7 = preload("res://presentation/ui7/ops_panel.gd").attach(self, root, left)   # G7 OPSUI7 CR 1401: ops room modal + PROTOCOL card
 	preload("res://presentation/ui7/dronebay_card.gd").attach(self, left)   # G7 DRONEBAY7 CR 5737: drone bay card (Drones n/12, LAUNCH / FPV / RECALL / AUTO)
+	preload("res://presentation/ui7/lpreserve_card.gd").attach(self, left)   # G7 LPRES7 (13.9c-34): Last Protocol barracks reserve card (In n/100, RELEASE / RECALL / AUTO)
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)

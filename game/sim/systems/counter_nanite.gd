@@ -886,7 +886,11 @@ static func _pair_follow(w: SimWorld, t: Dictionary) -> void:
 		var x: Dictionary = pr[0]
 		var y: Dictionary = pr[1]
 		var xt := String(x.order.get("type", ""))
-		if (xt == "move" or xt == "attack_move") and String(y.order.get("type", "")) == "idle" \
+		# FLOWC7 (facint7): a move set by the facility traffic controller (fac_drive7, order.fd7) is the controller's own
+		# drive inside the compound (lane routes, bay queue); it drives the partner itself. Dragging the partner here
+		# pulled a strike APC parked in a staging bay back to its garage while its partner queued for the other bay
+		# (taken by a tactical APC): the two met head-on in the lane and the team never loaded (stuck in to_pad).
+		if (xt == "move" or xt == "attack_move") and not x.order.has("fd7") and String(y.order.get("type", "")) == "idle" \
 				and Vector2(x.pos).distance_to(y.pos) > leash and typeof(x.order.get("target")) == TYPE_VECTOR2:
 			SimWorld.Movement.order_move(w, y, Vector2(x.order.target) + Vector2(0.0, 2.5))
 			w.emit("CnPairFollow", {"team": int(t.id), "owner": int(t.fid), "id": int(y.id)})
@@ -944,6 +948,8 @@ static func _tick_exposure(w: SimWorld) -> void:
 		for u in SimWorld.SimIndex.of(w, "unit"):
 			if int(u.id) % 2 != par or not u.has("morale") or bool(u.get("suit", false)):
 				continue
+			if not w.entities.has(int(u.id)):
+				continue   # DET7-2: destroyed since the index was built (a loaded world never lists it): _expose writes g7v + cn7.exposed
 			if String(Content.unit(String(u.def)).get("move_class", "")) != "foot" or not _creep_on(w, u.pos):
 				continue
 			_expose(w, u, float(X.get("creep_rate", 0.02)) * per_s * 2.0)

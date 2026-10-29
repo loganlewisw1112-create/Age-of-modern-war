@@ -68,9 +68,37 @@ func _merge(acc: Dictionary, t: Dictionary) -> void:
 		acc[k] = maxi(int(acc.get(k, 0)), int(t[k]))
 
 
+var _drills: Array = []
+
+
+## WATCH7-3: side me's Sentinels on the wall-walk or a tower deck, per compound face [N, E, S, W] (nearest edge).
+func _faces(w: SimWorld, me: int, cr: Rect2) -> Array:
+	var nf := [0, 0, 0, 0]
+	for id in S7.sentinels_of(w, me):
+		var e: Dictionary = w.entities[int(id)]
+		var gb = w.entities.get(int(e.get("garrisoned_in", -1)))
+		if not (SimWorld.WallWalk7.on_wall(w, e) or (gb != null and String(gb.def) == "cn_tower")):
+			continue
+		var p: Vector2 = Vector2(e.pos)
+		var dd := [absf(p.y - cr.position.y), absf(cr.end.x - p.x), absf(cr.end.y - p.y), absf(p.x - cr.position.x)]
+		var bi := 0
+		for q in 4:
+			if float(dd[q]) < float(dd[bi]):
+				bi = q
+		nf[bi] += 1
+	return nf
+
+
+func _on_ev7(evs: Array) -> void:
+	for ev in evs:
+		if ev is Dictionary and String(ev.get("type", "")) == "SentinelCasualtyDrill":
+			_drills.append(ev.duplicate())
+
+
 func run(pt) -> void:
 	var mv = pt._mv()
 	mv.join_sim()
+	mv.world_events.connect(_on_ev7)
 	if Content.building("a_cn_facility").is_empty() or Content.unit("g7_sent_warden").is_empty():
 		Content._merge_fragment_dir("res://content/g7")
 		Content._link_fragment_production()
@@ -99,6 +127,33 @@ func run(pt) -> void:
 	var t0 := _tally(w, me)
 	pt._log("sent7_posts_manned", t0["in"] >= 8 and t0.wall >= 2, "garrisoned %d, on the wall top %d of %d" % [t0["in"], t0.wall, t0.n])
 	await _shots(pt, mv, O + Vector2(cs * 0.5, 1.5), "walls")
+	# WATCH7-3 (13.9c-38 "heavier sentinel patrol force on the walls"): Sentinels on the wall-walk / tower decks per face
+	# counted once the quiet watch has settled (the beats are walked from the barracks first): up to 40 s
+	var cr: Rect2 = CnFacility.compound_rect(F)
+	var nf := [0, 0, 0, 0]   # N, E, S, W
+	# WATCH7-4: the flow map keeps a hostile rifleman inside alarm_r (the alarm stays latched, the beats merge and the
+	# men shift to the threatened faces), so the per-face count is only meaningful in a TRUE quiet watch: the fixture
+	# removes hostile units inside the alarm zone, waits for the stand-down (S7.threat clear), then counts.
+	var zr: Rect2 = cr.grow(float(S7._tac().get("alarm_r", 22.0)) + 6.0)
+	var quiet := false
+	var nquiet := 0
+	for tries in 60:
+		for e in w.entities.values():
+			if int(e.owner) != me and w.is_enemy(me, int(e.owner)) and zr.has_point(Vector2(e.pos)) and String(e.get("kind", "unit")) != "building":
+				w.destroy(int(e.id), "sent7 quiet-watch fixture")
+		await pt._wait(2.0)
+		mv.join_sim()
+		quiet = S7.threat(w, int(F.id)) == null
+		nquiet = nquiet + 1 if quiet else 0
+		nf = _faces(w, me, cr)
+		print("PLAYTEST sent7 faces try %d quiet %s N %d E %d S %d W %d" % [tries, str(quiet), nf[0], nf[1], nf[2], nf[3]])
+		if nquiet >= 8 and int(nf[0]) >= 6 and int(nf[1]) >= 6 and int(nf[3]) >= 6:
+			break   # 8 quiet samples (16 s) in a row, all three long faces manned
+	print("PLAYTEST sent7 wall_faces N %d E %d S %d W %d quiet_samples %d" % [nf[0], nf[1], nf[2], nf[3], nquiet])
+	pt._log("sent7_wall_faces_heavy", nquiet >= 8 and int(nf[0]) >= 6 and int(nf[1]) >= 6 and int(nf[3]) >= 6, "quiet watch (%d samples), Sentinels on the wall-walk / tower decks: N %d, E %d, S %d, W %d" % [nquiet, nf[0], nf[1], nf[2], nf[3]])
+	await _shots(pt, mv, O + Vector2(cs * 0.5, 1.0), "walls_north", [1.75, 2.5])
+	await _shots(pt, mv, O + Vector2(cs - 1.0, cs * 0.5), "walls_east", [1.75, 2.5])
+	await _shots(pt, mv, O + Vector2(1.0, cs * 0.5), "walls_west", [1.75, 2.5])
 	var tower = null
 	for pid in F.get("parts", []):
 		var b = w.entities.get(int(pid))
@@ -159,11 +214,20 @@ func run(pt) -> void:
 	pt._log("sent7_alarm_raised", alarm, "facility not secure during the assault")
 	pt._log("sent7_tactics_seen", int(acc.get("hold", 0)) > 0 and int(acc.get("crouch", 0)) > 0, "max at once: holding in cover %d, rushing %d, crouched %d, reloading %d, with targets %d, at stand-to %d" % [
 		int(acc.get("hold", 0)), int(acc.get("rush", 0)), int(acc.get("crouch", 0)), int(acc.get("reload", 0)), int(acc.get("target", 0)), int(acc.get("standto", 0))])
+	# WATCH7-3: the oracle counts attackers still FIGHTING (on the map and not down): a downed man (Wounds.is_down,
+	# bleeding out / unconscious) is out of the fight. This corrects what the check measures (WATCH7-2 found it counted
+	# downed men as "left"); the bar (at most half left) is unchanged.
 	var left := 0
+	var downed := 0
 	for id in foes:
-		if w.entities.has(int(id)):
+		var fe = w.entities.get(int(id))
+		if fe == null:
+			continue
+		if Wounds.is_down(fe):
+			downed += 1
+		else:
 			left += 1
-	pt._log("sent7_human_assault_held", left <= foes.size() / 2, "attackers left %d of %d, Sentinels %d" % [left, foes.size(), S7.sentinels_of(w, me).size()])
+	pt._log("sent7_human_assault_held", left <= foes.size() / 2, "attackers still fighting %d of %d (%d more down), Sentinels %d" % [left, foes.size(), downed, S7.sentinels_of(w, me).size()])
 	# ---- assault 2: the Machine on the east face
 	var mfoes := []
 	if foe >= 0:
@@ -189,7 +253,9 @@ func run(pt) -> void:
 	for id in S7.sentinels_of(w, me):
 		var e: Dictionary = w.entities[int(id)]
 		var k := String(S.jobs.get(str(id), {}).get("k", ""))
-		if not e.has("garrisoned_in") and (k == "wall" or k == "int") and String(e.s7) != "bearer":
+		# WATCH7-3: a fighting wall man (not down: the rush casualty keeps his wall job while he lies there; not a
+		# Mender, who now also walks the wall-walk)
+		if not e.has("garrisoned_in") and (k == "wall" or k == "int") and String(e.s7) != "bearer" and String(e.s7) != "mender" 				and not Wounds.is_down(e):
 			runner = int(id)
 			break
 	pt._log("sent7_reload_runner", runner >= 0, "Sentinel %d" % runner)
@@ -230,6 +296,11 @@ func run(pt) -> void:
 			mv.join_sim()
 			if dragged:
 				await _shots(pt, mv, Vector2(ce.pos), "casualty_drag", [1.75, 2.5])
+		print("PLAYTEST sent7 drag_events %s" % str(_drills))
+		if dragged:   # REGFIX7-3: cover is read where the drag ENDS (s7_dg is set when the drag is ordered, before the
+			# dragger reached him; FACINT7's 0.30 was read mid-drag): wait for the Wounds drag job on him to finish
+			await pt._wait_until(func(): mv.join_sim(); return not _drag_on(pt._w(), cas), 20.0)
+			mv.join_sim()
 		var cbd := int(S.jobs.get(str(cas), {}).get("bud", -1))
 		var cb = w.entities.get(cbd)
 		var wst = w.sys_state.get("wounds")
@@ -237,6 +308,8 @@ func run(pt) -> void:
 			S7._cover_v(w, w.cell_of(ce.pos), S7._team(w, me)), str(ce.has("s7_dg")), cbd, str(cb != null), str(cb != null and Wounds.is_down(cb)),
 			str(S.jobs.get(str(cbd), {}).get("k", "")) + "/" + str(S.jobs.get(str(cbd), {}).get("drg", -1)), str(wst != null and (wst.care as Dictionary).has(cbd)), str(S7.threat(w, int(F.id)) != null)])
 		var cov := S7._cover_v(w, w.cell_of(ce.pos), S7._team(w, me))
+		for dv in _drills:   # REGFIX7-3 diagnostic: cover at every ordered drag spot, and where he lies now
+			print("PLAYTEST sent7 drag_spot id %d by %d to %s cover %.2f; now at %s cover %.2f wdby %s" % [int(dv.id), int(dv.by), str(dv.to), S7._cover_v(w, w.cell_of(Vector2(dv.to)), S7._team(w, me)), str(ce.pos), cov, str(ce.get("wdby", -1))])
 		pt._log("sent7_casualty_in_cover", not dragged or cov >= float(S7._tac().get("open_v", 0.35)), "cover %.2f where he was dragged" % cov)
 		pt._log("sent7_buddy_drags", dragged, "casualty %d (hit on a rush: %s) down %s, dragged by %s" % [cas, str(on_rush), str(Wounds.is_down(ce)), str(ce.get("wdby", -1))])
 		var mender: bool = await pt._wait_until(func(): mv.join_sim(); return _mender_near(pt._w(), cas, me), 30.0)
@@ -287,5 +360,17 @@ func _mender_near(w: SimWorld, cas: int, me: int) -> bool:
 	for id in S7.sentinels_of(w, me):
 		var m: Dictionary = w.entities[int(id)]
 		if String(m.s7) == "mender" and Vector2(m.pos).distance_to(e.pos) <= 1.6:
+			return true
+	return false
+
+
+## REGFIX7-3: a Wounds care job is dragging casualty cid (walking to him or pulling him to the drag spot).
+func _drag_on(w: SimWorld, cid: int) -> bool:
+	var st = w.sys_state.get("wounds")
+	if st == null:
+		return false
+	for k in st.care:
+		var cv = st.care[k]
+		if cv is Dictionary and String(cv.get("k", "")) == "drag" and int(cv.get("c", -1)) == cid:
 			return true
 	return false

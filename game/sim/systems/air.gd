@@ -452,8 +452,17 @@ static func _pin_ground(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 	if b != null:
 		p = Vector2(b.pos)
 		if f.has("pad_slot"):
-			var n := (Airfield.field(w, int(b.id)).get("pads", []) as Array).size()
-			p += Vector2(0.9 * float(f.pad_slot) - 0.45 * float(n - 1), 0.0)
+			# LPFIN7: side by side across the craft actually landed on the pad (a lone craft sits centred on it; was
+			# spread over every pad slot, so a lone helicopter stood 0.45 tiles off-centre at slot 0)
+			var pads: Array = Airfield.field(w, int(b.id)).get("pads", [])
+			var n := 0
+			var k := 0
+			for i in pads.size():
+				if int(pads[i].landed) >= 0:
+					if i < int(f.pad_slot):
+						k += 1
+					n += 1
+			p += Vector2(0.9 * float(k) - 0.45 * float(maxi(n, 1) - 1), 0.0)
 		f.erase("pin")
 	elif f.has("pin"):
 		p = f.pin

@@ -52,7 +52,9 @@ func build(scen: String, pre := -1) -> SimWorld:
 			var O: Vector2i = s[2]
 			t._place(w, O + Vector2i(13, 0))
 			t._unit(w, "rifleman", 1, Vector2(O + Vector2i(12, -5)) + Vector2(0.5, 0.5))
-			t._run(w, 30 if pre < 0 else pre)
+			# WATCH7 (13.9c-38): every tower is manned now, so the north towers kill the probe 8 ticks after the scene is built (was later):
+			# save after a 4-tick run-up (was 30) so the death still falls inside the compared window (the check itself is unchanged).
+			t._run(w, 4 if pre < 0 else pre)
 			return w
 		"db":
 			var t = DB.new()
@@ -85,10 +87,19 @@ func build(scen: String, pre := -1) -> SimWorld:
 			for i in ((970 if scen == "apc" else 40) if pre < 0 else pre):
 				t._step(w)
 			if scen == "apckill":
-				# a third team's APC dies right before the save: the live world's SimIndex keeps it, a loaded world never has it
+				# a third team's APC drops its squad, then dies right before the save: the live world's SimIndex keeps the
+				# wreck, a loaded world never lists it (VehDrive7._discover, CR 7080). Empty on purpose: a carrier destroyed
+				# between two ticks with cargo aboard is not a state the sim can be saved in (Transport.sweep runs in the step)
 				dead = int(CnFacility.team(w, t3).apcs[0])
+				var r: Dictionary = w.submit({"type": "unload_all", "carrier": dead, "issuer": 0})
+				ctx.unload_ok = bool(r.ok)
+				for i in 60:
+					t._step(w)
+					if (w.entities[dead].get("cargo", []) as Array).is_empty():
+						break
+				ctx.empty = (w.entities[dead].get("cargo", []) as Array).is_empty()
 				w.destroy(dead, "test", SimWorld.NEUTRAL)
-			ctx = {"t1": t1, "t2": t2, "fid": fid, "dead": dead}
+			ctx.merge({"t1": t1, "t2": t2, "fid": fid, "dead": dead}, true)
 			return w
 		"lp":
 			var w := SimWorld.new_match(LastProtocol.make_config(4242, "industrial_heartland_m"))
@@ -110,8 +121,9 @@ func build(scen: String, pre := -1) -> SimWorld:
 			w.run_ticks(60 if pre < 0 else pre)
 			return w
 		"lpai":
+			# 1200: the Machine's creep has reached the soldiers by then (counter_nanite exposure on a dead unit diverged at 1240)
 			var w := SimWorld.new_match(LastProtocol.make_config(9091, "industrial_heartland_m"))
-			w.run_ticks(600 if pre < 0 else pre)
+			w.run_ticks(1200 if pre < 0 else pre)
 			return w
 	return null
 
@@ -223,6 +235,8 @@ func _scene(scen: String) -> void:
 	var l1 := roundtrip(w)
 	if not check(l1 != null, "[%s] save round trip loads" % scen):
 		return
+	if scen == "apckill":
+		check(bool(ctx.get("unload_ok", false)) and bool(ctx.get("empty", false)) and not w.entities.has(int(ctx.dead)), "[apckill] the third APC unloaded its squad and was destroyed before the save")
 	check_eq(l1.tick, w.tick, "[%s] loaded tick" % scen)
 	check_eq(l1.state_hash(), h0, "[%s] the loaded world hashes like the world it was saved from" % scen)
 	var worlds: Array = [w, l1]

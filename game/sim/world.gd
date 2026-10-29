@@ -87,6 +87,7 @@ const Fissures7 = preload("res://sim/systems/fissures7.gd")  # G7 FISSURE7: cree
 const Turrets7 = preload("res://sim/systems/turrets7.gd") # G7 8 Human A turrets (TURRET7 CR seq 480)
 const WallTurret7 = preload("res://sim/systems/wallturret7.gd") # G7 WTUR7 unmanned facility wall turrets (CR 3636)
 const Sentinels7 = preload("res://sim/systems/sentinels7.gd")  # G7 SENT7 (CR 3681)
+const LpReserve7 = preload("res://sim/systems/lp_reserve7.gd")  # G7 LPRES7 (13.9c-34): Last Protocol 100-Sentinel barracks reserve
 const Engineer7 = preload("res://sim/systems/engineer7.gd")  # G7 ENG7 Facility Engineer (CR 3963)
 const FacDrive7 = preload("res://sim/systems/fac_drive7.gd")  # G7 APCMOV7 facility APC traffic (13.9c-16)
 const VehDrive7 = preload("res://sim/systems/veh_drive7.gd")  # G7 PATH7 CR 6658: open-ground CN APC driver (13.9c-16a)
@@ -97,7 +98,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Sentinels7, Engineer7, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnOps7, DroneBay7, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Sentinels7, LpReserve7, Engineer7, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnOps7, DroneBay7, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -230,6 +231,7 @@ const COMMANDS := {
 	"vanta_loadout": Vanta7,  # G7 AIRV7 CR 4527
 	"vanta_rtb": Vanta7,
 	"dronebay_launch": DroneBay7, "dronebay_recall": DroneBay7, "dronebay_auto": DroneBay7,   # G7 DRONEBAY7 CR 5573
+	"lpres_release": LpReserve7, "lpres_recall": LpReserve7, "lpres_auto": LpReserve7,   # G7 LPRES7 (13.9c-34) barracks reserve card
 	"drone_take": DronePilot,
 	"drone_steer": DronePilot,
 	"drone_release": DronePilot,

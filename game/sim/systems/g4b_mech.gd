@@ -413,6 +413,8 @@ static func charge_target_error(w: SimWorld, fid: int, t: Dictionary) -> String:
 		return "Charges go on buildings, walls or bridges."
 	if int(t.owner) == fid or w.is_ally(fid, int(t.owner)):
 		return "Cannot demolish a friendly building."
+	if Damage.Roof7.is_roof(t) and Damage.Roof7.class_out("demolition"):
+		return "Out of reach: that gun is mounted on the roof."   # G7 ROOF7 (13.9c-39)
 	return ""
 
 

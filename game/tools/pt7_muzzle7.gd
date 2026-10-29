@@ -40,6 +40,11 @@ func _hold(w: SimWorld, foes: Array, pinned: Array, supp: Array) -> void:
 		var e = w.entities.get(id)
 		if e != null:
 			e.hp = float(Content.unit(String(e.def)).get("hp", 100.0)) * 4.0
+			if String(e.def) == "m_tracked" and String((e.order as Dictionary).get("type", "")) != "hold_fire":
+				# REGFIX7: the Machine tanks are passive targets. Since WOUND7 a hit on a single soldier is a wound (hp top-ups
+				# no longer keep him in the fight): the tanks' fire put the riflemen down as casualties (buddy care, then
+				# killed) before their group's turn, so the posed riflemen never fired. Our own shooters are unchanged.
+				e.order = {"type": "hold_fire"}
 	for id in pinned:
 		var e = w.entities.get(id)
 		if e != null:
@@ -55,6 +60,9 @@ func _hold(w: SimWorld, foes: Array, pinned: Array, supp: Array) -> void:
 
 func _dt(pt) -> float:
 	return pt.get_process_delta_time() if pt.has_method("get_process_delta_time") else 0.016
+
+
+var _gone_n := 0
 
 
 func run(pt) -> void:
@@ -119,6 +127,11 @@ func run(pt) -> void:
 	mv.issue({"type": "attack", "unit_ids": [groups.air[0][1]], "target_id": drones[0]})  # gun drone: the Machine drone
 	pt._log("muzzle7_lineup_spawned", groups.turrets[0].size() == bl.size(), "%d of %d turrets" % [groups.turrets[0].size(), bl.size()])
 	var fb0 := int(fx.muzzle7.fallback)
+	mv.world_events.connect(func(evs: Array):   # REGFIX7-3 diagnostic (no check changed): who fired a shot drawn after it was gone
+		for ev in evs:
+			if ev is Dictionary and ev.has("shooter") and not pt._w().entities.has(int(ev.shooter)) and _gone_n < 6:
+				_gone_n += 1
+				print("PLAYTEST muzzle7 gone_shot t%d %s" % [pt._w().tick, str(ev).left(300)]))
 	var t0 := int(fx.muzzle7.tip)
 	var shots := []
 	var inside := 0
@@ -188,7 +201,10 @@ func _apc(pt, mv, w: SimWorld, b: Vector2, foes: Array, pinned: Array, supp: Arr
 	var a0 := int(fx.muzzle7.get("apc", 0))
 	var maxdrawn := 0
 	var n_shots := 0
-	while waited < 40.0 and n_shots < 5:
+	var kinds := {}    # "front" / "rear" / "rws" -> true once that gun kind fired
+	# REGFIX7-4: the loop stopped after 5 screenshots; when the RWS and the two rear pods used them up first (r3b:
+	# rear 6, RWS 7) the front pod had not fired yet and apc_both_guns read 0. Run on until every gun kind fired.
+	while waited < 40.0 and (n_shots < 5 or kinds.size() < 3):
 		_hold(w, foes, pinned, supp)
 		await pt.get_tree().process_frame
 		var dt := _dt(pt)
@@ -225,9 +241,11 @@ func _apc(pt, mv, w: SimWorld, b: Vector2, foes: Array, pinned: Array, supp: Arr
 			if rear:
 				rear_off = maxf(rear_off, off)
 			got[key] = int(got.get(key, 0)) + 1
-			# shoot: the first flash of each gun, and rear-pod flashes laid well off travel
-			if got[key] == 1 or (rear and off > 0.6 and got[key] <= 3):
-				var gname := ("rear" if rear else "front") if strike else "rws"
+			var gname := ("rear" if rear else "front") if strike else "rws"
+			var new_kind := not kinds.has(gname)
+			kinds[gname] = true
+			# shoot: the first flash of each gun, and rear-pod flashes laid well off travel (at most 5, + a gun kind's first)
+			if (n_shots < 5 or new_kind) and (got[key] == 1 or (rear and off > 0.6 and got[key] <= 3)):
 				var nm := "muzzle7_apc_%d_%s_%s_off%d" % [n_shots, dn, gname, int(rad_to_deg(off))]
 				await pt._shot(nm)
 				shots.append(nm)

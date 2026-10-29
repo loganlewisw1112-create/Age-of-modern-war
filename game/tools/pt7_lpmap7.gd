@@ -93,16 +93,39 @@ func run(pt) -> void:
 	await _stop(pt, mv, cam, "overview", Vector2(256, 256), 0.04)
 	# BASE7-3: stops aimed at the BASE7-2 layout (rings 87 / 73 / 53 across = half 43 / 36 / 26, facility 3 north of C,
 	# airfield inside the core ring): the whole base, each wall, the outer gate yard, the airfield and the facility.
-	var rh: Array = [43.0, 36.0, 26.0]
+	# LPSHRINK7-2 (13.9c-36): two rings (61x61 outer, 47x47 core), read from the map
+	var rh: Array = [float(lp.base.rings[0].half), float(lp.base.rings[0].half) - 5.0, float(lp.base.rings[1].half)]
 	var fc: Vector2 = Vector2(lp.base.facility) + Vector2(float(lp.base.facility_size), float(lp.base.facility_size)) * 0.5
+	# LPSHRINK7-2: the whole squeezed base and the loaded helipad column by day too (Last Protocol runs at dusk by
+	# default; fac_atmo7's display-only time-of-day override)
+	var atmo = mv.get("fac_atmo7")
+	if atmo != null and atmo.has_method("set_time_of_day"):
+		atmo.set_time_of_day("day")
+		await pt._wait(1.0)
+		await _stop(pt, mv, cam, "base_day", C, 0.32)
+		var hps0: Array = (lp.base.get("airfield", {}) as Dictionary).get("helipads", [])
+		if not hps0.is_empty():
+			await _stop(pt, mv, cam, "helipads_day", (Vector2(hps0[1]) + Vector2(hps0[hps0.size() - 2])) * 0.5 + Vector2.ONE, 0.75)
+		atmo.set_time_of_day("")
+		await pt._wait(1.0)
 	await _stop(pt, mv, cam, "base_z1", C, 0.3)
 	await _stop(pt, mv, cam, "base_z2", C, 0.5)
 	await _stop(pt, mv, cam, "outer_ring", C + Vector2(0, -rh[0]), 0.8)
 	await _stop(pt, mv, cam, "outer_gate_s", C + Vector2(0, rh[0] - 3.0), 0.8)
 	await _stop(pt, mv, cam, "outer_corner_ne", C + Vector2(rh[0], -rh[0]), 0.8)
-	await _stop(pt, mv, cam, "economy_ring", C + Vector2(rh[1], 0), 0.6)
+	await _stop(pt, mv, cam, "economy_row", C + Vector2(rh[1], 0), 0.6)
 	await _stop(pt, mv, cam, "core_ring", C + Vector2(0, rh[2]), 0.6)
 	var af: Dictionary = lp.base.get("airfield", {})
+	# LPSHRINK7-2: the helipad column behind the east core gate, every pad loaded (13.9c-36)
+	var hps: Array = af.get("helipads", [])
+	if not hps.is_empty():
+		var hc := Vector2.ZERO
+		for hp in hps:
+			hc += Vector2(hp) + Vector2.ONE
+		hc /= float(hps.size())
+		await _stop(pt, mv, cam, "helipads", hc, 0.55)
+		await _stop(pt, mv, cam, "helipads_n", Vector2(hps[1]) + Vector2.ONE, 1.0)
+		await _stop(pt, mv, cam, "helipads_s", Vector2(hps[hps.size() - 2]) + Vector2.ONE, 1.0)
 	if af.has("strip"):
 		await _stop(pt, mv, cam, "airfield", Vector2(af.strip) + Vector2(0.5, 0.5), 0.6)
 	await _stop(pt, mv, cam, "facility_z1", fc, 0.6)

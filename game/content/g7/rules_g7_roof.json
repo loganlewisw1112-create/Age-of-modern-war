@@ -1,0 +1,8 @@
+{
+  "_note": "G7 ROOF7 (G7_REFERENCE 13.9c-39, owner choice 'Yes, out of reach', 2026-10-28): roof mounts (building defs with roof_mount: true, e.g. cn_ciws7 on the command-centre roof) cannot be hit by short-range ground attacks: a hit from a NON-AIR shooter whose weapon class is listed here. Guns, rockets, artillery, flame and aircraft keep their reach. Read by sim/systems/roof7.gd.",
+  "rules": {
+    "roof7": {
+      "out_of_reach_classes": ["melee", "demolition"]
+    }
+  }
+}

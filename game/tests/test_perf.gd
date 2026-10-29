@@ -107,15 +107,19 @@ func test_tier_promotion_on_contact_and_no_duplication() -> void:
 
 func test_attack_order_promotes_at_once() -> void:
 	var w := _clean()
-	var a := _place(w, "rifleman", 0, Vector2(8, 8))
-	var b := _place(w, "rifleman", 1, Vector2(86, 86))
+	# G7 (SUITMISC7): the tier bucket grew from 36 to 41 tiles (G7 content: a_g7_vtol_pad size 6, g7_a_fpv speed 14), so on
+	# the 96-tile map the side-1 HQ (cell 80) now falls in the 3x3 neighbourhood of a unit at (8, 8): that unit is
+	# correctly FULL (conservative). The lone unit is therefore side 1's, in the far corner (bucket 2), whose 3x3 holds
+	# only its own HQ; the enemy HQ (cell 13) is in bucket 0. Same property under test.
+	var a := _place(w, "rifleman", 1, Vector2(86, 86))
+	var b := _place(w, "rifleman", 0, Vector2(8, 8))
 	w.run_ticks(17)
 	check(Tiers.is_reduced(w.entities[a]), "lone far unit is REDUCED")
-	w.entities[b].pos = Vector2(w.entities[a].pos) + Vector2(5, 0)  # dropped next to it
+	w.entities[b].pos = Vector2(w.entities[a].pos) + Vector2(0, -5)  # dropped next to it (the +x spot was not visible to side 1)
 	preload("res://sim/hot_state.gd").touch(w, b)  # CORE10K-3: direct pos/path write -> hot state
 	w.run_ticks(4 - w.tick % 4)   # next fog recompute: b becomes visible (tiers recompute only every 8)
 	check(Tiers.is_reduced(w.entities[a]), "still REDUCED until the next tier recompute")
-	var ev := do_cmd(w, 0, {"type": "attack", "unit_ids": [a], "target_id": b})
+	var ev := do_cmd(w, 1, {"type": "attack", "unit_ids": [a], "target_id": b})
 	check_eq(rejected_reason(ev), "", "attack accepted")
 	check(not Tiers.is_reduced(w.entities[a]), "explicit attack order -> FULL immediately")
 

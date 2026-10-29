@@ -18,19 +18,36 @@ static func _m(motion, fn: String, id: int) -> float:
 	return float(motion.call(fn, id))
 
 
+const MotionT = preload("res://presentation/view/motion.gd")
+## G7 PERFFPS7: Motion.recoil / turn_rate / track_phase read straight from the motion state (no has_method + call per
+## read on the per-vehicle hot path); the same values. st = motion.vs[id] or null; k = Motion.S_KICK / S_TURN / S_DIST.
+static func _ms(motion, st, fn: String, id: int) -> float:
+	if not (motion is MotionT):
+		return _m(motion, fn, id)
+	if st == null:
+		return 0.0
+	match fn:
+		"recoil":
+			return float(st[MotionT.S_KICK]) / MotionT.KICK_T
+		"turn_rate":
+			return float(st[MotionT.S_TURN])
+	return float(st[MotionT.S_DIST])
+
+
 ## Final sheet column. base = the column the layer picked (idle / move / fire / special); idle / moving say
 ## whether base is the plain idle or move frame (specials such as parked, unload, dive are never replaced).
 static func pick(v: Dictionary, base: int, idle: bool, moving: bool, motion, id: int, hp_frac: float, t: float) -> int:
 	if v.is_empty():
 		return base
-	if v.has("recoil") and _m(motion, "recoil", id) > RECOIL and (idle or moving or not v.has("bank_l")):
+	var st = (motion as MotionT).vs.get(id) if motion is MotionT else null
+	if v.has("recoil") and _ms(motion, st, "recoil", id) > RECOIL and (idle or moving or not v.has("bank_l")):
 		return int(v.recoil)
 	if v.has("bank_l") and v.has("bank_r") and (idle or moving):
-		var tr := _m(motion, "turn_rate", id)
+		var tr := _ms(motion, st, "turn_rate", id)
 		if absf(tr) > BANK:
 			return int(v.bank_l) if tr < 0.0 else int(v.bank_r)
 	if moving:
-		var ph := _m(motion, "track_phase", id)
+		var ph := _ms(motion, st, "track_phase", id)
 		if v.get("move") is Array and not (v.move as Array).is_empty():
 			var mv: Array = v.move
 			return int(mv[posmod(int(floor(ph * WALK_PX)), mv.size())])

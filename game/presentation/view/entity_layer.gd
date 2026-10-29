@@ -168,6 +168,7 @@ var _atlas_at: float = float(OS.get_environment("ANIM61_ATLAS_AT")) if OS.has_en
 var _units_drawn := 0
 var _mcls: Dictionary = {}    # def -> Motion class
 var _post: Dictionary = {}    # id -> Motion posture bits from REAL61 Morale (pinned / suppressed / broken)
+var gone7: Dictionary = {}    # G7 REGFIX7-3: id -> its last drawn7 record, for shots drawn after the shooter was removed
 var drawn7: Dictionary = {}   # G7 MUZZLE7 CR 5592: id -> [sheet column, facing row, drawn anchor (after air lift), anim time] (fx_layer barrel-tip flashes)
 var apc_gun7 = ApcGun7.new()   # G7 MUZZLE7-2 CR 5911: CN APC pods / RWS drawn over the hull (traverse, recoil, flash); fx_layer reads it
 var _fat: Dictionary = {}     # id -> REAL61 Fatigue level 0..1
@@ -304,6 +305,10 @@ func on_destroyed(id: int) -> void:
 	else:
 		motion.forget(id)
 	_post.erase(id)
+	if drawn7.has(id):   # REGFIX7-3: a shooter killed in the step it fired: its last flash still leaves its drawn barrel
+		gone7[id] = drawn7[id]
+		if gone7.size() > 256:
+			gone7.clear()
 	drawn7.erase(id)
 	_wall_dirty = true   # ART7F: a wall-line part may be gone (re-pick its neighbours' joins)
 	_fat.erase(id)
@@ -332,6 +337,26 @@ func _refresh_post(id: int, e: Dictionary) -> void:
 	_chev[id] = RealInfo.chevron(e)
 	if AmmoBearer.is_bearer(e):
 		_pips[id] = 1 + clampi(ceili(AmmoBearer.load_frac(e) * 3.0), 0, 3)
+
+
+## G7 PERFFPS7: false when Motion.g7_col_sq(a61, b, posture, ...) can only return -1 (no back-off / throw / entry / gait /
+## stack state that picks a G7 column), so the per-soldier call is skipped; true otherwise (the call decides).
+var _dfl_names := PackedStringArray()   # names _dfl was built from (reset check)
+var _dfl := PackedInt32Array()   # G7 PERFFPS7: _def_flags per snap defs index (extended in refresh as the table grows)
+static func _def_flags(nm: String) -> int:
+	return (1 if BAY_ART.has(nm) else 0) | (2 if nm == "a_vtol_dropship" else 0)
+
+
+static func _sq_col_may(b: int, posture: int) -> bool:
+	var moving := (posture & Motion.P_MOVING) != 0
+	if moving and b & 4:   # _SQ_BACK
+		return true
+	if posture & Motion.P_FIRING:
+		return (posture & Motion.P_THROW) != 0
+	var gi := (b >> 6) & 3
+	if moving:
+		return (b & 16) != 0 or gi != 0   # _SQ_ENTRY, any gait
+	return (b & 8) != 0 or gi == 1 or gi == 2   # _SQ_STACK, crouch / duck
 
 
 ## G6.1: small procedural marks in the atlas: rank chevrons chev:1..4 (gold), bearer pips pip:0 / pip:1.
@@ -543,6 +568,14 @@ func refresh() -> void:
 	var has_x7 := not x7.is_empty()
 	var stick := int(sn.get("tick", 0))
 	var units_drawn := 0
+	# G7 PERFFPS7: the snap defs table only appends within one world, but a new world (new match / playtest scene)
+	# builds its own table from scratch: drop the flags when the cached names are no longer its prefix (ORCH fix).
+	if _dfl_names.size() > defs.size() or (_dfl_names.size() > 0 and defs.slice(0, _dfl_names.size()) != _dfl_names):
+		_dfl.clear()
+		_dfl_names.clear()
+	while _dfl.size() < defs.size():
+		_dfl.append(_def_flags(defs[_dfl.size()]))
+		_dfl_names.append(defs[_dfl_names.size()])
 	walls_linked = 0
 	var pframe := Engine.get_process_frames()
 	_bay_crafts(n_u, far, defs, def_a, flg_a, pos_a, fac_a, ids)
@@ -625,12 +658,17 @@ func refresh() -> void:
 		elif fl & RenderSnap.FLAG_S7 and has_s7 and ow != pf and not allies.has(ow) 				and not RenderSnap.s7_sees(s7v, id, int(s7ot.get(ow, -1)), my_team):
 			continue   # G7 PERF7D: hidden by Senses7 from this team (= the old FLAG_HID + hid_spot rule)
 		var dname: String = defs[def_a[i]]
+		var dfl := -1   # G7 PERFFPS7: per-def flags (1 BAY_ART, 2 the XL-remapped dropship) from the append-only snap defs table
+		if def_a[i] < _dfl.size():
+			dfl = _dfl[def_a[i]]
 		var mod6 := Color.WHITE
 		if fl & RenderSnap.FLAG_G6 and has_g6:
 			# G6 (VIEW6): garrisoned units ride inside (pips on the building); art override (e.art_def) and
 			# the mimic disguise for this viewer; own cloaked / submerged units translucent
 			var g6e = g6u.get(id)
-			if G6Vis.hidden_inside(g6e):
+			# WATCH7-3 (13.9c-38 "every tower manned", owner: the walls read empty): a man garrisoned in a facility watch
+			# tower stands on its open deck (the tower's wall-walk piece, wwv[5]) and is drawn there, not hidden inside.
+			if G6Vis.hidden_inside(g6e) and not (wwv != null and (wwv as Array).size() > 5 and bool(wwv[5])):
 				# G7 (LOOK7): roof cut away (own / allied troops clearing inside): the men inside are drawn
 				var gb = statics.get(int(g6e.get("gar", -1))) if g6e is Dictionary else null
 				if gb is Dictionary and roof_open_for(gb.get("roof_open"), pf, allies) and (ow == pf or allies.has(ow)):
@@ -648,6 +686,7 @@ func refresh() -> void:
 				else:
 					gc6.art_override += 1
 				dname = an
+				dfl = _def_flags(dname)   # G7 PERFFPS7
 			mod6 = G6Vis.modulate(g6e, ow == pf or allies.has(ow))
 			if g6e != null and int(g6e.get("cloak", 0)) > 0:
 				gc6.cloaked += 1
@@ -665,9 +704,12 @@ func refresh() -> void:
 			var isz: Vector2 = (ic[1] as Vector2) * inv_z
 			_push(2, sp.y, art.atlas.page_of(ic[0]), art.atlas.rect_of(ic[0]), sp + (ic[2] as Vector2) * inv_z, isz, _team.get(ow, neutral))
 			continue
-		if XL_REMAP and dname == "a_vtol_dropship":
+		if dfl < 0:
+			dfl = _def_flags(dname)   # a def the table has not seen yet
+		if XL_REMAP and dfl & 2:
 			dname = "g7_a_vtol_dropship_xl"  # G7 (CNFAC7-2): the upgraded, enlarged VTOL dropship
-		if BAY_ART.has(dname):
+			dfl = _def_flags(dname)
+		if dfl & 1:   # = BAY_ART.has(dname) (flags follow dname through the G6 override and the XL remap)
 			var gb = g7u.get(id) if has_g7 else null
 			if not (gb is Dictionary and (gb as Dictionary).has("bay")):
 				gb = {"bay": "closed"} if (fl & RenderSnap.FLAG_LANDED) != 0 else null   # landed, ramp up
@@ -709,7 +751,7 @@ func refresh() -> void:
 			var mfac: float = fac_a[i]
 			if gv != null:
 				mfac = Motion.g7_facing(gv, mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
-			elif sqb != 0:
+			elif sqb & 34:   # G7 PERFFPS7: only the hull (32) / sector (2) bits change the facing (Motion.g7_facing_sq)
 				mfac = Motion.g7_facing_sq(sqb, sq7a[i], sq7h[i], mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
 			motion.step(id, mcls, pos, mfac, bits, t)
 			var mo: Vector2 = motion.out_off
@@ -721,7 +763,9 @@ func refresh() -> void:
 				var of: float = motion.out_face
 				mpx += Vector2(cos(of) - sin(of), (cos(of) + sin(of)) * 0.5).normalized() * 2.0
 			sp += Vector2((mo.x - mo.y) * 32.0, (mo.x + mo.y) * 16.0) + mpx
-			motion.mark_screen(id, sp)
+			var ms: PackedFloat32Array = motion.out_s   # G7 PERFFPS7: = motion.mark_screen(id, sp) on the state step() just ran
+			ms[Motion.S_SX] = sp.x
+			ms[Motion.S_SY] = sp.y
 			if motion.out_flash > 0.0:
 				var fk: float = motion.out_flash
 				mod6 = Color(mod6.r * (1.0 + 0.9 * fk), mod6.g * (1.0 + 0.6 * fk), mod6.b * (1.0 + 0.5 * fk), mod6.a)
@@ -729,7 +773,7 @@ func refresh() -> void:
 		var g7c := -1
 		if gv != null and not a61.is_empty():
 			g7c = Motion.g7_col(a61, gv, bits, t, Motion.seed_of(id), stick)
-		elif sqb != 0 and not a61.is_empty():
+		elif sqb != 0 and not a61.is_empty() and _sq_col_may(sqb, bits):   # G7 PERFFPS7: skip the call when it can only return -1
 			g7c = Motion.g7_col_sq(a61, sqb, bits, t, Motion.seed_of(id))   # G7 PERF7D: no dict per formation soldier
 		var pg: int = c[2]
 		var ad = g5air.get(id) if has_air else null
@@ -762,7 +806,7 @@ func refresh() -> void:
 		elif fl & RenderSnap.FLAG_FIRING:
 			fi = c[20] if (fl & RenderSnap.FLAG_DRONE and c[20] >= 0) else c[7]
 			if not a61.is_empty():  # G6.1: fire standing / crouched (suppressed) / prone (pinned), cosmetic reload
-				fi = Motion.inf_col(a61, bits, t, Motion.seed_of(id), motion.firing_for(id), float(_fat.get(id, 0.0))) if mcls >= 0 else Motion.inf_col(a61, bits, t, (id % 61) * 0.0164)
+				fi = Motion.inf_col(a61, bits, t, Motion.seed_of(id), float(motion.out_s[Motion.S_FIRE]), float(_fat.get(id, 0.0))) if mcls >= 0 else Motion.inf_col(a61, bits, t, (id % 61) * 0.0164)
 				gc61.a61 += 1
 		elif ad != null and c[21] >= 0 and fl & RenderSnap.FLAG_LANDED:
 			# G5 (ART-AIR ground_frames): parked in a hangar / on a pad, else landed in the open
@@ -835,13 +879,17 @@ func refresh() -> void:
 				var ts: Array = art.turret_src(v61.turret, _team.get(ow, neutral), String(_ck.get(ow, "x")))
 				if hc >= 0 and not ts.is_empty():
 					fi = hc
-					var hrow := motion.row_h(id, motion.out_face)   # PATH7-2 CR 6994: hysteresis
+					var hrow: int = motion.out_row   # PATH7-2 CR 6994: hysteresis (= motion.row_h(id, motion.out_face); G7 PERFFPS7)
+					motion.out_s[Motion.S_ROW] = float(hrow + 1)
 					var tcol := 2 if motion.recoil(id) > VehAnim61.RECOIL else (1 if vfire else 0)
 					var tsz := Vector2(ts[2], ts[3])
 					var tb7 = (g7u.get(id) as Dictionary).get("tb") if has_g7 and g7u.has(id) else null   # G7 TURRET7B CR 6354 (13.9c-30): drawn on the SIMULATED turret bearing
 					var trow: int = posmod(int(round(float(tb7) * FACING_INV)), 8) if tb7 != null else hrow   # never laid: hull-forward
 					tur = [ts[0], (ts[1] as Vector2) + Vector2(tcol, trow) * tsz, ts[4], tsz]
-		var row := motion.row_h(id, motion.out_face) if mcls >= 0 else posmod(int(round(fac_a[i] * FACING_INV)), 8)   # PATH7-2 CR 6994: hysteresis
+		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
+		if mcls >= 0:   # PATH7-2 CR 6994: hysteresis row (= motion.row_h(id, motion.out_face) from the state step() just ran; G7 PERFFPS7)
+			row = motion.out_row
+			motion.out_s[Motion.S_ROW] = float(row + 1)
 		var fsz := Vector2(c[4], c[5])
 		var layer := 0
 		var lift_now := 0.0
@@ -857,7 +905,7 @@ func refresh() -> void:
 			sp.y -= float(gv.bz) - lift_now
 			layer = 1
 		if mcls >= 0:
-			drawn7[id] = [fi, row, sp, t]   # G7 MUZZLE7 CR 5592: what the muzzle flash is matched to
+			drawn7[id] = [fi, row, sp, t, dname]   # G7 MUZZLE7 CR 5592: what the muzzle flash is matched to (+ art name: REGFIX7-3)
 		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not (c[26] as Dictionary).is_empty() and (c[27] < 0 or G5Art.on_water(terr_w, pos, mw)):
 			# G5 (VIEW5-2, ART-NAV): wake sheet under the hull (fx_layer skips its line wake for these defs)
 			var wk: Dictionary = c[26]
@@ -915,7 +963,7 @@ func refresh() -> void:
 		if not v61.is_empty() and ApcGun7.DEFS.has(dname):   # G7 MUZZLE7-2 CR 5911 (13.9c-28a): APC pods / RWS over the hull, same depth key
 			for gs in apc_gun7.sprites(self, id, dname, row, motion.out_face if mcls >= 0 else fac_a[i], t, _team.get(ow, neutral), String(_ck.get(ow, "x")), sp):
 				_push(layer, float(ky), gs[0], gs[1], sp + (gs[2] as Vector2), gs[3], mod6)
-		if lod == 0 and motion_on:
+		if lod == 0 and motion_on and (int(_chev.get(id, 0)) > 0 or int(_pips.get(id, 0)) > 0):   # G7 PERFFPS7: no call for unmarked men
 			_push_marks(id, sp, c, layer, hl, gc61)
 		if fl & RenderSnap.FLAG_SLUNG:
 			_g5_slung(sling.get(id, []), id, ow, fac_a[i], sp, t, gc5)
@@ -1021,7 +1069,10 @@ func refresh() -> void:
 		var col: Color = _team.get(ow if kind != "wreck" else int(e.get("from_owner", -1)), neutral)
 		art.resolve_static(e, col, String(_ck.get(ow, "x")))
 		if art.out_page >= 0:
-			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+			# LPFIN7: a helipad is a flat deck: drawn under everything standing on it like the dropship pad (it sorted
+			# by its centre, so a helicopter parked on it sorted behind and only its tail showed past the pad's corner)
+			var fdep: float = 1.0 - float(Y_OFF) if kind == "building" and _flat_pad(String(e.get("def", ""))) else gs.y
+			_push(0, fdep, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 	_push_strips(sn, vr, pf, mem, statics, gc5)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
@@ -1713,6 +1764,16 @@ func _facb_px(e: Dictionary) -> bool:
 			if _lb_cells.get(q, "") == "baffle" or _wall_cells.has(q):
 				col |= 1 << k
 	return art.resolve_sheet({"file": String(b2.states.built.file), "fw": int(b2.fw), "fh": int(b2.fh), "pivot": b2.pivot}, col, dmg)
+
+
+## LPFIN7: flat helicopter decks (building defs with air_field "helipad"), cached per def.
+var _fpad: Dictionary = {}
+func _flat_pad(def: String) -> bool:
+	var v = _fpad.get(def)
+	if v == null:
+		v = String(Content.building(def).get("air_field", "")) == "helipad"
+		_fpad[def] = v
+	return v
 
 
 ## ART7F: a_g7_vtol_pad art (rot_<facing_i> = approach side; _damaged under 50% hp; build stages).

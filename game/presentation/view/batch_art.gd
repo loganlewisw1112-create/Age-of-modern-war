@@ -625,8 +625,9 @@ func _state_code(e: Dictionary, kind: String) -> int:
 		var g5v := _g5_variant(String(e.get("def", "")))
 		if g5v != "":
 			# G5 (VIEW5): ART-BLD variants (hangar level, field facing, shore side, damaged, build)
-			var tb7 := 0 if e.get("tb") == null else (1 + posmod(roundi(float(e.tb) / (PI / 8.0)), 16)) * 1048576   # G7 TURRET7B CR 6354 (13.9c-30): turret head bearing (16 steps) in the stamp
-			return -tb7 - 1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
+			var tb7 := 0 if e.get("tb") == null else (1 + posmod(roundi(float(e.tb) / (PI / 16.0)), 32)) * 1048576   # G7 TURRET7B CR 6354 (13.9c-30): turret head bearing in the stamp (CIWS7-5: 32 steps, the CIWS mount has 32 yaw frames)
+			var el7 := clampi(int(e.get("facing_i", 0)) / 8, 0, 7) * 65536   # G7 CIWS7-5: CIWS elevation band (facing_i = band * 8 + phase)
+			return -tb7 - el7 - 1000 - (int(e.get("level", 0)) * 64 + posmod(int(e.get("facing_i", 0)), 4) * 16
 				+ posmod(int(e.get("water_d", 0)), 4) * 4 + (2 if _damaged(e) else 0)
 				+ (1 if float(e.get("air_build", 0.0)) > 0.0 else 0)) - (4096 if not bool(e.get("built", true)) else 0) 				- 8192 * clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2) 				- (32768 if int(e.get("firing", 0)) > 0 else 0)  # G6 (VIEW6): rot_<f>_fire
 		if bool(e.get("built", true)):
@@ -659,7 +660,7 @@ func _static_art(e: Dictionary, kind: String, team: Color, ck: String) -> void:
 				st = _fort_state(b.states, e)  # G4 (FORT/ART-F): N1 E2 S4 W8 neighbour mask
 			var s: Dictionary = b.states.get(st, b.states.built)
 			var img: Image = ArtCatalog._sheet(String(s.file), String(s.mask), team)
-			_whole(String(s.file) + "|" + ck, img, b.pivot)
+			_whole(String(s.file) + "|" + ck, img, s.get("pivot", b.pivot))   # G7 CIWS7-5: cropped states carry their own pivot
 		"resource":
 			var rs: Dictionary = man.get("resources", {})
 			var r: Dictionary = rs.get(String(e.get("res", def)), rs.get(def, {}))

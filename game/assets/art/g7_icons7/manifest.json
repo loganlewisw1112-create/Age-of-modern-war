@@ -1,0 +1,14 @@
+{
+ "group": "g7_icons7",
+ "icons": {
+  "a_g7_camera": "icons/a_g7_camera.png",
+  "a_g7_vtol_pad": "icons/a_g7_vtol_pad.png",
+  "bridge_span": "icons/bridge_span.png",
+  "cn_ammo_locker": "icons/cn_ammo_locker.png",
+  "cn_armory": "icons/cn_armory.png",
+  "cn_ecp_baffle": "icons/cn_ecp_baffle.png",
+  "cn_link_wall": "icons/cn_link_wall.png",
+  "cn_magazine": "icons/cn_magazine.png"
+ },
+ "version": 1
+}

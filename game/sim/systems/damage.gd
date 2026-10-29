@@ -20,6 +20,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5):
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): SimIndex.g6h().on_destroyed(w, target) runs right before a target at 0 HP is
 ## removed (after Medical declined to keep it as Wounded), when the DESTROY bit of SimIndex.g6m(w) is set.
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
+const Roof7 = preload("res://sim/systems/roof7.gd")   # G7 ROOF7 (13.9c-39): roof mounts out of reach of ground melee / demolition
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
@@ -86,6 +87,8 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			return
 		near_miss(w, int(shooter.owner), target.pos, float(sup.get("per_near_miss", 8)), sf)
 		return
+	if target.kind == "building" and Roof7.shielded(shooter, s, target):
+		return   # G7 ROOF7 (13.9c-39): a melee / demolition hit from the ground cannot reach a roof mount (a charge at the building's foot included)
 	var cls := String(s.get("cls", ""))
 	var dmg := base_damage(s, target)
 	var side := ""
@@ -101,7 +104,10 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	dmg = snappedf(dmg, Q)
 	var zr = null   # G7 (WOUND7): hit zones for single-soldier infantry (Wounds.applies); else plain hp as before
 	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
+		var tz := Time.get_ticks_usec() if SimIndex.profiling else 0
 		zr = SimWorld.Wounds.apply_hit(w, target, "", dmg, shooter)
+		if SimIndex.profiling:
+			SimIndex.pt("dmg.zone", tz)
 	else:
 		target.hp = snappedf(float(target.hp) - dmg, Q)
 	var cev = w.cache.get("cmb_ev")   # SIM10K: Combat.tick wakes skipped shooters hit / aiming at this

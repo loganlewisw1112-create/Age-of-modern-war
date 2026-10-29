@@ -37,6 +37,7 @@ const FAR := {
 	"explosion_hero": "explosion_far", "explosion_purge": "", "impact_aps": "", "impact_stomp": "",
 	"creep_spread": "", "creep_growth": "", "creep_purged": "", "threat_packhunter": "", "threat_leech": "",
 	"threat_weaver": "", "threat_slug": "", "threat_cocoon": "", "threat_spawn": "",
+	"shot_ciws7_brrt": "shot_ciws7_brrt_far", "shot_ciws7_spinup": "", "shot_ciws7_spindown": "",   # CIWS7-4 13.9c-32a
 }
 
 static var _man: Dictionary = {}

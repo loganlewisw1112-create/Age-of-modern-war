@@ -203,6 +203,23 @@ func muzzle_point(ev: Dictionary, from: Vector2, to: Vector2, cls: String) -> Ar
 			return [anchor + Muzzle7.pick(tips, n), anchor, true]
 		ground = anchor
 	elif sid >= 0:
+		# G7 REGFIX7-3: the shooter was killed in the step it fired (removed before its shot is drawn): the flash still
+		# leaves the barrel as last drawn (entity_layer.gone7), not the centre / height guess
+		var el0 = mv.get("entity_layer") if mv != null else null
+		var g7 = el0.get("gone7") if el0 != null else null
+		var dw7 = el0.get("drawn7") if el0 != null else null
+		var r0 = (dw7 as Dictionary).get(sid) if dw7 is Dictionary else null   # its Destroyed not handled yet this frame
+		if r0 == null and g7 is Dictionary:
+			r0 = (g7 as Dictionary).get(sid)
+		if r0 is Array and (r0 as Array).size() >= 5:
+			var mo0 = el0.get("motion")
+			if mo0 == null or float(mo0._now) - float(r0[3]) <= 0.5:
+				var dn0 := String(r0[4])
+				var tp0: Array = Muzzle7.unit_tips(dn0, _pose_of_col(dn0, int(r0[0])), int(r0[1]))
+				if not tp0.is_empty():
+					muzzle7.tip += 1
+					muzzle7["gone"] = int(muzzle7.get("gone", 0)) + 1
+					return [(r0[2] as Vector2) + Muzzle7.pick(tp0, n), r0[2], true]
 		ground.y -= float(_snap_lift(sid)[0])   # no live entity (replays / tests): still at the aircraft's altitude
 	muzzle7.fallback += 1
 	muzzle7_fb[String(se.def) if se != null else "gone"] = int(muzzle7_fb.get(String(se.def) if se != null else "gone", 0)) + 1
@@ -341,6 +358,9 @@ func on_shot(ev: Dictionary) -> void:
 	if not (mv.cell_visible(Vector2i(floori(from.x), floori(from.y))) or mv.cell_visible(Vector2i(floori(to.x), floori(to.y)))):
 		return
 	if _fx.size() >= MAX_FX:
+		return
+	if bool(ev.get("ciws7", false)):
+		_ciws7_stream(ev, from, to)   # G7 CIWS7-4 (13.9c-32a): straight stream along the barrel, dispersion cone
 		return
 	if bool(ev.get("indirect", false)):
 		# G7 MUZZLE7: the shell leaves the barrel tip (was the unit centre + a height guess)
@@ -1219,3 +1239,170 @@ func _drone_fx(ev: Dictionary) -> void:
 			e.part("puff", s + Vector2(0, -40), Vector2(0, -4), 3.0, 6.0, 16.0, Color(0.3, 0.3, 0.3, 0.45))
 		_:
 			e.explosion(s, 9.0, "scorch")
+
+
+# ---------------------------------------------------------------- G7 CIWS7-4 (13.9c-32a): the roof CIWS stream
+## Owner: "shooting in a strait line wherever the barrel is point w realistic bullet spread the further they shoot".
+## One ciws7 ShotFired = one sim fire tick (2-3 rounds) or one intercept burst (60 rounds). Its rounds leave the drawn
+## barrel tip (muzzle7: the art state the mount shows) and fly STRAIGHT along the mount's bearing this tick (ev.brg,
+## the Traverse7 lay the sim fires from), laid in elevation on the target's range (ev.d) and height, each round
+## deflected inside the dispersion cone (half-angle ev.sp) by a pure hash of (ev.sd, round): tight close, wide far.
+## A round inside the target's radius (ev.rt) at its range ends on it (spark); the rest fly past and run on along their
+## own straight line until they strike the ground (dust kick) or fade out CIWS7_OVER x the range away. The stream never
+## bends to the target: if the target moved off the bore since the lay, the rounds go where the barrel points.
+## Display only (reads the event + snapshot, writes nothing back).
+const CIWS7_HPX := 28.0           # screen px per tile of height (vertical scale of the iso view)
+const CIWS7_OVER := 1.7           # misses run on to this multiple of the target range
+const CIWS7_ANG_PXM := 6.0         # CIWS7-5: screen barrel-vs-stream angle only for barrels drawn >= 6 px/m (>= 15 px long)
+const CIWS7_ICPT_DRAW := 24       # tracers drawn for a 60-round intercept burst (spread over its length)
+var ciws7_fx := {"ticks": 0, "rounds": 0, "on": 0, "past": 0, "ground": 0, "n_ang": 0, "max_ang": 0.0, "max_ang3": 0.0}   # evidence (tests / playtest); CIWS7-5: max angle (deg) between the drawn barrel of the frame shown and the stream, on screen (barrels drawn >= 2 px/m long) and in 3D
+## Last stream drawn: {sid, from, brg, d, sp, rt, a (muzzle px), bore (bore end px at the target's range), rounds:
+## [[ground point at range (world), lateral dev (tiles), vertical dev (tiles), on target, end px, strike]]}.
+var ciws7_last: Dictionary = {}
+
+
+## CIWS7-5: the art state the mount shows for shooter sid right now (same picker call as _bld_tips) -> [name, state dict].
+func _ciws7_shown(sid: int) -> Array:
+	var se = _ent(sid)
+	if se == null:
+		return ["", {}]
+	var sn: Dictionary = mv.snap if mv != null and mv.get("snap") is Dictionary else {}
+	var st = (sn.get("statics", {}) as Dictionary).get(sid)
+	if not (st is Dictionary):
+		st = se
+	var b: Dictionary = ArtCatalog.manifest().get("buildings", {}).get(String(se.def), {})
+	var sts: Dictionary = b.get("states", {})
+	var nm := G5Art.building_state(sts, {"facing_i": int(st.get("facing_i", 0)), "hp": 1.0, "built": true, "firing": 1,
+		"tb": st.get("tb"), "def": String(se.def)}, "rot")
+	return [nm, sts.get(nm, {})]
+
+
+## CIWS7-5: angle (deg) between the drawn barrel of state sd and the stream from muzzle a to bore point bp (screen;
+## -1 when the barrel is drawn shorter than CIWS7_ANG_PXM px per metre, i.e. seen almost end-on: a stub whose
+## on-screen direction is not defined) and in 3D (the
+## barrel's world bore vs the line from the frame's muzzle to the aim point at height ht px, from = mount point).
+static func ciws7_angles(sd: Dictionary, a: Vector2, bp: Vector2, from: Vector2, aim: Vector2, ht: float, roof_m: float) -> Vector2:
+	if not (sd.get("ax") is Array) or not (sd.get("ax3") is Array):
+		return Vector2(-1, -1)
+	var ax := Vector2(float(sd.ax[0]), float(sd.ax[1]))
+	var sa := -1.0
+	if ax.length() >= CIWS7_ANG_PXM and (bp - a).length() > 0.5:
+		sa = absf(rad_to_deg(ax.angle_to(bp - a)))
+	var m3 := Vector3(float(sd.mz3[0]), float(sd.mz3[1]), float(sd.mz3[2]))
+	var a3 := Vector3(float(sd.ax3[0]), float(sd.ax3[1]), float(sd.ax3[2]))
+	var mw := from + Vector2(m3.x, m3.y) / 4.0
+	var v := Vector3((aim.x - mw.x) * 4.0, (aim.y - mw.y) * 4.0, ht / 9.8 - (roof_m + m3.z))
+	return Vector2(sa, rad_to_deg(a3.angle_to(v)))
+
+
+## Pure hash of n -> [0, 1) (display spread; never randf, so a replayed fire tick fans its rounds the same way).
+static func _c7h(n: int) -> float:
+	var x := (n * 1103515245 + 12345) & 0x7fffffff
+	x = (((x >> 13) ^ x) * 1274126177) & 0x7fffffff
+	x = (x >> 16) ^ x
+	return float(x % 1000003) / 1000003.0
+
+
+## Deflection (lateral, vertical) in radians of round i of seed sd: uniform over the cone's disc of half-angle sp.
+static func ciws7_dev(sd: int, i: int, sp: float) -> Vector2:
+	var rho := sp * sqrt(_c7h(sd * 7 + i * 2 + 1))
+	var phi := TAU * _c7h(sd * 13 + i * 2 + 2)
+	return Vector2(rho * cos(phi), rho * sin(phi))
+
+
+func _ciws7_stream(ev: Dictionary, from: Vector2, to: Vector2) -> void:
+	if lod >= 2:
+		return
+	var sid := int(ev.get("shooter", -1))
+	var tid := int(ev.get("target", -1))
+	var d := maxf(float(ev.get("d", from.distance_to(to))), 0.3)
+	var brg := float(ev.get("brg", (to - from).angle()))
+	var sp := float(ev.get("sp", 0.08))
+	var rt := float(ev.get("rt", 0.4))
+	var sd := int(ev.get("sd", 0))
+	var dirw := Vector2.from_angle(brg)
+	var perp := Vector2(-dirw.y, dirw.x)
+	var aim := from + dirw * d                 # where the bore points at the target's range (NOT the target)
+	var a: Vector2 = _fx61_muzzle(ev, from, aim, "autocannon")   # flash / casings / smoke at the drawn barrel tip
+	var h0 := maxf(_w2s(from).y - a.y, 0.0)    # muzzle height above the mount's roof-corner ground point (px)
+	var icpt := ev.has("icpt") or tid < 0
+	var ht := 0.0                              # height of the aim point (px)
+	var air_t := false
+	var shown: Array = _ciws7_shown(sid)       # CIWS7-5: the frame drawn now (its barrel = where the stream goes)
+	var sdct: Dictionary = shown[1]
+	var c7: Dictionary = (Content.building("cn_ciws7").get("ciws7", {}) as Dictionary)
+	var roof_m := float(c7.get("roof_z", 15.5))
+	if icpt:
+		# an incoming shell / rocket: the stream climbs along the drawn (high band) barrel to meet it (CIWS7-5)
+		var pitch := deg_to_rad(32.0)
+		if sdct.get("ax3") is Array:
+			pitch = asin(clampf(float(sdct.ax3[2]), -1.0, 1.0))
+		var mzh := h0
+		var hz := d * 4.0
+		if sdct.get("mz3") is Array:
+			mzh = (roof_m + float(sdct.mz3[2])) * 9.8
+			hz = maxf((aim - (from + Vector2(float(sdct.mz3[0]), float(sdct.mz3[1])) / 4.0)).length() * 4.0, 0.5)
+		ht = mzh + hz * tan(pitch) * 9.8
+	else:
+		var lt := _snap_lift(tid)
+		air_t = bool(lt[1])
+		ht = (float(lt[0]) + 4.0) if air_t else _height_for(tid) * 0.55
+	var n := int(ev.get("rounds", 1))
+	var draw_n := mini(n, CIWS7_ICPT_DRAW) if icpt else clampi(n, 1, 4)
+	var span := float(n) / 50.0                # 3000 rpm: the rounds of this event come out over n / 50 s
+	var lay := float(ev.get("lay_ticks", 0)) / 20.0 if icpt else 0.0
+	# a drone the sim shot down this tick is shown with at least one round on it (ground fire scores rounds x share)
+	var forced_on := not (air_t and bool(ev.get("hit", false)))
+	var rounds: Array = []
+	var e = _e()
+	for i in draw_n:
+		var dv := ciws7_dev(sd, i, sp)
+		var lo := d * tan(dv.x)                # lateral miss at the target's range (tiles)
+		var vo := d * tan(dv.y)                # vertical miss (tiles)
+		var dev := sqrt(lo * lo + vo * vo)
+		if not forced_on and i == draw_n - 1 and dev > rt * 0.8:
+			lo *= rt * 0.6 / dev               # the sim scored a hit: this round is one of the rounds on target
+			vo *= rt * 0.6 / dev
+			dev = rt * 0.6
+		var on := dev <= rt
+		forced_on = forced_on or on
+		var g := aim + perp * lo
+		var h := ht + vo * CIWS7_HPX
+		var tip: Vector2 = _w2s(g) - Vector2(0, h)
+		var lam := 1.0 if on else CIWS7_OVER
+		var strike := false
+		if h0 - h > 0.001 and h0 + (h - h0) * lam <= 0.0:   # a descending round that reaches the ground first
+			lam = h0 / (h0 - h)
+			strike = true
+		var end: Vector2 = a + (tip - a) * lam
+		var delay := lay + span * (float(i) + 0.5) / float(draw_n)
+		var life := clampf(0.07 + 0.011 * d * lam, 0.08, 0.32)
+		if _fx.size() < MAX_FX:
+			_fx.append({"kind": "tracer", "t": -delay, "life": life, "a": a, "b": end, "size": 1.3,
+				"color": Color(1.0, 0.7, 0.32), "glow": 0.55})
+		var t_hit := delay + life * 0.625      # the tracer head reaches its end at k = 1 / 1.6
+		if on and not icpt:
+			e.part("spark", end, Vector2(0, -30) + perp * 20.0, 0.18, 2.5, 1.0, Color(1.0, 0.85, 0.45), 200.0, t_hit)
+			ciws7_fx.on += 1
+		elif strike:
+			e.part("puff", end, Vector2(0, -14), 0.55, 2.0, 7.0, Color(0.6, 0.55, 0.47, 0.55), 0.0, t_hit)
+			e.part("spark", end, Vector2(0, -40), 0.12, 2.0, 1.0, Color(1.0, 0.8, 0.4), 260.0, t_hit)
+			ciws7_fx.ground += 1
+		else:
+			ciws7_fx.past += 1
+		rounds.append([g, lo, vo, on, end, strike])
+	if icpt and bool(ev.get("hit", false)) and _fx.size() < MAX_FX:   # the shell / rocket / missile bursts in the air
+		var bp: Vector2 = _w2s(aim) - Vector2(0, ht)
+		_fx.append({"kind": "explosion_small", "t": -(lay + span * 0.7), "life": 0.4, "a": bp, "b": bp, "size": 8.0,
+			"color": Color(1, 0.6, 0.2)})
+	ciws7_fx.ticks += 1
+	ciws7_fx.rounds += draw_n
+	var bp: Vector2 = _w2s(aim) - Vector2(0, ht)
+	var ang := ciws7_angles(sdct, a, bp, from, aim, ht, roof_m)
+	if ang.y >= 0.0:
+		ciws7_fx.n_ang += 1
+		ciws7_fx.max_ang3 = maxf(float(ciws7_fx.max_ang3), ang.y)
+		if ang.x >= 0.0:
+			ciws7_fx.max_ang = maxf(float(ciws7_fx.max_ang), ang.x)
+	ciws7_last = {"sid": sid, "tid": tid, "from": from, "brg": brg, "d": d, "sp": sp, "rt": rt, "a": a,
+		"bore": bp, "rounds": rounds, "icpt": icpt, "state": String(shown[0]), "ang": ang.x, "ang3": ang.y}

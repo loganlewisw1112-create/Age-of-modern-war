@@ -35,7 +35,8 @@ func run(pt) -> void:
 		return
 	var s: Dictionary = w.sys_state.lp
 	var wall0 := Time.get_ticks_msec()
-	pt._log("lpmode7_start_state", (s.base.rings as Array).size() == 3 and (Cores.list(w) as Array).size() == 3 and int(s.army_n) >= 80,
+	# 13.9c-36 authority record (owner: "TOO mf big ... shrink it down drastically"): two rings (was 3)
+	pt._log("lpmode7_start_state", (s.base.rings as Array).size() == 2 and (Cores.list(w) as Array).size() == 3 and int(s.army_n) >= 80,
 		"rings %d cores %d army %d teams %d creep %.3f from_map %s" % [(s.base.rings as Array).size(), (Cores.list(w) as Array).size(),
 		int(s.army_n), int(s.teams_total), Creep.coverage(w), str(String(w.map.get("id", "")) == "last_protocol")])
 	# the whole map explored for the player so the shots show ground (flows may write the sim)

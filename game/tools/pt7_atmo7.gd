@@ -261,6 +261,12 @@ func run(pt) -> void:
 	await pt._wait(1.0)
 	pt._log("atmo7_geometry", L.geo.size() == 1 and (L.geo[0].towers as Array).size() >= 4, "geo %d, towers %d" % [L.geo.size(), (L.geo[0].towers as Array).size() if L.geo.size() > 0 else 0])
 	# LIGHT7_QUICK=1: only the layer bisect at night (which layer draws what): all / no atmo7 / no life7 / no glow / no over
+	if OS.get_environment("LIGHT7_QUICK") == "off":   # LIGHT7-7: run with ATMO7_OFF=1 (the lighting layer draws nothing): is a see-through box at the command centre this layer's?
+		print("LIGHT7_OFF layer off %s geo %d" % [str(L.off), L.geo.size()])
+		await _shots(pt, mv, L, "off_planning", zc.call("planning") + Vector2(1.0, 1.0), [2, 3])
+		await _shots(pt, mv, L, "off_workshop", zc.call("workshop") + Vector2(1.0, 1.0), [2])
+		_clean_view(mv, false)
+		return
 	if OS.get_environment("LIGHT7_QUICK") == "perim":
 		L.set_time_of_day("night")
 		await pt._wait(2.6)
@@ -275,9 +281,12 @@ func run(pt) -> void:
 		await _shots(pt, mv, L, "yard_night_staging", zc.call("staging"), [2])
 		var gy: Dictionary = L.geo[0]
 		var kc := {}
+		var kh := {}   # LIGHT7-7: fixtures a building stands in front of (hid), per kind
 		for fx in gy.fix:
 			kc[String(fx.k)] = int(kc.get(String(fx.k), 0)) + 1
-		print("LIGHT7_YARD fixtures %s total %d walk_drop %d mast_drop %d" % [str(kc), (gy.fix as Array).size(), int(gy.get("walk_drop", 0)), int(gy.get("mast_drop", 0))])
+			if fx.hid:
+				kh[String(fx.k)] = int(kh.get(String(fx.k), 0)) + 1
+		print("LIGHT7_YARD fixtures %s total %d walk_drop %d mast_drop %d hidden %s" % [str(kc), (gy.fix as Array).size(), int(gy.get("walk_drop", 0)), int(gy.get("mast_drop", 0)), str(kh)])
 		var wl: PackedFloat32Array = gy.get("work_lv", PackedFloat32Array())
 		var wmin := 9.0
 		var wdark := 0

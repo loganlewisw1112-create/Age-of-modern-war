@@ -17,6 +17,7 @@
     "icons/g7_vanta_anti_drone_missiles_flares.png": "d5ec11b4d7bfd7dfbf626ef1c5b82dc9",
     "icons/g7_vanta_anti_drone_missiles_gun.png": "d5ec11b4d7bfd7dfbf626ef1c5b82dc9",
     "icons/g7_vanta_bare.png": "ed8cca28947c7c3359fdf7b4ad48b648",
+    "icons/g7_vanta_bare_b.png": "0a7521872ba923cd0bc3c23ba78fa8ab",
     "icons/g7_vanta_cannon_anti_drone_anti_drone.png": "f21c4104e0c422093f7fbb5a6b92c94f",
     "icons/g7_vanta_cannon_anti_drone_deterrents.png": "f21c4104e0c422093f7fbb5a6b92c94f",
     "icons/g7_vanta_cannon_anti_drone_flares.png": "f21c4104e0c422093f7fbb5a6b92c94f",
@@ -51,104 +52,104 @@
     "icons/g7_vanta_missiles_missiles_gun.png": "2a6223158f60013abef53cc51126fc79",
     "units/g7_vanta_16.png": "e5dfa44e9917adb7f82450c8218ab23b",
     "units/g7_vanta_16_mask.png": "79e17d20f855cb687c5b6a8bf296bc8b",
-    "units/g7_vanta_anti_drone_anti_drone_anti_drone.png": "21b3148fee3085406c5117932488b8fc",
-    "units/g7_vanta_anti_drone_anti_drone_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_anti_drone_deterrents.png": "3d8267beed1611a1b48db56c45eaec4d",
-    "units/g7_vanta_anti_drone_anti_drone_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_anti_drone_flares.png": "ed97a88d7a93889d2cad17e9200d017b",
-    "units/g7_vanta_anti_drone_anti_drone_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_anti_drone_gun.png": "af033b55bb406a7c2a5570894a19521f",
-    "units/g7_vanta_anti_drone_anti_drone_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_drones_anti_drone.png": "c5d7b3e6c61052a002358dbc4ddd7ff3",
-    "units/g7_vanta_anti_drone_drones_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_drones_deterrents.png": "2bfc5f030c6bdfbdbb25404daa5ee8e8",
-    "units/g7_vanta_anti_drone_drones_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_drones_flares.png": "f08291b45689f2b063597fa7cafe4620",
-    "units/g7_vanta_anti_drone_drones_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_drones_gun.png": "fe0d7f8aed2edd149849af6e8d638d2c",
-    "units/g7_vanta_anti_drone_drones_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_gun_anti_drone.png": "a1c2cc0695ebd6817e7cd9b2f14c9b8d",
-    "units/g7_vanta_anti_drone_gun_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_gun_deterrents.png": "39e0a27ee459a677657bf6b8d59764f7",
-    "units/g7_vanta_anti_drone_gun_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_gun_flares.png": "7b98c73b1250269fca7752cd06cd4997",
-    "units/g7_vanta_anti_drone_gun_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_gun_gun.png": "d3678e359ef608efc3447a6ede003f0b",
-    "units/g7_vanta_anti_drone_gun_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_missiles_anti_drone.png": "7ebe14a5c6dcf448fac39513c8ec7d80",
-    "units/g7_vanta_anti_drone_missiles_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_missiles_deterrents.png": "2b5ed6b2a636a95fc5c7bf4a07d4b861",
-    "units/g7_vanta_anti_drone_missiles_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_missiles_flares.png": "706eeedc7897b9550d2fec991c4f3f5e",
-    "units/g7_vanta_anti_drone_missiles_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_anti_drone_missiles_gun.png": "2060598065329ad82de971c308e0e88d",
-    "units/g7_vanta_anti_drone_missiles_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_bare.png": "cfe21754a1e76f81fa95183088609886",
-    "units/g7_vanta_bare_mask.png": "a3701e89e547ac2c78ad2c3130d94c7a",
-    "units/g7_vanta_cannon_anti_drone_anti_drone.png": "501e59028f919d8e5e9e959e1f515ef5",
-    "units/g7_vanta_cannon_anti_drone_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_anti_drone_deterrents.png": "d6889686e6ffa348b17b79b2aedfc5af",
-    "units/g7_vanta_cannon_anti_drone_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_anti_drone_flares.png": "869c941ac60944dbf965d5e9611cb670",
-    "units/g7_vanta_cannon_anti_drone_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_anti_drone_gun.png": "032ffd47838dd4aee840d6b4dd0a9ae6",
-    "units/g7_vanta_cannon_anti_drone_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_drones_anti_drone.png": "b99f1b9faa284eb63ee6c42c1577d3b6",
-    "units/g7_vanta_cannon_drones_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_drones_deterrents.png": "b990385b5e8d556c1c4c1c3faee89cfb",
-    "units/g7_vanta_cannon_drones_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_drones_flares.png": "6853430115e9c09b8e8055b796d827a8",
-    "units/g7_vanta_cannon_drones_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_drones_gun.png": "e814307c9a28ef97c505ba946d4ce766",
-    "units/g7_vanta_cannon_drones_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_gun_anti_drone.png": "272ffe47f7050d38c5019500381cea50",
-    "units/g7_vanta_cannon_gun_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_gun_deterrents.png": "0ea59e5c390e8f49e5c2eac406b931e9",
-    "units/g7_vanta_cannon_gun_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_gun_flares.png": "532c02bbd47e4144e6acc213bc521566",
-    "units/g7_vanta_cannon_gun_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_gun_gun.png": "82a479eedaf7efce060587e45000c40c",
-    "units/g7_vanta_cannon_gun_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_missiles_anti_drone.png": "56a9b1ef540a2c1edd7652b3bce577bf",
-    "units/g7_vanta_cannon_missiles_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_missiles_deterrents.png": "42ab5220412bf67cb59d80d3c89f5cab",
-    "units/g7_vanta_cannon_missiles_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_missiles_flares.png": "3583e77d6c38a5ba3658afbfa8994873",
-    "units/g7_vanta_cannon_missiles_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_cannon_missiles_gun.png": "5784ecc4194f7214a53c540de71d64bf",
-    "units/g7_vanta_cannon_missiles_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_anti_drone_anti_drone.png": "99ed6f00154b38e341f9d3e87ecbe142",
-    "units/g7_vanta_missiles_anti_drone_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_anti_drone_deterrents.png": "6a5d10b2b9a0c9dc5fecaf77ce34e619",
-    "units/g7_vanta_missiles_anti_drone_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_anti_drone_flares.png": "9ad0252ba50b8b71fb03218766fef114",
-    "units/g7_vanta_missiles_anti_drone_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_anti_drone_gun.png": "8429f4406f14f24d5558d475e7e4c3c3",
-    "units/g7_vanta_missiles_anti_drone_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_drones_anti_drone.png": "27ce9f90f5fe6920efb39ac881b8d173",
-    "units/g7_vanta_missiles_drones_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_drones_deterrents.png": "a2c58ae2a948672676b207e9a6aba148",
-    "units/g7_vanta_missiles_drones_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_drones_flares.png": "1d1c469dfe68da25ac4e0b5764edc10d",
-    "units/g7_vanta_missiles_drones_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_drones_gun.png": "b7f7f7fb9572de6961f3b0254b4d89f8",
-    "units/g7_vanta_missiles_drones_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_gun_anti_drone.png": "0ece5714f30b62adb2904717b6b68697",
-    "units/g7_vanta_missiles_gun_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_gun_deterrents.png": "de1d332be56731e1a6ecd0fcd631e42f",
-    "units/g7_vanta_missiles_gun_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_gun_flares.png": "3d42aecb57eedbc69b2831a10909c295",
-    "units/g7_vanta_missiles_gun_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_gun_gun.png": "96b8c4b2e5dfb0356e4c78ab3c148d25",
-    "units/g7_vanta_missiles_gun_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_missiles_anti_drone.png": "f319137c224ee6565e913c0b6d35c5be",
-    "units/g7_vanta_missiles_missiles_anti_drone_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_missiles_deterrents.png": "54f3971d5c546517a64faf6a8ff435be",
-    "units/g7_vanta_missiles_missiles_deterrents_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_missiles_flares.png": "047baad4fdde77b7ede6d88fa3ca7aa2",
-    "units/g7_vanta_missiles_missiles_flares_mask.png": "61fa61dabdba1daf629940491db2de61",
-    "units/g7_vanta_missiles_missiles_gun.png": "29a1a42808e0aefeddc96a78efc5d500",
-    "units/g7_vanta_missiles_missiles_gun_mask.png": "61fa61dabdba1daf629940491db2de61",
+    "units/g7_vanta_anti_drone_anti_drone_anti_drone.png": "81c856de7152c8f87d7c18cf979a22fa",
+    "units/g7_vanta_anti_drone_anti_drone_anti_drone_mask.png": "bab18219d20c91335946689da02ae4cc",
+    "units/g7_vanta_anti_drone_anti_drone_deterrents.png": "96f4ae327e574665a5d067c72e964fa2",
+    "units/g7_vanta_anti_drone_anti_drone_deterrents_mask.png": "c43af0e17d8a7d7bea0efba0951ace7e",
+    "units/g7_vanta_anti_drone_anti_drone_flares.png": "106629448866959ed5d425efe590f315",
+    "units/g7_vanta_anti_drone_anti_drone_flares_mask.png": "94b99c0c931fdea3c9f9a0e67872da63",
+    "units/g7_vanta_anti_drone_anti_drone_gun.png": "7f77aeb4c90a8a84ae0885cbe8b6c24d",
+    "units/g7_vanta_anti_drone_anti_drone_gun_mask.png": "3b52b67b1136115c5d7fc7bb5762b7ea",
+    "units/g7_vanta_anti_drone_drones_anti_drone.png": "63c0c9a5116e239f282cca556ef9e619",
+    "units/g7_vanta_anti_drone_drones_anti_drone_mask.png": "bab18219d20c91335946689da02ae4cc",
+    "units/g7_vanta_anti_drone_drones_deterrents.png": "920a44f3ac224e57e49c8d8756669926",
+    "units/g7_vanta_anti_drone_drones_deterrents_mask.png": "c43af0e17d8a7d7bea0efba0951ace7e",
+    "units/g7_vanta_anti_drone_drones_flares.png": "b061f38349a5d4ceac04a60b860fce6f",
+    "units/g7_vanta_anti_drone_drones_flares_mask.png": "94b99c0c931fdea3c9f9a0e67872da63",
+    "units/g7_vanta_anti_drone_drones_gun.png": "3b1503c6ed6d544e8c50a43079a5d29a",
+    "units/g7_vanta_anti_drone_drones_gun_mask.png": "3b52b67b1136115c5d7fc7bb5762b7ea",
+    "units/g7_vanta_anti_drone_gun_anti_drone.png": "84d0f9afd56dd717a1d2fd23fd15af30",
+    "units/g7_vanta_anti_drone_gun_anti_drone_mask.png": "bab18219d20c91335946689da02ae4cc",
+    "units/g7_vanta_anti_drone_gun_deterrents.png": "d41fc156f8f6b03950b04e86365f10f0",
+    "units/g7_vanta_anti_drone_gun_deterrents_mask.png": "c43af0e17d8a7d7bea0efba0951ace7e",
+    "units/g7_vanta_anti_drone_gun_flares.png": "209133afd634c21dc36c6a11433e1fcb",
+    "units/g7_vanta_anti_drone_gun_flares_mask.png": "94b99c0c931fdea3c9f9a0e67872da63",
+    "units/g7_vanta_anti_drone_gun_gun.png": "e104e1d7226043210cb0165b8d6c90c4",
+    "units/g7_vanta_anti_drone_gun_gun_mask.png": "3b52b67b1136115c5d7fc7bb5762b7ea",
+    "units/g7_vanta_anti_drone_missiles_anti_drone.png": "bec31ae6dca076861aa62737581e3cac",
+    "units/g7_vanta_anti_drone_missiles_anti_drone_mask.png": "bab18219d20c91335946689da02ae4cc",
+    "units/g7_vanta_anti_drone_missiles_deterrents.png": "413ff68cc488f3bfe7d16768f0b24abf",
+    "units/g7_vanta_anti_drone_missiles_deterrents_mask.png": "c43af0e17d8a7d7bea0efba0951ace7e",
+    "units/g7_vanta_anti_drone_missiles_flares.png": "8cd223df8879fe9624d9d69e8bf8affa",
+    "units/g7_vanta_anti_drone_missiles_flares_mask.png": "94b99c0c931fdea3c9f9a0e67872da63",
+    "units/g7_vanta_anti_drone_missiles_gun.png": "0d3c92ef548d23043db54f06c12fd0e8",
+    "units/g7_vanta_anti_drone_missiles_gun_mask.png": "3b52b67b1136115c5d7fc7bb5762b7ea",
+    "units/g7_vanta_bare.png": "01e7414023b896d57c0e3dc6b2181e97",
+    "units/g7_vanta_bare_mask.png": "29abee795809dd3943671a1aec2a92e7",
+    "units/g7_vanta_cannon_anti_drone_anti_drone.png": "9b66a56a3318cccada5d1c99b9123776",
+    "units/g7_vanta_cannon_anti_drone_anti_drone_mask.png": "efa5efc804edd03945466b0864a58a1a",
+    "units/g7_vanta_cannon_anti_drone_deterrents.png": "f9e43dbddc8fa29d9953a91140be03c7",
+    "units/g7_vanta_cannon_anti_drone_deterrents_mask.png": "58fb943882b02694b5f98948b92afefd",
+    "units/g7_vanta_cannon_anti_drone_flares.png": "f77b2a0157467168ef918f622808ef4e",
+    "units/g7_vanta_cannon_anti_drone_flares_mask.png": "90736a62c02e2b8f8bbbd630dbcb55b4",
+    "units/g7_vanta_cannon_anti_drone_gun.png": "ce654121e69cd0991bc945d147e56f09",
+    "units/g7_vanta_cannon_anti_drone_gun_mask.png": "dc041e6eabc44d709958d47e74898630",
+    "units/g7_vanta_cannon_drones_anti_drone.png": "783c37a7c7fa5865c3d557b1068bd640",
+    "units/g7_vanta_cannon_drones_anti_drone_mask.png": "efa5efc804edd03945466b0864a58a1a",
+    "units/g7_vanta_cannon_drones_deterrents.png": "6d4f1dc8c62e13c96714216ea4553520",
+    "units/g7_vanta_cannon_drones_deterrents_mask.png": "58fb943882b02694b5f98948b92afefd",
+    "units/g7_vanta_cannon_drones_flares.png": "3d430ccb7f2f64b41feadba41aae8ef8",
+    "units/g7_vanta_cannon_drones_flares_mask.png": "90736a62c02e2b8f8bbbd630dbcb55b4",
+    "units/g7_vanta_cannon_drones_gun.png": "f2ff499e77ef4b3b200f28b093ace3a2",
+    "units/g7_vanta_cannon_drones_gun_mask.png": "dc041e6eabc44d709958d47e74898630",
+    "units/g7_vanta_cannon_gun_anti_drone.png": "fbc41ebaa29e0f345b99381a14199e2e",
+    "units/g7_vanta_cannon_gun_anti_drone_mask.png": "efa5efc804edd03945466b0864a58a1a",
+    "units/g7_vanta_cannon_gun_deterrents.png": "7a672d54fb9b7f082bff1760fea3b3a0",
+    "units/g7_vanta_cannon_gun_deterrents_mask.png": "58fb943882b02694b5f98948b92afefd",
+    "units/g7_vanta_cannon_gun_flares.png": "3137e06b04e2595c30682f5b2f816f29",
+    "units/g7_vanta_cannon_gun_flares_mask.png": "90736a62c02e2b8f8bbbd630dbcb55b4",
+    "units/g7_vanta_cannon_gun_gun.png": "5d37a49a866728eaa66b48285f14394d",
+    "units/g7_vanta_cannon_gun_gun_mask.png": "dc041e6eabc44d709958d47e74898630",
+    "units/g7_vanta_cannon_missiles_anti_drone.png": "8a9d8f59fc55b6ff1b3ede5a1363d041",
+    "units/g7_vanta_cannon_missiles_anti_drone_mask.png": "efa5efc804edd03945466b0864a58a1a",
+    "units/g7_vanta_cannon_missiles_deterrents.png": "ed24c40871c65c0769666ab8ff71459e",
+    "units/g7_vanta_cannon_missiles_deterrents_mask.png": "58fb943882b02694b5f98948b92afefd",
+    "units/g7_vanta_cannon_missiles_flares.png": "4f5fa0606472fb7be8e8959574191512",
+    "units/g7_vanta_cannon_missiles_flares_mask.png": "90736a62c02e2b8f8bbbd630dbcb55b4",
+    "units/g7_vanta_cannon_missiles_gun.png": "6c8a99d2a363921e1b88875c4f66fcda",
+    "units/g7_vanta_cannon_missiles_gun_mask.png": "dc041e6eabc44d709958d47e74898630",
+    "units/g7_vanta_missiles_anti_drone_anti_drone.png": "7937b8d61fe690e63a443f49dd3e358c",
+    "units/g7_vanta_missiles_anti_drone_anti_drone_mask.png": "b728c607011d0cd4a7564aedd9948479",
+    "units/g7_vanta_missiles_anti_drone_deterrents.png": "29fe0a47466da8b11f6766f913529720",
+    "units/g7_vanta_missiles_anti_drone_deterrents_mask.png": "505dab5f581bf2c17b0ac42623036636",
+    "units/g7_vanta_missiles_anti_drone_flares.png": "6fc133dd9292c42993ecc70bdc368c37",
+    "units/g7_vanta_missiles_anti_drone_flares_mask.png": "70cab5ee7f88b10960958e9f88038493",
+    "units/g7_vanta_missiles_anti_drone_gun.png": "6547f7b246d60d5892b261a1ed026742",
+    "units/g7_vanta_missiles_anti_drone_gun_mask.png": "bdd6cc62dc248d61a74b60c7184de188",
+    "units/g7_vanta_missiles_drones_anti_drone.png": "a7602a06ffe83375679c77d0c67a83b1",
+    "units/g7_vanta_missiles_drones_anti_drone_mask.png": "b728c607011d0cd4a7564aedd9948479",
+    "units/g7_vanta_missiles_drones_deterrents.png": "3e3abfc62f70e44666e54195efe2cb78",
+    "units/g7_vanta_missiles_drones_deterrents_mask.png": "505dab5f581bf2c17b0ac42623036636",
+    "units/g7_vanta_missiles_drones_flares.png": "7d7c2945f91324570861a8d87fe6b90f",
+    "units/g7_vanta_missiles_drones_flares_mask.png": "70cab5ee7f88b10960958e9f88038493",
+    "units/g7_vanta_missiles_drones_gun.png": "441b55b3b05f28f5fc008bfc4373f751",
+    "units/g7_vanta_missiles_drones_gun_mask.png": "bdd6cc62dc248d61a74b60c7184de188",
+    "units/g7_vanta_missiles_gun_anti_drone.png": "ffd0be324f14b698eab934ec42f6ecc6",
+    "units/g7_vanta_missiles_gun_anti_drone_mask.png": "b728c607011d0cd4a7564aedd9948479",
+    "units/g7_vanta_missiles_gun_deterrents.png": "5c6d588182f1e184ab80b51ec7be3200",
+    "units/g7_vanta_missiles_gun_deterrents_mask.png": "505dab5f581bf2c17b0ac42623036636",
+    "units/g7_vanta_missiles_gun_flares.png": "38a5058e709b03b48b150a9735c32c8f",
+    "units/g7_vanta_missiles_gun_flares_mask.png": "70cab5ee7f88b10960958e9f88038493",
+    "units/g7_vanta_missiles_gun_gun.png": "5d1b5a80d2e5bb68816d0737e304983d",
+    "units/g7_vanta_missiles_gun_gun_mask.png": "bdd6cc62dc248d61a74b60c7184de188",
+    "units/g7_vanta_missiles_missiles_anti_drone.png": "79ae58687436d0d87942e3cd4a9bc089",
+    "units/g7_vanta_missiles_missiles_anti_drone_mask.png": "b728c607011d0cd4a7564aedd9948479",
+    "units/g7_vanta_missiles_missiles_deterrents.png": "942d102174738211a57d6c1d0412e7d7",
+    "units/g7_vanta_missiles_missiles_deterrents_mask.png": "505dab5f581bf2c17b0ac42623036636",
+    "units/g7_vanta_missiles_missiles_flares.png": "49572cb6ac58228673b51d2edf1f3e02",
+    "units/g7_vanta_missiles_missiles_flares_mask.png": "70cab5ee7f88b10960958e9f88038493",
+    "units/g7_vanta_missiles_missiles_gun.png": "fce0e14a488b4cab09fcea8b60d5cfff",
+    "units/g7_vanta_missiles_missiles_gun_mask.png": "bdd6cc62dc248d61a74b60c7184de188",
     "wrecks/g7_vanta_bare_wreck.png": "89eb7b1b8de42518bc18ec3a25d18a56"
   },
   "g7_detail_level": {
@@ -219,6 +220,8 @@
   },
   "group": "g7_vanta",
   "icons": {
+    "cn_vanta_a": "icons/g7_vanta_bare.png",
+    "cn_vanta_b": "icons/g7_vanta_bare_b.png",
     "g7_vanta_anti_drone_anti_drone_anti_drone": "icons/g7_vanta_anti_drone_anti_drone_anti_drone.png",
     "g7_vanta_anti_drone_anti_drone_deterrents": "icons/g7_vanta_anti_drone_anti_drone_deterrents.png",
     "g7_vanta_anti_drone_anti_drone_flares": "icons/g7_vanta_anti_drone_anti_drone_flares.png",
@@ -269,14 +272,87 @@
     "g7_vanta_missiles_missiles_flares": "icons/g7_vanta_missiles_missiles_flares.png",
     "g7_vanta_missiles_missiles_gun": "icons/g7_vanta_missiles_missiles_gun.png"
   },
+  "showcase": {
+    "g7_vanta_16": {
+      "air": true,
+      "altitude": 150.0,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim_fps": 6,
+      "bob": 1.0,
+      "facings": 16,
+      "fh": 144,
+      "file": "units/g7_vanta_16.png",
+      "frames": [
+        "idle",
+        "move",
+        "landed"
+      ],
+      "fw": 208,
+      "g7": {
+        "altitude_m": {
+          "damaged": 0.7,
+          "fire": 0.7,
+          "flight": 0.9,
+          "flight_b": 0.9,
+          "hover": 0.7,
+          "hover_b": 0.7,
+          "landed": 0.0
+        },
+        "budget": 5750784,
+        "bytes": 5750784,
+        "class": "air",
+        "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
+        "detail_level": "DL7-3",
+        "line": "counter_nanite",
+        "mirror": -1,
+        "mounts_m": {
+          "nose": [
+            5.59999990463257,
+            0.0,
+            0.800000011920929
+          ],
+          "rear": [
+            -6.0,
+            0.0,
+            1.35000002384186
+          ],
+          "side": [
+            0.600000023841858,
+            1.75,
+            1.10000002384186
+          ]
+        },
+        "note": "16-facing showcase of the default loadout (the renderer draws 8 facings today)",
+        "raw_bytes": 5750784,
+        "sample": "air",
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
+        "size_m": [
+          14.0,
+          6.7,
+          3.5
+        ]
+      },
+      "mask": "units/g7_vanta_16_mask.png",
+      "pivot": [
+        104,
+        92
+      ]
+    }
+  },
   "specials": {
     "cn_vanta_a": {
       "parked": "landed"
     },
     "cn_vanta_b": {
-      "parked": "landed"
-    },
-    "g7_vanta_16": {
       "parked": "landed"
     },
     "g7_vanta_anti_drone_anti_drone_anti_drone": {
@@ -461,16 +537,91 @@
   },
   "vehicles": {
     "cn_vanta_a": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            19,
+            3
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -30,
+            7
+          ],
+          [
+            -21,
+            -10
+          ],
+          [
+            -13,
+            -17
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            26,
+            -21
+          ],
+          [
+            24,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -478,13 +629,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -498,7 +651,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -526,7 +679,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -542,16 +695,91 @@
       ]
     },
     "cn_vanta_b": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            19,
+            3
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -30,
+            7
+          ],
+          [
+            -21,
+            -10
+          ],
+          [
+            -13,
+            -17
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            26,
+            -21
+          ],
+          [
+            24,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -559,13 +787,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -579,7 +809,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -607,7 +837,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -622,90 +852,92 @@
         92
       ]
     },
-    "g7_vanta_16": {
-      "altitude": 150.0,
-      "anim": {
-        "air": [
-          "hover",
-          "hover_b"
-        ],
-        "move": [
-          "flight",
-          "flight_b"
-        ]
-      },
-      "anim_fps": 6,
-      "bob": 1.0,
-      "facings": 16,
-      "fh": 144,
-      "file": "units/g7_vanta_16.png",
-      "frames": [
-        "hover",
-        "flight",
-        "landed"
-      ],
-      "fw": 208,
-      "g7": {
-        "altitude_m": {
-          "damaged": 0.7,
-          "fire": 0.7,
-          "flight": 0.9,
-          "flight_b": 0.9,
-          "hover": 0.7,
-          "hover_b": 0.7,
-          "landed": 0.0
-        },
-        "budget": 5750784,
-        "bytes": 5750784,
-        "class": "air",
-        "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
-        "detail_level": "DL7-3",
-        "line": "counter_nanite",
-        "mirror": -1,
-        "mounts_m": {
-          "nose": [
-            5.59999990463257,
-            0.0,
-            0.800000011920929
-          ],
-          "rear": [
-            -6.0,
-            0.0,
-            1.35000002384186
-          ],
-          "side": [
-            0.600000023841858,
-            1.75,
-            1.10000002384186
-          ]
-        },
-        "note": "16-facing showcase of the default loadout (the renderer draws 8 facings today)",
-        "raw_bytes": 5750784,
-        "sample": "air",
-        "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
-        "size_m": [
-          14.0,
-          6.7,
-          3.5
-        ]
-      },
-      "mask": "units/g7_vanta_16_mask.png",
-      "pivot": [
-        104,
-        92
-      ]
-    },
     "g7_vanta_anti_drone_anti_drone_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            75,
+            27
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            -75,
+            28
+          ],
+          [
+            -104,
+            -8
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            103,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -713,13 +945,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_anti_drone_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -733,7 +967,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1659664,
+        "bytes": 2135220,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -761,7 +995,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -777,16 +1011,91 @@
       ]
     },
     "g7_vanta_anti_drone_anti_drone_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            75,
+            27
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            -75,
+            28
+          ],
+          [
+            -104,
+            -8
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            103,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -794,13 +1103,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_anti_drone_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -814,7 +1125,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660020,
+        "bytes": 2135168,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -842,7 +1153,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -858,16 +1169,91 @@
       ]
     },
     "g7_vanta_anti_drone_anti_drone_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -69,
+            -42
+          ],
+          [
+            1,
+            -58
+          ],
+          [
+            74,
+            -40
+          ],
+          [
+            89,
+            -12
+          ],
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -66,
+            17
+          ],
+          [
+            -89,
+            -14
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -875,13 +1261,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_anti_drone_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -895,7 +1283,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1661500,
+        "bytes": 2136648,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -923,7 +1311,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -939,16 +1327,91 @@
       ]
     },
     "g7_vanta_anti_drone_anti_drone_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -58,
+            -46
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            57,
+            -46
+          ],
+          [
+            82,
+            -18
+          ],
+          [
+            57,
+            11
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -59,
+            11
+          ],
+          [
+            -83,
+            -18
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -956,13 +1419,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_anti_drone_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -976,7 +1441,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648076,
+        "bytes": 2123632,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1004,7 +1469,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1020,16 +1485,91 @@
       ]
     },
     "g7_vanta_anti_drone_drones_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            75,
+            27
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            -75,
+            28
+          ],
+          [
+            -104,
+            -8
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            103,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1037,13 +1577,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_drones_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1057,7 +1599,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1659664,
+        "bytes": 2135220,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1085,7 +1627,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1101,16 +1643,91 @@
       ]
     },
     "g7_vanta_anti_drone_drones_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            75,
+            27
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            -75,
+            28
+          ],
+          [
+            -104,
+            -8
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            103,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1118,13 +1735,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_drones_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1138,7 +1757,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660020,
+        "bytes": 2135168,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1166,7 +1785,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1182,16 +1801,91 @@
       ]
     },
     "g7_vanta_anti_drone_drones_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -69,
+            -42
+          ],
+          [
+            1,
+            -58
+          ],
+          [
+            74,
+            -40
+          ],
+          [
+            89,
+            -12
+          ],
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -66,
+            17
+          ],
+          [
+            -89,
+            -14
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1199,13 +1893,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_drones_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1219,7 +1915,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1661500,
+        "bytes": 2136648,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1247,7 +1943,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1263,16 +1959,91 @@
       ]
     },
     "g7_vanta_anti_drone_drones_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -58,
+            -46
+          ],
+          [
+            0,
+            44
+          ],
+          [
+            57,
+            -46
+          ],
+          [
+            82,
+            -18
+          ],
+          [
+            57,
+            11
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -59,
+            11
+          ],
+          [
+            -83,
+            -18
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1280,13 +2051,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_drones_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1300,7 +2073,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648076,
+        "bytes": 2123632,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1328,7 +2101,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1344,16 +2117,91 @@
       ]
     },
     "g7_vanta_anti_drone_gun_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            1,
+            -1
+          ],
+          [
+            0,
+            -4
+          ],
+          [
+            -3,
+            -1
+          ],
+          [
+            -23,
+            -6
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            22,
+            -6
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1361,13 +2209,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_gun_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1381,7 +2231,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1659664,
+        "bytes": 2135220,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1409,7 +2259,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1425,16 +2275,91 @@
       ]
     },
     "g7_vanta_anti_drone_gun_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            1,
+            -1
+          ],
+          [
+            0,
+            -4
+          ],
+          [
+            -3,
+            -1
+          ],
+          [
+            -23,
+            -6
+          ],
+          [
+            -76,
+            -46
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            74,
+            -46
+          ],
+          [
+            22,
+            -6
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1442,13 +2367,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_gun_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1462,7 +2389,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660020,
+        "bytes": 2135168,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1490,7 +2417,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1506,16 +2433,91 @@
       ]
     },
     "g7_vanta_anti_drone_gun_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -17,
+            -12
+          ],
+          [
+            0,
+            -17
+          ],
+          [
+            9,
+            -7
+          ],
+          [
+            22,
+            -8
+          ],
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -66,
+            17
+          ],
+          [
+            -20,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1523,13 +2525,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_gun_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1543,7 +2547,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1661500,
+        "bytes": 2136648,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1571,7 +2575,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1587,16 +2591,91 @@
       ]
     },
     "g7_vanta_anti_drone_gun_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -18,
+            -15
+          ],
+          [
+            0,
+            -4
+          ],
+          [
+            16,
+            -14
+          ],
+          [
+            26,
+            -12
+          ],
+          [
+            57,
+            11
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -59,
+            11
+          ],
+          [
+            -27,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1604,13 +2683,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_gun_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1624,7 +2705,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648076,
+        "bytes": 2123632,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1652,7 +2733,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1668,16 +2749,91 @@
       ]
     },
     "g7_vanta_anti_drone_missiles_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            4,
+            4
+          ],
+          [
+            -3,
+            0
+          ],
+          [
+            -9,
+            2
+          ],
+          [
+            -30,
+            -5
+          ],
+          [
+            -36,
+            -19
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            37,
+            -17
+          ],
+          [
+            29,
+            -3
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1685,13 +2841,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_missiles_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1705,7 +2863,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1659664,
+        "bytes": 2135220,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1733,7 +2891,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1749,16 +2907,91 @@
       ]
     },
     "g7_vanta_anti_drone_missiles_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            4,
+            4
+          ],
+          [
+            -3,
+            0
+          ],
+          [
+            -9,
+            2
+          ],
+          [
+            -30,
+            -5
+          ],
+          [
+            -36,
+            -19
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            37,
+            -17
+          ],
+          [
+            29,
+            -3
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1766,13 +2999,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_missiles_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1786,7 +3021,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660020,
+        "bytes": 2135168,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1814,7 +3049,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1830,16 +3065,91 @@
       ]
     },
     "g7_vanta_anti_drone_missiles_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -20,
+            -12
+          ],
+          [
+            -2,
+            -18
+          ],
+          [
+            12,
+            -8
+          ],
+          [
+            29,
+            -9
+          ],
+          [
+            37,
+            9
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -4,
+            -4
+          ],
+          [
+            -23,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1847,13 +3157,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_missiles_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1867,7 +3179,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1661500,
+        "bytes": 2136648,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1895,7 +3207,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1911,16 +3223,91 @@
       ]
     },
     "g7_vanta_anti_drone_missiles_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            -21,
+            -16
+          ],
+          [
+            -3,
+            0
+          ],
+          [
+            20,
+            -19
+          ],
+          [
+            34,
+            -13
+          ],
+          [
+            38,
+            5
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -16,
+            -2
+          ],
+          [
+            -31,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -1928,13 +3315,15 @@
       "fh": 144,
       "file": "units/g7_vanta_anti_drone_missiles_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -1948,7 +3337,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648076,
+        "bytes": 2123632,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -1976,7 +3365,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -1992,16 +3381,91 @@
       ]
     },
     "g7_vanta_bare": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            56,
+            8
+          ],
+          [
+            -2,
+            21
+          ],
+          [
+            -57,
+            8
+          ],
+          [
+            -80,
+            -23
+          ],
+          [
+            -58,
+            -49
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            57,
+            -49
+          ],
+          [
+            79,
+            -23
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2009,8 +3473,15 @@
       "fh": 144,
       "file": "units/g7_vanta_bare.png",
       "frames": [
-        "hover",
-        "landed"
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
+        "landed",
+        "fire",
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2024,7 +3495,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 444736,
+        "bytes": 2103672,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2048,7 +3519,7 @@
           ]
         },
         "note": "bare airframe (no hardpoint items): reference",
-        "raw_bytes": 1916928,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2064,16 +3535,91 @@
       ]
     },
     "g7_vanta_cannon_anti_drone_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -62,
+            19
+          ],
+          [
+            -87,
+            -12
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            86,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2081,13 +3627,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_anti_drone_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2101,7 +3649,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665152,
+        "bytes": 2146768,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2129,7 +3677,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2145,16 +3693,91 @@
       ]
     },
     "g7_vanta_cannon_anti_drone_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -62,
+            19
+          ],
+          [
+            -87,
+            -12
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            86,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2162,13 +3785,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_anti_drone_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2182,7 +3807,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665508,
+        "bytes": 2146716,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2210,7 +3835,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2226,16 +3851,91 @@
       ]
     },
     "g7_vanta_cannon_anti_drone_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            27,
+            3
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            -41,
+            10
+          ],
+          [
+            -17,
+            -12
+          ],
+          [
+            -9,
+            -16
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            20,
+            -23
+          ],
+          [
+            22,
+            -13
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2243,13 +3943,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_anti_drone_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2263,7 +3965,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2291,7 +3993,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2307,16 +4009,91 @@
       ]
     },
     "g7_vanta_cannon_anti_drone_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            23,
+            -2
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -26,
+            -1
+          ],
+          [
+            -8,
+            -15
+          ],
+          [
+            -4,
+            -16
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            5,
+            -17
+          ],
+          [
+            9,
+            -15
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2324,13 +4101,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_anti_drone_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2344,7 +4123,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1653564,
+        "bytes": 2135180,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2372,7 +4151,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2388,16 +4167,91 @@
       ]
     },
     "g7_vanta_cannon_drones_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -62,
+            19
+          ],
+          [
+            -87,
+            -12
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            86,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2405,13 +4259,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_drones_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2425,7 +4281,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665152,
+        "bytes": 2146768,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2453,7 +4309,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2469,16 +4325,91 @@
       ]
     },
     "g7_vanta_cannon_drones_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            61,
+            19
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -62,
+            19
+          ],
+          [
+            -87,
+            -12
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            86,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2486,13 +4417,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_drones_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2506,7 +4439,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665508,
+        "bytes": 2146716,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2534,7 +4467,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2550,16 +4483,91 @@
       ]
     },
     "g7_vanta_cannon_drones_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            27,
+            3
+          ],
+          [
+            0,
+            -1
+          ],
+          [
+            -41,
+            10
+          ],
+          [
+            -17,
+            -12
+          ],
+          [
+            -9,
+            -16
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            20,
+            -23
+          ],
+          [
+            22,
+            -13
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2567,13 +4575,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_drones_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2587,7 +4597,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2615,7 +4625,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2631,16 +4641,91 @@
       ]
     },
     "g7_vanta_cannon_drones_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            23,
+            -2
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            -26,
+            -1
+          ],
+          [
+            -8,
+            -15
+          ],
+          [
+            -4,
+            -16
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            5,
+            -17
+          ],
+          [
+            9,
+            -15
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2648,13 +4733,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_drones_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2668,7 +4755,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1653564,
+        "bytes": 2135180,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2696,7 +4783,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2712,16 +4799,91 @@
       ]
     },
     "g7_vanta_cannon_gun_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            31,
+            9
+          ],
+          [
+            0,
+            8
+          ],
+          [
+            -32,
+            9
+          ],
+          [
+            -55,
+            -9
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            55,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2729,13 +4891,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_gun_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2749,7 +4913,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665152,
+        "bytes": 2146768,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2777,7 +4941,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2793,16 +4957,91 @@
       ]
     },
     "g7_vanta_cannon_gun_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            31,
+            9
+          ],
+          [
+            0,
+            8
+          ],
+          [
+            -32,
+            9
+          ],
+          [
+            -55,
+            -9
+          ],
+          [
+            -62,
+            -42
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            61,
+            -42
+          ],
+          [
+            55,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2810,13 +5049,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_gun_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2830,7 +5071,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665508,
+        "bytes": 2146716,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2858,7 +5099,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2874,16 +5115,91 @@
       ]
     },
     "g7_vanta_cannon_gun_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            16,
+            1
+          ],
+          [
+            0,
+            -3
+          ],
+          [
+            -23,
+            5
+          ],
+          [
+            -19,
+            -10
+          ],
+          [
+            -9,
+            -16
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            20,
+            -23
+          ],
+          [
+            22,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2891,13 +5207,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_gun_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2911,7 +5229,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -2939,7 +5257,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -2955,16 +5273,91 @@
       ]
     },
     "g7_vanta_cannon_gun_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            14,
+            -1
+          ],
+          [
+            0,
+            8
+          ],
+          [
+            -16,
+            -1
+          ],
+          [
+            -13,
+            -12
+          ],
+          [
+            -4,
+            -16
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            5,
+            -17
+          ],
+          [
+            13,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -2972,13 +5365,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_gun_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -2992,7 +5387,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1653564,
+        "bytes": 2135180,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3020,7 +5415,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3036,16 +5431,91 @@
       ]
     },
     "g7_vanta_cannon_missiles_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            37,
+            13
+          ],
+          [
+            -1,
+            14
+          ],
+          [
+            -43,
+            13
+          ],
+          [
+            -64,
+            -9
+          ],
+          [
+            -57,
+            -38
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            51,
+            -32
+          ],
+          [
+            62,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3053,13 +5523,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3073,7 +5545,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665152,
+        "bytes": 2146768,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3101,7 +5573,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3117,16 +5589,91 @@
       ]
     },
     "g7_vanta_cannon_missiles_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            37,
+            13
+          ],
+          [
+            -1,
+            14
+          ],
+          [
+            -43,
+            13
+          ],
+          [
+            -64,
+            -9
+          ],
+          [
+            -57,
+            -38
+          ],
+          [
+            -2,
+            -62
+          ],
+          [
+            51,
+            -32
+          ],
+          [
+            62,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3134,13 +5681,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3154,7 +5703,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1665508,
+        "bytes": 2146716,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3182,7 +5731,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3198,16 +5747,91 @@
       ]
     },
     "g7_vanta_cannon_missiles_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            19,
+            3
+          ],
+          [
+            -1,
+            -1
+          ],
+          [
+            -30,
+            7
+          ],
+          [
+            -21,
+            -10
+          ],
+          [
+            -13,
+            -17
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            26,
+            -21
+          ],
+          [
+            24,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3215,13 +5839,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3235,7 +5861,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1666952,
+        "bytes": 2148160,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3263,7 +5889,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3279,16 +5905,91 @@
       ]
     },
     "g7_vanta_cannon_missiles_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            17,
+            0
+          ],
+          [
+            -1,
+            14
+          ],
+          [
+            -21,
+            0
+          ],
+          [
+            -14,
+            -12
+          ],
+          [
+            -8,
+            -17
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            14,
+            -17
+          ],
+          [
+            15,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -3,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            3,
+            -69
+          ],
+          [
+            0,
+            -49
+          ],
+          [
+            3,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -3,
+            -51
+          ],
+          [
+            0,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3296,13 +5997,15 @@
       "fh": 144,
       "file": "units/g7_vanta_cannon_missiles_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3316,7 +6019,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1653564,
+        "bytes": 2135180,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3344,7 +6047,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3360,16 +6063,91 @@
       ]
     },
     "g7_vanta_missiles_anti_drone_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            59,
+            18
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -63,
+            16
+          ],
+          [
+            -88,
+            -15
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            87,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3377,13 +6155,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_anti_drone_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3397,7 +6177,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660532,
+        "bytes": 2137452,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3425,7 +6205,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3441,16 +6221,91 @@
       ]
     },
     "g7_vanta_missiles_anti_drone_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            59,
+            18
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -63,
+            16
+          ],
+          [
+            -88,
+            -15
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            87,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3458,13 +6313,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_anti_drone_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3478,7 +6335,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660832,
+        "bytes": 2137344,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3506,7 +6363,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3522,16 +6379,91 @@
       ]
     },
     "g7_vanta_missiles_anti_drone_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11,
+            -5
+          ],
+          [
+            -1,
+            -9
+          ],
+          [
+            -38,
+            6
+          ],
+          [
+            -12,
+            -14
+          ],
+          [
+            1,
+            -13
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            9,
+            -18
+          ],
+          [
+            6,
+            -13
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3539,13 +6471,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_anti_drone_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3559,7 +6493,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1662396,
+        "bytes": 2138908,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3587,7 +6521,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3603,16 +6537,91 @@
       ]
     },
     "g7_vanta_missiles_anti_drone_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            7,
+            -10
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -21,
+            -6
+          ],
+          [
+            -3,
+            -17
+          ],
+          [
+            5,
+            -14
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -7,
+            -12
+          ],
+          [
+            -7,
+            -15
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3620,13 +6629,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_anti_drone_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3640,7 +6651,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648580,
+        "bytes": 2125500,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3668,7 +6679,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3684,16 +6695,91 @@
       ]
     },
     "g7_vanta_missiles_drones_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            59,
+            18
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -63,
+            16
+          ],
+          [
+            -88,
+            -15
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            87,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3701,13 +6787,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_drones_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3721,7 +6809,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660532,
+        "bytes": 2137452,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3749,7 +6837,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3765,16 +6853,91 @@
       ]
     },
     "g7_vanta_missiles_drones_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            59,
+            18
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -63,
+            16
+          ],
+          [
+            -88,
+            -15
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            87,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3782,13 +6945,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_drones_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3802,7 +6967,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660832,
+        "bytes": 2137344,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3830,7 +6995,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3846,16 +7011,91 @@
       ]
     },
     "g7_vanta_missiles_drones_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11,
+            -5
+          ],
+          [
+            -1,
+            -9
+          ],
+          [
+            -38,
+            6
+          ],
+          [
+            -12,
+            -14
+          ],
+          [
+            1,
+            -13
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            9,
+            -18
+          ],
+          [
+            6,
+            -13
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3863,13 +7103,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_drones_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3883,7 +7125,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1662396,
+        "bytes": 2138908,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3911,7 +7153,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -3927,16 +7169,91 @@
       ]
     },
     "g7_vanta_missiles_drones_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            7,
+            -10
+          ],
+          [
+            -3,
+            30
+          ],
+          [
+            -21,
+            -6
+          ],
+          [
+            -3,
+            -17
+          ],
+          [
+            5,
+            -14
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -7,
+            -12
+          ],
+          [
+            -7,
+            -15
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -3944,13 +7261,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_drones_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -3964,7 +7283,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648580,
+        "bytes": 2125500,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -3992,7 +7311,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4008,16 +7327,91 @@
       ]
     },
     "g7_vanta_missiles_gun_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22,
+            6
+          ],
+          [
+            -1,
+            5
+          ],
+          [
+            -30,
+            7
+          ],
+          [
+            -54,
+            -10
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            49,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4025,13 +7419,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_gun_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4045,7 +7441,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660532,
+        "bytes": 2137452,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4073,7 +7469,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4089,16 +7485,91 @@
       ]
     },
     "g7_vanta_missiles_gun_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22,
+            6
+          ],
+          [
+            -1,
+            5
+          ],
+          [
+            -30,
+            7
+          ],
+          [
+            -54,
+            -10
+          ],
+          [
+            -60,
+            -45
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            62,
+            -43
+          ],
+          [
+            49,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4106,13 +7577,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_gun_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4126,7 +7599,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660832,
+        "bytes": 2137344,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4154,7 +7627,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4170,16 +7643,91 @@
       ]
     },
     "g7_vanta_missiles_gun_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            6,
+            -3
+          ],
+          [
+            -1,
+            -6
+          ],
+          [
+            -20,
+            2
+          ],
+          [
+            -17,
+            -11
+          ],
+          [
+            1,
+            -13
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            9,
+            -18
+          ],
+          [
+            13,
+            -10
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4187,13 +7735,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_gun_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4207,7 +7757,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1662396,
+        "bytes": 2138908,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4235,7 +7785,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4251,16 +7801,91 @@
       ]
     },
     "g7_vanta_missiles_gun_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            4,
+            -6
+          ],
+          [
+            -1,
+            5
+          ],
+          [
+            -13,
+            -3
+          ],
+          [
+            -10,
+            -13
+          ],
+          [
+            5,
+            -14
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            -7,
+            -12
+          ],
+          [
+            4,
+            -12
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4268,13 +7893,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_gun_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4288,7 +7915,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648580,
+        "bytes": 2125500,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4316,7 +7943,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4332,16 +7959,91 @@
       ]
     },
     "g7_vanta_missiles_missiles_anti_drone": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            29,
+            10
+          ],
+          [
+            -3,
+            11
+          ],
+          [
+            -41,
+            10
+          ],
+          [
+            -63,
+            -11
+          ],
+          [
+            -54,
+            -39
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            49,
+            -30
+          ],
+          [
+            57,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4349,13 +8051,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_missiles_anti_drone.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4369,7 +8073,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660532,
+        "bytes": 2137452,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4397,7 +8101,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4413,16 +8117,91 @@
       ]
     },
     "g7_vanta_missiles_missiles_deterrents": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            29,
+            10
+          ],
+          [
+            -3,
+            11
+          ],
+          [
+            -41,
+            10
+          ],
+          [
+            -63,
+            -11
+          ],
+          [
+            -54,
+            -39
+          ],
+          [
+            2,
+            -64
+          ],
+          [
+            49,
+            -30
+          ],
+          [
+            57,
+            -8
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4430,13 +8209,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_missiles_deterrents.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4450,7 +8231,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1660832,
+        "bytes": 2137344,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4478,7 +8259,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4494,16 +8275,91 @@
       ]
     },
     "g7_vanta_missiles_missiles_flares": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            8,
+            -1
+          ],
+          [
+            -2,
+            -5
+          ],
+          [
+            -27,
+            4
+          ],
+          [
+            -18,
+            -11
+          ],
+          [
+            -5,
+            -14
+          ],
+          [
+            0,
+            31
+          ],
+          [
+            19,
+            -18
+          ],
+          [
+            14,
+            -9
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4511,13 +8367,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_missiles_flares.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4531,7 +8389,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1662396,
+        "bytes": 2138908,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4559,7 +8417,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [
@@ -4575,16 +8433,91 @@
       ]
     },
     "g7_vanta_missiles_missiles_gun": {
+      "air": true,
       "altitude": 150.0,
       "anim": {
         "air": [
-          "hover",
-          "hover_b"
+          "idle",
+          "idle_b"
         ],
         "move": [
-          "flight",
-          "flight_b"
+          "move",
+          "move_b"
         ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            6,
+            -5
+          ],
+          [
+            -3,
+            11
+          ],
+          [
+            -17,
+            -3
+          ],
+          [
+            -11,
+            -13
+          ],
+          [
+            0,
+            -15
+          ],
+          [
+            0,
+            23
+          ],
+          [
+            7,
+            -14
+          ],
+          [
+            5,
+            -11
+          ]
+        ],
+        "smoke": [
+          [
+            -5,
+            -69
+          ],
+          [
+            0,
+            -81
+          ],
+          [
+            4,
+            -69
+          ],
+          [
+            2,
+            -49
+          ],
+          [
+            4,
+            -51
+          ],
+          [
+            0,
+            -60
+          ],
+          [
+            -4,
+            -51
+          ],
+          [
+            -2,
+            -49
+          ]
+        ],
+        "v": 1
       },
       "anim_fps": 6,
       "bob": 1.0,
@@ -4592,13 +8525,15 @@
       "fh": 144,
       "file": "units/g7_vanta_missiles_missiles_gun.png",
       "frames": [
-        "hover",
-        "hover_b",
-        "flight",
-        "flight_b",
+        "idle",
+        "idle_b",
+        "move",
+        "move_b",
         "landed",
         "fire",
-        "damaged"
+        "damaged",
+        "bank_l",
+        "bank_r"
       ],
       "fw": 208,
       "g7": {
@@ -4612,7 +8547,7 @@
           "landed": 0.0
         },
         "budget": 3145728,
-        "bytes": 1648580,
+        "bytes": 2125500,
         "class": "air",
         "deck_note": "drawn on the barracks roof deck at render alt 0.76 (114 of 150 px)",
         "detail_level": "DL7-3",
@@ -4640,7 +8575,7 @@
             1.10000002384186
           ]
         },
-        "raw_bytes": 6709248,
+        "raw_bytes": 8626176,
         "sample": "air",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "size_m": [

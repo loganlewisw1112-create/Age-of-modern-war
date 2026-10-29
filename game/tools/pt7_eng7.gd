@@ -94,6 +94,19 @@ func run(pt) -> void:
 				best = d
 				wall = int(pid)
 	if wall >= 0:
+		# FLOWB7 (suite 2026-10-28): the facility's repair job is open to Menders and engineers alike (Sentinels7 board,
+		# roles mender / engineer, one slot, nearest man first). With the 13.9c-38 watch (WATCH7-3: wall_roles adds the
+		# mender, a patrol pair on every wall run) a Mender patrolling the north wall is always nearer than the crew in
+		# its standby spot, takes the job and mends the wall himself (suite run: wall back at 3000 / 3000, no engineer
+		# ever on a repair run). This step tests the Facility Engineer crew, so the facility's Menders are removed
+		# first. The checks below are unchanged.
+		var mend := 0
+		for sid in w.entities.keys():
+			var se: Dictionary = w.entities[sid]
+			if se.kind == "unit" and int(se.owner) == me and String(se.get("s7", "")) == "mender":
+				w.destroy(int(sid), "playtest", SimWorld.NEUTRAL)
+				mend += 1
+		print("ENG7 removed %d Menders before the wall is damaged" % mend)
 		var wb: Dictionary = w.entities[wall]
 		wb.hp = float(wb.max_hp) * 0.55
 		var at_wall: bool = await pt._wait_until(func():

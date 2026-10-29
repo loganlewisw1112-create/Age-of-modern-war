@@ -144,6 +144,41 @@ impl RtsGrid {
         PackedInt32Array::from(out.as_slice())
     }
 
+    /// G7 PERF7L: the ids scan_vis(center, r, my_team, vis, mw) returns, sorted ascending by (d2, id) where
+    /// d2 = (cx - x) * (cx - x) + (cy - y) * (cy - y) in f32, the exact value GDScript's
+    /// center.distance_squared_to(pos) gives. Combat's exact scan walks them in that order and stops at the first
+    /// legal one, which is the (distance, id) argmin of the legal set.
+    #[func]
+    fn scan_vis_sorted(&self, center: Vector2, r: f32, my_team: i32, vis: PackedByteArray, mw: i32) -> PackedInt32Array {
+        let r2 = r * r;
+        let v = vis.as_slice();
+        let nv = v.len() as i64;
+        let mut out: Vec<(f32, i32)> = Vec::new();
+        if nv == 0 {
+            return PackedInt32Array::new();
+        }
+        self.for_each_near(center, r, |i| {
+            if self.team[i] == my_team {
+                return;
+            }
+            let p = self.pos[i];
+            let d = p - center;
+            if d.x * d.x + d.y * d.y > r2 {
+                return;
+            }
+            let vi = (p.y.floor() as i64) * (mw as i64) + (p.x.floor() as i64);
+            if vi < 0 || vi >= nv || v[vi as usize] != 1 {
+                return;
+            }
+            let ex = center.x - p.x;
+            let ey = center.y - p.y;
+            out.push((ex * ex + ey * ey, self.ids[i]));
+        });
+        out.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+        let ids: Vec<i32> = out.iter().map(|q| q.1).collect();
+        PackedInt32Array::from(ids.as_slice())
+    }
+
     /// Ids of items whose centre is within r of center, ascending.
     #[func]
     fn query_radius(&self, center: Vector2, r: f32) -> PackedInt32Array {

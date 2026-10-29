@@ -1040,13 +1040,24 @@ static func _free_bay(S: Dictionary, me: int) -> int:
 
 ## Registers / re-targets APC e: to = "g<i>" | "b" (any bay) | "b<j>" | "w<k>" | "x" (out; tgt world point or []).
 ## who = "fac" (CnFacility flow) | "player". False when the vehicle cannot be driven by the controller.
-static func order(w: SimWorld, e: Dictionary, fid: int, to: String, who: String, tgt: Array = [], then := "", gar := -2) -> bool:
+static func order(w: SimWorld, e: Dictionary, fid: int, to: String, who: String, tgt: Array = [], then := "", gar := -2, loose := false) -> bool:
 	var S := st(w)
 	var key := str(int(e.id))
 	var o := _origin(w, fid)
 	var V: Dictionary = S.v.get(key, {})
 	if V.is_empty():
 		var at := place_at(Vector2(e.pos) - o)
+		if at == "" and (loose or _by_gate(Vector2(e.pos) - o)):
+			at = "out"   # REGFIX7: between places (gate mouth / ECP after a hand-off): managed like an APC outside, so it is rinsed
+		if at == "":
+			# FLOWC7 (facint7): inside the compound but between places (e.g. just unloaded down the stealth dropship's
+			# ramp at the helipad): join the lanes at the nearest lane node (route starts at its own pose, see _go)
+			# instead of refusing; fd7_go garage / bays was accepted and silently did nothing.
+			var pl := Vector2(e.pos) - o
+			var csz := float(CnFacility.conf().compound)
+			var nn := _nearest(graph(), pl) if Rect2(0, 0, csz, csz).has_point(pl) else -1
+			if nn >= 0 and (graph().pos[nn] as Vector2).distance_to(pl) < 2.5:
+				at = "n%d" % nn
 		if at == "":
 			return false
 		V = {"id": int(e.id), "fac": fid, "seq": 0, "st": "park" if at != "out" else "out", "at": at, "to": "", "then": "",
@@ -1080,6 +1091,14 @@ static func order(w: SimWorld, e: Dictionary, fid: int, to: String, who: String,
 	return true
 
 
+## G7 REGFIX7: compound-local p is in the gate mouth (between the gate exit node and the apron), where _handoff leaves APCs.
+static func _by_gate(p: Vector2) -> bool:
+	var G := graph()
+	var ex: Vector2 = G.pos[int(G.exit)]
+	var en: Vector2 = G.pos[int(G.entry)]
+	return p.distance_to(ex) < 7.0 or p.distance_to(en + Vector2(0, 2.0)) < 7.0
+
+
 ## Starts V towards V.to from where it stands (parked place, or outside -> approach the gate apron first).
 static func _go(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 	V.erase("pend")
@@ -1101,7 +1120,7 @@ static func _go(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 	if at == to:
 		_arrive(w, V, e)
 		return
-	var legs := plan_cached(at, to, int(V.gar))
+	var legs := plan(at, to, int(V.gar), PackedVector2Array([Vector2(e.pos) - o])) if at.left(1) == "n" else plan_cached(at, to, int(V.gar))   # FLOWC7: "n<node>" = joining from its own pose
 	if legs.is_empty():
 		V.st = "park"
 		return
@@ -1262,7 +1281,7 @@ static func order_team(w: SimWorld, T: Dictionary, aps: Array, where: String) ->
 		if not V.is_empty() and String(V.get("rto", "")) == to and String(V.st) == "drive":
 			any = true
 			continue   # already on its way there (inner -> garage is one drive)
-		if order(w, a, int(T.fac), to, "fac", [], "", gar):
+		if order(w, a, int(T.fac), to, "fac", [], "", gar, where == "decon"):   # REGFIX7: a recalled APC is always taken in
 			any = true
 		else:
 			Movement.order_move(w, a, CnFacility._slot_pos(CnFacility.fac(w, int(T.fac)), T, where, i))
@@ -1518,6 +1537,12 @@ static func _watch_out(w: SimWorld, S: Dictionary) -> void:
 static func _intercept(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 	var od: Dictionary = e.order
 	var t := String(od.get("type", ""))
+	if t == "board" and (String(V.st) == "park" or String(V.st) == "queue"):
+		# FLOWC7 (facint7): a load order (Transport: drive up a carrier's ramp, e.g. the stealth dropship on its helipad)
+		# takes a parked APC off the controller; _pin snapped it back onto its bay pose every tick and it never boarded.
+		# It is re-taken (_discover) when it is next parked in its garage, like any APC the controller lost.
+		st(w).v.erase(str(int(e.id)))
+		return
 	if String(V.st) == "drive" and not od.has("fd7") and t != "move" and t != "attack_move":
 		V.st = "hold"   # player stop / hold: brake to a standstill where it is
 		V.erase("pend")
@@ -1567,6 +1592,9 @@ static func _approach(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 			if int(X.id) != int(V.id) and int(X.fac) == int(V.fac) and String(X.st) == "approach" and int(X.seq) < int(V.seq):
 				k += 1
 		var far := o + en + Vector2(0, 5.0 + 2.6 * float(mini(k, 4)))
+		if not Movement.is_passable_e(w, e, w.cell_of(far)):
+			_approach_blocked(w, V, e, o + en + Vector2(0, 2.0))   # REGFIX7: no room out on the gate axis (map edge, cliff, water)
+			return
 		if p.distance_to(far) > 1.0 and not (idle and p.distance_to(far) <= 3.0):
 			if idle or not (od.get("target") is Vector2) or Vector2(od.target).distance_to(far) > 0.01:
 				Movement.order_move(w, e, far)
@@ -1584,12 +1612,24 @@ static func _approach(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 		e.order["fd7"] = 1
 		return
 	var ap := o + en + Vector2(0, 2.0)   # stage 1: rolling north up the gate axis to the apron, then the controller drives
-	if p.distance_to(ap) > 0.25 and not (idle and p.distance_to(ap) <= 2.5):
+	var inner := int(V.get("apq", 0)) == 1
+	if inner:   # REGFIX7: the apron itself is off the map / blocked: line up on the gate axis just inside the entry instead
+		ap = o + en + Vector2(0, -1.0)
+	var tol := 0.25
+	if int(V.get("apb", 0)) == 1:   # REGFIX7 blocked-queue path only (normal layouts unchanged): an APC waiting next to the
+		tol = 1.0                    # apron can keep Movement from reaching the exact point; stalled 1.5 s within 2.5 -> go
+		var la: Array = V.get("apl", [-999.0, -999.0])   # plain floats: the state is saved and hashed
+		if p.distance_to(Vector2(float(la[0]), float(la[1]))) > 0.05:
+			V.apl = [p.x, p.y]
+			V.apw = w.tick
+		elif w.tick - int(V.apw) >= SimWorld.TICK_RATE * 3 / 2:
+			tol = 2.5
+	if p.distance_to(ap) > tol and not (idle and p.distance_to(ap) <= 2.5):
 		if idle:
 			Movement.order_move(w, e, ap)
 			e.order["fd7"] = 1
 		return
-	var want := ((o + en) - p).angle()
+	var want := ((o + en) - p).angle() if not inner else -PI * 0.5
 	var df := wrapf(want - float(e.facing), -PI, PI)
 	if absf(df) > 0.002:   # line up on the gate axis before rolling in (Movement's arrival leaves it a few degrees off)
 		var step := V_FWD / float(SimWorld.TICK_RATE) / R_MIN
@@ -1602,12 +1642,16 @@ static func _approach(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 	if to.left(1) != "w":   # every APC coming in is rinsed in the wash on the way (13.9c-2)
 		first = "w0"
 		V.then = to
-	var legs := plan("e", first, int(V.gar), PackedVector2Array([p - o]))
+	var legs := plan("e", first, int(V.gar), PackedVector2Array([p - o])) if not inner else plan("n%d" % _axis_node(p - o), first, int(V.gar), PackedVector2Array([p - o]))
 	if legs.is_empty():
 		st(w).v.erase(str(int(V.id)))
 		Movement.order_move(w, e, o + Vector2(place_pose(first)[0]))
 		return
 	V.erase("ap")
+	V.erase("apb")
+	V.erase("apq")
+	V.erase("apl")
+	V.erase("apw")
 	_set_legs(V, legs)
 	V.rto = first
 	V.to = first
@@ -1618,6 +1662,54 @@ static func _approach(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 
 
 # ================================================================ driving
+## G7 REGFIX7: stage 0 when the waiting spot out on the gate axis is not passable (a compound whose gate faces the map
+## edge, a cliff or water: pt7_seq7's facility). The returning APCs used to be sent to that spot forever and never reached
+## the wash. Instead they wait where they stand and go in nearest-to-the-apron first (ties: order sequence); only an APC
+## that already left the queue (stage 1 or driving) has to clear the apron first. Layouts with room outside the gate
+## never reach this path (behaviour and hashes unchanged there).
+static func _approach_blocked(w: SimWorld, V: Dictionary, e: Dictionary, ap: Vector2) -> void:
+	var p := Vector2(e.pos)
+	var inner := not Movement.is_passable_e(w, e, w.cell_of(ap))   # the apron itself is off the map / blocked
+	if inner:
+		ap += Vector2(0, -3.0)   # entry - 1 on the gate axis: the APC lines up inside the gate mouth instead
+	if int(V.get("ap", 0)) == 0 and not e.order.has("fd7"):   # waiting: drop the leftover order (the hand-off move out of the
+		Movement.stop_path(e)                                    # gate), else _intercept takes it for a new player order
+		e.order = {"type": "idle", "fd7": 1}
+	var d := p.distance_to(ap)
+	for kk in st(w).v:
+		var X: Dictionary = st(w).v[kk]
+		var xe = w.entities.get(int(X.id))
+		if int(X.id) == int(V.id) or xe == null or int(X.fac) != int(V.fac):
+			continue
+		var xd := Vector2(xe.pos).distance_to(ap)
+		if String(X.st) == "approach" and int(X.get("ap", 0)) == 0:
+			if xd < d or (xd == d and int(X.seq) < int(V.seq)):
+				return   # another queued APC is nearer the apron: it goes first
+		elif String(X.st) == "approach" or xd < 3.5:   # one at a time onto the apron
+			return   # the APC ahead has not cleared the apron yet
+	V.ap = 1
+	V.apb = 1   # stage 1 takes a looser apron stop: a queued APC may stand next to the apron (Movement stops short of it)
+	if inner:
+		V.apq = 1
+	Movement.order_move(w, e, ap)
+	e.order["fd7"] = 1
+
+
+## G7 REGFIX7: the gate-axis lane node just north of compound-local p (the route start for an APC lined up inside the
+## gate mouth because the apron is off the map); the entry node when there is none.
+static func _axis_node(p: Vector2) -> int:
+	var G := graph()
+	var en: Vector2 = G.pos[int(G.entry)]
+	var best := int(G.entry)
+	var by := -INF
+	for i in (G.pos as Array).size():
+		var q: Vector2 = G.pos[i]
+		if absf(q.x - en.x) < 0.05 and q.y < p.y - 0.5 and q.y > by:
+			by = q.y
+			best = i
+	return best
+
+
 ## G7 APCMOV7-4: convoy deadlock breaker. The APC X ordered earlier normally enters the gate lane before V, but when V is
 ## physically ahead of it on the shared lane (two APCs sent out of their garages at once: V's shorter route reaches the merge
 ## first) X stands still behind V (spacing) while V waits for X to enter first: neither can move. X is "held behind" V when it
@@ -1790,6 +1882,8 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 				if dpx < D_SAFE and dpx < me.distance_to(px) - 0.01:
 					stop = float(sm[0])
 					break
+			if stop >= 0.0 and bool(GT.get("hard", false)) and sally.has_point(me):
+				stop = _sally_follow_stop(R, s, stop, px, c0)
 			if stop < 0.0 and info.has(int(k2)):
 				var XI: Dictionary = info[int(k2)]
 				var sx := float(X.s)
@@ -2011,7 +2105,7 @@ static func _gate_clear0(w: SimWorld, F: Dictionary, zn: String) -> bool:
 		w.cache["fd7_gc"] = gc
 	var ck := "%d:%s" % [int(F.id), zn]
 	var lb = w.entities.get(int(gc.get(ck, -1)))
-	if lb != null and lb.kind == "unit" and _gate_blocks(z, lb):
+	if lb != null and lb.kind == "unit" and _gate_blocks(w, z, lb):
 		return false
 	var u := _gc_bound() + 0.01
 	var x0 := z.position.x - u
@@ -2024,17 +2118,52 @@ static func _gate_clear0(w: SimWorld, F: Dictionary, zn: String) -> bool:
 			continue
 		if not w.entities.has(int(e.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
 			continue
-		if _gate_blocks(z, e):
+		if _gate_blocks(w, z, e):
 			gc[ck] = int(e.id)
 			return false
 	gc.erase(ck)
 	return true
 
 
+## FLOWB7 (suite 2026-10-28, gate7 sally deadlock): the follow stop is quantised to the 0.4-tile look-ahead samples
+## less a 0.45 margin, so the second APC of a hardened sally (SALLY_CAP 2) could stop up to 0.85 tile further back than
+## D_SAFE behind the one waiting at the outer gate: centre at y 22.85 with the inner gate's keep-clear band reaching
+## 22.88 (gate y 20..22 + HL + 0.1). The inner gate then never closed, so the outer never opened: deadlock. Only when
+## that stop would leave the APC inside the inner gate's keep-clear band, the exact D_SAFE boundary is found (bisection
+## on the route between the last free sample and the first close one) and the APC closes up to it less 0.05; every
+## other stop is unchanged. Pure function of the route and positions (deterministic).
+static func _sally_follow_stop(R: Dictionary, s: float, stop: float, px: Vector2, c0: Dictionary) -> float:
+	var gi := _rect(c0.get("gate_inner", [0, 0, 0, 0]))
+	if gi.size.x <= 0.0:
+		return stop
+	var band := gi.grow_individual(HW, HL + 0.1, HW, HL + 0.1)
+	var at: Vector2 = pose_at(R, maxf(s, stop - 0.45))[0]
+	if not band.has_point(at):
+		return stop
+	var lo := maxf(s, stop - 0.4)
+	var hi := stop
+	for i in 12:
+		var mid := (lo + hi) * 0.5
+		if (pose_at(R, mid)[0] as Vector2).distance_to(px) >= D_SAFE:
+			lo = mid
+		else:
+			hi = mid
+	return maxf(stop - 0.4, lo + 0.40)   # the caller stops at stop - 0.45: lo - 0.05
+
+
 ## The original per-unit gate test (body radius across x, APC half-length along the gate axis for vehicles).
-static func _gate_blocks(z: Rect2, e: Dictionary) -> bool:
+## FLOWB7 (suite 2026-10-28, gate7 sally deadlock): nothing airborne (a drone-bay interceptor loitering over the gate,
+## move class air_low, was counted as a vehicle and held the inner gate open) and nobody up on the wall-walk (a
+## Sentinel of the 13.9c-38 watch at the end of a south wall run, on the wall piece beside the gate, overlapped the
+## opening by his body radius and held the outer gate open) stands in the gate's door.
+static func _gate_blocks(w: SimWorld, z: Rect2, e: Dictionary) -> bool:
+	var mc := Movement.move_class(e)
+	if Movement.is_air(mc):
+		return false
+	if mc == "foot" and Movement.wallwalk_team(w, w.cell_of(e.pos)) >= 0:
+		return false
 	var rad := float(Movement.udef(String(e.def)).get("radius", 0.3))
-	var ry := HL + 0.1 if Movement.move_class(e) != "foot" else rad
+	var ry := HL + 0.1 if mc != "foot" else rad
 	return z.grow_individual(rad, ry, rad, ry).has_point(e.pos)
 
 

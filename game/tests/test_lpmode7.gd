@@ -61,13 +61,14 @@ func test_start_state() -> void:
 	check_eq(String(w.cfg.mode), "last_protocol", "mode set")
 	check_eq(int(w.factions[s.fid].stage), 10, "Stage 10")
 	check((w.factions[s.fid].research.done as Array).has("g7_counter_nanite"), "everything researched (counter-nanite included)")
-	check_eq((s.base.rings as Array).size(), 3, "3 rings")
+	# LPSHRINK7, 13.9c-36 authority record (owner 2026-10-28 "TOO mf big ... shrink it down drastically"; two rings, about half):
+	check_eq((s.base.rings as Array).size(), 2, "2 rings")
 	var names := []
 	for r in s.base.rings:
 		names.append(String(r.name))
 		check((r.walls as Array).size() + (r.towers as Array).size() > 20, "%s ring walled (%d)" % [r.name, (r.walls as Array).size()])
 		check(not (r.gates as Array).is_empty(), "%s ring has gates" % r.name)
-	check_eq(names, ["outer", "economy", "core"], "ring order outer/economy/core")
+	check_eq(names, ["outer", "core"], "ring order outer/core")
 	check(not (s.base.rings[0].turrets as Array).is_empty(), "outer ring turrets")
 	check(w.entities.has(int(s.facility)), "Counter-Nanite facility built")
 	check(bool(s.filled), "facility filled")
@@ -89,7 +90,14 @@ func test_start_state() -> void:
 	check(cn.size() >= 6, "2 strike teams + 4 tactical squads (%d teams)" % cn.size())
 	check_eq(apcs, 8, "8 APCs")
 	check_eq(ds, 1, "stealth dropship on its helipad")
-	check_eq(vt, 2, "2 regular VTOL dropships")
+	check_eq(vt, 1, "1 regular VTOL dropship (13.9c-36: 2 pads -> 1)")
+	var heli := 0
+	for e in w.units_of(int(s.fid)):
+		if e.has("lp_pad"):
+			heli += 1
+	var lpm = w.map.get("lp")
+	var want_h := mini(6, ((lpm.base.airfield.get("helipads", []) as Array).size()) if lpm is Dictionary and lpm.has("base") else 0)
+	check_eq(heli, want_h, "every helipad loaded at the start, 6 on the real map (13.9c-36 ORCH)")
 	check(int(s.army_n) >= 80, "main army pre-built (%d)" % int(s.army_n))
 	check_eq((Cores.list(w) as Array).size(), 3, "3 doomsday cores")
 	check(Creep.coverage(w) > 0.02, "creep pre-spread (%.3f)" % Creep.coverage(w))
@@ -248,14 +256,14 @@ func test_breach_fallback_and_raid() -> void:
 		var gb = w.entities.get(int(g))
 		if gb != null and bool(gb.get("locked", false)):
 			locked += 1
-	check(locked > 0, "economy ring gates locked (%d)" % locked)
+	check(locked > 0, "core ring gates locked (%d)" % locked)
 	var after := 0
 	for e in w.units_of(int(s.fid)):
 		if e.has("lp_ring") and int(e.lp_ring) == 0:
 			after += 1
 	check(before > 0 and after == 0, "outer defenders fall back to the next ring (%d -> %d)" % [before, after])
-	# economy raid
-	var q := Vector2(r1.position.x + 3, r1.get_center().y) + Vector2(0.5, 0.5)
+	# economy raid (13.9c-36: the economy sits between the walls, in the outer ring's band)
+	var q := Vector2(r1.position.x - 4, r1.get_center().y + 4) + Vector2(0.5, 0.5)
 	for i in 3:
 		w.spawn_unit("m_walker", int(s.mfid), q + Vector2(0, i))
 	_evs(w, 60, [])
@@ -389,7 +397,7 @@ func test_real_map_layout_breach_and_tide() -> void:
 	w.run_ticks(2)
 	var s := _s(w)
 	var lp: Dictionary = w.map.lp
-	for i in 3:
+	for i in 2:   # 13.9c-36: two rings
 		var r: Dictionary = s.base.rings[i]
 		check_eq((r.gates as Array).size(), (lp.base.rings[i].gates as Array).size(), "%s ring: every map gate cell has a gate" % r.name)
 		check((r.towers as Array).size() > 0, "%s ring: map towers built (%d)" % [r.name, (r.towers as Array).size()])
@@ -401,7 +409,7 @@ func test_real_map_layout_breach_and_tide() -> void:
 		var gb = w.entities.get(int(g))
 		if gb != null and bool(gb.get("locked", false)):
 			locked += 1
-	check_eq(locked, (s.base.rings[1].gates as Array).size(), "outer ring falls: every economy gate sealed")
+	check_eq(locked, (s.base.rings[1].gates as Array).size(), "outer ring falls: every core gate sealed")
 	check(String(s.posture) != "maximum", "posture below maximum before the Tide")
 	LastProtocol.start_tide(w, s, "countdown")
 	check_eq(String(s.posture), "maximum", "THE TIDE sets maximum posture inside start_tide")
@@ -453,7 +461,7 @@ func test_base7_real_base_built() -> void:
 	var out_band := 0
 	for g in gens:
 		var d := maxi(absi(g.x - C.x), absi(g.y - C.y))
-		if d < int(lp.base.rings[2].half) - 7 or d > int(lp.base.rings[1].half):
+		if d < int(lp.base.rings[1].half) - 7 or d > int(lp.base.rings[0].half):   # 13.9c-36: core / outer band
 			out_band += 1
 	check_eq(out_band, 0, "every generator in a power plot (core/economy rows), none scattered (%d gens)" % gens.size())
 	var r0: Dictionary = lp.base.rings[0]
@@ -505,7 +513,7 @@ func test_base7_2_fortress_built_and_patrols_walk() -> void:
 	var C: Vector2i = base.center
 	# dropships on the pads
 	var vt: Array = s.vtols
-	check_eq(vt.size(), 2, "two VTOL dropships")
+	check_eq(vt.size(), 1, "one VTOL dropship (13.9c-36 authority record: pads 2 -> 1)")
 	for i in vt.size():
 		var e = w.entities.get(int(vt[i]))
 		if not check(e != null, "dropship %d alive" % i):
@@ -531,25 +539,29 @@ func test_base7_2_fortress_built_and_patrols_walk() -> void:
 					hangars += 1
 			"s_tank_traps", "s_barbed_wire":
 				obst += 1
-	check_eq(pads, 2, "two dropship pads built")
+	check_eq(pads, 1, "one dropship pad built (13.9c-36)")
 	check(field >= 0, "airfield built")
-	check_eq(hangars, 3, "3 heavy hangars adopted by the airfield (apron slots)")
+	check_eq(hangars, 2, "2 heavy hangars adopted by the airfield (apron slots; 13.9c-36: 3 -> 2)")
 	if field >= 0:
 		var rw: Array = Airfield.layout(w, field).runways
 		check(not rw.is_empty() and (rw[0][0] as Vector2).distance_to(air.runway[0]) < 0.01, "the built airfield's runway is the planned one")
 	check(obst >= int(0.9 * float((base.obstacles as Array).size())), "gate obstacles built (%d / %d)" % [obst, (base.obstacles as Array).size()])
-	# gate guards
+	# gate guards (13.9c-36 authority record, army about half: 7 guard teams for 12 posts, at least 2 posts per gate)
+	var per_gate := {}
 	for gp in base.gate_posts:
 		var c := Vector2(gp.cell) + Vector2(0.5, 0.5)
 		var n := 0
 		for e in w.units_of(fid):
 			if Vector2(e.pos).distance_to(c) <= 2.5:
 				n += 1
-		check(n >= 1, "gate post %s manned (%d)" % [gp.cell, n])
+		if n >= 1:
+			per_gate[String(gp.side)] = int(per_gate.get(String(gp.side), 0)) + 1
+	for sd in ["n", "e", "s"]:
+		check(int(per_gate.get(sd, 0)) >= 2, "outer gate %s: guard posts manned (%d)" % [sd, int(per_gate.get(sd, 0))])
 	# patrols walk (the LP tick hook calls Garr.tick once ORCH wires it; call it here when it is not wired)
 	var wired := FileAccess.get_file_as_string("res://sim/systems/last_protocol.gd").contains("LpGarrison7.tick")
 	var G: Dictionary = w.sys_state.get(Garr.KEY, {})
-	check(Garr.patrol_count(w) >= 30, "wall patrollers registered (%d)" % Garr.patrol_count(w))
+	check(Garr.patrol_count(w) >= 15, "wall patrollers registered (%d; 13.9c-36: about half)" % Garr.patrol_count(w))
 	if G.is_empty():
 		return
 	var wp0 := {}
@@ -573,6 +585,13 @@ func test_base7_2_fortress_built_and_patrols_walk() -> void:
 		var k := int(G.ring[int(rec[1])])
 		var rr: Vector2i = preload("res://sim/maps/last_protocol.gd").ring_road(k)
 		var d := maxf(absf(e.pos.x - float(C.x) - 0.5), absf(e.pos.y - float(C.y) - 0.5))
+		if k == (base.rings as Array).size() - 1 and k > 0:
+			# 13.9c-36 (two rings): the core patrol loops the facility service road (centre line 15 from the site centre)
+			var sc := Vector2((base.facility_site as Rect2i).get_center())
+			var ds := maxf(absf(e.pos.x - sc.x), absf(e.pos.y - sc.y))
+			if ds < 12.0 or ds > 19.5:   # +-3 like the outer check, +1.5 for the step-aside at the facility gate
+				off_road += 1
+			continue
 		if d < float(rr.x) - 3.0 or d > float(rr.y) + 3.0:
 			off_road += 1
 	check(off_road <= 2, "patrollers stay on their wall's ring road (%d off)" % off_road)

@@ -15,13 +15,27 @@ extends Node2D
 ##   --sim-thread=off|on|force  G4 (THREAD): step the sim on a WorkerThreadPool task (default on
 ##                         when safe: native off, or a threads-enabled native DLL); off = inline
 
+const CnFacility7 = preload("res://sim/systems/cn_facility.gd")  # G7 CARDSEL7
 const FacSeq7 = preload("res://presentation/view/fac_seq7.gd")  # G7 SEQ7: facility mission sequences
 const FacAtmo7 = preload("res://presentation/view/fac_atmo7.gd")  # G7 ATMO7: facility alarm, night, smoke, wear, signs, damage
 const WallTurret7 = preload("res://sim/systems/wallturret7.gd")  # G7 WTUR7 CR 3640
 const FacLife7 = preload("res://presentation/view/fac_life7.gd")  # G7 LIFE7 CR 3644
 const TILE_W := 64
 const TILE_H := 32
-const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dropping backlog
+const SIM_FRAME_BUDGET_US := 34000   # max sim time per rendered frame before dropping backlog (inline mode)
+## G7 LPPERF7B: threaded steps run beside the frame, so a task may take longer than a frame; this only bounds how stale
+## the snapshot gets while catching up (2 Last Protocol steps fit; a 34 ms budget stopped after one).
+const SIM_THREAD_BUDGET_US := 90000
+const MAX_BACKLOG_STEPS := 5
+## G7 LPPERF7C: threaded tasks run at most this many steps (was 5, then cut by the budget, so tasks alternated 2 and 3
+## steps and the hand-overs came at uneven intervals); with the snapshot prev bridged over the task (SimRunner) and the
+## next interval predicted from the per-step interval x k, motion glides evenly. Inline mode keeps 5 / 34 ms.
+const THREAD_MAX_K := 3
+const SNAP_DT_MARGIN := 1.15   # predicted interval x this: a late hand-over pauses motion less often (a stall reads worse than a lag)
+var _step_iv := 0.05   # smoothed real time per sim step between hand-overs (s)
+var _k_last := 0       # steps asked of the task in flight
+var _k_cut := 99       # steps the last task ran when its time budget stopped it early (99 = it ran all it was asked)
+static var SCHED7C := true   # A/B switch for perf probes: false = the LPPERF7B scheduling (k <= 5, measured-interval alpha)
 
 const Construction = preload("res://sim/systems/construction.gd")
 const TerrainLayer = preload("res://presentation/view/terrain_layer.gd")
@@ -76,6 +90,7 @@ var snap: Dictionary = {}                # latest render snapshot (sim/render_sn
 var sim_threaded := false                # G4: true = steps run on a worker task
 var player_fid: int = 0
 var selection: Array[int] = []
+var sel_part := ""   # G7 CARDSEL7 (13.9c-37): facility zone clicked ("drone_bay"); selection then holds that facility's id
 var speed: float = 1.0
 var paused: bool = false
 var control_groups: Dictionary = {}     # int 1..9 -> Array[int] of entity ids
@@ -119,6 +134,9 @@ var _team_cols: Dictionary = {}
 var _forced_joins := 0
 var _busy_frames := 0
 var _snap_us := 0
+var _joins := 0        # G7 LPPERF7B: hand-overs and steps per --fps-log second (SIMTHREAD line)
+var _join_steps := 0
+var _kick_k := 0
 var _acc: float = 0.0
 var _alpha: float = 0.0
 var _fps_tick0: int = -1   # world.tick at the start of the current --fps-log second (tps)
@@ -182,6 +200,11 @@ func _init_view() -> void:
 			_fps_log = true
 		elif a == "--sim-paused":
 			paused = true  # render-only perf measurement
+		elif a == "--old7c":   # G7 LPPERF7C perf A/B only: snapshot static reuse, prev bridge, k cap, ground batch off
+			SCHED7C = false
+			RenderSnap.STATIC_REUSE = false
+			SimRunner.BRIDGE_PREV = false
+			FacAtmo7.GROUND_BATCH = false
 		elif a == "--no-vsync":
 			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		elif a.begins_with("--autoshot="):
@@ -369,12 +392,17 @@ func _on_pre_draw() -> void:
 
 func _kick_sim() -> void:
 	_kick_pending = false
-	var k := mini(int(_acc / SimWorld.DT), 5)
+	var k := mini(int(_acc / SimWorld.DT), THREAD_MAX_K if SCHED7C and _runner != null and _runner.threaded else 5)
 	if k <= 0 or _runner == null or _runner.task_id >= 0:
 		return
-	_acc -= k * SimWorld.DT
-	if _acc >= SimWorld.DT:
-		_acc = 0.0  # drop backlog instead of spiralling
+	if _runner.threaded and SCHED7C:
+		# G7 LPPERF7C: the snapshot just taken is shown until this task hands over: about k steps (or as many as the
+		# budget let the last task run)
+		_k_last = k
+		_snap_dt = clampf(_step_iv * mini(k, _k_cut) * SNAP_DT_MARGIN, 0.008, 0.5)
+	# G7 LPPERF7B: _acc is debited at the join by the steps that actually ran (a task can stop early on its time
+	# budget); it used to be debited k steps here, so every budget stop silently dropped ticks and tps fell to about
+	# one step per frame whenever a step cost more than the budget (Last Protocol: ~17 tps at 26 fps).
 	var req: Array = []
 	for id in selection:
 		if req.size() >= RenderSnap.DETAIL_MAX - 1:
@@ -383,6 +411,7 @@ func _kick_sim() -> void:
 	if _hover_id >= 0:
 		req.append(_hover_id)
 	RenderSnap.request(_world, req)
+	_kick_k += k
 	_runner.start(k)
 	if not _runner.threaded:
 		_join_now()
@@ -417,11 +446,18 @@ func _join_now() -> void:
 	var r: Dictionary = _runner.join()
 	if r.is_empty():
 		return
+	# G7 LPPERF7B: debit the steps that ran; keep at most MAX_BACKLOG_STEPS of real time owed (a PC that cannot keep
+	# up slows the game down instead of spiralling; it used to drop everything past one task's k)
+	_acc = clampf(_acc - int(r.get("steps", 0)) * SimWorld.DT, 0.0, MAX_BACKLOG_STEPS * SimWorld.DT)
+	_joins += 1
+	_join_steps += int(r.get("steps", 0))
 	_t_sim += int(r.us)
 	_snap_us += int(r.snap_us)
 	snap = RenderSnap.latest(_world)
 	var iv := clampf(_anim_time - _snap_t, 0.008, 0.5)
 	_snap_dt = lerpf(_snap_dt, iv, 0.3)
+	_step_iv = lerpf(_step_iv, iv / maxf(1.0, float(r.get("steps", 1))), 0.3)   # G7 LPPERF7C (_kick_sim)
+	_k_cut = int(r.get("steps", 1)) if int(r.get("steps", 1)) < _k_last else 99
 	_snap_t = _anim_time
 	var evs: Array = r.events
 	_on_step_events(evs)
@@ -566,7 +602,7 @@ func _process(delta: float) -> void:
 		g2_over.queue_redraw()
 		g3_ground.queue_redraw()
 	_t_view += Time.get_ticks_usec() - tv
-	_runner.budget_us = SIM_FRAME_BUDGET_US
+	_runner.budget_us = SIM_THREAD_BUDGET_US if _runner.threaded else SIM_FRAME_BUDGET_US
 	_kick_pending = _runner.threaded and not paused and _runner.task_id < 0 and _acc >= SimWorld.DT
 	if _fps_log:
 		_fps_frames += 1
@@ -578,7 +614,10 @@ func _process(delta: float) -> void:
 			var stick := int(snap.get("tick", 0))
 			var tps := float(stick - _fps_tick0) / _fps_t if _fps_tick0 >= 0 else 0.0
 			_fps_tick0 = stick
-			print("SIMTHREAD mode=%s busy_frames=%d forced_joins=%d snap_ms_per_s=%.2f" % ["on" if sim_threaded else "off", _busy_frames, _forced_joins, _snap_us / 1000.0 / _fps_t])
+			print("SIMTHREAD mode=%s busy_frames=%d forced_joins=%d snap_ms_per_s=%.2f joins=%d steps=%d k_asked=%d backlog=%.2f" % ["on" if sim_threaded else "off", _busy_frames, _forced_joins, _snap_us / 1000.0 / _fps_t, _joins, _join_steps, _kick_k, _acc / SimWorld.DT])
+			_joins = 0
+			_join_steps = 0
+			_kick_k = 0
 			_busy_frames = 0
 			_snap_us = 0
 			print("FPS tps=%.1f fps=%.1f engine_fps=%.0f units=%d entities=%d tick=%d sim_ms_per_s=%.0f view_ms_per_s=%.0f ent_ms=%.1f proc_ms=%.1f draw_calls=%d zoom=%.2f lod=%d drawn=%d native=%s map=%dx%d" % [tps, fps, Engine.get_frames_per_second(), units, int(snap.get("entity_count", 0)), stick, _t_sim / 1000.0 / _fps_t, _t_view / 1000.0 / _fps_t, _t_ent / 1000.0 / maxf(1.0, _fps_frames), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), camera.zoom.x, entity_layer.lod, entity_layer.drawn, _native_state(), int(snap.get("map_w", 0)), int(snap.get("map_h", 0))])
@@ -751,7 +790,8 @@ func center_camera_on(world_pos: Vector2) -> void:
 		camera.center_on(world_to_screen(world_pos))
 
 
-func select_ids(ids: Array) -> void:
+func select_ids(ids: Array, part: String = "") -> void:
+	sel_part = part
 	var out: Array[int] = []
 	for raw in ids:
 		var id := int(raw)
@@ -1117,6 +1157,8 @@ func _finish_left(pos: Vector2, shift: bool) -> void:
 func _click_select(p: Vector2, shift: bool) -> void:
 	var e = entity_at(p, false)
 	if e == null:
+		if not shift and _select_facility_part_at(p):
+			return
 		if not shift:
 			select_ids([])
 		return
@@ -1132,6 +1174,29 @@ func _click_select(p: Vector2, shift: bool) -> void:
 		select_ids(cur)
 	else:
 		select_ids([id])
+
+
+## G7 CARDSEL7 (13.9c-37): the drone bay (the workshop's 2nd storey) has no building entity of its own, so a click on
+## the own facility's workshop / drone_bay zone selects the facility with the remembered part "drone_bay".
+func _select_facility_part_at(p: Vector2) -> bool:
+	var fs = world.sys_state.get("cn_facility")
+	if fs == null:
+		return false
+	var ids: Array = (fs.get("facs", {}) as Dictionary).keys()
+	ids.sort_custom(func(a, b): return int(a) < int(b))
+	for k in ids:
+		var F: Dictionary = fs.facs[k]
+		if int(F.owner) != player_fid or not world.entities.has(int(k)):
+			continue
+		if CnFacility7.zone(F, "drone_bay").has_point(p) or CnFacility7.zone(F, "workshop").has_point(p):
+			select_ids([int(k)], "drone_bay")
+			return true
+	return false
+
+
+## True while the player has facility fac selected through its part (13.9c-37).
+func part_selected(fac: int, part: String) -> bool:
+	return sel_part == part and selection.has(fac)
 
 
 func _marquee_select(r: Rect2, shift: bool) -> void:

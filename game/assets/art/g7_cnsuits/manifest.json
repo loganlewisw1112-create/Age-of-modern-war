@@ -1,37 +1,37 @@
 {
   "files": {
-    "icons/g7_b_cns_aegis.png": "d5d82de7849778d20a67658724b47783",
-    "icons/g7_b_cns_bastion.png": "fa08403523ed03c41e36c6d912846ac4",
-    "icons/g7_b_cns_breaker.png": "5cafe7b8577b2b8c6ea7934de923ad2d",
-    "icons/g7_b_cns_purifier.png": "763cce7f6112ffcf86b7d1a0eb2c02dc",
-    "icons/g7_cns_aegis.png": "f1fcdeac1cc6748066e9e8d997aaa552",
-    "icons/g7_cns_bastion.png": "0cadaee9671862158bba3c485cc07d9e",
-    "icons/g7_cns_breaker.png": "95652410ffaba87ed09a0f98f225c39b",
-    "icons/g7_cns_purifier.png": "c9e3459bac781cd63f0b08988f08323e",
-    "units/g7_b_cns_aegis.png": "7ec250b682c8ad1aaaeef80f3b7b6135",
-    "units/g7_b_cns_aegis_mask.png": "3479704fc3b2c6b60fae672bf060daae",
-    "units/g7_b_cns_bastion.png": "f9c8484fa595ad5a8937565115b95581",
-    "units/g7_b_cns_bastion_mask.png": "47b7c08723b9362f67c2ccc54b8c8f10",
-    "units/g7_b_cns_breaker.png": "9e282305465f5af241979d36580438e0",
-    "units/g7_b_cns_breaker_mask.png": "dc3cb91d4489370e7da5ec58a036048f",
-    "units/g7_b_cns_purifier.png": "4e2ccace337b4aa0a1b5c802b5494398",
-    "units/g7_b_cns_purifier_mask.png": "86260d02f48e1bf46e4c32e48a37c023",
-    "units/g7_cns_aegis.png": "a112af7a0baaf087f51b6be14c23d5ef",
-    "units/g7_cns_aegis_mask.png": "c4fa2d40db752ef1e40b8ef097418664",
-    "units/g7_cns_bastion.png": "26676d0f9d8450ba2d548e41b84c1c84",
-    "units/g7_cns_bastion_mask.png": "63928772c0defc4376af33bb48be584c",
-    "units/g7_cns_breaker.png": "96f8bf56232adba35f86a4f086672bf2",
-    "units/g7_cns_breaker_mask.png": "f640b48ce0477085aecfb44fde44ea88",
-    "units/g7_cns_purifier.png": "ae24a2b146b3a126729f7d0c146b0ef7",
-    "units/g7_cns_purifier_mask.png": "23b241c6b1781e5cc2becb5ce5ca5e05",
-    "wrecks/g7_b_cns_aegis_wreck.png": "8ac7808d678bf1dc60958f0c0896099d",
-    "wrecks/g7_b_cns_bastion_wreck.png": "7353c78d65696642426082d53b06e2c9",
-    "wrecks/g7_b_cns_breaker_wreck.png": "4725f5fe07455b09c8cd977dc8c6349d",
-    "wrecks/g7_b_cns_purifier_wreck.png": "6c94cb72a009813c6d1f82af3e21c7a4",
-    "wrecks/g7_cns_aegis_wreck.png": "d8b04779905d9a08df48babaae419d57",
-    "wrecks/g7_cns_bastion_wreck.png": "915fd5f717b6046c8e22bf26402e8b64",
-    "wrecks/g7_cns_breaker_wreck.png": "74c37d6c6440dc11837b9ebc03602ae6",
-    "wrecks/g7_cns_purifier_wreck.png": "9ddb216d82f16fd9a973ed819735124c"
+    "icons/g7_b_cns_aegis.png": "4007381b55ca9185b6dd7bfbd636423d",
+    "icons/g7_b_cns_bastion.png": "45fab864b9377f808edea8db1898e010",
+    "icons/g7_b_cns_breaker.png": "6bcc976bbe9302561839856a939df745",
+    "icons/g7_b_cns_purifier.png": "b693776d34202b7f7a6a6142bdba795a",
+    "icons/g7_cns_aegis.png": "c7fa3ce44477ba7745318ad4cae67e64",
+    "icons/g7_cns_bastion.png": "ec3a685096ba00c10e4618a992ea4b2e",
+    "icons/g7_cns_breaker.png": "4df896d94770040b3b81b5dcd97e83cf",
+    "icons/g7_cns_purifier.png": "e4300e2305e3b8e5af43bc54ad4a3fbf",
+    "units/g7_b_cns_aegis.png": "9e380b1251f0121d220fa35cd2481cef",
+    "units/g7_b_cns_aegis_mask.png": "2275d86cc44eef3bacaa374d2f2644c7",
+    "units/g7_b_cns_bastion.png": "69f2579e84b301da5099a0b892133414",
+    "units/g7_b_cns_bastion_mask.png": "7d1f361dc0399931891289a8cb702031",
+    "units/g7_b_cns_breaker.png": "c589c2633bd59533958a5869191845da",
+    "units/g7_b_cns_breaker_mask.png": "9488a03988513eb3001fbac9b9487665",
+    "units/g7_b_cns_purifier.png": "63158f419f347b81a2ced06a419ebe34",
+    "units/g7_b_cns_purifier_mask.png": "dbaedd61610524b8511191e351d3add9",
+    "units/g7_cns_aegis.png": "eeaa2de37a980b8039f85ad066975207",
+    "units/g7_cns_aegis_mask.png": "5fe3e67f2ecc3bf68fd4be3fe86eb271",
+    "units/g7_cns_bastion.png": "594419cbc92ba8f0fa42dd48c7e039bf",
+    "units/g7_cns_bastion_mask.png": "73a118dc017d4916e3fb1a4d9d6d9226",
+    "units/g7_cns_breaker.png": "b3bdbfe4cb7c604c0c4c6bd5204397a3",
+    "units/g7_cns_breaker_mask.png": "4fa9acdd36c5e59bc2e398b551e1e473",
+    "units/g7_cns_purifier.png": "854ae9b158e939005a6765a3b396910c",
+    "units/g7_cns_purifier_mask.png": "b54d54a0812d77630998699ba8a769f0",
+    "wrecks/g7_b_cns_aegis_wreck.png": "6fc58f8a19b6c4f3d25552ec217a225d",
+    "wrecks/g7_b_cns_bastion_wreck.png": "1e02cbdea8701ed4de290d706d624a39",
+    "wrecks/g7_b_cns_breaker_wreck.png": "983a9f4543fe14ca3bd7688607b7240e",
+    "wrecks/g7_b_cns_purifier_wreck.png": "c90db5fb0fcf16f1580691de842098d1",
+    "wrecks/g7_cns_aegis_wreck.png": "19c257507d46bb5e8eafe360e7dcb3e5",
+    "wrecks/g7_cns_bastion_wreck.png": "ccf32ad28e070ad517d6efca5ea6485f",
+    "wrecks/g7_cns_breaker_wreck.png": "248b10d31248a1740a2a0f6a4cc511e9",
+    "wrecks/g7_cns_purifier_wreck.png": "b594b4481ae2c3bfb2fd462088f5371b"
   },
   "g7_detail_level": {
     "air": {
@@ -116,7 +116,7 @@
     "g7_b_cns_aegis": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -127,6 +127,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -199,7 +200,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2892872,
+        "bytes": 2936028,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "aegis",
@@ -219,7 +220,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_b",
@@ -244,7 +245,7 @@
     "g7_b_cns_bastion": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -255,6 +256,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -327,7 +329,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2848552,
+        "bytes": 2890448,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "bastion",
@@ -347,7 +349,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_b",
@@ -372,7 +374,7 @@
     "g7_b_cns_breaker": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -383,6 +385,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -455,7 +458,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2387104,
+        "bytes": 2422020,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "breaker",
@@ -475,7 +478,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_b",
@@ -556,7 +559,7 @@
     "g7_b_cns_purifier": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -567,6 +570,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -639,7 +643,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2530672,
+        "bytes": 2567380,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "purifier",
@@ -659,7 +663,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_b",
@@ -684,7 +688,7 @@
     "g7_cns_aegis": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -695,6 +699,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -767,7 +772,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2882172,
+        "bytes": 2924588,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "aegis",
@@ -787,7 +792,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_a",
@@ -812,7 +817,7 @@
     "g7_cns_bastion": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -823,6 +828,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -895,7 +901,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2825492,
+        "bytes": 2867180,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "bastion",
@@ -915,7 +921,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_a",
@@ -940,7 +946,7 @@
     "g7_cns_breaker": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -951,6 +957,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -1023,7 +1030,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2377400,
+        "bytes": 2412108,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "breaker",
@@ -1043,7 +1050,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_a",
@@ -1124,7 +1131,7 @@
     "g7_cns_purifier": {
       "anim61": {
         "art": "native",
-        "base": 4,
+        "base": 5,
         "v": 7
       },
       "facings": 8,
@@ -1135,6 +1142,7 @@
         "walk_a",
         "walk_b",
         "fire",
+        "move",
         "walk_0",
         "walk_1",
         "walk_2",
@@ -1207,7 +1215,7 @@
       "fw": 76,
       "g7": {
         "budget": 3145728,
-        "bytes": 2514748,
+        "bytes": 2551228,
         "class": "threat_big",
         "class_reason": "13.9c-20c: 4 m amplified exosuits = the 4 m Machine threat size class (threat_big, ORCH board seq 5370); trim pass on the vehicle class still landed 2-3% over",
         "cn_suit": "purifier",
@@ -1227,7 +1235,7 @@
         ],
         "mirror": 1,
         "owner": "EXO7",
-        "raw_bytes": 11907072,
+        "raw_bytes": 12072448,
         "rig": "g7_cn_mesh DL7-3",
         "scale": "4 m/tile, 9.8 px/m (fact art.scale)",
         "side": "human_a",

@@ -4,7 +4,10 @@ extends SceneTree
 ##   CLIP     a visible control whose rect leaves the viewport;
 ##   OVERFLOW a visible control that spills out of its frame (nearest Panel/PanelContainer);
 ##   TEXTCUT  a Button with clip_text whose text is wider than the button;
-##   OVERLAP  two top-level frames of the same layer that overlap (modal frames are exempt).
+##   OVERLAP  two top-level frames of the same layer that overlap (modal frames are exempt);
+##   FEEDCOVER G7 DFEED7: the drone corner feed (a control with meta "ui_feed", on its own layer) touches a HUD frame
+##            of any layer, or the OBJECTIVES / VICTORY panels themselves (FEEDMISSING: a *_drone screen shows no feed at all,
+##            which would make that check pass for nothing).
 ## Controls inside a clip_contents ancestor (ScrollContainer) are checked only through that ancestor.
 ## Run (from the game folder):
 ##   godot --path . [--headless] -s tools/ui_fit_test.gd -- [--fit-out=ABS_DIR]
@@ -166,6 +169,42 @@ func _check(vp: SubViewport, nm: String, r: Vector2i, sc: float) -> Array:
 				if inter.size.x > TOL and inter.size.y > TOL:
 					found.append(_issue(r, sc, nm, "OVERLAP", g[i].ctl, inter,
 						"with=%s area=%dx%d" % [_path(g[j].ctl), int(inter.size.x), int(inter.size.y)]))
+	found.append_array(_check_feed(vp, nm, r, sc, groups))
+	return found
+
+
+## G7 DFEED7: the drone corner feed sits on a layer of its own below the HUD, so the per-layer OVERLAP check above never
+## sees it: a HUD frame drawn over it hides the picture. Every visible control with meta "ui_feed" must clear every
+## non-modal top-level HUD frame (all layers) and the OBJECTIVES / VICTORY panels (which sit inside a scroll column).
+func _check_feed(vp: SubViewport, nm: String, r: Vector2i, sc: float, groups: Dictionary) -> Array:
+	var found: Array = []
+	var feeds := 0
+	for c in _all_controls(vp):
+		var feed: Control = c
+		if not feed.has_meta("ui_feed") or not _visible(feed):
+			continue
+		var fr := _vrect(feed)
+		if fr.size.x < 0.5 or fr.size.y < 0.5:
+			continue
+		feeds += 1
+		var others: Array = []
+		for key in groups:
+			for g in groups[key]:
+				if not g.modal:
+					others.append({"rect": g.rect, "ctl": g.ctl})
+		for pn in ["ObjectivesPanel", "VictoryPanel"]:
+			var pc := vp.find_child(pn, true, false) as Control
+			if pc != null and _visible(pc) and pc.size.x > 0.5 and pc.size.y > 0.5:
+				others.append({"rect": _vrect(pc), "ctl": pc})
+		for o in others:
+			var inter := fr.intersection(o.rect as Rect2)
+			if inter.size.x > TOL and inter.size.y > TOL:
+				found.append(_issue(r, sc, nm, "FEEDCOVER", feed, inter,
+					"with=%s area=%dx%d feed=%s" % [_path(o.ctl), int(inter.size.x), int(inter.size.y), _rs(fr)]))
+	if feeds == 0 and nm.ends_with("_drone"):
+		var any: Array = _all_controls(vp)
+		if not any.is_empty():
+			found.append(_issue(r, sc, nm, "FEEDMISSING", any[0], Rect2(), "no visible drone feed (meta ui_feed) in this screen"))
 	return found
 
 

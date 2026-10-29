@@ -40,28 +40,32 @@ const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gat
 ## purpose: wounds, senses, squads, spawn facing, counter-nanite line) and the owner's order to finish now. Values: two
 ## independent parallel runs of .plan/gold61.gd on the same tree, 2026-10-27 ~15:15-15:40 UTC at 5e76849, all 16 hashes identical
 ## (C:/CODING/integ7_fast/gold_run1.log, gold_run2.log).
+## GOLD + GOLD_FLAT re-baselined 2026-10-28 for G7 by ORCH. Authority: the owner's G7 scope ("start G7"; G7 changes the
+## sim on purpose: wounds, senses, squads, formations (PERF7H/7I corner-slot fix ordered by ORCH on need 8535), wall
+## line-of-fire 13.9c-35, the 13.9c-33/-38 fortress + watch, CIWS 13.9c-32a/b). Values: two independent parallel runs of
+## .plan/gold61.gd on the same tree, 2026-10-28, all 16 hashes identical (.plan/regold7/run1.log, run2.log).
 const GOLD := {
-	"2k_fight/on": "54b546ffee3f0b01b13198758e0dae11192d6b3562b9316008a83d05caf3726a",
-	"2k_fight/off": "8e2b31c61df1ba470674729b901fbe8be1f21acf43fce553bb077853e17aa88f",
-	"2k_mixed/on": "703dc77d9c8b1959558ba21d5c7a64514b447f8251674bdff4aa8398c074813d",
-	"2k_mixed/off": "cd2b67b399f1a401bca73e577fbea19ebc03e5ad4ef22823e46e6d88d9e45117",
-	"10k_fight/on": "6481ae8f962118dcc9a0f9f4e77e65ff553b9aa0cac5d92272d169d40b5d30c8",
-	"10k_fight/off": "871d57a40ddaeb5187c2f44bc754e8a5c15f11193d21d318a16099b88ae926ed",
-	"10k_march/on": "9b2ce092d32b4fc233e59751cbb548caa05c4100f3758c4ccf03febeeaf8c24f",
-	"10k_march/off": "35fef188d5537da9dbbf222f5ab875022a23f58c587991f33fa7a87e315e6b3e",
+	"2k_fight/on": "6e77a27a341182617cfe2b64674055b3c9dcb2d46bddc2fd94fe21871d64a1ad",
+	"2k_fight/off": "631b30fe2038c32a4512b25d810e7542d4a3cb95b36fb20350f81ab77fc4839a",
+	"2k_mixed/on": "fb0e1866a08972e3096cad00031713565208cd3120c2bdd527a237c06489e955",
+	"2k_mixed/off": "9b5b4fc6e221484a12cf4270fad796ffc31d52e67712cf67750c37d73ebeb5e8",
+	"10k_fight/on": "e11a42c543f2080b7945e4b0333359693ea0763dbf06ece9aed904f524f06734",
+	"10k_fight/off": "0b91e53dbc9c43f440844855e7509ffe99033a7a8588004f86a6d1df6d73094f",
+	"10k_march/on": "c57a47a111c6b64633fa405fef21c7648d9578810dcbe050a0abeb3355a44314",
+	"10k_march/off": "25eb642d0047fd8f6a6f87328251d1c65e2bc0c3103e7d41c8970900e093f2c6",
 }
 
 ## What the AB scenarios give with the height flattened. G6.1 values (see the GOLD comment); before G6.1 this was the
 ## G5 GOLD (CORE10K-2, 2026-10-24), which G6 still reproduced flattened.
 const GOLD_FLAT := {
-	"2k_fight/on": "4ba0cc7d1bd637d511689b489bf0dbf9945bfbd24b943fe70e6b401e6929bece",
-	"2k_fight/off": "10d308d5ec420ab76a12187c7badfcd0d95c31bdcb5e60533270b740cfa49bcf",
-	"2k_mixed/on": "9248081ee18ab0d70800d2f9855dde300a8ea9e314956ec3bd2591320b9de41e",
-	"2k_mixed/off": "26a8769540db5f906a0b5836d49a80c97cae3460e3c92846762d6a7850e53a61",
-	"10k_fight/on": "e7ff147207ccdd019b32ae962fa5cc6f44331d9de8b53b90327962d542ad05cb",
-	"10k_fight/off": "35ca5a4bfe0df89b729266e263b421580974f739cb7accdb0f35d1f591a92da3",
-	"10k_march/on": "43c1931347db0a1b6ec855f525282112e573457ad08b0cdbffa12be3a83c655a",
-	"10k_march/off": "a33a92947d7ef951a66197e7f8efc49c55381e9cc61ecb152eb6e115f5d6b95e",
+	"2k_fight/on": "74a9d4493ba254d9e42625c643ce97e3aeb50a2c851bcedac19ff1b4b40cd9ad",
+	"2k_fight/off": "37b28a5a72c1364323193b8078b8e2948dbe9870b94df8514e86237bf8d40d68",
+	"2k_mixed/on": "4992db897ca93ea2e854f47e000aca6a453bd37321c8e8ec2c97120be5dc04f4",
+	"2k_mixed/off": "10f06e28c0af6428769cd278b6b62ad7cf8ce861bf948dc82a96ddf104b903a4",
+	"10k_fight/on": "4c8124668ecc4ac2f737a241fa129266b0dd55f815b1966ad78ab412f035bf29",
+	"10k_fight/off": "c2ee5edeedc76d4f5b3cf988945f5f60aa2dc48fc27dd89aca8dc4f98aa6051a",
+	"10k_march/on": "c6f176f7a1d65a19bd2e335183bea4c30689a8b5c17982c66829b5841698912b",
+	"10k_march/off": "0a651e766d21df3e069c2ec97b211211ce553d3e7ef25aff1ecf7f49d0f9fb7c",
 }
 
 

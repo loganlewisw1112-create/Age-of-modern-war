@@ -290,7 +290,7 @@ func update_state(w: SimWorld) -> void:
 			"ungarrison":
 				var bg = w.entities.get(_bld)
 				if bg != null:
-					sub = "%d / %d inside" % [Garrison.occupants(w, _bld).size(), Garrison.slots_of(String(bg.def))]
+					sub = "%d / %d inside" % [Garrison.occupants(w, _bld).size(), Garrison.cap_of(bg)]   # LPRES7: + per-building extra slots
 			"resuit":
 				var g = w.entities.get(_bld)
 				if g != null and GaragePanel.first_ready(w, pf, g) < 0:

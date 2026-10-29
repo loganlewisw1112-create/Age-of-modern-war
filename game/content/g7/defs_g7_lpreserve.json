@@ -1,0 +1,50 @@
+{
+  "_meta": "G7 fragment (owner: LPRES7). Master scope 13.9c-34 (owner answers 2026-10-28): in Last Protocol the facility's Sentinel Barracks holds a 100-Sentinel reserve on top of the normal starting garrison, released in tiers as the fighting grows heavier (post refills -> quick-reaction squads of 4-8 -> breach surge; ~20% last stand held for the command centre and core rooms), automatic by default + manual from the barracks card, finite pool with a slow paid trickle. Code: sim/systems/lp_reserve7.gd. EVERY NUMBER PROVISIONAL.",
+  "rules": {
+    "g7_lpreserve": {
+      "_note": "PROVISIONAL. size = owner's answer (100). Type mix = rules.g7_sentinels.start.force proportions without exclude_types (largest remainder): warden 30, marksman 17, gunner 13, bulwark 9, lancer 13, arc 9, mender 9. barracks_extra_slots: the LP barracks cap 120 -> 168 (WATCH7, 13.9c-38: reserve 100 + the whole 48-man garrison + 20 free for wounded coming back in; was 20 -> 140 with the 24-man garrison); skirmish barracks stay 120. The type mix follows the 48-man start.force proportions.",
+      "size": 100,
+      "exclude_types": ["bearer"],
+      "barracks_extra_slots": 48,
+      "every_s": 1.0,
+      "fit_frac": 0.6,
+      "_fit_note": "only men above fit_frac hp (not down, not EMP'd) are released; the rest heal in the barracks first",
+      "quiet_s": 20.0,
+      "_quiet_note": "a released squad comes back in to rest and refill when its sector (or the breach / core) has had no pressure for quiet_s",
+      "recall_hold_s": 20.0,
+      "manual_n": 6,
+      "weights": {"hp_ref": 100.0, "min": 0.5, "max": 8.0, "_note": "pressure of one enemy = clamp(max_hp / hp_ref): a rifleman ~1, a tank / walker up to 8"},
+      "post": {"per_step": 2, "queue_max": 40, "_note": "tier 1: dead roster Sentinels replaced one-for-one (same type first), at most per_step a cadence"},
+      "sector": {
+        "heavy": 6.0,
+        "men_per_p": 1.0,
+        "squad_min": 4,
+        "squad_max": 8,
+        "cd_s": 12.0,
+        "pair_gap": 2.5,
+        "slide_min": 3.0,
+        "armour_w": 4.0,
+        "points": {"n": [14.0, 1.0], "e": [27.0, 14.0], "s": [8.0, 26.5], "w": [1.0, 14.0]},
+        "template": ["warden", "gunner", "warden", "lancer", "marksman", "bulwark", "mender", "warden"],
+        "template_armour": ["lancer", "warden", "lancer", "gunner", "marksman", "warden", "mender", "arc"],
+        "_note": "tier 2: a wall face (n / e / w) or the gate face (s) with pressure >= heavy gets QRF squads of squad_min..squad_max while ceil(pressure x men_per_p) exceeds the men already there (cd_s between squads per face). Goals: compound-local, on the wall-walk slid towards the attackers' centre (n / e / w), the south wall-walk (s, WALLFIRE7 13.9c-35: staging yard cannot fire out); pairs pair_gap apart. Armour-heavy faces (an enemy >= armour_w) put the Lancers first."
+      },
+      "breach": {
+        "min_p": 2.0,
+        "mult": 2.0,
+        "min": 12,
+        "cd_s": 10.0,
+        "template": ["bulwark", "warden", "gunner", "warden", "lancer", "warden", "mender", "bulwark", "gunner", "warden", "arc", "marksman"],
+        "_note": "tier 3: enemies inside the walls (pressure >= min_p, or any once the base state is breached) -> a counter-attack surge of max(min, ceil(inside pressure x mult)) men, topped up every cd_s while the breach lasts"
+      },
+      "last_stand": {
+        "frac": 0.2,
+        "core_rect": [2, 2, 11, 15],
+        "core_r": 3.0,
+        "points": [[4.5, 7.5], [12.5, 10.5], [12.5, 14.5], [6.5, 12.5]],
+        "_note": "~20% of the reserve (same type proportions) is held in the barracks and committed only when an enemy is inside core_rect + core_r (compound-local: the core building, the command centre / planning room and the lab); it holds the core door, the command-centre door, the lab door and the lane between them"
+      },
+      "trickle": {"every_s": 45.0, "cost_mult": 1.0, "_note": "one replacement every every_s while the reserve is below size, the type furthest below its share, paid at the barracks' training cost x cost_mult; stops when the barracks is gone"}
+    }
+  }
+}

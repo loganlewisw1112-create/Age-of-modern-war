@@ -473,6 +473,48 @@ static func _entity_visible0(w: SimWorld, fid: int, e: Dictionary) -> bool:
 	return is_visible(w, fid, e.pos) and not concealed(w, fid, e)
 
 
+## PERFSIM7 (perf, exact): entity_visible for an e whose owner is an enemy of fid (w.is_enemy(fid, e.owner) checked
+## by the caller): the own / ally guard of entity_visible and of concealed is false by construction (is_enemy =>
+## owner != fid and not is_ally), so this runs the same remaining tests in the same order.
+static func enemy_visible(w: SimWorld, fid: int, e: Dictionary) -> bool:
+	if e.kind == "building":
+		var fb = w.fog.get(fid)
+		if fb == null or not _building_seen(w, e, fb.visible, int(w.map.w)):
+			return false
+	elif not (e.has("marked_until") and int(e.marked_until) > w.tick and w.factions.has(fid) 			and int(e.get("marked_team", -999)) == int(w.factions[fid].get("team", fid))):
+		var f = w.fog.get(fid)
+		if f == null:
+			return false
+		var p: Vector2 = e.pos
+		var cx := floori(p.x)
+		var cy := floori(p.y)
+		var mw := int(w.map.w)
+		if cx < 0 or cy < 0 or cx >= mw or cy >= int(w.map.h):
+			return false
+		var vis: PackedByteArray = f.visible
+		if vis[cy * mw + cx] != 1 or concealed_enemy(w, fid, e):
+			return false
+	return SimIndex.g6m(w) & SimIndex.G6_VIS == 0 or SimIndex.g6h().visible_to(w, fid, e)
+
+
+## PERFSIM7 (perf, exact): concealed() for an e that is not fid's own and not an ally's (the caller knows the teams
+## differ); the rest is concealed() line for line.
+static func concealed_enemy(w: SimWorld, fid: int, e: Dictionary) -> bool:
+	if e.kind != "unit" or not e.has("morale"):
+		return false
+	if bool(e.get("hid", false)):
+		var f = w.factions.get(fid)
+		return not (e.get("spot", []) as Array).has(int(f.get("team", fid)) if f != null else fid)
+	if w.tick - int(e.get("last_fired_tick", -9999)) < REVEAL_TICKS:
+		return false
+	if Senses7.hidden(w, fid, e):
+		return true
+	var p: Vector2 = e.pos
+	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) != FOREST_CODE:
+		return false
+	return not _spotted(w, fid, p)
+
+
 ## Enemy units AND buildings on cells currently visible to fid (the only legal enemy query for AI).
 ## G3b PERF4-2: (1) REDUCED-tier units are skipped: by the Tiers contact bound no unit or
 ## building of another team is within contact radius (>= every sight) of them, so they are never

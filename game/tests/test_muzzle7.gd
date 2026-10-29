@@ -152,8 +152,9 @@ func test_tips_lie_on_the_barrel_in_the_fire_frame() -> void:
 		for st in tb.b[def].st:
 			var img: Image = ArtCatalog._image(String(s.states[st].file)).duplicate()
 			img.convert(Image.FORMAT_RGBA8)
+			var spv: Array = (s.states[st] as Dictionary).get("pivot", pv)   # G7 CIWS7-5: cropped states carry their own pivot
 			for b in tb.b[def].st[st]:
-				var p := Vector2i(int(b[0]) + int(pv[0]), int(b[1]) + int(pv[1]))
+				var p := Vector2i(int(b[0]) + int(spv[0]), int(b[1]) + int(spv[1]))
 				var ok := _on_barrel(img.get_data(), img.get_width(), 0, 0, img.get_width(), img.get_height(), p)
 				n += 1
 				if not (ok[0] and ok[1]):

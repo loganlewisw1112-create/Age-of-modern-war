@@ -97,9 +97,12 @@ static func scan(w: SimWorld, s: Dictionary) -> Dictionary:
 	var outer: Rect2i = s.base.rings[0].rect
 	var grow := int(float(dr.get("threat_radius", 14.0)))
 	var near := outer.grow(grow)
-	var per := [0, 0, 0]
+	var per := []
+	var at := []
+	for i in (s.base.rings as Array).size():   # LPSHRINK7 (13.9c-36): any ring count (2 today)
+		per.append(0)
+		at.append([])
 	var sec := [0, 0, 0, 0, 0, 0, 0, 0]
-	var at := [[], [], []]
 	for e in w.units_of(int(s.mfid)):
 		var p: Vector2 = e.pos
 		if not near.has_point(Vector2i(int(p.x), int(p.y))):
@@ -144,15 +147,16 @@ static func think(w: SimWorld, s: Dictionary) -> Dictionary:
 	var wounded := []
 	var homers := []
 	var rot := float(dr.get("rotate_hp_frac", 0.4))
+	var core := (s.base.rings as Array).size() - 1
 	for e in w.units_of(fid):
 		if not is_main(e) or Air.is_aircraft(e):
 			continue
 		var hp := HotState.get_hp(w, int(e.id))
-		if hp < rot * float(e.max_hp) and int(e.lp_ring) < 2:
+		if hp < rot * float(e.max_hp) and int(e.lp_ring) < core:
 			wounded.append(e)
 		elif bool(e.get("lp_reserve", false)):
 			reserves.append(e)
-		elif (e.pos as Vector2).distance_to(Vector2(e.lp_home)) > 6.0 and sc.at[mini(int(e.lp_ring), 2)].is_empty():
+		elif (e.pos as Vector2).distance_to(Vector2(e.lp_home)) > 6.0 and sc.at[clampi(int(e.lp_ring), 0, core)].is_empty():
 			homers.append(e)
 	if top >= 0 and (post != "normal" or topn > 0):
 		var p := sector_point(s, front, top)
@@ -187,9 +191,14 @@ static func rings_step(w: SimWorld, s: Dictionary, sc: Dictionary) -> void:
 			rg.quiet_t = int(rg.get("quiet_t", 0)) + every
 		if not bool(rg.fallen) and int(rg.breach_t) >= _ticks(float(br.get("hold_s", 6.0))):
 			fall(w, s, i, (sc.at[i] as Array)[0] if not (sc.at[i] as Array).is_empty() else Vector2(s.base.center))
-	# economy raid: Machine units in the economy ring claw back part of the side's credit gain
+	# economy raid: Machine units in the economy ring claw back part of the side's credit gain (LPSHRINK7: the economy
+	# sits between the walls, in the outer ring, unless a ring is named "economy")
 	var cr := int(w.factions[fid].credits)
-	if rings.size() > 1 and int(sc.per_ring[1]) > 0:
+	var eri := 0
+	for i in rings.size():
+		if String(rings[i].get("name", "")) == "economy":
+			eri = i
+	if rings.size() > 1 and int(sc.per_ring[eri]) > 0:
 		var gain := cr - int(s.get("cred_last", cr))
 		if gain > 0:
 			var cut := int(float(gain) * (1.0 - float(br.get("economy_income_mult", 0.5))))

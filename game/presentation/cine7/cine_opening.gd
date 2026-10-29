@@ -51,6 +51,10 @@ static func shots(d: Dictionary) -> Array:
 		ho = (rings[0] as Rect2).size.x * 0.5
 		he = (rings[1] as Rect2).size.x * 0.5
 		hc = (rings[2] as Rect2).size.x * 0.5
+	elif rings.size() == 2:   # LPSHRINK7 (13.9c-36): two rings, the economy between the walls
+		ho = (rings[0] as Rect2).size.x * 0.5
+		hc = (rings[1] as Rect2).size.x * 0.5
+		he = (ho + hc) * 0.5
 	var arch := S.g_archive()
 	# 0. pre-roll on black: where this feed comes from
 	out.append(S.black(4.0, {"cue": "cine_open_archive", "tele": ["RECOVERED FEED  //  ORBITAL ASSET KESTREL-4",

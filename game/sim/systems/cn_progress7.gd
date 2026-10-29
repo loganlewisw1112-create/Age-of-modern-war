@@ -358,6 +358,15 @@ static func _on_mission(w: SimWorld, st: Dictionary, tid: int) -> void:
 static func _events(w: SimWorld, st: Dictionary) -> void:
 	for ev in w.events:
 		match String(ev.type):
+			"Damage":
+				# G7 REGFIX7-4: a team member's hit is remembered at once. _sample_hits alone (every 10 ticks) lost the
+				# credit for an enemy dropped within a few ticks of its first hit (WOUND7 zone kills: test_cnops7
+				# test_xp_levels_and_veteran_loss saw the rifleman die 4 ticks after spawning, before any sample).
+				var sh = w.entities.get(int(ev.get("shooter", -1)))
+				if sh != null and sh.has("cn_team") and (st.teams as Dictionary).has(str(int(sh.cn_team))):
+					var tg = w.entities.get(int(ev.get("target", -1)))
+					if tg == null or w.is_enemy(int(sh.owner), int(tg.owner)):
+						st.hits[str(int(ev.get("target", -1)))] = int(sh.id)
 			"EntityDestroyed":
 				var id := int(ev.get("id", -1))
 				var o := op(w, id)

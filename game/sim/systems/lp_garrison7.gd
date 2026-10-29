@@ -23,9 +23,10 @@ const VER := 1
 const ARRIVE := 1.6
 const LOOK_EVERY := 2
 ## [army key, group name, job, how many] (PROVISIONAL): which start-army groups take which job.
-const JOBS := [["outer", "rifle_squad", "patrol", 8], ["outer", "at_team", "gate", 6], ["outer", "a_hmg_team", "gate", 6],
-	["economy", "rifle_squad", "patrol", 2], ["core", "rifle_squad", "patrol", 2]]
-const RING_OF := {"outer": 0, "economy": 1, "core": 2}
+## LPSHRINK7 (13.9c-36, army about half, two rings): outer patrols 8 -> 4 (one squad per wall), gate AT 6 -> 4,
+## gate MG 6 -> 3, no economy patrol (the economy ring is gone), core patrol 2 (round the facility service road).
+const JOBS := [["outer", "rifle_squad", "patrol", 4], ["outer", "at_team", "gate", 4], ["outer", "a_hmg_team", "gate", 3],
+	["core", "rifle_squad", "patrol", 2]]
 
 
 static func _v2i(v) -> Vector2i:
@@ -38,6 +39,15 @@ static func _v2i(v) -> Vector2i:
 	return Vector2i.ZERO
 
 
+## Ring index of an army key on this layout (by ring name; "core" = the last ring; anything else -1).
+static func _ring_of(key: String, L0: Dictionary) -> int:
+	var rings: Array = L0.get("rings", [])
+	for i in rings.size():
+		if String(rings[i].get("name", "")) == key:
+			return i
+	return rings.size() - 1 if key == "core" and not rings.is_empty() else -1
+
+
 ## Start cells for the groups of one army key: {group index: {cell, job, route, wp}} (empty without map.lp data).
 ## gnames[j] = the production / unit name of group j. Gate posts: AT teams take the yard's front posts (index % 4 < 2),
 ## MG teams the back ones.
@@ -45,7 +55,7 @@ static func plan(key: String, gnames: Array, L0: Dictionary) -> Dictionary:
 	var out := {}
 	var routes: Array = L0.get("patrols", [])
 	var gposts: Array = L0.get("gate_posts", [])
-	var ring := int(RING_OF.get(key, -1))
+	var ring := _ring_of(key, L0)
 	if ring < 0 or (routes.is_empty() and gposts.is_empty()):
 		return out
 	var pslots := []   # [route, start wp]: first start of every route, then the second ones
@@ -77,7 +87,12 @@ static func plan(key: String, gnames: Array, L0: Dictionary) -> Dictionary:
 				var k := front if want_front else back
 				var found := -1
 				var seen := 0
-				for pi in gposts.size():
+				var order := []   # LPSHRINK7: round-robin over the gates (fewer guard teams still cover every gate)
+				for slot in 4:
+					for gi in range(0, gposts.size(), 4):
+						if gi + slot < gposts.size():
+							order.append(gi + slot)
+				for pi in order:
 					if (pi % 4 < 2) == want_front:
 						if seen == k:
 							found = pi

@@ -19,21 +19,41 @@ extends RefCounted
 ##    whose Turrets7 tags match ground_tags (crawlers / swarms / leeches / packs / light walkers / Machine infantry).
 ##    A held target is kept while valid; air pre-empts ground on the next scan. Ground scans share Turrets7's unit grid
 ##    (w.tick % 10 == 0); air checks every scan_s staggered by id.
+##  - Depression limit (CIWS7-6, 13.9c-32b, owner choice "Realistic: ~25 deg limit"): the barrels cannot aim lower than
+##    elev.depress_min_deg (-25, PROVISIONAL). A GROUND target whose line from the muzzle would need more depression is
+##    not engageable (_ground_ok / _ground_pick skip it, a held target that walks into the ring is dropped): the blind
+##    ring round the mount point, blind_radius(c, false) = ~8.63 tiles from the 15.5 m roof (air: ~8.42). Sentinels, towers
+##    and wall turrets cover it. Pure function of the content and the target's range (no rng). Air and intercept
+##    engagement are unchanged; no drawn or shown band is ever below the limit (el_band skips any), so an air target
+##    inside the ring is laid at the lowest band.
 ##  - Traverse7 lay (13.9c-30, rate in rules_g7_traverse.json buildings.cn_ciws7) toward the target as seen from c7m;
 ##    the barrels spin up meanwhile (spin_up_s); it fires only laid, spun up, in range and outside the burst pause.
 ##  - Burst: rate_rpm rounds per minute (2-3 a tick), burst_min_s..burst_max_s, then pause_s; the barrels spin down
 ##    spin_down_s after the last target. One ShotFired per fire tick (tracer stream from the barrel cluster: muzzle7
 ##    tips of the art state the view draws), rounds counted from the drum.
-##  - Air: each fire tick downs the drone with p = drone_p_tick x (1 - drone_falloff x d / air_radius) (w.rng), through
-##    Counterdrone._down (Ciws7Kill). Ground: rounds x accuracy x damage of ground_weapon as one Damage hit.
+##  - Dispersion cone (CIWS7-4, 13.9c-32a: "shooting in a strait line wherever the barrel is point w realistic bullet
+##    spread the further they shoot"): the rounds leave the bore inside a cone of half-angle spread.half_mrad; the hit
+##    share of a burst = the fraction of the cone's cross-section at the target's range that the target covers,
+##    share = clamp((r / (d tan a))^2, 0, 1) (cone_share; r = target_r: the def radius clamped to r_min..r_max), so
+##    close in the whole group lands and far out it outgrows the target. ONE rule for drones, intercepts and ground
+##    fire (pure function of state, no extra rng draw): a burst whose full-share kill chance is p downs its target with
+##    p_share(p, share) = 1 - (1 - p)^share; ground damage = rounds x share x damage.
+##  - Air: each fire tick downs the drone with p_share(drone_p_tick, share) (w.rng), through Counterdrone._down
+##    (Ciws7Kill). Ground: rounds x share x damage of ground_weapon as one Damage hit (the cone replaces the weapon's
+##    flat accuracy and the old linear drone_falloff, which ciws7 no longer reads).
 ##  - Shells / rockets / strikes / guided missiles: Counterdrone's intercept path (def.ciws) calls can_intercept /
 ##    intercept: the head lays first (Counterdrone lay window incl. the spin-up still needed), a burst of
-##    intercept_rounds is spent and the threat is destroyed with intercept_pk[kind] (w.rng); a miss gets through.
+##    intercept_rounds is spent and the threat is destroyed with p_share(intercept_pk[kind], share at the threat's aim
+##    point, r = spread.icpt_r) (w.rng); a miss gets through.
+##  - ShotFired (ciws7) also carries the stream for the display: brg (the mount's bearing this tick: the rounds fly
+##    straight along it, never bending to the target), sp (cone half-angle, rad), sh (share), rt (target radius), d
+##    (range) and sd (per-fire-tick seed = tick x 977 + id x 131: the view fans its rounds from it, never randf).
 ##  - Drum: drum rounds. Dry = silent: the mount posts a "ciws7" job (id "ciws7:<bid>", role engineer, at the command
 ##    centre stair door) on the facility job board (Sentinels7.post_job) every job_every_s until it is swapped; the
 ##    Engineer (Engineer7 job kind "ciws7") walks to the door, climbs (climb_s), swaps the drum (swap_s: begin_swap ->
 ##    swap_drum, drum_ammo_cost from the side's ammo stock when it keeps one) and comes back down (down_s).
-## Display (sim fields, deterministic): e.facing_i = el * 8 + ph (el 0 depressed / 1 level / 2 elevated; ph 0 idle,
+## Display (sim fields, deterministic): e.facing_i = el * 8 + ph (el = elevation band 0..4 of elev.bands_deg, CIWS7-5:
+## 0..3 depressed onto ground / low drone targets, 4 level = rest, 5 high = intercepts; ph 0 idle,
 ## 1 spinning, 2 firing, 3 drum swap, 4 dry), e.firing = 2 while firing; turret bearing = Traverse7 (render_snap "tb").
 ## State (saved, hashed; created when the first facility is seen, a match without one never creates it):
 ##   w.sys_state.ciws7 = {ver, raised {"fac": [bid]}, m {"bid": {fac, a ammo, sp spin ticks, t target, b0 burst start,
@@ -58,13 +78,21 @@ const CF_PATH := "res://sim/systems/cn_facility.gd"
 const CD_PATH := "res://sim/systems/counterdrone.gd"
 const S7_PATH := "res://sim/systems/sentinels7.gd"
 const DMG_PATH := "res://sim/systems/damage.gd"
+## CIWS7-5 (13.9c-32a "wherever the barrel is point"): elevation bands the art draws (tools/art/g7_ciws7.gd reads the
+## same elev.bands_deg). The band is the one whose barrel is closest to the REAL line from that band's muzzle to the
+## target as the view draws it (trunnion roof_z + elev.trunnion_m up, muzzle elev.barrel_m out along the bore, the
+## target elev.tz_ground_m / tz_air_m up, 4 m per tile): rest = level.
+const EL_REST := 4
+const EL_HIGH := 5
+const EL_BANDS := [-25.0, -21.5, -18.0, -14.5, 8.0, 32.0]   # fallback when content has no elev block (CIWS7-6: nothing below DEPRESS_MIN)
+const DEPRESS_MIN := -25.0   # fallback depression limit (deg) when content has no elev.depress_min_deg (13.9c-32b, PROVISIONAL)
 
 static var _cf = null
 static var _cd = null
 static var _s7 = null
 static var _dm = null
 static var enabled := true   # test / A-B switch only (not state): false = no mounts are raised, nothing fires
-static var counters := {"fire": 0, "kill": 0, "icpt": 0, "icpt_hit": 0, "ground_hits": 0}   # test / playtest evidence (not state)
+static var counters := {"fire": 0, "kill": 0, "icpt": 0, "icpt_hit": 0, "ground_hits": 0, "ring_viol": 0, "watch": -1, "watch_hits": 0, "watch_min_d": 99.0}   # test / playtest evidence (not state). CIWS7-6: ring_viol = ground fire ticks at a range inside the blind ring (must stay 0); watch = a target id whose ground hits / nearest fired-on range are tallied
 
 
 static func CF():
@@ -113,6 +141,92 @@ static func rounds_at(c: Dictionary, n: int) -> int:
 	var per_min := int(c.get("rate_rpm", 3000))
 	var den := int(TR) * 60
 	return (n + 1) * per_min / den - n * per_min / den
+
+
+# ================================================================ dispersion cone (CIWS7-4, 13.9c-32a)
+## Depression limit (deg, negative = below level): the lowest pitch the barrels can take (CIWS7-6, 13.9c-32b, owner choice
+## "Realistic: ~25 deg limit").
+static func depress_min(c: Dictionary) -> float:
+	return float((c.get("elev", {}) as Dictionary).get("depress_min_deg", DEPRESS_MIN))
+
+
+## Horizontal distance (tiles, from the mount point) inside which a target at height `gz` m cannot be aimed at: the bore
+## at the depression limit p0 passes through the target at exactly this range. Closed form of "the line from the muzzle
+## (trunnion roof_z + trunnion_m up, trunnion_fwd_m forward, barrel_m out along the bore at p0) to the target has pitch
+## p0": hz = barrel_m cos p0 + (gz - tz - barrel_m sin p0) / tan p0, range = (hz + trunnion_fwd_m) / tile_m. 0 when there is
+## no limit (p0 <= -89 deg or p0 >= 0). Pure function of the content.
+static func blind_radius(c: Dictionary, air: bool) -> float:
+	var E: Dictionary = c.get("elev", {})
+	var lim := depress_min(c)
+	if lim <= -89.0 or lim >= -0.5:
+		return 0.0
+	var p0 := deg_to_rad(lim)
+	var tz := float(c.get("roof_z", 15.5)) + float(E.get("trunnion_m", 1.54))
+	var gz := float(E.get("tz_air_m", 1.4)) if air else float(E.get("tz_ground_m", 1.0))
+	var bl := float(E.get("barrel_m", 2.54))
+	var hz := bl * cos(p0) + (gz - tz - bl * sin(p0)) / tan(p0)
+	return maxf(hz + float(E.get("trunnion_fwd_m", 0.14)), 0.0) / maxf(float(E.get("tile_m", 4.0)), 0.01)
+
+
+## True when a target at range d (tiles from the mount point) is inside the blind ring: aiming at it would need more
+## depression than the limit. Ground targets in the ring are not engageable (CIWS7-6); the ring edge itself is not blind.
+static func blind(c: Dictionary, d: float, air: bool = false) -> bool:
+	return d < blind_radius(c, air)
+
+
+## Elevation band (0..5, never the rest band) for a target at range d (tiles) from the mount point: the band whose barrel (pitch p) is
+## closest to the line from ITS muzzle (trunnion + barrel_m along p) to the target, in degrees (pure; CIWS7-5). CIWS7-6: a
+## band below the depression limit is never chosen, so an air target inside the ring is laid at the lowest allowed band.
+static func el_band(c: Dictionary, d: float, air: bool) -> int:
+	var E: Dictionary = c.get("elev", {})
+	var bands: Array = E.get("bands_deg", EL_BANDS)
+	var lim := depress_min(c)
+	var tz := float(c.get("roof_z", 15.5)) + float(E.get("trunnion_m", 1.54))
+	var hz := d * float(E.get("tile_m", 4.0)) - float(E.get("trunnion_fwd_m", 0.14))
+	var gz := float(E.get("tz_air_m", 1.4)) if air else float(E.get("tz_ground_m", 1.0))
+	var bl := float(E.get("barrel_m", 2.54))
+	var best := EL_REST
+	var bd := 1e9
+	for i in bands.size():
+		if i == EL_REST or float(bands[i]) < lim - 0.001:
+			continue
+		var p := deg_to_rad(float(bands[i]))
+		var a := atan2(gz - (tz + bl * sin(p)), maxf(hz - bl * cos(p), 0.5))
+		var dd := absf(p - a)
+		if dd < bd:
+			bd = dd
+			best = i
+	return best
+
+
+static func spread_of(c: Dictionary) -> Dictionary:
+	return c.get("spread", {})
+
+
+## Cone half-angle (radians) of mount content c.
+static func half_angle(c: Dictionary) -> float:
+	return float(spread_of(c).get("half_mrad", 80.0)) * 0.001
+
+
+## Fraction of a cone of half-angle `half` that a target of radius r covers at range d (tiles): (r / (d tan a))^2,
+## clamped to [0, 1]. 1 while the whole group fits on the target; falls with the square of the range past that.
+static func cone_share(d: float, r: float, half: float) -> float:
+	var rc := maxf(d, 0.05) * tan(maxf(half, 0.0001))
+	return clampf((r / rc) * (r / rc), 0.0, 1.0)
+
+
+## Presented radius (tiles) of target t: its unit def radius, clamped to spread r_min .. r_max (r_default otherwise).
+static func target_r(c: Dictionary, t: Dictionary) -> float:
+	var sp := spread_of(c)
+	var r := float(sp.get("r_default", 0.4))
+	if String(t.get("kind", "")) == "unit":
+		r = float(Content.unit(String(t.get("def", ""))).get("radius", r))
+	return clampf(r, float(sp.get("r_min", 0.25)), float(sp.get("r_max", 1.2)))
+
+
+## Chance a burst downs its target when its full-share chance is p and only a share s of its rounds lands on it.
+static func p_share(p: float, s: float) -> float:
+	return 1.0 - pow(clampf(1.0 - p, 0.0, 1.0), clampf(s, 0.0, 1.0))
 
 
 # ================================================================ state
@@ -181,11 +295,11 @@ static func raise(w: SimWorld, F: Dictionary) -> Array:
 		mp = Vector2(snappedf(mp.x, Q), snappedf(mp.y, Q))
 		e.c7m = mp
 		e.pos = Vector2(snappedf(mp.x + sh, Q), snappedf(mp.y + sh, Q))
-		e.facing_i = 8
+		e.facing_i = EL_REST * 8
 		e.firing = 0
 		HotState.touch(w, bid)
 		st.m[str(bid)] = {"fac": int(F.id), "a": int(c.get("drum", 1200)), "sp": 0, "t": -1, "b0": -1, "pu": 0, "rn": 0,
-			"el": 1, "job": 0, "rl": 0, "eng": -1, "fx": 0}
+			"el": EL_REST, "job": 0, "rl": 0, "eng": -1, "fx": 0}
 		out.append(bid)
 	st.raised[fk] = out.duplicate()
 	w.emit("Ciws7Raised", {"fac": int(F.id), "owner": owner, "ids": out.duplicate()})
@@ -230,7 +344,10 @@ static func _ground_ok(w: SimWorld, b: Dictionary, c: Dictionary, mp: Vector2, t
 	if t.kind != "unit" or not w.entities.has(int(t.id)) or not w.is_enemy(int(b.owner), int(t.owner)) or _airborne(t):
 		return false
 	var p := HotState.get_pos(w, int(t.id))
-	if not area.has_point(p) or p.distance_to(mp) > float(c.get("ground_range", 15.0)):
+	var dg := p.distance_to(mp)
+	if not area.has_point(p) or dg > float(c.get("ground_range", 15.0)):
+		return false
+	if blind(c, dg, false):   # CIWS7-6 (13.9c-32b): the barrels cannot depress that far: a target in the blind ring is never engaged
 		return false
 	var m := Turrets7.tags_of(w, t)
 	return m & Turrets7.bit("machine") != 0 and m & Turrets7.bits_of(c.get("ground_tags", [])) != 0
@@ -308,7 +425,7 @@ static func _drop(w: SimWorld, st: Dictionary, bid: int, M: Dictionary) -> void:
 
 
 static func _disp(b: Dictionary, M: Dictionary, ph: int, firing: bool) -> void:
-	b.facing_i = clampi(int(M.el), 0, 2) * 8 + ph
+	b.facing_i = clampi(int(M.el), 0, EL_HIGH) * 8 + ph
 	b.firing = 2 if firing else 0
 
 
@@ -338,10 +455,10 @@ static func _tick_mount(w: SimWorld, st: Dictionary, b: Dictionary, M: Dictionar
 			if (t + bid) % 20 == 0 and not _swap_alive(w, M, bid):
 				M.rl = 0
 				M.eng = -1
-			M.el = 1
+			M.el = EL_REST
 			_disp(b, M, 3 if int(M.rl) == 1 else 4, false)
 		else:
-			M.el = 1
+			M.el = EL_REST
 			_disp(b, M, 4, false)
 		if (t + bid) % ticks(float(c.get("job_every_s", 2.0))) == 0:
 			_post_job(w, b, M, c)
@@ -376,14 +493,15 @@ static func _tick_mount(w: SimWorld, st: Dictionary, b: Dictionary, M: Dictionar
 	if tgt == null:
 		M.t = -1
 		_spin_down(w, M, c)
-		M.el = 1
 		var fxo := t < int(M.get("fx", 0))
+		if not fxo and int(M.sp) <= 0:   # back to rest once the barrels stopped (spin-down / intercept display keep the band)
+			M.el = EL_REST
 		_disp(b, M, 2 if fxo else (1 if int(M.sp) > 0 else 0), fxo)
 		return
 	M.t = int(tgt.id)
 	var tp := _tpos(w, tgt)
 	var d := mp.distance_to(tp)
-	M.el = (2 if d < 6.0 else 1) if air else 0
+	M.el = el_band(c, d, air)
 	var full := ticks(float(c.get("spin_up_s", 0.5)))
 	M.sp = mini(int(M.sp) + 1, full)
 	M.lt = t
@@ -400,11 +518,17 @@ static func _tick_mount(w: SimWorld, st: Dictionary, b: Dictionary, M: Dictionar
 	counters.fire += 1
 	var done := false
 	var wid := String(c.get("ground_weapon", ""))
+	# 13.9c-32a: the cone's hit share at this range (one rule for air and ground) + the stream for the display
+	var half := half_angle(c)
+	var rt := target_r(c, tgt)
+	var sh := cone_share(d, rt, half)
+	var sev := {"shooter": bid, "target": int(tgt.id), "weapon": wid, "hit": true, "from": mp, "to": tp,
+		"indirect": false, "ciws7": true, "rounds": n, "brg": Traverse7.bearing(w, b, t), "sp": half, "sh": sh, "rt": rt,
+		"d": d, "sd": t * 977 + bid * 131}
 	if air:
-		var p := float(c.get("drone_p_tick", 0.3)) * (1.0 - float(c.get("drone_falloff", 0.5)) * clampf(d / maxf(float(c.get("air_radius", 10.0)), 0.1), 0.0, 1.0))
-		var hit := w.rng.chance(p)
-		w.emit("ShotFired", {"shooter": bid, "target": int(tgt.id), "weapon": wid, "hit": hit, "from": mp, "to": tp,
-			"indirect": false, "ciws7": true, "rounds": n})
+		var hit := w.rng.chance(p_share(float(c.get("drone_p_tick", 0.3)), sh))
+		sev.hit = hit
+		w.emit("ShotFired", sev)
 		if hit:
 			counters.kill += 1
 			w.emit("Ciws7Kill", {"ciws": bid, "owner": int(b.owner), "id": int(tgt.id), "def": String(tgt.def), "pos": tp})
@@ -412,10 +536,15 @@ static func _tick_mount(w: SimWorld, st: Dictionary, b: Dictionary, M: Dictionar
 			done = true
 	else:
 		var wd: Dictionary = Content.weapon(wid)
-		var dmg := float(n) * float(wd.get("accuracy", 0.6)) * float(wd.get("damage", 6.0))
-		w.emit("ShotFired", {"shooter": bid, "target": int(tgt.id), "weapon": wid, "hit": true, "from": mp, "to": tp,
-			"indirect": false, "ciws7": true, "rounds": n})
+		var dmg := float(n) * sh * float(wd.get("damage", 6.0))
+		sev.hit = sh > 0.0
+		w.emit("ShotFired", sev)
 		counters.ground_hits += 1
+		if blind(c, d, false):   # tripwire only (_ground_ok already refuses these): evidence for the tests / playtest
+			counters["ring_viol"] = int(counters.get("ring_viol", 0)) + 1
+		if int(tgt.id) == int(counters.get("watch", -1)):
+			counters["watch_hits"] = int(counters.get("watch_hits", 0)) + 1
+			counters["watch_min_d"] = minf(float(counters.get("watch_min_d", 99.0)), d)
 		DM().apply_hit(w, b, tgt, {"weapon": wid, "cls": String(wd.get("class", "autocannon")), "damage": dmg}, true)
 		done = not w.entities.has(int(tgt.id))
 	_disp(b, M, 2, true)
@@ -457,17 +586,24 @@ static func intercept(w: SimWorld, b: Dictionary, at: Vector2, lt: int, kind: St
 	M.a = int(M.a) - n
 	M.sp = ticks(float(c.get("spin_up_s", 0.5)))
 	M.lt = w.tick
-	M.el = 2
+	M.el = EL_HIGH
 	M.fx = w.tick + maxi(lt, 0) + maxi(ceili(float(n) / maxf(float(c.get("rate_rpm", 3000)) / 60.0 / TR, 0.1)), 1)
 	var pk: Dictionary = c.get("intercept_pk", {})
-	var hit := w.rng.chance(float(pk.get(kind, pk.get("default", 0.75))))
+	var mp: Vector2 = b.get("c7m", b.pos)
+	# 13.9c-32a: the same cone rule, at the threat's aim point (the burst meets it as it comes down on it)
+	var d := mp.distance_to(at)
+	var half := half_angle(c)
+	var rt := float(spread_of(c).get("icpt_r", 0.5))
+	var sh := cone_share(d, rt, half)
+	var hit := w.rng.chance(p_share(float(pk.get(kind, pk.get("default", 0.75))), sh))
 	counters.icpt += 1
 	if hit:
 		counters.icpt_hit += 1
-	var mp: Vector2 = b.get("c7m", b.pos)
 	_disp(b, M, 2, true)
 	w.emit("ShotFired", {"shooter": int(b.id), "target": -1, "weapon": String(c.get("ground_weapon", "")), "hit": hit,
-		"from": mp, "to": at, "indirect": false, "ciws7": true, "rounds": n, "lay_ticks": lt})
+		"from": mp, "to": at, "indirect": false, "ciws7": true, "rounds": n, "lay_ticks": lt,
+		"brg": Traverse7.bearing(w, b, int(w.tick)), "sp": half, "sh": sh, "rt": rt, "d": d, "icpt": kind,
+		"sd": int(w.tick) * 977 + int(b.id) * 131})
 	w.emit("Ciws7Intercept", {"ciws": int(b.id), "owner": int(b.owner), "kind": kind, "pos": at, "hit": hit, "lay_ticks": lt})
 	if int(M.a) <= 0:
 		w.emit("Ciws7Dry", {"ciws": int(b.id), "owner": int(b.owner)})

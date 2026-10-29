@@ -407,7 +407,7 @@ static func pick(w: SimWorld, b: Dictionary, c: Dictionary, wd: Dictionary):
 		if (tp - bp).dot(n) <= 0.0:   # cheap arc reject before the key
 			continue
 		var k := float(Turrets7.rank(w, c, t)) * 100000.0 + bp.distance_to(tp) * 10.0 + float(int(t.id)) * 1e-6
-		if k < bk and can_engage(w, b, c, wd, t):
+		if k < bk and can_engage(w, b, c, wd, t):   # (CR 6981 sort-first variant measured slower: 597 vs 485 us/call)
 			bk = k
 			best = t
 	return best

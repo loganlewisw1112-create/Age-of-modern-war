@@ -23,6 +23,7 @@ const NAMES := ["main_menu", "main_menu_howto", "main_menu_load", "hud_idle", "h
 	"ui7_lp_hud", "ui7_lp_end",  # G7 LPMODE7 (presentation/ui7/lp_hud.gd)
 	"ui7_ops_teams", "ui7_ops_deploy", "ui7_ops_cam", "ui7_ops_map", "ui7_ops_table", "ui7_ops_codex", "ui7_ops_advisor",  # G7 OPSUI7 (presentation/ui7/ops_panel.gd)
 	"ui5b_g6_infantry", "ui5b_g6_vehicles", "ui5b_g6_engineer", "ui5b_g6_garage", "ui5b_g6_research",  # G6 UI6b (presentation/ui6/b/g6_scen.gd via fit_panels)
+	"hud_drone", "ui7_lp_drone",  # G7 DFEED7: the player flies a drone (corner feed up), skirmish HUD and Last Protocol HUD
 	"cmd61_mode", "cmd61_plans", "sq61_teams", "sq61_formations", "sq61_stance"]  # + G6.1 SQUAD61 Teams panel + card pages  # G6.1 command layer (PLAN61 CR seq 185)
 
 static var _worlds: Dictionary = {}   # "s8" / "s9" -> SimWorld (never stepped: the HUD is paused)
@@ -100,6 +101,9 @@ static func build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -> bo
 					mv.control_groups[g] = ids.slice(0, mini(ids.size(), g))
 			await tree.process_frame
 			hud._refresh()
+		"hud_drone":   # G7 DFEED7: flying a drone, corner feed up beside the OBJECTIVES / VICTORY column
+			var pair := _hud(vp, sc)
+			await drone_feed(pair[1], tree)
 		"pause", "end_win":
 			var pair := _hud(vp, sc)
 			var l := _layer(vp, sc, 30)
@@ -130,6 +134,21 @@ static func build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -> bo
 		_:
 			return false
 	return true
+
+
+## G7 DFEED7: puts the drone corner feed up on a built HUD the way flying a drone does (DroneInput's cam), after the HUD
+## layout has settled, and lays the feed out again against the settled panels (in play drone_cam.gd re-runs it every 0.2 s).
+static func drone_feed(hud, tree: SceneTree) -> void:
+	for i in 3:
+		await tree.process_frame
+	hud._refresh()
+	await tree.process_frame
+	var di = hud.get_node_or_null("DroneInput")
+	if di == null or di.cam == null:
+		return
+	di.cam.show_drone(999999)   # an id no entity has: the window is shown, the camera has nothing to follow
+	await tree.process_frame
+	di.cam._relayout()
 
 
 static func _ids(mv, nm: String) -> Array:

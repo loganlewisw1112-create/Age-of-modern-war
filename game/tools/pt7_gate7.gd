@@ -242,7 +242,11 @@ func _inner_cycle(pt, mv, w: SimWorld, F: Dictionary, me: int, fid: int, cr: Rec
 		ee.cd_ticks = 100000
 		ee.hp = 1.0e9
 		ee.max_hp = 1.0e9
-	var hard: bool = await pt._wait_until(func(): _clear(w, F, me, keep); return FacDrive7.gate_state(w, fid) == "hardened", 20.0)
+	# ORCH (G7 final): wait on SIM ticks (400 = 20 sim s at 20 Hz, the same window as before at 1x), not wall-clock: under
+	# load (soak + another flow) 20 wall-s was less sim time and the check failed (outer still open); alone 20/0 x2.
+	var t_h := w.tick
+	var hard: bool = await pt._wait_until(func(): _clear(w, F, me, keep); return FacDrive7.gate_state(w, fid) == "hardened" or w.tick - t_h >= 400, 120.0)
+	hard = FacDrive7.gate_state(w, fid) == "hardened"
 	pt._log("gate7_hardened_for_sally", hard, "outer %s" % FacDrive7.gate_state(w, fid))
 	if not hard:
 		return
@@ -273,6 +277,11 @@ func _inner_cycle(pt, mv, w: SimWorld, F: Dictionary, me: int, fid: int, cr: Rec
 			dbg_t = Time.get_ticks_msec()
 			var V0 := FacDrive7.vstate(w, apcs[0])
 			print("PLAYTEST-DBG gate7 sally gates %s GT %s apc0 %s at %s apc1 %s at %s clear o/i %s/%s foe %s" % [gv, F.get("gate", {}), V0.get("st", "-"), (Vector2(w.entities[apcs[0]].pos) - o2).snappedf(0.1), FacDrive7.vstate(w, apcs[1]).get("st", "-"), (Vector2(w.entities[apcs[1]].pos) - o2).snappedf(0.1), FacDrive7._gate_clear(w, F, "gate_outer"), FacDrive7._gate_clear(w, F, "gate_inner"), w.entities.has(keep)])
+			for gz in ["gate_outer", "gate_inner"]:   # FLOWB7 diagnostics: who holds each gate open (FacDrive7's blocker cache)
+				var bid := int((w.cache.get("fd7_gc", {}) as Dictionary).get("%d:%s" % [int(F.id), gz], -1))
+				var be = w.entities.get(bid)
+				if be != null:
+					print("PLAYTEST-DBG gate7 %s blocker %d %s owner %d at %s order %s s7 %s job %s" % [gz, bid, String(be.def), int(be.owner), (Vector2(be.pos) - o2).snappedf(0.01), str(be.order).left(80), String(be.get("s7", "")), str(w.sys_state.get("sent7", {}).get("jobs", {}).get(str(bid), "")).left(80)])
 		var si := String(gv[1])
 		var so := String(gv[0])
 		if si != "closed":

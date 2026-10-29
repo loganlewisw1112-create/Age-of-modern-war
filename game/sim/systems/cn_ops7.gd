@@ -374,6 +374,13 @@ static func _send_relief(w: SimWorld, cmd: Dictionary) -> void:
 	var fac := int(SimWorld.CnFacility.facilities(w, fid)[0])
 	var z: Dictionary = SimWorld.CnFacility.zones(w, fac)
 	var gate: Vector2 = (z.gate as Rect2).get_center() if z.has("gate") else (z.compound as Rect2).get_center()
+	if not z.has("gate") and z.has("gate_outer"):
+		# REGFIX7-3: zones() has no "gate" key (a code alias of gate_outer), so the convoy started in the middle of the
+		# compound and drove out by plain Movement; with the gates hardened (a threat near) the outer gate never opens for
+		# an uncontrolled vehicle and it sat in the wash. It now starts outside the outer gate, where the gate controller
+		# hands its own APCs over (the gate mouth on the gate axis).
+		var G: Dictionary = SimWorld.FacDrive7.graph()
+		gate = Vector2(SimWorld.CnFacility.origin(SimWorld.CnFacility.fac(w, fac))) + Vector2(G.pos[int(G.exit)]) + Vector2(0, 1.5)
 	if not w.spend(fid, RL().get("cost", {}), "cn_relief"):
 		return
 	var units := []

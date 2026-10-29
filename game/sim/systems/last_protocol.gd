@@ -124,7 +124,7 @@ static func setup(w: SimWorld) -> Dictionary:
 	var core_units := []
 	for id in b.army:
 		var e = w.entities.get(int(id))
-		if e != null and int(e.lp_ring) == 2 and not Air.is_aircraft(e):
+		if e != null and int(e.lp_ring) == (b.rings as Array).size() - 1 and not Air.is_aircraft(e):   # LPSHRINK7: the core = the last ring
 			core_units.append(e)
 	var nres := maxi(int(float((b.army as Array).size()) * float(R().get("defence", {}).get("reserve_frac", 0.25))), 1)
 	for j in mini(nres, core_units.size()):

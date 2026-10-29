@@ -253,6 +253,11 @@ func test_lockdown_and_evacuation_on_breach() -> void:
 	var tid := _train(w, fid, "tactical_squad")
 	var F := CnFacility.fac(w, fid)
 	var mid := _unit(w, "m_walker", 1, CnFacility.zone(F, "decon").get_center())
+	# WATCH7-3 fixture (13.9c-27a): on a breach the drone hive now commits its kamikazes together, which killed this
+	# walker before the base state reached "breached". The breacher must survive the window (as test_dronebay7's
+	# breacher does); every check below is unchanged.
+	w.entities[mid].max_hp = 1000000.0
+	SimWorld.HotState.set_hp(w, mid, 1000000.0)
 	var hp0 := float(w.entities[mid].hp)
 	var evs := _run(w, 40, ["CnLockdown"])
 	check(_has(evs, "CnLockdown") and bool(F.lock), "breach triggers lockdown")

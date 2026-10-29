@@ -286,6 +286,198 @@ func _load_art() -> void:
 		var fw := int(e.get("fw", e.get("w", 1)))
 		var fh := int(e.get("fh", e.get("h", 1)))
 		_spr[k] = {"tex": tx, "pivot": Vector2(float(e.pivot[0]), float(e.pivot[1])), "fw": fw, "fh": fh, "frames": int(e.get("frames", 1))}
+	_build_atlas()
+
+
+## G7 LPPERF7B: every atmo7 sprite in one runtime atlas (2 px transparent gutters; the project filters nearest, so a
+## region samples exactly the texels of its own file), plus a white block for the plain rects. Sprites, pools, dots
+## and the fixture shafts drawn one after another then share a texture and batch: each sprite file used to cost its
+## own draw call wherever kinds alternated (~1400 draw calls a frame for the Last Protocol fixtures and steady lights).
+var _atlas: ImageTexture = null
+var _atlas_wr := Rect2()
+
+
+func _build_atlas() -> void:
+	var keys: Array = _spr.keys()
+	keys.sort()
+	var imgs := {}
+	for k in keys:
+		var im: Image = (_spr[k].tex as Texture2D).get_image()
+		if im == null:
+			return
+		if im.is_compressed():
+			return
+		im = im.duplicate()
+		im.convert(Image.FORMAT_RGBA8)
+		imgs[k] = im
+	keys.sort_custom(func(a, b): return (imgs[a] as Image).get_height() > (imgs[b] as Image).get_height() or ((imgs[a] as Image).get_height() == (imgs[b] as Image).get_height() and String(a) < String(b)))
+	const AW := 1024
+	const PAD := 2
+	var x := PAD + 4 + PAD
+	var y := PAD
+	var row_h := 4
+	var place := {}
+	for k in keys:
+		var im: Image = imgs[k]
+		if x + im.get_width() + PAD > AW:
+			x = PAD
+			y += row_h + PAD
+			row_h = 0
+		place[k] = Vector2i(x, y)
+		x += im.get_width() + PAD
+		row_h = maxi(row_h, im.get_height())
+	var ah := y + row_h + PAD
+	if ah > 4096:
+		return
+	var at := Image.create(AW, ah, false, Image.FORMAT_RGBA8)
+	at.fill(Color(0, 0, 0, 0))
+	at.fill_rect(Rect2i(PAD, PAD, 4, 4), Color.WHITE)
+	_atlas_wr = Rect2(PAD + 1, PAD + 1, 1, 1)   # the middle of the white block (nearest: any stretch samples that texel)
+	for k in keys:
+		var im: Image = imgs[k]
+		at.blit_rect(im, Rect2i(Vector2i.ZERO, im.get_size()), place[k])
+	_atlas = ImageTexture.create_from_image(at)
+	for k in keys:
+		_spr[k]["atex"] = _atlas
+		_spr[k]["ofs"] = Vector2(place[k])
+		_spr[k]["tsz"] = Vector2((imgs[k] as Image).get_size())
+
+
+## G7 LPPERF7B: the light polygons of the two ADDITIVE layers (glow, glow_s) go out as one triangle array on the atlas
+## (untextured ones sample its white texel) instead of one draw call each. Additive blending is order-free, so the
+## sum is the same; triangles come from Geometry2D.triangulate_polygon, as draw_polygon's own. A polygon that does not
+## triangulate, or whose uvs leave 0..1, is drawn directly as before.
+var _gb_on := false
+var _gb_pts := PackedVector2Array()
+var _gb_cols := PackedColorArray()
+var _gb_uvs := PackedVector2Array()
+var _gb_idx := PackedInt32Array()
+
+
+func _gpoly(pts: PackedVector2Array, cols: PackedColorArray, uvs := PackedVector2Array(), e = null) -> void:
+	var tex: Texture2D = (e.tex if e is Dictionary else null)
+	if not _gb_on or _atlas == null or (e is Dictionary and not e.has("atex")) or pts.size() < 3 or (cols.size() != 1 and cols.size() != pts.size()) 			or (tex != null and uvs.size() != pts.size()):
+		_gc.draw_polygon(pts, cols, uvs, tex)
+		return
+	var asz := Vector2(_atlas.get_size())
+	var nu := PackedVector2Array()
+	nu.resize(pts.size())
+	if tex != null:
+		var ofs: Vector2 = e.ofs
+		var tsz: Vector2 = e.tsz
+		var top := Vector2(1.0, 1.0) - Vector2(0.01, 0.01) / tsz
+		for i in uvs.size():
+			var u: Vector2 = uvs[i]
+			if u.x < 0.0 or u.y < 0.0 or u.x > 1.0 or u.y > 1.0:
+				_gc.draw_polygon(pts, cols, uvs, tex)
+				return
+			nu[i] = (ofs + u.min(top) * tsz) / asz
+	else:
+		nu.fill((_atlas_wr.position + Vector2(0.5, 0.5)) / asz)
+	var tri := Geometry2D.triangulate_polygon(pts)
+	if tri.is_empty():
+		_gc.draw_polygon(pts, cols, uvs, tex)
+		return
+	var base := _gb_pts.size()
+	_gb_pts.append_array(pts)
+	_gb_uvs.append_array(nu)
+	if cols.size() == 1:
+		for i in pts.size():
+			_gb_cols.append(cols[0])
+	else:
+		_gb_cols.append_array(cols)
+	for k in tri:
+		_gb_idx.append(base + k)
+
+
+func _gb_flush() -> void:
+	_gb_on = false
+	if not _gb_idx.is_empty():
+		RenderingServer.canvas_item_add_triangle_array(_gc.get_canvas_item(), _gb_idx, _gb_pts, _gb_cols, _gb_uvs, PackedInt32Array(), PackedFloat32Array(), _atlas.get_rid())
+	_gb_pts = PackedVector2Array()
+	_gb_cols = PackedColorArray()
+	_gb_uvs = PackedVector2Array()
+	_gb_idx = PackedInt32Array()
+
+
+## G7 LPPERF7C: the ground _draw (wear, marks, bay, signs, pad lights, scorch / rubble, ruins: ~600 draw calls) goes
+## out as ONE ordered triangle array on the atlas. Order is kept (alpha blending): every primitive is appended in draw
+## order; anything not expressible (a transformed block, a non-atlas sprite, a polygon that does not triangulate, a
+## primitive line) flushes the batch and is drawn directly. Same geometry as the engine's own commands: colored
+## polygons = Geometry2D.triangulate_polygon triangles on the white texel, width >= 0 lines = the engine's quad
+## (from +- the half-width normal, to +- it), atlas sprites = their dst rect with src uvs. GROUND_BATCH off = as before.
+static var GROUND_BATCH := true
+var _tb_on := false
+var _tb_want := false
+var _tb_pts := PackedVector2Array()
+var _tb_cols := PackedColorArray()
+var _tb_uvs := PackedVector2Array()
+var _tb_idx := PackedInt32Array()
+
+
+func _tb_flush() -> void:
+	if not _tb_idx.is_empty():
+		RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _tb_idx, _tb_pts, _tb_cols, _tb_uvs, PackedInt32Array(), PackedFloat32Array(), _atlas.get_rid())
+	_tb_pts = PackedVector2Array()
+	_tb_cols = PackedColorArray()
+	_tb_uvs = PackedVector2Array()
+	_tb_idx = PackedInt32Array()
+
+
+func _tb_white() -> Vector2:
+	return (_atlas_wr.position + Vector2(0.5, 0.5)) / Vector2(_atlas.get_size())
+
+
+func _bpoly(pts: PackedVector2Array, col: Color) -> void:
+	if not _tb_on:
+		draw_colored_polygon(pts, col)
+		return
+	var tri := Geometry2D.triangulate_polygon(pts)
+	if tri.is_empty():
+		_tb_flush()
+		draw_colored_polygon(pts, col)
+		return
+	var base := _tb_pts.size()
+	var wu := _tb_white()
+	_tb_pts.append_array(pts)
+	for i in pts.size():
+		_tb_cols.append(col)
+		_tb_uvs.append(wu)
+	for k in tri:
+		_tb_idx.append(base + k)
+
+
+func _bline(a: Vector2, b: Vector2, col: Color, w := -1.0) -> void:
+	if not _tb_on or w < 0.0:
+		_tb_flush()
+		draw_line(a, b, col, w)
+		return
+	var t := (a - b).orthogonal().normalized() * w * 0.5
+	var base := _tb_pts.size()
+	var wu := _tb_white()
+	_tb_pts.append_array(PackedVector2Array([a + t, a - t, b - t, b + t]))
+	for i in 4:
+		_tb_cols.append(col)
+		_tb_uvs.append(wu)
+	_tb_idx.append_array(PackedInt32Array([base, base + 1, base + 2, base, base + 2, base + 3]))
+
+
+func _bquad(dst: Rect2, src: Rect2, col: Color) -> void:
+	var asz := Vector2(_atlas.get_size())
+	var base := _tb_pts.size()
+	_tb_pts.append_array(PackedVector2Array([dst.position, Vector2(dst.end.x, dst.position.y), dst.end, Vector2(dst.position.x, dst.end.y)]))
+	_tb_uvs.append_array(PackedVector2Array([src.position / asz, Vector2(src.end.x, src.position.y) / asz, src.end / asz, Vector2(src.position.x, src.end.y) / asz]))
+	for i in 4:
+		_tb_cols.append(col)
+	_tb_idx.append_array(PackedInt32Array([base, base + 1, base + 2, base, base + 2, base + 3]))
+
+
+## A plain rect through the atlas white texel when the atlas exists (same colour: white x modulate), else draw_rect.
+func _wrect(o: CanvasItem, r: Rect2, col: Color) -> void:
+	if _atlas != null:
+		o.draw_texture_rect_region(_atlas, r, _atlas_wr, col)
+	else:
+		o.draw_rect(r, col)
 
 
 # =============================================================== public API
@@ -934,6 +1126,15 @@ func _sp(id: String, at: Vector2, frame := 0, row := 0, mod := Color.WHITE, sc :
 	var fh := float(e.fh)
 	var src := Rect2(float(frame % maxi(1, int(e.frames))) * fw, float(row) * fh, fw, fh)
 	var dst := Rect2(at - Vector2(e.pivot) * sc, Vector2(fw, fh) * sc)
+	if e.has("atex"):
+		src.position += e.ofs
+		if _tb_on and (node == null or node == self):
+			_bquad(dst, src, mod)
+			return true
+		(node if node != null else self).draw_texture_rect_region(e.atex, dst, src, mod)
+		return true
+	if _tb_on and (node == null or node == self):
+		_tb_flush()
 	(node if node != null else self).draw_texture_rect_region(e.tex, dst, src, mod)
 	return true
 
@@ -948,6 +1149,8 @@ func _cnt(k: String, n := 1) -> void:
 
 # =============================================================== ground (z 0, under everything; redrawn on change)
 func _draw() -> void:
+	_tb_want = GROUND_BATCH and _atlas != null
+	_tb_on = _tb_want
 	for k in ["tracks", "wet", "stripes", "oil", "stencils", "arrows", "signs", "vents", "rubble", "scorch", "bay"]:
 		counts[k] = 0
 	for g in geo:
@@ -963,6 +1166,8 @@ func _draw() -> void:
 		_cnt("rubble")
 	for r in _ruins:
 		_draw_ruin(r.g)
+	_tb_flush()
+	_tb_on = false
 
 
 const TRACK := Color(0.06, 0.06, 0.06, 0.40)
@@ -973,7 +1178,7 @@ const HAZ_K := Color(0.08, 0.08, 0.08, 0.92)
 
 
 func _line_t(a: Vector2, b: Vector2, c: Color, w := 1.0) -> void:
-	draw_line(_iso(a), _iso(b), c, w)
+	_bline(_iso(a), _iso(b), c, w)
 
 
 func _draw_wear(g: Dictionary) -> void:
@@ -982,7 +1187,7 @@ func _draw_wear(g: Dictionary) -> void:
 	if go0.size.x > 0.0:   # the paved approach outside the gate, under the tyre tracks (ATMO7-2: was drawn over them)
 		var go := go0
 		var ap := Rect2(go.position.x, go.end.y, go.size.x, 3.2)
-		draw_colored_polygon(_quad(ap), Color(0.21, 0.22, 0.23, 0.95))
+		_bpoly(_quad(ap), Color(0.21, 0.22, 0.23, 0.95))
 		_line_t(Vector2(ap.position.x + 0.1, ap.position.y), Vector2(ap.position.x + 0.1, ap.end.y), Color(0.9, 0.9, 0.85, 0.7))
 		_line_t(Vector2(ap.end.x - 0.1, ap.position.y), Vector2(ap.end.x - 0.1, ap.end.y), Color(0.9, 0.9, 0.85, 0.7))
 	var wash: Rect2 = Z.get("apc_wash", Rect2())
@@ -993,13 +1198,13 @@ func _draw_wear(g: Dictionary) -> void:
 		var x0 := wash.position.x
 		var xw := wash.size.x
 		# wet asphalt: the wash floor, the inner gate and a drying apron into the staging yard (fading strips)
-		draw_colored_polygon(_quad(wash), WET)
+		_bpoly(_quad(wash), WET)
 		if gin.size.x > 0.0:
-			draw_colored_polygon(_quad(gin), Color(WET, WET.a * 0.85))
+			_bpoly(_quad(gin), Color(WET, WET.a * 0.85))
 		var y_top := gin.position.y if gin.size.x > 0.0 else wash.position.y
 		for k in 5:
 			var a := WET.a * (0.75 - 0.14 * float(k))
-			draw_colored_polygon(_quad(Rect2(x0 + 0.3 + 0.1 * k, y_top - 0.6 * float(k + 1), xw - 0.6 - 0.2 * k, 0.6)), Color(WET, a))
+			_bpoly(_quad(Rect2(x0 + 0.3 + 0.1 * k, y_top - 0.6 * float(k + 1), xw - 0.6 - 0.2 * k, 0.6)), Color(WET, a))
 		_cnt("wet", 7)
 		for i in 18:   # sheen streaks on the wet floor
 			var hs := absi(hash(Vector2i(int(g.id), i)))
@@ -1064,7 +1269,7 @@ func _haz_rect(r: Rect2, band := 0.2) -> void:
 			var a := p0 + d * s
 			var b := p0 + d * s2
 			var col := HAZ_Y if k % 2 == 0 else HAZ_K
-			draw_colored_polygon(PackedVector2Array([_iso(a), _iso(b), _iso(b + n * band + d * 0.12), _iso(a + n * band + d * 0.12)]), col)
+			_bpoly(PackedVector2Array([_iso(a), _iso(b), _iso(b + n * band + d * 0.12), _iso(a + n * band + d * 0.12)]), col)
 			s = s2
 			k += 1
 		_cnt("stripes")
@@ -1077,8 +1282,8 @@ func _haz_rect(r: Rect2, band := 0.2) -> void:
 func _draw_bowser_bay(g: Dictionary) -> void:
 	var b := Rect2(Vector2(g.O) + Engineer7.bay_local().position, Engineer7.bay_local().size)
 	g["fuel_bay"] = b
-	draw_colored_polygon(_quad(b.grow(0.08)), Color(0.20, 0.21, 0.21, 1.0))
-	draw_colored_polygon(_quad(b), Color(0.27, 0.28, 0.27, 1.0))
+	_bpoly(_quad(b.grow(0.08)), Color(0.20, 0.21, 0.21, 1.0))
+	_bpoly(_quad(b), Color(0.27, 0.28, 0.27, 1.0))
 	var y := Color(0.95, 0.76, 0.12, 1.0)
 	var k := Color(0.07, 0.07, 0.07, 1.0)
 	var q := [b.position, Vector2(b.end.x, b.position.y), b.end, Vector2(b.position.x, b.end.y)]
@@ -1101,15 +1306,18 @@ func _draw_bowser_bay(g: Dictionary) -> void:
 	for i in n:
 		var v0 := W * float(i) / float(n)
 		var v1 := W * (float(i) + 0.5) / float(n)
-		draw_colored_polygon(PackedVector2Array([_iso(at.call(L - 0.05, v0)), _iso(at.call(L - 0.05, v1)),
+		_bpoly(PackedVector2Array([_iso(at.call(L - 0.05, v0)), _iso(at.call(L - 0.05, v1)),
 			_iso(at.call(L - 0.45, minf(W, v1 + 0.12))), _iso(at.call(L - 0.45, minf(W, v0 + 0.12)))]), y if i % 2 == 0 else k)
 	# fuel-drop stencil in the middle of the bay (red drop on a white disc)
 	var c := _iso(b.get_center())
+	_tb_flush()   # G7 LPPERF7C: transformed block drawn directly (the batch holds untransformed points)
+	_tb_on = false
 	draw_set_transform(c, 0.0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, 7.0, Color(0.93, 0.93, 0.89, 1.0))
 	draw_circle(Vector2(0, 1.2), 3.4, Color(0.80, 0.12, 0.08, 1.0))
-	draw_colored_polygon(PackedVector2Array([Vector2(0, -5.0), Vector2(2.9, -0.2), Vector2(-2.9, -0.2)]), Color(0.80, 0.12, 0.08, 1.0))
+	_bpoly(PackedVector2Array([Vector2(0, -5.0), Vector2(2.9, -0.2), Vector2(-2.9, -0.2)]), Color(0.80, 0.12, 0.08, 1.0))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_tb_on = _tb_want
 	_sp("w_nosmoke", _iso(at.call(0.12, W * 0.5)))
 	_cnt("bay")
 
@@ -1286,7 +1494,10 @@ func _draw_plaques(g: Dictionary) -> void:
 		var fw := float(e.fw)
 		var fh := float(e.fh) - 8.0   # the board without its posts
 		over.draw_set_transform_matrix(Transform2D(Vector2(1.0, -0.5 if face == 0 else 0.5), Vector2(0, 1), o))
-		over.draw_texture_rect_region(e.tex, Rect2(-fw * 0.5, -fh, fw, fh), Rect2(0, 0, fw, fh))
+		if e.has("atex"):
+			over.draw_texture_rect_region(e.atex, Rect2(-fw * 0.5, -fh, fw, fh), Rect2(e.ofs, Vector2(fw, fh)))
+		else:
+			over.draw_texture_rect_region(e.tex, Rect2(-fw * 0.5, -fh, fw, fh), Rect2(0, 0, fw, fh))
 		_cnt("plaques")
 	over.draw_set_transform_matrix(Transform2D.IDENTITY)
 
@@ -1318,16 +1529,16 @@ func _facade_light(g: Dictionary, n: float) -> void:
 func _draw_ruin(g: Dictionary) -> void:
 	# what is left of the roads and pads: cracked, soot-stained asphalt and concrete
 	for l in (g.F.get("lanes", []) as Array):
-		draw_colored_polygon(_quad(_rect(l)), Color(0.15, 0.15, 0.15, 0.9))
+		_bpoly(_quad(_rect(l)), Color(0.15, 0.15, 0.15, 0.9))
 	for zn in ["pad", "helipad", "staging", "apc_wash"]:
 		if (g.zones as Dictionary).has(zn):
 			var r: Rect2 = g.zones[zn]
-			draw_colored_polygon(_quad(r), Color(0.33, 0.32, 0.30, 0.95))
+			_bpoly(_quad(r), Color(0.33, 0.32, 0.30, 0.95))
 			for k in int(r.size.x * 2.0):   # cracks across the slab
 				var hs := absi(hash(Vector3i(int(g.id), k, zn.length())))
 				var p := r.position + Vector2(float(hs % 97) / 97.0 * r.size.x, float((hs / 97) % 89) / 89.0 * r.size.y)
 				var q := p + Vector2(float((hs / 8633) % 7) / 7.0 - 0.5, float((hs / 60431) % 5) / 5.0) * 0.9
-				draw_line(_iso(p), _iso(q), Color(0.1, 0.1, 0.1, 0.8), 1.0)
+				_bline(_iso(p), _iso(q), Color(0.1, 0.1, 0.1, 0.8), 1.0)
 	var areas := []
 	for zn in g.zones:
 		if not OPEN_ZONES.has(zn):
@@ -1338,7 +1549,7 @@ func _draw_ruin(g: Dictionary) -> void:
 	var ai := 0
 	for r in areas:
 		var rr: Rect2 = (r as Rect2).grow(-0.2)
-		draw_colored_polygon(_quad(rr), Color(0.22, 0.21, 0.20, 0.95))   # burnt foundation slab
+		_bpoly(_quad(rr), Color(0.22, 0.21, 0.20, 0.95))   # burnt foundation slab
 		_sp("scorch", _iso(rr.get_center()), 0, 0, Color(1, 1, 1, 0.9), maxf(rr.size.x, rr.size.y) * 0.45)
 		_cnt("scorch")
 		# standing stubs of the walls along the back edges, jagged tops
@@ -1353,8 +1564,8 @@ func _draw_ruin(g: Dictionary) -> void:
 					continue
 				var p0 := _iso(a.lerp(b, float(k) / float(segs)))
 				var p1 := _iso(a.lerp(b, float(k + 1) / float(segs)))
-				draw_colored_polygon(PackedVector2Array([p0, p1, p1 - Vector2(0, hz * 0.8), p0 - Vector2(0, hz)]), Color(0.40, 0.39, 0.37) if side == 0 else Color(0.33, 0.32, 0.30))
-				draw_line(p0 - Vector2(0, hz), p1 - Vector2(0, hz * 0.8), Color(0.12, 0.11, 0.1), 1.0)
+				_bpoly(PackedVector2Array([p0, p1, p1 - Vector2(0, hz * 0.8), p0 - Vector2(0, hz)]), Color(0.40, 0.39, 0.37) if side == 0 else Color(0.33, 0.32, 0.30))
+				_bline(p0 - Vector2(0, hz), p1 - Vector2(0, hz * 0.8), Color(0.12, 0.11, 0.1), 1.0)
 		var nx := maxi(1, int(round(rr.size.x / 1.6)))
 		var ny := maxi(1, int(round(rr.size.y / 1.6)))
 		for iy in ny:
@@ -1713,7 +1924,10 @@ func _pool(p: Vector2, rx: float, col: Color) -> void:
 	var e: Dictionary = _spr.get("glow", {})
 	if e.is_empty():
 		return
-	_gc.draw_texture_rect(e.tex, Rect2(p - Vector2(rx, rx * 0.5), Vector2(rx * 2.0, rx)), false, col)
+	if e.has("atex"):
+		_gc.draw_texture_rect_region(e.atex, Rect2(p - Vector2(rx, rx * 0.5), Vector2(rx * 2.0, rx)), Rect2(e.ofs, e.tsz), col)
+	else:
+		_gc.draw_texture_rect(e.tex, Rect2(p - Vector2(rx, rx * 0.5), Vector2(rx * 2.0, rx)), false, col)
 	counts["lights"] = int(counts.get("lights", 0)) + 1
 
 
@@ -1721,7 +1935,10 @@ func _dot(p: Vector2, r: float, col: Color) -> void:
 	var e: Dictionary = _spr.get("spot", {})
 	if e.is_empty():
 		return
-	_gc.draw_texture_rect(e.tex, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), false, col)
+	if e.has("atex"):
+		_gc.draw_texture_rect_region(e.atex, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), Rect2(e.ofs, e.tsz), col)
+	else:
+		_gc.draw_texture_rect(e.tex, Rect2(p - Vector2(r, r), Vector2(r * 2.0, r * 2.0)), false, col)
 
 
 # =============================================================== LIGHT7: the lighting plan (owner 13.9c-24 / 13.9c-24a)
@@ -1764,27 +1981,27 @@ const CORE_B := 2.4                   # ... and out from it
 const MAX_POLES := 30                 # LIGHT7-4 (13.9c-24d): was 14: lane poles + the open-zone masts
 const LIGHT_CAP := 480                # pools + lamps drawn per glow redraw (fps bound; LIGHT7-4: was 320, the compound interior is lit like the perimeter)
 const YARD_A := 6.0                   # LIGHT7-4 (13.9c-24d): an inward yard flood's wash: half-length along the wall (tiles; floods are 4 apart) ...
-const YARD_B := 4.2                   # ... and half-depth into the yard
+const YARD_B := 6.0                   # ... and half-depth into the yard
 const YARD_CA := 3.4                  # its hot core ...
 const YARD_CB := 1.9
 const YARD_WASH := 0.34               # additive alphas of the yard wash / core (the ground inside is not tint-lifted: the hex never lifts)
 const YARD_CORE := 0.26
-const POLE_R := 104.0                 # lane pole / zone mast pool radius (px): was 70
+const POLE_R := 140.0                 # lane pole / zone mast pool radius (px): was 70
 const POLE_A := 0.30                  # its additive alpha (LIGHT7-5: 0.46 -> 0.30, the pool now also lifts the night tint, IL_POLE)
-const IY_WASH := 0.38                 # LIGHT7-5 (13.9c-24d): interior tint lift of a yard flood's wash (the perimeter's 0.34 wash + its core's share)
-const IL_POLE := 0.36                 # ... of a lane pole / zone mast / apron flood pool
-const IL_MAST := 0.40                 # ... of an area mast (9 m, two flood luminaires)
+const IY_WASH := 0.46                 # LIGHT7-5 (13.9c-24d): interior tint lift of a yard flood's wash (the perimeter's 0.34 wash + its core's share)
+const IL_POLE := 0.46                 # ... of a lane pole / zone mast / apron flood pool
+const IL_MAST := 0.50                 # ... of an area mast (9 m, two flood luminaires)
 const IL_MIN := 0.12                  # every lane / apron cell the camera sees gets at least this lift (masts are added until it does)
 const MAX_MASTS := 12
 const FIX_CAP := 140                  # fixtures per facility (fps budget, test_light_count_bounded)
 const MAX_WALLF := 6                   # LIGHT7-6: wall-pack floods on building faces (cells no mast verge reaches)
 const WALLF_Z := 6.0 * PX_M            # their bracket: under the first roof line (the workshop's shop storey is 6.5 m)
-const WF_A := 3.6                      # their wash: half-length along the face (tiles) ...
-const WF_B := 2.6                      # ... and half-depth out from it
+const WF_A := 4.4                      # their wash: half-length along the face (tiles) ...
+const WF_B := 3.6                      # ... and half-depth out from it
 const WF_CA := 2.0                     # the hot core
 const WF_CB := 1.2
 const MAST_Z := 9.0 * PX_M            # area mast crossbar (9 m)
-const MAST_R := 300.0                 # its pool radius (px; a ground circle of ~4.7 tiles): the perimeter wash's class
+const MAST_R := 340.0                 # its pool radius (px; a ground circle of ~4.7 tiles): the perimeter wash's class
 const MAST_ADD := 0.18                # its additive alpha
 const YARD_ADD := 0.24                # LIGHT7-5: the yard wash / core additive alphas once the tint is lifted too (were YARD_WASH / YARD_CORE)
 const YARD_CADD := 0.20
@@ -1822,6 +2039,33 @@ func _ilv(F: Dictionary) -> Array:
 			var r := float(F.r)
 			return [[_iso(F.pool), Vector2(r, 0.0), Vector2(0.0, r * 0.5), IL_MAST if String(F.k) == "mast" else IL_POLE]]
 	return []
+
+
+## LIGHT7-7: the interior tint lift each work cell gets from a fixture list (the sum the planner and the coverage test both use).
+func _work_lift(work: Array, fix: Array) -> PackedFloat32Array:
+	var lv := PackedFloat32Array()
+	lv.resize(work.size())
+	var ws := []
+	for p in work:
+		ws.append(_iso(p))
+	for F in fix:
+		for e in _ilv(F):
+			for k in work.size():
+				lv[k] += _ell_f(e, ws[k])
+	return lv
+
+
+## LIGHT7-7: how much a candidate fixture F adds toward IL_MIN across the work cells (lifts already past IL_MIN count for nothing).
+func _lift_gain(F: Dictionary, ws: Array, lv: PackedFloat32Array) -> float:
+	var gain := 0.0
+	for k in ws.size():
+		if lv[k] >= IL_MIN:
+			continue
+		var add := 0.0
+		for e in _ilv(F):
+			add += _ell_f(e, ws[k])
+		gain += minf(add, IL_MIN - lv[k])
+	return gain
 
 
 ## The dark shader's falloff of one lift ellipse e (as _ilv) at screen point s (the same formula as the shader).
@@ -2175,7 +2419,7 @@ func _draw_pool(P: Dictionary, col: Color) -> void:
 		return
 	var cols := PackedColorArray([col])
 	for i in (P.polys as Array).size():
-		_gc.draw_polygon(P.polys[i], cols, P.uvs[i], e.tex)
+		_gpoly(P.polys[i], cols, P.uvs[i], e)
 	counts["lights"] = int(counts.get("lights", 0)) + 1
 
 
@@ -2417,94 +2661,6 @@ func _plan_lights(g: Dictionary, C: Dictionary) -> void:
 				poles.append(cp)
 				fix.append(_fx("pole", cp, POLE_Z, arm, cp + arm * 0.6, POLE_R + 24.0, 0.3))
 				break
-	# LIGHT7-5 (13.9c-24d): 9 m area masts (a crossbar with two of the perimeter's flood luminaires) wherever a lane / apron cell the camera
-	# sees is still darker than IL_MIN under the yard floods, apron floods and lane poles: darkest cell first, on the nearest free verge
-	var work := _work_cells(g, C)
-	var lv := PackedFloat32Array()
-	lv.resize(work.size())
-	var ws := []
-	for p in work:
-		ws.append(_iso(p))
-	for F in fix:
-		for e in _ilv(F):
-			for k in work.size():
-				lv[k] += _ell_f(e, ws[k])
-	var offs := []
-	for dy in range(-10, 11):   # quarter-tile steps (a footing on a yard rim / kerb line sits 0.25 tile in), within 2.5 tiles
-		for dx in range(-10, 11):
-			if dx * dx + dy * dy <= 100:
-				offs.append(Vector2(dx, dy) * 0.25)
-	offs.sort_custom(func(a, b): return a.length_squared() < b.length_squared())
-	var masts := []
-	var skip := {}
-	for it in MAX_MASTS * 3:
-		if masts.size() >= MAX_MASTS:
-			break
-		var wi := -1
-		var lo := IL_MIN
-		for k in work.size():
-			if lv[k] < lo and not skip.has(k):
-				lo = lv[k]
-				wi = k
-		if wi < 0:
-			break
-		var best := Vector2.INF
-		for off in offs:
-			var p: Vector2 = work[wi] + off
-			if _verge_ok(g, C, p, poles + masts, Rect2(), 3.0, MAST_Z, true, false) and not _behind_bld(g, p, MAST_Z + 3.0):   # its head in view
-				best = p
-				break
-		if best == Vector2.INF:
-			for k in work.size():   # no free verge within 2.5 tiles: this cell and its neighbours are left for the test to report
-				if (work[k] as Vector2).distance_to(work[wi]) <= 1.0:
-					skip[k] = true
-			continue
-		masts.append(best)
-		var M := _fx("mast", best, MAST_Z, Vector2.ZERO, best, MAST_R)
-		M.zv = 0.0   # the height up to which a building in front hides the shaft (0: the foot is in view)
-		if _behind_bld(g, best, 2.0):
-			var zl := 0.0
-			var zh := MAST_Z
-			for bi in 8:
-				var zm := (zl + zh) * 0.5
-				if _behind_bld(g, best, zm):
-					zl = zm
-				else:
-					zh = zm
-			M.zv = zh
-		fix.append(M)
-		for e in _ilv(M):
-			for k in work.size():
-				lv[k] += _ell_f(e, ws[k])
-	# LIGHT7-6 (13.9c-24d): a work cell no mast verge reaches (the east lane beside the workshop / barracks: no free verge) gets a wall-pack
-	# flood on the nearest camera-facing (+x / +y) face of a drawn building block, aimed at it: the perimeter's flood fixture on a wall
-	# bracket under the first roof line (WALLF_Z), a wash along the face foot and a hot core, cut to the ground like the yard floods
-	var wskip := {}
-	var nwf := 0
-	for it in MAX_WALLF * 3:
-		if nwf >= MAX_WALLF:
-			break
-		var wi := -1
-		var lo := IL_MIN
-		for k in work.size():
-			if lv[k] < lo and not wskip.has(k):
-				lo = lv[k]
-				wi = k
-		if wi < 0:
-			break
-		var WF := _wall_flood(g, work[wi])
-		if WF.is_empty():
-			wskip[wi] = true
-			continue
-		fix.append(WF)
-		nwf += 1
-		for e in _ilv(WF):
-			for k in work.size():
-				lv[k] += _ell_f(e, ws[k])
-		if lv[wi] < IL_MIN:
-			wskip[wi] = true
-	g.work = work
-	g.work_lv = lv
 	# bulkhead lamps above the visible doors (FACB7 doors: the art's own door line and height) and garage doors
 	for d in g.doors:
 		if String(d[0]) == "armory" and int(d[1]) == 0 and _has_art("armory"):   # LIGHT7-4: the open bay's own lamps (header strip, door-head housing, jamb status lamps) are in the art: a generic bulkhead 1.7 m out on the apron floated
@@ -2543,6 +2699,78 @@ func _plan_lights(g: Dictionary, C: Dictionary) -> void:
 		for cp in [rr.position, Vector2(rr.get_center().x, rr.position.y), Vector2(rr.end.x, rr.position.y), rr.end,
 				Vector2(rr.get_center().x, rr.end.y), Vector2(rr.position.x, rr.end.y)]:
 			fix.append(_fx("deck", cp, dz, Vector2.ZERO, cp, 0.0))
+	# LIGHT7-5 / LIGHT7-7 (13.9c-24d): 9 m area masts (a crossbar with two of the perimeter's flood luminaires) and wall-pack floods on a building face,
+	# placed greedily inside what is left of the FIX_CAP budget once every other fixture stands (the doors, garages, roof lamps above are already in):
+	# the darkest work cell the camera sees first, whichever candidate (a mast on the nearest free verge, or a wall-pack flood on the nearest camera-facing
+	# face) lifts the most cells toward IL_MIN, until every cell has IL_MIN or the budget is spent. Nothing is trimmed afterwards, so the coverage is real.
+	var work := _work_cells(g, C)
+	var ws := []
+	for p in work:
+		ws.append(_iso(p))
+	var lv := _work_lift(work, fix)
+	var offs := []
+	for dy in range(-10, 11):   # quarter-tile steps (a footing on a yard rim / kerb line sits 0.25 tile in), within 2.5 tiles
+		for dx in range(-10, 11):
+			if dx * dx + dy * dy <= 100:
+				offs.append(Vector2(dx, dy) * 0.25)
+	offs.sort_custom(func(a, b): return a.length_squared() < b.length_squared())
+	var masts := []
+	var skip := {}
+	var nwf := 0
+	for it in (MAX_MASTS + MAX_WALLF) * 4:
+		if fix.size() >= FIX_CAP or (masts.size() >= MAX_MASTS and nwf >= MAX_WALLF):
+			break
+		var wi := -1
+		var lo := IL_MIN
+		for k in work.size():
+			if lv[k] < lo and not skip.has(k):
+				lo = lv[k]
+				wi = k
+		if wi < 0:
+			break
+		var M := {}
+		if masts.size() < MAX_MASTS:
+			for off in offs:
+				var p: Vector2 = work[wi] + off
+				if _verge_ok(g, C, p, poles + masts, Rect2(), 3.0, MAST_Z, true, false) and not _behind_bld(g, p, MAST_Z + 3.0):   # its head in view
+					M = _fx("mast", p, MAST_Z, Vector2.ZERO, p, MAST_R)
+					M.zv = 0.0   # the height up to which a building in front hides the shaft (0: the foot is in view)
+					if _behind_bld(g, p, 2.0):
+						var zl := 0.0
+						var zh := MAST_Z
+						for bi in 8:
+							var zm := (zl + zh) * 0.5
+							if _behind_bld(g, p, zm):
+								zl = zm
+							else:
+								zh = zm
+						M.zv = zh
+					break
+		var WF := {}
+		if nwf < MAX_WALLF:
+			WF = _wall_flood(g, work[wi])
+		var gm := _lift_gain(M, ws, lv) if not M.is_empty() else -1.0
+		var gw := _lift_gain(WF, ws, lv) if not WF.is_empty() else -1.0
+		var pick := {}
+		if gm >= gw and gm > 0.0:
+			pick = M
+			masts.append(M.at)
+		elif gw > 0.0:
+			pick = WF
+			nwf += 1
+		if pick.is_empty():   # nothing reaches this cell: it and its neighbours are left for the coverage test to report
+			for k in work.size():
+				if (work[k] as Vector2).distance_to(work[wi]) <= 1.0:
+					skip[k] = true
+			continue
+		fix.append(pick)
+		for e in _ilv(pick):
+			for k in work.size():
+				lv[k] += _ell_f(e, ws[k])
+		if lv[wi] < IL_MIN:
+			skip[wi] = true
+	g.work = work
+	g.work_lv = lv
 	while fix.size() > FIX_CAP:   # LIGHT7-5: the fixture budget (test_light_count_bounded): drop the last-placed (least needed) masts
 		var li := -1
 		for i in fix.size():
@@ -2552,6 +2780,7 @@ func _plan_lights(g: Dictionary, C: Dictionary) -> void:
 			break
 		fix.remove_at(li)
 		g.mast_drop = int(g.get("mast_drop", 0)) + 1
+	g.work_lv = _work_lift(work, fix)   # LIGHT7-7: the coverage of the fixtures actually fitted (the in-loop sums still counted masts trimmed above)
 	for F in fix:
 		F.hid = _behind_bld(g, F.at, float(F.z) + 2.0)
 		if String(F.k) == "tower":
@@ -2698,8 +2927,8 @@ func _draw_fixtures(g: Dictionary, dyn := false) -> void:   # dyn: only the alar
 			"pole":
 				var b: Vector2 = (F.base as Vector2).round()
 				_sp("fx_plinth", b, 0, 0, Color.WHITE, 1.0, o)
-				o.draw_rect(Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))   # shaft: lit left column
-				o.draw_rect(Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))         # shaded right column
+				_wrect(o, Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))   # shaft: lit left column
+				_wrect(o, Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))         # shaded right column
 				_sp("fx_pole", hp, _aim_frame(F.aim), 0, Color.WHITE, 1.0, o)
 			"mast":   # LIGHT7-5: a 9 m area mast: footing, shaft, crossbar, two of the perimeter's flood luminaires (as the base masts)
 				var mb: Vector2 = (F.base as Vector2).round()
@@ -2707,9 +2936,9 @@ func _draw_fixtures(g: Dictionary, dyn := false) -> void:   # dyn: only the alar
 				if zv <= 0.0:
 					_sp("fx_plinth", mb, 0, 0, Color.WHITE, 1.0, o)
 				var sb := mb.y - roundf(zv)   # the shaft only above what hides its foot
-				o.draw_rect(Rect2(mb.x - 1.0, hp.y, 1.0, sb - hp.y), Color(0.50, 0.52, 0.53))
-				o.draw_rect(Rect2(mb.x, hp.y, 1.0, sb - hp.y), Color(0.15, 0.16, 0.19))
-				o.draw_rect(Rect2(hp.x - 5.0, hp.y, 10.0, 1.0), Color(0.33, 0.36, 0.40))
+				_wrect(o, Rect2(mb.x - 1.0, hp.y, 1.0, sb - hp.y), Color(0.50, 0.52, 0.53))
+				_wrect(o, Rect2(mb.x, hp.y, 1.0, sb - hp.y), Color(0.15, 0.16, 0.19))
+				_wrect(o, Rect2(hp.x - 5.0, hp.y, 10.0, 1.0), Color(0.33, 0.36, 0.40))
 				_sp("fx_flood", hp + Vector2(-4, 0), 1, 0, Color.WHITE, 1.0, o)
 				_sp("fx_flood", hp + Vector2(4, 0), 0, 0, Color.WHITE, 1.0, o)
 			"door":
@@ -2794,7 +3023,7 @@ func _glow_fixtures(g: Dictionary, n: float, red_search: bool) -> void:
 						var wc := PackedColorArray([Color(CT_DOOR, 0.22 * n)])
 						for k in 7:
 							wc.append(Color(CT_DOOR, 0.0))
-						_gc.draw_polygon(F.wash, wc)
+						_gpoly(F.wash, wc)
 			"obst":
 				if not F.hid:
 					_dot(hp - Vector2(-1.5, 4.0), 1.6, Color(CT_RED, 0.95 * n))
@@ -2990,12 +3219,12 @@ func _glow_bay(g: Dictionary, n: float) -> void:
 				var cols := PackedColorArray()
 				for a in S.al[pi]:
 					cols.append(Color(S.col, float(a) * n))
-				_gc.draw_polygon(S.polys[pi], cols)
+				_gpoly(S.polys[pi], cols)
 		for st in B.strips:
 			var cs := PackedColorArray()
 			for a in st.al:
 				cs.append(Color(BAY_W, float(a) * n))
-			_gc.draw_polygon(st.poly, cs)
+			_gpoly(st.poly, cs)
 		for L in B.lamps:
 			_dot(L, 1.7, Color(BAY_W, 0.95 * n))
 			_dot(L, 5.5, Color(BAY_W, 0.30 * n))
@@ -3569,14 +3798,14 @@ func _draw_base_fixtures() -> void:
 		match String(F.k):
 			"bpole":   # a street / yard lamp: footing, shaft, cobra-head arm (toward the camera or away)
 				_sp("fx_plinth", b, 0, 0, Color.WHITE, 1.0, fixo)
-				fixo.draw_rect(Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))
-				fixo.draw_rect(Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))
+				_wrect(fixo, Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))
+				_wrect(fixo, Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))
 				_sp("fx_pole", hp, 4 if (F.aim as Vector2).x + (F.aim as Vector2).y > 0.0 else 5, 0, Color.WHITE, 1.0, fixo)
 			"mast":   # a 9 m mast: footing, shaft, a crossbar with two flood luminaires aimed left and right
 				_sp("fx_plinth", b, 0, 0, Color.WHITE, 1.0, fixo)
-				fixo.draw_rect(Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))
-				fixo.draw_rect(Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))
-				fixo.draw_rect(Rect2(hp.x - 5.0, hp.y, 10.0, 1.0), Color(0.33, 0.36, 0.40))   # crossbar
+				_wrect(fixo, Rect2(b.x - 1.0, hp.y, 1.0, b.y - hp.y), Color(0.50, 0.52, 0.53))
+				_wrect(fixo, Rect2(b.x, hp.y, 1.0, b.y - hp.y), Color(0.15, 0.16, 0.19))
+				_wrect(fixo, Rect2(hp.x - 5.0, hp.y, 10.0, 1.0), Color(0.33, 0.36, 0.40))   # crossbar
 				_sp("fx_flood", hp + Vector2(-4, 0), 1, 0, Color.WHITE, 1.0, fixo)
 				_sp("fx_flood", hp + Vector2(4, 0), 0, 0, Color.WHITE, 1.0, fixo)
 			"lpad":
@@ -3606,13 +3835,17 @@ func _draw_glow() -> void:   # LIGHT7-5: the alarm lights only (beacons, ground 
 	_gc = glow
 	counts["lights"] = _ls
 	counts["searchlights"] = 0
+	_gb_on = true
 	_draw_glow_any(true)
+	_gb_flush()
 
 
 func _draw_glow_s() -> void:   # LIGHT7-5: every steady light (pools, lenses, bay, garage spill, pad edges): only when _static_sig changes
 	_gc = glow_s
 	counts["lights"] = 0
+	_gb_on = true
 	_draw_glow_any(false)
+	_gb_flush()
 	_ls = int(counts.get("lights", 0))
 	_gc = glow
 
@@ -3664,7 +3897,7 @@ func _draw_glow_any(dyn: bool) -> void:
 					var cols := PackedColorArray()
 					for v in pc:
 						cols.append(Color(cw, cw.a * (1.0 - clampf((v - m0).dot(ax) / l2, 0.0, 1.0))))
-					_gc.draw_polygon(pc, cols)
+					_gpoly(pc, cols)
 				counts["lights"] += 1
 		if n > 0.004 and not dyn:
 			# pad / helipad perimeter: steady green flush lights (night / dusk)
@@ -3726,7 +3959,7 @@ func _searchlight(g: Dictionary, L: Vector2, tgt: Vector2, a: float) -> void:
 	var perp := Vector2(-d.y, d.x).normalized()
 	var rx := 30.0
 	var c := Color(0.92, 0.96, 1.0)
-	_gc.draw_polygon(PackedVector2Array([L - perp * 1.0, L + perp * 1.0, S + perp * rx * 0.3, S - perp * rx * 0.3]),
+	_gpoly(PackedVector2Array([L - perp * 1.0, L + perp * 1.0, S + perp * rx * 0.3, S - perp * rx * 0.3]),
 		PackedColorArray([Color(c, 0.16 * a), Color(c, 0.16 * a), Color(c, 0.02 * a), Color(c, 0.02 * a)]))
 	_draw_pool(_mk_pool(S, rx * 1.5, g.get("lsil", g.sil)), Color(c, 0.55 * a))
 	_dot(L, 2.5, Color(c, a))

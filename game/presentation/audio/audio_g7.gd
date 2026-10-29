@@ -16,6 +16,7 @@ const Cat7 = preload("res://presentation/audio/audio_catalog7.gd")
 const Music = preload("res://presentation/audio/music_director.gd")
 const Buses = preload("res://presentation/audio/audio_buses.gd")
 const L = preload("res://sim/ai/ai_g6_lib.gd")
+const VU = preload("res://presentation/view/view_util.gd")
 const SENSES_PATH := "res://sim/systems/senses7.gd"
 const LP_PATH := "res://sim/systems/last_protocol.gd"
 
@@ -101,8 +102,9 @@ func _where(ev: Dictionary, how: String) -> Variant:
 
 # ------------------------------------------------------------------ events
 ## Turret ShotFired for the special kinds: the T7Rail / T7Emp / T7Burn / T7Cone event carries the sound instead.
+## CIWS7-4 (13.9c-32a): a roof CIWS fire tick (ciws7) never plays a per-round one-shot: its burst plays ciws_shot's loop.
 static func skip_shot(ev: Dictionary) -> bool:
-	return String(ev.get("t7", "")) in ["rail", "emp", "flame", "cone"]
+	return String(ev.get("t7", "")) in ["rail", "emp", "flame", "cone"] or bool(ev.get("ciws7", false))
 
 
 ## Sounds played for a G7 event (ids, for tests / log). Voices are queued separately.
@@ -112,6 +114,10 @@ func event(ev: Dictionary) -> Array:
 	match t:
 		"ShotFired":
 			_on_shot(ev)
+			if bool(ev.get("ciws7", false)):
+				var cid := ciws_shot(ev)
+				if cid != "":
+					played.append(cid)
 			return played
 		"CnBark":
 			if _mine(ev):
@@ -310,6 +316,7 @@ func music_state() -> Dictionary:
 func tick(dt: float) -> void:
 	_mt += dt
 	_hook_t += dt
+	_ciws_tick()
 	if _hook_t >= 2.0:
 		_hook_t = 0.0
 		_hook_advisor()
@@ -352,3 +359,105 @@ func _feed(id: int) -> void:
 		for p in _feed_players:
 			(p as Node).queue_free()
 		_feed_players.clear()
+
+
+# ------------------------------------------------------------------ CIWS7-4: the roof CIWS "BRRRT" (13.9c-32a)
+## Owner: "CIWS turrets need to have that signatture phlanx BBRRRRTTTTTTTTTT shooting sound". A mount's burst plays ONE
+## positional loop (shot_ciws7_brrt: 70 reports a second fused into a tearing buzz) from its first round to its last:
+## every ciws7 ShotFired of that mount extends the burst by its rounds / CIWS_RPS (an intercept burst: lay + 60
+## rounds); CIWS_GAP_S without a round = the burst is over: the loop fades out and, when the mount has no target left
+## (or no world to ask), the spin-down (last rounds ringing out + the barrel cluster whining down) plays. The spin-up
+## whine plays when the sim starts spinning a mount's barrels (its spin counter leaves 0). Same voice limits (mixer
+## request, gun category), far swap (shot_ciws7_brrt_far: a muffled distant rumble) and far / fog culling as every
+## battle sound; at most CIWS_VOICES loops at once. Presentation only: reads events + sys_state.ciws7 read-only.
+const CIWS_LOOP_ID := "shot_ciws7_brrt"
+const CIWS_UP_ID := "shot_ciws7_spinup"
+const CIWS_DOWN_ID := "shot_ciws7_spindown"
+const CIWS_RPS := 50.0            # rounds a second of the sim (rate_rpm 3000 / 60): sizes a burst from its rounds
+const CIWS_GAP_S := 0.08          # this long past the last round's end = the burst is over (fire ticks are 0.05 s)
+const CIWS_RES_S := 1.5           # voice reservation per burst (= burst_max_s)
+const CIWS_VOICES := 4
+const CIWS_FAR_START := 1.25      # = AudioDirector.FAR_START
+const CIWS_MAX_DN := 3.5          # = AudioDirector.MAX_DN
+var ciws_active: Dictionary = {}  # shooter id -> {id, end, at, pos, vis, player}
+var ciws_log: Array = []          # [{at, sid, ev: start | stop | spinup | spindown, id}] (tests / playtest evidence)
+var _ciws_sp: Dictionary = {}     # mount id (str) -> spin ticks seen at the last poll
+
+
+## Starts (or extends) mount ev.shooter's burst loop. Returns the loop id started ("" when extended / culled).
+func ciws_shot(ev: Dictionary) -> String:
+	var sid := int(ev.get("shooter", -1))
+	var p: Vector2 = ev.get("from", Vector2.ZERO)
+	var now: float = d.now()
+	var dur := maxf(float(ev.get("rounds", 1)) / CIWS_RPS, 0.05) + maxf(float(ev.get("lay_ticks", 0)), 0.0) / 20.0
+	var a = ciws_active.get(sid)
+	if a != null:
+		a.end = maxf(float(a.end), now + dur)
+		return ""
+	if ciws_active.size() >= CIWS_VOICES:
+		return ""
+	var vis: bool = d._visible(p)
+	var dn: float = d.dist_norm(p)
+	if dn > CIWS_MAX_DN:
+		return ""
+	var id := CIWS_LOOP_ID
+	var g := 0.0
+	if not vis or dn > CIWS_FAR_START:
+		id = Cat.far_of(id)
+		g = -6.0 if not vis else -clampf((dn - CIWS_FAR_START) * 2.5, 0.0, 12.0)
+	var vars := Cat.variants(id)
+	if id == "" or vars.is_empty() or not d.mixer.request(id, Cat.category(id), now, maxf(dur, CIWS_RES_S)):
+		return ""
+	var path := String(vars[d.mixer.next_variant(id, vars.size())])
+	var pl: AudioStreamPlayer2D = null
+	if d.enabled:
+		pl = AudioStreamPlayer2D.new()
+		pl.bus = "Battle"
+		pl.attenuation = 1.0
+		pl.panning_strength = 1.0
+		pl.stream = Cat.stream(path, true)
+		pl.position = VU.iso(p)
+		pl.volume_db = g
+		pl.max_distance = d._hear_px()
+		d.add_child(pl)
+		pl.play()
+	d.counts[id] = int(d.counts.get(id, 0)) + 1
+	ciws_active[sid] = {"id": id, "end": now + dur, "at": now, "pos": p, "vis": vis, "player": pl}
+	ciws_log.append({"at": now, "sid": sid, "ev": "start", "id": id})
+	if ciws_log.size() > 200:
+		ciws_log = ciws_log.slice(ciws_log.size() - 100)
+	return id
+
+
+func _ciws_tick() -> void:
+	var now: float = d.now()
+	var w = _w()
+	var st = w.sys_state.get("ciws7") if w != null else null
+	for sid in ciws_active.keys():
+		var a: Dictionary = ciws_active[sid]
+		if now <= float(a.end) + CIWS_GAP_S:
+			continue
+		ciws_active.erase(sid)
+		var pl = a.get("player")
+		if pl != null and is_instance_valid(pl):
+			var tw: Tween = (pl as Node).create_tween()
+			tw.tween_property(pl, "volume_db", float((pl as AudioStreamPlayer2D).volume_db) - 30.0, 0.06)
+			tw.tween_callback((pl as Node).queue_free)
+		ciws_log.append({"at": now, "sid": int(sid), "ev": "stop", "id": String(a.id)})
+		var M = (st.m as Dictionary).get(str(sid)) if st != null else null
+		if M == null or int(M.get("t", -1)) < 0:
+			var got: String = d.play_at(CIWS_DOWN_ID, a.pos, bool(a.vis))
+			ciws_log.append({"at": now, "sid": int(sid), "ev": "spindown", "id": got})
+	if st == null:
+		return
+	for k in (st.m as Dictionary):
+		var sp := int(st.m[k].get("sp", 0))
+		var was := int(_ciws_sp.get(k, 0))
+		_ciws_sp[k] = sp
+		if was == 0 and sp > 0 and not ciws_active.has(int(k)):
+			var b = w.entities.get(int(k))
+			if b == null:
+				continue
+			var p: Vector2 = b.get("c7m", b.pos)
+			var got: String = d.play_at(CIWS_UP_ID, p, d._visible(p))
+			ciws_log.append({"at": now, "sid": int(k), "ev": "spinup", "id": got})

@@ -201,6 +201,34 @@ func run(pt) -> void:
 	var inf_id := -1
 	var atk := "no enemy side"
 	if foe >= 0:
+		# FLOWB7 (suite 2026-10-28): the facility's Sentinel garrison (13.9c-38 "Double the watch": 48 men, every tower
+		# manned, patrol pairs on every wall run, the QRF) is not the turret under test. Its tower posts and east-wall
+		# patrol shot the six attackers dead before they took the outer turret down (suite run: "outer turret destroyed
+		# by the attackers" false, the flow had to finish it). Same fixture fix as tests/test_wallturret7.gd
+		# (test_assault_destroys_outer_turret): the men are removed before the assault; the facility's own structures
+		# (hardened towers, the other wall turrets) still shoot back. The checks below are unchanged.
+		var sent := 0
+		for sid in w.entities.keys():
+			var se: Dictionary = w.entities[sid]
+			if se.kind == "unit" and int(se.owner) == me and String(se.def).begins_with("g7_sent_"):
+				w.destroy(int(sid), "playtest", SimWorld.NEUTRAL)
+				sent += 1
+		print("WALLTURRET7 removed %d Sentinels before the assault" % sent)
+		# FLOWB7: the facility drone bay (13.9c-27a, added after this flow was written) is not the turret under test
+		# either: its hive went for the attackers (rerun with the garrison removed: AT team dead, both MBTs down to
+		# ~120 hp, broken off and idle 15 tiles away, the turret left at 492 / 1100). The player switches the bay's
+		# auto-release off (a player command, as tests/test_wallturret7.gd does); the checks below are unchanged.
+		var dr: Dictionary = w.submit({"type": "dronebay_auto", "on": false, "issuer": me})
+		print("WALLTURRET7 drone bay auto-release off: %s" % str(dr))
+		# FLOWB7: the assault runs on a live skirmish and the enemy side's skirmish AI (AiController.think, which does
+		# not honour a fresh commander order) re-tasks the attackers (r4/r5: at tick ~1630, ~9 s after the attack order,
+		# both MBTs got {move -> the AI's rally point 35 tiles off} and idled there, the infiltrator's hold became idle
+		# / retreat; stamping the orders fresh, as pt7_turret7's _pin, did not stop it). The headless twin
+		# (tests/test_wallturret7.gd) runs with an inert AI; the flow switches the enemy side's AI off for the rest of
+		# the flow so the attackers carry out the order they were given. The checks below are unchanged.
+		var had_ai := w.ai_state.has(foe)
+		w.ai_state.erase(foe)
+		print("WALLTURRET7 enemy side %d skirmish AI off (was on: %s)" % [foe, str(had_ai)])
 		# WTUR7-3: a real assault on the east wall: two main battle tanks and four AT gunners (anti-structure weapons; a
 		# rifle does 0.15x to a building) close to 4-5 tiles outside the wall, ordered onto the outer turret. The facility's towers and
 		# its other wall turrets fire back at them as they would in a match.
@@ -293,6 +321,9 @@ func run(pt) -> void:
 	var again := O + Vector2i(23, 27)
 	if _turret_at(w, again) >= 0:
 		again = O + Vector2i(25, 27)
+	mv.join_sim()
+	var pe := Construction.placement_error(w, me, def_id, again)
+	print("WALLTURRET7 rebuy face %s: placement '%s', turret there %d, credits %d" % [str(again - O), pe, _turret_at(w, again), int(w.factions[me].credits)])
 	var eng2: Dictionary = h._unit(w, "engineer", me, Vector2(again) + Vector2(0.5, 3.5))
 	var t_re: int = await _place(pt, mv, def_id, int(eng2.id), again)
 	pt._log("wallturret7_rebought_and_placed", t_re >= 0, "turret %d on %s" % [t_re, str(again - O)])

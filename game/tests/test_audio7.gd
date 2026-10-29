@@ -385,3 +385,84 @@ func test_sim_hash_unchanged_audio_on_off() -> void:
 	check_eq(a.state_hash(), b.state_hash(), "G7 audio (music, barks, PROTOCOL, sfx) never changes the sim")
 	check(d.g7.music.mlog.size() >= 1 and d.g7.subtitles.size() >= 1, "and it did run (%s / %d subtitles)" % [d.g7.music.mode, d.g7.subtitles.size()])
 	d.free()
+
+
+# ---------------------------------------------------------------- CIWS7-4 (G7_REFERENCE 13.9c-32a)
+class FakeWorld7 extends RefCounted:
+	var sys_state := {}
+	var entities := {}
+
+
+## Owner: "CIWS turrets need to have that signatture phlanx BBRRRRTTTTTTTTTT shooting sound". A roof CIWS burst plays
+## ONE positional loop from its first round to its last (no per-round one-shots), stops when the rounds stop, then the
+## barrels whine down; the spin-up whine plays when the sim spins the barrels up; far = the muffled far loop, fog =
+## far, beyond hearing = nothing; an intercept burst (60 rounds in one event) holds the loop for its length.
+func test_ciws_burst_loop_starts_and_stops() -> void:
+	for sid in ["shot_ciws7_brrt", "shot_ciws7_brrt_far", "shot_ciws7_spinup", "shot_ciws7_spindown"]:
+		check(not Cat.variants(sid).is_empty(), "sound %s exists in the G7 manifest" % sid)
+	check_eq(Cat.far_of("shot_ciws7_brrt"), "shot_ciws7_brrt_far", "far swap of the burst loop")
+	var mv := FakeView.new()
+	var fw := FakeWorld7.new()
+	fw.sys_state = {"ciws7": {"m": {"77": {"sp": 0, "t": -1}}}}
+	fw.entities = {77: {"pos": Vector2(1.6, 1.6), "c7m": Vector2(1, 1)}}
+	var d = _director(0, mv)
+	mv.world = fw                              # after setup: the director's side setup reads a real world's factions
+	d.listener_override = [Vector2.ZERO, Vector2(100, 100)]
+	var gun := Cat.shot_sound("g7_ciws7_ap")
+	d.tick(0.05)
+	fw.sys_state.ciws7.m["77"].sp = 1          # the sim starts spinning the barrels (laying onto a target)
+	fw.sys_state.ciws7.m["77"].t = 5
+	d.tick(0.05)
+	var ups: Array = d.g7.ciws_log.filter(func(e): return String(e.ev) == "spinup")
+	check(ups.size() == 1 and String(ups[0].id) == "shot_ciws7_spinup", "spin-up whine when the barrels start turning %s" % [ups])
+	var ev := {"type": "ShotFired", "ciws7": true, "shooter": 77, "target": 5, "weapon": "g7_ciws7_ap", "hit": true,
+		"from": Vector2(1, 1), "to": Vector2(4, 2), "rounds": 3}
+	var t0: float = d.now()
+	for i in 20:                               # a 1 s burst: a fire tick every 0.05 s
+		d._event(ev.duplicate())
+		if i % 5 == 0:
+			check(d.g7.ciws_active.has(77), "the loop plays while the rounds come (tick %d)" % i)
+		d.tick(0.05)
+	var starts: Array = d.g7.ciws_log.filter(func(e): return String(e.ev) == "start" and int(e.sid) == 77)
+	check_eq(starts.size(), 1, "ONE loop for the whole burst (no per-round one-shots)")
+	if not starts.is_empty():
+		check_eq(String(starts[0].id), "shot_ciws7_brrt", "the near burst plays the BRRRT loop")
+	check_eq(int(d.counts.get(gun, 0)), 0, "no generic %s one-shot per fire tick" % gun)
+	fw.sys_state.ciws7.m["77"].t = 5          # a pause between bursts on the same target: no spin-down yet
+	d.tick(0.2)
+	var stops: Array = d.g7.ciws_log.filter(func(e): return String(e.ev) == "stop" and int(e.sid) == 77)
+	check(stops.size() == 1 and not d.g7.ciws_active.has(77), "the loop stops when the rounds stop")
+	if stops.size() == 1 and starts.size() == 1:
+		var len_s: float = float(stops[0].at) - float(starts[0].at)
+		check(len_s >= 0.95 and len_s <= 1.3, "the loop lasted the burst (%.2f s for a 1.0 s burst)" % len_s)
+	check(d.g7.ciws_log.filter(func(e): return String(e.ev) == "spindown").is_empty(), "no spin-down in a pause (target held)")
+	fw.sys_state.ciws7.m["77"].t = -1         # last burst: the target is gone
+	d._event(ev.duplicate())
+	d.tick(0.3)
+	var downs: Array = d.g7.ciws_log.filter(func(e): return String(e.ev) == "spindown")
+	check(downs.size() == 1 and String(downs[0].id) == "shot_ciws7_spindown", "spin-down after the last burst %s" % [downs])
+	# an intercept: one event of 60 rounds holds the loop for 60 / 50 s
+	var ic := ev.duplicate()
+	ic.shooter = 78
+	ic.rounds = 60
+	ic.target = -1
+	d._event(ic)
+	d.tick(1.0)
+	check(d.g7.ciws_active.has(78), "an intercept burst still sounds 1.0 s in (60 rounds = 1.2 s)")
+	d.tick(0.4)
+	check(not d.g7.ciws_active.has(78), "and stops after it")
+	# far / fogged / out of hearing
+	var far := ev.duplicate()
+	far.shooter = 79
+	far.from = Vector2(12, 0)
+	check_eq(d.g7.event(far), ["shot_ciws7_brrt_far"], "a far mount plays the muffled far loop")
+	var gone := ev.duplicate()
+	gone.shooter = 80
+	gone.from = Vector2(20, 0)
+	check_eq(d.g7.event(gone), [], "beyond hearing: nothing")
+	d.vis_override = func(_c: Vector2i) -> bool: return false
+	var fog := ev.duplicate()
+	fog.shooter = 81
+	check_eq(d.g7.event(fog), ["shot_ciws7_brrt_far"], "a fogged mount is heard only as the far loop")
+	check(AudioG7Skip.call(ev), "the director's per-shot path defers CIWS fire to the burst loop")
+	d.free()

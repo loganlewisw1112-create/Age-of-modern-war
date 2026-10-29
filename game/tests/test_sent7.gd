@@ -6,6 +6,7 @@ const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const Garrison = preload("res://sim/systems/garrison.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const CommandNet = preload("res://sim/systems/command_net.gd")
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")
 const TYPES := ["warden", "marksman", "gunner", "bulwark", "lancer", "arc", "mender"]
 
 
@@ -346,13 +347,20 @@ func _silence(w: SimWorld, fac: int) -> void:
 ## Headless balance fight (brief item 4). The seeded starting garrison (24 incl. one ammo bearer) holds facility fac
 ## as raised (walls, towers, wall turrets, garrisons) against attackers worth mult x the garrison's value, spawned east
 ## of the compound on attack-move at the core, re-pushed every 10 s. Returns the numbers.
-func _fight(mix: Array, mult: float, secs: float, quiet: bool = false) -> Dictionary:
+## bay_off (BAL7, 13.9c-33): the facility drone bay's automatic release is switched off before the fight (the player's
+## own toggle, 13.9c-27), so the Sentinel balance is measured without the drone hive; towers / checkpoint / wall turrets /
+## roof CIWS still fire (quiet silences those too).
+func _fight(mix: Array, mult: float, secs: float, quiet: bool = false, bay_off: bool = false) -> Dictionary:
 	var a := _setup(60)
 	var w: SimWorld = a[0]
 	var o: Vector2i = a[1]
 	var n: int = a[2]
 	var fac := _facility(w, o)
 	_run(w, 40)
+	if bay_off:
+		var dcmd := {"type": "dronebay_auto", "on": false, "issuer": int(CnFacility.fac(w, fac).get("owner", 0))}
+		check_eq(SimWorld.DroneBay7.validate_command(w, dcmd), "", "bay_off: the facility has a drone bay to switch off")
+		SimWorld.DroneBay7.apply_command(w, dcmd)
 	var F: Dictionary = CnFacility.fac(w, fac)
 	var cr: Rect2 = CnFacility.compound_rect(F)
 	var sids := S7.sentinels_of(w, 0)
@@ -443,7 +451,7 @@ func _fight(mix: Array, mult: float, secs: float, quiet: bool = false) -> Dictio
 	var held := core_ok and inside == 0 and s_alive * 4 >= sids.size()
 	return {"sent": sids.size(), "sent_value": sv, "att": att.size(), "att_value": av, "sent_alive": s_alive,
 		"sent_value_left": s_val, "att_alive": a_alive, "att_value_left": a_val, "inside": inside, "core": core_ok,
-		"held": held, "events": ev}
+		"held": held, "events": ev, "bay_launched": int(SimWorld.DroneBay7.summary(w, fac).get("launched", 0))}
 
 
 func _report(tag: String, r: Dictionary) -> void:
@@ -453,28 +461,54 @@ func _report(tag: String, r: Dictionary) -> void:
 		"alive" if bool(r.core) else "DESTROYED", "HELD" if bool(r.held) else "LOST"])
 
 
+## Authority record: G7_REFERENCE 13.9c-33 (owner choice 2026-10-28, "Fortress: needs ~4x"). The old check "Sentinels
+## lose vs combined arms x2.5" predates the drone hive / roof CIWS; per the record it becomes "the full facility holds at
+## 2.5x" + "a ~4x combined-arms assault breaks in", and the Sentinel-only balance runs with the drone bay off (the
+## Sentinels stay "very strong ... dont make them invincible", 13.9c-10). The infantry / Machine holds are Sentinel
+## balance checks too, so they also run with the drone bay off (stricter than before: no hive help).
+## Infantry follow-up, G7_REFERENCE 13.9c-38 (owner choice 2026-10-28, "Full facility vs infantry"): the infantry x2 / x3
+## checks run with the whole facility (drone hive ON, as in a real game) at the new 48-man value; the "Sentinels alone are
+## beatable" rule stays on the combined-arms 2.5x check (drone bay off loses). The Machine x2.5 hold keeps the bay off.
 func test_balance_fight() -> void:
 	if not _hooks_wired():
 		print("  (skip: Sentinels7 hooks not wired)")
 		return
 	var at := "at_gunner" if not Content.unit("at_gunner").is_empty() else "rifleman"
+	var ca := [["a_old_tank", 0.4], ["a_guided_arty", 0.2], ["rifleman", 0.4]]
+	# 13.9c-38 infantry follow-up ("Full facility vs infantry"): drone bay ON for the infantry checks.
 	var r1 := _fight([["rifleman", 0.8], [at, 0.2]], 2.0, 240.0)
-	_report("human infantry x2", r1)
+	_report("full facility: human infantry x2", r1)
 	var r2 := _fight([["rifleman", 0.8], [at, 0.2]], 3.0, 240.0)
-	_report("human infantry x3", r2)
-	var r3 := _fight([["m_scout_crawler", 0.7], ["m_swarm", 0.3]], 2.5, 240.0)
-	_report("Machine x2.5", r3)
-	var r4 := _fight([["a_old_tank", 0.4], ["a_guided_arty", 0.2], ["rifleman", 0.4]], 2.5, 240.0)
-	_report("combined arms (armour + artillery + infantry) x2.5", r4)
+	_report("full facility: human infantry x3", r2)
+	var r3 := _fight([["m_scout_crawler", 0.7], ["m_swarm", 0.3]], 2.5, 240.0, false, true)
+	_report("Sentinels (drone bay off): Machine x2.5", r3)
+	var r4 := _fight(ca, 2.5, 240.0)
+	_report("full facility: combined arms (armour + artillery + infantry) x2.5", r4)
+	var r5 := _fight(ca, 4.0, 240.0)
+	_report("full facility: combined arms x4", r5)
+	var r6 := _fight(ca, 2.5, 240.0, false, true)
+	_report("Sentinels (drone bay off): combined arms x2.5", r6)
 	print("  BALANCE events (inf x2): %s" % str(r1.events))
-	# Reported, not checked: the same fights with the facility's own guns silenced (towers, checkpoint, wall turrets).
+	# Reported, not checked: the same fights with the facility's own guns silenced too (towers, checkpoint, wall turrets,
+	# drone bay: _silence).
 	_report("guns silenced: human infantry x2", _fight([["rifleman", 0.8], [at, 0.2]], 2.0, 240.0, true))
 	_report("guns silenced: Machine x2.5", _fight([["m_scout_crawler", 0.7], ["m_swarm", 0.3]], 2.5, 240.0, true))
-	_report("guns silenced: combined arms x2.5", _fight([["a_old_tank", 0.4], ["a_guided_arty", 0.2], ["rifleman", 0.4]], 2.5, 240.0, true))
-	check(bool(r1.held), "Sentinels hold vs 2x human infantry")
-	check(bool(r2.held), "Sentinels hold vs 3x human infantry")
-	check(bool(r3.held), "Sentinels hold vs 2.5x Machine")
-	check(not bool(r4.held), "Sentinels lose vs combined arms with armour + artillery")
+	_report("guns silenced: combined arms x2.5", _fight(ca, 2.5, 240.0, true))
+	check(bool(r1.held), "13.9c-38: the full facility holds vs 2x human infantry")
+	check(bool(r2.held), "13.9c-38: the full facility holds vs 3x human infantry")
+	check(bool(r3.held), "Sentinels (drone bay off) hold vs 2.5x Machine")
+	for r in [r3, r6]:
+		check_eq(int(r.bay_launched), 0, "drone bay off: no bay drone launched")
+	check(int(r4.bay_launched) > 0, "full facility: the drone hive took part (%d launches)" % int(r4.bay_launched))
+	# 13.9c-38 follow-up (owner: "Scale the defences up too"): every multiple below is of the NEW 48-man garrison value
+	# (2.5x ~ 319 attackers, 4x ~ 509); the drone hive grew 12 -> 24 and the Lancers 6 -> 9 (harpoon 95 -> 150) to keep
+	# 13.9c-33. The checks themselves are unchanged.
+	# 13.9c-33: the full facility (Sentinels + towers + wall turrets + drone hive + roof CIWS) holds at 2.5x ...
+	check(bool(r4.held), "13.9c-33: the full facility holds vs combined arms x2.5")
+	# ... and only a much larger assault (about 4x the garrison value) breaks in (core reached or compound overrun).
+	check(int(r5.inside) > 0 or not bool(r5.core), "13.9c-33: a ~4x combined-arms assault breaks in (inside %d, core %s)" % [int(r5.inside), str(r5.core)])
+	# 13.9c-10 "dont make them invincible": the Sentinels alone (drone bay off) still lose to combined arms at 2.5x.
+	check(not bool(r6.held), "Sentinels alone (drone bay off) lose vs combined arms with armour + artillery x2.5")
 
 
 ## 13.9c-13: buddy pairs, bounding (one moves while the other covers), cover + sectors, gait, guard net, stand-to,
@@ -684,3 +718,150 @@ func test_no_facility_no_cost() -> void:
 	print("  NO-COST: S7.tick without facility %.3f us/call" % us)
 	check(us < 5.0, "tick is a lookup (%.3f us)" % us)
 	check(not w.sys_state.has("sent7"), "still no state")
+
+
+## WATCH7 13.9c-38 ("Double the watch", owner 2026-10-28): the starting garrison is rules.start.force (48); at all
+## times a patrol pair walks every wall face on the wall-walk, every tower is manned, a 4-man team holds the entry
+## checkpoint and a pair the vehicle gate; shifts rotate with the barracks (relief in place: the man going off watch
+## stays until his relief is on post) so no post ever empties and nobody stands forever. The run shortens the shift
+## (shift_s 60, watch_stint_s 120) so it sees eight shift changes; the rules are restored after.
+func test_always_on_watch() -> void:
+	var P: Dictionary = S7.R().plan
+	var keep := P.duplicate()
+	P["shift_s"] = 60
+	P["watch_stint_s"] = 120
+	var s := _setup()
+	var w: SimWorld = s[0]
+	var fac := _facility(w, s[1])
+	var ids := S7.sentinels_of(w, 0)
+	check_eq(ids.size(), (S7.R().start.force as Array).size(), "13.9c-38: the starting garrison is rules.start.force")
+	check(ids.size() >= 48, "13.9c-38: the starting garrison is 48 (got %d)" % ids.size())
+	var F: Dictionary = CnFacility.fac(w, fac)
+	var towers := _parts(w, fac, "cn_tower")
+	var cp := int(F.get("cp", 0))
+	var watch := ["entry", "gate", "post", "wall", "int"]
+	var fails := {}
+	var samples := 0
+	var on_since := {}      # uid -> tick his current watch stint began (sampled)
+	var longest := 0
+	var longest_who := ""
+	var rested := {}        # uid -> true once he went off watch after standing one
+	var stood := {}
+	var holders := {}       # watch job id -> {uid: true}
+	var walls_seen := 0
+	var gate_seen := false
+	var T := 9600           # 8 shifts of 60 s
+	var cr: Rect2 = CnFacility.compound_rect(F)
+	var face_min := [999, 999, 999, 999]
+	var face_sum := [0, 0, 0, 0]
+	for t in T:
+		_step(w)
+		if t < 600 or t % 50 != 0:
+			continue
+		samples += 1
+		var S = S7.state(w)
+		var board: Array = S7.job_board(w, fac)
+		# every tower manned (a Sentinel inside), the entry team of 4 inside the checkpoint
+		for tid in towers:
+			var n := 0
+			for id in ids:
+				var e = w.entities.get(int(id))
+				if e != null and int(e.get("garrisoned_in", -1)) == int(tid):
+					n += 1
+			if n < 1:
+				fails["tower:%d" % int(tid)] = int(fails.get("tower:%d" % int(tid), 0)) + 1
+		var nin := 0
+		for id in ids:
+			var e = w.entities.get(int(id))
+			if e != null and int(e.get("garrisoned_in", -1)) == cp:
+				nin += 1
+		if nin < 4:
+			fails["entry"] = int(fails.get("entry", 0)) + 1
+		# a patrol pair on every wall run (on the wall-walk, on the run), a pair at the gate
+		var nw := 0
+		for j in board:
+			if String(j.kind) == "wall":
+				nw += 1
+				var on := 0
+				for id in ids:
+					var e = w.entities.get(int(id))
+					if e != null and String(S.jobs.get(str(id), {}).get("j", "")) == String(j.id) and WallWalk7.on_wall(w, e) and S7._route_d(Vector2(e.pos), j.route, false) <= 1.6:
+						on += 1
+				if on < 2:
+					fails[String(j.id)] = int(fails.get(String(j.id), 0)) + 1
+			elif String(j.kind) == "gate":
+				gate_seen = true
+				var on := 0
+				for id in ids:
+					var e = w.entities.get(int(id))
+					if e != null and String(S.jobs.get(str(id), {}).get("j", "")) == "gate" and Vector2(e.pos).distance_to(j.pos) <= 2.5:
+						on += 1
+				if on < 2:
+					fails["gate"] = int(fails.get("gate", 0)) + 1
+		walls_seen = maxi(walls_seen, nw)
+		# WATCH7-3 (13.9c-38 "heavier sentinel patrol force on the walls"): Sentinels on the wall-walk per face (tower deck
+		# men included: they are drawn on the deck), each face's minimum over the samples
+		var nf := [0, 0, 0, 0]   # N, E, S, W
+		for id in ids:
+			var e = w.entities.get(int(id))
+			if e == null:
+				continue
+			var gi := int(e.get("garrisoned_in", -1))
+			if not (WallWalk7.on_wall(w, e) or towers.has(gi)):
+				continue
+			var p: Vector2 = Vector2(e.pos)
+			var dd := [absf(p.y - cr.position.y), absf(cr.end.x - p.x), absf(cr.end.y - p.y), absf(p.x - cr.position.x)]
+			var bi := 0
+			for q in 4:
+				if float(dd[q]) < float(dd[bi]):
+					bi = q
+			nf[bi] += 1
+		for q in 4:
+			face_min[q] = mini(int(face_min[q]), int(nf[q]))
+			face_sum[q] = int(face_sum[q]) + int(nf[q])
+		# rotation bookkeeping from the duty records
+		for id in ids:
+			var r: Dictionary = S.jobs.get(str(id), {})
+			var on_watch := watch.has(String(r.get("k", "")))
+			var key := str(id)
+			if on_watch:
+				stood[key] = true
+				if not on_since.has(key):
+					on_since[key] = w.tick
+				if w.tick - int(on_since[key]) > longest:
+					longest_who = "%s %s on %s" % [key, String(w.entities[int(id)].get("s7", "")), String(r.get("j", ""))]
+				longest = maxi(longest, w.tick - int(on_since[key]))
+				var hj := String(r.get("j", ""))
+				if not holders.has(hj):
+					holders[hj] = {}
+				holders[hj][key] = true
+			elif on_since.has(key):
+				on_since.erase(key)
+				rested[key] = true
+	var hd := []
+	for k in holders:
+		hd.append(holders[k].size())
+	print("  sent7 watch: %d samples, wall runs %d, fails %s, men who stood watch %d, rotated off %d, longest stint %.0f s (%s), holders/post %s" % [
+		samples, walls_seen, str(fails), stood.size(), rested.size(), float(longest) / 20.0, longest_who, str(hd)])
+	var favg := []
+	for q in 4:
+		favg.append("%.1f" % (float(face_sum[q]) / maxf(float(samples), 1.0)))
+	print("  sent7 wall-walk Sentinels per face (N, E, S, W; towers included): min %s, mean %s" % [str(face_min), str(favg)])
+	for q in [0, 1, 3]:
+		check(int(face_min[q]) >= 6, "13.9c-38 heavier watch: long face %s always has >= 6 Sentinels on the wall-walk / tower decks (min %d)" % [["N", "E", "S", "W"][q], int(face_min[q])])
+	check(walls_seen >= 5, "a wall run per face (N, E, W and both sides of the south gate): %d" % walls_seen)
+	check(gate_seen, "a gate team on the board")
+	check(fails.is_empty(), "13.9c-38: no watch post ever empty over 8 shifts (%s)" % str(fails))
+	check(rested.size() * 2 >= stood.size(), "shifts rotate: %d of %d men who stood watch went off to rest" % [rested.size(), stood.size()])
+	var cap := 20 * (int(P.watch_stint_s) + 3 * int(P.shift_s) + int(P.get("relief_max_s", 90)))
+	check(longest <= cap, "nobody stands forever: longest stint %d ticks <= %d" % [longest, cap])
+	var multi := 0
+	for k in holders:
+		if holders[k].size() >= 2:
+			multi += 1
+	check(multi * 2 >= holders.size(), "posts change hands (%d of %d posts had 2+ holders)" % [multi, holders.size()])
+	for k in keep:
+		P[k] = keep[k]
+	for k in P.keys():
+		if not keep.has(k):
+			P.erase(k)

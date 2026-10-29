@@ -16,6 +16,7 @@ extends RefCounted
 
 const Terrain = preload("res://sim/terrain.gd")
 const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed display table (render snapshot)
+const NativeCore = preload("res://sim/native_core.gd")   # G7 PERF7K: RtsFormation (rts_core >= 0.5.4)
 
 const TILE_M := 7.0
 const FORMS := ["line", "wedge", "column", "box", "echelon_left", "echelon_right", "file", "spread", "staggered_column", "diamond"]
@@ -47,6 +48,13 @@ const DEFAULTS := {
 	"default_player_formation": "auto", "auto_col_len": 24.0, "auto_close_frac": 0.4,
 }
 static var _cfg := {}
+## G7 PERF7G: exact-result fast paths of the big-group assignment (same perm bit for bit; A/B toggle for benches).
+static var fast_assign := true
+static var native_polish := true   # G7 PERF7K: _polish_near_fast + _assign_exact in rts_core RtsFormation when loaded (A/B toggle)
+static var mass_fallback := true   # PERF7H: bench / A-B toggle (false = the pre-fix big-group shapes, clamped file)
+static var mass_line := true       # PERF7I: mass as a staggered assault line (false = PERF7H's boxes; A/B only)
+static var last_mass := []        # PERF7I: [chunk shape, spacing, chunks abreast, chunks] of the last mass (probes only)
+static var _massed := false        # PERF7I: set by every _group call (did that group mass); read by slots() right after
 
 
 ## Tunables: DEFAULTS, overridden by rules.g7_tactics (content/g7 fragment once ORCH merges content/g7), else by the
@@ -462,14 +470,19 @@ static func slots(w: SimWorld, units: Array, target: Vector2, pass_fn: Callable,
 	var out := []
 	out.resize(n)
 	var depth := 0.0
+	var vmass := false
 	if not vi.is_empty():
 		var r := _group(w, units, vi, form, target, fwd, side, true, mult, pass_fn, near_fn)
+		vmass = _massed and mass_line
 		for j in vi.size():
 			out[vi[j]] = r[j]
 			depth = maxf(depth, (target - Vector2(r[j])).dot(fwd))
 	if not fi.is_empty():
 		var ft := target
-		if not vi.is_empty():
+		# PERF7I: when the armour could not keep its shape on the map and massed on the objective, the infantry forms
+		# on the objective with it (infantry accompanying the tanks) instead of behind the whole armour block: behind a
+		# ~40-tile-deep block the infantry's slots fell back onto its own start line and it never closed with the enemy.
+		if not vi.is_empty() and not vmass:
 			ft = _clampv(w, target - fwd * (depth + base_sp(form, true) * 0.5))   # infantry follows the armour
 		var r2 := _group(w, units, fi, form, ft, fwd, side, false, mult, pass_fn, near_fn)
 		for j in fi.size():
@@ -505,6 +518,18 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 		if not fitted:
 			f = "file"                                   # squeeze into file through the gap (reopens next order)
 			loc = local_slots(m, f, sp, stag)
+	var mass := false
+	_massed = false
+	if mass_fallback and m > int(c.chunk) and not COLUMN_FORMS.has(form) and _overflows(w, loc[0], fwd, side):
+		if mass_line:                                    # PERF7I: a staggered assault line of <= chunk groups
+			var ml := _mass_line(w, m, form, veh, sp, stag, fwd, side)
+			f = String(ml[2])
+			loc = [ml[0], ml[1]]
+		else:
+			f = "box"                                    # PERF7H: a big group that cannot lie inside the map masses
+			loc = _mass_slots(w, m, veh, sp, stag, fwd, side)
+		mass = true
+		_massed = true
 	var pts := []
 	var heads := []
 	if COLUMN_FORMS.has(f) and m > 1 and is_road(w, target):
@@ -516,7 +541,7 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 		for q in loc[0]:
 			pts.append(_clampv(w, tg + side * (q as Vector2).x + fwd * (q as Vector2).y))
 			heads.append(fwd)
-		if m > 1:
+		if m > 1 and not mass:   # the mass block is centred on the goal: nothing strings back behind an anchor
 			_pull_forward(w, pts, tg, fwd, veh, pass_fn)
 	fit(w, pts, veh, fwd, pass_fn, near_fn, m <= 24)
 	var secs := sectors(loc[0], f)
@@ -532,6 +557,176 @@ static func _group(w: SimWorld, units: Array, idx: Array, form: String, target: 
 		Sq7D.put(w, e)
 		e.f7_f = deg(fwd)
 	return res
+
+
+## PERF7H (ORCH directive on need 8535): true when the local shape loc, laid along fwd / side, is wider or deeper than
+## the map with fit_in_map's 1-tile margin (fit_in_map would centre it and _clampv would pile the overflow onto the edge).
+static func _overflows(w: SimWorld, loc: Array, fwd: Vector2, side: Vector2) -> bool:
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for q in loc:
+		var p: Vector2 = side * (q as Vector2).x + fwd * (q as Vector2).y
+		lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+		hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+	return hi.x - lo.x > float(w.map.w) - 2.0 or hi.y - lo.y > float(w.map.h) - 2.0
+
+
+## PERF7H (ORCH directive on need 8535): the slots of a big group (more than cfg.chunk) whose shape does not fit in the
+## map. Before, a 1000-man attack-move on a 96 x 96 map fell back to one 1000-man file (~900 tiles) or 28 ranks of
+## wedges, and _clampv piled ~87% of the slots onto the map corner behind the group: the army walked back toward its
+## own corner instead of advancing (the G6.1 shape bug fixed in d601e1d, back in Formations7). Now the group masses on
+## the goal: G6.1-style chunks of at most cfg.chunk, each a hollow square ("box", leader of chunk 0 front centre), about
+## as many chunks abreast as there are ranks, the block centred on the goal (fit_in_map keeps it inside the map). The
+## spacing closes to the base spacing, then to foot_min_sp (foot), while the block is still bigger than the map.
+## Groups of cfg.chunk or fewer, and big groups whose shape fits, never come here (their slots are unchanged).
+static func _mass_slots(w: SimWorld, m: int, veh: bool, sp: float, stag: float, fwd: Vector2, side: Vector2) -> Array:
+	var c := cfg()
+	var groups := ceili(float(m) / float(int(c.chunk)))
+	var ab := maxi(1, ceili(sqrt(float(groups))))
+	var sps := [sp, base_sp("box", veh)]
+	if not veh:
+		sps.append(float(c.foot_min_sp))
+	var loc := []
+	for s2 in sps:
+		loc = local_slots(m, "box", minf(float(s2), sp), stag, ab)
+		var ylo := INF
+		var yhi := -INF
+		for q in loc[0]:
+			ylo = minf(ylo, (q as Vector2).y)
+			yhi = maxf(yhi, (q as Vector2).y)
+		var dy := -(ylo + yhi) * 0.5
+		for i in (loc[0] as Array).size():
+			loc[0][i] = (loc[0][i] as Vector2) + Vector2(0.0, dy)
+		if not _overflows(w, loc[0], fwd, side):
+			break
+	return loc
+
+
+## PERF7I (ORCH brief G7-PERF7I): the slots of a big group (more than cfg.chunk) whose shape does not fit in the map,
+## as an assault line, not a blob. PERF7H's hollow-square boxes fixed the corner walk, but in the 2k gate fight the
+## infantry then stood behind a ~40-tile armour block on its own start line (kills by tick 600: 258 vs G6.1's 1005).
+## Like G6.1 (d601e1d: "chunks of <= 12 abreast"), the group splits into chunks of at most cfg.chunk, each chunk in
+## the group's own shape (fire-team wedges ...) or, when that cannot fit, on line (the squad assault formation). The
+## chunks stand abreast facing the enemy, as many per rank as fit across the map (the widest front, so the fewest
+## ranks), the rest in ranks behind, every other rank shifted half a chunk so its chunks cover the gaps in the rank
+## ahead (a staggered line). Spacing closes sp -> base spacing -> foot_min_sp / mass_veh_min_sp only while nothing
+## fits; the line keeps mass_margin of the map (5% each side) so flank chunks do not hug the edge. The block is
+## centred on the goal (as G6.1's grid was): the army closes onto the objective instead of stopping short of it.
+## Returns [pts, roles, chunk shape]. Pure (no rng, no state).
+const MASS_VEH_MIN_SP := 2.0   # PROVISIONAL (rules g7_tactics mass_veh_min_sp): 14 m between massed vehicles
+const MASS_MARGIN := 0.9       # PROVISIONAL (rules g7_tactics mass_margin): share of the map the massed line may span
+
+static func _mass_line(w: SimWorld, m: int, form: String, veh: bool, sp: float, stag: float, fwd: Vector2, side: Vector2) -> Array:
+	var c := cfg()
+	var groups := ceili(float(m) / float(int(c.chunk)))
+	var per := ceili(float(m) / float(groups))
+	var sps := [sp]
+	var bsp := minf(base_sp(form, veh), sp)
+	if bsp < sp:
+		sps.append(bsp)
+	var msp := minf(float(c.get("mass_veh_min_sp", MASS_VEH_MIN_SP)) if veh else float(c.foot_min_sp), bsp)
+	if msp < bsp:
+		sps.append(msp)
+	var lim := Vector2(float(w.map.w) - 2.0, float(w.map.h) - 2.0) * float(c.get("mass_margin", MASS_MARGIN))
+	var shapes := [form] if form == "line" else [form, "line"]
+	var best := []
+	var best_over := INF
+	for s2 in sps:
+		for f2 in shapes:
+			var parts := []    # [[pts, roles], lateral lo, lateral hi, depth lo, depth hi]
+			var cw := 0.0
+			var k0 := 0
+			for g in groups:
+				var mm := mini(per, m - k0)
+				k0 += mm
+				var one := local_one(mm, f2, float(s2), stag)
+				var lo := INF
+				var hi := -INF
+				var dlo := INF
+				var dhi := -INF
+				for q in one[0]:
+					lo = minf(lo, (q as Vector2).x)
+					hi = maxf(hi, (q as Vector2).x)
+					dlo = minf(dlo, (q as Vector2).y)
+					dhi = maxf(dhi, (q as Vector2).y)
+				parts.append([one, lo, hi, dlo, dhi])
+				cw = maxf(cw, hi - lo)
+			var gap := float(s2) * float(c.chunk_gap)
+			var pitch := cw + gap
+			# widest front the map allows along side (front alone), then fewer abreast until the whole block fits
+			var wmax := INF
+			if absf(side.x) > 0.001:
+				wmax = minf(wmax, lim.x / absf(side.x))
+			if absf(side.y) > 0.001:
+				wmax = minf(wmax, lim.y / absf(side.y))
+			var k := clampi(int(floor((wmax + gap) / pitch)), 1, groups)
+			while k >= 1:
+				var offs := _line_offsets(parts, k, pitch, gap, cw)
+				var lo2 := Vector2(INF, INF)
+				var hi2 := Vector2(-INF, -INF)
+				for gi in parts.size():
+					var pt: Array = parts[gi]
+					var o: Vector2 = offs[gi]
+					for cu in [float(pt[1]), float(pt[2])]:
+						for cv in [float(pt[3]), float(pt[4])]:
+							var p: Vector2 = side * (cu + o.x) + fwd * (cv + o.y)
+							lo2 = Vector2(minf(lo2.x, p.x), minf(lo2.y, p.y))
+							hi2 = Vector2(maxf(hi2.x, p.x), maxf(hi2.y, p.y))
+				var over := maxf(hi2.x - lo2.x - lim.x, hi2.y - lo2.y - lim.y)
+				if over <= 0.0:
+					last_mass = [f2, s2, k, groups]
+					return _line_build(parts, offs, f2)
+				if over < best_over:
+					best_over = over
+					best = [parts, offs, f2]
+				k -= 1
+	last_mass = [best[2], -1.0, -1, groups]
+	return _line_build(best[0], best[1], best[2])
+
+
+## Per chunk (in order) its local offset in a staggered line of k chunks abreast: rank r = index / k, chunks centred
+## in pitch-wide cells across the rank, odd ranks shifted half a pitch, rank depth like local_slots (each rank stands
+## a chunk_gap behind the deepest chunk of the rank ahead).
+static func _line_offsets(parts: Array, k: int, pitch: float, gap: float, cw: float) -> Array:
+	var offs := []
+	var back := 0.0
+	var g0 := 0
+	var r := 0
+	while g0 < parts.size():
+		var g1 := mini(g0 + k, parts.size())
+		var width := pitch * float(g1 - g0) - gap
+		var shift := pitch * 0.5 if r % 2 == 1 else 0.0
+		var rdepth := 0.0
+		for gi in range(g0, g1):
+			var pt: Array = parts[gi]
+			var cell := -width * 0.5 + pitch * float(gi - g0) + shift
+			offs.append(Vector2(cell + (cw - (float(pt[2]) - float(pt[1]))) * 0.5 - float(pt[1]), back))
+			rdepth = minf(rdepth, float(pt[3]) - maxf(float(pt[4]), 0.0))
+		back += rdepth - gap
+		g0 = g1
+		r += 1
+	return offs
+
+
+## Builds [pts, roles, shape] from _line_offsets, the whole block centred on (0, 0); chunk 0's leader leads.
+static func _line_build(parts: Array, offs: Array, shape: String) -> Array:
+	var pts := []
+	var roles := []
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for gi in parts.size():
+		var pt: Array = parts[gi]
+		for qi in (pt[0][0] as Array).size():
+			var p: Vector2 = (pt[0][0][qi] as Vector2) + (offs[gi] as Vector2)
+			pts.append(p)
+			lo = Vector2(minf(lo.x, p.x), minf(lo.y, p.y))
+			hi = Vector2(maxf(hi.x, p.x), maxf(hi.y, p.y))
+			var rl: int = pt[0][1][qi]
+			roles.append(rl if (gi == 0 or rl != ROLE_LEADER) else ROLE_RIFLE)
+	var cen := (lo + hi) * 0.5
+	for i in pts.size():
+		pts[i] = (pts[i] as Vector2) - cen
+	return [pts, roles, shape]
 
 
 static func is_road(w: SimWorld, p: Vector2) -> bool:
@@ -814,6 +1009,9 @@ static func assign(mem: Array, pts: Array, roles: Array) -> Array:
 ## cells of polish_cell tiles, 3 x 3 around his), swapping a pair whose paths cross or whose squared travel shortens
 ## without crossing; a few passes, then crossing-only passes. Leader excluded (keeps slot 0).
 static func _polish_near(mem: Array, pts: Array, perm: Array, li: int) -> void:
+	if fast_assign:
+		_polish_near_fast(mem, pts, perm, li)
+		return
 	var cs := float(cfg().get("polish_cell", 5.0))
 	var grid := {}
 	var cells := []
@@ -898,160 +1096,360 @@ static func _assign_split(mem: Array, pts: Array, roles: Array, ui: Array, si: A
 		lo = lo.min(pts[s])
 		hi = hi.max(pts[s])
 	var ax := 0 if hi.x - lo.x >= hi.y - lo.y else 1
-	var ss := si.duplicate()
-	ss.sort_custom(func(a, b) -> bool:
-		var pa: float = (pts[a] as Vector2)[ax]
-		var pb: float = (pts[b] as Vector2)[ax]
-		return pa < pb if pa != pb else int(a) < int(b))
-	var us := ui.duplicate()
-	us.sort_custom(func(a, b) -> bool:
-		var pa: float = Vector2(mem[a].pos)[ax]
-		var pb: float = Vector2(mem[b].pos)[ax]
-		return pa < pb if pa != pb else int(mem[a].id) < int(mem[b].id))
+	var ss := []
+	var us := []
+	if fast_assign and _split_keys_ok(mem, si, ui):
+		ss = _sorted_by_key(pts, si, ax)
+		us = _sorted_units(mem, ui, ax)
+	else:
+		ss = si.duplicate()
+		ss.sort_custom(func(a, b) -> bool:
+			var pa: float = (pts[a] as Vector2)[ax]
+			var pb: float = (pts[b] as Vector2)[ax]
+			return pa < pb if pa != pb else int(a) < int(b))
+		us = ui.duplicate()
+		us.sort_custom(func(a, b) -> bool:
+			var pa: float = Vector2(mem[a].pos)[ax]
+			var pb: float = Vector2(mem[b].pos)[ax]
+			return pa < pb if pa != pb else int(mem[a].id) < int(mem[b].id))
 	var k := n / 2
 	_assign_split(mem, pts, roles, us.slice(0, k), ss.slice(0, k), perm, leaf)
 	_assign_split(mem, pts, roles, us.slice(k), ss.slice(k), perm, leaf)
 
 
+## G7 PERF7G: the split sorts without a per-compare lambda. A key is a float32 Vector2 / Vector3 whose first component
+## is the very coordinate the lambda compared (a Vector2 component, already float32) and whose next component is the
+## tie-break (slot index / unit id), so Array.sort() (lexicographic, keys all distinct) gives the lambda's order.
+## Exact only while slot indices, unit indices and ids fit a float32 integer (< 2^24): checked, else the lambda path.
+const _KEY_MAX := 16777216
+
+
+static func _split_keys_ok(mem: Array, si: Array, ui: Array) -> bool:
+	if mem.size() >= _KEY_MAX or si.size() >= _KEY_MAX:
+		return false
+	for j in ui:
+		var id := int(mem[j].id)
+		if id < 0 or id >= _KEY_MAX:
+			return false
+	return true
+
+
+static func _sorted_by_key(pts: Array, si: Array, ax: int) -> Array:
+	var keys := []
+	keys.resize(si.size())
+	for i in si.size():
+		var s: int = si[i]
+		keys[i] = Vector2((pts[s] as Vector2)[ax], float(s))
+	keys.sort()
+	var out := []
+	out.resize(keys.size())
+	for i in keys.size():
+		out[i] = int((keys[i] as Vector2).y)
+	return out
+
+
+static func _sorted_units(mem: Array, ui: Array, ax: int) -> Array:
+	var keys := []
+	keys.resize(ui.size())
+	for i in ui.size():
+		var j: int = ui[i]
+		keys[i] = Vector3(Vector2(mem[j].pos)[ax], float(int(mem[j].id)), float(j))
+	keys.sort()
+	var out := []
+	out.resize(keys.size())
+	for i in keys.size():
+		out[i] = int((keys[i] as Vector3).z)
+	return out
+
+
+## G7 PERF7G: _polish_near with the same visiting order and the same per-pair test, minus the pairs whose answer is
+## already known. A pair's test reads only the two men's fixed start points and their current slots, so a pair that
+## did not swap keeps not swapping while neither man's slot changes; and a pair that passed a cost pass unswapped also
+## passes a crossing-only pass (that test is the first half of the cost test). So in pass p >= 1 a pair is skipped when
+## neither man has changed slot since pass p - 1 began; a pass after a pass with no swap at all is skipped whole
+## (the plain loop runs it and finds nothing). Result: the same perm, bit for bit (bench: --set fast_assign=false).
+static func _polish_near_fast(mem: Array, pts: Array, perm: Array, li: int) -> void:
+	var cs := float(cfg().get("polish_cell", 5.0))
+	var m := mem.size()
+	# G7 PERF7K: the same loop in rts_core (RtsFormation.polish_near, exact port: same order, same f32/f64 widths);
+	# bench .plan/perf7k_assign.gd proves identical perms native vs this script path. Empty return = script path.
+	if native_polish and NativeCore.available() and not NativeCore.force_off and ClassDB.class_exists("RtsFormation"):
+		var stn := PackedVector2Array()
+		stn.resize(m)
+		for j in m:
+			stn[j] = mem[j].pos
+		var outn: PackedInt32Array = _nat_form().polish_near(stn, PackedVector2Array(pts), PackedInt32Array(perm), li, cs,
+			int(cfg().get("polish_passes", 3)))
+		if outn.size() == m:
+			for j in m:
+				perm[j] = outn[j]
+			return
+	var grid := {}
+	var cells := []
+	var st := PackedVector2Array()
+	st.resize(m)
+	for j in m:
+		var p: Vector2 = mem[j].pos
+		st[j] = p
+		var k := Vector2i(floori(p.x / cs), floori(p.y / cs))
+		cells.append(k)
+		if j == li:
+			continue
+		if grid.has(k):
+			(grid[k] as Array).append(j)
+		else:
+			grid[k] = [j]
+	var near := {}   # cell -> the 3 x 3 cell lists concatenated in the plain loop's order (dy, then dx)
+	for k in grid.keys():
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				var c := Vector2i(k.x + dx, k.y + dy)
+				if near.has(c):
+					continue
+				var cat := PackedInt32Array()
+				for ey in range(-1, 2):
+					for ex in range(-1, 2):
+						var l = grid.get(Vector2i(c.x + ex, c.y + ey))
+						if l != null:
+							cat.append_array(PackedInt32Array(l))
+				near[c] = cat
+	# each man's partners in that order, only those after him (jb > ja): the plain loop's skip done once, not per pass
+	var nb := PackedInt32Array()
+	var nb_off := PackedInt32Array()
+	nb_off.resize(m + 1)
+	for ja in m:
+		nb_off[ja] = nb.size()
+		if ja == li:
+			continue
+		for jb in (near[cells[ja]] as PackedInt32Array):
+			if jb > ja:
+				nb.append(jb)
+	nb_off[m] = nb.size()
+	var pv := PackedVector2Array(pts)
+	var pm := PackedInt32Array(perm)
+	var dd := PackedFloat64Array()   # each man's squared travel to his current slot (the same float32 call, cached)
+	dd.resize(m)
+	for j in m:
+		if j != li:
+			dd[j] = st[j].distance_squared_to(pv[pm[j]])
+	var lc := PackedInt32Array()   # clock of each man's last slot change (0 = never)
+	lc.resize(m)
+	lc.fill(0)
+	var clk := 0
+	var passes := int(cfg().get("polish_passes", 3))
+	var prev_start := -1           # clock when the previous pass began (-1: no previous pass, test every pair)
+	var prev_changed := true
+	for it in passes * 2:
+		var cost_too := it < passes
+		var changed := false
+		var start := clk
+		if prev_changed:
+			for ja in m:
+				if ja == li:
+					continue
+				var pa: Vector2 = st[ja]
+				var sa: Vector2 = pv[pm[ja]]
+				var u := sa - pa
+				var daa: float = dd[ja]
+				var a_clean := lc[ja] <= prev_start
+				for q in range(nb_off[ja], nb_off[ja + 1]):
+					var jb: int = nb[q]
+					if a_clean and lc[jb] <= prev_start:
+						continue
+					var pb: Vector2 = st[jb]
+					var sb: Vector2 = pv[pm[jb]]
+					var sw := u.cross(pb - pa) * u.cross(sb - pa) < 0.0 and _crosses(pa, sa, pb, sb)
+					if not sw and cost_too and pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < daa + dd[jb] - 0.0001:
+						var u2 := sb - pa
+						sw = not (u2.cross(pb - pa) * u2.cross(sa - pa) < 0.0 and _crosses(pa, sb, pb, sa))
+					if sw:
+						var t: int = pm[ja]
+						pm[ja] = pm[jb]
+						pm[jb] = t
+						clk += 1
+						lc[ja] = clk
+						lc[jb] = clk
+						changed = true
+						sa = sb
+						u = sa - pa
+						daa = pa.distance_squared_to(sa)
+						dd[ja] = daa
+						dd[jb] = pb.distance_squared_to(pv[t])
+						a_clean = false
+		prev_start = start
+		prev_changed = changed
+		if not changed:
+			if cost_too:
+				continue
+			break
+	for j in m:
+		perm[j] = pm[j]
+
+
+static var _nat_obj = null
+
+
+static func _nat_form():
+	if _nat_obj == null:
+		_nat_obj = ClassDB.instantiate("RtsFormation")
+	return _nat_obj
+
+
 ## The exact assignment (every group of up to assign_split, and each block of a big one; lead = false: no leader slot).
 static func _assign_exact(mem: Array, pts: Array, roles: Array, lead: bool) -> Array:
+	# PERF7J (perf, exact): the same passes, pairs, tests and swaps in the same order, with the men's start points and
+	# the slots read once into packed arrays (the same float32 Vector2 values the Dictionary / Array reads gave) and
+	# taken / perm as packed arrays, so the m x m loops do no Dictionary access per pair.
 	var m := mem.size()
-	var perm := []
-	perm.resize(m)
-	perm.fill(-1)
-	var taken := {}
+	var P := PackedVector2Array()
+	P.resize(m)
+	for j in m:
+		P[j] = Vector2(mem[j].pos)
+	var S := PackedVector2Array(pts)
+	var pm := PackedInt32Array()
+	pm.resize(m)
+	pm.fill(-1)
+	var taken := PackedByteArray()
+	taken.resize(maxi(m, S.size()))
+	taken.fill(0)
 	var li := -1
 	if lead:
 		li = _leader(mem)
-		perm[li] = 0
-		taken[0] = true
+		pm[li] = 0
+		taken[0] = 1
+	# G7 PERF7K: the whole assignment below in rts_core (RtsFormation.assign_exact, exact port: same passes, pairs,
+	# tests, swaps and float widths); proved on .plan/perf7k_assign.gd. Empty return = the script path below.
+	if native_polish and m > 1 and S.size() >= m and roles.size() >= m and NativeCore.available() and not NativeCore.force_off and ClassDB.class_exists("RtsFormation"):
+		var rl := PackedInt32Array()
+		rl.resize(m)
+		var arb := PackedByteArray()
+		arb.resize(m)
+		for j in m:
+			rl[j] = int(roles[j])
+			arb[j] = 1 if is_ar(mem[j]) else 0
+		var pn := int(cfg().twoopt_passes) if m <= 24 else int(cfg().twoopt_passes_big)
+		var outn: PackedInt32Array = _nat_form().assign_exact(P, S, rl, arb, li, pn)
+		if outn.size() == m:
+			var permn := []
+			permn.resize(m)
+			for j in m:
+				permn[j] = outn[j]
+			return permn
 	for j in m:
 		if j == li or not is_ar(mem[j]):
 			continue
 		var best := -1
 		var bd := INF
+		var pj: Vector2 = P[j]
 		for s in m:
-			if taken.has(s) or int(roles[s]) != ROLE_AR:
+			if taken[s] != 0 or int(roles[s]) != ROLE_AR:
 				continue
-			var d := Vector2(mem[j].pos).distance_to(pts[s])
+			var d := pj.distance_to(S[s])
 			if d < bd:
 				bd = d
 				best = s
 		if best >= 0:
-			perm[j] = best
-			taken[best] = true
-	var free := []
+			pm[j] = best
+			taken[best] = 1
+	var free := PackedInt32Array()
 	for j in m:
-		if perm[j] >= 0:
+		if pm[j] >= 0:
 			continue
 		free.append(j)
 		var best := -1
 		var bd := INF
+		var pj: Vector2 = P[j]
 		for s in m:
-			if taken.has(s):
+			if taken[s] != 0:
 				continue
-			var d := Vector2(mem[j].pos).distance_squared_to(pts[s])
+			var d := pj.distance_squared_to(S[s])
 			if d < bd:
 				bd = d
 				best = s
-		perm[j] = best
-		taken[best] = true
+		pm[j] = best
+		if best >= 0:
+			taken[best] = 1   # (a -1 here never matched a slot test before either)
+	var nf := free.size()
 	var passes := int(cfg().twoopt_passes) if m <= 24 else int(cfg().twoopt_passes_big)
 	for _p in passes:
 		var better := false
-		for a in free.size():
+		for a in nf:
 			var ja: int = free[a]
-			var pa := Vector2(mem[ja].pos)
-			for b in range(a + 1, free.size()):
+			var pa: Vector2 = P[ja]
+			for b in range(a + 1, nf):
 				var jb: int = free[b]
-				var pb := Vector2(mem[jb].pos)
-				var sa: Vector2 = pts[perm[ja]]
-				var sb: Vector2 = pts[perm[jb]]
+				var pb: Vector2 = P[jb]
+				var sa: Vector2 = S[pm[ja]]
+				var sb: Vector2 = S[pm[jb]]
 				# squared distance (quadratic-cost transport): a column moving along its own axis keeps its order
 				# (summed plain distances tie there, so the old test left the rear men assigned to the front slots and
 				# the march walked them through everyone), and straight-line moves never meet head-on
 				if pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001:
-					var t: int = perm[ja]
-					perm[ja] = perm[jb]
-					perm[jb] = t
+					var t: int = pm[ja]
+					pm[ja] = pm[jb]
+					pm[jb] = t
 					better = true
 		if not better:
 			break
 	# uncross: squared cost can leave two straight lines crossing (each swap of a properly crossing pair shortens
 	# the summed distance, so this ends); parallel lines of a column on the march never count as crossing
 	for _p in passes * 2:
-		var swapped := false
-		for a in free.size():
-			var ja: int = free[a]
-			for b in range(a + 1, free.size()):
-				var jb: int = free[b]
-				var qa: Vector2 = mem[ja].pos
-				var qb: Vector2 = mem[jb].pos
-				var ta: Vector2 = pts[perm[ja]]
-				var tb: Vector2 = pts[perm[jb]]
-				var tu := ta - qa
-				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
-					var t: int = perm[ja]
-					perm[ja] = perm[jb]
-					perm[jb] = t
-					swapped = true
-		if not swapped:
+		if not _uncross_packed(P, S, pm, free):
 			break
 	# G7 SQUAD7-4: the uncross swaps can leave a worse, non-crossing state that plain 2-opt would have improved (a
 	# column re-marching left a man assigned two slots behind the one he stood in front of: the man behind walked past
 	# him at 0.5 tiles). Polish: squared-cost swaps that do not make that pair cross, then uncross again, until stable.
 	for _p in passes:
 		var changed := false
-		for a in free.size():
+		for a in nf:
 			var ja: int = free[a]
-			var pa := Vector2(mem[ja].pos)
-			for b in range(a + 1, free.size()):
+			var pa: Vector2 = P[ja]
+			for b in range(a + 1, nf):
 				var jb: int = free[b]
-				var pb := Vector2(mem[jb].pos)
-				var sa: Vector2 = pts[perm[ja]]
-				var sb: Vector2 = pts[perm[jb]]
+				var pb: Vector2 = P[jb]
+				var sa: Vector2 = S[pm[ja]]
+				var sb: Vector2 = S[pm[jb]]
 				var u2 := sb - pa
 				if pa.distance_squared_to(sb) + pb.distance_squared_to(sa) < pa.distance_squared_to(sa) + pb.distance_squared_to(sb) - 0.0001 						and not (u2.cross(pb - pa) * u2.cross(sa - pa) < 0.0 and _crosses(pa, sb, pb, sa)):
-					var t: int = perm[ja]
-					perm[ja] = perm[jb]
-					perm[jb] = t
+					var t: int = pm[ja]
+					pm[ja] = pm[jb]
+					pm[jb] = t
 					changed = true
-		for a in free.size():
-			var ja: int = free[a]
-			for b in range(a + 1, free.size()):
-				var jb: int = free[b]
-				var qa: Vector2 = mem[ja].pos
-				var qb: Vector2 = mem[jb].pos
-				var ta: Vector2 = pts[perm[ja]]
-				var tb: Vector2 = pts[perm[jb]]
-				var tu := ta - qa
-				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
-					var t: int = perm[ja]
-					perm[ja] = perm[jb]
-					perm[jb] = t
-					changed = true
+		if _uncross_packed(P, S, pm, free):
+			changed = true
 		if not changed:
 			break
 	# the uncross pass gets the last word: a converged assignment never leaves two straight lines crossing
 	for _p in passes * 2:
-		var swapped2 := false
-		for a in free.size():
-			var ja: int = free[a]
-			for b in range(a + 1, free.size()):
-				var jb: int = free[b]
-				var qa: Vector2 = mem[ja].pos
-				var qb: Vector2 = mem[jb].pos
-				var ta: Vector2 = pts[perm[ja]]
-				var tb: Vector2 = pts[perm[jb]]
-				var tu := ta - qa
-				if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
-					var t: int = perm[ja]
-					perm[ja] = perm[jb]
-					perm[jb] = t
-					swapped2 = true
-		if not swapped2:
+		if not _uncross_packed(P, S, pm, free):
 			break
+	var perm := []
+	perm.resize(m)
+	for j in m:
+		perm[j] = pm[j]
 	return perm
+
+
+## PERF7J: one uncross sweep of _assign_exact (pairs a < b of free in order, the exact sign pre-test, then _crosses;
+## swaps in place). True when it swapped.
+static func _uncross_packed(P: PackedVector2Array, S: PackedVector2Array, pm: PackedInt32Array, free: PackedInt32Array) -> bool:
+	var swapped := false
+	var nf := free.size()
+	for a in nf:
+		var ja: int = free[a]
+		var qa: Vector2 = P[ja]
+		for b in range(a + 1, nf):
+			var jb: int = free[b]
+			var qb: Vector2 = P[jb]
+			var ta: Vector2 = S[pm[ja]]
+			var tb: Vector2 = S[pm[jb]]
+			var tu := ta - qa
+			if tu.cross(qb - qa) * tu.cross(tb - qa) < 0.0 and _crosses(qa, ta, qb, tb):   # INTEG7: exact sign pre-test
+				var t: int = pm[ja]
+				pm[ja] = pm[jb]
+				pm[jb] = t
+				swapped = true
+	return swapped
 
 
 ## Proper crossing of segments ab and cd (touching or collinear overlap is not a crossing). Each endpoint must lie

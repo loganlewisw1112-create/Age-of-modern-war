@@ -121,8 +121,23 @@ static func _near(w: SimWorld, at: Vector2, r: float, grid_ok: bool) -> Array:
 static func _air(c: Dictionary) -> bool:
 	if c.has("air_landed") and bool(c.air_landed):
 		return false
-	var d := Content.unit(String(c.def))
-	return bool(d.get("is_air", false)) or String(d.get("move_class", "")).begins_with("air") 		or d.has("aircraft") or bool(d.get("launched_drone", false))
+	# PERF7J (perf, exact): the def part is content-static: cached per def, dropped whenever Content's units table
+	# is another object (a reload / test swap), so the answer is always the current table's.
+	var ut = Content.table("units")
+	if not is_same(ut, _air_ref):
+		_air_ref = ut
+		_air_def.clear()
+	var dn := String(c.def)
+	var v = _air_def.get(dn)
+	if v == null:
+		var d := Content.unit(dn)
+		v = bool(d.get("is_air", false)) or String(d.get("move_class", "")).begins_with("air") 			or d.has("aircraft") or bool(d.get("launched_drone", false))
+		_air_def[dn] = v
+	return bool(v)
+
+
+static var _air_ref = null
+static var _air_def := {}
 
 
 static func burst(w: SimWorld, pos: Vector2, prof_in, src = null, plain: bool = true, grid_ok: bool = false) -> Dictionary:

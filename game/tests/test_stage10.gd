@@ -18,6 +18,18 @@ const UNLOCKS := {"human_a": ["a_laser_tank", "a_exo_trooper", "a_exo_aa", "a_t7
 		"m_stalker_synth", "m_stealth_drone", "m_overmind"]}
 ## Spawned by the counter-nanite line itself (facility / teams), not unlocked by a stage (see test_stage10_unlocks_list).
 const CN_SPAWNED := ["g7_cn_sentry", "g7_cn_barrier", "g7_cn_interceptor_drone", "cn_stealth_dropship", "cn_gun_drone"]
+## G7 (SUITMISC7; ORCH ruling 2026-10-28, checked against G7_REFERENCE incl. 13.9c-11 "trained at the facility"): facility-built Stage 10 defs, not stage unlocks (G7_REFERENCE 13.9c-9 wall turrets are bought through the
+## facility build card; 13.9c-10 Sentinels come from the sentinel barracks; 13.9c-15 the CN Vanta lifts from the barracks
+## rooftop pad; 13.9c-20 CN suits from the suit foundry; the facility engineer from the facility). Same class as CN_SPAWNED.
+const FACILITY_BUILT := [
+	"g7_cns_bastion", "g7_cns_breaker", "g7_cns_aegis", "g7_cns_purifier",
+	"g7_b_cns_bastion", "g7_b_cns_breaker", "g7_b_cns_aegis", "g7_b_cns_purifier",
+	"g7_cns_gunner", "g7_b_cns_gunner", "g7_fac_engineer", "g7_b_fac_engineer",
+	"g7_sent_warden", "g7_sent_marksman", "g7_sent_gunner", "g7_sent_bulwark",
+	"g7_sent_lancer", "g7_sent_arc", "g7_sent_mender", "g7_sent_bearer",
+	"g7_b_sent_warden", "g7_b_sent_marksman", "g7_b_sent_gunner", "g7_b_sent_bulwark",
+	"g7_b_sent_lancer", "g7_b_sent_arc", "g7_b_sent_mender", "g7_b_sent_bearer",
+	"cn_vanta_a", "cn_vanta_b", "a_wt7_wall_turret", "b_wt7_wall_turret"]
 const GATE_RESEARCH := {"human_a": "g6_automation_doctrine", "human_b": "g6_automation_doctrine", "machine": "g6_overmind_protocols"}
 
 
@@ -181,7 +193,7 @@ func test_stage10_unlocks_list() -> void:
 				# built / deployed by the CN facility and teams, not from a stage unlock (G7_REFERENCE 6.1), and the
 				# Machine escalation units g7_m_* are spawned by Threats7 escalation, never unlocked by a stage
 				# (G7_REFERENCE section 8).
-				if CN_SPAWNED.has(String(id)) or String(id).begins_with("g7_m_"):
+				if CN_SPAWNED.has(String(id)) or FACILITY_BUILT.has(String(id)) or String(id).begins_with("g7_m_"):
 					continue
 				check(listed.has(String(id)), "Stage 10 def %s is in an unlock list" % id)
 	for id in listed:

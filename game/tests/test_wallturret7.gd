@@ -450,6 +450,20 @@ func test_assault_destroys_outer_turret() -> void:
 	SimWorld.DroneBay7.apply_command(w, dcmd)
 	var tid := _place(w, O + Vector2i(27, 10))
 	_run(w, 2)
+	# SUITSIM7 (suite 2026-10-28): the facility's Sentinel garrison (13.9c-38 "Double the watch": 48 men, every tower
+	# manned, a patrol pair on every wall run, the 4-man QRF) is not the turret under test either. Seeded at tick 13
+	# (Sentinels7.tick, tick % 10 == 3, once per facility: never re-seeded), its tower posts and east-wall patrol shot
+	# the six attackers dead before they reached the turret (diagnosis: at_gunners dead by tick 92, MBTs by 400;
+	# shots at them from Sentinel gunners/arcs/marksmen/lancers/menders 156, towers 163, wall turrets 170). The men are
+	# removed once seeded; the facility's own structures (hardened towers, the other wall turrets) still shoot back.
+	# The checks below are unchanged.
+	var sent := 0
+	for id in w.entities.keys():
+		var se: Dictionary = w.entities[id]
+		if se.kind == "unit" and int(se.owner) == 0 and String(se.def).begins_with("g7_sent_"):
+			w.destroy(id, "test", SimWorld.NEUTRAL)
+			sent += 1
+	check(sent > 0, "the Sentinel garrison was seeded and is removed from this fixture (%d)" % sent)
 	check_eq(float(w.entities[tid].hp), float(Content.building(DEF).hp), "full health at the start of the fight")
 	var squad := []
 	for i in 6:
