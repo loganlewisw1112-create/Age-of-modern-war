@@ -36,12 +36,16 @@ const Fog = preload("res://sim/systems/fog.gd")
 const Status = preload("res://sim/systems/status.gd")
 const Damage = preload("res://sim/systems/damage.gd")
 const Shrapnel = preload("res://sim/systems/shrapnel.gd")  # G7 (WOUND7): fragments
+const Accuracy8 = preload("res://sim/systems/accuracy8.gd")  # G7 ACCURACY8 (13.9c-49): realistic per-shot hit chance
+const Stray8 = preload("res://sim/systems/stray8.gd")
+const Spread8 = preload("res://sim/systems/spread8.gd")  # G7 SPREAD8 (13.9c-53 packed-fight follow-up): combat spacing  # G7 ACCURACY8B (13.9c-53): stray rounds of missed direct fire
 const Supply = preload("res://sim/systems/supply.gd")
 const NativeCore = preload("res://sim/native_core.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
 const Fortify = preload("res://sim/systems/fortify.gd")
+const Cards8a = preload("res://sim/systems/cards8a.gd")   # G7 CARDS8A (13.9c-48): defence card fire mode / priority
 const G4bMech = preload("res://sim/systems/g4b_mech.gd")  # G4b UNITS: concealment, ignite
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): hit/splash damage_mult (next to _g4_mult), hit-roll accuracy_mult,
 ## acquisition + fire range_mult (_rm: hold/indirect scan radii, _pick, _engage, _return_fire, towers; the
@@ -1411,12 +1415,14 @@ static func _attack_order(w: SimWorld, e: Dictionary, s: Dictionary) -> void:
 
 static func _engage(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, can_chase: bool) -> void:
 	e.target = int(t.id)
+	if not e.has("sp8") and e.kind == "unit" and Spread8.radius() > 0.0 and Stray8.Accuracy8.enabled() and int(Stray8.Accuracy8._profile_of(e)[0]) == Stray8.Accuracy8.C_INF and Spread8.can_open(e):
+		Spread8.mark(w, e)   # G7 SPREAD8 (13.9c-53): a foot soldier in contact opens out to ~1 man per tile
 	var d := dist_to(e.pos, t)
 	var mr: float = s.min_range
 	# G2 (A2): in range but the line of fire crosses a ridge -> keep closing (chase) instead.
 	# G3a: indirect fire ignores the ridge check but needs d >= min_range.
 	if d <= float(s.range) * _rm(w, e, s) and d >= mr and (bool(s.indirect) or (_los(w, e.pos, t.pos) and not WallFire7.blocked(w, e, s, t) and _hlos(w, e, t))):
-		if e.moving:
+		if e.moving and not (e.has("ss8") and Stray8.stepping(w, e)):   # G7 STRAY8B: a fire-discipline sidestep finishes its few steps
 			Movement.stop_path(e)
 		_fire(w, e, s, t, true)  # line of fire just checked (positions unchanged since)
 	elif can_chase:
@@ -1443,6 +1449,8 @@ static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Arra
 	if s.weapon == "":
 		return
 	var t = _pick(w, b, float(s.range) * _rm(w, b, s), grid, blds)
+	if t != null and w.sys_state.has("cards8a"):   # G7 CARDS8A (13.9c-48): hold / return fire / priority
+		t = Cards8a.filter(w, b, t, float(s.range) * _rm(w, b, s), func(x): return _valid_target(w, int(b.owner), int(x.id), s) != null)
 	if t == null:
 		b.target = -1
 		return
@@ -1459,6 +1467,80 @@ static func _g6_shot_blocked(w: SimWorld, e: Dictionary, s: Dictionary, t: Dicti
 	return bool(h.shot_blocked(w, e, s, t, to))
 
 
+## G7 ARTY8 (fire control, danger close): AUTOMATIC indirect fire (base artillery pits / tower path, artillery, mortar
+## and rocket units on idle / hold / attack-move / return fire / fire-on-move) holds when a friendly ground unit
+## (soldier or vehicle of the shooter's side or an ally, not airborne) is inside the round's danger radius around the
+## aim point: the fragment reach (Shrapnel.from_weapon radius = splash x shell radius_mult, never less than the splash)
+## plus the indirect miss scatter. A held shot spends no round, no cooldown and no rng draw; the shooter waits
+## DC_HOLD_TICKS and checks again (FireHeld {reason: danger_close}). ORDERED fire (an explicit attack order on this
+## target) still fires: the issuer chose it; it emits DangerClose. Guided fire spares friendlies, so it never holds.
+## Base-call fire missions (Cards8a cc_fire -> Strikes) and Turrets7 mortars (enemy-only splash) do not come here.
+## Cost: one radius query per indirect shot decision (the per-tick combat grid), early exit on the first friendly.
+static var danger_close_on := true   # A/B toggle (tests)
+const DC_SCATTER := 1.5              # = the indirect miss dispersion in _fire (per axis)
+const DC_HOLD_TICKS := 20            # 1 s before a held shooter checks again
+
+
+static func danger_radius(s: Dictionary) -> float:
+	return maxf(maxf(float(s.get("splash", 0.0)), 0.0), float(Shrapnel.from_weapon(s).radius)) + DC_SCATTER
+
+
+## True when a friendly (ally of e.owner, not e) ground unit is within r of at. Boolean, so the query order never matters.
+static func friendly_near(w: SimWorld, e: Dictionary, at: Vector2, r: float) -> bool:
+	var fid := int(e.owner)
+	var eid := int(e.id)
+	var r2 := r * r
+	var ng = w.cache.get("combat_ng")
+	if ng != null:
+		for cid in ng.grid.query_radius(at, r + 0.05):
+			if int(cid) == eid:
+				continue
+			var c = w.entities.get(cid)
+			if c != null and _dc_friend(w, fid, c, at, r2):
+				return true
+		return false
+	if w.cache.has("combat_grid"):
+		var grid: Dictionary = w.cache.combat_grid
+		for o in grid:
+			if not w.is_ally(fid, int(o)):
+				continue
+			var g: Dictionary = grid[o]
+			for yy in range(floori((at.y - r) / BUCKET), floori((at.y + r) / BUCKET) + 1):
+				for xx in range(floori((at.x - r) / BUCKET), floori((at.x + r) / BUCKET) + 1):
+					var arr = g.get(xx + yy * GRID_STRIDE)
+					if arr == null:
+						continue
+					for c in arr:
+						if int(c.id) != eid and _dc_friend(w, fid, c, at, r2):
+							return true
+		return false
+	for c in SimIndex.of(w, "unit"):
+		if int(c.id) != eid and w.entities.has(int(c.id)) and _dc_friend(w, fid, c, at, r2):
+			return true
+	return false
+
+
+static func _dc_friend(w: SimWorld, fid: int, c: Dictionary, at: Vector2, r2: float) -> bool:
+	return c.kind == "unit" and w.is_ally(fid, int(c.owner)) and Vector2(c.pos).distance_squared_to(at) <= r2 and not Shrapnel._air(c)
+
+
+## G7 ARTY8: false = hold this automatic indirect shot (friendlies danger close). Ordered fire returns true (DangerClose).
+static func _dc_ok(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> bool:
+	if not danger_close_on or bool(s.get("guided", false)):
+		return true
+	var at: Vector2 = t.pos
+	if not friendly_near(w, e, at, danger_radius(s)):
+		return true
+	var o = e.get("order")
+	var ordered: bool = o is Dictionary and String(o.get("type", "")) == "attack" and int(o.get("target_id", -1)) == int(t.id)
+	if ordered:
+		w.emit("DangerClose", {"shooter": int(e.id), "target": int(t.id), "pos": at, "owner": int(e.owner)})
+		return true
+	e.cd_ticks = DC_HOLD_TICKS
+	w.emit("FireHeld", {"shooter": int(e.id), "target": int(t.id), "pos": at, "owner": int(e.owner), "reason": "danger_close"})
+	return false
+
+
 static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_ok := false) -> void:
 	if _cd(e) > 0:
 		return
@@ -1466,12 +1548,25 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		return
 	if int(s.get("setup", 0)) > 0 and (not bool(e.get("deployed", false)) or bool(e.get("moving", false))):
 		return  # G4b UNITS: mortar fires only deployed (G4bMech set-up)
-	if not Traverse7.lay(w, e, t.pos, float(s.cooldown), bool(s.indirect), int(t.id)):   # + TURRET7B CR 6480: no free swing onto a new target
+	var tly := Time.get_ticks_usec() if SimIndex.profiling else 0
+	var lyok: bool = Traverse7.lay(w, e, t.pos, float(s.cooldown), bool(s.indirect), int(t.id))
+	if SimIndex.profiling:
+		SimIndex.pt("PERF8_lay", tly)
+	if not lyok:   # + TURRET7B CR 6480: no free swing onto a new target
 		return   # G7 TURRET7B CR 6354 (13.9c-30): the turret / mount traverses onto the target first (holds fire until laid)
 	var indirect: bool = s.indirect
 	if not indirect and not los_ok and (not _los(w, e.pos, t.pos) or WallFire7.blocked(w, e, s, t) or not _hlos(w, e, t)):
 		return
 	if float(s.min_range) > 0.0 and dist_to(e.pos, t) < float(s.min_range):
+		return
+	if indirect and not _dc_ok(w, e, s, t):
+		return   # G7 ARTY8: automatic indirect fire holds danger-close to our own troops (no round, no draw)
+	var tmb := Time.get_ticks_usec() if SimIndex.profiling else 0
+	var mbk: bool = not indirect and Stray8.muzzle_blocked(w, e, s, t)
+	if SimIndex.profiling:
+		SimIndex.pt("PERF8_muzzle", tmb)
+	if mbk:
+		e.cd_ticks = Stray8.hold_ticks()   # G7 ACCURACY8B: fire discipline, a mate in front of the muzzle (no shot, no draw)
 		return
 	var tfr := Time.get_ticks_usec() if SimIndex.profiling else 0   # SIM10K sub-timer: fire resolution
 	# --- G3b STG4 EW hook: jammed shooters deal Status.damage_mult x damage (s is a shared cache: copy)
@@ -1491,6 +1586,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if e.has("wz"):
 		rlm *= SimWorld.Wounds.reload_mult(e)   # G7 (WOUND7): arm wounds reload slower
 	var cd := maxi(roundi(float(s.cooldown) * rlm * SimWorld.TICK_RATE), 1)  # G6.1 rank reload
+	if e.has("b8d"):
+		cd = Accuracy8.daze_cd(w, e, t, cd)   # G7 ACCURACY8B (13.9c-53): blast-dazed = slower reactions (no draw)
 	if int(s.get("salvo", 1)) > 1:   # G4b UNITS: rocket salvo, salvo_gap between rockets, then reload
 		var left := int(e.get("salvo_left", 0))
 		if left <= 0:
@@ -1506,6 +1603,10 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		acc *= SimIndex.g6h().accuracy_mult(w, e, s, t)  # G6: same single rng draw
 	if e.has("wz"):
 		acc *= SimWorld.Wounds.acc_mult(e)   # G7 (WOUND7): arm wounds aim worse (same single rng draw)
+	var tam := Time.get_ticks_usec() if SimIndex.profiling else 0
+	acc *= Accuracy8.mult(w, e, s, t)
+	if SimIndex.profiling:
+		SimIndex.pt("PERF8_accmult", tam)   # G7 ACCURACY8 (13.9c-49): range / flight time / movement / sight picture / visibility / shock / posture / training (same single rng draw)
 	var hit := w.rng.chance(acc)
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
@@ -1530,12 +1631,23 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		if SimIndex.profiling:
 			SimIndex.pt("fire.splash", tfr)
 		return
+	# G7 ACCURACY8B (13.9c-53): shot placement of this hit -> Wounds zone weights (w.cache.a8p, transient, no draw)
+	var a8p = Accuracy8.take_place() if hit else null
+	if a8p != null:
+		w.cache["a8p"] = a8p
 	if SimIndex.profiling:
 		var tdm := Time.get_ticks_usec()
 		Damage.apply_hit(w, e, t, s, hit)
 		SimIndex.pt("fire.dmg", tdm)
-		return
-	Damage.apply_hit(w, e, t, s, hit)  # G2 pipeline: armor facing, cover, components, suppression
+	else:
+		Damage.apply_hit(w, e, t, s, hit)  # G2 pipeline: armor facing, cover, components, suppression
+	if a8p != null:
+		w.cache.erase("a8p")
+	if not hit:
+		var tsy := Time.get_ticks_usec() if SimIndex.profiling else 0
+		Stray8.on_miss(w, e, s, t, from, to)   # G7 ACCURACY8B (13.9c-53): the missed round flies on (<= 1 draw)
+		if SimIndex.profiling:
+			SimIndex.pt("fire.stray", tsy)
 
 
 ## G3a artillery impact: every ground unit and building within s.splash of `at` (any owner, the
@@ -1682,6 +1794,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var tid := int(cmd.target_id)
+	if not w.entities.has(tid):
+		return   # REG8A: target died before the order applied (direct callers like vanta7 skip validate_command)
 	var t: Dictionary = w.entities[tid]
 	for id in cmd.get("unit_ids", []):
 		var e = w.entities.get(int(id))

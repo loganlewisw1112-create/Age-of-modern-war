@@ -118,6 +118,7 @@ func add_buttons(mode: String, ids: Array) -> void:
 	_add_casualty_buttons()
 	_add_span_button(_ids)   # G7 (FISSURE7 CR 710): repair units (can_repair) on a units card
 	_add_cn_buttons()        # G7 (CNSIM7-3 CR 557): counter-nanite team orders
+	_add_so_buttons()        # G7 SPECOPS8 (13.9c-44): spec-ops missions for a tactical operator squad
 	_add_vanta_buttons()     # G7 (AIRV7, CR 4527 part 5): CN Vanta hardpoints + return to pad
 	# G6.1 (INTEG61, BEARER61 CR seq 332): ammo bearer card. Join arms a click on an own squad member;
 	# right-clicking one with only bearers selected does the same (G2Input.smart).
@@ -293,6 +294,7 @@ func _add_cn_buttons() -> void:
 	pb.btn.pressed.connect(_cn_orders.bind("cn_pincer"))
 	var bb = _btn2("Break contact", "formed withdrawal", "cn_break_contact", "cn_break_contact", "Break contact: the selected counter-nanite team withdraws in bounds, covering itself, away from the threat.")
 	bb.btn.pressed.connect(_cn_orders.bind("cn_break_contact"))
+	_add_cn8_buttons()   # G7 CNMISSION8 (13.9c-44): PURGE MISSION + the team-orders page
 
 
 func _cn_cmd(typ: String, tid: int) -> Dictionary:
@@ -393,6 +395,8 @@ func add_page(ids: Array) -> bool:
 	_recs.clear()
 	_ids = ids.duplicate()
 	_combat = ids.duplicate()
+	if page.begins_with("cn8_"):
+		return _cn8_page()
 	if page == "formation":
 		hud._card_title.text = "FORMATION   (the group faces its move direction; armour leads mixed groups)"
 		for f in Orders.PLAYER_FORMATIONS:
@@ -569,6 +573,13 @@ func update_state(w: SimWorld) -> void:
 				reason = w.preview_command({"type": "regroup", "issuer": pf, "unit_ids": _combat})
 			"cn_pincer", "cn_break_contact":
 				reason = _cn_reason(w, String(rec.g2))
+			"cn8_purge", "cn8_team", "cn8_drive", "cn8_fly", "cn8_mount", "cn8_move", "cn8_dismount", "cn8_deploy", "cn8_hero", "cn8_loadout", "cn8_extract", "cn8_cancel", "cn8_hold":
+				reason = cn8_reason(w, String(rec.g2))
+			"so8_escort", "so8_raid", "so8_recon", "so8_rescue", "so8_insert", "so8_cancel":
+				reason = so8_reason(w, String(rec.g2))
+				if String(rec.g2) == "so8_insert":
+					b.text = "[%s] Insert
+%s" % [Hotkeys.badge(Hotkeys.key("so_insert")), so8_mode.to_upper()]
 			"bearer_leave":
 				reason = w.preview_command({"type": "leave_squad", "issuer": pf, "unit_ids": _bearers})
 			"risk":
@@ -595,3 +606,302 @@ func hint() -> String:
 ## (the card widens; the inspector column is SIZE_EXPAND_FILL and gives up the space).
 func compact(grid: GridContainer) -> void:
 	grid.columns = 5 if grid.get_child_count() > 8 else 4
+
+
+# ================================================================ G7 CNMISSION8 (master scope 13.9c-44)
+## PURGE MISSION [Shift+A]: select a strike team (a member or its APC), press, click a creep area or a core; the card
+## then asks Drive [Shift+R] or Fly [Shift+F] and submits cn_mission (CnMission8). Team orders [Shift+O] opens the
+## step page: Mount, Move (click), Dismount, Deploy (click ground), Hero detonate, Loadout (cycles presets),
+## Extract / Return, Cancel mission, Hold site. Every button is pre-checked with the sim's own reason function
+## (CnMission8 team_reason / mission_reason / step_reason, or world.preview_command) and disabled with the reason as
+## its tooltip. Keys: Hotkeys (cn_purge_mission / cn_team_orders in cn7; the page keys in the page group cn8p).
+const M8 = preload("res://sim/systems/cn_mission8.gd")
+const CN8_STEPS := [["Mount", "board the APCs", "cn_mount_team", "cn8_mount", "mount", "Every operator on foot boards his squad APC."],
+	["Move", "click a point", "cn_move_team", "cn8_move", "move", "One order moves the whole team (motorcade convoy)."],
+	["Dismount", "everyone out", "cn_dismount_team", "cn8_dismount", "dismount", "Everyone gets out of the APCs where they stand."],
+	["Deploy", "click the ground", "cn_deploy_here", "cn8_deploy", "deploy", "Deploy a counter-nanite package at the clicked site (the APCs must be within 7 tiles)."],
+	["Hero detonate", "one stays behind", "cn_hero_detonate", "cn8_hero", "hero", "One operator stays and detonates the package by hand: instant arming, certain death."],
+	["Loadout", "next preset", "cn_loadout_cycle", "cn8_loadout", "loadout", "Cycle the package loadout preset (only at the facility; locked in the field)."],
+	["Extract", "return home", "cn_extract", "cn8_extract", "extract", "Remount and return to the facility (by dropship when the mission flew in)."],
+	["Cancel mission", "stop here", "cn_mission_cancel", "cn8_cancel", "cancel", "Stop the purge mission: the team stays where it is."],
+	["Hold site", "off", "cn_mission_hold", "cn8_hold", "hold", "Hold the site after the purge instead of coming home (toggle)."]]
+var _cn8_target := Vector2(-1, -1)
+var cn8_last := {}   # last command a CNMISSION8 button submitted (playtest evidence)
+
+
+func _cn8_tid() -> int:
+	var tids: Array = _cn_teams.keys()
+	tids.sort()
+	var w = hud._world()
+	for tid in tids:
+		var t = CounterNanite.team(w, int(tid)) if w != null else null
+		if t != null and String(t.kind) == "strike":
+			return int(tid)
+	return int(tids[0]) if not tids.is_empty() else -1
+
+
+func _collect_cn_teams() -> void:
+	_cn_teams = {}
+	for id in _ids:
+		var e = _ent(int(id))
+		if e == null or e.kind != "unit":
+			continue
+		var tid := CounterNanite.team_of(e)
+		if tid >= 0:
+			if not _cn_teams.has(tid):
+				_cn_teams[tid] = []
+			_cn_teams[tid].append(int(id))
+
+
+func _add_cn8_buttons() -> void:
+	var pm = _btn2("PURGE MISSION", "click creep / core", "cn_purge_mission", "cn8_purge", "Purge mission: the strike team boards, leaves the facility, drives or flies to the creep area or core you click, deploys counter-nanites, holds until it is purged, then comes home. Any order you give the team takes over.")
+	pm.btn.pressed.connect(cn8_arm_purge)
+	var to = _btn2("Team orders", "step by step", "cn_team_orders", "cn8_team", "Step buttons: Mount, Move, Dismount, Deploy, Hero detonate, Loadout, Extract / Return, Cancel mission, Hold site.")
+	to.btn.pressed.connect(_cn8_open.bind("cn8_team"))
+
+
+func _cn8_open(p: String) -> void:
+	page = p
+	_page_ids = _ids.duplicate()
+	hud._card_sig = "?"
+	hud._refresh()
+
+
+func cn8_arm_purge() -> void:
+	var tid := _cn8_tid()
+	_mv().g2.arm("cell_cmd", {"unit_ids": _ids.duplicate(), "on_cell": _cn8_on_purge_cell.bind(tid),
+		"status": "PURGE MISSION: click a creep area or a core. Esc cancels."})
+
+
+## The clicked tile: refused (flash, stay armed) when there is no creep or core there; else the Drive / Fly page.
+func cn8_on_purge_cell(p: Vector2) -> bool:
+	return _cn8_on_purge_cell(p, _cn8_tid())
+
+
+func _cn8_on_purge_cell(p: Vector2, tid: int) -> bool:
+	var w = hud._world()
+	if w == null:
+		return true
+	var why: String = M8.mission_reason(w, int(hud._pf()), tid, p, "drive")
+	if why == "No creep or core there to purge." or why == "Pick a creep area or a core on the map.":
+		_mv().g2.flash(why)
+		return false
+	_cn8_target = p
+	_cn8_open("cn8_purge")
+	return true
+
+
+## Click-a-tile step orders (Move / Deploy).
+func _cn8_arm_cell(kind: String) -> void:
+	var tid := _cn8_tid()
+	var st := "MOVE TEAM: click the destination. Esc cancels." if kind == "move" else "DEPLOY: click the ground for the package site. Esc cancels."
+	_mv().g2.arm("cell_cmd", {"unit_ids": _ids.duplicate(), "on_cell": _cn8_on_cell.bind(kind, tid), "status": st})
+
+
+func _cn8_on_cell(p: Vector2, kind: String, tid: int) -> bool:
+	var w = hud._world()
+	if w == null:
+		return true
+	var c := _cn8_cmd(kind, tid, p)
+	c["issuer"] = int(hud._pf())
+	var why: String = w.preview_command(c)
+	if why != "":
+		_mv().g2.flash(why)
+		return false
+	c.erase("issuer")
+	cn8_last = c.duplicate()
+	hud._issue(c)
+	return true
+
+
+func _cn8_pkg(tid: int) -> String:
+	var w = hud._world()
+	var t = CounterNanite.team(w, tid) if w != null else null
+	if t == null:
+		return "purge"
+	var pk := M8.packages(w, t)
+	for k in ["purge", "seed_hunter", "barrier", "core_breaker"]:
+		if pk.has(k):
+			return k
+	return "purge"
+
+
+## The sim command a CNMISSION8 button submits (target only for move / deploy).
+func _cn8_cmd(kind: String, tid: int, p: Vector2 = Vector2(-1, -1)) -> Dictionary:
+	var w = hud._world()
+	match kind:
+		"drive", "fly":
+			return {"type": "cn_mission", "team_id": tid, "target": [_cn8_target.x, _cn8_target.y], "mode": kind}
+		"mount":
+			return {"type": "cn_mount", "team_id": tid}
+		"dismount":
+			return {"type": "cn_dismount", "team_id": tid}
+		"move":
+			return {"type": "cn_move", "team_id": tid, "target": [p.x, p.y]}
+		"deploy":
+			return {"type": "cn_deploy", "team_id": tid, "target": [p.x, p.y], "package": _cn8_pkg(tid)}
+		"hero":
+			return {"type": "cn_hero_detonate", "team_id": tid, "unit_id": -1}
+		"loadout":
+			return {"type": "cn_set_loadout", "team_id": tid, "packages": M8.next_loadout(w, tid) if w != null else []}
+		"extract":
+			return {"type": "cn_extract", "team_id": tid}
+		"cancel":
+			return {"type": "cn_mission_cancel", "team_id": tid}
+		"hold":
+			return {"type": "cn_mission_hold", "team_id": tid, "on": (not bool(M8.mission_of(w, tid).get("hold", false))) if w != null else true}
+	return {}
+
+
+func cn8_issue(kind: String) -> void:
+	var c := _cn8_cmd(kind, _cn8_tid())
+	if c.is_empty():
+		return
+	cn8_last = c.duplicate()
+	hud._issue(c)
+	if kind == "drive" or kind == "fly":
+		if _mv() != null and _mv().get("fx_layer") != null:
+			_mv().fx_layer.add_marker(_cn8_target, Color(0.35, 1.0, 0.6))
+		_close_page()
+
+
+## "" or the refusal for a CNMISSION8 button (rec kind cn8_*), from the sim's own reason functions.
+func cn8_reason(w: SimWorld, kind: String) -> String:
+	var tid := _cn8_tid()
+	var pf := int(hud._pf())
+	match kind:
+		"cn8_purge":
+			return M8.team_reason(w, pf, tid)
+		"cn8_team":
+			return "" if tid >= 0 else "Select a counter-nanite team."
+		"cn8_drive", "cn8_fly":
+			return M8.mission_reason(w, pf, tid, _cn8_target, kind.trim_prefix("cn8_"))
+		"cn8_mount", "cn8_dismount", "cn8_deploy":
+			return M8.step_reason(w, pf, tid, kind.trim_prefix("cn8_"))
+		"cn8_move":
+			return "" if CounterNanite.team(w, tid) != null else "Select a counter-nanite team."
+		"cn8_hero", "cn8_loadout", "cn8_extract", "cn8_cancel", "cn8_hold":
+			var c := _cn8_cmd(kind.trim_prefix("cn8_"), tid)
+			c["issuer"] = pf
+			return w.preview_command(c)
+	return ""
+
+
+func _cn8_page() -> bool:
+	_collect_cn_teams()
+	if _cn_teams.is_empty():
+		page = ""
+		return false
+	var w = hud._world()
+	var tid := _cn8_tid()
+	var t = CounterNanite.team(w, tid) if w != null else null
+	var nm := String(t.name) if t != null else "team"
+	if page == "cn8_purge":
+		hud._card_title.text = "PURGE MISSION - %s   (Drive or Fly?)" % nm.to_upper()
+		var db = _btn2("Drive", "APCs by road", "cn_mission_drive", "cn8_drive", "Drive: the APCs leave the facility through the gates and drive to the target.")
+		db.btn.pressed.connect(cn8_issue.bind("drive"))
+		var fb = _btn2("Fly", "dropship insert", "cn_mission_fly", "cn8_fly", "Fly: the team loads into the stealth dropship (or a VTOL dropship) on its pad and lands near the target on open ground.")
+		fb.btn.pressed.connect(cn8_issue.bind("fly"))
+	else:
+		hud._card_title.text = "%s - TEAM ORDERS" % nm.to_upper()
+		for s in CN8_STEPS:
+			var r = _btn2(String(s[0]), String(s[1]), String(s[2]), String(s[3]), String(s[5]))
+			if s[4] == "move" or s[4] == "deploy":
+				r.btn.pressed.connect(_cn8_arm_cell.bind(String(s[4])))
+			else:
+				r.btn.pressed.connect(cn8_issue.bind(String(s[4])))
+	var bk = _btn("Back", "", "BACKSPACE", "back", "Back to the orders card.")
+	bk.btn.pressed.connect(_close_page)
+	return true
+
+
+# ================================================================ G7 SPECOPS8 (master scope 13.9c-44)
+## Spec-ops missions for a selected tactical operator squad (a member or its APC): Escort [Shift+G] (click a strike
+## team on a purge mission), Core raid [Shift+C] (click a nanite core / Machine structure), Recon & mark [Shift+K]
+## (click an area), Rescue [Shift+M] (click a downed team, a lost squad or its beacon). Insert [Shift+I] toggles Drive /
+## Fly for the next mission; Cancel [Shift+Z]. Buttons are pre-checked with SpecOps8.team_reason / cancel_reason
+## (disabled + the reason as tooltip); the click is checked with the sim's own validation (refusal flashes, the mode
+## stays armed). Keys: Hotkeys group so8.
+const SO8 = preload("res://sim/systems/specops8.gd")
+const SO8_BTNS := [["Escort", "click a strike team", "so_escort", "so8_escort", "escort", "Escort: the squad joins a strike team's purge mission, drives or flies with it, screens the purge site and comes home with it. Click the strike team."],
+	["Core raid", "click a core", "so_raid", "so8_raid", "raid", "Core raid: the squad travels to a nanite core or Machine structure, plants demolition charges, withdraws and detonates them. Click the target."],
+	["Recon & mark", "click an area", "so_recon", "so8_recon", "recon", "Recon & mark: the squad scouts the area, reveals it and marks creep areas and Machine targets for fire support. Click the area."],
+	["Rescue", "click survivors", "so_rescue", "so8_rescue", "rescue", "Rescue / extract: the squad goes to a downed team, lost squad or beacon, recovers the survivors (wounded carried) and brings them home. Click the place."]]
+var so8_mode := "drive"
+var so8_last := {}   # last so_* command a SPECOPS8 button submitted (playtest evidence)
+
+
+func _so8_tid() -> int:
+	var w = hud._world()
+	if w == null:
+		return -1
+	var tids: Array = _cn_teams.keys()
+	tids.sort()
+	for tid in tids:
+		var t = CounterNanite.team(w, int(tid))
+		if t != null and String(t.kind) == "tactical":
+			return int(tid)
+	return -1
+
+
+func _add_so_buttons() -> void:
+	if _so8_tid() < 0:
+		return
+	for s in SO8_BTNS:
+		var r = _btn2(String(s[0]), String(s[1]), String(s[2]), String(s[3]), String(s[5]))
+		r.btn.pressed.connect(so8_arm.bind(String(s[4])))
+	var ib = _btn2("Insert", so8_mode.to_upper(), "so_insert", "so8_insert", "Insert: how the next spec-ops mission goes in - DRIVE (the APC leaves through the gates) or FLY (the stealth / VTOL dropship from its pad, landing on open ground near the target). Click to switch.")
+	ib.btn.pressed.connect(so8_toggle)
+	var cb = _btn2("Cancel spec-ops", "stop here", "so_cancel", "so8_cancel", "Stop the spec-ops mission: the squad stays where it is.")
+	cb.btn.pressed.connect(so8_issue_cancel)
+
+
+func so8_toggle() -> void:
+	so8_mode = "fly" if so8_mode == "drive" else "drive"
+
+
+func so8_arm(kind: String) -> void:
+	var tid := _so8_tid()
+	var what: String = {"escort": "click the strike team to escort", "raid": "click a nanite core or Machine structure",
+		"recon": "click the area to scout", "rescue": "click the downed team, lost squad or beacon"}.get(kind, "click the target")
+	_mv().g2.arm("cell_cmd", {"unit_ids": _ids.duplicate(), "on_cell": so8_on_cell.bind(kind, tid),
+		"status": "%s (%s): %s. Esc cancels." % [String(SO8.KIND_NAME.get(kind, kind)), so8_mode.to_upper(), what]})
+
+
+## The clicked point: the sim's refusal flashes and the mode stays armed; else so_mission is submitted.
+func so8_on_cell(p: Vector2, kind: String, tid: int = -1) -> bool:
+	var w = hud._world()
+	if w == null:
+		return true
+	if tid < 0:
+		tid = _so8_tid()
+	var c: Dictionary = SO8.cmd_for(w, int(hud._pf()), tid, kind, so8_mode, p)
+	c["issuer"] = int(hud._pf())
+	var why: String = w.preview_command(c)
+	if why != "":
+		_mv().g2.flash(why)
+		return false
+	c.erase("issuer")
+	so8_last = c.duplicate()
+	hud._issue(c)
+	if _mv() != null and _mv().get("fx_layer") != null:
+		_mv().fx_layer.add_marker(p, Color(1.0, 0.75, 0.3))
+	return true
+
+
+func so8_issue_cancel() -> void:
+	var c := {"type": "so_cancel", "team_id": _so8_tid()}
+	so8_last = c.duplicate()
+	hud._issue(c)
+
+
+## "" or the refusal for a SPECOPS8 button (rec kind so8_*), from the sim's own reason functions.
+func so8_reason(w: SimWorld, kind: String) -> String:
+	var tid := _so8_tid()
+	var pf := int(hud._pf())
+	match kind:
+		"so8_cancel":
+			return SO8.cancel_reason(w, pf, tid)
+		"so8_insert":
+			return SO8.team_reason(w, pf, tid, "drive")
+	return SO8.team_reason(w, pf, tid, so8_mode)

@@ -502,3 +502,282 @@ static func armband(img: Image, mask: Image, fw: int, fh: int, ncols: int, pal: 
 	var out_img := Image.create_from_data(sw, src.get_height(), false, Image.FORMAT_RGBA8, sd)
 	var out_m := Image.create_from_data(mw, msk.get_height(), false, Image.FORMAT_RGBA8, md)
 	return [out_img, out_m]
+
+
+# ================================================================ G8 (ANIM8, G7_REFERENCE 13.9c-52)
+## Blast throw / knock-down / unconscious / wake-up set: 31 columns baked through a generalised version of the same
+## two-piece rig (legs below the hip, torso above), for every human soldier sheet that has the G7 set. Unlike the
+## G6.1/G7 poses the body can PITCH through a full turn: its up axis is the 3-D direction cos(ph)*up + sin(ph)*T
+## projected to the screen, T = the throw direction = away from the facing (the man of a row faces the blast and is
+## thrown backward), so a head-over-heels tumble is real per-pixel rotation baked into the cells (nearest-neighbour
+## inverse map, team mask mapped identically), not a sprite rotation. Pure function of the input pixels.
+## Frame selection: presentation/view/entity_layer.gd (_k8_*), columns via BatchArt.k8_cols.
+const SET8 := ["k8_launch_0", "k8_launch_1", "k8_tum_0", "k8_tum_1", "k8_tum_2", "k8_tum_3", "k8_tum_4", "k8_tum_5",
+	"k8_tum_6", "k8_tum_7", "k8_imp_0", "k8_imp_1", "k8_bk_0", "k8_bk_1", "k8_bk_t", "k8_fd_0", "k8_fd_1", "k8_fd_t",
+	"k8_sd_0", "k8_sd_1", "k8_sd_t", "k8_buck_0", "k8_buck_1", "k8_buck_2", "k8_buck_3", "k8_wake_0", "k8_wake_1",
+	"k8_wake_2", "k8_wake_3", "k8_wake_4", "k8_wake_5"]
+
+
+## One pose: s source frame, ph torso pitch (rad, + = falling back along the throw), kk leg pitch relative to the torso
+## (+ = hips flexed / knees drawn up), lx / aw leg / torso width (limbs flung), lh / ts leg / torso length, vw lateral
+## scale (side-on), rl screen roll, pv body height (fraction) held at the anchor, lf anchor lift (fraction of height),
+## fx anchor shift along the throw (fraction), dk darkening, br draw the back view (face down), sh keep ground shadow.
+static func _p8(s: String, ph: float, kk: float, lx: float, lh: float, aw: float, pv: float, lf: float,
+		ex: Dictionary = {}) -> Dictionary:
+	var d := {"s": s, "ph": ph, "kk": kk, "lx": lx, "lh": lh, "aw": aw, "ts": 1.0, "vw": 1.0, "rl": 0.0, "pv": pv,
+		"lf": lf, "fx": 0.0, "dk": 1.0, "br": false, "sh": lf < 0.2}
+	d.merge(ex, true)
+	return d
+
+
+static func poses8() -> Dictionary:
+	var p := {}
+	p["k8_launch_0"] = _p8("walk_a", 0.3, 0.25, 1.12, 0.88, 1.1, 0.0, 0.04)
+	p["k8_launch_1"] = _p8("walk_b", 0.6, 0.45, 1.2, 0.9, 1.15, 0.5, 0.45, {"sr": true})
+	for k in 8:
+		p["k8_tum_%d" % k] = _p8("walk_a" if k % 2 == 0 else "walk_b", 1.2 + k * TAU / 8.0,
+			0.45 + 0.2 * cos(k * TAU / 4.0), 1.1 + 0.1 * (k % 2), 0.92, 1.05 + 0.1 * ((k + 1) % 2), 0.5, 0.5,
+			{"rl": 0.0, "sr": true})
+	p["k8_imp_0"] = _p8("walk_a", 1.4, 0.7, 1.25, 0.9, 1.2, 0.5, 0.12)
+	p["k8_imp_1"] = _p8("walk_b", 1.55, 0.35, 1.25, 0.92, 1.2, 0.5, 0.03)
+	# sprawls: on back (front view), face down (back view), on the side curled up; _1 = breath in, _t = a twitch
+	var sp := {"bk": _p8("idle", PI / 2.0, -0.15, 1.2, 0.95, 1.15, 0.5, 0.0, {"dk": 0.9}),
+		"fd": _p8("idle", PI / 2.0, 0.05, 1.1, 1.0, 1.15, 0.5, 0.0, {"dk": 0.86, "br": true}),
+		"sd": _p8("walk_a", PI / 2.0, 0.6, 1.05, 0.92, 1.1, 0.5, 0.0, {"dk": 0.88, "rl": 0.3})}
+	for v in ["bk", "fd", "sd"]:
+		var b: Dictionary = sp[v]
+		p["k8_%s_0" % v] = b
+		var br: Dictionary = b.duplicate()
+		br.ts = 1.05
+		br.aw = float(b.aw) * 1.07
+		p["k8_%s_1" % v] = br
+		var tw: Dictionary = b.duplicate()
+		tw.kk = float(b.kk) + 0.3
+		tw.lx = float(b.lx) * 1.15
+		tw.rl = float(b.rl) + 0.07
+		p["k8_%s_t" % v] = tw
+	# knocked off his feet (not thrown): knees buckle, stagger, fall back away from the blast
+	p["k8_buck_0"] = _p8("idle", 0.1, 0.3, 1.15, 0.8, 1.15, 0.0, 0.0, {"rl": 0.06})
+	p["k8_buck_1"] = _p8("walk_a", 0.3, 0.6, 1.15, 0.7, 1.1, 0.0, 0.0, {"rl": -0.1})
+	p["k8_buck_2"] = _p8("idle", 0.6, 0.45, 1.05, 0.85, 1.02, 0.1, 0.0, {"rl": 0.04})
+	p["k8_buck_3"] = _p8("idle", 1.3, 0.6, 1.2, 0.85, 1.15, 0.4, 0.0)
+	# coming round: roll to the side, sit up, to his knees, rise, groggy stand with a stumble, sway
+	p["k8_wake_0"] = _p8("walk_a", PI / 2.0, 0.55, 1.05, 0.92, 1.1, 0.5, 0.0, {"rl": 0.25, "dk": 0.9})
+	p["k8_wake_1"] = _p8("idle", 1.05, 0.5, 1.1, 1.0, 1.25, HIP, 0.0, {"dk": 0.94})
+	p["k8_wake_2"] = _p8("idle", -0.35, 0.65, 1.35, 0.5, 1.2, 0.0, 0.0, {"dk": 0.96})
+	p["k8_wake_3"] = _p8("idle", -0.45, 0.6, 1.3, 0.7, 1.15, 0.0, 0.0)
+	p["k8_wake_4"] = _p8("walk_a", -0.15, 0.15, 1.3, 0.92, 1.1, 0.0, 0.0, {"rl": 0.12})
+	p["k8_wake_5"] = _p8("idle", 0.05, 0.05, 1.05, 0.97, 1.0, 0.0, 0.0, {"rl": -0.08})
+	return p
+
+
+## Screen up-axis of a body pitched ph along the throw (tn = screen vector of one unit of ground along the throw).
+static func _up8(ph: float, tn: Vector2) -> Vector2:
+	return Vector2(0, -1) * cos(ph) + tn * sin(ph)
+
+
+const MIN8 := 0.95
+
+
+static func _len8(v: Vector2) -> Vector2:
+	var l := v.length()
+	return v if l >= MIN8 or l < 0.0001 else v / l * MIN8
+
+
+## Draws pose p (poses8) of figure set lp (source cell (sx0, soy)) into destination cell (dx0, doy), facing row r.
+## The ground shadow (non-figure pixels of the idle cell at (shx0, soy0)) is kept on grounded poses only.
+static func _render8(sd: PackedByteArray, sw: int, md: PackedByteArray, mw: int, dd: PackedByteArray, dw: int,
+		mdd: PackedByteArray, sx0: int, soy: int, dx0: int, doy: int, fw: int, fh: int, lp: Array, p: Dictionary,
+		r: int, shl: Array, shx0: int, shoy: int) -> void:
+	var lab: PackedInt32Array = lp[0]
+	var comps: Array = lp[1]
+	var has_m := not mdd.is_empty() and not md.is_empty()
+	var dark: float = p.dk
+	if bool(p.sh) and shx0 >= 0:
+		var slab: PackedInt32Array = shl[0]
+		for y in fh:
+			for x in fw:
+				var si := ((shoy + y) * sw + shx0 + x) * 4
+				if slab[y * fw + x] == -1 and sd[si + 3] > 0:
+					var di := ((doy + y) * dw + dx0 + x) * 4
+					for c in 4:
+						dd[di + c] = sd[si + c]
+	var mnx: Array = []
+	var mxx: Array = []
+	for cc in comps:
+		mnx.append(fw)
+		mxx.append(-1)
+	for k in lab.size():
+		var t := lab[k]
+		if t >= 0:
+			mnx[t] = mini(int(mnx[t]), k % fw)
+			mxx[t] = maxi(int(mxx[t]), k % fw)
+	var order: Array = []
+	for i in comps.size():
+		order.append(int(comps[i][1]) * 1024 + i)
+	order.sort()
+	var dl := _dir(r * PI / 4.0)
+	var pvv := _dir(r * PI / 4.0 + PI / 2.0)
+	# throw axis on screen; a body lying end-on to the camera (screen-vertical axis) reads as a squat standing man,
+	# so the axis keeps at least 0.55 of sideways component (lying bodies read diagonally, as in every iso game)
+	var t0 := (-dl).normalized()
+	if absf(t0.x) < 0.75:
+		t0 = Vector2(0.75 * (1.0 if pvv.x >= 0.0 else -1.0), (1.0 if t0.y >= 0.0 else -1.0) * 0.66)
+	var tn := t0 * 0.85
+	var ph: float = p.ph
+	var rl: float = p.rl
+	# sr: airborne spin = screen-plane rotation toward the throw side (even steps, constant body length); otherwise the
+	# 3-D pitch, its foreshortened axes held to >= MIN8 of full length so no frame shrinks into a blob (ANIM8B)
+	var ut: Vector2
+	var ulg: Vector2
+	if bool(p.get("sr", false)):
+		var sg := 1.0 if tn.x >= 0.0 else -1.0
+		ut = Vector2(0, -1).rotated(sg * ph + rl) * float(p.ts)
+		ulg = Vector2(0, -1).rotated(sg * (ph + float(p.kk)) + rl) * float(p.lh)
+	else:
+		ut = _len8(_up8(ph, tn).rotated(rl)) * float(p.ts)
+		ulg = _len8(_up8(ph + float(p.kk), tn).rotated(rl)) * float(p.lh)
+	# lateral axis perpendicular to each piece (pure rotation + scale: no shear, the figure stays one solid body)
+	var vt := Vector2(-ut.y, ut.x).normalized() * float(p.aw) * float(p.vw)
+	var vl := Vector2(-ulg.y, ulg.x).normalized() * float(p.lx) * float(p.vw)
+	for o in order:
+		var ci: int = o % 1024
+		var cx: float = comps[ci][0]
+		var bot: int = comps[ci][1]
+		var hh: float = float(comps[ci][2])
+		var h0 := HIP * hh
+		var an := Vector2(cx, bot) + tn * float(p.fx) * hh + Vector2(0, -float(p.lf) * hh)
+		var bp := float(p.pv) * hh
+		var hip: Vector2 = an - ut * (bp - h0) if bp >= h0 else an - ulg * (bp - h0)
+		var bb := Rect2(hip, Vector2.ZERO)
+		for w in [float(mnx[ci]) - cx, float(mxx[ci]) - cx]:
+			bb = bb.expand(hip + vl * w - ulg * h0).expand(hip + vl * w).expand(hip + vt * w)
+			bb = bb.expand(hip + vt * w + ut * (hh - h0))
+		# keep the whole body inside the cell (a sprawl centred on the foot point would lose its lower half)
+		var fit := Vector2.ZERO
+		if bb.position.x < 0.0:
+			fit.x = -bb.position.x
+		elif bb.end.x > fw - 1.0:
+			fit.x = fw - 1.0 - bb.end.x
+		if bb.end.y > fh - 1.0:
+			fit.y = fh - 1.0 - bb.end.y
+		elif bb.position.y < 0.0:
+			fit.y = -bb.position.y
+		hip += fit
+		bb.position += fit
+		var x0 := clampi(floori(bb.position.x) - 1, 0, fw - 1)
+		var x1 := clampi(ceili(bb.end.x) + 1, 0, fw - 1)
+		var y0 := clampi(floori(bb.position.y) - 1, 0, fh - 1)
+		var y1 := clampi(ceili(bb.end.y) + 1, 0, fh - 1)
+		for y in range(y0, y1 + 1):
+			for x in range(x0, x1 + 1):
+				var rel := Vector2(x, y) - hip
+				var sx := -1
+				var sy := -1
+				var q := _solve(vl, ulg, rel)
+				if q.y > -h0 - 0.6 and q.y < 0.5:
+					sx = roundi(cx + q.x)
+					sy = roundi(bot - (h0 + q.y))
+					if sx < 0 or sy < 0 or sx >= fw or sy >= fh or lab[sy * fw + sx] != ci:
+						sx = -1
+				if sx < 0:
+					q = _solve(vt, ut, rel)
+					if q.y >= -0.5:
+						sx = roundi(cx + q.x)
+						sy = roundi(bot - (h0 + q.y))
+						if sx < 0 or sy < 0 or sx >= fw or sy >= fh or lab[sy * fw + sx] != ci:
+							sx = -1
+				if sx < 0:
+					continue
+				var si := ((soy + sy) * sw + sx0 + sx) * 4
+				var di := ((doy + y) * dw + dx0 + x) * 4
+				for c in 3:
+					dd[di + c] = int(sd[si + c] * dark)
+				dd[di + 3] = sd[si + 3]
+				if has_m and sx0 + sx < mw:
+					var mi := ((soy + sy) * mw + sx0 + sx) * 4
+					for c in 4:
+						mdd[di + c] = md[mi + c]
+
+
+## Tidies one rotated cell (nearest-neighbour rotation leaves a ragged outline): an opaque pixel with <= 1 opaque
+## 4-neighbour is dropped, a see-through pixel with >= 3 opaque 4-neighbours takes its first opaque neighbour (order
+## up, left, right, down; colour and team mask alike). One pass read from a copy: order-independent, deterministic.
+static func _clean8(dd: PackedByteArray, mdd: PackedByteArray, dw: int, x0: int, y0: int, fw: int, fh: int) -> void:
+	var src := dd.slice(0)
+	var msrc := mdd.slice(0)
+	var has_m := not mdd.is_empty()
+	var nb: Array[Vector2i] = [Vector2i(0, -1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, 1)]
+	for y in range(1, fh - 1):
+		for x in range(1, fw - 1):
+			var i := ((y0 + y) * dw + x0 + x) * 4
+			var n := 0
+			var first := -1
+			for v in nb:
+				var j: int = ((y0 + y + v.y) * dw + x0 + x + v.x) * 4
+				if src[j + 3] >= OPAQUE:
+					n += 1
+					if first < 0:
+						first = j
+			if src[i + 3] >= OPAQUE:
+				if n <= 1:
+					for c in 4:
+						dd[i + c] = 0
+						if has_m:
+							mdd[i + c] = 0
+			elif n >= 3:
+				for c in 4:
+					dd[i + c] = src[first + c]
+					if has_m:
+						mdd[i + c] = msrc[first + c]
+
+
+## The SET8 cells of one sheet as a side image (SET8.size() columns x 8 rows) + its mask (null without one).
+## frames = the sheet's frame names (source columns idle / walk_a / walk_b looked up there).
+static func side8(img: Image, mask: Image, fw: int, fh: int, frames: Array) -> Array:
+	var src := _rgba(img)
+	var sm: Image = _rgba(mask) if mask != null else null
+	var nw := fw * SET8.size()
+	var hh := fh * 8
+	var dd := PackedByteArray()
+	dd.resize(nw * hh * 4)
+	dd.fill(0)
+	var mdd := PackedByteArray()
+	if sm != null:
+		mdd.resize(nw * hh * 4)
+		mdd.fill(0)
+	var sd := src.get_data()
+	var sw := src.get_width()
+	var md: PackedByteArray = sm.get_data() if sm != null else PackedByteArray()
+	var mw: int = sm.get_width() if sm != null else 0
+	var ps := poses8()
+	var idle_c := frames.find("idle")
+	for r in 8:
+		var labs := {}
+		var shl: Array = _components(sd, sw, idle_c * fw, r * fh, fw, fh)
+		for k in SET8.size():
+			var p: Dictionary = ps[SET8[k]]
+			var sname: String = p.s
+			if not frames.has(sname):
+				sname = "idle"
+			var srow: int = (r + 4) % 8 if bool(p.br) else r
+			var key := "%s|%d" % [sname, srow]
+			var scol := frames.find(sname)
+			if not labs.has(key):
+				labs[key] = _components(sd, sw, scol * fw, srow * fh, fw, fh)
+			_render8(sd, sw, md, mw, dd, nw, mdd, scol * fw, srow * fh, k * fw, r * fh, fw, fh, labs[key], p, r,
+				shl, idle_c * fw, r * fh)
+			_clean8(dd, mdd, nw, k * fw, r * fh, fw, fh)
+	var out_img := Image.create_from_data(nw, hh, false, Image.FORMAT_RGBA8, dd)
+	var out_m: Image = Image.create_from_data(nw, hh, false, Image.FORMAT_RGBA8, mdd) if sm != null else null
+	return [out_img, out_m]
+
+
+## Sheet + its SET8 side image side by side (columns [0, n0) unchanged, SET8 from column n0 on).
+static func join8(base: Image, side: Image, fw: int, n0: int) -> Image:
+	var b := _rgba(base)
+	var s := _rgba(side)
+	var out := Image.create(fw * n0 + s.get_width(), maxi(b.get_height(), s.get_height()), false, Image.FORMAT_RGBA8)
+	out.blit_rect(b, Rect2i(0, 0, mini(fw * n0, b.get_width()), b.get_height()), Vector2i.ZERO)
+	out.blit_rect(s, Rect2i(Vector2i.ZERO, s.get_size()), Vector2i(fw * n0, 0))
+	return out

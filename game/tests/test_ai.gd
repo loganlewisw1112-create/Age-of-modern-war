@@ -186,6 +186,15 @@ func _run_g2(seed_value: int) -> Dictionary:
 	while w.tick < G2_TICKS and not w.match_state.ended:
 		w.step()
 		for ev in w.events:
+			# G7 REG8A (setup only, G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): with realistic damage
+			# targets die early, so a seed-1 match fired 950 shots for 45 kills (1522 for 43 with LETHAL8_OFF) and only one
+			# unit ever fell below 30% ammo. The subject is the AI's resupply, so produced units leave the factory with half
+			# their ammo; the oracle (below 30%, later refilled) is unchanged.
+			if String(ev.type) == "ProductionCompleted":
+				for uid in ev.get("unit_ids", []):
+					var pu = w.entities.get(int(uid))
+					if pu != null and pu.has("ammo"):
+						pu.ammo = int(ceil(float(Content.unit(String(pu.def)).get("ammo_max", 0)) * 0.5))
 			if String(ev.type) == "ProductionCompleted" and got.has(int(ev.owner)) and String(ev.item) == "officer":
 				got[int(ev.owner)].officer = true
 			elif String(ev.type) == "ConstructionCompleted" and got.has(int(ev.owner)) and String(ev.def) == "refinery":

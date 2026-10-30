@@ -316,7 +316,7 @@ static func _post_ext(w: SimWorld, S: Dictionary, F: Dictionary) -> void:
 			continue
 		var jid := "fuel:%d" % int(u.id)
 		s7.post_job(w, fac, {"id": jid, "kind": "fuel", "pos": Vector2(u.pos),
-			"prio": float(FU.get("prio", 2.0)) + float(FU.get("prio_empty", 2.5)) * (1.0 - fr),
+			"prio": (float(FU.get("prio", 2.0)) + float(FU.get("prio_empty", 2.5)) * (1.0 - fr)) * S7()._sup8p(w, int(u.owner), "aircraft" if bool(d.get("is_air", false)) else "vehicles"),
 			"roles": ["engineer"], "slots": 1, "bid": int(u.id), "ttl_s": ttl})
 		now[jid] = true
 	var old: Dictionary = S.ext.get(str(fac), {})
@@ -346,6 +346,9 @@ static func _set_rec(w: SimWorld, uid: int, rec: Dictionary) -> void:
 
 static func _think(w: SimWorld, S: Dictionary, e: Dictionary) -> void:
 	var uid := int(e.id)
+	var s8 = w.sys_state.get("supply8")   # SUPPLY8 (13.9c-48): an engineer on an airdrop retrieval is run by Supply8
+	if s8 != null and (s8.m as Dictionary).has(str(uid)):
+		return
 	var rec := _rec(w, uid)
 	var k := String(rec.get("k", "auto"))
 	var run: Dictionary = S.run.get(str(uid), {})

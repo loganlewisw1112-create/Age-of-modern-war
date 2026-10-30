@@ -17,6 +17,8 @@ static var _sheets: Dictionary = {}  # "rel|#color" -> tinted Image
 static var _frames: Dictionary = {}  # "rel|#color|col|row" -> Texture2D
 static var _fx: Dictionary = {}
 static var _sil: Dictionary = {}   # G5 scaffold: "class|#color" -> silhouette Texture2D
+static var anim8_off := false     # G8 ANIM8: true while tools/art/g8_anim8.gd bakes (raw sheets, no join)
+static var _k8: Dictionary = {}    # G8 ANIM8: sheet / mask rel path -> [side sheet res path, fw, n0] joined in _image
 static var _rings: Dictionary = {}
 static var _fog: Dictionary = {}
 
@@ -34,6 +36,7 @@ static func load_all() -> void:
 	if _man.is_empty():
 		push_warning("ArtCatalog: manifest.json missing; run tools/gen_art.gd. Using placeholders.")
 	_merge_g5()
+	_merge_anim8()
 
 
 # ---------------------------------------------------------------- G5 art groups (VIEW5)
@@ -45,7 +48,7 @@ static func load_all() -> void:
 ## G6 (VIEW6, CR artcatalog_g6_groups): the ART-G6 / ART-G6b groups use the same schema and merge
 ## through the same path after the G5 groups (new ids only). g6_bld buildings carry `g6: {variants:
 ## "rot", fire}` (G5Art.variant_of reads g5 or g6); squads carry their own fw/fh (b_conscripts 64x44).
-const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval", "g6_units", "g6_bld", "g6_new", "g61_bearer", "drone7", "g7_cn", "g7_turrets", "g7_threats", "g7_threats2", "g7_growths", "g7_turrets2", "g7_rollout", "g7_baseprops", "g7_fac7f", "g7_seq7", "g7_life7", "g7_wallturret", "g7_atmo7", "g7_eng7", "g7_sentinels", "g7_vanta", "g7_cnsuits", "g7_ciws7", "g7_icons7"]  # + G7 AIRV7 CN Vanta loadout sheets; + G7 SENTART7 Sentinel sheets; + G6.1 BEARER61 CR seq 331; + G7 DRONE7 CR; + G7 THREAT7 / FISSURE7 CRs; + ART7F facility art; + G7 WTUR7 wall turrets; + G7 EXO7 counter-nanite armoured suits (13.9c-20)
+const G5_GROUPS := ["g5_units", "g5_bld", "g5_air", "g5_naval", "g6_units", "g6_bld", "g6_new", "g61_bearer", "drone7", "g7_cn", "g7_turrets", "g7_threats", "g7_threats2", "g7_growths", "g7_turrets2", "g7_rollout", "g7_baseprops", "g7_fac7f", "g7_seq7", "g7_life7", "g7_wallturret", "g7_atmo7", "g7_eng7", "g7_sentinels", "g7_vanta", "g7_cnsuits", "g7_ciws7", "g7_icons7", "g8_supply"]  # + G7 AIRV7 CN Vanta loadout sheets; + G7 SENTART7 Sentinel sheets; + G6.1 BEARER61 CR seq 331; + G7 DRONE7 CR; + G7 THREAT7 / FISSURE7 CRs; + ART7F facility art; + G7 WTUR7 wall turrets; + G7 EXO7 counter-nanite armoured suits (13.9c-20)
 const G5_SKIP := ["files", "version", "group", "tile"]
 static var g5_groups: Array = []   # groups merged this session (tests / playtest evidence; G6 groups too)
 
@@ -162,8 +165,84 @@ static func _image(rel: String) -> Image:
 			img.decompress()
 		if img.get_format() != Image.FORMAT_RGBA8:
 			img.convert(Image.FORMAT_RGBA8)
+		if not anim8_off and _k8.has(rel):
+			img = _join8(img, _k8[rel])
 	_imgs[rel] = img
 	return img
+
+
+# ---------------------------------------------------------------- G8 (ANIM8, G7_REFERENCE 13.9c-52)
+## tools/art/g8_anim8.gd bakes the blast throw / knock-down / unconscious / wake-up columns (g61_anim.gd SET8) as side
+## sheets in assets/art/g8_anim8/ (the soldier sheets themselves stay untouched). A def whose every sheet has a side
+## sheet baked from the same source bytes (md5; not checkable in an export, where the raw PNG is not packed) gets the
+## SET8 names appended to its frames, and _image returns sheet + side sheet side by side (columns n0.. = SET8).
+const K8_DIR := "res://assets/art/g8_anim8/"
+static func _merge_anim8() -> void:
+	if anim8_off:
+		return
+	var p := K8_DIR + "manifest.json"
+	if not FileAccess.file_exists(p):
+		return
+	var m = JSON.parse_string(FileAccess.get_file_as_string(p))
+	if not (m is Dictionary) or not (m.get("sheets") is Dictionary) or not (m.get("set") is Array):
+		return
+	var sh: Dictionary = m.sheets
+	var set8: Array = m.set
+	var inf = _man.get("infantry")
+	if not (inf is Dictionary):
+		return
+	for def in m.get("defs", []):
+		var spec = inf.get(def)
+		if not (spec is Dictionary):
+			continue
+		var frames: Array = spec.get("frames", [])
+		if frames.has(set8[0]):
+			continue
+		var files: Array = [String(spec.get("file", ""))]
+		var al = spec.get("alive_sheets", {})
+		if al is Dictionary:
+			for k in al:
+				if al[k] is Dictionary:
+					files.append(String(al[k].get("file", "")))
+		var ok := true
+		for f in files:
+			var e = sh.get(f)
+			ok = ok and e is Dictionary and int(e.n0) == frames.size() and int(e.fw) == int(spec.get("fw", 0))
+			if ok:
+				var src: String = String(f) if String(f).begins_with("res://") else BASE + String(f)
+				if FileAccess.file_exists(src) and FileAccess.get_md5(src) != String(e.md5):
+					ok = false
+		if not ok:
+			continue
+		for f in files:
+			var e: Dictionary = sh[f]
+			_k8[f] = [K8_DIR + String(e.file), int(e.fw), int(e.n0)]
+			if String(e.mask) != "" and String(e.mask_of) != "":
+				_k8[String(e.mask_of)] = [K8_DIR + String(e.mask), int(e.fw), int(e.n0)]
+		spec["frames"] = frames + set8
+		spec["anim8"] = {"base": frames.size(), "v": 1}
+
+
+static func _join8(img: Image, e: Array) -> Image:
+	var side: Image = null
+	var sp := String(e[0])
+	if FileAccess.file_exists(sp):
+		side = _raw_image(sp)
+	elif ResourceLoader.exists(sp):
+		var tex = load(sp)
+		if tex is Texture2D:
+			side = tex.get_image()
+	if side == null or side.is_empty():
+		return img
+	if side.is_compressed():
+		side.decompress()
+	if side.get_format() != Image.FORMAT_RGBA8:
+		side.convert(Image.FORMAT_RGBA8)
+	var w0 := int(e[1]) * int(e[2])
+	var out := Image.create(w0 + side.get_width(), maxi(img.get_height(), side.get_height()), false, Image.FORMAT_RGBA8)
+	out.blit_rect(img, Rect2i(0, 0, mini(w0, img.get_width()), img.get_height()), Vector2i.ZERO)
+	out.blit_rect(side, Rect2i(Vector2i.ZERO, side.get_size()), Vector2i(w0, 0))
+	return out
 
 
 static func _texture(rel: String) -> Texture2D:

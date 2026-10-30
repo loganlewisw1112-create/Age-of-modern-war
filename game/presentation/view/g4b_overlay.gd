@@ -131,7 +131,8 @@ func _draw_statics(vr: Rect2, font: Font) -> void:
 				draw_texture(mk.texture, sp + (mk.offset as Vector2))
 				mine_art_drawn += 1
 				continue
-		var lbl := "M" if kind == "mine" else str(int(e.get("fuse", 0)) / 20) + "s"   # charge fuse; "M" only without art
+		var fz := int(e.get("fuse", 0))
+		var lbl := "M" if kind == "mine" else ("ARMED" if fz >= 10000000 else str(fz / 20) + "s")   # charge fuse; ORCH: a spec-ops raid charge held for the detonate step (SpecOps8.FUSE_HOLD) reads ARMED, not ~5000000 s; "M" only without art
 		draw_string_outline(font, sp + Vector2(-5, -r * 0.6 - 3), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color(0, 0, 0, 0.8))
 		draw_string(font, sp + Vector2(-5, -r * 0.6 - 3), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
 

@@ -573,14 +573,30 @@ static func service_point_at(w: SimWorld, fid: int, pos: Vector2) -> int:
 	return -1
 
 
-## Nearest of fid's pads with a free landing spot: {bid, slot} or {}.
-static func free_pad_near(w: SimWorld, fid: int, pos: Vector2) -> Dictionary:
+## VTOL8 (13.9c-42): a regular (non counter-nanite) VTOL dropship (aircraft "vtol", no cn_dropship) never takes a pad
+## field smaller than its landing square (the 2x2 helicopter helipads); airfield / strip fields and pads at least
+## lz_size wide still serve it. Every other aircraft: true (unchanged).
+static func pad_fits(w: SimWorld, bid: int, def: Dictionary) -> bool:
+	if String(def.get("aircraft", "")) != "vtol" or bool(def.get("cn_dropship", false)):
+		return true
+	var b = w.entities.get(bid)
+	if b == null:
+		return false
+	if HANGAR_FIELDS.has(String(field(w, bid).get("kind", ""))):
+		return true
+	return int(b.get("size", 1)) >= maxi(1, int(def.get("lz_size", 2)))
+
+
+## Nearest of fid's pads with a free landing spot: {bid, slot} or {}. def (optional): only pads that fit it (pad_fits).
+static func free_pad_near(w: SimWorld, fid: int, pos: Vector2, def: Dictionary = {}) -> Dictionary:
 	var best := {}
 	var bd := INF
 	for fb in _sorted(fields(w)):
 		var fr: Dictionary = fields(w)[fb]
 		var fe = w.entities.get(int(fb))
 		if fe == null or int(fr.owner) != fid or not bool(fe.get("built", true)):
+			continue
+		if not def.is_empty() and not pad_fits(w, int(fb), def):
 			continue
 		for i in (fr.pads as Array).size():
 			var dd: float = Vector2(fe.pos).distance_to(pos)

@@ -68,6 +68,9 @@ const FAC_SITE_O := Vector2i(64, 64)    # = C - (16, 16): compound + its 2-wide 
 ## the gate apron + foot-entry serpentine outside its south wall). CnFacility.build paves it at match start, so the map
 ## keeps it paved and never plans a building, mast or light on it (MAPBIG7: rows C+14..C+18, x C-14..C+13).
 const FAC_APPROACH := Rect2i(0, 28, 28, 5)
+## G7 RETURN8: the facility gate lane (compound-local, like FAC_APPROACH): approach -> apron (rows 28..36, x 12..16),
+## core wall row 37 skipped (its gate triple), then the queue lane to the outer wall (rows 38..43, x 13..15).
+const FAC_LANE := [Rect2i(12, 28, 5, 9), Rect2i(13, 38, 3, 6)]
 const PLAYER_SPAWN := Vector2i(61, 80)    # = C + (-19, 0): HQ plot in the core ring's west (command) band (start package HQ lands here)
 ## MAPBIG7 (13.9c-41): the Machine spawn in the far corner; the North / South cores out on the far east / south edges,
 ## the Heart core (the walker) toward the far corner (was 350 tiles from the base, now ~750: walk_path finds the way).
@@ -628,6 +631,11 @@ static func _base(t: PackedByteArray, resources: Array) -> Dictionary:
 		for p in _walk(r):
 			for d in range(-1, 2):
 				_paint_road(t, occ, p + (Vector2i(d, 0) if r[0].x == r[1].x else Vector2i(0, d)))
+	# FACFLOW8E: the serpentine stretch of every outer approach road (d h0+3..h0+9) is 4 wide (t -2..+1), so the
+	# chicane traps (t +1 / t -2, _obstacles) stand at least 1 tile off the gate axis (the cell boundary at t 0)
+	for s in ["n", "e", "s"]:
+		for a in range(h0 + 3, h0 + 10):
+			_paint_road(t, occ, _side_o(s, a, 1, -2))
 	# LPSHRINK7-2: no outer ring road; the 1-wide service lane (d 27, between the economy row and the merged turret +
 	# defence row) carries vehicles, reserves and the wall patrols (the core patrol loops the facility service road)
 	# (painted after the army posts are taken, below: the economy army stands on it at the start)
@@ -765,7 +773,7 @@ static func _gate_posts() -> Array:
 
 ## Obstacles in front of every outer gate (lp_setup builds them; outside the wall, so in no ring): a barbed-wire belt
 ## (d h0+5, |t| 3..14), a tank-trap line (d h0+3, every other cell, |t| 4..12) and a serpentine of tank traps on the
-## approach road (alternating sides; the 3-wide road keeps a 2-wide chicane). [{cell, def, road}].
+## approach road (alternating sides at t +1 / t -2; the road is 4 wide there and keeps a 2-wide lane round the gate axis). [{cell, def, road}].
 static func _obstacles() -> Array:
 	var out := []
 	var h0: int = RING_HALF[0]
@@ -776,7 +784,8 @@ static func _obstacles() -> Array:
 			if absi(tt) >= 4 and absi(tt) <= 12 and tt % 2 == 0:
 				out.append({"cell": _side_o(s, h0 + 3, 1, tt), "def": "s_tank_traps", "road": false})
 		for i in 4:
-			out.append({"cell": _side_o(s, h0 + 3 + 2 * i, 1, 1 if i % 2 == 0 else -1), "def": "s_tank_traps", "road": true})
+			# FACFLOW8E: t +1 / t -2 (was +1 / -1: the t -1 trap touched the gate axis, the line a lead APC drives)
+			out.append({"cell": _side_o(s, h0 + 3 + 2 * i, 1, 1 if i % 2 == 0 else -2), "def": "s_tank_traps", "road": true})
 	return out
 
 
@@ -1317,6 +1326,15 @@ static func layout_issue(m: Dictionary) -> String:
 	for q in used:
 		if site.has_point(q):
 			return "Footprint %s inside the facility site." % [q]
+	# G7 RETURN8: the facility gate lane stays clear of every footprint: from the approach (FAC_APPROACH) up to the
+	# apron in the core-wall gate where returning APCs line up (compound-local entry y 34.8, apron 36.8, gate axis x 14,
+	# +-2 for the hull), and on through the economy row / service lane / outer row to the outer-wall gate (the queue
+	# spots of APCs waiting their turn, gate axis +-1).
+	for ln in FAC_LANE:
+		var lr := Rect2i(FAC_O + (ln as Rect2i).position, (ln as Rect2i).size)
+		for q in used:
+			if lr.has_point(q):
+				return "Footprint %s on the facility gate lane / apron %s." % [q, lr]
 	var econ := 0
 	for p in base.rings[0].plots:
 		if bool(p.get("econ", false)):

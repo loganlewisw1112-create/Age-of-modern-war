@@ -551,6 +551,13 @@ func test_gate_hardens_cycles_for_own_apcs_and_stands_down() -> void:
 	var passed_tick := -1
 	var wait_at := Vector2.ZERO
 	var waited := false
+	# ORCH ruling (13.9c-50, FACFLOW8D): the longer 3-APC airlock lets the APC roll through without a full stop, so "waited"
+	# is the long-airlock equivalent: while the outer gate is not open the APC stood between the layers (apc_wash) with the
+	# inner gate closed, and it never crossed the outer gate line before the outer was open. Never-both-open stays strict.
+	var c7 := CnFacility.conf()
+	var wash_r := Rect2(float(c7.apc_wash[0]), float(c7.apc_wash[1]), float(c7.apc_wash[2]), float(c7.apc_wash[3]))
+	var go_y := float(c7.gate_outer[1])
+	var early := false
 	for i in 2500:
 		_step(w)
 		sally = sally and _sally_ok(w, fid)
@@ -558,8 +565,10 @@ func test_gate_hardens_cycles_for_own_apcs_and_stands_down() -> void:
 		if states[states.size() - 1] != gv[0]:
 			states.append(gv[0])
 		var lp := _local(w, fid, Vector2(a.pos))
-		if String(gv[0]) != "open" and lp.y > 22.0 and lp.y < 26.0 and absf(float(FacDrive7.vstate(w, ids[0]).get("v", 1.0))) < 0.001:
+		if String(gv[0]) != "open" and String(gv[1]) == "closed" and wash_r.has_point(lp):
 			waited = true
+		if not seen_open and String(gv[0]) != "open" and lp.y > go_y:
+			early = true
 		if String(gv[0]) == "open":
 			seen_open = true
 		if passed_tick < 0 and lp.y > float(CnFacility.conf().compound) + 1.0:
@@ -567,7 +576,7 @@ func test_gate_hardens_cycles_for_own_apcs_and_stands_down() -> void:
 		if passed_tick > 0 and String(gv[0]) == "hardened" and String(gv[1]) == "open" and w.tick > passed_tick + 30:
 			break
 	print("  GATE states %s, APC waited in the wash %s, passed at %d" % [states, waited, passed_tick])
-	check(waited, "the APC waits in the wash (sally port) while the outer gate cycles")
+	check(waited and not early, "the APC waits in the wash (sally port) while the outer gate cycles (between the layers %s, early past the outer %s)" % [waited, early])
 	check(seen_open and passed_tick > 0, "the outer gate opened for it and it drove out")
 	check_eq(_gates_of(w, fid), ["hardened", "open", true], "the outer gate closed and locked behind it, the inner reopened")
 	check(sally, "outer and inner gates were never open at the same time while hardened")

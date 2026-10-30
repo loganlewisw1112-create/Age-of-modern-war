@@ -147,6 +147,9 @@ func test_intended_target_classes() -> void:
 	# microwave: a rifleman alone in its cone, then a swarm
 	var rf4 := _unit(w, "rifleman", M, Vector2(64.5, 20.5))
 	_run(w, 12)
+	# G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): presence check moved here, right after the
+	# first short run; with 13.9c-47 lethality the autocannon kills rf3/rf2 later in the microwave phase.
+	check(w.entities.has(wk) and w.entities.has(rf2) and w.entities.has(rf3), "setup units still present")
 	check_eq(_aim(w, nest), rf, "MG nest prefers infantry over a nearer walker")
 	check_eq(_aim(w, hd), wk2, "hull-down gun prefers the walker over nearer infantry")
 	check_eq(_aim(w, ac), lv, "autocannon prefers the light vehicle over nearer infantry")
@@ -157,7 +160,6 @@ func test_intended_target_classes() -> void:
 	_run(w, 25 + _lay_ticks(w, mw, Vector2(63.5, 20.5)))   # G7 TURRET7B (13.9c-30): + the head's lay time
 	check(_hp(w, sw) < s0, "microwave fries the swarm (%s -> %s)" % [s0, _hp(w, sw)])
 	check_eq(_hp(w, rf4), h0, "microwave soft-kill leaves the rifleman in the cone unhurt")
-	check(w.entities.has(wk) and w.entities.has(rf2) and w.entities.has(rf3), "setup units still present")
 	_restore()
 
 
@@ -227,6 +229,7 @@ func test_mortar_needs_spotting() -> void:
 	var w := _setup()
 	var mo: int = T.place(w, H, "a_t7_automortar", Vector2i(20, 80))
 	var tg := _unit(w, "m_scout_crawler", M, Vector2(36.5, 81.0))
+	w.entities[tg].hp = 100000.0   # FIX8B (Lethality test-setup authority): the guard tower killed the 110-hp crawler (2 hits, t47/63) before the mortar laid; subject = spotting, not toughness
 	_unit(w, "rifleman", H, Vector2(33.5, 81.0))   # sees the target, but is no spotter
 	var evs := _run(w, 40)
 	var shots := 0
@@ -258,6 +261,7 @@ func _wall(seed_v: int) -> SimWorld:
 	for u in ["rifleman", "m_swarm", "m_walker", "m_scout_crawler", "m_hauler", "m_colossus", "m_drone", "rifleman"]:
 		var id := w.spawn_unit(String(u), M, Vector2(22.0 + i * 3.5, 108.0))
 		w.entities[id].cd_ticks = NOFIRE
+		w.entities[id].hp = 100000.0   # FIX8B (Lethality test-setup authority): realistic rounds killed the group in 2 shots (4 shots / 200 ticks); subject = determinism, not toughness
 		i += 1
 	return w
 
@@ -388,6 +392,7 @@ func test_traverse_tracks_a_mover() -> void:
 func test_traverse_idle_returns_to_rest() -> void:
 	var r := _behind("a_t7_autocannon", "m_hauler", 5.0)
 	var w: SimWorld = r[0]
+	w.entities[int(r[2])].hp = 100000.0   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): durable m_hauler, so it lives until the scripted destroy
 	var bid: int = r[1]
 	var b: Dictionary = w.entities[bid]
 	var rest0 := Trav.rest_of(w, b, Trav.mount(b), int(w.tick))

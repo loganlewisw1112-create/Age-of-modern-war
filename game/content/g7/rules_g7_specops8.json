@@ -1,0 +1,20 @@
+{
+  "_note": "G7 SPECOPS8 (G7_REFERENCE 13.9c-44, 6.6, 6.9, 13.9c-29, 13.9c-42): spec ops (tactical operator squad) missions: escort a strike team's purge mission, core raid (plant demolition charges, withdraw, detonate), recon & mark (scout, reveal, mark creep and Machine targets for fire support), rescue / extract (recover survivors, wounded carried, fly them home). Every number here is PROVISIONAL. Read by sim/systems/specops8.gd.",
+  "rules": {
+    "g7_specops8": {
+      "think_every": 5,
+      "arrive_r": 6.0,
+      "home_r": 7.0,
+      "board_s": 40,
+      "exit_s": 240,
+      "air_board_s": 150,
+      "air_land_s": 240,
+      "travel_tries": 8,
+      "escort": {"offset": 6.0, "screen_r": 8.0, "regap": 5.0},
+      "raid": {"standoff": 9.0, "charges": 3, "charge_weapon": "g4_charge", "charge_mult": 1.0, "plant_s": 90, "withdraw_r": 16.0, "lz_back": 12.0, "planter_roles": ["purge", "hunter", "hunter", "emp"]},
+      "recon": {"radius": 14.0, "scout_s": 15, "mark_s": 240, "max_marks": 24, "creep_step": 4, "creep_bucket": 8, "lz_back": 6.0},
+      "rescue": {"radius": 10.0, "search_s": 60, "recover_s": 120, "carry_r": 1.2, "load_r": 2.5, "lz_back": 2.5},
+      "lz_back": 7.0
+    }
+  }
+}

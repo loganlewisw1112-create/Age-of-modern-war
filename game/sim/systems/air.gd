@@ -131,8 +131,8 @@ static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary, ignore_id: 
 	for dy in range(lo, lo + n):
 		for dx in range(lo, lo + n):
 			var c := cell + Vector2i(dx, dy)
-			if not w.in_bounds(c) or NO_LAND_TERRAIN.has(w.terrain_at(c)) or Construction.building_at_cell(w, c):
-				return false
+			if not w.in_bounds(c) or NO_LAND_TERRAIN.has(w.terrain_at(c)) or (Construction.building_at_cell(w, c) and vtol_pad_at(w, c) < 0):
+				return false   # VTOL8: the flat dropship landing pad (content vtol_pad) is a landing zone, not an obstacle
 			cells[c] = true
 	for fid in _sorted(flights(w)):
 		var o = w.entities.get(int(fid))
@@ -141,11 +141,122 @@ static func landing_ok(w: SimWorld, cell: Vector2i, def: Dictionary, ignore_id: 
 	return true
 
 
-## Own pad field whose footprint contains cell (land_at onto a pad = land on that pad), or -1.
-static func _own_pad_at(w: SimWorld, fid: int, cell: Vector2i) -> int:
+# ================================================================ VTOL8 (13.9c-42): regular dropship landing sites
+## The regular (non counter-nanite) VTOL dropship lands only on open ground that fits its lz square or on a dropship
+## landing pad (a building with content `vtol_pad`, e.g. a_g7_vtol_pad 6x6); never on a 2x2 helicopter helipad
+## (Airfield.pad_fits). A land order anywhere else redirects to the nearest valid spot (landing_spot). The stealth
+## dropship (cn_dropship) keeps its own facility-helipad rules; every other aircraft is unchanged.
+const SPOT_R := 12          # open-ground search radius (tiles) around a refused landing cell
+const SPOT_PAD_R := 24.0    # a dropship pad this close to the clicked cell is a candidate too
+
+
+static func regular_dropship(def: Dictionary) -> bool:
+	return String(def.get("aircraft", "")) == "vtol" and not bool(def.get("cn_dropship", false))
+
+
+## [{id, owner, r: Rect2i}] of every live dropship landing pad (runtime cache, rebuilt like Construction occupancy).
+static func _vtol_pads(w: SimWorld) -> Array:
+	var key := [w.tick, int(w.next_id), w.entities.size()]
+	var c = w.cache.get("vtol_pads")
+	if c != null and c.key == key:
+		return c.pads
+	var out := []
+	for b in SimIndex.of(w, "building"):
+		if SimIndex.alive(w, b) and bool(Content.building(String(b.def)).get("vtol_pad", false)):
+			out.append({"id": int(b.id), "owner": int(b.owner), "r": Rect2i(Vector2i(b.cell), Vector2i(int(b.size), int(b.size)))})
+	w.cache["vtol_pads"] = {"key": key, "pads": out}
+	return out
+
+
+## Id of the dropship landing pad covering cell (fid >= 0: owned by fid), or -1.
+static func vtol_pad_at(w: SimWorld, cell: Vector2i, fid: int = -1) -> int:
+	for p in _vtol_pads(w):
+		if (p.r as Rect2i).has_point(cell) and (fid < 0 or int(p.owner) == fid):
+			return int(p.id)
+	return -1
+
+
+## Landing cell of pad pid: its centre (the craft pivot sits on the pad centre, art.dropship_sizes).
+static func pad_cell(w: SimWorld, pid: int) -> Vector2i:
+	return w.cell_of(Vector2(w.entities[pid].pos))
+
+
+## Where regular dropship e lands when ordered to land at cell: the pad centre when cell is on a dropship pad, cell
+## itself when it is valid open ground, else the nearest valid open ground (within SPOT_R) or free dropship pad
+## (within SPOT_PAD_R), whichever is closer. Vector2i(-1, -1) = nowhere.
+static func landing_spot(w: SimWorld, e: Dictionary, cell: Vector2i) -> Vector2i:
+	var d := adef(e)
+	var id := int(e.id)
+	var pid := vtol_pad_at(w, cell)
+	if pid >= 0 and landing_ok(w, pad_cell(w, pid), d, id):
+		return pad_cell(w, pid)
+	if pid < 0 and landing_ok(w, cell, d, id):
+		return cell
+	var best := Vector2i(-1, -1)
+	var bd := INF
+	for p in _vtol_pads(w):
+		if int(p.owner) != int(e.owner):
+			continue
+		var pc := pad_cell(w, int(p.id))
+		var dd := Vector2(pc).distance_to(Vector2(cell))
+		if dd <= SPOT_PAD_R and dd < bd and landing_ok(w, pc, d, id):
+			bd = dd
+			best = pc
+	for r in range(1, SPOT_R + 1):
+		if float(r) > bd:
+			break
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var c := cell + Vector2i(dx, dy)
+				var dd := Vector2(c).distance_to(Vector2(cell))
+				if dd < bd and vtol_pad_at(w, c) < 0 and landing_ok(w, c, d, id):
+					bd = dd
+					best = c
+	return best
+
+
+## 13.9c-45: pad field rotorcraft e returns to on its own (dry / low fuel / no destination): its own home pad while it
+## has a free slot (or holds e), else the nearest free pad that fits it. {bid, slot} or {}.
+static func _return_pad(w: SimWorld, e: Dictionary) -> Dictionary:
+	var home := int(e.get("air_home", -1))
+	var hb = w.entities.get(home)
+	var fr := Airfield.field(w, home)
+	if hb != null and not fr.is_empty() and bool(hb.get("built", true)) and Airfield.pad_fits(w, home, adef(e)):
+		for i in (fr.pads as Array).size():
+			if int(fr.pads[i].landed) < 0 or int(fr.pads[i].landed) == int(e.id):
+				return {"bid": home, "slot": i}
+	return Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos), adef(e))
+
+
+## Free own dropship landing pad for e: its own pad (e.vpad, the pad it was based on) when free, else the nearest
+## free one to pos: its landing cell, or Vector2i(-1, -1).
+static func _free_vtol_pad_near(w: SimWorld, e: Dictionary, pos: Vector2) -> Vector2i:
+	var own := int(e.get("vpad", -1))
+	if w.entities.has(own) and vtol_pad_at(w, pad_cell(w, own)) == own and landing_ok(w, pad_cell(w, own), adef(e), int(e.id)):
+		return pad_cell(w, own)
+	var best := Vector2i(-1, -1)
+	var bd := INF
+	for p in _vtol_pads(w):
+		if int(p.owner) != int(e.owner):
+			continue
+		var pc := pad_cell(w, int(p.id))
+		var dd := Vector2(pc).distance_to(pos)
+		if dd < bd and landing_ok(w, pc, adef(e), int(e.id)):
+			bd = dd
+			best = pc
+	return best
+
+
+## Own pad field whose footprint contains cell (land_at onto a pad = land on that pad), or -1. def: only pads that
+## fit it (VTOL8: a regular dropship never takes a 2x2 helipad).
+static func _own_pad_at(w: SimWorld, fid: int, cell: Vector2i, def: Dictionary = {}) -> int:
 	for fb in _sorted(Airfield.fields(w)):
 		var b = w.entities.get(int(fb))
 		if b == null or int(b.owner) != fid or not bool(b.get("built", true)) or (Airfield.field(w, int(fb)).pads as Array).is_empty():
+			continue
+		if not def.is_empty() and not Airfield.pad_fits(w, int(fb), def):
 			continue
 		var o: Vector2i = b.cell
 		if cell.x >= o.x and cell.y >= o.y and cell.x < o.x + int(b.size) and cell.y < o.y + int(b.size):
@@ -195,6 +306,10 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			for e in air:
 				if is_jet(e):
 					continue
+				if regular_dropship(adef(e)):   # VTOL8: open ground or its big pad, redirected when needed
+					if landing_spot(w, e, cell).x >= 0:
+						return ""
+					return LZ_REASON
 				if landing_ok(w, cell, adef(e)) or _own_pad_at(w, int(cmd.issuer), cell) >= 0:
 					return ""
 				return LZ_REASON
@@ -259,7 +374,12 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 				if is_jet(e):
 					continue
 				var cell := _cell_arg(cmd.cell)
-				var pad := _own_pad_at(w, int(e.owner), cell)
+				var rd := regular_dropship(adef(e))
+				if rd:   # VTOL8: never a small helipad; a refused spot redirects to open ground or the big pad
+					cell = landing_spot(w, e, cell)
+					if cell.x < 0:
+						continue
+				var pad := -1 if rd else _own_pad_at(w, int(e.owner), cell)
 				if pad >= 0:
 					if GROUND.has(String(f.phase)):
 						_lift(w, e, f)
@@ -270,7 +390,7 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 					Movement.order_path(w, e, w.entities[pad].pos)
 					HotState.touch(w, id)
 					continue
-				if not landing_ok(w, cell, adef(e)):
+				if not rd and not landing_ok(w, cell, adef(e)):
 					continue
 				f.land_cell = cell
 				f.erase("dest")
@@ -340,7 +460,7 @@ static func _go_home(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 		return
 	var dest := int(e.get("air_home", -1))
 	if dest < 0 or not w.entities.has(dest):
-		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos))
+		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos), adef(e))
 		dest = int(p.get("bid", -1))
 	if dest < 0:
 		return
@@ -424,6 +544,9 @@ static func _park(w: SimWorld, e: Dictionary, f: Dictionary, at: int) -> void:
 			fr.pads[slot].landed = int(e.id)
 			f.pad_slot = slot
 	_pin_ground(w, e, f)
+	var ab = w.entities.get(at)
+	if ab != null and ab.has("facing_i") and String(fr.get("kind", "")) == "helipad":
+		e.facing = [PI, -PI / 2.0, 0.0, PI / 2.0][posmod(int(ab.facing_i), 4)]   # 13.9c-45: the pad's set heading
 	w.emit("AircraftLanded", {"id": int(e.id), "at": at, "owner": int(e.owner)})
 
 
@@ -432,6 +555,20 @@ static func _land_here(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 	var c := w.cell_of(e.pos)
 	e.pos = Vector2(c) + Vector2(0.5, 0.5)
 	var sp := Airfield.service_point_at(w, int(e.owner), Vector2(e.pos))
+	var d := adef(e)
+	if regular_dropship(d):
+		# VTOL8 (13.9c-42): never parked onto (or pinned to) a helipad it does not fit; on a dropship pad it sits on
+		# the pad centre, nose away from the pad's approach lane (the rear ramp opens onto the lane)
+		if sp >= 0 and not Airfield.pad_fits(w, sp, d):
+			sp = -1
+		var pid := vtol_pad_at(w, c)
+		if pid >= 0:
+			var pb: Dictionary = w.entities[pid]
+			e.pos = Vector2(pb.pos)
+			if not w.entities.has(int(e.get("vpad", -1))):
+				e.vpad = pid   # 13.9c-45: the first dropship pad it is based on is its own (saved, plain int)
+			if pb.has("facing_i"):
+				e.facing = [PI, -PI / 2.0, 0.0, PI / 2.0][posmod(int(pb.facing_i), 4)]
 	if sp >= 0 and not (Airfield.field(w, sp).pads as Array).is_empty():
 		_park(w, e, f, sp)
 		return
@@ -673,7 +810,16 @@ static func _tick_air(w: SimWorld, e: Dictionary, f: Dictionary, d: Dictionary) 
 			e.pos = lp
 		return
 	if (low or dry) and not f.has("land_cell"):
-		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos))
+		if regular_dropship(d):   # VTOL8 (13.9c-42/-45): back to its own big pad (else the nearest free one)
+			var pc := _free_vtol_pad_near(w, e, Vector2(e.pos))
+			if pc.x >= 0:
+				f.land_cell = pc
+				f.erase("dest")
+				var g2 := Vector2(pc) + Vector2(0.5, 0.5)
+				e.order = {"type": "move", "target": g2}
+				Movement.order_path(w, e, g2)
+				return
+		var p := _return_pad(w, e)
 		if not p.is_empty():
 			f.dest = int(p.bid)
 			f.phase = "ret"
@@ -681,6 +827,12 @@ static func _tick_air(w: SimWorld, e: Dictionary, f: Dictionary, d: Dictionary) 
 			e.order = {"type": "move", "target": goal}
 			Movement.order_path(w, e, goal)
 			return
+		if regular_dropship(d) and w.entities.has(int(e.get("vpad", -1))) and not bool(e.moving):
+			# 13.9c-45: its pad is taken and no other fits: hold beside it until it frees up
+			var hold: Vector2 = Vector2(w.entities[int(e.vpad)].pos) + Vector2(0.0, -5.0)
+			if Vector2(e.pos).distance_to(hold) > 1.0:
+				e.order = {"type": "move", "target": hold}
+				Movement.order_path(w, e, hold)
 	if bool(d.get("auto_engage_air", false)):
 		_auto_engage(w, e, d)
 	if bool(d.has("micro_drones")):
@@ -700,7 +852,7 @@ static func _tick_rotor_return(w: SimWorld, e: Dictionary, f: Dictionary) -> voi
 	var dest := int(f.get("dest", -1))
 	var b = w.entities.get(dest)
 	if b == null:
-		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos))
+		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos), adef(e))
 		if p.is_empty():
 			f.phase = "air"
 			return

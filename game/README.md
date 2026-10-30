@@ -195,9 +195,9 @@ Scoped by the owner in two question passes. Every level of the army now thinks f
   repeated for this build. The enemy general stays off by default (in AI-vs-AI matches the AI fields no companies).
 - Packaged build: `build/RTS_Age_of_Modern_War_G61/` + `build/RTS_Age_of_Modern_War_G61_2026-10-26.zip` (also in Downloads).
 
-## G7 "Signalborne / Last Protocol" (2026-10-28) — delivered (see PROGRESS G7 evidence)
-Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout, 13.9c-2 … 13.9c-38
-facility, Sentinels, defences and Last Protocol base).
+## G7 "Signalborne / Last Protocol" (2026-10-30) — delivered, with the late additions (see PROGRESS G7 evidence)
+Scope: `docs/G7_REFERENCE.md` (master scope + owner amendments 13.9a fissures, 13.9b base layout, 13.9c-2 … 13.9c-54
+facility, Sentinels, defences, Last Protocol base, flows, lethality and cards).
 - **Last Protocol** (main menu, its own mode; the map is locked out of skirmish): hold a tight two-ring base (61x61) in
   the top corner of a 768x768 map, flat, with the Counter-Nanite facility in its exact centre, against the Machine's nanite creep, which escalates in phases, opens fissures and
   canyons with growths rising out of them, sends Weavers and ends in THE TIDE. Strike teams hit nanite cores; ops room on
@@ -211,8 +211,7 @@ facility, Sentinels, defences and Last Protocol base).
   an open gate is a gap); unmanned wall turrets; an outer APC gate that hardens when enemies close; rotary CIWS on the
   command centre roof (BRRRT, straight stream spreading with range, ~25 deg depression limit); a drone-bay hive of
   defence drones; counter-nanite armoured suits per role from the armory + suit bay; the CN Vanta gunship from the
-  barracks rooftop pad; muzzle flashes from barrels and turrets that turn before firing. Drone bay and barracks reserve
-  cards show only when that building is selected.
+  barracks rooftop pad; muzzle flashes from barrels and turrets that turn before firing.
 - **Counter-nanite line:** operators; APCs with dome shield, side panels, .50 pods and a pop-out 6-tube rocket pod;
   limpet / harpoon / disruptor weapons; the anti-walker pincer that topples heavy walkers and blows them up; stealth and
   regular VTOL dropships with rear-ramp loading; the facility (gate > decon > staging > garages > pad / helipad).
@@ -220,27 +219,43 @@ facility, Sentinels, defences and Last Protocol base).
   see and hear), threat units (burrowers, mimics, leeches, cocoons, webs), turret line, squads redrawn at true scale.
 - **Bases:** compact, function-grouped rings, gate / ring / service roads, floodlights and street lights, cameras with
   real sight, auto turrets at gates and corners.
-- **Status (2026-10-28):**
-  - Tests: full suite 155 files, 1,283 checks, 0 script errors; the one file red in the 6-lane run is test_thread's
-    snapshot timing probe under 6-lane load (passes 4/0 twice alone, as on every earlier run).
-  - Determinism: hash goldens re-baselined for G7 (two identical capture runs), test_hot_state 17/17, test_det7 6/6
-    (incl. the drone-bay fight replay), test_determinism 5/5.
-  - Idle-PC performance (final code):
-    - sim at 2k is 1.13x G6.1 (median of 6 alternating pairs, 18.71 vs 16.53 ms/tick; gate 1.2x);
-    - fps p10 at 2k is 72.5 (gate 60);
-    - fps p10 at 10k zoomed out is 261.0 (gate 30).
-  - Last Protocol soak on the 768 map (seed 77, THE TIDE at 600 s) ran to an ending: defeat on the countdown at 1,252 s,
-    3/3 cores alive, 0 script errors, 0 invariant failures, 42.6 ms/tick.
-  - Last Protocol windowed playtests (final code): lpmode7 18/0, lpmap7 44/0, lpres7 24/0, ciws7 33/0, dronebay7 33/0,
-    sent7 25/0, gate7 20/0, wallturret7 28/0, seq7 22/0, muzzle7 21/0.
-  - Packaged build (2026-10-29, 768 map): import 0 errors; .pck 79 MB, md5 c5db62fe8b6fc78b0e31151bec4c820d. Clean-folder
-    smoke (build/_clean_G7_test, rts_core 0.5.5): lpmode7 18/0, lpmenu7 14/0 (real LAST PROTOCOL button), lpmap7 45/0,
-    cnfac7 174/0, drone7 14/0, h 33/0; 0 script errors, 0 art load errors. Copied to Downloads/Age of Modern War/
-    RTS_Age_of_Modern_War_G7 (+ RTS_Age_of_Modern_War_G7_2026-10-29.zip).
+- **Late additions (13.9c-39 … 13.9c-54, 2026-10-28/30):**
+  - Roof mounts (CIWS) out of reach of ground melee and demolition (13.9c-39).
+  - No population cap in skirmish (owner choice recorded in 13.9c-40; **parked, not built in G7**: skirmish keeps its 120 cap).
+  - Last Protocol map 768x768, base near the top corner, flat, facility centred, rings closed, validated by `map.validate()` (13.9c-41).
+  - Regular VTOL dropships land only on open ground or the big pad, never the small helipads, and must load (13.9c-42).
+  - Fatigue only from activity; exhausted idle soldiers inside the walls rest in the barracks and return to post (13.9c-43).
+  - Player controls for strike teams (PURGE MISSION, single-step orders, Drive or Fly) and four spec-ops missions
+    (escort, core raid, recon & mark, rescue / extract) on the command bar, team card and F4 (13.9c-44).
+  - Returning aircraft land exactly centred on their own pad (13.9c-45).
+  - Regular VTOL cargo: 1 APC + 2 suits + infantry (13.9c-46).
+  - Realistic lethality: per-round physics (calibre, speed, mass, penetration, armour classes), blast throw, concussion
+    "short comas" (13.9c-47). Fortress balance deliberately not retuned (owner ruling).
+  - Facility building cards: command centre, defences, magazine (airdrop retrieval op), armory, garages, barracks, air
+    pads, aid station, lab (13.9c-48).
+  - Realistic per-shot hit chance: movement, sighting, visibility, being under fire, posture, training (13.9c-49).
+  - 3-APC vehicle airlock, slightly faster doors; APCs and teams leave and return through the facility (13.9c-50).
+  - Building cards live in the bottom command bar as tabs (13.9c-51).
+  - Realistic knock-down, throw and unconscious animation (13.9c-52).
+  - Stray rounds with friendly fire ("Friendly fire!" alert), shot placement, blast daze, fire discipline with sidestep
+    and fire-over-kneeling mates, combat spacing; automatic artillery holds fire danger-close to friendly troops (13.9c-53).
+  - New art for the airdrop cargo carrier, supply pod and carrier garage; facility starts with 6 engineers (13.9c-48).
+- **Status (2026-10-30):**
+  - Tests: 170/170 files green, 1,405 checks, 0 failures, 0 script errors (.plan/suite7/SUMMARY.txt, 2026-10-30).
+  - Determinism: hash goldens re-baselined on the final tree (two identical gold61 runs, 16/16) (the late additions change hashes; see PROGRESS "Oracle / authority
+    changes"), test_hot_state 17/0, test_det7 6/0, test_determinism 5/0.
+  - Idle-PC performance (final code): sim at 2k 1.42x G6.1 (18.86 vs 26.80 ms; gate 1.2x NOT met, accepted for G7 by the owner, 13.9c-54); fps p10 at 2k 64.4 (gate 60, PASS);
+    at 10k zoomed out 218.7 (gate 30, PASS).
+  - Last Protocol soak on the 768 map (seed 77, THE TIDE at 600 s): 1,251 s, countdown defeat, 3/3 cores alive, no ring fallen, 0 script errors.
+  - Last Protocol windowed playtests (packaged build, clean folder): lpmode7 18/0, lpmenu7 14/0, lpmap7 45/0, cnfac7 174/0, drone7 14/0, h 33/0.
+  - Late-addition flows: each green on its agent's final run (facexit8, vtol8, cnmission8, specops8, cards8a/b/c, blast8, supply8, lpmenu7, lpmap7).
+  - Packaged build: pck md5 c1db446b5534fd06faf22fff6cdcc85e; clean-folder smoke lpmode7 18/0, lpmenu7 14/0, lpmap7 45/0, cnfac7 174/0, drone7 14/0, h 33/0, 0 script / load errors; Downloads/RTS_Age_of_Modern_War_G7_2026-10-30(.zip).
   - Parked for the next slice (owner, 2026-10-28: "STOP focusing on the skirmish"): no population cap in skirmish
-    (13.9c-40), the skirmish-hosted all-in-one facility flow facint7 (last run 97/10: night-assault phase, facility
-    security cameras, tactical APC garage return unverified).
-  - Balance numbers are provisional. Full evidence: PROGRESS.md "G7 Done-when evidence".
+    (13.9c-40), the skirmish-hosted all-in-one facility flow facint7.
+  - Known open items: 8-APC hardened exit ~83 s vs ~70 s target (13.9c-50); sim cost 1.42x G6.1 (13.9c-54; native
+    combat port planned); rifles do not damage hardened buildings such as an HQ; the airdrop pod has no parachute-fall frame.
+  - Balance numbers are provisional. Fortress balance was not retuned for the new lethality (owner ruling,
+    2026-10-29). Full evidence: PROGRESS.md "G7 Done-when evidence" and "G7 late additions (13.9c-39..53)".
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.

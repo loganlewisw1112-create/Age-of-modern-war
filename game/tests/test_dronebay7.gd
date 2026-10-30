@@ -8,6 +8,7 @@ const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const DroneBay7 = preload("res://sim/systems/drone_bay7.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const SaveSystem = preload("res://sim/save_system.gd")
+const HotState = preload("res://sim/hot_state.gd")   # G7 FIX8: _silence_guns
 const TMP_DIR := "user://test_dronebay7"
 
 
@@ -261,6 +262,21 @@ func test_auto_off_then_manual_launch_and_recall() -> void:
 	check_eq(_cmd(w, {"type": "dronebay_auto", "on": false}), "", "auto toggle accepted")
 	check(not bool(DroneBay7.summary(w, fac).auto), "auto release off")
 	var ids := _attack(w, fac)
+	# G7 SPREAD8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48; board need dronebay7.militia_strays):
+	# setup only. The 3 militia stood 2 tiles apart and, with ACCURACY8B stray rounds, shot each other dead before the
+	# manual kamikaze order had a target; spread them 6 tiles apart (same row, same distance to the wall).
+	var c0: Vector2 = CnFacility.compound_rect(CnFacility.fac(w, fac)).get_center()
+	for k in 3:
+		var me: Dictionary = w.entities[int(ids[k])]
+		me.pos = Vector2(Movement.nearest_free_cell(w, Vector2i(c0 + Vector2(-6 + 6 * k, 4)), "foot")) + Vector2(0.5, 0.5)
+		HotState.touch(w, int(me.id))
+	# G7 DRONE8 (same "Lethality test-setup authority", before 13.9c-48): setup only. The scrap mech is the only heavy
+	# (kamikaze) target; the base guns plus the 8 gun drones this test itself sends at it killed it by tick ~183, before
+	# the kamikaze order at tick ~224 (also with STRAY8_OFF=1), leaving no ground target. Keep it alive to observe.
+	var mech: Dictionary = w.entities[int(ids[ids.size() - 1])]
+	mech.hp = 6000.0
+	mech.max_hp = 6000.0
+	HotState.touch(w, int(mech.id))
 	var L := _launched(_run_ev(w, 80))
 	check_eq(L.size(), 0, "auto off: no drone leaves on its own")
 	check_eq(_cmd(w, {"type": "dronebay_launch", "kind": "all"}), "", "manual launch accepted")
@@ -555,10 +571,13 @@ func test_hive_screen_holds_while_strikers_engage() -> void:
 	var foe := _foe(w)
 	var m1 := _foe_unit(w, "b_militia", foe, Vector2(c.x - 3, cr.end.y + 6), 9000.0)
 	var m2 := _foe_unit(w, "b_militia", foe, Vector2(c.x + 3, cr.end.y + 6), 9000.0)
+	_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", ORCH ruling 2026-10-29): attackers live while the strikers engage
 	var SC: Dictionary = DroneBay7._hv("screen")
 	var r_out := cr.size.x * 0.5 + float(SC.outer_d)
 	var engaged := false
 	for i in 300:
+		if i % 10 == 0:
+			_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", ORCH ruling 2026-10-29): attackers live while the strikers engage
 		_run(w, 1)
 		var n := 0
 		for d in _drones(w, fac, "gun"):
@@ -568,7 +587,9 @@ func test_hive_screen_holds_while_strikers_engage() -> void:
 			engaged = true
 			break
 	check(engaged, "gun drones went out to strike the riflemen")
+	_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", ORCH ruling 2026-10-29): attackers live while the strikers engage
 	_run(w, 60)
+	_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", ORCH ruling 2026-10-29): attackers live while the strikers engage
 	var samples := 0
 	var screen_ok := 0
 	var stack_ok := 0
@@ -577,6 +598,8 @@ func test_hive_screen_holds_while_strikers_engage() -> void:
 	var team_seen := 0
 	var sides_ok := 0
 	for i in 40:
+		if i % 2 == 0:
+			_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", ORCH ruling 2026-10-29): lockdown pop-ups
 		_run(w, 5)
 		var ints := _drones(w, fac, "interceptor")
 		var guns := _drones(w, fac, "gun")
@@ -621,6 +644,8 @@ func test_hive_screen_holds_while_strikers_engage() -> void:
 			var mem: Array = teams[key]
 			if mem.size() < 2:
 				continue
+			if not w.entities.has(int(mem[0].tgt)):
+				continue   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): target killed this tick (was a SCRIPT ERROR)
 			team_seen += 1
 			var tp: Vector2 = w.entities[int(mem[0].tgt)].pos
 			var vs := []
@@ -771,6 +796,8 @@ func _core_case(at_core: bool) -> Dictionary:
 	var orders := 0
 	var commit := false
 	for i in 900:
+		if i % 10 == 0:
+			_silence_guns(w, fac)   # G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): attackers live until the hive acts
 		for ev in _run_ev(w, 1):
 			if String(ev.type) == "DroneBayRam":
 				rams.append(ev)
@@ -781,6 +808,20 @@ func _core_case(at_core: bool) -> Dictionary:
 		if at_core and not rams.is_empty():
 			break
 	return {"w": w, "fac": fac, "ids": ids, "rams": rams, "orders": orders, "commit": commit, "core": core}
+
+
+## G7 FIX8 (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48; setup only): silences the facility's other
+## guns (towers, wall turrets, pop-ups, like test_ciws7's _silence) but leaves the drone bay (keyed on the core) on, so
+## the 4000-hp attackers are not head-killed by 13.9c-47 lethality before the hive acts. Re-run in the loop because
+## lockdown pop-up guns spawn later.
+func _silence_guns(w: SimWorld, fac: int) -> void:
+	for bid in w.entities.keys():
+		var b: Dictionary = w.entities[bid]
+		if b.kind != "building" or int(b.owner) != 0 or int(bid) == fac:
+			continue
+		b.emp_until = w.tick + 1000000
+		if String(SimWorld.Combat.stats(b).get("weapon", "")) != "":
+			HotState.set_cd(w, int(bid), 1000000)
 
 
 func test_hive_ram_only_at_the_core() -> void:

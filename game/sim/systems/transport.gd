@@ -85,7 +85,18 @@ static func _bay_ok(c, u) -> bool:
 	var v := int(used.vehicle)
 	var f := int(used.foot)
 	if g == "vehicle":
-		return v + 1 <= int(b.get("vehicle", 1)) and f <= int(b.get("foot", 10))
+		if v + 1 > int(b.get("vehicle", 1)) or f > int(b.get("foot", 10)):
+			return false
+		# 13.9c-46: a bay may cap its carrier vehicles (APCs) and its non-carrier vehicles (suits) separately
+		var isc := capacity(String(u.def)) > 0
+		var key := "vehicle_carriers" if isc else "vehicle_other"
+		if b.has(key):
+			var n := 0
+			for x in c.get("cargo", []):
+				if _is_veh(c, x) and (capacity(String(x.def)) > 0) == isc:
+					n += 1
+			return n + 1 <= int(b[key])
+		return true
 	var lim := int(b.get("foot", 10)) if v > 0 else int(b.get("foot_empty", b.get("foot", 10)))
 	return f + _count_of(String(u.def)) <= lim
 
@@ -155,6 +166,42 @@ static func ramp_clear(w: SimWorld, c: Dictionary, f: float, cls: String) -> boo
 			return false
 		u -= 0.5
 	return true
+
+
+## VTOL8 (13.9c-42): a landed regular VTOL dropship whose rear ramp is blocked yaws on the spot to the nearest of the
+## 8 drawn facings with open ground behind the tail (cls), so boarders can always get in when any side is open. The
+## stealth dropship keeps its fixed facility-helipad facing. True when the ramp is clear after the turn.
+static func _turn_ramp_clear(w: SimWorld, c: Dictionary, cls: String) -> bool:
+	if not Air.regular_dropship(Content.unit(String(c.def))) or c.has("bay_seq"):
+		return false
+	var f0 := snap_facing(c)
+	for k in [1, -1, 2, -2, 3, -3, 4]:
+		var f := f0 + float(k) * PI / 4.0
+		if ramp_clear(w, c, f, cls):
+			c.facing = wrapf(f, -PI, PI)
+			HotState.touch(w, int(c.id))
+			return true
+	return false
+
+
+## FLY8 (test_cnmission8 fly): a landed bay aircraft out in the field (any dropship, the stealth one included, when it
+## is NOT on its facility helipad: the caller decides) yaws on the spot to the drawn facing nearest `pref` (radians,
+## nose heading; NAN = its current facing) that has open ground of class cls behind the tail. The stealth dropship
+## landed at a field LZ nose-first the way it flew in, its ramp over blocked ground, and every unload failed
+## RAMP_BLOCKED for 90 s. True when the ramp is clear (turned or already clear); never turns during a ramp sequence.
+static func face_ramp(w: SimWorld, c: Dictionary, cls: String, pref: float = NAN) -> bool:
+	if not is_bay_air(c) or c.has("bay_seq") or not bool(c.get("air_landed", false)):
+		return false
+	var step := PI / 4.0
+	var f0 := snap_facing(c) if is_nan(pref) else float(roundi(pref / step)) * step
+	for k in [0, 1, -1, 2, -2, 3, -3, 4]:
+		var f := wrapf(f0 + float(k) * step, -PI, PI)
+		if ramp_clear(w, c, f, cls):
+			if float(c.get("facing", 0.0)) != f:
+				c.facing = f
+				HotState.touch(w, int(c.id))
+			return true
+	return false
 
 
 static func _is_veh(c, u) -> bool:
@@ -747,7 +794,7 @@ static func _tick_bay_boarder(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dic
 		var r := can_carry(c, u)
 		if r == "" and not fits(c, u):
 			r = "The transport is full."
-		if r == "" and not ramp_clear(w, c, snap_facing(c), "vehicle" if veh else "foot"):
+		if r == "" and not ramp_clear(w, c, snap_facing(c), "vehicle" if veh else "foot") and not _turn_ramp_clear(w, c, "vehicle" if veh else "foot"):
 			r = RAMP_BLOCKED
 		if r != "":
 			_board_fail(w, tc, u, c, r)

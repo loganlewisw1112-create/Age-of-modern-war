@@ -1,0 +1,36 @@
+{
+  "_note": "G7 CARDS8B (G7_REFERENCE 13.9c-48, owner 2026-10-29): Armory + Suit Foundry card and Garages / Workshop / Decon wash card. Read by sim/systems/cards8b.gd (Content.rules().cards8b). ALL NUMBERS PROVISIONAL. Loadout presets: packages (strike APCs only, clipped to the APCs' pkg_capacity and the lab stock) + rocket canister mix (every CN APC); teams pick the role's preset up the next time they stand in their garage (unlocked). Weapon upgrades modify LETHAL8's round / armour model (rules.rounds8): round_mods multiplies a round's pen / wound / k, armour_mult its armour thickness t; they never invent parallel damage numbers. Vehicle upgrades act on the APC entity: armour_kit max hp, dome_shield the APC7 dome charge, rocket_pod extra launcher rounds topped up in the garage, engines e.c8mv (Morale's movement factor, ORCH CR).",
+  "rules": {
+    "cards8b": {
+      "think_every": 20,
+      "presets": {
+        "balanced":   {"name": "Balanced",      "packages": ["purge", "purge", "seed_hunter", "barrier", "purge", "purge", "seed_hunter", "barrier"], "rockets": {"tandem": 6, "emp": 4, "thermite": 4, "he_frag": 2, "smoke": 2}},
+        "at_heavy":   {"name": "AT-heavy",      "packages": ["core_breaker", "purge", "purge", "core_breaker", "purge", "purge"],                     "rockets": {"tandem": 12, "emp": 4, "smoke": 2}},
+        "anti_inf":   {"name": "Anti-infantry", "packages": ["purge", "purge", "purge", "seed_hunter", "purge", "purge", "purge", "seed_hunter"],       "rockets": {"he_frag": 10, "thermite": 6, "smoke": 2}},
+        "demolition": {"name": "Demolition",    "packages": ["core_breaker", "barrier", "purge", "core_breaker", "barrier", "purge"],               "rockets": {"thermite": 8, "tandem": 8, "smoke": 2}}
+      },
+      "preset_order": ["balanced", "at_heavy", "anti_inf", "demolition"],
+      "roles": ["strike", "tactical"],
+      "suit_roles": ["bastion", "breaker", "aegis", "purifier"],
+      "rush": {"frac": 0.5, "cost_mult": 0.6},
+      "suit_repair": {"hp_s": 40.0, "credits_per_hp": 0.4, "reach": 2.5},
+      "upgrades": {
+        "ap_rounds":  {"name": "AP rounds",         "cost": {"credits": 900, "salvage": 300},  "time_s": 45, "round": {"pen": 1.5, "wound": 0.85}},
+        "incendiary": {"name": "Incendiary rounds", "cost": {"credits": 800, "salvage": 250},  "time_s": 45, "round": {"wound": 1.15, "kill": 1.1}},
+        "optics":     {"name": "Optics",            "cost": {"credits": 700, "salvage": 200},  "time_s": 35, "round": {"k": 0.75}},
+        "suppressors":{"name": "Suppressors",       "cost": {"credits": 600, "salvage": 150},  "time_s": 30, "round": {"wound": 0.97}, "quiet": true},
+        "plates":     {"name": "Heavier plates",    "cost": {"credits": 1100, "salvage": 450}, "time_s": 60, "armour": 1.3}
+      },
+      "upgrade_order": ["ap_rounds", "incendiary", "optics", "suppressors", "plates"],
+      "veh_repair": {"hp_s": 60.0, "credits_per_hp": 0.3},
+      "veh_upgrades": {
+        "armour_kit":  {"name": "Armour kit",  "cost": {"credits": 500, "salvage": 250}, "hp_mult": 1.25},
+        "dome_shield": {"name": "Dome shield", "cost": {"credits": 650, "salvage": 300}, "dome_mult": 1.5},
+        "rocket_pod":  {"name": "Rocket pod",  "cost": {"credits": 550, "salvage": 200}, "rounds": 6, "kind": "tandem"},
+        "engines":     {"name": "Engines",     "cost": {"credits": 450, "salvage": 150}, "speed_mult": 1.15}
+      },
+      "veh_upgrade_order": ["armour_kit", "dome_shield", "rocket_pod", "engines"],
+      "decon": {"contaminated_at": 0.01, "under_fire_states": ["under_fire", "breached"]}
+    }
+  }
+}

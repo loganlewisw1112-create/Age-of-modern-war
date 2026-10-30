@@ -264,6 +264,7 @@ func test_machine_crawler_in_compound_engaged_outside_not() -> void:
 	check_eq(ring_ciws, 0, "a crawler in the blind ring right under the command centre is not engaged by the CIWS")
 	w.destroy(ringed, "test", SimWorld.NEUTRAL)
 	# beyond the ring (south end of the staging yard, 12.9 tiles from mount 1): engaged and killed
+	_silence(w, fac)   # G7 LETHAL8D: re-silence: lockdown pop-up guns (cn_facility) spawn after the first _silence() (setup only)
 	var inside := _unit(w, "m_breacher_crawler", M, O + Vector2(8.5, 24.5))
 	var shots := []
 	var dead := -1
@@ -293,13 +294,14 @@ func test_bursts_and_pauses() -> void:
 	var a: int = ms[0]
 	w.entities[ms[1]].emp_until = w.tick + 1000000
 	var O := Vector2(CnFacility.origin(CnFacility.fac(w, fac)))
-	var tid := _unit(w, "m_breacher_crawler", M, _east(w, a, 9.7))   # CIWS7-6: outside the ~8.63-tile blind ring
+	var p0 := _east(w, a, 9.7)
+	var tid := _unit(w, "m_breacher_crawler", M, p0)   # CIWS7-6: outside the ~8.63-tile blind ring
 	w.entities[tid].hp = 100000.0
 	w.entities[tid].max_hp = 100000.0
 	var fire_ticks := {}
 	var codes := {}
 	for i in 240:
-		_step(w)
+		_step_pinned(w, tid, p0)   # FACFLOW8C (ORCH ruling, board need seq 18716, 13.9c-50): crawler pinned like the ring sub-tests (it drifted into the blind ring)
 		for ev in w.events:
 			if String(ev.type) == "ShotFired" and bool(ev.get("ciws7", false)) and int(ev.shooter) == a:
 				fire_ticks[int(w.tick)] = int(ev.get("rounds", 0))
@@ -346,12 +348,13 @@ func test_dry_drum_engineer_swaps_and_it_fires_again() -> void:
 	check(not E7.engineers_of(w, fac).is_empty(), "the facility has its Engineer crew")
 	_rec(w, a).a = 30
 	var O := Vector2(CnFacility.origin(CnFacility.fac(w, fac)))
-	var tid := _unit(w, "m_breacher_crawler", M, _east(w, a, 9.7))   # CIWS7-6: outside the ~8.63-tile blind ring
+	var p0 := _east(w, a, 9.7)
+	var tid := _unit(w, "m_breacher_crawler", M, p0)   # CIWS7-6: outside the ~8.63-tile blind ring
 	w.entities[tid].hp = 100000.0
 	w.entities[tid].max_hp = 100000.0
 	var dry := []
 	for i in 400:   # CIWS7-6: until the drum runs dry (the mount first lays onto the crawler 9.7 tiles out), then 60 ticks of silence
-		_step(w)
+		_step_pinned(w, tid, p0)   # FACFLOW8C (ORCH ruling, board need seq 18716, 13.9c-50): crawler pinned like the ring sub-tests (it drifted into the blind ring)
 		for ev in w.events:
 			if String(ev.type) == "Ciws7Dry" and int(ev.get("ciws", -1)) == a:
 				dry.append(ev)
@@ -387,8 +390,14 @@ func test_dry_drum_engineer_swaps_and_it_fires_again() -> void:
 	check(swap_seen, "the mount showed its drum-swap frames")
 	check_eq(C7.ammo(w, a), int(C7.cfg().drum), "a full drum")
 	check(not S7.state(w).get("ext", {}).get(str(fac), {}).has(C7.job_id(a)), "the job is taken down")
-	var t2 := _unit(w, "m_breacher_crawler", M, _east(w, a, 9.7))
-	var again := _collect(w, 120, "ShotFired", "shooter", a)
+	var p2 := _east(w, a, 9.7)
+	var t2 := _unit(w, "m_breacher_crawler", M, p2)
+	var again := []
+	for i in 120:   # FACFLOW8C (ORCH ruling, board need seq 18716, 13.9c-50): crawler pinned like the ring sub-tests (it drifted into the blind ring)
+		_step_pinned(w, t2, p2)
+		for ev in w.events:
+			if String(ev.type) == "ShotFired" and int(ev.get("shooter", -1)) == a:
+				again.append([int(w.tick), ev])
 	check(not again.is_empty(), "it fires again after the swap")
 	if w.entities.has(t2):
 		w.destroy(t2, "test", SimWorld.NEUTRAL)

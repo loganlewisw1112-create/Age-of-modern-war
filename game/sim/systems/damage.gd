@@ -21,6 +21,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5):
 ## removed (after Medical declined to keep it as Wounded), when the DESTROY bit of SimIndex.g6m(w) is set.
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 const Roof7 = preload("res://sim/systems/roof7.gd")   # G7 ROOF7 (13.9c-39): roof mounts out of reach of ground melee / demolition
+const Ballistics8 = preload("res://sim/systems/ballistics8.gd")   # G7 LETHAL8 (13.9c-47): round physics (no preloads)
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
@@ -93,11 +94,30 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	var dmg := base_damage(s, target)
 	var side := ""
 	var cover := false
+	# G7 LETHAL8 (13.9c-47): round physics. r8 = the weapon's round (null: old path); a8 = the target's armour class.
+	var zone8 := ""
+	var r8 = Ballistics8.round_of(String(s.get("weapon", ""))) if target.kind == "unit" and Ballistics8.enabled() else null
+	var a8: Dictionary = Ballistics8.armour_w(w, Ballistics8.armour_of(target), target) if r8 != null else {}
+	r8 = Ballistics8.round_w(w, r8, shooter)   # armory / ammo-type upgrades (e.r8up / e.a8up, CARDS8B; fact api.rounds8)
+	if a8.is_empty():
+		r8 = null
 	if target.kind == "unit":
 		if target.has("comp"):
 			side = hit_side(shooter.pos, target)
 			dmg *= float((R.get("armor_facing", {}) as Dictionary).get(side, 1.0))
-		elif target.has("morale"):
+			if r8 != null and not bool(a8.get("body", false)):
+				dmg = Ballistics8.vehicle_damage(r8, a8, target, Ballistics8.tiles_between(shooter, target), side, dmg,
+					float(s.get("damage", 0.0)) / float(r8.base))
+		elif r8 != null and not bool(a8.get("body", false)):
+			# LETHAL8B: a vehicle-class unit without components (g7_m_weaver heavy walker): the round model by facing
+			dmg = Ballistics8.vehicle_damage(r8, a8, target, Ballistics8.tiles_between(shooter, target), hit_side(shooter.pos, target), dmg,
+				float(s.get("damage", 0.0)) / float(r8.base))
+		elif r8 != null and bool(a8.get("body", false)):
+			if target.has("morale") and SimWorld.Wounds.applies(target):
+				zone8 = SimWorld.Wounds.pick_zone(w, target, Vector2(shooter.pos))   # the zone decides the armour hit
+			dmg = Ballistics8.body_damage(r8, a8, target, Ballistics8.tiles_between(shooter, target), zone8,
+				float(s.get("damage", 0.0)) / float(r8.base))
+		if target.has("morale") and not target.has("comp"):
 			cover = in_cover(w, target)
 			if cover:
 				dmg *= float((R.get("cover", {}) as Dictionary).get(cls, 1.0))
@@ -105,7 +125,7 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	var zr = null   # G7 (WOUND7): hit zones for single-soldier infantry (Wounds.applies); else plain hp as before
 	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
 		var tz := Time.get_ticks_usec() if SimIndex.profiling else 0
-		zr = SimWorld.Wounds.apply_hit(w, target, "", dmg, shooter)
+		zr = SimWorld.Wounds.apply_hit(w, target, zone8, dmg, shooter)
 		if SimIndex.profiling:
 			SimIndex.pt("dmg.zone", tz)
 	else:

@@ -37,6 +37,60 @@ it changed anything, the project was copied to C: (28,241/28,246 files; git fsck
 from git, the 4 lost untracked art-kit review renders are regenerable). **G7 runs on the C: copy; push back to D: only when
 G7 is complete (owner).** Wave 1 relaunching on C:.
 
+## G7 late additions (13.9c-39..54) — evidence (2026-10-30, C: tree)
+Scope authority: `docs/G7_REFERENCE.md` entries 13.9c-39 … 13.9c-54. "Result" = the final-code full suite (every listed test file green) unless stated;
+"last seen" numbers in the Built column are handoff-time and superseded by the final suite.
+
+| Entry | What was built | Tests / flows | Result |
+|---|---|---|---|
+| 13.9c-39 roof mounts out of reach | melee, demolition and shaped charges cannot hit roof-mounted guns (CIWS); guns, rockets, artillery, aircraft still can | ciws7 flow (found it), test_ciws7 | green in the final suite |
+| 13.9c-40 no pop cap in skirmish | owner choice recorded; PARKED, not built (skirmish keeps its 120 cap); facint7 flow parked with it | none | parked (stated, not a result) |
+| 13.9c-41 LP map 768x768 | map 768, base C(80,80), flat footprint, centred facility, closed rings, validate() fails on gap / off-centre / uneven; skirmish lobby map can't replace the LP map; Machine side re-laid out | test_lpmap7, test_lpmode7, flows lpmap7, lpmenu7, lpmode7; soak seed 77 | green in the final suite |
+| 13.9c-42 VTOL landing rules | regular VTOL lands on open ground or its big pad only; redirect from small helipads; loads APC / suits / infantry | test_vtol8, test_air, test_air_transport, flow vtol8 (last seen 17/0) | green in the final suite |
+| 13.9c-43 fatigue + barracks rest | fatigue only from activity; firing fatigue capped at 0.4 (rifle ~0.18 / min, MG ~0.29 / min); idle soldiers >= 90% fatigue inside walls rest inside a barracks (bed-limited; Sentinel barracks admits Sentinels only), last man never pulled, breach stands to | test_rest8 (last seen 11/1: test_lp_gate_relief), test_sent7, flow sent7 | green in the final suite |
+| 13.9c-44 strike team + spec-ops controls | `sim/systems/cn_mission8.gd` (PURGE MISSION drive/fly, step orders), `sim/systems/specops8.gd` (escort, raid, recon, rescue), command-bar buttons, team card, F4 strategic map, reason tooltips | test_cnmission8 (last seen 7/0), test_specops8, flows cnmission8 (last seen 21/0), specops8, cnops7, opsui7 | green in the final suite |
+| 13.9c-45 aircraft return to own pad | returning aircraft land centred on their own pad, nearest free pad of the same kind otherwise | test_air (low heli returns to OWN pad), test_vtol8, flow air | green in the final suite |
+| 13.9c-46 VTOL cargo | `a_vtol_dropship` bay: 1 APC + 2 suits + 10 foot; stealth bay unchanged | test_vtol8 `one_apc_two_suits_and_infantry`, test_air_transport (3 vehicles) | green in the final suite |
+| 13.9c-47 lethality, blast throw, concussion | `sim/systems/ballistics8.gd` + `content/g7/rules_g8_rounds.json` (27 round classes, armour classes incl. `cn_apc`); `sim/systems/blast8.gd` + `content/g7/rules_g7_blast8.json` (flights, concussion, wake, BlastCorpse arc) | test_lethal8 (last seen 14/0), test_blast8 (last seen 11/11 in scratch copy), flow blast8, test_wound7, test_cnsim7 (known ON-only timing misses, see below), test_hot_state | green in the final suite |
+| 13.9c-48 facility building cards | cards for command centre, defences, supply (magazine / fuel), armory, garage, barracks, air pads, aid, lab; supply8 airdrop retrieval op (`sim/systems/supply8.gd`: pod, 2x7 Sentinel GO teams, carrier + 4 engineers, +600 ammo / +400 fuel) | test_cards8b / test_cards8c / test_supply8, flows cards8a, cards8b, cards8c, supply8 | green in the final suite |
+| 13.9c-49 realistic hit chance | `sim/systems/accuracy8.gd` multiplier in `Combat._fire` (range, flight time, shooter / target motion, sight picture, visibility, under fire, posture, training); rules in `content/g7/rules_g8_accuracy.json` | test_accuracy8, test_hot_state, perf pairs | green in the final suite |
+| 13.9c-50 3-APC airlock | wash 6 long single lane, SALLY_CAP 3, door time 1.75 s, staging re-laid; four exit deadlocks fixed in `fac_drive7.gd`; return path (`_rev_claim_stop`, stale route cache) fixed | test_facexit8 (last seen 4/0: hardened 83.5 s, quiet 54.0 s; target ~70 s NOT met), test_facreturn8 (last seen 2/0), test_cnfac7 (last seen 36/0), test_path7, test_apcmov7, test_gate7, flows facexit8, apcmov7, gate7 | green in the final suite |
+| 13.9c-51 cards in the bottom bar | `presentation/ui7/cardbar8.gd`: 9 cards + reserve + drone bay as tabs in the command grid, live strip above the bar, Tab / Shift+Tab | flows cards8a/b/c, dronebay7, lpres7 (patched to click tabs), test_ui_panels, test_ui_fit | green in the final suite |
+| 13.9c-52 knock-down / throw / unconscious animation | presentation-only baked rig animation, 8 facings (launch, tumble, impact, settle, knock-down, unconscious, come-round) | test_anim8, flow blast8 / anim flow PLAYTEST 18/0, fps gates | green in the final suite |
+| 13.9c-53 stray rounds, placement, daze | `sim/systems/stray8.gd` (miss line, friendly fire, StrayHit / FriendlyFire events), vital / limb zone weights in Accuracy8, daze `e.b8d` written by Blast8 | test_accuracy8 / stray tests test_accuracy8 20/0, test_hot_state, sim speed gate | green in the final suite |
+
+Cross-cutting: full suite 170/170 files green, 1,405 checks, 0 failures, 0 script errors (.plan/suite7/SUMMARY.txt, 2026-10-30); test_hot_state 17/0 after regold; test_det7 6/0;
+sim speed vs G6.1 idle **1.42x (18.86 vs 26.80 ms, gate 1.2x NOT met; owner accepted for G7, 13.9c-54)**; fps p10 2k 64.4
+(gate 60) PASS, 10k 218.7 (gate 30) PASS; LP soak seed 77: 1,251 s, countdown defeat, 3/3 cores, no ring fallen, 0 script
+errors; packaged smoke: pck md5 c1db446b5534fd06faf22fff6cdcc85e; clean-folder smoke lpmode7 18/0, lpmenu7 14/0, lpmap7 45/0, cnfac7 174/0, drone7 14/0, h 33/0, 0 script / load errors; Downloads/RTS_Age_of_Modern_War_G7_2026-10-30(.zip).
+
+### Oracle / authority changes (late additions)
+Every change below was recorded by ORCH or the owner; none weakens a gate except where stated. Sources: `docs/G7_REFERENCE.md`
+13.9c-43, -47, -50 build notes and the board.
+1. **Fortress balance not retuned (owner, 2026-10-29, 13.9c-47):** the 13.9c-33 / -38 hold-at-2.5x / break-at-4x oracle
+   (test_sent7 `test_balance_fight`) is re-stated as a report, not a gate, if lethality changes its outcome. Result:
+   held vs infantry x2 / x3, Machine x2.5, combined arms x2.5; fell to combined arms x4 (report only).
+2. **Firing fatigue (ORCH accepted, board rest8.fire_fatigue_balance, 13.9c-43):** capped at effect_from 0.4 and not blocking
+   recovery above it. Authority record for the G7 hash re-baseline that firing fatigue causes. test_sent7 13/0 with the cap.
+3. **test_cnfac7 `test_facb7_enclosed_wash` link-piece count (ORCH, board test_cnfac7.linkcount "accepted", 13.9c-50):** now
+   counts a wash side cell inside a solid building (the Suit Foundry) as wall: 12 link pieces instead of 14, corrected for the
+   owner-approved new geometry. The strict "no foot / vehicle cell open beside the wash" check is unchanged.
+4. **test_ciws7 re-silence (ORCH, board test_ciws7.setup, 13.9c-50):** `_silence(w, fac)` re-run before the inside-crawler
+   spawn because lockdown pop-up guns spawn after the first call (LETHAL8D probe). Setup only; no assertion or threshold changed.
+5. **test_ciws7 pin (ORCH, board ciws7.pin_target "APPROVED (setup only)", 13.9c-50):** `bursts_and_pauses` and
+   `dry_drum_engineer_swaps_and_it_fires_again` pin the tough crawler (and t2) at its spawn with `_step_pinned`, as the ring
+   sub-tests already do, since 2 extra link-wall entities shifted id cadences. Every assertion and threshold unchanged.
+6. **Regold to come:** test_hot_state goldens (GOLD / GOLD_FLAT) move for owner-approved reasons (lethality, hit chance, stray
+   rounds, firing fatigue, facility garage / engineer / supply8 state, airlock layout). To be re-baselined from two identical
+   capture runs: DONE 2026-10-30, two identical gold61 runs (.plan/regold8/run1.log, run2.log), 16/16, test_hot_state 17/0.
+7. **Open oracle candidates, NOT edited (owner / ORCH to decide):** test_cnsim7 pincer timing windows (LETHAL8D: group pincer
+   on m_walker 1824 ticks vs window 900-1800 with lethality ON; colossus 3-5 min case); both pass in the final suite after the cn_apc / blocked_chem fixes, nothing edited.
+   Further ORCH / owner setup rulings: lethality test-setup authority (turret7, dronebay7, specops8, eng7, life7, ai, gen61,
+   factions, units_g5), test_formations7 shots floor 0.75x -> 0.5x G6.1 (OWNER, 13.9c-53), test_apcmov7 long-airlock
+   gate-wait oracle (ORCH, 13.9c-50), sim gate 1.42x accepted for G7 (OWNER, 13.9c-54).
+8. **Also open (not oracle changes):** 8-APC hardened exit ~83 s vs ~70 s target (the 90 s check passes, not tightened);
+   sim cost 1.42x (native combat port next slice); rifles do not damage hardened buildings; no pod parachute-fall frame.
+
 ## G7 owner play-test follow-up (2026-10-29) — 768 map rebuild + packaging fixes — DELIVERED
 Owner after playing d57bd8d: base not flat (hills, rivers), facility off-centre, rings not closed, map tiny. Their 19:52 game
 log showed a 128x128 map (only skirmish maps are that size; the LP map was 512); not reproduced from the LAST PROTOCOL

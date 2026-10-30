@@ -48,6 +48,47 @@ impl RtsGrid {
             }
         }
     }
+
+    fn capsule_items(&self, from: Vector2, dir: Vector2, u0: f32, ln: f32, off: f32) -> Vec<(f32, i32)> {
+        let mut out: Vec<(f32, i32)> = Vec::new();
+        if self.gw <= 0 || self.items.is_empty() || ln < u0 {
+            return out;
+        }
+        let a = from + dir * u0;
+        let b = from + dir * ln;
+        let (x0, y0) = self.bucket_xy(Vector2::new(a.x.min(b.x) - off, a.y.min(b.y) - off));
+        let (x1, y1) = self.bucket_xy(Vector2::new(a.x.max(b.x) + off, a.y.max(b.y) + off));
+        let half = self.cell * 0.5;
+        let hd = half * std::f32::consts::SQRT_2 + off + 0.01;
+        for by in y0..=y1 {
+            for bx in x0..=x1 {
+                // bucket rejection: the bucket centre's distance to the segment [a, b] exceeds half-diagonal + off
+                let c = Vector2::new((bx as f32) * self.cell + half, (by as f32) * self.cell + half);
+                let rc = c - from;
+                let t = rc.dot(dir).clamp(u0, ln);
+                let q = from + dir * t;
+                let dq = c - q;
+                let edge = bx == 0 || by == 0 || bx == self.gw - 1 || by == self.gh - 1;   // clamped buckets may hold off-map items
+                if !edge && dq.x * dq.x + dq.y * dq.y > hd * hd {
+                    continue;
+                }
+                for &it in self.bucket_range(bx, by) {
+                    let i = it as usize;
+                    let rp = self.pos[i] - from;
+                    let cu = rp.x * dir.x + rp.y * dir.y;
+                    if cu < u0 || cu > ln {
+                        continue;
+                    }
+                    let cr = rp.x * dir.y - rp.y * dir.x;
+                    if cr.abs() > off {
+                        continue;
+                    }
+                    out.push((cu, self.ids[i]));
+                }
+            }
+        }
+        out
+    }
 }
 
 #[godot_api]
@@ -194,6 +235,26 @@ impl RtsGrid {
         PackedInt32Array::from(out.as_slice())
     }
 
+    /// G7 PERF8B (perf): ids (ascending) of the items whose centre p satisfies u0 <= (p - from).dot(dir) <= ln and
+    /// |(p - from).cross(dir)| <= off (a capsule along a unit direction; dir must be normalised). Callers pass a small
+    /// slack and repeat their exact tests, so the set they act on is unchanged; it replaces a chain of query_radius
+    /// discs along a line of fire (Stray8 scan / fire-discipline check).
+    #[func]
+    fn query_capsule(&self, from: Vector2, dir: Vector2, u0: f32, ln: f32, off: f32) -> PackedInt32Array {
+        let mut v = self.capsule_items(from, dir, u0, ln, off);
+        v.sort_unstable_by_key(|x| x.1);
+        let out: Vec<i32> = v.iter().map(|x| x.1).collect();
+        PackedInt32Array::from(out.as_slice())
+    }
+
+    /// query_capsule ordered by the along-line distance (p - from).dot(dir) ascending, then id.
+    #[func]
+    fn query_capsule_along(&self, from: Vector2, dir: Vector2, u0: f32, ln: f32, off: f32) -> PackedInt32Array {
+        let mut v = self.capsule_items(from, dir, u0, ln, off);
+        v.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+        let out: Vec<i32> = v.iter().map(|x| x.1).collect();
+        PackedInt32Array::from(out.as_slice())
+    }
     /// For each source item index s (into the last rebuild), the id of the nearest item with a
     /// different team whose centre is within ranges[k] (+ the target's radius), and, when
     /// need_flags[k] != 0, whose flags share a bit with it. -1 if none. Ties: lower id.

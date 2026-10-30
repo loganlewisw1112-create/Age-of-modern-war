@@ -238,3 +238,13 @@ func _on_recall() -> void:
 
 func _on_auto() -> void:
 	_issue({"type": "dronebay_auto", "on": not bool(last.get("auto", true))})
+
+# ---------------------------------------------------------------- G7 CARDBAR8 (13.9c-51): bottom-bar tabs
+## [[TAB, [Button...]], ...] for the bottom command card (presentation/ui7/cardbar8.gd); the card itself stays as the
+## info strip above the bar with its live read-outs.
+func bar_tabs() -> Array:
+	return [["GARRISON", [_btn_launch, _btn_fpv, _btn_recall]], ["AUTO", [_btn_auto]]]
+
+
+func bar_title() -> String:
+	return "DRONE BAY"

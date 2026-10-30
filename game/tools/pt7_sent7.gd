@@ -168,6 +168,49 @@ func run(pt) -> void:
 	pt._log("sent7_entry_manned", at_cp >= 2, "entry checkpoint holds %d Sentinels" % at_cp)
 	if cp != null:
 		await _shots(pt, mv, Vector2(cp.cell) + Vector2(1.0, 1.0), "entry")
+	# ---- REST8D (13.9c-43): an exhausted Sentinel on a post held by two walks into the Sentinel barracks to rest
+	var sbk := []
+	for pid in F.get("parts", []):
+		var sb = w.entities.get(int(pid))
+		if sb != null and String(sb.def) == "cn_sentinel_barracks":
+			sbk.append(int(pid))
+	var tired := -1
+	var tpost := -1
+	for sid in S7.sentinels_of(w, me):
+		var se = w.entities.get(int(sid))
+		if se == null or not se.has("garrisoned_in") or sbk.has(int(se.garrisoned_in)):
+			continue
+		if SimWorld.Garrison.occupants(w, int(se.garrisoned_in)).size() >= 2:
+			tired = int(sid)
+			tpost = int(se.garrisoned_in)
+			break
+	var walked := false
+	var rested := false
+	var walk_ticks := 0
+	if tired >= 0:
+		for k in 900:   # up to 90 s
+			mv.join_sim()
+			var te = w.entities.get(tired)
+			if te == null:
+				break
+			var gi := int(te.get("garrisoned_in", -1))
+			if k % 20 == 0:
+				print("PLAYTEST sent7 rest k %d gi %d r8s %s r8 %s fat %s job %s pos %s" % [k, gi, str(te.get("r8s")), str(te.get("r8")), str(te.get("fat")), str(S7.state(w).jobs.get(str(tired), {}).get("k", "")), str(te.pos)])
+			if gi == tpost:
+				te.fat = 0.95   # he stays exhausted until he is off the post
+			elif gi < 0:
+				walk_ticks += 1
+				if not walked and walk_ticks >= 8:
+					walked = true
+					await _shots(pt, mv, Vector2(te.pos), "rest_walk", [2.5])
+					mv.join_sim()
+			elif sbk.has(gi):
+				rested = true
+				var rb = w.entities.get(gi)
+				await _shots(pt, mv, Vector2(rb.cell) + Vector2(1.0, 1.0), "rest_inside", [1.75, 2.5])
+				break
+			await pt._wait(0.1)
+	pt._log("sent7_rest_barracks", rested, "exhausted Sentinel %d left post %d (walked %s) and rests inside the Sentinel barracks: %s" % [tired, tpost, str(walked), str(rested)])
 	# ---- assault 1: human infantry on the north face
 	var foes := []
 	if foe >= 0:

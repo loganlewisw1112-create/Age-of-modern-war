@@ -103,6 +103,14 @@ func _run_events(w: SimWorld, n: int, ty: String) -> Array:
 
 
 func _keep_engineers(w: SimWorld, fac: int, n: int) -> Array:
+	# FIX8B (setup only, Lethality test-setup authority / 13.9c-48 start_count 6): Supply8._seed tops the crew up once
+	# to rules.engineers (4) after Engineer7 seeded it; let that one-time top-up happen BEFORE the extras are erased,
+	# or it re-fills the crew with new engineers that take the jobs the kept one is tested on. No assertion change.
+	for i in 200:
+		var s8 = w.sys_state.get("supply8")
+		if s8 != null and (s8.get("seeded", []) as Array).has(fac):
+			break
+		_step(w)
 	var ids := E7.engineers_of(w, fac)
 	for i in range(n, ids.size()):
 		w.entities.erase(int(ids[i]))

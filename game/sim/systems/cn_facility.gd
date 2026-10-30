@@ -1230,6 +1230,9 @@ static func _arrived(w: SimWorld, T: Dictionary, aps: Array, where: String, tol:
 		var p: Vector2 = a.pos
 		if p.distance_to(_slot_pos(F, T, where, i)) > tol and String(a.order.get("type", "")) == "move":
 			return false
+		if where == "gate" and not (_callf(FD7_PATH, "vstate", [w, int(a.id)], {}) as Dictionary).is_empty():
+			return false   # FACFLOW8D (13.9c-50 layout): the staging yard now sits on the gate lane, so an APC the traffic
+			               # controller is still driving out passes within tol of its "gate" slot; it is out once handed off
 	return true
 
 

@@ -543,10 +543,20 @@ static func _tick_deploy(w: SimWorld, t: Dictionary, every: int) -> void:
 		return
 	if not bool(d.dis):
 		var ready := true   # dismount once both strike APCs are parked at the site (or after rules.deploy.park_s)
+		var near := 0
 		for aid in t.apcs:
 			var a = w.entities.get(int(aid))
-			if a != null and (bool(a.get("moving", false)) or Vector2(a.pos).distance_to(site) > 4.0):
+			if a == null:
+				continue
+			# FLY8B: an APC still far out (the partner driving up after a fly insert: the stealth dropship lifts one APC)
+			# is not waited for; the flown crew stood at the site for the whole park_s and was shelled there.
+			if Vector2(a.pos).distance_to(site) > 3.0 * r:
+				continue
+			near += 1
+			if bool(a.get("moving", false)) or Vector2(a.pos).distance_to(site) > 4.0:
 				ready = false
+		if near == 0:
+			ready = false
 		if ready or w.tick - int(d.t0) > ticks(float(D.get("park_s", 25)) * float(Apc7.callf(SimWorld.CnProgress7, "level_mult", [w, int(t.id), "dismount"], 1.0))):
 			dismount(w, t)
 			_take_posts(w, t, site)
@@ -772,6 +782,47 @@ static func _setup_hold(w: SimWorld, t: Dictionary, site: Vector2) -> void:
 	w.emit("CnHoldSetup", {"team": int(t.id), "owner": fid, "dir": dir, "barriers": nb, "sentries": ns, "site": site})
 
 
+## FACFLOW8E (test_specops8 raid "returning" 600 s): the motorcade a move_team formed (e.g. the drive to the evacuation
+## point) outlived the move: when the facility took the APC back (FacDrive7 approach to the wash), Convoy kept steering
+## it to its old slot with a plain move, FacDrive7 read that as a player order out of the base and handed the APC off,
+## so it idled outside the gate and the team never left "returning". Call this when the facility takes the team over.
+static func end_convoy(w: SimWorld, t: Dictionary) -> void:
+	if int(t.get("conv", -1)) >= 0:
+		Apc7.callf(SimWorld.Convoy, "disband", [w, int(t.conv)], null)
+		t.conv = -1
+	for id in t.apcs + t.members:
+		var e = w.entities.get(int(id))
+		if e != null and e.has("convoy"):
+			Apc7.callf(SimWorld.Convoy, "_drop", [w, int(e.convoy), int(id)], null)
+
+
+## FACFLOW8E: stop a running deployment without a blast (the package stays loaded): the site is already clean, or
+## the phase can never finish (its specialist is dead). The team packs its hold position and remounts.
+static func abort_deploy(w: SimWorld, t: Dictionary, why: String) -> void:
+	if t.dep == null:
+		return
+	var site: Vector2 = t.dep.site
+	t.dep = null
+	_pack_hold(w, t)
+	remount(w, t)
+	w.emit("CnDeployAborted", {"team": int(t.id), "owner": int(t.fid), "site": site, "reason": why})
+
+
+## FACFLOW8E: the first of `roles` (deploy-phase roles "scanner" / "ew" / "deploy") no live member of the team has any more ("" = all
+## present). A phase waiting on a dead specialist stalled the deployment for ever (test_cnmission8: deploy "jam",
+## stalled no_ew, from t~2400 to the limit).
+static func missing_role(w: SimWorld, t: Dictionary, roles: Array = ["scanner", "ew", "deploy"]) -> String:
+	var have := {}
+	for id in t.members:
+		var e = find(w, int(id))
+		if e != null:
+			have[role_of(e)] = true
+	for r in roles:
+		if not have.has(String(r)):
+			return r
+	return ""
+
+
 static func _pack_hold(w: SimWorld, t: Dictionary) -> void:
 	if (t.hold as Array).is_empty():
 		return
@@ -890,6 +941,10 @@ static func _pair_follow(w: SimWorld, t: Dictionary) -> void:
 		# drive inside the compound (lane routes, bay queue); it drives the partner itself. Dragging the partner here
 		# pulled a strike APC parked in a staging bay back to its garage while its partner queued for the other bay
 		# (taken by a tactical APC): the two met head-on in the lane and the team never loaded (stuck in to_pad).
+		# FLY8B: a partner parked at the team's running deployment holds the site (its dome covers the arming crew);
+		# pulling it towards an APC still driving up dropped the dome (stall dome_down) and left the deployers bare.
+		if t.dep != null and Vector2(y.pos).distance_to(Vector2(t.dep.site)) <= float(R().get("deploy", {}).get("site_radius", 7.0)):
+			continue
 		if (xt == "move" or xt == "attack_move") and not x.order.has("fd7") and String(y.order.get("type", "")) == "idle" \
 				and Vector2(x.pos).distance_to(y.pos) > leash and typeof(x.order.get("target")) == TYPE_VECTOR2:
 			SimWorld.Movement.order_move(w, y, Vector2(x.order.target) + Vector2(0.0, 2.5))

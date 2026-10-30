@@ -74,6 +74,7 @@ const Airdef = preload("res://sim/systems/airdef.gd")
 const Traverse7 = preload("res://sim/systems/traverse7.gd")
 const Turrets7 = preload("res://sim/systems/turrets7.gd")
 const HotState = preload("res://sim/hot_state.gd")
+const Cards8a = preload("res://sim/systems/cards8a.gd")   # G7 CARDS8A (13.9c-48): defence card fire mode / priority
 const CF_PATH := "res://sim/systems/cn_facility.gd"
 const CD_PATH := "res://sim/systems/counterdrone.gd"
 const S7_PATH := "res://sim/systems/sentinels7.gd"
@@ -488,6 +489,11 @@ static func _tick_mount(w: SimWorld, st: Dictionary, b: Dictionary, M: Dictionar
 		if tgt == null and t % SCAN_GROUND == 0:
 			tgt = _ground_pick(w, b, c, M, mp)
 			air = false
+	if tgt != null and w.sys_state.has("cards8a"):   # G7 CARDS8A (13.9c-48): hold / return fire / priority
+		var tr := float(c.get("track_radius", 15.0))
+		var ar := _area(w, M, c)
+		tgt = Cards8a.filter(w, b, tgt, maxf(tr, float(c.get("ground_range", 15.0))), func(x): return (_airborne(x) and w.is_enemy(int(b.owner), int(x.owner)) and mp.distance_to(Vector2(x.pos)) <= tr) or _ground_ok(w, b, c, mp, x, ar))
+		air = tgt != null and _airborne(tgt)
 	if tgt == null or int(tgt.id) != int(M.t):
 		_end_burst(w, M, c)
 	if tgt == null:

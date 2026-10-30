@@ -24,7 +24,9 @@ const NAMES := ["main_menu", "main_menu_howto", "main_menu_load", "hud_idle", "h
 	"ui7_ops_teams", "ui7_ops_deploy", "ui7_ops_cam", "ui7_ops_map", "ui7_ops_table", "ui7_ops_codex", "ui7_ops_advisor",  # G7 OPSUI7 (presentation/ui7/ops_panel.gd)
 	"ui5b_g6_infantry", "ui5b_g6_vehicles", "ui5b_g6_engineer", "ui5b_g6_garage", "ui5b_g6_research",  # G6 UI6b (presentation/ui6/b/g6_scen.gd via fit_panels)
 	"hud_drone", "ui7_lp_drone",  # G7 DFEED7: the player flies a drone (corner feed up), skirmish HUD and Last Protocol HUD
-	"cmd61_mode", "cmd61_plans", "sq61_teams", "sq61_formations", "sq61_stance"]  # + G6.1 SQUAD61 Teams panel + card pages  # G6.1 command layer (PLAN61 CR seq 185)
+	"cmd61_mode", "cmd61_plans", "sq61_teams", "sq61_formations", "sq61_stance",
+	"ui8_bar_ops", "ui8_bar_def", "ui8_bar_gate", "ui8_bar_supply", "ui8_bar_armory", "ui8_bar_garage",  # G7 CARDBAR8 (13.9c-51): facility cards in the bottom bar
+	"ui8_bar_dronebay", "ui8_bar_barracks", "ui8_bar_air", "ui8_bar_aid", "ui8_bar_lab"]  # + G6.1 SQUAD61 Teams panel + card pages  # G6.1 command layer (PLAN61 CR seq 185)
 
 static var _worlds: Dictionary = {}   # "s8" / "s9" -> SimWorld (never stepped: the HUD is paused)
 
@@ -63,6 +65,8 @@ static func _hud(vp: Node, sc: float, key: String = "s8") -> Array:
 
 ## Async: returns false when the screen does not exist yet (e.g. another agent's panel).
 static func build(nm: String, vp: SubViewport, sc: float, tree: SceneTree) -> bool:
+	if nm.begins_with("ui8_bar_"):  # G7 CARDBAR8
+		return await load("res://presentation/ui7/cardbar8.gd").fit_build(nm, vp, sc, tree)
 	if nm.begins_with("ui7_ops"):  # G7 OPSUI7
 		return await load("res://presentation/ui7/ops_panel.gd").fit_build(nm, vp, sc, tree)
 	if nm.begins_with("ui7_lp"):  # G7 LPMODE7

@@ -295,6 +295,19 @@ func _build_coast_decor(d: Dictionary, list: Array) -> void:
 			coast_count += 1
 
 
+## G7 BLAST8 (13.9c-47): the body of a man the blast killed flies the event's arc before it settles (corpse entry
+## [5] = [screen delta, peak px, flight s, turns, def]).
+func on_blast_corpse(ev: Dictionary) -> void:
+	var id := int(ev.get("id", -1))
+	for k in range(motion.corpses.size() - 1, -1, -1):
+		var cp: Array = motion.corpses[k]
+		if int(cp[0]) == id and cp.size() == 5:
+			var d: Vector2 = Vector2(ev.to) - Vector2(ev.from)
+			cp.append([Vector2((d.x - d.y) * 32.0, (d.x + d.y) * 16.0), float(ev.peak_m) * B8_PX_PER_M,
+				maxf(float(ev.ticks) / 20.0, 0.1), float(ev.turns), String(ev.get("def", ""))])
+			return
+
+
 func on_destroyed(id: int) -> void:
 	# G6.1: an infantry unit with the anim61 set leaves a corpse (die_0..2, lingers, fades)
 	var dc = art._ec.get(id)
@@ -312,6 +325,7 @@ func on_destroyed(id: int) -> void:
 	drawn7.erase(id)
 	_wall_dirty = true   # ART7F: a wall-line part may be gone (re-pick its neighbours' joins)
 	_fat.erase(id)
+	_k8.erase(id)   # G8 ANIM8
 	_chev.erase(id)
 	_pips.erase(id)
 	art.forget(id)
@@ -377,6 +391,169 @@ func _mark(key: String) -> int:
 		img = Image.create(2, 2, false, Image.FORMAT_RGBA8)
 		img.fill(Color(0.95, 0.85, 0.3) if key == "pip:1" else Color(0.15, 0.15, 0.15, 0.85))
 	return art.atlas.add(key, img)
+
+
+const B8_PX_PER_M := 10.0   # G7 BLAST8: screen px per metre of height (an 18 px soldier is ~1.8 m, rev3 scale)
+var _b8z: Array = []         # G7 BLAST8: [atlas page, src rect] of the "z" glyph (built once)
+
+# ---------------------------------------------------------------- G8 ANIM8 (G7_REFERENCE 13.9c-52)
+## Thrown / knocked-down / unconscious / coming-round soldiers drawn with the baked k8_* columns (BatchArt.k8_cols).
+## View-only record per soldier (never read by the sim): [kind 0 thrown / 1 knocked down, start tick, flight ticks,
+## turns, row facing the blast, sprawl 0 on back / 1 face down / 2 on side, landing tick, wake start tick (-1),
+## throw direction on screen]. Times are interpolated sim ticks (tick - 1 + alpha), so every offset moves per frame.
+var _k8: Dictionary = {}
+var _k8_fi := -1
+var _k8_row := 0
+var _k8_off := Vector2.ZERO
+const K8_IMPACT := 6.0    # ticks of impact frames after landing
+const K8_SKID := 7.0      # px skid along the throw line
+const K8_DUST := 14.0     # ticks the landing dust puff lasts
+const K8_BUCK := 14.0     # ticks of the knees-buckle fall
+const K8_WAKE := 30.0     # ticks of the coming-round sequence (6 frames)
+const K8_KD := 30         # = Motion.KD_SHOW: a knocked-down man lies this long
+
+
+## Row of a man facing grid direction gdir (toward the blast).
+static func k8_row_of(gdir: Vector2) -> int:
+	return posmod(int(round(atan2(gdir.y, gdir.x) * FACING_INV)), 8)
+
+
+## Sprawl variant: face down when the tumble ended half a turn over, else on his back / side by id (deterministic).
+static func k8_variant(id: int, turns: float) -> int:
+	var fr := absf(turns) - floorf(absf(turns))
+	if absf(turns) >= 0.25 and fr >= 0.25 and fr < 0.75:
+		return 1
+	return 2 if posmod(id * 7919 + 13, 3) == 0 else 0
+
+
+## Flight column at fraction k: launch, then the tumble at the throw's spin rate and direction, impact pose at the end.
+static func k8_flight_col(a61: Dictionary, k: float, turns: float) -> int:
+	if k < 0.1:
+		return int(a61.k8_launch[0 if k < 0.05 else 1])
+	if k >= 0.93:
+		return int(a61.k8_imp[0])
+	var i := int(floor((k - 0.1) / 0.83 * maxf(absf(turns), 0.35) * 8.0))
+	return int(a61.k8_tum[posmod(i if turns >= 0.0 else -i, 8)])
+
+
+## Lying column: still in the sprawl, or (unconscious) a slow breathing loop with the odd twitch.
+static func k8_lie_col(a61: Dictionary, v: int, t: float, id: int, unc: bool) -> int:
+	var cols: Array = a61[["k8_bk", "k8_fd", "k8_sd"][clampi(v, 0, 2)]]
+	if not unc:
+		return int(cols[0])
+	var s := float(posmod(id, 97)) * 0.37
+	var tw := t * 0.7 + s
+	if posmod(int(tw) * 31 + id, 23) == 0 and fmod(tw, 1.0) < 0.3:
+		return int(cols[2])
+	return int(cols[1]) if sin(t * TAU * 0.3 + s) > 0.2 else int(cols[0])
+
+
+## Landing dust: the generic smoke puff, small and earth-tinted, at ground point gp, dt ticks after the landing.
+func _k8_dust(gp: Vector2, dt: float) -> void:
+	if dt < 0.0 or dt >= K8_DUST:
+		return
+	var u := dt / K8_DUST
+	if art.resolve_fx("smoke", Color.WHITE, "-", clampi(int(u * 5.0), 0, 4)):
+		var sz: Vector2 = art.out_src.size * (0.45 + 0.35 * u)
+		_push(0, gp.y + 1.0, art.out_page, art.out_src, gp - Vector2(sz.x * 0.5, sz.y * 0.8), sz,
+			Color(0.80, 0.70, 0.52, 0.75 * (1.0 - u)))
+
+
+## Drives one live soldier from the k8 set. true = _k8_fi / _k8_row / _k8_off are set for this frame.
+func _k8_live(id: int, gv, a61: Dictionary, tt: float, stick: int, t: float, row: int, sp: Vector2, far: bool) -> bool:
+	var rec = _k8.get(id)
+	var unc := false
+	var kd := -100000
+	if gv != null:
+		if gv.has("bt"):
+			var b8: Array = gv.bt
+			if rec == null or float(rec[1]) != float(b8[5]):
+				var gd := Vector2(float(b8[0]) - float(b8[2]), float(b8[1]) - float(b8[3]))   # landing -> blast side
+				var sdir := Vector2(-(gd.x - gd.y) * 32.0, -(gd.x + gd.y) * 16.0).normalized()
+				var dur := maxf(float(b8[6]), 1.0)
+				rec = [0, float(b8[5]), dur, float(b8[7]), k8_row_of(gd) if gd.length() > 0.01 else row,
+					k8_variant(id, float(b8[7])), float(b8[5]) + dur, -1.0, sdir]
+				_k8[id] = rec
+			_k8_fi = k8_flight_col(a61, clampf((tt - float(rec[1])) / float(rec[2]), 0.0, 1.0), float(rec[3]))
+			_k8_row = int(rec[4])
+			_k8_off = Vector2.ZERO
+			return true
+		var cared := String(gv.get("cared", ""))
+		if cared == "drag" or cared == "carry":   # carried / dragged: the G7 limp pose at his sim position
+			_k8.erase(id)
+			return false
+		unc = gv.has("b8u") or bool(gv.get("unc", false))
+		kd = int(gv.get("kd", -100000))
+	if rec == null:
+		if not unc and stick - kd >= 3:
+			return false
+		# knocked off his feet without a flight (concussed / knocked down): knees buckle, fall back
+		rec = [1, tt, K8_BUCK, 0.0, row, 2 if posmod(id * 7919 + 13, 3) == 0 else 0, tt + K8_BUCK, -1.0, Vector2.ZERO]
+		_k8[id] = rec
+	_k8_row = int(rec[4])
+	var dt := tt - float(rec[6])
+	if dt < 0.0:
+		_k8_fi = int(a61.k8_buck[clampi(int((tt - float(rec[1])) / K8_BUCK * 4.0), 0, 3)])
+		_k8_off = Vector2.ZERO
+		return true
+	var lying := unc or stick - kd < K8_KD or dt < float(K8_KD)
+	var wk := 0.0
+	if not lying:
+		if float(rec[7]) < 0.0:
+			if dt > 600.0:   # came back into view long after: no wake-up replay
+				_k8.erase(id)
+				return false
+			rec[7] = tt
+		wk = (tt - float(rec[7])) / K8_WAKE
+		if wk >= 1.0:
+			_k8.erase(id)
+			return false
+	var skid := 0.0
+	if int(rec[0]) == 0:
+		var u := clampf(dt / (K8_IMPACT + 2.0), 0.0, 1.0)
+		skid = K8_SKID * (1.0 - (1.0 - u) * (1.0 - u))
+	_k8_off = (rec[8] as Vector2) * skid * (1.0 - clampf(wk * 1.5, 0.0, 1.0))
+	if int(rec[0]) == 0 and not far:
+		_k8_dust(sp + _k8_off, dt)
+	if int(rec[0]) == 0 and dt < K8_IMPACT:
+		_k8_fi = int(a61.k8_imp[0 if dt < 2.5 else 1])
+		_k8_off.y -= 2.5 * sin(PI * clampf((dt - 1.0) / 4.0, 0.0, 1.0))   # small bounce
+		return true
+	if wk > 0.0:
+		_k8_fi = int(a61.k8_wake[clampi(int(wk * 6.0), 0, 5)])
+		return true
+	_k8_fi = k8_lie_col(a61, int(rec[5]), t, id, unc)
+	return true
+
+
+## G7 BLAST8 (13.9c-47): three "z" glyphs rising and fading over a soldier knocked unconscious by a blast.
+func _b8_zzz(sp: Vector2, t: float, id: int) -> void:
+	if _b8z.is_empty():
+		var img := Image.create(7, 7, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0, 0, 0, 0))
+		var on := {}
+		for x in range(1, 6):
+			on[Vector2i(x, 1)] = true
+			on[Vector2i(x, 5)] = true
+		for k in range(1, 4):
+			on[Vector2i(5 - k, 1 + k)] = true
+		for q in on:
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					var n: Vector2i = q + Vector2i(dx, dy)
+					if not on.has(n) and n.x >= 0 and n.y >= 0 and n.x < 7 and n.y < 7:
+						img.set_pixelv(n, Color(0.05, 0.05, 0.12, 0.9))
+		for q in on:
+			img.set_pixelv(q, Color(1.0, 1.0, 0.82, 1.0))
+		var pg: int = art.atlas.add("b8_zzz", img)
+		_b8z = [pg, art.atlas.rect_of("b8_zzz") if pg >= 0 else Rect2()]
+	if int(_b8z[0]) < 0:
+		return
+	var r: Rect2 = _b8z[1]
+	for k in 3:
+		var ph := fposmod(t * 0.7 + float(k) / 3.0 + float(id % 7) * 0.13, 1.0)
+		var sc := 0.7 + 0.6 * ph
+		_push(1, sp.y + 2.0, int(_b8z[0]), r, sp + Vector2(3.0 + ph * 7.0 + float(k), -22.0 - ph * 14.0), r.size * sc, Color(1, 1, 1, 1.0 - ph * 0.75))
 
 
 func _push(layer: int, y: float, page: int, src: Rect2, dst: Vector2, dsz: Vector2, mod: Color) -> void:
@@ -904,6 +1081,24 @@ func refresh() -> void:
 		if gv != null and gv.has("bz") and float(gv.bz) > lift_now:   # G7 DRONEBAY7 CR 5833: bay drone on / rising from the workshop launch deck
 			sp.y -= float(gv.bz) - lift_now
 			layer = 1
+		if gv != null and gv.has("bt"):   # G7 BLAST8 (13.9c-47): thrown by a blast: arc with height, ground shadow, tumble
+			var b8: Array = gv.bt
+			var b8k := clampf((float(stick) - 1.0 + alpha - float(b8[5])) / maxf(float(b8[6]), 1.0), 0.0, 1.0)
+			var b8h := 4.0 * float(b8[4]) * b8k * (1.0 - b8k) * B8_PX_PER_M
+			if art.resolve_shadow(dname, 0):
+				_push(0, 1 - Y_OFF, art.out_page, art.out_src, sp + art.out_off, art.out_src.size, Color(1, 1, 1, clampf(1.0 - b8h / 90.0, 0.35, 1.0)))
+			if not a61.has("k8_tum"):   # sheets without the G8 set: BLAST8's spin through four G7 poses
+				var spin := b8k * float(b8[7])
+				row = posmod(row + int(floor(spin * 8.0)), 8)
+				if a61.has("g7_unc"):
+					fi = int(a61.g7_kdown) if b8k >= 0.85 else int([a61.g7_knock, a61.g7_stumble, a61.g7_kdown, a61.g7_unc][posmod(int(floor(absf(spin) * 4.0)), 4)])
+			sp.y -= b8h
+			layer = 1
+		if a61.has("k8_tum") and (_k8.has(id) or (gv != null and ("bt" in gv or "b8u" in gv or "unc" in gv or "kd" in gv))) \
+				and _k8_live(id, gv, a61, float(stick) - 1.0 + alpha, stick, t, row, sp, far):
+			fi = _k8_fi   # G8 ANIM8 (13.9c-52): launch / tumble / impact / sprawl / breathing / buckle / wake
+			row = _k8_row
+			sp += _k8_off
 		if mcls >= 0:
 			drawn7[id] = [fi, row, sp, t, dname]   # G7 MUZZLE7 CR 5592: what the muzzle flash is matched to (+ art name: REGFIX7-3)
 		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not (c[26] as Dictionary).is_empty() and (c[27] < 0 or G5Art.on_water(terr_w, pos, mw)):
@@ -969,6 +1164,8 @@ func refresh() -> void:
 			_g5_slung(sling.get(id, []), id, ow, fac_a[i], sp, t, gc5)
 		if fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC):
 			_g5_markers(sp, fl, id, t, neutral, gc5)
+		if gv != null and gv.has("b8u") and not far:   # G7 BLAST8: knocked out by a blast: "zzz" over him until he wakes
+			_b8_zzz(sp, t, id)
 	_units_drawn = units_drawn
 	if _hc >= 0:
 		_bay_hide[_hc][1] = _n
@@ -1117,12 +1314,45 @@ func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
 		var dcols: Array = (cc[31] as Dictionary).get("die", [])
 		if dcols.is_empty():
 			continue
-		art.frame_src(cc, int(dcols[Motion.corpse_frame(age)]), int(cp[3]))
+		var crow := int(cp[3])
+		var fly := false
+		var cfi := -1
+		if cp.size() > 5:   # G7 BLAST8: thrown body: arc + shadow + tumble, then the death frames from the landing
+			var th: Array = cp[5]
+			var k8 := clampf(age / float(th[2]), 0.0, 1.0)
+			var gnd: Vector2 = csp + (th[0] as Vector2) * k8
+			var a8: Dictionary = cc[31]
+			var has8 := a8.has("k8_tum")
+			var d8: Vector2 = th[0]
+			if has8 and d8.length() > 0.5:   # G8 ANIM8: face the blast, tumble along the throw line
+				crow = k8_row_of(Vector2(d8.x / 32.0 + d8.y / 16.0, d8.y / 16.0 - d8.x / 32.0) * -0.5)
+			if k8 < 1.0:
+				fly = true
+				if art.resolve_shadow(String(th[4]), 0):
+					_push(0, 1 - Y_OFF, art.out_page, art.out_src, gnd + art.out_off, art.out_src.size, Color(1, 1, 1, 0.6))
+				if has8:
+					cfi = k8_flight_col(a8, k8, float(th[3]))
+				else:
+					crow = posmod(crow + int(floor(k8 * float(th[3]) * 8.0)), 8)
+			csp = gnd - Vector2(0.0, 4.0 * float(th[1]) * k8 * (1.0 - k8))
+			age = 0.0 if fly else maxf(age - float(th[2]), 0.0)
+			if has8 and not fly:   # G8 ANIM8: impact, bounce, skid with dust, then he lies still in his sprawl
+				var dtl := age * 20.0
+				var u := clampf(dtl / (K8_IMPACT + 2.0), 0.0, 1.0)
+				var gp := csp + d8.normalized() * K8_SKID * (1.0 - (1.0 - u) * (1.0 - u))
+				_k8_dust(gp, dtl)
+				csp = gp
+				if dtl < K8_IMPACT:
+					cfi = int(a8.k8_imp[0 if dtl < 2.5 else 1])
+					csp.y -= 2.5 * sin(PI * clampf((dtl - 1.0) / 4.0, 0.0, 1.0))
+				else:
+					cfi = k8_lie_col(a8, k8_variant(int(cp[0]), float(th[3])), t, int(cp[0]), false)
+		art.frame_src(cc, cfi if cfi >= 0 else int(dcols[Motion.corpse_frame(age)]), crow)
 		if art.out_page < 0:
 			continue
 		var dst: Vector2 = csp + art.out_doff  # G6.1 (ANIMC61): cropped cell offset / signed size from frame_src
 		var dsz: Vector2 = art.out_dsz
-		_push(0, csp.y - 1.0, art.out_page, art.out_src, dst, dsz, Color(1, 1, 1, Motion.corpse_alpha(age)))
+		_push(1 if fly else 0, csp.y - 1.0, art.out_page, art.out_src, dst, dsz, Color(1, 1, 1, Motion.corpse_alpha(t - float(cp[4]))))
 		gc61.corpses += 1
 
 

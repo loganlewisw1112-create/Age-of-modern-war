@@ -1,0 +1,31 @@
+{
+ "_meta": {"owner": "SUPPLY8", "note": "G7 SUPPLY8 (G7_REFERENCE 13.9c-48): the magazine / ammo + fuel bay card and its AIRDROP RETRIEVAL OP. One drop at a time with a cooldown: an airdrop pod lands in open ground 4-6 tiles outside the facility gate; two seven-man Sentinel GO teams move out first and take up defensive positions around it; four Facility Engineers follow with the tracked drone cargo carrier (fast, hardened, small ray shield), load the pod and bring it home; the stock is added at the magazine and the carrier parks in its small garage beside the magazine. Every number PROVISIONAL."},
+ "units": {
+  "g8_cargo_carrier": {"name": "Tracked Cargo Carrier", "role": "logistics", "faction": "human_a", "armor": "heavy", "move_class": "vehicle", "hp": 900, "speed": 3.4, "sight": 6, "pop": 0, "radius": 0.4, "g7": true, "no_production": true, "no_command": true, "unhackable": true, "sup8_carrier": true, "_role": "unmanned tracked drone cargo bed of the facility engineers (13.9c-48): quick, hardened hull, small ray shield (rules.g8_supply.shield). PROVISIONAL."},
+  "g8_b_cargo_carrier": {"name": "Tracked Cargo Carrier", "role": "logistics", "faction": "human_b", "armor": "heavy", "move_class": "vehicle", "hp": 900, "speed": 3.4, "sight": 6, "pop": 0, "radius": 0.4, "g7": true, "no_production": true, "no_command": true, "unhackable": true, "sup8_carrier": true, "_role": "Human B copy of g8_cargo_carrier. PROVISIONAL."},
+  "g8_supply_pod": {"name": "Airdrop Supply Pod", "role": "static_defense", "faction": "shared", "armor": "light", "move_class": "vehicle", "hp": 600, "speed": 0, "sight": 2, "pop": 0, "radius": 0.35, "g7": true, "no_production": true, "no_command": true, "unhackable": true, "sup8_pod": true, "_role": "the delivered pallet pod (13.9c-48): stands where it landed until the engineers load it; destroyed = the drop is lost (retry free after the cooldown). PROVISIONAL."}
+ },
+ "buildings": {
+  "cn_carrier_garage": {"name": "Carrier Garage", "faction": "shared", "stage_min": 1, "size": 1, "hp": 1800, "armor": "building", "sight": 2, "buildable": false, "requires_power": false, "g7": true, "cn_part": "carrier_garage", "unhackable": true, "_note": "SUPPLY8 (13.9c-48): small armoured garage of the tracked cargo carrier beside the magazine (placed by Supply8 off every lane, zone, door and the approach, door onto a lane). PROVISIONAL."}
+ },
+ "rules": {
+  "g8_supply": {
+   "_note": "SUPPLY8 (13.9c-48). Every number PROVISIONAL.",
+   "every_s": 0.5,
+   "cost": {"credits": 900},
+   "cooldown_s": 90.0,
+   "drop": {"min": 4, "max": 6, "fall_s": 8.0},
+   "load": {"ammo": 600, "fuel": 400},
+   "teams": 2, "team_size": 7, "engineers": 4,
+   "go_ring": 2.6, "go_lead_s": 4.0, "secure_frac": 0.7, "secure_max_s": 30.0,
+   "load_s": 8.0, "load_r": 1.6, "op_max_s": 300.0, "escort_every_s": 2.0, "escort_r": 2.0,
+   "shield": {"hp": 260.0, "regen_s": 20.0, "quiet_s": 6.0},
+   "rebuild_s": 60.0,
+   "low": {"ammo": 200, "fuel": 150},
+   "prio_first": 1.8,
+   "prio_classes": ["walls", "teams", "vehicles", "aircraft"],
+   "mix_step": 10,
+   "mix_default": {"ap": 40, "he": 30, "inc": 15, "cn": 15}
+  }
+ }
+}

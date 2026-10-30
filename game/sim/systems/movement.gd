@@ -1061,7 +1061,7 @@ static func order_path(w: SimWorld, e: Dictionary, goal: Vector2) -> bool:
 	if front and _take_budget(w):
 		var fp := []
 		if _group_flow.has(move_class(e)) and not r.has("via"):
-			fp = _flow_path(w, move_class(e), int(_group_flow[move_class(e)].h), r.start, r.cell, r.pos, tm)
+			fp = _flow_path(w, move_class(e), int(_group_flow[move_class(e)].h), r.start, r.cell, r.pos, tm, _cut_of(e))
 		e.path = fp if not fp.is_empty() else (_via_path(w, move_class(e), r, tm) if r.has("via") else _compute(w, move_class(e), r.start, r.cell, r.pos, tm))   # G7 APCMOV7-4: via = shut own gate
 		e.path_req = -1
 	else:
@@ -1133,7 +1133,7 @@ static func _line_clear(w: SimWorld, mc: String, a: Vector2, b: Vector2, team: i
 ## Native group path: descend the shared flow field from start toward the group goal, cut over to
 ## a straight run to this unit's slot at the first waypoint with a clear line, else A* the rest.
 ## Returns [] when the flow cannot serve this unit (caller falls back to the normal A* path).
-static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: Vector2i, dest_pos: Vector2, team: int = -1) -> Array:
+static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: Vector2i, dest_pos: Vector2, team: int = -1, cut := LOS_MAX) -> Array:
 	var native = _native(w)
 	if native == null or h < 0:
 		return []
@@ -1147,7 +1147,7 @@ static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: V
 		# G6 PERF6-3 (flow_skip): a segment whose closest point to the slot is beyond LOS_MAX + 0.05
 		# (exact, in doubles) has no sample that can pass the distance test below (float32 sample and
 		# distance rounding is ~1e-4 here), so its per-tile loop is skipped: same path, same hash.
-		if flow_skip and _seg_far(prev, p, dest_pos):
+		if flow_skip and _seg_far(prev, p, dest_pos, cut):
 			out.append(p)
 			prev = p
 			continue
@@ -1157,7 +1157,7 @@ static func _flow_path(w: SimWorld, mc: String, h: int, start: Vector2i, dest: V
 		var steps := maxi(int(ceil(seg.length())), 1)
 		for k in range(1, steps + 1):
 			var s: Vector2 = prev + seg * (float(k) / float(steps))
-			if s.distance_to(dest_pos) <= LOS_MAX and native.line_clear(idx, s, dest_pos, LOS_MAX):
+			if s.distance_to(dest_pos) <= cut and native.line_clear(idx, s, dest_pos, cut):
 				out.append(_qpos(w, s))
 				out.append(dest_pos)
 				return out
@@ -1180,7 +1180,7 @@ static var flow_skip := true
 
 
 ## True when every point of segment a-b is farther than LOS_MAX + 0.05 from c (computed in doubles).
-static func _seg_far(a: Vector2, b: Vector2, c: Vector2) -> bool:
+static func _seg_far(a: Vector2, b: Vector2, c: Vector2, cut := LOS_MAX) -> bool:
 	var ax: float = a.x
 	var ay: float = a.y
 	var dx: float = float(b.x) - ax
@@ -1193,7 +1193,7 @@ static func _seg_far(a: Vector2, b: Vector2, c: Vector2) -> bool:
 		t = clampf((cx * dx + cy * dy) / l2, 0.0, 1.0)
 	var qx := dx * t - cx
 	var qy := dy * t - cy
-	var lim := LOS_MAX + 0.05
+	var lim := cut + 0.05
 	return qx * qx + qy * qy > lim * lim
 
 
@@ -1240,7 +1240,7 @@ static func _drain_queue(w: SimWorld) -> void:
 				# group request: descend the group's flow field (LRU cached; rebuilt identically
 				# from nav state after a load), A* only if the flow cannot serve it
 				var h: int = native.flow(Vector2i(int(req.fx), int(req.fy)), _key(mc, tm))
-				fp = _flow_path(w, mc, h, r.start, r.cell, r.pos, tm)
+				fp = _flow_path(w, mc, h, r.start, r.cell, r.pos, tm, _cut_of(e))
 			e.path = fp if not fp.is_empty() else (_via_path(w, mc, r, tm) if r.has("via") else _compute(w, mc, r.start, r.cell, r.pos, tm))   # G7 APCMOV7-4: via = shut own gate
 		e.path_i = 0
 		e.path_req = -1
@@ -1406,7 +1406,7 @@ static func _separate_native_only(w: SimWorld, steer) -> void:
 		var u := udef(String(e.def))
 		units.append(e)
 		pos.append(e.pos)
-		rad.append(float(u.radius))
+		rad.append(Spread8.rad_of(e, float(u.radius)))   # G7 SPREAD8
 		mov.append(1 if e.moving else 0)
 		keys.append((int(e.owner) + 1) * 1048576 + _layer(u.mc))
 		ids.append(int(e.id))
@@ -1414,8 +1414,9 @@ static func _separate_native_only(w: SimWorld, steer) -> void:
 		mcs.append(_key(u.mc, team_of(w, e)))
 	var out: PackedVector2Array = steer.separate(w.nav.native, pos, rad, mov, keys, ids, mcs,
 		PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q]))
+	var anc := w.sys_state.has(CnRole7.FAC_KEY)   # G7 REG8B: parked CN men are not shoved by separation
 	for i in out.size():
-		if out[i] != pos[i]:
+		if out[i] != pos[i] and not (anc and _anchored(w, units[i])):
 			units[i].pos = out[i]
 
 
@@ -1599,6 +1600,9 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 	if profile:
 		t0 = _pt("gather", t0)
 	_g6_speed(w, spd, nm, movers, [], PackedInt32Array(), mvi, 4 if held else 6, pos)
+	trad = _sp8_apply(w, tabs, trad)   # G7 SPREAD8: combat spacing radii
+	if profile:
+		t0 = _pt("PERF8_sp8", t0)
 	var prm := PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array
 	if held:
@@ -1607,7 +1611,11 @@ static func _tick_native(w: SimWorld, t0: int) -> void:
 		out = steer.advance_separate(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, wp, fin, prm)
 	if profile:
 		t0 = _pt("native_step", t0)
+	var anc := w.sys_state.has(CnRole7.FAC_KEY)   # G7 REG8B: parked CN men are not shoved by separation
 	for i in steer.last_changed():
+		if anc and _anchored(w, units[i]):
+			out[i] = pos[i]
+			continue
 		units[i].pos = out[i]
 	# N1-core-3: end-of-movement unit snapshot for other systems (runtime cache, never saved).
 	# ids ascending, pos = every listed unit's position after this tick's movement (nothing moves
@@ -2002,6 +2010,11 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	if profile:
 		t0 = _pt("gather", t0)
 	_g6_speed(w, spd, nm, [] if ng_done else movers, all, uix, mvi, 4, pos)
+	if profile:
+		t0 = _pt("PERF8_g6speed", t0)
+	trad = _sp8_apply(w, tabs, trad)   # G7 SPREAD8: combat spacing radii
+	if profile:
+		t0 = _pt("PERF8_sp8b", t0)
 	var prm := PackedFloat32Array([sep_strength, sep_max_push, SEP_BUCKET, Q, WP_TOL, SEG_MAX, STUCK_REPATH_TICKS])
 	var out: PackedVector2Array = steer.advance_held(w.nav.native, pos, ids, mov, trad, tkey, tmc, mvi, spd, prm)
 	if profile:
@@ -2009,12 +2022,19 @@ static func _tick_held(w: SimWorld, t0: int) -> void:
 	var hpm = w.get("hot")
 	var hposm: PackedVector2Array = hpm.pos if hpm != null else PackedVector2Array()
 	var hcap := hposm.size()
+	var anc := w.sys_state.has(CnRole7.FAC_KEY)   # G7 REG8B: parked CN men are not shoved by separation
 	if ng_done:
 		for i in steer.last_changed():
+			if anc and _anchored(w, all[uix[i]]):
+				out[i] = pos[i]
+				continue
 			all[uix[i]].pos = out[i]
 			hposm[ids[i]] = out[i]
 	else:
 		for i in steer.last_changed():
+			if anc and _anchored(w, units[i]):
+				out[i] = pos[i]
+				continue
 			units[i].pos = out[i]
 			if ids[i] < hcap:
 				hposm[ids[i]] = out[i]
@@ -2073,6 +2093,95 @@ static func _tabs(w: SimWorld) -> Dictionary:
 		t = {"rad": PackedFloat32Array(), "key": PackedInt32Array(), "mc": PackedByteArray(), "spd": PackedFloat32Array()}
 		w.cache["mv_tabs"] = t
 	return t
+
+
+## G7 SPREAD8 (13.9c-53 packed-fight follow-up): combat spacing on the native separation paths. Every soldier
+## Combat marked in contact (e.sp8, sim/systems/spread8.gd) gets the in-contact separation radius in the radius
+## table; a mark that no longer holds (Spread8.ok false) is cleared and the def radius restored. The marked ids live
+## in tabs.sp8 (runtime), rebuilt from e.sp8 whenever the tabs are fresh (load / cache drop): O(marked) per tick.
+const Spread8 = preload("res://sim/systems/spread8.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")   # G7 REG8B: parked CN men hold their post in separation
+
+
+## G7 REG8B (CNROLE7 13.9c-29 "parked units hold"): a CN unit parked at home and standing still is an anchor in the
+## separation pass: a unit walking past is pushed off him, he is never shoved off his post. Pure read of state;
+## callers check w.sys_state.has(CnRole7.FAC_KEY) first, so a match without a facility pays nothing per unit.
+static func _anchored(w: SimWorld, e: Dictionary) -> bool:
+	if not bool(e.moving) and CnRole7.parked(w, e):
+		# a suit the facility airlock controller is moving through the wash is traffic, not parked (FacDrive7.SUIT_KEY)
+		return not (w.sys_state.get("fac_suits7", {}).get("s", {}) as Dictionary).has(str(int(e.id)))
+	return false
+## G7 SPREAD8: the flow -> slot cut-over distance of e (Spread8.cut for foot soldiers on attack-move, else LOS_MAX).
+static func _cut_of(e: Dictionary) -> float:
+	var c := Spread8.cut()
+	if c <= LOS_MAX or String((e.order as Dictionary).get("type", "")) != "attack_move" or move_class(e) != "foot":
+		return LOS_MAX
+	return c
+
+
+static var _sp8_base := {}   # PERF8: def -> max(udef radius, 0.001) (udef is itself a never-cleared cache)
+static func _sp8_apply(w: SimWorld, tabs: Dictionary, trad: PackedFloat32Array) -> PackedFloat32Array:
+	var lst = tabs.get("sp8")
+	if lst == null:
+		lst = {}
+		tabs["sp8"] = lst
+		for e in SimIndex.of(w, "unit"):
+			if e.has("sp8"):
+				lst[int(e.id)] = true
+	if (lst as Dictionary).is_empty():
+		return trad
+	var r := Spread8.radius()
+	var tn := trad.size()
+	var ents: Dictionary = w.entities
+	var drop := []
+	if profile:
+		prof["PERF8_sp8_n"] = int(prof.get("PERF8_sp8_n", 0)) + 1000 * (lst as Dictionary).size()
+	var ron := r > 0.0
+	for id in lst:
+		var e = ents.get(id)
+		if e == null:
+			drop.append(id)
+			continue
+		# PERF8C (exact): Spread8.can_open_fast(e) inlined (same tests, same order; with has("sp8") = Spread8.ok(e))
+		var on: bool = ron and e.has("sp8")
+		if on:
+			var tg = e.get("target", -1)
+			if int(tg) < 0:
+				on = false
+			else:
+				var ot = (e.get("order") as Dictionary).get("type", "idle")
+				if ot != "idle" and ot != "attack_move" and ot != "attack":
+					on = false
+				else:
+					var st = e.get("stance")
+					if st != null and st == "hold_position":
+						on = false
+					elif e.has("deployed") and bool(e.deployed):
+						on = false
+					elif e.has("cn_sq") or e.has("evac_by"):
+						on = false
+					else:
+						var gi = e.get("garrisoned_in")
+						if gi != null and int(gi) >= 0:
+							on = false
+						else:
+							var ti = e.get("transport_id")
+							on = ti == null or int(ti) < 0
+		if id < tn and trad[id] > 0.0:
+			var dn = e.def
+			var bv = _sp8_base.get(dn)
+			if bv == null:
+				bv = maxf(float(udef(String(dn)).radius), 0.001)
+				_sp8_base[dn] = bv
+			var base: float = bv
+			trad[id] = maxf(base, r) if on else base
+		if not on:
+			e.erase("sp8")
+			drop.append(id)
+	for id in drop:
+		lst.erase(id)
+	tabs.rad = trad
+	return trad
 
 
 static func _arrive(e: Dictionary) -> void:
@@ -2259,7 +2368,7 @@ static func _separate(w: SimWorld) -> void:
 		var ok := (int(e.owner) + 1) * 1048576 + _layer(move_class(e))
 		units.append(e)
 		pos.append(p)
-		rad.append(float(udef(e.def).radius))
+		rad.append(Spread8.rad_of(e, float(udef(e.def).radius)))   # G7 SPREAD8
 		mov.append(1 if e.moving else 0)
 		okeys.append(ok)
 		var key := int(floor(p.x / SEP_BUCKET)) + int(floor(p.y / SEP_BUCKET)) * SEP_ROW + ok * SEP_BLOCK
@@ -2312,10 +2421,13 @@ static func _separate(w: SimWorld) -> void:
 		return
 	var mw := float(w.map.w) - 0.01
 	var mh := float(w.map.h) - 0.01
+	var anc := w.sys_state.has(CnRole7.FAC_KEY)   # G7 REG8B: parked CN men are not shoved by separation
 	for i in n:
 		var v := push[i]
 		var l := v.length()
 		if l < 0.002:
+			continue
+		if anc and _anchored(w, units[i]):
 			continue
 		if l > sep_max_push:
 			v = v / l * sep_max_push

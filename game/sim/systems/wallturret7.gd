@@ -48,6 +48,7 @@ const Turrets7 = preload("res://sim/systems/turrets7.gd")
 const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B (13.9c-30): lay before fire
 const PData = preload("res://sim/systems/progression_data.gd")
 const HotState = preload("res://sim/hot_state.gd")
+const Cards8a = preload("res://sim/systems/cards8a.gd")   # G7 CARDS8A (13.9c-48): defence card fire mode / priority
 
 static var _mv = null
 static var _cf = null
@@ -445,6 +446,8 @@ static func tick(w: SimWorld) -> void:
 			continue
 		if not bool(b.get("built", false)) or int(st.ready.get(bid, 0)) > w.tick:
 			continue
+		if int(b.get("emp_until", -1)) > w.tick:   # G7 LETHAL8C: EMP / silenced turrets hold fire (as airdef does)
+			continue
 		var c := cfg_of(String(b.def))
 		var wd := weapon_of(String(b.def))
 		var aim := int(st.aim.get(bid, -1))
@@ -455,6 +458,8 @@ static func tick(w: SimWorld) -> void:
 			t = w.entities.get(aim)
 			if t != null and not can_engage(w, b, c, wd, t):
 				t = null
+		if t != null and w.sys_state.has("cards8a"):   # G7 CARDS8A (13.9c-48): hold / return fire / priority
+			t = Cards8a.filter(w, b, t, float(wd.get("range", 0)), func(x): return can_engage(w, b, c, wd, x))
 		if t == null:
 			if aim >= 0:
 				(st.aim as Dictionary).erase(bid)

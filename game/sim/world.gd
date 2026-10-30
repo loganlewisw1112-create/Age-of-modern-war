@@ -74,6 +74,8 @@ const Convoy = preload("res://sim/systems/convoy.gd") # G7 motorcade convoys + m
 const Creep = preload("res://sim/systems/creep.gd") # G7 Machine creep + seeds (CREEP7)
 const Cores = preload("res://sim/systems/cores.gd") # G7 doomsday/living cores + escalation (CREEP7)
 const CounterNanite = preload("res://sim/systems/counter_nanite.gd") # G7 counter-nanite ops (CNSIM7)
+const CnMission8 = preload("res://sim/systems/cn_mission8.gd")  # G7 CNMISSION8 (13.9c-44): one-click purge mission
+const SpecOps8 = preload("res://sim/systems/specops8.gd")  # G7 SPECOPS8 (13.9c-44): spec-ops missions (escort, core raid, recon & mark, rescue)
 const Apc7 = preload("res://sim/systems/apc7.gd") # G7 advanced APC systems (CNSIM7)
 const CnFacility = preload("res://sim/systems/cn_facility.gd") # G7 Counter-Nanite facility (CNFAC7)
 const WallWalk7 = preload("res://sim/systems/wallwalk7.gd") # G7 WALL7 walkable facility walls (CR 3391)
@@ -89,6 +91,11 @@ const WallTurret7 = preload("res://sim/systems/wallturret7.gd") # G7 WTUR7 unman
 const Sentinels7 = preload("res://sim/systems/sentinels7.gd")  # G7 SENT7 (CR 3681)
 const LpReserve7 = preload("res://sim/systems/lp_reserve7.gd")  # G7 LPRES7 (13.9c-34): Last Protocol 100-Sentinel barracks reserve
 const Engineer7 = preload("res://sim/systems/engineer7.gd")  # G7 ENG7 Facility Engineer (CR 3963)
+const Supply8 = preload("res://sim/systems/supply8.gd")  # G7 SUPPLY8 (13.9c-48): magazine card + airdrop retrieval op
+const Cards8b = preload("res://sim/systems/cards8b.gd")  # G7 CARDS8B (13.9c-48): armory + garage building cards
+const Cards8c = preload("res://sim/systems/cards8c.gd")  # G7 CARDS8C (13.9c-48): barracks / air / aid station building cards
+const Cards8a = preload("res://sim/systems/cards8a.gd")  # G7 CARDS8A (13.9c-48): command centre + defences building cards
+const Blast8 = preload("res://sim/systems/blast8.gd")  # G7 BLAST8 (13.9c-47): blast throw ragdoll arc + concussion comas
 const FacDrive7 = preload("res://sim/systems/fac_drive7.gd")  # G7 APCMOV7 facility APC traffic (13.9c-16)
 const VehDrive7 = preload("res://sim/systems/veh_drive7.gd")  # G7 PATH7 CR 6658: open-ground CN APC driver (13.9c-16a)
 const Vanta7 = preload("res://sim/systems/vanta7.gd")  # G7 AIRV7 CN Vanta gunship (CR 4527)
@@ -98,7 +105,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Sentinels7, LpReserve7, Engineer7, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnOps7, DroneBay7, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Blast8, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnMission8, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -218,6 +225,14 @@ const COMMANDS := {
 	"cn_dismount": CounterNanite,
 	"cn_mount": CounterNanite,
 	"cn_move": CounterNanite,
+	"cn_mission": CnMission8, "cn_mission_cancel": CnMission8, "cn_mission_hold": CnMission8, "cn_extract": CnMission8,  # G7 CNMISSION8 (13.9c-44)
+	"so_mission": SpecOps8, "so_cancel": SpecOps8,  # G7 SPECOPS8 (13.9c-44)
+	"sup8_order": Supply8, "sup8_prio": Supply8, "sup8_mix": Supply8,  # G7 SUPPLY8 (13.9c-48)
+	"cc_fire": Cards8a, "cc_withdraw": Cards8a, "cc_last_stand": Cards8a, "def_fire_mode": Cards8a, "def_priority": Cards8a, "gate_set": Cards8a, "def_repair": Cards8a,  # G7 CARDS8A (13.9c-48)
+	"c8b_preset": Cards8b, "c8b_suit_build": Cards8b, "c8b_suit_rush": Cards8b, "c8b_suit_repair": Cards8b, "c8b_upgrade": Cards8b,  # G7 CARDS8B (13.9c-48)
+	"c8b_veh_repair": Cards8b, "c8b_veh_upgrade": Cards8b, "c8b_convoy": Cards8b, "c8b_recall": Cards8b, "c8b_decon_force": Cards8b, "c8b_decon_skip": Cards8b,
+	"c8c_rotate": Cards8c, "c8c_train": Cards8c, "c8c_standto": Cards8c, "c8c_plan": Cards8c, "c8c_cas_first": Cards8c, "c8c_evac": Cards8c,  # G7 CARDS8C (13.9c-48)
+	"c8c_medics": Cards8c, "c8c_air_service": Cards8c, "c8c_air_launch": Cards8c, "c8c_air_recall": Cards8c, "c8c_air_cap": Cards8c,
 	"cn_dome": Apc7,
 	"cn_emp": Apc7,
 	"cn_panels": Apc7,
@@ -543,6 +558,8 @@ func _apply_due_commands() -> void:
 			emit("CommandRejected", {"command_id": c.id, "type": c.type, "issuer": c.issuer, "reason": reason})
 			continue
 		COMMANDS[c.type].apply_command(self, c)
+		CnMission8.on_applied(self, c)  # G7 CNMISSION8: a fresh player order to a team on a purge mission takes over
+		SpecOps8.on_applied(self, c)  # G7 SPECOPS8: same for a spec-ops squad on a mission
 		AiCommand.on_applied(self, c)  # G6 (AI7-CMD CR 743): stamps e.player_order_tick; no-op unless the side used AI commanders
 		if DIRECT_ORDERS.has(String(c.type)):
 			Ops.on_direct_order(self, c)

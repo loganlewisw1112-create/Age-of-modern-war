@@ -329,6 +329,8 @@ static func _realism_pass(w: SimWorld, every: int) -> void:
 			mv *= 1.0 + Veterancy.trait_weight(w, int(e.id), "speed")
 		if e.has("t7mv"):
 			mv *= float(e.t7mv)   # G7 (THREAT7 CR): Weaver web slow / burrower speed, vehicles included
+		if e.has("c8mv"):
+			mv *= float(e.c8mv)   # G7 CARDS8B (13.9c-48): vehicle Engines upgrade (only on fitted APCs)
 		if not e.has("morale"):
 			_set_or_erase(e, "mvm", mv)
 			continue

@@ -11,6 +11,7 @@ extends RefCounted
 ## The flow writes the sim only between steps (match_view.join_sim) and says what it forces.
 ## Run: "$G" --path . -- --ui-playtest="<abs shot dir>" --ui-playtest-lpres7
 
+const CardBar8 = preload("res://tools/pt8_cardbar.gd")   # G7 CARDBAR8 (13.9c-51)
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const LpReserve7 = preload("res://sim/systems/lp_reserve7.gd")
 const S7 = preload("res://sim/systems/sentinels7.gd")
@@ -70,7 +71,7 @@ func _scroll_of(n: Node) -> ScrollContainer:
 
 ## A real click on a card button (scrolled into view first, as a player would).
 func _press(pt, card, btn_name: String) -> bool:
-	var b: Button = card.find_child(btn_name, true, false)
+	var b: Button = await CardBar8.reveal(pt, card, btn_name)   # G7 CARDBAR8: the bottom-bar tab first
 	if b == null or b.disabled or not b.is_visible_in_tree():
 		last_press = "%s: %s" % [btn_name, "missing" if b == null else ("disabled" if b.disabled else "hidden")]
 		return false

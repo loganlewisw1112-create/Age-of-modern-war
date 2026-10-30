@@ -18,6 +18,16 @@ const SAMPLES := 160            # terrain / creep texture side (samples)
 const CREEP_EVERY_S := 2.0
 
 var hub = null
+## G7 CNMISSION8 (13.9c-44): pick mode for a purge mission, set by the team card ({tid, mode drive|fly}); the next
+## click on the map submits cn_mission {team_id, target, mode} through the hub (refused clicks flash the sim's reason
+## in the header and keep the mode armed). Right-click / Esc cancels. last_pick: the last submitted command (tests).
+const M8 = preload("res://sim/systems/cn_mission8.gd")
+## G7 SPECOPS8: a pick with key "so" (escort | raid | recon | rescue) is a spec-ops mission for a tactical squad: the
+## click submits so_mission (SpecOps8.cmd_for resolves the strike team / the core). Recon marks are drawn (layer marks).
+const SO8 = preload("res://sim/systems/specops8.gd")
+var pick: Dictionary = {}
+var pick_msg := ""
+var last_pick: Dictionary = {}
 var layers: Dictionary = {}     # last refresh (tests / playtest): nests, seeds, cores, fobs, relays, rings, teams, routes, header
 var _terr: ImageTexture = null
 var _creep: ImageTexture = null
@@ -127,6 +137,9 @@ static func collect(w: SimWorld, fid: int) -> Dictionary:
 		var inc := D.incoming(w, fid, Vector2(row.pos), 22.0)
 		for id in inc.ids:
 			out.hostiles.append(Vector2(w.entities[int(id)].pos))
+	out["marks"] = []   # G7 SPECOPS8: recon marks (creep areas, Machine targets)
+	for mk in SO8.marks(w, fid):
+		out.marks.append({"pos": Vector2(float(mk.x), float(mk.y)), "kind": String(mk.kind)})
 	var hd := LastProtocol.hud(w)
 	if not hd.is_empty():
 		var cd := D.lp_countdown(hd)
@@ -183,6 +196,10 @@ func _draw() -> void:
 		return
 	_mrect = Rect2(Vector2(20.0 + (size.x - 40.0 - side) * 0.5, head_h + 12.0), Vector2(side, side))
 	S.text(self, Vector2(14, 18), String(layers.get("header", "")), S.AMBER, 14, true)
+	if pick.has("so"):
+		S.text(self, Vector2(14, size.y - 8.0), "%s (%s): click the target. Right-click cancels.%s" % [String(SO8.KIND_NAME.get(String(pick.so), "SPEC OPS")), String(pick.mode).to_upper(), ("   " + pick_msg) if pick_msg != "" else ""], S.AMBER, 12, true)
+	elif not pick.is_empty():
+		S.text(self, Vector2(14, size.y - 8.0), "PURGE MISSION (%s): click a creep area or a core. Right-click cancels.%s" % [String(pick.mode).to_upper(), ("   " + pick_msg) if pick_msg != "" else ""], S.AMBER, 12, true)
 	draw_texture_rect(_terr, _mrect, false, Color(1, 1, 1, 0.95))
 	if _creep != null:
 		draw_texture_rect(_creep, _mrect, false)
@@ -225,6 +242,10 @@ func _draw() -> void:
 		draw_circle(b, 3.0, S.AMBER)
 	for ds in layers.get("dropships", []):
 		S.unit_icon(self, _to_px(ds.pos, w), "dropship", S.OWN, 6.0)
+	for mk in layers.get("marks", []):   # G7 SPECOPS8: recon marks (diamond: amber creep, red target)
+		var mq := _to_px(mk.pos, w)
+		var mc: Color = S.HOSTILE if String(mk.kind) == "target" else S.AMBER
+		draw_polyline(PackedVector2Array([mq + Vector2(0, -5), mq + Vector2(5, 0), mq + Vector2(0, 5), mq + Vector2(-5, 0), mq + Vector2(0, -5)]), mc, 1.5)
 	for t in layers.get("teams", []):
 		var q := _to_px(t.pos, w)
 		S.unit_icon(self, q, "strike" if String(t.kind) == "strike" else "tactical", S.OWN, 7.0)
@@ -246,8 +267,57 @@ func map_pos_at(px: Vector2) -> Vector2:
 
 
 func _gui_input(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton and ev.pressed and not pick.is_empty() and hub != null:
+		if ev.button_index == MOUSE_BUTTON_RIGHT:
+			pick = {}
+			queue_redraw()
+			accept_event()
+			return
+		if ev.button_index == MOUSE_BUTTON_LEFT:
+			pick_at(map_pos_at(ev.position))
+			accept_event()
+			return
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and hub != null:
 		var p := map_pos_at(ev.position)
 		if p.x >= 0.0:
 			hub.jump_to(p, [])
 			accept_event()
+
+
+## Pick mode: submit the purge mission at map point p (sim reason checked first); true when submitted.
+func pick_at(p: Vector2) -> bool:
+	var w: SimWorld = hub.world() if hub != null else null
+	if w == null or pick.is_empty() or p.x < 0.0:
+		return false
+	if pick.has("so"):
+		return _so_pick_at(w, p)
+	var why := M8.mission_reason(w, int(hub.pf()), int(pick.tid), p, String(pick.mode))
+	if why != "":
+		pick_msg = why
+		queue_redraw()
+		return false
+	last_pick = {"type": "cn_mission", "issuer": int(hub.pf()), "team_id": int(pick.tid), "target": [p.x, p.y], "mode": String(pick.mode)}
+	hub.issue(last_pick.duplicate())
+	pick = {}
+	pick_msg = ""
+	if hub.has_method("open"):
+		hub.open("teams")
+	return true
+
+
+## G7 SPECOPS8: spec-ops pick: submit so_mission at map point p (the sim's own validation first); true when submitted.
+func _so_pick_at(w: SimWorld, p: Vector2) -> bool:
+	var c: Dictionary = SO8.cmd_for(w, int(hub.pf()), int(pick.tid), String(pick.so), String(pick.mode), p)
+	c["issuer"] = int(hub.pf())
+	var why: String = w.preview_command(c)
+	if why != "":
+		pick_msg = why
+		queue_redraw()
+		return false
+	last_pick = c.duplicate()
+	hub.issue(c)
+	pick = {}
+	pick_msg = ""
+	if hub.has_method("open"):
+		hub.open("teams")
+	return true

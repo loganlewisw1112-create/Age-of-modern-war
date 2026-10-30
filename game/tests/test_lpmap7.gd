@@ -56,6 +56,22 @@ func test_lpmap7_same_seed_same_bytes() -> void:
 	check_eq(var_to_bytes(LPM.gen(78, 0).lp.base), var_to_bytes(a.lp.base), "the base layout never depends on the seed")
 
 
+## G7 RETURN8: returning APCs line up on the facility apron (in the core-wall gate) and queue on the gate axis out to the
+## outer wall; layout_issue refuses any footprint on that lane (a plot planted on the gate axis outside the core wall is caught; the apron road itself is unbuildable).
+func test_lpmap7_facility_lane_clear() -> void:
+	var m := _map()
+	check_eq(LPM.layout_issue(m), "", "facility gate lane / apron clear of every footprint")
+	var m2 := m.duplicate(true)
+	var econ: Dictionary = m2.lp.base.rings[0]   # the economy row right outside the core-wall gate, on the gate axis
+	var q := LPM.FAC_O + Vector2i(14, 39)
+	var t2: PackedByteArray = m2.terrain
+	var pc: Vector2i = econ.plots[0].cell
+	t2[q.y * LPM.N + q.x] = t2[pc.y * LPM.N + pc.x]   # make the lane cell buildable ground, so only the lane rule can refuse it
+	m2.terrain = t2
+	(econ.plots as Array).append({"cell": q, "kind": "ciws", "size": 1})
+	check(LPM.layout_issue(m2).contains("facility gate lane"), "a plot on the gate axis queue lane is refused (%s)" % LPM.layout_issue(m2))
+
+
 func test_lpmap7_layout_consistent() -> void:
 	var m := _map()
 	var lp: Dictionary = m.lp

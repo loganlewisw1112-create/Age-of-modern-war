@@ -1241,6 +1241,244 @@ to top corner of map"**:
 - The Machine side (spawn, the 3 cores, the creep, the river / dam / ridge features, FOBs, traces) is re-laid out over
   the larger map away from the base (cores toward the far corner), keeping the 60-90 min target run length.
 
+#### 13.9c-42 VTOL dropships land on open ground or the big pad only; they must load (owner note, 2026-10-29)
+Owner, playing the 768 Last Protocol build: "impossible to load the vtols (non counter nanite dropship should ONLY be
+landing on open ground OR its bigger helipad NOT the smalle regular helipads obviously". Rules:
+- The regular (non counter-nanite) VTOL dropship lands **only on open ground** that fits its landing footprint, or on
+  **its own bigger dropship pad** (the VTOL / dropship pad sized for it). It never picks or is sent to the small
+  regular helipads (those are the helicopters' pads); a landing order there redirects to the nearest valid open ground
+  or the big pad.
+- Once landed, it **must load**: APCs, CN suits and infantry ordered to board walk / drive up the rear ramp and get in.
+- The counter-nanite stealth dropship keeps its own rules (the facility's 6x6 helipad, 13.9c / CNFAC7-2).
+
+#### 13.9c-43 Fatigue only from activity; exhausted soldiers inside the walls rest in the barracks (owner, 2026-10-29)
+Owner: "all units should ONLY get fatigue by moving/war/etc not from just standing at a post ---- when sldier enter the
+base wals they should go to barracks to rest of their fatigue is under 10% automatically---- lets make it intelligetn".
+Owner answers: **"Nearly exhausted"** and **"Idle ones only"**. Rules:
+- Fatigue builds **only from activity**: moving (more for running / carrying / crawling), fighting (firing, being under
+  fire / suppressed), working (building, repairing, carrying). Standing at a post, holding, idling or sitting in a
+  vehicle adds **no** fatigue (it may slowly recover, as resting does today, but never rises).
+- A soldier **inside the base walls** whose fatigue is **90% or more** (under 10% energy left) and who is **idle** (no
+  order, or their order finished) **goes to the nearest barracks with room on its own, rests until fresh, then returns
+  to their post / previous duty**. Units the player just ordered somewhere keep going.
+- Intelligent: never pull the last man off a manned post, gate or tower (a relief is sent first, as the Sentinel
+  rotation does, 13.9c-38); in a breach / lockdown resting soldiers stand to; pick the barracks by distance and free
+  beds; no ping-ponging (once resting, stay until recovered unless the base is breached).
+Build notes (2026-10-29, ORCH accepted): firing adds fatigue (rifle ~0.18 / min, MG ~0.29 / min of firing; standing
+still 0) but firing alone only tires a soldier up to the point where fatigue penalties begin (0.4) and never blocks his
+normal recovery above it; marching and being under fire are unchanged. Without that cap the 13.9c-33/-38 fortress balance
+broke (the full facility lost to infantry x3 and combined arms x2.5); with it both hold (test_sent7 13/0). Resting men
+go INSIDE a barracks (bed-limited; the Sentinel barracks admits Sentinels only, others rest at its door); a gate guard's
+relief is never a facility engineer or Sentinel. Authority record for the G7 hash re-baseline that firing fatigue causes.
+
+#### 13.9c-44 Player controls for counter-nanite strike teams and spec ops (owner, 2026-10-29)
+Owner: "i have zero controls for the actual purpose functionality of my counter nanite strike team and spec ops teams ---
+cant plce anything to kill the creep / apcs cant exit the facility". (The sim had cn_deploy / cn_mount / cn_dismount /
+cn_move / cn_set_loadout / cn_hero_detonate; the UI only showed Pincer and Break contact.) Owner answers:
+- **Purge order: "Both"**: a one-click **PURGE MISSION** (select team -> button -> click a creep area or core: the team
+  boards its APCs, leaves the facility, travels, dismounts, deploys counter-nanites, holds until purged, returns; the
+  player can step in any time) **and** the individual step buttons (Mount, Move, Dismount, Deploy (click ground),
+  Hero detonate, Loadout, Extract / Return).
+- **Where: "Both places"**: the command bar (with hotkeys) when a strike team, a member or its APC is selected, plus the
+  team card (status, loadout, mission progress); and the same orders from the **F4 ops room** strategic map.
+- **Spec ops (tactical operator teams) missions: all four**: **Escort** a purge team's mission; **Core raid** (plant
+  charges on a nanite core / Machine structure); **Recon & mark** (scout, mark creep and targets for fire support);
+  **Rescue / extract** (recover a downed team or lost squad, bring them home by dropship).
+- **Air insert: "Choose per mission"**: the mission asks **Drive or Fly**; Fly loads the team (+ APCs) into the
+  stealth / VTOL dropship at its pad and inserts near the target (13.9c-42 landing rules).
+Every order is pre-checked with the sim's own reason function and disabled with the reason as its tooltip.
+
+#### 13.9c-45 Aircraft returning to base land exactly on their own pad (owner note, 2026-10-29)
+Owner: "when airvehciels are auto returning to base they need to return exactly to their heli[ad for landing
+/offloading". Every aircraft that returns to base on its own (rearm, refuel, repair, end of mission, recall, out of
+ammo) flies to **its own assigned pad** (helicopters to their helipad, the VTOL dropship to its big pad / hangar
+apron, 13.9c-42; the CN stealth dropship to the facility helipad) and lands **exactly centred on it**, facing the
+pad's set heading, then offloads there. If its pad is taken or destroyed it takes the nearest free pad of its kind
+(never a pad of the wrong size) or holds nearby until one frees up.
+
+#### 13.9c-46 Regular VTOL dropship cargo: 1 APC + 2 suits + infantry (owner choice, 2026-10-29)
+The a_vtol_dropship bay held 1 vehicle, so an APC and a CN suit (vehicle class) could not ride together. Owner: **"1 APC
++ 2 suits + infantry"**: one APC, up to two armoured suits and a squad of infantry in one lift (the CN stealth dropship
+keeps its own load rules). PROVISIONAL.
+
+#### 13.9c-47 Realistic weapon lethality, round physics, blast throw and concussion (owner, 2026-10-29)
+Owner, playing Last Protocol: "weapons need to do more realistic damage like come on 10000 rounds later and still not
+dead? ... make it as realistic as we can --- if the smaller units get hit with artillery why arent they getting thrown
+with smooth animation due to blAST and shrapnle??" Owner answers: the enemy infantry in the live run had "near
+unlimited hp"; "ALL should be as realistic as possible per round type and how fast it flys etc *** real bullet/round
+physics"; lethality **"Realistic"**; blast **"thrown and ragdoll arc with realistic depth + can enter short comas
+depending how big the blast was, their armor and how close to proximity of blast"**. Rules:
+- **Find and fix why enemy infantry soak fire** in Last Protocol (stage / difficulty / nanite regeneration / armour
+  multipliers or a bug) — infantry of every side must die to realistic fire.
+- **Round physics per round type**: each weapon's round has a calibre / class, muzzle velocity, projectile mass (so
+  energy), velocity loss with range, and armour penetration; damage and penetration fall off with range as the round
+  slows; armour classes (none / soft body armour / hard plate / light vehicle / heavy vehicle / structure) stop or
+  reduce rounds realistically; hit zones (wounds, 7.x) still decide head / torso / limb effects. Data-driven
+  (PROVISIONAL numbers in content), deterministic.
+- **Lethality "Realistic"**: a few rifle hits drop an unarmoured soldier; MGs shred infantry in the open; cover and
+  armour matter a lot; AT weapons kill vehicles in 1-3 hits; artillery kills or wounds everyone near the impact.
+- **Blast throw**: soldiers (and light drones / small units) near an explosion are thrown in a smooth arc away from
+  the impact with realistic height and distance by blast size and proximity, tumble, land, and then die, lie wounded or
+  get up; the sim moves them deterministically, the view draws the arc + tumble (ragdoll-style).
+- **Concussion "short comas"**: survivors close to a big blast can be knocked unconscious for a short time (seconds to
+  a minute or so) scaled by blast size, proximity and their armour; unconscious units can't act, can be dragged /
+  treated by medics, and wake up (or die of wounds). Shrapnel wounds anyone farther out.
+- **Fortress balance: left as is (owner, 2026-10-29: "FUCK the fortress balance shit - leave that all as is and focus
+  on my tasks").** No retuning of defenders / attackers for the new lethality. If a fortress-balance test (13.9c-33 /
+  -38 hold-at-2.5x / break-at-4x, test_sent7 test_balance_fight) changes outcome under realistic lethality, that is
+  recorded, not tuned; this note is the owner authority for re-stating that oracle as a report instead of a gate.
+
+**Lethality test-setup authority (ORCH, under this owner-approved 13.9c-47 change, 2026-10-29):** tests whose subject is
+not toughness but whose setup target now dies early to realistic damage keep their assertions and thresholds; only the
+setup keeps the subject alive long enough to observe: `test_turret7` intended_target_classes (presence check right after
+the first short run) and traverse_idle_returns_to_rest (the m_hauler made durable); `test_dronebay7`
+hive_ram_only_at_the_core (attackers kept alive until the hive acts) plus a `has()` guard at the line that read a target
+killed that tick; `test_specops8` recon marks (the marked target made durable, or marks read from SoMark events). Also (FIX8B): `test_turret7` mortar_needs_spotting + determinism (targets made durable), `test_eng7`
+`_keep_engineers` waits for the one-time Supply8 crew top-up before trimming (start crew 3 -> 6, 13.9c-48); `test_life7` bowser bay test likewise (REG8B). Final-suite setup rulings (ORCH, REG8A,
+2026-10-30): `test_ai` G2 logistics (units start at half ammo so the resupply path is exercised); `test_gen61` infil/exfil
+(side 1's roaming start recon removed so the scripted raid is what is measured); `test_factions` artillery splash
+(explicit attack order, since ARTY8 holds automatic fire danger-close to an ally); `test_units_g5` HMG deploy (target
+durable only during set-up) and squad interval (squad XP held at green while the x1.5 squad-loss interval is measured,
+since one realistic AT hit now ranks it up). No assertion or threshold changed. LETHAL8E
+HTK: at_gunner -> m_colossus front 60 / side 4 / rear 3 (HEAT `blocked_chem`, PROVISIONAL).
+
+#### 13.9c-48 Facility building cards: options when a main building is selected (owner answers, 2026-10-29)
+Owner: "every building (main ones mostly) should have options i can select ... ask me questions and log and
+task/execute my answers". Every option is pre-checked by a sim reason function (disabled + reason tooltip), issued
+through MatchView.issue, deterministic and saved. Owner picks, per building:
+- **Command centre / ops room:** Mission board (all running team missions: progress, recall, cancel); Fire support
+  calls (artillery / rockets / air on a target, cooldowns and ammo shown); Evacuate / last stand (fighting withdrawal
+  into the core ring, or the facility's last-stand protocol). (Not picked: manual base alert level.)
+- **Armory + suit foundry:** Loadout presets per team role; Suit build & repair queue (by role, rush for more cost);
+  Weapon upgrades (AP / incendiary rounds, optics, suppressors, heavier plates). (Not picked: issue to selected.)
+- **Magazine / ammo + fuel bay:** Stock levels + alerts; Resupply priority (walls/turrets, teams, vehicles, aircraft);
+  Ammo type mix (AP, HE, incendiary, counter-nanite share); **Order deliveries = AIRDROP RETRIEVAL OP** (owner):
+  "air dropped come via airdrop pod in front of gates about 4-6 tiles outwards in open space ... once its dropped
+  facility must dispatch 4 engineers per drop + 2 support sentinel squads (7 man defensive specialized GO teams) to
+  fastly execute the retrieval of the drop(s) and bring it back to armory/mag ammo fuel bay /// go teams execute
+  defensive positioning and escort the four engineers to pick up each drop [one drop at a time with cooldown period]
+  + engineers utilize a tracked drone cargo truck bed that is quick/hardened with small ray shield defense (returns to
+  a parked location or ... give the magazine ammo and fuel bay armour a garage for it) keep it simple, concise,
+  accurate to lore and specialized facility tactility". So: one airdrop at a time (cooldown), pod lands in open ground
+  4-6 tiles outside a gate; the facility dispatches 4 facility engineers with a tracked drone cargo carrier (fast,
+  hardened, small ray shield) and 2 seven-man Sentinel GO teams that take up defensive positions and escort; they load
+  the pod, bring it back, and the stock is added at the magazine / fuel bay; the carrier parks in a small garage at
+  the magazine / fuel bay.
+- **Garages / workshop / decon wash:** Vehicle roster + repair (damage, fuel, ammo, repair priority); Launch / recall
+  convoy; Upgrade vehicles (armour kits, dome shield, rocket pod, engines); Wash / decon control (force decon, skip
+  under fire, contamination list).
+- **Sentinel barracks:** Watch roster (who is on which post, shifts, fatigue; swap / rotate by hand); Train Sentinels
+  by role; Rest & readiness (resting inside, beds, wake all / stand to); Patrol routes = **pick from a generated set of
+  defensive patrol / positioning plans for different facility security needs (no drawing)**.
+- **Helipads / VTOL pad / hangar:** Air roster + rearm; Launch / recall; Air patrol zones. (Not picked: dropship
+  scheduling.)
+- **Aid station:** Casualty board (wounded / unconscious, treatment order, evacuation); Medic dispatch.
+  **Package lab / research:** Research queue (CN packages / tiers); Field upgrades (team specialisations, new package
+  types).
+- **Defences (wall turrets, towers, CIWS, gates):** Fire mode (hold / return / at will / priority targets); Gate
+  control (open / close / lock by hand until released); Repair / rearm now. (Not picked: group select.)
+
+#### 13.9c-49 Realistic hit chance: misses from movement, poor sighting and being under fire (owner, 2026-10-29)
+Owner: "make it realistic - shots could be missed with movement, lack of proper sighting, getting shot themselves, etc".
+Hit chance per shot (deterministic) comes from: range vs the weapon's effective range and the round's flight time
+(13.9c-47); shooter moving (firing on the move is far less accurate; vehicles with stabilisers less affected); target
+moving fast / crossing; sight picture (time aiming at this target: the first shots after acquiring are worse, steady
+aimed fire improves; optics help); visibility (fog of war edge, night, smoke, dust, weather, target in cover /
+concealed / prone); the shooter being shot at (suppression, fresh wounds, fatigue 13.9c-43, concussion 13.9c-47);
+posture (prone / braced / mounted weapons steadier); training / rank. Misses still fly on and can hit something else
+along the line (existing straight-line streams). Data-driven PROVISIONAL numbers; reuse whatever accuracy factors
+already exist rather than stacking duplicates.
+
+#### 13.9c-50 Facility vehicle airlock: 3 APCs per cycle, slightly faster doors (owner choice, 2026-10-29)
+Under pressure (outer gate hardened, 13.9c-22) the gates run an airlock: one gate open at a time. It fitted 2 APCs, so
+8 APCs took ~94 s even after the deadlock fixes (FACFLOW8; GATE_S 4.0 -> 2.0). Owner: **"bigger airlock for 3 apcs at a
+time w slight faster doors but keep realism in check -- wider or long airlock? whatever is best"**. ORCH choice:
+a **longer** airlock (a real vehicle sally port is a single-lane box between two blast doors; a wider one would mean a
+second lane and wider doors in the wall) sized for **3 APCs nose-to-tail** with safe spacing, and door moves of about
+**1.75 s** (still a visible, heavy door). Target: all 8 APCs out under pressure in ~70 s, never both gates open; the
+return mirrors it. Layout change inside the facility only (the wash / decon chain keeps its order).
+Build note (FACFLOW8B, 2026-10-29): wash 4x6 single lane, inner gate 2 tiles north, staging [8,16,8,2], doors 1.75 s,
+SALLY_CAP 3. Hardened exit of 8 APCs 83.5 s (was 94 s; ~70 s target not yet met), quiet 54 s. **Oracle authority
+(ORCH, under this owner-approved layout change):** `test_cnfac7::test_facb7_enclosed_wash` link-piece count now treats a
+wash side cell inside a solid building (the Suit Foundry) as wall, so 12 link pieces instead of 14; this corrects a count
+derived from the old geometry. The strict check "no foot / vehicle cell open beside the wash" is unchanged. **Test-setup authority (ORCH):** `test_ciws7` bursts_and_pauses / dry_drum pin their tough target
+crawler at its spawn point (`_step_pinned`, as the ring sub-tests already do), since the 2 extra link-wall entities shifted
+id cadences and let the idle crawler drift into the blind ring; the crawler-inside sub-test re-runs `_silence()` after lockdown
+pop-ups spawn. No assertion or threshold changed. **apcmov7 oracle (ORCH, under 13.9c-50):** `test_gate_hardens_cycles_for_own_apcs_and_stands_down` "the APC waits in the
+wash while the outer gate cycles" now means the long-airlock equivalent: while the outer gate is not open the APC is inside
+the wash rect with the inner gate closed and never crosses the outer gate line before it opens (the full stop the 4-tile
+wash forced is no longer needed; never-both-open stays strict).
+
+#### 13.9c-51 Building cards live in the bottom command bar, with tabs (owner choice, 2026-10-29)
+Owner: **"all these new cards should be added at the bottom open space (same place when presing regular barracks the
+tabs to buy different troops types exitst)"**; approved ORCH's plan with **"approved"**. Every 13.9c-48 building card
+(command centre, defences, magazine, armory, garages, barracks, air pads, aid station, lab) plus the older barracks
+reserve (13.9c-34) and drone bay (13.9c-27) cards leave the floating left-side stack and render in the bottom bar's
+command-card area, the same grid a barracks uses for its production buttons:
+- each card's sections become **tabs** across the top of that area (e.g. command centre MISSIONS | FIRE SUPPORT |
+  EVACUATE); the tab's buttons fill the existing button grid, with the existing page arrow when they overflow;
+- live read-outs (mission progress, ammo + cooldowns, stock levels, rosters) go in the bottom bar's middle section by the
+  building portrait, or a small info strip just above the bar (as the airfield panel does) when they do not fit;
+- buttons, hotkeys, refusal reasons (disabled + tooltip) and sim commands are unchanged; only where they show changes.
+The barracks reserve + drone bay moving too was ORCH's recommendation, stated in the plan the owner approved.
+
+#### 13.9c-52 Realistic knock-down, blast-throw and unconscious animation (owner note, 2026-10-29)
+Owner: **"need better animations for when units get knocked unconcious or thrown of their feet -- more realistic asf"**.
+The 13.9c-47 throw cycled four borrowed poses (knock / stumble / knock-down / unconscious) by spin, which reads as
+flicker, not a body in flight. Presentation-only rework (no sim or hash change), baked from the soldier pose rig
+(tools/art/g61_anim.gd) for every soldier look that can be thrown or knocked out, all 8 facings:
+- **launch:** blast-side reaction, limbs flung, body leaving the ground away from the blast;
+- **airborne tumble:** a dedicated rotation sequence that follows the flight (spin direction from the throw, not the
+  facing), limbs trailing; spin rate scaled to the throw;
+- **impact:** hit the ground, a small bounce and a short skid along the throw line with a dust puff;
+- **settle:** comes to rest in one of several sprawl poses (face down / on back / on side), picked deterministically per
+  man, matching where his body ended up;
+- **knocked off his feet (not thrown):** knees buckle, stagger and fall away from the blast;
+- **unconscious:** limp in the sprawl pose, slow breathing, the odd twitch, no snap to a stock pose;
+- **coming round:** rolls over, pushes up to his knees, groggy stand with a stumble, then back to normal frames;
+- thrown corpses use the same launch / tumble / impact / settle, then lie still.
+The "z" marker stays. Frame budgets and the fps gates must still hold.
+
+#### 13.9c-53 Stray rounds, shot placement and blast daze (owner choice, 2026-10-29)
+Follows 13.9c-49 (ACCURACY8: per-shot hit chance in `sim/systems/accuracy8.gd`). Owner answers:
+- **Stray rounds:** **"all stray hits + makes shot placement crucial"**. A missed direct-fire round keeps flying along
+  its line (past / beside the aim point) and can hit whatever it crosses: enemy, **friendly** (friendly fire) or a vehicle /
+  building, with the round's energy falling off with distance (ballistics8). Firing into a crowd hits something; firing
+  past your own men can hit them.
+- **Shot placement is crucial:** where a round lands matters. Aimed, settled fire lands more often on vital zones
+  (head / torso; vehicle weak faces); snap, moving, suppressed or dazed fire spreads to limbs, cover and misses; vehicle
+  hits use the real hit facing (front / side / rear / top) so flanking pays. Uses the existing hit zones (Wounds.pick_zone,
+  ballistics8 zones / armour facing) rather than a parallel system.
+- **Blast daze:** **"Yes, dazed"**. A man near a blast who is not knocked out is dazed for a few seconds (aim about
+  halved, slower reactions), scaled by blast size, distance and armour (BLAST8 writes `e.b8d`; ACCURACY8 reads it).
+All numbers PROVISIONAL; deterministic (same seed = same hits); the sim speed gate (<= 1.2x G6.1 idle) still holds.
+**Friendly-fire follow-up (owner choice, 2026-10-29):** ACCURACY8B measured a packed 2k fight: with no protection, rear
+ranks shooting through their own front rank gave 2,135 friendly hits in 30 s; "close-friend clearance" (friends within 3
+tiles immune) cut it to 520; plain fire discipline (hold fire when a friend is near the muzzle line) cut shots from
+13,044 to 750 because nothing moved the blocked men. Owner chose **"Discipline + reposition"**: a soldier whose line
+of fire is blocked by a friend holds fire **and sidesteps to a clear firing spot** (a short, deterministic lateral move,
+then fires); friends further down the line stay hittable by strays; no immunity zone.
+**Packed-fight follow-up (owner choice, 2026-10-30):** STRAY8B built discipline + sidestep + fire-over-kneeling-mates;
+in a packed 2k blob (~10 men per tile) there is no room to sidestep, so shots fell to 59% of baseline (friendly fire 794 vs
+2,135 unprotected), at ~7 ms/tick. Owner chose **"Spread packed groups"**: keep discipline + sidestep as built and add
+realistic combat spacing: infantry squads in contact open out to about 1 man per tile (fire-team spacing), so there is
+room to fire and step aside. Firepower must return to the old engagement band (test_formations7 gate) and the
+discipline/stray cost must come down.
+**Fight-rate gate (OWNER AUTHORITY, 2026-10-30, "Yes, re-band it"):** SPREAD8 shipped combat spacing (marked men in contact
+keep ~1 tile, separation radius 0.5) and cut the discipline cost (4.1 -> 2.7 ms/tick) and stray cost (291 -> 244 us/call);
+the 2k fight fires 8,266 shots by tick 600 vs G6.1 13,685. `test_formations7::test_gate_fight_engages_like_g61` shots floor
+lowered 0.75x -> 0.5x G6.1 (ceiling 1.25x and the kills band unchanged): fewer rounds are the intended result of realistic
+hit chance, fire discipline, stray kills and spacing. Known follow-up: base auto artillery can shell creep nodes next to
+our own purge teams (FLY8B) - fix in progress.
+
+#### 13.9c-54 G7 sim-cost gate: 1.42x accepted for G7 (OWNER AUTHORITY, 2026-10-30)
+Idle-PC A/B (`.plan/perf7g_pairs.sh 6`, 0 other Godot processes) on the final late-additions tree: G6.1 median 18.86 ms vs
+G7 26.80 ms = **1.42x** (gate 1.2x). PERF8/8B/8C applied every hash-exact optimisation (native capsule queries, sp8 apply,
+prefilters; test_hot_state 17/0 unchanged); the remaining cost is the owner-requested realistic combat (more misses, strays,
+fire discipline + sidesteps, spacing, danger-close checks) per live unit. FPS gates still pass (2k p10 64.4 >= 60, 10k p10
+218.7 >= 30). Owner chose **"Accept 1.42x for G7"**: G7 ships at ~1.42x G6.1 sim cost in big fights; a native port of the
+combat / fire-discipline loops is planned for the next slice to win it back. The 1.2x gate itself is not edited.
+
 ### 13.10 Decided against for G7
 - **Moved to G8:** director-cam picture-in-picture, end-of-run highlight reel, end-of-run creep timelapse.
 - **Undecided, not in G7:** tactical pause with order queue (may be added later).

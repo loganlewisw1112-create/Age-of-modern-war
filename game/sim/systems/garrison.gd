@@ -221,13 +221,15 @@ static func tick(w: SimWorld) -> void:
 		if b == null or b.kind != "building" or int(b.owner) != int(r.owner):
 			_building_lost(w, r)
 			continue
+		# G7 REST8B 13.9c-43: a building without garrison slots (a base barracks) only ever quarters resting men
+		# (Rest8 puts them in with place_inside(.., beds)): they never fire out, like the Sentinel Barracks.
+		var nf := no_fire(String(r.def)) or slots_of(String(r.def)) <= 0
 		var units := []
 		for uid in r.units:
 			var e = w.entities.get(int(uid))
 			if e == null or int(e.get("garrisoned_in", -1)) != int(r.id):
 				continue
 			var ot := String(e.order.type)
-			var nf := no_fire(String(r.def))
 			if ot == "idle" or (nf and ot == "hold"):
 				HotState.set_order(w, int(uid), {"type": "rest" if nf else "hold"})
 			elif ot != "hold" and not (nf and ot == "rest"):
@@ -298,14 +300,17 @@ static func _pin(w: SimWorld, e: Dictionary, r: Dictionary, i: int) -> void:
 ## through the same record / pin / hold path as a unit that walked in (no walk, no reach check).
 ## Same rules as the garrison command: the owner's built building with a free slot, infantry only.
 ## Returns "" when the unit is inside, else the reason (nothing changes then).
-static func place_inside(w: SimWorld, bid: int, uid: int) -> String:
+## G7 REST8B (13.9c-43): beds >= 0 = Rest8 quartering a resting soldier in a barracks: a building without garrison
+## slots then holds at most beds occupants, and they never fire out (tick: nf).
+static func place_inside(w: SimWorld, bid: int, uid: int, beds: int = -1) -> String:
 	var b = w.entities.get(bid)
 	var e = w.entities.get(uid)
 	if b == null or b.kind != "building":
 		return "No building."
 	if e == null or e.kind != "unit" or int(e.owner) != int(b.owner):
 		return "Not a unit of the building's owner."
-	if slots_of(String(b.def)) <= 0:
+	var qs := beds >= 0 and slots_of(String(b.def)) <= 0   # G7 REST8B: rest quarters
+	if slots_of(String(b.def)) <= 0 and not qs:
 		return "That building cannot be garrisoned."
 	if not bool(b.get("built", false)):
 		return "The building is not finished."
@@ -313,7 +318,7 @@ static func place_inside(w: SimWorld, bid: int, uid: int) -> String:
 		return "Only Sentinels can garrison here." if only_of(String(b.def)) == "sentinel" else "Only infantry squads can garrison."
 	if int(e.get("garrisoned_in", -1)) == bid:
 		return ""
-	if free_slots(w, b) <= 0:
+	if (beds - occupants(w, bid).size() if qs else free_slots(w, b)) <= 0:
 		return "The building is full."
 	if e.has("garrisoned_in"):
 		_leave(w, e, "regarrison")

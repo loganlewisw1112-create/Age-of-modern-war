@@ -13,6 +13,7 @@ extends RefCounted
 ##  5. Real clicks on the card: AUTO off, LAUNCH (guard formation over the compound), RECALL, AUTO on.
 ## Run: "$G" --path . -- --ui-playtest="<abs shot dir>" --ui-playtest-dronebay7   (ORCH registered "dronebay7")
 
+const CardBar8 = preload("res://tools/pt8_cardbar.gd")   # G7 CARDBAR8 (13.9c-51)
 const H = preload("res://tests/test_machine_g6.gd")
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const DroneBay7 = preload("res://sim/systems/drone_bay7.gd")
@@ -73,7 +74,7 @@ func _scroll_of(n: Node) -> ScrollContainer:
 ## A real click on the card button. The HUD's left column scrolls when it is full, so the button is first scrolled into
 ## view (as a player would). last_press records where the click went (and what was under the mouse).
 func _press(pt, card, btn_name: String) -> bool:
-	var b: Button = card.find_child(btn_name, true, false)
+	var b: Button = await CardBar8.reveal(pt, card, btn_name)   # G7 CARDBAR8: the bottom-bar tab first
 	if b == null or b.disabled or not b.is_visible_in_tree():
 		last_press = "%s: %s" % [btn_name, "missing" if b == null else ("disabled" if b.disabled else "hidden")]
 		return false
@@ -266,12 +267,16 @@ func run(pt) -> void:
 	for i in 4:
 		foes.append(_foe(w, "b_militia", foe, Vector2(cc.x - 3 + 2 * i, cc.y + 5), 1800.0))
 	var allin: bool = await pt._wait_until(func(): return String(_sm(pt).mode) == "commit", 6.0)
+	var allin_card := ""   # CARDBAR8B: read the card the moment the hive commits (the mode falls back to alert within seconds)
+	if card != null:
+		card.refresh()
+		allin_card = String(card._task.text)
 	await pt._wait(2.5)
 	sm = _sm(pt)
 	pt._log("dronebay7_all_in", allin and int(sm.ready) <= 2, "breach: the hive commits (mode %s), %d left in the hangar, tasks %s" % [String(sm.mode), int(sm.ready), str(_tasks(sm))])
 	if card != null:
 		card.refresh()
-	pt._log("dronebay7_card_all_in", card != null and String(card._task.text).begins_with("ALL IN"), "card: '%s'" % (String(card._task.text) if card != null else ""))
+	pt._log("dronebay7_card_all_in", card != null and allin_card.begins_with("ALL IN"), "card at the commit: '%s'" % allin_card)
 	mv.join_sim()
 	await _shots(pt, mv, "allin", _drone_centre(pt, [], cc), [1.0, 1.75], 60.0)
 	var fought: bool = await pt._wait_until(func():

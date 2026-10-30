@@ -127,7 +127,9 @@ func test_gate_fight_engages_like_g61() -> void:
 				kills += 1
 	print("FORM7 fight kills=%d shots=%d first_shot=%d hash=%s" % [kills, shots, first, String(w.state_hash()).left(16)])
 	check(kills >= int(0.75 * G61_KILLS) and kills <= int(1.5 * G61_KILLS), "kills by tick 600: %d in [%d, %d] (G6.1 %d)" % [kills, int(0.75 * G61_KILLS), int(1.5 * G61_KILLS), G61_KILLS])
-	check(shots >= int(0.75 * G61_SHOTS) and shots <= int(1.25 * G61_SHOTS), "shots by tick 600: %d in [%d, %d] (G6.1 %d)" % [shots, int(0.75 * G61_SHOTS), int(1.25 * G61_SHOTS), G61_SHOTS])
+	# Shots floor 0.75 -> 0.5 x G6.1: OWNER AUTHORITY 2026-10-30 ("Yes, re-band it"), docs/G7_REFERENCE.md 13.9c-53: realistic
+	# hit chance, fire discipline, stray kills and combat spacing fire fewer rounds by design; ceiling + kills band unchanged.
+	check(shots >= int(0.5 * G61_SHOTS) and shots <= int(1.25 * G61_SHOTS), "shots by tick 600: %d in [%d, %d] (G6.1 %d)" % [shots, int(0.5 * G61_SHOTS), int(1.25 * G61_SHOTS), G61_SHOTS])
 	check(first >= 0 and first <= G61_FIRST_SHOT + 30, "first shot at tick %d <= %d (G6.1 %d)" % [first, G61_FIRST_SHOT + 30, G61_FIRST_SHOT])
 
 

@@ -82,7 +82,7 @@
     "foot_u": -2.6, "apc_u": -3.09, "stage_u": -5.8, "clear_u": -5.6, "side_v": 1.8, "out_u": 2.5, "enter_r": 0.6, "enter_r_veh": 0.3
   },
   "_g7_bays": {
-    "a_vtol_dropship": {"vehicle": 1, "foot": 10, "foot_empty": 16, "carry_occupants": true}
+    "a_vtol_dropship": {"vehicle": 3, "vehicle_carriers": 1, "vehicle_other": 2, "foot": 10, "foot_empty": 16, "carry_occupants": true}
   },
   "_g7_base_state": {
     "eval_every": 10, "outer_pad": 12, "radius": 10, "fire_window": 100, "def_factor": 1.5, "min_threat_hp": 1.0,
@@ -93,10 +93,11 @@
     "_layout_note": "BASE7-3 (13.9c-2/-3, PROVISIONAL): two-layer APC entry on the south wall: gate_outer (reinforced gate in the wall) -> apc_wash (APC decon wash between the layers) -> gate_inner -> staging yard; the infantry come in through the checkpoint (wall slot x18, a wall section x16 apart from the vehicle gate) up their own walkway (x17..20, y24..25) into the decon hall (x17..20, y21..23) and out north onto the y20 lane. Every building keeps its own footprint with >= 1 tile clearance to every other building (garages stand in two rows), doors open onto lanes, lanes never cross a footprint. Garage rows W/E on lanes x6..7 / x20..21; loading pad (stealth launch pad) + helipad on the north wall with the apron x15..18; planning room and package lab on the spine (x12..15); drone bay under the helipad apron; training range SW, workshop SE. Wall ring: 2x2 blast walls on even offsets, 16 hardened towers ON the wall line (13.9c-3 + 13.9c-4: 4 corners, 2-3 per long run, both entry flanks), closed and tied in on both sides; every tower keeps a free inner cell (wall-walk stairs, 13.9c-4) and no building lines a whole wall run. 13.9c-4 sentries: 1x1 a_t7_hmg_nest posts on the inner face of every wall run of >= 2 segments (they fire over the wall), facing outward, never on a tower's last free access cell, a door or a footprint. Core moved to [3,3] so the NW corner has its stair cell; range 8x4 / workshop 4x4 leave the south inner face open. 'gate' / 'decon' are code aliases of gate_outer / apc_wash (not drawn).",
     "core_offset": [3, 3],
     "gate_outer": [12, 26, 4, 2],
-    "apc_wash": [12, 22, 4, 4],
-    "gate_inner": [12, 20, 4, 2],
+    "_airlock_note": "FACFLOW8B (owner 13.9c-50, ORCH: a LONGER single-lane airlock): the vehicle sally port (gate_inner -> apc_wash -> gate_outer) holds 3 APCs nose to tail (FacDrive7.SALLY_CAP 3, wash stops 2.05 apart): the wash grew 2 tiles north (4x4 -> 4x6, y20..25) and the inner gate moved with it ([12,20] -> [12,18], same 4x2 reinforced layer, opening on the travel axis); the west link wall runs y19..25 beside it, the east side is the Suit Foundry wall (y18..20) then its link wall (y21..25). The staging yard moved 1 north and is 2 deep, [8,16,8,2], right behind the inner gate (the y16 cross lane now ends at the yard: [16,16,6,1]; the spine [12,9,4,7] runs into it), the y20 west lane ends at x10 at the link wall, and the foundry west door moved [15,18] -> [15,17] onto the staging apron (infantry path decon hall -> foundry -> spine unchanged in order). Outer gate, towers, decon hall, runoff and the wash order unchanged.",
+    "apc_wash": [12, 20, 4, 6],
+    "gate_inner": [12, 18, 4, 2],
     "decon_hall": [17, 21, 4, 3],
-    "staging": [8, 17, 8, 3],
+    "staging": [8, 16, 8, 2],
     "pad": [8, 2, 7, 6],
     "helipad": [19, 2, 6, 6],
     "drone_bay": [16, 9, 4, 4],
@@ -117,7 +118,7 @@
     "approach": [0, 28, 28, 5],
     "fuel_point": [16, 4, 3, 3],
     "runoff": [10, 22, 1, 2],
-    "link_walls": [[11, 21, 1, 5], [16, 21, 1, 5]],
+    "link_walls": [[11, 19, 1, 7], [16, 21, 1, 5]],
     "link_def": "cn_link_wall",
     "attached": {"aid_station": "decon_hall", "armory": "decon_hall"},
     "faces": {"gate_outer": 3, "gate_inner": 3, "armory": 0, "aid_station": 3, "magazine": 1, "barracks": 1, "runoff": 3, "link_walls": 0},
@@ -141,8 +142,8 @@
     "workshop": [16, 9, 4, 4],
     "garages": [[4, 9], [4, 12], [4, 15], [4, 18], [23, 9], [23, 12], [23, 15], [23, 18]],
     "garage_size": [3, 3],
-    "lanes": [[2, 7, 6, 1], [6, 8, 2, 13], [16, 3, 3, 6], [8, 8, 12, 1], [20, 8, 2, 13], [12, 9, 4, 8], [8, 12, 4, 1], [6, 16, 16, 1], [2, 20, 10, 1], [20, 20, 6, 1], [17, 24, 4, 2], [23, 21, 1, 5], [24, 25, 2, 1]],
-    "doors": {"core": [[4, 7]], "planning": [[12, 10]], "lab": [[12, 14]], "drone_bay": [[20, 12]], "range": [[5, 20], [8, 20]], "workshop": [[15, 10], [20, 10]], "armory": [[20, 17], [20, 18], [15, 18]], "aid_station": [[22, 20]], "magazine": [[24, 25]], "barracks": [[17, 16]], "decon_hall": [[18, 24], [20, 20]]},
+    "lanes": [[2, 7, 6, 1], [6, 8, 2, 13], [16, 3, 3, 6], [8, 8, 12, 1], [20, 8, 2, 13], [12, 9, 4, 7], [8, 12, 4, 1], [16, 16, 6, 1], [2, 20, 9, 1], [20, 20, 6, 1], [17, 24, 4, 2], [23, 21, 1, 5], [24, 25, 2, 1]],
+    "doors": {"core": [[4, 7]], "planning": [[12, 10]], "lab": [[12, 14]], "drone_bay": [[20, 12]], "range": [[5, 20], [8, 20]], "workshop": [[15, 10], [20, 10]], "armory": [[20, 17], [20, 18], [15, 17]], "aid_station": [[22, 20]], "magazine": [[24, 25]], "barracks": [[17, 16]], "decon_hall": [[18, 24], [20, 20]]},
     "helipad_craft": {"centred": true, "facing_deg": 0, "note": "art.dropship_sizes rev3/rev4: 6x6 pad, craft pivot on the pad centre, nose +u (east), rear ramp west onto the apron lane x16..19 (open ground to u -5.8 for the APC line-up)"},
     "towers": [[0, 0], [4, 0], [8, 0], [16, 0], [26, 0], [0, 6], [0, 12], [0, 18], [26, 6], [26, 12], [26, 18], [0, 26], [6, 26], [10, 26], [20, 26], [26, 26]],
     "_wtur_note": "FACB7-3 (owner 13.9c-9): the manned sentry nests (a_t7_hmg_nest) are removed; the facility starts with WTUR7's unmanned wall turrets instead (wall_turrets = compound-local [x, y, mount], WTUR7 fact facility.wall_turret_def.v2 board seq 3650 / need seq 3862; sim/systems/wallturret7.gd raises them and rebuys lost ones).",

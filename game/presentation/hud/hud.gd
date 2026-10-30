@@ -44,6 +44,7 @@ const BTN_MIN_W := 112.0
 const ALERT_LIFE := 9.0
 const ALERT_MAX := 6
 const ATTACK_ALERT_TICKS := 20 * 10
+const FF_ALERT_TICKS := 20 * 8   # G7 STRAY8B: "Friendly fire!" alert throttle (8 s)
 
 var mv: Node = null
 var layer: Node = null
@@ -89,6 +90,7 @@ var ui6a = Ui6aHub.new()       # G6 (UI6a): the four G6 panels (modal)
 var teams = TeamsPanel.new()   # G6.1 (SQUAD61)
 var cmd_layer = CommandLayer.new()   # G6.1 (PLAN61)
 var ops7 = null   # G7 OPSUI7: operations room hub (presentation/ui7/ops_panel.gd)
+var cardbar = preload("res://presentation/ui7/cardbar8.gd").new()   # G7 CARDBAR8 (13.9c-51): facility cards in the command card, with tabs
 var _card_title: Label
 var _card_grid: GridContainer
 var _queue_box: HBoxContainer
@@ -313,8 +315,15 @@ func _build_ui() -> void:
 	cmd_layer.build(self, root)   # G6.1 (PLAN61)
 	teams.build(self, root)       # G6.1 (SQUAD61)
 	ops7 = preload("res://presentation/ui7/ops_panel.gd").attach(self, root, left)   # G7 OPSUI7 CR 1401: ops room modal + PROTOCOL card
-	preload("res://presentation/ui7/dronebay_card.gd").attach(self, left)   # G7 DRONEBAY7 CR 5737: drone bay card (Drones n/12, LAUNCH / FPV / RECALL / AUTO)
-	preload("res://presentation/ui7/lpreserve_card.gd").attach(self, left)   # G7 LPRES7 (13.9c-34): Last Protocol barracks reserve card (In n/100, RELEASE / RECALL / AUTO)
+	cardbar.build(self, root)   # G7 CARDBAR8: the facility cards are the info strip above the bottom bar; their buttons go in the command card
+	cardbar.attach(preload("res://presentation/ui7/dronebay_card.gd"))   # G7 DRONEBAY7 CR 5737: drone bay card (Drones n/12, LAUNCH / FPV / RECALL / AUTO)
+	cardbar.attach(preload("res://presentation/ui7/lpreserve_card.gd"))   # G7 LPRES7 (13.9c-34): Last Protocol barracks reserve card (In n/100, RELEASE / RECALL / AUTO)
+	cardbar.attach(preload("res://presentation/ui7/ops_card8.gd"))   # G7 CARDS8A (13.9c-48): command centre card
+	cardbar.attach(preload("res://presentation/ui7/defence_card8.gd"))   # G7 CARDS8A (13.9c-48): defences card
+	cardbar.attach(preload("res://presentation/ui7/armory_card8.gd"))   # G7 CARDS8B (13.9c-48): Armory + Suit Foundry card
+	cardbar.attach(preload("res://presentation/ui7/garage_card8.gd"))   # G7 CARDS8B (13.9c-48): Garages / workshop / decon wash card
+	cardbar.attach(preload("res://presentation/ui7/building_card8c.gd"))   # G7 CARDS8C (13.9c-48): barracks / helipads + VTOL pad / aid station / package lab cards
+	cardbar.attach(preload("res://presentation/ui7/supply_card8.gd"))   # G7 SUPPLY8 (13.9c-48): magazine / ammo + fuel bay card (stock, priority, ammo mix, airdrop retrieval)
 	extras.bar.resized.connect(_cap_stacks)
 	left.resized.connect(_cap_stacks)
 	right.resized.connect(_cap_stacks)
@@ -432,7 +441,9 @@ func _fit_card() -> void:
 		return
 	var pageable: Array = []
 	for rec in _card_buttons:
-		if is_instance_valid(rec.btn) and ["build", "train", "research"].has(String(rec.kind)):
+		if is_instance_valid(rec.btn) and ["build", "train", "research", "fac"].has(String(rec.kind)):
+			if cardbar != null and cardbar.hides(rec.btn):
+				continue   # G7 CARDBAR8C: hidden behind an open facility card tab (no page slot)
 			pageable.append(rec.btn)
 	var fixed: Array = []
 	for c in _card_grid.get_children():
@@ -629,6 +640,7 @@ func _refresh() -> void:
 	ui6a.update(w, _pf())
 	cmd_layer.update(w, _pf())   # G6.1 (PLAN61)
 	teams.refresh()              # G6.1 (SQUAD61)
+	cardbar.place()              # G7 CARDBAR8: info strip above the bottom bar
 	_cap_stacks()
 
 
@@ -876,7 +888,7 @@ func _set_card(mode: String, ents: Array, w: SimWorld) -> void:
 	var id_strs: Array = []
 	for e in ents:
 		id_strs.append(str(int(e.id)))
-	var sig := mode + ":" + ",".join(id_strs)
+	var sig := mode + ":" + ",".join(id_strs) + cardbar.sig(mode)   # G7 CARDBAR8: facility card set + tab
 	var qsig := ""
 	if mode == "building":
 		var items: Array = []
@@ -898,6 +910,7 @@ func _set_card(mode: String, ents: Array, w: SimWorld) -> void:
 
 
 func _clear_card() -> void:
+	cardbar.release()   # G7 CARDBAR8: facility card buttons back to their stash before the grid is emptied
 	_card_buttons.clear()
 	_card_pager = null
 	_card_page = 0
@@ -953,6 +966,7 @@ func _rebuild_card(mode: String, ents: Array) -> void:
 		var btn2 := _card_button("Cancel build", "refund", "", "")
 		btn2.pressed.connect(_issue.bind({"type": "cancel_building", "building_id": int(b2.id)}))
 		_card_buttons.append({"btn": btn2, "kind": "plain"})
+	cardbar.apply(mode)   # G7 CARDBAR8 (13.9c-51): facility card tabs
 	g2_cmd.compact(_card_grid)
 	# G5 (UI5a): one fit routine for every card (replaces the G3a/G3b per-case shrinking)
 	_fit_card()
@@ -1127,6 +1141,9 @@ func _update_card_state(mode: String, ents: Array, w: SimWorld) -> void:
 		var reason := ""
 		var kind := String(rec.kind)
 		var tip := ""
+		if kind == "fac":   # G7 CARDBAR8: the card sets enabled + tooltip itself (sim reason)
+			rec["reason"] = cardbar.reason_of(btn)
+			continue
 		if kind == "build":
 			reason = _build_reason(w, String(rec.def))
 			var d: Dictionary = Content.building(String(rec.def))
@@ -1165,6 +1182,7 @@ For Stage %d" % [G3bData.project_name(String(rec.project), G3.faction_def(w, pf)
 	if mode == "engineer" or mode == "units":
 		g2_cmd.update_state(w)
 	g4b_cmd.update_state(w)
+	cardbar.post_update()   # G7 CARDBAR8
 	if _hover_btn != null:
 		for rec in _card_buttons:
 			if rec.btn == _hover_btn and String(rec.get("reason", "")) != "":
@@ -1407,6 +1425,9 @@ func _on_events(events: Array) -> void:
 					# G3a: an ally (same team) is being shot by a non-ally
 					if not _throttled("ally_attack:%d" % int(tgt.owner), ATTACK_ALERT_TICKS, w):
 						_push_alert("Ally under attack: %s" % String(w.factions[int(tgt.owner)].name), G3.side_color(w, int(tgt.owner)).lightened(0.3), tgt.pos)
+			"FriendlyFire":   # G7 STRAY8B (13.9c-53): a stray round hit our own man; at most one alert per FF_ALERT_TICKS
+				if int(ev.get("owner", -1)) == pf and not _throttled("ff", FF_ALERT_TICKS, w):
+					_push_alert("Friendly fire!", HT.YELLOW, ev.get("at", null))
 			"EntityDestroyed":
 				if int(ev.get("owner", -2)) == pf and String(ev.get("kind", "")) != "resource":
 					var ko := int(ev.get("killer_owner", -1))

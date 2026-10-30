@@ -87,18 +87,21 @@ func test_gunship_slings_one_light_vehicle() -> void:
 
 ## G7 (owner-ordered spec change, docs/G7_REFERENCE.md B18): the VTOL dropship carries ONE vehicle + its occupants + one
 ## squad INSIDE its cargo bay (nothing slung), replacing the G5 rule of 2 slung vehicles + 8 troops. Same checks, new rule.
-func test_vtol_bay_carries_one_vehicle_and_a_squad() -> void:
+func test_vtol_bay_carries_three_vehicles_and_a_squad() -> void:
 	var w := _w()
 	w.factions[0].stage = 9
 	var s := _landed(w, "a_vtol_dropship")
 	var v: int = s.id
-	var veh := _spawn_near(w, "mbt", s.cell, 1) + _spawn_near(w, JEEP, s.cell, 1)
+	var veh := _spawn_near(w, "mbt", s.cell, 2) + _spawn_near(w, JEEP, s.cell, 1)
 	var troops := _spawn_near(w, "rifleman", s.cell, 11)
 	check(_load(w, v, [veh[0]] + troops.slice(0, 10), 11) > 0, "1 vehicle + 10 troops board")
 	var load := Transport.group_load(w.entities[v])
 	check_eq(load, {"foot": 10, "vehicle": 1}, "mixed cargo counts")
 	check(Transport.slung(w.entities[v]).is_empty(), "nothing slung: the vehicle rides inside the bay")
-	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [veh[1]]}).contains("full"), "2nd vehicle refused")
+	# 13.9c-46: up to 3 vehicles (1 APC + 2 others); two non-carrier vehicles fit, a third is refused
+	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [veh[1]]}) == "", "2nd vehicle accepted")
+	Transport.load_now(w, w.entities[v], w.entities[veh[1]])
+	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [veh[2]]}).contains("full"), "3rd non-carrier vehicle refused")
 	check(w.preview_command({"type": "load", "issuer": 0, "carrier": v, "unit_ids": [troops[10]]}).contains("full"), "11th trooper refused")
 
 

@@ -346,6 +346,33 @@ static func inf_cols(frames: Array) -> Dictionary:
 	var g7 := g7_cols(frames)
 	for k in g7:
 		d["g7_" + k] = g7[k]   # G7 (LOOK7): flat keys (values stay int / Array like the G6.1 set)
+	var k8 := k8_cols(frames)
+	for k in k8:
+		d[k] = k8[k]   # G8 ANIM8: k8_* keys (packed into block B like every other a61 column)
+	return d
+
+
+## G8 (ANIM8, 13.9c-52): blast throw / knock-down / unconscious / wake-up columns (tools/art/g61_anim.gd SET8, joined by
+## ArtCatalog from assets/art/g8_anim8/): {k8_launch[2], k8_tum[8], k8_imp[2], k8_bk / k8_fd / k8_sd [breath 0,
+## breath 1, twitch], k8_buck[4], k8_wake[6]}; {} unless all present.
+const K8_ARR := [["launch", 2], ["tum", 8], ["imp", 2], ["buck", 4], ["wake", 6]]
+static func k8_cols(frames: Array) -> Dictionary:
+	if not frames.has("k8_tum_0"):
+		return {}
+	var d := {}
+	for k in K8_ARR:
+		var a: Array = []
+		for i in int(k[1]):
+			var c := frames.find("k8_%s_%d" % [k[0], i])
+			if c < 0:
+				return {}
+			a.append(c)
+		d["k8_" + String(k[0])] = a
+	for v in ["bk", "fd", "sd"]:
+		var a: Array = [frames.find("k8_%s_0" % v), frames.find("k8_%s_1" % v), frames.find("k8_%s_t" % v)]
+		if a.has(-1):
+			return {}
+		d["k8_" + v] = a
 	return d
 
 

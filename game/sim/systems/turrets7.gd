@@ -29,6 +29,7 @@ const Airdef = preload("res://sim/systems/airdef.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 PERF7A: spotter-def building list, on/off switch
+const Cards8a = preload("res://sim/systems/cards8a.gd")   # G7 CARDS8A (13.9c-48): defence card fire mode / priority
 const BBK := 16.0   # G7 PERF7A: building bucket size (tiles) for the enemy-building candidate scans
 
 const TAGS := ["inf", "swarm", "drone", "air", "leech", "pack", "walker_l", "walker_h", "light_v", "heavy", "big", "core", "machine", "building"]
@@ -442,6 +443,8 @@ static func _tick2(w: SimWorld, ids: Array) -> void:
 			t = w.entities.get(aim)
 			if t != null and not can_engage(w, b, c, wd, t):
 				t = null
+		if t != null and w.sys_state.has("cards8a"):   # G7 CARDS8A (13.9c-48): hold / return fire / priority
+			t = Cards8a.filter(w, b, t, float(wd.get("range", 0)), func(x): return can_engage(w, b, c, wd, x))
 		if t == null:
 			if aim >= 0:
 				(st.aim as Dictionary).erase(bid)

@@ -438,7 +438,7 @@ static func _jobs_for(w: SimWorld, S: Dictionary, F: Dictionary) -> Array:
 		var am := float(Content.unit(String(u.def)).get("ammo_max", 0))
 		if bool(u.get("s7_sa", false)) or float(u.ammo) < low * am:
 			var urg := 1.0 - float(u.ammo) / maxf(am, 1.0) + (1.0 if bool(u.get("s7_sa", false)) else 0.0)
-			var rj := _job("restock:%d" % int(id), "restock", Vector2(u.pos), 3.0 + urg, ["bearer"], 1)
+			var rj := _job("restock:%d" % int(id), "restock", Vector2(u.pos), (3.0 + urg) * _sup8p(w, fid, "teams"), ["bearer"], 1)
 			rj["uid"] = int(id)
 			jobs.append(rj)
 	# 13.9c-13 casualty drill: the Mender comes forward to every Sentinel that is down
@@ -454,7 +454,7 @@ static func _jobs_for(w: SimWorld, S: Dictionary, F: Dictionary) -> Array:
 	for lid in lockers_of(w, fid):
 		var stk := locker_stock(w, lid)
 		if stk < cap / 2:
-			jobs.append(_job("locker:%d" % lid, "locker", _bpos(w.entities[lid]), 2.0 + 1.0 - float(stk) / float(cap), ["bearer", "engineer"], 1, lid))   # ENG7 (13.9c-11): engineers refill lockers by forklift
+			jobs.append(_job("locker:%d" % lid, "locker", _bpos(w.entities[lid]), (2.0 + 1.0 - float(stk) / float(cap)) * _sup8p(w, fid, "walls"), ["bearer", "engineer"], 1, lid))   # ENG7 (13.9c-11): engineers refill lockers by forklift
 	for pid in F.parts:
 		var b = w.entities.get(int(pid))
 		if b != null and float(b.hp) < float(P.get("repair_below", 0.9)) * float(b.max_hp):
@@ -470,8 +470,29 @@ static func _jobs_for(w: SimWorld, S: Dictionary, F: Dictionary) -> Array:
 		var j := x.duplicate(true)
 		j["taken"] = []
 		jobs.append(j)
+	if w.sys_state.has("cards8c"):   # G7 CARDS8C (13.9c-48): barracks patrol plan, casualty order, medic point
+		_c8c().adjust_jobs(w, fac, jobs)
 	jobs.sort_custom(func(a, b) -> bool: return float(a.prio) > float(b.prio) if float(a.prio) != float(b.prio) else String(a.id) < String(b.id))
 	return jobs
+
+
+## SUPPLY8 (13.9c-48): resupply priority weight the player set on the magazine card (1.0 without the supply state).
+static var _sp8 = null
+static var _c8 = null
+
+
+static func _c8c():
+	if _c8 == null:
+		_c8 = load("res://sim/systems/cards8c.gd")
+	return _c8
+
+
+static func _sup8p(w: SimWorld, fid: int, cls: String) -> float:
+	if not w.sys_state.has("supply8"):
+		return 1.0
+	if _sp8 == null:
+		_sp8 = load("res://sim/systems/supply8.gd")
+	return float(_sp8.prio(w, fid, cls))
 
 
 ## Role of an automatic unit on the board ("" = not plannable now: player-owned, on an ammo run, manual).
@@ -482,6 +503,9 @@ static func _role(w: SimWorld, S: Dictionary, uid: int) -> String:
 		return ""   # withdrawing by bounds: finishes the withdrawal before it is re-planned
 	var lr = w.sys_state.get("lpres7")   # LPRES7 (13.9c-34): a Last Protocol barracks reserve man is released by LpReserve7, never planned here
 	if lr != null and (lr.m as Dictionary).has(str(uid)):
+		return ""
+	var s8 = w.sys_state.get("supply8")   # SUPPLY8 (13.9c-48): a GO team man / engineer on an airdrop retrieval is run by Supply8
+	if s8 != null and (s8.m as Dictionary).has(str(uid)):
 		return ""
 	if S.get("workers", {}).has(str(uid)):
 		return String(S.workers[str(uid)])
@@ -504,6 +528,8 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 	var old: Dictionary = S.board.get(key, {"at": -1, "shift": 0, "jobs": []})
 	var shift := w.tick / ticks(float(P.get("shift_s", 240.0)))
 	var alarm := threat(w, fac) != null
+	var so := w.sys_state.has("cards8c") and bool(_c8c().standing_to(w, fac))   # G7 CARDS8C: STAND TO from the barracks card
+	var ex := not alarm and not so   # REST8 13.9c-43: exhausted men rest (relieved in place first) unless the base is under alarm
 	var keep_old := shift == int(old.get("shift", 0)) or alarm
 	var jobs := _jobs_for(w, S, F)
 	var cands := []
@@ -561,7 +587,7 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 			if used.has(uid) or (j.taken as Array).size() >= int(j.slots):
 				continue
 			var cur: Dictionary = S.jobs.get(str(uid), {})
-			if String(cur.get("j", "")) != String(j.id) or not _fits(j.roles, _role(w, S, uid)) or (not care0 and _unfit(w, w.entities[uid], P)):
+			if String(cur.get("j", "")) != String(j.id) or not _fits(j.roles, _role(w, S, uid)) or (not care0 and _unfit(w, w.entities[uid], P, ex)):
 				continue
 			var ue: Dictionary = w.entities[uid]
 			if rot and wk and ue.has("s7_on") and w.tick - int(ue.s7_on) >= stint:
@@ -605,7 +631,7 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 				if used.has(uid) or not _fits(roles, _role(w, S, uid)):
 					continue
 				var e: Dictionary = w.entities[uid]
-				if not care and _unfit(w, e, P):
+				if not care and _unfit(w, e, P, ex):
 					continue   # wounded / just withdrawn: rests (barracks / Mender) instead of taking a post
 				var sc := Vector2(e.pos).distance_to(j.pos) + dw * float(e.get("s7_duty", 0)) / float(SimWorld.TICK_RATE * 60) \
 					+ xw * clampf(float(e.get("cn_exp", 0.0)), 0.0, 1.0)
@@ -616,7 +642,7 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 				var m := -1
 				if not care:
 					m = int(mate.call(uid))
-					if m >= 0 and (used.has(m) or not _fits(roles, _role(w, S, m)) or _unfit(w, w.entities[m], P)):
+					if m >= 0 and (used.has(m) or not _fits(roles, _role(w, S, m)) or _unfit(w, w.entities[m], P, ex)):
 						m = -1   # his partner cannot come (busy, wrong role, wounded): he goes alone
 					elif m >= 0 and wj and (w.entities[m] as Dictionary).has("s7_on") and w.tick - int(w.entities[m].s7_on) >= stint:
 						m = -1   # WATCH7-3: his partner stood his stint: he rests, the fresh man goes alone (no one stands forever)
@@ -640,20 +666,35 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 	for j in jobs:
 		byid[String(j.id)] = j
 	var rmax := ticks(float(P.get("relief_max_s", 90.0)))
-	if rot:
+	var tired := []   # REST8 13.9c-43: exhausted men still dealt a watch post (relieved in place like a shift change)
+	if ex:
+		for uid in cands:
+			if (w.entities[uid] as Dictionary).has("r8s") and not used.has(uid) and not rl.has(str(uid)):
+				tired.append(uid)
+	if rot or not tired.is_empty():
 		var newj := {}
 		for j in jobs:
 			for u in j.taken:
 				newj[int(u)] = j
-		for uid in cands:
+		for uid in (cands if rot else tired):
 			var cur: Dictionary = S.jobs.get(str(uid), {})
 			var oj := String(cur.get("j", ""))
-			if not WATCH.has(String(cur.get("k", ""))) or not byid.has(oj) or _unfit(w, w.entities[uid], P):
+			var ue: Dictionary = w.entities[uid]
+			var tr := ex and ue.has("r8s")
+			if not rot and not tr:
+				continue
+			if not WATCH.has(String(cur.get("k", ""))) or not byid.has(oj) or (_unfit(w, ue, P) or (tr and used.has(uid))):
 				continue
 			var nj = newj.get(uid)
 			if nj != null and String(nj.id) == oj:
 				continue
 			var J: Dictionary = byid[oj]
+			if tr and (J.taken as Array).is_empty():   # no relief for his post: the last man stays on it (never left empty)
+				if nj != null:
+					(nj.taken as Array).erase(uid)
+				J.taken.append(uid)
+				used[uid] = true
+				continue
 			var waiting := false
 			for u in J.taken:
 				if not _on_post_j(w, w.entities[int(u)], J):
@@ -694,8 +735,8 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 			freed.append(int(k))
 	var bk := _parts_of(w, F, "cn_sentinel_barracks")
 	var rest := _job("rest", "rest", _home(w, F), 0.0, ["*"], 9999, int(bk[0].id) if not bk.is_empty() else -1)
-	var pts := _standto_pts(F) if alarm else []
-	if not pts.is_empty():   # WATCH7 13.9c-38: the stand-to fills the threatened face first (nearest points first)
+	var pts := _standto_pts(F) if alarm or so else []   # CARDS8C: + the player's STAND TO
+	if not pts.is_empty() and alarm:   # WATCH7 13.9c-38: the stand-to fills the threatened face first (nearest points first)
 		var tp: Vector2 = threat(w, fac)[0]
 		pts.sort_custom(func(a, b) -> bool:
 			var da := Vector2(a).distance_squared_to(tp)
@@ -706,7 +747,7 @@ static func plan(w: SimWorld, F: Dictionary) -> void:
 		if used.has(uid):
 			continue
 		var role := _role(w, S, uid)
-		if not pts.is_empty() and role != "bearer" and role != "engineer" and role != "mender" and not _unfit(w, w.entities[uid], P):
+		if not pts.is_empty() and role != "bearer" and role != "engineer" and role != "mender" and not _unfit(w, w.entities[uid], P, ex):
 			var idx := nst
 			nst += 1
 			var sj := _job("standto:%d" % uid, "standto", pts[idx % pts.size()], 0.5, ["*"], 1)
@@ -769,8 +810,10 @@ static func _pairs(S: Dictionary, tk: Array, jid: String) -> Dictionary:
 	return out
 
 
-static func _unfit(w: SimWorld, e: Dictionary, P: Dictionary) -> bool:
-	return float(e.hp) < float(P.get("wounded_frac", 0.35)) * float(e.max_hp) or int(e.get("s7_wd", -1)) > w.tick
+## ex (REST8 13.9c-43, the board passes "no alarm"): an exhausted Sentinel (e.r8s, latched by Rest8 at fatigue
+## rest_at until fresh_at) is unfit too: he rests in the barracks until fresh; under alarm he stands to.
+static func _unfit(w: SimWorld, e: Dictionary, P: Dictionary, ex: bool = false) -> bool:
+	return float(e.hp) < float(P.get("wounded_frac", 0.35)) * float(e.max_hp) or int(e.get("s7_wd", -1)) > w.tick 		or (ex and e.has("r8s"))
 
 
 ## The wall-walk runs of facility F: [start, middle, end] each. North, east, west faces, and (WATCH7 13.9c-38: a
@@ -1432,7 +1475,21 @@ static func _post(w: SimWorld, S: Dictionary, e: Dictionary, job: Dictionary) ->
 		var gate := String(job.k) == "gate"
 		if hp is Vector2 and gate:   # WATCH7: the gate pair stands either side of the lane
 			var bd := int(job.get("bud", -1))
-			hp = Vector2(hp) + Vector2(-0.9 if bd < 0 or int(e.id) < bd else 0.9, 0.0)
+			# FACFLOW8C (13.9c-50, test_rest8 post fatigue): sides are picked once by where the pair stand (the western man
+			# takes the west side, id breaks a tie), not by id alone: on the 2-deep staging yard of the longer airlock the
+			# pair arrived crossed and stood head-on in one row, re-pathing for ever (walking = fatigue on a post)
+			if not job.has("gs"):
+				var bj: Dictionary = S.jobs.get(str(bd), {}) if bd >= 0 else {}
+				var be = w.entities.get(bd) if bd >= 0 else null
+				var wst := true
+				if be != null and int(bj.get("bud", -1)) == int(e.id):
+					var dx := float(e.pos.x) - float(be.pos.x)
+					wst = dx < 0.0 or (dx == 0.0 and int(e.id) < bd)
+					bj["gs"] = 1 if wst else -1
+				elif bd >= 0:
+					wst = int(e.id) < bd
+				job["gs"] = -1 if wst else 1
+			hp = Vector2(hp) + Vector2(0.9 * float(int(job.gs)), 0.0)
 		if hp is Vector2 and Vector2(e.pos).distance_to(hp) > (0.6 if gate else 2.0) and String(e.order.get("type", "idle")) == "idle":
 			_go(w, e, job, hp, "move")
 		return

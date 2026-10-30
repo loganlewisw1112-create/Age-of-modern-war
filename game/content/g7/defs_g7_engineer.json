@@ -73,7 +73,7 @@
   "g7_engineer": {
    "_note": "ENG7 (13.9c-11 / 13.9c-12). Every number PROVISIONAL.",
    "defs": {"human_a": "g7_fac_engineer", "human_b": "g7_b_fac_engineer"},
-   "start_count": 3,
+   "start_count": 6,  "_start_count_note": "13.9c-48: 4 go out on each airdrop retrieval + 2 keep the base repaired / supplied (was 3: the drop could never be ordered). PROVISIONAL.",
    "think_every": 10,
    "scan_every": 100,
    "ext_ttl_s": 8.0,

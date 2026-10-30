@@ -596,6 +596,15 @@ func test_sim_bowser_parks_in_its_bay() -> void:
 		break
 	var F := CnFacility.fac(w, fac)
 	var bay: Rect2 = E7.bowser_bay(F)
+	# REG8B (setup only, Lethality test-setup authority FIX8B line, same as test_eng7 _keep_engineers / 13.9c-48 start
+	# crew 3 -> 6): Supply8._seed tops the crew up once to rules.engineers (4) after Engineer7 seeded it; let that one-time
+	# top-up happen BEFORE the extras are erased, or it re-fills the crew with new engineers and one of them takes the
+	# fuel job the kept engineer is tested on. No assertion change.
+	for i in 200:
+		var s8 = w.sys_state.get("supply8")
+		if s8 != null and (s8.get("seeded", []) as Array).has(fac):
+			break
+		tick.call()
 	var ids: Array = E7.engineers_of(w, fac)
 	check(ids.size() >= 1, "the facility has a Facility Engineer (%d)" % ids.size())
 	for i in range(1, ids.size()):

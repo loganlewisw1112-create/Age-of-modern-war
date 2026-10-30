@@ -18,6 +18,7 @@ extends RefCounted
 const Damage = preload("res://sim/systems/damage.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
+const Blast8 = preload("res://sim/systems/blast8.gd")   # G7 BLAST8 (13.9c-47): blast throw + concussion
 
 const BUCKET := 2.0          # combat.gd BUCKET
 const GRID_STRIDE := 1024    # combat.gd GRID_STRIDE
@@ -157,10 +158,13 @@ static func burst(w: SimWorld, pos: Vector2, prof_in, src = null, plain: bool = 
 	var hit_r := float(_cfg().get("hit_r", 0.35))
 	var cb: Dictionary = _cfg().get("cover_block", {})
 	var supp := float(prof.get("supp", 40.0))
+	var b8pre := Blast8.pre(w, pos, prof, cands)   # G7 BLAST8: men in throw reach before the fragments (bodies thrown too)
+	var gnd: Array = []   # G7 BLAST8: ground units this burst reached (ascending id) for the blast throw / concussion
 	for id in cands:
 		var c = w.entities.get(id)
 		if c == null or _air(c):
 			continue
+		gnd.append(id)
 		var cp: Vector2 = c.pos
 		var d := cp.distance_to(pos)
 		if c.has("morale") and not bool(c.get("wounded", false)):
@@ -199,6 +203,7 @@ static func burst(w: SimWorld, pos: Vector2, prof_in, src = null, plain: bool = 
 				continue
 			Damage.wound_hit(w, s, c, float(prof.dmg) * (1.0 - 0.5 * d / radius), "")
 			out.hits += 1
+	Blast8.on_burst(w, pos, prof, gnd, s, b8pre)   # G7 BLAST8 (13.9c-47): throw / knock out the survivors near the blast
 	w.emit("ShrapnelBurst", {"pos": pos, "profile": String(prof.get("name", "")), "rays": n,
 		"hits": int(out.hits), "blocked": int(out.blocked), "src": int(s.get("id", -1))})
 	return out

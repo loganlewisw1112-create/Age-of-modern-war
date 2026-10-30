@@ -1,0 +1,116 @@
+{
+  "_note": "G7 ACCURACY8 (G7_REFERENCE 13.9c-49, owner 2026-10-29: 'make it realistic - shots could be missed with movement, lack of proper sighting, getting shot themselves, etc'). Read by sim/systems/accuracy8.gd from Combat._fire (one multiplier on the weapon accuracy, same single w.rng hit roll). ALL NUMBERS PROVISIONAL. Factors that already existed are NOT repeated here and stay where they were: suppression / pinned (Status.accuracy_mult), fatigue + rank / traits (Morale.acc_mult -> Fatigue / Veterancy), arm wounds (Wounds.acc_mult), sensors destroyed (Status), cohesion / loadouts / designation / auras / air defence (G6 hooks). Skipped entirely (multiplier 1.0): indirect fire, guided weapons, air shooters or air targets (Airdef has its own fire-control rules) and skip_classes.",
+  "rules": {
+    "accuracy8": {
+      "enabled": true,
+      "skip_classes": ["melee", "flame", "demolition", "crush", "torpedo"],
+      "min_mult": 0.02,
+      "max_mult": 1.35,
+      "range": {
+        "_note": "effective range = weapon range x eff_frac (by weapon class). Inside it the hit chance rises toward point blank (x (1 + close_bonus x (1 - d/eff))); past it it falls to (1 - far_drop) at max range with exponent far_pow.",
+        "eff_frac": {"small_arms": 0.6, "assault": 0.55, "sniper": 0.8, "autocannon": 0.7, "at": 0.6, "top_attack": 0.8, "energy": 0.85, "grenade": 0.5, "frag": 0.5, "default": 0.6},
+        "close_bonus": 0.15,
+        "far_drop": 0.45,
+        "far_pow": 1.5
+      },
+      "flight": {
+        "_note": "flight time tf of the weapon's round (rules.rounds8: v0, k; v = v0 exp(-k x), tf = (exp(k d) - 1) / (k v0), d in metres = tiles x m_per_tile_ballistic). Drop / wind / aiming-off error grows with tf: x 1 / (1 + tf_k x tf^2). A target moving across the line moves speed x tf metres while the round flies; the shooter's lead estimate leaves lead_err of that: x 1 / (1 + (lead_err x speed x tf x cross / half_size)^2), cross = |sin(target heading - line of fire)| (at least cross_min). Rounds without a rounds8 entry use v_default with no velocity loss.",
+        "tf_k": 0.15,
+        "v_default": 600.0,
+        "lead_err": 0.3,
+        "cross_min": 0.15,
+        "speed_m_per_tile": 1.8,
+        "half_size_m": {"inf": 0.45, "inf_prone": 0.3, "vehicle": 2.0, "heavy": 2.6}
+      },
+      "shooter_move": {
+        "_note": "firing on the move. Infantry walking / running fire is far less accurate and their aim picture restarts every shot; stabilised vehicles (stab_armor, stab_defs or def.stab true) barely lose; unstabilised vehicles a lot; Machine frames have gyro mounts.",
+        "inf": 0.5,
+        "veh_stab": 0.85,
+        "veh": 0.55,
+        "machine": 0.75,
+        "stab_armor": ["heavy", "medium"],
+        "stab_defs": ["ifv"]
+      },
+      "target_move": {
+        "_note": "tracking a moving target (the crossing lead error is in flight.*).",
+        "inf": 0.9,
+        "vehicle": 0.92
+      },
+      "aim": {
+        "_note": "sight picture: aim time on THIS target counts from the first shot at it (a new target or more than lose_s since the last shot at it starts over). snap -> steady over settle_s; optics (def.optics / def.scope / senses7 optics_defs / e.optics / sniper class) settle faster and steady better; vehicles, buildings (turrets) and Machine frames have fire control (fc).",
+        "snap": 0.65,
+        "steady": 1.05,
+        "settle_s": 2.0,
+        "optics_snap": 0.7,
+        "optics_steady": 1.15,
+        "optics_settle_s": 1.2,
+        "fc_snap": 0.8,
+        "fc_steady": 1.05,
+        "fc_settle_s": 1.5,
+        "lose_s": 6.0
+      },
+      "visibility": {
+        "_note": "light = senses7 light (1 = day); night x lerp(night, 1, light) unless the shooter has thermals / NVG (senses7 thermal_defs, def.thermal / nvg, e.nvg / e.thermal) or is a Machine frame (thermal_light). A sight line through smoke x smoke (thermal: smoke_thermal). Fog edge: past edge_from x the shooter's own sight it falls to edge at its sight and beyond (firing at a target a team-mate spotted). Infantry targets: silhouette (prone keys / crouch gait / forest, the senses7 numbers) ^ sil_pow. weather: w.cfg.weather (no weather system exists yet: clear unless a map / match config sets one).",
+        "night": 0.35,
+        "thermal_light": 0.9,
+        "smoke": 0.25,
+        "smoke_thermal": 0.85,
+        "edge_from": 0.8,
+        "edge": 0.75,
+        "sil_pow": 0.5,
+        "weather": {"clear": 1.0, "rain": 0.85, "fog": 0.6, "dust": 0.7, "snow": 0.8, "storm": 0.65}
+      },
+      "under_fire": {
+        "_note": "suppression / pinned stay in Status.accuracy_mult, fatigue in Fatigue, arm wounds in Wounds (not repeated). New: a fresh hit within shock_s (last_hit_tick, set by Damage) shakes the shooter; a concussed / dazed soldier (e.b8d = daze-until tick, BLAST8 13.9c-47 when it writes it) aims badly.",
+        "shock_s": 2.5,
+        "shock_inf": 0.7,
+        "shock_veh": 0.9,
+        "daze": 0.55
+      },
+      "posture": {
+        "_note": "standing static infantry = 1.0. Prone (prone keys except pinned / unconscious / cowering, which Status and Wounds already handle) or braced (garrisoned, on a wall / in cover, a deployed set-up weapon) steadier; the larger applies, not both. Vehicles / buildings / Machine frames are mounted already (1.0).",
+        "prone": 1.12,
+        "braced": 1.1,
+        "prone_keys": ["prone", "crawl"]
+      },
+      "training": {
+        "_note": "training tier of the shooter (def.training, else the longest matching def prefix); rank and traits stay in Veterancy.",
+        "tiers": {"conscript": 0.85, "militia": 0.88, "regular": 1.0, "veteran": 1.06, "elite": 1.12, "machine": 1.0},
+        "by_prefix": {"b_militia": "militia", "g7_sent": "elite", "g7_op_": "elite", "g7_b_op_": "elite", "g7_cn": "veteran", "a_sniper": "veteran", "b_marksman": "veteran"},
+        "default": "regular"
+      },
+      "placement": {
+        "_note": "ACCURACY8B (13.9c-53, owner: 'makes shot placement crucial'). Where a HIT lands on a soldier (Wounds.pick_zone weights, same single draw). q in [-1, 1]: aimed settled fire (sight picture snap -> steady, Accuracy8 aim) runs from snap_q to aimed_q; minus move (infantry / unstabilised vehicle) or move_stab, suppressed (supp > 25) or pinned, fresh-hit shock, blast daze; plus braced / prone static infantry. Then head and torso weights x exp(vital_k x q), arm and leg weights x exp(-limb_k x q). Infantry targets only (vehicles: real hit facing, Damage.hit_side). PROVISIONAL.",
+        "enabled": true,
+        "snap_q": -0.4,
+        "aimed_q": 0.6,
+        "move": 0.6,
+        "move_stab": 0.2,
+        "suppressed": 0.3,
+        "pinned": 0.6,
+        "shock": 0.3,
+        "daze": 0.6,
+        "braced": 0.2,
+        "vital_k": 0.7,
+        "limb_k": 0.7
+      },
+      "stray": {
+        "_note": "ACCURACY8B (13.9c-53, owner: 'all stray hits'). A missed direct-fire round flies on along shooter -> its miss point up to weapon range x range_frac (cap max_tiles) and can hit the first unit or building on the line (enemy, friendly, neutral): within hit_r tiles of the line, then ONE w.rng roll `connect` (inf, x prone_mult when prone; vehicle; building). Damage = Damage.apply_hit (Ballistics8 energy falls with the shooter -> victim distance; vehicle facing from the shooter). start_tiles: the shooter's own footprint is skipped. step_tiles: grid sampling step. Same skip list as accuracy8. Events StrayHit / FriendlyFire. PROVISIONAL.",
+        "enabled": true,
+        "range_frac": 1.0,
+        "max_tiles": 30.0,
+        "start_tiles": 0.5,
+        "step_tiles": 2.0,
+        "_note_friend_clear": "STRAY8B (owner 2026-10-29: Discipline + reposition): the friend_clear_tiles immunity zone is REMOVED (own men anywhere on the line are hittable by strays). ACCURACY8B measured (2k fight 600 ticks): no protection = 6844 shots / 2135 friendly; immunity 3.0 = 10391 / 520; discipline alone 3.0/0.45 = 750 shots, 1.5/0.3 = 1037 shots.",
+        "discipline": {"_note": "STRAY8B fire discipline + reposition (PROVISIONAL): a shooter whose line of fire passes within clear_off tiles of one of his own men in the first clear_tiles tiles from the muzzle holds fire for hold_s (no shot, no ammo, no draw); a free foot soldier then sidesteps (sidestep: offsets_tiles perpendicular to the line, side by id parity, first walkable spot >= min_gap from every unit with its own muzzle line clear; one per target per cooldown_s, retarget_s for a new target, the walk lasts at most max_s). Before moving, a blocked shooter on idle / attack_move / hold first switches to one of the retarget_n nearest enemies ahead with a clear line (traverse, no move; never on a player attack order). over_prone (fire over): a mate lying / crouched low or kneeling (a foot soldier standing still: with a target, or any still man when kneel_still) in front does not block; the rear rank fires over him and its rounds pass over such mates within over_tiles (standing mates there block fire instead; every mate beyond over_tiles, and standing mates anywhere, stay hittable by strays). max_search_per_tick caps reposition searches world-wide (cost). Hold / Hold Position / pinned / garrisoned / move orders: no sidestep. Vehicles and turrets: hold or retarget only.", "clear_tiles": 1.0, "clear_off": 0.3, "hold_s": 0.5, "over_prone": true, "over_tiles": 3.0, "kneel_still": false, "sidestep": {"enabled": true, "offsets_tiles": [0.6, 1.0, 1.5, 2.0], "forward_tiles": [0.0], "min_gap": 0.35, "cooldown_s": 3.0, "retarget_s": 1.5, "fail_s": 1.5, "max_s": 2.0, "retarget_n": 4, "max_search_per_tick": 4}, "spread": {"_note": "G7 SPREAD8 (13.9c-53 packed-fight follow-up, owner: Spread packed groups): a foot soldier in contact (Combat gave him a target on idle / attack-move / attack, not Hold Position / garrisoned / boarded / deployed) separates from his own mates with this body radius instead of the def radius (0.3), so mates in contact keep about 1 tile apart (fire-team spacing) and a packed group opens out as it engages. sim/systems/spread8.gd. PROVISIONAL.", "enabled": true, "radius": 0.5, "cut_tiles": 0.0, "_note_cut": "OFF (0 = every move keeps LOS_MAX 14): SPREAD8 measured cut_tiles 32 -> 5317 shots, 48 -> 6529 (vs 8266 with the in-contact radius alone; a broad front engages later). When > 14, attack-move approach spread: a foot soldier on attack-move cuts from the group flow field to his own formation slot at the first point with a clear line within cut_tiles (other moves: 14), so the advance arrives as a broad front, not one column at the group goal."}},
+        "hit_r": {"inf": 0.3, "inf_prone": 0.2, "vehicle": 0.7, "heavy": 0.9},
+        "connect": {"inf": 0.55, "prone_mult": 0.5, "vehicle": 0.85, "building": 0.95}
+      },
+      "daze_react": {
+        "_note": "ACCURACY8B (13.9c-53): slower reactions while blast-dazed (e.b8d > tick, written by blast8): weapon cooldown x cd_mult, and switching to a new target costs retarget_s extra. Aim x under_fire.daze is in the hit chance. PROVISIONAL.",
+        "cd_mult": 1.4,
+        "retarget_s": 0.6
+      }
+    }
+  }
+}

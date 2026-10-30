@@ -174,6 +174,13 @@ func test_infil_exfil_returns_by_a_different_route() -> void:
 	var tgt := w.spawn_unit(art, 1, Vector2(54.5, 12.5))
 	_face_away(w, tgt)   # REGRESS7-5 setup (see _face_away)
 	_squad(w, 1, 2, Vector2(55.5, 14.5))
+	# G7 REG8A (setup only, G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): the subject is the route in
+	# and out, not toughness. Side 1's roaming start recon is not part of this scenario (the planted defenders are the
+	# artillery + 2 guards); with G7 hit chance / lethality it caught the fire-held team on the way in and broke the op
+	# off at 46% losses (limit 45%). It is removed before the op; every assertion is unchanged.
+	for e in w.units_of(1):
+		if String(e.def) == "recon":
+			w.destroy(int(e.id), "test_setup")
 	var evs := _auto(w, 0, {"units": ids}, "specops")
 	var started := _run_until(w, 2400, evs, func(): return _op(w) == "infil")
 	check(started, "the specops general picks INFIL/EXFIL on a valuable target (ops %s)" % str(_ops_seen(evs)))

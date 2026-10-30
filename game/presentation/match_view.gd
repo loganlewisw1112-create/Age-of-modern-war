@@ -726,6 +726,8 @@ func _on_step_events(evs: Array) -> void:
 					selection_changed.emit()
 				if int(ev.owner) == player_fid:
 					last_alert_pos = ev.pos
+			"BlastCorpse":   # G7 BLAST8 (13.9c-47): a man killed by a blast: his body is thrown (display only)
+				entity_layer.on_blast_corpse(ev)
 			"ShotFired":
 				fx_layer.on_shot(ev)
 				if entity_layer.has_method("on_shot"):  # G6.1 ANIMA61 CR: recoil kick + hit flinch
@@ -1176,8 +1178,17 @@ func _click_select(p: Vector2, shift: bool) -> void:
 		select_ids([id])
 
 
+## G7 CARDS8A (13.9c-48): the shared building-card host. Facility zones with no building entity of their own, in the
+## order a click tests them: [part, [zones]]. A click on one of them selects the facility with sel_part = part; the
+## building cards show while mv.part_selected(fac, part). Other card agents add their rows here.
+const FAC_PARTS := [["drone_bay", ["drone_bay", "workshop"]], ["garage", ["decon"]], ["command", ["planning"]],   # garage: CARDS8B
+	["gate_outer", ["gate_outer"]], ["gate_inner", ["gate_inner"]],
+	["barracks", ["barracks"]], ["air", ["helipad"]], ["aid", ["aid_station"]], ["lab", ["lab"]]]   # CARDS8C building cards
+
+
 ## G7 CARDSEL7 (13.9c-37): the drone bay (the workshop's 2nd storey) has no building entity of its own, so a click on
 ## the own facility's workshop / drone_bay zone selects the facility with the remembered part "drone_bay".
+## G7 CARDS8A: generalised to every FAC_PARTS row (drone bay first: unchanged).
 func _select_facility_part_at(p: Vector2) -> bool:
 	var fs = world.sys_state.get("cn_facility")
 	if fs == null:
@@ -1188,9 +1199,17 @@ func _select_facility_part_at(p: Vector2) -> bool:
 		var F: Dictionary = fs.facs[k]
 		if int(F.owner) != player_fid or not world.entities.has(int(k)):
 			continue
-		if CnFacility7.zone(F, "drone_bay").has_point(p) or CnFacility7.zone(F, "workshop").has_point(p):
-			select_ids([int(k)], "drone_bay")
-			return true
+		# G7 CARDS8B/CARDS8C: a click on one of the facility's garage bays (3x3, no building entity) -> part "garage"
+		var gz: Array = CnFacility7.conf().get("garage_size", [3, 3])
+		for g in CnFacility7.garage_spots(F):
+			if Rect2(Vector2(g) - Vector2(float(gz[0]), float(gz[1])) * 0.5, Vector2(float(gz[0]), float(gz[1]))).has_point(p):
+				select_ids([int(k)], "garage")
+				return true
+		for row in FAC_PARTS:
+			for zn in row[1]:
+				if CnFacility7.zone(F, String(zn)).has_point(p):
+					select_ids([int(k)], String(row[0]))
+					return true
 	return false
 
 

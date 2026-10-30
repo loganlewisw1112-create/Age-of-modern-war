@@ -139,6 +139,16 @@ static func _zw_c(w: SimWorld, e: Dictionary, from, c: Dictionary) -> Array:
 			var k: String = ZK[i]
 			if md.has(k):
 				wt[i] = float(wt[i]) * float(md[k])
+	# G7 ACCURACY8B (13.9c-53): shot placement of the shot being resolved (Combat._fire puts Accuracy8's
+	# Vector2(vital mult, limb mult) in w.cache.a8p around Damage.apply_hit of a hit; absent = neutral). Same draw.
+	if w != null:
+		var pz = w.cache.get("a8p")
+		if pz != null:
+			var pv: Vector2 = pz
+			wt[0] = float(wt[0]) * pv.x
+			wt[1] = float(wt[1]) * pv.x
+			for i in range(2, 6):
+				wt[i] = float(wt[i]) * pv.y
 	return wt
 
 

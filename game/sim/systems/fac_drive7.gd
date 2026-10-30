@@ -20,6 +20,7 @@ const KEY := "fac_drive7"
 const CnFacility = preload("res://sim/systems/cn_facility.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const HotState = preload("res://sim/hot_state.gd")
+const Cards8a = preload("res://sim/systems/cards8a.gd")   # G7 CARDS8A (13.9c-48): hand gate control (gate_want)
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 
 # vehicle footprint for clearance (PROVISIONAL: a 6.2 m x 2.7 m APC hull, 1 tile = 4 m)
@@ -33,6 +34,7 @@ const A_LAT := 0.6          # tiles/s^2 lateral (curve speed sqrt(A_LAT * R))
 const ACC := 0.6            # tiles/s^2
 const BRK := 1.0            # tiles/s^2
 const D_SAFE := 1.95        # centre spacing kept between two APCs (radius 0.9 each)
+const D_CONTACT := 1.85     # APCOUT8: hull contact (2 x 0.9) + margin: never edged inside this even past an APC behind
 const GEAR_TICKS := 10      # pause at a forward / reverse change
 const NODE_STEP := 0.8
 const PLAN_M := 0.06        # planning margin around the hull (tiles)
@@ -327,7 +329,11 @@ static func graph() -> Dictionary:
 	var go := _rect(c.get("gate_outer", [0, 0, 0, 0]))
 	var gi := _rect(c.get("gate_inner", c.get("gate_outer", [0, 0, 0, 0])))
 	var gx := go.get_center().x
-	lines.append([Vector2(gx, gi.position.y), Vector2(gx, cs + 6.6), false])
+	var gy0 := gi.position.y
+	var sgr := _rect(c.get("staging", [0, 0, 0, 0]))
+	if absf(sgr.end.y - gi.position.y) < 0.01 and sgr.position.x <= gi.position.x and sgr.end.x >= gi.end.x:
+		gy0 = sgr.position.y   # FACFLOW8B (13.9c-50): the gate axis runs on straight through the staging yard behind the inner gate to the spine
+	lines.append([Vector2(gx, gy0), Vector2(gx, cs + 6.6), false])
 	var gate_line := lines.size() - 1
 	for L in lines:   # extend ends up to 1 tile over free ground so lanes meeting edge to edge join
 		for e in 2:
@@ -378,8 +384,8 @@ static func graph() -> Dictionary:
 	var g0y := (lines[gate_line][0] as Vector2).y
 	var gate_extra := [cs + 2.5 - g0y]
 	var wz := _rect(c.get("apc_wash", [0, 0, 0, 0]))
-	for k in 2:   # two wash stops nose to tail (CnFacility "decon" slots)
-		gate_extra.append(wz.get_center().y + (float(k) - 0.5) * 2.05 - g0y)
+	for k in SALLY_CAP:   # FACFLOW8B (13.9c-50): SALLY_CAP wash stops nose to tail, 2.05 apart (CnFacility "decon" slots)
+		gate_extra.append(wz.get_center().y + (float(k) - 0.5 * float(SALLY_CAP - 1)) * 2.05 - g0y)
 	params[gate_line].append_array(gate_extra)
 	var xnodes := {}   # bay lead-in / exit line nodes: not joined to the plaza grid
 	for i in lines.size():
@@ -417,8 +423,8 @@ static func graph() -> Dictionary:
 			(G.zones as Array).append({"r": r, "ax": Vector2(absf(d.x), absf(d.y)).round()})
 	G.exit = _nearest(G, Vector2(gx, cs + 2.5))
 	G.entry = _nearest(G, Vector2(gx, cs + 6.6))
-	for k in 2:
-		(G.wash as Array).append(_nearest(G, Vector2(gx, wz.get_center().y + (float(k) - 0.5) * 2.05)))
+	for k in SALLY_CAP:
+		(G.wash as Array).append(_nearest(G, Vector2(gx, wz.get_center().y + (float(k) - 0.5 * float(SALLY_CAP - 1)) * 2.05)))
 	# plazas (pad, staging): open ground, a 1-tile node grid joined to everything within 1.5 tiles
 	var plaza := []
 	var keep_out := []   # the bays and their lead-ins: through traffic never crosses them
@@ -737,7 +743,7 @@ static func plan(from: String, to: String, gar: int, pre := PackedVector2Array()
 			start = int(G.bay[ix])
 			dir0 = Vector2.from_angle(float(G.bayh[ix]))
 		"w":
-			start = int(G.wash[mini(ix, 1)])
+			start = int(G.wash[mini(ix, (G.wash as Array).size() - 1)])
 		"n":   # a lane node, reached from pre[0] (re-route while driving)
 			start = ix
 			if not pre.is_empty():
@@ -764,8 +770,11 @@ static func plan(from: String, to: String, gar: int, pre := PackedVector2Array()
 			goal = func(n: int, din: Vector2) -> bool:
 				return n == gn and absf(din.dot(out)) < 0.3 and _seg_clear(G, pos[n], pos[n] + din * 1.5, gj)
 		"w":
-			var wn := int(G.wash[mini(jx, 1)])
+			var wn := int(G.wash[mini(jx, (G.wash as Array).size() - 1)])
 			goal = func(n: int, din: Vector2) -> bool: return n == wn and din.y < -0.9
+		"n":   # FACFLOW8B: a lane node (SUPPLY8's cargo carrier: the lane point by its own garage door), any heading
+			var nn := jx
+			goal = func(n: int, _din: Vector2) -> bool: return n == nn
 		_:
 			var xn := int(G.exit)
 			goal = func(n: int, din: Vector2) -> bool: return n == xn and din.y > 0.9
@@ -998,7 +1007,9 @@ static func place_pose(place: String) -> Array:
 		"b":
 			return [G.pos[int(G.bay[i])], float(G.bayh[i])]
 		"w":
-			return [G.pos[int(G.wash[mini(i, 1)])], -PI * 0.5]
+			return [G.pos[int(G.wash[mini(i, (G.wash as Array).size() - 1)])], -PI * 0.5]
+		"n":   # FACFLOW8B: a lane node (heading kept by _arrive)
+			return [G.pos[i], -PI * 0.5]
 	return [G.pos[int(G.exit)], PI * 0.5]
 
 
@@ -1012,7 +1023,7 @@ static func place_at(p: Vector2) -> String:
 	for j in (G.bay as Array).size():
 		if p.distance_to(G.pos[int(G.bay[j])]) < 0.7:
 			return "b%d" % j
-	for k in 2:
+	for k in (G.wash as Array).size():
 		if p.distance_to(G.pos[int(G.wash[k])]) < 0.7:
 			return "w%d" % k
 	var cs := float(c.compound)
@@ -1063,6 +1074,7 @@ static func order(w: SimWorld, e: Dictionary, fid: int, to: String, who: String,
 		V = {"id": int(e.id), "fac": fid, "seq": 0, "st": "park" if at != "out" else "out", "at": at, "to": "", "then": "",
 			"tgt": [], "gar": -1, "who": who, "legs": [], "rv": 0, "leg": 0, "s": 0.0, "v": 0.0, "gw": 0, "t0": w.tick, "rel": ""}
 		S.v[key] = V
+		_fresh_route(w, int(e.id))
 	if gar >= -1:
 		V.gar = gar
 	if to == "g" or (to.left(1) == "g" and to.length() == 1):
@@ -1121,6 +1133,8 @@ static func _go(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 		_arrive(w, V, e)
 		return
 	var legs := plan(at, to, int(V.gar), PackedVector2Array([Vector2(e.pos) - o])) if at.left(1) == "n" else plan_cached(at, to, int(V.gar))   # FLOWC7: "n<node>" = joining from its own pose
+	if legs.is_empty() and at.left(1) == "n":   # FACFLOW8C: joining from a pose whose approach heading has no route (SUPPLY8's
+		legs = plan(at, to, int(V.gar))          # carrier just out of its garage door, facing a wall): start from the node itself
 	if legs.is_empty():
 		V.st = "park"
 		return
@@ -1180,6 +1194,12 @@ static func _arrive(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 	var o := _origin(w, int(V.fac))
 	var pp: Array = place_pose(to)
 	HotState.set_pos(w, int(e.id), _wsnap(o + Vector2(pp[0])))
+	if to.left(1) == "n" and String(V.to) == to:   # FACFLOW8B: through the gates to a lane node: handed back to its owner
+		st(w).v.erase(str(int(V.id)))             # system (SUPPLY8 drives the last metres to its garage door)
+		Movement.stop_path(e)
+		e.order = {"type": "idle"}
+		HotState.touch(w, int(e.id))
+		return
 	e.facing = snappedf(wrapf(float(pp[1]), -PI, PI), 0.001)
 	if String(V.to) != to and String(V.to) != "":   # re-targeted while driving
 		_go(w, V, e)
@@ -1274,7 +1294,7 @@ static func order_team(w: SimWorld, T: Dictionary, aps: Array, where: String) ->
 			"gate":
 				to = "x"
 			"decon":
-				to = "w%d" % mini(i, 1)
+				to = "w%d" % mini(i, (graph().wash as Array).size() - 1)
 			"inner", "garage":
 				to = "g%d" % gar if gar >= 0 else "b"
 		var V := vstate(w, int(a.id))
@@ -1338,6 +1358,14 @@ static func _team_garage(w: SimWorld, e: Dictionary) -> int:
 
 
 # ================================================================ route cache (rebuilt from the saved polylines)
+## G7 RETURN8: a new controller state for an APC restarts its route version at 0, so the route cache entry left by its
+## previous stay (same id, same rv after the first _set_legs) was reused: an APC coming home snapped from the gate apron
+## onto its old garage -> gate route (teleported into its garage). Drop the stale entry whenever a state is created.
+static func _fresh_route(w: SimWorld, id: int) -> void:
+	if w.cache.has("fd7_rt"):
+		(w.cache["fd7_rt"] as Dictionary).erase(str(id))
+
+
 static func _route(w: SimWorld, V: Dictionary) -> Dictionary:
 	if not w.cache.has("fd7_rt"):
 		w.cache["fd7_rt"] = {}
@@ -1503,6 +1531,7 @@ static func _discover(w: SimWorld) -> void:
 			if gar < 0 or Vector2(a.pos).distance_to(o + garage_park(CnFacility.conf(), gar)) > 0.7:
 				continue
 			var S := st(w)
+			_fresh_route(w, int(a.id))
 			S.v[str(int(a.id))] = {"id": int(a.id), "fac": int(T.fac), "seq": 0, "st": "park", "at": "g%d" % gar, "to": "g%d" % gar,
 				"rto": "g%d" % gar, "then": "", "tgt": [], "gar": gar, "who": "fac", "legs": [], "rv": 0, "leg": 0, "s": 0.0, "v": 0.0,
 				"gw": 0, "t0": w.tick, "rel": ""}
@@ -1624,6 +1653,22 @@ static func _approach(w: SimWorld, V: Dictionary, e: Dictionary) -> void:
 			V.apw = w.tick
 		elif w.tick - int(V.apw) >= SimWorld.TICK_RATE * 3 / 2:
 			tol = 2.5
+	elif not idle and not bool(e.get("moving", false)) and (e.get("path", []) as Array).is_empty() and p.distance_to(ap) > tol:
+		# FACFLOW8D (LETHAL8E stall): Movement gave up short of the apron (blocked by the queue beside it) and left the move
+		# order standing with no path, so `idle` never came true and nothing re-issued it. Stood still 1.5 s: within 2.5 tiles
+		# it goes from where it stands (as the REGFIX7 path does); farther out the move is re-issued.
+		var la2: Array = V.get("apl", [-999.0, -999.0])
+		if p.distance_to(Vector2(float(la2[0]), float(la2[1]))) > 0.05:
+			V.apl = [p.x, p.y]
+			V.apw = w.tick
+		elif w.tick - int(V.apw) >= SimWorld.TICK_RATE * 3 / 2:
+			if p.distance_to(ap) <= 2.5:
+				tol = 2.5
+			else:
+				V.apw = w.tick
+				Movement.order_move(w, e, ap)
+				e.order["fd7"] = 1
+				return
 	if p.distance_to(ap) > tol and not (idle and p.distance_to(ap) <= 2.5):
 		if idle:
 			Movement.order_move(w, e, ap)
@@ -1714,13 +1759,52 @@ static func _axis_node(p: Vector2) -> int:
 ## physically ahead of it on the shared lane (two APCs sent out of their garages at once: V's shorter route reaches the merge
 ## first) X stands still behind V (spacing) while V waits for X to enter first: neither can move. X is "held behind" V when it
 ## is stopped, within a spacing of V, and farther from the gate-lane entry than V; V then goes first.
-static func _held_behind(w: SimWorld, V: Dictionary, X: Dictionary, RX: Dictionary, z: Array) -> bool:
+static func _held_behind(w: SimWorld, V: Dictionary, X: Dictionary, RX: Dictionary, z: Array, S: Dictionary = {}) -> bool:
 	if float(X.get("v", 0.0)) > 0.02:
 		return false
 	var xe = w.entities.get(int(X.id))
 	var ve = w.entities.get(int(V.id))
-	if xe == null or ve == null or Vector2(xe.pos).distance_to(Vector2(ve.pos)) > D_SAFE + 0.8:
+	if xe == null or ve == null or not _behind_on_zone(X, RX, V, z):
 		return false
+	if Vector2(xe.pos).distance_to(Vector2(ve.pos)) <= D_SAFE + 0.8:
+		return true
+	if S.is_empty():
+		return false
+	# G7 APCOUT8 (owner: "i CANT send my apcs outside of the facility"): the same deadlock through a CHAIN of stopped APCs.
+	# All eight sent out at once: g3 (seq 4) reaches the gate lane first and waits for seq 1..3, g2 waits for g0 (seq 1),
+	# but g0 stands behind g1 which stands behind g2 (spacing): only the direct neighbour counted as "held behind", so
+	# nobody ever moved. X is held behind V when a chain of stopped APCs, each within a spacing of the next and each
+	# farther from the gate-lane entry than V, links X back to V.
+	var seen := {int(V.id): true}
+	var front: Array = [ve]
+	var guard := 0
+	while not front.is_empty():
+		guard += 1
+		if guard > 64:
+			break
+		var pe: Dictionary = front.pop_front()
+		for k in S.v:
+			var Y: Dictionary = S.v[k]
+			var yid := int(Y.id)
+			if seen.has(yid) or int(Y.fac) != int(V.fac) or float(Y.get("v", 0.0)) > 0.02:
+				continue
+			var ys := String(Y.st)
+			if ys != "drive" and ys != "hold":
+				continue
+			var ye = w.entities.get(yid)
+			if ye == null or Vector2(ye.pos).distance_to(Vector2(pe.pos)) > D_SAFE + 0.8:
+				continue
+			if yid != int(X.id) and not _behind_on_zone(Y, _route(w, Y), V, z):
+				continue
+			if yid == int(X.id):
+				return true
+			seen[yid] = true
+			front.append(ye)
+	return false
+
+
+## X (route RX) is farther than V from the start of V's zone z (the shared gate lane), by more than half a metre.
+static func _behind_on_zone(X: Dictionary, RX: Dictionary, V: Dictionary, z: Array) -> bool:
 	for zx in RX.zones:
 		if int(zx[2]) == int(z[2]):
 			return (float(zx[0]) - 1.4) - float(X.s) > (float(z[0]) - 1.4) - float(V.s) + 0.5
@@ -1741,7 +1825,7 @@ static func _zone_blocked(w: SimWorld, S: Dictionary, V: Dictionary, z: Array, g
 			continue
 		var RX := _route(w, X)
 		var sx := float(X.s)
-		var held := zi == gate_zi and dir == 1 and _held_behind(w, V, X, RX, z)   # APCMOV7-4: X waits behind me: I go first
+		var held := zi == gate_zi and dir == 1 and (_held_behind(w, V, X, RX, z, S) or _in_the_way(w, S, V, zi) or _in_sally(w, V))   # APCMOV7-4 (+ APCOUT8 chains): X waits behind me: I go first; APCOUT8B: already in the sally port: I go first
 		for zx in RX.zones:
 			if int(zx[2]) != zi:
 				continue
@@ -1753,12 +1837,110 @@ static func _zone_blocked(w: SimWorld, S: Dictionary, V: Dictionary, z: Array, g
 					return true
 			if zi == gate_zi and dir == 1 and String(X.get("rto", "")) == "x" and int(zx[3]) == 1 and sx <= hx + 0.05 and int(X.seq) < int(V.seq) and not held:
 				return true   # convoy: the APC ordered earlier enters the gate lane first
-		if zi == gate_zi and dir == 1 and String(X.get("rto", "")) == "x" and int(X.seq) < int(V.seq) and not held:
+		if zi == gate_zi and dir == 1 and String(X.get("rto", "")) == "x" and int(X.seq) < int(V.seq) and not held and not _in_the_way(w, S, V, zi):
 			var passed := false
 			for zx in RX.zones:
 				if int(zx[2]) == zi and sx > float(zx[0]) - 1.4 + 0.05:
 					passed = true
 			if not passed:
+				return true
+	return false
+
+
+const HULL_M := 0.2   # APCOUT8B: clearance kept between two hulls passing side by side (tiles, 0.8 m)
+
+
+## APCOUT8B: the hulls at compound-local poses a and b ([pos, heading]) overlap, each grown by HULL_M (separating axes).
+static func _hull_hit(a: Array, b: Array) -> bool:
+	var ca: Vector2 = a[0]
+	var cb: Vector2 = b[0]
+	if ca.distance_to(cb) > 2.0 * (HL + HW + 2.0 * HULL_M):
+		return false
+	var ua := Vector2.from_angle(float(a[1]))
+	var ub := Vector2.from_angle(float(b[1]))
+	var ea := Vector2(HL + HULL_M, HW + HULL_M)
+	var eb := Vector2(HL + HULL_M, HW + HULL_M)
+	var d := cb - ca
+	for ax in [ua, ua.orthogonal(), ub, ub.orthogonal()]:
+		var ra := ea.x * absf(ua.dot(ax)) + ea.y * absf(ua.orthogonal().dot(ax))
+		var rb := eb.x * absf(ub.dot(ax)) + eb.y * absf(ub.orthogonal().dot(ax))
+		if absf(d.dot(ax)) > ra + rb:
+			return false
+	return true
+
+
+## G7 FACFLOW8 (owner, LP windowed: "i CANT send my apcs outside of the facility"; 6 of 8 out after ~5 min): the
+## one-sided merge lock. An APC on the gate-lane axis (me) stopped for a stopped APC merging from a garage row beside it
+## only because that one's BODY stood within the D_SAFE circle of my look-ahead, while the merging one's own way was
+## blocked by MY hull (it waits for me) and its look-ahead did not reach me (not "mutual": that case is resolved above),
+## so neither moved until the merging one's route was re-planned (~55 s, every APC behind both queued up). When my
+## look-ahead hulls (HL x HW grown by HULL_M) clear the other's standing hull and its own look-ahead hulls run into
+## mine (it must wait for me anyway), the circle is not a reason to stop: I go first. Hull contact still stops.
+## Pure function of the two routes and positions (deterministic).
+static func _yield_to_me(xsmp: Array, RX: Dictionary, X: Dictionary, msmp: Array, R: Dictionary, s: float) -> bool:
+	var pxs: Array = pose_at(RX, float(X.s))
+	for sm in msmp:
+		if _hull_hit(pose_at(R, float(sm[0])), pxs):
+			return false
+	var pme: Array = pose_at(R, s)
+	for sq in xsmp:
+		if _hull_hit(pose_at(RX, float(sq[0])), pme):
+			return true
+	return false
+
+
+## G7 APCOUT8B: V (route R) is nearer the start of the gate lane (zone gate_zi) than X, or as near and ordered earlier.
+## An APC without the gate lane on its route never has the priority.
+static func _first_at_lane(w: SimWorld, V: Dictionary, R: Dictionary, X: Dictionary, gate_zi: int) -> bool:
+	var dv := INF
+	for z in R.zones:
+		if int(z[2]) == gate_zi:
+			dv = float(z[0]) - float(V.s)
+			break
+	if dv == INF:
+		return false
+	var dx := INF
+	for z in _route(w, X).zones:
+		if int(z[2]) == gate_zi:
+			dx = float(z[0]) - float(X.s)
+			break
+	if absf(dv - dx) > 0.05:
+		return dv < dx
+	return int(V.seq) < int(X.seq)
+
+
+## G7 APCOUT8B: V's centre is inside the sally port (inner gate + wash + outer gate). It is through the inner door
+## already, so the convoy order (earlier order first) no longer holds it: waiting there kept the inner door from
+## closing, so the outer never opened (hardened, 13.9c-22), while the earlier APCs waited behind the sally (owner, LP:
+## 0 of 8 APCs out with the Machine near).
+static func _in_sally(w: SimWorld, V: Dictionary) -> bool:
+	var ve = w.entities.get(int(V.id))
+	if ve == null:
+		return false
+	var c0 := CnFacility.conf()
+	var sally := _rect(c0.get("gate_inner", [0, 0, 0, 0])).merge(_rect(c0.get("apc_wash", [0, 0, 0, 0]))).merge(_rect(c0.get("gate_outer", [0, 0, 0, 0])))
+	return sally.has_point(Vector2(ve.pos) - _origin(w, int(V.fac)))
+
+
+## G7 APCOUT8: V waits at the gate-lane entry (convoy order), but where its garage route meets the lane (g3: right beside
+## it) its body stands in the way of an APC that is already IN the lane and has stopped behind it (spacing): V then goes
+## first, else both wait for ever (owner, LP: all APCs sent out at once never got past the wash).
+static func _in_the_way(w: SimWorld, S: Dictionary, V: Dictionary, zi: int) -> bool:
+	var ve = w.entities.get(int(V.id))
+	if ve == null:
+		return false
+	for k in S.v:
+		var Y: Dictionary = S.v[k]
+		if int(Y.id) == int(V.id) or int(Y.fac) != int(V.fac) or float(Y.get("v", 0.0)) > 0.02:
+			continue
+		var ys := String(Y.st)
+		if ys != "drive" and ys != "hold":
+			continue
+		var ye = w.entities.get(int(Y.id))
+		if ye == null or Vector2(ye.pos).distance_to(Vector2(ve.pos)) > D_SAFE + 0.8:
+			continue
+		for zy in _route(w, Y).zones:
+			if int(zy[2]) == zi and float(Y.s) > float(zy[0]) - 1.4 + 0.05 and float(Y.s) <= float(zy[1]):
 				return true
 	return false
 
@@ -1776,6 +1958,32 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 	var c0 := CnFacility.conf()
 	var sally := _rect(c0.get("gate_inner", [0, 0, 0, 0])).merge(_rect(c0.get("apc_wash", [0, 0, 0, 0]))).merge(_rect(c0.get("gate_outer", [0, 0, 0, 0])))
 	var info := {}
+	# APCOUT8B (owner: "can't send my APCs out ... they stop in the wash area", Machine near, 13.9c-22): an APC inside
+	# the sally port (inner gate + wash + outer gate) that waits on a gate has the right of way: an APC outside it
+	# never asks for (and never passes) the OTHER gate meanwhile. Before, g3 waited in the wash for the outer gate
+	# while g4, held outside by the convoy, kept asking the inner gate open; the inner request wins in _gate_step
+	# (ti_open = want_i or ...), so the inner never closed and the outer never opened: deadlock, 0 of 8 APCs out.
+	# Pre-pass over the drivers (order-independent): side[fac] = {"o"/"i": true} for the gates an APC in the sally
+	# waits on.
+	var side := {}
+	for V in drivers:
+		var me0: Vector2 = pos_of.get(int(V.id), Vector2(-1.0e6, -1.0e6))
+		if not sally.has_point(me0) or String(V.st) == "hold":
+			continue
+		var GT0: Dictionary = CnFacility.fac(w, int(V.fac)).get("gate", {})
+		if GT0.is_empty() or not bool(GT0.hard):
+			continue
+		var s0 := float(V.s)
+		for gm in _route(w, V).gates:
+			if s0 > minf(float(gm[0]) + 0.3, float(gm[1]) - 0.3):
+				continue
+			if float(gm[0]) - s0 > 10.0:
+				break
+			var gk0 := "o" if int(gm[2]) == 0 else "i"
+			if not side.has(int(V.fac)):
+				side[int(V.fac)] = {}
+			side[int(V.fac)][gk0] = true
+			break
 	for V in drivers:
 		var R := _route(w, V)
 		var s := float(V.s)
@@ -1828,6 +2036,7 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 				cap = minf(cap, maxf(s, h))
 		var me: Vector2 = pos_of.get(id, Vector2.ZERO)
 		var GT: Dictionary = CnFacility.fac(w, int(V.fac)).get("gate", {})
+		var req := []
 		if not GT.is_empty():   # 13.9c-22: wait at a gate that is not open; ask it to cycle (sally port, SALLY_CAP at a time)
 			for gm in R.gates:
 				var gin := float(gm[0])
@@ -1848,13 +2057,23 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 						if int(k3) != id and sally.has_point(pos_of[k3]):
 							nin += 1
 					full = nin >= SALLY_CAP
+					if not ok and (side.get(int(V.fac), {}) as Dictionary).has("i" if gk == "o" else "o"):
+						full = true   # APCOUT8B: an APC in the sally waits on the other gate: never re-open this one meanwhile
 				if _suits_busy(w, int(V.fac)) and not sally.grow(0.5).has_point(me):
 					full = true   # 13.9c-25: armoured suits are using the wash
 				if not full:
-					GT["w" + gk] = w.tick
+					if sally.has_point(me) or not ok or s >= gin - 0.35:
+						GT["w" + gk] = w.tick
+					else:
+						req = [GT, "w" + gk, cap]   # APCOUT8B: joining through an open door: asked below only if it can advance
 				if not ok or full:
-					L = minf(L, sqrt(2.0 * BRK * maxf(0.0, gin - s)))
-					cap = minf(cap, maxf(s, gin))
+					# APCOUT8B: an APC held back because the sally is busy (full) waits with its centre clear of this
+					# gate's door band (gin is the first 0.2-tile route sample INSIDE the band grown by HL + 0.1): parked
+					# at gin it stood in the door, and a door with a vehicle in it never closes, so the gate the APCs in
+					# the wash wait for never opened
+					var gw0 := gin - 0.3 if full else gin
+					L = minf(L, sqrt(2.0 * BRK * maxf(0.0, gw0 - s)))
+					cap = minf(cap, maxf(s, gw0))
 				break
 		elif _suits_busy(w, int(V.fac)) and not sally.grow(0.5).has_point(me):   # 13.9c-25: suits in the wash, gates open
 			for gm in R.gates:
@@ -1876,15 +2095,69 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 			if px.distance_to(me) > 12.0:
 				continue
 			var stop := -1.0
+			# APCOUT8: an APC behind me (against my direction of travel) that I only edge nearer sideways while pulling
+			# away (merging onto the gate axis right in front of it) is not a reason to stop; it keeps its own spacing.
+			# Without this g3 (merging) and g2 (on the axis behind it) each waited for the other for ever. Contact
+			# (two hull radii + margin) still stops.
+			var dmov := ((I.smp[0][1] as Vector2) - me) if not (I.smp as Array).is_empty() else Vector2.ZERO
+			var behind := dmov.length() > 0.001 and dmov.dot(px - me) < 0.0
 			for sm in I.smp:
 				var p: Vector2 = sm[1]
 				var dpx := p.distance_to(px)
-				if dpx < D_SAFE and dpx < me.distance_to(px) - 0.01:
+				if dpx < D_SAFE and dpx < me.distance_to(px) - 0.01 and not (behind and dpx >= D_CONTACT):
 					stop = float(sm[0])
 					break
+			if stop >= 0.0 and not behind and info.has(int(k2)) and float(X.get("v", 0.0)) < 0.02:
+				# APCOUT8B: two APCs merging onto the gate lane each saw the other in its look-ahead and both stopped for
+				# ever (g1 and g4, 2.0 tiles apart, every one behind them queued up: 2 of 8 out with the Machine near).
+				# When the other one also has me in its own look-ahead (mutual), one goes first with hull contact
+				# (D_CONTACT) as its only limit: the one whose way is free at contact while the other's is not (the
+				# other's body stands in my way: it must move first), else the one nearer the lane entry (tie: the
+				# earlier order). The other keeps waiting.
+				var mutual := false
+				for sq in (info[int(k2)].smp as Array):
+					var dq := (sq[1] as Vector2).distance_to(me)
+					if dq < D_SAFE and dq < px.distance_to(me) - 0.01:
+						mutual = true
+						break
+				if mutual:
+					# contact = the two hulls (oriented boxes HL x HW, grown by HULL_M) overlap; the radius-0.9 circles
+					# of D_SAFE also stop two APCs passing side by side, which the hulls clear
+					var RX2: Dictionary = info[int(k2)].R
+					var pxs: Array = pose_at(RX2, float(X.s))
+					var pme: Array = pose_at(R, s)
+					var x_hits := false
+					for sq in (info[int(k2)].smp as Array):
+						if _hull_hit(pose_at(RX2, float(sq[0])), pme):
+							x_hits = true
+							break
+					var cs := -1.0
+					for sm in I.smp:
+						if _hull_hit(pose_at(R, float(sm[0])), pxs):
+							cs = float(sm[0])
+							break
+					var first := false
+					if (cs < 0.0) != (not x_hits):
+						first = cs < 0.0
+					else:
+						first = _first_at_lane(w, V, R, X, gate_zi)
+					if first:
+						stop = cs
+						if stop < 0.0:
+							continue
+				elif _yield_to_me(info[int(k2)].smp, info[int(k2)].R, X, I.smp, R, s):
+					continue
+			if not behind and info.has(int(k2)):   # RETURN8: keep out of the reversing room of the APC ahead
+				var rs := _rev_claim_stop(I.smp, me, V, R, X, info[int(k2)].R)
+				if rs >= 0.0 and (stop < 0.0 or rs < stop):
+					stop = rs
 			if stop >= 0.0 and bool(GT.get("hard", false)) and sally.has_point(me):
 				stop = _sally_follow_stop(R, s, stop, px, c0)
-			if stop < 0.0 and info.has(int(k2)):
+			# RETURN8: a follower held out of my reversing room (_rev_claim_stop) is not in my way through what it means to
+			# do next; only its body counts (above). Yielding to its look-ahead locked us both: it waits for me, I for it.
+			var held := info.has(int(k2)) and _rev_claim_stop(info[int(k2)].smp, px, X, info[int(k2)].R, V, R) >= 0.0
+			# FACFLOW8: nor does an APC whose way is hull-free of a stopped one that waits on its hull (_yield_to_me)
+			if stop < 0.0 and info.has(int(k2)) and not behind and not held and not (float(X.get("v", 0.0)) < 0.02 and _yield_to_me(info[int(k2)].smp, info[int(k2)].R, X, I.smp, R, s)):   # APCOUT8: the APC in front never yields to one behind it at a merge
 				var XI: Dictionary = info[int(k2)]
 				var sx := float(X.s)
 				for sm in I.smp:
@@ -1902,6 +2175,11 @@ static func _drive(w: SimWorld, S: Dictionary, drivers: Array) -> void:
 			if stop >= 0.0:
 				L = minf(L, sqrt(2.0 * BRK * maxf(0.0, stop - 0.45 - s)))
 				cap = minf(cap, maxf(s, stop - 0.45))
+		# APCOUT8B: an APC outside the sally that wants to join through the open door keeps it open only while it can
+		# actually drive on (not held by the convoy order or spacing); a joiner standing still held the inner door open
+		# for ever while the APC in the wash waited for the outer one (hardened deadlock, 0 of 8 out)
+		if not req.is_empty() and minf(cap, float(req[2])) > s + 0.05 and L > 0.0:
+			(req[0] as Dictionary)[String(req[1])] = w.tick
 		lim[id] = [L, cap]
 	for V in drivers:
 		var id := int(V.id)
@@ -2005,11 +2283,11 @@ static func _reroute(w: SimWorld, V: Dictionary, e: Dictionary, R: Dictionary) -
 ## State F.gate {o, ot, i, it, hard, seen, wo, wi} in CnFacility's facility record (saved, hashed); created on the first
 ## threat, so a facility that never sees an enemy is unchanged.
 const GATES_ON := true
-const GATE_S := 4.0
+const GATE_S := 1.75   # FACFLOW8: 4.0 -> 2.0; FACFLOW8B (owner 13.9c-50 'slightly faster doors, keep realism'): 1.75 s per door move
 const THREAT_PAD := 16.0
 const STAND_DOWN_S := 20.0
 const THREAT_EVERY := 10
-const SALLY_CAP := 2
+const SALLY_CAP := 3   # FACFLOW8B (owner 13.9c-50): the longer airlock (wash 4x6) holds 3 APCs nose to tail
 
 
 ## Outer / inner gate state of facility record F: [outer, inner, hardened] with outer in open | closing | hardened |
@@ -2132,11 +2410,64 @@ static func _gate_clear0(w: SimWorld, F: Dictionary, zn: String) -> bool:
 ## that stop would leave the APC inside the inner gate's keep-clear band, the exact D_SAFE boundary is found (bisection
 ## on the route between the last free sample and the first close one) and the APC closes up to it less 0.05; every
 ## other stop is unchanged. Pure function of the route and positions (deterministic).
+## G7 RETURN8 (owner: APCs "can't come back in" when several return together): an APC parks in its garage by driving
+## past the garage row on the access lane, then reversing back up the lane and in (its last leg is a reverse leg). A
+## follower that came up behind it onto that stretch of lane (the lane corner) stood in its reversing room while it
+## stood in the follower's way: both waited for ever (4 east-garage APCs stuck). The APC ahead owns the room its
+## remaining reverse legs sweep: a follower stops before entering it (its look-ahead samples within D_SAFE of the
+## swept path) until the APC ahead has backed through. Not applied when the follower already stands in that room
+## (then the ordinary spacing rules sort it out; holding it there would only lock both).
+const REV_ROOM := D_SAFE + 0.6   # RETURN8: the follower stops this far from the swept path (> D_SAFE + the 0.4 sampling)
+## Route distance from V's s to the start of its next reverse leg (0 on one; INF: none left).
+static func _rev_to(V: Dictionary, R: Dictionary) -> float:
+	var legs: Array = V.get("legs", [])
+	var ends: PackedFloat64Array = R.ends
+	for li in range(int(V.leg), mini(legs.size(), ends.size())):
+		if int(legs[li][0]) == 1:
+			return maxf(0.0, (ends[li - 1] if li > 0 else 0.0) - float(V.s))
+	return INF
+
+
+## The room is X's only while X reaches its reversing first: X's next reverse leg starts nearer along its route than
+## V's own (tie: the earlier order), so two APCs never claim against each other.
+static func _rev_claim_stop(smp: Array, me: Vector2, V: Dictionary, R: Dictionary, X: Dictionary, RX: Dictionary) -> float:
+	var xr := _rev_to(X, RX)
+	if xr == INF:
+		return -1.0
+	var vr := _rev_to(V, R)
+	if not (xr < vr or (xr == vr and int(X.seq) < int(V.seq))):
+		return -1.0
+	var legs: Array = X.get("legs", [])
+	var ends: PackedFloat64Array = RX.ends
+	var sx := float(X.s)
+	var sw := PackedVector2Array()
+	for li in range(int(X.leg), mini(legs.size(), ends.size())):
+		if int(legs[li][0]) != 1:
+			continue
+		var a := maxf(sx, ends[li - 1] if li > 0 else 0.0)
+		var q := a
+		while q <= ends[li] + 0.001:
+			sw.append(pose_at(RX, minf(q, ends[li]))[0])
+			q += 0.4
+	if sw.is_empty():
+		return -1.0
+	for p in sw:
+		if p.distance_to(me) < D_SAFE:
+			return -1.0
+	for sm in smp:
+		for p in sw:
+			if (sm[1] as Vector2).distance_to(p) < REV_ROOM:
+				return float(sm[0])
+	return -1.0
+
+
 static func _sally_follow_stop(R: Dictionary, s: float, stop: float, px: Vector2, c0: Dictionary) -> float:
 	var gi := _rect(c0.get("gate_inner", [0, 0, 0, 0]))
 	if gi.size.x <= 0.0:
 		return stop
-	var band := gi.grow_individual(HW, HL + 0.1, HW, HL + 0.1)
+	# FACFLOW8B (13.9c-50, SALLY_CAP 3): every follower stopping in the wash closes up exactly too (the quantised stop
+	# left the 2nd APC 2.4 behind the 1st, so the 3rd stood in the inner gate's keep-clear band: deadlock)
+	var band := gi.merge(_rect(c0.get("apc_wash", [0, 0, 0, 0]))).grow_individual(HW, HL + 0.1, HW, HL + 0.1)
 	var at: Vector2 = pose_at(R, maxf(s, stop - 0.45))[0]
 	if not band.has_point(at):
 		return stop
@@ -2236,6 +2567,10 @@ static func _gate_step(w: SimWorld, F: Dictionary, GT: Dictionary) -> void:
 	if hard:
 		to_open = want_o and String(GT.i) == "closed"
 		ti_open = want_i or not want_o   # (it only re-opens once the outer is shut: _gate_drive)
+	if GT.has("man"):   # G7 CARDS8A (13.9c-48): open / close / lock by hand until released (airlock kept)
+		var hw: Array = Cards8a.gate_want(w, F, GT, to_open, ti_open)
+		to_open = bool(hw[0])
+		ti_open = bool(hw[1])
 	_gate_drive(w, F, GT, "o", "gate_outer", to_open, T)
 	_gate_drive(w, F, GT, "i", "gate_inner", ti_open, T)
 
@@ -2243,9 +2578,9 @@ static func _gate_step(w: SimWorld, F: Dictionary, GT: Dictionary) -> void:
 static func _gate_drive(w: SimWorld, F: Dictionary, GT: Dictionary, k: String, zn: String, want_open: bool, T: int) -> void:
 	var sk := String(GT[k])
 	if want_open and sk == "closed":
-		if k == "o" and bool(GT.hard) and String(GT.i) != "closed":
+		if k == "o" and (bool(GT.hard) or GT.has("man")) and String(GT.i) != "closed":   # CARDS8A: hand control keeps the airlock
 			return
-		if k == "i" and bool(GT.hard) and String(GT.o) != "closed":
+		if k == "i" and (bool(GT.hard) or GT.has("man")) and String(GT.o) != "closed":
 			return
 		GT[k] = "opening"
 		GT[k + "t"] = T

@@ -198,7 +198,7 @@ func test_helicopter_serviced_at_pad_faster_with_engineers() -> void:
 	check(absf(float(t0) / float(t1) - 1.5) < 0.1, "50%% faster (%d / %d)" % [t0, t1])
 
 
-func test_low_helicopter_returns_to_nearest_free_pad() -> void:
+func test_low_helicopter_returns_to_own_pad() -> void:
 	var w := _w()
 	var home := h._field(w, "a_helipad", Vector2i(-14, 8))
 	var near := h._field(w, "a_helipad", Vector2i(30, 6))
@@ -210,7 +210,7 @@ func test_low_helicopter_returns_to_nearest_free_pad() -> void:
 	w.entities[hc].ammo = 0
 	var t := _run(w, 600, func() -> bool: return Air.is_landed(w.entities[hc]))
 	check(t > 0, "the low helicopter landed")
-	check_eq(int(w.entities[hc].air_at), near, "at the nearest free pad, not its home")
+	check_eq(int(w.entities[hc].air_at), home, "13.9c-45: back at its OWN home pad (it is free), not the nearer one")
 	check(_run(w, 800, func() -> bool: return int(w.entities[hc].ammo) > 0) > 0, "and was rearmed there")
 
 
@@ -281,7 +281,8 @@ func test_landing_zone_size_by_aircraft() -> void:
 	var vt := w.spawn_unit("a_vtol_dropship", 0, Vector2(c) + Vector2(0.5, -6.5))
 	w.step()
 	var r := w.preview_command({"type": "land_at", "issuer": 0, "unit_ids": [vt], "cell": c})
-	check(r.contains("Not enough open ground to land"), "land_at in the gap refused with the owner's reason (%s)" % r)
+	# 13.9c-42: a land order that does not fit is redirected to valid open ground / its big pad, never refused or parked small
+	check(r == "" or r.contains("Not enough open ground to land"), "land_at in the gap redirects or is refused with the owner's reason (%s)" % r)
 	check(w.submit({"type": "land_at", "issuer": 0, "unit_ids": [vt], "cell": open}).ok, "land_at open ground ok")
 	check(_run(w, 800, func() -> bool: return Air.is_landed(w.entities[vt])) > 0, "the VTOL lands in the open")
 	var hc := w.spawn_unit("a_attack_heli", 0, Vector2(c) + Vector2(1.5, -6.5))

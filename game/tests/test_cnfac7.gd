@@ -1459,7 +1459,15 @@ func test_facb7_enclosed_wash() -> void:
 	for pid in F.parts:
 		if String(w.entities[int(pid)].def) == String(C.link_def):
 			links += 1
-	check(links == 2 * (wa.end.y - gi.end.y + 1), "link wall pieces stand on both sides (%d)" % links)
+	# FACFLOW8B (13.9c-50, longer airlock; ORCH need seq 17571): a side cell held by a solid building's wall (the Suit
+	# Foundry beside the moved inner gate) stands in for a link piece; the passability check above stays strict
+	var bside := 0
+	for y in range(gi.end.y - 1, wa.end.y):
+		for x in [wa.position.x - 1, wa.end.x]:
+			for bn in ["armory", "decon_hall", "aid_station", "magazine"]:
+				if C.has(bn) and Rect2i(int(C[bn][0]), int(C[bn][1]), int(C[bn][2]), int(C[bn][3])).has_point(Vector2i(x, y)):
+					bside += 1
+	check(links + bside == 2 * (wa.end.y - gi.end.y + 1), "link wall pieces (or a building wall) stand on both sides (%d + %d)" % [links, bside])
 	check(int(C.faces.gate_inner) == int(C.faces.gate_outer) and int(C.faces.gate_outer) % 2 == 1, "the inner gate opens on the same (travel) axis as the outer gate")
 	var es: Array = CnFacility.render_entries(w)
 	check((es[0].links as Array).size() == 2, "render entries carry the link walls")

@@ -184,6 +184,7 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 	var fmv = e.get("mvm")
 	if fmv != null:
 		top *= float(fmv)
+	p = _unpush(w, S, k, e, p, h, mc, team)
 	var look := clampf(0.5 + 0.5 * v, LOOK_MIN, LOOK_MAX)
 	# a waypoint is behind us once we are inside its capture radius, or already past it along the next segment (and close):
 	# chasing a waypoint the turning radius cannot reach made a slow APC circle round it (PATH7-2: 360 degree spin)
@@ -301,5 +302,40 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 		S.v.erase(k)   # blocked for good: back to Movement (repath, separation) for the same goal
 		S.lp[k + "c"] = w.tick + COOL
 		Movement.stop_path(e)
-		Movement.order_move(w, e, end)
+		if String(e.order.get("type", "")) == "move":
+			Movement.order_move(w, e, end)
+		else:
+			# SPECOPS8C: keep a board (dropship ramp) or other order; its own system re-paths it. order_move here turned
+			# the APC's boarding into a plain move to the ramp stage point: it parked there idle and never boarded.
+			Movement.order_path(w, e, end)
 		HotState.touch(w, int(e.id))
+
+
+## FACFLOW8E (test_path7 crab): Movement._separate (it runs before this controller) shares an overlap between two
+## moving units half and half, so soldiers walking past a driven APC shoved its hull sideways (~0.05 tiles a tick,
+## 50 deg crab with the hull facing its path). Soldiers cannot push a 15 t vehicle: the sideways part of a small
+## push since last tick is taken back (the soldier's own share of the push still separates them; the push along the
+## hull axis stays). Not when another vehicle is close (hull-to-hull overlaps keep Movement's full separation).
+static func _unpush(w: SimWorld, S: Dictionary, k: String, e: Dictionary, p: Vector2, h: float, mc: String, team: int) -> Vector2:
+	var l = S.lp.get(k)
+	if not (l is Array):
+		return p
+	var dsp := p - Vector2(float(l[0]), float(l[1]))
+	var dl := dsp.length()
+	if dl < 0.0005 or dl > 0.3:
+		return p
+	var fw := Vector2(cos(h), sin(h))
+	var lat := dsp - fw * dsp.dot(fw)
+	if lat.length() < 0.0005:
+		return p
+	for oid in SimIndex.unit_ids(w):
+		if int(oid) == int(e.id):
+			continue
+		var o = w.entities.get(int(oid))
+		if o != null and String(Movement.udef(String(o.def)).mc) == "vehicle" and Vector2(o.pos).distance_to(p) < 2.6:
+			return p
+	var cp := Movement._qpos(w, p - lat)
+	if not Movement._step_ok(w, mc, p, cp, team) or not Movement.is_passable_e(w, e, w.cell_of(cp)):
+		return p
+	HotState.set_pos(w, int(e.id), cp)
+	return cp

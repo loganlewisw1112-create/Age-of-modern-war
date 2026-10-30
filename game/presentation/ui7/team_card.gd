@@ -15,6 +15,7 @@ const CN = preload("res://sim/systems/counter_nanite.gd")
 const CnOps7 = preload("res://sim/systems/cn_ops7.gd")
 const CnProgress7 = preload("res://sim/systems/cn_progress7.gd")
 const Fog = preload("res://sim/systems/fog.gd")
+const M8 = preload("res://sim/systems/cn_mission8.gd")   # G7 CNMISSION8 (13.9c-44): purge mission line + orders
 
 const FIRE_KINDS := [["artillery", "ARTILLERY"], ["rockets", "ROCKETS"], ["air", "AIR STRIKE"]]
 const RELIEF_KINDS := [["operators", "RELIEF: OPERATORS"], ["reload", "RELIEF: RELOAD APC"]]
@@ -35,6 +36,22 @@ var _rec: Label
 var _calls: Label
 var _members: VBoxContainer
 var _sig := ""
+# G7 CNMISSION8: mission status / progress / loadout and the purge-mission orders (PICK ON MAP opens the strategic map
+# in pick mode: StratMap.pick = {tid, mode}; the click there submits cn_mission). Each button pre-checked with
+# CnMission8 team_reason / cancel_reason, disabled with the reason as its tooltip.
+var mission_lbl: Label
+var mission_bar: ProgressBar
+var loadout_lbl: Label
+var mission_btns: Dictionary = {}   # drive | fly | cancel | hold | extract -> Button
+# G7 SPECOPS8 (13.9c-44): spec-ops status / progress and the four missions for a tactical operator squad (each opens
+# the strategic map in pick mode {tid, mode, so: kind}; INSERT toggles Drive / Fly). Pre-checked with SpecOps8
+# team_reason / cancel_reason, disabled with the reason as tooltip. Hidden for strike teams.
+const SO8 = preload("res://sim/systems/specops8.gd")
+var so_box: VBoxContainer
+var so_lbl: Label
+var so_bar: ProgressBar
+var so_btns: Dictionary = {}       # escort | raid | recon | rescue | insert | cancel -> Button
+var so_mode := "drive"
 
 
 func _init() -> void:
@@ -82,6 +99,58 @@ func _init() -> void:
 		b.pressed.connect(_on_relief.bind(String(k[0])))
 		rr.add_child(b)
 		relief_btns[String(k[0])] = b
+	var mh := UiKit.label("MISSION", "header")
+	add_child(mh)
+	mission_lbl = UiKit.label("", "small")
+	mission_lbl.name = "MissionLine"
+	mission_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(mission_lbl)
+	mission_bar = UiKit.bar("hp")
+	mission_bar.name = "MissionBar"
+	mission_bar.self_modulate = UiKit.AMBER
+	add_child(mission_bar)
+	loadout_lbl = UiKit.label("", "small")
+	loadout_lbl.name = "Loadout"
+	loadout_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(loadout_lbl)
+	var mr := HFlowContainer.new()
+	mr.add_theme_constant_override("h_separation", 6)
+	add_child(mr)
+	for k in [["drive", "PURGE: DRIVE", "Pick a creep area or core on the strategic map; the team drives there, purges it and comes home."],
+			["fly", "PURGE: FLY", "Pick a creep area or core on the strategic map; the team flies in by dropship, purges it and comes home."],
+			["hold", "HOLD SITE", "Toggle: hold the purged site instead of coming home."],
+			["extract", "EXTRACT", "Remount and return to the facility."],
+			["cancel", "CANCEL MISSION", "Stop the mission: the team stays where it is."]]:
+		var b := UiKit.button(String(k[1]), "", String(k[2]))
+		b.name = "Mission_" + String(k[0])
+		b.pressed.connect(_on_mission.bind(String(k[0])))
+		mr.add_child(b)
+		mission_btns[String(k[0])] = b
+	so_box = VBoxContainer.new()
+	so_box.name = "SpecOps"
+	add_child(so_box)
+	so_lbl = UiKit.label("", "small")
+	so_lbl.name = "SpecOpsLine"
+	so_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	so_box.add_child(so_lbl)
+	so_bar = UiKit.bar("hp")
+	so_bar.name = "SpecOpsBar"
+	so_bar.self_modulate = UiKit.AMBER
+	so_box.add_child(so_bar)
+	var sr := HFlowContainer.new()
+	sr.add_theme_constant_override("h_separation", 6)
+	so_box.add_child(sr)
+	for k in [["escort", "ESCORT", "Pick the strike team on the strategic map: the squad escorts its purge mission and comes home with it."],
+			["raid", "CORE RAID", "Pick a nanite core or Machine structure on the strategic map: charges planted, withdraw, detonate."],
+			["recon", "RECON & MARK", "Pick an area on the strategic map: scout it, reveal it, mark creep and Machine targets for fire support."],
+			["rescue", "RESCUE", "Pick a downed team, lost squad or beacon on the strategic map: recover the survivors and bring them home."],
+			["insert", "INSERT: DRIVE", "Toggle how the next spec-ops mission goes in: Drive or Fly (dropship)."],
+			["cancel", "CANCEL SPEC-OPS", "Stop the spec-ops mission: the squad stays where it is."]]:
+		var sb := UiKit.button(String(k[1]), "", String(k[2]))
+		sb.name = "SpecOps_" + String(k[0])
+		sb.pressed.connect(_on_so.bind(String(k[0])))
+		sr.add_child(sb)
+		so_btns[String(k[0])] = sb
 	var ml := UiKit.label("OPERATORS", "header")
 	add_child(ml)
 	_members = VBoxContainer.new()
@@ -134,8 +203,11 @@ func refresh() -> void:
 		_rec.text = "Pick a team on the left to see its card."
 		_calls.text = ""
 		_xp.value = 0.0
-		for b in fire_btns.values() + relief_btns.values():
+		for b in fire_btns.values() + relief_btns.values() + mission_btns.values():
 			(b as Button).disabled = true
+		mission_lbl.text = ""
+		loadout_lbl.text = ""
+		mission_bar.value = 0.0
 		_clear_members()
 		return
 	var fid := _fid()
@@ -171,6 +243,7 @@ func refresh() -> void:
 		_set_btn(fire_btns[k], why)
 	for k in relief_btns:
 		_set_btn(relief_btns[k], CnOps7.relief_reason(w, relief_cmd(fid, k)))
+	_refresh_mission(w, fid, t)
 	_refresh_members(w, fid, card)
 
 
@@ -206,6 +279,79 @@ func _submit(c: Dictionary) -> void:
 
 func _on_fire(kind: String) -> void:
 	_submit(fire_cmd(_fid(), kind))
+
+
+func _refresh_mission(w: SimWorld, fid: int, t: Dictionary) -> void:
+	mission_lbl.text = M8.status_line(w, tid)
+	mission_bar.max_value = 1.0
+	mission_bar.value = M8.progress(w, tid)
+	var pk := M8.packages(w, t)
+	var cnt := {}
+	for k in pk:
+		cnt[k] = int(cnt.get(k, 0)) + 1
+	var parts := []
+	for k in cnt:
+		parts.append("%s x%d" % [String(k).replace("_", " "), int(cnt[k])])
+	loadout_lbl.text = "LOADOUT: " + (", ".join(parts) if not parts.is_empty() else "no packages") + ("   (locked in the field)" if bool(t.get("locked", false)) else "")
+	var tr := M8.team_reason(w, fid, tid)
+	_set_btn(mission_btns.drive, tr)
+	_set_btn(mission_btns.fly, tr if tr != "" else ("" if not M8.dropship(w, fid, Vector2(t.spawn)).is_empty() else "No dropship ready: the stealth dropship (or a VTOL dropship) must be landed and empty."))
+	_set_btn(mission_btns.hold, M8.cancel_reason(w, fid, tid))
+	_set_btn(mission_btns.cancel, M8.cancel_reason(w, fid, tid))
+	_set_btn(mission_btns.extract, M8.extract_reason(w, fid, tid))
+	(mission_btns.hold as Button).text = "HOLD SITE: %s" % ("ON" if bool(M8.mission_of(w, tid).get("hold", false)) else "OFF")
+	_refresh_so(w, fid, t)
+
+
+func _refresh_so(w: SimWorld, fid: int, t: Dictionary) -> void:
+	var tac := String(t.kind) == "tactical"
+	so_box.visible = tac
+	if not tac:
+		return
+	so_lbl.text = SO8.status_line(w, tid)
+	so_bar.max_value = 1.0
+	so_bar.value = SO8.progress(w, tid)
+	var tr := SO8.team_reason(w, fid, tid, so_mode)
+	for k in ["escort", "raid", "recon", "rescue"]:
+		_set_btn(so_btns[k], tr)
+	_set_btn(so_btns.insert, SO8.team_reason(w, fid, tid, "drive"))
+	(so_btns.insert as Button).text = "INSERT: %s" % so_mode.to_upper()
+	_set_btn(so_btns.cancel, SO8.cancel_reason(w, fid, tid))
+
+
+## Spec-ops buttons: a mission opens the strategic map in pick mode; insert toggles; cancel submits at once.
+func _on_so(kind: String) -> void:
+	match kind:
+		"insert":
+			so_mode = "fly" if so_mode == "drive" else "drive"
+			(so_btns.insert as Button).text = "INSERT: %s" % so_mode.to_upper()
+		"cancel":
+			_submit({"type": "so_cancel", "issuer": _fid(), "team_id": tid})
+		_:
+			if hub != null and hub.has_method("page"):
+				var sm = hub.page("map")
+				if sm != null:
+					sm.set("pick", {"tid": tid, "mode": so_mode, "so": kind})
+					hub.open("map")
+
+
+## Mission buttons: drive / fly arm the strategic map's pick mode; the others submit at once.
+func _on_mission(kind: String) -> void:
+	var fid := _fid()
+	match kind:
+		"drive", "fly":
+			if hub != null and hub.has_method("page"):
+				var sm = hub.page("map")
+				if sm != null:
+					sm.set("pick", {"tid": tid, "mode": kind})
+					hub.open("map")
+		"hold":
+			var w := _w()
+			_submit({"type": "cn_mission_hold", "issuer": fid, "team_id": tid, "on": not bool(M8.mission_of(w, tid).get("hold", false))})
+		"extract":
+			_submit({"type": "cn_extract", "issuer": fid, "team_id": tid})
+		"cancel":
+			_submit({"type": "cn_mission_cancel", "issuer": fid, "team_id": tid})
 
 
 func _on_relief(kind: String) -> void:

@@ -1,0 +1,49 @@
+{
+  "_note": "G7 BLAST8 (G7_REFERENCE 13.9c-47, owner 2026-10-29: 'thrown and ragdoll arc with realistic depth + can enter short comas depending how big the blast was, their armor and how close to proximity of blast'). Read by sim/systems/blast8.gd (hooked at the end of Shrapnel.burst: artillery / mortar splash, grenades, drone and strike munitions). All numbers PROVISIONAL (untuned). Model: charge W (kg TNT-equivalent) per blast profile; scaled distance Z = d_m / W^(1/3) (Hopkinson-Cranz); a body with Z < z_throw is thrown D = throw_k x W^(1/3) x (1 - Z / z_throw)^throw_pow x clamp(mass_ref / mass, 0, mass_fac_max) x armour.throw metres away from the burst (clamped to walkable ground: never into a building, a wall or off a wall-walk), peak height = min(height_k x D, height_max_m), flight time = 2 sqrt(2 H / g) (>= min_flight_s); landing hurts by land_dmg_per_m per metre of peak above land_safe_m. Soldiers with Z < z_conc are knocked unconscious when sev = (1 - Z / z_conc)^conc_pow x armour.conc >= conc_min, for conc_min_s .. conc_max_s seconds (linear in sev, +-conc_var from w.rng), woken early (treated_wake_s) once a medic stabilises them.",
+  "rules": {
+    "g7_blast8": {
+      "ver": 1,
+      "tile_m": 4.0,
+      "charge_kg": {"grenade": 0.18, "drone": 0.45, "mortar": 0.9},
+      "shell_kg_per_dmg": 0.05,
+      "shell_kg_min": 1.0,
+      "shell_kg_max": 15.0,
+      "z_throw": 5.5,
+      "throw_k": 4.5,
+      "throw_pow": 2.0,
+      "dist_min_m": 0.5,
+      "height_k": 0.35,
+      "height_max_m": 5.0,
+      "height_min_m": 0.3,
+      "min_flight_s": 0.35,
+      "step_t": 0.2,
+      "lie_s": 1.6,
+      "land_safe_m": 1.0,
+      "land_dmg_per_m": 6.0,
+      "mass_kg": {"soldier": 95.0, "light": 30.0},
+      "light_hp_max": 120.0,
+      "mass_ref": 95.0,
+      "mass_fac_max": 2.5,
+      "armour": {
+        "none": {"throw": 1.0, "conc": 1.0},
+        "soft": {"throw": 0.92, "conc": 0.85},
+        "plate": {"throw": 0.85, "conc": 0.7},
+        "exo": {"throw": 0.45, "conc": 0.45},
+        "machine": {"throw": 1.0, "conc": 0.0}
+      },
+      "z_conc": 9.0,
+      "conc_pow": 1.5,
+      "conc_min": 0.12,
+      "conc_min_s": 3.0,
+      "conc_max_s": 60.0,
+      "conc_var": 0.2,
+      "treated_wake_s": 4.0,
+      "_note_daze": "ACCURACY8B (13.9c-53, owner 'Yes, dazed', PROVISIONAL): a soldier within Z < z_daze who is NOT knocked out is dazed: sev = (1 - Z / z_daze)^daze_pow x armour.conc (none below daze_min), for daze_min_s .. daze_max_s seconds (linear in sev, no draw). e.b8d = until tick; Accuracy8 reads it (aim x0.55, shot placement to limbs, weapon cooldown x1.4 and +0.6 s to switch targets).",
+      "z_daze": 16.0,
+      "daze_pow": 1.0,
+      "daze_min": 0.05,
+      "daze_min_s": 1.5,
+      "daze_max_s": 8.0
+    }
+  }
+}

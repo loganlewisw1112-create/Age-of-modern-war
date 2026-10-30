@@ -129,6 +129,12 @@ func test_squad_entity_selects_as_one_and_loses_members() -> void:
 	var base_cd := roundi(float(Content.weapon("g5_at_rocket").cooldown) * SimWorld.TICK_RATE)
 	var shots := []
 	for i in 400:
+		# G7 REG8A (setup only, in the spirit of G7_REFERENCE "Lethality test-setup authority", before 13.9c-48; asked ORCH,
+		# need seq 21240): with realistic damage one AT hit does 349 to the mbt (was 60), and G6.1 damage XP (0.25/pt)
+		# ranks the green squad up after the first hit (rank reload x0.96: 58 + 30 = 88). The subject is the squad-loss
+		# x1.5, so the squad is kept green (no XP) while it is measured; the assertion is unchanged.
+		e.erase("xp")
+		e.erase("vet")
 		w.step()
 		if _count(w.events, "ShotFired", "shooter", sq) > 0:
 			shots.append(w.tick)
@@ -153,7 +159,13 @@ func test_hmg_deploy_pack() -> void:
 	check_eq(_count(evs, "ShotFired", "shooter", hmg), 0, "packed HMG does not fire")
 	do_cmd(w, 0, {"type": "deploy", "unit_ids": [hmg]})
 	check(not bool(w.entities[hmg].get("deployed", false)), "setting up")
+	# G7 REG8A (G7_REFERENCE "Lethality test-setup authority", before 13.9c-48): with realistic damage the HMG's first
+	# shot (the tick after Deployed, still inside this setup window) one-shots the rifleman, so the 60-tick window below
+	# had no target left. The foe is durable only during set-up and back at full health for the observed window.
+	w.entities[foe].hp = 100000.0
 	evs = _run(w, int(Content.unit("a_hmg_team").setup_ticks) + 2, ["Deployed"])
+	if w.entities.has(foe):
+		w.entities[foe].hp = float(w.entities[foe].max_hp)
 	check_eq(_count(evs, "Deployed", "id", hmg), 1, "Deployed after setup_ticks")
 	check(bool(w.entities[hmg].deployed), "deployed")
 	evs = _run(w, 60, ["ShotFired"])

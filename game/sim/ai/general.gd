@@ -41,6 +41,9 @@ const RULES := {
 	"flank_max": 14.0, "infil_deg": 70.0, "hit_ticks": 400, "arrive": 3.5, "recon_ticks": 120, "fix_ticks": 1400,
 	"air_radius": 10.0, "air_ticks": 300, "screen_ticks": 1200, "defend_quiet": 300, "trail_max": 12,
 	"repeat_penalty": 0.25, "danger_close": 7.0,
+	# G7 (GEN8): armed enemies inside the home core (home_core_r of the base) make DEFEND outrank every offensive op
+	# by home_priority, and the general re-plans for it even while consolidating (PROVISIONAL)
+	"home_core_r": 12.0, "home_priority": 0.5,
 	"form_r": 8.0, "form_ticks": 1600,   # G7 (REGRESS7-6): an infil / supply raid forms up first (PROVISIONAL)
 	# G7 (REGRESS7-7, ORCH ruling iv on need 2919): stealthy raids (PROVISIONAL). A known armed enemy's detection
 	# circle = its def sight (sneak_sight when unknown) x sneak_sil (a moving raider: crouch-walking does not cut the
@@ -220,6 +223,23 @@ static func armed_near(bel: Array, p: Vector2, r: float) -> float:
 	return s
 
 
+## G7 (GEN8): believed ARMED enemy power inside the home core (home_core_r of the base) > 0.
+static func home_raided(bel: Array, home: Vector2) -> bool:
+	return armed_near(bel, home, float(G("home_core_r"))) > 0.0
+
+
+## G7 (GEN8): cluster c holds nothing armed and a deliberate attack consolidated on it within memory_ticks: the
+## objective is already taken (only an unarmed building the force could not raze is left), so another ATTACK on it
+## would only repeat the same empty assault. Infil / supply raids on it stay open.
+static func taken_unarmed(w: SimWorld, g: Dictionary, c: Dictionary) -> bool:
+	if bool(c.get("armed", true)):
+		return false
+	for h in g.hist:
+		if String(h.type) == "attack" and bool(h.ok) and w.tick - int(h.tick) <= int(G("memory_ticks")) 				and (Vector2(h.tgt)).distance_to(Vector2(c.pos)) <= float(G("memory_radius")):
+			return true
+	return false
+
+
 ## Mop-up on an objective: the nearest believed enemy (unit or building) within r of tgt gets a direct
 ## attack order (buildings are not engaged by attack-move). Returns true when an order went out.
 static func mop_up(w: SimWorld, fid: int, s: Dictionary, badge: String, ids: Array, bel: Array, tgt: Vector2, r: float) -> bool:
@@ -388,7 +408,7 @@ static func candidates(w: SimWorld, fid: int, s: Dictionary, us: Array, home: Ve
 		if ratio >= float(G("strike_ratio")) * sr and bool(c.get("armed", true)):
 			out.append({"type": "strike", "score": 1.0 + minf(ratio, 4.0) * 0.3 + v * 0.4 - dterm * 1.5 - mem + ht, "tgt": p,
 				"tid": int(c.ids[0]), "why": "%d enemies at (%d, %d), weak escort %.1f:1" % [int(c.n), int(p.x), int(p.y), ratio]})
-		if ratio >= float(G("attack_ratio")) * sr and us.size() >= 4:
+		if ratio >= float(G("attack_ratio")) * sr and us.size() >= 4 and not taken_unarmed(w, g, c):
 			out.append({"type": "attack", "score": 0.9 + minf(ratio, 3.0) * 0.25 + v * 0.35 + (0.3 if bool(c.building) else 0.0) - dterm - mem + ht,
 				"tgt": p, "tid": int(c.ids[0]), "why": "%d enemies dug in at (%d, %d), %.1f:1" % [int(c.n), int(p.x), int(p.y), ratio]})
 		if v >= 2.0 and us.size() >= 2:
@@ -417,6 +437,17 @@ static func candidates(w: SimWorld, fid: int, s: Dictionary, us: Array, home: Ve
 		if String(o.type) == last and not ["defend", "refit"].has(last):
 			o.score = float(o.score) - float(G("repeat_penalty"))
 		o.score = snappedf(float(o.score), 0.001)
+	# G7 (GEN8): raiders inside the home core come first. A general does not keep attacking a far objective while
+	# armed enemies stand in its base: DEFEND outranks the best offensive op (refit keeps its own claim).
+	if home_raided(bel, home):
+		var best_off := -INF
+		for o in out:
+			if not ["defend", "refit"].has(String(o.type)):
+				best_off = maxf(best_off, float(o.score))
+		for o in out:
+			if String(o.type) == "defend" and best_off > -INF and float(o.score) < best_off + float(G("home_priority")):
+				o.score = snappedf(best_off + float(G("home_priority")), 0.001)
+				o.why = String(o.why) + ", raiders inside the base"
 	out.sort_custom(func(a, b):
 		if float(a.score) != float(b.score):
 			return float(a.score) > float(b.score)
@@ -1441,7 +1472,8 @@ static func think(w: SimWorld, fid: int, s: Dictionary, us: Array, free: Array, 
 			finish(w, fid, s, false, "broke off at %d%% losses" % roundi(lost * 100.0))
 			op = g.op
 	# (re)plan: no op, or the cadence came round and something urgent (defend / refit) outranks it
-	if w.tick >= int(g.next_plan) and w.tick >= int(g.pause_until):
+	# G7 (GEN8): raiders inside the home core cut a consolidation pause short (the plan still runs on its cadence)
+	if w.tick >= int(g.next_plan) and (w.tick >= int(g.pause_until) or home_raided(x.bel, home)):
 		var cands := candidates(w, fid, s, us, home, slot)
 		g.next_plan = w.tick + int(G("plan_ticks"))
 		if not cands.is_empty():

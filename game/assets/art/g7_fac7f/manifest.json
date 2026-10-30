@@ -2030,14 +2030,14 @@
       }
     },
     "g7_fac_wash": {
-      "fh": 200,
-      "fits": "wash zone 4x4 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
-      "fw": 268,
+      "fh": 232,
+      "fits": "wash zone 4x6 tiles, pivot = zone centre; rot_<f> door side 0 +x 1 +y 2 -x 3 -y",
+      "fw": 332,
       "pivot": [
-        134,
-        130
+        166,
+        146
       ],
-      "size": 4,
+      "size": 5,
       "states": {
         "built": {
           "file": "buildings/g7_fac_wash_rot_0.png",
@@ -2082,7 +2082,7 @@
       },
       "zone": [
         4,
-        4
+        6
       ]
     },
     "g7_fac_workshop": {
@@ -2773,22 +2773,22 @@
     "buildings/g7_fac_wall_front_mask.png": "e8dbe141fe77aa9d4155e01178a0f42d",
     "buildings/g7_fac_wall_sheet.png": "786dc48db279789520e03bb1854b418a",
     "buildings/g7_fac_wall_sheet_mask.png": "e8dbe141fe77aa9d4155e01178a0f42d",
-    "buildings/g7_fac_wash_rot_0.png": "c2edabfcb548d07203da1defae38fdaa",
-    "buildings/g7_fac_wash_rot_0_lockdown.png": "dbea4eceb11102db652359206b6778ee",
-    "buildings/g7_fac_wash_rot_0_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_0_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_1.png": "5cf6d7b1473145076a2f9a8b66614b38",
-    "buildings/g7_fac_wash_rot_1_lockdown.png": "8d8c3679db87d3f7dd07ab2c14a664ef",
-    "buildings/g7_fac_wash_rot_1_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_1_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_2.png": "bffbd090b7f60c910e70f4a9026d0e5e",
-    "buildings/g7_fac_wash_rot_2_lockdown.png": "e2e328bf4148ae07063984d2916a24fa",
-    "buildings/g7_fac_wash_rot_2_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_2_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_3.png": "82d75ad267547102c1a517f7063d73a6",
-    "buildings/g7_fac_wash_rot_3_lockdown.png": "099700e4f647a1dfe15288ae15154ca1",
-    "buildings/g7_fac_wash_rot_3_lockdown_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
-    "buildings/g7_fac_wash_rot_3_mask.png": "0bb0a458a99e985ca9e63d1f6172c1c8",
+    "buildings/g7_fac_wash_rot_0.png": "1a4d34f09c9131df43ae4008ed78fb84",
+    "buildings/g7_fac_wash_rot_0_lockdown.png": "46387801aec12c21608ac82d85026ec6",
+    "buildings/g7_fac_wash_rot_0_lockdown_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_0_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_1.png": "794b51928eb256356eadf23fdceb116e",
+    "buildings/g7_fac_wash_rot_1_lockdown.png": "f685feb78ec6a1a9cf28047cea50fd47",
+    "buildings/g7_fac_wash_rot_1_lockdown_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_1_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_2.png": "31178a8bd5dadb8f4d694064e6c0e2b4",
+    "buildings/g7_fac_wash_rot_2_lockdown.png": "8609015c4d8699477305c058f750c50f",
+    "buildings/g7_fac_wash_rot_2_lockdown_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_2_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_3.png": "b044483384b5c4a40a17a228f21b3754",
+    "buildings/g7_fac_wash_rot_3_lockdown.png": "e304cd193370a69da72ea7d84ac00b7e",
+    "buildings/g7_fac_wash_rot_3_lockdown_mask.png": "ca59c63b1f4404fe147d30287f31b435",
+    "buildings/g7_fac_wash_rot_3_mask.png": "ca59c63b1f4404fe147d30287f31b435",
     "buildings/g7_fac_workshop_rot_0.png": "42f06f082520e5ec7130bfc631580722",
     "buildings/g7_fac_workshop_rot_0_lockdown.png": "cc15f04a41df2f316fc321558384d7ad",
     "buildings/g7_fac_workshop_rot_0_lockdown_mask.png": "6803d905d65265c9dea215f9576126a4",

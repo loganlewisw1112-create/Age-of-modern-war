@@ -132,6 +132,21 @@ const G7_ACTIONS := {
 	"cn_fire_support": ["SHIFT+F", "Call fire support (team leader)", "cn7", "cn_fire_support"],
 	"cn_relief": ["SHIFT+R", "Send relief convoy", "cn7", "cn_relief"],
 	"cn_specialize": ["SHIFT+U", "Specialist upgrade", "cn7", "cn_specialize"],
+	# G7 CNMISSION8 (13.9c-44): PURGE MISSION + Team orders on the cn7 card (SHIFT+A / SHIFT+O, agreed with SPECOPS8 on
+	# the board); the step buttons and Drive / Fly sit on their own sub-pages (page group cn8p, shares nothing).
+	"cn_purge_mission": ["SHIFT+A", "Purge mission (click creep / core, then Drive or Fly)", "cn7", "cn_mission"],
+	"cn_team_orders": ["SHIFT+O", "Strike team step orders (page)", "cn7", "cn_mission"],
+	"cn_mission_drive": ["SHIFT+R", "Purge mission: drive", "cn8p", "cn_mission"],
+	"cn_mission_fly": ["SHIFT+F", "Purge mission: fly (dropship)", "cn8p", "cn_mission"],
+	"cn_mount_team": ["SHIFT+M", "Mount (board the APCs)", "cn8p", "cn_mount"],
+	"cn_move_team": ["SHIFT+V", "Move team (click)", "cn8p", "cn_move"],
+	"cn_dismount_team": ["SHIFT+D", "Dismount", "cn8p", "cn_dismount"],
+	"cn_deploy_here": ["SHIFT+S", "Deploy package (click ground)", "cn8p", "cn_deploy"],
+	"cn_hero_detonate": ["SHIFT+H", "Hero detonate", "cn8p", "cn_hero_detonate"],
+	"cn_loadout_cycle": ["SHIFT+L", "Loadout (next preset)", "cn8p", "cn_set_loadout"],
+	"cn_extract": ["SHIFT+X", "Extract / return home", "cn8p", "cn_extract"],
+	"cn_mission_cancel": ["SHIFT+C", "Cancel purge mission", "cn8p", "cn_mission_cancel"],
+	"cn_mission_hold": ["SHIFT+O", "Hold the purged site (toggle)", "cn8p", "cn_mission_hold"],
 	# G7 (FISSURE7 CR 710, SQUAD7-6): engineers span a fissure / canyon (click a tile). FISSURE7 proposed J, but the
 	# engineer card already holds J / U / X / Z (minefield, sweep, rail, garrison: the only letters the generated build
 	# keys never take), so it is the Shift chord SHIFT+J (same mnemonic; plain J stays the minefield).
@@ -142,14 +157,92 @@ const G7_ACTIONS := {
 	"vanta_cycle_nose": ["SHIFT+N", "Nose hardpoint (next item)", "vanta7", "vanta_loadout"],
 	"vanta_cycle_side": ["SHIFT+W", "Side hardpoints, both sides (next item)", "vanta7", "vanta_loadout"],
 	"vanta_cycle_rear": ["SHIFT+Q", "Rear hardpoint (next item)", "vanta7", "vanta_loadout"],
+	# G7 SPECOPS8 (13.9c-44): spec-ops missions on the tactical operator squad card (shares the cn7 card; Shift chords
+	# agreed with CNMISSION8: G C K M I Z here; SPREAD8: rescue moved Y -> M (medevac; X is a test rebind of cn_pincer), so Y stays free for rebinding the cn7 orders, A O on cn7, the rest on its cn8p page).
+	"so_escort": ["SHIFT+G", "Spec ops: escort a purge mission (click the strike team)", "so8", "so_mission"],
+	"so_raid": ["SHIFT+C", "Spec ops: core raid (click a core / Machine structure)", "so8", "so_mission"],
+	"so_recon": ["SHIFT+K", "Spec ops: recon & mark (click an area)", "so8", "so_mission"],
+	"so_rescue": ["SHIFT+M", "Spec ops: rescue / extract (click survivors or a beacon)", "so8", "so_mission"],
+	"so_insert": ["SHIFT+I", "Spec ops: insert by Drive or Fly (toggle)", "so8", "so_mission"],
+	"so_cancel": ["SHIFT+Z", "Spec ops: cancel the mission", "so8", "so_cancel"],
+	# G7 CARDS8A (13.9c-48): building cards. cc8 = command centre / ops room card, def8 = defences card (turrets,
+	# towers, CIWS, gates). Building cards never share a card with units or with each other, so they reuse letters.
+	"cc_fire_art": ["B", "Fire support: artillery (then click a target)", "cc8", "cc_fire"],
+	"cc_fire_rockets": ["K", "Fire support: rockets (then click a target)", "cc8", "cc_fire"],
+	"cc_fire_air": ["N", "Fire support: air strike (then click a target)", "cc8", "cc_fire"],
+	"cc_withdraw": ["X", "Withdraw: fighting withdrawal into the compound", "cc8", "cc_withdraw"],
+	"cc_last_stand": ["Z", "Last stand: commit the reserve to the core doors", "cc8", "cc_last_stand"],
+	"cc_mission_next": ["T", "Mission board: next mission", "cc8", "cc_mission"],
+	"cc_mission_recall": ["C", "Mission board: recall the marked team", "cc8", "cn_extract"],
+	"cc_mission_cancel": ["V", "Mission board: cancel the marked mission", "cc8", "cn_mission_cancel"],
+	"def_fire_mode": ["T", "Fire mode: hold / return fire / fire at will (cycle)", "def8", "def_fire_mode"],
+	"def_priority": ["Y", "Target priority: any / infantry / vehicles / air (cycle)", "def8", "def_priority"],
+	"gate_open": ["U", "Gate: hold open", "def8", "gate_set"],
+	"gate_close": ["J", "Gate: hold closed (opens only for its traffic)", "def8", "gate_set"],
+	"gate_lock": ["K", "Gate: lock", "def8", "gate_set"],
+	"gate_auto": ["N", "Gate: release to the automatic cycle", "def8", "gate_set"],
+	"def_repair": ["X", "Repair / rearm now (nearest facility engineer)", "def8", "def_repair"],
+	# G7 SUPPLY8 (13.9c-48): magazine / ammo + fuel bay card (group sup8; the card shows only while the magazine is
+	# selected, nothing else binds keys then).
+	"sup8_order": ["T", "Order airdrop delivery (retrieval op)", "sup8", "sup8_order"],
+	"sup8_prio": ["Y", "Resupply priority: next class first (cycle)", "sup8", "sup8_prio"],
+	"sup8_mix_type": ["C", "Ammo mix: next round type", "sup8", "sup8_mix"],
+	"sup8_mix_up": ["V", "Ammo mix: +10% of the round type", "sup8", "sup8_mix"],
+	"sup8_mix_down": ["X", "Ammo mix: -10% of the round type", "sup8", "sup8_mix"],
+	# G7 CARDS8B (13.9c-48): Armory + Suit Foundry card (arm8b) and Garages / workshop / decon wash card (gar8b). Page
+	# groups (shown only with their facility part selected, share no card), Shift chords like the other G8 cards.
+	"arm8b_role": ["SHIFT+T", "Armory: next team role", "arm8b", "c8b_preset"],
+	"arm8b_preset": ["SHIFT+L", "Armory: next loadout preset for the role", "arm8b", "c8b_preset"],
+	"arm8b_suit_role": ["SHIFT+S", "Armory: next suit role", "arm8b", "c8b_suit_build"],
+	"arm8b_build": ["SHIFT+B", "Armory: build suit", "arm8b", "c8b_suit_build"],
+	"arm8b_rush": ["SHIFT+R", "Armory: rush the suit in production", "arm8b", "c8b_suit_rush"],
+	"arm8b_repair": ["SHIFT+E", "Armory: repair damaged suits", "arm8b", "c8b_suit_repair"],
+	"arm8b_up_pick": ["SHIFT+I", "Armory: next weapon upgrade", "arm8b", "c8b_upgrade"],
+	"arm8b_upgrade": ["SHIFT+U", "Armory: research weapon upgrade", "arm8b", "c8b_upgrade"],
+	"gar8b_team": ["SHIFT+T", "Garage: next vehicle team", "gar8b", "c8b_veh_repair"],
+	"gar8b_repair": ["SHIFT+R", "Garage: priority repair (toggle)", "gar8b", "c8b_veh_repair"],
+	"gar8b_up_pick": ["SHIFT+I", "Garage: next vehicle upgrade", "gar8b", "c8b_veh_upgrade"],
+	"gar8b_upgrade": ["SHIFT+U", "Garage: fit vehicle upgrade", "gar8b", "c8b_veh_upgrade"],
+	"gar8b_pick": ["SHIFT+V", "Garage: team in / out of the convoy", "gar8b", "c8b_convoy"],
+	"gar8b_convoy": ["SHIFT+C", "Garage: launch convoy (click destination)", "gar8b", "c8b_convoy"],
+	"gar8b_recall": ["SHIFT+H", "Garage: recall all home", "gar8b", "c8b_recall"],
+	"gar8b_decon": ["SHIFT+D", "Garage: force decon", "gar8b", "c8b_decon_force"],
+	"gar8b_skip": ["SHIFT+W", "Garage: skip wash under fire", "gar8b", "c8b_decon_skip"],
+	# G7 CARDS8C (13.9c-48): Sentinel barracks (bar8c), helipads + VTOL pad (air8c), aid station (aid8c), package lab
+	# (lab8c) cards. Page groups (each card shows alone, with its facility part selected), Shift chords.
+	"bar8c_post": ["SHIFT+P", "Barracks: next watch post", "bar8c", "c8c_rotate"],
+	"bar8c_rotate": ["SHIFT+R", "Barracks: rotate the post (fresh men relieve it)", "bar8c", "c8c_rotate"],
+	"bar8c_role": ["SHIFT+T", "Barracks: next Sentinel role", "bar8c", "c8c_train"],
+	"bar8c_train": ["SHIFT+B", "Barracks: train the role", "bar8c", "c8c_train"],
+	"bar8c_plan": ["SHIFT+L", "Barracks: next patrol plan", "bar8c", "c8c_plan"],
+	"bar8c_adopt": ["SHIFT+A", "Barracks: adopt the patrol plan", "bar8c", "c8c_plan"],
+	"bar8c_standto": ["SHIFT+S", "Barracks: stand to (wake all)", "bar8c", "c8c_standto"],
+	"air8c_pick": ["SHIFT+N", "Air: next aircraft", "air8c", "c8c_air_service"],
+	"air8c_service": ["SHIFT+E", "Air: service at its own pad (rearm / refuel / repair)", "air8c", "c8c_air_service"],
+	"air8c_launch": ["SHIFT+L", "Air: launch (click a point)", "air8c", "c8c_air_launch"],
+	"air8c_launch_all": ["SHIFT+A", "Air: launch all (click a point)", "air8c", "c8c_air_launch"],
+	"air8c_recall": ["SHIFT+H", "Air: recall all to their pads", "air8c", "c8c_air_recall"],
+	"air8c_cap": ["SHIFT+P", "Air: air patrol (click a point)", "air8c", "c8c_air_cap"],
+	"air8c_cap_end": ["SHIFT+X", "Air: end the air patrol", "air8c", "c8c_air_cap"],
+	"aid8c_pick": ["SHIFT+N", "Aid station: next casualty", "aid8c", "c8c_cas_first"],
+	"aid8c_first": ["SHIFT+F", "Aid station: treat first", "aid8c", "c8c_cas_first"],
+	"aid8c_evac": ["SHIFT+E", "Aid station: evacuate", "aid8c", "c8c_evac"],
+	"aid8c_medics": ["SHIFT+M", "Aid station: medics to a point (click)", "aid8c", "c8c_medics"],
+	"lab8c_pkg": ["SHIFT+N", "Lab: next package", "lab8c", "cn_lab_queue"],
+	"lab8c_queue": ["SHIFT+Q", "Lab: queue the package", "lab8c", "cn_lab_queue"],
+	"lab8c_tier": ["SHIFT+U", "Lab: upgrade the lab tier", "lab8c", "cn_lab_upgrade"],
+	"lab8c_team": ["SHIFT+T", "Lab: next counter-nanite team", "lab8c", "cn_specialize"],
+	"lab8c_path": ["SHIFT+P", "Lab: next specialisation path", "lab8c", "cn_specialize"],
+	"lab8c_spec": ["SHIFT+S", "Lab: specialise the team's next operator", "lab8c", "cn_specialize"],
 }
-const PAGE_GROUPS := ["squad7"]
+const PAGE_GROUPS := ["squad7", "cn8p", "arm8b", "gar8b", "bar8c", "air8c", "aid8c", "lab8c"]   # cn8p: G7 CNMISSION8 strike-team pages; arm8b / gar8b: G7 CARDS8B building cards
 const G7_SHARE := [["drone7", "drone"], ["drone7", "loadout6"],
 	# fissure7 (Span fissure) sits on the engineer / repair-unit card next to their G6 actions
 	["fissure7", "mines6"], ["fissure7", "rail6"], ["fissure7", "garrison6"], ["fissure7", "loadout6"],
 	["fissure7", "breach6"], ["fissure7", "tow6"], ["fissure7", "bridge6"], ["fissure7", "eng_air"],
 	["fissure7", "truck"], ["fissure7", "medic"], ["fissure7", "cn7"],
-	["vanta7", "air"]]   # G7 AIRV7: the Vanta card sits on the air card
+	["vanta7", "air"],   # G7 AIRV7: the Vanta card sits on the air card
+	["so8", "cn7"], ["so8", "fissure7"], ["so8", "vanta7"], ["so8", "air"]]   # G7 SPECOPS8: the spec-ops buttons sit on the cn7 card
 
 ## Group pairs that can appear on one card together (mixed selections), so must not collide.
 const SHARE := [["air", "naval"], ["drone", "truck"], ["drone", "medic"], ["drone", "eng_air"],

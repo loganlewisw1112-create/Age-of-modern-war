@@ -146,6 +146,11 @@ func test_artillery_splash_hits_cluster_and_ally() -> void:
 	var ally: Dictionary = w.entities[w.spawn_unit("logistics_truck", 0, p + Vector2(0, -1.0))]
 	for u in [t1, t2, ally]:
 		u.order = {"type": "hold"}
+	# G7 REG8A (setup only, 13.9c ARTY8): the subject is splash on a cluster incl. an ally, not target choice. Automatic
+	# indirect fire now holds danger-close to our own troops (FireHeld), so the shot is an explicit attack order on t1,
+	# which still fires (DangerClose event). Assertions unchanged.
+	art.order = {"type": "attack", "target_id": int(t1.id), "last_pos": t1.pos, "lost": false}
+	art.target = int(t1.id)
 	var ids := [int(t1.id), int(t2.id), int(ally.id)]
 	var got := false
 	for i in 600:
