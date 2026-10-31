@@ -1,6 +1,29 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G7 "Last Protocol", owner-approved 2026-10-26; execution ordered 2026-10-26 "start G7"; branch `g7`)
+## Active goal (G7.1 "Tide Line", owner-LOCKED 2026-10-31; not started: execution waits for the owner's "start G7.1")
+Scope authority: `docs/G71_SCOPE.md` (parts A–J, Done-when frozen). Full roadmap after it: `docs/ROADMAP.md` (G8–G18).
+Work stays on the C: copy (branch `g7` until a `g71` branch is cut at the start); sync to D: after a D: health check at the end.
+```
+GOAL — G7.1 "Tide Line": the Last Protocol siege upgrade
+For whom / what changes:  the owner, playing Last Protocol: an hour in, a thinking hive hits the walls from every
+                          angle with 1,000+ machines; aircraft land on their own pads; fewer clicks to battle; real
+                          firepower, discipline, robot companions, dark gore and horror, core raids, the Blackglass
+                          reverse-engineering complex, the AI war-mind; and it runs smoother than any past build.
+Outcome:                  the G7.1 scope (A–J) in one packaged build, playable from a clean folder
+Done-when (frozen 2026-10-31): the 12 checks in docs/G71_SCOPE.md "Done-when", summarised:
+  1. full suite 0 FAIL / 0 SCRIPT ERROR + determinism; 2. AIRFIX matrix; 3. perf beats every past build (LP peak
+  1,000+ machines p10 >= 60 fps); 4. 60-min LP soak with every new machine; 5. packaged build + README/PLAY_ME + owner
+  look checkpoint; 6. robot fleet survives jamming, 0 hacked; 7. LP save/resume to the same hash; 8. core raid + 70 s
+  CN turnaround; 9. gore hash-identical, fps holds as bodies pile up; 10. infection purge/turn + gas, masks, filters;
+  11. war-mind fallibility + RE breakout/convoy raid; 12. Blackglass full capture-to-prototype chain + overrun cases.
+Out of scope:             G8+ items in docs/ROADMAP.md; the parked lists; skirmish changes beyond what A1-A5 touch.
+Stop-if / park-if:        determinism breaks and can't be fixed fast -> park that feature with a note; a perf gate
+                          can't be met -> stop and ask before cutting anything; look checkpoint rejected -> rework
+                          samples before any full art roll-out; a feature can't reach its tests -> park it in
+                          PROGRESS with the next step, ship the rest.
+```
+
+## Previous goal (G7 "Last Protocol", owner-approved 2026-10-26; execution ordered 2026-10-26 "start G7"; branch `g7`)
 Scope authority: the **G7 MASTER SCOPE** in `docs/G7_REFERENCE.md` (sections 0–13). Plan and agent roster: `docs/PLAN_G7.md`.
 Briefs: `.plan/agents/prompts/G7-*.md` + `G7_COMMON.md`. Board: `.plan/board_g7.jsonl`. Everything else moved to G8 (same file).
 ```
