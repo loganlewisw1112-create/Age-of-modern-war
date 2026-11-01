@@ -1,0 +1,6086 @@
+{
+ "std": {
+  "veh_heavy": {
+   "len": 24.0,
+   "w": 3.5,
+   "h": 5.6,
+   "R": 15.0,
+   "note": "low-loader tractor + 50 t trailer + caged Weaver"
+  },
+  "veh_std": {
+   "len": 9.0,
+   "w": 3.2,
+   "h": 3.4,
+   "R": 11.0,
+   "note": "APC / truck"
+  },
+  "lane_heavy2": 10.0,
+  "lane_heavy1": 7.0,
+  "lane_light": 6.0,
+  "foot": 2.0,
+  "apron_heavy": 26.0,
+  "apron_std": 12.0,
+  "apron_dead_end": 18.0,
+  "apron_person": 3.0,
+  "apron_bay": 4.0,
+  "rack_clear_road": 6.5,
+  "rack_clear_person": 3.0,
+  "rack_max_span": 18.0,
+  "killzone_min": 30.0,
+  "tower_max_spacing": 55.0,
+  "turret_range": {
+   "rail": 74.0,
+   "laser": 56.0,
+   "flak": 64.0,
+   "sam": 90.0,
+   "rws": 40.0,
+   "pdl": 48.0,
+   "ac": 58.0
+  },
+  "pad_slope": 4.0,
+  "pad_len": 150.0,
+  "pad_flare": 0.1,
+  "qd": {
+   "mag_inhabited": 50.0,
+   "mag_ops": 30.0,
+   "mag_mag": 12.0,
+   "fuel_inhabited": 25.0,
+   "fuel_ops": 15.0,
+   "fuel_ignition": 25.0,
+   "fuel_mag": 30.0
+  },
+  "rock_cover": 3.0
+ },
+ "draw": [
+  {
+   "id": "w_e_0",
+   "rect": [
+    187.0,
+    -10.0,
+    190.0,
+    0.0
+   ],
+   "kind": "fp",
+   "ord": 37
+  },
+  {
+   "id": "w_e_1",
+   "rect": [
+    187.0,
+    10.0,
+    190.0,
+    34.0
+   ],
+   "kind": "fp",
+   "ord": 48
+  },
+  {
+   "id": "w_e_2",
+   "rect": [
+    187.0,
+    46.0,
+    190.0,
+    124.0
+   ],
+   "kind": "fp",
+   "ord": 78
+  },
+  {
+   "id": "w_e_3",
+   "rect": [
+    187.0,
+    140.0,
+    190.0,
+    240.0
+   ],
+   "kind": "fp",
+   "ord": 98
+  },
+  {
+   "id": "w_n",
+   "rect": [
+    -2.0,
+    -10.0,
+    190.0,
+    -7.0
+   ],
+   "kind": "fp",
+   "ord": 14
+  },
+  {
+   "id": "w_s",
+   "rect": [
+    2.0,
+    237.0,
+    190.0,
+    240.0
+   ],
+   "kind": "fp",
+   "ord": 97
+  },
+  {
+   "id": "w_w",
+   "rect": [
+    2.0,
+    205.0,
+    5.0,
+    240.0
+   ],
+   "kind": "fp",
+   "ord": 53
+  },
+  {
+   "id": "sally_rail_a",
+   "rect": [
+    160.0,
+    -1.0,
+    187.0,
+    0.0
+   ],
+   "kind": "fp",
+   "ord": 34
+  },
+  {
+   "id": "sally_rail_b",
+   "rect": [
+    160.0,
+    10.0,
+    187.0,
+    11.0
+   ],
+   "kind": "fp",
+   "ord": 39
+  },
+  {
+   "id": "sally_hazard_a",
+   "rect": [
+    160.0,
+    33.0,
+    187.0,
+    34.0
+   ],
+   "kind": "fp",
+   "ord": 46
+  },
+  {
+   "id": "sally_hazard_b",
+   "rect": [
+    160.0,
+    46.0,
+    187.0,
+    47.0
+   ],
+   "kind": "fp",
+   "ord": 50
+  },
+  {
+   "id": "sally_main_a",
+   "rect": [
+    160.0,
+    123.0,
+    187.0,
+    124.0
+   ],
+   "kind": "fp",
+   "ord": 77
+  },
+  {
+   "id": "sally_main_b",
+   "rect": [
+    160.0,
+    140.0,
+    187.0,
+    141.0
+   ],
+   "kind": "fp",
+   "ord": 84
+  },
+  {
+   "id": "t_n1",
+   "rect": [
+    9.5,
+    -14.5,
+    18.5,
+    -5.5
+   ],
+   "kind": "fp",
+   "ord": 10
+  },
+  {
+   "id": "t_n2",
+   "rect": [
+    52.0,
+    -13.0,
+    58.0,
+    -7.0
+   ],
+   "kind": "fp",
+   "ord": 12
+  },
+  {
+   "id": "t_n3",
+   "rect": [
+    102.0,
+    -13.0,
+    108.0,
+    -7.0
+   ],
+   "kind": "fp",
+   "ord": 15
+  },
+  {
+   "id": "t_n4",
+   "rect": [
+    147.0,
+    -13.0,
+    153.0,
+    -7.0
+   ],
+   "kind": "fp",
+   "ord": 28
+  },
+  {
+   "id": "t_ne",
+   "rect": [
+    185.5,
+    -14.5,
+    194.5,
+    -5.5
+   ],
+   "kind": "fp",
+   "ord": 36
+  },
+  {
+   "id": "t_e1",
+   "rect": [
+    186.6,
+    18.6,
+    193.4,
+    25.4
+   ],
+   "kind": "fp",
+   "ord": 49
+  },
+  {
+   "id": "t_e2",
+   "rect": [
+    186.6,
+    54.6,
+    193.4,
+    61.4
+   ],
+   "kind": "fp",
+   "ord": 56
+  },
+  {
+   "id": "t_e3",
+   "rect": [
+    187.0,
+    87.0,
+    193.0,
+    93.0
+   ],
+   "kind": "fp",
+   "ord": 73
+  },
+  {
+   "id": "t_e4",
+   "rect": [
+    186.6,
+    112.6,
+    193.4,
+    119.4
+   ],
+   "kind": "fp",
+   "ord": 79
+  },
+  {
+   "id": "t_e5",
+   "rect": [
+    186.6,
+    144.6,
+    193.4,
+    151.4
+   ],
+   "kind": "fp",
+   "ord": 89
+  },
+  {
+   "id": "t_e6",
+   "rect": [
+    187.0,
+    177.0,
+    193.0,
+    183.0
+   ],
+   "kind": "fp",
+   "ord": 95
+  },
+  {
+   "id": "t_e7",
+   "rect": [
+    187.0,
+    209.0,
+    193.0,
+    215.0
+   ],
+   "kind": "fp",
+   "ord": 101
+  },
+  {
+   "id": "t_se",
+   "rect": [
+    185.5,
+    235.5,
+    194.5,
+    244.5
+   ],
+   "kind": "fp",
+   "ord": 103
+  },
+  {
+   "id": "t_s1",
+   "rect": [
+    148.0,
+    237.0,
+    154.0,
+    243.0
+   ],
+   "kind": "fp",
+   "ord": 100
+  },
+  {
+   "id": "t_s2",
+   "rect": [
+    100.0,
+    237.0,
+    106.0,
+    243.0
+   ],
+   "kind": "fp",
+   "ord": 90
+  },
+  {
+   "id": "t_s3",
+   "rect": [
+    45.0,
+    237.0,
+    51.0,
+    243.0
+   ],
+   "kind": "fp",
+   "ord": 74
+  },
+  {
+   "id": "t_sw",
+   "rect": [
+    -2.5,
+    235.5,
+    6.5,
+    244.5
+   ],
+   "kind": "fp",
+   "ord": 55
+  },
+  {
+   "id": "t_w1",
+   "rect": [
+    -2.0,
+    200.5,
+    7.0,
+    209.5
+   ],
+   "kind": "fp",
+   "ord": 47
+  },
+  {
+   "id": "sp_n1",
+   "rect": [
+    32.1,
+    -14.6,
+    36.9,
+    -9.4
+   ],
+   "kind": "fp",
+   "ord": 11
+  },
+  {
+   "id": "sp_n2",
+   "rect": [
+    77.6,
+    -14.6,
+    82.4,
+    -9.4
+   ],
+   "kind": "fp",
+   "ord": 13
+  },
+  {
+   "id": "sp_n3",
+   "rect": [
+    125.1,
+    -14.6,
+    129.9,
+    -9.4
+   ],
+   "kind": "fp",
+   "ord": 16
+  },
+  {
+   "id": "sp_n4",
+   "rect": [
+    167.6,
+    -14.6,
+    172.4,
+    -9.4
+   ],
+   "kind": "fp",
+   "ord": 30
+  },
+  {
+   "id": "sp_e1",
+   "rect": [
+    189.6,
+    71.4,
+    194.4,
+    76.6
+   ],
+   "kind": "fp",
+   "ord": 69
+  },
+  {
+   "id": "sp_e2",
+   "rect": [
+    189.6,
+    100.4,
+    194.4,
+    105.6
+   ],
+   "kind": "fp",
+   "ord": 76
+  },
+  {
+   "id": "sp_e3",
+   "rect": [
+    189.6,
+    161.4,
+    194.4,
+    166.6
+   ],
+   "kind": "fp",
+   "ord": 92
+  },
+  {
+   "id": "sp_e4",
+   "rect": [
+    189.6,
+    193.4,
+    194.4,
+    198.6
+   ],
+   "kind": "fp",
+   "ord": 99
+  },
+  {
+   "id": "sp_s1",
+   "rect": [
+    22.6,
+    239.4,
+    27.4,
+    244.6
+   ],
+   "kind": "fp",
+   "ord": 70
+  },
+  {
+   "id": "sp_s2",
+   "rect": [
+    168.6,
+    239.4,
+    173.4,
+    244.6
+   ],
+   "kind": "fp",
+   "ord": 102
+  },
+  {
+   "id": "intake",
+   "rect": [
+    30,
+    22,
+    66,
+    48
+   ],
+   "kind": "fp",
+   "ord": 24
+  },
+  {
+   "id": "tube",
+   "rect": [
+    3,
+    30,
+    30,
+    38
+   ],
+   "kind": "fp",
+   "ord": 23
+  },
+  {
+   "id": "hz_airlock",
+   "rect": [
+    4.0,
+    27.0,
+    13.0,
+    41.0
+   ],
+   "kind": "fp",
+   "ord": 22
+  },
+  {
+   "id": "containers",
+   "rect": [
+    92,
+    24,
+    132,
+    32
+   ],
+   "kind": "fp",
+   "ord": 29
+  },
+  {
+   "id": "frame_a",
+   "rect": [
+    110,
+    58,
+    122,
+    68
+   ],
+   "kind": "fp",
+   "ord": 35
+  },
+  {
+   "id": "frame_b",
+   "rect": [
+    126,
+    58,
+    138,
+    68
+   ],
+   "kind": "fp",
+   "ord": 41
+  },
+  {
+   "id": "hzpost",
+   "rect": [
+    152,
+    58,
+    168,
+    72
+   ],
+   "kind": "fp",
+   "ord": 52
+  },
+  {
+   "id": "wash",
+   "rect": [
+    42,
+    76,
+    54,
+    102
+   ],
+   "kind": "fp",
+   "ord": 26
+  },
+  {
+   "id": "pdecon",
+   "rect": [
+    86,
+    86,
+    100,
+    102
+   ],
+   "kind": "fp",
+   "ord": 40
+  },
+  {
+   "id": "zfence_0",
+   "rect": [
+    6.0,
+    93.6,
+    42.0,
+    94.4
+   ],
+   "kind": "fp",
+   "ord": 17
+  },
+  {
+   "id": "zfence_1",
+   "rect": [
+    54.0,
+    93.6,
+    86.0,
+    94.4
+   ],
+   "kind": "fp",
+   "ord": 32
+  },
+  {
+   "id": "zfence_2",
+   "rect": [
+    100.0,
+    93.6,
+    187.0,
+    94.4
+   ],
+   "kind": "fp",
+   "ord": 58
+  },
+  {
+   "id": "hfence",
+   "rect": [
+    6.0,
+    19.6,
+    156.0,
+    20.4
+   ],
+   "kind": "fp",
+   "ord": 21
+  },
+  {
+   "id": "gantry_a",
+   "rect": [
+    120.0,
+    -0.6,
+    121.2,
+    0.6
+   ],
+   "kind": "fp",
+   "ord": 18
+  },
+  {
+   "id": "gantry_b",
+   "rect": [
+    120.0,
+    17.4,
+    121.2,
+    18.6
+   ],
+   "kind": "fp",
+   "ord": 20
+  },
+  {
+   "id": "aid",
+   "rect": [
+    60,
+    104,
+    80,
+    124
+   ],
+   "kind": "fp",
+   "ord": 38
+  },
+  {
+   "id": "hq",
+   "rect": [
+    104,
+    104,
+    132,
+    124
+   ],
+   "kind": "fp",
+   "ord": 59
+  },
+  {
+   "id": "barracks_a",
+   "rect": [
+    136,
+    98,
+    158,
+    124
+   ],
+   "kind": "fp",
+   "ord": 68
+  },
+  {
+   "id": "depot",
+   "rect": [
+    47,
+    141,
+    88,
+    161
+   ],
+   "kind": "fp",
+   "ord": 63
+  },
+  {
+   "id": "dronefort",
+   "rect": [
+    113,
+    141,
+    141,
+    161
+   ],
+   "kind": "fp",
+   "ord": 72
+  },
+  {
+   "id": "motorpool",
+   "rect": [
+    173,
+    146,
+    186,
+    178
+   ],
+   "kind": "fp",
+   "ord": 88
+  },
+  {
+   "id": "fuel",
+   "rect": [
+    160,
+    194,
+    186,
+    220
+   ],
+   "kind": "fp",
+   "ord": 96
+  },
+  {
+   "id": "staff_0",
+   "rect": [
+    8.0,
+    157.0,
+    25.0,
+    181.0
+   ],
+   "kind": "fp",
+   "ord": 61
+  },
+  {
+   "id": "staff_1",
+   "rect": [
+    8.0,
+    183.0,
+    25.0,
+    207.0
+   ],
+   "kind": "fp",
+   "ord": 62
+  },
+  {
+   "id": "staff_2",
+   "rect": [
+    8.0,
+    209.0,
+    25.0,
+    233.0
+   ],
+   "kind": "fp",
+   "ord": 65
+  },
+  {
+   "id": "flood_0",
+   "rect": [
+    85.7,
+    51.7,
+    86.3,
+    52.3
+   ],
+   "kind": "fp",
+   "ord": 27
+  },
+  {
+   "id": "flood_1",
+   "rect": [
+    171.7,
+    81.7,
+    172.3,
+    82.3
+   ],
+   "kind": "fp",
+   "ord": 57
+  },
+  {
+   "id": "flood_2",
+   "rect": [
+    39.7,
+    90.7,
+    40.3,
+    91.3
+   ],
+   "kind": "fp",
+   "ord": 19
+  },
+  {
+   "id": "flood_3",
+   "rect": [
+    96.7,
+    125.2,
+    97.3,
+    125.8
+   ],
+   "kind": "fp",
+   "ord": 51
+  },
+  {
+   "id": "flood_4",
+   "rect": [
+    39.7,
+    213.7,
+    40.3,
+    214.3
+   ],
+   "kind": "fp",
+   "ord": 67
+  },
+  {
+   "id": "flood_5",
+   "rect": [
+    139.7,
+    167.7,
+    140.3,
+    168.3
+   ],
+   "kind": "fp",
+   "ord": 81
+  },
+  {
+   "id": "flood_6",
+   "rect": [
+    175.7,
+    185.7,
+    176.3,
+    186.3
+   ],
+   "kind": "fp",
+   "ord": 93
+  },
+  {
+   "id": "gate_rail",
+   "rect": [
+    188.4,
+    -1.0,
+    191.6,
+    11.0
+   ],
+   "kind": "gate",
+   "ord": 42
+  },
+  {
+   "id": "gate_hazard",
+   "rect": [
+    188.4,
+    33.0,
+    191.6,
+    47.0
+   ],
+   "kind": "gate",
+   "ord": 54
+  },
+  {
+   "id": "gate_main",
+   "rect": [
+    188.4,
+    123.0,
+    191.6,
+    141.0
+   ],
+   "kind": "gate",
+   "ord": 86
+  },
+  {
+   "id": "inner_rail",
+   "rect": [
+    158.4,
+    -1.0,
+    161.6,
+    11.0
+   ],
+   "kind": "gate",
+   "ord": 33
+  },
+  {
+   "id": "inner_hazard",
+   "rect": [
+    158.4,
+    33.0,
+    161.6,
+    47.0
+   ],
+   "kind": "gate",
+   "ord": 43
+  },
+  {
+   "id": "inner_main",
+   "rect": [
+    158.4,
+    123.0,
+    161.6,
+    141.0
+   ],
+   "kind": "gate",
+   "ord": 75
+  },
+  {
+   "id": "rack_fuel#0",
+   "rect": [
+    171.2,
+    187.2,
+    172.8,
+    194.3
+   ],
+   "kind": "rack",
+   "u": "rack_fuel",
+   "a": [
+    172.0,
+    193.5
+   ],
+   "b": [
+    172.0,
+    188.0
+   ],
+   "ord": 94
+  },
+  {
+   "id": "rack_fuel#1",
+   "rect": [
+    142.2,
+    187.2,
+    172.8,
+    188.8
+   ],
+   "kind": "rack",
+   "u": "rack_fuel",
+   "a": [
+    172.0,
+    188.0
+   ],
+   "b": [
+    143.0,
+    188.0
+   ],
+   "ord": 91
+  },
+  {
+   "id": "rack_fuel#2",
+   "rect": [
+    142.2,
+    138.2,
+    143.8,
+    188.8
+   ],
+   "kind": "rack",
+   "u": "rack_fuel",
+   "a": [
+    143.0,
+    188.0
+   ],
+   "b": [
+    143.0,
+    139.0
+   ],
+   "ord": 82
+  },
+  {
+   "id": "rack_fuel#3",
+   "rect": [
+    0.7,
+    138.2,
+    143.8,
+    139.8
+   ],
+   "kind": "rack",
+   "u": "rack_fuel",
+   "a": [
+    143.0,
+    139.0
+   ],
+   "b": [
+    1.5,
+    139.0
+   ],
+   "ord": 60
+  },
+  {
+   "id": "medevac_station",
+   "rect": [
+    35.0,
+    166.0,
+    56.0,
+    210.0
+   ],
+   "kind": "medevac",
+   "ord": 64
+  },
+  {
+   "id": "p_lowloader",
+   "rect": [
+    72.0,
+    28.0,
+    96.0,
+    52.0
+   ],
+   "kind": "prop",
+   "ord": 25
+  },
+  {
+   "id": "p_crane",
+   "rect": [
+    122.0,
+    176.0,
+    130.0,
+    184.0
+   ],
+   "kind": "prop",
+   "ord": 80
+  },
+  {
+   "id": "p_ambulance",
+   "rect": [
+    91.0,
+    176.0,
+    99.0,
+    184.0
+   ],
+   "kind": "prop",
+   "ord": 71
+  },
+  {
+   "id": "p_apc1",
+   "rect": [
+    159.0,
+    148.0,
+    167.0,
+    156.0
+   ],
+   "kind": "prop",
+   "ord": 85
+  },
+  {
+   "id": "p_apc2",
+   "rect": [
+    159.0,
+    168.0,
+    167.0,
+    176.0
+   ],
+   "kind": "prop",
+   "ord": 87
+  },
+  {
+   "id": "p_truck_depot",
+   "rect": [
+    90.0,
+    147.0,
+    98.0,
+    155.0
+   ],
+   "kind": "prop",
+   "ord": 66
+  },
+  {
+   "id": "p_truck_main",
+   "rect": [
+    68.0,
+    126.0,
+    76.0,
+    134.0
+   ],
+   "kind": "prop",
+   "ord": 44
+  },
+  {
+   "id": "p_truck_wash",
+   "rect": [
+    44.0,
+    110.0,
+    52.0,
+    118.0
+   ],
+   "kind": "prop",
+   "ord": 31
+  },
+  {
+   "id": "p_apc_gate",
+   "rect": [
+    170.0,
+    130.5,
+    178.0,
+    138.5
+   ],
+   "kind": "prop",
+   "ord": 83
+  },
+  {
+   "id": "p_forklift",
+   "rect": [
+    21.0,
+    178.0,
+    29.0,
+    186.0
+   ],
+   "kind": "prop",
+   "ord": 45
+  }
+ ],
+ "props": [
+  {
+   "id": "p_lowloader",
+   "kind": "cage_truck",
+   "at": [
+    84.0,
+    40.0
+   ],
+   "yaw": 3.141592653589793,
+   "spec": [
+    "g7_threats",
+    "g7_m_weaver"
+   ]
+  },
+  {
+   "id": "p_crane",
+   "kind": "vtol",
+   "at": [
+    126.0,
+    180.0
+   ],
+   "yaw": 0.0,
+   "z": 0.05,
+   "on": "pad_cargo",
+   "type": "vtol"
+  },
+  {
+   "id": "p_ambulance",
+   "kind": "truck",
+   "at": [
+    95.0,
+    180.0
+   ],
+   "yaw": 1.5707963267948966
+  },
+  {
+   "id": "p_apc1",
+   "kind": "apc",
+   "at": [
+    163.0,
+    152.0
+   ],
+   "yaw": 3.141592653589793
+  },
+  {
+   "id": "p_apc2",
+   "kind": "apc",
+   "at": [
+    163.0,
+    172.0
+   ],
+   "yaw": 0.0
+  },
+  {
+   "id": "p_truck_depot",
+   "kind": "truck",
+   "at": [
+    94.0,
+    151.0
+   ],
+   "yaw": 0.0
+  },
+  {
+   "id": "p_truck_main",
+   "kind": "truck",
+   "at": [
+    72.0,
+    130.0
+   ],
+   "yaw": 3.141592653589793
+  },
+  {
+   "id": "p_truck_wash",
+   "kind": "truck",
+   "at": [
+    48.0,
+    114.0
+   ],
+   "yaw": 1.5707963267948966
+  },
+  {
+   "id": "p_apc_gate",
+   "kind": "apc",
+   "at": [
+    174.0,
+    134.5
+   ],
+   "yaw": 3.141592653589793
+  },
+  {
+   "id": "p_forklift",
+   "kind": "truck",
+   "at": [
+    25.0,
+    182.0
+   ],
+   "yaw": 1.5707963267948966
+  }
+ ],
+ "platform": [
+  [
+   -42.0,
+   -62.0,
+   400.0,
+   -12.0
+  ],
+  [
+   -2.0,
+   -12.0,
+   400.0,
+   206.0
+  ],
+  [
+   -42.0,
+   206.0,
+   400.0,
+   292.0
+  ]
+ ],
+ "airfield": {
+  "deck": [
+   -112.0,
+   14.0,
+   -4.0,
+   186.0
+  ],
+  "stands": [
+   {
+    "id": "W1",
+    "type": "apache",
+    "rect": [
+     -55.0,
+     60.0,
+     -31.0,
+     76.0
+    ],
+    "lift": true
+   },
+   {
+    "id": "N1",
+    "type": "vanta",
+    "rect": [
+     -55.0,
+     84.0,
+     -31.0,
+     96.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "N2",
+    "type": "vanta",
+    "rect": [
+     -55.0,
+     104.0,
+     -31.0,
+     116.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "W2",
+    "type": "apache",
+    "rect": [
+     -55.0,
+     124.0,
+     -31.0,
+     140.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "HS1",
+    "type": "hauler",
+    "rect": [
+     -98.0,
+     16.0,
+     -65.0,
+     44.0
+    ],
+    "lift": true
+   },
+   {
+    "id": "HS2",
+    "type": "hauler",
+    "rect": [
+     -98.0,
+     46.0,
+     -65.0,
+     74.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "V1",
+    "type": "vtol",
+    "rect": [
+     -88.0,
+     76.0,
+     -65.0,
+     92.0
+    ],
+    "lift": true
+   },
+   {
+    "id": "V2",
+    "type": "vtol",
+    "rect": [
+     -88.0,
+     94.0,
+     -65.0,
+     110.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "W3",
+    "type": "apache",
+    "rect": [
+     -90.0,
+     112.0,
+     -65.0,
+     128.0
+    ],
+    "lift": false
+   },
+   {
+    "id": "N3",
+    "type": "vanta",
+    "rect": [
+     -90.0,
+     130.0,
+     -65.0,
+     142.0
+    ],
+    "lift": false
+   }
+  ],
+  "taxi": [
+   {
+    "id": "t_spine",
+    "w": 10.0,
+    "pts": [
+     [
+      -60.0,
+      16.0
+     ],
+     [
+      -60.0,
+      184.0
+     ]
+    ]
+   },
+   {
+    "id": "t_H1",
+    "w": 8.0,
+    "pts": [
+     [
+      -55.0,
+      38.0
+     ],
+     [
+      -47.0,
+      38.0
+     ]
+    ]
+   },
+   {
+    "id": "t_F2",
+    "w": 8.0,
+    "pts": [
+     [
+      -55.0,
+      80.0
+     ],
+     [
+      -30.0,
+      80.0
+     ]
+    ]
+   },
+   {
+    "id": "t_F3",
+    "w": 8.0,
+    "pts": [
+     [
+      -55.0,
+      100.0
+     ],
+     [
+      -30.0,
+      100.0
+     ]
+    ]
+   },
+   {
+    "id": "t_F4",
+    "w": 8.0,
+    "pts": [
+     [
+      -55.0,
+      120.0
+     ],
+     [
+      -30.0,
+      120.0
+     ]
+    ]
+   },
+   {
+    "id": "t_H2",
+    "w": 8.0,
+    "pts": [
+     [
+      -55.0,
+      162.0
+     ],
+     [
+      -47.0,
+      162.0
+     ]
+    ]
+   }
+  ],
+  "drone_station": [
+   -105.0,
+   146.0,
+   -65.0,
+   184.0
+  ],
+  "drone_pads": [
+   [
+    -100.5,
+    153.0,
+    3.4,
+    "up",
+    53.7
+   ],
+   [
+    -92.9,
+    153.0,
+    3.4,
+    "rising",
+    51.6
+   ],
+   [
+    -85.3,
+    153.0,
+    3.4,
+    "up",
+    53.7
+   ],
+   [
+    -77.7,
+    153.0,
+    3.4,
+    "reload",
+    48.9
+   ],
+   [
+    -70.1,
+    153.0,
+    3.4,
+    "up",
+    53.7
+   ],
+   [
+    -100.5,
+    165.0,
+    3.4,
+    "reload",
+    48.9
+   ],
+   [
+    -92.9,
+    165.0,
+    3.4,
+    "up",
+    53.7
+   ],
+   [
+    -85.3,
+    165.0,
+    3.4,
+    "up",
+    53.7
+   ],
+   [
+    -77.7,
+    165.0,
+    3.4,
+    "rising",
+    51.6
+   ],
+   [
+    -70.1,
+    165.0,
+    3.4,
+    "up",
+    53.7
+   ]
+  ],
+  "roof": 52.5,
+  "medevac_station": [
+   35.0,
+   166.0,
+   56.0,
+   210.0
+  ],
+  "medevac_pads": [
+   [
+    46.0,
+    176.0,
+    6.0
+   ],
+   [
+    46.0,
+    199.0,
+    6.0
+   ]
+  ],
+  "craft": [
+   {
+    "id": "k_W1",
+    "type": "apache",
+    "on": "W1",
+    "at": [
+     -43.0,
+     68.0
+    ],
+    "yaw": 0.0,
+    "z": 48.36
+   },
+   {
+    "id": "k_N1",
+    "type": "vanta",
+    "on": "N1",
+    "at": [
+     -43.0,
+     90.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_N2",
+    "type": "vanta",
+    "on": "N2",
+    "at": [
+     -43.0,
+     110.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_W2",
+    "type": "apache",
+    "on": "W2",
+    "at": [
+     -43.0,
+     132.0
+    ],
+    "yaw": 0.0,
+    "z": 48.36
+   },
+   {
+    "id": "k_HS1",
+    "type": "hauler",
+    "on": "HS1",
+    "at": [
+     -81.5,
+     30.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_HS2",
+    "type": "hauler",
+    "on": "HS2",
+    "at": [
+     -81.5,
+     60.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_V1",
+    "type": "vtol",
+    "on": "V1",
+    "at": [
+     -76.5,
+     84.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_V2",
+    "type": "vtol",
+    "on": "V2",
+    "at": [
+     -76.5,
+     102.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_W3",
+    "type": "apache",
+    "on": "W3",
+    "at": [
+     -77.5,
+     120.0
+    ],
+    "yaw": 0.0,
+    "z": 48.36
+   },
+   {
+    "id": "k_N3",
+    "type": "vanta",
+    "on": "N3",
+    "at": [
+     -77.5,
+     136.0
+    ],
+    "yaw": 0.0,
+    "z": 48.0
+   },
+   {
+    "id": "k_F3",
+    "type": "apache",
+    "on": "F3",
+    "at": [
+     -18.0,
+     100.0
+    ],
+    "yaw": 0.0,
+    "z": 48.36
+   },
+   {
+    "id": "k_d0",
+    "type": "drone",
+    "on": "dp0",
+    "at": [
+     -100.5,
+     153.0
+    ],
+    "yaw": 0.0,
+    "z": 53.86
+   },
+   {
+    "id": "k_d1",
+    "type": "drone",
+    "on": "dp1",
+    "at": [
+     -92.9,
+     153.0
+    ],
+    "yaw": 0.6,
+    "z": 51.76
+   },
+   {
+    "id": "k_d2",
+    "type": "drone",
+    "on": "dp2",
+    "at": [
+     -85.3,
+     153.0
+    ],
+    "yaw": 1.2,
+    "z": 53.86
+   },
+   {
+    "id": "k_d4",
+    "type": "drone",
+    "on": "dp4",
+    "at": [
+     -70.1,
+     153.0
+    ],
+    "yaw": 2.4,
+    "z": 53.86
+   },
+   {
+    "id": "k_d6",
+    "type": "drone",
+    "on": "dp6",
+    "at": [
+     -92.9,
+     165.0
+    ],
+    "yaw": 3.5999999999999996,
+    "z": 53.86
+   },
+   {
+    "id": "k_d7",
+    "type": "drone",
+    "on": "dp7",
+    "at": [
+     -85.3,
+     165.0
+    ],
+    "yaw": 4.2,
+    "z": 53.86
+   },
+   {
+    "id": "k_d8",
+    "type": "drone",
+    "on": "dp8",
+    "at": [
+     -77.7,
+     165.0
+    ],
+    "yaw": 4.8,
+    "z": 51.76
+   },
+   {
+    "id": "k_d9",
+    "type": "drone",
+    "on": "dp9",
+    "at": [
+     -70.1,
+     165.0
+    ],
+    "yaw": 5.3999999999999995,
+    "z": 53.86
+   },
+   {
+    "id": "k_mv0",
+    "type": "medevac",
+    "on": "mp0",
+    "at": [
+     46.0,
+     176.0
+    ],
+    "yaw": 0.0,
+    "z": 0.1
+   },
+   {
+    "id": "k_mv1",
+    "type": "medevac",
+    "on": "mp1",
+    "at": [
+     46.0,
+     199.0
+    ],
+    "yaw": 0.0,
+    "z": 0.1
+   }
+  ],
+  "craft_size": {
+   "hauler": [
+    15.0,
+    13.0,
+    0.0
+   ],
+   "apache": [
+    8.9,
+    4.6,
+    0.36
+   ],
+   "vtol": [
+    7.5,
+    7.0,
+    0.0
+   ],
+   "vanta": [
+    4.4,
+    4.2,
+    0.0
+   ],
+   "drone": [
+    1.75,
+    1.75,
+    0.16
+   ],
+   "medevac": [
+    3.9,
+    3.9,
+    0.0
+   ]
+  }
+ },
+ "walls": [
+  {
+   "id": "w_e_0",
+   "a": [
+    190.0,
+    -10.0
+   ],
+   "b": [
+    190.0,
+    0.0
+   ],
+   "out": [
+    1,
+    0
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_e_1",
+   "a": [
+    190.0,
+    10.0
+   ],
+   "b": [
+    190.0,
+    34.0
+   ],
+   "out": [
+    1,
+    0
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_e_2",
+   "a": [
+    190.0,
+    46.0
+   ],
+   "b": [
+    190.0,
+    124.0
+   ],
+   "out": [
+    1,
+    0
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_e_3",
+   "a": [
+    190.0,
+    140.0
+   ],
+   "b": [
+    190.0,
+    240.0
+   ],
+   "out": [
+    1,
+    0
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_n",
+   "a": [
+    -2.0,
+    -10.0
+   ],
+   "b": [
+    190.0,
+    -10.0
+   ],
+   "out": [
+    0,
+    -1
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_s",
+   "a": [
+    2.0,
+    240.0
+   ],
+   "b": [
+    190.0,
+    240.0
+   ],
+   "out": [
+    0,
+    1
+   ],
+   "h": 9.0
+  },
+  {
+   "id": "w_w",
+   "a": [
+    2.0,
+    205.0
+   ],
+   "b": [
+    2.0,
+    240.0
+   ],
+   "out": [
+    -1,
+    0
+   ],
+   "h": 9.0
+  }
+ ],
+ "wall_t": 3.0,
+ "gates": [
+  {
+   "id": "gate_rail",
+   "line": "east",
+   "x": 190.0,
+   "y0": 0.0,
+   "y1": 10.0,
+   "zone": "hazard"
+  },
+  {
+   "id": "gate_hazard",
+   "line": "east",
+   "x": 190.0,
+   "y0": 34.0,
+   "y1": 46.0,
+   "zone": "hazard"
+  },
+  {
+   "id": "gate_main",
+   "line": "east",
+   "x": 190.0,
+   "y0": 124.0,
+   "y1": 140.0,
+   "zone": "clean"
+  },
+  {
+   "id": "inner_rail",
+   "line": "inner",
+   "x": 160.0,
+   "y0": 0.0,
+   "y1": 10.0,
+   "zone": "hazard"
+  },
+  {
+   "id": "inner_hazard",
+   "line": "inner",
+   "x": 160.0,
+   "y0": 34.0,
+   "y1": 46.0,
+   "zone": "hazard"
+  },
+  {
+   "id": "inner_main",
+   "line": "inner",
+   "x": 160.0,
+   "y0": 124.0,
+   "y1": 140.0,
+   "zone": "clean"
+  }
+ ],
+ "footprints": [
+  {
+   "id": "w_e_0",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    -10.0,
+    190.0,
+    0.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_e_1",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    10.0,
+    190.0,
+    34.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_e_2",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    46.0,
+    190.0,
+    124.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_e_3",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    140.0,
+    190.0,
+    240.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_n",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    -2.0,
+    -10.0,
+    190.0,
+    -7.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_s",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    2.0,
+    237.0,
+    190.0,
+    240.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "w_w",
+   "kind": "wall",
+   "zone": "defence",
+   "rect": [
+    2.0,
+    205.0,
+    5.0,
+    240.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_rail_a",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    -1.0,
+    187.0,
+    0.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_rail_b",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    10.0,
+    187.0,
+    11.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_hazard_a",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    33.0,
+    187.0,
+    34.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_hazard_b",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    46.0,
+    187.0,
+    47.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_main_a",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    123.0,
+    187.0,
+    124.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sally_main_b",
+   "kind": "sallywall",
+   "zone": "defence",
+   "rect": [
+    160.0,
+    140.0,
+    187.0,
+    141.0
+   ],
+   "h": 7.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_n1",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    9.5,
+    -14.5,
+    18.5,
+    -5.5
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_n2",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    52.0,
+    -13.0,
+    58.0,
+    -7.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_n3",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    102.0,
+    -13.0,
+    108.0,
+    -7.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_n4",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    147.0,
+    -13.0,
+    153.0,
+    -7.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_ne",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    185.5,
+    -14.5,
+    194.5,
+    -5.5
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e1",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    186.6,
+    18.6,
+    193.4,
+    25.4
+   ],
+   "h": 18.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e2",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    186.6,
+    54.6,
+    193.4,
+    61.4
+   ],
+   "h": 18.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e3",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    87.0,
+    193.0,
+    93.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e4",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    186.6,
+    112.6,
+    193.4,
+    119.4
+   ],
+   "h": 18.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e5",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    186.6,
+    144.6,
+    193.4,
+    151.4
+   ],
+   "h": 18.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e6",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    177.0,
+    193.0,
+    183.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_e7",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    187.0,
+    209.0,
+    193.0,
+    215.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_se",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    185.5,
+    235.5,
+    194.5,
+    244.5
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_s1",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    148.0,
+    237.0,
+    154.0,
+    243.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_s2",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    100.0,
+    237.0,
+    106.0,
+    243.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_s3",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    45.0,
+    237.0,
+    51.0,
+    243.0
+   ],
+   "h": 17.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_sw",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    -2.5,
+    235.5,
+    6.5,
+    244.5
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "t_w1",
+   "kind": "tower",
+   "zone": "defence",
+   "rect": [
+    -2.0,
+    200.5,
+    7.0,
+    209.5
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_n1",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    32.1,
+    -14.6,
+    36.9,
+    -9.4
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_n2",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    77.6,
+    -14.6,
+    82.4,
+    -9.4
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_n3",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    125.1,
+    -14.6,
+    129.9,
+    -9.4
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_n4",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    167.6,
+    -14.6,
+    172.4,
+    -9.4
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_e1",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    189.6,
+    71.4,
+    194.4,
+    76.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_e2",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    189.6,
+    100.4,
+    194.4,
+    105.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_e3",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    189.6,
+    161.4,
+    194.4,
+    166.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_e4",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    189.6,
+    193.4,
+    194.4,
+    198.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_s1",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    22.6,
+    239.4,
+    27.4,
+    244.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "sp_s2",
+   "kind": "sponson",
+   "zone": "defence",
+   "rect": [
+    168.6,
+    239.4,
+    173.4,
+    244.6
+   ],
+   "h": 10.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "intake",
+   "kind": "intake",
+   "zone": "hazard",
+   "rect": [
+    30,
+    22,
+    66,
+    48
+   ],
+   "h": 13.0,
+   "cls": "ops",
+   "level": "ground",
+   "style": "brut"
+  },
+  {
+   "id": "tube",
+   "kind": "tube",
+   "zone": "hazard",
+   "rect": [
+    3,
+    30,
+    30,
+    38
+   ],
+   "h": 5.6,
+   "cls": "ops",
+   "level": "ground",
+   "attach": [
+    "intake",
+    "hz_airlock"
+   ]
+  },
+  {
+   "id": "hz_airlock",
+   "kind": "hzairlock",
+   "zone": "hazard",
+   "rect": [
+    4.0,
+    27.0,
+    13.0,
+    41.0
+   ],
+   "h": 9.0,
+   "cls": "ops",
+   "level": "ground",
+   "attach": [
+    "tube"
+   ]
+  },
+  {
+   "id": "containers",
+   "kind": "containers",
+   "zone": "hazard",
+   "rect": [
+    92,
+    24,
+    132,
+    32
+   ],
+   "h": 5.4,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "frame_a",
+   "kind": "frame",
+   "zone": "hazard",
+   "rect": [
+    110,
+    58,
+    122,
+    68
+   ],
+   "h": 6.2,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "frame_b",
+   "kind": "frame",
+   "zone": "hazard",
+   "rect": [
+    126,
+    58,
+    138,
+    68
+   ],
+   "h": 6.2,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "hzpost",
+   "kind": "hzpost",
+   "zone": "hazard",
+   "rect": [
+    152,
+    58,
+    168,
+    72
+   ],
+   "h": 6.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "wash",
+   "kind": "wash",
+   "zone": "cp",
+   "rect": [
+    42,
+    76,
+    54,
+    102
+   ],
+   "h": 8.0,
+   "cls": "ops",
+   "level": "ground",
+   "crosses_zone": true
+  },
+  {
+   "id": "pdecon",
+   "kind": "pdecon",
+   "zone": "cp",
+   "rect": [
+    86,
+    86,
+    100,
+    102
+   ],
+   "h": 5.4,
+   "cls": "inhabited",
+   "level": "ground",
+   "crosses_zone": true
+  },
+  {
+   "id": "zfence_0",
+   "kind": "zfence",
+   "zone": "defence",
+   "rect": [
+    6.0,
+    93.6,
+    42.0,
+    94.4
+   ],
+   "h": 3.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "zfence_1",
+   "kind": "zfence",
+   "zone": "defence",
+   "rect": [
+    54.0,
+    93.6,
+    86.0,
+    94.4
+   ],
+   "h": 3.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "zfence_2",
+   "kind": "zfence",
+   "zone": "defence",
+   "rect": [
+    100.0,
+    93.6,
+    187.0,
+    94.4
+   ],
+   "h": 3.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "hfence",
+   "kind": "zfence",
+   "zone": "defence",
+   "rect": [
+    6.0,
+    19.6,
+    156.0,
+    20.4
+   ],
+   "h": 3.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "gantry_a",
+   "kind": "gantry",
+   "zone": "hazard",
+   "rect": [
+    120.0,
+    -0.6,
+    121.2,
+    0.6
+   ],
+   "h": 8.5,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "gantry_b",
+   "kind": "gantry",
+   "zone": "hazard",
+   "rect": [
+    120.0,
+    17.4,
+    121.2,
+    18.6
+   ],
+   "h": 8.5,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "aid",
+   "kind": "aid",
+   "zone": "clean",
+   "rect": [
+    60,
+    104,
+    80,
+    124
+   ],
+   "h": 7.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "hq",
+   "kind": "hq",
+   "zone": "clean",
+   "rect": [
+    104,
+    104,
+    132,
+    124
+   ],
+   "h": 12.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "barracks_a",
+   "kind": "barracks",
+   "zone": "clean",
+   "rect": [
+    136,
+    98,
+    158,
+    124
+   ],
+   "h": 14.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "depot",
+   "kind": "depot",
+   "zone": "clean",
+   "rect": [
+    47,
+    141,
+    88,
+    161
+   ],
+   "h": 8.0,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "dronefort",
+   "kind": "dronefort",
+   "zone": "clean",
+   "rect": [
+    113,
+    141,
+    141,
+    161
+   ],
+   "h": 9.0,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "motorpool",
+   "kind": "motorpool",
+   "zone": "clean",
+   "rect": [
+    173,
+    146,
+    186,
+    178
+   ],
+   "h": 8.0,
+   "cls": "ops",
+   "level": "ground"
+  },
+  {
+   "id": "fuel",
+   "kind": "fuel",
+   "zone": "clean",
+   "rect": [
+    160,
+    194,
+    186,
+    220
+   ],
+   "h": 6.0,
+   "cls": "fuel",
+   "level": "ground"
+  },
+  {
+   "id": "staff_0",
+   "kind": "staff",
+   "zone": "clean",
+   "rect": [
+    8.0,
+    157.0,
+    25.0,
+    181.0
+   ],
+   "h": 21.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "staff_1",
+   "kind": "staff",
+   "zone": "clean",
+   "rect": [
+    8.0,
+    183.0,
+    25.0,
+    207.0
+   ],
+   "h": 21.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "staff_2",
+   "kind": "staff",
+   "zone": "clean",
+   "rect": [
+    8.0,
+    209.0,
+    25.0,
+    233.0
+   ],
+   "h": 21.0,
+   "cls": "inhabited",
+   "level": "ground"
+  },
+  {
+   "id": "s_atc",
+   "kind": "atc",
+   "zone": "summit",
+   "rect": [
+    -50.0,
+    -2.0,
+    -20.0,
+    10.0
+   ],
+   "h": 34.0,
+   "cls": "inhabited",
+   "level": "summit",
+   "ridge": true
+  },
+  {
+   "id": "s_fire",
+   "kind": "firestn",
+   "zone": "summit",
+   "rect": [
+    -101.0,
+    134.0,
+    -90.0,
+    143.0
+   ],
+   "h": 5.0,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_fuel",
+   "kind": "sfuel",
+   "zone": "summit",
+   "rect": [
+    -104.0,
+    80.0,
+    -92.0,
+    120.0
+   ],
+   "h": 3.2,
+   "cls": "fuel",
+   "level": "summit"
+  },
+  {
+   "id": "s_dronefac",
+   "kind": "dronefac",
+   "zone": "summit",
+   "rect": [
+    -105.0,
+    146.0,
+    -65.0,
+    184.0
+   ],
+   "h": 4.5,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_flood0",
+   "kind": "mast",
+   "zone": "summit",
+   "rect": [
+    -108.3,
+    46.7,
+    -107.7,
+    47.3
+   ],
+   "h": 10.0,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_flood1",
+   "kind": "mast",
+   "zone": "summit",
+   "rect": [
+    -108.3,
+    81.7,
+    -107.7,
+    82.3
+   ],
+   "h": 10.0,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_flood2",
+   "kind": "mast",
+   "zone": "summit",
+   "rect": [
+    -108.3,
+    117.7,
+    -107.7,
+    118.3
+   ],
+   "h": 10.0,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_flood3",
+   "kind": "mast",
+   "zone": "summit",
+   "rect": [
+    -108.3,
+    152.7,
+    -107.7,
+    153.3
+   ],
+   "h": 10.0,
+   "cls": "ops",
+   "level": "summit"
+  },
+  {
+   "id": "s_radome",
+   "kind": "radome",
+   "zone": "summit",
+   "rect": [
+    -73.0,
+    3.0,
+    -67.0,
+    9.0
+   ],
+   "h": 10.0,
+   "cls": "ops",
+   "level": "summit",
+   "ridge": true
+  },
+  {
+   "id": "s_dish",
+   "kind": "dish",
+   "zone": "summit",
+   "rect": [
+    -95.0,
+    3.0,
+    -89.0,
+    9.0
+   ],
+   "h": 13.0,
+   "cls": "ops",
+   "level": "summit",
+   "ridge": true
+  },
+  {
+   "id": "s_comms",
+   "kind": "comms",
+   "zone": "summit",
+   "rect": [
+    -42.0,
+    192.0,
+    -38.0,
+    196.0
+   ],
+   "h": 26.0,
+   "cls": "ops",
+   "level": "summit",
+   "ridge": true
+  },
+  {
+   "id": "s_flue",
+   "kind": "flue",
+   "zone": "summit",
+   "rect": [
+    -72.6,
+    192.0,
+    -67.4,
+    196.0
+   ],
+   "h": 14.0,
+   "cls": "ops",
+   "level": "summit",
+   "ignition": true,
+   "ridge": true
+  },
+  {
+   "id": "s_airstack",
+   "kind": "airstack",
+   "zone": "summit",
+   "rect": [
+    -93.6,
+    192.4,
+    -90.4,
+    195.6
+   ],
+   "h": 12.0,
+   "cls": "ops",
+   "level": "summit",
+   "ridge": true
+  },
+  {
+   "id": "s_rim1_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -7.199999999999999,
+    61.4,
+    -3.9999999999999996,
+    64.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_rim2_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -7.199999999999999,
+    135.4,
+    -3.9999999999999996,
+    138.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_flak1_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -109.6,
+    28.4,
+    -106.4,
+    31.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_sam1_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -109.6,
+    62.4,
+    -106.4,
+    65.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_las1_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -109.6,
+    98.4,
+    -106.4,
+    101.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_sam2_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -109.6,
+    134.4,
+    -106.4,
+    137.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "s_flak2_b",
+   "kind": "tplinth",
+   "zone": "summit",
+   "rect": [
+    -109.6,
+    168.4,
+    -106.4,
+    171.6
+   ],
+   "h": 1.2,
+   "cls": "defence",
+   "level": "summit"
+  },
+  {
+   "id": "facade",
+   "kind": "facade",
+   "zone": "defence",
+   "rect": [
+    -4.0,
+    -10.0,
+    -2.0,
+    204.0
+   ],
+   "h": 48.0,
+   "cls": "defence",
+   "level": "face"
+  },
+  {
+   "id": "flood_0",
+   "kind": "flood",
+   "zone": "hazard",
+   "rect": [
+    85.7,
+    51.7,
+    86.3,
+    52.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_1",
+   "kind": "flood",
+   "zone": "hazard",
+   "rect": [
+    171.7,
+    81.7,
+    172.3,
+    82.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_2",
+   "kind": "flood",
+   "zone": "hazard",
+   "rect": [
+    39.7,
+    90.7,
+    40.3,
+    91.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_3",
+   "kind": "flood",
+   "zone": "clean",
+   "rect": [
+    96.7,
+    125.2,
+    97.3,
+    125.8
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_4",
+   "kind": "flood",
+   "zone": "clean",
+   "rect": [
+    39.7,
+    213.7,
+    40.3,
+    214.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_5",
+   "kind": "flood",
+   "zone": "clean",
+   "rect": [
+    139.7,
+    167.7,
+    140.3,
+    168.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "flood_6",
+   "kind": "flood",
+   "zone": "clean",
+   "rect": [
+    175.7,
+    185.7,
+    176.3,
+    186.3
+   ],
+   "h": 12.0,
+   "cls": "pole",
+   "level": "ground"
+  },
+  {
+   "id": "portal_rail_n",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    -7.0,
+    4.0,
+    -2.0
+   ],
+   "h": 19.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_rail_s",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    12.0,
+    4.0,
+    17.0
+   ],
+   "h": 19.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_hazard_n",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    23.0,
+    4.0,
+    28.0
+   ],
+   "h": 15.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_hazard_s",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    40.0,
+    4.0,
+    45.0
+   ],
+   "h": 15.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_clean_n",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    117.0,
+    4.0,
+    122.0
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_clean_s",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    142.0,
+    4.0,
+    147.0
+   ],
+   "h": 21.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_person_n",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    148.0,
+    4.0,
+    153.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  },
+  {
+   "id": "portal_person_s",
+   "kind": "portal",
+   "zone": "defence",
+   "rect": [
+    0.0,
+    157.0,
+    4.0,
+    162.0
+   ],
+   "h": 9.0,
+   "cls": "defence",
+   "level": "ground",
+   "wall": true
+  }
+ ],
+ "doors": [
+  {
+   "id": "intake.x10",
+   "bld": "intake",
+   "side": "x1",
+   "at": 40.0,
+   "w": 8.0,
+   "kind": "heavy",
+   "dir": "in",
+   "apron": 26.0,
+   "h": 7.0
+  },
+  {
+   "id": "intake.y11",
+   "bld": "intake",
+   "side": "y1",
+   "at": 48.0,
+   "w": 7.0,
+   "kind": "heavy",
+   "dir": "out",
+   "apron": 26.0,
+   "h": 7.0
+  },
+  {
+   "id": "intake.y12",
+   "bld": "intake",
+   "side": "y1",
+   "at": 60.0,
+   "w": 1.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "containers.y10",
+   "bld": "containers",
+   "side": "y1",
+   "at": 112.0,
+   "w": 6.0,
+   "kind": "bay",
+   "dir": "both",
+   "apron": 4.0,
+   "h": 2.4
+  },
+  {
+   "id": "frame_a.y10",
+   "bld": "frame_a",
+   "side": "y1",
+   "at": 116.0,
+   "w": 8.0,
+   "kind": "bay",
+   "dir": "both",
+   "apron": 4.0,
+   "h": 2.4
+  },
+  {
+   "id": "frame_b.y10",
+   "bld": "frame_b",
+   "side": "y1",
+   "at": 132.0,
+   "w": 8.0,
+   "kind": "bay",
+   "dir": "both",
+   "apron": 4.0,
+   "h": 2.4
+  },
+  {
+   "id": "hzpost.x00",
+   "bld": "hzpost",
+   "side": "x0",
+   "at": 64.0,
+   "w": 1.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "wash.y00",
+   "bld": "wash",
+   "side": "y0",
+   "at": 48.0,
+   "w": 7.0,
+   "kind": "heavy",
+   "dir": "in",
+   "apron": 26.0,
+   "h": 7.0
+  },
+  {
+   "id": "wash.y11",
+   "bld": "wash",
+   "side": "y1",
+   "at": 48.0,
+   "w": 7.0,
+   "kind": "heavy",
+   "dir": "out",
+   "apron": 26.0,
+   "h": 7.0
+  },
+  {
+   "id": "pdecon.y00",
+   "bld": "pdecon",
+   "side": "y0",
+   "at": 93.0,
+   "w": 1.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "pdecon.y11",
+   "bld": "pdecon",
+   "side": "y1",
+   "at": 93.0,
+   "w": 1.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "aid.y10",
+   "bld": "aid",
+   "side": "y1",
+   "at": 70.0,
+   "w": 2.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "hq.y10",
+   "bld": "hq",
+   "side": "y1",
+   "at": 112.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "hq.y11",
+   "bld": "hq",
+   "side": "y1",
+   "at": 124.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "barracks_a.y10",
+   "bld": "barracks_a",
+   "side": "y1",
+   "at": 141.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "barracks_a.y11",
+   "bld": "barracks_a",
+   "side": "y1",
+   "at": 153.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "depot.x00",
+   "bld": "depot",
+   "side": "x0",
+   "at": 151.0,
+   "w": 6.0,
+   "kind": "std",
+   "dir": "in",
+   "apron": 12.0,
+   "h": 4.5
+  },
+  {
+   "id": "depot.x11",
+   "bld": "depot",
+   "side": "x1",
+   "at": 151.0,
+   "w": 6.0,
+   "kind": "std",
+   "dir": "out",
+   "apron": 12.0,
+   "h": 4.5
+  },
+  {
+   "id": "dronefort.x00",
+   "bld": "dronefort",
+   "side": "x0",
+   "at": 151.0,
+   "w": 1.4,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "motorpool.x00",
+   "bld": "motorpool",
+   "side": "x0",
+   "at": 152.0,
+   "w": 4.0,
+   "kind": "std",
+   "dir": "both",
+   "apron": 18.0,
+   "h": 4.5
+  },
+  {
+   "id": "motorpool.x01",
+   "bld": "motorpool",
+   "side": "x0",
+   "at": 162.0,
+   "w": 4.0,
+   "kind": "std",
+   "dir": "both",
+   "apron": 18.0,
+   "h": 4.5
+  },
+  {
+   "id": "motorpool.x02",
+   "bld": "motorpool",
+   "side": "x0",
+   "at": 172.0,
+   "w": 4.0,
+   "kind": "std",
+   "dir": "both",
+   "apron": 18.0,
+   "h": 4.5
+  },
+  {
+   "id": "fuel.x00",
+   "bld": "fuel",
+   "side": "x0",
+   "at": 200.0,
+   "w": 4.0,
+   "kind": "std",
+   "dir": "both",
+   "apron": 6.0,
+   "h": 4.5
+  },
+  {
+   "id": "staff_0.x10",
+   "bld": "staff_0",
+   "side": "x1",
+   "at": 164.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "staff_0.x11",
+   "bld": "staff_0",
+   "side": "x1",
+   "at": 174.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "staff_1.x10",
+   "bld": "staff_1",
+   "side": "x1",
+   "at": 190.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "staff_1.x11",
+   "bld": "staff_1",
+   "side": "x1",
+   "at": 200.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "staff_2.x10",
+   "bld": "staff_2",
+   "side": "x1",
+   "at": 211.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  },
+  {
+   "id": "staff_2.x11",
+   "bld": "staff_2",
+   "side": "x1",
+   "at": 217.0,
+   "w": 1.6,
+   "kind": "person",
+   "dir": "both",
+   "apron": 3.0,
+   "h": 2.4
+  }
+ ],
+ "roads": [
+  {
+   "id": "rail_main",
+   "cls": "rail",
+   "w": 6.0,
+   "oneway": false,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     -2.0,
+     5.0
+    ],
+    [
+     256.0,
+     5.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     -2.0,
+     5.0
+    ],
+    [
+     256.0,
+     5.0
+    ]
+   ]
+  },
+  {
+   "id": "rail_siding",
+   "cls": "rail",
+   "w": 6.0,
+   "oneway": false,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     30.0,
+     5.0
+    ],
+    [
+     44.0,
+     13.0
+    ],
+    [
+     128.0,
+     13.0
+    ],
+    [
+     142.0,
+     5.0
+    ]
+   ],
+   "radii": [
+    0,
+    30,
+    30,
+    0
+   ],
+   "pts": [
+    [
+     30.0,
+     5.0
+    ],
+    [
+     37.083,
+     9.047
+    ],
+    [
+     39.054,
+     10.079
+    ],
+    [
+     41.096,
+     10.961
+    ],
+    [
+     43.197,
+     11.69
+    ],
+    [
+     45.347,
+     12.261
+    ],
+    [
+     47.533,
+     12.671
+    ],
+    [
+     49.744,
+     12.918
+    ],
+    [
+     51.967,
+     13.0
+    ],
+    [
+     120.033,
+     13.0
+    ],
+    [
+     122.256,
+     12.918
+    ],
+    [
+     124.467,
+     12.671
+    ],
+    [
+     126.653,
+     12.261
+    ],
+    [
+     128.803,
+     11.69
+    ],
+    [
+     130.904,
+     10.961
+    ],
+    [
+     132.946,
+     10.079
+    ],
+    [
+     134.917,
+     9.047
+    ],
+    [
+     142.0,
+     5.0
+    ]
+   ]
+  },
+  {
+   "id": "h_in",
+   "cls": "heavy1",
+   "w": 8.0,
+   "oneway": true,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     256.0,
+     40.0
+    ],
+    [
+     66.0,
+     40.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     256.0,
+     40.0
+    ],
+    [
+     66.0,
+     40.0
+    ]
+   ]
+  },
+  {
+   "id": "h_loop",
+   "cls": "heavy1",
+   "w": 7.0,
+   "oneway": true,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     146.0,
+     40.0
+    ],
+    [
+     146.0,
+     74.0
+    ],
+    [
+     100.0,
+     74.0
+    ],
+    [
+     100.0,
+     40.0
+    ]
+   ],
+   "radii": [
+    0,
+    15,
+    15,
+    0
+   ],
+   "pts": [
+    [
+     146.0,
+     40.0
+    ],
+    [
+     146.0,
+     59.0
+    ],
+    [
+     145.847,
+     61.135
+    ],
+    [
+     145.392,
+     63.226
+    ],
+    [
+     144.644,
+     65.231
+    ],
+    [
+     143.619,
+     67.11
+    ],
+    [
+     142.336,
+     68.823
+    ],
+    [
+     140.823,
+     70.336
+    ],
+    [
+     139.11,
+     71.619
+    ],
+    [
+     137.231,
+     72.644
+    ],
+    [
+     135.226,
+     73.392
+    ],
+    [
+     133.135,
+     73.847
+    ],
+    [
+     131.0,
+     74.0
+    ],
+    [
+     115.0,
+     74.0
+    ],
+    [
+     112.865,
+     73.847
+    ],
+    [
+     110.774,
+     73.392
+    ],
+    [
+     108.769,
+     72.644
+    ],
+    [
+     106.89,
+     71.619
+    ],
+    [
+     105.177,
+     70.336
+    ],
+    [
+     103.664,
+     68.823
+    ],
+    [
+     102.381,
+     67.11
+    ],
+    [
+     101.356,
+     65.231
+    ],
+    [
+     100.608,
+     63.226
+    ],
+    [
+     100.153,
+     61.135
+    ],
+    [
+     100.0,
+     59.0
+    ],
+    [
+     100.0,
+     40.0
+    ]
+   ]
+  },
+  {
+   "id": "h_exit",
+   "cls": "heavy1",
+   "w": 7.0,
+   "oneway": true,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     48.0,
+     48.0
+    ],
+    [
+     48.0,
+     76.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     48.0,
+     48.0
+    ],
+    [
+     48.0,
+     76.0
+    ]
+   ]
+  },
+  {
+   "id": "c_wash",
+   "cls": "heavy1",
+   "w": 7.0,
+   "oneway": true,
+   "zone": "clean",
+   "ctrl": [
+    [
+     48.0,
+     102.0
+    ],
+    [
+     48.0,
+     132.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     48.0,
+     102.0
+    ],
+    [
+     48.0,
+     132.0
+    ]
+   ]
+  },
+  {
+   "id": "main",
+   "cls": "heavy2",
+   "w": 10.0,
+   "oneway": false,
+   "zone": "clean",
+   "ctrl": [
+    [
+     256.0,
+     132.0
+    ],
+    [
+     -1.0,
+     132.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     256.0,
+     132.0
+    ],
+    [
+     -1.0,
+     132.0
+    ]
+   ]
+  },
+  {
+   "id": "g_w",
+   "cls": "heavy2",
+   "w": 10.0,
+   "oneway": false,
+   "zone": "clean",
+   "ctrl": [
+    [
+     30.0,
+     132.0
+    ],
+    [
+     30.0,
+     228.0
+    ],
+    [
+     150.0,
+     228.0
+    ],
+    [
+     150.0,
+     132.0
+    ]
+   ],
+   "radii": [
+    0,
+    15,
+    15,
+    0
+   ],
+   "pts": [
+    [
+     30.0,
+     132.0
+    ],
+    [
+     30.0,
+     213.0
+    ],
+    [
+     30.153,
+     215.135
+    ],
+    [
+     30.608,
+     217.226
+    ],
+    [
+     31.356,
+     219.231
+    ],
+    [
+     32.381,
+     221.11
+    ],
+    [
+     33.664,
+     222.823
+    ],
+    [
+     35.177,
+     224.336
+    ],
+    [
+     36.89,
+     225.619
+    ],
+    [
+     38.769,
+     226.644
+    ],
+    [
+     40.774,
+     227.392
+    ],
+    [
+     42.865,
+     227.847
+    ],
+    [
+     45.0,
+     228.0
+    ],
+    [
+     135.0,
+     228.0
+    ],
+    [
+     137.135,
+     227.847
+    ],
+    [
+     139.226,
+     227.392
+    ],
+    [
+     141.231,
+     226.644
+    ],
+    [
+     143.11,
+     225.619
+    ],
+    [
+     144.823,
+     224.336
+    ],
+    [
+     146.336,
+     222.823
+    ],
+    [
+     147.619,
+     221.11
+    ],
+    [
+     148.644,
+     219.231
+    ],
+    [
+     149.392,
+     217.226
+    ],
+    [
+     149.847,
+     215.135
+    ],
+    [
+     150.0,
+     213.0
+    ],
+    [
+     150.0,
+     132.0
+    ]
+   ]
+  },
+  {
+   "id": "g_m",
+   "cls": "heavy2",
+   "w": 10.0,
+   "oneway": false,
+   "zone": "clean",
+   "ctrl": [
+    [
+     105.0,
+     132.0
+    ],
+    [
+     105.0,
+     228.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     105.0,
+     132.0
+    ],
+    [
+     105.0,
+     228.0
+    ]
+   ]
+  },
+  {
+   "id": "f_h",
+   "cls": "foot",
+   "w": 2.0,
+   "oneway": false,
+   "zone": "hazard",
+   "ctrl": [
+    [
+     60.0,
+     50.0
+    ],
+    [
+     60.0,
+     84.0
+    ],
+    [
+     93.0,
+     84.0
+    ],
+    [
+     93.0,
+     86.0
+    ]
+   ],
+   "radii": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "pts": [
+    [
+     60.0,
+     50.0
+    ],
+    [
+     60.0,
+     84.0
+    ],
+    [
+     93.0,
+     84.0
+    ],
+    [
+     93.0,
+     86.0
+    ]
+   ]
+  },
+  {
+   "id": "f_c",
+   "cls": "foot",
+   "w": 2.0,
+   "oneway": false,
+   "zone": "clean",
+   "ctrl": [
+    [
+     93.0,
+     102.0
+    ],
+    [
+     93.0,
+     127.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     93.0,
+     102.0
+    ],
+    [
+     93.0,
+     127.0
+    ]
+   ]
+  },
+  {
+   "id": "core_apron",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    -2.0,
+    95.5,
+    24.0,
+    116.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "core_apron2",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    4.0,
+    116.5,
+    24.0,
+    127.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "depot_w",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    35.0,
+    145.0,
+    47.0,
+    157.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "depot_e",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    88.0,
+    145.0,
+    100.0,
+    157.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "mp_yard",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    155.0,
+    146.0,
+    173.0,
+    178.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "pad_medevac_taxi",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    90.0,
+    173.0,
+    100.0,
+    187.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "pad_cargo_taxi",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    141.0,
+    173.0,
+    145.0,
+    187.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_intake.x10",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "hazard",
+   "rect": [
+    66,
+    34.0,
+    92.0,
+    46.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_intake.y11",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "hazard",
+   "rect": [
+    42.5,
+    48,
+    53.5,
+    74.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_wash.y00",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "hazard",
+   "rect": [
+    42.5,
+    50.0,
+    53.5,
+    76
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_wash.y11",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    42.5,
+    102,
+    53.5,
+    128.0
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_depot.x00",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    35.0,
+    146.5,
+    47,
+    155.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_depot.x11",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    88,
+    146.5,
+    100.0,
+    155.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_motorpool.x00",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    155.0,
+    148.5,
+    173,
+    155.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_motorpool.x01",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    155.0,
+    158.5,
+    173,
+    165.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_motorpool.x02",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    155.0,
+    168.5,
+    173,
+    175.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "apron_fuel.x00",
+   "cls": "hard",
+   "w": 0.0,
+   "oneway": false,
+   "zone": "clean",
+   "rect": [
+    154.0,
+    196.5,
+    160,
+    203.5
+   ],
+   "pts": []
+  },
+  {
+   "id": "f_p",
+   "cls": "foot",
+   "w": 2.0,
+   "oneway": false,
+   "zone": "clean",
+   "ctrl": [
+    [
+     0.5,
+     155.0
+    ],
+    [
+     26.0,
+     155.0
+    ]
+   ],
+   "radii": [
+    0,
+    0
+   ],
+   "pts": [
+    [
+     0.5,
+     155.0
+    ],
+    [
+     26.0,
+     155.0
+    ]
+   ]
+  }
+ ],
+ "turrets": [
+  {
+   "id": "t_n1.t",
+   "kind": "rail",
+   "mount": "tower",
+   "on": "t_n1",
+   "pos": [
+    14,
+    -10.0
+   ],
+   "z": 25.7,
+   "yaw": -2.356194490192345,
+   "sector": null,
+   "range": 74.0,
+   "role": "corner"
+  },
+  {
+   "id": "t_n2.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_n2",
+   "pos": [
+    55,
+    -10.0
+   ],
+   "z": 21.7,
+   "yaw": -1.5707963267948966,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_n3.t",
+   "kind": "sam",
+   "mount": "tower",
+   "on": "t_n3",
+   "pos": [
+    105,
+    -10.0
+   ],
+   "z": 21.7,
+   "yaw": -1.5707963267948966,
+   "sector": null,
+   "range": 90.0,
+   "role": "mid"
+  },
+  {
+   "id": "t_n4.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_n4",
+   "pos": [
+    150,
+    -10.0
+   ],
+   "z": 21.7,
+   "yaw": -1.5707963267948966,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_ne.t",
+   "kind": "rail",
+   "mount": "tower",
+   "on": "t_ne",
+   "pos": [
+    190.0,
+    -10.0
+   ],
+   "z": 25.7,
+   "yaw": -0.7853981633974483,
+   "sector": null,
+   "range": 74.0,
+   "role": "corner"
+  },
+  {
+   "id": "t_e1.t",
+   "kind": "laser",
+   "mount": "tower",
+   "on": "t_e1",
+   "pos": [
+    190.0,
+    22
+   ],
+   "z": 22.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0,
+   "role": "gate"
+  },
+  {
+   "id": "t_e2.t",
+   "kind": "laser",
+   "mount": "tower",
+   "on": "t_e2",
+   "pos": [
+    190.0,
+    58
+   ],
+   "z": 22.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0,
+   "role": "gate"
+  },
+  {
+   "id": "t_e3.t",
+   "kind": "sam",
+   "mount": "tower",
+   "on": "t_e3",
+   "pos": [
+    190.0,
+    90
+   ],
+   "z": 21.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 90.0,
+   "role": "mid"
+  },
+  {
+   "id": "t_e4.t",
+   "kind": "laser",
+   "mount": "tower",
+   "on": "t_e4",
+   "pos": [
+    190.0,
+    116
+   ],
+   "z": 22.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0,
+   "role": "gate"
+  },
+  {
+   "id": "t_e5.t",
+   "kind": "laser",
+   "mount": "tower",
+   "on": "t_e5",
+   "pos": [
+    190.0,
+    148
+   ],
+   "z": 22.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0,
+   "role": "gate"
+  },
+  {
+   "id": "t_e6.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_e6",
+   "pos": [
+    190.0,
+    180
+   ],
+   "z": 21.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_e7.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_e7",
+   "pos": [
+    190.0,
+    212
+   ],
+   "z": 21.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_se.t",
+   "kind": "rail",
+   "mount": "tower",
+   "on": "t_se",
+   "pos": [
+    190.0,
+    240.0
+   ],
+   "z": 25.7,
+   "yaw": 0.7853981633974483,
+   "sector": null,
+   "range": 74.0,
+   "role": "corner"
+  },
+  {
+   "id": "t_s1.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_s1",
+   "pos": [
+    151,
+    240.0
+   ],
+   "z": 21.7,
+   "yaw": 1.5707963267948966,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_s2.t",
+   "kind": "sam",
+   "mount": "tower",
+   "on": "t_s2",
+   "pos": [
+    103,
+    240.0
+   ],
+   "z": 21.7,
+   "yaw": 1.5707963267948966,
+   "sector": null,
+   "range": 90.0,
+   "role": "mid"
+  },
+  {
+   "id": "t_s3.t",
+   "kind": "flak",
+   "mount": "tower",
+   "on": "t_s3",
+   "pos": [
+    48,
+    240.0
+   ],
+   "z": 21.7,
+   "yaw": 1.5707963267948966,
+   "sector": null,
+   "range": 64.0,
+   "role": "span"
+  },
+  {
+   "id": "t_sw.t",
+   "kind": "rail",
+   "mount": "tower",
+   "on": "t_sw",
+   "pos": [
+    2,
+    240.0
+   ],
+   "z": 25.7,
+   "yaw": 2.356194490192345,
+   "sector": null,
+   "range": 74.0,
+   "role": "corner"
+  },
+  {
+   "id": "t_w1.t",
+   "kind": "rail",
+   "mount": "tower",
+   "on": "t_w1",
+   "pos": [
+    2.5,
+    205.0
+   ],
+   "z": 25.7,
+   "yaw": 2.670353755551324,
+   "sector": null,
+   "range": 74.0,
+   "role": "corner"
+  },
+  {
+   "id": "sp_n1.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_n1",
+   "pos": [
+    34.5,
+    -12.0
+   ],
+   "z": 12.5,
+   "yaw": -1.5707963267948966,
+   "out": [
+    0,
+    -1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_n2.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_n2",
+   "pos": [
+    80.0,
+    -12.0
+   ],
+   "z": 12.5,
+   "yaw": -1.5707963267948966,
+   "out": [
+    0,
+    -1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_n3.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_n3",
+   "pos": [
+    127.5,
+    -12.0
+   ],
+   "z": 12.5,
+   "yaw": -1.5707963267948966,
+   "out": [
+    0,
+    -1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_n4.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_n4",
+   "pos": [
+    170.0,
+    -12.0
+   ],
+   "z": 12.5,
+   "yaw": -1.5707963267948966,
+   "out": [
+    0,
+    -1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_e1.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_e1",
+   "pos": [
+    192.0,
+    74.0
+   ],
+   "z": 12.5,
+   "yaw": 0.0,
+   "out": [
+    1,
+    0
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_e2.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_e2",
+   "pos": [
+    192.0,
+    103.0
+   ],
+   "z": 12.5,
+   "yaw": 0.0,
+   "out": [
+    1,
+    0
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_e3.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_e3",
+   "pos": [
+    192.0,
+    164.0
+   ],
+   "z": 12.5,
+   "yaw": 0.0,
+   "out": [
+    1,
+    0
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_e4.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_e4",
+   "pos": [
+    192.0,
+    196.0
+   ],
+   "z": 12.5,
+   "yaw": 0.0,
+   "out": [
+    1,
+    0
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_s1.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_s1",
+   "pos": [
+    25.0,
+    242.0
+   ],
+   "z": 12.5,
+   "yaw": 1.5707963267948966,
+   "out": [
+    0,
+    1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "sp_s2.t",
+   "kind": "ac",
+   "mount": "wall",
+   "on": "sp_s2",
+   "pos": [
+    171.0,
+    242.0
+   ],
+   "z": 12.5,
+   "yaw": 1.5707963267948966,
+   "out": [
+    0,
+    1
+   ],
+   "sector": null,
+   "range": 58.0
+  },
+  {
+   "id": "pdl_intake",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "intake",
+   "pos": [
+    48.0,
+    30.0
+   ],
+   "z": 15.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_hq",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "hq",
+   "pos": [
+    118.0,
+    112.0
+   ],
+   "z": 14.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_drone",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "dronefort",
+   "pos": [
+    127.0,
+    148.0
+   ],
+   "z": 11.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_depot",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "depot",
+   "pos": [
+    66.0,
+    157.0
+   ],
+   "z": 10.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_hzpost",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "hzpost",
+   "pos": [
+    160.0,
+    65.0
+   ],
+   "z": 8.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_intake2",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "intake",
+   "pos": [
+    64.0,
+    44.0
+   ],
+   "z": 15.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "pdl_barracks",
+   "kind": "pdl",
+   "mount": "roof",
+   "on": "barracks_a",
+   "pos": [
+    147.0,
+    108.0
+   ],
+   "z": 16.5,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 48.0
+  },
+  {
+   "id": "s_rim1",
+   "kind": "laser",
+   "mount": "summit",
+   "on": "s_rim1_b",
+   "pos": [
+    -5.6,
+    63.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0
+  },
+  {
+   "id": "s_rim2",
+   "kind": "laser",
+   "mount": "summit",
+   "on": "s_rim2_b",
+   "pos": [
+    -5.6,
+    137.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0
+  },
+  {
+   "id": "s_flak1",
+   "kind": "flak",
+   "mount": "summit",
+   "on": "s_flak1_b",
+   "pos": [
+    -108.0,
+    30.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 64.0
+  },
+  {
+   "id": "s_sam1",
+   "kind": "sam",
+   "mount": "summit",
+   "on": "s_sam1_b",
+   "pos": [
+    -108.0,
+    64.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 90.0
+  },
+  {
+   "id": "s_las1",
+   "kind": "laser",
+   "mount": "summit",
+   "on": "s_las1_b",
+   "pos": [
+    -108.0,
+    100.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 56.0
+  },
+  {
+   "id": "s_sam2",
+   "kind": "sam",
+   "mount": "summit",
+   "on": "s_sam2_b",
+   "pos": [
+    -108.0,
+    136.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 90.0
+  },
+  {
+   "id": "s_flak2",
+   "kind": "flak",
+   "mount": "summit",
+   "on": "s_flak2_b",
+   "pos": [
+    -108.0,
+    170.0
+   ],
+   "z": 51.7,
+   "yaw": 0.0,
+   "sector": null,
+   "range": 64.0
+  }
+ ],
+ "pads": [
+  {
+   "id": "pad_medevac",
+   "level": "ground",
+   "c": [
+    75.0,
+    180.0
+   ],
+   "r": 15.0,
+   "z": 0.0,
+   "heading": [
+    0,
+    1
+   ],
+   "use": "medevac"
+  },
+  {
+   "id": "pad_cargo",
+   "level": "ground",
+   "c": [
+    126.0,
+    180.0
+   ],
+   "r": 15.0,
+   "z": 0.0,
+   "heading": [
+    0,
+    1
+   ],
+   "use": "cargo"
+  },
+  {
+   "id": "H1",
+   "level": "summit",
+   "c": [
+    -27.0,
+    38.0
+   ],
+   "r": 21.0,
+   "z": 48.0,
+   "heading": [
+    1,
+    0
+   ],
+   "use": "heavy hauler"
+  },
+  {
+   "id": "F2",
+   "level": "summit",
+   "c": [
+    -18.0,
+    80.0
+   ],
+   "r": 13.0,
+   "z": 48.0,
+   "heading": [
+    1,
+    0
+   ],
+   "use": "gunship / VTOL"
+  },
+  {
+   "id": "F3",
+   "level": "summit",
+   "c": [
+    -18.0,
+    100.0
+   ],
+   "r": 13.0,
+   "z": 48.0,
+   "heading": [
+    1,
+    0
+   ],
+   "use": "gunship / VTOL"
+  },
+  {
+   "id": "F4",
+   "level": "summit",
+   "c": [
+    -18.0,
+    120.0
+   ],
+   "r": 13.0,
+   "z": 48.0,
+   "heading": [
+    1,
+    0
+   ],
+   "use": "Vanta / VTOL"
+  },
+  {
+   "id": "H2",
+   "level": "summit",
+   "c": [
+    -27.0,
+    162.0
+   ],
+   "r": 21.0,
+   "z": 48.0,
+   "heading": [
+    1,
+    0
+   ],
+   "use": "heavy hauler"
+  }
+ ],
+ "qd": [
+  {
+   "src": "fuel",
+   "type": "fuel"
+  }
+ ],
+ "utilities": [
+  {
+   "id": "rack_fuel",
+   "kind": "pipe",
+   "carries": "fuel + water",
+   "h": 7.0,
+   "pts": [
+    [
+     172.0,
+     193.5
+    ],
+    [
+     172.0,
+     188.0
+    ],
+    [
+     143.0,
+     188.0
+    ],
+    [
+     143.0,
+     139.0
+    ],
+    [
+     1.5,
+     139.0
+    ]
+   ],
+   "serves": [
+    "fuel",
+    "portal_clean"
+   ]
+  }
+ ],
+ "misc": [
+  {
+   "id": "fence",
+   "kind": "fence",
+   "x": 226.0,
+   "yn": -46.0,
+   "ys": 276.0,
+   "xw": -42.0
+  },
+  {
+   "id": "berm",
+   "kind": "berm",
+   "x": 232.0,
+   "yn": -52.0,
+   "ys": 282.0,
+   "xw": -48.0,
+   "w": 4.0,
+   "h": 3.0
+  },
+  {
+   "id": "gantry_beam",
+   "kind": "overhead",
+   "a": [
+    120.6,
+    0.0
+   ],
+   "b": [
+    120.6,
+    18.0
+   ],
+   "clear": 7.5
+  },
+  {
+   "id": "portal_rail_canopy",
+   "kind": "overhead",
+   "a": [
+    0.0,
+    5.0
+   ],
+   "b": [
+    8.0,
+    5.0
+   ],
+   "clear": 16.0
+  },
+  {
+   "id": "portal_clean_canopy",
+   "kind": "overhead",
+   "a": [
+    0.0,
+    132.0
+   ],
+   "b": [
+    8.0,
+    132.0
+   ],
+   "clear": 18.0
+  }
+ ],
+ "portals": [
+  {
+   "id": "portal_rail",
+   "y": 5.0,
+   "w": 14.0,
+   "h": 14.0,
+   "kind": "rail",
+   "zone": "hazard"
+  },
+  {
+   "id": "portal_hazard",
+   "y": 34.0,
+   "w": 12.0,
+   "h": 10.0,
+   "kind": "sealed",
+   "zone": "hazard"
+  },
+  {
+   "id": "portal_clean",
+   "y": 132.0,
+   "w": 20.0,
+   "h": 16.0,
+   "kind": "blast",
+   "zone": "clean"
+  },
+  {
+   "id": "portal_person",
+   "y": 155.0,
+   "w": 4.0,
+   "h": 4.0,
+   "kind": "person",
+   "zone": "clean"
+  }
+ ],
+ "fence": {
+  "x": 226.0,
+  "yn": -46.0,
+  "ys": 276.0,
+  "xw": -42.0
+ },
+ "berm": {
+  "x": 232.0,
+  "yn": -52.0,
+  "ys": 282.0,
+  "w": 4.0,
+  "h": 3.0
+ },
+ "killzone": 36.0,
+ "bounds": {
+  "wx": 190.0,
+  "wn": -10.0,
+  "ws": 240.0,
+  "wwest_y0": 205.0
+ },
+ "summit_z": 48.0,
+ "interior": {
+  "ys": 152.0,
+  "rooms": [
+   {
+    "k": "airplant",
+    "z": "utility",
+    "x0": -78.0,
+    "x1": -67.0,
+    "z0": 32.0,
+    "z1": 44.0,
+    "yb": 112.0
+   },
+   {
+    "k": "hangar",
+    "z": "clean",
+    "x0": -64.0,
+    "x1": -28.0,
+    "z0": 32.0,
+    "z1": 44.0,
+    "yb": 108.0
+   },
+   {
+    "k": "power",
+    "z": "utility",
+    "x0": -18.0,
+    "x1": -10.5,
+    "z0": 32.0,
+    "z1": 43.0,
+    "yb": 114.0
+   },
+   {
+    "k": "shaft_v",
+    "z": "clean",
+    "x0": -59.0,
+    "x1": -49.0,
+    "z0": 44.0,
+    "z1": 48.5,
+    "yb": 121.5,
+    "surf": true,
+    "vlink": "hangar"
+   },
+   {
+    "k": "shaft_w",
+    "z": "clean",
+    "x0": -39.0,
+    "x1": -29.0,
+    "z0": 44.0,
+    "z1": 48.5,
+    "yb": 121.5,
+    "surf": true,
+    "vlink": "hangar"
+   },
+   {
+    "k": "vent",
+    "z": "utility",
+    "x0": -75.0,
+    "x1": -71.0,
+    "z0": 44.0,
+    "z1": 48.0,
+    "yb": 128.0,
+    "surf": true,
+    "vlink": "airplant"
+   },
+   {
+    "k": "core",
+    "z": "clean",
+    "x0": -25.0,
+    "x1": -21.0,
+    "z0": 0.0,
+    "z1": 48.0,
+    "yb": 130.0,
+    "surf": true,
+    "vertical": true
+   },
+   {
+    "k": "wstair",
+    "z": "utility",
+    "x0": -84.0,
+    "x1": -81.0,
+    "z0": 16.0,
+    "z1": 36.0,
+    "yb": 128.0,
+    "vertical": true
+   },
+   {
+    "k": "slift",
+    "z": "hazard",
+    "x0": -90.0,
+    "x1": -86.0,
+    "z0": -30.0,
+    "z1": 12.0,
+    "yb": 128.0,
+    "vertical": true
+   },
+   {
+    "k": "quarters",
+    "z": "clean",
+    "x0": -78.0,
+    "x1": -64.0,
+    "z0": 16.0,
+    "z1": 27.0,
+    "yb": 118.0
+   },
+   {
+    "k": "medical",
+    "z": "clean",
+    "x0": -61.0,
+    "x1": -51.0,
+    "z0": 16.0,
+    "z1": 27.0,
+    "yb": 124.0
+   },
+   {
+    "k": "labs",
+    "z": "clean",
+    "x0": -48.0,
+    "x1": -28.0,
+    "z0": 16.0,
+    "z1": 28.0,
+    "yb": 122.0
+   },
+   {
+    "k": "ops",
+    "z": "clean",
+    "x0": -18.0,
+    "x1": -6.0,
+    "z0": 16.0,
+    "z1": 28.0,
+    "yb": 122.0
+   },
+   {
+    "k": "airlock",
+    "z": "hazard",
+    "x0": -83.0,
+    "x1": -75.0,
+    "z0": 0.0,
+    "z1": 9.0,
+    "yb": 118.0
+   },
+   {
+    "k": "dissect",
+    "z": "hazard",
+    "x0": -72.0,
+    "x1": -56.0,
+    "z0": 0.0,
+    "z1": 13.0,
+    "yb": 116.0
+   },
+   {
+    "k": "pdecon",
+    "z": "cp",
+    "x0": -53.0,
+    "x1": -48.0,
+    "z0": 0.0,
+    "z1": 9.0,
+    "yb": 122.0
+   },
+   {
+    "k": "proto",
+    "z": "clean",
+    "x0": -45.0,
+    "x1": -28.0,
+    "z0": 0.0,
+    "z1": 12.0,
+    "yb": 110.0
+   },
+   {
+    "k": "freight",
+    "z": "clean",
+    "x0": -18.0,
+    "x1": -4.0,
+    "z0": 0.0,
+    "z1": 10.0,
+    "yb": 112.0
+   },
+   {
+    "k": "cellsA",
+    "z": "hazard",
+    "x0": -83.0,
+    "x1": -66.0,
+    "z0": -14.0,
+    "z1": -3.0,
+    "yb": 126.0
+   },
+   {
+    "k": "cellsB",
+    "z": "hazard",
+    "x0": -63.0,
+    "x1": -46.0,
+    "z0": -14.0,
+    "z1": -3.0,
+    "yb": 126.0
+   },
+   {
+    "k": "pit",
+    "z": "hazard",
+    "x0": -43.0,
+    "x1": -24.0,
+    "z0": -30.0,
+    "z1": -3.0,
+    "yb": 114.0
+   },
+   {
+    "k": "vault",
+    "z": "hazard",
+    "x0": -83.0,
+    "x1": -71.0,
+    "z0": -30.0,
+    "z1": -18.0,
+    "yb": 124.0
+   },
+   {
+    "k": "burn",
+    "z": "hazard",
+    "x0": -68.0,
+    "x1": -58.0,
+    "z0": -30.0,
+    "z1": -18.0,
+    "yb": 122.0
+   },
+   {
+    "k": "nanite",
+    "z": "hazard",
+    "x0": -55.0,
+    "x1": -46.0,
+    "z0": -30.0,
+    "z1": -18.0,
+    "yb": 122.0
+   }
+  ],
+  "corridors": [
+   {
+    "a": "wstair",
+    "b": "airplant",
+    "x0": -81.0,
+    "x1": -78.0,
+    "z": 32.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "airplant",
+    "b": "hangar",
+    "x0": -67.0,
+    "x1": -64.0,
+    "z": 32.0,
+    "h": 4.0,
+    "cp": true,
+    "kind": "corridor"
+   },
+   {
+    "a": "hangar",
+    "b": "core",
+    "x0": -28.0,
+    "x1": -25.0,
+    "z": 32.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "core",
+    "b": "power",
+    "x0": -21.0,
+    "x1": -18.0,
+    "z": 32.0,
+    "h": 4.0,
+    "cp": true,
+    "kind": "corridor"
+   },
+   {
+    "a": "wstair",
+    "b": "quarters",
+    "x0": -81.0,
+    "x1": -78.0,
+    "z": 16.0,
+    "h": 4.0,
+    "cp": true,
+    "kind": "corridor"
+   },
+   {
+    "a": "quarters",
+    "b": "medical",
+    "x0": -64.0,
+    "x1": -61.0,
+    "z": 16.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "medical",
+    "b": "labs",
+    "x0": -51.0,
+    "x1": -48.0,
+    "z": 16.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "labs",
+    "b": "core",
+    "x0": -28.0,
+    "x1": -25.0,
+    "z": 16.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "core",
+    "b": "ops",
+    "x0": -21.0,
+    "x1": -18.0,
+    "z": 16.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "slift",
+    "b": "airlock",
+    "x0": -86.0,
+    "x1": -83.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "airlock",
+    "b": "dissect",
+    "x0": -75.0,
+    "x1": -72.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "dissect",
+    "b": "pdecon",
+    "x0": -56.0,
+    "x1": -53.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "pdecon",
+    "b": "proto",
+    "x0": -48.0,
+    "x1": -45.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "proto",
+    "b": "core",
+    "x0": -28.0,
+    "x1": -25.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "core",
+    "b": "freight",
+    "x0": -21.0,
+    "x1": -18.0,
+    "z": 0.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "freight",
+    "b": "portal_clean",
+    "x0": -4.0,
+    "x1": 0.5,
+    "z": 0.0,
+    "h": 8.0,
+    "cp": true,
+    "kind": "tunnel"
+   },
+   {
+    "a": "slift",
+    "b": "cellsA",
+    "x0": -86.0,
+    "x1": -83.0,
+    "z": -14.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "cellsA",
+    "b": "cellsB",
+    "x0": -66.0,
+    "x1": -63.0,
+    "z": -14.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "cellsB",
+    "b": "pit",
+    "x0": -46.0,
+    "x1": -43.0,
+    "z": -14.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "gallery"
+   },
+   {
+    "a": "slift",
+    "b": "vault",
+    "x0": -86.0,
+    "x1": -83.0,
+    "z": -30.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "vault",
+    "b": "burn",
+    "x0": -71.0,
+    "x1": -68.0,
+    "z": -30.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   },
+   {
+    "a": "burn",
+    "b": "nanite",
+    "x0": -58.0,
+    "x1": -55.0,
+    "z": -30.0,
+    "h": 4.0,
+    "cp": false,
+    "kind": "corridor"
+   }
+  ],
+  "beyond": [
+   {
+    "a": "portal_hazard",
+    "b": "airlock",
+    "kind": "tunnel",
+    "cp": true,
+    "note": "hazard tunnel, 106 m north of the cut"
+   }
+  ]
+ }
+}

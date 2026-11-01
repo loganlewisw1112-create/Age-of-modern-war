@@ -1,0 +1,104 @@
+{
+ "site": "Blackglass v4",
+ "checks": [
+  {
+   "id": "A1",
+   "name": "Footprint overlaps (buildings, walls, towers, fences, masts, pads' structures)",
+   "checked": 3430,
+   "issues": []
+  },
+  {
+   "id": "A2",
+   "name": "Nothing built on a road, lane, footpath or rail corridor",
+   "checked": 2349,
+   "issues": []
+  },
+  {
+   "id": "A3",
+   "name": "Every door has a clear apron of the right depth, paved and connected (heavy 26m, std 12m, dead-end 18m, person 3m)",
+   "checked": 29,
+   "issues": []
+  },
+  {
+   "id": "A4",
+   "name": "Lane widths and curve radii (heavy convoy: low-loader R >= 15m)",
+   "checked": 12,
+   "issues": []
+  },
+  {
+   "id": "A5",
+   "name": "Swept path of the low-loader through every junction turn (R 15m, body + off-tracking)",
+   "checked": 20,
+   "issues": []
+  },
+  {
+   "id": "A6",
+   "name": "Rail: no level crossings with roads or footpaths, gantry clearance >= 6.5m",
+   "checked": 23,
+   "issues": []
+  },
+  {
+   "id": "A7",
+   "name": "Turrets: never over a road / door, clear field of fire (no structure masking), overlapping coverage",
+   "checked": 140,
+   "issues": []
+  },
+  {
+   "id": "A8",
+   "name": "Helipads: FATO + safety clear, approach / departure surface 4:1 for 150m clear of every obstacle",
+   "checked": 7,
+   "issues": []
+  },
+  {
+   "id": "A9",
+   "name": "Explosive + fuel safety distances (magazines: inhabited 50m, ops 30m, traverse if < 30m; fuel: inhabited 25m, ops 15m, ignition 25m)",
+   "checked": 20,
+   "issues": []
+  },
+  {
+   "id": "A10",
+   "name": "Pipe racks / cable trays: road clearance >= 6.5m, person >= 3.0m, spans <= 18.0m, never through a building it does not serve",
+   "checked": 226,
+   "issues": []
+  },
+  {
+   "id": "A11",
+   "name": "Perimeter: berm -> fence -> kill zone >= 30m -> wall; roads cross only at gates; towers <= 55m apart, gates flanked",
+   "checked": 55,
+   "issues": []
+  },
+  {
+   "id": "A12",
+   "name": "Traffic flow: one-way hazard spine, every door reachable, no reversing in the hazard zone, zones meet only at the wash",
+   "checked": 327,
+   "issues": []
+  },
+  {
+   "id": "A13",
+   "name": "Interior: every room on the corridor network through its blast door, zones meet only at checkpoints, >= 3.0m rock cover",
+   "checked": 347,
+   "issues": []
+  },
+  {
+   "id": "A14",
+   "name": "Terrain: everything built stands on the graded platform cut into the mountain (nothing overlaps rock)",
+   "checked": 118,
+   "issues": []
+  },
+  {
+   "id": "A15",
+   "name": "Airfield: stands / taxiways / FATOs / drone station on the deck, clear and connected; every parked craft fully ON its stand or pad",
+   "checked": 69,
+   "issues": []
+  },
+  {
+   "id": "A16",
+   "name": "Turret doctrine: corners alike, every gate flanked by a matching pair, north / south walls mirrored, sponsons alike, galleries typed by level, summit AD symmetric",
+   "checked": 15,
+   "issues": []
+  }
+ ],
+ "fail": 0,
+ "total_checks": 7187,
+ "total_issues": 0
+}
