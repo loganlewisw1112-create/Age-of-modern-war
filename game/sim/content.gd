@@ -26,7 +26,21 @@ static func load_all() -> void:
 			continue
 		_data[f] = _normalize(parsed)
 	_merge_fragments()
+	_apply_g71_speed()
 	_loaded = true
+
+
+## G7.1 A5: every unit moves rules.g71_speed_mult faster (aircraft included). Units copy def.speed at spawn
+## and aircraft read def.speed each tick, so scaling the merged table once covers both.
+static func _apply_g71_speed() -> void:
+	var m: float = float(_data.get("rules", {}).get("g71_speed_mult", 1.0))
+	if m == 1.0:
+		return
+	var units: Dictionary = _data.get("units", {})
+	for id in units:
+		var d = units[id]
+		if typeof(d) == TYPE_DICTIONARY and d.has("speed"):
+			d["speed"] = float(d["speed"]) * m
 
 
 ## G4 (CONTRACTS_G4 section 2.1): merge content/g4/*.json fragments, sorted by file name.
@@ -35,7 +49,7 @@ static func load_all() -> void:
 ##   faction_roles: {faction: {role: id}}       new role keys only
 ##   faction_stage_roles: {faction: {"7": {role: id}}}  new keys only
 const FRAGMENT_DIR := "res://content/g4"
-const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5", "res://content/g6", "res://content/g7"]  # G5/G6/G7: merged in this order (G7: DRONE7 CR)
+const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5", "res://content/g6", "res://content/g7", "res://content/g71"]  # G5/G6/G7/G7.1: merged in this order (G7: DRONE7 CR)
 
 
 static func _merge_fragments() -> void:

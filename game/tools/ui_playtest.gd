@@ -2373,7 +2373,7 @@ func _tut_unmet_gates() -> Array:
 ## harness grant + peace window are the G5 ones (this process only, in memory).
 const G6_FLOWS := ["elev", "company", "aicmd", "mines", "garrison", "naval6", "airdef", "exo", "loadout", "market", "airfield2", "survival", "checkpoint", "company61", "market61", "fuel61", "bearer61", "squad61", "officer61", "gen61", "chain61", "real61", "plan61", "anim61", "animb61", "vfx61", "audio61", "stock61", "flick61"]
 ## G7: flows live in tools/pt7_<flow>.gd (same `func run(pt) -> void` contract as the G6.1 pt61 flows).
-const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7", "life7", "atmo7", "seq7", "wallturret7", "sent7", "eng7", "sentart7", "vanta7", "apcmov7", "cnsuits7", "muzzle7", "gate7", "dronebay7", "turret7", "ciws7", "facint7", "lpres7", "wallfire7", "lpmenu7", "vtol8", "cnmission8", "facexit8", "specops8", "supply8", "cards8b", "cards8c", "cards8a", "blast8", "cbshots8", "blackglass71"]
+const G7_FLOWS := ["scale7", "wound7", "squad7", "drone7", "look7", "artcn7", "sense7", "creep7", "cnsim7", "cnops7", "cnfac7", "turret7", "threat7", "lpmode7", "lpmap7", "opsui7", "audio7", "cine7", "fissure7", "art7b", "vis7", "art7f", "wallwalk7", "life7", "atmo7", "seq7", "wallturret7", "sent7", "eng7", "sentart7", "vanta7", "apcmov7", "cnsuits7", "muzzle7", "gate7", "dronebay7", "turret7", "ciws7", "facint7", "lpres7", "wallfire7", "lpmenu7", "vtol8", "cnmission8", "facexit8", "specops8", "supply8", "cards8b", "cards8c", "cards8a", "blast8", "cbshots8", "blackglass71", "airfix71", "airops71", "flow71", "control71", "perfsim71", "perfdraw71"]  # G7.1 wave 1: tools/pt71_<flow>.gd
 const Elevation = preload("res://sim/systems/elevation.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const CompanyCardM = preload("res://presentation/ui6/a/company_card.gd")
@@ -2619,6 +2619,8 @@ func _g6_flow() -> void:
 			var path := "res://tools/pt61_%s.gd" % g6_flow
 			if not ResourceLoader.exists(path) and ResourceLoader.exists("res://tools/pt7_%s.gd" % g6_flow):
 				path = "res://tools/pt7_%s.gd" % g6_flow
+			if not ResourceLoader.exists(path) and ResourceLoader.exists("res://tools/pt71_%s.gd" % g6_flow):
+				path = "res://tools/pt71_%s.gd" % g6_flow  # G7.1
 			if ResourceLoader.exists(path):
 				await load(path).new().run(self)
 			else:

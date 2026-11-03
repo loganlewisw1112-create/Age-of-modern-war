@@ -1,0 +1,6 @@
+{
+  "_meta": "G7.1 A5 (owner, G71_SCOPE.md): +20% movement for every unit, aircraft included. Applied once at load to every units-table speed by Content._apply_g71_speed().",
+  "rules": {
+    "g71_speed_mult": 1.2
+  }
+}

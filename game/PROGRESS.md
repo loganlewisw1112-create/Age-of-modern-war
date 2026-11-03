@@ -1,8 +1,13 @@
 # PROGRESS: RTS: Age of Modern War
 
-## Active goal (G7.1 "Tide Line", owner-LOCKED 2026-10-31; not started: execution waits for the owner's "start G7.1")
-Scope authority: `docs/G71_SCOPE.md` (parts A–J, Done-when frozen). Full roadmap after it: `docs/ROADMAP.md` (G8–G18).
-Work stays on the C: copy (branch `g7` until a `g71` branch is cut at the start); sync to D: after a D: health check at the end.
+## Active goal (G7.1 "Tide Line", owner-LOCKED 2026-10-31; execution ordered 2026-11-02 "Start G7.1"; branch `g71`)
+Scope authority: `docs/G71_SCOPE.md` (parts A–J, Pre-start decisions 2026-11-02, Done-when frozen). Plan + roster:
+`docs/PLAN_G71.md`; briefs `.plan/agents/prompts/G71-*.md` + `G71_COMMON.md`; board `.plan/board_g71.jsonl`.
+Full roadmap after it: `docs/ROADMAP.md` (G8–G18).
+Status 2026-11-02 (ORCH): G7 leftovers committed (3a66ffc); branch `g71` cut. **D: health check FAILED** (Disk 1 Seagate:
+bad blocks + hardware I/O errors logged as recently as 2026-11-02 12:00), so G7 was NOT copied to D:; all work stays on C:
+and the D: tree is still at G6.1 (55b4e04). A5 done (+20% speed at load, `rules.g71_speed_mult`); goldens re-baselined
+(`.plan/regold71/`). Wave 1 launched: AIRFIX71, FLOW71, CONTROL71, PERFSIM71, PERFDRAW71.
 ```
 GOAL — G7.1 "Tide Line": the Last Protocol siege upgrade
 For whom / what changes:  the owner, playing Last Protocol: an hour in, a thinking hive hits the walls from every
