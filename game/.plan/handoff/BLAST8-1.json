@@ -1,0 +1,26 @@
+{
+  "agent": "BLAST8",
+  "task": "G7_REFERENCE 13.9c-47 blast half: blast throw + concussion + presentation + tests/flow",
+  "written_at_call": 101,
+  "done": [
+    "sim/systems/blast8.gd (new): on_burst/pre hooks, flights (sys_state.blast8.fl), lie, concussion (unc), wake, display keys g7v bt/b8u, BlastCorpse display event for men killed by the blast",
+    "content/g7/rules_g7_blast8.json (new, PROVISIONAL numbers)",
+    "sim/systems/shrapnel.gd: Blast8 preload, b8pre before fragments, gnd list, Blast8.on_burst at the end of burst",
+    "presentation/view/entity_layer.gd: thrown unit lift/shadow/tumble (gv.bt), _b8_zzz marker (gv.b8u), on_blast_corpse + thrown corpse arc in _push_corpses",
+    "presentation/match_view.gd (CRLF file): BlastCorpse -> entity_layer.on_blast_corpse",
+    "tests/test_blast8.gd (11 tests) and tools/pt7_blast8.gd (flow)",
+    "Verified only in a PRIVATE scratch copy with world.gd patched: test_blast8 11/11, flow blast8 15/0 (shots .plan/shots/BLAST8/scratch3)"
+  ],
+  "blocked_on": "ORCH: sim/world.gd const Blast8 = preload(\"res://sim/systems/blast8.gd\") + Blast8 right after Wounds in SYSTEM_ORDER; tools/ui_playtest.gd G7_FLOWS += \"blast8\". Until then Blast8.registered() is false and blast8 is inert in the real tree.",
+  "remaining": [
+    "after ORCH adds the slot: run test_blast8 + flow blast8 in the REAL tree, post shots.best from the real tree",
+    "regressions: test_wound7 test_real61 test_squad61 test_sent7 test_cnfac7 test_lpmode7 test_det7 test_determinism test_strikes test_hot_state (hot_state expected to move; report only)",
+    "perf under .plan/perf.lock: bash .plan/perf7g_pairs.sh 6 blast8 res://.plan/sim_ab7.gd (<= 1.2x); fps bench 2k p10 >= 60"
+  ],
+  "scratch_copy": "C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/36a6e2e6-9082-4996-b030-94bfe0ca56a7/scratchpad/g (copy of game at ~19:50 + world.gd slot + blast8 in G7_FLOWS)",
+  "gotchas": [
+    "match_view.gd is CRLF: patch with CRLF-aware strings",
+    "artillery kills most men inside ~1.2 tiles, so most dramatic throws are bodies (BlastCorpse, display only); survivors fly 0.5-1.5 m",
+    "concussed = e.wunc without Medical wounded; blast8 sets e.wsv so the first-treatment survival roll does not kill a concussed man; cleared on wake"
+  ]
+}

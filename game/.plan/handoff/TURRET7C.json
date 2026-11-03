@@ -1,0 +1,53 @@
+{
+  "agent": "TURRET7C",
+  "spec": "G7_REFERENCE 13.9c-30 (every turret turns to its target before it fires)",
+  "calls_used": 57,
+  "tokens_used_est": 460000,
+  "stopped_by": "budget.handoff_now (ORCH, 71%)",
+  "tests": {
+    "test_turret7": "RESULT pass=18 fail=0 (14 + 4 new CIWS tests: lays before it kills a drone, tracks a drone out of range, strike intercept needs a lay, CIWS lay deterministic)",
+    "test_wallturret7": "RESULT pass=10 fail=2. NOT traverse: test_assault_destroys_outer_turret (turret never destroyed in 65 s, killer -2) and test_save_load_round_trip (loaded world diverges) + SCRIPT ERROR PackedInt32Array index 200 at combat.gd:246. Cause: drone_bay7.gd (DRONEBAY7-2, live, newer than TURRET7B's handoff) spawns g7_cn_interceptor_drone id 199 in the facility world; in a SimWorld.from_dict copy the spawn leaves next_id=199 while entity 199 exists (original world next_id=200). Posted as fact wallturret7.regression. Assault failure probably the interceptor drones, unconfirmed.",
+    "test_mil": "RESULT pass=13 fail=0",
+    "test_muzzle7": "RESULT pass=8 fail=0",
+    "test_damage": "RESULT pass=10 fail=0",
+    "test_counterdrone": "RESULT pass=7 fail=0",
+    "test_strikes": "RESULT pass=5 fail=0",
+    "test_airdef": "RESULT pass=3 fail=0",
+    "test_cnsim7": "RESULT pass=27 fail=0",
+    "test_dronebay7": "RESULT pass=14 fail=1 (test_hive_threat_board_priority_and_rebalance: breach died to facility guards before gun drones reached it; not CIWS / traverse related as far as read, DRONEBAY7-2 live)",
+    "test_hot_state": "ONE run (485 s): RESULT pass=12 fail=5, NOT re-baselined. 2k_fight native on 6856e660c3217e403ee2aea6a6a2cbfb20e3f572164db31b832eafaabc23f95e (threaded on: same), native off ebea09e92b66355c6b72e0d01bd3ba822c42816d74ea91a2ab87d6266bb08c86, 10k_fight native on 107e77b6cf7c4ab0ebde4c52dc82f956bb9cf208952f27345bb707bf09d5b75b; GOLD_FLAT 2k_fight on b9b2d096453a91d37affdb17de18549946c3d7ef353183353ab214eeabf4c388, off 15238e03e97ea8e4bcba03e39ad4af9db89542b3bfc84dbe6b1efb1c924f680f, 10k_fight on 3c33bf7b104104e60627f9989770b542a0c05bbe2158c117ad587e47bd8cc74a. Held: 2k_mixed, 10k_march, hot_state_path_equals_dict_path. These moves include every G7 agent's changes in the tree, not only turrets. A second identical run was NOT done: ORCH must run it twice. The 2k bench hash was stable across 3 runs (f8e094305be0 with traverse)."
+  },
+  "playtest": {
+    "run5": ".plan/shots/TURRET7C/run5/run.log PLAYTEST RESULT pass=24 fail=0, 0 SCRIPT ERROR (IFV min-ticks check now passes: 175 deg in 60 ticks >= 56). Eight of eight shooters fired only once laid (<= 5 deg off), 5 swung >= 120 deg, drawn heads / turret rows on the sim bearing 7/7, hulls never swung, idle heads back to rest 6/6.",
+    "run6": "pass=24 fail=0 (APC rear flow with other enemies cleared: rear pod 2 shots, other guns 0)",
+    "run7": ".plan/shots/TURRET7C/run7/run.log PLAYTEST RESULT pass=25 fail=0, 0 SCRIPT ERROR. New check turret7_apc_muzzle_on_foe_side (drawn barrel tip on the foe side of the hull, cos 0.80, gun 1, hull facing 0 deg).",
+    "apc_rear_eye_check": "CONFIRMED by eye + numbers in run7 turret7_5_apc_rear_gun_fires_aft_2.png: the APCs face +x (right-down on screen), the only enemy is the white cyan-striped Machine tank up-left of them (it was misread in run4 / run5 as an APC), tracers and muzzle flares run up-left along the target line, hulls still. The playtest _apc_rear now destroys every other enemy unit within 45 tiles each frame and logs the geometry (apc_rear_geom, apc_rear_near).",
+    "shots_best": ["run5/turret7_3_shot_5_ifv.png", "run5/turret7_3_shot_4_a_t7_autocannon.png", "run5/turret7_3_shot_3_a_t7_hmg_nest.png", "run5/turret7_2_swinging.png", "run7/turret7_5_apc_rear_gun_fires_aft_2.png", "run7/turret7_5_apc_rear_gun_fires_aft_1.png"],
+    "shots_root": "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/TURRET7C/"
+  },
+  "ciws": {
+    "state": "DONE in the sim for the Laser CIWS (a_laser_ciws, Counterdrone): sim/systems/counterdrone.gd preloads Traverse7. Drones: the head tracks the nearest enemy drone out to track_mult (3.0) x radius and CiwsKill fires only once Traverse7.lay says laid and the drone is inside the radius. Strikes / shells / rockets (intercept_strike, called synchronously by Combat's shot hook and Strikes): accepted when the head can lay onto the landing point within window_s (0.75 s = 90 deg at 120 deg/s) from where it points now; CiwsIntercept now carries lay_ticks; a pending lay (sys_state.counterdrone.lay {bid: [x, y, until]}, created on first use, saved + hashed, advanced every tick by _advance_lays before the no-drone early-out) swings the head onto the point; a threat out of the window gets through, the head still swings onto it, the CIWS stays ready. content/g7/rules_g7_traverse.json _traverse7.ciws {track_mult 3.0, window_s 0.75} PROVISIONAL. presentation/art/g6_fx.gd: the ciws beam is delayed by lay_ticks / 20 s so it leaves when the head has arrived.",
+    "not_done": "Apc7 APS (apc7.gd) and DroneBay7 interceptors (drone_bay7.gd) are still instant point defence (live owners CNSIM7-3 / DRONEBAY7-2; same pattern: Traverse7.lay + a window). The CIWS head is drawn in 90 deg quarter steps (rot_aim art), so the swing reads coarsely. Combat's own g6_ciws_laser weapon and the Counterdrone layer both lay the same head (two lay calls in one tick with different target ids slew up to 2 ticks worth; harmless)."
+  },
+  "rot_aim_offset": "CHECKED, offset 0 is right: for each G6 rot-only turret (a_popup_turret, a_sam_site, a_laser_ciws, b_net_post, m_mass_driver, m_arc_pylon, b_flak_battery) the muzzle-flash pixels of rot_<k>_fire minus rot_<k> were measured against the iso projection of bearing k * 90 deg (K.AX in tools/art/g5_bld_lib.gd: AX[k] = bearing k*90): the flash order (right, left, up-left, up-right) matches the projection for k = 0..3 with a constant muzzle-elevation offset (a_popup_turret -8 / -165 / -117 / -38 deg on screen, m_mass_driver -10 / -162 / -118 / -41 vs projected +27 / +153 / -153 / -27 plus elevation). In game run5 shot_1: the popup turret rot_0_fire for a target at -40 deg draws a tracer to the screen right, as the projection predicts. Coarse (up to 45 deg error) is inherent in 4 frames. rot_aim_offset_deg left at 0.",
+  "cost_2k": {
+    "script": ".plan/sim_ab7_turret.gd (same as sim_ab7.gd; --notraverse sets Traverse7.enabled = false, a new static var added to traverse7.gd, every def then unmounted = the old instant turn / no lay). River crossing 2k fight, 600 ticks, native, PC NOT idle (8 Godot processes running).",
+    "pairs_avg_ms": "traverse on: 32.32, 29.62, 30.69 (median 30.69); traverse off: 28.03, 28.08, 29.61 (median 28.08). Paired differences +4.29 / +1.54 / +1.08 ms (median +1.5 ms, about 5%). Hashes differ (f8e094305be0 vs deac35f37a39) so the two runs fight different battles; the delta is fight dynamics + load noise, NOT lay cost.",
+    "direct_cost": "Traverse7.lay 3.6-3.9 us per call, bearing 1.2 us (.plan/lay_micro7.gd); 3283 lay calls in 600 ticks (5.5 per tick) = about 0.02 ms per tick (0.07% of a 28 ms tick). lay runs only on ready ticks. No measurement on an idle PC: ORCH should repeat sim_ab7.gd on an idle machine for the 1.2x gate. Absolute 28-32 ms here is a loaded PC (G6 idle was 14.5 ms)."
+  },
+  "files_changed": [
+    "sim/systems/counterdrone.gd (CIWS lay, preload Traverse7)",
+    "sim/systems/traverse7.gd (static var enabled + early-out in mount())",
+    "content/g7/rules_g7_traverse.json (ciws block)",
+    "presentation/art/g6_fx.gd (ciws beam delay)",
+    "tests/test_turret7.gd (+4 CIWS tests)",
+    "tools/pt7_turret7.gd (APC rear flow: clear other enemies, geometry log, muzzle-side check, 2 shots)",
+    ".plan/sim_ab7_turret.gd, .plan/lay_micro7.gd (scratch measurement scripts)"
+  ],
+  "next_steps": [
+    "1. ORCH: run test_hot_state TWICE (identical) and re-baseline GOLD / GOLD_FLAT using the values above as the expected new numbers; 2k_mixed and 10k_march held.",
+    "2. DRONEBAY7-2: from_dict next_id desync after a drone-bay spawn (entity 199 with next_id 199 in the loaded copy) breaks test_wallturret7 save/load + combat.gd:246 SCRIPT ERROR; then recheck test_assault_destroys_outer_turret and test_dronebay7 hive breach.",
+    "3. Idle-PC cost: run .plan/sim_ab7.gd (and sim_ab7_turret.gd on and off) on an idle machine for the 1.2x of G6.1 gate.",
+    "4. Optional: Apc7 APS / DroneBay7 interceptors lay-before-intercept (same pattern as counterdrone.gd _lay_ticks / _start_lay); separate turret sheets for hull-mode vehicles and ship guns (ARTCN); head art for bunkers / pits and the rot-only G6 turrets; drive apc_gun7 (display, 2.4 rad/s, own snap) from the sim tb via MUZZLE7-2 if exact sim agreement is wanted."
+  ]
+}

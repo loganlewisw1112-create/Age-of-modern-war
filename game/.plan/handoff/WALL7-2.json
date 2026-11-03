@@ -1,0 +1,38 @@
+{
+  "agent": "WALL7-2",
+  "why": "budget.handoff_now at 87/140 calls",
+  "done": [
+    "tools/art/g7_fac7f.gd: wall + tower art rewritten (13.9c-23). Every g7_fac_wall piece is a 2.9 m rampart with a steel-grated wall-walk deck at DECK_Z 3.66 m (36 px over the pivot), an outer armoured parapet (0.45 m sill + composite battlement panels to 1.0 m over the deck, 1.2 m panels / 0.4 m gaps on a global 1.6 m grid, a firing slot per panel), outer composite cladding with sensor strip, sensor pods and anti-climb overhang, inner kerb + 2-rail guard rail + walkway lamps; junction blocks with a floodlight / camera mast. Towers: bastion roof = fighting deck at the same 3.66 m, battlements on outer faces + flank panels, armoured corner merlons, rail on inner faces, steel stair (landing level with the deck, blast door under it) on a free inner face or caged ladder + side door on corner towers, shaft set back to (-0.5,-0.5) m, obstruction lamp now on a visible mast (it floated before). Sheets: 16 masks x 4 outer quadrants (q bit0 = outside toward +x, bit1 = toward +y) x intact/damaged = 8 rows; new state front = camera-side parapet / rail occluder sheet (same layout); manifest deck_px 36, parapet_px 10. _slab kept (the magazine uses it). assets/art/g7_fac7f/ regenerated: only the wall / tower sheets (+ front) and manifest.json changed (md5 compared).",
+    "presentation/view/motion.gd (wall-walk section only): WALL_TOP_PX 36 for wall + tower; wall_quadrant(p, centres); wall_walk_cells(statics, centres=[]) value [cx, cy, lift, run, q, tower]; wall_top_offset puts the feet on the firing step WALL_FIRE_STEP 0.1 tile outside the axis, towers clamped to the deck and pushed out of the shaft; wall_front_depth; wall_col = the crouch rule (reloading s7 bit 1 / pinned / suppressed -> crouch; firing -> up WALL_UP 2.0 s of every WALL_DUCK 3.2 s with a per-soldier phase; pinned + firing -> fire_c; never prone on the wall); wall_motion_off (motion-layer spread along the run only).",
+    "presentation/view/entity_layer.gd: ww_crouch / ww_front counters, _ww_occ, _ww_centres (from F.compound in _wall_rebuild), _wall_row (q*2+dmg on the 8-row sheets; old 2-row sheets still work), _wall_front_px; the statics loop pushes the front strip at (cx+cy)*16 + WALL_DEPTH_PAD + 1 only for pieces with a soldier on them this frame; the unit loop applies Motion.wall_col after the frame pick and wall_motion_off to the motion offset.",
+    "tests/test_wallwalk7b.gd (new) 8/8; tests/test_wallwalk7.gd 11/11 unchanged.",
+    "tools/pt7_wallwalk7.gd: new _sentinel_wall section (enemy squad outside the east wall, Sentinels man the east wall-walk and fire, one scripted reload via s7_rl, shots z250/175/100, NE corner tower shots)."
+  ],
+  "tests": [
+    "test_wallwalk7b: RESULT pass=8 fail=0 files=1",
+    "test_wallwalk7: RESULT pass=11 fail=0 files=1",
+    "test_art7f: RESULT pass=7 fail=1 - only 'wall sheet = 16 masks x (intact, damaged)'; the layout changed on purpose; CR seq 5146 to ORCH has the exact replacement lines (it checks 8 rows + the front sheet). NOT applied by WALL7-2 (not my file)."
+  ],
+  "playtest": [
+    "r6 (before the motion-spread fix): PLAYTEST RESULT pass=18 fail=1, 0 SCRIPT ERROR; the fail = wallwalk7_still_on_wall (pre-existing: squad_ai take-cover walks the rifle squad down; WALL7-1 CR squad_ai_wallwalk7 still pending)",
+    "r7 (after the fix): PLAYTEST RESULT pass=14 fail=2, 0 SCRIPT ERROR; extra fail = wallwalk7_sentinels_man_east_wall (0 Sentinels on the east wall-walk within 40 s; Sentinel autonomy timing varies run to run, r2-r6 found 2-6), so r7 has no east-wall shots"
+  ],
+  "not_done": [
+    "Crouched helmet visibility NOT verified in game after the motion-spread fix. In r6 a crouched Sentinel behind the camera-side (east) parapet showed only ~1-2 px of helmet. Cause found: the motion layer's per-soldier spread offset pushed him into the parapet. Fix (wall_motion_off) is in and test-covered, but r7 produced no east-wall shot.",
+    "pt7 flow: _sentinel_wall waits only 40 s for >= 2 Sentinels on the east wall. Make it robust: wait longer, accept the south wall too (its parapet also faces the camera), or order 2 Sentinels onto east-wall cells with a player move order.",
+    "CR 5146 (test_art7f wall rows) awaiting ORCH.",
+    "Wall lamps (LIGHT7 / fac_life7) still sit at the old 3.78 m wall cap; the new heights are posted as fact wall7.heights."
+  ],
+  "next_steps": [
+    "1. Make pt7_wallwalk7._sentinel_wall robust (see not_done) and run it windowed through bash .plan/hb.sh: \"$G\" --path . -- --ui-playtest=<abs dir> --ui-playtest-wallwalk7. Crop the east-wall z250 shot around the screen centre and confirm the crouched Sentinel's helmet and shoulders show over the battlements (spec: head just above the parapet, never fully hidden). If still hidden: lower MERL_Z (g7_fac7f.gd) or set WALL_FIRE_STEP to 0.05 (motion.gd), regenerate the art (godot --headless --path . -s tools/art/g7_fac7f.gd, ~35 s), rerun test_wallwalk7b.",
+    "2. Post fact shots.best with the east-wall crop + the corner tower shot.",
+    "3. Rerun --only=test_wallwalk7b, test_wallwalk7, and test_art7f (after CR 5146 lands)."
+  ],
+  "files": ["tools/art/g7_fac7f.gd", "assets/art/g7_fac7f/ (wall / tower sheets + front + manifest.json)", "presentation/view/motion.gd", "presentation/view/entity_layer.gd", "tests/test_wallwalk7b.gd", "tools/pt7_wallwalk7.gd"],
+  "shots": [".plan/shots/WALL7-2/r2/wallwalk7_sentinels_east_wall_z250.png", ".plan/shots/WALL7-2/r2/crop_east.png", ".plan/shots/WALL7-2/r2/wallwalk7_corner_tower_z250.png", ".plan/shots/WALL7-2/r6/wallwalk7_sentinels_east_wall_z250.png"],
+  "gotchas": [
+    "GDScript lambdas capture locals by value: fill an Array in place inside pt._wait_until.",
+    "Tower-cell Sentinels may be garrisoned (e.garrisoned_in) = hidden inside the tower; exclude them.",
+    "Forcing s7_rl for a long time makes the Sentinel AI walk off to a locker: script the reload right before the shot."
+  ]
+}

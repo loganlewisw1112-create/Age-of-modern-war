@@ -1,0 +1,65 @@
+{
+  "agent": "CNROLE7",
+  "status": "DONE (all brief items built and tested; two findings for other owners)",
+  "rule": "G7_REFERENCE 13.9c-29 + B16: counter-nanite strike teams and tactical / spec-ops squads are never on base defence; only missions or the player move them",
+  "recognition": "sim/systems/cn_role7.gd CnRole7.is_cn(e): e.cn_team, or def with cn_line (g7_cn_*, g7_op_*, g7_b_cn_*, g7_b_op_*), apc7.kind strike|tactical (their APCs), cn_suit (the team's armoured suits). Never a g7_b_ prefix (it also names Human B Sentinels, drones, engineers). CnRole7.parked(w,e) = CN unit inside the compound (+1.5 tiles) of a facility of its own side; one dictionary lookup when no facility exists.",
+  "audit": {
+    "unsafe_found_and_fixed": [
+      "sim/ai/ai_controller.gd _context: CN soldiers went into army/held and CN APCs into carriers for every AI side; now skipped before any list (one chokepoint for ai_g3/g4b/g5/g6*/doctrine/logistics/air, incl. an enemy AI that owns a facility)",
+      "sim/ai/commanders.gd role_ids: base_defence slot took any armed ground unit near home outside a company (CN soldiers + APCs); also air_ops/naval/logistics; logistics front-line list; now skipped",
+      "sim/ai/ally_cmds.gd pick: loose-unit ally commitments; now skipped",
+      "sim/systems/combat.gd idle branch (ORCH applied CR 6046): idle CN unit at the facility chased any enemy in sight; now parked units fire in range, never chase",
+      "sim/systems/squad_ai.gd _unit_think: parked CN skip (support moves, cover hops, kiting, stance leash)",
+      "sim/systems/lp_defence.gd is_main: was only e.cn_team, now by def too",
+      "sim/systems/lp_garrison7.gd tick: wall-patrol roster drops CN units",
+      "sim/systems/sentinels7.gd enlist: refuses a unit with cn_team (defensive; roster was already s7-only)"
+    ],
+    "safe_by_construction": [
+      "lp_defence reserves/rotation/fall/outside (only lp_ring units; start army has no CN defs)",
+      "sentinels7 job board / QRF / stand-to / guard net (roster = e.s7 units trained via type_of_def)",
+      "wallwalk7 (walkable cells only, no manning job)",
+      "garrison.gd (player command only; AI garrison orders come from ai_g6_def, which no longer sees CN)",
+      "turrets7 / wallturret7 (automatic guns, no crews)",
+      "base_state7 + cn_facility lockdown/evacuation (seals garages, pop-ups, evacuates APCs per spec 6.2; never orders soldiers to fight)",
+      "companies / command_net (CN units are in no company)",
+      "wave_ai / general_war* (explicit unit lists)",
+      "counter_nanite / cn_ops7 / convoy / apc7 (act only on a launched team)"
+    ],
+    "noted_not_changed": "sim/systems/threats7.gd:790 _is_cn matches the g7_b_ prefix, so Human B Sentinels, drones and engineers count as CN for the Machine target preference. Suggest THREAT7/ORCH swap its body for CnRole7.is_cn(u) (no test of mine covers it)."
+  },
+  "files_changed": [
+    "sim/systems/cn_role7.gd (new)",
+    "sim/ai/ai_controller.gd (const + 3 lines in _context)",
+    "sim/ai/commanders.gd (const, role_ids skip, logistics line)",
+    "sim/ai/ally_cmds.gd (const, pick loose filter)",
+    "sim/systems/lp_defence.gd (const, is_main)",
+    "sim/systems/lp_garrison7.gd (const, tick drop)",
+    "sim/systems/squad_ai.gd (const, _unit_think parked early-out)",
+    "sim/systems/sentinels7.gd (enlist guard)",
+    "tests/test_cnrole7.gd (new, 10 tests)",
+    ".plan/cnr7_one.sh, .plan/cnr7_onefile.sh (run one test function), .plan/cnr7_hang_repro.gd (helpers)"
+  ],
+  "tests": {
+    "test_cnrole7": "RESULT pass=10 fail=0 files=1 time_ms=141900 (0 SCRIPT ERROR); launch test rerun after tightening: pass. Mutation check: with the ai_controller and commanders exclusions disabled the roster and base_defence tests FAIL (CN APCs in carriers, base_defence takes CN units), restored.",
+    "fallout_green": {"test_ai_commanders": "10/0", "test_ally_cmds": "3/0", "test_ai": "18/0", "test_ai_g6": "9/0", "test_ai_g5": "5/0", "test_companies": "11/0", "test_garrison": "5/0", "test_doctrine": "9/0", "test_officers61": "11/0", "test_squad61": "14/0", "test_mil": "13/0", "test_cnfac7": "36/0", "test_lpmode7": "18/0", "test_wallwalk7": "11/0", "test_wallwalk7b": "8/0", "test_squad7": "23/0"},
+    "red_not_mine": {
+      "test_sent7": "11/1 test_tactics_drill (magazines run dry: the reloading call). Fails identically with CnRole7.is_cn forced false.",
+      "test_apcmov7": "14/2 test_gate_hardened_inbound_return and test_return_outer_gate_wash_inner_gate_garage_nose_out (team stays in returning/to_inner). Both still fail with CnRole7.is_cn forced false (APCMOV7-4 is editing fac_drive7.gd live; the first test's failure text differs run to run)."
+    }
+  },
+  "walker_hang": {
+    "board": "warn/fact sim.hang.walkers (+ .hint, .repro), sent to APCMOV7-4 and orch",
+    "symptom": "In the Last Protocol start world, 4 Machine m_walker spawned inside the CN compound (rc.get_center()+(i-1.5, 6)): the step for tick 119 never returns (infinite loop, no SCRIPT ERROR). 16 tiles from the centre (outside the compound) it does not hang.",
+    "culprit": "FacDrive7.tick (sim/systems/fac_drive7.gd): per-system hand stepping prints fac_drive7.gd as the last system before the stall.",
+    "without_my_changes": "Still hangs with CnRole7.parked forced false and with s.defence_ai=false, so neither the combat/SquadAI parked hooks nor the LP reserve order cause it; fac_drive7.gd does not reference CnRole7. I could not revert every edit at once (no git), but none of my other edits (is_main, lp_garrison7, sentinels enlist, AI filters) loops or runs in that world.",
+    "candidates": "fac_drive7.gd line 1349 `while true` (exits only on s > tot; INF/NaN tot never ends), line 1672 (look = v*v/(2*BRK)+2.4), line 2049 `while s <= tot + 0.2`. Not instrumented.",
+    "repro": ".plan/cnr7_hang_repro.gd (copy to tests/ as test_cnr7_x.gd; keep it OUT of tests/ otherwise: it hangs the suite)."
+  },
+  "test_design_notes": "tests/test_cnrole7.gd keeps every fixture enemy outside the compound and on hold, to stay clear of the FacDrive7 hang. Once APCMOV7-4 fixes it, add a test with enemies inside the compound.",
+  "next_steps": [
+    "ORCH/APCMOV7-4: fix the FacDrive7.tick loop (repro above), then add the inside-compound-enemy test to test_cnrole7.",
+    "ORCH: decide whether THREAT7 swaps threats7._is_cn for CnRole7.is_cn.",
+    "ORCH: rerun test_sent7 and test_apcmov7 once their owners settle; neither red result involves CnRole7.",
+    "Optional: a playtest flow showing a parked team holding while the base is attacked (none written; budget)."
+  ]
+}

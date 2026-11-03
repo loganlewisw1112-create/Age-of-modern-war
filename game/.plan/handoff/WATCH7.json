@@ -1,0 +1,50 @@
+{
+ "agent": "WATCH7",
+ "status": "PARKED at handoff_now (71%); code compiles, balance NOT restored",
+ "brief": "13.9c-38 Double the watch",
+ "roster": {
+  "start.force": "48 = bulwark 4, warden 12, marksman 9, gunner 8, lancer 6, arc 4, mender 3, bearer 2 (content/g7/defs_g7_sentinels.json rules.g7_sentinels.start)",
+  "quiet_watch": "entry checkpoint 4 (garrisoned) + vehicle-gate pair 2 (staging side of gate_inner, job kind 'gate') + all 16 towers x1 (per_tower_quiet) + 5 wall runs x2 (N, E, W, SW of gate, SE of checkpoint) + 1 interior pair (int_pairs) = 34; QRF 4 on call in barracks (no fatigue while quiet); rest off watch",
+  "alarm": "towers_alarm 6 towers nearest the threat fill to per_tower (now 4, was 2: PROVISIONAL tuning attempt, no measurable effect yet); stand-to points sorted nearest-threat-first; LP reserve unchanged",
+  "rotation": "shift_s 240; at a shift change only men past watch_stint_s 480 (tired_pen 500) and the QRF are re-dealt; fresh men relieve the longest-standing posts first; relief in place: S.rl {uid:{j,t}} keeps the outgoing man on post until all holders of that post are on it (max relief_max_s 90); jobs keep holders first (two-pass plan, a higher-priority job never strips a post)"
+ },
+ "code": "sim/systems/sentinels7.gd: _jobs_for (gate job, all towers, int_pairs, tower order by threat), _wall_routes (5 runs), new _route_d/_on_post_j/WATCH const, plan() (keep pass, fair fill order, tired penalty, relief in place, qrf fatigue, s7_on stint marker, threat-ordered stand-to), _think gate->_post, _post gate pair offsets",
+ "content": [
+  "defs_g7_sentinels.json: start.force 24->48 (+_note), plan.towers 3->99, per_tower 2->4, + per_tower_quiet 1, gate 2, int_pairs 1, watch_stint_s 480, tired_pen 500, relief_max_s 90, _watch_note",
+  "defs_g7_lpreserve.json: barracks_extra_slots 20->48 (LP cap 168 = reserve 100 + garrison 48 + 20 free), note updated; reserve type mix follows the new force proportions"
+ ],
+ "tests_changed": [
+  "tests/test_sent7.gd: + const WallWalk7, + test_always_on_watch (shift_s 60/stint 120 for the run, restored after; contains a debug print on gaps)",
+  "tests/test_lpreserve7.gd: cap 140->168, skirmish garrison 24->48 (authority 13.9c-38), + check reserve+garrison+20 fit",
+  "tests/test_det7.gd: wt scene run-up 30->4 ticks (every tower now manned kills the probe 8 ticks after build; the deaths-in-window check unchanged)"
+ ],
+ "RESULT": {
+  "test_always_on_watch": "0 failures (180 samples, 0 gaps, 46/46 rotated, longest stint 340 s, 43.6 s)",
+  "test_lpreserve7": "pass=7 fail=0",
+  "test_cnfac7": "pass=36 fail=0",
+  "test_wallfire7": "pass=8 fail=0",
+  "test_det7": "pass=6 fail=0",
+  "test_lpmode7": "pass=18 fail=0",
+  "test_sent7_full": "NOT RUN (test_balance_fight will fail: full facility no longer holds at 2.5x)",
+  "test_hot_state": "NOT RUN",
+  "pt7_sent7": "NOT RUN"
+ },
+ "attack_sizes": "garrison value 10380 -> 20850, so x2.5 = 156 -> 313 attackers, x4 = 249 -> 502",
+ "balance_before_24": "full x2.5 HELD 5/5, x3 HELD 5/5, x3.5 HELD 1/5, x4 LOST 5/5, x4.5 LOST 5/5; nobay x2.5 LOST 5/5 (inside 1-8) (.plan/watch7_before_*.log)",
+ "balance_after_48_untuned": "full LOST at every mult 5/5 (x2.5 inside 16-35); nobay x2.5 LOST 5/5 (.plan/watch7_after_*.log)",
+ "tuning_tried": {
+  "threat-first standto + per_tower 4 (kept in files)": "x2.5 still LOST 3/3 (inside 12-19) .plan/watch7_t1_*",
+  "defence_mult 0.55->0.4 (probe patch only, not in files)": "no help (inside 16-49) .plan/watch7_t2_*",
+  "drone bay cap 12->24 mix 8/10/6 (probe patch only)": "closer: x2.5 inside 5-9, x4 LOST, nobay LOST .plan/watch7_t3_*"
+ },
+ "diagnosis": "~23 Sentinels on the far faces (always-on watch) never engage (full hp at the end, .plan/watch7_diag.gd); the threatened face gets about the same ~25 men as before against 2x the attack; the remaining attackers are mostly tanks/artillery (heavy classes are not reduced by Sentinel armour by design).",
+ "remaining_steps": [
+  "Decide balance route (ORCH/owner): the 13.9c-33 thresholds measured against a 48-man garrison double the attack while fixed defences do not scale. Options: (a) scale the drone hive with the garrison (cap 24 got to inside 5-9 at x2.5; try cap 24 + more kamikaze/gun, or rebuild_s lower) - DRONEBAY7's content; (b) more lancers in the mix; (c) owner re-read of 13.9c-33 as 'attack vs the old 24-man value'",
+  "Re-run: bash .plan/watch7_bal.sh <tag> (5 seeds x 2.5/3/3.5/4/4.5 + nobay); EXTRA='--set=...' bash .plan/watch7_bal1.sh <tag> 2.5,4 1 2 3 for quick probes",
+  "Run bash tests/run.sh --only=test_sent7 (all tests incl. balance), test_hot_state (report moved hashes: start garrison 48 changes every facility scene)",
+  "Remove the debug print block in test_always_on_watch if unwanted",
+  "Windowed pt7_sent7 (flow waits for >= 20 Sentinels; entry check >= 2) + shots of busier walls and the entry team at day/readable zoom; post fact shots.best",
+  "Update header comment of sentinels7.gd (Starting garrison / job board lines) to mention 13.9c-38"
+ ],
+ "shots": []
+}

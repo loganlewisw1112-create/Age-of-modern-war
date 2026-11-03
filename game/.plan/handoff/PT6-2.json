@@ -1,0 +1,32 @@
+{
+  "agent": "PT6-2",
+  "gen": 2,
+  "calls_used": 98,
+  "tokens_used_est": 345000,
+  "reason": "70% of the call cap (guard nudge at ~96 calls); handing off per G6_COMMON",
+  "done": [
+    "p1 + p2 rounds of all 26 flows, 2 lanes x 1 windowed Godot (always 2 at a time, PT_MAXJ=2 total): .plan/shots/PT6/pt6_lanes.sh; logs .plan/shots/PT6/pt_<flow>_<p1|p2>.log, 0 SCRIPT ERROR in every one.",
+    "GREEN TWICE (p1 and p2, paired): h 33/0 x2, hb 37/0 x2, m 37/0 x2, g4b 68/0 x2, ed 25/0 x2, air 98/0 x2, naval 32/0 x2, drone 30/0 x2, support 37/0 x2, tutorial 73/0 x2, elev 21/0 x2 (HIGH GROUND tag in), garrison 25/0 x2 (UI6a-3 pick fix), mines 29/0 x2 (+ r1b 29/0), loadout 21/0 x2, market 13/0 x2, airfield2 43/0 x2, live 20/0 x2, brush 13/0 x2 (ORCH raise fix). = 18 flows.",
+    "GREEN ONCE: s (p2 53/0; p1 49/4 = research-building click flake, fixed), med (p1 30/0; p2 29/1 = wounded-flag render lag, fixed).",
+    "FAILING BOTH p1/p2 (now fixed in tools/ui_playtest.gd, not yet re-run): company 22/1 + aicmd 21/1 (co_companies_trained=0: Air Assault preset ~48 supply vs POP 6/20 -> now picks Rifle Company + builds depots until 2 platoons fit), exo 21/1 (pilot=-1: Exo._eject needs Medical.has_medical -> now builds a_hospital first), naval6 31/1 (enemy sub got e.submerged by hand, never in sys_state.sonar.subs -> now dives via Sonar.apply_command issuer 1), airdef 14/12 + survival 14/17 ('no legal on-screen site' -> _site now scrolls to a legal off-screen cell and prints PLAYTEST-DBG site_none def=.. errs=.. when none is legal).",
+    "Earlier fixes this gen: mines (sweep clears ENEMY mines only by design, Mines.sweep_cells skips own -> flow sweeps a harness-placed side-1 field; NOT a game bug, no CR), airfield2 (String(int) SCRIPT ERROR x241 in _g6_hangar_slots; air tower prerequisite), naval6 coast scouting, survival defences, live (palette picked unarmed engineers -> riflemen), height-aware _to_screen (ViewUtil.world_to_screen_h; ELEV-VIEW-3 level_px 32 made flat clicks miss raised units).",
+    "Owner checkpoint AFTER set: cp2 4/0 -> .plan/shots/PT6/checkpoint/after/ (23 files incl. run.log); NOTE.md updated with the tag list, the force_obj/force_attack disclosure and a fog gap (no units visible on the hill in cp_16)."
+  ],
+  "running_at_handoff": "Background p3+p4 lanes (hb.sh label 'p3+p4 lanes (8 flows x2, 2 windowed)'), started ~18:3x: lane A 'p3:airdef company exo s;p4:airdef company exo s', lane B 'p3:survival aicmd naval6 med;p4:survival aicmd naval6 med'. Output .plan/shots/PT6/lanes_p3p4.out + lane_A_/lane_B_<stamp>.txt. Let it finish (max 2 windowed).",
+  "remaining": [
+    "1. When p3/p4 finish: grep -H 'PLAYTEST RESULT' .plan/shots/PT6/pt_*_p3.log .plan/shots/PT6/pt_*_p4.log and grep -c 'SCRIPT ERROR' each (must be 0).",
+    "2. For any failure: grep 'ok=false\\|PLAYTEST-DBG' in its log. airdef/survival: read the PLAYTEST-DBG site_none errs (if 'Requires a completed X first', build X first in that flow like _g6_company_hq does). Fix only tools/ui_playtest.gd / tools/editor_playtest.gd; game bugs -> change_request to ORCH with step + log line.",
+    "3. Re-run only the still-failing flows in pairs: bash .plan/hb.sh <ID> <calls> <tokens> 'label' -- timeout 9000 bash .plan/shots/PT6/pt6_lanes.sh 'p5:<flows A>;p6:<flows A>' 'p5:<flows B>;p6:<flows B>' (each flow needs 2 passes; s and med need 1 more each, p3 or p4 suffices).",
+    "4. When all 26 have 2 passing logs (both runs paired), publish: AGENT_BOARD=... node post.mjs <ID> orch fact pt6.flows_green '{\"results\":[\"<flow> <tag>: PLAYTEST RESULT pass=N fail=0\", ...]}' with the raw lines (2 per flow).",
+    "5. Optional for the owner checkpoint: the after/ climax shot shows terrain but no units (fog: side-0 defenders dead, side-1 attackers hidden). Consider a fog-off re-shoot only if ORCH asks."
+  ],
+  "files_touched": ["tools/ui_playtest.gd", "tools/editor_playtest.gd", ".plan/shots/PT6/pt6_lanes.sh (new)", ".plan/shots/PT6/checkpoint/NOTE.md", ".plan/shots/PT6/checkpoint/after/*", ".plan/shots/PT6/pt_*_{r1b,p1,p2,cp2,p3,p4}.log + dirs"],
+  "test_state": "No unit test files owned. Both playtest scripts pass godot --check-only (no errors) after every edit this gen.",
+  "change_requests_open": [],
+  "gotchas": [
+    "My one attempt to Stop-Process PT6's stale airdef r1 Godot was denied by the auto-mode classifier; do not retry process kills, let runs finish.",
+    "Waiting: foreground 'timeout 580 bash -c until ...; do sleep 10; done' works; Monitor notifications also work. Post a board status every ~5 min or the guard flags STALE (it did once at ~18:20).",
+    "Survival on Ridge Bastion: HQ on a level-3 plateau; the waves overran an undefended base at 4:16 in r1.",
+    "Company HQ preset list (TemplateSource) defaults to Air Assault Company (~48 supply per platoon)."
+  ]
+}

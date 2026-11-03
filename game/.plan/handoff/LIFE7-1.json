@@ -1,0 +1,31 @@
+{
+  "agent": "LIFE7",
+  "stopped_by": "ORCH budget.handoff_now at 51 calls (projected 560k of 750k)",
+  "calls_used": 55,
+  "tokens_used_est": 520000,
+  "files_touched": {
+    "new": ["tools/art/g7_life7.gd", "assets/art/g7_life7/manifest.json", "assets/art/g7_life7/life7/*.png (11 sheets)", "presentation/view/fac_life7.gd", "tests/test_life7.gd"],
+    "edited": ["presentation/art/art_catalog.gd: G5_GROUPS += \"g7_life7\" (register only)"]
+  },
+  "done_with_evidence": [
+    "Art generator runs: 'G7_LIFE7 sheets=11 files=12' (figures tech/guard/staff via the ARTCN7 g7_cn_fig rig at 18 px; dog; forklift empty/loaded x beacon; fuel bowser; tow tractor; quadcopter; radar 16 steps; tower cupola RWS 16 aim steps; pop-up target up/half/down). Contact sheet reviewed (tech hi-vis vest fixed to bands).",
+    "fac_life7.gd compiles (--check-only clean). Staff on Dijkstra routes over the compound floor (lanes preferred) from render_entries zones + conf doors; occlusion vs every building / tower / wall strip; clocks advance per sim tick only while the way is clear; garage shutters + drone-bay door; alarm behaviour; range drill + pop-up targets + kill-house flashes + LIVE FIRE lamp; perimeter drone with bay returns; radar; blinking obstruction / comms lights; ops window glow; tower cupola aim from the snapshot; ops-room inset (zoom >= 1.6 or hover) with live strike-team blips + trails.",
+    "13.9c-10 applied: no display wall guards / patrols / foot-entry guards; dog heels beside the lowest-id friendly unit whose def contains 'sentinel', else kennel by the ready room. Posted fact life7.split_sent7.",
+    "test_life7: RESULT pass=7 fail=1 (art sheets, no-facility costs nothing, layout+routes (0 path corners inside buildings), occlusion rule, hash identical 200 ticks layer on vs off, deterministic from tick, vehicle waits for a sim unit + garage shutter opens/closes all PASS)."
+  ],
+  "not_done": [
+    "test_life7::test_cupola_tracks_enemy_and_dog_heels FAILS on 'tower 0 reports tracking' (the aim-angle check in the same test passes). Likely cause to check: aims dict mixes int keys and 't%d' keys and _rebuild replaces Lf (keeps aims) - verify Lf.aims identity after a 15-frame re-read, or the foe leaves the 14-tile radius / scan only runs when _onscreen (tests: is_inside_tree false -> true). Do not weaken the check.",
+    "tools/pt7_life7.gd not written; no windowed playtest, no shots, no anchor calibration (TOWER_TOP 88, ROOF_H_OPS 34, RADAR_AT, DOOR_HPX, ZONE_H are PROVISIONAL guesses). The tower art already carries a static RWS: ask FACB7 to drop the static gun (keep the ring) so the tracking cupola is the only one.",
+    "No fps bench before/after; no match_view wiring (change_request life7.wire posted to ORCH).",
+    "13.9c-11: forklifts and fuel truck should attach to the new real Facility Engineer unit when it does those jobs (display vehicles follow that unit's snapshot position like the dog follows a Sentinel); not started.",
+    "Range target positions / kill-house rooms are fractions of the range zone, uncalibrated against FACB7's range art."
+  ],
+  "next_steps": [
+    "1. Fix the tracking-flag test (see not_done[0]) and rerun: bash tests/run.sh --only=test_life7.",
+    "2. Write tools/pt7_life7.gd (RefCounted run(pt), registered 'life7'): raise a facility like pt7_art7f, add fac_life7 to mv if mv.get('fac_life7') == null (setup(mv), refresh(mv.snap) each frame via a process callback or rely on ORCH wiring), spawn an enemy near a tower, a friendly at the outer gate, an APC at a west garage door; shots at zoom 1 / 1.75 / 2.5 of: compound, west garages + forklift, pad + fuel truck, helipad + tug, range during live fire, ops inset, a tower cupola tracking, the gate check, the drone. Read every PNG, calibrate anchors.",
+    "3. Bench 2k p10 before / after with the layer on (tools/bench.gd) and report shared-PC numbers.",
+    "4. Attach forklift / fuel truck to the Facility Engineer unit (13.9c-11) once its def id is posted."
+  ],
+  "apis": "fac_life7.door_open(fac_id, name) -> 0..1 ('g0'..'g7', 'drone_bay'); fac_life7.busy_cells(fac_id) -> [Rect2]; fac_life7.eval_all() (tests); on/off switch fac_life7.on",
+  "shots": []
+}

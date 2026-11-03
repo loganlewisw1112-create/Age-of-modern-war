@@ -1,0 +1,28 @@
+{
+  "agent": "REGRESS7-5",
+  "calls_used": 129,
+  "tokens_used_est": 420000,
+  "done": [
+    "Ruling 1 spawn facing: sim/world.gd spawn_unit facing = _spawn_facing(owner) (owner start -> map centre, snapped 1/1024; 0 for neutral/start-less/empty map).",
+    "Ruling 2 torso KO: wounds.gd torso_ko (chance + time scale with sev / ko.full), immunity window e.wimm (light hits sev < ko.heavy cannot re-knock-out until immune_s after an out-of-action ends); rules ko {full 0.09, min_frac 0.25, immune_s 8, heavy 0.2}.",
+    "Option b clotting: wounds.gd _clot_mark/_clot_pass, entity wcl, rules clot {light 0.09, s 15}. Option c graze head: head_roll(r, md, mh, graze), head.graze_kill 0.5 / graze_unc 0.75.",
+    "Approved setup edits: test_ai_air_naval jets wait 12->24; test_gen61 _face_away (side-1 _squad units, infil target, side-1 start units in _world); test_drone7 _launch team facing 0; test_g2_scenarios MBT + IFV facing 0."
+  ],
+  "remaining_steps": [
+    "1. Read the final full suite C:/CODING/g7_live_full_r75b.log (started 11:23 by REGRESS7-5, ~48 min): RESULT line, every FAIL, script errors; check threaded==unthreaded hashes in test_hot_state (2k_fight / 2k_mixed native=true threaded=true vs threaded=false).",
+    "2. ORCH ruling (auras, need 2735): a unit inside an enemy morale-drain aura (propaganda) gets no out-of-combat morale recovery while inside it. Small change in sim/systems/morale.gd (recover term, see line ~399 'recover' and the native param pack at ~510: native morale update also applies recover, so gate it in both paths or zero recover for those units before native) or sim/systems/auras.gd (Auras.morale_delta < 0 marks the unit). Target test_auras::test_propaganda_buffs_friends_drains_enemies (100 -> 99.2 now); re-run test_auras, test_morale*, test_hot_state native on/off equality.",
+    "3. ORCH ruling (FFA, option d): Human A/B AI builders (sim/ai builder / AI Commanders) build medical support (field hospital / medics / ambulance per existing G5/G7 defs; Medical.has_medical(w, fid) is what damage.gd checks: without it a downed soldier dies at once) once wounds are enabled and the side has casualties. Then re-run test_ai (test_g3_ffa_three_factions) and probe .plan/r75_ffa.gd (prints first_offensive_cmd_tick). If FFA still fails, report evidence; do not fit a seed or re-scope.",
+    "4. Re-run: test_wound7, test_medical, test_real61, test_ai, test_ai_g6*, test_auras, test_gen61, then report."
+  ],
+  "test_state": {
+    "first full suite (before b/c and setup edits)": "C:/CODING/g7_live_full_r75.log RESULT pass=1002 fail=15, 0 script errors",
+    "green after edits (targeted)": "test_gen61 15/0, test_ai_air_naval 8/0, test_drone7 8/0, test_g2_scenarios 7/0, test_wound7 17/0 (before graze), test_sense7 10/0, test_damage 10/0, test_officers61 11/0, test_squad7 22/0, test_real61 8/0, test_medical 8/0, test_squad61 14/0, test_ally_cmds 3/0, test_victory 13/0, test_supply 10/0, test_terrain_classes 8/0, test_units_g5 8/0, test_mobility 4/0",
+    "still failing": "test_ai::test_g3_ffa_three_factions, test_auras::test_propaganda_buffs_friends_drains_enemies, test_hot_state GOLD (ORCH re-baselines)"
+  },
+  "gotchas": [
+    "rules g7_senses.spot_every = 16: a freshly placed spotter needs ~20 ticks before visible_enemies sees anything.",
+    "spawn facing makes side-1 test groups watch side 0; setups built on the old east-facing default need e.facing = 0.0 (ORCH-approved pattern).",
+    "FFA outcome is chaotic (Machine raids ~t6400 and ~t10800); compare variants on first_offensive_cmd_tick, not single numbers.",
+    "Probes: .plan/r75_jets2.gd, r75_kotable.gd, r75_headdist.gd, r75_ffa.gd (env R75_NOBLEED, R75_GK/R75_GU, R75_DEATHS)."
+  ]
+}

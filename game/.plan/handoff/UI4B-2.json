@@ -1,0 +1,34 @@
+{
+  "agent": "UI4B-2",
+  "gen": 2,
+  "reason": "guard: projected 430k of 600k (72%) at ~56 calls; orchestrator ordered handoff",
+  "done": [
+    "1a charges: render_snap STATIC_FIELDS += target. New static EntityLayer.g4b_static_visible(e, statics, pf, team, allies) shared by entity_layer and g4b_overlay: own/allied always; enemy mine only when mine.seen has our team (or detected); enemy charge when its target building belongs to us or an ally (the defender sees the charge on his own wall).",
+    "1b sniper concealment: render_snap FLAG_HID=16 + snap.hid_spot {id: copy of e.spot} (only hid units), FLAG_DEPLOYED=32; both read only for defs with conceal_still/setup_ticks (def-table bit DEF_G4B=1<<29), so the 10k hot path pays nothing. entity_layer skips enemy FLAG_HID units unless hid_spot[id] has our team; match_view.entity_visible returns false for them (hover/pick); minimap skips them.",
+    "1c alerts: new presentation/hud/g4b_alerts.gd (static on_event), hooked in hud._on_events default branch before g3b_stage/g2_alerts. FireStarted/FireSpread/FireOut on visible cells (throttled), MineLaid own/ally only, MineDetected (ours found / they found ours), MineTriggered, ChargePlanted/ChargeDetonated (ours, or on our/ally building), Deployed/Packed own only.",
+    "2 TerrainChanged: match_view._on_step_events calls terrain_layer.rebake_cells(ev.cells) (Vector2i list from g4b_mech fire burn-out).",
+    "3 fort art: batch_art _state_code adds +16 open (gate unlocked: e.has(locked) and not locked) and +32 damaged (snapshot hp fraction < 0.5); _fort_state picks conn_<m>_damaged > conn_<m>_open > conn_<m> > built.",
+    "4 (partial) ART-U: lod_icons.class_of uses manifest.lod_class[def] when lod_icons['*'] has that class (covers ART-U-3 CR seq 1934). Mortar 'deployed' frame: batch_art unit spec dep = frames.find('deployed'), cache index 13; entity_layer hot path uses it when FLAG_DEPLOYED and not firing; batch_art.resolve_unit does the same from e.deployed.",
+    "tools/ui_playtest.gd g4b flow: + g4b_gate_art_closed (conn_8), g4b_gate_art_open (conn_8_open), shot ui_g4b_03b_gate_open, g4b_snap_flag_deployed, g4b_alert_deployed, g4b_alert_mine_laid; helpers _g4b_gate_art/_g4b_alert/_g4b_snap_flag.",
+    "Headless probe .plan/shots/UI4B/g4b_vis_probe.gd (godot --headless --path . --script res://.plan/shots/UI4B/g4b_vis_probe.gd): hid flag+spot, deployed flag, unhid clears, static rule [true,false,false,true,true] -> PROBE RESULT PASS."
+  ],
+  "remaining": [
+    "ART-U-3 CR seq 1935: frame pick by name in presentation/art/art_catalog.gd entity_sprite (deployed done only in the batched renderer) + 'work' frame for engineers (e.order.type lay_mine/plant_charge with order.t>0) + 'unload' frame for carriers. In the batched path this needs new snapshot flags (e.g. FLAG_WORK=64, FLAG_UNLOAD=128; bits 8..15 are the cargo count, so use 1<<16+ if more are needed) set in render_snap build under the DEF_G4B-style def bit, then cache indices like c[13] in batch_art.cache_unit.",
+    "ART-U-3 CR seq 1937: draw mine/charge from ArtCatalog.effect_frames('mine'|'charge') tinted via manifest.effects[n].mask, 2-frame blink by anim_time; detected enemy mine uses 'mine_detected' (untinted); burning cells fire_forest loop and burnt cells burnt_ground variant by cell hash; flamer flame_jet. Visibility must keep EntityLayer.g4b_static_visible. Burning cells are not in the snapshot yet: add e.g. snap.fires (copy of w.sys_state.g4b.fires keys) in render_snap.",
+    "Full suite: my run (started 12:46:49, hb.sh UI4B-2 pid 60191 -> tests/run.sh pid 60195) was still running at handoff and writes .plan/shots/UI4B/full_suite_ui4b2.log; read its last lines, or rerun bash tests/run.sh inside hb.sh. I could not stop it: the kill was denied by the permission classifier.",
+    "Optional: view .plan/shots/UI4B/pt_g4b_r5/ui_g4b_06_mortar_deployed.png once the ART-U-3 sheets with the deployed column are in the manifest (r5 used whatever sheet existed then)."
+  ],
+  "files_touched": [
+    "sim/render_snap.gd", "presentation/view/entity_layer.gd", "presentation/view/batch_art.gd", "presentation/view/lod_icons.gd",
+    "presentation/view/g4b_overlay.gd", "presentation/hud/g4b_alerts.gd (new)", "presentation/hud/hud.gd", "presentation/hud/minimap.gd",
+    "presentation/match_view.gd", "tools/ui_playtest.gd", ".plan/shots/UI4B/g4b_vis_probe.gd (new probe)", ".plan/shots/UI4B/pt_*_r4|r5 logs+shots, as_on/as_off logs+png"
+  ],
+  "test_state": "pt5.sh r5 (sim thread on, all UI4B-2 edits in): h 33/0, hb 37/0, m 37/0, s 53/0, g4b 61/0 (pt_*_r5.log). r4 (same UI4B files) had all 5 exit silently ~1.5 s after match_started while AI5/movement files were being written; did not reproduce in r5; posted as fact playtest.regression. --check-only clean on all 10 edited scripts at handoff. Probe PASS. Full suite: NOT verified (still running at handoff).",
+  "gotchas": [
+    "All THREAD rules hold: entity_layer/overlay read only mv.snap; minimap and entity_visible read live dicts only where they already did (not during a step).",
+    "Flags bits 1..32 are used (MOVING, FIRING, AIR, DETAIL, HID, DEPLOYED); 64 and 128 are free; 8..15 are the cargo count.",
+    "batch_art fort _damaged assumes hp is a FRACTION (snapshot statics). Live dicts with absolute hp never read as damaged, which is harmless.",
+    "Gate art 'open' means unlocked (passable for friendlies), not 'a unit is passing'. ART-F has no open+damaged frame, so damaged wins.",
+    "If all 5 playtests die silently right after match_started, check for peer files written mid-launch (r4) before suspecting UI code, then rerun."
+  ]
+}

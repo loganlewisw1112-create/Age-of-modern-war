@@ -1,0 +1,9 @@
+{
+ "agent": "ENG7-2", "calls_used": 90, "tokens_used_est": 490000, "stopped_by": "ORCH budget.handoff_now",
+ "files_changed": ["sim/systems/engineer7.gd (static var enabled A/B switch; dropship refuel reach_air; Eng7Pump display event)", "content/g7/defs_g7_engineer.json (fuel.reach_air 3.6)", "assets/art/g7_eng7/manifest.json (icons: portrait was magenta)", "tools/pt7_eng7.gd (repair shot on the engineer + position log; follow-cam; eng7_forklift_drawn / eng7_bowser_drawn display checks)"],
+ "scratch": [".plan/eng7/cost_eng7.gd (--noeng=1)", ".plan/eng7/ab_test.gd", ".plan/eng7/det_eng7.gd"],
+ "tests": {"test_eng7": "RESULT pass=10 fail=0 (.plan/eng7b_test_eng7_2.log, after the last engineer7 edit)", "test_life7": "9/0", "test_wallturret7": "12/0", "test_cnfac7": "32/0", "test_sent7": "10/2 balance_fight + tactics_drill; identical with Engineer7.enabled=false (.plan/eng7/ab_balance.log): not eng7 fallout"},
+ "playtest": "pt7_eng7 run3 PLAYTEST RESULT pass=19 fail=0, 0 SCRIPT ERROR (.plan/eng7_pt3.log); run before the reach_air/Eng7Pump edit",
+ "perf": "LP seed 7, 200 ticks: step avg off 23.06 / 20.23 ms, on 22.34 / 20.19 ms (within noise); engineer7 not in the top-16 breakdown (< 0.25 ms/tick)",
+ "open": ["one earlier pair of eng-on LP cost runs gave different final hashes (bdae.., 4d98..); 3 later concurrent runs all e822.. and det_eng7 per-10-tick hashes agree twice; likely live edits by other agents between runs, not proven", "pt7_eng7 not re-run after reach_air 3.6 (bowser parked under the dropship wing in run3)", "POLISH7 asked (seq 4338) for a hose drawn on Eng7Pump", "test_hot_state GOLD not checked"]
+}

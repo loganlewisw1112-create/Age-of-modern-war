@@ -1,0 +1,22 @@
+{
+ "agent": "FACB7-3",
+ "state": "stopped on budget.handoff_now (ORCH) at ~62 calls; tree compiles (tests + windowed playtest ran with 0 SCRIPT ERROR)",
+ "playtest": "pt7_art7f windowed run2: PLAYTEST RESULT pass=15 fail=0, 0 SCRIPT ERROR (run1 before fixes: 14/0). Shots .plan/shots/FACB7-3/ (run1) and .plan/shots/FACB7-3/run2/",
+ "fixes_from_shots": [
+  "gatehouse drawn as a ghost: LOOK7 roof cut (ROOF_CUT_MOD alpha 0.34) applied because Sentinels garrison it; entity_layer now skips the roof cut for WALL_LINK defs (cn_blast_wall, cn_tower, cn_checkpoint). run2 ecp shots: solid gatehouse, blast door, roof grating visible",
+  "magazine door faced away from the camera: json faces.magazine 3 -> 1, doors.magazine [24,20] -> [24,25], new lanes [23,21,1,5] + [24,25,2,1] (service lane); headwall now faces south (rot_1 art, no regen needed). Partly occluded by the SE corner tower [26,26] at z2/z3",
+  "pt7_art7f: shots of the 13.9c-6 zones (magazine, armory, aid_station, barracks, fuel_point, runoff), SPOTS (ecp, wash_enclosed, locker_w, lockers_entry, wturret_e, wturret_n) at z1/z2/z3, and magazine/barracks ruin shots"
+ ],
+ "baffles": "re-enabled (baffle_def cn_ecp_baffle) as a two-turn serpentine of 17 T-wall baffles (json baffles + _baffle_note): mouth x16..17 y30, outer leg east along y30, turn at x22..23, inner leg west along y28, into the mantrap (18,27). (16,28),(23,28) kept free (WTUR7 turret fronts). test_facb7_foot_entry_mantrap starts on the outer leg (json ecp_start [23,30]), path check unchanged. Known: an OWNER soldier starting outside the serpentine mouth can route via the APC gate (open to the owner) and the wall top (wall-walk lets own foot step from the gate cell onto the wall): WALL7/movement issue, not changed",
+ "test_door_sides": "workshop expected 3 -> 2 with authority comment (13.9c-6/-8 re-layout; door [15,10] opens west onto the x12..15 spine; door_side_of lane weights west 16 > east 8 > north 4). Check logic unchanged",
+ "wall_turrets": "json sentry_def \"\", sentries [], wall_turrets = WTUR7 seq 3650 list (18). test_cnfac7 ring test re-pointed from nests to wall turrets (0 nests, 18 raised, each on a valid face via WallTurret7.face_info, every wall run of >= 2 segments covered). WTUR7-3 told (board).",
+ "pad_refuel": "cn_facility._service: pad self-refuel (fuel only) skipped while Engineer7.staffed(w,F) (lazy _callf ENG7_PATH, default false). test_cnfac7 fuel check runs with the facility engineers removed (fallback path)",
+ "tests": {"test_cnfac7": "RESULT pass=32 fail=0", "test_art7f": "RESULT pass=7 fail=0", "test_wallturret7": "RESULT pass=9 fail=2 (test_auto_rebuild_player_side / _ai_side 'lost again, queued again': WTUR7-3's live area; start-set tests PASS)", "not run": "test_life7, test_atmo7, test_seq7, test_wallwalk7, test_lpmap7, test_lpmode7"},
+ "next_steps": [
+  "run test_life7 / test_atmo7 / test_seq7 / test_lpmap7 (magazine door + lanes + baffles changed the layout they read)",
+  "magazine headwall partly hidden by the SE tower at close zoom: consider the ATMO7 'MAGAZINE SPECIAL AMMO' board (drawn on the tower top) moving to the forecourt",
+  "runoff tank [10,22,1,2] is hidden behind the west link wall from the camera: move it or show a sump inside the wash",
+  "a horizontal dotted line (world dir (1,-1)) crosses several shots (helipad, ECP): not facility art; owner unknown (unit path / LIFE7 / ATMO7?)",
+  "WALL7: own foot can step from the outer APC gate cell onto the wall top (bypasses the foot ECP for owner soldiers)"
+ ]
+}

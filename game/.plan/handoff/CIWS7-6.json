@@ -1,0 +1,20 @@
+{
+ "agent": "CIWS7-6",
+ "stopped_on": "ORCH budget.handoff_now (71%)",
+ "done": [
+  "Limit -25 deg (content elev.depress_min_deg). Blind ring: ground 8.634 tiles, air 8.420 (closed form Ciws7.blind_radius; measured per mount 8.64 on 3 directions x 2 mounts). Ground targets inside are not engageable (_ground_ok, held target dropped); air/intercept unchanged, air inside ring laid at lowest band.",
+  "Bands before [-60,-47,-34,-21,+8,+32], after [-25,-21.5,-18,-14.5,+8,+32]; el_band skips any band below limit; art regenerated 2965364 bytes <= 3145728; muzzle7.json regen diff = cn_ciws7 only (APC untouched).",
+  "Barrel-vs-stream max: 3D 6.57 deg (was 9.26), screen 7.95 (was 16.09); bounds tightened to 7.0 / 8.5. Air INSIDE ring: 43.57 deg 3D (clamped at limit, stream passes above the drone; unbounded, printed).",
+  "Evidence-only counters added to Ciws7.counters (ring_viol, watch, watch_hits, watch_min_d)."
+ ],
+ "files_changed": ["sim/systems/ciws7.gd","content/g7/defs_g7_ciws.json","tools/art/g7_ciws7.gd","assets/art/g7_ciws7/ (regen)","assets/art/muzzle7.json (regen)","tests/test_ciws7.gd","tools/pt7_ciws7.gd"],
+ "results": {
+  "test_ciws7": "RESULT pass=16 fail=0 (.plan/ciws76_test_ciws7_final.log)",
+  "test_muzzle7": "RESULT pass=8 fail=0","test_turret7":"RESULT pass=18 fail=0","test_art7f":"RESULT pass=8 fail=0","test_audio7":"RESULT pass=12 fail=0",
+  "test_sent7": "RESULT pass=12 fail=0","test_cnfac7":"RESULT pass=36 fail=0",
+  "pt7_ciws7": "PLAYTEST RESULT pass=31 fail=0, 0 SCRIPT ERROR (.plan/ciws76_pt7_ciws7_b.log)"
+ },
+ "shots": ["C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt_c76b/ciws7_stream_close_z175.png","C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt_c76b/ciws7_stream_close_z140.png","C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt_c76b/ciws7_ring_crawler_z125.png"],
+ "remaining_exact_steps": ["1. \"$G\" --headless --path . --import (judge by 0 ERROR lines; segfault on exit after DONE reimport is normal). NOT run.","2. Owner decision: air targets inside the ~8.4-tile ring are still engaged but visually the stream misses them; option is to make them unengageable too."],
+ "notes": "ORCH APC/muzzle7 concern: test_muzzle7 8/0 and test_turret7 18/0 pass with my edits; not caused by CIWS changes. spread check in pt flow changed to >=0.8 x range ratio because range ratio is now max 1.7."
+}

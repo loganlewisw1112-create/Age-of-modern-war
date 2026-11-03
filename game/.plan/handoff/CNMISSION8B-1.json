@@ -1,0 +1,22 @@
+{
+  "agent": "CNMISSION8B",
+  "reason": "budget.handoff_now (72%) from the coordinator",
+  "finished": {
+    "team_card": "presentation/ui7/team_card.gd MISSION section complete (line, bar, loadout, PURGE: DRIVE/FLY -> strat map pick, HOLD SITE, EXTRACT, CANCEL); no-team state now also disables mission buttons and clears line/bar/loadout.",
+    "fly_mode": "sim/systems/cn_mission8.gd: (1) air_board waits for the ramp sequence (no bay_seq) before air_fly; (2) _air_stalled + re-issue land_at in air_fly/air_pick/air_home (Transport bay_seq grounds the craft, Air._land_here drops land_cell, the resumed plain move left it hovering until the 240 s timeout); (3) _park_on_pad: back on its facility helipad the dropship is put at the pad centre + helipad_craft heading (as CnFacility spawns it) so the rear-ramp unload is not RAMP_BLOCKED forever. Helpers _land_pick/_land_home. HotState preload added. Phase names and mission_of API unchanged.",
+    "test": "tests/test_cnmission8.gd save/load now uses the real save format var_to_bytes (var_to_str is lossy for doubles, per sim/save_system.gd).",
+    "flow": "tools/pt7_cnmission8.gd: the 'clean ground' click was 14 tiles off a radius-5 patch = still within TARGET_R 9 (accepted, mode ended, then Fly missing); now 22 tiles off and checks the sim reason."
+  },
+  "results": {
+    "test_cnmission8": "RESULT pass=7 fail=0 (drive board>exit>travel>deploy>return>home>done; fly board>air_board>air_fly>air_unload>travel>deploy>return>air_pick>air_board2>air_home>home>done; cancel, save/load, same seed, reasons, buttons). One SCRIPT ERROR from REST8 work in progress: fatigue.gd:54 key fire_per_s.",
+    "flow_cnmission8": "PLAYTEST RESULT pass=21 fail=0, 0 SCRIPT ERROR (.plan/shots/CNMISSION8B/r1.log)",
+    "test_cnops7": "RESULT pass=11 fail=0",
+    "test_cnfac7": "RESULT pass=36 fail=0",
+    "test_cnsim7": "RESULT pass=26 fail=1 (test_group_pincer_on_colossus_takes_minutes_and_two_topples: 3534 ticks) with 22 SCRIPT ERRORs 'Could not preload res://sim/systems/rest8.gd' (fatigue.gd:18) - REST8 mid-edit; not cn_mission8 code. Rerun when rest8.gd parses.",
+    "test_hot_state": "RESULT pass=11 fail=6: GOLD_FLAT + HEAD hashes moved on 2k_fight/2k_mixed/10k (no cn_mission issued there; cnm8 state only exists after cn_mission). Native on/off also differs from HEAD. Run during REST8's broken rest8.gd/fatigue.gd edits - not attributable yet; rerun when the tree is clean. Goldens not edited."
+  },
+  "shots": ["C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CNMISSION8B/r1/cnmission8_2_drive_or_fly.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CNMISSION8B/r1/cnmission8_5_deploying.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CNMISSION8B/r1/cnmission8_6_purged.png"],
+  "not_run": ["test_lpmode7", "test_det7", "test_ui_fit", "test_cards7", "test_opsui7", "test_ui_panels (hotkey collisions, cn8p rows)", "flows cnops7, opsui7, lpmode7"],
+  "probes": ".plan/cnm8b_probe.gd (fly trace), .plan/cnm8b_save.gd (save diff) - throwaway, can be deleted",
+  "next_step": "When rest8.gd/fatigue.gd parse again: rerun test_hot_state (compare against a clean-worktree HEAD run to see whether cn_mission8 moves any hash; it should not) and test_cnsim7; then run test_lpmode7, test_det7, test_ui_fit, test_cards7, test_opsui7, test_ui_panels and flows cnops7, opsui7, lpmode7 (windowed, one at a time)."
+}

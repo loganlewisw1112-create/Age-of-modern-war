@@ -1,0 +1,30 @@
+{
+  "agent": "LETHAL8D",
+  "reason": "budget.handoff_now from ORCH (73% of 500k projected)",
+  "files_changed": {
+    "content/g7/rules_g8_rounds.json": "rounds8.armour: new class \"cn_apc\" {t 450, blocked 0.15, kill_mult 0.1, _note PROVISIONAL} (line after heavy_veh); rounds8.class_by_def: g7_cn_strike_apc, g7_op_tactical_apc, g7_b_cn_strike_apc, g7_b_op_tactical_apc -> cn_apc (line after m_colossus/g7_m_weaver)",
+    "diagnostics (new, .plan only)": ".plan/lethal8d_apc.gd (lone APC vs m_walker probe), .plan/lethal8d_ciws.gd + .plan/lethal8d_ciws_fix.gd (ciws7 crawler probe), outputs .plan/lethal8d_*.txt"
+  },
+  "item1_cnsim7": {
+    "root_cause": "Not rockets: APC launcher hits go through Apc7.hit_heavy with weapon \"\" (round_of -> null, old path), unchanged by lethality. The APC dies early. CN APCs (armor heavy, 2200/2600 hp) mapped to heavy_veh; the m_walker 'rail' -> rail_slug (pen 750 > t 450, kill 0.45) did through = 0.45 x 2200 = 990 per hit, so a lone tactical APC died after 3 rail hits (~t700) with 41 of 49 rockets left. OFF the same rail did 85/hit and the APC lived 3600 ticks. Also a table error: class_by_prefix g7_b_cn_ / g7_b_op_ -> soft made the faction-B APCs (g7_b_cn_strike_apc, g7_b_op_tactical_apc) take the soldier body model. Probe raw: .plan/lethal8d_apc_on.txt / _off.txt.",
+    "fix": "cn_apc armour class, kill_mult 0.1 (rail front 99/hit vs G2 85), class_by_def entries for all 4 APC defs (overrides the soft prefix). PROVISIONAL; matches owner 'APCs fucking tough' (G7_REFERENCE APC notes).",
+    "result_on_after": "RESULT pass=26 fail=1 files=1 time_ms=97586 | FAILURE: test_cnsim7::test_group_pincer_auto_operators_engage_then_remount — full-group pincer on m_walker takes 45-90 s (1824 ticks)",
+    "result_off_after": "RESULT pass=26 fail=1 files=1 time_ms=100494 | FAILURE: test_cnsim7::test_group_pincer_on_colossus_takes_minutes_and_two_topples — it takes 3-5 minutes (3534 ticks) (pre-existing, also OFF)",
+    "before": "ON 24/3 (lethal8c_ab_on.txt), OFF 26/1",
+    "remaining": "ON-only: group pincer 1824 ticks vs window 900-1800 (24 ticks over). Old-toughness/timing oracle candidate for ORCH->owner, not edited. Colossus 3534 fails ON? (not in ON list now: passes ON) and OFF."
+  },
+  "ciws7_crawler (ORCH request)": {
+    "shooter": "cn_popup building (Lockdown Pop-up Turret, g6_popup_rws -> hmg_127) fires t192, 234.8 dmg kills the 220 hp crawler t198 before the CIWS",
+    "cause": "lockdown pop-ups are spawned by cn_facility.gd:753-754 after _silence() ran (test_ciws7.gd:69), so they are never silenced",
+    "proposed_test_setup_change": "tests/test_ciws7.gd line 267: insert `\t_silence(w, fac)   # lockdown pop-ups spawned after the first _silence` right before `var inside := _unit(w, \"m_breacher_crawler\", M, O + Vector2(8.5, 24.5))`. Verified by probe: CIWS fires t199-201, crawler dies t201 (.plan/lethal8d_ciws3_on.txt). Posted as warn seq 18049. Not edited."
+  },
+  "htk": "NOT RUN this session. Existing .plan/lethal8_htk.txt: at_gunner -> m_colossus 600 hits at r2/r6/r10 (FLAG absurd, >60); lancer -> colossus 4; m_walker -> colossus 9-13; at_gunner -> m_walker/m_tracked 3.",
+  "not_done": ["item 2 HTK run + append", "item 3 specops8 OFF (lethal8c_rep_off.txt has only ciws7; specops8 OFF never finished)", "item 4 A/B for lpmode7, ai, sent7 (not in lethal8c_ab_*.txt; never ran)", "item 5 compile check + test_lethal8"],
+  "next_steps": [
+    "1) Compile check: timeout 240 $G --headless --path . --quit-after 60 2>&1 | grep -E -A2 'SCRIPT ERROR|Parse Error' (must be empty); bash tests/run.sh --only=test_lethal8 (json-only change, expected green).",
+    "2) timeout 900 $G --headless --path . -s .plan/lethal8c_htk.gd > .plan/lethal8c_htk_raw.txt; append HTK8C rows to .plan/lethal8_htk.txt; check g7_cn_strike_apc rows now use cn_apc. at_gunner -> m_colossus front: superheavy t_side.front 800 vs heat_rocket pen; if >60, consider a superheavy front fix (PROVISIONAL) only if clearly a table error.",
+    "3) specops8 OFF: LETHAL8_OFF=1 bash tests/run.sh --only=test_specops8 (~580 s). If OFF passes, probe Damage events on the m_hauler recon target (m_hauler is nanite_frame body class, 220 hp).",
+    "4) A/B ON vs OFF for test_lpmode7, test_ai, test_sent7 (sent7 report-only); list old-toughness assertions, do not edit oracles.",
+    "5) Report group-pincer 1824 vs 1800 window to ORCH as a near-miss timing oracle."
+  ]
+}

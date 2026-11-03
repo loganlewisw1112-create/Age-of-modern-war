@@ -1,0 +1,21 @@
+{
+ "agent": "CNSIM7-5", "gen": 5,
+ "reason": "budget: 93/140 calls, projected ~70% of cap; handing off per protocol",
+ "done": [
+  "Tuning (content/g7/defs_g7_cn.json rules.g7_cn, all PROVISIONAL) = CNSIM7-4 set9 + .plan/cn5_set10..18 (+ set19 notes), applied via python .plan/cn4_rules.py <set>. Pre-CNSIM7-5 copy: .plan/cn5_defs_set9_backup.json.",
+  "apc7.gd: agility_hit(t) (heavy.agility_speed_ref/exp/min): launcher hit roll and CN direct-fire mult x stride factor on a fast heavy walker (m_walker 0.497, m_colossus 1.0, 1.0 while down); down_secs(t) (topple.down_s x (hp/ref)^down_exp, max down_s_max): walker 3.0 s, colossus 9.0 s.",
+  "counter_nanite.gd: _stalled() break-contact rule (pincer.stall_s 75 x (hp/950)^0.5, stall_hp 0.62): walker still above 62% hp 75 s in (colossus 157 s) and not down -> break contact. _squad_touch(): SquadAI.touch after CN Transport.unload (fixes save round-trip divergence mid-pincer).",
+  "tests/test_cnsim7.gd: CNSIM7_DBG print removed; bare 5-APC test re-ranged (topple check moved to the full-group test); topple test loops to the threshold and checks per-round window bonus; lone/loadout checks derive from content; new tests: group head-on breaks contact, colossus 3-5 min + 2 topples, one window cannot kill an unhurt walker, save round-trip mid-pincer. bash tests/run.sh --only=test_cnsim7 -> TESTS OK (26 PASS).",
+  ".plan/cn5_tune.gd = 3+-seed harness (--s=pw,hw,pc,hc,ow,bare,lone --seeds=3,4,6,9,12,15). Logs .plan/shots/CNSIM7-5/t10..t19b.log; final numbers t19.log + t19b.log."
+ ],
+ "remaining": [
+  "1. pt7_cnsim7 windowed run (log .plan/shots/CNSIM7-5/pt.log, shots .plan/shots/CNSIM7-5/pt/) = pass 14 fail 10, 0 SCRIPT ERROR. Cause: the flow pits strike team + only 2 tactical squads (4 APCs) against TWO m_walkers at once; with the new difficulty the group kills one (pincer end 'killed' 1), never topples within 90 s, and is wiped (strike APCs 0/2, soldiers 0/20), so every later step (convoy_through, deploy, purge, dome stall, hero, team_after) fails. Fix in tools/pt7_cnsim7.gd scene 2: spawn ONE m_walker (or add a third escort squad) to match the balance target (one heavy walker vs the full group), keep topple wait 90 s / kill wait 240 s. Then re-run windowed and look at every shot (08 launchers, 09 toppled, 10 walkers down, withdrawal).",
+  "2. cnsim7_convoy_order ok=false 'convoy id -1' 0.3 s after cn_move: probably the auto pincer starting at once (walkers inside detect 12) disbands the convoy (start_eng). Check after fix 1 (spawn the walker farther than pincer.detect from the start, or log the check before contact).",
+  "3. test_hot_state: NOT determined. Two runs (--only=test_hot_state) produced no output: first lost when the tool backgrounded, second timeout 1500 s rc=124 with 4 other Godot processes on the machine. Reasoning only: tests/test_hot_state.gd references no CN unit, m_walker or m_colossus, and every CNSIM7-5 code path is gated on CN units / heavy-walker CN hits / CN engagements, so it should not move. Needs one quiet-machine run (ORCH).",
+  "4. Change requests to send: CNFAC7 (transport.gd) + SQUAD7-4 (squad_ai.gd): Transport._reinsert puts unloaded units back under old ids, SquadAI w.cache.sq61 only adds ids >= its nid, a loaded save rebuilds the index -> any unload (not just CN) can make live vs loaded diverge. Suggest Transport._reinsert calls SquadAI.touch(w) (or the cache tracks reinserts). Not sent.",
+  "5. Final report."
+ ],
+ "measured_final_set18": "pincer m_walker s3 58.5 s / s4 67.2 / s6 69.5 / s9 38.7 / s12 73.7 / s15 81.2, 1 topple each; pincer m_colossus 228.4 / 231.4 / 217.4 / 227.9 / 231.7 / 213.9 s, topples 2/2/3/2/2/2; head-on m_walker breaks 5/6 at 75 s (s4 no break, killed at 264 s = 3.9x); head-on m_colossus breaks 5/6 at 157 s; one window on an unhurt walker 43-134 hp, survives 6/6; lone APC 180 s: walker 932/950; bare 5 APCs pincer 1121-1646 ticks, head-on alive 769-791 hp after 3600.",
+ "files_touched": ["sim/systems/apc7.gd", "sim/systems/counter_nanite.gd", "content/g7/defs_g7_cn.json", "tests/test_cnsim7.gd", "tools/pt7_cnsim7.gd", ".plan/cn5_*"],
+ "gotchas": ["Harness 'by' totals under-count (killing blows / some sources missing).", "Walker fights are seed-sensitive (geometry): seed 9 is the fast outlier.", "Hotkeys cn_pincer P / cn_break_contact Shift+B already with SQUAD7-4: do not send."]
+}

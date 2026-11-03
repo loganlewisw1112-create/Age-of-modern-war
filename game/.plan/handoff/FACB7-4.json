@@ -1,0 +1,15 @@
+{
+ "agent": "FACB7-4",
+ "state": "done to a stopping point near the budget line (~59 calls, est ~440k tokens); tree compiles, tests + windowed playtest ran with 0 SCRIPT ERROR",
+ "layout": "planning [8,9,4,3] kept (4-storey command centre); barracks [24,3,2,3] -> [24,3,2,4], door [24,7], lane [24,7,1,1]; roof_pad {rect [24.125,3.125,1.75,3.75], deck_z 11.6, heading_deg 90}; range [2,21,8,4] = 2-storey indoor training bldg (west half) + outdoor rifle/explosives range (east half), doors [5,20],[8,20]; approach [0,28,28,5] cleared in the same _clear_site pass",
+ "sim": "CnFacility.roof_pad(w,F); render_entries roof_pad [x,y,w,h,z,heading,ok]; _svc_rects adds the roof pad to SV.air while the barracks stands",
+ "art": "tools/art/g7_fac7f.gd: new planning(), barracks() + _barracks_ruin(), range_(), helpers _ribbon/_band/_fins/_frustum/_slant_glass/_olamp, apc_wash runoff sump; TOPS planning 230 barracks 160 range 130",
+ "tests": {"test_cnfac7": "RESULT pass=33 fail=0", "test_art7f": "RESULT pass=7 fail=0", "test_wallwalk7": "RESULT pass=11 fail=0", "test_wallturret7": "RESULT pass=11 fail=1 (test_auto_rebuild_ai_side 'side 1: a turret the owner places is a facility post'; reproduces with my approach change removed; WTUR7 area)"},
+ "playtest": "pt7_art7f windowed: PLAYTEST RESULT pass=15 fail=0, shots .plan/shots/FACB7-4/",
+ "next_steps": [
+  "ATMO7/LIFE7 ops-screen overlay floats over the command-centre crown (planning_z2): POLISH7-2 to re-place from fact facb7.zone_heights (board seq 4583)",
+  "magazine headwall partly hidden by the SE tower [26,26] (not changed)",
+  "compound shots exist only at zoom 0.6 / 1.0 (the whole compound does not fit at 1.75 / 2.5; per-building shots cover those zooms)",
+  "AIRV7: land the Vanta on CnFacility.roof_pad (fact facb7.roof_pad seq 4395)"
+ ]
+}

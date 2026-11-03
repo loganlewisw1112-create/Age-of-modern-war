@@ -1,0 +1,33 @@
+{
+  "agent": "DRONEBAY7",
+  "reason": "budget.handoff_now at 110/140 calls (ORCH)",
+  "spec": "docs/G7_REFERENCE.md 13.9c-27 (drone bay defence drone garrison), 13.9c-18 (drone bay = workshop 2nd storey, launch deck on its roof)",
+  "files_owned_changed": [
+    "sim/systems/drone_bay7.gd (new): garrison 12 (interceptor 4 / gun 5 / kamikaze 3, PROVISIONAL), auto release ON by default when BaseState7 != secure, staggered launches from 4 deck spots, retarget / leash / battery / quiet-base recovery, landing on the deck -> rearm, slow rebuild of losses at a cost, dronebay_launch / dronebay_recall / dronebay_auto, intercept_strike hook, display_lifts (render only)",
+    "content/g7/defs_g7_dronebay.json (new): rules.g7_dronebay, every number PROVISIONAL",
+    "presentation/ui7/dronebay_card.gd (new): HUD card 'DRONE BAY  Drones n/12', per-kind ready / up, rearming, rebuild timer, LAUNCH / FPV / RECALL / AUTO",
+    "tests/test_dronebay7.gd (new)",
+    "tools/pt7_dronebay7.gd (new)"
+  ],
+  "orch_applied": ["CR 5573 world.gd (const, SYSTEM_ORDER after CnOps7, 3 COMMANDS)", "CR 5737 hud.gd card attach", "CR 5833 render_snap.gd g7u bz + entity_layer deck lift (applied, compiles, NOT yet re-shot)"],
+  "pending_crs": ["seq 5574 to DRONE7 (or ORCH): strikes.gd _intercepted add `or SimWorld.DroneBay7.intercept_strike(w, fid, at, kind)` so interceptors shoot down rockets / shells / strikes (API done + unit-tested; not wired until applied)"],
+  "test_dronebay7": "RESULT pass=9 fail=1. No double tick: _run only hand-ticks while SYSTEM_ORDER lacks DroneBay7. ORCH's 3 failures were (a) launch events emitted in the do_cmd apply tick and not collected (test now keeps last_ev), (b) the single enemy drone died to the towers' CIWS (radius 8) before the breach registered (attackers now a 4-drone swarm 10 tiles off the south wall). No check weakened. Remaining fail: test_save_load_and_hash (fight) 'same future after load' = root cause outside DRONEBAY7: base_state7._eval and sentinels7.threat() iterate SimIndex.of without the liveness check (incremental index keeps removed entities in the running world, a loaded world starts fresh) -> warn seq 5735 + 5754 (fix: `if not w.entities.has(int(e.id)): continue`). test_save_load_manual_sortie (no attackers) PASSES with full hash + dronebay7 state equal for 400 ticks after load. Same-hash-twice PASS.",
+  "test_ui_fit": "RESULT pass=3 fail=0 (FIT issues=0 at every resolution / scale)",
+  "playtest": "pt7_dronebay7 r4: PLAYTEST RESULT pass=23 fail=0, 0 SCRIPT ERROR (before CR 5833)",
+  "best_shots_looked_at": [
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r1/dronebay7_takeoff_z250.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r1/dronebay7_fight_south_z175.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r4/dronebay7_fight_z100.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r4/dronebay7_landing_z250.png"
+  ],
+  "next_steps": [
+    "1. Re-run the windowed playtest with CR 5833 applied: \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r5\" --ui-playtest-dronebay7 (timeout 900); expect PLAYTEST RESULT all ok, 0 SCRIPT ERROR.",
+    "2. Read r5 dronebay7_takeoff_z250.png, dronebay7_takeoff_z175.png and dronebay7_landing_z250.png: drones on / over the workshop roof deck must draw at deck height (bz = 103.6 px + up to 14 px hover, easing to normal flight over 3 tiles off the deck). If they still sit low, check snap g7u has 'bz' for bay drones (DroneBay7.display_lifts) and that entity_layer's unit loop reached the new lines.",
+    "3. Post fact shots.best with the r5 takeoff + landing shots (caption: drones lift off from and land on the workshop roof).",
+    "4. Get seq 5574 (strikes intercept hook) applied; test_interceptor_stops_a_strike already covers the API.",
+    "5. After base_state7 / sentinels7 add the liveness check, test_save_load_and_hash should pass unchanged.",
+    "6. Optional: bench a 2k-unit match with a facility to measure the bay's share (expected tiny: no facility = one has() per tick; quiet bay = discover every 20 ticks + a cheap sweep; full scan only every 10 ticks while drones are out or the base is threatened)."
+  ],
+  "hashes": "matches without a facility: unchanged (no dronebay7 state). Matches with a CN facility: new sys_state.dronebay7 + bay drones -> hashes move on purpose (fight hash twice same: c2c1109b6c51ea74b496fe233b9e014172c1655c155de4fef66f1e761bbbff24).",
+  "provisional": "cap 12, mix 4/5/3, rebuild 45 s at 60 credits + 25 salvage, rearm 20 s (+30 s x damage), sortie (battery) 120 s, launch gap 0.35 s, defence ring compound + 14 tiles, leash +8, quiet 6 s, intercept r 4 / cooldown 3 s"
+}

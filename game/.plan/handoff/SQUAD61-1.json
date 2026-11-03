@@ -1,0 +1,44 @@
+{
+  "agent": "SQUAD61",
+  "gen": 1,
+  "calls_used": 59,
+  "tree_state": "full-tree compile check at handoff: 0 SCRIPT ERROR / Parse Error (after the last edits)",
+  "done": [
+    "sim/systems/squad_ai.gd: full replacement of the ORCH stub. Commands set_stance {stance: aggressive|defensive|hold_fire|hold_position|default}, regroup. API: set_stance_internal, squad_state, squad_members, platoon_members, leader_of, execute_order (chain entry), on_direct_order, player_fresh, stance_of, touch, on_pace_set. Runtime cache w.cache.sq61 (id buckets id%EVERY, squads, plats, pace, helpers), rebuilt when production.next_squad / ops.next_gid / sys_state.squad_ai.ver change, plus incremental adds for new ids. tick: bucket posmod(-tick,10); squad think on the first live member; stance think; _smart (resume, prone, vehicle reverse vs AT, low-HP fallback to medic, low-ammo pull-back to supply/bearer, kiting, spread vs splash, cover/height via Terrain.cover_mult + Elevation.height_at); _pace_think (paced group waits for slowest; attack_move paused as move sq=pace and restored).",
+    "Stances: hold_position -> order {type:hold}; hold_fire -> order {type:hold_fire} (Combat's '_' branch = return fire only); defensive = anchor + DEF_CHASE leash; aggressive = pursue last seen pos.",
+    "sim/systems/movement.gd formation_slots + helpers right below it (_g61_form_ok, _g61_is_veh, _g61_shape, _g61_mixed): + box, echelon_left, echelon_right, file, spread; mixed vehicle+foot puts armour in front, infantry behind. line/wedge/column/grid unchanged for single-class groups.",
+    "sim/systems/orders.gd: FORMATIONS has 8 entries; set_formation accepts optional pace:bool (e.pace_grp = min id) and formation optional when pace given; preloads squad_ai.gd.",
+    "tests/test_squad61.gd written (13 tests).",
+    "presentation/ui6/teams_panel.gd: modal (F2) listing control groups, companies, platoons, squads(2+) with count/HP/ammo/stance/order/comms (CommandNet.comms_state via L.callf), click select, double-click centre, Stance cycle, Form cycle, Rename (view-only names).",
+    "presentation/hud/g2_commands.gd: Formation [F] cycles 8; new card buttons Formations [;] page (8 formations + Group pace toggle + Back), Stance [,] page (4 stances + default + Teams panel + Back), Regroup [/]. Hooked via g2_cmd.add_page at the top of hud._add_unit_buttons.",
+    "presentation/ui5/panels/hotkeys.gd: ACTIONS stance_page COMMA, formations_page SEMICOLON, regroup SLASH (group squad61 shares every card; punctuation rebinding allowed via PUNCT_KEYS); GLOBAL F2 Teams panel, F3 Command mode; GLOBAL_ACTIONS teams_panel/command_mode answered by Hotkeys.key; Hotkeys.badge().",
+    "presentation/hud/hud.gd hook lines: TeamsPanel + CommandLayer (PLAN61) preload/var/build/update; on_key line before ui6a.on_key; add_page hook. PLAN61 hud CR done and answered (command_mode on F3 because TAB is a GLOBAL key and C a card key).",
+    "Board: fact squad.api (stub-compiling) posted; need change_request.world_direct_order_hook to ORCH posted."
+  ],
+  "remaining": [
+    "1. Run: bash .plan/hb.sh SQUAD61 <calls> <tok> test_squad61 -- timeout 600 bash tests/run.sh --only=test_squad61. The only run so far (tree then broken by GEN61 general.gd / OFF61 doc_operational -> 'Nonexistent function tick' at world.gd:378, 3357 script errors) gave pass=7 fail=6, which proves nothing. Re-run now that the tree compiles and fix real failures.",
+    "2. OFF61 CR (board seq 46): add formation 'echelon' (alias = echelon_right) to Orders.FORMATIONS / _g61_form_ok / _g61_shape, and set_formation {spacing: float 1.0..2.5} stored as e.formation_spacing; in formation_slots multiply sp by units[0].formation_spacing when present (absent = unchanged). Answer OFF61 on the board. (file already exists: echelon_left/right + file.)",
+    "3. ORCH CR pending: world.gd must call SquadAI.on_direct_order(self, c) for DIRECT_ORDERS and set_formation. Until it lands, test_player_order_is_not_overridden stamps by hand and prints a NOTE.",
+    "4. Compile check, then targeted tests: test_squad61, test_orders*, test_movement*, test_combat*, test_g2*, test_hud, test_ui_panels (hotkey collisions: new squad61 group + F2/F3 GLOBAL), then test_ui_fit once (Teams panel and the card pages).",
+    "5. Perf: tools/scale_bench 2k units before/after (record CPU load); test_perf_g6 must stay green. Squad AI visits 1/10 of units per tick, cheap reject first.",
+    "6. Determinism: run test_determinism_and_save_load; report moved goldens (hashes move on purpose for AI soaks with squads) with two identical runs.",
+    "7. tools/pt61_squad61.gd playtest flow (RefCounted, func run(pt)): select a squad, open Formations page and click each formation (shot each), Stance page, F2 Teams panel (shot), fight. Run windowed with --ui-playtest-squad61, timeout 900.",
+    "8. Not done: CR to ORCH for match_view.gd: double-click a unit selects its squad, Ctrl+double-click its platoon (helper could be SquadAI.squad_members / platoon_members); Ctrl+Shift+number = add selection to a control group (Ctrl+N assign, N select, double-tap centre, Shift+N add-to-selection already exist in match_view).",
+    "9. Not done: stance in the inspector (g2_inspector not owned: CR or a hud hook line appending SquadAI.stance_of to _insp_info).",
+    "10. Post fact squad.api complete, done, bus DONE, final report."
+  ],
+  "files_touched": [
+    "sim/systems/squad_ai.gd", "sim/systems/movement.gd (formation_slots + _g61_* helpers only)", "sim/systems/orders.gd",
+    "tests/test_squad61.gd", "presentation/ui6/teams_panel.gd", "presentation/hud/g2_commands.gd",
+    "presentation/ui5/panels/hotkeys.gd", "presentation/hud/hud.gd (hook lines only)"
+  ],
+  "test_state": "test_squad61 never ran on a compiling tree. Unverified.",
+  "gotchas": [
+    "Bash heredocs that contain GDScript plus python triple quotes failed to parse in one call: write python edit scripts to the scratchpad with Write, then run them.",
+    "board post types: change_request is not a valid type; use 'need' with topic change_request.<x>.",
+    "squad_ai cache must stay a pure function of state (save/load determinism). Anyone who changes e.squad / e.platoon outside production / company formation must call SquadAI.touch(w) (asked of BEARER61 in fact squad.api).",
+    "e.target set by squad AI is honoured by Combat._pick until its next engaged rescan (32 ticks); squad think re-asserts every 10 ticks.",
+    "Pathless attack_move counts as arrived in Combat: that is why paused attack_move members become move sq=pace.",
+    "Test units get squads by setting e.squad right after spawn plus SquadAI.touch(w)."
+  ]
+}

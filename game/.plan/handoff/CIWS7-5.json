@@ -1,0 +1,54 @@
+{
+ "agent": "CIWS7-5",
+ "predecessor": "CIWS7-4 (.plan/handoff/CIWS7-4.json)",
+ "stopped_on": "ORCH budget.handoff_now (projected 551k of 750k at 108 calls)",
+ "spec": "docs/G7_REFERENCE.md 13.9c-32a (owner: 'CIWS turrets need to have that signatture phlanx BBRRRRTTTTTTTTTT shooting sound + shooting in a strait line wherever the barrel is point w realistic bullet spread the further they shoot'), 13.9c-32, 13.9c-30, 13.9c-28. Brief .plan/agents/prompts/G7-CIWS7-5.md",
+ "done": [
+  "ART tools/art/g7_ciws7.gd: 32 yaw frames (11.25 deg, was 8 x 45) x 6 elevation bands (was 3): bands_deg from content [-60, -47, -34, -21] (ground / low drones, _s + _fire), 4 = +8 level rest (idle frame only), 5 = +32 high (intercepts, _s + _fire); drum swap / dry frames every 2nd yaw (16). Same design (ciws() body untouched apart from yaw = k*TAU/NY and pitch from the band list). To fit the turret budget every frame is cropped to its opaque rect (a band's _s/_fire share one rect so muzzle7 can diff them) and carries its own 'pivot'; built / build_<n> stay full canvas (legacy ArtCatalog path). Barrel states carry the analytic barrel from the 3D model: mz (muzzle px from the drawn pivot), ax (barrel screen dir), mz3 / ax3 (world m / unit dir). Bytes 2835140 <= budget 3145728 (before: 2980800 at 8 x 3, 90 frames); 395 states, 776 files. Contact sheet looked at: same look, more frames.",
+  "SIM sim/systems/ciws7.gd: el is now the band (0..5) whose barrel is closest to the real line from that band's muzzle to the target as the view draws it (el_band: trunnion roof_z + 1.54 m, 0.14 m fwd, barrel 2.54 m; target 1.0 m ground / 1.4 m air; 4 m/tile); EL_REST 4, EL_HIGH 5 (intercept); a mount spinning down keeps its last band until sp == 0, then rest. facing_i = el*8 + ph (now up to 47). Hashes of CN-facility matches move (el values changed) - no golden edited.",
+  "CONTENT content/g7/defs_g7_ciws.json: new block buildings.cn_ciws7.ciws7.elev {bands_deg, trunnion_m, trunnion_fwd_m, barrel_m, tz_ground_m, tz_air_m, tile_m} PROVISIONAL (BAL7 said it does not edit this file).",
+  "PICKER presentation/art/g5_art.gd (CIWS branch): CW_YAWS 32 / CW_REST 4; kc = round(tb / (TAU/32)); r / x on the nearest even yaw; el clamp 0..5; idle in a non-rest band -> rest idle frame.",
+  "VIEW presentation/view/batch_art.gd (claimed, 2 lines): _state_code tb stamp 32 steps (PI/16) + CIWS band (facing_i/8 * 65536) so the frame refreshes when the band changes; _static_art draws a building state at s.pivot when it has one.",
+  "MUZZLE tools/art/muzzle7.gd: per-state pivot; cw fire states diff against the same band's _s frame; ny from manifest g7.yaws for _state_dir / _derive_cw; hidden muzzle (no flash pixels) -> analytic muzzle walked along the barrel's screen yaw to the first silhouette edge pixel (src 'a', 2 states: cw20_2_fire, cw20_3_fire). muzzle7_gen: 'MUZZLE7 GEN units=278 buildings=40 unit_rows flash=3994 edge=738 bld_states flash=411 edge=41'; only cn_ciws7 changed (diffed vs the previous muzzle7.json): 159 f + 2 a. tests/test_muzzle7.gd (claimed, 1 line): the tip check reads a state's own pivot.",
+  "FX presentation/view/fx_layer.gd (CIWS branch): _ciws7_shown(sid) = the frame the mount shows (same picker call as _bld_tips); static ciws7_angles(state, a, bore, from, aim, ht, roof) = drawn barrel vs stream angle (screen when the barrel is drawn >= 6 px/m, and 3D); intercept stream now climbs along the drawn high-band barrel (was a fixed 0.6 x 28 px/tile); evidence ciws7_fx.n_ang / max_ang / max_ang3, ciws7_last.state / ang / ang3.",
+  "TEST tests/test_ciws7.gd: + test_hit_share_falls_with_range (cone_share at 3 / 7 / 14 tiles ~ 1.00 / 0.64 / 0.16 strictly falling, p_share(1, s) == 1; one mount, crawler ~4 vs ~10.5 tiles: ShotFired.sh and hp loss per fire tick near > far; every ShotFired brg == Traverse7.bearing at its tick); + test_drawn_barrel_matches_stream (every bearing 1 deg x ground 2.5-15 / air 2-10 / intercept 2-10 tiles = 21600 cases through the real picker + muzzle table + fx angle helper: max 3D 9.26 deg <= 9.5, max screen (barrel drawn >= 6 px/m) 16.09 <= 16.5; >= 4 px/m 22.64, >= 8 px/m 12.26; the old 8 x 3 layout measured the same way: 117.64 deg 3D, because drones / ground targets drawn below the roof got the +46 / +10 deg air bands). Bounds set from this first measurement as regression guards.",
+  "PLAYTEST tools/pt7_ciws7.gd: + section 3b: one mount, close (~4 tiles) and far (~10.5 tiles) crawler legs: 8 fire ticks each recorded, sim paused on a burst frame, each ShotFired replayed into fx: every round on the brg ray, mean / max spread, on / past / ground, frame + barrel angle; spread wider far; far rounds miss; BRRRT loop start (audio ciws_log by sid). Stream stills replay the burst into fx with the PAUSED banner hidden and Engine.time_scale frozen mid-flight. Ground burst catch now any depressed band (0..3). Shots check >= 12."
+ ],
+ "results": {
+  "test_ciws7": "RESULT pass=11 fail=0 (3 runs: .plan/ciws75_test_ciws7_run1.log, _run2.log, .plan/ciws75_test_ciws7_final.log; test_hash_twice_same included)",
+  "test_muzzle7": "RESULT pass=8 fail=0 (.plan/ciws75_test_muzzle7.log, 'MUZZLE7 tips checked=7438 ... bad=0')",
+  "test_audio7": "RESULT pass=12 fail=0 (.plan/ciws75_test_audio7.log)",
+  "test_art7f": "RESULT pass=8 fail=0 (.plan/ciws75_test_art7f_final.log)",
+  "pt7_ciws7_run1": "PLAYTEST RESULT pass=27 fail=1, 0 SCRIPT ERROR (.plan/ciws75_pt7_ciws7.log; shots .plan/shots/CIWS7/pt_c75/). Fail = ciws7_brrt_loop_started: the flow read the audio log key 'id' (loop voice) instead of 'sid' (mount) - flow fixed. Stream: close 3.96 tiles share 1.00, 20/20 rounds on target, mean spread 0.220 tiles, frame cw5_1_fire, barrel vs stream 1.8 deg 3D / 0.9 screen; far 10.47 tiles share 0.29, 7 on / 13 ground, spread 0.532, max lateral 0.820, frame cw6_3_fire, 4.4 deg 3D / 4.7 screen; 20/20 rounds on the brg ray both legs.",
+  "pt7_ciws7_run2": "PLAYTEST RESULT pass=28 fail=0, 0 SCRIPT ERROR (.plan/ciws75_pt7_ciws7_b.log; shots .plan/shots/CIWS7/pt_c75b/). close 3.38 tiles share 1.00, 20/20 on, mean spread 0.184, frame cw6_1_fire, barrel vs stream 4.1 deg 3D / 2.4 screen; far 12.54 tiles share 0.20, 6 on / 14 ground, spread 0.623, max lateral 0.965, frame cw8_3_fire, 4.0 deg 3D / 0.4 screen; BRRRT loop starts for the mount: 5."
+ },
+ "files_changed": [
+  "tools/art/g7_ciws7.gd",
+  "assets/art/g7_ciws7/ (regenerated: manifest.json, 774 building PNGs + icon)",
+  "sim/systems/ciws7.gd",
+  "content/g7/defs_g7_ciws.json (new elev block only)",
+  "presentation/art/g5_art.gd (CIWS branch + 2 consts)",
+  "presentation/view/batch_art.gd (2 lines)",
+  "tools/art/muzzle7.gd",
+  "assets/art/muzzle7.json (regen: cn_ciws7 only)",
+  "presentation/view/fx_layer.gd (CIWS branch)",
+  "tests/test_ciws7.gd",
+  "tests/test_muzzle7.gd (1 line)",
+  "tools/pt7_ciws7.gd",
+  ".plan/ciws75_*.log (evidence)"
+ ],
+ "remaining_exact_steps": [
+  "1. \"$G\" --headless --path . --import (the regenerated CIWS PNGs in assets/art/g7_ciws7/ + the 6 CIWS wavs need .import files for export builds; judge by 0 ERROR lines, the editor may segfault on exit after DONE reimport). NOT run.",
+  "2. Optional polish: the PAUSED banner still shows in the stream stills (hud.suppress_banner lookup via mv.get_parent().hud had no effect); the stream itself is clear of it."
+ ],
+ "known_limits": [
+  "Barrel vs stream is not exactly 0: yaw is quantised to 11.25 deg and elevation to 4 aim bands 13 deg apart; measured max 9.26 deg 3D over all bearings / ranges. A 33rd+ yaw or a 5th aim band does not fit the 3 MB turret budget (now 2.84 MB).",
+  "Seen nearly end-on (barrel trained away from the camera, ~225 deg, bands -34 / -21) the drawn barrel is a short stub: screen angle there is large (22.6 deg for barrels drawn 4-6 px/m) although the 3D error is small; the muzzle there is hidden behind the radome (tip = silhouette edge).",
+  "At -60 / -47 deg the barrels point below the roof plane (the mount sits on the roof corner); a real Phalanx depresses to about -25 deg. Kept so the drawn barrel follows the stream down to targets 2-5 tiles from the building (owner: 'wherever the barrel is point'); engagement rules unchanged (BAL7's).",
+  "Hashes of matches with a CN facility move (CIWS el values); no golden edited."
+ ],
+ "shots_posted": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt_c75b/ciws7_stream_close_z250.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt_c75b/ciws7_stream_far_z140.png"
+ ]
+}

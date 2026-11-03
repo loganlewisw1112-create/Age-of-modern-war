@@ -1,0 +1,46 @@
+{
+  "agent": "WOUND7",
+  "gen": 1,
+  "reason": "budget.handoff_now at 71% (~100 tool calls)",
+  "done": [
+    "content/g7/rules_g7_wounds.json: rules.g7_wounds (zones, posture/cover/facing mods, bleeding, care, survival, scars, auto care, panic) + rules.g7_shrapnel (profiles grenade/drone/mortar/shell, shell_scale, detail table, cover_block). All PROVISIONAL. wounds.gd reads the file directly until content/g7 is in Content FRAGMENT_DIRS (CR posted).",
+    "sim/systems/wounds.gd: applies(e) (single-soldier infantry: morale, no comp, squad_size<=1), zone_weights/pick_zone (w.rng, one draw), apply_hit(w,e,zone_hint,dmg,src)->{zone,result}, go_down (G5 Medical Wounded state + down_bleed_out_s clock), is_down, crawling, move_mult/acc_mult/reload_mult, state(e), render_entry(e) {z,f,p}, puncture(w,e,src); tick = freeze->flee pass, staggered bleed pass, care jobs (buddy/medic/drag), auto care every 10 ticks (idle units only: medic within 12, squadmate within 6; idle evac carrier within 18), commands treat_casualty {unit_id,target,drag_to?} and evacuate_casualty {unit_id,target} (reuses Medical set_auto_evac).",
+    "sim/systems/damage.gd: zone path inside apply_hit (Wounds.apply_hit replaces the hp write for hit-zone soldiers), _zone_after (head kill final, down -> go_down only if Medical.has_medical else KIA = ORCH G5 rule kept), _kill helper, wound_hit(w,shooter,target,dmg,zone_hint,sf) for fragments.",
+    "sim/systems/shrapnel.gd: burst(w,pos,profile,src,plain=true,grid_ok=false)->{rays,hits,blocked}; analytic ray-in-silhouette count from one w.rng offset; Damage.line_clear walls block; cover_block rolls; blast core; flinch suppression; ray count by detail (FULL unit count); skips airborne units (is_air / air* move class / aircraft / launched_drone unless air_landed) per DRONE7 report.",
+    "sim/systems/combat.gd: arm wounds -> acc x Wounds.acc_mult (same single rng draw) and cooldown x Wounds.reload_mult; artillery _splash: hit-zone soldiers skip plain splash and get Shrapnel.burst(from_weapon(s)) (also when only inside the 1.5x fragment reach).",
+    "sim/systems/morale.gd: realism pass mvm x Wounds.move_mult (legs/crawl/drag); _break -> visible panic for hit-zone soldiers (panic_pick: cower/freeze/flee/drop weighted by steady trait, vet>=2, fatigue; cower/freeze only under fire), _flee split out, _rally clears panic (drop = 10 s no fire).",
+    "sim/systems/medical.gd: _bleed holds the clock when e.wstab; _revive -> _g7_scars (wz zones appended to e.scars, capped scars_max, all G7 wound fields cleared).",
+    "presentation/ui7/wound_card.gd: body diagram + status words; wants(e), set_unit(e), set_state(st).",
+    "tests/test_wound7.gd: 12 tests, 12/12 PASS.",
+    "tools/pt7_wound7.gd: written, NOT RUN yet.",
+    "Board: facts wounds.api, shrapnel.burst (posted as stubs; now complete), wounds.render_fields (complete). CRs: LOOK7 change_request.render_snap_wounds, ORCH change_request.hud_wound_card + change_request.content_g7_fragments, SQUAD7 change_request.hotkeys_casualty. DRONE7 answered (airborne skip)."
+  ],
+  "remaining": [
+    "1. SQUAD7-2 ask (1): in morale.gd _realism_pass, infantry branch, right after the Wounds.move_mult line add: `if e.has(\"gait\"): mv *= Movement.Formations7.gait_mult(e)` (Morale preloads movement.gd; Movement has const Formations7). Note mvm refreshes every fatigue.update_every ticks.",
+    "2. SQUAD7-2 ask (2): combat.gd _unit_tick (~line 1010): the early return `if tgt < 0 and ot != attack/idle/hold/attack_move and no recent hit: return` blocks fire for move orders; exempt orders with e.order.bk (`and not bool(e.order.get(\"bk\", false))`), and make sure the move order is kept (the engage path must not stop the path / replace the order for bk moves: check _engage and the `if e.moving` branch ~line 1028). Add a test: a unit with order {type:move, bk:true} fires while moving.",
+    "3. test_squad61::test_low_hp_member_falls_back fails at tests/test_squad61.gd:171 'Out of bounds get index 43': the enemy rifleman `en` (hold_fire) is now killed within the 90 ticks by the 3-man squad because hit zones are more lethal (head x2.5 + 60% head kill, no medical capability -> KIA). Not a crash in sim code. Fix belongs in the test (SQUAD7-2 owns it): cache `var pe: Vector2 = w.entities[en].pos` before the loop and use it at line 171. Post this triage to SQUAD7-2 if they have not seen it.",
+    "4. Run tools/pt7_wound7.gd windowed (one at a time, timeout 900): \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/WOUND7\" --ui-playtest-wound7 ; must print PLAYTEST RESULT all ok and 0 SCRIPT ERROR; fix flow issues (likely: hospital placement, move command target format, timing).",
+    "5. Golden moves for ORCH: second test_hot_state run to show stability (run 1 values below), then post fact gold.wound7_moved.",
+    "6. Cost: run tests/test_wound7.gd directly with Godot to capture the print 'WOUND7 cost: 16-rifle fight 300 ticks: wounds off X ms, on Y ms' (run.sh filters prints) and a 2k-fight bench delta (tools/bench.gd / scale_bench AB) on a quiet PC.",
+    "7. Re-run --only for: test_wound7, test_damage, test_medical, test_real61, test_g2_scenarios, test_support, test_exo, test_mil, test_squad61 (after SQUAD7-2 test fix), test_ui_fit (wound_card is not hooked yet).",
+    "8. Post done + bus DONE; final AGENT_RULES report."
+  ],
+  "files_touched": ["sim/systems/wounds.gd", "sim/systems/damage.gd", "sim/systems/combat.gd", "sim/systems/morale.gd", "sim/systems/medical.gd", "sim/systems/shrapnel.gd", "content/g7/rules_g7_wounds.json", "presentation/ui7/wound_card.gd", "tests/test_wound7.gd", "tools/pt7_wound7.gd"],
+  "test_state": {
+    "test_wound7": "RESULT pass=12 fail=0 / TESTS OK",
+    "test_damage": "RESULT pass=10 fail=0 / TESTS OK (after the G5 has_medical rule)",
+    "test_medical": "RESULT pass=8 fail=0 / TESTS OK",
+    "test_real61": "RESULT pass=8 fail=0 / TESTS OK",
+    "test_g2_scenarios": "RESULT pass=7 fail=0 / TESTS OK (after cower/freeze only under fire)",
+    "test_hot_state": "pass=11 fail=6: GOLD/GOLD_FLAT moved (expected: infantry fights now use hit zones). Run 1 values: 2k_fight/on ed132ee852ce60df4542c1261db3656c3624e6b6622f5d154869c6b689c73c32, 2k_mixed/on eb4f5c7b8437018d3660002b5ffd2915b71f494bdcdcb4a5ea5064ec583b3899, 2k_fight/off 63cdb32529d2ac70424d4462af57f6b7334547b552be4730cfaa7f65a0064643, 2k_mixed/off 0165774c52c3339f8bfc0bae4e7874b25593373d69f3bdd575f810df9f25ad72, 10k_fight/on 7ff975cb63167972e275293b76e50837e32f7fb1db6d694c86c25fb41cd36b0a (truncated in output; rerun for full), flat: 2k_fight/on 236d394298a76df011bb81a67681c16f961fe3c0fc8d58003eb85f8fe7f87434, 2k_fight/off 006b70f1949eaeb6050c21946e3f1da393326d9e57364e6cf8a3538dd70f3434, 2k_mixed/on a1ceb521023e7b7fedbbac9faec2fc4c3f7dbb4c40c89d2b2a940df0fc125bd1, 2k_mixed/off ccd8014c816ca203081f4a043a0e8991420459db5f9e298842b929b5c5b85e55, 10k_fight/on adac907b17bfb42b33b5236f92373f88039c5119892dfe788fab517f6306e9d1. threaded == unthreaded (2k_fight/on, 2k_mixed/on identical); perf-path on/off parity tests passed; 10k_march unchanged. Tree also has other G7 agents' changes, so the move is not attributable to WOUND7 alone. Only ONE run so far (stability not shown).",
+    "test_squad61": "test_low_hp_member_falls_back fails (see remaining 3)"
+  },
+  "gotchas": [
+    "post.mjs has no change_request type: post CRs as type `need` with topic `change_request.<x>`.",
+    "Down state needs Medical.has_medical(owner) (ORCH G5 rule) in Damage._zone_after and the bleed pass; Wounds.go_down itself is unconditional (tests / commands).",
+    "Wounds reached from other sim files as SimWorld.Wounds (no preload: avoids cycles); shrapnel.gd preloads damage.gd; combat.gd preloads shrapnel.gd.",
+    "Shrapnel grid_ok=true only inside Combat (combat_ng / combat_grid are stale outside Combat); standalone bursts scan SimIndex units.",
+    "Care jobs set the carer order to {type: move|hold, care: cid}; _end resets it to idle only when order.care matches.",
+    "run.sh filters print() lines; run Godot directly to see the cost print."
+  ]
+}

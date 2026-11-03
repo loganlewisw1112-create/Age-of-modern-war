@@ -1,0 +1,44 @@
+{
+ "agent": "FACB7-2",
+ "state": "stopped on budget.handoff_now (ORCH) at ~51 calls / ~500k tokens; tree compiles (generator ran, tests ran with script_errors=0)",
+ "current_test_failures": [
+  "test_art7f::test_door_sides 'workshop door side (got 2, expected 3)': STALE FIXTURE from FACB7's layout (workshop moved to [16,9,4,4]; json door [15,10] faces the x12..15 spine -> 2 is correct). Fix: expect 2 (and add gate_inner faces==3 check). Not edited yet.",
+  "test_art7f::test_interior_art_fits_zones 'drone_bay art drawn at the json zone size (got [4,6], expected [4,2])': ORCH ran before FACB7-2 regenerated assets/art/g7_fac7f; the regenerated manifest has g7_fac_dronebay zone [4,2] (fw 204). Re-run to confirm.",
+  "test_cnfac7::test_facb7_building_services (quarantine x2) + test_facb7_foot_entry_mantrap: CAUSED BY the FACB7-2 ECP baffles (bisected: with baffle_def disabled test_cnfac7 = RESULT pass=32 fail=0). The tests spawn their soldier south of the gatehouse where baffle (18,29) now stands. Baffles are now DISABLED in json (baffle_def \"\", list kept). Next: move the tests' start cell to the corridor entry (15,28)/(16,28) or route them, then set baffle_def back to cn_ecp_baffle.",
+  "test_wallwalk7 2 fails (soldier stops 1 cell short of the wall top): NOT caused by FACB7-2 lockers (bisected: still fails with locker_def disabled); likely another live agent (Sentinel garrison crowding / SENT7 seeding) - check."
+ ],
+ "done": {
+  "sim": "cn_facility._raise spawns SENT7 cn_sentinel_barracks at compound [24,3] (F.bar), 9 cn_ammo_locker parts (json lockers), ECP baffles (json baffles, def cn_ecp_baffle added; currently disabled); render_entries adds cp, bar, faces",
+  "art (tools/art/g7_fac7f.gd -> assets/art/g7_fac7f, 327 files)": "g7_fac_gatehouse (cn_checkpoint: built/open_out/open_in/lockdown + _damaged), g7_fac_linkwall sheet (cn_link_wall, gate-thickness walls on the bastion line), g7_fac_baffle sheet, cn_ammo_locker (built/empty/damaged), g7_fac_magazine (+_ruin), g7_fac_armory, g7_fac_aid, g7_fac_barracks (+_ruin), g7_fac_fuel (flat), g7_fac_runoff, planning room comms/EW mast, decon hall reinforced clean-exit door, tower static roof RWS removed (ring kept for LIFE7-2)",
+  "entity_layer": "FAC7F_ZONES + FAC7F_FLAT for the new zones, door side from render_entries faces (inner APC gate now on the APC axis), ruin states from mag/bar, _facb_px draws gatehouse/link walls/baffles, cn_magazine + cn_sentinel_barracks sprites skipped (zone art)",
+  "board": "seq 3775 lockers/barracks to SENT7, 3776 roof gun to LIFE7-2, fact facb7.zone_heights"
+ },
+ "art_drawn_vs_placeholder": {
+  "drawn (FACB7-2 art)": [
+   "gatehouse",
+   "link walls",
+   "lockers",
+   "magazine",
+   "armory",
+   "aid station",
+   "barracks",
+   "fuel point",
+   "runoff",
+   "EW mast",
+   "towers (ring)"
+  ],
+  "not verified in game yet": "all of the above: no pt7_art7f run / screenshots taken; only generator contact sheets (scratchpad s1.png/s2.png) were looked at",
+  "still old/placeholder": [
+   "WTUR7 wall turrets: json still uses a_t7_hmg_nest sentries (WTUR7 fact seq 3650 start list not applied)",
+   "baffles not spawned (disabled)"
+  ]
+ },
+ "next_steps": [
+  "fix cnfac7 mantrap/quarantine test start cells, re-enable baffle_def",
+  "test_art7f door_sides fixture -> 2 for workshop",
+  "run pt7_art7f windowed; shots at zoom 1/1.75/2.5 of compound + each new piece; Read every PNG",
+  "check link wall alignment in game (side 0/1 from gate_outer centre) and gatehouse/baffle masks",
+  "magazine door faces north (hidden from the camera): consider a visible headwall detail",
+  "apply WTUR7 wall turret start list (seq 3650)"
+ ]
+}

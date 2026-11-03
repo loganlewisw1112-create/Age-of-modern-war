@@ -1,0 +1,16 @@
+{
+ "agent": "VIS7-2",
+ "n": 2,
+ "reason": "done",
+ "done": [
+  "vis7_layer: WalkerBlownUp = core flash, 200 px ground shockwave + dust skirt, blast sheet at 2.0x, 9-fireball cluster (r to 40) rolling into a mushroom cap, 26 sparks + 10 tumbling burning hull plates, 16 s smoke column, 20 s embers, 30 s burnt crater with burning hull chunks (1.4 s blast)",
+  "vis7_layer: heavier topple (fall eased pow 2.6: slow tip then gravity, impact earth debris), harpoon cable capped at 12 tiles (slack loose end beyond)",
+  "vis7_layer: draw-over fallback removed (entity_layer x7 hook landed via CNFAC7-3): a toppled walker is drawn once, inside entity_layer's batch",
+  "vis7_layer: .50 fire / belt change now override the static launcher aim pose (before: once a pod was raised the gun frames never showed)",
+  "vis7_layer: event fast filter (EV_TYPES dict, ShotFired only while APCs are tracked) 0.21 us/event, stale APC/walker state pruned; backblast cone 44 px + lingering smoke 2.4 s",
+  "VIS7_OFF=1 env switch (vis7_layer + minimap creep no-op) for bench A/B only",
+  "pt7_vis7: dome APC parked + re-raised until shown; spitters in .50 range + wait for an APC ShotFired; walker in launcher range; salvo shots wait for the new salvo and frame the firing launcher; PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR"
+ ],
+ "remaining": [],
+ "evidence": ".plan/shots/VIS7-2/vis7_*.png (run9), run9.log, bench_fps.log, ab.sh"
+}

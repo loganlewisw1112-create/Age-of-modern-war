@@ -1,0 +1,38 @@
+{
+  "agent": "ED1",
+  "gen": 1,
+  "reason": "guard budget.handoff_now at calls=71 (projected 510000 of 700000; ED1 self-estimate 60k+5k/call)",
+  "done": [
+    "Tasks 2-9 implemented in code: presentation/editor/ (editor_scene, editor_panels, editor_view, editor_overlay, editor_minimap, editor_widgets, editor_doc, brushes, brushes_water, brushes_objects, symmetry, decor_catalog, tab_base, tab_map, tab_terrain, tab_water, tab_nature, tab_resources, editor_demo)",
+    "Task 1 editor scene: non-stepping SimWorld whose map IS doc.map; reuses terrain_layer (rebake_cells for changed chunks), entity_layer (rebuilt at stroke end when terrain changed, for tree/rock decor; resources + ED2 entities synced into world.entities), camera_rig; top bar New/Open/Save/Save As/Undo/Redo/Validate/Test Play/Exit; left tab bar with register_tab API; right minimap (click/drag jumps), symmetry, layers (grid, decor, units, passability per class via Terrain.passable), properties, issues with Go buttons; status bar",
+    "Task 10: main_menu 'Map Editor' button (signal editor_requested); main.gd open_editor/_close_editor/_editor_test_play; show_menu returns to the hidden editor after a test play; --editor, --editor-open=PATH, --editor-demo=ABS_DIR args",
+    "tests/test_editor_core.gd: 10 tests (shapes/paint/scatter, line/rect, symmetry transforms + involutions + footprints, undo/redo exactness incl. 200 cap + scenario + custom command, river, lake/ocean depth falloff + beach ring, bridge validation, decor/resources, editor scene smoke through every tab off-tree, 256x256 brush speed). --only run: RESULT pass=10 fail=0, TESTS OK"
+  ],
+  "remaining": [
+    "1. Post `fact ed1.framework_ready` if the seq below is missing (posted with this handoff).",
+    "2. Apply THREAD change_request seq 1462 to presentation/main.gd _process: before reading match_view world in the 0.25 s end check add `if match_view.has_method(\"sim_busy\") and match_view.sim_busy(): return`.",
+    "3. Windowed screenshots (NOT YET RUN): \"$G\" --path . -- --editor-demo=\"D:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/ED1\" (wrap in .plan/hb.sh). It writes 01_map_tab..07_map256.png, prints EDITOR_SHOT, EDITOR_DEMO validate/save lines and EDITOR_FPS_256 min/median/max. View PNGs; fix layout/visual issues found (editor_demo.gd is untested in a window).",
+    "4. Check the 60 fps on 256 requirement from EDITOR_FPS_256; if low, likely costs: entity_layer rebuild at stroke end (_build_decor loops all cells), overlay redraw with many decor entries, minimap queue_redraw every frame.",
+    "5. Verify MapIO.save/read round trip from the editor once MAPIO bodies land (save_to/open_path call MapIO.save(path, doc.map_for_save(), doc.scenario_for_save()) / MapIO.read). Demo prints EDITOR_DEMO save err=...",
+    "6. Full suite once inside hb.sh: bash .plan/hb.sh ED1 <calls> <tokens> full -- bash tests/run.sh",
+    "7. Kill leftover godot processes started by the demo (filter by --editor-demo in the command line)."
+  ],
+  "files_touched": [
+    "presentation/editor/*.gd (19 new files listed above)",
+    "presentation/main.gd (editor scene switching only)",
+    "presentation/menu/main_menu.gd (Map Editor button + editor_requested signal only)",
+    "tests/test_editor_core.gd (new)",
+    ".plan/handoff/ED1-1.json"
+  ],
+  "test_state": "bash tests/run.sh --only=test_editor_core -> RESULT pass=10 fail=0 files=1, TESTS OK (last run 2026-10-24 ~16:25). Full suite not run. Windowed demo not run.",
+  "extension_api_for_ED2": "Create res://presentation/editor/ed2_tabs.gd with `static func register_editor(editor) -> void`; editor_scene loads it if it exists. editor.register_tab(id, title, panel: Control, order:=100) (ED1 orders 10..50; panel.setup(editor) called; active panel = map tool with optional tool_begin/tool_drag/tool_end/tool_cancel(cell)/tool_preview(cell)->{cells,color,lines,points,text}/tab_activated). editor.doc: map/scenario (MapIO shapes; scenario.players[i].start Vector2i), begin_stroke(label)/mark(cells)/end_stroke(), push_command({label, undo: Callable, redo: Callable}), apply(brush, cells, params, symmetric:=true), sym_cells(cells), symmetry. editor.stroke_done() after a tool finishes. editor.view.sync via editor.view._sync_world() after changing scenario.entities (display entities: units via spawn_unit, buildings as plain dicts). editor.status(text,color), editor.set_properties(title, lines), editor.test_play_handler = Callable(editor), editor.validate_handler = Callable(editor)->Array of {code,msg,cell?}, editor.request_test_play(cfg) -> main.gd starts cfg, hides the editor and returns to it when the match is left via the menu. tab_base.gd (extend it) gives brush/line/rect strokes + sym_footprints(origin,size).",
+  "gotchas": [
+    "Bash heredocs failed in this harness ('unexpected EOF looking for matching quote'); use the Write/Edit tools or python - <<'PY' (that one worked).",
+    "Untyped refs (ed, ev, v) break `:=` inference: write `var x: Vector2 = ev.world_to_screen(...)`.",
+    "Do not name members size/show/name on Control/Node2D subclasses (tab_base uses bsize, view uses layers_on).",
+    "tests run before the SceneTree loop: Engine.get_main_loop() is null in tests, so the smoke test calls ed._ready() off-tree; camera.setup is skipped when not inside the tree.",
+    "Symmetric scatter is rolled on the original cells, then mirrored (doc.apply pre-filters strength<100; nature/resources tabs mirror picks), so mirrored maps stay fair.",
+    "Trees are FOREST terrain (renderer draws them), not decor entries; solid decor writes BUILDING and the eraser resets BUILDING/RIDGE under it to GRASS.",
+    "map.decor entries drawn only by the editor overlay (poi_decor art when present, coloured footprint otherwise); the game renderer does not draw map.decor today."
+  ]
+}

@@ -702,6 +702,27 @@ prototype misfires.
   salvage / reverse-engineering economy, sector status board, ammo dashboard. Most machine concepts offered beyond
   those listed in C3-C4 (kept as options for G8).
 
+## Pre-start decisions (owner Q&A 2026-11-02; clarifications, no Done-when check weakened)
+- **Check-ins:** run all 6 waves straight; screenshots forwarded as features land; stop only at the wave-5 look
+  checkpoint and at the end (plus any Stop-if rule).
+- **E2 sim gate reading:** sim ms/tick <= G6 is measured on the existing 2k-unit benchmark load. The LP 1,000+ peak is
+  judged by fps (p10 >= 60) and by beating G7's LP figures. Every other E2 / Done-when 3 condition stands as written.
+- **Names:** our B6 gunship stays **CONDUCTOR**; the hive's hidden commander (C4) is **the Hollow King**.
+- **Voice + music:** generated in-house, no outside services. Locally synthesized speech, processed per voice (radio
+  filter, distorted Overmind, synthetic robot voice, tired war-mind officer); adaptive score built procedurally from
+  script-made synth and drum layers.
+- **Difficulty (the one fixed level):** brutal but winnable. Most first runs end in a last stand; a good player who
+  secures the rear, uses kill zones and raids the cores wins about 1 run in 3; pyrrhic wins are common.
+- **After the ~60-min peak:** the tide holds at full siege (with breathers) until the cores fall or the core ring is
+  overrun. No timer ending.
+- **[PROPOSED] items:** all kept, built as written.
+- **Look checkpoint format:** in-game frame strips of every sample sent to the owner, plus a small packaged showcase map;
+  each sample approved or rejected individually.
+- **Limit:** none. Finish every wave to the frozen Done-when.
+- **Order:** the build order below, unchanged.
+- **Before wave 1:** commit the G7 leftovers on C: (staged by path), health-check D:, copy G7 to D: if the drive is clean,
+  then cut branch `g71`.
+
 ## Done-when (FROZEN 2026-10-31; never weaken a check to make it pass — stop and ask instead)
 1. Full suite 0 FAIL / 0 SCRIPT ERROR, every new G7.1 suite included; determinism hash identical across two runs.
 2. AIRFIX matrix green: every aircraft type x pad state lands centred on a correct pad or holds with an alert; 0

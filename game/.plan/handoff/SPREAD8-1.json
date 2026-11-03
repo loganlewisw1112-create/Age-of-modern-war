@@ -1,0 +1,6 @@
+{"agent":"SPREAD8","status":"PARTIAL",
+"done":["sim/systems/spread8.gd: in-contact combat spacing (separation radius 0.5 for foot soldiers Combat._engage marked, e.sp8 saved; Movement._sp8_apply on native paths, Spread8.rad_of on GDScript paths)","Movement._flow_path cut parameter + Spread8.cut (rules cut_tiles, OFF = 0)","stray8 exact cost cuts: kneel_still cache, building AABB pre-reject in _bld_on_line (SPREAD8_R=0 hash == pre-change baseline 954b2508...)","so_rescue SHIFT+Y -> SHIFT+X (collisions() empty), pt7_specops8 + g2_commands comment updated","test_dronebay7 auto_off_then_manual: militia spread 6 tiles (setup only, Lethality authority cited)"],
+"ab":{"before":"shots 7691 ff 794 stray 254-291us/call (2.35-2.7 ms/tick) disc 3.5-4.1 ms/tick hash 954b2508","after":"shots 8266 ff 1308 stray 242us/call (2.17 ms/tick) disc 2.7 ms/tick hash 84f49f10 (x2 identical)","strays_off_after":"11058"},
+"not_met":"formations7 gate shots >= 10263 (8266). Tried: deploy-on-contact lateral walk (2839 shots), flow cut-over 32/48 (5317/6529), retarget around target (6509), hold_s 0.3 (6173). Traverse7 lay delays any retarget.",
+"next":"owner decision: the gate band vs discipline in a 1000-v-1000 road blob; options: shorter clear_tiles/kneel_still, or re-band the gate (owner only)",
+"tests":"see final report"}

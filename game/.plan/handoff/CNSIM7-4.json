@@ -1,0 +1,37 @@
+{
+ "agent": "CNSIM7-4",
+ "gen": 4,
+ "reason": "budget.handoff_now (guard: projected 560k of 750k at 64/140 calls)",
+ "done": [
+  "THREAT7 asks (apc7.gd): near() is now always an exact sorted scan (no Combat neighbour-grid cache); _man_mounts, _pin and _disable read e.cd_ticks instead of HotState.get_cd; fire_panel + cn_panels validate check Threats7.part_ok(panel_l/panel_r) through the guarded callf (both wrecked = no panels, 'Side panels wrecked.'). m_walker AND m_colossus are covered by rules.g7_cn.heavy.defs (is_heavy_walker also accepts the def flag heavy_walker). The save round-trip TEST for a group mid-pincer is NOT written yet (remaining 3).",
+  "apc7.gd new: damage_mult applies heavy.direct_mult (x front_mult on a front hit) to CN direct fire (.50s, rifles, DMR, harpoon gun) on a heavy walker; dome absorb x heavy.dome_mult for heavy-walker slugs; the APS ignores heavy-walker shots (shot_blocked skips _aps_try when src is a heavy walker); _disable on a heavy walker: duration x heavy.emp_scale, then heavy.emp_immune_s before another stun (no EMP chain-lock); mark() keeps sensors >= heavy.sensors_floor on a heavy walker; attack_rounds_left(e) (rockets minus smoke); restock clears the soldiers' lim_n.",
+  "counter_nanite.gd new: engagement mode (cn_pincer {mode: head_on | pincer | empty}; head_on = every hull in the front arc via pincer.head_on_angles, operators approach from the front); limpet carry per soldier (ops_engage.limpet.carry {hunter 1, gunner 1}, field u.lim_n, lim_left()); out of limpets: gunners re-board, hunters keep tether range; strike gunners out on a downed walker capped by ops_engage.gunners_per_apc (u.cn_apc tag, _gunners_out); harpoon hit damage from ops_engage.harpoon.damage; planting a limpet on a standing, unstunned walker risks a stomp (ops_engage.limpet.stomp_chance / stomp_dmg, event WalkerStomp, Damage.apply_hit cls artillery); immediate volley when the walker goes down (E.dv); break contact counts attack rounds only (smoke no longer blocks 'out of rockets').",
+  "content/g7/defs_g7_cn.json rules.g7_cn (all PROVISIONAL) = sets 1..9 applied in order (.plan/cn4_set1.json .. cn4_set9.json via: python .plan/cn4_rules.py <set>; keys ending in ! replace instead of merge). Current: launcher capacity 36, default_load tandem 15 / emp 5 / thermite 5 / he_frag 3 / disruptor 5 / smoke 3, reload_s 20, tandem 12 stagger 0.5, emp 3 stun 1.5, thermite 5 burn 3, disruptor 5 sensors 10 mark 1.15; heavy front 0.25, flank_fixed 1.4, rear_fixed 1.6, stun 1.2, down 1.3, direct_mult 0.3, dome_mult 4, sensors_floor 75, emp_scale 0.3, emp_immune_s 10; topple threshold 17 (x sqrt(hp/950), max 28), decay 0.4/s after 8 s, down_s 5, immune 8; pincer volley_s 14 + head_on_angles; ops_engage limpet 12 dmg, cd 20, stagger 2.5, carry hunter 1 gunner 1, stomp 0.3 / 110, gunners_per_apc 1, harpoon dmg 2 stagger 1.0, disruptor dmg 4 sensors 10. Weapon g7_op_harpoon class at -> small_arms (a tether, not an AT gun).",
+  ".plan/cn4_tune.gd = measurement harness. Run: \"$G\" --headless --path . -s .plan/cn4_tune.gd [-- --s=pw,pw2,hw,pc,hc,ow,lone] [--dbg | --dbg2]. All scenarios take ~3-4 min. Logs: .plan/shots/CNSIM7-4/tune0..9.log."
+ ],
+ "measured": {
+  "targets": "walker ideal pincer 45-90 s with >=1 topple; colossus 180-300 s, usually 2 topples; head-on several x longer and usually breaks contact; lone APC cannot solo; one topple window cannot kill an unhurt walker",
+  "baseline (CNSIM7-3 numbers, measured here)": "full group pincer: m_walker 6.0 s, m_colossus 10.2 s, walker dealt 0 damage (APS ate every rail shot, EMP chain-lock, sensors 0).",
+  "set9 (current files)": "pincer m_walker 22.7 s (seed 6) / 37.2 s (seed 9), 1 topple, walker dealt 504-594, 1-2 men lost -> TOO FAST. pincer m_colossus 396.9 s, 2 topples, 3944 dmg to the group, APCs 74%, 7 men lost -> TOO SLOW. head-on m_walker 88 s (2.4-3.9x pincer), no break -> too effective. head-on m_colossus alive after 480 s (996 hp), no break, 19 men lost. One window on an unhurt walker: 189 dmg (survives with 760) OK. Lone APC: dies, walker 844/950 OK.",
+  "set8": "walker 32.7 / 49.9 s, colossus 412.6 s 4 topples, head-on walker 121.7 s, head-on colossus broke (APCs 27%), one window 217, lone OK.",
+  "set6": "walker 40 s, colossus 254 s 3 topples, head-on walker 134 s, head-on colossus broke, one window 380: closest overall, but then the colossus was barely shooting (EMP chain-lock, fixed in set8)."
+ },
+ "diagnosis": "Colossus/walker time ratio ~10 (target ~4). The walker fight is decided by bursts (limpets + the first topple window), the colossus fight by the sustained rocket rate, and the ~165 attack rounds run dry before the colossus dies, leaving slow chip. Direction: cut burst further (limpet 12 -> 8, down_mult 1.3 -> 1.2), keep the sustained rocket dps but make the stock last ~250 s (e.g. salvo 1 + volley_s 7 for a smoother rate), raise per-round damage a bit, and make colossus topples more frequent (threshold_max 28 -> 24). Head-on: front_mult 0.25 -> 0.2, dome_mult 4 -> 5 so it breaks.",
+ "remaining": [
+  "1. Iterate the rules (new set json + python .plan/cn4_rules.py, run the harness) until: walker pincer 45-90 s on seeds 6 and 9 with >=1 topple; colossus 180-300 s with >=2 topples; head-on walker >= 3x pincer and head-on colossus breaks; one window < 950; lone APC cannot solo. Report the measured values.",
+  "2. tests/test_cnsim7.gd: remove the CNSIM7_DBG print in _five_apcs_def; update test_pincer_kills_much_faster_than_head_on_and_topples (bare 5-APC launcher test: new measured ranges) and test_group_pincer_auto_operators_engage_then_remount (cap 2400 ticks may need ~3000); add a head-on group test (cn_pincer mode head_on: >=3x longer or breaks), a colossus group test (>=2 topples, 180-300 s), a one-window test (topple at full hp with the group in slots -> survives). test_topple_window_bonus_damage_and_righting topples with 8 stagger-1.0 hits: threshold is now 17, loop needs ~18 hits.",
+  "3. Save round-trip test (THREAT7 ask): full CN group mid-pincer, run 300 ticks, c2 = SimWorld.from_dict(a.to_dict().duplicate(true)), hashes equal, run both 100 more, equal (pattern: tests/test_threat7.gd test_same_seed_same_hash_and_save_roundtrip).",
+  "4. bash tests/run.sh --only=test_cnsim7 -> TESTS OK.",
+  "5. Windowed playtest pt7_cnsim7 (hb.sh, timeout 900); look at shots 08 / 09 / 10 / withdrawal; the pincer-scene waits in tools/pt7_cnsim7.gd must grow for ~60 s walker fights.",
+  "6. Send SQUAD7-4 need change_request.hotkeys_cn: cn_pincer = P, cn_break_contact = Shift+B (check presentation/ui5/panels/hotkeys.gd for collisions first). Not done.",
+  "7. Final report."
+ ],
+ "files_touched": ["sim/systems/apc7.gd", "sim/systems/counter_nanite.gd", "content/g7/defs_g7_cn.json", ".plan/cn4_tune.gd", ".plan/cn4_rules.py", ".plan/cn4_set1.json .. cn4_set9.json", ".plan/handoff/CNSIM7-4.json"],
+ "test_state": "test_cnsim7 NOT re-run after the edits (baseline before them: direct 21/0). Expect the timing tests and the topple-window test to fail on the new numbers. Code compiles: the harness runs with 0 SCRIPT ERROR.",
+ "gotchas": [
+  "The harness under-counts walker ShotFired; use the walker's ammo drop (--dbg2 prints it).",
+  "rl/limpet in the harness damage breakdown = limpets + thermite burn (shooter id -1).",
+  "Python triple-quoted edits ending a line with a backslash join the lines (still valid GDScript).",
+  "m_colossus ammo_max 60 runs dry in long fights (not CN data)."
+ ]
+}

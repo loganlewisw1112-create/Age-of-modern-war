@@ -1,0 +1,31 @@
+{
+  "agent": "CREEP7",
+  "gen": 1,
+  "done": [
+    "content/g7/rules_g7_machine.json: rules.g7_machine (creep, purge kinds, regrow, ew, cores, phases, wave_units, react), all PROVISIONAL",
+    "sim/systems/creep.gd: coarse creep grid (cell 4 tiles; 128x128 on 512 maps), striped spread (stripe_ticks 20, idle rows skipped), sources = Machine buildings + seeds, falloff/decay, water/burnt/crater/barrier/sterile flags, repair of Machine units/buildings on creep, seeds/nests/burrowed-core seeds with regrowth after a wipe, reveal, purge (standard / seed_hunter / barrier ring or line), burn, crater, jam_link + is_jammed (CNSIM7 CR: no growth / no creep repair inside), detach_leeches (CNSIM7 CR: clears e.leech_on), snap() for the view. State only created by enable() (cfg.creep, cfg.mode last_protocol, seed, purge, core)",
+    "sim/systems/machine_ew7.gd: stun (EMP hold + leech detach), can_hack (refuses e.unhackable / def.unhackable, foot, Machine), jam, takeover (drones pulled toward hacker), held(); auto hacking by rules ew.hackers only in creep matches / cfg.machine_ew7; called from MachineG6.tick (one line + preload added in machine_g6.gd)",
+    "sim/systems/cores.gd: register/place/list/alive_count/lost/walker/countdown_rate/set_phase/phase/phase_info/finish(w,ix,by) (signature kept for CNSIM7 core-breaker), pulse, plating (+max hp), CoreHit intensity, last-core phase 2 uproot -> walker (m_colossus) that heads for g7_cn_facility / nearest enemy building, held by EMP, slowed by leg damage, stopped by barrier cells; drives MachineReact7",
+    "sim/ai/machine_react7.gd: 4 learned reactions strictly in order with NetworkAdapted, latching triggers (reads last tick's events from event_log), think() for AI-run Machine sides (defend sites, hunter packs, raid known facility from w.memory, route-heat ambushes), escalation assault waves",
+    "presentation/view/creep_layer.gd: one quad, L8 textures straight from snapshot bytes, organic Voronoi vein shader with pulse, sterile ground recovering, barrier amber band, revealed seed markers on a child node",
+    "tests/test_creep7.gd: 12 tests, 12/12 green",
+    "tools/pt7_creep7.gd: PLAYTEST RESULT pass=15 fail=0, 0 SCRIPT ERROR; shots in .plan/shots/CREEP7/",
+    "facts posted: creep.api (complete), machine.ew_api, cores.api; CRs posted as need change_request.*: LOOK7 render_snap_creep, orch match_view_creep_layer, WOUND7 core_damage_floor"
+  ],
+  "remaining": [
+    "1. Read the result of `bash tests/run.sh --only=test_hot_state` (was running in background at handoff; it proves the no-creep path keeps the GOLD hash). If it fails, check whether machine_g6.gd's MachineEW7.tick call creates state (it must not without creep).",
+    "2. Re-post fact machine.ew_api and cores.api with state complete once test_hot_state is green.",
+    "3. After LOOK7 adds snap.creep and ORCH wires match_view.creep_layer, rerun pt7_creep7 (it then uses the wired layer) and check creep7_layer logs 'wired by match_view'.",
+    "4. Optional: give the walking core a nav-aware path (it walks a straight line now, stopping at impassable/barrier cells); apply ground height in creep_layer (quad is flat).",
+    "5. Optional perf: 2k-unit sim with creep on (bench) to report share vs the 1.2x G6.1 budget; only the 512 creep-tick-alone number exists."
+  ],
+  "files_touched": ["content/g7/rules_g7_machine.json", "sim/systems/creep.gd", "sim/systems/cores.gd", "sim/systems/machine_g6.gd", "sim/systems/machine_ew7.gd", "sim/ai/machine_react7.gd", "presentation/view/creep_layer.gd", "tests/test_creep7.gd", "tools/pt7_creep7.gd", ".plan/shots/CREEP7/"],
+  "test_state": {"test_creep7": "12/12 TESTS OK", "test_machine_g6": "12/0 TESTS OK", "test_strikes": "5/0 TESTS OK", "pt7_creep7": "pass=15 fail=0, 0 SCRIPT ERROR", "test_hot_state": "NOT VERIFIED (running at handoff)", "cost": "CREEP7_COST map=512x512 coverage=0.996 creep_tick_us_avg=526.2 (Creep.tick alone, 400 ticks)"},
+  "gotchas": [
+    "PackedByteArrays in sys_state are copy-on-write: writers take s.v/s.fl out of the dict, edit, put back (see _clear_cells/_spread). Never edit via a function argument.",
+    "Bash tool: a heredoc whose text contains an apostrophe fails to parse in this environment; use Write/Edit or python.",
+    "Tests: a Human-vs-Machine world with all entities removed ends the match at once; use victory endless (test _setup does).",
+    "A building whose source cell is purged no longer feeds creep (sterile blocks sources) - intended.",
+    "post.mjs has no change_request type: use type need with topic change_request.<x>."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "agent": "AI7-USE-6",
+  "written_by": "AI7-USE-6",
+  "reason": "budget: approaching the 70% guard projection (~96 calls); d7 soaks need ~3 h more at the current machine load (CPU 100%, ~600 ticks/min per soak)",
+  "in_flight": {
+    "lane_d7": "started 18:16 local, detached, TAG=d7 MAXJ=4 GMAX=4 (ORCH-approved 4-config exception), under `timeout 9000` (the lane bash is killed ~20:46 local). Configs: valley_s1 valley_s2 heart_s1 heart_s2 (running), then river_s1 coastal_s2 (not started yet). Log .plan/shots/AI7-USE/run_lane_d7.log; outputs .plan/shots/AI7-USE/soak_<cfg>_d7.txt. At 18:25 they were at t=19-23k of 120k. If the lane timeout fires first, the 4 running Godot soaks will probably keep running and still write their files, but river_s1/coastal_s2 will NOT be started and no summary will be printed: start those 2 by hand (TAG=d7b MAXJ=2 bash .plan/shots/AI7-USE/run_lane.sh river_s1 coastal_s2) once slots free. Grep each file for SCRIPT ERROR before trusting it. DO NOT stop the d7 soaks.",
+    "final_tests": "final tree: test_ai 18/18 and test_ai_g6 9/9 (RESULT pass=9 fail=0, 455 s at CPU 100%), both 0 SCRIPT ERROR. test_ai_air_naval 8/8 (RESULT pass=8 fail=0, 0 SCRIPT ERROR). test_ai_g5 4/5: FAIL test_ai_bench_under_2ms_per_side_5k (199604 ms, 0 SCRIPT ERROR), run at CPU 100% with 4 soaks + other agents' UI tests, so it is probably load-induced (that test is a timing bench) but UNPROVEN; the other 4 g5 tests pass. Re-run test_ai_g5 on a quieter machine before trusting either way; the stall-release / crew_cap additions are O(1) per think"
+  },
+  "done": [
+    "Verified the AI7-USE-5 market rich-buy edit in sim/ai/ai_g6_sea.gd: complete and correct (RICH_SPARE 2500, RICH_STOCK salvage 600 / ore 300, folded into the buy-need loop; it cannot collide with the SURPLUS sell rule or with CHURN)",
+    "sim/ai/ai_stage.gd: moved _note_pre_co's doc comment back above it (the inserted _scarce_hold had split them)",
+    "sim/ai/ai_econ.gd manage_gather: sal_first. When salvage < SAL_LOW (600) and salvage is the larger shortfall against the bank, ore crews are capped at 34% and the stage-bank 75%-ore rule is skipped. The refinery / ammo rules can still raise ore crews. Cause: valley d6 s1 Human A had 6 of 8 crews on ore with 733 ore / 70 salvage, and the Machine had 5 of 6 crews on ore with 12 ore / 344 salvage",
+    "sim/ai/ai_econ.gd crew_cap: wraps the old logic (_crew_cap0). From tick 48000, with salvage < 300, credits >= 300, salvage_left >= 5000 and pop <= pop_cap - 4, the cap rises to max_engineers + 4",
+    "sim/ai/ai_army.gd manage_army: big-map army-stall release. The army counts as stalled if it gains no +2 pop for ARMY_STALL (9600) ticks while home. If the side is also all-in and the army is >= the base attack_pop, thr = army_pop. This is the same release as the AI7-USE-4 hard-cap rule. It logs 'army stalled at pop N for T ticks: what stands goes (threshold X)', and _launch resets the clock (st.grow_pop = -1). Cause: LATE_WAVE_MULT assumes that pop < pop_cap - 6 means the army can still grow. Salvage-starved sides never reach the 1.6x threshold: in valley d6 the Machine (apop 16-19 vs thr 53-56) launched 0 waves on both seeds",
+    "compile clean after every edit; test_ai 18/18 on the final tree (direct Godot run, 0 SCRIPT ERROR); test_ai_g6 9/9 and test_ai_g5 5/5 passed on the tree before the ai_econ/ai_army edits",
+    "lane d6 complete (LANE_DONE d6, mixed tree). Winners: custom_s1 (1, t48341), survival_s1 (1, overrun t13917), assist_s1 (1, t14748), river_s2 (1, t102416), coastal_s1 (2, t67835). Draws: valley_s1, valley_s2, heart_s1, heart_s2 (all 4 started before the fixes), river_s1, coastal_s2. All 11 runs: 0 SCRIPT ERROR, INVARIANTS fails=0. Posted as fact ai.g6_soaks (seq 1598)"
+  ],
+  "remaining": [
+    "1. Collect the d7 results: valley_s1/s2 and heart_s1/s2 on the fixed tree, plus river_s1/coastal_s2 once started. For each file, grep SCRIPT ERROR (must be 0), then read SOAK INVARIANTS / SOAK RESULT / SOAK DOCTRINE / SOAK G6, and count 'army stalled' lines (each one is the new release firing).",
+    "2. If valley still draws: the d6 diagnosis is that both survivors end salvage-starved and the Machine fortress (barriers, spires, sentry, 16 walkers) beats 30-unit human waves, and waves focus m_charging_hub because the HQ is out of BUILDING_NEAR_ARMY range. History: valley drew 27 of 28 soaks since G5. It may need an economy/balance change outside sim/ai (salvage income or unit salvage costs). That is a change_request to the economy/content owner, or an owner decision on the gate.",
+    "3. river_s1 d6 draw: the map's salvage ran out (salvage_left 206). Human B's 2-7 unit waves died on Human A's HQ, which had 3 pop left and was broke. coastal_s2 d6 draw: Human A has ammo 0 / fuel 0. Neither run fired the big-map release (both maps are small or medium, so it is not active there).",
+    "4. Final-gate log evidence still missing from the soaks: subs=0 in every soak, Stage 10 reached in none (stages start at 7-9), and doctrine tags are empty for most sides. test_ai_g6 covers subs/carriers (test_ai_uses_subs_and_carriers) and Stage 10 (test_ai_reaches_stage_10), but only as test PASS lines, not soak logs.",
+    "5. Post ai.g6_soaks again with the d7 lines; the final gate (4 maps x 2 seeds + editor + survival, all with winners) is NOT met as of this handoff."
+  ],
+  "files_touched": ["sim/ai/ai_stage.gd", "sim/ai/ai_econ.gd", "sim/ai/ai_army.gd", ".plan/handoff/AI7-USE-6.json"],
+  "gotchas": [
+    "tests/run.sh buffers all output into a temp file and prints only at the end: a timeout loses everything. Under load, run Godot directly (-s tests/run_tests.gd -- --only=X > log) in the background, wrapped in .plan/hb.sh",
+    "SOAK COMP is pop-weighted, not a unit count; the 'carrier' grep matches the carrier_req diagnostic field, not real carrier use",
+    "Economy.cap_max_for is 200 with a built Company HQ (120 otherwise), so the massed / hard-cap rules almost never fire for sides that own a Company HQ"
+  ]
+}

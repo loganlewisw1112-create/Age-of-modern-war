@@ -1,0 +1,38 @@
+{
+ "agent": "LIGHT7-4",
+ "reason": "budget.handoff_now (ORCH: 75% projected, calls ~75 of 140)",
+ "files_changed": [
+  "presentation/view/fac_atmo7.gd: Foundry bay lights (_plan_bay / _glow_bay / _bay_surface / _bay_dims, BAY_* consts, bay-opening tint lift in DARK_SHADER via uniforms bay[12] / nb, set in _update_lift); armory bay-door bulkhead fixtures dropped (they floated 1.7 m out on the apron); WASH_A 8.0, CORE_A 4.6, WASH_ADD 0.30 / CORE_ADD 0.24 (north/west faces); pane overdraw (_unit_cuts, _pane_hits, _cur_cut, _wr / _wpoly clip, panes carry zr, g.wbb); 13.9c-24d first pass: yard floods (kind 'yard', YARD_* consts, _mk_pool_t(..., inside)), zone masts (kind 'pole' at open zones), MAX_POLES 30, POLE_R 104 / POLE_A 0.46, bigger door pools, LIGHT_CAP 320 -> 480",
+  "tools/pt7_atmo7.gd: LIGHT7_QUICK=bay / pane / yard modes, _overdraw flow (probe light7_pane_overdraw)"
+ ],
+ "done": {
+  "1_foundry_bay_work_lights": "DONE. Lit back wall (light-strip wash), header-strip lamps, gantry downlights (dots + warm apron pools), warm floor / apron pools. The inside is lit by lifting the night multiply tint toward warm white inside the bay's own opening quad (shader, exact what the camera sees through the door) plus additive strip / floor glow; apron pools are cut with the hall's own silhouette. Off when the bay door is down. Shots: .plan/shots/LIGHT7-4/b5/atmo7_bay_night_armory_z3.png (posted shots.best).",
+  "2_perimeter_wash": "DONE. WASH_A 8.0, CORE_A 4.6; north / west faces (additive only, tint not lifted) were blowing out to white when three floods overlapped, so WASH_ADD 0.30 / CORE_ADD 0.24 (was 0.52 / 0.46). South / east unchanged (lift 0.34 / 0.30 + 0.26 additive). Exposure checked on .plan/shots/LIGHT7-4/p3 (out_e_z1, out_gate_z1): no clipped regions, units plainly visible. Small brighter blobs at each flood remain by design (hot cores).",
+  "4_pane_overdraw": "DONE. Units standing in front of a facade (entity_layer.vis_units / vis_sp, drawn7 anchor, art._ec frame size + pivot) cut their sprite rect out of the panes behind them; the pane's room is still drawn around the hole. Display only; no entity_layer change was needed (no CR). Probe light7_pane_overdraw ok (2 attack helis against the command centre, 5 unit rects, 5-7 panes cut). Shot .plan/shots/LIGHT7-4/pn2/atmo7_overdraw_night_planning_z3.png. NOTE: infantry / ground suits never reach window height (lowest pane 4.5 m); this matters for aircraft and tall walkers.",
+  "6_full_playtest": "pt7_atmo7 full, run AFTER the 24d first pass: PLAYTEST RESULT pass=28 fail=0, 0 SCRIPT ERROR (.plan/shots/LIGHT7-4/full/run.log). light7_night_lit: lights 326 (cap 480) fixtures 136. atmo7_frame_cost: layer on mean 21.63 p90 24.82 ms vs off mean 16.59 p90 17.04 ms on a shared PC (about +5 ms: the new yard / pole / bay pools and the 30 Hz glow redraw; measure on an idle PC, see next_steps 4)."
+ },
+ "evidence": {
+  "test_atmo7": "RESULT pass=8 fail=0 files=1",
+  "test_light7": "RESULT pass=5 fail=0 files=1 (not yet extended, see not_done)",
+  "pt7_atmo7": "PLAYTEST RESULT pass=28 fail=0",
+  "shots_posted": "shots.best posted twice: bay + wash + overdraw (seq 6493), compound interior z1 (y2). Not yet posted: p3 shots were included in the first post."
+ },
+ "compound_interior_24d_state": {
+  "built": "inward 'yard' floods on the inner guard-rail post of every even wall section (14 in the standard compound; elliptic wash along the wall foot + hot core, ground inside the compound only, cut by every silhouette); lane poles every ~4 tiles (was 5) with 104 px / 0.46 pools (was 70 / 0.34); one pole at the verge of each open zone (pad, helipad, staging, apc_wash, gate_inner, fuel_point) when _verge_ok finds a spot 3.5 tiles from the others (fixtures counted at night: pole 8, yard 14); door pools 62 / 74 px at 0.50. Lights 326 of cap 480.",
+  "seen_in_shot": ".plan/shots/LIGHT7-4/y2/atmo7_yard_night_z1.png (also z2, wash_z2, staging_z2 in that folder; z2 / wash / staging shots NOT looked at): pads / helipad and wall feet are floodlit, apron by the Foundry is warm and bright; BUT the centre lanes between the command centre, lab and decon still look dark, and a few pale translucent-looking patches lie over low buildings (west garage row around screen (250,430) and (540,520) in the z1 shot, plus a pale quad on the ground south of the decon hall). The patches look like yard-flood / pole pools reaching onto low roofs: not verified which fixture draws them. Mast tint lift is NOT available inside the compound (the dark shader's hex exclusion), so interior light is additive only.",
+  "next_steps": [
+   "1. Find the pale patches: print per-fixture pool bboxes for the polygons that overlap the west garage row (L.geo[0].fix with F.P polys, kind yard / pole / door) and check which silhouette is missing from g.sil (low buildings: garages 46 px come from g.garages; the range building from RANGE_BLD; staging shelters / lab roofs?). Fix by adding the missing occluder to _occ_rects (static, tests/test_no_light_over_buildings will then cover them) rather than lowering alphas.",
+   "2. Dark pockets in the middle lanes: add poles on lane verges the _verge_ok rejects (MAX_POLES 30 is not binding: only 8 poles were placed; lower the 3.5 tile spacing to 2.5, allow candidates on lane kerb lines of wide lanes, and add masts for decon_hall's approach and the lab front). Keep ground light only and mounted on real verges. Target the same additive brightness as the wall-foot washes (0.34 wash / 0.26 core).",
+   "3. test_light7: extend test_light_count_bounded (NOT done): add the yard floods' P2 (F.P2) per fixture with 'core', the zone masts, g.bay pools (3) and assert lights <= LIGHT_CAP 480 at alarm night, g.win.size() <= 160 per facility and counts.panes <= g.win.size() after a night redraw. Add a 'yard' branch to test_fixtures_mounted_on_surfaces (mounted on the inner rail post: at = section centre -/+ 0.2 tile - out * RAIL_OFF, z RAIL_Z, aim inward, pool inside the compound footprint) and a check that g.bay exists for the armory (open quad within the zone rect, pools clear of the hall silhouette).",
+   "4. Cost: atmo7_frame_cost showed +5 ms with the layer on (shared PC). Cheap wins: redraw the glow canvas only every 3rd frame at night for static fixtures (the alarm strobes / beacons need 30 Hz: split into two canvases), cache the per-polygon colour arrays in _glow_bay, reduce BAY_CELLS 6x5 to 4x4. Re-measure on an idle PC before raising LIGHT_CAP again; the cap number to report to ORCH is 480 (was 320).",
+   "5. CR 5927 MAST_TIPS in fac_life7.gd: NOT done (no calls left). Re-measure the command centre's 3 comms-mast pole tips on a night zoom-2.5 shot (EW mast tip 25.6 m = 251 px above its foot) and fix that constant and the mast-blink lines only.",
+   "6. Re-run test_atmo7, test_light7, full pt7_atmo7 after any change; post shots.best for the zoom 1 and 1.75 compound at night once the pale patches and dark pockets are fixed (modes: LIGHT7_QUICK=yard writes atmo7_yard_night_z1 / z2 and the wash / staging views)."
+  ]
+ },
+ "not_done": [
+  "CR 5927 MAST_TIPS re-measure",
+  "test_light_count_bounded extension for core pools, panes, bay pools, yard floods",
+  "13.9c-24d finish: pale patches over low roofs, dark centre lanes, no z2 shot looked at",
+  "frame cost reduction (+5 ms on a shared PC)"
+ ]
+}

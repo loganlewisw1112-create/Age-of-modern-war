@@ -1,0 +1,24 @@
+{
+  "agent": "CARDS8D",
+  "why": "budget.handoff_now at 71% (orch)",
+  "tree_compiles": "yes: --quit-after 60 clean after every edit",
+  "fixed": {
+    "rotation (barracks ROTATE)": "Rest8.step erased e.r8s on a fresh man every second, so the hand-rotation latch was lost and the post never changed hands. rest8.gd: the fresh-erase now skips men with e.c8rot (Cards8c clears c8rot + r8s once he is off his watch post or after rot_max_s). Neutral without cards8c.",
+    "STAND TO": "on a quiet base nobody fit was spare (all on posts / QRF; the resting men were bearers + workers), so no stand-to points were dealt. Cards8c.adjust_jobs: while STAND TO holds and there is no alarm, the QRF job gets 0 slots, so the QRF turns out to the stand-to points. Under a real alarm the board's own rules apply.",
+    "air RECALL / SERVICE": "facility craft have no airfield pad (air_home -1, no free Airfield pad), so Air._go_home did nothing. New Cards8c._send_home: Air's own return first, else land_at the facility helipad (then the facility pad). New Cards8c.returning(w,F,id).",
+    "EVACUATE": "evac_unit now skips carriers that are down, full or already on an evac run (Medical state); new Cards8c.fetching(w,target); c8c_evac refused 'An evacuation is already on its way to him.' when a carrier is already sent.",
+    "test fixes (why)": "test_cards8c aid: the LP start has an evac-capable a_medic_team, so the 'no evac vehicle' case now removes own carriers first; the casualty is made with Medical.wound (setting e.wounded by hand never registered him with Medical, so no carrier could find him); waits Medical.STEP*2 ticks (carriers act on their tick bucket); aid summary checked while he is still on the ground (the ambulance may heal him); added checks: the ambulance is the carrier sent, a second evac refused. air: 'flying home' = Cards8c.returning (ret OR landing ordered on the facility helipad/pad) since facility craft have no airfield pad (13.9c-45). pt7_cards8c.gd: same Medical.wound + fetching fix."
+  },
+  "results": {
+    "test_cards8c": "RESULT pass=7 fail=0 (.plan/c8d_t8c.log)",
+    "test_cards8b": "RESULT pass=5 fail=0 via world.submit (.plan/c8d_t8b.log)",
+    "flow_cards8c": "run 1 (before CARDBAR8's 13:31 card8b_base/hud.gd edits): PLAYTEST RESULT pass=31 fail=1, only miss cards8c_aid_evac (flow fixture, fixed). run 2 (during CARDBAR8 bottom-bar move): pass=25 fail=7, aid_evac ok now; misses = buttons missing/off-screen (RotateButton missing, PatrolButton y=-5852, QueueButton y=-1007) = UI move in progress, not sim. .plan/c8d_flow8c.log",
+    "flow_cards8b": "during CARDBAR8 move: pass=16 fail=5 + SCRIPT ERROR (null tooltip_text, a missing button) in the flow; buttons missing. Earlier CARDS8C run: all ok except cards8b_suit_repair (328->328). Sim probe .plan/c8d_probe2.gd shows c8b_suit_repair (all) repairs 408->808 hp in 200 ticks, so that miss is flow/UI side. .plan/c8d_flow8b.log",
+    "regression (.plan/c8d_reg.sh -> .plan/c8d_reg.out, still running at handoff)": "test_cards7 pass=1 fail=0; test_ui_panels pass=5 fail=0; test_cards8a pass=10 fail=0; rest (ui_fit, sent7, rest8, vtol8, air, medical, cnops7, cnsuits7, lpmode7, det7, hot_state) NOT READ yet"
+  },
+  "options_confirmed": "barracks: rotate, train, plan (4 generated), stand-to (test + flow run 1). air: launch, recall, patrol, end patrol, service path (test; flow run 1 incl. landed back on pad). aid: treat first, evacuate, medics (test + flow). lab: queue, tier (flow run 1 + test).",
+  "shots": ".plan/shots/CARDS8C/cards8b/cards8b_armory_used.png, cards8b_garage_card.png, .plan/shots/CARDS8D/cards8c/cards8c_barracks_card.png, cards8c_aid_used.png posted as fact shots.best; air card shot from run 2 shows no card (bar move).",
+  "files_changed": ["sim/systems/cards8c.gd", "sim/systems/rest8.gd (one guard)", "tests/test_cards8c.gd", "tools/pt7_cards8c.gd", "new .plan/c8d_probe.gd, .plan/c8d_probe2.gd, .plan/c8d_reg.sh"],
+  "note": "barracks summary 'resting' counts sentinels_of incl. workers (106 resting vs 72 beds in the shot) - cosmetic, not changed.",
+  "next_step": "1) read .plan/c8d_reg.out when DONE (FAILURE lines in .plan/c8d_reg_<test>.log); test_hot_state may differ for owner-approved reasons - report, do not re-baseline. 2) after CARDBAR8 finishes the bottom bar: rerun flows cards8c and cards8b windowed, look at shots, post shots.best (air + lab cards). 3) if cards8b_suit_repair still misses, check which unit_id the REPAIR button issues."
+}

@@ -1,0 +1,32 @@
+{
+  "agent": "BASE7-2",
+  "why_stopped": "call budget at 70% (98 of 140 calls); real token use ~330k of 750k",
+  "first_items_for_successor": [
+    "OWNER 13.9c-2 (docs/G7_REFERENCE.md): counter-nanite facility: NO overlap/conflict between any buildings, garages, stealth launch pads, infantry decontamination hall, APC decon entry, training facilities (own footprint + clearance; no footprint, door or lane over another). APC entry = TWO-LAYER: outer reinforced gate -> APC decon wash zone -> inner reinforced gate (decon inside the entry zone, right inside the first gate layer). Infantry gets its own decon hall on the infantry path. Rework content/g7/defs_g7_facility.json _g7_facility (gate/decon/staging/lanes; probably split 'decon' into 'apc_decon' + 'inf_decon' + an 'inner_gate' rect; check cn_facility.gd users of zone 'decon' (line ~529 decon flow, ~711 _slot_pos) and 'gate' (~671)). Add a test (test_cnfac7): no two facility footprints / doors / lanes overlap; APC path outer gate -> decon -> inner gate. Post fact facility.footprints for ART7F-2.",
+    "OWNER 13.9c-3: facility defences: MORE hardened towers (corners, gates, along long wall runs) and hardened walls forming one closed ring tied into every tower on both sides; no tower outside the wall or in a gap. cn_facility.gd _raise: towers from conf towers (2x2 at [12,0],[0,12],[26,12],[8,26]) + checkpoint; walls are 2x2 cn_blast_wall on even offsets of the 28 ring, skipping reserved rects. Add corner towers [0,0],[26,0],[0,26],[26,26] and mid-run towers (e.g. [6,0],[20,0],[0,6],[0,20],[26,6],[26,20],[20,26]) on even offsets, keep gate/checkpoint; test: wall ring closed (every perimeter 2x2 slot is wall, tower, gate or checkpoint) and every tower has wall/tower/gate neighbours on both sides along the ring. Post fact facility.footprints (towers included).",
+    "LP perf before/after: run the .plan/lpperf7 cost harness (see .plan/lpperf7/*.log for BASE7's runs: avg 15.06 ms) on the new layout (LpGarrison7 hook is wired by ORCH, seq after 3297). Target well under 50 ms.",
+    "Playtests windowed, one at a time: pt7_lpmap7 and pt7_cnfac7; before/after overview shots of base + facility at zoom 1/2/3 into .plan/shots/BASE7-2/; look at every shot against 13.9c.",
+    "pt7_cnfac7 known miss cnfac7_ramp_all_loaded_f6_7 (packaged smoke only): headless replica tests/test_cnfac7.gd::test_ramp_pt_wave_every_facing_pair_loads_full passes all 4 facing pairs (25/0), and the editor windowed runs in .plan/base7/pt_cnfac7.log + .plan/shots/CNFAC7-3/run.log pass f6_7 2/2. Cause not proven: the flow waits on wall-clock (_wait_until(_all_done, 60.0)) in a live skirmish world (units / enemy can reach the patch late in the run). Suggested fix in tools/pt7_cnfac7.gd _ramp_wave: wait on sim ticks (e.g. until _all_done or 2400 sim ticks, wall cap 180 s), and on a miss log each outside unit (def, order, pos in craft u/v, LoadFailed reasons, hostiles within 20) so the next miss is explained.",
+    "Hashes: Last Protocol start state moves (new layout, obstacles, garrison state w.sys_state.lp_garrison7, pads); facility render zones gain 'lab' (display only). test_hot_state not run (ORCH)."
+  ],
+  "done": [
+    "Research (12 of 15 fetches; opened: en.wikipedia.org/wiki/Forward_operating_base, army.mil/article/265889 (wartime munitions storage), en.wikipedia.org/wiki/Fire_support_base, en.wikipedia.org/wiki/Hardened_aircraft_shelter, en.wikipedia.org/wiki/Revetment_(aircraft), en.wikipedia.org/wiki/Runway_safety_area, en.wikipedia.org/wiki/Field_of_fire; the WBDG Entry Control Facilities PDF downloaded but was not readable (binary), not used).",
+    "sim/maps/last_protocol.gd: base layout rewritten (rings 87/73/53, facility 3 north of C, airfield runway inside the core ring with paved clear zone, 2 x 6x6 dropship pads with paved approach lanes, artillery in dispersed outer sections (24 pits: 4 corner sections + 2 per face) + 4-gun core fallback battery, each section with its own ammo bunker, turret row by threat axis (step E5/N6/S6/W8), 8 outer SAM/radar on all faces, 5 core SAMs, laser CIWS at gates/corners/airfield/pads, ECP yards inside outer gates with 4 guard posts each, wire belt + tank-trap line + 4-trap serpentine in front of every outer gate, cameras along every wall (53), patrol routes on outer/economy/core ring roads, runway + lane lights); layout_issue core band fix.",
+    "sim/systems/lp_garrison7.gd (new): plan/register/tick wall patrols + gate guards; ORCH wired the LP tick hook (CR seq 3297).",
+    "sim/systems/lp_setup.gd: vtol_pad/ciws plot defs, facing_i on airfield/pads, build_obstacles, garrison plan in build_army, VTOLs centred on pads nose -y (ramp over the lane).",
+    "content/g7/defs_g7_facility.json: new a_g7_vtol_pad (6x6, passable_for foot/vehicle/amphibious/hover); facility planning [8,8,4,3] + new lab [8,11,4,3]. sim/systems/cn_facility.gd ZONES + 'lab'.",
+    "Tests: test_lpmap7 14/0 (5 new BASE7-2 tests; artillery-count oracle replaced by coverage/dispersal/ammo checks, authority owner 13.9c), test_lpmode7 18/0 (new fortress + patrols-walk test), test_cnfac7 25/0 (new pt-wave replica test), test_maps 13/0, test_lpperf7 9/0.",
+    "Board: fact facility.footprints (seq ~3240), answer to ART7F dropship.pads, CR lp_tick_hook (seq 3297, applied)."
+  ],
+  "not_done": [
+    "13.9c-2 and 13.9c-3 (above).",
+    "LP perf before/after measurement.",
+    "pt7_lpmap7 / pt7_cnfac7 windowed runs and shots; tools/pt7_lpmap7.gd not updated for the new layout (check it still passes).",
+    "pt7_cnfac7 f6_7 flow fix (diagnosis above)."
+  ],
+  "files_touched": [
+    "sim/maps/last_protocol.gd", "sim/systems/lp_setup.gd", "sim/systems/lp_garrison7.gd (new)", "sim/systems/cn_facility.gd (ZONES only)",
+    "content/g7/defs_g7_facility.json", "tests/test_lpmap7.gd", "tests/test_lpmode7.gd", "tests/test_cnfac7.gd", ".plan/base72/probe.gd (scratch probe)"
+  ],
+  "scale_audit": "posted as fact base7_2.scale_audit"
+}

@@ -1,0 +1,20 @@
+{
+  "agent": "SENTART7",
+  "reason": "budget.handoff_now at 67 of 140 calls (projected 560k of 750k)",
+  "done": {
+    "generator": "tools/art/g7_sentinels.gd (godot --headless --path . -s tools/art/g7_sentinels.gd) -> assets/art/g7_sentinels/ (16 sheets + masks + icons + manifest.json, deterministic)",
+    "sheets": "g7_sent_<t> and g7_b_sent_<t>, t in warden marksman gunner bulwark lancer arc mender bearer; 32x32 cell, pivot 16,27, 18 px figure, 8 facings, 62 columns: idle walk_a walk_b fire + full G6.1 SET + full G7 SET7 (cwalk duck back stumble limp knock kdown unc aid drag carry peek_l/r cower drop) + aim sa_aim sa_fire; anim61 native marker; packed 0.27-0.31 MB each (budget 0.52 MB), 0 over",
+    "look": "slim segmented plates over undersuit, closed helmet + narrow visor slit (A rounded grey-blue, pale cyan; B angular sand-olive, split visor, heavier shoulders); no glow; per-type kit per sent7.art_needs; shooting stance, kneeling crouch, drag walking backwards (body turned 180 vs travel), Mender kneel-treat with hose/applicator, pistol holstered right thigh, primary slung in sidearm/drag/aid frames",
+    "team_mask": "armbands both arms + 2 px strip on each shoulder plate + pack patch (back views) + Lancer tube band; every facing has team pixels (tested)",
+    "catalog": "presentation/art/art_catalog.gd G5_GROUPS += g7_sentinels (register only)",
+    "test": "tests/test_sentart7.gd: RESULT pass=5 fail=1 (only fail = defs art field, waiting on SENT7-4)",
+    "playtest": "tools/pt7_sentart7.gd: PLAYTEST RESULT pass=11 fail=0, 0 SCRIPT ERROR; shots in .plan/shots/SENTART7/"
+  },
+  "open": {
+    "defs_art": "change_request to SENT7-3 (seq 4401) and SENT7-4 (repeat): art = own def id, drop art_tint. Not applied yet. Catalog resolves by def id, so the art already draws in game.",
+    "orch_cr": "seq 4400 change_request.sentart7.anim: (1) render_snap g7u s7 bits (1 reload, 2 sidearm), (2) batch_art g7_cols optional sa_aim/sa_fire/aim, (3) motion g7_col reload/sidearm columns, (4) optional aimed-fire alternation. Not applied yet; until then the view shows the G6.1 cosmetic reload and the normal fire frame on the sidearm. Crouch-when-still already handled by motion (gait crouch -> crouch column, now a kneel).",
+    "drag_facing_assumption": "drag_0/1 are drawn facing opposite the travel direction (assumes the dragger's sim facing = move direction); verify in a casualty drill shot",
+    "not_done": "per-state live shots of reload / sidearm via the real view (needs the ORCH CR); Gunner 6 s drum swap uses the same 2 reload columns; door-stack uses crouch (Bulwark kneels shield forward)"
+  },
+  "next_steps": ["after ORCH applies CR 4400: rerun pt7_sentart7 and add a live reload/sidearm shot", "after SENT7-4 edits defs: test_sentart7 should be 6/0", "owner review of .plan/shots/SENTART7/sentart7_board_a_z250.png / board_b_z250.png"]
+}

@@ -1,0 +1,52 @@
+{
+ "agent": "SENT7-4",
+ "n": 4,
+ "calls_used": 66,
+ "tokens_used_est": 460000,
+ "reason": "budget.handoff_now from ORCH (64 of 140 calls, projected 535k)",
+ "tree": "compiles; test_sent7 runs (last run scratchpad r16.log): RESULT pass=11 fail=1 files=1 time_ms=167070; only failing check: test_tactics_drill 'the buddy drags the casualty to cover'",
+ "done_with_evidence": [
+  "Fixed the parse error SENT7-3 left in tests/test_sent7.gd (debug line called Movement.has_method / cell_class): before, the file did not load (RESULT pass=0 fail=0).",
+  "Casualty drill: rescuers sprint to the casualty (gait 3), drag hunched (gait 2), kneel to treat (gait 1) via the Wounds care chain (_think caring branch); the Mender answers man down at a run. The _caring branch now runs before the free/auto early return so a Mender on auto duty doing Wounds auto aid also gets it.",
+  "Care under fire (new _care_under_fire): whoever reached a downed Sentinel first (Wounds auto aid, often not his split-off buddy) drags him to cover away from the threat first if he lies in the open under alarm (once, e.s7_dg, cleared when he gets up), then treats. A casualty in cover is treated in place.",
+  "Reloading call: tactical reload threshold tac_reload_frac 0.34 -> 0.8 (top up in a lull once a fifth of the magazine is spent, with retention) and a man in a tower / booth now tops up behind its wall too (was skipped). PROVISIONAL.",
+  "Armour rule: defence_mult / Bulwark shield_mult now apply only vs small arms and nanite; weapon class in heavy_classes [at, artillery] hits a Sentinel at heavy_defence_mult 1.0 (13.9c-10: anti-armour / artillery still kill them). Uses Combat.stats 'cls' key. PROVISIONAL.",
+  "Balance fixture: every attacker mix follows one assault drill (heavy weapons breach the east-wall section nearest the axis, others stage 9 tiles out, then all rush the gap and attack-move to the core). Before, attack-move stalled tanks on wall sections out of range so no assault could ever enter. Plus reported (unchecked) variants with towers / checkpoint / wall turrets silenced.",
+  "SENTART7 seq 4401: all 16 Sentinel defs art = own def id, art_tint dropped; test_sentart7 RESULT pass=6 fail=0. s7_rl / s7_sa untouched."
+ ],
+ "balance_last_run": [
+  "BALANCE human infantry x2: Sentinels 24 (value 10380) vs attackers 243 (value 20645, x1.99) -> Sentinels left 23 (9910), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE human infantry x3: Sentinels 24 (value 10380) vs attackers 366 (value 31190, x3.00) -> Sentinels left 19 (8170), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE Machine x2.5: Sentinels 24 (value 10380) vs attackers 128 (value 26220, x2.53) -> Sentinels left 24 (10380), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE combined arms (armour + artillery + infantry) x2.5: Sentinels 24 (value 10380) vs attackers 156 (value 26190, x2.52) -> Sentinels left 13 (5600), attackers left 10 (8720), inside compound 10, core alive => LOST",
+  "BALANCE guns silenced: human infantry x2: ... Sentinels left 12 (5180), attackers left 0, inside 0 => HELD",
+  "BALANCE guns silenced: Machine x2.5: ... Sentinels left 24 (10380), attackers left 18 (2880), inside 0 => HELD",
+  "BALANCE guns silenced: combined arms x2.5: ... Sentinels left 5 (2220), attackers left 28 (11640), inside 28 => LOST",
+  "test_balance_fight PASS (all 4 checks)"
+ ],
+ "tactics_last_run": [
+  "TACTICS: attackers left 1 of 8, Sentinel rounds used 35",
+  "TACTICS: gaits seen [2, 1], settled-in-cover samples 379, bounding samples one-up 176 / both-up 15, stand-to jobs 0, events { SentinelStandTo 1, SentinelWithdraw 2, SentinelReloading 1 }",
+  "CASUALTY PICK: 157 (in the open: false)",
+  "CASUALTY DRILL: events { SentinelManDown 1, SentinelMenderTreats 1, SentinelRestocked 1 } -> FAIL 'the buddy drags the casualty to cover'",
+  "Same drill run alone earlier this session (balance skipped) passed 12/0 with CasualtyDragged 1 + MenderTreats 1: the outcome depends on where the casualty lies."
+ ],
+ "fallout": [
+  "test_lpmode7 RESULT pass=18 fail=0",
+  "test_wallwalk7 RESULT pass=11 fail=0",
+  "test_eng7 RESULT pass=10 fail=0",
+  "test_cnfac7 RESULT pass=31 fail=2: 'drone_bay overlaps workshop' (facility layout, FACB7 files, not Sentinels)",
+  "(fallout run was before the care-under-fire / reorder / reload-in-garrison edits; not rerun since)"
+ ],
+ "not_done_priority_order": [
+  "1. test_tactics_drill drag check: at the moment of the pick no field-pair man stands in the open (CASUALTY PICK in the open: false), so the casualty falls in cover and the Mender treats him in place (realistic, but no drag). Do NOT weaken the check. Options: pick the casualty during a rush (sample a moving pair man inside the 900-tick loop when he is in the open and put him down then), or check why the pair is split (buddy 169 was 24 tiles away pathing round the barracks; QRF one-man-at-a-time turnout + board re-pairing). Then rerun test_sent7 directly.",
+  "2. Rerun test_lpmode7 / test_wallwalk7 / test_cnfac7 / test_eng7 after the last sentinels7 edits.",
+  "3. Windowed playtest pt7_sent7 (never run): bash .plan/hb.sh <id> <calls> <tokens> sent7 -- \"$G\" --path . -- --ui-playtest=\"<abs shot dir>\" --ui-playtest-sent7 ; shots zoom 1/1.75/2.5 (walls, tower, checkpoint, assault, locker reload, casualty drag); Read each PNG; post fact shots.best.",
+  "4. Hashes move with Sentinels (hash test passes twice-same; ORCH re-baselines)."
+ ],
+ "files_touched": [
+  "sim/systems/sentinels7.gd (_think care branch moved before free/auto return + care gaits; _care_under_fire new; _casualty_drill sprint + s7_dg; _casualty_job sprint; _reload_check in garrisons; damage_mult heavy_classes; s7_dg cleared on getting up)",
+  "content/g7/defs_g7_sentinels.json (heavy_classes, heavy_defence_mult, tac_reload_frac 0.8 + notes, art fields)",
+  "tests/test_sent7.gd (parse fix, removed SENT7-3/-4 debug prints, breach-assault drill in _fight, quiet variant reports, open-casualty pick)"
+ ]
+}

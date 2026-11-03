@@ -1,0 +1,33 @@
+{
+  "agent": "POLISH7-3",
+  "stopped_by": "ORCH budget.handoff_now (calls ~93 of 140)",
+  "calls_used": 93,
+  "tokens_used_est": 245000,
+  "files_touched": [
+    "tests/test_wallturret7.gd (_setup: cfg victory endless + why; match-not-ended checks in the assault and auto-rebuild tests; diagnostic text in the post check)",
+    "presentation/view/fac_life7.gd (13.9c-19 ops-room inset deleted incl. team APC tracking + hover; ZONE_H planning 152 / barracks 114; range on FACB7-4 layout: RANGE_* consts, training-building occluder box 87 px, lanes / firing line / targets / LIVE FIRE lamp on the canopy, kill-house pair via the N door + window flashes, range figures occluded; ROOF_H_OPS 152)",
+    "presentation/view/fac_atmo7.gd (BLD_Z planning 152 / barracks 114; RANGE_BLD occluder in _behind_bld; TOC exhaust pinned at 38.5 px)",
+    "tests/test_life7.gd (new test_ops_inset_removed)",
+    "tools/pt7_life7.gd (life7_ops_inset -> life7_ops_inset_gone; cupola want = angle to the tank's current position; under_fire diagnosis comment)",
+    ".plan/polish7/fps_fac.gd + fps_ab.sh (layer evidence line, post load, all-godot process count)",
+    ".plan/polish7/uf_diag.gd (new, headless repro of the under_fire sim gap)"
+  ],
+  "wallturret7": {
+    "cause": "not the turret system: the side-1 facility (map centre) is within reach of side 0's HQ at (14.5,14.5); since the Sentinels' guard net its Sentinels (g7_sent_lancer/warden/arc) and cn_tower 41 kill that HQ -> MatchEnded hq_elimination at tick 2329 -> SimWorld.step() returns early when match_state.ended, so the world froze and t3 was never mounted/registered (posts {}). test_assault_destroys_outer_turret's earlier -2 is the same freeze class (passes now; not reproduced).",
+    "fix": "_setup sets w.cfg.victory = endless (the test measures turrets, not victory) and both scenario tests now also check not w.match_state.ended (a frozen world can no longer pass vacuously). No check weakened.",
+    "result": "test_wallturret7 RESULT pass=12 fail=0 (3 runs)"
+  },
+  "under_fire_sim_gap": "warn board seq 4677: damage.gd sets last_hit_tick only on units, base_state7._eval also reads it on buildings -> fire on towers/walls/ECP baffles never gives under_fire. Repro .plan/polish7/uf_diag.gd -- --rot=0.0. Blocks pt7_life7 life7_under_fire_life_goes_on and pt7_atmo7 atmo7_under_fire_amber (layers correct: alarm false / 0.5 amber, no red, no lock). Owners WOUND7/CNFAC7; hash-changing.",
+  "ops_inset": "removed (13.9c-19); test_life7 test_ops_inset_removed passes; pt7_life7 pl8 life7_ops_inset_gone ok=true",
+  "playtests": "pt7_life7 pl8 (C:/CODING/integ7_fast/pl8_life7/run.log): PLAYTEST RESULT pass=25 fail=1 (under_fire sim gap), 0 SCRIPT ERROR, cupola ok. pt7_atmo7 pl7: pass=22 fail=1 (same), 0 SCRIPT ERROR, 0 triangulation.",
+  "shots_looked_at": ["C:/CODING/integ7_fast/pl8_life7/life7_under_fire_z1.png (contested: amber only, life goes on)", "C:/CODING/integ7_fast/pl8_life7/life7_alarm_z1.png (breach: red lamps, shutters, mist)", "C:/CODING/integ7_fast/pl7_atmo7/atmo7_amber_under_fire_z2.png (tank firing, amber beacons, no red)", "C:/CODING/integ7_fast/pl7_atmo7/atmo7_alarm_tower_z2.png (red beacons on masts, red fans, command-centre shutters)"],
+  "fps": "see final report table; gate 2k p10 >= 60 NOT met even with both layers OFF (p10 29.5-36.2) on the shared PC: the facility-at-night 2k scene itself is under 60; layer cost within noise (run1 on 26.6 vs off 36.2 first-run warmup; run2 on 31.6 vs off 29.5).",
+  "open": [
+    "test_life7 test_cupola_tracks_enemy_and_dog_heels failed 'dog heels beside the Sentinel' in the last run only (10/1); passed 11/0 three times before; sim/systems/cn_facility.gd was changed at 20:25Z (FACB7-5 barracks/drone-bay move) between: check whether the Sentinel spawn cr.center+(0.5,3.5) now lands in/near a building or the kennel moved (LIFE7 kennel at the barracks front).",
+    "FACB7-5 moves the barracks to the drone bay site and the drone bay onto the workshop: re-read facb7.zone_heights when posted; update BLD_Z/ZONE_H (barracks 114 key follows the zone name; drone_bay height on the workshop) and re-shoot.",
+    "Under_fire playtest checks need the sim fix (seq 4677) — do not relax them.",
+    "Range re-layout not yet seen in a shot (pl8 shots were taken before/after? pl8 ran after the edits: look at pl8_life7/life7_range_live_z2.png).",
+    "Dog in the open shot and engineer-driving shot (LIFE7_INFO eng_drive not exercised in pl8) not done.",
+    "fps: rerun on an idle PC; if the layers then cost > 2 ms, LOD the atmo mist/searchlights first."
+  ]
+}

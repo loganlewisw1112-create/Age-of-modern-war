@@ -1,0 +1,16 @@
+{
+  "agent": "REST8C",
+  "stopped_by": "budget.handoff_now (73%)",
+  "calls_used": 23,
+  "tree_compiles": true,
+  "items": {
+    "a_rest_inside_barracks": {"status": "DONE + tested", "detail": "rest8.gd: pick_barracks returns [id, goal, can_enter] and prefers a barracks the soldier can be quartered in (Garrison.admits + free slot; door-only scored +10000); on arrival within size*0.75+arrive of _bpos -> Garrison.place_inside(w,b,id,beds) -> r8.in=1, emits RestInside; step treats rest/hold inside as idle; ends rest if put out (player/building lost); _back leaves the garrison (cause 'rested') before walking back. Sentinel-only barracks remain a door fallback for non-Sentinels."},
+    "b_lp_gate_relief": {"status": "CODED, test FAILS", "detail": "rest8.gd: _gate_relief (called from _try_start when not _gate_covered) picks _relief(w,e,-1) (bid<0: no admits check; excludes guards, patrollers, r8gr holders, CnRole7.is_cn, non-foot), sets u.r8gr={g,p,h?}, u.lp_home next to e.lp_home, appends to lp_garrison7.guards, _go; e.r8rl=rid; r8.rl kept when rest starts; _end -> _release (out of guards, lp_home restored/erased, walks back to gr.p, emits RestReleased).",
+      "failing_test": "test_lp_gate_relief: called=false left=true back=true unmanned=696: no relief was ever assigned, yet the guard still went >4 tiles from his gate.",
+      "hypotheses": ["relief candidate rv (compound centre +6) is > relief_r 30 from the far-corner gate spot or fails inside() -> _relief returns -1", "the guard left for a reason other than rest (check e.r8 when away first becomes true: if r8 present, _gate_covered returned true wrongly; if absent, something else moved him, e.g. Sentinels7/facility traffic)"],
+      "next_step": "Add a debug print in test_lp_gate_relief at the first tick away=true (e.r8, e.order, dist gate->rv). Spawn the relief within ~10 tiles of the gate. Fix code or test accordingly; do not weaken the unmanned==0 check."}
+  },
+  "files_changed": ["sim/systems/rest8.gd", "tests/test_rest8.gd (Sentinel-inside check in test_last_man_relieved_first + 5 new tests)", ".plan/rest8c_patch1.py (patch script, can be deleted)"],
+  "tests": "test_rest8: pass=11 fail=1 (only test_lp_gate_relief). firing: rifle 0.1758 / mg 0.2930 / standing 0.0000 per minute; inside: 180 ticks garrisoned, out at fat 0.084, back 0.00 tiles, same hash twice; beds: max inside 2 of 2, 4 rested; breach brings him out; Sentinel rests inside cn_sentinel_barracks (passes).",
+  "not_run": ["test_real61", "test_officers61", "test_squad61", "test_wound7", "test_det7", "test_lpmode7", "test_lpreserve7", "test_sent7", "test_garrison", "test_hot_state x2 (firing fatigue likely moves hashes: report, do not edit goldens)", "perf pairs: bash .plan/perf7g_pairs.sh 6 rest8c res://.plan/sim_ab7.gd under .plan/perf.lock", "windowed sent7 flow + shot of tired soldier entering a barracks -> fact shots.best"]
+}

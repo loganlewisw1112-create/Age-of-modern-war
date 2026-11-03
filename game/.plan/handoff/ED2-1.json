@@ -1,0 +1,49 @@
+{
+  "agent": "ED2",
+  "gen": 1,
+  "reason": "guard budget flag: projected 505k of 700k (72%) at calls=73",
+  "done": [
+    "Tasks 1-6 + 8 implemented: presentation/editor/ed2_tabs.gd (entry; registers Units & buildings 60, Players 70, Victory & triggers 80, Regions 90; validate_handler; test_play_handler; normalizes ED1's legacy victory 'hq' on new/open), ed2_model.gd (palette per faction from Content incl. content/g4, cargo rules per CONTRACTS_G4 s7, entity hit test/formation/nearest-slot, players/colors), ed2_scenario.gd (victory terms<->scenario block, typed trigger clauses, extra_issues, test_play_cfg, run_test_play, list_custom, thumbnail), ed2_tab_units.gd + ed2_units_sel.gd (player chips, faction filter, palette ItemList, Place/Select-move/Formation box, Q/E facing, built toggle, tag, delete, cargo list), ed2_tab_players.gd (4 slots Human/AI/Closed, faction/team/colour/stage/credits/stock/difficulty, Set start + symmetric starts, start packages), ed2_tab_victory.gd + ed2_trigger_row.gd + ed2_params.gd (AND/OR victory presets, trigger list editor), ed2_tab_regions.gd (drag rect regions, rename, go, delete), ed2_map_browser.gd (Built-in/Custom list, thumbnail, size/players, scenario vs skirmish rules, Maps folder), skirmish_setup.gd (browser at top, MapOption sync, prefill from file players, cfg.map_file/slot/stock/scenario_rules, finalize() hooked on main_menu.start_requested before main.gd applies the file victory)",
+    "tests/test_editor_scenario.gd: 5 tests, last --only run RESULT pass=5 fail=0, TESTS OK",
+    "tools/editor_playtest.gd (extends SceneTree; run: \"$G\" --path . -s res://tools/editor_playtest.gd -- --shots=ABS_DIR). Run1: whole flow by clicks reached a running custom-map match from skirmish (600 ticks in 30 s, 2 sides alive), RESULT pass=20 fail=5"
+  ],
+  "remaining": [
+    "1. Fix playtest cell offsets (paint_terrain, fill_lake, set_starts, formation_units fail: clicks land ~30 cells off in x, drags collapse to 1 cell). Likely cause: event positions must be in WINDOW coords; convert viewport coords with root.get_final_transform() * p (stretch / content scale) in _cell_vp and the minimap _jump; verify with a print of view.mouse_cell() after _move(p) vs the target cell. _settle() (camera ease wait) was added and did not fix it.",
+    "2. Playtest save: FileDialog current_file is to_snake_case('ED2 Playtest') = 'ed_2_playtest.rtsmap'; add user://maps/ed_2_playtest.rtsmap to the pre-delete list in _run (an existing file pops an overwrite confirm, so run2's save failed).",
+    "3. Once 1-2 pass: units placed must not sit inside the HQ footprint (validate illegal_placement came from the offset); re-run until PLAYTEST RESULT pass=N fail=0 (wrap in .plan/hb.sh, timeout 240).",
+    "4. bash tests/run.sh --only=test_editor_scenario (needs the tree compiling: currently sim/systems/transport.gd:337/376 'stale' inference error from TRANS breaks world.gd), then the full suite once in hb.sh.",
+    "5. Post the CHANGE_REQUESTS below if ORCH has not routed them; kill leftover godot processes filtered by editor_playtest."
+  ],
+  "files_touched": [
+    "presentation/editor/ed2_tabs.gd",
+    "presentation/editor/ed2_model.gd",
+    "presentation/editor/ed2_scenario.gd",
+    "presentation/editor/ed2_tab_units.gd",
+    "presentation/editor/ed2_units_sel.gd",
+    "presentation/editor/ed2_tab_players.gd",
+    "presentation/editor/ed2_tab_victory.gd",
+    "presentation/editor/ed2_trigger_row.gd",
+    "presentation/editor/ed2_params.gd",
+    "presentation/editor/ed2_tab_regions.gd",
+    "presentation/editor/ed2_map_browser.gd",
+    "presentation/menu/skirmish_setup.gd",
+    "tools/editor_playtest.gd",
+    "tests/test_editor_scenario.gd",
+    ".plan/shots/ED2/*"
+  ],
+  "test_state": "--only=test_editor_scenario: RESULT pass=5 fail=0 TESTS OK (before TRANS transport.gd broke compile). Headless --quit-after 60: no SCRIPT ERROR in any ED2 file; current errors are transport.gd only. Playtest run1 pass=20 fail=5, run2 pass=12 fail=8 (run2 also hit the save overwrite dialog and possibly the transport break). Full suite not run.",
+  "change_requests": [
+    "ED1/ORCH presentation/editor/editor_view.gd: entity_layer.refresh now reads mv.snap / mv.world_readable() / mv._world (THREAD G4) -> SCRIPT ERROR every frame in the editor, placed units not drawn. Add `var snap: Dictionary = {}`, `var _world` (= world), `func world_readable() -> bool: return true`, and at the end of _sync_world(): `RenderSnap.build(world); snap = RenderSnap.latest(world)` (RenderSnap = preload res://sim/render_snap.gd; check build() is allowed on a non-stepping world).",
+    "ED1 presentation/editor/editor_doc.gd default_scenario: victory {\"victory\":\"hq\"} -> {\"victory\":\"hq_elimination\"} (ED2 normalizes it at runtime meanwhile).",
+    "MAPIO sim/map_io.gd place_entities: honour cfg.scenario_rules == false ('skirmish rules only'): skip file stock, placed entities and triggers (init empty trigger state). skirmish_setup sets the flag.",
+    "main_menu owner: build_config: after victory.apply(cfg) call `if setup.has_method(\"finalize\"): setup.finalize(cfg)` so the live summary validates the file victory; optionally hide MapOption (ED2MapBrowser drives it).",
+    "pause_menu owner: label 'Main menu' as 'Back to editor' when main._editor_test is true."
+  ],
+  "gotchas": [
+    "Untyped refs (ed, ut, browser) break := inference; type them.",
+    "main menu/test off-tree: call menu._ready() then menu.setup._ready() (setup finds the menu in _ready and connects start_requested first).",
+    "MapIO.read intifies whole floats (t: 60.0 -> 60).",
+    "map_gen.gd has no class_name: preload it.",
+    "ItemList item clicks need wheel scrolling (_click_item)."
+  ]
+}

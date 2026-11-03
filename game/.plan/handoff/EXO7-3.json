@@ -1,0 +1,33 @@
+{
+  "agent": "EXO7-3",
+  "successor_of": "EXO7-2",
+  "stopped_at": {"calls_used": 85, "reason": "guard budget.handoff_now (seq 6363, projected 560000 of 750000)"},
+  "spec": "docs/G7_REFERENCE.md 13.9c-20, -20a, -20b, -20c, -20d",
+  "files_changed": [
+    "tools/art/g7_cnsuits.gd (per-role polish + 12-frame swalk walk + per-role measured stride in the manifest)",
+    "assets/art/g7_cnsuits/ (regenerated: 8 suit sheets + masks + icons + wrecks + manifest; EXO7_ART sheets=10 files=33 over=0; 2.38-2.89 MB each, threat_big 3 MB budget)",
+    "tests/test_cnsuits7.gd (added checks only: swalk_0..11 per sheet, g7.stride_tiles > 0.3)",
+    "tools/pt7_cnsuits7.gd (rear-facing board A f7, per-role tracking shots walking_<role> / firing_<role> at z1.75 + z2.5, firing / sustained shots centred on the suits, destroyed shots centred on the wreck + destroyed_gunner, CNSUITS7_SHOT zoom log line, 14 enemy riflemen instead of 8)"
+  ],
+  "art_changes": {
+    "aegis": "sensor array moved off the head: mast stands on the left of the back module and leans back (mt -0.62,-0.32,1.4 in the back-module frame), wide flat phased-array panel (light frame, dark face, 2 cyan emitter rows), slew drive at the mast foot, EO/IR pod on the right shoulder, whip antenna on the right; top margin 2 px in facing 0 (no clipping)",
+    "bastion": "head raised (hz 1.27) with a taller dome + crest ridge, wider shoulders / pauldrons (sh 0.78, pw 0.22), ammo drum high on the right of the back (shows over the right shoulder from the front), belt chute over the shoulder, bigger rotary (receiver, feed port, longer 6-sided barrel cluster, muzzle ring; muzzle at forearm x 1.73 m)",
+    "purifier": "taller capacitor cells, outer two fanned out, 4 glowing bands each, glowing tips show over the shoulders from the front; always-lit coil + emitter core on the projector",
+    "destroyed": "lying poses (die_2 / wreck / kdown / unc) yaw +0.72 rad in facings 1 and 5 (no foreshortened blob); back module opens 0.62 rad (was 1.05, stood up like a column)",
+    "swalk": "12-frame tactical walk swalk_0..11 appended after aim (existing columns unchanged), loping stride sw 0.4; manifest g7.swalk=12, g7.stride_m / g7.stride_tiles per role: bastion 3.25 m / 0.813, breaker 3.28 / 0.82, aegis 3.3 / 0.825, purifier 2.67 / 0.668"
+  },
+  "results": {
+    "test_cnsuits7": "RESULT pass=9 fail=0 (after the regeneration, with the new swalk / stride checks)",
+    "playtest_pt6": ".plan/shots/EXO7-3/pt6: PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR; every shot at the requested zoom (CNSUITS7_SHOT lines in run.log)",
+    "note": "pt6 ran before ORCH applied the swalk display change (cr.applied seq 6358), so no in-game shot shows the 12-frame walk yet"
+  },
+  "boards": [".plan/shots/EXO7-3/before_facings_4x.png / after_facings_4x.png", ".plan/shots/EXO7-3/before_actions_4x.png / after_actions_4x.png", ".plan/shots/EXO7-3/cnsuits_roles_a_5x.png, cnsuits_roles_b_5x.png (5x)", ".plan/shots/EXO7-3/swalk_bastion_f2_4x.png (12-frame walk)"],
+  "board_posts": {"shots.best": 6359, "change_request.cnsuits_swalk": 6346, "change_request.cnsuits_corpse": 6360, "muzzle.rerun need to MUZZLE7-2": 6262},
+  "open": [
+    "muzzle7.json not re-run after the regeneration: MUZZLE7-2 handed off (seq 6068) before answering seq 6262; its successor or ORCH must run tools/art/muzzle7_gen.gd (bastion barrel tip moved)",
+    "in-game check of the 12-frame swalk after ORCH's cr 6346 change: rerun --ui-playtest-cnsuits7 and look at walking_<role>_z250",
+    "destroyed suit shows twice (Motion.kill infantry corpse + the wreck entity ~1 tile away): change_request seq 6360 (display, LOOK7 / ORCH)",
+    "wrecks lose most role identity (all four lie the same way; only small kit bits differ)",
+    "per-role walking shots: the suits walk out past the gate tower / buildings, so two of the four walking_<role> shots are partly hidden behind the facility (tower occludes the breaker)"
+  ]
+}

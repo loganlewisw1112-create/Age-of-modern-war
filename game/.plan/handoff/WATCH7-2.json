@@ -1,0 +1,34 @@
+{
+ "agent": "WATCH7-2",
+ "status": "STOPPED at handoff_now (75%). Everything compiles. 13.9c-33 fortress table MET against the 48-man value; test_sent7 still has 1 fail (inf x3 bay-off) that tuning could not fix; pt7_dronebay7 flow literals fixed but not re-run.",
+ "numbers_changed": {
+  "defs_g7_dronebay.json": "cap 12->24; mix interceptor/gun/kamikaze 4/5/3 -> 4/8/12; rebuild_s 30->20 (_meta note added)",
+  "defs_g7_sentinels.json": "start.force warden 12->9, lancer 6->9 (still 48); weapon g7_sent_harpoon damage 95->150; plan.walls_alarm 2 (new); notes updated",
+  "sentinels7.gd": "walls_alarm: under alarm only the 2 wall runs nearest the threat keep their patrol pair, the far pairs join the stand-to (threatened face first) per 13.9c-11; header comment updated for 13.9c-38. (A per_tower_breach rule was tried and removed; it made things worse.)"
+ },
+ "balance_table_after": "5 seeds (1-5), x2.5 HELD 5/5 (0 attackers left), x3 LOST 5/5 (inside 9-42), x3.5 LOST 5/5, x4 LOST 5/5 (inside 47-99), x4.5 LOST 5/5; drone bay off x2.5 LOST 5/5 (inside 43-62). Logs .plan/watch7_w2fin_*.log",
+ "balance_table_before": "48 men untuned (WATCH7): full LOST at every mult 5/5 (x2.5 inside 16-35); nobay LOST 5/5",
+ "probe_trail": "w2a1 (cap24 6/10/8 + 9 lancers): x2.5 LOST 5/5 inside 5-30; w2a2 (+walls_alarm): inside 6-13; B (mix 4/8/12) inside 4-14; C (+harpoon 150) inside 1-11; D (+rebuild_s 20) HELD 5/5; Dn (D without harpoon) HELD 2/5; F3/G3 (rebuild 15, rearm 12, walls_alarm 1) did not make x3 hold. .plan/watch72_*.txt/.log",
+ "tests_changed": [
+  "tests/test_dronebay7.gd: cap/total/ready 12->24, 11/12->23/24, 12/12->24/24 (13.9c-38 follow-up); test_hive_breach_full_commit window 240->900 ticks (kamikazes go one per target, so 12 launch one after another; the check is unchanged)",
+  "tests/test_sent7.gd: test_balance_fight cites 13.9c-38 follow-up (checks unchanged); test_always_on_watch debug print block removed",
+  "tools/pt7_dronebay7.gd: Drones 12/12 -> 24/24 literals (lines 3-4, 161, 185)",
+  ".plan/bal7_probe.gd: + --tset=<json> table patch (weapons/units)"
+ ],
+ "RESULT": {
+  "test_sent7": "pass=12 fail=1: 'Sentinels (drone bay off) hold vs 3x human infantry' (747 attackers, 81 inside). Also fails with WATCH7's original mix (37 inside), so it comes from doubling the garrison value, not this tuning. Tried carbine 13->17, rotary 8->11, defence_mult 0.4/0.3, towers_alarm 8, walls_alarm 1/3/off, far-tower breach rule: none held. Every other balance check green (inf x2 HELD, Machine x2.5 HELD, full CA x2.5 HELD, CA x4 breaks in, bay-off CA x2.5 LOST); test_always_on_watch green (0 gaps, 46/46 rotated, longest 340 s).",
+  "test_dronebay7": "pass=15 fail=0",
+  "test_cnfac7": "pass=36 fail=0", "test_lpreserve7": "pass=7 fail=0", "test_wallfire7": "pass=8 fail=0", "test_det7": "pass=6 fail=0",
+  "test_lpmode7": "pass=18 fail=0", "test_ciws7": "pass=16 fail=0", "test_cards7": "pass=1 fail=0",
+  "test_hot_state": "pass=11 fail=6, golden/HEAD comparisons only; two runs gave the same hashes (e.g. 2k_fight/on flat 74a9d449..., 2k_fight native 6e77a27a..., 2k_mixed fb0e1866...); the bench scenes have no facility, so the moves are not from this change (they were already failing in BAL7's run). No golden edits.",
+  "pt7_sent7": "pass=22 fail=2: sent7_human_assault_held (9 of 14 'left' counts downed men still on the map), sent7_casualty_in_cover (cover 0.00; the drag spots chosen have cover 0.15-0.30, below open_v 0.35; same open issue REGFIX7-3 saw)",
+  "pt7_dronebay7": "pass=31 fail=2 before the flow fix (both were the hard-coded 12/12 literals; the card did show 'Drones 24/24'); NOT re-run after the fix"
+ },
+ "shots": [".plan/shots/WATCH7-2/sent7/sent7_entry_z250.png", ".plan/shots/WATCH7-2/sent7/sent7_walls_z175.png", ".plan/shots/WATCH7-2/sent7/sent7_human_assault_late_z250.png (posted as shots.best)", "more in .plan/shots/WATCH7-2/sent7 and .plan/shots/WATCH7-2/dronebay7"],
+ "remaining_steps": [
+  "Owner/ORCH decision on test_sent7 'hold vs 3x human infantry' with drone bay off: at the 48-man value that is 747 attackers; no content tune found that holds it while keeping the rest. Options: (a) Sentinel-only infantry checks measured against the old 24-man value, (b) a deeper change so far posts engage a breach without dying (per_tower_breach 0 was worse), (c) accept 2x/2.5x (both HOLD)",
+  "Re-run windowed pt7_dronebay7 (expect 33/0) and pt7_sent7; fix or record the two pt7_sent7 fails (assault_held should probably count Wounds.is_down as out of the fight, needs the flow owner's OK; casualty drag-spot cover is the REGFIX7-3 open issue)",
+  "Note for DRONEBAY7/ORCH: on a breach the kamikazes still go one per target, so 12 do not all go 'at once' against a single breacher",
+  "Observation: the facility now breaks in at 3x (24-man era held 3x); 13.9c-33 only names 2.5x holds / ~4x breaks, so this is within the owner's rule but a sharper cliff"
+ ]
+}

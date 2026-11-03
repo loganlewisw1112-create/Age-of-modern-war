@@ -1,0 +1,17 @@
+{
+  "agent": "REGRESS7", "head": "58dc6de (+ uncommitted working tree)",
+  "done": [
+    "test_fort::test_fort_breach_by_artillery: cause = G7 default player formation (Formations7 auto wedge, vehicle spacing) puts / snaps 2 of 3 trucks' slots outside the sealed ring, so order_path succeeds and they never breach. Fix sim/systems/movement.gd apply_command: player attack_move whose slot is reachable but whose group target is sealed (not can_reach) breaches too (Fortify.on_attack_move_blocked with the target), stop_path. test_fort 10/0.",
+    "test_terrain_classes::test_gate_blocks_enemy_team_lets_owner_through: cause = WOUND7 torso knock-out: Movement.stop_path on every torso hit and nothing ever resumed the move (order stayed move, moving=false forever). Game fix sim/systems/wounds.gd: _ko_hold/_ko_pass, sys_state.wounds.ko {id:[resume tick,gx,gy]}, walks on when the KO ends unless re-ordered/down/broken. Even so 3 torso KOs (4 s each) under fire from 4 tiles kept the unit short of the gate (x 43.7): test setup switches g7_wounds.enabled off (existing rule switch, test_squad61 precedent). test_terrain_classes 8/0.",
+    "test_supply::test_shots_consume_ammo_and_empty_cannot_fire: cause = head kill roll killed the 100000-hp target at shot 3 (Wound zone head result dead, wkill). Test setup switches g7_wounds.enabled off (G7_REFERENCE: 'Head: usually killed or knocked unconscious'). test_supply 10/0.",
+    "test_units_g5::test_hmg_deploy_pack SCRIPT ERROR: line 161 read w.entities[foe] before has(foe); foe now dies in the 60 ticks. Reordered the same oracle. test_units_g5 8/0, 0 script errors."
+  ],
+  "open": [
+    "test_wound7::test_bk_move_fires_while_moving (0 shots): SENSE7 spot gate hides the stationary peripheral enemy; passes with g7_senses off. need posted to SENSE7.",
+    "test_damage::test_forest_infantry_concealed_until_it_fires: SENSE7 spot gate; passes with g7_senses off. need posted to SENSE7.",
+    "test_native::test_group_move_parity_reaches_goal_and_respects_blocks + test_reduced_tier_stride_parity: Formations7 _group squeezes 30 foot into a 30-tile file behind the target, back west of the wall. CR posted to SQUAD7-6 (formations7 is theirs).",
+    "Full suite log C:/CODING/g7_full_suite_737e858.log was still empty (0 bytes) at handoff: not triaged.",
+    "test_hot_state not run: the KO resume and breach changes move hashes in fights with torso hits / player attack-moves into forts; ORCH re-baselines."
+  ],
+  "scratch": ".plan/r7/ (probe harness run.gd/cases.gd, tst.gd runs one test method with rule blocks off: -- --t=file::method --off=g7_senses)"
+}

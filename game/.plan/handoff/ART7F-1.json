@@ -1,0 +1,42 @@
+{
+  "agent": "ART7F",
+  "n": 1,
+  "reason": "budget.handoff_now from ORCH at ~76 calls",
+  "done": {
+    "flicker": "CAUSE: entity_layer.refresh only called _push_fac when mv.world_readable(); on every frame a threaded sim step was still in flight it drew NOTHING of the compound (pad tiles, helipad, garages, decon, gate). In a big fight that is most frames. FIX: _push_fac(w-or-null, vr, stick) re-reads CnFacility.render_entries once per new snapshot tick while readable and reuses the cached entries on busy frames. EVIDENCE (pt7_art7f, 1400-unit fight elsewhere on the map): 'speed 1x OLD frames=360 busy_refresh=305 empty=305 distinct=2 sig_changes=109 | FIXED frames=360 busy_refresh=296 empty=0 distinct=1 sig_changes=0 | state unchanged' and 'speed 3x OLD ... busy_refresh=314 empty=314 sig_changes=91 | FIXED ... busy_refresh=318 empty=0 distinct=1 sig_changes=0'. Without load the old path never blinked (0/360), which is why it only showed in real gameplay.",
+    "walls": "Facility blast walls autotile: entity_layer draws cn_blast_wall from the new g7_fac_wall sheet (16 conn masks N1 E2 S4 W8 x intact/damaged), neighbours = walls, cn_tower, cn_checkpoint and the gate zone (static wall_cells_of / wall_mask). Straight runs = 5 T-wall slabs edge to edge, corners/T/ends = hardened pillar (lamp + camera on corners, hazard face on ends). test_walls_link: every segment joins on >= 2 sides. pt: 45 segments drawn with the conn sheet.",
+    "interior": "New generator tools/art/g7_fac7f.gd (group assets/art/g7_fac7f, registered in art_catalog G5_GROUPS): g7_fac_planning (hardened TOC), g7_fac_lab (package lab), g7_fac_dronebay, g7_fac_workshop, g7_fac_range, each 4 door sides x (built, lockdown), drawn at the zone size read from defs_g7_facility.json at gen time (planning 4x3, lab 4x3, drone_bay 4x6, workshop 6x6, range 7x6). entity_layer draws them depth-sorted via _push_zone, door side = side touching the most lane cells x lane width (door_side_of). baseprops_layer slabs only as fallback when the art is missing.",
+    "pads": "a_g7_vtol_pad art (6x6, rot_<facing_i> = approach side; FATO/TLOF/touchdown ring, landing arrow toward the nose, green edge lights, approach bars, flank blast deflectors, scorch circles placed for nose away from the approach) + build/damaged states; entity_layer _vpad_px draws it flat (under units). BASE7-2 defined the def (size 6, facing_i 1 for the LP pads).",
+    "tests": "tests/test_art7f.gd: RESULT pass=4 fail=0 (interior art fits zones, walls link, door sides, view hash identical).",
+    "playtest": "tools/pt7_art7f.gd (flow art7f registered by ORCH). Last run: PLAYTEST RESULT pass=12 fail=0, 0 SCRIPT ERROR. Shots: .plan/shots/ART7F/art7f_*.png (compound z6/z10/lockdown, planning/lab/drone_bay/workshop/range/decon/gate/helipad/pad at z1/2/3, garage z2/3, wall corner_nw/corner_se/tower_w/gate z2/3, vtol_pad z1/2)."
+  },
+  "not_done": [
+    "Shots in .plan/shots/ART7F were taken BEFORE the last regeneration: planning was still drawn at 4x6 (overlapping the new 4x3 lab zone). Art is now regenerated at 4x3 + lab; re-run the playtest and look at planning/lab/vtol_pad/wall shots.",
+    "Workshop door faces north (-y) for the current layout, so the camera sees its back: make it a drive-through (second vehicle door on the local -x face) in g7_fac7f.gd workshop().",
+    "pt shot positions: garage shot centre and 'zoom 3' (camera ZOOM_MAX 2.5) need checking; lockdown shot came out fogged on one side (camera recentre).",
+    "Scale audit list not written / fact art7f.scale_audit not posted (see next_steps).",
+    "Base (LP) a_wall walls use the G4 conn autotile already; not re-verified on the LP map after BASE7-2's re-layout.",
+    "fact art7f.footprints_used not posted."
+  ],
+  "next_steps": [
+    "1. g7_fac7f.gd workshop(): add a closed vehicle door + sign on the local -x face (drive-through), regenerate: godot --headless --path . -s tools/art/g7_fac7f.gd (prints G7_FAC7F ... files=123).",
+    "2. Run windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/ART7F\" --ui-playtest-art7f (timeout 900); expect PLAYTEST RESULT all ok, ART7F_FLICKER lines FIXED empty=0 sig_changes=0. Make contact sheets and look at every shot.",
+    "3. Scale audit at the rev3 scale (4 m/tile, 18 px soldier, 8 m APC, ~20 m dropships): known so far - a_helipad 2x2 (8 m) too small for the XL VTOL (replaced on LP by a_g7_vtol_pad 6x6); CN garage 3x3 / 12 m bay with 3.8 m door fits the 8 m APC; facility gate 16 m fits; G5 hangar/airfield and the G4 a_gate (1 tile = 4 m gate for an 8 m vehicle) still need checking; road widths: lanes 2 tiles (8 m) ok for one APC lane, spine 4 tiles. Post fact art7f.scale_audit with the list and fix what is mine.",
+    "4. Post fact art7f.footprints_used {planning:[4,3], lab:[4,3], drone_bay:[4,6], workshop:[6,6], range:[7,6], wall:2x2, vtol_pad:6x6} to BASE7-2.",
+    "5. Final: bash tests/run.sh --only=test_art7f and --only=test_cnfac7 (entity_layer facility path) ; report."
+  ],
+  "files_touched": [
+    "presentation/view/entity_layer.gd (facility draw cache, fac_busy/fac_sig/walls_linked evidence vars, FAC7F_ZONES interior buildings, door_side_of, wall autotile wall_mask/wall_cells_of/_wall_px, _vpad_px flat pad)",
+    "presentation/view/baseprops_layer.gd (zone slabs only when the art is missing)",
+    "presentation/art/art_catalog.gd (G5_GROUPS + g7_fac7f)",
+    "tools/art/g7_fac7f.gd (new generator)",
+    "assets/art/g7_fac7f/ (generated: manifest.json + 123 files)",
+    "tests/test_art7f.gd (new)",
+    "tools/pt7_art7f.gd (new)"
+  ],
+  "gotchas": [
+    "Bash heredocs with GDScript in this harness failed ('unexpected EOF looking for matching quote'); use Edit/Write or python with a quoted heredoc.",
+    "GDScript: values from untyped array loops need explicit types (var f: Vector3 = ...).",
+    "The flicker only reproduces with a step in flight at entity refresh: needs a heavy sim (pt spawns 2x700 riflemen)."
+  ]
+}

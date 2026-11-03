@@ -1,0 +1,24 @@
+{
+  "agent": "INTEG61", "gen": 1, "calls_used": 96, "tokens_used_est": 335000,
+  "done": [
+    "item1 bearer UI: hotkeys.gd bearer_join=BRACKETLEFT / bearer_leave=BRACKETRIGHT (group bearer61, shares every unit card; J taken by medic_auto/minefield/sea_mines and the card ignores Shift); g2_commands.gd Join squad (arms g2 mode bearer_join) + Leave squad (leave_squad, preview reason); g2_input.gd mode bearer_join + right-click join when only bearers selected; squad_ai.leader_of skips ammo_bearer defs; panel_probe bearer61 block (4 PROBE OK lines)",
+    "item2 ai_army.manage_army: (w.tick+fid)%100==0 AB.ai_attach + Lib.queue_item(AB.bearer_def_for) when AB.ai_wanted>0 (GEN61-2 warned on board)",
+    "item3 rules_companies.json: bearer slot in a_rifle_co (rifle_squad 7->6), a_air_assault_co (paratroopers 6->5), b_conscript_bn (militia 3->2), b_shock_co (grenadiers 3->2), each with alt = the reduced unit; totals stay 15 (platoon_max 15, battalion <=45). Machine has no infantry company preset: none added",
+    "item4 ai_g6_co._companies: asks Companies.deploy_reason before train_company; builds power plant (HQ low power) else depot. test_ai_g6 9/0",
+    "item5 REAL GAME BUG fixed: CommandOverlay was 0x0 (HUD root Control has zero size, FULL_RECT anchors) so map clicks never reached it; cl_overlay.fit() sizes it to the canvas, called from command_layer.set_active(true) and update(). plan61 run after fix: pass=64 fail=2 (plan_select_company picked company 2 because the cell-centre click was nearer company 2's symbol)",
+    "item5 flow: tools/pt61_plan61.gd now clicks the captain's exact position (UNVERIFIED, written after the last run); also holds INTEG61 PLAYTEST-DBG diagnostics printed only when select fails",
+    "item6 partial: CommandCard moved to x=-630 (left of RightScroll, RIGHT_W 306+EDGE_M 12); test_ui_fit NOT run",
+    "item9: audio_catalog.radio_for_event voices CommandApplied from ev.cmd_type (issuer==player) -> holding/moving/ack; inert until ORCH adds cmd_type in world.gd:472 (CR board seq 406)"
+  ],
+  "remaining": [
+    "1. Rerun plan61 windowed: \"$G\" --path . -- --ui-playtest=<abs>/.plan/shots/INTEG61 --ui-playtest-plan61 (timeout 900); expect RESULT fail=0. If select still misses, the click must hit company A: check PLAYTEST-DBG line",
+    "2. Run --only=test_plans61 and test_ui6a (command_layer/overlay change) and test_ui_panels again",
+    "3. Run remaining item7 tests: test_supply, test_units*, test_art_machine, test_art_g3b, test_art_g6, test_content*, test_officers61, test_chain61, test_real61, test_audio61 (already green: test_ai_g6 9/0, test_companies 11/0, test_ui_panels 5/0, test_bearer61 9/0, test_squad61 14/0)",
+    "4. Playtests one at a time: chain61, bearer61 (Join button now exists: G6_bearer_join; flow may need to click it then a squad member), audio61",
+    "5. Item6: run --only=test_ui_fit once (heavy ~10 min); fix cmd61_mode / sq61_* / Settings Audio issues; bearer card adds 2 buttons to infantry cards (compact() goes to 5 columns >8 buttons) - check sq61 screens",
+    "6. Report hash moves: ai_army bearer hook + leader_of change move AI-match hashes (bearers trained by AI). Not measured yet: two identical runs needed for ORCH re-baseline"
+  ],
+  "files_touched": ["sim/systems/squad_ai.gd", "presentation/ui5/panels/hotkeys.gd", "presentation/hud/g2_commands.gd", "presentation/view/g2_input.gd (unowned D2/ORCH file: bearer_join mode + right-click; deviation)", "presentation/ui5/panels/panel_probe.gd", "sim/ai/ai_army.gd", "sim/ai/ai_g6_co.gd", "content/g6/rules_companies.json", "presentation/audio/audio_catalog.gd", "presentation/ui6/command_layer/command_layer.gd", "presentation/ui6/command_layer/cl_overlay.gd", "tools/pt61_plan61.gd"],
+  "test_state": "compile clean (quit-after 60, 0 SCRIPT ERROR); --import done 0 errors; logs in .plan/shots/INTEG61/",
+  "gotchas": ["hb.sh: pass current calls/tokens (stale numbers trigger LATE)", "command_layer.gd changed on disk after my edit by someone else - re-read before editing", "board type 'note' is invalid; use warn/need"]
+}

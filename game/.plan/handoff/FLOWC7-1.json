@@ -1,0 +1,28 @@
+{
+  "agent": "FLOWC7",
+  "task": "facint7 windowed flow to 0 fail / 0 SCRIPT ERROR at real causes",
+  "last_result": "run2 (.plan/flowc7/facint7_run2.log): PLAYTEST RESULT pass=97 fail=10, 0 SCRIPT ERROR (was pass=54 fail=36). Run2 predates the CIWS-wait flow fix and the fac_drive7 n-node fix.",
+  "groups": [
+    {"group": "barracks / Suit Foundry training (14 trained_* + production_done + new_staff_on_roster)", "cause": "FLOW (prerequisite): facility 48-man watch (pop 2 each) + 2 teams = ~133 pop > skirmish ceiling 120 -> every queue SUPPLY_CAP (headless .plan/facint7_diag.gd)", "fix": "done: flow _supply() places barracks + a_company_hq + depots via Construction.placement_error, cap 200; production now drains (pop 176/200)", "files": ["tools/pt7_facint7.gd"], "note_for_orch": "design question: in skirmish the free starting garrison eats 96 of a 120 cap; owner may want the garrison to not count or the facility to give supply"},
+    {"group": "lab_package_* / lab_tier_*", "cause": "FLOW: CnFacility.stock / package_tier take the side id, flow passed the facility id", "fix": "done, passing in run2", "files": ["tools/pt7_facint7.gd"]},
+    {"group": "mission_out + cascades (apc_repair_garage, shots count)", "cause": "GAME: counter_nanite._pair_follow dragged a bay-parked strike APC back to its garage while its partner queued for the bay held by the tactical APC -> head-on deadlock, team stuck in to_pad; FLOW also parked the tactical APC in a bay before the 2-APC rollout", "fix": "done: _pair_follow skips moves with order.fd7; flow sends tactical APC home after its bay shot and back to the bays before the dropship load", "files": ["sim/systems/counter_nanite.gd", "tools/pt7_facint7.gd"]},
+    {"group": "mission_deploy_purge", "cause": "FLOW: deployed the moment CnTeamOut fired, APCs not yet at the site", "fix": "done: waits for cn_deploy preview == ''", "files": ["tools/pt7_facint7.gd"]},
+    {"group": "player_drone", "cause": "FLOW (likely): fixed east heading flew the overwatch drone 25 tiles off, gone before hand-back", "fix": "done: steers toward the facility; DroneLinkLost/DroneReleased now logged; passed in run2", "files": ["tools/pt7_facint7.gd"]},
+    {"group": "dropship_loads_apc", "cause": "GAME: fac_drive7 park/_pin snapped the bay APC back every tick, the Transport board order never moved it", "fix": "done: _intercept releases a parked/queued APC on a board order; passed in run2", "files": ["sim/systems/fac_drive7.gd"]},
+    {"group": "tactical_back_to_garage", "cause": "GAME: after unloading at the helipad the APC is between places, fd7 order() returned false so fd7_go garage was accepted and silently ignored", "fix": "applied, NOT verified: order() joins at nearest lane node (<2.5 tiles) as 'n<node>', _go plans from its own pose. Verification diag was running: .plan/flowc7/diag_unload.log (look for GG lines)", "files": ["sim/systems/fac_drive7.gd"]},
+    {"group": "hive_recall", "cause": "FLOW: read auto flag the same frame the command was submitted", "fix": "done, passing", "files": ["tools/pt7_facint7.gd"]},
+    {"group": "svc_decon_walkway", "cause": "GAME: walking through the 4x3 decon hall takes ~1 s < walk_time 3 s, soldiers were never cleaned (diag2 trace)", "fix": "done: _sweep_zone marks cn_dwh in the hall and cleans on stepping out into the compound; test_cnfac7 36/0; passed in run2", "files": ["sim/systems/cn_facility.gd"]},
+    {"group": "part_cn_ciws7 (run2 only)", "cause": "FLOW race: Ciws7 raises the roof mounts on its own 10-tick cadence (tick % 10 == 3) after CnFacilityRaised, so the tally can run before them", "fix": "applied, NOT verified: waits until C7.state.raised has the facility", "files": ["tools/pt7_facint7.gd"]},
+    {"group": "part_a_g7_camera", "cause": "SPEC question: the facility layout never places cameras (only lp_setup does, 13.9b base). Asked ORCH (board need facint7.camera), no answer", "fix": "none (check not edited)", "files": []},
+    {"group": "G phase pre-load: sentinels_stand_to, hive_auto_release, fire_towers / wall_turrets / sentinels / drones / ciws (7 fails)", "cause": "UNKNOWN: in the first 60 s of the night assault no ShotFired at all (tally {}), no stand-to, no hive launch, although gate hardens and CIWS drum swap passes; after save/load the same fight produces plenty of shots. Suspect attackers not engaging/pathing until reload (attack_move to the compound centre) or ShotFired not reaching the flow before the reconnect", "fix": "not started", "files": []}
+  ],
+  "tests_run": ["test_hot_state RESULT pass=17 fail=0 (after counter_nanite fix, before fac_drive7/cn_facility edits)", "test_cnsim7 RESULT pass=27 fail=0", "test_cnfac7 RESULT pass=36 fail=0 (after walkway + board-release fixes)", "test_apcmov7 RESULT pass=16 fail=0 (before the n-node fix)"],
+  "next_steps": [
+    "Read .plan/flowc7/diag_unload.log GG lines: APC must reach st park at g<i>; if not, revert the n-node hunk in fac_drive7 order()/_go (marked FLOWC7) and report to FLOWB7/ORCH",
+    "Re-run test_hot_state (must be 17/0), test_cnfac7, test_apcmov7, test_sent7, test_dronebay7 after the fac_drive7 n-node + cn_facility edits",
+    "Diagnose G phase: in the flow's 60 s loop log the distance of the nearest attacker to the compound and attacker orders/paths; check whether ShotFired arrives before the load",
+    "Windowed run: \"$G\" --path . -- --ui-playtest=<abs dir> --ui-playtest-facint7 under .plan/hb.sh, timeout 900",
+    "ORCH: answer facint7.camera"
+  ],
+  "shots": "run2 shots in .plan/flowc7/facint7/ (not reviewed or posted)"
+}

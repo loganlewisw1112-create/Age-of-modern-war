@@ -1,0 +1,38 @@
+{
+  "agent": "SQUAD7-4",
+  "gen": 4,
+  "reason": "guard directive budget.handoff_now (projected 535k of 750k, 62/140 calls)",
+  "done": [
+    "1. test_mil GREEN 13/0 (was 11/2). test_mil01: game behaviour is right (probe .plan/squad7_mil_probe.gd: G7 default staggered column, each man idle 0.38-0.76 tiles from HIS slot, slots up to 5.8 tiles behind the goal); oracle changed from 'within 3 tiles of the click' (G1 clump) to: each slot <= 8 tiles from goal, formation front <= 1 tile from goal, each man <= 1.5 tiles from his own slot, idle, stopped. Authority: owner order G7_REFERENCE section 3 'Formations rebuilt like a real military' (default player formation).",
+    "1b. test_save_restore: real bug found + fixed. A 60-man default wedge was 5 fire-team wedges abreast (~70 tiles front, ~100 under threat_mult), flank slots clamped onto the map edge and piled on the same cells (probe: slots y 0..1, duplicates). Fix in sim/systems/formations7.gd: local_slots puts at most cfg chunk_abreast (3, new PROVISIONAL tunable in content/g7/rules_g7_tactics.json) groups per rank, the rest in ranks behind; new fit_in_map() shifts the footprint inside the map (used in _group for non-road shapes). Test now pens the movers in cliffs so all 60 paths need A* (queue provably non-empty) and asserts f7_auto set.",
+    "4. Lag pair (closing to 0.58 tiles mid-march) was squad-side, two causes, both fixed: (a) staggered column files at +-0.5 from the road cell centre = exactly on cell edges, so one man on road pace and his file-mate on grass pace (20% slower). New Formations7.road_keep() keeps foot file offsets inside road/bridge cells (road_follow keep_on for foot, and squad_ai._f7_keep waypoint shifts). (b) Formations7.assign uncross pass counted collinear end-to-end lines (0.00004 tile) as crossings and left worse non-crossing assignments (rear man to a front slot through the file). Fix: _crosses ignores endpoints within CROSS_EPS 0.001 of the other line; new polish loop (squared-cost swaps that don't cross the pair + uncross) then a final strict uncross pass. Column probe (.plan/squad7_column_probe.gd) nn now 1.00-1.13 tiles the whole march (was 0.58).",
+    "Tests added to tests/test_squad7.gd: test_company_wedge_in_ranks_and_inside_the_map, test_column_on_road_keeps_step. test_squad7 17/0."
+  ],
+  "test_state": {
+    "test_mil": "RESULT pass=13 fail=0 TESTS OK (after the formations7 chunk-rank fix; not re-run after the final assign uncross edit)",
+    "test_squad7": "RESULT pass=17 fail=0 TESTS OK (after all edits)",
+    "test_squad61": "14/0, test_garrison 5/0, test_g2_scenarios 7/0 (before the final CROSS_EPS 0.001 + final uncross edit)",
+    "test_officers61": "RED 10/1 test_fix_and_flank_geometry. With chunk_abreast 3: no contact in 2400 ticks (dec '', odds -1). With chunk_abreast 99 (old single rank): contact reached but 'flank point is 54.5 deg off the axis (>= 60)'. So part is my chunk-rank change (company formation now 2 ranks deep) and part predates it (SQUAD7-3 handoff had 11/11 only before its uncross/waypoint-drop edits, or road_keep/assign edits here). NOT diagnosed."
+  },
+  "hotkeys": "Not touched by SQUAD7-4. cn_pincer (P) and cn_break_contact (Shift+B) from CNSIM7-3 change_request seq 557 (addressed to SQUAD7-2) are NOT in presentation/ui5/panels/hotkeys.gd yet (grep finds nothing). Shift chords still depend on ORCH CR seq 249 (hud.gd/settings.gd).",
+  "remaining": [
+    "1. officers61 test_fix_and_flank_geometry: diagnose. Try chunk_abreast 99 with the old assign (revert polish loop) to split causes; if the 2-rank company formation is the cause, consider applying chunk ranks only to player/default moves or make the officer doctrine's company geometry account for ranks; never loosen the 60 deg / contact checks.",
+    "2. Re-run --only: test_mil, test_squad61, test_garrison, test_g2_scenarios, test_officers61, test_ui_panels after the final formations7 edits.",
+    "3. Add hotkeys cn_pincer P and cn_break_contact SHIFT+B in Hotkeys.G7_ACTIONS (same pattern as treat_casualty SHIFT+T), extend test_casualty_hotkeys test or add one.",
+    "4. pt7_squad7 run7 windowed (post status first): G=<console exe>; bash .plan/hb.sh <ID> <calls> <tok> \"pt7_squad7 run7\" -- timeout 900 \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SQUAD7\" --ui-playtest-squad7 > .plan/shots/SQUAD7/run7.log 2>&1; expect pass=21 fail=0, 0 SCRIPT ERROR; view 02 wedge, 03 herringbone, coil, 07/08 convoy, strip frames; refresh strip.",
+    "5. 2k A/B: headless \"$G\" --headless --path . -s .plan/ab_squad7.gd in hb.sh (timeout ~1500), record CPU load (e.g. wmic cpu get loadpercentage before/after), report ratio g7_off=false/true.",
+    "6. Hashes: test_hot_state twice; expected movers: big-group combat formation slots (chunk ranks, fit_in_map), road column slots (road_keep), assignment changes (polish/uncross). Never edit goldens."
+  ],
+  "files_touched": [
+    "sim/systems/formations7.gd (chunk_abreast ranks in local_slots, fit_in_map, road_keep, road_follow keep_on, assign polish + final uncross, _crosses CROSS_EPS)",
+    "sim/systems/squad_ai.gd (_f7_keep: road_keep for foot waypoint shifts)",
+    "content/g7/rules_g7_tactics.json (chunk_abreast 3, PROVISIONAL)",
+    "tests/test_mil.gd (test_mil01 oracle per own slot; save test cliff pen)",
+    "tests/test_squad7.gd (+2 tests)",
+    ".plan/squad7_mil_probe.gd, .plan/squad7_assign_probe.gd (new probes), .plan/squad7_column_probe.gd (extra prints)"
+  ],
+  "gotchas": [
+    "Do not run tests while editing the test file they load (an earlier test_squad7 run raced an append).",
+    "Waiting on background runs: use an until-loop on the output file (sleep chains are blocked)."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "agent": "ANIMC61", "gen": 1, "status": "partial: all brief items done except the ship case on real water (blocked on ORCH CR animb61_map)",
+  "done": [
+    "Vehicles wired in entity_layer: VehAnim61.pick (track cycle by Motion.track_phase, recoil, bank by turn_rate, burner, pulse, damaged at hp<50% via snapshot hp) while the motion layer runs (<= MOTION_CAP 700 drawn; far LOD untouched). mbt/ifv: hull-only column + separate turret sprite (BatchArt.turret_src, tinted, atlas) aimed via Motion.aim_row (last on_shot target screen pos, 3 s hold), turret_fire / turret_recoil columns. Counters g61_counts veh/turret/track/bank/recoil.",
+    "motion.gd: suspension -1/+1 px for 0.15 s on start/stop (vehicles), +1 px hull rock on a shot kick, on_shot records aim target; S_N 18 -> 22.",
+    "batch_art.gd: veh_cols adds damaged/burner/pulse + hull_idle/hull_move; packed atlas generalised: infantry AND vehicle anim61 columns (_v61_block) go to block B with per-cell crop to the opaque rect + shelf packing; vehicle rows 2/6/7 mirrored only when mirror_iou(col 0) >= 0.7 (97/110 sheets), bank_l/bank_r swapped on mirrored rows; tables c[38] src, c[39] signed draw size, c[40] draw offset; frame_src sets out_doff/out_dsz; corpses use them. env ANIM61_ATLAS_AT=<s> prints live atlas stats once.",
+    "Memory (test_anim61 print, main sheets, one tint, MB=1e6): infantry 47.8 -> 26.6 (whole 77.7, base 12.7); vehicles 165.3 -> 118.8 (base 88.0); anim61 frames 112.4 -> 44.8 MB (-60%). 2k match live atlas: 1 page, 16.8 MB.",
+    "Bearer: g61_bearer.gd hook + regen (only m_munitions_drone png/mask/manifest changed); test_animb61 5/5.",
+    "Tests TESTS OK: test_anim61 6/6, test_animb61 5/5, test_art, test_art_g3b, g4_fort, g4_terrain, g4_units, g5_air, g5_bld, g5_naval, g5_units, g6, machine, test_view5, test_view6, test_vfx61.",
+    "Playtests: anim61 12/0; animb61 pass=12 fail=2 (both ship checks: no water on the default map, painted lake has no path)."
+  ],
+  "remaining": [
+    "1. ORCH applies CR change_request.animb61_map (tools/ui_playtest.gd _g6_menu want += \"animb61\": \"Coastal Front\").",
+    "2. Re-run: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/ANIMC61\" --ui-playtest-animb61 (timeout 900). Expect animb_ship_at_speed (wake sheets > 0) and animb_ship_bank_frame. If the bank check still reads 0 with |turn_rate| > 0.6, its detail line now prints v61 keys and VehAnim61.pick(idle/move) for the ship: in the painted-lake run bank count stayed 0 at turn_rate 0.86 (unexplained; the ship never moved there).",
+    "3. FPS final numbers are ORCH/PERF61 on a quiet PC."
+  ],
+  "files_touched": ["presentation/view/entity_layer.gd", "presentation/view/batch_art.gd", "presentation/view/motion.gd", "tools/art/g61_bearer.gd", "assets/art/g61_bearer/manifest.json + units/m_munitions_drone(_mask).png", "tests/test_anim61.gd", "tools/pt61_animb61.gd"],
+  "gotchas": [
+    "Mirrored vehicle rows flip side details (and muzzle side); muzzle_g61 data is per unmirrored art: VFX61 muzzle flashes on mirrored rows may sit ~a few px off.",
+    "Turret aim uses the hull muzzle data in muzzle_g61 (facing = hull), not the turret row.",
+    "Anything reading c[3] + fi*fw for fi >= c[35] gets the wrong frame: use BatchArt.frame_src (cropped cells)."
+  ]
+}

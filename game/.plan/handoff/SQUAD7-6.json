@@ -1,0 +1,15 @@
+{
+  "agent": "SQUAD7-6", "gen": 6, "reason": "work list done except items needing others; at ~70% budget (96 calls)",
+  "done": [
+    "1. Convoy spacing regression: cause = Convoy.form orders the column by unit id; pt7_squad7 spawns the lowest-id IFV at the REAR of the travel direction, so the 'lead' drove through the column and every follower chased a track seeded backwards (vehicles 0.21 tiles apart in a headless repro). Not caused by SQUAD7-4/5 formations7/doc_operational edits (convoy.gd unchanged since 0002c4e; run7 vs run8 differed only by playtest timing). Fix: convoy.gd _order_for() in move(): lead = escort nearest the destination, core front-to-back, rear = escort furthest back, other escorts on the flanks (ties by id). Test test_squad7::test_convoy_keeps_real_spacing_either_way_round (both directions; nearest >= 2, widest <= 8, drove >= 10). pt7_squad7 now logs squad7_convoy_spacing (run9: 4.00 tiles).",
+    "2. FISSURE7 CR 710: hotkeys fissure_span = SHIFT+J (group fissure7; J/U/X/Z are minefield/sweep/rail/garrison on the engineer card, the only letters build keys never take); G7_SHARE pairs fissure7 with the engineer-card groups. g2_commands.gd: Span fissure button (engineer card and units card, only on maps with fissures, Fissures7.is_engineer units), _arm_span arms G2Input mode cell_cmd with on_cell/_span_preview (green span tiles + bank-to-bank line, red cross when span_plan is empty), click submits {type: fissure_span, unit_ids, cell: [x, y]}. NEEDS g2_input.gd hook (not SQUAD7's file): CR seq 914/979, ready file .plan/tmp/sq76/g2_input.gd (+ patch). Until applied the button flashes 'click-target mode unavailable'.",
+    "3. CN card buttons in g2_commands.gd: Pincer [Sh+P] (cn_pincer target_id -1 = nearest heavy walker) and Break contact [Sh+B], one command per selected team, disabled with the sim's reason via preview_command.",
+    "4. CNOPS7 CR 1206: cn_fire_support SHIFT+F, cn_relief SHIFT+R, cn_specialize SHIFT+U (Alt chords impossible: hud._unhandled_input returns on alt/ctrl/meta); convoy gap x CnProgress7.level_mult(core cn_team, 'convoy') (_level_mult, 1.0 for non-CN convoys). Test test_squad7::test_cnops_hotkeys_and_cn_convoy_gap."
+  ],
+  "remaining": [
+    "ORCH: apply g2_input cell_cmd hook (.plan/tmp/sq76/g2_input.gd) then a windowed check of Span fissure on a fissure map.",
+    "ORCH: test_hot_state stable pair on a quiet tree (my two runs 21:43/22:08 each internally consistent but differ from each other: the shared tree changed between them; my sim edits are convoy-only and the AB scenarios form no convoys).",
+    "test_ui_panels re-run after presentation/view/entity_layer.gd parse error (_bay_crafts/_push_bay not found; someone else's in-progress edit) is fixed: it was 5/0 at 20:53 with the span + CN buttons in.",
+    "Card buttons for cn_fire_support / cn_relief / cn_specialize (need target/params) not built."
+  ]
+}

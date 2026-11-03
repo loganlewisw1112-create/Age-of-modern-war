@@ -1,0 +1,35 @@
+{
+  "agent": "LPSHRINK7",
+  "stopped_on": "budget.handoff_now (75%)",
+  "calls_used": 86,
+  "state": "everything compiles (--quit-after 60: 0 SCRIPT ERROR / Parse Error)",
+  "done": [
+    "Two-ring Last Protocol base (13.9c-36) at the source: sim/maps/last_protocol.gd RING_HALF [34, 23] (outer 69x69, core 47x47; was 87/73/53), RING_NAMES [outer, core]; economy plots now in rings[0].plots tagged econ:true (economy row d 24..26), service lane d 27 paved, outer row d 28..29, ring road 30..31, turret row 32..33, wall 34; core: no ring road, core patrol loops the facility service road, free cells in d 21..22 paved as the core perimeter lane + helipad taxi lanes; gate roads run to h0+12 so the serpentine traps sit on road",
+    "Facility untouched (FAC_O, FAC_SITE_O, C unchanged)",
+    "Numbers (PROVISIONAL): outer pits 24->16 (corners 2 east / 1 west + one each side of every gate, 2-gun sections each side on the east face), core pits 4->2, outer CIWS 8->4, outer SAM/radar 8->4, ATGM 6->4, turret steps n/s 10, e 8, w 12 (54 -> 31 outer turrets), cameras 55->23, hangars 3->2, VTOL pads 2->1 (start.vtols 2->1), core barracks 3->2, core motor pools 3->1, economy refineries 8->4, barracks 7->3 (all in the west economy row, away from ammunition), research 6->3, hospitals 3->2, exo 3->1, motor pools 3->2, depots 29->13 listed, generators 45->30 total (17 outer + 13 power_up in core), piles 6->3",
+    "Army (rules_g7_lastprotocol.json start.army) halved: outer 8/4/3/3/3/1, economy 4/2/4/1, core 2/3/2/1/3/2, air 1 strike jet; army_n 96 (was ~190); garrison JOBS outer patrol 4, gate AT 4, gate MG 3 (round-robin over gates), core patrol 2, no economy patrol",
+    "6 helipads in one column behind the east core gate (C+(17,-14/-11/-8/3/6/9)) with fuel depot C+(20,-11), tower C+(17,-5), SAM; start.helipad_air = 3 a_attack_heli, 2 a_transport_gunship, 1 a_airlift. lp_setup.build_helipads spawns each on its pad centre (Air binds/parks it; census: all 5 helis landed with home=their helipad). a_airlift is fixed-wing (hangar heavy): parked in the airfield heavy hangar nearest (census: landed, home a_hangar_heavy@(86,271)); so pad 6 is the free turnaround pad. Strike jet in the other hangar (landed).",
+    "lp_setup: 2-ring fallback layout, ring_index(L0,key) (economy -> ring 0, core/air -> last), build_plots any ring count, build_helipads, HQ from last ring; NOT touched: the LpReserve7.seed line",
+    "lp_defence: per/at arrays sized by ring count, wounded/homers use last ring, economy raid on the ring named economy else ring 0",
+    "last_protocol.gd: reserves from the last ring; lp_garrison7: _ring_of by name",
+    "presentation/cine7/cine_opening.gd: 2-ring framing branch (claimed on board)"
+  ],
+  "files": ["sim/maps/last_protocol.gd", "sim/systems/lp_setup.gd", "sim/systems/lp_defence.gd", "sim/systems/last_protocol.gd", "sim/systems/lp_garrison7.gd", "content/g7/rules_g7_lastprotocol.json", "presentation/cine7/cine_opening.gd", "tests/test_lpmap7.gd", "tests/test_lpmode7.gd", "tests/test_cine7.gd", ".plan/lpshrink7_census.gd (probe)"],
+  "test_changes_authority": "every changed check cites the 13.9c-36 authority record (ring count/order/sizes, old totals: pads, hangars, pits, CIWS, turrets per face, cameras, patrollers, guard posts per gate, vtols); new checks: 6 helipads, every helipad loaded, helipads near a tower, core patrol on the service road",
+  "results": {
+    "test_lpmap7": "RESULT pass=14 fail=0",
+    "test_lpmode7": "RESULT pass=18 fail=0",
+    "test_cine7": "RESULT pass=7 fail=0"
+  },
+  "census_before": ".plan/lpshrink7/census_before.log: rings 87/73/53, 874 wall segments, r0 defences 156 (24 pits, 39 cams, 54 turrets...), economy 45 gens 29 depots 8 ref 7 barracks 6 research 3 hosp 3 exo 3 motor; core 2 helipads 3 hangars 2 vtol pads; units r2 198 r0 100 r1 46 = 344",
+  "census_after": ".plan/lpshrink7/census_after.log: rings 69/47, 499 wall segments, outer: 16 pits, 16 cams, 31 turrets (8 autocannon 3 automortar 4 emp 8 hmg 3 hulldown 1 microwave 1 railgun 3 thermite), 4 CIWS, 4 ATGM, 3 SAM, 1 radar; core: 6 helipads, 2 hangars, 1 vtol pad, 2 pits, 4 SAM, 3 CIWS; units r1 174 r0 73 = 247 (army_n 96); runtime layout_issue reports 'core depot at (90,269) not on buildable ground' only because the airfield paints its apron at runtime - the generated map passes layout_issue (test_lpmap7)",
+  "soak_before": "running/ran in background: .plan/lpshrink7/soak_before.log (started before any edit; grep 'LP SOAK RESULT'); ORCH early reference: ending=defeat_countdown time_s=1270 rings_fallen 1, 75 ms/tick on a busy PC",
+  "remaining": [
+    "1. Wait for / read .plan/lpshrink7/soak_before.log LP SOAK RESULT (if it died, the before soak needs a clean-tree copy; note it)",
+    "2. Run tests: test_lpperf7, test_lpreserve7, test_det7, test_cnfac7 (bash tests/run.sh --only=<t>); fix only via the 13.9c-36 authority record",
+    "3. Soak after: bash .plan/hb.sh <ID> ... -- $G --headless --path . -s res://tools/lp_soak7.gd -- --seed=77 --tide-at=600 > .plan/lpshrink7/soak_after.log; report phases, ending, rings_fallen, ms/tick vs before",
+    "4. Windowed playtests pt7_lpmap7 and pt7_lpmode7 (0 fail, 0 SCRIPT ERROR); flows may assert 3 rings / old totals: adjust per 13.9c-36",
+    "5. Overview shots: whole 69x69 base at a zoom that fits, day; the helipad column C+(17..18, -14..10) = world (121..122, 242..266) with the loaded helicopters; Read them, post fact shots.best",
+    "6. Final report (census before/after above, numbers above, helipads, soak before/after, RESULT lines, shots, not done)"
+  ]
+}

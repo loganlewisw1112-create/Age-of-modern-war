@@ -1,0 +1,42 @@
+{
+  "agent": "ED3",
+  "gen": 1,
+  "reason": "guard budget flag: projected 490k of 700k (70%) at calls=70",
+  "done": [
+    "Task 1: editor_view.gd now gives entity_layer what it reads: var snap, var _world (= world), world_readable() -> true, sim_busy() -> false, fog_of() -> {}; _sync_world() ends with RenderSnap.build(world); snap = RenderSnap.latest(world). Placed units/HQ are drawn (.plan/shots/ED3/playtest/02_units_placed.png), and there are 0 SCRIPT ERRORs in the playtest and demo logs.",
+    "Task 2: editor_doc.gd default victory is 'hq_elimination' (both places).",
+    "Task 3: main_menu.build_config calls setup.finalize(cfg) after victory.apply(cfg).",
+    "Task 4: pause_menu var editor_test (main.gd sets it before add_child) -> button text 'Back to editor'. The existing show_menu path returns to the editor.",
+    "Task 5: Root cause of the playtest offsets: editor_view.mouse_cell() used get_global_mouse_position(), which reads the OS cursor, not synthetic events. It now uses the last InputEventMouse position (captured in _input). The playtest also converts positions with root.get_final_transform() (identity today), pre-deletes user://maps/ed_2_playtest.rtsmap, and retries New if the Map tab is not showing (a load flake). Playtest: PLAYTEST RESULT pass=25 fail=0 (runs 1, 3 and 4; run 2 hit a load flake, guarded since).",
+    "Task 6: --editor-demo screenshots in .plan/shots/ED3/demo/ (01-07 ED1 tabs, 08-11 ED2 tabs). The demo now measures per-frame wall time (EDITOR_FPS_256 min=21 p5=53 median=60 max=125 frames=240; vsync caps the median) and runs a MapIO save -> read -> editor.open_path round trip: 'EDITOR_DEMO roundtrip ok=true cells=16384 decor=112 resources=18 bridges=2 players=2 mismatches=[]'.",
+    "Task 7 layout fixes: left panel fixed at LEFT_W 334 (was 300; ED2 tabs pushed it to ~331 and the map edge jumped per tab; playtest _on_map edge 310 -> 344). Players start stock uses a GridContainer with 4 columns, so label/spin pairs no longer split. Properties reset to the tab title on tab switch (was stale). Issues reset to 'Press Validate' on new/open. The skirmish summary names the custom map (was the stale built-in name).",
+    "UI4B regression (MapOption popup not opening): caused by my hiding of the MapOption row; reverted (row stays visible). Stages UI playtest re-run: PLAYTEST RESULT pass=53 fail=0."
+  ],
+  "remaining": [
+    "1. Optional: p5 frame rate on 256 is 53 (min 21 spikes). Likely the lazy terrain chunk bakes/installs in terrain_layer.tick while panning reveals new chunks (not verified; terrain_layer is not an ED file). Editor-side candidate: editor_minimap._process queues a redraw every frame; redraw only when the camera transform changes.",
+    "2. Optional: the editor demo sets doc.symmetry directly; the playtest covers the UI path.",
+    "3. Full suite was not green for other agents' reasons (see test_state); rerun once test_art/test_thread owners land."
+  ],
+  "files_touched": [
+    "presentation/editor/editor_view.gd",
+    "presentation/editor/editor_doc.gd",
+    "presentation/editor/editor_scene.gd",
+    "presentation/editor/editor_panels.gd",
+    "presentation/editor/editor_demo.gd",
+    "presentation/editor/ed2_tab_players.gd",
+    "presentation/menu/main_menu.gd",
+    "presentation/menu/pause_menu.gd",
+    "presentation/main.gd (pause editor_test flag only)",
+    "tools/editor_playtest.gd"
+  ],
+  "test_state": "--only test_editor_core: RESULT pass=10 fail=0 TESTS OK; --only test_editor_scenario: RESULT pass=5 fail=0 TESTS OK (both before the panel/players/menu edits; the editor playtest and demo ran after them with 0 SCRIPT ERROR). Full suite (hb.sh): RESULT pass=281 fail=5 files=34, TESTS FAILED (rc=1 script_errors=0). Failures are in test_art (placeholder icons for the new UNITS defs a_sniper/a_mortar/a_combat_engineer/a_apc/b_*; generator manifest 1315 vs 1375) and test_thread::test_snapshot_matches_world (perf 3890 vs 1694 us under load), none in editor files. Headless --editor --quit-after 120: no SCRIPT ERROR / Parse Error. Editor playtest: PLAYTEST RESULT pass=25 fail=0. Stages UI playtest: pass=53 fail=0.",
+  "change_requests": [
+    "MAPIO sim/map_io.gd validate(): the start_blocked break leaves only the dx loop, so one blocked start emits up to 5 issues; break both loops (posted on the board)."
+  ],
+  "gotchas": [
+    "Viewport.get_mouse_position()/get_global_mouse_position() read the OS cursor; synthetic Input.parse_input_event clicks don't move it. Use event positions.",
+    "The first terrain bake can take 12-14 s when the machine is loaded; playtests need waits that check state, not fixed sleeps.",
+    "The stages UI playtest (tools/ui_playtest.gd) clicks MapOption: keep that row visible.",
+    "Bash heredoc for python worked: python - <<'PY'."
+  ]
+}

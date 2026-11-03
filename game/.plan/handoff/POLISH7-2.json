@@ -1,0 +1,41 @@
+{
+  "agent": "POLISH7-2",
+  "stopped_by": "ORCH budget.handoff_now (84+ of 140 calls, projected 560k)",
+  "calls_used": 92,
+  "tokens_used_est": 530000,
+  "files_touched": [
+    "presentation/view/fac_atmo7.gd (13.9c-14 light fixtures + masts + occlusion; 13.9c-17 red only on lock/breached; plaques drawn after shutters)",
+    "presentation/view/fac_life7.gd (13.9c-17 alarm only on lock/breached; _gone state cache + rebuilds counter; fuel truck stops on the fuel point north strip; dog kennel at the barracks front)",
+    "tests/test_atmo7.gd (state -> alarm level / red checks in test_alarm_levels)",
+    "tests/test_life7.gd (new test_alarm_only_on_breach)",
+    "tools/pt7_atmo7.gd (atmo7_beacon_fixtures, atmo7_under_fire_amber, shots alarm_gate z1-3, alarm_cp z3, alarm_back_tower z1-3, alarm_tower z1-3, amber_under_fire z1-2)",
+    "tools/pt7_life7.gd (cupola check reads the live layer entry + same_entry/rebuilds diagnostics; eng_drive shots when an engineer drives; life7_under_fire_life_goes_on; life7_breach_alarm with a real breach before the alarm shot)"
+  ],
+  "red_lights_13_9c_14": {
+    "cause": "tower beacons at tower centre + (0.62,-0.62) tiles = 2.48 m out, but the FACB7 roof slab is 2.15 m half wide (tower_piece slab top 10.84 m): the beacon hung in the air off the roof corner. Gate beacons at x+0.2 / end-0.2 and 5.3 m (the bastions are at ey-1.3 m across, cap 5.85 m). Wall lamps at 4.5 m (capping beam top 3.78 m). FACB7's own red obstruction lamps (tower 12.8 m, checkpoint 7.2 m) sit on 3-6 cm masts that vanish, so the lamp floats.",
+    "fix": "constants from g7_fac7f.gd: TOWER_ROOF_Z 10.84 m, BEACON_OFF (0.475,-0.475) on the slab corner, SEARCH_OFF/SEARCH_Z = the art searchlight, GATE_CAP_Z 5.85 m on each bastion centre, checkpoint beacon on its east parapet (3.85,-2.0) m at 5.6 m, WALL_CAP_Z 3.78 m with a lamp housing always drawn; masts drawn under the FACB7 obstruction lamps; lights behind a zone building prism (BLD_Z) are skipped (_hid / _behind_bld).",
+    "evidence": "pl6_atmo7: PLAYTEST atmo7_beacon_fixtures ok=true (106.2 px slab, 5 entry beacons, wall cap 37.0 px). Shots looked at: C:/CODING/integ7_fast/pl3_atmo7/atmo7_alarm_tower_z3.png, atmo7_alarm_gate_z2.png, atmo7_alarm_cp_z3.png, atmo7_alarm_back_tower_z2.png; C:/CODING/integ7_fast/pl4_atmo7/atmo7_alarm_tower_z3.png (mast under the obstruction lamp).",
+    "pending": "FACB7-4 is making planning 4 storeys (16.9 m) and barracks 3 storeys (roof pad deck 11.6 m): BLD_Z in fac_atmo7 (and LIFE7 ZONE_H) must be updated from facb7.zone_heights once the art lands (asked FACB7-4); it feeds light occlusion, fires/cracks and plaques."
+  },
+  "breach_only_13_9c_17": {
+    "change": "fac_atmo7 _alarms: red = lock or state == breached; amber = contested / under_fire / launch alert; wall lamps lit + searchlights only on red (beacons amber otherwise); shutters / mist flood already follow lock. fac_life7 _rebuild: alarm = F.lock or state == breached.",
+    "tests": "test_atmo7 RESULT pass=7 fail=0; test_life7 RESULT pass=10 fail=0 (new test_alarm_only_on_breach); test_seq7 RESULT pass=4 fail=0 (after the last edit).",
+    "playtests": "pl6_atmo7: atmo7_under_fire_amber ok=true (state under_fire alarm 0.5 red false lock false), atmo7_alarm_real ok=true (breached), PLAYTEST RESULT pass=23 fail=0, 0 SCRIPT ERROR, 0 triangulation. pl6_life7: PLAYTEST RESULT pass=25 fail=1: life7_under_fire_life_goes_on failed on the scenario (state was contested when sampled after the tracking shots; the layer alarm was correctly false); sampling moved to right after the tank spawns (wait_until under_fire 12 s); NOT re-run yet. life7_breach_alarm ok=true (state breached, alarm true).",
+    "shots_not_looked_at": "pl6_atmo7/atmo7_amber_under_fire_z1.png, _z2.png; pl6_life7/life7_under_fire_z1.png, life7_alarm_z1.png"
+  },
+  "cupola_tracks": "cause: the playtest held a handle to L.life[0] taken before the tank; rebuilds (alarm / state change) replace the entry, and a facility missing from render_entries for one rebuild got a fresh aims dict, so the old handle kept a frozen mid-turn aim (run 1: 0.51). Diagnostic: 'same_entry false rebuilds 3' in pl4/pl5/pl6. Fix: the test reads the live entry (check unchanged: tracking and |aim - want| < 0.3); the layer keeps the state of a facility that drops out for one rebuild (_gone). Runs 3-6 all ok (aim 1.25-1.29 want 1.29).",
+  "plaques": "the lab lockdown shutter covered the PACKAGE LAB plaque (pl2 alarm_lab_z3): plaques are now drawn after the shutters. Not re-shot.",
+  "flags": "pl2 hq_flags_z3 looked at: both flags readable in the lane by the HQ walkway; the left pole's foot sits on the garage roof edge line (minor, left as is).",
+  "dog": "the kennel fell back to the workshop door (no ready_room zone) = behind the workshop from the camera (pl4 dog0_z3: no dog visible). Kennel moved to the barracks front corner. pl5: dog walking (heeling a Sentinel) at (52.2, 84.5) but behind the wash link walls in the shot: dog in the open NOT confirmed.",
+  "eng7_hide_driver": "not verified: the engineer figure is drawn by entity_layer (ORCH); the attached vehicle is drawn by fac_life7 on z 2 over it at the same point. pt7_life7 now shoots life7_eng_drive_z1..z3 when an engineer is attached, but none drove within 40 s in pl5/pl6 (LIFE7_INFO not exercised). If the figure shows, the exact fix is in entity_layer: skip unit ids in fac_life7._eng_job (ORCH). Answered ENG7.",
+  "magazine_door": "FACB7-3 seq 4139: magazine door moved to [24,25] facing south (faces.magazine 1) + service lane x23; LIFE7 MAG_FORECOURT follows render_entries faces -> consistent now; pl5 life7_forklift1_z2 looked at.",
+  "fuel_truck": "SEQ7-3 request: stops moved to the fuel point north strip (park: fuel_point centre x, y+0.6; pad stop pad.end.x+0.3, y+1.2; helipad stop hr.x-0.3, y+1.6), clear of the APC line-up (pad centre row) and the runner / rig routes; seen in pl4_life7/life7_fuel0_z2.png.",
+  "garrison_dots": "row of dots = Sentinel Barracks 120 garrison pips in overlay_layer.gd (need seq 4393); ORCH fixed it.",
+  "fps": "NOT run (budget). Harness: bash .plan/polish7/fps_ab.sh 30 on nolife noatmo off (untested script).",
+  "next_steps": [
+    "1. Re-run pt7_life7 windowed (life7_under_fire_life_goes_on with the new sampling) and pt7_atmo7; read the amber_under_fire vs alarm shots",
+    "2. fps A/B via .plan/polish7/fps_ab.sh; gate 2k p10 >= 60 with the layers on",
+    "3. Update BLD_Z (atmo7) / ZONE_H (life7) when FACB7-4 posts facb7.zone_heights for the 4-storey command centre / 3-storey barracks",
+    "4. Dog shot in the open (wait until the dog is not occluded); ENG7 driver cover shot"
+  ]
+}

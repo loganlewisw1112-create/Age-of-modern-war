@@ -1,0 +1,32 @@
+{
+ "agent": "CIWS7-2",
+ "predecessor": "CIWS7 (.plan/handoff/CIWS7.json)",
+ "calls_used": 77,
+ "tokens_used_est": 480000,
+ "stopped_on": "budget.handoff_now (ORCH)",
+ "spec": "docs/G7_REFERENCE.md 13.9c-32 + owner answers (2 mounts on opposite roof corners; air first, ground too; Facility Engineers swap the drum), 13.9c-30, 13.9c-28",
+ "done": [
+  "SIM FIX sim/systems/ciws7.gd _end_burst: M.pu = w.tick + ticks(pause_s) + 1 (the silent gap is the full pause; was one tick short)",
+  "TEST REFERENCE FIX tests/test_ciws7.gd test_two_mounts_on_the_command_centre_roof: corner distance measured against the roof brim Rect2(origin + (8.1, 9.08), (3.2, 2.84)) (fact facb7.zone_heights seq 4583), threshold 0.9 unchanged, footprint-inside-zone check kept",
+  "sim/systems/ciws7.gd: static var enabled := true (test / A-B switch only, not state; tick returns at once when false)",
+  "test_ciws7 RESULT pass=9 fail=0 (run twice: .plan/ciws7_t2.log, .plan/ciws7_t3.log after all edits)",
+  "test_eng7 RESULT pass=10 fail=0, test_turret7 RESULT pass=18 fail=0, test_cnfac7 RESULT pass=36 fail=0 (.plan/ciws7_test_*.log)",
+  "test_sent7 RESULT pass=11 fail=1: test_balance_fight 'Sentinels lose vs combined arms' fails (combined arms x2.5 HELD). NOT Ciws7: .plan/ciws7_ab.gd runs that r4 fight with Ciws7.enabled false -> HELD (16 left, attackers 0) and true -> HELD (18 left, attackers 0), the CIWS fired 0 rounds there (log .plan/ciws7_ab.log, fact ciws7.sent7_ab)",
+  "ART tools/art/g7_ciws7.gd -> assets/art/g7_ciws7/ (group g7_ciws7, 99 states, 182 files, bytes 2980800 <= turret budget 3145728, deterministic). Original design 'Thresher Rotary CIWS': octagonal concrete roof plinth + power duct, armoured training mount with sloped base, rear electronics cabinet (team patch), trunnion cheeks; elevating mass = faceted ceramic radome (equator band, dark track window, flat search plate on the crown), 7-barrel rotary cannon in a ventilated steel shroud, olive side ammo drum with ribs + open belt chute (brass links), spent-case chute. States cw<k>_<el> / _s / _fire (k 0..7 = yaw k*45 deg, el 0 -29 / 1 +10 / 2 +46 deg), cw<k>_r (hatch open, empty + fresh drum on the roof, engineer figure on the camera side), cw<k>_x (barrels parked low, red DRY lamp), damaged, destroyed (wreck), aliases built / rot_0..3 / fire / build_0..2. Pivot = o + (0, round(15.52 * 9.8) + 19) = o.y + 171 (roof + sort shift). Opaque, no shadow decal.",
+  "5x review boards .plan/shots/CIWS7/board5x_v1..v3_*.png + board2x_v1_c.png (3 iterations: v1 tall bottle radome + spike panel -> v2 squat faceted dome, lighter longer barrels, bigger drum -> v3 flat search plate, drum-swap engineer moved to the camera side)",
+  "fact art.g7_ciws7 posted (seq 7493); ORCH appended g7_ciws7 to art_catalog G5_GROUPS",
+  "muzzle7_gen run after registration: MUZZLE7 GEN units=278 buildings=40 ... ; cn_ciws7 measured 24 of 25 fire states from the flash at the barrel cluster ('f'), cw5_0_fire = 'e' edge fallback (barrels trained away and depressed: the muzzle is hidden behind the radome, so no flash pixels; muzzle7._state_dir has no cw<k> case so that edge uses straight up)",
+  "PLAYTEST tools/pt7_ciws7.gd (registered ciws7): facility + 2 roof mounts, art registered check, 18-drone swarm (frame-exact paused burst shots), 4 rockets via Counterdrone.intercept_strike, 8 breacher crawlers in the staging yard (frame-exact depressed burst), drum run dry -> engineer swap (frame-exact paused cw<k>_r shots + door shot), drum refilled. Run 2 (.plan/ciws7_pt2.log, shots .plan/shots/CIWS7/pt2/): PLAYTEST RESULT pass=15 fail=2, 0 SCRIPT ERROR",
+  "fact shots.best posted (seq 7574): pt2 roof_after_z175, roof_idle_z250, drone_burst_z250, drum_swap_z250, board5x_v3_b; read: both mounts drawn on opposite roof corners at roof height, no translucent placeholder boxes at the tower foot / east entrance"
+ ],
+ "playtest_state": "run 2 fails ciws7_ground_burst_caught + ciws7_crawlers_engaged (0 ground fire ticks, 0 of 8 crawlers left after 30 s): drones left over from wave 1 (8 of 18 alive) kept the mounts on air-first. Fix applied AFTER run 2 and compile-checked, NOT yet run: the leftover drones are destroyed (pt_cleanup) before the crawler rush. Also tuned before run 2 (checks unchanged): 18 drones instead of 10 (other facility defences shared the kills), crawler hp x5.",
+ "remaining_exact_steps": [
+  "1. Re-run the playtest: \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CIWS7/pt3\" --ui-playtest-ciws7 (timeout 900). Want PLAYTEST RESULT all ok, 0 SCRIPT ERROR. If ciws7_crawlers_engaged still shows 0 ground ticks: print C7.state(w).m (t / el / a) and the crawlers' positions vs CnFacility.compound_rect + ground_pad (Ciws7._area) and Turrets7 tags of m_breacher_crawler vs ground_tags; breachers may detonate on the walls within seconds (then spawn them nearer the mount, or use m_scout_crawler as test_ciws7 cases allow). Never lower the >= 10 ground-tick check.",
+  "2. Read the new crawler_burst_z175 / z250 PNGs; post fact shots.best with the crawler burst shot.",
+  "3. Optional polish: cw5_0_fire muzzle uses the edge fallback (muzzle hidden behind the radome); a MUZZLE7 owner could add a cw<k> case to muzzle7._state_dir (screen_dir(k)) so the fallback points along the barrels.",
+  "4. Optional: roof plinths in tools/art/g7_fac7f.gd planning() (CIWS7 handoff step 6) - not done; the mount art carries its own plinth.",
+  "5. Known display gaps (report, not fixed): the Engineer unit waits at the stair door during climb + swap (no path puts a unit on the 15.5 m roof; the roof shows the swap through cw<k>_r with a drawn engineer figure); idle radar sweep is only a per-yaw tilt of the search plate (no separate sweep animation frames); the PAUSED banner shows in the frame-exact shots (the sim is paused on the exact tick)."
+ ],
+ "files": ["sim/systems/ciws7.gd", "tests/test_ciws7.gd", "tools/art/g7_ciws7.gd", "assets/art/g7_ciws7/", "assets/art/muzzle7.json (regenerated by muzzle7_gen)", "tools/pt7_ciws7.gd", ".plan/ciws7_ab.gd + .plan/ciws7_ab.log (scratch A/B)", ".plan/ciws7_board.gd (scratch board maker)", ".plan/shots/CIWS7/"],
+ "hashes": "unchanged by this agent apart from the predecessor's on-purpose moves (a match with a CN facility raises 2 mounts); the _end_burst +1 tick shifts burst timing in matches with a facility only"
+}

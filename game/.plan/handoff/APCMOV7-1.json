@@ -1,0 +1,39 @@
+{
+  "agent": "APCMOV7", "n": 1, "reason": "budget.handoff_now at 64/140 calls (projected 560k)",
+  "brief": ".plan/agents/prompts/G7-APCMOV7.md (spec docs/G7_REFERENCE.md 13.9c-16)",
+  "files": {
+    "sim/systems/fac_drive7.gd": "OWN, about 1000 lines, compiles. Runtime lane graph from the layout json: lanes become centrelines (lanes 3.5+ wide carry two one-way lanes, right-hand traffic); the gate column runs at the gate centre x from the gate_inner top to compound+6.6; the pad and staging plazas are a 1-tile node grid; garages go park P -> door (P+out*1.5) -> any node within 2.6 ahead; bays go front node (bay-1.6*dir) -> bay -> exit node. Clearance raster: every zone except DRIVE_ZONES, plus core, wall ring, towers, link walls, lockers, baffles; garages tagged 10+i. Routing: Dijkstra over (node, came-from) with turns <= 100 deg, then string pulling (_pull), then fillets fitted to clearance (_fit, R_MAX 2 down to 0.6), prims/pose_at. Route cache lives in w.cache.fd7_rt and is rebuilt from the saved raw polylines (V.legs). Orders: order(w,e,fid,to,who,tgt,then,gar) with to = g<i> / b / b<j> / w<k> / x. Garages are backed into (forward leg + reverse leg). 2 bays (_free_bay fills the front bay first; a 3rd APC gets st=queue). Wash: rinse stop, then continue (V.then). APCs outside approach via Movement to _ap(); outbound APCs are handed off to Movement past the gate (to tgt, or to a dispersal spot). tick: _discover (team APCs in garages -> parked, nose out), _watch_out (team APCs that are out and get a move order into the compound), _intercept (a plain move/attack_move without the fd7 key -> classify -> order), _drive (speed V_FWD 1.4, V_REV 0.5, curve speed sqrt(A_LAT*R), ACC 0.6, BRK 1.0; zone reservations on two-way lanes and the gate lane, where APCs standing in the wash hold it inbound; convoy rule at the gate by seq; look-ahead conflicts at D_SAFE 1.95 with priority by distance-to-conflict, then seq; gear stop GEAR_TICKS). order_team(w,T,aps,where) is the CnFacility hook. fd7_go: validate_command/apply_command. registered() is true only when fac_drive7.gd is in SimWorld.SYSTEM_ORDER (or the static force_on is set, for tests).",
+    "sim/systems/cn_facility.gd": "HOOK APPLIED (ORCH allowed it): const FD7_PATH, and in _order_slots: if _callf(FD7_PATH, order_team, [w, T, aps, where], false) == true: return. Inert until fac_drive7 is in SYSTEM_ORDER (order_team returns false).",
+    "tests/test_apcmov7.gd": "OWN: helpers (_setup/_facility/_train/_cmd/_step) + test_every_route_clears_buildings_with_a_turning_radius. It covers every garage->bay/exit, wash->garage, entry->wash and bay->exit route and checks: body clear, rmin >= R_MIN, heading change per 0.1 tile <= 0.1/R_MIN. No test sets force_on (it is static and must not leak into test_cnfac7).",
+    "tools/pt7_apcmov7.gd": "NOT WRITTEN"
+  },
+  "change_requests": [
+    "ORCH world.gd (board need change_request.world_fac_drive7): const FacDrive7 preload; SYSTEM_ORDER Movement, FacDrive7, DronePilot; COMMANDS fd7_go. HOLD it until the successor has test_apcmov7 green and test_cnfac7 green with the slot in. Applying it now switches CnFacility to the controller while some corners are still too tight.",
+    "FACB7-5 (need apc_bays): add apc_bays [[9.8,5.6,90],[12.5,5.6,90]] and bay markings on the pad. The code defaults to these positions when the key is missing."
+  ],
+  "tests": {
+    "test_cnfac7": "RESULT pass=34 fail=0 (hook inert)",
+    "test_apcmov7": "RESULT pass=0 fail=1: the geometry test fails on tight corners (rmin 0.34 to 0.8) and a few body hits"
+  },
+  "failing_routes_now": [
+    "g0..g3 -> b0/b1: the diagonal cut over the pad to the bay front (e.g. (7.8,8.5)->(8.5,5.5)->(9.8,4.0)->(9.8,5.6)) leaves too little straight for the fillets.",
+    "g2 -> b*: hits the planning corner near (7.7,8.9).",
+    "g4..g6 -> b*: hit near (20.2,8.8) (workshop corner (20,9)) on the diagonal from the door to (20.2,8.5), then west.",
+    "w0 -> g4..g6: hit at (15.5,16.5) turning from the spine north lane onto L7 east (the 1-wide channel between the drone bay and the armory). The pull went (14,22.2)->(15,16.5) straight, then a 90 deg turn.",
+    "g7 -> b1: rmin 0.34 on (15,9.5)->(12.5,4.0)."
+  ],
+  "next_steps": [
+    "1. Geometry. (a) Make the bay approach a proper U over the pad top: only accept edges into the bay front node within 30 deg of the bay heading, or add a second pinned node at bay-3.0*dir. (b) Pin the node where a lane meets a plaza. (c) In _pull, rebuild prims for a candidate cut and reject it if it lowers rmin below R_MIN. (d) When no R >= R_MIN clears a corner, keep that Dijkstra vertex unpulled. Debug with the scratchpad scripts: dbg2.gd prints the failing pairs. The python prototype (proto.py + t2.py, scratchpad) validated a hand-built graph with 0 failures and min R 1.0, using diagonal door connectors D0->(7.6,8.5), D2->(7.6,16.5), D3->(9.5,18.5), D4->(20.4,8.5), D6/D7->(20.4,16.5), the inbound north lane via (15,18.6), and bays entered by a U from (15,2.6). Adding such connectors generically (door to a cross-lane point 0.6 past the junction) is the proven fix.",
+    "2. Flow tests in test_apcmov7: a strike team plus a tactical squad (3 APCs) roll out; check 2 in the bays and the 3rd at st=queue in its garage; convoy order at the gate by seq; min APC spacing >= 1.75 every tick; pose_clear every tick; heading change per tick <= V_FWD/TICK_RATE/R_MIN; return: wash rinse, then garage, parked nose out; player: fd7_go out with a target, then Movement.order_move into its own garage rect (intercept) -> it parks; hash twice the same; save mid-drive round trip; a match without a facility has no sys_state.fac_drive7. Set FacDrive7.force_on = true inside each flow test and reset it to false at the end.",
+    "3. Then ask ORCH to apply the world.gd CR and re-run test_cnfac7 (34/0) with the slot in: test_loading_and_rollout must finish within 1600 ticks, and the test_base73 return flow must keep the order gate_outer -> apc_wash -> gate_inner.",
+    "4. tools/pt7_apcmov7.gd (flow apcmov7 is registered): two APCs at the bays, both selected and sent out, a third waiting, one sent back to its garage; log positions and headings per frame; shots at zoom 1 / 1.75 / 2.5; Read every PNG; post fact shots.best right away.",
+    "5. motion.gd already limits the drawn turn rate (TURN[cls]); no CR is needed unless the shots show snaps."
+  ],
+  "gotchas": [
+    "A PackedVector2Array inside a Dictionary: (G.pos as PackedVector2Array).append() appends to a copy. Build it as an Array, then convert (fixed).",
+    "Movement._arrive resets the order to idle each tick for a unit that is moving with an empty path. The controller re-sets order {type move, target, fd7 1} after Movement every tick, so CnFacility (which runs before Movement) sees move while an APC drives and idle once it is parked; its _arrived works unchanged.",
+    "The rinse needs e.moving false in the wash (_sweep_zone).",
+    "Hashes: none moved (the controller is inert, not in SYSTEM_ORDER). Once it is registered, facility matches change: team APCs face nose-out at discovery, sys_state.fac_drive7 appears, APC paths change."
+  ],
+  "shots": "none: nothing is visible in game yet (system not registered)"
+}

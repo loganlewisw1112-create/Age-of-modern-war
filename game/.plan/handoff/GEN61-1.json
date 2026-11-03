@@ -1,0 +1,44 @@
+{
+  "agent": "GEN61",
+  "gen": 1,
+  "calls_used": 90,
+  "done": [
+    "NEW sim/ai/general.gd: auto-general ops engine. Belief = Fog-visible enemies + last-seen buildings + CHAIN61 Intel.contacts(w,fid,Rect2(map),0) (guarded; decoys/ageing contacts are kept). Clusters, power/value scoring, 9 ops (strike, infil, attack recon>fix>flank>assault>consolidate, defend, counter after a successful defend, recon, screen/delay, raid_supply, refit). Mission memory (penalty for a failed target/axis), tempo pause after a success, break-off at the stance loss limit, disperse under enemy air, slot coordination (taken_targets), mop-up of buildings, op timeouts. Traits via Veterancy.slot_trait_weight(w,fid,'p<slot>',key) (guarded). Event AiGeneralOp; view() for the panel.",
+    "NEW sim/ai/general_war.gd: budget (parse/update/earned/left, ints, rate per minute + lump), replacement companies via train_company (pre-validated with Companies.validate_command, cost booked before submit, adoption of the formed company into spec.companies), fire support (Strikes via L.sys, danger_close 7 against the whole team, AiFireSupport event), logistics (set_auto_resupply station at the rally point during refit).",
+    "sim/ai/commanders.gd: preloads General; drive() hands objective 'auto' to General.think; formation_ids also takes spec.units together with companies.",
+    "sim/systems/ai_command.gd: OBJECTIVES gets 'auto' (the default when objective is missing); a budget field on set_ai_commander; new command set_ai_budget {issuer, slot, budget} (validate/apply done, NOT yet in world COMMANDS); slots()[i].general = General.view.",
+    "presentation/ui6/a/commanders_panel.gd: Auto objective is the default, Budget option + Grant button (set_ai_budget), GeneralLog label (status + last 3 log lines), slot_text shows 'auto general: <op>'.",
+    "tests/test_gen61.gd: 9 tests (a-i), --only run: RESULT pass=9 fail=0 TESTS OK.",
+    "tools/pt61_gen61.gd: written, NOT run."
+  ],
+  "remaining": [
+    "1. Directive ui.fit_commanders (ORCH seq 151): in presentation/ui6/a/commanders_panel.gd build() change the objective label 'Auto (general decides)' to 'Auto' and set tooltip_text on r.obj to 'Auto: the general decides its own operations', OR widen U.option(r2, objs, 170) to 180 (check that row r2 still fits: obj + pick 130 + assign 90 + recall 90 + budget 140 + grant 70). Then run bash tests/run.sh --only=test_ui6a once (heavy). pt61_gen61 picks the option by the text 'Auto', so 'Auto' still matches.",
+    "2. When ORCH adds \"set_ai_budget\": AiCommand to world COMMANDS (posted as need change_request.world.commands, seq 61), the guarded part of test_trains_replacement_within_budget_only runs; rerun --only=test_gen61.",
+    "3. Run the playtest windowed, alone: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/GEN61\" --ui-playtest-gen61 (timeout 900); it must print PLAYTEST RESULT all ok and 0 SCRIPT ERROR. Shots: gen61_panel_setup, gen61_battle, gen61_panel_log.",
+    "4. Post fact general.api complete once 1-3 are green; bus DONE.",
+    "5. Optional (brief items not done): queue_unit at production buildings within budget; air sortie / callin designate as fire support; medevac (set_auto_evac); routing op intent through CommandNet.issue/report (CHAIN61 API is up: issue(w,fid,from_id,to,order), from_id 0 = General); enemy AI generals reusing General (needs OFF61 ai_army hook by change_request)."
+  ],
+  "files_touched": [
+    "sim/ai/general.gd (new)", "sim/ai/general_war.gd (new)", "sim/ai/commanders.gd", "sim/systems/ai_command.gd",
+    "presentation/ui6/a/commanders_panel.gd", "tests/test_gen61.gd (new)", "tools/pt61_gen61.gd (new)",
+    ".plan/gen61_chk.gd (scratch compile probe, safe to delete)"
+  ],
+  "test_state": {
+    "test_gen61": "RESULT pass=9 fail=0 files=1 time_ms=73816 / TESTS OK",
+    "test_ai_commanders": "RESULT pass=10 fail=0 / TESTS OK",
+    "test_ally_cmds": "RESULT pass=3 fail=0 / TESTS OK",
+    "test_survival": "RESULT pass=6 fail=0 / TESTS OK",
+    "test_companies": "RESULT pass=11 fail=0 / TESTS OK",
+    "test_wave_ai": "FAIL test_waves_attack_defender: the wave fights with doctrine (several decision tags): { reserve_commit: 1 }. wave_ai.gd is untouched and the take/raid drive path is unchanged; most likely OFF61's doctrine rewrite (Doctrine.plan_for tags). Warned OFF61 (board warn test_wave_ai).",
+    "test_ai_g6": "FAIL test_ai_trains_companies_and_forms_army: the AI trained at least two companies (0). This is the enemy AI's company training (OFF61 ai_army / ORCH companies path), not touched by GEN61; not investigated.",
+    "test_ui6a": "FAILS per ORCH directive seq 151 (Objective option text cut at 1280x720): remaining step 1."
+  },
+  "hashes": "No golden edited. A set_ai_commander with no objective is now 'auto' (it used to be 'hold'); matches without AI commanders are unchanged (no state is created).",
+  "gotchas": [
+    "general.gd and general_war.gd load commanders.gd / general.gd lazily with load() to avoid a preload cycle (commanders preloads general).",
+    "Veterancy.slot_trait_weight takes the slot as a String; GEN61 passes 'p<slot>'.",
+    "Intel.contacts is a stub returning [] until CHAIN61 completes it; belief falls back to Fog in the meantime, so behaviour changes once Intel lands (rerun test_gen61 then).",
+    "The test runner truncates FAILURE messages at about 200 chars.",
+    "World.submit does not validate: general_war pre-validates train_company through Companies.validate_command and books the cost before submitting."
+  ]
+}

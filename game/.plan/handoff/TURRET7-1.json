@@ -1,0 +1,47 @@
+{
+ "agent": "TURRET7",
+ "gen": 1,
+ "status": "recycled (budget.handoff_now at 71%)",
+ "done": [
+  "content/g7/defs_g7_turrets.json: 8 Human A turret defs a_t7_* + 8 weapons (PROVISIONAL numbers; stages MG 7, autocannon 8, hull-down/auto-mortar/thermite 9, EMP/microwave/rail 10; stage 10 is the last playable stage). No def.weapon: Turrets7 drives them via def.t7",
+  "sim/systems/turrets7.gd (~620 lines): tick/validate_command/apply_command; target classes (tags_of, t7_class override for THREAT7), preference pick on scan ticks (every 10) with an own bucket grid, gun / mortar (spotting by tower or drone) / emp (MachineEW7.stun + drops enemy drones) / flame (Creep.burn, guarded Creep.burn_seeds, burns nearest creep with no target) / cone (microwave soft-kill) / rail (pierce lane); ai_rows(w,fid,threat,late), lp_ring_mix(), place(w,fid,def,cell)",
+  "tests/test_turret7.gd: 8 tests, `bash tests/run.sh --only=test_turret7` -> pass=8 fail=0 TESTS OK (tests drive Turrets7.tick by hand while world.gd has no slot; switch off automatically once the slot exists)",
+  "tools/art/g7_turrets2.gd: SceneTree generator on ARTCN7-2 lib (C.bld): 8 turrets, 4 rotations + fire + damaged + build_0..2, aim_0..7, aim_k_fire, recoil, impact_0/1, charge_0/1 (EMP, rail); 0 over budget; generated so far ONLY to scratch C:/Users/logan/AppData/Local/Temp/claude/t7art; review sheet .plan/shots/TURRET7/sheet_v1.png",
+  "board: fact turrets7.api (stub), fact turrets7.lp to LPMODE7, CR ORCH slot, CR CREEP7 burn_seeds; forwarded the misrouted THREAT7 topple directive to THREAT7"
+ ],
+ "remaining": [
+  "1. Wait for/confirm ORCH slot: world.gd `const Turrets7 = preload(\"res://sim/systems/turrets7.gd\")` + SYSTEM_ORDER after Combat; then rerun --only=test_turret7 (tests detect the slot) and post fact turrets7.api complete",
+  "2. Generate real art: `\"$G\" --headless --path . -s tools/art/g7_turrets2.gd` (writes assets/art/g7_turrets2/ + manifest.json); polish first: impact_0/1 frames are tiny (enlarge MG/HE impacts), consider C.hull_detail panel seams/rivets on heads once ARTCN7-2 posts fact art.detail_level DL7-2 final; menu icons not made yet (C.icon(out,id,sheet,fw,fh) exists in g7_cn_lib) ",
+  "3. CR to ORCH: register art group assets/art/g7_turrets2 (building ids == content def ids a_t7_*) with the building art loader",
+  "4. CR to ORCH (owner of sim/ai/ai_g6_def.gd in G7): in _defences after `plan` is built, for Human A append Turrets7.ai_rows(w, fid, {inf: t.inf, armour: t.armour, drone: t.drone, air: t.air, machine: <any visible Machine unit>}, late) rows as direct def ids (skip L.rdef for them) with the same count_def/build_at loop",
+  "5. Write tools/pt7_turret7.gd (RefCounted run(pt)): start_match cfg sides[0] human_a stage 10, sides[1] machine ai false, victory endless; fill fog explored; near the player HQ place a wall line of all 8 via Turrets7.place + a guard_tower (spotter) + ~4 generators (power: mortar 15, emp 45, microwave 40, rail 150; generator gives 100); spawn a Machine assault (m_walker x2, m_colossus, m_scout_crawler x3, m_swarm x2, m_drone, rifleman-ish light units) 14 tiles out and submit attack_move (issuer 1, units, target = wall); step manually w.step() (+ Turrets7.tick(w) only if not SimWorld.SYSTEM_ORDER.has(Turrets7)); log one step per turret kind fired (ShotFired shooter==bid, T7Emp, T7Burn, T7Cone, T7Rail); pt._shot after contact and after the EMP; run windowed per G7_COMMON (timeout 900, --ui-playtest-turret7)",
+  "6. Measure cost: 2k bench with no turrets (Turrets7.tick = one cache check) and with a 40-turret ring; report",
+  "7. Hash check: run --only=test_hot_state once (content defs added; no turret in those matches so hashes should not move)"
+ ],
+ "files_touched": [
+  "content/g7/defs_g7_turrets.json",
+  "sim/systems/turrets7.gd",
+  "tests/test_turret7.gd",
+  "tools/art/g7_turrets2.gd",
+  ".plan/t7/t7chk.gd (scratch)",
+  ".plan/t7/sheet.gd (scratch contact sheet)",
+  ".plan/shots/TURRET7/sheet_v1.png"
+ ],
+ "test_state": "test_turret7 8/8 TESTS OK (02:3x); tree compiled clean at handoff",
+ "gotchas": [
+  "SimIndex is not a class_name: preload sim/systems/sim_index.gd",
+  "Creep.burn enables creep state -> only called when Creep.enabled(w) (keeps non-creep matches hash-identical)",
+  "PackedByteArray from a dict is a copy: write back",
+  "stages 11-13 are not playable: rail is stage 10",
+  "bash heredoc appends with quotes failed silently once: use Edit/Write",
+  "turret LOS uses Damage.line_clear (terrain ridges/cliffs/BUILDING decor); mortar is indirect; building entities never block",
+  "mortar splash and all turret damage hit enemies only (smart fuze)"
+ ],
+ "change_requests": [
+  "ORCH: Turrets7 system slot after Combat (sent, seq 480)",
+  "ORCH: art group g7_turrets2 registration (not yet sent)",
+  "ORCH: ai_g6_def wiring via Turrets7.ai_rows (not yet sent; text in remaining 4)",
+  "CREEP7: Creep.burn_seeds(w,center,radius)->int (sent)",
+  "THREAT7: optional t7_class on threat defs (sent with the forward)"
+ ]
+}

@@ -1,0 +1,31 @@
+{
+  "agent": "CARDS8C",
+  "why": "budget.handoff_now at 73% (orch)",
+  "tree_compiles": "yes: .plan/cards8c_chk.gd loads cards8c.gd, cards8b.gd, building_card8c.gd, garage/armory cards, sentinels7.gd, rest8.gd, match_view.gd, hud.gd, hotkeys.gd, world.gd, test_cards8b.gd, test_cards8c.gd, pt7_cards8c.gd, ui_playtest.gd: all ok; --quit-after 60 clean",
+  "part1_cards8b_integration": {
+    "world.gd": "const Cards8b; SYSTEM_ORDER ... DroneBay7, Cards8b, Cards8c, Callins; COMMANDS 11 c8b_* rows",
+    "hud.gd": "armory_card8 + garage_card8 attach lines after lpreserve_card (CRLF kept)",
+    "G7_FLOWS": "cards8b was already present (someone else added it); cards8c appended",
+    "morale.gd": "if e.has(\"c8mv\"): mv *= float(e.c8mv) right after the t7mv line (no-op when absent)",
+    "hotkeys.gd": "arm8b_* / gar8b_* rows (CARDS8B CR 16727 verbatim) + PAGE_GROUPS arm8b, gar8b",
+    "match_view.gd": "_select_facility_part_at: click on a garage bay (CnFacility.garage_spots, garage_size) selects part 'garage' (FAC_PARTS already had garage [decon]); garage_card8 no longer shows on the drone_bay part",
+    "cards8b.gd": "_stamp(w,fid) in _think: researched weapon upgrades written to CN units as e.r8up {id:'c8b:<keys>', pen, wound, kill, k} and plates as e.a8up {id, t} (LETHAL8B api.rounds8); never overwrites a non-c8b id",
+    "test_cards8b.gd": "check 'drone_bay part also shows garage card' replaced by 'drone bay part: not the garage card' (behaviour change: garages have their own part); added checks: engines raise e.mvm >1.1; AP research gives e.r8up pen 1.5",
+    "test_cards8b_result": "first run (before the r8up/engines/visibility edits) RESULT pass=4 fail=1 (only the drone_bay visibility check, since changed). Rerun with all edits: .plan/c8c_t8b.log -- NOT READ at handoff (unverified)",
+    "cards8b_flow": "running in background at handoff -> .plan/c8c_flow8b.log, shots .plan/shots/CARDS8C/cards8b/ ; NOT checked, no shots posted"
+  },
+  "part2": {
+    "sim": "new sim/systems/cards8c.gd, registered (const, SYSTEM_ORDER after Cards8b, COMMANDS c8c_rotate, c8c_train, c8c_standto, c8c_plan, c8c_cas_first, c8c_evac, c8c_medics, c8c_air_service, c8c_air_launch, c8c_air_recall, c8c_air_cap). PROVISIONAL numbers in RULES const.",
+    "hooks": "sentinels7.gd: _c8c() lazy load; _jobs_for calls Cards8c.adjust_jobs before the sort (patrol plan prio/slot multipliers, treat-first casualty prio, medic point post job c8c_med) when sys_state has cards8c; plan(): so = standing_to -> ex = not alarm and not so, stand-to points dealt when alarm or so (threat sort only under alarm). rest8.gd _try_start: return while e.c8st > tick.",
+    "ui": "new presentation/ui7/building_card8c.gd (extends card8b_base): 4 cards BarracksCard8c / AirCard8c / AidCard8c / LabCard8c, attached by one hud.gd line; FAC_PARTS rows barracks [barracks], air [helipad], aid [aid_station], lab [lab]; barracks card also on a selected cn_sentinel_barracks building",
+    "barracks": {"done": "code", "buttons": "POST Sh+P, ROTATE Sh+R (c8c_rotate: holders get r8s+c8rot -> relieved in place), ROLE Sh+T, TRAIN Sh+B (c8c_train: credits, 40s, +60 xp per Sentinel of that role, max 3), PLAN Sh+L + ADOPT Sh+A (c8c_plan balanced/perimeter/gate/inner, generated men per post kind), STAND TO Sh+S (c8c_standto: wakes resting, board deals stand-to 90s)"},
+    "air": {"done": "code", "buttons": "AIRCRAFT Sh+N, SERVICE Sh+E (Air._go_home), LAUNCH Sh+L / LAUNCH ALL Sh+A (map click), RECALL ALL Sh+H, AIR PATROL Sh+P (map click; up to 2 ready rotorcraft orbit) / END PATROL Sh+X"},
+    "aid": {"done": "code", "buttons": "CASUALTY Sh+N, TREAT FIRST Sh+F, EVACUATE Sh+E (nearest evac vehicle via Wounds evacuate_casualty), MEDICS Sh+M (map click; menders posted, nearby casualty jobs first)"},
+    "lab": {"done": "code (no new sim cmds)", "buttons": "PACKAGE Sh+N, QUEUE Sh+Q (cn_lab_queue), LAB TIER Sh+U (cn_lab_upgrade), TEAM Sh+T, PATH Sh+P, SPECIALISE Sh+S (cn_specialize on the team's first eligible operator)"},
+    "hotkeys": "bar8c/air8c/aid8c/lab8c rows + PAGE_GROUPS (Shift chords)",
+    "test": "new tests/test_cards8c.gd (registered, barracks, aid, air, save/load, determinism+untouched, selection/issue). Run in progress at handoff: test_registered PASS; test_barracks_options, test_aid_options, test_air_options FAIL (failure messages print at the end of .plan/c8c_t8c.log -- not yet read). Likely suspects: barracks rotate/plan timing (board replans every 'every' ticks), aid evac/medics, air heli spawn phase / recall with no air_home pad.",
+    "flow": "new tools/pt7_cards8c.gd, compiles, 'cards8c' in G7_FLOWS; NOT RUN"
+  },
+  "not_run": ["test_ui_fit", "test_ui_panels", "test_cards7", "test_cards8a", "test_sent7", "test_rest8", "test_vtol8", "test_air", "test_medical", "test_cnops7", "test_lpmode7", "test_det7", "test_hot_state"],
+  "next_step": "1) read FAILURE lines at the end of .plan/c8c_t8c.log, fix cards8c.gd / test (never weaken a check), rerun --only=test_cards8c; 2) read .plan/c8c_t8b.log RESULT and .plan/c8c_flow8b.log PLAYTEST RESULT, Read .plan/shots/CARDS8C/cards8b/*.png, post 2-3 as fact shots.best; 3) run cards8c flow windowed: \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/CARDS8C/cards8c\" --ui-playtest-cards8c, look at shots, post; 4) regression list above (sentinels7/rest8 hooks are neutral without cards8c state; morale c8mv only on fitted APCs)."
+}

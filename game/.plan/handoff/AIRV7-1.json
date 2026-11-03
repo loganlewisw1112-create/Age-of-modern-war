@@ -1,0 +1,32 @@
+{
+  "agent": "AIRV7",
+  "reason": "budget.handoff_now (ORCH) at ~100 of 140 calls",
+  "spec": "G7_REFERENCE 13.9c-14, 13.9c-15 (incl. owner follow-up: side hardpoints are ONE mirrored choice), 13.9c-13",
+  "files": {
+    "new": ["content/g7/defs_g7_vanta.json", "sim/systems/vanta7.gd", "tools/art/g7_vanta.gd", "assets/art/g7_vanta/ (52 sheets + masks + icons + wreck, 11 MB)", "tests/test_vanta7.gd", "tools/pt7_vanta7.gd"],
+    "edited_by_me": ["presentation/art/art_catalog.gd (G5_GROUPS += g7_vanta, register only)", "presentation/ui5/panels/hotkeys.gd (G7_ACTIONS vanta_rtb SHIFT+H, vanta_cycle_nose SHIFT+N, vanta_cycle_side SHIFT+W, vanta_cycle_rear SHIFT+Q; G7_SHARE [vanta7, air]) per ORCH CR 4527 part 5", "presentation/hud/g2_commands.gd (_add_vanta_buttons: Return to pad + Nose / Sides / Rear cycle buttons) per CR 4527 part 5"],
+    "applied_by_orch_cr_4527": ["sim/world.gd (Vanta7 after Counterdrone; commands vanta_loadout, vanta_rtb)", "sim/systems/g6_hooks.gd (shot_blocked + SHOT mask)", "sim/systems/production.gd (Vanta7.can_produce gate)", "sim/render_snap.gd (art_def export when vanta7 state exists; vt_deck alt)"]
+  },
+  "works": {
+    "basing": "trained at cn_sentinel_barracks (production cn_vanta_a human_a / cn_vanta_b human_b, PROVISIONAL 2200/700/500, 90 s); set down on CnFacility.roof_pad (read at runtime, never hard-coded); one per pad (production gate); drawn at deck height (e.vt_deck 0.76 of the 150 px flight altitude = 114 px)",
+    "flight": "G5 vtol aircraft (Air: lift-off, hover, flight, fuel); Vanta7: roof-pad landing, vanta_rtb, low-fuel RTB (35%), pivot toward target when hovering with a cannon / missile nose",
+    "hardpoints": "nose: cannon | missiles | anti_drone; side pair (mirrored, both fire): missiles | gun | drones | anti_drone; rear: flares | deterrents | anti_drone | gun. Each shot is a ShotFired from its mount point (vt = nose/sl/sr/rear) inside that mount's arc; Combat only acquires (fire-control weapon g7_vanta_fc, e.ammo held 0)",
+    "countermeasures": "flares: 8 charges, each decoys one guided / AA missile (0.6 s gap); deterrents: one per 3 s; stealth: Airdef radar_invisible (reveal 5 tiles) + 35% lock loss for guided shots from beyond 60% of range (pure hash)",
+    "pad_service": "rearm after 8 s on the pad (mags + flares), rooftop refuel 30/s (+ CnFacility service), loadout swap 10 s (vanta_loadout only while on the pad)",
+    "ai": "AI factions only: enemy within 18 tiles of the pad -> attack; 20 s calm -> RTB. Player Vantas never flown by AI",
+    "art": "g7_vanta.gd on the DL7-3 mesh renderer: 48 loadout sheets g7_vanta_<nose>_<side>_<rear> (hover, hover_b, flight, flight_b, landed, fire, damaged x 8 facings), g7_vanta_16 (16-facing showcase, renderer draws 8), g7_vanta_bare, wreck for cn_vanta_a/b; all within the air budget (1.6 MB of 3 MB packed)"
+  },
+  "tests": "test_vanta7 RESULT pass=7 fail=0; test_ui_panels RESULT pass=5 fail=0; test_ui_fit RESULT pass=3 fail=0",
+  "playtest": "pt7_vanta7 run 1: PLAYTEST RESULT pass=24 fail=1 (vanta7_antidrone: enemy drones spawned out of reach; flow fixed: drones now spawned ahead / astern); run 2 in flight at handoff (see final report); flow now frames the lifted craft (camera offset by the lift)",
+  "not_done": [
+    "Damaged frame exists in every sheet but the renderer never selects it (no hook: needs a LOOK7-side rule, e.g. hp < 40% -> 'damaged' column)",
+    "16 facings: renderer steps 8 (entity_layer FACING_INV); a 16-facing showcase sheet is written for when it supports 16",
+    "Health bar of lifted aircraft is drawn at the ground point (existing G5 renderer behaviour)",
+    "AI loadout choice: AI keeps the default loadout",
+    "Senses7 has no aircraft-target signature hook; stealth = radar invisibility + lock loss only",
+    "Hashes: no golden moved by design (no Vanta = no vanta7 state); test_hot_state not run by me"
+  ],
+  "next_steps": ["read pt7_vanta7 run-2 shots in .plan/shots/AIRV7 (fire_A/B/C, flares, takeoff, pad, home)", "optional art polish: hull silhouette / larger stores", "ORCH: run test_hot_state + full suite"],
+  "calls_used": 101,
+  "tokens_used_est": 505000
+}

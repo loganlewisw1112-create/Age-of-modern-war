@@ -1,0 +1,19 @@
+{
+  "agent": "RETURN8B",
+  "calls_used": 54,
+  "causes_fixes": "Cause 1 (RETURN8): stale fd7_rt route cache (rv restarts at 0 per new controller state) snapped a returning APC onto its old garage route -> _fresh_route drops it. Cause 2 (RETURN8 code, verified here): east-garage APCs park by driving past the row and reversing back up the lane; a follower stood in the reversing room while the leader stood in its way -> _rev_claim_stop: the APC whose next reverse leg comes first along its route (tie: earlier seq) owns the swept room; followers stop REV_ROOM short of it; never applied if the follower already stands in it. Deterministic, no mutual waits. Negative control: with _rev_claim_stop disabled test_facreturn8 parks 4/8 (4 east stuck) in both cases.",
+  "map": "No plot on FAC_APPROACH, apron or gate lane: layout_issue == '' (RETURN8's FAC_LANE check in last_protocol.gd layout_issue + test_lpmap7_facility_lane_clear). The depot is at compound-local (16..17, 38..39), one tile east of the queue lane x 13..15 -> not moved.",
+  "results": {
+    "test_facreturn8": "RESULT pass=2 fail=0 (quiet 8/8 parked +117.5 s; machine near 8/8 +175 s; 8 distinct garages, crews aboard, foot 6/6 back in, gates never both open)",
+    "test_facexit8": "3/0", "test_path7": "6/0", "test_apcmov7": "16/0", "test_gate7": "5/0", "test_cnfac7": "36/0",
+    "test_cnmission8": "7/0", "test_specops8": "5/0", "test_lpmode7": "18/0", "test_lpmap7": "18/0", "test_det7": "6/0",
+    "test_hot_state": "11/6: GOLD_FLAT + equal-to-HEAD hashes moved (expected, owner-approved fatigue); not re-baselined"
+  },
+  "flows": {
+    "apcmov7": "PLAYTEST RESULT pass=23 fail=0", "gate7": "pass=20 fail=0",
+    "facexit8": "pass=14 fail=1 (twice). Failing line facexit8_apcs_out 7/8: NOT a deadlock - headless repro (.plan/ret8b_exit.gd, same target C+(0.5,44.5)) shows all 8 APCs idle at their move-group slots; APC 1095's slot is at C+(12.5,32.5), past the outer wall (30) but inside the flow's OUT_D 33. New return phase: facexit8_apcs_parked 8/8, foot_home 4/4. Needs a decision (flow target / slot spread vs OUT_D); threshold not weakened."
+  },
+  "shots": ".plan/shots/RETURN8B/facexit8b/facexit8_apcs_parked_in_garages.png (+ facexit8_returning_to_garages.png); garages are roofed, the parked APCs show as crew badges on the garage roofs",
+  "files": ["tests/test_facreturn8.gd (new)", "tools/pt7_facexit8.gd (return phase + stuck diagnostics appended)", "sim/systems/fac_drive7.gd, sim/maps/last_protocol.gd, tests/test_lpmap7.gd: RETURN8's edits, unchanged by me", ".plan/ret8b_plots.gd, .plan/ret8b_exit.gd (diags)"],
+  "next_step": "ORCH: decide facexit8 apcs_out (move-group slot at Cheb 32.5 vs OUT_D 33); re-baseline test_hot_state."
+}

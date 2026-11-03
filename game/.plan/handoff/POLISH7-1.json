@@ -1,0 +1,57 @@
+{
+  "agent": "POLISH7",
+  "stopped_by": "ORCH budget.handoff_now (projected 530k of 750k at 79 calls)",
+  "calls_used": 83,
+  "tokens_used_est": 470000,
+  "files_touched": [
+    "presentation/view/fac_life7.gd (drone footprint polygon; ZONE_H for magazine/armory/aid_station/barracks from facb7.zone_heights; MAG_FORECOURT box trim)",
+    "presentation/view/fac_atmo7.gd (HQ flags moved + drawn on the over layer via _draw_flags; _facb7_doors for planning/lab shutters; _plaque_hidden)",
+    "tools/pt7_atmo7.gd (new shots alarm_planning_z3, alarm_lab_z3)",
+    "tools/pt7_life7.gd (life7_cupola_tracks log message carries diagnostics: tracking flag, tank position/angle, hostiles within 14 tiles; the check itself unchanged)",
+    "new scratch: .plan/polish7/fps_fac.gd, .plan/polish7/fps_ab.sh (fps A/B harness, NOT run yet)"
+  ],
+  "triangulation": {
+    "cause": "fac_life7.gd _draw_actor, perimeter drone camera footprint: draw_colored_polygon([g, fp-(12,0), fp+(0,6), fp+(12,0)]) where fp = g + iso(1.6 tiles along the drone heading). Whenever the heading ran along the screen x axis, g was level with fp's left/right points -> collinear / self-crossing quad -> ~450 'Invalid polygon data, triangulation failed' per run (the line moved 1288 -> 1293 with LIFE7-2's last edits).",
+    "fix": "a triangle cone across the view axis (g, fp + perp, fp - perp; skipped when |fp - g| < 2 px, never degenerate otherwise) plus an elliptical ground spot (draw_circle under a (1, 0.5) transform).",
+    "evidence": "pt7_life7 run 1 (C:/CODING/integ7_fast/pl_life7/run.log): 0 triangulation lines; pt7_atmo7 run 1 (pl_atmo7/run.log): 0. WTUR7-3 (seq 4065) reported the same error from their older runs; fixed by this."
+  },
+  "atmo7": {
+    "flags": "g.flags now (core.x + 0.9, core.end.y + 0.75) and (core.x + 1.45, core.end.y + 0.75): open lane beside the HQ walkway, left of LIFE7's ops inset and the comms mast; drawn on the over layer (_draw_flags, called from _draw_over; counts.flags reset there). Run-1 shot showed the first move (1.15 tiles out, west) put them under a garage roof -> moved again; the final position is NOT yet seen in a shot (run 2 in flight).",
+    "shutters": "planning / lab doors now use FACB7 g7_fac7f.gd planning()/lab() _door geometry (_facb7_doors; face from render_entries faces, fallback = the conf door's face, which is what applies today: faces has no planning/lab). Run 1 showed the planning shutter roughly on the vestibule door and the lab shutter on the annex door with the generic width (that run still used the generic fallback because faces lacks lab/planning); fixed after run 1, not yet seen in a shot. Posted need facb7.doors to FACB7-3 (seq after 4000) asking for a fact if they move those doors.",
+    "plaques": "new _plaque_hidden: a building plaque is dropped when a tower (2x2, TOWER_Z) or the compound's +x/+y wall strip stands in front and covers its middle or ends (the MAGAZINE / SPECIAL AMMO board hung over the south corner tower and hid its cupola in pl_life7 tower shots). Not yet seen in a shot."
+  },
+  "life7": {
+    "forklift1": "visible at the magazine in pl_life7/life7_forklift1_z3.png (was hidden by a 46 px box over the whole zone). Note: conf faces.magazine = 1 and door [24,25] (south) while facb7.zone_heights text says door N and the art in the shots shows the headwall + forklift at the north end; MAG_FORECOURT follows render_entries faces. Ask FACB7-3 which is current.",
+    "dog": "NOT confirmed: life7_dog0_z1..z3 centre on the dog but no dog is visible at the centre (likely occluded behind the garage it heels near, or drawn tiny); the pt check only tests 'not inside a building'. Next: shot when the dog is in the open (wait_until not occluded) and look again.",
+    "drone": "pl_life7/life7_drone0_z3.png: a small quadcopter with red/green lights near the gate wall (top-left of centre, drawn alt*9.8 px above its ground point); its new footprint is faint. Confirmed weakly; a closer framing (centre on the drawn position g - alt*9.8) would read better.",
+    "cupola": "FACB7 fact: ring at tower-local (0.6,-0.5,10.84) m -> iso (9, -106) px; CUPOLA_OFF is (9, -104) (2 px high-side, within the ring's 0.6 m). Not re-checked visually: the tracked tower's roof was covered by the magazine plaque (now dropped).",
+    "cupola_tracks_fail": "pt7_life7 run 1: PLAYTEST RESULT pass=23 fail=1, life7_cupola_tracks 'tower 15 aim 0.51 want 1.29' (LIFE7-2 had 24/0). The tank was 6 tiles out and firing (shot tower_tracking_z2); aim 0.51 looks like the idle sector sweep (outward 0.79 +- 0.7), i.e. the tower lost its target (_near empty for it) or tracks a nearer hostile. The log line now prints tracking flag, tank angle and hostiles within 14 tiles: read it in pl2_life7/run.log. Do not weaken the check.",
+    "other_errors": "11x 'Drawing is only allowed inside this node's _draw()' from fac_seq7.gd:1433 _draw_glow (SEQ7's file) in pl_life7/run.log; posted need seq7.draw_outside to SEQ7-3."
+  },
+  "tests": {
+    "test_life7": "RESULT pass=9 fail=0 files=1 time_ms=15481",
+    "test_atmo7": "RESULT pass=7 fail=0 files=1 time_ms=7580",
+    "test_seq7": "RESULT pass=4 fail=0 files=1 time_ms=16064",
+    "compile": "--check-only clean on fac_life7.gd, fac_atmo7.gd, pt7_life7.gd, pt7_atmo7.gd after the last edit"
+  },
+  "playtests": {
+    "run1_life7": "C:/CODING/integ7_fast/pl_life7: PLAYTEST RESULT pass=23 fail=1 (cupola_tracks), 0 SCRIPT ERROR, 0 triangulation",
+    "run1_atmo7": "C:/CODING/integ7_fast/pl_atmo7: PLAYTEST RESULT pass=21 fail=0, 0 SCRIPT ERROR, 0 triangulation (beacons 21 searchlights 16 shutters 12; flags 2)",
+    "run2": "in flight when stopped (background): C:/CODING/integ7_fast/pl2_life7 then pl2_atmo7 (run.log + shots). Read both RESULT lines and the shots hq_flags_z2/z3, alarm_planning_z3, alarm_lab_z3, tower_idle/tracking, dog0, forklift1.",
+    "run2_result": "Finished after the report: pl2_life7 PLAYTEST RESULT pass=24 fail=0 (cupola_tracks passed this time: flaky, see its diagnostics line), pl2_atmo7 PLAYTEST RESULT pass=21 fail=0; both 0 SCRIPT ERROR, 0 triangulation. Shots in C:/CODING/integ7_fast/pl2_* not yet looked at."
+  },
+  "fps": "NOT run. Harness ready: bash .plan/polish7/fps_ab.sh 30 on nolife noatmo off (windowed 2k spawn-test, facility raised at the open ground nearest the map centre, camera held on the compound at zoom 1, ATMO7 night, held breach -> real lockdown; prints CASE lines with CPU load, Godot count, FPS_SUMMARY, alarm). Untested script: check its first run prints 'FACFPS facility' and 'FACFPS alarm 1.0'. Gate: 2k p10 >= 60 with layers on.",
+  "eng7_request": "ENG7 seq 4056 eng7.hide_driver: hide/cover the engineer figure while a display forklift / fuel bowser is attached (snapshot flag declined by ORCH; sim sets e.eng7_drv). Not started. fac_life7 _drive_at draws the vehicle at the engineer's position on the LIFE7 layer; covering needs either entity_layer (LOOK7/ORCH) to skip units with eng7_drv, or reading e.eng7_drv via render_snap (ORCH declined). Reply to ENG7 pending.",
+  "next_steps": [
+    "1. Read pl2_life7/run.log and pl2_atmo7/run.log (RESULT, SCRIPT ERROR count, grep -c triangulation) and the shots listed under playtests.run2; fix cupola_tracks from its diagnostics.",
+    "2. Confirm the dog in a close shot (wait until it is not occluded) and frame the drone on its drawn position.",
+    "3. Run the fps A/B (.plan/polish7/fps_ab.sh 30 on nolife noatmo off) on a quiet moment; report load / Godot count.",
+    "4. Answer ENG7 4056; ask FACB7-3 about magazine door N vs conf faces 1."
+  ],
+  "best_shots_looked_at": [
+    "C:/CODING/integ7_fast/pl_life7/life7_forklift1_z3.png (forklift at the magazine, visible)",
+    "C:/CODING/integ7_fast/pl_life7/life7_tower_tracking_z2.png (tank firing at the south corner, tracers, facility at dusk light)",
+    "C:/CODING/integ7_fast/pl_atmo7/atmo7_alarm_planning_z3.png (lockdown: pad lights red, garage shutters down, planning shutter)",
+    "C:/CODING/integ7_fast/pl_atmo7/atmo7_alarm_lab_z3.png (lockdown beacons + searchlight beams on the wall, decon mist, FACB7 red lock door)"
+  ]
+}

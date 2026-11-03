@@ -1,0 +1,48 @@
+{
+  "agent": "SQUAD7-3",
+  "gen": 3,
+  "reason": "guard directive budget.handoff_now (projected 530k of 750k, seq 402/422); calls used ~83 of 140",
+  "done": [
+    "1. Default player formation (rules default_player_formation auto): already done by SQUAD7-2, verified: test_squad7::test_player_moves_default_to_a_real_formation PASS.",
+    "2. test_squad61::test_low_hp_member_falls_back: already fixed in the tree (Wounds off around the test + cached enemy pos); test_squad61 14/14.",
+    "3. Hotkeys: Hotkeys.G7_ACTIONS treat_casualty SHIFT+T, evacuate_casualty SHIFT+E (were APOSTROPHE / BACKSLASH); Hotkeys.badge('SHIFT+T') = 'Sh+T'; new Hotkeys.event_key(k, registered) resolves a Shift chord only when registered. hud.gd still ignores Shift: CR posted seq 249 (need change_request.hotkeys_shift_chords: hud.gd:1270 use Hotkeys.event_key(k, _hotkeys); settings.gd:319 capture k.get_keycode_with_modifiers() when Shift). Test test_squad7::test_casualty_hotkeys_are_shift_chords.",
+    "4a. squad_ai._g7_halt: units the player just placed (player_fresh) now get the herringbone / ring heading (f7_hb / f7_hd / f7_sec) in place instead of nothing (pt herringbone failed 0/4 before); f7_hb erased when the squad moves again. Test test_squad7::test_player_halt_turns_in_place.",
+    "4b. Vehicle coil was a clump (radius 0.6 x 3.5 tiles): Formations7.ring_radius uses rules coil_sp 5.0 tiles (~35 m between neighbours, PROVISIONAL) for vehicles; the 0.6 factor removed in squad_ai._g7_halt and convoy.gd stop coil.",
+    "4c. Formations7.assign: 2-opt and greedy use squared distance (a column moving along its own axis kept a reversed order: summed plain distances tie, so the rear men took the front slots and walked through everyone), then an uncross pass (swap properly crossing pairs; parallel column lines never count) so test_reforming_assignment_has_no_crossings stays green.",
+    "4d. SquadAI._f7_keep (called from the G7 squad think when moving): once per order each member's remaining A*/flow waypoints are shifted sideways by its lateral formation offset (passability-checked, new e.path Array + HotState.touch) and a backward first waypoint (start-cell centre behind the soldier) is dropped. Probe .plan/squad7_column_probe.gd: column files stay at x 60/61 on the march (before: folded into one file, nn 0.58 tiles); a lag pair still closes to 0.58 tiles briefly (movement-side, not chased).",
+    "4e. tools/pt7_squad7.gd: wedge scene heads screen-left (reads as a '>' on the iso view; sim slots == positions verified by PLAYTEST-DBG frame print), wedge shot taken at idle before the 360 halt ring, IFV section leaves the road as one group (was 4 single moves piling up), clear-building shot waits for the real stack at the door, platoon spawn step 1.5 + retry Shift-click for missed units.",
+    "Shots: run4 21/21 0 SCRIPT ERROR; run6 20/21 0 SCRIPT ERROR (squad7_select_platoon 8/9 flaky shift-click, fixed after); strip squad7_strip_00..09 (0.3 s) in .plan/shots/SQUAD7/ from run6; SQUAD7-2 shots moved to .plan/shots/SQUAD7/prev_squad7-2/."
+  ],
+  "remaining": [
+    "1. Run pt7_squad7 windowed once more (run7): G=<console exe>; bash .plan/hb.sh <ID> <calls> <tok> \"pt7_squad7 run7\" -- timeout 900 \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SQUAD7\" --ui-playtest-squad7 > .plan/shots/SQUAD7/run7.log 2>&1 ; expect PLAYTEST RESULT pass=21 fail=0, 0 SCRIPT ERROR. View squad7_02_wedge_open.png (should be a '>' wedge, not a ring), 03_herringbone, 07/08 convoy, one strip frame.",
+    "2. 2k sim cost A/B: script ready at .plan/ab_squad7.gd (SquadAI.g7_off true/false, fight + mixed, 3 alternating pairs, 600 ticks, prints AB7 lines with avg_ms + hash). Run headless on a quiet PC in hb.sh (timeout ~1500): \"$G\" --headless --path . -s .plan/ab_squad7.gd. Report ratio g7_off=false / g7_off=true.",
+    "3. Hashes: bash tests/run.sh --only=test_hot_state twice (in hb.sh); report which GOLD values moved and that both runs agree. Never edit goldens. Expected movers: formation slots (assign squared cost + uncross), halt headings in place, coil radius, _f7_keep path offsets (only for squads moving in a named/auto formation on A* paths).",
+    "4. Re-run after the last edits (not yet run since the uncross pass / waypoint drop): test_squad61, test_officers61, test_garrison, test_g2_scenarios (all green after _f7_keep, before the uncross pass), test_ui_panels.",
+    "5. Pending CR seq 249 for ORCH (hud.gd / settings.gd Shift chords); until applied Shift+T fires the plain T button (tech_overwatch) on the squad7 page."
+  ],
+  "files_touched": [
+    "presentation/ui5/panels/hotkeys.gd (casualty keys, badge, event_key)",
+    "presentation/hud/g2_commands.gd (comment only)",
+    "sim/systems/squad_ai.gd (_g7_halt in-place heading + f7_hb clear, _f7_keep, coil radius)",
+    "sim/systems/formations7.gd (coil_sp, ring_radius, assign squared cost + uncross, _crosses)",
+    "sim/systems/convoy.gd (stop coil radius)",
+    "content/g7/rules_g7_tactics.json (coil_sp 5.0)",
+    "tests/test_squad7.gd (+test_casualty_hotkeys_are_shift_chords, +test_player_halt_turns_in_place)",
+    "tools/pt7_squad7.gd (scene fixes + _dbg_frame)",
+    ".plan/squad7_wedge_probe.gd, .plan/squad7_column_probe.gd, .plan/ab_squad7.gd (probes)"
+  ],
+  "test_state": {
+    "test_squad7": "RESULT pass=15 fail=0 TESTS OK (after every edit)",
+    "test_squad61": "14/14 (after _f7_keep, before uncross + waypoint drop)",
+    "test_officers61": "11/11 (same point)", "test_garrison": "5/5 (same point)", "test_g2_scenarios": "7/7 (same point)",
+    "test_ui_fit": "RESULT pass=3 fail=0 TESTS OK (takes ~12 min)",
+    "test_ui_panels": "5/5 (after the hotkey change)",
+    "pt7_squad7": "run4 21/21; run6 20/21 (select 8/9, fixed after; not re-run)"
+  },
+  "gotchas": [
+    "A* paths start at the start cell's centre: waypoints are cell centres, so files on cell boundaries fold onto one line; _f7_keep handles it for squads.",
+    "Never mutate e.path in place: assign a new Array and call HotState.touch (held native mirrors).",
+    "The halt drill turns a long-idle squad into a 360 ring at coil_ticks (400) once the player window (400 ticks) has expired: take formation shots right at idle.",
+    "board post types: change requests go as type need, topic change_request.<name> (post.mjs rejects type change_request)."
+  ]
+}

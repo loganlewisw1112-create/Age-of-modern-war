@@ -1,0 +1,20 @@
+{"agent":"WTUR7","calls_used":79,"tokens_used_est":500000,"reason":"budget.handoff_now (ORCH)",
+"done_with_evidence":[
+ "content/g7/defs_g7_wallturret.json: a_wt7_wall_turret (human_a) + b_wt7_wall_turret (human_b), wt7 block, weapons wt7_rws_a/b; requires a_/b_cn_facility, stage 10, cost 380 cr + 60 ore, build 16 s, 1100 hp, no salvage cost (no scrap in compound); all PROVISIONAL",
+ "sim/systems/wallturret7.gd: mount on a 2x2 cn_blast_wall face row (outer row faces out, inner row faces in), placement_error/face_info/snap/faces_of/def_for, fire only in the half-plane in front of the face (Turrets7 rules), wall-walk restored when a turret dies, turret falls with its wall, e.pos 0.35 tile out for depth sort, facing_i = m + 4*(a+1) aim frames",
+ "tests/test_wallturret7.gd: RESULT pass=8 fail=0 files=1 (TESTS OK) with ORCH CRs 3636/3637/3640/3641 applied",
+ "tools/art/g7_wallturret.gd -> assets/art/g7_wallturret/: G7_ART a_wt7_wall_turret bytes=2973696 budget=3145728 states=102 ok; b same; files=357 over=0; vehicle_wrecks sheet per def; frames looked at in scratch contact sheets (not in-game)",
+ "presentation/art/art_catalog.gd: g7_wallturret added to G5_GROUPS"],
+"not_done":[
+ "tools/pt7_wallturret7.gd written but NEVER RUN (no playtest result, no in-game shots, depth against the real wall sprite unverified)",
+ "FACB7 has not switched sentry_def/sentries to the wall turret yet (fact facility.wall_turret_def v2 seq 3650: 18 start cells, all verified valid faces by test_start_set_valid_faces)",
+ "AI commanders do not buy/rebuild wall turrets; build-menu listing of the def not checked in the UI",
+ "13.9c-12 (wall turrets part of the automatic facility, SENT7 job board) not read/handled"],
+"next_steps":[
+ "run: \"$G\" --path . -- --ui-playtest=\"<abs shot dir>\" --ui-playtest-wallturret7 ; fix until PLAYTEST RESULT all ok, 0 SCRIPT ERROR; Read every wallturret7_*.png, especially far_face_over_parapet (head must show over the wall) and outer_face_east (turret in front of the wall)",
+ "if the engineer cannot reach an outer face from inside: give the flow an engineer outside the wall (outer faces), on the wall top (inner)",
+ "after FACB7 switches: rerun test_wallturret7 + test_cnfac7 + test_wallwalk7; hashes of facility matches move (start set replaces the nests) - two identical runs for ORCH",
+ "SENT7 / 13.9c-12: if the automatic facility rebuys lost turrets, it can call WallTurret7.faces_of(w, fac_id, def) for valid faces and Construction.placement_error for the check; def per side via WallTurret7.def_for(w, owner)"],
+"files_touched":["content/g7/defs_g7_wallturret.json","sim/systems/wallturret7.gd","tools/art/g7_wallturret.gd","assets/art/g7_wallturret/","tests/test_wallturret7.gd","tools/pt7_wallturret7.gd","presentation/art/art_catalog.gd (G5_GROUPS only)"],
+"crs":["3636 world.gd system slot (applied)","3637 construction.gd wt7 placement branch (applied)","3640 match_view ghost snap + entity_at smallest building (applied)","3641 g5_art aim frames (applied; works with facing_i/4 >= 1 which the sim now always sets)"],
+"shots":"none in-game; scratch contact sheets only"}

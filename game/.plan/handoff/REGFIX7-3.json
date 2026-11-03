@@ -1,0 +1,32 @@
+{
+ "agent": "REGFIX7-3",
+ "stopped_on": "budget.handoff_now (70%), calls ~87/140",
+ "runner": ".plan/regfix7_logs/runflow2.sh <flow> <tag> (windowed, timeout 900); logs .plan/regfix7_logs/<flow><tag>.log",
+ "flows": {
+  "seq7": {"before": "PLAYTEST RESULT pass=17 fail=5", "after": "seq7_r3a: PLAYTEST RESULT pass=22 fail=0, 0 SCRIPT ERRORs",
+   "cause": "CONFIRMED headless (.plan/regfix7_logs/probe_seq7.gd, same 96x96 map, origin (37,61)): the gate apron (entry+2, world y 97.8) is OFF the map. APCs stop inside the gate mouth, stage 1 lined them up facing the entry (south), plan('e','w0',[p]) failed (wrong heading), _approach erased the vstate and ordered a plain Movement move -> idle in the ECP, never rinsed.",
+   "fix": "sim/systems/fac_drive7.gd: _approach_blocked: if the apron cell itself is impassable, V.apq=1 and the APC lines up at entry-1 inside the gate mouth; stage 1 for apq faces north and plans from the gate-axis node ahead (new _axis_node) with plan('n<k>', ...). Only on the apron-impassable path. RGDBG debug prints removed.",
+   "tests": "test_regfix7 3/0 (new test_recall_with_the_apron_off_the_map_parks, failed before the fix in the probe), test_cnfac7 36/0, test_apcmov7 16/0, test_seq7 4/0",
+   "open": "seq7 not re-run windowed after the RGDBG print removal (prints were env-gated; logic unchanged)"},
+  "cnops7": {"before": "pass=14 fail=1 (relief_arrived empty)", "after": "cnops7_r3b: PLAYTEST RESULT pass=15 fail=0",
+   "cause": "relief_trip diag (cnops7_r3a.log): the reload APC oscillated at (51-53, 86.9) in the APC wash for 90 s. CnFacility.zones() has no 'gate' key (code alias of gate_outer), so cn_ops7 spawned it mid-compound; the threat (enemy for fire support) hardens the gates and the outer gate only opens for controller-driven APCs, so the plain-Movement relief never got out.",
+   "fix": "sim/systems/cn_ops7.gd _send_relief: when zones has no 'gate', the convoy starts outside the outer gate (FacDrive7 graph exit node + (0,1.5), where the controller hands its own APCs over). tools/pt7_cnops7.gd: 90 s wait split into 9x10 s with a relief_trip print (no check changed).",
+   "open": "test_cnops7: test_xp_levels_and_veteran_loss FAILS ('kill credited to the operator' got 0) - CnProgress7 kill credit via last_attacker, unrelated to relief; likely PERF7L/combat live work. Not investigated."},
+  "sent7": {"before": "FACINT7 23/1 casualty_in_cover cover 0.30; r3b (after oracle fix) 23/1 cover 0.15", "after": "sent7_r3c: PLAYTEST RESULT pass=24 fail=0 (drag to (50.5,60.5) cover 0.90)",
+   "cause": "BOTH: (1) oracle timing: s7_dg is set when the drag is ordered, cover was read mid-drag (FACINT7 0.30); (2) real Sentinel bug found with drag diag (sent7_r3b.log): the casualty was dragged 3 times; the buddy's _casualty_drill re-dragged him out of cover 0.60 into 0.15 (no in-cover guard, unlike _care_under_fire), and _drag_spot could return a near spot worse than where he lay.",
+   "fix": "tools/pt7_sent7.gd: waits (<=20 s) for the Wounds drag job on the casualty to finish before reading cover (+ drag_events/drag_spot diagnostic prints). sim/systems/sentinels7.gd: _casualty_drill treats a casualty already in cover (>= open_v) where he lies; _drag_spot returns bp when the fallback near spot has less cover than his own cell.",
+   "tests": "test_sent7 12/0"},
+  "muzzle7": {"before": "18/3 (REGFIX7-2 got 20/1: all_measured 'gone': 2)", "after": "muzzle7_r3c: PLAYTEST RESULT pass=20 fail=1 - all_measured now ok; the 1 fail is g6_slot0_stage9_click (harness build-card setup click, items=4), looks unrelated/flaky",
+   "cause": "gone_shot diag: shooters 46 (g7_sent_rotary) / 47 (g7_cn_carbine) of our line-up fire and are killed in the same step (t152, t209, WOUND7 kills) - the shot is drawn after the entity is removed. REGFIX7-3 first guess (flow destroy before the wait) was REFUTED (fallbacks already 2 before cleanup) and reverted.",
+   "fix": "presentation/view/entity_layer.gd: drawn7 records carry the art name; on_destroyed stashes the record in new gone7. presentation/view/fx_layer.gd muzzle_point: with no live shooter, use drawn7/gone7 (drawn within 0.5 s) -> measured tip (counter muzzle7.gone). tools/pt7_muzzle7.gd: gone_shot diagnostic print only.",
+   "open": "re-run muzzle7 once to confirm 21/0 (g6_slot0_stage9_click flake); muzzle7_r3b also once failed apc_both_guns (front pod 0) - same intermittent pod choice as turret7?"},
+  "dronebay7": {"before": "28/1 rockets_intercepted 0", "after": "dronebay7_r2a: PLAYTEST RESULT pass=29 fail=0; message: 0 by screen interceptors, 1 by the roof CIWS (CIWS > 0 confirmed)"},
+  "ciws7": {"before": "16/3 transient", "after": "ciws7_r2a: PLAYTEST RESULT pass=31 fail=0"},
+  "turret7": {"before": "FACINT7 23/2; chain r2a 23/2 again (rear pod 0, other guns 200)", "after": "turret7_r3a: PLAYTEST RESULT pass=25 fail=0 (rear gun 1, cos 0.80)",
+   "cause": "INTERMITTENT, not found. tools/pt7_turret7.gd now prints 'apc_front_shot' (gun, sim facing, drawn face, shot ang, row, target) when a non-rear gun fires; next failing run will show whether apc_gun7.on_shot's drawn face (s.face) or the target is wrong.",
+   "open": "run turret7 until it fails, read apc_front_shot"}
+ },
+ "hot_state": "test_hot_state run once: 6 FAIL (gold_holds_flattened, hash_equal_head 10k/2k fight/2k mixed, native_on_off, sim_thread_on_off). The 2k/10k scenarios have no CN facility/relief/sentinels, so none of my paths run there; the native/thread on-off failures point at live native/combat work (PERF7L). NOT A/B-verified against my edits.",
+ "files_changed": ["sim/systems/fac_drive7.gd", "sim/systems/cn_ops7.gd", "sim/systems/sentinels7.gd", "presentation/view/fx_layer.gd", "presentation/view/entity_layer.gd", "tests/test_regfix7.gd (+1 test)", "tools/pt7_cnops7.gd (diag)", "tools/pt7_sent7.gd (oracle wait + diag)", "tools/pt7_muzzle7.gd (diag)", "tools/pt7_turret7.gd (diag)", "scratch: .plan/regfix7_logs/probe_seq7.gd, probe_cnops7.gd, chain3.sh"],
+ "next_steps": ["re-run windowed seq7, muzzle7, turret7 (x2) on the final tree", "test_look7 / test_muzzle7-type unit tests for the fx/entity_layer change if they exist", "A/B test_hot_state if ORCH wants proof"]
+}

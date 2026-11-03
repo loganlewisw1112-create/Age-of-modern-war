@@ -1,0 +1,19 @@
+{
+  "agent": "ART7B", "n": 1, "reason": "70% projected budget (call ~94); only CR-blocked verification left",
+  "done": [
+    "tools/art/g7_turrets2.gd rewritten on ARTCN7's mesh renderer at art.scale (rev3 DL7-3): 8 a_t7_* turrets, FIG crews (hmg, thermite, automortar loader), rot_0..3 + fire + damaged + build_0..2, aim_0..7 (+aim fire), recoil, impact_0/1, charge_0/1 (emp, railgun), 32x32 icons -> assets/art/g7_turrets2 (681 files, 0 over budget)",
+    "tools/art/g7_rollout.gd (new): g7_cn_sentry, g7_cn_barrier (units) + a_cn_facility, b_cn_facility (Human B warm), cn_tower, cn_checkpoint(+open), cn_blast_wall, cn_popup(+lowered/rising/aim) + icons -> assets/art/g7_rollout (267 files, 0 over)",
+    "tools/art/g7_drones.gd rewritten on the mesh renderer (same drone7 sheet layout) + cn_gun_drone + g7_cn_interceptor_drone + icons for all 6",
+    "tools/art/g7_threats2.gd: walk_a/walk_b/fire catalog frames appended (burrower, spitter, mimic, leech)",
+    "tools/art/g7_growths.gd: build_0..2 states + icons for g7_growth_spire / g7_growth_heart",
+    "tools/pt7_art7b.gd (new playtest flow: mixed G7 scene, zoom 1/2/3 shots)",
+    "contact sheets in .plan/shots/ART7B/"
+  ],
+  "remaining_steps": [
+    "WAIT for ORCH CR seq 1104/1150: presentation/art/art_catalog.gd G5_GROUPS += \"g7_turrets2\", \"g7_rollout\"; tools/ui_playtest.gd G7_FLOWS += \"art7b\"",
+    "bash tests/run.sh --only=test_art  (expected: the 52 remaining failures are all g7_turrets2/g7_rollout ids -> should go to 0; pre-CR scratch verify of the same checks = 292/0)",
+    "windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/ART7B/ingame\" --ui-playtest-art7b (timeout 900) -> PLAYTEST RESULT all ok, 0 SCRIPT ERROR; look at art7b_mixed_zoom1/2, art7b_turrets_zoom3, art7b_compound_zoom2/3, art7b_threats_zoom3, art7b_drones_zoom3"
+  ],
+  "test_state": "test_art: 85 failures at start -> 56 before the drone team fix -> remaining all CR-blocked (registration). No hashes touched (art only).",
+  "gotchas": ["Thin team boxes get painter-sorted under bigger faces: use team_patch (decal) in g7_turrets2.gd", "g7_rollout.gd preloads g7_turrets2.gd (TU) for helpers: a parse error in turrets2 breaks both", "facility uses half rotations (rot_2/3 = rot_0/1) to fit the 4 MB building budget"]
+}

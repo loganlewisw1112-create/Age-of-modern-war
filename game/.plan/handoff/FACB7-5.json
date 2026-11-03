@@ -1,0 +1,38 @@
+{
+ "agent": "FACB7-5",
+ "state": "stopped on budget.handoff_now (~73 calls, est ~550k tokens); tree compiles, tests + windowed playtest green with 0 SCRIPT ERROR",
+ "layout75": {
+  "barracks": "[24,3,2,4] -> [16,14,4,2] (the drone bay's old site), door [24,7] -> [17,16] (south, y16 lane), barracks_part [24,3] -> [17,14], lane [24,7,1,1] removed, faces.barracks 1",
+  "roof_pad": "rect [16.125,14.125,3.75,1.75], deck_z 11.6, heading_deg 0 (long axis +x); CnFacility.roof_pad API unchanged; a cn_vanta_a spawned in pt7_art7f landed on it",
+  "drone_bay": "[16,14,4,2] -> [16,9,4,4] = the workshop footprint, new json key stacked {drone_bay: workshop}; door [[20,12]] (stair-core ground door on lane x20); render_entries carry 'stacked'; entity_layer skips drawing a stacked zone",
+  "old_barracks_site": "[24,3,2,4] open ground"
+ },
+ "art": "tools/art/g7_fac7f.gd: workshop() + _dronebay_storey() (2nd storey to 10.4 m, cyan floor band, corner pilasters, ribbon windows, DRONE BAY signs, launch deck with 2 spots + quadcopters + lift hatch + charging cabinets + rail + deck lamps + windsock, stair core + penthouse + relay mast with red lamp on a fixture), helpers _rim, _qdrone (opaque rotor discs); barracks() deck generalised for a long-y footprint (lx); g7_fac_dronebay manifest entry = alias of g7_fac_workshop (stacked_on). Old g7_fac_dronebay_*.png files from earlier runs are no longer referenced (left on disk, not deleted).",
+ "transparency": {
+  "entity_layer ROOF_CUT_MOD (alpha 0.34)": "removed: building stays solid; own/allied men inside are hidden and an opaque team-colour badge (one figure per man, + over 4) is drawn over the building (_badges/_draw_badge)",
+  "entity_layer sinking wreck fade (alpha 0.3..1) + sink sheet (0.55..1)": "replaced by bld_mod(false, k): opaque, darkens as it settles",
+  "entity_layer GHOST_MOD remembered buildings": "already opaque grey; routed through bld_mod(true)",
+  "entity_layer wake sheet (0.85), aircraft shadow, rotor-wash fx (0.7)": "kept: effects / shadows, not buildings",
+  "facility zone sprites (_push_zone)": "Color.WHITE (opaque) - unchanged",
+  "baseprops_layer ground ASPHALT/SLAB/GRAVEL/YARD/LANE_LINE/BAY_LINE (alpha 0.8-0.96)": "now opaque",
+  "evidence counter": "entity_layer.bld_see_through = building/wreck pushes with alpha < 1 this frame; pt7_art7f facb75_no_see_through: 0 over 40 frames with 3 buildings being cleared",
+  "not touched (POLISH7-3 owns)": "fac_life7.gd / fac_atmo7.gd overlays"
+ },
+ "tests": {
+  "test_cnfac7": "RESULT pass=34 fail=0 (new test_facb75_barracks_on_dronebay_site_dronebay_on_workshop; the drone_bay x workshop overlap SENT7-4 may have seen mid-edit is now a declared upper storey: _fac_footprints marks it 'upper', it must sit EXACTLY on its host, and it keeps every other overlap check; test_facility_sizes_proportionate same rule. Authority: owner 13.9c-18)",
+  "test_art7f": "RESULT pass=8 fail=0 (new test_no_see_through_buildings; test_no_sprite_overlap skips a stacked zone after checking it equals its host)",
+  "test_wallturret7": "RESULT pass=12 fail=0",
+  "test_wallwalk7": "RESULT pass=11 fail=0",
+  "test_look7": "RESULT pass=8 fail=0",
+  "test_view5": "RESULT pass=10 fail=0",
+  "test_view6": "RESULT pass=6 fail=0"
+ },
+ "playtest": "pt7_art7f windowed: PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR, shots .plan/shots/FACB7-5/ (run before the drone_bay door moved [15,12] -> [20,12]; json-only change, both tests re-run green after it)",
+ "best_shots": [".plan/shots/FACB7-5/facb75_barracks_pad_z25.png", ".plan/shots/FACB7-5/facb75_workshop_dronebay_z25.png", ".plan/shots/FACB7-5/facb75_barracks_workshop_pair_z14.png", ".plan/shots/FACB7-5/facb75_compound_z10.png", ".plan/shots/FACB7-5/facb75_clearing_opaque_z17.png"],
+ "next_steps": [
+  "POLISH7-3: a 'DRONE BAY' overlay sign now shows on the barracks east face and a yellow vehicle actor stands on the workshop roof deck (LIFE7/ATMO7 still use the old drone-bay rect / heights); posted fact facb7.layout75_display seq 4787",
+  "the troops-clearing badge was only checked at count level and in one shot; a closer look at the badge with real garrisoned men (SQUAD7 building clear) is still open",
+  "pt7_look7's 'look_roof_cutaway' log now counts opaque badges (g61_counts.roof) - re-run pt7_look7 to confirm it stays green",
+  "optional polish: barracks deck 'CN' marking reads as a box at zoom 2.5"
+ ]
+}

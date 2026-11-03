@@ -1,0 +1,40 @@
+{
+  "agent": "OFF61",
+  "gen": 1,
+  "reason": "budget.handoff_now directive (guard projected 535k / 750k at 77 calls)",
+  "done": [
+    "Order API (sim/ai/doctrine/doctrine.gd): execute_order(w,fid,node,order)->{ok,reason,key,drill}, drill_state(w,fid,node), ordered(w,fid,key), node_key, node_form, drive_orders(w). Orders saved in w.sys_state.ops.orders61 (created by the first order only); driven from Ops.tick every drill_every=10 ticks (staggered by key hash) for ANY side incl. the player's AI generals; Doctrine.think skips ordered formations. formations() got an optional skip_cmd param (orders drive commander-badged units).",
+    "doc_util.gd: G6.1 rule defaults, side-aware submit (U.submit for AI st with 'pending', else w.submit with ai_cmd='doctrine'), formation_ok fallback (echelon->wedge, file->column until SQUAD61 adds them), player_held filter in movers (player_order_tick fresh within 400 ticks or player Hold), REAL61 traits/rank via L.api (Veterancy.traits(w,uid), rank(w,uid)), report_up -> CommandNet.report(w,fid,from_id,kind,text,data), belief_power (visible pop power vs Intel.strength_at), ammo_frac; order dedupe now also keys on unit count; TAGS += contact, smoke.",
+    "doc_tactical.gd: coarse A* route (mines, observed-fire exposure, cover/height/forest bonus, bounded box), route_lines, threats_of, ground_formation (column road/forest, file in gaps), stack_point, off_axis_deg, flank_at.",
+    "doc_operational.gd: officers behind the line (officer_back, on the far side from the enemy via fs.edir), leaderless filter (_led), travelling (far from objective and out of contact; halts + straggler close-up on phase lines), bounding overwatch in contact (never both groups moving; echelon on an exposed flank), react to contact (return fire/cover, report up, decide by belief + leader traits: assault / fix_flank (>=65 deg, L-shape 90 for tactician, pincer with 3+ elements) / break contact (bound back, smoke tag if a def has smoke, re-route other flank)), stack-up and breach before assaulting a garrisoned building or dug-in unit, raid withdraws after consolidating, defence in depth (_defend: primary/alternate positions, sectors, reserve, fall back by bounds, counter-attack), resupply pull-back for ordered formations (ammo<25% or strength<35%), tempo slows below 60% strength, readable drill lines (fs.drill/fs.line61) reported up on drill change.",
+    "ops.gd: drive_orders hook in tick; leaderless gap: _succeed names the senior squad leader at once (highest REAL61 rank, ties members order -> test_companies unchanged) but sets g.leaderless_until = tick + rules.ops.leaderless_ticks (default 100) and emits PlatoonLeaderless; missions not evaluated while leaderless; Ops.leaderless(w,g).",
+    "tests/test_officers61.gd: 8 tests (stack-up >=70% before entry, bounding never both moving in contact, react-to-contact all engage within 2 s + officers farther than men, fix-and-flank geometry, leaderless gap then succession, route avoids known minefield, execute_order take/hold/cancel end to end, determinism + save/load).",
+    "tools/pt61_officer61.gd written (not yet run)."
+  ],
+  "test_state": {
+    "test_officers61": "TESTS OK 8/8, 0 script errors (run before the travel_dist change; rerun in flight)",
+    "test_doctrine": "TESTS OK after travel_dist change (before flank_angle default 55->65 in doc_util DEFAULTS; content/g6/rules_doctrine.json still says 55 and wins)",
+    "test_ops": "TESTS OK",
+    "test_companies": "TESTS OK",
+    "results_after_handoff": "test_officers61 TESTS OK; test_ai_commanders TESTS OK; test_wave_ai FAIL test_waves_attack_defender 'the wave fights with doctrine (several decision tags): {reserve_commit: 1}' -> LIKELY OFF61: travelling (far from objective, no contact) emits no AiDecision tags, so plan_for/wave formations lose the overwatch_set tags; fix first (e.g. use bounding when out != null / plan mode, or tag overwatch_set at travel halts); test_ai_g6 FAIL test_ai_trains_companies_and_forms_army (0 companies trained; check whether OFF61-related, probably not); test_ai FAIL ai02_static_fairness (general.gd / general_war.gd, GEN61 files, not OFF61), g3_no_hardcoded_defs (general.gd OPS const, GEN61), g3_ffa_three_factions (AI-01 human_a offensive command; investigate whether doctrine orders on side 0 are involved: drive_orders only runs for executed orders, so probably GEN61).",
+    "in_flight_was": "background run of test_officers61, test_ai_g6, test_ai_commanders, test_wave_ai, test_ai -> scratchpad r_<test>.log (C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/1121247f-c9b8-4ed3-adb4-546f11b33109/scratchpad/)"
+  },
+  "remaining": [
+    "1. Rerun: bash tests/run.sh --only=test_officers61, test_doctrine, test_ai_g6, test_ai_commanders, test_wave_ai, test_ai (one at a time, hb.sh). Fix anything in OFF61 files.",
+    "2. Run the playtest windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/OFF61\" --ui-playtest-officer61 (timeout 900); need PLAYTEST RESULT all ok, 0 SCRIPT ERROR; view the 3 shots (bounding, flank, stack_up). If the outpost contact does not produce a fix_flank, adjust outpost size/distance in tools/pt61_officer61.gd.",
+    "3. change_request ORCH: content/g6/rules_doctrine.json (Content.rules().g6_doctrine, ORCH-owned) overrides sim/ai/doctrine/doctrine_rules.json; ask ORCH to set flank_angle_deg 65 and copy the G6.1 keys (see doctrine_rules.json _g61 block) so the drill numbers are data-driven in the shipped rules. Until then doc_util DEFAULTS supply them; contact fix-and-flank already uses max(flank_angle_deg, 65).",
+    "4. Post fact doctrine.order_api state=complete on board_g61; bus DONE; board done.",
+    "5. Hash note for ORCH: any match where an AI side fields companies changes behaviour (travelling/bounding/contact drills) so soak / hot_state hashes with companies move; a match without companies and without orders is unchanged (orders61 key only on first execute_order). Show two identical runs (test_officers61::test_determinism_and_save_load covers same-hash)."
+  ],
+  "files_touched": ["sim/ai/doctrine/doctrine.gd", "sim/ai/doctrine/doc_operational.gd", "sim/ai/doctrine/doc_tactical.gd", "sim/ai/doctrine/doc_util.gd", "sim/ai/doctrine/doctrine_rules.json", "sim/systems/ops.gd", "tests/test_officers61.gd", "tools/pt61_officer61.gd"],
+  "not_touched": ["sim/systems/ops_missions.gd", "sim/ai/ai_army.gd", "sim/ai/ai_tactics.gd"],
+  "gotchas": [
+    "Heredoc appends through the Bash tool failed on quotes once: write chunks with Write to the scratchpad, then cat >>.",
+    "U.submit needs the AI st bookkeeping (backoff, pending, cmds_issued): always go through D.submit/D.order, never U.submit directly, for order-driven sides.",
+    "D.order dedupes per key on type+cell+unit count; a filtered (leaderless) set re-issues when the platoon returns.",
+    "Garrisoned buildings are visible enemies (kind building); _foes() filters to units; contact at the objective (within standoff+2) is left to the deliberate attack, not the react drill.",
+    "Smoke has no system in the game: the break-contact drill only tags 'smoke' when a unit def carries smoke=true.",
+    "Echelon/file formations and set_formation spacing are a change_request to SQUAD61 (formations_echelon_file); under-artillery spacing is not implemented.",
+    "Fatigue/suppression (REAL61 Fatigue.can_assault, Morale.is_pinned) are not yet read by the drills."
+  ]
+}

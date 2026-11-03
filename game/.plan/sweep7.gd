@@ -23,11 +23,16 @@ func _init() -> void:
 	var loc := F.local_slots(units.size(), form, 1.0, 0.5)
 	var pts := []
 	for q in loc[0]: pts.append(F._clampv(w, target + side * (q as Vector2).x + fwd * (q as Vector2).y))
-	var c: Dictionary = F.cfg()
-	for cfgs in [[24, 5.0, 3], [24, 5.0, 2], [48, 4.0, 2], [48, 5.0, 2], [64, 4.0, 2], [24, 4.0, 3]]:
-		c.assign_leaf = cfgs[0]; c.polish_cell = cfgs[1]; c.polish_passes = cfgs[2]
-		var t := Time.get_ticks_usec()
-		var perm := F.assign(units, pts, loc[1])
-		var ms := (Time.get_ticks_usec() - t) / 1000.0
-		print("SWEEP leaf=%d cell=%.1f passes=%d ms=%.0f crossings=%d" % [cfgs[0], cfgs[1], cfgs[2], ms, _cnt(units, pts, perm)])
+	var m := units.size()
+	for rep in 2:
+		var perm := []; perm.resize(m); perm.fill(-1)
+		var li := F._leader(units); perm[li] = 0
+		var ui := []; for j in m: if j != li: ui.append(j)
+		var si := []; for s in range(1, m): si.append(s)
+		var t0 := Time.get_ticks_usec()
+		var lo := []; lo.resize(m); lo.fill(-1); F._assign_split(units, pts, loc[1], ui, si, perm, 24, lo)
+		var t1 := Time.get_ticks_usec()
+		F._polish_near(units, pts, perm, li, lo)
+		var t2 := Time.get_ticks_usec()
+		print("SPLITPROF split=%.0f ms polish=%.0f ms" % [(t1 - t0) / 1000.0, (t2 - t1) / 1000.0])
 	quit()

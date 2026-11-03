@@ -1,0 +1,33 @@
+{
+  "agent": "FACFLOW8B",
+  "calls_used": 68,
+  "status": "PARTIAL - handoff_now at 75% budget",
+  "layout_13.9c-50 (in tree, content/g7/defs_g7_facility.json, new _airlock_note)": {
+    "apc_wash": "[12,22,4,4] -> [12,20,4,6] (6 tiles long, single lane)",
+    "gate_inner": "[12,20,4,2] -> [12,18,4,2] (same 4x2 layer, same face)",
+    "link_walls": "[[11,21,1,5],[16,21,1,5]] -> [[11,19,1,7],[16,21,1,5]] (east of x16 y19..20 is the Suit Foundry wall)",
+    "staging": "[8,17,8,3] -> [8,16,8,2]; lanes [12,9,4,8] -> [12,9,4,7], [6,16,16,1] -> [16,16,6,1], [2,20,10,1] -> [2,20,9,1]",
+    "doors.armory": "[15,18] -> [15,17]",
+    "compound size unchanged (28), outer gate/towers/decon hall/runoff unchanged; test_lpmap7 18/0 (ring_issue etc) and test_cnfac7 36/0 on this layout",
+    "rejected variants": "staging [8,17,4,2]+spine to y17 drove fastest (76.5 s hardened, quiet 37.5 s) but fails cnfac7 'staging yard opens behind the inner gate'; [8,17,8,1] deadlocked (APCs never left garages); [12,16,4,2] fails 'garages flank the staging yard'. Backups: scratchpad defs_g7_facility.orig.json / defs_v3.json and .plan/ff8b_orig_fac.json (original)"
+  },
+  "fac_drive7.gd (in tree)": [
+    "GATE_S 2.0 -> 1.75 (fac_gate7 animation reads the constant); SALLY_CAP 2 -> 3",
+    "SALLY_CAP wash stops (2.05 apart, centred) instead of 2; every mini(ix,1) wash index -> wash.size()-1; place_at loops all stops",
+    "_sally_follow_stop: exact D_SAFE close-up now applies inside gate_inner U apc_wash (was the inner band only): fixed a 3rd-APC-in-the-inner-band deadlock",
+    "gate axis line starts at the staging yard's north edge when staging sits right behind the inner gate (no measurable effect)",
+    "new 'n<node>' destination for FacDrive7.order (plan goal any heading, place_pose, _arrive releases the vehicle: erases V, idle) - for SUPPLY8's carrier, NOT yet wired in supply8.gd"
+  ],
+  "tests/test_cnfac7.gd": "test_facb7_enclosed_wash count: link pieces + side cells inside a solid building (armory/decon_hall/aid/magazine) == 2*(wash.end.y-gi.end.y+1); passability check unchanged. Board need seq 17571 to ORCH: NEEDS ORCH OK (revert if rejected)",
+  "timings": "test_facexit8 RESULT pass=4 fail=0: hardened 8 APCs out in 83.5 s (machine near) / 83.5 s (real start), quiet 54.0 s, unhardened ticks 0. Target ~70 s NOT met (the 90 s check passes, not tightened). The v3 staging layout costs ~16 s vs the rejected [8,17,4,2] variant (plaza crossing slower than a lane).",
+  "test_ciws7 regression (ORCH report)": "CAUSED BY THIS LAYOUT: 2 extra cn_link_wall parts (12 vs 10) shift every later entity id by 2; the id-staggered cn_popup at (25.5,8.5) first hits the bursts-test crawler at tick 39 instead of 34; meanwhile the crawler crawls toward the workshop and crosses the CIWS blind ring (8.63) before the CIWS lays + spins up (fires at t34 in the old layout). Test is timing-marginal (spawned 1.07 tiles outside the ring). Spawn order does not help (popups/mounts spawn after all parts). Options: (a) keep 10 link-wall entities (e.g. one multi-cell link part per side, or the west run starts at y21 with a 2-cell solid at x11 y19..20 from another def) - must keep the enclosure passability check; (b) ORCH ruling on the test's spawn margin. Diag: .plan/ff8b_ciws.gd (copy to tests/test_zzff8b.gd, FF8B_ORIG=1 env loads .plan/ff8b_orig_fac.json; delete after).",
+  "not_done": [
+    "SUPPLY8 carrier: in supply8.gd 'secure'->'out' call FacDrive7.order(w, car, fac, 'x', 'fac', [goal.x, goal.y]) after _unpark; at 'load'->'return' when the carrier is outside the compound order(w, car, fac, 'n%d' % FacDrive7._nearest(FacDrive7.graph(), door_local), 'fac'); skip _move_if while FacDrive7.vstate(w, car.id) is non-empty (FacDrive7._intercept otherwise reclassifies plain moves, an inside target -> 'b' pad bay). Then test_supply8 + a hardened case.",
+    "tests/test_facreturn8.gd: keep_threat each tick in the hardened case, checks 'gate stays hardened' (unhard==0) and 'all 8 parked within 180 s'",
+    "tools/pt7_facexit8.gd: respawn the threat in the wait loops",
+    "wash art regenerate for 4x6 (tools/art/g7_fac7f.gd build_zone reads the zone size; g7_fac_wash, gate_inner position moves automatically)",
+    "verify: test_path7 test_apcmov7 test_gate7 test_cnmission8 test_specops8 test_lpmode7 test_det7 test_supply8 test_ciws7, test_hot_state (report only); windowed facexit8/apcmov7/gate7/supply8; shots of 3 APCs in the airlock + parked back; fact shots.best",
+    "CARDS8A hand gate control: _gate_drive still refuses outer-open unless inner closed (airlock kept) - unchanged by this work"
+  ],
+  "files_changed": ["content/g7/defs_g7_facility.json", "sim/systems/fac_drive7.gd", "tests/test_cnfac7.gd (one check, pending ORCH)", ".plan/ff8b_ciws.gd (diag)", ".plan/ff8b_orig_fac.json (original layout copy)"]
+}

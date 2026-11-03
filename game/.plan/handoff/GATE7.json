@@ -1,0 +1,21 @@
+{
+  "agent": "GATE7",
+  "stopped_by": "budget.handoff_now (orch, 70/140 calls, ~76% projected)",
+  "spec": "docs/G7_REFERENCE.md 13.9c-26 (blast doors), 13.9c-22 (gate states), 13.9c-18 (opaque)",
+  "done": {
+    "art": "tools/art/g7_fac7f.gd gate functions only: gate_layer rewritten (hardened bastions with leaf pockets + steel jamb columns + hazard chevrons, armoured header with hazard band / sign / status lamp row, two hydraulic rams + power pack + accumulators on top, 3-stage telescopic bi-parting leaves per side with stiffener ribs, plate seams, bolt heads, hazard foot band, chevron leading edges, astragal over the seam, 3 lock bars per face sliding into keepers, wedge barrier rising on the outward side, floor rail trench with 3 rails, caged rotating beacons dark/amber/red; flood light pool removed). New _gband and build_gate_frames; one call line added in build(); TOPS gate 80 -> 96. Generated into assets/art/g7_fac7f/ (gate_outer and gate_inner: 86 states each = per door side rot_f, rot_f_lockdown, rot_f_gm_0..15, rot_f_gb_0..2; fw 204 fh 198).",
+    "display": "new presentation/view/fac_gate7.gd: sync(w, entries, tick) reads F.gate o/i + ot/it while entity_layer refreshes render_entries; suffix(F, zn, lock, tick) maps closing/opening to frames over GATE_S (10% warning, 70% trapezoid heavy travel, 20% lock bars); closed/hardened = _lockdown; facility lockdown still shows sealed. entity_layer CR 5743 applied by ORCH.",
+    "tests": "tests/test_gate7.gd RESULT pass=5 fail=0 (frames for every state/facing, leaves close progressively, opaque: no pixel alpha<150 except shadow and no rim-alpha pixel deeper than 3 px, phase order, real sim cycle closing->hardened->opening with display sealed on the lock tick, >=10 travel frames, state hash with picker == without)",
+    "playtest": "tools/pt7_gate7.gd round 1: PLAYTEST RESULT pass=11 fail=1, 0 SCRIPT ERROR. The one fail = gate7_opening_mid_travel: the AI was cleared before the gate hardened, so there was no opening cycle to shoot at the start.",
+    "shots_looked_at": [".plan/shots/GATE7/r1/gate7_outer_open_z25.png", ".plan/shots/GATE7/r1/gate7_outer_closing_z25.png", ".plan/shots/GATE7/r1/gate7_outer_sealed_z25.png"],
+    "shots_not_looked_at": [".plan/shots/GATE7/r1/gate7_outer_bolting_z25.png", ".plan/shots/GATE7/r1/gate7_outer_open_z175.png", ".plan/shots/GATE7/r1/gate7_outer_sealed_z175.png", ".plan/shots/GATE7/r1/gate7_inner_open_z175.png"]
+  },
+  "next_steps": [
+    "pt7_gate7.gd: drop the step-1 opening check (or make it a log-only note) and add a step 3 at the end: erase `keep`, keep calling _clear every frame, wait_until gate_state == opening and _travel_k in 5..10 (timeout 40 s: stand-down 20 s), shot gate7_outer_opening_z25 + _z175, then wait for open and log the drawn frame == ''. Remove the unused _layers helper. Rerun windowed: --ui-playtest-gate7 (timeout 900), need PLAYTEST RESULT all ok, 0 SCRIPT ERROR.",
+    "Read the bolting / z175 / inner shots and post fact shots.best for opening + bolting.",
+    "Optional polish seen in the shots: the outer face could use a bigger stencil / number plate; the lock bars read small at zoom 1.75.",
+    "Not done: inner gate cycle shots (inner only cycles in a sally with an APC; use pt7_apcmov7's fd7_go out while hardened to film it)."
+  ],
+  "files": ["tools/art/g7_fac7f.gd (gate_layer, _gband, build_gate_frames, 1 line in build(), TOPS gate)", "assets/art/g7_fac7f/ (regenerated 3x, announced on the board each time)", "presentation/view/fac_gate7.gd (new)", "tests/test_gate7.gd (new)", "tools/pt7_gate7.gd (new)"],
+  "hashes": "no sim change; display only (test hash on == off)"
+}

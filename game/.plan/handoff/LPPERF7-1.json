@@ -1,0 +1,16 @@
+{
+ "agent": "LPPERF7",
+ "gen": 1,
+ "reason": "end of run (all 3 steps done); written before the final test_hot_state rerun in case of a stop",
+ "done": [
+  "step 1: new sim/systems/inert7.gd (def-filtered SimIndex building lists, w.cache.inert7, Inert7.enabled on/off switch); used by economy (ECO/REFINE/MAGNET), supply (SUPPLY_PT/RECHARGE x2), production (PRODUCE), morale (REST rest_points, HOME _home_of), combat act loop (ARMED); combat enemy-building search bucketed (_eb_grid, EB_CS 16, Inert7 off = all cells); combat nores brs fill by index. LP step 54.2 -> ~30 ms (shared PC). LP hash identical skip on/off and vs baseline before steps 2-3.",
+  "step 2: Terrain.CHASM = 15 (sim/terrain.gd: air only, speed 0 ground, not LOS-blocking, not buildable, name chasm); terrain_layer.gd _chasm_tile() dark tile injected in _prefill; defs_g7_fissures.json stage_codes.canyon = 15; test_fissure7 test_chasm_blocks_ground_not_fire + stage test extended",
+  "step 3: Movement.on_cells_changed(w, cells) (one new func after on_terrain_changed) + fissures7._commit call site (chg list); LP 300 cells: 7 ms vs on_terrain_changed 147 ms; test_cells_changed_equals_full_rebuild (native + gdscript)"
+ ],
+ "remaining": [
+  "confirm test_hot_state after the change: .plan/lpperf7/hot_state_after2.log (bash tests/run.sh --only=test_hot_state); first run's output was lost (exit 0)",
+  "test_supply / test_fort / test_terrain_classes each have 1 failure that ALSO fails with Inert7.enabled=false (logs .plan/lpperf7/*_skipoff.log): not the skip; likely other agents' in-progress files (apc7/convoy/counter_nanite/combat edits by others) - ORCH to bisect"
+ ],
+ "files": ["sim/systems/inert7.gd", "sim/systems/economy.gd", "sim/systems/supply.gd", "sim/systems/production.gd", "sim/systems/morale.gd", "sim/systems/combat.gd", "sim/terrain.gd", "presentation/view/terrain_layer.gd", "sim/systems/movement.gd (on_cells_changed only)", "sim/systems/fissures7.gd", "content/g7/defs_g7_fissures.json", "tests/test_fissure7.gd", "tests/test_lpperf7.gd", ".plan/lpperf7/"],
+ "gotchas": ["fortify precheck tried and reverted (no gain)", "fog untouched (walls have sight 2; memory rewrites per tick); fog now owned by SENSE7", "LP 220-tick hash moved 6326732... -> 9bd87beb... between the step-1 and final runs: fissure canyon code + on_cells_changed (fissures commit in that window) and/or ORCH's economy pop_cap_floor line; skip on/off stays identical"]
+}

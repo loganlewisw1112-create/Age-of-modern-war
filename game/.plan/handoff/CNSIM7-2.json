@@ -1,0 +1,25 @@
+{
+ "agent": "CNSIM7-2",
+ "gen": 2,
+ "reason": "budget.handoff_now (guard seq 382, projected 530k at 65 calls); noticed late at call 73",
+ "done": [
+  "Handoff steps 1, 2, 4 of CNSIM7-1 done. tools/pt7_cnsim7.gd written and run windowed: PLAYTEST RESULT pass=19 fail=0, 0 SCRIPT ERROR (.plan/shots/CNSIM7/run3.log + shots).",
+  "8 change requests posted (board seq 265-272): ORCH cn_commands / cn_g6_hooks / cn_research / cn_art_catalog, WOUND7-2 cn_slow, LOOK7 cn_render_snap, CREEP7 cn_creep_api (jam_link, detach_leeches, can_hack vs unhackable), CNFAC7 cn_stock_putback. ORCH already registered the commands and g6_hooks/strikes hooks.",
+  "Fixed a real bug found by the playtest: dismounted specialists never walked to the deployment site (stalled no_scanner forever unless the team spawned on the site). counter_nanite.gd now runs a deployment drill: convoy disbands at the site, strike APCs bracket the site across the threat axis, escort tactical APCs take overwatch (threat side + flanks), dismount after both APCs park (rules deploy.park_s default 25 s), scanners/EW/deployers to the arming point, gunners in a 250-degree perimeter ring, leader/radio/medics just behind.",
+  "Hero window: everyone else withdraws straight out of blast_radius+2.5 (APCs +3) and remounts after the blast (was: remount to APCs parked inside the blast radius -> 2 extra deaths). Playtest: only the hero dies (19/20).",
+  "apc7.gd: crew pops a smoke panel by itself when the APC is hit (apc7.auto_smoke default true, auto_smoke_gap_s 6).",
+  "tests/test_cnsim7.gd: stall test now waits for CnDismount (drill parks first); new test_deploy_drill_posts_withdrawal_and_crew_smoke. bash tests/run.sh --only=test_cnsim7 -> RESULT pass=14 fail=0, TESTS OK."
+ ],
+ "remaining": [
+  "1. Read .plan/shots/CNSIM7/hot_state.log (test_hot_state rerun started in the background at call 72; first run's output was lost to a tool timeout). Expect TESTS OK: cn7/apc7 state only exists after spawn_team, so goldens should not move. If a golden moved, report it to ORCH (do not edit goldens).",
+  "2. Post done + final report."
+ ],
+ "files_touched": ["sim/systems/counter_nanite.gd", "sim/systems/apc7.gd", "tests/test_cnsim7.gd", "tools/pt7_cnsim7.gd", ".plan/handoff/CNSIM7-2.json"],
+ "test_state": "test_cnsim7 14/14 TESTS OK; pt7_cnsim7 19/0 0 SCRIPT ERROR; tree compile check clean; test_hot_state result pending in .plan/shots/CNSIM7/hot_state.log",
+ "gotchas": [
+  "w.submit queues commands: check results after a short wait (the first flow run read loadout/convoy too early).",
+  ".50 mounts are small_arms (x0.05 vs heavy armour): the convoy cannot kill heavy Machine walkers while mounted; the flow's contact oracle is 'took fire, crew smoke, mounts manned, pushed through with both strike APCs'. Killing heavy armour needs the operators' hunter-killers on foot (no auto-dismount-to-engage logic exists).",
+  "Loadout fill is APC A first (4x purge all went into APC A); losing APC A loses every package. Round-robin would change the existing loadout test expectation.",
+  "Dome, suit breach, hero and hold sentries/barriers are not drawn until LOOK7's render_snap CR and ORCH art_catalog CR land (sentry/barrier/interceptor drone have no art)."
+ ]
+}

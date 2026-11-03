@@ -1,0 +1,27 @@
+{
+  "agent": "APCMOV7-2", "n": 2, "reason": "budget.handoff_now at 106/140 calls",
+  "brief": ".plan/agents/prompts/G7-APCMOV7.md (13.9c-16) + ORCH 13.9c-22 (hardened outer gate)",
+  "files": {
+    "sim/systems/fac_drive7.gd": "OWN. Router rewritten: lane graph from layout75 json (lanes, garage-front exact nodes, gate column extended north to the y16.5 lane, bay lead-in line (one-way, U over the pad top at bay-2.6*dir) + bay exit lines, bay keep-out boxes so through traffic never crosses a bay), radius-aware string pulling (_pull/_pull_from: DFS farthest-first, every corner R>=R_MIN=1.0 inside half-split tangent budgets, exact straight checks with PLAN_M 0.06 margin, start/goal headings kept) + ban-and-retry Dijkstra (12 tries), plan_cached per (from,to,gar). Driving: player stop/hold brakes to a standstill (order sentinel path_req=PATH_WAIT so Movement leaves the controller order alone and a stop shows as a changed order); new orders while driving re-route at the next straight keeping speed (_reroute, one try per straight), else at route end (heading out: turns round outside and comes back in); approach from outside is two-stage on the gate axis (waiting spots in seq order, aligns heading at <= V/R per tick, then drives in). 13.9c-22 gate state machine written (gate_view/gate_state/_threat/_gates/_gate_step/_gate_drive/_gate_marks, F.gate in CnFacility state, sally port, nav-locked when shut, APCs wait at a non-open gate and request cycles, SALLY_CAP 2) but SWITCHED OFF: const GATES_ON := false.",
+    "sim/systems/cn_facility.gd": "render_entries: + \"gates\": _callf(FD7_PATH, \"gate_view\", [F], [\"open\",\"open\",false]) (1 line, ORCH told me to put the gate state there). Earlier FD7 hook in _order_slots unchanged.",
+    "tests/test_apcmov7.gd": "OWN: geometry test + 9 flow tests (bays/queue/convoy/spacing, return outer gate->wash->inner gate->garage nose out, player bays/point/garage, re-route + stop, hash twice, save mid-drive, no-facility cost, 2 gate tests that print NOT EXECUTED while GATES_ON is false). All flows set FacDrive7.force_on and reset it.",
+    "tools/pt7_apcmov7.gd": "WRITTEN, NOT RUN: needs fac_drive7 in SYSTEM_ORDER (logs apcmov7_registered false and stops otherwise). Two APCs to the bays + third queued, both sent out (convoy), third takes a bay then back to its garage; 0.1 s pose track CSV; shots at zoom 1/1.75/2.5."
+  },
+  "tests": {
+    "test_apcmov7 (last full run, before GATES_ON=false)": "RESULT pass=8 fail=2 files=1 time_ms=67522 (the 2 fails = the gate tests; all 8 drive tests PASS). Expected now: pass=10 fail=0 with the gate tests printing NOT EXECUTED; NOT re-run after that last edit.",
+    "hash": "HASH apcmov7 twice: f1c34dd582a7bbe26610ff6802db9e183e27f3b503ff0b807f7ea853c5476410 / same (flow hash, before the last fixes; rerun gives the current value)",
+    "test_cnfac7": "NOT re-run with the slot (the slot is not in world.gd yet)."
+  },
+  "ready_to_wire": "YES for the driving controller (drive tests green; gates off so nothing can stall). ORCH: apply change_request.world_fac_drive7 (board seq 4665: const FacDrive7 preload; SYSTEM_ORDER Movement, FacDrive7, DronePilot; COMMANDS fd7_go), then run test_apcmov7 and test_cnfac7 (test_loading_and_rollout within 1600 ticks, test_base73 return order). Facility match hashes will move (APCs nose-out at discovery, sys_state.fac_drive7, new paths): re-baseline with two identical runs.",
+  "change_requests_pending": [
+    "ORCH world.gd change_request.world_fac_drive7 (seq 4665) - READY now",
+    "ORCH/LOOK7 entity_layer.gd change_request.entity_layer_gate_state (posted this session): gate_outer / gate_inner draw their _lockdown (closed) art when gates[0]/[1] != open"
+  ],
+  "next_steps": [
+    "1. 13.9c-22 OWED (top): set GATES_ON true and make test_gate_hardens_cycles_for_own_apcs_and_stands_down + test_gate_hardened_inbound_return pass. Symptom: after an enemy comes near, the outer gate goes open -> closing and is still 'closing' secs(GATE_S)+40 ticks later (then never opens for the APC). Check: GT.ot countdown in _gate_step (does _gates run every tick in the test: _step calls FacDrive7.tick after w.step), SimWorld.TICK_RATE vs the wait, and that nothing re-sets 'closing'/ot each tick (_gate_drive only starts closing from 'open'). Inbound test: enemy hp 1e9 at compound end + (-26,12); the outer ended 'open' (stand-down early?) - it prints the enemy pos/hp.",
+    "2. After ORCH wires the slot: bash tests/run.sh --only=test_apcmov7, --only=test_cnfac7.",
+    "3. Playtest: bash .plan/hb.sh <ID> ... -- \"$G\" --path . -- --ui-playtest=<abs dir> --ui-playtest-apcmov7 (windowed, timeout 900), Read every PNG, post fact shots.best.",
+    "4. Known limits: a U-turn re-route on a one-way lane is not planned mid-route (it finishes the route and comes back); a strike team's pair always follows each other (counter_nanite _pair_follow), so 'select one APC of a pair' moves both; the approach heading line-up rotates at <= V/R per tick while standing (a small pivot)."
+  ],
+  "shots": "none: the playtest needs the SYSTEM_ORDER slot; nothing visible yet"
+}

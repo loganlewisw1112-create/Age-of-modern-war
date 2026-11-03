@@ -1,0 +1,29 @@
+{
+ "agent": "SPECOPS8D",
+ "calls_used": 66,
+ "reason": "budget.handoff_now (71%)",
+ "compile": "0 SCRIPT ERROR / Parse Error at handoff",
+ "fixes_this_session": [
+  "specops8 _air_fly: beacon rescue lands inside the LP secret radius (lp_world secrets.radius 4) when a landable cell exists; else M.ovr=1 -> new _step_overfly flies the dropship over the beacon first (lp_world reveals the lost squad to an aircraft within 4 tiles), then land_at the LZ (M.since reset, air_land_s fallback). Cause: LZ was 4.47 tiles from the beacon, so the lost squad never spawned ('nobody found').",
+  "specops8 air_unload: new _pickup_aboard: fly rescue whose survivors are already within the rescue radius and none wounded -> straight to search, team stays aboard. Cause: the lost squad's APC spawns at beacon+(2,0), right behind the ramp -> RAMP_BLOCKED for 90 s -> travel from inside the cargo -> 'cannot reach the target'.",
+  "specops8 _go_home/_drop_off: survivors no longer unloaded where the team turned home (drop happened at the rescue site when 'home' began); now dropped in the home tick when inside the compound or within drop_r 12 of evac_point, then ordered to evac_point + (drop_side 6, 0) off the gate axis."
+ ],
+ "probe_results": {
+  ".plan/so8d_fly.gd (test_fly rescue staging, rescue only)": "board > air_board > air_fly(ovr=1) > LpSecret lost_squad t=849 > air_unload > search > recover (SoSurvivorsFound teams [7]) > ret > air_board2 > air_home > home > done, saved 8",
+  ".plan/so8d_resc.gd (drive rescue only, pre drop-off fix)": "survivors found 3, wounded carried + aboard, saved 3; then survivors were dropped at the site (fixed after) and the APC stuck in the facility return queue at (78.1,101.4)"
+ },
+ "test_specops8": {
+  "run1 (old code, before my fixes)": "reasons PASS, override PASS, save_load PASS; drive_all FAIL (4x APC parked back in garage = facility RETURN jam; rescue 0 recovered); fly FAIL ([fly raid] stuck air_home, not done)",
+  "run2 (current code, .plan/so8d_t2.log, still running at handoff)": "drive_all FAIL again (493 s) - read the FAILURE lines at the end of the log; expected cause: RETURN jam (not mine). fly/override/save_load/reasons results pending in that log."
+ },
+ "open": [
+  "Facility RETURN jam (fac_drive7, no owner now): reported board warn facility.return. Repro .plan/so8b_probe.gd -- 99. First queued APC (stage 1, ap=1) never gets within the apron tolerance (Movement order_move to apron local (14,36.8)); a friendly depot sits at local (17,39) right outside the gate. Blocks drive_all 'parked' checks x4 and the drive rescue survivors-near-gate check (they ride home in the APC).",
+  "fly raid stuck in air_home in run1 (raid + rescue dropships at once): check run2 log; likely pad contention on return (13.9c-45: nearest free pad / hold).",
+  "Flow specops8 (windowed, .plan/so8d_flow1.log, background task) was mid-run at handoff: all PLAYTEST lines so far ok=true; 9 shots written to .plan/shots/SPECOPS8D/ (NOT yet looked at, so no shots.best posted).",
+  "fact api.specops (complete) not posted yet.",
+  "Regressions not run: test_cnmission8, test_cnsim7, test_cnops7, test_cnfac7, test_lpmode7, test_det7, test_ui_fit, test_opsui7, test_ui_panels."
+ ],
+ "next_step": "1) read FAILURE lines at the end of .plan/so8d_t2.log and the PLAYTEST RESULT in .plan/so8d_flow1.log; 2) look at .plan/shots/SPECOPS8D/specops8_{5_raid_flying,7_raid_planting,9_rescue_recover}.png and post shots.best; 3) diagnose fly raid air_home; 4) run the regression list; 5) post fact api.specops complete once drive_all only fails on the RETURN jam.",
+ "files_changed": ["sim/systems/specops8.gd"],
+ "scratch": [".plan/so8d_fly.gd", ".plan/so8d_resc.gd", ".plan/so8d_*.log"]
+}

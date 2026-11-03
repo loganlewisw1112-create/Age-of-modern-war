@@ -1,0 +1,35 @@
+{
+ "agent": "FACB7-7",
+ "state": "stopped on budget.handoff_now (~96 calls of 140, ~470k tokens est). Tree compiles; all five named tests green. Windowed pt7_art7f into .plan/shots/FACB7-7 was run at the end; see playtest below.",
+ "suit_foundry_art_13_9c_20e": {
+  "done": "tools/art/g7_fac7f.gd Suit Foundry section only (from the '# ---- Suit Foundry (13.9c-20c / 13.9c-20e ...' header to the aid-station header) rewritten; GATE7 / WALL7-3 functions untouched (spliced by marker, board claim seq 6016). Same 4x4 footprint, same fw/fh (268x294), TOPS unchanged.",
+  "what_it_has": "a REAL open bay (rear hall + two jambs + header, 4.4 m deep) instead of a painted door: lit back/side walls, epoxy floor with bay markings, crane runway + bridge with a hoist holding a suit's gun arm, two ~4 m suits in charging cradles (north one being fitted, a 1.8 m technician beside it), ammo-cassette racks and a charging cabinet on the north wall, light strip under the header; heavy steel bay portal with hazard chevrons, track rails, door-head housing with the lifted door's hazard edge, status lamp column (green open / red lockdown), beacon, BAY 01 lettering; lockdown = five armoured door panels + hazard band + SEALED, shutters shut, interior not drawn. Hall: layered two-depth bolted armour plates on every face, sloped corner + face buttresses, sloped blast skirt, armoured blast shutters, hardened parapet, caged maintenance ladder, cable tray, louvre vents, HV placard, wall pack. Roof: crane monitor with shutters, lattice sensor mast (radar bar, sensor dome, red obstruction lamp on top, 15.6 m), whip antennas, satcom dish, two heat-exchanger banks with fans, HVAC, hatch, parapet corner lamps. Power annex (7.4 m, -x end of the wing): capacitor banks with cyan charge bands, bus bars, cooling unit, bus duct into the hall, HIGH VOLTAGE placard, louvres. Lit SUIT FOUNDRY signs on the +x and +y faces with mounted gooseneck lamps. Apron: slimmer muted gantry with downlights + pools, hoisted missile cell, cradle + pilot boarding gantry, two charging pedestals, arming rack. Everything opaque (13.9c-18); every lamp on a fixture (13.9c-24).",
+  "assets": "generator run with --out to a scratch dir; only the 16 buildings/g7_fac_armory_* PNGs and their 16 manifest hash lines copied into assets/art/g7_fac7f (manifest diff = those 16 lines; the building entry itself is unchanged).",
+  "scratch_source": "C:/Users/logan/AppData/Local/Temp/facb77/armory_new.gd (the section), board renders C:/Users/logan/AppData/Local/Temp/facb77/board2/*.png (x3, all 4 rotations, open + lockdown)"
+ },
+ "mantrap_no_suits_13_9c_20c": {
+  "done": "sim/systems/cn_facility.gd: _mantrap sets the two mantrap door cells as FOOT-ONLY owner gates; new _foot_hall makes every decon-hall cell a foot-only owner gate (never locked) at facility raise; both through _foot_gate, a guarded runtime dispatch that falls back to the plain team gate if set_gate has no 6th parameter. movement.gd foot-only gate CR (seq 5748, diff .plan/handoff/FACB7-7_movement_fonly.diff) was applied by APCMOV7-4 together with the hardened-gate fix.",
+  "test": "tests/test_cnfac7.gd test_facb77_suits_never_use_the_mantrap_or_decon_hall (new): mantrap cells shut to the owner's suits and open to its soldiers, no decon-hall cell open to suits, soldiers still walk the hall, a Bastion outside the foot entry ordered to staging never enters the mantrap / hall and arrives by the vehicle route. Green.",
+  "hash_note": "facility matches carry new gate entries in sys_state.movement.gates (6-field foot-only entries): hashes of facility worlds move on purpose; ORCH re-baselines if any fixed hash covers a facility."
+ },
+ "test_cnfac7_breach_fixture_CR_seq_6023": "DONE: test_range_xp_only_while_secure keeps its intruder alive (hp / max_hp 1e6 after spawn, comment added); both checks unchanged.",
+ "tests": {
+  "test_cnfac7": "RESULT pass=36 fail=0",
+  "test_apcmov7": "RESULT pass=15 fail=0",
+  "test_art7f": "RESULT pass=8 fail=0",
+  "test_cnsuits7": "RESULT pass=9 fail=0",
+  "test_lpmode7": "RESULT pass=18 fail=0"
+ },
+ "playtest": "pt7_art7f windowed into .plan/shots/FACB7-7: PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR (log C:/Users/logan/AppData/Local/Temp/facb77/pt_art7f.log). Read art7f_armory_z2.png: the new Foundry is in game; posted fact shots.best.",
+ "best_shots": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/FACB7-7/art7f_armory_z2.png (in game, looked at)",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/FACB7-7/facb77_suit_foundry_sprite_x3.png (sprite x3, open bay, looked at)",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/FACB7-7/facb77_suit_foundry_sprite_lockdown_x3.png (sprite x3, lockdown, looked at)"
+ ],
+ "next_steps": [
+  "1. Read the other in-game shots art7f_armory_z1 / z3 (taken, not looked at) and post them if better.",
+  "2. Night shots: pt7_art7f takes day shots; a night armory shot (sign lamps, bay light strip, gantry downlights, mast lamp) is not taken yet; LIGHT7's flow or a pt7_art7f extension would be needed (change_request to ORCH).",
+  "3. Optional polish: armour plates read subtle at zoom 1 (raise plate/base contrast); the +y face below the sign could take one more detail band; the south suit in the bay is partly hidden by the south jamb from this camera (by geometry).",
+  "4. In game the g7_atmo7 'SUIT FOUNDRY' plaque (not my file) is drawn in front of the bay opening and hides part of the lit interior: move that plaque off the opening (e.g. onto the south jamb face or the issue wing) by change_request to its owner via ORCH."
+ ]
+}

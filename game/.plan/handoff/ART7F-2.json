@@ -1,0 +1,51 @@
+{
+  "agent": "ART7F-2",
+  "n": 2,
+  "reason": "budget.handoff_now from ORCH (~85 calls)",
+  "done": {
+    "shot_framing_root_cause": "tools/pt7_art7f.gd called pt._shot() without await, so every PNG captured the NEXT shot's camera (why 'zoom 3', the garage shot and lockdown looked wrong). Fixed: await on every shot; zoom levels z1/z2/z3 = 1.0/1.75/2.5 (camera max 2.5); the 1400-unit load fight is destroyed after the flicker capture; HUD panels + fog overlay hidden during shots; garage shots centred on the rect (west row first + east row last).",
+    "workshop": "g7_fac7f.gd workshop(): hall set back from the zone edge (service alleys, standoff from the perimeter wall); the faces seen when the door looks away are finished: lit high-bay window band, bay sign + team stripe and floodlight on the back and both flanks, extraction fans, compressor/parts lean-to with door, wheel stack / plate rack / engine stand / 20 ft container / oil skip / drums in the alleys. Not a drive-through: both visible faces of the SE-corner workshop face the compound wall 0.8 m away, a vehicle door there would drive into the wall.",
+    "compound_ground": "baseprops_layer: gravel hardstand inside the walls (no grass patches between lanes) + marked staging yard (3-tile APC bays, yellow border). pt: art7f_ground ok.",
+    "hardened_towers_13_9c_3": "New g7_fac_tower autotile sheet (16 conn masks x intact/damaged) in g7_fac7f.gd: 4.8 m reinforced bastion (footing, pilasters, firing slits, blast door on a free face), shaft with slits + caged ladder, armoured cab with vision blocks, cupola + RWS, searchlight, camera, red lamp; wall arms run from the bastion face to the cell edge on linked sides so the wall meets the tower flush. entity_layer _wall_px draws cn_tower from it (WALL_SHEET). Walls got a continuous footing + capping beam (read as one hardened wall).",
+    "entry_13_9c_2_art_ready": "g7_fac_gate_outer / g7_fac_gate_inner (hardened bastions, overhead armoured beam, lifting blast door up=open / down=lockdown, wedge barrier, stop line, rumble strip, floods + cameras), g7_fac_wash (drained wash bay, 2 spray gantries with mist, wheel troughs, tank, pump skid, agent totes; sprays off on lockdown), g7_fac_deconhall (hall with dirty entry vestibule + canopy + hazard floor + gear bins, clean exit, frosted window band, extraction stacks, roof tank, drain). Generated at PROVISIONAL default sizes (4x2, 4x2, 4x4, 5x3) because the zones are not in defs_g7_facility.json yet. entity_layer FAC7F_ZONES draws zones named gate_outer, apc_wash, gate_inner, decon_hall (and wall_cells_of ends walls on gate_outer/gate_inner).",
+    "tests": "test_art7f RESULT pass=7 fail=0 (new: test_towers_tied_in, test_lp_walls_link = LP 512 map a_wall 0 dead ends after BASE7-2 re-layout, test_no_sprite_overlap = no two facility footprints overlap). test_cnfac7 RESULT pass=25 fail=0.",
+    "playtest": "pt7_art7f windowed: PLAYTEST RESULT pass=14 fail=0, 0 SCRIPT ERROR; ART7F_FLICKER 1x OLD empty=304 sig_changes=111 | FIXED empty=0 distinct=1 sig_changes=0; 3x OLD empty=314 | FIXED empty=0; walls_linked 49; towers_shot 4.",
+    "facts_posted": "art7f.scale_audit, art7f.footprints_used, need facility.entry_zones (zone-name proposal for the BASE7 successor)"
+  },
+  "not_done": [
+    "13.9c-2 entry/decon art not yet on real footprints: BASE7-2 handed off before re-laying the facility; zones gate_outer / apc_wash / gate_inner / decon_hall do not exist in CnFacility yet, so they are not drawn in game yet.",
+    "Old g7_cn_decon (blue spray box) and g7_cn_gate still draw on zones 'decon' / 'gate' until BASE7-3 retires/renames them.",
+    "Shots of the new entry layers / decon hall / extra towers in game: pending the re-layout.",
+    "Lab, range, decon, gate z1/z3 shots were captured but only z2 contact sheets were reviewed by ART7F-2.",
+    "Tower 'fire' frame: the old g7_rollout tower had a muzzle-flash state; the autotile tower has none (static RWS).",
+    "Skirmish-map flaws inside the compound in pt7_art7f (terrain boulder on the staging yard, NW hill with a cliff) are terrain/placement, not facility art; unverified on the LP map."
+  ],
+  "next_steps": [
+    "1. Wait for BASE7-3 fact facility.footprints (zone names gate_outer, apc_wash, gate_inner, decon_hall or their own; if they differ, rename in g7_fac7f.gd build() list, ENTRY_DEFAULT, entity_layer FAC7F_ZONES and test_art7f ZONE_ART).",
+    "2. Re-run tools/art/g7_fac7f.gd: godot --headless --path . -s tools/art/g7_fac7f.gd (expect G7_FAC7F files=189 and no 'provisional' on the entry zones once the json has them).",
+    "3. bash tests/run.sh --only=test_art7f (expect 7/0; test_interior_art_fits_zones then checks the entry art sizes; test_no_sprite_overlap checks the new layout; test_towers_tied_in checks every new tower).",
+    "4. Re-shoot: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/ART7F\" --ui-playtest-art7f (timeout 900); look at gate_outer/apc_wash/gate_inner/decon_hall z1-z3, every art7f_wall_tower<k>_z2/z3, compound_z6/z10, lockdown.",
+    "5. Final report: best before/after shots (before = ART7F-1 compound/workshop/tower shots are overwritten; use the ART7F-2 list below as 'before' for the re-layout)."
+  ],
+  "files_touched": [
+    "tools/art/g7_fac7f.gd (workshop rewrite, hardened tower autotile, wall footing/cap, gate_layer, apc_wash, decon_hall, ENTRY_DEFAULT)",
+    "assets/art/g7_fac7f/ (regenerated: manifest + 189 files)",
+    "presentation/view/entity_layer.gd (WALL_SHEET: cn_tower autotile; FAC7F_ZONES entry zones; wall_cells_of gate_outer/gate_inner)",
+    "presentation/view/baseprops_layer.gd (compound gravel hardstand + staging yard)",
+    "tests/test_art7f.gd (3 new tests, ZONE_ART entry zones)",
+    "tools/pt7_art7f.gd (awaited shots, zoom map, load cleanup, clean view, garage + per-tower shots, entry zones)"
+  ],
+  "best_shots": [
+    ".plan/shots/ART7F/art7f_compound_z10.png (whole compound, gravel floor, hardened towers + walls)",
+    ".plan/shots/ART7F/art7f_compound_z6.png",
+    ".plan/shots/ART7F/art7f_wall_tower0_z2.png .. art7f_wall_tower3_z3.png (tower-wall joins)",
+    ".plan/shots/ART7F/art7f_workshop_z2.png (finished back/flank faces)",
+    ".plan/shots/ART7F/art7f_planning_z2.png, art7f_lab_z2.png, art7f_drone_bay_z2.png, art7f_range_z2.png",
+    ".plan/shots/ART7F/art7f_compound_lockdown_z10.png, art7f_vtol_pad_z1.png"
+  ],
+  "gotchas": [
+    "pt._shot is a coroutine: always 'await pt._shot(...)' or the PNG shows the next camera setting.",
+    "Bash heredocs with GDScript break in this harness; python with a quoted 'PY' heredoc or Write works.",
+    "GDScript: 'var x := c - Y * s' with s from an untyped loop fails type inference; type it explicitly."
+  ]
+}

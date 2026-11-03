@@ -1,0 +1,22 @@
+{
+  "agent": "FACFLOW8E",
+  "status": "PARTIAL - handoff at 70% of call cap (~101/140)",
+  "done": {
+    "path7": "6/0. Causes: (a) LP chicane trap at t=-1 touched the gate axis (cell boundary x=80.0); (b) the real crab (50 deg, 36 frames) was Movement._separate pushing a VehDrive7-driven APC sideways when riflemen walked past at the facility gate (y~97). Fixes: sim/maps/last_protocol.gd serpentine traps t+1/t-2 with the approach road painted 4 wide (t-2..+1) over d h0+3..h0+9 (lpmap7 18/0); sim/systems/veh_drive7.gd _unpush: the sideways part of a small (<0.3) push since last tick is taken back unless another vehicle is within 2.6 tiles (crab 50 -> 0).",
+    "specops8": "5/0. Cause: the raid team's motorcade (CounterNanite.move_team -> Convoy, formed by the earlier move to the evacuation point) outlived the move; at t~2968 Convoy re-steered the APC (plain move to evac+(6,0)) while FacDrive7 had it in 'approach'; FacDrive7 _intercept read it as a player order out of the base -> V.to 'x' -> _handoff; APC idled outside, team stuck 'returning' 600 s. Fix: CounterNanite.end_convoy(w,t) (disband t.conv + Convoy._drop any APC/member still tagged), called in specops8 _go_home and cn_mission8 _go_home when the facility takes the team over (inside or phase out).",
+    "cnmission8 drive": "PASS. Cause: first blast left 0.15 cover; mission at once started a 2nd deployment at a new site whose scanner(s) had died of creep exposure -> stalled no_scanner/no_ew forever while the leftover creep died back to 0 (seeds killed). Fixes in cn_mission8 deploy step: SETTLE_S 60 (PROVISIONAL) wait after a blast for leftover creep to recede before another package; a running deployment is aborted (CounterNanite.abort_deploy, package kept, hold packed, remount) when the site is already purged or the role the CURRENT phase waits on (scan scanner / jam ew / arm deploy) has no live member; a new deployment with any of scanner/ew/deploy dead -> return with note 'no X left, area not clean'."
+  },
+  "open": {
+    "cnmission8 fly (FAIL)": "dropship lands at LZ (120.5,81.5) t~746, unload: APC 1064 comes out, APC 1053 (with all 10 crew) never does; air_unload times out at 90 s (t 2529) -> travel with one APC -> deploy stalls no_scanner (crew still aboard the dropship-borne APC). Likely Transport.bay_unload ramp_clear false (UnloadFailed RAMP_BLOCKED) because the first APC idles on the ramp foot. I added cn_mission8 _clear_ramp (idle team APC within 6 tiles of the dropship is ordered 8 tiles toward the target before each unload_all retry) but the result is unchanged -> next: trace UnloadFailed events + APC 1064 pos/order/vstate (VehDrive7/FacDrive7) during t 750-2500; check whether 1064 is idle (maybe 'move' order with fd7 or VehDrive7) or whether the block is something else (bay_seq stuck, cur unit). transport.gd is CNFAC7's, not mine.",
+    "re-runs pending": "test_det7, test_lpmode7 were running in lane at handoff (logs scratchpad ff8e/f_test_det7.log, f_test_lpmode7.log).",
+    "windowed flows": "NOT run: facexit8, cnfac7, gate7, cnmission8, specops8."
+  },
+  "results": {
+    "test_path7": "RESULT pass=6 fail=0", "test_specops8": "RESULT pass=5 fail=0", "test_cnmission8": "RESULT pass=6 fail=1 (fly)",
+    "test_apcmov7": "RESULT pass=16 fail=0", "test_facexit8": "RESULT pass=4 fail=0", "test_facreturn8": "RESULT pass=2 fail=0",
+    "test_lpmap7": "RESULT pass=18 fail=0", "test_gate7": "RESULT pass=5 fail=0", "compile": "headless --quit-after 60: 0 SCRIPT ERROR"
+  },
+  "files_changed": ["sim/maps/last_protocol.gd", "sim/systems/veh_drive7.gd", "sim/systems/counter_nanite.gd (abort_deploy, missing_role, end_convoy)", "sim/systems/cn_mission8.gd (deploy settle/abort, SETTLE_S, _clear_ramp, end_convoy in _go_home)", "sim/systems/specops8.gd (end_convoy in _go_home)"],
+  "temp_files_removed": ["tests/test_zzff8e_p7.gd", "tests/test_zzff8e_cnm.gd", "tests/test_zzff8e_so.gd", "tests/test_zzff8e_fly.gd"],
+  "hashes": "LP map terrain changes (4-wide serpentine road, trap cells) -> any LP-map hash moves; VehDrive7 unpush changes APC positions when infantry bump a driven APC; mission/specops timing changes. test_hot_state not touched/run."
+}

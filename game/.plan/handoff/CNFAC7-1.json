@@ -1,0 +1,26 @@
+{
+  "agent": "CNFAC7", "gen": 1, "status": "recycled (guard budget.handoff_now at 75%)",
+  "done": [
+    "sim/systems/base_state7.gd complete: state/training_mult/register/unregister/state_of/base_at, BaseStateChanged event; state only when a base registers",
+    "sim/systems/cn_facility.gd: compound rises with the core (4 towers, checkpoint, ~50 blast walls, unhackable, complete); training queue x training_mult; teams spawn inside APCs in garages (CounterNanite.spawn_team when present, fallback roster otherwise); rollout garage->pad->load->gate->out; return->decon rinse->garage (repair, Apc7.restock); decon walkway (CounterNanite.decontaminate + fallback field clear), mimic exposure; package lab queue + 2 tiers; range drills XP only while secure; lockdown (6 pop-ups, sealed APCs, mist vs Machine), evacuation (cmd or core < 35%), EMP field, self-repair; stealth dropship trained onto the helipad (Air.land_now); extraction drones (3 G5 strike kamikaze via G5Mech._launch + 2 cn_gun_drone with 60 s life); render_entries(w)",
+    "sim/systems/transport.gd: internal cargo bays (def `bay` or content _g7_bays override for a_vtol_dropship): 1 vehicle (APC with its occupants nested) + 10 foot, or foot_empty without a vehicle; never slung; nested occupants in cache, carried APC leaves carrier list, re-registers on unload, nested occupants die with an air carrier; load_now()",
+    "content/g7/defs_g7_facility.json (all PROVISIONAL): a_cn_facility, b_cn_facility (requires g7_counter_nanite, stage 10), cn_tower, cn_checkpoint, cn_blast_wall, cn_popup, cn_stealth_dropship, cn_gun_drone, _g7_bays, _g7_base_state, _g7_facility",
+    "tests/test_cnfac7.gd 13/13 green; tools/pt7_cnfac7.gd PLAYTEST RESULT pass=12 fail=0, 0 SCRIPT ERROR"
+  ],
+  "remaining": [
+    "1. bash tests/run.sh --only=<each test covering transport callers> (G5 air / airsys / transport / naval / hover tests): a_vtol_dropship now uses the internal bay (1 vehicle + 10 foot, no sling) instead of cargo_caps vehicle 2 / foot 8 sling; any test expecting 2 slung vehicles must be reported to ORCH as an intended owner-ordered change, not edited",
+    "2. run test_hot_state (heavy, alone) and confirm GOLD unchanged (no facility in it; transport edits are no-ops without bay defs except a_vtol_dropship)",
+    "3. once ORCH registers cn_* COMMANDS, rerun test_cnfac7 (the _cmd helper switches to w.submit automatically)",
+    "4. hook THREAT7 mimic API when it exists (today: e.mimic -> e.mimic_exposed + MimicExposed event)",
+    "5. Convoy hand-off on CnTeamOut (CNSIM7 owns motorcade; optional Convoy.form call)"
+  ],
+  "files": ["sim/systems/cn_facility.gd", "sim/systems/base_state7.gd", "sim/systems/transport.gd", "content/g7/defs_g7_facility.json", "tests/test_cnfac7.gd", "tools/pt7_cnfac7.gd"],
+  "test_state": "test_cnfac7 RESULT pass=13 fail=0 TESTS OK; pt7_cnfac7 PLAYTEST RESULT pass=12 fail=0, SCRIPT ERROR 0; other test files NOT run",
+  "gotchas": [
+    "content fragments cannot redefine an existing id, so a_vtol_dropship's bay comes from the _g7_bays key read by Transport.bay()",
+    "post.mjs has no change_request type: use type need, topic change_request.<x>",
+    "compound placement is not validated by Construction for the full 32x32 area: parts that would overlap buildings / leave the map are skipped",
+    "pop-up turrets are removed by direct erase (no wreck) when lockdown lifts; caches sim_index/unit_subsets cleared"
+  ],
+  "change_requests": ["orch: change_request.world_commands_cnfac7 (cn_* commands in world.gd COMMANDS)", "orch: change_request.art_catalog_cnfac7", "LOOK7: change_request.render_cn_facility (snap.cnf from CnFacility.render_entries)", "CNSIM7: interface agreed (seq 207)"]
+}

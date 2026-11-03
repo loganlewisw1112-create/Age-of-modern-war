@@ -1,0 +1,51 @@
+{
+ "agent": "SCALE7",
+ "gen": 1,
+ "reason": "budget projection reached 70% at ~100 tool calls",
+ "done": [
+  "sim/map_io.gd MAX_DIM 512 -> 1024 (512 and 768 load/save/validate)",
+  "sim/maps/lp_test512.gd: generated point-symmetric test map, gen(seed, attempt, n); ids lp_test512 (512) and lp_test768 (768) registered in sim/map_gen.gd (MODULES + SIZED); spawn sets 2/4 (3-side set dropped: unfair)",
+  "sim/systems/movement.gd: GDScript separation bucket key widened (SEP_ROW/SEP_BLOCK; rows >= 256 used to fold into the air-layer key range on 512+; only extra distance checks, no behaviour change); _group_flows: on maps > 256 a group closer than FLOW_NEAR (96) to its target uses per-unit A* instead of a whole-map native flow field (flow build 7 ms@256, 30 ms@512, 77 ms@768). Maps <= 256 untouched.",
+  "presentation/hud/minimap.gd: maps > 256 sample every k-th cell into <= 256x256 terrain/fog textures (per-frame fog rebuild cost bounded)",
+  "presentation/view/terrain_layer.gd: backdrop rect sized from the map (was fixed +-16000 px)",
+  "presentation/view/camera_rig.gd: zoom floor 0.08 on maps > 256 (512: 0.094, 768: 0.08); <= 256 unchanged",
+  "tools/bench.gd: --map=<id>, --spread, --ticks-warm=N, --breakdown, static-mem column, fps cases 2k512/10k512/2k768/10k768",
+  "tests/test_scale7.gd (7 tests) PASS 7/0",
+  "tools/pt7_scale7.gd: PLAYTEST RESULT pass=19 fail=0, 0 SCRIPT ERROR; shots in .plan/shots/SCALE7/",
+  "fps (windowed, bench --fps --fps-secs=20): 2k p10 256/512/768 = 64.9/77.3/79.0; 10k p10 = 286.5/430.7/410.6; all PASS",
+  "CRs posted: maps.json listing (optional), territory.gd first-use 626 ms hitch on 768"
+ ],
+ "remaining": [
+  "ORCH: add lp_test512 + lp_test768 to content/maps.json (now REQUIRED: test_maps::test_maps_json_matches_generators fails 'maps.json has lp_test512/lp_test768'); entries in the change_request.maps_json need. test_maps also reported script_errors=1 (not investigated).",
+  "ORCH: test_hot_state ran 11 pass / 6 fail (GOLD, GOLD_FLAT, equal-to-HEAD hashes moved on the 2k/10k scenarios, maps <= 256). SCALE7's sim changes are gated to maps > 256 (flows) or bijective on <= 256 (separation key), so the moves are most likely other agents' in-progress sim edits; NOT verified by an A/B run.",
+  "optional: territory.gd first-use hitch (CR), far group moves still build whole-map flows (30 ms@512, 77 ms@768)"
+ ],
+ "files_touched": [
+  "sim/map_io.gd",
+  "sim/map_gen.gd",
+  "sim/maps/lp_test512.gd",
+  "sim/systems/movement.gd",
+  "presentation/hud/minimap.gd",
+  "presentation/view/terrain_layer.gd",
+  "presentation/view/camera_rig.gd",
+  "tools/bench.gd",
+  "tests/test_scale7.gd",
+  "tools/pt7_scale7.gd"
+ ],
+ "test_state": "test_scale7 7/0 (hash 921a2ba0d2cd3617f202e71f05668fbc7258944e1dc7afce264cca41b8362ff4, equal within a run and across runs); test_map_io 12/0 TESTS OK; test_maps 12/1 (maps.json CR); test_hot_state 11/6 (see remaining); pt7_scale7 19/0",
+ "gotchas": [
+  "other agents break the tree often (squad_ai, convoy, creep): grep SCRIPT ERROR before trusting any timing",
+  "scale_bench --breakdown aborts silently per system when a foreign file fails to compile",
+  "remaining big-map costs not fixed: far group moves still build a whole-map flow (30 ms@512, 77 ms@768, one-off per order); GDScript fallback A* drain is ~107 ms/tick at 512 (native is the shipped path); territory first-use hitch (ORCH CR)"
+ ],
+ "perf": {
+  "fps_p10_2k": "256 64.9 / 512 77.3 / 768 79.0",
+  "fps_p10_10k_zoom0.15": "256 286.5 / 512 430.7 / 768 410.6",
+  "sim_2k_mixed_native_scale_bench_ms_avg": "256 11.3 / 512 12.2 / 768 16.7",
+  "sim_2k_fight_bench_ms_avg": "256 10.2 / 512 11.9",
+  "sim_2k_spread_bench_ms_avg_p95": "256 10.6/22.4; 512 before 18.8/73.4, after 8.9/13.2; 768 after 16.0/22.1",
+  "corner_path_512_native_ms": "vehicle 63.8, foot 69.6",
+  "flow_build_ms": "256 7.1 / 512 29.6 / 768 77.3",
+  "static_mem_MB_2k": "256 ~126 / 512 ~132-160 / 768 ~171"
+ }
+}

@@ -1,0 +1,40 @@
+{
+ "agent": "CARDBAR8", "scope": "docs/G7_REFERENCE.md 13.9c-51", "status": "PARTIAL (budget handoff)",
+ "done": [
+  "New presentation/ui7/cardbar8.gd host: all facility cards attach via hud.cardbar.attach(); every card button is moved once into a hidden stash; while a card is visible (its own selection rules unchanged) the ACTIVE TAB's buttons are moved into hud._card_grid as kind 'fac' records (existing fit + 'More' page arrow handle overflow); release() puts them back before the grid is cleared. Tab strip lives in the card title row (build_pages pattern); click a tab, Tab = next, Shift+Tab = previous (registered via hud._register_hotkey, FOCUS_NONE). Card hotkeys untouched (cards still handle their own keys while visible). Refusals unchanged: card sets disabled + tooltip; hud._update_card_state skips kind fac and reads the reason for the hover hint. Regular building buttons (if any) stay registered (hotkeys work on every tab) and show on a last tab named after the regular title.",
+  "Read-outs: the card itself (only its live lines left) is the info strip FacCardStrip above the bottom bar, centred between the side stacks; when that rect would touch any HUD frame (small canvas / 150% / PAUSED / side stacks / GaragePanel) the strip moves into the inspector (bottom bar middle section, scrolls).",
+  "All 9 cards moved: ops_card8, defence_card8, supply_card8, armory_card8, garage_card8, card8b_base, building_card8c (4 cards: bar/air/aid/lab, via base, file itself NOT edited), lpreserve_card, dronebay_card. Nothing attaches to the left stack any more.",
+  "Flows patched to open the tab by a real click then click the button (tools/pt8_cardbar.gd CardBar8.reveal/node): pt7_cards8a, pt7_cards8b, pt7_cards8c, pt7_dronebay7, pt7_lpres7 (assertions unchanged)."
+ ],
+ "tabs": {
+  "command centre": "MISSIONS (RECALL n / CANCEL n per running row) | FIRE SUPPORT | EVACUATE",
+  "defence tower/turret": "FIRE MODE | TARGETS | REPAIR", "gate part": "GATE",
+  "magazine": "STOCK | PRIORITY | AMMO MIX | AIRDROP",
+  "armory": "LOADOUTS | SUITS | UPGRADES", "garage": "ROSTER | UPGRADE | CONVOY | DECON",
+  "barracks": "WATCH | TRAIN | REST | PATROL (+ RESERVE | AUTO RELEASE in Last Protocol)",
+  "air pads": "ROSTER | LAUNCH | PATROL", "aid station": "CASUALTIES | MEDICS", "lab": "RESEARCH | FIELD",
+  "drone bay": "GARRISON | AUTO"
+ },
+ "shared_files_edited": {
+  "presentation/hud/hud.gd": "var cardbar; cardbar.build + 8 cardbar.attach lines replace .attach(self,left); _clear_card -> cardbar.release(); _rebuild_card -> cardbar.apply(mode) before g2_cmd.compact; _fit_card pageable kinds + 'fac'; _update_card_state skips kind fac; _set_card sig += cardbar.sig(mode); cardbar.post_update() after g4b_cmd.update_state; cardbar.place() in _refresh",
+  "presentation/ui5/kit/fit_screens.gd": "11 screens ui8_bar_* (built by cardbar8.fit_build over a facility world)",
+  "cards": "ops_card8 (section list, RECALL n / CANCEL n text, row number in label, bar_tabs), defence_card8 (section list, bar_tabs), supply_card8/dronebay_card/lpreserve_card (bar_tabs), card8b_base (BAR_TAB map + bar_tabs)"
+ },
+ "tests": {
+  "compile": "0 SCRIPT ERROR (after another agent's art_catalog.gd parse error cleared)",
+  "test_cards8a": "RESULT pass=10 fail=0", "test_cards7": "RESULT pass=1 fail=0", "test_supply8": "RESULT pass=6 fail=0",
+  "test_lpreserve7": "RESULT pass=7 fail=0", "test_ui_panels": "RESULT pass=5 fail=0", "test_cards8b": "RESULT pass=5 fail=0",
+  "test_dronebay7": "RESULT pass=14 fail=1 (test_hive_ram_only_at_the_core: sim hive behaviour, + 1 SCRIPT ERROR at test_dronebay7.gd:625 Out of bounds index on Dictionary; sim side, not presentation - not investigated)",
+  "test_ui_fit (before placement fix)": "RESULT pass=5 fail=1 (test_ui_scale_75_to_150_still_fits: ui8 screens)",
+  "ui8 fit after fix": "tools/ui_fit_test.gd --fit-scales=0.75,1,1.5 all 7 res, 11 ui8 screens: FIT RESULT screens=231 controls=24825 issues=0, 0 SCRIPT ERROR (.plan/cardbar8_fit3.log)",
+  "test_cards8c": "NOT RUN"
+ },
+ "flows": "NOT RUN yet: cards8a, cards8b, cards8c, dronebay7, lpres7 (patched). supply8: no tools/pt7_supply8.gd exists, so that flow has no file.",
+ "screenshots": "fit full-size shots (taken before the placement fix, s=1): .plan/shots/CARDBAR8/fit/ui8_bar_{ops,def,gate,supply,armory,garage,dronebay,barracks}_{1280x720,1600x900}_s1.0.png. Missing: air, aid, lab, barracks reserve (LP), fresh after fix; shots.best not posted.",
+ "next_steps": [
+  "bash tests/run.sh --only=test_ui_fit (expect 6/0) and --only=test_cards8c",
+  "windowed flows one at a time: --ui-playtest-cards8a, cards8b, cards8c, dronebay7, lpres7; all ok + 0 SCRIPT ERROR (CARDS8D notes: 8c PatrolButton was off-screen in left stack and 8b null tooltip from a missing button - both should be fixed by the move; 8b suit_repair: REPAIR sends unit_id -1)",
+  "re-shoot: godot --path . -s tools/ui_fit_test.gd -- --fit-res=1600x900 --fit-full --fit-out=<abs>/.plan/shots/CARDBAR8/fit --fit-screens=ui8_bar_*; plus lpres7 flow shot for barracks reserve; Read them; post fact shots.best",
+  "check hotkeys collisions test (presentation/ui5/panels/hotkeys.gd unchanged; Tab/Shift+Tab only registered while a facility card is up)"
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "agent": "CARDS8B",
+  "why": "budget.handoff_now at 71% (orch)",
+  "tree_compiles": "yes: .plan/cards8b_chk.gd loads sim/systems/cards8b.gd, presentation/ui7/card8b_base.gd, armory_card8.gd, garage_card8.gd, tests/test_cards8b.gd, tools/pt7_cards8b.gd all ok",
+  "files_new": ["sim/systems/cards8b.gd", "content/g7/rules_g8_cards8b.json", "presentation/ui7/card8b_base.gd", "presentation/ui7/armory_card8.gd", "presentation/ui7/garage_card8.gd", "tests/test_cards8b.gd", "tools/pt7_cards8b.gd", ".plan/cards8b_chk.gd", ".plan/c8b_reg.sh"],
+  "options": {
+    "armory.loadout_presets": {"done": true, "cmd": "c8b_preset {role, preset}", "button": "ROLE (Sh+T) / PRESET (Sh+L)", "test": "pass (parked strike APCs pick up AT-heavy rockets)"},
+    "armory.suit_build": {"done": true, "cmd": "c8b_suit_build {role}", "button": "SUIT (Sh+S) / BUILD (Sh+B)", "test": "pass"},
+    "armory.suit_rush": {"done": true, "cmd": "c8b_suit_rush", "button": "RUSH (Sh+R)", "test": "pass"},
+    "armory.suit_repair_queue": {"done": true, "cmd": "c8b_suit_repair {unit_id|-1}", "button": "REPAIR (Sh+E)", "test": "pass"},
+    "armory.weapon_upgrades": {"done": "sim + API; damage effect needs LETHAL8 to call Cards8b.round_mods / armour_mult from ballistics8 (need posted)", "cmd": "c8b_upgrade {key}", "button": "UPG (Sh+I) / RESEARCH (Sh+U)", "test": "pass (round_mods pen x1.5 after AP research)"},
+    "garage.roster_repair_priority": {"done": true, "cmd": "c8b_veh_repair {team}", "button": "TEAM (Sh+T) / REPAIR (Sh+R)", "test": "pass"},
+    "garage.vehicle_upgrades": {"done": "armour_kit / dome_shield / rocket_pod live; engines sets e.c8mv but needs CR change_request.morale_c8mv (morale.gd) to change speed", "cmd": "c8b_veh_upgrade {team, key}", "button": "KIT (Sh+I) / FIT (Sh+U)", "test": "pass"},
+    "garage.convoy_launch_recall": {"done": true, "cmd": "c8b_convoy {teams, target} (cn_rollout per team), c8b_recall (cn_return)", "button": "CONVOY +/- (Sh+V), LAUNCH (Sh+C, then map click via begin_point_pick), RECALL ALL (Sh+H)", "test": "pass (out within 3000 ticks, recall -> returning)"},
+    "garage.decon": {"done": true, "cmd": "c8b_decon_force, c8b_decon_skip {on}", "button": "DECON (Sh+D), SKIP WASH (Sh+W); contamination list on the card", "test": "pass"}
+  },
+  "tests": {"test_cards8b": "RESULT pass=5 fail=0 (direct Cards8b path: c8b_* not yet in world.gd COMMANDS; _do() switches to world.submit automatically once registered)",
+    "regression": "started in background via .plan/c8b_reg.sh -> .plan/c8b_reg.out and .plan/c8b_reg_<test>.log (test_ui_fit, test_ui_panels, test_cards7, test_cnsuits7, test_cnfac7, test_cnmission8, test_apcmov7, test_lpmode7, test_det7, test_hot_state); NO RESULTS YET at handoff (unverified)"},
+  "flow": "tools/pt7_cards8b.gd written + compiles; NOT RUN: needs world.gd c8b_* registration (otherwise every card command is rejected) and \"cards8b\" in tools/ui_playtest.gd G7_FLOWS",
+  "shots": "none yet (flow not run)",
+  "pending_crs_on_board": ["change_request.world_cards8b (seq 16722)", "change_request.hud_cards8b (16723)", "change_request.match_view_garage_part (16724; CARDS8A may do it via its FAC_PARTS table, answer seq 16881)", "change_request.morale_c8mv (16725)", "change_request.ui_playtest_cards8b (16726)", "change_request.hotkeys_cards8b (16727)", "need to LETHAL8 cards8b.round_mods"],
+  "next_step": "1) once ORCH registers c8b_* in world.gd + G7_FLOWS: rerun test_cards8b (now through world.submit), then run the flow windowed: \"$G\" --path . -- --ui-playtest=\"<abs dir>\" --ui-playtest-cards8b; Read the cards8b_*.png shots, post 2-3 as fact shots.best. 2) read .plan/c8b_reg.out for the regression RESULT lines. 3) confirm LETHAL8 wired round_mods/armour_mult and morale c8mv CR applied; add a test that a fitted Engines APC moves faster."
+}

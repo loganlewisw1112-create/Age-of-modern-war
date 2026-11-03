@@ -1,0 +1,39 @@
+{
+  "agent": "ATMO7-2",
+  "reason": "budget.handoff_now from ORCH (projected 570k of 750k at 70 calls)",
+  "calls_used": 72,
+  "alarm": {
+    "cause": "Not a layer bug: the old pt7_atmo7 step called CnFacility._lockdown and then set mv.paused = true, but match_view had already set _kick_pending for this frame and _on_pre_draw kicks the step without checking paused; that one step saw no intruder (secure) and lifted the lockdown at once, so alarm stayed 0. The real game path (breach -> sim lockdown -> CnLockdown via _on_step_events + entries re-read) works.",
+    "fix": "tools/pt7_atmo7.gd now uses a real breach (3 hostile riflemen held on the pad, hp 1e6), waits for the layer's alarm through the wired path (new check atmo7_alarm_real), then pauses and waits 0.3 s so no queued step remains; after the shots it removes the hostiles and waits for the sim to lift the lockdown (atmo7_alarm_off). Side note for ORCH: match_view._on_pre_draw can still run one step after paused is set (it does not check paused).",
+    "status": "fixed, pt run 2/3/4 all PLAYTEST RESULT pass=21 fail=0, atmo7_alarm 1.0, beacons 21 searchlights 16 shutters 12 mist 34"
+  },
+  "gatehouse_duplicates": "Removed my footpath slab + staggered jersey barriers at the foot entry (FACB7's cn_ecp_baffle serpentine owns that ground); gate apron narrowed to the gate width; ECP board moved before the walk-in leg's mouth clear of the baffles; STOP SHOW ID board dropped (it stood on the apron behind a map rock); SPEED 10 moved to the vehicles' side. I draw no checkpoint/mantrap door states (FACB7-2 draws built/open_out/open_in/lockdown). Heights calibrated to FACB7-2 fact facb7.zone_heights (9.8 px/m): TOWER_Z 110, beacons on the roof parapet corner, cn_tower damage z 100, cn_checkpoint 51, BLD_Z magazine 38 / armory 41 / aid 37 / barracks 71. Lockdown shutters now on the inset facade (INSET 0.42, garage hw 0.56).",
+  "other_fixes": "zone fire/cracks only where the zone's building art exists (no floating fires over bare slabs); tyre tracks 2 px, muddy colour outside the outer gate, apron drawn under the tracks, fade continues across the staging yard into the lane; perf: memoised _iso (ground lift) + over/props and glow redrawn at 30 Hz on alternate frames.",
+  "tests": "bash tests/run.sh --only=test_atmo7 -> RESULT pass=7 fail=0 (after the last edit)",
+  "playtest": "pt run 4 (before the last board/track edits): PLAYTEST RESULT pass=21 fail=0, 0 SCRIPT ERROR. ~430-477 'triangulation failed' engine errors per run all from presentation/view/fac_life7.gd:1288 _draw_actor (LIFE7-2 warned on the board).",
+  "frame_cost": "night + alarm at the compound, zoom 1, shared PC: run 2 on 19.48/off 16.64 ms mean (GDScript draw over 1.43 + glow 2.38 ms); after memo+stagger run 3 on 16.95 p90 18.76 vs off 16.69 p90 17.09; run 4 on 17.47 p90 19.72 vs off 16.70 p90 17.16 (draw ~1.1 ms per frame). tools/bench.gd --fps 2k before/after NOT run.",
+  "best_shots_run4_looked_at": [
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_alarm_night_z2.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_alarm_tower_z3.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_alarm_day_z1.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_alarm_garages_z3.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_compound_night_z1.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_garages_night_z3.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_damage_tower_z3.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_ruin_z1.png",
+    "C:/CODING/integ7_fast/pt_atmo7/atmo7_gate_approach_z2.png"
+  ],
+  "not_done": [
+    "pt7_atmo7 re-run after the final edits (ECP boards, SPEED board, muddy tracks): not run; test_atmo7 passes.",
+    "HQ flags hidden: atmo7_hq_flags_z3 shows no flag; the poles at core.end + 0.45 sit under LIFE7's floating OPS screen and behind the core; move g.flags (fac_atmo7.gd line ~422) to an open spot in front of the core door [4,7] and re-check.",
+    "Zone-door shutters (lab / planning) still sit slightly off FACB7-2's door art; garage shutters line up.",
+    "fps bench 2k before/after (tools/bench.gd --fps 2k, ATMO7_OFF=1 vs on).",
+    "wash tracks not yet confirmed in a shot (the inner gate hides the first yard tiles; the fix extends them across the yard)."
+  ],
+  "next_steps": [
+    "1. Move g.flags to open ground in front of the HQ door; re-run: G=<godot console exe>; bash .plan/hb.sh <ID> ... -- \"$G\" --path . -- --ui-playtest=C:/CODING/integ7_fast/pt_atmo7 --ui-playtest-atmo7 ; expect PLAYTEST RESULT all ok.",
+    "2. Look at gate_approach_z2/z3, wash_tracks_z2/z3, hq_flags_z2/z3, decon_mist_z3, helipad_wind_z3.",
+    "3. tools/bench.gd --fps 2k with ATMO7_OFF=1 and without; report shared-PC p10.",
+    "4. The prof dict / _timed wrappers in fac_atmo7.gd are profiling-only and cheap; keep or drop."
+  ]
+}

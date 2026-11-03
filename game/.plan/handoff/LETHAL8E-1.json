@@ -1,0 +1,48 @@
+{
+  "agent": "LETHAL8E",
+  "reason": "budget.handoff_now from ORCH (71%)",
+  "files_changed": {
+    "content/g7/rules_g8_rounds.json": "superheavy: + blocked_chem 1.0 (blocked stays 0.35), note updated; new class superheavy_weaver (same plates, blocked 0.35, blocked_chem 0.7); class_by_def g7_m_weaver -> superheavy_weaver. PROVISIONAL",
+    "sim/systems/ballistics8.gd": "vehicle_damage: if round.chem and the armour has blocked_chem, a stopped round does old x blocked_chem (3 lines)",
+    ".plan only": "lethal8e_so8.gd, lethal8e_t7.gd, lethal8e_db7.gd probes + lethal8e_*.txt outputs; rows appended to .plan/lethal8_htk.txt"
+  },
+  "htk": {
+    "cause": "superheavy t_side.front 800 > heat_rocket pen 500, so the round does not penetrate and damage = G2 x blocked 0.35. RPG front = 60/0.35 = 172 hits (600 in the older capped r2-r10 probe). The at_rocket -> heat_rocket mapping is correct.",
+    "fix": "blocked_chem: a stopped HEAT round keeps its full G2 chip damage (colossus front 60, weaver 54 via 0.7); small-arms and kinetic chip is unchanged at 0.35. A first attempt (blocked 1.0 for all rounds) failed test_lethal8 (weaver front >= 50) and made the cnsim7 colossus pincer 3394 ticks (< 3600). Both are green with blocked_chem.",
+    "flags": "rifles/HMG/sniper/autocannon vs tanks, superheavy, cn_apc: 400 = no kill, OK. AT vs light vehicles 1-2 hits OK, vs tanks 2-3 OK. g7_cn_strike_apc uses cn_apc (at_gunner front 29, mbt 23, harpoon 17), OK. Report-only: rifleman -> logistics_truck front 382 (old 134) because rifle pen < light_veh t 14."
+  },
+  "results_final": {
+    "compile": "0 SCRIPT ERROR / Parse Error (.plan/lethal8e_compile2.txt)",
+    "test_lethal8": "RESULT pass=14 fail=0 files=1 time_ms=12502. ACCURACY8B's 13/1 on test_superheavy_front_vs_flank was the interim blocked 1.0 state (weaver front 38 < 50); fixed by superheavy_weaver.",
+    "test_cnsim7": "RESULT pass=26 fail=1 files=1 time_ms=98868 | FAILURE: test_one_topple_window_cannot_kill_an_unhurt_walker (48). OFF 27/0. ACCURACY8_OFF=1 27/0, so the cause is ACCURACY8 (warned).",
+    "test_ciws7": "RESULT pass=16 fail=0 files=1 time_ms=71360 (run before blocked_chem; superheavy not involved)",
+    "test_cards8b": "RESULT pass=5 fail=0 files=1 time_ms=216727 (run before blocked_chem)"
+  },
+  "specops8_drive_all": {
+    "ON": "5 messages: 3x APC not parked (returning), recon marks (no target kind), survivors home 0; the run ends at t14954. OFF: 0 fails, ends at t4909.",
+    "recon": "The recon team's own g7_op_tactical_apc (twin .50, g7_op_twin50) kills the marked m_hauler (nanite_frame body, 220 hp) in one hit (221.9 dmg) at t2481, 56 ticks after its SoMark. OFF it chips 3.75 per hit. This is a legitimate lethality outcome: the mark is dropped from SO.marks when the target dies. Proposed test change (not edited): take the recon kinds from SoMark events seen during the run (kind target fired at t2425) instead of live SO.marks at 'ret', or give mu survivable hp (w.entities[mu].hp = 100000.0 in _machine_unit).",
+    "parking": "fac_drive7 stage-1 approach stall: APC 1106 (ap=1, apb=0) stops 1.35 tiles short of the apron at (81.32,102.51) with order move, path [], moving false. The queue behind it waits forever and nobody reaches the wash. ON timing only exposes the stall. Warned FACFLOW8B (fd7.approach_stall) with a suggested fix."
+  },
+  "ab_results": {
+    "test_turret7": "ON 15/3, then 16/2 on a rerun (the mortar test now passes); OFF 18/0. (1) test_intended_target_classes 'setup units still present': the autocannon kills m_hauler at t10, then rifleman rf3 at t20 and rf2 at t45 (195-230 dmg per hit); the check runs after ~37 ticks + lay time. Fix: move that check to right after the first _run(w, 12). (2) test_traverse_idle_returns_to_rest 'holds its last lay for hold_s': the autocannon kills the m_hauler at t53 (475 dmg) before the test destroys it at t120, so the hold started earlier. Fix: w.entities[int(r[2])].hp = 100000.0 after _behind. (3) Mortar: the guard tower can kill the crawler before the mortar fires; currently passing. Note: the mortar test shows guard_tower Damage events with shooter == target (1.5 dmg, t55-71); not investigated.",
+    "test_dronebay7": "ON 14/1 + SCRIPT ERROR; LETHAL8_OFF 15/0; ACCURACY8_OFF 11/4. hive_ram: the 5 b_militia (hp 4000) die t63-134 to wall turrets, towers and pop-ups at ~50 dmg per hit (OFF ~8). WOUND7 head-kill rolls (sev = head dmg / max hp) succeed with the bigger per-hit damage, before the hive's ram order (OFF t140). Proposed setup (ORCH decides): make the _core_case attackers immune to zone kills (e.g. erase 'morale') or silence the facility guns. The SCRIPT ERROR at test_dronebay7.gd:625 reads w.entities[int(mem[0].tgt)] for a target killed this tick; it needs a has() guard.",
+    "test_lpmode7": "ON 18/0; OFF 17/1 (patrollers off ring road): not lethality",
+    "test_sent7": "ON 13/0; OFF 12/1 (balance_fight 4x break-in): report-only",
+    "test_cnops7": "ON 11/0; OFF 10/1 (the quick-kill test expects the new lethality)",
+    "test_air": "ON 9/0, OFF 9/0",
+    "test_ai": "ON 17/1: test_g3_ffa_three_factions 'AI-01 human_a (side 0) issued an offensive command toward an enemy start'; OFF 18/0. NOT diagnosed."
+  },
+  "old_toughness_oracles": [
+    "test_turret7::test_intended_target_classes 'setup units still present' (rf2/rf3 die at t20/t45 to the autocannon)",
+    "test_turret7::test_traverse_idle_returns_to_rest 'holds its last lay' (the target dies at t53, before the scripted destroy at t120)",
+    "test_dronebay7::test_hive_ram_only_at_the_core rams 0 (4000-hp militia head-killed t63-134; OFF ram at t140-145)",
+    "test_specops8::test_drive_all recon marks (220-hp m_hauler one-shot by its own APC's .50)",
+    "test_cnsim7::test_group_pincer_auto_operators_engage_then_remount 45-90 s (LETHAL8D: 1824 ticks, 24 over; passes in this session's ON runs)"
+  ],
+  "next_steps": [
+    "1) test_ai::test_g3_ffa_three_factions ON-only: probe what offensive command human_a issues (faster kills probably change the AI state); decide code vs oracle.",
+    "2) ORCH: decide the test-setup changes above (turret7 x2, dronebay7 hive + line 625 guard, specops8 recon).",
+    "3) FACFLOW8B: fd7 approach stall (specops8 parking). ACCURACY8: cnsim7 topple window 48.",
+    "4) Re-run test_ciws7 / test_cards8b after blocked_chem (only HEAT vs the superheavy classes changed)."
+  ]
+}

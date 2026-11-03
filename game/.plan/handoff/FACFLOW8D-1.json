@@ -1,0 +1,28 @@
+{
+  "agent": "FACFLOW8D",
+  "status": "PARTIAL - handoff at ~70% of call cap (96/140)",
+  "done": {
+    "approach_stall (LETHAL8E)": "sim/systems/fac_drive7.gd _approach stage 1: when apb==0, order still move, not moving, empty path and > tol from the apron: stood still 1.5 s -> within 2.5 tiles it goes from where it stands (REGFIX7 rule), farther it re-issues Movement.order_move. test_specops8 '3x APC not parked / survivors home 0' cleared (now 4/1, see open).",
+    "two_bays third APC": "cause: 13.9c-50 staging yard [8,16,8,2] sits on the gate lane; CnFacility 'to_gate' -> 'out' (_arrived, slot = staging centre) fired while the 3rd APC was still being driven past the staging slot (premature team 'out', loop ended, APC never crossed). Fix sim/systems/cn_facility.gd _arrived: for 'gate', an APC still in FacDrive7 vstate is not out (it is out once handed off). A/B old layout: same flow, no early 'out'.",
+    "apcmov7 gate-wait oracle": "ORCH ruling (13.9c-50) applied in tests/test_apcmov7.gd with comment: waited = outer not open + inner closed + APC in apc_wash rect, and never past gate_outer.y before the outer opened. Cause: longer wash lets the APC roll through (A/B old layout stops at y25.31 ~25 ticks). Never-both-open unchanged.",
+    "path7 (not fixed, not my file)": "outside-bucket snap/crab/start: LP map s_tank_traps entity at world (79.5,115.5) beside the gate axis (x=80.000, a cell boundary); lead APC at x 79.99x steps into cell (79,115): VehDrive7 _step_ok false, stuck 60 ticks, handed to Movement (COOL 100) -> snaps/instant starts. Warned LPMAP7/veh_drive7 owner (board warn path7.tank_trap_lane). Old layout passes snap/start by float luck (crab 33 there too).",
+    "cnmission8 (not fixed, not my file)": "drive AND fly fail identically (fly has no airlock): deploy phase 'jam' stalled 'no_ew' from t~2400 to the limit, creep already 0.00; counter_nanite.gd:566 needs an EW soldier on foot near the site. Warned (board warn cnmission8.no_ew).",
+    "exit time": "not improved: facexit8 hardened case still passes the 90 s check (RESULT 4/0); ~83.5 s per FACFLOW8C. Analysis: next-cycle APCs already wait at the inner door band (gw0 = gin-0.3); fill/drain are travel+accel bound at V_FWD 1.4/ACC 0.6; the order arrives after hardening so pre-staging is not applicable without moving APCs before the order. ~70 s NOT met."
+  },
+  "results": {
+    "test_apcmov7": "RESULT pass=16 fail=0", "test_specops8": "RESULT pass=4 fail=1 ([raid] the APC parked back in its garage (returning))",
+    "test_lpmode7": "pass=18 fail=0", "test_cards8a": "pass=10 fail=0", "test_facexit8": "pass=4 fail=0", "test_facreturn8": "pass=2 fail=0",
+    "test_supply8": "pass=6 fail=0", "test_cnfac7": "pass=36 fail=0", "test_ciws7": "pass=16 fail=0", "test_rest8": "pass=12 fail=0",
+    "test_gate7": "pass=5 fail=0", "test_path7": "pass=5 fail=1 (tank trap, above)", "test_cnmission8": "running in lane at handoff (baseline 5/2), then test_det7 queued",
+    "compile": "0 SCRIPT ERROR (headless --quit-after 60)"
+  },
+  "next_steps": [
+    "specops8 raid: team phase stays 'returning' 600 s; an on_tick trace sampling teams in phase 'returning' every 200 ticks printed nothing (team key/phase may differ) - trace SO.fac_team(raid tid) and the APC's fac_drive7 vstate directly.",
+    "Collect test_cnmission8 / test_det7 results from scratchpad ff8d/r_test_*.log.",
+    "Windowed flows NOT run: facexit8 (alone, quiet machine), cnfac7, gate7. Supply-carrier airlock shot NOT taken: tools/pt7_supply8.gd exists now but is CARDBAR8B's (not hardened, no airlock shot); add a hook there via change_request or a facexit8 tail step (needs engineers/stage 10 like pt7_supply8).",
+    "Exit time ~70 s still open."
+  ],
+  "files_changed": ["sim/systems/fac_drive7.gd (_approach stage-1 stall)", "sim/systems/cn_facility.gd (_arrived gate)", "tests/test_apcmov7.gd (ORCH-ruled oracle)"],
+  "temp_files_removed": ["tests/test_zzff8d.gd", "tests/test_zzff8e.gd", "tests/test_zzff8f.gd", "tests/test_zzff8g.gd"],
+  "hashes": "fac_drive7 stall state (apl/apw) only appears on a stalled stage-1 approach; cn_facility gate arrival changes team phase timing wherever FacDrive7 drives APCs out (facility runs). test_hot_state not touched/run."
+}

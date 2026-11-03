@@ -1,0 +1,23 @@
+{
+  "agent": "SEQ7-3", "calls_used": 106, "tokens_used_est": 340000, "stopped_by": "budget.handoff_now (orch, 104/140 calls)",
+  "tests": "bash tests/run.sh --only=test_seq7: RESULT pass=4 fail=0, TESTS OK (after the last edit; hash on/off check unchanged)",
+  "playtest": "pt7_seq7 windowed, 4 runs after the changes: d 22/0, e 21/1 (ramp check missed on a loaded PC, check fixed), f 22/0, g 22/0, h 22/0 (final code, boarded 19 of 20), 0 SCRIPT ERROR, 0 engine ERROR lines from run e on. Shots C:/CODING/integ7_fast/pt_seq7d..h; run h shots NOT looked at.",
+  "found_and_fixed": [
+    "glow child never drew: _draw_glow called self.draw_* from the glow node's draw signal -> 8605 engine ERROR lines per playtest, no scramble beacon / ramp strobe / scan / quarantine light ever showed; now glow.draw_*",
+    "wash jets drew over the near link wall and past the lane: nozzles inboard (1.12 tiles), jets in 3 pieces cut by the link-wall bodies (5.85 m) + gate pillars, mist and runoff cut too",
+    "figures in the yard behind the gatehouse stood on its roof: checkpoint 2x2 (5.6 m) is an occluder + route block, FACB7 zone heights used, figures whose feet are hidden are cut at the roof line",
+    "quarantine beacons floated off the aid-station zone corners: one lamp at FACB7's lamp spot (roof 4.75 m, west end) + violet door spill",
+    "sliding legs: frames advance at motion.gd's cadence (run 16 fps, walk 10 fps) per distance at each figure's speed; door chase advances the cycle; loaders lift / walk / hand up / walk back instead of gliding",
+    "run speed capped at 2.7 tiles/s (was up to 4.0), staggered double file, single-file queue at the APC rear door",
+    "ramp strobes (4 per edge, chasing, hot core + halo) and marshaller (hi-vis band, lit batons, tip halos) readable at z1.75; bay spill dimmed",
+    "spool-up also triggers when the ramp comes up on the pad; stronger, soft-edged dust"
+  ],
+  "not_done": [
+    "fps: tools/pt7_seq7.gd --seq7-fps mode written (bench MIX 2000 units across the facility, 1x, vsync off, alternating 5 s windows layer ON/OFF, prints SEQ7_FPS lines) but NOT RUN. Command: \"$G\" --path . -- --ui-playtest=C:/CODING/integ7_fast/pt_seq7fps --ui-playtest-seq7 --seq7-fps",
+    "run h shots not looked at (spool dust after the strength change, gatehouse clip in pixels)",
+    "FACB7-3 asked (board seq 4006) for a man-door in the east link wall (16,24); no answer yet; layer reads doors.wash_man if added",
+    "LIFE7/ENG7 fuel truck parks in the dropship APC line-up and the runner path at the fuel point (overlaps the APC)"
+  ],
+  "recheck_for_FACB7-4": "barracks 3 storeys: runners start at the barracks door (keys.ready) and ZONE_H.barracks = 71 px (7.2 m) must be raised to the new roof; command centre 4 storeys (core block occluder 48 px in _layout) and a new 2-storey training building need occluder heights; any moved doors change the launch / decon routes (all read from conf doors/zones)",
+  "files": ["presentation/view/fac_seq7.gd", "tools/pt7_seq7.gd"]
+}

@@ -1,0 +1,20 @@
+{
+  "agent": "REGRESS7-3", "head": "live g7 tree + uncommitted (doc_util, doc_operational, last_protocol.gd, 4 tests)",
+  "full_suite": "C:/CODING/g7_live_full_r73.log: pass=1001 fail=11, 3 SCRIPT ERRORs",
+  "done": [
+    "doc_util.belief_power: Intel belief counted in pop units (Intel strength is hp-scaled, rifleman 2.0 vs power() 1) -> fix_flank decided (odds 1.21, was 2.41 break)",
+    "doc_operational._lost: with senses on, contact is lost only when nothing is seen AND Intel believes nothing near it -> officers61 exhausted passes",
+    "last_protocol.gd bridge_cells = hold bridge (bridges[0]) cells (bridges.gd contract) -> map_io round trip",
+    "test_map_io dev_map for skirmish:false maps; test_stages counts g7_counter_nanite by name; test_stage10 exempts requires_research g7_counter_nanite; test_victory contest pair hold fire (head-roll kills ignore 100000 hp)"
+  ],
+  "remaining": [
+    "officers61 fix_flank: SCRIPT ERROR (whole company dead at the flank signal: senses spot delay -> contact ~1.8 tiles closer -> all 10 defenders in range)",
+    "test_ally_cmds:120 SCRIPT ERROR: 3-man ally pool killed by one recon via head-roll kills (4 heads in 13 hits), never returns fire",
+    "test_ai ffa: human_a army lost to a Machine raid at t~6400 only with g7_wounds on; no Wound/EntityDestroyed events for side 0 seen in my diag (mechanism not pinned)",
+    "jets: senses-only (visible 6 off / 0 on; spotter 11.1 tiles, sil 1.0, light 1.0, cone aligned) - cause not pinned",
+    "gen61 infil_exfil: not investigated",
+    "stage10: 14 non-CN-gated stage-10 defs need ORCH ruling (posted need seq 1982)",
+    "test_thread snapshot build 5661 vs 1298 us (render_snap, PERF7C area)",
+    "hot_state: GOLD drift only (threaded == unthreaded native hashes) -> ORCH re-baseline"
+  ]
+}

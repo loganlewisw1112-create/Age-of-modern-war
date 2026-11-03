@@ -1,0 +1,48 @@
+{
+ "agent": "SENT7-2",
+ "n": 2,
+ "calls_used": 59,
+ "reason": "budget.handoff_now from ORCH (projected 570k/750k at 52 calls; my posted tokens_used_est 480k was an over-estimate, context ~290k)",
+ "tree": "compiles: sentinels7.gd / garrison.gd ran in test_sent7 + test_wallwalk7 after the patch; tools/pt7_sent7.gd --check-only clean. Last full test_sent7 (run 1, before the arena fix): 11 pass / 1 fail (balance, empty arena bug, fixed since) + 1 SCRIPT ERROR in test_tactics_drill (same cause: _setup(70) raised no facility, now _setup(60)). Run 2 was still running at handoff (log: scratchpad run2.log): first 3 balance fights printed.",
+ "done_with_evidence": [
+  "13.9c-13 tactics layer in sim/systems/sentinels7.gd (section '13.9c-13 realism and expert tactics', ~500 lines): buddy pairs (plan sets record bud for the 2 holders of a job; test run 1 not reached the check), bounding (_bound_to: trailing man rushes past his buddy by bound_len to the best cover cell, the other holds/covers; nobody bounds while the buddy reloads), cover scoring (_cover_v: terrain cover + wall-walk parapet +0.6 + hard cover beside: moving along walls; _settle: never stand in the open, one adjustment per spot), cutting the pie (_pie: a corner masking the threat -> step out wide pie_r to the side with a clear line; modest approximation, no lean display), sectors (e.f7_hd outward / to the threat, buddies +-25 deg, in/out-of-sector target weighting), guard net (S.net: every enemy the owner sees in compound + 22, refreshed every 10 ticks under alarm; fog vision = Sentinels, towers, cameras, wall turrets), target priority (_aim: class prio x type preference: Lancer armour, Arc drones/Machine, Marksman crew-served/leaders, Gunner infantry; focus fire; closeness; only in range), magazines + reload (tactics.mag / reload_s, SentinelReloading event = the 'reloading' call, tactical reload when low with no target and buddy not reloading, reload in the open -> into cover first), casualty drill (_casualty_drill: buddy drags the downed partner via Wounds.start_care drag to cover away from the threat, then buddy aid; board job 'casualty' prio 7 for the Mender, _casualty_job: Mender comes forward and treats), withdrawal by bounds (_withdraw: pair hp < 0.4 or outnumbered 3:1 within 10 tiles -> bounds back to the barracks with order.bk, rests 30 s), gait (walk on patrol, duck-run bounding, sprint under fire, crouch holding / stacked) via e.gait + sq7_display.put, door stack (Bulwark first, e.f7_clr = 1, 1.5 s) before garrisoning a post under alarm.",
+  "13.9c-12 rest: per-unit stand-to positions under alarm (board jobs standto:<uid>, 12 points along the wall-walk runs, unit i -> point i % n); interior patrol loop includes camera/tower blind spots (_with_blind, up to 4); patrol pauses with varied deterministic timing and check-ins at the towers (SentinelCheckIn); interior loop direction flips per shift; creep exposure (cn_exp) in the job score; guard net as above.",
+  "content/g7/defs_g7_sentinels.json rules.g7_sentinels.tactics (all PROVISIONAL).",
+  "Barracks occupants do not fire out: garrison.gd no_fire(def) (def garrison_fire false) -> order 'rest', target cleared, last_attacker erased each tick (Combat only returns fire on unknown orders). test_barracks_do_not_fire_out PASS (run 1).",
+  "ENG7 ask: locker job roles ['bearer','engineer'] + Sentinels7.set_worker_job(w, uid, job); fact sent7.locker_roles posted.",
+  "Fallout tests (ORCH directive): tests/test_lpmode7.gd test_base7_real_base_built skips e.s7 units in the 'no defence unit parked inside' check (authority comment 13.9c-10) - NOT rerun yet; tests/test_wallwalk7.gd _setup marks the facility seeded (no starting garrison on the wall cells) -> RESULT pass=11 fail=0 files=1 TESTS OK.",
+  "tests/test_sent7.gd new: test_balance_fight, test_tactics_drill, test_barracks_do_not_fire_out (PASS), test_hash_twice_same (PASS, dba313cd52aa0dbb5da3a5b13da9ad2b42c47d7f366d4e7b52f0372602ee57c7 twice), test_no_facility_no_cost (PASS, 0.858 us/call, no sys_state.sent7).",
+  "facts posted: sent7.art_needs (7 types + bearer, A vs B, kit, anim states), sent7.anim_needs (reload e.s7_rl, crouch while stationary with gait 1, sidearm e.s7_sa), sent7.locker_roles."
+ ],
+ "balance_numbers_run2_partial": [
+  "BALANCE human infantry x2: Sentinels 24 (value 10380) vs attackers 243 (value 20645, x1.99) -> Sentinels left 24 (10380), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE human infantry x3: Sentinels 24 (value 10380) vs attackers 366 (value 31190, x3.00) -> Sentinels left 24 (10380), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE Machine x2.5: Sentinels 24 (value 10380) vs attackers 128 (value 26220, x2.53) -> Sentinels left 24 (10380), attackers left 0 (0), inside compound 0, core alive => HELD",
+  "BALANCE combined arms (armour + artillery + infantry) x2.5: Sentinels 24 (value 10380) vs attackers 156 (value 26190, x2.52) -> Sentinels left 21 (9140), attackers left 11 (9460), inside compound 0, core alive => HELD (test expects LOST: FAIL)",
+  "BALANCE events (inf x2): SentinelCheckIn 62, SentinelReloading 10, SentinelSidearm 1 (no withdraw / casualty-drill events: patrols kept walking)",
+  "RESULT pass=10 fail=2 files=1 (test_balance_fight: combined arms held; test_tactics_drill: no alarm)"
+ ],
+ "not_done_priority_order": [
+  "1. Alarm from the guard net (see root_cause_found), rerun test_sent7 directly with godot to see TACTICS / BALANCE lines; fix test_tactics_drill.",
+  "2. Balance: wall turrets + towers currently win the infantry / Machine fights alone (0 Sentinel losses); combined arms x2.5 was HELD (21 of 24 Sentinels left, 11 of 156 attackers left) but must LOSE. Raise combined-arms pressure honestly (longer fight 360 s, artillery that actually engages: check a_guided_arty fires at buildings/turrets; x3 value) before touching Sentinel numbers; report a variant with wall turrets silenced for the Sentinels' own share.",
+  "3. Rerun test_lpmode7 (only the check edited) and report RESULT.",
+  "4. Windowed playtest pt7_sent7 (not run): bash .plan/hb.sh <id> <calls> <tokens> sent7 -- \"$G\" --path . -- --ui-playtest=\"<abs shot dir>\" --ui-playtest-sent7 ; Read every PNG.",
+  "5. Hashes move with Sentinels (ORCH re-baselines)."
+ ],
+ "files_touched": [
+  "sim/systems/sentinels7.gd",
+  "sim/systems/garrison.gd",
+  "content/g7/defs_g7_sentinels.json",
+  "tests/test_sent7.gd",
+  "tests/test_lpmode7.gd (one check, ORCH directive)",
+  "tests/test_wallwalk7.gd (_setup, ORCH directive)",
+  "tools/pt7_sent7.gd (new)"
+ ],
+ "gotchas": [
+  "tests/run.sh greps output: print() lines are hidden; run godot directly (-s tests/run_tests.gd -- --only=test_sent7) to see numbers.",
+  "test_sent7 _setup(n0 > 60) leaves no facility (CnFacility.fac empty -> SCRIPT ERROR origin); keep arenas at 60.",
+  "_player_took: this system holds units only with job.hold = true; a hold order without it = player took the unit. Orders with a 'care' key belong to the Wounds care chain.",
+  "_role returns '' while job.wd (withdrawing) so plan never cuts a withdrawal; it ends as auto at the barracks."
+ ],
+ "root_cause_found": "The tactics layer only runs under alarm = Sentinels7.threat(w, fac) != null, which needs CnFacility.secure_state(w, fac) != 'secure'. In test_tactics_drill 8 riflemen 7 tiles outside the north wall never made the facility insecure for 900 ticks (TACTICS: gaits [], stand-to jobs 0, only SentinelCheckIn events), and in the balance fights the wall turrets / towers killed the infantry and Machine waves before (or without) an alarm: Sentinels lost nobody and patrols kept checking in. Fix first: raise the alarm from the guard net too (any enemy the owner sees inside compound + net_r, i.e. compute threat() from _net-style contacts, not only secure_state), then rerun; the casualty drill already works without alarm (CASUALTY DRILL: SentinelMenderTreats 1) but SentinelCasualtyDrill did not fire because the chosen casualty's buddy was garrisoned / job differed - check _casualty_drill conditions with a field pair."
+}

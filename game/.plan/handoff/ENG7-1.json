@@ -1,0 +1,59 @@
+{
+ "agent": "ENG7",
+ "calls_used": 64,
+ "tokens_used_est": 480000,
+ "stopped_by": "ORCH budget.handoff_now",
+ "files": {
+  "new": [
+   "content/g7/defs_g7_engineer.json",
+   "sim/systems/engineer7.gd",
+   "tests/test_eng7.gd",
+   "tools/pt7_eng7.gd",
+   "assets/art/g7_eng7/manifest.json"
+  ]
+ },
+ "crs": {
+  "applied_by_orch": [
+   "Engineer7 in SYSTEM_ORDER after Sentinels7 (seq 4060)",
+   "g7_eng7 in art_catalog G5_GROUPS (seq 4059)",
+   "ai_controller skips eng7/s7 units (seq 4004)"
+  ],
+  "declined": [
+   "render_snap hide flag (perf); asked POLISH7 (fac_life7) to cover the figure; sim sets e.eng7_drv while driving"
+  ],
+  "open": [
+   "SENT7-2 seq 3962/ping: locker job roles [bearer, engineer] (one word in sentinels7 _jobs_for lockers loop) + optional set_worker_job(w,uid,rec) (engineer7 falls back to writing Sentinels7.state(w).jobs)",
+   "FACB7-2: pad passive refuel skipped when Engineer7.staffed(w,F) (cn_facility _service air branch)"
+  ]
+ },
+ "done_with_evidence": {
+  "test_eng7": "RESULT pass=9 fail=1 (.plan/eng7_t2.log): repair wall, refuel APC + landed dropship by bowser, build site, no-two-on-one-job + most urgent first, player order then back to duty, hash twice-same, no facility no cost, defs, start crew all PASS; locker refill FAILS only because the board locker job is bearer-only (SENT7-2 CR open)"
+ },
+ "not_done": [
+  "locker forklift test green (needs SENT7-2 roles CR)",
+  "hash moves not checked against test_hot_state GOLD (new system only acts when a cn facility exists; sim start crew adds 3 units per facility -> any facility-raising golden/fixed-hash test moves)",
+  "perf share not measured",
+  "view the 12 PNGs and list the best for the owner; get forklift shots after the locker CR"
+ ],
+ "next_steps": [
+  "after SENT7-2 applies roles: bash tests/run.sh --only=test_eng7 (expect 10/0)",
+  "read .plan/eng7_pt1.log; fix flow; rerun windowed; Read every eng7_*.png; list best shots",
+  "run test_sent7/test_life7/test_wallturret7/test_cnfac7 to see hash/count fallout from the 3 start engineers"
+ ],
+ "playtest_run1": {
+  "log": ".plan/eng7_pt1.log",
+  "result": "PLAYTEST RESULT pass=15 fail=2, 0 SCRIPT ERROR lines",
+  "fails": [
+   "eng7_forklift_run",
+   "eng7_locker_refilled (stock 0/14 after 60 s: locker job is bearer-only until SENT7-2 roles CR; the seeded bearer did not refill it either within 60 s)"
+  ],
+  "ok": [
+   "crew_mustered 3",
+   "repair_started + wall_repaired 3000/3000",
+   "bowser_pumping",
+   "refuelled APC 520 / dropship 500",
+   "player_order, obeyed, back_on_duty"
+  ],
+  "shots": ".plan/shots/ENG7/eng7_{crew_standby,repair_wall,refuel,back_on_duty}_z{100,175,250}.png (12 PNGs, NOT yet viewed; no forklift shots)"
+ }
+}

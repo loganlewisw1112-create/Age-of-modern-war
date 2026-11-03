@@ -1,0 +1,48 @@
+{
+  "agent": "PATH7",
+  "stopped_at": "budget.handoff_now at 100/140 calls",
+  "scope": "13.9c-31 (nothing walks through anything, smooth movement) + ORCH first target 13.9c-16a (CN APC driving smooth/crisp)",
+  "files_changed": {
+    "sim/systems/veh_drive7.gd": "NEW (PATH7). Open-ground kinematic driver for facility APCs (cn_fac != 0, mc vehicle): takes Movement's A* path, drives it with ACC 0.8 / BRK 1.6 tiles/s^2, corner braking (A_LAT 1.2, R_MIN 1.5), turn rate max(v/R_MIN, 0.9 rad/s) (no pivot, no snap), pure pursuit, Movement._step_ok collision, exact arrival on the path end, 2.2-tile gap behind another facility APC in its lane (stops short behind one parked on its goal), stuck -> back to Movement (cooldown 100). PATH_WAIT trick like FacDrive7. Skips every FacDrive7-managed APC (all stages incl. approach). Wired by ORCH (CR 6658) right after FacDrive7. State w.sys_state.veh_drive7 (saved + hashed); none created without facility APCs. All numbers PROVISIONAL.",
+    "sim/systems/movement.gd": "SEP_STRENGTH / SEP_MAX_PUSH mirrored as static vars sep_strength / sep_max_push (same defaults) at the 4 call sites; hash unchanged at defaults (c2k probe hash f8e094305be0e45b identical before/after). Gate parts untouched.",
+    "tools/path7_measure.gd": "NEW read-only counters: per-unit jump/snap/start/stop/mvflip + display replay (entity_layer lerp + motion.gd at 60 fps): jerk, row changes, row flicker, crab angle, row-hysteresis emulation; crowd counters in_fp / pen / inf_ov / veh_ov / jump / idle_drift.",
+    "tests/test_path7.gd": "NEW, 5 tests: open-ground APC course (native vs driver), player order wins, hash twice + save/load mid-drive, no state without facility APCs, real LP facility (APCs + crowd).",
+    "probes": ".plan/path7_apc.gd, .plan/path7_crowd.gd, .plan/path7_one.gd, .plan/apcmov7_one.gd (not tests)"
+  },
+  "measurements": {
+    "apc_LP_2_strike_APCs_out_of_facility_then_across_map_900_ticks": {
+      "inside_compound_FacDrive7_before_and_after": "jump 0, snap 0, start 0, jerk 0, crab max 6 deg, row flicker 0, mvflip 8 (gear pauses)",
+      "outside_BEFORE_Movement": "heading snaps 14 (max 88 deg in one tick), instant 0->full starts 3, row flickers 5, crab frames 13 (hull up to 66 deg off travel)",
+      "outside_AFTER_VehDrive7_real_tick": "jump 0, snap 0, start 0, jerk 0 (max 0.1 px), crab 0 (max 13 deg), row flicker 1 (0 with the proposed row hysteresis)"
+    },
+    "apc_course_test_L_wall": "native: snap 5 (max 50 deg), start 1; driver: snap 0, start 0, crab max 11 deg, arrives exactly on the goal (367 vs 293 ticks)",
+    "crowd_LP_facility_600_ticks": "in_fp 0, body pen 0 (max 0.05), soldier overlaps 0, hull overlaps 0, jumps 0",
+    "crowd_LP_map_outside_compound": "in_fp 0, jumps 0, but 9343/50430 unit-ticks: idle units pressed flush (0.05 tile) against walls/buildings, body pen 0.10 infantry / 0.30 tanks (a_wall 2554, generator 1000, depot 926, laser_ciws 600 ...). Cause: separation pushes in shared cells stop at the cell edge (native try_move slides to the boundary). Not fixed.",
+    "crowd_200_battle_600_ticks": "in_fp 0, pen 0, jump 0, inf_ov 14, veh_ov 82 / 38605 unit-ticks",
+    "crowd_2k_600_ticks": "in_fp 0, pen 23, jump 0, inf_ov 15855, veh_ov 7141 / 307726 unit-ticks, idle_drift 66066. Separation A/B: 1.0/0.15 -> inf_ov -16%, veh_ov -28%, idle jitter +11%; 1.0/0.3 -> 61 pops. Defaults kept: needs local avoidance in native advance (movers ignore each other; separation is same-owner only and soft).",
+    "sim_ab7": "NOT RUN (budget). VehDrive7 without facility APCs = one SimIndex unit scan every 10 ticks."
+  },
+  "tests": {
+    "test_path7": "RESULT pass=5 fail=0 files=1 time_ms=29858",
+    "test_cnfac7": "RESULT pass=36 fail=0 files=1 time_ms=30453",
+    "test_apcmov7": "full run: RESULT pass=14 fail=2 files=1 time_ms=102465. After handing the approach stage back to FacDrive7/Movement: test_return_outer_gate_wash_inner_gate_garage_nose_out PASS; test_gate_hardened_inbound_return STILL FAILS: 'the outer gate cycled open for them and locked again (1 openings, now open)' (team phase reaches garage; the gate is open at the end)",
+    "not_run": "test_hot_state, test_squad7, test_wallwalk7 (movement.gd change is hash-neutral at defaults; VehDrive7 acts only on cn_fac vehicles)"
+  },
+  "regression_next_steps": [
+    "1. Run .plan/apcmov7_one.gd --fn=test_gate_hardened_inbound_return with a trace of every cn_fac APC (pos, veh_drive7 V present?, fac_drive7 V.st, outer gate state) over the last ~600 ticks.",
+    "2. Most likely: a facility APC NOT in FacDrive7's v (handed off / dispersal spot after leaving) is captured by VehDrive7 and stops short (GAP 2.2 / HOLD_SHORT 3.0) or is held behind another APC inside the outer gate's keep-clear zone, so the gate cannot lock. Fix by the trace: skip capture and the gap rule while the APC or its goal is within CnFacility.compound_rect grown by ~6 tiles, or only stop short outside that zone. Never weaken the test.",
+    "3. Then re-run test_apcmov7 (must be 16/0 as before VehDrive7), test_path7, test_cnfac7, test_hot_state, test_squad7, test_wallwalk7, and .plan/sim_ab7.gd before/after (2 runs each)."
+  ],
+  "change_requests_not_yet_sent": [
+    "motion.gd + entity_layer.gd (LOOK7/ORCH): row hysteresis. entity_layer.gd line 844 'var row := posmod(int(round((motion.out_face if mcls >= 0 else fac_a[i]) * FACING_INV)), 8)' -> use motion.row_h(id, motion.out_face) when mcls >= 0; motion.row_h keeps the previous row until the facing is 0.12 rad past the 22.5 deg boundary (new slot S_ROW, S_N 22 -> 23). Emulated: outside flicker 1 -> 0, inside row changes 12 -> 8.",
+    "vis7_layer.gd _apc() (VIS7/ORCH): the 'dome' hull frame (elif dome >= 0.0 and col_of(ms, \"dome\") >= 0 and (fl & RenderSnap.FLAG_MOVING) == 0) swaps in on every short pause (FacDrive7 toggles moving 8x in 45 s) -> show only after >= 0.8 s stopped (a.mv_t = t while FLAG_MOVING).",
+    "vis7_layer.gd _apc(): 'if spec.is_empty() and gfr != \"\":' replaces the whole hull with the static _gun sheet while firing, freezing the track cycle on the move -> add 'and (fl & RenderSnap.FLAG_MOVING) == 0' (apc_gun7 overlays still show the pods firing).",
+    "native rts_core (ORCH, likely G8-size): crowd local avoidance in advance; cross-owner separation; an edge margin so separation never parks bodies flush against walls."
+  ],
+  "shots": "none taken (budget). Still owed: windowed before/after frame sequence of an APC driving out of the facility and across open ground at zoom 1.75 / 2.5, plus crowded facility moments.",
+  "gotchas": [
+    "Movement's held path leaves an APC alone while path_req == PATH_WAIT (1<<30) and moving == true; any new order shows up as a new path / request / stop.",
+    "A second APC sent to the same point was shoved by separation 0 -> 2.9 tiles/s; the in-lane gap rule fixes that.",
+    "Godot parse errors hang headless runs: always wrap in timeout / hb.sh."
+  ]
+}

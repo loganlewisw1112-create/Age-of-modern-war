@@ -1,0 +1,33 @@
+{
+ "agent": "WATCH7-3",
+ "status": "STOPPED at handoff_now (70%). Everything compiles. Items 1, 3, 4, 6 done; item 2 done in the sim (headless per-face counts met) but the windowed flow's per-face check fails (N 5, E 14, S 13, W 3); item 5 pt7_cnfac7 not run.",
+ "numbers_changed": {
+  "defs_g7_sentinels.json plan": "wall_split 2 (new), wall_split_min 16 (new), wall_roles + bulwark, mender (new key), int_pairs 1->0 (interior pair moved to the walls), tired_pen 500->2500, _wall_note added. File re-serialised with 2-space indent (content unchanged otherwise).",
+  "defs_g7_dronebay.json hive.kamikaze": "+ commit_per_heavy 4, commit_per 2",
+  "sentinels7.gd": "_jobs_for: while quiet each long wall run (>=16 tiles: N/E/W) split into 2 beats with a pair each (wall:i:q); alarm unchanged. plan(): tired penalty applies whenever quiet (not only at the shift change); a fresh man no longer drags his tired partner back on watch. _drag_spot: full-radius scan for the nearest real-cover cell (>= open_v, passable, not nearer the threat) within drag_far.",
+  "wounds.gd": "drag ends 'near the spot' (<=0.6) only on the spot's own level (wall-walk vs ground)",
+  "drone_bay7.gd": "breach commit queues the whole kamikaze stock at once, round-robin over threats (4 per heavy / 2 per other first, then the rest); DEFAULTS cap 24, mix 4/8/12, header 12->24",
+  "entity_layer.gd (LOOK7 file, presentation only)": "a man garrisoned in a facility tower is drawn on its deck instead of hidden"
+ },
+ "per_face_counts": "headless test_always_on_watch (quiet, 180 samples): min N 7, E 7, S 5, W 6; mean N 9.2, E 8.4, S 7.5, W 7.4 (wall-walk + tower decks). Before: 1 pair per face, tower men invisible. Windowed pt7_sent7: N 5, E 14, S 13, W 3 (the flow map has an enemy AI nearby; likely alarm, which re-merges the beats and moves men to the threatened faces)",
+ "balance_table": "test_sent7: full facility inf x2 HELD (0 left), inf x3 HELD (0 left), bay-off Machine x2.5 HELD, full CA x2.5 HELD, full CA x4 LOST (49 inside), bay-off CA x2.5 LOST (44 inside). 5-seed probe (.plan/w3_bal.txt): full x2.5 HELD 5/5; x3, x3.5, x4, x4.5 LOST 5/5; nobay x2.5 LOST 5/5",
+ "tests_changed": [
+  "tests/test_sent7.gd: test_balance_fight infantry x2/x3 run with the drone bay ON, citing the 13.9c-38 infantry follow-up; the bay-off launch check covers r3/r6 only; test_always_on_watch prints who stood longest + per-face counts and checks N/E/W >= 6 (new)",
+  "tests/test_dronebay7.gd: breach window back 900->240 ticks (kamikazes now go together)",
+  "tests/test_cnfac7.gd: lockdown fixture walker hp 1e6 (the hive's commit killed it before the base state reached breached; checks unchanged)",
+  "tools/pt7_sent7.gd: assault oracle counts attackers still fighting (not down); reload runner skips downed men and Menders; + sent7_wall_faces_heavy check and walls_north/east/west shots"
+ ],
+ "RESULT": {
+  "test_sent7": "pass=13 fail=0", "test_dronebay7": "pass=15 fail=0", "test_cnfac7": "pass=36 fail=0", "test_lpreserve7": "pass=7 fail=0",
+  "test_wallfire7": "pass=8 fail=0", "test_det7": "pass=6 fail=0", "test_lpmode7": "pass=18 fail=0", "test_ciws7": "pass=16 fail=0",
+  "test_cards7": "pass=1 fail=0", "test_wound7": "pass=17 fail=0",
+  "pt7_dronebay7": "pass=33 fail=0", "pt7_sent7": "pass=24 fail=1 (sent7_wall_faces_heavy N5 E14 S13 W3); casualty_in_cover now ok (cover 0.75), assault_held ok", "pt7_cnfac7": "NOT RUN"
+ },
+ "shots": [".plan/shots/WATCH7-3/sent7/sent7_walls_east_z175.png (read, posted)", "walls_north/west z175/z250, entry z100-250 in the same folder (not read)"],
+ "remaining_steps": [
+  "Find why the windowed pt7_sent7 scene splits the watch unevenly: print S7.threat(w, fac) and the board's wall jobs at the count; if an alarm is up (enemy AI unit near), count during quiet or accept per-face under alarm; then rerun pt7_sent7 to 0 fail",
+  "Run windowed pt7_cnfac7 (0 fail expected)",
+  "Read walls_north/west and entry shots; post the best with per-face counts",
+  "test_hot_state not run (start garrison jobs changed: hashes in facility scenes may move; bench scenes have no facility)"
+ ]
+}

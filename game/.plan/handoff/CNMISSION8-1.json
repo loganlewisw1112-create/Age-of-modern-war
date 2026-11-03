@@ -1,0 +1,23 @@
+{
+  "agent": "CNMISSION8",
+  "reason": "budget.handoff_now (75%) from the coordinator",
+  "spec": "docs/G7_REFERENCE.md 13.9c-44 (+6.3, 6.9, 13.9c-29, 13.9c-42)",
+  "done": {
+    "sim": "sim/systems/cn_mission8.gd (new): commands cn_mission {team_id, target:[x,y], mode drive|fly, hold}, cn_mission_cancel, cn_mission_hold {on}, cn_extract; reason fns team_reason / mission_reason / step_reason / cancel_reason / extract_reason; queries mission_of / status_line / progress / cover / packages / dropship / fac_team / next_loadout. State w.sys_state.cnm8.m[str(tid)] (plain data). Phases: board > exit (CnFacility rollout via fac_drive7) > travel (CounterNanite.move_team) > deploy (start_deploy, repeats until creep share within 6 tiles <= 0.10 or core down) > hold|return > home (CnFacility returning/wash/garage) > done; fly: board > air_board > air_fly (Air land_at at Air.landing_spot 7 tiles short of target) > air_unload > travel > ... > return > air_pick > air_board2 > air_home > home > done. on_applied: any other player order to the team cancels; cn_pincer/cn_break_contact pause (resume when eng/wd ends); support orders (fire support, relief, stance, dome...) keep it.",
+    "world": "sim/world.gd: preload CnMission8, SYSTEM_ORDER slot after CounterNanite, COMMANDS rows (cn_mission, cn_mission_cancel, cn_mission_hold, cn_extract), CnMission8.on_applied(self, c) in _apply_due_commands",
+    "ui": "presentation/hud/g2_commands.gd: _add_cn8_buttons (PURGE MISSION Shift+A arms cell_cmd click; Team orders Shift+O page), pages cn8_purge (Drive Shift+R / Fly Shift+F) and cn8_team (Mount M, Move V click, Dismount D, Deploy S click, Hero H, Loadout L cycle presets, Extract X, Cancel C, Hold O; all Shift chords), every button disabled with cn8_reason (sim reason fns / preview_command) as tooltip. hotkeys.gd: rows after cn_specialize, new PAGE_GROUPS group cn8p. team_card.gd: MISSION section (MissionLine, MissionBar, Loadout, buttons PURGE: DRIVE/FLY (arm strat map pick), HOLD SITE, EXTRACT, CANCEL MISSION). strat_map.gd: pick mode (var pick {tid, mode}; left click -> pick_at -> hub.issue cn_mission; right click cancels).",
+    "tests": "tests/test_cnmission8.gd (drive + fly end to end on LP, manual-order cancel, save/load mid-mission same future, same seed same hash + untouched match, reasons match sim, command-bar buttons via stub hud). tools/pt7_cnmission8.gd + 'cnmission8' appended to G7_FLOWS in tools/ui_playtest.gd."
+  },
+  "evidence": {
+    "drive_probe": "earlier probe (same sim code): phases board>exit>travel>deploy>return>home>done on the real LP start, creep at the target 96% -> 0%, team parked in its garage at tick 3719 (scratchpad p2.log). PASS.",
+    "test_opsui7": "9/0 PASS after team_card/strat_map edits",
+    "test_cards7": "1/0 PASS"
+  },
+  "unverified": [
+    "full tests/test_cnmission8.gd run (was running at handoff: scratchpad p4.log) - fly mode never observed yet; test_command_bar_buttons_and_reasons stub-hud test unrun",
+    "flow cnmission8 (was running: .plan/shots/CNMISSION8/r1.log, shots in .plan/shots/CNMISSION8/r1/) - no shots looked at / posted yet",
+    "test_hot_state, test_cnsim7, test_cnops7, test_cnfac7, test_lpmode7, test_det7, test_ui_fit (ui_fit started, result not read), flows cnops7, opsui7, lpmode7 - not run",
+    "hotkey collision tests (test_ui_panels / hotkeys collisions) not run after adding cn8p rows"
+  ],
+  "next_step": "Run: bash tests/run.sh --only=test_cnmission8 ; fix fly mode if air_board/air_fly stall (check Transport.order_board of the APC onto the stealth dropship on its helipad and Air land_at for cn_stealth_dropship; VTOL8 owns air.gd landing). Then read .plan/shots/CNMISSION8/r1.log, look at the shots, post best 2-3 as fact shots.best. Then run test_hot_state (expect 17/0: no cnm8 state unless cn_mission issued) and the listed regression tests/flows. Post fact api.cn_mission state complete when fly passes."
+}

@@ -1,0 +1,32 @@
+{
+  "agent": "THREAD-2",
+  "gen": 2,
+  "reason": "guard directive budget.handoff_now (seq 1651: projected 353600 / cap 500000 at 22 calls)",
+  "done": [
+    "4 UI playtests with the sim thread ON all PASS (run 16:53-16:57 on the tree BEFORE this agent's edits): human 33/0, human_b 37/0, machine 37/0, stages 53/0; every log has 'SIM_THREAD mode=on why=ok native=on'. Logs: .plan/shots/THREAD-2/pt_{h,hb,m,s}_r1.log. Runner script: .plan/shots/THREAD-2/pt4.sh <tag> (runs all 4 in parallel, greps results).",
+    "Orch note (1): presentation/view/terrain_layer.gd (now THREAD-owned) applies THREAD's CR: new _busy_snap()/_terrain(); while mv.sim_busy() the terrain/biome arrays come from mv.snap.terrain/.biome (COW refs from the last join) instead of mv.world.map; idle, editor (editor_view has no sim_busy) and the rc_probe FakeView still read mv.world.map. tick() chunk scheduling, rebake_cells, _build_base and _biome_arr use it; _base_cell now takes the terrain array as a parameter (no per-cell lookup). setup() keeps mv.world.map (runs before any step).",
+    "River Crossing pixel check: rc_probe.gd output .plan/shots/THREAD-2/rc_thread2.txt is byte-identical to .plan/shots/ART-T/rc_after.txt (36/36 chunk hashes; `diff -q` -> IDENTICAL).",
+    "Orch note (2): match_view._thread_ok() now calls NativeCore.threads_safe() directly; the version-regex fallback is removed.",
+    "match_view: new debug flag --cam-cell=X,Y (centre the camera on a map cell at start; header comment added), for the POI decor screenshot."
+  ],
+  "remaining": [
+    "1. BLOCKED on TRANS: sim/systems/transport.gd (TRANS in progress, mtime 09:55) fails to parse: 'Function unload() not found in base self' (lines 235, 273, 304, 307), 'Function _load() not found' (335), 'Cannot infer the type of stale' (337). The game cannot boot while it is broken. Posted fact compile.broken to TRANS. Wait until it parses: `$G --headless --path . --check-only --script res://sim/systems/transport.gd` shows no SCRIPT ERROR.",
+    "2. Re-run the 4 playtests on the edited tree: `bash .plan/hb.sh <id> <calls> <est> 'playtests r2' -- timeout 900 bash .plan/shots/THREAD-2/pt4.sh r2`. Expect 33/37/37/53, fail=0, SIM_THREAD mode=on.",
+    "3. Heartland POI decor shot (the current .plan/shots/THREAD-2/heart_*.png were taken while transport.gd was broken, so they are INVALID): `$G --path . -- --autostart --autostart-map=industrial_heartland_m --cam-cell=99,37 --autoshot=<abs>/heart_factory.png --autoshot-delay=4` (factory_block compound at 98,36) and --cam-cell=79,60 (refinery_tanks at 72,61 / 86,61). Look at the PNG with Read.",
+    "4. Serve integration CRs: poll `grep -E '\"to\":\"(THREAD|THREAD-2|THREAD-3)\"' .plan/board.jsonl` for change_request facts from UI4B / ED2. None were pending at 16:58.",
+    "5. Optional: snapshot cost < 2 ms (read packed positions from movement's w.cache.unit_snap instead of per-unit dict reads; floor measured by THREAD = 4.0 ms).",
+    "6. Full suite at the end inside hb.sh: `bash .plan/hb.sh <id> ... -- bash tests/run.sh`; quote the final lines."
+  ],
+  "files_touched": [
+    "presentation/view/terrain_layer.gd",
+    "presentation/match_view.gd",
+    ".plan/shots/THREAD-2/* (pt4.sh, pt_*_r1.log + dirs, rc_thread2.txt, heart_*.png/log [invalid])",
+    ".plan/handoff/THREAD-2.json"
+  ],
+  "test_state": "Both edited files pass --check-only for their own code; the only errors in the check output come from sim/systems/transport.gd (TRANS). RC probe identical. The playtests after the edits and the full suite were NOT run.",
+  "gotchas": [
+    "All of THREAD-1's gotchas still apply (never read w.cache/w.render_snap/w.entities while a step is in flight; reading mv.world joins).",
+    "When terrain_layer._busy_snap() returns data, it reflects the terrain as of the last join. Bridge/fire rebakes arrive through events at the join, so they stay consistent.",
+    "The THREAD-2 godot runs all finished (they were waited on, and the shots ran under timeout 120). No leftover processes from this agent. The other godot.exe processes on the machine belong to peers."
+  ]
+}

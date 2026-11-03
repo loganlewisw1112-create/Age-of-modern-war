@@ -1,0 +1,47 @@
+{
+  "agent": "REGFIX7",
+  "stopped_on": "budget.handoff_now (81%)",
+  "calls_used": 66,
+  "runner": "flow runner script used: logs in .plan/regfix7_logs/<flow><tag>.log, shots in .plan/shots/REGFIX7/<flow><tag>/ (run: timeout 900 \"$G\" --path . -- --ui-playtest=<abs dir> --ui-playtest-<flow>)",
+  "flows": {
+    "turret7": {
+      "before": "FACINT7: PLAYTEST RESULT pass=23 fail=2 (apc_rear_gun 0 shots, apc_muzzle_on_foe_side cos -1.00)",
+      "after": "REGFIX7 rerun on the current tree, no code change: PLAYTEST RESULT pass=25 fail=0, SCRIPT_ERRORS 0; rear pod shots 2 (other guns 0), cos 0.80 (.plan/regfix7_logs/turret7_a.log)",
+      "cause": "NOT REPRODUCED. Most likely transient: FACINT7 ran while CIWS7-5 was mid-edit on batch_art.gd (stamp change) / the tree was mid-edit. Not proven.",
+      "fix": "none",
+      "remaining": "re-run once more at the end to confirm it stays green"
+    },
+    "seq7": {
+      "before": "PLAYTEST RESULT pass=17 fail=5 (wash_spray, stretcher, decon_clean, quarantine, parked); reproduced 3x by REGFIX7 (seq7_a/_b/_c logs)",
+      "cause": "sim/systems/fac_drive7.gd _approach stage 0 (APCMOV7, landed after SEQ7-3's 22/0 run): a returning APC is first sent by Movement to a waiting spot out on the gate axis (entry + (0, 5 + 2.6k)). pt7_seq7 builds the facility so its gate faces the map's south edge: rows >= 96 are impassable (diag: pass(-2..6) 111000000). APC 182 is stuck at (51.5,95.5) with a move order to (51,100.8) (off map), APC 193 idle at (49.35,95.74) waits its turn (k=1) and the apron-clear check sees 182 on the apron -> deadlock, phase stays 'returning', never rinsed. Evidence: .plan/regfix7_logs/seq7_c.log line 'PLAYTEST seq7 return_state'. Headless with room outside the gate the same 2-APC recall parks fine (test_regfix7::test_strike_team_recalled_near_the_gate_parks PASS).",
+      "fix_in_progress": "fac_drive7.gd: stage 0 now checks Movement.is_passable_e on the waiting spot; if blocked it calls new _approach_blocked(): APCs wait where they stand, nearest-to-apron goes first (tie: seq), only one APC at a time onto the apron (any other approach APC with ap=1, or a driver within 3.5 of the apron, blocks). Path only taken when the waiting spot is impassable, so normal layouts and hashes are untouched. Compiles; normal test passes.",
+      "open": "tests/test_regfix7.gd::test_recall_with_no_room_outside_the_gate_parks still FAILS (water south of the apron in the 60x60 arena): (a) leader 148 in stage 1 stops 0.41 from the apron point (tolerance 0.25, not idle because APC 159 stands 1.8 tiles away) -> stuck; (b) APC 159 has NO fac_drive7 vstate (place_at(p) == '' for a spot inside the compound rect near the gate, so order_team falls back to Movement.order_move to CnFacility._slot_pos 'decon' and it never gets rinsed). In the real flow both APCs did have vstates (approach), so (a) is the one the flow needs.",
+      "next_steps": [
+        "In fac_drive7 _approach_blocked set V.apb = 1; in stage 1 relax the apron tolerance for apb (e.g. 0.6 instead of 0.25) or plan from the current pose when within ~1 tile, so the leader is not held by a queued APC standing next to the apron",
+        "For (b): in order_team / order(), when place_at() is '' but the APC is inside the compound near the gate (or within the gate/wash zones), treat it as 'out'/'e' so it is managed instead of falling back to plain Movement; or make the test place both APCs like the flow does",
+        "Run test_regfix7 (both tests green), test_cnfac7 (36/0 before), test_apcmov7, test_seq7 (4/0 before)",
+        "Re-run pt seq7 windowed to 22/0; then remove nothing: the pt7_seq7 'PLAYTEST seq7 return' diagnostic prints are harmless and can stay",
+        "Hash: the new path only runs when the waiting spot is impassable; confirm test_hot_state unchanged"
+      ]
+    },
+    "cnops7": {
+      "before": "PLAYTEST RESULT pass=14 fail=1 (relief_arrived empty)",
+      "after": "not run by REGFIX7",
+      "cause": "not diagnosed; brief suspects same root as seq7 (team return). Re-run after the seq7 fix first."
+    },
+    "muzzle7": {
+      "before": "FACINT7 18/3; REGFIX7 rerun also 18/3 (.plan/regfix7_logs/muzzle7_a.log): poses_flash 0 shots (the suppressed rifleman + the pinned rifleman never flash at m_tracked targets; the infantry group's 3 shots also came only from team_leader/bastion/sent_gunner, no rifleman), apc_idle_travel false, all_measured fallback 1 {gone:1}",
+      "cause": "not diagnosed. Lead: riflemen may no longer fire at m_tracked armour (check combat/WOUND7 target choice and kite/can-hurt rules) and pinned suppression rules; apc_idle_travel and 'gone' fallback likely flow-side (a shooter destroyed in the frame) or apc_gun7 return logic. Note CIWS7-6 owns tools/art/muzzle7.gd + fx CIWS branch; pt7_muzzle7.gd itself is unclaimed."
+    },
+    "sent7": {"before": "pass=23 fail=1 (casualty_in_cover: cover 0.30 where he was dragged)", "after": "not run", "cause": "not diagnosed"},
+    "dronebay7": {"before": "pass=28 fail=1 (rockets_intercepted 0)", "after": "not run", "cause": "not diagnosed (brief: maybe the roof CIWS takes the rockets first; check the spec before touching the oracle)"},
+    "ciws7": {"before": "pass=16 fail=3 with 5685 SCRIPT ERRORs from a then mid-edit lp_reserve7.gd", "after": "not re-run", "cause": "transient parse error per the brief; just re-run (CIWS7-6 is live on ciws7 files)"}
+  },
+  "files_changed": [
+    "sim/systems/fac_drive7.gd: stage 0 impassable-spot branch + new static func _approach_blocked (claimed on the board)",
+    "tools/pt7_seq7.gd: diagnostic prints after cn_return ('PLAYTEST seq7 return' / 'return_state' with vstate, nearby entities, passability); no check changed",
+    "new tests/test_regfix7.gd: test_strike_team_recalled_near_the_gate_parks (PASS), test_recall_with_no_room_outside_the_gate_parks (FAILS, open)"
+  ],
+  "unit_tests_seen": "test_seq7 4/0, test_cnfac7 36/0 (both before the fac_drive7 edit); test_regfix7 1/1 after it",
+  "transients_seen": "the tree was briefly uncompilable twice during this run (lp_* 'ECON_ROW_B' / 'Cannot get index 2' parse errors from a live LP agent); retry when SCRIPT ERRORs name LP files"
+}

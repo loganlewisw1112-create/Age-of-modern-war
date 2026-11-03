@@ -1,0 +1,50 @@
+{
+  "agent": "ATMO7",
+  "reason": "budget.handoff_now from ORCH (projected 580k of 750k at 67 calls)",
+  "calls_used": 70,
+  "tokens_used_est": 500000,
+  "files_touched": [
+    "presentation/view/fac_atmo7.gd (new: the layer)",
+    "tools/art/g7_atmo7.gd (new: art generator) + assets/art/g7_atmo7/ (72 png + manifest.json, section atmo7)",
+    "tests/test_atmo7.gd (new)",
+    "tools/pt7_atmo7.gd (new; it still has one ATMO7_DBG print line before the atmo7_alarm log, which is fine to keep or drop)"
+  ],
+  "done_with_evidence": {
+    "test_atmo7": "RESULT pass=7 fail=0 files=1 (after the last edit): art present, geometry from entries, alarm levels (lockdown red / launch_alert amber / off), time of day (override, LP dusk, default day), damage + rubble + ruin, no facility -> nothing drawn, state hash identical with the layer on / off",
+    "pt7_atmo7 run 2 (before the final plaque / windsock edit)": "PLAYTEST RESULT pass=18 fail=2; fails = atmo7_alarm and atmo7_alarm_draw (alarm 0.0 during a scripted lockdown, cause not yet found, see next_steps). Frame A/B at the compound, night: layer on mean 16.67 p90 17.09 ms vs off mean 16.70 p90 17.62 ms (vsync-bound, shared PC).",
+    "looked at": "compound day/night/dusk z1, gate approach z3, wash tracks z2, garages z3, planning z3, helipad z3, decon z3, damage z1/z3, rubble z2, ruin z1: the night look, facade plaques, gate apron, stencils, arrows, oil stains, hazard stripes, ruin, damage fires read well"
+  },
+  "not_done": [
+    "Alarm in the windowed playtest: alarm_level stayed 0 after CnFacility._lockdown with mv.paused = true (the headless test passes). The ATMO7_DBG line in pt7_atmo7 prints entries lock/state + L._alarm + geo lock to pin it down. Suspects: the sim lifted the lockdown before the pause took hold (try spawning a hostile inside the compound like test_cnfac7 test_lockdown_and_evacuation_on_breach), or the layer's 15-frame entry re-read never ran while paused. Beacons, searchlights, wall lamps, shutters, helipad shields and the mist flood are therefore not yet seen in a shot.",
+    "Final playtest after the last edit (plaques only where FACB7 art exists, warning plaque spacing, windsock moved to the helipad's far corner, pad boards on the pad corners, new hq_flags shot) was blocked: sim/systems/sentinels7.gd (another agent) failed to compile mid-edit; it compiles again now.",
+    "Calibrate against FACB7-2's redrawn art (e4e1cb1 layout): WALL_Z / TOWER_Z / DOOR_Z / BLD_Z heights, INSET 0.42 for facade plaques, shutter door geometry (garage +x faces only; -x doors are hidden faces), the checkpoint signs vs the new fortified foot entry (gatehouse at [18,26], mantrap cells): my staggered jersey barriers + footpath outside the checkpoint may now duplicate FACB7's serpentine; drop them if so.",
+    "art_catalog registration of g7_atmo7 (sent as a change_request to ORCH instead; the layer reads its own manifest so nothing depends on it).",
+    "fps 2k bench before/after not run (the layer costs one early-out call per frame without a facility; a facility on screen at night + alarm was within noise in the A/B above)."
+  ],
+  "next_steps": [
+    "1. bash: G=<godot console exe>; \"$G\" --path . -- --ui-playtest=\"C:/CODING/integ7_fast/pt_atmo7\" --ui-playtest-atmo7 ; read the ATMO7_DBG line, fix the alarm path, re-run until PLAYTEST RESULT all ok, 0 SCRIPT ERROR.",
+    "2. Look at every atmo7_*.png (alarm_day_z1, alarm_tower_z2/z3, alarm_garages_z3, alarm_helipad_z2, alarm_night_z1/z2, hq_flags_z2/z3, helipad_wind_z3) and calibrate heights / positions on FACB7-2's art.",
+    "3. tools/bench.gd 2k before/after (ATMO7_OFF=1 vs on) and report shared-PC p10 fps.",
+    "4. Re-run bash tests/run.sh --only=test_atmo7."
+  ],
+  "change_requests_sent": [
+    "seq 3757 match_view wiring (preload, var fac_atmo7, add after baseprops_layer z 0, setup, refresh(snap) after baseprops_layer.refresh, on_events in _on_step_events)",
+    "seq 3758 settings.gd Time of day row (graphics/time_of_day day|dusk|night)",
+    "seq 3759 art_catalog G5_GROUPS += g7_atmo7"
+  ],
+  "best_shots_run2": [
+    "C:/CODING/integ7_fast/pt_atmo7 was cleared before the blocked run 3; run-2 shots are gone. Re-run step 1 to regenerate."
+  ],
+  "extra_depth_added": [
+    "paved gate approach apron with edge lines, STOP line + STOP / G1 stencils, SLOW / G2 inside the inner gate, CP stencil",
+    "staggered jersey barriers on the foot approach to the checkpoint",
+    "'RESTRICTED AREA / DEADLY FORCE AUTHORIZED' board, nanite-hazard, speed 10, STOP SHOW ID, CLEAR OF VTOL BLAST, ROTOR WASH, NO SMOKING at the fuel point, LIVE FIRE / EXPLOSIVES / SUITS ON plaques",
+    "facade name plaques sheared onto the building faces (iso-correct), only where the building art exists",
+    "counter-nanite unit crest + bay numbers 01-08 painted on the garage aprons (iso-projected stencils)",
+    "pad / helipad edge lights (green / blue) with a white chase light running round toward the touchdown side",
+    "helipad blast shields rising on lockdown (back edges under the craft, front edges over it)",
+    "warm facade light wash + ground pools at night (lit windows), garage door spill reading LIFE7 door_open",
+    "rubble + scorch where a tower / wall is destroyed while the facility stands; ruin with cracked lanes, burnt foundations, jagged wall stubs, smouldering fires for 90 s and smoke after",
+    "wind direction per map drives smoke, mist, windsock and both flags (team-colour flag + unit flag)"
+  ]
+}

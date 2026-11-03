@@ -1,0 +1,28 @@
+{
+ "agent": "CNSIM7-3",
+ "gen": 3,
+ "reason": "budget.handoff_now directive (guard seq 553, projected 540k at 66 calls)",
+ "done": [
+  "content/g7/defs_g7_cn.json: rules.g7_cn.launcher (6 tubes, 18 rounds, canisters tandem/emp/thermite/he_frag/disruptor/smoke, default_load), heavy (front_mult 0.35, flank_fixed 1.5, rear_fixed 1.8, stun 1.25, down 2.2), topple (threshold 8 scaled by sqrt(hp/950) max 18, fall 1 s / down 6 s / rise 2 s / immune 6 s, decay), pincer, ops_engage (limpet 140, harpoon tether, disruptor), withdraw. g7_op_harpoon damage 55 -> 24 (tether, not an AT gun). All PROVISIONAL.",
+  "sim/systems/apc7.gd: pop-out launcher on every CN APC (e.a7.rl: pop/stow, salvos, tube reload from rack, auto-fire at heavy Machine units unless an engagement drives it; set_rockets / restock refill the chosen mix); hit_heavy (front armour, pincer bonus when fixed by another of our units, stun/mark windows, x2.2 while down), topple state machine e.tpl (fixed in the sim, w.sys_state.apc7.fx list ticked every 5 ticks: burn, mark, harpoon tether drag, stagger decay, fall/down/rise with comp.mobility 0 + weapon cooldown), render g7v[apc].rl/rl_n/rl_k and g7v[walker].topple/topple_dir/stagger; events RocketSalvo, ApcLauncher, WalkerToppled, WalkerDown, WalkerRighted, WalkerBlownUp.",
+  "sim/systems/counter_nanite.gd: anti-walker pincer t.eng (auto on contact by the group lead = strike team or lone tactical squad, skips Hold Position / fresh player orders; player command cn_pincer {team_id, target_id?}); fixer = tactical APC rushes to 4 tiles in its face + dome, others take flank/rear slots, synchronised volleys (EMP stun, disruptor mark, tandem/thermite), tactical operators dismount when it is fixed (hunters harpoon-tether + limpets on the legs from the flank, EMP grenadier closes in, marksman disruptor rounds, others behind their hull), strike gunners run out with limpets while it is down, everyone remounts after, convoy resumes (mv_to) after an auto kill; fixer swap at 30% hp; break contact (cn_break_contact command, auto at group hp < 35% or out of rockets): mount under smoke, then formed_withdraw; hero window now uses formed_withdraw (APC line between blast and soldiers, soldiers in a block behind, smoke); split loadout (_split: each package to the APC with fewest of that kind; spawn default = the default kit per APC interleaved); cn_set_loadout accepts rockets {canister: count} (tactical teams too, locked in the field).",
+  "tests/test_cnsim7.gd: 21 tests incl. new lone APC cannot solo, pincer vs head-on + topple, topple window/bonus/righting, group auto pincer + operators + remount, player pincer order + slots, formed withdrawal (hero + break contact), split loadout + rockets. Direct run: RESULT pass=21 fail=0 (.plan/shots/CNSIM7/t3_full.log). Numbers: head-on 5 APCs 842 ticks (42 s), ideal pincer 72 ticks, m_colossus ideal pincer 499 ticks, lone APC leaves m_walker at 715/950 after 180 s, full group (auto pincer + operators) 119 ticks.",
+  "tools/pt7_cnsim7.gd: contact section rewritten into the pincer scene (2 heavy walkers, auto pincer, shots cnsim7_08_pincer_launchers, cnsim7_09_walker_toppled, cnsim7_10_walkers_down, formed-withdrawal log at the hero window). NOT RUN."
+ ],
+ "remaining": [
+  "1. Run the flow windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/CNSIM7\" --ui-playtest-cnsim7 (timeout 900, in hb.sh), need PLAYTEST RESULT all ok + 0 SCRIPT ERROR; LOOK at shots 08/09/10/06 yourself. If the convoy never meets the walkers, move the two m_walker spawns (flow section 2) onto the motorcade path; if 'through' times out, raise its wait.",
+  "2. bash tests/run.sh --only=test_cnsim7 once through run.sh (direct godot run is 21/0; run.sh pass was 18/3 before the last fixes).",
+  "3. Remove the CNSIM7_DBG print in _five_apcs_def if ORCH wants quiet logs (harmless).",
+  "4. test_hot_state (log .plan/shots/CNSIM7/hot_state.log from CNSIM7-2: 6 FAIL, gold/HEAD hashes moved in 2k/10k scenarios incl. native on/off and thread on/off): attribution still open. CN code only runs when sys_state.cn7/apc7 exist (none in those scenarios; test_determinism_and_unused_is_free shows the CN/Apc7 ticks are hash-neutral without the line); the native/thread on-off inequality points at another in-flight change. Not re-run by CNSIM7-3.",
+  "5. Post done + final report."
+ ],
+ "files_touched": ["content/g7/defs_g7_cn.json", "sim/systems/apc7.gd", "sim/systems/counter_nanite.gd", "tests/test_cnsim7.gd", "tools/pt7_cnsim7.gd", ".plan/handoff/CNSIM7-3.json"],
+ "test_state": "test_cnsim7 21/21 (direct godot run_tests --only); tree compile check clean after apc7/counter_nanite edits; pt7_cnsim7 --check-only see board; flow not run.",
+ "gotchas": [
+  "Launcher/limpet damage goes through Damage.apply_hit (loaded at runtime in Apc7.Dmg(): a preload would cycle damage.gd -> g6_hooks.gd -> apc7.gd). G6Hooks.damage_mult (machine shields) is not applied to launcher hits.",
+  "Events emitted by a directly applied command land in w.events before the next step (tests read w.events right after _cmd).",
+  "Bare APCs in a tight arc push each other apart (separation): keep test placements >= 2 tiles apart or hits turn into side hits.",
+  "Topple pins the walker via comp.mobility 0 + HotState cooldown; mobility restored on rising (tp.mob).",
+  "cn_pincer / cn_break_contact are not registered in world.gd COMMANDS yet (CR posted); flows/tests call validate/apply directly."
+ ]
+}

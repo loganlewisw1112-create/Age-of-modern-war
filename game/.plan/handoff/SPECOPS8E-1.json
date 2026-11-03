@@ -1,0 +1,25 @@
+{
+ "agent": "SPECOPS8E",
+ "calls_used": 70,
+ "reason": "budget.handoff_now (75%)",
+ "compile": "--check-only on specops8.gd, test_specops8.gd, pt7_specops8.gd: 0 errors at handoff",
+ "fixes": [
+  "specops8 air_home (fly raid stuck): stealth dropship landed on the facility helipad at a tile centre with its approach heading, ramp into a building -> unload_all RAMP_BLOCKED forever (5153 UnloadFailed in probe .plan/so8e_fly2.log). New _park_on_pad (pad centre + helipad_craft facing_deg, like CnMission8) before unload_all; landed-with-cargo branch now ends after 2x air_land_s with note 'could not unload at the pad' (never wait forever). Probe after fix .plan/so8e_fly2b.log: 0 UnloadFailed, raid done t=2456.",
+  "specops8 _home_cell (13.9c-45): regular VTOL returns to its own vpad if free, else nearest free dropship pad (Air._free_vtol_pad_near), else Air.landing_spot near its start cell (holds nearby); never a cell another landed craft holds.",
+  "test_specops8: test_fly adds checks 'dropship unloaded at home (cargo empty)' and 'no unload timeout at the pad' (stricter); test_override_cancels sends cn_fire_support pos as Vector2 (Array crashed cn_ops7:292/321, warned on board cn_ops7.pos); test_drive_all: new on_tick hook re-clears creep round the downed group until the rescue squad searches (cause: cfg creep_spread is read by nobody, creep regrew, all 3 died of nanite_exposure t=800..2040 while the rescue squad was still queued at the gate, probe .plan/so8e_drv.log / so8e_drv2.log).",
+  "pt7_specops8 flow: same clean-ground staging (_keep_clean inside _wait_phase) -> shot 9 was an empty field because the group was dead."
+ ],
+ "results_at_handoff": {
+  "test_det7": "6/6 PASS, 0 SCRIPT ERROR (.plan/so8e_test_det7.log)",
+  "test_ui_fit": "6/6 PASS, 0 SCRIPT ERROR (.plan/so8e_test_ui_fit.log)",
+  "test_specops8 full (.plan/so8e_t1.log)": "RUNNING at handoff (started before the drive staging fix? no: after test edits incl. on_tick; flow edit came later). Read FAILURE lines when done.",
+  "test_cnmission8/test_cnsim7/test_cnops7": "RUNNING at handoff, logs .plan/so8e_test_cnmission8.log etc.",
+  "flow specops8 (.plan/so8e_flow.log, shots .plan/shots/SPECOPS8E/)": "RUNNING with the OLD flow (started before _keep_clean); all PLAYTEST lines ok so far through rescue_started. Previous run so8d_flow1 never printed PLAYTEST RESULT (likely the 900 s timeout during the long waits).",
+  "fly rescue VTOL": "comes home fine but its team ends 'home (not parked)' after 600 s = facility RETURN jam (RETURN8, fac_drive7)"
+ },
+ "not_run": ["test_cnfac7", "test_lpmode7", "test_opsui7", "test_ui_panels", "drive_all after RETURN8 fix (RETURN8 still working at 17:24Z)"],
+ "shots_posted": "fact shots.best seq 15763: SPECOPS8D/specops8_7_raid_planting.png, _6_recon_scouting.png, _8_escort_screen.png. Shot 9 rescue_recover was blank (dead group). Charge labels read ~5000 s: FUSE_HOLD 99999999 ticks shown by the display (presentation, not mine).",
+ "next_step": "1) read .plan/so8e_t1.log FAILURE lines and the cn regression logs; 2) re-run the windowed specops8 flow (new _keep_clean), look at shot 9, post shots.best; 3) once RETURN8 posts its fac_drive7 fix, re-run test_specops8 --only test_drive_all/test_fly; 4) run test_cnfac7, test_lpmode7, test_opsui7, test_ui_panels; 5) post fact api.specops complete when drive_all only fails on nothing.",
+ "files_changed": ["sim/systems/specops8.gd", "tests/test_specops8.gd", "tools/pt7_specops8.gd"],
+ "scratch": [".plan/so8e_fly2.gd", ".plan/so8e_drv.gd", ".plan/so8e_drv2.gd", ".plan/so8e_*.log"]
+}

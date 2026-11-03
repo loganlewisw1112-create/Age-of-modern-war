@@ -1,0 +1,39 @@
+{
+  "agent": "FLY8",
+  "status": "PARTIAL - budget.handoff_now from ORCH at ~24 calls; cause found, fix written, verification lanes running",
+  "cause": "test_cnmission8 fly: the stealth dropship (1133, cn_stealth_dropship, bay vehicle:1 foot:10) lands at the LZ (120.5,81.5) nose-first the way it flew in (facing 0.31 -> snapped 0). Its rear ramp runs over terrain that is impassable for class vehicle, so Transport.bay_unload refuses with UnloadFailed RAMP_BLOCKED on every 10-tick retry (t 729..2529) and the sequence never starts. Transport._turn_ramp_clear (VTOL8 yaw) only applies to the REGULAR VTOL, so the stealth dropship never turns. The earlier reading was wrong: APC 1064 never flew. It stays empty and idle at the base (70.5,78.5); its squad walks up the ramp. Only APC 1053 (10 crew) plus 10 foot ride. FACFLOW8E's _clear_ramp therefore had nothing to clear (entities don't block ramp_clear: it checks terrain only).",
+  "cargo_model_check": "Matches 13.9c-46 and the stealth bay: _air_board boards ONE APC (the package APC) and dismounts the other APC's squad to walk aboard (cargo at takeoff = 1053 + 1065..1074). One dropship and one lift. The second APC stays home (it is later ordered to drive to the site by move_team: the existing travel behaviour, not changed).",
+  "fix": {
+    "sim/systems/transport.gd": "new static face_ramp(w, c, cls, pref=NAN) -> bool. A landed bay aircraft with no bay_seq yaws to the drawn facing nearest pref (k = 0, +-1, +-2, +-3, 4 eighths) whose ramp_clear(cls) is true. It sets facing and HotState.touch. The caller decides it is in the field (not the facility helipad). Placed just above _is_veh.",
+    "sim/systems/cn_mission8.gd": "new static _face_field(w, ds, toward): nose = (ds.pos - toward).angle(), so the tail points at 'toward'; it calls Transport.face_ramp(vehicle). It is called in air_fly when landed at the LZ (before unload_all, toward target_of(M)), in air_unload before each retry, and on _enter air_board2 (toward the team) before the boarding orders. It is not used at the home helipad (_park_on_pad keeps the fixed facility heading)."
+  },
+  "trace_evidence": "temp trace test (removed): with the fix, ds facing -2.36 at t=729, BayRamp open unload, 10 foot UnitUnloaded t 806-959, APC 1053 UnitUnloaded t=1079 (crew n=10 aboard), phase travel t=1079 -> deploy t=1089. 0 SCRIPT ERROR in that run.",
+  "running_at_handoff": "Background lane started at ~11:50 (bash .plan/hb.sh FLY8 ... lane.sh). Each log is a tests/run.sh --only=<t> output in C:/Users/logan/AppData/Local/Temp/fly8/<t>.log for test_cnmission8, test_vtol8, test_specops8, test_transport, test_air_transport, test_facexit8, test_det7, test_cnfac7. Read them (grep RESULT / FAIL / SCRIPT ERROR). If they are missing or incomplete, re-run them.",
+  "next_steps": [
+    "0. NEW: test_cnmission8 fly still fails AFTER unload (not purged, cover 1.00). Re-run a trace from t=1079: check deploy phase status_line/note, whether the deploy waits on APC 1064 (empty, driving from base) or on crew still inside 1053, and the scanner/ew/deploy roles.",
+    "1. Read the lane logs in C:/Users/logan/AppData/Local/Temp/fly8. Need test_cnmission8 RESULT pass=7 fail=0 and the others green. If a hash or fixed-position test moved because face_ramp changed a facing, report it (do not edit goldens).",
+    "2. Compile check: timeout 240 $G --headless --path . --quit-after 60 2>&1 | grep -E -A2 'SCRIPT ERROR|Parse Error' must print nothing.",
+    "3. Windowed flow: \"$G\" --path . -- --ui-playtest=\"<abs shot dir>\" --ui-playtest-cnmission8 (timeout 900). Need PLAYTEST RESULT fail=0 and 0 SCRIPT ERROR. Check whether pt7_cnmission8.gd shoots the fly unload; if it doesn't, take one shot of APC 1053 rolling off the ramp (phase air_unload, seq ph apc_out, about 1000-1079 ticks after the order in the test setup). Read the PNG, then post fact shots.best.",
+    "4. Optional hardening: the pickup (air_pick, _land_pick) path also lands in the field. _face_field now runs at air_board2 entry; check that the boarding at the pickup has no RAMP_BLOCKED BoardFailed.",
+    "5. Final report: cause/fix above, raw RESULT lines, files changed (transport.gd, cn_mission8.gd)."
+  ],
+  "files_changed": [
+    "sim/systems/transport.gd (face_ramp)",
+    "sim/systems/cn_mission8.gd (_face_field + 3 call sites)"
+  ],
+  "temp_files_removed": [
+    "tests/test_zzfly8_trace.gd"
+  ],
+  "hashes": "Only a match where a bay dropship unloads or boards in the field through cn_mission8 changes (the dropship's facing). Transport.face_ramp is not called from Transport's own paths, so other transport and VTOL tests should not move. test_hot_state not touched or run.",
+  "lane_results": {
+    "test_cnmission8": "RESULT pass=6 fail=1: fly still FAILS, but later in the run: unload now works; failing checks are \"fly: the area was purged (CnMissionPurged)\" and \"fly: creep at the target 1.00 <= 0.10\" -> the deploy/purge after the fly landing is the next bug (trace phases after t=1089: deploy with team split between LZ crew and APC 1064 driving from base?)",
+    "test_vtol8": "RESULT pass=5 fail=0",
+    "test_specops8": "RESULT pass=5 fail=0",
+    "test_transport": "RESULT pass=11 fail=0",
+    "test_air_transport": "RESULT pass=7 fail=0",
+    "test_det7": "RESULT pass=6 fail=0",
+    "test_cnfac7": "RESULT pass=36 fail=0",
+    "test_facexit8": "SCRIPT ERROR Parse Error \"Could not resolve external class member free\" / signature mismatch free() -> another agent's in-progress file at run time (not transport/cn_mission8); re-run",
+    "logs": "C:/Users/logan/AppData/Local/Temp/fly8/<test>.log, summary C:/Users/logan/AppData/Local/Temp/fly8/summary.txt"
+  }
+}

@@ -1,0 +1,37 @@
+{
+ "agent": "CNSIM7",
+ "gen": 1,
+ "reason": "budget.handoff_now at 74% (guard), 76 tool calls",
+ "done": [
+  "content/g7/defs_g7_cn.json: 35 units (Human A + B: 7 strike roles, 7 operator roles, strike APC, tactical APC each; g7_cn_sentry, g7_cn_barrier, g7_cn_interceptor_drone), 8 weapons, rules.g7_cn (packages, deploy, hero, hold, exposure, kit, tac_cap 3, leash). All numbers PROVISIONAL. Generator: scratchpad gen_cn.js (not in repo; edit the JSON directly).",
+  "sim/systems/apc7.gd complete: unhackable(e), init_apc, restock/refill, dome (cn_dome, drops when moving, absorb, break + recharge), APS (_aps_try, shot_blocked, intercept_strike), damage_mult hook, anti-drone emitter, manned .50 mounts with gunner hits/replacement from cargo and hold-fire when unmanned, EMP pulse (cn_emp; Creep.detach_leeches guarded), side panels (cn_panels interceptors|smoke|idrones, stock), interceptor drone expiry, kill_cargo, near().",
+  "sim/systems/counter_nanite.gd complete: spawn_team(w,fid,kind strike_team|tactical_squad,pos) with crew inside the APCs, call signs, one leader + succession (A second, then B second), pair-only deploy + _pair_follow, tac cap + set_tac_cap, loadout (cn_set_loadout, lab stock via CnFacility.take_packages/stock when the side has a facility, free otherwise), lock in the field / unlock at a cn_facility building, deployment scan->jam->arm->purge with stalls (no_scanner/no_ew/no_deployer/dome_down/apc_lost), crew auto-raises dome, engineers auto hold (barriers + sentries toward threat) + pack up, hero detonation (window, blast, Remembered list), dismount/remount, cn_move via Convoy.form/move (fallback order_move), suits: hp-drop -> Wounds.puncture, exposure (punctured suits; ordinary foot soldiers on creep via Creep.on_creep while sys_state.creep exists), cn_slow, decon near cn_decon defs + decontaminate(), EMP grenade kit for gunners/EMP grenadier, g7v render keys sb/ex/hero.",
+  "tests/test_cnsim7.gd: 13 tests, bash tests/run.sh --only=test_cnsim7 -> TESTS OK (13/13, 0 script errors).",
+  "Tree compile check: 0 SCRIPT ERROR (after CNFAC7 fixed cn_facility.gd)."
+ ],
+ "remaining": [
+  "1. Write tools/pt7_cnsim7.gd (RefCounted, func run(pt) -> void; copy the harness API from tools/pt7_drone7.gd or pt7_squad7.gd): research unlock via debug (or set research directly), CN.spawn_team strike + tactical near a creep nest (Creep.enable + Creep.add_nest), cn_move convoy toward an enemy m_walker group (contact), cn_deploy purge with dome up, then a second deploy with dome zeroed + cn_hero_detonate; shots of each + a 10-shot strip of the convoy. Run windowed: \"$G\" --path . -- --ui-playtest=\"<abs .plan/shots/CNSIM7>\" --ui-playtest-cnsim7 (timeout 900); must print PLAYTEST RESULT ok with 0 SCRIPT ERROR. Units will draw with whatever art_catalog has until ORCH registers def.art (CR below).",
+  "2. Send the CHANGE_REQUESTS listed below to ORCH / WOUND7 / CREEP7 on the board (type need, topic change_request.*) - NOT YET POSTED except the CREEP7/CNFAC7 interface messages (seq ~180-190).",
+  "3. Optional: run tests --only=test_hot_state once to confirm the new content did not move a golden (not run).",
+  "4. Post fact cn.api state complete, post done, final report."
+ ],
+ "change_requests_to_send": {
+  "ORCH world.gd COMMANDS": "cn_set_loadout, cn_deploy, cn_hero_detonate, cn_dismount, cn_mount, cn_move -> CounterNanite; cn_dome, cn_emp, cn_panels -> Apc7. Params: team_id (or unit_ids), cn_deploy {target: Vector2, package: purge|seed_hunter|barrier|core_breaker}, cn_hero_detonate {unit_id?}, cn_set_loadout {packages: [kinds]}, cn_move {target, escort_teams: [team ids]}, cn_dome {unit_ids, on}, cn_panels {unit_ids, kind}.",
+  "ORCH g6_hooks.gd": "damage_mult *= Apc7.damage_mult(w,src,s,t) (dome absorption); shot_blocked ||= Apc7.shot_blocked(w,src,s,t,at) (APS/panels/smoke/dome vs indirect); strikes intercept path ||= Apc7.intercept_strike(w,fid,at,kind). All return neutral in one dict lookup when sys_state.apc7 is absent. NOTE: shot hook only fires if the shot dict carries cls/guided/indirect; s.dmg is read for dome absorption (falls back to 10).",
+  "ORCH research.json": "\"g7_counter_nanite\": {\"name\": \"Counter-Nanite Protocol\", \"cost\": {\"credits\": 6000, \"ore\": 1500, \"salvage\": 800}, \"time\": 180, \"stage_min\": 10, \"factions\": [\"human_a\", \"human_b\"], \"requires_research\": [\"g6_automation_doctrine\", \"g6_jamming_1\", \"electronic_resilience\"], \"effect\": \"unlock_line\", \"value\": \"counter_nanite\", \"owner\": \"CNSIM7\", \"g7\": true, \"desc\": \"The last, very expensive research: unlocks the Counter-Nanite facility, strike team and tactical operators. PROVISIONAL.\"}",
+  "ORCH art_catalog": "register def.art for the 35 defs in defs_g7_cn.json (Human A ids equal ARTCN7 sample names g7_cn_* / g7_op_*; Human B g7_b_* reuse the same sheets; sentry/barrier/interceptor drone have no art yet).",
+  "WOUND7 (morale.gd mvm writer or Wounds.move_mult)": "multiply the movement factor by float(e.get(\"cn_slow\", 1.0)) (exposure slow). Optional: call Wounds.puncture from apply_hit for e.suit units (CNSIM7 already detects hp drops every 10 ticks).",
+  "LOOK7 render_snap": "copy g7v keys sb (suit breached), ex (exposure 0..1), hero; APC e.a7 {dome_on, manned, smoke_until} for dome/mount drawing.",
+  "CREEP7": "Creep.jam_link(w,pos,radius,until_tick,fid) and Creep.detach_leeches(w,vehicle_id)->int are called guarded and do not exist yet; Cores.finish(w, ix, by) is called with the nearest live Cores.list entry within radius+2 for core_breaker."
+ },
+ "files_touched": ["content/g7/defs_g7_cn.json", "sim/systems/apc7.gd", "sim/systems/counter_nanite.gd", "tests/test_cnsim7.gd", ".plan/handoff/CNSIM7-1.json"],
+ "test_state": "bash tests/run.sh --only=test_cnsim7 -> TESTS OK (13 PASS). CNSIM7_COST base_300=119.7ms group_300=197.9ms cn_apc7_systems_300=31.809ms (extra CN.tick+Apc7.tick passes, 300 ticks, strike team + 3 tactical squads deploying: ~0.11 ms/tick for both systems; the group delta mostly is the 44 extra units' movement/combat). Loaded PC, not ORCH quiet-PC numbers.",
+ "gotchas": [
+  "Commands are not registered in world.gd yet: tests call validate_command/apply_command directly (_cmd helper).",
+  "Units riding in a carrier are NOT in w.entities: use CounterNanite.find/alive (Transport cargo lookup). Apc7.kill_cargo kills a soldier inside.",
+  "Sentry/barrier units have speed 0.0 and hold orders; packing uses w.destroy(...,'packed') and refunds stats.lost.",
+  "Exposure for ordinary soldiers only runs while w.sys_state.creep exists; the creep -> ordinary-soldier exposure path was NOT covered by a test (no creep in tests).",
+  "Re-equipping does not return the old packages to the lab stock (no put-back API) - known gap.",
+  "Kit EMP grenade, emitter vs real drones, and smoke miss chance are untested."
+ ]
+}

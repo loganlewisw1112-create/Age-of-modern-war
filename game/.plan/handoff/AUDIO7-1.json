@@ -1,0 +1,22 @@
+{
+ "agent": "AUDIO7",
+ "state": "functionally complete; stopped at the 70% projected budget",
+ "done": [
+  "adaptive music: presentation/audio/music_director.gd (planning/tension/combat/silence/tide, sample-locked 96 BPM stems, pre-Tide silence predicted from the LP countdown + TheTide window for the walking core, Tide stinger, smooth crossfades); battle bus hushed -24 dB during the silence",
+  "operator barks: 4 personalities x 7 kinds x 2 texts x 2 voices (112 lines), radio chain, CnBark + derived under_fire (shots at a named operator), per-team 4 s gap + per-kind cooldowns + one voice at a time (radio_queue)",
+  "command voice acks for counter-nanite / convoy / drone orders (CommandApplied cmd_type), HQ radio for Last Protocol + CN ops events, PROTOCOL advisor voice (23 keys) with the OPSUI7 advisor auto-hooked (hud.ops7.advisor.advisory) and the shared mute key protocol.advisor",
+  "subtitle signal + recent_subtitles() + protocol_say() + music_state() on AudioDirector",
+  "G7 SFX: 37 ids / 73 files (APC .50, rocket pod, rail, thermite, EMP, microwave, disruptor, harpoon, hero detonation, purge, APS, walker stomp, dropship fan + ramp, drone motor + feed, klaxon, dome, limpet, creep/fissure/growth/purge, 7 threat sounds, core scream/pulse/hit/destroyed); positional + culled through play_at; G7 weapons mapped (G7_SHOT)",
+  "Settings > Audio: Voice slider (new Voice bus), PROTOCOL voice toggle; Master hard limiter; voice ducks Battle and Music",
+  "fix: looped streams used data.size()/2 frames, wrong for QOA-imported WAVs (engine loops looped only ~20% of the clip) -> get_length() * mix_rate"
+ ],
+ "remaining": [
+  "re-run tools/pt7_audio7.gd once after the last change (battle hush during pre-Tide silence); last run before it: PLAYTEST RESULT pass=26 fail=0, 0 SCRIPT ERROR",
+  "bash tests/run.sh --only=test_ui_fit once (Audio tab gained 2 rows; not run)",
+  "OPSUI7 CR seq 1418 (team cam bark subtitles from the director's subtitle signal) — their call"
+ ],
+ "files": ["presentation/audio/audio_director.gd", "presentation/audio/audio_catalog.gd", "presentation/audio/audio_mixer.gd", "presentation/audio/audio_buses.gd", "presentation/audio/audio_tab.gd", "presentation/audio/audio_catalog7.gd", "presentation/audio/audio_g7.gd", "presentation/audio/music_director.gd", "presentation/audio/audio_lines_g7.json", "tools/audio/synth_g7.py", "tools/audio/render_voice_g7.py", "tools/audio/build_manifest_g7.py", "assets/generated/audio7/**", "tests/test_audio7.gd", "tools/pt7_audio7.gd"],
+ "tests": {"test_audio7": "11/11", "test_audio61": "10/10", "pt7_audio7": "26/0, 0 SCRIPT ERROR (before the hush change)"},
+ "regenerate": "py -3.13 tools/audio/synth_g7.py && py -3.13 tools/audio/render_voice_g7.py && py -3.13 tools/audio/build_manifest_g7.py && godot --headless --path . --import",
+ "gotchas": ["imported WAVs are QOA (compress/mode=2): never derive frame counts from data.size()", "radio queue drops lines older than 10 s by design: send flow barks one at a time", "the director's camera may move during a flow: recenter before positional checks"]
+}

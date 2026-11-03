@@ -1,0 +1,44 @@
+{
+  "agent": "TURRET7B",
+  "spec": "G7_REFERENCE 13.9c-30 (every turret turns to its target before it fires) + ORCH ruling (mounted weapons never swing the hull)",
+  "calls_used": 102,
+  "tokens_used_est": 520000,
+  "stopped_by": "budget.handoff_now (ORCH, 76%)",
+  "audit": {
+    "sim_before": "No turret facing existed. combat.gd _fire snapped every UNIT facing to the target on the shot (hull swing, turreted or not; buildings had no facing); naval.gd shore bombardment snapped the hull; Turrets7 / WallTurret7 fired the tick a target was picked; WallTurret7 snapped its aim step onto the target at the shot.",
+    "display_before": {
+      "never_turned": "G5/G6 rot_<f>-only turrets (a_atgm_bunker, a_howitzer_pit, a_laser_ciws, a_popup_turret, a_sam_site, b_flak_battery, b_mortar_pit, b_net_post, b_pak_nest, b_pillbox, cn_tower, g7_cn_gate, m_arc_pylon, m_mass_driver, m_pulse_spire2, m_sentry_mine); a_t7_* (8), cn_popup, g7_a_hmg_nest, g7_a_rail_cannon whose aim_0..7 art existed but was never selected",
+      "snapped": "wall turrets (aim frame jumped to the target on the shot); mbt / ifv turret row (motion.aim_row toward the last shot target); every other vehicle and ship (whole sprite snapped by combat.gd)",
+      "traversed": "only the CN APC roof guns (apc_gun7.gd, display-side), but the hull swing put the target in the rear pod blind arc"
+    }
+  },
+  "design": "sim/systems/traverse7.gd + content/g7/rules_g7_traverse.json (all under _traverse7; Content skips _ keys). Saved+hashed e.tf (bearing), e.tft (last lay tick), e.tfh (hold-until tick), e.tfa (target id of the last lay). lay(w,e,to,cd_s,indirect,tid) slews at the per-def rate and returns laid (tol 5 deg, 10 indirect); called only on ready ticks (no per-tick cost between shots, catch-up of <= 10 ticks only while tracking the SAME target); bearing(w,e,tick) is a pure function (hold, then return to rest at the same rate; direct-fire building mounts scan +-20 deg over 16 s) read by render_snap as tb. Modes: turret (mbt, ifv, 4 CN APCs: hull never swings), hull (turreted vehicles / ships with no separate turret art: the hull lays at the gun rate instead of snapping; on the move unchanged), building (every armed building, Turrets7, WallTurret7). Rates PROVISIONAL (mbt 40, ifv 60, APC mounts 138 = apc_gun7's 2.4 rad/s, RWS 140, heavy naval 20-25, hmg nest 120, rail 25, derived for other buildings).",
+  "families": {
+    "building_turrets_Turrets7_a_t7": "DONE sim (lay before fire) + display (aim_<k>[_fire] from tb in G5Art.building_state; batch_art stamp carries tb)",
+    "combat_buildings (guard towers, G6 turrets, cn_popup...)": "DONE sim; display DONE where head art exists (aim_k: cn_popup, g7_a_*); rot-only G6 turrets in rules rot_aim (a_popup_turret, a_sam_site, b_flak_battery, a_laser_ciws, cn_tower, b_net_post, m_pulse_spire2, m_arc_pylon, m_mass_driver) turn the whole sprite in quarter steps (coarse, PROVISIONAL, offset 0 not eye-checked); bunkers / pits / gate / sentry mine traverse in the sim only (no head art)",
+    "wall_turrets": "DONE sim (lay before fire, facing_i from the laid bearing) + display (rot_<m>_a<n> from tb); test_wallturret7 12/0; not in the playtest",
+    "vehicle_turrets": "DONE mbt / ifv (turret row from sim tb, entity_layer CR 6354; hull never swings: playtest 0 hull frames moved, MBT/IFV turrets swung 175 deg before firing in run2); CN APCs hull held (playtest: hull 0 deg while the rear pod fired, 2 rear-pod shots logged); other turreted vehicles in hull mode (no turret art)",
+    "ships": "PARTIAL: hull mode (hull lays at the gun rate, no snap) for Combat fire and naval shore bombardment; no ship turret art, so no separate gun traverse is drawn"
+  },
+  "crs": {
+    "applied": ["6354 combat.gd (lay + face) / render_snap.gd (tb for units + statics) / entity_layer.gd (turret row from tb) / batch_art.gd (stamp)", "6370 + 6457 fx_layer _bld_tips tb + def"],
+    "pending": ["6480 combat.gd line 1281: pass int(t.id) as the 6th arg of Traverse7.lay (same-target catch-up; without it Combat mounts get one tick of slew per call, no free swing)"]
+  },
+  "files_changed": ["sim/systems/traverse7.gd (new)", "content/g7/rules_g7_traverse.json (new)", "sim/systems/turrets7.gd (lay hook + preload)", "sim/systems/wallturret7.gd (lay hook, facing_i from tf, preload)", "sim/systems/naval.gd (bombardment lay + face, preload)", "presentation/art/g5_art.gd (building_state tb branch: aim_k, wall aim, rot_aim quarter turns; WT_N, Traverse7 preload)", "tests/test_turret7.gd (+6 traverse tests; rail / microwave windows + the head's computed lay time via _lay_ticks)", "tools/pt7_turret7.gd (new)"],
+  "tests": {
+    "test_turret7": "RESULT pass=14 fail=0 (after the tfa change)",
+    "test_wallturret7": "RESULT pass=12 fail=0", "test_mil": "RESULT pass=13 fail=0", "test_muzzle7": "RESULT pass=8 fail=0", "test_damage": "RESULT pass=10 fail=0",
+    "test_hot_state": "ONE run (before the tfa change): RESULT pass=12 fail=5. Moved (expected: armed buildings / mbt / ifv lay before fire): GOLD 2k_fight on b7b8cb5a..., 2k_fight off 98eb3f65..., 10k_fight on 84ae6ed7..., GOLD_FLAT 2k_fight on 4ac54ec6..., off e4ba1548..., 10k_fight on 80e13b78...; held: 2k_mixed, 10k_march, hot_state_path_equals_dict_path. The second confirming run did not complete, and the tfa change moves these again: ORCH must run it twice after CR 6480"
+  },
+  "test_note": "test_intended_target_classes (microwave) and test_rail_penetration_and_power windows now add _lay_ticks (the head's worst-case traverse from its scanning rest at its rate); thresholds unchanged. Flagged for ORCH: these encoded zero lay time, which 13.9c-30 removes.",
+  "playtest": "run4 (.plan/shots/TURRET7B/run4/run.log) PLAYTEST RESULT pass=23 fail=1, 0 SCRIPT ERROR: 8/8 shooters fired only once laid (<= 5 deg off), 5 swung >= 120 deg onto targets behind, drawn heads / turret rows on the sim bearing 7/7, hulls never swung, idle heads back to rest 6/6, APC rear pod 2 shots with hull 0 deg. FAIL: ifv swung 175 deg in 50 ticks (< 56 at 60 deg/s) = the free catch-up onto a new target, fixed in traverse7 (tfa) but needs CR 6480 for Combat shooters; rerun not done",
+  "shots_best": ["C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/TURRET7B/run3/turret7_1_before_rest.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/TURRET7B/run3/turret7_2_swinging.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/TURRET7B/run4/turret7_3_shot_6_mbt.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/TURRET7B/run4/turret7_3_shot_3_a_t7_hmg_nest.png"],
+  "not_done_next_steps": [
+    "1. ORCH applies CR 6480 (combat.gd:1281 + int(t.id)); rerun `--only=test_turret7` (expect 14/0) and the playtest: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/TURRET7B/run5\" --ui-playtest-turret7 (expect the ifv min-ticks check to pass)",
+    "2. test_hot_state twice (identical values) -> ORCH re-baselines GOLD / GOLD_FLAT 2k_fight + 10k_fight",
+    "3. Cost: 2k bench with and without traverse (add `static var enabled` to traverse7 if an A/B is wanted); lay runs only on ready ticks + a cached per-def lookup",
+    "4. APC: the run4 frame turret7_5_apc_rear_gun_fires_aft.png shows tracers toward the APC's front-right (an AI Machine unit was there), so the rear-gun read is NOT eye-confirmed even though apc_gun7.last_shot logged 2 gun-1 shots; re-shoot with no other enemy near (or drive apc_gun7 from the sim tb)",
+    "5. Art (ARTCN): separate turret sheets for the hull-mode vehicles (b_rebuilt_mbt, a_old_tank, a_laser_tank, m_hover_tank, a_spaag, b_armored_car, a_recon_car, ...) and ship guns, then move them to units.turret in rules_g7_traverse.json; head (aim_k) art for bunkers / pits / rot-only G6 turrets, then drop them from rot_aim",
+    "6. Eye-check rot_aim offset (rot_aim_offset_deg 0) on a_sam_site / b_flak_battery; CIWS intercepts (Counterdrone CiwsKill / CiwsIntercept) are still instant events with no lay"
+  ]
+}

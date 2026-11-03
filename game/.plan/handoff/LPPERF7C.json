@@ -1,0 +1,30 @@
+{
+ "agent": "LPPERF7C", "gen": 2, "stopped_on": "ORCH budget.handoff_now (75%), ~95 calls",
+ "state": "all edited files pass --check-only; no git; sim untouched. A final interleaved A/B (all changes off via --old7c vs on; LP z1.0, z0.5, 2k river_crossing_s) was STARTED in the background at stop: results land in .plan/lpperf7c/final.out (+ run_fin_*.log, fin2k_*.log). Read it; it is unread.",
+ "env": "windowed, LP seed 7, 1x; 6-18 other Godot processes during every run (very noisy; per-run tps ranged 12-20 for the same build)",
+ "tests_before_changes": "test_lpperf7 9/0, test_lpmode7 18/0, test_det7 6/0, test_ui_fit 6/0 (render_snap untouched for these); test_thread 4/0, test_atmo7 8/0, test_light7 6/0, test_vis7 5/0, test_cards7 1/0 ran while the first render_snap edit was in (logs .plan/lpperf7c/t_*.log). NOT re-run after sim_runner / match_view / fac_atmo7 edits: RE-RUN all 9 + test_hot_state.",
+ "changes": [
+  {"file": "sim/render_snap.gd", "what": "building statics dirty tracking by content: record per id [keys, values, static dict, static-relevant key positions, had_tb, Traverse7.enabled]; same keys + (values Array == (type-strict, deep) OR same values at static-relevant positions) -> last dict reused; head-less mounts skip snap_bearing; scanning heads (only tb moved) -> duplicate()+new tb (same key order); statics holding a container never recorded; _water_sides only on freshly built dicts; switch static var STATIC_REUSE",
+   "proof": "equivalence probe .plan/lpperf7c/snap_eq.gd: 2400 LP ticks, every tick var_to_bytes(snapshot with reuse) == full rebuild from the same previous snapshot, statics AND whole snapshot (minus build_us/creep; creep also 0 diffs), with 65 forced building edits (hp, new key, int->float, firing, key erase): bad_statics=0 bad_snapshot=0, RESULT PASS (snap_eq3.log). reuse 85% + 134 tb-copies/tick of 901. Sim hash: hash_eq.gd reuse on vs off, LP 1800 ticks, state_hash identical at all 6 checkpoints (hash_on.log/hash_off.log). Build cost in probe 18.83 -> 12.59 ms/tick (noisy PC)."},
+  {"file": "presentation/view/sim_runner.gd", "what": "_bridge_prev: after a multi-step task the final snapshot's prev = positions from the snapshot the view showed during the task (display data only; single-step tasks unchanged; test_thread uses start(1)); switch static var BRIDGE_PREV"},
+  {"file": "presentation/match_view.gd", "what": "LPPERF7B edits intact (SIM_THREAD_BUDGET_US x2, sel_part x3 kept). Added THREAD_MAX_K=3 (threaded k cap, was 5), _snap_dt predicted at kick = smoothed per-step interval x min(k, last budget-cut steps) x 1.15 margin, _step_iv/_k_last/_k_cut; static var SCHED7C (A/B); --old7c user arg turns off all four LPPERF7C changes (perf A/B only)",
+   "proof": "A/B same session (ab.sh, files swapped, restored): jitter CV (median over ~38 moving units of displayed speed CV) old 1.186/1.046 -> new 0.909/0.874; stall frac 0.18/0.12 -> 0.15/0.14; steps/join old mix 1-4 -> new mostly 3; cadence mean 151/112 -> 146/179 ms (noise dominated; tps 17.2/20.0 vs 19.2/12.9 with 12/8 vs 6/6 other procs). Before (single run, 16 procs): cadence 179 ms sd 57, jitter 1.19, stall 0.177, tps 13.4."},
+  {"file": "presentation/view/fac_atmo7.gd", "what": "ground _draw (wear, marks, bowser bay, signs, pad lights, scorch/rubble, ruins) goes out as ONE ordered triangle array on the atlas: _bpoly (triangulate_polygon, white texel), _bline (engine quad for width>=0, primitive lines flushed+direct), _bquad (atlas sprites via _sp to self); transformed block (bowser bay roundel) flushed and drawn directly; switch static var GROUND_BATCH",
+   "proof": "pixcheck (lp_fps.gd --pixcheck, everything but fac_atmo7 hidden, paused): draw calls 713 -> 455 (-258); pixel diff on vs off = 52 px in two 4x9 blinking-lamp blobs that differ identically on-vs-on (animation) -> 0 batching pixel changes; pngs .plan/lpperf7c/pix/z1.0_320/340/360.png (zoom arg not applied in that check: same framing at both)"}
+ ],
+ "RESULT": [
+  "RESULT snap_static_reuse equivalence 2400 ticks: PASS (0 diffs, 65 forced edits)",
+  "RESULT sim hash reuse on==off: PASS (6/6 checkpoints)",
+  "RESULT fac_atmo7 ground batch same pixels: PASS (0 px outside animated lamps), draw calls -258",
+  "RESULT motion jitter CV: 1.19/1.05 -> 0.91/0.87 (improved, noisy PC)",
+  "RESULT final LP tps/fps z1/z0.5 + 2k no-regression: PENDING (.plan/lpperf7c/final.out)"
+ ],
+ "not_done": [
+  "read .plan/lpperf7c/final.out (final A/B numbers) and report",
+  "re-run the 9 tests + test_hot_state after all edits",
+  "entity_layer ~230 draw calls NOT batched: they are atlas-page switches in depth order (draw_texture_rect_region per sprite, art.atlas.pages); fix needs page consolidation in batch_atlas (LOOK7) or overlap-aware regrouping - not started",
+  "shots: .plan/shots/LPPERF7B/lp_z1.0.png / lp_z0.5.png do not exist (dir empty/missing); new after-shots not taken; no fact shots.best posted (no visible change besides minimap outlines over tints, unshot)",
+  "remaining motion jitter (~0.9 CV) comes from irregular worker cadence under CPU load; a fixed render delay (interpolate between the last two snapshots at t - delay) would remove stalls - not done"
+ ],
+ "scratch": ".plan/lpperf7c/ (lp_fps.gd probe: --motion --pixcheck= --skipcine --old7c; snap_eq.gd; hash_eq.gd; snapprof.gd; snap_why.gd; run.sh; ab.sh; final.sh; *.bak originals)"
+}

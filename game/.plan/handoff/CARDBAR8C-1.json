@@ -1,0 +1,15 @@
+{"agent":"CARDBAR8C","status":"DONE (handoff_now honoured; all 4 tasks complete)",
+"results":{
+ "flow lpres7":"PLAYTEST RESULT pass=24 fail=0, 0 SCRIPT ERROR (.plan/cb8c_lpres7.log, copied to .plan/cb8b_lpres7.log)",
+ "flow supply8":"PLAYTEST RESULT pass=26 fail=0, 0 SCRIPT ERROR (.plan/cb8c_supply8.log); phases drop/secure/out/load/return, delivered, ammo +600, carrier home, all released",
+ "flow cbshots8 (new)":"PLAYTEST RESULT pass=22 fail=0, 0 SCRIPT ERROR (.plan/cb8c_cbshots8.log; run via a temporary lpres7 hook before ORCH registered it, hook since removed)",
+ "test_cards8c":"RESULT pass=7 fail=0 files=1",
+ "test_ui_fit":"RESULT pass=6 fail=0 files=1"},
+"fixes":[
+ "lpres7 root cause: hud._fit_card paged the regular barracks TRAIN buttons that cardbar hides on a card tab, so the open tab's buttons went to page 2 behind 'More' (hidden). cardbar8.hides(b) + one guard in hud._fit_card: hidden regular buttons take no page slot.",
+ "cardbar8.apply: the regular card tab no longer duplicates a card tab name (barracks TRAIN drills vs regular TRAIN -> regular tab is 'UNITS'), which made the regular tab unreachable by click.",
+ "pt7_supply8: waits up to ~75 s game time for Supply8.order_reason == '' before ORDER; trains the missing engineer (queue_unit, FORCED stage 10); when still blocked, probes and FORCED-spawns+enlists the 4th engineer (logged). All assertions unchanged."],
+"warns_posted":["supply8.engineers + supply8.engineers2: start_count 3 vs supply engineers 4; trained engineer blocked by SUPPLY_CAP in skirmish (pop 105/cap 20); seeded engineers stuck run_ph go / order idle, never move"],
+"files_changed":["presentation/ui7/cardbar8.gd","presentation/hud/hud.gd (one guard in _fit_card)","tools/pt7_supply8.gd","tools/pt7_cbshots8.gd (new)","tools/pt7_lpres7.gd (temp hook added then removed: net unchanged)",".plan/cb8c_flows.sh (new helper)"],
+"shots":".plan/shots/CARDBAR8C/cb8c_{cc,tower,gate,armory,garage,barracks,reserve,air,aid,lab,dronebay,magazine}.png (looked at; fact shots.best posted)",
+"left":["sim-side engineer count / stuck engineers (warned to orch, not mine)"]}

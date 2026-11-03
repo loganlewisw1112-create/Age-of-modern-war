@@ -1,0 +1,51 @@
+{
+ "agent": "SENT7-5",
+ "n": 5,
+ "calls_used": 83,
+ "tokens_used_est": 470000,
+ "reason": "budget.handoff_now from ORCH (80 of 140, projected 545k)",
+ "tree": "compiles; test_sent7 RESULT pass=12 fail=0 on 4 runs (r1 125317 ms, r2 125204 ms, r3 166474 ms, r4 158663 ms; r3/r4 after the last edit)",
+ "done_with_evidence": [
+  "Buddy pairs are a unit of work (sentinels7.gd plan()/_pairs): persistent two-man teams S.pr (mutual, kept through rest, QRF turn-out and re-plans, erased when a man is gone). When the board takes a man for a paired job (non-care, not rest/standto, slots>=2) it takes his partner too; a job with one free slot (or a non-paired job) adds tactics.pair_split_pen (1000) to a man who has an available partner, so a team is split only when nobody else fits. _pairs pairs S.pr teams first.",
+  "Drag spot (_drag_spot, used by _casualty_drill and _care_under_fire): best cover within drag_r away from the threat; if there is none (man down in the open field) he is dragged up to tactics.drag_far (8, PROVISIONAL) away from the threat or back towards the facility to real cover. Playtest before: casualty dragged to cover 0.00 in the open; after: cover 0.75 at the foot of a tower.",
+  "test_tactics_drill: the drill's man goes down during the rush (t>=150, alarm, moving, gait>=2, cover<open_v, buddy within 2*bound_len+1); the old after-the-fight pick is only the fallback; checks unchanged (plus a check that the casualty still exists). CASUALTY PICK: 157 hit at t=150 rushing in the open (gait 2, cover 0.15), buddy 156 4.1 tiles away -> SentinelCasualtyDrill 2, CasualtyDragged 2, SentinelMenderTreats 1, PASS on r1-r4.",
+  "pt7_sent7: bounding shot (pair one rushing / one covering), a man hit on a rush during the human assault, drag shot, drill-state + casualty-in-cover logs; drag detected by wdby or s7_dg. Run 3: PLAYTEST RESULT pass=24 fail=0, 0 SCRIPT ERROR.",
+  "defs_g7_sentinels.json tactics: pair_split_pen 1000.0, drag_far 8.0 (+ notes, PROVISIONAL)."
+ ],
+ "tactics_last_run": [
+  "TACTICS: attackers left 0 of 8, Sentinel rounds used 30",
+  "TACTICS: gaits seen [2, 1, 3], settled-in-cover samples 409, bounding samples one-up 286 / both-up 45, stand-to jobs 0, events { SentinelStandTo 1, SentinelWithdraw 4, SentinelManDown 1, SentinelCasualtyDrill 2, CasualtyDragged 2, SentinelReloading 2, SentinelMenderTreats 1 }"
+ ],
+ "balance_last_run": [
+  "BALANCE human infantry x2: Sentinels 24 (10380) vs 243 (20645, x1.99) -> Sentinels left 22 (9470), attackers left 0, inside 0 => HELD",
+  "BALANCE human infantry x3: Sentinels 24 (10380) vs 366 (31190, x3.00) -> Sentinels left 21 (9090), attackers left 0, inside 0 => HELD",
+  "BALANCE Machine x2.5: Sentinels 24 (10380) vs 128 (26220, x2.53) -> Sentinels left 23 (9930), attackers left 0, inside 0 => HELD",
+  "BALANCE combined arms x2.5: Sentinels 24 (10380) vs 156 (26190, x2.52) -> Sentinels left 21 (9070), attackers left 3 (2580), inside compound 3 => LOST (narrow: only 3 attackers got inside)",
+  "BALANCE guns silenced: inf x2 HELD (7 left); Machine x2.5 HELD (24 left, 15 crawlers outside); combined arms x2.5 LOST (13 left, 28 inside)"
+ ],
+ "hash": "test_hash_twice_same: a7ef71640f8307c52811fcda9f9d12eb964d94ae71bce6b27dec0a30ffd5f26a twice-same in r3 AND r4 (two separate processes). Before _drag_spot (r1/r2): dc860bfbd107556a1293ecca81289dd660f92d7e135f312a9aaaaa02b79fa3ea. Moves with Sentinel behaviour: ORCH re-baselines.",
+ "playtest": "pt7_sent7 windowed run 3 (shots .plan/shots/SENT7-5c): PLAYTEST RESULT pass=24 fail=0, 0 SCRIPT ERROR; 1565 engine ERROR lines 'Drawing is only allowed inside _draw()' from presentation/view/fac_life7.gd:1573 _draw_glows (not a SENT7 file; also in runs 1-2).",
+ "shots_best": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5c/sent7_casualty_drag_z175.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5c/sent7_mender_treats_z250.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5/sent7_bounding_z175.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5/sent7_entry_z250.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5/sent7_walls_z250.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/SENT7-5/sent7_tower_z250.png"
+ ],
+ "fallout": [
+  "test_lpmode7 RESULT pass=18 fail=0; test_wallwalk7 pass=11 fail=0; test_cnfac7 pass=34 fail=0; test_sentart7 pass=6 fail=0 (all after the pairing change, before _drag_spot)",
+  "test_eng7 pass=9 fail=1: test_apc_and_dropship_refuelled_by_bowser 'an engineer pumped the APC (Eng7Refuel)'. A/B with the Sentinel pairing disabled fails identically; engineer7.gd / cn_facility.gd were edited by another agent minutes before. Not SENT7."
+ ],
+ "not_done": [
+  "Fallout tests not rerun after _drag_spot (it only changes where a downed Sentinel is dragged).",
+  "Read 15 of the ~57 PNGs across the three runs: every category (walls, tower, entry, human assault, bounding, Machine assault, reload run, casualty drag, Mender). Run 3's other shots were not opened.",
+  "Stand-to positions are still per man (pairs are not kept together at stand-to)."
+ ],
+ "files_touched": [
+  "sim/systems/sentinels7.gd",
+  "tests/test_sent7.gd",
+  "tools/pt7_sent7.gd",
+  "content/g7/defs_g7_sentinels.json"
+ ]
+}

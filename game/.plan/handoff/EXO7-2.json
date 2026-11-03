@@ -1,0 +1,52 @@
+{
+  "agent": "EXO7-2",
+  "successor_of": "EXO7",
+  "stopped_at": {"calls_used": 98, "reason": "budget.handoff_now (70% of 140 calls)"},
+  "spec": "docs/G7_REFERENCE.md 13.9c-20 (roles), 13.9c-20a (nanotech look), 13.9c-20b (stances / animation), 13.9c-20c (4 m amplified exosuits, Suit Foundry), 13.9c-20d (distinct design per role)",
+  "files_owned": [
+    "content/g7/defs_g7_cnsuits.json",
+    "tools/art/g7_cnsuits.gd",
+    "assets/art/g7_cnsuits/",
+    "tests/test_cnsuits7.gd",
+    "tools/pt7_cnsuits7.gd",
+    "presentation/art/art_catalog.gd (register only, already registers g7_cnsuits)"
+  ],
+  "art_state": {
+    "generator": "tools/art/g7_cnsuits.gd fully rewritten: 4 m amplified exosuit on athletic human proportions (LT 1.0, LS 0.98, ANK 0.17, UA 0.62, FA 0.6, WAIST 0.2), sealed torso cockpit with the sensor visor band (opaque), segmented plates over a dark under-layer, belt pouches, low-profile back module (= pilot access, hinges open in die_2). Per-role ROLE table (sh, chest, waist, lb limb thickness, ga forearm/hand armour, hipw, pw, hz) + _head(typ) + role_pose(typ) + per-role back kit.",
+    "roles": {
+      "bastion": "heaviest wide build, low armoured dome under a heavy brow, big rotary carried on an articulated support arm (back module -> hip pivot -> gun), brass belt in a chute from a large back drum, wider braced stance",
+      "breaker": "twin launcher pods flanking the head and rising above it (tilt forward 0.55 rad to launch), backblast cheek plates, side targeting sight, kneels for aim / fire / reload",
+      "aegis": "lighter sensor build, tall mast with a raised tilted array + whip antenna, cannon tilts up +0.5 rad when aiming, head tracks up (hup), lens cluster + crest",
+      "purifier": "sealed collar ring + rebreather canisters, glowing 3-cell capacitor bank (DISR bands), shielded hands, projector held forward while walking (deliberate advance, shorter stride)"
+    },
+    "stances_13_9c_20b": "idle_0 high ready, idle_1 low ready, bladed stance (torso twist, left foot forward), knees bent, weight forward; aim / fire braced (rear foot back), recoil rk rocks torso + weapon; walk / run tactical with the arms counter-rotated against twist + lean so the weapon stays on target",
+    "cells": "FW 76 x FH 68, pivot (38, 54), 61 frames x 8 facings, team mask = shoulder chevrons",
+    "budget_class": "threat_big (3 MB), approved by ORCH board seq 5370; noted in each manifest entry g7.class_reason. Sizes: bastion 2.12 MB, breaker 1.96, aegis 2.18, purifier 1.99 (B builds +10-20 KB). All ok.",
+    "generated": "assets/art/g7_cnsuits regenerated from the per-role generator (EXO7_ART sheets=10 files=33 over=0)"
+  },
+  "sim_content": {
+    "suits": "radius 0.65 (fact cnsuits.radius), move_class vehicle (vehicle routes, never mantrap / decon / wall-walk / garrison); gunners stay foot 0.3",
+    "suit_foundry_rename": "DONE: content/g7/defs_g7_cnsuits.json cn_armory name = \"Suit Foundry\" (def id unchanged)"
+  },
+  "tests": {
+    "test_cnsuits7": "RESULT pass=9 fail=0 (per-role art, radius 0.65, move_class vehicle)",
+    "note": "one earlier run hit a parse error in sim/systems/fac_drive7.gd (another agent mid-edit); the rerun passed"
+  },
+  "playtest": {
+    "flow_fixes": "tools/pt7_cnsuits7.gd: fog overlay hidden only while shooting (display only; fixed the all-black shots), facility placed like cnfac7 (_open 18, o = c - 16), diagnostics on the armory raise, pose board sprites freed after board shots and respaced for 76 px cells, walking check = displacement > 0.5 tile in 2.5 s (vehicle-class suits)",
+    "last_run": ".plan/shots/EXO7-2/pt4: PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR — on the 4 m single-design art (BEFORE the 13.9c-20d per-role rebuild)",
+    "per_role_run": "NOT RUN: the playtest has not been rerun on the per-role sheets; no in-game shots of the per-role suits yet",
+    "not_mine": "presentation/view/fac_life7.gd:1578 _draw_glows spams 'Drawing is only allowed inside _draw()' ERROR lines (hundreds per run); not a SCRIPT ERROR, owner of fac_life7 should fix"
+  },
+  "best_shots_looked_at": [
+    ".plan/shots/EXO7-2/cnsuits_roles_5x.png (per-role, A + B, front / side / fire / walk / back, 5x)",
+    ".plan/shots/EXO7-2/cnsuits_a_board.png and cnsuits_b_board.png (4x boards incl. low/high ready, fire brace, walk 0-5, destroyed, CN gunner for scale)",
+    ".plan/shots/EXO7-2/pt3/cnsuits7_firing_z175.png and cnsuits7_walking_z250.png (4 m single-design suits in game; walking one is in the APC wash on the vehicle route)"
+  ],
+  "next_steps": [
+    "1. Run the windowed playtest on the per-role sheets: G=<godot console exe>; D=<abs>/.plan/shots/EXO7-3/pt5; bash .plan/hb.sh EXO7-3 <calls> <tokens> \"pt cnsuits7\" -- timeout 900 \"$G\" --path . -- --ui-playtest=\"$D\" --ui-playtest-cnsuits7 > \"$D/run.log\" 2>&1 ; expect PLAYTEST RESULT pass=17 fail=0, 0 SCRIPT ERROR. Post a direct board status before and after (hb.sh heartbeats did not keep the guard happy).",
+    "2. Read every PNG in pt5 (board_a/side/b at z100/175/250, armory, walking, firing, sustained_fire, destroyed); post fact shots.best with in-game shots at zoom 1.75 and 2.5 plus .plan/shots/EXO7-2/cnsuits_roles_5x.png.",
+    "3. Known art nits to consider if budget allows: aegis array reads like a cap over the head in the front facing (move mast further back, x -0.4, or tilt the array back); bastion head mostly hidden in the front facing (hz 1.16 -> 1.22); destroyed pose in facing 1 is a compact blob (lying toward the camera).",
+    "4. Possible change_request to ORCH (display, not done): owner 13.9c-20b asks for more in-between walk / run frames; the display (presentation/view/batch_art.gd / fac_seq7.gd) uses 6-frame walk_% / run_% cycles, so 8-frame cycles for cn_suit units would need ORCH's change there plus SET61 additions in g7_cnsuits.gd; stride-to-speed matching is display-side too."
+  ]
+}

@@ -77,3 +77,9 @@ Layering: WOUND7 resolves what a hit does to a soldier; SQUAD7 decides how soldi
 bounding, formations, clearing, grenade decisions; it calls WOUND7/combat APIs to throw or fire); DRONE7 owns drones
 that the player flies; LOOK7 draws all of it (it reads states others put in the render snapshot); SCALE7 makes the
 engine hold up on 512×512+ maps; ARTCN7 sets the new art detail level and makes the checkpoint samples.
+
+## Screenshots to the owner (owner rule, 2026-10-27: "i need fresh screenshots of all new additions as theyre added")
+Whenever something visible lands (a building, unit, effect, fix the owner asked for), take fresh in-game shots, LOOK at
+them (Read the PNG), and immediately post them to the board, not only in your final report:
+`node post.mjs <ID> orch fact shots.best '{"paths":["C:/.../a.png","C:/.../b.png"],"caption":"one plain sentence: what the owner is looking at"}'`
+(absolute C:/ paths, 1-6 best shots, only shots you looked at, captions in plain words). ORCH forwards them to the owner.

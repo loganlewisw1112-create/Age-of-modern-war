@@ -1,0 +1,37 @@
+{
+  "agent": "REGRESS7-6",
+  "calls_used": 131,
+  "tokens_used_est": 395000,
+  "done": [
+    "auras (ORCH 2774/2783): the 'no recovery inside an enemy drain aura' rule was implemented then fully REVERTED (auras.gd, g6_hooks.gd, morale.gd byte-identical to HEAD). Real cause: the measured enemy rifleman is shot dead at t7 (G7 head/torso wounds) and the test read his stale dict. tests/test_auras.gd: test_propaganda_buffs_friends_drains_enemies now runs with rules g7_wounds.enabled off (test_supply / test_squad61 pattern, section-2 quote), checks and placements unchanged. test_auras 2/0.",
+    "FFA medical (ORCH 2739 option d): sim/ai/ai_g5.gd casualty-care mode (care_needed: wounds on + human faction + st.cas >= CARE_LOSSES 3 infantry lost, PROVISIONAL). manage_hospital builds a field hospital at once in care mode (ignores HOSP_FROM_TICK / army size / defend / open sites / headroom), a full hospital follows on the G5 schedule; manage_production fields medic / ambulance early (before PROD_FROM_TICK, while defending) once a medical building is placed, without the army-size gate, and the first care unit is exempt from the support salvage share (salvage_scarce still applies). sim/ai/ai_util.gd counts st.cas (own infantry EntityDestroyed). test_ai 18/0 (FFA passes; first version with CARE_LOSSES 1 + any loss broke test_ai01_seed2, fixed). Probe .plan/r75_ffa.gd: END side0_attack_log=true first_offensive_cmd_tick=10521 killed=18 bled=8 (was: never by t14000, killed 34-49).",
+    "gen61 deliberate attack (ORCH 2844/2881 (a)): cause = Movement._separate shoves an idle formation member (unit 44, left standing on its own slot by the G7 group move) along the exact line of a walking probe unit (41), then the general re-ordered 44 back head-on into 41 -> permanent deadlock, probe centroid never within 12 of contact, no DELIBERATE ATTACK. formations7 route analysed and NOT applied (a slot move to its own spot arrives the same tick; counting it as moving locks it against the shove). sim/ai/general.gd: _away() (recon rest not re-ordered when already within arrive of op.from) -> flank PASS (probe flank 71.5 deg). Plus infil/raid 'form' phase (spread > form_r 8 -> gather at the rally point, route re-planned from the formed centroid via _infil_route, called off after form_ticks 1600; PROVISIONAL in RULES).",
+    "Targeted: test_wound7 17/0, test_medical 8/0, test_real61 8/0, test_ai 18/0, test_auras 2/0, test_ai_g6 9/0, test_ai_commanders 10/0, test_doctrine 9/0, test_ops 10/0, test_officers61 11/0, test_gen61 14/1 (infil only)."
+  ],
+  "remaining_steps": [
+    "1. ORCH ruling 2920 (iv), game fix in sim/ai/general.gd (+ squad gait hooks; keep the Sq7D.put hook after any write of f7_hd / gait / f7_hb / f7_clr): AI infil / exfil / supply-raid teams use G7 stealth: crouched / prone gait (lower silhouette) on the 'in' leg, hold fire until the 'hit' phase (hold_fire stance or order, released at 'hit', restored on 'out'), approach outside the defenders' view cones where terrain allows (wp_in chosen behind the known defenders' facing). Target: test_gen61::test_infil_exfil_returns_by_a_different_route (currently: infil goes in with 3 at the enemy start (81,81), one shot on the approach -> loss limit -> REFIT; G6.1 baseline met no fire there). Do NOT change the test setup or oracle (ORCH rejected setup routes; squad sight 8 < 14 tiles to the artillery anyway, see .plan/r76_sight.gd). Probe: .plan/r76_infil.gd (prints op/phase/hist per change).",
+    "2. Re-run test_gen61 (all 15), test_doctrine, test_ops, test_officers61, test_ai_g6, test_ai_commanders, test_squad7, test_sq7disp (gait hooks), test_ai.",
+    "3. Full suite DONE by REGRESS7-6 (C:/CODING/r76_full.log): RESULT pass=1008 fail=9 files=126, 0 script errors. Fails: test_ai::test_ai02_static_fairness (2 untagged reads in general.gd: FIXED after the suite with AI-FAIR tags, test_ai re-run 18/0), test_gen61 infil (step 1), test_hot_state x6 (GOLD / per-config HEAD hash constants only: threaded == unthreaded 2k_fight ce968814.. both, 2k_mixed 7d32bdf4.. both; test_perf_paths_on_off_hash_equal_threaded PASS; ORCH re-baselines), test_thread::test_snapshot_matches_world (timing 2838 vs 1100 us, run while other agents ran windowed playtests; re-run on an idle PC). Next full suite only after step 1.",
+    "4. Report in G7_COMMON format."
+  ],
+  "files_changed": [
+    "sim/ai/ai_g5.gd",
+    "sim/ai/ai_util.gd",
+    "sim/ai/general.gd",
+    "tests/test_auras.gd",
+    "(general.gd lines 632 / 832 AI-FAIR tags)"
+  ],
+  "probes": [
+    ".plan/r76_aura.gd (R76_HF=1)",
+    ".plan/r76_ffa.gd (R76_T)",
+    ".plan/r76_flank.gd (R76_BEL, R76_STUCK)",
+    ".plan/r76_infil.gd",
+    ".plan/r76_sight.gd"
+  ],
+  "gotchas": [
+    "Baseline worktree C:/CODING/g7_regress2_wt (55b4e04, G6.1) is handy for A/B: copy a probe into its .plan and drop G7-only calls (_face_away).",
+    "test_gen61 scenarios start with RECON IN FORCE (side 0 sees nothing at t1; spot_every 16, sight 8).",
+    "Movement._separate collinear shove of idle units: ORCH noted a sideways step-aside for G8; no movement/native change in G7.",
+    "tests/run.sh output only appears at the end when redirected to a file."
+  ]
+}

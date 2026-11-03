@@ -1,0 +1,30 @@
+{
+  "agent": "DRONEBAY7-2",
+  "reason": "finished within budget (final report delivered); handoff kept for continuity",
+  "spec": "docs/G7_REFERENCE.md 13.9c-27a (hive mind), 13.9c-27, 13.9c-13",
+  "files_owned_changed": [
+    "sim/systems/drone_bay7.gd (hive: threat board, layered screen, fire teams, kamikaze timing, rotation, commit, core ram, display_hive)",
+    "content/g7/defs_g7_dronebay.json (rules.g7_dronebay.hive, PROVISIONAL)",
+    "presentation/ui7/dronebay_card.gd (tasking line ALL IN / ALERT + SCREEN / STRIKE / REARM; 2x2 buttons)",
+    "tests/test_dronebay7.gd (+5 hive tests)",
+    "tools/pt7_dronebay7.gd (mixed attack, rockets, breach, formation shots, AUTO click scrolled into view)",
+    ".plan/db7_ab.gd (cost bench, new)"
+  ],
+  "test_dronebay7": "RESULT pass=15 fail=0 (fight hash twice same; value moves with other agents' live edits: 5c6ebcb4 then 975258c8 with no sim change of mine in between)",
+  "test_ui_fit": "RESULT pass=3 fail=0 (issues=0)",
+  "playtest": "pt7_dronebay7 r6 PLAYTEST RESULT pass=29 fail=0, 0 SCRIPT ERROR (r5 also 29/0)",
+  "bench": ".plan/db7_ab.gd 2k river_crossing_s 600 ticks: no facility 28.3 ms (bay: no state, one has() per tick); facility overrun by the 2k fight (96x96 map, no quiet site exists): bay 0.33-0.40 ms/tick (profiled) ~1.2-1.4%; the facility as a whole adds +14..33 ms (not the bay)",
+  "best_shots_looked_at": [
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r6/dronebay7_formation_z250.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r6/dronebay7_allin_z175.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r6/dronebay7_screen_z100.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/DRONEBAY7/r6/dronebay7_takeoff_z250.png"
+  ],
+  "pending_crs": [
+    "seq 6700 optional hive overlay (display_hive -> dashed screen ring + target links) for readability at zoom 1"
+  ],
+  "next_steps": [
+    "If ORCH applies the overlay CR: rerun pt7_dronebay7 and Read screen_z100 / formation_z100",
+    "Owner may set garrison size / hive numbers (all PROVISIONAL)"
+  ]
+}

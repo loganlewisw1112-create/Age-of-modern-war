@@ -1,0 +1,20 @@
+{
+  "agent": "PERF7I",
+  "reason": "near 70% projected budget (53 calls, est ~420k -> projected ~510k of 750k); core formation work done, gate pairs invalid (machine 50-100% CPU, 10-22 Godot procs)",
+  "formation_fix": {
+    "file": "sim/systems/formations7.gd",
+    "design": "big group (> cfg.chunk) whose shape overflows the map: _mass_line = chunks of <= 12 in the group's own shape (wedge) or, when that cannot fit, on line (squad assault formation); chunks abreast facing the enemy, widest front that fits within mass_margin 0.9 of the map, rest in ranks behind, odd ranks shifted half a chunk (staggered line); spacing sp -> base -> foot_min_sp / mass_veh_min_sp 2.0 (PROVISIONAL); block centred on the goal. slots(): when the armour massed, the infantry forms on the objective too (not behind the ~40-tile armour block). Toggles: mass_fallback (false = pre-PERF7H), mass_line (false = PERF7H boxes). last_mass = probe info only. Gate: infantry 67 chunks, line @1.1, 7 abreast, front 101 x depth 17 tiles.",
+    "engagement_600_ticks": {"G61": "kills 1005, shots 13685, first shot t55, alive t600 278/717", "G7_PERF7H_boxes": "kills 258, shots 1625, centroids never left the start (no fight)", "G7_mass_off_bug": "kills 1187, shots 11658", "G7_mass_line": "kills 1324, shots 13230, first shot t49, alive t600 109/567, centroids 3.6-8 tiles from centre (G6.1 8-16)"},
+    "band": "kills 0.75-1.5x G6.1, shots 0.75-1.25x, first shot <= G6.1+30 (tests/test_formations7.gd); kills/shot 0.10 in both G7 variants vs 0.073 G6.1 = wound rules, not formation",
+    "hashes": "gate scene 14f1c23c6ffd1d42 (perf7i_eng run + test_formations7 run, identical); mass_fallback=false still f8e094305be0e45b-path (corner slots 1688); small groups n=20 (10/side), 24 (12/side), 120 (60/side, fits) identical hashes on/off at ticks 100/200/300 (.plan/perf7i/h*.log)"
+  },
+  "tests": {"test_formations7": "4/0", "test_squad7": "23/0", "test_det7": "6/0", "test_wound7": "17/0", "test_squad61": "14/0", "test_perf_g6": "7/0", "test_hot_state": "11/6 (5 known + head_2k_mixed now moves: 2k_mixed fight groups mass); goldens not edited", "test_senses7/test_officer61": "not present in tests/"},
+  "pairs_final7i_INVALID_LOAD": {"ms_G61_G7": [[42.14,47.48],[35.13,60.59],[57.07,77.06],[59.57,63.05],[47.31,67.21],[46.56,59.54]], "ratios": [1.127,1.725,1.350,1.058,1.421,1.279], "median_pair_ratio": 1.315, "cpu": "24-100%, 6-22 Godot processes (other agents); not a valid gate measurement"},
+  "next_steps": [
+    "1. Rerun bash .plan/perf7g_pairs.sh 6 final7i2 res://.plan/sim_ab7.gd on an idle PC (<= ~10% CPU, 1-2 Godot procs).",
+    "2. If > 1.15x: perf7h_prof.gd --sub in both trees to see which system grew with the fair fight; exact headroom per PERF7H next_step 5 (Senses7._pass: _is_machine string compare per _profile call -> cache per faction per pass; cf() lookups per target; shrapnel _air Content lookup per candidate; _vis_sync per hit).",
+    "3. Measure tick-1 cost of _mass_line (pure, corner-bbox search, few iterations) if pairs show _cmds growth."
+  ],
+  "tools": [".plan/perf7i_eng.gd (engagement census, both trees)", ".plan/perf7i_diag.gd (order/slot census, --veh)", ".plan/perf7i_hash.gd (hash A/B by bench size)", ".plan/perf7i/ logs"],
+  "files_changed": ["sim/systems/formations7.gd", "new tests/test_formations7.gd", "new .plan/perf7i_*.gd (+ copies of eng/diag in the G6.1 tree .plan/)"]
+}

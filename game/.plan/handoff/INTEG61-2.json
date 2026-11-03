@@ -1,0 +1,24 @@
+{
+  "agent": "INTEG61-2", "gen": 2, "calls_used": 97, "tokens_used_est": 425000,
+  "done": [
+    "ORCH (b) cmd_toggle_label: command_layer.gd toggle button key badge from Hotkeys.badge(Hotkeys.key(\"command_mode\")) (F3), Hotkeys preloaded",
+    "ORCH (a) radio acks: test_audio61 line-199 check kept (no cmd_type -> silent, message reworded) + 4 new checks (move->moving, hold->holding, attack->ack, enemy issuer silent). test_audio61 10/0",
+    "plan61 flow: _focus() centres camera on the objective / quick-order cell before clicking (r3 diag: quick click landed at y=929 of a 900 px window). plan61 r4 PASS 66/0, 0 SCRIPT ERROR",
+    "bearer61 flow: Join squad button then LEFT click on the squad leader (centred); PLAYTEST-DBG blocks for train miss / join miss. r3 PASS 26/0 (r1: harness rifle_squad never queued, r2: join missed; both not reproduced in r3)",
+    "audio61 flow: fails if MatchView/Settings hooks are missing (no more attach-by-flow passes); new step audio_player_order_ack (mv.issue stop -> radio holding line). PASS 19/0",
+    "chain61 playtest PASS 19/0",
+    "REAL BUG fixed sim/systems/squad_ai.gd: kite/spread moved conceal_still units (sniper, SF, marksman, stalker) and broke their concealment -> they now hold (hid or conceal_still). test_units_g4b 10/0, test_units_g5 8/0 (were 9/1, 7/1), test_squad61 14/0, test_bearer61 9/0",
+    "UI fit: command_layer _fit_card(): CommandCard placed between LeftScroll/RightScroll (global rects), under top bar, above BottomPanel, beside or below the PAUSED banner; whole card scrolls (CommandCardScroll) on short canvases; plans list only as tall as its rows. fit tool cmd61_mode/cmd61_plans x 7 res x scales 1/0.75/1.5: FIT RESULT screens=42 issues=0",
+    "Tests green this gen: test_plans61 6/0 (after card change), test_ui6a 8/0, test_ui_panels 5/0, test_supply 10/0, test_art_machine 4/0, test_art_g3b 5/0, test_art_g6 7/0, test_content_g6 7/0, test_officers61 11/0, test_chain61 9/0, test_real61 7/0 (ui6a/ui_panels ran BEFORE the _fit_card change)"
+  ],
+  "remaining": [
+    "1. Rerun plan61 playtest after the CommandCard scroll change: \"$G\" --path . -- --ui-playtest=<abs>/.plan/shots/INTEG61 --ui-playtest-plan61 (timeout 900); expect pass=66 fail=0",
+    "2. Rerun test_ui_panels and test_ui6a (command_layer changed after their green runs)",
+    "3. Run --only=test_ui_fit once (heavy ~15 min, background + hb.sh). Before the card fix it was pass=2 fail=1 (scale test, 16 issues all CommandCard: PAUSED/RightScroll/BottomPanel). Expect 0 issues now; sq61_* and Settings Audio had no issues in the 3-res scale listing (.plan/shots/INTEG61/fit_scales.log)",
+    "4. Rerun test_companies + test_ai_g6 (squad_ai change; both were green in gen 1)",
+    "5. Hash report (gen-1 item 6): ai_army bearer hook, leader_of change and the squad_ai conceal_still hold all move AI-match hashes. Two identical soak runs (same seed, e.g. tools/soak.gd --seed=7 --max-ticks=12000) to give ORCH a stable new value; never edit goldens"
+  ],
+  "files_touched": ["presentation/ui6/command_layer/command_layer.gd", "tests/test_audio61.gd", "tools/pt61_plan61.gd", "tools/pt61_bearer61.gd", "tools/pt61_audio61.gd", "sim/systems/squad_ai.gd"],
+  "test_state": "compile clean after last edit (quit-after 60, 0 SCRIPT ERROR). Logs in .plan/shots/INTEG61/ (pt_plan61_r4, pt_chain61, pt_bearer61_r3, pt_audio61, tests1, ui_fit, fit_scales, fit_cmd61_r2)",
+  "gotchas": ["run.sh --only takes ONE file", "fit tool fast check: -s tools/ui_fit_test.gd -- --fit-scales=1,0.75,1.5 --fit-screens=cmd61_mode,cmd61_plans (~3 min)", "HUD root Control may be zero-size: use global rects", "post status every 5 calls (guard flagged LATE once)"]
+}

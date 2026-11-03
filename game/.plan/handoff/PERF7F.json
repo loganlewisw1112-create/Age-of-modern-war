@@ -1,0 +1,59 @@
+{
+  "agent": "PERF7F",
+  "reason": "budget.handoff_now at 68/140 calls (ORCH directive); fixes landed, gate measurements not done",
+  "bench": ".plan/prof7fac.gd (new): the DB7AB 2k fight (river_crossing_s, 600 ticks) with a per-system timer; --case=A|B|A2|C (C = facility in the fight + raiders, A2 = same without facility), --sub (SimIndex + Movement sub-phases), --wt (wall turret pick/can_engage probe), --census, toggles --nobucket --nolean --nogar --nogate (A/B of each fix)",
+  "scene_note": "the 24-tile 'quiet' site resolves to (48,48) = the map centre on the river crossing in every case; the compound splits the armies, so 1729 units are alive at tick 600 with a facility vs 827 without. Much of the +14..33 ms is shared systems (combat, movement, fog/senses, morale) doing 2x the live units, not facility code. Single runs on a shared PC: totals swing 23..42 ms for the same case; compare per-system numbers inside one pair.",
+  "cost_table_C_ms_per_tick_before_after": {
+    "sentinels7.gd": "3.19-3.56 -> 0.97-1.05 (threat() 1.97 -> 0.38-0.43, _alarm_scan 0.24 -> 0.09, aim 0.53 -> 0.25)",
+    "fac_drive7.gd": "1.78-2.01 -> 0.195 (_gate_clear full unit scan every tick 2.02 -> 0.025)",
+    "combat.gd cmb.ngrid": "4.93-4.98 -> 2.2-2.9 (no-candidate building pre-scan was shooters x ~115 buildings; A2 without facility 1.0)",
+    "fog.gd gather": "3.65-3.81 ms/call (1.8-1.9 ms/tick) -> 1.94 ms/call (~1.0 ms/tick); A2 native gather 0.56-0.8 ms/call",
+    "movement.gd gather": "native gather ran 5.5% of ticks -> 96%; GDScript gather 4.1-5.5 -> ng_call 2.96 (prepass ~1.7 + native ~1.2); movement total 9.35 -> 6.52 in the same pair",
+    "wallturret7.gd": "1.27-1.83, unchanged (TURRET7C live: CR seq 6981)",
+    "cn_facility.gd": "0.66-0.88, unchanged: 0.39-0.52 of it is the one-off compound raise at tick 10 (_discover -> _raise), steady _tick_fac 0.25-0.33",
+    "drone_bay7.gd": "0.28-0.42 unchanged",
+    "counterdrone.gd": "0.26-0.33 unchanged (TURRET7C owns it now)",
+    "base_state7 / engineer7 / garrison / veh_drive7": "< 0.1 each"
+  },
+  "fixes": [
+    "sentinels7.gd: threat(), _alarm_scan, _net walk only enemy owners' SimIndex lists (_enemy_lists; order-free (distance,id) minimum / sorted result); _aim tests range before can_target (both pure)",
+    "fac_drive7.gd: _gate_clear tests the last blocker first (w.cache.fd7_gc, never saved) and skips units outside the zone grown by the largest possible body (_gc_bound) with float compares before the per-unit test",
+    "combat.gd: SIM10K building pre-scan bucketed (8-tile buckets of the same float32 rects) above 16 buildings (_nores_bucketed; toggle Combat.bscan_bucket, debug Combat.bscan_debug)",
+    "fog.gd: SIGHT bit set only by the wall-walk (no aerostat): lean per-entity bonus = the same Elevation / WallWalk7 calls, only on raised / gate cells (toggle Fog.lean_wall_sight)",
+    "movement.gd _tick_held: one prepass hands the native gather the unit list without garrisoned units and foot/vehicle grids with gate / wall-walk cells cleared when every unit standing on one is passable there (_held_prepass; toggles Movement.held_gar_filter, Movement.held_gate_cells)",
+    "DET7 CR 6999 (hash moves on purpose): liveness skips in sentinels7 (_alarm_scan, _net), cn_facility (6 loops), fac_drive7 (_threat, _gate_clear0 scan, _suits)",
+    "bench-only SimIndex.pt labels (only when SimIndex.profiling): sentinels7 s7.* / s7x.*, cn_facility cnf.*, fac_drive7 fd7.* / fd7x.* (the s7x.* fine-grain ones can go)"
+  ],
+  "hash_evidence": {
+    "sentinels7 + fac_drive7": "C 600 ticks d648f5aaad7752a5 before and after (several runs)",
+    "combat bucket": "per-tick compare vs the plain loop: 0 mismatches over 200 ticks (--bdebug); C 200 ticks 8bb8bdbc3c733b7d on and off; C 600 d648f5aaad7752a5; later fd3d77b270a6ea72 on and off",
+    "fog lean": "C 200 ticks 8bb8bdbc3c733b7d on and off; C 600 fd3d77b270a6ea72 on and off",
+    "movement prepass": "C 600 ticks bf83d46678f2a824 with --nogate --nogar and with both on (first and final version)",
+    "det7": ".plan/det7_probe.gd --scen=wt -> [wt] RESULT same future for 300 ticks (tick 342)",
+    "base hash drift": "d648f5 -> fd3d77 -> 1b5f19 -> bf83d4 between runs came from the DET7 liveness skips and other agents' live edits (PATH7-2 fac_drive7 gate-commit, DET7 engineer7/senses7/...), never from a PERF7F toggle"
+  },
+  "tests": {
+    "test_lpperf7": "RESULT pass=9 fail=0",
+    "test_wallwalk7": "RESULT pass=11 fail=0",
+    "test_cnfac7": "RESULT pass=36 fail=0",
+    "test_sent7": "RESULT pass=11 fail=1 (test_balance_fight; CNROLE7 reported the same 11/1 at 23:56, seq 6800, before any PERF7F edit)",
+    "test_hot_state": "5 FAIL (gold_holds_flattened, head_10k, head_2k, native_on_off, sim_thread_on_off): TURRET7C saw the same pass=12 fail=5 at 00:06 (seq 6826) before my combat/fog/movement edits; my sentinels7/fac_drive7 edits do nothing without a facility. Golden re-baseline + the native on/off 2k_fight split are ORCH's / an owner's to chase"
+  },
+  "not_done": [
+    "frozen gate check: .plan/sim_ab7.gd 3 alternating pairs vs the G6.1 tree (C:/CODING/g7_regress2_wt/game) and the after-pairs of the C scene: NOT measured",
+    "wallturret7.pick: CR seq 6981 to TURRET7C (exact sort-then-check; optional per-turret scan stagger moves the hash)",
+    "movement prepass still ~1.7 ms in GDScript: next step = rts_core gather_held takes a gate-cell team mask (or a garrison flag) so no GDScript pass is needed (SCALE7 native stage/swap), or keep a per-tick garrisoned-id list in Garrison",
+    "fog: Senses7.tick inside fog.gd ~2 ms/tick in C (scales with live units); fog gather could go native with a per-entity wall-walk bonus input",
+    "combat cmb.ngrid: the bucket map is rebuilt every tick (could be cached on the SimIndex building list identity)",
+    "cn_facility: the one-off _raise (~300 ms at tick 10) is a hitch, not steady cost"
+  ],
+  "files_changed": [
+    "sim/systems/sentinels7.gd",
+    "sim/systems/fac_drive7.gd",
+    "sim/systems/cn_facility.gd",
+    "sim/systems/combat.gd",
+    "sim/systems/fog.gd",
+    "sim/systems/movement.gd",
+    ".plan/prof7fac.gd (new)"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "agent": "ART-F-2",
+  "reason": "budget.handoff_now directive (board seq 1765, projected 358200 / cap 500000) at calls ~29",
+  "done": [
+    "Reviewed predecessor files: g4_fort.gd build()/render_def/manifest/icons and g4_fort_contact.gd were already complete; only parse errors remained",
+    "Fixed 8 GDScript type-inference parse errors: g4_fort_lib.gd lines 170,177,193 (var c: Color), 221 (near: bool), 224-225 (xx/yy: int); g4_fort_contact.gd 80-81 (cx/cy: int); contact canvas widened 1290->1420 so icons fit",
+    "Human A open gate (g4_fort_a.gd _gate open leaves) now carries a team stripe (open states had empty team masks)",
+    "Smoke (.plan/shots/ART-F/smoke.gd): 735 images, 9 defs, 0 missing states, ~9.5 s; contact sheet .plan/shots/ART-F/fort.png viewed (made before the a_gate stripe fix)",
+    "Full generator run twice under art.gen_lock (locks released, seq 1759/1762 and run 2): GEN_ART wrote 1316 files; all 580 pre-existing non-manifest files byte-identical (md5_before.txt vs md5_after2.txt); manifest.json additive only: 0 changed/removed keys, 754 added (9 buildings + 9 icons + fort + 735 files)",
+    "tests/test_art_g4_fort.gd written (5 tests). First run 3/5: fixed a_gate open mask (art) and tower N/W-arm check (back arms hidden behind the tower core; test now checks front arms 2,4 for towers)",
+    "test_art_machine 4/4 green (incl. test_machine_buildings_and_icons). test_art: 0 fort failures left; remaining failures are only the 8 UNITS ids (a_apc a_sniper a_mortar a_combat_engineer b_flamer b_halftrack b_scrap_mech b_rocket_truck), ART-U dependency"
+  ],
+  "remaining": [
+    "1. bash tests/run.sh --only=test_art_g4_fort inside .plan/hb.sh; expect 5/5 (assets already regenerated with the fix)",
+    "2. Re-run smoke: godot --headless --path . -s .plan/shots/ART-F/smoke.gd (refreshes .plan/shots/ART-F/fort.png with the a_gate stripe); view it with Read",
+    "3. Full suite once inside .plan/hb.sh: bash tests/run.sh; expected failures only test_art (8 UNITS ids, ART-U) unless peers fixed them",
+    "4. Post CHANGE_REQUEST to the art_catalog/renderer owner (orch): AC.entity_sprite for kind building should pick state conn_<e.conn> (+ '_open' for gates when open, + '_damaged' below ~50% hp) when the manifest entry has key 'fort'; falls back to 'built' today",
+    "5. post done; final report"
+  ],
+  "files_touched": ["tools/art/g4_fort_lib.gd", "tools/art/g4_fort_contact.gd", "tools/art/g4_fort_a.gd", "tests/test_art_g4_fort.gd", "assets/generated/buildings/{9 fort defs}_*.png (+_mask)", "assets/generated/icons/{9 fort defs}.png", "assets/generated/manifest.json (additive)", ".plan/shots/ART-F/*"],
+  "test_state": "test_art_machine 4/4 PASS; test_art 4/7 (fails only on 8 UNITS ids); test_art_g4_fort 3/5 before the two fixes, not yet rerun after them",
+  "gotchas": [
+    "A script load failure inside a -s SceneTree _init never reaches quit(): godot hangs. smoke.gd now guards can_instantiate(); always wrap godot in `timeout`",
+    "Untyped canvas params (cv) make cv.get_px()/cv.w Variant: use explicit types, not :=",
+    "Full generator takes 75-130 s; take art.gen_lock first"
+  ]
+}

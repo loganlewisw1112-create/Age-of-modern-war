@@ -1,0 +1,20 @@
+{"agent":"CARDBAR8B","status":"PARTIAL (budget handoff, ~72%)",
+"results":{
+ "test_ui_fit":"RESULT pass=6 fail=0 files=1 (687 s)",
+ "test_cards8c":"RESULT pass=7 fail=0 files=1",
+ "flow cards8a":"PLAYTEST RESULT pass=29 fail=0, 0 SCRIPT ERROR",
+ "flow cards8b":"PLAYTEST RESULT pass=34 fail=0, 0 SCRIPT ERROR (after stash fix; before: 27/7)",
+ "flow cards8c":"PLAYTEST RESULT pass=32 fail=0, 0 SCRIPT ERROR (before: 29/3)",
+ "flow dronebay7":"PLAYTEST RESULT pass=33 fail=0, 0 SCRIPT ERROR (before: 32/1 card_all_in)",
+ "flow lpres7":"PLAYTEST RESULT pass=20 fail=4, 0 SCRIPT ERROR (click_recall/auto_off/release/auto_on: button 'hidden' after reveal) - this run was STARTED AFTER the stash fix, so the rename is not the (whole) cause",
+ "flow supply8 (new)":"PLAYTEST RESULT pass=14 fail=1, 0 SCRIPT ERROR; only miss supply8_order: OrderButton disabled 'Needs 4 Facility Engineers free (3 free)'"},
+"fixes":[
+ "presentation/ui7/cardbar8.gd: cause of cards8b/8c misses (suit_repair, veh_repair, recall, convoy, decon, skip, air_recall, aid_evac) was the shared hidden stash: Godot renamed the 2nd card's RepairButton/RecallButton on reparent, so find()/tab_for() missed them (NOT the unit_id -1 theory). Now one holder per card (_stash_of); names preserved.",
+ "tools/pt7_dronebay7.gd: card_all_in now reads the card text the moment the hive reports mode commit (sim drops back to 'alert' within the 2.5 s wait; same assertion, begins_with 'ALL IN'). Sim summary vs card verified consistent."],
+"new_files":["tools/pt7_supply8.gd (magazine select by click, 4 tabs by click, PRIORITY, AMMO MIX type+up, ORDER DROP, watches phases out/load/return, asserts delivered/stock/carrier home/released; mv.speed 6 while waiting)","cb8b_flows.sh helper at .plan/cb8b_flows.sh (runs flows sequentially, logs .plan/cb8b_<flow>.log, summary .plan/cb8b_summary.log)"],
+"next_steps":[
+ "supply8: the 4 engineers are not all free when ORDER is pressed (3 free; cn_facility crew probably busy building/repairing). Fix in flow: wait_until Engineer7.engineers_of free count >=4 / reason from Supply8.validate_command == '' (up to ~60 s) before pressing ORDER; do not weaken assertions. If crew never reaches 4, probe and warn orch (sim-side).",
+ "lpres7: debug why tab click leaves buttons hidden: print hud.cardbar.tab_for(card,'RecallButton'), tab_button names (tabs RESERVE / AUTO RELEASE) and whether the card is the active one in LP; check cb8b_lpres7.log. Possibly tab strip not shown because LP barracks also has regular buttons, or tab_btns text differs (e.g. uppercase/trim). Existing log: .plan/cb8b_lpres7.log",
+ "Screenshots (task 4) NOT started: .plan/shots/CARDBAR8B/ has only per-flow dirs (cards8a/b/c, dronebay7, lpres7, supply8 flow shots). Need an in-match Last Protocol shot per building with bottom bar + tab open (cc, tower, gate, magazine, armory, garage, barracks, reserve, air pad, aid, lab, drone bay), look at each, then post fact shots.best. Flow shots like cards8a_ops_card/garage_card in those dirs may serve as a start.",
+ "No headless re-run of test_ui_fit/cards8c after the stash fix (run both once more)."],
+"files_changed":["presentation/ui7/cardbar8.gd","tools/pt7_dronebay7.gd","tools/pt7_supply8.gd (new)","tools/pt8_cardbar.gd (unchanged)"]}

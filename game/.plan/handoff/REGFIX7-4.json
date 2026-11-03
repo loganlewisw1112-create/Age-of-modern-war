@@ -1,0 +1,34 @@
+{
+ "agent": "REGFIX7-4",
+ "stopped_on": "budget.handoff_now (71%), calls ~78/140",
+ "items": {
+  "1_turret7": {
+   "runs": "r4a 23/2 (apc_rear_gun: rear 0, other guns 0; muzzle_on_foe_side cos -1.00), r4b 25/0, r4c 25/0, r4d 25/0, r4e 24/1 (first_shot_a_popup_turret: swung 83 of 89 deg, 6.0 deg off, under concurrent headless test load), r4f 25/0 (after the popup oracle fix, under load)",
+   "popup_cause": "oracle sampling, not sim: the flow read each shooter's target once per frame (tpos); a slow frame holds several sim ticks, so the target it compared the lay against could be a foe other than the one the mount actually laid on and shot (sim traverse7.lay enforces 5 deg). Fix: tools/pt7_turret7.gd records each shooter's first ShotFired target (mv.world_events, tick exact) and measures off-target against it; prints 'first_shot_target' when the frame-read target differs. Check thresholds unchanged.",
+   "apc_rear_cause": "NOT FOUND (could not reproduce in 5 more runs). Two modes seen: r2a 'other guns 200' (front pod took every shot) and r4a 'other guns 0' (no drawn APC shot at all). Leading hypothesis for mode a: apc_gun7.on_shot picks the gun with the DRAWN hull face (s.face = motion out_face), the flow forces sim facing 0 with ae.facing = 0.0 directly; if the drawn face lags/differs (APC moved briefly after spawn_team), the front pod 'bears' and the rear is blind -> front takes all. Check motion.gd step() S_FACE vs sim facing for a stationary vehicle whose facing was written directly. Mode b unexplained.",
+   "diag_added": "tools/pt7_turret7.gd prints 'apc_rear_diag' (sim fires counted from cd_ticks restarts vs drawn apc shots, order, target, moving, cd, foe alive/hp/dist, gun state seen/face, fx muzzle7 counters) only when rear == 0 or front > 0; 'apc_front_shot' kept.",
+   "open": "run turret7 until apc_rear_gun fails again, read apc_rear_diag, fix at the cause; then 3 consecutive green runs (r4d, r4e(apc part ok), r4f were green but the popup fix landed between r4e and r4f, so only r4f counts on the final tree)"
+  },
+  "2_muzzle7": {
+   "stage9_cause": "the run's first click (_pick_option, 1.5 s after start) sometimes produced no popup (log: ok=false items=4 with no pick_option_miss print = popup not visible after the click). Fix: tools/ui_playtest.gd _pick_option clicks the OptionButton up to 3 times until its popup shows (prints PLAYTEST-DBG pick_option_no_popup per retry). The item is still picked by a real click.",
+   "apc_both_guns_cause": "flow loop stop condition: the APC loop ended after 5 screenshots; in r3b the RWS and the rear pods used them (rear 6, RWS 7) before the front pod fired -> front 0. Across runs the front pod fires (a: 102, r2a: 26, r3a: 1, r3c: 29). Fix: tools/pt7_muzzle7.gd keeps looping (<= 40 s as before) until front, rear and RWS have each fired; a gun kind's first flash may take a 6th+ screenshot. Check unchanged.",
+   "result_before": "muzzle7_r3c 20/1 (g6_slot0_stage9_click); muzzle7_r3b 18/3 incl apc_both_guns front pod 0",
+   "result_after": "NOT RUN windowed (budget). pt7_muzzle7.gd parse-checked headless only.",
+   "open": "2 consecutive windowed muzzle7 runs"
+  },
+  "3_cnops7_xp": {
+   "cause": "two parts. (a) real bug in sim/systems/cn_progress7.gd: kill credit came only from st.hits sampled every 10 ticks (_sample_hits); an enemy dropped within a few ticks of its first hit (WOUND7 zone kills, uncommitted wounds/combat work) was never credited to anyone. (b) test setup: the rifleman spawned 3 tiles from the dismounted team was shot dead by team mate op 49 at tick 4, so the staged kill never happened (probe: Damage 41/45/49 then EntityDestroyed at t4).",
+   "fix": "cn_progress7._events: a 'Damage' event whose shooter is a registered CN team member/APC records st.hits[target] = shooter at once (enemy targets only; only runs when CN state exists). tests/test_cnops7.gd: team holds fire (cd_ticks NOFIRE) while the veteran kill is staged (check unchanged); new test_quick_kill_credited_to_the_shooter (fails without the fix: got 0, expected 1 - A/B done).",
+   "result_before": "RESULT pass=9 fail=1 (kill credited to the operator got 0)",
+   "result_after": "RESULT pass=11 fail=0"
+  },
+  "4_reruns": {
+   "unit_tests_final_tree": "test_turret7 18/0, test_muzzle7 8/0, test_regfix7 3/0, test_cnfac7 36/0, test_sent7 12/0, test_cnops7 11/0, test_apcmov7 16/0",
+   "windowed_not_done": "seq7, cnops7, sent7, dronebay7, ciws7 once each; muzzle7 x2; turret7 until fail + 3 green"
+  },
+  "5_prints": "kept: turret7 apc_front_shot / apc_rear_diag / first_shot_target (only on failure paths), pick_option_no_popup (only on retry). None noisy on green runs."
+ },
+ "files_changed": ["sim/systems/cn_progress7.gd", "tests/test_cnops7.gd", "tools/ui_playtest.gd", "tools/pt7_turret7.gd", "tools/pt7_muzzle7.gd"],
+ "hash_note": "cn_progress7 change writes st.hits (saved state) only when CN teams exist; hashes of CN matches may move, non-CN matches unchanged. Not A/B'd against test_hot_state.",
+ "logs": ".plan/regfix7_logs/turret7_r4a..r4f.log"
+}

@@ -1,0 +1,37 @@
+{
+ "agent": "LPMAP7",
+ "gen": 1,
+ "reason": "budget.handoff_now at 71%",
+ "done": [
+  "sim/maps/last_protocol.gd: id last_protocol, 512x512, asymmetric hand-authored layout generated deterministically (seed moves only meanders/scatter/world traces). gen 0.65 s, validate 0.4 s. Own validate(m) (size, height_issue non-symmetric, spawn footprints, layout_issue, foot+vehicle reach to every target via targets(m), open ground >= 0.55). 13 seeds validated.",
+  "map.lp (ver 1) exactly the shape agreed with LPMODE7 on the board (interface.lp_layout; fact lpmap.layout posted): player_spawn (78,256), machine_spawn (480,356), base{center (104,256), rings outer half 70 / economy 55 / core 37 {name,half,rect,wall,gates(3x3 cells N/E/S),towers,turrets 2x2,bunkers 2x2,plots[{cell,kind,size}]}, facility (88,240) 32x32 compound, facility_site Rect2i(84,236,40,40) reserved per owner order (dropship growth), facility_gate, airfield{origin,strip,tower,hangars x3,pads x2}, roads, hq}, cores [(404,44),(420,468),(454,254)] last walks, core_zones, walker_core 2, nests x10, creep blobs, machine_bases x22, fobs x5 {id,name,cell,rect,machine_held}, relays x7, dam{cell,cells 18,flood Rect2i(222,132,110,40),route b_valley}, bridges x7 (b_main_c/n/s, b_trib, b_valley, b_south_w, b_south_e), power{cell (262,464),rect}, secrets{cache,lost_squad,origin,mech}+secrets_info, dead_zones x3, tunnels x4, urban x5, world{animals 28, vehicles 40, camps 12, beacons 8}",
+  "counts: outer wall 492 + towers 59 + turrets 43 + bunkers 11 + plots 6 (sam/radar); economy wall 394 + towers 37 + turrets 16 + plots 48 (ECON_MAX, PROVISIONAL); core wall 257 + towers 30 + turrets 13 + plots 25",
+  "presentation/view/world7_layer.gd: creep-warped terrain shader (forest lattice, dark water, nanite growths on buildings, grey ground), view-side warp age per creep cell (striped, sim-time), purged cells recover (RECOVER_S 240), CanvasModulate + haze CanvasLayer(1) easing with creep coverage, herds that flee fights/creep, abandoned vehicles, camps, blinking beacons; culled + zoom LOD. Hidden/free without creep and map.lp.",
+  "tests/test_lpmap7.gd 8 tests: 8/0 TESTS OK",
+  "tools/pt7_lpmap7.gd written and loads (can_instantiate true); NOT run (map not registered yet)",
+  "CRs posted: change_request.lp_map_register (map_gen MODULES + validate dispatch + maps.json entry with skirmish:false, mode:last_protocol), change_request.world7_layer (match_view wiring)"
+ ],
+ "remaining": [
+  "1. Wait for ORCH: grep -n last_protocol sim/map_gen.gd content/maps.json presentation/match_view.gd. Entry needed: {\"id\":\"last_protocol\",\"name\":\"Last Protocol\",\"size\":\"xxl\",\"w\":512,\"h\":512,\"max_sides\":2,\"spawns\":[[78,256],[480,356]],\"spawn_sets\":{\"2\":[0,1]},\"skirmish\":false,\"mode\":\"last_protocol\",\"blurb\":\"Last Protocol only: your three-ring base and the Counter-Nanite facility against the Machine across a 512x512 world.\"}; map_gen MODULES \"last_protocol\": preload(\"res://sim/maps/last_protocol.gd\"); validate(): if id == \"last_protocol\": return MODULES[\"last_protocol\"].validate(m)",
+  "2. bash tests/run.sh --only=test_lpmap7 (test_lpmap7_registered_in_map_gen then checks MapGen dispatch + skirmish:false/mode) and --only=test_maps, --only=test_scale7 (maps.json consistency)",
+  "3. Run the flow windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/LPMAP7\" --ui-playtest-lpmap7 (timeout 900); must print PLAYTEST RESULT all ok, 0 SCRIPT ERROR. lpmap7_base_prebuilt needs > 300 player buildings (probe: 1325).",
+  "4. Perf: tools/bench.gd --map=last_protocol fps cases (2k on screen p10 >= 60, 10k zoomed out p10 >= 30) with the pre-built base; report. Sim probe (headless, not idle PC, other agents running): .plan/lpmap7/simcost.gd -> setup 348 ms, 1325 buildings (1143 walls/towers/gates), 251 units, creep 0.405 at start / 0.485 after 300 ticks, step avg 31.8 ms p50 29.1 p95 43.0 max 274. If walls dominate, LPMODE7 can place every 2nd wall cell (or ORCH/LPMODE7 decide) - not measured which system costs most (use bench --breakdown).",
+  "5. Report fps numbers and coverage; adjust ECON_MAX / creep blob radii only if a measured target fails"
+ ],
+ "files_touched": [
+  "sim/maps/last_protocol.gd",
+  "presentation/view/world7_layer.gd",
+  "tests/test_lpmap7.gd",
+  "tools/pt7_lpmap7.gd",
+  ".plan/lpmap7/ (probe.gd, load.gd, simcost.gd scratch probes)"
+ ],
+ "test_state": "test_lpmap7 8/0 TESTS OK (run 2026-10-27 ~02:4x); flow not run; bench not run",
+ "gotchas": [
+  "the map is NOT point-symmetric: MapCheck.validate must not be used for it (map_gen dispatch CR)",
+  "MapUtil painters mirror every write: last_protocol.gd uses its own non-mirrored painters (_rect/_disc/_road/_site)",
+  "lp_test512 is skirmish:false/mode dev now: tests need cfg.dev_map = true",
+  "_site clears water: never put a site on a river (machine_bases were moved off the tributary)",
+  "world7 warp age is a view clock (180 s to full warp): the flow advances it directly for its shot and logs that",
+  "PROVISIONAL values: ECON_STEP 8 / ECON_MAX 48, creep blob radii (cores 60, nests 44, bases 40, spawn 50, dead zones 30), WARP_FULL_S 180, RECOVER_S 240, FADE_S 600, sky curve smoothstep(0.12, 0.80, coverage)"
+ ]
+}

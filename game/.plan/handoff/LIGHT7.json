@@ -1,0 +1,62 @@
+{
+ "agent": "LIGHT7",
+ "reason": "budget.handoff_now (guard seq 5559, calls 63, est ~530k of 750k)",
+ "brief": ".plan/agents/prompts/G7-LIGHT7.md (spec 13.9c-24, 13.9c-24a, 13.9c-18)",
+ "files_changed": [
+  "presentation/view/fac_atmo7.gd (LIGHT7 section after _dot: lighting plan _plan_lights, _occ_rects/_sil/_clip/_mk_pool/_draw_pool, _draw_fixtures, _draw_flush, _glow_fixtures, _plan_base/_draw_base_fixtures/_glow_base, new _draw_glow, _beacon_flash (replaces _beam_rot wedges), _searchlight(g,..) thin beam + clipped spot, _ground_hid + g.edge_hid; garage spill clipped; _facade_light draws cached clipped g.fpool; mist banks inset 0.5 and off the decon hall roof; _refresh redraws over at 2 Hz at night for base lamp posts)",
+  "tests/test_light7.gd (new: fixtures mounted on surfaces, no light pool over a building silhouette + no holes, light count bounded, hash on==off)",
+  "tools/pt7_atmo7.gd (light_day_yard z2/3, light7_plan + light7_night_lit probes, light_night_yard z1/2/3, light_night_pads z2/3, light_night_wall_s z2/3, light_night_planning z3, light_night_gate z1/2, compound_dusk z1/2/3, alarm_night z1/2/3)"
+ ],
+ "evidence": {
+  "test_light7": "RESULT pass=4 fail=0",
+  "test_atmo7": "RESULT pass=8 fail=0",
+  "pt7_atmo7_windowed_r2": "PLAYTEST RESULT pass=26 fail=0, 0 SCRIPT ERROR (.plan/shots/LIGHT7/r2/run.log); light7_plan fixtures {wall_in 3, wall 11, gate 2, tower 16, pole 4, door 19, obst 4, deck 6}; lights 164 (cap 320), fixtures 65"
+ },
+ "next_steps": [
+  "1. Apply ORCH seq 5289 CR: fac_atmo7.gd BLD_Z \"armory\": 41.0 -> 114.0 (Suit Foundry roof 11.6 m; this ALSO fixes the light pool showing on the foundry roof in r2 light_night_yard_z2 / light_night_planning_z3, since the occluder height comes from BLD_Z); tools/art/g7_atmo7.gd line 36 armory board -> [\"SUIT FOUNDRY\"], regenerate g7_atmo7 art.",
+  "2. WALL7-2 fact wall7.heights seq 5356: wall walk deck 3.66 m, battlement top 4.66 m (46 px), inner walkway lamps in the art at 3.17 m every 4 m, junction mast floodlight 5.44 m, tower obstruction lamp 12.78 m on a mast. Re-seat: WALL_CAP_Z (3.78 m) -> mount wall floods / alarm wall lamps on the battlement top 4.66 m (or on the inner face at the art's 3.17 m lamp spots), occluder height for the wall strips 46 px and half thickness ~1.45 m/4 = 0.36 tile (WALL_HT); MAST_TOP_Z 12.7 -> 12.78 m (LIFE7 obstruction_lamp follows the const; test_atmo7 test_light_anchors checks it). Update test_atmo7 wall-lamp height check only if it pins 3.78 (do not weaken; change the expected value to the posted art height with the fact cited).",
+  "3. Investigate the black floating parallelogram + lit trapezoid west of the command centre (r2 atmo7_light_night_planning_z3.png at x 250-630 y 110-360; atmo7_garages_night_z3.png at x 900-1050 y 240-340): appears at night only in LIGHT7 runs (not in POLISH7-5 atmo7b garages_night_z3). Suspects: a west-garage door_open spill polygon (fac_atmo7 garage spill now clipped by _clip, check vertex colours / clip output order) or LIFE7 garage door / drone-bay spill (fac_life7 _draw_glows lines ~1564-1576, POLISH7-5 owner). Bisect with ATMO7_OFF=1.",
+  "4. Change requests not yet sent: (a) POLISH7-5 / fac_life7.gd line 81 MAST_TIPS [(-71,-87),(-60,-89),(-50,-90)] were measured on the old 4.4 m ops roof; the command centre is now 15.5 m brim / EW mast 25.6 m (fact facb7.zone_heights seq 4583) -> re-measure on a night z3 shot so the comms-mast blinks sit on the pole tips, not on the facade; (b) fac_seq7.gd _draw_glow scramble beacons: pad-corner beacons at 6 px with no post (line ~1400 `pts.append([c, 6.0])`) and the translucent ground wedge in _beacon (line ~1517): give them a post / mount on the pad edge light housing, drop the wedge.",
+  "5. Re-run windowed pt7_atmo7 through hb.sh, Read every new PNG, post fact shots.best."
+ ],
+ "not_done": [
+  "foundry height CR",
+  "wall height re-seat to WALL7-2 art",
+  "black panel artifact",
+  "LIFE7/SEQ7 CRs",
+  "art regen"
+ ],
+ "inventory_before": {
+  "fac_atmo7": [
+   "tower floodlight head: a dot at tower centre TOWER_Z-10 inside the cupola (floating) -> removed; the tower art's searchlight head (SEARCH_OFF, 11.05 m) is now the parked yard flood",
+   "tower flood pools 120 px additive over everything (glow on roofs) -> clipped against building/garage/tower/wall/checkpoint/link-wall silhouettes",
+   "door lamp dots 0.25 tile in front of the facade at 25 px (floating) -> bulkhead hood+lens ON the facade line above the door, scallop wash on the wall, clipped ground pool",
+   "facade ground pools over buildings -> clipped (cached)",
+   "garage door spill quads over the east garages' own roofs (see-through bands) -> clipped with per-vertex fade",
+   "pad/helipad edge dots: blinking + white chase, drawn over buildings in front (green dots on the command-centre facade and workshop roof) -> steady green, night/dusk only, hidden where a silhouette covers them, flush housings on the ground layer",
+   "rotating-beacon beam wedges (translucent fans) -> lens flash + halo only; red ground pulse at tower foot clipped",
+   "searchlight cone 34 px wide + unclipped spot -> thin faint beam + clipped spot (lockdown only)",
+   "base building lamp: dot 18 px in the air with no fixture -> 4 m lamp post at the front corner, clipped pool",
+   "Last Protocol street/flood/pad lights: pools with no fixture -> 5 m street poles, 9 m masts (2 heads) inside the tower/gate they serve, flush pad lights",
+   "decon mist banks over the roofed decon hall -> removed there; banks inset 0.5 tile inside open zones, smaller puffs"
+  ],
+  "fac_atmo7_kept": [
+   "tower obstruction-lamp masts (POLISH7-5)",
+   "wall alarm lamp housings on WALL_CAP_Z (stale height, see next_steps 2)",
+   "alarm beacon sprites on tower roof corner / gate bastions / checkpoint parapet"
+  ],
+  "added_fixtures": "wall-top floods every other wall section angled out (pool on the clear zone) or in over the pads; 2 ECP floods on the outer gate bastions over the approach; 4 lane-kerb 6 m area poles; 19 bulkheads (doors + garage doors); 4 red obstruction lamps on the command-centre brim corners; 6 green TLOF lamps on the barracks roof pad; colour temps 5000 K area / 3000 K bulkhead",
+  "fac_life7 (POLISH7-5)": "obstruction lamp on mast tip ok; MAST_TIPS on the planning roof stale (CR not sent); garage/drone-bay spill rects unclipped; ops window glows ok",
+  "fac_seq7": "scramble pad-corner beacons at 6 px with no post + translucent wedge (CR not sent)",
+  "sense_layer (SENSE7)": "cone fan = selected-soldier view cones; CR seq 5244, applied by ORCH seq 5250"
+ },
+ "foundry_relay_seq_5289": "NOT applied: BLD_Z armory 41 -> 114 and g7_atmo7 plaque ARMORY/SUIT BAY -> SUIT FOUNDRY + art regen still to do (next_steps 1)",
+ "open_extra": [
+  "fixture art: door lamps / floodlights / poles are primitive rects+lines, not g7_atmo7 sprites at the ARTCN7 detail level",
+  "lit window panes: windows rely on building art + LIFE7 ops-window glows; no per-building lit panes at night"
+ ],
+ "best_shots": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7/r2/atmo7_light_night_yard_z2.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7/r1/atmo7_compound_night_z1.png"
+ ]
+}

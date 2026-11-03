@@ -1,0 +1,57 @@
+{
+  "agent": "ACCURACY8",
+  "brief": "13.9c-49 realistic per-shot hit chance (deterministic)",
+  "compiles": true,
+  "built": "sim/systems/accuracy8.gd: Accuracy8.mult(w,e,s,t) multiplies the weapon accuracy in Combat._fire (one line after Wounds.acc_mult + one preload). Same single w.rng hit roll. Content content/g7/rules_g8_accuracy.json rules.accuracy8 (all PROVISIONAL). Saved entity ints a8t/a8k/a8l (sight picture). Env ACCURACY8_OFF=1 (old path) / ACCURACY8_SHADOW=1 (computed, returns 1.0) for A/B only.",
+  "factors_reused_not_duplicated": "suppression/pinned (Status.accuracy_mult 0.8/0.5), fatigue + rank/traits (Morale.acc_mult -> Fatigue/Veterancy), arm wounds (Wounds.acc_mult), dead sensors (Status), G6 hooks (cohesion, loadouts, designation, auras, airdef). Senses7 light / smoke clouds / silhouette numbers / optics_defs / thermal_defs reused.",
+  "factors_new": {
+    "range": "eff = range x eff_frac[class] (small_arms 0.6, sniper 0.8, at 0.6, ...); inside x(1+0.15(1-d/eff)); past it down to x0.55 at max range (pow 1.5)",
+    "flight_time": "tf from rounds8 v0/k (exp drag); x1/(1+0.15 tf^2); crossing lead error x1/(1+(0.3 speed tf |sin| / half_size)^2), speed = def speed x mvm x 1.8 m/tile",
+    "shooter_moving": "infantry x0.5 + aim restarts; stabilised vehicle (heavy/medium armour, ifv, def.stab) x0.85; unstabilised x0.55 + aim restarts; Machine x0.75",
+    "target_moving": "inf x0.9, vehicle x0.92 (+ lead error)",
+    "sight_picture": "aim time on this target since first shot (lost after 6 s / new target): iron snap 0.65 -> steady 1.05 over 2 s; optics 0.7 -> 1.15 over 1.2 s; vehicles/buildings/Machine fire control 0.8 -> 1.05 over 1.5 s",
+    "visibility": "night lerp(0.35,1,light) (thermal/NVG/Machine: max(0.9,light)); smoke on line x0.25 (thermal x0.85); past shooter's own sight x0.8..x0.75; infantry target silhouette^0.5 (prone 0.45, crouch 0.7, forest 0.6); weather w.cfg.weather (fog 0.6, dust 0.7, rain 0.85...; no weather system exists)",
+    "under_fire": "fresh hit within 2.5 s (last_hit_tick) inf x0.7 / veh x0.9; concussion daze e.b8d > tick x0.55 (BLAST8 asked via board need concussion_daze to write b8d; absent = no effect)",
+    "posture": "infantry static: prone x1.12 or braced (garrison / in_cover / deployed) x1.10, the larger",
+    "training": "tier by def.training or prefix: militia 0.88, regular 1.0, veteran 1.06 (g7_cn, a_sniper, b_marksman), elite 1.12 (g7_sent, g7_op_)",
+    "skipped_x1": "indirect, guided, air shooter or air target (Airdef rules), melee/flame/demolition/crush/torpedo",
+    "clamp": "0.02..1.35"
+  },
+  "hit_table_full_chain": {
+    "rifleman static vs moving @4": "0.759 vs 0.235",
+    "REAL _fire rifleman->mbt @4 static vs moving (400 shots)": "0.752 vs 0.223",
+    "MBT stabilised static vs moving": "0.832 vs 0.707",
+    "carrier unstabilised static vs moving": "0.724 vs 0.303",
+    "snap first shot vs aimed 3 s": "0.470 vs 0.759",
+    "calm vs suppressed vs pinned": "0.759 / 0.607 / 0.380",
+    "day vs night light 0.1": "0.759 vs 0.315",
+    "clear vs smoke": "0.759 vs 0.190",
+    "standing vs prone shooter": "0.624 vs 0.699 (braced 0.687)",
+    "target standing vs prone": "0.759 vs 0.509",
+    "target static / radial / crossing @5": "0.624 / 0.557 / 0.411",
+    "range 1.5 vs 5.8 tiles aimed": "0.856 vs 0.471"
+  },
+  "misses_fly_on": "NOT added: the existing code has no stray-hit path for direct fire (a miss scatters the tracer end +-0.6 and Damage.near_miss suppresses enemy infantry within 1.5 of the target; only CIWS has straight streams). Adding stray hits needs damage.gd (LETHAL8B) + an extra rng draw; left for ORCH to decide.",
+  "tests": {
+    "test_accuracy8": "RESULT pass=9 fail=0 (new)",
+    "test_lethal8": "13/0", "test_damage": "10/0", "test_wound7": "17/0", "test_real61": "8/0", "test_squad61": "14/0",
+    "test_det7": "6/0", "test_determinism": "5/0", "test_g2_scenarios": "7/0", "test_mil": "13/0", "test_wallfire7": "8/0",
+    "test_sent7": "13/0 (incl. test_balance_fight; balance numbers not captured, outcome unchanged = pass)",
+    "test_ciws7": "14/2 and test_turret7 15/3: IDENTICAL failures with ACCURACY8_OFF=1 -> not from this change (pre-existing/concurrent)",
+    "test_hot_state": "11/6: all 12 FAILURE lines are golden hash mismatches (GOLD, GOLD_FLAT, per-path HEAD) - expected, owner-approved; ORCH re-baselines. Second stability run NOT done (test_accuracy8 determinism: same seed same shots/hits/hash)."
+  },
+  "perf": {
+    "perf7g_pairs 6 accuracy8 (G6.1 vs G7 tree, machine loaded 6-12 godot procs)": "ratios 1.45 1.64 1.47 1.41 1.27 1.55 (median ~1.46x) - OVER 1.2x for the whole tree; lethal8b earlier ~1.03-1.10x",
+    "own A/B in G7 tree after hot-path optimisation, only clean pair (4 procs)": "off 31.78 ms, shadow 32.07 ms (+0.9% pure compute), on 36.92 ms (+16%): the extra is behavioural (fewer hits -> longer fights, more shots + near-miss queries), not the per-shot cost. Other pairs too noisy (11-21 godot procs).",
+    "verdict": "NOT VERIFIED <= 1.2x; needs a quiet-machine re-run"
+  },
+  "screenshots": "none (sim-only change, nothing visible)",
+  "files_changed": ["new sim/systems/accuracy8.gd", "new content/g7/rules_g8_accuracy.json", "new tests/test_accuracy8.gd", "sim/systems/combat.gd (preload + 1 line in _fire)", ".plan/acc8_batch.sh, .plan/acc8_perf.sh, .plan/acc8_ab.sh (scratch)"],
+  "next_steps": [
+    "On a quiet machine: bash .plan/perf7g_pairs.sh 6 accuracy8 res://.plan/sim_ab7.gd and bash .plan/acc8_ab.sh; if the behavioural +16% pushes the tree over 1.2x, ORCH decides (e.g. lower near_miss cost on misses, or soften snap/move numbers)",
+    "ORCH: re-baseline test_hot_state (two identical runs)",
+    "BLAST8: write e.b8d daze tick (board need concussion_daze)",
+    "Decide on stray hits for misses (damage.gd, LETHAL8B)",
+    "Optional: rerun test_sent7 capturing balance numbers for the report"
+  ]
+}

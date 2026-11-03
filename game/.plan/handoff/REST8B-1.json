@@ -1,0 +1,35 @@
+{
+  "agent": "REST8B",
+  "stopped_by": "budget.handoff_now (73%)",
+  "calls_used": 29,
+  "gaps": {
+    "1_firing_fatigue": {
+      "status": "code done, NOT tested, NOT compiled-checked",
+      "files": ["sim/systems/fatigue.gd"],
+      "what": "update_unit: fired = kind==1 and w.tick - e.last_fired_tick < roundi(dt*TICK_RATE) -> enters the gain branch and adds _fps*dt*info[3]. def_info now returns [kind, load, speed, fire_load]; fire_load from rules.g7_rest8.fire_load by weapon class (mg detection reused). _sync reads fire_per_s / fire_load from rules.g7_rest8 with defaults Rest8.RULES.fire_per_s / fire_load.",
+      "blocker": "Rest8.RULES does NOT yet have fire_per_s / fire_load keys (rest8.gd patch failed) -> fatigue.gd will not compile until they are added: add \"fire_per_s\": 0.003, \"fire_load\": {\"mg\": 1.6, \"at\": 2.0, \"artillery\": 2.0} to RULES in sim/systems/rest8.gd (PROVISIONAL)."
+    },
+    "2_rest_inside": {
+      "status": "half: garrison side done, rest8 side NOT done",
+      "files": ["sim/systems/garrison.gd (done, converted CRLF->LF worktree, index was LF so diff is clean)", "sim/systems/rest8.gd (todo)"],
+      "done": "Garrison.place_inside(w,bid,uid,beds=-1): beds>=0 on a building with 0 garrison slots (base barracks) = rest quarters capped at beds; Garrison.tick nf = no_fire(def) or slots_of(def)<=0 (hoisted per record) so quartered men get order 'rest' and never fire out. Sentinels already rest inside cn_sentinel_barracks via the Sentinels7 rest job (_post -> place_inside, line ~283): no change needed, just test it.",
+      "todo_rest8": [
+        "pick_barracks: return [id, goal, inside]; prefer barracks where Garrison.admits(bdef, udef) and (slots_of<=0 or free_slots>0); door-only (e.g. cn_sentinel_barracks for a rifleman) only as fallback",
+        "_try_start: r.i = 1 when pk[2]",
+        "step s==1 arrival: if r.i and within size*0.75+arrive of _bpos: Garrison.place_inside(w, r.b, id, P.beds)=='' -> r.in=1, emit RestInside",
+        "step guard: inb = r.in and garrisoned_in==r.b; allow ty rest/hold when inb; _end when (gin>=0 and not inb and s!=3) or (r.in and not inb) (player ungarrison / building lost)",
+        "_back: if r.in: erase, Garrison._leave(w,e,'rested') before r.s=3 / _go"
+      ]
+    },
+    "3_lp_gate_relief": {
+      "status": "NOT done",
+      "plan": "_try_start: when not _gate_covered -> _gate_relief(w,e): if e.r8rl relief still has r8gr.g==e.id return; else rid=_relief(w,e,-1) (make bid optional: skip admits when bid<0; exclude lp_garrison7.guards, _on_patrol, u.r8gr); set u.r8gr={g,p,h?}, u.lp_home=free cell next to e.lp_home, append+sort G.guards, _go(w,u,goal), e.r8rl=rid, emit RestRelief. When starting rest keep r.rl=rid. In step s==3 idle branch call _release(w,e,r) before _end: remove relief from guards, restore/erase lp_home, erase r8gr, _go back to gr.p if idle/move and no target."
+    }
+  },
+  "tests": "none run yet; test_rest8.gd not extended yet (needs: firing raises fatigue; standing without firing doesn't; rifleman rests inside a base 'barracks' spawned inside the compound (garrisoned_in == barracks) and leaves when fresh; Sentinel with r8s ends garrisoned in cn_sentinel_barracks; gate-guard relief via a minimal lp_garrison7 state)",
+  "hash_status": "not run; firing fatigue will likely move test_hot_state hashes -> report, do not edit goldens",
+  "perf": "not run",
+  "board_claims": "REST8B claim seq 14542 (rest8.gd, fatigue.gd, sentinels7.gd, garrison.gd, test_rest8.gd)",
+  "note": "bash heredoc patches with tab-indented GDScript were fragile here: write patch scripts with the Write tool, use explicit \\t, and normalise CRLF (garrison.gd worktree was CRLF)",
+  "next_step": "Add fire_per_s/fire_load to Rest8.RULES, then implement the rest8.gd todo list above, compile-check with test_rest8, extend tests, run the listed suites + hot_state twice, perf pairs under perf.lock, sent7 windowed shot."
+}

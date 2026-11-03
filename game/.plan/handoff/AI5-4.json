@@ -1,0 +1,9 @@
+{"agent":"AI5-4","gen":1,"calls_used":34,"status":"partial",
+ "done":["Diagnosis: valley f1 (human_b) froze 20-46k ticks at pop 50-55/80 in regroup holding a 3000-9600 cr stage bank: ai_stage core_ok used ctx.army_pop (before resupply/ferry holds) >= thr, while ai_army's launch army (after those holds) stayed just under thr -> neither launch nor spend.",
+  "ai_stage.gd: all-in bank judged by st.army_pop_eff/st.thr_eff (written by ai_army.manage_army); from LATE_BANK_TICK=48000 the bank needs 2x thr (lever a).",
+  "ai_g3.gd + ai_army.gd: per-target-side failed-wave count g3.fails_vs (note_failed_wave on regroup/withdraw); choose_target adds 60 tiles per failed wave from the 3rd on big maps (lever b).",
+  "tools/soak.gd SOAK DIAG adds apop/thr/fv."],
+ "in_flight":"valley s1/s2 TAG=f1 soaks (godot cmdline --ai54soak) still running at handoff; outputs .plan/shots/AI5-4/soak_valley_conquest_l_s{1,2}_f1.txt, done when .plan/shots/AI5-4/run_valley_f1.log prints VALLEY2_DONE.",
+ "remaining":["Read SOAK RESULT/INVARIANTS of both f1 soaks.","If draws: lever b likely counterproductive (at t=72000 both humans ping-pong targets: s1 f1 retargeted 3x, fails_vs penalties accumulate on every side, Machine still alive); try a/bank fix alone or penalty that decays / only toward the side with fewer known defences.","Then the 7-config rerun, test_ai, ai_bench, full suite (orch said it runs those)."],
+ "files_touched":["sim/ai/ai_stage.gd","sim/ai/ai_army.gd","sim/ai/ai_g3.gd","tools/soak.gd",".plan/shots/AI5-4/run_valley.sh"],
+ "test_state":"compile check clean (no SCRIPT ERROR), 0 SCRIPT ERROR in both soak logs so far; test_ai/ai_bench/full suite not run (skipped per orch)."}

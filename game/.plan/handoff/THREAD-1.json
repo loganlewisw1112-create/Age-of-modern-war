@@ -1,0 +1,36 @@
+{
+  "agent": "THREAD",
+  "gen": 1,
+  "reason": "70% projection (60k+5k/call estimate) reached at 66 calls",
+  "done": [
+    "sim/render_snap.gd: full snapshot (packed unit arrays ids/pos/prev/facing/def/owner/hp/flags incl. cargo count; statics dict copies with conn/status/built/progress; events; per-faction top-bar scalars + stock/stats; detail deep copies for w.snap_request (<=64); fog COW refs; memory deep copy for w.cache.snap_fids; terrain/biome COW refs). ORCH hook in world.step() is live (snap_enabled).",
+    "presentation/view/sim_runner.gd (new): one in-flight WorkerThreadPool task, k<=5 steps under 34 ms budget, join() = hand-over (events of all steps + queued commands submitted), submit() queues while busy. --sim-thread=off runs the same path inline.",
+    "match_view.gd: step kicked at RenderingServer.frame_pre_draw (fallback: next _process), joined in _process when finished; busy frames render from snap; overlays/HUD/minimap redraw only when no step in flight; `world` property getter joins an in-flight step (safety net, counted as forced_joins); _input joins on non-motion events (before GUI); issue() queues; fog helpers/team colours/render_pos read the snapshot; interpolation alpha over measured snapshot interval; SIM_THREAD / SIMTHREAD log lines; --sim-thread=off|on|force; threaded when native off or rts_core >= 0.2.2 (or NativeCore.threads_safe()).",
+    "entity_layer.gd: refresh reads ONLY mv.snap (+content); vis_* lists rebuilt only when no step in flight; enemy mines/charges hidden unless detected; POI map.decor drawn from manifest poi_decor (flat ones under everything, tiled when entry size > footprint); HILL/CLIFF raise offset for ground units (ART-T CR).",
+    "batch_art.gd: built buildings with conn pick art state conn_<mask> when the manifest has it (state code -100-conn).",
+    "hud.gd/minimap.gd _process skip while sim_busy(); fog_layer reads mv.fog_of().",
+    "tests/test_thread.gd: 4 tests, all PASS in the full suite (hash threaded==inline native on+off, queued commands, 2000 ticks at ~2k threaded with concurrent snapshot reads, snapshot matches world)."
+  ],
+  "evidence": {
+    "fps2k_on": ".plan/shots/THREAD/fps2k_on.log FPS_SUMMARY avg=194.7 min=110.2 p10=126.1 tps 12.9 forced_joins=0 (machine loaded: 10+ godot procs)",
+    "fps2k_off": ".plan/shots/THREAD/fps2k_off.log FPS_SUMMARY avg=13.3 min=7.9 tps 10.0",
+    "fps10k_on_valley_zoom0.3": ".plan/shots/THREAD/fps10k_on.log FPS_SUMMARY avg=238.6 min=167.8 p10=190.6, tps 3.8 (sim-bound, game slows)",
+    "snapshot_cost": "SNAP_BUILD median 3.4-7.6 ms at 2k on the loaded machine; floor of just reading 7 fields/unit from dicts = 4.0 ms (snapbench .plan/shots/THREAD/snapbench.gd): <2 ms NOT MET",
+    "full_suite": "RESULT pass=248 fail=7 files=30 / TESTS FAILED (rc=1 script_errors=19): failures are test_art/test_art_machine (fort defs without art: ART-F) and test_ui3 (ed2_map_browser.gd:156 parse error 'MapGen not declared': ED2)"
+  },
+  "remaining": [
+    "1. UI playtests with thread on (NOT RUN: first attempt died because main.gd failed to parse; now fixed by ED1, but ed2_map_browser.gd parse error may still break the skirmish menu). Commands (console exe, windowed, run in parallel under hb.sh): $G --path . -- --ui-playtest=<abs .plan/shots/THREAD/pt_h> ; add --ui-playtest-faction=human_b (37) / machine (37) ; --ui-playtest-stages (53). Expected human 33/0. Check each log for 'SIM_THREAD mode=on' and 'PLAYTEST RESULT'.",
+    "2. Re-run bash tests/run.sh once ED2/ART-F fix their files; quote result.",
+    "3. Confirm POI decor visually: screenshot Heartland at a POI (industrial_heartland_m; e.g. --autostart --autostart-map=industrial_heartland_m with camera on a factory_block cell from sim/maps/industrial_heartland.gd decor list). .plan/shots/THREAD/heartland.png only shows the start area (grey flat area is probably tarmac/rail, unconfirmed).",
+    "4. Optional: snapshot cost (<2 ms) needs a non-dict source of positions (e.g. native/unit_snap packed arrays from movement) to beat the field-read floor."
+  ],
+  "files_touched": ["sim/render_snap.gd", "presentation/view/sim_runner.gd (new)", "presentation/match_view.gd", "presentation/view/entity_layer.gd", "presentation/view/batch_art.gd", "presentation/view/fog_layer.gd", "presentation/hud/hud.gd", "presentation/hud/minimap.gd", "tests/test_thread.gd (new)", ".plan/shots/THREAD/* (logs, snapbench.gd, png)"],
+  "test_state": "test_thread 4/4 PASS in full suite run; all owned scripts --check-only clean after the last edit (hill offset); windowed autostart after last edit OK (SIM_THREAD mode=on).",
+  "gotchas": [
+    "Main thread must NEVER read w.cache / w.render_snap / w.entities while a task is in flight: a test that read RenderSnap.latest(w) during a step segfaulted (dictionary _unref). Take the snapshot at join and hold it.",
+    "Reading mv.world (or main.gd / HUD _world()) during a step JOINS it: correct but stalls; watch SIMTHREAD forced_joins (0 in fps runs).",
+    "frame_pre_draw does not fire headless; _process kicks the step instead.",
+    "Tests run inside SceneTree._init: no tree, so MatchView cannot be instantiated in tests; covered by windowed runs.",
+    "Pending CRs: NAT threads_safe() in native_core.gd (version parse used meanwhile), ART-T terrain_layer read mv.snap.terrain/map_w/map_h, ED1 main.gd _process gate with sim_busy()."
+  ]
+}

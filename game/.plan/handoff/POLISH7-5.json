@@ -1,0 +1,55 @@
+{
+ "agent": "POLISH7-5",
+ "stopped_by": "ORCH budget.handoff_now (calls ~108 of 140)",
+ "calls_used": 108,
+ "tokens_used_est": 450000,
+ "files_touched": [
+  "sim/systems/engineer7.gd (bay only): Engineer7.bay_local() / bay_heading() read _g7_facility fuel_bay [x,y,w,h,heading_deg] (fallback const BOWSER_BAY Rect2(16,13.05,2.4,0.9) / BOWSER_HEADING PI, the old alley site, now unused while the json has fuel_bay); bowser_bay(F) uses bay_local()",
+  "presentation/view/fac_life7.gd: display truck parks at the bay centre facing bay_heading(), mouth = nose side + 0.65 tile (drives straight out, reverses back in); fuel bay grid block reads bay_local(); kennel moved off the y16 lane to the barracks back wall (barracks.end.x-0.5, barracks.y-0.5) = compound-local (19.5,13.5); LIVE FIRE lamp housing drawn in _draw via _range_lamp() (was a draw_rect inside the Life7Glows draw callback); obstruction_lamp(Lf,i) = ATMO7 mast tip (FacAtmo7.MAST_OFF / MAST_TOP_Z)",
+  "presentation/view/fac_atmo7.gd (now LIGHT7's, handed over seq 5258/5259): _facade_light ground pool only (translucent facade wash removed), MAST_OFF / MAST_TOP_Z consts, _draw_bowser_bay oriented by bay_heading() from bay_local()",
+  "tests/test_life7.gd: new test_fuel_bay_makes_sense (every door +1 all round and +2 out, garage rects + 2-deep door fronts, gates/wash/decon/pad/helipad/fuel_point/staging/approach +1, mantrap, checkpoint, APC bays, lane mouths +1, footprints, lanes, towers, lockers, pop-ups, baffles, link walls, wall ring, all from defs_g7_facility.json; drive-out = nose strip on a lane OR parallel lay-by (long side on a lane, ground past the nose clear); along a building side / wall inner face; every tower keeps a stair cell; no fac_drive7 route body within 0.3 tiles; truck drawn size from its sprite (1.96 x 0.66 tiles) fits with 0.1 room; dog kennel off lanes / door fronts / garages / footprints / the bay). 13.9c-21b authority record: helipad +1 margin skipped only when the bay is on the helipad's west (apron) side",
+  "tests/test_atmo7.gd (now LIGHT7's): new test_light_anchors_on_surfaces",
+  "tools/pt7_atmo7.gd (now LIGHT7's): fuel bay shot framed from bay_local()"
+ ],
+ "fuel_bay_state": {
+  "history": "alley y13 between workshop and barracks (only rule-compliant spot of the old layout) failed the in-sight check (hidden by the barracks); FACB7-6 rev1 x25 strip [25.05,15.6,0.9,2.4,90] hidden by the east wall / tower [26,18]; rev2 [15.05,2.05,2.4,0.9,0] in sight but inside the loading pad +1 margin (13.9c-21b keeps it); ORCH approved rev3 (seq 5267): helipad 1 tile east + fuel_bay [16.0,2.05,2.4,0.9,0]",
+  "json_now": "[19, 2, 6, 6] [16.0, 2.05, 2.4, 0.9, 0]",
+  "test_life7_on_json_now": "RESULT pass=15 fail=0 files=1 time_ms=22317 ",
+  "next_steps": [
+   "1. Confirm FACB7-6 posted fact layout.fuel_layby rev3 and the json has helipad moved east (x19) + fuel_bay [16.0,2.05,2.4,0.9,0] (and apron lane / fuel_point adjusted).",
+   "2. bash tests/run.sh --only=test_life7 (want 15/0: test_fuel_bay_makes_sense + test_actors_off_footprints in sight + test_sim_bowser_parks_in_its_bay); --only=test_eng7 (10/0), test_apcmov7, test_cnfac7 (FACB7-6 runs those).",
+   "3. If the display truck's path from the mouth (nose +0.65 = about (19.05,2.5)) to the pad/helipad hose spots is odd, adjust only the mouth / itinerary in fac_life7.gd _actors (fuel block ~line 707).",
+   "4. Post fact eng7.bowser_bay {fuel_bay, heading} to APCMOV7-2 (fac_drive7 routes must stay 0.3 clear; the test checks it).",
+   "5. Windowed: \"$G\" --path . -- --ui-playtest=<abs dir> --ui-playtest-life7 (timeout 900) -> PLAYTEST RESULT all ok, 0 SCRIPT ERROR, 0 'Drawing is only allowed'; Read life7_fuel_bay_z2/z3 (truck parked in the marked bay beside the helipad, doors/garages in frame); post fact shots.best. The atmo7 bay markings shot (pt7_atmo7) is LIGHT7's flow now: ask LIGHT7 / ORCH for it."
+  ]
+ },
+ "glow_draw_fix": "presentation/view/fac_life7.gd: the only bare draw call inside _draw_glows (the range LIVE FIRE lamp housing draw_rect) moved into _draw; windowed pt7_life7 .plan/polish7/pl75_life7.log: 0 'Drawing is only allowed' lines (POLISH7-4's run pl74_life7.log had 2020), 0 SCRIPT ERROR, PLAYTEST RESULT pass=28 fail=0; pt7_atmo7 pl75_atmo7.log / pl75_atmo7b.log: 0 such lines, 0 ERROR, PLAYTEST RESULT pass=24 fail=0",
+ "kennel": "(19.5,13.5) compound-local, against the barracks' back wall at the east end of the alley; off every lane / door front / garage / footprint / the bay (test_fuel_bay_makes_sense) and in sight (test_actors_off_footprints)",
+ "tests": {
+  "test_life7": "RESULT pass=15 fail=0 files=1 time_ms=22317",
+  "test_eng7": "RESULT pass=10 fail=0 (earlier this run)",
+  "test_atmo7": "RESULT pass=8 fail=0 (with test_light_anchors_on_surfaces)"
+ },
+ "playtests": {
+  "pt7_life7": "PLAYTEST RESULT pass=28 fail=0, 0 SCRIPT ERROR, 0 draw-outside-_draw (bay was the x25 rev1 site then)",
+  "pt7_atmo7": "PLAYTEST RESULT pass=24 fail=0 twice, 0 SCRIPT ERROR"
+ },
+ "best_shots": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/POLISH7-5/atmo7b/atmo7_alarm_night_z1.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/POLISH7-5/atmo7b/atmo7_alarm_night_z2.png"
+ ],
+ "board": [
+  "need fuel_bay.site 5066",
+  "need fuel_bay.visibility 5153",
+  "need layout.fuel_layby.rev3 5265",
+  "fact light.handover 5258",
+  "need fuel_bay.markings (to LIGHT7) 5259",
+  "fact shots.best 5083 + 5159"
+ ],
+ "hash": "engineer fuel runs park at the json fuel_bay (sim bowser position changes with the bay; display layers view-only)",
+ "open": [
+  "fuel bay re-site verification + windowed shots (next_steps above)",
+  "no fuel bay shot posted yet: every bay shot so far showed a hidden or interim bay",
+  "lighting items now LIGHT7's: wall lamps at the old 3.78 m wall cap (castle walls are taller), door lamps / floodlight heads without fixtures, no lit window panes"
+ ]
+}

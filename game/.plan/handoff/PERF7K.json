@@ -1,0 +1,23 @@
+{
+  "agent": "PERF7K",
+  "status": "done (gate still NOT MET in-process; remaining gap is diffuse G7 behaviour/feature cost)",
+  "changes_all_exact": [
+    {"file": "native/rts_core/src/formation.rs (new), src/lib.rs (mod formation), Cargo.toml 0.5.3 -> 0.5.4", "what": "RtsFormation.polish_near (exact port of formations7.gd _polish_near_fast) + RtsFormation.assign_exact (exact port of _assign_exact after the leader pick incl. _uncross_packed/_crosses). Vector2 math f32, scalar combos f64 as GDScript. Empty return on bad input -> script path."},
+    {"file": "bin/rts_core.dll", "what": "rebuilt via bash tools/build_native.sh (cargo build --release, swap install); md5 before 9d1c5079..., rts_core 0.5.4 loads"},
+    {"file": "sim/systems/formations7.gd", "what": "static var native_polish (A/B toggle); _polish_near_fast and _assign_exact call RtsFormation when NativeCore.available() and not force_off and the class exists; GDScript path kept as fallback unchanged. Pre-edit copy .plan/perf7k/orig/formations7.gd"}
+  ],
+  "proof": {
+    "bench": ".plan/perf7k_assign.gd -> .plan/perf7k/assign2.log: assign() on gate armies n=49/200/900 and 49/200/800 same perms (900: 101 ms -> 10.5 ms); 300 random polish stress cases 0 diffs (3673 -> 175 ms); 400 random _assign_exact cases on real unit dicts 0 diffs (246 -> 26 ms); ASSIGN RESULT SAME",
+    "gate_hash": "perf7h_prof --hashes=100: ticks 100..600 b86d73d0a4246c4c 2046aaca11e7a326 be65122d827f22c6 ebef90a51d085ec3 bb01c1c7022931d5 14f1c23c6ffd1d42 before (b0) and after (r1 polish, r2 polish+exact) - .plan/perf7k/{b0,r1,r2}_g7.log"
+  },
+  "per_system_in_process (G7 / G6.1 concurrent pairs)": {
+    "before_b0": "total 26.34/21.22 = 1.241; combat 16.05/13.07; fog 1.20/0.58; _cmds 0.581/0.108; wounds 0.50",
+    "after_r2": "total 27.23/21.74 = 1.253 (machine load noise ~+-0.03); combat 16.94/13.44; fog 1.25/0.60; _cmds 0.247/0.104; wounds 0.54",
+    "verdict": "_cmds (tick-1 formation assign) cut 0.33 ms/tick (~1.5% of the ratio). Gate 1.2x NOT MET in-process."
+  },
+  "profiled_not_changed": "temp labels (removed, files restored byte-exact): per burst wound_hit rays 0.44 ms/tick, add_supp 0.10, line_clear 0.06; Wounds.apply_hit zone pick 0.19 (6007 calls), vis_mark 0.12, HotState.touch 0.08. Senses7 tick 0.68 (spot 0.43). cmb.act +3.7 ms is mostly more engagement (62k finds vs 41k), per-find cost already lower than G6.1. No single remaining exact cut > ~0.1 ms found.",
+  "next_steps": [
+    "1. ORCH idle-PC pairs (bash .plan/perf7g_pairs.sh 6 ...) to measure the real ratio.",
+    "2. If still > 1.2x: the gap is feature/behaviour (wound zones, shrapnel bursts, senses, more engagement); only larger native ports (Senses7 spot pass, shrapnel burst) or an owner ruling on the gate remain."
+  ]
+}

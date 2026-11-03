@@ -1,0 +1,12 @@
+{
+  "agent": "ACCURACY8B",
+  "brief": "13.9c-53 stray rounds, shot placement, blast daze",
+  "compiles": true,
+  "built": {
+    "stray": "new sim/systems/stray8.gd: Combat._fire calls Stray8.on_miss after a direct-fire miss; line shooter -> rolled miss point (no extra draw) to weapon range; first unit/building within hit_r of the line (combat_ng native grid / combat_grid / scan; Construction occupancy for buildings); one Damage.line_clear; ONE w.rng connect roll only when something is crossed; Damage.apply_hit(hit=true) = Ballistics8 distance falloff + real facing. Events StrayHit, FriendlyFire. Env STRAY8_OFF=1.",
+    "placement": "Accuracy8.mult computes Vector2(vital, limb) zone multipliers (aim settle, moving, suppressed/pinned, shock, daze, braced); Combat puts it in w.cache.a8p around Damage.apply_hit of a hit; Wounds._zw_c multiplies head/torso and limbs. Same draw count (tested). Env PLACE8_OFF=1.",
+    "daze": "blast8: soldiers within z_daze (16) not knocked out get e.b8d (1.5-8 s by severity x armour conc, no draw), Dazed event, sys_state.blast8.dz clears it; Accuracy8.daze_cd: cooldown x1.4, +0.6 s on a new target.",
+    "discipline": "Stray8.muzzle_blocked (fire discipline, hold fire when own man near the muzzle line) implemented and tested but SHIPS OFF (rules stray.discipline.clear_tiles 0): 2k fight shots 13044 -> 750 (3.0/0.45) or 1037 (1.5/0.3). friend_clear_tiles 3.0 (own men within 3 tiles immune to strays) ships ON instead = DEVIATION for the owner."
+  },
+  "next_steps": ["ORCH/owner: decide friend_clear vs discipline (numbers in rules_g8_accuracy.json _note_friend_clear)", "ORCH: HUD alert for FriendlyFire (need hud.friendly_fire_alert)", "ORCH: regold test_hot_state", "per stray call cost ~170-220 us incl. apply_hit on ~50% of calls; could be cut (skip buildings pass when no building nearby, cheaper candidate filter)"]
+}

@@ -1,0 +1,42 @@
+{
+  "agent": "PERF7G",
+  "reason": "near 70% projected budget (78/140 calls, est ~420k); gate measured, not met by a small margin",
+  "gate": {
+    "bench": ".plan/sim_ab7.gd (river_crossing_s 2k fight, 600 ticks, native, no CN facility), same script in both trees; G6.1 = C:/CODING/g7_regress2_wt/game (55b4e04)",
+    "runner": "bash .plan/perf7g_pairs.sh 6 final res://.plan/sim_ab7.gd (logs .plan/perf7g_runs/final_p*_{G61,G7}.log)",
+    "pairs_ms_G61_G7": [[33.66, 36.24], [31.53, 36.50], [27.37, 38.91], [25.40, 26.59], [20.13, 26.00], [20.08, 25.50]],
+    "pair_ratios": [1.077, 1.158, 1.422, 1.047, 1.292, 1.270],
+    "median_pair_ratio": 1.214,
+    "ratio_of_medians": 1.191,
+    "cpu_load": "1-48% (Win32_Processor LoadPercentage before/after each run), 3-7 Godot processes; pairs 4-6 near idle (1-9%)",
+    "verdict": "NOT MET: median pair ratio 1.214 > 1.2 (ratio of medians 1.19). Was 1.65x busy-PC before PERF7F/PERF7G."
+  },
+  "per_system_ms_per_tick": {
+    "before_same_load_pair (sub1, both trees run at once, before the formations7 fix)": {"combat": [34.99, 40.54], "_cmds": [0.19, 2.62], "movement": [6.51, 8.54], "fog(+Senses7)": [1.33, 3.20], "wounds": [0.0, 1.18], "intel": [1.39, 1.72], "veh_drive7": [0.0, 0.19], "total": [54.17, 68.43]},
+    "after_clean_idle_pair (sysidle_p2, alternating)": {"combat": [20.75, 24.86], "_cmds": [0.17, 0.95], "movement": [4.20, 5.06], "fog(+Senses7)": [0.87, 1.86], "wounds": [0.0, 0.76], "intel": [0.82, 1.01], "veh_drive7": [0.0, 0.10], "sys_sum": [32.58, 40.26]},
+    "combat_sub_after": "cmb.find calls 41051 -> 60167 (+47%, more invalid targets: downed / wounded soldiers) +0.78 ms; Shrapnel.burst from _splash 1.26 ms (187 bursts, ~2925 fragment wound_hits); Wounds.apply_hit zone path (dmg.zone) 0.68; fire.dmg +0.8; movement drain (path queue) +0.58"
+  },
+  "fixes": [
+    {"file": "sim/systems/formations7.gd", "what": "big-group assign (1000-unit attack_move at tick 1 of the gate scene): _assign_split sorts by float32 Vector2/Vector3 keys with Array.sort() instead of per-compare lambdas (exact: same first component, same tie-break, ids < 2^24 checked else lambda path); _polish_near_fast = same visiting order and per-pair test, cached squared travel per man, per-man partner lists (jb > ja) built once, skips pairs whose two men kept their slots since the previous pass began (their answer is known; a cost-pass no-swap implies a crossing-pass no-swap), toggle Formations7.fast_assign", "effect": "assign per 1000-unit cmd 264-294 ms (plain) -> 164-191 ms same run; apply_command 585-626 ms -> 210-222 ms (G6.1: 86-95 ms); _cmds 2.4-2.6 -> 0.75-0.95 ms/tick", "proof": "perf7g_cmd.gd SAME_PERM=true on both commands; 600-tick hashes every 100 ticks identical with fast_assign on/off (hash_on.log / hash_off.log)"},
+    {"file": "sim/systems/wounds.gd", "what": "_auto_pass: a carer out of both medic_r and buddy_r is skipped before is_medic (pure; neither branch can pick him)", "proof": "gate scene 600-tick hash f8e094305be0e45b == pre-edit hash"},
+    {"file": "sim/systems/wounds.gd, damage.gd, combat.gd", "what": "profiling-only SimIndex labels (wd.fz_ko / wd.bleed / wd.care / wd.auto / wd.vis, dmg.zone, spl.frag_near(0) / spl.burst(0)); only run when SimIndex.profiling"},
+    {"file": "sim/systems/shrapnel.gd", "what": "temporary labels removed, file restored byte-identical"}
+  ],
+  "hash_evidence": "gate scene (sim_ab7 setup) G7 600 ticks: f8e094305be0e45b before any PERF7G edit (perf7g_runs/sys_p1_G7.log) and after all edits (hash_on.log); fast_assign=false identical at ticks 100..600 (1758268b4d03dee4, 5ec85e82e5c92042, e777b8fe5f2a9b36, 0d834f13b625652d, f14ce2176639a8f7, f8e094305be0e45b). G6.1 tree: 88b32c757147bdf7.",
+  "tests": {
+    "test_squad7": "RESULT pass=23 fail=0",
+    "test_wound7": "RESULT pass=17 fail=0",
+    "test_det7": "RESULT pass=6 fail=0",
+    "test_perf_g6": "RESULT pass=7 fail=0",
+    "test_hot_state": "RESULT pass=12 fail=5 (the 5 known golden fails: gold_holds_flattened, head_10k, head_2k, native_on_off, sim_thread_on_off; G6.1 goldens, regold pending)"
+  },
+  "tools": [".plan/perf7g_prof.gd (per-system timer of the gate scene, both trees; --sub, --cmds per-command-type timing, --plain, --hashes=N, --set=res://path.gd:var=value)", ".plan/perf7g_cmd.gd (tick-1 attack_move pieces + SAME_PERM fast/slow)", ".plan/perf7g_pairs.sh <n> <tag> <script> [args] (alternating pairs + CPU load)", "copies of perf7g_prof.gd / perf7g_cmd.gd in C:/CODING/g7_regress2_wt/game/.plan/"],
+  "next_steps": [
+    "need ~0.5-1 ms/tick more at idle to clear 1.2x with margin",
+    "Formations7 polish still ~130-150 ms per 1000-unit cmd (pair evaluations, thousands of swaps every pass): native port (rts_core, float32-exact Vector2 cross/distance_squared) or a cheaper exact pre-filter would take the tick-1 cost to G6.1 level (~0.3 ms/tick)",
+    "Shrapnel.burst: ~100 us per fragment wound_hit (Wounds.apply_hit + Damage events + suppression); overhead per candidate (_air Content lookup, cover_level) ~0.25 ms/tick",
+    "Senses7 (+1.0 ms in fog) and Movement path queue drain (+0.58) are next biggest G7-only costs; Wounds _vis_pass / _bleed_pass iterate all entries every tick (~0.4 ms)",
+    "cmb.find +47% calls is behaviour (downed targets invalidate), not overhead"
+  ],
+  "files_changed": ["sim/systems/formations7.gd", "sim/systems/wounds.gd", "sim/systems/damage.gd", "sim/systems/combat.gd", ".plan/perf7g_prof.gd (new)", ".plan/perf7g_cmd.gd (new)", ".plan/perf7g_pairs.sh (new)"]
+}

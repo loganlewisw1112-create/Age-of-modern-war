@@ -1,0 +1,17 @@
+{
+  "agent": "APCOUT8B",
+  "calls_used": 76,
+  "cause_hardened": "Four interlocking waits in sim/systems/fac_drive7.gd _drive with the outer gate hardened (13.9c-22): (1) an APC outside the sally kept requesting the inner gate (wi) while one in the wash waited for the outer; _gate_step lets want_i win, so the inner never closed and the outer never opened; (2) an APC held because the sally was full stopped at gin, which is INSIDE the inner door band, so the door could not close; (3) the convoy rule (earlier order enters the lane first) held an APC already standing in the sally behind earlier-ordered APCs outside it; (4) two APCs merging at the lane head each saw the other in its D_SAFE look-ahead (radius-0.9 circles) and both stopped forever.",
+  "fix": "fac_drive7.gd: pre-pass `side` (gates an APC inside the sally waits on); an outside APC never re-opens the other gate meanwhile; a joiner through an open door only refreshes the gate request when it can actually advance (deferred `req`); a 'full'-held APC waits 0.3 before gin (clear of the door band); new _in_sally exempts an APC in the sally from the convoy order; mutual spacing stop at the merge resolved by new _hull_hit (oriented hulls + HULL_M 0.2) and _first_at_lane priority. Temporary DBG8B instrumentation removed (grep DBG8B = 0).",
+  "results": {
+    "test_facexit8": "RESULT pass=3 fail=0 (machine near: APCs 8/8 foot 6/6 last +2530; quiet: 8/8 6/6 last +1000; dismounted strike team + tactical squad 18/18 out, 0 back after 60 s; APCs still out 60 s later)",
+    "test_path7": "RESULT pass=6 fail=0",
+    "test_apcmov7": "RESULT pass=16 fail=0",
+    "test_gate7": "RESULT pass=5 fail=0",
+    "test_cnfac7": "RESULT pass=36 fail=0",
+    "test_hot_state": "FAIL: 8 failures, GOLD_FLAT 2k_fight on/off, 2k_mixed on/off, 10k_fight on and HEAD hashes 2k_fight/2k_mixed/10k_fight_and_march moved. NOT attributed: tree has concurrent edits by REST8 (fatigue.gd, rest8.gd, sentinels7.gd), VTOL8B (air.gd, airfield.gd, transport.gd), world.gd; fac_drive7 _drive only runs with facility APC drivers (LP). Needs ORCH bisect (stash-free: run test_hot_state in a clean worktree at HEAD + only fac_drive7.gd).",
+    "not_run": "test_sent7, test_lpmode7, test_lpmap7, test_det7 (batch was still running at handoff), flows facexit8/gate7/apcmov7/lpmode7, shots.best"
+  },
+  "files": ["sim/systems/fac_drive7.gd", "tests/test_facexit8.gd (+ dismount test, APC stay-out check)", "tools/pt7_facexit8.gd (now runs the hardened case: enemy rifleman near, waits for hardened, logs facexit8_hardened)", ".plan/apcout8b_diag.gd, .plan/apcout8b_dis.gd (diagnostics)"],
+  "next_step": "1) Attribute the test_hot_state move: in a clean worktree at HEAD copy only sim/systems/fac_drive7.gd and run test_hot_state; if still 17/0 the move is another agent's. 2) Run test_sent7 test_lpmode7 test_lpmap7 test_det7. 3) Windowed flows facexit8 (hardened now), gate7, apcmov7, lpmode7; look at facexit8 shots and post fact shots.best."
+}

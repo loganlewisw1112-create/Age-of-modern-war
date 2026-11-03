@@ -1,0 +1,16 @@
+{"agent":"WTUR7-2","calls_used":76,"tokens_used_est":500000,"reason":"budget.handoff_now (ORCH, two notices)",
+"done_with_evidence":[
+ "tests/test_wallturret7.gd: RESULT pass=11 fail=0 files=1 (before FACB7 switch landed): new test_start_set_raised, test_auto_rebuild_player_side, test_auto_rebuild_ai_side",
+ "sim/systems/wallturret7.gd: 13.9c-12 start-set raise (conf wall_turrets, raise_start once per facility) + automatic rebuild (posts per facility; lost turret -> after wt7.rebuild_delay_s 15 s PROVISIONAL, face valid, affordable -> pays (ledger rebuild:<def>), lays site, WallTurretRebuild event, Sentinels7.post_job kind build for a Facility Engineer; cancelled site drops the post; owner-placed turrets become posts; same rule for AI-owned facilities)",
+ "content/g7/defs_g7_wallturret.json: wt7.rebuild_delay_s 15.0 (PROVISIONAL)",
+ "tools/art/g7_wallturret.gd: conduit no longer drops to the wall foot (read as a pole in game); art regenerated: G7_ART a/b bytes=2973696 budget=3145728 states=102 ok, files=357 over=0",
+ "tools/pt7_wallturret7.gd rewritten; windowed run4: PLAYTEST RESULT pass=26 fail=2, 0 SCRIPT ERROR (log .plan/shots/WTUR7/pt_run4.log). Card check PASS: Wall Turret on engineer Defences card page 2, enabled, arms the ghost. Auto rebuild queued + player Cancel build + cancel sticks PASS in game.",
+ "board: seq 3862 need to FACB7-2 (json-only switch: sentry_def \"\", sentries [], wall_turrets 18 cells); seq 3865 fact wallturret7.rebuild_jobs for ENG7/SENT7"],
+"not_done":[
+ "run4 fail 1: wallturret7_facility_starts_with_turrets: FACB7 switch LANDED (18 listed, 0 nests) but 0 turrets raised at start in game. Debug: run test_wallturret7 (test_start_set_raised now checks the conf path); likely face_info rejects the cells against the new layout (blocked in front / wall changed) or raise timing; print WallTurret7.face_info for each conf cell",
+ "run4 fail 2: wallturret7_destroyed_in_fight: hardened attackers with an attack command still do not kill the 140 hp outer turret within 65 s (flow destroys it itself afterwards); check w.submit attack accepted / the facility towers kill them first",
+ "test_wallturret7 + test_cnfac7 + test_wallwalk7 not rerun after the FACB7 switch; facility-match hashes moved (nests out, turrets in): two identical runs for ORCH still owed",
+ "ENG7 must execute job kind build (e.order build on job.bid); until then rebuild sites wait for any engineer",
+ "LIFE7-2 not told (post.mjs rejected type info): 442x 'Invalid polygon data' from presentation/view/fac_life7.gd:1293 in pt_run3/run4 logs"],
+"files_touched":["sim/systems/wallturret7.gd","content/g7/defs_g7_wallturret.json","tests/test_wallturret7.gd","tools/pt7_wallturret7.gd","tools/art/g7_wallturret.gd","assets/art/g7_wallturret/"],
+"shots_dir":".plan/shots/WTUR7 (run4 shots; best looked at in run3: outer_face_east_z250, inner_face_north_z250, far_face_over_parapet_z250, firing_outer_z175, auto_rebuild_site_z250, wreck_z250, rebought_south_z250, build_card)"}

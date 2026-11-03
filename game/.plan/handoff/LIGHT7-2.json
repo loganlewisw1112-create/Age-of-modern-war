@@ -1,0 +1,33 @@
+{
+ "agent": "LIGHT7-2",
+ "reason": "budget.handoff_now (calls ~76 of 140, est ~480k of 750k)",
+ "files_changed": [
+  "presentation/view/fac_atmo7.gd (WALL7-2 heights; wall floods on the 4.66 m battlement panel (WALL_CAP_Z 46 px), apron floods on the 4.68 m inner rail post, alarm strobes on odd sections' battlement panels (plan kind alarm), junction mast floodlight lights at the corner (kind corner, 5.41 m lens), art walkway lamps 3.17 m lit on N/W walls (kind walk); MAST_TOP_Z 12.78 m; WALL_Z 46; WALL_HT 1.45/4 tile; all luminaires drawn from sprites fx_*; base poles/masts too; outward floods (wall/gate/tower, tower now aims OUT) = wide wash FLOOD_R 150 + hot core CORE_R 62, ground outside the walls only (g.foot subtracted in _mk_pool), plus a night-tint lift shader (DARK_SHADER on the dark node, _update_lift) on the S/E faces so units outside show their own colours; BLD_Z armory 114 already by ORCH)",
+  "tools/art/g7_atmo7.gd (+ assets/art/g7_atmo7/, regenerated 80 files: board_armory = SUIT FOUNDRY; new fx_flood, fx_pole (6 frames), fx_bulk, fx_obst, fx_strobe, fx_puck, fx_plinth, 5-tone steel ramp)",
+  "tests/test_light7.gd (wall mounts at WALL7-2 heights cited to fact seq 5356, corner/alarm/walk kinds, occluder strips 46 px x 2.9 m)",
+  "tools/pt7_atmo7.gd (WALL7-2 height pin, wall e/n/corner shots, LIGHT7_QUICK=1 bisect flow with garage doors forced open, LIGHT7_QUICK=perim + _perim(): own riflemen outside the gate approach and east wall, night z1/z1.75)"
+ ],
+ "done": {
+  "1_plaque_regen": "g7_atmo7 regenerated; SUIT FOUNDRY plaque visible in game (r1 light_night_wall_e_z3, light_day_yard_z3); the roof light pool on the foundry is gone with BLD_Z 114",
+  "2_wall_heights": "done, see files_changed; test_light7 pins deck/battlement/rail/lamp/mast numbers",
+  "3_black_panel": "FOUND, not fixable in my files: fac_life7._draw_doors opaque quad at the un-inset garage rect end, 2x door width; CR sent (change_request.life7_black_panel) with exact edits",
+  "4_crs": "sent to orch: change_request.life7_black_panel, change_request.life7_mast_tips (needs a re-measure), change_request.seq7_beacons",
+  "5_fixture_art": "done for floods, pole arms, bulkheads, obstruction lamps, strobes, pucks, plinths",
+  "13.9c-24b_floods": "done: bright wide wash + hot core + tint lift; shots posted as fact shots.best",
+  "lit_windows": "NOT DONE"
+ },
+ "evidence": {
+  "test_light7": "RESULT pass=4 fail=0 files=1",
+  "test_atmo7": "RESULT pass=8 fail=0 files=1",
+  "pt7_atmo7_full_r1 (before the 24b flood work)": "PLAYTEST RESULT pass=25 fail=1, 0 SCRIPT ERROR; the one fail is g6_slot0_stage9_click (menu click flake before the facility exists, not an atmo7 check); light7_plan fixtures {walk 36, alarm 19, wall_in 3, wall 11, gate 2, tower 16, pole 4, door 19, obst 4, deck 6}; lights 246 night / 272 alarm (cap 320)",
+  "pt7_atmo7_perim_quick (after 24b, shader lift)": "PLAYTEST RESULT pass=9 fail=0, 0 SCRIPT ERROR (.plan/shots/LIGHT7-2/p2/run.log); lights 276-277 at night",
+  "shots": ".plan/shots/LIGHT7-2/r1 (full run), p2 (perimeter), q2 (black panel bisect)"
+ },
+ "next_steps": [
+  "1. Re-run the FULL windowed pt7_atmo7 once after the 24b changes (not done): alarm-night lights must stay <= LIGHT_CAP 320 (r1 alarm 272 + ~29 core pools = ~300, unverified), frame cost check atmo7_frame_cost; add the outward core pools to test_light7 test_light_count_bounded's n formula.",
+  "2. East wall at zoom 1: the wash is still a row of soft patches with dark gaps between floods; raise FLOOD_R (150) toward 190 or add a second flood per section to make it continuous (the shader lift max 0.66 and strengths 0.34/0.30 are in _update_lift).",
+  "3. N and W walls use additive light only (no tint lift: lifting there would land on interior roofs); units on those sides stay low contrast.",
+  "4. Lit window panes at night on the multi-storey buildings: not started (needs the window grid of the FACB7 art per facade; do not guess positions).",
+  "5. fac_life7 MAST_TIPS re-measure (CR sent), and confirm the life7 / seq7 CRs landed, then re-shoot garages_night_z3 with a door open (LIGHT7_QUICK=1)."
+ ]
+}

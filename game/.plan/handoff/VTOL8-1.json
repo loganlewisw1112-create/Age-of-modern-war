@@ -1,0 +1,43 @@
+{
+ "agent": "VTOL8",
+ "stopped_by": "budget.handoff_now (79%)",
+ "cause": "Air.landing_ok rejected every building cell, including the 6x6 a_g7_vtol_pad. On the LP start lp_setup.build_vtols -> Air.land_now failed, so the VTOL hovered (phase air, air_landed false) over its pad. Boarders wait until the craft is on the ground (transport._tick_bay_boarder), so they never loaded. land_at on the big pad was refused ('Not enough open ground'), while land_at on a 2x2 helipad was accepted (_own_pad_at) and the dropship parked there. Low-fuel/dry return (free_pad_near) and _land_here's service-point park also sent it to helipads; a helipad row leaves its 5.6-tile rear-ramp lane blocked -> RAMP_BLOCKED.",
+ "fixes_done": [
+  "air.gd: a vtol_pad building is a landing zone (landing_ok); regular_dropship(); _vtol_pads cache; vtol_pad_at; pad_cell; landing_spot (pad centre / open ground / nearest valid open ground within 12 or own big pad within 24); land_at validate+apply use it for regular dropships (a helipad land order redirects); _land_here never parks/pins a dropship on a pad it does not fit, snaps onto the big pad centre with the pad heading, and records e.vpad (its own pad)",
+  "13.9c-45: dry/low-fuel return goes to the dropship's own big pad (vpad) first, else nearest free big pad, else holds beside its pad; rotorcraft return to their OWN home helipad when a slot is free (_return_pad), else nearest fitting pad; _park sets the helipad's facing_i heading when the helipad has one",
+  "airfield.gd: pad_fits(w,bid,def) (a regular VTOL never fits a pad smaller than lz_size; airfields still fit); free_pad_near optional def filter",
+  "transport.gd: _turn_ramp_clear: a landed regular dropship with a blocked ramp yaws to the nearest of the 8 facings with a clear ramp before failing"
+ ],
+ "not_done": [
+  "CN stealth dropship return to the facility helipad (13.9c-45) not touched (its own CNFAC rules)",
+  "the bay holds 1 vehicle (content): APC and suit cannot ride together; posted need vtol.bay_vehicles",
+  "regression batch (test_hot_state, air, air_transport, transport, airfield, airfield_g6, ui_panels, cnfac7, lpmode7, lpmap7, det7) was started BEFORE the 13.9c-45 edits and had not finished; results unknown -> must rerun",
+  "windowed flow: tools/pt7_vtol8.gd written, never run; vtol8 is not in ui_playtest G7_FLOWS (need posted); scratch launcher .plan/vtol8/boot_main.gd. No screenshot taken, no shots.best posted",
+  "windowed air / cnfac7 / lpmode7 flows not run"
+ ],
+ "files": [
+  "sim/systems/air.gd",
+  "sim/systems/airfield.gd",
+  "sim/systems/transport.gd",
+  "tests/test_vtol8.gd (new)",
+  "tools/pt7_vtol8.gd (new)",
+  ".plan/vtol8/boot_main.gd + pt_boot.gd (scratch)"
+ ],
+ "tests": "test_vtol8 RESULT pass=4 fail=0 (starts landed on big pad; helipad land orders redirect, big pad centre, open ground, dry return to own pad, heli still uses helipad; full load/unload APC+crew+10 men, suit+6 men, open-ground load after redirect; every LP aircraft returns to own pad centred within 0.05)",
+ "hash_risk": "LP start changes on purpose (VTOL now landed, e.vpad saved). Non-LP: helicopters running dry now go to their own home pad instead of the nearest free one; this can move test_hot_state if a heli runs dry there. Check it.",
+ "next_step": "1) Run, one at a time: test_hot_state (must be 17/0; if hashes move STOP and report), test_air, test_air_transport, test_transport, test_airfield, test_airfield_g6, test_ui_panels, test_cnfac7, test_lpmode7, test_lpmap7, test_det7. 2) Windowed: \"$G\" --path . -s .plan/vtol8/boot_main.gd -- --vtol8-shots=<abs dir> (or --ui-playtest-vtol8 once ORCH registers it), then flows air, cnfac7, lpmode7. Look at the vtol8_pad_boarding / vtol8_open_ground_boarding shots and a returned-aircraft shot, and post fact shots.best.",
+ "batch_results": {
+  "note": "batch finished after handback; test_hot_state started before the 13.9c-45 edits, the rest ran on mixed/new code",
+  "test_hot_state": "17/0 (pre-13.9c-45 code: rerun)",
+  "test_air": "7/2 FAIL: test_landing_zone_size_by_aircraft (expects a VTOL land_at in a gap REFUSED; 13.9c-42 now redirects to valid ground) and test_low_helicopter_returns_to_nearest_free_pad (expects nearest free pad, not home; 13.9c-45 says own pad). Both are criteria the new owner rules contradict: per sovereign 3A they need an ORCH/owner authority record before changing, NOT edited by VTOL8",
+  "test_air_transport": "7/0",
+  "test_transport": "11/0",
+  "test_airfield": "13/0",
+  "test_airfield_g6": "8/0",
+  "test_ui_panels": "5/0",
+  "test_cnfac7": "36/0",
+  "test_lpmode7": "18/0",
+  "test_lpmap7": "17/0",
+  "test_det7": "6/0"
+ }
+}

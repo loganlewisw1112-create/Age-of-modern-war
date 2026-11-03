@@ -1,0 +1,33 @@
+{
+ "agent": "FACB7-6",
+ "state": "stopped on budget.handoff_now (~108 calls, ~420k tokens measured). Tree compiles; facility tests green. The windowed pt7_art7f run into .plan/shots/FACB7-6 was still running at stop time: its PLAYTEST RESULT and in-game armory shots have NOT been read (C:/Users/logan/AppData/Local/Temp/facb76/pt_art7f.log).",
+ "suit_radius_used": "0.65 tiles (EXO7-2 fact cnsuits.radius: 4 m tall, 2 m shoulder span, vehicle move class, needs a >= 2-tile wide, >= 4.5 m tall door)",
+ "helipad_and_fuel_bay_13_9c_21b": {
+  "done": "helipad [18,2,6,6] -> [19,2,6,6]; apron lane [15,2,3,7] -> [16,3,3,6]; fuel_point [15,3,3,4] -> [16,4,3,3]; fuel_bay [16.0,2.05,2.4,0.9,0] (the value ORCH set); fact layout.fuel_layby rev3 posted (seq 5283). ORCH's life7 playtest shows the bowser parked at (17.2,2.5). Intermediate revs (x25 stub, locker move) were undone (locker back at [25,17]).",
+  "test_criterion_change": "tests/test_cnfac7.gd test_facb75 'the old barracks site holds no building': the loop now skips kind 'yard' as well as 'ring', because the moved helipad (open ground) covers x24 of the old site. Authority: owner 13.9c-21b + ORCH approval of the move. Posted as fact test_criterion.old_barracks_site (seq 5354) for ORCH to confirm or revert."
+ },
+ "suit_foundry_13_9c_20c": {
+  "zone": "armory [16,17,4,3] -> [16,17,4,4] (16 x 16 m), attached to the decon hall (attached.armory = decon_hall); faces.armory 1 -> 0 (east); doors.armory [[20,17],[20,18],[15,18]] = a 2-tile suit bay door onto the x20..21 vehicle lane + the infantry door into staging; doors.decon_hall north [18,20] -> [20,20]; lane [16,20,10,1] -> [20,20,6,1]; armory_part [17,17] -> [16,19] (SW corner, bay floor clear); new armory_exit [21.0,18.0] = cn_armory production rally (set in sim/systems/cn_facility.gd armory-part block)",
+  "art": "tools/art/g7_fac7f.gd armory section replaced (helpers _sf_text/_sf_sign/_sf_suit/_sf_cradle + SF_* consts): an 11.6 m armoured hangar with corner buttresses, armour ribs and a clerestory; a 7 x 7 m vertical-lift bay door showing a lit bay with two suits in cradles under the crane girder (sealed with a hazard leaf in lockdown); SUIT FOUNDRY lettering on the +x and +y faces; a roof crane monitor; a red mast lamp on a roof fixture; a 5.2 m issue wing; a test apron with a gantry crane and hoisted missile cell; an outdoor cradle with a ~4 m suit and a pilot entry gantry; a charging pedestal and an arming rack. Everything is opaque. TOPS armory 92 -> 160. Generated to a scratch dir; only the g7_fac_armory_* and g7_fac_fuel_* PNGs and their manifest entries were copied into assets/art/g7_fac7f (WALL7-2's assets untouched; manifest diff is 5 lines).",
+  "heights_m": {"hall_roof": 11.6, "parapet": 11.85, "monitor": 12.6, "mast_lamp": 14.4, "issue_wing": 5.2, "gantry": 8.6},
+  "heights_CR": "ZONE_H/BLD_Z armory -> 114.0 in fac_life7.gd:51, fac_seq7.gd:41, fac_atmo7.gd:54 (seq 5286): applied by ORCH and relayed to LIGHT7",
+  "plaque_CR": "g7_atmo7.gd:36 armory board -> [\"SUIT FOUNDRY\"] + regenerate g7_atmo7 (seq 5287): relayed by ORCH",
+  "defs_name": "cn_armory name -> \"Suit Foundry\" in defs_g7_cnsuits.json (CR to EXO7-2, seq 5288); not checked that it landed",
+  "test": "tests/test_cnfac7.gd test_facb76_suit_foundry_fits_suits (new, green)"
+ },
+ "tests": {
+  "test_cnfac7": "RESULT pass=35 fail=0",
+  "test_apcmov7": "RESULT pass=14 fail=0",
+  "test_art7f": "RESULT pass=8 fail=0",
+  "test_life7": "RESULT pass=15 fail=0",
+  "test_lpmode7": "RESULT pass=18 fail=0",
+  "test_cnsuits7": "RESULT pass=9 fail=0"
+ },
+ "best_shots": [".plan/shots/FACB7-6/facb76_suit_foundry_sprite_x3.png (sprite render x3, looked at)", ".plan/shots/FACB7-6/facb76_suit_foundry_baydoor_x4.png (bay door close-up, looked at)"],
+ "next_steps": [
+  "1. Mantrap foot-only (ORCH seq 5361): make the mantrap / decon-hall cells impassable to exo_suit / cn_suit defs. Options: in cn_facility.gd (_mantrap / the decon hall cells), or a change_request to ORCH for a movement.gd foot-only gate flag mirroring APCMOV7-3's vonly. Then add a check to test_cnfac7 that a g7_cns_bastion ordered to a cell beyond the mantrap paths around it, never through (18,26)/(18,27) or the decon hall.",
+  "2. Read pt7_art7f's PLAYTEST RESULT and SCRIPT ERROR count (C:/Users/logan/AppData/Local/Temp/facb76/pt_art7f.log). Read the armory PNGs in .plan/shots/FACB7-6 at zoom 1 / 1.75 / 2.5, then post fact shots.best with in-game shots.",
+  "3. Confirm that EXO7-2 applied the 'Suit Foundry' defs name.",
+  "4. Optional art polish: the gantry portal reads heavy at zoom 1, and the apron suit is small next to the 11.6 m hall (to scale)."
+ ]
+}

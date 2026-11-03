@@ -1,0 +1,31 @@
+{
+  "agent": "SPECOPS8",
+  "why": "guard budget.handoff_now (seq 14153; projection > 70% of 750k at 72 calls)",
+  "brief": "13.9c-44 spec-ops missions (escort, core raid, recon & mark, rescue/extract), Drive or Fly, command bar + hotkeys, team card, F4 ops room; tests/test_specops8.gd; tools/pt7_specops8.gd",
+  "done": {
+    "sim/systems/specops8.gd (new)": "full deterministic per-team state machine; commands so_mission {team_id, kind escort|raid|recon|rescue, mode drive|fly, target [x,y], target_id, escort_team} / so_cancel; legs mirror CNMISSION8 phase names (board, exit, air_board, air_fly, air_unload, travel ... ret, air_pick, air_board2, air_home, home, done); work phases escort follow->screen, raid dismount->plant->withdraw->detonate (G4bMech._spawn_charge with FUSE_HOLD, detonate sets fuse 1), recon scout (Triggers._apply_reveal + Creep.reveal, G5 mark e.marked_until/marked_team, marks list shared into CnOps7 seen so cn_fire_support accepts marked targets), rescue search->recover (LP lost_squad beacon needs fly; wounded carried: follow carrier every tick incl. wnd_pos, board_now into APC/dropship; CN survivor teams with APC drive home; walkers walk home / board dropship). Reasons: mission_reason, team_reason, cancel_reason; helpers cmd_for, strike_near, raid_target, beacon_near, survivors, marks, status_line, progress, dropship(skip busy), dropship_busy. on_applied: player order cancels (KEEP/PAUSE lists like CNMISSION8). State w.sys_state.so8 only after first so_mission.",
+    "content/g7/rules_g7_specops8.json (new)": "rules.g7_specops8, all PROVISIONAL",
+    "sim/world.gd": "SpecOps8 const, SYSTEM_ORDER slot after CnMission8, so_mission/so_cancel rows, SpecOps8.on_applied after CnMission8.on_applied",
+    "presentation/hud/g2_commands.gd": "_add_so_buttons() call after _add_cn_buttons(); update_state arm for so8_*; block at file end (Escort SHIFT+G, Core raid SHIFT+C, Recon SHIFT+K, Rescue SHIFT+Y arm a cell_cmd click checked by preview_command; Insert SHIFT+I toggles drive/fly; Cancel SHIFT+Z). Var so8_last for flows.",
+    "presentation/ui5/panels/hotkeys.gd": "so8 rows + G7_SHARE so8<->cn7/fissure7/vanta7/air; Hotkeys.collisions() == []",
+    "presentation/ui7/team_card.gd": "SPEC OPS section (SpecOpsLine, SpecOpsBar, buttons SpecOps_escort/raid/recon/rescue/insert/cancel), _refresh_so called from _refresh_mission; mission buttons open strat map with pick {tid, mode, so}",
+    "presentation/ui7/strat_map.gd": "pick.so branch -> _so_pick_at (SO8.cmd_for + preview_command), header text, layers.marks drawn as diamonds",
+    "tests/test_specops8.gd (new)": "test_reasons (PASS 0 fails), test_drive_all, test_fly, test_override_cancels, test_save_load_same_future (not yet run)",
+    "dev tools": ".plan/so8_run.gd (-s .plan/so8_run.gd -- --m=test_drive_all, LOG on), .plan/so8_parse.gd (parse check + hotkey collisions), .plan/so8_probe.gd"
+  },
+  "evidence": {
+    "parse": "all 6 edited scripts load + can_instantiate; Hotkeys.collisions() []",
+    "test_reasons": "DONE test_reasons fails=0",
+    "drive probe (before APCOUT8 fix landed)": "escort team 3 exit->follow at t=742 then ret/home when the purge failed; strike team 1 and squads 4/5/6 stuck in facility to_gate until exit_s (t=4829) then travel failed 'cannot reach the target' (facility exit deadlock = APCOUT8's bug: 5 teams launched at once)"
+  },
+  "next": [
+    "1. Wait for / check APCOUT8 fact (facility exit fix) then rerun: G -s .plan/so8_run.gd -- --m=test_drive_all (log). If many simultaneous launches still jam, stagger the so_mission orders in the test (e.g. 600 ticks apart) - do not weaken checks.",
+    "2. Run test_fly (VTOL8 handoff .plan/handoff/VTOL8-1.json fixed landing at the big pad), test_override_cancels, test_save_load_same_future; fix sim bugs found.",
+    "3. Write tools/pt7_specops8.gd (RefCounted run(pt), like pt7_cnmission8 when it exists): select a tactical squad, press Shift+K -> click recon area etc. via g2_commands.so8_on_cell; open F4 team card SpecOps_* buttons + strat_map _so_pick_at; screenshots; add 'specops8' to G7_FLOWS in tools/ui_playtest.gd (claimed).",
+    "4. Run test_hot_state (report moves, never edit goldens), test_cnsim7, test_cnops7, test_cnfac7, test_lpmode7, test_det7, test_ui_fit, test_opsui7, test_specops8.",
+    "5. Post fact api.specops complete + fact shots.best."
+  ],
+  "coordination": "CNMISSION8 agreed keys (A/O main cn7, cn8p page for steps); I told it my world.gd/g2/team_card/strat_map insert points (board seq 14156). CnM8.mission_of/active/target_of used for escort.",
+  "calls_used": 74,
+  "tokens_used_est": 560000
+}

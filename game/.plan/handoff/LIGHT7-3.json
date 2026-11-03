@@ -1,0 +1,45 @@
+{
+ "agent": "LIGHT7-3",
+ "reason": "budget.handoff_now (ORCH: 75% projected, calls ~67 of 140)",
+ "files_changed": [
+  "presentation/view/fac_atmo7.gd (new 'win' node (z3, after the dark multiply, before glow); _win_bands (window grids read from tools/art/g7_fac7f.gd: planning ribbons + ops crown, workshop drone-bay storey ribbon, barracks armour slots, armory wing windows), _plan_windows (panes cut by every silhouette in front, own building excluded by zone rect), _draw_room / _draw_windows (frame + inset glass + lit room: ceiling gradient, floor band, side walls, ceiling strip light, blinds / partition / desk+monitor / silhouette, screen rooms flicker, dim and dark rooms, warm 3000 K / cool 5000 K, opaque), _tint shared with _draw_dark; armory name plaque dropped (board ask atmo7.foundry_plaque_off_bay); elongated outward wash: WASH_A/WASH_B/CORE_A/CORE_B, _mk_pool_t, _ivec, _lift_ellipse, DARK_SHADER now lights[128] as two vec4 per elliptic light (inverse conjugate-diameter matrix))",
+  "tools/pt7_atmo7.gd (_wins flow + LIGHT7_QUICK=win: Foundry day shots then night shots of planning / workshop / barracks / armory; probes light7_windows_plan / light7_windows_drawn; also called in the full flow after light_night_planning)",
+  "tests/test_light7.gd (test_window_panes_on_buildings: every pane centre on its own building silhouette, opaque tones, planning / workshop / barracks >= 6 panes, dark+dim+lit+screen all present, >= 30% dark or dim)"
+ ],
+ "done": {
+  "1_lit_windows_as_rooms": "DONE incl. the owner 13.9c-24c rework: each window keeps its drawn frame, glass inset ~1.5 px, a room behind it (ceiling-lit gradient, floor line, darker side walls, cream ceiling strip light, per-window half-drawn blinds / partition / desk with glowing monitor / occasional silhouette), screen rooms flicker, ~45% of panes dark or dim, no pure white, opaque. Planning 42 panes, workshop 9, barracks 24, armory 0 (its two +y wing windows are behind the decon hall; the +x one is behind the bay gantry in the art).",
+  "plaque_off_bay": "DONE: the armory name plaque board is no longer drawn (the building has its own lit SUIT FOUNDRY lettering); Foundry day + night shots w4 show the bay opening clear.",
+  "2_continuous_perimeter_wash": "BUILT and looks mostly continuous (p1 shots): wall / gate floods are now ground ellipses stretched ALONG the wall (WASH_A 6.6 tiles x WASH_B 4.6 out, core 3.6 x 2.4), pools via _mk_pool_t, tint lift via elliptic shader lights. Still slight brighter blobs at each flood; see next_steps 1."
+ },
+ "evidence": {
+  "test_light7": "RESULT pass=5 fail=0 files=1 (after the elongated wash + window rooms)",
+  "test_atmo7": "RESULT pass=8 fail=0 files=1 (run after the plaque change, before the wash change: re-run)",
+  "pt7_atmo7_win_quick (LIGHT7_QUICK=win, final rooms + plaque drop)": "PLAYTEST RESULT pass=11 fail=0, 0 SCRIPT ERROR (.plan/shots/LIGHT7-3/w4/run.log)",
+  "pt7_atmo7_perim_quick (after the elongated wash)": "PLAYTEST RESULT pass=9 fail=0, 0 SCRIPT ERROR (.plan/shots/LIGHT7-3/p1/run.log)",
+  "best_shots": [
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/w3/atmo7_win_night_planning_z3.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/w3/atmo7_win_night_barracks_z3.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/w3/atmo7_win_night_workshop_z3.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/w4/atmo7_win_day_armory_z3.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/w4/atmo7_win_night_armory_z3.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/p1/atmo7_light_night_out_e_z1.png",
+   "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LIGHT7-3/p1/atmo7_light_night_out_e_z2.png"
+  ],
+  "shots_posted_as_fact_shots_best": "w3 planning / barracks / workshop (rooms), w4 Foundry day + night. The p1 perimeter shots (wash) are NOT yet posted: post them after the WASH_A tune."
+ },
+ "next_steps": [
+  "1. Perimeter wash tune (13.9c-24b): in presentation/view/fac_atmo7.gd raise WASH_A 6.6 -> ~8.0 (floods are 4 tiles apart; the blobs at each flood remain), optionally nudge the wash pool centre (at + out * 3.2) and the additive alphas in _glow_fixtures 'wall'/'gate' (0.26 lift / 0.52 no-lift wash, 0.26 / 0.46 core) if overlap over-exposes; re-shoot with `LIGHT7_QUICK=perim` (shots atmo7_light_night_out_e_z1 / z2, out_gate_z1 / z2), Read them, post fact shots.best. Do not exceed the shader's 64 elliptic lights (lights[128] vec4; _update_lift skips beyond 120 entries).",
+  "2. Foundry bay interior work lights (ORCH board ask, after the wash): in fac_atmo7.gd add fixtures / glow for the Suit Foundry bay: a lit back wall, light-strip glow, downlights on the gantry, a warm pool on the bay floor and the apron, all kept to the bay opening and the ground (clip pools with the existing _mk_pool / sil, no translucent volume over the building; bay door centre = zone [20,17..18] east face, art local: dy0 = -ey*0.5, dhw 3.2, dhz 7.2, xb = xf - 4.4 back wall; read tools/art/g7_fac7f.gd armory() for the gantry downlight positions, do not edit it). Re-shoot with `LIGHT7_QUICK=win` (atmo7_win_night_armory_z3 / z2) and post fact shots.best.",
+  "3. CR 5927 (fac_life7.gd MAST_TIPS, you own that constant and the mast-blink lines only): re-measure the command centre's 3 comms-mast pole tips on a night zoom-2.5 shot of the command centre (EW mast tip 25.6 m = 251 px above its foot: ew = c + (th.x - 1.4, th.y - 1.4) with c = (-1.2, 0) in planning() of g7_fac7f.gd; MAST_TIPS entries are screen offsets from the zone centre) and fix MAST_TIPS so the blink dots sit on the pole tips, not the facade.",
+  "4. tests/test_light7.gd test_light_count_bounded: add the new core pools (F.P2 per outward flood: the formula's n already counts fixtures; add (g.fix with core).size()) and the window panes (g.win.size() is bounded: assert <= 160 per facility and that counts.panes stays <= g.win.size() after a night redraw). LIGHT_CAP 320 counts pools + lamps only; panes are not in it.",
+  "5. Run the FULL windowed pt7_atmo7 once: `\"$G\" --path . -- --ui-playtest=<abs shot dir> --ui-playtest-atmo7` (timeout 900; the full flow now includes _wins after light_night_planning); want PLAYTEST RESULT all ok, 0 SCRIPT ERROR; check lights at alarm-night <= LIGHT_CAP 320 (r1 alarm 272 + core pools) and atmo7_frame_cost (win node redraws at ~10 Hz at night: if it is heavy, redraw only on night change and when a flicker pane is on screen). Re-run test_atmo7 (last 8/0 was before the wash change).",
+  "6. Armory windows: FACB7-7 is still reworking tools/art/g7_fac7f.gd armory(); if its wing windows move, update _win_bands 'armory' (mirrors RO.window calls at xa + 1.4 + k * 2.6, ye, z 2.6, 0.9 x 0.7)."
+ ],
+ "not_done": [
+  "wash fine-tune and shots.best for the perimeter",
+  "Foundry bay interior work lights",
+  "CR 5927 MAST_TIPS",
+  "light-count test extension",
+  "full windowed pt7_atmo7"
+ ]
+}

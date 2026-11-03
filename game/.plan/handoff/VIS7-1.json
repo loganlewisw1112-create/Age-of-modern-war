@@ -1,0 +1,40 @@
+{
+ "agent": "VIS7",
+ "n": 1,
+ "reason": "70% projected budget (~100 calls)",
+ "done": [
+  "sim/render_snap.gd: _g7_vis -> g7u keys apc/dome/dome_r/smk/t7w/web/t7(Threats7.render_info)/coc + snap.v7 id list; threats7 added to the lazy _sys map",
+  "presentation/view/vis7_layer.gd (new, ~1150 lines): topple swap (stagger lurch/fall/impact bounce/down thrash/rise) via x7; APC _rkt (raise, ripple fire, reload, stow aliases rk_aim/rk_stow_*), _gun (fire front/rear by shot direction, cosmetic belt reload after 5.5 s), main-sheet panels_open/dome frames; threat states (burrow mound hide+ripple, mimic as_foot sheet, leech latch/drill, cocoon hide+pod); overlays dome bubble+charge bar+hit ripple, smoke, web, wrecked-part smoke, exposed weak point + thrashing legs; fx for RocketSalvo/backblast/canister impacts, WalkerBlownUp (blast sheet+fireballs+debris+smoke column+embers), limpet/harpoon/disruptor, dome up/break/hit, APS, panels, EMP, emitter beam, BurrowerErupt, slugs, web, cocoon wrap/cut/lost, sparks, leech fling, claws, mimic glitch; threaded team tint for weapon sheets; self-drives in _process until match_view wires it; fallback draws swaps over units while entity_layer lacks x7",
+  "presentation/view/world7_layer.gd: recovering ground = RG8 warp texture (g = creep on now) -> thin scar/regrowth tint instead of grey slab; beacons as tripod strobe masts that keep screen size; abandoned vehicles as sprite-scale iso boxes (body, cabin, glass, wheels, rust, creep veins); dam deck + parapets + spillway face + lamps",
+  "presentation/hud/minimap.gd: full terrain palette 0-15 (CHASM dark rift, buildings/shallow/deep/beach/cliff/hill/rail no longer ridge colour); creep overlay under the fog (LA8 texture every 1.5 s, creep_cells probe)",
+  "tests/test_vis7.gd 5/5; tools/pt7_vis7.gd run 1: PLAYTEST RESULT pass=14 fail=2, 0 SCRIPT ERROR"
+ ],
+ "remaining": [
+  "Get the entity_layer x7 hook applied (seq 1392 -> CNFAC7-3 seq 1449, escalated to ORCH). Without it the toppled walker draws twice (upright + overlay). Exact lines in seq 1392.",
+  "ORCH: match_view wiring CR seq 1393 (refresh before entity_layer.refresh, on_events in _on_step_events).",
+  "pt7_vis7 fixes: (a) vis7_dome failed because the spawned strike APC drove off and dropped the dome before the first sample: stop its path (Movement.stop_path) and re-raise each 0.5 s until g7u dome shows; (b) vis7_guns: no .50 fire happened in the 4 s window (walker out of range / team holding): spawn 2 spitters 4 tiles from APC a and wait until a ShotFired with shooter = an APC id",
+  "vis7_layer polish from the shots: WalkerBlownUp too small for 'a big destruction blast' -> blast sheet scale ~2.0, fireballs to r 40, shockwave to 200 px, 1.4 s; cap the harpoon cable when the two ends are > ~12 tiles apart (synthetic event used a far APC)",
+  "Re-run pt7_vis7 windowed, look at every shot at z0.6/1.2/2.4 (esp. 08-14 topple + blast once the hook is in)",
+  "fps: bench 2k/10k with the layer on (shared PC) - not measured yet; the layer is O(len(snap.v7) + live fx), empty otherwise",
+  "test_hot_state / test_look7 / test_scale7 (minimap) targeted runs not done yet"
+ ],
+ "files": [
+  "sim/render_snap.gd",
+  "presentation/view/vis7_layer.gd",
+  "presentation/view/world7_layer.gd",
+  "presentation/hud/minimap.gd",
+  "tests/test_vis7.gd",
+  "tools/pt7_vis7.gd"
+ ],
+ "tests": {
+  "test_vis7": "5/0",
+  "pt7_vis7": "14/2 (vis7_dome, vis7_guns: flow timing, see remaining)"
+ },
+ "gotchas": [
+  "manifest _rkt specs have no frame_alias; vis7 FRAME_ALIAS maps rk_aim/rk_stow_*",
+  "ArtCatalog._sheet tint is a GDScript per-pixel loop (1-2 s on a 1.4 MB sheet): vis7 tints on a WorkerThreadPool task, tests use sync_tint",
+  "WalkerBlownUp has no pos: vis7 keeps _last[id] from the topple keys",
+  "Bash heredocs containing an apostrophe failed in this environment: write scripts with the Write tool"
+ ],
+ "evidence": ".plan/shots/VIS7/vis7_01..21_*.png"
+}

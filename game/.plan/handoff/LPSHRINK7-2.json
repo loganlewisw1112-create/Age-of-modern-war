@@ -1,0 +1,47 @@
+{
+ "agent": "LPSHRINK7-2",
+ "stopped_on": "budget.handoff_now (75%)",
+ "calls_used": 88,
+ "state": "everything compiles; all 7 tests green; pt7_lpmode7 18/0; pt7_lpmap7 43/1 (lpmap7_valid, facility approach CR)",
+ "layout": "RING_HALF [30,23]: outer 61x61 (was 69x69 LPSHRINK7, 87x87 BASE7-2), core 47x47. Outer band: economy row d24..26, service lane d27 (1 wide, paved all round, = ring_road(0), wall patrols), merged turret+defence row d28..29 (explicit FACE_PLAN per face), wall d30. No outer ring road. Gate yard |t|<=3 (HOLD 4->3), gate turret pair t -5/4 placed first, gate camera masts at (d29, t+-2), corner masts phase 0, corner pits 2 in from the corner; power yard = spare 2x2 slots in the economy row (merged row is full). Core unchanged. ~59 not reachable: econ 3 + lane 1 + row 2 + wall 1 = 7 -> 61 (51% less ground than 87x87).",
+ "numbers_outer": "16 pits (6 corner + n2 s2 w2 e4), 8 ammo bunkers, 23 turrets (n6 e6 s6 w5; autocannon 6, microwave 5, hmg 4, hulldown 3, thermite 2, automortar 1, emp 1, railgun 1), 4 ATGM, 3 SAM + 1 radar, 4 CIWS, 19 cameras = 70 defences; 464-467 wall segments; economy row 4 refineries, 3 barracks, 3 research, 2 hospitals, 1 exo, 2 motor pools, 13 depots, 27 generators (power yard). Core: 2 pits, 4 SAM, 3 CIWS, 1 radar, 4 turrets, 7 cams; army_n 96, units r1 175 r0 73 = 248.",
+ "helipads": "start.helipad_air = 4 a_attack_heli + 2 a_transport_gunship (all 6 pads landed, home=their helipad, lp_pad 0..5); new start.hangar_air [a_airlift] parks in a_hangar_heavy@(86,271) (lp_setup.build_helipads); strike jet in the other hangar.",
+ "coverage": ".plan/lpshrink7_cover.gd: 18 pits, 148 approach points 6 outside the wall, 0 uncovered, 14 by one, 134 by two+, east face min 2",
+ "vehicle_loop": ".plan/lpshrink7_loop.gd -> .plan/lpshrink7/loop.log: a_laser_tank and a_apc drive lane NW/NE/SE/SW/W/N + out of and back through N, E, S gates: 28/28 legs ok, LOOP RESULT fails=0; on road 93% / 91% of samples",
+ "soak_before": ".plan/lpshrink7/soak_before.log (old 3-ring): ending=defeat_countdown time_s=1270 phase=4 tide at 601 rings_fallen=0 cores 3/3 ms_per_tick=84.92 lp_us 414",
+ "soak_after": ".plan/lpshrink7/soak_after.log (61x61): ending=defeat_countdown time_s=1269 phase=4 tide at 601 rings_fallen=0 cores 3/3 ms_per_tick=43.95 lp_us 190 creep_us 613; own units 241 -> 195",
+ "tests": {
+  "test_lpmap7": "RESULT pass=14 fail=0",
+  "test_lpmode7": "RESULT pass=18 fail=0",
+  "test_cine7": "RESULT pass=7 fail=0",
+  "test_lpperf7": "RESULT pass=9 fail=0 (nb > 1000 -> > 600, 13.9c-36 authority record)",
+  "test_lpreserve7": "RESULT pass=7 fail=0",
+  "test_det7": "RESULT pass=6 fail=0",
+  "test_cnfac7": "RESULT pass=36 fail=0"
+ },
+ "playtests": {
+  "pt7_lpmode7": "PLAYTEST RESULT pass=18 fail=0 (rings == 3 -> 2, 13.9c-36)",
+  "pt7_lpmap7": "PLAYTEST RESULT pass=43 fail=1 (lpmap7_valid: Ring core depot at (90,269) not on buildable ground)"
+ },
+ "shots": [
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPSHRINK7-2/lpmap7/lpmap7_base_day.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPSHRINK7-2/lpmap7/lpmap7_helipads_day.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPSHRINK7-2/lpmap7/lpmap7_helipads_n.png",
+  "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPSHRINK7-2/lpmap7/lpmap7_base_z1.png"
+ ],
+ "files": [
+  "sim/maps/last_protocol.gd",
+  "sim/systems/lp_setup.gd (build_helipads only)",
+  "content/g7/rules_g7_lastprotocol.json (helipad_air, hangar_air)",
+  "tests/test_lpperf7.gd (1 check)",
+  "tools/pt7_lpmap7.gd",
+  "tools/pt7_lpmode7.gd",
+  ".plan/lpshrink7_loop.gd",
+  ".plan/lpshrink7_cover.gd"
+ ],
+ "remaining": [
+  "1. ORCH decides change_request lp.facility_approach_vs_core_plots: cn_facility conf.approach [0,28,28,5] paves (90..117,267..271) under core fuel depot, repair bay, dropship pad, QRF barracks (both 69x69 and 61x61); then pt7_lpmap7 0 fail",
+  "2. Visual: parked helicopters render as small sprites at each pad's back corner, not centred on the pad (Air park pos x+0.55 / art scale) - LOOK/air art owner",
+  "3. ORCH: confirm 61x61 vs the ~59 target (59 needs a 2-deep economy row, which the 3x3 refineries/barracks/hospitals/motor pools cannot use)"
+ ]
+}

@@ -1,0 +1,26 @@
+{
+  "agent": "PERF7J",
+  "reason": "ORCH guard budget.handoff_now (76%) at ~66 calls; every change hash-proved, everything compiles",
+  "changes_all_exact": [
+    {"file": "sim/systems/senses7.gd", "what": "spot loop: per-faction _is_machine cached for the loop (_mf/_mf_on, used by _profile); _silhouette tunables + max_range + prone_keys read from _K (_kfresh at pass start) via new _sil_k; _opos inlined for units in _sees; head() inlined for the no-bk case; duplicate entities.has before need.append removed"},
+    {"file": "sim/systems/wounds.gd", "what": "apply_hit reads cfg() once (zone cfg, graze, unc_hp, mh=max_hp once); pick_zone/_zw -> _pick_zone_c/_zw_c with the dict passed (public pick_zone/_zw/zone_weights unchanged); _vis_pass collects due ids without a keys() copy (same ids, same order); _idle_carers skips men outside near-bbox grown by sqrt(r2)+1 tile before the exact test"},
+    {"file": "sim/systems/formations7.gd", "what": "_assign_exact on packed arrays (start points/slots read once, taken/perm packed) + _uncross_packed helper; same passes, pairs, tests, swaps in order. A/B bench .plan/perf7j_assign.gd: old vs new perms identical for n=3,12,24,30,48,49,200,900/800 both owners (ASSIGN RESULT SAME); n<=48 ~2x faster, big groups ~5-10% (polish dominates, untouched)"},
+    {"file": "sim/systems/shrapnel.gd", "what": "_air: def part cached per def, cache dropped when Content.table('units') is another object"}
+  ],
+  "hash_proof": "gate scene perf7h_prof --hashes=100, ticks 100..600 = b86d73d0a4246c4c, 2046aaca11e7a326, be65122d827f22c6, ebef90a51d085ec3, bb01c1c7022931d5, 14f1c23c6ffd1d42 before (b0) and after every stage (r1, plain run, r2 with all edits) - .plan/perf7j/{b0,r1,r2}_g7.log",
+  "tests": {"test_squad7": "23/0", "test_formations7": "4/0", "test_wound7": "17/0", "test_det7": "6/0", "test_perf_g6": "7/0", "test_sense7": "10/0", "note": "run before the last edit (senses7 head() inline), which is hash-proved in r2 but tests not rerun"},
+  "per_system_ms_tick_in_process (G7 / G6.1 concurrent --sub runs)": {
+    "before_b0": {"total": "49.06 / 39.63 = 1.238", "combat": "30.33/24.51", "fog": "2.40/1.07 (S7 tick 1.41 spot 0.945)", "_cmds": "1.17/0.24", "wounds": "0.90/0", "movement": "5.48/5.22", "intel": "1.21/1.01", "spl.burst": 1.61, "dmg.zone": 0.69},
+    "after_r1_partial": {"total": "44.09 / 36.14 = 1.220", "fog": "2.05/0.96 (S7 1.14 spot 0.72)", "wounds": 0.81},
+    "after_r2_all (lighter load)": {"total": "29.91 / 23.51 = 1.272", "combat": "18.40/14.45 (1.27)", "fog": "1.36/0.66 (2.07, was 2.24)", "_cmds": "0.60/0.11", "wounds": 0.58, "spl.burst": 0.95, "dmg.zone": 0.41},
+    "verdict": "NOT MET (target <= 1.12). Ratio moves with machine load more than with these edits; the gap is combat cmb.act (1.35-1.40x: 62k finds vs 41k, f.scan 21.8k vs 12.8k, more engagement in the G7 fight = behaviour, not overhead)"
+  },
+  "measured": {"tick1_attack_move_apply": "G7 ~650-710 ms vs G6.1 113 ms over 2 commands: Formations7 assign 447-476 (polish 358, split/exact 113), fit 24, local 18, _mass_line 12.5 ms (measured, small), tail 7", "burst": "264 bursts/600 ticks, ~47 candidates and ~10.6 wound_hits each; Wounds.apply_hit ~80 us loaded, wound_hit ~100 us"},
+  "next_steps": [
+    "1. Shared-code exact speedups count against the frozen G6.1 tree: Morale.add_supp/cover_level (near_miss + shrapnel + hits, ~1 ms/tick), Fog.concealed / _cand_ok chain in Combat._find (f.units +0.75), Damage.wound_hit; combat.gd/damage.gd need coordination with WALLFIRE7 (live).",
+    "2. Formations7._polish_near_fast is 358 ms at tick 1 (passes 0-2 ~equal cost, 67k pairs per big group); only a native port would cut it substantially.",
+    "3. Rerun test_sense7/test_det7 once (last edit after tests), then ORCH idle-PC pairs (bash .plan/perf7g_pairs.sh 6 ...)."
+  ],
+  "tools": [".plan/perf7j_assign.gd (old/new assign A/B, --pol phase timing)", ".plan/perf7j/orig/ (pre-edit copies)", ".plan/perf7j/*.log"],
+  "files_changed": ["sim/systems/senses7.gd", "sim/systems/wounds.gd", "sim/systems/formations7.gd", "sim/systems/shrapnel.gd"]
+}

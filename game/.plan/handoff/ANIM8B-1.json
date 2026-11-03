@@ -1,0 +1,32 @@
+{
+  "id": "ANIM8B-1",
+  "task": "13.9c-52 knock-down / blast-throw / unconscious animation (presentation only)",
+  "done": [
+    "tools/art/g61_anim.gd _render8: tumble/launch_1 use flag sr = even screen-plane spin toward the throw side at constant body length (3-D pitch foreshortened some rows to 0.7 mass / 12x12 blobs); other poses keep the 3-D pitch with axes held >= MIN8 0.95 length (_len8); whole body shifted to fit inside the cell (sprawls were losing their lower half at the cell bottom); new _clean8 outline pass per cell (drop opaque px with <=1 opaque 4-neighbour, fill holes with >=3, colour+mask alike, read from copy = deterministic)",
+    "poses8: launch_0 narrower (lx 1.12 aw 1.1); launch_1 sr; tum_k = 1.2 + k*TAU/8, kk 0.45+0.2cos, sr (no frame reads as a standing man); buck_1 narrower; buck_2 reworked = idle source sitting back (ph .6 kk .45 pv .1)",
+    "tools/art/g8_anim8.gd: --contact-fast (in-memory rifleman side sheet, no bake, ~3 s) + per-frame mass table (ANIM8M lines); strips now go to .plan/shots/ANIM8B/",
+    "Rifleman mass per frame vs same-row idle now 0.89-1.31 everywhere (was 0.62-1.50); strips looked at: launch_tumble, impact_settle, unconscious, buckle, wake (2x zooms) - every frame a full-size body",
+    "Full bake x2: 'ANIM8 baked 58 side sheets in 122345 ms' / '... 117172 ms', 35 defs, 158 files, manifest.json byte-identical (cmp), 0 SCRIPT ERROR; godot --import done",
+    "tests/test_anim8.gd mass check tightened 0.55..1.8 -> 0.8..1.5, against the same facing's idle (row 5 idle is narrower than row 0)",
+    "tools/pt7_blast8.gd (BLAST8/ACCURACY8B file, bus-noted): +2 shots blast8_impact_skid (3 ticks after the highest man lands, paused) and blast8_mid_wake (12 ticks into the wake, zoom 3); no check changed"
+  ],
+  "results": [
+    "test_anim8: RESULT pass=5 fail=0 files=1 time_ms=13695",
+    "test_anim61: RESULT pass=7 fail=0 files=1 time_ms=17544",
+    "test_blast8: RESULT pass=11 fail=0 files=1 time_ms=16751",
+    "test_look7: RESULT pass=8 fail=0 files=1 time_ms=15682"
+  ],
+  "remaining": [
+    "bash tests/run.sh --only=test_wound7",
+    "compile check: timeout 240 \"$G\" --headless --path . --quit-after 60 2>&1 | grep -E -A2 'SCRIPT ERROR|Parse Error' (expect nothing)",
+    "windowed flow: \"$G\" --path . -- --ui-playtest=\"C:/.../game/.plan/shots/ANIM8B\" --ui-playtest-blast8 (timeout 900, via hb.sh) -> PLAYTEST RESULT fail=0, 0 SCRIPT ERROR; Read blast8_mid_throw_close, blast8_impact_skid, blast8_unconscious_selected/after_landing, blast8_mid_wake",
+    "post fact shots.best with those + .plan/shots/ANIM8B/rifleman_launch_tumble.png, rifleman_unconscious.png, rifleman_wake.png, rifleman_buckle.png",
+    "fps: tools/bench.gd -- --fps --fps-secs=30 2k p10, report with `tasklist | grep -ci godot` (was 18 at 22:05)"
+  ],
+  "gotchas": [
+    "python str.replace replaced a shared bb-clamp line in _render too once (fixed); edit _render8 by unique anchors",
+    "if poses change again: --contact-fast to iterate, then full bake twice (2 min each, use hb.sh) and cmp manifest.json",
+    "entity_layer k8 driver untouched by ANIM8B; skid goes 7 px past the sim landing point and eases back during the wake"
+  ],
+  "files_changed": ["tools/art/g61_anim.gd", "tools/art/g8_anim8.gd", "tests/test_anim8.gd", "tools/pt7_blast8.gd", "assets/art/g8_anim8/* (rebaked)", ".plan/shots/ANIM8B/"]
+}

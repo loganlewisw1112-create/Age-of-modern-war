@@ -1,0 +1,21 @@
+{
+ "agent": "OPSUI7", "gen": 1, "status": "done (all 10 brief items built; hooks wait on ORCH / SQUAD7-6 CRs)",
+ "done": [
+  "presentation/ui7/ops_panel.gd: operations room hub (tablet modal, 6 screens TEAMS/DEPLOY/TEAM CAM/STRAT MAP/WAR TABLE/CODEX, LP countdown + real minutes in the header, radio log from mv.world_events, jump_to, issue via MatchView.issue, F4/Esc on_key, fit_build for 7 ui7_ops_* screens)",
+  "ops_data.gd read-only model (team rows, deployment tracker values, dropships, facility stock, incoming forces, routes, grid refs A1..J10, lp_countdown real minutes); ops_style.gd + ops_screen.gd tablet look (scan lines, brackets, NATO icons, drone-feed palette)",
+  "team_card.gd (CnProgress7.team_card + cn_fire_support / cn_relief / cn_specialize buttons pre-checked with the sim's reason functions)",
+  "deploy_tracker.gd, team_cam.gd (overwatch / helmet feed through drone_cam.gdshader, radio subtitles; main camera follows the feed while the cam screen is up, restored on leave), strat_map.gd, war_table.gd (rotate/tilt/zoom hologram), codex.gd (14 PROVISIONAL lore files, collected = pure read of sys_state.lp), protocol_advisor.gd (HUD card: compact tracker + PROTOCOL lines, modes on/muted/off, signal advisory(line) for AUDIO7)",
+  "tests/test_opsui7.gd 9/9; tools/pt7_opsui7.gd PLAYTEST RESULT pass=18 fail=0, 0 SCRIPT ERROR; fit (scratch runner .plan/opsui7_fit.gd, same _check) 147 screens 0 issues; test_ui_fit 3/3, test_ui_panels 5/5"
+ ],
+ "remaining": [
+  "ORCH: apply CR seq 1401 (hud.gd: var ops7 + attach + on_key), 1402 (fit_screens.gd NAMES + ui7_ops dispatch), 1403 (settings DEFAULTS protocol.advisor + row), 1405 (lp_hud countdown ~N min). SQUAD7-6: CR 1404 (hotkeys GLOBAL_ACTIONS ops_room F4).",
+  "After 1401/1402: bash tests/run.sh --only=test_ui_fit (screen count grows by 7 x 7) and rerun pt7_opsui7 (it logs opsui7_hook 'hud.ops7 present')."
+ ],
+ "files": ["presentation/ui7/ops_panel.gd", "presentation/ui7/ops_data.gd", "presentation/ui7/ops_style.gd", "presentation/ui7/ops_screen.gd", "presentation/ui7/team_card.gd", "presentation/ui7/deploy_tracker.gd", "presentation/ui7/team_cam.gd", "presentation/ui7/strat_map.gd", "presentation/ui7/war_table.gd", "presentation/ui7/codex.gd", "presentation/ui7/protocol_advisor.gd", "tests/test_opsui7.gd", "tools/pt7_opsui7.gd"],
+ "scratch": [".plan/opsui7_fit.gd", ".plan/opsui7_*.log", ".plan/shots/OPSUI7/fit2/", ".plan/shots/OPSUI7/pt2/"],
+ "gotchas": [
+  "Never call CnFacility.st / Air._st / CN._st from UI: they create sys_state keys (hash change). ops_data uses fac/facilities/flights/team only.",
+  "Team cam shares world_2d: layers draw around the main camera, so the hub moves the main camera to the feed while TEAM CAM is shown.",
+  "Settings ConfigFile.get_value with a missing key and null default prints ERROR: read has_section_key first."
+ ]
+}

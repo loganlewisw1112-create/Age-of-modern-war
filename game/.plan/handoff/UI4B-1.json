@@ -1,0 +1,31 @@
+{
+  "agent": "UI4B",
+  "gen": 1,
+  "reason": "70% projection reached (52 calls, est ~320k of 600k cap with +90k margin) right after the orch's new rendering CRs arrived",
+  "done": [
+    "Brief tasks 1-6 are done. The playtests pass with the sim thread on (run r3, .plan/shots/UI4B/pt5.sh r3): h 33/0, hb 37/0, m 37/0, g4b 56/0, s 52/1 (s fails at g3b_map_pick_click: the MapOption popup does not open, a peer menu change, posted as fact playtest.regression).",
+    "presentation/view/g4b_input.gd (new, MatchView.g4b): wall drag tool. Pick the wall from the build card, press, drag: an 8-direction snapped preview (green legal, red illegal) with a cost total. Release issues build_line; Shift appends. Gate and tower use normal single-building placement. Modes: unload_point, lay_mine, plant_charge. Smart right-click with units on an own carrier issues load.",
+    "presentation/view/g4b_overlay.gd (new, z5): reads only the snapshot. Draws the wall preview, cargo count badges (snap flags bits 8..15), own mines and detected enemy mines (detected or seen-team), charge markers with the fuse, and a lock mark on locked gates.",
+    "presentation/hud/g4b_commands.gd (new, hud.g4b_cmd): Deploy/Pack [E] for mortars (deploy {pack}); Lay mine [M] and Plant charge [O] for combat engineers; Unload at point [I] and Unload all [L] for carriers; a cargo strip (CARGO n/cap, one icon button per rider = unload that rider; buttons named G4bCargo_<id>); Transport to point on the officer card (arms g2 mission transport_to_point); Lock/Unlock gate [L] on the gate card (button G4bGateLock). Hotkeys E/M/O/I/L collide with no build, G2 or MatchView key.",
+    "Wiring: match_view.gd (preloads, g4b + g4b_over, left/right/motion/release/key/smart hooks, begin/cancel placement), hud.gd (g4b_cmd build/reset/add_buttons/add_building_buttons/update_state/hint), entity_layer._detected also accepts mine.seen containing the local team, render_snap STATIC_FIELDS += seen, fuse.",
+    "tools/ui_playtest.gd: --ui-playtest-g4b flow (read from the cmdline in _ready). Harness grant of credits and stock. Build power, barracks and motor pool, drag a 6-wall line, place a gate at its end, Lock then Unlock from the gate panel, train an APC and a rifle squad, right-click load, unload one rider from the cargo strip, Unload at point for the rest, train a mortar and Deploy it, train a combat engineer, Lay mine, check the mine marker. It also has an in-memory facility->produces patch, a no-op now that content.gd merges facilities."
+  ],
+  "remaining": [
+    "Orch rendering CRs (msg 2026-10-24 ~17:40), none started except the snapshot seen/fuse fields:",
+    "1a. Mines/charges: entity_layer already hides enemy mines unless detected or seen-team (done). Verify charges: an enemy charge has no seen; decide whether to show it to the target's owner.",
+    "1b. Sniper concealment: add per-unit flag bits in sim/render_snap.gd build() (e.g. FLAG_HID=16 when e.hid; spot teams are needed per unit, so either a FLAG bit per local team (only the player's team matters: precompute in build with no team knowledge -> instead copy e.spot into a small dict snap.hid_spot{id:[teams]} only for hid units). In entity_layer refresh, skip enemy units with hid where the local team is not in spot. Also hide them in the minimap/hover (mv.entity_at).",
+    "1c. Events in hud._on_events (presentation/hud/hud.gd ~line 923): alerts for FireStarted/FireSpread/FireOut, MineTriggered, MineDetected, ChargePlanted/ChargeDetonated, Deployed/Packed (own only), MineLaid ONLY when owner == player or ally. fx_layer markers optional.",
+    "2. TerrainChanged{cells, cause:fire}: in match_view._on_step_events, call terrain_layer.rebake_cells(cells) (check how bridge rebakes are already routed there; TerrainChanged may already be handled, so grep first).",
+    "3. batch_art.gd: for buildings whose manifest entry has a `fort` key, pick state conn_<conn> + `_open` for unlocked gates (e.locked false and Fortify.kind_of=gate) + `_damaged` when hp < 50%; fall back conn_<m> -> built. Statics already carry conn, locked, hp (fraction).",
+    "4. ART-U-3 will request lod_icons.gd manifest.lod_class and a mortar deployed frame (unit flag: add FLAG_DEPLOYED in render_snap for e.deployed).",
+    "After each: --check-only the edited scripts; then bash .plan/shots/UI4B/pt5.sh r4 under hb.sh (expect h 33, hb 37, m 37, g4b 56, s 53 once the menu regression is fixed); full suite in hb.sh."
+  ],
+  "files_touched": ["presentation/view/g4b_input.gd (new)", "presentation/view/g4b_overlay.gd (new)", "presentation/hud/g4b_commands.gd (new)", "presentation/match_view.gd", "presentation/hud/hud.gd", "presentation/view/entity_layer.gd", "sim/render_snap.gd", "tools/ui_playtest.gd", ".plan/shots/UI4B/* (pt5.sh, logs, shots)"],
+  "test_state": "Full suite (before the render_snap edit): RESULT pass=283 fail=3 files=34; the 3 failures are all test_art placeholder icons for the 8 G4b units (ART-U). After the render_snap edit: test_thread 4/4 TESTS OK. Playtests: see done[0].",
+  "gotchas": [
+    "Never read w.entities while sim_busy(). The HUD reads live dicts only inside the gated _refresh; the overlay reads only mv.snap; g4b_input reads the world only from click/key handlers (MatchView._input joins) or after world_readable().",
+    "Fortify.preview_line reads the world, so it is refreshed in draw_preview (the overlay draws only when idle) and on release.",
+    "UNITS deploy uses {pack:bool}, not {deploy}.",
+    "An earlier pt4 run had h and m die silently right after match_started (no crash text); the r3 rerun passed them. Treat that as intermittent and watch for it."
+  ]
+}

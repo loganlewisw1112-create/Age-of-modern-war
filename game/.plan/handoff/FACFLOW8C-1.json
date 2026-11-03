@@ -1,0 +1,31 @@
+{
+  "agent": "FACFLOW8C",
+  "status": "PARTIAL - handoff_now at 71%",
+  "done": {
+    "ciws7": "ORCH ruling (need seq 18716): crawler pinned with _step_pinned in test_bursts_and_pauses (p0) and test_dry_drum (p0 + t2 p2), comment cites 13.9c-50; no assertion/threshold changed. Layout-side fix impossible: square-only footprints -> 1 link entity per cell, cnfac7 count needs 12. test_ciws7 RESULT pass=16 fail=0.",
+    "rest8 (ORCH directive)": "CAUSE: inner gate moved 2 N -> vehicle-gate Sentinel pair post (gi.y-1.5) now y16.5 in the 2-deep staging yard; sides were by id only, the pair arrived crossed and stood head-on in one row re-pathing for ever (fat 0.328). FIX sim/systems/sentinels7.gd _post: sides picked once by position (west man west, id tie), stored job.gs. test_rest8 RESULT pass=12 fail=0.",
+    "supply8 carrier": "sim/systems/supply8.gd: FD() lazy loader, _fd_busy/_fd_home; secure->out FacDrive7.order(x, [goal]); out/return/failed-home skip own moves while FacDrive7 drives; return orders n<node nearest door> from outside. sim/systems/fac_drive7.gd _go: an 'n<node>' join whose own-pose heading has no route retries from the node itself (carrier stood 'park' at its door for ever). test_supply8 RESULT pass=6 fail=0 (quiet only; no hardened supply case run).",
+    "return": "tests/test_facreturn8.gd: T_EXIT.keep_threat respawn in the hardening wait + return loop; new checks 'gate stays hardened' (unhard==0) and 'all 8 parked within 180 s' (HARD_PARK_LIMIT 3600). RESULT pass=2 fail=0. tools/pt7_facexit8.gd: _keep() respawn in every wait loop + airlock shot hook (3 APCs in wash, outer open/>half-open, inner closed).",
+    "wash art": "tools/art/g7_fac7f.gd regenerated to scratch twice: byte-identical; vs tree only g7_fac_wash_rot_* + manifest wash entry (4x6, fw 332 fh 232) changed; copied into assets/art/g7_fac7f.",
+    "exit time": "unchanged: test_facexit8 RESULT pass=4 fail=0 (hardened ~83.5 s, quiet ~54 s per FF8B; 90 s check). Timeline: 3 airlock cycles x (4 door moves 7 s + fill ~8 s + drain ~8.5 s) + 14 s first APC garage->staging. Tried convoy-following speed credit (v^2<=v_lead^2+2BRK gap): 80.6 vs 80.0 s diag, no gain, reverted. ~70 s NOT met."
+  },
+  "results": {
+    "test_ciws7": "pass=16 fail=0", "test_rest8": "pass=12 fail=0", "test_supply8": "pass=6 fail=0", "test_facreturn8": "pass=2 fail=0",
+    "test_facexit8": "pass=4 fail=0", "test_det7": "pass=6 fail=0", "test_cnfac7": "pass=36 fail=0", "test_lpmap7": "pass=18 fail=0", "test_gate7": "pass=5 fail=0",
+    "test_path7": "pass=5 fail=1: test_last_protocol_facility APC heading snap 4 / hull 82.2 deg off travel / instant start on open ground 3",
+    "test_apcmov7": "pass=14 fail=2: test_gate_hardens_cycles... (APC waits in the wash while outer cycles) and test_two_bays_third_waits_convoy_and_spacing (third APC 226 never leaves)",
+    "test_cnmission8": "pass=6 fail=1: test_drive_mission_end_to_end (not purged, phase deploy, team out)",
+    "pending": "test_specops8 test_lpmode7 test_cards8a (+ ciws7/rest8 rerun) still running in chain 3 -> scratchpad v3.log (FACFLOW8C session scratchpad)",
+    "windowed facexit8": "PLAYTEST RESULT pass=15 fail=1: facexit8_apcs_parked 7/8 within the 420 s wall-clock limit (3 headless test chains ran at the same time); 0 SCRIPT ERROR; airlock_3 ok",
+    "compile": "0 SCRIPT ERROR from my files (one transient art_catalog.gd parse error from another agent mid-edit at ~21:10, gone later)"
+  },
+  "next_steps": [
+    "Diagnose test_path7 / test_apcmov7 x2 / test_cnmission8: never run on FF8B's 13.9c-50 layout before; first A/B with FF8B_ORIG layout (.plan/ff8b_orig_fac.json, see .plan/ff8b_ciws.gd pattern) and with my fac_drive7 _go fallback removed to split layout vs my change. apcmov7 'two bays third waits' + wash wait look like SALLY_CAP 3 / longer wash expectations in the test (FF8B layout) - may need ORCH ruling if the oracle encodes SALLY_CAP 2.",
+    "Rerun windowed facexit8 on a quiet machine (7/8 parked was wall-clock bound under load); windowed cnfac7, gate7 not run; supply8 windowed flow file tools/pt7_supply8.gd does not exist (registered in ui_playtest G7_FLOWS) -> NOT EXECUTED.",
+    "Hardened supply8 case (keep_threat) not run; carrier-coming-back shot not taken.",
+    "Exit time ~70 s still open; remaining real levers: shorter garage->staging (14 s), outer gate close begins only after the 3rd clears cr."
+  ],
+  "files_changed": ["tests/test_ciws7.gd (ORCH-ruled pin)", "sim/systems/sentinels7.gd (_post gate pair)", "sim/systems/supply8.gd", "sim/systems/fac_drive7.gd (_go n-join fallback)", "tests/test_facreturn8.gd", "tools/pt7_facexit8.gd", "assets/art/g7_fac7f/buildings/g7_fac_wash_rot_* + manifest.json"],
+  "temp_files_removed": ["tests/test_zzff8c.gd", "tests/test_zzff8t.gd", "tests/test_zzff8s.gd", "tests/test_zzff8r.gd"],
+  "not_touched": "test_hot_state, perf; hashes: sentinels7 gate-pair (job.gs) and supply8 carrier routing change sim results where a facility exists"
+}

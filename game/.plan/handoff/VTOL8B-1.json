@@ -1,0 +1,6 @@
+{"agent":"VTOL8B","stopped_by":"budget.handoff_now (71%)",
+"results":"test_hot_state 17/0 (hashes unchanged); test_vtol8 5/0; test_air 9/0; test_air_transport 7/0; test_transport 11/0; test_airfield 13/0; test_airfield_g6 8/0; test_ui_panels 5/0; test_cnfac7 36/0; test_lpmode7 18/0; test_lpmap7 17/0; test_det7 6/0",
+"cargo_13.9c-46":"done: transport.gd _bay_ok honours bay keys vehicle_carriers / vehicle_other; defs_g7_facility.json a_vtol_dropship bay = vehicle 3, carriers 1, other 2, foot 10; stealth bay unchanged. New test_vtol8_one_apc_two_suits_and_infantry (APC+crew + 2 suits + 10 men load and unload; 3rd suit and 2nd APC refused).",
+"test_updates":"test_air: gap land_at now accepts redirect (13.9c-42); low heli test now expects OWN home pad (13.9c-45). test_air_transport bay test now 3 vehicles (13.9c-46).",
+"flows":"vtol8 flow PLAYTEST RESULT pass=17 fail=0; shots in .plan/vtol8b/shots_vtol8 (posted shots.best). NOT run: air, cnfac7, lpmode7 windowed flows.",
+"next_step":"run windowed flows air, cnfac7, lpmode7 one at a time: $G --path . -- --ui-playtest=<abs dir> --ui-playtest-<flow>; look at a returned-aircraft shot (own pad centred)."}

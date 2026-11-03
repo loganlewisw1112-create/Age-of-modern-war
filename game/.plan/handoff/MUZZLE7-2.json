@@ -1,0 +1,53 @@
+{
+  "agent": "MUZZLE7-2",
+  "spec": "G7_REFERENCE 13.9c-28a (APC rear mounted gun animated when firing) + 13.9c-28 (muzzle flashes from the barrels)",
+  "calls_used": 104,
+  "tokens_used_est": 450000,
+  "stopped_by": "budget.handoff_now (ORCH, 71%)",
+  "apc_gun_state": {
+    "design": "The CN APC roof guns are no longer baked into the hull sheets. Strike APC front + rear manned .50 pods and the tactical APC twin .50 RWS are separate overlay sheets drawn over the hull by presentation/view/apc_gun7.gd (entity_layer CR 5911, applied): each gun traverses on its own to the unit's live target (e.target, read only) at 2.4 rad/s independent of the hull, the long way round its blind arc (rear pod never swings through the front pod), takes the sim's shots (one Combat weapon = the mount pair) when it bears, pods alternate when both bear, recoil + flash (fire_0 / fire_1) then tail (fire_t: smoke, brass), belt change in lulls / while the other pod covers (reload_0..2), back to travel (front/RWS forward, rear aft) 2.5 s after the last target. fx_layer.muzzle_point asks apc_gun7.on_shot() for the barrel tip of the gun that fired, as drawn.",
+    "art": "tools/art/g7_cn_vehicles.gd: model(..., guns := true) (hull sheets main/_gun/_rkt now guns=false; wrecks and dropship apcload keep the baked pods), pods still cast their travel-position shadow, menu icon rendered with guns; new sheets g7_cn_strike_apc_pod / g7_op_tactical_apc_rws (96x56 cells, pivot 48,32 = turret-ring centre, 8 rows = world aim k*45 deg, *_h columns = +22.5 deg -> 16 aim steps; columns rest, fire_0, fire_1, fire_t, reload_0..2, rest_h, fire_0_h, fire_1_h, fire_t_h); manifest g7.gun_mounts on the main sheet (anchor px per hull row, travel yaw, blind arc), g7.tips16 on the gun sheet (analytic barrel tips snapped onto the drawn barrel). rws() got an optional st.ph override (barrel 1 full flash).",
+    "regeneration": "Ran tools/art/g7_cn_gen.gd --groups=g7_cn --out=<scratch>; diffed vs live: only the 21 APC files + APC manifest keys changed (everything else byte-identical), so only those were installed in assets/art/g7_cn (manifest copied verbatim from the generator after an equality check). muzzle7_gen.gd re-run after (units=278 buildings=39).",
+    "for_TURRET7": "Reuse from presentation/view/apc_gun7.gd: per-id gun state (world yaw, last fire, barrel counter, belt/reload), _turn() (shortest turn or the long way round a blind arc), _bears() (blind arc), traverse-at-rate toward e.target with a RETURN_AFTER hold then return to travel, on_shot() picking the gun and returning the drawn barrel tip, the SNAP rule (first shot of a burst lays the gun within a half step), and the 16-step aim via 8 rows + *_h half-step columns (keeps facings=8 so batch_art / atlas need no change). Generator side: gun_cell()/gun_tips()/_snap_tips() in g7_cn_vehicles.gd show how to render a gun alone at its ring pivot and compute tips analytically from the same pose chain."
+  },
+  "files_changed": [
+    "presentation/view/apc_gun7.gd (NEW)",
+    "tools/art/g7_cn_vehicles.gd (guns flag, gun overlay sheets, gun_mounts, tips16, _snap_tips, _gun_icon, rws ph override)",
+    "assets/art/g7_cn/ (21 APC PNGs: main/_gun/_rkt hulls + masks + icons regenerated, new *_pod / *_rws sheets; manifest.json)",
+    "assets/art/muzzle7.json (re-generated)",
+    "presentation/view/fx_layer.gd (muzzle parts: APC gun tip via apc_gun7.on_shot, muzzle7.apc counter, muzzle7_fb per-def fallback evidence, laser beam starts at the barrel tip via _add_g6_list(specs, from_w, from_s) + muzzle7.beam counter)",
+    "tests/test_muzzle7.gd (+ test_apc_gun_overlays, + test_laser_beam_leaves_the_barrel)",
+    "tools/pt7_muzzle7.gd (rewritten: zoom 2.5 settled and re-applied after centring, poses group, air attack orders, line-up hp held, CN strike team + tactical APC drive past / away from the Machine line, APC checks, idle travel)",
+    "presentation/view/entity_layer.gd: CR 5911 applied by ORCH (not edited by MUZZLE7-2)"
+  ],
+  "tests": [
+    "test_muzzle7: RESULT pass=8 fail=0 (incl. test_apc_gun_overlays, test_laser_beam_leaves_the_barrel)",
+    "test_vfx61: RESULT pass=8 fail=0",
+    "test_view5: RESULT pass=10 fail=0 (run before the laser change)",
+    "test_look7: RESULT pass=8 fail=0 (run before the laser change)",
+    "test_artcn7: RESULT pass=6 fail=0",
+    "test_animb61: RESULT pass=4 fail=1 (pre-existing: cn_vanta_* / g7_vanta_* frames, not APC)"
+  ],
+  "playtest": {
+    "last": "run4 PLAYTEST RESULT pass=17 fail=4 (.plan/shots/MUZZLE7-2/run4.log): ok = zoom 2.50 in every group, turrets 3 shots, air 1 (cn_gun_drone), APC overlays drawn (5 per frame), front pod 382 + RWS 181 shots, idle travel ok, all measured (fallbacks 0), on_sprite 5/5; FAIL = infantry got only 1 / poses 0 / vehicles 0 shots, rear pod 0 shots.",
+    "run3": "pass=17 fail=4 but rear pod fired 4x laid 65 deg off travel (independent traverse proven); run1 rear pod 12 shots laid 48 deg off. Rear-pod engagement varies run to run, see finding.",
+    "finding_rear_pod": "sim/systems/combat.gd:1325 sets e.facing = shot angle on EVERY shot for every unit, so a strike APC turns its whole hull toward its target; the target then sits dead ahead in the rear pod's blind arc and only the front pod can fire. The rear pod only engages while the APC drives with the target behind / on the flank (movement resets facing). Suggested CR (sim, hash-moving for matches with APCs; owner WOUND7/ORCH): skip that facing write for units with independently traversing mounts (def apc7.mounts present, or a def flag such as turret_free), so the hull keeps its heading and the rear gun covers the rear. Not sent as a formal CR yet.",
+    "infantry_regression_note": "run4 infantry/vehicle groups produced fewer flashes after the line-up hp top-up was added (likely the infantry stay alive but the flow's seen-filter / 25 s window or the CN team spawn order changed targeting); investigate before rerun."
+  },
+  "best_shots": [
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/MUZZLE7-2/apc_run4_crops.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/MUZZLE7-2/muzzle7_apc_2_g7_cn_strike_apc_front_off35.png",
+    "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/MUZZLE7-2/muzzle7_apc_0_g7_op_tactical_apc_rws_off63.png",
+    "C:/Users/logan/AppData/Local/Temp/claude/D--CODING-PROJECTS---CURRENTLY-WORKING-ON-RTS-Age-of-Modern-Warfare/36a6e2e6-9082-4996-b030-94bfe0ca56a7/scratchpad/apc_compose.png (generator-side composite: hull + pods at travel / aimed at the flank, 8 hull rows)"
+  ],
+  "not_done_next_steps": [
+    "1. Rear-pod in-game shot frame-exact on a rear flash: run3 had them (rear_off43/48/65) but those PNGs were overwritten; either get the combat.gd facing CR above applied, or in pt7_muzzle7 _apc() keep the strike APCs driving away from the targets (leg 3) longer / start with leg 3, then rerun and post the rear-pod shots.",
+    "2. pt7_muzzle7 infantry / poses / vehicles groups: run4 got 1/0/0 flashes. Posed riflemen (suppressed at Morale._supp_at+2, pinned) never fired in 3 runs: check whether REAL61 / morale blocks fire for pinned and heavily suppressed soldiers (then the prone flash is not reachable in a real fight; the prone tip is covered by test_pose_selects_the_pose_tip).",
+    "3. Air group: 1 flash (gun drone) in run4, heli none yet (attack order on m_tracked given).",
+    "4. Sentinels on a wall (pt7_wallwalk7 facility setup) not shot yet.",
+    "5. Hill lift on building anchors: muzzle_point uses _w2s (height-map world_to_screen_h) for statics; not verified against entity_layer's static lift on raised ground.",
+    "6. After any g7_cn art regeneration re-run tools/art/muzzle7_gen.gd; regenerate g7_cn to a scratch --out dir and install only changed APC files when other agents are editing the group.",
+    "7. Known limitation: the rear pod overlay is drawn over the hull in one depth key, so in the few hull rows where the raised rocket pod is nearer the camera the gun pod draws over it; the hull's 'damaged' frame keeps clean gun pods.",
+    "8. VIS7 still swaps to the _gun sheet frames while firing (now hull-only, identical to idle, wheels stop while firing as before); VIS7 could drop that swap."
+  ]
+}

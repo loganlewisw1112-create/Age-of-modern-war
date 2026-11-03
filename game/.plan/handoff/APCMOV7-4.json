@@ -1,0 +1,63 @@
+{
+  "agent": "APCMOV7-4", "n": 4, "reason": "budget.handoff_now at ~100/140 calls (est 385k tokens)",
+  "brief": ".plan/agents/prompts/G7-APCMOV7-4.md (items 1-3 + Also item 4)",
+  "done": {
+    "1_mantrap_foot_only_patch": "FACB7-7's patch applied to sim/systems/movement.gd with python3 .plan/handoff/FACB7-7_patch_movement.py (13 hunks, exact-match, no refusal). set_gate(w, cells, owner_team, locked, vonly := false, fonly := false); foot-only gate = [team, locked, 0, 0, 1], saved [idx, team, locked, 0, 0, 1]; non-foot ground classes get allow 0 (native: _fo_native_allow). Backup of the pre-patch file: C:/Users/logan/AppData/Local/Temp/movement.gd.bak_apcmov74.",
+    "2_hardened_gate_suit_fix": "movement.gd: new Movement._gate_plan / _uf_find / _via_path (right after can_reach) + a fallback at the end of _resolve + via handling in order_path and _drain_queue. A SHUT (locked) vehicle-only gate of the unit's OWN team counts as passable for path PLANNING only (union-find over the nav component labels that touch one connected cluster of locked own-team vonly cells); the cells stay solid for the step, foot never plans through them (_resolve skips foot), other teams never match the gate team. The order survives (not turned idle); the path is real-path-to-the-cell-in-front-of-the-gate then the goal. FacDrive7._suit_scan then queues the suit, asks the gate to cycle (sally port), wash, in. Deterministic (sorted indices); no facility = no cost (runs only after the plain reachability check failed and a locked own vonly gate exists).",
+    "2b_found_and_fixed_in_fac_drive7": "Two strike-team APCs sent out of their garages at once DEADLOCKED at the gate-lane entry (pre-existing, found by the gate7 inner-gate playtest): the later-ordered APC reached the merge first and waited for the earlier one (convoy rule: earlier seq enters the gate lane first), while the earlier one stood still behind it (spacing). New FacDrive7._held_behind + a held flag in _zone_blocked: X is held behind V when X is stopped (v<=0.02), within D_SAFE+0.8 of V and farther from the gate-lane entry by more than 0.5; V then goes first. Only the two convoy returns are gated by not held.",
+    "3_tests_added_in_tests_test_apcmov7_gd": [
+      "test_mantrap_foot_only_and_shut_gate_planned_through (mantrap doors + decon hall cells closed to suits/vehicles of both teams and to the other team's foot, open to the owner's foot; hardened gate: owner suit can plan in, order stays move, path ends at the goal; another team's armour / soldier cannot; owner soldier plans in by the foot entry; a suit to the staging yard and a suit ordered to the decon hall itself both get inside, rinsed, never standing on a foot-only cell)",
+      "test_two_apcs_out_of_garages_together_through_hardened_gate (strike team, both out through the hardened gate, never both gates open, outer re-locks, inner reopens)"
+    ],
+    "4_playtests": {
+      "tools/pt7_gate7.gd": "step 1 opening check is now a log-only note (gate7_start_state_note: the AI can be cleared before the gate ever hardens); the real check moved to the new final step 3 (enemy removed, AI kept clear, wait up to 40 s for opening mid-travel _gm_5..10, shoot z25, wait open, drawn frame == empty); new step 4 _inner_cycle (train strike_team, enemy hardens the outer gate, two fd7_go out to a point straight south of the gate mouth, shoots: inner closing, inner sealed + outer opening, inner opening; checks never both open, drawn _lockdown for every closed sample that held 0.4 s); fast 0.03 s poll helper _until for the sub-second travel / lock-bar windows (0.25 s polling missed the bolting window about half the time at 3x); unused _layers helper removed; PLAYTEST-DBG lines left in the sally loop (harmless).",
+      "tools/pt7_apcmov7.gd": "new step 5b (a suit ordered to the decon hall goes round through the wash, rinsed, 0 steps on foot-only cells) and step 7 (two suits ordered in while the outer gate is hardened: orders kept, queue outside, gate cycles, wash, in; never both gates open); step 6 enemy moved to cr.end+(-26,12) because a suit that sees an enemy takes an attack order and FacDrive7 releases it (intended: a fresh order releases the suit)."
+    }
+  },
+  "tests": {
+    "test_apcmov7": "RESULT pass=16 fail=0 (after PATH7/ORCH changes up to ~23:08Z; NOT re-run after VehDrive7 landed)",
+    "test_cnfac7": "RESULT pass=36 fail=0 (one transient 35/1 test_range_xp_only_while_secure right after ORCH's base_state7 stale-index skip, green on the next run; posted as fact test_regression.cnfac7_range_xp)",
+    "test_lpmode7": "RESULT pass=18 fail=0",
+    "test_wallwalk7": "RESULT pass=11 fail=0",
+    "test_fort": "RESULT pass=10 fail=0",
+    "test_terrain_classes": "RESULT pass=8 fail=0",
+    "test_cnsim7": "RESULT pass=27 fail=0",
+    "test_dronebay7": "RESULT pass=15 fail=0",
+    "test_sent7": "RESULT pass=11 fail=1: test_tactics_drill 'magazines run dry: the reloading call' (was 12/0 at 22:52Z). Not analysed: sentinel magazines / reload, no gate or movement path involved; probably another live agent's change. Re-run once to see if it is stable and pass it to the owner of sentinels7.",
+    "hash": "HASH apcmov7 suits twice dc8dfc6a45e9ecf8e6494b9afc8099cde77168c1dc599979a9d4ba12edc4b11f / same; HASH apcmov7 twice 2ae4dc6462a72da85b5e003073e5f6663867366f4b41b0b3ad5b1e254ce19e0f / same (facility matches move on purpose: sys_state.movement.gates gains 6-field foot-only entries for the mantrap and decon hall; the convoy tie-break can change a two-APC departure order)"
+  },
+  "playtest_results": {
+    "pt7_gate7 (r5, shots dir .plan/shots/APCMOV7-4/g5)": "PLAYTEST RESULT pass=20 fail=0, 0 SCRIPT ERROR",
+    "pt7_apcmov7 (r4, shots dir .plan/shots/APCMOV7-4/a4)": "PLAYTEST RESULT pass=23 fail=0, 0 SCRIPT ERROR (r3 also 23/0 but its steps 5b/6/7 shots were not written: the window did not draw; r4 has them)"
+  },
+  "shots_posted_best": [
+    ".plan/shots/APCMOV7-4/g5/gate7_outer_opening_z25.png",
+    ".plan/shots/APCMOV7-4/g1/gate7_outer_bolting_z25.png",
+    ".plan/shots/APCMOV7-4/g5/gate7_inner_closing_z25.png",
+    ".plan/shots/APCMOV7-4/g5/gate7_inner_sealed_outer_opening_z25.png",
+    ".plan/shots/APCMOV7-4/a4/apcmov7_suits_wait_hardened_gate_z175.png",
+    ".plan/shots/APCMOV7-4/a4/apcmov7_suits_wash_hardened_cycle_z175.png",
+    ".plan/shots/APCMOV7-4/a4/apcmov7_suit_to_hall_in_wash_z175.png",
+    ".plan/shots/APCMOV7-4/a4/apcmov7_hardened_suits_inside_z175.png"
+  ],
+  "open_items": [
+    "PATH7 added VehDrive7 after FacDrive7 in SYSTEM_ORDER (ORCH message ~23:40Z): test_apcmov7 and both windowed flows were NOT re-run after that. Next: bash tests/run.sh --only=test_apcmov7, then --ui-playtest-gate7 and --ui-playtest-apcmov7 (timeout 900, one at a time).",
+    "test_sent7::test_tactics_drill failing (see above), not mine / not analysed.",
+    "Design note for ORCH: an APC left idle just outside the outer gate (inside the gate keep-clear margin, HL+0.1) keeps the outer gate open and the inner closed for as long as it stands there (a gate only closes when nothing stands in it; seen when an APC out-order target was unreachable on the playtest map). By design; the player must move it.",
+    "A suit captured by FacDrive7 that sees an enemy takes an attack order and is released (a fresh order releases it); it then plans to the gate front through Movement._gate_plan and parks at the locked door. Acceptable, not tested.",
+    "The open outer gate art still reads close to a closed slab at zoom 1 (GATE7 / LOOK7 art, not mine)."
+  ],
+  "next_steps": [
+    "1. Re-run test_apcmov7 + test_cnfac7 against VehDrive7; if VehDrive7 takes over an APC inside the compound or the out-of-garage convoy, check test_two_apcs_out_of_garages_together_through_hardened_gate and test_suits_wait_for_hardened_gate.",
+    "2. Re-run --ui-playtest-gate7 and --ui-playtest-apcmov7 windowed; need PLAYTEST RESULT all ok, 0 SCRIPT ERROR; Read PNGs and post shots.best if anything changed.",
+    "3. ORCH: re-baseline facility-match hashes (movement.gates now carries the 6-field foot-only entries); two identical runs above."
+  ],
+  "files": [
+    "sim/systems/movement.gd (FACB7-7 foot-only gate patch; _gate_plan/_uf_find/_via_path; _resolve fallback; order_path/_drain_queue via)",
+    "sim/systems/fac_drive7.gd (_held_behind + held flag in _zone_blocked)",
+    "tests/test_apcmov7.gd (2 new tests)",
+    "tools/pt7_gate7.gd",
+    "tools/pt7_apcmov7.gd",
+    ".plan/shots/APCMOV7-4/{g1,g5,a4}/"
+  ]
+}

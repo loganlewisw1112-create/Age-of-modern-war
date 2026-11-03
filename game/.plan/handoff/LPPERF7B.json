@@ -1,0 +1,33 @@
+{
+ "agent": "LPPERF7B", "gen": 1, "stopped_on": "ORCH budget.handoff_now (75%), ~111 calls",
+ "state": "all 4 touched files pass --check-only; sim untouched (no hash can move). Tests test_lpperf7 / test_lpmode7 / test_det7 / test_ui_fit / test_thread / test_atmo7 NOT run (unverified).",
+ "measure_env": "windowed, Last Protocol seed 7, 1x, 8-11 other Godot processes (other agents) during every run; probe .plan/lpperf7b/lp_fps.gd (-s, --fps-log --fps-quit=30 --lpz=Z [--dcsplit] [--shot=png])",
+ "cost_split_before": {
+  "sim_step_headless": "~31 ms/tick (.plan/lpperf7b/sysprof.gd): RenderSnap.build ~17-20 ms (875 building statics ~10 ms of it, units ~3 ms, _g5_out ~1.4 ms), combat 6.6, fog 3.0, morale 1.9, ai 1.8, movement 1.8, economy 1.6, air 1.5, fac_drive7 1.4, apc7 1.0, sentinels7 1.0, counter_nanite 0.9, turrets7 0.8, garrison 0.8, creep 0.7, cn_facility 0.5, LP-only lp_reserve7 0.08 / last_protocol 0.22",
+  "draw_calls_4700": "paired hide/show split (.plan/lpperf7b/dcsplit2.log): fac_atmo7 ~2200 (GlowS 763, Fix 628, its own ground _draw ~660, Over 64, lift mask 88), HUD minimap ~1920 (territory grid: 2 draw calls per sector, 43x43 sectors), entity_layer ~230, overlay ~90, g2 ~80, baseprops ~40, terrain ~20",
+  "main_thread": "PROF ~24 ms measured/frame: p_ent ~9, d_ov_under ~3.5-4.5, terrain 1.6; rest is render-server CPU for the draw calls",
+  "scheduling_why_tps_tied_to_fps": "_kick_sim debited k*DT from _acc BEFORE the task ran; the task stops at SIM_FRAME_BUDGET_US 34 ms, and an LP step + snapshot costs ~30-40 ms, so every task ran 1 step and the other k-1 owed ticks were silently dropped (plus 'if _acc >= DT: _acc = 0'). Handover happens only at _process/frame_pre_draw, so at most ~1 step per frame -> tps ~0.65 x fps."
+ },
+ "changes": [
+  {"file": "presentation/match_view.gd", "what": "_acc debited at _join_now by the steps that actually ran (r.steps), backlog kept up to MAX_BACKLOG_STEPS=5 (was: debit k up front, drop backlog); threaded runner budget SIM_THREAD_BUDGET_US=90000 (inline keeps 34000); SIMTHREAD log line adds joins/steps/k_asked/backlog", "proof": "final_z1.0.log: SIMTHREAD steps=19-20 per s, joins 6-7, k_asked==steps; tps 19.6 mean. NOTE these edits were clobbered once by another writer (posted fact match_view.clobbered) and re-applied 07:5x local: re-check they are still there (grep SIM_THREAD_BUDGET_US)."},
+  {"file": "presentation/hud/minimap.gd", "what": "_draw_territory: sector tints painted into one SIZE x SIZE image (rebuilt only when owners/counted/team colours change; pixel-centre rule = same pixels as draw_rect), outlines as one draw_multiline", "proof": "minimap draw calls 1920 -> 18 (dcsplit3.log). Visual: outlines now all above all tints (was interleaved per sector) - shot not yet looked at"},
+  {"file": "presentation/view/fac_atmo7.gd", "what": "(1) runtime atlas of all 79 atmo7 sprites (2px gutters, nearest filter) + white block; _sp/_dot/_pool/plaques draw from it and fixture shaft rects go through _wrect (atlas white texel) so they batch; (2) _gpoly: light polygons of the two ADDITIVE layers (glow, glow_s) collected into one canvas_item_add_triangle_array on the atlas (order-free under additive blend; falls back to draw_polygon on any odd input)", "proof": "fac_atmo7 Fix 628 -> <10, total atmo 2209 -> 1462 after (1); after (2) whole-frame draw calls 4690 -> ~1355 at zoom 1, 5600 -> ~1715 at zoom 0.5. No SCRIPT ERROR in 7 windowed runs. Visual check of lights NOT done (shots .plan/shots/LPPERF7B/lp_z1.0.png, lp_z0.5.png taken, not looked at)."},
+  {"file": "presentation/view/sim_runner.gd", "what": "REVERTED (byte-identical to before): skipping RenderSnap.build on intermediate steps of a multi-step task. runner_eq.gd showed snapshot.creep differs vs build-every-step (Creep.snap seeds rev likely accumulate/consume per build); not proven, so reverted."},
+  {"file": "sim/render_snap.gd", "what": "untouched (static-dict reuse tried: 85% hit rate but no gain; key-iteration build: no gain; reverted)"}
+ ],
+ "results": {
+  "A_B_interleaved_same_session (old files vs runner+minimap+atmo, scheduler edits were missing in that 'new')": "z1.0: tps 11.28/11.21/10.22 -> 16.94/14.15/16.56; fps 20.0/19.8/18.9 -> 29.6/23.4/27.2; draw calls 4690 -> 1355. z0.5: tps 9.43/8.79 -> 13.58/13.57; fps 16.2/16.5 -> 21.1/21.0; draw calls 5620 -> 1715",
+  "final_with_scheduler_fix (runner skip in, since reverted)": "z1.0: tps mean 19.63 (min 15.6), fps 25.1 (p10 20.9), 8 Godot procs; z0.5: tps 19.95 (min 17.5), fps 22.9 (p10 20.3)",
+  "logs": ".plan/lpperf7b/ab.out, ab_*.log, final_z1.0.log, final_z0.5.log, before_z1.log, dcsplit*.log"
+ },
+ "not_done": [
+  "run tests: test_lpperf7, test_lpmode7, test_det7, test_ui_fit, test_thread, test_atmo7 (+ test_light7, test_vis7 for minimap/atmo)",
+  "re-measure final tps/fps with sim_runner reverted (numbers above had the snapshot skip on)",
+  "2k scene fps (scale7 / fps harness) no-regression run",
+  "look at shots + post fact shots.best (atmo lights, minimap territory)",
+  "snapshot cadence: with backlog the tasks run ~3 steps (joins ~6/s) -> coarser interpolation; consider SIM_THREAD_BUDGET_US ~60000 or k cap 3 if motion looks steppy",
+  "remaining draw calls: fac_atmo7 ground _draw ~600 (polygons/lines/sprites interleaved; order-preserving triangle batching possible), entity_layer ~230",
+  "sim: RenderSnap statics ~10 ms/tick for 875 buildings is the largest single LP cost (worker side); needs a dirty-tracking design, not a per-field compare"
+ ],
+ "scratch": ".plan/lpperf7b/ (probe lp_fps.gd, ab.sh, sysprof.gd, snapprof.gd, runner_eq.gd, micro.gd, backups *.bak, old/ new/)"
+}

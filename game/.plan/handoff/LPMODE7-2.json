@@ -1,0 +1,33 @@
+{
+  "agent": "LPMODE7-2",
+  "gen": 2,
+  "status": "recycled (guard budget.handoff_now, ~72 calls)",
+  "done": [
+    "test_lpmode7 15/15 PASS (TESTS OK). Fixes: lp_setup.build_army spawns squad items (rifle_squad, at_team = production items) as their member units with a shared Production squad id (army_n 62 -> 198); build_machine places each core on the nearest free spot on growing square rings (was +x only: 3rd core never placed on industrial_heartland_m); last_protocol._try_fill records fill_tick so the fill's own CnTeamReady events are not counted twice (teams_total 12 -> 6, pyrrhic ending fixed) and erases w.cache.eco_pop after the fill (operators spawned+boarded in one tick escaped Economy's carried pop count: live pop 342 vs loaded 414, broke save/load hash); test_lpmode7: rifle_squad -> rifleman, facility test destroys cn_team units until none are left (APC deaths drop operators).",
+    "THREAT7 interplay checked: LP phases stay <= 3 before the Tide (tier-3 waves include g7_m_weaver, refused by Threats7.spawn until LastProtocol calls allow_weavers at its seeded weaver_frac in [0.6,0.75], same window as defs_g7_threats weaver_window); phase 4 only at the Tide.",
+    "NEW presentation/ui7/lp_hud.gd: creep meter vs critical, countdown h:mm:ss + rate, phase + posture, cores alive, TIDE/FINAL STAGE/WEAVERS/RAID/RINGS LOST flags; first card of the HUD LeftStack; on lp.ended opens a centred modal end-of-run panel (LpEnd) and saves the run once via LpMenu.save_run(records_path). fit_build(nm,vp,sc,tree) for screens ui7_lp_hud / ui7_lp_end. Fit: .plan/lp7_fit.gd (subclass of tools/ui_fit_test.gd calling LpHud.fit_build) 7 res x scales 1/0.75/1.5 = 42 screens issues=0; shots .plan/shots/LPMODE7/fit/.",
+    "lp_menu.add_entry(parent, on_start, path, records_parent, btn) now takes the menu's own button + puts the records line under the button row; records_line().",
+    "CRs posted: change_request.lp_menu_hook (seq 617, main_menu.gd lines) and change_request.lp_hud_hook (seq 618, hud.gd lines + fit_screens.gd names/build line).",
+    "NEW tools/pt7_lpmode7.gd, run windowed once on the registered last_protocol map: PLAYTEST RESULT pass=14 fail=2 (log .plan/pt7_lpmode7.log, shots .plan/shots/LPMODE7/lpmode7_*.png NOT looked at yet)."
+  ],
+  "remaining": [
+    "1. Fix the 2 pt7_lpmode7 fails: (a) lpmode7_breach_fallback: outer ring fell, outer units re-homed (0 left) but economy gates locked 0 on the real map: check s.base.rings[1].gates on map.lp layout (lp_setup.build_rings: are gate pieces entity ids? are they built from map.lp gates cells?) and LpDefence.rings_step's seal of ring i+1 gates; (b) lpmode7_tide: tide true, phase 4, flags ok but posture 'alert' when read right after s.tide: posture goes to maximum on LpDefence.think (every 3 s) - either set s.posture = maximum in LastProtocol.start_tide or make the flow wait_until posture == maximum (prefer start_tide). Then rerun windowed (timeout 900, hb.sh) and look at the shots (lpmode7_start/breach/tide/ending).",
+    "2. Note from the run: start creep coverage on last_protocol is 0.404 (critical 0.62) and countdown rate x1.81 at start: prespread (map.lp.creep blobs at prespread_value 200) is heavy vs LPMAP7's blobs - check with LPMAP7 / tune rules creep thresholds (PROVISIONAL) so a run lasts 60-90 min; the ending reported time_s 9 s (t0 vs tick: sim ran only ~9 sim-seconds during the flow, check the 512 tick rate).",
+    "3. INTEG7 soak hook: tools/lp_soak7.gd (extends SceneTree, headless): new_match(LastProtocol.make_config(seed, 'last_protocol')), run with the Machine AI on, force the countdown to its final stage after N ticks (or run long), print 'LP SOAK RESULT tide=<bool> ended=<ending> ticks=<n> ms/tick=<x> script_errors=0'. Not written.",
+    "4. Run caller tests: bash tests/run.sh --only=test_creep7, --only=test_cnfac7, --only=test_cnsim7, --only=test_turret7 (hb.sh) and test_hot_state (LP state only in cfg.mode last_protocol; GOLD must hold). Not run by LPMODE7-2.",
+    "5. Measure LP cost on last_protocol: setup time (start_match 2087 ms + fill at tick 11 seen 4482 ms after start in the windowed run) and per-tick cost of LastProtocol (bench.gd --map=last_protocol, or time LastProtocol.tick in the soak).",
+    "6. Re-post fact lp.api complete once 1-4 are green."
+  ],
+  "files_touched": ["sim/systems/last_protocol.gd", "sim/systems/lp_setup.gd", "tests/test_lpmode7.gd", "presentation/ui7/lp_menu.gd", "presentation/ui7/lp_hud.gd (new)", "tools/pt7_lpmode7.gd (new)", ".plan/lp7_probe.gd, .plan/lp7_rt.gd, .plan/lp7_fit.gd (debug tools, new)"],
+  "test_state": "test_lpmode7 15/15 TESTS OK; LP HUD fit 42 screens issues=0 (via .plan/lp7_fit.gd); pt7_lpmode7 windowed 14/2; caller tests + test_hot_state not run",
+  "hook_lines_for_orch": {
+    "main_menu.gd (_build, after the Tutorial button)": ["var lp_b := _menu_button(\"Last Protocol\", _btn_flow)", "preload(\"res://presentation/ui7/lp_menu.gd\").add_entry(_btn_flow, func(cfg): start_requested.emit(cfg), \"user://lp_records.json\", _left, lp_b)"],
+    "hud.gd (setup, after _left_scroll.add_child(left))": ["if preload(\"res://presentation/ui7/lp_hud.gd\").wants(_world()):", "\tpreload(\"res://presentation/ui7/lp_hud.gd\").attach(left, mv, root)"],
+    "fit_screens.gd": "NAMES += [\"ui7_lp_hud\", \"ui7_lp_end\"]; in build(): if nm.begins_with(\"ui7_lp\"): return await load(\"res://presentation/ui7/lp_hud.gd\").fit_build(nm, vp, sc, tree)"
+  },
+  "gotchas": [
+    "Economy pop cache: any code that spawns units and boards them into a carrier in the same tick must erase w.cache.eco_pop (or Economy should count cargo of new carriers) - worth telling ORCH/CNFAC7: CnFacility._finish_train does exactly that.",
+    "Squad items (rifle_squad, at_team) are production items, not unit defs: Content.unit() is empty for them.",
+    "Python edits: write with newline='' (files are LF)."
+  ]
+}

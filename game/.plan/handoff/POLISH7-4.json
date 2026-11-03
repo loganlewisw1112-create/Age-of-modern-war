@@ -1,0 +1,25 @@
+{
+ "agent": "POLISH7-4",
+ "stopped_by": "ORCH budget.handoff_now (calls ~75 of 140)",
+ "calls_used": 75,
+ "tokens_used_est": 520000,
+ "files_touched": [
+  "sim/systems/engineer7.gd (bowser parking only: const BOWSER_BAY Rect2(7.08,2.08,0.84,2.02) compound-local + BOWSER_HEADING + BAY_ARRIVE + static bowser_bay(F); _fuel to_fp walks to the bay (within 0.6 or inside the bay and idle), ret drives back and parks (within 0.35 or inside and idle); pump emits Eng7Refuel + pump-off and goes to ret the think the tank fills)",
+  "presentation/view/fac_life7.gd (ZONE_H workshop 114 = deck rail 11.6 m; stacked zones (drone_bay) get no occluder box; fuel bay cells blocked for other actors; fuel truck itinerary bay(park, holds while no own fuel vehicle on the target pad) -> mouth -> pad hose -> mouth (reverse in) -> bay -> ... helipad; tug parks at the helipad NW corner (was the y8 lane behind the workshop = drawn on the deck), single park stop when no dropship; drone recovers on the workshop launch deck spot at 10.57 m, orbit 14 m, cruise 18 m to/from the deck, deck shadow + hatch glow; _dog_at(step_dt) for tests; _veh_def/_vehs snapshot scan; rev flag for reversing legs; unused var fuel removed)",
+  "presentation/view/fac_atmo7.gd (BLD_Z workshop 114, drone_bay key removed; workshop exhaust on the stair-core penthouse 128 px; no plaque for stacked zones (the DRONE BAY plaque on the barracks/workshop is gone, the art carries its signs); _draw_bowser_bay ground markings: slab, yellow box, wheel-stop bar, mouth hatching, fuel-drop stencil, NO SMOKING board; counts.bay)",
+  "tests/test_life7.gd (dog heel: fixed 0.1 s step; new test_actors_off_footprints, test_fuel_bowser_bay_display, test_sim_bowser_parks_in_its_bay)",
+  "tools/pt7_life7.gd (under_fire check accepts contested OR under_fire with authority comment 13.9c-17, breach check unchanged; new life7_fuel_bay_parked, life7_workshop_deck_clear + shots fuel_bay / workshop_deck / barracks)",
+  "tools/pt7_atmo7.gd (same under_fire change; new atmo7_bowser_bay check + shots fuel_bay / workshop_barracks) -- NOT YET RUN windowed"
+ ],
+ "tests": {"test_life7": "RESULT pass=14 fail=0", "test_atmo7": "RESULT pass=7 fail=0", "test_eng7": "RESULT pass=10 fail=0 (was 9/1 with the bay before the Eng7Refuel-on-fill change: the test's 'both full' break landed between the fill and the next-think event)"},
+ "playtests": {"pt7_life7": "windowed, .plan/polish7/pl74_life7.log: PLAYTEST RESULT pass=28 fail=0, 0 SCRIPT ERROR (fuel_bay_parked, workshop_deck_clear, under_fire (state contested, alarm false), breach_alarm all ok)", "pt7_atmo7": "not run (budget handoff); flow parses (--check-only clean)"},
+ "shots_looked_at": [".plan/shots/POLISH7-4/life7/life7_workshop_deck_z2.png (deck clear, drone on deck, tug at helipad corner, no DRONE BAY sign on barracks)", ".plan/shots/POLISH7-4/life7/life7_fuel_bay_z3.png (bowser parked in its bay between core block and pad)"],
+ "board": ["fact eng7.bowser_bay seq 4908 (to APCMOV7-2: keep fac_drive7 fillets off the bay)", "fact shots.best seq 4920"],
+ "hash": "engineer fuel runs move (bay instead of the fuel point centre; Eng7Refuel a think earlier); display layers are view-only",
+ "open": [
+  "Run pt7_atmo7 windowed (timeout 900) to all-ok, 0 SCRIPT ERROR; Read atmo7_fuel_bay_z2/z3, atmo7_workshop_barracks_z2, atmo7_alarm_night_z1 and post shots.best with the night/alarm compound.",
+  "Fuel bay shot: the truck sprite is wider than the 0.84-tile bay and its nose reaches the pad's NW corner hatching; consider a slightly shorter truck draw or nudging the park point 0.2 north if the owner flags it.",
+  "Dog kennel (barracks front, compound-local ~(19.55,16.55)) sits on the y16 lane; move it off-lane in a later pass (not required by this brief).",
+  "Under_fire sim gap (damage.gd last_hit_tick on units only, seq 4677) still for ORCH; flows accept contested OR under_fire meanwhile."
+ ]
+}

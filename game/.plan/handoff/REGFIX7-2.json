@@ -1,0 +1,60 @@
+{
+ "agent": "REGFIX7-2",
+ "stopped_on": "own projection at 70% of MAX_TOOL_CALLS (calls ~93/140)",
+ "runner": ".plan/regfix7_logs/runflow2.sh <flow> <tag> (windowed, timeout 900) -> log .plan/regfix7_logs/<flow><tag>.log, shots .plan/shots/REGFIX7/<flow><tag>/. A chain .plan/regfix7_logs/chain2.sh was started at ~13:03 running cnops7 muzzle7 sent7 dronebay7 ciws7 turret7 one at a time, tag _r2a; read the '== <flow>_r2a: PLAYTEST RESULT' line + ok=false lines from each log.",
+ "flows": {
+  "seq7": {
+   "before": "PLAYTEST RESULT pass=17 fail=5 (REGFIX7 seq7_a/b/c)",
+   "unit_tests_now": "test_regfix7 2/0 (both green, incl. the no-room-outside-the-gate recall), test_cnfac7 OK, test_apcmov7 OK, test_seq7 OK (tests/run.sh, all TESTS OK)",
+   "fixes_made_in_sim/systems/fac_drive7.gd": [
+    "_approach_blocked: a waiting APC drops its leftover non-fd7 order (the hand-off move out of the gate) -> stop_path + order {type idle, fd7 1}; before, _intercept took that order for a new player order and handed the APC off again ('x'), so it lost its vstate and was never rinsed (found by trace: RGDBG handoff 159 to x x3)",
+    "_approach_blocked sets V.apb=1; stage 1 then uses apron tolerance 1.0 and, if the APC has not moved >0.05 for 1.5 s, 2.5 (V.apl=[x,y] floats, V.apw tick; erased with ap/apb when the drive starts). Only on the blocked-queue path; normal layouts keep 0.25",
+    "order(): new last param loose:=false; order_team passes loose = (where == 'decon'); with loose, or when _by_gate(p) (new helper: within 7 of the gate exit node or of the apron), an APC standing between places is managed as 'out' (approach) instead of falling back to a plain Movement move"
+   ],
+   "after": "pt seq7 windowed STILL pass=17 fail=5 (seq7_r2a.log and seq7_r2b.log, 0 SCRIPT ERRORs). Flow diag: both APCs (182 at (51.5,89.5), 193 at (51.35,91.66)) idle INSIDE the ECP (next to cn_blast_wall / cn_ecp_baffle), NO fac_drive7 vstate, phase 'returning', rinsed tick 1168/1188 (= rinsed on the way OUT). Note they are now inside the gate structure, not at (51.5,95.5) south of it like in REGFIX7's run.",
+   "open_cause_guess": "Either the vstate is created by order_team(decon, loose) and then erased by _approach's 'legs.is_empty()' branch (plan('e', 'w0', gar, [p-o]) fails from a point inside the ECP that is not on the gate-axis approach) which only orders a plain Movement move to the wash that Movement cannot path -> idle; or the hand-off/rollout left them inside the ECP and _pin/_intercept dropped them. NOT confirmed.",
+   "next_steps": [
+    "Add temporary prints in fac_drive7 order_team / the legs.is_empty() branch / _handoff (pattern 'RGDBG', remove afterwards) and re-run pt seq7 windowed ONCE to see which path drops the vstate",
+    "If it is the plan failure from inside the ECP: in _approach (blocked path, apb) when plan from [p-o] fails, plan from the apron instead (send the APC back out to the apron by Movement first) rather than erasing the vstate",
+    "Then pt seq7 to 22/0, re-run test_regfix7/test_cnfac7/test_apcmov7/test_seq7, confirm test_hot_state unchanged (new code only runs on the impassable-waiting-spot path, the decon order of a between-places APC, and the gate-mouth case)"
+   ]
+  },
+  "cnops7": {
+   "before": "FACINT7 pass=14 fail=1 (relief_arrived empty)",
+   "after": "cnops7_r2a (after the seq7 edits): PLAYTEST RESULT pass=14 fail=1, 0 SCRIPT ERRORs; relief_arrived ok=false with empty message = neither CnReliefArrived nor CnReliefLost within 90 s of CnReliefSent (relief unit = CnReliefSent.units[0]). Not the team-return path: it is the relief vehicle's trip; next: print the relief unit's pos/order/fac_drive7 vstate during the 90 s wait (pt7_cnops7.gd ~line 187) and check sim/systems/cn_ops7 relief travel / fac_drive7 hand-off ('x') for it.",
+   "cause": "not diagnosed; likely the same team-return path as seq7"
+  },
+  "muzzle7": {
+   "before": "18/3 (poses_flash 0 shots, apc_idle_travel false, all_measured fallback {gone:1})",
+   "cause_poses": "CONFIRMED headless (.plan/regfix7_logs/probe_m7.gd): the riflemen DO fire (sim fine) but the Machine m_tracked fire wounds them (WOUND7: single soldiers take Wound events; buddy care starts; killed ~tick 157) - the flow's hp*4 top-up no longer keeps a soldier in the fight, so by the 'poses' group's turn the posed riflemen are casualties. Flow-side.",
+   "fix": "tools/pt7_muzzle7.gd _hold(): the m_tracked targets get order {type: hold_fire} (passive targets); our shooters/checks unchanged",
+   "after": "muzzle7_r2a: PLAYTEST RESULT pass=20 fail=1 (was 18/3), 0 SCRIPT ERRORs. poses_flash ok (1 shot), apc_idle_travel ok. Still failing: all_measured 'centre/height fallbacks 2 {gone: 2}' (fx_layer.muzzle_point: shot drawn after its shooter entity is gone; LOOK7's fx_layer.gd - a fix there would use entity_layer.drawn7[sid] for a shooter removed this frame, or skip the flash; or flow-side: the shots come from the foes destroyed by w.destroy before the idle-travel wait). Not fixed.",
+   "open": "apc_idle_travel and the 'gone' fallback (fx_layer muzzle_point: shooter entity no longer exists when its shot is drawn; the flow destroys the foes with w.destroy just before the idle-travel wait) not yet diagnosed; may change with the hold_fire fix"
+  },
+  "sent7": {
+   "before": "23/1 casualty_in_cover (cover 0.30)",
+   "cause": "not diagnosed. Reading: the oracle logs cover at ce.pos right when the drag started/was seen (s7_dg true); sentinels7._drag_spot returns the near spot p even without cover when nothing within drag_far has cover >= open_v 0.35. Check the drill_state line in sent7_r2a.log",
+   "after": "see .plan/regfix7_logs/sent7_r2a.log"
+  },
+  "dronebay7": {
+   "before": "28/1 rockets_intercepted 0",
+   "fix": "tools/pt7_dronebay7.gd oracle: counts a rocket shot down by the bay's screen interceptors OR by the roof CIWS (Ciws7.counters.icpt_hit), logs both numbers. Spec: 13.9c-27 'interceptors vs drones / rockets' and 13.9c-32 'anti-drone / anti-missile / anti-rocket point defence first'.",
+   "after": "see .plan/regfix7_logs/dronebay7_r2a.log - CONFIRM the message shows CIWS > 0 (if both 0 it still fails, correctly)"
+  },
+  "ciws7": {
+   "before": "16/3 (transient parse error)",
+   "after": "see .plan/regfix7_logs/ciws7_r2a.log"
+  },
+  "turret7": {
+   "before": "FACINT7 23/2; REGFIX7 25/0",
+   "after": "see .plan/regfix7_logs/turret7_r2a.log"
+  }
+ },
+ "files_changed": [
+  "sim/systems/fac_drive7.gd (claimed by REGFIX7): _approach_blocked leftover-order drop + apb/apl/apw stage-1 tolerance, order() loose param, new _by_gate(), order_team passes loose for decon",
+  "tools/pt7_muzzle7.gd: _hold sets the m_tracked targets to hold_fire",
+  "tools/pt7_dronebay7.gd: Ciws7 const, either-defender oracle with both counts",
+  "scratch only: .plan/regfix7_logs/probe_m7.gd, runflow2.sh, chain2.sh"
+ ],
+ "not_done": "seq7 flow still 17/5 (unit tests green); cnops7 14/1 relief not diagnosed; muzzle7 20/1 (gone fallback); sent7/dronebay7/ciws7/turret7 results pending in the chain logs (_r2a); test_hot_state not run after the fac_drive7 edits"
+}

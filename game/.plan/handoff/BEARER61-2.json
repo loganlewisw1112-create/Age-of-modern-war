@@ -1,0 +1,26 @@
+{
+  "agent": "BEARER61-2",
+  "gen": 2,
+  "reason": "orch directive budget.handoff_now at calls=73 (guard projected 560k/750k)",
+  "done": [
+    "content/g6/defs_g61_bearer.json: a_ammo_bearer (human_a, barracks), b_supply_carrier (human_b, b_barracks), m_munitions_drone (machine, m_assembler); pop 1, weapon '', ammo_bearer:true, bearer_load_max 3, bearer_rounds_per_restock 60; production ids = unit ids (linked by facility). fact bearer.defs posted.",
+    "sim/systems/ammo_bearer.gd (stub replaced): e.bearer_load milli (3000 = 3 restocks), e.bearer_trip; cache w.cache.bearer61; think (tick+id)%10; refill at Supply sources via Supply._draw (60 rounds/restock, 500 milli/think); restock one unit/think: squad members <50% within 2 tiles lowest first, else own units nearby; cost ceil(1000*rounds/ammo_max); follow 2.5 tiles behind squad centre, walk to needy member within 10; empty -> trip to nearest own supply point (<=48 tiles) when stock>0; never moves on hold / player-fresh / foreign orders. join_squad / leave_squad validate+apply (squad, ops group members, company), SquadAI.touch. Public: is_bearer, load_max, load_of, load_line ('Ammo load 2.4 / 3'), load_frac, restock_cost, bearer_def_for, ai_wanted, ai_attach. Emits AmmoRestock {id,target,rounds,owner}. fact bearer.api posted (stub state; complete now).",
+    "tests/test_bearer61.gd: 9 tests (content, exactly-3 full restock, fractional, depot refill + no-stock, empty walks back, join follows + leave, validation, save/load + determinism, AI helpers): RESULT pass=9 fail=0, TESTS OK.",
+    "art: tools/art/g61_bearer.gd (FIG/SQ human figures + G61Anim rig frames, machine hover-crawler with slung pod) + tools/art/g61_bearer_gen.gd -> assets/art/g61_bearer/ (11 files, manifest md5 9e6543fa2fce3209b26f3859d76fc812 identical on two runs).",
+    "tools/pt61_bearer61.gd: windowed run2 PLAYTEST RESULT pass=26 fail=0, 0 SCRIPT ERROR; shots .plan/shots/BEARER61/bearer61_01..05 (join via command: SQUAD61 button pending).",
+    "change_requests posted (type need): seq 331 orch (art_catalog G5_GROUPS += g61_bearer, hud inspector line, --import), 332 SQUAD61 (Join/Leave buttons, right-click join, hotkeys, leader_of skip bearers), 333 OFF61 (ai_army hook ai_attach/ai_wanted/queue bearer), 334 ANIMA61 (load pips marker + restock frame)."
+  ],
+  "remaining": [
+    "1. Run --only for regression: test_supply, test_units*, test_art_machine, test_art_g3b, test_art_g6, test_content* (not run yet). Expect green: no-bearer matches do no AmmoBearer work; g6:true defs are skipped by art_machine/g3b.",
+    "2. Post fact bearer.api state complete and `done`.",
+    "3. After ORCH adds g61_bearer to art_catalog + inspector line: rerun pt61 bearer61, check shot 04 shows 'Ammo load' and the sprite is not a placeholder; add a test_bearer61 check that AC.manifest().infantry has a_ammo_bearer.",
+    "4. After SQUAD61 lands the Join squad button: playtest log should say via button."
+  ],
+  "files_touched": ["content/g6/defs_g61_bearer.json", "sim/systems/ammo_bearer.gd", "tests/test_bearer61.gd", "tools/art/g61_bearer.gd", "tools/art/g61_bearer_gen.gd", "assets/art/g61_bearer/*", "tools/pt61_bearer61.gd", ".plan/handoff/BEARER61-2.json"],
+  "test_state": "test_bearer61 9/9 PASS; pt61 bearer61 26/26 ok; regression --only runs not done; full suite not run (rule)",
+  "gotchas": [
+    "post.mjs has no change_request type: use type need, topic change_request.<x>.",
+    "pt._log returns void; a walking unit can miss pt._g5_select: center the camera first.",
+    "Hashes: no golden should move (bearer code is a no-op without bearer units) - unverified."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+ "agent": "REGFIX7-5",
+ "stopped_on": "budget.handoff_now (71%) from ORCH, calls ~76/140",
+ "1_turret7_apc_rear": {
+  "repro": "turret7_r5e 23/2: apc_rear_gun 'rear 0 (other guns 200)' + muzzle_on_foe_side cos -1.00. apc_front_shot diag: gun 0, sim facing 0.00, drawn face 0.0, shot ang 0.17, foe at (55.1,77.4), apc at (53.0,77.0); apc_rear_diag: sim fires 236, foe alive, dist 8.7, order last_pos (68.4,77.5).",
+  "hypothesis_tested": "REFUTED. Sim facing (0.00) and drawn face (0.0) were equal, and the shot angle (0.17 rad) pointed FORWARD. apc_gun7.on_shot picked the right gun: the foe really was in front of the APC.",
+  "cause": "the flow's target is not held in place. The enemy side's AI replaced the foe's {hold} order (pt7_turret7 diag apc_foe_drift in r6d: foe (48.0,77.3) order {move -> (76.55,76.55)} at tick 989), and it drove past the APC to its front, so the front pod rightly took every shot. The same thing moving the turret-part foes explains the popup turret's '6 deg off' failure (r4e, r6d): the target walked between the shot and the frame read. Also found: the flow wrote the world (spawn, destroy, hold) while a sim step could be in flight on the worker thread (join_sim only at run start).",
+  "fix": "tools/pt7_turret7.gd only (no sim or draw change): new _pin(w, ids) re-states {hold} + stop_path + player_order_tick (AiCommand.player_fresh) on the flow's targets every frame; player_order_tick is set at spawn; mv.join_sim() before every world write (turret-part setup, the turret loop, foe destroy, _apc_rear setup and its loop); 'apc_foe_drift' diagnostic print (only when a target moves > 1 tile). Checks and thresholds unchanged.",
+  "runs": "before fix: r5a void (fac_atmo7.gd parse error from another agent, fixed by its owner), r5b 25/0, r5c 25/0, r5d 25/0, r5e 23/2 (apc_rear). After join_sim only: r6a 25/0, r6b 25/0, r6c 25/0, r6d 24/1 (popup 6.0 deg off; apc ok but foe_drift printed). After _pin: r7a 25/0, r7b 25/0, r7c 25/0 (3 consecutive green, no drift print)."
+ },
+ "2_muzzle7": "muzzle7_r5a PLAYTEST RESULT pass=21 fail=0, muzzle7_r5b pass=21 fail=0, 0 SCRIPT ERRORs",
+ "3_flows": "seq7_r5a pass=22 fail=0; cnops7_r5a pass=15 fail=0; sent7_r5a pass=24 fail=0; ciws7_r5a pass=31 fail=0; dronebay7_r5a pass=33 fail=0 (run after ICONS7 posted its dronebay7 x3 33/0); all 0 SCRIPT ERRORs",
+ "4_hot_state_ab": "NOT DONE (budget stop). Plan: bash tests/run.sh --only=test_hot_state on the current tree (B), then the same with sim/systems/cn_progress7.gd at HEAD (git show HEAD:game/sim/systems/cn_progress7.gd, swapped in temporarily, then restored) (A); compare scene hashes. Expected no change (the new 'Damage' branch only writes st.hits when CN teams exist).",
+ "files_changed": ["tools/pt7_turret7.gd"],
+ "scratch": [".plan/regfix7_logs/probe_apc5.gd (headless probe; spawn_team leaves the APC at facing -2.36, attack submit did not take in the probe), logs .plan/regfix7_logs/*_r5*.log, *_r6*.log, *_r7*.log"],
+ "next": "run the test_hot_state A/B in step 4; nothing else is open from this brief"
+}

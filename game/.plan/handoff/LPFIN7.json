@@ -1,0 +1,27 @@
+{
+ "agent": "LPFIN7",
+ "stopped_on": "ORCH budget.handoff_now (75%), ~103 calls",
+ "state": "everything compiles (test_lpmap7 / test_cnfac7 / test_air / test_airfield / test_art_g5_air green after the edits; windowed probe ran with 0 SCRIPT ERROR in game code). Temp probe hook removed from tools/pt7_lpmap7.gd (byte-identical to before).",
+ "job1_approach": {
+  "cause": "cn_facility conf.approach [0,28,28,5] paves rows C+11..C+15 (x C-14..C+13); the core plots fuel depot (-14,13), repair bay (-6,13), dropship pad (3,14) and QRF barracks (12,14) stood on rows C+13..15.",
+  "fix": "sim/maps/last_protocol.gd only (facility unchanged): new const FAC_APPROACH (mirrors the facility json), _base paves it and marks it occupied; plots moved: depot (-14,16), tower (-11,16), repair_bay (-8,16), ciws (-4,17); vtol_pad (14,14) (PADS too, lane still +y rows C+20..22), barracks (3,16), motor_pool (7,16), sam (11,16); airfield.tower -> C+(-11,16); cameras (10,22)->(13,22), (2,13)->(2,16).",
+  "results": "LPM.validate(gen) == ''; census unchanged except core turrets 4 -> 5 (the design's 'turret beside every core gate' south slot (108,277) now fits); test_lpmap7 RESULT pass=14 fail=0; test_cnfac7 RESULT pass=36 fail=0. Windowed pt7_lpmap7 NOT yet re-run (job 5).",
+  "hashes": "LP map layout moved on purpose -> LP hashes move (not re-baselined, no golden touched)."
+ },
+ "job2_helipads": {
+  "cause": "(a) the pad sprite sorted by its centre while Air._pin_ground put a lone craft at slot 0 = 0.45 tiles -x of the centre, so the pad drew OVER the helicopter and only its tail/rotor showed past the pad's back corner (looked like a small sprite); art itself resolves fine (page 7, full 97x79 frames). (b) the slot spread used every pad slot (pad_slots 2) even with one craft.",
+  "fix": "sim/systems/air.gd _pin_ground: spread over the craft actually landed on the pad (lone craft centred; two side by side at -0.45/+0.45; re-evaluated every tick). presentation/view/entity_layer.gd: helipad defs (air_field 'helipad': a_helipad, b_helipad) drawn as a flat deck at depth 1-Y_OFF like the dropship pad (new _flat_pad cache).",
+  "results": "probe: all 6 LP craft pos == pad pos (122,243..266); two craft on one pad: (121.55,249) slot 0 and (122.45,249) slot 1. test_air 9/0, test_airfield 13/0, test_art_g5_air 2/0. Shots (looked at, posted fact shots.best seq ~9966): .plan/shots/LPFIN7/probe3/probe_pads_z1.png, .plan/shots/LPFIN7/probe3/pad_one_vs_two.png, probe_pad_z2.png, probe_pads_z075.png. Generic check done on the same a_helipad def with two craft (not in a skirmish match).",
+  "hashes": "any match with a lone craft parked on a 2-slot pad moves (pos centred); test_hot_state has no helicopters."
+ },
+ "job3_tps": "NOT DONE (no windowed tps measurement yet).",
+ "job4_quiet_test": {
+  "findings": "test_lpreserve7 x3 runs: RESULT pass=7 fail=0 each. Margin probe (.plan/lpfin7/quiet_probe.gd via run_probe.gd): recall 391 ticks after the enemies die (test window 600), all home at 551 (window 1200), field 0 in 100; identical state hash 64f0fa7afd9b in 3 reps x 3 concurrent processes (no in-process leak, no load/thread nondeterminism). The runner runs one file per process, so the one-off 'field 8, in 92' most likely came from code changing under a live agent between loop iterations (PERF7L native combat/scan swaps), not from static state. Audited static vars (LpReserve7.enabled, Inert7.enabled, FacDrive7.force_on, SimIndex flags): tests restore them; no test writes Content.rules.",
+  "fix": "none (no cause found in test or sim code).",
+  "next": "2 more full-file runs to reach the 5 asked for."
+ },
+ "job5": "NOT DONE: re-run test_lpmode7, test_lpmap7(done 14/0), test_lpreserve7(3/5 done), test_lpperf7, test_det7, test_cnfac7(done 36/0), test_sent7; windowed pt7_lpmode7, pt7_lpmap7, pt7_lpres7.",
+ "files": ["sim/maps/last_protocol.gd", "sim/systems/air.gd (_pin_ground)", "presentation/view/entity_layer.gd (helipad flat depth + _flat_pad)"],
+ "scratch": [".plan/lpfin7/ (dump.gd, census.gd, probe.gd, quiet_probe.gd, run_probe.gd, backups last_protocol.gd.bak, lp_old.gd, pt7_lpmap7.gd.bak)"],
+ "next_steps": ["1. job 3: windowed LP tps at 1x reserve on vs LpReserve7.enabled=false, render vs sim split (probe.gd pattern + a temp env hook in pt7_lpmap7, remove after)", "2. job 4: 2 more test_lpreserve7 runs", "3. job 5 list above; pt7_lpmap7 must now show lpmap7_valid ok"]
+}

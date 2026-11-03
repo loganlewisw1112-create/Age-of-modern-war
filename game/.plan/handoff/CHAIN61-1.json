@@ -1,0 +1,22 @@
+{
+  "agent": "CHAIN61",
+  "done": [
+    "sim/systems/command_net.gd complete: radio graph (per-tick runtime cache), stored net rebuilt every 20 ticks per side, hierarchy (General > commander > captain > lieutenant > squad leader > soldier from companies/ops/e.squad), orders issue/deliver/wait/expire, inbox + intent, default executor after 3 s if nobody take_orders, reports up with per-hop delay + rate limits, auto reports (contact/casualty/ammo/fuel/objective), succession with confusion, initiative (mission command), tree, inspector_lines",
+    "sim/systems/intel.gd complete: per-side belief from w.visible_enemies, last-known pos, linear confidence decay, drop when spot re-seen empty, mimic disguise, decoy identification, contacts/strength_at/threats_to/note_contact/known/confidence/forget",
+    "content/g6/rules_g61_command.json",
+    "tests/test_chain61.gd 9/9 green (registered systems)",
+    "tools/pt61_chain61.gd written, parses clean (--check-only)"
+  ],
+  "remaining": [
+    "ORCH: add \"chain61\" to G6_FLOWS in tools/ui_playtest.gd (CR change_request.ui_playtest_chain61)",
+    "Then run windowed: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/CHAIN61\" --ui-playtest-chain61 (timeout 900); expect PLAYTEST RESULT all ok, 0 SCRIPT ERROR, shots chain61_officer_linked/_cut/_relinked",
+    "ORCH/SQUAD61: hook CommandNet.inspector_lines(w, uid) into the inspector and optional comms overlay by CommandNet.comms_state (CR change_request.inspector_comms)",
+    "ORCH: re-baseline goldens (every match now has sys_state.command_net + sys_state.intel)"
+  ],
+  "files_touched": ["sim/systems/command_net.gd", "sim/systems/intel.gd", "content/g6/rules_g61_command.json", "tests/test_chain61.gd", "tools/pt61_chain61.gd"],
+  "test_state": "bash tests/run.sh --only=test_chain61 -> RESULT pass=9 fail=0, TESTS OK",
+  "gotchas": [
+    "CommandNet.graph is cached per tick (w.cache.cn_graph); tests that teleport units inside one tick must erase it",
+    "Orders not consumed via take_orders within consume_window_s are executed by CommandNet itself; owners reading only intent_of will see double control"
+  ]
+}

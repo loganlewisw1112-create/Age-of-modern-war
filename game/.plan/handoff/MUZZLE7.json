@@ -1,0 +1,40 @@
+{
+  "agent": "MUZZLE7",
+  "spec": "G7_REFERENCE 13.9c-28 (muzzle flashes from the barrels, everything that fires)",
+  "calls_used": 74,
+  "tokens_used_est": 490000,
+  "audit": {
+    "posted": "board fact muzzle7.audit (seq 5435); full table .plan/muzzle7/audit.tsv",
+    "before": "fx_layer._fx61_muzzle anchored every flash at the sim point (ev.from) + muzzle_g61 anim61.muzzle (vehicles only, flash centroid, shot-angle row) else Fx61Core guess (class barrel length + body height 8+r*12). All 100 infantry, cn_vanta_a/b, all 36 weapon buildings / G7 turrets / wall turrets fell back; air shots had no shooter flash; barrels never alternated.",
+    "now": "ALL families have measured barrel tips: 278 unit sheets (infantry per pose stand/crouch/prone/side/peek_l/peek_r, vehicles, naval, aircraft, drones, CN suits, Sentinels, squads = one tip per rifle) + mbt/ifv turret sheets + 39 buildings (every *_fire art state: G6 rot_<f>_fire, G7 a_t7_* aim_<k>_fire, wall turrets rot_<m>_a<n>_fire, + 8-facing edge points for fire-less art: bunkers, guard tower, wall towers, coastal batteries, m_sentry). test coverage: units=183 firing defs, buildings=36, missing=0.",
+    "sources": "unit rows: flash=4008, edge=730 (old art without a drawn flash, e.g. G1 rifleman, some Sentinel rows; camera-axis rows 1/5 without flash use the neighbour-row midpoint snapped onto the body, 381 tips); building states flash=252, edge=41"
+  },
+  "files_changed": [
+    "tools/art/muzzle7.gd (NEW measuring lib: flash-vs-reference diff, 8-connected flash blobs on the main opaque piece, rear blobs dropped, tip = non-flash pixel nearest the flash root; edge fallback; build_table())",
+    "tools/art/muzzle7_gen.gd (NEW runner: godot --headless --path . -s tools/art/muzzle7_gen.gd -> assets/art/muzzle7.json, ~16 s, deterministic)",
+    "assets/art/muzzle7.json (NEW generated data; exported: include_filter *.json)",
+    "presentation/art/muzzle_g61.gd (data7(), unit_tips(def,pose,row), has_turret7, building_tips(def,state,row), pick(tips,n); muzzle_px/has_data prefer muzzle7)",
+    "presentation/view/fx_layer.gd (muzzle parts: _fx61_muzzle -> muzzle_point(): drawn anchor (entity_layer.drawn7 if present, else motion vs S_SX/S_SY + posture bits/_ww_cells, minus air lift), drawn row, turret aim row, pose, building drawn state via G5Art.building_state, per-shooter barrel alternation, counters muzzle7 + muzzle7_last; shell arc, flame jet, air-to-air/ground tracers + flash now start at the tip)",
+    "tests/test_muzzle7.gd (NEW, 6 tests)",
+    "tools/pt7_muzzle7.gd (NEW playtest flow)"
+  ],
+  "data_format": "assets/art/muzzle7.json {v:1, u:{art_def:{p:{pose:[8 rows of [[x,y],...barrels]]}, s:{pose:'ffffeeen'} (f flash, e edge, n camera-axis midpoint), t:[8 rows] turret sheet}}, b:{def:{st:{state:[[x,y],...]}, e:[8 rows], s:'ff..'}}}; px from the sprite pivot = drawn ground anchor.",
+  "tests": [
+    "test_muzzle7: RESULT pass=6 fail=0 (coverage missing=0; 7209 tips checked opaque + at edge/flash base, bad=0; battle hash on==off, tip=22 fallback=0)",
+    "test_vfx61: RESULT pass=8 fail=0",
+    "test_view5: RESULT pass=10 fail=0 (after fixing the no-entity air fallback lift)",
+    "test_look7: RESULT pass=8 fail=0",
+    "test_animb61: RESULT pass=4 fail=1 -- test_every_vehicle_def_has_its_frames: cn_vanta_* / g7_vanta_* sheets lack anim61/recoil frames (art manifest, not touched by MUZZLE7; pre-existing art gap)"
+  ],
+  "playtest": "PLAYTEST RESULT pass=13 fail=1 (shots .plan/shots/MUZZLE7/). infantry/vehicles/turrets groups each got 3 frame-exact flash shots; all_measured ok (tips 3212, fallbacks 0); on_sprite 9/9. FAIL muzzle7_air_flash: heli + CN gun drone produced no flash within 25 s (likely no target in their range/arc or the air shots go through a path where muzzle7_last shooter id differs).",
+  "change_request": "board need change_request.entity_layer.drawn7 (seq 5592): entity_layer records drawn7[id] = [fi, row, sp, t] so the flash uses the exact drawn column (wall crouch / peek / sidearm phases) -- fx_layer already reads it (guarded).",
+  "not_done_next_steps": [
+    "1. Playtest zoom: the shots came out at ~zoom 1 although _zoom(mv, 2.5) is called (camera_rig ZOOM_MAX 2.5). Check mv.camera is the CameraRig and that nothing resets zoom after center_camera_on; re-apply _zoom after center_camera_on in the group loop. Then re-run and Read every PNG, post fact shots.best with zoom-2.5 shots.",
+    "2. Air group: move the heli / gun drone closer to the m_tracked / m_drone targets (or give them an attack order), confirm _air_shot -> _fx61_muzzle sets muzzle7_last with the heli id; get muzzle7_air_flash ok.",
+    "3. Line-up gaps vs brief: Sentinels on a wall (needs the facility from pt7_wallwalk7 setup), crouch/prone poses are forced via e.supp / e.pinned but not separately screenshotted; add per-pose shots.",
+    "4. Laser beams (G6Fx.from_event in fx_layer laser path) still start at the event point, not the tip -- route the beam start through muzzle_point (G6Fx file owner: LOOK7 files; fx_layer side is MUZZLE7's).",
+    "5. Hill lift for building anchors (entity_layer raises statics by the cell height lift) is not applied in muzzle_point (small offset on raised ground).",
+    "6. After any art regeneration re-run tools/art/muzzle7_gen.gd (ORCH may want it chained after gen_art)."
+  ],
+  "debug_tools": ".plan/muzzle7/dbg.gd renders fire cells x3 with tips (magenta flash tip, cyan edge): godot --headless --path . -s .plan/muzzle7/dbg.gd -- <out.png> \"def,def:crouch,def:t,bld\"; contact sheets dbg_inf.png, dbg_veh.png, dbg_bld.png, dbg_bld2.png"
+}

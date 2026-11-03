@@ -1,0 +1,49 @@
+{
+  "agent": "PERF61-2",
+  "gen": 2,
+  "calls_used": 57,
+  "tokens_used_est": 430000,
+  "stopped_because": "ORCH directive: owner wants a testable build ASAP; finish edit in hand, test, handoff",
+  "done": [
+    "(a) morale.gd _realism_pass staggered by unit id: runs every tick for units with (tick + id) % update_every == REAL_PHASE (same per-unit cadence and dt); leaders bucketed from this tick's state; is_leader_def cache now static _ldef (cleared on rules change); Veterancy.objectives still once per cycle on tick % every == REAL_PHASE (moved to Morale.tick).",
+    "(a') veterancy.gd objectives(): HASH-IDENTICAL rewrite, one entity pass for all flipped sectors (_objectives_many, 3x3 sector-block lookup, exact distance test, credit order sectors asc / ids asc). Was one full w.entities.values() pass per flipped sector: a mass sector flip at 10k cost 2.5 s on one tick.",
+    "(b) morale.gd high-ground check: lvl > Elevation.PLAIN (was > 0). New test tests/test_real61.gd::test_high_ground_only_raised (plain level 1 and low level 0 give no resist, level 2 gives x high_ground).",
+    "(c) fog.gd: Fog.visible_enemies_ro(w, fid) returns the per-tick cached list without a copy (READ-ONLY); visible_enemies() still returns a copy (cache refactored into _vis_cached, one copy per call as before). Switched: intel.gd refresh, command_net.gd contact loop, doctrine.gd intel dicts (lines ~78, ~455). squad_ai.gd has no visible_enemies caller. doc_util D.visible fallback left as is.",
+    "(e) test_perf_g6 run alone twice: run 1 FAIL 23.78 ms (load 95% before, 57% after: noise), run 2 PASS (load 59% before, 91% after). Not attributable; nothing changed in g6_hooks/accuracy path (Morale.acc_mult is 2 has() + 2 cheap mults)."
+  ],
+  "not_done": [
+    "(d) squad_ai.gd early-out + order type read once: NOT started. INTEG61-2 posted handoff (seq 612), not done/release; PERF61-2 asked ORCH (need squad_ai_release, seq 615), no answer yet. The PERF61 CR (seq 568) has the exact hash-identical conditions. Do NOT skip REDUCED-tier units.",
+    "(e) no cost investigation beyond the two runs (second passed); if it fails again on a quiet PC, profile hooks on/off with an in-process A/B.",
+    "Final alternating bench G6 worktree vs G6.1 (2k river_crossing_s 1200t, 10k valley_conquest_l 400t) and perf/PERF_G61.md: NOT written."
+  ],
+  "numbers": {
+    "probe": "scratchpad perf612/spike.gd: exact copy of SimWorld.step that also times Morale.tick (hash equals w.step path: 02a98823 pre-change 2k 400t). Usage: godot --headless --path . -s <scratchpad>/perf612/spike.gd -- --units=2000 --ticks=400 [--map=valley_conquest_l --units=10000 --ticks=240] [--old = pre-stagger morale]",
+    "2k_pre": "load 100: morale avg 7.54 p99 150.9 max 631.7 ms; by tick%20: phase 7 = 116.2 ms, other phases 0.1 (8 on the 4-tick morale update)",
+    "2k_post_a": "load 93-97, 2 runs: morale by phase flat 4-19 ms (no phase-7 spike), max 210/362 (OS noise at ~95% load), hash 0862bb5a3a94fbcf both runs",
+    "10k_pre": "load 84: phase 7 avg 479.8 ms, tick 227 = 2555 ms (sector mass flip in objectives)",
+    "10k_post_a": "load 87: per-tick 20-60 ms, tick 227 still 2752 (objectives); after objectives rewrite (load 93): t227 524 ms, hash identical 4c2a3887b06cfe49 before/after the rewrite",
+    "c_identity": "2k 400t with (a)+(c) and the old high-ground test = 0862bb5a = (a) alone -> (c) hash-identical",
+    "hashes_moved": "(a) stagger and (b) high-ground move G6.1 hashes on purpose (2k 400t probe: 02a98823 -> 0862bb5a (a) -> 91c02f36 (a)+(b)+(c)); river_crossing_s has authored height so (b) applies. ORCH re-baselines; goldens untouched."
+  },
+  "test_state": {
+    "test_real61": "8/8 (incl. new high-ground case, save/load mid-cycle)",
+    "test_chain61": "9/9",
+    "test_officers61": "11/11",
+    "test_perf_g6": "run1 6/1 (probe 23.78 under load), run2 7/7",
+    "compile_check": "clean (no SCRIPT ERROR / Parse Error)"
+  },
+  "files_touched": [
+    "sim/systems/morale.gd",
+    "sim/systems/veterancy.gd",
+    "sim/systems/fog.gd",
+    "sim/systems/intel.gd",
+    "sim/systems/command_net.gd",
+    "sim/ai/doctrine/doctrine.gd",
+    "tests/test_real61.gd"
+  ],
+  "gotchas": [
+    "Fog.visible_enemies_ro returns the live cache: callers must never mutate or keep it.",
+    "Realism stagger: leader scan still walks all units every tick (needed for exact save/load: rank_role can change any tick).",
+    "Machine load 85-100% all session: per-tick max numbers are noisy; compare by-phase averages within one run."
+  ]
+}

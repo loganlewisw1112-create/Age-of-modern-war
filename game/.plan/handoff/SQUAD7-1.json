@@ -1,0 +1,44 @@
+{
+  "agent": "SQUAD7",
+  "gen": 1,
+  "reason": "budget at 70% (calls ~97 of 140)",
+  "done": [
+    "sim/systems/formations7.gd (new): all 8 G6.1 shapes rebuilt + staggered_column + diamond; real spacing (foot 1.1 t ~8 m, staggered column nearest neighbour ~9 m, vehicles 3.5 t / 7.5 t ~52 m in column); fire-team wedges (leader front centre, automatic rifle on the team's outer flank); spacing x1.5 under threat (e.f7_thr via note_threat or squad supp >= 50), x0.75 in close terrain / low vis; sectors of fire on every unit (f7_sec, f7_hd, f7_f); terrain fit (blocked slot -> nearest passable, hug tree lines/walls, never stacked), squeeze to file through a gap, column shapes bend along roads (road_follow); crossing-free slot assignment (leader pinned to slot 0, ARs to AR slots, 2-opt); halts (herringbone, coil, ring); gait_for / gait_mult; technique_for; saved coarse threat grid (w.sys_state.f7.tg, rebuilt tick % 20).",
+    "sim/systems/movement.gd formation_slots: every named formation now goes through Formations7.slots (G6.1 helpers kept, unreachable). No-formation grid unchanged.",
+    "sim/systems/orders.gd: FORMATIONS / PLAYER_FORMATIONS + staggered_column, diamond.",
+    "sim/systems/squad_ai.gd: G7 block (technique by threat incl. set_technique override, gait per squad, bounding A/B with f7_bw holds, traveling overwatch trail, 360 ring / herringbone / coil halts, friendly-safe grenade decisions via WOUND7 Shrapnel.burst guard, suppressive fire on ordered areas and last-known positions via Morale.add_supp, ambush stance (hold fire until kill zone, fire, break contact), fall_back (bk order, facing the enemy, broken units excluded)); commands set_technique, fall_back, suppress_area; static g7_off A/B switch.",
+    "sim/systems/convoy.gd: full motorcade framework (form/move/disband/of_unit/perimeter_ready/members; column on the lead's track with chain spacing, tighter at chokepoints, pace to slowest, flank escorts on the threatened side, shield escort interposes (core waits until it is in place unless in contact), kill zone: never stop, one escort peels off to hold then rejoins, herringbone then coil at the stop, perimeter_ready, moving cover for foot members on the sheltered side).",
+    "sim/systems/garrison.gd: clear_building command (stack at the door in a file, grenade first when enemies hold it, room by room: one defender driven out per clear_room_ticks, then enter own building); b.roof_open = owner faction while troops are inside.",
+    "presentation/hud/g2_commands.gd: formation page lists staggered column + diamond, 4 technique buttons, Fall back, Suppress, Clear building.",
+    "presentation/ui5/panels/hotkeys.gd: Hotkeys.G7_ACTIONS (rebindable via key()/label()/group(), covered by collisions()); squad7 page keys Y U T R M Q H; DRONE7 keys drone_take Y, drone_fullscreen N, drone_handback B, drone_thermal T, drone_drop J, drone_detonate K (posted fact hotkeys.drone7).",
+    "content/g7/rules_g7_tactics.json (all values PROVISIONAL).",
+    "tests/test_squad7.gd 12/12 green."
+  ],
+  "remaining": [
+    "1. Write tools/pt7_squad7.gd (RefCounted, func run(pt) -> void, like tools/pt61_*.gd): platoon in staggered column on a road, wedge across open ground, halt into herringbone (3+ vehicles in a squad or a convoy), bounding under fire (set_technique bounding_overwatch + enemy), a building clear (clear_building on s_garrison_bld), a 5-vehicle convoy (Convoy.form + move, enemy on a flank); a shot of each plus a 10-shot 0.3 s strip of the column. Run windowed, timeout 900: \"$G\" --path . -- --ui-playtest=\"<abs .plan/shots/SQUAD7>\" --ui-playtest-squad7; must print PLAYTEST RESULT all ok, 0 SCRIPT ERROR.",
+    "2. 2k sim cost delta: A/B with SquadAI.g7_off = true/false (also covers convoy grid build) on the 2k fight/mixed bench (tools/bench.gd), alternating pairs on a quiet PC; report the ratio.",
+    "3. Check the formation page fits: bash tests/run.sh --only=test_ui_fit (the page now has 10 formations + pace + 4 techniques + 3 tactics + back = 19 buttons; g2_commands.compact() uses 5 columns).",
+    "4. Hashes: test_hot_state GOLD / fixed-hash tests will move (formation slots for every named formation incl. AI doctrine formations, squad halt rings, gait/technique fields, sys_state.f7 threat grid). Capture two identical runs and report to ORCH; never edit goldens.",
+    "5. Follow up CRs: ORCH squad7_commands (register set_technique / fall_back / suppress_area -> SquadAI, clear_building -> Garrison in world.gd COMMANDS + on_direct_order routing; until then the page buttons show 'unknown command' in preview), ORCH content_g7_dir (FRAGMENT_DIRS += content/g7), ORCH settings_g7_keys (settings.gd rebind list += Hotkeys.G7_ACTIONS), WOUND7 gait_speed (morale e.mvm *= Formations7.gait_mult(e)), WOUND7 backing_off_fire (combat fires on the move for order.bk), LOOK7 snapshot_squad7 (gait, f7_sec/f7_hd, bk, f7_clr/f7_bld, f7_f, f7_hb, roof_open)."
+  ],
+  "files_touched": [
+    "sim/systems/formations7.gd", "sim/systems/movement.gd (formation_slots + helpers only)", "sim/systems/orders.gd", "sim/systems/squad_ai.gd",
+    "sim/systems/convoy.gd", "sim/systems/garrison.gd", "presentation/hud/g2_commands.gd", "presentation/ui5/panels/hotkeys.gd",
+    "content/g7/rules_g7_tactics.json", "tests/test_squad7.gd"
+  ],
+  "test_state": {
+    "test_squad7": "RESULT pass=12 fail=0, TESTS OK",
+    "test_ui_panels": "RESULT pass=5 fail=0, TESTS OK",
+    "test_garrison": "RESULT pass=5 fail=0, TESTS OK",
+    "test_officers61": "RESULT pass=11 fail=0, TESTS OK",
+    "test_g2_scenarios": "RESULT pass=7 fail=0 (s4 broke on friendly grenades; fixed)",
+    "test_squad61": "pass=13 fail=1: test_low_hp_member_falls_back ('the low-HP member got a fallback move' + SCRIPT ERROR Out of bounds get index '43' at test_squad61.gd:171). Reproduces with SquadAI.g7_off = true (probe: no fallback move with G7 squad code off), so not from SQUAD7's squad code; likely another wave-1 in-progress change (morale/damage/wounds diff in the tree). Needs ORCH triage."
+  },
+  "gotchas": [
+    "Map in make_world() is 96x96: keep test coordinates inside it.",
+    "Formations7 must never preload movement.gd (movement preloads it): pass passability as Callables.",
+    "Functions that return a value or null need '-> Variant' or the parser types them as null.",
+    "Hotkeys: G7 rows live in G7_ACTIONS, not ACTIONS (test_ui_panels probes every ACTIONS row for a G5 card button).",
+    "Grenades: never throw within 2.5 tiles of any squadmate (broken ones are not in the squad think's member list)."
+  ]
+}

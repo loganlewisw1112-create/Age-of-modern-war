@@ -1,0 +1,18 @@
+{
+  "agent": "REGRESS7-2", "head": "cccfcdd + uncommitted",
+  "done": [
+    "senses7.head(): bk (ordered fall-back) soldiers look at target / f7_hd / back along path -> test_wound7 bk 17/0",
+    "test_damage forest: setup faces the hidden rifleman west (owner: 'a view cone from the head (peripheral vision spots movement only)') -> 10/0",
+    "formations7: fewer groups abreast before file (_fits, local_slots ab_over) + _pull_forward (no slot across an obstacle from the anchor); test_squad7 new test_mixed_group_never_stops_across_a_wall; test_native x2 use cmd.grid (owner B20 true spacing) -> test_native 12/0, test_squad7 22/0, test_mil 13/0, test_squad61 14/0",
+    "senses7 heard contacts dropped when the shooter is seen (sid); did NOT fix officers61",
+    "machine_react7 fairness: event_log fall scan moved to cores._machine_fell; AI-FAIR tags; memory[fid] -> test_ai fairness + hardcoded pass",
+    "Senses7.seen_now + combat.validate attack -> test_perf 11/0",
+    "test_mobility:161 foe-gone guard -> 4/0"
+  ],
+  "open": [
+    "test_officers61 fix_flank + exhausted: fail with senses on, pass off (spot-pass reaction delay -> contact registered ~1.2 tiles closer -> whole enemy block seen -> odds 2.41 -> break). Not fixed.",
+    "test_ai ffa: human_a never attacks; passes with g7_wounds off (base wiped at ~6500 ticks). Not fixed.",
+    "ally_cmds, gen61, victory (PERF7A file), stages/stage10, map_io: not started",
+    "live full suite: C:/CODING/g7_live_full_r72.log; baseline 55b4e04: C:/CODING/g7_base_full.log"
+  ]
+}

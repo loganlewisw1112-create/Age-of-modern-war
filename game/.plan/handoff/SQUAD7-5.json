@@ -1,0 +1,25 @@
+{
+  "agent": "SQUAD7-5",
+  "gen": 5,
+  "reason": "approaching 70% projected budget (~93/140 calls)",
+  "done": [
+    "1. test_officers61::test_fix_and_flank_geometry diagnosed + fixed (now 11/0). Probe .plan/squad7_ff_probe.gd (args: ab=N, dy=<start shift>). chunk_abreast is irrelevant (11 men < chunk 12; ab=3 and ab=99 identical). The doctrine picked fp at exactly 65.0 deg to the contact centroid at plan time; _contact keeps moving c.pos to the visible-foe centroid as front foes die (37.19,48.21 -> 38.91,48.04) and fp was never re-aimed -> 54.5 deg. The fight is chaotic: with SQUAD7-3/4 assign uncross/polish disabled it passed at dy=0 but failed at dy=-0.25/0.5 (59.4/53.9). The 'no contact in 2400 ticks' half = contact -> decision 'break' (odds 1.76 after 2 men lost in the react window) -> company destroyed -> contact erased. Fix (ORCH gave SQUAD7-5 doc_operational.gd for it, CR 689): _fix_flank stores c.fpc and re-aims c.fp (same side, same angle) on the current estimate whenever it drifts > 0.5 tile before the signal. Shift sweep after the fix: dy 0/-0.25/-0.5/1.0 -> fix_flank, fp 65.6/63.6/66.1/65.0 deg, sig 50.4/49.0/49.4/52.3 (dy=1.0 was 59.0 before); dy 0.25/0.5 still decide 'break' (odds 1.76/1.77: decision half, not geometry).",
+    "2. Re-runs: test_mil 13/0, test_squad61 14/0, test_garrison 5/0, test_g2_scenarios 7/0, test_squad7 18/0, test_officers61 11/0 (after fix), test_doctrine 9/0, test_ops 10/0; test_ui_panels 3/2 was the human_a build page out of keys (a_t7_railgun) -> ORCH fixed (Defences page), ORCH re-runs it.",
+    "3. Hotkeys: cn_pincer = SHIFT+P (P is the GLOBAL pause key, so plain P was impossible), cn_break_contact = SHIFT+B, group cn7, in G7_ACTIONS (rebindable); rebind_error accepts Shift+<letter> chords for G7 actions (also lets the wound7 casualty keys be rebound back to chords); sheet label cn7. test_squad7::test_cn_hotkeys_are_rebindable_chords. No CN card button exists yet (whoever owns the CN unit card must add buttons using Hotkeys.key('cn_pincer'/'cn_break_contact')).",
+    "4. pt7_squad7: run7 21/0, 0 SCRIPT ERROR; run8 (after reframing the bounding shot on the squad centroid and taking the convoy-contact shot the moment an escort is on the core-threat line) PLAYTEST RESULT pass=21 fail=0, 0 SCRIPT ERROR. Strip squad7_strip_00..09 refreshed by run8. Previous shots in .plan/shots/SQUAD7/prev_run6, prev_run7.",
+    "5. 2k A/B (.plan/tmp/ab7.log, shared PC, CPU load 23% before / 10% after, 7 godot procs): fight off 39.39/40.59/40.11 vs on 40.52/39.66/41.60 -> 1.014x; mixed off 46.54/39.63/39.63 vs on 51.44/36.00/42.09 -> 1.03x (noisy). Hashes identical g7_off true/false in both scenarios (the bench scenarios never trigger a G7 squad-state change), so this measures overhead only."
+  ],
+  "remaining": [
+    "1. test_hot_state: two runs were started at 20:28 local (.plan/tmp/hot1.log, hot2.log via hb.sh). hot1 started BEFORE the doc_operational re-aim edit (~20:39), so it is not comparable; take hot2 plus one more run after all edits (bash .plan/hb.sh <ID> ... -- timeout 1200 bash tests/run.sh --only=test_hot_state), report which GOLD values moved and that both post-edit runs agree. Never edit goldens (ORCH re-baselines).",
+    "2. FISSURE7 CR 710 (ORCH directive): engineer command 'Span fissure': action fissure_span, label 'Span fissure', in Hotkeys (FISSURE7 proposed J; pick a free non-colliding letter for the engineer card groups - check Hotkeys.collisions() == [] and test_ui_panels), button on the engineer card (g2_commands.gd or the G6 unit card that holds engineer actions), then click-target mode: click a tile -> valid when Fissures7.span_plan(w, cell) is non-empty -> submit {type:'fissure_span', unit_ids, cell:[x,y]}. fissure_span is in world.gd COMMANDS. Add a test in test_squad7 (key present, no collision).",
+    "3. KNOWN GAP to look at: run8 squad7_07_convoy_move.png shows the 5-vehicle convoy closed up to ~1 tile spacing on the road (run7 at the same tick showed 2-6 tiles); not diagnosed (convoy.gd _moving chain / lead wait while the shield gets in place, or the IFV section leaving the road blocking). A headless spacing probe over the pt convoy scene would settle it."
+  ],
+  "files_touched": [
+    "sim/ai/doctrine/doc_operational.gd (_fix_flank re-aim, c.fpc; ORCH-granted for CR 689)",
+    "presentation/ui5/panels/hotkeys.gd (cn_pincer, cn_break_contact, Shift-chord rebinds, cn7 sheet label)",
+    "tests/test_squad7.gd (+test_cn_hotkeys_are_rebindable_chords)",
+    "tools/pt7_squad7.gd (_focus helper, bounding + convoy-contact shot framing)",
+    "sim/systems/formations7.gd, sim/systems/squad_ai.gd (temporary diagnosis toggles added and removed; net unchanged)",
+    ".plan/squad7_ff_probe.gd (new probe)"
+  ]
+}

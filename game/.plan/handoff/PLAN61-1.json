@@ -1,0 +1,24 @@
+{
+  "agent": "PLAN61",
+  "gen": 1,
+  "status": "partial (stopped at ~70% of the call cap)",
+  "done": [
+    "sim/systems/plans.gd complete: issue_plan / cancel_plan / plan_signal (registered by ORCH: Plans before Ops in SYSTEM_ORDER, 3 COMMANDS). Plan -> legs (phase lines crossed by the axis, then objectives; screen = PL1 spread), per-platoon points abreast, Ops missions per leg (secure_point at PLs, attack_area/hold_zone at objectives, attack consolidates with hold_zone, raid pulls back after 20 s), halts at each PL until a signal (go/next/phase N) or pl_hold_s, timing now/signal/at, withdraw signal back to the start line, progress (pl_reached, obj_held, losses), status_line(). State only created on first issue_plan (no hash change for matches without plans).",
+    "Chain of command: each leg goes over CHAIN61 CommandNet.issue(w,fid,0,{platoon:gid},{type:<mission>,target,radius,risk,intent,main_effort,source:'plan',plan_id}); when it leaves pending_orders PLAN61 applies it as Ops set_mission and take_orders() the officer's inbox only if every record there is source=plan. cancel_plan issues a 'hold' order at the platoon centroid so CommandNet initiative does not continue a cancelled plan. New plan on overlapping formations (army vs its company) supersedes the old one.",
+    "UI presentation/ui6/command_layer/: command_layer.gd (hub: COMMAND toggle button 'CommandModeButton' top-centre, Tab/command_mode hotkey, Esc, Enter; plan card 'CommandCard' with intent/timing/main effort, tools Tool_objective/Tool_axis/Tool_phase/ToolClear, IssuePlanButton, plan list with Plan<id>_Go/_Withdraw/_Cancel; right-click quick officer orders popup), cl_model.gd (snapshot + draft), cl_overlay.gd (dims map, NATO symbols, plans/draft drawing, real mouse input; under the HUD panels), fit_cmd.gd (fit screens cmd61_mode, cmd61_plans). HUD hooks added by SQUAD61 (hud.gd lines 29/87/301/608/1233).",
+    "tests/test_plans61.gd: 6 tests, TESTS OK (validation, company PL1->PL2 in order with halts and objective hold, cancel, signals/timing/withdraw/pl_hold_s, save/load mid-plan + determinism, orders over CommandNet + player override).",
+    "tools/pt61_plan61.gd written (real mouse drag/click flow, shots plan61_command_mode/_draft/_pl1/_pl2/_objective/_cancelled)."
+  ],
+  "remaining": [
+    "1. Wait for ORCH to add \"plan61\" to G6_FLOWS (tools/ui_playtest.gd:2215, CR seq 146). Then run: \"$G\" --path . -- --ui-playtest=\"<abs>/.plan/shots/PLAN61\" --ui-playtest-plan61 (timeout 900, windowed). Needs PLAYTEST RESULT all ok + 0 SCRIPT ERROR; view shots. Likely fixes: symbol click position (formation_at uses officer world pos, radius 1.6 tiles), map geometry from company A toward map centre may hit water/cliffs.",
+    "2. Run --only=test_ui_fit once (it is heavy, >10 min; run it with run_in_background and your own board_g61 heartbeat because .plan/hb.sh posts to the G6 board.jsonl, not board_g61). My first attempt produced an empty log (unverified). The COMMAND toggle at top-centre y=46 may overlap HUD top-bar items in hud_* screens; move it if FIT reports an overlap. After ORCH adds cmd61_mode/cmd61_plans to fit_screens.gd (CR seq 185) the card is checked at all resolutions and 0.75/1.5.",
+    "3. Optional when CHAIN61 answers CR seq 126: use CommandNet.consume(w,uid,oid) / cancel(w,oid) if added (adapter _net() checks arity)."
+  ],
+  "files_touched": ["sim/systems/plans.gd", "presentation/ui6/command_layer/command_layer.gd", "presentation/ui6/command_layer/cl_model.gd", "presentation/ui6/command_layer/cl_overlay.gd", "presentation/ui6/command_layer/fit_cmd.gd", "tests/test_plans61.gd", "tools/pt61_plan61.gd"],
+  "test_state": "bash tests/run.sh --only=test_plans61 -> RESULT pass=6 fail=0 files=1 / TESTS OK (last run after the overlap change). test_ui_fit: not verified. pt61_plan61: not run (flag missing; --ui-playtest-plan61 currently runs the default G1 flow).",
+  "gotchas": [
+    "CommandNet's default executor acts on unconsumed inbox orders after consume_window_s and its initiative re-issues attack_move on the last intent when a node is idle: plan cancel must leave a hold intent (done).",
+    "Radio delay: tests that check a mission right after a leg change must wait (hold_zone check waits up to 600 ticks).",
+    "No hashes/goldens touched; plan state is absent unless issue_plan is used."
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "agent": "LPMODE7-3",
+  "gen": 3,
+  "status": "finishing at ~70% projected budget (~100 calls); work complete except the items under remaining",
+  "done": [
+    "pt7_lpmode7 fails fixed at the root: (a) gates were never built on the real map: map.lp gate cells are ROAD (not buildable) -> lp_setup.place(..., road_ok) lets a_gate stand on ROAD/BRIDGE (9 gates per ring now); map.lp tower cells (listed apart from the wall cells) are now built too; LpDefence.fall seals the next ring's gates through Fortify.apply_command set_gate_lock (nav grid closed too); (b) LastProtocol.start_tide sets posture maximum at once (player override still wins).",
+    "Economy pop-cache root cause fixed in CnFacility.spawn_team (crews spawned + boarded in one tick: w.cache.erase(eco_pop) there); the workaround in last_protocol.gd removed; lp_world lost-squad secret (CounterNanite.spawn_team direct) erases it too. test_lpmode7 same-seed + save round-trip test green.",
+    "Base starts secure: lp_setup.power_up places generators along the inside of the core-ring wall to cover the base draw +10% (last_protocol: PWR 4930 prod / 4429 use; was 1230 / 4429: powered air defence was OFF). Pop: LastProtocol sets w.factions[fid].pop_cap_floor = pop + start.pop_headroom (60) once after the fill; Economy needs ORCH CR economy_pop_cap_floor (seq 940) to honour it.",
+    "Skirmish OBJECTIVES / VICTORY cards: LpHud.hide_skirmish_cards(hud) + ORCH CR lp_skirmish_cards (seq 939, hud.gd 2 lines).",
+    "LpEnd panel now stays on top of the match end screen (move_to_front) and has a Continue button.",
+    "LP defence orders are pre-validated with w.preview_command (no 'No selected unit can reach that location' toasts from the director).",
+    "Breach counts ground units only (Machine aircraft overhead held rings); breach hostile_min 3->4, hold_s 6->10 (PROVISIONAL).",
+    "Balance: creep reach is set by Machine sources, not the pre-spread: from the LP start the creep settles at 0.455 within 60 s (27 Machine buildings + 50 nest seeds; .plan/lp7_creep_eq.gd). Rules: creep critical 0.62 -> 0.70 (warn 0.55/0.62/0.67), countdown total 4800 -> 9000 protocol-s (Cores.countdown_rate ~1.92-1.97 -> ~76 real min), warn_s adds 3600. No LPMAP7 change needed (pre-spread radii don't decide the equilibrium).",
+    "time_s 9 s explained: time_s = sim ticks x DT since setup and is right; the windowed 512 LP match runs the sim at ~0.29x real time (237 ticks = 11.9 sim-s in 40.7 wall-s), so the flow's wall-clock waits cover few sim seconds. Engine-side cost is LPPERF7's.",
+    "tools/lp_soak7.gd written (mirrors SimWorld.step with timers on LastProtocol/Creep; --seed --map --max-s --tide-at --side0-ai --report-every --wall-max --cd-total --critical; loss diagnostics per zone)."
+  ],
+  "remaining": [
+    "A full natural soak to the end (~4600 sim-s, ~2.5 h wall at 60-90 ms/tick) was not completed; natural run 2 (current rules) reached 900 s: rings_fallen 0, own losses 7, Machine lost 1927, cov 0.469, cd_left 7266 at rate 1.94 (.plan/lp_soak7_natural_run2.log). Projection: Tide ~3900 s, countdown end ~4600 s (76 min). Run it once on a quiet PC after LPPERF7: bash .plan/hb.sh ... timeout 12000 $G --headless --path . -s res://tools/lp_soak7.gd -- --max-s=6000 --report-every=300",
+    "test_hot_state not run by LPMODE7-3 (heavy; ORCH runs it). Only a normal-match hash change could come from the CnFacility.spawn_team eco_pop erase (matches that train counter-nanite teams).",
+    "ORCH: apply CR lp_skirmish_cards (seq 939) and economy_pop_cap_floor (seq 940); pt7_lpmode7 logs whether they are present."
+  ],
+  "files": ["sim/systems/last_protocol.gd", "sim/systems/lp_setup.gd", "sim/systems/lp_defence.gd", "sim/systems/lp_world.gd", "sim/systems/cn_facility.gd (4 lines)", "content/g7/rules_g7_lastprotocol.json", "presentation/ui7/lp_hud.gd", "tests/test_lpmode7.gd", "tools/pt7_lpmode7.gd", "tools/lp_soak7.gd (new)", ".plan/lp7_probe3.gd, .plan/lp7_creep_eq.gd, .plan/lp7_pw.gd (debug, new)"],
+  "gotchas": [
+    "The first natural soak (old rules) lost 2 rings by 25 min with almost no own losses: Machine aircraft counted as ring holders + base unpowered. Both fixed.",
+    "test_cnsim7 had 3 failures during this session in CNSIM7-4's in-progress files (launcher stock 36 vs 18, topple): not LP."
+  ]
+}

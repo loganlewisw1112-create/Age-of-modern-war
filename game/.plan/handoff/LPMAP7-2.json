@@ -1,0 +1,23 @@
+{
+ "agent": "LPMAP7-2",
+ "gen": 2,
+ "reason": "brief items done; near 70% projected budget (~97 calls)",
+ "done": [
+  "sim/maps/last_protocol.gd: map dict now carries symmetric:false (asymmetric 1v1; for the generic height test). Already had hold_bridge 0 + bridges (7) + ford_cells [] + pois.",
+  "tools/pt7_lpmap7.gd: _observe() places 5 player recon units at each core, the dam, the lost-squad beacon and wreck 0 so the shots see them (Machine cores/traces only drawn in current sight); true full-map overview at raw zoom 0.04 (below the camera clamp, as match_view --zoom does); dam shot centred on dam.cell. Windowed run 2: PLAYTEST RESULT pass=31 fail=0, 0 SCRIPT ERROR (.plan/lpmap7/flow2.log, shots .plan/shots/LPMAP7-2b/).",
+  "perf probes: .plan/lpmap7/simcost2.gd (real LastProtocol.make_config match, per-system breakdown, --variant=full|noplain|nowalls --prof); .plan/lpmap7/fps_lp.gd (windowed fps WITH the pre-built base; bench --autostart cannot start the mode-only map).",
+  "CRs: change_request.lp_maps_json_test_maps, change_request.lp_maps_json_fields (maps.json hold_bridge 0, bridges 7, fords 0, pois [...]; test_maps:274 symmetric flag), change_request.lp_wall_sim_cost, change_request.autostart_dev_map, change_request.world7_traces_visible (FISSURE7), change_request.lp_base_visual_hud"
+ ],
+ "remaining": [
+  "1. Read .plan/lpmap7/final_test_lpmap7.log / final_test_maps.log / final_test_scale7.log (run after ORCH's dev_map guard fix); test_maps needs ORCH's maps.json fields + test_maps:274 edit to be script_errors=0 and 13/0.",
+  "2. After ORCH/LPMODE7 act on lp_wall_sim_cost: rerun simcost2 (--variant=full) and fps_lp.gd 2k (--spawn-test=2000 --zoom=1.0 --no-vsync --fps-quit=30) and 10k (--spawn-test=10000 --zoom=0.15).",
+  "3. After change_request.autostart_dev_map: bench --fps --fps-cases=2k512,10k512 for a same-PC reference."
+ ],
+ "files_touched": ["sim/maps/last_protocol.gd", "tools/pt7_lpmap7.gd", ".plan/lpmap7/ (simcost2.gd, fps_lp.gd, bcount.gd, logs)"],
+ "test_state": "test_lpmap7 8/0 TESTS OK; test_maps 2 fails on last_protocol before ORCH CRs; test_scale7 failed pre-guard-fix (63369 script errors from refused lp_test maps); final reruns in .plan/lpmap7/final_*.log",
+ "gotchas": [
+  "main.gd --autostart --map=<skirmish:false map> is refused by validate_config (no dev_map) -> bench --fps lp cases hang to timeout",
+  "pt7_lpmap7 reads world7_layer private fields _age/_cw/_cs/_last_tick (now FISSURE7's file); if FISSURE7 renames them the warp shot step breaks",
+  "PID 7768 (Godot child of my first test_scale7 run, killed by timeout 900) may still be running; my Stop-Process was denied by the permission classifier"
+ ]
+}

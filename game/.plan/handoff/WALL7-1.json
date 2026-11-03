@@ -1,0 +1,24 @@
+{
+  "agent": "WALL7",
+  "n": 1,
+  "why": "70% budget projection (~100 tool calls)",
+  "done": [
+    "sim/systems/movement.gd: wall-walk layer. A wall-walk cell = gate entry [team, 0, 1] (saved [idx, team, 0, 1]); open only for the owner team's foot class (is_passable / _solid_view), solid for enemies, team-less queries and every other class (native: allow 0 for non-foot classes via RtsNav.add_class in rebuild_nav, on_cells_changed, _ensure_class, _ww_commit). Outer faces closed as edges (sys_state.movement.wwo, merged into w.nav.edge; w.nav.edge0 = cliff edges alone) so soldiers climb up only from inside the compound. New API: set_wallwalk(w, cells, team, inside_rect), wallwalk_team(w, cell), wallwalk_any(w). set_gate keeps the 4th field (_save_gates). on_footprint_changed(solid=false) drops the cells of a destroyed piece (_ww_remove) and steps anyone on a closed cell to nearest_free_cell. apply_command: a move onto a wall-walk cell lines the team's foot units up along the wall top (_ww_slots, BFS, one per cell).",
+    "sim/systems/wallwalk7.gd (new): tick registers each facility ring (F.parts with cn_part wall/tower or wall_walk true) once; hooks on_wall / range_mult / defence_mult / sight_bonus / any (Elevation per-level numbers, 1 level).",
+    "presentation/view/motion.gd: wall_walk_cells(statics), wall_top_offset (snap onto the slab crest + lift 39 px wall / 46 px tower deck), wall_top_depth.",
+    "presentation/view/entity_layer.gd: _ww_cells built in _wall_rebuild; unit loop lifts soldiers on wall cells and sorts them after the piece (ww_drawn counter).",
+    "tests/test_wallwalk7.gd 11/11; tools/pt7_wallwalk7.gd r3 14 ok / 1 fail (still_on_wall: squad AI take-cover walks them down after the fight, CR sent)."
+  ],
+  "not_done": [
+    "ORCH CRs pending: world.gd SYSTEM_ORDER slot for WallWalk7 after CnFacility (until then the ring registers only when something calls WallWalk7.tick: tests and the playtest do); g6_hooks.gd wiring (range / defence / sight + active() RANGE|SIGHT bits); morale.gd cover_level 2 on the wall; squad_ai _cell_value bonus for wall cells (keeps the squad on the wall); match_view smart_command wall click + overlay selection ring lift.",
+    "AI manning of the walls (Last Protocol defence commander / garrison): not done (optional per brief).",
+    "Bench before: not measured separately (no switch; changes are inert without a facility: wallwalk_any() dict checks only)."
+  ],
+  "next_steps": [
+    "When ORCH registers WallWalk7 + g6_hooks: rerun bash tests/run.sh --only=test_wallwalk7 (the G6Hooks branch of test_height_and_cover_bonus_on_the_wall then runs instead of printing pending).",
+    "When squad_ai CR lands: rerun pt7_wallwalk7 windowed; wallwalk7_still_on_wall must go ok.",
+    "Optional: LP defence commander mans the wall (issue moves onto wall cells via Movement._ww_slots when the facility is attacked)."
+  ],
+  "files": ["sim/systems/movement.gd", "sim/systems/wallwalk7.gd", "presentation/view/motion.gd", "presentation/view/entity_layer.gd", "tests/test_wallwalk7.gd", "tools/pt7_wallwalk7.gd"],
+  "shots": ".plan/shots/WALL7/r3/ (best: wallwalk7_squad_on_wall_z250.png in r1, wallwalk7_walking_along_z175.png in r3)"
+}

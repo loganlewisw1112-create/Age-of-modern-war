@@ -1,0 +1,9 @@
+{"agent": "CNOPS7", "gen": 1, "status": "done (first full pass)",
+ "done": ["sim/systems/cn_ops7.gd: overwatch drone (recon airframe a_drone_recon/b_drone_recon, e.cn_ow, bay/orbit/flyable, Intel share + CnOverwatchWarning), cn_fire_support (seen targets only, calls_per_mission, refill on CnTeamOut, Strikes shots), cn_relief (operators | reload APC from the facility gate)",
+  "sim/systems/cn_progress7.gd: named operators/teams, personalities+voice, signature skills, bonds, team XP (missions/drills/kills), veteran loss, scars, cn_specialize paths, team_card, CnBark & co. events",
+  "content/g7/defs_g7_cnops.json (rules.g7_cnops + 3 weapons, all PROVISIONAL)", "tests/test_cnops7.gd 10/10", "tools/pt7_cnops7.gd 15/0, 0 SCRIPT ERROR",
+  "ORCH registered systems + commands (CR seq 1147)"],
+ "remaining": ["CRs pending with owners: CNSIM7 seq 1205 (arm/scan/jam/dismount/exposure hooks), SQUAD7-6 seq 1206 (hotkeys + convoy spacing), WOUND7 seq 1207 (buddy drag), SENSE7 seq 1208 (share push API), OPSUI7/AUDIO7 seq 1209; seq 1217 (icons) is obsolete: drone now reuses recon defs",
+  "test_hot_state not run by CNOPS7 (both systems return on the first sys_state check without cn7)"],
+ "files": ["sim/systems/cn_ops7.gd", "sim/systems/cn_progress7.gd", "content/g7/defs_g7_cnops.json", "tests/test_cnops7.gd", "tools/pt7_cnops7.gd"],
+ "scratch": [".plan/cnops7_chk.gd", ".plan/cnops7_cost.gd", ".plan/shots/CNOPS7/"]}

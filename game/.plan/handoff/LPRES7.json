@@ -1,0 +1,64 @@
+{
+  "agent": "LPRES7",
+  "why_stopped": "ORCH guard budget.handoff_now (projected 535k of 750k, 90 calls). Everything compiles (startup --quit-after 60 clean; .plan/lpres7_chk.gd loads test_lpreserve7.gd, pt7_lpres7.gd, lpreserve_card.gd, lp_reserve7.gd OK).",
+  "brief": ".plan/agents/prompts/G7-LPRES7.md (13.9c-34 + owner answers)",
+  "design": {
+    "reserve": "LP only: LpSetup.fill_facility calls LpReserve7.seed(w,F). It spawns 100 Sentinels straight into the Sentinel Barracks (Garrison.place_inside, Sentinels7.enlist, job k=rest j=lpr:in bid=barracks). Type mix = rules.g7_sentinels.start.force proportions without the bearer (largest remainder): warden 30, marksman 17, gunner 13, lancer 13, bulwark 9, arc 9, mender 9. Last stand = 20 (same proportions), group 'l'; the rest group 'r'. Start garrison (24, seeded by Sentinels7 a few ticks later) is untouched.",
+    "barracks_cap": "LP barracks entity gets b.g7_xs = 20 -> Garrison.cap_of(b) = 140 (new helper; free_slots uses it). At LP start: 103-ish occupants / 140 (100 reserve + off-duty roster), >= 20 free. Skirmish barracks has no g7_xs (120).",
+    "board_exclusion": "sentinels7.gd _role: a member of sys_state.lpres7.m is never planned on the facility job board (3 lines). Released men run the normal Sentinels7 drills through their job records.",
+    "tiers (every 1 s per facility, staggered (tick+fac)%20)": [
+      "pressure from Sentinels7._net (guard net, only while Sentinels7.threat is up): weight clamp(max_hp/100, 0.5, 8) per enemy, by face n/e/s/w, 'in' (inside compound grown -1), 'core' (core_rect [2,2,11,15] + 3, compound-local)",
+      "1 POSTS: roster snapshot (owner's non-member, non-bearer Sentinels with job fac == fac or -1); ones gone since the last step queue their type in Rr.need; up to 2 per step a fit reserve man (same type first) is handed to the board (job auto, S.call = true)",
+      "2 QRF: face pressure >= 6 and cd 12 s: need = ceil(p*1.0) - men already there; squad clamp(need,4,8); job k=standto (Sentinels7 bound/cover/settle/withdraw drill) with 'hand' so Sentinels7 walks him out of the barracks; goals on the wall-walk (n [x,1], e [27,y], w [1,y], slid to the attackers' centre) or the gate staging yard (s [14,18.5]); pairs 2.5 apart; buddy pairs (bud) set",
+      "3 SURGE: inside pressure >= 2 (or breached + any): need = ceil(p_in*2) - committed, min 12 for the first; job k=qrf bid=barracks (Sentinels7 QRF turn-out pair by pair, close with the deepest intruder); cd 10 s",
+      "LAST STAND: only when core pressure > 0: all fit 'l' men in the barracks -> standto at core points [[4.5,7.5],[12.5,10.5],[12.5,14.5],[6.5,12.5]]",
+      "recall: auto squads come home (job rest, M.st ret) when their face / in / core had no pressure for quiet_s 20 (and squad age >= 20 s); manual squads only by RECALL. Withdrawn (job auto) or player-timeout members are sent home; back inside -> st in, ammo refilled",
+      "barracks lost: 'r' members handed to the board, 'l' members commit to the core for good; trickle stops",
+      "trickle: every 45 s while members < 100 and the barracks has room: type furthest below its share, paid at the production cost x1.0 (w.spend), spawned into the barracks; 'l' first while the last stand is short"
+    ],
+    "commands": "lpres_release {building_id?, count?} (squad of manual_n 6 to the most pressed face, else the gate), lpres_recall (everyone out home + auto QRF held recall_hold_s 20 s), lpres_auto {on}. Validated: issuer owns the reserve, barracks alive, someone ready / out.",
+    "ui": "presentation/ui7/lpreserve_card.gd (DroneBayCard pattern): 'BARRACKS RESERVE  In n/100', tier line (CALM/POSTS/QRF/SURGE/LAST STAND, FIELD n, LAST STAND x/20 held), detail line (Posts/QRF/Surge/Hand, pressure by face, trickle), RELEASE / RECALL / AUTO buttons. Attached in hud.gd after the drone bay card.",
+    "state": "w.sys_state.lpres7 = {ver, m {uid: fac}, facs {fac: Rr}} (saved + hashed). Rr = {fac, owner, bar, size, ls_n, auto, hold_u, mem {uid: {g, st, sq, t}}, sq {id: {t, sec, at}}, nsq, ros, need, cd, bcd, lp, p, cen, hv, tier, tier_max, post_t, rel, lost, trained, tr_at, gone}"
+  },
+  "numbers_PROVISIONAL (content/g7/defs_g7_lpreserve.json rules.g7_lpreserve)": {
+    "size": 100, "exclude_types": ["bearer"], "barracks_extra_slots": 20, "every_s": 1.0, "fit_frac": 0.6, "quiet_s": 20.0,
+    "recall_hold_s": 20.0, "manual_n": 6, "weights": {"hp_ref": 100.0, "min": 0.5, "max": 8.0},
+    "post": {"per_step": 2, "queue_max": 40},
+    "sector": {"heavy": 6.0, "men_per_p": 1.0, "squad_min": 4, "squad_max": 8, "cd_s": 12.0, "pair_gap": 2.5, "slide_min": 3.0, "armour_w": 4.0},
+    "breach": {"min_p": 2.0, "mult": 2.0, "min": 12, "cd_s": 10.0},
+    "last_stand": {"frac": 0.2, "core_rect": [2, 2, 11, 15], "core_r": 3.0},
+    "trickle": {"every_s": 45.0, "cost_mult": 1.0}
+  },
+  "files": {
+    "new": ["sim/systems/lp_reserve7.gd", "content/g7/defs_g7_lpreserve.json", "presentation/ui7/lpreserve_card.gd", "tests/test_lpreserve7.gd", "tools/pt7_lpres7.gd"],
+    "edited": {
+      "sim/world.gd": "const LpReserve7 preload (line 90); SYSTEM_ORDER LpReserve7 right after Sentinels7; COMMANDS lpres_release/lpres_recall/lpres_auto (fact world.lines seq 8526)",
+      "sim/systems/sentinels7.gd": "_role: reserve members never planned (3 lines)",
+      "sim/systems/garrison.gd": "free_slots -> new cap_of(b) = slots_of(def) + b.g7_xs",
+      "sim/render_snap.gd": "garrison cap display + g7_xs (1 line)",
+      "presentation/ui6/b/g6_cmds.gd": "ungarrison 'n / cap inside' uses Garrison.cap_of (1 line)",
+      "sim/systems/lp_setup.gd": "fill_facility: one LpReserve7.seed call",
+      "presentation/hud/hud.gd": "one attach line after the drone bay card",
+      "tools/ui_playtest.gd": "G7_FLOWS += lpres7"
+    },
+    "scratch": [".plan/lpres7_one.gd (run one test method: -s .plan/lpres7_one.gd -- --m=<test>)", ".plan/lpres7_chk.gd (compile check of the new scripts)", ".plan/lpres7_neigh.sh (neighbour test loop)"]
+  },
+  "results_so_far": {
+    "test_lpreserve7": "RESULT pass=6 fail=0 files=1 (run before the 7th test test_cost_probe was appended; test_cost_probe parses but has NOT run yet)",
+    "skirmish_unchanged_proof": "skirmish facility probe hash (tests/test_lpreserve7 _skirmish(600), 10 riflemen attacking) BEFORE any LPRES7 edit = 24927879802c9ccfe4da06b2ffa6d4282012b15759121495c8687f247841a220; AFTER all edits = 24927879802c9ccfe4da06b2ffa6d4282012b15759121495c8687f247841a220 (identical)",
+    "tiers_in_order (test)": "first tick post 101 < qrf 141 < surge 201 < last stand 261; rel post 2, qrf 8, surge 12, ls 20; last stand held in the barracks through QRF and surge",
+    "playtest": "PLAYTEST RESULT pass=23 fail=0, 0 SCRIPT ERROR (windowed, last_protocol map; log .plan/lpres7_pt.log). QRF of 8 to the north wall, reached ~6 tiles of the wall-walk at tick 150 (released 41); surge 12 with last stand 20/20 held; real clicks RECALL / AUTO off / RELEASE (6) / AUTO on all applied",
+    "shots": ["C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPRES7/lpres7_qrf_bounding_z175.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPRES7/lpres7_qrf_wall_z175.png", "C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/LPRES7/lpres7_surge_z175.png", "(+ calm_z100, qrf_bounding_z100, surge_z100, card_surge, manual_z100 in the same dir)"],
+    "shots_posted": "fact shots.best seq 8724",
+    "neighbour_tests": "RUNNING in the background when I stopped: bash .plan/lpres7_neigh.sh -> .plan/lpres7_neigh.out (one line per file: test_lpmode7, test_cnfac7, test_det7, test_lpperf7, test_sent7, test_ui_fit, test_lpreserve7; full logs .plan/lpres7_<test>.log). Not yet seen.",
+    "lp_soak": "NOT RUN yet",
+    "observation": "windowed LP game ran ~7 sim ticks per real second during the flow (tick 333 after 46 s, flow joins the sim often); not caused by this work as far as measured, but worth checking against the soak"
+  },
+  "remaining_steps": [
+    "1. Read .plan/lpres7_neigh.out (wait for it to finish; do not start another Godot run until it has, or timings mix). Each line must be RESULT ... fail=0 with errs=0. If test_lpmode7 / test_cnfac7 / test_det7 / test_sent7 / test_lpperf7 fail, check whether the 100 extra garrisoned Sentinels moved an LP hash or a count (test_lpmode7 counts / LP fixed hashes): hashes in LP move on purpose (report two identical runs; never edit a golden).",
+    "2. test_lpreserve7 now has 7 tests (test_cost_probe prints 'LPRES7 cost: with reserve X ms/tick, without Y ms/tick'); report that line.",
+    "3. LP soak segment: \"$G\" --headless --path . -s res://tools/lp_soak7.gd -- --seed=77 --tide-at=600 --wall-max=900 (wrap with .plan/hb.sh, background, ~15 min). Compare the 'LP SOAK t=300' ms/tick line and the RESULT ms_per_tick with .plan/soak7/early_seed77.log (t=300: 73.5, t=600: 92.8, RESULT 75.10 ms/tick on a busy PC); 0 SCRIPT ERROR.",
+    "4. Optional check: tests/test_ui_fit result line covers the new card (it registers via UiKit.fit_register).",
+    "5. Final report to ORCH with: design summary, the numbers above, files, test RESULT lines, the playtest RESULT line, the soak ms/tick, shot paths, and not-done items (numbers PROVISIONAL; hashes of LP runs change by design because the reserve exists)."
+  ]
+}

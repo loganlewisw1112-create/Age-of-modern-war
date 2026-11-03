@@ -1,0 +1,29 @@
+{
+  "agent": "PERF7L",
+  "status": "handoff on ORCH budget.handoff_now (72%); both changes complete, exact and hash-proved; tree + DLL consistent",
+  "native": "rts_core 0.5.5 (Cargo.toml 0.5.4 -> 0.5.5), bin/rts_core.dll rebuilt via tools/build_native.sh, md5 see board status",
+  "changes_all_exact": [
+    {"file": "native/rts_core/src/grid.rs", "what": "RtsGrid.scan_vis_sorted: scan_vis ids sorted by (f32 distance_squared_to, id)"},
+    {"file": "sim/systems/combat.gd", "what": "_find exact scan walks scan_vis_sorted ids and breaks at the first legal pick; static native_sorted_scan (A/B), scan_ab bench counter + _scan_ref (old unsorted loop); fallback to scan_vis/query_radius kept"},
+    {"file": "native/rts_core/src/spot.rs (new), src/lib.rs (mod spot)", "what": "RtsSpot.spotted: exact port of senses7 _spotted_any ring search + _sees (no-smoke case), f32 vector / f64 scalar math in the same order"},
+    {"file": "sim/systems/senses7.gd", "what": "_pass collects observers in idx order (only those inside the targets' bucket box grown by kmax rings; exact while bx in [0,KST), else all); _native_spot packs per-observer data (_profile, flags, Vector2.from_angle(head)) and per-target _sil_k; used when native_spot, clouds empty, NativeCore available; spot_ab bench counter; NativeCore preload. Script path unchanged as fallback"}
+  ],
+  "originals": ".plan/perf7l/orig/{combat.gd,senses7.gd,grid.rs,lib.rs,Cargo.toml}",
+  "proof": {
+    "gate_hashes": "ticks 100..600 b86d73d0a4246c4c 2046aaca11e7a326 be65122d827f22c6 ebef90a51d085ec3 bb01c1c7022931d5 14f1c23c6ffd1d42 unchanged (.plan/perf7l/ab1.log, ab2.log, ab3.log)",
+    "gate_ab": "scan 21759 real scans diff=0; spot 5761 real answers diff=0 (ab3.log, with the bucket-box filter)",
+    "random_ab": ".plan/perf7l_rand.gd -> .plan/perf7l/rand2.log: scan 3000 cases / 96216 ids order diff=0 (incl. half-tile lattice ties); spot 177162 answers (121940 true) diff=0 on real gate entities with random pos/facing/flags/light/maxc",
+    "tests": "test_sense7 10/0, test_wallfire7 8/0, test_fort 10/0, test_det7 6/0, test_formations7 4/0, test_squad7 23/0, test_wound7 17/0, test_perf_g6 7/0, test_hot_state 11/6 (the 6 are pre-existing G6.1-golden mismatches; all 13 'got' hashes identical with both toggles off: .plan/perf7l/hot_on.txt == hot_off.txt)"
+  },
+  "timing": {
+    "f.scan": "2.4 -> 0.67 ms/tick (--sub, same machine load)",
+    "senses7 spot": "~0.52 -> ~0.23 ms/tick; S7 tick ~0.87 -> ~0.53",
+    "in_process_ratio_plain_concurrent_pairs (scan change only)": "sorted on 1.196 / 1.185 / 1.189 vs off 1.267 / 1.280 / 1.244 (.plan/perf7l/p*_g7.log / p*_g61.log); spot change adds ~0.3 ms (~1%) more, ratio not re-measured after it",
+    "machine": "heavily loaded (G6.1 runs 33-35 ms vs 21-22 idle); ORCH idle pairs needed"
+  },
+  "next_steps": [
+    "1. ORCH idle 6 pairs (bash .plan/perf7g_pairs.sh 6 ...) for the real ratio; expected ~1.17-1.18 in-process.",
+    "2. Target <= 1.12 not reached. Remaining gap: shrapnel burst wound_hit rays (spl.burst ~0.9 ms), fire.dmg/dmg.zone (+0.6), wounds.gd 0.5-0.9, _find per-call overhead with 62k vs 41k finds (more engagement), f.eb +0.2. None is a pure function of packed state like the two ported here.",
+    "3. Spot packing still dominates the native spot cost; caching per-observer packs across the two team passes of a tick could cut it further."
+  ]
+}

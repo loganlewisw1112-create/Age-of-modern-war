@@ -1,0 +1,23 @@
+{
+ "agent": "PERF7A",
+ "gen": 1,
+ "reason": "end of run near the 70% guard point (~99 calls); CR 1046 + CR 278 done, ORCH's two extra items profiled, not fixed",
+ "done": [
+  "inert7.gd: new bits HQ (is_hq), SPOTTER (def in any turret t7.spotters), WIRE (Fieldworks.kind_of == wire); all content-static",
+  "victory.gd: _eliminate + progress iterate Inert7.blds(HQ); hqless scans stop once every hqless side is found (full scans when Inert7.enabled=false)",
+  "turrets7.gd: spotted() over Inert7.blds(SPOTTER); pick()/_splash() enemy buildings from a center bucket grid (w.cache.t7_bgrid, BBK 16, list-index order, enemy+distance filtered); pick tests can_engage only for a candidate whose key beats the best",
+  "movement.gd: _fp_cmask cached per def (dropped on Content.rules()/g6h() change, off while SimIndex.g6_spy is set or Inert7.enabled=false)",
+  "territory.gd: state() counted flags via _counted_fast (terrain LUT + native count fast path for clear bands/rows + per-sector early decision); old pass kept as _counted_ref (Inert7 off)",
+  "tests/test_lpperf7.gd: +5 tests (territory fast==ref on LP/lp_test512/random at 3 sector sizes + on/off state; fp_cmask cache==uncached; victory hqless on/off; turret line on/off same events+hash; WIRE list == full scan): 9/0",
+  "CR seq 1602 to ORCH: G6Hooks.active wire scan -> Inert7.blds(w, Inert7.WIRE) (8.16 -> 0.025 ms/tick on LP)"
+ ],
+ "remaining": [
+  "ORCH applies CR 1602 (g6_hooks.gd), then re-measure LP movement (expected ~8.6 -> ~0.6 ms/tick)",
+  "render_snap (test_thread::test_snapshot_matches_world): ready exact patch in .plan/perf7a/rs_new.gd (_s7_inputs/_s7_hid2, saves ~2 ms, var_to_str-identical snapshot) waiting on VIS7-2/LOOK7 ack; the rest needs owners: SQUAD7 _g7_squad creates ~1000 mostly-empty g7u entries (~4-8 ms), WOUND7 render_entry runs for every unit because every unit has e.wounded (~2-4 ms), Senses7 marks all 2012 units hidden (one spot array each). Even with all three removed the build stayed ~13 ms vs floor ~3.4 ms on the shared PC: the 2x budget needs a structural change (e.g. per-tick cached/sparse G7 tables)",
+  "test_perf_g6 elevation probe: reproduced overhead 3.91 ms/tick (<= 5) on the shared PC with .plan/perf7a/hooksprobe.gd (2 reps); per-system rise combat +1.3, morale +1.2, movement +1.0; per-hook spy (.plan/perf7a/hookspy.gd) shows no G7 hook cost (Apc7 damage_mult/shot_blocked ~0 calls with no apc7 state). Suite value 8.96 likely load; not fixed",
+  "Territory 20-tick recompute (presence ~1-3 ms on LP, ~1 ms 768 at 2k units) not changed",
+  "test_victory::test_vict01_territory_sticky_and_recapture and test_perf::test_attack_order_promotes_at_once fail in this tree WITH ALL SKIPS OFF too (logs .plan/perf7a/*_skipoff.log): not PERF7A; senses7.gd is modified in the tree (SENSE7?)"
+ ],
+ "files": ["sim/systems/inert7.gd", "sim/systems/victory.gd", "sim/systems/turrets7.gd", "sim/systems/territory.gd", "sim/systems/movement.gd (_fp_cmask + one preload only)", "tests/test_lpperf7.gd", ".plan/perf7a/"],
+ "gotchas": ["probe.gd prints LP/768 hashes: e5489eb5... (LP 220 ticks) and 773fca89... (768) identical skip on/off and vs the pre-edit baseline", "rs_new.gd preloads nothing new; it is a copy of render_snap.gd with T_* switches (scratch only)"]
+}

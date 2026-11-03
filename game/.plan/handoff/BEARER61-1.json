@@ -1,0 +1,29 @@
+{
+  "agent": "BEARER61",
+  "gen": 1,
+  "reason": "guard budget.handoff_now at calls=8 (projected 321400 / cap 450000). The guard's fixed base is 303k + 2.3k x calls, so 70% of a 450k cap (315k) is crossed at call ~6. Any successor on the same 450k cap gets handoff_now almost at once: ORCH must size the cap (>= ~700k for ~100 calls) or the guard base before it respawns.",
+  "done": [
+    "posted status (seq 230) and claim files: sim/systems/ammo_bearer.gd, content/g6/defs_g61_bearer.json, tests/test_bearer61.gd, tools/pt61_bearer61.gd, a new bearer art drawer in tools/art, optional new presentation/ui6/bearer_input.gd",
+    "read G61_COMMON, G6_COMMON, AGENT_RULES, G61-BEARER61 brief",
+    "read the ORCH stub sim/systems/ammo_bearer.gd (tick / validate_command / apply_command, all stubs; registered in world.gd SYSTEM_ORDER right after Supply; COMMANDS join_squad, leave_squad -> AmmoBearer)",
+    "read supply.gd and squad_ai.gd structure (see gotchas)",
+    "NO code written, nothing changed in the tree"
+  ],
+  "remaining": [
+    "1. Read sim/content.gd lines 28-150 (_merge_fragments / _merge_fragment_dir / _link_fragment_production: a fragment production entry names its producer with 'facility') and content/g6/defs_units_g6.json for the exact unit/production schema; also tests/pending_g6 or tests/pending_g61 for a test_bearer61 skeleton to git mv.",
+    "2. Write content/g6/defs_g61_bearer.json: 3 units (human_a 'Ammo Bearer', human_b 'Supply Carrier', machine 'Munitions Drone', small foot/hover), pop 1, cheap, no or light weapon, def field ammo_bearer:true (squad_ai.gd line 340 already treats ammo_bearer/bearer defs as helpers that low-ammo units pull toward), bearer_load_max 3.0; production entries with facility = each faction's barracks. Post fact bearer.defs with the 3 ids.",
+    "3. Replace ammo_bearer.gd: entity fields e.bearer_load (int, thousandths of a restock: 3000 = 3.0, determinism), e.bearer_squad (anchor squad id). Restock unit from a% uses (1-a) restock: cost_milli = ceil(1000 * (ammo_max - ammo) / ammo_max). Think staggered (tick + id) % N. Follow the squad centre 2-3 tiles behind (inside squad_ai LEASH 6), restock squad members < 50% within 2 tiles, lowest first, then nearby friendlies. Refill: when the bearer is in range of Supply._sources(w)[fid] (Supply._in_range(e, srcs, rules.supply.radius)), add load and spend ammo through Supply._draw(w, fid, 'ammo', n, flags) so the ledger stays conserved (pick a rounds-per-restock rate). join_squad {issuer, unit_ids, squad_unit_id}: validate owner, bearer def, live target, same owner; set e.squad = target.squad (and platoon/company if any), then SquadAI.touch(w) via L.callf until SQUAD61 posts its fact. leave_squad: erase squad/platoon, then touch. Save/hash: entity fields are saved by default; check world hashing includes them.",
+    "4. Inspector line function: static func load_line(e) -> 'Ammo load 2.4 / 3'; send ORCH a change_request to wire it, plus a small ammo marker (ANIMA61 owns entity_layer: change_request).",
+    "5. Art: per-faction sprite + production icon via tools/gen_art.gd / assets/art/g6_*, using the infantry rig of ANIMA61 (change_request to ANIMA61 for the rig); keep test_art_machine / test_art_g3b green.",
+    "6. change_requests: SQUAD61 'Join squad' button + hotkey (hotkeys.gd), plus right-click a friendly squad member with a bearer selected (g2_commands/orders); OFF61 ai_army.gd hook: one bearer per ~3 infantry squads; ORCH if the fragment can't add to a building's produces list.",
+    "7. tests/test_bearer61.gd: 3 empty units fully restocked then bearer empty; partial = fractional; depot refill; join follows; leave; validation (not bearer, enemy squad, dead unit); save/load + determinism. Run --only=test_bearer61, test_supply, test_units*, test_art*, test_content*.",
+    "8. tools/pt61_bearer61.gd playtest flow (train bearer, join from UI, fight, restock, shots)."
+  ],
+  "files_touched": [".plan/handoff/BEARER61-1.json"],
+  "test_state": "nothing run; tree untouched by BEARER61",
+  "gotchas": [
+    "Supply: resupply is staggered (tick + id) % 20 and draws from the faction stock through _draw -> w.spend(fid, {ammo:n}, 'resupply'). Supply points are built HQ/supply_point buildings plus is_supply trucks (an auto truck with supply_load <= 0 is not a source). Aircraft and submerged subs are excluded. supply.gd is ORCH's: call its static helpers, don't edit it.",
+    "Squads: e.squad (int) / e.platoon (gid) / e.company (cid); SquadAI.squad_members(w, sq), squad_state(w, sq), leader_of. SquadAI caches membership in w.cache.sq61, so call SquadAI.touch(w) after changing e.squad. squad_ai cohesion leashes stragglers to the leader at 6 tiles and issues moves with order.sq = reason; player orders within 400 ticks (e.sq_pt) are never overridden; never move a unit on hold.",
+    "Companies set u.squad in companies.gd ~847/985/1058; a unit leaving a company erases platoon (~1175)."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "agent": "FACFLOW8",
+  "calls_used": 48,
+  "status": "PARTIAL - handoff_now at 72% budget",
+  "causes": [
+    "1) Test blind spot: the spawned Machine rifleman in test_facexit8 / test_facreturn8 'machine near' is killed by the base guns within ~1 s (a head wound kills regardless of hp=1e9: Wound result dead at +24 ticks, shooter wt_mg). The gate stood down 20 s later, so the 'hardened' headless cases ran almost unhardened (that is why they were fast). The windowed flow keeps a threat near (hard=true to the end).",
+    "2) One-sided merge lock at the gate-lane head (fac_drive7 _drive): the APC on the lane axis (e.g. 1095 at local (13.4,17.6)) stopped for a stopped APC merging from the west garage row (1051 at (11.7,18.0)) via the 'APC in front never yields' look-ahead rule / D_SAFE circles, while 1051 itself was hull-blocked by 1095 (mutual-case resolution not reached: not mutual). Both stood ~55 s (+916..+2029) until a re-plan; every APC behind them queued. Can repeat in a game.",
+    "3) Throughput floor: the sally holds 2 APCs (geometry: inner band ends 22.88, outer wait 25.2, D_SAFE 1.95), so a hardened exit of 8 = 4 cycles of 4 door moves + 2 drive phases (~6 s each). With GATE_S 4.0 a cycle was ~575 ticks (29 s)."
+  ],
+  "fix_in_tree": [
+    "sim/systems/fac_drive7.gd: new static _yield_to_me(xsmp, RX, X, msmp, R, s): if my look-ahead hulls clear the stopped other APC's hull and its look-ahead hulls hit mine, I go (applied as an elif after the mutual branch of the circle stop, and as a guard on the 'APC in front never yields' rule). Mutually exclusive by construction (deterministic).",
+    "sim/systems/fac_drive7.gd: GATE_S 4.0 -> 2.0 (presentation fac_gate7.gd and tests read the constant). ACC tried at 0.8 (only -40 ticks) and reverted to 0.6. DBGFF8 instrumentation removed (grep = 0), compiles clean.",
+    "tests/test_facexit8.gd: keep_threat() respawns the Machine rifleman whenever it falls (pre-wait and every tick of the sally); _run_out takes the target offsets; new checks in the hardened cases: gate stayed hardened every tick (unhard == 0) and all 8 APCs out of the facility (Cheb >= OUT_FAC 17) within SALLY_S 90 s; new case test_real_lp_start_hardened_sally (AI kept, 150-tick warm-up, flow targets C+(0.5,54.5)/C+(0.5,40.5)); stall list printed as diagnostics only (an APC waiting its sally turn legitimately stands still)."
+  ],
+  "timings_hardened_exit_8_APCs": {
+    "before (flow repro headless, persistent threat, GATE_S 4.0, no merge fix)": "last APC past OUT_D +2531..+4051 ticks (126-202 s); windowed flow 6/8 after ~5700 ticks",
+    "merge fix, GATE_S 4.0": "+2531 ticks (126.5 s), clean 575-tick cycles",
+    "merge fix, GATE_S 2.5": "+2111 (105.5 s)",
+    "merge fix, GATE_S 2.0 (in tree)": "diag +1971 past OUT_D (98.5 s); test_facexit8 out of facility +1880 (94.0 s) machine near, real start same",
+    "GATE_S 2.0 + ACC 0.8 (reverted)": "test 92.0 / 91.5 s"
+  },
+  "results": {
+    "test_facexit8": "RESULT pass=2 fail=2 (quiet + dismount pass; machine near and real start FAIL only the new 'within 90 s' check: 94.0 s / 91.5-94 s; 8/8 out, 6/6 foot, hardened every tick, gates never both open)",
+    "not_run": "test_facreturn8 (needs the same keep_threat in its hardened case + a <=180 s park check), test_path7, test_apcmov7, test_gate7, test_cnfac7, test_cnmission8, test_specops8, test_lpmode7, test_det7, test_hot_state; flows facexit8/apcmov7/gate7; shots.best"
+  },
+  "decision_needed": "90 s for 8 APCs through a 2-APC sally needs ~17 s cycles: either faster doors (GATE_S ~1.5, owner wants 'realistic gate timing'), a longer wash/sally (layout, SALLY_CAP 3), or ORCH accepts ~94 s and the SALLY_S check is set from the owner's ruling (do NOT just raise it to pass).",
+  "supply8_question": "NOT covered. FacDrive7 only drives facility APC drivers (fac_drive7 vstate); a SUPPLY8 cargo carrier on plain Movement 'move' orders never requests the gate cycle (GT.wo/wi) and would stall at a hardened outer gate (Movement.set_gate nav-blocks it). SUPPLY8 must either register the carrier as a FacDrive7 driver (FacDrive7.order) or set GT.wo/GT.wi for it each tick while it waits, respecting SALLY_CAP and the 'never both open' rule.",
+  "files": ["sim/systems/fac_drive7.gd", "tests/test_facexit8.gd", ".plan/facflow8_diag.gd (diag; references removed FD.dbg_on/dbg_why - delete those lines before reuse)", ".plan/ff8_en2.gd (threat-death repro)"],
+  "next_step": "1) Owner/ORCH ruling on the 90 s target vs door timing (above). 2) tests/test_facreturn8.gd: use test_facexit8.keep_threat in the hardened case each tick, add unhard==0 and all parked <= 180 s checks; run it. 3) tools/pt7_facexit8.gd: keep the threat alive each loop iteration (respawn like keep_threat). 4) Run test_path7 test_apcmov7 test_gate7 test_cnfac7 test_cnmission8 test_specops8 test_lpmode7 test_det7 test_hot_state (report only), then windowed facexit8/apcmov7/gate7; Read a facexit8 shot (APCs outside / parked) and post fact shots.best."
+}

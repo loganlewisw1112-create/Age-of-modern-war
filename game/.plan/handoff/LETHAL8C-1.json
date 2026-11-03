@@ -1,0 +1,34 @@
+{
+  "agent": "LETHAL8C",
+  "reason": "budget.handoff_now from ORCH (projected 77% of 500k at ~33 calls)",
+  "files_changed": "NONE in sim/content/tests. New diag only: .plan/lethal8c_ciws.gd (CIWS probe), .plan/lethal8c_htk.gd (heavy HTK script, written, NOT run). Outputs: .plan/lethal8c_rep_on.txt, .plan/lethal8c_rep_off.txt, .plan/lethal8c_ab_on.txt, .plan/lethal8c_ab_off.txt (A/B batches may still be running in background: test_cnsim7, test_lpmode7, test_ai, test_sent7 still to come).",
+  "regressions": {
+    "test_ciws7::test_machine_crawler_in_compound_engaged_outside_not": {
+      "ab": "ON 13/3, OFF 14/2: only this test differs, so it is lethality-dependent",
+      "root_cause": "The test's _silence() helper says it silences towers, laser CIWS, wall turrets and drone bay. It does not silence wall turrets: wallturret7.gd never checks emp_until, and a wall turret has no def.weapon for HotState.set_cd. Probe .plan/lethal8c_ciws.gd: wall turret 148 (a_wt7_wall_turret, weapon wt7_rws_a -> rounds8 hmg_127) hits the inside crawler at t31. With OFF it does 5.5 dmg, and the CIWS fires from t39. With ON it does 234 dmg against 220 hp, a one-shot, so the CIWS never fires at it. That is not a lethality bug: an HMG one-shotting a nanite_frame crawler matches the LETHAL8 HTK design.",
+      "fix": "NOT APPLIED (WTUR7's file). Proposed: in the wallturret7.gd tick loop, `if int(b.get(\"emp_until\", 0)) > w.tick: continue`. An EMP'd remote weapon station goes silent, matching what _silence assumes. Warn posted to orch, waiting on approval or routing."
+    },
+    "test_ciws7 bursts_and_pauses + dry_drum (the other 2 fails)": "Also fail with LETHAL8_OFF=1, so not lethality. The 100000-hp crawler placed 9.70 tiles from mount a sits at 5.62 tiles 30 ticks later, inside the 8.63-tile blind ring, and the CIWS records 0 fire ticks. Suspect FACFLOW8B's uncommitted airlock layout change in defs_g7_facility.json (apc_wash 4x6, gate_inner y18, staging y16). Warn posted to FACFLOW8B and orch.",
+    "test_specops8::test_drive_all": {
+      "ab": "ON 4/1: `recon marked creep areas and Machine targets (6 marks)`, so there is no 'target' mark. OFF result NOT YET IN (.plan/lethal8c_rep_off.txt, specops8 takes ~580 s).",
+      "hypothesis_unverified": "The recon target is an m_hauler (220 hp, light -> nanite_frame) held by _machine_unit with cd_ticks. Under lethality the recon squad (or the escort or strike teams) likely kills it before the recon phase reaches 'ret', so there is no live Machine target left to mark. If OFF passes, the next step is a probe that logs Damage on mu. If it dies to friendly fire, that is the old-toughness premise of the test (an oracle for the owner, not a code bug), unless the kill comes from a team that should not engage (a code bug in that team's ROE)."
+    }
+  },
+  "ab_table_raw_done": [
+    "ON  test_mil RESULT pass=13 fail=0 | OFF test_mil RESULT pass=13 fail=0",
+    "ON  test_squad61 RESULT pass=14 fail=0 | OFF test_squad61 RESULT pass=14 fail=0",
+    "ON  test_wound7 RESULT pass=17 fail=0 | OFF test_wound7 RESULT pass=17 fail=0",
+    "ON  test_ciws7 RESULT pass=13 fail=3 | OFF test_ciws7 RESULT pass=14 fail=2",
+    "ON  test_specops8 RESULT pass=4 fail=1 | OFF pending"
+  ],
+  "ab_from_LETHAL8B_earlier_tree": "test_cnsim7 ON 23/4 (lethal8b_rerun.txt) vs OFF 26/1 (lethal8b_cnsim_off.txt). ON-only fails: group_pincer_auto_operators (heavy walker down in 45-90 s; got 2400 ticks, not down), lone_apc_launcher_cannot_solo (fired salvos 5; 44 of 49 rockets left), pincer_kills_much_faster (launcher-only pincer 45-105 s, got 3600 ticks, no kill), colossus 3-5 min (6600 ticks; OFF 3534 ticks also fails). The direction is SLOWER kills of heavy walkers under lethality. That points to a likely model-side bug (rockets vs heavy_veh/g7_m_weaver too weak, or the APC dying early), not just a toughness oracle. Investigate with the HTK script rows at_gunner/lancer/apc launcher -> m_walker / g7_m_weaver / m_colossus.",
+  "htk_rows_done": "None new. .plan/lethal8_htk_after.txt (LETHAL8, before the blocked 0.10->0.35 change) has at_gunner -> m_colossus = 172 hits at every range. That is >60, so FLAG as absurd. The same table has lancer -> colossus 7, at_gunner -> m_walker/m_tracked 3, and rifles -> walker/tracked/colossus 999 (correctly immune).",
+  "next_steps": [
+    "1) Read .plan/lethal8c_rep_off.txt for specops8 OFF, and .plan/lethal8c_ab_on/off.txt for cnsim7, lpmode7, ai, sent7 (sent7 balance = report only, owner ruling).",
+    "2) Run: timeout 900 $G --headless --path . -s .plan/lethal8c_htk.gd > .plan/lethal8c_htk_raw.txt; append the HTK8C rows to .plan/lethal8_htk.txt. Flag: rifles killing tanks, AT failing light vehicles, heavy walker >60 AT hits (at_gunner -> m_colossus front).",
+    "3) If at_gunner -> colossus stays >60 front: superheavy 'blocked'/kill_mult in content/g7/rules_g8_rounds.json armour.superheavy. Fix only a clear table error, mark it PROVISIONAL.",
+    "4) cnsim7 ON-only fails: check the rocket round (APC launcher weapon -> weapon_round) vs heavy_veh / g7_m_weaver vehicle_damage path (damage.gd LETHAL8B no-comp branch).",
+    "5) specops8: if OFF passes, probe who kills the m_hauler (Damage events on mu).",
+    "6) Compile check (0 SCRIPT ERROR) + test_lethal8 green. Do NOT run perf, do NOT touch test_hot_state."
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "agent": "DET7",
+  "stopped_by": "budget.handoff_now (ORCH, projected 72% at 66/140 calls)",
+  "calls_used": 68,
+  "tokens_used_est": 470000,
+  "spec": "PROGRESS Active goal G7 Done-when #2: a real deep save / load of a CN facility world gives the same future",
+  "harness": {
+    "probe": ".plan/det7_probe.gd  -- usage: \"$G\" --headless --path . -s .plan/det7_probe.gd -- --scen=wt|db|lp|all [--m=N] [--pre=N] [--fresh]",
+    "what_it_does": "builds a facility scene (wt = test_wallturret7 save/load scene, db = test_dronebay7 facility + attack, lp = Last Protocol industrial_heartland_m seed 4242 + 6 militia + scrap mech at the CN compound), runs PRE ticks, deep save / load (var_to_bytes round trip), steps both lockstep; on the first differing state_hash it rebuilds the scene, re-runs to the tick before and steps that tick system by system (SYSTEM_ORDER, Ops.prune, AiController, Commanders), names the first diverging system, diffs entities / sys_state (incl. Dictionary key order) and prints SimIndex entries present in one world only (with dead flags) plus cache keys in one world only",
+    "fresh_mode": "--fresh rebuilds the SimIndex in both worlds before every tick: isolates non-index causes",
+    "assault_probe": ".plan/det7_assault.gd (logs test_assault_destroys_outer_turret: attackers' orders, targets, lay state tfa/tf, shots, damage taken by shooter def, spawns, deaths; --bayoff waits for the bay then switches auto off; --reps=N; --pretest=m1,m2 runs earlier test methods first)"
+  },
+  "root_cause_class": "SimIndex lists keep destroyed entities until the 1/8 rebuild (Tiers.begin_tick only rebuilds when (known - live) * 8 > known), while a loaded world starts with a clean index. Every loop over SimIndex.of / units_by_owner / Tiers.lists without a w.entities.has check decides differently after a load. With --fresh (no stale entries) wt, db (300 ticks) and lp (400 ticks) were already identical: no other cause class found in these scenes.",
+  "divergences": [
+    {"system": "sentinels7.gd _alarm_scan + guard-net contacts (S.net)", "cause": "dead unit 167 (side 1) still in units_by_owner counted as a contact -> sent7.alarm.u 950 vs 940 (wt, tick 50); lp tick 91 alarm id 1322 (dead) vs 1320", "fix": "PERF7F applied my CR 6999 (liveness skip in both loops)", "status": "fixed"},
+    {"system": "cn_facility.gd (gate occupancy, _discover, _raise occ, service/mist, EMP, bay launch near list)", "cause": "static audit: loops over stale index entries", "fix": "PERF7F applied CR 6999", "status": "fixed"},
+    {"system": "fac_drive7.gd (_threat, _gate_clear full scan, _suits)", "cause": "static audit: a dead unit blocks a gate / counts as a threat in the running world only", "fix": "PERF7F applied CR 6999", "status": "fixed"},
+    {"system": "engineer7.gd (repair jobs loop, fuel loop)", "cause": "static audit: repair job posted for a destroyed building / refuel for a dead unit (saved job board)", "fix": "DET7: w.entities.has skip in both loops", "status": "fixed"},
+    {"system": "senses7.gd (observer loop ~178, sound/spot pass ~504)", "cause": "static audit: a destroyed observer still 'sees'; a dead shooter's last shot still makes sound contacts", "fix": "DET7: liveness skip", "status": "fixed"},
+    {"system": "machine_ew7.gd hack target scan (~166)", "cause": "static audit: a dead unit could be picked as hack target (cooldown / held state written)", "fix": "DET7: liveness skip", "status": "fixed"},
+    {"system": "shrapnel.gd detail()", "cause": "ray factor from Tiers full / index list .size() incl. destroyed units (rows 200 / 800 are reachable in LP fights) -> other ray count after a load", "fix": "DET7: counts live units once per tick (w.cache.shr_n)", "status": "fixed"},
+    {"system": "veh_drive7.gd _discover (~62)", "cause": "static audit: dead unit id can enter S.c (saved)", "fix": "CR 7080 to PATH7-2 (live owner): liveness skip", "status": "NOT CONFIRMED applied"}
+  ],
+  "files_changed_by_DET7": ["sim/systems/engineer7.gd", "sim/systems/senses7.gd", "sim/systems/machine_ew7.gd", "sim/systems/shrapnel.gd", "sim/systems/drone_bay7.gd", ".plan/det7_probe.gd (new)", ".plan/det7_assault.gd (new)"],
+  "compile": "clean after every edit (--quit-after 60, no SCRIPT ERROR / Parse Error)",
+  "probe_results_after_fixes": {
+    "wt": "[wt] RESULT same future for 500 ticks (tick 542)",
+    "db": "[db] RESULT same future for 500 ticks (tick 611)",
+    "lp": "[lp] RESULT same future for 500 ticks (tick 585)"
+  },
+  "tests": {
+    "test_wallturret7": "RESULT pass=11 fail=1 (test_save_load_round_trip PASS; test_assault_destroys_outer_turret FAIL, see assault)",
+    "not_run": "test_cnrole7, test_dronebay7, test_sent7, test_apcmov7, test_cnfac7 save/load reruns; tests/test_det7.gd not written"
+  },
+  "hash_moves": "drone_bay7 bay discovery now happens the tick a facility is raised (was next tick % 20): every facility scene's hash moves; shrapnel detail now counts live units (moves hashes only where the stale count crossed a 200/800 row). Not re-baselined (no goldens edited).",
+  "assault": {
+    "test": "test_wallturret7::test_assault_destroys_outer_turret",
+    "cause": "the facility drone bay. ORCH's dronebay_auto off block never took: at tick 12 validate_command returned 'Needs a Counter-Nanite facility drone bay.' because DroneBay7 discovered bays only on tick % 20 == 0. With auto on the hive launches interceptors + gun drones from t48 and 3 kamikaze a_drone_strike (t90/130/160, 416 dmg each); with Sentinel lancers they kill both MBTs (t300, t424) after 10 shots (880/1100). The 4 AT gunners are killed by wall turrets + Sentinels + towers within ~50 ticks and never fire (same with the bay off).",
+    "system_fix": "drone_bay7.gd tick(): _bay_missing -> discover the bay the tick the facility rises",
+    "evidence": ".plan/det7_assault.gd with the switch-off: validates at tick 12 (bays [40]), turret destroyed t519, all turret damage from mbt (1144); 2 processes + 2 in-process reps identical (hash f7da6958f12f)",
+    "state": "test still FAILS because ORCH reverted the switch-off block; fact det7.assault_cause (seq 7187) asks ORCH to re-add it (checks unchanged). DET7 did not edit the test."
+  },
+  "next_steps": [
+    "ORCH: re-add the dronebay_auto off block (validate + apply, issuer 0) before _place in test_assault_destroys_outer_turret; rerun test_wallturret7 (expect 12/0)",
+    "confirm PATH7-2 applied CR 7080 (veh_drive7 _discover liveness skip)",
+    "write tests/test_det7.gd: 3 facility scenes (wt, db, lp from .plan/det7_probe.gd _build), deep save / load, 300 ticks, check_eq state_hash",
+    "rerun save/load tests: test_cnrole7, test_dronebay7, test_sent7, test_apcmov7, test_cnfac7, test_threat7, test_cnsim7, test_turret7",
+    "extend the probe: several save points (--pre=0,150,300) in a long fight, LP with AI on (keep ai_state), APC traffic scene (test_apcmov7 _setup/_facility/_train/cn_rollout), to catch stale-index consumers that only bite after deaths before the save",
+    "remaining static-audit items not fixed (judged harmless or pre-G7): counter_nanite.gd ~944 creep exposure on dead dicts (writes only to the dead dict), pre-G7 systems not audited"
+  ]
+}
