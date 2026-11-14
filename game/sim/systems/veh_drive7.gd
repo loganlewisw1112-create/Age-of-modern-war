@@ -184,7 +184,7 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 	var fmv = e.get("mvm")
 	if fmv != null:
 		top *= float(fmv)
-	p = _unpush(w, S, k, e, p, h, mc, team)
+	p = _unpush(w, S, k, e, p, h, v, mc, team)
 	var look := clampf(0.5 + 0.5 * v, LOOK_MIN, LOOK_MAX)
 	# a waypoint is behind us once we are inside its capture radius, or already past it along the next segment (and close):
 	# chasing a waypoint the turning radius cannot reach made a slow APC circle round it (PATH7-2: 360 degree spin)
@@ -316,7 +316,12 @@ static func _drive(w: SimWorld, S: Dictionary, k: String, e: Dictionary, V: Dict
 ## 50 deg crab with the hull facing its path). Soldiers cannot push a 15 t vehicle: the sideways part of a small
 ## push since last tick is taken back (the soldier's own share of the push still separates them; the push along the
 ## hull axis stays). Not when another vehicle is close (hull-to-hull overlaps keep Movement's full separation).
-static func _unpush(w: SimWorld, S: Dictionary, k: String, e: Dictionary, p: Vector2, h: float, mc: String, team: int) -> Vector2:
+## SPEEDFIX71 (test_path7 LP crab at A5 speeds): the push along the hull axis moved it too: men walking into the
+## APC's front shoved it BACKWARDS (~0.07 tiles a tick against a 0.002-0.02 tiles a tick crawl out of the gate) into
+## the next APC, then the same men shoved it forward at ~3x its own speed once they were behind it. Now only a
+## backward push up to the APC's own step this tick stays (men in front can hold it up for the tick, as before at
+## speed); any other axial push is taken back with the sideways part (infantry yields, it never moves the hull).
+static func _unpush(w: SimWorld, S: Dictionary, k: String, e: Dictionary, p: Vector2, h: float, v: float, mc: String, team: int) -> Vector2:
 	var l = S.lp.get(k)
 	if not (l is Array):
 		return p
@@ -325,7 +330,7 @@ static func _unpush(w: SimWorld, S: Dictionary, k: String, e: Dictionary, p: Vec
 	if dl < 0.0005 or dl > 0.3:
 		return p
 	var fw := Vector2(cos(h), sin(h))
-	var lat := dsp - fw * dsp.dot(fw)
+	var lat := dsp - fw * clampf(dsp.dot(fw), -v * SimWorld.DT, 0.0)   # the part taken back
 	if lat.length() < 0.0005:
 		return p
 	for oid in SimIndex.unit_ids(w):

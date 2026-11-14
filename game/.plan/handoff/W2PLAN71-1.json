@@ -1,0 +1,29 @@
+{
+  "agent": "W2PLAN71-1",
+  "reason": "guard NUDGE (projected 550k of 750k); all deliverables were already written when it arrived",
+  "done": [
+    ".plan/orch71/wave2_roster.md (slots + start order, ownership table, unowned files, per-agent inputs / Done-when / sim cost / riskiest question / ambiguities, names to register, open questions Q1-Q20, kept-out list)",
+    ".plan/agents/prompts/G71-DAMAGE71.md (B2, J1, J2, J3, G1 medics+)",
+    ".plan/agents/prompts/G71-FIRES71.md (B4, D5, B1 thermobaric + incendiary, B6 CONDUCTOR, G1 FO / JTAC, G2 MLRS)",
+    ".plan/agents/prompts/G71-ARMY71.md (D4, B3, B5, G1 NVG / thermal, I2 hand-to-hand, G2 flame tank)",
+    ".plan/agents/prompts/G71-BASTION71.md (B1 rotary railgun + laser CIWS + HPM, G3, I2 minus hand-to-hand, G1 engineers+, G2 dozer)",
+    ".plan/agents/prompts/G71-CNOPS71.md (D7, H8, J6, J10, B7 VANTA2; starts after RAMP71 is done)"
+  ],
+  "not_done": [
+    "no self-review read-back pass of the five briefs (written once each); ORCH review is the next step",
+    "briefs contain 'ORCH: answer roster Qn here before launch' placeholders by design"
+  ],
+  "open_questions": "wave2_roster.md section 5: Q1 LP-only vs every mode for B/D4/D5/D7 (blocks scope); Q2 native find/act off LP; Q3 PERFSIM71-7 still posting after handoff + RAMP71 file set + fact w2.bench_ref; Q4 snapshot fields / entity_layer / motion route while SWARMNAT71 owns them; Q5 in-run unlocks before H7 (B5, G3 tiers, H8 upgrades); Q6 illumination B4 vs I5; Q7 gas source + wind before I3; Q8 which 70 s; Q9 hospital footprint; Q10 walker collapse vs no wall damage; Q11 heat vs I2 no heat wear; Q12 new defs vs reworks; Q13 radio voice now or text; Q14 unowned files; Q15 LP base placement + counts; Q16 art depth in wave 2; Q17 stale perf71.budget; Q18 per-agent unused budget 0.05 ms; Q19 radial gunship = CONDUCTOR; Q20 facility-under-siege trigger is wave 3",
+  "next_step": "ORCH reviews the roster + briefs, answers Q1/Q3/Q4/Q18 at least, fills the placeholders, posts fact w2.bench_ref, registers names (roster section 4), posts orch.grants, launches DAMAGE71 / FIRES71 / ARMY71 / BASTION71, then CNOPS71 after RAMP71",
+  "files_touched": [
+    ".plan/orch71/wave2_roster.md",
+    ".plan/agents/prompts/G71-DAMAGE71.md",
+    ".plan/agents/prompts/G71-FIRES71.md",
+    ".plan/agents/prompts/G71-ARMY71.md",
+    ".plan/agents/prompts/G71-BASTION71.md",
+    ".plan/agents/prompts/G71-CNOPS71.md",
+    ".plan/handoff/W2PLAN71-1.json"
+  ],
+  "uncommitted_state": "all of the above are new, uncommitted files; no code edited; no git commands run",
+  "test_state": "n/a (planning only)"
+}

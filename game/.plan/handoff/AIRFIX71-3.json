@@ -1,0 +1,23 @@
+{
+  "id": "AIRFIX71", "gen": 3, "agent": "AIRFIX71-3",
+  "reason": "owner PAUSE relayed by ORCH 2026-11-04 ~19:15 PST; stopped at calls ~19, est ~110k",
+  "done": [
+    "Verified gen-2 logs in .plan/airfix71/ (no reruns): airops2.log RESULT pass=8 fail=0; matrix3_full.log RESULT pass=6 fail=0 (16-case matrix: 4 pad, 4 hold_alert AirPadBusy, 8 ground_alert AirNoPad, 0 over a building centre); pt_airfix71_2.log PLAYTEST RESULT pass=15 fail=0; pt_airops71_1.log PLAYTEST RESULT pass=13 fail=1 (airops71_three_on_patrol on route=2); callers.log: test_air 9/0, test_vanta7 7/0, test_air_transport 7/0, test_airfield 13/0, test_airfield_g6 8/0, test_ai_air_naval 8/0, test_lpmode7 18/0, test_cnfac7 35/1 (test_ramp_load_and_unload_sequence: 'a_vtol_dropship: APC hidden only once lined up at the ramp foot (0.52 tiles off)').",
+    "Gold check (item 5, partial): gold_run1.log and gold_run2.log are byte-identical, and their 14 GOLD61 lines equal .plan/regold71/run1+run2 exactly (2k_fight on/off, 2k_mixed on/off, 10k_fight on/off, 10k_march/on; GOLD+FLAT). BOTH runs are truncated before 10k_march/off (regold71: GOLD 7122b748..., FLAT 9f57f413...), so that case is UNVERIFIED. No hash among the 14 moved.",
+    "Worktree C:/CODING/af71_head (detached at fda25f9) created, main tree .godot copied in (110M). Headless --import was ~96% when the pause came; I killed it (my pids) plus the test_cnfac7 run it chained into. No HEAD result yet."
+  ],
+  "not_done": [
+    "1. test_cnfac7 ramp test on HEAD: in C:/CODING/af71_head/game run `\"$G\" --headless --path . --import` (finish), then `bash tests/run.sh --only=test_cnfac7 > /c/CODING/af71_head/cnfac7_head.log`. If it also fails at HEAD -> pre-existing (likely A5 x1.2 speed moves the APC lineup), report and leave. If it passes at HEAD -> the cause is in air.gd/pads71 (look at land71/_park or the hold path moving a landed a_vtol_dropship during bay_seq). Then `git worktree remove --force C:/CODING/af71_head`.",
+    "2. pt71_airops71 airops71_three_on_patrol (2 on route, want 3): not started.",
+    "3. Swap in .plan/airfix71/air.nodead.gd after callers green; rerun test_air, test_airops71, test_vanta7, one test_airfix71 case (AIRFIX71_ONLY=<tag>_<type>_<state>): not started.",
+    "4. Air share of 2k bench sim cost (tools/perf71_prof.gd --sub): not started.",
+    "5. Rerun .plan/gold61.gd to get 10k_march/off (both gen-2 runs truncated): not started.",
+    "6. fact shots.best for landing shots (.plan/shots/AIRFIX71-2/, look at them first): not started.",
+    "Header comment of presentation/ui71/patrol_draw.gd still says SHIFT+P; must become SHIFT+Y: not edited."
+  ],
+  "exact_next_step": "Finish the --import in C:/CODING/af71_head/game and run test_cnfac7 there (item 1).",
+  "files_touched_by_gen3": ["C:/CODING/af71_head (git worktree, read-only use, still present)", ".plan/handoff/AIRFIX71-3.json"],
+  "files_owned_uncommitted_from_gen1_2": ["sim/systems/pads71.gd", "sim/systems/air.gd", "sim/systems/vanta7.gd", "sim/systems/cn_facility.gd", "sim/systems/drone_bay7.gd", "content/g71/defs_g71_air.json", "presentation/hud/g2_alerts.gd", "presentation/ui71/patrol_draw.gd", "tests/test_airfix71.gd", "tests/test_airops71.gd", "tools/airfix71_probe.gd", "tools/pt71_airfix71.gd", "tools/pt71_airops71.gd"],
+  "uncommitted_state": "gen 3 made no source edits; all gen 1/2 work uncommitted on g71; no git writes besides `git worktree add`",
+  "open_change_requests": "none new from gen 3"
+}

@@ -1,0 +1,29 @@
+{
+  "agent": "PERFSIM71-2",
+  "gen": 2,
+  "status": "recycled (owner PAUSE before any edit)",
+  "calls_used": 13,
+  "tokens_used_est": 110000,
+  "done": [
+    "Read G71_COMMON, G7_COMMON, brief G71-PERFSIM71, scope E2 + Pre-start + Done-when, PLAN_G71, board facts seq 107/108/109/110/133/210",
+    "Surveyed combat.gd (_find / find_target / _pick / prep), stray8.gd (_on_miss, _muzzle_blocked, _sidestep), native rts_core (Rust gdext 0.5.5: combat.rs, combat_prep.rs prep_units_ids, morale_scan.rs, grid capsule queries)",
+    "Read the profile log .plan/perfsim71/runs/prof_g71_b.log (sub-path table)"
+  ],
+  "not_done": [
+    "Fresh paired G6 vs G71 baseline (blocked: the G6 worktree C:/CODING/ps71_g6 does not exist any more; .plan/perfsim71/pairs.sh expects /c/CODING/ps71_g6/game)",
+    "Any native port, build, stage or swap",
+    "Any source edit"
+  ],
+  "findings": {
+    "g6_worktree_missing": "C:/CODING/ps71_g6 not found (ls fails). Needs re-creating at 979a6d8 (ORCH: git worktree add; agents may not run git checkout in the main tree).",
+    "amdahl": "Profiled totals (prof_g71_b vs prof_g6_b): G71 44.17 ms = combat 25.68 + rest 18.49; G6 23.52. To reach G6 with only combat ported, G71 combat must fall to ~5.0 ms (-80%). cmb.np (already native prep_units_ids, which reads unit dicts from Rust) alone costs 3.77 ms, so Rust dict reads are ~1.9 us/unit: a native cmb.act that still reads entity dicts would likely land at ~5-8 ms, not ~1 ms. Closing the gate therefore needs the whole cmb.act (combat + accuracy8 + stray8 + damage hooks + WallFire7/Fog/G4bMech filters + exact w.rng draw order) ported, AND ~3+ ms more cut from movement/morale/blast8/wounds/fog/intel.",
+    "piecewise_candidates_ms_per_tick_profiled": {"cmb.find": 2.8, "fire.stray": 2.5, "fire.dmg": 2.23, "PERF8_muzzle (incl sidestep 1.15)": 1.73, "fire.resolve": 1.64, "eng.chase_path": 1.17, "PERF8_ss_collect": 0.91, "dmg.near_miss": 0.93, "PERF8_sq": 0.83},
+    "piecewise_ceiling": "These separable sub-paths sum to ~9-10 ms profiled (profiling overhead included); already prefiltered natively (scan_vis_sorted, query_capsule_along). Even a 100% saving on all of them would not close the ~16 ms (loaded) / ~20.6 ms (profiled) gap; realistic native saving per piece 40-70%.",
+    "exactness_trap": "A per-tick packed attribute table (owner/garrisoned/low/profile) built in prep_units would cut most dict reads in muzzle/stray/sidestep loops, but low(ce) reads ce.target and moving, which change during the act loop, so a prep-time table is NOT exact; any such table must be refreshed per write or limited to fields fixed during Combat.tick."
+  },
+  "exact_next_step": "1) ORCH recreates G6 worktree at C:/CODING/ps71_g6 (979a6d8) and confirms it runs .plan/perfsim71/sim_ab.gd. 2) Run bash .plan/hb.sh PERFSIM71-3 <calls> <est> pairs -- bash .plan/perfsim71/pairs.sh 3 base3 fight G6,G71 with Godot proc count + CPU logged. 3) First native piece (template): stray8._sidestep collect loop (PERF8_ss_collect, 0.41 ms per call) as RtsCombat.ss_collect(cands, ents, ...) returning pts/own/foe ids, GDScript kept as fallback and A/B oracle; then _muzzle_blocked candidate loop, then _on_miss candidate loop. Each: two identical sim_ab hashes (G71 8fd794b3... unless goldens moved), test_hot_state GOLD/GOLD_FLAT, tests/test_perfsim71.gd native on/off, then paired measure. 4) If after those the projection still cannot reach G6, stop and report to owner per owner.sim_gate (seq 210).",
+  "files_touched": [".plan/handoff/PERFSIM71-2.json (this file only)"],
+  "native_build_state": "untouched: bin/rts_core.dll = rts_core 0.5.5 as found; no staged rts_core.new.dll from this agent; no cargo build run",
+  "uncommitted_state": "none from this agent (the many M/?? files in git status belong to other agents/ORCH)",
+  "open_change_requests": []
+}

@@ -1,0 +1,27 @@
+{
+  "id": "PERFDRAW71", "gen": 7, "written_by": "PERFDRAW71-7",
+  "reason": "brief items 1-6 done or reported; clean stop at 83 calls (projection 312k + 2.3k x 83 = 503k < 525k), no godot of mine running, no timing batch of mine open (ab11 posted done)",
+  "done": [
+    "CR 467 (ORCH grant seq 470): presentation/hud/minimap.gd incoming markers batched. Godot 4.7's own AA geometry (draw_arc/draw_line AA incl. canvas_item_get_compensated_antialiasing_width, draw_circle 64-fan, head triangle) built only when _threats/_waves/_base_mini change, one canvas_item_add_triangle_array per layer, pulse = shader uniform set in _process; text + dashed lines stay native on plain layers in the old order. Old path kept as reference behind MINIMAP_INC_OLD=1; MINIMAP_INC_PULSE freezes the pulse (proofs only).",
+    "Same look: tools/perf71_draw_inc.gd test card max diff 1/255 at 4 pulses (.plan/perfdraw71/inc7/run2.log); tools/perf71_draw_incab.gd in game 10k zoom 0.15 / 0.5: max diff 1/255, draw calls 234->131 / 488->383 (.plan/perfdraw71/inc7/incab_z*.log). fact shots.best seq 498.",
+    "ab11 (quiet-gated, .plan/perfdraw71/ab11.out): 10k A/B g71 new p10 216.5/217.7 frame 4.26/4.29 ms 133 dc; old markers 161.9/178.7, 5.04/5.13 ms, 242/246 dc; g7 228.3/223.6, 4.00/4.08 ms, 132 dc. Gate bench rows: 2k g71 65.6 (clean) / 64.1 (loaded), g61 today 53.6; 10k g71 bench rows loaded/suspect, g7 205.7. fact perfdraw71.cr467 seq 590, perfdraw71.gates seq 591.",
+    "pt71_perfdraw71 9/0 after the gen-6 _flat_pad fix; heli draws on top of the FARP (looked; fact shots.best seq 517; FARP art is AIRFIX71 placeholder).",
+    "Tests: test_control71 6/0, test_ui_fit pass 2 fail 4 same as before (counts 12/14/374/520 vs 12/14/374/522, .plan/orch71/test_ui_fit.log), test_perfdraw71 6/0 (2 new CR 467 tests), test_hot_state 17/0.",
+    "owner.lp_peak.ask posted (seq 532) from ab10's idle LP peak data: p10 22.4, frame 41.5 ms, p_e2_ents 17.4 ms, HUD hidden = no gain; options a/b/c with PROVISIONAL estimates; nothing started."
+  ],
+  "not_done": [
+    "Gates: 2k beat 85.2 NOT met (g71 65.6; G6.1 itself 53.6 today on this PC); 10k beat 262.5 NOT met (g71 ~216 clean A/B); LP peak 60 NOT met (22.4) -> owner decision on seq 532. 10k g71 still 3-5% below g7 (0.2-0.25 ms in unmeasured 'other', not in MatchView parts or sim).",
+    "Gate bench rows for 10k g71/g61 and 2k g7 were loaded (bench start load 28-71): a quiet rerun of the gate rows is still owed if ORCH wants gate-grade numbers.",
+    "LP zoomed-out / LP pan not re-measured this gen."
+  ],
+  "incident": "My test_perfdraw71 run (18:07:25-18:07:38Z) overlapped PERFSIM71-6's timing batch seq 585; reported on the board (seq 589, corrected in 590).",
+  "next_step": "Wait for the owner's answer on owner.lp_peak.ask (seq 532). If ORCH wants gate-grade 2k/10k rows: wait for no open perfsim71.timing_batch, then CASES rerun of the ab11 bench part (bash .plan/hb.sh <ID> ... -- bash .plan/perfdraw71/ab11.sh, after trimming part A).",
+  "files_touched": [
+    "presentation/hud/minimap.gd (CR 467 incoming markers only; backup of the pre-edit file .plan/perfdraw71/minimap.gd.orig7)",
+    "tests/test_perfdraw71.gd (test_minimap_incoming_arrow_rule_matches_old, test_minimap_incoming_layers)",
+    "tools/perf71_draw_inc.gd, tools/perf71_draw_incab.gd (new look-proof harnesses)",
+    ".plan/perfdraw71/ab11.sh + ab11.out + ab11_* logs, inc7/, shots7/, t7_*.log, t7b_perfdraw71.log, pt71_perfdraw71_r7.log, test_ui_fit_prev.log; .plan/orch71/test_ui_fit.log (rewritten)"
+  ],
+  "uncommitted_state": "All on g71, uncommitted (ORCH commits). Outside the repo: C:/CODING/pd71_g71s/game = live tree at 17:35Z incl. CR 467 (before the later inc_arrow_m refactor, which is behaviour-identical); kept for timing, delete when no longer needed.",
+  "calls_used": 83, "tokens_used_est": 260000
+}

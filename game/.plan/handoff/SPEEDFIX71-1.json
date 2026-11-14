@@ -1,0 +1,69 @@
+{
+ "agent": "SPEEDFIX71-1",
+ "gen": 1,
+ "state": "recycled on budget.handoff_now at ~79 calls",
+ "no_git_writes": true,
+ "files_touched_tracked": [],
+ "sim_changes": "none (no tracked file edited; hashes / test_hot_state untouched by this agent)",
+ "evidence_dir": ".plan/speedfix71/ (untracked: probes, proposed test copies, before logs, scratch runner run_one.gd: godot --headless --path <tree> -s <abs>/run_one.gd -- --file=<abs test copy> [--m=method])",
+ "tests": {
+  "test_content_g6": {
+   "state": "done: change_request posted",
+   "seq": 1076,
+   "cause": "guard speed <= 10 hard-codes pre-A5 cap; m_stealth_drone 8.5 -> 10.2 (x1.2)",
+   "fix": "test: cap 10.0 * rules.g71_speed_mult",
+   "verified": "proposed copy .plan/speedfix71/tc6_fix.gd 7/0 on G7 and live",
+   "before": ".plan/speedfix71/live_test_content_g6.log 6/1"
+  },
+  "test_perf": {
+   "state": "done: change_request posted",
+   "seq": 1077,
+   "cause": "Tiers.bucket_size 41 -> 44 (vmax g7_a_fpv 14 -> 16.8); on the 96 map every cell < 88 is in buckets 0-1 so nothing is REDUCED; sim correct (conservative)",
+   "fix": "test: _armies far arg (92 for the promotion test), lone unit at (92,92)",
+   "verified": ".plan/speedfix71/tp_fix.gd 11/0 on G7 and live",
+   "before": ".plan/speedfix71/live_test_perf.log 9/2; G7 .plan/speedfix71/g7_test_perf.log 11/0"
+  },
+  "test_real61": {
+   "state": "done: change_request posted",
+   "seq": 1094,
+   "cause": "fixed 340-tick legs; faster rifleman rests 158 ticks/leg and fully recovers (fatigue per tile unchanged)",
+   "fix": "test: leg ticks 340 / g71_speed_mult",
+   "verified": ".plan/speedfix71/tr61_fix.gd 8/0 G7 (f1 0.160) and live (f1 0.301)",
+   "before": ".plan/speedfix71/live_test_real61.log 7/1"
+  },
+  "test_gen61": {
+   "state": "done: change_request posted",
+   "seq": 1120,
+   "cause": "fixed 40-tick lead-in: idle JTAC auto-closes on the foe; at A5 it is within danger_close 7 of the cluster cell at the general's first pass (6.98 vs G7 7.68)",
+   "fix": "test line 523: lead-in 40 / g71_speed_mult",
+   "verified": ".plan/speedfix71/tg61_fix.gd target test PASS G7 + live",
+   "before": "C:/CODING/orch71_check/suite71/test_gen61.log 14/1"
+  },
+  "test_drone_team": {
+   "state": "done: change_request posted",
+   "seq": 1134,
+   "cause": "hull-laid SPAAG (90 deg/s) needs 3 hits at 5-tick cooldown; at A5 the drone overflies after hit 2, hull needs ~40 ticks to turn, impact first",
+   "fix": "test: SPAAG at o+19.5 and facing PI",
+   "verified": ".plan/speedfix71/tdt_fix2.gd PASS G7 + live",
+   "before": "C:/CODING/orch71_check/suite71/test_drone_team.log 7/1"
+  },
+  "test_naval_g6": {
+   "state": "done: change_request posted",
+   "seq": 1141,
+   "cause": "sweeper clears on a time budget (2 mines/s while in reach); faster pass = 7 passes in reach instead of 8 -> 3/4 cleared",
+   "fix": "test: move target y 60 -> 54 (ends on the far edge of the field); owner alternative noted (budget per tile or sweep_mines_per_s x mult)",
+   "verified": ".plan/speedfix71/tng6_fix.gd 10/0 G7 + live",
+   "before": "C:/CODING/orch71_check/suite71/test_naval_g6.log 9/1"
+  },
+  "test_path7": {
+   "state": "NOT DONE: cause located, no fix yet",
+   "cause_found": "test_last_protocol_facility outside APC crab: G7 0 frames, HEAD 51 frames max 89 deg. Trace (.plan/speedfix71/probe_lp2.gd, live output .plan/speedfix71/lp2_live_out.txt): APC #1053 is handed from FacDrive7 to VehDrive7 at t=521 at (80.0,96.50) facing +y; with A5 a rifleman squad (842/843/844) reaches the gate exit at the same time (G7: nobody within 2.5 tiles) and the APC is shoved BACKWARD and left while VehDrive7 accelerates forward: y 96.50 -> 95.51, x 80.0 -> 79.08 over t 522-545, hull turning 90 -> 62 deg, then it recovers (bad ticks 25). A vehicle being displaced backwards by soldiers in front looks like real sim misbehaviour (likely collision separation / Movement push on a vehicle, or VehDrive7._unpush), not a test number.",
+   "exact_next_step": "Find what writes #1053's pos during t 522-545 in the live tree: instrument (in a scratch probe, not the sim) VehDrive7._drive / _unpush (sim/systems/veh_drive7.gd line ~319) and Movement separation / push of vehicles by foot units; if the soldiers push the APC (should be the other way: infantry yield to vehicles), fix at that cause (claim the file first: fact claim.file), parse-check, rerun test_path7 (live, ~60 s, via hb.sh), then test_hot_state 17/0, the 3 bench hashes (.plan/perfsim71/sim_ab4.gd vs w2.bench_ref, under orch.timing_lock), test_mil, test_squad61, test_perfsim71, test_cnfac7/test_cnsim7. If the push turns out to be intended (owner rule), post change_request.testfix.test_path7 instead.",
+   "before": "C:/CODING/orch71_check/suite71/test_path7.log 5/1 (crab 88.7); G7 g7ref71/test_path7.log 6/0"
+  }
+ },
+ "facts_posted": {
+  "speedfix71.cause": 1075
+ },
+ "background": "none running (all Godot runs were foreground and finished)"
+}

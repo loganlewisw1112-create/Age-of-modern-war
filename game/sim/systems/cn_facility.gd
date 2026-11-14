@@ -323,6 +323,19 @@ static func tick(w: SimWorld) -> void:
 		SimIndex.pt("cnf.tick_team", tq)
 
 
+## AIRFIX71 (G7.1 A1, registration only): facility F's stealth-dropship helipad ("cnh:<id>", ref = the facility) and
+## the Vanta roof pad ("roof:<id>", ref = the barracks) in Pads71. Idempotent (Air also calls it for older saves).
+static func pads71_register(w: SimWorld, F: Dictionary) -> void:
+	var P71 = load("res://sim/systems/pads71.gd")
+	var id := int(F.id)
+	var fd := float((conf().get("helipad_craft", {}) as Dictionary).get("facing_deg", 0))
+	P71.register(w, "cnh:%d" % id, "cn_helipad", int(F.owner), zone(F, "helipad").get_center(), zone(F, "helipad").size.x, id, fd)
+	var rp := roof_pad(w, F)
+	if not rp.is_empty():
+		var bar := int(F.get("bar", 0))
+		P71.register(w, "roof:%d" % id, "roof_pad", int(F.owner), Vector2(rp.centre), (rp.rect as Rect2).size.x, bar if bar != 0 else id, float(rp.heading_deg))
+
+
 static func _discover(w: SimWorld) -> void:
 	for b in SimIndex.of(w, "building"):
 		if not w.entities.has(int(b.id)):   # DET7 CR 6999: skip destroyed entries still in the SimIndex (a loaded world's index has none)
@@ -449,6 +462,7 @@ static func _raise(w: SimWorld, b: Dictionary) -> void:
 	for k in PKG_KINDS:
 		F.stock[k] = 0
 	st(w).facs[str(id)] = F
+	pads71_register(w, F)   # AIRFIX71 (G7.1 A1): the helipad + roof pad join the shared home-pad registry
 	if cp != 0:   # FACB7 (13.9c-8): the foot-entry mantrap doors are team gates through the gatehouse (owner only)
 		_mantrap(w, F, false)
 	_foot_hall(w, F)   # FACB7-7 (13.9c-20c): the decon hall is foot only (no CN suits)

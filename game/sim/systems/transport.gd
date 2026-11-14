@@ -109,7 +109,8 @@ static func _bay_ok(c, u) -> bool:
 ##                q [cargo ids still to come out: foot first, then the vehicle], cur (id coming out now), n (units out),
 ##                idle (tick the bay went idle), pend [ids asked to unload while loading], resume Vector2 (held move goal)}
 ##   phases: ramp_down -> open <-> apc_in / squad_in (load) | squad_out / apc_out (unload) -> ramp_up -> (erased)
-##   boarder u.order adds st (APC staged on the axis) and g (current walk goal).
+##   boarder u.order adds st (APC staged on the axis), g (current walk goal) and ln (vehicle settled on the line-up
+##   for one drawn tick before it drives in; RAMP71).
 ## While a sequence runs the craft is committed (hold_bays, called before Movement / Air: no move, no lift-off; a move
 ## order is kept and resumed when the ramp is up). Display: LOOK7's g7v table, own keys only:
 ##   g7v[cid] = {bay ph, bm mode, b0 t0, b1 t1, bv 1 = a vehicle is aboard}. No bay aircraft = no state, same hash.
@@ -825,6 +826,17 @@ static func _tick_bay_boarder(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dic
 		if r != "":
 			_board_fail(w, tc, u, c, r)
 			return
+		if veh and int(u.order.get("ln", 0)) == 0:
+			# RAMP71 (G7.1): a vehicle first settles on the line-up point, nose to the ramp, and stays in the world for
+			# this tick (Transport runs after Movement, so loading on the arrival tick hid it a whole step short of the
+			# line-up, 0.52 tiles at the A5 x1.2 speed); it drives in on the next tick. Speed-independent.
+			u.order["ln"] = 1
+			u.pos = entry
+			u.facing = f
+			if bool(u.moving):
+				Movement.stop_path(u)
+			HotState.touch(w, uid)
+			return
 		tc.boarding.erase(uid)
 		u.pos = entry
 		u.facing = f   # lined up on the craft's axis, nose to the ramp (apc_load_0)
@@ -838,6 +850,7 @@ static func _tick_bay_boarder(w: SimWorld, tc: Dictionary, u: Dictionary, c: Dic
 			s.t0 = t0
 			_seq_render(w, c)
 		return
+	u.order.erase("ln")   # RAMP71: re-armed whenever the vehicle is not at the line-up (e.g. sent back to the stage)
 	_bay_goto(w, tc, u, c, goal)
 
 

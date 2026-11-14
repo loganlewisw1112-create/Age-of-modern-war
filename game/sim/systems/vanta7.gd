@@ -267,6 +267,8 @@ static func _tick_one(w: SimWorld, s: Dictionary, e: Dictionary, r: Dictionary) 
 	if int(e.get("ammo", 0)) != 0:
 		e.ammo = 0   # Combat acquires, Vanta7 fires: Combat's own shot never happens (Status NO_AMMO)
 	var landed := bool(e.get("air_landed", false))
+	if landed and bool(r.rtb):
+		r.rtb = false
 	var onp := landed and on_pad(w, e, r)
 	var deck := rf("deck_alt", 0.76) if onp else 0.0
 	if float(e.get("vt_deck", 0.0)) != deck:
@@ -324,32 +326,15 @@ static func _full(r: Dictionary) -> bool:
 static func _fly(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 	var d := Content.unit(String(e.def))
 	var p := pad_of(w, int(r.fac))
-	if not p.is_empty() and bool(p.ok):
-		var c: Vector2 = p.centre
-		if not bool(r.rtb) and float(e.get("fuel", 1e9)) <= rf("rtb_fuel_frac", 0.35) * float(d.get("fuel_max", 1.0)):
-			_start_rtb(w, e, r)
-		if bool(r.rtb):
-			var ot := String(e.order.get("type", "idle"))
-			if ot != "idle" and not (ot == "move" and Vector2(e.order.get("target", Vector2.INF)) == c):
-				r.rtb = false   # a fresh player / AI order wins
-			else:
-				var occ := int(st(w).pads.get(str(int(r.fac)), 0))
-				var dist := Vector2(e.pos).distance_to(c)
-				if dist <= rf("land_r", 0.8) and (occ == int(e.id) or occ == 0 or not w.entities.has(occ)):
-					r.rtb = false
-					e.facing = deg_to_rad(float(p.heading_deg))
-					_land(w, e, c)
-					return
-				var f: Dictionary = _d("air")._ensure(w, e)
-				f.land_cell = w.cell_of(c)   # keeps Air's low-fuel pad search from diverting it to another pad
-				if String(f.get("phase", "")) == "ret":
-					f.phase = "air"
-					f.erase("dest")
-				if not bool(e.moving):
-					e.order = {"type": "move", "target": c}
-					_d("mov").order_path(w, e, c)
-	elif bool(r.rtb):
-		r.rtb = false
+	if not bool(r.rtb) and float(e.get("fuel", 1e9)) <= rf("rtb_fuel_frac", 0.35) * float(d.get("fuel_max", 1.0)):
+		_start_rtb(w, e, r)
+	if bool(r.rtb):
+		# AIRFIX71 (G7.1 A1): Air flies the return (pad free -> land on it; taken -> hold beside it; barracks lost ->
+		# the next pad / open ground, with an alert); a fresh order (Air drops its pad target) ends it
+		var f71: Dictionary = _d("air")._ensure(w, e)
+		if not f71.has("pad71") and not f71.has("land_cell"):
+			r.rtb = false
+	# (AIRFIX71: the pad-lost elif that cancelled the return is gone; Air holds / diverts instead)
 	if not bool(e.moving):
 		var t = _target(w, e)
 		if t != null and ["cannon", "missiles"].has(String(r.n)):
@@ -362,9 +347,14 @@ static func _fly(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 
 static func _start_rtb(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
 	var p := pad_of(w, int(r.fac))
+	r.rtb = true
+	var fa: Dictionary = _d("air")._ensure(w, e)
+	_d("air").rtb71(w, e, fa)   # AIRFIX71 (G7.1 A1): the shared home-pad return (alerts when the pad is taken / gone)
+	w.emit("VantaRTB", {"id": int(e.id), "owner": int(e.owner), "fac": int(r.fac)})
+	if true:
+		return
 	if p.is_empty():
 		return
-	r.rtb = true
 	var c: Vector2 = p.centre
 	var f: Dictionary = _d("air")._ensure(w, e)
 	f.land_cell = w.cell_of(c)   # Air's low-fuel search for another pad stays off while it heads home

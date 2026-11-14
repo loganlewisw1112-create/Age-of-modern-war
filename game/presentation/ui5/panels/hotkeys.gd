@@ -126,6 +126,9 @@ const G7_ACTIONS := {
 	# Shift chord SHIFT+P (hud.gd resolves chords with event_key(); plain P still pauses).
 	"cn_pincer": ["SHIFT+P", "Anti-walker pincer", "cn7", "cn_pincer"],
 	"cn_break_contact": ["SHIFT+B", "Break contact (formed withdrawal)", "cn7", "cn_break_contact"],
+	# G7.1 (AIRFIX71-2 CR seq 149, ORCH): draw a patrol loop for helicopters / VTOLs. SHIFT+P was asked for but cn_pincer
+	# owns it and a mixed CN + air selection shows both cards, so the free chord SHIFT+Y is used.
+	"air_patrol": ["SHIFT+Y", "Patrol route", "air", "air_patrol"],
 	# G7 (CNOPS7 CR seq 1206, SQUAD7-6): CNOPS7 proposed Alt+F / Alt+R / Alt+U, but hud._unhandled_input drops every
 	# key event with Alt / Ctrl / Meta held before the card lookup, so Alt chords can never fire; same letters as
 	# Shift chords instead (free in cn7: only SHIFT+P / SHIFT+B there, wound7 SHIFT+T / SHIFT+E on every card).

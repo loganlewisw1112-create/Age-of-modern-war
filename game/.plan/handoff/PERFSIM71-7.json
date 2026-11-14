@@ -1,0 +1,39 @@
+{
+ "agent": "PERFSIM71-7",
+ "gen": 7,
+ "status": "recycled at the guard NUDGE (projected 560k of 750k): probe done, verdict posted (owner.sim_gate.ask), cut 1 built but not installed",
+ "calls_used": 90,
+ "tokens_used_est": 530000,
+ "read_first": "docs/NATIVE_COMBAT71.md section 9 (Phase 6 probe)",
+ "done": [
+  "Per-system profile G6 (979a6d8) vs G7.1, 2k fight, 2 quiet alternating pairs + 1 --sub pair (.plan/perfsim71/prof7.sh, p7/a.out, p7/a_*.log): profiled G6 18.11 vs G7.1 26.86 (1.48x); combat +2.09, outside combat +6.66 (blast8 1.32, movement 1.12, wounds 1.08, morale 1.00, intel 0.74, squad_ai 0.63, fog 0.45, cmds 0.13, command_net 0.13, veh_drive7 0.06, tail 0.15, supply/eco/victory -0.16)",
+  "Sub-timer probe .plan/perfsim71/probe7.gd (+ probe7.sh): replica ticks, hash 8fd794b3 on pa_r1/pa_r2/pb_r1: b8.unc 1.26-1.30 (154 unconscious/tick), mor.realism_pass 0.86-0.93, int.vis_enemies 0.43 + int.refresh 0.28 (60 calls), sq.think 0.68, wd.vis 0.46, mv PERF8_sp8b 1.17 (487 marked/tick), Senses7 0.45-0.51",
+  "Cut 1 Fog.lean_vis built + parse-checked in .plan/perfsim71/chk/fog.gd: 2k fight on/off same hash 8fd794b3 (p7/c7_f1, c7_f0), 2k mixed on a1e5af17 (c7_m1)",
+  "sim_ab4.gd: --set=res://path.gd:var=val (bench toggles)",
+  "docs/NATIVE_COMBAT71.md section 9 written; owner.sim_gate.ask posted"
+ ],
+ "not_done": [
+  "Cut 1 not installed: needs 2k mixed off, 10k 200t on/off (41b5f765), test_hot_state, test_perfsim71, quiet timing (probe7 pairs with --set=res://sim/systems/fog.gd:lean_vis=true|false); cut7.sh does all of it once chk/fog.gd is copied in",
+  "No other cut built (estimates in section 9, discounted total 0.8-1.7 ms)",
+  "No unprofiled G6 vs G7.1 pair in this session (section 8's 15.95 vs 26.67 stays the anchor)"
+ ],
+ "exact_next_step": "Wait for the owner's answer to owner.sim_gate.ask. If cut 1 is wanted: on a quiet PC copy .plan/perfsim71/chk/fog.gd over sim/systems/fog.gd and run bash .plan/perfsim71/cut7.sh (oracles, both tests, probe pairs); restore chk/fog.gd.orig7 if any hash differs.",
+ "files_touched": [
+  ".plan/perfsim71/prof7.sh",
+  ".plan/perfsim71/probe7.gd",
+  ".plan/perfsim71/probe7.sh",
+  ".plan/perfsim71/cut7.sh",
+  ".plan/perfsim71/sim_ab4.gd (--set)",
+  ".plan/perfsim71/chk/fog.gd (patched, not installed)",
+  ".plan/perfsim71/chk/fog.gd.orig7",
+  ".plan/perfsim71/p7/*",
+  "docs/NATIVE_COMBAT71.md (section 9)",
+  "sim/systems/fog.gd: edited, then restored from chk/fog.gd.orig7 (net no change)"
+ ],
+ "uncommitted_state": "all uncommitted (ORCH commits); no sim file changed net; no dll touched; timing_batch closed (done)",
+ "open_change_requests": [],
+ "notes": [
+  "hb.sh heartbeats in a background run repeat the calls_used given at its start; the guard read them as no progress",
+  "another session's CleanCityBots tools/drift_hazards.py (12 python workers) loads the CPU to 100% at times: quiet-gate every timing run"
+ ]
+}

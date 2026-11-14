@@ -1,0 +1,19 @@
+{
+  "id": "PERFDRAW71", "gen": 3, "written_by": "PERFDRAW71-3", "reason": "owner PAUSE via coordinator (stop new work); clean stop, no half-applied edit",
+  "done": [
+    "CR seq 148 (AIRFIX71 air_hot): sim/render_snap.gd _g5_unit now puts \"hot\": bool(e.get(\"air_hot\", false)) into g5.air[id] (absent = false). presentation/view/entity_layer.gd: the landed ground-frame branch is skipped when ad.hot and rotor anim frames exist; the rotor/prop anim branch now runs when airborne OR ad.hot, so rotors/fans keep turning on the pad during hot-pit. NOT yet run in a test or seen in a screenshot.",
+    "tools/perf71_draw_lp.gd: --peak=N now uses PERFSIM71's bench.lp_peak placement (Bench.LP_ROBOTS + Bench._spiral_spawn, 150 robots on hold 6-14 tiles, N machines in 4 sectors 30-55 tiles, attack-move) on the live match world; g7 tree loads the g71 scale_bench.gd by abs path. Old ring kept as _spawn_peak_ring_old. Copied to C:/CODING/pd71_g7/game/tools/. Smoke on g71: robots=150 machines=1000, 0 SCRIPT ERROR (.plan/perfdraw71/smoke3_peak.log).",
+    "Forced-join diagnosis on LP peak (temporary env-gated backtrace in match_view world getter, REVERTED byte-exact to .plan/perfdraw71/match_view.gd.pre3diag): forced_joins in the SIMTHREAD line is CUMULATIVE, only 3 per run (harness x2, ops_panel.gd:98 via audio subtitle, lp_hud.gd:89 refresh). Not the fps cap. (.plan/perfdraw71/diag3_join.log)",
+    "LP peak observation (g71, single runs, not a baseline): fps 20-25, engine_fps 14-24, sim steps 3-5/s (tps 3-5), sim_ms_per_s 600-1480 on the worker, view_ms_per_s 560-1430, ent_ms 13-60, draw_calls 850-1640, drawn ~1450. Gen-2 bis1 lppeak (old ring placement): g71 p10 20.1 / g7 19.5 / g71c 21.9. Main thread view time is near 600 ms/s with the sim worker also saturated: needs the --prof breakdown to split render vs sim-contention."
+  ],
+  "not_done": [
+    "Baseline re-take (>=3 runs per tree per case, alternating, load + godot count): not started. No new paired numbers.",
+    "--prof breakdown of LP peak: the run (.plan/perfdraw71/prof3_peak.log) printed no PROF lines -- check whether --prof reaches match_view through this harness (match_view parses --prof at line ~232) or the log name/format differs.",
+    "tests/test_perfdraw71.gd not run; air_hot not covered by a test or screenshot.",
+    "2k/10k gap to G6.1, swarm batch, shots.best, pt71_perfdraw71 flow: not started."
+  ],
+  "next_step": "1) grep .plan/perfdraw71/prof3_peak.log for PROF/FPS to see why no PROF line; 2) bash tests/run.sh --only=test_perfdraw71.gd (+ a parse check of render_snap/entity_layer); 3) baseline sweep with .plan/perfdraw71/bisect.sh via hb.sh: CASES='2k 10k' LPCASES='lpz lppan lppeak' trees g61 g7 g71, x3 rounds.",
+  "files_touched": ["sim/render_snap.gd (_g5_unit: hot field)", "presentation/view/entity_layer.gd (aircraft frame branches, air_hot)", "tools/perf71_draw_lp.gd (bench.lp_peak placement)", "C:/CODING/pd71_g7/game/tools/perf71_draw_lp.gd (copy, comparison worktree)", "presentation/match_view.gd (temporary diagnostic, reverted byte-exact)", ".plan/perfdraw71/{smoke3_peak,diag3_join,prof3_peak}.log, match_view.gd.pre3diag"],
+  "uncommitted_state": "all uncommitted on g71; ORCH commits. Hashes: none expected to move (render_snap field is view-side only) but not verified with test_hot_state.",
+  "calls_used": 23, "tokens_used_est": 215000
+}

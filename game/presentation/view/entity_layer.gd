@@ -98,6 +98,9 @@ var vis_bld: Array = []                    # visible (non-ghost) building dicts
 var _air_def: Dictionary = {}              # def -> bool (G3.is_air cache)
 var _far_key: Array = []                   # far LOD: last rebuild key (tick, view, fog, n)
 var skipped := 0                           # far-LOD frames that reused the last draw list
+const FAR_PAN_PAD := 0.3                   # G7.1 PERFDRAW71: far list built this much wider per side while panning
+var _far_rect := Rect2()                   # G7.1 PERFDRAW71: canvas rect the far list was built for
+var _far_origin := Vector2(INF, INF)       # G7.1 PERFDRAW71: canvas origin at that build (moved = panning)
 # G4b (UI4B-3): burnt-out forest cells (TerrainChanged cause "fire"): cell index -> true. Their
 # tree decor is skipped and a burnt_ground variant (cell hash) is drawn flat. Presentation-only:
 # the sim keeps no burnt set, so a loaded save shows plain dirt there (KNOWN GAP).
@@ -177,6 +180,69 @@ var _pips: Dictionary = {}    # id -> 1 + filled ammo pips (BEARER61 bearers), a
 var g61_counts: Dictionary = {}
 var g61_off := OS.get_environment("ANIM61_OFF") == "1"   # perf A/B: G6.1 motion + anim61 frame choice off
 var _no61: Dictionary = {}
+
+# ---------------------------------------------------------------- G7.1 PERFDRAW71-8 per-snapshot unit record cache
+## Owner "cache now, native later" (board seq 599). On frames without the motion layer (> MOTION_CAP units drawn: LP
+## peak, 2k on screen) and not at far LOD, a unit whose draw depends only on its snapshot fields and the anim time (no
+## G6 / bay / air-data / G7 / SQUAD7 / k8 / ship / sling / wounded / evac / amphibian / APC-gun state) keeps a record of
+## its snapshot-only choices (art cache entry, facing row, frame mode, fixed frame src) for the life of that snapshot.
+## Later frames of the same snapshot only re-interpolate its position, redo the terrain / height lift, pick the
+## anim-time frame and push: the same items, values and order as the full path (PD71_RC_VERIFY=1 compares every
+## refresh item for item). A wall-walk cell, a VIS7 swap or a landed craft sends the unit through the full path that
+## frame. PD71_RC=0 = full path only (the reference).
+const RC_FIX := 1    # modes: fixed frame (push fields precomputed)
+const RC_PER := 2    # Motion.inf_col on a motion-off posture: cols[int(t * r1 * r2 + ph) % n]
+const RC_WALK := 3   # 2-frame walk: int(t * 6.0 + id * 0.37) % 2
+const RC_OFFA := 4   # idle officer with the anim61 set: command pose 2 s in 8, else RC_PER idle
+const RC_OFF := 5    # idle officer without it: command pose 2 s in 8, else column 0
+const CB_SQ := 1     # counter bits: gc5.squads, gc5.tactical, gc5.ramp, gc61.a61, gc61.flipped (fixed), air lift
+const CB_TAC := 2
+const CB_RAMP := 4
+const CB_A61 := 8
+const CB_FLIP := 16
+const CB_AIR := 32
+var rc_on := OS.get_environment("PD71_RC") == "1"  # off by default: rc8 verify found 2 diffs at 2k and no measured gain (ORCH 2026-11-09)
+var rc_verify := OS.get_environment("PD71_RC_VERIFY") == "1"
+var rc_hits := 0     # units pushed from a record in the last refresh
+var rc_built := 0    # records made in the last refresh
+var rc_fall := 0     # recorded units sent through the full path in the last refresh (wall walk / VIS7 / crafts)
+var rv_frames := 0   # PD71_RC_VERIFY: refreshes compared / with any difference / record pushes compared
+var rv_diffs := 0
+var rv_hits := 0
+var rv_log := 0
+var rv_skip := 0     # PD71_RC_VERIFY: refreshes not compared (record path off: same code both times)
+var rc_used := false # the last refresh ran with the record path on
+var _rc_sn = null
+var _rc_key: Array = []
+var _rc_k := PackedInt32Array()     # per snapshot index: 0 not tried, -1 full path for this snapshot, else the mode
+var _rc_c: Array = []               # BatchArt cache entry
+var _rc_row := PackedInt32Array()
+var _rc_cb := PackedInt32Array()    # CB_* bits
+var _rc_fa := PackedInt32Array()    # fixed column / walk col A / officer col
+var _rc_fb := PackedInt32Array()    # walk col B / periodic modulus
+var _rc_cols: Array = []            # periodic: the anim61 column array
+var _rc_r := PackedFloat64Array()   # periodic: r1, r2, ph (3 per index); air: alt, bob (indices 3, 4)
+var _rc_pg := PackedInt32Array()    # fixed: page, src, dst offset, dsz, size
+var _rc_src := PackedVector2Array()
+var _rc_off := PackedVector2Array()
+var _rc_dsz := PackedVector2Array()
+var _rc_sz := PackedVector2Array()
+## Statics (plain buildings, resources, wrecks: no facility part, roof badge or sinking wreck) keep one record per
+## snapshot too: their single item is fixed for the snapshot, so later frames only cull it against the view and push it.
+var rs_hits := 0     # statics pushed from a record in the last refresh
+var rs_used := false
+var _rs_sn = null
+var _rs_key: Array = []
+var _rs_k := PackedInt32Array()     # per statics iteration index: 0 not tried, -1 full path, else 1 | 2 vis_bld | 4 see-through
+var _rs_wk := PackedByteArray()     # 1 = wreck (its seen flag is re-checked every frame)
+var _rs_gs := PackedVector2Array()  # ground screen point (the cull test)
+var _rs_ky := PackedInt64Array()    # (int(depth) + Y_OFF) * IDX_MUL
+var _rs_pg := PackedInt32Array()
+var _rs_src := PackedVector2Array()
+var _rs_sz := PackedVector2Array()
+var _rs_dst := PackedVector2Array()
+var _rs_mod := PackedColorArray()
+var _rs_gp := PackedVector2Array()  # ground point (wall pieces: soldier-on-top check)
 
 
 ## Per-cell lift (px) for this frame: ELEV-VIEW's own table wins (exactly what the terrain bake used).
@@ -596,6 +662,220 @@ func _view_rect() -> Rect2:
 ## overlays hold live entity dicts, so they are rebuilt only when no step is in flight (the
 ## overlays redraw only then, too).
 func refresh() -> void:
+	if not rc_verify:
+		_refresh(rc_on)
+		return
+	# G7.1 PERFDRAW71-8 PD71_RC_VERIFY=1: full path, then the record path on the same inputs, compared item for item.
+	# The motion layer (per-unit smoothing state) and the k8 records advance once per refresh: both runs start from the
+	# same copy, so the second run sees exactly the state the first one saw.
+	var mvs := {}
+	for q in motion.vs:
+		mvs[q] = (motion.vs[q] as PackedFloat32Array).duplicate()
+	var k8s := {}
+	for q in _k8:
+		k8s[q] = (_k8[q] as Array).duplicate()
+	var mcorp: Array = motion.corpses.duplicate()
+	_refresh(false)
+	var a := _rc_capture()
+	motion.vs = mvs
+	_k8 = k8s
+	motion.corpses = mcorp
+	_refresh(true)
+	var b := _rc_capture()
+	if (rv_frames + rv_skip) % 120 == 0:
+		print("PD71_RC_VERIFY frames=%d diffs=%d rec_pushes=%d skipped=%d rejects=%d last: used=%s/%s hits=%d st_hits=%d built=%d fall=%d drawn=%d units=%d lod=%d" % [rv_frames, rv_diffs, rv_hits, rv_skip, rc_reject, str(rc_used), str(rs_used), rc_hits, rs_hits, rc_built, rc_fall, drawn, _units_drawn, lod])
+	if not rc_used and not rs_used:
+		rv_skip += 1   # the record path was off for this refresh (motion layer / far LOD): both ran the same code
+		return
+	rv_frames += 1
+	rv_hits += rc_hits
+	var bad: Array = []
+	for k in a:
+		if typeof(a[k]) == TYPE_ARRAY:   # vis_units / vis_bld: the same live dicts, by identity
+			var x: Array = a[k]
+			var y: Array = b[k]
+			if x.size() != y.size():
+				bad.append("%s size %d/%d" % [k, x.size(), y.size()])
+			else:
+				for q in x.size():
+					if not is_same(x[q], y[q]):
+						bad.append("%s[%d]" % [k, q])
+						break
+		elif a[k] != b[k]:
+			var s := "%s" % k
+			if a[k] is PackedInt64Array or a[k] is PackedInt32Array or a[k] is PackedVector2Array or a[k] is PackedColorArray:
+				var m: int = mini(a[k].size(), b[k].size())
+				var j := 0
+				while j < m and a[k][j] == b[k][j]:
+					j += 1
+				s += " at %d/%d: %s / %s" % [j, a[k].size(), str(a[k][j]) if j < a[k].size() else "-", str(b[k][j]) if j < b[k].size() else "-"]
+			else:
+				s += ": %s / %s" % [str(a[k]), str(b[k])]
+			bad.append(s)
+	if not bad.is_empty():
+		rv_diffs += 1
+		if rv_log < 12:
+			rv_log += 1
+			print("PD71_RC_DIFF frame=%d tick=%d hits=%d %s" % [rv_frames, int(mv.snap.get("tick", -1)), rc_hits, "; ".join(bad.slice(0, 6))])
+
+
+## PD71_RC_VERIFY: everything one refresh hands to _draw / the overlays / the playtest counters.
+func _rc_capture() -> Dictionary:
+	return {"n": _n, "keys": _keys.slice(0, _n), "page": _page.slice(0, _n), "src": _src.slice(0, _n),
+		"size": _size.slice(0, _n), "dst": _dst.slice(0, _n), "dsz": _dsz.slice(0, _n), "mod": _mod.slice(0, _n),
+		"sorted": _sorted.duplicate(), "vis_units": vis_units.duplicate(), "vis_sp": vis_sp.duplicate(),
+		"vis_air": vis_air.duplicate(), "vis_bld": vis_bld.duplicate(), "g5": g5_counts.duplicate(),
+		"g6": g6_counts.duplicate(), "g61": g61_counts.duplicate(), "units_drawn": _units_drawn, "ww": [ww_drawn, ww_crouch, ww_front],
+		"bay": [bay_hidden, bay_drawn, fac_drawn], "misc": [walls_linked, bld_see_through, g4b_fx_drawn, lod, motion_on],
+		"badges": str(_badges), "roof": str(_roof_n), "drawn7": drawn7.size()}
+
+
+## G7.1 PERFDRAW71-8: the record for snapshot index i, whose full draw just ended at push ii with column fi; -1 when its
+## draw is not a pure function of its snapshot fields + the anim time (it keeps the full path for this snapshot). The
+## mode re-derives the full path's frame choice for a motion-off unit; it is only kept when it gives this frame's fi.
+var rc_reject := 0   # records refused because the derived frame differed from the full path's (should stay 0)
+func _rc_put(i: int, id: int, c: Array, fl: int, a61: Dictionary, row: int, fi: int, ii: int, dname: String, d0: String,
+		sq: bool, ok: bool, t: float) -> int:
+	if not ok or dname != d0 or (_def_flags(d0) & 3) != 0 or int(c[2]) < 0 or int(c[27]) >= 0 \
+			or (fl & (RenderSnap.FLAG_WOUNDED | RenderSnap.FLAG_EVAC | RenderSnap.FLAG_SLUNG | RenderSnap.FLAG_SHIP | RenderSnap.FLAG_ABOARD)) != 0 \
+			or (a61.has("k8_tum") and _k8.has(id)):
+		return -1
+	var moving := (fl & RenderSnap.FLAG_MOVING) != 0
+	var sd := (id % 61) * 0.0164   # = the motion-off Motion.inf_col seed
+	var m := RC_FIX
+	var cb := CB_SQ if sq else 0
+	var fa := 0
+	var fb := 0
+	var cols = null
+	var r1 := 1.0
+	var r2 := 1.0
+	var ph := 0.0
+	if fl & RenderSnap.FLAG_FIRING:
+		fa = c[20] if (fl & RenderSnap.FLAG_DRONE and c[20] >= 0) else c[7]
+		if not a61.is_empty():   # Motion.inf_col: firing, not pinned: cosmetic reload 0.8 s in 5 s, else fire_s
+			cb |= CB_A61
+			if fposmod(0.0 + sd * 5.0, 5.0) > 4.2:
+				m = RC_PER
+				cols = a61.reload
+				r1 = 3.0
+				fb = 2
+			else:
+				fa = int(a61.fire_s)
+	elif fl & RenderSnap.FLAG_TACTICAL and c[18] >= 0 and not moving:
+		fa = c[18]
+		cb |= CB_TAC
+	else:
+		var pz := -1
+		if fl & POSE_MASK:
+			pz = c[13] if fl & RenderSnap.FLAG_DEPLOYED else (c[14] if fl & RenderSnap.FLAG_WORK else c[15])
+			if fl & RenderSnap.FLAG_UNLOAD and c[29] >= 0 and ((fl >> 8) & 0xFF) > 0:
+				pz = c[29]
+				cb |= CB_RAMP
+		if pz >= 0:
+			fa = pz
+		elif not a61.is_empty():   # Motion.inf_col walk / swalk / idle (no run, crawl, crouch: motion off)
+			m = RC_OFFA if (c[30] >= 0 and not moving) else RC_PER
+			if m == RC_PER:
+				cb |= CB_A61
+			fa = c[30]
+			if moving and a61.has("swalk"):
+				cols = a61.swalk
+				r1 = float(a61.get("swalk_hz", 2.5))
+				r2 = 12.0
+				ph = sd * 12.0
+				fb = 12
+			elif moving:
+				cols = a61.walk
+				r1 = 10.0
+				ph = sd * 6.0
+				fb = 6
+			else:
+				cols = a61.idle
+				r1 = 0.9 + 0.0 * 1.6
+				ph = sd * 2.0
+				fb = 2
+		elif moving:
+			m = RC_WALK
+			if c[8]:
+				fa = c[9]
+				fb = c[10]
+			else:
+				fa = c[11]
+				fb = 0
+		elif c[30] >= 0:
+			m = RC_OFF
+			fa = c[30]
+	# guard: the derived frame must be this frame's
+	var pf := fa
+	if m == RC_PER or (m == RC_OFFA and int(t * 0.5 + id * 0.61) % 4 != 0):
+		pf = int(cols[int(t * r1 * r2 + ph) % fb])
+	elif m == RC_WALK:
+		pf = fa if int(t * 6.0 + id * 0.37) % 2 == 0 else fb
+	elif m == RC_OFF and int(t * 0.5 + id * 0.61) % 4 != 0:
+		pf = 0
+	if pf < 0:
+		pf = 0
+	if pf != fi:
+		rc_reject += 1
+		return -1
+	_rc_c[i] = c
+	_rc_row[i] = row
+	_rc_fa[i] = fa
+	_rc_fb[i] = fb
+	_rc_cols[i] = cols
+	var q := i * 5
+	_rc_r[q] = r1
+	_rc_r[q + 1] = r2
+	_rc_r[q + 2] = ph
+	if c[12]:
+		cb |= CB_AIR
+		var s: Dictionary = G3View._spec(dname)
+		_rc_r[q + 3] = float(s.alt)
+		_rc_r[q + 4] = float(s.bob)
+	if m == RC_FIX:
+		_rc_pg[i] = _page[ii]
+		_rc_src[i] = _src[ii]
+		_rc_dsz[i] = _dsz[ii]
+		_rc_sz[i] = _size[ii]
+		var tb: bool = fi >= int(c[35]) and (c[38] as PackedVector2Array)[fi * 8 + row].x >= 0.0
+		_rc_off[i] = (c[40] as PackedVector2Array)[fi * 8 + row] if tb else (c[6] as Vector2)
+		if tb and _dsz[ii].x < 0.0:
+			cb |= CB_FLIP
+	_rc_cb[i] = cb
+	rc_built += 1
+	return m
+
+
+## G7.1 PERFDRAW71-8: record of static e (statics iteration index j) whose generic draw just ended at push _n - 1; -1 for
+## the ones with per-frame parts (roof badge, sinking wreck).
+func _rs_put(j: int, id, e: Dictionary, kind: String, ow: int, pf: int, gs: Vector2, sn: Dictionary, xf: int) -> int:
+	if kind == "building" and roof_open_for(e.get("roof_open"), pf, mv._ally_fids) and not WALL_LINK.has(String(e.get("def", ""))):
+		return -1
+	if kind == "wreck" and (sn.get("sinking", {}) as Dictionary).get(id) != null:
+		return -1
+	if kind != "building" and kind != "wreck" and kind != "resource":
+		return -1
+	var ii := _n - 1
+	var f := 1 | xf
+	if kind == "building" and (ow == pf or mv.entity_visible(e)):
+		f |= 2
+	if (kind == "building" or kind == "wreck") and _mod[ii].a < 1.0:
+		f |= 4
+	_rs_wk[j] = 1 if kind == "wreck" else 0
+	_rs_gs[j] = gs
+	_rs_ky[j] = _keys[ii] - ii
+	_rs_pg[j] = _page[ii]
+	_rs_src[j] = _src[ii]
+	_rs_sz[j] = _size[ii]
+	_rs_dst[j] = _dst[ii]
+	_rs_mod[j] = _mod[ii]
+	_rs_gp[j] = e.pos
+	return f
+
+
+func _refresh(rc: bool) -> void:
+	rc_used = false
+	rs_used = false
 	var sn: Dictionary = mv.snap
 	if sn.is_empty():
 		return
@@ -610,19 +890,42 @@ func refresh() -> void:
 		_atlas_at = -1.0
 		var st: Dictionary = art.atlas.stats()
 		print("ANIM61_ATLAS pages=%d MB=%.1f units_drawn=%d t=%.1f" % [int(st.pages), float(st.bytes) / 1e6, _units_drawn, t])
+		# G7.1 PERFDRAW71 diag (same env gate): uploads so far, page sizes, page switches in last frame's sorted list
+		var psz: Array = []
+		for pgd in art.atlas.pages:
+			psz.append("%dx%d" % [(pgd.img as Image).get_width(), (pgd.img as Image).get_height()])
+		var sw := 0
+		var lastp := -9
+		var used := {}
+		for k in _sorted:
+			var pi: int = _page[k % IDX_MUL]
+			used[pi] = int(used.get(pi, 0)) + 1
+			if pi != lastp:
+				sw += 1
+				lastp = pi
+		print("PD71_ATLAS uploads=%d items=%d switches=%d used=%s sizes=%s" % [art.atlas.uploads, _sorted.size(), sw, str(used), ",".join(psz)])
 	var alpha: float = mv._alpha
 	var vr := _view_rect()
 	var mem: Dictionary = (sn.get("memory", {}) as Dictionary).get(pf, {})
 	var statics: Dictionary = sn.statics
 	# far LOD draws un-interpolated icons, so the list only changes with the sim tick, the
 	# camera, the fog or the selection: reuse the canvas commands from the last rebuild.
+	# G7.1 PERFDRAW71: far icons are drawn in canvas space, so a pan alone (same zoom) never changes them: the key
+	# holds the zoom (canvas scale), not the whole transform, and the list is reused while the view stays inside the
+	# rect it was built for. While the camera moves, the list is built for the view grown by FAR_PAN_PAD per side
+	# (everything in the view is drawn exactly as before; the extra ring is off screen until the pan reaches it).
 	if far:
-		var key := [int(sn.tick), get_viewport().get_canvas_transform(), get_viewport_rect().size,
+		var ct: Transform2D = get_viewport().get_canvas_transform()
+		var key := [int(sn.tick), ct.get_scale(), get_viewport_rect().size,
 			mv.fog_layer.rebuilds if mv.fog_layer != null else 0, int(sn.entity_count), mem.size(), live]
-		if key == _far_key:
+		if key == _far_key and _far_rect.encloses(vr):
 			skipped += 1
 			return
+		if ct.origin != _far_origin:
+			vr = vr.grow_individual(vr.size.x * FAR_PAN_PAD, vr.size.y * FAR_PAN_PAD, vr.size.x * FAR_PAN_PAD, vr.size.y * FAR_PAN_PAD)
+		_far_origin = ct.origin
 		_far_key = key
+		_far_rect = vr
 	else:
 		_far_key = []
 	if live:
@@ -773,10 +1076,133 @@ func refresh() -> void:
 	ww_front = 0
 	if not _ww_occ.is_empty():
 		_ww_occ.clear()
+	# G7.1 PERFDRAW71-8: per-snapshot unit records (see RC_*): motion-off, non-far frames only
+	var use_rc := rc and not far and not motion_on
+	rc_used = use_rc
+	rc_hits = 0
+	rc_built = 0
+	rc_fall = 0
+	if use_rc:
+		var rkey := [pf, allies.hash(), g61_off, n_u]
+		if not is_same(sn, _rc_sn) or rkey != _rc_key:
+			_rc_sn = sn
+			_rc_key = rkey
+			_rc_k.resize(n_u)
+			_rc_k.fill(0)
+			if _rc_c.size() < n_u:
+				_rc_c.resize(n_u); _rc_cols.resize(n_u); _rc_row.resize(n_u); _rc_cb.resize(n_u); _rc_fa.resize(n_u)
+				_rc_fb.resize(n_u); _rc_r.resize(n_u * 5); _rc_pg.resize(n_u); _rc_src.resize(n_u); _rc_off.resize(n_u)
+				_rc_dsz.resize(n_u); _rc_sz.resize(n_u)
+	var t_u := Time.get_ticks_usec()
 	for i in n_u:
 		if _hc >= 0:
 			_bay_hide[_hc][1] = _n
 			_hc = -1
+		if use_rc and _rc_k[i] > 0:
+			# G7.1 PERFDRAW71-8 record replay: the full path's arithmetic for this unit's per-frame part, in its order
+			var r_raw: Vector2 = pos_a[i]
+			var r_pos := r_raw
+			var r_pp: Vector2 = prev_a[i]
+			if r_pp.distance_squared_to(r_raw) < 4.0:
+				r_pos = r_pp.lerp(r_raw, alpha)
+			var r_sp := Vector2((r_pos.x - r_pos.y) * 32.0, (r_pos.x + r_pos.y) * 16.0)
+			if not vr.has_point(r_sp):
+				continue
+			var r_fl: int = flg_a[i]
+			if not terr.is_empty() and (r_fl & RenderSnap.FLAG_AIR) == 0:
+				var r_ti := floori(r_pos.y) * mw + floori(r_pos.x)
+				if r_ti >= 0 and r_ti < terr.size():
+					r_sp.y -= float(raise.get(int(terr[r_ti]), 0))
+			var r_hl := 0.0
+			if hl_n > 0:
+				var r_hci := floori(r_pos.y) * mw + floori(r_pos.x)
+				if r_hci >= 0 and r_hci < hl_n:
+					r_hl = hl_t[r_hci]
+					if rp6_n > 0 and rp6[r_hci] != 0:
+						r_hl = ViewUtil.ground_lift(hm6, r_pos)
+					r_sp.y -= r_hl
+			var r_id: int = ids[i]
+			if has_cr or (has_x7 and x7.get(r_id) != null) or (has_ww and (r_fl & RenderSnap.FLAG_AIR) == 0 \
+					and _ww_cells.get(Vector2i(floori(r_pos.x), floori(r_pos.y))) != null):
+				rc_fall += 1   # this frame through the full path below (nothing above wrote any state)
+			else:
+				if r_hl != 0.0:
+					gc6.lifted += 1
+				if live:
+					var r_le = ents.get(r_id)
+					if r_le != null:
+						if r_fl & RenderSnap.FLAG_AIR:
+							vis_air.append(vis_units.size())
+						vis_units.append(r_le)
+						vis_sp.append(r_sp)
+				var r_cb: int = _rc_cb[i]
+				if r_cb & CB_SQ:
+					gc5.squads += 1
+				units_drawn += 1
+				var r_c: Array = _rc_c[i]
+				var r_m: int = _rc_k[i]
+				var r_fi := 0
+				if r_m == RC_PER:
+					var r_q := i * 5
+					r_fi = int(_rc_cols[i][int(t * _rc_r[r_q] * _rc_r[r_q + 1] + _rc_r[r_q + 2]) % _rc_fb[i]])
+				elif r_m == RC_WALK:
+					r_fi = _rc_fa[i] if int(t * 6.0 + r_id * 0.37) % 2 == 0 else _rc_fb[i]
+				elif r_m == RC_OFFA or r_m == RC_OFF:
+					if int(t * 0.5 + r_id * 0.61) % 4 == 0:
+						r_fi = _rc_fa[i]
+						gc6.command += 1
+					elif r_m == RC_OFFA:
+						var r_q := i * 5
+						r_fi = int(_rc_cols[i][int(t * _rc_r[r_q] * _rc_r[r_q + 1] + _rc_r[r_q + 2]) % _rc_fb[i]])
+						gc61.a61 += 1
+				if r_cb & CB_A61:
+					gc61.a61 += 1
+				if r_cb & CB_TAC:
+					gc5.tactical += 1
+				if r_cb & CB_RAMP:
+					gc5.ramp += 1
+				var r_layer := 0
+				if r_cb & CB_AIR:
+					r_sp.y -= _rc_r[i * 5 + 3] + sin(t * 3.0 + float(r_id)) * _rc_r[i * 5 + 4]   # = G3View.air_lift
+					r_layer = 1
+				var r_ii := _n
+				if r_ii >= _page.size():
+					_reserve(r_ii * 2 + 16)
+				_keys[r_ii] = r_layer * LAYER_MUL + (int(r_sp.y + r_hl) + Y_OFF) * IDX_MUL + r_ii
+				if r_m == RC_FIX:
+					_page[r_ii] = _rc_pg[i]
+					_src[r_ii] = _rc_src[i]
+					_dst[r_ii] = r_sp + _rc_off[i]
+					_dsz[r_ii] = _rc_dsz[i]
+					_size[r_ii] = _rc_sz[i]
+					if r_cb & CB_FLIP:
+						gc61.flipped += 1
+				else:
+					if r_fi < 0:
+						r_fi = 0
+					var r_row: int = _rc_row[i]
+					var r_tb: Vector2 = Vector2(-1, -1) if r_fi < int(r_c[35]) else (r_c[38] as PackedVector2Array)[r_fi * 8 + r_row]
+					if r_tb.x >= 0.0:
+						var r_k61 := r_fi * 8 + r_row
+						var r_dz: Vector2 = (r_c[39] as PackedVector2Array)[r_k61]
+						_page[r_ii] = r_c[33]
+						_src[r_ii] = r_tb
+						_dst[r_ii] = r_sp + (r_c[40] as PackedVector2Array)[r_k61]
+						_dsz[r_ii] = r_dz
+						_size[r_ii] = Vector2(absf(r_dz.x), r_dz.y)
+						if r_dz.x < 0.0:
+							gc61.flipped += 1
+					else:
+						var r_fsz := Vector2(r_c[4], r_c[5])
+						_page[r_ii] = r_c[2]
+						_src[r_ii] = (r_c[3] as Vector2) + Vector2(r_fi if r_fi < int(r_c[35]) else 0, r_row) * r_fsz
+						_dst[r_ii] = r_sp + (r_c[6] as Vector2)
+						_dsz[r_ii] = r_fsz
+						_size[r_ii] = r_fsz
+				_mod[r_ii] = Color.WHITE
+				_n = r_ii + 1
+				rc_hits += 1
+				continue
 		var id: int = ids[i]
 		if flg_a[i] & RenderSnap.FLAG_ABOARD:
 			gc5.aboard += 1
@@ -985,11 +1411,12 @@ func refresh() -> void:
 			if not a61.is_empty():  # G6.1: fire standing / crouched (suppressed) / prone (pinned), cosmetic reload
 				fi = Motion.inf_col(a61, bits, t, Motion.seed_of(id), float(motion.out_s[Motion.S_FIRE]), float(_fat.get(id, 0.0))) if mcls >= 0 else Motion.inf_col(a61, bits, t, (id % 61) * 0.0164)
 				gc61.a61 += 1
-		elif ad != null and c[21] >= 0 and fl & RenderSnap.FLAG_LANDED:
+		elif ad != null and c[21] >= 0 and fl & RenderSnap.FLAG_LANDED and not (bool(ad.get("hot", false)) and not (c[24] as Array).is_empty()):
 			# G5 (ART-AIR ground_frames): parked in a hangar / on a pad, else landed in the open
 			fi = c[21] if String(ad.ph) == "parked" or (c[22] < 0) else c[22]
-		elif ad != null and not (fl & RenderSnap.FLAG_LANDED) and not (c[24] as Array).is_empty():
+		elif ad != null and (not (fl & RenderSnap.FLAG_LANDED) or bool(ad.get("hot", false))) and not (c[24] as Array).is_empty():
 			# G5 (ART-AIR anim): rotor / prop frames cycle at anim_fps while airborne
+			# G7.1 (CR seq 148): and while landed hot-pit serviced (e.air_hot): rotors / fans keep turning on the pad
 			var an: Array = c[24] if (fl & RenderSnap.FLAG_MOVING) or (c[23] as Array).is_empty() else c[23]
 			fi = an[int(t * float(c[25]) + id * 0.37) % an.size()]
 		elif c[27] >= 0 and G5Art.on_water(terr_w, pos, mw):
@@ -1152,6 +1579,10 @@ func refresh() -> void:
 			_size[ii] = fsz
 		_mod[ii] = mod6
 		_n = ii + 1
+		if use_rc and _rc_k[i] == 0:   # G7.1 PERFDRAW71-8: first full draw of this unit in this snapshot: record it?
+			_rc_k[i] = _rc_put(i, id, c, fl, a61, row, fi, ii, dname, defs[def_a[i]], sq_al > 0, gv == null and sqb == 0 and ad == null \
+				and ww_ky < 0 and not has_cr and tur.is_empty() and mcls < 0 and not (has_g6 and (fl & RenderSnap.FLAG_G6) != 0) \
+				and not (has_x7 and x7.get(id) != null) and not (not v61.is_empty() and ApcGun7.DEFS.has(dname)) and layer == (1 if c[12] else 0), t)
 		if not tur.is_empty():  # G6.1 (ANIMC61): turret over its hull (same depth, later index sorts after)
 			_push(layer, sp.y + hl, tur[0], Rect2(tur[1], tur[3]), sp + (tur[2] as Vector2), tur[3], mod6)
 			gc61.turret += 1
@@ -1166,6 +1597,7 @@ func refresh() -> void:
 			_g5_markers(sp, fl, id, t, neutral, gc5)
 		if gv != null and gv.has("b8u") and not far:   # G7 BLAST8: knocked out by a blast: "zzz" over him until he wakes
 			_b8_zzz(sp, t, id)
+	ViewUtil.prof_add("p_e2u_units", t_u)   # G7.1 PERFDRAW71-8: the unit loop alone (part of p_e2_ents)
 	_units_drawn = units_drawn
 	if _hc >= 0:
 		_bay_hide[_hc][1] = _n
@@ -1175,7 +1607,49 @@ func refresh() -> void:
 	if not far:
 		_push_corpses(vr, t, gc61)
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
+	var use_rs := rc and not far   # G7.1 PERFDRAW71-8: per-snapshot static records
+	rs_used = use_rs
+	rs_hits = 0
+	var n_st := statics.size()
+	if use_rs:
+		var skey := [pf, allies.hash(), _fac_e.is_empty(), n_st, _fac_e_tick, _wall_gen, _wall_dirty, _wall_nstat]
+		if not is_same(sn, _rs_sn) or skey != _rs_key:
+			_rs_sn = sn
+			_rs_key = skey
+			_rs_k.resize(n_st)
+			_rs_k.fill(0)
+			if _rs_gs.size() < n_st:
+				_rs_wk.resize(n_st); _rs_gs.resize(n_st); _rs_ky.resize(n_st); _rs_pg.resize(n_st); _rs_src.resize(n_st)
+				_rs_sz.resize(n_st); _rs_dst.resize(n_st); _rs_mod.resize(n_st); _rs_gp.resize(n_st)
+	var sj := -1
 	for id in statics:
+		sj += 1
+		if use_rs and _rs_k[sj] > 0 and not (_rs_wk[sj] != 0 and not _seen_wrecks.has(id)) \
+				and not (_rs_k[sj] & 16 and not _ww_occ.is_empty() and _ww_occ.has(_rs_gp[sj])):
+			if not vr.has_point(_rs_gs[sj]):
+				continue
+			var s_f: int = _rs_k[sj]
+			if s_f & 2 and live:
+				var s_le = ents.get(id)
+				if s_le != null:
+					vis_bld.append(s_le)
+			if s_f & 4:
+				bld_see_through += 1
+			if s_f & 8:
+				walls_linked += 1
+			var s_ii := _n
+			if s_ii >= _page.size():
+				_reserve(s_ii * 2 + 16)
+			_keys[s_ii] = _rs_ky[sj] + s_ii
+			_page[s_ii] = _rs_pg[sj]
+			_src[s_ii] = _rs_src[sj]
+			_size[s_ii] = _rs_sz[sj]
+			_dst[s_ii] = _rs_dst[sj]
+			_dsz[s_ii] = _rs_sz[sj]
+			_mod[s_ii] = _rs_mod[sj]
+			_n = s_ii + 1
+			rs_hits += 1
+			continue
 		var e: Dictionary = statics[id]
 		var kind: String = e.kind
 		var ow := int(e.owner)
@@ -1250,15 +1724,21 @@ func refresh() -> void:
 			bld_see_through += 1
 		if kind == "building" and _vpad_px(e):   # ART7F: dropship landing site, flat under everything that stands on it
 			_push(0, 1.0 - float(Y_OFF), art.out_page, art.out_src, gd + art.out_off, art.out_src.size, mod)
+			if use_rs and _rs_k[sj] == 0:
+				_rs_k[sj] = _rs_put(sj, id, e, kind, ow, pf, gs, sn, 0)
 			continue
 		if kind == "building" and FAC_ZONE_PARTS.has(String(e.get("def", ""))) and not _fac_e.is_empty():
 			continue   # FACB7-2: the magazine cell / Sentinel barracks are drawn by their zone art
 		if kind == "building" and _facb_px(e):   # FACB7-2: gatehouse (ECP), wash link walls, ECP baffles
 			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+			if use_rs and _rs_k[sj] == 0:
+				_rs_k[sj] = _rs_put(sj, id, e, kind, ow, pf, gs, sn, 0)
 			continue
 		if kind == "building" and _wall_px(e):   # ART7F: facility wall autotile
 			_push(0, gs.y, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 			walls_linked += 1
+			if use_rs and _rs_k[sj] == 0:
+				_rs_k[sj] = _rs_put(sj, id, e, kind, ow, pf, gs, sn, 8 | 16)
 			if not _ww_occ.is_empty() and _ww_occ.has(e.pos) and _wall_front_px(e):   # WALL7-2: parapet over its soldiers
 				_push(0, float(int((e.pos.x + e.pos.y) * 16.0) + Motion.WALL_DEPTH_PAD + 1), art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
 				ww_front += 1
@@ -1270,6 +1750,8 @@ func refresh() -> void:
 			# by its centre, so a helicopter parked on it sorted behind and only its tail showed past the pad's corner)
 			var fdep: float = 1.0 - float(Y_OFF) if kind == "building" and _flat_pad(String(e.get("def", ""))) else gs.y
 			_push(0, fdep, art.out_page, art.out_src, gd + art.out_off + Vector2(0, sdy), art.out_src.size, mod)
+			if use_rs and _rs_k[sj] == 0:   # G7.1 PERFDRAW71-8: first full draw of this static in this snapshot
+				_rs_k[sj] = _rs_put(sj, id, e, kind, ow, pf, gs, sn, 0)
 	_push_strips(sn, vr, pf, mem, statics, gc5)
 	ViewUtil.prof_add("p_e2_ents", t_sub)
 	t_sub = Time.get_ticks_usec()
@@ -2001,7 +2483,10 @@ var _fpad: Dictionary = {}
 func _flat_pad(def: String) -> bool:
 	var v = _fpad.get(def)
 	if v == null:
-		v = String(Content.building(def).get("air_field", "")) == "helipad"
+		# G7.1 PERFDRAW71-6: the FARP (air_field "forward_helipad", AIRFIX71 A2) is a flat pad too, else its body sorts
+		# in front of the helicopters landed on it (pt71_perfdraw71 hot-pit shots showed the block hiding the heli)
+		var bd: Dictionary = Content.building(def)
+		v = String(bd.get("air_field", "")) in ["helipad", "forward_helipad"] or bool(bd.get("farp", false))
 		_fpad[def] = v
 	return v
 
@@ -2059,7 +2544,9 @@ static func wall_cells_of(statics: Dictionary, facs: Array) -> Dictionary:
 	return cells
 
 
+var _wall_gen := 0   # G7.1 PERFDRAW71-8: bumps on every wall-line rebuild (static records key)
 func _wall_rebuild() -> void:
+	_wall_gen += 1
 	_wall_dirty = false
 	_wall_nfac = _fac_e.size()
 	var sn: Dictionary = mv.snap if mv != null else {}

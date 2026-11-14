@@ -290,6 +290,8 @@ static func _discover(w: SimWorld) -> void:
 		if (st.bays as Dictionary).has(str(int(k))):
 			continue
 		st.bays[str(int(k))] = _new_bay(w, int(k), int(F.owner))
+		var dz: Rect2 = SimWorld.CnFacility.zone(F, "drone_bay")   # AIRFIX71 (G7.1 A1): the bay's dock joins the home-pad registry
+		load("res://sim/systems/pads71.gd").register(w, "dock:%d" % int(k), "drone_dock", int(F.owner), dz.get_center(), dz.size.x, int(k), 0.0, int(R().cap))
 		w.emit("DroneBayReady", {"fac": int(k), "owner": int(F.owner), "cap": int(R().cap)})
 
 

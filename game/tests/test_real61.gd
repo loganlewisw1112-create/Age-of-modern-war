@@ -142,7 +142,7 @@ func test_fatigue_march_rest_and_assault() -> void:
 	for lp in legs + legs:
 		var p0: Vector2 = e.pos
 		do_cmd(w, 0, {"type": "move", "unit_ids": [u], "target": lp})
-		_steps(w, 340)
+		_steps(w, roundi(340.0 / float(Content.rules().get("g71_speed_mult", 1.0))))   # G7.1 A5: same march / rest split per leg as at G7 speed
 		walked += (e.pos as Vector2).distance_to(p0)
 	var f1 := Fatigue.level(w, e)
 	check(walked > 60.0, "the unit marched (%s tiles)" % walked)

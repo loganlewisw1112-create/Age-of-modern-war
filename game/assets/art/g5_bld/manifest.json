@@ -2947,6 +2947,9 @@
     "g6": [
       "lay_sea_mines"
     ],
+    "g71": [
+      "air_patrol"
+    ],
     "modes": [
       "build_hangar_light",
       "build_hangar_heavy",
@@ -3752,6 +3755,7 @@
     "icons/a_supply_pier.png": "ac9bb78a894b72f63fa8115433c250f7",
     "icons/a_transport_gunship.png": "0c1bfa92c6fab6f2a3be2181af7e7393",
     "icons/a_vtol_dropship.png": "4b664fb9f099106e804edeffbb1f3e3d",
+    "icons/air_patrol.png": "0cffe79e426764a05156edd118bbe106",
     "icons/assign_engineers.png": "b3c15fdd0c1ab689da68faac7c8a8fa9",
     "icons/b_aerodrome.png": "ecbc33f7a779224c0024f6c9c6e23529",
     "icons/b_air_tower.png": "eaa39f28aa6a5719aa83d4659fc0cf46",
@@ -4005,6 +4009,7 @@
     "a_supply_pier": "icons/a_supply_pier.png",
     "a_transport_gunship": "icons/a_transport_gunship.png",
     "a_vtol_dropship": "icons/a_vtol_dropship.png",
+    "air_patrol": "icons/air_patrol.png",
     "assign_engineers": "icons/assign_engineers.png",
     "b_aerodrome": "icons/b_aerodrome.png",
     "b_air_tower": "icons/b_air_tower.png",

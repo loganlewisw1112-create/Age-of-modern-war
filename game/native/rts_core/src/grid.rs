@@ -49,6 +49,69 @@ impl RtsGrid {
         }
     }
 
+    /// G7.1 PERFSIM71-5: largest item radius (the nearest_enemy_batch query margin).
+    pub(crate) fn max_rad(&self) -> f32 {
+        self.rad.iter().cloned().fold(0.0f32, f32::max)
+    }
+
+    /// One nearest_enemy_batch entry (moved here unchanged so RtsCombat.find shares it): the id of the
+    /// nearest item of another team within range (+ its radius), flags sharing a bit with need when
+    /// need != 0; ties: lower id; -1 if none or si out of range.
+    pub(crate) fn nearest_one(&self, si: usize, range: f32, need: i32, max_rad: f32) -> i32 {
+        if si >= self.ids.len() {
+            return -1;
+        }
+        let c = self.pos[si];
+        let my_team = self.team[si];
+        let mut best_id = -1i32;
+        let mut best_d2 = f32::INFINITY;
+        self.for_each_near(c, range + max_rad, |j| {
+            if self.team[j] == my_team || (need != 0 && (self.flags[j] & need) == 0) {
+                return;
+            }
+            let d = self.pos[j] - c;
+            let d2 = d.x * d.x + d.y * d.y;
+            let lim = range + self.rad[j];
+            if d2 > lim * lim {
+                return;
+            }
+            if d2 < best_d2 || (d2 == best_d2 && self.ids[j] < best_id) {
+                best_d2 = d2;
+                best_id = self.ids[j];
+            }
+        });
+        best_id
+    }
+
+    /// scan_vis_sorted into a reusable buffer (moved here unchanged): items of another team within r
+    /// on a visible cell (v[cell] == 1), as (f32 distance_squared, id) sorted by distance then id.
+    pub(crate) fn scan_sorted_buf(&self, center: Vector2, r: f32, my_team: i32, v: &[u8], mw: i32, out: &mut Vec<(f32, i32)>) {
+        out.clear();
+        let r2 = r * r;
+        let nv = v.len() as i64;
+        if nv == 0 {
+            return;
+        }
+        self.for_each_near(center, r, |i| {
+            if self.team[i] == my_team {
+                return;
+            }
+            let p = self.pos[i];
+            let d = p - center;
+            if d.x * d.x + d.y * d.y > r2 {
+                return;
+            }
+            let vi = (p.y.floor() as i64) * (mw as i64) + (p.x.floor() as i64);
+            if vi < 0 || vi >= nv || v[vi as usize] != 1 {
+                return;
+            }
+            let ex = center.x - p.x;
+            let ey = center.y - p.y;
+            out.push((ex * ex + ey * ey, self.ids[i]));
+        });
+        out.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+    }
+
     fn capsule_items(&self, from: Vector2, dir: Vector2, u0: f32, ln: f32, off: f32) -> Vec<(f32, i32)> {
         let mut out: Vec<(f32, i32)> = Vec::new();
         if self.gw <= 0 || self.items.is_empty() || ln < u0 {
@@ -191,31 +254,8 @@ impl RtsGrid {
     /// legal one, which is the (distance, id) argmin of the legal set.
     #[func]
     fn scan_vis_sorted(&self, center: Vector2, r: f32, my_team: i32, vis: PackedByteArray, mw: i32) -> PackedInt32Array {
-        let r2 = r * r;
-        let v = vis.as_slice();
-        let nv = v.len() as i64;
         let mut out: Vec<(f32, i32)> = Vec::new();
-        if nv == 0 {
-            return PackedInt32Array::new();
-        }
-        self.for_each_near(center, r, |i| {
-            if self.team[i] == my_team {
-                return;
-            }
-            let p = self.pos[i];
-            let d = p - center;
-            if d.x * d.x + d.y * d.y > r2 {
-                return;
-            }
-            let vi = (p.y.floor() as i64) * (mw as i64) + (p.x.floor() as i64);
-            if vi < 0 || vi >= nv || v[vi as usize] != 1 {
-                return;
-            }
-            let ex = center.x - p.x;
-            let ey = center.y - p.y;
-            out.push((ex * ex + ey * ey, self.ids[i]));
-        });
-        out.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal).then(a.1.cmp(&b.1)));
+        self.scan_sorted_buf(center, r, my_team, vis.as_slice(), mw, &mut out);
         let ids: Vec<i32> = out.iter().map(|q| q.1).collect();
         PackedInt32Array::from(ids.as_slice())
     }
@@ -255,6 +295,104 @@ impl RtsGrid {
         let out: Vec<i32> = v.iter().map(|x| x.1).collect();
         PackedInt32Array::from(out.as_slice())
     }
+
+    /// G7.1 PERFSIM71 (exact): stray8._sidestep's collect prefilter in one call. The ids query_radius(center, r)
+    /// returns (ascending), each put through the same packed-npos box test GDScript runs (PERF8 in _sidestep):
+    /// rp = npos[nix[id]] - from (f32), la = |rp.dot(nrm)|, lo = rp.dot(dir) (f32 dots, as Vector2.dot), then in f64
+    /// dla = max(la - omax, 0), dlo = max(max(fmin - lo, lo - fmax), 0), far when dla^2 + dlo^2 > rb2. Near ids (and
+    /// ids with no packed slot, which GDScript also passes through) come back as id; far ids as -id - 1 when keep_far,
+    /// else dropped (GDScript `continue`s them when no retarget is possible). Input order is kept.
+    #[func]
+    fn ss_split(
+        &self,
+        center: Vector2,
+        r: f32,
+        from: Vector2,
+        dir: Vector2,
+        nrm: Vector2,
+        omax: f64,
+        fmin: f64,
+        fmax: f64,
+        rb2: f64,
+        keep_far: bool,
+        nix: PackedInt32Array,
+        npos: PackedVector2Array,
+    ) -> PackedInt32Array {
+        let r2 = r * r;
+        let mut ids: Vec<i32> = Vec::new();
+        self.for_each_near(center, r, |i| {
+            let d = self.pos[i] - center;
+            if d.x * d.x + d.y * d.y <= r2 {
+                ids.push(self.ids[i]);
+            }
+        });
+        ids.sort_unstable();
+        let nx = nix.as_slice();
+        let np = npos.as_slice();
+        let mut out: Vec<i32> = Vec::with_capacity(ids.len());
+        for &cv in ids.iter() {
+            let ci = if cv >= 0 && (cv as usize) < nx.len() { nx[cv as usize] } else { -1 };
+            if ci >= 0 && (ci as usize) < np.len() {
+                let rp = np[ci as usize] - from;
+                let la = ((rp.x * nrm.x + rp.y * nrm.y) as f64).abs();
+                let lo = (rp.x * dir.x + rp.y * dir.y) as f64;
+                let dla = (la - omax).max(0.0);
+                let dlo = (fmin - lo).max(lo - fmax).max(0.0);
+                if dla * dla + dlo * dlo > rb2 {
+                    if keep_far {
+                        out.push(-cv - 1);
+                    }
+                    continue;
+                }
+            }
+            out.push(cv);
+        }
+        PackedInt32Array::from(out.as_slice())
+    }
+
+    /// G7.1 PERFSIM71 (exact): stray8._muzzle_blocked's candidate prefilter in one call. The ids
+    /// query_capsule(from, dir, u0 - 0.01, ln + 0.01, co + 0.01) returns (ascending), keeping those GDScript's loop
+    /// would not skip before a Dictionary read: an id with no packed slot passes; a packed one passes when its npos
+    /// satisfies u0 <= (npos - from).dot(dir) <= ln and |(npos - from).cross(dir)| <= co (f32 dot / cross, f64
+    /// compares, as GDScript) AND its packed team nteam[ci] equals my_team (the loop only counts the shooter's own men,
+    /// owner == shooter owner, and same owner means the same packed team: combat.gd builds both from one teams map).
+    #[func]
+    fn mz_cands(
+        &self,
+        from: Vector2,
+        dir: Vector2,
+        u0: f64,
+        ln: f64,
+        co: f64,
+        my_team: i32,
+        nix: PackedInt32Array,
+        npos: PackedVector2Array,
+        nteam: PackedInt32Array,
+    ) -> PackedInt32Array {
+        let mut v = self.capsule_items(from, dir, (u0 - 0.01) as f32, (ln + 0.01) as f32, (co + 0.01) as f32);
+        v.sort_unstable_by_key(|x| x.1);
+        let nx = nix.as_slice();
+        let np = npos.as_slice();
+        let nt = nteam.as_slice();
+        let mut out: Vec<i32> = Vec::with_capacity(v.len());
+        for &(_, cv) in v.iter() {
+            let ci = if cv >= 0 && (cv as usize) < nx.len() { nx[cv as usize] } else { -1 };
+            if ci >= 0 && (ci as usize) < np.len() {
+                let rp = np[ci as usize] - from;
+                let cp = (rp.x * dir.x + rp.y * dir.y) as f64;
+                let cr = ((rp.x * dir.y - rp.y * dir.x) as f64).abs();
+                if cp < u0 || cp > ln || cr > co {
+                    continue;
+                }
+                if (ci as usize) < nt.len() && nt[ci as usize] != my_team {
+                    continue;
+                }
+            }
+            out.push(cv);
+        }
+        PackedInt32Array::from(out.as_slice())
+    }
+
     /// For each source item index s (into the last rebuild), the id of the nearest item with a
     /// different team whose centre is within ranges[k] (+ the target's radius), and, when
     /// need_flags[k] != 0, whose flags share a bit with it. -1 if none. Ties: lower id.
@@ -269,35 +407,11 @@ impl RtsGrid {
         let rs = ranges.as_slice();
         let nf = need_flags.as_slice();
         let mut out: Vec<i32> = Vec::with_capacity(src.len());
-        let max_rad = self.rad.iter().cloned().fold(0.0f32, f32::max);
+        let max_rad = self.max_rad();
         for (k, &si) in src.iter().enumerate() {
-            let si = si as usize;
-            if si >= self.ids.len() {
-                out.push(-1);
-                continue;
-            }
             let range = if k < rs.len() { rs[k] } else { 0.0 };
             let need = if k < nf.len() { nf[k] } else { 0 };
-            let c = self.pos[si];
-            let my_team = self.team[si];
-            let mut best_id = -1i32;
-            let mut best_d2 = f32::INFINITY;
-            self.for_each_near(c, range + max_rad, |j| {
-                if self.team[j] == my_team || (need != 0 && (self.flags[j] & need) == 0) {
-                    return;
-                }
-                let d = self.pos[j] - c;
-                let d2 = d.x * d.x + d.y * d.y;
-                let lim = range + self.rad[j];
-                if d2 > lim * lim {
-                    return;
-                }
-                if d2 < best_d2 || (d2 == best_d2 && self.ids[j] < best_id) {
-                    best_d2 = d2;
-                    best_id = self.ids[j];
-                }
-            });
-            out.push(best_id);
+            out.push(self.nearest_one(si as usize, range, need, max_rad));
         }
         PackedInt32Array::from(out.as_slice())
     }

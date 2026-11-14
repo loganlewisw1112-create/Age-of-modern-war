@@ -1,0 +1,34 @@
+{
+  "agent": "FLOW71",
+  "gen": 1,
+  "reason": "budget.handoff_now (guard 71% at ~75 calls); ~79 calls used, est ~450k tokens",
+  "done": [
+    "sim/systems/flow71.gd complete: front_point (LP: most threatened sector of the front ring via LpDefence.scan; else last-seen enemy nearest HQ minus front_back_off; else 40% HQ->enemy spawn), send(), flow_send / flow_auto / flow_template_save / flow_template_launch validate+apply, auto-deploy (ProductionCompleted scan; squad items go at once, singles batch deploy_group=4 / deploy_batch_wait=120 then one squad), auto refuel/rearm trips to nearest HQ/supply_point/is_supply unit and back to old task (skips aircraft, hold, Hold Position, fresh player orders, convoys, wounded, squads with an ammo bearer for ammo), reinforce/retrain (register squad make-up, queue single-unit items or the squad item via Production validate/apply, replacements join via FlowJoined), templates launch from available units nearest the target + queue missing parts (tq) that go to the target on completion. State w.sys_state.flow71 (String keys) + e.fl71; tick returns at once when unused.",
+    "content/g71/rules_g71_flow.json (rules.g71_flow, all numbers PROVISIONAL)",
+    "tests/test_flow71.gd 12/12 PASS on the pre-registration path (RESULT pass=12 fail=0): unused costs nothing, cost with all toggles on 600 units < 0.5 ms/tick, unused < 5 us/tick, front rules, send to front, send from building, auto-deploy squad goes, Hold Position never auto-moved, rearm trip returns to task, reinforce back to 4, template save+launch, determinism two runs, save/load mid-template + 200 ticks identical",
+    "presentation/ui71/flow_bar.gd: FRONT / ATTACK HERE (begin_point_pick) / FUEL AMMO REINF TRAIN toggles (squad scope) / AUTO-DEPLOY (producer) / name box + SAVE PKG (match template + user://flow71_presets.json preset) / one button per package (click + map click). Presets re-created in a fresh match on first refresh.",
+    "presentation/ui7/cardbar8.gd: preload FlowBar, var flow_bar mounted in build() as last child of FacCardStrip, kept last on attach(), counted in place() showing + height",
+    "ui_fit headless (hud_barracks, hud_army, hud_hq, ui8_bar_barracks, 7 res): 0 issues on FlowBar71 (35 issues all Root/BottomPanel vs Root/GroupBar, not mine). Windowed shots in .plan/shots/FLOW71/, two posted as fact shots.best",
+    "tools/pt71_flow71.gd written (check-only clean): 4 click-count cases infantry (select barracks, AUTO-DEPLOY, train = 3), armour (box select, FRONT = 2), CN package and air package (package button + target = 2), each then waits for a member with a target (fighting); logs FLOW71-CLICKS <case> <n>"
+  ],
+  "not_done": [
+    "Re-run tests/test_flow71.gd on the REGISTERED path (ORCH was applying world.gd registration at handoff; grep shows 6 Flow71 lines in sim/world.gd now): bash tests/run.sh --only=test_flow71",
+    "Run pt71_flow71 windowed via hb.sh: G=<godot console exe>; bash .plan/hb.sh <ID> <calls> <est> pt71_flow71 -- timeout 900 \"$G\" --path . -- --ui-playtest=\"C:/CODING/PROJECTS - CURRENTLY WORKING ON/RTS Age of Modern Warfare/game/.plan/shots/FLOW71/pt\" --ui-playtest-flow71 ; need PLAYTEST RESULT all ok, 0 SCRIPT ERROR; fix flow-side misses (likely: pt._g5_select_many signature/return, _card_find of 'Rifle Squad (4)', air units attack_move via Movement.apply_command may not suit aircraft, CN defs spawn in skirmish); LOOK at flow71_*.png and post best as fact shots.best with click counts",
+    "Compile check whole tree after registration: timeout 240 \"$G\" --headless --path . --quit-after 60 | grep SCRIPT ERROR",
+    "Check test_hot_state hash unchanged (Flow71 in SYSTEM_ORDER does nothing when unused, so GOLD should not move); run --only=test_hot_state once",
+    "Optional gaps: hotkeys for the flow bar (hotkeys.gd change_request), aircraft excluded from auto refuel/rearm (AIRFIX71/AIRS own pads), no dedicated repair trip (vehicles use existing repair), ops/reserve cards reach the bar through selection (no extra buttons on those cards)"
+  ],
+  "exact_next_step": "Wait for fact world.flow71_registered, then: bash tests/run.sh --only=test_flow71 (expect 12/12), then the pt71_flow71 windowed run above.",
+  "files_touched": [
+    "sim/systems/flow71.gd (new)",
+    "content/g71/rules_g71_flow.json (new)",
+    "tests/test_flow71.gd (new)",
+    "presentation/ui71/flow_bar.gd (new)",
+    "presentation/ui7/cardbar8.gd (FlowBar mount: const, var flow_bar, build(), attach(), place())",
+    "tools/pt71_flow71.gd (new)",
+    ".plan/shots/FLOW71/* (fit screenshots)"
+  ],
+  "uncommitted_state": "All files above uncommitted on branch g71 (ORCH commits). No git commands run. A background poll (grep world.gd, under hb.sh) may still be running and exits on its own within 9 min.",
+  "change_requests": ["need change_request.world_system_slot seq 16 (+ reminder 63): Flow71 preload, SYSTEM_ORDER after Convoy, 4 COMMANDS, DIRECT_ORDERS += flow_send, flow_template_launch — being applied by ORCH at handoff"],
+  "hashes": "No golden touched. Flow71 is inert unless a flow command is issued (no sys_state key created), so existing hashes should not move."
+}

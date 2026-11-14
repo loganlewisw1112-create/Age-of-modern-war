@@ -1,0 +1,30 @@
+{
+  "agent": "UIFIX71-1",
+  "status": "recycled (budget.handoff_now at 87 calls)",
+  "tests": {
+    "test_ui6a": {
+      "state": "GREEN in the live tree: RESULT pass=8 fail=0 (was 7/1), log .plan/uifix71/test_ui6a_after2.log",
+      "cause_1": "CONTROL71 raised minimap DEFAULT_SIZE 192 -> 208; minimap._init sets custom_minimum_size/size from SIZE, so hud.gd's later `_minimap.SIZE = 206` (ORCH, CR 164) never reached the layout. BottomPanel min height = 208 + inset 6 + frame 16 = 230 > BOTTOM_H 220 (grow up) -> top at -230 over the GroupBar Idle / group buttons (bottom -228, -226) and the G2 group panel (-222). Probe: .plan/uifix71/probe_before.log (BottomPanel min 230) vs probe_after.log (220). Even 206 would give 228 (> 226 group bar, > 222 group panel / cargo strip / side panels).",
+      "fix_1": "presentation/hud/minimap.gd: SIZE got a setter that also sets custom_minimum_size and size. presentation/hud/hud.gd _build_bottom: `_minimap.SIZE = int(BOTTOM_H - UiKit.box(\"frame\").get_minimum_size().y - mmsb.get_minimum_size().y)` = 198 (largest square the 220 px panel holds; G7 had 192). Panel stays 220, cargo strip / group bar / group panel unmoved.",
+      "cause_2": "FLOW71 flow_bar.gd rows were HBoxContainers (row 1 min 399). At 1280x720 / 150% CardBar8.place() moves the FacCardStrip (now holding FlowBar71) into the 270 px inspector -> InspectorScroll min 421 -> BottomPanel min 1161 > canvas 1066 -> CLIP (and the command card can then lock at 5 columns). HEAD fda25f9 has 0 issues there (.plan/uifix71/fit_head_720_s15.log).",
+      "fix_2": "presentation/ui71/flow_bar.gd: _row1/_row2 are HFlowContainers (h_separation 3, v_separation 2), _btn(row: HFlowContainer,...); buttons wrap instead of widening the inspector. Fit 1280x720 s=1/1.5 hud_idle, hud_army, ui6a_hud_company(_hq): 0 issues (.plan/uifix71/fit_live_720_s15_b.log, shots_after.log)."
+    },
+    "test_ui_fit": {
+      "state": "NOT VERIFIED: the one full run was started at ~07:30 (hb.sh, log .plan/uifix71/test_ui_fit_after.log) and stopped by the handoff directive before RESULT. Same fixes cover it (every reported issue was the same BottomPanel/GroupBar overlap).",
+      "next_step": "bash .plan/hb.sh <ID> <calls> <est> \"test_ui_fit\" -- bash tests/run.sh --only=test_ui_fit  (~18 min); expect pass=6 fail=0. Then test_ui6b and test_perfdraw71 (cover minimap.gd) once each."
+    }
+  },
+  "other_tests_after_fix": {
+    "test_flow71": "12/0 (.plan/uifix71/test_flow71_after2.log)",
+    "test_control71": "6/0 (.plan/uifix71/test_control71_after2.log)",
+    "test_ui_panels": "4/1 (.plan/uifix71/test_ui_panels_after2.log): PROBE FAIL hotkey build_rail=X bound to G6_sweep + badge build_rail missing (direct probe: .plan/uifix71/panel_probe_live.log). NOT from these 3 files: none touches hotkeys/card registration, and my pre-edit shot (.plan/shots/UIFIX71/before/hud_army_bottom_crop.png, taken before any edit) already shows the shifted badges (minefield U, sweep X, rail Z). Frozen suite71 had 5/0, so it came in after 2026-11-09 07:32; files changed since then in the live tree besides mine: presentation/art/art_catalog.gd, tools/art/g5_bld_icons.gd, content/g71/defs_g71_air.json (ARTFIX71-1), sim/systems/apc7.gd, sim/systems/wounds.gd (SPEEDCN71-1). Needs an owner."
+  },
+  "files_touched": [
+    "presentation/hud/minimap.gd (CRLF kept; backup .plan/uifix71/minimap.gd.orig)",
+    "presentation/hud/hud.gd (CRLF kept; backup .plan/uifix71/hud.gd.orig)",
+    "presentation/ui71/flow_bar.gd (untracked wave-1 file, LF kept; backup .plan/uifix71/flow_bar.gd.orig)"
+  ],
+  "scratch": ".plan/uifix71/ (probe_bottom.gd probe, fit/probe logs), .plan/shots/UIFIX71/ (before/after shots)",
+  "sim_hashes": "no sim file touched (presentation only), test_hot_state / bench hashes unaffected",
+  "uncommitted": "all three edits are uncommitted in the live tree; no git writes"
+}

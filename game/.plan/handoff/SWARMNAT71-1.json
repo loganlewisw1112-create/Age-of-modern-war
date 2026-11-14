@@ -1,0 +1,32 @@
+{
+  "id": "SWARMNAT71",
+  "gen": 1,
+  "written_by": "SWARMNAT71-1",
+  "reason": "budget projection at the 70% mark (312k + 2.3k x ~88 calls = ~515k of 750k); clean stop. Brief step 2 STOP rule hit: owner.lp_peak.ask2 posted (seq 953); nothing native built.",
+  "done": [
+    "Step 1 measured (fact swarmnat71.split seq 946): tools/swarmnat71_frame.gd (new diag, extends perf71_draw_lp.gd) timestamps process-step start / RenderingServer.frame_pre_draw / frame_post_draw + root viewport render CPU/GPU in windows A normal, B entity layer hidden, C normal, D sim paused, E paused+entity hidden, F paused, G paused + every MatchView CanvasItem child hidden. Run m1u (LOADED PC: load 100%, 7 other godot): A frame 99.8 / process 87.7 / render 11.6 / GPU 8.3 / 1494 dc; B render 10.4 / GPU 7.1; C render 12.3 / GPU 7.5; G (HUD + engine only) render 6.5 / GPU 6.3 / 132 dc. Logs .plan/swarmnat71/m1u.out, m1u_r1.log.",
+    "Finding: quiet LP peak ~41.5 ms = process step ~30 (entity layer 18.6, terrain group 3.4, fx ~2, overlay draws ~3.3, unmeasured scripts ~3) + render ~10-11 (GPU-bound). Entity canvas commands are only ~1.2 ms of render; HUD+engine GPU floor 6.3 ms. Even a free entity layer leaves ~23 ms (~43 fps); all-native best case ~27.5 ms (~33-36 p10 PROVISIONAL). Performance.TIME_PROCESS is a per-second MAX (proc_ms spikes), not a frame average.",
+    "Step 2: docs/SWARM_NATIVE71.md written (split, per-unit reads, design of RtsSwarmDraw: art records, native motion store with take/give handover, per-frame kernel that returns at the first non-plain unit so push order/keys are unchanged, append_array merge; exactness = per-frame record-for-record verify incl. 23-float motion state + looked-at pixel A/B + test_hot_state/test_perfsim71 per swap; per-part estimate table; options a-d). fact owner.lp_peak.ask2 seq 953 (recommendation: GPU-floor probe + (d) static records alone now, then a + c).",
+    "ORCH first-priority task done: sim/render_snap.gd g71 provider hook (static register_g71(key, provider) / unregister_g71(key) / g71_keys(); provider.call(w, snap) once per build after every built-in field, result at snap.g71[key]; empty registry = no loop, no key). New tests/test_swarmnat71.gd test_g71_hook pass=1 fail=0 (.plan/swarmnat71/t1_test_swarmnat71.log). Parse-check clean, LF. fact render_snap.g71_hook seq 872. Backup of the pre-edit file: .plan/swarmnat71/render_snap.gd.orig1."
+  ],
+  "not_done_or_unverified": [
+    "UPDATE after handback: the queued quiet-gated m1.sh has ENDED (exit 1) without a run; m1.out says: NOT_QUIET load=100 godot=8 sim=\"state\":\"done\" 22:09:42 | NOT QUIET, abort. So no quiet split exists yet: rerun it with bash .plan/hb.sh <ID> <calls> <est> m1 -- bash .plan/swarmnat71/m1.sh once perfsim71.timing_batch is done.",
+    "Quiet split: the posted split is from a LOADED run (ratios only). The quiet-gated rerun .plan/swarmnat71/m1.sh (2 runs) is still queued under hb.sh (waits up to 45 min from 21:32 local for perfsim71.timing_batch done + no godot + load<30; it posts swarmnat71.timing_batch starting/done itself) -> .plan/swarmnat71/m1.out + m1_r{1,2}.log. Its hb heartbeat repeats calls_used 46 (stale, by design). If it ended NOT QUIET, rerun: bash .plan/hb.sh <ID> <calls> <est> m1 -- bash .plan/swarmnat71/m1.sh",
+    "test_hot_state was NOT rerun after the render_snap hook edit (the hook is inert with no provider: one is_empty() check per build); run it once before ORCH commits.",
+    "The 6.3 ms HUD/engine GPU floor is unlocated (HUD / minimap / lp_hud / iGPU present?).",
+    "Nothing native built; native/ and bin/ untouched. bin/rts_core.v062_keep.dll does NOT exist yet: before the first swap copy bin/rts_core.dll (0.6.2, 1949184 bytes, Nov 8 10:34) to it."
+  ],
+  "incident": "21:38-21:45 local: tasklist.exe hung (pid 24728, mine inside m1u.sh, and pid 17664, probably my m1.sh quiet gate); every agent script calling tasklist stalled. I killed both; seven other agents' queued godot test runs then started at once (load 100%), which is why m1u is loaded. The orphan PERFSIM71-7 cut7.sh (bash pid 12964) still held perfsim71.timing_batch=starting (seq 787) at handoff; reported as fact swarmnat71.blocker seq 875.",
+  "next_step": "1) Wait for the owner's answer to owner.lp_peak.ask2 (seq 953). 2) Read .plan/swarmnat71/m1.out (quiet NATWIN lines) and replace the loaded table in docs/SWARM_NATIVE71.md section 1; repost swarmnat71.split if the conclusion changes. 3) If (d): statics-only verify of the PERFDRAW71-8 records (needs a separate toggle for static vs unit records in entity_layer.gd, e.g. PD71_RS=1) on 2k / 10k / LP, then default it on. 4) If (a): build per docs/SWARM_NATIVE71.md sections 3-4, unit kernel first, toggle default off, verify 0 diffs, then time LP peak / 2k / 10k quiet-gated (post swarmnat71.timing_batch starting/done).",
+  "files_touched": [
+    "sim/render_snap.gd (g71 hook only; backup .plan/swarmnat71/render_snap.gd.orig1)",
+    "tests/test_swarmnat71.gd (new)",
+    "tools/swarmnat71_frame.gd (new diag harness)",
+    "docs/SWARM_NATIVE71.md (new)",
+    ".plan/swarmnat71/{m1.sh,m1u.sh,m1u.out,m1u_r1.log,t1_test_swarmnat71.log,render_snap.gd.orig1} (+ m1.out / m1_r*.log when the queued run lands)",
+    ".plan/handoff/SWARMNAT71-1.json"
+  ],
+  "uncommitted_state": "All on g71, uncommitted (ORCH commits). No godot of mine running except the queued quiet-gated m1.sh (it only starts godot when the PC is quiet).",
+  "calls_used": 88,
+  "tokens_used_est": 360000
+}

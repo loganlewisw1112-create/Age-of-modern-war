@@ -28,12 +28,14 @@ const MODES := ["build_hangar_light", "build_hangar_heavy", "upgrade_hangar_leve
 	"set_auto_resupply_off", "set_auto_resupply_station", "set_auto_resupply_roam", "set_auto_evac_on", "set_auto_evac_off"]
 ## G6 commands registered on a G5 system script (ART-G6b): naval.gd lay_sea_mines (NAVAL6, CONTRACTS_G6 s11).
 const G6_ON_G5 := ["lay_sea_mines"]
+## G7.1 commands registered on a G5 system script (ARTFIX71): air.gd air_patrol (AIRFIX71 A2 patrol loops, SHIFT+Y).
+const G71_ON_G5 := ["air_patrol"]
 
 
 static func build(out: Dictionary) -> void:
 	var icons: Dictionary = out.manifest.get("icons", {})
 	var cmd := {}
-	for id in COMMANDS + MODES + G6_ON_G5:
+	for id in COMMANDS + MODES + G6_ON_G5 + G71_ON_G5:
 		var cv = P.Canvas.new(32, 32)
 		glyph(cv, id)
 		cv.outline(Color(0.05, 0.05, 0.04, 1))
@@ -43,7 +45,8 @@ static func build(out: Dictionary) -> void:
 		icons[id] = "icons/%s.png" % id
 		cmd[id] = "icons/%s.png" % id
 	out.manifest["icons"] = icons
-	out.manifest["command_icons"] = {"commands": COMMANDS.duplicate(), "modes": MODES.duplicate(), "g6": G6_ON_G5.duplicate()}
+	out.manifest["command_icons"] = {"commands": COMMANDS.duplicate(), "modes": MODES.duplicate(), "g6": G6_ON_G5.duplicate(),
+		"g71": G71_ON_G5.duplicate()}
 	IU.build(out)
 
 
@@ -216,6 +219,26 @@ static func glyph(cv, id: String) -> void:
 
 static func _glyph2(cv, id: String) -> void:
 	match id:
+		"air_patrol":  # patrol route: dashed loop through 4 waypoints, direction arrow, a helicopter (top view) on it
+			var wp := [Vector2(5, 9), Vector2(25, 5), Vector2(27, 25), Vector2(6, 26)]
+			for i in 4:
+				var a: Vector2 = wp[i]
+				var b: Vector2 = wp[(i + 1) % 4]
+				var n := int(a.distance_to(b))
+				for t in n:
+					if (t / 2) % 2 == 0:
+						var q := a.lerp(b, float(t) / n)
+						cv.px(int(q.x), int(q.y), GOLD)
+			F2._arrowhead(cv, Vector2(5, 14), Vector2(0, -1), GOLD)
+			for q in wp:
+				F2._dot(cv, int(q.x), int(q.y), INK)
+			cv.line(16, 18, 16, 25, P.mul(TEAM, 0.8))
+			cv.line(14, 25, 18, 25, INK_D)
+			cv.ellipse(16, 15, 3.0, 4.5, TEAM)
+			cv.px(16, 12, Color8(150, 200, 210))
+			cv.line(8, 9, 24, 21, INK)
+			cv.line(24, 9, 8, 21, INK)
+			F2._dot(cv, 16, 15, INK_D)
 		"tactical":
 			F2._ring(cv, 16, 16, 9, 9, INK)
 			for d in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:

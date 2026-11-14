@@ -28,6 +28,11 @@ const FIGHT_GAP := 26.0  # --scenario=fight: start distance from the centre (til
 
 
 func _init() -> void:
+	for a0 in OS.get_cmdline_user_args():
+		if a0 == "--lp-peak" or a0.begins_with("--lp-peak="):
+			_lp_peak_main()   # G7.1 PERFSIM71: LP-peak case (fact bench.lp_peak)
+			quit(0)
+			return
 	var map_id := "river_crossing_s"
 	var sizes := [1000]
 	var facs := ["human_a", "human_b"]
@@ -393,6 +398,108 @@ static func unit_def(fdef: String, role: String) -> String:
 
 static func clamp_in(w: SimWorld, p: Vector2) -> Vector2:
 	return Vector2(clampf(p.x, 2.5, float(w.map.w) - 2.5), clampf(p.y, 2.5, float(w.map.h) - 2.5))
+
+
+## G7.1 PERFSIM71: LP-peak benchmark case (fact bench.lp_peak). The Last Protocol match (LastProtocol.make_config:
+## its map, full start base, Machine AI + director live), `warm` ticks so the LP start state is built, then
+## `n_robots` friendly robot stand-ins (the 8 G7 sentinels, a_ugv, the strike / FPV drones; F1 wave-3 units replace
+## them later) round the player spawn, and `n_machine` Machine units (its infantry / antitank / recon / light / heavy
+## role defs) on four sectors (N, E, S, W: several sides at once) 30-55 tiles out, attack-moving on the base.
+## Deterministic: golden-ratio spiral placement, no rng. Returns {w, hfid, mfid, robots, machines}.
+const LP_ROBOTS := ["g7_sent_warden", "g7_sent_marksman", "g7_sent_gunner", "g7_sent_bulwark", "g7_sent_lancer",
+	"g7_sent_arc", "g7_sent_mender", "g7_sent_bearer", "a_ugv", "g7_a_strike_drone", "g7_a_fpv"]
+static func build_lp_peak(n_machine := 1000, n_robots := 150, seed := 7, warm := 5) -> Dictionary:
+	var LP = load("res://sim/systems/last_protocol.gd")
+	var w := SimWorld.new_match(LP.make_config(seed))
+	for i in warm:
+		w.step()
+	var hfid := -1
+	var mfid := -1
+	var fids: Array = w.factions.keys()
+	fids.sort()
+	for fid in fids:
+		if String(w.factions[fid].faction_def) == "machine":
+			mfid = int(fid)
+		elif hfid < 0:
+			hfid = int(fid)
+	var sp := Vector2(w.factions[hfid].spawn) + Vector2(0.5, 0.5)
+	var rdefs := LP_ROBOTS.filter(func(d): return not Content.unit(d).is_empty())
+	var robots := _spiral_spawn(w, hfid, rdefs, n_robots, sp, 6.0, 14.0, 0.0, TAU)
+	var mdefs := []
+	for role in ["infantry", "infantry", "antitank", "recon", "light", "heavy"]:
+		var d := unit_def("machine", role)
+		if d != "":
+			mdefs.append(d)
+	var machines := []
+	for q in 4:   # four attack sectors, 60 degrees wide, centred N / E / S / W
+		var a0 := float(q) * PI * 0.5 - PI / 6.0
+		machines.append_array(_spiral_spawn(w, mfid, mdefs, n_machine / 4 + (1 if q < n_machine % 4 else 0), sp, 30.0, 55.0, a0, PI / 3.0))
+	if not robots.is_empty():
+		w.submit({"type": "hold", "issuer": hfid, "unit_ids": robots})
+	if not machines.is_empty():
+		w.submit({"type": "attack_move", "issuer": mfid, "unit_ids": machines, "target": sp})
+	return {"w": w, "hfid": hfid, "mfid": mfid, "robots": robots, "machines": machines}
+
+
+static func _spiral_spawn(w: SimWorld, fid: int, defs: Array, n: int, c: Vector2, r0: float, r1: float, a0: float, span: float) -> Array:
+	var ids := []
+	if defs.is_empty() or fid < 0:
+		return ids
+	var k := 0
+	while ids.size() < n and k < n * 30:
+		var ang := a0 + span * fmod(float(k) * 0.618034, 1.0)
+		var r := r0 + (r1 - r0) * fmod(float(k) * 0.754878, 1.0)
+		k += 1
+		var p := clamp_in(w, c + Vector2(cos(ang), sin(ang)) * r)
+		var def: String = defs[ids.size() % defs.size()]
+		var mc := String(Content.unit(def).get("move_class", "foot"))
+		var cell := Vector2i(floori(p.x), floori(p.y))
+		if not w.in_bounds(cell) or not Movement.is_passable(w, cell, mc if mc != "air" else "foot"):
+			continue
+		ids.append(w.spawn_unit(def, fid, p))
+	return ids
+
+
+## --lp-peak[=N] [--robots=150] [--ticks=600] [--seed=7]: times w.step() on the LP-peak case, prints LPPEAK lines.
+func _lp_peak_main() -> void:
+	var n := 1000
+	var nr := 150
+	var ticks := 600
+	var seed := 7
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--lp-peak="):
+			n = int(a.substr(10))
+		elif a.begins_with("--robots="):
+			nr = int(a.substr(9))
+		elif a.begins_with("--ticks="):
+			ticks = int(a.substr(8))
+		elif a.begins_with("--seed="):
+			seed = int(a.substr(7))
+	var t0 := Time.get_ticks_msec()
+	var st := build_lp_peak(n, nr, seed)
+	var w: SimWorld = st.w
+	print("LPPEAK built map=%s robots=%d machines=%d entities=%d native=%s build_ms=%d" % [String(w.cfg.get("map", "")),
+		st.robots.size(), st.machines.size(), w.entities.size(), str(NativeCore.available()), Time.get_ticks_msec() - t0])
+	var times := PackedFloat64Array()
+	for i in ticks:
+		var a := Time.get_ticks_usec()
+		w.step()
+		times.append((Time.get_ticks_usec() - a) / 1000.0)
+		if (i + 1) % 150 == 0:
+			var nm := 0
+			for e in w.entities.values():
+				if int(e.owner) == int(st.mfid) and String(e.kind) == "unit":
+					nm += 1
+			print("LPPEAK tick=%d machine_units=%d entities=%d" % [w.tick, nm, w.entities.size()])
+	var srt := times.duplicate()
+	srt.sort()
+	var tot := 0.0
+	for v in times:
+		tot += v
+	var p95 := srt[int(srt.size() * 0.95)] if not srt.is_empty() else 0.0
+	var mx := srt[srt.size() - 1] if not srt.is_empty() else 0.0
+	print("LPPEAK avg_ms=%.2f p95_ms=%.2f max_ms=%.2f ticks=%d hash=%s" % [tot / maxf(1.0, float(ticks)), p95, mx, ticks,
+		String(w.state_hash()).left(16)])
 
 
 ## Bench-local copy of SimWorld.step() that times each system (keep in sync with world.gd).

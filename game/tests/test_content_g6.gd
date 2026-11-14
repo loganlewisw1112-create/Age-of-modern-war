@@ -104,7 +104,7 @@ func test_every_section3_id_loads() -> void:
 		check(ARMORS.has(String(d.get("armor", ""))), "%s armour class %s is a known column" % [id, String(d.get("armor", ""))])
 		if String(e.kind) == "U":
 			check(MOVE.has(String(d.get("move_class", ""))), "%s move class %s" % [id, String(d.get("move_class", ""))])
-			check(float(d.get("speed", 0)) > 0.0 and float(d.get("speed", 0)) <= 10.0, "%s speed in (0, 10] (tiers bucket unchanged)" % id)
+			check(float(d.get("speed", 0)) > 0.0 and float(d.get("speed", 0)) <= 10.0 * float(Content.rules().get("g71_speed_mult", 1.0)), "%s speed in (0, 10 x g71_speed_mult] (tiers bucket unchanged)" % id)
 			check(float(d.get("sight", 0)) > 0.0, "%s sight > 0" % id)
 			check(int(d.get("pop", -1)) >= 1, "%s pop >= 1" % id)
 		else:

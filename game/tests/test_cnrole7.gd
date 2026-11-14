@@ -316,7 +316,7 @@ func test_parked_units_hold_no_chase() -> void:
 	check(mv_apc < 0.05, "a parked CN APC does not leave its garage to chase (moved %.2f)" % mv_apc)
 	check_eq(String(w.entities[parked].order.get("type", "idle")), "idle", "the parked soldier was never given an order")
 	# in weapon range: it fires from its post and still never advances
-	var near_foe := _still_foe(w, a_pos + Vector2(-2.0, 0.0), "m_walker")
+	var near_foe := _still_foe(w, a_pos + Vector2(-4.0, -1.0), "m_walker")   # G7.1 (owner 2026-11-13): 4.1 tiles, in his 4.5 shotgun range, off the defenders' lines of fire through his post
 	var ever_moving := false
 	var closest := 0.0   # how far toward the enemy (west, -x) it ever got
 	for k in 60:

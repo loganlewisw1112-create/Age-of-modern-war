@@ -85,6 +85,35 @@ static var act_skip := true
 ## CORE10K-2: native prep with the list's ids (rts_core >= 0.4.2; dict-free pass 1, act by index). Off = 0.3.1 call.
 static var prep_ids := true
 static var native_prep := true
+## G7.1 PERFSIM71-4 (docs/NATIVE_COMBAT71.md phase 1): rts_core >= 0.6.0 RtsCombat.prep_mirror = prep_units_ids with
+## pointer-level reads / in-place countdown writes (same result, same writes) that also keeps the prep-time packed entity
+## mirror for the native act-loop phases. false = prep_units_ids (the A/B oracle). mirror_debug (tests / bench): compare
+## every mirror row with the unit Dictionaries after prep (all fields) and after the act loop (tick-fixed fields: pos,
+## owner); mismatches counted in mirror_bad (0 expected), rows in mirror_rows, act-time changes of the volatile fields in
+## mirror_vol (information: those fields must be read live or updated on write by a native act loop).
+static var native_mirror := true
+static var mirror_debug := false
+## G7.1 PERFSIM71-5 (docs/NATIVE_COMBAT71.md phase 2): _find asks RtsCombat.find (rts_core >= 0.6.1) first; it returns
+## the same pick from the mirror + per-def columns, or -2 when a rule without a native port could decide (then the
+## GDScript body below runs). Off = the GDScript _find only (A/B oracle). native_find_ab (bench): ask both, count
+## picks that differ, return the GDScript pick.
+static var native_find := true
+static var native_find_ab := false
+## G7.1 PERFSIM71-6 (docs/NATIVE_COMBAT71.md phase 3a, rts_core >= 0.6.2): RtsCombat.act_run runs the act loop and finishes
+## natively every entry whose GDScript body would end without a callback (writes only target / order.engaged); every other
+## entry runs the GDScript body (_act_one). false = the GDScript loop (the A/B oracle). native_act_ab (bench): for each
+## natively finished entry undo its writes, run the GDScript body and compare the whole shooter Dictionary.
+static var native_act := true
+static var native_act_ab := false
+static var na_ab_n := 0
+static var na_ab_diff := 0
+const NA_NO_BLD := 9223372036854775807
+static var nf_ab_n := 0
+static var nf_ab_diff := 0
+static var nf_ab_fb := 0
+static var mirror_rows := 0
+static var mirror_bad := 0
+static var mirror_vol := {"target": 0, "moving": 0, "cd": 0, "ocode": 0, "broken": 0}
 
 
 ## Cached combat stats for an entity def.
@@ -223,6 +252,7 @@ static func tick(w: SimWorld) -> void:
 	# the GDScript loop stays the fallback and the hash oracle).
 	var trf := float(SimWorld.TICK_RATE)
 	var np_done := false
+	var mir_ok := false   # G7.1 PERFSIM71-5: this tick's RtsCombat mirror is filled (prep_mirror)
 	var nores := PackedByteArray()   # SIM10K: per id, 1 = this tick's search is null by construction
 	if native and not need_grid and native_prep and act_skip:
 		var cobj = _combat_obj(w)
@@ -234,6 +264,11 @@ static func tick(w: SimWorld) -> void:
 				tabs["dr"] = PackedFloat32Array()
 				tabs["ds"] = PackedFloat32Array()
 				tabs["df"] = PackedInt32Array()
+				tabs["dmr"] = PackedFloat64Array()   # G7.1 PERFSIM71-5: native _find columns (per def, filled once)
+				tabs["dcf"] = PackedInt32Array()
+				tabs["dar"] = PackedFloat64Array()   # G7.1 PERFSIM71-6: native act columns (per def, filled once)
+				tabs["das"] = PackedFloat64Array()
+				tabs["daf"] = PackedInt32Array()
 			var dxa: PackedInt32Array = tabs.dx
 			if dxa.size() < tf.size():
 				dxa.resize(tf.size())
@@ -244,7 +279,10 @@ static func tick(w: SimWorld) -> void:
 			# no unit dict, and returns act_ids so a skipped act entry is never read either
 			var pids := _list_ids(idx, units) if prep_ids and tiers_on and cobj.has_method("prep_units_ids") else PackedInt32Array()
 			var r: Array
-			if not pids.is_empty():
+			var pm: bool = native_mirror and not pids.is_empty() and cobj.has_method("prep_mirror")   # G7.1 PERFSIM71-4
+			if pm:
+				r = cobj.prep_mirror(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+			elif not pids.is_empty():
 				r = cobj.prep_units_ids(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
 			else:
 				r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
@@ -256,7 +294,9 @@ static func tick(w: SimWorld) -> void:
 					if tf[nid] == 0:
 						tf[nid] = _tf_of(ne, teams)
 					dxa[nid] = _dx_of(ne, tabs)
-				if not pids.is_empty():
+				if pm:
+					r = cobj.prep_mirror(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
+				elif not pids.is_empty():
 					r = cobj.prep_units_ids(units, ents, pids, tick, [tf, dxa, tabs.dr, tabs.ds, tabs.df], int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
 				else:
 					r = cobj.prep_units(units, ents, tick, tf, dxa, tabs.dr, tabs.ds, tabs.df, int(w.next_id), trf, SCAN_EVERY, RETURN_FIRE_TICKS)
@@ -280,6 +320,9 @@ static func tick(w: SimWorld) -> void:
 					for k in aix:
 						act.append(units[k])
 				np_done = true
+				mir_ok = pm
+				if mirror_debug and pm:
+					_mirror_check(w, cobj, false)
 				if SimIndex.profiling:
 					var nz := 0
 					for c in askip:
@@ -424,10 +467,12 @@ static func tick(w: SimWorld) -> void:
 		ng.rebuild(nids, npos, nteam, zr)
 		ng.set_flags(nflags)
 		var pre := {}
+		var pres := PackedInt32Array()
 		if not scan_src.is_empty():
 			if SimIndex.g6m(w) & SimIndex.G6_RANGE:
 				_scan_rm(w, scan_ids, scan_r)
 			var res: PackedInt32Array = ng.nearest_enemy_batch(scan_src, scan_r, scan_need)
+			pres = res
 			for i in scan_ids.size():
 				pre[scan_ids[i]] = Vector2(float(res[i]), scan_r[i])
 			if np_done:
@@ -501,9 +546,15 @@ static func tick(w: SimWorld) -> void:
 				w.cache["combat_lc"] = lc if lc != null else false
 			elif not lc is Object:
 				lc = null   # older DLL without RtsCombat: GDScript line_clear
+		# G7.1 PERFSIM71-5: native _find for this tick (guards: WallFire7 walls and a G6 test spy have no native port)
+		var nfo = null
+		if native_find and mir_ok and not scan_ab and SimIndex.g6_spy == null and not WallFire7.any(w):
+			var cob = _combat_obj(w)
+			if cob != null and cob.has_method("find_setup") and cob.find_setup(_nf_args(w, ng, nidx, scan_ids, pres, scan_r, blds, teams)):
+				nfo = cob
 		w.cache["combat_ng"] = {"grid": ng, "idx": nidx, "pre": pre, "eb": {}, "lc": lc,
 			"hl": lc != null and lc.has_method("height_los"),
-			"mw": int(w.map.w), "mh": int(w.map.h), "teams": teams, "npos": npos, "nteam": nteam}
+			"mw": int(w.map.w), "mh": int(w.map.h), "teams": teams, "npos": npos, "nteam": nteam, "nf": nfo}
 	else:
 		w.cache.erase("combat_ng")
 	if SimIndex.profiling:
@@ -522,43 +573,74 @@ static func tick(w: SimWorld) -> void:
 	var use_nr := not nores.is_empty()
 	var bi := 0
 	var by_ix := not act_id.is_empty()
-	for i in (act_id.size() if by_ix else act.size()):
-		var eid: int = act_id[i] if by_ix else int(act[i].id)
-		while bi < ablds.size() and int(ablds[bi].id) < eid:
-			_bld_act(w, ablds[bi], grid, blds)
-			bi += 1
-		if not ents.has(eid):
-			continue  # destroyed earlier this tick: dead entities never act
-		var sk := askip[i]
-		if sk != 0:
-			if sk == 1 or ev.is_empty():
+	var nao = null   # G7.1 PERFSIM71-6: the native act driver for this tick (null: the GDScript loop)
+	if native_act and by_ix and not prof_units and not native_find_ab:
+		nao = _na_setup(w, act_id, askip, atg, nores, ev)
+	if nao != null:
+		var na := act_id.size()
+		var i := 0
+		while i < na:
+			var stop: int = int(ablds[bi].id) if bi < ablds.size() else NA_NO_BLD
+			var rr: int = _na_ab(w, nao, i, stop, act_id, ents, askip, atg, ev, units, act_ix, use_nr, nores, grid, blds) if native_act_ab else int(nao.act_run(i, stop))
+			var j := rr >> 1
+			if j >= na:
+				break
+			var jid: int = act_id[j]
+			while bi < ablds.size() and int(ablds[bi].id) < jid:
+				_bld_act(w, ablds[bi], grid, blds)
+				bi += 1
+			if rr & 1 == 0:
+				i = j
 				continue
-			if sk == 2 and not ev.has(atg[i]):
-				continue
-			if sk == 3 and not ev.has(eid):
-				continue
-		var e: Dictionary = units[act_ix[i]] if by_ix else act[i]
-		if by_ix and int(e.id) != eid:
-			e = ents[eid]   # the list was re-sorted mid-act (an append + Tiers.lists): same dict by id
-		if sk == 0 and use_nr and nores[eid] == 1 and atg[i] < 0:
-			# SIM10K: untargeted scan-slot shooter whose search is null by construction (see above):
-			# _unit_tick is then a no-op for idle / hold, and for an attack-move that is moving and
-			# not engaged (it only rewrites target = -1). Anything else still calls.
-			var ot2 = e.order.get("type", "idle")
-			if ot2 == "idle" or ot2 == "hold":
-				continue
-			if ot2 == "attack_move" and e.moving and not e.order.get("engaged", false):
-				continue
-		if prof_units and SimIndex.profiling:
-			var lab := "u." + String(e.order.get("type", "idle")) + (".t" if int(e.target) >= 0 else "") + (".mv" if e.moving else "")
-			var tu := Time.get_ticks_usec()
-			_unit_tick(w, e, grid, blds)
-			SimIndex.pt(lab, tu)
-		else:
-			_unit_tick(w, e, grid, blds)
+			i = j + 1
+			_act_one(w, j, jid, ents, askip, atg, ev, units, act_ix, use_nr, nores, grid, blds)
+	else:
+		for i in (act_id.size() if by_ix else act.size()):
+			var eid: int = act_id[i] if by_ix else int(act[i].id)
+			while bi < ablds.size() and int(ablds[bi].id) < eid:
+				_bld_act(w, ablds[bi], grid, blds)
+				bi += 1
+			if not ents.has(eid):
+				continue  # destroyed earlier this tick: dead entities never act
+			var sk := askip[i]
+			if sk != 0:
+				if sk == 1 or ev.is_empty():
+					continue
+				if sk == 2 and not ev.has(atg[i]):
+					continue
+				if sk == 3 and not ev.has(eid):
+					continue
+			var e: Dictionary = units[act_ix[i]] if by_ix else act[i]
+			if by_ix and int(e.id) != eid:
+				e = ents[eid]   # the list was re-sorted mid-act (an append + Tiers.lists): same dict by id
+			if sk == 0 and use_nr and nores[eid] == 1 and atg[i] < 0:
+				# SIM10K: untargeted scan-slot shooter whose search is null by construction (see above):
+				# _unit_tick is then a no-op for idle / hold, and for an attack-move that is moving and
+				# not engaged (it only rewrites target = -1). Anything else still calls.
+				var ot2 = e.order.get("type", "idle")
+				if ot2 == "idle" or ot2 == "hold":
+					continue
+				if ot2 == "attack_move" and e.moving and not e.order.get("engaged", false):
+					continue
+			if prof_units and SimIndex.profiling:
+				var lab := "u." + String(e.order.get("type", "idle")) + (".t" if int(e.target) >= 0 else "") + (".mv" if e.moving else "")
+				var cb0 := _pu_cb()
+				var tu := Time.get_ticks_usec()
+				_unit_tick(w, e, grid, blds)
+				var tu1 := Time.get_ticks_usec()
+				var cb1 := _pu_cb() - cb0   # PERFSIM71-6: time of this tick spent in the phase-3 callbacks (_fire from lay on, chase path)
+				_pu_add(lab + (".F" if cb1.y > 0 else ".D"), tu1 - tu)
+				if cb1.y > 0:
+					_pu_add("pu.cb." + String(e.order.get("type", "idle")), cb1.x)
+			else:
+				_unit_tick(w, e, grid, blds)
 	while bi < ablds.size():
 		_bld_act(w, ablds[bi], grid, blds)
 		bi += 1
+	if mirror_debug and np_done and native_mirror:
+		var cm = _combat_obj(w)
+		if cm != null and cm.has_method("mirror_arrays"):
+			_mirror_check(w, cm, true)
 	if SimIndex.profiling:
 		t0 = SimIndex.pt("cmb.act", t0)
 	_no_search = true
@@ -588,6 +670,68 @@ static func tick(w: SimWorld) -> void:
 	w.cache.erase("cmb_ev")
 	if SimIndex.profiling:
 		SimIndex.pt("cmb.reduced", t0)
+
+
+## G7.1 PERFSIM71-4 debug oracle: the RtsCombat prep mirror vs the unit Dictionaries (GDScript reads, independent of the
+## native code). after_act = false: right after prep, every field must match (mirror_bad). after_act = true: the tick-fixed
+## fields (pos, owner) must still match for every live row (mirror_bad); act-time changes of the volatile fields are
+## counted in mirror_vol. Bench / tests only (mirror_debug); never changes state.
+static func _mirror_check(w: SimWorld, cobj, after_act: bool) -> void:
+	var a: Array = cobj.mirror_arrays()
+	if a.size() != 11 or int(a[0]) != w.tick:
+		mirror_bad += 1
+		print("MIRROR bad snapshot tick=%d size=%d" % [w.tick, a.size()])
+		return
+	var ids: PackedInt32Array = a[1]
+	var mpos: PackedVector2Array = a[2]
+	var mown: PackedInt32Array = a[3]
+	var mtf: PackedInt32Array = a[4]
+	var mdx: PackedInt32Array = a[5]
+	var mtg: PackedInt32Array = a[6]
+	var mmv: PackedByteArray = a[7]
+	var mcd: PackedInt32Array = a[8]
+	var moc: PackedByteArray = a[9]
+	var mbr: PackedByteArray = a[10]
+	var tabs: Dictionary = w.cache.get("cmb_tabs", {})
+	var ents: Dictionary = w.entities
+	var codes := {"idle": 0, "hold": 1, "attack_move": 2, "attack": 3}
+	var bad0 := mirror_bad
+	for i in ids.size():
+		var id := ids[i]
+		var e = ents.get(id)
+		if e == null:
+			if not after_act:
+				mirror_bad += 1   # prep mirrors live units only
+			continue
+		var ot = e.order.get("type", "idle") if e.order is Dictionary else "idle"
+		var oc: int = int(codes.get(String(ot), 4)) if (ot is String or ot is StringName) else 4
+		var cdn := _cd(e)
+		var f := {"pos": Vector2(e.pos) == mpos[i], "owner": int(e.owner) == mown[i]}
+		if not after_act:
+			mirror_rows += 1
+			f["tf"] = tabs.has("tf") and int(tabs.tf[id]) == mtf[i]
+			f["dx"] = tabs.has("dx") and int(tabs.dx[id]) == mdx[i]
+			f["target"] = int(e.target) == mtg[i]
+			f["moving"] = int(bool(e.moving)) == mmv[i]
+			f["cd"] = cdn == mcd[i]
+			f["ocode"] = oc == moc[i]
+			f["broken"] = int(bool(e.get("broken", false))) == mbr[i]
+		else:
+			if int(e.target) != mtg[i]:
+				mirror_vol.target += 1
+			if int(bool(e.moving)) != mmv[i]:
+				mirror_vol.moving += 1
+			if cdn != mcd[i]:
+				mirror_vol.cd += 1
+			if oc != moc[i]:
+				mirror_vol.ocode += 1
+			if int(bool(e.get("broken", false))) != mbr[i]:
+				mirror_vol.broken += 1
+		for k in f:
+			if not f[k]:
+				mirror_bad += 1
+				if mirror_bad - bad0 <= 3:
+					print("MIRROR mismatch tick=%d after_act=%s id=%d field=%s" % [w.tick, str(after_act), id, k])
 
 
 ## cmb_tabs entry for unit e: -1 = owner has no faction team, else
@@ -643,7 +787,51 @@ static func _dx_of(e: Dictionary, tabs: Dictionary) -> int:
 	tabs.dr = dr
 	tabs.ds = ds
 	tabs.df = df
+	if tabs.has("dcf"):
+		# G7.1 PERFSIM71-5: native _find columns (find.rs C_*): 1 is_air, 2 naval_ship, 4 naval_only, 8 roof_out,
+		# 16 Senses7 infantry def, 32 unit kind; dmr = min_range. Same per-def values _find / _g5_ok / Fog read.
+		var dmr: PackedFloat64Array = tabs.dmr
+		var dcf: PackedInt32Array = tabs.dcf
+		var unit: bool = String(e.kind) == "unit"
+		dmr.append(float(s.min_range))
+		dcf.append((1 if bool(s.is_air) else 0) \
+			| (2 if unit and bool(Content.unit(String(e.def)).get("naval_ship", false)) else 0) \
+			| (4 if bool(s.get("naval_only", false)) else 0) | (8 if bool(s.get("roof_out", false)) else 0) \
+			| (16 if unit and Fog.Senses7._inf_def(String(e.def)) else 0) | (32 if unit else 0))
+		tabs.dmr = dmr
+		tabs.dcf = dcf
+	if tabs.has("daf"):
+		# G7.1 PERFSIM71-6: native act columns (act.rs): dar = range, das = sight (float64, the values _unit_tick reads),
+		# daf bits 1 indirect, 2 Accuracy8 infantry profile (the Spread8.mark precondition)
+		var dar: PackedFloat64Array = tabs.dar
+		var das: PackedFloat64Array = tabs.das
+		var daf: PackedInt32Array = tabs.daf
+		dar.append(float(s.range))
+		das.append(float(s.sight))
+		# bit 2 = Accuracy8._profile_of(e)[0] == C_INF, its code rule (unit, content not is_air, the Senses7 infantry def) without
+		# its cfg-dependent fields (called here it would run before Accuracy8.cfg())
+		var a8i: bool = String(e.kind) == "unit" and not bool(Content.unit(String(e.def)).get("is_air", false)) and Fog.Senses7._inf_def(String(e.def))
+		daf.append((1 if bool(s.indirect) else 0) | (2 if a8i else 0))
+		tabs.dar = dar
+		tabs.das = das
+		tabs.daf = daf
 	return n
+
+
+## G7.1 PERFSIM71-5: per-tick inputs of RtsCombat.find (native/rts_core/src/find.rs FindCtx::setup, same order).
+static func _nf_args(w: SimWorld, ng, nidx: PackedInt32Array, scan_ids: PackedInt32Array, res: PackedInt32Array, scan_r: PackedFloat32Array, blds: Array, teams: Dictionary) -> Array:
+	var tabs: Dictionary = w.cache["cmb_tabs"]
+	var st = w.sys_state.get("senses7")
+	var fids := PackedInt32Array()
+	var fteam := PackedInt32Array()
+	var ftk := PackedInt64Array()
+	for fid in teams:
+		fids.append(int(fid))
+		fteam.append(int(teams[fid]))
+		ftk.append(Fog.Senses7.tkey(w, int(fid)) if st != null else 0)
+	return [ng, w.entities, w.fog, w.map, st.spot if st != null else null, fids, fteam, ftk, SimWorld.NEUTRAL, w.tick,
+		Fog.REVEAL_TICKS, Fog.FOREST_CODE, nidx, scan_ids, res, scan_r, tabs.df, tabs.get("dmr", PackedFloat64Array()),
+		tabs.get("dcf", PackedInt32Array()), blds, int(w.map.w), int(w.map.h)]
 
 
 static var _dmg_ng := -1
@@ -985,6 +1173,14 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 	var ng = w.cache.get("combat_ng")
 	if ng == null:
 		return find_target(w, e, radius, grid, blds)
+	var nfr := -3   # G7.1 PERFSIM71-5: RtsCombat.find answer (-3 not asked, -2 use the GDScript body below)
+	var nf = ng.get("nf")
+	if nf != null:
+		nfr = nf.find(int(e.id), radius)
+		if nfr != -2 and not native_find_ab:
+			if SimIndex.profiling:
+				SimIndex.pt("f.native", tq0)
+			return null if nfr < 0 else w.entities.get(nfr)
 	var nix: PackedInt32Array = ng.idx
 	var eid := int(e.id)
 	var si := nix[eid] if eid >= 0 and eid < nix.size() else -1   # -1: outside the grid (towers): exact scan below
@@ -1136,6 +1332,12 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				best_id = bid
 	if SimIndex.profiling:
 		SimIndex.pt("f.eb%d" % int(eb.n), tq)
+	if native_find_ab and nfr != -3:   # G7.1 PERFSIM71-5 oracle: native pick vs this GDScript pick
+		nf_ab_n += 1
+		if nfr == -2:
+			nf_ab_fb += 1
+		elif nfr != (int(best.id) if best != null else -1):
+			nf_ab_diff += 1
 	return best
 
 
@@ -1214,6 +1416,130 @@ static func _cand_ok(w: SimWorld, fid: int, c: Dictionary, d2: float, r2: float,
 	if Fog.concealed(w, fid, c) or (c.has("hid") and G4bMech.hidden_from(w, fid, c)) or _g6_hidden(w, fid, c):
 		return false
 	return (aa or not bool(stats(c).is_air) or _landed(c)) and _g5_ok(s, c) and (wfe == null or WallFire7.cand_ok(w, wfe, c))   # G7 WALLFIRE7: wfe = shooter, set while a facility wall can block it
+
+
+## G7.1 PERFSIM71-6: this tick's native act driver (RtsCombat.act_setup) or null. Guards: native find live this tick (it
+## carries the WallFire7.any / G6 spy / scan_ab guards), G6_LOS only through the native height_los (ng.hl), G6_RANGE / G6_VIS
+## handled per unit in act.rs (hand back), WallFire7.blocked at its cheap false exit (no facility, no Fortify wall mask), the per-def act columns.
+static func _na_setup(w: SimWorld, act_id: PackedInt32Array, askip: PackedByteArray, atg: PackedInt32Array, nores: PackedByteArray, ev: Dictionary):
+	var ng = w.cache.get("combat_ng")
+	if ng == null:
+		return null
+	var nfo = ng.get("nf")
+	if nfo == null or not nfo.has_method("act_setup"):
+		return null
+	var g6 := SimIndex.g6m(w)
+	if g6 & SimIndex.G6_LOS != 0 and not (native_elev and bool(ng.get("hl", false))):
+		return null   # _hlos would ask G6Hooks.los_ok (no native port)
+	if not WallFire7.enabled or Fortify._los_mask(w) != null:
+		return null
+	var tabs: Dictionary = w.cache["cmb_tabs"]
+	if not tabs.has("daf"):
+		return null
+	var fl := 0
+	if w.sys_state.has("wallwalk7") or w.sys_state.has(CnRole7.FAC_KEY):
+		fl |= 1   # idle units: the wall-walk / CN parked rule (no native port)
+	if Spread8.radius() > 0.0 and Stray8.Accuracy8.enabled():
+		fl |= 2   # Spread8.mark can fire in _engage
+	if g6 & SimIndex.G6_RANGE != 0:
+		fl |= 4   # _rm: native delegates a shooter on a raised cell / with s7
+		if w.sys_state.has(WallWalk7.KEY):
+			fl |= 8
+	if g6 & SimIndex.G6_LOS != 0:
+		fl |= 16   # _hlos: native height_los (the ng.hl path); G6_VIS: find.rs legal() hands G6-key targets back
+	var args := [act_id, askip, atg, nores, ev, SCAN_EVERY, SCAN_EVERY_ENGAGED, RETURN_FIRE_TICKS, CHASE_REPATH_TICKS,
+		float(SimWorld.TICK_RATE), fl, w.map.terrain, Damage.RIDGE, tabs.dar, tabs.das, tabs.daf,
+		w.map.get("height", PackedByteArray()), Elevation.PLAIN, Elevation.MAX_LEVEL]
+	if not nfo.act_setup(args):
+		return null
+	return nfo
+
+
+## G7.1 PERFSIM71-6: one act-loop entry, line for line the GDScript loop body in tick() (the native driver hands an
+## entry back here untouched).
+static func _act_one(w: SimWorld, i: int, eid: int, ents: Dictionary, askip: PackedByteArray, atg: PackedInt32Array, ev: Dictionary,
+		units: Array, act_ix: PackedInt32Array, use_nr: bool, nores: PackedByteArray, grid: Dictionary, blds: Array) -> void:
+	if not ents.has(eid):
+		return
+	var sk := askip[i]
+	if sk != 0:
+		if sk == 1 or ev.is_empty():
+			return
+		if sk == 2 and not ev.has(atg[i]):
+			return
+		if sk == 3 and not ev.has(eid):
+			return
+	var e: Dictionary = units[act_ix[i]]
+	if int(e.id) != eid:
+		e = ents[eid]
+	if sk == 0 and use_nr and nores[eid] == 1 and atg[i] < 0:
+		var ot2 = e.order.get("type", "idle")
+		if ot2 == "idle" or ot2 == "hold":
+			return
+		if ot2 == "attack_move" and e.moving and not e.order.get("engaged", false):
+			return
+	_unit_tick(w, e, grid, blds)
+
+
+## G7.1 PERFSIM71-6 (bench oracle, native_act_ab): entry i alone through act_run; when native finishes it, keep its
+## result, undo its writes (target, order.engaged), run the GDScript body (authoritative) and compare the whole shooter.
+static func _na_ab(w: SimWorld, nao, i: int, stop: int, act_id: PackedInt32Array, ents: Dictionary, askip: PackedByteArray, atg: PackedInt32Array,
+		ev: Dictionary, units: Array, act_ix: PackedInt32Array, use_nr: bool, nores: PackedByteArray, grid: Dictionary, blds: Array) -> int:
+	var eid: int = act_id[i]
+	if eid > stop:
+		return i * 2
+	var e = ents.get(eid)
+	if e == null:
+		return int(nao.act_run(i, eid))
+	var o: Dictionary = e.order
+	var b_t = e.target
+	var b_has := o.has("engaged")
+	var b_eng = o.get("engaged")
+	var b_str := var_to_str(e)
+	var rr: int = nao.act_run(i, eid)   # entry i only (the next id is larger)
+	if rr & 1 == 1:
+		return rr
+	var n_str := var_to_str(e)
+	e.target = b_t
+	if b_has:
+		o.engaged = b_eng
+	elif o.has("engaged"):
+		o.erase("engaged")
+	if var_to_str(e) != b_str:
+		na_ab_diff += 1
+		print("NAAB undo tick=%d id=%d" % [w.tick, eid])
+	_act_one(w, i, eid, ents, askip, atg, ev, units, act_ix, use_nr, nores, grid, blds)
+	na_ab_n += 1
+	var g_str := var_to_str(e)
+	if g_str != n_str:
+		na_ab_diff += 1
+		if na_ab_diff <= 6:
+			print("NAAB diff tick=%d id=%d\n G %s\n N %s" % [w.tick, eid, g_str.substr(0, 700), n_str.substr(0, 700)])
+	return (i + 1) * 2
+
+
+## PERFSIM71-6 (bench only, prof_units): the phase-3 ceiling split. Sum of the top-level profiling keys that a native act
+## driver would keep as GDScript callbacks (the _fire body from Traverse7.lay on, the chase Movement.order_path): x = usec,
+## y = calls. Read before / after each profiled _unit_tick; u.<type>.F = ticks that reached a callback, .D = dispatch only.
+const PU_CB_KEYS := ["PERF8_lay", "PERF8_muzzle", "fire.resolve", "fire.splash", "fire.dmg", "fire.stray", "eng.chase_path"]
+
+
+static func _pu_cb() -> Vector2i:
+	var r := Vector2i.ZERO
+	for k in PU_CB_KEYS:
+		var a = SimIndex.prof.get(k)
+		if a != null:
+			r += Vector2i(int(a[0]), int(a[1]))
+	return r
+
+
+static func _pu_add(label: String, us: int) -> void:
+	var a = SimIndex.prof.get(label)
+	if a == null:
+		SimIndex.prof[label] = [us, 1]
+	else:
+		a[0] += us
+		a[1] += 1
 
 
 static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:

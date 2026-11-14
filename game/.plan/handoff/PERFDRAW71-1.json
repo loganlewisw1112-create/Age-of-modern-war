@@ -1,0 +1,30 @@
+{
+  "agent": "PERFDRAW71", "gen": 1, "status": "recycled", "calls_used": 58,
+  "baseline": {
+    "method": "same PC + session (2026-11-02 23:42-23:52 local), shared PC: CPU 5-54%, 5-9 godot procs. 2k/10k = tools/bench.gd -- --fps --fps-secs=30 --fps-cases=<c> --no-write; LP = tools/perf71_draw_lp.gd -- --fps-log --fps-quit=30 --no-vsync + lpz:--lpz=0.25 | lppan:--lpz=0.25 --pan | lppeak:--lpz=0.5 --peak=1000. Script .plan/perfdraw71/base.sh <tag> g61 g7 g71 (env CASES / LPCASES); raw .plan/perfdraw71/base.out + base_<tree>_<case>.log. Posted as fact perfdraw71.baseline (seq 105).",
+    "p10": {"2k": {"g61": 74.3, "g7": 62.3, "g71": 12.0}, "10k": {"g61": 269.6, "g7": 227.6, "g71": 7.6},
+            "lpz": {"g7": 71.9, "g71": 11.8}, "lppan": {"g7": 33.2, "g71": 10.4}, "lppeak": {"g7": 24.4, "g71": 8.7}},
+    "g71_note": "g71 numbers taken BEFORE ORCH's forced-join fix (CONTROL71 hover_outline/roster/hover_entity read mv.world every frame). Not re-measured after fact control71.joins_fixed."
+  },
+  "findings": [
+    "Forced sim joins: any per-frame read of MatchView.world while a step is in flight blocks the frame on the sim. CR seq 64 -> ORCH applied it. Even with hover_outline+roster disabled (harness --no-join-readers) g71 still showed 17 forced joins in 20 s on LP pan vs 1 on G7: some other g71 reader remains (hover_entity in match_view?). Re-measure SIMTHREAD forced_joins after ORCH's fix.",
+    "LP pan choppiness (G7 33 p10): entity_layer far LOD rebuilt its whole list every frame while panning because the reuse key held the full canvas transform (~12 ms/frame, 3k items at zoom 0.25).",
+    "LP peak (1,000 machines, z0.5): G7 frame ~44 ms = entity layer ~20 ms (mid LOD, per-frame rebuild for interpolation, GDScript loop over ~1,400 drawn) + rest; sim tps ~5 (sim-bound, PERFSIM71). 60 fps here needs the per-unit GDScript loop cut massively (GPU swarm batch: one MultiMesh y-sorted with a Texture2DArray of atlas pages, per-instance custom = packed src rect/page/interp delta, alpha as a shader uniform; rebuild per snapshot not per frame) - not started."
+  ],
+  "done": [
+    "tools/perf71_draw_lp.gd: LP fps harness (zoom / build-independent pan loop / 1,000-machine peak / --shot / diag --no-join-readers). Copied into the G7 worktree too.",
+    "presentation/view/entity_layer.gd refresh(): far-LOD list reuse while panning (key = zoom scale not full transform; built for the view grown FAR_PAN_PAD=0.3 per side when the canvas origin moved; reused while _far_rect encloses the view). Compiles (headless --quit-after 60: 0 errors). One run, LP pan z0.25, diag mode, loaded PC: avg 37.6 -> 56.0, p10 29.2 -> 44.5, ent 12.9 -> 3.4 ms/frame (.plan/perfdraw71/prof_pan.log vs prof_pan2.log). Single run, not a paired A/B."
+  ],
+  "not_done": [
+    "Screenshot proof that the far pan reuse is invisible (side-by-side shots during a pan, old vs new) + fact shots.best",
+    "tests/test_perfdraw71.gd (view on/off hash identical; batch draws same entity set as old path) - not created",
+    "tools/pt71_perfdraw71.gd flow - not created",
+    "GPU swarm batch (presentation/view/swarm_batch71.gd + .gdshader) for LP peak - not started",
+    "re-measure all 5 cases after ORCH's forced-join fix; paired A/B for the far pan change",
+    "2k gate (beat 85.2) and 10k (beat 269.6 today / 262.5 ref): G7 was already below G6.1 (62.3 vs 74.3 loaded) - needs its own profile (--prof on bench 2k)"
+  ],
+  "exact_next_step": "Run: bash .plan/perfdraw71/base.sh after1 g71 (all cases, now with ORCH's join fix + far pan reuse) via .plan/hb.sh; check SIMTHREAD forced_joins ~0; then take pan shots: perf71_draw_lp.gd --lpz=0.25 --pan --shot=<abs>.png --shot-frame=300 with entity_layer.gd vs .plan/perfdraw71/entity_layer.gd.orig swapped in, Read both, post fact shots.best.",
+  "files_touched": ["presentation/view/entity_layer.gd (far-LOD pan reuse; original saved at .plan/perfdraw71/entity_layer.gd.orig)", "tools/perf71_draw_lp.gd (new)", ".plan/perfdraw71/* (logs, base.sh)"],
+  "uncommitted_state": "both files above uncommitted (ORCH commits). Worktrees C:/CODING/pd71_g61 (55b4e04) and C:/CODING/pd71_g7 (g7 3a66ffc, .godot imported, untracked tools/perf71_draw_lp.gd) LEFT IN PLACE for the successor's same-session comparisons; remove with git worktree remove --force when done. No Godot processes of mine running.",
+  "gotchas": ["Never read mv.world per frame in a harness or layer (forced join); use mv._world after mv.world_readable()", "new worktree needs .godot copied from the main tree + one --headless --import (~5 min)", "board type for change requests is `need` with topic change_request.<x>"]
+}

@@ -352,6 +352,10 @@ func _build_bottom(root: Control) -> void:
 	mm_frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bh.add_child(mm_frame)
 	_minimap = MinimapScript.new()
+	# G7.1 UIFIX71: the largest square the BOTTOM_H panel holds (220 - frame 16 - inset 6 = 198, G7 had 192), so the panel
+	# stays 220 tall under the group bar (-226), G2 group panel and cargo strip (-222). ORCH's 206 (CR 164) never reached
+	# the layout (minimap _init had already sized the box at 208) and would still make the panel 228 tall.
+	_minimap.SIZE = int(BOTTOM_H - UiKit.box("frame").get_minimum_size().y - mmsb.get_minimum_size().y)
 	_minimap.setup(mv)
 	mm_frame.add_child(_minimap)
 	# inspector (scrolls if a selection has more lines than fit)
@@ -485,7 +489,14 @@ func _fit_card() -> void:
 	var count := shown.size() + fixed.size() + (1 if pages > 1 else 0)
 	var rows := ceili(float(count) / float(cols))
 	var bh := clampf(floorf((avail - 4.0 * float(rows - 1)) / float(rows)), 34.0, 74.0)
-	var bw := clampf(floorf((w - 4.0 * float(cols - 1)) / float(cols)) - 1.0, BTN_MIN_W, 190.0)
+	# G7.1 UIFIX71: a card taller than its slot scrolls, and CardScroll then adds its scroll bar's width to its minimum:
+	# share only the rest between the columns. The -1 slack alone covered 4 of those 6 px, so a scrolling card could
+	# settle up to 2 px wider than its slot (it re-fits only on a resize, and its own minimum blocked that) and push the
+	# bottom panel past a 1066 px canvas (1280x720 / 2560x1440 at 150 %). Cards that fit without scrolling are unchanged.
+	var sbw := 0.0
+	if float(rows) * bh + 4.0 * float(rows - 1) > avail:
+		sbw = _card_scroll.get_v_scroll_bar().get_combined_minimum_size().x
+	var bw := clampf(floorf((w - sbw - 4.0 * float(cols - 1)) / float(cols)) - 1.0, BTN_MIN_W, 190.0)
 	var fs := 11
 	for cand in [14, 13, 12]:
 		if _btn_need(f, cand) <= bh:

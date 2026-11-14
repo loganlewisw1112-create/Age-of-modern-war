@@ -1,0 +1,71 @@
+{
+  "buildings": {
+    "a_g71_farp": {
+      "fits": "4x4 forward arming and refuelling point: 2 rotorcraft pads on one PSP strip (pads = world offsets from the centre)",
+      "flat": true,
+      "g71": {
+        "faction": "a",
+        "kind": "farp",
+        "pads": [
+          [
+            -0.639999985694885,
+            0.280000001192093
+          ],
+          [
+            0.720000028610229,
+            0.280000001192093
+          ]
+        ]
+      },
+      "pivot": [
+        134,
+        100
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_g71_farp_build_0.png",
+          "mask": "buildings/a_g71_farp_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_g71_farp_build_1.png",
+          "mask": "buildings/a_g71_farp_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_g71_farp_build_2.png",
+          "mask": "buildings/a_g71_farp_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_g71_farp_built.png",
+          "mask": "buildings/a_g71_farp_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_g71_farp_damaged.png",
+          "mask": "buildings/a_g71_farp_damaged_mask.png"
+        }
+      }
+    }
+  },
+  "files": {
+    "buildings/a_g71_farp_build_0.png": "ee7b7a43b898355bb366d3c0e62664a4",
+    "buildings/a_g71_farp_build_0_mask.png": "6461224862b18d5324e9c288b5ac0be6",
+    "buildings/a_g71_farp_build_1.png": "65c4e8739fb588101cdca7fd004870eb",
+    "buildings/a_g71_farp_build_1_mask.png": "6461224862b18d5324e9c288b5ac0be6",
+    "buildings/a_g71_farp_build_2.png": "5a62485c6def2135b8b3341e4f500623",
+    "buildings/a_g71_farp_build_2_mask.png": "6461224862b18d5324e9c288b5ac0be6",
+    "buildings/a_g71_farp_built.png": "0c81c908a533e54d402fdfd65e6b5ef7",
+    "buildings/a_g71_farp_built_mask.png": "0abee0d85c8bb37a23eeae68a1ff9fc6",
+    "buildings/a_g71_farp_damaged.png": "828852f01e86c4803d4d456f9d5b1750",
+    "buildings/a_g71_farp_damaged_mask.png": "0abee0d85c8bb37a23eeae68a1ff9fc6",
+    "icons/a_g71_farp.png": "ebf1837541e52eafeed2b9a95927e052"
+  },
+  "group": "g71_farp",
+  "icons": {
+    "a_g71_farp": "icons/a_g71_farp.png"
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}

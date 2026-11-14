@@ -1,0 +1,28 @@
+{
+  "_meta": "G7.1 A2 AIR OPS (owner: AIRFIX71, docs/G71_SCOPE.md A2). rules.g71_air: endurance, own airspace, hot-pit service, patrols. buildings.a_g71_farp: the Human A forward arming and refuelling point. Every number PROVISIONAL (untuned).",
+  "rules": {
+    "g71_air": {
+      "ver": 1,
+      "burn_mult": 0.34,
+      "_note_burn_mult": "PROVISIONAL. Multiplies every aircraft's fuel_burn: about 3x the old endurance ('much longer fuel').",
+      "idle_burn_mult": 0.05,
+      "_note_idle": "PROVISIONAL. Burn x this while hovering / loitering / holding (not moving) inside own airspace: near zero.",
+      "own_airspace_r": 28.0,
+      "_note_own_airspace": "Own airspace = within this many tiles of any own registered aircraft pad (Pads71: helipads, dropship pads, CN helipad, roof pad, FARPs). PROVISIONAL.",
+      "hold_reserve_s": 6.0,
+      "hot_pit_s": 6.0,
+      "_note_hot_pit": "PROVISIONAL. Rotorcraft on a FARP / helipad / dropship pad / CN helipad: full refuel + rearm in this many seconds, rotors / fans kept turning (entity field air_hot), then back to its last task.",
+      "patrol_service_frac": 0.5,
+      "_note_patrol": "PROVISIONAL. A patrolling craft leaves for service after a lap once fuel < this fraction of max or it is out of ammo, but only while more than the route's min_on_station craft stay on it (low fuel at 25% always goes)."
+    }
+  },
+  "buildings": {
+    "a_g71_farp": {
+      "name": "FARP", "faction": "human_a", "stage_min": 6, "size": 4, "hp": 900, "armor": "building", "sight": 8,
+      "power": 0, "requires_power": false, "buildable": true, "requires": [],
+      "cost": {"credits": 300, "salvage": 120, "ore": 0}, "build_time": 20,
+      "air_field": "forward_helipad", "pad_slots": 2, "home_ok": false, "farp": true, "g71": true, "field_buildable": true,
+      "_note": "G7.1 A2: forward arming and refuelling point, buildable outside the walls; 2 rotorcraft pads in the shared home-pad registry (kind farp), hot-pit refuel + rearm. field_buildable: true = no base-range rule (Construction._field_buildable), so it can be placed outside the walls on any explored buildable ground. farp: true lets the hive AI target it late game (C2). Art: tools/art/g71_farp.gd -> assets/art/g71_farp (built, damaged, 3 construction stages, icon; ARTFIX71), look-checkpoint polish in wave 5. PROVISIONAL."
+    }
+  }
+}

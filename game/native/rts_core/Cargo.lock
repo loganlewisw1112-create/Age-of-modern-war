@@ -135,7 +135,7 @@ dependencies = [
 
 [[package]]
 name = "rts_core"
-version = "0.5.5"
+version = "0.6.3"
 dependencies = [
  "godot",
 ]

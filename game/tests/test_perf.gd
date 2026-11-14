@@ -28,13 +28,13 @@ func _place(w: SimWorld, def: String, fid: int, at: Vector2) -> int:
 
 
 ## Two groups in opposite corners, both attack-moving to the centre.
-func _armies(w: SimWorld, n0: int, n1: int) -> Array:
+func _armies(w: SimWorld, n0: int, n1: int, far: float = 86.0) -> Array:
 	var a := []
 	var b := []
 	for i in n0:
 		a.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 0, Vector2(8 + (i % 4) * 2, 8 + (i / 4) * 2)))
 	for i in n1:
-		b.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 1, Vector2(86 - (i % 4) * 2, 86 - (i / 4) * 2)))
+		b.append(_place(w, "ifv" if i % 4 == 3 else "rifleman", 1, Vector2(far - (i % 4) * 2, far - (i / 4) * 2)))
 	var mid := Vector2(48.5, 48.5)
 	w.submit({"type": "attack_move", "issuer": 0, "unit_ids": a, "target": mid})
 	w.submit({"type": "attack_move", "issuer": 1, "unit_ids": b, "target": mid})
@@ -69,7 +69,7 @@ func _totals(w: SimWorld) -> Dictionary:
 func test_tier_promotion_on_contact_and_no_duplication() -> void:
 	Tiers.force_off = false
 	var w := _clean()
-	_armies(w, 8, 8)
+	_armies(w, 8, 8, 92.0)   # G7.1 A5: bucket 44 (g7_a_fpv 16.8), so side 1 starts at >= 88 (bucket 2) to be REDUCED at first
 	var cr := Tiers.contact_radius()
 	var saw_reduced := 0
 	var flips := 0
@@ -111,7 +111,7 @@ func test_attack_order_promotes_at_once() -> void:
 	# the 96-tile map the side-1 HQ (cell 80) now falls in the 3x3 neighbourhood of a unit at (8, 8): that unit is
 	# correctly FULL (conservative). The lone unit is therefore side 1's, in the far corner (bucket 2), whose 3x3 holds
 	# only its own HQ; the enemy HQ (cell 13) is in bucket 0. Same property under test.
-	var a := _place(w, "rifleman", 1, Vector2(86, 86))
+	var a := _place(w, "rifleman", 1, Vector2(92, 92))
 	var b := _place(w, "rifleman", 0, Vector2(8, 8))
 	w.run_ticks(17)
 	check(Tiers.is_reduced(w.entities[a]), "lone far unit is REDUCED")

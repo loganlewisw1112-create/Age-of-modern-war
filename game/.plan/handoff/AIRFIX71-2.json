@@ -1,0 +1,33 @@
+{
+  "id": "AIRFIX71", "gen": 2, "written_by": "ORCH (reconstructed 2026-11-04)",
+  "reason": "AIRFIX71-2 stopped without a handoff when the host session ended (last board status seq 201, 2026-11-03 08:23Z, calls ~77, est ~380k). This file is rebuilt from its board statuses and its logs in .plan/airfix71/.",
+  "done": [
+    "HUD alert lines for AirPadBusy / AirPadLost / AirNoPad in presentation/hud/g2_alerts.gd",
+    "a_g71_farp made field_buildable; sync71 FARP registration fixed (was registering as af: helipad, now farp:<id>)",
+    "tests/test_airops71.gd written: 8/8 PASS (.plan/airfix71/airops1.log / airops2.log)",
+    "test_airfix71 full matrix: matrix3_full.log RESULT pass=6 fail=0 (16-case check bad=0, LP + skirmish, save/load, same hash)",
+    "presentation/ui71/patrol_draw.gd written",
+    "tools/pt71_airfix71.gd: pt_airfix71_2.log PLAYTEST RESULT pass=15 fail=0 (all 4 craft + FARP land on pad d=0.00, taken pad holds beside it, FARP hot-pit air_hot seen)",
+    "tools/pt71_airops71.gd: pt_airops71_1.log PLAYTEST RESULT pass=13 fail=1 (airops71_three_on_patrol: only 2 on route)",
+    "gold61 x2 (gold_run1.log / gold_run2.log): the two runs are identical to each other",
+    "caller tests (.plan/airfix71/callers.log): test_air 9/9, test_vanta7 7/7, test_air_transport 7/7 and the rest pass, EXCEPT test_cnfac7 35/1: test_ramp_load_and_unload_sequence 'a_vtol_dropship: APC hidden only once lined up at the ramp foot (0.52 tiles off)'",
+    "dead-code-free air.gd staged at .plan/airfix71/air.nodead.gd (NOT swapped in)"
+  ],
+  "orch_applied_since": [
+    "sim/world.gd COMMANDS air_patrol: Air (seq 142)",
+    "hotkeys.gd: air_patrol on SHIFT+Y (not SHIFT+P: cn_pincer owns SHIFT+P and a mixed CN + air selection shows both cards)",
+    "g5_unit_cmds.gd: 'air_patrol' button on the air card calls mv.get_node('PatrolDraw71').start()",
+    "match_view.gd: PatrolDraw71.attach(self) next to Roster71.attach",
+    "render_snap air_hot (CR seq 148) is handed to PERFDRAW71-3, which owns render_snap.gd and the rotor animation"
+  ],
+  "remaining": [
+    "1. test_cnfac7::test_ramp_load_and_unload_sequence: decide whether it fails on the committed g71 HEAD too (git worktree at HEAD fda25f9, or git stash is FORBIDDEN: use a worktree) or only with the air.gd / pads71 changes. If yours, fix it in your files; if pre-existing, report it with evidence and leave it.",
+    "2. pt71_airops71 'three_on_patrol' (2 on route, want 3): check whether the test setup or the min_on_station / lap-service logic is wrong; fix; rerun both pt71 flows windowed.",
+    "3. Swap in .plan/airfix71/air.nodead.gd only after callers are green; rerun test_air, test_airfix71 (one case is enough after a full matrix pass), test_airops71, test_vanta7.",
+    "4. Air system share of 2k bench sim cost with tools/perf71_prof.gd --sub (A2 must cost ~nothing when no aircraft fly).",
+    "5. Check that the gold61 hashes match .plan/regold71 (i.e. A1/A2 moved no golden) or name which moved and why, with the two identical runs you already have.",
+    "6. Post fact shots.best for the landing shots, then the final report."
+  ],
+  "files_touched": ["sim/systems/pads71.gd", "sim/systems/air.gd", "sim/systems/vanta7.gd", "sim/systems/cn_facility.gd", "sim/systems/drone_bay7.gd", "content/g71/defs_g71_air.json", "presentation/hud/g2_alerts.gd", "presentation/ui71/patrol_draw.gd", "tests/test_airfix71.gd", "tests/test_airops71.gd", "tools/airfix71_probe.gd", "tools/pt71_airfix71.gd", "tools/pt71_airops71.gd"],
+  "uncommitted_state": "all uncommitted on g71; ORCH commits"
+}

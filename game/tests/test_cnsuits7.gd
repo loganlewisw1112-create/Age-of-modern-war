@@ -125,7 +125,7 @@ func test_variants_roles_and_weapons() -> void:
 			var wd := Content.weapon(String(d.weapon))
 			check_eq(String(wd.get("class", "")), want[String(d.cn_suit)], "%s weapon class" % id)
 			ws[String(d.weapon)] = true
-			check(int(d.hp) > 700 and float(d.speed) <= 2.2 and int(d.pop) == 3, "%s heavier than a G6 exo suit" % id)
+			check(int(d.hp) > 700 and float(d.speed) <= float(Content.unit("a_exo_rifle").speed) and int(d.pop) == 3, "%s heavier than a G6 exo suit" % id)
 		check_eq(ws.size(), 4, "four distinct weapons (%s)" % ("B" if b else "A"))
 	check(bool(Content.weapon("g7_cns_atgm").get("guided", false)), "Breaker missiles are guided")
 	check(float(Content.weapon("g7_cns_cuas").get("anti_drone_mult", 1.0)) >= 3.0 and bool(Content.weapon("g7_cns_cuas").get("anti_air", false)),

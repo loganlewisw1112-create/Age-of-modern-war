@@ -8,6 +8,250 @@ Status 2026-11-02 (ORCH): G7 leftovers committed (3a66ffc); branch `g71` cut. **
 bad blocks + hardware I/O errors logged as recently as 2026-11-02 12:00), so G7 was NOT copied to D:; all work stays on C:
 and the D: tree is still at G6.1 (55b4e04). A5 done (+20% speed at load, `rules.g71_speed_mult`); goldens re-baselined
 (`.plan/regold71/`). Wave 1 launched: AIRFIX71, FLOW71, CONTROL71, PERFSIM71, PERFDRAW71.
+Status 2026-11-04 (ORCH, resume): CONTROL71 + FLOW71 done. AIRFIX71-2 / PERFDRAW71-2 ended with the host session
+(no handoff; ORCH rebuilt `.plan/handoff/*-2.json`); successors AIRFIX71-3 / PERFDRAW71-3 running. PERFSIM71 hit the
+Stop-if (2k sim 1.72x G6, loaded PC). **Owner decision 2026-11-04: native combat port (PERFSIM71-2), gate unchanged;
+if it still falls short, stop and ask again.** ORCH applied CRs 149 (air_patrol on SHIFT+Y, not SHIFT+P: cn_pincer),
+161 (PatrolDraw71 attach), 164 (minimap SIZE 206 in hud.gd).
+**PAUSED 2026-11-04 by the owner.** All wave-1 agents stopped cleanly with handoffs: `.plan/handoff/AIRFIX71-3.json`,
+`PERFDRAW71-3.json`, `PERFSIM71-2.json` (budget audits OK). Nothing committed. Resume notes: (1) PERFSIM71-2 estimates
+(unmeasured) that piecewise native ports won't reach the G6 gate; measure before re-asking the owner; the G6 worktree
+C:/CODING/ps71_g6 is gone, recreate at 979a6d8 first. (2) AIRFIX71 left worktree C:/CODING/af71_head (fda25f9) for the
+test_cnfac7 ramp check; remove after. (3) PERFDRAW71-3 added render_snap air_hot (untested); baseline sweep not started. (4) test_ui_fit still FAILS 2/4 (log `.plan/orch71/test_ui_fit.log`):
+the same BottomPanel vs GroupBar "[.] Idle" 1 px overlap (61x1). ORCH's `_minimap.SIZE = 206` in hud.gd did NOT clear it;
+find what really sets BottomPanel height (FLOW71-2 saw issues=0 only with minimap DEFAULT_SIZE 192) before trying again.
+Status 2026-11-04 late (ORCH, resumed by the owner: "continue where left off"): G6 worktree C:/CODING/ps71_g6 recreated at
+979a6d8 and imported (smoke: SIMAB fight 23.00 ms, 0 errors). Successors AIRFIX71-4, PERFDRAW71-4, PERFSIM71-3 launched from
+their handoffs (caps 750k/140, board seq 229-232, guard armed).
+Status 2026-11-05/08 (ORCH): AIRFIX71-4 DONE (patrol 3/3 on route, air.nodead swap, air tests 9/8/7/6 all 0 fail, gold61 16/16
+lines = regold71, air <0.05 ms/tick on 2k). test_cnfac7 ramp failure (APC hidden 0.52 tiles off) confirmed PRE-EXISTING at fda25f9
+(C:/CODING/g71_clean, 35/1, log C:/CODING/orch71_check/cnfac7_head.log); G7 final was 155/0 so A5 speed is the likely cause; OPEN:
+fix the lineup code, not the tolerance. PERFSIM71-3 hit the stop rule: 2k fight G6 34.0 vs G7.1 49.9 ms/tick (1.71x, loaded PC);
+prefilter ports saved ~0.03 ms. **Owner decision 2026-11-05: full native combat port (option A), gate unchanged.** PERFDRAW71-5
+died on an API error (handoff rebuilt by ORCH). 2026-11-08: PERFSIM71-4 (native port, gen 1 of several) + PERFDRAW71-6 launched.
+Nothing committed yet.
+Status 2026-11-08 (ORCH): native combat port phase 1 (mirror, rts_core 0.6.0) exact, saved ~0; phase 2 (native _find,
+rts_core 0.6.1) exact (0 diffs over ~135k calls, test_hot_state 17/0) and saved ~1.5 profiled ms of a 2.0 estimate. Clean pairs
+(.plan/perfsim71/n5p_pairs.txt): G6 14.82 ms, G7.1 27.45 ms = 1.85x. Projection (docs/NATIVE_COMBAT71.md s8): 1.25-1.55x G6 after
+combat phases 3-5, gate also needs phase 6 cuts outside combat; 6-9 more generations. Owner asked whether to start phase 3.
+PERFDRAW71-6: 10k regression = minimap._draw_incoming (242 vs 132 draw calls); CR 467 given to PERFDRAW71-7.
+Owner 2026-11-08: "Yes, start phase 3" (PERFSIM71-6 running). PERFDRAW71-7: CR 467 done (same look, max diff 1/255; 10k g71 p10
+~217 vs old 162-179, g7 ~226; draw calls 133 vs g7 132); FARP hot-pit draw order fixed (looked). Gates: 2k g71 65.6 vs G6.1-today
+53.6 (the 85.2 reference does not reproduce on this PC; gate-grade rerun owed), 10k ~217 vs G7 ~226 (3-5% short), LP peak 22.4 vs 60.
+**Owner 2026-11-08 on LP peak: "Cache now, native later"**: PERFDRAW71-8 builds the GDScript per-snapshot frame cache; the native
+machine entity-list builder is queued after the native combat port. Gate unchanged.
+Status 2026-11-09 (ORCH, resumed after a session break): PERFSIM71-6 phase 3a (native act driver, rts_core 0.6.2) exact
+(hash 8fd794b3 / a1e5af17 / 41b5f765 on==off, 1.79M whole-shooter compares 0 diffs, test_hot_state 17/0) but ~50% of estimate:
+G7.1 26.67 vs G6 15.95 ms (1.67x, .plan/perfsim71/n6p_pairs.txt). PERFDRAW71-8 frame cache: no fps gain, 2 diffs at 2k -> ORCH set
+it OFF by default (entity_layer.gd rc_on). **Owner 2026-11-09: "Probe other systems first"** -> PERFSIM71-7 measures the non-combat
+per-system gap and tries exact cuts; combat port paused. Decisions log: DECISIONS.md. Audit of PERFSIM71-6 usage: UNVERIFIED (session
+ended before its completion usage arrived). Nothing committed.
+Status 2026-11-09 (ORCH): PERFSIM71-7 probe (docs/NATIVE_COMBAT71.md s9): G6 18.11 vs G7.1 26.86 profiled; ~6.1 of the 6.7 ms
+non-combat gap is new G6.1/G7 feature work; exact cuts ~1-2 ms. **Owner 2026-11-09: "New bar, move on"**: E2 sim gate is now
+final build <= 1.7x G6 on 2k, later waves add ~0 (G71_SCOPE.md; DECISIONS.md). Port stopped at phase 3a. Next: wave 1 close-out
+(cnfac7 ramp fix, full suite + determinism + perf gates, commit) and wave 2 briefs; LP-peak native builder now unblocked.
+Status 2026-11-09 05:40Z (ORCH): RAMP71 DONE: transport.gd _tick_bay_boarder settles a vehicle on the line-up for one
+tick before it drives in (A5 x1.2 moved the APC 0.52 tiles short); live test_cnfac7 36/0 (.plan/ramp71/test_cnfac7_live.log),
+copy airfix71 6/0, airops71 8/0, hot_state 17/0. Open, untested: soldiers still hide ~0.73 tiles short of the ramp foot (same
+pop). Wave 2 launched (roster .plan/orch71/wave2_roster.md, answers 5A): DAMAGE71, FIRES71, ARMY71, BASTION71, CNOPS71 + SWARMNAT71
+(LP-peak native builder). Wave-2 agents add only new files until wave 1 is committed (owner asked; pending). ORCH stopped an
+orphaned cut7.sh of the ended PERFSIM71-7 that held the timing lock 05:10-05:30Z. Nothing committed.
+Status 2026-11-09 06:15Z (ORCH): owner amended the LP-peak gate ("Bar >=30 fps, build native": p10 >= 30 and >= 2x G7).
+Owner approved committing wave 1 after the full suite + determinism pass on a frozen copy: copy = C:/CODING/g71_clean
+(HEAD fda25f9 + the 94 wave-1 paths in C:/CODING/orch71_check/wave1_files.txt, no wave-2 files); suite running
+(C:/CODING/orch71_check/w1_status.txt, w1_full_suite.log). Wave-2 gen-1 agents DAMAGE71, FIRES71, BASTION71, CNOPS71 handed off
+(new files only; their CRs for world.gd SYSTEM_ORDER / COMMANDS wait for the commit); ARMY71-2 running. Hospital site A approved
+(new building north of the facility). RISK for Done-when 8: CN team airlock cycle measured 102.1 s vs 70 s, soldiers not healed
+in the cycle today (.plan/cnops71/repro_*.log); CNOPS71-2 must redesign the turnaround (heal in wash/garage, overlap rearm).
+Status 2026-11-10 06:57Z (ORCH, resumed "continue"): step A DONE with one change: **4 fixers, not 3** (the 13 A5 files split
+by area so they run in parallel): ARTFIX71-1 (test_art, test_icons7, test_art_g5_bld), UIFIX71-1 (test_ui_fit, test_ui6a),
+SPEEDFIX71-1 (core sim: test_content_g6, test_perf, test_path7, test_naval_g6, test_gen61, test_real61, test_drone_team),
+SPEEDCN71-1 (CN / soldiers: test_cnsuits7, test_cnsim7, test_cnrole7, test_sent7, test_wound7, test_cards8c). Briefs
+`.plan/agents/prompts/G71-{ARTFIX71,UIFIX71,SPEEDFIX71,SPEEDCN71}.md` + shared `G71-FIX71_COMMON.md` (tests frozen: any
+expectation change goes to ORCH as `change_request testfix.<test>`, ORCH asks the owner). Caps 750k/140 registered (seq
+1047-1050); guard v1 armed under Monitor. Max 6 live: 2 slots left, wave-2 successors still wait for the commit. Next: steps B, C.
+Pre-check (ORCH, 2026-11-10): the 2 live-tree fixes (rts_core 0.6.3 DLL + Cargo.toml/lock + mirror.rs, test_perfdraw71.gd,
+test_perfsim71.gd) copied into the frozen copy; there: test_airfield 13/0, test_perfdraw71 7/0, test_perfsim71 6/0,
+test_hot_state 17/0, 0 script errors (logs C:/CODING/orch71_check/pre71/). Frozen copy now differs from the live tree only by
+docs/board + whatever the 4 fixers change.
+Testfix requests (2026-11-10 ~07:25Z, board type `need`, topic `change_request.testfix.<test>`; each proposed copy passes on
+G7 3a66ffc and live; evidence `.plan/speedfix71/`, scratchpad probes for SPEEDCN71). OWNER DECISION PENDING, none applied:
+- Like-for-like (same check, the speed-coupled number scales with A5): test_cnsuits7 1067 (compare with the loaded G6 exo speed,
+  not 2.2), test_wound7 1069 (crawl bound 4.0 x mult; crawl = 0.15 x unit speed by design, G7 had 0.007 margin), test_content_g6
+  1076 (cap 10 x mult), test_real61 1094 (march leg 340 -> 283 ticks), test_gen61 1120 (lead-in 40 -> 33 ticks), test_perf 1077
+  (far units 86 -> 92: A5 grew the tiers bucket 41 -> 44, so on 96-tile maps nothing under 88 is REDUCED; correct, conservative).
+- Scenario changes: test_drone_team 1134 (SPAAG 3 tiles closer AND gun pre-laid at the launch: easier than G7's setup);
+  test_naval_g6 1141 (sweeper stops on the field's far edge; ORCH prefers the sim alternative: sweep rate x speed mult, so one
+  pass still clears the lane); test_cnrole7 1122 (tolerate the parked soldier dying to own-side splash: weakens the hold check;
+  ORCH prefers a setup that keeps him alive, e.g. walker further away).
+- SPEEDFIX71-1 DONE (audit OK, real 256k / 78 calls); successor SPEEDFIX71-2 on test_path7 = real sim bug (riflemen shove an
+  APC backwards at the gate exit, VehDrive7 handoff t~521).
+- ARTFIX71 found (seq 1131): live-tree test_icons7 also lists 11 wave-2 ids with placeholder icons (defs_g71_defences.json,
+  defs_g71_fires.json: BASTION71 / FIRES71). Not in the frozen copy, so not a wave-1 blocker; wave-2 successors owe those icons.
+- ARTFIX71-1 DONE (audit OK, real 270k / 99 calls): FARP art (new generator tools/art/g71_farp.gd, group assets/art/g71_farp,
+  268 px, 3 build stages, icon) + air_patrol 32x32 icon (g5_bld regenerated, 936/936 old files byte-identical). Wave-1-only
+  tree: test_art 7/0, test_icons7 1/0; live: test_art_g5_bld 2/0, test_airfix71 6/0, test_airops71 8/0, pt airfix71 15/0.
+  Every fixer path for step B is listed in C:/CODING/orch71_check/fixer_files.txt (append as fixers finish). New PNGs need
+  `--import` in the frozen copy before the suite.
+- UIFIX71-1 handed off (audit OK, real 236k / 97 calls). Causes: (1) CONTROL71 minimap DEFAULT_SIZE 208 applied in _init, so
+  ORCH's CR-164 `SIZE = 206` never reached the layout (panel min 230 > BOTTOM_H 220); fix: SIZE setter + hud.gd sets 198, the
+  largest square the 220 px panel holds (G7 192; 206 needs a taller panel = moves the cargo strip). (2) FLOW71 flow bar rows
+  HBox -> HFlowContainer (150% CLIP at 1280x720). test_ui6a 8/0, test_flow71 12/0, test_control71 6/0. ORCH (no successor)
+  runs test_ui_fit, test_ui6b, test_perfdraw71 live + test_ui_panels live vs wave-1-only tree (ui_panels went 5/0 -> 4/1 in
+  the live tree: build_rail hotkey X taken by G6_sweep; suspect wave-2 content). Logs C:/CODING/orch71_check/ui71/.
+- SPEEDCN71-1 handed off (audit OK, real 259k / 84 calls). Sim fixes: apc7.gd agility_hit (ref x g71_speed_mult: colossus
+  stride factor back to 1.0) and wounds.gd _care_pass (a carer with a `board` order ends its care job: CN operators remount);
+  hashes == w2.bench_ref, hot_state 17/0. 8th testfix request: test_cards8c 1191 (scenario change: clear the enemy units so the
+  base is quiet; A5 brings a Machine scout into the guard net 50 ticks earlier and the board never rotates under alarm).
+  Successor SPEEDCN71-2: re-run cnsim7 + wound7, then test_sent7, then cnfac7 / cnops7 / airops71 / hashes.
+- SPEEDCN71-2 DONE (board seq 1251; no sim change this gen): live test_cnsim7 27/0, test_wound7 16/1 (crawl only, CR 1069),
+  test_sent7 12/1 (W face only, CR 1223); cnfac7 36/0, cnops7 11/0, airops71 8/0, hot_state 17/0, hashes == w2.bench_ref.
+- 2026-11-10 ~08:00-16:20Z: PC asleep / offline; SPEEDFIX71-2 and UIFIX71-2 both died on API ENOTFOUND (no final usage:
+  budget audit UNVERIFIED for both; last statuses 235k / 58 calls and 125k / 31 calls). No successors needed:
+  SPEEDFIX71-2 had finished: sim/systems/veh_drive7.gd _unpush (infantry walking into a driven APC no longer shoves it
+  backwards beyond its own step; other axial push taken back with the sideways part); live test_path7 6/0 (was 5/1),
+  hashes == w2.bench_ref, hot_state 17/0, mil 13/0, squad61 14/0, perfsim71 6/0, cnfac7 36/0, cnsim7 27/0, facexit8 4/0,
+  facreturn8 2/0, apcmov7 16/0, det7 6/0 (logs .plan/speedfix71/live_test_*.log). UIFIX71-2: hud.gd _fit_card reserves the
+  CardScroll v-scrollbar width when the card scrolls (hud.gd == .plan/uifix71b/hud.gd.fixed); windowed fit at 1280x720 s=1.5
+  3 issues -> 0 (.plan/uifix71b/shots_*.log); its full test_ui_fit run resumed after wake, ORCH reads the result.
+- UIFIX71-2's orphaned test_ui_fit finished after wake: 6/0, TESTS OK, 0 script errors (.plan/uifix71b/test_ui_fit_after.log).
+  ALL FIXER WORK DONE; only the 9 testfix requests remain (owner decision pending since 2026-11-10).
+- 2026-11-13 16:35Z (ORCH, owner "status? continue"; nothing changed in the tree since 2026-11-10): step B started without
+  waiting for the testfix answer: 24 fixer paths (C:/CODING/orch71_check/fixer_files.txt) copied into g71_clean, `--import`,
+  `suite71.sh 6` running (pre-approval run: expect the 9 testfix files red, everything else green). First run's logs moved
+  to C:/CODING/orch71_check/suite71_run1/ (fixer briefs and CRs cite them as .../suite71/).
+- 2026-11-13 (ORCH): **owner "Yes, as recommended"** (DECISIONS.md). ORCH applied the 9 test edits in the live tree
+  (test_content_g6, test_perf, test_gen61, test_cards8c, test_sent7 = proposed copies, diff = approved lines only;
+  test_real61, test_drone_team without the debug prints; test_cnsuits7, test_wound7 by exact replacement; originals in
+  .plan/orch71/testfix_orig/). Live re-run of the 9: logs C:/CODING/orch71_check/tf71/. TESTFIX71-1 (cap 750k/140, guard
+  armed) does the naval sweep-rate sim fix (test_naval_g6 unchanged) and a test_cnrole7 setup where the parked soldier
+  survives (only that test function may change; must pass in live / HEAD / G7 and across tick shifts).
+  Live re-run of the 9 edited tests: ALL GREEN, 0 script errors: real61 8/0, gen61 15/0, drone_team 8/0, cards8c 7/0,
+  cnsuits7 9/0, perf 11/0, content_g6 7/0, wound7 17/0, sent7 13/0.
+  PC idle-slept again 16:58-22:10Z (suite paused at 116/177, resumed; import was clean: 0 errors). ORCH set keep-awake for the
+  session. Any timing-only red in this run (test_perf_g6 etc.) gets a rerun alone before it counts.
+- TESTFIX71-1 handed off (handoff .plan/handoff/TESTFIX71-1.json). NAVAL DONE: naval.gd _sweep_one rate x g71_speed_mult;
+  test_naval_g6 live 10/0, G7+patch 10/0, HEAD+patch 10/0 (HEAD unpatched 9/1), test_mines 7/0, hot_state 17/0, hashes ==
+  w2.bench_ref. CNROLE7 NOT DONE (need seq 1330): two causes: own-side strays at the walker 2 tiles away AND Wounds auto
+  buddy-aid sends the parked soldier to treat a wounded mate (fails ever_moving / moved < 1.0; CnRole7 parked doesn't filter
+  care). Original setup already failed 5/6 tick shifts on G7. No placement passes all 18 tree x shift runs; best: walker at
+  a_pos + (-4,-1) (line 319) = live 6/6, HEAD 6/6, G7 5/6 (care). Options for the owner: A placement only; B parked CN units
+  take no automatic buddy-aid job (sim); C both (ORCH recommends C). tests/test_cnrole7.gd untouched.
+  TESTFIX71-1 audit OK (real 282k / 56 calls).
+- Pre-approval full suite on the refreshed frozen copy (2026-11-13 16:33-22:32Z, with a sleep in between): files=177, 165 green,
+  fail_files=11, err_files=1. The 12 red = the 9 approved test edits (not yet copied) + test_naval_g6 (sim fix not yet copied)
+  + test_cnrole7 (owner choice pending) + test_perf_g6 5.05 vs 5 ms timing probe under 6 lanes. No other regression: every
+  fixer-fixed file (art, icons, ui_fit, ui6a, airfield, path7, cnsim7, ...) green. Logs C:/CODING/orch71_check/suite71/.
+  Then: the 9 test edits + naval.gd copied into g71_clean; those files + test_mines + test_hot_state rerun there, then
+  test_perf_g6 alone (logs C:/CODING/orch71_check/frozen_tf/).
+  RESULT on g71_clean: ALL GREEN, 0 script errors: real61 8/0, gen61 15/0, drone_team 8/0, cards8c 7/0, cnsuits7 9/0, perf
+  11/0, content_g6 7/0, wound7 17/0, mines 7/0, naval_g6 10/0, sent7 13/0, hot_state 17/0; test_perf_g6 alone 7/0.
+  => frozen copy at 176/177; only test_cnrole7 left (owner A / B / C). After it: copy, rerun cnrole7 + hot_state (+ hashes
+  if B), then step C commit by path (wave1_files.txt + wave1_uids.txt + fixer_files.txt + new .uid files).
+- 2026-11-13 (ORCH): owner chose **"Both A and B"** for test_cnrole7 (DECISIONS.md). Applied in the live tree: (A) test line 319
+  walker a_pos + (-4,-1); (B) wounds.gd: const CnRole7 preload + `and not CnRole7.parked(w, t)` on the _auto_pass buddy branch
+  (backups .plan/orch71/testfix_orig/wounds.gd.preB, test_cnrole7.gd). Verifying (C:/CODING/orch71_check/cnrole71/): parse,
+  3 bench hashes, cnrole7, wound7, cnsim7, hot_state, cnfac7, cnops7, real61, tick-shift probe (tf_cn2.gd, -4,-1, 6 shifts).
+  RESULT (live): parse clean; hashes 8fd794b3 / a1e5af17 / 41b5f765 == w2.bench_ref; cnrole7 10/0 + 0 script errors, wound7
+  17/0, cnsim7 27/0, hot_state 17/0, cnfac7 36/0, cnops7 11/0, real61 8/0; shift probe 6/6 strict (survives undamaged, fires
+  5-6 shots, never moves). Copied to g71_clean: every listed code/content/test file now byte-identical live vs frozen, no
+  tracked change outside the lists. FINAL full suite on g71_clean started (run 2 logs kept in suite71_run2/).
+- **WAVE-1 GATE MET (2026-11-14 02:37-03:10Z, g71_clean, suite71.sh 6 lanes): files=177 fail_files=0 err_files=0, 1,451 checks
+  pass** (C:/CODING/orch71_check/suite71/STATUS + SUMMARY.txt). Wave 1 committed locally by path (no push): wave1_files.txt +
+  wave1_uids.txt + fixer_files.txt + tools/art/g71_farp.gd.uid + fixer briefs/handoffs. NEXT (old steps 3-4 below): ORCH
+  world.gd wiring CRs (FIRES71 978, DAMAGE71 damage71_register/g6hooks, BASTION71 cr_orch, CNOPS71 1001, lp_setup q15 hook),
+  then post `fact orch.wave1_committed` and spawn the wave-2 successors (DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2,
+  CNOPS71-2, SWARMNAT71-2) from their handoffs. Wave 2 also owes: icons for its 11 ids (test_art/test_icons7 live) and the
+  build_rail X hotkey clash its content causes (test_ui_panels/test_ui6b live). Owner triage list: care pass overrides newer
+  non-care orders (player move); cn_ops7 overwatch drone speed not A5-scaled; cn_popup strays hit own men near a target;
+  Sentinel patrol arrival point speed-dependent (1 s think, 1.4 radius).
+- 9th testfix request: test_sent7 1223 (count rule: a wall-patrol man on his own run counts for his run's face instead of the
+  nearest face with ties to N; A5 men overshoot the 1 s arrival check and pause exactly on the NW corner = N/W tie, so W dips to
+  5; with the rule all three trees give min [9,8,8,7], bar >= 6 unchanged, no alarm involved).
+- ORCH UI checks (C:/CODING/orch71_check/ui71/): live test_perfdraw71 7/0; test_ui_panels wave-1-only tree 5/0 vs live 4/1
+  and live test_ui6b 4/1 (same build_rail hotkey X taken by G6_sweep) = wave-2 content, not a wave-1 blocker (owed by wave 2).
+  Live test_ui_fit 5/1 (was 2/4): left = test_ui_scale_75_to_150_still_fits, BottomPanel 1281 wide at 1280x720 s=1.5 (2563 at
+  2560) for ui5b_air_mixed / g6_infantry / g6_vehicles; HEAD clean. Wave-1-only tree has the same 6 issues
+  (w1_uifit_scale.log) = wave-1 regression, blocker: successor UIFIX71-2 launched (cap 750k/140) to fix it.
+  Adjacent (for owner triage, not fixed): care pass overwrites ANY newer order incl. a player move; cn_ops7 overwatch drone
+  speed (rules 6.0) not A5-scaled; cn_popup splash kills own soldiers 1 tile from its target.
+**RESUME HERE (ORCH, 2026-11-09 16:10Z)** - owner chose **"Fix all 18 first"** (DECISIONS.md): commit wave 1 only when
+all 177 test files are green on the frozen copy. Exact order:
+A. Spawn 3 fixers on board_g71 (v1, caps 750k/140, guard v1 under Monitor, AGENT_BOARD env, status every 5 calls,
+   parse-check + LF, timing lock, no background script left running, no GENESIS offer). Briefs from the findings below:
+   - ARTFIX71: a_g71_farp icon + building art (>= footprint wide) + 3 construction looks + human_a faction coverage
+     (test_art, test_icons7), and a 32x32 icon for command air_patrol (test_art_g5_bld), through the existing art
+     manifests; no placeholder, look-checkpoint polish not needed.
+   - UIFIX71: the 1 px BottomPanel / GroupBar "[.] Idle" overlap (test_ui_fit, test_ui6a; HEAD passes both; NOT the
+     minimap size: same failure at 205 and 192). Find the wave-1 change (candidates: ui7/cardbar8.gd, ui5/panels/
+     g5_unit_cmds.gd, ui5/panels/hotkeys.gd, ui71/roster.gd, ui71/flow_bar.gd, hud/minimap.gd frame) and fix it without
+     moving the cargo strip; test_ui_fit takes ~18 min, test_ui6a ~100 s.
+   - SPEEDFIX71: the 13 A5 files (list below). For each, find why +20% speed breaks it (compare with G7 worktree
+     C:/CODING/pd71_g7 = 3a66ffc, HEAD worktree C:/CODING/g71_head = fda25f9). Fix the sim when behaviour is wrong. If a
+     test hard-codes a speed-coupled number, post a change_request with old/new value and reason: ORCH asks the owner
+     before ANY expectation change (Done-when frozen, never weaken a test).
+   Wave-2 successors (DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2, CNOPS71-2, SWARMNAT71-2) and the world.gd wiring wait
+   for the commit (sim/world.gd is a wave-1 file). Max 6 live: 3 fixers leave room for 3 wave-2 agents on NEW files only.
+B. Refresh the frozen copy C:/CODING/g71_clean (ORCH's own worktree): copy every wave-1 path + the fixers' files + the
+   0.6.3 DLL from the live tree, `--import`, then `bash C:/CODING/orch71_check/suite71.sh 6`. Green = files=177
+   fail_files=0 err_files=0; a timing-only miss (test_perf_g6) is rerun alone on a quiet PC.
+C. Commit by path (wave1_files.txt + wave1_uids.txt + the fixers' new paths), `git diff --cached --stat` has no wave-2
+   file, local only, no push, Co-Authored-By line; post fact orch.wave1_committed.
+Then the old steps 3 (world.gd wiring) and 4 (wave-2 successors) below.
+
+Previous gate notes (14:55Z), kept for the evidence:
+1. Wave-1 gate: wait for `SUITE71_DONE` in C:/CODING/orch71_check/suite71/STATUS (G7's method: one Godot process per test
+   file, 6 lanes, `bash C:/CODING/orch71_check/suite71.sh 6`, on the frozen copy C:/CODING/g71_clean, started 14:47Z; per-file
+   logs + SUMMARY.txt in that folder; progress in done.txt). The earlier single-process `tests/run.sh` run was stopped at
+   14:45Z: 8.4 h in, still running at ~18% of one core, no output. Green = files=177 fail_files=0 err_files=0, incl.
+   test_hot_state. Any failure: check whether it is pre-existing (HEAD fda25f9) before blaming wave 1; fix or list it.
+   Checked 14:50Z: all 91 wave-1 code/content files in the live tree are byte-identical to the frozen copy (only
+   board_g71.jsonl, PROGRESS.md, handoff/SWARMNAT71-1.json differ: docs updated after the copy).
+   **Findings so far (15:30Z, per-file logs in C:/CODING/orch71_check/suite71, HEAD runs in .../head71 on worktree
+   C:/CODING/g71_head = fda25f9):**
+   - FIXED wave-1 regression, test_airfield native on != off (HEAD 13/0, wave 1 12/1): rts_core 0.6.2 prep_mirror ADDED
+     `cd_ticks` as a String key where GDScript / prep_units_ids add a StringName (unit with cooldown but no cd_ticks, e.g.
+     aircraft after a sortie). Same value, different var_to_bytes, so state_hash split. Fix: native/rts_core/src/mirror.rs
+     k_cd_ticks = StringName variant; rts_core 0.6.3 (Cargo.toml), built + installed in the LIVE tree bin/ (0.6.2 backup
+     C:/CODING/orch71_check/rts_core_062_backup.dll). New test tests/test_perfsim71.gd test_native_added_key_matches_gdscript_bytes:
+     red on 0.6.2, green on 0.6.3. Live tree on 0.6.3: test_airfield 13/0, test_hot_state 17/0, bench hashes unchanged
+     (2k fight 8fd794b3, 2k mixed a1e5af17, 10k valley_conquest_l 200t 41b5f765). act.rs builds `engaged` the same way but
+     attack_move orders always carry engaged from the command, so it never adds it (probed 6 distances): left as is.
+     NOT YET copied into the frozen copy (its DLL was locked by the running suite).
+   - WAVE-1 regressions still open (art): test_art 4/3 + test_icons7 0/1 (a_g71_farp has placeholder icon/art, no 3
+     construction looks; its def says "Art: placeholder until the look checkpoint"), test_art_g5_bld 1/1 (no 32x32 icon for
+     command air_patrol). HEAD passes all three.
+   - PRE-EXISTING at HEAD fda25f9 (identical failure messages in both trees, 10 files): test_cnsuits7, test_cnsim7,
+     test_cards8c, test_path7, test_content_g6, test_cnrole7 (script error line 324), test_naval_g6, test_drone_team,
+     test_gen61, test_real61. CONFIRMED 15:30Z: all 10 pass on the G7 worktree C:/CODING/pd71_g7 (3a66ffc, results
+     .../g7ref71), whose only sim difference from fda25f9 is sim/content.gd = the A5 +20% speed rule. So A5 (committed at
+     the G7.1 start without a full suite) broke them; they are G7.1 Done-when 1 work, not wave 1's.
+   - **FULL RESULT 15:53Z: files=177, 157 green, 1,417 checks pass, fail_files=20, err_files=2.** Every failing file
+     triaged by 16:05Z:
+     - Wave 1, FIXED in the live tree (not yet in the frozen copy): test_airfield (rts_core 0.6.3 above);
+       test_perfdraw71 (compile error: local consts RS / Mo used inside a lambda, moved to class level; 7/0 after).
+     - Wave 1, OPEN: test_art 4/3 + test_icons7 0/1 + test_art_g5_bld 1/1 (FARP art / icons, air_patrol icon, see above);
+       test_ui_fit 2/4 + test_ui6a 7/1 (BottomPanel overlaps the GroupBar "[.] Idle" button by 1 px at every resolution;
+       HEAD passes both). NOT the minimap: same failure with _minimap.SIZE 205 and 192 (hud.gd restored to 206,
+       byte-identical to the frozen copy). Cause not found yet.
+     - PRE-EXISTING, A5 +20% speed rule (fail identically at HEAD fda25f9, pass on G7 3a66ffc), 13 files:
+       test_cnsuits7, test_cnsim7, test_cards8c, test_path7, test_content_g6, test_cnrole7, test_naval_g6,
+       test_drone_team, test_gen61, test_real61, test_perf, test_sent7, test_wound7.
+     - Timing only: test_perf_g6 7/0 run alone at 16:05Z (6/1 under 6 lanes + load).
+   - test_perf_g6 6/1 (elevation overhead 12.05 ms vs 5 ms budget) is a timing probe run under 6 lanes + another project's
+     load; HEAD passes it. Rerun alone on an idle PC.
+2. Commit wave 1 (owner said "Yes, commit after tests", local only, no push): `git add` exactly the paths in
+   C:/CODING/orch71_check/wave1_files.txt PLUS the 26 `.gd.uid` files in C:/CODING/orch71_check/wave1_uids.txt (both relative
+   to game/; the repo tracks .uid files; generated by the frozen copy's import, copied into the live tree 14:52Z). sim/world.gd
+   is a wave-1 file, so the step-3 wiring waits for this commit. Never `git add .`; check `git diff --cached --stat` has no wave-2
+   file; message "G7.1 wave 1 ..." + Co-Authored-By line. Then post `fact orch.wave1_committed {commit}` on board_g71.
+3. ORCH wiring CRs (world.gd SYSTEM_ORDER + COMMANDS, ORCH-owned): FIRES71 seq 978, DAMAGE71 change_request.damage71_register
+   + damage71_g6hooks, BASTION71 need bastion71.cr_orch, CNOPS71 change_request.world_cnops71 (seq 1001). Add the LP-base hook
+   in lp_setup.gd reading content/g71_lp/lp_base_<agent>.json (orch.q15_fix). Parse-check, run test_hot_state + the 3 bench hashes.
+4. Spawn successors (caps 750k/140 on board_g71, guard v1 under Monitor): DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2,
+   CNOPS71-2, SWARMNAT71-2 (owner LP-peak plan: static records alone + GPU-floor probe, then native unit drawer), each from
+   .plan/handoff/<ID>-<gen>.json. Max 6 live. Every prompt: AGENT_BOARD env, status every 5 calls, parse-check + LF, timing lock,
+   no background script left running.
 ```
 GOAL — G7.1 "Tide Line": the Last Protocol siege upgrade
 For whom / what changes:  the owner, playing Last Protocol: an hour in, a thinking hive hits the walls from every

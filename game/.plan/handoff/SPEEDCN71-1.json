@@ -1,0 +1,54 @@
+{
+ "agent": "SPEEDCN71-1",
+ "status": "recycled (budget.handoff_now at 77 calls)",
+ "tests": {
+  "test_cnsuits7": {
+   "state": "done: testfix CR seq 1067",
+   "cause": "test hard-codes raw G6 exo speed 2.2; loaded exo 2.64, CN suits 2.28-2.52 (still slower)",
+   "fix": "none in sim"
+  },
+  "test_wound7": {
+   "state": "done: testfix CR seq 1069",
+   "cause": "crawl = crawl_move 0.15 x def speed, follows A5; G7 measured 3.993 vs bound 4.0, HEAD 4.712",
+   "note": "first ~6 ticks run at full speed before the realism-pass bucket sets mvm (both trees, not A5)"
+  },
+  "test_cnrole7": {
+   "state": "done: testfix CR seq 1122",
+   "cause": "parked soldier 987 killed by own-side fire (cn_popup splash, sentinel strays) at the m_walker 1 tile away; luck: G7 harpoon one-shots the walker, HEAD (A5 positions) misses; G7 also dies with a 2-tick shift"
+  },
+  "test_cnsim7": {
+   "state": "sim fixed; live 27/0 with apc7 fix only (.plan/speedcn71/cnsim7_fix1.log); NOT yet re-run after the wounds.gd edit",
+   "cause": "(1) Apc7.agility_hit compared loaded (x1.2) def speed with raw agility_speed_ref 1.2 -> colossus 0.796, walker 0.45 (G7 1.0 / 0.497); (2) remount: Wounds._care_pass overwrote the CN remount board order of a buddy-carer (care job started in the fight) and when the casualty boarded, _end left him idle 2.18 tiles from the APC forever (HEAD 2 ops stuck to 1500 ticks)",
+   "fix": "sim/systems/apc7.gd agility_hit: ref x rules.g71_speed_mult; sim/systems/wounds.gd _care_pass: carer with a board order ends its care job (board order kept)",
+   "proof": "live with HEAD agility forced replays HEAD ttk 1484 and all operators mount by t141 (scratchpad remount_probe5.out)"
+  },
+  "test_cards8c": {
+   "state": "done: testfix CR posted at handoff (topic change_request.testfix.test_cards8c)",
+   "cause": "A5 brings scout crawler 76 into the guard net at t=282 (G7 t=332); board never rotates under alarm; G7 relief dealt t=301-321 before its alarm"
+  },
+  "test_sent7": {
+   "state": "NOT STARTED",
+   "next": "read C:/CODING/orch71_check/{g7ref71,head71,suite71}/test_sent7.log, probe Sentinel count on the long-face W wall-walk / tower decks over time in G7 vs HEAD (13.9c-38 check, min 5 got <6); likely the same early-alarm pattern as cards8c (stand-to moves men off the wall)"
+  }
+ },
+ "files_touched": {
+  "sim/systems/apc7.gd": "agility_hit 2 lines (CRLF file, kept CRLF), parse-clean (tests ran)",
+  "sim/systems/wounds.gd": "_care_pass +6 lines (CRLF file, kept CRLF), parse-clean (hash run + hot_state ran)"
+ },
+ "verification_after_both_edits": {
+  "bench": "2k fight 8fd794b3, 2k mixed a1e5af17, 10k valley_conquest_l 41b5f765 == w2.bench_ref (.plan/speedcn71/hash_1.out)",
+  "test_hot_state": "17/0 (.plan/speedcn71/hot_state_1.log)"
+ },
+ "exact_next_step": "1) bash tests/run.sh --only=test_cnsim7 and --only=test_wound7 (wounds.gd edit) in the live tree; 2) test_sent7 investigation (hb.sh, ~400 s per run); 3) after the last sim change: test_cnfac7, test_cnops7, test_airops71, test_hot_state, 3 bench hashes",
+ "claims": [
+  "sim/systems/apc7.gd (seq 1111)",
+  "sim/systems/wounds.gd (seq 1143)"
+ ],
+ "adjacent": [
+  "Wounds care pass overrides ANY newer non-care order (player move etc.) every repath; only board orders handled now",
+  "cn_ops7 _fly_drone rules speed (OW speed 6.0) is not A5-scaled (rules value, not a unit def)",
+  "friendly-fire splash from cn_popup kills own soldiers 1 tile from a target (design?)"
+ ],
+ "scratch": "C:/Users/logan/AppData/Local/Temp/claude/9f89f495cddbf58f/a5013942-514b-4989-84e1-4584a49fd1a7/scratchpad (probe_*.gd + *.out)",
+ "git": "no git writes"
+}

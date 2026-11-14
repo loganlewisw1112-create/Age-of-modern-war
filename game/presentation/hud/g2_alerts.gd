@@ -78,3 +78,15 @@ func on_event(hud, w: SimWorld, pf: int, ev: Dictionary) -> void:
 				own = _owner(w, {"target_id": int(ev.get("target_id", -1))}, "target_id") == pf
 			if own and not hud._throttled("repair_blocked", 20 * 5, w):
 				hud._push_alert("Repair stopped: %s" % String(ev.get("reason", "blocked")).replace("_", " ").to_lower(), HT.YELLOW)
+		"AirPadBusy", "AirPadLost", "AirNoPad":   # G7.1 AIRFIX71 A1: a returning aircraft could not land on its own pad
+			var aid := int(ev.get("id", -1))
+			if _owner(w, ev, "id") != pf or hud._throttled("airpad:%d:%s" % [aid, String(ev.type)], 20 * 10, w):
+				return
+			var nm := _unit_name(w, aid, "Aircraft")
+			match String(ev.type):
+				"AirPadBusy":
+					hud._push_alert("%s: pad taken, holding beside it." % nm, HT.AMBER, _pos(w, aid))
+				"AirPadLost":
+					hud._push_alert("%s: pad lost, diverting to another pad." % nm, HT.AMBER, _pos(w, aid))
+				_:
+					hud._push_alert("%s: no pad, landing in the open beside base." % nm, HT.YELLOW, _pos(w, aid))

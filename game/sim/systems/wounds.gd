@@ -28,6 +28,7 @@ extends RefCounted
 const Movement = preload("res://sim/systems/movement.gd")
 const HotState = preload("res://sim/hot_state.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
+const CnRole7 = preload("res://sim/systems/cn_role7.gd")   # G7.1 (owner 2026-11-13): parked CN units take no automatic buddy-aid job
 
 const Q := 1.0 / 1024.0
 const ZONES := ["head", "torso", "arm_l", "arm_r", "leg_l", "leg_r"]
@@ -833,6 +834,12 @@ static func _care_pass(w: SimWorld, st: Dictionary) -> void:
 				or (k != "drag" and not _needs_care(c)):
 			_end(w, st, int(tid))
 			continue
+		if String(t.order.get("type", "")) == "board":
+			# SPEEDCN71 (G7.1): ordered aboard a transport (CN remount, a load order): the boarding wins. The pass used to
+			# overwrite the board order with its own move, and when the casualty boarded first, _end left the carer idle
+			# beside the APC for good. _end keeps a non-care order, so the board order stands.
+			_end(w, st, int(tid))
+			continue
 		var tp: Vector2 = t.pos
 		var cp: Vector2 = c.pos
 		if k == "drag" and int(job.t) == 1:
@@ -961,7 +968,7 @@ static func _auto_pass(w: SimWorld, st: Dictionary, au: Dictionary) -> void:
 					best = t
 					bd = d2
 					best_med = true
-			elif not best_med and d2 <= br2 and d2 < bd and (int(c.get("squad", -1)) < 0 or int(t.get("squad", -2)) == int(c.get("squad", -1))):
+			elif not best_med and d2 <= br2 and d2 < bd and (int(c.get("squad", -1)) < 0 or int(t.get("squad", -2)) == int(c.get("squad", -1))) and not CnRole7.parked(w, t):   # G7.1 (owner 2026-11-13): a CN unit parked at home holds its post, no automatic buddy aid (one lookup without a facility)
 				best = t
 				bd = d2
 		if best != null:

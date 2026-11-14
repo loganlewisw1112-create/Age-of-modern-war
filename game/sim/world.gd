@@ -71,6 +71,7 @@ const AmmoBearer = preload("res://sim/systems/ammo_bearer.gd") # G6.1 ammo beare
 const Wounds = preload("res://sim/systems/wounds.gd") # G7 hit zones + casualty care (WOUND7)
 const DronePilot = preload("res://sim/systems/drone_pilot.gd") # G7 player-flown drones (DRONE7)
 const Convoy = preload("res://sim/systems/convoy.gd") # G7 motorcade convoys + moving cover (SQUAD7)
+const Flow71 = preload("res://sim/systems/flow71.gd") # G7.1 A3 one-click deploy, auto logistics, mission templates (FLOW71)
 const Creep = preload("res://sim/systems/creep.gd") # G7 Machine creep + seeds (CREEP7)
 const Cores = preload("res://sim/systems/cores.gd") # G7 doomsday/living cores + escalation (CREEP7)
 const CounterNanite = preload("res://sim/systems/counter_nanite.gd") # G7 counter-nanite ops (CNSIM7)
@@ -105,7 +106,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Blast8, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnMission8, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Blast8, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnMission8, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -159,6 +160,7 @@ const COMMANDS := {
 	"rebase": Air,
 	"land_at": Air,
 	"take_off": Air,
+	"air_patrol": Air,  # G7.1 AIRFIX71 A2 patrol loops
 	"bombard": Naval,
 	"launch_drone": G5Mech,
 	"tactical": G5Mech,
@@ -255,6 +257,10 @@ const COMMANDS := {
 	"convoy_form": Convoy,
 	"convoy_move": Convoy,
 	"convoy_disband": Convoy,
+	"flow_send": Flow71,  # G7.1 FLOW71
+	"flow_auto": Flow71,
+	"flow_template_save": Flow71,
+	"flow_template_launch": Flow71,
 	"join_squad": AmmoBearer,
 	"leave_squad": AmmoBearer,
 	"issue_plan": Plans,
@@ -264,7 +270,7 @@ const COMMANDS := {
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).
-const DIRECT_ORDERS := ["move", "attack_move", "attack", "stop", "hold", "patrol", "guard", "fall_back", "suppress_area", "clear_building"]  # G7: + SQUAD7 orders
+const DIRECT_ORDERS := ["move", "attack_move", "attack", "stop", "hold", "patrol", "guard", "fall_back", "suppress_area", "clear_building", "flow_send", "flow_template_launch"]  # G7: + SQUAD7 orders; G7.1: + FLOW71
 
 # ---------------------------------------------------------------- state
 var tick: int = 0

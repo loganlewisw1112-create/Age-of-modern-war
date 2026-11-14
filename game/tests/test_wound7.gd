@@ -434,7 +434,7 @@ func test_crawler_obeys_move_order() -> void:
 		if i % 20 == 0:
 			trace.append("%d:%s/%s/%.2f" % [w.tick, String(e.order.get("type", "")), str(e.get("moving", false)), Vector2(e.pos).distance_to(p0)])
 	var d := Vector2(e.pos).distance_to(p0)
-	check(d > 0.3 and d < 4.0, "crawls slowly: %.2f tiles in 10 s, trace %s" % [d, str(trace)])
+	check(d > 0.3 and d < 4.0 * float(Content.rules().get("g71_speed_mult", 1.0)), "crawls slowly: %.2f tiles in 10 s, trace %s" % [d, str(trace)])
 
 
 ## CNSIM7 ask: a hit on a sealed-suit soldier punctures the suit at once (e.wpunct + SuitPunctured), once.

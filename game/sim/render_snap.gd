@@ -346,8 +346,42 @@ static func build(w) -> void:
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	if w.sys_state.has("creep"):
 		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
+	if not _g71_prov.is_empty():   # G7.1 wave 2: per-system display providers (register_g71); none registered = no work
+		var g71 := {}
+		for k in _g71_prov:
+			g71[k] = (_g71_prov[k] as Callable).call(w, snap)
+		snap["g71"] = g71
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)
+
+
+## G7.1 (SWARMNAT71-1, ORCH task for wave 2): one generic snapshot hook. A system registers a display provider once
+## (at load / setup, on the main thread, never while a sim step is in flight); every snapshot build then calls
+## provider.call(w, snap) once, after every built-in field is in `snap` (ids / pos / flags ... are final, so a provider
+## can align packed arrays with snap.ids), in registration order, and stores the return value at snap.g71[key].
+## Read it in the view with (sn.get("g71", {}) as Dictionary).get(key). snap.g71 is absent while nothing is registered.
+## Rules: render_snap is view-side (never hashed), so a provider must only READ w (never write sim state, never draw
+## rng); it runs on the sim worker thread, so it must not touch nodes; return fresh or copy-on-write data (packed
+## arrays, small dicts), never a live entity dict the next step mutates. Registering an existing key replaces it.
+static var _g71_prov: Dictionary = {}   # key -> Callable(w, snap) -> Variant
+
+
+static func register_g71(key: String, provider: Callable) -> void:
+	var d := _g71_prov.duplicate()   # swap a new dict in: a build in flight keeps iterating the old one
+	d[key] = provider
+	_g71_prov = d
+
+
+static func unregister_g71(key: String) -> void:
+	if not _g71_prov.has(key):
+		return
+	var d := _g71_prov.duplicate()
+	d.erase(key)
+	_g71_prov = d
+
+
+static func g71_keys() -> PackedStringArray:
+	return PackedStringArray(_g71_prov.keys())
 
 
 ## The latest snapshot ({} before the first build). Main thread: call ONLY while no step is in
@@ -620,7 +654,8 @@ static func _g5_unit(e: Dictionary, id: int, dfl: int, g5: Dictionary) -> int:
 				alt = float(e.vt_deck)  # G7 AIRV7 CR 4527: Vanta standing on the barracks roof deck (landed frame, lifted)
 		if FLOWN_PHASES.has(ph):
 			fl |= FLAG_MOVING  # Air / G5Mech move these themselves (e.moving stays false): move frame, trail
-		g5.air[id] = {"ph": ph, "alt": alt, "field": fld, "strip": stp}
+		# G7.1 AIRFIX71 CR seq 148: hot-pit servicing keeps rotors / fans turning on the pad (absent = false)
+		g5.air[id] = {"ph": ph, "alt": alt, "field": fld, "strip": stp, "hot": bool(e.get("air_hot", false))}
 	if dfl & DEF_SQUAD:
 		var sz := int(e.get("squad_size", 0))
 		var al := int(e.get("squad_alive", sz))

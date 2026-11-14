@@ -1,0 +1,23 @@
+{
+  "_meta": "G7.1 A3 FLOW71 (G71_SCOPE.md A3: one-click send to front, auto logistics, mission templates). Read by sim/systems/flow71.gd. Every number PROVISIONAL (FLOW71 picked it; the scope leaves it open).",
+  "rules": {
+    "g71_flow": {
+      "think_every": 10,
+      "unit_every": 30,
+      "front_back_off": 6.0,
+      "front_frac_no_intel": 0.4,
+      "deploy_batch_wait": 120,
+      "deploy_group": 4,
+      "svc_low": 0.25,
+      "svc_full": 0.9,
+      "svc_timeout": 1800,
+      "svc_reach": 2.5,
+      "reinforce_every": 300,
+      "join_r": 3.0,
+      "template_max": 12,
+      "template_parts_max": 12,
+      "template_name_max": 24,
+      "template_take_r": 0.0
+    }
+  }
+}

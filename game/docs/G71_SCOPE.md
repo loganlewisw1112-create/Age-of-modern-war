@@ -707,6 +707,20 @@ prototype misfires.
   checkpoint and at the end (plus any Stop-if rule).
 - **E2 sim gate reading:** sim ms/tick <= G6 is measured on the existing 2k-unit benchmark load. The LP 1,000+ peak is
   judged by fps (p10 >= 60) and by beating G7's LP figures. Every other E2 / Done-when 3 condition stands as written.
+- **E2 sim gate AMENDED 2026-11-09 (owner: "New bar, move on").** The "sim ms/tick <= G6" bar is retired for G7.1.
+  New bar: on the 2k benchmark load, the final G7.1 build's sim ms/tick is **<= 1.7x G6** on the same PC and load, and
+  every later wave adds ~0 sim cost (features cost ~nothing when unused; `tiers.gd` budgets them when used). State at
+  the amendment: 26.67 vs 15.95 ms = 1.67x (clean unprofiled pairs, `.plan/perfsim71/n6p_pairs.txt`), after exact
+  native ports of target finding and the act loop. Why: ~6.1 of the 6.7 ms non-combat gap is G6.1/G7 feature work G6
+  does not run; exact cuts left total ~1-2 ms (docs/NATIVE_COMBAT71.md s9). Rejected: keep the G6 bar (7-9 more agent
+  rounds, best case only), finish the combat port first, approximations. The fps gates are unchanged.
+- **E2 LP-peak fps gate AMENDED 2026-11-09 (owner: "Bar >=30 fps, build native").** LP peak (1,000+ machines): fps
+  p10 **>= 30 and at least 2x G7's LP-peak p10** on the same PC (was >= 60). The 2k / 10k / LP zoomed-out / LP panning
+  gates are unchanged (>= 60 and above every past build). State at the amendment: p10 ~22-24, frame ~41.5 ms; G7
+  13.3-15.4. Why: measured split (fact swarmnat71.split, docs/SWARM_NATIVE71.md): unit drawing ~18.6 ms, renderer
+  ~10-11 ms of which HUD + engine ~6.5 ms; with zero-cost unit drawing the frame stays ~23 ms (~43 fps); native
+  drawer best case ~33-36 p10. Plan: exact quick wins (static records, GPU-floor probe) + the native unit drawer.
+  Rejected: keep 60 with a whole-frame program (no guarantee); beat-G7-only; defer to wave 6.
 - **Names:** our B6 gunship stays **CONDUCTOR**; the hive's hidden commander (C4) is **the Hollow King**.
 - **Voice + music:** generated in-house, no outside services. Locally synthesized speech, processed per voice (radio
   filter, distorted Overmind, synthetic robot voice, tired war-mind officer); adaptive score built procedurally from

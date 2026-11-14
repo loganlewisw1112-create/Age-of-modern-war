@@ -27,6 +27,8 @@ const Damage = preload("res://sim/systems/damage.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const HotState = preload("res://sim/hot_state.gd")  # core.hot_writer_rule: touch after direct dict writes
+const Pads71 = preload("res://sim/systems/pads71.gd")  # AIRFIX71 (G7.1 A1): the shared home-pad registry
+const STRIP_FIELDS71 := ["airfield", "airstrip", "rail", "forward_strip", "carrier"]   # pads on a strip field are not helipads
 
 const GROUND := ["parked", "landed", "taxi", "hold", "taxi_in"]
 const NO_LAND_TERRAIN := [3, 4, 5, 7, 8, 9, 10, 12]   # forest, water, bridge, ridge, building, shallow, deep, cliff
@@ -273,6 +275,17 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			air.append(e)
 	if air.is_empty():
 		return "Select aircraft."
+	if String(cmd.type) == "air_patrol":   # AIRFIX71 A2: {points: [[x, y], ...] (>= 2), min_on_station (optional)}
+		var pts: Array = cmd.get("points", [])
+		if pts.size() < 2:
+			return "Draw at least two patrol points."
+		for q in pts:
+			if typeof(q) != TYPE_ARRAY or (q as Array).size() < 2 or not w.in_bounds(w.cell_of(Vector2(float(q[0]), float(q[1])))):
+				return "A patrol point is outside the map."
+		for e in air:
+			if not is_jet(e):
+				return ""
+		return "Only helicopters and VTOLs fly patrol routes."
 	match String(cmd.type):
 		"sortie":
 			if cmd.has("target_id"):
@@ -337,6 +350,9 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 		if not ids.has(int(raw)):
 			ids.append(int(raw))
 	ids.sort()
+	if String(cmd.type) == "air_patrol":
+		_apply_patrol71(w, cmd, ids)
+		return
 	for id in ids:
 		var e = w.entities.get(id)
 		if not is_aircraft(e) or String(adef(e).aircraft) == "micro":
@@ -369,6 +385,8 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 							Airfield.bind_home(w, e, Vector2(e.pos), INF, old)
 						continue
 				f.field = Airfield.field_of(w, int(e.air_home))
+				if Pads71.home(w, id) != "" and Pads71.home(w, id) != "af:%d" % int(e.air_home):
+					Pads71.set_home(w, id, "")
 				_go_home(w, e, f)
 			"land_at":
 				if is_jet(e):
@@ -458,20 +476,7 @@ static func _go_home(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 			f.phase = "ret"
 			Movement.stop_path(e)
 		return
-	var dest := int(e.get("air_home", -1))
-	if dest < 0 or not w.entities.has(dest):
-		var p := Airfield.free_pad_near(w, int(e.owner), Vector2(e.pos), adef(e))
-		dest = int(p.get("bid", -1))
-	if dest < 0:
-		return
-	if GROUND.has(String(f.phase)):
-		_lift(w, e, f)
-	f.erase("land_cell")
-	f.dest = dest
-	f.phase = "ret"
-	var goal: Vector2 = Vector2(w.entities[dest].pos)
-	e.order = {"type": "move", "target": goal}
-	Movement.order_path(w, e, goal)
+	rtb71(w, e, f)   # AIRFIX71 (G7.1 A1): the shared return path (was: fly to the home building centre)
 
 
 static func _leave_holding(w: SimWorld, id: int) -> void:
@@ -724,6 +729,8 @@ static func _tick_flying(w: SimWorld, e: Dictionary, f: Dictionary, ph: String) 
 					f.ang = (Vector2(e.pos) - fp).angle()
 				else:
 					_fly(e, fp, float(d.speed))
+			elif f.has("pad71"):
+				_tick_ret71(w, e, f)
 			else:
 				_tick_rotor_return(w, e, f)
 		"holding":
@@ -809,30 +816,16 @@ static func _tick_air(w: SimWorld, e: Dictionary, f: Dictionary, d: Dictionary) 
 			e.facing = (lp - Vector2(e.pos)).angle()
 			e.pos = lp
 		return
+	if craft71(d) == "vanta":
+		dry = false   # the Vanta fires from its own mags (Vanta7); its ammo field stays 0
+	if f.has("pat71") and float(e.get("fuel", 1.0)) > 0.5 * rf("low_fuel_frac", 0.25) * float(d.get("fuel_max", 1.0)):
+		low = false   # AIRFIX71 A2: a patrolling craft is serviced at the lap end (keeps the minimum on station); only critical fuel breaks the route
+		dry = false
 	if (low or dry) and not f.has("land_cell"):
-		if regular_dropship(d):   # VTOL8 (13.9c-42/-45): back to its own big pad (else the nearest free one)
-			var pc := _free_vtol_pad_near(w, e, Vector2(e.pos))
-			if pc.x >= 0:
-				f.land_cell = pc
-				f.erase("dest")
-				var g2 := Vector2(pc) + Vector2(0.5, 0.5)
-				e.order = {"type": "move", "target": g2}
-				Movement.order_path(w, e, g2)
-				return
-		var p := _return_pad(w, e)
-		if not p.is_empty():
-			f.dest = int(p.bid)
-			f.phase = "ret"
-			var goal: Vector2 = w.entities[int(p.bid)].pos
-			e.order = {"type": "move", "target": goal}
-			Movement.order_path(w, e, goal)
-			return
-		if regular_dropship(d) and w.entities.has(int(e.get("vpad", -1))) and not bool(e.moving):
-			# 13.9c-45: its pad is taken and no other fits: hold beside it until it frees up
-			var hold: Vector2 = Vector2(w.entities[int(e.vpad)].pos) + Vector2(0.0, -5.0)
-			if Vector2(e.pos).distance_to(hold) > 1.0:
-				e.order = {"type": "move", "target": hold}
-				Movement.order_path(w, e, hold)
+		rtb71(w, e, f)   # AIRFIX71 (G7.1 A1): home pad / hold beside it / next pad / open ground, never a building centre
+		return
+	if f.has("pat71"):
+		_tick_patrol71(w, e, f)   # AIRFIX71 A2: auto patrol route
 	if bool(d.get("auto_engage_air", false)):
 		_auto_engage(w, e, d)
 	if bool(d.has("micro_drones")):
@@ -874,7 +867,7 @@ static func _tick_rotor_return(w: SimWorld, e: Dictionary, f: Dictionary) -> voi
 static func _burn(w: SimWorld, e: Dictionary, f: Dictionary) -> bool:
 	if bool(e.get("air_landed", false)) or not e.has("fuel"):
 		return false
-	e.fuel = maxf(0.0, snappedf(float(e.fuel) - float(adef(e).get("fuel_burn", 1.0)) * SimWorld.DT, 1.0 / 1024.0))
+	e.fuel = maxf(0.0, snappedf(float(e.fuel) - burn71(w, e, f) * SimWorld.DT, 1.0 / 1024.0))   # AIRFIX71 A2: endurance rules
 	if float(e.fuel) > 0.0:
 		return false
 	if not is_jet(e) and landing_ok(w, w.cell_of(e.pos), adef(e)):
@@ -1065,6 +1058,8 @@ static func _tick_micro(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
 
 # ================================================================ service (rearm / refuel / repair)
 static func _service(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
+	if f.has("hp71") and _hot_pit71(w, e, f):   # AIRFIX71 A2: hot-pit on a registered pad
+		return
 	var d := adef(e)
 	var at := int(e.get("air_at", -1))
 	var fb := Airfield.field_of(w, at)
@@ -1170,3 +1165,470 @@ static func land_now(w: SimWorld, e: Dictionary) -> bool:
 	_land_here(w, e, _ensure(w, e))
 	HotState.touch(w, int(e.id))
 	return true
+
+
+# ================================================================ AIRFIX71 (G7.1 A1): every rotorcraft comes home to a pad
+## One return path for helicopters, regular VTOL dropships, CN stealth dropships and CN Vantas (low fuel, dry / mission
+## done, the player's return): its home pad in the Pads71 registry when free (fly to the exact landing point, land
+## there); taken -> holding orbit beside it + AirPadBusy, landing once it frees; destroyed -> the nearest free pad of its
+## kinds + AirPadLost; none -> open ground beside its base + AirNoPad. Never a building centre. Lookups only on these
+## events (and every HOLD_RECHECK ticks while holding): no per-tick scan.
+const HOLD_RECHECK := 20
+const HOLD_R := 2.0
+const PAD_KINDS71 := {"heli": ["helipad", "farp"], "vtol": ["vtol_pad", "farp"], "cn": ["cn_helipad", "vtol_pad", "farp"],
+	"vanta": ["roof_pad", "farp"]}
+
+
+static func craft71(d: Dictionary) -> String:
+	if bool(d.get("cn_vanta", false)):
+		return "vanta"
+	if bool(d.get("cn_dropship", false)):
+		return "cn"
+	return "vtol" if String(d.get("aircraft", "")) == "vtol" else "heli"
+
+
+## Registers pads of buildings created since the last sync (Airfield pad fields, dropship pads) and any CN facility's
+## pads an older save lacks. Event-driven: only new ids are looked at.
+static func sync71(w: SimWorld) -> void:
+	Airfield.scan_new(w)
+	var from := int(w.cache.get("pads71_next", 1))
+	if from < w.next_id:
+		for id in range(from, w.next_id):
+			var b = w.entities.get(id)
+			if b == null or String(b.kind) != "building":
+				continue
+			var fr := Airfield.field(w, id)
+			var hd := float([180.0, -90.0, 0.0, 90.0][posmod(int(b.facing_i), 4)]) if b.has("facing_i") else 0.0
+			if bool(Content.building(String(b.def)).get("farp", false)):   # before the helipad test: a FARP is a helipad field too
+				Pads71.register(w, "farp:%d" % id, "farp", int(b.owner), Vector2(b.pos), float(b.size), id, hd,
+					int(Content.building(String(b.def)).get("pad_slots", 1)))
+			elif not fr.is_empty() and not (fr.pads as Array).is_empty() and not STRIP_FIELDS71.has(String(fr.kind)):
+				Pads71.register(w, "af:%d" % id, "helipad", int(b.owner), Vector2(b.pos), float(b.size), id, hd, (fr.pads as Array).size())
+			elif bool(Content.building(String(b.def)).get("vtol_pad", false)):
+				Pads71.register(w, "vp:%d" % id, "vtol_pad", int(b.owner), Vector2(b.pos), float(b.size), id, hd)
+		w.cache["pads71_next"] = w.next_id
+	var cs = w.sys_state.get("cn_facility")
+	if cs != null:
+		var ks: Array = (cs.get("facs", {}) as Dictionary).keys()
+		ks.sort_custom(func(a, b): return int(a) < int(b))
+		for k in ks:
+			if not Pads71.has_pad(w, "cnh:%d" % int(k)):
+				SimWorld.CnFacility.pads71_register(w, cs.facs[k])
+
+
+## Home pad key of e (Pads71 home, else derived from what each system calls home, then remembered): "" none.
+static func home71(w: SimWorld, e: Dictionary) -> String:
+	var id := int(e.id)
+	var k := Pads71.home(w, id)
+	if k != "" and Pads71.has_pad(w, k):
+		return k
+	var c := ""
+	match craft71(adef(e)):
+		"vanta":
+			var vs = w.sys_state.get("vanta7")
+			var r = (vs.get("v", {}) as Dictionary).get(str(id)) if vs != null else null
+			if r != null and int(r.get("fac", 0)) > 0:
+				c = "roof:%d" % int(r.fac)
+		"cn":
+			var cs = w.sys_state.get("cn_facility")
+			if cs != null:
+				for fk in _sorted(cs.get("facs", {})):
+					if int(cs.facs[fk].get("heli", 0)) == id:
+						c = "cnh:%d" % int(fk)
+						break
+		"vtol":
+			if int(e.get("vpad", -1)) > 0:
+				c = "vp:%d" % int(e.vpad)
+		_:
+			if int(e.get("air_home", -1)) > 0:
+				c = "af:%d" % int(e.air_home)
+	if c != "" and Pads71.has_pad(w, c):
+		Pads71.set_home(w, id, c)
+		return c
+	return k
+
+
+## Where e returns to: {mode: home|alt|busy|ground, key, pos} (pos: landing point / holding centre / ground cell centre).
+static func pick71(w: SimWorld, e: Dictionary) -> Dictionary:
+	sync71(w)
+	var ids: Array = _sorted(flights(w))
+	var id := int(e.id)
+	var d := adef(e)
+	var kinds: Array = PAD_KINDS71[craft71(d)]
+	var home := home71(w, e)
+	if home != "" and Pads71.alive(w, home):
+		if Pads71.is_free(w, home, ids, id):
+			return {"mode": "home", "key": home, "pos": Pads71.pos_of(w, home)}
+		return {"mode": "busy", "key": home, "pos": _hold_spot71(w, home)}
+	var ms := float(lz_size(d)) if craft71(d) == "vtol" else 0.0
+	var alt := Pads71.nearest_free(w, int(e.owner), kinds, Vector2(e.pos), ids, id, ms)
+	if alt != "":
+		return {"mode": "alt", "key": alt, "pos": Pads71.pos_of(w, alt), "lost": home}
+	var anchor := Pads71.pos_of(w, home) if home != "" else _base_anchor71(w, e)
+	var cell := _ground71(w, e, anchor)
+	return {"mode": "ground", "key": home, "pos": Vector2(cell) + Vector2(0.5, 0.5), "cell": cell}
+
+
+## Nearest own building to e (its base), else where it is.
+static func _base_anchor71(w: SimWorld, e: Dictionary) -> Vector2:
+	var best := Vector2(e.pos)
+	var bd := INF
+	for b in w.buildings_of(int(e.owner)):
+		var dd := Vector2(b.pos).distance_to(e.pos)
+		if dd < bd:
+			bd = dd
+			best = Vector2(b.pos)
+	return best
+
+
+## Open landing cell for e beside anchor (rings 3..20 tiles out, first valid in ring order), else its own cell.
+static func _ground71(w: SimWorld, e: Dictionary, anchor: Vector2) -> Vector2i:
+	var d := adef(e)
+	var c0 := w.cell_of(anchor)
+	for r in range(3, 21):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var c := c0 + Vector2i(dx, dy)
+				if landing_ok(w, c, d, int(e.id)) and vtol_pad_at(w, c) < 0:
+					return c
+	return w.cell_of(e.pos)
+
+
+## Holding-orbit centre beside pad key: of 4 spots (half its size + a margin out), the one farthest from any building
+## centre (never orbit over a building), kept inside the map.
+static func _hold_spot71(w: SimWorld, key: String) -> Vector2:
+	var p := Pads71.pad(w, key)
+	var c := Pads71.pos_of(w, key)
+	var off := float(p.get("s", 2.0)) * 0.5 + HOLD_R + 1.5
+	var best := c + Vector2(0.0, -off)
+	var bs := -1.0
+	for v in [Vector2(0, -1), Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0)]:
+		var q := _inset(w, c + (v as Vector2) * off, HOLD_R + 0.5)
+		var md := INF
+		for b in SimIndex.of(w, "building"):
+			md = minf(md, Vector2(b.pos).distance_to(q))
+		if md > bs + 0.001:
+			bs = md
+			best = q
+	return best
+
+
+## Starts the return of e (any trigger). Lifts it first when grounded. Emits the alert of its mode.
+static func rtb71(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
+	var p := pick71(w, e)
+	if not GROUND.has(String(f.phase)):
+		_remember71(e, f)   # A2: back to this task after the hot-pit
+	if GROUND.has(String(f.phase)):
+		_lift(w, e, f)
+	for k in ["land_cell", "dest", "pad71", "hold71", "mission", "loiter", "pat71", "wp71"]:
+		f.erase(k)
+	var id := int(e.id)
+	var goal: Vector2 = p.pos
+	match String(p.mode):
+		"home", "alt":
+			f.pad71 = String(p.key)
+			f.phase = "ret"
+			if String(p.mode) == "alt":
+				w.emit("AirPadLost", {"id": id, "owner": int(e.owner), "pad": String(p.get("lost", "")), "to": String(p.key)})
+		"busy":
+			f.pad71 = String(p.key)
+			f.hold71 = goal
+			f.phase = "ret"
+			w.emit("AirPadBusy", {"id": id, "owner": int(e.owner), "pad": String(p.key)})
+		_:
+			f.land_cell = p.cell
+			f.phase = "air"
+			w.emit("AirNoPad", {"id": id, "owner": int(e.owner), "pad": String(p.key)})
+	e.target = -1
+	e.order = {"type": "move", "target": goal}
+	Movement.order_path(w, e, goal)
+	HotState.touch(w, id)
+
+
+## Lands e exactly on pad key (helipad fields through _park: centred, side by side when shared).
+static func land71(w: SimWorld, e: Dictionary, f: Dictionary, key: String) -> void:
+	var p := Pads71.pad(w, key)
+	var pos := Pads71.pos_of(w, key)
+	f.erase("pad71")
+	f.erase("hold71")
+	var kind := String(p.k)
+	if (kind == "helipad" or kind == "farp") and not Airfield.field(w, int(p.ref)).is_empty():
+		e.pos = pos
+		_park(w, e, f, int(p.ref))
+		f.hp71 = key   # A2 hot-pit service
+		return
+	if kind != "roof_pad":
+		f.hp71 = key
+	e.pos = pos
+	e.facing = deg_to_rad(float(p.get("h", 0.0)))
+	if kind == "roof_pad":
+		SimWorld.Vanta7._land(w, e, pos)
+		return
+	if kind == "vtol_pad" and craft71(adef(e)) == "vtol":
+		e.vpad = int(p.ref)
+	e.air_landed = true
+	e.air_at = int(p.ref) if not Airfield.field(w, int(p.ref)).is_empty() else -1
+	Movement.stop_path(e)
+	e.order = {"type": "idle"}
+	e.target = -1
+	f.phase = "landed"
+	f.erase("land_cell")
+	f.erase("dest")
+	f.svc = 0.0
+	f.pin = pos
+	HotState.touch(w, int(e.id))
+	w.emit("AircraftLanded", {"id": int(e.id), "at": int(p.ref), "owner": int(e.owner), "pad71": key})
+
+
+## Phase "ret" with a Pads71 target: fly to the exact point, hold beside it while taken, land when free.
+static func _tick_ret71(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
+	var key := String(f.pad71)
+	var id := int(e.id)
+	var holding := f.has("hold71")
+	var goal: Vector2 = f.hold71 if holding else Pads71.pos_of(w, key)
+	var ot := String(e.order.get("type", "idle"))
+	if ot == "attack" or (ot == "move" and Vector2(e.order.get("target", goal)).distance_to(goal) > 0.01):
+		f.erase("pad71")   # a fresh player / AI order wins
+		f.erase("hold71")
+		f.phase = "air"
+		return
+	if not Pads71.alive(w, key):
+		rtb71(w, e, f)   # destroyed on the way: the next pad / open ground
+		return
+	if holding:
+		if e.has("fuel") and float(e.fuel) <= burn71(w, e, f) * g71("hold_reserve_s", 6.0):
+			# fuel for a few more seconds only: give up the wait, land on open ground beside its base (alerted)
+			var cell := _ground71(w, e, Pads71.pos_of(w, key))
+			f.erase("pad71")
+			f.erase("hold71")
+			f.phase = "air"
+			f.land_cell = cell
+			var g := Vector2(cell) + Vector2(0.5, 0.5)
+			e.order = {"type": "move", "target": g}
+			Movement.order_path(w, e, g)
+			w.emit("AirNoPad", {"id": id, "owner": int(e.owner), "pad": key, "reason": "fuel"})
+			return
+		if (w.tick + id) % HOLD_RECHECK == 0 and Pads71.is_free(w, key, _sorted(flights(w)), id):
+			f.erase("hold71")
+			var pp := Pads71.pos_of(w, key)
+			e.order = {"type": "move", "target": pp}
+			Movement.order_path(w, e, pp)
+			return
+		if Vector2(e.pos).distance_to(goal) <= HOLD_R + 0.6:
+			if bool(e.moving):
+				Movement.stop_path(e)
+			var d := adef(e)
+			f.ang = fmod(float(f.get("ang", (Vector2(e.pos) - goal).angle())) + float(d.speed) * 0.5 / HOLD_R * SimWorld.DT, TAU)
+			var q := goal + Vector2(cos(float(f.ang)), sin(float(f.ang))) * HOLD_R
+			if q != Vector2(e.pos):
+				e.facing = (q - Vector2(e.pos)).angle()
+			e.pos = q
+		elif not bool(e.moving):
+			Movement.order_path(w, e, goal)
+		return
+	var dist := Vector2(e.pos).distance_to(goal)
+	if dist <= 0.6 or (not bool(e.moving) and dist <= 1.6):
+		if Pads71.is_free(w, key, _sorted(flights(w)), id):
+			land71(w, e, f, key)
+		else:
+			var hs := _hold_spot71(w, key)
+			f.hold71 = hs
+			e.order = {"type": "move", "target": hs}
+			Movement.order_path(w, e, hs)
+			w.emit("AirPadBusy", {"id": id, "owner": int(e.owner), "pad": key})
+	elif not bool(e.moving):
+		Movement.order_path(w, e, goal)
+
+
+# ================================================================ AIRFIX71 (G7.1 A2): air ops (endurance, hot-pit, patrols)
+## rules.g71_air (content/g71/defs_g71_air.json).
+static func g71(key: String, dflt: float) -> float:
+	return float((Content.rules().get("g71_air", {}) as Dictionary).get(key, dflt))
+
+
+## True while e is inside own airspace: within own_airspace_r of an own registered pad. Re-evaluated every 20 ticks
+## (staggered by id) and kept in the flight record (own71, saved), so it costs one short registry pass per craft / s.
+static func own_air71(w: SimWorld, e: Dictionary, f: Dictionary) -> bool:
+	if not f.has("own71") or (w.tick + int(e.id)) % 20 == 0:
+		var r := g71("own_airspace_r", 28.0)
+		var yes := false
+		sync71(w)
+		var pads: Dictionary = Pads71.pads(w)
+		for k in pads:
+			var p: Dictionary = pads[k]
+			if int(p.o) == int(e.owner) and Vector2(float(p.x), float(p.y)).distance_to(e.pos) <= r and Pads71.alive(w, String(k)):
+				yes = true
+				break
+		f.own71 = yes
+	return bool(f.own71)
+
+
+## Fuel burn rate of e this tick (per second): fuel_burn x burn_mult, x idle_burn_mult while not moving in own airspace.
+static func burn71(w: SimWorld, e: Dictionary, f: Dictionary) -> float:
+	var rate := float(adef(e).get("fuel_burn", 1.0)) * g71("burn_mult", 0.34)
+	if not bool(e.moving) and not is_jet(e) and own_air71(w, e, f):
+		rate *= g71("idle_burn_mult", 0.05)
+	return rate
+
+
+## The task e was flying when its return started (move / attack order, patrol), resumed after a hot-pit service.
+static func _remember71(e: Dictionary, f: Dictionary) -> void:
+	var ot := String(e.order.get("type", "idle"))
+	if f.has("pat71"):
+		f.resume71 = {"pat": int(f.pat71)}
+	elif (ot == "move" or ot == "attack") and not f.has("resume71"):
+		f.resume71 = {"o": (e.order as Dictionary).duplicate(true)}
+
+
+## Hot-pit service on a registered pad (farp / helipad / dropship pad / CN helipad): refuel + rearm + patch in hot_pit_s
+## with rotors / fans turning (e.air_hot, for the view), then back to the remembered task. True while it handles e.
+static func _hot_pit71(w: SimWorld, e: Dictionary, f: Dictionary) -> bool:
+	var key := String(f.get("hp71", ""))
+	if key == "" or not Pads71.alive(w, key) or Vector2(e.pos).distance_to(Pads71.pos_of(w, key)) > 1.0:
+		f.erase("hp71")
+		if e.has("air_hot"):
+			e.erase("air_hot")
+		return false
+	var d := adef(e)
+	var need: bool = int(e.get("ammo", 0)) < int(d.get("ammo_max", 0)) or float(e.get("fuel", 0.0)) < float(d.get("fuel_max", 0.0)) \
+		or float(e.hp) < float(e.max_hp)
+	if not need:
+		f.erase("hp71")
+		if e.has("air_hot"):
+			e.erase("air_hot")
+		_resume71(w, e, f)
+		return true
+	e.air_hot = true
+	f.svc = float(f.get("svc", 0.0)) + SimWorld.DT / maxf(g71("hot_pit_s", 6.0), 0.001)
+	if float(f.svc) < 1.0 - 0.000001:
+		return true
+	f.svc = 0.0
+	var fid := int(e.owner)
+	if d.has("ammo_max"):
+		e.ammo = int(e.get("ammo", 0)) + _draw(w, fid, "ammo", int(d.ammo_max) - int(e.get("ammo", 0)))
+	if d.has("fuel_max"):
+		e.fuel = float(d.fuel_max)   # hot-pit: topped up from the pad's bowser
+	e.hp = float(e.max_hp)
+	w.emit("AircraftServiced", {"id": int(e.id), "at": int(Pads71.pad(w, key).ref), "hot_pit": true, "owner": fid})
+	return true
+
+
+## Lifts e back to its remembered task (patrol / order), if any.
+static func _resume71(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
+	if not f.has("resume71"):
+		return
+	var rs: Dictionary = f.resume71
+	f.erase("resume71")
+	if rs.has("pat") and _st(w).get("patrols71", {}).has(str(int(rs.pat))):
+		_lift(w, e, f)
+		f.pat71 = int(rs.pat)
+		_patrol_next71(w, e, f, false)
+		w.emit("AircraftResumed", {"id": int(e.id), "owner": int(e.owner), "task": "patrol"})
+		return
+	if not rs.has("o"):
+		return
+	var o: Dictionary = rs.o
+	var goal = o.get("target")
+	if String(o.get("type", "")) == "attack":
+		var t = w.entities.get(int(o.get("target_id", -1)))
+		if t == null:
+			return
+		goal = Vector2(t.pos)
+		e.target = int(t.id)
+	if not (goal is Vector2):
+		return
+	_lift(w, e, f)
+	e.order = o
+	Movement.order_path(w, e, goal)
+	w.emit("AircraftResumed", {"id": int(e.id), "owner": int(e.owner), "task": String(o.get("type", ""))})
+
+
+## Patrol route pid's next waypoint for e (advance: step past the current one); a lap end checks service.
+static func _patrol_next71(w: SimWorld, e: Dictionary, f: Dictionary, advance: bool) -> void:
+	var P: Dictionary = _st(w).patrols71[str(int(f.pat71))]
+	var pts: Array = P.pts
+	var i := int(f.get("wp71", 0))
+	if advance:
+		i = (i + 1) % pts.size()
+		if i == 0 and _patrol_service_due71(w, e, P):
+			_remember71(e, f)
+			rtb71(w, e, f)
+			return
+	f.wp71 = i
+	var g := Vector2(float(pts[i][0]), float(pts[i][1]))
+	f.phase = "air"
+	e.order = {"type": "move", "target": g}
+	Movement.order_path(w, e, g)
+
+
+## Due for service after a lap: fuel < patrol_service_frac or dry, and more than min_on_station others on the route.
+static func _patrol_service_due71(w: SimWorld, e: Dictionary, P: Dictionary) -> bool:
+	var d := adef(e)
+	var low := float(e.get("fuel", 1.0)) < g71("patrol_service_frac", 0.5) * float(d.get("fuel_max", 1.0))
+	var dry := int(d.get("ammo_max", 0)) > 0 and int(e.get("ammo", 1)) < int(d.get("ammo_max", 0))
+	if not (low or dry):
+		return false
+	var up := 0
+	for raw in P.ids:
+		var u = w.entities.get(int(raw))
+		var uf := flight(w, int(raw))
+		if u != null and int(raw) != int(e.id) and not bool(u.get("air_landed", false)) and int(uf.get("pat71", -1)) == int(P.id):
+			up += 1
+	return up >= int(P.min)
+
+
+## Patrolling craft: next waypoint on arrival; a fresh order (target off the route) ends the patrol.
+static func _tick_patrol71(w: SimWorld, e: Dictionary, f: Dictionary) -> void:
+	var P = (_st(w).get("patrols71", {}) as Dictionary).get(str(int(f.pat71)))
+	if P == null:
+		f.erase("pat71")
+		return
+	var pts: Array = P.pts
+	var g := Vector2(float(pts[int(f.get("wp71", 0)) % pts.size()][0]), float(pts[int(f.get("wp71", 0)) % pts.size()][1]))
+	var ot := String(e.order.get("type", "idle"))
+	if ot == "attack" or (ot == "move" and Vector2(e.order.get("target", g)).distance_to(g) > 0.01):
+		f.erase("pat71")
+		f.erase("wp71")
+		return
+	if Vector2(e.pos).distance_to(g) <= 1.2 or not bool(e.moving):
+		_patrol_next71(w, e, f, Vector2(e.pos).distance_to(g) <= 2.0)
+
+
+## air_patrol: one route record (saved, hashed) for the selected rotorcraft; each starts at the nearest waypoint.
+static func _apply_patrol71(w: SimWorld, cmd: Dictionary, ids: Array) -> void:
+	var st := _st(w)
+	if not st.has("patrols71"):
+		st.patrols71 = {}
+	var pid := int(st.get("pat_next71", 1))
+	st.pat_next71 = pid + 1
+	var pts := []
+	for q in cmd.points:
+		pts.append([float(q[0]), float(q[1])])
+	var mem := []
+	for id in ids:
+		var e = w.entities.get(int(id))
+		if e != null and is_aircraft(e) and not is_jet(e) and String(adef(e).aircraft) != "micro":
+			mem.append(int(id))
+	var mn := int(cmd.get("min_on_station", maxi(1, mem.size() / 2)))
+	st.patrols71[str(pid)] = {"id": pid, "pts": pts, "ids": mem, "min": clampi(mn, 0, mem.size()), "owner": int(cmd.get("issuer", -1))}
+	for id in mem:
+		var e: Dictionary = w.entities[int(id)]
+		var f := _ensure(w, e)
+		if GROUND.has(String(f.phase)):
+			_lift(w, e, f)
+		for k in ["land_cell", "dest", "pad71", "hold71", "resume71", "mission", "loiter"]:
+			f.erase(k)
+		var bi := 0
+		var bd := INF
+		for i in pts.size():
+			var dd := Vector2(float(pts[i][0]), float(pts[i][1])).distance_to(e.pos)
+			if dd < bd:
+				bd = dd
+				bi = i
+		f.pat71 = pid
+		f.wp71 = bi
+		_patrol_next71(w, e, f, false)
+		HotState.touch(w, int(id))
+	w.emit("AirPatrolSet", {"id": pid, "owner": int(cmd.get("issuer", -1)), "units": mem.duplicate(), "points": pts.size()})

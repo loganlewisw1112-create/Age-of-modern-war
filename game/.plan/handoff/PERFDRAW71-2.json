@@ -1,0 +1,21 @@
+{
+  "id": "PERFDRAW71", "gen": 2, "written_by": "ORCH (reconstructed 2026-11-04)",
+  "reason": "PERFDRAW71-2 stopped without a handoff when the host session ended (last status seq 199, 2026-11-03 08:22Z, calls ~30, est ~215k). Rebuilt from its board statuses and .plan/perfdraw71/.",
+  "done": [
+    "Bisect: gen-1's 12 fps g71 baseline was INVALID (taken mid-edit / loaded). Clean numbers (loaded PC 27-49%): 2k p10 g71-clean-HEAD 67.2 / g71 working tree 61.7 / g7 65.8; 10k p10 239 / 177 / 235; 0 script errors.",
+    "Suspect for the working-tree drop: match_view.entity_at doing a 4th full entity pass (roof pick) while the HUD picks every frame -> rewritten as a single pass (CONTROL71 is finished; the change sits in match_view.gd entity_at).",
+    "tests/test_perfdraw71.gd written (result not recorded).",
+    "A/B of the single-pass entity_at (.plan/perfdraw71/ab.out, loaded PC, 2 rounds): 10k p10 pre 174.4/178.1 -> post 174.5/205.9; 2k p10 pre 57.5/59.4 -> post 52.6/60.2. Inconclusive on 2k, likely better on 10k; PC was loaded (9-11 godot procs).",
+    "From gen 1: far-LOD pan reuse in entity_layer.gd (one run LP pan p10 29.2 -> 44.5); tools/perf71_draw_lp.gd harness; worktrees C:/CODING/pd71_g61 and C:/CODING/pd71_g7 kept for same-session comparisons."
+  ],
+  "remaining": [
+    "1. Re-take the baseline on a QUIET PC where possible (record CPU load + godot proc count per run; alternate trees; >= 3 runs per tree per case): 2k, 10k, LP zoomed out, LP pan, LP peak 1,000 machines (use PERFSIM71's bench.lp_peak / Bench.build_lp_peak). Bars: 2k p10 > 85.2, 10k p10 > 262.5 (G6.1 record), LP cases above G7 and LP peak p10 >= 60.",
+    "2. Run tests/test_perfdraw71.gd; finish it (view on/off hash identical; batched path draws the same entity set as the old path).",
+    "3. Find and fix the 2k/10k gap to G6.1 (G7 was already below G6.1): profile with bench --prof.",
+    "4. GPU swarm batch for LP peak (presentation/view/swarm_batch71.gd + .gdshader): one y-sorted MultiMesh, Texture2DArray of atlas pages, per-instance custom data (src rect / page / interp delta), rebuilt per snapshot not per frame. Must look identical (owner: no visible quality trades).",
+    "5. render_snap air_hot (AIRFIX71 CR seq 148): expose unit field air_hot (absent = false) and keep rotors / fans turning in the view while it is true.",
+    "6. Screenshot proof that the far pan reuse and the swarm batch are invisible (old vs new, same frame), fact shots.best; tools/pt71_perfdraw71.gd flow; final report with paired numbers."
+  ],
+  "files_touched": ["presentation/view/entity_layer.gd", "presentation/match_view.gd (entity_at single pass only)", "tools/perf71_draw_lp.gd", "tests/test_perfdraw71.gd", ".plan/perfdraw71/*"],
+  "uncommitted_state": "all uncommitted on g71; ORCH commits"
+}

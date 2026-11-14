@@ -106,7 +106,12 @@ pub fn line_clear_core(terr: &[u8], mw: i32, mh: i32, ridge: u8, from: Vector2, 
 
 #[derive(GodotClass)]
 #[class(base = RefCounted, init)]
-pub struct RtsCombat {}
+pub struct RtsCombat {
+    /// G7.1 PERFSIM71-4: per-tick packed entity mirror (mirror.rs, docs/NATIVE_COMBAT71.md)
+    mir: crate::mirror::Mirror,
+    /// G7.1 PERFSIM71-5: per-tick inputs of the native _find (find.rs)
+    fc: crate::find::FindCtx,
+}
 
 #[godot_api]
 impl RtsCombat {
@@ -177,6 +182,80 @@ impl RtsCombat {
         let pi = |j: usize| -> PackedInt32Array { tabs.at(j).try_to::<PackedInt32Array>().unwrap_or_default() };
         let pf = |j: usize| -> PackedFloat32Array { tabs.at(j).try_to::<PackedFloat32Array>().unwrap_or_default() };
         crate::combat_prep::prep_units_ids(units, ents, ids.as_slice(), tick, pi(0), pi(1), pf(2), pf(3), pi(4), next_id, trf, scan_every, ret_fire)
+    }
+
+    /// G7.1 PERFSIM71-4 (rts_core 0.6.0): prep_units_ids (same arguments, same 13-entry result, same
+    /// writes) with pointer-level Dictionary reads / in-place countdown writes, keeping the prep-time
+    /// packed mirror in this object (mirror.rs). ids must be parallel to units; an [need_ids] result
+    /// (some live unit has no table entry yet) does no writes, as prep_units_ids.
+    #[func]
+    fn prep_mirror(&mut self, units: VarArray, ents: VarDictionary, ids: PackedInt32Array, tick: i64, tabs: VarArray,
+                   next_id: i64, trf: f64, scan_every: i64, ret_fire: i64) -> VarArray {
+        let pi = |j: usize| -> PackedInt32Array { tabs.at(j).try_to::<PackedInt32Array>().unwrap_or_default() };
+        let pf = |j: usize| -> PackedFloat32Array { tabs.at(j).try_to::<PackedFloat32Array>().unwrap_or_default() };
+        let (tf, dx, dr, ds, df) = (pi(0), pi(1), pf(2), pf(3), pi(4));
+        crate::mirror::prep_mirror(&mut self.mir, &units, &ents, ids.as_slice(), tick, tf.as_slice(), dx.as_slice(),
+                                   dr.as_slice(), ds.as_slice(), df.as_slice(), next_id, trf, scan_every, ret_fire)
+    }
+
+    /// G7.1 PERFSIM71-5 (rts_core 0.6.1): per-tick inputs of find() (find.rs FindCtx::setup): [grid, entities,
+    /// fog, map, senses7 spot or null, fids, fid teams, fid tkeys (PackedInt64Array), NEUTRAL, tick, REVEAL_TICKS,
+    /// FOREST code, nidx, scan_ids, pre-batch res, scan_r, df, dmr, dcf, blds, map w, map h]. false = find() is off
+    /// (returns -2) until the next setup.
+    #[func]
+    fn find_setup(&mut self, args: VarArray) -> bool {
+        self.fc.setup(&args)
+    }
+
+    /// combat.gd _find(w, e, radius, ...) for a FULL unit shooter of this tick's mirror: the picked unit /
+    /// building id, -1 for none, or -2 = use the GDScript _find (a rule without a native port could decide).
+    #[func]
+    fn find(&mut self, eid: i64, radius: f64) -> i64 {
+        self.fc.find(&self.mir, eid, radius)
+    }
+
+    /// G7.1 PERFSIM71-6 (rts_core 0.6.2): per-tick inputs of act_run (act.rs ActCtx): [act_id, askip, atg, nores,
+    /// cmb_ev, SCAN_EVERY, SCAN_EVERY_ENGAGED, RETURN_FIRE_TICKS, CHASE_REPATH_TICKS, TICK_RATE, flags, terrain, RIDGE,
+    /// dar, das, daf, height (or empty), Elevation.PLAIN, Elevation.MAX_LEVEL]. Call after this tick's find_setup;
+    /// false = act_run hands every entry to GDScript.
+    #[func]
+    fn act_setup(&mut self, args: VarArray) -> bool {
+        self.fc.act_setup(&args)
+    }
+
+    /// Runs act-loop entries from i0 natively: 2*j = stopped before entry j (building stop_id acts first),
+    /// 2*j+1 = entry j needs the GDScript body (nothing of it written), 2*n = all done.
+    #[func]
+    fn act_run(&mut self, i0: i64, stop_id: i64) -> i64 {
+        self.fc.act_run(&self.mir, i0, stop_id)
+    }
+
+    /// act_run counters since the last reset: [entries, native, delegated, d_guard, d_attack, d_find, d_valid, d_fire,
+    /// d_chase, d_stop, d_order, d_sp8, d_idle, n_skip, n_fast, n_pick, d_range, spare].
+    #[func]
+    fn act_stats(&mut self, reset: bool) -> PackedInt64Array {
+        let s = PackedInt64Array::from(&self.fc.act.stats[..]);
+        if reset {
+            self.fc.act.stats = [0; crate::find::act::A_N];
+        }
+        s
+    }
+
+    /// find() counters since the last reset: [calls, fallbacks, guard, hid, forest, g6, air, roof, spot, bld_g6].
+    #[func]
+    fn find_stats(&mut self, reset: bool) -> PackedInt64Array {
+        let s = PackedInt64Array::from(&self.fc.stats[..]);
+        if reset {
+            self.fc.stats = [0; crate::find::NSTATS];
+        }
+        s
+    }
+
+    /// The last prep_mirror rows: [tick, ids, pos, owner, tf, dx, target, moving, cd, ocode, broken]
+    /// (empty when none). Debug oracle input (combat.gd mirror_check).
+    #[func]
+    fn mirror_arrays(&self) -> VarArray {
+        crate::mirror::mirror_arrays(&self.mir)
     }
 
     /// G6 PERF6-4 (rts_core 0.5.1): morale.gd FULL-loop batch (G6 MORALE bit clear). ids parallel to

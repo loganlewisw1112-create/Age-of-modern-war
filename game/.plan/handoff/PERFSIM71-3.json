@@ -1,0 +1,15 @@
+{
+  "agent": "PERFSIM71-3", "gen": 3, "status": "done: STOP RULE hit, owner asked (fact owner.sim_gate.ask)",
+  "calls_used": 55, "tokens_used_est": 310000,
+  "done": [
+    "Fresh G6 vs G71 pairs on the 2k fight (sim_ab, river_crossing_s, 600 t): base3 + base4, logs .plan/perfsim71/runs/base3_* base4_*, lines .plan/perfsim71/base3_pairs.txt base4_pairs.txt",
+    "rts_core 0.5.6: RtsGrid.ss_split (stray8._sidestep collect prefilter) + RtsGrid.mz_cands (stray8._muzzle_blocked candidate prefilter incl. exact packed-team filter); built --stage, swapped (0.5.5 kept as bin/rts_core.prev2650_1.dll and scratchpad copy)",
+    "stray8.gd: static toggles native_ss / native_mz (default on), GDScript path kept as fallback + A/B oracle; tests/test_perfsim71.gd PATHS now include both",
+    "Exactness: sim_ab2 hash 8fd794b3 for ss/mz on/on (x2), off/off, on/off, off/on (runs/nat3_a..e.log, 0 errors); test_perfsim71 5/0 (.plan/perfsim71/t3_test_perfsim71.log); test_hot_state 17/0 incl GOLD/GOLD_FLAT (.plan/perfsim71/t3_test_hot_state.log)",
+    "Saving measured in-process (Stray8.bench, runs/sb3_p*_on|off.log): discipline ms/tick on 1.691/1.869/2.026 vs off 1.568/1.906/2.369; normalised by the unchanged miss path (disc/miss) median on 0.689 vs off 0.699 = ~0.03 ms/tick = nothing measurable"
+  ],
+  "not_done": ["_on_miss candidate loop port (piece 3): not built; same shape as pieces 1-2 (capsule query already native, cost is per-candidate Dictionary reads), measured ceiling PERF8_sq 0.83 ms profiled even at 100%"],
+  "exact_next_step": "Owner decision on fact owner.sim_gate.ask. Nothing half-done: dll swapped and consistent with source, no staged rts_core.new.dll left.",
+  "files_touched": ["native/rts_core/src/grid.rs", "native/rts_core/Cargo.toml (0.5.6)", "native/rts_core/Cargo.lock", "bin/rts_core.dll (0.5.6)", "bin/rts_core.prev2650_1.dll (old 0.5.5)", "sim/systems/stray8.gd", "tests/test_perfsim71.gd", ".plan/perfsim71/sim_ab2.gd (new)", ".plan/perfsim71/base3_pairs.txt base4_pairs.txt t3_*.log runs/*"],
+  "uncommitted_state": "all above uncommitted (ORCH commits)", "open_change_requests": []
+}

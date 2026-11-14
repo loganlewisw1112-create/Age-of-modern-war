@@ -32,6 +32,8 @@ static var n_retarget := 0
 static var why := {}   # bench diagnostics only (runtime): why a blocked man did not sidestep
 static var bench := false   # bench only: time on_miss into us_total (two clock reads per miss when on)
 static var us_total := 0
+static var native_ss := true   # G7.1 PERFSIM71 (exact): _sidestep collect prefilter via RtsGrid.ss_split (rts_core >= 0.5.6)
+static var native_mz := true   # G7.1 PERFSIM71 (exact): _muzzle_blocked candidate prefilter via RtsGrid.mz_cands (rts_core >= 0.5.6)
 static var us_disc := 0   # bench only: time inside muzzle_blocked (discipline check + reposition search)
 
 
@@ -81,6 +83,14 @@ static func _has_capq(ng) -> bool:
 	if _capq == null:
 		_capq = ng.grid.has_method("query_capsule_along")
 	return bool(_capq)
+
+
+## G7.1 PERFSIM71: the native grid has ss_split / mz_cands (rts_core >= 0.5.6); checked once per grid class.
+static var _ssq = null
+static func _has_ssq(ng) -> bool:
+	if _ssq == null:
+		_ssq = ng.grid.has_method("ss_split") and ng.grid.has_method("mz_cands")
+	return bool(_ssq)
 
 
 static func _on_miss(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, from: Vector2, to: Vector2) -> void:
@@ -280,11 +290,26 @@ static func _muzzle_blocked(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictio
 	var mid := from + dir * (ln * 0.5)
 	var rq := ln * 0.5 + co
 	var pk0 := ng != null and w.cache.has("cmb_ev") and _has_capq(ng)   # PERF8B (exact): capsule = the npos prefilter below (+ slack)
-	var cands = (ng.grid.query_capsule(from, dir, u0 - 0.01, ln + 0.01, co + 0.01) if pk0 else ng.grid.query_radius(mid, rq)) if ng != null else _near(w, w.cache.get("combat_grid"), mid, rq)
+	# G7.1 PERFSIM71 (exact): with rts_core >= 0.5.6 one native call returns the capsule ids that pass the packed
+	# npos test below AND share the shooter's packed team (only his own men count: same owner = same packed team),
+	# so the loop skips the GDScript prefilter; the Dictionary checks after it are unchanged.
+	var nat := false
+	var mt := 0
+	if native_mz and pk0 and _has_ssq(ng):
+		var nx0: PackedInt32Array = ng.idx
+		var si0: int = nx0[eid] if eid < nx0.size() else -1
+		if si0 >= 0:
+			nat = true
+			mt = (ng.nteam as PackedInt32Array)[si0]
+	var cands
+	if nat:
+		cands = ng.grid.mz_cands(from, dir, u0, ln, co, mt, ng.idx, ng.npos, ng.nteam)
+	else:
+		cands = (ng.grid.query_capsule(from, dir, u0 - 0.01, ln + 0.01, co + 0.01) if pk0 else ng.grid.query_radius(mid, rq)) if ng != null else _near(w, w.cache.get("combat_grid"), mid, rq)
 	var ents: Dictionary = w.entities
 	var blocked := false
 	var ovp := bool(fd.get("over_prone", false))
-	var pk := ng != null and w.cache.has("cmb_ev")   # PERF8 (exact): geometry on the packed npos first (see _on_miss)
+	var pk := ng != null and w.cache.has("cmb_ev") and not nat   # PERF8 (exact): geometry on the packed npos first (see _on_miss)
 	var nix: PackedInt32Array = ng.idx if pk else PackedInt32Array()
 	var npos: PackedVector2Array = ng.npos if pk else PackedVector2Array()
 	var nsz := nix.size()
@@ -436,7 +461,18 @@ static func _sidestep(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, 
 	var fmax := float(fwd.max()) if not fwd.is_empty() else 0.0
 	var rq := cl * 0.5 + omax + fmax + co + mg
 	var tc0 := Time.get_ticks_usec() if SimIndex.profiling else 0
-	var cands = ng.grid.query_radius(mid, rq) if ng != null else _near(w, w.cache.get("combat_grid"), mid, rq)
+	var pk := ng != null and w.cache.has("cmb_ev")
+	var fmin := float(fwd.min()) if not fwd.is_empty() else 0.0
+	var rb := maxf(mg, sqrt(cl * cl + co * co)) + 0.05
+	var rb2 := rb * rb
+	# G7.1 PERFSIM71 (exact): rts_core >= 0.5.6 runs query_radius + the PERF8 box test below in one call: near ids
+	# as they are, far ids as -id - 1 (only when a retarget is possible; else dropped, as the loop `continue`s them).
+	var nat := native_ss and pk and _has_ssq(ng)
+	var cands
+	if nat:
+		cands = ng.grid.ss_split(mid, rq, from, dir, nrm, omax, fmin, fmax, rb2, may_rt, ng.idx, ng.npos)
+	else:
+		cands = ng.grid.query_radius(mid, rq) if ng != null else _near(w, w.cache.get("combat_grid"), mid, rq)
 	var ents: Dictionary = w.entities
 	var pts := PackedVector2Array()
 	var own := PackedByteArray()
@@ -445,16 +481,19 @@ static func _sidestep(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, 
 	# or the spot's / the shooter's own muzzle zone: cu <= cl, off <= co); spots lie in the box lateral [-omax, omax]
 	# x forward [fmin, fmax] around the shooter. Inside Combat.tick (packed npos == pos) units farther than rb (+ a
 	# float margin) from that box are skipped before any Dictionary read, unless they may be a retarget foe.
-	var pk := ng != null and w.cache.has("cmb_ev")
 	var nix: PackedInt32Array = ng.idx if pk else PackedInt32Array()
 	var npos: PackedVector2Array = ng.npos if pk else PackedVector2Array()
 	var nsz := nix.size()
-	var fmin := float(fwd.min()) if not fwd.is_empty() else 0.0
-	var rb := maxf(mg, sqrt(cl * cl + co * co)) + 0.05
-	var rb2 := rb * rb
 	var ovp := bool(fd.get("over_prone", false))
-	for cv in cands:
-		if pk:
+	for cv0 in cands:
+		var cv = cv0
+		if nat:
+			if cv0 < 0:
+				cv = -cv0 - 1
+				var cwf = ents.get(cv)
+				if cwf == null or int(cwf.get("owner", -1)) == eo:
+					continue   # same as the far branch below: an own mate this far out takes part in no check
+		elif pk:
 			var ci: int = nix[cv] if cv < nsz else -1
 			if ci >= 0:
 				var rp: Vector2 = npos[ci] - from

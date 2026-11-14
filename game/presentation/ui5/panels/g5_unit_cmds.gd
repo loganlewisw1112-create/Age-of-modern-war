@@ -94,6 +94,12 @@ func add_buttons(ids: Array) -> void:
 		_btn("land_at", "click a spot", "Helicopters and VTOLs land on any open area big enough; jets only at a field.",
 			func(): _mv().g4b.arm("land_at", {"unit_ids": air}))
 		_btn("take_off", "", "Landed aircraft take off and hover.", func(): hud._issue({"type": "take_off", "unit_ids": air.duplicate()}))
+		_btn("air_patrol", "click waypoints", "Patrol route: click points on the map, then Enter or right-click to start the loop.
+Helicopters and VTOLs fly it and take turns going back to service.",
+			func():
+				var pd = _mv().get_node_or_null("PatrolDraw71")
+				if pd != null:
+					pd.start())
 	if not teams.is_empty():
 		team_mode = G5Mech.mode(_ent(teams[0]))
 		if team_mode == "tactical":

@@ -636,7 +636,8 @@ static func agility_hit(t) -> float:
 	if not is_heavy_walker(t) or is_down(t):
 		return 1.0
 	var H := HV()
-	var ref := float(H.get("agility_speed_ref", 0.0))
+	# G7.1 A5 (SPEEDCN71): the ref is a raw content speed; def speeds are x g71_speed_mult at load, so scale it alike
+	var ref := float(H.get("agility_speed_ref", 0.0)) * float(Content.rules().get("g71_speed_mult", 1.0))
 	var sp := float(Content.unit(String(t.def)).get("speed", 0.0))
 	if ref <= 0.0 or sp <= ref:
 		return 1.0

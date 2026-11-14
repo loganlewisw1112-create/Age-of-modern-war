@@ -58,6 +58,9 @@ const G2Demo = preload("res://presentation/view/g2_demo.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const HoverOutline = preload("res://presentation/view/hover_outline.gd")   # G7.1 CONTROL71
+const Roster71 = preload("res://presentation/ui71/roster.gd")
+const PatrolDraw71 = preload("res://presentation/ui71/patrol_draw.gd")   # G7.1 AIRFIX71 CR seq 161
 const SimRunner = preload("res://presentation/view/sim_runner.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
 
@@ -101,6 +104,7 @@ var last_alert_pos: Variant = null       # Vector2 world pos of the last alert (
 
 # ------------------------------------------------------------ internals
 var camera: Camera2D
+var hover_outline: Node2D                # G7.1 CONTROL71
 var terrain_layer: Node2D
 var creep_layer: Node2D  # G7 CREEP7
 var world7_layer: Node2D  # G7 LPMAP7
@@ -130,6 +134,7 @@ var _snap_dt := 0.05                     # smoothed interval between snapshot ar
 var _snap_idx: Dictionary = {}           # unit id -> index in snap arrays (lazy, per snapshot)
 var _snap_idx_tick := -1
 var _hover_id := -1
+var _hover_frame := -100                 # G7.1 CONTROL71: process frame of the last hover pick (hover_entity() cache)
 var _team_cols: Dictionary = {}
 var _forced_joins := 0
 var _busy_frames := 0
@@ -317,6 +322,11 @@ func _init_view() -> void:
 	fac_atmo7.setup(self)   # G7 ATMO7 CR 3757
 	fac_seq7.setup(self)   # G7 SEQ7 CR 3721
 	camera.setup(self)
+	hover_outline = HoverOutline.new()   # G7.1 CONTROL71 (A4): crisp outline on what a click would select
+	add_child(hover_outline)
+	hover_outline.setup(self)
+	Roster71.attach(self)               # G7.1 CONTROL71: unit roster panel (selected units by type)
+	PatrolDraw71.attach(self)           # G7.1 AIRFIX71 (A2): patrol-loop drawing tool, started by the air card / SHIFT+Y
 
 	# start centred on the player's HQ (or spawn)
 	var hq = _player_hq()
@@ -895,12 +905,26 @@ func get_hover_info() -> Dictionary:
 		info.entity_id = int(e.id)
 		info.entity = e
 	_hover_id = int(info.entity_id)
+	_hover_frame = Engine.get_process_frames()
 	if placing_def != "":
 		var o := placement_origin(placing_def, p)
 		info.placement_origin = o
 		info.placement_error = Construction.placement_error(world, player_fid, placing_def, o)
 		info.placement_cost = Content.building(placing_def).get("cost", {})
 	return info
+
+
+## G7.1 CONTROL71: the entity under the mouse (what a click would select), or null. Reuses the HUD's per-frame hover
+## pick (get_hover_info) when it is fresh; otherwise picks itself, at most every 4th frame.
+func hover_entity():
+	if _world == null or sim_busy():   # never force a join for a hover (PERFDRAW71 seq 64)
+		return null
+	var f := Engine.get_process_frames()
+	if f - _hover_frame > 4:
+		var e = entity_at(mouse_world(), false)
+		_hover_id = -1 if e == null else int(e.id)
+		_hover_frame = f
+	return _world.entities.get(_hover_id) if _hover_id >= 0 else null
 
 
 # ================================================================ visibility helpers
@@ -984,47 +1008,62 @@ static func is_garrisoned(e: Dictionary) -> bool:
 ## Entity under world point p. Units pick by screen proximity; buildings by footprint.
 ## only_actionable=true skips entities the player cannot currently see.
 func entity_at(p: Vector2, only_actionable: bool = true):
-	var sp := world_to_screen(p)
+	# G7.1 CONTROL71 (A4): generous pick radius that scales with zoom, nearest-to-cursor wins (ViewUtil.unit_dist)
+	# G7.1 PERFDRAW71-2: ONE pass over the entities (G7 made 3, CONTROL71's roof pick a 4th: -26% fps at 10k, the HUD
+	# picks every frame). Same result as the old pass order: units first (nearest), then the smallest footprint hit,
+	# then the nearest roof, then the first resource; each keeps its own first-wins tie rule (strict <).
+	var hm: Dictionary = camera.height_map() if camera != null and camera.has_method("height_map") else {}
+	var sp := ViewUtil.world_to_screen_h(hm, p)
+	var zm: float = camera.zoom.x if camera != null else 1.0
 	var best = null
 	var best_d := 1e9
-	for id in world.entities:
-		var e: Dictionary = world.entities[id]
-		if e.kind != "unit":
-			continue
-		# G3b (R4-2): cheap world-space reject first (pick radius + sprite offset < 6 tiles),
-		# so hover/click picking stays cheap with 10k units
-		var dw: Vector2 = (e.pos as Vector2) - p
-		if absf(dw.x) + absf(dw.y) > 6.0:
-			continue
-		if is_garrisoned(e) or not entity_visible(e):
-			continue
-		var r := float(Content.unit(e.def).get("radius", 0.3))
-		var es := world_to_screen(render_pos(e)) + Vector2(0, -10 - r * 12.0)
-		var d := es.distance_to(sp)
-		var lim := 14.0 + r * 16.0
-		if d < lim and d < best_d:
-			best = e
-			best_d = d
+	var rej := ViewUtil.world_reject(ViewUtil.unit_reach(0.9, zm))
+	var c := Vector2i(floori(p.x), floori(p.y))
+	var bpick = null      # smallest visible building whose footprint holds the cursor cell
+	var rpick = null      # nearest visible building sprite body (roof pick)
+	var bd_best := 1e9
+	var res_pick = null   # first resource under the cursor
+	var ents: Dictionary = world.entities   # one getter call (a join only if a step is in flight, as before)
+	for id in ents:
+		var e: Dictionary = ents[id]
+		var k = e.kind
+		if k == "unit":
+			# cheap world-space reject first (so hover/click picking stays cheap with 10k units)
+			var dw: Vector2 = (e.pos as Vector2) - p
+			if absf(dw.x) + absf(dw.y) > rej:
+				continue
+			if is_garrisoned(e) or not entity_visible(e):
+				continue
+			var r := float(Content.unit(e.def).get("radius", 0.3))
+			var d := ViewUtil.unit_dist(sp, ViewUtil.world_to_screen_h(hm, render_pos(e)), r, zm)
+			if d >= 0.0 and d < best_d:
+				best = e
+				best_d = d
+		elif k == "building":
+			if best != null:
+				continue   # a unit already wins over every building
+			var o: Vector2i = e.cell
+			var s := int(e.size)
+			if c.x >= o.x and c.y >= o.y and c.x < o.x + s and c.y < o.y + s:
+				if (entity_visible(e) or (not only_actionable and _remembered(int(e.id)))) and (bpick == null or s < int(bpick.size)):
+					bpick = e   # G7 WTUR7 CR 3640: the smallest building on the cell (a wall turret over its wall)
+			if bpick != null:
+				continue   # a footprint hit already wins over every roof
+			# G7.1 CONTROL71: no footprint hit -> the nearest building sprite body (the roof of a tall building, a thin wall)
+			var bd := ViewUtil.building_dist(sp, o, s, zm)
+			if bd >= 0.0 and bd < bd_best and (entity_visible(e) or (not only_actionable and _remembered(int(e.id)))):
+				bd_best = bd
+				rpick = e
+		elif k == "resource":
+			if res_pick == null and best == null and (e.pos as Vector2).distance_to(p) < 0.8 and cell_explored(world.cell_of(e.pos)):
+				res_pick = e
 	if best != null:
 		return best
-	var c := Vector2i(floori(p.x), floori(p.y))
-	var bpick = null
-	for id in world.entities:
-		var e: Dictionary = world.entities[id]
-		if e.kind != "building":
-			continue
-		var o: Vector2i = e.cell
-		var s := int(e.size)
-		if c.x >= o.x and c.y >= o.y and c.x < o.x + s and c.y < o.y + s:
-			if (entity_visible(e) or (not only_actionable and _remembered(int(e.id)))) and (bpick == null or s < int(bpick.size)):
-				bpick = e   # G7 WTUR7 CR 3640: the smallest building on the cell (a wall turret over its wall)
 	if bpick != null:
 		return bpick
-	for id in world.entities:
-		var e: Dictionary = world.entities[id]
-		if e.kind == "resource" and (e.pos as Vector2).distance_to(p) < 0.8 and cell_explored(world.cell_of(e.pos)):
-			return e
-	return null
+	if rpick != null:
+		return rpick
+	return res_pick
 
 
 func _remembered(eid: int) -> bool:
@@ -1100,7 +1139,7 @@ func _input(event: InputEvent) -> void:
 		if g4b.dragging():
 			g4b.on_motion(pick_world(_viewport_to_canvas(mm.position)))
 		if _mid_drag:
-			camera.pan_screen(_mid_last - mm.position)
+			camera.pan_screen((_mid_last - mm.position) * CameraRig.DRAG_MULT)
 			_mid_last = mm.position
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
@@ -1480,18 +1519,13 @@ func _process_input_state(delta: float) -> void:
 			KEY_S, KEY_DOWN: dir.y += 1
 			KEY_A, KEY_LEFT: dir.x -= 1
 			KEY_D, KEY_RIGHT: dir.x += 1
-	# edge pan
+	# edge pan (G7.1 CONTROL71: AoE-style, CameraRig.edge_dir; Shift = fast)
 	if _edge_pan_enabled and demo_mouse_world == null and get_window().has_focus():
-		var vp := get_viewport()
-		var m := vp.get_mouse_position()
-		var vs := get_viewport_rect().size
-		if Rect2(Vector2.ZERO, vs).has_point(m):
-			if m.x < 6: dir.x -= 1
-			elif m.x > vs.x - 6: dir.x += 1
-			if m.y < 6: dir.y -= 1
-			elif m.y > vs.y - 6: dir.y += 1
+		dir += CameraRig.edge_dir(get_viewport().get_mouse_position(), get_viewport_rect().size)
 	if dir != Vector2.ZERO:
 		var pan_speed: float = camera.edge_pan_speed() if camera.has_method("edge_pan_speed") else 900.0
+		if Input.is_key_pressed(KEY_SHIFT):
+			pan_speed *= CameraRig.FAST_MULT
 		camera.pan_screen(dir.normalized() * pan_speed * delta / camera.zoom.x)
 	# a drag whose release we never saw (window lost focus etc.)
 	if _drag_start_screen != null and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and demo_marquee == null:

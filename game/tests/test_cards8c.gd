@@ -114,6 +114,13 @@ func test_barracks_options() -> void:
 	if not check(w != null and not _F(w).is_empty(), "Last Protocol world with a facility"):
 		return
 	var fac := int(_F(w).id)
+	# a quiet base: the Machine already marching on it raises the alarm, and the board never rotates a post under alarm
+	var foes := []
+	for e in w.entities.values():
+		if String(e.get("kind", "")) == "unit" and w.is_enemy(_fid(w), int(e.owner)):
+			foes.append(int(e.id))
+	for id in foes:
+		w.destroy(id, "test")
 	# watch roster + rotate
 	check(_do(w, {"type": "c8c_rotate", "post": "nope"}) == "No such post on the watch roster.", "unknown post refused with its reason")
 	var j := _manned(w, fac)

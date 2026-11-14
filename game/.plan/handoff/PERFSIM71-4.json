@@ -1,0 +1,25 @@
+{
+  "agent": "PERFSIM71-4", "gen": 4, "status": "recycled at ~70% budget: phase 1 landed (exact, ~0 saving), plan doc written",
+  "calls_used": 66, "tokens_used_est": 470000,
+  "read_first": "docs/NATIVE_COMBAT71.md (whole design: field table, mirror, sync, rng order, oracle, phase list with estimates/measured, and section 8 'Phase 1 result and what it changes')",
+  "done": [
+    "docs/NATIVE_COMBAT71.md: plan for the full native combat port (owner option A); fact perfsim71.native_plan posted",
+    "rts_core 0.6.0: new native/rts_core/src/mirror.rs + RtsCombat.prep_mirror (drop-in for prep_units_ids: same args, same 13-entry result, same writes, pointer-level reads, in-place writes) + RtsCombat.mirror_arrays (per-tick packed mirror: ids,pos,owner,tf,dx,target,moving,cd,ocode,broken). RtsCombat now has a field (mir). Built --stage, swapped. 0.5.6 kept as bin/rts_core.v056_keep.dll + scratchpad rts_core_0.5.6.dll / rts_core_0.5.5.dll",
+    "combat.gd: static native_mirror (default true; off = prep_units_ids), mirror_debug + _mirror_check (GDScript oracle: all columns after prep, pos/owner after act, mirror_vol counts act-time changes)",
+    ".plan/perfsim71/sim_ab3.gd (--pm=0|1 --dbg=1 --prof=1), .plan/perfsim71/pairs4.sh (G6 / G71 pm on / pm off + profiled pairs)",
+    "tests/test_perfsim71.gd PATHS += combat.gd native_mirror",
+    "Exactness: hash 8fd794b3 for pm on, pm off, dbg on (runs/m4_on.log m4_off.log m4_dbg.log, 0 script errors) and in all 13 batch runs (m4p_pairs.txt). mirror_check: 899011 rows, 0 mismatches; pos/owner unchanged through the act loop; act-time volatile changes target 63793, cd 17141, moving 16175, ocode 516, broken 0",
+    "Measured saving: ~0. Profiled cmb.np on 3.570/3.966 vs off 3.665/3.836 ms/tick (runs/m4p_q*). Unprofiled pairs (m4p_pairs.txt): G6 21.14/22.12/21.97, G71 pm on 32.26/46.24/43.39, pm off 45.42/39.93/38.03 -> too noisy to use: PERFDRAW71-6 ab7 10k minimap A/B overlapped pairs 2-3 and the profiled pairs (other_godot=2). Discarded as a gate number; G6 itself was stable at ~22 ms on the near-idle pair 1."
+  ],
+  "key_finding": "Pointer-level Dictionary reads are not faster than get_named: each native field access costs ~150-250 ns whatever the method. So per-tick mirror refill is not free and must happen once (prep already pays it); later phases save only by deleting GDScript work and reading tick-fixed fields from the mirror. Estimate future phases by GDScript removed minus ~0.2 us per live dict read kept.",
+  "not_done": [
+    "test_hot_state on this tree: UNVERIFIED at handoff (bash tests/run.sh --only=test_hot_state started ~16:48Z, still running; result lands in .plan/perfsim71/t4_test_hot_state.log, run.sh writes it only at the end: successor reads it first). test_perfsim71 DONE: 5/0 TESTS OK (.plan/perfsim71/t4_test_perfsim71.log, includes native_mirror in PATHS). An earlier attempt used --only=<file>.gd and ran 0 files",
+    "Clean (no other godot) G6 vs G71 pairs for this generation",
+    "Phase 2 (native _find) and beyond"
+  ],
+  "exact_next_step": "Phase 2 per docs/NATIVE_COMBAT71.md section 7.2: add stats columns by dx to the mirror (range, sight, min_range, aa, indirect, builder, armed, is_air, roof, naval_only, roof_out; fill once per def, never per tick), port _find (unit candidates + eb cells) as RtsCombat.find(row, radius, vis, ...) reading only mirror columns + live alive/wounded/hid/morale/last_fired_tick of the candidate it is about to accept, returning -2 = 'fallback to GDScript _find' whenever a guarded filter is live (WallFire7.any, G6_VIS, a candidate with morale not revealed by firing (Fog.concealed_enemy/Senses7), hid). Toggle Combat.native_find; oracle: sim_ab3-style --nf=0|1 same hash x2, plus a scan_ab-style per-call compare (native pick == GDScript pick) counted over 600 ticks = 0 diffs; then test_perfsim71 (add native_find to PATHS), test_hot_state. Measure with pairs4.sh only after posting perfsim71.timing_batch and seeing PERFDRAW71 idle (0 other godot).",
+  "files_touched": ["native/rts_core/src/mirror.rs (new)", "native/rts_core/src/combat.rs (RtsCombat.mir field, prep_mirror, mirror_arrays)", "native/rts_core/src/lib.rs (mod mirror)", "native/rts_core/Cargo.toml (0.6.0) + Cargo.lock", "native/rts_core/src/grid.rs (CRLF -> LF only; content from PERFSIM71-3)", "bin/rts_core.dll (0.6.0)", "bin/rts_core.v056_keep.dll (0.5.6 backup)", "sim/systems/combat.gd", "tests/test_perfsim71.gd", "docs/NATIVE_COMBAT71.md (new)", ".plan/perfsim71/sim_ab3.gd pairs4.sh m4p_pairs.txt t4_*.log runs/m4_* runs/m4p_*"],
+  "incident": "combat.gd did not parse from ~16:26Z to ~16:35Z (var pm := ... type inference); fixed (var pm: bool). PERFDRAW71 saw 200+ SCRIPT ERRORs in main-tree runs in that window and moved to a frozen copy.",
+  "uncommitted_state": "all above uncommitted (ORCH commits). No staged rts_core.new.dll left; bin/rts_core.prev*_1.dll is the previous live copy left by the swap.",
+  "open_change_requests": []
+}

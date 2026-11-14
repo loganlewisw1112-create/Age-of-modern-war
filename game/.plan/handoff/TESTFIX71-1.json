@@ -1,0 +1,98 @@
+{
+ "agent": "TESTFIX71-1",
+ "when": "2026-11-13",
+ "git": "none (no add/commit)",
+ "godot_runs_left": "none of mine (test_specops8 running is not mine; the bash grep loops are ORCH's guard)",
+ "files_touched": [
+  "sim/systems/naval.gd (_sweep_one, 1 line -> 4 lines; working copy keeps its CRLF endings, git normalizes to LF)",
+  "new scratch outputs under .plan/testfix71/ only"
+ ],
+ "tests_cnrole7_gd": "UNTOUCHED (no edit made)",
+ "naval": {
+  "state": "DONE",
+  "cause": "Naval._sweep_one clears sea mines on a time budget (mines_per_s 2.0, every 5 ticks while a mine is within width+0.5); A5 sweeper (4.08 t/s vs 3.4) spends 7 passes in reach instead of 8 and clears 3 of 4",
+  "fix": "rate = mines_per_s * Content.rules().g71_speed_mult (default 1.0; x1.0 is exact, so a tree without A5 computes the G7 product bit for bit)",
+  "evidence": {
+   "live": ".plan/testfix71/naval_live_after.log RESULT pass=10 fail=0 (TESTS OK)",
+   "G7 tree + patched naval.gd hot-reloaded (tree untouched)": ".plan/testfix71/naval_g7tree_patched.log 10/0 (unpatched 10/0)",
+   "live with A5 undone (speeds/1.2, mult 1.0)": ".plan/testfix71/naval_live_undoA5.log 10/0",
+   "HEAD + patch": ".plan/testfix71/naval_headtree_patched.log 10/0; HEAD unpatched control .plan/testfix71/naval_headtree_unpatched.log 9/1 (got 3 expected 4 / 1 left)",
+   "coverage": "test_mines 7/0 (.plan/testfix71/mines_live.log), test_content_g6 7/0 (.plan/testfix71/content_g6_live.log)",
+   "test_hot_state": "17/0 TESTS OK (.plan/testfix71/hot_state_1.log)",
+   "bench hashes": "8fd794b3 / a1e5af17 / 41b5f765 == fact w2.bench_ref (.plan/testfix71/hash_1.out; timing_batch starting/done posted)"
+  }
+ },
+ "cnrole7": {
+  "state": "NOT DONE: need posted (orch.cnrole7_setup, board seq 1330); no placement passed all 18 tree x shift runs",
+  "cause_1_death": "all damage on the parked soldier is own-side STRAYS (cn_popup RWS is small arms, no splash; Sentinel marksman/bulwark/arc) at the walker 2 tiles from him",
+  "cause_2_care": "independent: Wounds auto buddy-aid (buddy_r 6) sends him to treat a wounded mate (CareStarted id=parked), failing ever_moving/moved<1.0; CnRole7 parked does not filter care. Original setup in G7: fails 5/6 shifts (care 1/3/4/8, death 2) -> .plan/testfix71/cn_orig_g7.out; live: death 0/3, care 2/3 -> cn_orig_live.out",
+  "results_test_level_pass_per_6_shifts": {
+   "orig ay+4 off(-2,0)": {
+    "live": 3,
+    "head": 3,
+    "g7": 2
+   },
+   "ay+4 (-4,0)": {
+    "live": "4 (3/4 care)",
+    "head": 4,
+    "g7": "4 (3/4 care)"
+   },
+   "ay+4 (-3.5,0)": {
+    "live": 4,
+    "head": 4,
+    "g7": 4
+   },
+   "ay+4 (-4,-1.5)": {
+    "live": 4,
+    "head": 4,
+    "g7": 5
+   },
+   "ay+4 (-4,1.5)": {
+    "live": 4,
+    "head": 4,
+    "g7": 5
+   },
+   "ay+4 (-3,-3) and (-3,3)": "pass 5-6 but VACUOUS: he never aims/fires (walker killed by others), rejected",
+   "ay+4 (-4,1)": "live/head 4-5, g7 3 (care)",
+   "ay+4 (-4,-1) BEST": {
+    "live": "6/6 strict",
+    "head": "6/6 strict",
+    "g7": "5/6 (shift 0 care; shift 3 passes at 1 hp from walker fire)"
+   },
+   "ay+6 (-4,0)/(-3.5,0)": "VACUOUS: walker killed at k=0..3, he never fires",
+   "ay+3/+3.5 (-4,0)": {
+    "live": 4,
+    "head": 4,
+    "g7": 6
+   },
+   "ay+3/+3.5 (-4.3,0) runner-up": {
+    "live": "5 (shift 1 care)",
+    "head": 5,
+    "g7": 6
+   },
+   "ay+4.5 (-4,0)": {
+    "live": 3,
+    "head": 3,
+    "g7": 4
+   },
+   "ay+4.5 (-4.3,0)": {
+    "live": 4,
+    "head": 4,
+    "g7": 4
+   },
+   "ay+5 (-4,0)/(-4.3,0)": {
+    "live": 4,
+    "head": 4,
+    "g7": 3
+   },
+   "clear own Sentinels within 7 + (-4,0)": {
+    "live": 6,
+    "head": 6,
+    "g7": "2 (care x2, marksman strays)"
+   },
+   "clear 7 + (-2,0)": "1-ish, deaths"
+  },
+  "files": ".plan/testfix71/cn_cand1_*.out (sweep 1, no care column), cn_cand2_*.out, cn_cand3_*.out, cn_clear_*.out, cn_orig_*.out, trace_live_s4_m4.out, trace_live_ay35_s1_m43.out, geo_live.out; probes in scratchpad tf_cn.gd tf_cn2.gd tf_cntrace.gd tf_geo.gd tf_run.gd",
+  "exact_next_step": "wait for ORCH/owner answer on need orch.cnrole7_setup (A: accept near_foe a_pos+Vector2(-4.0,-1.0) at line 319 = live/HEAD 12/12, G7 5/6; B: parked CN units take no automatic buddy-aid job (Wounds auto-care checks CnRole7.is_parked) - sim change, owner call; C: both). If A: edit line 319 only (LF file), run bash tests/run.sh --only=test_cnrole7 in live, copy to HEAD/G7 via a scratch runner (never edit those trees), rerun tf_cn2.gd --offs=-4,-1 --ays=4 in all 3 trees."
+ }
+}

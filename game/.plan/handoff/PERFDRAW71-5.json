@@ -1,0 +1,22 @@
+{
+  "id": "PERFDRAW71", "gen": 5, "written_by": "ORCH (rebuilt)",
+  "reason": "PERFDRAW71-5 died on an API network error (ENOTFOUND) 2026-11-05 ~07:01Z while waiting on b5r3 + ab5; no handoff of its own. Rebuilt by ORCH from board seq 353-356 and the files on disk.",
+  "done": [
+    "Baseline rounds b4r1 (by gen 4), b5r2, b5r3 all completed (DONE lines in .plan/perfdraw71/b4r1.out, b5r2.out, b5r3.out). EVERY round ran on a loaded PC (cpu 29-100%, 2-6 godot procs). VERIFY the tree order of each line from the per-tree logs b5r*_<tree>_<case>.log before quoting; ORCH read them in bisect order g61,g7,g71 (LP: g7,g71).",
+    "ORCH reading, fps p10: 2k g61/g7/g71 = r1 63.2/49.9/44.7, r2 37.7/30.5/34.9, r3 39.3/56.5/44.7. 10k = r1 188.6/213.5/139.0, r2 117.3/189.4/132.4, r3 206.0/185.5/135.0. lpz g7/g71 = 45.1/42.0, 42.4/44.5, 47.8/52.9. lppan = 16.3/15.7, 25.5/19.7, 21.5/28.8. lppeak = 13.3/11.5, 14.9/15.4, 15.2/14.5.",
+    "Gen-5 finding (seq 353): g71 10k p10 ~35% below g7 in 3/3 rounds (~135 vs ~206); suspected CONTROL71 hover pick / minimap per-frame work. Not yet profiled.",
+    "presentation/view/batch_atlas.gd: env-gated A/B probe PD71_PAGE (page_w; default = PAGE, so unchanged without the env var). Original saved as .plan/perfdraw71/batch_atlas.gd.orig5.",
+    ".plan/perfdraw71/ab5.sh written (LP peak atlas page 2048 vs 4096 x2 alternating + 10k --prof g7 vs g71). NEVER RAN: no ab5.out exists."
+  ],
+  "not_done": [
+    "Run ab5.sh (via hb.sh) on a quiet PC; read ab5.out: does a 4096 page cut draw calls / raise LP peak fps; where the 10k g71-vs-g7 frame time goes.",
+    "Fix the 10k regression vs G7 if it is in your files; if it is in CONTROL71's (hover_outline / minimap / picking), post a change_request to ORCH with the exact function and cost.",
+    "fact perfdraw71.baseline with the 3-round numbers (loaded-PC caveat) once tree order is verified.",
+    "pt71_perfdraw71 flow run + look at the hot-pit shots + fact shots.best.",
+    "LP peak p10 >= 60 decision: gen 4 measured ~42 ms/frame at peak (p_ent 18.7, terrain 3.3, fx 1.2, draws 4.1, other ~15). If it is clearly out of reach without big work (native swarm entity-list builder: native/ is PERFSIM71's), post fact owner.lp_peak.ask with numbers and options; do not start it.",
+    "Remove the PD71_PAGE probe (restore .orig5) or keep it env-gated, and say which."
+  ],
+  "next_step": "Read the per-tree logs to verify the baseline table, then run ab5.sh via hb.sh.",
+  "uncommitted_state": "all on g71, uncommitted (ORCH commits): gen 3-5 edits to render_snap.gd, entity_layer.gd, batch_atlas.gd (probe), tools/perf71_draw_lp.gd, tools/pt71_perfdraw71.gd, tests/test_perfdraw71.gd.",
+  "calls_used": 42, "tokens_used_est": 300000
+}

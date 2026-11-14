@@ -331,3 +331,40 @@ static func pick_world(hm: Dictionary, s: Vector2) -> Vector2:
 static func pick_cell(hm: Dictionary, s: Vector2) -> Vector2i:
 	var p := pick_world(hm, s)
 	return Vector2i(floori(p.x), floori(p.y))
+
+
+# ================================================================ G7.1 CONTROL71 (A4): picking
+## A click / hover reaches a unit within a generous radius that scales with zoom: at least PICK_PX viewport pixels
+## (small units stay clickable zoomed out), never less than the old per-unit radius in canvas units. The nearest
+## candidate to the cursor wins. Pure functions (no scene state) so tests/test_control71.gd can drive them.
+const PICK_PX := 20.0           # PROVISIONAL: minimum pick radius, viewport px
+const PICK_MAX_CANVAS := 150.0  # cap in canvas units (a 0.08-zoom 768 map would otherwise reach across the screen)
+const PICK_BLD_LIFT := 14.0     # PROVISIONAL: canvas px a building sprite rises per footprint cell (roof pick)
+
+
+## Pick radius (canvas units) of a unit of def radius r at camera zoom z.
+static func unit_reach(r: float, z: float) -> float:
+	var base := 14.0 + r * 16.0
+	if r >= 0.45:
+		base *= 1.25   # vehicles: bigger bodies, bigger target
+	return minf(maxf(base, PICK_PX / maxf(z, 0.01)), maxf(PICK_MAX_CANVAS, base))
+
+
+## Distance from the cursor (canvas point c) to a unit's drawn body (canvas point of its feet p); -1 = out of reach.
+static func unit_dist(c: Vector2, p: Vector2, r: float, z: float) -> float:
+	var d := c.distance_to(p + Vector2(0.0, -10.0 - r * 12.0))
+	return d if d < unit_reach(r, z) else -1.0
+
+
+## World-tile |dx|+|dy| beyond which a unit cannot be within `reach` canvas units of the cursor (cheap pre-reject).
+static func world_reject(reach: float) -> float:
+	return maxf(6.0, (reach + 30.0) / 16.0 + 2.0)
+
+
+## Roof pick for a building (footprint origin cell o, size s): distance from canvas point c to the sprite's body, or
+## -1 when out of reach. Used only when no footprint cell was hit.
+static func building_dist(c: Vector2, o: Vector2i, s: int, z: float) -> float:
+	var ctr := iso(Vector2(o) + Vector2(s, s) * 0.5) + Vector2(0.0, -PICK_BLD_LIFT * s)
+	var reach := minf(s * 22.0 + 8.0 + PICK_PX * 0.5 / maxf(z, 0.01), PICK_MAX_CANVAS + s * 22.0)
+	var d := c.distance_to(ctr)
+	return d if d < reach else -1.0

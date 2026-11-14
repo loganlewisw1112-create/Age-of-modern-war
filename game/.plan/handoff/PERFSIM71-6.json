@@ -1,0 +1,36 @@
+{
+ "agent": "PERFSIM71-6",
+ "gen": 6,
+ "status": "recycled at the calls floor: phase 3 step 0 passed, phase 3a built exact + measured, owner.sim_gate.ask posted (3a at ~45-55% of its estimate)",
+ "calls_used": 94,
+ "tokens_used_est": 420000,
+ "read_first": "docs/NATIVE_COMBAT71.md section 8: 'Phase 3 step 0', 'Phase 3a as built', 'Phase 3a measured', 'Updated projection after phase 3a'",
+ "done": [
+  "Step 0: combat.gd prof_units split (u.<type>.F/.D + pu.cb.<type>, PU_CB_KEYS, _pu_cb/_pu_add; bench only), sim_ab4 --pu=1 + PUCAL, .plan/perfsim71/pusplit.py. Clean runs s6_pu2 + n6p_pu3: dispatch 5.90 / 5.64 profiled ms (ceiling >= 3: build). s6_pu1 discarded (overlapped test_perfdraw71). fact perfsim71.phase3_step0",
+  "Probe .plan/perfsim71/na_probe.gd: the 2k fight runs with G6 RANGE / LOS / VIS live (g6m 687), so act.rs handles _rm (hand back raised / s7 / wall-walk shooters), _hlos (native height_los) and VIS (legal() G6-key hand-back)",
+  "rts_core 0.6.2 (src/act.rs child module of find.rs; RtsCombat.act_setup / act_run / act_stats; 0.6.1 kept as bin/rts_core.v061_keep.dll); combat.gd: native_act (default on), native_act_ab + na_ab_n/diff, NA_NO_BLD, _na_setup, _act_one, _na_ab, act-loop native branch (old loop kept in the else), tabs.dar/das/daf in _dx_of (a8inf by the _profile_of code rule: calling _profile_of there raised script errors before Accuracy8.cfg; fixed before any oracle counted)",
+  "Oracles: same hash na0/na1/naab 2k fight 8fd794b3 (o6c_f_na1, o6c_f_naab, o6d_f_na0), 2k mixed a1e5af17 (o6d_mx_*), 10k 200t 41b5f765 (o6d_k10_na1/naab); whole-shooter compare 426,155 + 758,761 + 607,365 entries 0 diffs; 0 SCRIPT ERRORs; test_perfsim71 5/0 (native_act in PATHS), test_hot_state 17/0 (t6_*.log)",
+  "Timing n6p_pairs.txt (all clean): G6 15.95, na1 26.67, na0 28.61 medians -> 1.67x G6; profiled cmb.act 13.05 -> 11.42"
+ ],
+ "not_done": [
+  "Phase 3b (callback-tick dispatch; Spread8 / stop / fire / chase natively with callbacks)",
+  "10k na0 not rerun this gen (phase 2 reference 41b5f765 used)",
+  "LP map: native_act off there (WallFire7.any -> no find_setup)",
+  "hand-back paths (hid / forest / air / G6-key / building / structure targets) are exact by construction; the benches never produce a native result on them"
+ ],
+ "exact_next_step": "Wait for the owner's answer to owner.sim_gate.ask. If continue: phase 3b per doc section 8, first d_sp8 (24,195 hand-backs a run), measured with .plan/perfsim71/pairs6.sh after perfsim71.timing_batch starting.",
+ "files_touched": [
+  "native/rts_core/src/act.rs (new)",
+  "native/rts_core/src/find.rs (mod act, act field)",
+  "native/rts_core/src/combat.rs (act_setup/act_run/act_stats)",
+  "native/rts_core/Cargo.toml (0.6.2) + Cargo.lock",
+  "bin/rts_core.dll (0.6.2)",
+  "bin/rts_core.v061_keep.dll",
+  "sim/systems/combat.gd",
+  "tests/test_perfsim71.gd",
+  "docs/NATIVE_COMBAT71.md",
+  ".plan/perfsim71/sim_ab4.gd step0.sh orc6.sh chain6.sh pairs6.sh pusplit.py na_probe.gd chk/ s6_step0.txt chain6.out n6p_pairs.txt t6_*.log runs/s6_* runs/o6* runs/n6p_*"
+ ],
+ "uncommitted_state": "all uncommitted (ORCH commits); no staged bin/rts_core.new.dll; bin/rts_core.prev*.dll = previous live copy left by the swap",
+ "open_change_requests": []
+}

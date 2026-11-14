@@ -1,0 +1,26 @@
+{
+  "agent": "PERFSIM71-5", "gen": 5, "status": "recycled near 70% budget: phase 2 (native _find) landed exact, measured, doc updated; phase 3 not started",
+  "calls_used": 85, "tokens_used_est": 420000,
+  "read_first": "docs/NATIVE_COMBAT71.md section 8: the phase table (row 2 measured), 'Phase 2 as built', 'Updated projection after phase 2' and 'Phase 3 design notes'",
+  "done": [
+    "First check: t4_test_hot_state.log was green (17/0, written 09:03 local); my redundant rerun t5_test_hot_state.log also 17/0 (phase-1 tree)",
+    "rts_core 0.6.1 (built --stage, swapped; 0.6.0 kept as bin/rts_core.v060_keep.dll, 0.5.6 as bin/rts_core.v056_keep.dll): new native/rts_core/src/find.rs (FindCtx: setup + find), RtsCombat.find_setup(args) / find(eid, radius) / find_stats(reset); grid.rs: nearest_enemy_batch and scan_vis_sorted now call shared cores nearest_one / scan_sorted_buf (moved unchanged; nf=0 hash still 8fd794b3 with the new DLL)",
+    "combat.gd: static native_find (default ON) + native_find_ab / nf_ab_n / nf_ab_diff / nf_ab_fb; tabs.dmr / tabs.dcf per-def columns (filled once per def in _dx_of); mir_ok; pres (pre-batch result); _nf_args; per-tick guards WallFire7.any / g6_spy / scan_ab; _find asks RtsCombat.find first (-2 = GDScript body). Parse-checked on a copy before install (godot --check-only)",
+    "tests/test_perfsim71.gd PATHS += combat.gd native_find",
+    ".plan/perfsim71/sim_ab4.gd (--nf=0|1, --nfab=1, --map=, --n=, --prof=1 prints all cmb./f./fire. keys + NFSTATS), .plan/perfsim71/pairs5.sh (G6 / nf on / nf off + profiled; waits for 0 other godot before each run, logs cpu + godot counts)",
+    "Exactness: same hash nf0 / nf1 / nf1 / nfab: 2k fight 8fd794b3 (runs/n5_nf0, n5_nf1, n5_nf1b, n5_nfab), 2k mixed a1e5af17 (n5_mixed_*), 10k fight 200 ticks 41b5f765 (n5_10k_*); per-call compare 74552 + 46181 + 14147 calls, 0 diffs, 0 fallbacks; 0 SCRIPT ERRORs. test_perfsim71 5/0 (t5_test_perfsim71.log), test_hot_state 17/0 with native_find on (t5b_test_hot_state.log)",
+    "Measured (n5p_pairs.txt, 15 clean runs other_godot=0; p1_G6 discarded: cpu 100%, 5 other godot): profiled cmb.find 2.078/2.096 -> 0.568/0.575 ms/tick (saved 1.51 of the 2.0 estimate), cmb.act 13.92/14.01 -> 12.18/12.33; unprofiled medians G6 14.82 (14.82, 16.90, 14.70), G71 nf on 27.45 (27.84, 26.18, 27.05, 31.85), nf off 29.60 (30.12, 29.07, 31.26, 28.91) -> G71 = 1.85x G6",
+    "Decision point: phase 2 landed at ~75% of its estimate (not under half), so no owner.sim_gate.ask; but the updated projection (doc section 8) says G7.1 ends phases 3-5 at ~1.25-1.55x G6 and needs phase 6 plus every remaining phase near estimate: ORCH may want to show the owner now",
+    "Board: fact perfsim71.phase2 (seq 553), perfsim71.timing_batch starting (503) / done (552)"
+  ],
+  "not_done": [
+    "Phase 3 (native act driver): designed only (doc 'Phase 3 design notes'), nothing built",
+    "The -2 fallback paths (hid, forest-concealed, air, G6 keys, roof_out, building G6 keys) were never hit by the three benches (0 fallbacks): exact by construction (the GDScript body runs) but untested in a bench; the LP map stays on GDScript every tick (WallFire7.any)",
+    "No LP-peak / 2k-mixed timing for native_find (only 2k fight timed)"
+  ],
+  "exact_next_step": "Phase 3 step 0 per docs/NATIVE_COMBAT71.md 'Phase 3 design notes': run sim_ab4.gd --prof=1 with Combat.prof_units = true (add a --pu=1 flag) on the 2k fight to split _unit_tick time by order type into dispatch-only vs ends-in-_fire / order_path; if the dispatch-only share is under ~3 profiled ms, post owner.sim_gate.ask (phase 3's 5-7 ms estimate is then wrong) with the section 8 projection; else build RtsCombat.act as designed with a native_act toggle and the same oracle set (hash x2 on/off 2k fight / mixed / 10k, per-unit write log compare), timing only after perfsim71.timing_batch starting and .plan/perfdraw71/quiet.sh QUIET.",
+  "files_touched": ["native/rts_core/src/find.rs (new)", "native/rts_core/src/grid.rs (shared cores nearest_one / scan_sorted_buf / max_rad)", "native/rts_core/src/combat.rs (fc field, find_setup, find, find_stats)", "native/rts_core/src/lib.rs (mod find)", "native/rts_core/Cargo.toml (0.6.1) + Cargo.lock", "bin/rts_core.dll (0.6.1)", "bin/rts_core.v060_keep.dll (0.6.0 backup)", "sim/systems/combat.gd", "tests/test_perfsim71.gd", "docs/NATIVE_COMBAT71.md", ".plan/perfsim71/sim_ab4.gd pairs5.sh n5p_pairs.txt t5_*.log t5b_*.log runs/n5_* runs/n5p_*", ".plan/handoff/PERFSIM71-5.json"],
+  "incidents": ["My redundant t5 test_hot_state run (started before I saw t4 was green) overlapped PERFDRAW71-6's timing window; a Stop-Process to end it was denied by the permission classifier, so it ran to completion (17/0).", "pairs5 run 1 G6 overlapped PERFDRAW71-7's test_ui_fit / test_hot_state (started after my timing_batch starting post): discarded; ORCH then held PERFDRAW71-7 and the remaining 15 runs were clean."],
+  "uncommitted_state": "all above uncommitted (ORCH commits). No staged bin/rts_core.new.dll left; bin/rts_core.prev*_1.dll is the previous live copy left by the swap.",
+  "open_change_requests": []
+}

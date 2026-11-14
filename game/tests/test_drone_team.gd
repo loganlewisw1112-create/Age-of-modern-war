@@ -235,8 +235,9 @@ func test_drones_shot_down_by_aa_and_jammed_by_ew() -> void:
 	var w: SimWorld = s[0]
 	var o: Vector2i = s[1]
 	var team := _spawn(w, "a_drone_team", 0, _p(o, 1.5, 12.5))
-	var aa := _spawn(w, "a_spaag", 1, _p(o, 16.5, 12.5), false)
+	var aa := _spawn(w, "a_spaag", 1, _p(o, 19.5, 12.5), false)   # G7.1 A5: next to the strike cell, gun laid toward the launch
 	w.entities[aa].order = {"type": "hold"}
+	w.entities[aa].facing = PI
 	w.run_ticks(2)
 	var lr := _launch(w, team, "strike", {"cell": [o.x + 20, o.y + 12]})
 	check_eq(rejected_reason(lr), "", "strike launched over the SPAAG")

@@ -17,6 +17,7 @@ extends RefCounted
 const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 
 const STRIP_W := 520.0
+const FlowBar = preload("res://presentation/ui71/flow_bar.gd")   # G7.1 FLOW71: one-click send / auto / packages bar
 
 var hud
 var strip: VBoxContainer          # parent of every card (info strip above the bottom bar)
@@ -31,6 +32,7 @@ var _bar: HBoxContainer = null
 var _shown: Array = []            # [Button, ...] fac buttons now in the grid
 var _regular: Array = []          # regular card buttons hidden while a card tab is open
 var _home := {}                   # Button -> card (to find it again)
+var flow_bar: Control = null      # G7.1 FLOW71: always the last child of the strip (right above the bottom bar)
 
 
 func build(h, root: Control) -> void:
@@ -50,6 +52,7 @@ func build(h, root: Control) -> void:
 	stash.visible = false
 	stash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(stash)
+	flow_bar = FlowBar.attach(h, strip)
 
 
 ## hud._build_ui: attach a card script into the strip (replaces `.attach(self, left)`).
@@ -63,6 +66,8 @@ func attach(script: GDScript) -> Control:
 			bind(c)
 		else:
 			c.ready.connect(bind.bind(c), CONNECT_ONE_SHOT)
+	if flow_bar != null and is_instance_valid(flow_bar):
+		strip.move_child(flow_bar, -1)
 	return first
 
 
@@ -320,6 +325,8 @@ func place() -> void:
 	for c in cards:
 		if is_instance_valid(c) and c.visible:
 			showing = true
+	if flow_bar != null and is_instance_valid(flow_bar) and flow_bar.visible:
+		showing = true
 	var cw: float = root.size.x if root.size.x > 0.0 else 1600.0
 	var rw = hud.get("RIGHT_W")
 	var side: float = (float(rw) if rw != null else 306.0) + 20.0
@@ -333,7 +340,7 @@ func place() -> void:
 		if pn != null and (pn as Control).visible and (pn as Control).size.y > 0.0:
 			bot = maxf(bot, root.size.y - (pn as Control).position.y + 6.0)
 	var h := 0.0
-	for c in cards:
+	for c in cards + ([flow_bar] if flow_bar != null else []):
 		if is_instance_valid(c) and c.visible:
 			h += (c as Control).get_combined_minimum_size().y + 4.0
 	var rect := Rect2(cw * 0.5 - wdt * 0.5, root.size.y - bot - h, wdt, h)

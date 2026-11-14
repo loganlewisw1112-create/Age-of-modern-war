@@ -815,6 +815,16 @@ func test_always_on_watch() -> void:
 			for q in 4:
 				if float(dd[q]) < float(dd[bi]):
 					bi = q
+			var rj: Dictionary = S.jobs.get(str(id), {})
+			if String(rj.get("k", "")) == "wall":   # a wall-run man on his run counts for his run's face (the corner ends of a run are as near the next face)
+				for j in board:
+					if String(j.id) == String(rj.get("j", "")) and S7._route_d(p, j.route, false) <= 1.6:
+						var m: Vector2 = Vector2(j.route[1])
+						var dm := [absf(m.y - cr.position.y), absf(cr.end.x - m.x), absf(cr.end.y - m.y), absf(m.x - cr.position.x)]
+						bi = 0
+						for q in 4:
+							if float(dm[q]) < float(dm[bi]):
+								bi = q
 			nf[bi] += 1
 		for q in 4:
 			face_min[q] = mini(int(face_min[q]), int(nf[q]))

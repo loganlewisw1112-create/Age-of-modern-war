@@ -628,7 +628,10 @@ static func _sweep_one(w: SimWorld, e: Dictionary, mines: Array, every: int) -> 
 	if reach.is_empty():
 		e.erase("sweep_acc")
 		return
-	var acc := float(e.get("sweep_acc", 0.0)) + float(ms.get("mines_per_s", _g6("sweep_mines_per_s", 2.0))) * float(every) * SimWorld.DT
+	# G7.1 A5 (owner 2026-11-13): ships sail g71_speed_mult faster, so the sweep rate scales alike and one pass over a
+	# field still clears what it did at G7 (1.0 without A5: the G7 product, bit for bit)
+	var rate := float(ms.get("mines_per_s", _g6("sweep_mines_per_s", 2.0))) * float(Content.rules().get("g71_speed_mult", 1.0))
+	var acc := float(e.get("sweep_acc", 0.0)) + rate * float(every) * SimWorld.DT
 	var cells := []
 	for m in reach:
 		if acc < 1.0:

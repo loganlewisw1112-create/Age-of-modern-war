@@ -520,7 +520,7 @@ func test_designates_and_sets_medevac() -> void:
 	var med := w.spawn_unit("a_ambulance", 0, Vector2(34.5, 10.5))
 	ids.append_array([jtac, med])
 	_squad(w, 1, 3, Vector2(53.5, 12.5))   # 13 tiles from the JTAC: in designator range, not danger close
-	_run(w, 40, [])
+	_run(w, roundi(40.0 / float(Content.rules().get("g71_speed_mult", 1.0))), [])   # G7.1 A5: the JTAC closes the same distance as at G7 speed
 	var evs := _auto(w, 0, {"units": ids}, "defensive", "cautious")
 	_run(w, 300, evs)
 	var des := 0
