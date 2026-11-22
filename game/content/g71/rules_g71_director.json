@@ -18,8 +18,17 @@
       "retreat_hp": 0.35,
       "regrow_hp": 0.7,
       "regrow_heal_per_s": 0.08,
-      "siege_spawn_mixed": ["g71_m_brute", "g71_m_turret_eater", "g71_m_turret_eater"],
-      "siege_spawn": ["g71_m_brute", "g71_m_siege_walker", "g71_m_sapper", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_turret_eater"],
+      "siege_spawn_mixed": ["g71_m_brute", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_glass_stalker"],
+      "siege_spawn": ["g71_m_brute", "g71_m_siege_walker", "g71_m_sapper", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_reclaimer", "g71_m_hive_conductor", "g71_m_glass_stalker", "g71_m_glass_stalker"],
+      "overmind_break": "breaking_point",
+      "overmind_lines": {
+        "breaking_point": "THE TIDE ANSWERS.",
+        "probe": "WE SEE YOU.",
+        "adapt_armour": "YOUR GUNS ARE NOTED.",
+        "adapt_smoke": "YOUR LIGHT BURNS. WE WILL SPREAD.",
+        "adapt_emp": "YOUR DRONES ARE COUNTED.",
+        "adapt_disperse": "YOUR FIRE IS WASTED."
+      },
       "adapt_map": {
         "mg": "armour",
         "hmg": "armour",

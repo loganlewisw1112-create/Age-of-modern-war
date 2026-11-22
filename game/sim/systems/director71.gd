@@ -163,6 +163,14 @@ static func siege_roster(dread: float) -> Array:
 	return []
 
 
+## Overmind radio line for a key (breaking_point / adapt_* / probe). Empty when unknown.
+static func overmind_line(key: String) -> String:
+	var lines = rules().get("overmind_lines", {})
+	if not (lines is Dictionary):
+		return ""
+	return String(lines.get(key, ""))
+
+
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
 static func counter_for(s: Dictionary) -> String:
 	var a = s.get("adapt", {})

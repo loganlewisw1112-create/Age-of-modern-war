@@ -290,7 +290,10 @@ static func _meters(w: SimWorld, s: Dictionary) -> void:
 		start_tide(w, s, "walker" if Cores.walker(w) >= 0 else "countdown")
 	Director71.apply(s, float(s.frac), int(s.get("rings_fallen", 0)), cov, int(s.get("teams_lost", 0)))
 	if Director71.note_breaking(s, float(s.get("dread", 0.0))):
-		w.emit("LpBreakingPoint", {"dread": float(s.dread), "band": Director71.band(float(s.dread)), "tide": bool(s.tide)})
+		var line := Director71.overmind_line(String(Director71.rules().get("overmind_break", "breaking_point")))
+		w.emit("LpBreakingPoint", {"dread": float(s.dread), "band": Director71.band(float(s.dread)), "tide": bool(s.tide), "line": line})
+		if line != "":
+			w.emit("OvermindSay", {"key": "breaking_point", "line": line, "dread": float(s.dread)})
 
 
 ## THE TIDE: maximum escalation, a creep surge toward the base, every Machine unit thrown at the rings.
@@ -317,7 +320,10 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 	var dread := float(s.get("dread", 0.0))
 	w.emit("TheTide", {"why": why, "phase": int(s.phase), "walker": Cores.walker(w), "dread": dread, "band": Director71.band(dread)})
 	if Director71.note_breaking(s, dread):
-		w.emit("LpBreakingPoint", {"dread": dread, "band": Director71.band(dread), "tide": true})
+		var line := Director71.overmind_line(String(Director71.rules().get("overmind_break", "breaking_point")))
+		w.emit("LpBreakingPoint", {"dread": dread, "band": Director71.band(dread), "tide": true, "line": line})
+		if line != "":
+			w.emit("OvermindSay", {"key": "breaking_point", "line": line, "dread": dread})
 
 
 static func _assault(w: SimWorld, s: Dictionary) -> void:

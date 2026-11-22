@@ -65,16 +65,22 @@ func test_logistics_and_regrow_rules() -> void:
 
 
 func test_siege_roster_stubs() -> void:
-	for id in ["g71_m_brute", "g71_m_siege_walker", "g71_m_turret_eater", "g71_m_sapper"]:
+	for id in ["g71_m_brute", "g71_m_siege_walker", "g71_m_turret_eater", "g71_m_sapper",
+			"g71_m_reclaimer", "g71_m_hive_conductor", "g71_m_glass_stalker"]:
 		check(not Content.unit(id).is_empty(), "%s def loads" % id)
 	check_eq(String(Content.unit("g71_m_brute").get("g71_siege", "")), "brute", "brute is tagged")
 	check_eq(String(Content.unit("g71_m_siege_walker").get("g71_siege", "")), "walker", "walker is tagged")
 	check_eq(String(Content.unit("g71_m_turret_eater").get("g71_siege", "")), "turret_eater", "turret-eater is tagged")
 	check_eq(String(Content.unit("g71_m_sapper").get("g71_siege", "")), "sapper", "sapper is tagged")
 	check_eq(String(Content.unit("g71_m_sapper").get("t7", "")), "burrower", "sapper reuses burrower tunnel AI")
+	check_eq(String(Content.unit("g71_m_reclaimer").get("g71_special", "")), "reclaimer", "reclaimer is tagged")
+	check_eq(String(Content.unit("g71_m_hive_conductor").get("g71_special", "")), "hive_conductor", "hive Conductor is tagged")
+	check_eq(String(Content.unit("g71_m_glass_stalker").get("g71_special", "")), "glass_stalker", "glass stalker is tagged")
+	check(bool(Content.unit("g71_m_glass_stalker").get("stealth", {}).get("thermal_visible", false)), "stalkers show on thermal")
 	check(Director71.siege_roster(0.1).is_empty(), "probe dread spawns no siege stubs")
-	check_eq(Director71.siege_roster(0.5).size(), 3, "mixed dread brings brute + eaters")
-	check_eq(Director71.siege_roster(0.9).size(), 6, "siege dread brings the full C3 stub set")
+	check_eq(Director71.siege_roster(0.5).size(), 4, "mixed dread brings brute + eaters + stalker")
+	check_eq(Director71.siege_roster(0.9).size(), 10, "siege dread brings C3 + C4 stubs")
+	check(Director71.overmind_line("breaking_point") != "", "Overmind has a breaking-point line")
 
 
 func test_adapt_buckets_and_counter() -> void:
