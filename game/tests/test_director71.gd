@@ -3,6 +3,7 @@ extends "res://tests/test_base.gd"
 
 const Director71 = preload("res://sim/systems/director71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
+const LpHud = preload("res://presentation/ui7/lp_hud.gd")
 
 
 func test_pressure_is_pure_and_ordered() -> void:
@@ -117,3 +118,11 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	var h: Dictionary = LastProtocol.hud(a)
 	check(h.has("dread") and String(h.band) == Director71.band(float(h.dread)), "the HUD shows the same band")
 	check(h.has("break_point"), "HUD exposes the breaking-point flag")
+	var shown: Dictionary = LpHud.lines({
+		"phase": 0, "posture": "normal", "creep": 0.1, "critical": 0.62, "win_below": 0.12,
+		"cd_left": 1000.0, "cd_rate": 1.0, "cores_alive": 3, "cores_total": 3, "walker": false,
+		"tide": false, "final_stage": false, "weavers": false, "raid": false, "rings_fallen": 0,
+		"dread": 0.9, "band": "siege", "break_point": true, "counter": "armour", "ended": false, "result": {},
+	})
+	check(String(shown.dread).find("BREAKING POINT") >= 0, "HUD text shows the breaking point")
+	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")

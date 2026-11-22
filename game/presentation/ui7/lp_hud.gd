@@ -174,6 +174,11 @@ static func lines(d: Dictionary) -> Dictionary:
 	var dread := ""
 	if d.has("dread"):
 		dread = "Dread %.0f%%  %s" % [float(d.dread) * 100.0, String(d.get("band", "")).to_upper()]
+		if bool(d.get("break_point", false)):
+			dread += "  BREAKING POINT"
+		var ctr := String(d.get("counter", ""))
+		if ctr != "":
+			dread += "  hive counters %s" % ctr
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
