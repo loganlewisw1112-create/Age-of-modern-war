@@ -81,6 +81,8 @@ func test_siege_roster_stubs() -> void:
 	check(Director71.siege_roster(0.1).is_empty(), "probe dread spawns no siege stubs")
 	check_eq(Director71.siege_roster(0.5).size(), 4, "mixed dread brings brute + eaters + stalker")
 	check_eq(Director71.siege_roster(0.9).size(), 10, "siege dread brings C3 + C4 stubs")
+	check_eq(Director71.siege_roster(0.9, "armour").size(), 11, "an armour counter adds another brute")
+	check_eq(String(Director71.siege_roster(0.9, "armour").back()), "g71_m_brute", "armour bonus is a brute")
 	check(Director71.overmind_line("breaking_point") != "", "Overmind has a breaking-point line")
 	check(Director71.overmind_line("adapt_armour") != "", "Overmind has an armour-counter line")
 

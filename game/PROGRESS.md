@@ -29,6 +29,7 @@ wave. This slice's own change is Vanta2 flight. The package is
 - C4 special stubs + Overmind line (2026-11-22): `g71_m_reclaimer`, `g71_m_hive_conductor`, `g71_m_glass_stalker` defs; siege roster includes them; breaking-point emits `OvermindSay`. Eat/print, sync aura, camo polish still open. `test_director71` 6/0; `test_lpmode7` 18/0.
 - Overmind adapts on the radio (2026-11-22): when the adapt counter flips, `OvermindSay` fires the matching adapt_* line.
 - LP HUD shows BREAKING POINT and the current hive counter next to dread (`lp_hud.lines`).
+- Adapt spawn bias (2026-11-22): the current counter peels one bonus C3/C4 unit onto each Tide siege roster (`adapt_spawn`).
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).

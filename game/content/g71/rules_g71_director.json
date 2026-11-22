@@ -20,6 +20,12 @@
       "regrow_heal_per_s": 0.08,
       "siege_spawn_mixed": ["g71_m_brute", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_glass_stalker"],
       "siege_spawn": ["g71_m_brute", "g71_m_siege_walker", "g71_m_sapper", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_reclaimer", "g71_m_hive_conductor", "g71_m_glass_stalker", "g71_m_glass_stalker"],
+      "adapt_spawn": {
+        "armour": "g71_m_brute",
+        "emp": "g71_m_glass_stalker",
+        "smoke": "g71_m_turret_eater",
+        "disperse": "g71_m_sapper"
+      },
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

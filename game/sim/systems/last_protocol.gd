@@ -337,7 +337,7 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 static func _assault(w: SimWorld, s: Dictionary) -> void:
 	var spawn_at := Vector2(w.factions[int(s.mfid)].spawn) + Vector2(0.5, 0.5)
 	var spawned := []
-	var roster: Array = Director71.siege_roster(float(s.get("dread", 0.0)))
+	var roster: Array = Director71.siege_roster(float(s.get("dread", 0.0)), Director71.counter_for(s))
 	for i in roster.size():
 		var def_id := String(roster[i])
 		if Content.unit(def_id).is_empty():

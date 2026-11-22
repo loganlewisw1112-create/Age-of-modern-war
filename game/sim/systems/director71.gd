@@ -154,13 +154,28 @@ static func note_kill(s: Dictionary, cls: String, weapon: String = "") -> String
 
 
 ## Def ids to spawn with the next Tide push. Empty while dread is still probing.
-static func siege_roster(dread: float) -> Array:
+## counter (armour/emp/smoke/disperse) peels an extra unit onto the roster when known.
+static func siege_roster(dread: float, counter: String = "") -> Array:
 	var b := band(dread)
+	var out: Array = []
 	if b == "siege":
-		return Array(rules().get("siege_spawn", ["g71_m_brute", "g71_m_siege_walker"]))
-	if b == "mixed":
-		return Array(rules().get("siege_spawn_mixed", ["g71_m_brute"]))
-	return []
+		out = Array(rules().get("siege_spawn", ["g71_m_brute", "g71_m_siege_walker"]))
+	elif b == "mixed":
+		out = Array(rules().get("siege_spawn_mixed", ["g71_m_brute"]))
+	else:
+		return []
+	var bonus = rules().get("adapt_spawn", {
+		"armour": "g71_m_brute",
+		"emp": "g71_m_glass_stalker",
+		"smoke": "g71_m_turret_eater",
+		"disperse": "g71_m_sapper",
+	})
+	if bonus is Dictionary and counter != "" and bonus.has(counter):
+		var extra := String(bonus[counter])
+		if extra != "" and not Content.unit(extra).is_empty():
+			out = out.duplicate()
+			out.append(extra)
+	return out
 
 
 ## Overmind radio line for a key (breaking_point / adapt_* / probe). Empty when unknown.
