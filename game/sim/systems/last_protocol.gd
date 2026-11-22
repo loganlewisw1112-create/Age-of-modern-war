@@ -179,7 +179,8 @@ static func tick(w: SimWorld) -> void:
 	if (w.tick + 13) % _t(1.0) == 0:
 		LpGarrison7.tick(w)  # BASE7-2: wall patrols (once a second, staggered inside; no-op without its state)
 	if bool(s.tide):
-		var every := _t(float(R().get("tide", {}).get("assault_every_s", 30.0)))
+		var base_s := float(R().get("tide", {}).get("assault_every_s", 30.0))
+		var every := _t(Director71.interval_s(base_s, float(s.get("dread", 0.0))))
 		if (w.tick - int(s.tide_t)) % every == 0:
 			_assault(w, s)
 

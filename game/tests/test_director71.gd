@@ -18,6 +18,8 @@ func test_pressure_is_pure_and_ordered() -> void:
 	check_eq(Director71.band(0.1), "probe", "early band")
 	check_eq(Director71.band(0.5), "mixed", "middle band")
 	check_eq(Director71.band(0.9), "siege", "peak band")
+	check(Director71.interval_s(30.0, 0.0) > Director71.interval_s(30.0, 1.0), "early breaths are longer than the peak")
+	check_eq(Director71.interval_s(30.0, 1.0), 30.0, "at full dread the gap is the written base")
 
 
 func test_live_meter_does_not_move_the_phase() -> void:
