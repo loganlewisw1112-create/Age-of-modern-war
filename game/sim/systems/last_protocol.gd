@@ -354,6 +354,10 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 			var t7 = load(THREATS_PATH)
 			if t7 != null and L.api(t7, "adopt"):
 				t7.callv("adopt", [w, sid])  # sapper (and any t7-tagged C3) picks up burrower AI
+			var se = w.entities.get(sid)
+			# C4 Glass stalker: start concealed (Fog.hid); Damage clears it when hit.
+			if se != null and String(Content.unit(def_id).get("g71_special", "")) == "glass_stalker":
+				se.hid = true
 			spawned.append(sid)
 	if not spawned.is_empty():
 		w.emit("LpSiegeSpawn", {"ids": spawned.duplicate(), "defs": roster.duplicate(), "dread": float(s.get("dread", 0.0))})

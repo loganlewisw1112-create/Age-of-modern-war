@@ -78,6 +78,7 @@ func test_siege_roster_stubs() -> void:
 	check_eq(String(Content.unit("g71_m_hive_conductor").get("g71_special", "")), "hive_conductor", "hive Conductor is tagged")
 	check_eq(String(Content.unit("g71_m_glass_stalker").get("g71_special", "")), "glass_stalker", "glass stalker is tagged")
 	check(bool(Content.unit("g71_m_glass_stalker").get("stealth", {}).get("thermal_visible", false)), "stalkers show on thermal")
+	check(String(Content.unit("g71_m_glass_stalker").get("g71_special", "")) == "glass_stalker", "glass stalker special tag")
 	check(Director71.siege_roster(0.1).is_empty(), "probe dread spawns no siege stubs")
 	check_eq(Director71.siege_roster(0.5).size(), 4, "mixed dread brings brute + eaters + stalker")
 	check_eq(Director71.siege_roster(0.9).size(), 10, "siege dread brings C3 + C4 stubs")
