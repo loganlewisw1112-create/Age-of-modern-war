@@ -1,11 +1,13 @@
 extends RefCounted
-## G7.1 C1 / C2 first slices (Last Protocol only). The dread meter: how hard the hive is pressing.
+## G7.1 C1 / C2 (Last Protocol only). The dread meter: how hard the hive is pressing.
 ## Time is the spine (the ~60 min ramp). Creep, fallen rings and lost teams pull it up.
 ## Tide assault gaps stretch while dread is low (a breather) and return to the written base at full dread.
-## Assaults split onto a main face and a feint face (C2). The first time dread hits the siege band,
-## note_breaking() fires the climax once (C1 breaking-point). Phase timing is unchanged.
+## Assaults split onto a main face and a feint face. Late dread peels a logistics strike onto rear targets
+## (FARP / radar / power / hospital / depot). Wounded machines retreat to the hive spawn, heal, and return.
+## The first siege-band crossing fires LpBreakingPoint once. Phase timing is unchanged.
 ##
-## pressure() / pick_push() are pure. apply() writes s.dread. Numbers are provisional.
+## Pure: pressure, pick_push, pick_logistics, needs_retreat, ready_return. apply() writes s.dread.
+## Numbers are provisional.
 
 const Q := 1.0 / 1024.0
 
@@ -65,6 +67,53 @@ static func pick_push(sectors: Array) -> Dictionary:
 	if second_n > 0 and second != main and second != feint and sectors.size() >= 8 and int(sectors[feint]) <= 0:
 		feint = second
 	return {"main": main, "feint": feint, "feint_frac": float(rules().get("feint_frac", 0.25))}
+
+
+## True once dread reaches the late-logistics band (defaults near siege).
+static func logistics_ready(dread: float) -> bool:
+	return dread >= float(rules().get("logistics_at", 0.75))
+
+
+## Building def ids / flags the late strike peels onto (ammo, power, radar, fuel, FARPs, aid).
+static func is_logistics_def(def_id: String) -> bool:
+	var d: Dictionary = Content.building(def_id)
+	if d.is_empty():
+		return false
+	if bool(d.get("farp", false)) or d.has("radar") or bool(d.get("hospital", false)):
+		return true
+	var tags: Array = rules().get("logistics_defs", ["generator", "depot", "a_radar_station", "a_hospital", "a_g71_farp", "a_repair_bay"])
+	return tags.has(def_id)
+
+
+## Sorted list of {id, pos} for living logistics buildings on the human side.
+static func pick_logistics(buildings: Array) -> Array:
+	var out := []
+	for b in buildings:
+		if not bool(b.get("built", true)):
+			continue
+		if int(b.get("hp", 1)) <= 0:
+			continue
+		if not is_logistics_def(String(b.get("def", ""))):
+			continue
+		out.append({"id": int(b.id), "pos": Vector2(b.pos)})
+	out.sort_custom(func(a, b): return int(a.id) < int(b.id))
+	return out
+
+
+static func hp_frac(e: Dictionary) -> float:
+	var mx := float(e.get("hp_max", e.get("max_hp", 0.0)))
+	if mx <= 0.0:
+		var d: Dictionary = Content.unit(String(e.get("def", "")))
+		mx = float(d.get("hp", 1.0))
+	return clampf(float(e.get("hp", 0.0)) / maxf(mx, 1.0), 0.0, 1.0)
+
+
+static func needs_retreat(frac: float) -> bool:
+	return frac <= float(rules().get("retreat_hp", 0.35))
+
+
+static func ready_return(frac: float) -> bool:
+	return frac >= float(rules().get("regrow_hp", 0.70))
 
 
 ## True the first time dread crosses the siege band. Sets s.break_point so it fires once.

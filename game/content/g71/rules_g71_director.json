@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 C1/C2 (director71.gd). Dread meter + assault face split. Tide gaps longer while dread is low. First siege crossing fires the breaking-point once. Phase timing unchanged. Every number PROVISIONAL.",
+  "_meta": "G7.1 C1/C2 (director71.gd). Dread meter, breaths, feints, late logistics peels, retreat+regrow. Phase timing unchanged. Every number PROVISIONAL.",
   "rules": {
     "g71_director": {
       "time_w": 0.7,
@@ -11,7 +11,13 @@
       "mixed_at": 0.45,
       "siege_at": 0.85,
       "breath_at_start": 1.6,
-      "feint_frac": 0.25
+      "feint_frac": 0.25,
+      "logistics_at": 0.75,
+      "logistics_frac": 0.15,
+      "logistics_defs": ["generator", "depot", "a_radar_station", "a_hospital", "a_g71_farp", "a_repair_bay"],
+      "retreat_hp": 0.35,
+      "regrow_hp": 0.7,
+      "regrow_heal_per_s": 0.08
     }
   }
 }

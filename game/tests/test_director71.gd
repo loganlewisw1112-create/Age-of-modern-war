@@ -44,6 +44,26 @@ func test_pick_push_and_breaking_point() -> void:
 	check(not Director71.note_breaking(s, 1.0), "second call is quiet")
 
 
+func test_logistics_and_regrow_rules() -> void:
+	check(not Director71.logistics_ready(0.2), "early dread skips logistics peels")
+	check(Director71.logistics_ready(0.9), "late dread opens logistics peels")
+	check(Director71.is_logistics_def("generator"), "generators are logistics targets")
+	check(Director71.is_logistics_def("a_radar_station"), "radar is a logistics target")
+	check(not Director71.is_logistics_def("wall"), "plain walls are not logistics")
+	var logs: Array = Director71.pick_logistics([
+		{"id": 3, "def": "generator", "pos": Vector2(1, 1), "built": true, "hp": 10},
+		{"id": 1, "def": "wall", "pos": Vector2(2, 2), "built": true, "hp": 10},
+		{"id": 2, "def": "depot", "pos": Vector2(3, 3), "built": true, "hp": 10},
+	])
+	check_eq(logs.size(), 2, "pick_logistics keeps only rear targets")
+	check_eq(int(logs[0].id), 2, "logistics list is sorted by id")
+	check(Director71.needs_retreat(0.2), "low hp wants to retreat")
+	check(not Director71.needs_retreat(0.9), "healthy machines stay in the fight")
+	check(Director71.ready_return(0.85), "healed machines return")
+	check(not Director71.ready_return(0.4), "half-healed machines stay at the spawn")
+	check(is_equal_approx(Director71.hp_frac({"hp": 50, "hp_max": 100}), 0.5), "hp_frac is hp / max")
+
+
 func test_live_meter_does_not_move_the_phase() -> void:
 	var c := LastProtocol.make_config(77, "industrial_heartland_m")
 	var a := SimWorld.new_match(c)

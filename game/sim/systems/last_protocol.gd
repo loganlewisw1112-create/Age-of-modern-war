@@ -183,6 +183,8 @@ static func tick(w: SimWorld) -> void:
 		var every := _t(Director71.interval_s(base_s, float(s.get("dread", 0.0))))
 		if (w.tick - int(s.tide_t)) % every == 0:
 			_assault(w, s)
+		if (w.tick + 17) % _t(2.0) == 0:
+			_regrow(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -306,8 +308,9 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 	var ids := []
 	var wk := Cores.walker(w)
 	for e in w.units_of(int(s.mfid)):
-		if int(e.id) != wk and not e.has("core7"):
-			ids.append(int(e.id))
+		if int(e.id) == wk or e.has("core7") or bool(e.get("lp_regrow", false)):
+			continue
+		ids.append(int(e.id))
 	if ids.is_empty():
 		return
 	ids.sort()
@@ -319,6 +322,16 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 	n_feint = clampi(n_feint, 0, maxi(ids.size() - 1, 0))
 	var feint_ids: Array = ids.slice(0, n_feint)
 	var main_ids: Array = ids.slice(n_feint, ids.size())
+	var log_ids: Array = []
+	var log_t := Vector2(s.base.center) + Vector2(0.5, 0.5)
+	var n_log := 0
+	if Director71.logistics_ready(float(s.get("dread", 0.0))):
+		var logs: Array = Director71.pick_logistics(w.buildings_of(int(s.fid)))
+		if not logs.is_empty() and main_ids.size() > 1:
+			n_log = clampi(int(round(float(ids.size()) * float(Director71.rules().get("logistics_frac", 0.15)))), 1, main_ids.size() - 1)
+			log_ids = main_ids.slice(0, n_log)
+			main_ids = main_ids.slice(n_log, main_ids.size())
+			log_t = Vector2(logs[0].pos)
 	var center := Vector2(s.base.center) + Vector2(0.5, 0.5)
 	var main_t := LpDefence.sector_point(s, 0, main_i) if main_ids.size() > 0 else center
 	var feint_t := LpDefence.sector_point(s, 0, feint_i) if feint_ids.size() > 0 else center
@@ -326,7 +339,42 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": main_ids, "target": main_t, "ai_cmd": "lp"})
 	if not feint_ids.is_empty():
 		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": feint_ids, "target": feint_t, "ai_cmd": "lp"})
-	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size()})
+	if not log_ids.is_empty():
+		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": log_ids, "target": log_t, "ai_cmd": "lp"})
+		w.emit("LpLogisticsStrike", {"n": log_ids.size(), "target": log_t, "dread": float(s.get("dread", 0.0))})
+	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size(), "n_log": n_log})
+
+
+## C2 retreat + regrow: pull badly damaged machines back to the hive spawn, heal them there, then clear the flag
+## so the next assault takes them again.
+static func _regrow(w: SimWorld, s: Dictionary) -> void:
+	var wk := Cores.walker(w)
+	var spawn := Vector2(w.factions[int(s.mfid)].spawn) + Vector2(0.5, 0.5)
+	var heal := float(Director71.rules().get("regrow_heal_per_s", 0.08)) * 2.0  # this tick runs every 2 s
+	var retreat_ids := []
+	for e in w.units_of(int(s.mfid)):
+		if int(e.id) == wk or e.has("core7"):
+			continue
+		var frac := Director71.hp_frac(e)
+		if bool(e.get("lp_regrow", false)):
+			if Director71.ready_return(frac):
+				e.erase("lp_regrow")
+				w.emit("LpRegrow", {"id": int(e.id), "hp": frac})
+			else:
+				var mx := float(e.get("hp_max", 0.0))
+				if mx <= 0.0:
+					mx = float(Content.unit(String(e.get("def", ""))).get("hp", 1.0))
+					e.hp_max = mx
+				if Vector2(e.pos).distance_to(spawn) <= 6.0:
+					e.hp = minf(mx, float(e.hp) + mx * heal)
+				w.submit({"type": "move", "issuer": int(s.mfid), "unit_ids": [int(e.id)], "target": spawn, "ai_cmd": "lp"})
+		elif Director71.needs_retreat(frac) and float(s.get("dread", 0.0)) >= float(Director71.rules().get("mixed_at", 0.45)):
+			e.lp_regrow = true
+			retreat_ids.append(int(e.id))
+	if not retreat_ids.is_empty():
+		retreat_ids.sort()
+		w.submit({"type": "move", "issuer": int(s.mfid), "unit_ids": retreat_ids, "target": spawn, "ai_cmd": "lp"})
+		w.emit("LpRetreat", {"n": retreat_ids.size(), "pos": spawn})
 
 
 # ================================================================ lose / win / endings
