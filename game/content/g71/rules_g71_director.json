@@ -1,0 +1,15 @@
+{
+  "_meta": "G7.1 C1 first slice (director71.gd). Dread meter only: time is the spine, creep / fallen rings / lost teams pull it up. Does not change phase or assault timing. Every number PROVISIONAL.",
+  "rules": {
+    "g71_director": {
+      "time_w": 0.7,
+      "creep_w": 0.15,
+      "ring_w": 0.2,
+      "ring_cap": 0.4,
+      "loss_w": 0.02,
+      "loss_cap": 0.15,
+      "mixed_at": 0.45,
+      "siege_at": 0.85
+    }
+  }
+}

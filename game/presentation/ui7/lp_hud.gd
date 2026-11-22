@@ -171,10 +171,14 @@ static func lines(d: Dictionary) -> Dictionary:
 		fl.append("RAID")
 	if int(d.rings_fallen) > 0:
 		fl.append("%d RING%s LOST" % [int(d.rings_fallen), "" if int(d.rings_fallen) == 1 else "S"])
+	var dread := ""
+	if d.has("dread"):
+		dread = "Dread %.0f%%  %s" % [float(d.dread) * 100.0, String(d.get("band", "")).to_upper()]
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
 		"cores": "Cores %d/%d%s" % [int(d.cores_alive), int(d.cores_total), "  (one walks)" if bool(d.walker) else ""],
+		"dread": dread,
 		"flags": "  ".join(PackedStringArray(fl))}
 
 
@@ -191,7 +195,7 @@ func refresh() -> void:
 	_cd_lbl.text = t.countdown
 	_cd_lbl.add_theme_color_override("font_color", UiKit.RED if bool(d.final_stage) else UiKit.AMBER)
 	_cores_lbl.text = t.cores
-	_flags.text = t.flags
+	_flags.text = t.dread if t.flags == "" else (t.flags if t.dread == "" else t.dread + "   " + t.flags)
 	CineData.note_cores(w)
 	if not _open_checked and mv != null and mv.get("camera") != null and world_override == null:
 		_open_checked = true

@@ -26,6 +26,7 @@ const LpSetup = preload("res://sim/systems/lp_setup.gd")
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const LpWorld = preload("res://sim/systems/lp_world.gd")
 const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 (CR seq 3297): wall patrols
+const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1: dread meter (does not move the phase clock)
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -268,6 +269,7 @@ static func _meters(w: SimWorld, s: Dictionary) -> void:
 		w.emit("LpWeaversUnleashed", {"frac": float(s.frac)})
 	if not bool(s.tide) and (Cores.walker(w) >= 0 or bool(s.final_stage)):
 		start_tide(w, s, "walker" if Cores.walker(w) >= 0 else "countdown")
+	Director71.apply(s, float(s.frac), int(s.get("rings_fallen", 0)), cov, int(s.get("teams_lost", 0)))
 
 
 ## THE TIDE: maximum escalation, a creep surge toward the base, every Machine unit thrown at the rings.
@@ -408,6 +410,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"weavers": bool(s.weavers), "posture": String(s.posture), "cores_alive": Cores.alive_count(w),
 		"cores_total": (Cores.list(w) as Array).size(), "walker": Cores.walker(w) >= 0,
 		"rings_fallen": int(s.get("rings_fallen", 0)), "raid": bool(s.get("raid_on", false)),
+		"dread": float(s.get("dread", 0.0)), "band": Director71.band(float(s.get("dread", 0.0))),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
 
