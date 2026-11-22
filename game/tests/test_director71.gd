@@ -81,6 +81,7 @@ func test_siege_roster_stubs() -> void:
 	check_eq(Director71.siege_roster(0.5).size(), 4, "mixed dread brings brute + eaters + stalker")
 	check_eq(Director71.siege_roster(0.9).size(), 10, "siege dread brings C3 + C4 stubs")
 	check(Director71.overmind_line("breaking_point") != "", "Overmind has a breaking-point line")
+	check(Director71.overmind_line("adapt_armour") != "", "Overmind has an armour-counter line")
 
 
 func test_adapt_buckets_and_counter() -> void:

@@ -241,8 +241,16 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					hit = s.adapt_last.get(id, {})
 					s.adapt_last.erase(id)
 				if String(ev.get("kind", "")) == "unit" and int(ev.get("owner", -1)) == int(s.mfid):
+					var prev := String(s.get("adapt_counter", ""))
 					var bucket := Director71.note_kill(s, String(hit.get("cls", "")), String(hit.get("weapon", "")))
-					w.emit("LpAdapt", {"id": id, "bucket": bucket, "counter": Director71.counter_for(s)})
+					var counter := Director71.counter_for(s)
+					s.adapt_counter = counter
+					w.emit("LpAdapt", {"id": id, "bucket": bucket, "counter": counter})
+					if counter != "" and counter != prev:
+						var akey := "adapt_%s" % counter
+						var aline := Director71.overmind_line(akey)
+						if aline != "":
+							w.emit("OvermindSay", {"key": akey, "line": aline, "dread": float(s.get("dread", 0.0)), "counter": counter})
 				LpDefence.note_destroyed(w, s, ev)
 
 

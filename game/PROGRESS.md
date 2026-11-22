@@ -27,6 +27,7 @@ wave. This slice's own change is Vanta2 flight. The package is
 - C2 adapt counters (2026-11-22): Machine deaths bucket into armour/emp/smoke/disperse from the killing weapon class; AssaultWave + HUD expose the current counter; `LpAdapt` events. Damage events carry `cls`/`weapon`. `test_director71` 5/0; `test_lpmode7` 18/0.
 - C3 siege stubs (2026-11-22): all four C3 defs (`g71_m_brute`, `g71_m_siege_walker`, `g71_m_turret_eater`, `g71_m_sapper`); Tide assaults spawn the roster once dread hits mixed/siege (`LpSiegeSpawn`). Sapper reuses burrower `t7` AI. Latch / jammer polish still open. `test_director71` 6/0; `test_lpmode7` 18/0.
 - C4 special stubs + Overmind line (2026-11-22): `g71_m_reclaimer`, `g71_m_hive_conductor`, `g71_m_glass_stalker` defs; siege roster includes them; breaking-point emits `OvermindSay`. Eat/print, sync aura, camo polish still open. `test_director71` 6/0; `test_lpmode7` 18/0.
+- Overmind adapts on the radio (2026-11-22): when the adapt counter flips, `OvermindSay` fires the matching adapt_* line.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).
