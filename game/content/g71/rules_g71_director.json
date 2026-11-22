@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 C1 (director71.gd). Dread meter: time is the spine, creep / fallen rings / lost teams pull it up. Tide assault gaps are longer while dread is low and equal the written base at full dread. Phase timing is unchanged. Every number PROVISIONAL.",
+  "_meta": "G7.1 C1/C2 (director71.gd). Dread meter + assault face split. Tide gaps longer while dread is low. First siege crossing fires the breaking-point once. Phase timing unchanged. Every number PROVISIONAL.",
   "rules": {
     "g71_director": {
       "time_w": 0.7,
@@ -10,7 +10,8 @@
       "loss_cap": 0.15,
       "mixed_at": 0.45,
       "siege_at": 0.85,
-      "breath_at_start": 1.6
+      "breath_at_start": 1.6,
+      "feint_frac": 0.25
     }
   }
 }

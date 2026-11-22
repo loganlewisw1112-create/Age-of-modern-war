@@ -26,7 +26,7 @@ const LpSetup = preload("res://sim/systems/lp_setup.gd")
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const LpWorld = preload("res://sim/systems/lp_world.gd")
 const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 (CR seq 3297): wall patrols
-const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1: dread meter (does not move the phase clock)
+const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1/C2: dread, breaths, feints, breaking-point
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -271,6 +271,8 @@ static func _meters(w: SimWorld, s: Dictionary) -> void:
 	if not bool(s.tide) and (Cores.walker(w) >= 0 or bool(s.final_stage)):
 		start_tide(w, s, "walker" if Cores.walker(w) >= 0 else "countdown")
 	Director71.apply(s, float(s.frac), int(s.get("rings_fallen", 0)), cov, int(s.get("teams_lost", 0)))
+	if Director71.note_breaking(s, float(s.get("dread", 0.0))):
+		w.emit("LpBreakingPoint", {"dread": float(s.dread), "band": Director71.band(float(s.dread)), "tide": bool(s.tide)})
 
 
 ## THE TIDE: maximum escalation, a creep surge toward the base, every Machine unit thrown at the rings.
@@ -294,7 +296,10 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 	for i in n:
 		var t := 0.25 + 0.6 * float(i) / maxf(float(n - 1), 1.0)
 		Creep.add_seed(w, m.lerp(c, t) + Vector2(float(i % 3) - 1.0, float(i % 2)) * 6.0, "seed", int(s.mfid))
-	w.emit("TheTide", {"why": why, "phase": int(s.phase), "walker": Cores.walker(w)})
+	var dread := float(s.get("dread", 0.0))
+	w.emit("TheTide", {"why": why, "phase": int(s.phase), "walker": Cores.walker(w), "dread": dread, "band": Director71.band(dread)})
+	if Director71.note_breaking(s, dread):
+		w.emit("LpBreakingPoint", {"dread": dread, "band": Director71.band(dread), "tide": true})
 
 
 static func _assault(w: SimWorld, s: Dictionary) -> void:
@@ -306,8 +311,22 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 	if ids.is_empty():
 		return
 	ids.sort()
-	w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": ids, "target": Vector2(s.base.center) + Vector2(0.5, 0.5), "ai_cmd": "lp"})
-	w.emit("AssaultWave", {"n": ids.size(), "tide": true})
+	var sc: Dictionary = LpDefence.scan(w, s)
+	var push: Dictionary = Director71.pick_push(sc.sectors as Array)
+	var main_i := int(push.main)
+	var feint_i := int(push.feint)
+	var n_feint := int(round(float(ids.size()) * float(push.feint_frac)))
+	n_feint = clampi(n_feint, 0, maxi(ids.size() - 1, 0))
+	var feint_ids: Array = ids.slice(0, n_feint)
+	var main_ids: Array = ids.slice(n_feint, ids.size())
+	var center := Vector2(s.base.center) + Vector2(0.5, 0.5)
+	var main_t := LpDefence.sector_point(s, 0, main_i) if main_ids.size() > 0 else center
+	var feint_t := LpDefence.sector_point(s, 0, feint_i) if feint_ids.size() > 0 else center
+	if not main_ids.is_empty():
+		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": main_ids, "target": main_t, "ai_cmd": "lp"})
+	if not feint_ids.is_empty():
+		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": feint_ids, "target": feint_t, "ai_cmd": "lp"})
+	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size()})
 
 
 # ================================================================ lose / win / endings
@@ -412,6 +431,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"cores_total": (Cores.list(w) as Array).size(), "walker": Cores.walker(w) >= 0,
 		"rings_fallen": int(s.get("rings_fallen", 0)), "raid": bool(s.get("raid_on", false)),
 		"dread": float(s.get("dread", 0.0)), "band": Director71.band(float(s.get("dread", 0.0))),
+		"break_point": bool(s.get("break_point", false)),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
 

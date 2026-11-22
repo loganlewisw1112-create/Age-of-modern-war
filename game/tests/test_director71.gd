@@ -1,5 +1,5 @@
 extends "res://tests/test_base.gd"
-## G7.1 C1 first slice: the dread meter is pure, rises with the fight, and does not move the phase clock.
+## G7.1 C1/C2: dread meter, breaths, face split, one-shot breaking-point. Phase clock untouched.
 
 const Director71 = preload("res://sim/systems/director71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
@@ -22,6 +22,28 @@ func test_pressure_is_pure_and_ordered() -> void:
 	check_eq(Director71.interval_s(30.0, 1.0), 30.0, "at full dread the gap is the written base")
 
 
+func test_pick_push_and_breaking_point() -> void:
+	var quiet := [0, 0, 0, 0, 0, 0, 0, 0]
+	var q: Dictionary = Director71.pick_push(quiet)
+	check_eq(int(q.main), 0, "quiet board: main is sector 0")
+	check_eq(int(q.feint), 4, "quiet board: feint is opposite")
+	var busy := [1, 0, 9, 0, 0, 2, 0, 0]
+	var p: Dictionary = Director71.pick_push(busy)
+	check_eq(int(p.main), 2, "main is the busiest sector")
+	check_eq(int(p.feint), 5, "feint prefers a live face when the opposite is empty")
+	var both := [0, 0, 2, 0, 0, 0, 8, 0]
+	var b: Dictionary = Director71.pick_push(both)
+	check_eq(int(b.main), 6, "main tracks the peak")
+	check_eq(int(b.feint), 2, "feint stays opposite when that face has presence")
+	check(float(p.feint_frac) > 0.0 and float(p.feint_frac) < 1.0, "feint_frac is a fraction")
+	var s := {}
+	check(not Director71.note_breaking(s, 0.4), "mixed band is not the climax")
+	check(not bool(s.get("break_point", false)), "flag stays clear before siege")
+	check(Director71.note_breaking(s, 0.9), "first siege crossing fires once")
+	check(bool(s.break_point), "flag sticks")
+	check(not Director71.note_breaking(s, 1.0), "second call is quiet")
+
+
 func test_live_meter_does_not_move_the_phase() -> void:
 	var c := LastProtocol.make_config(77, "industrial_heartland_m")
 	var a := SimWorld.new_match(c)
@@ -38,3 +60,4 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	check_eq(int(s.phase), 0, "40 ticks do not advance the phase (still %d)" % int(s.phase))
 	var h: Dictionary = LastProtocol.hud(a)
 	check(h.has("dread") and String(h.band) == Director71.band(float(h.dread)), "the HUD shows the same band")
+	check(h.has("break_point"), "HUD exposes the breaking-point flag")

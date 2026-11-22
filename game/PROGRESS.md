@@ -22,6 +22,7 @@ wave. This slice's own change is Vanta2 flight. The package is
 
 **Left for the next slice. Do not treat these as done.**
 - C1 dread meter is in (2026-11-22, after the checkpoint package): `director71.gd` records hive pressure from time, creep, fallen rings and lost teams. The HUD shows it. Tide assault gaps are longer while dread is low and return to the written base at full dread. Phase timing is unchanged. `test_director71` 2/0.
+- C1 breaking-point + C2 feint assaults (2026-11-22): first siege-band crossing emits `LpBreakingPoint` once; Tide waves split onto a main face and a feint face via `Director71.pick_push`. HUD exposes `break_point`. `test_director71` 3/0.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).
