@@ -18,8 +18,8 @@
       "retreat_hp": 0.35,
       "regrow_hp": 0.7,
       "regrow_heal_per_s": 0.08,
-      "siege_spawn_mixed": ["g71_m_brute"],
-      "siege_spawn": ["g71_m_brute", "g71_m_siege_walker"],
+      "siege_spawn_mixed": ["g71_m_brute", "g71_m_turret_eater", "g71_m_turret_eater"],
+      "siege_spawn": ["g71_m_brute", "g71_m_siege_walker", "g71_m_sapper", "g71_m_turret_eater", "g71_m_turret_eater", "g71_m_turret_eater"],
       "adapt_map": {
         "mg": "armour",
         "hmg": "armour",

@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 C3 siege units (docs/G71_SCOPE.md C3). First stub: gorilla brute + siege walker. Turret-eater and sapper follow. Art is stand-in (reuse walker / siege crawler sheets at the look checkpoint). Every number PROVISIONAL.",
+  "_meta": "G7.1 C3 siege units (docs/G71_SCOPE.md C3): gorilla brute, turret-eater swarm, siege walker, burrower/sapper. Behaviour polish (latch, jammer, charge) follows; this file is the content stub. Art is stand-in at the look checkpoint. Every number PROVISIONAL.",
   "units": {
     "g71_m_brute": {
       "name": "Gorilla Brute",
@@ -48,6 +48,53 @@
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
       "_role": "C3: long-range artillery shelling walls from outside turret range (counter-battery bait). PROVISIONAL stand-in."
+    },
+    "g71_m_turret_eater": {
+      "name": "Turret-Eater",
+      "faction": "machine",
+      "role": "air",
+      "armor": "light",
+      "move_class": "air",
+      "hp": 90,
+      "speed": 6.5,
+      "sight": 10,
+      "weapon": "g71_turret_bite",
+      "ammo_max": 20,
+      "pop": 1,
+      "radius": 0.35,
+      "stage_min": 10,
+      "g7": true,
+      "g71": true,
+      "g71_siege": "turret_eater",
+      "no_production": true,
+      "energy": true,
+      "air": true,
+      "leaves_wreck": false,
+      "_role": "C3: fast flying drones that dive and latch onto turrets. Latch behaviour still open. PROVISIONAL stand-in."
+    },
+    "g71_m_sapper": {
+      "name": "Sapper",
+      "faction": "machine",
+      "role": "burrower",
+      "armor": "medium",
+      "move_class": "foot",
+      "hp": 480,
+      "speed": 2.0,
+      "sight": 8,
+      "weapon": "g71_sapper_charge",
+      "ammo_max": 6,
+      "pop": 3,
+      "radius": 0.65,
+      "stage_min": 10,
+      "g7": true,
+      "g71": true,
+      "g71_siege": "sapper",
+      "t7": "burrower",
+      "t7_class": "light_walker",
+      "no_production": true,
+      "energy": true,
+      "leaves_wreck": false,
+      "_role": "C3: tunnels under or blows through walls; jammer blinds turrets (jammer behaviour still open). Reuses burrower tunnel AI via t7. PROVISIONAL stand-in."
     }
   },
   "weapons": {
@@ -68,6 +115,25 @@
       "accuracy": 0.7,
       "g71": true,
       "_note": "Long-range wall shell for the siege walker (counter-battery bait). PROVISIONAL."
+    },
+    "g71_turret_bite": {
+      "class": "anti_drone",
+      "damage": 18,
+      "range": 1.8,
+      "cooldown": 0.6,
+      "accuracy": 0.9,
+      "g71": true,
+      "_note": "Close latch bite on turrets. Prefer / latch AI still open. PROVISIONAL."
+    },
+    "g71_sapper_charge": {
+      "class": "demolition",
+      "damage": 220,
+      "range": 1.4,
+      "cooldown": 4.0,
+      "accuracy": 1.0,
+      "g71": true,
+      "breach_mult": 2.0,
+      "_note": "Wall breach charge. Jammer aura still open. PROVISIONAL."
     }
   }
 }

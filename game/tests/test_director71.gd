@@ -65,13 +65,16 @@ func test_logistics_and_regrow_rules() -> void:
 
 
 func test_siege_roster_stubs() -> void:
-	check(not Content.unit("g71_m_brute").is_empty(), "gorilla brute def loads")
-	check(not Content.unit("g71_m_siege_walker").is_empty(), "siege walker def loads")
+	for id in ["g71_m_brute", "g71_m_siege_walker", "g71_m_turret_eater", "g71_m_sapper"]:
+		check(not Content.unit(id).is_empty(), "%s def loads" % id)
 	check_eq(String(Content.unit("g71_m_brute").get("g71_siege", "")), "brute", "brute is tagged")
 	check_eq(String(Content.unit("g71_m_siege_walker").get("g71_siege", "")), "walker", "walker is tagged")
+	check_eq(String(Content.unit("g71_m_turret_eater").get("g71_siege", "")), "turret_eater", "turret-eater is tagged")
+	check_eq(String(Content.unit("g71_m_sapper").get("g71_siege", "")), "sapper", "sapper is tagged")
+	check_eq(String(Content.unit("g71_m_sapper").get("t7", "")), "burrower", "sapper reuses burrower tunnel AI")
 	check(Director71.siege_roster(0.1).is_empty(), "probe dread spawns no siege stubs")
-	check_eq(Director71.siege_roster(0.5).size(), 1, "mixed dread brings the brute")
-	check_eq(Director71.siege_roster(0.9).size(), 2, "siege dread brings brute + walker")
+	check_eq(Director71.siege_roster(0.5).size(), 3, "mixed dread brings brute + eaters")
+	check_eq(Director71.siege_roster(0.9).size(), 6, "siege dread brings the full C3 stub set")
 
 
 func test_adapt_buckets_and_counter() -> void:
