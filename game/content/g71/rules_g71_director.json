@@ -27,6 +27,7 @@
         "disperse": "g71_m_sapper"
       },
       "sync_radius": 10.0,
+      "sync_damage": 1.12,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

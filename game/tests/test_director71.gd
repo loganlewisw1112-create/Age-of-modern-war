@@ -88,6 +88,7 @@ func test_siege_roster_stubs() -> void:
 	check(Director71.is_hive_conductor("g71_m_hive_conductor"), "hive Conductor id is recognized")
 	check(not Director71.is_hive_conductor("g71_m_brute"), "brutes are not the hive Conductor")
 	check(Director71.sync_radius() > 0.0, "sync aura has a radius")
+	check(float(Director71.rules().get("sync_damage", 0.0)) > 1.0, "synced Machines hit harder")
 
 
 func test_adapt_buckets_and_counter() -> void:

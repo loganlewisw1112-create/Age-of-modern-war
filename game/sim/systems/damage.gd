@@ -130,6 +130,10 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			cover = in_cover(w, target)
 			if cover:
 				dmg *= float((R.get("cover", {}) as Dictionary).get(cls, 1.0))
+	# G7.1 C4: hive Conductor sync — Machines locked in formation hit harder (LP only via e.lp_sync).
+	if bool(shooter.get("lp_sync", false)):
+		var sm := float(Content.rules().get("g71_director", {}).get("sync_damage", 1.12))
+		dmg *= sm
 	dmg = snappedf(dmg, Q)
 	if target.kind == "building" and target.has("nres"):   # G7.1 BASTION71 G3: nanite-resistant wall coating (LP walls only; CR seq 3364)
 		dmg = snappedf(dmg * SimWorld.Walls71.nres_mult(w, shooter, target), Q)
