@@ -188,6 +188,8 @@ static func tick(w: SimWorld) -> void:
 			_regrow(w, s)
 		if (w.tick + 19) % _t(2.0) == 0:
 			_hive_sync(w, s)
+		if (w.tick + 23) % _t(3.0) == 0:
+			_reclaim(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -392,6 +394,36 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 		w.emit("LpLogisticsStrike", {"n": log_ids.size(), "target": log_t, "dread": float(s.get("dread", 0.0))})
 	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size(),
 		"n_log": n_log, "counter": Director71.counter_for(s)})
+
+
+## C4 Reclaimer: eat the nearest wreck in reach and print a small Machine (default turret-eater).
+static func _reclaim(w: SimWorld, s: Dictionary) -> void:
+	var print_def := Director71.reclaim_print()
+	if Content.unit(print_def).is_empty():
+		return
+	var r := Director71.reclaim_radius()
+	var r2 := r * r
+	for e in w.units_of(int(s.mfid)):
+		if not Director71.is_reclaimer(String(e.get("def", ""))):
+			continue
+		var best := -1
+		var best_d := r2 + 1.0
+		var at: Vector2 = e.pos
+		for id in w.entities.keys():
+			var x = w.entities[id]
+			if x == null or String(x.get("kind", "")) != "wreck":
+				continue
+			var d := at.distance_squared_to(Vector2(x.pos))
+			if d <= r2 and d < best_d:
+				best_d = d
+				best = int(id)
+		if best < 0:
+			continue
+		var wreck_pos: Vector2 = w.entities[best].pos
+		w.destroy(best, "reclaim", int(s.mfid))
+		var nid := w.spawn_unit(print_def, int(s.mfid), wreck_pos)
+		if nid >= 0:
+			w.emit("LpReclaim", {"reclaimer": int(e.id), "wreck": best, "spawned": nid, "def": print_def})
 
 
 ## C4 hive Conductor: mark Machine units inside sync_radius with lp_sync so presentation / AI can treat them as

@@ -28,6 +28,8 @@
       },
       "sync_radius": 10.0,
       "sync_damage": 1.12,
+      "reclaim_radius": 4.0,
+      "reclaim_print": "g71_m_turret_eater",
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

@@ -89,6 +89,9 @@ func test_siege_roster_stubs() -> void:
 	check(not Director71.is_hive_conductor("g71_m_brute"), "brutes are not the hive Conductor")
 	check(Director71.sync_radius() > 0.0, "sync aura has a radius")
 	check(float(Director71.rules().get("sync_damage", 0.0)) > 1.0, "synced Machines hit harder")
+	check(Director71.is_reclaimer("g71_m_reclaimer"), "reclaimer id is recognized")
+	check(Director71.reclaim_radius() > 0.0, "reclaim reach is set")
+	check(not Content.unit(Director71.reclaim_print()).is_empty(), "reclaim print def loads")
 
 
 func test_adapt_buckets_and_counter() -> void:

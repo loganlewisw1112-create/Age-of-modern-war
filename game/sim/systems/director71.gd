@@ -196,6 +196,20 @@ static func sync_radius() -> float:
 	return float(rules().get("sync_radius", 10.0))
 
 
+## True when a unit def is the C4 Reclaimer.
+static func is_reclaimer(def_id: String) -> bool:
+	return String(Content.unit(def_id).get("g71_special", "")) == "reclaimer"
+
+
+## How far a Reclaimer reaches for wrecks, and what it prints.
+static func reclaim_radius() -> float:
+	return float(rules().get("reclaim_radius", 4.0))
+
+
+static func reclaim_print() -> String:
+	return String(rules().get("reclaim_print", "g71_m_turret_eater"))
+
+
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
 static func counter_for(s: Dictionary) -> String:
 	var a = s.get("adapt", {})
