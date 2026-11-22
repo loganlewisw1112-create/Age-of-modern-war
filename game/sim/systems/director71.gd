@@ -126,6 +126,50 @@ static func note_breaking(s: Dictionary, dread: float) -> bool:
 	return true
 
 
+## Map a weapon class / id onto an adapt bucket (armour / emp / smoke / disperse).
+static func kill_bucket(cls: String, weapon: String = "") -> String:
+	var key := cls.strip_edges().to_lower()
+	if key == "" and weapon != "":
+		key = weapon.strip_edges().to_lower()
+	var map: Dictionary = rules().get("adapt_map", {
+		"mg": "armour", "hmg": "armour", "rifle": "armour", "autocannon": "armour", "cannon": "armour",
+		"laser": "smoke", "beam": "smoke", "rail": "smoke", "railgun": "smoke",
+		"missile": "disperse", "rocket": "disperse", "artillery": "disperse", "mortar": "disperse",
+		"drone": "emp", "anti_drone": "emp", "emp": "emp", "flak": "emp",
+	})
+	if map.has(key):
+		return String(map[key])
+	for tok in ["laser", "beam", "rail", "missile", "rocket", "drone", "emp", "mg", "cannon"]:
+		if key.find(tok) >= 0 and map.has(tok):
+			return String(map[tok])
+	return "armour"
+
+
+## Record one Machine death cause into s.adapt {bucket: count}.
+static func note_kill(s: Dictionary, cls: String, weapon: String = "") -> String:
+	var b := kill_bucket(cls, weapon)
+	if not s.has("adapt") or not (s.adapt is Dictionary):
+		s.adapt = {}
+	s.adapt[b] = int(s.adapt.get(b, 0)) + 1
+	return b
+
+
+## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
+static func counter_for(s: Dictionary) -> String:
+	var a = s.get("adapt", {})
+	if not (a is Dictionary) or (a as Dictionary).is_empty():
+		return ""
+	var order := ["armour", "emp", "smoke", "disperse"]
+	var best := ""
+	var n := -1
+	for k in order:
+		var v := int(a.get(k, 0))
+		if v > n:
+			n = v
+			best = k
+	return best if n > 0 else ""
+
+
 static func apply(s: Dictionary, frac: float, rings: int, creep: float, losses: int) -> float:
 	var d := pressure(frac, rings, creep, losses)
 	if not s.has("dread") or not is_equal_approx(float(s.dread), d):

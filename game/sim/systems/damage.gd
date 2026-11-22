@@ -159,7 +159,7 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 		if oi.is_valid():
 			oi.call(w, cwd, target.pos)
 	w.emit("Damage", {"shooter": int(shooter.id), "target": int(target.id), "amount": dmg,
-		"hit_side": side, "in_cover": cover})
+		"hit_side": side, "in_cover": cover, "cls": cls, "weapon": String(s.get("weapon", ""))})
 	if g71 and r8 != null and SimWorld.Gore71.outcome(String(r8.id)).has("line"):
 		SimWorld.Gore71.rail_line(w, shooter, target, String(r8.id), dmg)   # G7.1 J1: railgun slug goes on through the line
 	if zr != null and _zone_after(w, shooter, target, zr):

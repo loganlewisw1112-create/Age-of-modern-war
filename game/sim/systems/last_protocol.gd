@@ -102,6 +102,7 @@ static func setup(w: SimWorld) -> Dictionary:
 	fid = maxi(fid, 0)
 	mfid = mfid if mfid >= 0 else 1
 	s = {"ver": VER, "fid": fid, "mfid": mfid, "t0": w.tick, "rebuild": [], "routes_closed": [], "secrets_found": [],
+		"adapt": {}, "adapt_last": {},
 		"remembered": [], "roster": {}, "warn": {"creep": [], "cd": []}, "filled": false, "teams_total": 0,
 		"teams_lost": 0, "extractions": 0, "purged_cells": 0, "creep_peak": 0.0, "phase": 0, "frac": 0.0,
 		"weavers": false, "tide": false, "tide_t": -1, "posture": "normal", "posture_override": "", "defence_ai": true,
@@ -220,6 +221,14 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				var cs := String(ev.get("call_sign", ""))
 				if cs != "" and not (s.remembered as Array).has(cs):
 					(s.remembered as Array).append(cs)
+			"Damage":
+				# Combat runs before LastProtocol: the unit may already be gone. Remember the last hit by id;
+				# EntityDestroyed below only counts Machine deaths into adapt.
+				var tid := int(ev.get("target", -1))
+				if tid >= 0:
+					if not s.has("adapt_last") or not (s.adapt_last is Dictionary):
+						s.adapt_last = {}
+					s.adapt_last[tid] = {"cls": String(ev.get("cls", "")), "weapon": String(ev.get("weapon", ""))}
 			"EntityDestroyed":
 				var id := int(ev.get("id", -1))
 				if (s.roster as Dictionary).has(id):
@@ -227,6 +236,13 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					s.roster.erase(id)
 					if cs2 != "" and not (s.remembered as Array).has(cs2):
 						(s.remembered as Array).append(cs2)
+				var hit = {}
+				if s.has("adapt_last") and (s.adapt_last is Dictionary):
+					hit = s.adapt_last.get(id, {})
+					s.adapt_last.erase(id)
+				if String(ev.get("kind", "")) == "unit" and int(ev.get("owner", -1)) == int(s.mfid):
+					var bucket := Director71.note_kill(s, String(hit.get("cls", "")), String(hit.get("weapon", "")))
+					w.emit("LpAdapt", {"id": id, "bucket": bucket, "counter": Director71.counter_for(s)})
 				LpDefence.note_destroyed(w, s, ev)
 
 
@@ -342,7 +358,8 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 	if not log_ids.is_empty():
 		w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": log_ids, "target": log_t, "ai_cmd": "lp"})
 		w.emit("LpLogisticsStrike", {"n": log_ids.size(), "target": log_t, "dread": float(s.get("dread", 0.0))})
-	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size(), "n_log": n_log})
+	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size(),
+		"n_log": n_log, "counter": Director71.counter_for(s)})
 
 
 ## C2 retreat + regrow: pull badly damaged machines back to the hive spawn, heal them there, then clear the flag
@@ -479,7 +496,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"cores_total": (Cores.list(w) as Array).size(), "walker": Cores.walker(w) >= 0,
 		"rings_fallen": int(s.get("rings_fallen", 0)), "raid": bool(s.get("raid_on", false)),
 		"dread": float(s.get("dread", 0.0)), "band": Director71.band(float(s.get("dread", 0.0))),
-		"break_point": bool(s.get("break_point", false)),
+		"break_point": bool(s.get("break_point", false)), "counter": Director71.counter_for(s),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
 

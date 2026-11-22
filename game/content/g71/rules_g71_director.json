@@ -17,7 +17,26 @@
       "logistics_defs": ["generator", "depot", "a_radar_station", "a_hospital", "a_g71_farp", "a_repair_bay"],
       "retreat_hp": 0.35,
       "regrow_hp": 0.7,
-      "regrow_heal_per_s": 0.08
+      "regrow_heal_per_s": 0.08,
+      "adapt_map": {
+        "mg": "armour",
+        "hmg": "armour",
+        "rifle": "armour",
+        "autocannon": "armour",
+        "cannon": "armour",
+        "laser": "smoke",
+        "beam": "smoke",
+        "rail": "smoke",
+        "railgun": "smoke",
+        "missile": "disperse",
+        "rocket": "disperse",
+        "artillery": "disperse",
+        "mortar": "disperse",
+        "drone": "emp",
+        "anti_drone": "emp",
+        "emp": "emp",
+        "flak": "emp"
+      }
     }
   }
 }

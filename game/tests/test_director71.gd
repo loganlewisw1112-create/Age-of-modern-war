@@ -64,6 +64,22 @@ func test_logistics_and_regrow_rules() -> void:
 	check(is_equal_approx(Director71.hp_frac({"hp": 50, "hp_max": 100}), 0.5), "hp_frac is hp / max")
 
 
+func test_adapt_buckets_and_counter() -> void:
+	check_eq(Director71.kill_bucket("mg"), "armour", "MGs push armour")
+	check_eq(Director71.kill_bucket("laser"), "smoke", "lasers push smoke / dispersal")
+	check_eq(Director71.kill_bucket("", "anti_drone_pod"), "emp", "drone weapons push EMP")
+	check_eq(Director71.kill_bucket("missile"), "disperse", "missiles push disperse")
+	var s := {"adapt": {}}
+	check_eq(Director71.counter_for(s), "", "no deaths yet")
+	Director71.note_kill(s, "mg")
+	Director71.note_kill(s, "mg")
+	Director71.note_kill(s, "laser")
+	check_eq(Director71.counter_for(s), "armour", "the hive counters what killed it most")
+	Director71.note_kill(s, "laser")
+	Director71.note_kill(s, "laser")
+	check_eq(Director71.counter_for(s), "smoke", "a new peak flips the counter")
+
+
 func test_live_meter_does_not_move_the_phase() -> void:
 	var c := LastProtocol.make_config(77, "industrial_heartland_m")
 	var a := SimWorld.new_match(c)
