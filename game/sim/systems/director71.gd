@@ -1,13 +1,12 @@
 extends RefCounted
-## G7.1 C1 / C2 (Last Protocol only). The dread meter: how hard the hive is pressing.
+## G7.1 C1 / C2 / C3 stub (Last Protocol only). The dread meter: how hard the hive is pressing.
 ## Time is the spine (the ~60 min ramp). Creep, fallen rings and lost teams pull it up.
 ## Tide assault gaps stretch while dread is low (a breather) and return to the written base at full dread.
 ## Assaults split onto a main face and a feint face. Late dread peels a logistics strike onto rear targets
 ## (FARP / radar / power / hospital / depot). Wounded machines retreat to the hive spawn, heal, and return.
-## The first siege-band crossing fires LpBreakingPoint once. Phase timing is unchanged.
-##
-## Pure: pressure, pick_push, pick_logistics, needs_retreat, ready_return. apply() writes s.dread.
-## Numbers are provisional.
+## Adapt buckets counter the weapons that kill Machines most. Siege band (and mixed) can spawn C3 stubs
+## (gorilla brute / siege walker). The first siege-band crossing fires LpBreakingPoint once.
+## Phase timing is unchanged. Numbers are provisional.
 
 const Q := 1.0 / 1024.0
 
@@ -152,6 +151,16 @@ static func note_kill(s: Dictionary, cls: String, weapon: String = "") -> String
 		s.adapt = {}
 	s.adapt[b] = int(s.adapt.get(b, 0)) + 1
 	return b
+
+
+## Def ids to spawn with the next Tide push. Empty while dread is still probing.
+static func siege_roster(dread: float) -> Array:
+	var b := band(dread)
+	if b == "siege":
+		return Array(rules().get("siege_spawn", ["g71_m_brute", "g71_m_siege_walker"]))
+	if b == "mixed":
+		return Array(rules().get("siege_spawn_mixed", ["g71_m_brute"]))
+	return []
 
 
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".

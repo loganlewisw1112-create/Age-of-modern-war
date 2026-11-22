@@ -64,6 +64,16 @@ func test_logistics_and_regrow_rules() -> void:
 	check(is_equal_approx(Director71.hp_frac({"hp": 50, "hp_max": 100}), 0.5), "hp_frac is hp / max")
 
 
+func test_siege_roster_stubs() -> void:
+	check(not Content.unit("g71_m_brute").is_empty(), "gorilla brute def loads")
+	check(not Content.unit("g71_m_siege_walker").is_empty(), "siege walker def loads")
+	check_eq(String(Content.unit("g71_m_brute").get("g71_siege", "")), "brute", "brute is tagged")
+	check_eq(String(Content.unit("g71_m_siege_walker").get("g71_siege", "")), "walker", "walker is tagged")
+	check(Director71.siege_roster(0.1).is_empty(), "probe dread spawns no siege stubs")
+	check_eq(Director71.siege_roster(0.5).size(), 1, "mixed dread brings the brute")
+	check_eq(Director71.siege_roster(0.9).size(), 2, "siege dread brings brute + walker")
+
+
 func test_adapt_buckets_and_counter() -> void:
 	check_eq(Director71.kill_bucket("mg"), "armour", "MGs push armour")
 	check_eq(Director71.kill_bucket("laser"), "smoke", "lasers push smoke / dispersal")

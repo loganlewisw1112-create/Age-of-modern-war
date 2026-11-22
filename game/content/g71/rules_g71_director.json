@@ -18,6 +18,8 @@
       "retreat_hp": 0.35,
       "regrow_hp": 0.7,
       "regrow_heal_per_s": 0.08,
+      "siege_spawn_mixed": ["g71_m_brute"],
+      "siege_spawn": ["g71_m_brute", "g71_m_siege_walker"],
       "adapt_map": {
         "mg": "armour",
         "hmg": "armour",

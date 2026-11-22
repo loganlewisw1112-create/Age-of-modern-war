@@ -25,6 +25,7 @@ wave. This slice's own change is Vanta2 flight. The package is
 - C1 breaking-point + C2 feint assaults (2026-11-22): first siege-band crossing emits `LpBreakingPoint` once; Tide waves split onto a main face and a feint face via `Director71.pick_push`. HUD exposes `break_point`. `test_director71` 3/0.
 - C2 late logistics peels + retreat/regrow (2026-11-22): at high dread, a slice of each Tide wave peels onto FARP/radar/power/hospital/depot; wounded machines fall back to the hive spawn, heal, and return. Events `LpLogisticsStrike` / `LpRetreat` / `LpRegrow`. `test_director71` 4/0; `test_lpmode7` 18/0.
 - C2 adapt counters (2026-11-22): Machine deaths bucket into armour/emp/smoke/disperse from the killing weapon class; AssaultWave + HUD expose the current counter; `LpAdapt` events. Damage events carry `cls`/`weapon`. `test_director71` 5/0; `test_lpmode7` 18/0.
+- C3 siege stubs (2026-11-22): `g71_m_brute` + `g71_m_siege_walker` defs/weapons; Tide assaults spawn them once dread hits mixed/siege (`LpSiegeSpawn`). Turret-eater + sapper still open. `test_director71` 6/0; `test_lpmode7` 18/0.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).

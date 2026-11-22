@@ -321,6 +321,19 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 
 
 static func _assault(w: SimWorld, s: Dictionary) -> void:
+	var spawn_at := Vector2(w.factions[int(s.mfid)].spawn) + Vector2(0.5, 0.5)
+	var spawned := []
+	var roster: Array = Director71.siege_roster(float(s.get("dread", 0.0)))
+	for i in roster.size():
+		var def_id := String(roster[i])
+		if Content.unit(def_id).is_empty():
+			continue
+		var off := Vector2(float((i % 3) - 1) * 2.0, float((i / 3) - 1) * 2.0)
+		var sid := w.spawn_unit(def_id, int(s.mfid), spawn_at + off)
+		if sid >= 0:
+			spawned.append(sid)
+	if not spawned.is_empty():
+		w.emit("LpSiegeSpawn", {"ids": spawned.duplicate(), "defs": roster.duplicate(), "dread": float(s.get("dread", 0.0))})
 	var ids := []
 	var wk := Cores.walker(w)
 	for e in w.units_of(int(s.mfid)):

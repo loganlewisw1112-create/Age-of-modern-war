@@ -150,6 +150,8 @@
         "m_lancer": {"tpl": "walker4"},
         "m_tracked": {"tpl": "tracked"},
         "m_siege_crawler": {"tpl": "tracked"},
+        "g71_m_brute": {"tpl": "walker4", "heavy": true, "topple": 1.4},
+        "g71_m_siege_walker": {"tpl": "walker4", "heavy": true, "topple": 1.8},
         "m_hover_tank": {"tpl": "tracked", "leg_speed": [1.0, 0.5, 0.0]},
         "m_assimilator": {"tpl": "tracked"},
         "m_colossus": {"tpl": "superheavy"},

@@ -1,0 +1,73 @@
+{
+  "_meta": "G7.1 C3 siege units (docs/G71_SCOPE.md C3). First stub: gorilla brute + siege walker. Turret-eater and sapper follow. Art is stand-in (reuse walker / siege crawler sheets at the look checkpoint). Every number PROVISIONAL.",
+  "units": {
+    "g71_m_brute": {
+      "name": "Gorilla Brute",
+      "faction": "machine",
+      "role": "heavy",
+      "armor": "heavy",
+      "move_class": "foot",
+      "hp": 1400,
+      "speed": 2.4,
+      "sight": 9,
+      "weapon": "g71_brute_slam",
+      "ammo_max": 24,
+      "pop": 5,
+      "radius": 0.9,
+      "stage_min": 10,
+      "g7": true,
+      "g71": true,
+      "g71_siege": "brute",
+      "no_production": true,
+      "energy": true,
+      "legged": true,
+      "leaves_wreck": true,
+      "components": {"mobility": 100, "weapon": 100, "sensors": 100},
+      "_role": "C3: charges walls head-on, pounds them, fires heavy shots. PROVISIONAL stand-in."
+    },
+    "g71_m_siege_walker": {
+      "name": "Siege Walker",
+      "faction": "machine",
+      "role": "artillery",
+      "armor": "heavy",
+      "move_class": "foot",
+      "hp": 1100,
+      "speed": 1.5,
+      "sight": 14,
+      "weapon": "g71_siege_gun",
+      "ammo_max": 40,
+      "pop": 6,
+      "radius": 1.1,
+      "stage_min": 10,
+      "g7": true,
+      "g71": true,
+      "g71_siege": "walker",
+      "no_production": true,
+      "energy": true,
+      "legged": true,
+      "leaves_wreck": true,
+      "components": {"mobility": 100, "weapon": 100, "sensors": 100},
+      "_role": "C3: long-range artillery shelling walls from outside turret range (counter-battery bait). PROVISIONAL stand-in."
+    }
+  },
+  "weapons": {
+    "g71_brute_slam": {
+      "class": "cannon",
+      "damage": 85,
+      "range": 2.5,
+      "cooldown": 1.8,
+      "accuracy": 0.85,
+      "g71": true,
+      "_note": "Close-range wall pound for the gorilla brute. PROVISIONAL."
+    },
+    "g71_siege_gun": {
+      "class": "artillery",
+      "damage": 70,
+      "range": 22,
+      "cooldown": 3.5,
+      "accuracy": 0.7,
+      "g71": true,
+      "_note": "Long-range wall shell for the siege walker (counter-battery bait). PROVISIONAL."
+    }
+  }
+}
