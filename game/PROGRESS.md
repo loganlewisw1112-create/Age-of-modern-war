@@ -32,6 +32,7 @@ wave. This slice's own change is Vanta2 flight. The package is
 - Adapt spawn bias (2026-11-22): the current counter peels one bonus C3/C4 unit onto each Tide siege roster (`adapt_spawn`).
 - Hive Conductor sync aura (2026-11-22): machines inside `sync_radius` get `lp_sync`; count changes emit `LpHiveSync`; synced shooters deal `sync_damage` (1.12×) via Damage.
 - Reclaimer eat/print (2026-11-22): reclaimers destroy a wreck in reach and spawn `reclaim_print` (`LpReclaim`). Body piles still open.
+- C6 wreck cover (2026-11-22): in Last Protocol, units next to a wreck count as in cover (`wreck_cover_r`).
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).

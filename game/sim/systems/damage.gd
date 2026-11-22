@@ -73,7 +73,19 @@ static func in_cover(w: SimWorld, e: Dictionary) -> bool:
 	if bool(e.get("in_cover", false)):
 		return true
 	var p: Vector2 = e.pos
-	return w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == FOREST
+	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == FOREST:
+		return true
+	# G7.1 C6 (Last Protocol): wrecks of heavy Machines give cover to nearby bodies.
+	if SimWorld.LastProtocol.active(w):
+		var r2 := float(Content.rules().get("g71_director", {}).get("wreck_cover_r", 1.6))
+		r2 *= r2
+		for id in w.entities.keys():
+			var x = w.entities[id]
+			if x == null or String(x.get("kind", "")) != "wreck":
+				continue
+			if p.distance_squared_to(Vector2(x.pos)) <= r2:
+				return true
+	return false
 
 
 ## Called by combat._fire for every shot (hit or miss).

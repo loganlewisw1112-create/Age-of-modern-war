@@ -92,6 +92,7 @@ func test_siege_roster_stubs() -> void:
 	check(Director71.is_reclaimer("g71_m_reclaimer"), "reclaimer id is recognized")
 	check(Director71.reclaim_radius() > 0.0, "reclaim reach is set")
 	check(not Content.unit(Director71.reclaim_print()).is_empty(), "reclaim print def loads")
+	check(float(Director71.rules().get("wreck_cover_r", 0.0)) > 0.0, "wreck cover radius is set")
 
 
 func test_adapt_buckets_and_counter() -> void:
