@@ -75,16 +75,15 @@ static func in_cover(w: SimWorld, e: Dictionary) -> bool:
 	var p: Vector2 = e.pos
 	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == FOREST:
 		return true
-	# G7.1 C6 (Last Protocol): wrecks of heavy Machines give cover to nearby bodies.
+	# G7.1 C6 (Last Protocol): wrecks give cover. Positions are cached on lp.wreck_pos by LastProtocol.
 	if SimWorld.LastProtocol.active(w):
-		var r2 := float(Content.rules().get("g71_director", {}).get("wreck_cover_r", 1.6))
-		r2 *= r2
-		for id in w.entities.keys():
-			var x = w.entities[id]
-			if x == null or String(x.get("kind", "")) != "wreck":
-				continue
-			if p.distance_squared_to(Vector2(x.pos)) <= r2:
-				return true
+		var lp = w.sys_state.get("lp")
+		if lp is Dictionary:
+			var r2 := float(Content.rules().get("g71_director", {}).get("wreck_cover_r", 1.6))
+			r2 *= r2
+			for wp in (lp.get("wreck_pos", []) as Array):
+				if p.distance_squared_to(Vector2(wp)) <= r2:
+					return true
 	return false
 
 

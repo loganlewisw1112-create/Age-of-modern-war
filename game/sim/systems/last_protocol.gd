@@ -190,6 +190,8 @@ static func tick(w: SimWorld) -> void:
 			_hive_sync(w, s)
 		if (w.tick + 23) % _t(3.0) == 0:
 			_reclaim(w, s)
+		if (w.tick + 29) % _t(2.0) == 0:
+			_cache_wrecks(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -394,6 +396,17 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 		w.emit("LpLogisticsStrike", {"n": log_ids.size(), "target": log_t, "dread": float(s.get("dread", 0.0))})
 	w.emit("AssaultWave", {"n": ids.size(), "tide": true, "main": main_i, "feint": feint_i, "n_feint": feint_ids.size(),
 		"n_log": n_log, "counter": Director71.counter_for(s)})
+
+
+## Cache wreck positions for C6 cover checks (Damage.in_cover reads s.wreck_pos — no full entity scan per hit).
+static func _cache_wrecks(w: SimWorld, s: Dictionary) -> void:
+	var pos := []
+	for id in w.entities.keys():
+		var x = w.entities[id]
+		if x != null and String(x.get("kind", "")) == "wreck":
+			pos.append(Vector2(x.pos))
+	pos.sort_custom(func(a, b): return a.x < b.x or (is_equal_approx(a.x, b.x) and a.y < b.y))
+	s.wreck_pos = pos
 
 
 ## C4 Reclaimer: eat the nearest wreck in reach and print a small Machine (default turret-eater).
