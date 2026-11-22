@@ -1,0 +1,106 @@
+{
+  "_meta": "G7.1 CNOPS71 (docs/G71_SCOPE.md J6, roster 5A Q9 site A approved by ORCH 2026-11-09): the trauma + decon hospital, two 4x4 blocks astride the gate approach road north of the CN facility (ORCH decision 2026-11-22, PROVISIONAL, to the owner: no free 6x6 inside the rings after the facility fill; content/g71_lp/lp_base_cnops.json): the trauma block (hospital: true = Medical evacuation delivers there, def-driven, no hard-coded building; hospital71: true = Hospital71 wards) and the ward wing. Art: tools/art/g71_cn.gd -> assets/art/g71_cn. Every number PROVISIONAL. Units (CNOPS71-7): the hospital fleet, 2 medevac helicopters + 2 drone ambulances (art: same generator, derived from the G5 transport gunship / G6 UGV sheets).",
+  "buildings": {
+    "a_g71_hospital": {
+      "name": "Trauma Hospital",
+      "faction": "human_a",
+      "stage_min": 6,
+      "size": 4,
+      "hp": 2600,
+      "armor": "building",
+      "sight": 8,
+      "power": -20,
+      "requires_power": false,
+      "buildable": false,
+      "requires": [],
+      "cost": {
+        "credits": 600,
+        "salvage": 260,
+        "ore": 0
+      },
+      "build_time": 45,
+      "hospital": true,
+      "hospital71": true,
+      "roof_pad71": true,
+      "g71": true,
+      "_note": "J6 trauma block: triage bay, surgery theatres (2), ICU (4), rooftop medevac pad (Pads71 kind hospital, next step). Last Protocol starting base only (buildable false). PROVISIONAL."
+    },
+    "a_g71_hospital_wing": {
+      "name": "Hospital Ward Wing",
+      "faction": "human_a",
+      "stage_min": 6,
+      "size": 4,
+      "hp": 2200,
+      "armor": "building",
+      "sight": 6,
+      "power": -10,
+      "requires_power": false,
+      "buildable": false,
+      "requires": [],
+      "cost": {
+        "credits": 400,
+        "salvage": 160,
+        "ore": 0
+      },
+      "build_time": 40,
+      "hospital71_wing": true,
+      "g71": true,
+      "_note": "J6 ward wing: recovery ward (12), decon showers + scan gate, sealed quarantine ward (2), prosthetics bay (1). PROVISIONAL."
+    }
+  },
+  "units": {
+    "a_g71_medevac_heli": {
+      "name": "Medevac Helicopter",
+      "faction": "human_a",
+      "stage_min": 6,
+      "role": "ambulance",
+      "armor": "light",
+      "move_class": "air_low",
+      "is_air": true,
+      "hp": 520,
+      "speed": 6.0,
+      "sight": 10,
+      "pop": 2,
+      "radius": 0.6,
+      "weapon": "",
+      "ammo_max": 0,
+      "fuel_max": 300,
+      "fuel_per_tile": 0.0,
+      "wounded_slots": 4,
+      "med_unit": true,
+      "hosp71_fleet": "heli",
+      "g71": true,
+      "lp_only": true,
+      "_note": "J6 medevac helicopter (CNOPS71-7): no 'aircraft' key, so Air leaves it alone; it flies straight (air_low skips nav) on Medical auto evac and holds over the hospital roof pad (Hospital71._fleet). LP starting base only, not trainable. Count 2, speed, slots PROVISIONAL."
+    },
+    "a_g71_drone_ambulance": {
+      "name": "Drone Ambulance",
+      "faction": "human_a",
+      "stage_min": 6,
+      "role": "ambulance",
+      "armor": "light",
+      "move_class": "vehicle",
+      "leaves_wreck": true,
+      "components": {
+        "mobility": 100,
+        "weapon": 100,
+        "sensors": 100
+      },
+      "hp": 300,
+      "speed": 4.6,
+      "sight": 7,
+      "pop": 1,
+      "radius": 0.5,
+      "weapon": "",
+      "ammo_max": 0,
+      "fuel_max": 300,
+      "fuel_per_tile": 0.5,
+      "wounded_slots": 2,
+      "med_unit": true,
+      "hosp71_fleet": "ground",
+      "g71": true,
+      "lp_only": true,
+      "_note": "J6 fast tracked drone ambulance (CNOPS71-7): pulls own wounded off the field on Medical auto evac and parks at the trauma block door (Hospital71._fleet). LP starting base only. Count 2, speed, slots PROVISIONAL."
+    }
+  }
+}

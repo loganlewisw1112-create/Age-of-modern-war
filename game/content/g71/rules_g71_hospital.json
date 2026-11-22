@@ -1,0 +1,29 @@
+{
+  "_meta": "G7.1 J6 CNOPS71 (docs/G71_SCOPE.md J6): trauma + decon hospital ward machine (sim/systems/hospital71.gd). Every number PROVISIONAL (CNOPS71 picked it; the scope leaves it open). Times in s, hp per s, every in ticks.",
+  "rules": {
+    "g71_hospital": {
+      "every": 10,
+      "triage_s": 4.0,
+      "green_s": 6.0,
+      "surgery_s": 20.0,
+      "icu_hp_s": 4.0,
+      "icu_to": 0.5,
+      "rec_hp_s": 2.0,
+      "pros_s": 30.0,
+      "quar_exp": 0.5,
+      "quar_decon": 0.05,
+      "pad_off": [-0.2, -0.27],
+      "pad_size": 2.0,
+      "fleet_radius": 40.0,
+      "amb_home_off": [-5.5, 2.5],
+      "beds": {"surgery": 2, "icu": 4, "recovery": 12, "quarantine": 2, "prosthetics": 1},
+      "_notes": {
+        "icu_to": "ICU heals a post-surgery patient to this share of max hp, then recovery heals to full",
+        "pad_off": "roof pad centre from the trauma block centre (b.pos), on the drawn H of the 4x4 roof (tools/art/g71_cn.gd pad part x SC)",
+        "fleet_radius": "Medical auto-evac radius of the hospital fleet (helis around the roof pad, ambulances around the door)",
+        "amb_home_off": "drone ambulance park spot from the trauma block centre (west of the gate road)",
+        "quar_exp": "nanite exposure (cn_exp) at admission at or above this goes to the quarantine ward first"
+      }
+    }
+  }
+}

@@ -1,0 +1,260 @@
+{
+  "_meta": "G7.1 ARMY71 LP defs (roster 5A Q12: new ids only, old defs untouched; Last Protocol only). G2 flame / thermite tank, B3 crews (crew71). Every number PROVISIONAL.",
+  "units": {
+    "a_g71_flame_tank": {
+      "name": "Flame Tank (thermite)",
+      "faction": "human_a",
+      "stage_min": 9,
+      "role": "heavy",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 1100,
+      "speed": 2.4,
+      "sight": 9,
+      "pop": 5,
+      "radius": 0.7,
+      "g71": true,
+      "lp_only": true,
+      "weapon": "g71_heavy_flamer",
+      "leaves_wreck": true,
+      "ammo_max": 30,
+      "fuel_max": 380,
+      "fuel_per_tile": 1.5,
+      "components": {
+        "mobility": 100,
+        "weapon": 100,
+        "sensors": 100
+      },
+      "_note": "PROVISIONAL. G2: heavy flamer vehicle on the laser-tank hull (art base a_laser_tank). Burns swarms (flame class: ignore_cover, splash, ignites forest) and every hit on a Machine calls Parts71.ignite (g71_ignite_s): burning stops nanite regrowth (B2)."
+    },
+    "a_g71_mg_crew": {
+      "faction": "human_a",
+      "stage_min": 9,
+      "armor": "infantry",
+      "move_class": "foot",
+      "radius": 0.35,
+      "morale": 100,
+      "g71": true,
+      "lp_only": true,
+      "name": "MG Nest Crew",
+      "role": "hmg",
+      "hp": 255,
+      "speed": 1.9,
+      "sight": 10,
+      "pop": 3,
+      "weapon": "g71_mg_belt",
+      "ammo_max": 900,
+      "squad_size": 3,
+      "crew71": {
+        "kind": "mg"
+      },
+      "_note": "PROVISIONAL. B3 belt-fed MG nest: gunner + assistant (barrel swaps) + ammo bearer; rates / heat / beaten zone in rules.g71_crew.mg. Art base a_hmg_team."
+    },
+    "a_g71_at_team": {
+      "faction": "human_a",
+      "stage_min": 9,
+      "armor": "infantry",
+      "move_class": "foot",
+      "radius": 0.35,
+      "morale": 100,
+      "g71": true,
+      "lp_only": true,
+      "name": "AT Team (gunner + loader)",
+      "role": "antitank",
+      "hp": 200,
+      "speed": 2.0,
+      "sight": 9,
+      "pop": 2,
+      "weapon": "g71_at_tube",
+      "ammo_max": 14,
+      "squad_size": 2,
+      "crew71": {
+        "kind": "at"
+      },
+      "_note": "PROVISIONAL. B3: loader halves the reload; backblast danger zone; top-attack vs heavy armour. Art base b_at_rocket_team."
+    },
+    "a_g71_am_team": {
+      "faction": "human_a",
+      "stage_min": 9,
+      "armor": "infantry",
+      "move_class": "foot",
+      "radius": 0.35,
+      "morale": 100,
+      "g71": true,
+      "lp_only": true,
+      "name": ".50 Anti-Materiel Team",
+      "role": "sniper",
+      "hp": 160,
+      "speed": 2.1,
+      "sight": 14,
+      "pop": 2,
+      "weapon": "g71_am50",
+      "ammo_max": 40,
+      "squad_size": 2,
+      "conceal_still": true,
+      "crew71": {
+        "kind": "am"
+      },
+      "_note": "PROVISIONAL. B3: shooter + spotter; the spotter calls weak spots / cores (Parts71) at long range. Art base a_hmg_team."
+    },
+    "a_g71_grenadier": {
+      "faction": "human_a",
+      "stage_min": 9,
+      "armor": "infantry",
+      "move_class": "foot",
+      "radius": 0.35,
+      "morale": 100,
+      "g71": true,
+      "lp_only": true,
+      "name": "Grenadier Team",
+      "role": "grenadier",
+      "hp": 280,
+      "speed": 2.0,
+      "sight": 9,
+      "pop": 3,
+      "weapon": "g71_gl",
+      "ammo_max": 48,
+      "squad_size": 3,
+      "crew71": {
+        "kind": "gren"
+      },
+      "_note": "PROVISIONAL. B3: frag / airburst over swarms / smoke / thermite (Parts71.ignite). Art base b_grenadiers."
+    }
+  },
+  "weapons": {
+    "g71_heavy_flamer": {
+      "class": "flame",
+      "damage": 34,
+      "range": 5,
+      "cooldown": 0.6,
+      "accuracy": 0.9,
+      "ignore_cover": true,
+      "ignite": true,
+      "splash": 1.4,
+      "g71": true,
+      "g71_ignite_s": 6.0,
+      "_note": "PROVISIONAL. Thermite heavy flamer (G2); g71_ignite_s = Parts71.ignite seconds per hit (LP, Combat._fire hook)."
+    },
+    "g71_mg_belt": {
+      "class": "small_arms",
+      "damage": 12,
+      "range": 11,
+      "cooldown": 0.3,
+      "accuracy": 0.6,
+      "g71": true,
+      "_note": "PROVISIONAL. Belt-fed GPMG/HMG (g5_hmg numbers, +1 range); rate mults in rules.g71_crew.mg."
+    },
+    "g71_at_tube": {
+      "class": "at",
+      "damage": 120,
+      "range": 9,
+      "cooldown": 3.5,
+      "accuracy": 0.75,
+      "g71": true,
+      "_note": "PROVISIONAL. Crew AT launcher; backblast + top-attack in rules.g71_crew.at."
+    },
+    "g71_am50": {
+      "class": "at",
+      "damage": 70,
+      "range": 14,
+      "cooldown": 2.8,
+      "accuracy": 0.7,
+      "g71": true,
+      "_note": "PROVISIONAL. .50 anti-materiel rifle (class at: full damage on Machine armour)."
+    },
+    "g71_gl": {
+      "class": "grenade",
+      "damage": 30,
+      "range": 7,
+      "cooldown": 2.0,
+      "accuracy": 0.8,
+      "indirect": true,
+      "splash": 1.2,
+      "g71": true,
+      "_note": "PROVISIONAL. Grenade launcher (g5_grenade numbers, +1 range); round type chosen in Crew71.shot."
+    }
+  },
+  "rules": {
+    "g71_crew": {
+      "_note": "G7.1 ARMY71 B3 crews (sim/systems/crew71.gd). Every number PROVISIONAL.",
+      "mg": {
+        "default_rate": 1,
+        "rates": {
+          "sustained": {
+            "cd": 1.5,
+            "heat": 0.015
+          },
+          "rapid": {
+            "cd": 1.0,
+            "heat": 0.04
+          },
+          "cyclic": {
+            "cd": 0.6,
+            "heat": 0.09
+          }
+        },
+        "cool_per_s": 0.06,
+        "auto_sustain_heat": 0.7,
+        "swap_s": 5.0,
+        "jam_s": 9.0,
+        "swap_heat_after": 0.2,
+        "zone": {
+          "min_range": 5.0,
+          "len_per_tile": 0.14,
+          "wid_per_tile": 0.04,
+          "traverse": [
+            0,
+            1,
+            -1,
+            0
+          ],
+          "search": [
+            0,
+            0.5,
+            -0.5
+          ],
+          "supp": 6.0,
+          "max_hit": 6,
+          "keep_s": 1.5,
+          "dmg_frac": 0.25
+        }
+      },
+      "at": {
+        "loader_cd": 1.0,
+        "alone_cd": 2.0,
+        "top": {
+          "armor": [
+            "heavy"
+          ],
+          "min_range": 4.0,
+          "mult": 1.6,
+          "cd": 1.25
+        },
+        "backblast": {
+          "len": 3.0,
+          "half_w": 0.7,
+          "dmg": 25.0,
+          "supp": 20.0,
+          "show_s": 0.6
+        }
+      },
+      "am": {
+        "min_range": 7.0,
+        "acc_mult": 1.25,
+        "weak_mult": 1.5
+      },
+      "gren": {
+        "airburst_n": 4,
+        "airburst_r": 2.0,
+        "airburst_splash": 2.0,
+        "thermite_s": 6.0,
+        "smoke_r": 3.0,
+        "smoke_s": 10.0,
+        "smoke_dmg": 0.3,
+        "thermite_armor": [
+          "heavy"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "_note": "G7.1 CNOPS71 D7 team-leader radio reports (text now, voiced in the wave-5 sound pass; roster 5A Q13). Key cn71.<line> = the CnRadio {team, owner, line, args} event of sim/systems/cnmission71.gd; {0} {1} {2} = args in order. cat = radio_queue category, prio higher first, cd seconds per category. PROVISIONAL.",
+  "lines": {
+    "cn71.cn_search": {
+      "text": "Team leader: moving to search the area. Drones going up.",
+      "cat": "cn_ops",
+      "prio": 40,
+      "cd": 4.0
+    },
+    "cn71.cn_moving": {
+      "text": "Team leader: en route to node {0}.",
+      "cat": "cn_ops",
+      "prio": 30,
+      "cd": 6.0
+    },
+    "cn71.cn_found": {
+      "text": "Drone has a creep node. Marking it for the purge.",
+      "cat": "cn_ops",
+      "prio": 45,
+      "cd": 4.0
+    },
+    "cn71.cn_search_done": {
+      "text": "Search complete. {0} nodes purged, area clean.",
+      "cat": "cn_ops",
+      "prio": 50,
+      "cd": 2.0
+    },
+    "cn71.cn_purged": {
+      "text": "Node purged. {0} down, moving to the next one.",
+      "cat": "cn_ops",
+      "prio": 50,
+      "cd": 3.0
+    },
+    "cn71.cn_residue": {
+      "text": "Purge done, residue left ({0}). Engineers sealing.",
+      "cat": "cn_ops",
+      "prio": 35,
+      "cd": 5.0
+    },
+    "cn71.cn_skip": {
+      "text": "Skipping this node: {0}.",
+      "cat": "cn_ops",
+      "prio": 45,
+      "cd": 4.0
+    },
+    "cn71.cn_replan": {
+      "text": "Route blocked, re-planning: {0}.",
+      "cat": "cn_ops",
+      "prio": 45,
+      "cd": 5.0
+    },
+    "cn71.cn_contact": {
+      "text": "Contact, {0} Machines! Reaction: {2}.",
+      "cat": "contact",
+      "prio": 65,
+      "cd": 6.0
+    },
+    "cn71.cn_exfil": {
+      "text": "Team leader: exfil, {0}. Mount up.",
+      "cat": "cn_ops",
+      "prio": 60,
+      "cd": 3.0
+    },
+    "cn71.cn_abort": {
+      "text": "Copy abort. Extracting now.",
+      "cat": "cn_ops",
+      "prio": 70,
+      "cd": 2.0
+    },
+    "cn71.cn_home": {
+      "text": "Team is home. {0} nodes purged.",
+      "cat": "cn_ops",
+      "prio": 40,
+      "cd": 2.0
+    },
+    "cn71.cn_casevac": {
+      "text": "Casualty! Moving him back to the APC.",
+      "cat": "cn_ops",
+      "prio": 55,
+      "cd": 5.0
+    },
+    "cn71.cn_overwatch": {
+      "text": "Overwatch is set on the high ground.",
+      "cat": "cn_ops",
+      "prio": 35,
+      "cd": 6.0
+    },
+    "cn71.cn_grenade": {
+      "text": "Nanite grenade out. {0} hit, {1} down.",
+      "cat": "cn_ops",
+      "prio": 35,
+      "cd": 5.0
+    },
+    "cn71.cn_shield": {
+      "text": "Shield drone up over the team.",
+      "cat": "cn_ops",
+      "prio": 38,
+      "cd": 10.0
+    },
+    "cn71.cn_cannon": {
+      "text": "Purge cannon firing on the node. Softening it before we go in.",
+      "cat": "cn_ops",
+      "prio": 36,
+      "cd": 8.0
+    }
+  }
+}

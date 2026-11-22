@@ -1,0 +1,405 @@
+{
+  "buildings": {
+    "a_g71_hospital": {
+      "fits": "4x4 trauma block: triage bay, surgery theatres, ICU, rooftop medevac pad",
+      "g71": {
+        "faction": "a",
+        "kind": "hospital"
+      },
+      "pivot": [
+        134,
+        104
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_g71_hospital_build_0.png",
+          "mask": "buildings/a_g71_hospital_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_g71_hospital_build_1.png",
+          "mask": "buildings/a_g71_hospital_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_g71_hospital_build_2.png",
+          "mask": "buildings/a_g71_hospital_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_g71_hospital_built.png",
+          "mask": "buildings/a_g71_hospital_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_g71_hospital_damaged.png",
+          "mask": "buildings/a_g71_hospital_damaged_mask.png"
+        }
+      }
+    },
+    "a_g71_hospital_wing": {
+      "fits": "4x4 ward wing: recovery ward, decon showers, scan gate, sealed quarantine, prosthetics bay",
+      "g71": {
+        "faction": "a",
+        "kind": "hospital_wing"
+      },
+      "pivot": [
+        134,
+        104
+      ],
+      "size": 4,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_g71_hospital_wing_build_0.png",
+          "mask": "buildings/a_g71_hospital_wing_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_g71_hospital_wing_build_1.png",
+          "mask": "buildings/a_g71_hospital_wing_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_g71_hospital_wing_build_2.png",
+          "mask": "buildings/a_g71_hospital_wing_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_g71_hospital_wing_built.png",
+          "mask": "buildings/a_g71_hospital_wing_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_g71_hospital_wing_damaged.png",
+          "mask": "buildings/a_g71_hospital_wing_damaged_mask.png"
+        }
+      }
+    }
+  },
+  "files": {
+    "buildings/a_g71_hospital_build_0.png": "7ab509b1681892cb5718d1df48d89e92",
+    "buildings/a_g71_hospital_build_0_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_build_1.png": "c74722d2b5cfe0ebf10827e12740e0c7",
+    "buildings/a_g71_hospital_build_1_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_build_2.png": "3f88aa99d1a70b37991c357779874d0d",
+    "buildings/a_g71_hospital_build_2_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_built.png": "4c58d72f38e49f7d16e721045a4503ed",
+    "buildings/a_g71_hospital_built_mask.png": "c37ce81bbe1ddad058664df18cd2a93e",
+    "buildings/a_g71_hospital_damaged.png": "f7935d92a6f61beeed36cf5d356414db",
+    "buildings/a_g71_hospital_damaged_mask.png": "c37ce81bbe1ddad058664df18cd2a93e",
+    "buildings/a_g71_hospital_wing_build_0.png": "4eb3a7f41033ca1fc8979a22079690af",
+    "buildings/a_g71_hospital_wing_build_0_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_wing_build_1.png": "9da6e911b13a25cf6d3d964eb1fb89fd",
+    "buildings/a_g71_hospital_wing_build_1_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_wing_build_2.png": "84c391857eb6a173219e17fe75cfcac6",
+    "buildings/a_g71_hospital_wing_build_2_mask.png": "6766a7c71350e15ae1ee40c2d4c9c063",
+    "buildings/a_g71_hospital_wing_built.png": "920faa21f8f35f9993a583c9c88538d2",
+    "buildings/a_g71_hospital_wing_built_mask.png": "dce0809a47202955095773a9a2f09186",
+    "buildings/a_g71_hospital_wing_damaged.png": "5d0f0086b1a00bff9fa665138ff307f1",
+    "buildings/a_g71_hospital_wing_damaged_mask.png": "dce0809a47202955095773a9a2f09186",
+    "icons/a_g71_drone_ambulance.png": "67d0aaa171a70372f7a641d52d2d2279",
+    "icons/a_g71_hospital.png": "0b00cb941a63941f7b3a95d0a55901df",
+    "icons/a_g71_hospital_wing.png": "e0b6ca841cb8a44c4577551d5a2cf48a",
+    "icons/a_g71_medevac_heli.png": "6af3c5c8e074ca05237836bcd258cac1",
+    "units/a_g71_drone_ambulance.png": "37ed875bda8c2e5b5051b28a251aa96c",
+    "units/a_g71_drone_ambulance_mask.png": "75463198c824dd1de9184c053e9a7944",
+    "units/a_g71_medevac_heli.png": "11b2d98c80631226422d4a74e7498620",
+    "units/a_g71_medevac_heli_mask.png": "609ed593102664ffdc87c6e8624c6a2f",
+    "units/a_g71_medevac_heli_shadow.png": "cea82a4c2ab224a0b4ead6c640b80a7d",
+    "units/a_g71_medevac_heli_shadow_sheet.png": "fbcfc8aa90f57d509e30c7abd90d09d1",
+    "wrecks/a_g71_drone_ambulance_wreck.png": "73f51d4a63502a43f30787270042729f",
+    "wrecks/a_g71_medevac_heli_wreck.png": "697092ad8e0bb4f335df988aacddeeef"
+  },
+  "group": "g71_cn",
+  "icons": {
+    "a_g71_drone_ambulance": "icons/a_g71_drone_ambulance.png",
+    "a_g71_hospital": "icons/a_g71_hospital.png",
+    "a_g71_hospital_wing": "icons/a_g71_hospital_wing.png",
+    "a_g71_medevac_heli": "icons/a_g71_medevac_heli.png"
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_g71_drone_ambulance": {
+      "facings": 8.0,
+      "fh": 38.0,
+      "file": "wrecks/a_g71_drone_ambulance_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 48.0,
+      "pivot": [
+        24.0,
+        25.0
+      ]
+    },
+    "a_g71_medevac_heli": {
+      "facings": 8.0,
+      "fh": 83.0,
+      "file": "wrecks/a_g71_medevac_heli_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 105.0,
+      "pivot": [
+        49.0,
+        47.0
+      ]
+    }
+  },
+  "vehicles": {
+    "a_g71_drone_ambulance": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9.0,
+            -5.0
+          ],
+          [
+            -1.0,
+            -4.0
+          ],
+          [
+            -10.0,
+            -5.0
+          ],
+          [
+            -14.0,
+            -11.0
+          ],
+          [
+            -10.0,
+            -16.0
+          ],
+          [
+            -1.0,
+            -17.0
+          ],
+          [
+            9.0,
+            -16.0
+          ],
+          [
+            13.0,
+            -11.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            -1.0,
+            -18.0
+          ],
+          [
+            0.0,
+            -20.0
+          ],
+          [
+            1.0,
+            -21.0
+          ],
+          [
+            0.0,
+            -18.0
+          ],
+          [
+            -1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -17.0
+          ],
+          [
+            1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -15.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 38.0,
+      "file": "units/a_g71_drone_ambulance.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "a_ugv",
+        "mark": "medevac white + red cross"
+      },
+      "mask": "units/a_g71_drone_ambulance_mask.png",
+      "pivot": [
+        24.0,
+        25.0
+      ]
+    },
+    "a_g71_medevac_heli": {
+      "air": true,
+      "aircraft": "lift",
+      "alt_scale": {},
+      "altitude": 22.0,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ],
+        "sling": [
+          "sling",
+          "sling_b"
+        ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9.0,
+            -2.0
+          ],
+          [
+            -1.0,
+            0.0
+          ],
+          [
+            -10.0,
+            -2.0
+          ],
+          [
+            -14.0,
+            -8.0
+          ],
+          [
+            -11.0,
+            -13.0
+          ],
+          [
+            -1.0,
+            -15.0
+          ],
+          [
+            10.0,
+            -13.0
+          ],
+          [
+            13.0,
+            -8.0
+          ]
+        ],
+        "smoke": [
+          [
+            -8.0,
+            -33.0
+          ],
+          [
+            2.0,
+            -39.0
+          ],
+          [
+            8.0,
+            -33.0
+          ],
+          [
+            10.0,
+            -20.0
+          ],
+          [
+            8.0,
+            -32.0
+          ],
+          [
+            2.0,
+            -21.0
+          ],
+          [
+            -8.0,
+            -32.0
+          ],
+          [
+            -10.0,
+            -20.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "anim_fps": 10.0,
+      "bob": 2.0,
+      "facings": 8.0,
+      "fh": 83.0,
+      "file": "units/a_g71_medevac_heli.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked",
+        "sling",
+        "sling_b",
+        "sling_hook",
+        "unload",
+        "bank_l",
+        "bank_r",
+        "damaged"
+      ],
+      "fw": 105.0,
+      "g71": {
+        "base": "a_transport_gunship",
+        "mark": "medevac white + red cross"
+      },
+      "ground_frames": [
+        "landed",
+        "parked",
+        "unload"
+      ],
+      "mask": "units/a_g71_medevac_heli_mask.png",
+      "pivot": [
+        49.0,
+        47.0
+      ],
+      "shadow": {
+        "fh": 18.0,
+        "file": "units/a_g71_medevac_heli_shadow.png",
+        "fw": 33.0,
+        "pivot": [
+          16.0,
+          9.0
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8.0,
+        "fh": 83.0,
+        "file": "units/a_g71_medevac_heli_shadow_sheet.png",
+        "fw": 105.0,
+        "pivot": [
+          49.0,
+          47.0
+        ]
+      },
+      "sling": {
+        "frame": "sling",
+        "hook_dz": 3.0,
+        "hook_frame": "sling_hook",
+        "load_dy": 14.0
+      }
+    }
+  },
+  "version": 1
+}

@@ -32,6 +32,19 @@ extends RefCounted
 ## Events: VantaReady, VantaLoadout, VantaRearmed, VantaFlares, VantaDeterrent, VantaLockLost, VantaDrones,
 ##   VantaRTB, plus ShotFired per hardpoint shot (flares: indirect arcs from the tail).
 ## Determinism: ascending ids, integer ticks, w.rng only for hit rolls, pure hash for lock loss.
+##
+## G7.1 B7 VANTA2 (CNOPS71, docs/G71_SCOPE.md B7; numbers rules.g71_cn.vanta2 in content/g71/rules_g71_cn.json, all
+## PROVISIONAL; keeps the rotorless airframe). Airborne and not on a landing / return approach, Vanta7 flies the craft
+## after Movement / Air (`_flight2`): Movement's step only gives the wanted direction; the craft keeps its own velocity
+## (rec fp = last flown position, fv = velocity, tiles/s) and accelerates (accel) toward cruise (def speed x
+## cruise_mult), turns at most turn_deg_s (a slow craft pivots faster: pivot_frac / pivot_deg_s), brakes at decel
+## (momentum: no instant stop; it eases off as it nears the move target) and banks into turns (e.vt_bank, degrees,
+## + = right; present only while banking; saved / hashed with the entity). A jump bigger than a flown step (a test
+## teleport, a landing snap) resets the velocity. Strafing runs: on an attack order the craft flies passes through the
+## target (strafe_len past it, then turns back for the next pass) instead of hovering; rec sp = the pass end, spt = its
+## target. Twin front MGs (mounts ml / mr at mg_mount, arc +-mg_arc around the nose, weapon mg_weapon, one shared belt
+## rec mg of mg_mag) fire at the target / the nearest enemy ahead whatever the loadout. With rules.g71_cn.vanta2
+## absent none of this runs (G7 behaviour, same hashes).
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const HotState = preload("res://sim/hot_state.gd")
@@ -56,6 +69,16 @@ static func _d(n: String):
 
 static func R() -> Dictionary:
 	return Content.rules().get("g7_vanta", {})
+
+
+## G7.1 B7 Vanta2 rules (empty = off).
+static func V2() -> Dictionary:
+	var c = Content.rules().get("g71_cn", {})
+	return (c as Dictionary).get("vanta2", {}) if c is Dictionary else {}
+
+
+static func v2f(k: String, d: float) -> float:
+	return float(V2().get(k, d))
 
 
 static func rf(k: String, d: float) -> float:
@@ -211,6 +234,8 @@ static func _fill(r: Dictionary) -> void:
 		var item := String(r.n if m == "nose" else (r.r if m == "rear" else r.s))
 		r.mag[m] = int((it.get(item, {}) as Dictionary).get("mag", 0))
 	r.fl = int((it.get("flares", {}) as Dictionary).get("charges", 0)) if String(r.r) == "flares" else 0
+	if not V2().is_empty():
+		r.mg = int(v2f("mg_mag", 0.0))   # B7 twin front MGs
 
 
 static func _land(w: SimWorld, e: Dictionary, p: Vector2) -> void:
@@ -282,10 +307,14 @@ static func _tick_one(w: SimWorld, s: Dictionary, e: Dictionary, r: Dictionary) 
 		r.rr = -1
 	if not landed:
 		_fly(w, e, r)
+	if not V2().is_empty():
+		_flight2(w, e, r, landed)
 	if (w.tick + int(e.id)) % maxi(1, int(rf("think_every", 10))) == 0:
 		_think(w, e, r, landed)
 	if not landed and (w.tick + int(e.id)) % maxi(1, int(rf("fire_every", 2))) == 0:
 		_fire_all(w, s, e, r)
+		if not V2().is_empty():
+			_fire_mg(w, e, r)
 
 
 ## On the pad: rearm after rearm_s, apply a queued loadout after swap_s.
@@ -319,6 +348,8 @@ static func _full(r: Dictionary) -> bool:
 		var item := String(r.n if m == "nose" else (r.r if m == "rear" else r.s))
 		if int(r.mag.get(m, 0)) < int((it.get(item, {}) as Dictionary).get("mag", 0)):
 			return false
+	if not V2().is_empty() and int(r.get("mg", 0)) < int(v2f("mg_mag", 0.0)):
+		return false
 	return String(r.r) != "flares" or int(r.fl) >= int((it.get("flares", {}) as Dictionary).get("charges", 0))
 
 
@@ -398,8 +429,10 @@ static func _wstats(wid: String) -> Dictionary:
 static func mount_pos(e: Dictionary, m: String) -> Vector2:
 	var mt: Dictionary = R().get("mounts", {})
 	var v: Array = mt.get("side" if m == "sl" or m == "sr" else m, [0.0, 0.0, 0.0])
+	if m == "ml" or m == "mr":
+		v = V2().get("mg_mount", [4.6, 0.9, 0.6])   # B7 twin front MGs, left / right of the front body
 	var f := float(v[0])
-	var rr := float(v[1]) * (-1.0 if m == "sl" else 1.0)
+	var rr := float(v[1]) * (-1.0 if m == "sl" or m == "ml" else 1.0)
 	var a := float(e.get("facing", 0.0))
 	return Vector2(e.pos) + Vector2(f * cos(a) - rr * sin(a), f * sin(a) + rr * cos(a)) / 4.0
 
@@ -408,6 +441,8 @@ static func mount_pos(e: Dictionary, m: String) -> Vector2:
 static func in_arc(e: Dictionary, m: String, p: Vector2) -> bool:
 	var ar: Dictionary = R().get("arcs", {})
 	var a: Array = ar.get("side" if m == "sl" or m == "sr" else m, [0.0, 180.0])
+	if m == "ml" or m == "mr":
+		a = [0.0, v2f("mg_arc", 20.0)]
 	var c := deg_to_rad(float(a[0])) * (-1.0 if m == "sl" else 1.0)
 	var rel := wrapf((p - Vector2(e.pos)).angle() - float(e.get("facing", 0.0)) - c, -PI, PI)
 	return absf(rel) <= deg_to_rad(float(a[1])) + 0.0001
@@ -460,6 +495,126 @@ static func _shoot(w: SimWorld, e: Dictionary, r: Dictionary, m: String, ws: Dic
 	w.emit("ShotFired", {"shooter": int(e.id), "target": int(tg.id), "weapon": String(ws.weapon), "hit": hit, "from": from,
 		"to": Vector2(tg.pos), "indirect": false, "vt": m})
 	_d("dmg").apply_hit(w, e, tg, ws, hit)
+
+
+## B7 twin front MGs: each fires (own cooldown, one shared belt r.mg) at the target, else the nearest enemy, in the nose arc.
+static func _fire_mg(w: SimWorld, e: Dictionary, r: Dictionary) -> void:
+	if int(r.get("mg", 0)) <= 0:
+		return
+	var ws := _wstats(String(V2().get("mg_weapon", "g7_vanta_mg")))
+	if ws.is_empty():
+		return
+	var t = _target(w, e)
+	var cbt = _d("cbt")
+	for m in ["ml", "mr"]:
+		if int(r.rdy.get(m, 0)) > w.tick or int(r.get("mg", 0)) <= 0:
+			continue
+		var tg = null
+		if t != null and Vector2(t.pos).distance_to(mount_pos(e, m)) <= float(ws.range) and in_arc(e, m, Vector2(t.pos)) and cbt.can_target(ws, t):
+			tg = t
+		else:
+			tg = _auto_target(w, e, r, m, ws)
+		if tg == null:
+			continue
+		r.mag[m] = 1
+		_shoot(w, e, r, m, ws, tg)   # _shoot spends the per-mount counter; the twin guns share the belt r.mg
+		r.mag.erase(m)
+		r.mg = int(r.mg) - 1
+
+
+## B7 Vanta2 flight (see the header): velocity, acceleration, turn limit, braking, banking, strafing passes.
+static func _flight2(w: SimWorld, e: Dictionary, r: Dictionary, landed: bool) -> void:
+	var p := Vector2(e.pos)
+	var dt := SimWorld.DT
+	var f: Dictionary = _d("air")._ensure(w, e)
+	var vmax := float(Content.unit(String(e.def)).get("speed", 6.0)) * v2f("cruise_mult", 1.35)
+	# A real snap (test teleport, landing) is many tiles. A chase-path step is not: Combat repaths an
+	# attack onto the target after this system runs, and treating that step as a teleport zeroed fv.
+	var jump := 8.0
+	var fp = r.get("fp")
+	var ph := String(f.get("phase", ""))
+	var free := not landed and not bool(r.rtb) and ph != "ret" and not f.has("pad71")
+	if free and String(e.order.get("type", "")) == "attack":
+		_d("mov").stop_path(e)   # a chase path yanks the strafe back onto the target; move orders keep theirs
+	if fp == null or not free or p.distance_to(Vector2(float(fp[0]), float(fp[1]))) > jump:
+		# grounded, on a landing / return approach, or teleported: Air / Movement fly it; keep the velocity it really had
+		var v0 := Vector2.ZERO
+		if fp != null and not landed and p.distance_to(Vector2(float(fp[0]), float(fp[1]))) <= jump:
+			v0 = (p - Vector2(float(fp[0]), float(fp[1]))) / dt
+		r.fp = [p.x, p.y]
+		r.fv = [v0.x, v0.y]
+		if not free:
+			r.erase("sp")
+			r.erase("spt")
+		if e.has("vt_bank"):
+			e.erase("vt_bank")
+		return
+	var p0 := Vector2(float(fp[0]), float(fp[1]))
+	var vel := Vector2(float(r.fv[0]), float(r.fv[1]))
+	var want := Vector2.ZERO
+	var t = _target(w, e) if String(e.order.get("type", "")) == "attack" else null
+	if t != null and bool(V2().get("strafe", true)):
+		var tp := Vector2(t.pos)
+		var gap := p0.distance_to(tp)
+		var sgo := int(r.get("sgo", 0))
+		var aim := tp
+		if gap > 2.0 and sgo <= 0:
+			aim = tp
+		else:
+			if sgo <= 0:
+				sgo = maxi(1, int(v2f("strafe_len", 10.0) / maxf(vmax * dt, 0.05)))
+			sgo -= 1
+			var dir := vel.normalized() if vel.length() > 0.2 else Vector2.from_angle(float(e.get("facing", 0.0)))
+			aim = p0 + dir * v2f("strafe_len", 10.0)
+			aim = Vector2(clampf(aim.x, 1.0, float(w.map.w) - 1.0), clampf(aim.y, 1.0, float(w.map.h) - 1.0))
+		r.sgo = sgo
+		r.spt = int(t.id)
+		want = (aim - p0).normalized() * vmax if aim.distance_to(p0) > 0.05 else Vector2.ZERO
+	else:
+		r.erase("sp")
+		r.erase("spt")
+		r.erase("sgo")
+		if bool(e.get("moving", false)) and p.distance_to(p0) > 0.00001:
+			var cap := vmax
+			var g = e.order.get("target")
+			if g is Vector2:
+				cap = clampf(sqrt(2.0 * v2f("decel", 4.0) * p0.distance_to(g)), 0.6, vmax)   # ease off near the goal
+			want = (p - p0).normalized() * cap
+	var spd := vel.length()
+	var wsp := want.length()
+	var h := vel.angle() if spd > 0.05 else float(e.get("facing", 0.0))
+	var dh := 0.0
+	var tl := deg_to_rad(v2f("turn_deg_s", 120.0)) * dt
+	if wsp > 0.0:
+		var err := absf(wrapf(want.angle() - h, -PI, PI))
+		var lim := tl
+		if t != null and err > deg_to_rad(8.0):
+			wsp = minf(wsp, v2f("pivot_frac", 0.25) * vmax)
+			lim = deg_to_rad(v2f("pivot_deg_s", 240.0)) * dt
+			spd = minf(spd, wsp)
+		if spd <= v2f("pivot_frac", 0.25) * vmax:
+			lim = maxf(lim, deg_to_rad(v2f("pivot_deg_s", 240.0)) * dt)
+		dh = clampf(wrapf(want.angle() - h, -PI, PI), -lim, lim)
+		h = wrapf(h + dh, -PI, PI)
+	spd = move_toward(spd, wsp, (v2f("accel", 5.0) if wsp > spd else v2f("decel", 4.0)) * dt)
+	vel = Vector2.from_angle(h) * spd
+	var np := p0 + vel * dt
+	np = Vector2(clampf(np.x, 0.5, float(w.map.w) - 0.5), clampf(np.y, 0.5, float(w.map.h) - 0.5))
+	r.fp = [np.x, np.y]
+	r.fv = [vel.x, vel.y]
+	if np != p:
+		e.pos = np
+		HotState.touch(w, int(e.id))
+	if spd > 0.3:
+		e.facing = h
+	var bank := 0.0
+	if spd > 0.3:
+		bank = clampf(dh / tl, -1.0, 1.0) * v2f("bank_deg", 35.0) * clampf(spd / vmax, 0.0, 1.0)
+	bank = snappedf(bank, 0.5)
+	if absf(bank) >= 0.5:
+		e.vt_bank = bank
+	elif e.has("vt_bank"):
+		e.erase("vt_bank")
 
 
 ## Nearest enemy drone within rng of e inside mount m's arc (Airdef's drone list, ascending ids).

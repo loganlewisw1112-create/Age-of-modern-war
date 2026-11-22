@@ -1,0 +1,573 @@
+{
+  "files": {
+    "icons/a_g71_am_team.png": "a8665515fbe4478c98d8aac986a3ab47",
+    "icons/a_g71_at_team.png": "419c912c9e58af15800b8d7d440a5adf",
+    "icons/a_g71_flame_tank.png": "f4a03147f67f2b5615a1adadea01b295",
+    "icons/a_g71_grenadier.png": "91ee0f49afd39e104e382d59428428d2",
+    "icons/a_g71_mg_crew.png": "98c26df3a933ec81a6f2539c3095e959",
+    "units/a_g71_am_team.png": "4d27dccf228cedcdcd63ed3fedc5b6a0",
+    "units/a_g71_am_team_a1.png": "d50a5764e62f48d9286ebddc8bb7b100",
+    "units/a_g71_am_team_a1_mask.png": "05e88a7a1126d738876a4776de2e3de1",
+    "units/a_g71_am_team_a2.png": "c4b3a22145b307e2969aa712743f484d",
+    "units/a_g71_am_team_a2_mask.png": "9f06d3aead9f4eb5d4c70288b82c4ab3",
+    "units/a_g71_am_team_mask.png": "2eac853927e2a147f046826498f42a31",
+    "units/a_g71_at_team.png": "390c13ef294f9c0a7c2eb31a39af3ba7",
+    "units/a_g71_at_team_a1.png": "e1b00bf39cace521ceae3683bec44649",
+    "units/a_g71_at_team_a1_mask.png": "74913af072304ba49f7b75a822c75037",
+    "units/a_g71_at_team_a2.png": "b13ddf0a1877adc8d27f0d17d85debdd",
+    "units/a_g71_at_team_a2_mask.png": "42cd3d9c4ab0129422a34f153c4abb70",
+    "units/a_g71_at_team_mask.png": "c8026516323dd61f97b2a3bacf780e7b",
+    "units/a_g71_flame_tank.png": "6ecfab57e20d3763e2cde68156d87f67",
+    "units/a_g71_flame_tank_mask.png": "ecf5bc5ce6145feff9554bdbb2a4647b",
+    "units/a_g71_grenadier.png": "94215008c0d05a19f756ae53d570876c",
+    "units/a_g71_grenadier_a1.png": "4dce8c097746f7ae747403c8e291a020",
+    "units/a_g71_grenadier_a1_mask.png": "ac3e7b2a222ff01a972a5816748533ed",
+    "units/a_g71_grenadier_a2.png": "2b1c670b79a691468209f236d90a1bdd",
+    "units/a_g71_grenadier_a2_mask.png": "48aa7b67cb9ab2731d05ab9faa979d78",
+    "units/a_g71_grenadier_a3.png": "c2b35ff4ab0178f708816e3c2f8e6fb1",
+    "units/a_g71_grenadier_a3_mask.png": "057eb45e11efad43c420224ca9852cde",
+    "units/a_g71_grenadier_mask.png": "74cf76244267bd65c09e95afd18a537a",
+    "units/a_g71_mg_crew.png": "f684062b42cbd863dd8f6d6f25689a9f",
+    "units/a_g71_mg_crew_a1.png": "f3622ddea221b5a69f57e9398634612e",
+    "units/a_g71_mg_crew_a1_mask.png": "05e88a7a1126d738876a4776de2e3de1",
+    "units/a_g71_mg_crew_a2.png": "3edfe8f1e8428b1300372acfb3b9c9e4",
+    "units/a_g71_mg_crew_a2_mask.png": "9f06d3aead9f4eb5d4c70288b82c4ab3",
+    "units/a_g71_mg_crew_mask.png": "2eac853927e2a147f046826498f42a31",
+    "wrecks/a_g71_flame_tank_wreck.png": "9ce4637a333845dfa00bf3bdc3e427b1"
+  },
+  "group": "g71_army",
+  "icons": {
+    "a_g71_am_team": "icons/a_g71_am_team.png",
+    "a_g71_at_team": "icons/a_g71_at_team.png",
+    "a_g71_flame_tank": "icons/a_g71_flame_tank.png",
+    "a_g71_grenadier": "icons/a_g71_grenadier.png",
+    "a_g71_mg_crew": "icons/a_g71_mg_crew.png"
+  },
+  "infantry": {
+    "a_g71_am_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_g71_am_team_a1.png",
+          "mask": "units/a_g71_am_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_g71_am_team_a2.png",
+          "mask": "units/a_g71_am_team_a2_mask.png"
+        }
+      },
+      "anim61": {
+        "base": 7.0,
+        "v": 1.0
+      },
+      "anim7": {
+        "base": 35.0,
+        "v": 1.0
+      },
+      "armband7": {
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 36.0,
+      "file": "units/a_g71_am_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed",
+        "deploy",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "a_hmg_team",
+        "mark": "crew_steel"
+      },
+      "mask": "units/a_g71_am_team_mask.png",
+      "pivot": [
+        24.0,
+        28.0
+      ],
+      "squad_size": 3.0
+    },
+    "a_g71_at_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_g71_at_team_a1.png",
+          "mask": "units/a_g71_at_team_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_g71_at_team_a2.png",
+          "mask": "units/a_g71_at_team_a2_mask.png"
+        }
+      },
+      "anim61": {
+        "base": 6.0,
+        "v": 1.0
+      },
+      "anim7": {
+        "base": 34.0,
+        "v": 1.0
+      },
+      "armband7": {
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 36.0,
+      "file": "units/a_g71_at_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "b_at_rocket_team",
+        "mark": "crew_red"
+      },
+      "mask": "units/a_g71_at_team_mask.png",
+      "pivot": [
+        24.0,
+        28.0
+      ],
+      "squad_size": 3.0
+    },
+    "a_g71_grenadier": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_g71_grenadier_a1.png",
+          "mask": "units/a_g71_grenadier_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_g71_grenadier_a2.png",
+          "mask": "units/a_g71_grenadier_a2_mask.png"
+        },
+        "3": {
+          "file": "units/a_g71_grenadier_a3.png",
+          "mask": "units/a_g71_grenadier_a3_mask.png"
+        }
+      },
+      "anim61": {
+        "base": 5.0,
+        "v": 1.0
+      },
+      "anim7": {
+        "base": 33.0,
+        "v": 1.0
+      },
+      "armband7": {
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 36.0,
+      "file": "units/a_g71_grenadier.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "b_grenadiers",
+        "mark": "crew_green"
+      },
+      "mask": "units/a_g71_grenadier_mask.png",
+      "pivot": [
+        24.0,
+        28.0
+      ],
+      "squad_size": 4.0
+    },
+    "a_g71_mg_crew": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_g71_mg_crew_a1.png",
+          "mask": "units/a_g71_mg_crew_a1_mask.png"
+        },
+        "2": {
+          "file": "units/a_g71_mg_crew_a2.png",
+          "mask": "units/a_g71_mg_crew_a2_mask.png"
+        }
+      },
+      "anim61": {
+        "base": 7.0,
+        "v": 1.0
+      },
+      "anim7": {
+        "base": 35.0,
+        "v": 1.0
+      },
+      "armband7": {
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 36.0,
+      "file": "units/a_g71_mg_crew.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "deployed",
+        "deploy",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "a_hmg_team",
+        "mark": "crew_brass"
+      },
+      "mask": "units/a_g71_mg_crew_mask.png",
+      "pivot": [
+        24.0,
+        28.0
+      ],
+      "squad_size": 3.0
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_g71_flame_tank": {
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "wrecks/a_g71_flame_tank_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 96.0,
+      "pivot": [
+        44.0,
+        36.0
+      ]
+    }
+  },
+  "vehicles": {
+    "a_g71_flame_tank": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            51.0,
+            11.0
+          ],
+          [
+            0.0,
+            23.0
+          ],
+          [
+            -44.0,
+            7.0
+          ],
+          [
+            -44.0,
+            -15.0
+          ],
+          [
+            -41.0,
+            -36.0
+          ],
+          [
+            0.0,
+            -36.0
+          ],
+          [
+            40.0,
+            -36.0
+          ],
+          [
+            51.0,
+            -15.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0.0,
+            -27.0
+          ],
+          [
+            0.0,
+            -31.0
+          ],
+          [
+            0.0,
+            -32.0
+          ],
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -27.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -21.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "units/a_g71_flame_tank.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 96.0,
+      "g71": {
+        "base": "a_laser_tank",
+        "mark": "thermite fuel band + hot nozzle"
+      },
+      "mask": "units/a_g71_flame_tank_mask.png",
+      "pivot": [
+        44.0,
+        36.0
+      ]
+    }
+  },
+  "version": 1
+}

@@ -346,10 +346,11 @@ static func build(w) -> void:
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	if w.sys_state.has("creep"):
 		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
-	if not _g71_prov.is_empty():   # G7.1 wave 2: per-system display providers (register_g71); none registered = no work
+	var prov: Dictionary = _g71_prov   # ONE read: register / unregister swap a new dict in on the main thread; re-reading _g71_prov per key raced with an unregister at match end (SCRIPT ERROR key care71, SWARMNAT71-8 pan run 2026-11-22)
+	if not prov.is_empty():   # G7.1 wave 2: per-system display providers (register_g71); none registered = no work
 		var g71 := {}
-		for k in _g71_prov:
-			g71[k] = (_g71_prov[k] as Callable).call(w, snap)
+		for k in prov:
+			g71[k] = (prov[k] as Callable).call(w, snap)
 		snap["g71"] = g71
 	snap["build_us"] = Time.get_ticks_usec() - t0
 	store(w, snap)

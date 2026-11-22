@@ -1,0 +1,60 @@
+{
+  "buildings": {
+    "a_g71_surgery_tent": {
+      "fits": "3x3 field surgery tent: ridge tent + sterile module + stretchers behind a sandbag berm",
+      "g71": {
+        "faction": "a",
+        "kind": "surgery_tent"
+      },
+      "pivot": [
+        102,
+        82
+      ],
+      "size": 3,
+      "states": {
+        "build_0": {
+          "file": "buildings/a_g71_surgery_tent_build_0.png",
+          "mask": "buildings/a_g71_surgery_tent_build_0_mask.png"
+        },
+        "build_1": {
+          "file": "buildings/a_g71_surgery_tent_build_1.png",
+          "mask": "buildings/a_g71_surgery_tent_build_1_mask.png"
+        },
+        "build_2": {
+          "file": "buildings/a_g71_surgery_tent_build_2.png",
+          "mask": "buildings/a_g71_surgery_tent_build_2_mask.png"
+        },
+        "built": {
+          "file": "buildings/a_g71_surgery_tent_built.png",
+          "mask": "buildings/a_g71_surgery_tent_built_mask.png"
+        },
+        "damaged": {
+          "file": "buildings/a_g71_surgery_tent_damaged.png",
+          "mask": "buildings/a_g71_surgery_tent_damaged_mask.png"
+        }
+      }
+    }
+  },
+  "files": {
+    "buildings/a_g71_surgery_tent_build_0.png": "2438762a757931e2a03114d648c90a2f",
+    "buildings/a_g71_surgery_tent_build_0_mask.png": "f0f07eef031bef16d91fdc2239d6a724",
+    "buildings/a_g71_surgery_tent_build_1.png": "0a99756f23330eb3eb7b3407f712dc5e",
+    "buildings/a_g71_surgery_tent_build_1_mask.png": "f0f07eef031bef16d91fdc2239d6a724",
+    "buildings/a_g71_surgery_tent_build_2.png": "6a4a6f435ee0c5eaf11985a1b82c12c8",
+    "buildings/a_g71_surgery_tent_build_2_mask.png": "f0f07eef031bef16d91fdc2239d6a724",
+    "buildings/a_g71_surgery_tent_built.png": "6a63c22f2e6a93ed90a7d61bba65758d",
+    "buildings/a_g71_surgery_tent_built_mask.png": "aa2c4595c0c68cd57ae226ff7dce85d1",
+    "buildings/a_g71_surgery_tent_damaged.png": "37c117027a62f7d8557100e7595b35d5",
+    "buildings/a_g71_surgery_tent_damaged_mask.png": "aa2c4595c0c68cd57ae226ff7dce85d1",
+    "icons/a_g71_surgery_tent.png": "02d71a6ad5fa192c9bbe776a05c5d13a"
+  },
+  "group": "g71_damage",
+  "icons": {
+    "a_g71_surgery_tent": "icons/a_g71_surgery_tent.png"
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "version": 1
+}

@@ -1,9 +1,727 @@
 # PROGRESS: RTS: Age of Modern War
 
+## SLICE STOP (2026-11-22) — packaged as-is. Read this first. Next slice starts below this line.
+Branch `g71`. Wave 1 is the commit `82a887a` (suite 177/177). Wave 2 is in the working tree and is **not** a closed
+wave. This slice's own change is Vanta2 flight. The package is
+`build/RTS_Age_of_Modern_War_G71_2026-11-22/` and the same folder under
+`C:/Users/logan/Downloads/Age of Modern War/`. Pack: import exit 0, export exit 0, pck md5
+`07302424eab39e0bc3e0777d8441a517` (97,855,428 bytes). Player note: `build/PLAY_ME_G71.txt`.
+
+**In this package, on top of the 2026-10-30 G7 build**
+- Wave 1: aircraft home pads, air ops, fewer steps to battle, control, the sim/render perf work from `82a887a`.
+- Wave 2 as far as the six lines got on 2026-11-22: firepower (Conductor + wingmen, ammo tiers, kill zones, fires),
+  soldiers / vehicles / defences (crews, walls, turrets, discipline), counter-nanite ops (grenades, shield drone,
+  hospital, gas and masks, 41.5 s airlock cycle on seed 77), gore and casualty care. Army, Damage, and Bastion
+  lines had handed off. Fires, counter-nanite ops, and the drawing line were still open when the agents stopped.
+- Vanta2 (this slice): the gunship keeps momentum, banks, strafes through the target, and fires the twin front
+  guns. `sim/systems/vanta7.gd` `_flight2`. A chase step is no longer treated as a teleport. Attack orders drop
+  the chase path. A large heading error slows and pivots. The run-out flies straight through before the next pass.
+  Tests: gear / momentum / strafe failures=[], `test_vanta7` 7/0, full `test_cnops71` 16/0 (includes the purge-cannon
+  and save/load checks). The strafe test holds the target outside the base
+  (a core hit deletes the machine) and keeps its part hp up.
+
+**Left for the next slice. Do not treat these as done.**
+- Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
+  Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
+  out (`docs/SWARM_NATIVE71.md` sections 10–11).
+- Waves 3–6 are not started: hive director, robot fleet, core raids, save/resume, the look checkpoint, animation,
+  the long soaks, a final package that claims the frozen Done-when.
+- Skirmish still has the 120 population cap (parked, 13.9c-40).
+- The 8-APC airlock under pressure is still about 83 s (target was ~70 s). The headless counter-nanite cycle on
+  seed 77 was 41.5 s.
+- Quiet-PC 60-minute body run, wave-2 gate suite, and the owner's yes before a wave-2 commit were not done.
+  This save is a checkpoint of the tree, not that yes.
+
 ## Active goal (G7.1 "Tide Line", owner-LOCKED 2026-10-31; execution ordered 2026-11-02 "Start G7.1"; branch `g71`)
 Scope authority: `docs/G71_SCOPE.md` (parts A–J, Pre-start decisions 2026-11-02, Done-when frozen). Plan + roster:
 `docs/PLAN_G71.md`; briefs `.plan/agents/prompts/G71-*.md` + `G71_COMMON.md`; board `.plan/board_g71.jsonl`.
 Full roadmap after it: `docs/ROADMAP.md` (G8–G18).
+**CURRENT STATE (ORCH, 2026-11-21 18:15Z; read this first, history below):** wave 1 committed 82a887a (177/177). Owner
+2026-11-21: "Start wave 2". ORCH wiring DONE, uncommitted (backups .plan/orch71/wire_orig/): sim/world.gd (10 wave-2 systems
+in SYSTEM_ORDER, 17 commands), sim/systems/g6_hooks.gd (DAMAGE71 CR 955: p71spd / p71acc), sim/systems/lp_setup.gd
+(build_g71: Q15 LP-base hook, reads content/g71_lp/lp_base_<agent>.json; no file = no change). Not registered yet (handler
+not ready): turret_revive, hosp_medevac, fac_upgrade, cn_search / cn_abort / cn_roe + CnMission71, Conductor71, Discipline71.
+Verified after wiring (logs C:/CODING/orch71_check/wire71/): parse clean; hashes 8fd794b3 / a1e5af17 / 41b5f765 == ref;
+test_lpmode7 18/0, test_lpmap7 18/0, test_lpreserve7 7/0, test_lpperf7 9/0, test_perfsim71 6/0, test_mil 13/0, test_content_g6
+7/0, test_damage71 11/0, test_bastion71 9/0, test_fires71 10/0, test_army71 5/0, test_swarmnat71 1/0; test_gas71 9/3 + 16
+script errors = CNOPS71-1's known open item (same before wiring); test_hot_state 17/0.
+**LAUNCHED 2026-11-21 18:25Z (all Opus, caps 750k/140 registered, guard + board watcher under Monitor, keep-awake on):
+DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2, CNOPS71-2, SWARMNAT71-2 = 6 live (the cap). On resume after a break: read
+each agent's last `status` on the board; a dead agent (API error) gets a successor from its handoff or last status.**
+2026-11-21 ~19:00Z: connection drop killed DAMAGE71-2, FIRES71-2, SWARMNAT71-2 (API ENOTFOUND); all three RESUMED in place
+with SendMessage (same context, same caps). First LP-base file live: content/g71_lp/lp_base_fires.json (2 FO teams outer
+ring, 2 MLRS core ring), ORCH-approved (owner may tune at the look checkpoint); LP tests after it: lpmode7 18/0, lpmap7
+18/0, lpreserve7 7/0, lpperf7 9/0; export filter `*.json` already covers the new dir.
+**PARKED 2026-11-21 19:50Z (ORCH): the internet connection dropped 3 times in an hour (API ENOTFOUND / ECONNRESET /
+timeouts) and killed all six agents each time; resumed twice, third time not resumed. Wave 2 waits for a stable
+connection.** Nothing is lost: every agent can be resumed in place with SendMessage (same context) or respawned from its
+last board status. State at the park (last real status per agent):
+- DAMAGE71-2 (45 calls, ~280k): damage.gd Parts71 hook INSTALLED (hashes == ref posted 19:02); gore71.gd J1 written but
+  STAGED (.plan/damage71/stage2); next: rules_g71_gore.json + care71.gd + rules_g71_care.json, install with the damage /
+  wounds / medical hooks after test_hot_state + test_lpmode7.
+- FIRES71-2 (43 calls, ~335k): art group g71_fires registered; LP base file live + approved; conductor71.gd written (ORCH
+  fixed its one parse error, line 130, and it is now LF), NOT tested, no tests/test_conductor71.gd yet, not in world.gd;
+  must rerun test_lpmode7 + test_lpreserve7 (its runs had 56 / 58 lp_home script errors, fixed by ORCH); then handoff.
+- ARMY71-3 (34 calls, ~215k): combat.gd / squad_ai.gd D4 hooks + DAMAGE71 CR 956 installed; combat.gd ammo hooks (LP only)
+  + tests/test_ammo71.gd (6 tests) written; hashes / hot_state / test_ammo71 results NOT collected.
+- BASTION71-2 (31 calls, ~245k): build_rail X hotkey clash FIXED (reports test_ui_panels 5/0, test_ui6b 5/0; ORCH has not
+  re-run them); art generator tools/art/g71_defences.gd written, NOT run / registered; test_art + test_icons7 still owed.
+- CNOPS71-2 (47 calls, ~420k = at its handoff line): test_gas71 12/0; cnmission71.gd installed + fix; turnaround built;
+  test_facility71 + test_cnops71 r2 results NOT collected; must write its handoff file first on resume.
+- SWARMNAT71-2 (38 calls, ~275k): verify harness fixed; statics-only verify (rsv r2) result NOT collected;
+  native/rts_core/src/swarm_draw.rs not started.
+- ORCH fix 19:20Z: lp_setup.gd build_g71 sets lp_home (+ lp_ring >= 0) on placed units (LpDefence.think threw ~160 script
+  errors per LP run; found by CNOPS71-2 seq 1478). NOT yet verified by a clean LP run: run test_lpmode7 + test_lpreserve7
+  and grep `lp_home` = 0 before anything else.
+- Parse sweep of the 40 changed / new .gd files: C:/CODING/orch71_check/park71/ (only conductor71.gd failed; fixed).
+- **Owner note 2026-11-21: the Godot windows that pop up during agent testing look "SUPER laggy; should have next to zero
+  lag".** At that moment the PC was at 100% CPU (8 Godot test processes of six agents), so those windows do not show the
+  game's own frame rate; agents are now told: windowed runs only for screenshots, one at a time. Owed to the owner: a
+  quiet-PC fps run (2k / 10k / LP peak) + a windowed demo, before the wave-2 gate. Known real gap: LP peak ~22 fps vs the
+  amended gate >= 30 (SWARMNAT71).
+**RESUMED 2026-11-21 22:20Z (owner "Resume now"): connection 12/12 probes OK; all six agents resumed in place (SendMessage,
+same contexts; CNOPS71-2 for its handoff only); guard + watcher re-armed; keep-awake on. ORCH health checks running on the
+live tree: C:/CODING/orch71_check/resume71/ (hashes, test_hot_state, test_lpmode7, test_lpreserve7, test_ui_panels,
+test_ui6b, test_lpmap7, test_lpperf7, test_perfsim71; ends with HEALTH_DONE).**
+22:30Z: CNOPS71-2 handed off (audit OK, real 236k; handoff .plan/handoff/CNOPS71-2.json): gas71 12/0; cnmission71 installed
+(test_cnops71 4/2: nest seeds queued as separate nodes; skip reason overwritten); cn_mission8 KEEP fix (player Extract was
+cancelled); H8 turnaround built in cn_facility.gd but **Done-when 8 (70 s) NOT MEASURED**: queued cn_rollout refused "The
+team is not in its garage." (test_facility71 1/1); hospital still a stub (its Write of the ward code was refused by the
+tool check). **CNOPS71-3 launched** (Opus, cap 750k/140): 70 s gate first, then test_cnops71, hashes, hospital.
+BASTION71-2: all its ids pass test_art; left red there: a_g71_conductor + a_g71_wingman (FIRES71's new ids, need seq 1613).
+**HEALTH (ORCH, live tree, 22:35Z, all partial wave-2 work in): hashes == ref, test_hot_state 17/0, test_lpmode7 18/0,
+test_lpmap7 18/0, test_lpreserve7 7/0, test_lpperf7 9/0, test_perfsim71 6/0, test_ui_panels 5/0, test_ui6b 5/0; 0 script
+errors, 0 lp_home errors (logs C:/CODING/orch71_check/resume71/). So: lp_home fix confirmed, BASTION71's hotkey fix confirmed.**
+22:45Z ORCH world.gd: + `turret_revive` -> Turrets71 (CR 1644), + `ammo_tier` -> Ammo71 with its preload (CR 1651); parse
+clean, test_ammo71 6/0, test_bastion71 10/0.
+**4th connection drop ~22:27Z: DAMAGE71-2, BASTION71-2, SWARMNAT71-2, CNOPS71-3 dead (NOT resumed: owner asked whether to
+keep auto-resuming); ARMY71-3 still live (guard armed for it); FIRES71-2 handed off cleanly (audit OK, real 222k).** Where
+each stands (resume in place with SendMessage, or successor from handoff):
+- FIRES71-3 TO LAUNCH from .plan/handoff/FIRES71-2.json: test_conductor71 6/1 (home + hot-pit), then CR world71 for
+  Conductor71, art for a_g71_conductor / a_g71_wingman, CRs to ARMY71 / BASTION71 / DAMAGE71, all presentation + flows.
+- DAMAGE71-2 (67 calls, ~410k: near its handoff line): gore / care hooks applied to COPIES (stage2), tests/test_gore71.gd
+  written; next: test_care71.gd, install stage2, run tests + hashes; then handoff.
+- BASTION71-2 (51 calls, ~360k): art done (all its ids pass test_art), hotkey fixed, turret_revive done; test_walls71 6/0
+  with 1 script error (crawler killed by the LP garrison); next: Turrets71.blocked guard in turrets7 / wallturret7.
+- SWARMNAT71-2 (45 calls, ~360k): statics-only record cache verified clean and ON by default; swarm_draw.rs written (cargo
+  check clean), rts_core 0.6.4 bump NOT built / installed (bin has 0.6.3; backup bin/rts_core.v063_keep.dll); entity_layer
+  glue inserted (toggle default off); next: _sw_* helpers, parse-check, cargo build --stage.
+- CNOPS71-3 (12 calls, ~95k): Done-when 8 refusal cause = the TEST submitted cn_rollout while cn_return was still pending;
+  test_facility71 rerun was in flight (.plan/cnops71/t2_test_facility71.log): read its `RESULT cycle` vs 70 s first.
+- ARMY71-3 HANDED OFF 22:44Z (audit OK, real 248k; .plan/handoff/ARMY71-3.json): D4 hooks live (+ DAMAGE71 CR 956), B5
+  ammo tiers complete (test_ammo71 7/0), G1 NVG / thermal, G2 flame tank + art, I2 wall melee (test_army71 7/0). Its hashes /
+  hot_state / perfsim were NOT re-run after the later combat.gd / accuracy8.gd / senses7.gd edits: ORCH is running them
+  (C:/CODING/orch71_check/army71/, ends ARMY_CHECK_DONE). ARMY71-4 TO LAUNCH: B3 crew71, rest of D4, ammo_panel, flows.
+  RESULT 23:00Z, ALL GREEN, 0 script errors: hashes == ref, test_hot_state 17/0, test_perfsim71 6/0, test_lpmode7 18/0,
+  test_lpreserve7 7/0, test_army71 7/0, test_ammo71 7/0, test_mil 13/0, test_squad61 14/0, test_accuracy8 20/0.
+- No agent live after 22:44Z. ORCH queued a quiet-PC fps run after the checks: `.plan/perfdraw71/base.sh q1121 g7 g71`
+  (2k, 10k, lpz, lppan, lppeak) -> .plan/perfdraw71/q1121.out (the owner's lag question; first numbers with wave-2 code in).
+**23:15Z (ORCH): owner "yes auto resume and continue seamlessly" (DECISIONS.md; memory auto-resume-after-drops): after
+every drop resume each dead agent at once, no asking. LIVE NOW (6): DAMAGE71-2, BASTION71-2, SWARMNAT71-2, CNOPS71-3
+(resumed in place), FIRES71-3, ARMY71-4 (new, Opus, caps 750k/140). Agent ids for SendMessage resumes:
+.plan/orch71/live_agents.txt. Guard + watcher under Monitor (30 min each: re-arm), keep-awake on.**
+- **LIVE TREE VIEW BROKEN since ~22:24Z: presentation/view/entity_layer.gd does not compile** (SWARMNAT71-2 cut mid-edit:
+  line 1144 calls _sw_begin / ids_of, helpers never appended). Headless tests are unaffected (all green 23:00Z), every
+  windowed run fails. SWARMNAT71-2 resumed with this as its first job; it posts `fact swarmnat71.view_ok`. Until then no
+  windowed run / fps number of g71 is valid. New rule appended to G71-W2_GEN2.md (multi-part edits via a staged copy;
+  windowed smoke run after presentation edits).
+  **FIXED 23:14Z** (fact swarmnat71.view_ok seq 1730: helpers appended, windowed 90 s smoke 0 script errors; ORCH
+  re-checked the parse: 0 errors). The g71 fps re-run still needs a quiet PC (six agents testing now).
+  23:20Z: DAMAGE71-2 and BASTION71-2 told to hand off (budget line); caps registered for DAMAGE71-3 / BASTION71-3; launch
+  each from its handoff file as soon as it is posted. SWARMNAT71-2 also plans its handoff after `cargo build --stage`.
+**23:30Z, all gen changes done (audits OK: DAMAGE71-2 244k, SWARMNAT71-2 283k; BASTION71-2 usage not yet received).
+LIVE (6): CNOPS71-3, FIRES71-3, ARMY71-4, BASTION71-3, DAMAGE71-3, SWARMNAT71-3 (ids: .plan/orch71/live_agents.txt).**
+- **Done-when 8 (70 s CN airlock cycle): MET in the headless test, 41.5 s vs 70 s (was 102.1 s), one seed (LP seed 77);
+  riders healed 0.40 -> 1.00, APCs rearmed, no garage stop** (fact cnops71.dw8 seq 1732; test_facility71 2/0, 0 script
+  errors; .plan/cnops71/t3_test_facility71_raw.log). Still to do for the gate: more seeds + the packaged-build flow.
+  CNOPS71-3 is writing its handoff (hospital71 5/0; test_cnops71 run 4 + hashes + hot_state in flight); cap registered for
+  CNOPS71-4.
+- **2026-11-22 01:45Z (ORCH): 5th connection drop at ~23:45Z; ORCH's own resume calls were refused once by the tool
+  safety check (no verdict), owner said "Try again". Connection 6/6; world.gd / match_view.gd / entity_layer.gd / combat.gd
+  parse clean. LIVE (6): FIRES71-4, BASTION71-3, DAMAGE71-3, SWARMNAT71-3 (resumed in place), CNOPS71-4, ARMY71-5 (new,
+  Opus, caps 750k/140). Ids: .plan/orch71/live_agents.txt. Guard + watcher re-armed; keep-awake on.**
+  - CNOPS71-3 handed off cleanly (audit OK, real 213k): DW8 41.5 s (one seed), test_cnops71 6/0, hospital ward machine
+    (test_hospital71 5/0), hashes == ref, hot_state 17/0. ORCH rerun WITH CnMission71 registered: test_cnops71 6/0 but
+    **6 script errors** ('tid' / 'why' / 'roe' key access, cnmission71.gd _sig:449) = CNOPS71-4's first job; test_cnmission8 7/0.
+  - ARMY71-4 handoff (.plan/handoff/ARMY71-4.json; audit UNVERIFIED: died on the drop after posting it): crew71 built
+    (test_crew71 7/0), crew art, lp_base_army71.json, radio_feed, ammo_panel; other agents' combat.gd lines (BASTION71
+    1720, FIRES71 1827 items 1/2/4) installed parse-clean but NOT verified (revert copy .plan/army71/stage/combat.gd.pre_cr)
+    = ARMY71-5's first job.
+  - **View attach point (ORCH, 23:40Z):** new presentation/view/g71_attach.gd (LAYERS list, load() so a broken layer is
+    skipped) + 4 edits in match_view.gd (backup .plan/orch71/wire_orig/match_view.gd.pre_g71attach); in: gore71_layer
+    (under units), triage_tags (over units). 60 s windowed smoke: 0 SCRIPT ERROR. Agents request entries with
+    `need change_request.match_view71`.
+  - PROVISIONAL (ORCH, DECISIONS.md): fire-support radial on the backquote key held, not F (F = Formation).
+- **02:58Z (ORCH; later sub-bullets carry their own times): BASTION71-4 handed off (audit OK 215k / 54 calls) -> BASTION71-5 launched. LIVE (6): BASTION71-5,
+  SWARMNAT71-5, ARMY71-6 (handoff file written, cap ARMY71-7 registered), CNOPS71-5 (cap CNOPS71-6 registered),
+  DAMAGE71-5, FIRES71-6.**
+  - **LP-base wall anchors (ORCH, lp_setup.gd `_g71_points`):** new `near: "outer_wall"` / `"core_wall"` = the map wall
+    stations of that ring (`L0.posts[<ring>]`, offset between the posts the G7 army took; falls back to the ring
+    perimeter). Reason (ARMY71-6 seq 2414): crews placed on `outer_ring` stand 3 tiles inside the wall on the ground and
+    drew 0 shots in 600 ticks at machines outside it. lp_base_army71.json now puts MG / AT / AM crews + grenadiers on
+    `outer_wall`, flame tank `core_ring`, counts unchanged. **NOT yet proven or re-tested** (ARMY71-7's first job: the
+    outside-the-wall diag, the 4 LP tests, test_crew71 / test_army71, re-post `fact lp_base71.added`).
+  - ARMY71-6 also: SquadAI no longer kites emplaced MG / AM crews in LP (they walked off their post and fired once; after:
+    9 bursts); signals71_layer provider-owner fix; flow army71 setup reworked (checks unchanged). Batch (hashes,
+    hot_state, perfsim71, army71, crew71) was running at handoff.
+  - BASTION71-4: 8 generators out of lp_base_bastion71.json (ORCH hook powers the base), 4 LP tests green; turret look
+    layer built + attached (not yet seen in game); towers covered by disable; idle engineers / maint drones are called to
+    disabled defences but in a real wave only 1 of 20 disabled was revived (uptime 0.903 on vs 0.888 off) -> BASTION71-5
+    finds why, then flows + shots. test_bastion71 13/0 last run; tower case went red once (flake check owed).
+  - CNOPS71-5: `VehDrive7._clear_hulls` -> test_path7 6/0 with all base files (one run); acceptance chain6 running.
+  - FIRES71-6: test_fo_call setup hardened (11/0); CR to ARMY71 for Combat._pick (next enemy inside the painted sector +
+    keep-branch allow check) = what turns `test_pick_next_in_sector` green.
+  - **test_path7 fixed in the sim (CNOPS71-5, fact path7.fix71 seq 2446):** `VehDrive7._clear_hulls` moves an own foot
+    unit off the hull of a moving facility APC; 6/0 with all base files and with each single file and `G71_LP_BASE=0`
+    (.plan/cnops71/g6_path7_*.log). Regression chain6 (apcmov7, facexit8, facreturn8, cnfac7, cnsim7, sent7, hot_state,
+    hashes) not yet reported.
+  - **lp_base_fires.json (FIRES71-6 seq 2455): conductor 1 + wingmen 4 approved PROVISIONAL** (lpmode7 18/0, lpmap7
+    18/0, lpreserve7 7/0, lpperf7 9/0, conductor71 7/0, fires71 11/0, path7 6/0). Grenadiers will be excluded from fire
+    missions (range 7, counted as mortars by mistake).
+  - **OWNER QUESTION OPEN (seq 2456, asked 03:05Z): FPF reach.** Measured on the real LP start: strips are 61-tile lines
+    40.5 tiles from the base centre; 8 of 25 indirect guns reach a strip centre (east 5, south 1, west 1, north 1); the 2
+    SP howitzers reach none. Options: A fire-support guns placed near each face in the base file (no rule change);
+    B an FPF-only range bonus (~+12 tiles); C strips closer to the wall (30 m out). Nothing changed pending the answer;
+    FIRES71-6 stages option A only.
+  - **03:03Z: ARMY71-6 handed off (audit OK 209k / 90 calls) -> ARMY71-7; CNOPS71-5 handed off (audit OK 225k / 73
+    calls) -> CNOPS71-6. LIVE (6): BASTION71-5, FIRES71-6, SWARMNAT71-5, ARMY71-7, CNOPS71-6, DAMAGE71-5.**
+    ARMY71-6's last batch was killed by a timeout: only the hashes finished (== ref); test_hot_state, test_perfsim71,
+    test_army71, test_crew71 are UNVERIFIED after the squad_ai kite guard (ARMY71-7 step 1). CNOPS71-5's chain6 was still
+    running at handoff (facreturn8 2/0 so far; cnfac7, cnsim7, sent7, hot_state, hashes owed: CNOPS71-6 step 1).
+    hospital71.gd live (roof pad, LP-start registration, inert patients, abstract hosp_medevac); its 2 new tests were
+    red 5/2 before a wait helper, not re-run.
+  - **03:06Z: DAMAGE71-5 handed off (181k / 81 calls) -> DAMAGE71-6.** Triage layer provider bug fixed (flow gore71
+    14/0); care71 hospital routing installed in medical.gd (tests green, hashes == ref, hot_state 17/0). **Open:
+    Care71 costs 1.56 ms/tick at LP peak (64 casualties; busy PC, rough)** -> DAMAGE71-6 step 1 (spread the medic scan
+    over ticks); only red triage tags appear (2 of 16-17 casualties tagged) -> step 2; 60-min body run needs a quiet PC
+    (agent posts the command as `fact damage71.quiet_cmd`).
+  - **03:08Z: FIRES71-6 handed off (audit OK 216k / 89 calls) -> FIRES71-7. LIVE (6): BASTION71-5, FIRES71-7,
+    SWARMNAT71-5, ARMY71-7, CNOPS71-6, DAMAGE71-6 (.plan/orch71/live_agents.txt).** Fires71.gun_kind excludes grenadiers
+    (test_fires71 12/0; hashes NOT run yet: FIRES71-7 step 1). World markers drawn at z 5 over the night tint (smoke
+    clean, not yet seen in an LP shot). test_killzone71 8/1 = the known red until ARMY71-7 installs
+    change_request.combat71 (seq 2426). FIRES71-7 stages FPF option A only (owner question open). ARMY71-7 is probing
+    whether the outer_wall stations give a line of fire (may post need change_request.lp_setup71).
+  - **03:15Z, two LP-base placement defects found by the new agents (both OPEN):**
+    (1) ARMY71-7 seq 2516: the `outer_wall` stations are on the ground 1-2 tiles INSIDE the wall; by owner rule
+    13.9c-35 nobody fires through a wall from inside, the outer ring has no wall-walk, so all 10 crews were blocked
+    (0 shots in 600 ticks). ORCH fix in lp_setup.gd (parse-clean, NOT yet tested): a unit entry may carry
+    `"port": true`; `_g71_port` fits a Walls71 firing port on the nearest own wall segment within 3 tiles, which
+    WallFire7 already honours. ARMY71-7 proves it + reruns the LP tests. Rejected: crews outside the wall.
+    (2) CNOPS71-6 seq 2524: with late placement lp_base_cnops.json places NOTHING: site A (centre + (-6,-20) / (0,-20))
+    is blocked by obstacles + non-buildable rows; the earlier early placement had landed inside the facility rect. No
+    free 6x6 inside the rings. So the earlier \"test_path7 6/0 with all base files\" ran without the hospital. CNOPS71-6
+    surveys what blocks site A (fact cnops71.site_a); then ORCH adds a clear-obstacles option, or the hospital replaces
+    an existing base medical building, or (owner call) two 4x4 blocks. The LP-base-hospital test stays red until then.
+  - **OWNER ANSWER (FPF reach): option A, "Guns near each face".** Directive to FIRES71-7: >= 3 indirect guns in reach
+    of every face strip, fewest added units, guns inside the wall; stage -> measure -> install lp_base_fires.json ->
+    LP tests -> fact lp_base71.added. No range bonus, no strip move. Exact added counts go back to the owner.
+  - **03:15Z: SWARMNAT71-5 DONE (audit OK 213k / 70 calls); no successor until the timing is in.** rts_core 0.6.5 live
+    (backups bin/rts_core.v064_keep.dll, v063_keep.dll): Machines + anim61 infantry drawn by the native kernel; verify
+    0 real diffs (lp / lpw / lppan / 2k); LP peak 244 of ~592 drawn units native (was 56), kernel calls/frame 696 ->
+    343; hashes == ref, hot_state 17/0, perfsim71 6/0, swarmnat71 1/0, perfdraw71 7/0. Toggle SWARMNAT71 still default
+    OFF. Not native: FLAG_S7 soldiers (~218/frame at LP, every soldier in 2k); MOTION_CAP 700 switches motion layer +
+    kernel off above ~700 drawn units (lpw ~863, pan peaks ~807). Next scope (S7 port, MOTION_CAP) is decided by timing.
+  - **03:17Z ORCH QUIET WINDOW (directive seq 2588, flag .plan/orch71/QUIET):** all 5 agents finish their current run,
+    then wait in .plan/orch71/quietwait.sh; .plan/orch71/quietrun.sh waits for a quiet PC, runs base.sh kernel off
+    (q1122off) and on (q1122on) for 2k / 10k / lpz / lppan / lppeak, removes the flag at exit. Results:
+    .plan/perfdraw71/q1122off.out, q1122on.out; log .plan/orch71/quietrun.log. If ORCH dies mid-window: delete the
+    QUIET flag so the agents resume.
+  - **03:38Z FPS OF THE CURRENT BUILD (ORCH, agents paused, godot=0, background CPU 12-45%; the strict quiet.sh gate
+    never passed in 13 min so it was dropped; G7 ref q1121 ran at 8-43%). fact swarmnat71.fps; logs
+    .plan/perfdraw71/q1122off.out / q1122on.out, 0 script errors in all 10 runs.**
+
+    | case | p10 kernel off | p10 kernel on | G7 ref p10 | gate |
+    |---|---|---|---|---|
+    | 2k | 35.2 (avg 77.4) | 35.0 (avg 56.8) | 62.7 | 60 **FAIL** |
+    | 10k | 192.2 | 200.8 | 228.0 | 30 pass |
+    | LP zoomed out | 84.0 | 85.6 | 62.8 | 60 pass |
+    | LP pan | 62.8 | 65.4 | 39.9 | 60 pass |
+    | LP peak | 23.9 | 23.6 | 24.5 | 30 and 2x G7 (49) **FAIL** |
+
+    Reading: the native swarm kernel changes nothing measurable (on == off within noise). 2k p10 is far under G7 on
+    the same PC = a regression to find (wave 1 or wave 2: no valid wave-1 2k number exists, the 11-21 g71 run was
+    invalid). LP peak is at G7's level. SWARMNAT71-6 is launched as a perf DIAGNOSIS agent (2k regression first, then
+    what bounds LP peak), not for the S7 soldier port. Agents released (directive quiet_window off).
+  - 03:22Z: `hosp_medevac` registered in world.gd COMMANDS (CNOPS71-6 CR seq 2622; check-only clean; backup
+    .plan/orch71/wire_orig/world.gd.pre_medevac). test_path7 fix regression chain6 all green (apcmov7 16/0, facexit8
+    4/0, facreturn8 2/0, cnfac7 36/0, cnsim7 27/0, sent7 13/0, hot_state 17/0, 0 script errors; hashes == ref).
+    BASTION71-5 CR seq 2613 (Machines do not auto-target a disabled turret, LP only) approved PROVISIONAL, relayed to
+    ARMY71-7 with FIRES71's CR 2426 for one staged combat.gd pass.
+  - **03:50Z: ARMY71-7 handed off (audit OK 205k / 85 calls) -> ARMY71-8; SWARMNAT71-6 launched as perf diagnosis.
+    LIVE (6): BASTION71-5, FIRES71-7, CNOPS71-6, DAMAGE71-6, ARMY71-8, SWARMNAT71-6.**
+    Firing ports: 9 of 10 crews proven not blocked at 4 / 8 / 14 tiles outside (a rifleman 6 tiles inside stays
+    blocked; MG fires 20 ticks into an attack-move run, 62 bursts). The 10th (mg at (53,104), port 3.0 > 2.5) fixed by
+    ORCH: `LpSetup._g71_port_cell` moves a ported post one cell toward its wall when the wall is > 2 tiles away
+    (parse-clean, NOT yet re-probed: ARMY71-8 step 3; backup .plan/orch71/wire_orig/lp_setup.gd.pre_portstep).
+    combat.gd: FIRES71 CR 2426 (next enemy inside the painted sector) + BASTION71 CR 2613 (disabled turret not an
+    auto target, LP only) INSTALLED from a staged copy (orig .plan/army71/stage/combat.gd.orig): test_killzone71 9/0,
+    test_fires71 12/0, test_crew71 7/0, test_bastion71 13/0, test_turret7 18/0, test_path7 6/0; test_army71 10/1 (the
+    new test's own setup check); hashes / hot_state / perfsim71 after the install were still running (ARMY71-8 step 1).
+    FPF option A staged (fact fires71.fpf_option_a seq 2683): +5 MLRS, the 2 base MLRS re-anchored; per-face guns in
+    reach 5/1/1/1 -> 4/3/3/3; FIRES71-7 installs + tests it.
+  - **03:56Z: DAMAGE71-6 handed off (audit OK 200k / 105 calls) -> DAMAGE71-7 (first agent on the larger cap 1,000k /
+    190, DECISIONS.md). LIVE (6): BASTION71-5, FIRES71-7, CNOPS71-6, ARMY71-8, SWARMNAT71-6, DAMAGE71-7.**
+    care71.gd final version is live but UNVERIFIED (hashes / hot_state / perfsim71 / cost not run on it): per-side
+    medic list instead of the combat grid (also fixes medics not found), new state `st.trk` (patched-up soldiers turn
+    green), morphine keeps a black tag; test_care71 5/0. Casings decal staged, not installed.
+  - **OPEN RED (gate): tests/test_lpreserve7.gd `test_save_load_mid_release` 6/1 on the live tree** (hash mismatch after
+    load; green at 03:00Z). Candidates: care71 `st.trk`, Walls71 port fits from LpSetup._g71_port, the combat.gd CR
+    install, base file changes. CNOPS71-6 bisects (fact lpreserve7.red); DAMAGE71-7 checks care71 save / load.
+  - **Hospital site (ORCH, PROVISIONAL, to report to the owner):** site A cannot take 12x6 (the gate approach road x
+    79-81 and the E-W road y 64-65 cross it; fact cnops71.site_a seq 2539). Decision: two 4x4 blocks astride the
+    gate road at (74,60) and (82,60) in the off-road rows y 60-63; defs 6 -> 4. Not built yet (CNOPS71-6 / -7).
+  - **04:00Z: BASTION71-5 handed off (audit OK 217k / 92 calls) -> BASTION71-6 (cap 1,000k / 190). LIVE (6):
+    FIRES71-7, CNOPS71-6, ARMY71-8, SWARMNAT71-6, DAMAGE71-7, BASTION71-6.**
+    BASTION71-5: tower test was a real setup problem (turret slew time), fixed in the test setup (assertion
+    unchanged), 13/0; real bug fixed: an engineer could not take over a drone revive; Walls71.port_exempt answers
+    from a per-tick cell cache (equivalence test); hashes == ref + hot_state 17/0 after those.
+  - **OPEN RED (gate): tests/test_walls71.gd 7/2 on the live tree.** `test_unused_is_stateless`: a NON-LP world has
+    walls71 / turrets71 / sensors71 state after 20 ticks = some wave-2 code creates state off Last Protocol (not the
+    port cache: bisected). Plus the gate-guns case. BASTION71-6 step 1 (also relevant to the 2k fps regression).
+  - **04:05Z: FIRES71-7 handed off (audit OK 214k / 79 calls); FIRES71-8 (cap registered 1,000k / 190) launches when
+    -7 has closed out.** gun_kind change: hashes == ref, hot_state 17/0, perfsim71 6/0, fires71 12/0.
+    **FPF option A is STAGED, NOT LIVE** (.plan/fires71/stage/lp_base_fires.A.json: 2 base MLRS re-anchored + 5 MLRS;
+    per-face guns in reach 5/1/1/1 -> 4/3/3/3). Live install turned test_lpreserve7 `test_save_load_mid_release` RED
+    twice (6/1), restored both times (live file == pre-A backup). This explains the lpreserve7 red seen at 03:44Z.
+  - **OPEN DEFECT (gate, latent, exposed by option A; seq 2789): save / load target-pick divergence.** One tick after a
+    load, a_laser_tank 564 (attack_move, north of the base) takes a target (Machine rifleman 1042, 3.3 tiles) in the
+    loaded copy that the original world does not take: an input of the target choice is not in to_dict. Fires71 caches
+    ruled out (removed, same failing hash). Repro without touching the live tree: .plan/fires71/probe_div.gd. Owner:
+    ARMY71-8 (combat.gd), posts fact saveload.pick; then FIRES71-8 installs option A. Never edit test_lpreserve7.
+  - **04:10Z: CNOPS71-6 handed off (audit OK 219k / 88 calls) -> CNOPS71-7; FIRES71-8 launched (both cap 1,000k /
+    190). LIVE (6): ARMY71-8, SWARMNAT71-6, DAMAGE71-7, BASTION71-6, CNOPS71-7, FIRES71-8.**
+  - **CORRECTION to the 03:38Z fps reading (fact perf71.2k_regress seq 2833, SWARMNAT71-6): there is NO 2k regression.**
+    4 alternating triples G7 / wave 1 (82a887a worktree /c/CODING/sw6_w1) / live in one session (busy PC, 4-8 other
+    Godot, load 5-48%): p10 medians G7 46.2, wave 1 51.6, live 47.6; live / G7 pair ratio median 1.11 (1.01-1.24).
+    View 9.7-10.5 ms/frame and sim worker ~62-65 ms/step in all three trees. The 35.2 vs 62.7 gap compared two
+    different sessions (q1122 vs q1121). The 2k gate (p10 >= 60) is still UNPROVEN either way: it needs a quiet PC with
+    G7 alternating in the same session. LP peak (23.9 vs G7 24.5, gate 30 / 49) stands: SWARMNAT71-6 step 2.
+  - test_lpreserve7 is 7/0 on the live tree (CNOPS71-6 rerun; its 6/1 ran while FPF option A was briefly live).
+    Hospital card wired by ORCH: g71_attach.gd HUD list + `G71Attach.attach_hud(self)` in match_view.gd (parse-clean,
+    windowed smoke owed by CNOPS71-7; backups .plan/orch71/wire_orig/*.pre_hud71). test_hospital71 9/1 (only the
+    LP-base-site test red until the 4x4 site is built: CNOPS71-7 step 1).
+  - **04:25Z: combat.gd CR install VERIFIED (ARMY71-8 fact cr_installed seq 2869):** hashes == ref, hot_state 17/0,
+    perfsim71 6/0, killzone71 9/0, fires71 12/0, army71 11/0, crew71 7/0, bastion71 13/0, turret7 18/0, path7 6/0,
+    lpmode7 18/0, lpmap7 18/0, lpreserve7 7/0, lpperf7 9/0.
+  - **Port crew 10 of 10 (ORCH, lp_setup.gd, parse-clean):** the mg post at (53,104) was moved but BASTION71's 2x2 rail
+    turret was then placed on it and pushed the crew back. Now a ported post is reserved in the occupancy map (+ a
+    fallback cell search). ORCH probe .plan/orch71/port_probe2.gd: all 8 ported crews port_exempt, distances 1.0-2.0,
+    0 stacked. LP start changed by one crew cell + one turret cell: ARMY71-8 / BASTION71-6 rerun the LP tests.
+  - FIRES71-7 closed (final audit 223k). Its last batch: hashes == ref with the Fires71 cache removal, Fires71 /
+    KillZone71 / Conductor71 0.004-0.005 ms/tick on 2k; FPF burst inconclusive (+15.6 / -4.9 ms); test_hot_state +
+    test_fires71 after the cache change UNVERIFIED (FIRES71-8 overwrote the running batch11.sh; reruns as batch12).
+    FIRES71-8 `need orch.refused` (seq 2865: an overwrite of that script, refused by the classifier): not done by
+    anyone, not needed.
+  - **04:30Z SAVE / LOAD TARGET-PICK DEFECT FIXED (ARMY71-8, fact saveload.pick seq 2965).** Cause: the unsaved combat
+    cache `w.cache.cmb_tabs` kept a stale def index (dx 0 = the first def, engineer) for units whose team / flags row
+    was filled outside the native fill (37 ids in the repro, e.g. AT gunners, an IFV, the laser tank): the native prep
+    used the wrong range / scan radius for them; a loaded world rebuilt the table correctly, hence the divergence.
+    Fix in sim/systems/combat.gd (`_dx_fill`; staged swap, prior copy .plan/army71/stage/combat.gd.pre_dx). Acceptance:
+    FIRES71's probe with the staged option A file: no divergence in 200 ticks; test_lpreserve7 7/0; test_army71 11/0;
+    test_perfsim71 6/0; hashes == ref; test_hot_state 17/0 (.plan/army71/w8_dx.txt). FIRES71-8 may now install FPF
+    option A (must rerun test_lpreserve7 with it).
+  - **04:32Z HOSPITAL PLACED (CNOPS71-7 fact lp_base71.added seq 2978; approved PROVISIONAL):** two 4x4 blocks at
+    (74,60) and (82,60), same on seeds 77 / 5 / 1234; gate road and E-W road passable for foot + vehicles; the 7 late
+    generators are off the roads. test_hospital71 10/0 (the LP-base test is green), art 7/0, icons7 1/0, lpmode7 18/0,
+    lpmap7 18/0, lpreserve7 7/0, lpperf7 9/0, path7 6/0 (first run with the hospital really placed), apcmov7 16/0,
+    sent7 13/0, 0 script errors (.plan/cnops71/a7_*.log). Timing slot: directive orch.timing_lock gives SWARMNAT71-6
+    the next slot (it had waited 20 min).
+  - **04:38Z WALL CREWS PROVEN (ARMY71-8 fact lp_base71.added seq 2998; approved PROVISIONAL):** all 8 ported crews
+    not blocked at 4 / 8 / 14 tiles outside, a rifleman 6 tiles inside still blocked, 0 stacked, MG fires from tick 20
+    in the attack-move run; army71 11/0, crew71 7/0, bastion71 13/0, path7 6/0, lpmode7 18/0, lpmap7 18/0, lpreserve7
+    7/0, lpperf7 9/0 on the final placement. Hospital shots (card + site) forwarded to the owner (CNOPS71-7 seq 2988:
+    flow hospital71 11/0, windowed smoke clean).
+  - **04:46Z: ARMY71-8 handed off (audit OK 224k / 79 calls) -> ARMY71-9 (cap 1,000k / 190). LIVE (6): SWARMNAT71-6,
+    DAMAGE71-7, BASTION71-6, CNOPS71-7, FIRES71-8, ARMY71-9.** Flow army71 14/0, 0 script errors; shots forwarded to
+    the owner (MG crew firing through its port; BASTION71-6 rail tracking laser + wall tiers). Weak: hand-signal /
+    radio-feed shot (unreadable at that zoom): ARMY71-9 step 1. ARMY71-9's main job: the D4 writers (cover hug / peek
+    / bound, door stacking, formation catch-up, radio sources).
+  - **04:55Z LP PEAK, PARTIAL DIAGNOSIS (SWARMNAT71-6 fact perf71.lp_peak seq 3072, from the q1122 logs; its own --prof
+    batch has not run: timing lock):** frame ~40 ms = view ~19 ms (entity layer ~15) + ~21 ms other; the sim worker
+    takes ~110-130 ms per step (combat.gd ~39%) so the LP-peak game runs at ~5 of 20 ticks/s (about quarter speed);
+    EVERY sim hand-over is a FORCED JOIN (5 per s): something on the main thread reads match_view.world mid-step and
+    blocks until the step ends. That is why the native kernel buys 0 fps. Ranked, bounded: (1) find + remove that
+    main-thread world read; (2) LP sim step cost; (3) soldier kernel port, worth up to ~+60% only after (1). Ceiling
+    while forced joins remain: ~25-26 fps. No best-reachable number yet. test_walls71 8/0 (BASTION71-6: the stateless
+    check used an LP world by default; a skirmish world creates no wave-2 state; fact bastion71.stateless seq 2844).
+    gas71_layer.gd added to G71Attach.LAYERS (CR seq 3041). Timing lock: BASTION71-6 jumped the slot (batch6d opened
+    04:34Z inside DAMAGE71-7's batch): ms numbers of that window are noisy; told to yield to SWARMNAT71-6.
+  - **05:00Z LP PEAK, CORRECTION (SWARMNAT71-6 fact perf71.lp_peak v2 seq 3126; the 04:55Z forced-join reading is
+    WRONG):** the forced_joins counter is cumulative (5 = startup joins, not 5 per s); a backtrace run found 6 forced
+    joins in a whole 30 s run (harness setup, ops_panel.gd:98 x3, lp_hud.gd:89 x1). The main thread does NOT wait on
+    the sim at LP peak; the slow sim (~110-130 ms per step, ~5 of 20 ticks/s) sets GAME SPEED, not fps. Main-thread
+    frame 53-71 ms in that (busy-PC, pre-04:27Z) run: entity layer 24-27 ms (units ~14, other entities ~9-10),
+    terrain ~4, other draws ~6, and an UNMEASURED remainder of 20-35 ms (render-server CPU / HUD / GPU wait). The
+    kernel covers part of the ~14 ms unit share only, so its gain is inside the noise. Bounded outlook: non-unit
+    entity cost + the remaining GDScript unit draw give ~30-35 fps; 49 (2x G7) needs the unmeasured remainder to be
+    small or fixable. Not proven: its live off / on --prof pairs are running. Hand-signal close shot forwarded to the
+    owner (ARMY71-9, flow 15/0).
+  - **05:20Z STATE FOR A RESUME (read this first after a /clear):** LIVE (6), ids in .plan/orch71/live_agents.txt:
+    BASTION71-7, FIRES71-8, ARMY71-9, CNOPS71-8, DAMAGE71-7, SWARMNAT71-7 (all cap 1,000k / 190; hand-off line 700k /
+    133 calls). 05:08Z connection drop killed DAMAGE71-7, ARMY71-9, SWARMNAT71-7, BASTION71-7: resumed in place at
+    05:15Z (owner rule: auto-resume). Audits OK: BASTION71-6 268k, SWARMNAT71-6 197k, CNOPS71-7 282k.
+    Monitors to re-arm every 30 min: guard.mjs (filter the live generations) + the board watcher.
+    **No known red on the live tree except** tests/test_bastion71.gd `test_turret_obeys_painted_sector` (waits for
+    FIRES71-8 to widen KillZone71._wrange to turret weapons; routed). **Open, in order:** (1) FIRES71-8 installs FPF
+    option A (staged .plan/fires71/stage/lp_base_fires.A.json; lpreserve7 must be 7/0) + the _wrange CR; (2)
+    SWARMNAT71-7 final LP-peak split + best-reachable p10 -> then the owner's LP-peak gate question (p10 ~24 vs 30 /
+    49); (3) CNOPS71-8: fleet batch result + `fact lp_base71.added` (+2 medevac helis, +2 drone ambulances: NOT yet
+    approved), gas shot, mission card; (4) ARMY71-9: D4 writers (cover / stacking / catch-up / radio sources); (5)
+    BASTION71-7: revive moves, FPF aim for wall guns, engineer / dozer; (6) DAMAGE71-7: care71 verification + cost,
+    tag-mix shot, casings, fx; (7) quiet-PC runs owed: 2k gate with G7 alternating, DAMAGE71's 60-min body run;
+    (8) wave-2 gate: refresh C:/CODING/g71_clean, --import, `bash C:/CODING/orch71_check/suite71.sh 6`, all green + 0
+    script errors; (9) ask the owner before the wave-2 commit. Owner items to raise: hospital 4x4 x2 (told), +5 MLRS
+    (owner chose A), fleet +4 units, provisional counts, QUOTELEFT radial key, minimap 198 px, hand-signal plate
+    small / radio line small, /c/CODING/sw6_w1 worktree to remove (SWARMNAT71-7).
+  - **05:24Z: DAMAGE71-7 handed off (audit OK 247k / 112 calls) -> DAMAGE71-8 (LIVE list in live_agents.txt).**
+    care71 VERIFIED: 0.344 ms/tick at LP peak (was 1.562), hashes == ref, hot_state 17/0, perfsim71 6/0, save / load
+    test green; casings + part / ricochet / silver fx installed (smoke clean); flows care71 + damage71 6/6; shots
+    forwarded (triage cards yellow / red / black, crawler losing a part). **NEW BLOCKER (Done-when 3 + 9): 3000
+    settled bodies -> LP p10 7.9 fps vs ~30 with none; hiding gore71_layer.gd restores 30.4 = the body layer redraws
+    every body every frame.** DAMAGE71-8 step 1: chunk-baked textures. gore71 flow tag-mix step still unmet (never 3
+    kinds at one moment in a real fight; check NOT to be relaxed). Ricochets never fire in a real fight (rule may be
+    too strict: numbers to ORCH as need owner.ricochet). CNOPS71-8 `need orch.refused` seq 3201 (Stop-Process on the
+    predecessor's test chain refused): not done by anyone; chain left to end by itself.
+  - **05:31Z FPF OPTION A IS LIVE (FIRES71-8 fact lp_base71.added seq 3279; approved PROVISIONAL):** 7 base MLRS (2
+    re-anchored + 5 new: 3 W, 1 S, 1 N), per-face guns in reach E / S / W / N 4 / 3 / 3 / 3 (was 5 / 1 / 1 / 1)
+    measured on the live placement; lpreserve7 7/0 (the save / load case is green WITH option A), lpmode7 18/0, lpmap7
+    18/0, lpperf7 9/0, conductor71 7/0, fires71 12/0, killzone71 9/0, path7 6/0 (.plan/fires71/w13_g8_tests.log). FPF
+    burst cost: below this PC's run-to-run noise, no number claimable. Shots forwarded to the owner: medevac helis on
+    the hospital pad, gas cloud + mask glyphs (CNOPS71-8).
+  - **05:43Z:** hospital fleet verified + approved PROVISIONAL (seq 3339 / 3341: +2 medevac helis, +2 drone
+    ambulances; path7 6/0, hospital71 11/0, lpmode7 18/0, lpmap7 18/0, lpreserve7 7/0, lpperf7 9/0, apcmov7 16/0, sent7
+    13/0, hot_state 17/0, art 7/0, icons7 1/0, hashes == ref). World.gd COMMANDS + `berm_build`, `doze_clear` ->
+    Walls71 (BASTION71-7 CR seq 3323; check-only clean; test_walls71 10/0; hash check owed by the agent; no UI yet).
+    DAMAGE71-8: gore71_layer.gd rebuilt as chunk-baked meshes (3000 bodies: ~7.5 fps -> p10 28.2 at zoom 1 in
+    non-timing runs; before / after shot forwarded; the alternating comparison is owed); gore71 flow 15/0 with green /
+    red / yellow at one moment (fight shaped, check unchanged). All LP-base files are now live and approved
+    PROVISIONAL: fires (option A), army71 (ported wall crews), bastion71, damage71 (tent), cnops (hospital + fleet).
+  - **06:16Z STATE (newest; supersedes the 05:20Z block where they differ):** second outage 05:45-06:08Z killed all
+    6 agents; all resumed in place at 06:10Z; ORCH parse sweep of every .gd edited in the last hour: 0 bad. LIVE (6):
+    BASTION71-7, CNOPS71-8, DAMAGE71-8, SWARMNAT71-7 (resumed), FIRES71-9, ARMY71-10 (new; ids in live_agents.txt).
+    Audits OK: FIRES71-8 206k, ARMY71-9 247k.
+    ARMY71-9 done: D4 writers in the sim, LP only (cover hug / peek / bound in `e.d71c`, hug = incoming accuracy x0.55;
+    formation catch-up beyond 3 tiles; door stacking before entering an own building; radio sources already wired);
+    gas-mask accuracy / sight cost (CNOPS71 CR 3042); hand signals on a z-6 plate; test_army71 15/0, flow 15/0, LP
+    tests green, hashes == ref, hot_state 17/0, perfsim71 6/0. NOT visible yet: the poses (ARMY71-10 step 1).
+    FIRES71-8 done: option A live; `KillZone71._wrange` reads turret weapons (INSTALLED, UNTESTED: FIRES71-9 step 1;
+    BASTION71's `test_turret_obeys_painted_sector` should turn green). World.gd COMMANDS + `fac_upgrade` -> CnFacility
+    (CNOPS71-8 CR seq 3459; check-only clean; backup world.gd.pre_facupg). Timing lock: SWARMNAT71-7 since 06:11Z.
+  - **06:25Z:** third drop ~06:18Z killed ARMY71-10, SWARMNAT71-7, DAMAGE71-8, FIRES71-9: resumed in place 06:22Z,
+    all posting again. CNOPS71-8 handed off (audit OK 272k / 116 calls) -> CNOPS71-9. LIVE (6): BASTION71-7,
+    FIRES71-9, ARMY71-10, CNOPS71-9, DAMAGE71-8, SWARMNAT71-7 (live_agents.txt).
+    **No known red on the live tree:** FIRES71-9 fact cr_installed seq 3507: turret sectors tested (test_killzone71
+    10/0, test_bastion71 18/0 incl. test_turret_obeys_painted_sector, test_turret7 18/0, test_fires71 12/0; hashes
+    pending its timing batch). CNOPS71-8 built (determinism check chainG8 still queued = UNVERIFIED): hosp_medevac
+    retasks a real fleet heli; contact reaction by ROE (stealth / standard calls a fire mission / aggressive) with the
+    team card line; facility upgrades (bays heal / decon x1.5 / x2.0; foundry numbers stored, not hooked); gas flow
+    11/0; hospital flow 12/0; test_hospital71 12/0, test_cnops71 7/0, test_facility71 3/0, test_cnfac7 36/0.
+  - **06:28Z LP-PEAK SIM PROFILE (SWARMNAT71-7 fact perf71.lp_sim seq 3511; headless, 600 ticks, busy PC, after the
+    combat fix):** 106.4 ms per tick avg (p50 90.5, p95 178): combat.gd 40.6 (38%), squad_ai.gd 7.4, movement.gd 6.4,
+    air.gd 6.3, **turrets71.gd 5.2 (wave 2: BASTION71-7 told to cut it, target < 1 ms)**, fog 4.3, sentinels7 3.4,
+    supply 2.5, cn_facility 2.1, morale 2.0. Tick rate: headless ceiling ~9.4 of 20 ticks/s, in game ~3.8-3.9. 20
+    ticks/s needs <= 50 ms per tick (about -55%). Findings only; no sim change.
+  - **06:32Z LP PEAK, FINAL DIAGNOSIS (SWARMNAT71-7 fact perf71.lp_peak seq 3516; busy PC, ratios are the finding).
+    OWNER QUESTION ASKED 06:32Z: which LP-peak target for this slice (30 only, or keep 2x G7 = 49).**
+    Frame ~52 ms busy (quiet-PC p10 frame ~42 ms = 23.9 fps): process step ~46 ms = entity layer refresh 22-25 (units
+    15-18, non-unit entities 5-7), terrain 4-5, fx ~1, draws ~3.5, unattributed 12-14 (43 presentation scripts'
+    _process + ~1,700-1,850 draw calls); render server 4.5-9.4 (HUD 3-5 of it); NOT GPU-bound; the main thread does
+    not wait on the sim. Kernel off / on p10 18.3 / 17.7: the kernel only runs when <= MOTION_CAP 700 units are drawn
+    and LP peak draws ~1,470-2,030 items, so its gain there is 0 BY CONSTRUCTION. Ranked: (1) native path for the
+    over-cap unit refresh, <= 15-18 ms, realistic 9-13 (entity_layer.gd + Rust kernel, not started); (2) non-unit
+    entity refresh <= 5-7; (3) unattributed _process / draw calls <= 12-14, unproven; (4) HUD 3-5; (5) terrain 4-5.
+    **Best reachable: p10 >= 30 needs -9 ms: reachable with (1) alone, range 30-38 fps with (1)+(2) on a quiet PC
+    (unproven scaling). p10 >= 49 needs -21 of ~42 ms: NOT supported by any measurement this slice.** Separate
+    problem: game speed at LP peak ~3.8-3.9 of 20 ticks/s in game (sim 106 ms per tick, combat 38%).
+  - **OWNER DECISION ("30 fps only"): the LP-peak gate for G7.1 is p10 >= 30 fps; the 2x G7 half is dropped
+    (DECISIONS.md; directive owner.lp_peak_gate).** SWARMNAT71-7 builds rank 1 (native path for the over-MOTION_CAP
+    unit refresh) then rank 2 (non-unit entity refresh), kernel default stays OFF until verify is clean and pairs show
+    the gain (it posts need orch.swarmnat_default). The gate proof = ORCH's quiet-PC run. Still separate and unowned:
+    LP-peak game speed ~4 of 20 ticks/s (sim 106 ms per tick, combat 38%).
+  - **06:35Z CORRECTION to the 06:32Z diagnosis (SWARMNAT71-7 fact perf71.lp_peak_correction seq 3531, measured):**
+    the "kernel never runs at LP peak (MOTION_CAP)" reason was WRONG. In the gate's case the motion layer IS on and
+    the kernel runs when enabled, but it draws 0 units; the entity layer's unit counter reads 0 drawn units per
+    frame while the unit loop still costs 15-18 ms per frame. So the old rank 1 (native over-cap path) targets a
+    path that does not run here. NEW rank 1: find why the unit loop spends 15-18 ms and draws 0 units (work done
+    before a cull, or a draw path the counter misses) in entity_layer.gd. Under investigation. The owner's gate
+    decision (30 fps only) stands; the route to it is open again.
+  - **06:40Z SECOND CORRECTION (SWARMNAT71-7 seq 3546; the 06:35Z entry is WRONG too: its runs lacked --fps-log):**
+    valid run with the exact gate args and SWARMNAT71=1: kernel ran 501 / 501 frames and drew ~257 of ~605 drawn
+    units (same as SWARM_NATIVE71 s9); ~350 units per frame still go through GDScript (FLAG_S7 soldiers ~218). The
+    over-cap path does not run at the gate case. Candidate rank 1 = native coverage of the remaining GDScript units
+    (the S7 soldier port), bound not yet timed. **OPEN ANOMALY: the same harness without --fps-log shows ~40 fps with
+    ~167 snapshot units and 0 units drawn; with it ~1,478 units and ~18-24 fps: which one is the real game at LP peak
+    is not known.** ORCH told the agent: explain the anomaly first, then time kernel vs GDScript units, then ONE
+    final fact (perf71.lp_peak_final2); no fix work before that. Treat every LP-peak cause above as unsettled.
+  - **06:45Z: BASTION71-7 handed off (audit OK 278k / 131 calls) -> BASTION71-8. LIVE (6): BASTION71-8, FIRES71-9,
+    ARMY71-10, CNOPS71-9, DAMAGE71-8, SWARMNAT71-7.** BASTION71-7 done (hashes == ref, hot_state 17/0, perfsim71 6/0,
+    4 LP tests green after all of it): wall guns fire at the FPF strip (test red first; a wall HMG range 9 lands just
+    short of a strip 10 out: PROVISIONAL); dozer berm_build / doze_clear (test_walls71 11/0); mid-wave save / load
+    test of its state (green); laser CIWS range by weather (fog x0.45; test not seen red); nanite-coated walls take
+    0.6x from Machines (the damage.gd hook waits on DAMAGE71, CR seq 3364); casings per rotary shot (not yet seen on
+    screen); test_bastion71 18/0. Revive check on the current tree: 0 drops from move orders; 12 of 16 drops =
+    turret destroyed before the engineer arrived; 4 revives. BASTION71-8 first job: Turrets71.tick 5.24 ms per tick at
+    LP peak -> well under 1 ms (profile first, behaviour unchanged).
+  - **06:50Z LP PEAK, FINAL STATEMENT (SWARMNAT71-7 fact perf71.lp_peak_final2 seq 3673; supersedes every LP-peak
+    cause above).** MEASURED: (a) the --fps-log anomaly = without an --fps* / --autostart arg the LP intro cinematic
+    plays (match paused, camera flying): the gate runs measure the real post-intro state; (b) at the gate case the
+    kernel runs every frame and draws ~257 of ~605 units; **kernel ON is WORSE: p10 15.6 / 18.0 on vs 19.9 / 24.3 off
+    (alternating pairs); it costs 4.5-5.2 ms to save ~1-2 ms = a net loss of 3-6 ms -> SWARMNAT71 stays OFF and the
+    kernel is PARKED for this slice**; (c) frame split, kernel off: unit loop 10.5-12.2 ms (~605 units, ~18-20 us
+    each), non-unit entities 4.1-5.1, terrain 3.1-3.5, HUD 3-5, render server 4.5-9.4 (not GPU-bound), unattributed
+    8-14, sim wait 0. INFERRED: ranks 1 (cheaper GDScript unit loop, realistic 3-5 ms) + 2 (skip unchanged non-unit
+    entities, 2-3) + 3 (HUD 3-5) give ~8-13 ms; p10 30 needs -9 ms on a quiet PC: plausible, NOT proven. ORCH order:
+    build ranks 1 + 2 in entity_layer.gd / motion.gd, HUD as a change request; gate proof = ORCH quiet-PC run:
+    `SWARMNAT71=0 ... perf71_draw_lp.gd -- --fps-log --fps-quit=30 --no-vsync --lpz=0.5 --peak=1000` x3, median p10.
+    Timing-slot reservation (orch.timing_batch + .plan/orch71/reserve_release.sh) worked: use it again when a line is
+    starved.
+  - **06:52Z: SWARMNAT71-7 handed off (audit OK 246k / 120 calls; worktree /c/CODING/sw6_w1 removed) -> SWARMNAT71-8,
+    which BUILDS rank 1 (GDScript unit loop) + rank 2 (non-unit entities); kernel parked (DECISIONS.md). LIVE (6):
+    BASTION71-8, FIRES71-9, ARMY71-10, CNOPS71-9, DAMAGE71-8, SWARMNAT71-8 (live_agents.txt).** CNOPS71-9 shots
+    posted (seq 3668 / 3669: gas cloud brighter + larger mask glyphs, before / after; mission card en route / contact
+    / exfil): NOT yet looked at or forwarded by ORCH.
+  - **07:15Z:** connection drops continue (about 06:55Z and 07:05Z): BASTION71-8 (twice) and DAMAGE71-8 died and were
+    resumed in place; SWARMNAT71-8 silent since 06:54Z, messaged. The measured Turrets71 split (seq 3694): 5.5 ms
+    per tick = rotary 2.5 (lane query 1.8) + laser aim 1.5 + maintenance scans ~0.5; bookkeeping is small. Body layer
+    comparison ran (.plan/damage71/gen8/timing_g8.out, batch done 07:00Z): 3000 bodies p10 32.9 vs 3000 with the
+    layer hidden 33.3 in run 2 = the baked layer costs ~nothing (DAMAGE71-8 posts the full fact). ARMY71-10 shots
+    forwarded (bounding markers, wall bayonets, flame tank); its cover / NVG shots not looked at by ORCH. CNOPS71-8
+    closed (final audit 273k). Stray board topic orch.timing_lock_stale closed.
+  - **07:20Z DAMAGE71 LINE NEARLY CLOSED (DAMAGE71-8 final report; audit OK 264k / 104 calls; resumed for two small
+    items):** body layer chunk-baked and timed (p10 0 / 3000 / 3000-hidden: r1 34.9 / 31.4 / 34.3, r2 33.9 / 32.9 /
+    33.3; was 7.5-7.9 with 3000); gore71 flow 15/0 with 3 tag kinds at one moment; ricochets DO fire (1.01% of hits on
+    part-layout Machines at LP peak; rule set A 50/60/75 deg would give 5.4%: owner taste, unchanged); medics recover
+    bodies when no casualty is listed (LP only; test_care71 7/0); Trampled71 fx drawn (no shot yet); hashes == ref,
+    hot_state 17/0. Left with DAMAGE71-8: BASTION71's nanite-coat hook in damage.gd (CR seq 3364) + a tank-crush shot.
+    ORCH quiet-PC job: the 60-minute body run (`.plan/damage71/body60_fps.gd --fps-log --fps-quit=3600 --no-vsync
+    --peak=1000 --bodies=0` and `--bodies=3000`). Its Done-when 3 still names 60 fps at LP peak: the owner's gate is
+    now 30.
+  - **07:33Z STATE (newest; read this first after a /clear):** outage 07:15-07:29Z killed BASTION71-8, DAMAGE71-8,
+    FIRES71-9, SWARMNAT71-8, ARMY71-10: all resumed in place 07:31Z. CNOPS71-9 handed off -> CNOPS71-10. LIVE (6) with
+    ids + current jobs in .plan/orch71/live_agents.txt.
+    **KNOWN RED (gate blocker): tests/test_cards8c.gd `test_aid_options`** (CNOPS71-9 fact seq 3743: menders never take
+    the c8c_med / casualty jobs; green in the wave-1 suite, so a wave-2 change broke it; CNOPS71-10 bisects, never
+    edit the test).
+    CNOPS71-9 done (g8 installs verified: hashes == ref, hot_state 17/0): fac_upgrade / hosp_medevac tested through
+    submit; cn71 radio lines file + overwatch element + casualties back to the APC; flow cnops71 20/0; gas contrast;
+    facility siege stages (alert -> lockdown -> evac) + upgrade buttons on the facility card (shots posted seq 3795,
+    NOT looked at by ORCH). Its own chain_g9 determinism check was still queued at handoff = UNVERIFIED.
+    Order of what is left: (1) SWARMNAT71-8 unit-loop fix -> ORCH quiet-PC gate run (LP peak p10 >= 30); (2)
+    test_cards8c red; (3) BASTION71-8 turret cost; (4) FIRES71-9 hashes + shots; (5) ARMY71-10 batch + radio CR; (6)
+    DAMAGE71-8 nanite hook, then that line is closed; (7) ORCH quiet-PC: 2k gate with G7 alternating, 60-min body
+    run; (8) wave-2 gate suite on a refreshed frozen copy; (9) owner's yes before the commit.
+  - **07:42Z ARMY71 LINE DONE (ARMY71-10 final report; audit OK 248k / 121 calls; no successor launched). LIVE (5):
+    BASTION71-8, FIRES71-9, CNOPS71-10, DAMAGE71-8 (two leftovers), SWARMNAT71-8 (timing slot reserved 07:35Z).**
+    Cover poses visible as markers when zoomed in >= 0.55 (hug shadow + chevron, peek lean, green bounding arrow, cyan
+    overwatch arc; unit sprites unchanged); NVG / thermal glints at night; melee clash stars; flow army71 20/0 twice;
+    CnRadio case in radio_feed.gd (CNOPS71 CR 3541; test red first; smoke clean). Own bug fixed: Discipline71.poses
+    tested technique 3, bounding is 2 (LP-only behaviour change; LP batch green). Cost: 2k hash-identical; LP peak
+    +2.42 ms per tick (3.2%; on / off are different fights); view provider 0.17 ms per snapshot. Open for ORCH: full
+    suite, LP soak, fps with the pose overlay. **Finding for the owner: the view never gets darker at night (Senses7
+    light changes the sim only), so NVG shows over a daylight scene; a night tint is a design call.**
+  - **08:05Z DAMAGE71 LINE DONE (addendum; 121 calls). LIVE (4): BASTION71-8, FIRES71-9, CNOPS71-10, SWARMNAT71-8.**
+    Nanite-coat hook installed in damage.gd apply_hit (BASTION71 CR 3364; acts only on buildings carrying `nres`):
+    test_walls71 11/0, test_bastion71 18/0, test_damage71 12/0, hashes == ref, hot_state 17/0 (BASTION71-8 adds its
+    hp-loss test). Tank-crush shot forwarded (effect is subtle). SWARMNAT71-8: SWN8 cuts in entity_layer.gd (unit-loop
+    locals, drawn7 rows reused, static cull record), default OFF, SWN8_VERIFY 0 real diffs on lp / lpw / lppan / 2k
+    (fact seq 3990); A/B timing running in a reserved slot (07:57Z); its HUD / terrain change requests (seq 3995 /
+    3996) have no live owner: ORCH hands them to SWARMNAT71-8 if the A/B leaves the gate short.
+  - **08:10Z test_cards8c RED FIXED IN THE SIM (CNOPS71-10 fact seq 4026; test file unmodified, checked with git
+    status): no known red on the live tree again.** Cause: the MEDICS order's post found no Mender in a quiet LP
+    opening (the 3 on duty hold wall / QRF jobs, 6 are barracks reserve); in wave 1 it passed only because a Machine
+    scout raised the alarm by tick ~480; the combined wave-2 LP base changes the opening (no alarm). Bisect: wave-1
+    tree 7/0, live red, any one of army71 / cnops / fires dropped = green. Fix in sim/systems/cards8c.gd adjust_jobs:
+    while a MEDICS order holds, non-care jobs drop the mender role. test_cards8c 7/0 (also with no base files).
+    Hashes after it: queued with CNOPS71-10's profile batch = UNVERIFIED. DAMAGE71-8 final audit OK 283k.
+  - **08:12Z LP PEAK: THE FIRST FIX GAVE NOTHING (SWARMNAT71-8 fact perf71.lp_peak_fix seq 4033).** The exact unit-loop
+    cuts + static cull record (verify 0 real diffs) measured p10 off / on 20.5 / 18.9, 22.2 / 23.1, 23.8 / 23.9; unit
+    loop 10.55 -> 10.50 ms. Reverted byte-exact (entity_layer.gd == pre-change copy; staged copies kept in
+    .plan/swarmnat71/g8/stage/). Why: the per-unit cost (~18 us) is flat over 9 steps (largest Motion.step 2.7 ms);
+    no few-line GDScript cut removes ms. Gate gap: ~9-10 ms of a ~42 ms p10 frame. Remaining EXACT candidates: HUD
+    3-5 ms (controls not identified), terrain group ~3 ms (split unmeasured): SWARMNAT71-8 is on both. What would
+    close it otherwise: a native per-unit step (kernel design lost to marshal cost; parked) or a VISIBLE trade at peak
+    (lower animation rate / LOD at zoom 0.5; forbidden unless the owner allows it). **OWNER QUESTION ASKED 08:12Z:
+    allow a visible trade at peak as a fallback, or keep visuals and park the gate.**
+  - **13:55Z: THE PC SLEPT 08:24Z -> 13:46Z (5 h 22 min; board seq 4121 -> 4122).** The keep-awake hold (session_idle)
+    lapses ~5 min after ORCH's last turn; with no event for ORCH nothing kept the PC up. On wake the agents' scripts and
+    sessions carried on (BASTION71-8 posted at 13:49Z). Keep-awake re-requested, monitors re-armed. Owner told: needs
+    a Windows power setting or an approved keep-awake script for unattended runs.
+    BASTION71-8 fact bastion71.cost (seq 4138): Turrets71 at LP peak 5.29-5.49 -> 3.08 ms per tick (1.32 when the
+    shared T7 unit grid build is counted outside it); rotary lane query ~1.8 -> ~0.3, laser aim 1.55 -> 0.94; target
+    "well under 1 ms" NOT reached (left: the per-tick unit grid build ~1.3 ms + real weapon work). Behaviour
+    unchanged: LP-peak 600-tick hash equal before / after, hashes == ref, hot_state 17/0, perfsim71 6/0, bastion71
+    18/0, walls71 11/0, turret7 18/0, 4 LP tests green. LIVE (4): BASTION71-8, FIRES71-9, CNOPS71-10 (holds the timing
+    lock since 13:48Z), SWARMNAT71-8 (HUD / terrain A/B running). Owner question still open: visible trade at peak.
+  - **14:00Z: BASTION71-8 handed off (audit OK 283k / 128 calls) -> BASTION71-9 (Sonnet, bounded close-out). LIVE (4):
+    BASTION71-9, FIRES71-9, CNOPS71-10, SWARMNAT71-8.** Survey after all fixes: disable on = uptime 0.901, 17 died, 25
+    disabled, 4 revived; off = uptime 0.900, 28 died (disabling cuts deaths 28 -> 17, uptime flat: disabled time
+    replaces dead time; a design note for the owner). Its 4 new shots are weak (too far out): NOT forwarded; flow
+    walls71 15/1 (`walls71_gate_guns_choke_sealed` false: BASTION71-9 fixes the setup). Turrets71 stays at 3.08 ms per
+    tick (no further cut this slice).
+  - **14:10Z: SWARMNAT71-8 handed off (audit OK 270k / 123 calls) -> SWARMNAT71-9. LIVE (4): BASTION71-9 (Sonnet),
+    FIRES71-9, CNOPS71-10, SWARMNAT71-9.** Terrain-group split (seq 4215): world7_layer.refresh 2.4-2.75 ms (same on a
+    static and a panning camera), fac_atmo7 0.6-0.7, creep 0.2-0.3, terrain 0.1-0.3. Unit-loop split: flat (~18 us per
+    drawn unit over 9 steps). SWARMNAT71-9: exact skips in world7_layer.refresh and the HUD, a _process census of the
+    unattributed 8-14 ms. Gate still ~9-10 ms short; owner question on a visible trade still open.
+    **ORCH fix: script error at sim/render_snap.gd:352 "Invalid access to key 'care71'"** (seen once at the end of a
+    pan run): the g71 provider loop re-read the static table per key and raced with a main-thread unregister at match
+    end; it now reads the table once into a local (check-only clean; display-only; backup
+    .plan/orch71/wire_orig/render_snap.gd.pre_provfix). Not yet re-run in a windowed quit: watch the gate suite and
+    flows for that line. BASTION71-9 shots: the dozer berm forwarded; casing piles are ~4 px and not visible.
+  - **14:20Z: CNOPS71-10 handed off (audit OK 261k / 121 calls) -> CNOPS71-11. LIVE (4): BASTION71-9, FIRES71-9,
+    CNOPS71-11, SWARMNAT71-9.** Owner: "I'll set sleep to Never" (their Windows setting). CNOPS71-10 done: chain_g9 +
+    chain_g10 verified (hashes == ref, hot_state 17/0, perfsim71 6/0, incl. the cards8c MEDICS fix); LP-peak cost of
+    its systems 1.4-1.5 ms per tick (Gas71 0.9, CnFacility 0.5); nanite grenades + shield drone (test_cnops71 12/0);
+    purge cannon coded but PARKED (pc_r 0: a stand-off purge during travel stalls CnMission8's deploy; its own new
+    cannon test was dropped with it); cn71 radio subtitles live (flow cnops71 20/0; shot forwarded). MEDICS now pulls
+    every on-duty Mender off watch while it holds (PROVISIONAL behaviour change). CNOPS71-11: cannon stall, Vanta 2,
+    gear availability, LP soak, closing batch + done_when.
+  - **14:35Z BASTION71 LINE DONE (BASTION71-9 final report; audit OK 187k / 75 calls; Sonnet). LIVE (3): FIRES71-9,
+    CNOPS71-11, SWARMNAT71-9.** Flows walls71 16/0 and bastion71 15/0 (choke step fixed in the flow setup: 4 crawlers
+    at the choke wall; check unchanged); `test_nanite_coat_hp_loss` red first then green (test_walls71 12/0); 2k
+    profile: Turrets71 0.009, Sensors71 0.007, Walls71 0.003 ms per tick; hashes == ref; hot_state 17/0; minimap sensor
+    contact marker 6 -> 10 px (presentation/hud/minimap.gd, `_s71` block only). Open by design: Turrets71 3.08 ms per
+    tick at LP peak; casing piles not visible (1 decal ~4 px: a look change in fx61_engine.gd, owner taste); the wall
+    gun's muzzle fire at the FPF strip is not obvious. Its teardown SCRIPT ERROR at render_snap.gd:352 (key
+    'bastion71') is in a log written 14:00Z = BEFORE the ORCH fix of 14:07Z (same race); not seen since, still to be
+    confirmed by the gate suite + flows.
+  - **14:50Z LP PEAK, FIRST MEASURED GAIN (SWARMNAT71-9 fact perf71.lp_peak_fix2 seq 4374, part 1 of 2; LIVE):**
+    fissure_layer.gd refresh() returns early when the fissure snapshot is the same object as last frame (it rebuilt a
+    loop over every creep cell EVERY frame at LP peak); world7_layer.gd step_herds reads event positions once per
+    call, not once per herd. Exact: headless old / new differential over 500 + 700 LP-peak ticks, every drawn field
+    compared, 0 diffs; test_lpmap7 18/0, test_fissure7 12/0, test_perfdraw71 7/0; flows fissure7 19/0, lpmap7 45/0,
+    vis7 17/0; 0 script errors in 12 windowed runs. Measured: terrain group 3.11 -> 1.16 ms (-1.95 ms per frame); gate
+    p10 pairs old / new 21.4 / 24.3, 23.8 / 24.9, 23.2 / 23.3 (median 23.2 -> 24.3, inside the spread); pan pairs inside
+    noise. Still missing for a 33.3 ms p10 frame: ~7.8 ms (busy PC). Next: HUD per-control split + skips, _process
+    census.
+  - **15:05Z:** FIRES71-9 (seq 4454 / 4455): turret sectors (`KillZone71._wrange`) installed + tested + HASH-CHECKED
+    (killzone71 10/0, bastion71 18/0, turret7 18/0, fires71 12/0, hot_state 17/0, hashes == ref). Fires71 cache
+    removal: correct (hot_state 17/0, lpreserve7 7/0); cost at LP peak 0.19-0.24 ms per tick vs 0.04 with the old
+    unsaved cache; a save-safe per-def memo brings it to ~0.10 (LP hash identical); the full list cache is not
+    restored (cannot be made save-identical without a spawn hook). cn71_layer.gd (Vanta 2 trail + bank cue, shield
+    bubble) added to G71Attach.LAYERS (CNOPS71-11 CR seq 4443; 9 layers; windowed smoke owed by the agent).
+- **03:00Z (ORCH): FIRES71-5 handed off (audit OK 240k) -> FIRES71-6. LIVE (6): BASTION71-4, SWARMNAT71-5, ARMY71-6,
+  CNOPS71-5, DAMAGE71-5, FIRES71-6. Guard + watcher re-armed.**
+  - **test_path7 (wave-2 gate blocker), state:** ORCH moved the LP-base additions to LpSetup.build_g71_late (called from
+    LastProtocol._try_fill at facility fill; backups .plan/orch71/wire_orig/*.pre_late): G7 start ids unchanged, the 4 LP
+    tests green (lpmode7 18/0, lpmap7 18/0, lpreserve7 7/0, lpperf7 9/0), hashes == ref, but test_path7 STILL red (got 2).
+    Per-file bisect (`G71_LP_BASE=<name>`, logs C:/CODING/orch71_check/path7/bis_*.log): fires 1, army71 3, bastion71 2,
+    damage71 (one tent) 1; `=0` is 6/0. So it is a real sim defect: a foot unit can end inside a moving facility vehicle;
+    any change to the LP world exposes it. **CNOPS71-5 owns the sim fix (priority 1; never edit test_path7).**
+  - Same check run also showed (agents' work in flight, theirs to settle): test_fires71 10/1 + 1 script error (new
+    test_fo_call "observer cannot see that point": FIRES71-6), test_bastion71 11/2 (two new tests of BASTION71-4).
+  - FIRES71-5: flow 24/0; provider-unregister bug fixed in fires71_view (a restarted match's old layer wiped snap.g71;
+    DAMAGE71's layers had the same bug); radial clamped to the viewport on its own CanvasLayer; conductor + 4 wingmen
+    added to lp_base_fires.json (NOT approved yet); `test_pick_next_in_sector` red on purpose until ARMY71 changes the
+    target pick. **Design finding for the owner (FIRES71-6 measures, posts need owner.fpf_reach): FPF strips sit ~40
+    tiles from the base centre, gun ranges are 12-22, so base artillery near the centre cannot reach a strip.**
+  - DAMAGE71-5: triage layer draws now (shot forwarded: call-for-medic rings + a tag card). turret71_look.gd attached
+    (g71_attach.gd has 7 layers). lp_base_cnops.json went live (CNOPS71-5; its LP tests wait for the path7 fix).
+- **02:35Z (ORCH): four handoffs in 15 min, all audits OK (SWARMNAT71-4 198k, ARMY71-5 217k, CNOPS71-4 217k, DAMAGE71-4
+  193k). LIVE (6): BASTION71-4, FIRES71-5, SWARMNAT71-5, ARMY71-6, CNOPS71-5, DAMAGE71-5 (.plan/orch71/live_agents.txt).**
+  - FIRES71-5 (seq 2280): `--ui-playtest-fires71` 24/0, 0 script errors; shots .plan/shots/FIRES71/run3/ (radial,
+    line barrage, smoke box, FPF strip, sector, conductor orbit; radial + orbit forwarded to the owner). Clicks: lane
+    barrage 13 -> 2, smoke screen impossible -> 2, one-unit sector impossible -> 3. Seen limits: world markers (mission
+    outline, orbit ring, sector) are dimmed by the LP night tint; impacts not visible in the barrage / smoke shots.
+  - **test_path7 RED (5/1) "facility: no hull overlapping another unit (got 1)": caused by the LP-base placements**
+    (ORCH bisect: new env switch `G71_LP_BASE=0` in LpSetup.build_g71 -> 6/0; with the base files -> 5/1; logs
+    C:/CODING/orch71_check/path7/). ORCH's hook (lp_setup.gd _g71_points) puts a unit hull on another unit: CNOPS71-5
+    probes which def / where and posts `need change_request.lp_setup71`; ORCH fixes the placement. Wave-2 gate blocker.
+  - SWARMNAT71-4: the dsz verify diff is FIXED (entity_layer.gd: bay-hide range closed before the kernel run); verify r1
+    0 real diffs on lp / lpw / lppan. Probes: m_scout_crawler + m_walker are infantry-class with basic anim61 sets (+ a
+    bay-hide entry each); m_tracked is vehicle-class and drops out before registration (cause unknown). 8-step port plan
+    with line numbers in .plan/handoff/SWARMNAT71-4.json. SWARMNAT71-5 does the port. No timing yet.
+  - ARMY71-5: combat.gd lines VERIFIED (hashes == ref, hot_state 17/0, perfsim71 6/0, 9 test files green);
+    lp_base_army71 counts APPROVED by ORCH (PROVISIONAL); army71 flow 12/2 (crew marks + hand signals never appear):
+    ARMY71-6's first job; shots not looked at yet.
+  - CNOPS71-4: cnmission71 'tid' errors were the TEST reading a record in the submit tick (fixed in its own test;
+    test_cnops71 6/0, 0 SE); regressions green (cnmission8 7/0, cnfac7 36/0, apcmov7 16/0, facexit8 4/0, facreturn8 2/0,
+    cnrole7 10/0, cnsim7 27/0) except test_path7; DW8 41.8 s on 6 seeds (seed does not vary the drill = 1 sample);
+    hospital defs (two 6x6 blocks) + art live; lp_base_cnops.json staged only. HARNESS NOTE: tests/run_tests.gd reports
+    PASS when a SCRIPT ERROR aborts a test before its checks: the suite gate must keep counting script errors (it does:
+    err_files).
+  - DAMAGE71-4: pt71_gore71 flow 12/0; real-game shots forwarded to the owner (bodies + blood draw under units). **The
+    triage tags do NOT draw in the real game** (layer attached, Care71 has 13 tags): DAMAGE71-5's first job. care71
+    hospital routing (CNOPS71 seq 2138) not installed. No cost numbers yet.
+- **02:25Z (ORCH): 6th connection drop ~02:00Z killed all six; owner "Try again". Connection 4/4; hospital71.gd (CNOPS71-4
+  reported a 1-minute parse break it fixed), world.gd, match_view.gd, entity_layer.gd, combat.gd parse clean. LIVE (6):
+  SWARMNAT71-4, CNOPS71-4 (handoff only), ARMY71-5, BASTION71-4, DAMAGE71-4 (resumed in place), FIRES71-5 (new).
+  Ids: .plan/orch71/live_agents.txt. Guard + watcher re-armed.**
+  - **Owner 2026-11-22 "Yes, apply it" (DECISIONS.md):** ORCH applied the tests/test_conductor71.gd setup change (13 lines
+    added, 0 removed; backup .plan/orch71/testfix_orig/test_conductor71.gd.pre_cr2130): test_conductor71 7/0, 0 script
+    errors. Owner question (2) (LP-peak "2x G7" reading) still open, to raise with measured numbers.
+  - FIRES71-4 handed off (audit OK 221k): radial + fires71_view + killzone_paint built and attached, pt71_fires71.gd
+    written but never run; thermobaric / incendiary set Gore71.ctx_rc; airfix71 6/0, airops71 8/0, hot_state 17/0,
+    ui_panels 5/0, ui6b 5/0, art 7/0, icons7 1/0, hashes == ref.
+  - BASTION71-4 (seq 2214): lp_base_bastion71.json without generators: 4 LP tests green (18/0, 18/0, 7/0, 9/0). Survey,
+    1000 machines / 90 s: uptime 0.893 -> 0.917 (0.924 with disabled-not-dead), defence deaths 25 -> 19 / 17; rotary
+    rails fire ~2,200 slugs (21 when unpowered); lasers / flak 0 shots (no air targets in that wave); 0 revives (nobody
+    acts on disabled turrets yet). **Counts APPROVED by ORCH as PROVISIONAL** (fact orch.lp_base71.approved).
+    Approved so far: fires (2 FO, 2 MLRS), damage (1 surgery tent), bastion. Pending: army71 (no fact yet), cnops
+    (staged), fires conductor + 4 wingmen (staged).
+  - ARMY71-5: fact army71.cr_installed (seq 2157): BASTION71 tower guard + FIRES71 lines verified so far by perfsim71
+    6/0, army71 9/0, ammo71 7/0, crew71 7/0; rest of its batch in flight.
+- **02:10Z: SWARMNAT71-3 handed off (audit OK 212k) -> SWARMNAT71-4 launched. KEY FINDING: the native unit kernel
+  (rts_core 0.6.4, LIVE, toggle default off; hashes / hot_state / perfsim71 green) draws ~60 human vehicles per frame at LP
+  peak and 0 Machines (anim61 machines are classed as infantry and never registered), so as built it cannot move the LP
+  peak. SWARMNAT71-4: fix the 1 real verify diff (unwritten dsz slot), port the anim61 Machine path into the kernel, look
+  at MOTION_CAP 700. No g71 timing yet (PC never quiet); quiet-PC command list in .plan/handoff/SWARMNAT71-3.json.**
+  - **OWNER QUESTIONS PENDING (fact orch.owner_asks):** (1) tests/test_conductor71.gd setup change (FIRES71-4 seq 2130:
+    remove armed player units near the station so the new LP-base turrets / crews don't kill the 3 targets in 25 ticks;
+    assertions unchanged; test is 6/1 until then). The agent's own Edit was refused by the permission check and it asked
+    ORCH to do it: ORCH did NOT (no routing around a refusal) and asked the owner. (2) LP-peak gate reading: ">= 30 and
+    >= 2x G7" was set when G7's LP peak was recorded as 13.3-15.4 p10 (loaded rounds; SWARM_NATIVE71.md s5), i.e. ~27-31;
+    the quiet G7 run of 2026-11-21 gives 24.5, so the literal bar is 49 vs an estimated best case ~43. To raise with
+    measured g71 numbers; agents work to >= 30 first.
+- **01:55Z: BASTION71-3 (audit OK 235k) and DAMAGE71-3 (audit OK 230k) handed off -> BASTION71-4, DAMAGE71-4 launched.
+  LIVE (6): FIRES71-4, SWARMNAT71-3, CNOPS71-4, ARMY71-5, BASTION71-4, DAMAGE71-4 (.plan/orch71/live_agents.txt).**
+  - **LP start power bug (ORCH hook) FIXED:** power_up ran before build_g71, so wave-2 powered buildings were unpowered
+    ("base powered 2730 / 3026": test_lpmode7 16/2 or 17/1). lp_setup.gd now runs power_up again after build_g71 when it
+    placed anything (adds only the missing generators). VERIFIED 02:00Z: test_lpmode7 18/0, 0 script errors, with
+    lp_base_fires + army71 + bastion71 live (C:/CODING/orch71_check/resume71/lpmode7_power.log).
+    02:15Z DAMAGE71-4 (seq 2148): surgery tent file live; with all 4 base files and BASTION71's generators REMOVED:
+    test_lpmode7 18/0 twice, test_lpmap7 18/0, test_lpreserve7 7/0, test_lpperf7 9/0 (the second power pass works).
+    BASTION71-4 removes its 8 workaround generators; DAMAGE71-4 un-parks the surgery tent (count 1 approved).
+  - LP start files live: lp_base_fires (approved), lp_base_army71 (4 MG crews, 2 AT, 2 AM, 2 grenadiers, 1 flame tank:
+    NOT approved, no LP results posted), lp_base_bastion71 (2 siege engineers, 2 maint drones, 1 breacher, 4 rotary rail,
+    2 HPM, 2 laser CIWS, 2 flak, 4 sonic sensors, + 8 generators to remove: NOT approved). Owner told the counts; may tune.
+  - BASTION71-3: firing ports, choke doors (movement.gd is_passable_e), minimap sensor contacts (no windowed smoke yet),
+    traverse for new turrets; test_walls71 7/0, test_bastion71 11/0; hashes == ref, hot_state 17/0, perfsim71 6/0. Survey
+    (1000 machines, 90 s): uptime 0.893 -> 0.894 with disabled-not-dead (no engineers near; 18 of 25 deaths are towers).
+  - DAMAGE71-3: regression green after Gore71 / Care71 (6 files, hashes, hot_state); limp native on == off test (no native
+    change needed); surgery tent def + art; both view layers attached, not yet seen drawing in a real game.
+  - ORCH: tools/ui_playtest.gd G7_FLOWS + 16 wave-2 flow names (fact orch.ui_playtest71); g71_attach.gd LAYERS now 6:
+    gore71_layer, triage_tags, fires71_view, killzone_paint, fire_radial, signals71_layer (windowed smoke 0 script errors).
+- ~23:35Z: FIRES71-3 handed off (audit OK, real 244k / 84 calls) -> **FIRES71-4 launched**. FIRES71-3: test_conductor71
+  7/0 (wingmen no longer share the gunship's landing cell), conductor + wingman art, strikes.gd track_shell (LP only),
+  hotkey `fire_radial71` = QUOTELEFT held (ORCH PROVISIONAL decision: F is the fixed Formation key), 3 ui71 files written
+  but not attached. NOT run after the Conductor71 wiring / hotkeys change: test_airfix71, test_airops71, test_hot_state,
+  hashes, test_ui_panels, test_ui6b (FIRES71-4's first job).
+- world.gd also has: CnMission71 (slot after CnMission8; cn_search / cn_abort / cn_roe; CR 1811; test_cnops71 6/0 before
+  registration, ORCH rerun in flight: C:/CODING/orch71_check/resume71/test_cnops71.log) and Crew71 (crew_rate / crew_top;
+  CR 1863; test_crew71 7/0). DAMAGE71-3: regression after Gore71 / Care71 green on 6 files + hashes == ref (status seq 1869).
+- test_art in the live tree is red on ARMY71's new crew ids (mg_crew, at_team, am_team, grenadier): told ARMY71-4.
+- world.gd 23:25Z: + Conductor71 (preload, slot after Fires71, conductor_orbit / home / kamikaze; CR 1748): parse clean,
+  test_conductor71 7/0, test_fires71 10/0; FIRES71-3 reruns airfix71 / airops71 / hashes / hot_state.
+- DAMAGE71-2 handoff: Gore71 + Care71 + hooks in damage / wounds / medical are LIVE (test_gore71 7/0, test_care71 4/0) but
+  the regression run after them (damage71, wound7, damage, lpmode7, hashes, hot_state) is NOT done: DAMAGE71-3's first job.
+- BASTION71-2 handoff: hotkey cause = berm + sonic sensor ran out of build letters and took J (fix: build_cat in content);
+  blocked guard in turrets7 / wallturret7; combat.gd tower line with ARMY71-4 (CR 1720).
+- SWARMNAT71-2 handoff: statics records verified 0 diffs, ON by default; native unit kernel built as bin/rts_core.new.dll
+  (0.6.4), NOT swapped in, never run. **Outlook (unmeasured): LP peak best case ~43 fps vs the gate 49 (2x G7 24.5): likely
+  an owner stop-and-ask once SWARMNAT71-3 has quiet-PC numbers (it posts need owner.lp_peak.ask3).**
+- Quiet-PC fps, G7 reference only (.plan/perfdraw71/q1121.out, 2026-11-21 22:55Z): 2k p10 62.7, 10k p10 228.0, LP zoomed-out
+  62.8, LP pan 39.9, LP peak 24.5. So the amended LP-peak gate (>= 30 and >= 2x G7) = p10 >= 49. g71 run INVALID (view
+  broken): redo `CASES="2k 10k" bash .plan/perfdraw71/base.sh <tag> g71` on a quiet PC once swarmnat71.view_ok is posted.
+Previous park note, kept: (1) confirm the connection holds (a few minutes of curl to api.anthropic.com); (2) ORCH runs
+test_lpmode7 + test_lpreserve7 (lp_home), test_ui_panels + test_ui6b, the 3 bench hashes and test_hot_state on the live tree
+to know where it stands; (3) resume the six agents (SendMessage to each, or successors from the statuses above), guard +
+watcher under Monitor, keep-awake on.
+Wave-2 gen-2 briefing: `.plan/agents/prompts/G71-W2_GEN2.md` (what is wired, what wave 2 owes: 11 placeholder icons, the
+build_rail X hotkey clash, rules). NEXT: launch DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2, CNOPS71-2, SWARMNAT71-2 from
+`.plan/handoff/<ID>.json` (caps 750k/140, board v1, guard under Monitor, keep-awake on); then per agent: handle CRs
+(change_request.world71, testfix.*), audit on completion, successors from handoffs; wave-2 gate = full suite on a refreshed
+frozen copy before the wave-2 commit (owner's yes needed for the commit).
 Status 2026-11-02 (ORCH): G7 leftovers committed (3a66ffc); branch `g71` cut. **D: health check FAILED** (Disk 1 Seagate:
 bad blocks + hardware I/O errors logged as recently as 2026-11-02 12:00), so G7 was NOT copied to D:; all work stays on C:
 and the D: tree is still at G6.1 (55b4e04). A5 done (+20% speed at load, `rules.g71_speed_mult`); goldens re-baselined
@@ -157,7 +875,9 @@ G7 3a66ffc and live; evidence `.plan/speedfix71/`, scratchpad probes for SPEEDCN
   5-6 shots, never moves). Copied to g71_clean: every listed code/content/test file now byte-identical live vs frozen, no
   tracked change outside the lists. FINAL full suite on g71_clean started (run 2 logs kept in suite71_run2/).
 - **WAVE-1 GATE MET (2026-11-14 02:37-03:10Z, g71_clean, suite71.sh 6 lanes): files=177 fail_files=0 err_files=0, 1,451 checks
-  pass** (C:/CODING/orch71_check/suite71/STATUS + SUMMARY.txt). Wave 1 committed locally by path (no push): wave1_files.txt +
+  pass** (C:/CODING/orch71_check/suite71/STATUS + SUMMARY.txt). **Committed 82a887a** (155 files staged by path from
+  C:/CODING/orch71_check/commit_paths.txt; all 114 code/content/test/asset blobs == the tested g71_clean files, CR-stripped;
+  fact orch.wave1_committed posted; NOT pushed; D: still not synced). Wave 1 committed locally by path (no push): wave1_files.txt +
   wave1_uids.txt + fixer_files.txt + tools/art/g71_farp.gd.uid + fixer briefs/handoffs. NEXT (old steps 3-4 below): ORCH
   world.gd wiring CRs (FIRES71 978, DAMAGE71 damage71_register/g6hooks, BASTION71 cr_orch, CNOPS71 1001, lp_setup q15 hook),
   then post `fact orch.wave1_committed` and spawn the wave-2 successors (DAMAGE71-2, FIRES71-2, ARMY71-3, BASTION71-2,

@@ -1,0 +1,12 @@
+{
+  "_meta": "DAMAGE71 (roster 5A Q15, scope G1 'a field surgery tent near the walls') Last Protocol starting-base addition, read by LpSetup.build_g71. PROVISIONAL count; ORCH approves.",
+  "units": [],
+  "buildings": [
+    {
+      "def": "a_g71_surgery_tent",
+      "count": 1,
+      "near": "outer_ring",
+      "_why": "G1: casualty drop-off for medics just inside the outer wall (field_hospital: Medical's def-driven lookup)"
+    }
+  ]
+}

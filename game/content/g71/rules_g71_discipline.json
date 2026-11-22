@@ -1,0 +1,104 @@
+{
+  "_meta": "G7.1 D4 DISCIPLINE (ARMY71, docs/G71_SCOPE.md D4; Last Protocol only per roster 5A Q1). rules.g71_discipline drives sim/systems/discipline71.gd. Every number is PROVISIONAL (first pass from fact army71.baseline, untuned).",
+  "rules": {
+    "g71_discipline": {
+      "ver": 1,
+      "enabled": true,
+      "think_every": 10,
+      "_think_note": "PROVISIONAL. Squad thinking period in ticks, staggered by squad id ((tick + sq) % think_every).",
+      "threat": {
+        "in_range_mult": 2.0,
+        "targets_us_mult": 1.5,
+        "focus_ratio": 2.0,
+        "overkill": 1.3,
+        "overkill_mult": 0.3,
+        "_note": "PROVISIONAL. threat(t) = t's damage per second against the squad member it threatens most, x in_range_mult when that member is inside t's range, x targets_us_mult when t is shooting one of us. The squad focus-fires the top threat when it is >= focus_ratio x the median threat (a 'big one'), else every member takes the top threat in its own sector. A target already assigned >= overkill x its hp is scored x overkill_mult."
+      },
+      "sector": {
+        "spread_deg": 120.0,
+        "overlap": 1.5,
+        "out_mult": 0.4,
+        "painted_out_mult": 0.1,
+        "_note": "PROVISIONAL. Auto sectors: the squad front (centroid -> threat centroid) split into one arc per member (sorted by id), each widened by overlap so neighbours' fields overlap. A target outside a member's arc scores x out_mult (x painted_out_mult outside a KillZone71 painted sector)."
+      },
+      "mag": {
+        "by_class": {
+          "small_arms": [
+            8,
+            2.5
+          ],
+          "assault": [
+            6,
+            2.0
+          ],
+          "sniper": [
+            5,
+            3.0
+          ]
+        },
+        "by_weapon": {
+          "lmg": [
+            24,
+            5.0
+          ],
+          "g5_heavy_mg": [
+            30,
+            6.0
+          ],
+          "g6_sidecar_mg": [
+            30,
+            6.0
+          ],
+          "pistol": [
+            5,
+            1.5
+          ]
+        },
+        "tactical_frac": 0.34,
+        "max_reloading_frac": 0.34,
+        "_note": "PROVISIONAL. [shots per magazine, reload seconds] for foot soldiers (Accuracy8 C_INF) in Last Protocol; other weapons keep their old cooldown cycle. Staggered reloads: with its NCO alive a soldier at <= tactical_frac of a magazine reloads early only while fewer than max_reloading_frac of its squad (at least 1) are reloading; otherwise he fires the magazine dry."
+      },
+      "nco": {
+        "step_up_s": 10.0,
+        "lost_switch_every": 3,
+        "lost_slot_mult": 1.6,
+        "lost_stagger": false,
+        "_note": "PROVISIONAL. The squad NCO is its leader (SquadAI.leader_of) when the squad is first seen. While the NCO is down: the squad re-picks targets only every lost_switch_every thinks, never focus-fires, keeps no reload stagger and holds formation lost_slot_mult x looser; after step_up_s the most senior survivor steps up as the new NCO."
+      },
+      "radio": {
+        "contact_quiet_s": 8.0,
+        "_note": "PROVISIONAL. A squad calls 'Contact <dir>!' when it gets a target after contact_quiet_s with none. The view (radio_feed.gd) rate-limits per category."
+      },
+      "gear": {
+        "nvg_infantry": true,
+        "nvg_light": 0.8,
+        "nvg_sight": 0.85,
+        "_note": "PROVISIONAL (G1 NVG vs thermal, LP only). nvg_infantry: every LP squad soldier without thermals wears NVG (e.g71nvg, set at its first squad think). NVG lifts darkness to nvg_light (accuracy) / nvg_sight (spotting) but smoke still blocks it; thermals (def thermal / thermal_defs / e.thermal) see through smoke and reveal Glass stalkers (Senses7.thermal_reveals, wave 3)."
+      },
+      "melee": {
+        "range": 1.6,
+        "bayonet": 2.2,
+        "shotgun": 2.8,
+        "flame": 1.6,
+        "other": 1.3,
+        "_note": "PROVISIONAL (I2 hand-to-hand on the wall-walk, LP only). A soldier on the wall-walk (WallWalk7.on_wall) whose target is within range tiles fights hand-to-hand: damage x bayonet (rifles / small arms), x shotgun (assault class or a shotgun weapon), x flame (flamers), x other; the shot keeps its one rng draw; event Melee71 {shooter, target, kind, pos} for the view."
+      },
+      "cover": {
+        "hug_mult": 0.55,
+        "peek_mult": 1.0,
+        "bound_mult": 1.0,
+        "hug_supp": 60.0,
+        "_note": "PROVISIONAL (ARMY71-9). Pose per squad soldier on each LP squad think (e.d71c): bound 3 = a mover of the bounding team; in cover: hug 1 (reloading, supp >= hug_supp or no target), peek 2 (firing from cover). Incoming hit chance x hug_mult / peek_mult / bound_mult."
+      },
+      "catchup": {
+        "dist": 3.0,
+        "_note": "PROVISIONAL (ARMY71-9). While the leader moves, a moving member > dist tiles from him sprints (gait 3) to close up."
+      },
+      "stack": {
+        "on_enter": true,
+        "min_dist": 2.5,
+        "_note": "PROVISIONAL (ARMY71-9). >= 2 men of a squad ordered into one of our buildings stack on its door first (garrison clear drill), unless already within min_dist tiles of it."
+      }
+    }
+  }
+}

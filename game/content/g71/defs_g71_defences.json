@@ -1,0 +1,394 @@
+{
+ "_meta": "G7.1 BASTION71 (docs/G71_SCOPE.md B1 rotary railgun / laser CIWS / HPM, G3 flak tower + sonic sensor, I2 disabled-not-dead, G3 wall tech). New ids only (roster Q12). Every number PROVISIONAL (untuned). Defs carry a t71 block and NO def.weapon and NO t7 block: sim/systems/turrets71.gd drives them (Last Protocol only; skirmish never builds them).",
+ "buildings": {
+  "a_g71_rotary_rail": {
+   "name": "Rotary Railgun",
+   "faction": "human_a",
+   "stage_min": 10,
+   "size": 2,
+   "hp": 2200,
+   "armor": "fortification",
+   "sight": 11,
+   "power": -90,
+   "buildable": true,
+   "requires": [
+    "a_radar_station"
+   ],
+   "requires_power": true,
+   "cost": {
+    "credits": 1100,
+    "salvage": 380,
+    "ore": 420
+   },
+   "build_time": 44,
+   "g7": true,
+   "g71": true,
+   "turret71": true,
+   "build_cat": "defence",
+   "desc": "Wall turret: hypervelocity slugs at minigun rate. Spins up, runs hot, forced cooldown. Slugs pierce a whole line of machines.",
+   "t71": {
+    "kind": "rotary", "traverse_deg": 120.0,
+    "weapon": "g71_rotary_slug",
+    "air": false,
+    "buildings": false,
+    "prefer": [
+     "swarm",
+     "pack",
+     "walker_l",
+     "light_v",
+     "walker_h",
+     "heavy"
+    ],
+    "only": [
+     "swarm",
+     "pack",
+     "walker_l",
+     "light_v",
+     "walker_h",
+     "heavy",
+     "big",
+     "leech"
+    ],
+    "spin_up_s": 1.5,
+    "spin_down_s": 3.0,
+    "fire_every": 2,
+    "heat_per_shot": 9,
+    "heat_max": 1000,
+    "heat_resume": 300,
+    "cool_per_tick": 6,
+    "pierce": 8,
+    "lane": 0.6,
+    "falloff": 0.88
+   }
+  },
+  "a_g71_laser_ciws": {
+   "name": "Laser CIWS (beam)",
+   "faction": "human_a",
+   "stage_min": 10,
+   "size": 1,
+   "hp": 1000,
+   "armor": "building",
+   "sight": 10,
+   "power": -60,
+   "buildable": true,
+   "requires": [
+    "research_station"
+   ],
+   "requires_power": true,
+   "cost": {
+    "credits": 700,
+    "salvage": 240,
+    "ore": 180
+   },
+   "build_time": 30,
+   "g7": true,
+   "g71": true,
+   "turret71": true,
+   "build_cat": "defence",
+   "desc": "Burns drones out of the sky with a held beam. Smoke cuts its range; the optic runs hot.",
+   "t71": {
+    "kind": "laser", "traverse_deg": 240.0,
+    "weapon": "g71_laser",
+    "air": true,
+    "buildings": false,
+    "prefer": [
+     "drone",
+     "air",
+     "swarm"
+    ],
+    "only": [
+     "drone",
+     "air",
+     "swarm"
+    ],
+    "dwell_s": 0.7,
+    "dwell_per_hp": 0.0015,
+    "heat_per_tick": 14,
+    "heat_max": 1000,
+    "heat_resume": 250,
+    "cool_per_tick": 5,
+    "smoke_range_mult": 0.35,
+    "weather_range_mult": {"rain": 0.7, "snow": 0.75, "fog": 0.45, "dust": 0.55, "storm": 0.6, "_note": "PROVISIONAL (BASTION71-7): laser range x this for w.cfg.weather (the Accuracy8 key); clear / none = x1"},
+    "smoke_mult_per_cloud": 1.0,
+    "switch_dwell_keep": 0.0
+   }
+  },
+  "a_g71_hpm": {
+   "name": "HPM Emitter",
+   "faction": "human_a",
+   "stage_min": 10,
+   "size": 1,
+   "hp": 1100,
+   "armor": "building",
+   "sight": 9,
+   "power": -80,
+   "buildable": true,
+   "requires": [
+    "research_station"
+   ],
+   "requires_power": true,
+   "cost": {
+    "credits": 640,
+    "salvage": 230,
+    "ore": 170
+   },
+   "build_time": 28,
+   "g7": true,
+   "g71": true,
+   "turret71": true,
+   "build_cat": "defence",
+   "desc": "High-power microwave: fries the electronics of a swarm in a short cone and drops drones. Long recharge.",
+   "t71": {
+    "kind": "hpm", "traverse_deg": 90.0,
+    "weapon": "g71_hpm",
+    "air": true,
+    "buildings": false,
+    "prefer": [
+     "swarm",
+     "drone",
+     "leech",
+     "pack"
+    ],
+    "only": [
+     "swarm",
+     "drone",
+     "leech",
+     "pack",
+     "walker_l",
+     "light_v"
+    ],
+    "cone_deg": 70.0,
+    "stun_s": 6.0,
+    "min_targets": 3,
+    "drop_drones": true
+   }
+  },
+  "a_g71_flak": {
+   "name": "Flak Tower",
+   "faction": "human_a",
+   "stage_min": 9,
+   "size": 1,
+   "hp": 1300,
+   "armor": "fortification",
+   "sight": 11,
+   "power": 0,
+   "buildable": true,
+   "requires": [
+    "a_radar_station"
+   ],
+   "requires_power": false,
+   "cost": {
+    "credits": 520,
+    "salvage": 210,
+    "ore": 120
+   },
+   "build_time": 26,
+   "g7": true,
+   "g71": true,
+   "turret71": true,
+   "build_cat": "defence",
+   "desc": "Proximity-fused flak: bursts when a cloud of drones is inside the fuse radius. The main answer to aerial flocks.",
+   "t71": {
+    "kind": "flak", "traverse_deg": 110.0,
+    "weapon": "g71_flak",
+    "air": true,
+    "buildings": false,
+    "prefer": [
+     "drone",
+     "air",
+     "swarm"
+    ],
+    "only": [
+     "drone",
+     "air",
+     "swarm"
+    ],
+    "fuse_r": 2.6,
+    "burst_r": 3.2,
+    "min_cluster": 3,
+    "cluster_scan": true
+   }
+  },
+  "a_g71_sonic_sensor": {
+   "name": "Sonic Sensor",
+   "faction": "human_a",
+   "stage_min": 8,
+   "size": 1,
+   "hp": 450,
+   "armor": "building",
+   "sight": 6,
+   "power": 0,
+   "buildable": true,
+   "requires": [
+    "research_station"
+   ],
+   "requires_power": false,
+   "cost": {
+    "credits": 160,
+    "salvage": 60,
+    "ore": 30
+   },
+   "build_time": 10,
+   "g7": true,
+   "g71": true,
+   "build_cat": "base",
+   "_build_cat_note": "BASTION71-2: base page (defence page is full: a 14th def there took J, the engineer-card minefield key)",
+   "desc": "Ground sensor: hears burrowers and (later) Glass stalkers through the soil. Contacts show on the minimap.",
+   "s71": {
+    "range": 16.0,
+    "classes": [
+     "burrower",
+     "stalker"
+    ],
+    "scan_s": 1.0
+   }
+  },
+  "a_g71_berm": {
+   "name": "Earth Berm",
+   "faction": "human_a",
+   "size": 1,
+   "hp": 900,
+   "armor": "fortification",
+   "sight": 1,
+   "power": 0,
+   "buildable": true,
+   "requires": [],
+   "requires_power": false,
+   "cost": {
+    "credits": 40,
+    "salvage": 20
+   },
+   "build_time": 5,
+   "build_cat": "support",
+   "_build_cat_note": "BASTION71-2: field works page beside sandbags / trench (on the full Military page it took J and shifted the engineer G6 keys: X armed sweep)",
+   "wall": true,
+   "g7": true,
+   "g71": true,
+   "stage_min": 9,
+   "desc": "Dozer-built earth bank: cheap cover and a speed bump for the swarm."
+  }
+ },
+ "weapons": {
+  "g71_rotary_slug": {
+   "class": "autocannon",
+   "damage": 34,
+   "range": 20,
+   "cooldown": 0.1,
+   "accuracy": 0.9,
+   "g71": true,
+   "suppress": 2.0
+  },
+  "g71_laser": {
+   "class": "energy",
+   "damage": 400,
+   "range": 14,
+   "cooldown": 0.05,
+   "accuracy": 1.0,
+   "g71": true,
+   "anti_drone": true
+  },
+  "g71_hpm": {
+   "class": "energy",
+   "damage": 60,
+   "range": 9,
+   "cooldown": 22.0,
+   "accuracy": 1.0,
+   "g71": true
+  },
+  "g71_flak": {
+   "class": "frag",
+   "damage": 70,
+   "range": 16,
+   "cooldown": 1.6,
+   "accuracy": 1.0,
+   "g71": true,
+   "anti_air_low": true,
+   "anti_drone": true
+  }
+ },
+ "units": {
+  "a_g71_siege_engineer": {
+   "name": "Siege Engineer",
+   "role": "engineer",
+   "armor": "infantry",
+   "move_class": "foot",
+   "hp": 110,
+   "speed": 2.3,
+   "sight": 8,
+   "weapon": "carbine",
+   "pop": 1,
+   "radius": 0.3,
+   "ammo_max": 40,
+   "morale": 110,
+   "can_build": true,
+   "can_repair": true,
+   "build_power": 1.8,
+   "detects_mines": true,
+   "can_mine": true,
+   "can_charge": true,
+   "field_builder": true,
+   "eng71": true,
+   "faction": "human_a",
+   "stage_min": 8,
+   "g71": true,
+   "desc": "Combat engineers+: wire, wall rebuilds under fire, demo charges, bunkers and firing steps mid-siege; revives disabled turrets fast. PROVISIONAL stand-in art (combat engineer)."
+  },
+  "a_g71_maint_drone": {
+   "name": "Turret Maintenance Drone",
+   "role": "builder",
+   "armor": "light",
+   "move_class": "foot",
+   "radius": 0.4,
+   "hp": 140,
+   "speed": 3.2,
+   "sight": 8,
+   "weapon": "",
+   "pop": 1,
+   "energy": true,
+   "can_repair": true,
+   "build_power": 1.0,
+   "maint71": true,
+   "faction": "human_a",
+   "stage_min": 9,
+   "g71": true,
+   "desc": "Repairs damaged turrets and slowly revives disabled ones in the middle of a wave (Turrets71 auto behaviour). PROVISIONAL stand-in art."
+  },
+  "a_g71_breacher": {
+   "name": "Breacher Dozer",
+   "role": "dozer",
+   "armor": "heavy",
+   "move_class": "vehicle",
+   "hp": 1500,
+   "speed": 2.0,
+   "sight": 7,
+   "pop": 3,
+   "radius": 0.8,
+   "g71": true,
+   "leaves_wreck": true,
+   "ammo_max": 40,
+   "fuel_max": 380,
+   "fuel_per_tile": 1.3,
+   "components": {
+    "mobility": 100,
+    "weapon": 100,
+    "sensors": 100
+   },
+   "can_build": true,
+   "build_power": 1.8,
+   "can_sweep": true,
+   "clears_obstacles": true,
+   "dozer71": {
+    "clears": [
+     "wreck",
+     "trench"
+    ],
+    "builds": [
+     "a_g71_berm"
+    ]
+   },
+   "faction": "human_a",
+   "stage_min": 9,
+   "desc": "Armoured dozer: pushes earth berms up (build_line a_g71_berm), clears tank traps and wire; wreck clearing and trench filling are API stubs until Gore71 / C3 land. PROVISIONAL stand-in art."
+  }
+ }
+}

@@ -68,6 +68,11 @@ const AIM_HOLD := 3.0 # s a turret keeps aiming at its last target
 
 var vs: Dictionary = {}          # id -> PackedFloat32Array(S_N)
 var corpses: Array = []          # [id, art cache Array (batch_art cache_unit), screen pos, row, t0]
+## G7.1 DAMAGE71 CR 1897 (board seq 1897): in Last Protocol with Gore71 state (snap.g71.gore71 != null; set by the
+## entity layer each refresh) the settled body is drawn by gore71_layer.gd, so a corpse ends once its death animation
+## has settled (GORE_SETTLE s after death, after the landing for a thrown body) instead of lingering CORPSE_LIFE.
+var gore_hand := false
+const GORE_SETTLE := 1.5        # PROVISIONAL: die_0..2 settle at 0.4 s, a thrown body lies still ~0.4 s after landing
 var out_face := 0.0
 var out_off := Vector2.ZERO
 var out_px := Vector2.ZERO
@@ -327,6 +332,14 @@ func forget(id: int) -> void:
 
 ## Drops corpses past their life. Returns nothing; call once per frame.
 func prune(t: float) -> void:
+	if gore_hand and not corpses.is_empty():   # G7.1 DAMAGE71 CR 1897
+		var any := false
+		for cp in corpses:
+			if t - float(cp[4]) > GORE_SETTLE + (float((cp[5] as Array)[2]) if cp.size() > 5 else 0.0):
+				any = true
+				break
+		if any:
+			corpses = corpses.filter(func(cp): return t - float(cp[4]) <= GORE_SETTLE + (float((cp[5] as Array)[2]) if cp.size() > 5 else 0.0))
 	while not corpses.is_empty() and t - float(corpses[0][4]) > CORPSE_LIFE:
 		corpses.pop_front()
 	if not corpses.is_empty() and t - float(corpses[corpses.size() - 1][4]) > CORPSE_LIFE:

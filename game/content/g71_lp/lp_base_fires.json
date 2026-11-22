@@ -1,0 +1,72 @@
+{
+  "_meta": "FIRES71 (roster 5A Q15) Last Protocol starting-base additions, read by LpSetup.build_g71. PROVISIONAL counts; ORCH approves. Counter-battery uses the existing a_radar_station core plot (no new def). The CONDUCTOR (B6) + 4 loyal wingmen start in the core ring; Conductor71.conductor_home gives the gunship its pad cell and each wingman its own landing cell. OPTION A (owner 2026-11-22, owner.fpf_reach seq 2456: guns near each face): the 2 base MLRS moved to the outer ring and 5 MLRS added so every wall face FPF strip centre has >= 3 indirect guns in reach (range 22 + 1 slack). Placements 3 tiles inside the outer wall (indirect fire arcs over the wall). PROVISIONAL.",
+  "units": [
+    {
+      "def": "a_g71_fo_team",
+      "count": 2,
+      "near": "outer_ring",
+      "_why": "G1: spotters make B4 fire precise (one per two wall faces)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 2,
+      "near": "outer_ring",
+      "_why": "G2 + option A: fuel-air / cluster / smart rockets; on the outer ring they land behind the south and north faces (reach their FPF strips)"
+    },
+    {
+      "def": "a_g71_conductor",
+      "count": 1,
+      "near": "core_ring",
+      "_why": "B6: the command gunship, orbit placed from the radial (gunship slot)"
+    },
+    {
+      "def": "a_g71_wingman",
+      "count": 4,
+      "near": "core_ring",
+      "_why": "B6: 4 loyal-wingman drones in the rotating formation (PROVISIONAL 4 of 4-6)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 1,
+      "near": "outer_ring",
+      "offset": [
+        0,
+        -27
+      ],
+      "_why": "option A: west face FPF (1 of 3)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 1,
+      "near": "outer_ring",
+      "_why": "option A: west face FPF (2 of 3)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 1,
+      "near": "outer_ring",
+      "_why": "option A: west face FPF (3 of 3)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 1,
+      "near": "outer_ring",
+      "offset": [
+        27,
+        27
+      ],
+      "_why": "option A: south face FPF (3rd gun)"
+    },
+    {
+      "def": "a_g71_mlrs",
+      "count": 1,
+      "near": "outer_ring",
+      "offset": [
+        27,
+        -20
+      ],
+      "_why": "option A: north face FPF (3rd gun)"
+    }
+  ],
+  "buildings": []
+}

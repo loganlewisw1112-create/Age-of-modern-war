@@ -1,0 +1,15 @@
+{
+  "_meta": "BASTION71 (roster 5A Q15) Last Protocol starting-base additions, read by LpSetup.build_g71. PROVISIONAL counts; ORCH approves. B1 rotary railguns and HPM emitters on the outer ring (one railgun per wall face, two HPM where swarms bunch), G3 laser CIWS and flak towers in the core ring against drones and aerial flocks, sonic sensors on the outer ring (burrowers), I2 maintenance drones and G1 siege engineers to revive disabled turrets mid-wave, the G2 breacher dozer in the core ring (berms, wreck clearing).",
+  "units": [
+    {"def": "a_g71_siege_engineer", "count": 2, "near": "outer_ring", "_why": "G1 / I2: revive disabled turrets (turret_revive), rebuild under fire"},
+    {"def": "a_g71_maint_drone", "count": 2, "near": "core_ring", "_why": "I2: drone repairs mid-wave"},
+    {"def": "a_g71_breacher", "count": 1, "near": "core_ring", "_why": "G2: berms, wreck clearing"}
+  ],
+  "buildings": [
+    {"def": "a_g71_rotary_rail", "count": 4, "near": "outer_ring", "_why": "B1: one per wall face, pierces the swarm lines"},
+    {"def": "a_g71_hpm", "count": 2, "near": "outer_ring", "_why": "B1: cone stun where swarms bunch"},
+    {"def": "a_g71_laser_ciws", "count": 2, "near": "core_ring", "_why": "B1: burns drones out of the sky"},
+    {"def": "a_g71_flak", "count": 2, "near": "core_ring", "_why": "G3: proximity flak against aerial flocks"},
+    {"def": "a_g71_sonic_sensor", "count": 4, "near": "outer_ring", "_why": "G3: burrower contacts on the minimap"}
+  ]
+}

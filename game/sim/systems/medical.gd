@@ -31,6 +31,7 @@ const Movement = preload("res://sim/systems/movement.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const HotState = preload("res://sim/hot_state.gd")   # direct dict writes are followed by HotState.touch
+const Hospital71 = preload("res://sim/systems/hospital71.gd")   # G7.1 J6 (CNOPS71 CR seq 2138): trauma hospital wards
 
 const STEP := 10
 const HUMAN := ["human_a", "human_b"]
@@ -254,6 +255,8 @@ static func _bleed(w: SimWorld, st: Dictionary) -> void:
 		if e.has("loadout"):
 			SimWorld.Loadouts.forget(w, e)   # G6 (EXO6): keep loadouts.nonstandard exact
 		w.emit("BledOut", {"id": int(id), "owner": int(e.owner), "def": String(e.def)})
+		if SimWorld.Gore71.on(w):
+			SimWorld.Gore71.on_death(w, e, "bled_out")   # G7.1 DAMAGE71 J1
 		w.destroy(int(id), "bled_out")
 
 
@@ -494,9 +497,15 @@ static func _deliver(w: SimWorld, st: Dictionary, c: Dictionary, b: Dictionary, 
 	var hosp := bool(Content.building(String(b.def)).get("hospital", false))
 	var light_left := bleed_ticks() - int(float(cfg().get("light_s", 30)) * 20.0)
 	var keep := []
+	var h71 := bool(Content.building(String(b.def)).get("hospital71", false))   # G7.1 J6: LP-only def flag (CNOPS71 CR seq 2138)
 	for id in load:
 		var u = w.entities.get(int(id))
 		if u == null:
+			continue
+		if h71 and Hospital71.admit(w, u):   # into the Hospital71 wards instead of the instant G5 revive
+			st.wounded.erase(int(id))
+			for k in ["wnd_pos", "evac_by"]:
+				u.erase(k)
 			continue
 		if hosp or int(st.wounded.get(int(id), 0)) >= light_left:
 			_revive(w, st, u, b)

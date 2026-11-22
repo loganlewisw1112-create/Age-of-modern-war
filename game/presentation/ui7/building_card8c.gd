@@ -112,6 +112,9 @@ func _ready() -> void:
 			_mk("lab8c_pkg", "PackageButton", "PACKAGE", "Pick a counter-nanite package.", func(): _bump(1))
 			_mk("lab8c_queue", "QueueButton", "QUEUE", "Queue this package at the lab.", func(): _issue(_cmd("lab8c_queue")), func(): return _cmd("lab8c_queue"))
 			_mk("lab8c_tier", "TierButton", "LAB TIER", "Upgrade the package lab to the next tier (new package types).", func(): _issue(_cmd("lab8c_tier")), func(): return _cmd("lab8c_tier"))
+			# G7.1 CNOPS71-9 H8 facility upgrades (fac_upgrade): airlock bays (faster turnaround heal / decon), suit foundry
+			_mk("lab8c_bays", "BaysButton", "BAYS", "Upgrade the airlock bays: the turnaround wash heals and decontaminates returning teams faster.", func(): _issue(_cmd("lab8c_bays")), func(): return _cmd("lab8c_bays"))
+			_mk("lab8c_foundry", "FoundryButton", "FOUNDRY", "Upgrade the suit foundry: suits are built faster.", func(): _issue(_cmd("lab8c_foundry")), func(): return _cmd("lab8c_foundry"))
 			_l2 = _line("Field")
 			_new_grid()
 			_mk("lab8c_team", "TeamButton", "TEAM", "Pick a counter-nanite team.", func(): _bump(2))
@@ -262,6 +265,10 @@ func _cmd(action: String) -> Dictionary:
 			return {} if p == null else {"type": "cn_lab_queue", "package": String(p)}
 		"lab8c_tier":
 			return {"type": "cn_lab_upgrade"}
+		"lab8c_bays":
+			return {"type": "fac_upgrade", "kind": "bays"}
+		"lab8c_foundry":
+			return {"type": "fac_upgrade", "kind": "foundry"}
 		"lab8c_spec":
 			var u := spec_unit()
 			var path = _pick(ids("path"), cur3)
@@ -424,6 +431,13 @@ func _fill_lab(w: SimWorld) -> void:
 	_set_btn("lab8c_pkg", "PKG " + (String(P.get(String(pk), {}).get("name", pk)).to_upper() if pk != null else "-"), "" if pk != null else "No packages.")
 	_set_btn("lab8c_queue", "QUEUE", why("lab8c_queue"))
 	_set_btn("lab8c_tier", "LAB TIER", why("lab8c_tier"))
+	for k in ["bays", "foundry"]:
+		var n := (CnFac._ups().get(k, []) as Array).size() if CnFac._ups().get(k) is Array else 0
+		var uq: Dictionary = F.get("g71upq", {})
+		var lbl := "%s %d/%d" % [k.to_upper(), CnFac.up_tier(F, k), n]
+		if String(uq.get("kind", "")) == k:
+			lbl = "%s %ds" % [k.to_upper(), int(float(uq.left) / SimWorld.TICK_RATE)]
+		_set_btn("lab8c_" + k, lbl, why("lab8c_" + k))
 	_set_btn("lab8c_team", "TEAM " + (str(tm) if tm != null else "-"), "" if tm != null else "No counter-nanite teams.")
 	_set_btn("lab8c_path", "PATH " + (String(path).to_upper() if path != null else "-"), "")
 	_set_btn("lab8c_spec", "SPECIALISE", why("lab8c_spec"))

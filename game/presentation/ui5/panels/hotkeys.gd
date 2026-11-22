@@ -27,7 +27,7 @@ const GLOBAL_ACTIONS := {"teams_panel": ["F2", "Teams panel"], "command_mode": [
 	"ops_room": ["F4", "Operations room (teams, deployments, team cam, map, war table, codex)"]}  # G7 OPSUI7 CR 1404
 ## Printable badge for a non-letter key name.
 const BADGE := {"COMMA": ",", "SEMICOLON": ";", "SLASH": "/", "APOSTROPHE": "'", "BRACKETLEFT": "[",
-	"BRACKETRIGHT": "]", "BACKSLASH": "\\", "MINUS": "-", "EQUAL": "=", "BACKSPACE": "Bksp"}
+	"BRACKETRIGHT": "]", "BACKSLASH": "\\", "MINUS": "-", "EQUAL": "=", "BACKSPACE": "Bksp", "QUOTELEFT": "`"}
 ## Keys the squad61 card actions may be rebound to (letters are all taken by unit-card actions).
 const PUNCT_KEYS := ["COMMA", "SEMICOLON", "SLASH", "APOSTROPHE", "BRACKETLEFT", "BRACKETRIGHT", "BACKSLASH", "MINUS", "EQUAL"]
 
@@ -129,6 +129,9 @@ const G7_ACTIONS := {
 	# G7.1 (AIRFIX71-2 CR seq 149, ORCH): draw a patrol loop for helicopters / VTOLs. SHIFT+P was asked for but cn_pincer
 	# owns it and a mixed CN + air selection shows both cards, so the free chord SHIFT+Y is used.
 	"air_patrol": ["SHIFT+Y", "Patrol route", "air", "air_patrol"],
+	# G7.1 (FIRES71-3 CR seq 1830, ORCH decision PROVISIONAL): hold for the radial fire-support menu (presentation/ui71/
+	# fire_radial.gd reads this action). F is the fixed Formation key, every free letter is taken: backquote / tilde.
+	"fire_radial71": ["QUOTELEFT", "Fire support (hold)", "fires71", "fire_mission"],
 	# G7 (CNOPS7 CR seq 1206, SQUAD7-6): CNOPS7 proposed Alt+F / Alt+R / Alt+U, but hud._unhandled_input drops every
 	# key event with Alt / Ctrl / Meta held before the card lookup, so Alt chords can never fire; same letters as
 	# Shift chords instead (free in cn7: only SHIFT+P / SHIFT+B there, wound7 SHIFT+T / SHIFT+E on every card).

@@ -74,6 +74,8 @@ static func _raised_def(def_id: String, is_bld: bool) -> bool:
 static func shooter_exempt(w: SimWorld, e: Dictionary, s: Dictionary) -> bool:
 	if bool(s.get("indirect", false)) or Elevation.is_air(e):
 		return true
+	if SimWorld.Walls71.port_exempt(w, e):   # G7.1 BASTION71 G3: hidden firing port / pop-out slit (no walls71 state = false)
+		return true
 	var kind := String(e.get("kind", ""))
 	if kind == "building":
 		return bool(e.get("cn_sentry", false)) or _raised_def(String(e.get("def", "")), true)

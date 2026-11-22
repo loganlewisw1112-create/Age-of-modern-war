@@ -117,6 +117,50 @@ static func tick(w: SimWorld) -> void:
 			if l is Array:
 				v = Vector2(float(l[0]), float(l[1])).distance_to(e.pos) / SimWorld.DT
 			_mark(lp, k, e.pos, v, float(e.facing))
+	_clear_hulls(w, S)
+
+
+## G7.1 CNOPS71-5 (ORCH priority 1, test_path7 veh_ov): a soldier never ends a tick inside a MOVING facility APC's hull.
+## Foot units steer and separate without seeing a driven hull (FacDrive7 / this controller keep the APC on its lane), so a
+## Sentinel walking to his post across the bay lane could stand inside the APC (seen: warden vs strike APC at the bay
+## lane, any change to the LP world moved the trajectory into it). After every APC has moved this tick, each own foot
+## unit closer than HULL_R to a moving APC (v > CLEAR_V, or moving: FacDrive7 marks its APCs v 0) is set out on the hull edge, sideways off its heading (the side
+## he stands on; exactly on the axis = right side), when that step is legal (Movement._step_ok + passable), else the
+## other side, else he stays. Cost: nothing unless a facility APC is moving (LP only; no cn_fac vehicle elsewhere).
+const HULL_R := 0.52        # path7_measure BODY_VEH 0.35 + BODY_FOOT 0.15 + 0.02
+const CLEAR_V := 0.05       # tiles/s
+
+
+static func _clear_hulls(w: SimWorld, S: Dictionary) -> void:
+	var mv := []
+	for id in S.c:
+		var l = S.lp.get(str(id))
+		var e = w.entities.get(int(id))
+		if e != null and l is Array and (l as Array).size() >= 4 and (float(l[2]) > CLEAR_V or bool(e.moving)):
+			mv.append(e)
+	if mv.is_empty():
+		return
+	var by: Dictionary = SimIndex.units_by_owner(w)
+	for a in mv:
+		var ap: Vector2 = a.pos
+		var h := float(S.lp[str(a.id)][3])
+		var rt := Vector2(-sin(h), cos(h))
+		for o in by.get(a.owner, []):
+			if o.has("garrisoned_in") or int(o.get("evac_by", -1)) >= 0:
+				continue
+			var op: Vector2 = o.pos
+			if absf(op.x - ap.x) >= HULL_R or absf(op.y - ap.y) >= HULL_R or op.distance_to(ap) >= HULL_R:
+				continue
+			if String(Movement.udef(String(o.def)).mc) != "foot":
+				continue
+			var sd := 1.0 if (op - ap).dot(rt) >= 0.0 else -1.0
+			var team := Movement._qteam(w, o)
+			for s in [sd, -sd]:
+				var fw := Vector2(cos(h), sin(h))
+				var to := Movement._qpos(w, ap + fw * (op - ap).dot(fw) + rt * float(s) * HULL_R)
+				if Movement._step_ok(w, "foot", op, to, team) and Movement.is_passable_e(w, o, w.cell_of(to)):
+					HotState.set_pos(w, int(o.id), to)
+					break
 
 
 static func _mark(lp: Dictionary, k: String, p: Vector2, v: float, h: float) -> void:

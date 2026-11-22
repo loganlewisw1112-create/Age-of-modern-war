@@ -1,0 +1,47 @@
+{
+  "_meta": "CNOPS71 (roster 5A Q15, Q9) Last Protocol starting-base additions, read by LpSetup.build_g71. The J6 hospital: two 4x4 blocks astride the gate approach road at site A (ORCH decision 2026-11-22, PROVISIONAL, to the owner): trauma block at base centre + (-6, -20) = (74,60), ward wing at centre + (2, -20) = (82,60), rows y 60-63; the gate-road columns x 79-81 and the road rows y 64-65 stay free (probe .plan/cnops71/site_a_probe.gd). PROVISIONAL counts; ORCH approves.",
+  "units": [
+    {
+      "def": "a_g71_medevac_heli",
+      "count": 2,
+      "near": "center",
+      "offset": [
+        -5,
+        -21
+      ],
+      "_why": "J6 medevac helicopters: Hospital71 puts them on auto evac over the roof pad"
+    },
+    {
+      "def": "a_g71_drone_ambulance",
+      "count": 2,
+      "near": "center",
+      "offset": [
+        -11,
+        -16
+      ],
+      "_why": "J6 drone ambulances: Hospital71 parks them at the trauma block door (spawned on its park spot, clear of the trauma block corner: test_path7 body-in-footprint)"
+    }
+  ],
+  "buildings": [
+    {
+      "def": "a_g71_hospital",
+      "count": 1,
+      "near": "center",
+      "offset": [
+        -6,
+        -20
+      ],
+      "_why": "J6 trauma block: triage, surgery, ICU, rooftop medevac pad; Medical evacuation delivers here (hospital: true)"
+    },
+    {
+      "def": "a_g71_hospital_wing",
+      "count": 1,
+      "near": "center",
+      "offset": [
+        2,
+        -20
+      ],
+      "_why": "J6 ward wing: recovery, decon + scan gate, sealed quarantine, prosthetics"
+    }
+  ]
+}

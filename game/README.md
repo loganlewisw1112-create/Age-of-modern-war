@@ -1,4 +1,9 @@
-# RTS: Age of Modern War: playable slice (G0 through G7)
+# RTS: Age of Modern War: playable slice (G0 through G7, plus a G7.1 checkpoint)
+
+The newest playable build is the **2026-11-22 G7.1 checkpoint** (`build/RTS_Age_of_Modern_War_G71_2026-11-22/`,
+also in Downloads). It is G7 plus G7.1 wave 1 and the wave-2 work that was on the tree, including the Vanta2
+flight fix. It is not a closed G7.1. What is in it and what the next slice still owes is the "SLICE STOP" block
+at the top of `PROGRESS.md`.
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
@@ -256,6 +261,14 @@ facility, Sentinels, defences, Last Protocol base, flows, lethality and cards).
     combat port planned); rifles do not damage hardened buildings such as an HQ; the airdrop pod has no parachute-fall frame.
   - Balance numbers are provisional. Fortress balance was not retuned for the new lethality (owner ruling,
     2026-10-29). Full evidence: PROGRESS.md "G7 Done-when evidence" and "G7 late additions (13.9c-39..53)".
+
+## G7.1 checkpoint (2026-11-22) — not a closed wave
+Playable build: `build/RTS_Age_of_Modern_War_G71_2026-11-22/` (also in Downloads). Wave 1 is committed
+(`82a887a`, suite 177/177). Wave 2 is in the tree: Conductor and wingmen, ammo tiers, kill zones, crews,
+walls and turrets, discipline, counter-nanite grenades and shield drone, hospital, gas and masks, gore and
+care, and the Vanta2 flight fix from this slice (momentum, bank, strafe, twin front guns; `test_vanta7` 7/0).
+Left open: Last Protocol peak about 24 fps (gate 30), 2,000-unit case about 35 fps (gate 60), and waves 3–6.
+The stop note is the "SLICE STOP" block at the top of `PROGRESS.md`.
 
 ## Status (honest)
 - **Done and verified:** G0+G1 core loop, G2 Smart Warfare, G3a Factions + Skirmish, G3b maps and stages, G4 editor / walls / transports / new units (see PROGRESS.md for the G4 items that are NOT met: 10k all-fighting speed, 2 Valley AI soaks drawing, G4 windowed fps unmeasured). Evidence is in `PROGRESS.md`.

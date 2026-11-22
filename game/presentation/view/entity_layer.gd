@@ -203,6 +203,33 @@ const CB_FLIP := 16
 const CB_AIR := 32
 var rc_on := OS.get_environment("PD71_RC") == "1"  # off by default: rc8 verify found 2 diffs at 2k and no measured gain (ORCH 2026-11-09)
 var rc_verify := OS.get_environment("PD71_RC_VERIFY") == "1"
+## G7.1 SWARMNAT71-2: the static records alone (unit records stay as rc_on says). ON by default (PD71_RS=0 = off): the
+## statics-only verify (PD71_RC_VERIFY=1, no PD71_RC) found 0 item diffs on LP peak / LP wide / LP pan / 2k (rsv_r2, seq
+## swarmnat71.statics_verify); its one counter diff (g5.apron, frame 36) shows in the null control as well (harness).
+var rs_on := OS.get_environment("PD71_RS") != "0"
+var rv_null := OS.get_environment("PD71_VERIFY_NULL") == "1"
+## G7.1 SWARMNAT71: native unit kernel (rts_core 0.6.4 RtsSwarmDraw, docs/SWARM_NATIVE71.md sections 3-4) for plain units
+## on motion-layer frames. OFF by default (SWARMNAT71=1 on) until SWARMNAT71_VERIFY=1 shows 0 diffs: that mode runs every
+## refresh twice (GDScript path, then the kernel, from the same motion / drawn7 state) and compares every item, counter,
+## vis list, drawn7 row and motion state.
+var sw_on := OS.get_environment("SWARMNAT71") == "1"
+var sw_verify := OS.get_environment("SWARMNAT71_VERIFY") == "1"
+var _sw = null
+var _sw65 := false       # SWARMNAT71-5: rts_core >= 0.6.5 kernel (anim61 infantry / Machines, fatigue mirror, bay-hide out)
+var _sw_reg := {}        # id -> the BatchArt cache entry registered natively
+var _sw_force := -1      # verify: -1 = sw_on decides, 0 off, 1 on
+var _sw_ww_src = null    # wall-walk mask source (_ww_cells) and mask
+var _sw_ww := PackedByteArray()
+var sw_used := false     # the last refresh ran the kernel
+var sw_units := 0        # units the kernel drew in the last refresh
+var sw_calls := 0        # kernel calls in the last refresh
+var sw_why := ""         # SWARMNAT71-3 diag: why the kernel did not run in the last refresh
+var swv_frames := 0
+var swv_diffs := 0
+var swv_skip := 0
+var swv_units := 0
+var swv_log := 0
+const SW_ABS := -999999   # SWARMNAT71-2 control: second run = the full path again (harness diffs)
 var rc_hits := 0     # units pushed from a record in the last refresh
 var rc_built := 0    # records made in the last refresh
 var rc_fall := 0     # recorded units sent through the full path in the last refresh (wall walk / VIS7 / crafts)
@@ -394,6 +421,9 @@ func on_destroyed(id: int) -> void:
 	_k8.erase(id)   # G8 ANIM8
 	_chev.erase(id)
 	_pips.erase(id)
+	if _sw != null:   # G7.1 SWARMNAT71
+		_sw.forget(id)
+	_sw_reg.erase(id)
 	art.forget(id)
 	art.forget(-1 - id)  # G5: its sling-load sprite cache
 	_seen_wrecks.erase(id)
@@ -417,6 +447,10 @@ func _refresh_post(id: int, e: Dictionary) -> void:
 	_chev[id] = RealInfo.chevron(e)
 	if AmmoBearer.is_bearer(e):
 		_pips[id] = 1 + clampi(ceili(AmmoBearer.load_frac(e) * 3.0), 0, 3)
+	if _sw != null:   # G7.1 SWARMNAT71: the kernel's posture / marks mirror
+		_sw.set_post(id, p, int(_chev.get(id, 0)) > 0 or int(_pips.get(id, 0)) > 0)
+		if _sw65:
+			_sw.set_fat(id, float(_fat[id]))
 
 
 ## G7 PERFFPS7: false when Motion.g7_col_sq(a61, b, posture, ...) can only return -1 (no back-off / throw / entry / gait /
@@ -662,8 +696,11 @@ func _view_rect() -> Rect2:
 ## overlays hold live entity dicts, so they are rebuilt only when no step is in flight (the
 ## overlays redraw only then, too).
 func refresh() -> void:
+	if sw_verify:
+		_sw_verify_refresh()
+		return
 	if not rc_verify:
-		_refresh(rc_on)
+		_refresh(rc_on, rc_on or rs_on)
 		return
 	# G7.1 PERFDRAW71-8 PD71_RC_VERIFY=1: full path, then the record path on the same inputs, compared item for item.
 	# The motion layer (per-unit smoothing state) and the k8 records advance once per refresh: both runs start from the
@@ -675,16 +712,21 @@ func refresh() -> void:
 	for q in _k8:
 		k8s[q] = (_k8[q] as Array).duplicate()
 	var mcorp: Array = motion.corpses.duplicate()
-	_refresh(false)
+	var ud0 := _units_drawn   # SWARMNAT71-2: motion_on follows the last refresh's count: both runs must see the same one
+	_refresh(false, false)
 	var a := _rc_capture()
 	motion.vs = mvs
 	_k8 = k8s
 	motion.corpses = mcorp
-	_refresh(true)
+	_units_drawn = ud0
+	if rv_null:
+		_refresh(false, false)
+	else:
+		_refresh(rc_on or not rs_on, true)
 	var b := _rc_capture()
 	if (rv_frames + rv_skip) % 120 == 0:
 		print("PD71_RC_VERIFY frames=%d diffs=%d rec_pushes=%d skipped=%d rejects=%d last: used=%s/%s hits=%d st_hits=%d built=%d fall=%d drawn=%d units=%d lod=%d" % [rv_frames, rv_diffs, rv_hits, rv_skip, rc_reject, str(rc_used), str(rs_used), rc_hits, rs_hits, rc_built, rc_fall, drawn, _units_drawn, lod])
-	if not rc_used and not rs_used:
+	if not rc_used and not rs_used and not rv_null:
 		rv_skip += 1   # the record path was off for this refresh (motion layer / far LOD): both ran the same code
 		return
 	rv_frames += 1
@@ -873,7 +915,7 @@ func _rs_put(j: int, id, e: Dictionary, kind: String, ow: int, pf: int, gs: Vect
 	return f
 
 
-func _refresh(rc: bool) -> void:
+func _refresh(rc: bool, rs: bool) -> void:
 	rc_used = false
 	rs_used = false
 	var sn: Dictionary = mv.snap
@@ -1032,6 +1074,7 @@ func _refresh(rc: bool) -> void:
 	g5_counts = gc5
 	# G6.1 (ANIMA61): motion layer on while the last frame drew <= MOTION_CAP units (2k-on-screen stays cheap)
 	motion_on = not far and not g61_off and _units_drawn <= MOTION_CAP
+	motion.gore_hand = (sn.get("g71", {}) as Dictionary).get("gore71") != null   # G7.1 DAMAGE71 CR 1897 (LP: Gore71 draws the body)
 	_roof_n.clear()
 	_badges.clear()
 	bld_see_through = 0
@@ -1053,6 +1096,9 @@ func _refresh(rc: bool) -> void:
 	if _dfl_names.size() > defs.size() or (_dfl_names.size() > 0 and defs.slice(0, _dfl_names.size()) != _dfl_names):
 		_dfl.clear()
 		_dfl_names.clear()
+		if _sw != null:   # G7.1 SWARMNAT71: def indices restart with the new world
+			_sw.reset()
+		_sw_reg.clear()
 	while _dfl.size() < defs.size():
 		_dfl.append(_def_flags(defs[_dfl.size()]))
 		_dfl_names.append(defs[_dfl_names.size()])
@@ -1093,11 +1139,34 @@ func _refresh(rc: bool) -> void:
 				_rc_c.resize(n_u); _rc_cols.resize(n_u); _rc_row.resize(n_u); _rc_cb.resize(n_u); _rc_fa.resize(n_u)
 				_rc_fb.resize(n_u); _rc_r.resize(n_u * 5); _rc_pg.resize(n_u); _rc_src.resize(n_u); _rc_off.resize(n_u)
 				_rc_dsz.resize(n_u); _rc_sz.resize(n_u)
+	# G7.1 SWARMNAT71: the native kernel draws runs of plain units; it stops at the first unit it cannot draw exactly and
+	# this loop draws that one (sw_stop), so push order, keys and counters are the GDScript path's.
+	var use_sw := (sw_on if _sw_force < 0 else _sw_force == 1) and motion_on and not far and not use_rc and _sw_init()
+	sw_used = false
+	sw_units = 0
+	sw_calls = 0
+	sw_why = "" if use_sw else "m%d f%d cr%d rc%d" % [int(motion_on), int(far), int(has_cr), int(use_rc)]
+	if use_sw:
+		sw_why = "begin"
+		use_sw = _sw_begin(sn, alpha, t, vr, mw, pf, live, pframe, ids, raise, hl_t, rp6_n, rp6, vis, ally_vis, has_g6,
+			has_ww, squad, g7u, g5air, sling)
+	var sw_next := 0
+	var sw_stop := -1
 	var t_u := Time.get_ticks_usec()
 	for i in n_u:
-		if _hc >= 0:
+		if _hc >= 0:   # SWARMNAT71-4: close the hidden soldier's item range before the kernel pushes (else it swallowed them)
 			_bay_hide[_hc][1] = _n
 			_hc = -1
+		if use_sw:
+			if i < sw_next:
+				continue
+			if i != sw_stop:
+				sw_stop = _sw_run(i, ents, ids, live)
+				sw_next = sw_stop
+				if sw_stop > i:
+					continue
+			if sw_verify and _sw_force == 1:
+				_sw_fb_note(i, ids, flg_a, pframe, live)
 		if use_rc and _rc_k[i] > 0:
 			# G7.1 PERFDRAW71-8 record replay: the full path's arithmetic for this unit's per-frame part, in its order
 			var r_raw: Vector2 = pos_a[i]
@@ -1579,6 +1648,8 @@ func _refresh(rc: bool) -> void:
 			_size[ii] = fsz
 		_mod[ii] = mod6
 		_n = ii + 1
+		if use_sw and (mcls > 0 or (mcls == 0 and _sw65)) and not is_same(_sw_reg.get(id), c):   # G7.1 SWARMNAT71: plain from the next frame on?
+			_sw_reg_unit(id, c, def_a[i], ow, mcls, v61, dname, defs[def_a[i]])
 		if use_rc and _rc_k[i] == 0:   # G7.1 PERFDRAW71-8: first full draw of this unit in this snapshot: record it?
 			_rc_k[i] = _rc_put(i, id, c, fl, a61, row, fi, ii, dname, defs[def_a[i]], sq_al > 0, gv == null and sqb == 0 and ad == null \
 				and ww_ky < 0 and not has_cr and tur.is_empty() and mcls < 0 and not (has_g6 and (fl & RenderSnap.FLAG_G6) != 0) \
@@ -1597,6 +1668,28 @@ func _refresh(rc: bool) -> void:
 			_g5_markers(sp, fl, id, t, neutral, gc5)
 		if gv != null and gv.has("b8u") and not far:   # G7 BLAST8: knocked out by a blast: "zzz" over him until he wakes
 			_b8_zzz(sp, t, id)
+	if use_sw:
+		var swr: Array = _sw.scatter(_keys, _page, _src, _size, _dst, _dsz, _mod)
+		_keys = swr[0]; _page = swr[1]; _src = swr[2]; _size = swr[3]; _dst = swr[4]; _dsz = swr[5]; _mod = swr[6]
+		var cn: PackedInt64Array = _sw.counts()
+		gc5.aboard += cn[0]; gc6.lifted += cn[1]; gc61.motion += cn[2]; gc5.tactical += cn[3]; gc5.ramp += cn[4]
+		gc6.command += cn[5]; gc61.veh += cn[6]; gc61.bank += cn[7]; gc61.recoil += cn[8]; gc61.track += cn[9]
+		gc61.flipped += cn[10]
+		if cn.size() > 14:   # rts_core 0.6.5: anim61 infantry frames
+			gc61.a61 += cn[14]
+		if _sw65 and has_cr:   # 0.6.5: bay-hide entries of the native infantry items (_apply_bay_hide is order-free)
+			var bo: Array = _sw.bay_out()
+			var bii: PackedInt32Array = bo[0]
+			var bsp: PackedVector2Array = bo[1]
+			var bky: PackedInt32Array = bo[2]
+			for k in bii.size():
+				_bay_hide.append([bii[k], bii[k] + 1, bsp[k], bky[k]])
+		units_drawn += cn[11]
+		sw_units = cn[12]
+		sw_calls = cn[13]
+		sw_used = true
+		if cn[2] > 0:
+			motion._now = t   # = what motion.step sets
 	ViewUtil.prof_add("p_e2u_units", t_u)   # G7.1 PERFDRAW71-8: the unit loop alone (part of p_e2_ents)
 	_units_drawn = units_drawn
 	if _hc >= 0:
@@ -1607,7 +1700,7 @@ func _refresh(rc: bool) -> void:
 	if not far:
 		_push_corpses(vr, t, gc61)
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
-	var use_rs := rc and not far   # G7.1 PERFDRAW71-8: per-snapshot static records
+	var use_rs := rs and not far   # G7.1 PERFDRAW71-8: per-snapshot static records
 	rs_used = use_rs
 	rs_hits = 0
 	var n_st := statics.size()
@@ -2640,3 +2733,249 @@ static func _pad_col(x: int, y: int, x0: int, y0: int, x1: int, y1: int) -> int:
 	if posmod(x - x0, 3) == 2 and (y - y0) % 2 == 1:
 		return 3
 	return posmod(x * 7 + y * 13, 3)
+
+
+## ---- G7.1 SWARMNAT71: native unit kernel glue (rts_core RtsSwarmDraw; docs/SWARM_NATIVE71.md) ----
+func _sw_init() -> bool:
+	if _sw == null and ClassDB.class_exists("RtsSwarmDraw"):
+		_sw = ClassDB.instantiate("RtsSwarmDraw")
+		_sw65 = _sw != null and _sw.has_method("set_fat")
+	return _sw != null
+
+
+## Hands the kernel this frame's snapshot arrays and tables; false = it cannot run this frame (GDScript path only).
+func _sw_begin(sn: Dictionary, alpha: float, t: float, vr: Rect2, mw: int, pf: int, live: bool, pframe: int,
+		ids: PackedInt32Array, raise: Dictionary, hl_t: PackedFloat32Array, rp6_n: int, rp6: PackedByteArray,
+		vis: PackedByteArray, ally_vis: Array, has_g6: bool, has_ww: bool, squad: Dictionary, g7u: Dictionary,
+		g5air: Dictionary, sling: Dictionary) -> bool:
+	var rz := PackedInt32Array()
+	rz.resize(256)
+	for code in raise:
+		var ci := int(code)
+		if ci < 0 or ci >= 256 or float(raise[code]) != float(int(raise[code])):
+			return false
+		rz[ci] = int(raise[code])
+	var terr_all: PackedByteArray = sn.get("terrain", PackedByteArray())
+	var terr: PackedByteArray = terr_all if not raise.is_empty() else PackedByteArray()
+	var ally := PackedByteArray()
+	for av in ally_vis:
+		if (av as PackedByteArray).size() != vis.size():
+			return false
+		ally.append_array(av)
+	var ww := PackedByteArray()
+	if has_ww:   # wall-walk cells: those units take the GDScript path
+		var n_c: int = terr_all.size() if terr_all.size() > 0 else mw * mw
+		if _sw_ww.size() != n_c:
+			_sw_ww.resize(n_c)
+		_sw_ww.fill(0)
+		for k in _ww_cells:
+			var kc: Vector2i = k
+			var j := kc.y * mw + kc.x
+			if kc.x >= 0 and kc.x < mw and j >= 0 and j < n_c:
+				_sw_ww[j] = 1
+		ww = _sw_ww
+	var keys := PackedInt32Array()
+	for d in [squad, g7u, g5air, sling, x7]:
+		if not (d as Dictionary).is_empty():
+			keys.append_array(PackedInt32Array((d as Dictionary).keys()))
+	if not _crafts.is_empty():   # SWARMNAT71-3: units near a landed dropship sort by bay_sort_y: GDScript path
+		var pa: PackedVector2Array = sn.pos   # raw pos; 10.5 > 7.5 (bay_sort_y reach) + the interpolation step (< 3)
+		for j in ids.size():
+			var q: Vector2 = pa[j]
+			for cr in _crafts:
+				var cp: Vector2 = cr[0]
+				if absf(q.x - cp.x) + absf(q.y - cp.y) <= 10.5:
+					keys.append(ids[j])
+					break
+	var sc :=PackedFloat64Array([alpha, t, vr.position.x, vr.position.y, vr.size.x, vr.size.y, mw, pf, 1.0 if live else 0.0,
+		pframe, lod, 1.0 if has_g6 else 0.0, 1.0 if has_ww else 0.0, 0.0 if _crafts.is_empty() else 1.0])
+	var inp := [ids, sn.pos, sn.prev, sn.facing, sn.def, sn.owner, sn.flags, sn.get("hp", PackedFloat32Array()),
+		sn.get("sq7f", PackedByteArray()), terr, rz, hl_t, rp6 if rp6_n > 0 else PackedByteArray(), vis, ally, ally_vis.size(),
+		ww, _dfl, keys, sc]
+	return bool(_sw.begin(inp, motion.vs, drawn7))
+
+
+## Kernel from unit index i; returns the index it stopped at (that unit is drawn by the GDScript loop).
+func _sw_run(i: int, ents: Dictionary, ids: PackedInt32Array, live: bool) -> int:
+	var s: int = _sw.run(i, _n, motion._cdt, motion._ck, motion._cb)
+	_n = _sw.n_now()
+	if _n + 16 >= _page.size():
+		_reserve(_n * 2 + 16)
+	if _sw.cache_changed():
+		motion._cdt = _sw.cdt()
+		motion._ck = _sw.ck()
+		motion._cb = _sw.cb()
+	if live:
+		var vi: PackedInt32Array = _sw.vis_idx()
+		if not vi.is_empty():
+			var vp: PackedVector2Array = _sw.vis_pts()
+			for k in vi.size():
+				var le = ents.get(ids[vi[k]])
+				if le != null:
+					vis_units.append(le)
+					vis_sp.append(vp[k])
+	return s
+
+
+static func _sw_v(v: Dictionary, k: String) -> int:
+	return int(v[k]) if v.has(k) else SW_ABS
+
+
+## The unit the GDScript path just drew: registers its art record when its draw is one the kernel reproduces.
+func _sw_reg_unit(id: int, c: Array, dx: int, ow: int, mcls: int, v61: Dictionary, dname: String, d0: String) -> void:
+	_sw_reg[id] = c
+	var a61f := _sw_a61_flat(c[31] as Dictionary) if _sw65 else PackedInt32Array()
+	var a61_ok: bool = (c[31] as Dictionary).is_empty() or (_sw65 and a61f.size() == 26)
+	if dname != d0 or not a61_ok or bool(c[12]) or int(c[27]) >= 0 or int(c[16]) != 0 \
+			or int(c[2]) < 0 or v61.has("turret") or ApcGun7.DEFS.has(dname) or dx >= _dfl.size() or _dfl[dx] != 0 \
+			or (mcls == Motion.CLS_INF and not _sw65):
+		if sw_verify:   # SWARMNAT71-3 diag: first reason
+			var why := "dname" if dname != d0 else "a61" if not a61_ok else "c12" if bool(c[12]) \
+				else "c27" if int(c[27]) >= 0 else "c16" if int(c[16]) != 0 else "nopage" if int(c[2]) < 0 \
+				else "turret" if v61.has("turret") else "apcgun" if ApcGun7.DEFS.has(dname) else "dfl" if (dx >= _dfl.size() or _dfl[dx] != 0) else "inf"
+			sw_fg[why + ":" + dname] = int(sw_fg.get(why + ":" + dname, 0)) + 1
+		_sw.forget(id)
+		return
+	var mvv: PackedInt32Array = PackedInt32Array(v61.move) if v61.get("move") is Array else PackedInt32Array()
+	var trk: PackedInt32Array = PackedInt32Array(v61.track) if v61.get("track") is Array else PackedInt32Array()
+	_sw.reg(id, [dx, ow, c[2], c[3], c[4], c[5], c[6], c[7], 1 if bool(c[8]) else 0, c[9], c[10], c[11], c[13], c[14], c[15],
+		c[18], c[20], c[29], c[30], c[35], c[33], c[38], c[39], c[40], mcls, 0 if v61.is_empty() else 1,
+		_sw_v(v61, "recoil"), _sw_v(v61, "bank_l"), _sw_v(v61, "bank_r"), mvv, trk, _sw_v(v61, "burner"),
+		_sw_v(v61, "damaged"), _sw_v(v61, "pulse"), 1 if (v61.has("track") or v61.has("move")) else 0, dname,
+		a61f, 1 if _is_inf(dname) else 0])
+	if _post.has(id) or _chev.has(id) or _pips.has(id):
+		_sw.set_post(id, int(_post.get(id, 0)), int(_chev.get(id, 0)) > 0 or int(_pips.get(id, 0)) > 0)
+
+
+## rts_core 0.6.5 record of an anim61 set: walk6 run6 crawl2 reload2 throw2 idle2 crouch prone fire_s fire_c fire_p wounded
+## (26 ints); empty when the set has keys some path reads for an unmarked unit that the kernel does not port (k8_tum: G8
+## ANIM8 state; swalk: EXO7-3 suits) or a column list of another length.
+static func _sw_a61_flat(a: Dictionary) -> PackedInt32Array:
+	var r := PackedInt32Array()
+	if a.is_empty() or a.has("k8_tum") or a.has("swalk"):
+		return r
+	for k in [["walk", 6], ["run", 6], ["crawl", 2], ["reload", 2], ["throw", 2], ["idle", 2]]:
+		var v = a.get(k[0])
+		if not (v is Array or v is PackedInt32Array) or v.size() != int(k[1]):
+			return PackedInt32Array()
+		for x in v:
+			r.append(int(x))
+	for k in ["crouch", "prone", "fire_s", "fire_c", "fire_p", "wounded"]:
+		if not a.has(k):
+			return PackedInt32Array()
+		r.append(int(a[k]))
+	return r
+
+
+static func _sw_vs_copy(d: Dictionary) -> Dictionary:
+	var r := {}
+	for q in d:
+		r[q] = (d[q] as PackedFloat32Array).duplicate()
+	return r
+
+
+## SWARMNAT71_VERIFY=1: GDScript path, then the kernel from the same state, compared item for item.
+func _sw_verify_refresh() -> void:
+	var mvs := _sw_vs_copy(motion.vs)
+	var k8s := {}
+	for q in _k8:
+		k8s[q] = (_k8[q] as Array).duplicate()
+	var mcorp: Array = motion.corpses.duplicate()
+	var d7: Dictionary = drawn7.duplicate(true)
+	var ud0 := _units_drawn
+	var c0 := [motion._cdt, (motion._ck as PackedFloat64Array).duplicate(), motion._cb, motion._now, motion._gc_t]   # SWARMNAT71-3: + prune's 5 s GC clock
+	_sw_force = 0
+	_refresh(rc_on, rc_on or rs_on)
+	var a := _rc_capture()
+	var va := _sw_vs_copy(motion.vs)
+	var da: Dictionary = drawn7.duplicate(true)
+	motion.vs = mvs
+	_k8 = k8s
+	motion.corpses = mcorp
+	drawn7 = d7
+	_units_drawn = ud0
+	motion._cdt = c0[0]
+	motion._ck = c0[1]
+	motion._cb = c0[2]
+	motion._now = c0[3]
+	motion._gc_t = c0[4]
+	_sw_force = 1
+	_refresh(rc_on, rc_on or rs_on)
+	_sw_force = -1
+	var b := _rc_capture()
+	if (swv_frames + swv_skip) % 120 == 0:
+		print("SWARMNAT71_VERIFY frames=%d diffs=%d skipped=%d native_units=%d last: used=%s units=%d calls=%d drawn=%d units_drawn=%d motion=%s why=%s" % [swv_frames, swv_diffs, swv_skip, swv_units, str(sw_used), sw_units, sw_calls, drawn, _units_drawn, str(motion_on), sw_why])
+		print("SWARMNAT71_FB ", sw_fb, " FORGET ", sw_fg)
+	if not sw_used:
+		swv_skip += 1
+		return
+	swv_frames += 1
+	swv_units += sw_units
+	var bad: Array = []
+	for k in a:
+		if typeof(a[k]) == TYPE_ARRAY:
+			var x: Array = a[k]
+			var y: Array = b[k]
+			if x.size() != y.size():
+				bad.append("%s size %d/%d" % [k, x.size(), y.size()])
+			else:
+				for q in x.size():
+					if not is_same(x[q], y[q]):
+						bad.append("%s[%d]" % [k, q])
+						break
+		elif a[k] != b[k]:
+			var s := "%s" % k
+			if a[k] is PackedInt64Array or a[k] is PackedInt32Array or a[k] is PackedVector2Array or a[k] is PackedColorArray:
+				var m: int = mini(a[k].size(), b[k].size())
+				var j := 0
+				while j < m and a[k][j] == b[k][j]:
+					j += 1
+				s += " at %d/%d: %s / %s" % [j, a[k].size(), str(a[k][j]) if j < a[k].size() else "-", str(b[k][j]) if j < b[k].size() else "-"]
+			else:
+				s += ": %s / %s" % [str(a[k]), str(b[k])]
+			bad.append(s)
+	if va.size() != motion.vs.size():
+		bad.append("vs size %d/%d" % [va.size(), motion.vs.size()])
+	else:
+		for q in va:
+			if not motion.vs.has(q) or va[q] != motion.vs[q]:
+				bad.append("vs[%d] %s / %s" % [q, str(va[q]), str(motion.vs.get(q))])
+				break
+	if da.size() != drawn7.size():
+		bad.append("drawn7 size %d/%d" % [da.size(), drawn7.size()])
+	else:
+		for q in da:
+			if not drawn7.has(q) or da[q] != drawn7[q]:
+				bad.append("drawn7[%d] %s / %s" % [q, str(da[q]), str(drawn7.get(q))])
+				break
+	if not bad.is_empty():
+		swv_diffs += 1
+		if swv_log < 12:
+			swv_log += 1
+			print("SWARMNAT71_DIFF frame=%d tick=%d units=%d %s" % [swv_frames, int(mv.snap.get("tick", -1)), sw_units, "; ".join(bad.slice(0, 6))])
+
+
+## SWARMNAT71-3 diag (SWARMNAT71_VERIFY only): why the GDScript loop drew a unit the kernel handed back.
+var sw_fb := {}
+var sw_fg := {}
+func _sw_fb_note(i: int, ids: PackedInt32Array, flg_a: PackedInt32Array, pframe: int, live: bool) -> void:
+	var id := ids[i]
+	var fl := flg_a[i]
+	var k := "other"
+	if fl & (4 | 16 | 128 | (1 << 18) | (1 << 20) | (1 << 21) | (1 << 23) | (1 << 27)):
+		k = "flag:%x" % (fl & (4 | 16 | 128 | (1 << 18) | (1 << 20) | (1 << 21) | (1 << 23) | (1 << 27)))
+	elif fl & 64:
+		k = "g6"
+	elif not _sw_reg.has(id):
+		var sdx: int = (mv.snap.def as PackedInt32Array)[i] if mv != null and mv.snap.has("def") else -1
+		var dnm: String = String(_dfl_names[sdx]) if sdx >= 0 and sdx < _dfl_names.size() else "?"
+		var sns: Dictionary = mv.snap if mv != null else {}
+		var ce = art._ec.get(id)   # SWARMNAT71-5 diag: why the GDScript draw never reached the reg
+		k = "noreg:" + ("x7" if x7.has(id) else "") + ("g" if (sns.get("g7u", {}) as Dictionary).has(id) else "") \
+			+ ("s" if (sns.get("squad", {}) as Dictionary).has(id) else "") + ("a" if (sns.get("air", {}) as Dictionary).has(id) else "") \
+			+ ("P" if ce != null and int(ce[2]) == -2 else "") + ("N" if ce == null else "") + ":" + dnm
+	elif not _sw.has_rec(id):
+		k = "forgot"
+	elif live and (pframe + id) % 8 == 0:
+		k = "post8"
+	sw_fb[k] = int(sw_fb.get(k, 0)) + 1

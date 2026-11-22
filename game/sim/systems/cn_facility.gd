@@ -17,6 +17,15 @@ extends RefCounted
 ## Commands (ORCH registers in world.gd COMMANDS): cn_train {building_id, kind}, cn_cancel_train {building_id},
 ## cn_rollout {team, target}, cn_return {team}, cn_lab_queue {building_id, package}, cn_lab_upgrade {building_id},
 ## cn_drill {team, on}, cn_evacuate {building_id}.
+## G7.1 H8 facility under siege (CNOPS71-9; roster Q20: the hive's targeting is wave 3, this is the facility's response
+## + the API it calls): siege(w, F, on, reason) starts / ends a staged response, F.g71sg {stage, t0, reason} (no field
+## = never besieged, hash-identical). Stages (rules.g71_cn.siege, PROVISIONAL):
+##   "alert"    at once: defences up (pop-up turrets, garaged APCs sealed, decon mist: _lockdown without the doors);
+##   "lockdown" core below lock_frac of its hp, the base breached, or alert_s passed: the mantrap doors seal too;
+##   "evac"     core below evac_frac: last-ditch evacuation (evacuate: every team inside rolls out, dropship lifts off).
+## It ends (lockdown lifted) after end_quiet_s with the base secure. While a siege runs the contested-state auto-unlock
+## of the G7 breach lockdown is held. Test trigger: order fac_siege {issuer, building_id, on, reason} (validate /
+## apply; not in world.gd COMMANDS: the wave-3 director calls siege() directly). siege_stage(F) -> "" when none.
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Movement = preload("res://sim/systems/movement.gd")
@@ -656,8 +665,16 @@ static func _tick_fac(w: SimWorld, F: Dictionary) -> void:
 			w.emit("CnLabTier", {"fac": id, "owner": int(F.owner), "tier": int(lab.tier)})
 	if sstate == "breached" and not bool(F.lock):
 		_lockdown(w, F, true)
-	elif bool(F.lock) and (sstate == "secure" or sstate == "contested"):
+	elif bool(F.lock) and not F.has("g71sg") and (sstate == "secure" or sstate == "contested"):
 		_lockdown(w, F, false)
+	if F.has("g71sg"):
+		_siege_tick(w, F, sstate)
+	if F.has("g71upq"):
+		var uq: Dictionary = F.g71upq
+		uq.left = float(uq.left) - mult
+		if float(uq.left) <= 0.0:
+			F.erase("g71upq")
+			upgrade(w, F, String(uq.kind))
 	if bool(F.lock):
 		var core = w.entities.get(id)
 		if not bool(F.evac) and core != null and float(core.hp) < float(conf().get("evac_core_frac", 0.35)) * float(core.max_hp):
@@ -757,10 +774,10 @@ static func spawn_team(w: SimWorld, F: Dictionary, kind: String) -> int:
 	return tid
 
 
-static func _lockdown(w: SimWorld, F: Dictionary, on: bool) -> void:
+static func _lockdown(w: SimWorld, F: Dictionary, on: bool, doors: bool = true) -> void:
 	F.lock = on
 	var owner := int(F.owner)
-	if int(F.get("cp", 0)) != 0 and w.entities.has(int(F.cp)):
+	if (doors or not on) and int(F.get("cp", 0)) != 0 and w.entities.has(int(F.cp)):
 		_mantrap(w, F, on)   # FACB7 (13.9c-8): lockdown seals both mantrap doors (even the owner's own soldiers)
 	if on:
 		var occ := {}
@@ -1048,6 +1065,59 @@ static func _self_repair(w: SimWorld, F: Dictionary) -> void:
 			p.hp = minf(float(p.max_hp), float(p.hp) + frac * float(p.max_hp))
 
 
+## H8 siege API (see the header). on = false ends it at once (lockdown lifted).
+static func siege(w: SimWorld, F: Dictionary, on: bool, reason: String = "") -> void:
+	if F.is_empty():
+		return
+	if on:
+		if F.has("g71sg"):
+			return
+		F["g71sg"] = {"stage": "alert", "t0": w.tick, "reason": reason}
+		if not bool(F.lock):
+			_lockdown(w, F, true, false)
+		w.emit("CnSiege", {"fac": int(F.id), "owner": int(F.owner), "stage": "alert", "reason": reason})
+	elif F.has("g71sg"):
+		F.erase("g71sg")
+		if bool(F.lock):
+			_lockdown(w, F, false)
+		w.emit("CnSiege", {"fac": int(F.id), "owner": int(F.owner), "stage": "", "reason": reason})
+
+
+static func siege_stage(F: Dictionary) -> String:
+	return String((F.get("g71sg", {}) as Dictionary).get("stage", ""))
+
+
+static func _sg() -> Dictionary:
+	var c = Content.rules().get("g71_cn", {})
+	var d = c.get("siege", {}) if c is Dictionary else {}
+	return d if d is Dictionary else {}
+
+
+static func _siege_tick(w: SimWorld, F: Dictionary, sstate: String) -> void:
+	var S: Dictionary = F.g71sg
+	var R := _sg()
+	var core = w.entities.get(int(F.id))
+	var frac := (float(core.hp) / maxf(1.0, float(core.max_hp))) if core != null else 0.0
+	var stage := String(S.stage)
+	var nxt := stage
+	if stage == "alert" and (frac < float(R.get("lock_frac", 0.75)) or sstate == "breached" or w.tick - int(S.t0) >= secs(R.get("alert_s", 20.0))):
+		nxt = "lockdown"
+		if not bool(F.lock):
+			_lockdown(w, F, true)
+		elif int(F.get("cp", 0)) != 0 and w.entities.has(int(F.cp)):
+			_mantrap(w, F, true)
+	if (nxt == "lockdown" or stage == "lockdown") and frac < float(R.get("evac_frac", 0.35)):
+		nxt = "evac"
+		if not bool(F.evac):
+			evacuate(w, F)
+	if nxt != stage:
+		S.stage = nxt
+		w.emit("CnSiege", {"fac": int(F.id), "owner": int(F.owner), "stage": nxt, "reason": String(S.reason)})
+	var q := secs(R.get("end_quiet_s", 30.0))
+	if sstate == "secure" and w.tick - int(F.quiet) >= q and w.tick - int(S.t0) >= q:
+		siege(w, F, false, "quiet")
+
+
 ## Emergency evacuation: every team still inside rolls out at once, the dropship lifts off the helipad.
 static func evacuate(w: SimWorld, F: Dictionary) -> void:
 	F.evac = true
@@ -1214,6 +1284,8 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 						Movement.order_move(w, a, Vector2(float(tg[0]), float(tg[1])))
 				w.emit("CnTeamOut", {"team": tid, "fac": int(T.fac), "owner": int(T.owner)})
 		"returning":
+			if _turn_on() and not F.is_empty():
+				_turn_service(w, F, T, aps)
 			var all_clean := true
 			for a in aps:
 				if int(a.get("cn_rinsed", -1)) < int(T.t):
@@ -1222,9 +1294,14 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 				T.phase = "to_inner"
 				_order_slots(w, T, "inner")
 		"to_inner":
+			if _turn_on() and not F.is_empty():
+				_turn_service(w, F, T, aps)
 			if _arrived(w, T, aps, "inner", 1.6):
-				T.phase = "to_garage"
-				_order_slots(w, T, "garage")
+				if bool(T.get("again", false)):
+					_turn_out(w, T)
+				else:
+					T.phase = "to_garage"
+					_order_slots(w, T, "garage")
 		"to_garage":
 			if _arrived(w, T, aps, "garage", 1.2):
 				T.phase = "garage"
@@ -1232,6 +1309,124 @@ static func _tick_team(w: SimWorld, T: Dictionary) -> void:
 					if mag_ok(w, F):   # FACB7: special rounds come from the magazine; none once it is destroyed
 						_callf(APC7_PATH, "restock", [w, a], null)
 				w.emit("CnTeamParked", {"team": tid, "fac": int(T.fac), "owner": int(T.owner)})
+
+
+# ================================================================ G7.1 H8 turnaround (CNOPS71)
+## Rules rules.g71_cn.turn (content/g71/rules_g71_cn.json, PROVISIONAL): a returning team heals and rearms while it
+## stands in the airlock wash (riders in the APC cargo included: they never reached the aid station before), and a
+## redeploy ordered during the return (cn_rollout queued: T.again) sends it straight back out from the inner gate:
+## no garage stop, and no loading stop when the whole team is still aboard.
+static func _turn() -> Dictionary:
+	var c = Content.rules().get("g71_cn", {})
+	return c.get("turn", {}) if c is Dictionary else {}
+
+
+static func _turn_on() -> bool:
+	return bool(_turn().get("on", false))
+
+
+## H8 facility upgrades (CNOPS71-8; roster Q5: mechanic + API now, the run progression comes with H7). Rules
+## rules.g71_cn.upgrades {kind: [tier 1, tier 2, ...]} with cost + effect keys per tier (PROVISIONAL):
+##   "bays":    heal_mult, decon_mult: the airlock turnaround wash (_turn_service) heals / decons faster;
+##   "foundry": build_mult: stored per facility, read with up_val (the suit-foundry hook is still open);
+##   the labs keep their own G7 tiers (cn_lab_upgrade). F.g71up {kind: tier} exists only once upgraded (unused = no
+## field, hash-identical). Order fac_upgrade {issuer, building_id, kind}: pays the tier cost; with build_s on the tier
+## (CNOPS71-9) it builds over that time (F.g71upq {kind, left}, scaled by the base training mult like the lab; one at a
+## time), else it is in at once. upgrade(w, F, kind) is the API H7 / tests call (no cost, at once).
+static func _ups() -> Dictionary:
+	var c = Content.rules().get("g71_cn", {})
+	var u = c.get("upgrades", {}) if c is Dictionary else {}
+	return u if u is Dictionary else {}
+
+
+static func up_tier(F: Dictionary, kind: String) -> int:
+	return int((F.get("g71up", {}) as Dictionary).get(kind, 0))
+
+
+static func up_val(F: Dictionary, kind: String, key: String, dflt: float) -> float:
+	var t := up_tier(F, kind)
+	var tiers = _ups().get(kind, [])
+	if t <= 0 or not (tiers is Array) or t > (tiers as Array).size():
+		return dflt
+	return float((tiers[t - 1] as Dictionary).get(key, dflt))
+
+
+static func upgrade_reason(w: SimWorld, F: Dictionary, kind: String, fid: int) -> String:
+	if F.is_empty():
+		return "That is not a Counter-Nanite facility."
+	var tiers = _ups().get(kind)
+	if not (tiers is Array):
+		return "Unknown facility upgrade."
+	if up_tier(F, kind) >= (tiers as Array).size():
+		return "Fully upgraded."
+	if F.has("g71upq"):
+		return "An upgrade is already being built."
+	return w.can_afford(fid, (tiers[up_tier(F, kind)] as Dictionary).get("cost", {}))
+
+
+static func upgrade(w: SimWorld, F: Dictionary, kind: String) -> bool:
+	var tiers = _ups().get(kind)
+	if F.is_empty() or not (tiers is Array) or up_tier(F, kind) >= (tiers as Array).size():
+		return false
+	if not F.has("g71up"):
+		F["g71up"] = {}
+	F.g71up[kind] = up_tier(F, kind) + 1
+	w.emit("CnFacUpgrade", {"fac": int(F.id), "owner": int(F.owner), "kind": kind, "tier": int(F.g71up[kind])})
+	return true
+
+
+## Heal + decon the riders, rearm the APCs (once per return), every FLOW_EVERY ticks while in the airlock.
+static func _turn_service(w: SimWorld, F: Dictionary, T: Dictionary, aps: Array) -> void:
+	var tr := _turn()
+	var dt := float(FLOW_EVERY) / float(SimWorld.TICK_RATE)
+	var hp_s := float(tr.get("heal_hp_s", 60.0)) * up_val(F, "bays", "heal_mult", 1.0)
+	var exp_s := float(tr.get("decon_exp_s", 0.5)) * up_val(F, "bays", "decon_mult", 1.0)
+	var healed := false
+	for a in aps:
+		for u in a.get("cargo", []):
+			var mh := float(u.get("max_hp", Content.unit(String(u.def)).get("hp", 100)))
+			if float(u.get("wb", 0.0)) > 0.0 and not bool(u.get("wstab", false)):
+				u.wstab = true
+				healed = true
+			if float(u.hp) < mh:
+				u.hp = minf(mh, float(u.hp) + hp_s * dt)
+				healed = true
+			var x := float(u.get("cn_exp", 0.0))
+			if x > 0.0:
+				x -= exp_s * dt
+				if x <= 0.0:
+					u.erase("cn_exp")
+					u.erase("cn_slow")
+				else:
+					u.cn_exp = snappedf(x, 1.0 / 1024.0)
+		if mag_ok(w, F) and int(a.get("cn_turn_rs", -1)) != int(T.t):
+			a.cn_turn_rs = int(T.t)   # T.t = the tick of this return: one restock per return
+			_callf(APC7_PATH, "restock", [w, a], null)
+	if healed and int(T.get("turn_heal", -1)) != int(T.t):
+		T.turn_heal = int(T.t)
+		w.emit("CnTurnHeal", {"team": int(T.id), "fac": int(T.fac), "owner": int(T.owner)})
+
+
+## Queued redeploy: straight to the gate when every member is aboard, else to the pad to load.
+static func _turn_out(w: SimWorld, T: Dictionary) -> void:
+	T.erase("again")
+	var aboard := true
+	var t = _callf(CN_PATH, "team", [w, int(T.get("ext", -1))], null)
+	if t != null:
+		for id in t.members:
+			if w.entities.has(int(id)) and not Transport.in_cargo(w, int(id)):
+				aboard = false
+	if not aboard or not bool(_turn().get("skip_load_aboard", true)):
+		_start_rollout(w, T)
+		return
+	for a in _apcs(w, T):
+		a.erase("cn_sealed")
+		a.erase("cn_seal_hp")
+	T.phase = "to_gate"
+	_order_slots(w, T, "gate")
+	var F := fac(w, int(T.fac))
+	if not F.is_empty():
+		w.emit("CnRollout", {"team": int(T.id), "fac": int(T.fac), "owner": int(T.owner), "smoke": zone(F, "staging").get_center(), "turn": true})
 
 
 ## True when every APC of T stands at its slot of `where` (or stopped trying to get there).
@@ -1290,6 +1485,13 @@ static func _count_kind(w: SimWorld, fid: int, kind: String) -> int:
 static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	var t := String(cmd.get("type", ""))
 	match t:
+		"fac_upgrade":
+			return upgrade_reason(w, _cmd_fac(w, cmd), String(cmd.get("kind", "")), int(cmd.get("issuer", -1)))
+		"fac_siege":
+			var F := _cmd_fac(w, cmd)
+			if F.is_empty():
+				return "That is not a Counter-Nanite facility."
+			return "" if int(F.owner) == int(cmd.get("issuer", -1)) else "Not your facility."
 		"cn_train", "cn_cancel_train", "cn_lab_queue", "cn_lab_upgrade", "cn_evacuate":
 			var F := _cmd_fac(w, cmd)
 			if F.is_empty():
@@ -1332,6 +1534,8 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var T := _cmd_team(w, cmd)
 			if T.is_empty():
 				return "Not your team."
+			if t == "cn_rollout" and _turn_on() and ["returning", "to_inner", "to_garage"].has(String(T.phase)):
+				return ""   # G7.1 H8: queued redeploy (turnaround through the airlock, no garage stop)
 			return "" if String(T.phase) == "garage" else "The team is not in its garage."
 		"cn_return":
 			var T := _cmd_team(w, cmd)
@@ -1345,6 +1549,18 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var t := String(cmd.get("type", ""))
 	var fid := int(cmd.issuer)
 	match t:
+		"fac_upgrade":
+			var F := _cmd_fac(w, cmd)
+			var kind := String(cmd.get("kind", ""))
+			var tier: Dictionary = {} if upgrade_reason(w, F, kind, fid) != "" else _ups()[kind][up_tier(F, kind)]
+			if not tier.is_empty() and w.spend(fid, tier.get("cost", {}), "fac_upgrade"):
+				if float(tier.get("build_s", 0.0)) > 0.0:
+					F["g71upq"] = {"kind": kind, "left": float(secs(tier.build_s))}   # built over build_s (x training mult)
+					w.emit("CnFacUpgradeStarted", {"fac": int(F.id), "owner": int(F.owner), "kind": kind, "tier": up_tier(F, kind) + 1})
+				else:
+					upgrade(w, F, kind)
+		"fac_siege":
+			siege(w, _cmd_fac(w, cmd), bool(cmd.get("on", true)), String(cmd.get("reason", "test trigger")))
 		"cn_train":
 			var F := _cmd_fac(w, cmd)
 			var kind := String(cmd.kind)
@@ -1372,7 +1588,13 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			var tg = cmd.get("target")
 			T.target = [float(tg.x), float(tg.y)] if typeof(tg) == TYPE_VECTOR2 else ([float(tg[0]), float(tg[1])] if typeof(tg) == TYPE_ARRAY and tg.size() == 2 else [])
 			T.drill = false
-			_start_rollout(w, T)
+			if String(T.phase) != "garage":
+				T.again = true   # G7.1 H8: redeploy straight from the airlock when the rinse is done
+				w.emit("CnTurnQueued", {"team": int(T.id), "fac": int(T.fac), "owner": int(T.owner)})
+				if String(T.phase) == "to_garage":
+					_turn_out(w, T)
+			else:
+				_start_rollout(w, T)
 		"cn_drill":
 			var T := _cmd_team(w, cmd)
 			T.drill = bool(cmd.get("on", true))

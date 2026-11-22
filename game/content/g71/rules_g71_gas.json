@@ -1,0 +1,41 @@
+{
+  "_meta": "G7.1 J10 GAS71 (docs/G71_SCOPE.md J10, roster Q7 PROVISIONAL): counter-nanite gas, masks, filters. Read by sim/systems/gas71.gd. Every number PROVISIONAL (CNOPS71 picked it; the scope leaves it open). conc 1000 = a fresh full-strength cloud; cell = tiles per gas cell; every / wind_every in ticks; *_pm = per mille per update.",
+  "rules": {
+    "g71_gas": {
+      "cell": 2,
+      "every": 10,
+      "fx_off": 5,
+      "wind_every": 600,
+      "decay_pm": 30,
+      "decay_min": 2,
+      "diff_pm": 160,
+      "adv_pm": 220,
+      "min_c": 8,
+      "release_c": 900,
+      "release_r": 1,
+      "near_cells": 2,
+      "near_c": 40,
+      "off_s": 10.0,
+      "machine_dps": 60.0,
+      "human_dps": 6.0,
+      "harm_c": 60,
+      "filter_wear": 36.0,
+      "acc_cost": 0.08,
+      "sight_cost": 0.15,
+      "grab_r": 3.0,
+      "fetch_r": 40.0,
+      "spares": 3,
+      "give_r": 5.0,
+      "default_mask": true,
+      "vent_c": 700,
+      "src_masks": 40,
+      "src_filters": 80,
+      "_notes": {
+        "machine_dps": "hp/s at conc 1000 (a 1000-hp walker dies in ~17 s in a fresh cloud)",
+        "human_dps": "hp/s at conc 1000 for an unmasked soldier",
+        "filter_wear": "filter per-mille lost per s at conc 1000, scaled by conc (a fresh filter lasts ~28 s in a full cloud, minutes at the edges)",
+        "default_mask": "standard issue: every LP soldier carries one mask; lockers / armory / gate crates replace masks and filters, bearers carry spares"
+      }
+    }
+  }
+}

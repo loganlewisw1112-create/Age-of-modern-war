@@ -110,13 +110,29 @@ static func pname(k: String) -> String:
 	return String(Cards8b.R().get("presets", {}).get(k, {}).get("name", "default")) if k != "" else "default"
 
 
+## G7.1 H8 (CNOPS71-11): the CN kit a preset carries (rules.g71_cn.gear_presets; no preset / no row = the full kit).
+static func gear_txt(k: String) -> String:
+	var c = Content.rules().get("g71_cn", {})
+	if not (c is Dictionary) or not (c as Dictionary).has("gear_presets"):
+		return ""
+	var g = (c.gear_presets as Dictionary).get(k, {}) if k != "" else {}
+	if not (g is Dictionary):
+		g = {}
+	var bits := ["%d nanite gren." % int(g.get("gr", ((c as Dictionary).get("mission", {}) as Dictionary).get("gr_n", 4)))]
+	if int(g.get("sd", 1)) > 0:
+		bits.append("shield drone")
+	if int(g.get("pc", 1)) > 0:
+		bits.append("purge cannon")
+	return " (" + ", ".join(PackedStringArray(bits)) + ")"
+
+
 func _fill(w: SimWorld) -> void:
 	var sm := Cards8b.armory_summary(w, fac)
 	last = sm
 	var pr: Dictionary = sm.get("presets", {})
 	var parts := []
 	for r in roles():
-		parts.append("%s: %s" % [String(r).to_upper(), pname(String(pr.get(r, "")))])
+		parts.append("%s: %s%s" % [String(r).to_upper(), pname(String(pr.get(r, ""))), gear_txt(String(pr.get(r, "")))])
 	_pre.text = "Loadouts  " + "   ".join(PackedStringArray(parts))
 	var q := []
 	for it in sm.get("queue", []):

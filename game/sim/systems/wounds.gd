@@ -433,6 +433,8 @@ static func is_down(e: Dictionary) -> bool:
 
 static func crawling(e: Dictionary) -> bool:
 	var wz = e.get("wz")
+	if wz != null and e.has("g71lost") and int(e.g71lost) & 12:
+		return true   # G7.1 DAMAGE71 J2: a lost leg = crawl only (Last Protocol gore)
 	return wz != null and int(wz.get("leg_l", 0)) > 0 and int(wz.get("leg_r", 0)) > 0
 
 
@@ -750,6 +752,8 @@ static func _bleed_pass(w: SimWorld, st: Dictionary) -> void:
 			if not SimWorld.Medical.has_medical(w, int(e.owner)):
 				bl.erase(id)   # ORCH G5 design rule: no medical capability -> no Wounded state, bled out
 				w.emit("BledOut", {"id": int(id), "owner": int(e.owner), "def": String(e.def)})
+				if SimWorld.Gore71.on(w):
+					SimWorld.Gore71.on_death(w, e, "bled_out")   # G7.1 DAMAGE71 J1
 				w.destroy(int(id), "bled_out")
 				continue
 			go_down(w, e)
@@ -880,6 +884,8 @@ static func _care_pass(w: SimWorld, st: Dictionary) -> void:
 				if not w.rng.chance(p):
 					_end(w, st, int(tid))
 					w.emit("DiedOfWounds", {"id": int(c.id), "owner": int(c.owner), "waited_s": mins * 60.0})
+					if SimWorld.Gore71.on(w):
+						SimWorld.Gore71.on_death(w, c, "died_of_wounds")   # G7.1 DAMAGE71 J1
 					w.destroy(int(c.id), "died_of_wounds")
 					continue
 			var kc: Dictionary = cfg_.get(k, {})
@@ -930,6 +936,8 @@ static func _auto_pass(w: SimWorld, st: Dictionary, au: Dictionary) -> void:
 		busy[int(st.care[tid].c)] = true
 	var ids: Array = seen.keys()
 	ids.sort()
+	if SimWorld.Care71.on(w):
+		ids = SimWorld.Care71.order(w, ids)   # G7.1 DAMAGE71 J2 (Last Protocol): triage order red, yellow, green; black left out
 	for id in ids:
 		var c = w.entities.get(id)
 		if c != null and not busy.has(int(id)) and _needs_care(c):

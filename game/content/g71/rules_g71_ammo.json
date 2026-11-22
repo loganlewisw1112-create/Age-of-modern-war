@@ -1,0 +1,36 @@
+{
+  "_meta": "G7.1 B5 AMMO TIERS (ARMY71, docs/G71_SCOPE.md B5; Last Protocol only per roster 5A Q1; Q5: mechanic + unlock/upgrade API now, LP keeps research_all so every tier starts unlocked at level 1 until H7 builds run progression). rules.g71_ammo drives sim/systems/ammo71.gd. Tier effects ride the existing rounds8 upgrade hook (shooter e.r8up multipliers on the weapon's ballistics8 round: pen / wound / kill / k / chem), so no ballistics8 edit is needed. Every number is PROVISIONAL.",
+  "rules": {
+    "g71_ammo": {
+      "ver": 1,
+      "enabled": true,
+      "research_all": true,
+      "_research_note": "PROVISIONAL (Q5). true = every side starts with every tier unlocked at level 1 (LP research_all). false = locked until unlock(tier).",
+      "max_level": 3,
+      "level_step": 0.15,
+      "_level_note": "PROVISIONAL. Upgrade level L scales each tier multiplier's distance from 1.0 by 1 + level_step x (L - 1).",
+      "tiers": {
+        "ap": {"label": "AP", "mods": {"pen": 1.6, "wound": 0.85, "kill": 1.15}, "stock": 600, "unlock_cost": 150, "unlock_s": 30, "upgrade_cost": 120, "upgrade_s": 40},
+        "he": {"label": "HE", "mods": {"pen": 0.45, "wound": 1.35, "kill": 0.8}, "stock": 400, "unlock_cost": 150, "unlock_s": 30, "upgrade_cost": 120, "upgrade_s": 40},
+        "heat": {"label": "HEAT", "mods": {"pen": 1.7, "wound": 0.9, "kill": 1.25, "chem": true}, "stock": 120, "unlock_cost": 200, "unlock_s": 40, "upgrade_cost": 160, "upgrade_s": 50},
+        "airburst": {"label": "Airburst", "mods": {"pen": 0.5, "wound": 1.5, "kill": 0.7}, "stock": 300, "unlock_cost": 200, "unlock_s": 40, "upgrade_cost": 160, "upgrade_s": 50},
+        "top_attack": {"label": "Top-attack", "mods": {"pen": 1.35, "kill": 1.5, "chem": true}, "stock": 60, "unlock_cost": 250, "unlock_s": 50, "upgrade_cost": 200, "upgrade_s": 60},
+        "incendiary": {"label": "Incendiary", "mods": {"wound": 1.1, "pen": 0.9}, "ignite_s": 3.0, "stock": 400, "unlock_cost": 180, "unlock_s": 35, "upgrade_cost": 140, "upgrade_s": 45},
+        "rail": {"label": "Rail slug", "mods": {"pen": 2.4, "k": 0.3, "kill": 1.4, "wound": 1.1}, "stock": 80, "unlock_cost": 300, "unlock_s": 60, "upgrade_cost": 240, "upgrade_s": 70}
+      },
+      "_tiers_note": "PROVISIONAL. mods = rounds8 upgrade multipliers (Ballistics8.round_for: pen, wound, kill, k; chem = penetration ignores velocity). stock = rounds per side at state creation (supply drops D2 add through Ammo71.add_stock). ignite_s = Parts71.ignite seconds on a hit (stops nanite regrowth). Costs / times are for H7 progression, unused now.",
+      "class_tiers": {
+        "small_arms": ["ap", "incendiary"],
+        "assault": ["ap", "incendiary"],
+        "sniper": ["ap", "incendiary", "rail"],
+        "autocannon": ["ap", "he", "airburst", "incendiary", "rail"],
+        "at": ["heat", "top_attack", "he"],
+        "top_attack": ["top_attack", "heat"],
+        "grenade": ["he", "airburst", "incendiary"],
+        "frag": ["he", "airburst", "incendiary"],
+        "artillery": ["he", "airburst", "incendiary"]
+      },
+      "_class_note": "PROVISIONAL. Weapon class -> tiers it may load (content weapon 'class'). A weapon with no rounds8 round (flame, melee, energy) has no tiers."
+    }
+  }
+}

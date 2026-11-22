@@ -316,14 +316,21 @@ func step_herds(events: Array, dt: float) -> void:
 	var mw := float(map.get("w", 512))
 	var mh := float(map.get("h", 512))
 	var n_ev := mini(events.size(), 200)
+	if herds.is_empty():
+		return
+	# SWN9: event positions read once per call (was once per herd); same events, same order, same first hit
+	var eps := PackedVector2Array()
+	for i in n_ev:
+		var ev = events[i]
+		if typeof(ev) != TYPE_DICTIONARY:
+			continue
+		var ep = ev.get("pos", ev.get("data", {}).get("pos") if typeof(ev.get("data")) == TYPE_DICTIONARY else null)
+		if ep is Vector2:
+			eps.append(ep)
 	for hd in herds:
 		var p: Vector2 = hd.pos
-		for i in n_ev:
-			var ev = events[i]
-			if typeof(ev) != TYPE_DICTIONARY:
-				continue
-			var ep = ev.get("pos", ev.get("data", {}).get("pos") if typeof(ev.get("data")) == TYPE_DICTIONARY else null)
-			if ep is Vector2 and p.distance_to(ep) < FLEE_R:
+		for ep in eps:
+			if p.distance_to(ep) < FLEE_R:
 				var away: Vector2 = (p - ep)
 				hd.flee = away.normalized() if away.length() > 0.01 else Vector2.RIGHT
 				if float(hd.flee_t) <= 0.0:

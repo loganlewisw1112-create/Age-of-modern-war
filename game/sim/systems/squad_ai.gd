@@ -27,6 +27,9 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Terrain = preload("res://sim/terrain.gd")
 const Elevation = preload("res://sim/systems/elevation.gd")
 const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never given automatic jobs
+const Discipline71 = preload("res://sim/systems/discipline71.gd")   # G7.1 ARMY71 D4 discipline (Last Protocol only)
+const Crew71 = preload("res://sim/systems/crew71.gd")   # G7.1 ARMY71 B3: emplaced crews hold their post (LP only)
+static var d71 := false   # G7.1 ARMY71: this tick is a Last Protocol tick with D4 on
 
 const EVERY := 10                 # think period per unit (0.5 s)
 const PLAYER_TICKS := 400         # 20 s player-order override window
@@ -429,6 +432,7 @@ static func _first_alive(w: SimWorld, lst: Array, key: String, val: int) -> int:
 static func tick(w: SimWorld) -> void:
 	if w.entities.is_empty():
 		return
+	d71 = String(w.cfg.get("mode", "")) == "last_protocol" and Discipline71.enabled()   # G7.1 ARMY71 D4: LP only
 	var c := _cache(w)
 	_g7_grid(w, c)
 	var k := posmod(-w.tick, EVERY)
@@ -558,7 +562,11 @@ static func _squad_think(w: SimWorld, c: Dictionary, sq: int, lst: Array) -> voi
 			var a = _valid_enemy(w, e, int(e.get("last_attacker", -1)))
 			if a != null and not pool.has(int(a.id)):
 				pool[int(a.id)] = 0
+	var d71np = Discipline71.squad_think(w, sq, mem, pool) if d71 else null   # G7.1 ARMY71 D4 (LP): threat / focus / sector target choice + NCO; null off LP
 	_g7_squad(w, mem, le, pool.is_empty())
+	if d71:   # G7.1 ARMY71 D4 (LP): cover poses (hug / peek / bound) + door stacking before entering a building
+		Discipline71.poses(w, mem)
+		Discipline71.stack_enter(w, mem)
 	if pool.is_empty():
 		_cohesion(w, mem, le)
 		return
@@ -572,7 +580,10 @@ static func _squad_think(w: SimWorld, c: Dictionary, sq: int, lst: Array) -> voi
 				focus = int(tid)
 	var assigned := {}
 	var engaged_pos: Vector2 = w.entities[focus].pos
-	for e in mem:
+	if d71np != null:
+		for e in d71np:
+			_d71_support(w, e, engaged_pos)
+	for e in (mem if d71np == null else []):   # G7.1 ARMY71: off LP the old armour-mult assignment, unchanged
 		var ot := String(e.order.get("type", "idle"))
 		if ot != "idle" and ot != "hold" and ot != "attack_move":
 			continue
@@ -617,6 +628,24 @@ static func _squad_think(w: SimWorld, c: Dictionary, sq: int, lst: Array) -> voi
 			if pp.distance_to(le.pos) <= SUPPORT_R:
 				_ai_move(w, p, Vector2(le.pos).lerp(pp, 0.3), "attack_move", "support")
 	_g7_grenade(w, mem, lst)
+
+
+## G7.1 ARMY71 D4 (LP): a member the discipline pick left without a target moves up in support, exactly as the old
+## assignment loop does for an idle member out of reach.
+static func _d71_support(w: SimWorld, e: Dictionary, engaged_pos: Vector2) -> void:
+	if String(e.order.get("type", "idle")) != "idle" or int(e.target) >= 0 or bool(e.moving):
+		return
+	var s := Combat.stats(e)
+	if String(s.weapon) == "":
+		return
+	var fresh := player_fresh(w, e)
+	var pos: Vector2 = e.pos
+	var rad: float = float(s.range) if fresh else maxf(float(s.sight), float(s.range))
+	if fresh or stance_of(e) == "hold_position" or pos.distance_to(engaged_pos) > SUPPORT_R + rad:
+		return
+	var dir := engaged_pos - pos
+	var goal := engaged_pos - dir.normalized() * maxf(float(s.range) - 0.5, 1.0) if dir.length() > 0.01 else pos
+	_ai_move(w, e, goal, "attack_move", "support")
 
 
 ## Quiet squad: stragglers more than LEASH tiles from the leader catch up (only units nobody else is driving).
@@ -789,6 +818,10 @@ static func _smart(w: SimWorld, c: Dictionary, e: Dictionary, ot: String) -> voi
 	# 4) kiting: out-range the target, step back to our own range when it closes inside its range. Only from a
 	# threat that can really hurt us (owner test 2026-10-26: an MBT backed away from a rifleman, whose rifle does 5%
 	# against heavy armour, and showed it its rear armour); a tank holds against rifles and autocannons.
+	# G7.1 ARMY71 B3 (LP only, d71): an emplaced MG nest / .50 team holds its post (kiting walked the nest into the
+	# wall corner away from melee crawlers and it never fired again: flow army71, ARMY71-6 diag)
+	if d71 and ["mg", "am"].has(Crew71.kind_of_def(String(e.def))):
+		return
 	if rng > trng + 1.0 and dt < trng + 0.5 and Combat.can_target(ts, e) 			and Content.armor_mult(String(ts.cls), String(s.armor)) >= KITE_MIN_MULT:
 		_reposition(w, e, pos + away * (rng - 0.5 - dt), "kite")
 		return
@@ -967,7 +1000,7 @@ static func _g7_squad(w: SimWorld, mem: Array, le: Dictionary, quiet: bool) -> v
 		gait = F7.gait_for(thr, supp, F7.open_route(w, lp, goal if typeof(goal) == TYPE_VECTOR2 else lp))
 	for e in mem:
 		_set_or_erase_i(e, "f7_tech", tech)
-		_set_or_erase_i(e, "gait", 3 if bool(e.get("broken", false)) else gait)
+		_set_or_erase_i(e, "gait", 3 if bool(e.get("broken", false)) or (d71 and Discipline71.catchup(w, e, le)) else gait)   # G7.1 ARMY71 D4 (LP): a straggler sprints to close up
 		Sq7D.put(w, e)
 	if moving:
 		_f7_keep(w, mem)

@@ -1,6 +1,6 @@
 [package]
 name = "rts_core"
-version = "0.6.3"
+version = "0.6.5"
 edition = "2021"
 publish = false
 description = "Native sim core for RTS: Age of Modern War (spatial hash, nav, steering). CONTRACTS_G3b section 5."

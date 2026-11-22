@@ -70,11 +70,14 @@ static func mount(e: Dictionary) -> Array:
 	elif String(e.get("kind", "")) == "building" and not (c.get("no_lay_buildings", []) as Array).has(key):
 		var bo: Dictionary = c.get("buildings", {})
 		var d: Dictionary = Content.building(key)
-		var wid := String(d.get("weapon", ""))
+		var t71: Dictionary = d.get("t71", {})   # G7.1 BASTION71: Turrets71 defs (t71 block, no def.weapon) lay too
+		var wid := String(d.get("weapon", t71.get("weapon", "")))
 		var wd: Dictionary = Content.weapon(wid) if wid != "" else {}
 		var ind := bool(wd.get("indirect", false))
 		if bo.has(key):
 			m = [MOUNT_BLD, _deg(bo[key]), tol, toli, 0.0 if ind else scan]
+		elif t71.has("traverse_deg"):
+			m = [MOUNT_BLD, _deg(t71.traverse_deg), tol, toli, 0.0 if ind else scan]
 		elif not wd.is_empty():
 			var dv: Dictionary = c.get("derive", {})
 			var aa := bool(wd.get("anti_air", false)) or bool(wd.get("anti_air_low", false)) or bool(wd.get("anti_air_high", false))

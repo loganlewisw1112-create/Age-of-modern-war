@@ -22,6 +22,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5):
 const G6Hooks = preload("res://sim/systems/g6_hooks.gd")
 const Roof7 = preload("res://sim/systems/roof7.gd")   # G7 ROOF7 (13.9c-39): roof mounts out of reach of ground melee / demolition
 const Ballistics8 = preload("res://sim/systems/ballistics8.gd")   # G7 LETHAL8 (13.9c-47): round physics (no preloads)
+const Parts71 = preload("res://sim/systems/parts71.gd")   # G7.1 DAMAGE71 B2: LP Machine parts / plates (loads damage.gd lazily: no cycle)
 const BUCKET := 2.0          # must match combat.gd BUCKET (w.cache.combat_grid layout)
 const GRID_STRIDE := 1024    # must match combat.gd GRID_STRIDE
 const NEAR_MISS_R := 1.5
@@ -101,8 +102,16 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	r8 = Ballistics8.round_w(w, r8, shooter)   # armory / ammo-type upgrades (e.r8up / e.a8up, CARDS8B; fact api.rounds8)
 	if a8.is_empty():
 		r8 = null
+	# G7.1 DAMAGE71 (B2, Last Protocol only): a Machine with a part layout resolves the hit on its parts / plates
+	# (Parts71.hit replaces the class-armour step below). Off LP: no parts71 state, p71 stays false.
+	var p71: bool = target.kind == "unit" and (target.has("p71") or (Parts71.on(w) and Parts71.adopt(w, target)))
 	if target.kind == "unit":
-		if target.has("comp"):
+		if p71:
+			if target.has("comp"):
+				side = hit_side(shooter.pos, target)
+				dmg *= float((R.get("armor_facing", {}) as Dictionary).get(side, 1.0))
+			dmg = Parts71.hit(w, shooter, target, r8, a8, dmg, dmg, float(s.get("damage", 0.0)) / float(r8.base) if r8 != null else 1.0)
+		elif target.has("comp"):
 			side = hit_side(shooter.pos, target)
 			dmg *= float((R.get("armor_facing", {}) as Dictionary).get(side, 1.0))
 			if r8 != null and not bool(a8.get("body", false)):
@@ -122,12 +131,19 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			if cover:
 				dmg *= float((R.get("cover", {}) as Dictionary).get(cls, 1.0))
 	dmg = snappedf(dmg, Q)
+	if target.kind == "building" and target.has("nres"):   # G7.1 BASTION71 G3: nanite-resistant wall coating (LP walls only; CR seq 3364)
+		dmg = snappedf(dmg * SimWorld.Walls71.nres_mult(w, shooter, target), Q)
+	var g71: bool = target.kind == "unit" and SimWorld.Gore71.on(w)   # G7.1 DAMAGE71 J1 (Last Protocol only): gore outcome records
+	if g71:
+		SimWorld.Gore71.note_hit(target, String(r8.id) if r8 != null else "", Vector2(shooter.pos))
 	var zr = null   # G7 (WOUND7): hit zones for single-soldier infantry (Wounds.applies); else plain hp as before
 	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
 		var tz := Time.get_ticks_usec() if SimIndex.profiling else 0
 		zr = SimWorld.Wounds.apply_hit(w, target, zone8, dmg, shooter)
 		if SimIndex.profiling:
 			SimIndex.pt("dmg.zone", tz)
+		if g71 and String(zr.get("result", "hit")) == "hit":
+			SimWorld.Gore71.limb_hit(w, target, String(zr.get("zone", "")), dmg / maxf(SimWorld.Wounds.max_hp(target), 1.0))   # G7.1 J1: severed limbs
 	else:
 		target.hp = snappedf(float(target.hp) - dmg, Q)
 	var cev = w.cache.get("cmb_ev")   # SIM10K: Combat.tick wakes skipped shooters hit / aiming at this
@@ -144,9 +160,15 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 			oi.call(w, cwd, target.pos)
 	w.emit("Damage", {"shooter": int(shooter.id), "target": int(target.id), "amount": dmg,
 		"hit_side": side, "in_cover": cover})
+	if g71 and r8 != null and SimWorld.Gore71.outcome(String(r8.id)).has("line"):
+		SimWorld.Gore71.rail_line(w, shooter, target, String(r8.id), dmg)   # G7.1 J1: railgun slug goes on through the line
 	if zr != null and _zone_after(w, shooter, target, zr):
 		return   # G7: head kill (final) or knocked unconscious
 	if float(target.hp) <= 0.0:
+		if p71 and Parts71.on_zero(w, shooter, target):
+			return   # G7.1 DAMAGE71 J3: lives on half-dead (a heavy one that dies topples first inside on_zero)
+		if target.kind == "building" and SimWorld.Turrets71.on_zero_hp(w, target):
+			return   # G7.1 BASTION71 CR 971: an LP defence is disabled, not destroyed (false off LP)
 		# G5 (CORE10K, CONTRACTS_G5 section 5 core.zero_hp_hook_ready): SUPPORT's Medical may keep a
 		# unit alive as Wounded (true = do not destroy). The stub returns false: G4 results unchanged.
 		if target.kind == "unit" and SimWorld.Medical.on_zero_hp(w, target):
@@ -163,7 +185,7 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 		return
 	if target.kind != "unit":
 		return
-	if target.has("comp") and (cls == "at" or cls == "autocannon"):
+	if target.has("comp") and (cls == "at" or cls == "autocannon") and not p71:   # G7.1: layout Machines use their parts
 		_component_roll(w, target, dmg, R)
 	if target.has("morale"):
 		suppress(w, target, float(sup.get("per_hit", 18)), sf)
@@ -188,6 +210,10 @@ static func _zone_after(w: SimWorld, shooter: Dictionary, target: Dictionary, zr
 
 ## The 0 hp path of apply_hit (Medical Wounded save, G6 destroy hook, morale death queue, destroy).
 static func _kill(w: SimWorld, shooter: Dictionary, target: Dictionary) -> void:
+	if target.has("p71") and Parts71.on_zero(w, shooter, target):
+		return   # G7.1 DAMAGE71 J3: half-dead
+	if target.kind == "building" and SimWorld.Turrets71.on_zero_hp(w, target):
+		return   # G7.1 BASTION71 CR 971: an LP defence is disabled, not destroyed (false off LP)
 	if target.kind == "unit" and not bool(target.get("wkill", false)) and SimWorld.Medical.on_zero_hp(w, target):
 		return
 	if SimIndex.g6m(w) & SimIndex.G6_DESTROY:
@@ -205,10 +231,14 @@ static func wound_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, dmg:
 	var zr = null
 	if target.kind == "unit" and target.has("morale") and SimWorld.Wounds.applies(target):
 		dmg = snappedf(dmg, Q)
+		if SimWorld.Gore71.on(w):   # G7.1 DAMAGE71 J1: splash outcome (callers set Gore71.ctx_rc; default blast)
+			SimWorld.Gore71.note_hit(target, SimWorld.Gore71.ctx_rc if SimWorld.Gore71.ctx_rc != "" else "blast", Vector2(shooter.get("pos", target.pos)))
 		zr = SimWorld.Wounds.apply_hit(w, target, zone_hint, dmg, shooter)
 	else:
 		dmg = snappedf(dmg * Content.armor_mult("frag", armor_of(target)), Q)
 		target.hp = snappedf(float(target.hp) - dmg, Q)
+		if target.has("p71"):
+			Parts71.note_damage(w, target)   # G7.1 DAMAGE71: splash on an LP Machine; it may regrow after the lull
 	var cev = w.cache.get("cmb_ev")
 	if cev != null:
 		cev[int(target.id)] = true
@@ -297,6 +327,8 @@ static func _component_roll(w: SimWorld, t: Dictionary, dmg: float, R: Dictionar
 static func _note_death(w: SimWorld, t: Dictionary) -> void:
 	if t.kind != "unit":
 		return
+	if SimWorld.Gore71.on(w):
+		SimWorld.Gore71.on_death(w, t, "killed")   # G7.1 DAMAGE71 J1: the body stays all match (Last Protocol)
 	if not w.cache.has("morale_deaths"):
 		w.cache["morale_deaths"] = []
 	w.cache["morale_deaths"].append({"id": int(t.id), "owner": int(t.owner),

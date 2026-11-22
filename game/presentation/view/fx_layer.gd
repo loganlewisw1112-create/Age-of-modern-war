@@ -852,8 +852,43 @@ func _on_world_events(evs: Array) -> void:
 		elif String(ev.get("type", "")) == "AiDecision":
 			if String(ev.get("tag", "")) == "smoke":
 				_fx61_smoke(ev)
+		elif D71_FX.has(String(ev.get("type", ""))):
+			_fx71(ev)
 		elif String(ev.get("type", "")) != "ShotFired":  # lasers come through on_shot (MatchView dispatch)
 			_add_g6_list(G6Fx.from_event(ev, mv.snap, int(mv.player_fid), mv._ally_fids))
+
+
+# ---------------------------------------------------------------- G7.1 DAMAGE71 effects (B2 / J3)
+## Sim events -> fx61: Ricochet71 (glancing sparks + a streak away from the shooter), PlateShear71 (sparks, the plate
+## tumbling off, a scrap mark), PartDestroyed71 (sparks + silver nanite fluid and a silver pool), CellCookoff71 (a small
+## blast), NaniteRegrow71 (silver glints over the regrowing part). Presentation only; off-screen events are skipped.
+const D71_FX := {"Ricochet71": 1, "PlateShear71": 1, "PartDestroyed71": 1, "CellCookoff71": 1, "NaniteRegrow71": 1, "Trampled71": 1}
+func _fx71(ev: Dictionary) -> void:
+	if not ev.has("pos"):
+		return
+	var wp := Vector2(ev.pos)
+	var b := _w2s(wp)
+	if not _vr().grow(64.0).has_point(b):
+		return
+	var e = _e()
+	match String(ev.type):
+		"Ricochet71":
+			var fr := _w2s(Vector2(ev.get("from", wp - Vector2(1, 0))))
+			e.ricochet71(b + Vector2(0, -6), b - fr)
+		"PlateShear71":
+			var f := Vector2.from_angle(float(ev.get("facing", 0.0)))
+			var fc := String(ev.get("face", "all"))
+			var dw := -f if fc == "rear" else (f.orthogonal() if fc == "side" else f)
+			e.plate_shear71(b + Vector2(0, -6), _w2s(wp + dw) - b)
+		"PartDestroyed71":
+			e.part_down71(b + Vector2(0, -5), String(ev.get("kind", "")))
+		"CellCookoff71":
+			e.explosion(b, 10.0, "scorch")
+		"NaniteRegrow71":
+			e.silver71(b + Vector2(0, -5), false)
+		"Trampled71":   # a tank / heavy Machine rolls over a body: a fresh smear of blood and a puff of churned dirt
+			e.blood(b, 9.0, false)
+			e.dust(b, Color(0.32, 0.27, 0.2, 0.7), false)
 
 
 # ---------------------------------------------------------------- G6 (VIEW6) effects

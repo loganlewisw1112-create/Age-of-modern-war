@@ -74,6 +74,8 @@ func _process(delta: float) -> bool:
 		w = "F_paused_normal"
 	elif s >= 36.0 and s < 40.0:
 		w = "G_paused_world_hidden"
+	elif s >= 40.0 and s < 44.0:
+		w = "H_paused_nothing_ours"
 	if w != _win:
 		if _win != "":
 			_print_win(_win)
@@ -96,7 +98,18 @@ func _process(delta: float) -> bool:
 						(c as CanvasItem).visible = false
 						hid.append(String(c.name))
 				print("NATWIN G hid ", ",".join(hid))
-	if s >= 40.5:
+			"H_paused_nothing_ours":   # SWARMNAT71-3 GPU / engine floor probe: also every CanvasLayer (HUD) and MatchView
+				var hid2 := []
+				for n in root.find_children("*", "CanvasLayer", true, false):
+					if (n as CanvasLayer).visible:
+						(n as CanvasLayer).visible = false
+						hid2.append(String(n.name))
+				for n in root.find_children("*", "CanvasItem", true, false):
+					if (n as CanvasItem).visible and (n as CanvasItem).get_parent() == root:
+						(n as CanvasItem).visible = false
+						hid2.append(String(n.name))
+				print("NATWIN H hid ", ",".join(hid2))
+	if s >= 44.5:
 		print("NATWIN end")
 		return true
 	return r

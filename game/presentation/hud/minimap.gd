@@ -54,6 +54,8 @@ var _fog_bytes := PackedByteArray()
 var _fog_row := 0
 var _redraw_acc := 0.0
 var _cam_overlay: Control = null
+var _s71: Array = []   # G7.1 BASTION71 (Q14): sensor contacts [minimap pos], cached at the dot rebuild
+const S71_COL := Color(0.35, 0.95, 0.85)
 ## G7 (SCALE7): on maps over TEX_MAX a side, the terrain and fog textures sample every _k-th cell
 ## (texture _tw x _th <= TEX_MAX), so the per-frame fog rebuild costs the same as on a 256 map (a 768
 ## map was 147k GDScript cell writes per frame while the fog refreshed). Maps <= 256: _k = 1, as before.
@@ -330,6 +332,10 @@ func _rebuild_dots(w: SimWorld) -> void:
 		_tbins.resize(_tb_n * _tb_n)
 	_tbins.fill(0)
 	var pf: int = int(mv.get("player_fid"))
+	_s71.clear()
+	if w.sys_state.has("sensors71"):   # G7.1 BASTION71: sonic / seismic contacts (burrowers, stalkers)
+		for c in SimWorld.Sensors71.contacts(w, pf):
+			_s71.append(_to_mini(Vector2(c.pos)))
 	var f := _fog_arrays()
 	var exp: PackedByteArray = f.get("explored", PackedByteArray())
 	var vis := _vis_arrays(w, pf)
@@ -470,6 +476,11 @@ func _draw() -> void:
 		draw_texture_rect(_fog_tex, full, false)
 	if _dot_tex != null:
 		draw_texture_rect(_dot_tex, full, false)
+	for q in _s71:   # G7.1 BASTION71: sensor contact = a hollow diamond (seen through the ground, not by sight)
+		# g9: a 6 px diamond was unreadable on the 198 px minimap; 10 px, 2 px line, filled centre
+		var d := PackedVector2Array([q + Vector2(0, -5), q + Vector2(5, 0), q + Vector2(0, 5), q + Vector2(-5, 0), q + Vector2(0, -5)])
+		draw_polyline(d, S71_COL, 2.0)
+		draw_circle(q, 1.6, S71_COL)
 	draw_rect(full, Color("4b555b"), false, 1.0)
 
 

@@ -147,3 +147,123 @@ Recommendation: the GPU-floor probe and (d) now; then (a) + (c), unless the prob
 - `sim/render_snap.gd` g71 provider hook for wave 2 (`RenderSnap.register_g71(key, provider)`, provider.call(w, snap)
   once per build, result at snap.g71[key]; nothing registered = no work): fact render_snap.g71_hook, test
   tests/test_swarmnat71.gd test_g71_hook 1/0.
+
+## 8. Generation 3 (SWARMNAT71-3, 2026-11-21/22): kernel live, verified, and what it covers
+
+- **rts_core 0.6.4 is live** (bin/rts_core.dll 2,104,320 bytes, swapped 23:23Z; 0.6.3 kept as bin/rts_core.v063_keep.dll).
+  On 0.6.4: test_hot_state 17/0, test_perfsim71 6/0, test_swarmnat71 1/0, test_perfdraw71 7/0, bench hashes
+  8fd794b3 / a1e5af17 / 41b5f765 = ref (logs .plan/swarmnat71/g3/t1_*.log). fact swarmnat71.dll.
+- **The kernel had never run in Last Protocol:** the glue skipped it on every frame with a landed dropship
+  (`has_cr`), and LP always has one. Fixed exactly: units within 10.5 tiles (Manhattan, raw pos; bay_sort_y reaches
+  7.5 + the < 3 tile interpolation step) of a landed craft are marked for the GDScript path, the rest go native.
+- **Verify harness fix:** `motion.prune`'s 5 s GC clock (`motion._gc_t`) was not restored between the two runs, so the
+  kernel run never GC'd and `vs size` differed (harness, not kernel). Restored now.
+- **Coverage (the real limit):** SWARMNAT71_FB / FORGET diag lines (verify mode only) at LP peak: of ~550-650 drawn
+  units the kernel draws ~55-65 per frame, all human vehicles. **It draws 0 Machines.** m_scout_crawler / m_walker /
+  m_tracked carry anim61 sets, so Motion.class_for gives them CLS_INF and the a61 frame path; the kernel (built for
+  plain vehicles, "a61 empty") never registers them. Infantry (FLAG_S7 soldiers, a61) are out by design too. Porting
+  the a61 path (infantry posture / gait columns, inf_col, run / pinned, k8 throws) is a new kernel of about the same
+  size again.
+- Second limit: the kernel runs only on motion-layer frames (<= MOTION_CAP 700 units drawn). LP peak sits at
+  ~580-650 drawn on the bench, and over 700 the layer (and the kernel) turns off.
+- **DAMAGE71 CR 1897 in** (motion.gd `gore_hand` + `GORE_SETTLE` 1.5 s PROVISIONAL, set each refresh from
+  snap.g71.gore71 != null): LP corpses end once settled; off LP unchanged.
+
+## 9. Generations 4-5 (SWARMNAT71-4/-5, 2026-11-22): the Machines go native (rts_core 0.6.5)
+
+- **dsz unwritten-slot diff fixed (gen 4)**: the bay-hide range of a GDScript soldier was closed after the kernel had
+  pushed the next run, so `_apply_bay_hide` zeroed kernel items. The close now runs at the top of the unit loop.
+- **Why m_tracked was "noreg" (gen 5)**: 11,284 of its 11,348 fallbacks had no art-cache entry at all. They were units
+  that were off screen or in fog. The kernel checked marks / non-plain flags before its own view and fog cull and handed
+  them back; GDScript then culled them, so they never reached registration and stopped the run every frame. In 0.6.5
+  that check runs after the cull. The culls are the same for every unit and have no side effects, so this is exact.
+- **rts_core 0.6.5 (live since 02:47Z; 0.6.4 kept as bin/rts_core.v064_keep.dll)** adds the anim61 infantry path:
+  - record [36] is the flat anim61 columns (walk6 run6 crawl2 reload2 throw2 idle2 crouch prone fire_s fire_c fire_p wounded),
+    and [37] is `_is_inf(dname)`;
+  - Motion.step for CLS_INF: P_RUN from the pre-step speed >= RUN_SPEED, walking bob / running sway, kick 1.2 with no
+    hull rock;
+  - Motion.inf_col in the GDScript branch order (firing / reload / throw, idle-officer exception, walk / run / crawl,
+    prone / crouch / idle breathing at the fatigue rate);
+  - `set_fat` mirrors `_fat` (written in `_refresh_post`);
+  - `bay_out` returns the bay-hide entries of native infantry items (the glue appends them before `_apply_bay_hide`);
+  - counter 14 is gc61.a61.
+  The glue feature-checks `has_method("set_fat")` (`_sw65`), so it also works with 0.6.4. Sets with `k8_tum` (G8 ANIM8)
+  or `swalk` (EXO7-3 suits) are still refused.
+- **Checks on 0.6.5**:
+  - bench hashes 8fd794b3 / a1e5af17 / 41b5f765 = ref;
+  - test_hot_state 17/0, test_perfsim71 6/0, test_swarmnat71 1/0, test_perfdraw71 7/0 (.plan/swarmnat71/g5/t1_*.log).
+- **Verify r1** (.plan/swarmnat71/g5/swv_r1_*.log, 0 SCRIPT ERROR):
+
+  | Case | Kernel frames | Skipped frames | Diffs |
+  |---|---|---|---|
+  | lp | 840 | 0 | 1 |
+  | lpw | 143 | 697 | 1 |
+  | lppan | 603 | 117 | 1 |
+  | 2k | 1059 | 501 | 0 |
+
+  Every diff is the known frame-36 apron harness diff, so there are **0 real diffs**.
+- **Coverage at LP peak**: **244 native units per frame of ~592 drawn (was 56)**, and kernel calls per frame fell from 696
+  to 343. The scout crawlers, walkers and tracked Machines are now native; no Machine shows in the noreg fallbacks.
+- **What is left**:
+  - FLAG_S7 soldiers (Senses7 / formation state) are the largest remaining fallback: ~218 per frame at LP, and every
+    soldier in 2k (so 2k still has 0 native).
+  - The kernel is off above MOTION_CAP 700 drawn units (lpw ~863 drawn, LP pan peaks ~807).
+- **Timing**: not measured yet (the PC was not quiet). See the command list in the gen-3 handoff
+  (.plan/handoff/SWARMNAT71-3.json `quiet_pc_commands_for_orch`).
+
+## 10. Parked for G7.1 (ORCH decision, 2026-11-22; SWARMNAT71-8)
+
+- **Decision:** the swarm kernel is parked for this slice. `SWARMNAT71` stays default OFF. There is no port of the
+  remaining units, no kernel redesign and no MOTION_CAP change in G7.1.
+- **Measurement** (SWARMNAT71-7 ks1, the LP-peak gate case `tools/perf71_draw_lp.gd --fps-log --no-vsync --lpz=0.5
+  --peak=1000`, windowed, alternating pairs on a busy PC; board fact `perf71.lp_peak_final2`):
+  - p10 fps, kernel ON 15.6 / 18.0, OFF 19.9 / 24.3. OFF was better in both pairs, by 4.3 and 6.3 fps.
+  - Frame median ON 60.3 / 49.3 ms, OFF 44.3 / 38.5 ms.
+- **Why it loses:** at LP peak the kernel takes about 257 of about 605 drawn units: the plain ones, the cheapest for
+  GDScript (about 1-2 ms of loop time). It costs 4.5-5.2 ms a frame for them: begin (snapshot marshal) 1.9-2.3 ms, the
+  runs 1.8-2.0 ms, scatter 0.75-0.87 ms. That is a net loss of about 3-6 ms.
+- **Before it is worth revisiting**, all of these must be true, measured at the gate case:
+  1. Begin plus run plus scatter costs less than the GDScript cost of the units the kernel takes. Today the fixed begin
+     cost alone, about 2 ms, is more than those units cost. It would need a persistent native snapshot (no per-frame
+     marshal) and one batched call per frame instead of a call per run.
+  2. The FLAG_S7 soldiers (about 218 a frame at LP, all of them in 2k) are covered, so the kernel takes the expensive
+     units and not only the cheap ones.
+  3. The over-MOTION_CAP frames (lpw, LP pan) are covered or shown not to matter.
+- The GDScript loop itself is the G7.1 frame-rate work (rank 1 in `perf71.lp_peak_final2`); see section 11 when it lands.
+
+## 11. The GDScript unit loop at LP peak (SWARMNAT71-8, 2026-11-22): measured flat, exact cuts gave nothing
+
+- **Split** (sp1, 2 gate runs, kernel off, diag keys in for the batch only, removed byte-exact; board fact
+  `swarmnat71.unit_split`). The unit loop took 11.0-11.3 ms a frame. It iterates 1431 snapshot units; 613 reach the
+  art cache.
+
+  | Step | ms / frame |
+  |---|---|
+  | interpolation, view cull, terrain and height lift, wall walk, fog (1431 units) | 1.31-1.33 |
+  | hidden / G6 / vis list / far / def flags / bay | 0.54-0.56 |
+  | art cache lookup, a61, G7 / SQUAD7 merge, bits | 1.00-1.03 |
+  | motion (Motion.step, class, run, facing; `_refresh_post` 1 in 8) | 2.65-2.71 |
+  | frame choice | 1.31-1.32 |
+  | vehicle anim61, turret, row | 0.81-0.83 |
+  | lift, blast, k8, drawn7, wake, VIS7 | 1.35-1.39 |
+  | push | 1.77-1.81 |
+  | turret / APC guns / marks / sling / markers | 0.32-0.33 |
+
+  Outside the units: pre-loop setup 1.10-1.19 ms, statics 2.13-2.38 ms (955 statics, 336 from records).
+- **Cuts tried**, all exact. `SWN8_VERIFY=1` compared old and new code on every refresh and found 0 real diffs on lp,
+  lpw, lppan and 2k:
+  - the per-unit dictionary counters moved to locals;
+  - drawn7 rows reused instead of allocated;
+  - the k8 test order changed;
+  - an off-screen cull record for non-wreck statics.
+- **Measured: no gain** (ab1, 3 alternating pairs plus a prof pair, board fact `perf71.lp_peak_fix`):
+  - p10 median 22.2 off vs 23.1 on, inside the spread between pairs;
+  - unit loop 10.55 vs 10.50 ms;
+  - all entities 14.59 vs 14.41 ms.
+
+  The change was reverted, and the staged copies are kept under `.plan/swarmnat71/g8/stage/`.
+- **Reading:** the cost is about 18 us per drawn unit, spread over many ordinary statements that all depend on the
+  frame time. No few-line GDScript cut removes milliseconds here. Two things would:
+  - fewer statements per unit, meaning native code for Motion.step and the frame choice. That is the parked kernel
+    line, and section 10's conditions still apply.
+  - a visible trade, which the owner has ruled out.

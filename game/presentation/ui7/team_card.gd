@@ -282,7 +282,7 @@ func _on_fire(kind: String) -> void:
 
 
 func _refresh_mission(w: SimWorld, fid: int, t: Dictionary) -> void:
-	mission_lbl.text = M8.status_line(w, tid)
+	mission_lbl.text = preload("res://sim/systems/cnmission71.gd").card_line(w, tid)   # G7.1 D7 (CNOPS71-8): area layer; = M8.status_line without one
 	mission_bar.max_value = 1.0
 	mission_bar.value = M8.progress(w, tid)
 	var pk := M8.packages(w, t)

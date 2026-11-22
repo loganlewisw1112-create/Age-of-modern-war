@@ -58,7 +58,8 @@ const NAMES := {"board": "boarding the APCs", "exit": "leaving the facility", "a
 	"failed": "mission failed", "paused": "paused (engagement)"}
 const KEEP := ["cn_fire_support", "cn_relief", "cn_specialize", "cn_dome", "cn_emp", "cn_panels", "set_stance",
 	"set_formation", "set_technique", "cn_set_loadout", "cn_mission", "cn_mission_cancel", "cn_mission_hold", "cn_drill",
-	"cn_lab_queue", "cn_lab_upgrade", "cn_train", "cn_cancel_train"]
+	"cn_lab_queue", "cn_lab_upgrade", "cn_train", "cn_cancel_train",
+	"cn_extract", "cn_search", "cn_abort", "cn_roe"]   # G7.1 D7 (CNOPS71): Extract / the area layer's own orders keep the mission
 const PAUSE := ["cn_pincer", "cn_break_contact"]
 
 
@@ -471,6 +472,8 @@ static func end(w: SimWorld, tid: int, how: String, note: String = "") -> void:
 
 ## world.gd calls this after every applied command: a fresh player order to a team on a mission takes over.
 static func on_applied(w: SimWorld, c: Dictionary) -> void:
+	if w.sys_state.has("cnm71"):   # G7.1 D7: the area-search layer (CnMission71) is cancelled by the same player orders
+		load("res://sim/systems/cnmission71.gd").on_player_order(w, c)
 	var s = w.sys_state.get(KEY)
 	if s == null or (s.m as Dictionary).is_empty():
 		return

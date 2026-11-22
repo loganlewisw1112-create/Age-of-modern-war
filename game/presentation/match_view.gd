@@ -60,6 +60,7 @@ const G3View = preload("res://presentation/view/g3_view.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
 const HoverOutline = preload("res://presentation/view/hover_outline.gd")   # G7.1 CONTROL71
 const Roster71 = preload("res://presentation/ui71/roster.gd")
+const G71Attach = preload("res://presentation/view/g71_attach.gd")   # G7.1 wave 2 (ORCH): the one attach point of wave-2 view layers
 const PatrolDraw71 = preload("res://presentation/ui71/patrol_draw.gd")   # G7.1 AIRFIX71 CR seq 161
 const SimRunner = preload("res://presentation/view/sim_runner.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
@@ -105,6 +106,7 @@ var last_alert_pos: Variant = null       # Vector2 world pos of the last alert (
 # ------------------------------------------------------------ internals
 var camera: Camera2D
 var hover_outline: Node2D                # G7.1 CONTROL71
+var g71_layers: Array = []               # G7.1 wave 2 (ORCH): layers from G71Attach.LAYERS, refreshed each frame
 var terrain_layer: Node2D
 var creep_layer: Node2D  # G7 CREEP7
 var world7_layer: Node2D  # G7 LPMAP7
@@ -263,9 +265,11 @@ func _init_view() -> void:
 	ring_layer.mode = "under"
 	ring_layer.z_index = 1
 	add_child(ring_layer)
+	g71_layers.append_array(G71Attach.attach(self, "under_units", 2))   # G7.1 wave 2: drawn under units
 	entity_layer = EntityLayer.new()
 	entity_layer.z_index = 2
 	add_child(entity_layer)
+	g71_layers.append_array(G71Attach.attach(self, "over_units", 2))   # G7.1 wave 2: drawn over units
 	vis7_layer = Vis7Layer.new()  # G7 VIS7 CR 1393: right after the entity layer, same z
 	vis7_layer.z_index = 2
 	add_child(vis7_layer)
@@ -326,6 +330,7 @@ func _init_view() -> void:
 	add_child(hover_outline)
 	hover_outline.setup(self)
 	Roster71.attach(self)               # G7.1 CONTROL71: unit roster panel (selected units by type)
+	G71Attach.attach_hud(self)          # G7.1 wave 2 (ORCH): HUD panels from G71Attach.HUD (hospital card)
 	PatrolDraw71.attach(self)           # G7.1 AIRFIX71 (A2): patrol-loop drawing tool, started by the air card / SHIFT+Y
 
 	# start centred on the player's HQ (or spawn)
@@ -595,6 +600,8 @@ func _process(delta: float) -> void:
 	vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
 	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
+	if not g71_layers.is_empty():
+		G71Attach.refresh_all(g71_layers, snap)   # G7.1 wave 2 layers (each ~0 when its provider returns null)
 	fac_life7.refresh(snap)   # G7 LIFE7 CR 3644
 	fac_seq7.refresh(snap)   # G7 SEQ7 CR 3721
 	_t_ent += Time.get_ticks_usec() - te

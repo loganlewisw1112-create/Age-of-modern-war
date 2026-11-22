@@ -1,0 +1,51 @@
+{
+  "_meta": "G7.1 B2 (DAMAGE71, docs/G71_SCOPE.md B2, Last Protocol only per roster 5A Q1): rules.g71_damage drives sim/systems/parts71.gd (Machine component damage, armour plates + ricochets, nanite self-repair, half-dead machines, heavy death physics). Part layouts per Machine def are in defs_g71_parts.json. Every number is PROVISIONAL (untuned; first pass from the survey in fact damage71.survey).",
+  "rules": {
+    "g71_damage": {
+      "ver": 1,
+      "enabled": true,
+      "plate": {
+        "min_cos": 0.2,
+        "wear": 1.0,
+        "ric_wear": 0.25,
+        "_note": "PROVISIONAL. Effective plate thickness = t / max(cos(obliquity), min_cos); obliquity combines the horizontal impact angle (shooter vs the plate's facing) with the plate's slope. A plate loses wear x the round's pre-armour damage per hit (ric_wear on a ricochet); at 0 hp it shears off (event PlateShear71) and the parts behind it are exposed."
+      },
+      "ricochet": {
+        "deg_small": 62.0,
+        "deg_ap": 72.0,
+        "deg_rail": 80.0,
+        "pen_ap": 30.0,
+        "pen_rail": 700.0,
+        "pen_k": 1.5,
+        "no_ric_rounds": ["laser", "laser_heavy", "he_frag", "he_frag_light", "heat_rocket", "heat_fpv", "atgm"],
+        "_note": "PROVISIONAL. A kinetic round striking a plate at obliquity >= its class angle (small arms < pen_ap mm: deg_small; AP: deg_ap; pen >= pen_rail: deg_rail) whose penetration is below pen_k x the effective thickness glances off: no damage, event Ricochet71 (sparks). Chemical (HEAT / ATGM), energy and HE rounds never ricochet."
+      },
+      "sensor_blind_acc": 0.35,
+      "sensor_part_acc": 0.75,
+      "_note_sensor": "PROVISIONAL. Accuracy x sensor_part_acc per lost sensor cluster while one is left; all sensors gone = blind: x sensor_blind_acc and wild fire (e.p71wild).",
+      "cell_cook_frac": 0.2,
+      "_note_cell": "PROVISIONAL. A destroyed ammo / energy cell cooks off: extra cell_cook_frac x design hp to the machine (event CellCookoff71).",
+      "repair": {
+        "every": 10,
+        "delay_s": 4.0,
+        "part_per_s": 0.05,
+        "plate_per_s": 0.02,
+        "hp_per_s": 0.012,
+        "regrow_destroyed": true,
+        "_note": "PROVISIONAL. Nanite self-repair: a damaged layout Machine that was not hit for delay_s regrows every `every` ticks (staggered by id): parts part_per_s x part max, sheared plates plate_per_s, vitality hp_per_s x max hp, per second. Blocked while burning (Parts71.ignite), EMP-stunned (MachineEW7 'stun') or half-dead (finished). Forces commitment over chipping."
+      },
+      "half_dead": {
+        "hp_frac": 0.12,
+        "speed": 0.2,
+        "acc": 0.5,
+        "_note": "PROVISIONAL. J3: a layout with half_dead at 0 hp, core intact, keeps crawling / fighting at hp_frac x max hp, speed x speed, accuracy x acc, no self-repair, until finished (event HalfDead71)."
+      },
+      "topple": {
+        "crush_frac": 0.35,
+        "slide_s": 0.6,
+        "step": 0.5,
+        "_note": "PROVISIONAL. Heavy layouts topple along their momentum (facing when moving, else away from the killing shot) over topple x radius tiles; units under the fallen hull (ids ascending, not air) take crush_frac x the hulk's design hp as a crush wound; a building (wall) in the path stops the fall against it with no wall damage (roster 5A Q10); a moving hulk slides on for slide_s x its speed. The wreck is stored in Gore71 (kind wreck)."
+      }
+    }
+  }
+}

@@ -116,6 +116,12 @@ static func adjust_jobs(w: SimWorld, fac: int, jobs: Array) -> void:
 	var so := int(S.get("st", -1)) > w.tick and SimWorld.Sentinels7.threat(w, fac) == null
 	for j in jobs:
 		var k := String(j.kind)
+		# G7.1 CNOPS71-10: MEDICS to a point must work in a quiet base too. Every job keeps its holders first, so with
+		# all on-duty Menders holding wall / tower / QRF posts the fresh c8c_med post found nobody (it only filled when an
+		# alarm happened to release the far wall pairs). While the order holds, watch jobs stop taking Menders: they are
+		# re-dealt to the medic point (care jobs: casualty / repair / restock keep them).
+		if not med.is_empty() and k != "casualty" and k != "repair" and k != "restock" and (j.roles as Array).has("mender"):
+			j.roles = (j.roles as Array).filter(func(r): return String(r) != "mender")
 		if pm.has(k):
 			j.prio = float(j.prio) * float(pm[k][0])
 			j.slots = maxi(int(j.slots) + int(pm[k][1]), 1 if k == "entry" or k == "gate" else 0)

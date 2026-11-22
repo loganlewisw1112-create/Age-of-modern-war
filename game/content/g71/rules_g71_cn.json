@@ -1,0 +1,132 @@
+{
+  "_meta": "G7.1 D7 / H8 CNOPS71 (docs/G71_SCOPE.md D7, H8): CN strike-team area missions (sim/systems/cnmission71.gd) and the facility turnaround. Every number PROVISIONAL (CNOPS71 picked it; the scope leaves it open). Times in s, distances in tiles, every / wd_every in ticks.",
+  "rules": {
+    "g71_cn": {
+      "mission": {
+        "every": 10,
+        "wd_every": 20,
+        "wd_s": 45.0,
+        "wd_tries": 3,
+        "sweep_lane": 8.0,
+        "drone_speed": 6.0,
+        "drone_sight": 6.0,
+        "exfil_hp": 0.45,
+        "chain_max": 6,
+        "detour": 6.0,
+        "_notes": {
+          "wd_s": "stuck watchdog: a step whose progress signature (phase, team tile, deploy phase, creep cover, sweep index) is unchanged this long re-plans; wd_tries re-plans on one step -> the node is skipped and reported",
+          "sweep_lane": "lawnmower lane spacing of the search drone (drone_sight 6 -> lanes overlap by 4 tiles)",
+          "exfil_hp": "team health share under which the team exfils instead of chaining to the next node"
+        }
+      },
+      "turn": {
+        "on": true,
+        "heal_hp_s": 60.0,
+        "decon_exp_s": 0.5,
+        "skip_load_aboard": true,
+        "_notes": {
+          "heal_hp_s": "hp/s healed per rider (in the APC cargo) while the team stands in the airlock wash / inner gate (the aid station gives 6/s to soldiers on foot)",
+          "on": "H8 turnaround: heal + rearm in the airlock; a cn_rollout during the return is queued and the team leaves from the inner gate (no garage, no loading stop when all are aboard)"
+        }
+      },
+      "upgrades": {
+        "_notes": "H8 facility upgrades (CNOPS71-8/9, roster Q5): per kind a list of tiers; cost paid by the fac_upgrade order, built over build_s seconds (x base training mult; one at a time). bays: airlock turnaround heal / decon multipliers; foundry: build_mult stored (suit-foundry hook open). PROVISIONAL numbers.",
+        "bays": [
+          {
+            "cost": {
+              "salvage": 400,
+              "ore": 200
+            },
+            "heal_mult": 1.5,
+            "decon_mult": 1.5,
+            "build_s": 30.0
+          },
+          {
+            "cost": {
+              "salvage": 800,
+              "ore": 400
+            },
+            "heal_mult": 2.0,
+            "decon_mult": 2.0,
+            "build_s": 45.0
+          }
+        ],
+        "foundry": [
+          {
+            "cost": {
+              "salvage": 500,
+              "ore": 300
+            },
+            "build_mult": 0.8,
+            "build_s": 40.0
+          },
+          {
+            "cost": {
+              "salvage": 1000,
+              "ore": 600
+            },
+            "build_mult": 0.65,
+            "build_s": 60.0
+          }
+        ]
+      },
+      "siege": {
+        "alert_s": 20.0,
+        "lock_frac": 0.75,
+        "evac_frac": 0.35,
+        "end_quiet_s": 30.0,
+        "_notes": "H8 facility under siege (CNOPS71-9, roster Q20): staged response alert -> lockdown -> evac (sim/systems/cn_facility.gd siege). PROVISIONAL."
+      },
+      "vanta2": {
+        "cruise_mult": 1.35,
+        "accel": 5.0,
+        "decel": 4.0,
+        "turn_deg_s": 120.0,
+        "pivot_frac": 0.25,
+        "pivot_deg_s": 240.0,
+        "bank_deg": 35.0,
+        "strafe": true,
+        "strafe_len": 10.0,
+        "strafe_turn_r": 2.0,
+        "mg_weapon": "g7_vanta_mg",
+        "mg_mag": 800,
+        "mg_mount": [
+          4.6,
+          0.9,
+          0.6
+        ],
+        "mg_arc": 20.0,
+        "_notes": {
+          "all": "G7.1 B7 VANTA2 (sim/systems/vanta7.gd _flight2 / _fire_mg), every number PROVISIONAL (CNOPS71-11). Speeds in tiles/s (accel / decel tiles/s^2), angles in degrees.",
+          "cruise_mult": "x the loaded def speed (A5 already applied at load): Vanta2 cruise",
+          "pivot_frac": "under this share of cruise the craft pivots at pivot_deg_s (VTOL agility when slow); faster it turns at most turn_deg_s and banks",
+          "strafe_len": "an attack order flies passes through the target, ending this far past it, then turns back",
+          "mg_mount": "twin front MGs, metres on the airframe (f forward, r right of the centreline, z up); mirrored left / right"
+        }
+      },
+      "gear_presets": {
+        "balanced": {
+          "gr": 4,
+          "sd": 1,
+          "pc": 1
+        },
+        "at_heavy": {
+          "gr": 2,
+          "sd": 1,
+          "pc": 1
+        },
+        "anti_inf": {
+          "gr": 6,
+          "sd": 1,
+          "pc": 0
+        },
+        "demolition": {
+          "gr": 2,
+          "sd": 0,
+          "pc": 1
+        },
+        "_notes": "H8 gear availability (CNOPS71-11, PROVISIONAL): the CN kit per armory loadout preset (rules.cards8b.presets ids; the armory card sets one per team role and the team picks it up in its garage). gr = nanite grenades per mission, sd 1/0 = shield drone, pc 1/0 = purge cannon. A team with no preset carries the full kit (mission gr_n, shield, cannon)."
+      }
+    }
+  }
+}

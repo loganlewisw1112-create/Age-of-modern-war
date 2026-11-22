@@ -1,0 +1,31 @@
+RTS: Age of Modern War — G7.1 checkpoint, 2026-11-22
+
+This is the newest build. It is G7 (2026-10-30) plus G7.1 wave 1 and the wave-2 work that was on the
+tree when this slice stopped, including the Vanta2 flight fix. It is a checkpoint, not a finished G7.1.
+
+PLAY: double-click RTS_Age_of_Modern_War.exe
+      Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
+NEW TO THE GAME? Main menu > Tutorial. F1 in a match = hotkey sheet.
+LAST PROTOCOL: main menu > Last Protocol. It is its own mode, not a skirmish map.
+
+IN THIS BUILD, ON TOP OF G7
+  Wave 1: aircraft go home to their own pads, air ops, fewer steps to send a force, control fixes.
+  Wave 2, as far as it got: Conductor gunship and wingmen, ammo tiers, kill zones, crew-served weapons,
+    wall and turret work, discipline, counter-nanite grenades and a shield drone, the hospital, gas and
+    masks, gore and casualty care.
+  Vanta2: the rotorless gunship keeps its speed (a stop does not kill it dead), banks into turns, strafes
+    through a target, and fires the twin guns on the front of the body.
+
+LEFT FOR THE NEXT SLICE
+  Last Protocol peak is about 24 fps (the gate is 30). A 2,000-unit view is about 35 fps (the gate is 60).
+  Exact drawing cuts did not close that. A visible quality cut was ruled out. The swarm drawing kernel is parked.
+  Waves 3 to 6 are not in this build: the hive director, the robot fleet, core raids, save and resume,
+    the look checkpoint, the full animation pass, and the long soaks.
+  Skirmish still has its 120 population cap.
+  The 8-APC exit under pressure is still about 83 seconds (the target was about 70).
+
+G7 LIMITS THAT STILL APPLY
+  Balance numbers are provisional. Fortress balance was not retuned when the new lethality landed.
+  Rifles do not damage a hardened building such as an HQ.
+  The sim is heavier than G6.1. That was accepted for G7.
+  See PROGRESS.md "SLICE STOP" for the handoff.

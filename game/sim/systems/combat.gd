@@ -59,6 +59,11 @@ const CnRole7 = preload("res://sim/systems/cn_role7.gd")   # G7 CNROLE7 CR 6046 
 const WallFire7 = preload("res://sim/systems/wallfire7.gd")   # G7 WALLFIRE7 (13.9c-35): facility walls stop direct fire both ways
 const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B CR 6354 (13.9c-30): turret / mount traverse before fire
 const Roof7 = preload("res://sim/systems/roof7.gd")   # G7 ROOF7 (13.9c-39): roof mounts out of reach of ground melee / demolition
+const Discipline71 = preload("res://sim/systems/discipline71.gd")   # G7.1 ARMY71 D4 discipline (Last Protocol only)
+const Ammo71 = preload("res://sim/systems/ammo71.gd")   # G7.1 ARMY71 B5 ammo tiers (Last Protocol only)
+const Crew71 = preload("res://sim/systems/crew71.gd")   # G7.1 ARMY71 B3 crew-served weapons (Last Protocol only)
+static var _d71 := false   # G7.1 ARMY71: discipline71 state exists this tick (LP only; one lookup per tick)
+static var _kz71 := false   # G7.1 FIRES71 D5 (CR 1827): LP + killzone71 state this tick (sector-of-fire filter in _pick)
 ## G6 PERF6: height LOS through RtsCombat.height_los (rts_core >= 0.5.0, exact port of Elevation.los_map) while
 ## G6Hooks.los_ok == Elevation.los (its only delegate) and no test spy is set. Off = the GDScript hook.
 static var native_elev := true
@@ -200,6 +205,10 @@ static func _cd(e: Dictionary) -> int:
 ## RtsGrid.query_radius runs instead, so the result equals find_target().
 static func tick(w: SimWorld) -> void:
 	var t0 := Time.get_ticks_usec() if SimIndex.profiling else 0
+	_d71 = w.sys_state.has(Discipline71.KEY)   # G7.1 ARMY71 D4: absent off LP (skirmish / benches unchanged)
+	_kz71 = _d71 and w.sys_state.has("killzone71")   # G7.1 FIRES71 CR 1827 (LP)
+	if _d71:
+		Ammo71.ensure(w)   # G7.1 ARMY71 B5 (LP): ammo tier state (one has() once it exists)
 	var tiers_on := Tiers.enabled(w)
 	var idx := Tiers.lists(w)
 	var units: Array = idx.full if tiers_on else idx.kinds.get("unit", [])
@@ -269,6 +278,9 @@ static func tick(w: SimWorld) -> void:
 				tabs["dar"] = PackedFloat64Array()   # G7.1 PERFSIM71-6: native act columns (per def, filled once)
 				tabs["das"] = PackedFloat64Array()
 				tabs["daf"] = PackedInt32Array()
+				# G7.1 ARMY71 (save/load pick fix): a tf row filled before dx existed has dx 0 = the wrong def's
+				# columns; clear tf once here so the native fill sets tf and dx together for every id
+				tf.fill(0)
 			var dxa: PackedInt32Array = tabs.dx
 			if dxa.size() < tf.size():
 				dxa.resize(tf.size())
@@ -360,6 +372,7 @@ static func tick(w: SimWorld) -> void:
 				if tfv == 0:
 					tfv = _tf_of(e, teams)
 					tf[id] = tfv
+					_dx_fill(w, e, id)   # G7.1 ARMY71: tf and dx are always filled together (save/load pick fix)
 				if tfv > 0:
 					var si := nn
 					nn += 1
@@ -548,7 +561,7 @@ static func tick(w: SimWorld) -> void:
 				lc = null   # older DLL without RtsCombat: GDScript line_clear
 		# G7.1 PERFSIM71-5: native _find for this tick (guards: WallFire7 walls and a G6 test spy have no native port)
 		var nfo = null
-		if native_find and mir_ok and not scan_ab and SimIndex.g6_spy == null and not WallFire7.any(w):
+		if native_find and mir_ok and not scan_ab and SimIndex.g6_spy == null and not WallFire7.any(w) and not _d71:   # + G7.1 ARMY71: D4 target rules live on the GDScript path
 			var cob = _combat_obj(w)
 			if cob != null and cob.has_method("find_setup") and cob.find_setup(_nf_args(w, ng, nidx, scan_ids, pres, scan_r, blds, teams)):
 				nfo = cob
@@ -656,6 +669,7 @@ static func tick(w: SimWorld) -> void:
 			if tfv == 0:
 				tfv = _tf_of(e, teams)
 				tf[rid] = tfv
+				_dx_fill(w, e, rid)   # G7.1 ARMY71: tf and dx are always filled together (save/load pick fix)
 			if tfv > 0 and tfv & 4:
 				var ot1 = e.order.get("type", "idle")
 				if ot1 == "idle" or ot1 == "hold":
@@ -742,6 +756,20 @@ static func _tf_of(e: Dictionary, teams: Dictionary) -> int:
 		return -1
 	var s0 := stats(e)
 	return ((int(tv) + 1) << 3) | (4 if s0.weapon != "" and not s0.builder else 0) | (2 if s0.is_air else 1)
+
+
+## G7.1 ARMY71 (save/load pick fix, ORCH 2026-11-22): a tf row filled outside the native fill (GDScript prep, REDUCED
+## pass) used to leave dx[id] = 0, so RtsCombat.prep read def 0's range / scan radius / flags for that unit once it was
+## FULL; a loaded world (fresh cmb_tabs) read the right def, and the pick diverged after a save / load.
+static func _dx_fill(w: SimWorld, e: Dictionary, id: int) -> void:
+	var tabs: Dictionary = w.cache["cmb_tabs"]
+	if not tabs.has("dx"):
+		return   # dx is created later with tf cleared (prep), so every row is refilled together
+	var dxa: PackedInt32Array = tabs.dx
+	if dxa.size() <= id:
+		dxa.resize(maxi(int(w.next_id) + 1, id + 1))
+		tabs.dx = dxa
+	dxa[id] = _dx_of(e, tabs)
 
 
 ## SIM10K: this world's RtsCombat (cached in w.cache.combat_lc; false = DLL without it) or null.
@@ -1069,6 +1097,8 @@ static func _valid_target(w: SimWorld, fid: int, tid: int, s = null):
 				return null   # == _g5_ok for a ground unit
 		elif not can_target(s, t):
 			return null
+	if _d71 and t.kind == "building" and SimWorld.Turrets71.disabled(w, t):
+		return null   # G7.1 BASTION71 I2 (CR 2613, LP): a knocked-out turret is not a target (splash still hits it)
 	return t
 
 
@@ -1152,6 +1182,8 @@ static func find_target(w: SimWorld, e: Dictionary, radius: float, grid: Diction
 			continue
 		if wf and not WallFire7.cand_ok(w, e, b):
 			continue
+		if _d71 and SimWorld.Turrets71.disabled(w, b):
+			continue   # G7.1 BASTION71 I2 (CR 2613, LP): a knocked-out turret is not picked
 		if ro and bool(stats(b).roof):
 			continue   # G7 ROOF7 (13.9c-39): a roof mount is out of this melee / demolition shooter's reach
 		best = b
@@ -1325,6 +1357,8 @@ static func _find(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 					continue
 				if wfe != null and not WallFire7.cand_ok(w, wfe, b):
 					continue   # G7 WALLFIRE7 (13.9c-35)
+				if _d71 and SimWorld.Turrets71.disabled(w, b):
+					continue   # G7.1 BASTION71 I2 (CR 2613, LP): a knocked-out turret is not picked
 				if ro and bool(stats(b).roof):
 					continue   # G7 ROOF7 (13.9c-39): a roof mount is out of this melee / demolition shooter's reach
 				best = b
@@ -1546,6 +1580,42 @@ static func _scan_due(w: SimWorld, e: Dictionary, period: int) -> bool:
 	return (w.tick + int(e.id)) % period == 0
 
 
+## G7.1 FIRES71 D5 (CR 2426, LP only: called from _pick's _kz71 branch when the nearest enemy is outside the shooter's
+## painted sector). The (distance, id) argmin over the legal unit candidates in radius (_cand_ok, as _find's exact
+## scan) that KillZone71.allow accepts; null when none (or no combat grid this tick).
+static func _find_kz71(w: SimWorld, e: Dictionary, radius: float):
+	var ng = w.cache.get("combat_ng")
+	if ng == null:
+		return null
+	var sv = _stats.get(e.def)
+	var s: Dictionary = sv if sv != null else stats(e)
+	var fid := int(e.owner)
+	var p: Vector2 = e.pos
+	var r2 := radius * radius
+	var mr: float = s.min_range
+	var mr2 := mr * mr
+	var mw := int(w.map.w)
+	var vis := PackedByteArray()
+	if w.fog.has(fid):
+		vis = w.fog[fid].visible
+	var wfe = e if WallFire7.any(w) and not WallFire7.shooter_exempt(w, e, s) else null
+	var best = null
+	var best_d := INF
+	var best_id := 0
+	for cid in ng.grid.query_radius(p, radius):
+		var c2 = w.entities.get(cid)
+		if c2 == null or not w.is_enemy(fid, int(c2.owner)):
+			continue
+		var dd := p.distance_squared_to(Vector2(c2.pos))
+		if dd > best_d or (dd == best_d and cid > best_id):
+			continue
+		if _cand_ok(w, fid, c2, dd, r2, mr2, bool(s.aa), vis, mw, s, wfe) and SimWorld.KillZone71.allow(w, e, Vector2(c2.pos)):
+			best = c2
+			best_d = dd
+			best_id = cid
+	return best
+
+
 ## Keeps the current target if still valid within radius. Rescans on this shooter's stagger slot
 ## (every SCAN_EVERY ticks; every SCAN_EVERY_ENGAGED while the target is already in weapon range),
 ## or immediately when the tracked target just became invalid.
@@ -1559,7 +1629,11 @@ static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 		var d := dist_to(e.pos, cur)
 		if d > radius or d < float(s.min_range):
 			cur = null
+		elif _kz71 and not SimWorld.KillZone71.allow(w, e, Vector2(cur.pos)):
+			cur = null   # G7.1 FIRES71 D5 (CR 2426, LP): a kept target outside the painted sector (and the self-defence ring) is dropped and re-picked
 		else:
+			if _d71 and Discipline71.keep(e, cur):
+				return cur   # G7.1 ARMY71 D4 (LP): a squad soldier keeps the target its squad gave it (SquadAI re-picks every think)
 			# PERFSIM7 (perf, exact): SCAN_EVERY_ENGAGED is a multiple of SCAN_EVERY, so off the SCAN_EVERY slot
 			# both branches keep cur and on the engaged slot both rescan; only in between does the in-range
 			# test (and its _rm, a pure read) decide.
@@ -1569,6 +1643,11 @@ static func _pick(w: SimWorld, e: Dictionary, radius: float, grid: Dictionary, b
 				return cur
 	elif int(e.target) < 0 and not _scan_due(w, e, SCAN_EVERY):
 		return null  # nothing tracked: wait for this shooter's scan slot
+	if _kz71:   # G7.1 FIRES71 D5 (CR 1827, LP): a new pick outside the shooter's painted sector of fire is not taken
+		var rk = _find(w, e, radius, grid, blds)
+		if rk != null and not SimWorld.KillZone71.allow(w, e, Vector2(rk.pos)):
+			return _find_kz71(w, e, radius)   # G7.1 FIRES71 D5 (CR 2426): the nearest legal enemy INSIDE the sector instead of none
+		return rk
 	if SimIndex.profiling:
 		var t0 := Time.get_ticks_usec()
 		var r = _find(w, e, radius, grid, blds)
@@ -1774,6 +1853,9 @@ static func _tower_tick(w: SimWorld, b: Dictionary, grid: Dictionary, blds: Arra
 	var s := stats(b)
 	if s.weapon == "":
 		return
+	if _d71 and SimWorld.Turrets71.blocked(w, b):   # G7.1 BASTION71 I2 (CR 1720, LP): disabled / jammed towers hold fire
+		b.target = -1
+		return
 	var t = _pick(w, b, float(s.range) * _rm(w, b, s), grid, blds)
 	if t != null and w.sys_state.has("cards8a"):   # G7 CARDS8A (13.9c-48): hold / return fire / priority
 		t = Cards8a.filter(w, b, t, float(s.range) * _rm(w, b, s), func(x): return _valid_target(w, int(b.owner), int(x.id), s) != null)
@@ -1870,7 +1952,10 @@ static func _dc_ok(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> 
 static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_ok := false) -> void:
 	if _cd(e) > 0:
 		return
-	if Status.can_fire(w, e) != "":
+	if Status.can_fire(w, e) != "" or e.has("p71ws"):   # + G7.1 DAMAGE71 B2 (CR seq 956): every weapon part destroyed (= not Parts71.can_fire(e)); LP Machines only
+		return
+	if _d71 and Discipline71.hold_fire(w, e):
+		e.cd_ticks = 5   # G7.1 ARMY71 D4 (LP): last round held while the stagger cap of the squad is reloading (no shot, no draw)
 		return
 	if int(s.get("setup", 0)) > 0 and (not bool(e.get("deployed", false)) or bool(e.get("moving", false))):
 		return  # G4b UNITS: mortar fires only deployed (G4bMech set-up)
@@ -1908,6 +1993,13 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		if gm != 1.0:
 			s = s.duplicate()
 			s.damage = float(s.damage) * gm
+		if _d71:
+			var mm := Discipline71.melee_mult(w, e, s, t)   # G7.1 ARMY71 I2 (LP): hand-to-hand on the wall-walk (bayonet / shotgun / flamer; no draw)
+			if mm != 1.0:
+				s = s.duplicate()
+				s.damage = float(s.damage) * mm
+	if _d71 and Crew71.crew(e):
+		s = Crew71.shot(w, e, s, t)   # G7.1 ARMY71 B3 (LP): crew weapon mode (AT top-attack, .50 spotter mark, grenade type; copy of s, no draw)
 	var rlm := SimWorld.Morale.reload_mult(e)
 	if e.has("wz"):
 		rlm *= SimWorld.Wounds.reload_mult(e)   # G7 (WOUND7): arm wounds reload slower
@@ -1922,6 +2014,11 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 		e.salvo_left = left
 		if left > 0:
 			cd = maxi(roundi(float(s.salvo_gap) * SimWorld.TICK_RATE), 1)
+	if _d71:
+		cd = Discipline71.on_shot(w, e, s, cd)   # G7.1 ARMY71 D4 (LP): magazines + staggered reloads (no draw)
+		Ammo71.on_fire(w, e, s)   # G7.1 ARMY71 B5 (LP): chosen ammo tier -> e.r8up round multipliers, draws one round of stock (no draw)
+		if e.has("c71"):
+			cd = Crew71.on_shot(w, e, s, t, cd)   # G7.1 ARMY71 B3 (LP): MG rate / heat / barrel swap / beaten zone, AT loader / backblast, smoke (no draw)
 	e.cd_ticks = cd
 	e.cooldown = float(cd) / SimWorld.TICK_RATE
 	var acc := float(s.accuracy) * Status.accuracy_mult(w, e)
@@ -1934,6 +2031,14 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if SimIndex.profiling:
 		SimIndex.pt("PERF8_accmult", tam)   # G7 ACCURACY8 (13.9c-49): range / flight time / movement / sight picture / visibility / shock / posture / training (same single rng draw)
 	var hit := w.rng.chance(acc)
+	if _d71 and hit and bool(s.get("guided", false)) and w.sys_state.has("conductor71") and SimWorld.Conductor71.decoy(w, int(t.id)):
+		hit = false   # G7.1 FIRES71 B6 (CR 1827, LP): the gunship's flares decoy this AA missile (no damage)
+	if _d71 and hit and e.has("a71"):
+		Ammo71.on_hit(w, e, t)   # G7.1 ARMY71 B5 (LP): incendiary rounds ignite (Parts71)
+	if _d71 and hit and String(s.cls) == "flame":
+		Ammo71.on_flame(w, s, t)   # G7.1 ARMY71 G2 (LP): thermite flame (weapon g71_ignite_s) sets the Machine burning: stops nanite regrowth
+	if _d71 and hit and e.has("c71"):
+		Crew71.on_hit(w, e, s, t)   # G7.1 ARMY71 B3 (LP): thermite grenade ignites the Machine (Parts71)
 	var from: Vector2 = e.pos
 	var to: Vector2 = t.pos
 	if not hit and not bool(s.get("guided", false)):  # G3b STG4: guided fire never scatters
@@ -1953,6 +2058,8 @@ static func _fire(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary, los_
 	if SimIndex.g6m(w) & SimIndex.G6_SHOT and _g6_shot_blocked(w, e, s, t, to):
 		return  # G6 AIRDEF6: CIWS intercept / guided shot jammed (Counterdrone emits CiwsIntercept / GuidedJammed); cooldown + ammo spent
 	if indirect:
+		if _d71 and w.sys_state.has("fires71"):
+			SimWorld.Fires71.track_shell(w, int(e.owner), int(e.id), Vector2(e.pos))   # G7.1 FIRES71 B4 (CR 1827, LP): counter-battery radars track this shell
 		_splash(w, e, s, to)
 		if SimIndex.profiling:
 			SimIndex.pt("fire.splash", tfr)

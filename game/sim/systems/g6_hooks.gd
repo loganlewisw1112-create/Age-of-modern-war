@@ -36,7 +36,7 @@ static func damage_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictiona
 ## Shooter-side accuracy factor for src firing at t.
 static func accuracy_mult(w: SimWorld, src: Dictionary, s: Dictionary, t: Dictionary) -> float:
 	return Companies.cohesion_acc(w, src) * Loadouts.acc_mult(w, src) \
-		* Callins.designated_mult(w, src, t) * Auras.acc_mult(w, src) * Airdef.acc_mult(w, src, s, t) 		* SimWorld.Morale.acc_mult(w, src)  # G6.1 REAL61 CR 59: suppression / fatigue / rank
+		* Callins.designated_mult(w, src, t) * Auras.acc_mult(w, src) * Airdef.acc_mult(w, src, s, t) 		* SimWorld.Morale.acc_mult(w, src) * float(src.get("p71acc", 1.0))  # G6.1 REAL61 CR 59: suppression / fatigue / rank; G7.1 DAMAGE71 B2 (CR 955): sensors / half-dead
 
 
 ## Weapon range factor for src (acquisition and fire, GDScript and native paths).
@@ -128,6 +128,8 @@ static func active(w: SimWorld) -> int:
 				if Fieldworks.kind_of(String(b.def)) == "wire":
 					m |= G6_SPEED
 					break
+	if (m & G6_SPEED) == 0 and ss.has("parts71"):
+		m |= G6_SPEED   # G7.1 DAMAGE71 B2 (CR 955): LP Machine legs (Parts71)
 	if Counterdrone.active(w) or ss.has("apc7") or ss.has("vanta7"):  # G7: CN APC active protection / panels / dome need the SHOT hook
 		m |= G6_SHOT
 	if not (ss.get("auras", {}).get("sources", []) as Array).is_empty() 			or not (ss.get("companies", {}).get("companies", {}) as Dictionary).is_empty():
@@ -154,7 +156,7 @@ static func speed_mult(w: SimWorld, e: Dictionary) -> float:
 	if (active(w) & G6_SPEED) == 0:
 		return 1.0
 	var f := Elevation.slope_mult(w, e) if w.map.has("height") else 1.0
-	return f * Fieldworks.wire_mult(w, e) * Loadouts.speed_mult(w, e) * _tow_mult(w, e) * Sonar.speed_mult(w, e)
+	return f * Fieldworks.wire_mult(w, e) * Loadouts.speed_mult(w, e) * _tow_mult(w, e) * Sonar.speed_mult(w, e) * float(e.get("p71spd", 1.0))   # G7.1 DAMAGE71 B2 (CR 955)
 
 
 ## Speed factor WITHOUT the ramp term (PERF6 applies the ramp factor from w.map.ramps in packed/native
@@ -162,7 +164,7 @@ static func speed_mult(w: SimWorld, e: Dictionary) -> float:
 static func speed_mult_ex(w: SimWorld, e: Dictionary) -> float:
 	if (active(w) & G6_SPEED) == 0:
 		return 1.0
-	return Fieldworks.wire_mult(w, e) * Loadouts.speed_mult(w, e) * _tow_mult(w, e) * Sonar.speed_mult(w, e)
+	return Fieldworks.wire_mult(w, e) * Loadouts.speed_mult(w, e) * _tow_mult(w, e) * Sonar.speed_mult(w, e) * float(e.get("p71spd", 1.0))   # G7.1 DAMAGE71 B2 (CR 955)
 
 
 ## True when a building def's footprint is passable for move_class (tank traps for foot, ...).

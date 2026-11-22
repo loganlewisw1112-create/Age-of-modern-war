@@ -1,0 +1,540 @@
+{
+  "files": {
+    "icons/a_g71_conductor.png": "a0e1e024a6b0c855d1415295681ebe4b",
+    "icons/a_g71_fo_team.png": "7ca4ce003003f04b7a3776ba217402d1",
+    "icons/a_g71_mlrs.png": "79f63c7b03e1713ce1244b25ce561e1b",
+    "icons/a_g71_wingman.png": "ec52b3a1f9c91a16451382ea36ec4b77",
+    "units/a_g71_conductor.png": "d067662cea2b4bb687d7fe9a5d9e1d1f",
+    "units/a_g71_conductor_mask.png": "6bc40a86decd7ebfb6183bf521fd09a4",
+    "units/a_g71_conductor_shadow.png": "f5ea0ca63a74dfa82f90a7b017c08958",
+    "units/a_g71_conductor_shadow_sheet.png": "492dee1f08ed51da41f99e4ad518ac23",
+    "units/a_g71_fo_team.png": "7c288ffc905753dcdd876e8908ae0665",
+    "units/a_g71_fo_team_a1.png": "1ed6bde84c339f4f36814fc549e39b73",
+    "units/a_g71_fo_team_a1_mask.png": "509418cb82fec90e71bbb922be697baf",
+    "units/a_g71_fo_team_mask.png": "13d35538cfd46a79917f9d97888ddebb",
+    "units/a_g71_mlrs.png": "e40e07da8879eecfc9ab533829a209b2",
+    "units/a_g71_mlrs_mask.png": "f5fee892d21e6af42ec8f581816d48af",
+    "units/a_g71_wingman.png": "232dc4330a612f1ff6e622cef2ce8575",
+    "units/a_g71_wingman_mask.png": "7dfe81814959e818faa071435a3b58f6",
+    "units/a_g71_wingman_shadow.png": "a92d9943d94b835855f7168d477ef4c1",
+    "wrecks/a_g71_conductor_wreck.png": "2b6ffc29cddb2886c6e3e6766b5773c1",
+    "wrecks/a_g71_mlrs_wreck.png": "b1506a097bd26e297d5d0e7567a7a61f",
+    "wrecks/a_g71_wingman_wreck.png": "b2a396134548c49c101195a60acf8b1a"
+  },
+  "group": "g71_fires",
+  "icons": {
+    "a_g71_conductor": "icons/a_g71_conductor.png",
+    "a_g71_fo_team": "icons/a_g71_fo_team.png",
+    "a_g71_mlrs": "icons/a_g71_mlrs.png",
+    "a_g71_wingman": "icons/a_g71_wingman.png"
+  },
+  "infantry": {
+    "a_g71_fo_team": {
+      "alive_sheets": {
+        "1": {
+          "file": "units/a_g71_fo_team_a1.png",
+          "mask": "units/a_g71_fo_team_a1_mask.png"
+        }
+      },
+      "anim61": {
+        "base": 6.0,
+        "v": 1.0
+      },
+      "anim7": {
+        "base": 34.0,
+        "v": 1.0
+      },
+      "armband7": {
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 36.0,
+      "file": "units/a_g71_fo_team.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "lase",
+        "wounded",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "a_jtac",
+        "mark": "tripod designator + whip antenna"
+      },
+      "mask": "units/a_g71_fo_team_mask.png",
+      "pivot": [
+        24.0,
+        28.0
+      ],
+      "squad_size": 2.0
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "a_g71_conductor": {
+      "facings": 8.0,
+      "fh": 79.0,
+      "file": "wrecks/a_g71_conductor_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 97.0,
+      "pivot": [
+        45.0,
+        45.0
+      ]
+    },
+    "a_g71_mlrs": {
+      "facings": 8.0,
+      "fh": 64.0,
+      "file": "wrecks/a_g71_mlrs_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84.0,
+      "pivot": [
+        42.0,
+        43.0
+      ]
+    },
+    "a_g71_wingman": {
+      "facings": 8.0,
+      "fh": 34.0,
+      "file": "wrecks/a_g71_wingman_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38.0,
+      "pivot": [
+        19.0,
+        21.0
+      ]
+    }
+  },
+  "vehicles": {
+    "a_g71_conductor": {
+      "air": true,
+      "aircraft": "heli",
+      "alt_scale": {},
+      "altitude": 20.0,
+      "anim": {
+        "air": [
+          "idle",
+          "idle_b"
+        ],
+        "move": [
+          "move",
+          "move_b"
+        ]
+      },
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11.0,
+            1.0
+          ],
+          [
+            0.0,
+            5.0
+          ],
+          [
+            -12.0,
+            1.0
+          ],
+          [
+            -16.0,
+            -4.0
+          ],
+          [
+            -13.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -14.0
+          ],
+          [
+            12.0,
+            -10.0
+          ],
+          [
+            15.0,
+            -4.0
+          ]
+        ],
+        "smoke": [
+          [
+            -4.0,
+            -32.0
+          ],
+          [
+            0.0,
+            -37.0
+          ],
+          [
+            3.0,
+            -32.0
+          ],
+          [
+            6.0,
+            -21.0
+          ],
+          [
+            3.0,
+            -20.0
+          ],
+          [
+            0.0,
+            -21.0
+          ],
+          [
+            -3.0,
+            -20.0
+          ],
+          [
+            -7.0,
+            -21.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "anim_fps": 10.0,
+      "bob": 2.0,
+      "facings": 8.0,
+      "fh": 79.0,
+      "file": "units/a_g71_conductor.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "idle_b",
+        "move_b",
+        "landed",
+        "parked",
+        "bank_l",
+        "bank_r",
+        "damaged"
+      ],
+      "fw": 97.0,
+      "g71": {
+        "base": "a_attack_heli",
+        "mark": "cond"
+      },
+      "ground_frames": [
+        "landed",
+        "parked"
+      ],
+      "mask": "units/a_g71_conductor_mask.png",
+      "pivot": [
+        45.0,
+        45.0
+      ],
+      "shadow": {
+        "fh": 16.0,
+        "file": "units/a_g71_conductor_shadow.png",
+        "fw": 30.0,
+        "pivot": [
+          15.0,
+          8.0
+        ]
+      },
+      "shadow_sheet": {
+        "facings": 8.0,
+        "fh": 79.0,
+        "file": "units/a_g71_conductor_shadow_sheet.png",
+        "fw": 97.0,
+        "pivot": [
+          45.0,
+          45.0
+        ]
+      }
+    },
+    "a_g71_mlrs": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            12.0,
+            -23.0
+          ],
+          [
+            0.0,
+            -20.0
+          ],
+          [
+            -14.0,
+            -23.0
+          ],
+          [
+            -18.0,
+            -29.0
+          ],
+          [
+            -13.0,
+            -32.0
+          ],
+          [
+            -4.0,
+            -34.0
+          ],
+          [
+            12.0,
+            -35.0
+          ],
+          [
+            17.0,
+            -29.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0.0,
+            -35.0
+          ],
+          [
+            0.0,
+            -35.0
+          ],
+          [
+            0.0,
+            -35.0
+          ],
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -33.0
+          ],
+          [
+            0.0,
+            -38.0
+          ],
+          [
+            0.0,
+            -40.0
+          ],
+          [
+            0.0,
+            -36.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 64.0,
+      "file": "units/a_g71_mlrs.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 84.0,
+      "g71": {
+        "base": "a_mlrs",
+        "mark": "hazard band on the launcher pods"
+      },
+      "mask": "units/a_g71_mlrs_mask.png",
+      "pivot": [
+        42.0,
+        43.0
+      ]
+    },
+    "a_g71_wingman": {
+      "air": true,
+      "altitude": 16.0,
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11.0,
+            0.0
+          ],
+          [
+            -5.0,
+            4.0
+          ],
+          [
+            -12.0,
+            0.0
+          ],
+          [
+            -11.0,
+            -4.0
+          ],
+          [
+            -12.0,
+            -3.0
+          ],
+          [
+            -6.0,
+            -8.0
+          ],
+          [
+            11.0,
+            -3.0
+          ],
+          [
+            10.0,
+            -5.0
+          ]
+        ],
+        "smoke": [
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            1.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            -1.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -10.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "bob": 1.0,
+      "facings": 8.0,
+      "fh": 34.0,
+      "file": "units/a_g71_wingman.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "trail",
+        "damaged"
+      ],
+      "fw": 38.0,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728.0,
+        "bytes": 60928.0,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "strike",
+        "raw_bytes": 372096.0,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "g71": {
+        "base": "g7_a_strike_drone",
+        "mark": "wing"
+      },
+      "mask": "units/a_g71_wingman_mask.png",
+      "pivot": [
+        19.0,
+        21.0
+      ],
+      "shadow": {
+        "fh": 7.0,
+        "file": "units/a_g71_wingman_shadow.png",
+        "fw": 13.0,
+        "pivot": [
+          6.0,
+          3.0
+        ]
+      }
+    }
+  },
+  "version": 1
+}

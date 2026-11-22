@@ -760,7 +760,8 @@ static func is_passable(w: SimWorld, cell: Vector2i, mc: String, team: int = -1)
 ## is_passable with the entity's own move class and team (gates).
 static func is_passable_e(w: SimWorld, e: Dictionary, cell: Vector2i) -> bool:
 	_ensure_nav(w)
-	return is_passable(w, cell, move_class(e), team_of(w, e))
+	# G7.1 BASTION71 G3: a sealed choke door stops enemies on the wall-walk (no walls71 seal state = true at once)
+	return is_passable(w, cell, move_class(e), team_of(w, e)) and SimWorld.Walls71.passable_for(w, int(e.owner), cell)
 
 
 ## Nearest passable cell to `cell` (itself if passable). Deterministic order: distance, then y, then x.

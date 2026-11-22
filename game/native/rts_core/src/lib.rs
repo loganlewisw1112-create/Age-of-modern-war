@@ -13,6 +13,7 @@
 //!   RtsCombat - stateless line-of-fire (damage.gd line_clear) + batch helpers for combat.gd
 //!   RtsFormation - exact formations7.gd big-group assignment polish (G7 PERF7K, 0.5.4)
 //!   RtsSpot - exact senses7.gd spot pass ring search + _sees without smoke (G7 PERF7L, 0.5.5)
+//!   RtsSwarmDraw - entity_layer.gd unit kernel for plain units on motion-layer frames (G7.1 SWARMNAT71, 0.6.4; display only)
 
 use godot::prelude::*;
 
@@ -31,6 +32,7 @@ mod spot;
 mod morale_scan;
 mod nav;
 mod steer;
+mod swarm_draw;
 
 struct RtsCore;
 

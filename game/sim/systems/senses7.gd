@@ -45,6 +45,7 @@ extends RefCounted
 
 const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Tiers = preload("res://sim/systems/tiers.gd")
+const Gas71 = preload("res://sim/systems/gas71.gd")   # G7.1 CNOPS71 J10 mask sight cost (CR seq 3042)
 const NativeCore = preload("res://sim/native_core.gd")   # G7 PERF7L: RtsSpot (rts_core >= 0.5.5)
 
 const CFG_PATH := "res://content/g7/rules_g7_senses.json"
@@ -404,13 +405,17 @@ static func _sees(w: SimWorld, st: Dictionary, o: Dictionary, t: Dictionary, sil
 	if bool(o.get("wunc", false)):
 		return false
 	var thermal: bool = pr[3] or bool(o.get("nvg", false)) or bool(o.get("thermal", false))
+	if not thermal and t.has("g71glass"):
+		return false   # G7.1 ARMY71 G1 hook (wave-3 Glass stalkers, C4): only thermals reveal them (thermal_reveals)
 	var s := sil
 	if moving:
 		s = minf(1.0, s * float(K[1]))
 	if not thermal:
-		s *= float(st.light)
+		s *= float(st.light) if not o.has("g71nvg") else maxf(float(st.light), nvg_sight())   # + G7.1 ARMY71 G1: NVG lifts darkness (smoke below still blocks)
 		if not clouds.is_empty() and _smoke_blocks(clouds, op, tp):
 			return false
+	if o.has("g71mk"):   # G7.1 CNOPS71 CR seq 3042 (J10): a gas mask narrows sight (no mask state off LP)
+		s *= Gas71.sight_mult(o)
 	if code == P_INF:
 		var to := (tp - op) / d
 		var od = o.get("order")   # PERF7J: head() inlined for the common case (no bk order: the body facing)
@@ -691,6 +696,24 @@ static func _pass(w: SimWorld, st: Dictionary, tk: int) -> void:
 ## G7 PERF7L: the spot loop in rts_core (RtsSpot.spotted, exact port of _spotted_any + _sees for the no-smoke case;
 ## same observer order, same f32 vector / f64 scalar math). Every Dictionary read happens here, once per observer.
 static var native_spot := true   # A/B toggle
+
+
+## G7.1 ARMY71 G1 (LP gear, rules.g71_discipline.gear, PROVISIONAL): NVG light floor for accuracy / for spotting.
+static func nvg_light() -> float:
+	return float(((Content.rules().get("g71_discipline", {}) as Dictionary).get("gear", {}) as Dictionary).get("nvg_light", 0.8))
+
+
+static func nvg_sight() -> float:
+	return float(((Content.rules().get("g71_discipline", {}) as Dictionary).get("gear", {}) as Dictionary).get("nvg_sight", 0.85))
+
+
+## G7.1 ARMY71 G1 hook for wave-3 Glass stalkers (C4): true when observer o's thermals reveal t (t.g71glass marks a
+## stalker; NVG and the naked eye never do). _sees() applies it on the GDScript spot path; the native spot path needs
+## the same rule when wave 3 adds stalkers (CR to SWARMNAT71 then).
+static func thermal_reveals(w: SimWorld, o: Dictionary, t: Dictionary) -> bool:
+	if not t.has("g71glass"):
+		return false
+	return bool(_profile(w, o)[3]) or bool(o.get("nvg", false)) or bool(o.get("thermal", false))
 static var spot_ab := false   # bench: also run the script loop and count differing answers
 static var spot_ab_n := 0
 static var spot_ab_diff := 0
@@ -721,7 +744,7 @@ static func _native_spot(w: SimWorld, st: Dictionary, obs: Array, need: Array, B
 		var fl := 0
 		if bool(o.get("wunc", false)):
 			fl |= 1
-		if pr[3] or bool(o.get("nvg", false)) or bool(o.get("thermal", false)):
+		if pr[3] or bool(o.get("nvg", false)) or bool(o.get("thermal", false)) or o.has("g71nvg"):   # + G7.1 ARMY71 G1: native spot runs only without smoke, where NVG = no darkness
 			fl |= 2
 		if pr[2] or bool(o.get("optics", false)):
 			fl |= 4

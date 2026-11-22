@@ -1,0 +1,44 @@
+{
+  "_meta": "G7.1 J1 (DAMAGE71, docs/G71_SCOPE.md J1, Last Protocol only): rules.g71_gore drives sim/systems/gore71.gd. One wound outcome per ballistics8 round id (rules.rounds8.rounds, 27 ids) + default. out = outcome id the view draws (bleed / knockdown / heavy / sever / destroyed / through / shredded / charred / burned); sever = chance a limb comes off (on the kill; on a surviving soldier when the limb hit's severity >= sever_sev); throw = tiles the body is thrown away from the shot (x 0.5..1 by a pure roll); char = charred body; line = railgun line-through (n more units behind the target within len tiles, half-width w, damage x falloff per unit). trample: heavy units (move_class prefix in classes, radius >= min_radius, or listed defs) flatten bodies they stand on (checked every `every` ticks, one of `slices` slices per pass). burn_run = tiles a burning soldier runs before falling. Every number is PROVISIONAL (untuned).",
+  "rules": {
+    "g71_gore": {
+      "enabled": true,
+      "sever_sev": 0.35,
+      "burn_run": 1.5,
+      "trample": {"every": 15, "slices": 4, "r": 0.9, "classes": ["vehicle"], "min_radius": 0.7, "defs": []},
+      "rounds": {
+        "default":      {"out": "bleed"},
+        "pistol_9":     {"out": "bleed"},
+        "smg_9":        {"out": "bleed"},
+        "pdw_46":       {"out": "bleed"},
+        "carbine_556":  {"out": "bleed"},
+        "rifle_556":    {"out": "knockdown", "throw": 0.3},
+        "rifle_68":     {"out": "knockdown", "throw": 0.4},
+        "rifle_762x39": {"out": "knockdown", "throw": 0.4},
+        "dmr_762":      {"out": "knockdown", "throw": 0.5},
+        "needle":       {"out": "bleed"},
+        "flechette_m":  {"out": "shredded", "throw": 0.3},
+        "shotgun_12":   {"out": "knockdown", "throw": 0.6},
+        "slug_12":      {"out": "knockdown", "throw": 0.7},
+        "mg_762":       {"out": "heavy", "throw": 0.6, "sever": 0.05},
+        "hmg_127":      {"out": "sever", "throw": 1.6, "sever": 0.6},
+        "sniper_338":   {"out": "sever", "throw": 1.2, "sever": 0.4},
+        "ac_20":        {"out": "destroyed", "throw": 2.0, "sever": 0.9},
+        "ac_30":        {"out": "destroyed", "throw": 2.4, "sever": 1.0},
+        "ap_100":       {"out": "destroyed", "throw": 2.6, "sever": 1.0},
+        "apfsds_120":   {"out": "destroyed", "throw": 3.0, "sever": 1.0},
+        "rail_slug":    {"out": "through", "throw": 0.8, "sever": 0.3, "line": {"n": 3, "len": 10.0, "w": 0.45, "falloff": 0.75}},
+        "he_frag":      {"out": "shredded", "throw": 2.2, "sever": 0.5},
+        "he_frag_light":{"out": "shredded", "throw": 1.4, "sever": 0.3},
+        "heat_fpv":     {"out": "destroyed", "throw": 2.0, "sever": 0.7},
+        "heat_rocket":  {"out": "destroyed", "throw": 2.4, "sever": 0.8},
+        "atgm":         {"out": "destroyed", "throw": 2.8, "sever": 0.9},
+        "laser":        {"out": "burned", "char": true},
+        "laser_heavy":  {"out": "charred", "char": true, "sever": 0.2},
+        "blast":        {"out": "shredded", "throw": 1.8, "sever": 0.4},
+        "thermobaric":  {"out": "charred", "char": true, "throw": 2.5, "sever": 0.3},
+        "incendiary":   {"out": "charred", "char": true}
+      }
+    }
+  }
+}

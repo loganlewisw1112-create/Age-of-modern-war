@@ -31,6 +31,8 @@ extends RefCounted
 const TPS := 20.0
 const Senses7 = preload("res://sim/systems/senses7.gd")
 const Ballistics8 = preload("res://sim/systems/ballistics8.gd")
+const Discipline71 = preload("res://sim/systems/discipline71.gd")   # G7.1 ARMY71 D4 cover poses (LP only)
+const Gas71 = preload("res://sim/systems/gas71.gd")   # G7.1 CNOPS71 J10 mask cost (CR seq 3042)
 
 static var _rref = null
 static var _c: Dictionary = {}
@@ -423,6 +425,10 @@ static func mult(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> fl
 				hs = _hsp
 			var le := _lead * spd * tf * cross / maxf(hs, 0.05)
 			m /= 1.0 + le * le
+	if tcode == C_INF and t.has("d71c"):   # G7.1 ARMY71 D4 (LP): hugging cover / peeking / bounding
+		m *= Discipline71.pose_mult(int(t.d71c))
+	if e.has("g71mk"):   # G7.1 CNOPS71 CR seq 3042 (J10): a masked shooter aims worse (no mask state off LP)
+		m *= Gas71.acc_mult(e)
 	# --- shooter moving
 	var smov: bool = e.get("moving", false)
 	var stab := true
@@ -461,8 +467,12 @@ static func mult(w: SimWorld, e: Dictionary, s: Dictionary, t: Dictionary) -> fl
 	m *= lerpf(a0, a1, af)
 	# --- visibility
 	var thermal: bool = mach or sp[3] or e.get("nvg", false) or e.get("thermal", false)
+	var nv71: bool = not thermal and e.has("g71nvg")   # G7.1 ARMY71 G1 (LP gear): NVG lifts darkness only, smoke still blocks
 	if _light < 1.0:
-		m *= lerpf(_night, 1.0, _light) if not thermal else maxf(_thl, _light)
+		if nv71:
+			m *= maxf(Senses7.nvg_light(), _light)
+		else:
+			m *= lerpf(_night, 1.0, _light) if not thermal else maxf(_thl, _light)
 	if not _clouds.is_empty() and Senses7._smoke_blocks(_clouds, ep, tpos):
 		m *= _smkt if thermal else _smk
 	var sight: float = sp[4]

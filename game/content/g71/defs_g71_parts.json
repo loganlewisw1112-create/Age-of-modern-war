@@ -1,0 +1,162 @@
+{
+  "_meta": "G7.1 B2 (DAMAGE71): Machine part layouts for sim/systems/parts71.gd, keyed by Machine unit def id (Last Protocol only). Registration for later waves is data only: add a rules key that starts with g71_parts (e.g. g71_parts_c3 in your own content/g71 fragment) with the same {templates, defs} shape; keys merge in sorted order, a def id may appear once. Part fields: id, kind (leg | weapon | sensor | core | cell | hull), w = hit weight [front, side, rear], hp = share of the def's design hp, weak = damage x on that part when exposed (weak spots: joints, cores, sensor clusters, cells), t = bare armour (mm RHA-eq.; vehicle-class defs) or [t, cov] (body-class defs, as rounds8 avg), plate = id of the plate covering it. Plates: id, face (front | side | rear | all), t (mm) or [t, cov], slope (deg from vertical), hp share. leg_speed[n] = speed x with n legs / tracks destroyed. heavy = topples + crushes on death (topple = fall length x radius); half_dead = crawls on at 0 hp until finished (J3). Every number PROVISIONAL.",
+  "rules": {
+    "g71_parts": {
+      "templates": {
+        "crawler6": {
+          "half_dead": true,
+          "leg_speed": [1.0, 0.85, 0.7, 0.5, 0.3, 0.15, 0.0],
+          "plates": [
+            {"id": "carapace", "face": "all", "t": [9, 0.9], "slope": 35, "hp": 0.3}
+          ],
+          "parts": [
+            {"id": "leg_fl", "kind": "leg", "w": [0.4, 0.7, 0.4], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_ml", "kind": "leg", "w": [0.2, 0.7, 0.2], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_rl", "kind": "leg", "w": [0.2, 0.7, 0.5], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_fr", "kind": "leg", "w": [0.4, 0.7, 0.4], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_mr", "kind": "leg", "w": [0.2, 0.7, 0.2], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_rr", "kind": "leg", "w": [0.2, 0.7, 0.5], "hp": 0.14, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "gun", "kind": "weapon", "w": [1.0, 0.4, 0.1], "hp": 0.25, "weak": 1.0, "t": [4, 0.6]},
+            {"id": "eyes", "kind": "sensor", "w": [0.8, 0.3, 0.0], "hp": 0.15, "weak": 1.5, "t": [2, 0.4]},
+            {"id": "core", "kind": "core", "w": [0.6, 0.8, 1.0], "hp": 0.35, "weak": 1.8, "t": [5, 0.8], "plate": "carapace"},
+            {"id": "cell", "kind": "cell", "w": [0.1, 0.3, 0.8], "hp": 0.18, "weak": 1.5, "t": [3, 0.6], "plate": "carapace"},
+            {"id": "body", "kind": "hull", "w": [1.2, 1.6, 1.4], "hp": 9.0, "weak": 1.0, "t": [6, 0.7], "plate": "carapace"}
+          ]
+        },
+        "walker4": {
+          "heavy": true,
+          "topple": 2.2,
+          "half_dead": true,
+          "leg_speed": [1.0, 0.6, 0.3, 0.1, 0.0],
+          "plates": [
+            {"id": "glacis", "face": "front", "t": 450, "slope": 30, "hp": 0.35},
+            {"id": "flank_l", "face": "side", "t": 260, "slope": 10, "hp": 0.22},
+            {"id": "flank_r", "face": "side", "t": 260, "slope": 10, "hp": 0.22},
+            {"id": "deck", "face": "rear", "t": 160, "slope": 15, "hp": 0.18}
+          ],
+          "parts": [
+            {"id": "leg_fl", "kind": "leg", "w": [0.5, 0.8, 0.4], "hp": 0.16, "weak": 1.3, "t": 90},
+            {"id": "leg_fr", "kind": "leg", "w": [0.5, 0.8, 0.4], "hp": 0.16, "weak": 1.3, "t": 90},
+            {"id": "leg_rl", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.16, "weak": 1.3, "t": 90},
+            {"id": "leg_rr", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.16, "weak": 1.3, "t": 90},
+            {"id": "rail", "kind": "weapon", "w": [0.9, 0.4, 0.2], "hp": 0.2, "weak": 1.1, "t": 120},
+            {"id": "sensor_head", "kind": "sensor", "w": [0.6, 0.3, 0.1], "hp": 0.1, "weak": 1.6, "t": 40},
+            {"id": "sensor_mast", "kind": "sensor", "w": [0.2, 0.3, 0.3], "hp": 0.08, "weak": 1.6, "t": 30},
+            {"id": "core", "kind": "core", "w": [0.6, 0.7, 0.9], "hp": 0.3, "weak": 1.8, "t": 200, "plate": "glacis"},
+            {"id": "cell_l", "kind": "cell", "w": [0.1, 0.5, 0.6], "hp": 0.1, "weak": 1.6, "t": 60, "plate": "flank_l"},
+            {"id": "cell_r", "kind": "cell", "w": [0.1, 0.5, 0.6], "hp": 0.1, "weak": 1.6, "t": 60, "plate": "flank_r"},
+            {"id": "torso", "kind": "hull", "w": [1.6, 1.4, 1.4], "hp": 9.0, "weak": 1.0, "t": 300, "plate": "glacis"}
+          ]
+        },
+        "tracked": {
+          "heavy": true,
+          "topple": 1.4,
+          "leg_speed": [1.0, 0.0, 0.0],
+          "plates": [
+            {"id": "glacis", "face": "front", "t": 450, "slope": 55, "hp": 0.35},
+            {"id": "skirt_l", "face": "side", "t": 220, "slope": 5, "hp": 0.2},
+            {"id": "skirt_r", "face": "side", "t": 220, "slope": 5, "hp": 0.2},
+            {"id": "rear_deck", "face": "rear", "t": 140, "slope": 20, "hp": 0.18}
+          ],
+          "parts": [
+            {"id": "track_l", "kind": "leg", "w": [0.4, 1.0, 0.5], "hp": 0.2, "weak": 1.2, "t": 80, "plate": "skirt_l"},
+            {"id": "track_r", "kind": "leg", "w": [0.4, 1.0, 0.5], "hp": 0.2, "weak": 1.2, "t": 80, "plate": "skirt_r"},
+            {"id": "twin_ac", "kind": "weapon", "w": [0.9, 0.5, 0.3], "hp": 0.2, "weak": 1.1, "t": 110},
+            {"id": "optics", "kind": "sensor", "w": [0.6, 0.3, 0.1], "hp": 0.1, "weak": 1.6, "t": 35},
+            {"id": "core", "kind": "core", "w": [0.5, 0.6, 0.9], "hp": 0.3, "weak": 1.8, "t": 200, "plate": "glacis"},
+            {"id": "cells", "kind": "cell", "w": [0.1, 0.4, 0.9], "hp": 0.12, "weak": 1.6, "t": 60, "plate": "rear_deck"},
+            {"id": "hull", "kind": "hull", "w": [1.6, 1.4, 1.2], "hp": 9.0, "weak": 1.0, "t": 300, "plate": "glacis"}
+          ]
+        },
+        "superheavy": {
+          "heavy": true,
+          "topple": 2.0,
+          "half_dead": true,
+          "leg_speed": [1.0, 0.7, 0.45, 0.2, 0.0],
+          "plates": [
+            {"id": "glacis", "face": "front", "t": 800, "slope": 30, "hp": 0.3},
+            {"id": "flank_l", "face": "side", "t": 300, "slope": 10, "hp": 0.18},
+            {"id": "flank_r", "face": "side", "t": 300, "slope": 10, "hp": 0.18},
+            {"id": "deck", "face": "rear", "t": 200, "slope": 15, "hp": 0.15}
+          ],
+          "parts": [
+            {"id": "leg_fl", "kind": "leg", "w": [0.5, 0.8, 0.4], "hp": 0.12, "weak": 1.3, "t": 160},
+            {"id": "leg_fr", "kind": "leg", "w": [0.5, 0.8, 0.4], "hp": 0.12, "weak": 1.3, "t": 160},
+            {"id": "leg_rl", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.12, "weak": 1.3, "t": 160},
+            {"id": "leg_rr", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.12, "weak": 1.3, "t": 160},
+            {"id": "main_gun", "kind": "weapon", "w": [0.8, 0.4, 0.2], "hp": 0.12, "weak": 1.1, "t": 200},
+            {"id": "sensor_array", "kind": "sensor", "w": [0.5, 0.3, 0.2], "hp": 0.06, "weak": 1.6, "t": 60},
+            {"id": "core", "kind": "core", "w": [0.5, 0.6, 0.9], "hp": 0.25, "weak": 1.8, "t": 400, "plate": "glacis"},
+            {"id": "cell_l", "kind": "cell", "w": [0.1, 0.5, 0.6], "hp": 0.07, "weak": 1.6, "t": 100, "plate": "flank_l"},
+            {"id": "cell_r", "kind": "cell", "w": [0.1, 0.5, 0.6], "hp": 0.07, "weak": 1.6, "t": 100, "plate": "flank_r"},
+            {"id": "torso", "kind": "hull", "w": [1.6, 1.4, 1.4], "hp": 9.0, "weak": 1.0, "t": 500, "plate": "glacis"}
+          ]
+        },
+        "skulker": {
+          "half_dead": true,
+          "leg_speed": [1.0, 0.65, 0.35, 0.1, 0.0],
+          "plates": [
+            {"id": "shell", "face": "all", "t": [7, 0.85], "slope": 25, "hp": 0.25}
+          ],
+          "parts": [
+            {"id": "leg_fl", "kind": "leg", "w": [0.4, 0.8, 0.4], "hp": 0.15, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_fr", "kind": "leg", "w": [0.4, 0.8, 0.4], "hp": 0.15, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_rl", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.15, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "leg_rr", "kind": "leg", "w": [0.3, 0.8, 0.6], "hp": 0.15, "weak": 1.2, "t": [2, 0.5]},
+            {"id": "maw", "kind": "weapon", "w": [1.0, 0.4, 0.1], "hp": 0.2, "weak": 1.0, "t": [4, 0.6]},
+            {"id": "eyes", "kind": "sensor", "w": [0.8, 0.3, 0.0], "hp": 0.12, "weak": 1.5, "t": [2, 0.4]},
+            {"id": "core", "kind": "core", "w": [0.5, 0.8, 1.0], "hp": 0.3, "weak": 1.8, "t": [5, 0.8], "plate": "shell"},
+            {"id": "body", "kind": "hull", "w": [1.2, 1.6, 1.4], "hp": 9.0, "weak": 1.0, "t": [6, 0.7], "plate": "shell"}
+          ]
+        },
+        "node": {
+          "heavy": false,
+          "leg_speed": [1.0, 0.0, 0.0],
+          "plates": [
+            {"id": "housing", "face": "all", "t": 14, "slope": 20, "hp": 0.3}
+          ],
+          "parts": [
+            {"id": "wheels_l", "kind": "leg", "w": [0.3, 0.9, 0.4], "hp": 0.2, "weak": 1.2, "t": 8},
+            {"id": "wheels_r", "kind": "leg", "w": [0.3, 0.9, 0.4], "hp": 0.2, "weak": 1.2, "t": 8},
+            {"id": "mount", "kind": "weapon", "w": [0.8, 0.4, 0.2], "hp": 0.2, "weak": 1.1, "t": 10},
+            {"id": "array", "kind": "sensor", "w": [0.5, 0.3, 0.3], "hp": 0.12, "weak": 1.6, "t": 4},
+            {"id": "core", "kind": "core", "w": [0.5, 0.6, 0.8], "hp": 0.3, "weak": 1.8, "t": 12, "plate": "housing"},
+            {"id": "cells", "kind": "cell", "w": [0.1, 0.4, 0.9], "hp": 0.12, "weak": 1.6, "t": 6, "plate": "housing"},
+            {"id": "hull", "kind": "hull", "w": [1.4, 1.4, 1.2], "hp": 9.0, "weak": 1.0, "t": 14, "plate": "housing"}
+          ]
+        }
+      },
+      "defs": {
+        "m_scout_crawler": {"tpl": "crawler6"},
+        "m_spider_layer": {"tpl": "crawler6"},
+        "m_breacher_crawler": {"tpl": "crawler6"},
+        "m_repair_bot": {"tpl": "crawler6"},
+        "m_maint_swarm": {"tpl": "crawler6"},
+        "m_munitions_drone": {"tpl": "crawler6"},
+        "m_repair_swarm2": {"tpl": "crawler6"},
+        "m_shield_drone": {"tpl": "crawler6"},
+        "m_hauler": {"tpl": "crawler6"},
+        "m_stalker_synth": {"tpl": "skulker"},
+        "m_commander": {"tpl": "skulker"},
+        "m_captain": {"tpl": "skulker"},
+        "m_lieutenant": {"tpl": "skulker"},
+        "m_coordinator": {"tpl": "skulker"},
+        "g7_m_spitter": {"tpl": "skulker"},
+        "g7_m_mimic": {"tpl": "skulker"},
+        "g7_m_packhunter": {"tpl": "skulker"},
+        "g7_m_leech": {"tpl": "skulker"},
+        "g7_m_burrower": {"tpl": "skulker", "heavy": true, "topple": 1.6},
+        "m_walker": {"tpl": "walker4"},
+        "m_lancer": {"tpl": "walker4"},
+        "m_tracked": {"tpl": "tracked"},
+        "m_siege_crawler": {"tpl": "tracked"},
+        "m_hover_tank": {"tpl": "tracked", "leg_speed": [1.0, 0.5, 0.0]},
+        "m_assimilator": {"tpl": "tracked"},
+        "m_colossus": {"tpl": "superheavy"},
+        "g7_m_weaver": {"tpl": "superheavy"},
+        "m_artillery_node": {"tpl": "node"},
+        "m_ew_node": {"tpl": "node"}
+      }
+    }
+  }
+}

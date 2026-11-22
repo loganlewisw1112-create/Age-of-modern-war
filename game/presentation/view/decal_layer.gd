@@ -10,11 +10,16 @@ extends RefCounted
 const Core = preload("res://presentation/view/fx61_core.gd")
 const Tex = preload("res://presentation/view/fx61_tex.gd")
 
-const KINDS := ["crater", "scorch", "blood", "debris"]
+const KINDS := ["crater", "scorch", "blood", "debris", "casings", "silver"]
 const BLOOD_CAP := {"low": 80, "medium": 140, "high": 200}
 const DEBRIS_CAP := {"low": 50, "medium": 90, "high": 130}
+## G7.1 DAMAGE71 (BASTION71 CR seq 2288): spent-casing piles beside firing turrets; one mark per pile that grows
+## (fx61_engine.casings merges shots within PILE_PX into the nearest live pile), so the count is piles, not casings.
+const CASING_CAP := {"low": 40, "medium": 70, "high": 100}
+## G7.1 DAMAGE71 (J3): silver nanite fluid pools where a Machine part was destroyed (fx61_engine.silver71).
+const SILVER_CAP := {"low": 40, "medium": 70, "high": 100}
 const FADE_S := 2.0
-const OWN := ["blood", "blood_s", "debris"]   # textures made here (blood_s = small splat)
+const OWN := ["blood", "blood_s", "debris", "casings", "silver"]   # textures made here (blood_s = small splat)
 
 static var _tex: Dictionary = {}
 
@@ -26,6 +31,10 @@ static func cap_of(kind: String, q: String) -> int:
 			return int(BLOOD_CAP.get(q, 140))
 		"debris":
 			return int(DEBRIS_CAP.get(q, 90))
+		"casings":
+			return int(CASING_CAP.get(q, 70))
+		"silver":
+			return int(SILVER_CAP.get(q, 70))
 	return int(Core.DECAL_CAP.get(q, 110))
 
 
@@ -106,6 +115,19 @@ static func image(name: String) -> Image:
 						a2 = 0.9
 					var v := 0.22 + 0.25 * _h(x, y, 17)
 					c = Color(v * 1.05, v * 0.95, v * 0.8, a2)
+				"casings":
+					# brass glints: denser at the pile's heart, a few strays at its rim, some dulled / tarnished
+					if d < 1.0 and _h(x, y, 19) > 0.55 + 0.4 * d:
+						var g := 0.55 + 0.45 * _h(x, y, 23)
+						c = Color(0.86 * g, 0.66 * g, 0.28 * g, 0.95)
+				"silver":
+					# nanite fluid: a glossy pale pool with a bright sheen at its heart, beaded droplets at the rim
+					var lobe2 := 0.5 + 0.35 * _h(int(atan2(y - cy, x - cx) * 3.0 + 10.0), 0, 29)
+					var a3 := clampf((lobe2 - d) * 4.0, 0.0, 1.0)
+					if a3 <= 0.0 and d < 1.0 and _h(x, y, 31) > 0.94:
+						a3 = 0.8
+					var sh := 0.62 + 0.3 * n + 0.25 * clampf(1.0 - d * 2.2, 0.0, 1.0)
+					c = Color(0.74 * sh, 0.80 * sh, 0.88 * sh, a3 * 0.9)
 			img.set_pixel(x, y, c)
 	return img
 

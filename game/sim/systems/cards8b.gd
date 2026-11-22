@@ -97,6 +97,25 @@ static func _fac(w: SimWorld, fac: int) -> Dictionary:
 	return SimWorld.CnFacility.fac(w, fac)
 
 
+## G7.1 CNOPS71-9 H8 foundry upgrade hook: with the facility's foundry tier (CnFacility.up_val "foundry" build_mult < 1)
+## the suit at the head of the foundry queue gains (1 / build_mult - 1) x the progress Production gave it since the last
+## think, so it builds in build_mult of the time. S.fb = [item, progress after the boost] only while upgraded and a suit
+## is building (never upgraded = no field, hash-identical).
+static func _foundry_boost(w: SimWorld, F: Dictionary, S: Dictionary) -> void:
+	var m := SimWorld.CnFacility.up_val(F, "foundry", "build_mult", 1.0)
+	var ap = armory_part(w, F) if m < 1.0 and m > 0.0 else null
+	if ap == null or (ap.get("queue", []) as Array).is_empty():
+		S.erase("fb")
+		return
+	var head: Dictionary = ap.queue[0]
+	var pr := float(head.get("progress", 0.0))
+	var fb: Array = S.get("fb", [])
+	if fb.size() == 2 and String(fb[0]) == String(head.get("item", "")) and pr >= float(fb[1]):
+		pr = minf(0.999, pr + (pr - float(fb[1])) * (1.0 / m - 1.0))
+		head.progress = pr
+	S["fb"] = [String(head.get("item", "")), pr]
+
+
 ## The Suit Foundry part (cn_armory building) of facility F, or null.
 static func armory_part(w: SimWorld, F: Dictionary):
 	for pid in F.get("parts", []):
@@ -636,6 +655,7 @@ static func _think(w: SimWorld, F: Dictionary, S: Dictionary, n: int) -> void:
 	var fid := int(F.owner)
 	var fac := int(F.id)
 	var dt := float(n) / SimWorld.TICK_RATE
+	_foundry_boost(w, F, S)
 	# weapon upgrade research
 	var rs: Dictionary = S.get("res", {})
 	if not rs.is_empty():

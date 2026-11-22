@@ -189,6 +189,67 @@ func blood(b: Vector2, r: float, small: bool) -> void:
 	add_decal(b + _rv(2, 1), r, "blood_s" if small else "blood", rng.randf() * TAU)
 
 
+## G7.1 DAMAGE71 (B2 / J3) effects, screen px like the rest of this file.
+## A shallow hit glances off armour: a fan of sparks and one bright streak carrying on along dir (away from the shooter).
+func ricochet71(b: Vector2, dir: Vector2) -> void:
+	_made("ricochet71")
+	var u := dir.normalized() if dir.length() > 0.01 else Vector2.RIGHT
+	light(b + Vector2(0, 6), 16.0, Color(1.0, 0.85, 0.5), 0.08)
+	if not _spend():
+		return
+	for i in n(6):
+		part("spark", b, u.rotated(rng.randf_range(-0.7, 0.7)) * rng.randf_range(110, 250) + Vector2(0, -rng.randf_range(10, 60)),
+			rng.randf_range(0.15, 0.4), 3.0, 1.2, Color(1.0, 0.88, 0.45), 260.0)
+	part("streak", b, u.rotated(rng.randf_range(-0.25, 0.25)) * 460.0 + Vector2(0, -40), 0.16, 1.6, 1.0, Color(1.0, 0.92, 0.65))
+
+
+## An armour plate shears off: a burst of sparks, the dark plate tumbling off along dir, a scrap mark where it lands.
+func plate_shear71(b: Vector2, dir: Vector2) -> void:
+	_made("plate_shear71")
+	var u := dir.normalized() if dir.length() > 0.01 else Vector2.RIGHT
+	light(b + Vector2(0, 6), 24.0, Color(1.0, 0.8, 0.5), 0.12)
+	for i in n(9):
+		part("spark", b + _rv(3, 2), Vector2.from_angle(rng.randf_range(-PI, 0.0)) * rng.randf_range(70, 190), rng.randf_range(0.2, 0.45),
+			3.0, 1.4, Color(1.0, 0.85, 0.4), 260.0)
+	var land := b + u * rng.randf_range(12.0, 20.0) + Vector2(0, 8)
+	part("chunk", b, u * rng.randf_range(50, 80) + Vector2(0, -rng.randf_range(90, 130)), 0.95, 6.5, 6.5, Color(0.30, 0.32, 0.36),
+		330.0, 0.0, land.y, 9.0)
+	add_decal(land, rng.randf_range(5.0, 7.0), "debris", rng.randf() * TAU)
+
+
+## A part is destroyed: sparks and a puff of smoke, then silver nanite fluid spills (silver71, with a pool).
+func part_down71(b: Vector2, kind: String) -> void:
+	_made("part_down71")
+	for i in n(5):
+		part("spark", b + _rv(3, 2), Vector2.from_angle(rng.randf_range(-PI, 0.0)) * rng.randf_range(50, 150), rng.randf_range(0.2, 0.5),
+			2.6, 1.2, Color(1.0, 0.8, 0.45) if i % 2 == 0 else Color(0.75, 0.9, 1.0), 240.0)
+	part("puff", b, Vector2(0, -14) + wind() * 0.5, 1.4, 4.0, 11.0, Color(0.32, 0.32, 0.34, 0.5))
+	silver71(b, kind != "plate")
+
+
+## Silver nanite fluid: pale glints welling up and dripping over the wound; big = also a silver pool on the ground.
+func silver71(b: Vector2, big: bool) -> void:
+	_made("silver71")
+	for i in n(4 if big else 2):
+		part("spark", b + _rv(4, 3), Vector2(rng.randf_range(-14, 14), -rng.randf_range(8, 28)), rng.randf_range(0.45, 0.9), 2.4, 1.0,
+			Color(0.80, 0.86, 0.94), 90.0, i * 0.05)
+	light(b, 10.0, Color(0.7, 0.85, 1.0), 0.25)
+	if big:
+		add_decal(b + Vector2(0, 7) + _rv(3, 1), rng.randf_range(4.0, 7.0), "silver", rng.randf() * TAU)
+
+
+## G7.1 DAMAGE71 (BASTION71 CR seq 2288): n spent casings land at screen point b (px). Shots within PILE_PX of a
+## live pile grow that pile (radius up to 10 px) instead of adding marks; piles share the "casings" cap
+## (decal_layer.gd CASING_CAP), oldest fading first. Presentation only.
+const PILE_PX := 6.0
+func casings(b: Vector2, n: int) -> void:
+	for d in decals:
+		if float(d.fade) < 0.0 and String(d.tx) == "casings" and Vector2(d.p).distance_squared_to(b) < PILE_PX * PILE_PX:
+			d.r = minf(float(d.r) + 0.35 * float(n), 10.0)
+			return
+	add_decal(b + _rv(2, 1), minf(3.0 + 0.35 * float(n), 10.0), "casings", rng.randf() * TAU)
+
+
 ## G7 (LOOK7): rubble scattered around point b (radius r px), k marks.
 func debris(b: Vector2, r: float, k: int) -> void:
 	for i in k:

@@ -1,0 +1,24 @@
+{
+  "_meta": "G7.1 G1 combat medics+ (owner: DAMAGE71, docs/G71_SCOPE.md G1 'a field surgery tent near the walls'). buildings.a_g71_surgery_tent: a Human A field surgery tent. field_hospital: true puts it in Medical's def-driven hospital lookup (Medical._hospitals / med_cap), so medics run casualties to it and it heals light wounds in place like the Field Aid Station; g71_surgery marks it for Care71 / CNOPS71's Hospital71. Every number PROVISIONAL (untuned).",
+  "buildings": {
+    "a_g71_surgery_tent": {
+      "name": "Field Surgery Tent",
+      "faction": "human_a",
+      "stage_min": 5,
+      "size": 3,
+      "hp": 800,
+      "armor": "building",
+      "sight": 6,
+      "power": 0,
+      "requires_power": false,
+      "buildable": true,
+      "requires": [],
+      "cost": {"credits": 200, "salvage": 60, "ore": 0},
+      "build_time": 20,
+      "field_hospital": true,
+      "g71_surgery": true,
+      "g71": true,
+      "_note": "G7.1 G1: a field surgery tent built near the walls (base range, no field_buildable); a casualty drop-off for medics (Medical's def-driven field_hospital lookup, no hard-coded building). Art: tools/art/g71_damage.gd -> assets/art/g71_damage (built, damaged, 3 construction stages, icon). PROVISIONAL."
+    }
+  }
+}

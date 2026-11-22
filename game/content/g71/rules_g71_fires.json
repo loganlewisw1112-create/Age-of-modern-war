@@ -1,0 +1,205 @@
+{
+  "_meta": "G7.1 FIRES71 (docs/G71_SCOPE.md B4 fire support, D5 kill zones, B1 thermobaric + incendiary, G1 forward observers, G2 MLRS). Last Protocol only (roster 5A Q1). Every number PROVISIONAL (untuned). Tile scale: 4 m per tile (Blast8 tile_m), so the B4 FPF strip '30-60 m out' = 7.5-15 tiles.",
+  "rules": {
+    "g71_fires": {
+      "ver": 1,
+      "use_ledger": true,
+      "_note_ledger": "PROVISIONAL. Fire missions and FPF spend the side's ammo ledger (kinds.*.ammo per round, fpf.ammo_cost per face).",
+      "max_guns": 12,
+      "mortar_max_range": 14.0,
+      "range_slack": 1.0,
+      "rate_mult": 1.0,
+      "rocket_mult": 3,
+      "ripple": 4,
+      "ripple_cd_s": 2.0,
+      "danger_close_mult": 0.5,
+      "danger_close_pad": 2.0,
+      "_note_danger_close": "PROVISIONAL. Every mission round also hits our own ground units in its splash at this fraction (the player ordered it); FireDangerClose warns when own units are inside the area at the order.",
+      "fo_cache_ticks": 20,
+      "flight_s": {
+        "mortar": 3.0,
+        "artillery": 5.0,
+        "rockets": 4.0
+      },
+      "scatter": {
+        "base": {
+          "mortar": 1.2,
+          "artillery": 1.6,
+          "rockets": 2.0
+        },
+        "tier_mult": [
+          1.8,
+          1.0,
+          0.4
+        ],
+        "_note": "PROVISIONAL. tier 0 unobserved (wider), 1 seen by fog sight / drones / radar, 2 spotted by a forward observer team, a Callins designation or a counter-battery track (precise)."
+      },
+      "shapes": {
+        "point": {
+          "rounds": 3,
+          "radius": 1.5
+        },
+        "line": {
+          "rounds": 4,
+          "max_len": 24.0
+        },
+        "box": {
+          "rounds": 6,
+          "max_side": 16.0
+        },
+        "creeping": {
+          "rounds": 6,
+          "max_len": 24.0,
+          "rate_tps": 0.5,
+          "width": 8.0,
+          "step_s": 4.0,
+          "_note": "PROVISIONAL. The barrage line walks from a toward b at rate_tps tiles per second, width tiles across."
+        }
+      },
+      "kinds": {
+        "he": {
+          "ammo": 2
+        },
+        "smoke": {
+          "ammo": 1,
+          "rounds": 2,
+          "dmg_mult": 0.0,
+          "smoke_r": 3.0,
+          "smoke_s": 25.0
+        },
+        "illumination": {
+          "slot_only": true,
+          "_note": "Empty radial slot (roster 5A Q6): I5 (wave 5) adds the rounds, the lit area and the darkness penalty."
+        },
+        "thermobaric": {
+          "ammo": 4,
+          "dmg_mult": 1.3,
+          "splash_mult": 1.4,
+          "per_extra": 0.12,
+          "cap": 1.0,
+          "_note": "PROVISIONAL. Fuel-air rockets (rocket guns only): damage x (1 + per_extra per extra enemy in the blast, capped at +cap): best on packed lanes."
+        },
+        "incendiary": {
+          "ammo": 3,
+          "dmg_mult": 0.4,
+          "burn_r": 1.5,
+          "burn_s": 20.0
+        },
+        "precision": {
+          "ammo": 6,
+          "rounds": 1,
+          "max_guns": 4,
+          "dmg_mult": 1.6,
+          "splash_mult": 0.6,
+          "scatter_mult": 0.15,
+          "scatter_mult_unobs": 1.0,
+          "_note": "PROVISIONAL. Tight only when observed (tier >= 1); unobserved it scatters like any round."
+        },
+        "cluster": {
+          "ammo": 4,
+          "dmg_mult": 0.35,
+          "bomblets": 4,
+          "spread": 1.5,
+          "bomblet_splash": 0.8
+        },
+        "smart": {
+          "ammo": 5,
+          "dmg_mult": 1.2,
+          "seek_r": 4.0
+        },
+        "gunship": {
+          "_note": "Radial entry = the CONDUCTOR orbit (roster 5A Q19, conductor71.gd)."
+        }
+      },
+      "fpf": {
+        "out_tiles": 10.0,
+        "depth_tiles": 3.0,
+        "paint_min_out": 2.0,
+        "paint_max_out": 30.0,
+        "duration_s": 45.0,
+        "cooldown_s": 180.0,
+        "ammo_cost": 400,
+        "max_guns": 16,
+        "rate_mult": 1.0,
+        "wall_band": 4.0,
+        "_note": "PROVISIONAL. Strip 10 tiles (40 m) out, 3 deep, along each LP outer ring face; one press = every free gun that reaches it fires its max rate for 45 s; wall weapons within wall_band of that face read Fires71.fpf_aim."
+      },
+      "cb": {
+        "range_mult": 1.5,
+        "track_s": 3.0,
+        "guns": 2,
+        "cooldown_s": 20.0,
+        "max_tracks": 8,
+        "scan_ticks": 20,
+        "list_ticks": 200
+      },
+      "belts": {
+        "max_len": 20.0,
+        "max_belts": 12,
+        "cost": {
+          "credits": 150,
+          "fuel": 60
+        },
+        "burn_s": 30.0,
+        "burn_every_ticks": 10,
+        "burn_dmg": 8.0,
+        "burn_r": 0.9,
+        "step": 1.0,
+        "ignite_s": 8.0,
+        "keep_spent_s": 30.0
+      }
+    },
+    "g71_killzone": {
+      "ver": 1,
+      "arc_deg_default": 60.0,
+      "arc_min": 10.0,
+      "arc_max": 180.0,
+      "min_rmax": 2.0,
+      "max_group": 400,
+      "max_slices": 12,
+      "overlap_frac": 0.15,
+      "self_defence_r": 3.0,
+      "auto": {
+        "restrict": false,
+        "turret_arc_deg": 110.0,
+        "squad_arc_deg": 75.0,
+        "wall_band": 3.0
+      },
+      "_note": "PROVISIONAL. Painted sectors are hard (self-defence inside self_defence_r); auto zones are advisory (shown, never restrict) while auto.restrict is false."
+    },
+    "g71_conductor": {
+      "_note": "PROVISIONAL (B6). conductor71.gd. Orbit = Air air_patrol polygon; pulse = ticks between combat passes.",
+      "radius": 9.0,
+      "radius_min": 5.0,
+      "radius_max": 18.0,
+      "alt": 3.0,
+      "orbit_points": 8,
+      "wing_max": 4,
+      "pulse": 5,
+      "station_slack": 2.5,
+      "cannon_s": 2.0,
+      "cannon_dmg": 90.0,
+      "cannon_splash": 1.0,
+      "cannon_scatter": 0.6,
+      "missile_s": 6.0,
+      "missile_dmg": 320.0,
+      "missile_splash": 0.8,
+      "missile_reach": 4.0,
+      "cells": 8,
+      "flares": 6,
+      "flare_cd_s": 4.0,
+      "ciws_r": 5.0,
+      "ciws_n": 2,
+      "ciws_s": 1.0,
+      "ciws_dmg": 400.0,
+      "block_r": 2.5,
+      "block_dmg": 160.0,
+      "handoff_s": 3.0,
+      "wing_dmg": 120.0,
+      "wing_splash": 0.6,
+      "kamikaze_dmg": 260.0,
+      "kamikaze_splash": 1.2,
+      "hot_pit_s": 6.0
+    }
+  }
+}

@@ -72,6 +72,20 @@ const Wounds = preload("res://sim/systems/wounds.gd") # G7 hit zones + casualty 
 const DronePilot = preload("res://sim/systems/drone_pilot.gd") # G7 player-flown drones (DRONE7)
 const Convoy = preload("res://sim/systems/convoy.gd") # G7 motorcade convoys + moving cover (SQUAD7)
 const Flow71 = preload("res://sim/systems/flow71.gd") # G7.1 A3 one-click deploy, auto logistics, mission templates (FLOW71)
+const Parts71 = preload("res://sim/systems/parts71.gd")  # G7.1 wave 2 DAMAGE71 B2 component damage (CR 954)
+const Gore71 = preload("res://sim/systems/gore71.gd")  # G7.1 wave 2 DAMAGE71 J1/J3 wound outcomes
+const Care71 = preload("res://sim/systems/care71.gd")  # G7.1 wave 2 DAMAGE71 J2/G1 triage + medics
+const Turrets71 = preload("res://sim/systems/turrets71.gd")  # G7.1 wave 2 BASTION71 turrets (CR 970)
+const Walls71 = preload("res://sim/systems/walls71.gd")  # G7.1 wave 2 BASTION71 wall tiers / gates / chokes
+const Sensors71 = preload("res://sim/systems/sensors71.gd")  # G7.1 wave 2 BASTION71 sonic / seismic sensors
+const KillZone71 = preload("res://sim/systems/killzone71.gd")  # G7.1 wave 2 FIRES71 kill zones / FPF lines (CR 978)
+const Fires71 = preload("res://sim/systems/fires71.gd")  # G7.1 wave 2 FIRES71 fire missions / belts
+const Conductor71 = preload("res://sim/systems/conductor71.gd")  # G7.1 wave 2 FIRES71 B6 CONDUCTOR gunship (CR seq 1748)
+const Gas71 = preload("res://sim/systems/gas71.gd")  # G7.1 wave 2 CNOPS71 J10 gas (CR 1001)
+const Hospital71 = preload("res://sim/systems/hospital71.gd")  # G7.1 wave 2 CNOPS71 hospital
+const CnMission71 = preload("res://sim/systems/cnmission71.gd")  # G7.1 wave 2 CNOPS71 D7 area missions (CR seq 1811)
+const Ammo71 = preload("res://sim/systems/ammo71.gd")  # G7.1 wave 2 ARMY71 B3 ammo tiers (CR seq 1651; commands only, no tick slot)
+const Crew71 = preload("res://sim/systems/crew71.gd")  # G7.1 wave 2 ARMY71 B3 crew-served weapons (CR seq 1863; commands only, no tick slot)
 const Creep = preload("res://sim/systems/creep.gd") # G7 Machine creep + seeds (CREEP7)
 const Cores = preload("res://sim/systems/cores.gd") # G7 doomsday/living cores + escalation (CREEP7)
 const CounterNanite = preload("res://sim/systems/counter_nanite.gd") # G7 counter-nanite ops (CNSIM7)
@@ -106,7 +120,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, Combat, Turrets7, WallTurret7, Wounds, Blast8, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Strikes, CounterNanite, CnMission8, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Gas71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Sensors71, Strikes, Fires71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -267,6 +281,37 @@ const COMMANDS := {
 	"cancel_plan": Plans,
 	"plan_signal": Plans,
 	"set_ai_budget": AiCommand,
+	"triage_tag": Care71,  # G7.1 wave 2 (ORCH wiring 2026-11-21): only types the handler already validates; later ones by change_request
+	"give_morphine": Care71,
+	"wall_tier": Walls71,
+	"gate_reinforce": Walls71,
+	"choke_seal": Walls71,
+	"lift_use": Walls71,
+	"berm_build": Walls71,  # G7.1 BASTION71 G2 dozer berm line (LP)
+	"doze_clear": Walls71,  # G7.1 BASTION71 G2 dozer clears wrecks / bodies (LP)
+	"turret_revive": Turrets71,  # BASTION71 CR seq 1644
+	"ammo_tier": Ammo71,  # ARMY71 CR seq 1651
+	"crew_rate": Crew71,  # ARMY71 CR seq 1863
+	"crew_top": Crew71,
+	"fire_mission": Fires71,
+	"fpf_fire": Fires71,
+	"belt_lay": Fires71,
+	"belt_ignite": Fires71,
+	"fo_call": Fires71,
+	"conductor_orbit": Conductor71,  # FIRES71 CR seq 1748
+	"conductor_home": Conductor71,
+	"conductor_kamikaze": Conductor71,
+	"kz_paint": KillZone71,
+	"kz_clear": KillZone71,
+	"fpf_paint": KillZone71,
+	"hosp_quarantine": Hospital71,
+	"hosp_medevac": Hospital71,
+	"fac_upgrade": CnFacility,  # G7.1 CNOPS71 H8 facility upgrades (CR seq 3459)
+	"gas_release": Gas71,
+	"mask_on": Gas71,
+	"cn_search": CnMission71,  # CNOPS71 CR seq 1811
+	"cn_abort": CnMission71,
+	"cn_roe": CnMission71,
 }
 
 ## Direct orders that detach a unit from officer mission control (CONTRACTS_G2 section 4).

@@ -138,6 +138,8 @@ func _draw_g6_under() -> void:
 			continue
 		var own := int(st.owner) == pf or allies.has(int(st.owner))
 		var rr := G6Vis.radar_radius(String(st.def))
+		if rr <= 0.0 and _jam_radius(String(st.def)) <= 0.0:   # SWN9: no ring for this def -> no screen position needed
+			continue
 		var c: Vector2 = mv.world_to_screen(st.pos) - Vector2(0, _lift(st.pos, sn))
 		if rr > 0.0 and own and bool(st.get("built", true)):
 			_iso_circle(c, rr, Color(C_RADAR, 0.55 if sel.has(int(id)) else 0.16), 1.5 if sel.has(int(id)) else 1.0, not sel.has(int(id)))

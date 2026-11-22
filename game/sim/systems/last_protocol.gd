@@ -186,6 +186,9 @@ static func tick(w: SimWorld) -> void:
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
 	if LpSetup.fill_facility(w, int(s.fid)):
 		s.filled = true
+		var g71 := LpSetup.build_g71_late(w, int(s.fid))   # G7.1 wave 2 (ORCH): LP-base additions, after the G7 start entities
+		if not g71.is_empty():
+			s.g71 = g71
 		s.fill_tick = w.tick  # the fill's own CnTeamReady events land in this tick's list: not counted twice
 		var st0: Dictionary = R().get("start", {})
 		s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))

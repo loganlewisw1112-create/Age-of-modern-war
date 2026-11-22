@@ -694,6 +694,183 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 		"cameras": cams, "obstacles": obst, "patrols": LpGarrison7.patrol_count(w)}
 
 
+## G7.1 wave 2 (ORCH): the LP-base additions, placed LATE: LastProtocol._try_fill calls this once, in the tick the
+## facility is filled, so every G7 start entity (base, army, strike teams, Sentinels) keeps the id it had before wave 2
+## and its id-based cadences don't move (CNOPS71-5 seq 2284: placed early, the id shift made a Sentinel warden cross a
+## CN APC's bay route: test_path7). Powers the new buildings (power_up adds only the missing generators).
+## Returns build_g71's summary ({} when no content/g71_lp file places anything).
+static func build_g71_late(w: SimWorld, fid: int) -> Dictionary:
+	var L0 := layout(w)
+	var occ := _occ(w)
+	var g71 := build_g71(w, occ, L0, fid)
+	if not g71.is_empty():
+		power_up(w, occ, L0, fid)
+	return g71
+
+
+## G7.1 wave 2 (ORCH, roster 5A Q15): the LP starting base additions of the wave-2 agents. Reads every
+## res://content/g71_lp/lp_base_<agent>.json in name order (NOT content/g71: the content merger would load it as a
+## unit fragment). File: {"units": [{"def", "count", "near", "port": bool}], "buildings": [{"def", "count", "near", "offset": [dx, dy]}]},
+## near = "outer_ring" | "core_ring" (spread evenly 3 tiles inside that ring's wall, on the ground) | "outer_wall" | "core_wall" (the
+## map wall stations of that ring: on the ground 1-2 tiles inside the wall; add "port": true so the unit can fire out
+## through a firing port fitted on the wall beside it, see _g71_port) | "center" | "facility" (+ offset).
+## Unknown defs / anchors are skipped with an error. No file = nothing placed and no "g71" key (same hash as before).
+## Returns {agent: {"units": [ids], "buildings": [ids]}}.
+const G71_LP_DIR := "res://content/g71_lp"
+static func build_g71(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> Dictionary:
+	var out := {}
+	if OS.get_environment("G71_LP_BASE") == "0":
+		return out   # ORCH bisect switch: run an LP test without any content/g71_lp file (read once per LP build)
+	var dir := DirAccess.open(G71_LP_DIR)
+	if dir == null:
+		return out
+	var files := []
+	for fn in dir.get_files():
+		var name := String(fn).trim_suffix(".remap")
+		if name.begins_with("lp_base_") and name.ends_with(".json") and not files.has(name):
+			files.append(name)
+	files.sort()
+	var only := OS.get_environment("G71_LP_BASE")   # ORCH bisect switch: "0" = none (above), "fires,army71" = only those files
+	if only != "":
+		var keep := []
+		for fn2 in files:
+			if only.split(",").has(String(fn2).trim_prefix("lp_base_").trim_suffix(".json")):
+				keep.append(fn2)
+		files = keep
+	for fi in files.size():
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(G71_LP_DIR + "/" + String(files[fi])))
+		if typeof(parsed) != TYPE_DICTIONARY:
+			push_error("LpSetup: invalid LP-base file %s" % files[fi])
+			continue
+		var us := []
+		var bs := []
+		var slot := 0
+		for kind in ["units", "buildings"]:
+			for it in (parsed.get(kind, []) as Array):
+				var def := String(it.get("def", ""))
+				var n := int(it.get("count", 1))
+				var known: bool = not (Content.unit(def) if kind == "units" else Content.building(def)).is_empty()
+				var pts := _g71_points(L0, String(it.get("near", "")), it.get("offset", [0, 0]), n, fi * 5 + slot)
+				slot += 1
+				if not known or pts.is_empty():
+					push_error("LpSetup: %s skips %s '%s' near '%s'" % [files[fi], kind, def, it.get("near", "")])
+					continue
+				for p0 in pts:
+					var p: Vector2i = p0
+					if kind == "units":
+						if bool(it.get("port", false)):
+							p = _g71_port_cell(w, occ, fid, p)
+							occ[p] = true   # reserve the post: a later base file's building must not be placed on it (a 2x2 rail turret landed on the mg post and pushed the crew back out of its port's reach)
+						var id := w.spawn_unit(def, fid, Vector2(p) + Vector2(0.5, 0.5))
+						w.entities[id].lp_ring = maxi(ring_of(L0, Vector2(p)), 0)
+						w.entities[id].lp_home = Vector2(p) + Vector2(0.5, 0.5)   # LpDefence reads lp_home of every lp_ring unit (found by CNOPS71-2, seq 1478)
+						us.append(id)
+						if bool(it.get("port", false)):
+							_g71_port(w, fid, Vector2(p) + Vector2(0.5, 0.5))
+					else:
+						var bid := place_near(w, occ, def, fid, p, 8)
+						if bid >= 0:
+							bs.append(bid)
+		if not us.is_empty() or not bs.is_empty():
+			out[String(files[fi]).trim_prefix("lp_base_").trim_suffix(".json")] = {"units": us, "buildings": bs}
+	return out
+
+
+## A unit entry with "port": true (ARMY71-7 seq 2516: a wall station is on the ground 1-2 tiles inside the wall, and by
+## owner rule 13.9c-35 nobody fires through a wall from inside): fits a hidden firing port (Walls71 "port", BASTION71 G3)
+## on the nearest own wall segment within 3 tiles of the post, so the crew at that post may fire out (WallFire7 reads
+## Walls71.port_exempt: shooter within size + 1.5 of a ported wall). Nearest by (distance, id); no wall in reach = no port.
+static func _g71_port(w: SimWorld, fid: int, at: Vector2) -> int:
+	var best := _g71_wall_near(w, fid, at)
+	if best >= 0:
+		SimWorld.Walls71.fit(w, w.entities[best], "port")
+	return best
+
+
+## The post of a "port" unit: Walls71.port_exempt reaches size + 1.5 tiles (2.5 for a wall segment), and one map wall
+## station stands 3.0 from its wall (ARMY71-7 seq 2596: the mg crew at (53,104) stayed blocked). A post more than 2 tiles
+## from its nearest wall moves one cell toward it (along the larger axis) when that cell is free; else it stays.
+static func _g71_port_cell(w: SimWorld, occ: Dictionary, fid: int, p: Vector2i) -> Vector2i:
+	var at := Vector2(p) + Vector2(0.5, 0.5)
+	var wall := _g71_wall_near(w, fid, at)
+	if wall < 0:
+		return p
+	var d := Vector2(w.entities[wall].pos) - at
+	if d.length() <= 2.0:
+		return p
+	var st := Vector2i(signi(roundi(d.x)), 0) if absf(d.x) >= absf(d.y) else Vector2i(0, signi(roundi(d.y)))
+	if _free(w, occ, p + st, 1):
+		return p + st
+	# The cell toward the wall is taken (ORCH probe 2026-11-22: a 2x2 rail turret stands between the post (53,104) and its
+	# wall): take the nearest free cell within 3 of the post that is within 2 tiles of an own wall and has no unit on it.
+	var best := p
+	var best_d := INF
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			var c := p + Vector2i(dx, dy)
+			var cd := float(dx * dx + dy * dy)
+			if cd >= best_d or not _free(w, occ, c, 1):
+				continue
+			var cc := Vector2(c) + Vector2(0.5, 0.5)
+			var cw := _g71_wall_near(w, fid, cc)
+			if cw < 0 or cc.distance_to(Vector2(w.entities[cw].pos)) > 2.0:
+				continue
+			var taken := false
+			for e in w.entities.values():
+				if String(e.kind) == "unit" and Vector2(e.pos).distance_squared_to(cc) < 0.5625:
+					taken = true
+					break
+			if not taken:
+				best = c
+				best_d = cd
+	return best
+
+
+## Nearest own wall segment within 3 tiles of `at`, by (distance, id); -1 = none.
+static func _g71_wall_near(w: SimWorld, fid: int, at: Vector2) -> int:
+	var best := -1
+	var best_d := 9.0 + 0.001   # 3 tiles, squared
+	var ids := w.entities.keys()
+	ids.sort()
+	for id in ids:
+		var b: Dictionary = w.entities[id]
+		if String(b.kind) != "building" or int(b.owner) != fid or not SimWorld.Walls71.is_wall(b):
+			continue
+		var d2 := at.distance_squared_to(Vector2(b.pos))
+		if d2 < best_d:
+			best_d = d2
+			best = int(id)
+	return best
+
+
+## n cells for a build_g71 anchor; `turn` rotates the start so two entries on one ring don't stack.
+static func _g71_points(L0: Dictionary, near: String, offset, n: int, turn: int) -> Array:
+	var off := Vector2i(int(offset[0]), int(offset[1])) if offset is Array and (offset as Array).size() >= 2 else Vector2i.ZERO
+	var out := []
+	if n <= 0:
+		return out
+	if near == "outer_wall" or near == "core_wall":   # the map wall stations of that ring (map.lp posts: where the G7 army mans the wall), between the posts the army took
+		var wkey := near.trim_suffix("_wall")
+		var wps: Array = (L0.get("posts", {}) as Dictionary).get(wkey, [])
+		if not wps.is_empty():
+			for i in n:
+				out.append(_v2i(wps[((i * wps.size()) / n + wps.size() / maxi(2 * n, 1) + turn * 3) % wps.size()]) + off)
+			return out
+		near = wkey + "_ring"   # a layout without map posts: the ring perimeter
+	if near == "outer_ring" or near == "core_ring":
+		var r: Rect2i = L0.rings[ring_index(L0, near.trim_suffix("_ring"))].rect
+		var per := perimeter(r.grow(-3)) if r.size.x > 8 and r.size.y > 8 else perimeter(r)
+		if per.is_empty():
+			return out
+		for i in n:
+			out.append(Vector2i(per[((i * per.size()) / n + turn * 7) % per.size()]) + off)
+	elif near == "center" or near == "facility":
+		var c: Vector2i = L0.center if near == "center" else L0.facility
+		for i in n:
+			out.append(c + off + Vector2i((i % 4) * 2, (i / 4) * 2))
+	return out
+
+
 ## Fills the raised facility: strike teams, tactical squads and the stealth dropship on its helipad (CNFAC7's own
 ## training finisher, so garages, helipad and dropship sizes all come from content). True once done.
 static func fill_facility(w: SimWorld, fid: int) -> bool:

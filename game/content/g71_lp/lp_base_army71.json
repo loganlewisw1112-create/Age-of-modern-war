@@ -1,0 +1,11 @@
+{
+  "_meta": "ARMY71 (2026-11-22 ORCH seq 2516 answer: MG / AT / .50 crews stay at the inside wall stations and fire through a hidden firing port fitted on the wall beside them, \"port\": true; the grenadier GL is indirect = already exempt) ARMY71 (roster 5A Q15) Last Protocol starting-base additions, read by LpSetup.build_g71. PROVISIONAL counts; ORCH approves. B3 crews on the outer wall stations (near outer_wall, ORCH 2026-11-22: from the ground 3 tiles inside the wall they could not shoot over it), the G2 flame tank in the core ring (no production entry: LP base only).",
+  "units": [
+    {"def": "a_g71_mg_crew", "port": true, "count": 4, "near": "outer_wall", "_why": "B3: a belt-fed MG nest per wall face (beaten zones, FPF) covering the approach"},
+    {"def": "a_g71_at_team", "port": true, "count": 2, "near": "outer_wall", "_why": "B3: gunner + loader, top-attack vs heavy Machines"},
+    {"def": "a_g71_am_team", "port": true, "count": 2, "near": "outer_wall", "_why": "B3: .50 + spotter calling cores at long range"},
+    {"def": "a_g71_grenadier", "count": 2, "near": "outer_wall", "_why": "B3: airburst over swarms, thermite on heavies; on the wall because grenade shots need a line of fire like any other (ground behind the wall = same blind spot as the MG had)"},
+    {"def": "a_g71_flame_tank", "count": 1, "near": "core_ring", "_why": "G2: thermite flamer that stops nanite regrowth"}
+  ],
+  "buildings": []
+}

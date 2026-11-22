@@ -146,6 +146,7 @@ var _now_s := 0.0      # sim seconds of the last snap
 var _big := {}         # id -> canvas pos
 var _shatter: Array = []   # [pos, t_start(real s)]
 var _jobs: Array = []
+var _f_last = null     # SWN9: the fissure snapshot dict refresh() last used
 var uploads := 0
 var drawn := 0         # growth sprites drawn last frame (tests / playtest)
 var instances := 0
@@ -199,6 +200,12 @@ func refresh(snap: Dictionary) -> void:
 		return
 	visible = true
 	_now_s = float(f.get("tick", 0)) / 20.0
+	# SWN9: same snapshot object as last frame -> upload / build / big-track would redo the same work on the same input
+	if is_same(f, _f_last):
+		growths.queue_redraw()
+		glows.queue_redraw()
+		return
+	_f_last = f
 	if int(f.get("dv", 0)) != _dv or int(f.w) != _w:
 		_upload(f)
 	var key := int(f.get("dv", 0)) * 1000003 + (f.pts as PackedInt32Array).size() * 7 + int(f.get("tick", 0)) / 200
@@ -322,6 +329,8 @@ func _zoom() -> float:
 
 ## Visible tile buckets (iso inverse of the screen corners, padded for tall sprites).
 func _visible_keys() -> Array:
+	if _inst.is_empty():   # SWN9: nothing to find (the loop below only collects keys of _inst)
+		return []
 	var inv := get_canvas_transform().affine_inverse()
 	var vr := get_viewport_rect()
 	var xs := []

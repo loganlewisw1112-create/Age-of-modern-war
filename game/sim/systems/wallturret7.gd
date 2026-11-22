@@ -383,6 +383,8 @@ static func can_engage(w: SimWorld, b: Dictionary, c: Dictionary, wd: Dictionary
 		return false
 	if not in_arc(b, c, tp) or not Turrets7.allowed(w, c, t):
 		return false
+	if w.sys_state.has("killzone71") and not SimWorld.KillZone71.allow(w, b, tp):
+		return false   # G7.1 FIRES71 CR seq 2302: a painted fire sector (no killzone71 state off LP)
 	if not SimWorld.Fog.entity_visible(w, int(b.owner), t):
 		return false
 	if not Turrets7._airborne(t) and not Turrets7._damage().line_clear(w, bp, tp):
@@ -448,8 +450,16 @@ static func tick(w: SimWorld) -> void:
 			continue
 		if int(b.get("emp_until", -1)) > w.tick:   # G7 LETHAL8C: EMP / silenced turrets hold fire (as airdef does)
 			continue
+		if SimWorld.Turrets71.blocked(w, b):   # G7.1 BASTION71 I2: disabled / jammed (LP only; no turrets71 state = false)
+			continue
 		var c := cfg_of(String(b.def))
 		var wd := weapon_of(String(b.def))
+		if w.sys_state.has("fires71"):   # G7.1 BASTION71 (FIRES71 CR 2302 line 2): FPF on this face (LP, manual)
+			var fa = Turrets7.fpf_point(w, b, wd)
+			if fa != null:
+				if Traverse7.lay(w, b, fa - Turrets7.center(b) + Vector2(b.pos), float(wd.get("cooldown", 1.0)), false, -1):
+					_fpf_fire(w, st, b, c, wd, fa)
+				continue
 		var aim := int(st.aim.get(bid, -1))
 		var t = null
 		if scan:
@@ -519,6 +529,17 @@ static func _restore_walk(w: SimWorld, cell: Vector2i) -> void:
 static func _lose(w: SimWorld, b: Dictionary, cause: String) -> void:
 	w.emit("WallTurretLost", {"id": int(b.id), "cause": cause, "pos": b.pos})
 	w.destroy(int(b.id), cause, SimWorld.NEUTRAL)
+
+
+## G7.1 BASTION71: one FPF round at ground point fa (Turrets7.fpf_point / fpf_shot), laid head and firing hint as _fire.
+static func _fpf_fire(w: SimWorld, st: Dictionary, b: Dictionary, c: Dictionary, wd: Dictionary, fa: Vector2) -> void:
+	var bid := int(b.id)
+	st.ready[bid] = w.tick + maxi(roundi(float(wd.get("cooldown", 1.0)) * SimWorld.TICK_RATE), 1)
+	var m := int(b.get("wt_m", 0))
+	var bp := Turrets7.center(b)
+	b.facing_i = m + 4 * (aim_step(m, Vector2.from_angle(float(b.tf)) if b.has("tf") else fa - bp) + 1)
+	b.firing = int(c.get("fire_hint", 6))
+	Turrets7.fpf_shot(w, b, wd, String(c.get("weapon", "")), fa, bp + normal(m) * 0.3, {"wt7": true})
 
 
 static func _fire(w: SimWorld, st: Dictionary, b: Dictionary, c: Dictionary, wd: Dictionary, t: Dictionary) -> void:

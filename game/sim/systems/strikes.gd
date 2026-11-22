@@ -46,6 +46,7 @@ const KINDS := ["loiter", "mlrs", "mass_driver", "cruise"]
 const DROP_KIND := "drone_drop"   # G7 DRONE7
 const SHRAPNEL_PATH := "res://sim/systems/shrapnel.gd"
 static var _shr = null   # G7: WOUND7 shrapnel script once it exists (guarded call)
+static var _f71 = null   # G7.1 FIRES71: fires71.gd, loaded on the first LP indirect launch (fires71 preloads this file)
 
 static func R() -> Dictionary:
 	return Content.rules().get("g6_machine", {}).get("strikes", {})
@@ -233,6 +234,10 @@ static func _launch_shot(w: SimWorld, e: Dictionary, at: Vector2, kind: String, 
 	(st.shots as Array).append({"n": n, "kind": kind, "owner": int(e.owner), "src": int(e.id), "from": _snap(Vector2(e.pos)),
 		"at": _snap(at), "t": flight, "total": flight, "weapon": weapon})
 	w.emit("StrikeLaunched", {"kind": kind, "src": int(e.id), "owner": int(e.owner), "pos": _snap(at), "n": n, "eta": flight})
+	if (kind == "rocket" or kind == "shell") and SimWorld.LastProtocol.active(w):   # G7.1 FIRES71 B4: counter-battery radar tracks indirect shells (LP only)
+		if _f71 == null:
+			_f71 = load("res://sim/systems/fires71.gd")
+		_f71.track_shell(w, int(e.owner), int(e.id), Vector2(e.pos))
 
 
 ## dm / am: designation delay and accuracy multipliers (Callins); accuracy shrinks the scatter radius.

@@ -1,0 +1,24 @@
+{
+  "_meta": "G7.1 J2 + G1 combat medics+ (DAMAGE71, docs/G71_SCOPE.md J2 / G1, Last Protocol only): rules.g71_care drives sim/systems/care71.gd. every = triage pass cadence (ticks); tag_r = a medic of the casualty's side within this many tiles tags it; black = down with < black_left_s on the bleed-out clock, or >= black_limbs limbs lost; red = down or bleeding >= red_bleed hp/s; yellow = bleeding or crawling; green = the rest. comfort_s = how long a black-tagged soldier on morphine lives (made comfortable, dies quietly). green_keep_s = a soldier patched up and walking again is re-tagged green by a medic and stays on the casualty list this many seconds (the tag stays on him). call_k = an untended down / crawling casualty calls for a medic every call_k passes. Every number is PROVISIONAL (untuned).",
+  "rules": {
+    "g71_care": {
+      "enabled": true,
+      "every": 10,
+      "tag_r": 10.0,
+      "black_left_s": 15.0,
+      "black_limbs": 2,
+      "red_bleed": 3.0,
+      "comfort_s": 60.0,
+      "call_k": 3,
+      "green_keep_s": 30.0,
+      "recover": {
+        "enabled": true,
+        "every_pass": 3,
+        "seek_r": 8.0,
+        "pick_r": 1.0,
+        "secs": 4.0,
+        "_note": "PROVISIONAL (DAMAGE71-8). Medics recover our dead: every every_pass triage passes, on a side with no casualty listed, an idle medic walks to the nearest own body within seek_r tiles, works on it secs seconds within pick_r, then it is carried off (Gore71.remove, event BodyRecovered71)."
+      }
+    }
+  }
+}

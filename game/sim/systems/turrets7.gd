@@ -231,10 +231,22 @@ static func _grid(w: SimWorld) -> Dictionary:
 	if g != null and int(g.t) == w.tick:
 		return g.b
 	var b := {}
+	# G7.1 BASTION71-8 (cost, ~2x cheaper at LP peak): positions read exactly like HotState.get_pos, with the hot arrays
+	# fetched once per build instead of once per unit; same buckets, same members, same order.
+	var ents: Dictionary = w.entities
+	var hot = w.get("hot")
+	var hcap := 0
+	var hlive := PackedByteArray()
+	var hpos := PackedVector2Array()
+	if hot != null:
+		hcap = int(hot.cap)
+		hlive = hot.live
+		hpos = hot.pos
 	for e in SimIndex.of(w, "unit"):
-		if not w.entities.has(int(e.id)):
+		var id := int(e.id)
+		if not ents.has(id):
 			continue
-		var p := HotState.get_pos(w, int(e.id))
+		var p: Vector2 = hpos[id] if id >= 0 and id < hcap and hlive[id] == 1 else Vector2(ents[id].pos)
 		var k := floori(p.x / BK) + floori(p.y / BK) * 4096
 		var arr = b.get(k)
 		if arr == null:
@@ -370,6 +382,8 @@ static func can_engage(w: SimWorld, b: Dictionary, c: Dictionary, wd: Dictionary
 		return false
 	if not allowed(w, c, t) or not _visible(w, int(b.owner), t):
 		return false
+	if w.sys_state.has("killzone71") and not SimWorld.KillZone71.allow(w, b, tp):
+		return false   # G7.1 FIRES71 CR seq 2302: a painted fire sector (no killzone71 state off LP)
 	var kind := String(c.get("kind", "gun"))
 	if kind == "mortar":
 		return spotted(w, int(b.owner), c, t)
@@ -428,6 +442,8 @@ static func _tick2(w: SimWorld, ids: Array) -> void:
 				st = _st(w)
 		if int(st.ready.get(bid, 0)) > w.tick:
 			continue
+		if SimWorld.Turrets71.blocked(w, b):   # G7.1 BASTION71 I2: disabled / jammed (LP only; no turrets71 state = false)
+			continue
 		var c := cfg_of(String(b.def))
 		var kind := String(c.get("kind", "gun"))
 		if kind == "emp":
@@ -435,6 +451,13 @@ static func _tick2(w: SimWorld, ids: Array) -> void:
 				_emp(w, st, b, c)
 			continue
 		var wd := weapon_of(String(b.def))
+		if kind == "gun" and w.sys_state.has("fires71"):   # G7.1 BASTION71 (FIRES71 CR 2302 line 2): FPF (LP, manual)
+			var fa = fpf_point(w, b, wd)
+			if fa != null:
+				if Traverse7.lay(w, b, fa - center(b) + Vector2(b.pos), float(wd.get("cooldown", 1.0)), false, -1):
+					_spend(w, st, int(bid), wd)
+					fpf_shot(w, b, wd, _wid(b), fa, center(b), {})
+				continue
 		var t = null
 		var aim := int(st.aim.get(bid, -1))
 		if scan:
@@ -468,6 +491,56 @@ static func _tick2(w: SimWorld, ids: Array) -> void:
 				_rail(w, b, c, wd, t)
 			_:
 				_gun(w, b, wd, t)
+
+
+## G7.1 BASTION71 (FIRES71 CR seq 2302 line 2): final protective fire for a ground gun (Turrets7 kind gun, WallTurret7).
+## While the player's FPF fires on the gun's face and the gun is on that face's wall band (Fires71.fpf_aim != null: LP
+## only, after fpf_fire), the gun fires at the strip instead of picking a target: no target / LOS / arc / spotting test.
+## Aim: Fires71's strip point when it is in range, else the strip-centre point nearest this gun (its own stretch of
+## the face, swept +- FPF_SWEEP along the face), clamped to the weapon range (a short gun's rounds land in the approach
+## short of the strip). PROVISIONAL: FPF_R, FPF_SWEEP. No fires71 state (off LP / never pressed) = null, one has().
+const FPF_R := 1.5
+const FPF_SWEEP := 1.5
+static func fpf_point(w: SimWorld, b: Dictionary, wd: Dictionary) -> Variant:
+	if not w.sys_state.has("fires71"):
+		return null
+	var fa = SimWorld.Fires71.fpf_aim(w, b)
+	if fa == null:
+		return null
+	var bp := center(b)
+	var rg := float(wd.get("range", 0))
+	if bp.distance_to(fa) <= rg:
+		return fa
+	var s: Dictionary = SimWorld.KillZone71.fpf_strip(w, SimWorld.KillZone71.face_of(w, Vector2(b.pos)))
+	if s.is_empty():
+		return null
+	var a := Vector2(float(s.a[0]), float(s.a[1]))
+	var ab := Vector2(float(s.b[0]), float(s.b[1])) - a
+	var l2 := maxf(ab.length_squared(), 0.0001)
+	var sw := (float((w.tick / 10 + int(b.id)) % 5) - 2.0) * FPF_SWEEP * 0.5
+	var q := a + ab * clampf((bp - a).dot(ab) / l2 + sw / sqrt(l2), 0.0, 1.0)
+	if bp.distance_to(q) > rg:
+		q = bp + (q - bp).normalized() * rg
+	return Vector2(snappedf(q.x, 1.0 / 1024.0), snappedf(q.y, 1.0 / 1024.0))
+
+
+## One FPF round from b at ground point to: the nearest enemy ground unit within FPF_R of it (then lowest id) takes the
+## hit roll; none = the round only lands. ShotFired carries fpf = true (+ extra fields, e.g. wt7 for a wall gun).
+static func fpf_shot(w: SimWorld, b: Dictionary, wd: Dictionary, wid: String, to: Vector2, from: Vector2, extra: Dictionary) -> void:
+	var best = null
+	var bd := INF
+	for t in _near(w, int(b.owner), to, FPF_R, true):
+		var d := pos_of(w, t).distance_to(to)
+		if d < bd or (d == bd and int(t.id) < int(best.id)):
+			bd = d
+			best = t
+	var hit := w.rng.chance(float(wd.get("accuracy", 1.0)))
+	var ev := {"shooter": int(b.id), "target": -1 if best == null else int(best.id), "weapon": wid, "hit": hit and best != null,
+		"from": from, "to": to, "indirect": false, "t7": "gun", "fpf": true}
+	ev.merge(extra)
+	w.emit("ShotFired", ev)
+	if best != null:
+		_damage().apply_hit(w, b, best, _s(b, wd, wid, float(wd.get("damage", 0))), hit)
 
 
 static func _spend(w: SimWorld, st: Dictionary, bid: int, wd: Dictionary) -> void:

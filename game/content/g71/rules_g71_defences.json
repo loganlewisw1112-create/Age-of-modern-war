@@ -1,0 +1,75 @@
+{
+ "_meta": "G7.1 BASTION71 rules. All PROVISIONAL.",
+ "rules": {
+  "g71_defences": {
+   "ver": 1,
+   "disable": {
+    "enabled": true,
+    "hp_frac": 0.12,
+    "revive_hp_frac": 0.5,
+    "jam_hit_frac": 0.35,
+    "jam_s": 6.0,
+    "revive_s": 8.0,
+    "drone_revive_s": 20.0,
+    "dispatch_r": 40.0,
+    "_note": "A lethal hit on a defence (a Turrets71 def or any t7 turret) leaves it disabled at hp_frac*max hp instead of destroying it; a second lethal hit while disabled destroys it. One hit of >= jam_hit_frac of max hp jams it for jam_s. Engineers revive in revive_s, maintenance drones in drone_revive_s."
+   },
+   "walls": {
+    "nanite_resist_mult": 0.6,
+    "_nanite_resist_note": "PROVISIONAL (BASTION71-7): a nanite_coat wall takes x0.6 damage from Machine-owned shooters (Walls71.nres_mult, called by Damage.apply_hit)",
+    "doze": {"reach": 1.5, "clear_r": 2.5, "clear_s": 1.5, "_note": "PROVISIONAL (BASTION71-7): breacher dozer doze_clear: arrive within reach, remove one Gore71 body / wreck within clear_r every clear_s"},
+    "tiers": [
+     {
+      "id": "steel",
+      "hp_mult": 1.0,
+      "cost": {}
+     },
+     {
+      "id": "composite",
+      "hp_mult": 1.6,
+      "cost": {
+       "credits": 300,
+       "salvage": 150
+      },
+      "time_s": 20
+     },
+     {
+      "id": "nanite_coat",
+      "hp_mult": 2.2,
+      "cost": {
+       "credits": 600,
+       "salvage": 300,
+       "ore": 100
+      },
+      "time_s": 30,
+      "nanite_resist": true
+     }
+    ],
+    "anti_climb": {
+     "overhang_r": 1.5,
+     "electric_dmg": 40,
+     "electric_every_s": 1.0,
+     "electric_r": 1.6,
+     "firepour_r": 2.0,
+     "firepour_dmg": 60,
+     "firepour_cd_s": 10.0
+    },
+    "gate": {
+     "reinforce_hp_mult": 1.5,
+     "murder_dmg": 30,
+     "murder_every_s": 0.5,
+     "murder_r": 3.0,
+     "popup_cd_s": 6.0
+    },
+    "choke_seal_s": 4.0,
+    "lift_s": 3.0,
+    "firing_port": {
+     "range_mult": 0.8
+    }
+   },
+   "sensors": {
+    "scan_s": 1.0
+   }
+  }
+ }
+}
