@@ -186,6 +186,8 @@ static func tick(w: SimWorld) -> void:
 			_assault(w, s)
 		if (w.tick + 17) % _t(2.0) == 0:
 			_regrow(w, s)
+		if (w.tick + 19) % _t(2.0) == 0:
+			_hive_sync(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -392,6 +394,37 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 		"n_log": n_log, "counter": Director71.counter_for(s)})
 
 
+## C4 hive Conductor: mark Machine units inside sync_radius with lp_sync so presentation / AI can treat them as
+## locked in formation. Clearing the flag when the Conductor dies makes the local tide stumble.
+static func _hive_sync(w: SimWorld, s: Dictionary) -> void:
+	var conductors := []
+	var units: Array = w.units_of(int(s.mfid))
+	for e in units:
+		if Director71.is_hive_conductor(String(e.get("def", ""))):
+			conductors.append(e)
+	var r := Director71.sync_radius()
+	var r2 := r * r
+	var synced := 0
+	for e in units:
+		var on := false
+		if not conductors.is_empty():
+			var p: Vector2 = e.pos
+			for c in conductors:
+				if p.distance_squared_to(Vector2(c.pos)) <= r2:
+					on = true
+					break
+		if on:
+			if not bool(e.get("lp_sync", false)):
+				e.lp_sync = true
+			synced += 1
+		elif bool(e.get("lp_sync", false)):
+			e.erase("lp_sync")
+	var prev := int(s.get("sync_n", 0))
+	if synced != prev:
+		s.sync_n = synced
+		w.emit("LpHiveSync", {"n": synced, "conductors": conductors.size(), "radius": r})
+
+
 ## C2 retreat + regrow: pull badly damaged machines back to the hive spawn, heal them there, then clear the flag
 ## so the next assault takes them again.
 static func _regrow(w: SimWorld, s: Dictionary) -> void:
@@ -527,6 +560,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"rings_fallen": int(s.get("rings_fallen", 0)), "raid": bool(s.get("raid_on", false)),
 		"dread": float(s.get("dread", 0.0)), "band": Director71.band(float(s.get("dread", 0.0))),
 		"break_point": bool(s.get("break_point", false)), "counter": Director71.counter_for(s),
+		"sync_n": int(s.get("sync_n", 0)),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
 

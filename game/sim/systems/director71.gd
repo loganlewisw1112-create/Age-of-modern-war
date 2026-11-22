@@ -186,6 +186,16 @@ static func overmind_line(key: String) -> String:
 	return String(lines.get(key, ""))
 
 
+## True when a unit def is the C4 hive Conductor (not the B6 gunship).
+static func is_hive_conductor(def_id: String) -> bool:
+	return String(Content.unit(def_id).get("g71_special", "")) == "hive_conductor"
+
+
+## Sync aura radius in tiles (provisional).
+static func sync_radius() -> float:
+	return float(rules().get("sync_radius", 10.0))
+
+
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
 static func counter_for(s: Dictionary) -> String:
 	var a = s.get("adapt", {})

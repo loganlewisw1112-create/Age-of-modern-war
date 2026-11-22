@@ -85,6 +85,9 @@ func test_siege_roster_stubs() -> void:
 	check_eq(String(Director71.siege_roster(0.9, "armour").back()), "g71_m_brute", "armour bonus is a brute")
 	check(Director71.overmind_line("breaking_point") != "", "Overmind has a breaking-point line")
 	check(Director71.overmind_line("adapt_armour") != "", "Overmind has an armour-counter line")
+	check(Director71.is_hive_conductor("g71_m_hive_conductor"), "hive Conductor id is recognized")
+	check(not Director71.is_hive_conductor("g71_m_brute"), "brutes are not the hive Conductor")
+	check(Director71.sync_radius() > 0.0, "sync aura has a radius")
 
 
 func test_adapt_buckets_and_counter() -> void:
