@@ -1,0 +1,17 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+SIEGE_START secs=180 ticks=3600
+SIEGE_FIRE n=1
+SIEGE_JAM board_n=119 hacked=0
+SIEGE_RE_CAPTURE cell=siege_c0
+SIEGE_MARK t=60s hive=13 death={ "blasts": 3, "seeds": 8, "gasps": 0 } re_cells=1 fooled=false
+SIEGE_FEINT n=1 push={ "main": 4, "feint": 0, "feint_frac": 0.25 } fooled=true ask=abandon logistics=true
+SIEGE_RE_PROTOTYPE unlocked=["g71_m_brute"]
+SIEGE_BREAKOUT purged hive_signal=false
+SIEGE_MARK t=120s hive=27 death={ "blasts": 19, "seeds": 38, "gasps": 0 } re_cells=1 fooled=true
+SIEGE_OVERRUN overrun_t=-1
+SIEGE_RAID phases=["soften", "breach", "purge", "failed"] failed=purge
+SIEGE_FLEET_END n=119 hacked=0
+SIEGE_DONE ticks=3600 wall_ms=86283 fire=true jam=true re=true breakout=true overrun=true raid=true feints=1 boards hive={ "nests": 2, "relays": 1, "isolated": 0, "prod_mult": 1.45, "beat": 45, "pulse": false, "eaten": 1 } death={ "blasts": 45, "seeds": 83, "gasps": 1 }

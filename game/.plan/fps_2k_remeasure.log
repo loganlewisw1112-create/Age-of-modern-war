@@ -1,0 +1,15 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 24.30.74.02.250929 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon TM Graphics
+
+FPS 2k PASS rc=0 40766 ms load=29 / 2 :: FPS_SUMMARY samples=27 avg=98.0 min=66.6 p10=69.9 max=123.6 zoom=1.00 lod=0 native=on
+# G6 windowed fps (2026-11-23T10:57:33)
+
+`godot --headless -s tools/bench.gd -- --fps --fps-secs=30`; gate on p10 fps; vsync off. economy=real, construction=real, production=real, gather=real, movement=real, combat=real, fog=real, victory=real, damage=real, morale=real, supply=real, repair=real, ops=real, orders=real, bridges=real, ai=real
+
+| case | map | units | zoom | avg | min | p10 | gate | result | CPU load % / godot procs at start | summary |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2k on screen | river_crossing_s | 2000 | 1.0 | 98.0 | 66.6 | 69.9 | 60 | PASS | 29 / 2 | FPS_SUMMARY samples=27 avg=98.0 min=66.6 p10=69.9 max=123.6 zoom=1.00 lod=0 native=on |
+
+RESULT all gates met
+

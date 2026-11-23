@@ -50,9 +50,9 @@ Hive network, wildfire and fire-lines, machine death chains, harvester swarms, c
 
 Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
-Harnessed **60-minute** Last Protocol soak is **GREEN** (evidence `game/.plan/soak_3600_durable_*`): no crash, boards sane, mid-run save hash match at 30 min, RE capture at end. Headless wall ~234 s for 72k ticks. Soak harness also exercises fleet jam (no hive hack), H1 core-raid phases to failed purge, warmind feint + abandon ask, fire seed, and director push pick.
+**Perf (Done-when 3, quiet remasures):** zoomed-out pan **p10 68.3 / avg 86.2** (gate ≥60 CLEAR); 2k on-screen **p10 69.9 / avg 98.0** (gate ≥60 PASS, beats G7 p10 62.7). LP peak quiet **p10 42.8** (amended ≥30 CLEAR). Evidence: `game/.plan/lp_pan_30_remeasure.log`, `fps_2k_remeasure.log`, `lp_peak_lodfar.log`.
 
-**LP peak** (1,000 machines, zoom 0.5): quiet sample **p10 42.8 / avg 56.3** — clears the amended ≥30 gate. Far-LOD icons engage by zoom 0.55 (sprite detail is already sub-readable there).
+**Soaks:** durable 60-min board soak GREEN (`soak_3600_durable_*`). Longer live RE+warmind siege (10 min sim) GREEN — prototype unlock, breakout purge no hive signal, overrun retake, 6 warmind feints, fleet jam no-hack, H1 raid (`live_siege_600_*`).
 
 ---
 
@@ -60,8 +60,6 @@ Harnessed **60-minute** Last Protocol soak is **GREEN** (evidence `game/.plan/so
 
 - **Owner look checkpoint (E3)** — approve or reject each sample; full art roll-out waits on that.
 - **E4 animation** — after look approval.
-- **Live RE / warmind siege length** beyond the harnessed 60-min board soak (deeper live fidelity than the headless board soak).
-- Strict 2k / zoomed-out panning vs every past build where the frozen bar still applies (pan sample already clears avg 65.9 / p10 51.2; peak amended ≥30 is clear).
 
 Frozen Done-when is never weakened to make a check pass.
 
@@ -71,8 +69,9 @@ Frozen Done-when is never weakened to make a check pass.
 
 - Active branch: `g71`
 - Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2).
-- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (21 suites incl. AIRFIX matrix + airops; last run 0 fails)
-- Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90` (jam / warmind / save / RE)
-- Durable soak: same harness with `--secs=3600 --save_at=1800`
+- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (21 suites incl. AIRFIX; last run 0 fails)
+- Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90`
+- Live siege: `godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600`
+- Durable soak: `... g71_soak_short.gd -- --secs=3600 --save_at=1800`
 
 Build tag in Downloads embeds the short git hash so you always know which commit you are playing.

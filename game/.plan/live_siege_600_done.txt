@@ -1,0 +1,13 @@
+G7.1 live RE + warmind siege soak — GREEN (beyond short harness)
+Harness: godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600
+Log: game/.plan/live_siege_600.log
+Wall: ~294 s for 12k ticks
+
+SIEGE_DONE fire=true jam=true re=true breakout=true overrun=true raid=true feints=6
+- RE: capture g71_m_brute -> five stages -> prototype unlocked
+- Breakout purge on glass stalker with hive_signal=false (inside compound)
+- Overrun retake resolved (overrun_t=-1)
+- Warmind: 6 feint cycles, fooled=true, abandon ask pending each cycle
+- Fleet jam: hacked=0 start and end
+- H1 raid: soften->breach->purge->failed
+- Boards end: hive beat=154 eaten=105; death blasts=192 seeds=303 gasps=52

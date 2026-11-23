@@ -1,0 +1,8 @@
+G7.1 2k on-screen fps (Done-when 3 / E2 evidence)
+Commit near run: dca4391a+
+Harness: godot --path game -s res://tools/bench.gd -- --fps --fps-secs=30 --fps-cases=2k --no-write
+Log: game/.plan/fps_2k_remeasure.log
+
+FPS 2k PASS — FPS_SUMMARY samples=27 avg=98.0 min=66.6 p10=69.9 max=123.6 zoom=1.00 lod=0 native=on
+Gate p10 >= 60: CLEAR (p10 69.9).
+Beats prior G7 same-case sample (q1121_g7_2k p10 62.7).
