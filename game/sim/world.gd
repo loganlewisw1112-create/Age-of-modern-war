@@ -92,6 +92,7 @@ const Neural71 = preload("res://sim/systems/neural71.gd")  # G7.1 J9 neural-link
 const Horror71 = preload("res://sim/systems/horror71.gd")  # G7.1 J7 horror atmosphere
 const Atmo71 = preload("res://sim/systems/atmo71.gd")  # G7.1 E1 end-battle atmosphere
 const Weather71 = preload("res://sim/systems/weather71.gd")  # G7.1 I3 wind + fog mornings
+const Night71 = preload("res://sim/systems/night71.gd")  # G7.1 I5 night / illumination
 const CnMission71 = preload("res://sim/systems/cnmission71.gd")  # G7.1 wave 2 CNOPS71 D7 area missions (CR seq 1811)
 const Ammo71 = preload("res://sim/systems/ammo71.gd")  # G7.1 wave 2 ARMY71 B3 ammo tiers (CR seq 1651; commands only, no tick slot)
 const Crew71 = preload("res://sim/systems/crew71.gd")  # G7.1 wave 2 ARMY71 B3 crew-served weapons (CR seq 1863; commands only, no tick slot)
@@ -130,7 +131,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Gas71, Weather71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Sensors71, Strikes, Fires71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Gas71, Weather71, Night71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Sensors71, Strikes, Fires71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -304,6 +305,7 @@ const COMMANDS := {
 	"research71_start": Research71,  # G7.1 H7 siege tech
 	"stim71_dose": Stim71,  # G7.1 J9 stimulants
 	"neural71_link": Neural71,  # G7.1 J9 neural-link
+	"night71_illuminate": Night71,  # G7.1 I5 illumination
 	"warmind71_reply": Warmind71,  # G7.1 J13 war-mind ask
 	"recomplex71_capture": Recomplex71,  # G7.1 J12 Site Blackglass
 	"recomplex71_purge": Recomplex71,

@@ -93,6 +93,10 @@ static func accuracy_mult(w: SimWorld, e: Dictionary) -> float:
 	if e.has("g71neural_pilot"):
 		var Neural71 = preload("res://sim/systems/neural71.gd")
 		m *= float(Neural71.R().get("acc_mult", 1.2))
+	# I5 darkness: miss more without light / NVG.
+	var Night71 = preload("res://sim/systems/night71.gd")
+	if Night71.active(w):
+		m *= Night71.dark_mult(w, e)
 	return m
 
 

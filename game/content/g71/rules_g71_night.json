@@ -1,0 +1,15 @@
+{
+  "_meta": "G7.1 I5 night / illumination / searchlights. PROVISIONAL.",
+  "rules": {
+    "g71_night": {
+      "night_dread": 0.85,
+      "flare_s": 20.0,
+      "flare_r": 14.0,
+      "ills_max": 6,
+      "light_r": 18.0,
+      "light_cone_deg": 25.0,
+      "sweep_deg": 2.0,
+      "dark_acc": 0.7
+    }
+  }
+}
