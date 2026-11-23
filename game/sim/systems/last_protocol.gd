@@ -225,6 +225,8 @@ static func tick(w: SimWorld) -> void:
 			_spawn_boss(w, s, "siege")
 	if (w.tick + 73) % _t(float(Director71.rules().get("spore_every_s", 60.0))) == 0:
 		_spore_drop(w, s)
+	if (w.tick + 79) % _t(5.0) == 0:
+		_lazarus_tick(w, s)
 	# F robot fleet (ticked from LP only so skirmish hashes stay put).
 	Fleet71.tick(w)
 
@@ -288,6 +290,14 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				if s.has("adapt_last") and (s.adapt_last is Dictionary):
 					hit = s.adapt_last.get(id, {})
 					s.adapt_last.erase(id)
+				# J8: count friendly armour wrecks toward Lazarus.
+				if String(ev.get("kind", "")) == "unit" and int(ev.get("owner", -1)) == fid:
+					var udef: Dictionary = Content.unit(String(ev.get("def", "")))
+					var mc := String(udef.get("move_class", "foot"))
+					var arm := String(udef.get("armor", ""))
+					if mc == "tracked" or mc == "wheeled" or mc == "vehicle" or arm == "heavy" or arm == "medium":
+						if String(udef.get("g71_fleet", "")) == "":
+							s.armour_lost = int(s.get("armour_lost", 0)) + 1
 				if String(ev.get("kind", "")) == "unit" and int(ev.get("owner", -1)) == int(s.mfid):
 					var prev := String(s.get("adapt_counter", ""))
 					var bucket := Director71.note_kill(s, String(hit.get("cls", "")), String(hit.get("weapon", "")))
@@ -313,6 +323,7 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					if Director71.is_boss(String(ev.get("def", ""))):
 						_complete_objective(w, s, "kill_boss_break", {"id": id})
 						_complete_objective(w, s, "kill_boss_siege", {"id": id})
+						_complete_objective(w, s, "kill_boss_lazarus", {"id": id})
 						w.emit("LpBossDown", {"id": id, "def": String(ev.get("def", ""))})
 				LpDefence.note_destroyed(w, s, ev)
 			"LpRingBreached":
@@ -419,7 +430,7 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 		_spawn_boss(w, s, "break")
 
 
-## H5 mini-boss spike: one Gorilla Alpha at breaking-point, one Mega Walker once at full siege (if not already).
+## H5/J8 mini-boss spike: Gorilla Alpha at breaking-point, Mega Walker at full siege, Lazarus after heavy armour losses.
 static func _spawn_boss(w: SimWorld, s: Dictionary, kind: String) -> void:
 	var flag := "boss_%s" % kind
 	if bool(s.get(flag, false)):
@@ -436,6 +447,16 @@ static func _spawn_boss(w: SimWorld, s: Dictionary, kind: String) -> void:
 	_push_objective(w, s, "kill_boss_%s" % kind, "Kill the %s" % name, {"id": sid, "def": def_id, "boss": kind})
 	_note_intel(w, s, def_id, "armour")
 	w.emit("LpBossSpawn", {"id": sid, "def": def_id, "kind": kind, "name": name, "pos": at})
+
+
+## J8: after enough friendly armour wrecks, stitch a Lazarus walker from the scrap (once per run).
+static func _lazarus_tick(w: SimWorld, s: Dictionary) -> void:
+	if bool(s.get("boss_lazarus", false)):
+		return
+	var need := int(Director71.rules().get("lazarus_at_armour_lost", 4))
+	if int(s.get("armour_lost", 0)) < need:
+		return
+	_spawn_boss(w, s, "lazarus")
 
 
 static func _assault(w: SimWorld, s: Dictionary) -> void:

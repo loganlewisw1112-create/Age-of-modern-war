@@ -154,6 +154,7 @@
         "g71_m_brute_alpha": {"tpl": "walker4", "heavy": true, "topple": 1.6},
         "g71_m_siege_walker": {"tpl": "walker4", "heavy": true, "topple": 1.8},
         "g71_m_mega_walker": {"tpl": "walker4", "heavy": true, "topple": 2.0},
+        "g71_m_lazarus": {"tpl": "walker4", "heavy": true, "topple": 2.1},
         "g71_m_turret_eater": {"tpl": "skulker"},
         "g71_m_sapper": {"tpl": "skulker", "heavy": true, "topple": 1.5},
         "g71_m_reclaimer": {"tpl": "tracked"},

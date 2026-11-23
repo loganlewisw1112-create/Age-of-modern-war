@@ -262,9 +262,13 @@ static func pile_min() -> int:
 	return int(rules().get("pile_min", 3))
 
 
-## H5 mini-boss def for a spike moment ("break" at breaking-point, "siege" late). Empty if unset.
+## H5/J8 mini-boss def for a spike moment ("break", "siege", "lazarus"). Empty if unset.
 static func boss_def(kind: String) -> String:
-	var key := "boss_break" if kind == "break" else "boss_siege"
+	var key := "boss_siege"
+	if kind == "break":
+		key = "boss_break"
+	elif kind == "lazarus":
+		key = "boss_lazarus"
 	return String(rules().get(key, ""))
 
 

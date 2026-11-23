@@ -494,3 +494,31 @@ func test_supply_wall_life_and_sally() -> void:
 				break
 	check(crack_ok, "radio speaks a sector crack")
 	feed.free()
+
+
+func test_lazarus_spawns_after_armour_losses() -> void:
+	check(not Content.unit("g71_m_lazarus").is_empty(), "Lazarus walker def loads")
+	check_eq(Director71.boss_def("lazarus"), "g71_m_lazarus", "director maps lazarus boss")
+	check(Director71.is_boss("g71_m_lazarus"), "Lazarus flagged as boss")
+	var c := LastProtocol.make_config(88, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP match for Lazarus"):
+		return
+	for i in 25:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	s.armour_lost = int(Director71.rules().get("lazarus_at_armour_lost", 4))
+	LastProtocol._lazarus_tick(w, s)
+	check(bool(s.get("boss_lazarus", false)), "Lazarus flag sticks after armour threshold")
+	var found := false
+	for e in w.units_of(int(s.mfid)):
+		if String(e.def) == "g71_m_lazarus":
+			found = true
+			break
+	check(found, "Lazarus walker is on the map")
+	LastProtocol._lazarus_tick(w, s)
+	var n := 0
+	for e2 in w.units_of(int(s.mfid)):
+		if String(e2.def) == "g71_m_lazarus":
+			n += 1
+	check_eq(n, 1, "Lazarus spawns once per run")
