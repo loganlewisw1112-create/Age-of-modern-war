@@ -23,6 +23,7 @@ const UiKit = preload("res://presentation/ui5/kit/ui_kit.gd")
 const CineDirector = preload("res://presentation/cine7/cine_director.gd")
 const CineData = preload("res://presentation/cine7/cine_data.gd")
 const EndScreen = preload("res://presentation/cine7/lp_end_screen.gd")
+const Pres8 = preload("res://presentation/pres8/pres8.gd")
 const ScaledLayer = preload("res://presentation/hud/scaled_layer.gd")
 const END_LAYER := 95
 const W := 300.0
@@ -52,6 +53,8 @@ var _open_checked := false
 var _end_seen := false
 var _end_layer: CanvasLayer = null
 var minimal := false                 # H9: hide most of the HUD for cinematic play (toggle with set_minimal)
+var _creep_samples: Array = []       # G8 PRES8: presentation-only creep track for end-of-run timelapse
+var _pres8_pack: Dictionary = {}     # last eor_harness payload (tests / end screen)
 
 
 static func wants(w: SimWorld) -> bool:
@@ -326,6 +329,10 @@ func refresh() -> void:
 	_cd_lbl.add_theme_color_override("font_color", UiKit.RED if bool(d.final_stage) else UiKit.AMBER)
 	_cores_lbl.text = t.cores
 	_flags.text = t.dread if t.flags == "" else (t.flags if t.dread == "" else t.dread + "   " + t.flags)
+	# G8 PRES8: sample creep coverage for the end-of-run timelapse (display only).
+	if w != null and d.has("creep"):
+		var age_s := float(w.tick) / float(SimWorld.TICK_RATE)
+		Pres8.append_creep_sample(_creep_samples, age_s, float(d.creep))
 	if minimal:
 		_creep_bar.visible = false
 		_creep_lbl.visible = false
@@ -387,7 +394,12 @@ func show_end(result: Dictionary) -> void:
 				(_end_layer.get("root") as Control).theme = th   # the HUD's panel / button styles
 		parent = _end_layer.get("root")
 	var rows := CineData.remembered_rows(_world(), result.get("remembered", []))
+	# G8 PRES8: director PiP + highlight reel + creep timelapse each fire once for the after-action pack.
+	_pres8_pack = Pres8.eor_harness(mv if mv != null and world_override == null else null, result, rows, _creep_samples)
 	var scr: Control = EndScreen.build(parent, result, saved, rows, cinematics and mv != null and world_override == null)
+	scr.set_meta("pres8", _pres8_pack)
+	if scr.has_method("apply_pres8"):
+		scr.apply_pres8(_pres8_pack)
 	end_panel = scr.get("panel")
 	scr.continue_pressed.connect(func(): scr.hide())
 	scr.replay_pressed.connect(func():

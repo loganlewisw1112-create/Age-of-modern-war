@@ -88,6 +88,11 @@ func _ready() -> void:
 	body.add_child(_stats_col())
 	body.add_child(_side_col())
 	v.add_child(HSeparator.new())
+	var pres8_box := VBoxContainer.new()
+	pres8_box.name = "LpPres8"
+	pres8_box.visible = false
+	v.add_child(pres8_box)
+	v.add_child(HSeparator.new())
 	var foot := HBoxContainer.new()
 	foot.alignment = BoxContainer.ALIGNMENT_END
 	foot.add_theme_constant_override("separation", 10)
@@ -242,6 +247,36 @@ func remembered_call_signs() -> Array:
 	for r in rows:
 		out.append(String(r.get("cs", "")))
 	return out
+
+
+## G8 PRES8: after-action strip (PiP / reel / creep timelapse / kill heat).
+func apply_pres8(pack: Dictionary) -> void:
+	var box: VBoxContainer = find_child("LpPres8", true, false) as VBoxContainer
+	if box == null:
+		return
+	for c in box.get_children():
+		c.queue_free()
+	box.visible = true
+	box.add_child(_head("AFTER ACTION"))
+	var reel: Dictionary = pack.get("reel", {})
+	var clips: Array = reel.get("clips", [])
+	var tl: Dictionary = pack.get("timelapse", {})
+	var track: Array = tl.get("track", [])
+	var heat: Array = pack.get("heat", [])
+	var line := "Director PiP · highlight reel (%d) · creep track (%d) · heat cells (%d)" % [
+		clips.size(), track.size(), heat.size()]
+	var l := UiKit.label(line, "small")
+	l.add_theme_color_override("font_color", UiKit.DIM)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(l)
+	if not heat.is_empty():
+		var cells := []
+		for h in heat:
+			cells.append("%s×%d" % [String(h.get("cell", "?")), int(h.get("n", 0))])
+		var hl := UiKit.label("Kill heat: " + ", ".join(PackedStringArray(cells)), "small")
+		hl.add_theme_color_override("font_color", UiKit.DIM)
+		hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(hl)
 
 
 func _draw_medal() -> void:

@@ -18,6 +18,7 @@ extends Node2D
 const CnFacility7 = preload("res://sim/systems/cn_facility.gd")  # G7 CARDSEL7
 const FacSeq7 = preload("res://presentation/view/fac_seq7.gd")  # G7 SEQ7: facility mission sequences
 const FacAtmo7 = preload("res://presentation/view/fac_atmo7.gd")  # G7 ATMO7: facility alarm, night, smoke, wear, signs, damage
+const Pres8 = preload("res://presentation/pres8/pres8.gd")  # G8 PRES8: director PiP on LP beat events
 const WallTurret7 = preload("res://sim/systems/wallturret7.gd")  # G7 WTUR7 CR 3640
 const FacLife7 = preload("res://presentation/view/fac_life7.gd")  # G7 LIFE7 CR 3644
 const TILE_W := 64
@@ -788,6 +789,7 @@ func _on_step_events(evs: Array) -> void:
 	fac_atmo7.on_events(evs)   # G7 ATMO7 CR 3757
 	vis7_layer.on_events(evs)  # G7 VIS7 CR 1393
 	for ev in evs:
+		Pres8.try_event_pip(self, ev)  # G8 PRES8: director PiP on breaking / tide / boss / core
 		match String(ev.type):
 			"EntityDestroyed":
 				var id := int(ev.id)

@@ -39,6 +39,7 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 - Select: click, drag, shift, double-click. Right-click is the smart order.
 - Common hotkeys: **A** attack-move, **S** stop, **H** hold. Ctrl+1–9 control groups. **Q / E** (or horizontal middle-mouse drag) rotate the view 90° (G8 Four Sides). Rot buildings and loco / fire / death / k8 sheets follow the camera (no mirror cheats on rot_0..3).
 - **Ctrl+M** — minimal Last Protocol HUD (cinematic).
+- End of a Last Protocol run: director PiP beats, highlight reel, creep timelapse, and kill-heat strip on the after-action screen.
 - Save / load: F5 / F9 (or pause menu).
 - Skirmish still works from the main menu if you want a classic match.
 
