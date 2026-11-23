@@ -30,8 +30,11 @@ foreach ($parent in @((Join-Path $root "build"), $dstParent)) {
 }
 $out = Join-Path $root "build\RTS_Age_of_Modern_War_$tag"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
+$docsPlay = Join-Path $root "game\docs\PLAY_ME_G71_2026-11-22.txt"
 $playPath = Join-Path $root "build\PLAY_ME_G71.txt"
-if (-not (Test-Path $playPath)) {
+if (Test-Path $docsPlay) {
+  Copy-Item $docsPlay $playPath -Force
+} elseif (-not (Test-Path $playPath)) {
   @(
     "RTS: Age of Modern War - G7.1 playable ($sha)"
     "PLAY: double-click RTS_Age_of_Modern_War.exe"
@@ -47,6 +50,19 @@ if ($play -notmatch [regex]::Escape($sha)) {
   Set-Content -Path $playPath -Value ("Commit: $sha`r`n`r`n" + $play) -Encoding ascii
 }
 Copy-Item $playPath (Join-Path $out "PLAY_ME.txt") -Force
+$lookSrc = Join-Path $root "game\.plan\shots\G71_LOOK"
+$lookDoc = Join-Path $root "game\docs\G71_LOOK_CHECKPOINT.md"
+if (Test-Path $lookDoc) {
+  Copy-Item $lookDoc (Join-Path $out "G71_LOOK_CHECKPOINT.md") -Force
+}
+if (Test-Path $lookSrc) {
+  $lookOut = Join-Path $out "G71_LOOK_CHECKPOINT"
+  New-Item -ItemType Directory -Force -Path $lookOut | Out-Null
+  Copy-Item (Join-Path $lookSrc "*") $lookOut -Force
+  $lookDstParent = Join-Path $dstParent "G71_LOOK_CHECKPOINT"
+  New-Item -ItemType Directory -Force -Path $lookDstParent | Out-Null
+  Copy-Item (Join-Path $lookSrc "*") $lookDstParent -Force
+}
 Set-Location (Join-Path $root "game")
 Write-Host "IMPORT_START $sha -> $out"
 & $godot --headless --path . --import *> (Join-Path $root "build\import_G71.log")
