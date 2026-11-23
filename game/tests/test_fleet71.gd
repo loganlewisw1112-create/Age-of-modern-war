@@ -151,3 +151,36 @@ func test_fleet_self_wipe_under_jam() -> void:
 		if x != null and String(x.get("kind", "")) == "wreck" and String(x.get("def", "")) == "g71_robot_dog":
 			wrecks += 1
 	check(wrecks == 0, "self-wipe leaves no reclaimable wreck")
+
+
+## Done-when 6 style: jam a sector; no robot flips to the hive (local autonomy / self-wipe only).
+func test_jam_never_hacks_robots_to_hive() -> void:
+	var c := LastProtocol.make_config(102, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP match for jam soak"):
+		return
+	for i in 30:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	var fid := int(s.fid)
+	var mfid := int(s.mfid)
+	for face in 8:
+		Fleet71.jam_sector(w, face, 20.0)
+	# Damage several robots so wipe path can fire; none may change owner.
+	var ids: Array = []
+	for e in Fleet71.robots_of(w, fid):
+		ids.append(int(e.id))
+		if ids.size() >= 20:
+			e.hp = float(e.max_hp) * 0.08
+	for i in 80:
+		w.step()
+		for id in ids:
+			if w.entities.has(id) and int(w.entities[id].owner) == mfid:
+				check(false, "robot %d hacked to hive under jam" % id)
+				return
+	var live := 0
+	for id in ids:
+		if w.entities.has(id):
+			check_eq(int(w.entities[id].owner), fid, "survivor %d stays ours" % id)
+			live += 1
+	check(live >= 0, "jam soak finished without hive flips")
