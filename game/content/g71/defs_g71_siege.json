@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 C3 siege units (docs/G71_SCOPE.md C3): gorilla brute, turret-eater swarm, siege walker, burrower/sapper. Behaviour polish (latch, jammer, charge) follows; this file is the content stub. Art is stand-in at the look checkpoint. Every number PROVISIONAL.",
+  "_meta": "G7.1 C3 siege units (docs/G71_SCOPE.md C3): gorilla brute, turret-eater swarm, siege walker, burrower/sapper. Behaviour polish (latch, jammer, charge) follows. Art roll-out live (assets/art/g71_siege via tools/art/g71_siege.gd). Every number PROVISIONAL.",
   "units": {
     "g71_m_brute": {
       "name": "Gorilla Brute",
@@ -23,7 +23,7 @@
       "legged": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "C3: charges walls head-on, pounds them, fires heavy shots. PROVISIONAL stand-in."
+      "_role": "C3: charges walls head-on, pounds them, fires heavy shots. Art roll-out live. PROVISIONAL."
     },
     "g71_m_siege_walker": {
       "name": "Siege Walker",
@@ -47,7 +47,7 @@
       "legged": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "C3: long-range artillery shelling walls from outside turret range (counter-battery bait). PROVISIONAL stand-in."
+      "_role": "C3: long-range artillery shelling walls from outside turret range (counter-battery bait). Art roll-out live. PROVISIONAL."
     },
     "g71_m_brute_alpha": {
       "name": "Gorilla Alpha",
@@ -72,7 +72,7 @@
       "legged": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "H5 mini-boss: armoured Gorilla alpha. Spike at breaking-point. PROVISIONAL."
+      "_role": "H5 mini-boss: armoured Gorilla alpha. Spike at breaking-point. Art roll-out live. PROVISIONAL."
     },
     "g71_m_mega_walker": {
       "name": "Mega Siege Walker",
@@ -97,7 +97,7 @@
       "legged": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "H5 mini-boss: mega siege walker. Late siege spike. PROVISIONAL."
+      "_role": "H5 mini-boss: mega siege walker. Late siege spike. Art roll-out live. PROVISIONAL."
     },
     "g71_m_lazarus": {
       "name": "Lazarus Walker",
@@ -122,7 +122,7 @@
       "legged": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "J8 mini-boss: stitched from lost tank company wrecks after heavy armour losses. PROVISIONAL."
+      "_role": "J8 mini-boss: stitched from lost tank company wrecks after heavy armour losses. Art roll-out live. PROVISIONAL."
     },
     "g71_m_turret_eater": {
       "name": "Turret-Eater",
@@ -145,7 +145,7 @@
       "energy": true,
       "air": true,
       "leaves_wreck": false,
-      "_role": "C3: fast flying drones that dive and latch onto turrets. Latch behaviour still open. PROVISIONAL stand-in."
+      "_role": "C3: fast flying drones that dive and latch onto turrets. Latch behaviour still open. Art roll-out live. PROVISIONAL."
     },
     "g71_m_sapper": {
       "name": "Sapper",
@@ -169,7 +169,7 @@
       "no_production": true,
       "energy": true,
       "leaves_wreck": false,
-      "_role": "C3: tunnels under or blows through walls; jammer blinds turrets (jammer behaviour still open). Reuses burrower tunnel AI via t7. PROVISIONAL stand-in."
+      "_role": "C3: tunnels under or blows through walls; jammer blinds turrets (jammer behaviour still open). Reuses burrower tunnel AI via t7. Art roll-out live. PROVISIONAL."
     }
   },
   "weapons": {
