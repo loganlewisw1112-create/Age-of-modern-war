@@ -20,6 +20,8 @@ const LAYERS := [
 	{"script": "res://presentation/view/cn71_layer.gd", "at": "over_units", "by": "CNOPS71"},   # CR seq 4443: Vanta 2 trail + bank cue, shield-drone bubble
 	{"script": "res://presentation/view/horror71_layer.gd", "at": "over_units", "by": "G71"},   # J7 silence / night eyes / bodies on display
 	{"script": "res://presentation/view/atmo71_layer.gd", "at": "over_units", "by": "G71"},   # E1 flares / ash / camera shake
+	{"script": "res://presentation/view/fire71_layer.gd", "at": "under_units", "by": "G71"},   # I4 wildfire cells
+	{"script": "res://presentation/view/hive71_layer.gd", "at": "over_units", "by": "G71"},   # I6 nests / relays / pulse
 ]
 
 ## HUD panels (ORCH): scripts with `static func attach(mv) -> Node` (the Roster71 pattern), mounted once after the HUD is
