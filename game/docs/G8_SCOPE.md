@@ -24,3 +24,6 @@ Shadow Coalition (G10), Machine full overhaul (G9), UNDERSTRIKE, campaign, co-op
 
 ## Build order
 B1 ROT8 → B2 ART8 → B3 ANIM8 → B4 PRES8 → B5 integ + package.
+
+## Lock status
+**CLOSED (`g8.lock`)** on UP71 — ROT8/ART8/ANIM8/PRES8 + TOD71 (LP night=2× day) shipped; smoke includes G8 suites; package + README/PLAY_ME current.

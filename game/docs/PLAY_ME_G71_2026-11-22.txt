@@ -1,26 +1,29 @@
-RTS: Age of Modern War - G7.1 playable (branch g71)
+RTS: Age of Modern War - G8 lock playable (branch g71)
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
 LAST PROTOCOL: main menu > Last Protocol.
 
-CONTROLS (new)
+CONTROLS
+  Q / E or horizontal middle-mouse drag - rotate view 90 deg (Four Sides)
   Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (Wave 3-6 live)
-  Hive / fire / deaths / harvest / capture-evolve / night / weather / fleet / RE / warmind
-  Full art: g71_siege, g71_special, g71_fleet (+ prior g71 groups)
-  E4 animation: infantry lean/aim, vehicle brake/suspension, turret recoil/heat,
-    Machine gait/damage/scramble, wreck break-up variety
-  FX/gore depth + look checkpoint APPROVED
-  Perf: pan/2k >=60 CLEAR; LP peak amended >=30 CLEAR
-  Soaks: 60m + live RE/warmind siege GREEN
+IN THIS BUILD (G8 LOCK + G7.1)
+  Four Sides: rot buildings + loco/fire/death/k8 sheets follow camera
+  Last Protocol clock: starts at dusk; night lasts 2x day
+  End of run: director PiP, highlight reel, creep timelapse, kill-heat strip
+  Hive / fire / deaths / harvest / capture-evolve / night lights / weather / fleet / RE / warmind
+  Full art groups + E4 motion + FX/gore depth
+  Perf: pan/2k >=60 CLEAR; LP peak amended >=30 CLEAR; quiet chase p10 72.9 held
+  Soaks: 60m + live RE/warmind siege GREEN (G7.1 evidence)
 
-LOOK CHECKPOINT (E3) ? APPROVED 2026-11-23
+LOOK CHECKPOINT (E3) - APPROVED 2026-11-23
 
 LEFT OPEN
-  Owner taste pass on E4 if anything looks wrong (optional)
+  G9 Hive Reborn next
+  Peak chase continues (amended gate still held)
 
 HARNESS
   Smoke: powershell -File game/tools/g71_donewhen_smoke.ps1
   Soak:  godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90
+  PRES8: godot --headless --path game -s res://tools/pres8_eor_harness.gd
