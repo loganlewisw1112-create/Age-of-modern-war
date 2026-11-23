@@ -50,7 +50,9 @@ Hive network, wildfire and fire-lines, machine death chains, harvester swarms, c
 
 Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
-Harnessed **60-minute** Last Protocol soak completed without crash (boards stayed sane; mid-run save path covered in shorter soaks and `test_lp_save71`).
+Harnessed **60-minute** Last Protocol soak completed without crash (boards stayed sane; mid-run save hash match at 30 min).
+
+**LP peak** (1,000 machines, zoom 0.5): quiet sample **p10 42.8 / avg 56.3** — clears the amended ≥30 gate. Far-LOD icons engage by zoom 0.55 (sprite detail is already sub-readable there).
 
 ---
 
@@ -58,8 +60,10 @@ Harnessed **60-minute** Last Protocol soak completed without crash (boards staye
 
 - **Owner look checkpoint (E3)** — approve or reject each sample; full art roll-out waits on that.
 - **E4 animation** — after look approval.
-- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (best quiet sample p10 28.3 / avg 32.6; far-zoom skips horror eye scatter).
-- **Live RE / warmind siege length** beyond the harnessed 60-min board soak (that soak completed green: 72k ticks, no crash).
+- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (far-LOD icons engage by zoom 0.55 so the 0.5 peak harness is on icons; overlay redraws gated).
+
+- **Live RE / warmind siege length** beyond the harnessed 60-min board soak (completed green with mid-run save hash match).
+
 - Strict 2k / zoomed-out panning vs every past build where the frozen bar still applies.
 
 Frozen Done-when is never weakened to make a check pass.

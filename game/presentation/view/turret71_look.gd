@@ -31,15 +31,20 @@ var _kick := {}   # id -> 0..1 recoil, decays per frame
 var _fired := {}  # id -> true once the turret fired on its current target (tracking line dims)
 var _tgt := {}    # id -> Vector2 target tile pos last refresh
 var _fx = null    # MatchView.fx_layer (casings decal API), looked up once
+var _redraw_gate := 0   # far/mid LOD: redraw every N process ticks (kick still decays)
 
 
 static var _reg_owner := 0   # only the newest instance unregisters (an old MatchView leaving the tree wiped the new registration)
+static var _snap_cache: Dictionary = {}
+static var _bastion_tick := -999
+static var _walls_tick := -999
+const SNAP_EVERY := 2
 
 
 func _init() -> void:
 	_reg_owner = get_instance_id()
-	RenderSnap.register_g71("bastion71", Callable(Turrets71, "snap"))
-	RenderSnap.register_g71("walls71", Callable(Walls71, "snap"))
+	RenderSnap.register_g71("bastion71", Callable(get_script(), "snap_bastion"))
+	RenderSnap.register_g71("walls71", Callable(get_script(), "snap_walls"))
 
 
 func _exit_tree() -> void:
@@ -47,6 +52,32 @@ func _exit_tree() -> void:
 		return
 	RenderSnap.unregister_g71("bastion71")
 	RenderSnap.unregister_g71("walls71")
+
+
+## Cached wrappers: walls rarely change; turret heat needs fresher rows for recoil.
+static func snap_bastion(w: SimWorld, sn: Dictionary) -> Dictionary:
+	if _snap_cache.has("bastion71") and w.tick - _bastion_tick < SNAP_EVERY:
+		return _snap_cache.bastion71
+	var d: Dictionary = Turrets71.snap(w, sn)
+	_snap_cache.bastion71 = d
+	_bastion_tick = w.tick
+	return d
+
+
+static func snap_walls(w: SimWorld, sn: Dictionary) -> Dictionary:
+	if _snap_cache.has("walls71") and w.tick - _walls_tick < 8:
+		return _snap_cache.walls71
+	var d: Dictionary = Walls71.snap(w, sn)
+	_snap_cache.walls71 = d
+	_walls_tick = w.tick
+	return d
+
+
+func _lod() -> int:
+	var mv = get_parent()
+	if mv != null and mv.get("entity_layer") != null:
+		return int(mv.entity_layer.lod)
+	return 0
 
 
 func refresh(snap: Dictionary) -> void:
@@ -76,10 +107,22 @@ func refresh(snap: Dictionary) -> void:
 			if int(r[2]) > 0:
 				_casing(Vector2(float(r[4]), float(r[5])), id)
 		hs[id] = h
+	var fired_now := false
+	for id in _kick.keys():
+		if float(_kick[id]) >= 0.99:
+			fired_now = true
+			break
 	_heat = hs
 	visible = not _rows.is_empty() or not _sc.is_empty() or not _wl.is_empty()
-	if visible:
-		queue_redraw()
+	if not visible:
+		return
+	# Close zoom: redraw every refresh. Mid/far: only on fire kick or every 3rd refresh.
+	if _lod() >= 1:
+		_redraw_gate += 1
+		if not fired_now and _redraw_gate < 3:
+			return
+		_redraw_gate = 0
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -90,8 +133,17 @@ func _process(delta: float) -> void:
 			_kick.erase(id)
 		else:
 			_kick[id] = k
-	if visible:
-		queue_redraw()
+	if not visible:
+		return
+	# Mid/far: refresh() already gates redraws; only keep kick animation alive while recoiling.
+	if _lod() >= 1:
+		if _kick.is_empty():
+			return
+		_redraw_gate += 1
+		if _redraw_gate < 2:
+			return
+		_redraw_gate = 0
+	queue_redraw()
 
 
 ## One spent casing beside rotary turret id at tile p (ejection side alternates by id). Guarded: no MatchView fx layer
@@ -153,17 +205,24 @@ func _draw_walls() -> void:
 
 
 func _draw() -> void:
-	_draw_walls()
+	var lod := _lod()
+	if lod < 1:
+		_draw_walls()
 	for l in _a:   # tracking lasers / IR, under the barrel strokes
+		if lod >= 2:
+			break
 		var id := int(l[0])
 		var p0 := _iso(float(l[1]), float(l[2])) + Vector2(0, -14)
 		var p1 := _iso(float(l[3]), float(l[4])) + Vector2(0, -6)
 		var on := not _fired.has(id)
 		var fl := 0.75 + 0.25 * sin(_t * 23.0 + float(id))
 		var al := (0.75 if on else 0.22) * fl
-		draw_line(p0, p1, Color(1.0, 0.12, 0.08, al * 0.35), 3.0)
-		draw_line(p0, p1, Color(1.0, 0.25, 0.2, al), 1.0)
-		draw_circle(p1, 2.5 if on else 1.5, Color(1.0, 0.3, 0.25, al))
+		if lod >= 1:
+			draw_line(p0, p1, Color(1.0, 0.25, 0.2, al), 1.0)
+		else:
+			draw_line(p0, p1, Color(1.0, 0.12, 0.08, al * 0.35), 3.0)
+			draw_line(p0, p1, Color(1.0, 0.25, 0.2, al), 1.0)
+			draw_circle(p1, 2.5 if on else 1.5, Color(1.0, 0.3, 0.25, al))
 	for r in _rows:
 		var id := int(r[0])
 		var p := _iso(float(r[4]), float(r[5]))
@@ -187,7 +246,7 @@ func _draw() -> void:
 			var a := clampf((heat - 0.15) * 0.9, 0.0, 0.8)
 			draw_circle(top, 10.0 + heat * 8.0, Color(1.0, 0.35 + 0.4 * (1.0 - heat), 0.1, a * 0.45))
 			draw_circle(top, 5.0 + heat * 4.0, Color(1.0, 0.8, 0.4, a))
-		if fl & 4:
+		if lod < 1 and (fl & 4):
 			for j in 4:
 				var ph := fmod(_t * 0.7 + float(j) * 0.25 + float(id % 7) * 0.13, 1.0)
 				draw_circle(p + Vector2(sin(ph * 6.0 + float(j)) * 5.0, -18.0 - ph * 30.0), 4.0 + ph * 6.0, Color(0.85, 0.88, 0.9, 0.5 * (1.0 - ph)))
@@ -195,13 +254,15 @@ func _draw() -> void:
 			var flick := 0.5 + 0.5 * sin(_t * 17.0 + float(id))
 			draw_circle(p + Vector2(0, -12), 6.0, Color(0.1, 0.1, 0.1, 0.55))
 			draw_circle(p + Vector2(3.0 * flick, -16), 2.5, Color(1.0, 0.9, 0.3, flick))
-			for j in 3:
-				var ph2 := fmod(_t * 0.5 + float(j) * 0.33, 1.0)
-				draw_circle(p + Vector2(0, -16.0 - ph2 * 26.0), 5.0 + ph2 * 7.0, Color(0.15, 0.15, 0.15, 0.45 * (1.0 - ph2)))
+			if lod < 1:
+				for j in 3:
+					var ph2 := fmod(_t * 0.5 + float(j) * 0.33, 1.0)
+					draw_circle(p + Vector2(0, -16.0 - ph2 * 26.0), 5.0 + ph2 * 7.0, Color(0.15, 0.15, 0.15, 0.45 * (1.0 - ph2)))
 		if fl & 2:
 			draw_arc(p + Vector2(0, -12), 14.0, 0.0, TAU, 16, Color(1.0, 0.9, 0.2, 0.6 + 0.4 * sin(_t * 20.0)), 2.0)
-	for c in _sc:
-		var q := _iso(float(c[2]), float(c[3]))
-		var pulse := fmod(_t * 0.8, 1.0)
-		draw_arc(q, 6.0 + pulse * 16.0, 0.0, TAU, 20, Color(0.4, 0.9, 1.0, 0.8 * (1.0 - pulse)), 2.0)
-		draw_circle(q, 3.0, Color(0.4, 0.9, 1.0, 0.9))
+	if lod < 1:
+		for c in _sc:
+			var q := _iso(float(c[2]), float(c[3]))
+			var pulse := fmod(_t * 0.8, 1.0)
+			draw_arc(q, 6.0 + pulse * 16.0, 0.0, TAU, 20, Color(0.4, 0.9, 1.0, 0.8 * (1.0 - pulse)), 2.0)
+			draw_circle(q, 3.0, Color(0.4, 0.9, 1.0, 0.9))

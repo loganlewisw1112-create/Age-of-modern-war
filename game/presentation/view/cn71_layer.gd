@@ -23,6 +23,7 @@ var _v: Array = []
 var _sh: Array = []
 var _tr := {}      # id -> Array of [screen centre Vector2, wing Vector2 (screen), bank]
 var _t := 0.0
+var _shimmer_gate := 0
 
 
 func _init() -> void:
@@ -103,6 +104,15 @@ func _process(delta: float) -> void:
 	if _sh.is_empty():
 		return
 	_t += delta   # the shield shimmers; redraw only while one is up
+	var lod := 0
+	var mv = get_parent()
+	if mv != null and mv.get("entity_layer") != null:
+		lod = int(mv.entity_layer.lod)
+	if lod >= 1:
+		_shimmer_gate += 1
+		if _shimmer_gate < 4:
+			return
+		_shimmer_gate = 0
 	queue_redraw()
 
 

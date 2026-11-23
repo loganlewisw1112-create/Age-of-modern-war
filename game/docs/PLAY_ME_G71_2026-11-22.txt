@@ -14,8 +14,8 @@ IN THIS BUILD (Wave 3-5 stubs live)
   Audio: flash-to-boom delay, unique weapon voices, armour clang, tide-song pulse
   HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
   View: fire/hive/harvest layers read snap.g71 providers (no mv.world joins)
-  Perf: forced_joins ~0-1; zoomed-out pan p10 51.2 / avg 65.9; LP peak still under amended p10>=30 (work continues)
-  Done-when harness: mid-run save/resume (7), H1 raid end states (8), 30m soak green
+  Perf: forced_joins ~0-1; zoomed-out pan p10 51.2 / avg 65.9; LP peak quiet p10 42.8 / avg 56.3 (gate >=30 CLEAR)
+  Done-when harness: mid-run save/resume (7), H1 raid end states (8), 60m soak green + save hash match
 
 LOOK CHECKPOINT (E3 - owner)
   Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)

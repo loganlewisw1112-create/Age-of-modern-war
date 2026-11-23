@@ -34,10 +34,14 @@ var crew: Dictionary = {}     # latest snap.g71.army71 {bz, bb, mk} (B3 crew mar
 var _on := false
 var _sig_node: Node2D = null   # hand signals draw here, above the unit markers (z 6, absolute): gen 9 shots
 var _t := 0.0
+var _crew_sig := -1            # skip redraw when army71 crew rows are unchanged
 
 static var _crew_ids: Array = []
 static var _crew_t := -100000
 static var _pose_ids: Array = []   # members of the squads Discipline71 tracks (rescanned with the crews)
+static var _army_cache: Variant = null
+static var _army_cache_tick := -999
+const ARMY_SNAP_EVERY := 3         # rebuild beaten-zone rows at most every N ticks (view-only)
 const NIGHT_LIGHT := 0.5          # Senses7 light below this = night: NVG / thermal gear shows on our soldiers
 const CLASH_S := 0.8               # seconds a wall-walk melee clash mark lives (Melee71 events)
 const CLASH_MAX := 32
@@ -66,6 +70,8 @@ func _exit_tree() -> void:
 static func snap_army(w, _sn: Dictionary):
 	if not w.sys_state.has(Discipline71.KEY):
 		return null
+	if _army_cache != null and w.tick - _army_cache_tick < ARMY_SNAP_EVERY:
+		return _army_cache
 	if w.tick - _crew_t >= CREW_RESCAN or w.tick < _crew_t:
 		var ids: Array = []
 		var pids: Array = []
@@ -122,8 +128,12 @@ static func snap_army(w, _sn: Dictionary):
 				ang = (t.pos - e.pos).angle()
 		po.append([float(e.pos.x), float(e.pos.y), p, ang, 1 if e.has("f7_bw") else 0])
 	if bz.is_empty() and bb.is_empty() and mk.is_empty() and po.is_empty() and nv.is_empty():
+		_army_cache = null
+		_army_cache_tick = w.tick
 		return null
-	return {"bz": bz, "bb": bb, "mk": mk, "po": po, "nv": nv}
+	_army_cache = {"bz": bz, "bb": bb, "mk": mk, "po": po, "nv": nv}
+	_army_cache_tick = w.tick
+	return _army_cache
 
 
 func setup(m: Node) -> void:
@@ -140,9 +150,17 @@ func setup(m: Node) -> void:
 ## Per frame (G71Attach.refresh_all). Mounts the panel + feed the first frame the world is a Last Protocol match.
 func refresh(snap: Dictionary) -> void:
 	var c = (snap.get("g71", {}) as Dictionary).get(SNAP_KEY)
-	var had := not crew.is_empty()   # crew marks and / or cover poses (po)
-	crew = c if c is Dictionary else {}
-	if not sigs.is_empty() or had or not crew.is_empty():
+	var next: Dictionary = c if c is Dictionary else {}
+	var sig := next.size()
+	for k in ["bz", "bb", "mk", "po"]:
+		var arr = next.get(k, [])
+		if arr is Array:
+			sig = (sig * 31 + arr.size()) & 0x3fffffff
+	var crew_changed := sig != _crew_sig
+	_crew_sig = sig
+	crew = next
+	# Only redraw when signals/clashes are live OR crew mark rows actually changed (LP peak was redrawing every frame).
+	if not sigs.is_empty() or not clashes.is_empty() or crew_changed:
 		queue_redraw()
 		if _sig_node != null:
 			_sig_node.queue_redraw()

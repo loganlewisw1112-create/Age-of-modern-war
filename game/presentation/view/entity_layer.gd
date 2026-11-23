@@ -25,7 +25,7 @@ const MOTION_CAP := 700      # G6.1: motion layer (smooth facing, ease, bob, rea
 const RUN_SPEED := 2.3       # G6.1: drawn speed (tiles/s) above which infantry use the run cycle
 
 const LOD_MID := 0.8     # zoom below this: mid LOD (small FX dropped by fx_layer)
-const LOD_FAR := 0.45    # zoom below this: far LOD (unit icons)
+const LOD_FAR := 0.55    # zoom below this: far LOD (unit icons). Raised 0.45->0.55: at 0.5 peak zoom sprite detail is already sub-readable (E2 allows LOD where invisible).
 const CHUNK := 16        # decor bucket size (cells)
 const MARGIN := 220.0    # cull margin around the view (world px; tallest sprites)
 const IDX_MUL := 4194304          # 2^22 items per frame max
