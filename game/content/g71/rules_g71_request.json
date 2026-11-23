@@ -1,0 +1,8 @@
+{
+  "_meta": "G7.1 I1 request queue. PROVISIONAL.",
+  "rules": {
+    "g71_request": {
+      "timeout_s": 20.0
+    }
+  }
+}

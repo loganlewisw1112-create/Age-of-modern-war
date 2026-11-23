@@ -236,6 +236,11 @@ static func lines(d: Dictionary) -> Dictionary:
 			var fog := float(wx.get("fog", 0.0))
 			if fog > 0.05:
 				dread += "  FOG %.0f%%" % (fog * 100.0)
+		var req: Dictionary = d.get("requests", {})
+		if req is Dictionary:
+			var pn := (req.get("pending", []) as Array).size()
+			if pn > 0:
+				dread += "  |  REQUESTS %d" % pn
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
