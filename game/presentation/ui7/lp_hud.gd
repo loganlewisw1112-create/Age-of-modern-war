@@ -273,6 +273,11 @@ static func lines(d: Dictionary) -> Dictionary:
 		var cap: Dictionary = d.get("capture", {})
 		if cap is Dictionary and bool(cap.get("caged", false)):
 			dread += "  |  STUDY ~%ds" % int(ceil(float(cap.get("study_left", 0)) / 20.0))
+		var evo: Dictionary = d.get("evolve", {})
+		if evo is Dictionary:
+			var stg := int(evo.get("stage", 0))
+			if stg > 0:
+				dread += "  |  EVOLVE %d x%.2f" % [stg, float(evo.get("harden", 1.0))]
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405

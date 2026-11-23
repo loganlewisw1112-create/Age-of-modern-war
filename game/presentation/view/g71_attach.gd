@@ -22,6 +22,7 @@ const LAYERS := [
 	{"script": "res://presentation/view/atmo71_layer.gd", "at": "over_units", "by": "G71"},   # E1 flares / ash / camera shake
 	{"script": "res://presentation/view/fire71_layer.gd", "at": "under_units", "by": "G71"},   # I4 wildfire cells
 	{"script": "res://presentation/view/hive71_layer.gd", "at": "over_units", "by": "G71"},   # I6 nests / relays / pulse
+	{"script": "res://presentation/view/harvest71_layer.gd", "at": "over_units", "by": "G71"},   # J4 harvester swarm
 ]
 
 ## HUD panels (ORCH): scripts with `static func attach(mv) -> Node` (the Roster71 pattern), mounted once after the HUD is
