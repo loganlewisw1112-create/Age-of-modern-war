@@ -317,6 +317,106 @@ func test_vehicle_brake_suspension_and_companion_weight() -> void:
 	check(is_equal_approx(brake2, brake_y), "brake squat deterministic (%.4f vs %.4f)" % [brake2, brake_y])
 
 
+## G7.1 ANIM71 E4-2.5: Machine/walker terrain-adaptive gait, damage limp, scramble; E4-2.6 distinct wreck break-ups.
+func test_machine_locomotion_and_death_variety() -> void:
+	check_eq(Motion.weight_for("g71_m_siege_walker"), Motion.WT_WALKER, "siege walker weight")
+	check_eq(Motion.weight_for("g71_m_mega_walker"), Motion.WT_WALKER, "mega walker weight")
+	check_eq(Motion.weight_for("g71_m_brute"), Motion.WT_MACHINE, "brute is Machine weight")
+	check_eq(Motion.weight_for("g71_m_sapper"), Motion.WT_MACHINE, "sapper is Machine weight")
+	check_eq(Motion.weight_for("g71_m_reclaimer"), Motion.WT_MACHINE, "reclaimer is Machine weight")
+	check_eq(Motion.death_kind_for("g71_m_siege_walker"), Motion.DK_WALKER, "walker death kind")
+	check_eq(Motion.death_kind_for("g71_m_brute"), Motion.DK_BRUTE, "brute death kind")
+	check_eq(Motion.death_kind_for("g71_m_turret_eater"), Motion.DK_SMALL, "small Machine death kind")
+	check_eq(Motion.death_kind_for("g71_m_reclaimer"), Motion.DK_CELL, "cell blast death kind")
+	check_eq(Motion.death_kind_for("rifleman"), Motion.DK_NONE, "human has no Machine death kind")
+	var m = Motion.new()
+	var dt := 1.0 / 60.0
+	var t := 0.0
+	var pos := Vector2(4, 4)
+	# flat healthy walker vs raised-terrain walker: terrain plant louder
+	var m_flat = Motion.new()
+	var m_hill = Motion.new()
+	var t1 := 0.0
+	var p1 := Vector2(2, 2)
+	var flat_peak := 0.0
+	var hill_peak := 0.0
+	m_flat.step(70, Motion.CLS_HEAVY, p1, 0.0, 0, t1, Motion.WT_WALKER, 1.0, 0.0)
+	m_hill.step(70, Motion.CLS_HEAVY, p1, 0.0, 0, t1, Motion.WT_WALKER, 1.0, 36.0)
+	for k in 80:
+		t1 += dt
+		p1 += Vector2(0.05, 0.0)
+		m_flat.step(70, Motion.CLS_HEAVY, p1, 0.0, Motion.P_MOVING, t1, Motion.WT_WALKER, 1.0, 0.0)
+		m_hill.step(70, Motion.CLS_HEAVY, p1, 0.0, Motion.P_MOVING, t1, Motion.WT_WALKER, 1.0, 36.0)
+		flat_peak = maxf(flat_peak, absf(m_flat.out_px.y))
+		hill_peak = maxf(hill_peak, absf(m_hill.out_px.y))
+	check(hill_peak > flat_peak * 1.08, "terrain-adaptive gait louder on raised ground (%.3f vs %.3f)" % [hill_peak, flat_peak])
+	# damage gait: damaged Machine lists / hitch more than healthy at same seed/path
+	var m_ok = Motion.new()
+	var m_hurt = Motion.new()
+	var t2 := 0.0
+	var p2 := Vector2(3, 3)
+	var ok_lat := 0.0
+	var hurt_lat := 0.0
+	m_ok.step(71, Motion.CLS_VEH, p2, 0.0, 0, t2, Motion.WT_MACHINE, 1.0, 0.0)
+	m_hurt.step(71, Motion.CLS_VEH, p2, 0.0, 0, t2, Motion.WT_MACHINE, 0.35, 0.0)
+	for k in 70:
+		t2 += dt
+		p2 += Vector2(0.055, 0.0)
+		m_ok.step(71, Motion.CLS_VEH, p2, 0.0, Motion.P_MOVING, t2, Motion.WT_MACHINE, 1.0, 0.0)
+		m_hurt.step(71, Motion.CLS_VEH, p2, 0.0, Motion.P_MOVING, t2, Motion.WT_MACHINE, 0.35, 0.0)
+		ok_lat = maxf(ok_lat, absf(m_ok.out_px.x) + absf(m_ok.out_px.y))
+		hurt_lat = maxf(hurt_lat, absf(m_hurt.out_px.x) + absf(m_hurt.out_px.y))
+	check(hurt_lat > ok_lat * 1.05, "damage gait amplifies motion (%.3f vs %.3f)" % [hurt_lat, ok_lat])
+	# scramble: hard turn on raised terrain produces lean / lateral cue
+	m.step(72, Motion.CLS_HEAVY, pos, 0.0, 0, t, Motion.WT_WALKER, 1.0, 36.0)
+	var lean_scr := 0.0
+	var px_scr := 0.0
+	for k in 90:
+		t += dt
+		pos += Vector2(0.05, 0.0)
+		m.step(72, Motion.CLS_HEAVY, pos, PI * 0.5, Motion.P_MOVING, t, Motion.WT_WALKER, 1.0, 36.0)
+		lean_scr = maxf(lean_scr, absf(m.out_lean))
+		px_scr = maxf(px_scr, m.out_px.length())
+	check(lean_scr > 0.3 or px_scr > 1.2, "walker scramble/weight on raised turn (lean=%.3f px=%.3f)" % [lean_scr, px_scr])
+	# E4-2.6: distinct break-up offsets by kind; deterministic; prune after BREAK_LIFE
+	var ages := [0.1, 0.45, 0.8]
+	var kinds := [Motion.DK_WALKER, Motion.DK_BRUTE, Motion.DK_SMALL, Motion.DK_CELL]
+	var seen := {}
+	for kind in kinds:
+		var offs: Array = []
+		for age in ages:
+			var o: Vector2 = Motion.break_offset(age, kind, 0.31)
+			offs.append(o)
+			check(o != Vector2.ZERO, "break_offset kind %d age %.2f non-zero" % [kind, age])
+		# kinds diverge at mid-break
+		seen[str(offs[1])] = kind
+		check(Motion.break_offset(0.45, kind, 0.31) == offs[1], "break_offset deterministic kind %d" % kind)
+	check(seen.size() >= 3, "death variety: >=3 distinct mid-break offsets across kinds (%d)" % seen.size())
+	var mw = Motion.new()
+	mw.step(80, Motion.CLS_HEAVY, Vector2(6, 6), 0.0, 0, 1.0, Motion.WT_WALKER, 1.0, 0.0)
+	mw.mark_screen(80, Vector2(100, 50))
+	mw.kill_machine(80, 1.0, Motion.DK_WALKER)
+	check_eq(mw.breaks.size(), 1, "kill_machine records break cue")
+	check(not mw.vs.has(80), "kill_machine drops visual state")
+	var bo: Vector2 = mw.break_at(Vector2(100, 50), 1.2)
+	check(bo != Vector2.ZERO, "break_at finds nearby cue (off=%s)" % str(bo))
+	check(mw.break_at(Vector2(400, 400), 1.2) == Vector2.ZERO, "break_at ignores far wrecks")
+	mw.prune(1.0 + Motion.BREAK_LIFE + 0.1)
+	check_eq(mw.breaks.size(), 0, "breaks pruned after BREAK_LIFE")
+	# replay determinism for terrain gait
+	var m3 = Motion.new()
+	var t3 := 0.0
+	var p3 := Vector2(2, 2)
+	var hill2 := 0.0
+	m3.step(70, Motion.CLS_HEAVY, p3, 0.0, 0, t3, Motion.WT_WALKER, 1.0, 36.0)
+	for k in 80:
+		t3 += dt
+		p3 += Vector2(0.05, 0.0)
+		m3.step(70, Motion.CLS_HEAVY, p3, 0.0, Motion.P_MOVING, t3, Motion.WT_WALKER, 1.0, 36.0)
+		hill2 = maxf(hill2, absf(m3.out_px.y))
+	check(is_equal_approx(hill2, hill_peak), "terrain gait deterministic (%.4f vs %.4f)" % [hill2, hill_peak])
+
+
 func test_postures_pick_frames() -> void:
 	var fr: Array = ["idle", "walk_a", "walk_b", "fire"] + SET
 	var a := BatchArt.inf_cols(fr)

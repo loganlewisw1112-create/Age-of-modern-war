@@ -20,6 +20,9 @@ extends RefCounted
 ## G7.1 ANIM71 E4-2.2: human vehicles deepen brake squat, continuous suspension rock, hull recoil rock
 ## (presentation only; no RNG). E4-2.4: optional companion weight cues (dog gallop, UGV track rock,
 ## sentinel plant) via step weight=WT_* / weight_for(def).
+## G7.1 ANIM71 E4-2.5: Machine / walker locomotion (terrain-adaptive plant, damage limp, scramble/weight)
+## via WT_WALKER / WT_MACHINE + step(hp_frac, terr_raise). E4-2.6: distinct machine wreck break-up cues
+## (kill_machine / break_at) — presentation only; does not touch fx_layer / gore71_layer / sim hash.
 
 const MAX_OFF := 0.3            # drawn position never further than this (tiles) from the interpolated sim pos
 const TURN := [10.0, 3.2, 1.6, 3.6, 0.9]   # max turn rad/s per class: infantry, vehicle, heavy, air, ship
@@ -70,7 +73,9 @@ const S_AIM := 20    # last shot target id (turret aim / infantry look), -1 none
 const S_AIMT := 21   # time of that shot
 const S_ROW := 22   # PATH7-2 CR 6994: drawn facing row + 1 (0 = unset)
 const S_WT := 23    # G7.1 ANIM71 E4-2.4: companion weight kind (WT_*)
-const S_N := 24
+const S_HP := 24    # G7.1 ANIM71 E4-2.5: last hp_frac 0..1 (damage gait)
+const S_TERR := 25  # G7.1 ANIM71 E4-2.5: terrain raise cue (px) for adaptive plant / scramble
+const S_N := 26
 const ROW_HYS := 0.12   # rad past the 22.5 deg boundary before the drawn row changes
 const SUSP_T := 0.22 # G7.1 ANIM71 E4-2.2: s of suspension after start / brake (was 0.15)
 const BRAKE_PX := 2.35 # G7.1 ANIM71 E4-2.2: max brake squat (stop dip) px
@@ -80,11 +85,16 @@ const AIM_HOLD := 3.0 # s a turret / soldier keeps aiming at its last target
 const AIM_LEAD := 0.18 # G7.1 ANIM71 E4-2.1: seconds of target velocity lead for aim / look
 const LEAN_TURN := 5.0 # rad/s that maps to full infantry lean
 const LEAN_PX := 1.5   # max lateral lean at LEAN_TURN (px); run scales 1.25x
-# G7.1 ANIM71 E4-2.4 companion weight kinds (presentation only; 0 = human / default)
-enum { WT_NONE = 0, WT_DOG = 1, WT_UGV = 2, WT_SENT = 3 }
+const BREAK_LIFE := 0.9 # G7.1 ANIM71 E4-2.6: s of machine wreck break-up cue
+const BREAK_RAD := 48.0 # px: wreck draw uses a cue within this of its ground point
+# G7.1 ANIM71 E4-2.4 companion + E4-2.5 Machine weight kinds (presentation only; 0 = human / default)
+enum { WT_NONE = 0, WT_DOG = 1, WT_UGV = 2, WT_SENT = 3, WT_WALKER = 4, WT_MACHINE = 5 }
+# G7.1 ANIM71 E4-2.6 machine death / wreck break-up kinds (presentation only)
+enum { DK_NONE = 0, DK_WALKER = 1, DK_BRUTE = 2, DK_SMALL = 3, DK_CELL = 4 }
 
 var vs: Dictionary = {}          # id -> PackedFloat32Array(S_N)
 var corpses: Array = []          # [id, art cache Array (batch_art cache_unit), screen pos, row, t0]
+var breaks: Array = []           # G7.1 ANIM71 E4-2.6: [screen pos, t0, kind DK_*, seed]
 ## G7.1 DAMAGE71 CR 1897 (board seq 1897): in Last Protocol with Gore71 state (snap.g71.gore71 != null; set by the
 ## entity layer each refresh) the settled body is drawn by gore71_layer.gd, so a corpse ends once its death animation
 ## has settled (GORE_SETTLE s after death, after the landing for a thrown body) instead of lingering CORPSE_LIFE.
@@ -115,7 +125,7 @@ static func class_for(is_inf: bool, is_air: bool, is_ship: bool, def_name: Strin
 	return CLS_VEH
 
 
-## G7.1 ANIM71 E4-2.4: companion weight kind from def name (dogs / UGV / wall sentinel). Cheap; no art.
+## G7.1 ANIM71 E4-2.4/2.5: companion + Machine/walker weight kind from def name. Cheap; no art.
 static func weight_for(def_name: String) -> int:
 	if def_name.contains("robot_dog") or def_name.ends_with("_dog"):
 		return WT_DOG
@@ -123,7 +133,33 @@ static func weight_for(def_name: String) -> int:
 		return WT_UGV
 	if def_name.contains("wall_sentinel") or def_name == "g71_wall_sentinel":
 		return WT_SENT
+	# E4-2.5: walkers (siege / mega / colossus / conductor mast) before generic Machines
+	if def_name.contains("walker") or def_name.contains("colossus") or def_name.contains("hive_conductor") \
+			or def_name.contains("lazarus"):
+		return WT_WALKER
+	if def_name.begins_with("g71_m_") or def_name.begins_with("m_") or def_name.contains("brute") \
+			or def_name.contains("sapper") or def_name.contains("reclaimer") or def_name.contains("glass_stalker") \
+			or def_name.contains("turret_eater") or def_name.contains("packhunter") or def_name.contains("burrower") \
+			or def_name.contains("assimilator") or def_name.contains("mimic_drone"):
+		return WT_MACHINE
 	return WT_NONE
+
+
+## G7.1 ANIM71 E4-2.6: distinct Machine death / wreck break-up kind from def name (presentation only).
+static func death_kind_for(def_name: String) -> int:
+	var w := weight_for(def_name)
+	if w == WT_WALKER or def_name.contains("walker") or def_name.contains("lazarus") \
+			or def_name.contains("hive_conductor"):
+		return DK_WALKER
+	if def_name.contains("brute"):
+		return DK_BRUTE
+	if w == WT_DOG or def_name.contains("turret_eater") or def_name.contains("sapper") \
+			or def_name.contains("glass") or def_name.contains("packhunter") or def_name.contains("burrower") \
+			or def_name.contains("mimic") or def_name.contains("swarm"):
+		return DK_SMALL
+	if w == WT_MACHINE or def_name.begins_with("g71_m_") or def_name.begins_with("m_"):
+		return DK_CELL
+	return DK_NONE
 
 
 func _state(id: int, cls: int, pos: Vector2, facing: float, t: float) -> PackedFloat32Array:
@@ -154,7 +190,8 @@ var out_row := 0                    # row_h(id, out_face) as of this step (commi
 var _cdt := -1.0                    # dt the cached factors below belong to
 var _ck := PackedFloat64Array([0.0, 0.0, 0.0, 0.0, 0.0])   # 1 - exp(-dt / LAG[cls])
 var _cb := 0.0                      # exp(-dt / BACK)
-func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, weight: int = WT_NONE) -> void:
+func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, weight: int = WT_NONE,
+		hp_frac: float = 1.0, terr_raise: float = 0.0) -> void:
 	var sv = vs.get(id)
 	var s: PackedFloat32Array
 	if sv == null or t - float(sv[S_T]) > 0.5 or (Vector2(sv[S_PX], sv[S_PY]) - pos).length_squared() > 4.0:
@@ -165,6 +202,8 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, 
 	s[S_CLS] = cls
 	if weight != WT_NONE:
 		s[S_WT] = float(weight)
+	s[S_HP] = clampf(hp_frac, 0.0, 1.0)
+	s[S_TERR] = maxf(0.0, terr_raise)
 	var dt := clampf(t - s[S_T], 0.0, 0.1)
 	_now = t
 	# smooth facing: turn toward sim facing (infantry: blend toward lead aim when tracking a target)
@@ -233,7 +272,7 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, 
 		rr = posmod(int(round(out_face * (4.0 / PI))), 8)
 	out_row = rr
 	# pixel reactions: walking bob / running sway (infantry), lean/plant, recoil kick, hit flinch,
-	# vehicle brake squat / suspension rock (E4-2.2), companion weight (E4-2.4)
+	# vehicle brake squat / suspension rock (E4-2.2), companion weight (E4-2.4), Machine gait (E4-2.5)
 	var kk := s[S_KICK] / KICK_T
 	var fk := s[S_FLINCH] / FLINCH_T
 	out_flash = fk
@@ -243,7 +282,10 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, 
 	var mv_inf := cls == CLS_INF and flags & P_MOVING and not (flags & P_PINNED)
 	var lean_inf := cls == CLS_INF and mv_inf and absf(s[S_TURN]) > 0.15
 	var mv_veh := veh_w and (flags & P_MOVING) != 0
-	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf and not lean_inf and not mv_veh:
+	var mach := wt == WT_WALKER or wt == WT_MACHINE
+	var hp := float(s[S_HP]) if s.size() > S_HP else 1.0
+	var dmg_list := mach and hp < 0.55
+	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf and not lean_inf and not mv_veh and not dmg_list:
 		out_px = Vector2.ZERO
 		return
 	var px := Vector2.ZERO
@@ -266,7 +308,38 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, 
 			var lean_amt := clampf(s[S_TURN] / LEAN_TURN, -1.2, 1.2) * (1.25 if run else 1.0)
 			out_lean = lean_amt * LEAN_PX
 			px += Vector2(-dir.y, dir.x) * out_lean
-	if mv_veh:
+	if mv_veh and mach:
+		# G7.1 ANIM71 E4-2.5: Machine / walker terrain-adaptive gait, damage limp, scramble weight
+		var terr_k := clampf(float(s[S_TERR]) / 24.0, 0.0, 1.5)
+		var dmg := clampf(1.0 - hp, 0.0, 1.0)
+		var gait_hz := (1.35 if wt == WT_WALKER else 1.85) * (1.0 - 0.38 * dmg) * (1.0 - 0.18 * minf(terr_k, 1.0))
+		var phm := s[S_DIST] * TAU * gait_hz + seed * TAU
+		var stride_m := absf(sin(phm))
+		var amp := (1.6 if wt == WT_WALKER else 1.1) * (1.0 + 0.5 * terr_k)
+		px.y -= stride_m * amp
+		# heavier plant on raised / wall terrain (legs adapt)
+		px.y += maxf(0.0, 1.0 - stride_m * 2.0) * (0.75 if wt == WT_WALKER else 0.5) * (1.0 + 0.65 * terr_k)
+		# damage gait: list to seed side + hitch on the down stride
+		if dmg > 0.35:
+			var side_d := 1.0 if seed > 0.5 else -1.0
+			px += Vector2(-dir.y, dir.x) * side_d * dmg * 1.15
+			if sin(phm) < 0.0:
+				px.y += dmg * 0.9
+				px -= dir * dmg * 0.4
+		# scramble over walls / raised ground while turning hard
+		if terr_k > 0.35 and absf(s[S_TURN]) > 0.75:
+			var scr := clampf(absf(s[S_TURN]) / 3.0, 0.0, 1.0) * (0.95 + 0.55 * terr_k)
+			px.y -= scr * 1.25
+			px += Vector2(-dir.y, dir.x) * signf(s[S_TURN]) * scr * 1.45
+			out_lean = signf(s[S_TURN]) * scr * 1.85
+		# walker weight: forward stretch on the up phase (heavier than dog gallop)
+		if wt == WT_WALKER:
+			px += dir * maxf(0.0, sin(phm)) * 0.75
+		elif wt == WT_MACHINE:
+			# Machine chassis sway into turns (chrome mass)
+			var bank_m := clampf(s[S_TURN] / 2.4, -1.0, 1.0)
+			px += Vector2(-dir.y, dir.x) * bank_m * 0.55
+	elif mv_veh:
 		# G7.1 ANIM71 E4-2.2: continuous suspension rock from track phase + turn; UGV/dog amplify
 		var rock_amp := ROCK_PX * (1.35 if wt == WT_UGV else (1.2 if wt == WT_DOG else 1.0))
 		var phv := s[S_DIST] * TAU * (2.4 if wt == WT_DOG else 1.7) + seed * TAU
@@ -277,6 +350,11 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, 
 		if wt == WT_DOG:
 			# quadruped gallop: forward stretch on the up phase
 			px += dir * maxf(0.0, sin(phv)) * 0.55
+	elif dmg_list:
+		# E4-2.5: damaged Machine at a halt still lists (seed-side sag)
+		var side_h := 1.0 if seed > 0.5 else -1.0
+		px += Vector2(-dir.y, dir.x) * side_h * (1.0 - hp) * 0.85
+		px.y += (1.0 - hp) * 0.55
 	if kk > 0.0:
 		px -= dir * kk * (1.2 if cls == CLS_INF else 2.6)
 		if cls == CLS_INF:
@@ -442,6 +520,66 @@ func kill(id: int, art, t: float) -> void:
 	vs.erase(id)
 
 
+## G7.1 ANIM71 E4-2.6: Machine death — record a short wreck break-up cue at the last drawn spot (presentation only).
+## kind = DK_*; does not allocate art / does not touch sim or FX layers.
+func kill_machine(id: int, t: float, kind: int = DK_CELL) -> void:
+	if kind == DK_NONE:
+		forget(id)
+		return
+	var s = vs.get(id)
+	var sp := Vector2.ZERO
+	var seed := seed_of(id)
+	if s != null:
+		sp = Vector2(float(s[S_SX]), float(s[S_SY]))
+		seed = float(s[S_SEED])
+	breaks.append([sp, t, kind, seed])
+	while breaks.size() > 64:
+		breaks.pop_front()
+	vs.erase(id)
+
+
+## G7.1 ANIM71 E4-2.6: screen offset for a wreck break-up of the given age / kind (deterministic from seed).
+static func break_offset(age: float, kind: int, seed: float) -> Vector2:
+	var u := clampf(age / BREAK_LIFE, 0.0, 1.0)
+	var ease := u * u * (3.0 - 2.0 * u)
+	match kind:
+		DK_WALKER:
+			# topple: lean sideways then slam down
+			var side := 1.0 if seed > 0.5 else -1.0
+			return Vector2(side * 10.0 * ease, 4.0 * ease * ease)
+		DK_BRUTE:
+			# heavy collapse: drop + short lateral settle
+			return Vector2((seed - 0.5) * 4.0 * ease, 8.0 * ease)
+		DK_SMALL:
+			# scatter kick outward then settle
+			var a := seed * TAU
+			return Vector2(cos(a), sin(a) * 0.5) * 6.0 * sin(PI * u)
+		DK_CELL:
+			# power-cell kick outward then settle
+			var a2 := seed * TAU
+			var kick := sin(PI * minf(u * 1.4, 1.0))
+			return Vector2(cos(a2), sin(a2) * 0.55) * 7.5 * kick + Vector2(0.0, 3.0 * ease)
+	return Vector2.ZERO
+
+
+## G7.1 ANIM71 E4-2.6: offset for a wreck drawn near a recent machine death cue (or ZERO).
+func break_at(sp: Vector2, t: float) -> Vector2:
+	var best := Vector2.ZERO
+	var best_d := BREAK_RAD * BREAK_RAD
+	var found := false
+	for b in breaks:
+		var age := t - float(b[1])
+		if age < 0.0 or age > BREAK_LIFE:
+			continue
+		var d: Vector2 = (b[0] as Vector2) - sp
+		var d2 := d.length_squared()
+		if d2 <= best_d:
+			best_d = d2
+			best = break_offset(age, int(b[2]), float(b[3]))
+			found = true
+	return best if found else Vector2.ZERO
+
+
 func forget(id: int) -> void:
 	vs.erase(id)
 
@@ -460,6 +598,10 @@ func prune(t: float) -> void:
 		corpses.pop_front()
 	if not corpses.is_empty() and t - float(corpses[corpses.size() - 1][4]) > CORPSE_LIFE:
 		corpses = corpses.filter(func(cp): return t - float(cp[4]) <= CORPSE_LIFE)
+	# G7.1 ANIM71 E4-2.6: drop stale machine break-up cues
+	if not breaks.is_empty():
+		if t - float(breaks[0][1]) > BREAK_LIFE:
+			breaks = breaks.filter(func(b): return t - float(b[1]) <= BREAK_LIFE)
 	# stale visual state (units scrolled off screen / hidden): drop entries not stepped for 5 s, every 5 s
 	if t - _gc_t > 5.0 or t < _gc_t:
 		_gc_t = t

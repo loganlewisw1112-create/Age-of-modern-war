@@ -58,10 +58,8 @@ Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Still open (Done-when holds)
 
-- **E3 look checkpoint — APPROVED** (2026-11-23). Full art roll-out unlocked; Wave 6 E4 animation in progress.
-- **E4 animation** — weight, aim, Machine gait, death variety (Wave 6).
-
-Frozen Done-when is never weakened to make a check pass.
+- Wave 6 E4 core pillars shipped (infantry, vehicles, turrets, Machine gait, death variety). Optional owner taste pass if something looks off.
+- Frozen Done-when is never weakened to make a check pass.
 
 ---
 

@@ -7,28 +7,20 @@ LAST PROTOCOL: main menu > Last Protocol.
 CONTROLS (new)
   Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (Wave 3-5 stubs live)
-  Hive: nests/relays, heartbeat, land-eat, harvest swarm, evolve stages, capture study
-  Fire: wildfire wind-spread + night light + walker fire-lines
-  Deaths: cell-blast chain, nanite bleed, last-gasp
-  Audio: flash-to-boom delay, unique weapon voices, armour clang, tide-song pulse
-  HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
-  View: fire/hive/harvest layers read snap.g71 providers (no mv.world joins)
-  Perf: pan p10 68.3 / avg 86.2 (>=60 CLEAR); 2k p10 69.9 / avg 98.0 (>=60 PASS, >G7 62.7);
-    LP peak quiet p10 42.8 (amended >=30 CLEAR); forced_joins ~0-1
-  Soaks: durable 60m GREEN; live RE+warmind siege 600s GREEN (prototype, breakout purge,
-    overrun retake, 6 feints, jam no-hack, H1 raid)
+IN THIS BUILD (Wave 3-6 live)
+  Hive / fire / deaths / harvest / capture-evolve / night / weather / fleet / RE / warmind
+  Full art: g71_siege, g71_special, g71_fleet (+ prior g71 groups)
+  E4 animation: infantry lean/aim, vehicle brake/suspension, turret recoil/heat,
+    Machine gait/damage/scramble, wreck break-up variety
+  FX/gore depth + look checkpoint APPROVED
+  Perf: pan/2k >=60 CLEAR; LP peak amended >=30 CLEAR
+  Soaks: 60m + live RE/warmind siege GREEN
 
-LOOK CHECKPOINT (E3) — APPROVED 2026-11-23
-  Strips remain under G71_LOOK_CHECKPOINT/ for reference.
-  Full art roll-out + Wave 6 E4 animation unlocked.
+LOOK CHECKPOINT (E3) ? APPROVED 2026-11-23
 
-LEFT OPEN (Done-when not weakened)
-  Full art roll-out (Wave 5 leftover) then E4 animation (Wave 6)
+LEFT OPEN
+  Owner taste pass on E4 if anything looks wrong (optional)
 
 HARNESS
-  Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90 [--save_at=45]
-  Live siege: godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600
-  Durable:   ... soak_short --secs=3600 --save_at=1800
-  Smoke:      powershell -File game/tools/g71_donewhen_smoke.ps1
-  Look:       godot --headless --path game -s res://tools/art/g71_lookcheck.gd
+  Smoke: powershell -File game/tools/g71_donewhen_smoke.ps1
+  Soak:  godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90

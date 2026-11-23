@@ -407,12 +407,19 @@ func on_blast_corpse(ev: Dictionary) -> void:
 			return
 
 
-func on_destroyed(id: int) -> void:
+func on_destroyed(id: int, def_name: String = "") -> void:
 	# G6.1: an infantry unit with the anim61 set leaves a corpse (die_0..2, lingers, fades)
 	var dc = art._ec.get(id)
+	# G7.1 ANIM71 E4-2.6: Machine / walker wreck break-up cue (presentation only; no FX / gore fight)
+	var dname := def_name
+	if dname.is_empty() and dc is Array and (dc as Array).size() > 0:
+		dname = String(dc[0])
+	var dk := Motion.death_kind_for(dname) if not dname.is_empty() else Motion.DK_NONE
+	if dk != Motion.DK_NONE and mv != null:
+		motion.kill_machine(id, mv.anim_time(), dk)
 	# EXO7-3 CR 6360: a CN armoured suit (the only infantry-sheet unit with a 12-frame swalk and a sim wreck entity) leaves
 	# its wreck only, never a second infantry corpse beside it
-	if dc is Array and (dc as Array).size() > 37 and not (dc[31] as Dictionary).is_empty() and mv != null 			and not (dc[31] as Dictionary).has("swalk"):
+	elif dc is Array and (dc as Array).size() > 37 and not (dc[31] as Dictionary).is_empty() and mv != null 			and not (dc[31] as Dictionary).has("swalk"):
 		motion.kill(id, dc, mv.anim_time())
 	else:
 		motion.forget(id)
@@ -1431,8 +1438,16 @@ func _refresh(rc: bool, rs: bool) -> void:
 				mfac = Motion.g7_facing(gv, mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
 			elif sqb & 34:   # G7 PERFFPS7: only the hull (32) / sector (2) bits change the facing (Motion.g7_facing_sq)
 				mfac = Motion.g7_facing_sq(sqb, sq7a[i], sq7h[i], mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
-			# G7.1 ANIM71 E4-2.4: companion weight cues (dog/UGV/sentinel) when def matches; else WT_NONE
-			motion.step(id, mcls, pos, mfac, bits, t, Motion.weight_for(dname))
+			# G7.1 ANIM71 E4-2.4/2.5: companion + Machine/walker weight; hp + terrain raise for damage/terrain gait
+			var hpf0: float = hp_a[i] if i < hp_a.size() else 1.0
+			var raise_px := 0.0
+			if not terr.is_empty() and (fl & RenderSnap.FLAG_AIR) == 0:
+				var ti_m := floori(pos.y) * mw + floori(pos.x)
+				if ti_m >= 0 and ti_m < terr.size():
+					raise_px = float(raise.get(int(terr[ti_m]), 0))
+			if ww_ky >= 0:
+				raise_px = maxf(raise_px, 36.0)  # E4-2.5: wall-walk = scramble terrain cue
+			motion.step(id, mcls, pos, mfac, bits, t, Motion.weight_for(dname), hpf0, raise_px)
 			var mo: Vector2 = motion.out_off
 			if ww_ky >= 0:
 				mo = Motion.wall_motion_off(wwv, mo)   # WALL7-2: spread along the walk only, never off the firing step
@@ -1706,6 +1721,8 @@ func _refresh(rc: bool, rs: bool) -> void:
 		_apply_bay_hide()
 	if not far:
 		_push_corpses(vr, t, gc61)
+	elif not motion.breaks.is_empty():
+		motion.prune(t)  # G7.1 ANIM71 E4-2.6: still expire wreck break-up cues when zoomed far
 	# buildings, resources, wrecks, mines, charges (light dict copies in the snapshot)
 	var use_rs := rs and not far   # G7.1 PERFDRAW71-8: per-snapshot static records
 	rs_used = use_rs
@@ -1744,7 +1761,12 @@ func _refresh(rc: bool, rs: bool) -> void:
 			_page[s_ii] = _rs_pg[sj]
 			_src[s_ii] = _rs_src[sj]
 			_size[s_ii] = _rs_sz[sj]
-			_dst[s_ii] = _rs_dst[sj]
+			var s_dst: Vector2 = _rs_dst[sj]
+			if _rs_wk[sj] != 0:  # G7.1 ANIM71 E4-2.6: wreck break-up still animates on cached draws
+				var s_bo: Vector2 = motion.break_at(_rs_gs[sj], t)
+				if s_bo != Vector2.ZERO:
+					s_dst += s_bo
+			_dst[s_ii] = s_dst
 			_dsz[s_ii] = _rs_sz[sj]
 			_mod[s_ii] = _rs_mod[sj]
 			_n = s_ii + 1
@@ -1807,6 +1829,10 @@ func _refresh(rc: bool, rs: bool) -> void:
 						_push(0, gs.y, art.out_page, art.out_src, gs + art.out_off, art.out_src.size, mod)
 						gc5.sink_sheets += 1
 						continue
+				# G7.1 ANIM71 E4-2.6: Machine wreck break-up offset (presentation; no FX/gore edit)
+				var boff: Vector2 = motion.break_at(gd, t)
+				if boff != Vector2.ZERO:
+					gd += boff
 			"mine", "charge":
 				# G4b: hidden from enemies unless detected (mines) or planted on our side's target (charges)
 				if not g4b_static_visible(e, statics, pf, my_team, mv._ally_fids):

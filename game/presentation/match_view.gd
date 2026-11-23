@@ -736,7 +736,7 @@ func _on_step_events(evs: Array) -> void:
 		match String(ev.type):
 			"EntityDestroyed":
 				var id := int(ev.id)
-				entity_layer.on_destroyed(id)
+				entity_layer.on_destroyed(id, String(ev.get("def", "")))  # G7.1 ANIM71 E4-2.6: Machine death kind
 				fx_layer.on_destroyed(ev)
 				if selection.has(id):
 					selection.erase(id)
