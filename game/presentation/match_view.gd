@@ -181,6 +181,13 @@ var _prof := false                       # --prof: per-node frame profile (PROF 
 var _prof_hide: Array = []               # --prof-hide=a,b: ablation (hud, g2, g3, ring, over, fx, fog, ent)
 var _prof_last_us := 0
 var _prof_frame_us := 0
+## PEAK60: at far LOD with nothing interactive, overlay canvas only rebuilds on sim tick (not every free
+## frame). Jam/radar pulse drops to tick rate; selection / ghost / order mode force a full redraw.
+var _ov_far_tick := -1
+## PEAK60: facility atmo / life / seq + G71 detail layers also rebuild on sim tick at far LOD (icon scale
+## hides their per-frame pulse; content stays exact per tick).
+var _fac_far_tick := -1
+var _g71_far_tick := -1
 
 
 # ================================================================ lifecycle
@@ -592,7 +599,13 @@ func _process(delta: float) -> void:
 	world7_layer.refresh(snap)  # G7 LPMAP7: hidden and free with no creep and no map.lp
 	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
 	baseprops_layer.refresh(snap)  # G7 BASE7 CR 1798
-	fac_atmo7.refresh(snap)   # G7 ATMO7 CR 3757
+	# PEAK60: far zoom (LOD_FAR) → atmo rebuild on tick only (night/smoke pulse is sub-pixel on icons).
+	var far_z: bool = camera != null and camera.zoom.x < entity_layer.LOD_FAR
+	var stick_now: int = int(snap.get("tick", -1))
+	if far_z and stick_now == _fac_far_tick:
+		pass
+	else:
+		fac_atmo7.refresh(snap)   # G7 ATMO7 CR 3757
 	ViewUtil.prof_add("p_terrain", tp)
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
@@ -600,24 +613,45 @@ func _process(delta: float) -> void:
 	vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
 	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
+	var far: bool = entity_layer.lod >= 2
 	if not g71_layers.is_empty():
-		G71Attach.refresh_all(g71_layers, snap)   # G7.1 wave 2 layers (each ~0 when its provider returns null)
-	fac_life7.refresh(snap)   # G7 LIFE7 CR 3644
-	fac_seq7.refresh(snap)   # G7 SEQ7 CR 3721
+		if far and stick_now == _g71_far_tick:
+			pass
+		else:
+			_g71_far_tick = stick_now if far else -1
+			G71Attach.refresh_all(g71_layers, snap)   # G7.1 wave 2 layers (each ~0 when its provider returns null)
+	if far and stick_now == _fac_far_tick:
+		pass
+	else:
+		_fac_far_tick = stick_now if far else -1
+		fac_life7.refresh(snap)   # G7 LIFE7 CR 3644
+		fac_seq7.refresh(snap)   # G7 SEQ7 CR 3721
 	_t_ent += Time.get_ticks_usec() - te
 	ViewUtil.prof_add("p_ent", te)
 	fx_layer.lod = entity_layer.lod
 	tp = Time.get_ticks_usec()
 	fx_layer.tick(delta)
 	ViewUtil.prof_add("p_fx", tp)
+	# PEAK60: hover outline on far-LOD icons is sub-readable; skip the per-frame pick while zoomed far.
+	if hover_outline != null:
+		hover_outline.set_process(entity_layer.lod < 2)
 	if not busy:
 		# these overlays read live entity dicts in _draw: only redraw while no step is in flight
-		# (they keep last frame's canvas meanwhile)
-		ring_layer.queue_redraw()
-		overlay_layer.queue_redraw()
-		g2_ground.queue_redraw()
-		g2_over.queue_redraw()
-		g3_ground.queue_redraw()
+		# (they keep last frame's canvas meanwhile). At far LOD with idle input, rebuild only when the
+		# sim tick changes (exact content for static rings; pulse anims update at tps, not fps).
+		var far_idle: bool = entity_layer.lod >= 2 and selection.is_empty() and placing_def == "" \
+			and demo_marquee == null and not attack_move_armed and g2.mode == "" \
+			and not point_pick_armed()
+		var ov_tick: int = int(snap.get("tick", -1))
+		if far_idle and ov_tick == _ov_far_tick:
+			pass
+		else:
+			_ov_far_tick = ov_tick if far_idle else -1
+			ring_layer.queue_redraw()
+			overlay_layer.queue_redraw()
+			g2_ground.queue_redraw()
+			g2_over.queue_redraw()
+			g3_ground.queue_redraw()
 	_t_view += Time.get_ticks_usec() - tv
 	_runner.budget_us = SIM_THREAD_BUDGET_US if _runner.threaded else SIM_FRAME_BUDGET_US
 	_kick_pending = _runner.threaded and not paused and _runner.task_id < 0 and _acc >= SimWorld.DT

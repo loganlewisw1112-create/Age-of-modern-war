@@ -17,6 +17,7 @@ func _initialize() -> void:
 	var Hive71 = load("res://sim/systems/hive71.gd")
 	var Fire71 = load("res://sim/systems/fire71.gd")
 	var Death71 = load("res://sim/systems/death71.gd")
+	var Gore71 = load("res://sim/systems/gore71.gd")
 	var Re = load("res://sim/systems/recomplex71.gd")
 	var Fleet71 = load("res://sim/systems/fleet71.gd")
 	var Warmind71 = load("res://sim/systems/warmind71.gd")
@@ -96,11 +97,13 @@ func _initialize() -> void:
 				quit(2)
 				return
 		if i > 0 and i % int(SimWorld.TICK_RATE * 30) == 0:
-			print("SOAK_MARK t=%.0fs hive=%s fire=%s death=%s re_cells=%d" % [
+			var bodies_n: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
+			print("SOAK_MARK t=%.0fs hive=%s fire=%s death=%s gore_bodies=%d re_cells=%d" % [
 				float(i) / float(SimWorld.TICK_RATE),
 				str(Hive71.board(w)),
 				str(Fire71.board(w)),
 				str(Death71.board(w)),
+				bodies_n,
 				(Re._st(w).cells as Dictionary).size() if Re.active(w) else 0,
 			])
 	# Done-when 8: drive a multi-phase core raid to a reported failed purge (or done).
@@ -145,7 +148,8 @@ func _initialize() -> void:
 			quit(3)
 			return
 	var ms := Time.get_ticks_msec() - t0
-	print("SOAK_DONE ticks=%d wall_ms=%d boards hive=%s fire=%s death=%s jam=%s feint=%s" % [
+	var bodies_end: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
+	print("SOAK_DONE ticks=%d wall_ms=%d boards hive=%s fire=%s death=%s gore_bodies=%d jam=%s feint=%s" % [
 		ticks, ms, str(Hive71.board(w)), str(Fire71.board(w)), str(Death71.board(w)),
-		str(jam_done), str(feint_done)])
+		bodies_end, str(jam_done), str(feint_done)])
 	quit(0)

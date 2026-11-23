@@ -24,6 +24,8 @@ const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const SETTINGS := "res://presentation/menu/settings.gd"
 
 const SCAN_S := 2.0               # wall seconds between rule passes (only when the sim tick moved)
+const SCAN_S_PEAK := 5.0          # PEAK60 HUD budget: slower passes at LP peak entity counts (lines stay exact)
+const PEAK_ENTS := 1200           # entity count that trips SCAN_S_PEAK
 const COOLDOWN_S := 90.0          # sim seconds before the same key may fire again
 const KEEP := 4                   # lines kept on the card
 const CORE_STEPS := [0.8, 0.6, 0.4, 0.2]
@@ -110,11 +112,21 @@ func cycle_mode() -> void:
 
 func _process(delta: float) -> void:
 	_acc += delta
-	if _acc < SCAN_S:
+	var need := SCAN_S
+	# PEAK60: at LP peak the hostile walk is the costly HUD pass; stretch the interval when the world is dense.
+	if hub != null:
+		var ww = hub.get("mv")
+		if ww != null:
+			var sn = ww.get("snap")
+			if sn is Dictionary and int((sn as Dictionary).get("entity_count", 0)) >= PEAK_ENTS:
+				need = SCAN_S_PEAK
+	if _acc < need:
 		return
-	# G7 PERF7C: hub.world() joins an in-flight threaded sim step (a frame stall each scan); scan at the next
-	# hand-over instead (world_events is emitted inside MatchView._join_now), or after 1 s more anyway.
-	if _acc < SCAN_S + 1.0 and hub != null and hub.has_method("sim_busy") and hub.sim_busy() and _link_handover():
+	# G7 PERF7C / PEAK60: hub.world() joins an in-flight threaded sim step. Never scan while busy — a forced
+	# pass used to call entities.keys() mid-mutation and FATAL Index OOB the peak harness (peak60_base1).
+	# Wait for the next hand-over (world_events from MatchView._join_now) instead.
+	if hub != null and hub.has_method("sim_busy") and hub.sim_busy():
+		_link_handover()
 		return
 	_acc = 0.0
 	refresh()
@@ -212,22 +224,32 @@ static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 
 
 ## New advisor lines for side fid (deduplicated through memo). Never writes the world.
+## PEAK60: entity walk is bounds-safe (copy keys, has/get) so a concurrent shrink never FATAL the peak harness.
 static func scan(w: SimWorld, fid: int, memo_: Dictionary) -> Array:
 	var out := []
 	for k in ["fired", "core", "pack"]:
 		if not memo_.has(k):
 			memo_[k] = {}
 	# packhunters seen now refresh their territory marks (kept 120 s)
-	var ks: Array = w.entities.keys()
+	var ents: Dictionary = w.entities
+	var ks: Array = ents.keys().duplicate()
 	ks.sort()
 	var hostiles := []
+	# HUD budget at LP peak (~2k ents): cap hostile collect; packhunter marks still refresh while walking keys.
+	const HOSTILE_CAP := 192
 	for id in ks:
-		var e: Dictionary = w.entities[id]
-		if String(e.kind) != "unit" or not w.is_enemy(fid, int(e.owner)) or not Fog.entity_visible(w, fid, e):
+		if not ents.has(id):
 			continue
-		hostiles.append(e)
-		if String(Content.unit(String(e.def)).get("t7", "")) == "packhunter" or String(e.def).contains("packhunter"):
-			memo_.pack[str(int(id))] = [Vector2(e.pos), w.tick]
+		var er = ents.get(id, null)
+		if typeof(er) != TYPE_DICTIONARY:
+			continue
+		var e: Dictionary = er
+		if String(e.get("kind", "")) != "unit" or not w.is_enemy(fid, int(e.get("owner", -1))) or not Fog.entity_visible(w, fid, e):
+			continue
+		if hostiles.size() < HOSTILE_CAP:
+			hostiles.append(e)
+		if String(Content.unit(String(e.get("def", ""))).get("t7", "")) == "packhunter" or String(e.get("def", "")).contains("packhunter"):
+			memo_.pack[str(int(id))] = [Vector2(e.get("pos", Vector2.ZERO)), w.tick]
 	for k in (memo_.pack as Dictionary).keys():
 		if w.tick - int(memo_.pack[k][1]) > int(120.0 * SimWorld.TICK_RATE):
 			memo_.pack.erase(k)

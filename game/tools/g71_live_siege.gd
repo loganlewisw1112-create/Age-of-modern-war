@@ -14,6 +14,7 @@ func _initialize() -> void:
 	var Hive71 = load("res://sim/systems/hive71.gd")
 	var Fire71 = load("res://sim/systems/fire71.gd")
 	var Death71 = load("res://sim/systems/death71.gd")
+	var Gore71 = load("res://sim/systems/gore71.gd")
 	var Re = load("res://sim/systems/recomplex71.gd")
 	var Fleet71 = load("res://sim/systems/fleet71.gd")
 	var Warmind71 = load("res://sim/systems/warmind71.gd")
@@ -128,10 +129,12 @@ func _initialize() -> void:
 			print("SIEGE_RAID phases=%s failed=%s" % [str(phases), str(s.core_raid.get("failed", ""))])
 			raid_done = true
 		if i > 0 and i % int(SimWorld.TICK_RATE * 60) == 0:
-			print("SIEGE_MARK t=%.0fs hive=%s death=%s re_cells=%d fooled=%s" % [
+			var bodies_n: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
+			print("SIEGE_MARK t=%.0fs hive=%s death=%s gore_bodies=%d re_cells=%d fooled=%s" % [
 				float(i) / float(SimWorld.TICK_RATE),
 				str(Hive71.board(w).get("beat", 0)),
 				str(Death71.board(w)),
+				bodies_n,
 				(Re._st(w).cells as Dictionary).size() if Re.active(w) else 0,
 				str(Warmind71.fooled(w)) if Warmind71.active(w) else "n/a",
 			])
@@ -160,8 +163,9 @@ func _initialize() -> void:
 			quit(3)
 			return
 	var ms := Time.get_ticks_msec() - t0
-	print("SIEGE_DONE ticks=%d wall_ms=%d fire=%s jam=%s re=%s breakout=%s overrun=%s raid=%s feints=%d boards hive=%s death=%s" % [
+	var bodies_end: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
+	print("SIEGE_DONE ticks=%d wall_ms=%d fire=%s jam=%s re=%s breakout=%s overrun=%s raid=%s feints=%d gore_bodies=%d boards hive=%s death=%s" % [
 		ticks, ms, str(fire_seeded), str(jam_done), str(re_done), str(breakout_done),
-		str(overrun_done), str(raid_done), feint_n,
+		str(overrun_done), str(raid_done), feint_n, bodies_end,
 		str(Hive71.board(w)), str(Death71.board(w))])
 	quit(0)

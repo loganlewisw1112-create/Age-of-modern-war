@@ -52,15 +52,15 @@ Hive network, wildfire and fire-lines, machine death chains, harvester swarms, c
 
 Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
-**Perf (Done-when 3):** zoomed-out pan **p10 68.3** (gate ≥60 CLEAR); 2k **p10 69.9** (gate ≥60 PASS). LP peak quiet **p10 42.8** (amended ≥30 CLEAR). UP71 is chasing peak toward **≥60** without blocking ship on 60. Fresh peak remasure in progress.
+**Perf (Done-when 3):** zoomed-out pan **p10 68.3** (gate ≥60 CLEAR); 2k **p10 69.9** (gate ≥60 PASS). LP peak amended gate **≥30 CLEAR** (prior quiet 42.8). UP71 chase mid-flight: noisy remasure **p10 48.9** after far-LOD overlay throttle + advisor HUD budget (gap_to_60 ≈11). Quiet remasure continues.
 
-**Soaks / smoke:** Done-when smoke **21/0** (latest `upgrade_board/evidence/smoke_verify71.log`). Prior durable 60-min soak and live siege 600 GREEN; Stage A re-verify soaks running.
+**Soaks / smoke:** Done-when smoke **21/0**. Live siege 600 **SIEGE_DONE** (feints=6, jam no-hack, RE/breakout/raid). Soak90 PASS. Durable 3600 running. Gore71 two-run hash green + bodies logged on soak/siege marks.
 
 ---
 
 ## Still open (UP71)
 
-- Stage A: Done-when evidence packs (full suite / 60-min soak / gore fps) + PEAK60 chase + G7.1 LOCK.
+- Stage A: durable 60-min soak finish + quiet PEAK60 remasure + G7.1 LOCK.
 - Then G8 Four Sides → G9 Hive Reborn (scopes frozen in `game/docs/G8_SCOPE.md`, `G9_SCOPE.md`).
 - Frozen Done-when is never weakened to make a check pass.
 

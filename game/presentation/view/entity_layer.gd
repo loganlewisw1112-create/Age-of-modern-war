@@ -939,7 +939,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 	var pf: int = mv.player_fid
 	var z: float = mv.camera.zoom.x if mv.camera != null else 1.0
 	lod = 2 if z < LOD_FAR else (1 if z < LOD_MID else 0)
-	var far := lod == 2
+	var far: bool = lod == 2
 	var t: float = mv.anim_time()
 	if _atlas_at > 0.0 and t >= _atlas_at:  # G6.1 (ANIMC61): env ANIM61_ATLAS_AT=<s> prints the live atlas once
 		_atlas_at = -1.0
