@@ -179,8 +179,8 @@ func _process(delta: float) -> void:
 	# G7 PERF7C: mv.world joined the in-flight threaded sim step every frame (read before the readable check).
 	# While a step runs the camera follows the drone through the render snapshot (render_pos reads only kind/id).
 	var e = null
-	if mv.world_readable() and mv.world != null:
-		var w: SimWorld = mv.world
+	if mv.world_readable() and mv.get("_world") != null:
+		var w: SimWorld = mv.get("_world") as SimWorld
 		e = w.entities.get(drone_id)
 		var r = DronePilot.record(w, drone_id)
 		if r != null:

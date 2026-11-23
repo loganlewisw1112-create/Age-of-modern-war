@@ -211,6 +211,16 @@ static func lines(d: Dictionary) -> Dictionary:
 				dread += "  |  TECH %s ~%.0fs" % [cur, float(research.get("eta_s", 0.0))]
 			elif done_n > 0:
 				dread += "  |  TECH %d done" % done_n
+		var wm: Dictionary = d.get("warmind", {})
+		if wm is Dictionary and not wm.is_empty():
+			if bool(wm.get("fooled", false)):
+				dread += "  |  WARMIND FOOLED face %d" % int(wm.get("bias", -1))
+			var ask: Dictionary = wm.get("ask", {})
+			if ask is Dictionary and not ask.is_empty():
+				dread += "  |  WARMIND ASKS: abandon sector %d?" % int(ask.get("sector", -1))
+		var cond: Dictionary = d.get("conduct", {})
+		if cond is Dictionary and not cond.is_empty() and not bool(cond.get("gold_ok", true)):
+			dread += "  |  CONDUCT %d (%s)" % [int(cond.get("score", 0)), String(cond.get("ending", ""))]
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405

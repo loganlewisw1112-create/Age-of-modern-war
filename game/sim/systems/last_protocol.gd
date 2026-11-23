@@ -1326,8 +1326,33 @@ static func hud(w: SimWorld) -> Dictionary:
 		"fleet_n": int(s.get("fleet_n", 0)),
 		"fleet": Fleet71.board(w, int(s.fid)),
 		"research": Research71.board(w),
+		"warmind": _hud_warmind(w),
+		"conduct": _hud_conduct(w),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
+
+
+static func _hud_warmind(w: SimWorld) -> Dictionary:
+	var Warmind71 = preload("res://sim/systems/warmind71.gd")
+	if not Warmind71.active(w):
+		return {}
+	var ask: Dictionary = Warmind71.pending_ask(w)
+	return {
+		"bias": Warmind71.bias_face(w),
+		"fooled": Warmind71.fooled(w),
+		"ask": ask,
+	}
+
+
+static func _hud_conduct(w: SimWorld) -> Dictionary:
+	var Conduct71 = preload("res://sim/systems/conduct71.gd")
+	if not Conduct71.active(w):
+		return {}
+	return {
+		"score": Conduct71.score(w),
+		"gold_ok": Conduct71.gold_ok(w),
+		"ending": Conduct71.ending(w),
+	}
 
 
 static func _hud_objectives(s: Dictionary) -> Array:
