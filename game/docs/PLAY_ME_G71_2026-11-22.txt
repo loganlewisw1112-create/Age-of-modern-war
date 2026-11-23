@@ -17,7 +17,8 @@ IN THIS BUILD (Wave 3-5 stubs live)
   Perf: forced_joins ~0-1; zoomed-out pan p10 51.2 / avg 65.9; LP peak quiet p10 42.8 / avg 56.3 (gate >=30 CLEAR)
   Done-when harness: mid-run save/resume (7), H1 raid end states (8), durable 60m soak GREEN
     (save hash match at 30m; wall ~234s headless; evidence game/.plan/soak_3600_durable_*)
-  Soak also exercises: fire seed, fleet jam no-hack (6), warmind feint+ask (11), RE capture (12)
+  Soak also exercises: fire seed, fleet jam no-hack (6), H1 raid failed-purge (8),
+    warmind feint+ask (11), RE capture (12)
 
 LOOK CHECKPOINT (E3 - owner)
   Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)

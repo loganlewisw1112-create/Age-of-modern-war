@@ -50,7 +50,7 @@ Hive network, wildfire and fire-lines, machine death chains, harvester swarms, c
 
 Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
-Harnessed **60-minute** Last Protocol soak is **GREEN** (evidence `game/.plan/soak_3600_durable_*`): no crash, boards sane, mid-run save hash match at 30 min, RE capture at end. Headless wall ~234 s for 72k ticks. Soak harness also exercises fleet jam (no hive hack), warmind feint + abandon ask, fire seed, and director push pick.
+Harnessed **60-minute** Last Protocol soak is **GREEN** (evidence `game/.plan/soak_3600_durable_*`): no crash, boards sane, mid-run save hash match at 30 min, RE capture at end. Headless wall ~234 s for 72k ticks. Soak harness also exercises fleet jam (no hive hack), H1 core-raid phases to failed purge, warmind feint + abandon ask, fire seed, and director push pick.
 
 **LP peak** (1,000 machines, zoom 0.5): quiet sample **p10 42.8 / avg 56.3** — clears the amended ≥30 gate. Far-LOD icons engage by zoom 0.55 (sprite detail is already sub-readable there).
 

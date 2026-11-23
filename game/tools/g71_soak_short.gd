@@ -103,6 +103,24 @@ func _initialize() -> void:
 				str(Death71.board(w)),
 				(Re._st(w).cells as Dictionary).size() if Re.active(w) else 0,
 			])
+	# Done-when 8: drive a multi-phase core raid to a reported failed purge (or done).
+	var LP_sys = load("res://sim/systems/last_protocol.gd")
+	if w.sys_state.has("lp"):
+		var s: Dictionary = w.sys_state.lp
+		s.dread = 0.95
+		s.core_raid = {}
+		LP_sys._core_raid_tick(w, s)
+		var every := int(ceil(float(Director71.rules().get("core_raid_phase_s", 45.0)) * float(SimWorld.TICK_RATE)))
+		var phases: Array = []
+		for expect in ["soften", "breach", "purge", "failed"]:
+			s.core_raid.t0 = w.tick - every - 1
+			LP_sys._core_raid_tick(w, s)
+			phases.append(String(s.core_raid.get("phase", "")))
+		print("SOAK_RAID phases=%s failed=%s" % [str(phases), str(s.core_raid.get("failed", ""))])
+		if String(s.core_raid.get("phase", "")) != "failed" and String(s.core_raid.get("phase", "")) != "done":
+			printerr("SOAK fail: core raid did not reach failed/done")
+			quit(5)
+			return
 	# Kick a short RE study chain near the end so Done-when 12 gets live-siege exercise.
 	if Re.active(w):
 		Re.capture(w, "g71_m_brute", "soak_c0")
