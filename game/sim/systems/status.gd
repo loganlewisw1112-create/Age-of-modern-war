@@ -108,6 +108,10 @@ static func sight_mult(w: SimWorld, e: Dictionary) -> float:
 	var Weather71 = preload("res://sim/systems/weather71.gd")
 	if Weather71.active(w):
 		m *= Weather71.sight_mult(w)
+	# H12 smoke columns block sight.
+	var Smoke71 = preload("res://sim/systems/smoke71.gd")
+	if Smoke71.active(w):
+		m *= Smoke71.sight_at(w, Vector2(e.pos))
 	if is_jammed(w, e):
 		m *= jam_mult(w, int(e.owner))
 	return m

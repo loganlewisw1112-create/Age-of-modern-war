@@ -1,0 +1,14 @@
+{
+  "_meta": "G7.1 H12 smoke columns. PROVISIONAL.",
+  "rules": {
+    "g71_smoke": {
+      "block_r": 3.5,
+      "sight_cut": 0.55,
+      "drift": 0.04,
+      "decay": 0.008,
+      "spawn_chance": 0.15,
+      "spawn_dens": 0.7,
+      "max_cols": 40
+    }
+  }
+}
