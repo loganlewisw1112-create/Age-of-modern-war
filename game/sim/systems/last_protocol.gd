@@ -29,6 +29,7 @@ const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 
 const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1–C6 director / siege
 const Turrets71 = preload("res://sim/systems/turrets71.gd")
 const Supply8 = preload("res://sim/systems/supply8.gd")
+const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -106,6 +107,8 @@ static func setup(w: SimWorld) -> Dictionary:
 	s = {"ver": VER, "fid": fid, "mfid": mfid, "t0": w.tick, "rebuild": [], "routes_closed": [], "secrets_found": [],
 		"adapt": {}, "adapt_last": {}, "objectives": [], "intel": {},
 		"wall_fatigue": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "wall_crack": [],
+		"runner_miss": [0, 0, 0, 0, 0, 0, 0, 0], "wall_starve": [],
+		"kill_heat": {}, "dread_peak": 0.0, "obj_done": 0,
 		"remembered": [], "roster": {}, "warn": {"creep": [], "cd": []}, "filled": false, "teams_total": 0,
 		"teams_lost": 0, "extractions": 0, "purged_cells": 0, "creep_peak": 0.0, "phase": 0, "frac": 0.0,
 		"weavers": false, "tide": false, "tide_t": -1, "posture": "normal", "posture_override": "", "defence_ai": true,
@@ -205,6 +208,8 @@ static func tick(w: SimWorld) -> void:
 			_wall_life(w, s)
 		if (w.tick + 47) % _t(4.0) == 0:
 			_counter_attacks(w, s)
+		if (w.tick + 53) % _t(3.0) == 0:
+			_wall_runners(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -267,6 +272,7 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					s.adapt_counter = counter
 					w.emit("LpAdapt", {"id": id, "bucket": bucket, "counter": counter})
 					_note_intel(w, s, String(ev.get("def", "")), bucket)
+					_note_kill_heat(s, ev)
 					if counter != "" and counter != prev:
 						var akey := "adapt_%s" % counter
 						var aline := Director71.overmind_line(akey)
@@ -332,6 +338,7 @@ static func _meters(w: SimWorld, s: Dictionary) -> void:
 	if not bool(s.tide) and (Cores.walker(w) >= 0 or bool(s.final_stage)):
 		start_tide(w, s, "walker" if Cores.walker(w) >= 0 else "countdown")
 	Director71.apply(s, float(s.frac), int(s.get("rings_fallen", 0)), cov, int(s.get("teams_lost", 0)))
+	s.dread_peak = maxf(float(s.get("dread_peak", 0.0)), float(s.get("dread", 0.0)))
 	if Director71.note_breaking(s, float(s.get("dread", 0.0))):
 		var line := Director71.overmind_line(String(Director71.rules().get("overmind_break", "breaking_point")))
 		w.emit("LpBreakingPoint", {"dread": float(s.dread), "band": Director71.band(float(s.dread)), "tide": bool(s.tide), "line": line})
@@ -527,6 +534,7 @@ static func _complete_objective(w: SimWorld, s: Dictionary, kind: String, match:
 			continue
 		o.done = true
 		o.done_tick = w.tick
+		s.obj_done = int(s.get("obj_done", 0)) + 1
 		w.emit("LpObjectiveDone", o.duplicate(true))
 		return
 
@@ -574,6 +582,72 @@ static func _wall_life(w: SimWorld, s: Dictionary) -> void:
 			cracked.erase(k)
 			_complete_objective(w, s, "rotate_sector", {"sector": k})
 	s.wall_crack = cracked
+
+
+## D3 runners under fire: cracked / threatened faces need friendlies on the wall-walk; miss enough checks = starve.
+static func _wall_runners(w: SimWorld, s: Dictionary) -> void:
+	if not s.has("runner_miss") or not (s.runner_miss is Array) or (s.runner_miss as Array).size() != 8:
+		s.runner_miss = [0, 0, 0, 0, 0, 0, 0, 0]
+	if not s.has("wall_starve") or not (s.wall_starve is Array):
+		s.wall_starve = []
+	var sc: Dictionary = LpDefence.scan(w, s)
+	var secs: Array = sc.sectors as Array
+	var on_face := [0, 0, 0, 0, 0, 0, 0, 0]
+	for e in w.units_of(int(s.fid)):
+		if String(e.get("kind", "")) != "unit":
+			continue
+		if not WallWalk7.on_wall(w, e):
+			continue
+		var k := LpDefence._sector(s, Vector2(e.pos))
+		on_face[k] = int(on_face[k]) + 1
+	var need := int(Director71.rules().get("runner_starve_misses", 3))
+	var miss: Array = s.runner_miss
+	var starved: Array = s.wall_starve
+	var cracked: Array = s.get("wall_crack", []) if s.get("wall_crack", []) is Array else []
+	for k in 8:
+		var hot := int(secs[k]) > 0 or cracked.has(k)
+		if hot and int(on_face[k]) <= 0:
+			miss[k] = int(miss[k]) + 1
+		else:
+			miss[k] = 0
+			if starved.has(k):
+				starved.erase(k)
+				_complete_objective(w, s, "clear_walk", {"sector": k})
+		if int(miss[k]) >= need and not starved.has(k):
+			starved.append(k)
+			var at: Vector2 = LpDefence.sector_point(s, 0, k)
+			var title := "Clear the %s wall-walk — runners are cut off" % Director71.face_name(k)
+			_push_objective(w, s, "clear_walk", title, {"sector": k})
+			w.emit("LpWallStarve", {"sector": k, "name": Director71.face_name(k), "misses": int(miss[k]), "pos": at})
+	s.wall_starve = starved
+
+
+## D6 kill heat for the after-action report (cell -> Machine kill count, capped).
+static func _note_kill_heat(s: Dictionary, ev: Dictionary) -> void:
+	if not s.has("kill_heat") or not (s.kill_heat is Dictionary):
+		s.kill_heat = {}
+	var p = ev.get("pos")
+	var cell := Vector2i.ZERO
+	if p is Vector2:
+		cell = Vector2i(int(floor(p.x)), int(floor(p.y)))
+	elif p is Array and (p as Array).size() >= 2:
+		cell = Vector2i(int(p[0]), int(p[1]))
+	else:
+		return
+	var key := "%d,%d" % [cell.x, cell.y]
+	var heat: Dictionary = s.kill_heat
+	heat[key] = int(heat.get(key, 0)) + 1
+	if heat.size() > 256:
+		# drop the coldest keys so the AAR stays bounded
+		var worst := ""
+		var wn := 1 << 30
+		for k in heat.keys():
+			var n := int(heat[k])
+			if n < wn:
+				wn = n
+				worst = String(k)
+		if worst != "":
+			heat.erase(worst)
 
 
 ## D3 counter-attacks: when a sapper digs at the wall, open a sally objective.
@@ -792,12 +866,34 @@ static func result(w: SimWorld, s: Dictionary, ending: String) -> Dictionary:
 	for m in ["bronze", "silver", "gold"]:
 		if won and sco >= int(md.get(m, 1 << 30)):
 			medal = m
+	var crack_faces := []
+	for k in (s.get("wall_crack", []) as Array):
+		crack_faces.append(Director71.face_name(int(k)))
+	var heat_top := _heat_top(s.get("kill_heat", {}), 8)
 	return {"ending": ending, "won": won, "time_s": float(w.tick - int(s.t0)) * SimWorld.DT, "seed": w.seed_value,
 		"creep_purged": snappedf(purged_pts, 0.01), "creep_final": snappedf(cov, 0.0001), "purged_cells": int(s.purged_cells),
 		"cores_destroyed": Cores.lost(w), "cores_total": (Cores.list(w) as Array).size(), "teams_lost": int(s.teams_lost),
 		"teams_total": int(s.teams_total), "extractions": int(s.extractions), "secrets": (s.secrets_found as Array).duplicate(),
 		"rings_fallen": int(s.get("rings_fallen", 0)), "score": sco, "medal": medal, "remembered": (s.remembered as Array).duplicate(),
-		"countdown_left_s": maxf(float(s.cd_left), 0.0), "tide": bool(s.tide)}
+		"countdown_left_s": maxf(float(s.cd_left), 0.0), "tide": bool(s.tide),
+		"dread_peak": snappedf(float(s.get("dread_peak", 0.0)), 0.01),
+		"counter": Director71.counter_for(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
+		"objectives_done": int(s.get("obj_done", 0)),
+		"wall_cracks": crack_faces, "wall_starve_n": (s.get("wall_starve", []) as Array).size(),
+		"kill_heat_top": heat_top}
+
+
+## Top N kill-heat cells as [{cell, n}] for the D6 after-action report.
+static func _heat_top(heat, n: int) -> Array:
+	var rows := []
+	if not (heat is Dictionary):
+		return rows
+	for k in (heat as Dictionary).keys():
+		rows.append({"cell": String(k), "n": int(heat[k])})
+	rows.sort_custom(func(a, b): return int(a.n) > int(b.n) or (int(a.n) == int(b.n) and String(a.cell) < String(b.cell)))
+	if rows.size() > n:
+		rows.resize(n)
+	return rows
 
 
 static func finish(w: SimWorld, s: Dictionary, ending: String) -> void:

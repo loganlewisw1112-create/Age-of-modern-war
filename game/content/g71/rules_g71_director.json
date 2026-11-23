@@ -43,6 +43,7 @@
       "wall_fatigue_rest": 0.02,
       "wall_crack_at": 0.85,
       "sally_dread": 0.45,
+      "runner_starve_misses": 3,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

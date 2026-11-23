@@ -41,6 +41,7 @@ breaking-point, logistics, regrow, adapt, C3/C4 units, sync, reclaim, wreck cove
 - LP save/resume for director fields (2026-11-22): dread / break_point / adapt / forecast / intel round-trip via `to_dict`/`from_dict` and keep the same future hash. `test_director71` 6/0; `test_lpreserve7` 7/0.
 - D2 scheduled Supply8 drops (2026-11-22): at dread >= supply_at every supply_every_s, LP orders a magazine drop when ready, opens `protect_drop`, clears on Supply8Delivered/OpEnded; radio `lp71.supply_drop`.
 - D3 wall-life stubs (2026-11-22): per-face fatigue / crack (`LpSectorCrack`, rotate objective); sapper-near-wall sally objective (`LpCounterAttack`); HUD WALL CRACK count. `test_director71` 7/0; `test_lpmode7` 18/0.
+- D3 runners + D6 AAR (2026-11-22): cracked/hot faces without wall-walk friendlies starve (`LpWallStarve` / clear_walk); end report adds dread peak, intel, objectives done, crack faces, kill-heat top.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
 
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled

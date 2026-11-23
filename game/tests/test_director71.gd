@@ -179,6 +179,50 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
 
 
+func test_runners_and_after_action() -> void:
+	# D3 wall-walk starve + D6 after-action fields.
+	check(int(Director71.rules().get("runner_starve_misses", 0)) >= 2, "runner starve needs a few misses")
+	Radio71._lines = null
+	check(not Radio71.line("lp71.wall_starve").is_empty(), "wall-starve radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for AAR"):
+		return
+	for i in 15:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	s.dread = 0.77
+	s.dread_peak = 0.77
+	s.wall_crack = [2, 5]
+	s.wall_starve = [2]
+	s.obj_done = 3
+	s.intel = {"g71_m_brute": {"def": "g71_m_brute", "counter": "armour"}}
+	s.adapt = {"armour": 4}
+	s.kill_heat = {"10,20": 5, "11,20": 2, "1,1": 9}
+	LastProtocol._note_kill_heat(s, {"pos": Vector2(10.2, 20.4)})
+	check_eq(int(s.kill_heat["10,20"]), 6, "kill heat stacks on a cell")
+	var top: Array = LastProtocol._heat_top(s.kill_heat, 2)
+	check_eq(top.size(), 2, "heat top is capped")
+	check_eq(String(top[0].cell), "1,1", "hottest cell leads the AAR")
+	var r: Dictionary = LastProtocol.result(w, s, "victory")
+	check(r.has("dread_peak") and float(r.dread_peak) >= 0.77, "AAR keeps dread peak")
+	check_eq(int(r.objectives_done), 3, "AAR counts completed objectives")
+	check_eq(int(r.intel_n), 1, "AAR counts intel entries")
+	check((r.wall_cracks as Array).has("N"), "AAR names cracked faces")
+	check_eq(int(r.wall_starve_n), 1, "AAR counts starved faces")
+	check((r.kill_heat_top as Array).size() >= 1, "AAR includes kill heat")
+	LastProtocol._push_objective(w, s, "clear_walk", "Clear the N wall-walk", {"sector": 2})
+	check((LastProtocol.hud(w).objectives as Array).size() >= 1, "clear_walk objective shows")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpWallStarve", "sector": 2, "name": "N", "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("wall") >= 0 or String(feed.text).find("N") >= 0,
+		"radio speaks wall-walk starve")
+	feed.free()
+
+
 func test_supply_wall_life_and_sally() -> void:
 	# D2 cadence + D3 wall fatigue / counter-attack stubs.
 	check(float(Director71.rules().get("supply_at", 0.0)) > 0.0, "supply_at is set")
