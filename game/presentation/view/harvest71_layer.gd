@@ -1,8 +1,37 @@
 extends Node2D
-## G7.1 J4 harvester swarm draw: spider dots dragging bodies home. Never mv.world.
+## G7.1 J4 harvester swarm draw: spider dots dragging bodies home.
+## Snapshot provider "harvest71"; null when empty. Never mv.world from refresh.
+
+const RenderSnap = preload("res://sim/render_snap.gd")
+const KEY := "harvest71"
+
+static var _reg_owner := 0
 
 var mv: Node = null
 var _harvs: Array = []
+var _sig := -1
+
+
+func _init() -> void:
+	_reg_owner = get_instance_id()
+	RenderSnap.register_g71(KEY, Callable(get_script(), "snap"))
+
+
+func _exit_tree() -> void:
+	if _reg_owner == get_instance_id():
+		RenderSnap.unregister_g71(KEY)
+
+
+static func snap(w, _sn: Dictionary):
+	if not w.sys_state.has("lp"):
+		return null
+	var st = w.sys_state.get("harvest71")
+	if st == null or not (st is Dictionary):
+		return null
+	var harvs: Array = st.get("harvs", [])
+	if harvs.is_empty():
+		return null
+	return {"harvs": (harvs as Array).duplicate(true)}
 
 
 func setup(view: Node) -> void:
@@ -13,25 +42,21 @@ func setup(view: Node) -> void:
 func refresh(snap: Dictionary) -> void:
 	if snap.is_empty() or mv == null:
 		return
-	if not mv.has_method("world_readable") or not mv.world_readable():
+	var row = (snap.get("g71", {}) as Dictionary).get(KEY)
+	if row == null:
+		if not _harvs.is_empty():
+			_harvs = []
+			_sig = -1
+			queue_redraw()
 		return
-	var w = mv.get("_world")
-	if w == null:
+	var harvs: Array = row.get("harvs", [])
+	var sig := harvs.size()
+	for i in mini(harvs.size(), 4):
+		var p = harvs[i].get("pos", [0, 0])
+		sig = (sig * 31 + int(float(p[0]) * 10.0) + int(float(p[1]) * 10.0)) & 0x3fffffff
+	if sig == _sig:
 		return
-	var st = w.sys_state.get("harvest71")
-	var harvs: Array = []
-	if st is Dictionary:
-		harvs = (st.get("harvs", []) as Array).duplicate(true)
-	if harvs.size() == _harvs.size():
-		var same := true
-		for i in mini(harvs.size(), 4):
-			var a = harvs[i].get("pos", [0, 0])
-			var b = _harvs[i].get("pos", [0, 0])
-			if float(a[0]) != float(b[0]) or float(a[1]) != float(b[1]):
-				same = false
-				break
-		if same:
-			return
+	_sig = sig
 	_harvs = harvs
 	queue_redraw()
 
@@ -47,7 +72,6 @@ func _draw() -> void:
 		var carry := int(h.get("carry", -1)) >= 0
 		var col := Color(0.75, 0.55, 0.15, 0.95) if carry else Color(0.55, 0.4, 0.1, 0.85)
 		draw_circle(sp, 4.5, col)
-		# Legs hint.
 		for a in [0.4, 1.2, 2.0, 2.8, 3.6, 4.4]:
 			draw_line(sp, sp + Vector2(cos(a), sin(a)) * 7.0, Color(col.r, col.g, col.b, 0.55), 1.0)
 		if carry:

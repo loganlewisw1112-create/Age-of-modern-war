@@ -1,11 +1,57 @@
 extends Node2D
-## G7.1 I6 hive network draw: nests, relays, isolation marks, heartbeat pulse. Never mv.world.
+## G7.1 I6 hive network draw: nests, relays, isolation marks, heartbeat pulse.
+## Snapshot provider "hive71"; null when inactive. Never mv.world from refresh.
+
+const RenderSnap = preload("res://sim/render_snap.gd")
+const KEY := "hive71"
+
+static var _reg_owner := 0
 
 var mv: Node = null
 var _nests: Array = []
 var _relays: Array = []
 var _iso: Dictionary = {}
 var _pulse := false
+var _sig := -1
+
+
+func _init() -> void:
+	_reg_owner = get_instance_id()
+	RenderSnap.register_g71(KEY, Callable(get_script(), "snap"))
+
+
+func _exit_tree() -> void:
+	if _reg_owner == get_instance_id():
+		RenderSnap.unregister_g71(KEY)
+
+
+static func snap(w, _sn: Dictionary):
+	if not w.sys_state.has("lp"):
+		return null
+	var st = w.sys_state.get("hive71")
+	if st == null or not (st is Dictionary):
+		return null
+	var nests: Array = []
+	var relays: Array = []
+	for id in (st.get("nests", {}) as Dictionary).keys():
+		var n: Dictionary = st.nests[id]
+		nests.append({"id": id, "pos": n.get("pos", [0, 0]), "alive": bool(n.get("alive", true))})
+	for id in (st.get("relays", {}) as Dictionary).keys():
+		var r: Dictionary = st.relays[id]
+		relays.append({
+			"id": id,
+			"pos": r.get("pos", [0, 0]),
+			"alive": bool(r.get("alive", true)),
+			"links": r.get("links", []),
+		})
+	if nests.is_empty() and relays.is_empty():
+		return null
+	return {
+		"nests": nests,
+		"relays": relays,
+		"iso": (st.get("isolated", {}) as Dictionary).duplicate(),
+		"pulse": bool(st.get("pulse", false)),
+	}
 
 
 func setup(view: Node) -> void:
@@ -16,28 +62,24 @@ func setup(view: Node) -> void:
 func refresh(snap: Dictionary) -> void:
 	if snap.is_empty() or mv == null:
 		return
-	if not mv.has_method("world_readable") or not mv.world_readable():
+	var row = (snap.get("g71", {}) as Dictionary).get(KEY)
+	if row == null:
+		if not _nests.is_empty() or not _relays.is_empty():
+			_nests = []
+			_relays = []
+			_iso = {}
+			_pulse = false
+			_sig = -1
+			queue_redraw()
 		return
-	var w = mv.get("_world")
-	if w == null:
+	var nests: Array = row.get("nests", [])
+	var relays: Array = row.get("relays", [])
+	var pulse := bool(row.get("pulse", false))
+	var iso: Dictionary = row.get("iso", {})
+	var sig := nests.size() * 17 + relays.size() * 13 + iso.size() * 7 + (1 if pulse else 0)
+	if sig == _sig:
 		return
-	var Hive71 = preload("res://sim/systems/hive71.gd")
-	var b: Dictionary = Hive71.board(w)
-	var st = w.sys_state.get("hive71")
-	var nests: Array = []
-	var relays: Array = []
-	var iso := {}
-	var pulse := bool(b.get("pulse", false))
-	if st is Dictionary:
-		for id in (st.get("nests", {}) as Dictionary).keys():
-			var n: Dictionary = st.nests[id]
-			nests.append({"id": id, "pos": n.get("pos", [0, 0]), "alive": bool(n.get("alive", true))})
-		for id in (st.get("relays", {}) as Dictionary).keys():
-			var r: Dictionary = st.relays[id]
-			relays.append({"id": id, "pos": r.get("pos", [0, 0]), "alive": bool(r.get("alive", true)), "links": r.get("links", [])})
-		iso = (st.get("isolated", {}) as Dictionary).duplicate()
-	if nests.size() == _nests.size() and relays.size() == _relays.size() and pulse == _pulse and iso.size() == _iso.size():
-		return
+	_sig = sig
 	_nests = nests
 	_relays = relays
 	_iso = iso

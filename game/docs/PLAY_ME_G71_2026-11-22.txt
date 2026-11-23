@@ -13,8 +13,9 @@ IN THIS BUILD (Wave 3-5 stubs live)
   Deaths: cell-blast chain, nanite bleed, last-gasp
   Audio: flash-to-boom delay, unique weapon voices, armour clang, tide-song pulse
   HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
-  Perf: forced_joins cut to 1; LP peak harness p10 ~50 (gate >=30)
-  Done-when harness: mid-run save/resume (7), H1 raid end states (8), short+30m soaks
+  View: fire/hive/harvest layers read snap.g71 providers (no mv.world joins)
+  Perf: forced_joins ~0-1; zoomed-out pan p10 51.2 / avg 65.9; LP peak still under amended p10>=30 (work continues)
+  Done-when harness: mid-run save/resume (7), H1 raid end states (8), 30m soak green
 
 LOOK CHECKPOINT (E3 - owner)
   Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)
@@ -22,8 +23,9 @@ LOOK CHECKPOINT (E3 - owner)
 
 LEFT OPEN (Done-when not weakened)
   Owner look approvals (E3) then full E4 animation pass
+  LP peak p10 >= 30 with 1000+ machines
   60-min peak siege soak / live RE+warmind siege
-  2k / zoomed-out panning gates vs past builds
+  Strict 2k / zoomed-out panning vs past builds where frozen bar still applies
 
 HARNESS
   Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90 [--save_at=45]

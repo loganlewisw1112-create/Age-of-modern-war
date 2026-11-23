@@ -1,8 +1,47 @@
 extends Node2D
-## G7.1 I4 wildfire draw: orange cells + block-line ring. Never mv.world.
+## G7.1 I4 wildfire draw: orange cells + block-line ring.
+## Snapshot provider "fire71" (RenderSnap.register_g71): null while no cells (layer then costs nothing).
+## Never touches mv.world / _world from refresh — only snap.g71.
+
+const RenderSnap = preload("res://sim/render_snap.gd")
+const KEY := "fire71"
+
+static var _reg_owner := 0
 
 var mv: Node = null
 var _cells: Array = []
+var _sig := -1
+
+
+func _init() -> void:
+	_reg_owner = get_instance_id()
+	RenderSnap.register_g71(KEY, Callable(get_script(), "snap"))
+
+
+func _exit_tree() -> void:
+	if _reg_owner == get_instance_id():
+		RenderSnap.unregister_g71(KEY)
+
+
+static func snap(w, _sn: Dictionary):
+	if not w.sys_state.has("lp"):
+		return null
+	var st = w.sys_state.get("fire71")
+	if st == null or not (st is Dictionary):
+		return null
+	var bag: Dictionary = st.get("cells", {})
+	if bag.is_empty():
+		return null
+	var cells: Array = []
+	var keys: Array = bag.keys()
+	keys.sort()
+	for k in keys:
+		var c: Dictionary = bag[k]
+		var parts := String(k).split(",")
+		if parts.size() < 2:
+			continue
+		cells.append([float(parts[0]), float(parts[1]), float(c.get("i", 0.0))])
+	return {"cells": cells} if not cells.is_empty() else null
 
 
 func setup(view: Node) -> void:
@@ -13,28 +52,21 @@ func setup(view: Node) -> void:
 func refresh(snap: Dictionary) -> void:
 	if snap.is_empty() or mv == null:
 		return
-	if not mv.has_method("world_readable") or not mv.world_readable():
+	var g71: Dictionary = snap.get("g71", {})
+	var row = g71.get(KEY)
+	if row == null:
+		if not _cells.is_empty():
+			_cells = []
+			_sig = -1
+			queue_redraw()
 		return
-	var w = mv.get("_world")
-	if w == null:
+	var cells: Array = row.get("cells", [])
+	var sig := cells.size()
+	for i in mini(cells.size(), 6):
+		sig = (sig * 31 + int(float(cells[i][2]) * 100.0)) & 0x3fffffff
+	if sig == _sig:
 		return
-	var st = w.sys_state.get("fire71")
-	var cells: Array = []
-	if st is Dictionary:
-		for k in (st.get("cells", {}) as Dictionary).keys():
-			var c: Dictionary = st.cells[k]
-			cells.append({
-				"pos": String(k).split(","),
-				"i": float(c.get("i", 0.0)),
-			})
-	if cells.size() == _cells.size():
-		var same := true
-		for i in mini(cells.size(), 8):
-			if float(cells[i].get("i", 0.0)) != float(_cells[i].get("i", -1.0)):
-				same = false
-				break
-		if same and cells.size() == _cells.size():
-			return
+	_sig = sig
 	_cells = cells
 	queue_redraw()
 
@@ -43,12 +75,11 @@ func _draw() -> void:
 	if mv == null or _cells.is_empty():
 		return
 	for c in _cells:
-		var parts = c.get("pos", [])
-		if not (parts is Array) or parts.size() < 2:
+		if not (c is Array) or c.size() < 3:
 			continue
-		var wp := Vector2(float(parts[0]) + 0.5, float(parts[1]) + 0.5)
+		var wp := Vector2(float(c[0]) + 0.5, float(c[1]) + 0.5)
 		var sp: Vector2 = mv.world_to_screen(wp)
-		var i := float(c.get("i", 0.5))
+		var i := float(c[2])
 		var a := 0.25 + 0.55 * i
 		draw_circle(sp, 6.0 + 4.0 * i, Color(1.0, 0.35 + 0.2 * i, 0.05, a))
 		if i >= 0.55:
