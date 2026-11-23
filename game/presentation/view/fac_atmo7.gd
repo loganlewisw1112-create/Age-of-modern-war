@@ -129,7 +129,8 @@ var _vr := Rect2()
 
 func setup(view) -> void:
 	mv = view
-	map = view.world.map if view != null and view.get("_world") != null else {}
+	var ww = view.get("_world") if view != null else null  # never view.world: forces a sim join
+	map = ww.map if ww != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	var hs := absi(hash(Vector3i(int(map.get("w", 64)), int(map.get("h", 64)), int(map.get("seed", 7)))))
 	wind = Vector2.RIGHT.rotated(float(hs % 6283) / 1000.0)

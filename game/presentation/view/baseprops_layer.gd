@@ -36,7 +36,8 @@ var drawn_lanes := 0
 
 func setup(view) -> void:
 	mv = view
-	map = view.world.map if view != null and view.get("_world") != null else {}
+	var ww = view.get("_world") if view != null else null  # never view.world: forces a sim join
+	map = ww.map if ww != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	for k in ["street_light", "flood_mast", "glow_warm", "glow_cold", "pad_light"]:
 		var p := ART + "props/%s.png" % k

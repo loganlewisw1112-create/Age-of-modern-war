@@ -149,7 +149,8 @@ func release(p: Vector2) -> bool:
 func _enemy_at(p: Vector2):
 	var mv = _mv()
 	var t = mv.entity_at(p, true)
-	if t != null and int(t.owner) != int(mv.player_fid) and mv.world.is_enemy(int(mv.player_fid), int(t.owner)):
+	var ww = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if t != null and ww != null and int(t.owner) != int(mv.player_fid) and ww.is_enemy(int(mv.player_fid), int(t.owner)):
 		return t
 	return null
 
@@ -158,7 +159,9 @@ func _enemy_at(p: Vector2):
 func wreck_at(p: Vector2):
 	var best = null
 	var bd := WRECK_PICK
-	var w: SimWorld = _mv().world
+	var w: SimWorld = _mv().get("_world")  # never .world: forces a sim join
+	if w == null:
+		return null
 	var ids: Array = w.entities.keys()
 	ids.sort()
 	for id in ids:
@@ -223,7 +226,9 @@ func draw(ci: CanvasItem, mouse_canvas: Vector2) -> void:
 ## One click in a click mode; false keeps the mode armed (a hint was flashed).
 func _click(m: String, p: Vector2) -> bool:
 	var mv = _mv()
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return false
 	var c := _cell(p)
 	var cc := [c.x, c.y]
 	var ids: Array = (g4b.unit_ids as Array).duplicate()

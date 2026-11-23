@@ -122,7 +122,8 @@ func _init() -> void:
 
 func setup(view) -> void:
 	mv = view
-	map = view.world.map
+	var ww = view.get("_world") if view != null else null  # never view.world: forces a sim join
+	map = ww.map if ww != null else {}
 	hm = ViewUtil.height_map_of(map)
 	_setup_traces()
 	# G7 FISSURE7: openings draw over the creep, under everything after it (same z, next in tree order)

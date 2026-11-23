@@ -131,11 +131,18 @@ var _hmat: ShaderMaterial
 var lift_px := PackedFloat32Array()
 
 
+## Live map dict without forcing a threaded-step join (mv.world getter joins).
+func _map() -> Dictionary:
+	var ww = mv.get("_world") if mv != null else null
+	return ww.map if ww != null and ww.map is Dictionary else {}
+
+
 func setup(view: Node2D) -> void:
 	mv = view
 	var t0 := Time.get_ticks_msec()
-	_w = int(mv.world.map.w)
-	_h = int(mv.world.map.h)
+	var m0 := _map()
+	_w = int(m0.get("w", 0))
+	_h = int(m0.get("h", 0))
 	_prefill()
 	_load_g6()
 	_read_height()
@@ -151,7 +158,7 @@ func setup(view: Node2D) -> void:
 	else:
 		for cy0 in range(0, _h, CHUNK):
 			for cx0 in range(0, _w, CHUNK):
-				_install(Vector2i(cx0, cy0), _bake(cx0, cy0, mv.world.map.terrain, biome, _hg(), _rp()))
+				_install(Vector2i(cx0, cy0), _bake(cx0, cy0, m0.terrain, biome, _hg(), _rp()))
 	bake_ms = Time.get_ticks_msec() - t0
 	print("TERRAIN %s %d chunks (%dx%d)%s in %d ms" % ["lazy base +" if lazy else "baked", _chunks.size(), _w, _h,
 		" height" if not hmap.is_empty() else "", bake_ms])
@@ -381,8 +388,8 @@ func _biome_arr() -> PackedByteArray:
 	var s := _busy_snap()
 	var b = s.get("biome") if not s.is_empty() else null
 	if s.is_empty():
-		var m = mv.world.map
-		b = m.get("biome") if m is Dictionary else null
+		var m := _map()
+		b = m.get("biome") if not m.is_empty() else null
 	if b is PackedByteArray and b.size() == _w * _h:
 		return b
 	return PackedByteArray()
@@ -403,7 +410,8 @@ func _terrain() -> PackedByteArray:
 	var s := _busy_snap()
 	if not s.is_empty():
 		return s.terrain
-	return mv.world.map.terrain
+	var m := _map()
+	return m.terrain if m.has("terrain") else PackedByteArray()
 
 
 func _any_biome(b: PackedByteArray) -> bool:
@@ -528,8 +536,9 @@ func _rp() -> PackedByteArray:
 
 ## Main thread: (re)read the height layer while no sim step is in flight (height only changes in the editor).
 func _read_height() -> void:
-	if _busy_snap().is_empty() and mv.world.map is Dictionary:
-		hmap = ViewUtil.height_map_of(mv.world.map)
+	var m := _map()
+	if _busy_snap().is_empty() and not m.is_empty():
+		hmap = ViewUtil.height_map_of(m)
 	height_ver += 1
 	if not hmap.is_empty() and _hmat == null:
 		var sh := Shader.new()

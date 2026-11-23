@@ -131,7 +131,8 @@ func setup(view) -> void:
 	mv = view
 	if OS.get_cmdline_user_args().has("--no-life7"):   # fps A/B (bench child args + --no-life7)
 		on = false
-	var map: Dictionary = view.world.map if view != null and view.get("_world") != null else {}
+	var ww = view.get("_world") if view != null else null  # never view.world: forces a sim join
+	var map: Dictionary = ww.map if ww != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	_load_art()
 	glows = Node2D.new()
