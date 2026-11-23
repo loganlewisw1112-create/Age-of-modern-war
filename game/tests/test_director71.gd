@@ -9,6 +9,8 @@ const LpHud = preload("res://presentation/ui7/lp_hud.gd")
 const Radio71 = preload("res://sim/systems/radio71.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
+const Turrets71 = preload("res://sim/systems/turrets71.gd")
+const Damage = preload("res://sim/systems/damage.gd")
 
 
 func test_pressure_is_pure_and_ordered() -> void:
@@ -494,6 +496,120 @@ func test_supply_wall_life_and_sally() -> void:
 				break
 	check(crack_ok, "radio speaks a sector crack")
 	feed.free()
+
+
+func test_latch_jam_piles_glass_and_fleet_board() -> void:
+	# C3 latch/jam feel, C5 body piles, C4 glass reveal, F Done-when 6 fleet board depth.
+	var c := LastProtocol.make_config(71, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP match for polish residuals"):
+		return
+	for i in 20:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	var fid := int(s.fid)
+	var mfid := int(s.mfid)
+	var center: Vector2 = Vector2(s.base.center) + Vector2(0.5, 0.5)
+	# --- Turret-eater latch: attach in range, clear when moved out ---
+	var tid := -1
+	for b in w.buildings_of(fid):
+		if Turrets71.is_defence(String(b.get("def", ""))) and bool(b.get("built", true)) and float(b.get("hp", 0)) > 0.0:
+			tid = int(b.id)
+			break
+	if not check(tid >= 0, "have a defence turret to latch"):
+		return
+	var tpos: Vector2 = w.entities[tid].pos
+	var eid := w.spawn_unit("g71_m_turret_eater", mfid, tpos)
+	check(eid >= 0, "turret-eater spawns")
+	w.entities[eid].pos = tpos
+	var hp0 := float(w.entities[tid].hp)
+	LastProtocol._siege_specials(w, s)
+	check_eq(int(w.entities[eid].get("lp_latch", -1)), tid, "eater latches in range")
+	check(float(w.entities[tid].hp) < hp0, "latch deals DPS")
+	var latched := false
+	for ev in w.events:
+		if String(ev.get("type", "")) == "LpTurretLatch":
+			latched = true
+			check(float(ev.get("r", 0.0)) > 0.0, "latch FX carries radius")
+	check(latched, "LpTurretLatch emitted on attach")
+	w.entities[eid].pos = tpos + Vector2(Director71.latch_radius() + 3.0, 0)
+	LastProtocol._siege_specials(w, s)
+	check(not w.entities[eid].has("lp_latch"), "latch clears when eater leaves range")
+	var detached := false
+	for ev2 in w.events:
+		if String(ev2.get("type", "")) == "LpTurretDetach":
+			detached = true
+	check(detached, "LpTurretDetach emitted on leave")
+	# --- Sapper jam applies inside jam radius ---
+	var sid := w.spawn_unit("g71_m_sapper", mfid, tpos)
+	check(sid >= 0, "sapper spawns")
+	w.entities[sid].pos = tpos
+	LastProtocol._siege_specials(w, s)
+	check_eq(int(w.entities[sid].get("lp_jam_turret", -1)), tid, "sapper marks jam target")
+	var jammed := false
+	for ev3 in w.events:
+		if String(ev3.get("type", "")) == "LpSapperJam":
+			jammed = true
+			check(float(ev3.get("r", 0.0)) >= Director71.jam_radius() * 0.9, "jam FX carries radius")
+	check(jammed, "LpSapperJam emitted")
+	# --- Body piles from clustered wrecks ---
+	var wreck_defs := ["g71_m_brute", "g71_m_siege_walker", "g71_m_reclaimer"]
+	var pile_at := center + Vector2(30, 0)
+	for i in Director71.pile_min():
+		var def: String = String(wreck_defs[i % wreck_defs.size()])
+		var uid := w.spawn_unit(def, mfid, pile_at + Vector2(float(i) * 0.2, 0))
+		if uid >= 0:
+			w.destroy(uid, "test", fid)
+	LastProtocol._cache_wrecks(w, s)
+	check((s.get("pile_pos", []) as Array).size() >= 1, "clustered wrecks form a body pile")
+	var piled := false
+	for ev4 in w.events:
+		if String(ev4.get("type", "")) == "LpBodyPile" and int(ev4.get("n", 0)) > 0:
+			piled = true
+			check(bool(ev4.get("climb", false)), "pile notes climb")
+	check(piled, "LpBodyPile emitted when a pile forms")
+	var cover_u := w.spawn_unit("rifleman", fid, pile_at)
+	if cover_u >= 0:
+		check(Damage.in_cover(w, w.entities[cover_u]), "body pile gives cover")
+	# --- Glass stalker: hid + g71glass; research_thermal reveals ---
+	var gid := w.spawn_unit("g71_m_glass_stalker", mfid, center + Vector2(12, 0))
+	check(gid >= 0, "glass stalker spawns")
+	w.entities[gid].hid = true
+	w.entities[gid].g71glass = true
+	s.research_thermal = true
+	LastProtocol._glass_camo(w, s)
+	check(not w.entities[gid].has("hid"), "research_thermal strips glass camo")
+	var revealed := false
+	for ev5 in w.events:
+		if String(ev5.get("type", "")) == "LpGlassReveal" and String(ev5.get("how", "")) == "research_thermal":
+			revealed = true
+	check(revealed, "LpGlassReveal how=research_thermal")
+	# Rain/mist proxy: fog morning reveals another stalker.
+	s.research_thermal = false
+	var gid2 := w.spawn_unit("g71_m_glass_stalker", mfid, center + Vector2(14, 0))
+	w.entities[gid2].hid = true
+	w.entities[gid2].g71glass = true
+	var Weather71 = load("res://sim/systems/weather71.gd")
+	if Weather71.active(w):
+		Weather71._st(w).fog = 0.9
+	LastProtocol._glass_camo(w, s)
+	check(not w.entities[gid2].has("hid"), "rain/mist fog reveals glass stalker")
+	# Smoke cloud reveals.
+	var gid3 := w.spawn_unit("g71_m_glass_stalker", mfid, center + Vector2(16, 0))
+	w.entities[gid3].hid = true
+	w.entities[gid3].g71glass = true
+	if Weather71.active(w):
+		Weather71._st(w).fog = 0.0
+	var Senses7 = load("res://sim/systems/senses7.gd")
+	Senses7.add_smoke(w, Vector2(w.entities[gid3].pos), 3.0, 30.0)
+	LastProtocol._glass_camo(w, s)
+	check(not w.entities[gid3].has("hid"), "smoke reveals glass stalker")
+	# --- Fleet board Done-when 6 depth ---
+	var Fleet71 = load("res://sim/systems/fleet71.gd")
+	var board: Dictionary = Fleet71.board(w, fid)
+	check(board.has("docked") and board.has("charging") and board.has("damaged"), "fleet board has dock/charge/dmg")
+	check(board.has("lost") and board.has("in_production"), "fleet board has lost/in_production")
+	check(int((LastProtocol.hud(w).get("fleet", {}) as Dictionary).get("n", 0)) >= 0, "HUD exposes fleet board")
 
 
 func test_lazarus_spawns_after_armour_losses() -> void:

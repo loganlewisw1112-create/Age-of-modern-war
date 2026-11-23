@@ -2,7 +2,7 @@
 
 A single-player real-time strategy war in Godot 4.7.2. Skirmish still stands — three factions, stages, salvage and steel — but the heart of the current build is **Last Protocol**: one night against the Machine tide, walls and robots and a war that does not pause for breath.
 
-Branch **`g71`** is G7.1 *Tide Line*. It is playable. It is not finished.
+Branch **`g71`** is G7.1 *Tide Line*. **UP71** is underway: finish G7.1 Done-when + polish, chase LP-peak toward 60, then G8 Four Sides and G9 Hive Reborn — one continuous phase. It is playable. G7.1 is not locked yet.
 
 ---
 
@@ -44,29 +44,33 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (G7.1, live)
+## In this build (G7.1 + UP71 Stage A polish, live)
 
-Hive network, wildfire and fire-lines, machine death chains, harvester swarms, capture and evolve, night illumination, weather wind and fog, request queue, robot fleet under jam, research / RE / warmind / conduct / infection / Lazarus, core-raid phases, efficiency HUD grades, tide-song audio, and forced-join cuts so the view stays off the sim thread.
+Hive network, wildfire and fire-lines, machine death chains, harvester swarms, capture and evolve, night illumination, weather wind and fog, request queue, robot fleet under jam, research / RE / warmind / conduct / infection / Lazarus, core-raid phases, efficiency HUD grades, tide-song audio, Wave 6 art + E4 motion, and forced-join cuts so the view stays off the sim thread.
 
-Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
+**UP71 polish (Stage A2):** turret-eater latch clear + sapper jam radius events; Reclaimer body-piles as tagged wreck cover; Glass stalker reveal via thermal / rain-mist / smoke; fleet board counts (docked / charging / damaged / lost / in production) on the LP HUD.
 
-**Perf (Done-when 3, quiet remasures):** zoomed-out pan **p10 68.3 / avg 86.2** (gate ≥60 CLEAR); 2k on-screen **p10 69.9 / avg 98.0** (gate ≥60 PASS, beats G7 p10 62.7). LP peak quiet **p10 42.8** (amended ≥30 CLEAR). Evidence: `game/.plan/lp_pan_30_remeasure.log`, `fps_2k_remeasure.log`, `lp_peak_lodfar.log`.
+Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
-**Soaks:** durable 60-min board soak GREEN (`soak_3600_durable_*`). Longer live RE+warmind siege (10 min sim) GREEN — prototype unlock, breakout purge no hive signal, overrun retake, 6 warmind feints, fleet jam no-hack, H1 raid (`live_siege_600_*`).
+**Perf (Done-when 3):** zoomed-out pan **p10 68.3** (gate ≥60 CLEAR); 2k **p10 69.9** (gate ≥60 PASS). LP peak quiet **p10 42.8** (amended ≥30 CLEAR). UP71 is chasing peak toward **≥60** without blocking ship on 60. Fresh peak remasure in progress.
+
+**Soaks / smoke:** Done-when smoke **21/0** (latest `upgrade_board/evidence/smoke_verify71.log`). Prior durable 60-min soak and live siege 600 GREEN; Stage A re-verify soaks running.
 
 ---
 
-## Still open (Done-when holds)
+## Still open (UP71)
 
-- Wave 6 E4 core pillars shipped (infantry, vehicles, turrets, Machine gait, death variety). Optional owner taste pass if something looks off.
+- Stage A: Done-when evidence packs (full suite / 60-min soak / gore fps) + PEAK60 chase + G7.1 LOCK.
+- Then G8 Four Sides → G9 Hive Reborn (scopes frozen in `game/docs/G8_SCOPE.md`, `G9_SCOPE.md`).
 - Frozen Done-when is never weakened to make a check pass.
 
 ---
 
 ## Branch & ship
 
-- Active branch: `g71`
-- Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2).
+- Active branch: `g71` (UP71 execution)
+- Board: `game/.plan/upgrade_board/` (permanent semantic CLAIM board)
+- Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Root README updated every ship.
 - Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (21 suites incl. AIRFIX; last run 0 fails)
 - Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90`
 - Live siege: `godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600`

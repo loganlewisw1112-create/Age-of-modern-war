@@ -178,9 +178,10 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 		target.last_attacker = int(shooter.id)
 		target.last_hit_tick = w.tick
 		# G7.1 C4 Glass stalker: a hit strips light-bending camo (Fog.hid).
+		# Thermal / rain / smoke / research_thermal also clear hid via LastProtocol._glass_camo.
 		if bool(target.get("hid", false)) and String(Content.unit(String(target.get("def", ""))).get("g71_special", "")) == "glass_stalker":
 			target.erase("hid")
-			w.emit("LpGlassReveal", {"id": int(target.id), "by": int(shooter.id)})
+			w.emit("LpGlassReveal", {"id": int(target.id), "by": int(shooter.id), "how": "hit"})
 	# G5 (AIRSYS CR 2590): a cratering weapon closes airfield strips at the impact point
 	var cwd: Dictionary = Content.weapon(String(s.get("weapon", ""))) if String(s.get("weapon", "")) != "" else {}
 	if bool(cwd.get("cratering", false)):

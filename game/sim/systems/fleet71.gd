@@ -21,10 +21,12 @@ static func active(w: SimWorld) -> bool:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "leaders": {}, "jam": {}, "recover": {}}
+		s = {"ver": VER, "leaders": {}, "jam": {}, "recover": {}, "lost": 0}
 		w.sys_state[KEY] = s
 	if not (s.get("recover") is Dictionary):
 		s.recover = {}
+	if not s.has("lost"):
+		s.lost = 0
 	return s
 
 
@@ -95,7 +97,8 @@ static func seed(w: SimWorld, fid: int, center: Vector2) -> Array:
 	return out
 
 
-## Live fleet board for HUD / Done-when 6 telemetry (counts by role + charging / local / recover).
+## Live fleet board for HUD / Done-when 6 telemetry
+## (docked / charging / damaged / lost / in_production + role counts).
 static func board(w: SimWorld, fid: int = -1) -> Dictionary:
 	if not active(w):
 		return {}
@@ -103,23 +106,46 @@ static func board(w: SimWorld, fid: int = -1) -> Dictionary:
 		fid = int(w.sys_state.lp.fid)
 	var by := {}
 	var charging := 0
+	var docked := 0
+	var damaged := 0
 	var local_n := 0
 	var bat_sum := 0.0
 	var n := 0
+	var dmg_frac := float(R().get("board_damaged_frac", 0.6))
+	var dock_r2 := float(R().get("dock_near_r", 2.5))
+	dock_r2 *= dock_r2
 	for e in robots_of(w, fid):
 		var role := String(Content.unit(String(e.def)).get("g71_fleet", "robot"))
 		by[role] = int(by.get(role, 0)) + 1
 		n += 1
 		bat_sum += float(e.get("f71_bat", battery_max()))
-		if bool(e.get("f71_charge", false)):
+		var is_chg := bool(e.get("f71_charge", false))
+		if is_chg:
 			charging += 1
+			var home: Vector2 = e.get("lp_home", Vector2.ZERO)
+			if home == Vector2.ZERO or Vector2(e.pos).distance_squared_to(home) <= dock_r2:
+				docked += 1
 		if bool(e.get("f71_local", false)):
 			local_n += 1
+		var mx := float(e.get("max_hp", e.get("hp_max", 0.0)))
+		if mx <= 0.0:
+			mx = float(Content.unit(String(e.def)).get("hp", 1.0))
+		if mx > 0.0 and float(e.get("hp", 0.0)) / mx < dmg_frac:
+			damaged += 1
+	var in_prod := 0
+	for b in w.buildings_of(fid):
+		for q in (b.get("queue", []) as Array):
+			if is_robot(String(q.get("item", ""))):
+				in_prod += 1
 	var s := _st(w)
 	return {
 		"n": n,
 		"by": by,
 		"charging": charging,
+		"docked": docked,
+		"damaged": damaged,
+		"lost": int(s.get("lost", 0)),
+		"in_production": in_prod,
 		"local": local_n,
 		"recover": (s.recover as Dictionary).size(),
 		"bat_avg": (bat_sum / float(n)) if n > 0 else 0.0,
@@ -199,6 +225,7 @@ static func tick(w: SimWorld) -> void:
 	var s := _st(w)
 	var fid := int(lp.fid)
 	var dt := 1.0 / float(SimWorld.TICK_RATE)
+	_note_losses(w, s, fid)
 	_queue_recoveries(w, s, fid)
 	_run_recoveries(w, s, fid)
 	# Cadence: battery every 10 ticks, elect every 40. Cap dock orders per pass so a low-battery wave
@@ -251,6 +278,18 @@ static func _self_wipe(w: SimWorld, id: int, def: String, pos: Vector2) -> void:
 	if wid >= 0:
 		w.entities.erase(wid)
 	w.emit("Fleet71Wipe", {"id": id, "def": def, "pos": pos})
+
+
+## Count fleet robot losses for Done-when 6 board (hash-safe running total on fleet71.lost).
+static func _note_losses(w: SimWorld, s: Dictionary, fid: int) -> void:
+	for ev in w.events:
+		if String(ev.get("type", "")) != "EntityDestroyed":
+			continue
+		if int(ev.get("owner", -1)) != fid:
+			continue
+		var def := String(ev.get("def", ""))
+		if is_robot(def):
+			s.lost = int(s.get("lost", 0)) + 1
 
 
 ## Queue mule pickups for our fleet wrecks (event + live scan — events clear at step start).

@@ -203,6 +203,8 @@ static func tick(w: SimWorld) -> void:
 			_cache_wrecks(w, s)
 		if (w.tick + 31) % _t(1.0) == 0:
 			_siege_specials(w, s)
+		if (w.tick + 33) % _t(2.0) == 0:
+			_glass_camo(w, s)
 		if (w.tick + 37) % _t(5.0) == 0:
 			_forecast(w, s)
 		if (w.tick + 41) % _t(float(Director71.rules().get("supply_every_s", 90.0))) == 0:
@@ -492,9 +494,10 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 			if t7 != null and L.api(t7, "adopt"):
 				t7.callv("adopt", [w, sid])  # sapper (and any t7-tagged C3) picks up burrower AI
 			var se = w.entities.get(sid)
-			# C4 Glass stalker: start concealed (Fog.hid); Damage clears it when hit.
+			# C4 Glass stalker: start concealed (Fog.hid); Damage / thermal / rain / smoke clear it.
 			if se != null and String(Content.unit(def_id).get("g71_special", "")) == "glass_stalker":
 				se.hid = true
+				se.g71glass = true  # Senses7.thermal_reveals / spot path
 			spawned.append(sid)
 	if not spawned.is_empty():
 		w.emit("LpSiegeSpawn", {"ids": spawned.duplicate(), "defs": roster.duplicate(), "dread": float(s.get("dread", 0.0))})
@@ -541,13 +544,17 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 
 ## Cache wreck positions for C6 cover checks (Damage.in_cover reads s.wreck_pos — no full entity scan per hit).
 ## Also marks body-pile cells (C5): wreck_pos entries that sit in a cluster of pile_min.
+## Piles are climbable ramps (C5) and fire-pour bait for walls with the firepour fit (Walls71 anti_climb).
 static func _cache_wrecks(w: SimWorld, s: Dictionary) -> void:
 	var pos := []
+	var wreck_ids := []
 	for id in w.entities.keys():
 		var x = w.entities[id]
 		if x != null and String(x.get("kind", "")) == "wreck":
 			pos.append(Vector2(x.pos))
+			wreck_ids.append(int(id))
 	pos.sort_custom(func(a, b): return a.x < b.x or (is_equal_approx(a.x, b.x) and a.y < b.y))
+	wreck_ids.sort()
 	s.wreck_pos = pos
 	var piles := []
 	var r2 := float(Director71.rules().get("wreck_cover_r", 1.6))
@@ -561,15 +568,37 @@ static func _cache_wrecks(w: SimWorld, s: Dictionary) -> void:
 				n += 1
 		if n >= need:
 			piles.append(p)
+	var prev_n := (s.get("pile_pos", []) as Array).size() if s.get("pile_pos") is Array else 0
+	# Tag wrecks that sit in a pile so presentation / climb / fire-pour notes stay hash-safe and local.
+	for wid in wreck_ids:
+		var x = w.entities.get(wid)
+		if x == null:
+			continue
+		var in_pile := false
+		var wp: Vector2 = x.pos
+		for p in piles:
+			if wp.distance_squared_to(p) <= r2:
+				in_pile = true
+				break
+		if in_pile:
+			x.lp_pile = true
+		elif x.has("lp_pile"):
+			x.erase("lp_pile")
 	s.pile_pos = piles
+	if piles.size() > prev_n:
+		w.emit("LpBodyPile", {"n": piles.size(), "pos": piles[0], "climb": true, "firepour": true})
+	elif piles.is_empty() and prev_n > 0:
+		w.emit("LpBodyPile", {"n": 0, "pos": Vector2.ZERO, "climb": false, "firepour": false})
 
 
 ## C3 turret-eater latch + sapper jam (Last Protocol Tide).
+## Latch clears when the eater dies (entity gone) or leaves latch_radius / loses its turret.
+## Jam applies whenever a sapper is inside jam_radius of a live defence; FX carries the jam radius.
 static func _siege_specials(w: SimWorld, s: Dictionary) -> void:
-	var latch_r2 := Director71.latch_radius()
-	latch_r2 *= latch_r2
-	var jam_r2 := Director71.jam_radius()
-	jam_r2 *= jam_r2
+	var latch_r := Director71.latch_radius()
+	var latch_r2 := latch_r * latch_r
+	var jam_r := Director71.jam_radius()
+	var jam_r2 := jam_r * jam_r
 	var dps := Director71.latch_dps() * 1.0  # this cadence is 1 s
 	var jam_secs := Director71.jam_s()
 	var defs := w.buildings_of(int(s.fid))
@@ -589,18 +618,85 @@ static func _siege_specials(w: SimWorld, s: Dictionary) -> void:
 			if d < best_d:
 				best_d = d
 				best = b
-		if best == null:
+		if kind == "turret_eater":
+			var was := int(e.get("lp_latch", -1))
+			if best != null and best_d <= latch_r2:
+				var tid := int(best.id)
+				var fresh := was != tid
+				e.lp_latch = tid
+				best.hp = snappedf(maxf(float(best.hp) - dps, 1.0), 1.0 / 1024.0)
+				Turrets71.force_jam(w, best, jam_secs * 0.5)
+				if fresh:
+					w.emit("LpTurretLatch", {"id": int(e.id), "turret": tid, "hp": float(best.hp), "r": latch_r})
+			elif was >= 0:
+				e.erase("lp_latch")
+				w.emit("LpTurretDetach", {"id": int(e.id), "turret": was})
+		elif kind == "sapper":
+			if best != null and best_d <= jam_r2:
+				# force_jam always returns true for a live defence — apply sector jam every pass so the blind sticks.
+				if Turrets71.force_jam(w, best, jam_secs):
+					var face := LpDefence._sector(s, Vector2(best.pos))
+					Fleet71.jam_sector(w, face, jam_secs)
+					var prev_jam := int(e.get("lp_jam_turret", -1))
+					if prev_jam != int(best.id):
+						e.lp_jam_turret = int(best.id)
+						w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id), "sector": face, "r": jam_r})
+			elif e.has("lp_jam_turret"):
+				e.erase("lp_jam_turret")
+
+
+## C4 Glass stalker camo: research_thermal / nearby thermal gear / rain-mist / smoke strip Fog.hid.
+## NVG alone does not (Senses7.thermal_reveals / army71 G1). Hit + sensors71 already emit LpGlassReveal.
+static func _glass_camo(w: SimWorld, s: Dictionary) -> void:
+	var thermal_net := bool(s.get("research_thermal", false))
+	var Weather71 = preload("res://sim/systems/weather71.gd")
+	var Smoke71 = preload("res://sim/systems/smoke71.gd")
+	var Senses7 = preload("res://sim/systems/senses7.gd")
+	var fog := Weather71.fog(w) if Weather71.active(w) else 0.0
+	# Morning mist / wet air stands in for rain until Weather71 grows a rain channel (scope: rain reveals).
+	var rainish := fog >= float(Director71.rules().get("glass_rain_fog", 0.35))
+	var therm_obs: Array = []
+	if not thermal_net:
+		for u in w.units_of(int(s.fid)):
+			if bool(u.get("thermal", false)) or bool(Content.unit(String(u.get("def", ""))).get("thermal", false)):
+				therm_obs.append(Vector2(u.pos))
+	var smoke_clouds: Array = []
+	var st = Senses7.state(w)
+	if st != null and st.get("smoke") is Array:
+		smoke_clouds = st.smoke
+	for e in w.units_of(int(s.mfid)):
+		if String(Content.unit(String(e.get("def", ""))).get("g71_special", "")) != "glass_stalker":
 			continue
-		if kind == "turret_eater" and best_d <= latch_r2:
-			e.lp_latch = int(best.id)
-			best.hp = snappedf(maxf(float(best.hp) - dps, 1.0), 1.0 / 1024.0)
-			Turrets71.force_jam(w, best, jam_secs * 0.5)
-			w.emit("LpTurretLatch", {"id": int(e.id), "turret": int(best.id), "hp": float(best.hp)})
-		elif kind == "sapper" and best_d <= jam_r2:
-			if Turrets71.force_jam(w, best, jam_secs):
-				var face := LpDefence._sector(s, Vector2(best.pos))
-				Fleet71.jam_sector(w, face, jam_secs)
-				w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id), "sector": face})
+		if not e.has("g71glass"):
+			e.g71glass = true
+		if not bool(e.get("hid", false)):
+			continue
+		var why := ""
+		var at: Vector2 = e.pos
+		if thermal_net:
+			why = "research_thermal"
+		elif rainish:
+			why = "rain"
+		elif Smoke71.active(w) and Smoke71.sight_at(w, at) < 0.99:
+			why = "smoke"
+		else:
+			for c in smoke_clouds:
+				if c is Array and c.size() >= 3:
+					var cp := Vector2(float(c[0]), float(c[1]))
+					var cr := float(c[2])
+					if at.distance_squared_to(cp) <= cr * cr:
+						why = "smoke"
+						break
+		if why == "" and not therm_obs.is_empty():
+			var rr := float(Content.unit(String(e.get("def", ""))).get("stealth", {}).get("reveal_range", 4.0))
+			var rr2 := rr * rr
+			for op in therm_obs:
+				if at.distance_squared_to(op) <= rr2:
+					why = "thermal"
+					break
+		if why != "":
+			e.erase("hid")
+			w.emit("LpGlassReveal", {"id": int(e.id), "by": -1, "how": why})
 
 
 ## D1 escalating mid-siege objectives (open list, capped).

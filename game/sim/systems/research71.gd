@@ -151,6 +151,8 @@ static func _apply(w: SimWorld, apply: String) -> void:
 					e.hp = minf(float(e.hp) * 1.12, float(e.max_hp))
 		"thermal":
 			lp.research_thermal = true
+			# Glass stalkers (C4): faction thermal net strips light-bending camo on the next LP glass pass.
+			w.emit("Research71Thermal", {"fid": int(lp.fid)})
 		"plasma":
 			lp.research_plasma = true
 			_unlock_prod(w, int(lp.fid), "a_g71_plasma_gunner")

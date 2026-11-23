@@ -199,9 +199,21 @@ static func lines(d: Dictionary) -> Dictionary:
 		var fleet: Dictionary = d.get("fleet", {})
 		if fleet is Dictionary and int(fleet.get("n", 0)) > 0:
 			dread += "  |  FLEET %d" % int(fleet.n)
+			var dk := int(fleet.get("docked", 0))
+			if dk > 0:
+				dread += " dock %d" % dk
 			var ch := int(fleet.get("charging", 0))
 			if ch > 0:
 				dread += " chg %d" % ch
+			var dmg := int(fleet.get("damaged", 0))
+			if dmg > 0:
+				dread += " dmg %d" % dmg
+			var lost := int(fleet.get("lost", 0))
+			if lost > 0:
+				dread += " lost %d" % lost
+			var prod := int(fleet.get("in_production", 0))
+			if prod > 0:
+				dread += " prod %d" % prod
 			var loc := int(fleet.get("local", 0))
 			if loc > 0:
 				dread += " local %d" % loc
