@@ -19,8 +19,8 @@ const ConductorOrbit = preload("res://presentation/ui71/conductor_orbit.gd")
 const KillZone71 = preload("res://sim/systems/killzone71.gd")
 
 const ACTION := "fire_radial71"
-## [id, label, enabled]. Illumination stays an empty slot until I5 (roster 5A Q6).
-const SLOTS := [["he", "HE", true], ["smoke", "Smoke", true], ["illumination", "Illum (I5)", false],
+## [id, label, enabled]. I5 illumination fires Night71.illuminate (point strike).
+const SLOTS := [["he", "HE", true], ["smoke", "Smoke", true], ["illumination", "Illum", true],
 	["thermobaric", "Thermobaric", true], ["incendiary", "Incendiary", true], ["precision", "Precision", true],
 	["gunship", "Conductor", true], ["cluster", "Cluster", true], ["smart", "Smart", true], ["fpf", "FPF", true],
 	["sectors", "Sectors", true]]
@@ -154,6 +154,8 @@ func finish(a: Vector2, b: Vector2, shift: bool, ctrl: bool) -> Dictionary:
 			cmd = ConductorOrbit.make_cmd(a, b, ctrl)
 		"fpf":
 			cmd = {"type": "fpf_fire", "face": -1 if shift else KillZone71.face_of(mv.get("_world"), a)}
+		"illumination":
+			cmd = {"type": "night71_illuminate", "target": a}
 		_:
 			cmd = StrikeShape.make_cmd(armed, StrikeShape.shape_for(a, b, shift, ctrl), a, b)
 	last_result = mv.issue(cmd)
