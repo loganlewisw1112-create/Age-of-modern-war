@@ -1328,6 +1328,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"research": Research71.board(w),
 		"warmind": _hud_warmind(w),
 		"conduct": _hud_conduct(w),
+		"horror": preload("res://sim/systems/horror71.gd").board(w),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 

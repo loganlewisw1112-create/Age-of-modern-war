@@ -201,7 +201,7 @@ func _refresh_preview() -> void:
 	if key == _preview_key:
 		return
 	_preview_key = key
-	preview = Fortify.preview_line(mv.world, mv.player_fid, wall_def, wall_from, wall_to)
+	preview = Fortify.preview_line(mv.get("_world"), mv.player_fid, wall_def, wall_from, wall_to)
 
 
 func _cost_text(n: int) -> String:
@@ -258,12 +258,13 @@ func _own_field_at(p: Vector2) -> int:
 	var t = mv.entity_at(p, true)
 	if t == null or String(t.kind) != "building" or int(t.owner) != int(mv.player_fid):
 		return -1
-	return int(t.id) if Airfield.field_of(mv.world, int(t.id)) >= 0 else -1
+	return int(t.id) if Airfield.field_of(mv.get("_world"), int(t.id)) >= 0 else -1
 
 
 func _enemy_at(p: Vector2):
 	var t = mv.entity_at(p, true)
-	if t != null and int(t.owner) != int(mv.player_fid) and mv.world.is_enemy(int(mv.player_fid), int(t.owner)):
+	var ww = mv.get("_world")
+	if ww != null and t != null and int(t.owner) != int(mv.player_fid) and ww.is_enemy(int(mv.player_fid), int(t.owner)):
 		return t
 	return null
 
@@ -285,7 +286,7 @@ func _g5_left(p: Vector2) -> bool:
 			if bid < 0:
 				flash("Click an own airfield, hangar or helipad.")
 				return true
-			_send({"type": mode, "unit_ids": ids, "building_id": bid}, mv.world.entities[bid].pos, Color(0.45, 0.85, 1.0))
+			_send({"type": mode, "unit_ids": ids, "building_id": bid}, mv.get("_world").entities[bid].pos, Color(0.45, 0.85, 1.0))
 		"land_at":
 			_send({"type": "land_at", "unit_ids": ids, "cell": cc}, Vector2(c) + Vector2(0.5, 0.5), Color(0.45, 0.85, 1.0))
 		"bombard":
@@ -376,7 +377,7 @@ func on_key(kc: int) -> bool:
 func smart(p: Vector2, t, units: Array) -> bool:
 	if t == null or String(t.kind) != "unit" or int(t.owner) != mv.player_fid or not Transport.is_carrier(t):
 		return false
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
 	var riders: Array = []
 	for id in units:
 		var u = w.entities.get(int(id))

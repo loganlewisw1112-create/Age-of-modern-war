@@ -1,0 +1,13 @@
+{
+  "_meta": "G7.1 J7 horror atmosphere. PROVISIONAL.",
+  "rules": {
+    "g71_horror": {
+      "silence_s": 8.0,
+      "silence_at": 0.42,
+      "eyes_at": 0.35,
+      "night_dread": 0.9,
+      "bodies_max": 6,
+      "body_chance": 0.08
+    }
+  }
+}

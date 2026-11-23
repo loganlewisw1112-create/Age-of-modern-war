@@ -221,6 +221,15 @@ static func lines(d: Dictionary) -> Dictionary:
 		var cond: Dictionary = d.get("conduct", {})
 		if cond is Dictionary and not cond.is_empty() and not bool(cond.get("gold_ok", true)):
 			dread += "  |  CONDUCT %d (%s)" % [int(cond.get("score", 0)), String(cond.get("ending", ""))]
+		var hor: Dictionary = d.get("horror", {})
+		if hor is Dictionary and not hor.is_empty():
+			if bool(hor.get("silence", false)):
+				dread += "  |  SILENCE"
+			if bool(hor.get("night_eyes", false)):
+				dread += "  |  NIGHT EYES"
+			var bn := int(hor.get("bodies_n", 0))
+			if bn > 0:
+				dread += "  |  BODIES %d" % bn
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
