@@ -1475,6 +1475,15 @@ func _on_key(k: InputEventKey) -> bool:
 			if last_alert_pos != null:
 				center_camera_on(last_alert_pos)
 				return true
+		KEY_M:
+			# G7.1 H9: Ctrl+M toggles minimal LP HUD (cinematic).
+			if k.ctrl_pressed:
+				var hud = get_tree().get_first_node_in_group("lp_hud") if is_inside_tree() else null
+				if hud == null:
+					hud = find_child("LpHud", true, false)
+				if hud != null and hud.has_method("set_minimal"):
+					hud.set_minimal(not bool(hud.get("minimal")))
+					return true
 	# panning keys (A/S only pan when no own units are selected)
 	if kc in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT] and not k.ctrl_pressed:
 		_pan_keys[kc] = true

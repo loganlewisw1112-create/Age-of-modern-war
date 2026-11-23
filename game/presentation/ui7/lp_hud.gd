@@ -92,6 +92,7 @@ func _world() -> SimWorld:
 
 func _ready() -> void:
 	name = "LpHud"
+	add_to_group("lp_hud")
 	theme_type_variation = "PlatePanel"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiKit.fit_register(self)

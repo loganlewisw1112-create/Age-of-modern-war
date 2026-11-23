@@ -150,6 +150,11 @@ static func apply_hit(w: SimWorld, shooter: Dictionary, target: Dictionary, s: D
 	if bool(shooter.get("lp_sync", false)):
 		var sm := float(Content.rules().get("g71_director", {}).get("sync_damage", 1.12))
 		dmg *= sm
+	# G7.1 H11: evolved Machines take less damage (harden_mult from dread stage).
+	if target.kind == "unit" and int(target.get("g71_evolve", 0)) > 0:
+		var Evolve71 = preload("res://sim/systems/evolve71.gd")
+		if Evolve71.active(w):
+			dmg /= maxf(Evolve71.harden_mult(w), 1.0)
 	dmg = snappedf(dmg, Q)
 	if target.kind == "building" and target.has("nres"):   # G7.1 BASTION71 G3: nanite-resistant wall coating (LP walls only; CR seq 3364)
 		dmg = snappedf(dmg * SimWorld.Walls71.nres_mult(w, shooter, target), Q)

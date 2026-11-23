@@ -21,3 +21,5 @@ func test_stage_rises_with_dread() -> void:
 	w.sys_state.lp.dread = 0.95
 	Evolve71.tick(w)
 	check(Evolve71.stage(w) >= 4, "stage 4 at high dread")
+	# Harden divides incoming damage in Damage.apply_hit when g71_evolve > 0.
+	check(is_equal_approx(Evolve71.harden_mult(w), 1.0 + 4.0 * 0.08) or Evolve71.harden_mult(w) > 1.2, "harden at stage 4")
