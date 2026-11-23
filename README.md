@@ -56,8 +56,8 @@ Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
 - **Owner look checkpoint (E3)** — approve or reject each sample; full art roll-out waits on that.
 - **E4 animation** — after look approval.
-- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (quiet sample after snap providers: p10 28.3 / avg 32.6; still short of 30).
-- **60-minute peak siege soak** (running / queued) and live RE / warmind siege length.
+- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (best quiet sample p10 28.3 / avg 32.6; still short; atmosphere layers now on snap too).
+- **60-minute peak siege soak** (in progress when packaged) and live RE / warmind siege length.
 - Strict 2k / zoomed-out panning vs every past build where the frozen bar still applies.
 
 Frozen Done-when is never weakened to make a check pass.

@@ -1,12 +1,58 @@
 extends Node2D
-## G7.1 J7 horror atmosphere draw: silence vignette cue, night-eye clusters, body markers.
-## Reads MatchView snap / horror board only when world_readable; never mv.world.
+## G7.1 J7 horror atmosphere draw: silence vignette, night-eye clusters, body markers.
+## Snapshot provider "horror71"; null when idle. Never mv.world from refresh.
+
+const RenderSnap = preload("res://sim/render_snap.gd")
+const KEY := "horror71"
+
+static var _reg_owner := 0
+static var _cache: Variant = null
+static var _cache_tick := -999
+const CACHE_EVERY := 4
 
 var mv: Node = null
 var _silence := false
 var _eyes := false
 var _bodies: Array = []
 var _song := 0.0
+var _sig := -1
+
+
+func _init() -> void:
+	_reg_owner = get_instance_id()
+	RenderSnap.register_g71(KEY, Callable(get_script(), "snap"))
+
+
+func _exit_tree() -> void:
+	if _reg_owner == get_instance_id():
+		RenderSnap.unregister_g71(KEY)
+
+
+static func snap(w, _sn: Dictionary):
+	if not w.sys_state.has("lp"):
+		return null
+	if _cache != null and w.tick - _cache_tick < CACHE_EVERY:
+		return _cache
+	var st = w.sys_state.get("horror71")
+	var Horror71 = preload("res://sim/systems/horror71.gd")
+	if not Horror71.active(w):
+		_cache = null
+		_cache_tick = w.tick
+		return null
+	var b: Dictionary = Horror71.board(w)
+	var bodies: Array = []
+	if st is Dictionary:
+		bodies = (st.get("bodies", []) as Array).duplicate()
+	var sil := bool(b.get("silence", false))
+	var eyes := bool(b.get("night_eyes", false))
+	var song := float(b.get("tide_song", 0.0))
+	if not sil and not eyes and bodies.is_empty() and song < 0.01:
+		_cache = null
+		_cache_tick = w.tick
+		return null
+	_cache = {"silence": sil, "night_eyes": eyes, "tide_song": song, "bodies": bodies}
+	_cache_tick = w.tick
+	return _cache
 
 
 func setup(view: Node) -> void:
@@ -14,26 +60,27 @@ func setup(view: Node) -> void:
 	z_index = 40
 
 
-## Called each frame from G71Attach.refresh_all with the latest render snap.
 func refresh(snap: Dictionary) -> void:
-	if snap.is_empty():
+	if snap.is_empty() or mv == null:
 		return
-	if mv == null or not mv.has_method("world_readable") or not mv.world_readable():
+	var row = (snap.get("g71", {}) as Dictionary).get(KEY)
+	if row == null:
+		if _silence or _eyes or not _bodies.is_empty() or _song > 0.01:
+			_silence = false
+			_eyes = false
+			_bodies = []
+			_song = 0.0
+			_sig = -1
+			queue_redraw()
 		return
-	var w = mv.get("_world")
-	if w == null:
+	var sil := bool(row.get("silence", false))
+	var eyes := bool(row.get("night_eyes", false))
+	var song := float(row.get("tide_song", 0.0))
+	var bodies: Array = row.get("bodies", [])
+	var sig := bodies.size() + (2 if sil else 0) + (4 if eyes else 0) + int(song * 50.0)
+	if sig == _sig:
 		return
-	var Horror71 = preload("res://sim/systems/horror71.gd")
-	var b: Dictionary = Horror71.board(w)
-	var sil := bool(b.get("silence", false))
-	var eyes := bool(b.get("night_eyes", false))
-	var song := float(b.get("tide_song", 0.0))
-	var st = w.sys_state.get("horror71")
-	var bodies: Array = []
-	if st is Dictionary:
-		bodies = (st.get("bodies", []) as Array).duplicate()
-	if sil == _silence and eyes == _eyes and is_equal_approx(song, _song) and bodies.size() == _bodies.size():
-		return
+	_sig = sig
 	_silence = sil
 	_eyes = eyes
 	_song = song
@@ -43,11 +90,9 @@ func refresh(snap: Dictionary) -> void:
 
 func _draw() -> void:
 	if _silence:
-		# Soft edge darken: the silence-before cue.
 		var r := get_viewport_rect().size
 		draw_rect(Rect2(Vector2.ZERO, r), Color(0.02, 0.02, 0.05, 0.18))
 	if _eyes and mv != null:
-		# Cluster of glowing eyes across the far field (screen-space scatter, deterministic).
 		var n := 24 + int(_song * 40.0)
 		for i in n:
 			var x := fmod(float(i * 97 + 13), 1.0)
