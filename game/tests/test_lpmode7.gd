@@ -485,6 +485,9 @@ func test_base7_real_base_built() -> void:
 		# refilling lockers, refuelling): the facility's own engineer crew (e.eng7) belongs there too.
 		if e.has("eng7"):
 			continue
+		# G7.1 F fleet stubs (wall sentinels / dogs / UGVs) seed on the outer ring, not the CN compound.
+		if String(Content.unit(String(e.def)).get("g71_fleet", "")) != "":
+			continue
 		if comp.has_point(Vector2i(int(floor(e.pos.x)), int(floor(e.pos.y)))):
 			inside.append(String(e.def))
 	check_eq(inside, [], "no defence unit parked inside the facility compound")

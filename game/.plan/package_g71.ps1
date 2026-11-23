@@ -1,8 +1,6 @@
 # G7.1 playable package: import -> export-pack -> exe+dll+PLAY_ME -> build/ + Downloads + zip.
-# Usage (from anywhere): powershell -File game/.plan/package_g71.ps1
-param(
-  [string]$Note = ""
-)
+# Usage: powershell -NoProfile -File game/.plan/package_g71.ps1
+param([string]$Note = "")
 $ErrorActionPreference = "Stop"
 $root = "C:\CODING\PROJECTS - CURRENTLY WORKING ON\RTS Age of Modern Warfare"
 $godot = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe"
@@ -14,16 +12,19 @@ $out = Join-Path $root "build\RTS_Age_of_Modern_War_$tag"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $playPath = Join-Path $root "build\PLAY_ME_G71.txt"
 if (-not (Test-Path $playPath)) {
-  Set-Content -Path $playPath -Value "RTS: Age of Modern War — G7.1 playable ($sha)`nPLAY: double-click RTS_Age_of_Modern_War.exe`n" -Encoding UTF8
+  @(
+    "RTS: Age of Modern War - G7.1 playable ($sha)"
+    "PLAY: double-click RTS_Age_of_Modern_War.exe"
+    "Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it."
+    "LAST PROTOCOL: main menu > Last Protocol."
+  ) | Set-Content -Path $playPath -Encoding ascii
 }
 if ($Note -ne "") {
-  Add-Content -Path $playPath -Value "`n$Note" -Encoding UTF8
+  Add-Content -Path $playPath -Value $Note -Encoding ascii
 }
-# stamp commit at top
 $play = Get-Content $playPath -Raw
-if ($play -notmatch $sha) {
-  $play = "Commit: $sha`n`n" + $play
-  Set-Content -Path $playPath -Value $play -Encoding UTF8
+if ($play -notmatch [regex]::Escape($sha)) {
+  Set-Content -Path $playPath -Value ("Commit: $sha`r`n`r`n" + $play) -Encoding ascii
 }
 Copy-Item $playPath (Join-Path $out "PLAY_ME.txt") -Force
 Set-Location (Join-Path $root "game")

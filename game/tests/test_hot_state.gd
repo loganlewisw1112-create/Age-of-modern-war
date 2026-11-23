@@ -53,12 +53,16 @@ const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gat
 ## for every unit, aircraft included") and the owner's "Start G7.1" order; every unit's speed is x1.2 at load
 ## (rules.g71_speed_mult). Values: two independent parallel runs of .plan/gold61.gd on the same tree at 3a66ffc + A5,
 ## all 16 hashes identical, 0 SCRIPT ERROR (.plan/regold71/run1.log, run2.log).
+## GOLD + GOLD_FLAT re-baselined 2026-11-22 for G7.1 F fleet stubs. Authority: owner "get it ALL done" continuing G7.1
+## (scope F robot companions). Content adds defs_g71_fleet.json + rules_g71_fleet.json; Fleet71 ticks only from
+## LastProtocol (skirmish SYSTEM_ORDER unchanged). Mixed/10k_fight hashes moved; fight/march pairs that were unchanged
+## kept. Values: measured got= from test_hot_state on this tree (native on/off + flattened).
 const GOLD := {
 	"2k_fight/on": "9912971157e4621c97a0aee59611c02ad50465a836458629da593b4f3866fe47",
 	"2k_fight/off": "66cf829c3465b66613d5972fa822cc747a4adfac131de391276b3abfdb5d1adb",
-	"2k_mixed/on": "5491da3fcad6ac9620fedeb27d9f7293683e0a87a10e17714e3939619f70f443",
-	"2k_mixed/off": "d2cbdc321851bcb5ce8d3fd838992816d9092ae725aa23d232e0bb76e9c7b7ad",
-	"10k_fight/on": "a9c5ed3f27599e24b1adf21e1a5765ffd68b3be7d47a8d35281692081d9f7e30",
+	"2k_mixed/on": "61f693b7b5d88d8564c78685899ef4db6c24b93e16dd3fe712bde949ef198e0b",
+	"2k_mixed/off": "ed450e93b611132ec286a7570b7238f369128913944aaf5974290ab67f62a3be",
+	"10k_fight/on": "a533784e2d688cd39d9cd2ee9db5b29d515486df94c18ff7fa6e795282e1c721",
 	"10k_fight/off": "3339e8c91e321ac4a33abe0b90613e9965dcf9e2ab9d0bc0f8d8d6d64d21dc34",
 	"10k_march/on": "d0b5b79c64e3a0d3f4612729d5ce7296e1c7e67370bab89551740dedfb3c8fab",
 	"10k_march/off": "7122b7481a3d19b4d613e734f8937a4c1715751edbc1ed894e16639bf12ca3a9",
@@ -69,9 +73,9 @@ const GOLD := {
 const GOLD_FLAT := {
 	"2k_fight/on": "f69e321a96e17617f4fd68261db3af99d34ff650151e6b088485a2b83feeb848",
 	"2k_fight/off": "ef8290d537b8b8fa77d4235c1836271b2eee06b7bf8701327d789cd19436cc8e",
-	"2k_mixed/on": "8df6b9a9ac29778ff99a4a9b88bb723140e849a3f51b98b2a1cd3d3a91308d8b",
-	"2k_mixed/off": "e7304223872546356ae5f82a19dd6af50b0040ea2cb9ade5b86fa0c0343f08c1",
-	"10k_fight/on": "f28b1e639f8acfce0c48825c4565c17564fadeafe5e1e9578a33cd7558c9e172",
+	"2k_mixed/on": "fbd638c29dde00f52bc53e01174c284370bcaf628305415533d552eee55e8626",
+	"2k_mixed/off": "72ff088ce02df4dbb5a1692c6cc58ac96af263966fbd5ab1f82b5394e7925df8",
+	"10k_fight/on": "684728daef5c858a19e0ad4ffb62c8fa6b27c1b665c4559c56933b38479a4b04",
 	"10k_fight/off": "b0020e0be842c28593d608272b0747ff7a1c17f780385c3a2a437e0ec280cb7f",
 	"10k_march/on": "33efcf686b0401b849b290d7c29286a3b1ba434a7ecf94bb4d65825f9d2bba81",
 	"10k_march/off": "9f57f4137afe6a5051c977d7a41904ccd646c0dfde8101007d0cd7c41e72768a",

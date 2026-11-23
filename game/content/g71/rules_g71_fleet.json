@@ -1,0 +1,14 @@
+{
+  "_meta": "G7.1 F robot fleet rules. Numbers PROVISIONAL.",
+  "rules": {
+    "g71_fleet": {
+      "battery_max": 100.0,
+      "drain_per_s": 1.2,
+      "charge_per_s": 8.0,
+      "low_frac": 0.25,
+      "seed_sentinels": 8,
+      "seed_dogs": 4,
+      "seed_ugvs": 2
+    }
+  }
+}

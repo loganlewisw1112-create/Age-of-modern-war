@@ -30,6 +30,7 @@ const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1–C6 d
 const Turrets71 = preload("res://sim/systems/turrets71.gd")
 const Supply8 = preload("res://sim/systems/supply8.gd")
 const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")
+const Fleet71 = preload("res://sim/systems/fleet71.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -221,6 +222,8 @@ static func tick(w: SimWorld) -> void:
 			_hunt_ops(w, s)
 		if (w.tick + 71) % _t(8.0) == 0 and float(s.get("dread", 0.0)) >= float(Director71.rules().get("siege_at", 0.85)):
 			_spawn_boss(w, s, "siege")
+	# F robot fleet (ticked from LP only so skirmish hashes stay put).
+	Fleet71.tick(w)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -232,7 +235,14 @@ static func _try_fill(w: SimWorld, s: Dictionary) -> void:
 		s.fill_tick = w.tick  # the fill's own CnTeamReady events land in this tick's list: not counted twice
 		var st0: Dictionary = R().get("start", {})
 		s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))
-		w.emit("LpFacilityReady", {"teams": s.teams_total})
+		# F robot fleet stub: seed on the outer ring (not inside the CN facility compound). Full ~150 later.
+		var fr: Dictionary = Content.rules().get("g71_fleet", {})
+		var outer: Rect2i = s.base.rings[0].rect
+		var fleet_at := Vector2(outer.get_center()) + Vector2(0.5, float(outer.size.y) * 0.5 - 2.0)
+		var seeded: Array = Fleet71.seed(w, int(s.fid), fleet_at,
+			int(fr.get("seed_sentinels", 8)), int(fr.get("seed_dogs", 4)), int(fr.get("seed_ugvs", 2)))
+		s.fleet_n = seeded.size()
+		w.emit("LpFacilityReady", {"teams": s.teams_total, "fleet": seeded.size()})
 
 
 ## Stats from this tick's events (systems before LastProtocol in SYSTEM_ORDER).
@@ -1227,6 +1237,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"pile_n": (s.get("pile_pos", []) as Array).size(),
 		"wall_crack_n": (s.get("wall_crack", []) as Array).size(),
 		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
+		"fleet_n": int(s.get("fleet_n", 0)),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
