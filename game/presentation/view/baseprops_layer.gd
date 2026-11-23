@@ -36,7 +36,7 @@ var drawn_lanes := 0
 
 func setup(view) -> void:
 	mv = view
-	map = view.world.map if view != null and view.get("world") != null else {}
+	map = view.world.map if view != null and view.get("_world") != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	for k in ["street_light", "flood_mast", "glow_warm", "glow_cold", "pad_light"]:
 		var p := ART + "props/%s.png" % k
@@ -61,7 +61,7 @@ func refresh(_snap: Dictionary) -> void:
 		_frame -= 1   # G7 PERF7C: mv.world would join the in-flight sim step; retry next frame (<= 1 s late)
 	elif _frame % 15 == 1:   # facility state changes slowly (lockdown, dropship on the pad)
 		_fac_frame = _frame
-		var w = mv.get("world")
+		var w = mv.get("_world")  # never mv.world: that getter forces a sim join
 		facs = CnFacility.render_entries(w) if w != null else []
 		var key := str(facs.size())
 		for F in facs:

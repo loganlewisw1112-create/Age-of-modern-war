@@ -129,7 +129,7 @@ var _vr := Rect2()
 
 func setup(view) -> void:
 	mv = view
-	map = view.world.map if view != null and view.get("world") != null else {}
+	map = view.world.map if view != null and view.get("_world") != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	var hs := absi(hash(Vector3i(int(map.get("w", 64)), int(map.get("h", 64)), int(map.get("seed", 7)))))
 	wind = Vector2.RIGHT.rotated(float(hs % 6283) / 1000.0)
@@ -557,7 +557,7 @@ func _refresh(snap: Dictionary) -> void:
 	# facility entries: re-read every 15 frames (a facility changes slowly), never while a sim step is in flight
 	if _frame - _fac_frame >= 15 and not (mv.has_method("sim_busy") and mv.sim_busy()):
 		_fac_frame = _frame
-		var w = mv.get("world")
+		var w = mv.get("_world")
 		var fe: Array = CnFacility.render_entries(w) if w != null and CnFacility.active(w) else []
 		var key := str(fe.size())
 		for F in fe:

@@ -92,7 +92,7 @@ func _gather() -> void:
 	_heard = []
 	if mv == null or not visible:
 		return
-	var w = mv.get("world")
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
 	if w == null or not w.sys_state.has("senses7"):
 		return
 	var fid := int(mv.get("player_fid")) if mv.get("player_fid") != null else 0

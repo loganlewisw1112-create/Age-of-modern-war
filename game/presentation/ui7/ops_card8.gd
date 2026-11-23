@@ -145,7 +145,7 @@ func _mk(parent: Control, nm: String, text: String, tip: String, cb: Callable) -
 func world() -> SimWorld:
 	if world_override != null:
 		return world_override
-	return mv.get("world") as SimWorld if mv != null else null
+	return mv.get("_world") as SimWorld if mv != null else null
 
 
 func pf() -> int:

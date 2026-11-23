@@ -107,7 +107,7 @@ var hidden_occ := 0
 
 func setup(view) -> void:
 	mv = view
-	var w = view.get("world") if view != null else null
+	var w = view.get("_world") if view != null else null
 	hm = ViewUtil.height_map_of(w.map) if w != null else {}
 	glow = Node2D.new()
 	glow.name = "Seq7Glow"
@@ -134,7 +134,7 @@ func refresh(snap: Dictionary) -> void:
 	_frame += 1
 	if _frame - _read_frame >= READ_EVERY and not (mv.has_method("sim_busy") and mv.sim_busy()):
 		_read_frame = _frame
-		_read(mv.get("world"))
+		_read(mv.get("_world"))
 	if facs.is_empty() and actors.is_empty() and puffs.is_empty():
 		visible = false
 		return

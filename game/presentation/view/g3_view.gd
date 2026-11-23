@@ -52,9 +52,9 @@ func _draw() -> void:
 
 
 func _draw_body() -> void:
-	if mv == null or mv.world == null:
+	if mv == null or mv.get("_world") == null:
 		return
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world")
 	var pf: int = mv.player_fid
 	var sel_hub := {}
 	var energy_sel := false

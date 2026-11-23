@@ -102,7 +102,7 @@ static func play(match_view: Node, root: Control, what: String, res: Dictionary 
 	dd.kind = what
 	dd.result = res
 	dd.on_done = cb
-	var w: SimWorld = match_view.get("world") as SimWorld if match_view != null else null
+	var w: SimWorld = match_view.get("_world") as SimWorld if match_view != null else null
 	if what == "opening" and w != null:
 		opened[w.seed_value] = true
 	if match_view != null and match_view.is_inside_tree():
@@ -113,7 +113,7 @@ static func play(match_view: Node, root: Control, what: String, res: Dictionary 
 
 
 func _world() -> SimWorld:
-	return mv.get("world") as SimWorld if mv != null else null
+	return mv.get("_world") as SimWorld if mv != null else null
 
 
 func _ready() -> void:

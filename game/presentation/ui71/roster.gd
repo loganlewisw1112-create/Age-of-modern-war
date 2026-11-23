@@ -161,7 +161,7 @@ func _max_rows() -> int:
 func refresh() -> void:
 	if panel == null or mv == null:
 		return
-	var w = mv.get("world")
+	var w = mv.get("_world")
 	if w == null:
 		return
 	var sel: Array = mv.get("selection")
@@ -241,7 +241,7 @@ func _row_input(ev: InputEvent, ids: Array) -> void:
 
 ## Row click (public for the tests / the playtest flow): narrow to `ids`; `centre` = also move the camera to them.
 func click_row(ids: Array, centre: bool) -> void:
-	var w = mv.get("world")
+	var w = mv.get("_world")
 	if centre:
 		mv.center_camera_on(centroid(w, ids))
 		return

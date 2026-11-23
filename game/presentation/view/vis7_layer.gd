@@ -72,7 +72,7 @@ var _hook := false                # entity_layer has the x7 hook (frames swapped
 
 func setup(view) -> void:
 	mv = view
-	var w = view.get("world")
+	var w = view.get("_world")
 	if w != null and w.get("map") is Dictionary:
 		hm = ViewUtil.height_map_of(w.map)
 	var tr: Dictionary = Content.rules().get("g7_cn", {}).get("topple", {}) if Content.rules().get("g7_cn") is Dictionary else {}

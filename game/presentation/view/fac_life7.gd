@@ -131,7 +131,7 @@ func setup(view) -> void:
 	mv = view
 	if OS.get_cmdline_user_args().has("--no-life7"):   # fps A/B (bench child args + --no-life7)
 		on = false
-	var map: Dictionary = view.world.map if view != null and view.get("world") != null else {}
+	var map: Dictionary = view.world.map if view != null and view.get("_world") != null else {}
 	hm = ViewUtil.height_map_of(map) if not map.is_empty() else {}
 	_load_art()
 	glows = Node2D.new()
@@ -196,7 +196,7 @@ func refresh(snap: Dictionary) -> void:
 		_frame -= 1   # the world would join the in-flight sim step; retry next frame (<= 1 s late)
 	elif _frame % 15 == 1:
 		_fac_frame = _frame
-		var w = mv.get("world")
+		var w = mv.get("_world")
 		facs = CnFacility.render_entries(w) if w != null and CnFacility.active(w) else []
 		var key := str(facs.size())
 		for F in facs:
