@@ -1,11 +1,11 @@
 extends RefCounted
-## G7.1 F robot fleet stub (Last Protocol only). Charge drain, dock recover, swarm leader re-election,
-## jam-local autonomy. Full ~150 fleet + bay polish is later. Numbers PROVISIONAL.
+## G7.1 F robot fleet (Last Protocol only). Charge drain, dock recover, swarm leader re-election,
+## jam-local autonomy, mule wreck recovery before Reclaimer. Full ~150 + bay polish continues.
 ## Does not preload last_protocol.gd (LastProtocol already preloads us).
 
 const KEY := "fleet71"
 const VER := 1
-const DEFS := ["g71_wall_sentinel", "g71_robot_dog", "g71_ugv_mg"]
+const DEFS := ["g71_wall_sentinel", "g71_robot_dog", "g71_ugv_mg", "g71_robot_mule", "g71_hunter_tank"]
 
 
 static func R() -> Dictionary:
@@ -20,13 +20,19 @@ static func active(w: SimWorld) -> bool:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "leaders": {}, "jam": {}}
+		s = {"ver": VER, "leaders": {}, "jam": {}, "recover": {}}
 		w.sys_state[KEY] = s
+	if not (s.get("recover") is Dictionary):
+		s.recover = {}
 	return s
 
 
 static func is_robot(def_id: String) -> bool:
 	return String(Content.unit(def_id).get("g71_fleet", "")) != ""
+
+
+static func is_mule(def_id: String) -> bool:
+	return String(Content.unit(def_id).get("g71_fleet", "")) == "mule"
 
 
 static func battery_max() -> float:
@@ -45,15 +51,30 @@ static func low_frac() -> float:
 	return float(R().get("low_frac", 0.25))
 
 
-## Seed a small starter fleet around the LP base (full 150 is later). Returns spawned ids.
-static func seed(w: SimWorld, fid: int, center: Vector2, n_sent: int = 8, n_dog: int = 4, n_ugv: int = 2) -> Array:
+## Seed a starter fleet around the LP base (F9 target ~150; counts from rules). Returns spawned ids.
+static func seed(w: SimWorld, fid: int, center: Vector2,
+		n_sent: int = -1, n_dog: int = -1, n_ugv: int = -1, n_mule: int = -1, n_hunt: int = -1) -> Array:
 	_st(w)
+	var fr := R()
+	if n_sent < 0:
+		n_sent = int(fr.get("seed_sentinels", 32))
+	if n_dog < 0:
+		n_dog = int(fr.get("seed_dogs", 16))
+	if n_ugv < 0:
+		n_ugv = int(fr.get("seed_ugvs", 12))
+	if n_mule < 0:
+		n_mule = int(fr.get("seed_mules", 8))
+	if n_hunt < 0:
+		n_hunt = int(fr.get("seed_hunters", 2))
 	var out := []
 	var packs := [
 		["g71_wall_sentinel", n_sent, 6.0],
-		["g71_robot_dog", n_dog, 4.0],
+		["g71_robot_dog", n_dog, 4.5],
 		["g71_ugv_mg", n_ugv, 8.0],
+		["g71_robot_mule", n_mule, 5.5],
+		["g71_hunter_tank", n_hunt, 10.0],
 	]
+	var total := maxi(n_sent + n_dog + n_ugv + n_mule + n_hunt, 1)
 	var i := 0
 	for pack in packs:
 		var def := String(pack[0])
@@ -62,7 +83,7 @@ static func seed(w: SimWorld, fid: int, center: Vector2, n_sent: int = 8, n_dog:
 		var count := int(pack[1])
 		var rad := float(pack[2])
 		for k in count:
-			var a := TAU * float(i) / maxf(float(n_sent + n_dog + n_ugv), 1.0)
+			var a := TAU * float(i) / float(total)
 			var pos := center + Vector2(cos(a), sin(a)) * rad
 			var id := w.spawn_unit(def, fid, pos)
 			if id >= 0:
@@ -74,7 +95,7 @@ static func seed(w: SimWorld, fid: int, center: Vector2, n_sent: int = 8, n_dog:
 			i += 1
 	_elect(w, fid)
 	if not out.is_empty():
-		w.emit("Fleet71Seed", {"n": out.size(), "fid": fid})
+		w.emit("Fleet71Seed", {"n": out.size(), "fid": fid, "pos": center})
 	return out
 
 
@@ -86,6 +107,14 @@ static func robots_of(w: SimWorld, fid: int) -> Array:
 	return out
 
 
+static func mules_of(w: SimWorld, fid: int) -> Array:
+	var out := []
+	for e in robots_of(w, fid):
+		if is_mule(String(e.def)):
+			out.append(e)
+	return out
+
+
 static func _elect(w: SimWorld, fid: int) -> void:
 	var s := _st(w)
 	var bots: Array = robots_of(w, fid)
@@ -93,24 +122,37 @@ static func _elect(w: SimWorld, fid: int) -> void:
 		s.leaders.erase(str(fid))
 		return
 	bots.sort_custom(func(a, b): return int(a.id) < int(b.id))
-	# Prefer a sentinel, else highest battery, else lowest id.
+	# Prefer a sentinel, else highest battery, else lowest id. Skip mules as leaders.
 	var best = null
 	for e in bots:
-		if String(Content.unit(String(e.def)).get("g71_fleet", "")) == "sentinel":
+		var role := String(Content.unit(String(e.def)).get("g71_fleet", ""))
+		if role == "mule":
+			continue
+		if role == "sentinel":
 			if best == null or float(e.get("f71_bat", 0.0)) > float(best.get("f71_bat", 0.0)):
 				best = e
 	if best == null:
-		best = bots[0]
 		for e in bots:
-			if float(e.get("f71_bat", 0.0)) > float(best.get("f71_bat", 0.0)):
-				best = e
+			if is_mule(String(e.def)):
+				continue
+			best = e
+			break
+		if best != null:
+			for e in bots:
+				if is_mule(String(e.def)):
+					continue
+				if float(e.get("f71_bat", 0.0)) > float(best.get("f71_bat", 0.0)):
+					best = e
+	if best == null:
+		s.leaders.erase(str(fid))
+		return
 	var lid := int(best.id)
 	var prev := int(s.leaders.get(str(fid), -1))
 	if prev != lid:
 		s.leaders[str(fid)] = lid
 		for e in bots:
 			e.f71_leader = int(e.id) == lid
-		w.emit("Fleet71Leader", {"fid": fid, "id": lid, "def": String(best.def)})
+		w.emit("Fleet71Leader", {"fid": fid, "id": lid, "def": String(best.def), "pos": Vector2(best.pos)})
 
 
 ## Mark a sector jammed until tick; robots there go local-autonomy (keep fighting, no hack flip).
@@ -129,6 +171,8 @@ static func tick(w: SimWorld) -> void:
 	var s := _st(w)
 	var fid := int(lp.fid)
 	var dt := 1.0 / float(SimWorld.TICK_RATE)
+	_queue_recoveries(w, s, fid)
+	_run_recoveries(w, s, fid)
 	# Cadence: battery every 10 ticks, elect every 40.
 	if w.tick % 10 == 0:
 		for e in robots_of(w, fid):
@@ -158,3 +202,110 @@ static func tick(w: SimWorld) -> void:
 		var lid := int(s.leaders.get(str(fid), -1))
 		if lid < 0 or not w.entities.has(lid):
 			_elect(w, fid)
+
+
+## Queue mule pickups for our fleet wrecks (event + live scan — events clear at step start).
+static func _queue_recoveries(w: SimWorld, s: Dictionary, fid: int) -> void:
+	var grace := int(R().get("recover_grace_ticks", 90))
+	for ev in w.events:
+		if String(ev.get("type", "")) != "EntityDestroyed":
+			continue
+		if int(ev.get("owner", -1)) != fid:
+			continue
+		var def := String(ev.get("def", ""))
+		if not is_robot(def) or is_mule(def):
+			continue
+		_offer_wreck(w, s, _wreck_near(w, Vector2(ev.get("pos", Vector2.ZERO)), def), def, grace)
+	# Live scan every 5 ticks so wrecks from between ticks / mid-step destroys still get mules.
+	if w.tick % 5 != 0:
+		return
+	for id in w.entities:
+		var x = w.entities[id]
+		if x == null or String(x.get("kind", "")) != "wreck":
+			continue
+		if int(x.get("from_owner", -1)) != fid:
+			continue
+		var def2 := String(x.get("def", ""))
+		if not is_robot(def2) or is_mule(def2):
+			continue
+		_offer_wreck(w, s, int(id), def2, grace)
+
+
+static func _offer_wreck(w: SimWorld, s: Dictionary, wid: int, def: String, grace: int) -> void:
+	if wid < 0:
+		return
+	var key := str(wid)
+	if s.recover.has(key):
+		return
+	s.recover[key] = {"wreck": wid, "def": def, "until": w.tick + grace, "mule": -1}
+	w.emit("Fleet71RecoverQueued", {"wreck": wid, "def": def})
+
+
+static func _wreck_near(w: SimWorld, at: Vector2, def: String) -> int:
+	var best := -1
+	var best_d := 2.25
+	for id in w.entities:
+		var x = w.entities[id]
+		if x == null or String(x.get("kind", "")) != "wreck":
+			continue
+		if String(x.get("def", "")) != def:
+			continue
+		var d: float = Vector2(x.pos).distance_squared_to(at)
+		if d < best_d:
+			best_d = d
+			best = int(id)
+	return best
+
+
+static func _run_recoveries(w: SimWorld, s: Dictionary, fid: int) -> void:
+	var reach := float(R().get("recover_reach", 1.8))
+	var reach2 := reach * reach
+	var mules: Array = mules_of(w, fid)
+	var done := []
+	for key in s.recover.keys():
+		var job: Dictionary = s.recover[key]
+		var wid := int(job.get("wreck", -1))
+		if wid < 0 or not w.entities.has(wid) or String(w.entities[wid].get("kind", "")) != "wreck":
+			done.append(key)
+			continue
+		if w.tick > int(job.get("until", 0)):
+			done.append(key)
+			continue
+		var wreck_pos: Vector2 = w.entities[wid].pos
+		var mid := int(job.get("mule", -1))
+		if mid < 0 or not w.entities.has(mid) or not is_mule(String(w.entities[mid].get("def", ""))):
+			mid = _nearest_mule(mules, wreck_pos, s)
+			job.mule = mid
+			s.recover[key] = job
+			if mid >= 0:
+				w.submit({"type": "move", "issuer": fid, "unit_ids": [mid], "target": wreck_pos, "ai_cmd": "lp"})
+		if mid < 0:
+			continue
+		var mule = w.entities[mid]
+		if Vector2(mule.pos).distance_squared_to(wreck_pos) > reach2:
+			continue
+		# Recover: remove wreck so Reclaimer cannot print from it.
+		w.entities.erase(wid)
+		w.emit("Fleet71Recovered", {"wreck": wid, "mule": mid, "def": String(job.get("def", "")), "pos": wreck_pos})
+		done.append(key)
+	for key in done:
+		s.recover.erase(key)
+
+
+static func _nearest_mule(mules: Array, at: Vector2, s: Dictionary) -> int:
+	var busy := {}
+	for job in s.recover.values():
+		var mid := int(job.get("mule", -1))
+		if mid >= 0:
+			busy[mid] = true
+	var best := -1
+	var best_d := 1.0e12
+	for e in mules:
+		var id := int(e.id)
+		if busy.has(id):
+			continue
+		var d: float = Vector2(e.pos).distance_squared_to(at)
+		if d < best_d:
+			best_d = d
+			best = id
+	return best

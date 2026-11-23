@@ -21,6 +21,11 @@
     "lp71.boss": {"text": "Mini-boss inbound: {0}!", "cat": "alert", "prio": 92, "cd": 25.0},
     "lp71.boss_down": {"text": "Mini-boss down!", "cat": "command", "prio": 85, "cd": 12.0},
     "lp71.wall_rotate": {"text": "Rotating fresh squads onto the {0} face.", "cat": "command", "prio": 73, "cd": 10.0},
-    "lp71.supply_threatened": {"text": "Machines moving on the supply drop — hold the LZ!", "cat": "alert", "prio": 86, "cd": 12.0}
+    "lp71.supply_threatened": {"text": "Machines moving on the supply drop — hold the LZ!", "cat": "alert", "prio": 86, "cd": 12.0},
+    "lp71.fleet_seed": {"text": "Robot fleet online — {0} units on the wall.", "cat": "command", "prio": 68, "cd": 30.0},
+    "lp71.fleet_leader": {"text": "Swarm leader elected.", "cat": "intel", "prio": 55, "cd": 12.0},
+    "lp71.fleet_jam": {"text": "Sector jammed — robots on local autonomy.", "cat": "alert", "prio": 80, "cd": 16.0},
+    "lp71.fleet_dock": {"text": "Robot returning to charge.", "cat": "intel", "prio": 45, "cd": 8.0},
+    "lp71.fleet_recover": {"text": "Mule recovering a downed robot — deny the Reclaimer!", "cat": "command", "prio": 78, "cd": 10.0}
   }
 }

@@ -1,14 +1,18 @@
 {
-  "_meta": "G7.1 F robot fleet rules. Numbers PROVISIONAL.",
+  "_meta": "G7.1 F robot fleet rules. Seed counts climb toward F9 ~150. Numbers PROVISIONAL.",
   "rules": {
     "g71_fleet": {
       "battery_max": 100.0,
       "drain_per_s": 1.2,
       "charge_per_s": 8.0,
       "low_frac": 0.25,
-      "seed_sentinels": 8,
-      "seed_dogs": 4,
-      "seed_ugvs": 2
+      "seed_sentinels": 32,
+      "seed_dogs": 16,
+      "seed_ugvs": 12,
+      "seed_mules": 8,
+      "seed_hunters": 2,
+      "recover_reach": 1.8,
+      "recover_grace_ticks": 90
     }
   }
 }

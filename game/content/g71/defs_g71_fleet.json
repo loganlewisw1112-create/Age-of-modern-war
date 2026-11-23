@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 F robot fleet stubs (docs/G71_SCOPE.md F1). Wall sentinel, robot dog, armed UGV. Behaviour polish (charge, mesh, modules) follows. Art stand-in at look checkpoint. Every number PROVISIONAL.",
+  "_meta": "G7.1 F robot fleet (docs/G71_SCOPE.md F1/F7/F9). Sentinels, dogs, UGVs, mules, hunter-tank. Charge/mesh/modules polish follows. Art stand-in at look checkpoint. Every number PROVISIONAL.",
   "units": {
     "g71_wall_sentinel": {
       "name": "Wall Sentinel",
@@ -69,6 +69,52 @@
       "energy": true,
       "leaves_wreck": true,
       "_role": "F1: tracked MG UGV for wall gaps. PROVISIONAL."
+    },
+    "g71_robot_mule": {
+      "name": "Robot Mule",
+      "faction": "human_a",
+      "role": "support",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 280,
+      "speed": 3.6,
+      "sight": 8,
+      "weapon": "",
+      "ammo_max": 0,
+      "pop": 1,
+      "radius": 0.5,
+      "stage_min": 6,
+      "g7": true,
+      "g71": true,
+      "g71_fleet": "mule",
+      "lp_only": true,
+      "no_production": true,
+      "energy": true,
+      "leaves_wreck": true,
+      "_role": "F1/F7: ammo/wounded/wreck runner. PROVISIONAL."
+    },
+    "g71_hunter_tank": {
+      "name": "Hunter Tank",
+      "faction": "human_a",
+      "role": "vehicle",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 2200,
+      "speed": 2.2,
+      "sight": 14,
+      "weapon": "g71_mg_belt",
+      "ammo_max": 400,
+      "pop": 4,
+      "radius": 1.1,
+      "stage_min": 6,
+      "g7": true,
+      "g71": true,
+      "g71_fleet": "hunter",
+      "lp_only": true,
+      "no_production": true,
+      "energy": true,
+      "leaves_wreck": true,
+      "_role": "F1: unmanned heavy hunter-tank. 2-4 in starting fleet. PROVISIONAL."
     }
   }
 }
