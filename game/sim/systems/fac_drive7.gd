@@ -2487,11 +2487,15 @@ static func _sally_follow_stop(R: Dictionary, s: float, stop: float, px: Vector2
 ## move class air_low, was counted as a vehicle and held the inner gate open) and nobody up on the wall-walk (a
 ## Sentinel of the 13.9c-38 watch at the end of a south wall run, on the wall piece beside the gate, overlapped the
 ## opening by his body radius and held the outer gate open) stands in the gate's door.
+## G7.1 fleet: robot stubs seeded on the ring must not hold the airlock open — they are not facility APC traffic, and
+## a mule/UGV on the apron under hardened sally was keeping outer/inner from cycling (0 of 8 APCs out).
 static func _gate_blocks(w: SimWorld, z: Rect2, e: Dictionary) -> bool:
 	var mc := Movement.move_class(e)
 	if Movement.is_air(mc):
 		return false
 	if mc == "foot" and Movement.wallwalk_team(w, w.cell_of(e.pos)) >= 0:
+		return false
+	if String(Content.unit(String(e.def)).get("g71_fleet", "")) != "":
 		return false
 	var rad := float(Movement.udef(String(e.def)).get("radius", 0.3))
 	var ry := HL + 0.1 if mc != "foot" else rad

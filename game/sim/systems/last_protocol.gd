@@ -238,9 +238,10 @@ static func _try_fill(w: SimWorld, s: Dictionary) -> void:
 		s.fill_tick = w.tick  # the fill's own CnTeamReady events land in this tick's list: not counted twice
 		var st0: Dictionary = R().get("start", {})
 		s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))
-		# F robot fleet: seed on the outer ring (not inside the CN facility compound). Counts from g71_fleet rules (~70 now, F9 ~150).
+		# F robot fleet: seed on the NORTH outer ring (keep clear of the south sally port / APC apron).
+		# Counts from g71_fleet rules (~70 now, F9 ~150).
 		var outer: Rect2i = s.base.rings[0].rect
-		var fleet_at := Vector2(outer.get_center()) + Vector2(0.5, float(outer.size.y) * 0.5 - 2.0)
+		var fleet_at := Vector2(outer.get_center()) + Vector2(0.5, -float(outer.size.y) * 0.5 + 3.0)
 		var seeded: Array = Fleet71.seed(w, int(s.fid), fleet_at)
 		s.fleet_n = seeded.size()
 		w.emit("LpFacilityReady", {"teams": s.teams_total, "fleet": seeded.size()})
