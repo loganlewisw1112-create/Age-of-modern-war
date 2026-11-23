@@ -217,6 +217,8 @@ static func tick(w: SimWorld) -> void:
 			_core_raid_tick(w, s)
 		if (w.tick + 67) % _t(4.0) == 0:
 			_hunt_ops(w, s)
+		if (w.tick + 71) % _t(8.0) == 0 and float(s.get("dread", 0.0)) >= float(Director71.rules().get("siege_at", 0.85)):
+			_spawn_boss(w, s, "siege")
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -294,6 +296,10 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					elif String(ev.get("def", "")) == "g71_m_reclaimer":
 						_complete_objective(w, s, "hunt_reclaimer", {"id": id})
 						w.emit("LpHuntDone", {"kind": "reclaimer", "id": id})
+					if Director71.is_boss(String(ev.get("def", ""))):
+						_complete_objective(w, s, "kill_boss_break", {"id": id})
+						_complete_objective(w, s, "kill_boss_siege", {"id": id})
+						w.emit("LpBossDown", {"id": id, "def": String(ev.get("def", ""))})
 				LpDefence.note_destroyed(w, s, ev)
 			"LpRingBreached":
 				_push_objective(w, s, "hold_fallback", "Hold the fallback after %s fell" % String(ev.get("name", "a ring")),
@@ -359,6 +365,7 @@ static func _meters(w: SimWorld, s: Dictionary) -> void:
 		w.emit("LpBreakingPoint", {"dread": float(s.dread), "band": Director71.band(float(s.dread)), "tide": bool(s.tide), "line": line})
 		if line != "":
 			w.emit("OvermindSay", {"key": "breaking_point", "line": line, "dread": float(s.dread)})
+		_spawn_boss(w, s, "break")
 
 
 ## THE TIDE: maximum escalation, a creep surge toward the base, every Machine unit thrown at the rings.
@@ -389,6 +396,26 @@ static func start_tide(w: SimWorld, s: Dictionary, why: String) -> void:
 		w.emit("LpBreakingPoint", {"dread": dread, "band": Director71.band(dread), "tide": true, "line": line})
 		if line != "":
 			w.emit("OvermindSay", {"key": "breaking_point", "line": line, "dread": dread})
+		_spawn_boss(w, s, "break")
+
+
+## H5 mini-boss spike: one Gorilla Alpha at breaking-point, one Mega Walker once at full siege (if not already).
+static func _spawn_boss(w: SimWorld, s: Dictionary, kind: String) -> void:
+	var flag := "boss_%s" % kind
+	if bool(s.get(flag, false)):
+		return
+	var def_id := Director71.boss_def(kind)
+	if def_id == "" or Content.unit(def_id).is_empty():
+		return
+	var at := Vector2(w.factions[int(s.mfid)].spawn) + Vector2(0.5, 0.5)
+	var sid := w.spawn_unit(def_id, int(s.mfid), at)
+	if sid < 0:
+		return
+	s[flag] = true
+	var name := String(Content.unit(def_id).get("name", def_id))
+	_push_objective(w, s, "kill_boss_%s" % kind, "Kill the %s" % name, {"id": sid, "def": def_id, "boss": kind})
+	_note_intel(w, s, def_id, "armour")
+	w.emit("LpBossSpawn", {"id": sid, "def": def_id, "kind": kind, "name": name, "pos": at})
 
 
 static func _assault(w: SimWorld, s: Dictionary) -> void:

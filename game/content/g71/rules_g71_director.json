@@ -48,6 +48,8 @@
       "core_raid_at": 0.75,
       "core_raid_phase_s": 45.0,
       "hunt_at": 0.55,
+      "boss_break": "g71_m_brute_alpha",
+      "boss_siege": "g71_m_mega_walker",
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

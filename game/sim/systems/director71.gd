@@ -262,6 +262,16 @@ static func pile_min() -> int:
 	return int(rules().get("pile_min", 3))
 
 
+## H5 mini-boss def for a spike moment ("break" at breaking-point, "siege" late). Empty if unset.
+static func boss_def(kind: String) -> String:
+	var key := "boss_break" if kind == "break" else "boss_siege"
+	return String(rules().get(key, ""))
+
+
+static func is_boss(def_id: String) -> bool:
+	return String(Content.unit(def_id).get("g71_boss", "")) != ""
+
+
 ## Compass face label for sector 0..7 (same order as forecast).
 static func face_name(sector: int) -> String:
 	var names := ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]

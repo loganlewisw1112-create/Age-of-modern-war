@@ -129,6 +129,10 @@ func handle_events(evs: Array, w = null) -> void:
 				_say("lp71.hunt", _pos(ev, w), {"0": "Hollow King" if hk == "conductor" else hk})
 			"LpHuntDone":
 				_say("lp71.hunt_done", _pos(ev, w), {})
+			"LpBossSpawn":
+				_say("lp71.boss", _pos(ev, w), {"0": String(ev.get("name", "elite machine"))})
+			"LpBossDown":
+				_say("lp71.boss_down", _pos(ev, w), {})
 			_:
 				if MAP.has(ty) and int(ev.get("owner", -1)) == fid:
 					_say(String(MAP[ty]), _pos(ev, w), {})

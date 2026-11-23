@@ -99,6 +99,11 @@ func test_siege_roster_stubs() -> void:
 	check(Director71.siege_kind("g71_m_sapper") == "sapper", "sapper kind")
 	check(Director71.latch_radius() > 0.0 and Director71.jam_radius() > 0.0, "latch/jam radii set")
 	check(Director71.pile_min() >= 2, "body piles need a cluster")
+	check(not Content.unit("g71_m_brute_alpha").is_empty(), "Gorilla Alpha def loads")
+	check(not Content.unit("g71_m_mega_walker").is_empty(), "Mega Walker def loads")
+	check(Director71.is_boss("g71_m_brute_alpha"), "alpha is a mini-boss")
+	check(Director71.boss_def("break") == "g71_m_brute_alpha", "break spike is the alpha")
+	check(Director71.boss_def("siege") == "g71_m_mega_walker", "siege spike is the mega walker")
 	var fc := Director71.forecast(0.9, "armour", 2)
 	check(fc != "" and fc.find("brute") >= 0, "forecast names the next wave (%s)" % fc)
 	check(fc.find("N") >= 0 or fc.find("face") >= 0, "forecast names a face")
@@ -177,6 +182,46 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	})
 	check(String(shown.dread).find("BREAKING POINT") >= 0, "HUD text shows the breaking point")
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
+
+
+func test_boss_spikes() -> void:
+	Radio71._lines = null
+	check(not Radio71.line("lp71.boss").is_empty(), "boss radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for bosses"):
+		return
+	for i in 15:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	LastProtocol._spawn_boss(w, s, "break")
+	check(bool(s.get("boss_break", false)), "breaking-point boss flags once")
+	var n_alpha := 0
+	for e in w.units_of(int(s.mfid)):
+		if String(e.get("def", "")) == "g71_m_brute_alpha":
+			n_alpha += 1
+	check_eq(n_alpha, 1, "one Gorilla Alpha at break")
+	LastProtocol._spawn_boss(w, s, "break")
+	n_alpha = 0
+	for e2 in w.units_of(int(s.mfid)):
+		if String(e2.get("def", "")) == "g71_m_brute_alpha":
+			n_alpha += 1
+	check_eq(n_alpha, 1, "break boss does not double-spawn")
+	LastProtocol._spawn_boss(w, s, "siege")
+	check(bool(s.get("boss_siege", false)), "siege boss flags once")
+	var kinds := {}
+	for o in LastProtocol.hud(w).objectives:
+		kinds[String(o.kind)] = true
+	check(bool(kinds.get("kill_boss_break", false)), "break boss kill objective opens")
+	check(bool(kinds.get("kill_boss_siege", false)), "siege boss kill objective opens")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpBossSpawn", "name": "Gorilla Alpha", "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("boss") >= 0 or String(feed.text).find("Alpha") >= 0,
+		"radio speaks the mini-boss")
+	feed.free()
 
 
 func test_hunt_ops() -> void:
