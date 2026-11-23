@@ -100,6 +100,10 @@ static func sight_mult(w: SimWorld, e: Dictionary) -> float:
 	var m := 1.0
 	if e.has("comp") and float(e.comp.get("sensors", 100)) <= 0.0:
 		m = 0.5
+	# I3 morning fog shrinks sight early in Last Protocol.
+	var Weather71 = preload("res://sim/systems/weather71.gd")
+	if Weather71.active(w):
+		m *= Weather71.sight_mult(w)
 	if is_jammed(w, e):
 		m *= jam_mult(w, int(e.owner))
 	return m

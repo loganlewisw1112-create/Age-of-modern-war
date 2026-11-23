@@ -230,6 +230,12 @@ static func lines(d: Dictionary) -> Dictionary:
 			var bn := int(hor.get("bodies_n", 0))
 			if bn > 0:
 				dread += "  |  BODIES %d" % bn
+		var wx: Dictionary = d.get("weather", {})
+		if wx is Dictionary and not wx.is_empty():
+			dread += "  |  WIND %d° %.2f" % [int(wx.get("wind_deg", 0)), float(wx.get("wind_spd", 0.0))]
+			var fog := float(wx.get("fog", 0.0))
+			if fog > 0.05:
+				dread += "  FOG %.0f%%" % (fog * 100.0)
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405

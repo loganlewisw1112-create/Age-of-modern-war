@@ -1,0 +1,10 @@
+{
+  "_meta": "G7.1 I3 wind + fog mornings. PROVISIONAL.",
+  "rules": {
+    "g71_weather": {
+      "fog_burn_s": 480.0,
+      "fog_sight_cut": 0.45,
+      "veer_every": 600
+    }
+  }
+}
