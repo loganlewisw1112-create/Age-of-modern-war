@@ -96,7 +96,7 @@ func _terrain_at(p: Vector2) -> int:
 
 
 func _ent(eid: int):
-	var wd = mv.world if mv != null else null
+	var wd = mv.get("_world") if mv != null else null  # never mv.world: that getter forces a sim join
 	if wd == null:
 		return null
 	return (wd.entities as Dictionary).get(eid)

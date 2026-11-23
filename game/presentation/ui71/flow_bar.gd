@@ -100,7 +100,7 @@ func _btn(row: HFlowContainer, nm: String, text: String, tip: String, cb: Callab
 func _w() -> SimWorld:
 	if world_override != null:
 		return world_override
-	return mv.world if mv != null else null
+	return mv.get("_world") as SimWorld if mv != null else null  # never mv.world: that getter forces a sim join
 
 
 func pf() -> int:

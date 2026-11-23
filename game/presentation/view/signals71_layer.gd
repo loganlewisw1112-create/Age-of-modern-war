@@ -150,7 +150,7 @@ func refresh(snap: Dictionary) -> void:
 		return
 	if not mv.has_method("world_readable") or not mv.world_readable():
 		return
-	var w = mv.get("world")
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
 	if w == null or not w.sys_state.has(Discipline71.KEY):
 		return
 	var main = mv.get_parent()
@@ -190,7 +190,7 @@ func _process(delta: float) -> void:
 func _on_events(evs: Array) -> void:
 	if not _on or mv == null:
 		return
-	feed.handle_events(evs, mv.get("world"))
+	feed.handle_events(evs, mv.get("_world"))
 	signal_events(evs, int(mv.get("player_fid")))
 
 

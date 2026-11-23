@@ -152,7 +152,7 @@ func set_ui_scale(s: float) -> void:
 
 
 func _world() -> SimWorld:
-	return mv.get("world") as SimWorld if mv != null else null
+	return mv.get("_world") as SimWorld if mv != null else null  # never mv.world: that getter forces a sim join
 
 
 func _pf() -> int:

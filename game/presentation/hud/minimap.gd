@@ -87,7 +87,7 @@ func setup(match_view: Node) -> void:
 func _world() -> SimWorld:
 	if mv == null:
 		return null
-	return mv.get("world") as SimWorld
+	return mv.get("_world") as SimWorld  # never mv.world: that getter forces a sim join
 
 
 func _build_terrain() -> void:

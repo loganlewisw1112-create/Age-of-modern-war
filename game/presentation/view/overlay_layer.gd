@@ -30,8 +30,15 @@ func _draw() -> void:
 	preload("res://presentation/view/view_util.gd").prof_add("d_ov_" + mode, t0)
 
 
+## Live sim without forcing a threaded-step join (mv.world getter joins; PERFDRAW71 seq 64).
+func _live_world():
+	if mv == null:
+		return null
+	return mv.get("_world")
+
+
 func _draw_body() -> void:
-	if mv == null or mv.world == null:
+	if _live_world() == null:
 		return
 	if mode == "under":
 		_draw_g6_under()
@@ -261,7 +268,9 @@ const PIP_MAX := 16   # G7: garrisons with more slots show a count badge instead
 
 
 func _draw_rings() -> void:
-	var w = mv.world
+	var w = _live_world()
+	if w == null:
+		return
 	for id in mv.selection:
 		var e = w.entities.get(id)
 		if e == null or not mv.entity_visible(e):
@@ -325,8 +334,9 @@ func _draw_bars() -> void:
 	if far:
 		us = []
 		sps = PackedVector2Array()
+		var wfar = _live_world()
 		for sid in selset:
-			var se = mv.world.entities.get(sid)
+			var se = wfar.entities.get(sid) if wfar != null else null
 			if se != null and se.kind == "unit" and mv.entity_visible(se):
 				us.append(se)
 				sps.append(_w2s(se.pos))
@@ -380,7 +390,9 @@ func _radius(def_id: String) -> float:
 
 
 func _draw_rally() -> void:
-	var w = mv.world
+	var w = _live_world()
+	if w == null:
+		return
 	for id in mv.selection:
 		var b = w.entities.get(id)
 		if b == null or b.kind != "building" or int(b.owner) != mv.player_fid:
@@ -405,14 +417,15 @@ func _draw_ghost() -> void:
 	var size := int(d.get("size", 1))
 	var p: Vector2 = mv.mouse_world()
 	var o: Vector2i = mv.placement_origin(def, p)
-	var err: String = Construction.placement_error(mv.world, mv.player_fid, def, o)
+	var w = _live_world()
+	var err: String = "" if w == null else Construction.placement_error(w, mv.player_fid, def, o)
 	var ok := err == ""
 	var fill := Color(0.2, 0.9, 0.3, 0.35) if ok else Color(0.95, 0.2, 0.15, 0.35)
 	var line := Color(0.4, 1.0, 0.5, 0.95) if ok else Color(1.0, 0.35, 0.3, 0.95)
 	for dy in size:
 		for dx in size:
 			var c := o + Vector2i(dx, dy)
-			var cell_ok: bool = ok or (mv.world.in_bounds(c) and Terrain.buildable(mv.world.terrain_at(c)))
+			var cell_ok: bool = ok or (w != null and w.in_bounds(c) and Terrain.buildable(w.terrain_at(c)))
 			var cf := fill if cell_ok else Color(0.95, 0.2, 0.15, 0.5)
 			var pts := _diamond(Vector2(c), 1.0)
 			draw_colored_polygon(pts, cf)
