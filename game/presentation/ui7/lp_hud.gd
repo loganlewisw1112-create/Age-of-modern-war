@@ -194,6 +194,15 @@ static func lines(d: Dictionary) -> Dictionary:
 		var raid := String(d.get("core_raid", ""))
 		if raid != "" and raid != "done" and raid != "failed":
 			dread += "  |  RAID %s" % raid.to_upper()
+		var fleet: Dictionary = d.get("fleet", {})
+		if fleet is Dictionary and int(fleet.get("n", 0)) > 0:
+			dread += "  |  FLEET %d" % int(fleet.n)
+			var ch := int(fleet.get("charging", 0))
+			if ch > 0:
+				dread += " chg %d" % ch
+			var loc := int(fleet.get("local", 0))
+			if loc > 0:
+				dread += " local %d" % loc
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405

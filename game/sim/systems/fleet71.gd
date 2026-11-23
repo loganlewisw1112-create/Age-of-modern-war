@@ -5,7 +5,8 @@ extends RefCounted
 
 const KEY := "fleet71"
 const VER := 1
-const DEFS := ["g71_wall_sentinel", "g71_robot_dog", "g71_ugv_mg", "g71_robot_mule", "g71_hunter_tank"]
+const DEFS := ["g71_wall_sentinel", "g71_robot_dog", "g71_ugv_mg", "g71_robot_mule", "g71_hunter_tank",
+	"g71_ucav", "g71_ew_drone", "g71_purge_bot"]
 
 
 static func R() -> Dictionary:
@@ -52,29 +53,24 @@ static func low_frac() -> float:
 
 
 ## Seed a starter fleet around the LP base (F9 target ~150; counts from rules). Returns spawned ids.
-static func seed(w: SimWorld, fid: int, center: Vector2,
-		n_sent: int = -1, n_dog: int = -1, n_ugv: int = -1, n_mule: int = -1, n_hunt: int = -1) -> Array:
+static func seed(w: SimWorld, fid: int, center: Vector2) -> Array:
 	_st(w)
 	var fr := R()
-	if n_sent < 0:
-		n_sent = int(fr.get("seed_sentinels", 32))
-	if n_dog < 0:
-		n_dog = int(fr.get("seed_dogs", 16))
-	if n_ugv < 0:
-		n_ugv = int(fr.get("seed_ugvs", 12))
-	if n_mule < 0:
-		n_mule = int(fr.get("seed_mules", 8))
-	if n_hunt < 0:
-		n_hunt = int(fr.get("seed_hunters", 2))
-	var out := []
 	var packs := [
-		["g71_wall_sentinel", n_sent, 6.0],
-		["g71_robot_dog", n_dog, 4.5],
-		["g71_ugv_mg", n_ugv, 8.0],
-		["g71_robot_mule", n_mule, 5.5],
-		["g71_hunter_tank", n_hunt, 10.0],
+		["g71_wall_sentinel", int(fr.get("seed_sentinels", 48)), 6.0],
+		["g71_robot_dog", int(fr.get("seed_dogs", 24)), 4.5],
+		["g71_ugv_mg", int(fr.get("seed_ugvs", 18)), 8.0],
+		["g71_robot_mule", int(fr.get("seed_mules", 12)), 5.5],
+		["g71_hunter_tank", int(fr.get("seed_hunters", 3)), 10.0],
+		["g71_ucav", int(fr.get("seed_ucavs", 4)), 12.0],
+		["g71_ew_drone", int(fr.get("seed_ew", 4)), 11.0],
+		["g71_purge_bot", int(fr.get("seed_purge", 6)), 7.0],
 	]
-	var total := maxi(n_sent + n_dog + n_ugv + n_mule + n_hunt, 1)
+	var total := 0
+	for pack in packs:
+		total += int(pack[1])
+	total = maxi(total, 1)
+	var out := []
 	var i := 0
 	for pack in packs:
 		var def := String(pack[0])
@@ -97,6 +93,38 @@ static func seed(w: SimWorld, fid: int, center: Vector2,
 	if not out.is_empty():
 		w.emit("Fleet71Seed", {"n": out.size(), "fid": fid, "pos": center})
 	return out
+
+
+## Live fleet board for HUD / Done-when 6 telemetry (counts by role + charging / local / recover).
+static func board(w: SimWorld, fid: int = -1) -> Dictionary:
+	if not active(w):
+		return {}
+	if fid < 0:
+		fid = int(w.sys_state.lp.fid)
+	var by := {}
+	var charging := 0
+	var local_n := 0
+	var bat_sum := 0.0
+	var n := 0
+	for e in robots_of(w, fid):
+		var role := String(Content.unit(String(e.def)).get("g71_fleet", "robot"))
+		by[role] = int(by.get(role, 0)) + 1
+		n += 1
+		bat_sum += float(e.get("f71_bat", battery_max()))
+		if bool(e.get("f71_charge", false)):
+			charging += 1
+		if bool(e.get("f71_local", false)):
+			local_n += 1
+	var s := _st(w)
+	return {
+		"n": n,
+		"by": by,
+		"charging": charging,
+		"local": local_n,
+		"recover": (s.recover as Dictionary).size(),
+		"bat_avg": (bat_sum / float(n)) if n > 0 else 0.0,
+		"leader": int(s.leaders.get(str(fid), -1)),
+	}
 
 
 static func robots_of(w: SimWorld, fid: int) -> Array:
@@ -175,6 +203,7 @@ static func tick(w: SimWorld) -> void:
 	_run_recoveries(w, s, fid)
 	# Cadence: battery every 10 ticks, elect every 40.
 	if w.tick % 10 == 0:
+		var wipe_ids: Array = []
 		for e in robots_of(w, fid):
 			if not e.has("f71_bat"):
 				e.f71_bat = battery_max()
@@ -192,16 +221,32 @@ static func tick(w: SimWorld) -> void:
 					var dock: Vector2 = e.get("lp_home", Vector2(lp.base.center) + Vector2(0.5, 0.5))
 					w.submit({"type": "move", "issuer": fid, "unit_ids": [int(e.id)], "target": dock, "ai_cmd": "lp"})
 					w.emit("Fleet71Dock", {"id": int(e.id), "pos": dock})
-			# Jam: local autonomy flag only (never flips owner).
+			# Jam: local autonomy flag only (never flips owner). Self-wipe if critically damaged while jammed (F3).
 			var face := 0
 			if lp.has("base"):
 				face = preload("res://sim/systems/lp_defence.gd")._sector(lp, Vector2(e.pos))
 			var until := int(s.jam.get(str(face), 0))
 			e.f71_local = until > w.tick
+			if bool(e.f71_local) and float(e.get("hp", 1.0)) <= float(e.get("max_hp", 1.0)) * float(R().get("wipe_frac", 0.12)):
+				wipe_ids.append([int(e.id), String(e.def), Vector2(e.pos)])
+		for row in wipe_ids:
+			_self_wipe(w, int(row[0]), String(row[1]), row[2] as Vector2)
 	if w.tick % 40 == 0:
 		var lid := int(s.leaders.get(str(fid), -1))
 		if lid < 0 or not w.entities.has(lid):
 			_elect(w, fid)
+
+
+## F3 anti-hack: destroy without leaving a reclaimable wreck (never flipped to the hive).
+static func _self_wipe(w: SimWorld, id: int, def: String, pos: Vector2) -> void:
+	if not w.entities.has(id):
+		return
+	w.destroy(id, "fleet71_wipe", SimWorld.NEUTRAL)
+	# Strip any wreck spawned from leaves_wreck so Reclaimer / hackers get nothing.
+	var wid := _wreck_near(w, pos, def)
+	if wid >= 0:
+		w.entities.erase(wid)
+	w.emit("Fleet71Wipe", {"id": id, "def": def, "pos": pos})
 
 
 ## Queue mule pickups for our fleet wrecks (event + live scan — events clear at step start).

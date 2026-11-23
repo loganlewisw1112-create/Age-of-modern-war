@@ -1236,6 +1236,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"wall_crack_n": (s.get("wall_crack", []) as Array).size(),
 		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
 		"fleet_n": int(s.get("fleet_n", 0)),
+		"fleet": Fleet71.board(w, int(s.fid)),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 

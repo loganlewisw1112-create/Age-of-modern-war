@@ -147,6 +147,8 @@ func handle_events(evs: Array, w = null) -> void:
 				_say("lp71.fleet_dock", _pos(ev, w), {})
 			"Fleet71Recovered":
 				_say("lp71.fleet_recover", _pos(ev, w), {})
+			"Fleet71Wipe":
+				_say("lp71.fleet_wipe", _pos(ev, w), {})
 			_:
 				if MAP.has(ty) and int(ev.get("owner", -1)) == fid:
 					_say(String(MAP[ty]), _pos(ev, w), {})
