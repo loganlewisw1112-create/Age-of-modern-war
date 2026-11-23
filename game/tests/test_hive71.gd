@@ -20,6 +20,19 @@ func test_relay_cut_isolates_and_prod_mult() -> void:
 	check(Hive71.is_isolated(w, "n1"), "n1 isolated after cut")
 
 
+func test_prod_mult_raises_with_harvest_mass() -> void:
+	var c := LastProtocol.make_config(91, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP"):
+		return
+	for i in 6:
+		w.step()
+	var base := Hive71.prod_mult(w)
+	var Harvest71 = preload("res://sim/systems/harvest71.gd")
+	Harvest71._st(w).mass = 10.0
+	check(Hive71.prod_mult(w) > base, "harvest mass raises prod mult")
+
+
 func test_heartbeat_pulses() -> void:
 	var c := LastProtocol.make_config(85, "industrial_heartland_m")
 	var w := SimWorld.new_match(c)

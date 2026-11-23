@@ -123,7 +123,13 @@ static func _step_head(w: SimWorld, b: Dictionary, bd: Dictionary) -> String:
 		item_pop += int(Content.unit(String(u)).get("pop", 1))
 	if int(f.pop) + item_pop > int(f.pop_cap):
 		return "SUPPLY_CAP"
-	head.progress = float(head.progress) + SimWorld.DT / maxf(float(p.train_time), 0.001)
+	var rate := SimWorld.DT / maxf(float(p.train_time), 0.001)
+	# G7.1 I6: creep / harvest speed Machine production.
+	if String(f.get("faction_def", "")) == "machine":
+		var Hive71 = preload("res://sim/systems/hive71.gd")
+		if Hive71.active(w):
+			rate *= Hive71.prod_mult(w)
+	head.progress = float(head.progress) + rate
 	if float(head.progress) >= 1.0 - 0.000001:
 		b.queue.remove_at(0)
 		_complete(w, b, String(head.item), p, item_pop)

@@ -350,7 +350,12 @@ static func _spawn_step(w: SimWorld, st: Dictionary, rr: Dictionary) -> void:
 				or (bool(d.get("requires_power", false)) and not _powered(w, int(e.owner)))):
 			continue
 		var md: Dictionary = d.micro_drones
-		var iv := _ticks(float(md.get("interval_s", 12.0)))
+		var interval_s := float(md.get("interval_s", 12.0))
+		# G7.1 I6: hive prod_mult shortens micro-drone spawn intervals.
+		var Hive71 = preload("res://sim/systems/hive71.gd")
+		if Hive71.active(w):
+			interval_s /= maxf(Hive71.prod_mult(w), 0.25)
+		var iv := _ticks(interval_s)
 		e.mg6_t = int(e.get("mg6_t", 0)) + 1
 		if int(e.mg6_t) < iv:
 			continue
