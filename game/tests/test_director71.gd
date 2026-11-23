@@ -152,6 +152,23 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	check((LastProtocol.hud(a).objectives as Array).size() == 1, "an open objective shows on the HUD")
 	LastProtocol._complete_objective(a, a.sys_state.lp, "hold_fallback", {"ring": 0})
 	check((LastProtocol.hud(a).objectives as Array).is_empty(), "completed objectives leave the HUD")
+	# Done-when style: save / load keeps director fields and the same future.
+	a.sys_state.lp.dread = 0.91
+	a.sys_state.lp.break_point = true
+	a.sys_state.lp.adapt = {"armour": 3, "smoke": 1}
+	a.sys_state.lp.forecast = "3x brute, N face, ~30s"
+	LastProtocol._note_intel(a, a.sys_state.lp, "g71_m_brute", "armour")
+	var loaded := SimWorld.from_dict(a.to_dict().duplicate(true))
+	var lp: Dictionary = loaded.sys_state.lp
+	check(is_equal_approx(float(lp.dread), 0.91), "save keeps dread")
+	check(bool(lp.break_point), "save keeps breaking-point")
+	check_eq(int(lp.adapt.armour), 3, "save keeps adapt buckets")
+	check_eq(String(lp.forecast), "3x brute, N face, ~30s", "save keeps forecast")
+	check((lp.intel as Dictionary).has("g71_m_brute"), "save keeps intel codex")
+	for i in 40:
+		a.step()
+		loaded.step()
+	check_eq(a.state_hash(), loaded.state_hash(), "save / load mid-siege keeps the same future")
 	var shown: Dictionary = LpHud.lines({
 		"phase": 0, "posture": "normal", "creep": 0.1, "critical": 0.62, "win_below": 0.12,
 		"cd_left": 1000.0, "cd_rate": 1.0, "cores_alive": 3, "cores_total": 3, "walker": false,
