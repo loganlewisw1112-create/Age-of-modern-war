@@ -42,6 +42,26 @@ func test_infection_turns_without_purge() -> void:
 	check(turned, "Infect71Turn fired or owner flipped")
 
 
+func test_decon_purges_infection() -> void:
+	var c := LastProtocol.make_config(57, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP match for decon purge"):
+		return
+	for i in 15:
+		w.step()
+	var fid := int(w.sys_state.lp.fid)
+	var victim := -1
+	for e in w.units_of(fid):
+		if String(Content.unit(String(e.def)).get("move_class", "foot")) == "foot":
+			victim = int(e.id)
+			break
+	if not check(victim >= 0, "foot soldier"):
+		return
+	w.entities[victim].cn_infect_t = 30.0
+	preload("res://sim/systems/counter_nanite.gd").decontaminate(w, w.entities[victim])
+	check(not w.entities[victim].has("cn_infect_t"), "decon clears infection timer")
+
+
 func test_quarantine_locks_on_turn() -> void:
 	var c := LastProtocol.make_config(56, "industrial_heartland_m")
 	var w := SimWorld.new_match(c)

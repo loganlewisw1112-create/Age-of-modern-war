@@ -355,10 +355,12 @@ static func near_facility(w: SimWorld, fid: int, pos: Vector2, r: float) -> bool
 
 ## Clears exposure and repairs a punctured suit (CNFAC7's decon walkway; APCs clean their whole crew).
 static func decontaminate(w: SimWorld, e: Dictionary) -> void:
-	var had := float(e.get("cn_exp", 0.0)) > 0.0 or bool(e.get("wpunct", false))
+	var had := float(e.get("cn_exp", 0.0)) > 0.0 or bool(e.get("wpunct", false)) or e.has("cn_infect_t")
 	e.erase("cn_exp")
 	e.erase("cn_slow")
 	e.erase("wpunct")
+	if e.has("cn_infect_t"):
+		preload("res://sim/systems/infect71.gd").purge(w, e)
 	if e.has("cargo"):
 		for u in e.cargo:
 			decontaminate(w, u)
