@@ -152,7 +152,9 @@ func on_key(kc: int) -> bool:
 
 ## Called by MatchView.smart_command before the G1 rules. Returns true when it issued something.
 func smart(p: Vector2, shift: bool, t, units: Array, engineers: Array) -> bool:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return false
 	var pf: int = mv.player_fid
 	if t != null and t.kind in ["unit", "building"] and w.is_enemy(pf, int(t.owner)):
 		return false
@@ -184,7 +186,9 @@ func smart(p: Vector2, shift: bool, t, units: Array, engineers: Array) -> bool:
 
 
 func _repair_target(p: Vector2, t) -> Dictionary:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return {}
 	if t != null and t.kind in ["unit", "building"] and G2.repairable(w, mv.player_fid, t):
 		return t
 	if G2.is_bridge_cell(w, Vector2i(floori(p.x), floori(p.y))):
@@ -200,19 +204,23 @@ func _issue_repair(ids: Array, t: Dictionary) -> void:
 
 
 func _live_ids() -> Array:
-	return unit_ids.filter(func(x): return mv.world.entities.has(int(x)))
+	var w = mv.get("_world")
+	if w == null:
+		return []
+	return unit_ids.filter(func(x): return w.entities.has(int(x)))
 
 
 func _finish_patrol() -> void:
+	var w = mv.get("_world")
 	var ids := _live_ids()
 	var pts := points.duplicate()
-	if ids.is_empty() or pts.is_empty():
+	if w == null or ids.is_empty() or pts.is_empty():
 		cancel()
 		return
 	if pts.size() == 1:
 		var c := Vector2.ZERO
 		for id in ids:
-			c += mv.world.entities[int(id)].pos
+			c += w.entities[int(id)].pos
 		pts.push_front(c / ids.size())
 	mv.issue({"type": "patrol", "unit_ids": ids, "points": pts})
 	for q in pts:
@@ -221,7 +229,8 @@ func _finish_patrol() -> void:
 
 
 func _finish_mission() -> void:
-	if points.is_empty() or not mv.world.entities.has(officer_id):
+	var w = mv.get("_world")
+	if w == null or points.is_empty() or not w.entities.has(officer_id):
 		cancel()
 		return
 	var cmd := {"type": "set_mission", "officer_id": officer_id, "mission": mission,
@@ -229,7 +238,7 @@ func _finish_mission() -> void:
 	if mission == "patrol_route":
 		var pts := points.duplicate()
 		if pts.size() == 1:
-			pts.push_front(mv.world.entities[officer_id].pos)
+			pts.push_front(w.entities[officer_id].pos)
 		cmd.points = pts
 	mv.issue(cmd)
 	mv.fx_layer.add_marker(points[0], Color(1.0, 0.78, 0.25))
@@ -277,7 +286,9 @@ func _hover_hint(p: Vector2) -> String:
 	var units: Array = mv._own_units_in_selection()
 	if units.is_empty():
 		return ""
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return ""
 	var on_bridge: bool = G2.is_bridge_cell(w, Vector2i(floori(p.x), floori(p.y)))
 	var engineers: Array = mv._own_engineers_in_selection()
 	if not engineers.is_empty():
