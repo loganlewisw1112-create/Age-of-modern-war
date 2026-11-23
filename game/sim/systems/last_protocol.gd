@@ -31,6 +31,7 @@ const Turrets71 = preload("res://sim/systems/turrets71.gd")
 const Supply8 = preload("res://sim/systems/supply8.gd")
 const WallWalk7 = preload("res://sim/systems/wallwalk7.gd")
 const Fleet71 = preload("res://sim/systems/fleet71.gd")
+const Research71 = preload("res://sim/systems/research71.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -1299,6 +1300,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
 		"fleet_n": int(s.get("fleet_n", 0)),
 		"fleet": Fleet71.board(w, int(s.fid)),
+		"research": Research71.board(w),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
