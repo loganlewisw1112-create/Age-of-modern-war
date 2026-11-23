@@ -203,6 +203,14 @@ static func lines(d: Dictionary) -> Dictionary:
 			var loc := int(fleet.get("local", 0))
 			if loc > 0:
 				dread += " local %d" % loc
+		var research: Dictionary = d.get("research", {})
+		if research is Dictionary and not research.is_empty():
+			var cur := String(research.get("cur", ""))
+			var done_n := (research.get("done", []) as Array).size()
+			if cur != "":
+				dread += "  |  TECH %s ~%.0fs" % [cur, float(research.get("eta_s", 0.0))]
+			elif done_n > 0:
+				dread += "  |  TECH %d done" % done_n
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405
