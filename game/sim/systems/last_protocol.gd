@@ -103,7 +103,7 @@ static func setup(w: SimWorld) -> Dictionary:
 	fid = maxi(fid, 0)
 	mfid = mfid if mfid >= 0 else 1
 	s = {"ver": VER, "fid": fid, "mfid": mfid, "t0": w.tick, "rebuild": [], "routes_closed": [], "secrets_found": [],
-		"adapt": {}, "adapt_last": {},
+		"adapt": {}, "adapt_last": {}, "objectives": [], "intel": {},
 		"remembered": [], "roster": {}, "warn": {"creep": [], "cd": []}, "filled": false, "teams_total": 0,
 		"teams_lost": 0, "extractions": 0, "purged_cells": 0, "creep_peak": 0.0, "phase": 0, "frac": 0.0,
 		"weavers": false, "tide": false, "tide_t": -1, "posture": "normal", "posture_override": "", "defence_ai": true,
@@ -247,6 +247,7 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					s.roster.erase(id)
 					if cs2 != "" and not (s.remembered as Array).has(cs2):
 						(s.remembered as Array).append(cs2)
+					_push_objective(w, s, "recover_crew", "Recover downed crew %s" % cs2, {"call_sign": cs2})
 				var hit = {}
 				if s.has("adapt_last") and (s.adapt_last is Dictionary):
 					hit = s.adapt_last.get(id, {})
@@ -257,12 +258,23 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					var counter := Director71.counter_for(s)
 					s.adapt_counter = counter
 					w.emit("LpAdapt", {"id": id, "bucket": bucket, "counter": counter})
+					_note_intel(w, s, String(ev.get("def", "")), bucket)
 					if counter != "" and counter != prev:
 						var akey := "adapt_%s" % counter
 						var aline := Director71.overmind_line(akey)
 						if aline != "":
 							w.emit("OvermindSay", {"key": akey, "line": aline, "dread": float(s.get("dread", 0.0)), "counter": counter})
 				LpDefence.note_destroyed(w, s, ev)
+			"LpRingBreached":
+				_push_objective(w, s, "hold_fallback", "Hold the fallback after %s fell" % String(ev.get("name", "a ring")),
+					{"ring": int(ev.get("ring", -1))})
+			"T71Disabled":
+				if int(ev.get("owner", -1)) == int(s.fid):
+					_push_objective(w, s, "retake_turret", "Retake disabled turret", {"id": int(ev.get("id", -1))})
+			"T71Revived":
+				_complete_objective(w, s, "retake_turret", {"id": int(ev.get("id", -1))})
+			"LpRingRestored":
+				_complete_objective(w, s, "hold_fallback", {"ring": int(ev.get("ring", -1))})
 
 
 ## Meters, phase, Weavers, Tide (cadence think_every).
@@ -467,6 +479,63 @@ static func _siege_specials(w: SimWorld, s: Dictionary) -> void:
 		elif kind == "sapper" and best_d <= jam_r2:
 			if Turrets71.force_jam(w, best, jam_secs):
 				w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id)})
+
+
+## D1 escalating mid-siege objectives (open list, capped).
+static func _push_objective(w: SimWorld, s: Dictionary, kind: String, title: String, data: Dictionary = {}) -> void:
+	if not s.has("objectives") or not (s.objectives is Array):
+		s.objectives = []
+	var ops: Array = s.objectives
+	for o in ops:
+		if String(o.get("kind", "")) == kind and not bool(o.get("done", false)):
+			return  # one open of each kind
+	if ops.size() >= 8:
+		return
+	var oid := int(s.get("obj_next", 1))
+	s.obj_next = oid + 1
+	var row := {"id": oid, "kind": kind, "title": title, "done": false, "tick": w.tick}
+	for k in data:
+		row[k] = data[k]
+	ops.append(row)
+	w.emit("LpObjective", row.duplicate(true))
+
+
+static func _complete_objective(w: SimWorld, s: Dictionary, kind: String, match: Dictionary = {}) -> void:
+	if not s.has("objectives") or not (s.objectives is Array):
+		return
+	for o in s.objectives:
+		if bool(o.get("done", false)) or String(o.get("kind", "")) != kind:
+			continue
+		var ok := true
+		for k in match:
+			if o.get(k) != match[k]:
+				ok = false
+				break
+		if not ok:
+			continue
+		o.done = true
+		o.done_tick = w.tick
+		w.emit("LpObjectiveDone", o.duplicate(true))
+		return
+
+
+## D6 hive intel file: first time we kill a Machine type, record its counter bucket.
+static func _note_intel(w: SimWorld, s: Dictionary, def_id: String, bucket: String) -> void:
+	if def_id == "":
+		return
+	if not s.has("intel") or not (s.intel is Dictionary):
+		s.intel = {}
+	if (s.intel as Dictionary).has(def_id):
+		return
+	var entry := {
+		"def": def_id,
+		"name": String(Content.unit(def_id).get("name", def_id)),
+		"kind": Director71.siege_kind(def_id),
+		"counter": bucket,
+		"tick": w.tick,
+	}
+	s.intel[def_id] = entry
+	w.emit("LpIntel", entry.duplicate(true))
 
 
 ## D6 threat forecast: write a short line onto the HUD from the next siege roster.
@@ -678,7 +747,16 @@ static func hud(w: SimWorld) -> Dictionary:
 		"break_point": bool(s.get("break_point", false)), "counter": Director71.counter_for(s),
 		"sync_n": int(s.get("sync_n", 0)), "forecast": String(s.get("forecast", "")),
 		"pile_n": (s.get("pile_pos", []) as Array).size(),
+		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
+
+
+static func _hud_objectives(s: Dictionary) -> Array:
+	var out := []
+	for o in (s.get("objectives", []) as Array):
+		if not bool(o.get("done", false)):
+			out.append({"id": int(o.id), "kind": String(o.kind), "title": String(o.title)})
+	return out
 
 
 # ================================================================ commands

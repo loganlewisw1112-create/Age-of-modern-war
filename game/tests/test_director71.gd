@@ -136,6 +136,11 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	var h: Dictionary = LastProtocol.hud(a)
 	check(h.has("dread") and String(h.band) == Director71.band(float(h.dread)), "the HUD shows the same band")
 	check(h.has("break_point"), "HUD exposes the breaking-point flag")
+	check(h.has("objectives") and h.has("intel_n"), "HUD exposes objectives and intel count")
+	LastProtocol._push_objective(a, a.sys_state.lp, "hold_fallback", "Hold the fallback", {"ring": 0})
+	check((LastProtocol.hud(a).objectives as Array).size() == 1, "an open objective shows on the HUD")
+	LastProtocol._complete_objective(a, a.sys_state.lp, "hold_fallback", {"ring": 0})
+	check((LastProtocol.hud(a).objectives as Array).is_empty(), "completed objectives leave the HUD")
 	var shown: Dictionary = LpHud.lines({
 		"phase": 0, "posture": "normal", "creep": 0.1, "critical": 0.62, "win_below": 0.12,
 		"cd_left": 1000.0, "cd_rate": 1.0, "cores_alive": 3, "cores_total": 3, "walker": false,
