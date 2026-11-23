@@ -2,7 +2,7 @@
 
 A single-player real-time strategy war in Godot 4.7.2. Skirmish still stands — three factions, stages, salvage and steel — but the heart of the current build is **Last Protocol**: one night against the Machine tide, walls and robots and a war that does not pause for breath.
 
-Branch **`g71`** is G7.1 *Tide Line*. **UP71** is underway: finish G7.1 Done-when + polish, chase LP-peak toward 60, then G8 Four Sides and G9 Hive Reborn — one continuous phase. It is playable. G7.1 is not locked yet.
+Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** UP71 continues into **G8 Four Sides** → **G9 Hive Reborn**.
 
 ---
 
@@ -44,31 +44,29 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (G7.1 + UP71 Stage A polish, live)
+## In this build (G7.1 LOCK)
 
-Hive network, wildfire and fire-lines, machine death chains, harvester swarms, capture and evolve, night illumination, weather wind and fog, request queue, robot fleet under jam, research / RE / warmind / conduct / infection / Lazarus, core-raid phases, efficiency HUD grades, tide-song audio, Wave 6 art + E4 motion, and forced-join cuts so the view stays off the sim thread.
-
-**UP71 polish (Stage A2):** turret-eater latch clear + sapper jam radius events; Reclaimer body-piles as tagged wreck cover; Glass stalker reveal via thermal / rain-mist / smoke; fleet board counts (docked / charging / damaged / lost / in production) on the LP HUD.
+Hive network, wildfire and fire-lines, machine death chains, harvester swarms, capture and evolve, night illumination, weather wind and fog, request queue, robot fleet under jam, research / RE / warmind / conduct / infection / Lazarus, core-raid phases, efficiency HUD grades, tide-song audio, Wave 6 art + E4 motion, UP71 Stage A polish (latch/jam clear, body-piles, Glass thermal/rain/smoke reveal, fleet board HUD), and forced-join cuts so the view stays off the sim thread.
 
 Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
-**Perf (Done-when 3):** zoomed-out pan **p10 68.3** (gate ≥60 CLEAR); 2k **p10 69.9** (gate ≥60 PASS). LP peak amended gate **≥30 CLEAR** (prior quiet 42.8). UP71 chase mid-flight: noisy remasure **p10 48.9** after far-LOD overlay throttle + advisor HUD budget (gap_to_60 ≈11). Quiet remasure continues.
+**Perf (Done-when 3):** pan **p10 68.3** (≥60 CLEAR); 2k **p10 69.9** (≥60 PASS). LP peak amended gate ≥30 CLEAR; UP71 quiet chase **p10 72.9** (target ≥60 **met** — `peak60_quiet1.log`). Far-LOD overlay / props / vis7 tick throttle + advisor HUD budget; SWARMNAT71 stays OFF.
 
-**Soaks / smoke:** Done-when smoke **21/0**. Live siege 600 **SIEGE_DONE** (feints=6, jam no-hack, RE/breakout/raid). Soak90 PASS. Durable 3600 running. Gore71 two-run hash green + bodies logged on soak/siege marks.
+**Soaks / smoke:** Done-when smoke **21/0**. Soak90 PASS. Durable **3600 SOAK_DONE**. Live siege 600 **SIEGE_DONE** (feints=6, jam no-hack, RE/breakout/raid). Gore71 two-run hash green; body counts climb on soak/siege marks.
 
 ---
 
 ## Still open (UP71)
 
-- Stage A: durable 60-min soak finish + quiet PEAK60 remasure + G7.1 LOCK.
-- Then G8 Four Sides → G9 Hive Reborn (scopes frozen in `game/docs/G8_SCOPE.md`, `G9_SCOPE.md`).
+- **G8 Four Sides** next (view rotation + 4-side art/anim + presentation) — scope `game/docs/G8_SCOPE.md`.
+- Then **G9 Hive Reborn** — scope `game/docs/G9_SCOPE.md`.
 - Frozen Done-when is never weakened to make a check pass.
 
 ---
 
 ## Branch & ship
 
-- Active branch: `g71` (UP71 execution)
+- Active branch: `g71` (UP71 → G8)
 - Board: `game/.plan/upgrade_board/` (permanent semantic CLAIM board)
 - Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Root README updated every ship.
 - Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (21 suites incl. AIRFIX; last run 0 fails)

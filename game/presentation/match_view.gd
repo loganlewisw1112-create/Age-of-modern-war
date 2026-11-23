@@ -188,6 +188,8 @@ var _ov_far_tick := -1
 ## hides their per-frame pulse; content stays exact per tick).
 var _fac_far_tick := -1
 var _g71_far_tick := -1
+var _vis7_far_tick := -1
+var _props_far_tick := -1
 
 
 # ================================================================ lifecycle
@@ -598,10 +600,14 @@ func _process(delta: float) -> void:
 	terrain_layer.tick()
 	world7_layer.refresh(snap)  # G7 LPMAP7: hidden and free with no creep and no map.lp
 	creep_layer.refresh(snap)  # G7 CREEP7: hidden and free when the match has no creep
-	baseprops_layer.refresh(snap)  # G7 BASE7 CR 1798
-	# PEAK60: far zoom (LOD_FAR) → atmo rebuild on tick only (night/smoke pulse is sub-pixel on icons).
+	# PEAK60: far zoom (LOD_FAR) → props / atmo / vis7 / life / seq / G71 on sim tick only (icon scale).
 	var far_z: bool = camera != null and camera.zoom.x < entity_layer.LOD_FAR
 	var stick_now: int = int(snap.get("tick", -1))
+	if far_z and stick_now == _props_far_tick:
+		pass
+	else:
+		_props_far_tick = stick_now if far_z else -1
+		baseprops_layer.refresh(snap)  # G7 BASE7 CR 1798
 	if far_z and stick_now == _fac_far_tick:
 		pass
 	else:
@@ -610,7 +616,11 @@ func _process(delta: float) -> void:
 	tp = Time.get_ticks_usec()
 	fog_layer.refresh()
 	ViewUtil.prof_add("p_fog", tp)
-	vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
+	if far_z and stick_now == _vis7_far_tick:
+		pass
+	else:
+		_vis7_far_tick = stick_now if far_z else -1
+		vis7_layer.refresh(snap)  # G7 VIS7 CR 1393: before entity_layer so its frame swaps apply this frame
 	var te := Time.get_ticks_usec()
 	entity_layer.refresh()
 	var far: bool = entity_layer.lod >= 2

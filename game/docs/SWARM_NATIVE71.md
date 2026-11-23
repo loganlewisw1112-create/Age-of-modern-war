@@ -267,3 +267,35 @@ Recommendation: the GPU-floor probe and (d) now; then (a) + (c), unless the prob
   - fewer statements per unit, meaning native code for Motion.step and the frame choice. That is the parked kernel
     line, and section 10's conditions still apply.
   - a visible trade, which the owner has ruled out.
+
+## 12. UP71 PEAK60 Stage A (2026-11-23): far-LOD match_view budget, gap_to_60
+
+Gate case: `tools/perf71_draw_lp.gd --fps-log --fps-quit=30 --no-vsync --lpz=0.5 --peak=1000`, windowed,
+`SWARMNAT71=0`. Ship gate remains amended p10 >= 30; chase target 60 (never block on 60).
+
+| State | p10 | gap_to_60 | notes |
+|---|---|---|---|
+| Seed (LOD_FAR=0.55, lod=2) | 42.8 | 17.2 | `.plan/lp_peak_lodfar.log` |
+| peak60_base1 | crash | — | FATAL Index OOB `protocol_advisor.gd:221` `entities.keys()` mid-threaded step |
+| peak60_base2 (advisor OOB fix only) | 41.5 | 18.5 | `evidence/peak60_base2.log` load~43 godot=10 |
+| peak60_cut1 (+ fac/G71 tick + advisor SCAN_S_PEAK) | 44.3 | 15.7 | `evidence/peak60_cut1.log` load~40 godot=10 |
+| peak60_r1 / r3 (noisy, overlay+hover+fac/G71) | 48.9 / 48.7 | 11.1 | `evidence/peak60_r1.log`, `peak60_r3.log` |
+| peak60_cut2 (+ vis7/baseprops tick) | 55.6 / 54.7 | 4.4 / 5.3 | `evidence/peak60_cut2.log` + `peak60_cut2b.log` load~5-20 |
+| **peak60_quiet1 (quiet PC + same cuts)** | **72.9** | **-12.9 (chase met)** | `evidence/peak60_quiet1.log` avg=92.4 min=65.6; soak finished, no peak peers |
+
+Crash fix (presentation): never scan while `sim_busy`; `ents.keys().duplicate()` + `has`/`get` bounds; HOSTILE_CAP=192;
+SCAN_S_PEAK=5 s when entity_count >= 1200. Harness survives peak=1000.
+
+Already true before this slice (left alone):
+- Static records ON by default (`PD71_RS != "0"`); unit records stay off.
+- Far LOD at peak zoom (`LOD_FAR=0.55` → lod=2); entity refresh ~1.2-2 ms at far.
+- Native swarm kernel OFF; section-10 preconditions still unmet. FACT why: leave OFF.
+
+Shipped in match_view (invisible / tick-exact at far):
+- Idle far overlay redraw only on sim tick (selection / ghost / order mode force full rate).
+- Hover outline `set_process` off at lod >= 2 (icons sub-readable).
+- Facility atmo / life / seq, G71 detail layers, baseprops, and vis7 refresh on sim tick at far zoom.
+
+**Quiet remasure conclusion:** noisy runs understated p10 by ~17-24 fps. On a quiet PC the same GDScript
+far-LOD budget clears chase 60 (p10=72.9). Amended gate 30 remains cleared. No further invisible cut required
+this slice; SWARMNAT71 stays OFF (section 10). Parked: GPU atlas batch; kernel revisit.
