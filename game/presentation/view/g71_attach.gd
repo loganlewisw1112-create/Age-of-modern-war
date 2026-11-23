@@ -18,6 +18,7 @@ const LAYERS := [
 	{"script": "res://presentation/view/turret71_look.gd", "at": "over_units", "by": "BASTION71"},   # CR seq 2287: turret tracking lines, recoil, heat, disabled sparks
 	{"script": "res://presentation/view/gas71_layer.gd", "at": "over_units", "by": "CNOPS71"},   # CR seq 3041: J10 gas cloud + mask glyphs
 	{"script": "res://presentation/view/cn71_layer.gd", "at": "over_units", "by": "CNOPS71"},   # CR seq 4443: Vanta 2 trail + bank cue, shield-drone bubble
+	{"script": "res://presentation/view/horror71_layer.gd", "at": "over_units", "by": "G71"},   # J7 silence / night eyes / bodies on display
 ]
 
 ## HUD panels (ORCH): scripts with `static func attach(mv) -> Node` (the Roster71 pattern), mounted once after the HUD is
