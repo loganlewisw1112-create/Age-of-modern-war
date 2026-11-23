@@ -1,6 +1,6 @@
 # RTS: Age of Modern War
 
-A single-player real-time strategy war in Godot 4.7.2. Skirmish still stands — three factions, stages, salvage and steel — but the heart of the current build is **Last Protocol**: one night against the Machine tide, walls and robots and a war that does not pause for breath.
+A single-player real-time strategy war in Godot 4.7.2. Skirmish still stands — three factions, stages, salvage and steel — but the heart of the current build is **Last Protocol**: the siege the rest of the game was built to earn.
 
 Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-when is CLOSED (`g8.lock`).** UP71 continues into **G9 Hive Reborn**.
 
@@ -8,9 +8,13 @@ Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-w
 
 ## Last Protocol
 
-You hold a fortified ring while the hive learns you. Creep eats the land. Nests pulse. Wildfire walks with the wind. Captured machines go to the study cells; some come back as hard-won knowledge, some break out. Your robot fleet fights under jamming without flipping sides. The war-mind can be fooled. Conduct has a cost. The clock starts at dusk; night lasts twice as long as day — when it deepens, searchlights and muzzle flash are all the map you get.
+Something under the world is finishing a count. When it hits zero, there is no second chance — only the Protocol.
 
-This is the siege the rest of the game was built to earn.
+You are the last ring still standing: walls, guns, people who know the gates by heart, and machines that still answer to your side. Outside, the hive does not advance like an army. It *learns*. Land turns wrong. The dark lasts longer than the day. Somewhere in the tide, things that should not speak do.
+
+**Your brief is simple.** Hold until the cores fall or the count ends you. Keep the rings. Spend what you earn — intel, scrap, captured steel, hard choices — without knowing which door leads out. Tools exist for those who dig: eyes that cut the dark, steel that will not turn, fire that refuses the ground, a war-mind that can be lied to. Use them. Or don't. The Protocol does not explain itself.
+
+Win, and dawn still feels like a question. Lose, and you will understand why it was called *Last*.
 
 ---
 
