@@ -15,7 +15,9 @@ IN THIS BUILD (Wave 3-5 stubs live)
   HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
   View: fire/hive/harvest layers read snap.g71 providers (no mv.world joins)
   Perf: forced_joins ~0-1; zoomed-out pan p10 51.2 / avg 65.9; LP peak quiet p10 42.8 / avg 56.3 (gate >=30 CLEAR)
-  Done-when harness: mid-run save/resume (7), H1 raid end states (8), 60m soak green + save hash match
+  Done-when harness: mid-run save/resume (7), H1 raid end states (8), durable 60m soak GREEN
+    (save hash match at 30m; wall ~234s headless; evidence game/.plan/soak_3600_durable_*)
+  Soak also exercises: fire seed, fleet jam no-hack (6), warmind feint+ask (11), RE capture (12)
 
 LOOK CHECKPOINT (E3 - owner)
   Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)
@@ -23,11 +25,12 @@ LOOK CHECKPOINT (E3 - owner)
 
 LEFT OPEN (Done-when not weakened)
   Owner look approvals (E3) then full E4 animation pass
-  LP peak p10 >= 30 with 1000+ machines
-  60-min peak siege soak / live RE+warmind siege
-  Strict 2k / zoomed-out panning vs past builds where frozen bar still applies
+  Live RE / warmind siege length beyond the harnessed 60-min board soak
+  Strict 2k / zoomed-out panning vs every past build where the frozen bar still applies
+    (pan sample already clears avg 65.9 / p10 51.2; LP peak amended gate >=30 is CLEAR)
 
 HARNESS
   Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90 [--save_at=45]
+  Durable:   ... --secs=3600 --save_at=1800
   Smoke:      powershell -File game/tools/g71_donewhen_smoke.ps1
   Look:       godot --headless --path game -s res://tools/art/g71_lookcheck.gd

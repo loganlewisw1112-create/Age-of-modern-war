@@ -1,0 +1,46 @@
+=== test_hive71 ===
+
+RESULT pass=3 fail=0 files=1 time_ms=10707
+=== test_fire71 ===
+RESULT pass=1 fail=0 files=1 time_ms=7808
+=== test_fire71_block ===
+RESULT pass=1 fail=0 files=1 time_ms=7641
+=== test_death71 ===
+RESULT pass=1 fail=0 files=1 time_ms=6439
+=== test_harvest71 ===
+RESULT pass=1 fail=0 files=1 time_ms=6355
+=== test_audio_h10 ===
+RESULT pass=2 fail=0 files=1 time_ms=5384
+=== test_h9_score ===
+RESULT pass=1 fail=0 files=1 time_ms=5838
+=== test_capture71 ===
+RESULT pass=1 fail=0 files=1 time_ms=5648
+=== test_evolve71 ===
+RESULT pass=1 fail=0 files=1 time_ms=5611
+=== test_atmo_tide ===
+RESULT pass=1 fail=0 files=1 time_ms=5654
+=== test_warmind71 ===
+RESULT pass=2 fail=0 files=1 time_ms=5873
+=== test_recomplex71 ===
+RESULT pass=3 fail=0 files=1 time_ms=40344
+=== test_fleet71 ===
+RESULT pass=4 fail=0 files=1 time_ms=11071
+=== test_lp_save71 ===
+RESULT pass=2 fail=0 files=1 time_ms=14335
+=== test_facility71 ===
+  [facility71] RESULT cycle first_in=10.5 s after return; first_in -> last_out 41.0 s (gate 70; G7.1 before: 102.1); 
+hp 0.40 -> 1.00; aps min 6
+RESULT pass=6 fail=0 files=1 time_ms=165430
+=== test_director71 ===
+RESULT pass=14 fail=0 files=1 time_ms=14857
+=== test_h1_raid71 ===
+RESULT pass=2 fail=0 files=1 time_ms=6798
+=== test_infect71 ===
+RESULT pass=3 fail=0 files=1 time_ms=7641
+=== test_gore71 ===
+RESULT pass=7 fail=0 files=1 time_ms=6142
+=== test_airfix71 ===
+RESULT pass=6 fail=0 files=1 time_ms=246004
+=== test_airops71 ===
+RESULT pass=8 fail=0 files=1 time_ms=26852
+SMOKE_DONE fails=0 / 21

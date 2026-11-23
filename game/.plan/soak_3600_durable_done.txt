@@ -1,0 +1,9 @@
+G7.1 durable 60-min LP soak — GREEN
+Commit near run: 239988ae / harness g71_soak_short.gd
+Command: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=3600 --save_at=1800
+SOAK_START secs=3600 ticks=72000 save_at=1800
+SOAK_SAVE tick=36000 hash_match=true
+SOAK_DONE ticks=72000 wall_ms=234057
+End boards: hive nests=2 relays=1 prod_mult=1.8 beat=91 eaten=49; death blasts=187 seeds=282 gasps=17
+SOAK_RE cells=1
+Log: game/.plan/soak_3600_durable_green.log

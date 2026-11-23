@@ -1,0 +1,14 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+SOAK_START secs=90 ticks=1800 save_at=45
+SOAK_FIRE seeded at (87.0, 36.0) n=1
+SOAK_JAM board={ "n": 119, "by": { "sentinel": 48, "dog": 24, "ugv": 18, "mule": 12, "hunter": 3, "ucav": 4, "ew": 4, "purge": 6 }, "charging": 0, "local": 0, "recover": 0, "bat_avg": 73.0000000000002, "leader": 989 } hacked=0
+SOAK_MARK t=30s hive={ "nests": 2, "relays": 1, "isolated": 0, "prod_mult": 1.34, "beat": 6, "pulse": false, "eaten": 0 } fire={ "n": 0 } death={ "blasts": 0, "seeds": 2, "gasps": 0 } re_cells=0
+SOAK_FEINT push={ "main": 4, "feint": 0, "feint_frac": 0.25 } fooled=true logistics=true ask=abandon
+SOAK_SAVE tick=900 hash_match=true
+SOAK_MARK t=60s hive={ "nests": 2, "relays": 1, "isolated": 0, "prod_mult": 1.42, "beat": 13, "pulse": false, "eaten": 0 } fire={ "n": 0 } death={ "blasts": 3, "seeds": 7, "gasps": 0 } re_cells=0
+SOAK_RE cells=1 prototypes=[]
+SOAK_FLEET board={ "n": 119, "by": { "sentinel": 48, "dog": 24, "ugv": 18, "mule": 12, "hunter": 3, "ucav": 4, "ew": 4, "purge": 6 }, "charging": 0, "local": 0, "recover": 0, "bat_avg": 59.8000000000002, "leader": 989 } hacked_end=0
+SOAK_DONE ticks=1800 wall_ms=49107 boards hive={ "nests": 2, "relays": 1, "isolated": 0, "prod_mult": 1.44, "beat": 24, "pulse": false, "eaten": 0 } fire={ "n": 0 } death={ "blasts": 12, "seeds": 25, "gasps": 0 } jam=true feint=true
