@@ -241,6 +241,17 @@ static func lines(d: Dictionary) -> Dictionary:
 			var pn := (req.get("pending", []) as Array).size()
 			if pn > 0:
 				dread += "  |  REQUESTS %d" % pn
+		var hive: Dictionary = d.get("hive", {})
+		if hive is Dictionary and not hive.is_empty():
+			var iso := int(hive.get("isolated", 0))
+			dread += "  |  HIVE n%d r%d" % [int(hive.get("nests", 0)), int(hive.get("relays", 0))]
+			if iso > 0:
+				dread += " iso%d" % iso
+		var fire: Dictionary = d.get("fire", {})
+		if fire is Dictionary:
+			var fn := int(fire.get("n", 0))
+			if fn > 0:
+				dread += "  |  FIRE %d" % fn
 	return {"title": "LAST PROTOCOL  -  PHASE %d  -  %s" % [int(d.phase), String(d.posture).to_upper()],
 		"creep": "Creep %.1f%%   critical %.0f%%   win below %.0f%%" % [float(d.creep) * 100.0, crit * 100.0, float(d.win_below) * 100.0],
 		"countdown": "PROTOCOL  %s   x%.2f   ~%d min" % [LpMenu.fmt_time(float(d.cd_left)), float(d.cd_rate), int(ceil(float(d.cd_left) / maxf(float(d.cd_rate), 0.001) / 60.0))],  # OPSUI7 CR seq 1405

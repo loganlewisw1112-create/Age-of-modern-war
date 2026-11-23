@@ -1,0 +1,15 @@
+{
+  "_meta": "G7.1 I4 wildfire. PROVISIONAL.",
+  "rules": {
+    "g71_fire": {
+      "seed_i": 0.85,
+      "burn_s": 40.0,
+      "step_ticks": 10,
+      "decay": 0.06,
+      "spread": 0.55,
+      "block_i": 0.55,
+      "dmg": 6.0,
+      "max_cells": 120
+    }
+  }
+}

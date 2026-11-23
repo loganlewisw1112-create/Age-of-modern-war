@@ -74,9 +74,12 @@ static func add_searchlight(w: SimWorld, building_id: int) -> void:
 	s.lights = lights
 
 
-## True if pos is lit by an illumination flare or a searchlight beam.
+## True if pos is lit by an illumination flare, searchlight beam, or burning wildfire cell (I4).
 static func lit(w: SimWorld, pos: Vector2) -> bool:
 	if not active(w):
+		return true
+	var Fire71 = preload("res://sim/systems/fire71.gd")
+	if Fire71.burning_at(w, pos):
 		return true
 	var s := _st(w)
 	for ill in s.ills:

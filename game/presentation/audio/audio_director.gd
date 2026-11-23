@@ -29,6 +29,9 @@ const MAX_DN := 3.5          # beyond this: silent (big booms reach BOOM_DN)
 const BOOM_DN := 7.0
 const MAX_ENGINES := 4
 const META := "audio61_director"
+## G7.1 H10: seconds of flash-to-boom delay per unit of camera-distance past FAR_START (artillery / big guns).
+const FLASH_DELAY_PER_DN := 0.35
+const FLASH_DELAY_MAX := 1.5
 
 var mv = null
 var enabled := false
@@ -55,6 +58,7 @@ var _line_rot := 0
 var _alert_t: Dictionary = {}
 var g7 = null                    # G7 (AUDIO7) layer: audio_g7.gd
 var _voice_player: AudioStreamPlayer = null
+var _delayed: Array = []         # G7.1 H10: [{at, id, tile, vis, gain}]
 
 
 func _init() -> void:
@@ -196,19 +200,45 @@ func dist_norm(tile: Vector2) -> float:
 
 
 # ------------------------------------------------------------------ battle one-shots
+## G7.1 H10: flash-to-sound delay (seconds) for distant booms. Close / non-boom = 0.
+static func flash_delay_s(dn: float, boom: bool) -> float:
+	if not boom or dn <= FAR_START:
+		return 0.0
+	return clampf((dn - FAR_START) * FLASH_DELAY_PER_DN, 0.05, FLASH_DELAY_MAX)
+
+
+static func is_boom_id(id: String) -> bool:
+	return id.begins_with("explosion") or id.begins_with("shot_artillery") or id == "shot_cannon" 			or id.begins_with("core_") or id == "shot_rail" or id == "creep_fissure"
+
+
 ## Plays sound id at a map position (tiles). Hidden (fogged) events play distant-only. Returns the id played.
+## G7.1 H10: distant booms are queued so the crack arrives after the flash.
 func play_at(id: String, tile: Vector2, vis: bool = true, gain_db: float = 0.0) -> String:
 	if id == "":
 		return ""
 	if vis and not mixer.would_accept(id, Cat.category(id), _now):
 		return ""  # category full: skip the distance math (a far swap could still fit, but full = loud enough)
 	var dn := dist_norm(tile)
+	var boom := is_boom_id(id)
+	var delay := flash_delay_s(dn, boom)
+	if delay > 0.0:
+		_delayed.append({"at": _now + delay, "id": id, "tile": tile, "vis": vis, "gain": gain_db})
+		if _delayed.size() > 64:
+			_delayed.pop_front()
+		counts["delayed:" + id] = int(counts.get("delayed:" + id, 0)) + 1
+		return id
+	return _play_at_now(id, tile, vis, gain_db, dn)
+
+
+func _play_at_now(id: String, tile: Vector2, vis: bool, gain_db: float, dn: float = -1.0) -> String:
+	if dn < 0.0:
+		dn = dist_norm(tile)
 	if not vis or dn > FAR_START:
 		id = Cat.far_of(id)
 		gain_db -= 6.0 if not vis else clampf((dn - FAR_START) * 2.5, 0.0, 12.0)
 		if id == "":
 			return ""
-	var boom := id.begins_with("explosion") or id.begins_with("shot_artillery") or id == "shot_cannon" 			or id.begins_with("core_") or id == "shot_rail" or id == "creep_fissure"
+	var boom := is_boom_id(id)
 	if dn > (BOOM_DN if boom else MAX_DN):
 		return ""
 	var vars := Cat.variants(id)
@@ -314,6 +344,15 @@ func _radio_dur(line: String) -> float:
 ## Advances the director clock: starts the next radio line, eases ducking, refreshes engine loops.
 func tick(dt: float) -> void:
 	_now += dt
+	# G7.1 H10: flush flash-delayed distant booms.
+	if not _delayed.is_empty():
+		var keep_d := []
+		for d in _delayed:
+			if float(d.get("at", 0.0)) > _now:
+				keep_d.append(d)
+				continue
+			_play_at_now(String(d.get("id", "")), d.get("tile", Vector2.ZERO), bool(d.get("vis", true)), float(d.get("gain", 0.0)))
+		_delayed = keep_d
 	if mv != null and mv.get("player_fid") != null and int(mv.player_fid) != player_fid:
 		setup(mv, enabled)  # the view switched sides (spectate / editor): re-read side + faction voice
 	var it: Dictionary = radio.poll(_now, _radio_dur)
