@@ -1,6 +1,6 @@
 # RTS: Age of Modern War
 
-A single-player real-time strategy war in Godot 4.7.2. Skirmish still stands — three factions, stages, salvage and steel — but the heart of the current build is **Last Protocol**: the siege the rest of the game was built to earn.
+A single-player real-time strategy war in Godot 4.7.2. Skirmish is the sparring floor. **Last Protocol** is the night they built the game to survive.
 
 Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-when is CLOSED (`g8.lock`).** UP71 continues into **G9 Hive Reborn**.
 
@@ -8,13 +8,37 @@ Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-w
 
 ## Last Protocol
 
-Something under the world is finishing a count. When it hits zero, there is no second chance — only the Protocol.
+Somewhere under the map, a clock is still counting. Nobody who wrote the Protocol is left to explain what happens at zero. You get one night. Maybe two if you steal the dark and make it yours.
 
-You are the last ring still standing: walls, guns, people who know the gates by heart, and machines that still answer to your side. Outside, the hive does not advance like an army. It *learns*. Land turns wrong. The dark lasts longer than the day. Somewhere in the tide, things that should not speak do.
+### The ground you inherit
 
-**Your brief is simple.** Hold until the cores fall or the count ends you. Keep the rings. Spend what you earn — intel, scrap, captured steel, hard choices — without knowing which door leads out. Tools exist for those who dig: eyes that cut the dark, steel that will not turn, fire that refuses the ground, a war-mind that can be lied to. Use them. Or don't. The Protocol does not explain itself.
+You don't drop into an empty sandbox. You inherit a living fortress already under pressure:
 
-Win, and dawn still feels like a question. Lose, and you will understand why it was called *Last*.
+- **Two rings of wall** — outer kill-zone and a hard **core** around the heart of the base.
+- Between them: the economy that keeps guns fed, pads hot, and wounded moving.
+- At the centre: the **facility** — command, labs, workshops, pads on the roof, doors that open into a war that never clocks out.
+- Gates with approach belts. Cameras on the corners. Helipads already loaded. An army on the wire — and a reserve held back behind the last wall, because someone before you knew the first wave is never the real one.
+- On the far horizon: **Machine cores**. Kill them and the tide can break. Fail, and the count finishes what the hive started.
+
+The clock starts at **dusk**. Night lasts longer than day here. When the lights die down to searchlights and muzzle flash, the map stops being a map and starts being a confession.
+
+### Why you fight
+
+The hive is not a faction. It is a *process*. Creep eats the land. Nests pulse. Something in the dark adapts to how you hold a wall, how you rotate a sector, how you panic. It will feint. It will learn your weak face. It will climb its own dead if that is what the wall demands.
+
+You are not here to farm a leaderboard. You are here because if this ring falls, there is no next ring.
+
+### What you actually do
+
+Hold. Rotate. Fall back only when the Protocol would rather you live than die proud on a cracked rampart. Strike the cores when the night opens a seam. Spend what the siege pays you — scrap, captured steel, intel, research scratched out under fire — without a tutorial telling you which door is mercy and which is a trap.
+
+There are tools. Loyal robots that refuse the hive's handshake. Eyes that see what camo thinks is invisible. Fire that redraws the approaches. A war-mind you can lie to. Conduct that costs more than ammo. None of them come with a ribbon that says *press this to win*. The game wants you hungry. It wants you wrong once, then dangerous forever.
+
+### The part we won't spoil
+
+There are things in the tide with names you will earn the hard way. There are endings that change what dawn means. There is a reason the Protocol is called *Last* — and the only way to learn it is to still be standing when the count runs out… or to watch the facility go quiet and know exactly what you traded.
+
+**Main menu → Last Protocol.** Bring a pulse.
 
 ---
 
