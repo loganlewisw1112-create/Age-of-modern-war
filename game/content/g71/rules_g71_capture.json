@@ -1,0 +1,11 @@
+{
+  "_meta": "G7.1 H11 captured machine study. PROVISIONAL.",
+  "rules": {
+    "g71_capture": {
+      "max_hp_frac": 0.35,
+      "study_s": 45.0,
+      "breakout_per_tick": 0.0008,
+      "research_boost": 12.0
+    }
+  }
+}

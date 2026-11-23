@@ -47,6 +47,8 @@ static func _is_machine(w: SimWorld, e: Dictionary) -> bool:
 static func on_destroyed(w: SimWorld, e: Dictionary) -> void:
 	if not active(w) or not _is_machine(w, e):
 		return
+	if bool(e.get("g71_nocell", false)):
+		return  # captured for study / other non-lethal removals
 	var s := _st(w)
 	var id := int(e.get("id", -1))
 	if id < 0 or (s.seen as Dictionary).has(id):
