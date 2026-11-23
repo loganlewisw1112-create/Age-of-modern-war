@@ -1,0 +1,10 @@
+{
+  "_meta": "G7.1 H11 hive evolve stages. PROVISIONAL.",
+  "rules": {
+    "g71_evolve": {
+      "stage_at": [0.35, 0.55, 0.75, 0.9],
+      "harden_per_stage": 0.08,
+      "tag_every": 30
+    }
+  }
+}

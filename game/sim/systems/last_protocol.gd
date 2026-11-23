@@ -1398,6 +1398,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"fire": preload("res://sim/systems/fire71.gd").board(w),
 		"death": preload("res://sim/systems/death71.gd").board(w),
 		"harvest": preload("res://sim/systems/harvest71.gd").board(w),
+		"capture": preload("res://sim/systems/capture71.gd").board(w),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
