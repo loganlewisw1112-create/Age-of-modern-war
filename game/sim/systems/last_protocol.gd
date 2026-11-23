@@ -108,6 +108,7 @@ static func setup(w: SimWorld) -> Dictionary:
 		"adapt": {}, "adapt_last": {}, "objectives": [], "intel": {},
 		"wall_fatigue": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "wall_crack": [],
 		"runner_miss": [0, 0, 0, 0, 0, 0, 0, 0], "wall_starve": [],
+		"scuttle": [], "core_raid": {},
 		"kill_heat": {}, "dread_peak": 0.0, "obj_done": 0,
 		"remembered": [], "roster": {}, "warn": {"creep": [], "cd": []}, "filled": false, "teams_total": 0,
 		"teams_lost": 0, "extractions": 0, "purged_cells": 0, "creep_peak": 0.0, "phase": 0, "frac": 0.0,
@@ -210,6 +211,10 @@ static func tick(w: SimWorld) -> void:
 			_counter_attacks(w, s)
 		if (w.tick + 53) % _t(3.0) == 0:
 			_wall_runners(w, s)
+		if (w.tick + 59) % _t(1.0) == 0:
+			_scuttle_tick(w, s)
+		if (w.tick + 61) % _t(5.0) == 0:
+			_core_raid_tick(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -284,6 +289,7 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 			"LpRingBreached":
 				_push_objective(w, s, "hold_fallback", "Hold the fallback after %s fell" % String(ev.get("name", "a ring")),
 					{"ring": int(ev.get("ring", -1))})
+				_queue_scuttle(w, s, int(ev.get("ring", -1)))
 			"T71Disabled":
 				if int(ev.get("owner", -1)) == int(s.fid):
 					_push_objective(w, s, "retake_turret", "Retake disabled turret", {"id": int(ev.get("id", -1))})
@@ -584,6 +590,114 @@ static func _wall_life(w: SimWorld, s: Dictionary) -> void:
 	s.wall_crack = cracked
 
 
+## D3 fallback: abandoned turrets on a fallen ring are blown after a short rear-guard delay.
+static func _queue_scuttle(w: SimWorld, s: Dictionary, ring: int) -> void:
+	if ring < 0 or not s.has("base") or ring >= (s.base.rings as Array).size():
+		return
+	if not s.has("scuttle") or not (s.scuttle is Array):
+		s.scuttle = []
+	var delay := _t(float(Director71.rules().get("scuttle_delay_s", 8.0)))
+	var at := w.tick + delay
+	var turrets: Array = s.base.rings[ring].get("turrets", [])
+	var n := 0
+	for tid in turrets:
+		var id := int(tid)
+		if not w.entities.has(id):
+			continue
+		var already := false
+		for row in s.scuttle:
+			if int(row.get("id", -1)) == id:
+				already = true
+				break
+		if already:
+			continue
+		(s.scuttle as Array).append({"id": id, "at": at, "ring": ring})
+		n += 1
+	if n > 0:
+		w.emit("LpTurretScuttleQueued", {"ring": ring, "n": n, "at": at})
+
+
+static func _scuttle_tick(w: SimWorld, s: Dictionary) -> void:
+	if not s.has("scuttle") or not (s.scuttle is Array) or (s.scuttle as Array).is_empty():
+		return
+	var keep := []
+	for row in s.scuttle:
+		var id := int(row.get("id", -1))
+		if w.tick < int(row.get("at", 0)):
+			keep.append(row)
+			continue
+		if w.entities.has(id):
+			var e = w.entities[id]
+			var pos: Vector2 = e.pos
+			w.destroy(id, "scuttle", int(s.fid))
+			w.emit("LpTurretScuttled", {"id": id, "ring": int(row.get("ring", -1)), "pos": pos})
+	s.scuttle = keep
+
+
+## H1 core assault stub: multi-phase raid that opens once dread is late and a core still lives.
+static func _core_raid_tick(w: SimWorld, s: Dictionary) -> void:
+	if not s.has("core_raid") or not (s.core_raid is Dictionary):
+		s.core_raid = {}
+	var raid: Dictionary = s.core_raid
+	var phase := String(raid.get("phase", ""))
+	var alive := Cores.alive_count(w)
+	if phase == "" or phase == "done" or phase == "failed":
+		if float(s.get("dread", 0.0)) < float(Director71.rules().get("core_raid_at", 0.75)):
+			return
+		if alive <= 0:
+			return
+		if phase == "done" or phase == "failed":
+			return  # one stub raid per run
+		var core_id := -1
+		for c in Cores.list(w):
+			if bool(c.get("alive", false)):
+				core_id = int(c.get("id", -1))
+				break
+		if core_id < 0:
+			return
+		raid.phase = "recon"
+		raid.core = core_id
+		raid.t0 = w.tick
+		raid.phase_i = 0
+		s.core_raid = raid
+		_push_objective(w, s, "core_raid", "Core raid: recon the hive heart", {"phase": "recon", "core": core_id})
+		w.emit("LpCoreRaid", {"phase": "recon", "core": core_id})
+		return
+	if alive <= 0:
+		_complete_objective(w, s, "core_raid", {})
+		raid.phase = "done"
+		s.core_raid = raid
+		w.emit("LpCoreRaid", {"phase": "done", "core": int(raid.get("core", -1))})
+		return
+	var every := _t(float(Director71.rules().get("core_raid_phase_s", 45.0)))
+	if w.tick - int(raid.get("t0", w.tick)) < every:
+		return
+	var order := ["recon", "soften", "breach", "purge"]
+	var i := int(raid.get("phase_i", 0)) + 1
+	if i >= order.size():
+		# purge window expired without a core kill = failed phase report
+		raid.phase = "failed"
+		raid.failed = "purge"
+		s.core_raid = raid
+		_complete_objective(w, s, "core_raid", {})
+		_push_objective(w, s, "core_raid_fail", "Core raid failed at purge — regroup", {"phase": "purge"})
+		w.emit("LpCoreRaid", {"phase": "failed", "failed": "purge", "core": int(raid.get("core", -1))})
+		return
+	raid.phase = String(order[i])
+	raid.phase_i = i
+	raid.t0 = w.tick
+	s.core_raid = raid
+	var titles := {
+		"soften": "Core raid: soften the heart (arty / UCAV)",
+		"breach": "Core raid: breach with CN teams",
+		"purge": "Core raid: purge the heart",
+	}
+	var title := String(titles.get(raid.phase, "Core raid: %s" % raid.phase))
+	_complete_objective(w, s, "core_raid", {})
+	_push_objective(w, s, "core_raid", title, {"phase": String(raid.phase), "core": int(raid.core)})
+	w.emit("LpCoreRaid", {"phase": String(raid.phase), "core": int(raid.core)})
+
+
 ## D3 runners under fire: cracked / threatened faces need friendlies on the wall-walk; miss enough checks = starve.
 static func _wall_runners(w: SimWorld, s: Dictionary) -> void:
 	if not s.has("runner_miss") or not (s.runner_miss is Array) or (s.runner_miss as Array).size() != 8:
@@ -880,7 +994,9 @@ static func result(w: SimWorld, s: Dictionary, ending: String) -> Dictionary:
 		"counter": Director71.counter_for(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"objectives_done": int(s.get("obj_done", 0)),
 		"wall_cracks": crack_faces, "wall_starve_n": (s.get("wall_starve", []) as Array).size(),
-		"kill_heat_top": heat_top}
+		"kill_heat_top": heat_top,
+		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
+		"core_raid_failed": String((s.get("core_raid", {}) as Dictionary).get("failed", ""))}
 
 
 ## Top N kill-heat cells as [{cell, n}] for the D6 after-action report.
@@ -923,6 +1039,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"sync_n": int(s.get("sync_n", 0)), "forecast": String(s.get("forecast", "")),
 		"pile_n": (s.get("pile_pos", []) as Array).size(),
 		"wall_crack_n": (s.get("wall_crack", []) as Array).size(),
+		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 

@@ -179,6 +179,51 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
 
 
+func test_scuttle_and_core_raid() -> void:
+	check(float(Director71.rules().get("scuttle_delay_s", 0.0)) > 0.0, "scuttle delay is set")
+	check(float(Director71.rules().get("core_raid_at", 0.0)) > 0.5, "core raid opens late")
+	Radio71._lines = null
+	check(not Radio71.line("lp71.turret_scuttle").is_empty(), "scuttle radio line loads")
+	check(not Radio71.line("lp71.core_raid").is_empty(), "core-raid radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for scuttle/raid"):
+		return
+	for i in 20:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	# Scuttle: invent a fallen-ring turret id still alive, queue, then force the blow.
+	var tid := -1
+	if (s.base.rings as Array).size() > 0:
+		var ts: Array = s.base.rings[0].get("turrets", [])
+		if not ts.is_empty() and w.entities.has(int(ts[0])):
+			tid = int(ts[0])
+	if tid >= 0:
+		LastProtocol._queue_scuttle(w, s, 0)
+		check((s.scuttle as Array).size() >= 1, "fallen ring queues turret scuttle")
+		for row in s.scuttle:
+			row.at = w.tick  # due now
+		LastProtocol._scuttle_tick(w, s)
+		check(not w.entities.has(tid), "scuttle destroys the abandoned turret")
+	# Core raid stub advances through phases.
+	s.dread = 0.9
+	s.core_raid = {}
+	LastProtocol._core_raid_tick(w, s)
+	check_eq(String(s.core_raid.get("phase", "")), "recon", "late dread opens recon")
+	check(String(LastProtocol.hud(w).get("core_raid", "")) == "recon", "HUD shows raid phase")
+	s.core_raid.t0 = w.tick - int(SimWorld.TICK_RATE * 50)
+	LastProtocol._core_raid_tick(w, s)
+	check_eq(String(s.core_raid.get("phase", "")), "soften", "raid advances to soften")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpCoreRaid", "phase": "breach", "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("raid") >= 0 or String(feed.text).find("breach") >= 0,
+		"radio speaks core raid phase")
+	feed.free()
+
+
 func test_runners_and_after_action() -> void:
 	# D3 wall-walk starve + D6 after-action fields.
 	check(int(Director71.rules().get("runner_starve_misses", 0)) >= 2, "runner starve needs a few misses")

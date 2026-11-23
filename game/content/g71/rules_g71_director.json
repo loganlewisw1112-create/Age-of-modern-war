@@ -44,6 +44,9 @@
       "wall_crack_at": 0.85,
       "sally_dread": 0.45,
       "runner_starve_misses": 3,
+      "scuttle_delay_s": 8.0,
+      "core_raid_at": 0.75,
+      "core_raid_phase_s": 45.0,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

@@ -13,6 +13,8 @@
     "lp71.supply_drop": {"text": "Inbound supply drop — protect the flight!", "cat": "command", "prio": 78, "cd": 20.0},
     "lp71.sector_crack": {"text": "Sector {0} is cracking — rotate fresh squads!", "cat": "alert", "prio": 82, "cd": 18.0},
     "lp71.counter_attack": {"text": "Counter-attack: {0}", "cat": "command", "prio": 76, "cd": 12.0},
-    "lp71.wall_starve": {"text": "Wall-walk cut on {0} — ammo and medics cannot reach the line!", "cat": "alert", "prio": 84, "cd": 16.0}
+    "lp71.wall_starve": {"text": "Wall-walk cut on {0} — ammo and medics cannot reach the line!", "cat": "alert", "prio": 84, "cd": 16.0},
+    "lp71.turret_scuttle": {"text": "Abandoned turrets on the fallen ring — scuttling charges set.", "cat": "command", "prio": 70, "cd": 20.0},
+    "lp71.core_raid": {"text": "Core raid phase: {0}", "cat": "command", "prio": 80, "cd": 15.0}
   }
 }
