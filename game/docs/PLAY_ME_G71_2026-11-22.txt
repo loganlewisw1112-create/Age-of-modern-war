@@ -1,7 +1,8 @@
-RTS: Age of Modern War — G7.1 checkpoint, 2026-11-22
+RTS: Age of Modern War — G7.1 checkpoint, 2026-11-22 (director slice)
 
-This is the newest build. It is G7 (2026-10-30) plus G7.1 wave 1 and the wave-2 work that was on the
-tree when this slice stopped, including the Vanta2 flight fix. It is a checkpoint, not a finished G7.1.
+This is the newest build. It is G7 (2026-10-30) plus G7.1 wave 1, wave-2 work on the tree,
+the Vanta2 flight fix, and the Last Protocol hive director slices (C1–C6 stubs). Checkpoint,
+not a finished G7.1. Commit: 24f68b4 on branch g71.
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
@@ -15,12 +16,17 @@ IN THIS BUILD, ON TOP OF G7
     masks, gore and casualty care.
   Vanta2: the rotorless gunship keeps its speed (a stop does not kill it dead), banks into turns, strafes
     through a target, and fires the twin guns on the front of the body.
+  Hive director (this slice): dread meter + Tide breaths; feint assaults; breaking-point + Overmind lines;
+    late logistics peels; retreat/regrow; adapt counters that bias spawns; C3/C4 stubs (brute, siege walker,
+    turret-eater, sapper, reclaimer, hive Conductor, glass stalker); Conductor sync damage; wreck cover;
+    Glass stalker camo that strips when hit. HUD shows dread, breaking point, and hive counter.
 
 LEFT FOR THE NEXT SLICE
   Last Protocol peak is about 24 fps (the gate is 30). A 2,000-unit view is about 35 fps (the gate is 60).
   Exact drawing cuts did not close that. A visible quality cut was ruled out. The swarm drawing kernel is parked.
-  Waves 3 to 6 are not in this build: the hive director, the robot fleet, core raids, save and resume,
-    the look checkpoint, the full animation pass, and the long soaks.
+  Polish still open: turret latch/jammer, thermal/rain stalker reveal, body piles, formation AI beyond sync damage.
+  Waves 3 to 6 Done-when items remain: core raids, save/resume, look checkpoint, full animation, long soaks,
+    frame-rate gates, final package that claims the frozen Done-when.
   Skirmish still has its 120 population cap.
   The 8-APC exit under pressure is still about 83 seconds (the target was about 70).
 

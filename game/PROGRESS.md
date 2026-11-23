@@ -1,11 +1,12 @@
 # PROGRESS: RTS: Age of Modern War
 
 ## SLICE STOP (2026-11-22) — packaged as-is. Read this first. Next slice starts below this line.
-Branch `g71`. Wave 1 is the commit `82a887a` (suite 177/177). Wave 2 is in the working tree and is **not** a closed
-wave. This slice's own change is Vanta2 flight. The package is
+Branch `g71` at `24f68b4`. Wave 1 is the commit `82a887a` (suite 177/177). Wave 2 is in the working tree and is
+**not** a closed wave. After the Vanta2 checkpoint, the hive director C1–C6 stubs landed (dread, feints,
+breaking-point, logistics, regrow, adapt, C3/C4 units, sync, reclaim, wreck cover, glass camo). The package is
 `build/RTS_Age_of_Modern_War_G71_2026-11-22/` and the same folder under
-`C:/Users/logan/Downloads/Age of Modern War/`. Pack: import exit 0, export exit 0, pck md5
-`07302424eab39e0bc3e0777d8441a517` (97,855,428 bytes). Player note: `build/PLAY_ME_G71.txt`.
+`C:/Users/logan/Downloads/Age of Modern War/` (+ zip). Pack: import exit 0, export exit 0, pck md5
+`0d9b68a59f6abc40372bc40486bcb1d7` (97,889,260 bytes). Player note: `build/PLAY_ME_G71.txt`.
 
 **In this package, on top of the 2026-10-30 G7 build**
 - Wave 1: aircraft home pads, air ops, fewer steps to battle, control, the sim/render perf work from `82a887a`.
