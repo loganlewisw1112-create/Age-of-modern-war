@@ -1,0 +1,10 @@
+{
+  "_meta": "G9 COMBAT9 destructible terrain + ballistics harness tuning. All PROVISIONAL.",
+  "rules": {
+    "g71_combat9": {
+      "enabled": true,
+      "crater_min_charge_kg": 0.45,
+      "crater_radius_tiles": 0.45
+    }
+  }
+}

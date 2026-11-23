@@ -228,6 +228,7 @@ static func on_burst(w: SimWorld, pos: Vector2, prof: Dictionary, ids: Array, sr
 		return
 	if not pre_in.is_empty():
 		_corpses(w, pos, prof, pre_in)
+	_combat9().on_burst(w, pos, prof)
 	if ids.is_empty():
 		return
 	var c := cfg()
@@ -276,6 +277,15 @@ static func on_burst(w: SimWorld, pos: Vector2, prof: Dictionary, ids: Array, sr
 			if dsev > 0.0:
 				daze(w, e, maxi(int(round(daze_s(dsev) * SimWorld.TICK_RATE)), 1))
 				st0 = w.sys_state.get("blast8")
+
+
+static var _c9 = null
+
+
+static func _combat9():
+	if _c9 == null:
+		_c9 = load("res://sim/systems/combat9.gd")
+	return _c9
 
 
 ## Men killed by this burst: their bodies are thrown too (display event only, ascending id).
