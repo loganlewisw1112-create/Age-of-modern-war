@@ -1257,12 +1257,23 @@ static func result(w: SimWorld, s: Dictionary, ending: String) -> Dictionary:
 	if won:
 		score += float(sc.get("per_min_left", 20)) * maxf(float(s.cd_left), 0.0) / 60.0
 		score += float((sc.get("ending_bonus", {}) as Dictionary).get(ending, 0))
+	var Conduct71 = preload("res://sim/systems/conduct71.gd")
+	score += float(Conduct71.score(w))  # J14 dark marks already negative
 	var sco := maxi(roundi(score), 0)
 	var medal := ""
 	var md: Dictionary = R().get("medals", {})
 	for m in ["bronze", "silver", "gold"]:
 		if won and sco >= int(md.get(m, 1 << 30)):
 			medal = m
+	# J14: crossing the line blocks gold; epilogue tag follows conduct ending.
+	if medal == "gold" and not Conduct71.gold_ok(w):
+		medal = "silver"
+	var conduct_ending := Conduct71.ending(w)
+	var epilogue := "clean"
+	if conduct_ending == "dark":
+		epilogue = "dark_protocol"
+	elif conduct_ending == "crossed":
+		epilogue = "crossed_the_line"
 	var crack_faces := []
 	for k in (s.get("wall_crack", []) as Array):
 		crack_faces.append(Director71.face_name(int(k)))
@@ -1279,7 +1290,9 @@ static func result(w: SimWorld, s: Dictionary, ending: String) -> Dictionary:
 		"wall_cracks": crack_faces, "wall_starve_n": (s.get("wall_starve", []) as Array).size(),
 		"kill_heat_top": heat_top,
 		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
-		"core_raid_failed": String((s.get("core_raid", {}) as Dictionary).get("failed", ""))}
+		"core_raid_failed": String((s.get("core_raid", {}) as Dictionary).get("failed", "")),
+		"conduct_score": Conduct71.score(w), "conduct_ending": conduct_ending, "epilogue": epilogue,
+		"gold_blocked": not Conduct71.gold_ok(w)}
 
 
 ## Top N kill-heat cells as [{cell, n}] for the D6 after-action report.
