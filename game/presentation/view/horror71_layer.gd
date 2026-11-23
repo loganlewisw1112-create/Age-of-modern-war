@@ -63,6 +63,10 @@ func setup(view: Node) -> void:
 func refresh(snap: Dictionary) -> void:
 	if snap.is_empty() or mv == null:
 		return
+	# Far zoom (peak / pan): skip night-eye scatter cost; silence/bodies still update.
+	var far := false
+	if mv.get("entity_layer") != null and int(mv.entity_layer.lod) >= 1:
+		far = true
 	var row = (snap.get("g71", {}) as Dictionary).get(KEY)
 	if row == null:
 		if _silence or _eyes or not _bodies.is_empty() or _song > 0.01:
@@ -82,7 +86,7 @@ func refresh(snap: Dictionary) -> void:
 		return
 	_sig = sig
 	_silence = sil
-	_eyes = eyes
+	_eyes = eyes and not far
 	_song = song
 	_bodies = bodies
 	queue_redraw()

@@ -58,7 +58,7 @@ Harnessed **60-minute** Last Protocol soak completed without crash (boards staye
 
 - **Owner look checkpoint (E3)** — approve or reject each sample; full art roll-out waits on that.
 - **E4 animation** — after look approval.
-- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (best quiet sample p10 28.3 / avg 32.6; still short).
+- **LP peak fps** — amended gate p10 ≥ 30 with 1,000+ machines (best quiet sample p10 28.3 / avg 32.6; far-zoom skips horror eye scatter).
 - **Live RE / warmind siege length** beyond the harnessed 60-min board soak (that soak completed green: 72k ticks, no crash).
 - Strict 2k / zoomed-out panning vs every past build where the frozen bar still applies.
 
