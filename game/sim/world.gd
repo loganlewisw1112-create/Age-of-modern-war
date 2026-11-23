@@ -83,6 +83,7 @@ const Fires71 = preload("res://sim/systems/fires71.gd")  # G7.1 wave 2 FIRES71 f
 const Conductor71 = preload("res://sim/systems/conductor71.gd")  # G7.1 wave 2 FIRES71 B6 CONDUCTOR gunship (CR seq 1748)
 const Gas71 = preload("res://sim/systems/gas71.gd")  # G7.1 wave 2 CNOPS71 J10 gas (CR 1001)
 const Hospital71 = preload("res://sim/systems/hospital71.gd")  # G7.1 wave 2 CNOPS71 hospital
+const Infect71 = preload("res://sim/systems/infect71.gd")  # G7.1 J5 nanite wound infection
 const CnMission71 = preload("res://sim/systems/cnmission71.gd")  # G7.1 wave 2 CNOPS71 D7 area missions (CR seq 1811)
 const Ammo71 = preload("res://sim/systems/ammo71.gd")  # G7.1 wave 2 ARMY71 B3 ammo tiers (CR seq 1651; commands only, no tick slot)
 const Crew71 = preload("res://sim/systems/crew71.gd")  # G7.1 wave 2 ARMY71 B3 crew-served weapons (CR seq 1863; commands only, no tick slot)
@@ -121,7 +122,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Gas71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Sensors71, Strikes, Fires71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Gas71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Sensors71, Strikes, Fires71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.

@@ -1,0 +1,9 @@
+{
+  "_meta": "G7.1 J5 nanite wound infection. PROVISIONAL.",
+  "rules": {
+    "g71_infect": {
+      "infect_s": 45.0,
+      "_infect_s": "seconds from Machine hit on a foot soldier until they turn if not purged"
+    }
+  }
+}
