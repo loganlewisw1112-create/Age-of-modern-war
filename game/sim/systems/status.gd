@@ -41,6 +41,11 @@ static func move_mult(w: SimWorld, e: Dictionary) -> float:
 		return 1.2 * fm
 	if bool(e.get("pinned", false)):
 		return SimWorld.Morale.pin_move * fm
+	# J9 cybernetic prosthetic: slight move boost; EMP (jammed) cancels it and slows harder.
+	if bool(e.get("g71pros", false)):
+		if is_jammed(w, e):
+			return fm * 0.7
+		return fm * 1.08
 	return fm
 
 
@@ -67,6 +72,8 @@ static func accuracy_mult(w: SimWorld, e: Dictionary) -> float:
 		m *= 0.8
 	if e.has("comp") and float(e.comp.get("sensors", 100)) <= 0.0:
 		m *= 0.7
+	if bool(e.get("g71pros", false)):
+		m *= 0.85 if is_jammed(w, e) else 1.1  # J9 optic implant; EMP hurts linked systems
 	return m
 
 
