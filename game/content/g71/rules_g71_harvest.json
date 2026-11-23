@@ -1,0 +1,16 @@
+{
+  "_meta": "G7.1 J4 harvester swarm. PROVISIONAL.",
+  "rules": {
+    "g71_harvest": {
+      "spawn_n": 4,
+      "max_harvs": 12,
+      "spawn_every_beats": 4,
+      "speed": 0.35,
+      "grab_r": 1.2,
+      "hunt_r": 40.0,
+      "mass_per": 1.0,
+      "prod_per_mass": 0.02,
+      "prod_bonus_cap": 0.5
+    }
+  }
+}

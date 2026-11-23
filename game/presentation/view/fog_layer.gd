@@ -241,8 +241,10 @@ func _sync_height(force: bool = false) -> void:
 	_hver = ver
 	if tl != null and tl.has_method("height_map"):
 		_hm = tl.height_map()
-	elif mv.world.map is Dictionary:
-		_hm = ViewUtil.height_map_of(mv.world.map)
+	else:
+		var ww = mv.get("_world") if mv != null else null  # never mv.world: that getter forces a sim join
+		if ww != null and ww.map is Dictionary:
+			_hm = ViewUtil.height_map_of(ww.map)
 	var on := ViewUtil.has_height(_hm) and int(_hm.w) == _w and int(_hm.h) == _h
 	if on:
 		_h_img = Image.create_from_data(_w, _h, false, Image.FORMAT_L8, (_hm.height as PackedByteArray).duplicate())

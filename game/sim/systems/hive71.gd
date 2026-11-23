@@ -38,15 +38,16 @@ static func board(w: SimWorld) -> Dictionary:
 	}
 
 
-## Machine production speed mult from creep coverage (more creep = faster).
+## Machine production speed mult from creep coverage (more creep = faster) + harvest mass (J4).
 static func prod_mult(w: SimWorld) -> float:
 	if not active(w):
 		return 1.0
 	var Creep = preload("res://sim/systems/creep.gd")
+	var Harvest71 = preload("res://sim/systems/harvest71.gd")
 	var cov := Creep.coverage(w)
 	var base := float(R().get("prod_base", 1.0))
 	var per := float(R().get("prod_per_creep", 0.8))
-	return snappedf(base + cov * per, 0.01)
+	return snappedf(base + cov * per + Harvest71.prod_bonus(w), 0.01)
 
 
 static func add_nest(w: SimWorld, id: String, pos: Vector2) -> void:
