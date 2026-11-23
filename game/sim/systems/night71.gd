@@ -139,8 +139,39 @@ static func tick(w: SimWorld) -> void:
 		if int(ill.get("until", 0)) > w.tick:
 			keep.append(ill)
 	s.ills = keep
-	# Sweep searchlights slowly.
-	var step := deg_to_rad(float(R().get("sweep_deg", 2.0)))
+	# Register new searchlight towers; drop destroyed ones.
+	for ev in w.events:
+		if String(ev.get("type", "")) == "ConstructionCompleted":
+			var bid := int(ev.get("building_id", -1))
+			var b = w.entities.get(bid)
+			if b != null and bool(Content.building(String(b.def)).get("g71_searchlight", false)):
+				add_searchlight(w, bid)
+	var live := []
 	for L in s.lights:
-		if int(L.get("lock", -1)) < 0:
+		if w.entities.has(int(L.get("id", -1))):
+			live.append(L)
+	s.lights = live
+	# Sweep searchlights slowly; auto-lock nearest enemy in reach.
+	var step := deg_to_rad(float(R().get("sweep_deg", 2.0)))
+	var reach := float(R().get("light_r", 18.0))
+	var reach2 := reach * reach
+	var lp = w.sys_state.get("lp")
+	var mfid := int(lp.mfid) if lp != null else -1
+	for L in s.lights:
+		var b = w.entities.get(int(L.get("id", -1)))
+		if b == null:
+			continue
+		var bp: Vector2 = b.pos
+		var best := -1
+		var best_d := reach2 + 1.0
+		if mfid >= 0:
+			for e in w.units_of(mfid):
+				var d := bp.distance_squared_to(Vector2(e.pos))
+				if d < best_d:
+					best_d = d
+					best = int(e.id)
+		L.lock = best
+		if best < 0:
 			L.ang = float(L.get("ang", 0.0)) + step
+		else:
+			L.ang = Vector2(w.entities[best].pos - bp).angle()

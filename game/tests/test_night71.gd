@@ -32,3 +32,15 @@ func test_darkness_and_illumination() -> void:
 	# Clear flares so only NVG matters.
 	Night71._st(w).ills = []
 	check_eq(Night71.dark_mult(w, e), 1.0, "NVG ignores darkness")
+
+
+func test_searchlight_def_and_register() -> void:
+	check(not Content.building("a_g71_searchlight").is_empty(), "searchlight building def")
+	var c := LastProtocol.make_config(79, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP"):
+		return
+	for i in 6:
+		w.step()
+	Night71.add_searchlight(w, 1)
+	check_eq(int(Night71.board(w).get("lights_n", 0)), 1, "searchlight registered")

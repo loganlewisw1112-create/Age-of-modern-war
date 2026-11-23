@@ -1,0 +1,26 @@
+{
+  "_meta": "G7.1 I5 searchlight tower. New ids only. PROVISIONAL.",
+  "buildings": {
+    "a_g71_searchlight": {
+      "name": "Searchlight Tower",
+      "faction": "human_a",
+      "stage_min": 9,
+      "size": 1,
+      "hp": 900,
+      "armor": "building",
+      "sight": 14,
+      "power": -20,
+      "buildable": true,
+      "requires": ["a_radar_station"],
+      "requires_power": true,
+      "cost": {"credits": 280, "salvage": 90, "ore": 40},
+      "build_time": 18,
+      "g71": true,
+      "lp_only": true,
+      "build_cat": "defence",
+      "g71_searchlight": true,
+      "desc": "Wall searchlight: sweeps or locks onto threats. Lights a cone so troops shoot true at night.",
+      "_note": "PROVISIONAL. Night71.add_searchlight on complete."
+    }
+  }
+}
