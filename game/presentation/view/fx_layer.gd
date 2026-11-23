@@ -508,8 +508,12 @@ func tick(delta: float) -> void:
 	queue_redraw()
 
 
+var _draw_night := 0.0   # cached FacAtmo7 night for the current _draw pass (tracers)
+
+
 func _draw() -> void:
 	var t0 := Time.get_ticks_usec()
+	_draw_night = _night_amt()
 	_draw_body()
 	preload("res://presentation/view/view_util.gd").prof_add("d_fx", t0)
 
@@ -536,15 +540,17 @@ func _draw_body() -> void:
 		var col: Color = f.color
 		match String(f.kind):
 			"tracer":
-				# a short bright segment travelling from a to b
+				# G71 ART71-FX 1E: longer bright segment + night halo so tracers light the sky / read at play zoom.
 				var head: Vector2 = (f.a as Vector2).lerp(f.b, clampf(k * 1.6, 0.0, 1.0))
-				var tail: Vector2 = (f.a as Vector2).lerp(f.b, clampf(k * 1.6 - 0.45, 0.0, 1.0))
+				var tail: Vector2 = (f.a as Vector2).lerp(f.b, clampf(k * 1.6 - 0.55, 0.0, 1.0))
 				var gl: float = float(f.get("glow", 0.0))
-				if gl > 0.0:
-					draw_line(tail, head, Color(col.r, col.g, col.b, gl * (1.0 - k) * 0.45), float(f.size) * 3.0)
-				draw_line(tail, head, Color(col.r, col.g, col.b, 1.0 - k * 0.5), f.size)
-				if gl > 0.0:
-					draw_line(tail.lerp(head, 0.6), head, Color(1, 1, 0.92, 1.0 - k * 0.5), maxf(1.0, float(f.size) * 0.5))
+				var nmul: float = 1.0 + _draw_night * 0.85
+				var fade: float = 1.0 - k * 0.45
+				if gl > 0.0 or nmul > 1.05:
+					var ga: float = maxf(gl, 0.35) * fade * (0.45 + _draw_night * 0.35)
+					draw_line(tail, head, Color(col.r, col.g, col.b, ga), float(f.size) * (3.2 + _draw_night * 1.6))
+				draw_line(tail, head, Color(col.r, col.g, col.b, fade), float(f.size) * (1.0 + _draw_night * 0.25))
+				draw_line(tail.lerp(head, 0.55), head, Color(1, 1, 0.92, fade), maxf(1.0, float(f.size) * 0.55 * nmul))
 			"muzzle":
 				if not _draw_frames("muzzle", f.a, k, 1.0):
 					draw_circle(f.a, f.size * (1.0 - k * 0.5), Color(1, 0.95, 0.6, 1.0 - k))
@@ -1137,9 +1143,20 @@ func _draw_air_fx(f: Dictionary, k: float) -> void:
 # ---------------------------------------------------------------- G6.1 (VFX61) per-frame + ambient
 ## Per frame: quality refresh (every 2 s), ambient scan once per snapshot tick, engine step, child redraws.
 ## Returns true while the engine has anything to draw.
+func _night_amt() -> float:
+	# FacAtmo7 night amount (0 day .. 1 night); safe when match_view / atmo is missing (tests).
+	if mv == null:
+		return 0.0
+	var atmo = mv.get("fac_atmo7")
+	if atmo == null or not atmo.has_method("night_amount"):
+		return 0.0
+	return float(atmo.night_amount())
+
+
 func _fx61_frame(delta: float) -> bool:
 	var e = _e()
 	e.lod = lod
+	e.night = _night_amt()
 	_q_t -= delta
 	if _q_t <= 0.0:
 		_q_t = 2.0

@@ -19,6 +19,7 @@ var decals: Array = []     # {p, r, tx, fade}  fade < 0 = persistent, else secon
 var emitters: Dictionary = {}  # key -> {p, kind, until, acc, r, ph}
 var made: Dictionary = {}  # effect name -> count started (tests / playtest)
 var heat := 0.0            # recent battle intensity in view (vignette)
+var night := 0.0           # G71 ART71-FX 1E: 0 day .. 1 night (FacAtmo7); boosts muzzle/blast lights + vignette
 var now := 0.0
 var lod := 0
 var vignette_on := true
@@ -77,7 +78,12 @@ func part(tx: String, p: Vector2, v: Vector2, life: float, s0: float, s1: float,
 func light(p: Vector2, r: float, c: Color, life: float, delay: float = 0.0) -> void:
 	if r <= 0.0 or lights.size() >= 64:
 		return
-	lights.append({"p": p, "r": r, "c": c, "t": -delay, "life": life})
+	# Night: wider/brighter ground pools so muzzle flashes and blasts still punch through the multiply tint.
+	var nr: float = r * (1.0 + night * 0.55)
+	var nc: Color = c
+	if night > 0.05:
+		nc = Color(minf(1.0, c.r + 0.08 * night), minf(1.0, c.g + 0.05 * night), c.b, c.a)
+	lights.append({"p": p, "r": nr, "c": nc, "t": -delay, "life": life})
 
 
 func _rv(sx: float, sy: float) -> Vector2:
@@ -485,13 +491,14 @@ func draw_lights(ci: CanvasItem, vr: Rect2) -> int:
 	var cnt := 0
 	var g := Tex.tex("glow")
 	var big := vr.grow(120.0)
+	var lit_a := 0.55 + night * 0.22
 	for l in lights:
 		if l.t < 0.0 or not big.has_point(l.p):
 			continue
 		var k: float = float(l.t) / float(l.life)
 		var r: float = l.r
 		var c: Color = l.c
-		ci.draw_texture_rect(g, Rect2((l.p as Vector2) - Vector2(r, r * 0.5), Vector2(r * 2.0, r)), false, Color(c.r, c.g, c.b, 0.55 * (1.0 - k)))
+		ci.draw_texture_rect(g, Rect2((l.p as Vector2) - Vector2(r, r * 0.5), Vector2(r * 2.0, r)), false, Color(c.r, c.g, c.b, lit_a * (1.0 - k)))
 		cnt += 1
 	for key in emitters:
 		var e: Dictionary = emitters[key]
@@ -499,7 +506,8 @@ func draw_lights(ci: CanvasItem, vr: Rect2) -> int:
 			continue
 		var sm: bool = String(e.kind) == "wreck" and float(e.until) - now < 6.0
 		var r2: float = float(e.r) * (5.0 if not sm else 2.5) * (0.85 + 0.15 * sin(now * 13.0 + float(e.ph)) * sin(now * 7.3))
-		ci.draw_texture_rect(g, Rect2((e.p as Vector2) - Vector2(r2, r2 * 0.5), Vector2(r2 * 2.0, r2)), false, Color(1.0, 0.55, 0.2, 0.4 if not sm else 0.18))
+		var wa := (0.4 if not sm else 0.18) * (1.0 + night * 0.35)
+		ci.draw_texture_rect(g, Rect2((e.p as Vector2) - Vector2(r2, r2 * 0.5), Vector2(r2 * 2.0, r2)), false, Color(1.0, 0.55, 0.2, wa))
 		cnt += 1
 	for f in fixed:
 		if String(f.tx) != "glow" or f.t < 0.0 or not vr.has_point(f.p):
@@ -518,8 +526,9 @@ func draw_decals(ci: CanvasItem, vr: Rect2) -> int:
 
 
 ## Subtle battle vignette over the view rect (fades in with recent fire in view; off on Low).
+## Night leans the heat vignette a touch harder so siege fire reads against the dark frame.
 func draw_vignette(ci: CanvasItem, view: Rect2) -> bool:
 	if not vignette_on or heat < 0.05:
 		return false
-	ci.draw_texture_rect(Tex.tex("vignette"), view, false, Color(1, 1, 1, heat * 0.3))
+	ci.draw_texture_rect(Tex.tex("vignette"), view, false, Color(1, 1, 1, heat * (0.3 + night * 0.12)))
 	return true

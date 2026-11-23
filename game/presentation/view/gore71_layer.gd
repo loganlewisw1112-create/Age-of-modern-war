@@ -232,53 +232,76 @@ func _ellipse(c: Vector2, rx: float, ry: float, col: Color) -> void:
 
 
 func _body(p: Vector2, dir: Vector2, fl: int, j: int) -> void:
+	# G71 ART71-FX 1F: denser silhouette at play zoom (bake-only; chunk meshes keep FPS flat).
 	var severe := (fl & 32) != 0
 	var bled := (fl & 64) != 0
 	var ch := (fl & 2) != 0
+	var side := Vector2(-dir.y, dir.x)
 	# blood soak (none on a charred body: burnt, not bled)
 	if not ch:
-		var r := 7.0 + (5.0 if severe else 0.0) + (3.0 if bled else 0.0) + _h(j, 1) * 3.0
-		_ellipse(p + Vector2(_h(j, 2) * 4.0 - 2.0, 1.0), r, r * 0.5, Color(0.36, 0.03, 0.02, 0.55))
-		_ellipse(p + Vector2(1.0, 1.5), r * 0.55, r * 0.28, Color(0.24, 0.01, 0.01, 0.6))
+		var r := 8.5 + (6.0 if severe else 0.0) + (3.5 if bled else 0.0) + _h(j, 1) * 3.5
+		_ellipse(p + Vector2(_h(j, 2) * 4.0 - 2.0, 1.2), r, r * 0.52, Color(0.42, 0.04, 0.02, 0.62))
+		_ellipse(p + Vector2(1.0, 1.8), r * 0.58, r * 0.3, Color(0.28, 0.015, 0.01, 0.68))
+		if severe:
+			_ellipse(p + side * (_h(j, 5) * 6.0 - 3.0), r * 0.35, r * 0.18, Color(0.5, 0.04, 0.02, 0.55))
 		if fl & 16:   # drag smear back along the way it came
-			_line(p, p - dir * 22.0, Color(0.3, 0.02, 0.02, 0.45), 4.0)
+			_line(p, p - dir * 26.0, Color(0.34, 0.025, 0.02, 0.5), 5.0)
+			_line(p - side * 1.5, p - dir * 18.0 - side * 2.0, Color(0.28, 0.02, 0.015, 0.35), 2.5)
 	else:
-		_ellipse(p + Vector2(0, 1), 8.0, 4.0, Color(0.08, 0.07, 0.06, 0.55))   # scorch
-	var col := Color(0.07, 0.06, 0.05) if ch else Color(0.30, 0.32, 0.24)
+		_ellipse(p + Vector2(0, 1), 9.0, 4.5, Color(0.07, 0.06, 0.05, 0.62))   # scorch
+	var col := Color(0.07, 0.06, 0.05) if ch else Color(0.28, 0.30, 0.22)
 	if fl & 8:
 		col = Color(0.55, 0.57, 0.6) if not ch else Color(0.12, 0.12, 0.13)
 	var trampled := (fl & 4) != 0
-	var hl := 5.0 if not trampled else 6.5
-	var hw := 1.8 if not trampled else 1.2
+	var hl := 5.6 if not trampled else 7.0
+	var hw := 2.35 if not trampled else 1.45
 	var a := p - dir * hl
 	var b := p + dir * hl
-	_line(a, b, col, hw * 2.0)
-	_circle(b + dir * 1.5, 2.0, Color(0.62, 0.5, 0.4) if not ch else col)   # head
+	# torso mass (reads as a body, not a stick) + limbs
+	_ellipse(p, hl * 0.55, hw * 1.15, Color(col.r, col.g, col.b, 0.92))
+	_line(a, b, col, hw * 2.15)
+	_line(p - side * (hw * 2.2), p + side * (hw * 2.2), col, hw * 1.1)   # shoulders / hips
+	_line(p - side * (hw * 1.6) - dir * 1.5, p - side * (hw * 2.8) + dir * 2.5, col, 1.6)  # arm
+	_line(p + side * (hw * 1.6) - dir * 1.5, p + side * (hw * 2.8) + dir * 2.5, col, 1.6)
+	_circle(b + dir * 1.7, 2.35, Color(0.66, 0.52, 0.42) if not ch else col)   # head
+	if not ch and not (fl & 8):
+		_circle(b + dir * 1.7, 1.1, Color(0.2, 0.12, 0.1, 0.55))   # face shade
 	var lost := (fl >> 8) & 15
 	if lost != 0:
-		var off := Vector2(_h(j, 3) * 16.0 - 8.0, _h(j, 4) * 8.0 - 4.0)
-		_line(p + off, p + off + dir.rotated(1.2) * 5.0, col, 2.4)
-		_ellipse(p + off, 3.0, 1.5, Color(0.4, 0.02, 0.02, 0.7))
-		_ellipse(p - dir * 2.0, 3.5, 1.8, Color(0.5, 0.03, 0.02, 0.75))   # the stump
+		var off := Vector2(_h(j, 3) * 18.0 - 9.0, _h(j, 4) * 9.0 - 4.5)
+		_line(p + off, p + off + dir.rotated(1.2) * 6.0, col, 2.8)
+		_ellipse(p + off, 3.6, 1.8, Color(0.45, 0.025, 0.02, 0.75))
+		_ellipse(p - dir * 2.2, 4.0, 2.0, Color(0.55, 0.035, 0.02, 0.8))   # the stump
+		_circle(p + off + dir.rotated(1.2) * 3.0, 1.4, Color(0.5, 0.04, 0.02, 0.7))
 
 
 func _wreck(p: Vector2, dir: Vector2, sz: float, fl: int, j: int) -> void:
-	var s := maxf(sz, 0.4) * 32.0
+	# G71 ART71-FX 1F: heavier hull silhouette + clearer nanite spill / core at play zoom (bake-only).
+	var s := maxf(sz, 0.4) * 34.0
 	if fl & 8:   # Machine: a pool of silver nanite fluid under the wreck
-		_ellipse(p + Vector2(0, 2), s * 0.9, s * 0.45, Color(0.72, 0.76, 0.8, 0.5))
-		_ellipse(p + Vector2(2, 2), s * 0.5, s * 0.25, Color(0.88, 0.9, 0.94, 0.55))
+		_ellipse(p + Vector2(0, 2.5), s * 1.0, s * 0.5, Color(0.72, 0.76, 0.8, 0.58))
+		_ellipse(p + Vector2(2.5, 2.5), s * 0.55, s * 0.28, Color(0.9, 0.93, 0.96, 0.62))
+		_ellipse(p - Vector2(3.0, -1.0), s * 0.28, s * 0.14, Color(0.8, 0.86, 0.9, 0.45))
 	else:
-		_ellipse(p + Vector2(0, 2), s * 0.9, s * 0.45, Color(0.06, 0.05, 0.04, 0.5))
+		_ellipse(p + Vector2(0, 2.5), s * 1.0, s * 0.5, Color(0.05, 0.04, 0.035, 0.58))
+		_ellipse(p + Vector2(1.5, 3.0), s * 0.4, s * 0.2, Color(0.12, 0.08, 0.05, 0.4))  # oil
 	var side := Vector2(-dir.y, dir.x)
-	var pts := PackedVector2Array([p - dir * s * 0.7 - side * s * 0.3, p + dir * s * 0.7 - side * s * 0.3,
-		p + dir * s * 0.7 + side * s * 0.3, p - dir * s * 0.7 + side * s * 0.3])
-	var col := Color(0.2, 0.21, 0.22) if (fl & 2) == 0 else Color(0.08, 0.08, 0.08)
+	var pts := PackedVector2Array([p - dir * s * 0.72 - side * s * 0.34, p + dir * s * 0.72 - side * s * 0.34,
+		p + dir * s * 0.72 + side * s * 0.34, p - dir * s * 0.72 + side * s * 0.34])
+	var col := Color(0.18, 0.19, 0.2) if (fl & 2) == 0 else Color(0.07, 0.07, 0.07)
 	_poly(pts, col)
-	var lc := col.lightened(0.25)
+	# broken panel ridge
+	_line(p - dir * s * 0.35 - side * s * 0.1, p + dir * s * 0.4 + side * s * 0.15, col.darkened(0.25), 2.2)
+	var lc := col.lightened(0.3)
 	for k in 4:   # outline (draw_polyline width 1)
-		_line(pts[k], pts[(k + 1) % 4], lc, 1.0)
+		_line(pts[k], pts[(k + 1) % 4], lc, 1.35)
+	# armour scrap chunks beside the hull
+	for k in 2:
+		var scrap := p + side * (s * (0.55 + _h(j, 20 + k) * 0.25)) + dir * ((float(k) - 0.5) * s * 0.4)
+		_ellipse(scrap, 3.2 + _h(j, 22 + k) * 2.0, 1.6, Color(0.32, 0.33, 0.35, 0.85))
 	if fl & 8:   # cable entrails spilling out of the torso
-		for k in 3:
-			var q := p + side * (s * 0.3) + dir * ((float(k) - 1.0) * s * 0.3)
-			_line(q, q + side * (4.0 + _h(j, 10 + k) * 6.0) + dir * 2.0, Color(0.15, 0.15, 0.18), 1.5)
-		_circle(p, 2.5, Color(0.4, 0.9, 1.0, 0.8))   # the core, still lit
+		for k in 4:
+			var q := p + side * (s * 0.28) + dir * ((float(k) - 1.5) * s * 0.28)
+			_line(q, q + side * (5.0 + _h(j, 10 + k) * 7.0) + dir * 2.5, Color(0.14, 0.14, 0.17), 1.7)
+		_circle(p, 3.2, Color(0.35, 0.88, 1.0, 0.9))   # the core, still lit
+		_circle(p, 1.4, Color(0.85, 0.98, 1.0, 0.95))

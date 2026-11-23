@@ -334,7 +334,13 @@ func test_g5_art_groups_merged() -> void:
 class FxView:
 	extends RefCounted
 	var snap: Dictionary = {}
-	var world = null
+	## Mirror MatchView: fx_layer._ent reads mv._world (never mv.world — that getter can force a sim join).
+	var _world = null
+	var world:
+		get:
+			return _world
+		set(v):
+			_world = v
 	var player_fid := 0
 	var _ally_fids: Array = []
 
