@@ -1,0 +1,7 @@
+G7.1 60-min LP soak evidence
+Commit near run: fa8e9473 (headless soak harness)
+Command: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=3600 --save_at=1800
+Result: SOAK_DONE ticks=72000 wall_ms=213354
+Boards at end: hive nests=2 relays=1 prod_mult=1.8 beat=91 eaten=49; death blasts=187 seeds=282 gasps=17
+SOAK_RE cells=1 (RE exercise kicked)
+Marks through t=3570s with no crash. Process exited cleanly before quiet peak remeasure.
