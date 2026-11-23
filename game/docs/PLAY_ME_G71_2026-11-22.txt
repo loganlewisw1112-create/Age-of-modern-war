@@ -16,6 +16,12 @@ IN THIS BUILD (Wave 3–5 stubs live)
   Perf: forced_joins cut to 1; LP peak harness p10 ~50 (gate >=30)
 
 LEFT OPEN (owner / soaks — Done-when not weakened)
-  Owner look checkpoint (E3) + full E4 animation pass
-  Long soaks (60-min / full RE chain in live siege)
+  Owner look checkpoint (E3) — see docs/G71_LOOK_CHECKPOINT.md; approve/reject each sample
+  Full E4 animation pass (after look checkpoint)
+  Long soaks (60-min peak siege / full RE chain in live siege)
   2k / zoomed-out panning gates vs past builds
+
+DONE-WHEN HARNESS NOTES
+  Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90
+  Smoke:      powershell -File game/tools/g71_donewhen_smoke.ps1
+  Mid-run save/resume covered by test_lp_save71 (Done-when 7)

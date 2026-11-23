@@ -10,7 +10,7 @@ Set-Location (Join-Path $root "game")
 $tests = @(
   "test_hive71","test_fire71","test_fire71_block","test_death71","test_harvest71",
   "test_audio_h10","test_h9_score","test_capture71","test_evolve71","test_atmo_tide",
-  "test_warmind71","test_recomplex71","test_fleet71"
+  "test_warmind71","test_recomplex71","test_fleet71","test_lp_save71"
 )
 $fail = 0
 foreach ($t in $tests) {
