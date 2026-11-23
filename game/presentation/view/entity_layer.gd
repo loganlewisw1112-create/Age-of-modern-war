@@ -296,9 +296,12 @@ func setup(view) -> void:
 
 
 func _build_decor() -> void:
-	var w := int(mv.world.map.w)
-	var h := int(mv.world.map.h)
-	var terrain: PackedByteArray = mv.world.map.terrain
+	var ww = mv.get("_world")
+	if ww == null:
+		return
+	var w := int(ww.map.w)
+	var h := int(ww.map.h)
+	var terrain: PackedByteArray = ww.map.terrain
 	for y in h:
 		for x in w:
 			var d: Dictionary = ArtCatalog.decor(int(terrain[y * w + x]), Vector2i(x, y))
@@ -329,9 +332,12 @@ func _build_decor() -> void:
 ## rail...) drawn from manifest poi_decor[id] = {file, pivot, footprint, flat}. Static, bucketed
 ## like terrain decor; an entry larger than its sprite's footprint is tiled with it.
 func _build_poi_decor() -> void:
+	var ww = mv.get("_world")
+	if ww == null:
+		return
 	var pois: Dictionary = ArtCatalog.manifest().get("poi_decor", {})
 	var lists: Dictionary = ArtCatalog.manifest().get("decor", {})
-	for d in mv.world.map.get("decor", []):
+	for d in ww.map.get("decor", []):
 		var spec: Dictionary = pois.get(String(d.get("id", "")), {})
 		if spec.is_empty():
 			if String(d.get("id", "")).begins_with("coast_") and lists.get(String(d.id)) is Array:

@@ -201,9 +201,11 @@ static func tick(w: SimWorld) -> void:
 	var dt := 1.0 / float(SimWorld.TICK_RATE)
 	_queue_recoveries(w, s, fid)
 	_run_recoveries(w, s, fid)
-	# Cadence: battery every 10 ticks, elect every 40.
+	# Cadence: battery every 10 ticks, elect every 40. Cap dock orders per pass so a low-battery wave
+	# does not flood Movement with ~150 path requests in one tick (LP peak sim_ms).
 	if w.tick % 10 == 0:
 		var wipe_ids: Array = []
+		var dock_budget := int(R().get("dock_orders_per_pass", 8))
 		for e in robots_of(w, fid):
 			if not e.has("f71_bat"):
 				e.f71_bat = battery_max()
@@ -218,9 +220,11 @@ static func tick(w: SimWorld) -> void:
 				e.f71_bat = maxf(0.0, float(e.f71_bat) - drain_per_s() * dt * 10.0)
 				if float(e.f71_bat) <= float(e.f71_bat_max) * low_frac():
 					e.f71_charge = true
-					var dock: Vector2 = e.get("lp_home", Vector2(lp.base.center) + Vector2(0.5, 0.5))
-					w.submit({"type": "move", "issuer": fid, "unit_ids": [int(e.id)], "target": dock, "ai_cmd": "lp"})
-					w.emit("Fleet71Dock", {"id": int(e.id), "pos": dock})
+					if dock_budget > 0:
+						dock_budget -= 1
+						var dock: Vector2 = e.get("lp_home", Vector2(lp.base.center) + Vector2(0.5, 0.5))
+						w.submit({"type": "move", "issuer": fid, "unit_ids": [int(e.id)], "target": dock, "ai_cmd": "lp"})
+						w.emit("Fleet71Dock", {"id": int(e.id), "pos": dock})
 			# Jam: local autonomy flag only (never flips owner). Self-wipe if critically damaged while jammed (F3).
 			var face := 0
 			if lp.has("base"):
