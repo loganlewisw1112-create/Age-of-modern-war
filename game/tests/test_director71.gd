@@ -4,6 +4,7 @@ extends "res://tests/test_base.gd"
 const Director71 = preload("res://sim/systems/director71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const LpHud = preload("res://presentation/ui7/lp_hud.gd")
+const Radio71 = preload("res://sim/systems/radio71.gd")
 
 
 func test_pressure_is_pure_and_ordered() -> void:
@@ -101,6 +102,16 @@ func test_siege_roster_stubs() -> void:
 	var fc := Director71.forecast(0.9, "armour", 2)
 	check(fc != "" and fc.find("brute") >= 0, "forecast names the next wave (%s)" % fc)
 	check(fc.find("N") >= 0 or fc.find("face") >= 0, "forecast names a face")
+	Radio71._lines = null  # pick up lines71_lp.json
+	check(not Radio71.line("lp71.breaking_point").is_empty(), "LP breaking-point radio line loads")
+	check(not Radio71.line("lp71.forecast").is_empty(), "LP forecast radio line loads")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpBreakingPoint", "dread": 0.9, "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).find("Breaking point") >= 0, "radio feed speaks the breaking point")
+	feed.free()
 
 
 func test_adapt_buckets_and_counter() -> void:

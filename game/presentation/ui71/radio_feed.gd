@@ -92,6 +92,26 @@ func handle_events(evs: Array, w = null) -> void:
 						for i in (al as Array).size():
 							a[str(i)] = al[i]
 					_say("cn71." + String(ev.get("line", "")), _pos(ev, w), a)
+			"LpBreakingPoint":
+				_say("lp71.breaking_point", _pos(ev, w), {})
+			"LpThreatForecast":
+				_say("lp71.forecast", _pos(ev, w), {"0": String(ev.get("line", ""))})
+			"LpObjective":
+				_say("lp71.objective", _pos(ev, w), {"0": String(ev.get("title", ""))})
+			"LpObjectiveDone":
+				_say("lp71.objective_done", _pos(ev, w), {})
+			"LpIntel":
+				_say("lp71.intel", _pos(ev, w), {"0": String(ev.get("name", "")), "1": String(ev.get("counter", ""))})
+			"OvermindSay":
+				_say("lp71.overmind", _pos(ev, w), {"0": String(ev.get("line", ""))})
+			"LpRingBreached":
+				_say("lp71.sector_breach", _pos(ev, w), {"0": String(ev.get("name", "wall"))})
+			"T71Disabled":
+				if int(ev.get("owner", -1)) == fid:
+					_say("lp71.turret_down", _pos(ev, w), {})
+			"LpHiveSync":
+				if int(ev.get("n", 0)) > 0 and int(ev.get("conductors", 0)) > 0:
+					_say("lp71.hive_sync", _pos(ev, w), {})
 			_:
 				if MAP.has(ty) and int(ev.get("owner", -1)) == fid:
 					_say(String(MAP[ty]), _pos(ev, w), {})

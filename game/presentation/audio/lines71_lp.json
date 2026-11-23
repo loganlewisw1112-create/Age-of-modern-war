@@ -1,0 +1,14 @@
+{
+  "_meta": "G7.1 Last Protocol radio lines (director / D1 / D6). Keys are lp71.*. Text now; wave-5 voices them.",
+  "lines": {
+    "lp71.breaking_point": {"text": "Breaking point — the Tide is here!", "cat": "alert", "prio": 95, "cd": 30.0},
+    "lp71.forecast": {"text": "Threat forecast: {0}", "cat": "intel", "prio": 70, "cd": 12.0},
+    "lp71.objective": {"text": "New objective: {0}", "cat": "command", "prio": 75, "cd": 8.0},
+    "lp71.objective_done": {"text": "Objective complete.", "cat": "command", "prio": 65, "cd": 6.0},
+    "lp71.intel": {"text": "Intel file: {0}. Counter with {1}.", "cat": "intel", "prio": 60, "cd": 10.0},
+    "lp71.overmind": {"text": "{0}", "cat": "overmind", "prio": 90, "cd": 20.0},
+    "lp71.sector_breach": {"text": "Sector {0} is breaking!", "cat": "alert", "prio": 85, "cd": 15.0},
+    "lp71.turret_down": {"text": "Turret down — retake it!", "cat": "alert", "prio": 80, "cd": 10.0},
+    "lp71.hive_sync": {"text": "Machines locking formation — kill the Conductor!", "cat": "intel", "prio": 72, "cd": 20.0}
+  }
+}
