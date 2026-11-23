@@ -334,11 +334,10 @@ static func decor(code: int, cell: Vector2i) -> Dictionary:
 
 # ---------------------------------------------------------------- entities
 static func facing_index(facing: float) -> int:
-	# G8 ART8: unit sheet rows are world bearings; shift by camera facing (4 view × 2 rows = 8).
+	# G8 ART8/ANIM8: world bearing row, then ViewFacing.sheet_row shifts for camera (4 view × 2 rows = 8).
+	var VF = load("res://presentation/view/view_facing.gd")
 	var row := posmod(int(round(facing / FACING_STEP)), 8)
-	var VU = load("res://presentation/view/view_util.gd")
-	var cam := int(VU.view_facing) if VU != null else 0
-	return posmod(row - cam * 2, 8)
+	return VF.sheet_row(row) if VF != null else row
 
 
 static func entity_sprite(e: Dictionary, team_color: Color, anim_time: float) -> Dictionary:

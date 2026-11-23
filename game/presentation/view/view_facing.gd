@@ -55,6 +55,16 @@ static func art_side(authored: int, facing: int) -> int:
 	return face_wrap(int(authored) - face_wrap(facing))
 
 
+## 8-way unit sheet row from a world bearing row under camera facing (ANIM8 / ART8: 4 view × 2 rows).
+## Pass facing -1 to read live ViewUtil.view_facing. Keeps Motion / hysteresis in world rows; shift only at draw.
+static func sheet_row(world_row: int, facing: int = -1) -> int:
+	var cam: int = facing
+	if cam < 0:
+		var VU = load("res://presentation/view/view_util.gd")
+		cam = int(VU.view_facing) if VU != null else 0
+	return posmod(int(world_row) - face_wrap(cam) * 2, 8)
+
+
 ## Short compass label for HUD facing hint.
 static func label(facing: int) -> String:
 	match face_wrap(facing):

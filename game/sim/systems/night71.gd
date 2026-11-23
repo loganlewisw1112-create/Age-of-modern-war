@@ -29,6 +29,10 @@ static func is_night(w: SimWorld) -> bool:
 	var s := _st(w)
 	if bool(s.force):
 		return true
+	# TOD71 clock: night phase owns the dark even before dread peaks.
+	var Tod71 = preload("res://sim/systems/tod71.gd")
+	if Tod71.active(w) and Tod71.phase(w) == "night":
+		return true
 	return float(w.sys_state.lp.get("dread", 0.0)) >= float(R().get("night_dread", 0.85))
 
 

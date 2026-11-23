@@ -150,3 +150,19 @@ func test_frame_selection() -> void:
 		lie[EL.k8_lie_col(a, 0, i * 0.1, 5, true)] = true
 	check(lie.has(int(a.k8_bk[0])) and lie.has(int(a.k8_bk[1])), "unconscious man breathes (2-frame loop)")
 	check(EL.k8_lie_col(a, 2, 3.3, 5, false) == int(a.k8_sd[0]), "a dead / knocked-down body lies still")
+
+
+func test_sheet_row_follows_camera_facing() -> void:
+	## G8 ANIM8 B3: loco/fire/death/k8 keep world rows; ViewFacing.sheet_row shifts at draw.
+	var VF = preload("res://presentation/view/view_facing.gd")
+	var VU = preload("res://presentation/view/view_util.gd")
+	var saved: int = int(VU.view_facing)
+	VU.view_facing = 0
+	check_eq(VF.sheet_row(0, 0), 0, "facing 0 leaves world row 0")
+	check_eq(VF.sheet_row(0, 1), 6, "cam+1 shifts world row 0 by -2 → 6")
+	check_eq(VF.sheet_row(0, 2), 4, "cam+2 shifts world row 0 by -4 → 4")
+	check_eq(VF.sheet_row(0, 3), 2, "cam+3 shifts world row 0 by -6 → 2")
+	check_eq(VF.sheet_row(EL.k8_row_of(Vector2(1, 0)), 1), VF.sheet_row(0, 1), "k8 blast row uses same shift")
+	VU.view_facing = 1
+	check_eq(AC.facing_index(0.0), VF.sheet_row(0, 1), "ArtCatalog.facing_index delegates to sheet_row")
+	VU.view_facing = saved

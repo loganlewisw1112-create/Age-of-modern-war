@@ -28,8 +28,8 @@ const SettingsMenu = preload("res://presentation/menu/settings.gd")
 const EntityLayer = preload("res://presentation/view/entity_layer.gd")   # LIGHT7-3: door_side_of (which way a zone building is drawn)
 
 const ART_DIR := "res://assets/art/g7_atmo7/"
-const TODS := ["day", "dusk", "night"]
-const TOD_AMT := {"day": 0.0, "dusk": 0.5, "night": 1.0}
+const TODS := ["day", "dusk", "night", "dawn"]
+const TOD_AMT := {"day": 0.0, "dusk": 0.5, "night": 1.0, "dawn": 0.35}
 const DUSK := Color(0.86, 0.70, 0.64)
 const NIGHT := Color(0.27, 0.31, 0.50)
 ## Heights in screen px at zoom 1 above the ground point (calibrated on the ART7F sprites, see pt7_atmo7 shots).
@@ -482,7 +482,8 @@ func _wrect(o: CanvasItem, r: Rect2, col: Color) -> void:
 
 
 # =============================================================== public API
-## Settings "Time of day" (graphics / time_of_day): day | dusk | night. Unset: day, Last Protocol dusk.
+## Settings "Time of day" (graphics / time_of_day): day | dusk | night | dawn.
+## Unset: skirmish day; Last Protocol follows TOD71 clock (starts dusk). Settings / set_time_of_day override the clock.
 func time_of_day() -> String:
 	if _tod_override != "":
 		return _tod_override
@@ -491,6 +492,12 @@ func time_of_day() -> String:
 		v = SettingsMenu.get_value("graphics", "time_of_day")
 	if v != null and TODS.has(String(v)):
 		return String(v)
+	if map.has("lp") and mv != null:
+		var w = mv.get("_world")
+		if w != null and w.sys_state.has("tod71"):
+			var ph := String((w.sys_state.tod71 as Dictionary).get("phase", "dusk"))
+			if TODS.has(ph):
+				return ph
 	return "dusk" if map.has("lp") else "day"
 
 

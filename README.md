@@ -8,7 +8,7 @@ Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** UP71 continues into **
 
 ## Last Protocol
 
-You hold a fortified ring while the hive learns you. Creep eats the land. Nests pulse. Wildfire walks with the wind. Captured machines go to the study cells; some come back as hard-won knowledge, some break out. Your robot fleet fights under jamming without flipping sides. The war-mind can be fooled. Conduct has a cost. When the night deepens, searchlights and muzzle flash are all the map you get.
+You hold a fortified ring while the hive learns you. Creep eats the land. Nests pulse. Wildfire walks with the wind. Captured machines go to the study cells; some come back as hard-won knowledge, some break out. Your robot fleet fights under jamming without flipping sides. The war-mind can be fooled. Conduct has a cost. The clock starts at dusk; night lasts twice as long as day — when it deepens, searchlights and muzzle flash are all the map you get.
 
 This is the siege the rest of the game was built to earn.
 
@@ -37,7 +37,7 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 ## How to fight
 
 - Select: click, drag, shift, double-click. Right-click is the smart order.
-- Common hotkeys: **A** attack-move, **S** stop, **H** hold. Ctrl+1–9 control groups. **Q / E** (or horizontal middle-mouse drag) rotate the view 90° (G8 Four Sides). Rot buildings and unit sheets follow the camera (no mirror cheats on rot_0..3).
+- Common hotkeys: **A** attack-move, **S** stop, **H** hold. Ctrl+1–9 control groups. **Q / E** (or horizontal middle-mouse drag) rotate the view 90° (G8 Four Sides). Rot buildings and loco / fire / death / k8 sheets follow the camera (no mirror cheats on rot_0..3).
 - **Ctrl+M** — minimal Last Protocol HUD (cinematic).
 - Save / load: F5 / F9 (or pause menu).
 - Skirmish still works from the main menu if you want a classic match.

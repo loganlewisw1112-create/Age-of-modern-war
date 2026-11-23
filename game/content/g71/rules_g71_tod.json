@@ -1,0 +1,18 @@
+{
+  "_meta": "TOD71 Last Protocol day/night clock. Night = 2x day. PROVISIONAL.",
+  "rules": {
+    "g71_tod": {
+      "day_s": 480.0,
+      "dusk_s": 120.0,
+      "dawn_s": 120.0,
+      "night_mult": 2.0,
+      "start_phase": "dusk",
+      "light": {
+        "day": 1.0,
+        "dusk": 0.55,
+        "night": 0.22,
+        "dawn": 0.55
+      }
+    }
+  }
+}

@@ -8,6 +8,7 @@ extends Node2D
 ## then their remembered state (greyed); wrecks once seen; resources once their cell is explored.
 
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const ViewFacing = preload("res://presentation/view/view_facing.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const BatchArt = preload("res://presentation/view/batch_art.gd")
 const LodIcons = preload("res://presentation/view/lod_icons.gd")
@@ -1580,6 +1581,7 @@ func _refresh(rc: bool, rs: bool) -> void:
 					var tsz := Vector2(ts[2], ts[3])
 					var tb7 = (g7u.get(id) as Dictionary).get("tb") if has_g7 and g7u.has(id) else null   # G7 TURRET7B CR 6354 (13.9c-30): drawn on the SIMULATED turret bearing
 					var trow: int = posmod(int(round(float(tb7) * FACING_INV)), 8) if tb7 != null else hrow   # never laid: hull-forward
+					trow = ViewFacing.sheet_row(trow)   # G8 ANIM8: turret sheet follows camera facing
 					tur = [ts[0], (ts[1] as Vector2) + Vector2(tcol, trow) * tsz, ts[4], tsz]
 		var row := posmod(int(round(fac_a[i] * FACING_INV)), 8)
 		if mcls >= 0:   # PATH7-2 CR 6994: hysteresis row (= motion.row_h(id, motion.out_face) from the state step() just ran; G7 PERFFPS7)
@@ -1617,6 +1619,8 @@ func _refresh(rc: bool, rs: bool) -> void:
 			fi = _k8_fi   # G8 ANIM8 (13.9c-52): launch / tumble / impact / sprawl / breathing / buckle / wake
 			row = _k8_row
 			sp += _k8_off
+		# G8 ANIM8: Motion / k8 keep world rows; shift once at draw for camera facing (loco / fire / death / k8).
+		row = ViewFacing.sheet_row(row)
 		if mcls >= 0:
 			drawn7[id] = [fi, row, sp, t, dname]   # G7 MUZZLE7 CR 5592: what the muzzle flash is matched to (+ art name: REGFIX7-3)
 		if fl & RenderSnap.FLAG_SHIP and fl & RenderSnap.FLAG_MOVING and not (c[26] as Dictionary).is_empty() and (c[27] < 0 or G5Art.on_water(terr_w, pos, mw)):
@@ -1955,6 +1959,7 @@ func _push_corpses(vr: Rect2, t: float, gc61: Dictionary) -> void:
 					csp.y -= 2.5 * sin(PI * clampf((dtl - 1.0) / 4.0, 0.0, 1.0))
 				else:
 					cfi = k8_lie_col(a8, k8_variant(int(cp[0]), float(th[3])), t, int(cp[0]), false)
+		crow = ViewFacing.sheet_row(crow)   # G8 ANIM8: death / k8 corpse rows follow camera
 		art.frame_src(cc, cfi if cfi >= 0 else int(dcols[Motion.corpse_frame(age)]), crow)
 		if art.out_page < 0:
 			continue

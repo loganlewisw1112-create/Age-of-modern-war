@@ -1489,6 +1489,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"conduct": _hud_conduct(w),
 		"horror": preload("res://sim/systems/horror71.gd").board(w),
 		"weather": preload("res://sim/systems/weather71.gd").board(w),
+		"tod": preload("res://sim/systems/tod71.gd").board(w),
 		"requests": preload("res://sim/systems/request71.gd").board(w),
 		"hive": preload("res://sim/systems/hive71.gd").board(w),
 		"fire": preload("res://sim/systems/fire71.gd").board(w),
