@@ -1,0 +1,9 @@
+{
+  "_meta": "G7.1 I6 hive ecosystem. PROVISIONAL.",
+  "rules": {
+    "g71_hive": {
+      "prod_base": 1.0,
+      "prod_per_creep": 0.8
+    }
+  }
+}
