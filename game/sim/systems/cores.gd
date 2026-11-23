@@ -367,11 +367,14 @@ static func _walk_step(w: SimWorld, s: Dictionary, c: Dictionary, rk: Dictionary
 	var np := p.move_toward(goal, spd)
 	np = Vector2(snappedf(np.x, 1.0 / 1024.0), snappedf(np.y, 1.0 / 1024.0))
 	var nc := w.cell_of(np)
-	if Creep.is_barrier(w, nc) or not Terrain.passable(w.terrain_at(nc), "vehicle"):
+	# G7.1 I4: wildfire fire lines also stop the walker (same as creep barriers / impassable terrain).
+	var Fire71 = preload("res://sim/systems/fire71.gd")
+	var on_fire := Fire71.blocks_at(w, np)
+	if Creep.is_barrier(w, nc) or not Terrain.passable(w.terrain_at(nc), "vehicle") or on_fire:
 		if not bool(c.get("stopped", false)):
 			c.stopped = true
-			w.emit("CoreWalkerBlocked", {"ix": c.ix, "unit": uid, "pos": p})
-			if not Creep.is_barrier(w, nc):
+			w.emit("CoreWalkerBlocked", {"ix": c.ix, "unit": uid, "pos": p, "fire": on_fire})
+			if not Creep.is_barrier(w, nc) and not on_fire:
 				c.path = walk_path(w, p, c.tgt)   # terrain corner: re-plan once
 		return
 	c.stopped = false

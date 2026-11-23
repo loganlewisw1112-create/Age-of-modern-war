@@ -52,7 +52,7 @@ func _process(delta: float) -> bool:
 	if _f == 40:
 		var cam = mv.camera
 		cam.set_zoom_level(_zoom)
-		var w = mv.world
+		var w = mv.get("_world")  # never mv.world: that getter forces a sim join
 		var sp := Vector2(w.factions[mv.player_fid].spawn) + Vector2(0.5, 0.5)
 		if _peak > 0:
 			sp += Vector2(-20.0, -20.0)   # look at the near arc of the attack ring
