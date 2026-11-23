@@ -32,3 +32,7 @@ func test_research_tree_unlocks() -> void:
 	check((Research71.board(w).get("avail", []) as Array).has("ammo_he"), "ammo_he opens after ammo_ap")
 	var hud: Dictionary = LastProtocol.hud(w)
 	check(hud.has("research"), "HUD exposes research board")
+	# Save / resume keeps unlocks (Done-when 7 style).
+	var loaded := SimWorld.from_dict(w.to_dict().duplicate(true))
+	check(Research71.unlocked(loaded, "ammo_ap"), "save keeps ammo_ap unlock")
+	check((Research71.board(loaded).get("avail", []) as Array).has("ammo_he"), "save keeps ammo_he available")
