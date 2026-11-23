@@ -1,27 +1,31 @@
-RTS: Age of Modern War — G7.1 playable (branch g71)
+RTS: Age of Modern War - G7.1 playable (branch g71)
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
 LAST PROTOCOL: main menu > Last Protocol.
 
 CONTROLS (new)
-  Ctrl+M  — toggle minimal LP HUD (cinematic)
+  Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (Wave 3–5 stubs live)
+IN THIS BUILD (Wave 3-5 stubs live)
   Hive: nests/relays, heartbeat, land-eat, harvest swarm, evolve stages, capture study
   Fire: wildfire wind-spread + night light + walker fire-lines
   Deaths: cell-blast chain, nanite bleed, last-gasp
   Audio: flash-to-boom delay, unique weapon voices, armour clang, tide-song pulse
   HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
   Perf: forced_joins cut to 1; LP peak harness p10 ~50 (gate >=30)
+  Done-when harness: mid-run save/resume (7), H1 raid end states (8), short+30m soaks
 
-LEFT OPEN (owner / soaks — Done-when not weakened)
-  Owner look checkpoint (E3) — see docs/G71_LOOK_CHECKPOINT.md; approve/reject each sample
-  Full E4 animation pass (after look checkpoint)
-  Long soaks (60-min peak siege / full RE chain in live siege)
+LOOK CHECKPOINT (E3 - owner)
+  Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)
+  Approve or reject each sample by id; full E4 animation waits on that.
+
+LEFT OPEN (Done-when not weakened)
+  Owner look approvals (E3) then full E4 animation pass
+  60-min peak siege soak / live RE+warmind siege
   2k / zoomed-out panning gates vs past builds
 
-DONE-WHEN HARNESS NOTES
-  Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90
+HARNESS
+  Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90 [--save_at=45]
   Smoke:      powershell -File game/tools/g71_donewhen_smoke.ps1
-  Mid-run save/resume covered by test_lp_save71 (Done-when 7)
+  Look:       godot --headless --path game -s res://tools/art/g71_lookcheck.gd
