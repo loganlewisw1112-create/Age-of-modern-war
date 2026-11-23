@@ -1,0 +1,10 @@
+G7.1 zoomed-out pan sample (Done-when 3 / E2 evidence)
+Date: 2026-11-23
+Commit near run: 5418faa1
+Harness: godot --path game -s res://tools/perf71_draw_lp.gd -- --fps-log --fps-quit=25 --no-vsync --lpz=0.2 --pan
+Log: game/.plan/lp_pan_25.log
+
+FPS_SUMMARY samples=22 avg=65.9 min=46.7 p10=51.2 max=95.8 zoom=0.20 lod=2 native=on
+forced_joins observed: 0 throughout samples
+Amended LP-peak gate (>=30 p10): CLEAR on this zoomed-out pan sample (p10 51.2).
+Frozen original "p10 >= 60 every case" still OPEN for strict reading (p10 51.2 < 60); avg 65.9 clears 60.

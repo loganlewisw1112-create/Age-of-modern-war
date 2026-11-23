@@ -29,8 +29,20 @@ func _initialize() -> void:
 	print("SOAK_START secs=%.0f ticks=%d save_at=%.0f" % [_secs, ticks, _save_at])
 	var t0 := Time.get_ticks_msec()
 	var saved_hash := ""
+	var fire_seeded := false
 	for i in ticks:
 		w.step()
+		# After LP boards exist, seed a grass fire once (I4/I5 live exercise).
+		if not fire_seeded and i == 5 and Fire71.active(w) and w.sys_state.has("lp") and w.map != null:
+			var base = w.sys_state.lp.get("base", {})
+			var center := Vector2(base.get("center", Vector2(w.map.w * 0.5, w.map.h * 0.5)))
+			var origin := center + Vector2(8, 0)
+			var ox := clampi(floori(origin.x), 0, w.map.w - 1)
+			var oy := clampi(floori(origin.y), 0, w.map.h - 1)
+			w.map.terrain[oy * w.map.w + ox] = preload("res://sim/terrain.gd").GRASS
+			Fire71.ignite_cell(w, Vector2(ox + 0.5, oy + 0.5), 0, 0.9)
+			fire_seeded = true
+			print("SOAK_FIRE seeded at %s n=%s" % [str(origin), str(Fire71.board(w).get("n", 0))])
 		if save_tick > 0 and i == save_tick:
 			saved_hash = w.state_hash()
 			w = SimWorld.from_dict(w.to_dict().duplicate(true))
