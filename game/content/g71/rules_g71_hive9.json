@@ -1,0 +1,21 @@
+{
+  "_meta": "G9 HIVE9 machine hive reborn tuning. All PROVISIONAL.",
+  "rules": {
+    "g71_hive9": {
+      "nanite_per_eaten": 0.15,
+      "nanite_per_harvest": 0.08,
+      "nanite_cap": 40.0,
+      "replicate_every": 120,
+      "replicate_cost": 6.0,
+      "replicate_min_dread": 0.45,
+      "replicate_def": "m_micro_drone",
+      "replicate_cap": 8,
+      "adapt_per_player_kill": 0.02,
+      "adapt_cap": 0.25,
+      "glow_alpha_base": 0.22,
+      "glow_alpha_per_stage": 0.12,
+      "wreck_mass_mult": 1.5,
+      "wreck_hunt_r": 28.0
+    }
+  }
+}

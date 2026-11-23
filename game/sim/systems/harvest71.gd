@@ -12,6 +12,11 @@ static func R() -> Dictionary:
 	return c if c is Dictionary else {}
 
 
+static func _hive9_r() -> Dictionary:
+	var c = Content.rules().get("g71_hive9", {})
+	return c if c is Dictionary else {}
+
+
 static func active(w: SimWorld) -> bool:
 	return w.sys_state.has("lp")
 
@@ -19,7 +24,7 @@ static func active(w: SimWorld) -> bool:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "harvs": [], "mass": 0.0, "taken": 0, "wave_seen": 0}
+		s = {"ver": VER, "harvs": [], "mass": 0.0, "taken": 0, "wrecks_taken": 0, "wave_seen": 0}
 		w.sys_state[KEY] = s
 	return s
 
@@ -32,6 +37,7 @@ static func board(w: SimWorld) -> Dictionary:
 		"n": (s.harvs as Array).size(),
 		"mass": snappedf(float(s.mass), 0.01),
 		"taken": int(s.taken),
+		"wrecks": int(s.get("wrecks_taken", 0)),
 	}
 
 
@@ -95,10 +101,14 @@ static func _move_harvs(w: SimWorld, s: Dictionary) -> void:
 		var spd := float(h.get("spd", 0.35))
 		var carry := int(h.get("carry", -1))
 		if carry < 0:
-			# Hunt nearest free body.
+			# Hunt nearest free body, else a neutral wreck (G9 HIVE9 eat-the-battlefield).
 			var best_id := -1
+			var best_wreck := -1
 			var best_d2 := float(R().get("hunt_r", 40.0))
 			best_d2 *= best_d2
+			var wreck_r := float(_hive9_r().get("wreck_hunt_r", 28.0))
+			var wreck_r2 := wreck_r * wreck_r
+			var best_w2 := wreck_r2
 			for b in Gore71.bodies_near(w, pos, float(R().get("hunt_r", 40.0))):
 				if int(b.get("drag", -1)) >= 0:
 					continue
@@ -106,7 +116,26 @@ static func _move_harvs(w: SimWorld, s: Dictionary) -> void:
 				if d2 < best_d2:
 					best_d2 = d2
 					best_id = int(b.id)
-			if best_id >= 0:
+			for wid in w.entities.keys():
+				var wr = w.entities[wid]
+				if wr == null or String(wr.get("kind", "")) != "wreck":
+					continue
+				if int(wr.get("drag", -1)) >= 0:
+					continue
+				var d2w := Vector2(wr.pos).distance_squared_to(pos)
+				if d2w < best_w2:
+					best_w2 = d2w
+					best_wreck = int(wid)
+			if best_id < 0 and best_wreck >= 0:
+				var wr: Dictionary = w.entities[best_wreck]
+				var tgtw: Vector2 = wr.pos
+				if pos.distance_squared_to(tgtw) <= reach * reach:
+					wr.drag = 1
+					h.carry = best_wreck
+					h["wreck"] = true
+				else:
+					pos = pos.move_toward(tgtw, spd)
+			elif best_id >= 0:
 				var bodies: Dictionary = Gore71.bodies(w)
 				var bb: Dictionary = bodies[best_id]
 				var tgt: Vector2 = bb.pos
@@ -120,15 +149,30 @@ static func _move_harvs(w: SimWorld, s: Dictionary) -> void:
 				# Idle near tide.
 				pos = pos.move_toward(home, spd * 0.5)
 		else:
-			# Drag body home; deposit = remove + mass.
+			# Drag body or wreck home; deposit = remove + mass.
 			pos = pos.move_toward(home, spd * 0.7)
-			Gore71.drag(w, carry, pos)
+			if bool(h.get("wreck", false)):
+				var wr = w.entities.get(carry)
+				if wr != null:
+					wr.pos = pos
+			else:
+				Gore71.drag(w, carry, pos)
 			if pos.distance_squared_to(home) <= reach * reach:
-				if Gore71.remove(w, carry):
+				var mult := 1.0
+				if bool(h.get("wreck", false)):
+					if w.entities.has(carry):
+						mult = float(_hive9_r().get("wreck_mass_mult", 1.5))
+						w.destroy(carry, "harvest71_wreck")
+						s.wrecks_taken = int(s.get("wrecks_taken", 0)) + 1
+						s.mass = float(s.mass) + float(R().get("mass_per", 1.0)) * mult
+						s.taken = int(s.taken) + 1
+						w.emit("Harvest71Wreck", {"wreck": carry, "mass": float(s.mass)})
+				elif Gore71.remove(w, carry):
 					s.mass = float(s.mass) + float(R().get("mass_per", 1.0))
 					s.taken = int(s.taken) + 1
 					w.emit("Harvest71Taken", {"body": carry, "mass": float(s.mass)})
 				h.carry = -1
+				h.erase("wreck")
 		h.pos = [snappedf(pos.x, 0.01), snappedf(pos.y, 0.01)]
 		keep.append(h)
 	s.harvs = keep

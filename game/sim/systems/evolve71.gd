@@ -45,6 +45,9 @@ static func tick(w: SimWorld) -> void:
 		return
 	var s := _st(w)
 	var dread := float(w.sys_state.lp.get("dread", 0.0))
+	var Hive9 = preload("res://sim/systems/hive9.gd")
+	if Hive9.active(w):
+		dread = minf(dread + Hive9.adapt_bonus(w), 1.0)
 	var cuts: Array = R().get("stage_at", [0.35, 0.55, 0.75, 0.9])
 	var want := 0
 	for c in cuts:

@@ -15,6 +15,8 @@ func _initialize() -> void:
 			_save_at = float(a.substr(10))
 	var LP = load("res://sim/systems/last_protocol.gd")
 	var Hive71 = load("res://sim/systems/hive71.gd")
+	var Hive9 = load("res://sim/systems/hive9.gd")
+	var Evolve71 = load("res://sim/systems/evolve71.gd")
 	var Fire71 = load("res://sim/systems/fire71.gd")
 	var Death71 = load("res://sim/systems/death71.gd")
 	var Gore71 = load("res://sim/systems/gore71.gd")
@@ -98,9 +100,11 @@ func _initialize() -> void:
 				return
 		if i > 0 and i % int(SimWorld.TICK_RATE * 30) == 0:
 			var bodies_n: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
-			print("SOAK_MARK t=%.0fs hive=%s fire=%s death=%s gore_bodies=%d re_cells=%d" % [
+			print("SOAK_MARK t=%.0fs hive=%s hive9=%s evolve=%s fire=%s death=%s gore_bodies=%d re_cells=%d" % [
 				float(i) / float(SimWorld.TICK_RATE),
 				str(Hive71.board(w)),
+				str(Hive9.board(w)),
+				str(Evolve71.board(w)),
 				str(Fire71.board(w)),
 				str(Death71.board(w)),
 				bodies_n,
@@ -149,7 +153,8 @@ func _initialize() -> void:
 			return
 	var ms := Time.get_ticks_msec() - t0
 	var bodies_end: int = Gore71.bodies(w).size() if Gore71.on(w) else 0
-	print("SOAK_DONE ticks=%d wall_ms=%d boards hive=%s fire=%s death=%s gore_bodies=%d jam=%s feint=%s" % [
-		ticks, ms, str(Hive71.board(w)), str(Fire71.board(w)), str(Death71.board(w)),
+	print("SOAK_DONE ticks=%d wall_ms=%d boards hive=%s hive9=%s evolve=%s fire=%s death=%s gore_bodies=%d jam=%s feint=%s" % [
+		ticks, ms, str(Hive71.board(w)), str(Hive9.board(w)), str(Evolve71.board(w)),
+		str(Fire71.board(w)), str(Death71.board(w)),
 		bodies_end, str(jam_done), str(feint_done)])
 	quit(0)
