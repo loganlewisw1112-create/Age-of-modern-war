@@ -8,6 +8,26 @@ $godotWin = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.
 $sha = (git -C $root rev-parse --short HEAD).Trim()
 $day = Get-Date -Format "yyyy-MM-dd"
 $tag = "G71_${day}_$sha"
+# Keep only the newest KeepN packages so disk does not fill with ~100MB pcks each commit.
+$KeepN = 2
+$dstParent = "C:\Users\logan\Downloads\Age of Modern War"
+foreach ($parent in @((Join-Path $root "build"), $dstParent)) {
+  if (-not (Test-Path $parent)) { continue }
+  $dirs = @(Get-ChildItem $parent -Directory -Filter "RTS_Age_of_Modern_War_G71_*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
+  if ($dirs.Count -gt $KeepN) {
+    $dirs | Select-Object -First ($dirs.Count - $KeepN) | ForEach-Object {
+      Write-Host "PRUNE $($_.FullName)"
+      Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
+  $zips = @(Get-ChildItem $parent -Filter "RTS_Age_of_Modern_War_G71_*.zip" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime)
+  if ($zips.Count -gt $KeepN) {
+    $zips | Select-Object -First ($zips.Count - $KeepN) | ForEach-Object {
+      Write-Host "PRUNE $($_.FullName)"
+      Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
 $out = Join-Path $root "build\RTS_Age_of_Modern_War_$tag"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $playPath = Join-Path $root "build\PLAY_ME_G71.txt"
@@ -41,7 +61,6 @@ Copy-Item (Join-Path $root "game\bin\rts_core.dll") (Join-Path $out "rts_core.dl
 $md5 = (Get-FileHash $pck -Algorithm MD5).Hash.ToLower()
 $len = (Get-Item $pck).Length
 Write-Host "PCK_MD5 $md5 SIZE $len"
-$dstParent = "C:\Users\logan\Downloads\Age of Modern War"
 New-Item -ItemType Directory -Force -Path $dstParent | Out-Null
 $dst = Join-Path $dstParent "RTS_Age_of_Modern_War_$tag"
 if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
