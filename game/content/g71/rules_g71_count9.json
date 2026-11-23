@@ -1,0 +1,14 @@
+{
+  "_meta": "G9 COUNT9 thirteen Machine counters — harness tuning. All PROVISIONAL.",
+  "rules": {
+    "g71_count9": {
+      "virus_spread_every": 80,
+      "coalition_truce_ticks": 600,
+      "dead_zone_default_r": 12.0,
+      "reprogram_max_hp_frac": 0.35,
+      "decap_coordination_ticks": 120,
+      "deny_thermite_mass": 0.0,
+      "early_strike_min_dread": 0.0
+    }
+  }
+}

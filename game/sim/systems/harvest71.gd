@@ -120,6 +120,8 @@ static func _move_harvs(w: SimWorld, s: Dictionary) -> void:
 				var wr = w.entities[wid]
 				if wr == null or String(wr.get("kind", "")) != "wreck":
 					continue
+				if bool(wr.get("g71_denied", false)):  # G9 COUNT9 deny material
+					continue
 				if int(wr.get("drag", -1)) >= 0:
 					continue
 				var d2w := Vector2(wr.pos).distance_squared_to(pos)
