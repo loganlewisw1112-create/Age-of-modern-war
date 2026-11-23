@@ -1,0 +1,2 @@
+{"seq":1,"ts":"2026-11-23T19:20:00Z","from":"ORCH","to":"*","type":"FACT","topic":"owner.e3.approved","data":{"decision":"owner approved all E3 look checkpoint samples as-is","unlocked":["full_art_rollout","wave6_e4"],"plan":"Phase0 record -> Phase1 art slices -> Phase2 E4 -> Phase3 integ","package_rule":"orch commits+pushes+package_g71.ps1+README every ship"}}
+{"seq":2,"ts":"2026-11-23T19:20:01Z","from":"ORCH","to":"*","type":"FACT","topic":"board.open","data":{"path":"game/.plan/wave6_board/board.jsonl","readme":"game/.plan/wave6_board/README.md"}}

@@ -19,12 +19,12 @@ IN THIS BUILD (Wave 3-5 stubs live)
   Soaks: durable 60m GREEN; live RE+warmind siege 600s GREEN (prototype, breakout purge,
     overrun retake, 6 feints, jam no-hack, H1 raid)
 
-LOOK CHECKPOINT (E3 - owner)
-  Strips + checklist: G71_LOOK_CHECKPOINT/ in this folder (and Downloads\Age of Modern War\G71_LOOK_CHECKPOINT)
-  Approve or reject each sample by id; full E4 animation waits on that.
+LOOK CHECKPOINT (E3) — APPROVED 2026-11-23
+  Strips remain under G71_LOOK_CHECKPOINT/ for reference.
+  Full art roll-out + Wave 6 E4 animation unlocked.
 
 LEFT OPEN (Done-when not weakened)
-  Owner look approvals (E3) then full E4 animation pass
+  Full art roll-out (Wave 5 leftover) then E4 animation (Wave 6)
 
 HARNESS
   Short soak: godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90 [--save_at=45]

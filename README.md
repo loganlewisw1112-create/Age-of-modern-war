@@ -58,8 +58,8 @@ Look samples for owner review ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Still open (Done-when holds)
 
-- **Owner look checkpoint (E3)** — approve or reject each sample; full art roll-out waits on that.
-- **E4 animation** — after look approval.
+- **E3 look checkpoint — APPROVED** (2026-11-23). Full art roll-out unlocked; Wave 6 E4 animation in progress.
+- **E4 animation** — weight, aim, Machine gait, death variety (Wave 6).
 
 Frozen Done-when is never weakened to make a check pass.
 

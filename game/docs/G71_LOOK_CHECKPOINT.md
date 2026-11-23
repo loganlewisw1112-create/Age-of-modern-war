@@ -2,33 +2,35 @@
 
 Format (frozen Done-when 5 / Pre-start): in-game frame strips of every sample + a small packaged showcase map; each sample approved or rejected individually.
 
-## Samples required before full art roll-out
+## Owner decision
+
+**APPROVED as-is** — 2026-11-23 (owner: "i approve the E3 look checkpoint(s)").
+
+Full art roll-out and Wave 6 E4 animation are **unlocked**. Done-when 5 look-gate is MET.
+
+## Samples
 
 | # | Sample | Status |
 |---|--------|--------|
-| 1 | Conductor gunship | awaiting owner |
-| 2 | Vanta2 | awaiting owner |
-| 3 | Siege units (brute / siege walker / mega / Lazarus) | awaiting owner |
-| 4 | Reclaimer | awaiting owner |
-| 5 | Glass stalker | awaiting owner |
-| 6 | Hive core | awaiting owner |
-| 7 | Effects samples (explosions, smoke, fire, tracers, debris) | awaiting owner |
-| 8 | Night lighting | awaiting owner |
-| 9 | Hunter-tank | awaiting owner |
-| 10 | Robot dog | awaiting owner |
-| 11 | Wall sentinel | awaiting owner |
-| 12 | UCAV | awaiting owner |
-| 13 | New drone bay | awaiting owner |
+| 1 | Conductor gunship | **APPROVED** |
+| 2 | Vanta2 | **APPROVED** |
+| 3 | Siege units (brute / siege walker / mega / Lazarus) | **APPROVED** |
+| 4 | Reclaimer | **APPROVED** |
+| 5 | Glass stalker | **APPROVED** |
+| 6 | Hive core | **APPROVED** |
+| 7 | Effects samples (explosions, smoke, fire, tracers, debris) | **APPROVED** |
+| 8 | Night lighting | **APPROVED** |
+| 9 | Hunter-tank | **APPROVED** |
+| 10 | Robot dog | **APPROVED** |
+| 11 | Wall sentinel | **APPROVED** |
+| 12 | UCAV | **APPROVED** |
+| 13 | New drone bay | **APPROVED** |
 
-## How to review
+## How strips were generated
 
-1. Play the latest packaged build under `Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_*`.
-2. Main menu → Last Protocol; use Ctrl+M for minimal HUD while inspecting.
-3. Approve or reject each sample by name (reply with the table rows).
+- `godot --headless --path game -s res://tools/art/g71_lookcheck.gd`
+- Output: `game/.plan/shots/G71_LOOK/` and package folder `G71_LOOK_CHECKPOINT/`
 
-## Agent notes
+## Next
 
-- Full E4 animation pass waits on this checkpoint (build order Wave 6).
-- Functional / G7-detail art is already live for combat; this checkpoint gates the full G7.1 art roll-out only.
-- Strip generator for G7 samples: `godot --headless --path game -s tools/art/g7_lookcheck.gd`
-- G7.1 unit art sheets remain stub/placeholder until owner approvals land.
+Wave 6 board: `game/.plan/wave6_board/`. Phase 1 full art roll-out, then Phase 2 E4 animation.
