@@ -37,7 +37,7 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 ## How to fight
 
 - Select: click, drag, shift, double-click. Right-click is the smart order.
-- Common hotkeys: **A** attack-move, **S** stop, **H** hold. Ctrl+1–9 control groups.
+- Common hotkeys: **A** attack-move, **S** stop, **H** hold. Ctrl+1–9 control groups. **Q / E** (or horizontal middle-mouse drag) rotate the view 90° (G8 Four Sides).
 - **Ctrl+M** — minimal Last Protocol HUD (cinematic).
 - Save / load: F5 / F9 (or pause menu).
 - Skirmish still works from the main menu if you want a classic match.

@@ -505,11 +505,11 @@ func _camera_poly() -> PackedVector2Array:
 		return out
 	var vsize := vp.get_visible_rect().size
 	var to_screen_local: Transform2D = (vp.get_canvas_transform() * (mv as CanvasItem).get_global_transform()).affine_inverse()
+	var ViewUtil = load("res://presentation/view/view_util.gd")
 	for corner in [Vector2(0, 0), Vector2(vsize.x, 0), vsize, Vector2(0, vsize.y)]:
 		var sp: Vector2 = to_screen_local * corner
-		var a := sp.x / 32.0
-		var b := sp.y / 16.0
-		var wp := Vector2((a + b) * 0.5, (b - a) * 0.5)
+		# G8 ROT8: canvas → world must honour live view facing.
+		var wp: Vector2 = ViewUtil.iso_inv(sp) if ViewUtil != null else Vector2((sp.x / 32.0 + sp.y / 16.0) * 0.5, (sp.y / 16.0 - sp.x / 32.0) * 0.5)
 		out.append(_to_mini(wp).clamp(Vector2.ZERO, Vector2(SIZE, SIZE)))
 	return out
 

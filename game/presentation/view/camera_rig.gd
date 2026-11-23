@@ -126,6 +126,33 @@ func height_map() -> Dictionary:
 	return {}
 
 
+## G8 ROT8: pan bounds = union of the map diamond under all four facings so rotate never clamps off-map.
+func recompute_bounds() -> void:
+	if mv == null:
+		return
+	var world = mv.get("_world")
+	if world == null or not (world.map is Dictionary):
+		return
+	var w := float(world.map.w)
+	var h := float(world.map.h)
+	var corners := [Vector2(0, 0), Vector2(w, 0), Vector2(w, h), Vector2(0, h)]
+	var min_p := Vector2(INF, INF)
+	var max_p := Vector2(-INF, -INF)
+	var saved := ViewUtil.view_facing
+	for f in 4:
+		ViewUtil.view_facing = f
+		for c in corners:
+			var s: Vector2 = ViewUtil.iso(c)
+			min_p = min_p.min(s)
+			max_p = max_p.max(s)
+	ViewUtil.view_facing = saved
+	if world.map is Dictionary and ViewUtil.has_height(world.map):
+		var up := ViewUtil.lift_px(ViewUtil.MAX_LEVEL)
+		min_p.y -= up
+	_bounds = Rect2(min_p, max_p - min_p)
+	_clamp()
+
+
 func _clamp() -> void:
 	position.x = clampf(position.x, _bounds.position.x, _bounds.end.x)
 	position.y = clampf(position.y, _bounds.position.y, _bounds.end.y)

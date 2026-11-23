@@ -58,6 +58,7 @@ const G2Demo = preload("res://presentation/view/g2_demo.gd")
 const G3 = preload("res://presentation/hud/g3_faction.gd")
 const G3View = preload("res://presentation/view/g3_view.gd")
 const ViewUtil = preload("res://presentation/view/view_util.gd")
+const ViewFacing = preload("res://presentation/view/view_facing.gd")   # G8 ROT8
 const HoverOutline = preload("res://presentation/view/hover_outline.gd")   # G7.1 CONTROL71
 const Roster71 = preload("res://presentation/ui71/roster.gd")
 const G71Attach = preload("res://presentation/view/g71_attach.gd")   # G7.1 wave 2 (ORCH): the one attach point of wave-2 view layers
@@ -157,6 +158,11 @@ var _drag_now_screen: Vector2 = Vector2.ZERO
 var _dragging := false
 var _skip_click_release := false
 var _mid_drag := false
+var _mid_rot_acc := 0.0   # G8 ROT8: horizontal MMB drag accumulates toward a 90° step
+const MID_ROT_PX := 48.0
+## G8 ROT8: camera facing 0..3 (NE/SE/SW/NW). Layers read ViewUtil.view_facing.
+var view_facing: int = 0
+var _facing_hint: Label = null
 var _mid_last := Vector2.ZERO
 var _pan_keys := {}                      # Key -> true while held (set from unhandled input)
 var _group_last_tap := {}                # group -> msec of last recall
@@ -335,6 +341,11 @@ func _init_view() -> void:
 	fac_atmo7.setup(self)   # G7 ATMO7 CR 3757
 	fac_seq7.setup(self)   # G7 SEQ7 CR 3721
 	camera.setup(self)
+	ViewUtil.view_facing = 0
+	view_facing = 0
+	if camera.has_method("recompute_bounds"):
+		camera.recompute_bounds()
+	_ensure_facing_hint()
 	hover_outline = HoverOutline.new()   # G7.1 CONTROL71 (A4): crisp outline on what a click would select
 	add_child(hover_outline)
 	hover_outline.setup(self)
@@ -853,6 +864,59 @@ func center_camera_on(world_pos: Vector2) -> void:
 		camera.center_on(world_to_screen(world_pos))
 
 
+## G8 ROT8: set facing 0..3; keeps the world point under the viewport centre fixed.
+func set_view_facing(f: int) -> void:
+	f = ViewFacing.face_wrap(int(f))
+	if f == view_facing and ViewUtil.view_facing == f:
+		_refresh_facing_hint()
+		return
+	var focus := Vector2.ZERO
+	var had_focus := false
+	if camera != null and is_inside_tree():
+		var vs := get_viewport().get_visible_rect().size
+		focus = pick_world(_viewport_to_canvas(vs * 0.5))
+		had_focus = true
+	view_facing = f
+	ViewUtil.view_facing = f
+	if camera != null and camera.has_method("recompute_bounds"):
+		camera.recompute_bounds()
+	if had_focus:
+		center_camera_on(focus)
+	_ensure_facing_hint()
+	_refresh_facing_hint()
+
+
+## G8 ROT8: rotate by delta steps (+1 = Q / clockwise on the compass labels).
+func rotate_view(delta: int) -> void:
+	if delta == 0:
+		return
+	set_view_facing(view_facing + delta)
+
+
+func _ensure_facing_hint() -> void:
+	if _facing_hint != null:
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "FacingHint8"
+	layer.layer = 80
+	add_child(layer)
+	_facing_hint = Label.new()
+	_facing_hint.name = "FacingLabel"
+	_facing_hint.position = Vector2(12, 12)
+	_facing_hint.add_theme_font_size_override("font_size", 14)
+	_facing_hint.add_theme_color_override("font_color", Color(0.92, 0.95, 0.88, 0.92))
+	_facing_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
+	_facing_hint.add_theme_constant_override("outline_size", 4)
+	layer.add_child(_facing_hint)
+	_refresh_facing_hint()
+
+
+func _refresh_facing_hint() -> void:
+	if _facing_hint == null:
+		return
+	_facing_hint.text = "View %s  [Q/E]" % ViewFacing.label(view_facing)
+
+
 func select_ids(ids: Array, part: String = "") -> void:
 	sel_part = part
 	var out: Array[int] = []
@@ -865,13 +929,11 @@ func select_ids(ids: Array, part: String = "") -> void:
 
 
 static func world_to_screen(p: Vector2) -> Vector2:
-	return Vector2((p.x - p.y) * TILE_W * 0.5, (p.x + p.y) * TILE_H * 0.5)
+	return ViewUtil.iso(p)
 
 
 static func screen_to_world(s: Vector2) -> Vector2:
-	var a := s.x / (TILE_W * 0.5)
-	var b := s.y / (TILE_H * 0.5)
-	return Vector2((a + b) * 0.5, (b - a) * 0.5)
+	return ViewUtil.iso_inv(s)
 
 
 ## G6 (UI6a, ELEV-VIEW CR seq 820): world-tile position of the ground actually drawn under canvas
@@ -1158,6 +1220,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					_on_right_press(mb)
 				MOUSE_BUTTON_MIDDLE:
 					_mid_drag = true
+					_mid_rot_acc = 0.0
 					_mid_last = mb.position
 				MOUSE_BUTTON_WHEEL_UP:
 					camera.zoom_at(mb.position, 1.15)
@@ -1190,7 +1253,14 @@ func _input(event: InputEvent) -> void:
 		if g4b.dragging():
 			g4b.on_motion(pick_world(_viewport_to_canvas(mm.position)))
 		if _mid_drag:
-			camera.pan_screen((_mid_last - mm.position) * CameraRig.DRAG_MULT)
+			# G8 ROT8: horizontal MMB drag rotates 90° per MID_ROT_PX; vertical still pans.
+			var d: Vector2 = _mid_last - mm.position
+			_mid_rot_acc += d.x
+			while absf(_mid_rot_acc) >= MID_ROT_PX:
+				rotate_view(1 if _mid_rot_acc > 0.0 else -1)
+				_mid_rot_acc -= signf(_mid_rot_acc) * MID_ROT_PX
+			if absf(d.y) > 0.01:
+				camera.pan_screen(Vector2(0.0, d.y) * CameraRig.DRAG_MULT)
 			_mid_last = mm.position
 	elif event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
@@ -1201,6 +1271,7 @@ func _input(event: InputEvent) -> void:
 				_finish_left(mb.position, mb.shift_pressed)
 			elif mb.button_index == MOUSE_BUTTON_MIDDLE:
 				_mid_drag = false
+				_mid_rot_acc = 0.0
 
 
 func _on_left_press(mb: InputEventMouseButton) -> void:
@@ -1518,6 +1589,15 @@ func _on_key(k: InputEventKey) -> bool:
 		KEY_SPACE:
 			if last_alert_pos != null:
 				center_camera_on(last_alert_pos)
+				return true
+		KEY_Q:
+			# G8 ROT8: Q = rotate view one step (compass NE→NW→SW→SE).
+			if not k.ctrl_pressed and not k.alt_pressed:
+				rotate_view(-1)
+				return true
+		KEY_E:
+			if not k.ctrl_pressed and not k.alt_pressed:
+				rotate_view(1)
 				return true
 		KEY_M:
 			# G7.1 H9: Ctrl+M toggles minimal LP HUD (cinematic).

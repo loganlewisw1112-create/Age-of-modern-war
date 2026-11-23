@@ -285,14 +285,51 @@ static func ground_lift(hm: Dictionary, p: Vector2) -> float:
 	return lift_px(ground_level(hm, p))
 
 
-static func iso(p: Vector2) -> Vector2:
+## G8 ROT8: live camera facing 0..3. MatchView sets this; iso/iso_inv rotate world into face-0 space.
+static var view_facing: int = 0
+
+
+## Raw isometric (facing 0 only). Prefer iso() for draw / pick.
+static func iso_raw(p: Vector2) -> Vector2:
 	return Vector2((p.x - p.y) * 32.0, (p.x + p.y) * 16.0)
 
 
-static func iso_inv(s: Vector2) -> Vector2:
+static func iso_inv_raw(s: Vector2) -> Vector2:
 	var a := s.x / 32.0
 	var b := s.y / 16.0
 	return Vector2((a + b) * 0.5, (b - a) * 0.5)
+
+
+static func _face0(p: Vector2) -> Vector2:
+	match ((view_facing % 4) + 4) % 4:
+		1:
+			return Vector2(p.y, -p.x)
+		2:
+			return Vector2(-p.x, -p.y)
+		3:
+			return Vector2(-p.y, p.x)
+		_:
+			return p
+
+
+static func _from_face0(p: Vector2) -> Vector2:
+	match ((view_facing % 4) + 4) % 4:
+		1:
+			return Vector2(-p.y, p.x)
+		2:
+			return Vector2(-p.x, -p.y)
+		3:
+			return Vector2(p.y, -p.x)
+		_:
+			return p
+
+
+static func iso(p: Vector2) -> Vector2:
+	return iso_raw(_face0(p))
+
+
+static func iso_inv(s: Vector2) -> Vector2:
+	return _from_face0(iso_inv_raw(s))
 
 
 ## World tile position -> canvas px on the drawn (raised) ground.
