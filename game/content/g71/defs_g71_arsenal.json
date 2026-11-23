@@ -132,6 +132,64 @@
       "_note": "PROVISIONAL. J11 energy shield. Behaviour polish later."
     }
   },
+  "production": {
+    "a_g71_plasma_gunner": {
+      "name": "Plasma Gunner",
+      "spawns": ["a_g71_plasma_gunner"],
+      "facility": "barracks",
+      "faction": "human_a",
+      "cost": {"credits": 320, "salvage": 80, "ore": 60},
+      "train_time": 28,
+      "g71": true,
+      "lp_only": true,
+      "needs_research": "plasma_cannon",
+      "_note": "PROVISIONAL. Unlocks after Blackglass brute proto + plasma research."
+    },
+    "a_g71_coilgunner": {
+      "name": "Coilgun Infantry",
+      "spawns": ["a_g71_coilgunner"],
+      "facility": "barracks",
+      "faction": "human_a",
+      "cost": {"credits": 300, "salvage": 70, "ore": 55},
+      "train_time": 26,
+      "g71": true,
+      "lp_only": true,
+      "needs_research": "coilgun"
+    },
+    "a_g71_dust_operator": {
+      "name": "Smart-Dust Operator",
+      "spawns": ["a_g71_dust_operator"],
+      "facility": "barracks",
+      "faction": "human_a",
+      "cost": {"credits": 340, "salvage": 90, "ore": 70},
+      "train_time": 30,
+      "g71": true,
+      "lp_only": true,
+      "needs_research": "smart_dust"
+    },
+    "a_g71_light_mech": {
+      "name": "Light Mech",
+      "spawns": ["a_g71_light_mech"],
+      "facility": "motor_pool",
+      "faction": "human_a",
+      "cost": {"credits": 900, "salvage": 400, "ore": 280},
+      "train_time": 55,
+      "g71": true,
+      "lp_only": true,
+      "needs_research": "plasma_cannon"
+    },
+    "a_g71_heavy_mech": {
+      "name": "Heavy Battle Mech",
+      "spawns": ["a_g71_heavy_mech"],
+      "facility": "motor_pool",
+      "faction": "human_a",
+      "cost": {"credits": 2200, "salvage": 900, "ore": 600},
+      "train_time": 90,
+      "g71": true,
+      "lp_only": true,
+      "needs_research": "plasma_cannon"
+    }
+  },
   "weapons": {
     "g71_plasma_rifle": {
       "name": "Plasma Rifle",

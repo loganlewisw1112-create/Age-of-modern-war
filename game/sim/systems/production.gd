@@ -35,6 +35,12 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var gate := PData.production_reason(w, fid, item)  # G3b: "Requires Stage 8" / "Requires research: X"
 			if gate != "":
 				return "%s: %s." % [String(p.get("name", item)), gate]
+			# G7.1 J11: Blackglass-gated arsenal (Research71 tech id on the production row).
+			var need_r := String(p.get("needs_research", ""))
+			if need_r != "":
+				var Research71 = preload("res://sim/systems/research71.gd")
+				if not Research71.unlocked(w, need_r):
+					return "%s: Requires research: %s." % [String(p.get("name", item)), need_r]
 			if b.queue.size() >= QUEUE_MAX:
 				return "The production queue is full (%d)." % QUEUE_MAX
 			var air_gate := Airfield.can_produce(w, fid, item)  # G5 (CONTRACTS_G5 section 4): hangar / pad gating

@@ -11,8 +11,10 @@ const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 func test_j11_defs_exist() -> void:
 	for id in ["a_g71_plasma_gunner", "a_g71_coilgunner", "a_g71_dust_operator", "a_g71_light_mech", "a_g71_heavy_mech"]:
 		check(not Content.unit(id).is_empty(), "%s unit def" % id)
+		check(not Content.production(id).is_empty(), "%s production row" % id)
 	check(not Content.building("a_g71_shield_dome").is_empty(), "shield dome building")
 	check(not Content.weapon("g71_plasma_rifle").is_empty(), "plasma weapon")
+	check_eq(String(Content.production("a_g71_plasma_gunner").get("needs_research", "")), "plasma_cannon", "plasma gated on research")
 
 
 func test_plasma_research_needs_blackglass_proto() -> void:
