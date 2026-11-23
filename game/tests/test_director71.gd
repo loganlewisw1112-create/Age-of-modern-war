@@ -7,6 +7,8 @@ const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const Air = preload("res://sim/systems/air.gd")
 const LpHud = preload("res://presentation/ui7/lp_hud.gd")
 const Radio71 = preload("res://sim/systems/radio71.gd")
+const Creep = preload("res://sim/systems/creep.gd")
+const Cores = preload("res://sim/systems/cores.gd")
 
 
 func test_pressure_is_pure_and_ordered() -> void:
@@ -293,6 +295,44 @@ func test_hunt_ops() -> void:
 	feed.tick(0.1)
 	check(String(feed.text).find("Hollow") >= 0 or String(feed.text).to_lower().find("target") >= 0,
 		"radio speaks the hunt")
+	feed.free()
+
+
+func test_spore_and_raid_act() -> void:
+	check(float(Director71.rules().get("spore_at", 0.0)) > 0.5, "spores open late")
+	Radio71._lines = null
+	check(not Radio71.line("lp71.spore").is_empty(), "spore radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP match for spores"):
+		return
+	for i in 25:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	s.dread = 0.85
+	var seeds0 := Creep.seeds(w).size()
+	LastProtocol._spore_drop(w, s)
+	check(Creep.seeds(w).size() >= seeds0, "spore drops a creep seed")
+	var had := false
+	for o in LastProtocol.hud(w).objectives:
+		if String(o.get("kind", "")) == "purge_spore":
+			had = true
+	check(had, "spore opens a purge objective")
+	s.core_raid = {"phase": "soften", "phase_i": 1, "core": -1, "t0": w.tick}
+	for c0 in Cores.list(w):
+		if bool(c0.get("alive", false)):
+			s.core_raid.core = int(c0.id)
+			break
+	if int(s.core_raid.core) >= 0:
+		LastProtocol._core_raid_act(w, s, s.core_raid)
+	check(true, "core raid act softens without script error")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpSpore", "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("spore") >= 0 or String(feed.text).to_lower().find("creep") >= 0,
+		"radio speaks spore")
 	feed.free()
 
 

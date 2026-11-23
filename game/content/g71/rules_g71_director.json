@@ -50,6 +50,8 @@
       "hunt_at": 0.55,
       "boss_break": "g71_m_brute_alpha",
       "boss_siege": "g71_m_mega_walker",
+      "spore_at": 0.7,
+      "spore_every_s": 60.0,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

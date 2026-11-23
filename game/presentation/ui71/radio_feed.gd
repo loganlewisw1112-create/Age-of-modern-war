@@ -137,6 +137,8 @@ func handle_events(evs: Array, w = null) -> void:
 				_say("lp71.wall_rotate", _pos(ev, w), {"0": String(ev.get("name", str(int(ev.get("sector", 0)))))})
 			"LpSupplyThreatened":
 				_say("lp71.supply_threatened", _pos(ev, w), {})
+			"LpSpore":
+				_say("lp71.spore", _pos(ev, w), {})
 			"Fleet71Seed":
 				_say("lp71.fleet_seed", _pos(ev, w), {"0": str(int(ev.get("n", 0)))})
 			"Fleet71Leader":

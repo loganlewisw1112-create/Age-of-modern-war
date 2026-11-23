@@ -27,6 +27,7 @@
     "lp71.fleet_jam": {"text": "Sector jammed — robots on local autonomy.", "cat": "alert", "prio": 80, "cd": 16.0},
     "lp71.fleet_dock": {"text": "Robot returning to charge.", "cat": "intel", "prio": 45, "cd": 8.0},
     "lp71.fleet_recover": {"text": "Mule recovering a downed robot — deny the Reclaimer!", "cat": "command", "prio": 78, "cd": 10.0},
-    "lp71.fleet_wipe": {"text": "Robot self-wipe under jam — denied to the hive.", "cat": "alert", "prio": 82, "cd": 12.0}
+    "lp71.fleet_wipe": {"text": "Robot self-wipe under jam — denied to the hive.", "cat": "alert", "prio": 82, "cd": 12.0},
+    "lp71.spore": {"text": "Creep spore inside the walls — purge it!", "cat": "alert", "prio": 88, "cd": 18.0}
   }
 }

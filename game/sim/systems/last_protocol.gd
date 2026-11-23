@@ -222,6 +222,8 @@ static func tick(w: SimWorld) -> void:
 			_hunt_ops(w, s)
 		if (w.tick + 71) % _t(8.0) == 0 and float(s.get("dread", 0.0)) >= float(Director71.rules().get("siege_at", 0.85)):
 			_spawn_boss(w, s, "siege")
+	if (w.tick + 73) % _t(float(Director71.rules().get("spore_every_s", 60.0))) == 0:
+		_spore_drop(w, s)
 	# F robot fleet (ticked from LP only so skirmish hashes stay put).
 	Fleet71.tick(w)
 
@@ -555,7 +557,9 @@ static func _siege_specials(w: SimWorld, s: Dictionary) -> void:
 			w.emit("LpTurretLatch", {"id": int(e.id), "turret": int(best.id), "hp": float(best.hp)})
 		elif kind == "sapper" and best_d <= jam_r2:
 			if Turrets71.force_jam(w, best, jam_secs):
-				w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id)})
+				var face := LpDefence._sector(s, Vector2(best.pos))
+				Fleet71.jam_sector(w, face, jam_secs)
+				w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id), "sector": face})
 
 
 ## D1 escalating mid-siege objectives (open list, capped).
@@ -802,6 +806,36 @@ static func _core_raid_advance(w: SimWorld, s: Dictionary, raid: Dictionary) -> 
 	_complete_objective(w, s, "core_raid", {})
 	_push_objective(w, s, "core_raid", title, {"phase": String(raid.phase), "core": int(raid.core)})
 	w.emit("LpCoreRaid", {"phase": String(raid.phase), "core": int(raid.core), "why": "event"})
+	_core_raid_act(w, s, raid)
+
+
+## H1: kick the matching support for the new phase (fires soften / CN search breach / purge bots).
+static func _core_raid_act(w: SimWorld, s: Dictionary, raid: Dictionary) -> void:
+	var core_id := int(raid.get("core", -1))
+	if core_id < 0 or not w.entities.has(core_id):
+		return
+	var at: Vector2 = w.entities[core_id].pos
+	var phase := String(raid.get("phase", ""))
+	match phase:
+		"soften":
+			var Fires71 = load("res://sim/systems/fires71.gd")
+			if Fires71 != null and Fires71.has_method("start_mission") and Fires71.call("lp_on", w):
+				var guns: Array = Fires71.call("assign", w, int(s.fid), at, [], false, 4)
+				if not guns.is_empty():
+					Fires71.call("start_mission", w, int(s.fid), "suppress", "point", at, at, guns, -1, {})
+					w.emit("LpCoreRaidAct", {"phase": "soften", "guns": guns.size(), "pos": at})
+		"breach", "purge":
+			# Send available CN teams / purge bots toward the core.
+			var go := []
+			for e in w.units_of(int(s.fid)):
+				if e.has("cn_team") or String(Content.unit(String(e.get("def", ""))).get("g71_fleet", "")) == "purge":
+					go.append(int(e.id))
+			if not go.is_empty():
+				go.sort()
+				if go.size() > 16:
+					go = go.slice(0, 16)
+				w.submit({"type": "attack_move", "issuer": int(s.fid), "unit_ids": go, "target": at, "ai_cmd": "lp"})
+				w.emit("LpCoreRaidAct", {"phase": phase, "n": go.size(), "pos": at})
 
 
 ## H1 core assault stub: multi-phase raid that opens once dread is late and a core still lives.
@@ -853,6 +887,34 @@ static func _core_raid_tick(w: SimWorld, s: Dictionary) -> void:
 		w.emit("LpCoreRaid", {"phase": "failed", "failed": "purge", "core": int(raid.get("core", -1))})
 		return
 	_core_raid_advance(w, s, raid)
+
+
+## H6 creep spores: late dread drops a creep seed inside the outer ring; purge bots go clean it.
+static func _spore_drop(w: SimWorld, s: Dictionary) -> void:
+	if float(s.get("dread", 0.0)) < float(Director71.rules().get("spore_at", 0.7)):
+		return
+	if not s.has("base") or (s.base.rings as Array).is_empty():
+		return
+	var outer: Rect2i = s.base.rings[0].rect
+	var inner := outer.grow(-4)
+	if inner.size.x < 4 or inner.size.y < 4:
+		inner = outer.grow(-1)
+	var cx := inner.position.x + int(inner.size.x / 2)
+	var cy := inner.position.y + int(inner.size.y / 2)
+	var spot := Vector2(float(cx) + 0.5, float(cy) + 0.5)
+	# Offset by a deterministic dread hash so repeats do not stack the same cell.
+	var off := int(float(s.get("dread", 0.0)) * 17.0) % 5
+	spot += Vector2(float(off - 2), float((off * 3) % 5) - 2.0)
+	Creep.add_seed(w, spot, "seed", int(s.mfid))
+	_push_objective(w, s, "purge_spore", "Purge creep spore inside the walls", {"pos": spot})
+	w.emit("LpSpore", {"pos": spot, "dread": float(s.get("dread", 0.0))})
+	var bots := []
+	for e in w.units_of(int(s.fid)):
+		if String(Content.unit(String(e.get("def", ""))).get("g71_fleet", "")) == "purge":
+			bots.append(int(e.id))
+	if not bots.is_empty():
+		bots.sort()
+		w.submit({"type": "attack_move", "issuer": int(s.fid), "unit_ids": bots, "target": spot, "ai_cmd": "lp"})
 
 
 ## D3 runners under fire: cracked / threatened faces need friendlies on the wall-walk; miss enough checks = starve.
