@@ -178,8 +178,9 @@ func _apply_grey() -> void:
 
 func setup(view) -> void:
 	mv = view
-	_w = int(mv.world.map.w)
-	_h = int(mv.world.map.h)
+	var world = mv.get("_world")  # never mv.world: that getter forces a sim join
+	_w = int(world.map.w)
+	_h = int(world.map.h)
 	_vis_img = Image.create(_w, _h, false, Image.FORMAT_L8)
 	_exp_img = Image.create(_w, _h, false, Image.FORMAT_L8)
 	_vis_tex = ImageTexture.create_from_image(_vis_img)

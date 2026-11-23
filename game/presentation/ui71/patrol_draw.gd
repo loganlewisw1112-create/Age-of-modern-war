@@ -50,7 +50,7 @@ static func make_cmd(ids: Array, pts: Array) -> Dictionary:
 
 
 func start() -> bool:
-	if mv == null or patrol_ids(mv.world, mv.selection).is_empty():
+	if mv == null or patrol_ids(mv.get("_world"), mv.selection).is_empty():
 		return false
 	points.clear()
 	active = true
@@ -81,7 +81,7 @@ func _on_point(p: Vector2) -> void:
 
 ## Issues the route (>= 2 points) for the selected rotorcraft; returns MatchView.issue()'s result ({} if not issued).
 func finish() -> Dictionary:
-	var ids: Array = patrol_ids(mv.world, mv.selection) if mv != null else []
+	var ids: Array = patrol_ids(mv.get("_world"), mv.selection) if mv != null else []
 	var res := {}
 	if active and points.size() >= 2 and not ids.is_empty():
 		res = mv.issue(make_cmd(ids, points))

@@ -1,0 +1,11 @@
+{
+  "_meta": "G7.1 J9 neural-link pilots. PROVISIONAL.",
+  "rules": {
+    "g71_neural": {
+      "move_mult": 1.12,
+      "acc_mult": 1.2,
+      "feel_supp": 8.0,
+      "burn_hp": 0.35
+    }
+  }
+}

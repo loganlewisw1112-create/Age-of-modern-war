@@ -42,7 +42,7 @@ func _draw() -> void:
 
 
 func _draw_body() -> void:
-	if mv == null or mv.world == null:
+	if mv == null or mv.get("_world") == null:
 		return
 	if mode == "ground":
 		_draw_bridge()
@@ -57,7 +57,9 @@ func _draw_body() -> void:
 
 # ---------------------------------------------------------------- per-unit status
 func _draw_unit_status() -> void:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return
 	var t: float = mv.anim_time()
 	var vr: Rect2 = _visible_world_rect()
 	# G3b (R4-2): only the entity layer's on-screen, fog-visible units (no full entity scan)
@@ -204,7 +206,9 @@ func _draw_chevrons(sp: Vector2, facing: float, t: float) -> void:
 
 # ---------------------------------------------------------------- officers / missions
 func _draw_missions(ground: bool) -> void:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return
 	var pf: int = mv.player_fid
 	var gs: Dictionary = G2.groups(w)
 	for gid in gs:

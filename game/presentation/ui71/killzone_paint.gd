@@ -97,7 +97,8 @@ func _input(ev: InputEvent) -> void:
 			finish_drag(Vector2(drag_from), mv.mouse_world(), mb.shift_pressed)
 		get_viewport().set_input_as_handled()
 	elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
-		var mem := members(mv.world, int(mv.player_fid), mv.selection)
+		var ww = mv.get("_world")  # never mv.world: that getter forces a sim join
+		var mem := members(ww, int(mv.player_fid), mv.selection) if ww != null else {"unit_ids": [], "building_ids": []}
 		if not (mem.unit_ids as Array).is_empty() or not (mem.building_ids as Array).is_empty():
 			clicks += 1
 			last_result = mv.issue({"type": "kz_clear", "unit_ids": mem.unit_ids, "building_ids": mem.building_ids})
@@ -110,12 +111,15 @@ func finish_drag(a: Vector2, b: Vector2, shift: bool) -> Dictionary:
 	drag_from = null
 	clicks += 1
 	var res := {}
+	var ww = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if ww == null:
+		return res
 	if shift:
-		var face := KillZone71.face_of(mv.world, a)
+		var face := KillZone71.face_of(ww, a)
 		if face >= 0 and a.distance_to(b) >= 1.0:
 			res = mv.issue(fpf_cmd(face, a, b))
 	else:
-		var mem := members(mv.world, int(mv.player_fid), mv.selection)
+		var mem := members(ww, int(mv.player_fid), mv.selection)
 		if not (mem.unit_ids as Array).is_empty() or not (mem.building_ids as Array).is_empty():
 			res = mv.issue(paint_cmd(mem, a, b))
 	last_result = res

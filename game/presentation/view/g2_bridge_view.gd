@@ -31,7 +31,9 @@ static func _sprite(mv, b: Dictionary, state: String) -> Dictionary:
 
 
 static func draw_ground(ci: CanvasItem, mv) -> void:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return
 	var cells: Array = G2.bridge_cells(w)
 	if cells.is_empty():
 		return
@@ -102,7 +104,9 @@ static func draw_ground(ci: CanvasItem, mv) -> void:
 
 ## HP bar over the bridge while damaged (only where the player can see it).
 static func draw_bar(ci: CanvasItem, mv) -> void:
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return
 	var b: Dictionary = G2.bridge(w)
 	if b.is_empty() or b.kind != "structure" or G2.bridge_state(w) == "ruined":
 		return

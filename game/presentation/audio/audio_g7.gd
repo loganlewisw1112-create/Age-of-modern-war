@@ -67,7 +67,7 @@ func setup(on: bool) -> void:
 func _w():
 	if d == null or d.mv == null or not d.mv.has_method("world_readable") or not d.mv.world_readable():
 		return null
-	return d.mv.world
+	return d.mv.get("_world")  # never mv.world: that getter forces a sim join
 
 
 func _mine(ev: Dictionary) -> bool:

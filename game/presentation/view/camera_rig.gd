@@ -21,11 +21,12 @@ var _map_span := 96.0
 
 func setup(view: Node2D) -> void:
 	mv = view
-	var w := float(mv.world.map.w)
-	var h := float(mv.world.map.h)
+	var world = mv.get("_world")  # never mv.world: that getter forces a sim join
+	var w := float(world.map.w)
+	var h := float(world.map.h)
 	# map diamond: x in [-h*32, w*32], y in [0, (w+h)*16]
 	_bounds = Rect2(Vector2(-h * 32.0, 0.0), Vector2((w + h) * 32.0, (w + h) * 16.0))
-	if mv.world.map is Dictionary and ViewUtil.has_height(mv.world.map):
+	if world.map is Dictionary and ViewUtil.has_height(world.map):
 		var up := ViewUtil.lift_px(ViewUtil.MAX_LEVEL)
 		_bounds = Rect2(_bounds.position - Vector2(0.0, up), _bounds.size + Vector2(0.0, up))
 	_map_span = maxf(w, h)

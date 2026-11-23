@@ -124,7 +124,7 @@ func _fly(id: int, kind: String) -> void:
 	flying = id
 	_kind = kind
 	_sent.clear()
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world") as SimWorld  # never mv.world: that getter forces a sim join
 	var r = DronePilot.record(w, id) if w != null and mv.world_readable() else null
 	_hdg = float(r.hdg) if r != null else 0.0
 	_h = float(r.h) if r != null else DronePilot.rf("height_start", 40.0)
@@ -195,7 +195,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _try_take(shift: bool, ctrl: bool) -> bool:
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world") as SimWorld  # never mv.world: that getter forces a sim join
 	if w == null or not mv.world_readable():
 		return false
 	for id in mv.selection:
@@ -222,7 +222,7 @@ func _process(delta: float) -> void:
 	# throttle only needs the tick, which the render snapshot carries.
 	var tk := int(mv.snap.get("tick", -1)) if mv.get("snap") is Dictionary and not (mv.snap as Dictionary).is_empty() else -1
 	if tk < 0:
-		var w: SimWorld = mv.world if mv.world_readable() else null
+		var w: SimWorld = mv.get("_world") as SimWorld if mv.world_readable() else null
 		if w == null:
 			return
 		tk = w.tick   # DROP7: was `tk = tk` (no-op), which left tk at -1 and stalled the steer throttle without a snapshot

@@ -84,7 +84,7 @@ func setup(view, force_enabled: Variant = null) -> void:
 	name = "AudioDirector"
 	if mv != null:
 		player_fid = int(mv.get("player_fid")) if mv.get("player_fid") != null else 0
-		var w = mv.get("world")
+		var w = mv.get("_world")  # never get("world"): that getter forces a sim join
 		if w != null and w.factions.has(player_fid):
 			kind = Cat.faction_kind(String(w.factions[player_fid].get("faction_def", w.factions[player_fid].get("faction", ""))))
 		if mv.has_signal("world_events") and not mv.world_events.is_connected(handle_events):
@@ -152,7 +152,7 @@ func _event(ev: Dictionary) -> void:
 func _shot_alerts(ev: Dictionary, to: Vector2) -> void:
 	if mv == null or not mv.has_method("world_readable") or not mv.world_readable():
 		return
-	var t = mv.world.entities.get(int(ev.get("target", -1)))
+	var t = mv.get("_world").entities.get(int(ev.get("target", -1))) if mv.get("_world") != null else null
 	if t == null or int(t.owner) != player_fid:
 		return
 	if bool(ev.get("indirect", false)):
@@ -375,7 +375,9 @@ func engine_candidates() -> Array:
 	var out: Array = []
 	if mv == null or not mv.has_method("world_readable") or not mv.world_readable():
 		return out
-	var w = mv.world
+	var w = mv.get("_world")  # never mv.world: that getter forces a sim join
+	if w == null:
+		return out
 	for id in mv.get("selection") if mv.get("selection") != null else []:
 		var e = w.entities.get(int(id))
 		if e != null and e.kind == "unit" and Cat.engine_sound(String(e.def)) != "" and out.size() < MAX_ENGINES:
@@ -412,7 +414,10 @@ func _update_engines() -> void:
 	for id in want:
 		if _engines.has(id):
 			continue
-		var e = mv.world.entities.get(id)
+		var ww = mv.get("_world")
+		var e = ww.entities.get(id) if ww != null else null
+		if e == null:
+			continue
 		var sid := Cat.engine_sound(String(e.def))
 		var vars := Cat.variants(sid)
 		if vars.is_empty():
@@ -433,7 +438,10 @@ func _update_engines() -> void:
 func _follow_engines() -> void:
 	if _engines.is_empty() or mv == null or not mv.world_readable():
 		return
+	var ww = mv.get("_world")
+	if ww == null:
+		return
 	for id in _engines:
-		var e = mv.world.entities.get(id)
+		var e = ww.entities.get(id)
 		if e != null:
 			(_engines[id] as AudioStreamPlayer2D).position = ViewUtil.iso(Vector2(e.pos))

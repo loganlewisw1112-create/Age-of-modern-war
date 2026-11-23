@@ -53,6 +53,10 @@ static func move_mult(w: SimWorld, e: Dictionary) -> float:
 		fm *= float(Stim71.R().get("move_boost", 1.2))
 	elif Stim71.crashed(w, e):
 		fm *= float(Stim71.R().get("move_crash", 0.7))
+	# J9 neural-link: linked machine gets near-perfect control.
+	if e.has("g71neural_pilot"):
+		var Neural71 = preload("res://sim/systems/neural71.gd")
+		fm *= float(Neural71.R().get("move_mult", 1.12))
 	return fm
 
 
@@ -86,6 +90,9 @@ static func accuracy_mult(w: SimWorld, e: Dictionary) -> float:
 		m *= float(Stim71.R().get("acc_boost", 1.15))
 	elif Stim71.crashed(w, e):
 		m *= float(Stim71.R().get("acc_crash", 0.75))
+	if e.has("g71neural_pilot"):
+		var Neural71 = preload("res://sim/systems/neural71.gd")
+		m *= float(Neural71.R().get("acc_mult", 1.2))
 	return m
 
 

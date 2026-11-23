@@ -153,7 +153,7 @@ func finish(a: Vector2, b: Vector2, shift: bool, ctrl: bool) -> Dictionary:
 		"gunship":
 			cmd = ConductorOrbit.make_cmd(a, b, ctrl)
 		"fpf":
-			cmd = {"type": "fpf_fire", "face": -1 if shift else KillZone71.face_of(mv.world, a)}
+			cmd = {"type": "fpf_fire", "face": -1 if shift else KillZone71.face_of(mv.get("_world"), a)}
 		_:
 			cmd = StrikeShape.make_cmd(armed, StrikeShape.shape_for(a, b, shift, ctrl), a, b)
 	last_result = mv.issue(cmd)
