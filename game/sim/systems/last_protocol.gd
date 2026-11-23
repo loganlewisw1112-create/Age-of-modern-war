@@ -270,6 +270,20 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				var cs := String(ev.get("call_sign", ""))
 				if cs != "" and not (s.remembered as Array).has(cs):
 					(s.remembered as Array).append(cs)
+			"ShotFired":
+				# H9 efficiency: count own-side shots and hits for ammo grade.
+				if int(ev.get("owner", -1)) == fid or int(ev.get("shooter_owner", -1)) == fid:
+					s.ammo_spent = float(s.get("ammo_spent", 0.0)) + 1.0
+					if bool(ev.get("hit", false)):
+						s.ammo_hits = float(s.get("ammo_hits", 0.0)) + 1.0
+			"FireMission", "FireMissionEnded", "FpfEnded":
+				if int(ev.get("owner", fid)) == fid:
+					s.fire_calls = float(s.get("fire_calls", 0.0)) + 1.0
+			"FireFriendlyHit":
+				pass
+			"StrikeImpact":
+				if int(ev.get("owner", -1)) == fid:
+					s.fire_hits = float(s.get("fire_hits", 0.0)) + 1.0
 			"Damage":
 				# Combat runs before LastProtocol: the unit may already be gone. Remember the last hit by id;
 				# EntityDestroyed below only counts Machine deaths into adapt.
@@ -278,6 +292,10 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 					if not s.has("adapt_last") or not (s.adapt_last is Dictionary):
 						s.adapt_last = {}
 					s.adapt_last[tid] = {"cls": String(ev.get("cls", "")), "weapon": String(ev.get("weapon", ""))}
+				# Fire-support hit when the shot was indirect / artillery class.
+				if int(ev.get("shooter", -1)) >= 0 and String(ev.get("cls", "")) in ["artillery", "he", "indirect"]:
+					if int(ev.get("owner", -1)) == fid:
+						s.fire_hits = float(s.get("fire_hits", 0.0)) + 1.0
 			"EntityDestroyed":
 				var id := int(ev.get("id", -1))
 				if (s.roster as Dictionary).has(id):
@@ -1292,7 +1310,39 @@ static func result(w: SimWorld, s: Dictionary, ending: String) -> Dictionary:
 		"core_raid": String((s.get("core_raid", {}) as Dictionary).get("phase", "")),
 		"core_raid_failed": String((s.get("core_raid", {}) as Dictionary).get("failed", "")),
 		"conduct_score": Conduct71.score(w), "conduct_ending": conduct_ending, "epilogue": epilogue,
-		"gold_blocked": not Conduct71.gold_ok(w)}
+		"gold_blocked": not Conduct71.gold_ok(w),
+		"efficiency": _efficiency_grades(w, s, won, purged_pts)}
+
+
+## H9 efficiency grades (A..D) for ammo thrift, fire-support accuracy, and mission success.
+static func _efficiency_grades(w: SimWorld, s: Dictionary, won: bool, purged_pts: float) -> Dictionary:
+	var eg: Dictionary = R().get("efficiency", {})
+	var ammo_spent := float(s.get("ammo_spent", 0.0))
+	var ammo_hits := float(s.get("ammo_hits", 0.0))
+	var fire_calls := float(s.get("fire_calls", 0.0))
+	var fire_hits := float(s.get("fire_hits", 0.0))
+	var ammo_acc := ammo_hits / maxf(ammo_spent, 1.0)
+	var fire_acc := fire_hits / maxf(fire_calls, 1.0)
+	var mission := 1.0 if won else 0.35
+	mission = clampf(mission + purged_pts * float(eg.get("mission_purge_w", 0.002)), 0.0, 1.0)
+	return {
+		"ammo": _grade_letter(ammo_acc, eg.get("ammo_cuts", [0.55, 0.35, 0.2])),
+		"fire": _grade_letter(fire_acc, eg.get("fire_cuts", [0.6, 0.4, 0.2])),
+		"mission": _grade_letter(mission, eg.get("mission_cuts", [0.85, 0.6, 0.4])),
+		"ammo_acc": snappedf(ammo_acc, 0.01),
+		"fire_acc": snappedf(fire_acc, 0.01),
+	}
+
+
+static func _grade_letter(v: float, cuts) -> String:
+	var c: Array = cuts if cuts is Array else [0.55, 0.35, 0.2]
+	if v >= float(c[0] if c.size() > 0 else 0.55):
+		return "A"
+	if v >= float(c[1] if c.size() > 1 else 0.35):
+		return "B"
+	if v >= float(c[2] if c.size() > 2 else 0.2):
+		return "C"
+	return "D"
 
 
 ## Top N kill-heat cells as [{cell, n}] for the D6 after-action report.

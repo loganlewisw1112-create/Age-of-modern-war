@@ -51,6 +51,7 @@ var cine_log: Array = []             # [kind] cinematics started (tests / playte
 var _open_checked := false
 var _end_seen := false
 var _end_layer: CanvasLayer = null
+var minimal := false                 # H9: hide most of the HUD for cinematic play (toggle with set_minimal)
 
 
 static func wants(w: SimWorld) -> bool:
@@ -276,6 +277,20 @@ static func lines(d: Dictionary) -> Dictionary:
 		"flags": "  ".join(PackedStringArray(fl))}
 
 
+## H9 minimal HUD: keep title + countdown only; hide creep/cores/flags for cinematic play.
+func set_minimal(on: bool) -> void:
+	minimal = on
+	if _creep_bar != null:
+		_creep_bar.visible = not on
+	if _creep_lbl != null:
+		_creep_lbl.visible = not on
+	if _cores_lbl != null:
+		_cores_lbl.visible = not on
+	if _flags != null:
+		_flags.visible = not on
+	refresh()
+
+
 func refresh() -> void:
 	var w := _world()
 	var d := LastProtocol.hud(w) if w != null else {}
@@ -283,13 +298,18 @@ func refresh() -> void:
 	if d.is_empty() or _title == null:
 		return
 	var t := lines(d)
-	_title.text = t.title
+	_title.text = t.title if not minimal else ("LP  P%d" % int(d.phase))
 	_creep_bar.value = clampf(float(d.creep) / maxf(float(d.critical), 0.001), 0.0, 1.0)
 	_creep_lbl.text = t.creep
 	_cd_lbl.text = t.countdown
 	_cd_lbl.add_theme_color_override("font_color", UiKit.RED if bool(d.final_stage) else UiKit.AMBER)
 	_cores_lbl.text = t.cores
 	_flags.text = t.dread if t.flags == "" else (t.flags if t.dread == "" else t.dread + "   " + t.flags)
+	if minimal:
+		_creep_bar.visible = false
+		_creep_lbl.visible = false
+		_cores_lbl.visible = false
+		_flags.visible = false
 	CineData.note_cores(w)
 	if not _open_checked and mv != null and mv.get("camera") != null and world_override == null:
 		_open_checked = true
@@ -396,6 +416,10 @@ static func end_lines(r: Dictionary, new_bests: Array = []) -> Array:
 		out.append("Secrets  %s" % ", ".join(PackedStringArray(r.secrets)))
 	out.append("Score  %d%s" % [int(r.get("score", 0)), nb.call("score")])
 	out.append("Medal  %s%s" % [String(r.get("medal", "")).to_upper() if String(r.get("medal", "")) != "" else "none", nb.call("medal")])
+	var eff: Dictionary = r.get("efficiency", {})
+	if eff is Dictionary and not eff.is_empty():
+		out.append("Efficiency  ammo %s  fire %s  mission %s" % [
+			String(eff.get("ammo", "-")), String(eff.get("fire", "-")), String(eff.get("mission", "-"))])
 	var rem: Array = r.get("remembered", [])
 	out.append("Remembered: %s" % (", ".join(PackedStringArray(rem)) if not rem.is_empty() else "no one was lost"))
 	return out
