@@ -6,6 +6,9 @@ const RenderSnap = preload("res://sim/render_snap.gd")
 const KEY := "hive71"
 
 static var _reg_owner := 0
+static var _cache: Variant = null
+static var _cache_tick := -999
+const CACHE_EVERY := 4   # rebuild at most every N sim ticks (nests are nearly static)
 
 var mv: Node = null
 var _nests: Array = []
@@ -28,8 +31,12 @@ func _exit_tree() -> void:
 static func snap(w, _sn: Dictionary):
 	if not w.sys_state.has("lp"):
 		return null
+	if _cache != null and w.tick - _cache_tick < CACHE_EVERY:
+		return _cache
 	var st = w.sys_state.get("hive71")
 	if st == null or not (st is Dictionary):
+		_cache = null
+		_cache_tick = w.tick
 		return null
 	var nests: Array = []
 	var relays: Array = []
@@ -45,13 +52,17 @@ static func snap(w, _sn: Dictionary):
 			"links": r.get("links", []),
 		})
 	if nests.is_empty() and relays.is_empty():
+		_cache = null
+		_cache_tick = w.tick
 		return null
-	return {
+	_cache = {
 		"nests": nests,
 		"relays": relays,
 		"iso": (st.get("isolated", {}) as Dictionary).duplicate(),
 		"pulse": bool(st.get("pulse", false)),
 	}
+	_cache_tick = w.tick
+	return _cache
 
 
 func setup(view: Node) -> void:

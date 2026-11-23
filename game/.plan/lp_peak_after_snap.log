@@ -1,0 +1,91 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 Core Profile Context 24.30.74.02.250929 - Compatibility - Using Device: ATI Technologies Inc. - AMD Radeon TM Graphics
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+TERRAIN lazy base + 0 chunks (768x768) height in 1198 ms
+SIM_THREAD mode=on why=ok native=on
+LPDRAW start=true
+LPDRAW peak (bench.lp_peak placement) robots=150 machines=1000 defs=["m_scout_crawler", "m_scout_crawler", "m_walker", "m_scout_crawler", "m_tracked", "m_walker"]
+LPDRAW zoom=0.500 pan=false peak=1000 units=2093
+SIMTHREAD mode=on busy_frames=41 forced_joins=1 snap_ms_per_s=39.42 joins=2 steps=2 k_asked=8 backlog=8.23
+FPS tps=0.0 fps=40.2 engine_fps=29 units=1317 entities=2093 tick=2 sim_ms_per_s=799 view_ms_per_s=816 ent_ms=18.6 proc_ms=565.9 draw_calls=570 zoom=0.50 lod=1 drawn=978 native=on map=768x768
+SIMTHREAD mode=on busy_frames=50 forced_joins=1 snap_ms_per_s=59.27 joins=4 steps=4 k_asked=12 backlog=7.39
+FPS tps=4.0 fps=53.8 engine_fps=47 units=1316 entities=2097 tick=6 sim_ms_per_s=662 view_ms_per_s=639 ent_ms=10.6 proc_ms=266.7 draw_calls=880 zoom=0.50 lod=1 drawn=1204 native=on map=768x768
+SIMTHREAD mode=on busy_frames=60 forced_joins=1 snap_ms_per_s=37.24 joins=2 steps=3 k_asked=6 backlog=18.66
+FPS tps=3.0 fps=61.2 engine_fps=46 units=1313 entities=2098 tick=9 sim_ms_per_s=328 view_ms_per_s=670 ent_ms=9.8 proc_ms=59.0 draw_calls=920 zoom=0.50 lod=1 drawn=1208 native=on map=768x768
+SIMTHREAD mode=on busy_frames=41 forced_joins=1 snap_ms_per_s=42.07 joins=2 steps=2 k_asked=3 backlog=7.75
+FPS tps=1.9 fps=40.9 engine_fps=58 units=1576 entities=2498 tick=11 sim_ms_per_s=1833 view_ms_per_s=2696 ent_ms=61.2 proc_ms=29.6 draw_calls=1754 zoom=0.50 lod=1 drawn=1480 native=on map=768x768
+SIMTHREAD mode=on busy_frames=16 forced_joins=1 snap_ms_per_s=55.25 joins=3 steps=3 k_asked=12 backlog=7.12
+FPS tps=2.9 fps=18.5 engine_fps=12 units=1627 entities=2551 tick=14 sim_ms_per_s=652 view_ms_per_s=302 ent_ms=11.9 proc_ms=118.7 draw_calls=1592 zoom=0.50 lod=1 drawn=1501 native=on map=768x768
+SIMTHREAD mode=on busy_frames=36 forced_joins=1 snap_ms_per_s=50.06 joins=3 steps=3 k_asked=9 backlog=8.26
+FPS tps=3.0 fps=38.7 engine_fps=33 units=1637 entities=2566 tick=17 sim_ms_per_s=702 view_ms_per_s=501 ent_ms=10.5 proc_ms=83.2 draw_calls=1632 zoom=0.50 lod=1 drawn=1506 native=on map=768x768
+SIMTHREAD mode=on busy_frames=34 forced_joins=1 snap_ms_per_s=75.79 joins=4 steps=4 k_asked=12 backlog=7.24
+FPS tps=3.9 fps=36.9 engine_fps=39 units=1650 entities=2582 tick=21 sim_ms_per_s=781 view_ms_per_s=521 ent_ms=11.8 proc_ms=87.1 draw_calls=1640 zoom=0.50 lod=1 drawn=1515 native=on map=768x768
+SIMTHREAD mode=on busy_frames=25 forced_joins=1 snap_ms_per_s=84.78 joins=3 steps=3 k_asked=6 backlog=5.60
+FPS tps=2.9 fps=27.2 engine_fps=29 units=1646 entities=2578 tick=24 sim_ms_per_s=820 view_ms_per_s=537 ent_ms=17.0 proc_ms=100.3 draw_calls=1634 zoom=0.50 lod=1 drawn=1519 native=on map=768x768
+SIMTHREAD mode=on busy_frames=19 forced_joins=1 snap_ms_per_s=75.82 joins=4 steps=4 k_asked=15 backlog=6.80
+FPS tps=4.0 fps=22.8 engine_fps=16 units=1643 entities=2575 tick=28 sim_ms_per_s=755 view_ms_per_s=374 ent_ms=13.8 proc_ms=125.3 draw_calls=1654 zoom=0.50 lod=1 drawn=1520 native=on map=768x768
+SIMTHREAD mode=on busy_frames=31 forced_joins=1 snap_ms_per_s=59.31 joins=3 steps=3 k_asked=9 backlog=8.47
+FPS tps=3.0 fps=33.8 engine_fps=34 units=1640 entities=2573 tick=31 sim_ms_per_s=643 view_ms_per_s=521 ent_ms=11.9 proc_ms=78.4 draw_calls=1656 zoom=0.50 lod=1 drawn=1521 native=on map=768x768
+SIMTHREAD mode=on busy_frames=30 forced_joins=1 snap_ms_per_s=70.01 joins=4 steps=4 k_asked=12 backlog=7.70
+FPS tps=4.0 fps=34.0 engine_fps=32 units=1633 entities=2566 tick=35 sim_ms_per_s=686 view_ms_per_s=511 ent_ms=12.7 proc_ms=124.4 draw_calls=1666 zoom=0.50 lod=1 drawn=1522 native=on map=768x768
+SIMTHREAD mode=on busy_frames=30 forced_joins=1 snap_ms_per_s=72.64 joins=4 steps=4 k_asked=12 backlog=9.29
+FPS tps=4.0 fps=33.8 engine_fps=34 units=1630 entities=2563 tick=39 sim_ms_per_s=617 view_ms_per_s=511 ent_ms=12.6 proc_ms=93.0 draw_calls=1677 zoom=0.50 lod=1 drawn=1524 native=on map=768x768
+SIMTHREAD mode=on busy_frames=33 forced_joins=1 snap_ms_per_s=73.42 joins=4 steps=4 k_asked=12 backlog=9.41
+FPS tps=4.0 fps=37.0 engine_fps=36 units=1620 entities=2555 tick=43 sim_ms_per_s=698 view_ms_per_s=501 ent_ms=11.3 proc_ms=82.0 draw_calls=1658 zoom=0.50 lod=1 drawn=1524 native=on map=768x768
+SIMTHREAD mode=on busy_frames=34 forced_joins=1 snap_ms_per_s=83.88 joins=5 steps=5 k_asked=15 backlog=7.75
+FPS tps=4.9 fps=38.6 engine_fps=38 units=1613 entities=2548 tick=48 sim_ms_per_s=756 view_ms_per_s=506 ent_ms=10.8 proc_ms=67.3 draw_calls=1686 zoom=0.50 lod=1 drawn=1528 native=on map=768x768
+SIMTHREAD mode=on busy_frames=32 forced_joins=1 snap_ms_per_s=74.07 joins=4 steps=4 k_asked=12 backlog=8.17
+FPS tps=4.0 fps=35.6 engine_fps=36 units=1607 entities=2544 tick=52 sim_ms_per_s=695 view_ms_per_s=507 ent_ms=11.9 proc_ms=78.9 draw_calls=1680 zoom=0.50 lod=1 drawn=1527 native=on map=768x768
+SIMTHREAD mode=on busy_frames=36 forced_joins=1 snap_ms_per_s=79.35 joins=5 steps=5 k_asked=15 backlog=6.32
+FPS tps=4.8 fps=39.3 engine_fps=40 units=1597 entities=2532 tick=57 sim_ms_per_s=775 view_ms_per_s=510 ent_ms=10.6 proc_ms=72.7 draw_calls=1675 zoom=0.50 lod=1 drawn=1537 native=on map=768x768
+SIMTHREAD mode=on busy_frames=33 forced_joins=1 snap_ms_per_s=52.78 joins=3 steps=3 k_asked=9 backlog=10.10
+FPS tps=2.9 fps=35.3 engine_fps=37 units=1590 entities=2525 tick=60 sim_ms_per_s=615 view_ms_per_s=537 ent_ms=11.7 proc_ms=73.3 draw_calls=1698 zoom=0.50 lod=1 drawn=1542 native=on map=768x768
+SIMTHREAD mode=on busy_frames=30 forced_joins=1 snap_ms_per_s=70.64 joins=4 steps=4 k_asked=12 backlog=7.31
+FPS tps=4.0 fps=34.0 engine_fps=34 units=1580 entities=2522 tick=64 sim_ms_per_s=794 view_ms_per_s=508 ent_ms=12.4 proc_ms=130.1 draw_calls=1732 zoom=0.50 lod=1 drawn=1543 native=on map=768x768
+SIMTHREAD mode=on busy_frames=32 forced_joins=1 snap_ms_per_s=55.50 joins=3 steps=3 k_asked=9 backlog=7.73
+FPS tps=2.8 fps=32.8 engine_fps=36 units=1568 entities=2517 tick=67 sim_ms_per_s=724 view_ms_per_s=518 ent_ms=13.3 proc_ms=88.6 draw_calls=1760 zoom=0.50 lod=1 drawn=1548 native=on map=768x768
+SIMTHREAD mode=on busy_frames=32 forced_joins=1 snap_ms_per_s=70.71 joins=4 steps=4 k_asked=12 backlog=6.58
+FPS tps=3.9 fps=35.0 engine_fps=30 units=1562 entities=2515 tick=71 sim_ms_per_s=729 view_ms_per_s=509 ent_ms=12.0 proc_ms=117.3 draw_calls=1763 zoom=0.50 lod=1 drawn=1559 native=on map=768x768
+SIMTHREAD mode=on busy_frames=31 forced_joins=1 snap_ms_per_s=54.13 joins=3 steps=3 k_asked=9 backlog=9.16
+FPS tps=3.0 fps=33.5 engine_fps=36 units=1550 entities=2505 tick=74 sim_ms_per_s=661 view_ms_per_s=501 ent_ms=12.4 proc_ms=73.2 draw_calls=1769 zoom=0.50 lod=1 drawn=1563 native=on map=768x768
+SIMTHREAD mode=on busy_frames=32 forced_joins=1 snap_ms_per_s=83.82 joins=5 steps=5 k_asked=15 backlog=6.99
+FPS tps=4.9 fps=36.4 engine_fps=34 units=1546 entities=2503 tick=79 sim_ms_per_s=760 view_ms_per_s=500 ent_ms=11.2 proc_ms=80.5 draw_calls=1779 zoom=0.50 lod=1 drawn=1569 native=on map=768x768
+SIMTHREAD mode=on busy_frames=31 forced_joins=1 snap_ms_per_s=72.27 joins=4 steps=4 k_asked=12 backlog=7.20
+FPS tps=3.9 fps=34.3 engine_fps=37 units=1540 entities=2497 tick=83 sim_ms_per_s=685 view_ms_per_s=507 ent_ms=12.2 proc_ms=75.6 draw_calls=1798 zoom=0.50 lod=1 drawn=1567 native=on map=768x768
+SIMTHREAD mode=on busy_frames=28 forced_joins=1 snap_ms_per_s=78.65 joins=4 steps=4 k_asked=12 backlog=6.98
+FPS tps=4.0 fps=31.9 engine_fps=33 units=1530 entities=2491 tick=87 sim_ms_per_s=734 view_ms_per_s=495 ent_ms=12.7 proc_ms=93.9 draw_calls=1797 zoom=0.50 lod=1 drawn=1568 native=on map=768x768
+SIMTHREAD mode=on busy_frames=31 forced_joins=1 snap_ms_per_s=69.88 joins=4 steps=4 k_asked=12 backlog=7.62
+FPS tps=3.9 fps=34.1 engine_fps=33 units=1517 entities=2478 tick=91 sim_ms_per_s=655 view_ms_per_s=513 ent_ms=11.4 proc_ms=76.3 draw_calls=1795 zoom=0.50 lod=1 drawn=1573 native=on map=768x768
+SIMTHREAD mode=on busy_frames=30 forced_joins=1 snap_ms_per_s=70.38 joins=4 steps=4 k_asked=12 backlog=7.30
+FPS tps=3.9 fps=33.0 engine_fps=32 units=1510 entities=2479 tick=95 sim_ms_per_s=676 view_ms_per_s=499 ent_ms=12.4 proc_ms=104.1 draw_calls=1828 zoom=0.50 lod=1 drawn=1588 native=on map=768x768
+SIMTHREAD mode=on busy_frames=26 forced_joins=1 snap_ms_per_s=79.84 joins=4 steps=4 k_asked=9 backlog=5.45
+FPS tps=4.0 fps=30.0 engine_fps=35 units=1496 entities=2470 tick=99 sim_ms_per_s=748 view_ms_per_s=507 ent_ms=14.1 proc_ms=72.5 draw_calls=1783 zoom=0.50 lod=1 drawn=1591 native=on map=768x768
+SIMTHREAD mode=on busy_frames=29 forced_joins=1 snap_ms_per_s=58.01 joins=3 steps=3 k_asked=12 backlog=8.56
+FPS tps=2.9 fps=31.5 engine_fps=28 units=1487 entities=2461 tick=102 sim_ms_per_s=621 view_ms_per_s=496 ent_ms=13.2 proc_ms=106.7 draw_calls=1818 zoom=0.50 lod=1 drawn=1595 native=on map=768x768
+SIMTHREAD mode=on busy_frames=27 forced_joins=1 snap_ms_per_s=69.00 joins=4 steps=4 k_asked=12 backlog=9.32
+FPS tps=3.9 fps=30.4 engine_fps=32 units=1472 entities=2450 tick=106 sim_ms_per_s=690 view_ms_per_s=491 ent_ms=13.3 proc_ms=76.8 draw_calls=1807 zoom=0.50 lod=1 drawn=1600 native=on map=768x768
+SIMTHREAD mode=on busy_frames=28 forced_joins=1 snap_ms_per_s=60.62 joins=3 steps=3 k_asked=9 backlog=11.30
+FPS tps=3.0 fps=30.9 engine_fps=31 units=1463 entities=2443 tick=109 sim_ms_per_s=577 view_ms_per_s=503 ent_ms=13.7 proc_ms=90.1 draw_calls=1806 zoom=0.50 lod=1 drawn=1600 native=on map=768x768
+SIMTHREAD mode=on busy_frames=26 forced_joins=1 snap_ms_per_s=83.76 joins=4 steps=4 k_asked=12 backlog=7.24
+FPS tps=3.9 fps=29.3 engine_fps=30 units=1452 entities=2433 tick=113 sim_ms_per_s=896 view_ms_per_s=504 ent_ms=14.4 proc_ms=103.0 draw_calls=1771 zoom=0.50 lod=1 drawn=1596 native=on map=768x768
+SIMTHREAD mode=on busy_frames=27 forced_joins=1 snap_ms_per_s=76.17 joins=4 steps=4 k_asked=12 backlog=6.68
+FPS tps=3.8 fps=29.6 engine_fps=31 units=1443 entities=2426 tick=117 sim_ms_per_s=678 view_ms_per_s=492 ent_ms=13.7 proc_ms=81.1 draw_calls=1784 zoom=0.50 lod=1 drawn=1598 native=on map=768x768
+SIMTHREAD mode=on busy_frames=26 forced_joins=1 snap_ms_per_s=65.18 joins=3 steps=3 k_asked=9 backlog=10.54
+FPS tps=2.9 fps=28.3 engine_fps=28 units=1438 entities=2425 tick=120 sim_ms_per_s=544 view_ms_per_s=539 ent_ms=14.7 proc_ms=122.6 draw_calls=1803 zoom=0.50 lod=1 drawn=1600 native=on map=768x768
+SIMTHREAD mode=on busy_frames=26 forced_joins=1 snap_ms_per_s=61.04 joins=3 steps=3 k_asked=9 backlog=11.34
+FPS tps=2.9 fps=28.5 engine_fps=29 units=1429 entities=2418 tick=123 sim_ms_per_s=590 view_ms_per_s=485 ent_ms=14.2 proc_ms=121.5 draw_calls=1815 zoom=0.50 lod=1 drawn=1601 native=on map=768x768
+SIMTHREAD mode=on busy_frames=30 forced_joins=1 snap_ms_per_s=67.29 joins=4 steps=4 k_asked=12 backlog=7.32
+FPS tps=3.9 fps=32.9 engine_fps=32 units=1412 entities=2414 tick=127 sim_ms_per_s=890 view_ms_per_s=491 ent_ms=12.2 proc_ms=76.0 draw_calls=1850 zoom=0.50 lod=1 drawn=1608 native=on map=768x768
+SIMTHREAD mode=on busy_frames=29 forced_joins=1 snap_ms_per_s=77.40 joins=4 steps=4 k_asked=12 backlog=7.82
+FPS tps=3.9 fps=32.2 engine_fps=32 units=1402 entities=2406 tick=131 sim_ms_per_s=628 view_ms_per_s=514 ent_ms=13.3 proc_ms=100.5 draw_calls=1824 zoom=0.50 lod=1 drawn=1607 native=on map=768x768
+SIMTHREAD mode=on busy_frames=29 forced_joins=1 snap_ms_per_s=68.35 joins=4 steps=4 k_asked=12 backlog=7.98
+FPS tps=3.9 fps=32.6 engine_fps=33 units=1395 entities=2402 tick=135 sim_ms_per_s=700 view_ms_per_s=522 ent_ms=13.2 proc_ms=79.5 draw_calls=1829 zoom=0.50 lod=1 drawn=1610 native=on map=768x768
+SIMTHREAD mode=on busy_frames=27 forced_joins=1 snap_ms_per_s=79.18 joins=4 steps=4 k_asked=12 backlog=8.24
+FPS tps=3.9 fps=30.5 engine_fps=30 units=1385 entities=2396 tick=139 sim_ms_per_s=680 view_ms_per_s=504 ent_ms=13.7 proc_ms=102.8 draw_calls=1800 zoom=0.50 lod=1 drawn=1610 native=on map=768x768
+SIMTHREAD mode=on busy_frames=28 forced_joins=1 snap_ms_per_s=84.70 joins=4 steps=4 k_asked=12 backlog=6.34
+FPS tps=3.9 fps=31.1 engine_fps=32 units=1373 entities=2387 tick=143 sim_ms_per_s=760 view_ms_per_s=511 ent_ms=13.6 proc_ms=96.2 draw_calls=1837 zoom=0.50 lod=1 drawn=1611 native=on map=768x768
+SIMTHREAD mode=on busy_frames=26 forced_joins=1 snap_ms_per_s=81.48 joins=4 steps=4 k_asked=12 backlog=7.86
+FPS tps=4.0 fps=29.7 engine_fps=30 units=1368 entities=2380 tick=147 sim_ms_per_s=632 view_ms_per_s=482 ent_ms=13.4 proc_ms=91.3 draw_calls=1828 zoom=0.50 lod=1 drawn=1616 native=on map=768x768
+FPS_SUMMARY samples=37 avg=32.6 min=18.5 p10=28.3 max=40.9 zoom=0.50 lod=1 native=on
