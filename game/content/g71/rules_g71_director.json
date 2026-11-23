@@ -37,6 +37,12 @@
       "jam_radius": 2.5,
       "jam_s": 5.0,
       "forecast_base_s": 30.0,
+      "supply_at": 0.45,
+      "supply_every_s": 90.0,
+      "wall_fatigue_gain": 0.04,
+      "wall_fatigue_rest": 0.02,
+      "wall_crack_at": 0.85,
+      "sally_dread": 0.45,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",

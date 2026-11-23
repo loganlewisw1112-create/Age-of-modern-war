@@ -28,6 +28,7 @@ const LpWorld = preload("res://sim/systems/lp_world.gd")
 const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 (CR seq 3297): wall patrols
 const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1–C6 director / siege
 const Turrets71 = preload("res://sim/systems/turrets71.gd")
+const Supply8 = preload("res://sim/systems/supply8.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -104,6 +105,7 @@ static func setup(w: SimWorld) -> Dictionary:
 	mfid = mfid if mfid >= 0 else 1
 	s = {"ver": VER, "fid": fid, "mfid": mfid, "t0": w.tick, "rebuild": [], "routes_closed": [], "secrets_found": [],
 		"adapt": {}, "adapt_last": {}, "objectives": [], "intel": {},
+		"wall_fatigue": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "wall_crack": [],
 		"remembered": [], "roster": {}, "warn": {"creep": [], "cd": []}, "filled": false, "teams_total": 0,
 		"teams_lost": 0, "extractions": 0, "purged_cells": 0, "creep_peak": 0.0, "phase": 0, "frac": 0.0,
 		"weavers": false, "tide": false, "tide_t": -1, "posture": "normal", "posture_override": "", "defence_ai": true,
@@ -197,6 +199,12 @@ static func tick(w: SimWorld) -> void:
 			_siege_specials(w, s)
 		if (w.tick + 37) % _t(5.0) == 0:
 			_forecast(w, s)
+		if (w.tick + 41) % _t(float(Director71.rules().get("supply_every_s", 90.0))) == 0:
+			_scheduled_supply(w, s)
+		if (w.tick + 43) % _t(2.0) == 0:
+			_wall_life(w, s)
+		if (w.tick + 47) % _t(4.0) == 0:
+			_counter_attacks(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -264,6 +272,8 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 						var aline := Director71.overmind_line(akey)
 						if aline != "":
 							w.emit("OvermindSay", {"key": akey, "line": aline, "dread": float(s.get("dread", 0.0)), "counter": counter})
+					if Director71.siege_kind(String(ev.get("def", ""))) == "sapper":
+						_complete_objective(w, s, "sally_sapper", {})
 				LpDefence.note_destroyed(w, s, ev)
 			"LpRingBreached":
 				_push_objective(w, s, "hold_fallback", "Hold the fallback after %s fell" % String(ev.get("name", "a ring")),
@@ -275,6 +285,8 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				_complete_objective(w, s, "retake_turret", {"id": int(ev.get("id", -1))})
 			"LpRingRestored":
 				_complete_objective(w, s, "hold_fallback", {"ring": int(ev.get("ring", -1))})
+			"Supply8Delivered", "Supply8OpEnded":
+				_complete_objective(w, s, "protect_drop", {})
 
 
 ## Meters, phase, Weavers, Tide (cadence think_every).
@@ -538,6 +550,73 @@ static func _note_intel(w: SimWorld, s: Dictionary, def_id: String, bucket: Stri
 	w.emit("LpIntel", entry.duplicate(true))
 
 
+## D3 wall life: per-sector fatigue under pressure; crack when a face is held too long.
+static func _wall_life(w: SimWorld, s: Dictionary) -> void:
+	if not s.has("wall_fatigue") or not (s.wall_fatigue is Array) or (s.wall_fatigue as Array).size() != 8:
+		s.wall_fatigue = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	if not s.has("wall_crack") or not (s.wall_crack is Array):
+		s.wall_crack = []
+	var sc: Dictionary = LpDefence.scan(w, s)
+	var secs: Array = sc.sectors as Array
+	var fat: Array = s.wall_fatigue
+	var cracked: Array = s.wall_crack
+	var thr := Director71.wall_crack_at()
+	for k in 8:
+		var next := Director71.wall_fatigue_step(float(fat[k]), int(secs[k]) > 0)
+		fat[k] = next
+		if next >= thr and not cracked.has(k):
+			cracked.append(k)
+			var at: Vector2 = LpDefence.sector_point(s, 0, k)
+			w.emit("LpSectorCrack", {"sector": k, "name": Director71.face_name(k), "fatigue": next, "pos": at})
+			_push_objective(w, s, "rotate_sector", "Rotate fresh squads onto the %s face" % Director71.face_name(k),
+				{"sector": k})
+		elif next < thr * 0.5 and cracked.has(k):
+			cracked.erase(k)
+			_complete_objective(w, s, "rotate_sector", {"sector": k})
+	s.wall_crack = cracked
+
+
+## D3 counter-attacks: when a sapper digs at the wall, open a sally objective.
+static func _counter_attacks(w: SimWorld, s: Dictionary) -> void:
+	if float(s.get("dread", 0.0)) < float(Director71.rules().get("sally_dread", 0.45)):
+		return
+	for o in (s.get("objectives", []) as Array):
+		if String(o.get("kind", "")) == "sally_sapper" and not bool(o.get("done", false)):
+			return
+	var outer: Rect2i = s.base.rings[0].rect
+	var near := outer.grow(6)
+	for e in w.units_of(int(s.mfid)):
+		if Director71.siege_kind(String(e.get("def", ""))) != "sapper":
+			continue
+		var cell := Vector2i(int(floor(e.pos.x)), int(floor(e.pos.y)))
+		if not near.has_point(cell):
+			continue
+		var face := LpDefence._sector(s, Vector2(e.pos))
+		var title := "Sally out — smash the sapper on the %s face" % Director71.face_name(face)
+		_push_objective(w, s, "sally_sapper", title, {"id": int(e.id), "sector": face})
+		w.emit("LpCounterAttack", {"kind": "sapper", "id": int(e.id), "sector": face, "title": title, "pos": e.pos})
+		return
+
+
+## D2 siege economy: schedule a Supply8 airdrop when dread is high and a magazine can take one.
+static func _scheduled_supply(w: SimWorld, s: Dictionary) -> void:
+	if float(s.get("dread", 0.0)) < float(Director71.rules().get("supply_at", 0.45)):
+		return
+	for o in (s.get("objectives", []) as Array):
+		if String(o.get("kind", "")) == "protect_drop" and not bool(o.get("done", false)):
+			return  # one inbound drop at a time
+	var facs: Array = Supply8.facs_of(w, int(s.fid))
+	if facs.is_empty():
+		return
+	var fac := int(facs[0])
+	var why := Supply8.order_reason(w, int(s.fid), fac)
+	if why != "":
+		return
+	w.submit({"type": "sup8_order", "issuer": int(s.fid), "ai_cmd": "lp"})
+	_push_objective(w, s, "protect_drop", "Protect the inbound supply drop", {"fac": fac})
+	w.emit("LpSupplyDrop", {"fac": fac, "dread": float(s.get("dread", 0.0))})
+
+
 ## D6 threat forecast: write a short line onto the HUD from the next siege roster.
 static func _forecast(w: SimWorld, s: Dictionary) -> void:
 	var sc: Dictionary = LpDefence.scan(w, s)
@@ -747,6 +826,7 @@ static func hud(w: SimWorld) -> Dictionary:
 		"break_point": bool(s.get("break_point", false)), "counter": Director71.counter_for(s),
 		"sync_n": int(s.get("sync_n", 0)), "forecast": String(s.get("forecast", "")),
 		"pile_n": (s.get("pile_pos", []) as Array).size(),
+		"wall_crack_n": (s.get("wall_crack", []) as Array).size(),
 		"objectives": _hud_objectives(s), "intel_n": (s.get("intel", {}) as Dictionary).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 

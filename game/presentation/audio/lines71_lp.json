@@ -9,6 +9,9 @@
     "lp71.overmind": {"text": "{0}", "cat": "overmind", "prio": 90, "cd": 20.0},
     "lp71.sector_breach": {"text": "Sector {0} is breaking!", "cat": "alert", "prio": 85, "cd": 15.0},
     "lp71.turret_down": {"text": "Turret down — retake it!", "cat": "alert", "prio": 80, "cd": 10.0},
-    "lp71.hive_sync": {"text": "Machines locking formation — kill the Conductor!", "cat": "intel", "prio": 72, "cd": 20.0}
+    "lp71.hive_sync": {"text": "Machines locking formation — kill the Conductor!", "cat": "intel", "prio": 72, "cd": 20.0},
+    "lp71.supply_drop": {"text": "Inbound supply drop — protect the flight!", "cat": "command", "prio": 78, "cd": 20.0},
+    "lp71.sector_crack": {"text": "Sector {0} is cracking — rotate fresh squads!", "cat": "alert", "prio": 82, "cd": 18.0},
+    "lp71.counter_attack": {"text": "Counter-attack: {0}", "cat": "command", "prio": 76, "cd": 12.0}
   }
 }

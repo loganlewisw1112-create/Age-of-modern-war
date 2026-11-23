@@ -262,6 +262,25 @@ static func pile_min() -> int:
 	return int(rules().get("pile_min", 3))
 
 
+## Compass face label for sector 0..7 (same order as forecast).
+static func face_name(sector: int) -> String:
+	var names := ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+	return names[clampi(sector, 0, 7)]
+
+
+## D3 wall-life: fatigue rises under pressure, rests when quiet. Pure.
+static func wall_fatigue_step(cur: float, threatened: bool) -> float:
+	var gain := float(rules().get("wall_fatigue_gain", 0.04))
+	var rest := float(rules().get("wall_fatigue_rest", 0.02))
+	if threatened:
+		return clampf(cur + gain, 0.0, 1.0)
+	return clampf(cur - rest, 0.0, 1.0)
+
+
+static func wall_crack_at() -> float:
+	return float(rules().get("wall_crack_at", 0.85))
+
+
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
 static func counter_for(s: Dictionary) -> String:
 	var a = s.get("adapt", {})

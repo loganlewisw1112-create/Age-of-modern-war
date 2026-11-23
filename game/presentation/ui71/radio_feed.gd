@@ -112,6 +112,12 @@ func handle_events(evs: Array, w = null) -> void:
 			"LpHiveSync":
 				if int(ev.get("n", 0)) > 0 and int(ev.get("conductors", 0)) > 0:
 					_say("lp71.hive_sync", _pos(ev, w), {})
+			"LpSupplyDrop":
+				_say("lp71.supply_drop", _pos(ev, w), {})
+			"LpSectorCrack":
+				_say("lp71.sector_crack", _pos(ev, w), {"0": String(ev.get("name", str(int(ev.get("sector", 0)))))})
+			"LpCounterAttack":
+				_say("lp71.counter_attack", _pos(ev, w), {"0": String(ev.get("title", "sally out"))})
 			_:
 				if MAP.has(ty) and int(ev.get("owner", -1)) == fid:
 					_say(String(MAP[ty]), _pos(ev, w), {})

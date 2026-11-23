@@ -39,7 +39,10 @@ breaking-point, logistics, regrow, adapt, C3/C4 units, sync, reclaim, wreck cove
 - D1 mid-siege objectives + D6 hive intel (2026-11-22): ring breach / disabled turret / lost CN call-sign open objectives; revive/restore closes them; first kill of each Machine def fills `intel` codex. HUD shows OBJ + INTEL. `test_director71` 6/0; `test_lpmode7` 18/0.
 - D4 LP radio lines (2026-11-22): `lines71_lp.json` + radio_feed handles breaking-point, forecast, objectives, intel, Overmind, ring breach, turret down, hive sync. `test_director71` 6/0; `test_army71` radio still 15/0.
 - LP save/resume for director fields (2026-11-22): dread / break_point / adapt / forecast / intel round-trip via `to_dict`/`from_dict` and keep the same future hash. `test_director71` 6/0; `test_lpreserve7` 7/0.
+- D2 scheduled Supply8 drops (2026-11-22): at dread >= supply_at every supply_every_s, LP orders a magazine drop when ready, opens `protect_drop`, clears on Supply8Delivered/OpEnded; radio `lp71.supply_drop`.
+- D3 wall-life stubs (2026-11-22): per-face fatigue / crack (`LpSectorCrack`, rotate objective); sapper-near-wall sally objective (`LpCounterAttack`); HUD WALL CRACK count. `test_director71` 7/0; `test_lpmode7` 18/0.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
+
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).
 - Waves 3–6 are not started: hive director, robot fleet, core raids, save/resume, the look checkpoint, animation,

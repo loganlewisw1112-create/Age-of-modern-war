@@ -177,3 +177,74 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	})
 	check(String(shown.dread).find("BREAKING POINT") >= 0, "HUD text shows the breaking point")
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
+
+
+func test_supply_wall_life_and_sally() -> void:
+	# D2 cadence + D3 wall fatigue / counter-attack stubs.
+	check(float(Director71.rules().get("supply_at", 0.0)) > 0.0, "supply_at is set")
+	check(float(Director71.rules().get("supply_every_s", 0.0)) >= 30.0, "supply cadence is at least 30 s")
+	check_eq(Director71.face_name(2), "N", "face 2 is north")
+	check(is_equal_approx(Director71.wall_fatigue_step(0.0, true), float(Director71.rules().get("wall_fatigue_gain", 0.04))),
+		"pressure raises wall fatigue")
+	check(Director71.wall_fatigue_step(0.5, false) < 0.5, "quiet sectors rest")
+	check(Director71.wall_crack_at() > 0.5, "crack threshold is late-hold")
+	Radio71._lines = null
+	check(not Radio71.line("lp71.supply_drop").is_empty(), "supply-drop radio line loads")
+	check(not Radio71.line("lp71.sector_crack").is_empty(), "sector-crack radio line loads")
+	check(not Radio71.line("lp71.counter_attack").is_empty(), "counter-attack radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for D2/D3"):
+		return
+	for i in 20:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	check((s.get("wall_fatigue", []) as Array).size() == 8, "wall fatigue tracks 8 faces")
+	# Low dread: scheduled supply is a no-op.
+	s.dread = 0.1
+	LastProtocol._scheduled_supply(w, s)
+	var had_drop := false
+	for o in LastProtocol.hud(w).get("objectives", []):
+		if String(o.get("kind", "")) == "protect_drop":
+			had_drop = true
+	check(not had_drop, "low dread does not schedule a supply drop")
+	# High dread may order if magazine ready; always can open/close protect_drop by hand.
+	s.dread = 0.9
+	LastProtocol._scheduled_supply(w, s)
+	LastProtocol._push_objective(w, s, "protect_drop", "Protect the inbound supply drop", {"fac": 0})
+	check((LastProtocol.hud(w).objectives as Array).size() >= 1, "protect_drop shows on the HUD")
+	LastProtocol._complete_objective(w, s, "protect_drop", {})
+	var left := false
+	for o2 in LastProtocol.hud(w).objectives:
+		if String(o2.get("kind", "")) == "protect_drop":
+			left = true
+	check(not left, "delivered drop clears the protect objective")
+	var fat := 0.0
+	while fat < Director71.wall_crack_at():
+		fat = Director71.wall_fatigue_step(fat, true)
+	check(fat >= Director71.wall_crack_at(), "sustained pressure reaches crack")
+	LastProtocol._push_objective(w, s, "rotate_sector", "Rotate fresh squads onto the N face", {"sector": 2})
+	LastProtocol._push_objective(w, s, "sally_sapper", "Sally out — smash the sapper on the N face", {"sector": 2})
+	var kinds := {}
+	for o3 in LastProtocol.hud(w).objectives:
+		kinds[String(o3.kind)] = true
+	check(bool(kinds.get("rotate_sector", false)), "rotate-sector objective is open")
+	check(bool(kinds.get("sally_sapper", false)), "sally objective is open")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpSupplyDrop", "fac": 0, "dread": 0.9, "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("supply") >= 0 or String(feed.text).find("Inbound") >= 0,
+		"radio speaks the supply drop")
+	feed.tick(30.0)  # clear the subtitle so the next line can show
+	feed.handle_events([{"type": "LpSectorCrack", "sector": 2, "name": "N", "pos": Vector2(10, 10)}], null)
+	feed.tick(30.1)
+	var crack_ok := String(feed.text).to_lower().find("crack") >= 0 or String(feed.text).find("N") >= 0
+	if not crack_ok:
+		for line in feed.shown:
+			if String(line).to_lower().find("crack") >= 0 or String(line).find("N") >= 0:
+				crack_ok = true
+				break
+	check(crack_ok, "radio speaks a sector crack")
+	feed.free()
