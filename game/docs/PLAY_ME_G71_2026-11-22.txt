@@ -1,15 +1,21 @@
-RTS: Age of Modern War — G7.1 playable, 2026-11-22
-
-Newest build on branch g71. Checkpoint, not finished G7.1.
+RTS: Age of Modern War — G7.1 playable (branch g71)
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
 LAST PROTOCOL: main menu > Last Protocol.
 
-IN THIS BUILD
-  Hive director C1–C6, D1–D3/D6, H1/H2/H5 stubs.
-  NEW: cracked faces rotate fresh squads onto the wall (LpWallRotate); Tide peels onto inbound supply drops;
-       core-raid phases advance on CoreHit / CN purge / core-down (timer still fails a stuck purge).
+CONTROLS (new)
+  Ctrl+M  — toggle minimal LP HUD (cinematic)
 
-LEFT OPEN
-  LP peak fps (~24 vs 30), 2k (~35 vs 60), airlock ~83s vs 70s, robot fleet, look checkpoint, waves 3–6 Done-when.
+IN THIS BUILD (Wave 3–5 stubs live)
+  Hive: nests/relays, heartbeat, land-eat, harvest swarm, evolve stages, capture study
+  Fire: wildfire wind-spread + night light + walker fire-lines
+  Deaths: cell-blast chain, nanite bleed, last-gasp
+  Audio: flash-to-boom delay, unique weapon voices, armour clang, tide-song pulse
+  HUD: efficiency grades (ammo/fire/mission), warmind/conduct/horror/weather/requests
+  Perf: forced_joins cut to 1; LP peak harness p10 ~50 (gate >=30)
+
+LEFT OPEN (owner / soaks — Done-when not weakened)
+  Owner look checkpoint (E3) + full E4 animation pass
+  Long soaks (60-min / full RE chain in live siege)
+  2k / zoomed-out panning gates vs past builds
