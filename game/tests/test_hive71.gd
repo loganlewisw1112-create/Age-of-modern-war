@@ -18,3 +18,15 @@ func test_relay_cut_isolates_and_prod_mult() -> void:
 	Hive71.cut_relay(w, "r0")
 	check(Hive71.is_isolated(w, "n0"), "n0 isolated after cut")
 	check(Hive71.is_isolated(w, "n1"), "n1 isolated after cut")
+
+
+func test_heartbeat_pulses() -> void:
+	var c := LastProtocol.make_config(85, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP"):
+		return
+	var beats0 := 0
+	for i in 120:
+		w.step()
+		beats0 = maxi(beats0, int(Hive71.board(w).get("beat", 0)))
+	check(beats0 >= 1, "heartbeat fired at least once")

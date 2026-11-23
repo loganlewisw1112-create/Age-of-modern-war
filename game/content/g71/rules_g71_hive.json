@@ -3,7 +3,12 @@
   "rules": {
     "g71_hive": {
       "prod_base": 1.0,
-      "prod_per_creep": 0.8
+      "prod_per_creep": 0.8,
+      "beat_ticks": 90,
+      "beat_dread_cut": 40,
+      "eat_every": 45,
+      "eat_min_cov": 0.08,
+      "eat_per": 2
     }
   }
 }

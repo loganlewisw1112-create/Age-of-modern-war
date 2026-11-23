@@ -18,7 +18,7 @@ static func active(w: SimWorld) -> bool:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "nests": {}, "relays": {}, "isolated": {}}
+		s = {"ver": VER, "nests": {}, "relays": {}, "isolated": {}, "beat": 0, "eaten": 0, "pulse": false}
 		w.sys_state[KEY] = s
 	return s
 
@@ -32,6 +32,9 @@ static func board(w: SimWorld) -> Dictionary:
 		"relays": (s.relays as Dictionary).size(),
 		"isolated": (s.isolated as Dictionary).size(),
 		"prod_mult": prod_mult(w),
+		"beat": int(s.get("beat", 0)),
+		"pulse": bool(s.get("pulse", false)),
+		"eaten": int(s.get("eaten", 0)),
 	}
 
 
@@ -102,3 +105,63 @@ static func tick(w: SimWorld) -> void:
 	for nid in drop:
 		iso.erase(nid)
 	s.isolated = iso
+	_heartbeat(w, s)
+	_eat_land(w, s)
+
+
+## I6 hive heartbeat: a learnable pulse tied to dread; director can shift period after feints later.
+static func _heartbeat(w: SimWorld, s: Dictionary) -> void:
+	var dread := float(w.sys_state.lp.get("dread", 0.0))
+	var base_period := int(R().get("beat_ticks", 90))
+	var period := maxi(base_period - int(dread * float(R().get("beat_dread_cut", 40))), 30)
+	var phase := w.tick % period
+	var pulse := phase == 0
+	s.pulse = pulse
+	if pulse:
+		s.beat = int(s.get("beat", 0)) + 1
+		w.emit("Hive71Heartbeat", {"beat": int(s.beat), "period": period, "dread": snappedf(dread, 0.01)})
+
+
+## I6 creep eats the land: convert nearby wrecks / forest cells into creep seeds (starves the map).
+static func _eat_land(w: SimWorld, s: Dictionary) -> void:
+	var every := maxi(int(R().get("eat_every", 45)), 1)
+	if w.tick % every != 11:
+		return
+	var Creep = preload("res://sim/systems/creep.gd")
+	var cov := Creep.coverage(w)
+	if cov < float(R().get("eat_min_cov", 0.08)):
+		return
+	var n_eat := 0
+	# Prefer wrecks first.
+	for id in w.entities.keys():
+		if n_eat >= int(R().get("eat_per", 2)):
+			break
+		var x = w.entities[id]
+		if x == null or String(x.get("kind", "")) != "wreck":
+			continue
+		Creep.add_seed(w, Vector2(x.pos), "seed", -1)
+		w.destroy(int(id), "hive_eat")
+		n_eat += 1
+	# Then chew a forest tile near a nest into dirt (visual/pathing eat).
+	if n_eat < int(R().get("eat_per", 2)) and w.map != null:
+		for nid in s.nests.keys():
+			if n_eat >= int(R().get("eat_per", 2)):
+				break
+			var nest: Dictionary = s.nests[nid]
+			if not bool(nest.get("alive", true)):
+				continue
+			var np := Vector2(float(nest.pos[0]), float(nest.pos[1]))
+			var ox := ((w.tick * 3) + int(nid.hash()) * 7) % 5 - 2
+			var oy := ((w.tick * 5) + int(nid.hash()) * 11) % 5 - 2
+			var x := floori(np.x) + ox
+			var y := floori(np.y) + oy
+			if x < 0 or y < 0 or x >= w.map.w or y >= w.map.h:
+				continue
+			var idx: int = y * int(w.map.w) + x
+			if int(w.map.terrain[idx]) == Terrain.FOREST:
+				w.map.terrain[idx] = Terrain.DIRT
+				Creep.add_seed(w, Vector2(float(x) + 0.5, float(y) + 0.5), "seed", -1)
+				n_eat += 1
+	if n_eat > 0:
+		s.eaten = int(s.get("eaten", 0)) + n_eat
+		w.emit("Hive71Eat", {"n": n_eat, "eaten": int(s.eaten)})
