@@ -135,7 +135,7 @@ func _build_panel(root: Control) -> void:
 func refresh() -> void:
 	if panel == null or mv == null or not mv.has_method("world_readable") or not mv.world_readable():
 		return
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world")
 	info = summary(w, int(mv.player_fid), mv.selection)
 	var sig := str(info)
 	if sig == _sig:

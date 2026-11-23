@@ -116,7 +116,7 @@ func _build_panel(root: Control) -> void:
 func refresh() -> void:
 	if panel == null or mv == null or not mv.has_method("world_readable") or not mv.world_readable():
 		return
-	var w: SimWorld = mv.world
+	var w: SimWorld = mv.get("_world")
 	var ids: Array = mv.selection
 	rows = tier_rows(w, int(mv.player_fid), ids)
 	var sig := str(rows) + str(ids)

@@ -205,7 +205,7 @@ static func tick(w: SimWorld) -> void:
 	# does not flood Movement with ~150 path requests in one tick (LP peak sim_ms).
 	if w.tick % 10 == 0:
 		var wipe_ids: Array = []
-		var dock_budget := int(R().get("dock_orders_per_pass", 8))
+		var dock_budget := int(R().get("dock_orders_per_pass", 6))
 		for e in robots_of(w, fid):
 			if not e.has("f71_bat"):
 				e.f71_bat = battery_max()
