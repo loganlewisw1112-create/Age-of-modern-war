@@ -155,6 +155,20 @@ static func jammed(w: SimWorld, e: Dictionary) -> bool:
 	return s != null and int((s.jam as Dictionary).get(int(e.id), 0)) > w.tick
 
 
+## G7.1 C3: sapper / turret-eater jam. Extends an existing jam if longer. True when applied.
+static func force_jam(w: SimWorld, e: Dictionary, secs: float) -> bool:
+	if e == null or String(e.get("kind", "")) != "building" or not is_defence(String(e.get("def", ""))):
+		return false
+	var s := _st(w)
+	var id := int(e.id)
+	var until := w.tick + _ticks(secs)
+	var cur := int((s.jam as Dictionary).get(id, 0))
+	if until > cur:
+		s.jam[id] = until
+		w.emit("T71Jammed", {"id": id, "until": until, "src": "g71"})
+	return true
+
+
 ## True while turret b may not fire (disabled, jammed or in forced cooldown). Turrets7 / WallTurret7 call this.
 static func blocked(w: SimWorld, b: Dictionary) -> bool:
 	var s = w.sys_state.get("turrets71")

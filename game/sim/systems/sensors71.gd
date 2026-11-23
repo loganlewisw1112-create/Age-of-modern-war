@@ -54,13 +54,17 @@ static func tick(w: SimWorld) -> void:
 			var kind := ""
 			if Threats7.is_burrowed(e):
 				kind = "burrower"
-			elif String(e.def).find("stalker") >= 0:
+			elif String(e.def).find("stalker") >= 0 or String(Content.unit(String(e.def)).get("g71_special", "")) == "glass_stalker":
 				kind = "stalker"
 			if kind == "" or not (cfg.get("classes", []) as Array).has(kind):
 				continue
 			var p := HotState.get_pos(w, int(e.id))
 			if p.distance_to(bp) > r:
 				continue
+			# G7.1 C4: a sonic / seismic contact strips Glass stalker light-bending camo (thermal/sensor reveal).
+			if kind == "stalker" and bool(e.get("hid", false)):
+				e.erase("hid")
+				w.emit("LpGlassReveal", {"id": int(e.id), "by": int(b.id), "how": "sensor"})
 			var l: Array = fresh.get(owner, [])
 			var dup := false
 			for q in l:

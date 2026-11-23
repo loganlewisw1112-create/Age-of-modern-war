@@ -94,6 +94,13 @@ func test_siege_roster_stubs() -> void:
 	check(Director71.reclaim_radius() > 0.0, "reclaim reach is set")
 	check(not Content.unit(Director71.reclaim_print()).is_empty(), "reclaim print def loads")
 	check(float(Director71.rules().get("wreck_cover_r", 0.0)) > 0.0, "wreck cover radius is set")
+	check(Director71.siege_kind("g71_m_turret_eater") == "turret_eater", "turret-eater kind")
+	check(Director71.siege_kind("g71_m_sapper") == "sapper", "sapper kind")
+	check(Director71.latch_radius() > 0.0 and Director71.jam_radius() > 0.0, "latch/jam radii set")
+	check(Director71.pile_min() >= 2, "body piles need a cluster")
+	var fc := Director71.forecast(0.9, "armour", 2)
+	check(fc != "" and fc.find("brute") >= 0, "forecast names the next wave (%s)" % fc)
+	check(fc.find("N") >= 0 or fc.find("face") >= 0, "forecast names a face")
 
 
 func test_adapt_buckets_and_counter() -> void:

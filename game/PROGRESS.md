@@ -35,6 +35,7 @@ breaking-point, logistics, regrow, adapt, C3/C4 units, sync, reclaim, wreck cove
 - Reclaimer eat/print (2026-11-22): reclaimers destroy a wreck in reach and spawn `reclaim_print` (`LpReclaim`). Body piles still open.
 - C6 wreck cover (2026-11-22): in Last Protocol, units next to a wreck count as in cover (`wreck_cover_r`); wreck positions cached on `lp.wreck_pos`.
 - C4 Glass stalker camo (2026-11-22): stalkers spawn with Fog `hid`; a hit clears it and emits `LpGlassReveal`. Thermal / rain polish still open.
+- C3 latch/jam + C4 sensor reveal + D6 forecast + C5 piles (2026-11-22 next slice): turret-eaters latch and chew turrets; sappers jam via `Turrets71.force_jam`; sonic sensors strip Glass camo; HUD shows NEXT forecast; wreck clusters mark body piles for cover. `test_director71` 6/0; `test_lpmode7` 18/0.
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
   out (`docs/SWARM_NATIVE71.md` sections 10–11).

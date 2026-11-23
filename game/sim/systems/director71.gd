@@ -210,6 +210,58 @@ static func reclaim_print() -> String:
 	return String(rules().get("reclaim_print", "g71_m_turret_eater"))
 
 
+static func siege_kind(def_id: String) -> String:
+	var d: Dictionary = Content.unit(def_id)
+	var k := String(d.get("g71_siege", ""))
+	if k != "":
+		return k
+	return String(d.get("g71_special", ""))
+
+
+static func latch_radius() -> float:
+	return float(rules().get("latch_radius", 1.8))
+
+
+static func jam_radius() -> float:
+	return float(rules().get("jam_radius", 2.5))
+
+
+static func jam_s() -> float:
+	return float(rules().get("jam_s", 5.0))
+
+
+static func latch_dps() -> float:
+	return float(rules().get("latch_dps", 18.0))
+
+
+## D6 threat forecast line from dread + next roster + face. Pure.
+static func forecast(dread: float, counter: String = "", main_face: int = -1) -> String:
+	var roster: Array = siege_roster(dread, counter)
+	if roster.is_empty():
+		return ""
+	var kinds := {}
+	for def_id in roster:
+		var k := siege_kind(String(def_id))
+		if k == "":
+			k = "machine"
+		kinds[k] = int(kinds.get(k, 0)) + 1
+	var parts := []
+	for k in ["brute", "siege_walker", "turret_eater", "sapper", "reclaimer", "hive_conductor", "glass_stalker", "walker", "machine"]:
+		if kinds.has(k):
+			parts.append("%dx %s" % [int(kinds[k]), k.replace("_", " ")])
+	var face := ""
+	if main_face >= 0:
+		var names := ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+		face = ", %s face" % names[clampi(main_face, 0, 7)]
+	var eta := int(round(interval_s(float(rules().get("forecast_base_s", 30.0)), dread)))
+	return "%s%s, ~%ds" % [", ".join(PackedStringArray(parts)), face, eta]
+
+
+## C5 body-pile: how many wrecks in wreck_cover_r make a climbable pile.
+static func pile_min() -> int:
+	return int(rules().get("pile_min", 3))
+
+
 ## Highest adapt bucket (ties: armour, emp, smoke, disperse order). Empty board -> "".
 static func counter_for(s: Dictionary) -> String:
 	var a = s.get("adapt", {})

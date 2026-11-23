@@ -26,7 +26,8 @@ const LpSetup = preload("res://sim/systems/lp_setup.gd")
 const LpDefence = preload("res://sim/systems/lp_defence.gd")
 const LpWorld = preload("res://sim/systems/lp_world.gd")
 const LpGarrison7 = preload("res://sim/systems/lp_garrison7.gd")   # G7 BASE7-2 (CR seq 3297): wall patrols
-const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1/C2: dread, breaths, feints, breaking-point
+const Director71 = preload("res://sim/systems/director71.gd")   # G7.1 C1–C6 director / siege
+const Turrets71 = preload("res://sim/systems/turrets71.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 const Cores = preload("res://sim/systems/cores.gd")
 const Victory = preload("res://sim/systems/victory.gd")
@@ -192,6 +193,10 @@ static func tick(w: SimWorld) -> void:
 			_reclaim(w, s)
 		if (w.tick + 29) % _t(2.0) == 0:
 			_cache_wrecks(w, s)
+		if (w.tick + 31) % _t(1.0) == 0:
+			_siege_specials(w, s)
+		if (w.tick + 37) % _t(5.0) == 0:
+			_forecast(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -403,6 +408,7 @@ static func _assault(w: SimWorld, s: Dictionary) -> void:
 
 
 ## Cache wreck positions for C6 cover checks (Damage.in_cover reads s.wreck_pos — no full entity scan per hit).
+## Also marks body-pile cells (C5): wreck_pos entries that sit in a cluster of pile_min.
 static func _cache_wrecks(w: SimWorld, s: Dictionary) -> void:
 	var pos := []
 	for id in w.entities.keys():
@@ -411,6 +417,67 @@ static func _cache_wrecks(w: SimWorld, s: Dictionary) -> void:
 			pos.append(Vector2(x.pos))
 	pos.sort_custom(func(a, b): return a.x < b.x or (is_equal_approx(a.x, b.x) and a.y < b.y))
 	s.wreck_pos = pos
+	var piles := []
+	var r2 := float(Director71.rules().get("wreck_cover_r", 1.6))
+	r2 *= r2
+	var need := Director71.pile_min()
+	for i in pos.size():
+		var n := 0
+		var p: Vector2 = pos[i]
+		for j in pos.size():
+			if p.distance_squared_to(pos[j]) <= r2:
+				n += 1
+		if n >= need:
+			piles.append(p)
+	s.pile_pos = piles
+
+
+## C3 turret-eater latch + sapper jam (Last Protocol Tide).
+static func _siege_specials(w: SimWorld, s: Dictionary) -> void:
+	var latch_r2 := Director71.latch_radius()
+	latch_r2 *= latch_r2
+	var jam_r2 := Director71.jam_radius()
+	jam_r2 *= jam_r2
+	var dps := Director71.latch_dps() * 1.0  # this cadence is 1 s
+	var jam_secs := Director71.jam_s()
+	var defs := w.buildings_of(int(s.fid))
+	for e in w.units_of(int(s.mfid)):
+		var kind := Director71.siege_kind(String(e.get("def", "")))
+		if kind != "turret_eater" and kind != "sapper":
+			continue
+		var best = null
+		var best_d := INF
+		var at: Vector2 = e.pos
+		for b in defs:
+			if not bool(b.get("built", true)) or int(b.get("hp", 0)) <= 0:
+				continue
+			if not Turrets71.is_defence(String(b.get("def", ""))):
+				continue
+			var d := at.distance_squared_to(Vector2(b.pos))
+			if d < best_d:
+				best_d = d
+				best = b
+		if best == null:
+			continue
+		if kind == "turret_eater" and best_d <= latch_r2:
+			e.lp_latch = int(best.id)
+			best.hp = snappedf(maxf(float(best.hp) - dps, 1.0), 1.0 / 1024.0)
+			Turrets71.force_jam(w, best, jam_secs * 0.5)
+			w.emit("LpTurretLatch", {"id": int(e.id), "turret": int(best.id), "hp": float(best.hp)})
+		elif kind == "sapper" and best_d <= jam_r2:
+			if Turrets71.force_jam(w, best, jam_secs):
+				w.emit("LpSapperJam", {"id": int(e.id), "turret": int(best.id)})
+
+
+## D6 threat forecast: write a short line onto the HUD from the next siege roster.
+static func _forecast(w: SimWorld, s: Dictionary) -> void:
+	var sc: Dictionary = LpDefence.scan(w, s)
+	var push: Dictionary = Director71.pick_push(sc.sectors as Array)
+	var line := Director71.forecast(float(s.get("dread", 0.0)), Director71.counter_for(s), int(push.main))
+	if line != String(s.get("forecast", "")):
+		s.forecast = line
+		if line != "":
+			w.emit("LpThreatForecast", {"line": line, "dread": float(s.get("dread", 0.0)), "face": int(push.main)})
 
 
 ## C4 Reclaimer: eat the nearest wreck in reach and print a small Machine (default turret-eater).
@@ -609,7 +676,8 @@ static func hud(w: SimWorld) -> Dictionary:
 		"rings_fallen": int(s.get("rings_fallen", 0)), "raid": bool(s.get("raid_on", false)),
 		"dread": float(s.get("dread", 0.0)), "band": Director71.band(float(s.get("dread", 0.0))),
 		"break_point": bool(s.get("break_point", false)), "counter": Director71.counter_for(s),
-		"sync_n": int(s.get("sync_n", 0)),
+		"sync_n": int(s.get("sync_n", 0)), "forecast": String(s.get("forecast", "")),
+		"pile_n": (s.get("pile_pos", []) as Array).size(),
 		"prototype": int(s.prototype), "ended": bool(s.ended), "result": s.result}
 
 

@@ -75,7 +75,7 @@ static func in_cover(w: SimWorld, e: Dictionary) -> bool:
 	var p: Vector2 = e.pos
 	if w.terrain_at(Vector2i(floori(p.x), floori(p.y))) == FOREST:
 		return true
-	# G7.1 C6 (Last Protocol): wrecks give cover. Positions are cached on lp.wreck_pos by LastProtocol.
+	# G7.1 C6 / C5 (Last Protocol): wrecks and body piles give cover (cached on lp by LastProtocol).
 	if SimWorld.LastProtocol.active(w):
 		var lp = w.sys_state.get("lp")
 		if lp is Dictionary:
@@ -83,6 +83,11 @@ static func in_cover(w: SimWorld, e: Dictionary) -> bool:
 			r2 *= r2
 			for wp in (lp.get("wreck_pos", []) as Array):
 				if p.distance_squared_to(Vector2(wp)) <= r2:
+					return true
+			# Body piles (C5): denser wreck clusters also count even for units slightly further out.
+			var pr2 := r2 * 1.5
+			for pp in (lp.get("pile_pos", []) as Array):
+				if p.distance_squared_to(Vector2(pp)) <= pr2:
 					return true
 	return false
 

@@ -31,6 +31,12 @@
       "reclaim_radius": 4.0,
       "reclaim_print": "g71_m_turret_eater",
       "wreck_cover_r": 1.6,
+      "pile_min": 3,
+      "latch_radius": 1.8,
+      "latch_dps": 18.0,
+      "jam_radius": 2.5,
+      "jam_s": 5.0,
+      "forecast_base_s": 30.0,
       "overmind_break": "breaking_point",
       "overmind_lines": {
         "breaking_point": "THE TIDE ANSWERS.",
