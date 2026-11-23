@@ -4,11 +4,14 @@ extends RefCounted
 ##   col = VehAnim61.pick(c[32], col, col == c_idle, col == c_move, motion, id, hp_frac, t)
 ## Motion is duck-typed (recoil / turn_rate / track_phase / speed) and guarded, so a missing getter falls back.
 ## No class_name: preload it.
+##
+## G7.1 ANIM71 E4-2.2 (presentation only): deeper track cycle, earlier bank, longer recoil frame window;
+## walker (dog) gait slightly snappier. Deterministic; no RNG / no art edits.
 
-const BANK := 0.6        # |turn_rate| rad/s above which the bank / roll frame shows
-const RECOIL := 0.3      # Motion.recoil above which the recoil frame shows
-const TRACK_PX := 6.0    # track phases per tile travelled (3 phases cycle twice per tile)
-const WALK_PX := 4.0     # walker cycle frames per tile travelled
+const BANK := 0.45       # G7.1 ANIM71 E4-2.2: |turn_rate| rad/s for bank / roll (was 0.6)
+const RECOIL := 0.22     # G7.1 ANIM71 E4-2.2: Motion.recoil above which the recoil frame shows (was 0.3)
+const TRACK_PX := 7.5    # G7.1 ANIM71 E4-2.2: track phases per tile travelled (was 6; snappier tracks)
+const WALK_PX := 4.8     # G7.1 ANIM71 E4-2.2/2.4: walker cycle frames per tile (was 4; dog gallop read)
 const PULSE_HZ := 1.5
 
 
@@ -40,6 +43,7 @@ static func pick(v: Dictionary, base: int, idle: bool, moving: bool, motion, id:
 	if v.is_empty():
 		return base
 	var st = (motion as MotionT).vs.get(id) if motion is MotionT else null
+	# G7.1 ANIM71 E4-2.2: recoil wins over bank while the kick is hot (polish the shot reaction)
 	if v.has("recoil") and _ms(motion, st, "recoil", id) > RECOIL and (idle or moving or not v.has("bank_l")):
 		return int(v.recoil)
 	if v.has("bank_l") and v.has("bank_r") and (idle or moving):

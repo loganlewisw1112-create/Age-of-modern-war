@@ -1431,7 +1431,8 @@ func _refresh(rc: bool, rs: bool) -> void:
 				mfac = Motion.g7_facing(gv, mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
 			elif sqb & 34:   # G7 PERFFPS7: only the hull (32) / sector (2) bits change the facing (Motion.g7_facing_sq)
 				mfac = Motion.g7_facing_sq(sqb, sq7a[i], sq7h[i], mfac, (fl & RenderSnap.FLAG_MOVING) != 0)
-			motion.step(id, mcls, pos, mfac, bits, t)
+			# G7.1 ANIM71 E4-2.4: companion weight cues (dog/UGV/sentinel) when def matches; else WT_NONE
+			motion.step(id, mcls, pos, mfac, bits, t, Motion.weight_for(dname))
 			var mo: Vector2 = motion.out_off
 			if ww_ky >= 0:
 				mo = Motion.wall_motion_off(wwv, mo)   # WALL7-2: spread along the walk only, never off the firing step

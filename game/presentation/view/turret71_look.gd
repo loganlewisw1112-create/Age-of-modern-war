@@ -11,15 +11,19 @@ extends Node2D
 ## door (red bar while sealed), lift arrows, reinforced-gate plates.
 ## Ejected casings (BASTION71-7): every rotary shot seen here (heat rose, spin > 0) drops one casing beside the turret
 ## through DAMAGE71's decal API (MatchView.fx_layer._e().casings(canvas px, n): piles merge and are capped there).
+## G7.1 ANIM71 E4-2.3 (presentation only): deeper barrel recoil, denser casing pile cues, stronger heat/steam,
+## night IR tracking (reads MatchView.fac_atmo7.night_amount when present). Deterministic offsets; no RNG here.
 ## Wiring: ORCH's presentation/view/g71_attach.gd LAYERS ("over_units"); refresh(snap) each frame.
 ## Registering the snapshot provider happens here on load (the provider only reads the sim).
 const Turrets71 = preload("res://sim/systems/turrets71.gd")
 const Walls71 = preload("res://sim/systems/walls71.gd")
 const RenderSnap = preload("res://sim/render_snap.gd")
 
-const KICK_DECAY := 7.0     # recoil recovers in ~0.15 s
-const BARREL_LEN := 13.0    # screen px
-const KICK_PX := 5.0
+const KICK_DECAY := 4.6     # G7.1 ANIM71 E4-2.3: recoil recovers in ~0.22 s (was 7.0 / ~0.15 s)
+const BARREL_LEN := 14.0    # G7.1 ANIM71 E4-2.3: screen px (was 13)
+const KICK_PX := 8.0        # G7.1 ANIM71 E4-2.3: deeper barrel stroke (was 5)
+const CASING_N := 2         # G7.1 ANIM71 E4-2.3: casings per rotary shot cue (pile grows faster)
+const NIGHT_IR := 0.35      # night_amount above this: IR tracking (cyan) instead of red laser
 
 var _rows: Array = []
 var _sc: Array = []
@@ -30,8 +34,10 @@ var _heat := {}   # id -> heat at the last refresh (recoil = heat rose)
 var _kick := {}   # id -> 0..1 recoil, decays per frame
 var _fired := {}  # id -> true once the turret fired on its current target (tracking line dims)
 var _tgt := {}    # id -> Vector2 target tile pos last refresh
+var _pile := {}   # id -> casing count cue (presentation; for brass glint under the pile)
 var _fx = null    # MatchView.fx_layer (casings decal API), looked up once
 var _redraw_gate := 0   # far/mid LOD: redraw every N process ticks (kick still decays)
+var _night := 0.0       # cached FacAtmo7 night_amount 0..1
 
 
 static var _reg_owner := 0   # only the newest instance unregisters (an old MatchView leaving the tree wiped the new registration)
@@ -86,6 +92,7 @@ func refresh(snap: Dictionary) -> void:
 	_sc = d.get("sc", [])
 	_a = d.get("a", [])
 	_wl = ((snap.get("g71", {}) as Dictionary).get("walls71", {}) as Dictionary).get("w", [])
+	_night = _night_amount()
 	var tg := {}
 	for l in _a:
 		var tp := Vector2(float(l[3]), float(l[4]))
@@ -106,6 +113,7 @@ func refresh(snap: Dictionary) -> void:
 			_fired[id] = true
 			if int(r[2]) > 0:
 				_casing(Vector2(float(r[4]), float(r[5])), id)
+				_pile[id] = mini(int(_pile.get(id, 0)) + CASING_N, 48)
 		hs[id] = h
 	var fired_now := false
 	for id in _kick.keys():
@@ -123,6 +131,17 @@ func refresh(snap: Dictionary) -> void:
 			return
 		_redraw_gate = 0
 	queue_redraw()
+
+
+## G7.1 ANIM71 E4-2.3: FacAtmo7 night_amount when MatchView is parent; else 0 (day).
+func _night_amount() -> float:
+	var mv = get_parent()
+	if mv == null:
+		return 0.0
+	var atmo = mv.get("fac_atmo7")
+	if atmo != null and is_instance_valid(atmo) and atmo.has_method("night_amount"):
+		return float(atmo.night_amount())
+	return 0.0
 
 
 func _process(delta: float) -> void:
@@ -146,8 +165,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## One spent casing beside rotary turret id at tile p (ejection side alternates by id). Guarded: no MatchView fx layer
-## (tests, other parents) or an older fx engine without casings = nothing drawn.
+## Spent casings beside rotary turret id at tile p. Ejection side + scatter are hashed from id (no RNG).
+## Guarded: no MatchView fx layer (tests, other parents) or an older fx engine without casings = nothing drawn.
 func _casing(p: Vector2, id: int) -> void:
 	if _fx == null or not is_instance_valid(_fx):
 		var mv = get_parent()
@@ -157,7 +176,11 @@ func _casing(p: Vector2, id: int) -> void:
 			return
 	var e = _fx._e()
 	if e != null and e.has_method("casings"):
-		e.casings(_fx._w2s(p) + Vector2(9.0 if id % 2 == 0 else -9.0, 5.0), 1)
+		# G7.1 ANIM71 E4-2.3: wider pile seat + dual drop so brass reads at close zoom
+		var side := 1.0 if id % 2 == 0 else -1.0
+		var h := float((id * 2654435761) & 0xFF) / 255.0
+		var seat := Vector2(11.0 * side + (h - 0.5) * 4.0, 6.0 + h * 3.0)
+		e.casings(_fx._w2s(p) + seat, CASING_N)
 
 
 static func _iso(x: float, y: float) -> Vector2:
@@ -208,6 +231,7 @@ func _draw() -> void:
 	var lod := _lod()
 	if lod < 1:
 		_draw_walls()
+	var night_ir := _night >= NIGHT_IR
 	for l in _a:   # tracking lasers / IR, under the barrel strokes
 		if lod >= 2:
 			break
@@ -216,13 +240,18 @@ func _draw() -> void:
 		var p1 := _iso(float(l[3]), float(l[4])) + Vector2(0, -6)
 		var on := not _fired.has(id)
 		var fl := 0.75 + 0.25 * sin(_t * 23.0 + float(id))
-		var al := (0.75 if on else 0.22) * fl
+		# G7.1 ANIM71 E4-2.3: night = brighter cyan IR; day = red laser (fainter after first shot)
+		var al := (0.88 if on else 0.28) * fl * (1.15 if night_ir else 1.0)
+		var core := Color(0.35, 0.95, 1.0, al) if night_ir else Color(1.0, 0.25, 0.2, al)
+		var bloom := Color(0.2, 0.7, 1.0, al * 0.4) if night_ir else Color(1.0, 0.12, 0.08, al * 0.35)
 		if lod >= 1:
-			draw_line(p0, p1, Color(1.0, 0.25, 0.2, al), 1.0)
+			draw_line(p0, p1, core, 1.25 if night_ir else 1.0)
 		else:
-			draw_line(p0, p1, Color(1.0, 0.12, 0.08, al * 0.35), 3.0)
-			draw_line(p0, p1, Color(1.0, 0.25, 0.2, al), 1.0)
-			draw_circle(p1, 2.5 if on else 1.5, Color(1.0, 0.3, 0.25, al))
+			draw_line(p0, p1, bloom, 3.5 if night_ir else 3.0)
+			draw_line(p0, p1, core, 1.25 if night_ir else 1.0)
+			draw_circle(p1, 3.0 if on else 1.7, core)
+			if night_ir and on:
+				draw_circle(p1, 5.0, Color(0.4, 0.95, 1.0, al * 0.35))
 	for r in _rows:
 		var id := int(r[0])
 		var p := _iso(float(r[4]), float(r[5]))
@@ -235,21 +264,41 @@ func _draw() -> void:
 			if tv.length() > 1.0:
 				dir = tv.normalized()
 		var k: float = float(_kick.get(id, 0.0))
+		# G7.1 ANIM71 E4-2.3: ease-out kick so the stroke reads longer near the end
+		var k_ease := k * k
 		if _tgt.has(id) or k > 0.0:
-			var tip := top + dir * (BARREL_LEN - KICK_PX * k)
-			var bc := Color(0.18, 0.19, 0.2, 0.95).lerp(Color(1.0, 0.45, 0.15, 0.95), clampf((heat - 0.4) * 1.6, 0.0, 1.0))
-			draw_line(top, tip, bc, 3.0)
-			if k > 0.55:
-				draw_circle(tip + dir * 3.0, 3.0 + 3.0 * k, Color(1.0, 0.85, 0.4, 0.85 * k))
-				draw_circle(tip + dir * 3.0, 1.5 + 1.5 * k, Color(1.0, 1.0, 0.85, k))
-		if heat > 0.15:
-			var a := clampf((heat - 0.15) * 0.9, 0.0, 0.8)
-			draw_circle(top, 10.0 + heat * 8.0, Color(1.0, 0.35 + 0.4 * (1.0 - heat), 0.1, a * 0.45))
-			draw_circle(top, 5.0 + heat * 4.0, Color(1.0, 0.8, 0.4, a))
+			var tip := top + dir * (BARREL_LEN - KICK_PX * k_ease)
+			var bc := Color(0.18, 0.19, 0.2, 0.95).lerp(Color(1.0, 0.4, 0.12, 0.95), clampf((heat - 0.28) * 1.8, 0.0, 1.0))
+			draw_line(top, tip, bc, 3.4)
+			if k > 0.4:
+				draw_circle(tip + dir * 3.0, 3.5 + 4.0 * k, Color(1.0, 0.8, 0.35, 0.9 * k))
+				draw_circle(tip + dir * 3.0, 1.6 + 2.0 * k, Color(1.0, 1.0, 0.88, k))
+				# secondary flash ring on the deepest kick
+				if k > 0.75:
+					draw_arc(tip + dir * 2.0, 6.0 + 4.0 * k, 0.0, TAU, 12, Color(1.0, 0.7, 0.3, 0.55 * k), 1.5)
+		if heat > 0.12:
+			# G7.1 ANIM71 E4-2.3: deeper heat bloom (outer haze + hot core)
+			var a := clampf((heat - 0.12) * 1.05, 0.0, 0.9)
+			draw_circle(top, 12.0 + heat * 11.0, Color(1.0, 0.3 + 0.35 * (1.0 - heat), 0.08, a * 0.4))
+			draw_circle(top, 6.0 + heat * 5.5, Color(1.0, 0.75, 0.35, a * 0.95))
+			if heat > 0.55:
+				draw_circle(top + dir * 4.0, 3.0 + heat * 2.0, Color(1.0, 0.95, 0.7, a * 0.7))
 		if lod < 1 and (fl & 4):
-			for j in 4:
-				var ph := fmod(_t * 0.7 + float(j) * 0.25 + float(id % 7) * 0.13, 1.0)
-				draw_circle(p + Vector2(sin(ph * 6.0 + float(j)) * 5.0, -18.0 - ph * 30.0), 4.0 + ph * 6.0, Color(0.85, 0.88, 0.9, 0.5 * (1.0 - ph)))
+			# denser steam plume during forced cooldown
+			for j in 6:
+				var ph := fmod(_t * 0.75 + float(j) * 0.17 + float(id % 7) * 0.13, 1.0)
+				var sx := sin(ph * 6.0 + float(j)) * (5.0 + 2.0 * heat)
+				draw_circle(p + Vector2(sx, -18.0 - ph * 34.0), 3.5 + ph * 7.0,
+					Color(0.88, 0.9, 0.93, 0.55 * (1.0 - ph)))
+		# casing pile brass glint (presentation cue atop the decal pile)
+		if lod < 1 and int(_pile.get(id, 0)) > 0:
+			var n := int(_pile[id])
+			var side := 1.0 if id % 2 == 0 else -1.0
+			var h := float((id * 2654435761) & 0xFF) / 255.0
+			var seat := p + Vector2(11.0 * side + (h - 0.5) * 4.0, 6.0 + h * 3.0)
+			var rad := 2.5 + minf(float(n) * 0.22, 7.0)
+			draw_circle(seat, rad, Color(0.75, 0.55, 0.22, 0.55))
+			draw_circle(seat + Vector2(-rad * 0.25, -rad * 0.15), rad * 0.45, Color(0.95, 0.8, 0.4, 0.7))
 		if fl & 1:
 			var flick := 0.5 + 0.5 * sin(_t * 17.0 + float(id))
 			draw_circle(p + Vector2(0, -12), 6.0, Color(0.1, 0.1, 0.1, 0.55))

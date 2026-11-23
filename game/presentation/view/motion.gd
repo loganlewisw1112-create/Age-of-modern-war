@@ -13,9 +13,13 @@ extends RefCounted
 ##   lean(id) -> signed lateral lean px (G7.1 ANIM71 E4-2.1 infantry weight)
 ##   on_shot(shooter_id, target_id)                      kill(id, def, owner, t) / forget(id)
 ##   static inf_col(cols, posture, t, seed, fat) -> sheet column of the infantry set (see POSE_*)
+##   static weight_for(def_name) -> WT_* companion cue (E4-2.4); pass as step(..., weight)
 ##
 ## G7.1 ANIM71 E4-2.1 (presentation only): human infantry weight (feet plant, lean into turns, deeper recoil
 ## plant) + procedural aim lead (drawn facing / aim_row lead moving targets via hashed id seed, no RNG).
+## G7.1 ANIM71 E4-2.2: human vehicles deepen brake squat, continuous suspension rock, hull recoil rock
+## (presentation only; no RNG). E4-2.4: optional companion weight cues (dog gallop, UGV track rock,
+## sentinel plant) via step weight=WT_* / weight_for(def).
 
 const MAX_OFF := 0.3            # drawn position never further than this (tiles) from the interpolated sim pos
 const TURN := [10.0, 3.2, 1.6, 3.6, 0.9]   # max turn rad/s per class: infantry, vehicle, heavy, air, ship
@@ -61,17 +65,23 @@ const S_DIST := 15
 const S_SX := 16
 const S_SY := 17
 const S_MV := 18     # G6.1 (ANIMC61): moving flag last frame (suspension start / stop)
-const S_SUSP := 19   # signed suspension timer: < 0 squat on start (-1 px), > 0 dip on stop (+1 px)
+const S_SUSP := 19   # signed suspension timer: < 0 squat on start, > 0 dip on brake/stop
 const S_AIM := 20    # last shot target id (turret aim / infantry look), -1 none
 const S_AIMT := 21   # time of that shot
 const S_ROW := 22   # PATH7-2 CR 6994: drawn facing row + 1 (0 = unset)
-const S_N := 23
+const S_WT := 23    # G7.1 ANIM71 E4-2.4: companion weight kind (WT_*)
+const S_N := 24
 const ROW_HYS := 0.12   # rad past the 22.5 deg boundary before the drawn row changes
-const SUSP_T := 0.15 # s of suspension offset after a start / stop
+const SUSP_T := 0.22 # G7.1 ANIM71 E4-2.2: s of suspension after start / brake (was 0.15)
+const BRAKE_PX := 2.35 # G7.1 ANIM71 E4-2.2: max brake squat (stop dip) px
+const LAUNCH_PX := 1.55 # G7.1 ANIM71 E4-2.2: accel nose-up squat px
+const ROCK_PX := 0.85  # G7.1 ANIM71 E4-2.2: continuous suspension rock amplitude while moving
 const AIM_HOLD := 3.0 # s a turret / soldier keeps aiming at its last target
 const AIM_LEAD := 0.18 # G7.1 ANIM71 E4-2.1: seconds of target velocity lead for aim / look
 const LEAN_TURN := 5.0 # rad/s that maps to full infantry lean
 const LEAN_PX := 1.5   # max lateral lean at LEAN_TURN (px); run scales 1.25x
+# G7.1 ANIM71 E4-2.4 companion weight kinds (presentation only; 0 = human / default)
+enum { WT_NONE = 0, WT_DOG = 1, WT_UGV = 2, WT_SENT = 3 }
 
 var vs: Dictionary = {}          # id -> PackedFloat32Array(S_N)
 var corpses: Array = []          # [id, art cache Array (batch_art cache_unit), screen pos, row, t0]
@@ -105,10 +115,22 @@ static func class_for(is_inf: bool, is_air: bool, is_ship: bool, def_name: Strin
 	return CLS_VEH
 
 
+## G7.1 ANIM71 E4-2.4: companion weight kind from def name (dogs / UGV / wall sentinel). Cheap; no art.
+static func weight_for(def_name: String) -> int:
+	if def_name.contains("robot_dog") or def_name.ends_with("_dog"):
+		return WT_DOG
+	if def_name.contains("ugv") or def_name.contains("robot_mule"):
+		return WT_UGV
+	if def_name.contains("wall_sentinel") or def_name == "g71_wall_sentinel":
+		return WT_SENT
+	return WT_NONE
+
+
 func _state(id: int, cls: int, pos: Vector2, facing: float, t: float) -> PackedFloat32Array:
 	var s = vs.get(id)
 	if s == null or t - float(s[S_T]) > 0.5 or (Vector2(s[S_PX], s[S_PY]) - pos).length_squared() > 4.0:
 		var dist := 0.0 if s == null else float(s[S_DIST])
+		var wt0 := 0.0 if s == null or s.size() <= S_WT else float(s[S_WT])
 		s = PackedFloat32Array()
 		s.resize(S_N)
 		s[S_FACE] = facing
@@ -118,6 +140,7 @@ func _state(id: int, cls: int, pos: Vector2, facing: float, t: float) -> PackedF
 		s[S_SEED] = seed_of(id)
 		s[S_DIST] = dist
 		s[S_AIM] = -1.0
+		s[S_WT] = wt0
 	s[S_CLS] = cls
 	return s
 
@@ -131,7 +154,7 @@ var out_row := 0                    # row_h(id, out_face) as of this step (commi
 var _cdt := -1.0                    # dt the cached factors below belong to
 var _ck := PackedFloat64Array([0.0, 0.0, 0.0, 0.0, 0.0])   # 1 - exp(-dt / LAG[cls])
 var _cb := 0.0                      # exp(-dt / BACK)
-func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) -> void:
+func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float, weight: int = WT_NONE) -> void:
 	var sv = vs.get(id)
 	var s: PackedFloat32Array
 	if sv == null or t - float(sv[S_T]) > 0.5 or (Vector2(sv[S_PX], sv[S_PY]) - pos).length_squared() > 4.0:
@@ -140,6 +163,8 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	else:
 		s = sv
 	s[S_CLS] = cls
+	if weight != WT_NONE:
+		s[S_WT] = float(weight)
 	var dt := clampf(t - s[S_T], 0.0, 0.1)
 	_now = t
 	# smooth facing: turn toward sim facing (infantry: blend toward lead aim when tracking a target)
@@ -207,14 +232,18 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	if rr < 0 or absf(wrapf(out_face - float(rr) * (PI / 4.0), -PI, PI)) >= PI / 8.0 + ROW_HYS:
 		rr = posmod(int(round(out_face * (4.0 / PI))), 8)
 	out_row = rr
-	# pixel reactions: walking bob / running sway (infantry), lean/plant, recoil kick, hit flinch
+	# pixel reactions: walking bob / running sway (infantry), lean/plant, recoil kick, hit flinch,
+	# vehicle brake squat / suspension rock (E4-2.2), companion weight (E4-2.4)
 	var kk := s[S_KICK] / KICK_T
 	var fk := s[S_FLINCH] / FLINCH_T
 	out_flash = fk
-	var su2 := s[S_SUSP] if cls == CLS_VEH or cls == CLS_HEAVY or cls == CLS_INF else 0.0
+	var wt := int(s[S_WT])
+	var veh_w := cls == CLS_VEH or cls == CLS_HEAVY
+	var su2 := s[S_SUSP] if veh_w or cls == CLS_INF else 0.0
 	var mv_inf := cls == CLS_INF and flags & P_MOVING and not (flags & P_PINNED)
 	var lean_inf := cls == CLS_INF and mv_inf and absf(s[S_TURN]) > 0.15
-	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf and not lean_inf:
+	var mv_veh := veh_w and (flags & P_MOVING) != 0
+	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf and not lean_inf and not mv_veh:
 		out_px = Vector2.ZERO
 		return
 	var px := Vector2.ZERO
@@ -222,11 +251,14 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	var dir := Vector2(cos(out_face) - sin(out_face), (cos(out_face) + sin(out_face)) * 0.5).normalized()
 	if mv_inf:
 		var run := (flags & P_RUN) != 0
-		var ph := t * (2.4 if run else 1.7) + seed
+		# E4-2.4: sentinel = heavier plant; dogs rarely use CLS_INF (walkers are CLS_VEH)
+		var bob := 1.0 if wt != WT_SENT else 1.35
+		var plant := 1.0 if wt != WT_SENT else 1.45
+		var ph := t * ((2.4 if run else 1.7) * (0.85 if wt == WT_SENT else 1.0)) + seed
 		var stride := absf(sin(ph * PI))
-		px.y -= stride * (1.5 if run else 1.0)
+		px.y -= stride * (1.5 if run else 1.0) * bob
 		# G7.1 ANIM71 E4-2.1: feet plant at contact (settle into the ground when the stride is down)
-		px.y += maxf(0.0, 1.0 - stride * 2.0) * (0.55 if run else 0.4)
+		px.y += maxf(0.0, 1.0 - stride * 2.0) * (0.55 if run else 0.4) * plant
 		if run:
 			px.x += sin(ph * PI) * 0.6
 		# lean into turns (centripetal; screen lateral)
@@ -234,22 +266,43 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 			var lean_amt := clampf(s[S_TURN] / LEAN_TURN, -1.2, 1.2) * (1.25 if run else 1.0)
 			out_lean = lean_amt * LEAN_PX
 			px += Vector2(-dir.y, dir.x) * out_lean
+	if mv_veh:
+		# G7.1 ANIM71 E4-2.2: continuous suspension rock from track phase + turn; UGV/dog amplify
+		var rock_amp := ROCK_PX * (1.35 if wt == WT_UGV else (1.2 if wt == WT_DOG else 1.0))
+		var phv := s[S_DIST] * TAU * (2.4 if wt == WT_DOG else 1.7) + seed * TAU
+		px.y += sin(phv) * rock_amp
+		# lateral hull sway into turns (bank feel even without bank frames)
+		var bank := clampf(s[S_TURN] / 2.8, -1.0, 1.0)
+		px += Vector2(-dir.y, dir.x) * bank * (0.7 if wt == WT_UGV else 0.45)
+		if wt == WT_DOG:
+			# quadruped gallop: forward stretch on the up phase
+			px += dir * maxf(0.0, sin(phv)) * 0.55
 	if kk > 0.0:
-		px -= dir * kk * (1.2 if cls == CLS_INF else 2.2)
+		px -= dir * kk * (1.2 if cls == CLS_INF else 2.6)
 		if cls == CLS_INF:
 			px.y += kk * 0.7   # G7.1 ANIM71 E4-2.1: plant under recoil
-		elif cls == CLS_VEH or cls == CLS_HEAVY:
-			px.y += 1.0  # G6.1 (ANIMC61): 1 px hull rock on a shot
+		elif veh_w:
+			# G7.1 ANIM71 E4-2.2: deeper hull rock + slight nose dip on a shot
+			px.y += 1.65 * kk
+			px += dir * kk * 0.35
 	if su2 != 0.0:
+		var ease := absf(su2) / SUSP_T   # 1 at onset -> 0 as it settles (deterministic)
 		if cls == CLS_INF:
 			# feet plant on start (lean forward + settle) / stop (hard plant)
+			var sent_m := 1.25 if wt == WT_SENT else 1.0
 			if su2 < 0.0:
-				px += dir * 0.85
-				px.y += 0.45
+				px += dir * 0.85 * sent_m
+				px.y += 0.45 * sent_m
 			else:
-				px.y += 1.15
+				px.y += 1.15 * sent_m
 		else:
-			px.y += -1.0 if su2 < 0.0 else 1.0
+			# G7.1 ANIM71 E4-2.2: deepened brake squat (stop) / launch squat (start)
+			if su2 < 0.0:
+				px.y -= LAUNCH_PX * ease
+				px += dir * 0.4 * ease
+			else:
+				px.y += BRAKE_PX * ease
+				px -= dir * 0.55 * ease   # nose dive into the brake
 	if fk > 0.0:
 		var side := 1.0 if seed > 0.5 else -1.0
 		px += Vector2(-dir.y, dir.x) * side * fk * 1.5 - dir * fk * 0.8

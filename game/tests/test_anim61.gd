@@ -236,6 +236,87 @@ func test_infantry_lean_plant_and_aim_lead() -> void:
 		"lean is deterministic from id/motion (%.4f vs %.4f)" % [lean_peak2, lean_peak])
 
 
+## G7.1 ANIM71 E4-2.2: vehicle brake squat deeper than launch; suspension rocks while moving; recoil hull dip.
+## E4-2.4: companion weight_for + dog/UGV rock amplify (presentation only, deterministic).
+func test_vehicle_brake_suspension_and_companion_weight() -> void:
+	var m = Motion.new()
+	var dt := 1.0 / 60.0
+	var t := 0.0
+	var pos := Vector2(8, 8)
+	m.step(50, Motion.CLS_VEH, pos, 0.0, 0, t)
+	# accelerate: launch squat (negative y)
+	t += dt
+	pos += Vector2(0.08, 0.0)
+	m.step(50, Motion.CLS_VEH, pos, 0.0, Motion.P_MOVING, t)
+	var launch_y: float = m.out_px.y
+	check(launch_y < -0.4, "vehicle launch squat lifts hull (out_px.y=%.3f)" % launch_y)
+	# cruise: suspension rock non-zero while moving
+	var rock_peak := 0.0
+	for k in 90:
+		t += dt
+		pos += Vector2(0.07, 0.0)
+		m.step(50, Motion.CLS_VEH, pos, 0.0, Motion.P_MOVING, t)
+		rock_peak = maxf(rock_peak, absf(m.out_px.y))
+	check(rock_peak > 0.3, "vehicle suspension rocks while moving (peak |y|=%.3f)" % rock_peak)
+	# brake: stop dip deeper than launch magnitude
+	m.step(50, Motion.CLS_VEH, pos, 0.0, Motion.P_MOVING, t)
+	t += dt
+	m.step(50, Motion.CLS_VEH, pos, 0.0, 0, t)
+	var brake_y: float = m.out_px.y
+	check(brake_y > 0.9, "brake squat plants hull (out_px.y=%.3f)" % brake_y)
+	check(brake_y > absf(launch_y), "brake squat deeper than launch (|launch|=%.3f brake=%.3f)" % [absf(launch_y), brake_y])
+	# recoil hull rock
+	m.on_shot(50, -1)
+	t += dt
+	m.step(50, Motion.CLS_VEH, pos, 0.0, Motion.P_FIRING, t)
+	check(m.recoil(50) > 0.5, "vehicle recoil(id) hot after on_shot")
+	check(m.out_px.y > 0.5 or m.out_px.length() > 0.8, "hull rock on shot (out_px=%s)" % str(m.out_px))
+	# veh_anim61: recoil column preferred; track phase advances
+	var VehAnim61 = preload("res://presentation/view/veh_anim61.gd")
+	var v := {"idle": 0, "recoil": 7, "track": [1, 2, 3], "bank_l": 4, "bank_r": 5}
+	check_eq(VehAnim61.pick(v, 0, true, false, m, 50, 1.0, t), 7, "veh_anim61 picks recoil while kick hot")
+	# companion weight kinds
+	check_eq(Motion.weight_for("g71_robot_dog"), Motion.WT_DOG, "dog weight")
+	check_eq(Motion.weight_for("g71_ugv_mg"), Motion.WT_UGV, "ugv weight")
+	check_eq(Motion.weight_for("g71_wall_sentinel"), Motion.WT_SENT, "sentinel weight")
+	check_eq(Motion.weight_for("rifleman"), Motion.WT_NONE, "human infantry is WT_NONE")
+	# UGV rock louder than plain vehicle at same id/path (same seed, separate Motion instances)
+	var m_ugv = Motion.new()
+	var m_plain = Motion.new()
+	var t2 := 0.0
+	var p2 := Vector2(1, 1)
+	var ugv_peak := 0.0
+	var plain_peak := 0.0
+	m_ugv.step(60, Motion.CLS_VEH, p2, 0.0, 0, t2, Motion.WT_UGV)
+	m_plain.step(60, Motion.CLS_VEH, p2, 0.0, 0, t2, Motion.WT_NONE)
+	for k in 60:
+		t2 += dt
+		p2 += Vector2(0.06, 0.0)
+		m_ugv.step(60, Motion.CLS_VEH, p2, 0.0, Motion.P_MOVING, t2, Motion.WT_UGV)
+		m_plain.step(60, Motion.CLS_VEH, p2, 0.0, Motion.P_MOVING, t2, Motion.WT_NONE)
+		ugv_peak = maxf(ugv_peak, absf(m_ugv.out_px.y))
+		plain_peak = maxf(plain_peak, absf(m_plain.out_px.y))
+	check(ugv_peak > plain_peak * 1.05, "UGV track rock louder than plain veh (%.3f vs %.3f)" % [ugv_peak, plain_peak])
+	# determinism replay
+	var m3 = Motion.new()
+	var t3 := 0.0
+	var p3 := Vector2(8, 8)
+	var brake2 := 0.0
+	m3.step(50, Motion.CLS_VEH, p3, 0.0, 0, t3)
+	t3 += dt
+	p3 += Vector2(0.08, 0.0)
+	m3.step(50, Motion.CLS_VEH, p3, 0.0, Motion.P_MOVING, t3)
+	for k in 90:
+		t3 += dt
+		p3 += Vector2(0.07, 0.0)
+		m3.step(50, Motion.CLS_VEH, p3, 0.0, Motion.P_MOVING, t3)
+	m3.step(50, Motion.CLS_VEH, p3, 0.0, Motion.P_MOVING, t3)
+	t3 += dt
+	m3.step(50, Motion.CLS_VEH, p3, 0.0, 0, t3)
+	brake2 = m3.out_px.y
+	check(is_equal_approx(brake2, brake_y), "brake squat deterministic (%.4f vs %.4f)" % [brake2, brake_y])
+
+
 func test_postures_pick_frames() -> void:
 	var fr: Array = ["idle", "walk_a", "walk_b", "fire"] + SET
 	var a := BatchArt.inf_cols(fr)
