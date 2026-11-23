@@ -2,7 +2,7 @@
 
 A single-player real-time strategy war in Godot 4.7.2. Skirmish is the sparring floor. **Last Protocol** is the night they built the game to survive.
 
-Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-when is CLOSED (`g8.lock`).** UP71 continues into **G9 Hive Reborn**.
+Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-when is CLOSED (`g8.lock`).** **G9 Hive Reborn Done-when is CLOSED (`g9.lock`).** UP71 Stage A–C complete — board stands for G10+.
 
 ---
 
@@ -73,34 +73,36 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (G8 LOCK)
+## In this build (G9 LOCK)
 
 **Four Sides:** Q/E + MMB rotate the view; rot buildings and loco/fire/death/k8 sheets follow the camera (no mirror cheats). **Last Protocol clock** starts at dusk; night lasts **2×** day. End-of-run: director PiP, highlight reel, creep timelapse, kill-heat strip.
+
+**G9 Hive Reborn (thin verticals):** HIVE9 nanite harvest + evolve glow + blended art harness (47 defs); COUNT9 thirteen counter harness cases; COMBAT9 persistent craters/breaches + ballistics across match families; SKIRM9 fair-capped Tide siege spawns in skirmish (`cfg.skirm9.director_adapt` optional).
 
 Plus G7.1: hive network, wildfire, death chains, harvest / capture / evolve, night illumination, weather, fleet under jam, RE / warmind / conduct, Wave 6 art + E4 motion, Stage A polish, forced-join cuts.
 
 Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
-**Perf:** pan **p10 68.3**; 2k **p10 69.9**; quiet chase **p10 72.9** (amended peak gate ≥30 still held — remasure FACT cites prior evidence; chase continues into G9).
+**Perf:** pan **p10 68.3**; 2k **p10 69.9**; quiet chase **p10 72.9** (amended peak gate ≥30 still held — remasure FACT cites prior evidence; chase continues into G10+).
 
-**Soaks / smoke:** Done-when smoke includes G8 suites. Soak90 / 3600 / live siege 600 GREEN from G7.1 lock evidence. Gore71 + LP two-run hash green.
+**Soaks / smoke:** Done-when smoke includes G7.1 + G8 + G9 suites (30 tests). Soak90 / 3600 / live siege 600 GREEN from G7.1 lock evidence. Gore71 + LP two-run hash green.
 
 ---
 
 ## Still open (UP71)
 
-- **G9 Hive Reborn** next — scope `game/docs/G9_SCOPE.md`.
-- Peak chase continues across G9 (amended G7.1 gate held).
+- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; G9 depth gaps are chase work, not lock blockers (`game/docs/G9_SCOPE.md`).
+- Peak chase continues (amended G7.1 gate held; target 60 p10).
 - Frozen Done-when is never weakened to make a check pass.
 
 ---
 
 ## Branch & ship
 
-- Active branch: `g71` (UP71 → G9)
+- Active branch: `g71` (UP71 Stage A–C CLOSED; G10+ next)
 - Board: `game/.plan/upgrade_board/` (permanent semantic CLAIM board)
 - Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Root README updated every ship.
-- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (G7.1 + G8 suites; last lock run 0 fails)
+- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (G7.1 + G8 + G9 suites; last lock run 0 fails)
 - Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90`
 - Live siege: `godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600`
 - Durable soak: `... g71_soak_short.gd -- --secs=3600 --save_at=1800`

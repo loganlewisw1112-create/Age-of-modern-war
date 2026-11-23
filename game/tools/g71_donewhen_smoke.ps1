@@ -16,7 +16,9 @@ $tests = @(
   # Done-when 2 AIRFIX re-verify (matrix + ops; never weaken)
   "test_airfix71","test_airops71",
   # G8 Four Sides lock (ROT8/ART8/ANIM8/PRES8 + TOD71)
-  "test_view8","test_art8","test_anim8","test_pres8","test_tod71"
+  "test_view8","test_art8","test_anim8","test_pres8","test_tod71",
+  # G9 Hive Reborn lock (HIVE9/COUNT9/COMBAT9/SKIRM9)
+  "test_hive9","test_count9","test_combat9","test_skirm9"
 )
 $fail = 0
 foreach ($t in $tests) {

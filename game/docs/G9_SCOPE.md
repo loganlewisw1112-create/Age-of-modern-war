@@ -22,3 +22,6 @@ Shadow Coalition (G10), UNDERSTRIKE bunkers (G11+), campaign, space.
 
 ## Build order
 C1 HIVE9 → C2 COUNT9 → C3 COMBAT9 (parallel where paths allow) → C4 SKIRM9 → integ + `g9.lock`.
+
+## Lock status
+**CLOSED (`g9.lock`)** on UP71 — HIVE9/COUNT9/COMBAT9/SKIRM9 thin verticals shipped; smoke includes G9 suites; package + README/PLAY_ME current. Depth gaps (60+ blended defs, counter diplomacy, EW/forts) remain chase work, not lock blockers.
