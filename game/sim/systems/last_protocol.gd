@@ -215,6 +215,8 @@ static func tick(w: SimWorld) -> void:
 			_scuttle_tick(w, s)
 		if (w.tick + 61) % _t(5.0) == 0:
 			_core_raid_tick(w, s)
+		if (w.tick + 67) % _t(4.0) == 0:
+			_hunt_ops(w, s)
 
 
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
@@ -283,8 +285,15 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 						var aline := Director71.overmind_line(akey)
 						if aline != "":
 							w.emit("OvermindSay", {"key": akey, "line": aline, "dread": float(s.get("dread", 0.0)), "counter": counter})
-					if Director71.siege_kind(String(ev.get("def", ""))) == "sapper":
+					var sk := Director71.siege_kind(String(ev.get("def", "")))
+					if sk == "sapper":
 						_complete_objective(w, s, "sally_sapper", {})
+					elif String(ev.get("def", "")) == "g71_m_hive_conductor":
+						_complete_objective(w, s, "hunt_conductor", {})
+						w.emit("LpHuntDone", {"kind": "conductor", "id": id})
+					elif String(ev.get("def", "")) == "g71_m_reclaimer":
+						_complete_objective(w, s, "hunt_reclaimer", {"id": id})
+						w.emit("LpHuntDone", {"kind": "reclaimer", "id": id})
 				LpDefence.note_destroyed(w, s, ev)
 			"LpRingBreached":
 				_push_objective(w, s, "hold_fallback", "Hold the fallback after %s fell" % String(ev.get("name", "a ring")),
@@ -632,6 +641,36 @@ static func _scuttle_tick(w: SimWorld, s: Dictionary) -> void:
 			w.destroy(id, "scuttle", int(s.fid))
 			w.emit("LpTurretScuttled", {"id": id, "ring": int(row.get("ring", -1)), "pos": pos})
 	s.scuttle = keep
+
+
+## H2 hunt ops: mark the Hollow King (hive Conductor) and live Reclaimers as high-value targets.
+static func _hunt_ops(w: SimWorld, s: Dictionary) -> void:
+	if float(s.get("dread", 0.0)) < float(Director71.rules().get("hunt_at", 0.55)):
+		return
+	var has_cond := false
+	var has_rec := false
+	for o in (s.get("objectives", []) as Array):
+		if bool(o.get("done", false)):
+			continue
+		var k := String(o.get("kind", ""))
+		if k == "hunt_conductor":
+			has_cond = true
+		elif k == "hunt_reclaimer":
+			has_rec = true
+	for e in w.units_of(int(s.mfid)):
+		var def := String(e.get("def", ""))
+		if not has_cond and Director71.is_hive_conductor(def):
+			_push_objective(w, s, "hunt_conductor", "Hunt the Hollow King — kill the hive Conductor",
+				{"id": int(e.id)})
+			w.emit("LpHunt", {"kind": "conductor", "id": int(e.id), "pos": e.pos})
+			has_cond = true
+		elif not has_rec and Director71.is_reclaimer(def):
+			_push_objective(w, s, "hunt_reclaimer", "Raid the Reclaimer before it prints more",
+				{"id": int(e.id)})
+			w.emit("LpHunt", {"kind": "reclaimer", "id": int(e.id), "pos": e.pos})
+			has_rec = true
+		if has_cond and has_rec:
+			return
 
 
 ## H1 core assault stub: multi-phase raid that opens once dread is late and a core still lives.

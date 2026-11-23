@@ -179,6 +179,44 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
 
 
+func test_hunt_ops() -> void:
+	check(float(Director71.rules().get("hunt_at", 0.0)) > 0.0, "hunt ops open mid-siege")
+	Radio71._lines = null
+	check(not Radio71.line("lp71.hunt").is_empty(), "hunt radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for hunts"):
+		return
+	for i in 15:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	s.dread = 0.7
+	var pos: Vector2 = Vector2(s.base.center) + Vector2(20, 0)
+	var cid := w.spawn_unit("g71_m_hive_conductor", int(s.mfid), pos)
+	var rid := w.spawn_unit("g71_m_reclaimer", int(s.mfid), pos + Vector2(2, 0))
+	check(cid >= 0 and rid >= 0, "Conductor and Reclaimer spawn for hunt stubs")
+	LastProtocol._hunt_ops(w, s)
+	var kinds := {}
+	for o in LastProtocol.hud(w).objectives:
+		kinds[String(o.kind)] = true
+	check(bool(kinds.get("hunt_conductor", false)), "Conductor hunt objective opens")
+	check(bool(kinds.get("hunt_reclaimer", false)), "Reclaimer hunt objective opens")
+	LastProtocol._complete_objective(w, s, "hunt_conductor", {})
+	var left := false
+	for o2 in LastProtocol.hud(w).objectives:
+		if String(o2.kind) == "hunt_conductor":
+			left = true
+	check(not left, "Conductor kill clears the hunt")
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpHunt", "kind": "conductor", "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).find("Hollow") >= 0 or String(feed.text).to_lower().find("target") >= 0,
+		"radio speaks the hunt")
+	feed.free()
+
+
 func test_scuttle_and_core_raid() -> void:
 	check(float(Director71.rules().get("scuttle_delay_s", 0.0)) > 0.0, "scuttle delay is set")
 	check(float(Director71.rules().get("core_raid_at", 0.0)) > 0.5, "core raid opens late")

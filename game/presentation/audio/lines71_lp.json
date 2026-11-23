@@ -15,6 +15,8 @@
     "lp71.counter_attack": {"text": "Counter-attack: {0}", "cat": "command", "prio": 76, "cd": 12.0},
     "lp71.wall_starve": {"text": "Wall-walk cut on {0} — ammo and medics cannot reach the line!", "cat": "alert", "prio": 84, "cd": 16.0},
     "lp71.turret_scuttle": {"text": "Abandoned turrets on the fallen ring — scuttling charges set.", "cat": "command", "prio": 70, "cd": 20.0},
-    "lp71.core_raid": {"text": "Core raid phase: {0}", "cat": "command", "prio": 80, "cd": 15.0}
+    "lp71.core_raid": {"text": "Core raid phase: {0}", "cat": "command", "prio": 80, "cd": 15.0},
+    "lp71.hunt": {"text": "High-value target: {0}", "cat": "command", "prio": 77, "cd": 14.0},
+    "lp71.hunt_done": {"text": "High-value target down.", "cat": "command", "prio": 74, "cd": 10.0}
   }
 }
