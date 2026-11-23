@@ -1,0 +1,12 @@
+{
+  "_meta": "G7.1 E1 end-battle atmosphere. PROVISIONAL.",
+  "rules": {
+    "g71_atmo": {
+      "flare_s": 12.0,
+      "flares_max": 8,
+      "haze_at": 0.55,
+      "ash_at": 0.7,
+      "shake_decay": 0.04
+    }
+  }
+}
