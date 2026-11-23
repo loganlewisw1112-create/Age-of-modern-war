@@ -153,9 +153,23 @@ static func _apply(w: SimWorld, apply: String) -> void:
 			lp.research_thermal = true
 		"plasma":
 			lp.research_plasma = true
+			_unlock_prod(w, int(lp.fid), "a_g71_plasma_gunner")
 		"coil":
 			lp.research_coil = true
+			_unlock_prod(w, int(lp.fid), "a_g71_coilgunner")
 		"dust":
 			lp.research_dust = true
+			_unlock_prod(w, int(lp.fid), "a_g71_dust_operator")
 		"shield":
 			lp.research_shield = true
+			_unlock_prod(w, int(lp.fid), "a_g71_shield_dome")
+
+
+## Mark a unit/building def as research-unlocked for faction production cards.
+static func _unlock_prod(w: SimWorld, fid: int, def_id: String) -> void:
+	if not w.factions.has(fid):
+		return
+	var f: Dictionary = w.factions[fid]
+	if not f.has("g71_unlock"):
+		f.g71_unlock = {}
+	(f.g71_unlock as Dictionary)[def_id] = true

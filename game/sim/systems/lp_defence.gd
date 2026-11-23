@@ -247,6 +247,10 @@ static func fall(w: SimWorld, s: Dictionary, i: int, at: Vector2) -> void:
 		Creep.add_seed(w, at, "seed", int(s.mfid))
 	w.emit("LpRingBreached", {"ring": i, "name": String(rg.name), "pos": at, "fallback": nxt, "movers": movers.size()})
 	w.emit("LpGatesSealed", {"ring": nxt, "gates": sealed})
+	# J13: war-mind asks before abandoning the breached sector (Done-when 11).
+	var Warmind71 = preload("res://sim/systems/warmind71.gd")
+	if Warmind71.active(w) and Warmind71.pending_ask(w).is_empty():
+		Warmind71.ask_abandon(w, k, "ring_breach")
 
 
 ## A destroyed wall / tower / gate of a ring joins the rebuild queue.
