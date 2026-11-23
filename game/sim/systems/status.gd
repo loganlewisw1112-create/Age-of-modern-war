@@ -44,8 +44,15 @@ static func move_mult(w: SimWorld, e: Dictionary) -> float:
 	# J9 cybernetic prosthetic: slight move boost; EMP (jammed) cancels it and slows harder.
 	if bool(e.get("g71pros", false)):
 		if is_jammed(w, e):
-			return fm * 0.7
-		return fm * 1.08
+			fm *= 0.7
+		else:
+			fm *= 1.08
+	# J9 combat stimulants: short boost then crash.
+	var Stim71 = preload("res://sim/systems/stim71.gd")
+	if Stim71.boosted(w, e):
+		fm *= float(Stim71.R().get("move_boost", 1.2))
+	elif Stim71.crashed(w, e):
+		fm *= float(Stim71.R().get("move_crash", 0.7))
 	return fm
 
 
@@ -74,6 +81,11 @@ static func accuracy_mult(w: SimWorld, e: Dictionary) -> float:
 		m *= 0.7
 	if bool(e.get("g71pros", false)):
 		m *= 0.85 if is_jammed(w, e) else 1.1  # J9 optic implant; EMP hurts linked systems
+	var Stim71 = preload("res://sim/systems/stim71.gd")
+	if Stim71.boosted(w, e):
+		m *= float(Stim71.R().get("acc_boost", 1.15))
+	elif Stim71.crashed(w, e):
+		m *= float(Stim71.R().get("acc_crash", 0.75))
 	return m
 
 

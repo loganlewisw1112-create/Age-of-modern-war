@@ -1,0 +1,10 @@
+{
+  "_meta": "G7.1 J12/J15 Site Blackglass reverse-engineering complex. PROVISIONAL.",
+  "rules": {
+    "g71_recomplex": {
+      "stage_s": 8.0,
+      "overrun_s": 20.0,
+      "_stages": "intake, scan, dissect, model, prototype"
+    }
+  }
+}

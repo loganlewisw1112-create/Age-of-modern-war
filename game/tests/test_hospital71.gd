@@ -130,6 +130,11 @@ func test_red_path_returns_to_the_fight_with_prosthetic() -> void:
 	check_eq(why, "recovered", "discharged recovered: back to the fight")
 	check(float(e.hp) >= float(e.max_hp), "full hp")
 	check(bool(e.get("g71pros", false)), "a cybernetic prosthetic fitted (state for J9)")
+	var Status = preload("res://sim/systems/status.gd")
+	var mv := Status.move_mult(w, e)
+	var ac := Status.accuracy_mult(w, e)
+	check(mv > 1.0, "J9 prosthetic move edge")
+	check(ac > 1.0, "J9 prosthetic accuracy edge")
 
 
 func test_quarantine_lock_seals_the_ward() -> void:

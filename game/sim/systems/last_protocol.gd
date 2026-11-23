@@ -1086,14 +1086,17 @@ static func _scheduled_supply(w: SimWorld, s: Dictionary) -> void:
 
 
 ## D6 threat forecast: write a short line onto the HUD from the next siege roster.
+## J13: war-mind may bias the reported face after it falls for a repeated feint.
 static func _forecast(w: SimWorld, s: Dictionary) -> void:
+	var Warmind71 = preload("res://sim/systems/warmind71.gd")
 	var sc: Dictionary = LpDefence.scan(w, s)
 	var push: Dictionary = Director71.pick_push(sc.sectors as Array)
-	var line := Director71.forecast(float(s.get("dread", 0.0)), Director71.counter_for(s), int(push.main))
+	var line := Warmind71.forecast(w, float(s.get("dread", 0.0)), Director71.counter_for(s), int(push.main))
 	if line != String(s.get("forecast", "")):
 		s.forecast = line
 		if line != "":
-			w.emit("LpThreatForecast", {"line": line, "dread": float(s.get("dread", 0.0)), "face": int(push.main)})
+			w.emit("LpThreatForecast", {"line": line, "dread": float(s.get("dread", 0.0)), "face": int(push.main),
+				"warmind_bias": Warmind71.bias_face(w)})
 
 
 ## C4 Reclaimer: eat the nearest wreck in reach and print a small Machine (default turret-eater).

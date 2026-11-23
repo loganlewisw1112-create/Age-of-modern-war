@@ -1,0 +1,15 @@
+{
+  "_meta": "G7.1 J9 combat stimulants. PROVISIONAL.",
+  "rules": {
+    "g71_stim": {
+      "boost_s": 12.0,
+      "crash_s": 8.0,
+      "addict_at": 3,
+      "addict_hp": 0.05,
+      "move_boost": 1.2,
+      "move_crash": 0.7,
+      "acc_boost": 1.15,
+      "acc_crash": 0.75
+    }
+  }
+}

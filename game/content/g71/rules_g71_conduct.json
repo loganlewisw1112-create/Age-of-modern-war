@@ -1,0 +1,15 @@
+{
+  "_meta": "G7.1 J14 cost of crossing the line. PROVISIONAL.",
+  "rules": {
+    "g71_conduct": {
+      "default_cost": 50,
+      "dark_ending_below": -200,
+      "costs": {
+        "gas_friendly": 75,
+        "purge_staff": 100,
+        "abandon_no_ask": 60,
+        "stim_overdose": 25
+      }
+    }
+  }
+}

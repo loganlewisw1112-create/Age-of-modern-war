@@ -12,6 +12,11 @@ const TREE := {
 	"wall_tier2": {"name": "Wall armour II", "cost_s": 180.0, "requires": [], "apply": "wall2"},
 	"robot_harden": {"name": "Robot hardening", "cost_s": 160.0, "requires": [], "apply": "robot_hp"},
 	"sensor_thermal": {"name": "Thermal sensors", "cost_s": 140.0, "requires": [], "apply": "thermal"},
+	# J11 late sci-fi arsenal (unlocked once Site Blackglass finishes a matching prototype).
+	"plasma_cannon": {"name": "Plasma cannon", "cost_s": 240.0, "requires": ["ammo_he"], "apply": "plasma", "needs_proto": "g71_m_brute"},
+	"coilgun": {"name": "Coilgun infantry", "cost_s": 220.0, "requires": ["ammo_ap"], "apply": "coil", "needs_proto": "g71_m_sapper"},
+	"smart_dust": {"name": "Smart-dust nanites", "cost_s": 260.0, "requires": ["robot_harden"], "apply": "dust", "needs_proto": "g71_m_glass_stalker"},
+	"energy_shield": {"name": "Energy shield dome", "cost_s": 280.0, "requires": ["wall_tier2"], "apply": "shield", "needs_proto": "g71_m_siege_walker"},
 }
 
 
@@ -49,6 +54,11 @@ static func board(w: SimWorld) -> Dictionary:
 			if not unlocked(w, String(req)):
 				ok = false
 				break
+		var need_proto := str(TREE[id].get("needs_proto", ""))
+		if ok and need_proto != "":
+			var Re = preload("res://sim/systems/recomplex71.gd")
+			if not (Re._st(w).prototypes as Dictionary).has(need_proto):
+				ok = false
 		if ok:
 			avail.append(String(id))
 	avail.sort()
@@ -82,6 +92,11 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	for req in TREE[id].get("requires", []):
 		if not unlocked(w, str(req)):
 			return "Requires %s first." % str(req)
+	var need_proto := str(TREE[id].get("needs_proto", ""))
+	if need_proto != "":
+		var Re = preload("res://sim/systems/recomplex71.gd")
+		if not (Re._st(w).prototypes as Dictionary).has(need_proto):
+			return "Needs Blackglass prototype of %s." % need_proto
 	var s := _st(w)
 	if str(s.get("cur", "")) != "":
 		return "Research already running."
@@ -136,3 +151,11 @@ static func _apply(w: SimWorld, apply: String) -> void:
 					e.hp = minf(float(e.hp) * 1.12, float(e.max_hp))
 		"thermal":
 			lp.research_thermal = true
+		"plasma":
+			lp.research_plasma = true
+		"coil":
+			lp.research_coil = true
+		"dust":
+			lp.research_dust = true
+		"shield":
+			lp.research_shield = true
