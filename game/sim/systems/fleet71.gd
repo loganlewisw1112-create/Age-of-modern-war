@@ -345,12 +345,18 @@ static func _nearest_mule(mules: Array, at: Vector2, s: Dictionary) -> int:
 			busy[mid] = true
 	var best := -1
 	var best_d := 1.0e12
+	var best_busy := -1
+	var best_busy_d := 1.0e12
 	for e in mules:
 		var id := int(e.id)
-		if busy.has(id):
-			continue
 		var d: float = Vector2(e.pos).distance_squared_to(at)
+		if busy.has(id):
+			if d < best_busy_d:
+				best_busy_d = d
+				best_busy = id
+			continue
 		if d < best_d:
 			best_d = d
 			best = id
-	return best
+	# Prefer a free mule; if every mule is already queued (north-ring fights), steal the nearest.
+	return best if best >= 0 else best_busy

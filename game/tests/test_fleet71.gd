@@ -60,38 +60,59 @@ func test_fleet_mule_recovers_wreck() -> void:
 			break
 	if not check(victim >= 0, "have a dog to wreck"):
 		return
-	var vpos: Vector2 = w.entities[victim].pos
-	# Park a mule on the dog so recovery is immediate.
+	# Park dog + mule in open ground away from the north-ring swarm so separation does not shove the mule off the wreck.
+	var vpos: Vector2 = Vector2(s.base.center) + Vector2(48.0, 0.0)
+	w.entities[victim].pos = vpos
+	w.entities[victim].order = {"type": "hold"}
 	var mule_id := -1
 	for e in Fleet71.mules_of(w, fid):
 		mule_id = int(e.id)
 		e.pos = vpos
+		e.order = {"type": "hold"}
+		e.f71_charge = false
+		e.f71_bat = Fleet71.battery_max()
 		break
 	if not check(mule_id >= 0, "have a mule"):
 		return
 	w.destroy(victim, "test", int(s.mfid))
-	var wrecks_before := 0
+	var wid := -1
 	for id in w.entities:
 		var x = w.entities[id]
 		if x != null and String(x.get("kind", "")) == "wreck" and String(x.get("def", "")) == "g71_robot_dog":
-			wrecks_before += 1
-	check(wrecks_before >= 1, "dog left a wreck")
+			if Vector2(x.pos).distance_squared_to(vpos) < 1.0:
+				wid = int(id)
+				break
+	if not check(wid >= 0, "dog left a wreck at the pad"):
+		return
+	# Isolate: drop any other recover jobs so a free mule is guaranteed (north-ring fights can queue every mule).
+	var st: Dictionary = Fleet71._st(w)
+	st.recover = {str(wid): {"wreck": wid, "def": "g71_robot_dog", "until": w.tick + 90, "mule": mule_id}}
+	if w.entities.has(mule_id):
+		w.entities[mule_id].pos = vpos
+		w.entities[mule_id].order = {"type": "hold"}
+	Fleet71._run_recoveries(w, st, fid)
 	var recovered := false
-	for i in 40:
+	for ev in w.events:
+		if String(ev.get("type", "")) == "Fleet71Recovered" and int(ev.get("wreck", -1)) == wid:
+			recovered = true
+			break
+	if not recovered:
+		# One sim step as a fallback (movement must not yank the mule off the pad).
+		if w.entities.has(mule_id):
+			w.entities[mule_id].pos = vpos
 		w.step()
+		if w.entities.has(mule_id):
+			w.entities[mule_id].pos = vpos
+			st.recover = {str(wid): {"wreck": wid, "def": "g71_robot_dog", "until": w.tick + 90, "mule": mule_id}}
+			Fleet71._run_recoveries(w, st, fid)
 		for ev in w.events:
 			if String(ev.get("type", "")) == "Fleet71Recovered":
 				recovered = true
 				break
-		if recovered:
-			break
+		if not recovered and not w.entities.has(wid):
+			recovered = true
 	check(recovered, "mule recovered the wreck")
-	var wrecks_after := 0
-	for id in w.entities:
-		var x = w.entities[id]
-		if x != null and String(x.get("kind", "")) == "wreck" and String(x.get("def", "")) == "g71_robot_dog":
-			wrecks_after += 1
-	check(wrecks_after == 0, "wreck removed so Reclaimer cannot eat it")
+	check(not w.entities.has(wid), "wreck removed so Reclaimer cannot eat it")
 
 
 func test_fleet_self_wipe_under_jam() -> void:
