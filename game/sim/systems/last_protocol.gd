@@ -205,6 +205,8 @@ static func tick(w: SimWorld) -> void:
 			_forecast(w, s)
 		if (w.tick + 41) % _t(float(Director71.rules().get("supply_every_s", 90.0))) == 0:
 			_scheduled_supply(w, s)
+		if (w.tick + 42) % _t(3.0) == 0:
+			_supply_under_fire(w, s)
 		if (w.tick + 43) % _t(2.0) == 0:
 			_wall_life(w, s)
 		if (w.tick + 47) % _t(4.0) == 0:
@@ -314,6 +316,12 @@ static func _events(w: SimWorld, s: Dictionary) -> void:
 				_complete_objective(w, s, "hold_fallback", {"ring": int(ev.get("ring", -1))})
 			"Supply8Delivered", "Supply8OpEnded":
 				_complete_objective(w, s, "protect_drop", {})
+			"CoreHit", "CorePulse":
+				_core_raid_event(w, s, "soften")
+			"CnRadio", "CnMissionDone", "CnNodePurged":
+				_core_raid_event(w, s, "breach")
+			"CoreDestroyed", "CoreUprooted":
+				_core_raid_event(w, s, "purge")
 
 
 ## Meters, phase, Weavers, Tide (cadence think_every).
@@ -620,10 +628,56 @@ static func _wall_life(w: SimWorld, s: Dictionary) -> void:
 			w.emit("LpSectorCrack", {"sector": k, "name": Director71.face_name(k), "fatigue": next, "pos": at})
 			_push_objective(w, s, "rotate_sector", "Rotate fresh squads onto the %s face" % Director71.face_name(k),
 				{"sector": k})
+			_rotate_to_face(w, s, k)
 		elif next < thr * 0.5 and cracked.has(k):
 			cracked.erase(k)
 			_complete_objective(w, s, "rotate_sector", {"sector": k})
+	# Keep pushing fresh bodies onto every still-cracked face.
+	for k2 in cracked:
+		_rotate_to_face(w, s, int(k2))
 	s.wall_crack = cracked
+
+
+## D3: send reserves + healthy core troops onto a cracking face; resting them drops fatigue when they arrive.
+static func _rotate_to_face(w: SimWorld, s: Dictionary, sector: int) -> int:
+	if not bool(s.get("defence_ai", true)):
+		return 0
+	var front := 0
+	while front < (s.base.rings as Array).size() - 1 and bool(s.base.rings[front].fallen):
+		front += 1
+	var p: Vector2 = LpDefence.sector_point(s, front, sector)
+	var movers := []
+	var on_face := 0
+	var rot_hp := float(Content.rules().get("g7_lastprotocol", {}).get("defence", {}).get("rotate_hp_frac", 0.4))
+	for e in w.units_of(int(s.fid)):
+		if not LpDefence.is_main(e) or Air.is_aircraft(e):
+			continue
+		var face := LpDefence._sector(s, Vector2(e.pos))
+		if face == sector and Vector2(e.pos).distance_to(p) <= 8.0:
+			on_face += 1
+			continue
+		var hp := float(e.get("hp", e.get("max_hp", 1.0)))
+		var mx := float(e.get("max_hp", e.get("hp_max", hp)))
+		if mx <= 0.0:
+			mx = 1.0
+		if hp < rot_hp * mx:
+			continue  # wounded stay in the core
+		if bool(e.get("lp_reserve", false)) or int(e.get("lp_ring", 0)) >= (s.base.rings as Array).size() - 1:
+			movers.append(e)
+	if movers.is_empty():
+		return on_face
+	# Cap the rush so the whole base does not empty.
+	movers.sort_custom(func(a, b): return int(a.id) < int(b.id))
+	if movers.size() > 12:
+		movers = movers.slice(0, 12)
+	var n := LpDefence.order(w, int(s.fid), movers, "attack_move", p)
+	if n > 0:
+		w.emit("LpWallRotate", {"sector": sector, "name": Director71.face_name(sector), "n": n, "pos": p})
+	# Fresh bodies on the face bleed fatigue off.
+	if on_face + n > 0 and s.has("wall_fatigue") and (s.wall_fatigue as Array).size() == 8:
+		var rest := float(Director71.rules().get("wall_fatigue_rest", 0.02)) * 2.0
+		s.wall_fatigue[sector] = clampf(float(s.wall_fatigue[sector]) - rest * float(maxi(on_face, 1)), 0.0, 1.0)
+	return n
 
 
 ## D3 fallback: abandoned turrets on a fallen ring are blown after a short rear-guard delay.
@@ -700,6 +754,48 @@ static func _hunt_ops(w: SimWorld, s: Dictionary) -> void:
 			return
 
 
+## H1: advance the open raid when the matching phase event lands (or the timer in _core_raid_tick).
+static func _core_raid_event(w: SimWorld, s: Dictionary, want: String) -> void:
+	if not s.has("core_raid") or not (s.core_raid is Dictionary):
+		return
+	var raid: Dictionary = s.core_raid
+	var phase := String(raid.get("phase", ""))
+	if phase == "" or phase == "done" or phase == "failed":
+		return
+	# Event advances the *current* phase into the next one when it matches.
+	if phase == "recon" and want == "soften":
+		_core_raid_advance(w, s, raid)
+	elif phase == "soften" and want == "breach":
+		_core_raid_advance(w, s, raid)
+	elif phase == "breach" and want == "purge":
+		_core_raid_advance(w, s, raid)
+	elif phase == "purge" and want == "purge":
+		_complete_objective(w, s, "core_raid", {})
+		raid.phase = "done"
+		s.core_raid = raid
+		w.emit("LpCoreRaid", {"phase": "done", "core": int(raid.get("core", -1)), "why": "core_down"})
+
+
+static func _core_raid_advance(w: SimWorld, s: Dictionary, raid: Dictionary) -> void:
+	var order := ["recon", "soften", "breach", "purge"]
+	var i := int(raid.get("phase_i", 0)) + 1
+	if i >= order.size():
+		return
+	raid.phase = String(order[i])
+	raid.phase_i = i
+	raid.t0 = w.tick
+	s.core_raid = raid
+	var titles := {
+		"soften": "Core raid: soften the heart (arty / UCAV)",
+		"breach": "Core raid: breach with CN teams",
+		"purge": "Core raid: purge the heart",
+	}
+	var title := String(titles.get(raid.phase, "Core raid: %s" % raid.phase))
+	_complete_objective(w, s, "core_raid", {})
+	_push_objective(w, s, "core_raid", title, {"phase": String(raid.phase), "core": int(raid.core)})
+	w.emit("LpCoreRaid", {"phase": String(raid.phase), "core": int(raid.core), "why": "event"})
+
+
 ## H1 core assault stub: multi-phase raid that opens once dread is late and a core still lives.
 static func _core_raid_tick(w: SimWorld, s: Dictionary) -> void:
 	if not s.has("core_raid") or not (s.core_raid is Dictionary):
@@ -738,9 +834,8 @@ static func _core_raid_tick(w: SimWorld, s: Dictionary) -> void:
 	var every := _t(float(Director71.rules().get("core_raid_phase_s", 45.0)))
 	if w.tick - int(raid.get("t0", w.tick)) < every:
 		return
-	var order := ["recon", "soften", "breach", "purge"]
 	var i := int(raid.get("phase_i", 0)) + 1
-	if i >= order.size():
+	if i >= 4:
 		# purge window expired without a core kill = failed phase report
 		raid.phase = "failed"
 		raid.failed = "purge"
@@ -749,19 +844,7 @@ static func _core_raid_tick(w: SimWorld, s: Dictionary) -> void:
 		_push_objective(w, s, "core_raid_fail", "Core raid failed at purge — regroup", {"phase": "purge"})
 		w.emit("LpCoreRaid", {"phase": "failed", "failed": "purge", "core": int(raid.get("core", -1))})
 		return
-	raid.phase = String(order[i])
-	raid.phase_i = i
-	raid.t0 = w.tick
-	s.core_raid = raid
-	var titles := {
-		"soften": "Core raid: soften the heart (arty / UCAV)",
-		"breach": "Core raid: breach with CN teams",
-		"purge": "Core raid: purge the heart",
-	}
-	var title := String(titles.get(raid.phase, "Core raid: %s" % raid.phase))
-	_complete_objective(w, s, "core_raid", {})
-	_push_objective(w, s, "core_raid", title, {"phase": String(raid.phase), "core": int(raid.core)})
-	w.emit("LpCoreRaid", {"phase": String(raid.phase), "core": int(raid.core)})
+	_core_raid_advance(w, s, raid)
 
 
 ## D3 runners under fire: cracked / threatened faces need friendlies on the wall-walk; miss enough checks = starve.
@@ -850,6 +933,44 @@ static func _counter_attacks(w: SimWorld, s: Dictionary) -> void:
 		_push_objective(w, s, "sally_sapper", title, {"id": int(e.id), "sector": face})
 		w.emit("LpCounterAttack", {"kind": "sapper", "id": int(e.id), "sector": face, "title": title, "pos": e.pos})
 		return
+
+
+## D2: while protect_drop is open, peel a logistics slice of the Tide onto the magazine / drop zone.
+static func _supply_under_fire(w: SimWorld, s: Dictionary) -> void:
+	var fac := -1
+	for o in (s.get("objectives", []) as Array):
+		if String(o.get("kind", "")) == "protect_drop" and not bool(o.get("done", false)):
+			fac = int(o.get("fac", -1))
+			break
+	if fac < 0:
+		s.erase("supply_threat_t")
+		return
+	var tgt := Vector2(s.base.center) + Vector2(0.5, 0.5)
+	var Rf: Dictionary = Supply8.rec(w, fac)
+	if not Rf.is_empty():
+		var op: Dictionary = Rf.get("op", {})
+		if op.has("spot"):
+			tgt = Vector2(op.spot)
+		elif op.has("pod") and int(op.pod) >= 0 and w.entities.has(int(op.pod)):
+			tgt = Vector2(w.entities[int(op.pod)].pos)
+		elif w.entities.has(int(Rf.get("mag", -1))):
+			tgt = Vector2(w.entities[int(Rf.mag)].pos)
+	var ids := []
+	var wk := Cores.walker(w)
+	for e in w.units_of(int(s.mfid)):
+		if int(e.id) == wk or e.has("core7") or bool(e.get("lp_regrow", false)):
+			continue
+		ids.append(int(e.id))
+	if ids.is_empty():
+		return
+	ids.sort()
+	var n := clampi(int(round(float(ids.size()) * float(Director71.rules().get("logistics_frac", 0.15)))), 1, mini(8, ids.size()))
+	var peel: Array = ids.slice(0, n)
+	w.submit({"type": "attack_move", "issuer": int(s.mfid), "unit_ids": peel, "target": tgt, "ai_cmd": "lp"})
+	# Radio once per inbound drop (not every peel tick).
+	if int(s.get("supply_threat_t", -1)) != int(s.get("obj_next", 0)):
+		s.supply_threat_t = int(s.get("obj_next", 0))
+		w.emit("LpSupplyThreatened", {"fac": fac, "n": peel.size(), "pos": tgt})
 
 
 ## D2 siege economy: schedule a Supply8 airdrop when dread is high and a magazine can take one.

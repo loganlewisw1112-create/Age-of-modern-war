@@ -1,0 +1,53 @@
+# G7.1 playable package: import -> export-pack -> exe+dll+PLAY_ME -> build/ + Downloads + zip.
+# Usage (from anywhere): powershell -File game/.plan/package_g71.ps1
+param(
+  [string]$Note = ""
+)
+$ErrorActionPreference = "Stop"
+$root = "C:\CODING\PROJECTS - CURRENTLY WORKING ON\RTS Age of Modern Warfare"
+$godot = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe"
+$godotWin = "C:\Users\logan\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64.exe"
+$sha = (git -C $root rev-parse --short HEAD).Trim()
+$day = Get-Date -Format "yyyy-MM-dd"
+$tag = "G71_${day}_$sha"
+$out = Join-Path $root "build\RTS_Age_of_Modern_War_$tag"
+New-Item -ItemType Directory -Force -Path $out | Out-Null
+$playPath = Join-Path $root "build\PLAY_ME_G71.txt"
+if (-not (Test-Path $playPath)) {
+  Set-Content -Path $playPath -Value "RTS: Age of Modern War — G7.1 playable ($sha)`nPLAY: double-click RTS_Age_of_Modern_War.exe`n" -Encoding UTF8
+}
+if ($Note -ne "") {
+  Add-Content -Path $playPath -Value "`n$Note" -Encoding UTF8
+}
+# stamp commit at top
+$play = Get-Content $playPath -Raw
+if ($play -notmatch $sha) {
+  $play = "Commit: $sha`n`n" + $play
+  Set-Content -Path $playPath -Value $play -Encoding UTF8
+}
+Copy-Item $playPath (Join-Path $out "PLAY_ME.txt") -Force
+Set-Location (Join-Path $root "game")
+Write-Host "IMPORT_START $sha -> $out"
+& $godot --headless --path . --import *> (Join-Path $root "build\import_G71.log")
+Write-Host "IMPORT_EXIT $LASTEXITCODE"
+$pck = Join-Path $out "RTS_Age_of_Modern_War.pck"
+& $godot --headless --path . --export-pack "Windows Desktop" $pck *> (Join-Path $root "build\export_G71.log")
+Write-Host "EXPORT_EXIT $LASTEXITCODE"
+if (-not (Test-Path $pck)) { throw "export failed: no pck" }
+Copy-Item $godotWin (Join-Path $out "RTS_Age_of_Modern_War.exe") -Force
+Copy-Item $godot (Join-Path $out "RTS_Age_of_Modern_War_console.exe") -Force
+Copy-Item (Join-Path $root "game\bin\rts_core.dll") (Join-Path $out "rts_core.dll") -Force
+$md5 = (Get-FileHash $pck -Algorithm MD5).Hash.ToLower()
+$len = (Get-Item $pck).Length
+Write-Host "PCK_MD5 $md5 SIZE $len"
+$dstParent = "C:\Users\logan\Downloads\Age of Modern War"
+New-Item -ItemType Directory -Force -Path $dstParent | Out-Null
+$dst = Join-Path $dstParent "RTS_Age_of_Modern_War_$tag"
+if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
+Copy-Item $out $dst -Recurse -Force
+$zip = Join-Path $dstParent "RTS_Age_of_Modern_War_$tag.zip"
+if (Test-Path $zip) { Remove-Item $zip -Force }
+Compress-Archive -Path $dst -DestinationPath $zip -Force
+Write-Host "DOWNLOADS $dst"
+Write-Host "ZIP $zip"
+Write-Host "PACKAGE_DONE $tag"

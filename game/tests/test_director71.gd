@@ -3,6 +3,8 @@ extends "res://tests/test_base.gd"
 
 const Director71 = preload("res://sim/systems/director71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
+const LpDefence = preload("res://sim/systems/lp_defence.gd")
+const Air = preload("res://sim/systems/air.gd")
 const LpHud = preload("res://presentation/ui7/lp_hud.gd")
 const Radio71 = preload("res://sim/systems/radio71.gd")
 
@@ -182,6 +184,38 @@ func test_live_meter_does_not_move_the_phase() -> void:
 	})
 	check(String(shown.dread).find("BREAKING POINT") >= 0, "HUD text shows the breaking point")
 	check(String(shown.dread).find("armour") >= 0, "HUD text shows the hive counter")
+
+
+func test_wall_rotate_orders_reserves() -> void:
+	Radio71._lines = null
+	check(not Radio71.line("lp71.wall_rotate").is_empty(), "wall-rotate radio line loads")
+	var c := LastProtocol.make_config(77, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "Last Protocol match starts for wall rotate"):
+		return
+	for i in 25:
+		w.step()
+	var s: Dictionary = w.sys_state.lp
+	# Mark a few units as reserves so rotation has bodies to send.
+	var tagged := 0
+	for e in w.units_of(int(s.fid)):
+		if not LpDefence.is_main(e) or Air.is_aircraft(e):
+			continue
+		e.lp_reserve = true
+		tagged += 1
+		if tagged >= 6:
+			break
+	check(tagged > 0, "tagged reserves for rotation")
+	var n := LastProtocol._rotate_to_face(w, s, 2)
+	check(n > 0, "rotation issues orders onto the N face (%d)" % n)
+	var RF = load("res://presentation/ui71/radio_feed.gd")
+	var feed = RF.new()
+	feed.setup(0)
+	feed.handle_events([{"type": "LpWallRotate", "sector": 2, "name": "N", "n": n, "pos": Vector2(1, 1)}], null)
+	feed.tick(0.1)
+	check(String(feed.text).to_lower().find("rotat") >= 0 or String(feed.text).find("N") >= 0,
+		"radio speaks wall rotate")
+	feed.free()
 
 
 func test_boss_spikes() -> void:

@@ -1,37 +1,15 @@
-RTS: Age of Modern War — G7.1 checkpoint, 2026-11-22 (director slice)
+RTS: Age of Modern War — G7.1 playable, 2026-11-22
 
-This is the newest build. It is G7 (2026-10-30) plus G7.1 wave 1, wave-2 work on the tree,
-the Vanta2 flight fix, and the Last Protocol hive director slices (C1–C6 stubs). Checkpoint,
-not a finished G7.1. Commit: 24f68b4 on branch g71.
+Newest build on branch g71. Checkpoint, not finished G7.1.
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
-NEW TO THE GAME? Main menu > Tutorial. F1 in a match = hotkey sheet.
-LAST PROTOCOL: main menu > Last Protocol. It is its own mode, not a skirmish map.
+LAST PROTOCOL: main menu > Last Protocol.
 
-IN THIS BUILD, ON TOP OF G7
-  Wave 1: aircraft go home to their own pads, air ops, fewer steps to send a force, control fixes.
-  Wave 2, as far as it got: Conductor gunship and wingmen, ammo tiers, kill zones, crew-served weapons,
-    wall and turret work, discipline, counter-nanite grenades and a shield drone, the hospital, gas and
-    masks, gore and casualty care.
-  Vanta2: the rotorless gunship keeps its speed (a stop does not kill it dead), banks into turns, strafes
-    through a target, and fires the twin guns on the front of the body.
-  Hive director (this slice): dread meter + Tide breaths; feint assaults; breaking-point + Overmind lines;
-    late logistics peels; retreat/regrow; adapt counters that bias spawns; C3/C4 stubs (brute, siege walker,
-    turret-eater, sapper, reclaimer, hive Conductor, glass stalker); Conductor sync damage; wreck cover;
-    Glass stalker camo that strips when hit. HUD shows dread, breaking point, and hive counter.
+IN THIS BUILD
+  Hive director C1–C6, D1–D3/D6, H1/H2/H5 stubs.
+  NEW: cracked faces rotate fresh squads onto the wall (LpWallRotate); Tide peels onto inbound supply drops;
+       core-raid phases advance on CoreHit / CN purge / core-down (timer still fails a stuck purge).
 
-LEFT FOR THE NEXT SLICE
-  Last Protocol peak is about 24 fps (the gate is 30). A 2,000-unit view is about 35 fps (the gate is 60).
-  Exact drawing cuts did not close that. A visible quality cut was ruled out. The swarm drawing kernel is parked.
-  Polish still open: turret latch/jammer, thermal/rain stalker reveal, body piles, formation AI beyond sync damage.
-  Waves 3 to 6 Done-when items remain: core raids, save/resume, look checkpoint, full animation, long soaks,
-    frame-rate gates, final package that claims the frozen Done-when.
-  Skirmish still has its 120 population cap.
-  The 8-APC exit under pressure is still about 83 seconds (the target was about 70).
-
-G7 LIMITS THAT STILL APPLY
-  Balance numbers are provisional. Fortress balance was not retuned when the new lethality landed.
-  Rifles do not damage a hardened building such as an HQ.
-  The sim is heavier than G6.1. That was accepted for G7.
-  See PROGRESS.md "SLICE STOP" for the handoff.
+LEFT OPEN
+  LP peak fps (~24 vs 30), 2k (~35 vs 60), airlock ~83s vs 70s, robot fleet, look checkpoint, waves 3–6 Done-when.

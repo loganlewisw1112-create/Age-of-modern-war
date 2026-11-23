@@ -45,6 +45,9 @@ breaking-point, logistics, regrow, adapt, C3/C4 units, sync, reclaim, wreck cove
 - D3 scuttle + H1 core-raid stub (2026-11-22): fallen-ring turrets queue then blow (`LpTurretScuttled`); multi-phase core raid opens at high dread (`LpCoreRaid`, HUD RAID).
 - H2 hunt stubs (2026-11-22): mid-dread marks hive Conductor + Reclaimer as HVTs (`LpHunt` / `LpHuntDone`).
 - H5 mini-boss stubs (2026-11-22): Gorilla Alpha at breaking-point, Mega Walker at siege; kill objectives + radio.
+- D3 wall rotate real (2026-11-22): cracked faces pull reserves/core troops via `LpWallRotate`; fatigue bleeds off when bodies arrive.
+- D2 supply under fire + H1 event advance (2026-11-22): Tide peels onto open protect_drop LZ; core-raid phases advance on CoreHit / CN / core-down (timer still fails purge).
+- Package rule: every commit rebuilds playable exe+pck into `build/` + Downloads (`game/.plan/package_g71.ps1`).
 - Frame rate. Last Protocol peak p10 was about 24 fps (gate 30). The 2,000-unit case p10 was about 35 fps (gate 60).
 
   Exact drawing cuts did not close it. The swarm kernel is parked (it was slower). A visible quality cut was ruled
