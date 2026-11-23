@@ -4,7 +4,7 @@ extends SceneTree
 ##   godot --headless --path . -s tools/art/g71_lookcheck.gd [-- --out=<abs dir>]
 const PAD := 3
 const LABEL_H := 10
-const GROUPS := ["g71_army", "g71_defences", "g71_fires", "g71_cn", "g71_damage", "g71_farp", "g71_siege"]
+const GROUPS := ["g71_army", "g71_defences", "g71_fires", "g71_cn", "g71_damage", "g71_farp", "g71_siege", "g71_special", "g71_fleet"]
 const SUBS := ["units", "buildings", "icons"]
 const FONT := {"A": 0x7B6F, "B": 0x6BAE, "C": 0x7927, "D": 0x6B6E, "E": 0x79A7, "F": 0x79A4, "G": 0x796F,
 	"H": 0x5BED, "I": 0x7497, "J": 0x126F, "K": 0x5BAD, "L": 0x4927, "M": 0x5FED, "N": 0x6B6D, "O": 0x7B6F,

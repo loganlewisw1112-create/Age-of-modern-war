@@ -1,0 +1,272 @@
+{
+  "files": {
+    "icons/g71_m_glass_stalker.png": "92323ab151076f0a15d3b9de31d698a9",
+    "icons/g71_m_hive_conductor.png": "76ef7a95c5fff0c78426f97986d091ca",
+    "icons/g71_m_reclaimer.png": "ec9e5f111ccdecad9883cdf3ff4ec3e0",
+    "units/g71_m_glass_stalker.png": "5bc8f9dd6dbb7025a53a22fd2008df4f",
+    "units/g71_m_glass_stalker_mask.png": "1c5b0c6088acb147a278a9a0908953fb",
+    "units/g71_m_hive_conductor.png": "af041904891a427abd37314f8dc9ed8d",
+    "units/g71_m_hive_conductor_mask.png": "3b2ddc74098803762d13285f164aff2a",
+    "units/g71_m_reclaimer.png": "58994d94e161c73ce37d5f48449bc872",
+    "units/g71_m_reclaimer_mask.png": "4fc3e37c5d5335305740d1dc4900306d",
+    "wrecks/g71_m_hive_conductor_wreck.png": "644604394ec4501bb4c5e8d5aed3607b",
+    "wrecks/g71_m_reclaimer_wreck.png": "e1d4989291de7d3aea460f0999ccc60f"
+  },
+  "group": "g71_special",
+  "icons": {
+    "g71_m_glass_stalker": "icons/g71_m_glass_stalker.png",
+    "g71_m_hive_conductor": "icons/g71_m_hive_conductor.png",
+    "g71_m_reclaimer": "icons/g71_m_reclaimer.png"
+  },
+  "infantry": {
+    "g71_m_glass_stalker": {
+      "anim61": {
+        "base": 4.0,
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 40.0,
+      "file": "units/g71_m_glass_stalker.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 28.0,
+      "g71": {
+        "base": "m_coordinator",
+        "mark": "translucent glass edge + cyan refraction stripe"
+      },
+      "legged": true,
+      "mask": "units/g71_m_glass_stalker_mask.png",
+      "pivot": [
+        14.0,
+        33.0
+      ]
+    },
+    "g71_m_hive_conductor": {
+      "anim61": {
+        "base": 4.0,
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 70.0,
+      "file": "units/g71_m_hive_conductor.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 70.0,
+      "g71": {
+        "base": "m_walker",
+        "mark": "violet sync ring + command mast"
+      },
+      "legged": true,
+      "mask": "units/g71_m_hive_conductor_mask.png",
+      "pivot": [
+        35.0,
+        52.0
+      ]
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "g71_m_hive_conductor": {
+      "facings": 8.0,
+      "fh": 70.0,
+      "file": "wrecks/g71_m_hive_conductor_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 70.0,
+      "pivot": [
+        35.0,
+        52.0
+      ]
+    },
+    "g71_m_reclaimer": {
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "wrecks/g71_m_reclaimer_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 84.0,
+      "pivot": [
+        42.0,
+        38.0
+      ]
+    }
+  },
+  "vehicles": {
+    "g71_m_reclaimer": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            31.0,
+            6.0
+          ],
+          [
+            -8.0,
+            14.0
+          ],
+          [
+            -32.0,
+            6.0
+          ],
+          [
+            -37.0,
+            -3.0
+          ],
+          [
+            -32.0,
+            -15.0
+          ],
+          [
+            -10.0,
+            -33.0
+          ],
+          [
+            31.0,
+            -15.0
+          ],
+          [
+            36.0,
+            -8.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            2.0,
+            -33.0
+          ],
+          [
+            0.0,
+            -33.0
+          ],
+          [
+            -2.0,
+            -28.0
+          ],
+          [
+            -7.0,
+            -23.0
+          ],
+          [
+            -2.0,
+            -31.0
+          ],
+          [
+            0.0,
+            -31.0
+          ],
+          [
+            2.0,
+            -31.0
+          ],
+          [
+            7.0,
+            -29.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "units/g71_m_reclaimer.png",
+      "frames": [
+        "idle",
+        "move",
+        "work",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 84.0,
+      "g71": {
+        "base": "m_assimilator",
+        "mark": "amber reclaim hopper + intake scoop + beam tip"
+      },
+      "mask": "units/g71_m_reclaimer_mask.png",
+      "pivot": [
+        42.0,
+        38.0
+      ]
+    }
+  },
+  "version": 1
+}

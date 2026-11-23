@@ -1,0 +1,1071 @@
+{
+  "files": {
+    "icons/g71_ew_drone.png": "dd1085f525222bfa62852401e65cf9b1",
+    "icons/g71_hunter_tank.png": "43c5d2ceb2c9b2027981f472409d6d27",
+    "icons/g71_purge_bot.png": "73979643311d47f5e9c7024311e7f03d",
+    "icons/g71_robot_dog.png": "e290d47f74882776d81420d2a7215760",
+    "icons/g71_robot_mule.png": "4f7e892da30c038e004dd5847090cce4",
+    "icons/g71_ucav.png": "2acfd846b2f7ba3bbd8a4c2e4f17b77f",
+    "icons/g71_ugv_mg.png": "f5160bcb0cdc32813548f57c3dcc83db",
+    "icons/g71_wall_sentinel.png": "79bab23da64a770896c50e7f93813c50",
+    "units/g71_ew_drone.png": "713fd79911705a6a69f21fa72fe211e1",
+    "units/g71_ew_drone_mask.png": "3551908de33d925c03098c04d2f9bffb",
+    "units/g71_ew_drone_shadow.png": "18fc7670963e6c8d6bad904667a24068",
+    "units/g71_hunter_tank.png": "895dd25112b679df1560104a33fea0e5",
+    "units/g71_hunter_tank_mask.png": "b89247f45399fb06ce60ee54a42203bb",
+    "units/g71_purge_bot.png": "dd0d1f53d031b45492d0a79eb1a4895d",
+    "units/g71_purge_bot_mask.png": "cca66097fc5b5d4dadf8243874bceb7c",
+    "units/g71_robot_dog.png": "f42af23f3a41daff7fbe883260659259",
+    "units/g71_robot_dog_mask.png": "c5bb90dde7e604a5cfacbb200b366f97",
+    "units/g71_robot_mule.png": "f24c84a838c80d1b9ac7b91c951919ce",
+    "units/g71_robot_mule_mask.png": "9b0515e8d5127638e1b45b99cb60038d",
+    "units/g71_ucav.png": "aec852e8897026449afdca5a7474ba23",
+    "units/g71_ucav_mask.png": "cf04eab5e20c23ac1d533c55fac45a9e",
+    "units/g71_ucav_shadow.png": "a92d9943d94b835855f7168d477ef4c1",
+    "units/g71_ugv_mg.png": "72ef5092596278f33e75f235066f149d",
+    "units/g71_ugv_mg_mask.png": "3aaed922fce80bee1210b85373887033",
+    "units/g71_wall_sentinel.png": "3a8975195deb30ac092e2b045c3b47f7",
+    "units/g71_wall_sentinel_mask.png": "0d2839f452bdaa4a8a4f54a90843f70e",
+    "wrecks/g71_ew_drone_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
+    "wrecks/g71_hunter_tank_wreck.png": "9ce4637a333845dfa00bf3bdc3e427b1",
+    "wrecks/g71_purge_bot_wreck.png": "afbf71531e739a7ccd395764c6b74b67",
+    "wrecks/g71_robot_dog_wreck.png": "4c469d7ce3701921886f5c6e05fe0f1a",
+    "wrecks/g71_robot_mule_wreck.png": "3b1cd9845de31b6f0c2f12d0ef1810c3",
+    "wrecks/g71_ucav_wreck.png": "b2a396134548c49c101195a60acf8b1a",
+    "wrecks/g71_ugv_mg_wreck.png": "73f51d4a63502a43f30787270042729f",
+    "wrecks/g71_wall_sentinel_wreck.png": "128289fa13b8b4ce956f43b0e7bdd3fd"
+  },
+  "group": "g71_fleet",
+  "icons": {
+    "g71_ew_drone": "icons/g71_ew_drone.png",
+    "g71_hunter_tank": "icons/g71_hunter_tank.png",
+    "g71_purge_bot": "icons/g71_purge_bot.png",
+    "g71_robot_dog": "icons/g71_robot_dog.png",
+    "g71_robot_mule": "icons/g71_robot_mule.png",
+    "g71_ucav": "icons/g71_ucav.png",
+    "g71_ugv_mg": "icons/g71_ugv_mg.png",
+    "g71_wall_sentinel": "icons/g71_wall_sentinel.png"
+  },
+  "infantry": {
+    "g71_wall_sentinel": {
+      "anim61": {
+        "art": "native",
+        "base": 4.0,
+        "v": 7.0
+      },
+      "facings": 8.0,
+      "fh": 32.0,
+      "file": "units/g71_wall_sentinel.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1",
+        "cwalk_0",
+        "cwalk_1",
+        "cwalk_2",
+        "cwalk_3",
+        "duck_0",
+        "duck_1",
+        "duck_2",
+        "duck_3",
+        "back_0",
+        "back_1",
+        "stumble",
+        "limp_0",
+        "limp_1",
+        "knock",
+        "kdown",
+        "unc",
+        "aid_0",
+        "aid_1",
+        "drag_0",
+        "drag_1",
+        "carry_0",
+        "carry_1",
+        "peek_l",
+        "peek_r",
+        "cower",
+        "drop",
+        "aim",
+        "sa_aim",
+        "sa_fire"
+      ],
+      "fw": 32.0,
+      "g7": {
+        "budget": 524288.0,
+        "bytes": 296440.0,
+        "class": "infantry",
+        "detail_level": "DL7-3",
+        "key_frames": [
+          "idle",
+          "aim",
+          "fire",
+          "reload_0",
+          "sa_fire",
+          "crouch",
+          "drag_0"
+        ],
+        "mirror": 1.0,
+        "owner": "SENTART7",
+        "raw_bytes": 2031616.0,
+        "sentinel": "gunner",
+        "side": "human_a"
+      },
+      "g71": {
+        "base": "g7_sent_gunner",
+        "mark": "sentinel",
+        "src_group": "g7_sentinels"
+      },
+      "legged": true,
+      "mask": "units/g71_wall_sentinel_mask.png",
+      "pivot": [
+        16.0,
+        27.0
+      ],
+      "squad_size": 1.0
+    }
+  },
+  "tile": [
+    64,
+    32
+  ],
+  "vehicle_wrecks": {
+    "g71_ew_drone": {
+      "facings": 8.0,
+      "fh": 30.0,
+      "file": "wrecks/g71_ew_drone_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 34.0,
+      "pivot": [
+        17.0,
+        18.0
+      ]
+    },
+    "g71_hunter_tank": {
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "wrecks/g71_hunter_tank_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 96.0,
+      "pivot": [
+        44.0,
+        36.0
+      ]
+    },
+    "g71_purge_bot": {
+      "facings": 8.0,
+      "fh": 46.0,
+      "file": "wrecks/g71_purge_bot_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 54.0,
+      "pivot": [
+        27.0,
+        31.0
+      ]
+    },
+    "g71_robot_dog": {
+      "fh": 66,
+      "file": "wrecks/g71_robot_dog_wreck.png",
+      "fw": 84,
+      "pivot": [
+        42.0,
+        47.0
+      ]
+    },
+    "g71_robot_mule": {
+      "facings": 8.0,
+      "fh": 54.0,
+      "file": "wrecks/g71_robot_mule_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 64.0,
+      "pivot": [
+        32.0,
+        35.0
+      ]
+    },
+    "g71_ucav": {
+      "facings": 8.0,
+      "fh": 34.0,
+      "file": "wrecks/g71_ucav_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 38.0,
+      "pivot": [
+        19.0,
+        21.0
+      ]
+    },
+    "g71_ugv_mg": {
+      "facings": 8.0,
+      "fh": 38.0,
+      "file": "wrecks/g71_ugv_mg_wreck.png",
+      "frames": [
+        "wreck"
+      ],
+      "fw": 48.0,
+      "pivot": [
+        24.0,
+        25.0
+      ]
+    },
+    "g71_wall_sentinel": {
+      "fh": 32,
+      "file": "wrecks/g71_wall_sentinel_wreck.png",
+      "fw": 32,
+      "pivot": [
+        16.0,
+        27.0
+      ]
+    }
+  },
+  "vehicles": {
+    "g71_ew_drone": {
+      "air": true,
+      "altitude": 14.0,
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            10.0,
+            -1.0
+          ],
+          [
+            -4.0,
+            6.0
+          ],
+          [
+            -11.0,
+            -1.0
+          ],
+          [
+            -8.0,
+            -5.0
+          ],
+          [
+            -11.0,
+            -3.0
+          ],
+          [
+            -5.0,
+            -9.0
+          ],
+          [
+            10.0,
+            -3.0
+          ],
+          [
+            7.0,
+            -6.0
+          ]
+        ],
+        "smoke": [
+          [
+            0.0,
+            -6.0
+          ],
+          [
+            1.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -6.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -6.0
+          ],
+          [
+            1.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -6.0
+          ],
+          [
+            0.0,
+            -9.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "bob": 1.0,
+      "facings": 8.0,
+      "fh": 30.0,
+      "file": "units/g71_ew_drone.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "trail",
+        "bank_l",
+        "bank_r",
+        "damaged"
+      ],
+      "fw": 34.0,
+      "g71": {
+        "base": "a_drone_emp",
+        "mark": "ew",
+        "src_group": "g5_units"
+      },
+      "mask": "units/g71_ew_drone_mask.png",
+      "pivot": [
+        17.0,
+        18.0
+      ],
+      "shadow": {
+        "fh": 8.0,
+        "file": "units/g71_ew_drone_shadow.png",
+        "fw": 14.0,
+        "pivot": [
+          7.0,
+          4.0
+        ]
+      }
+    },
+    "g71_hunter_tank": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            51.0,
+            11.0
+          ],
+          [
+            0.0,
+            23.0
+          ],
+          [
+            -44.0,
+            7.0
+          ],
+          [
+            -44.0,
+            -15.0
+          ],
+          [
+            -41.0,
+            -36.0
+          ],
+          [
+            0.0,
+            -36.0
+          ],
+          [
+            40.0,
+            -36.0
+          ],
+          [
+            51.0,
+            -15.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0.0,
+            -27.0
+          ],
+          [
+            0.0,
+            -31.0
+          ],
+          [
+            0.0,
+            -32.0
+          ],
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -27.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -21.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "units/g71_hunter_tank.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 96.0,
+      "g71": {
+        "base": "a_laser_tank",
+        "mark": "hunter",
+        "src_group": "g6_units"
+      },
+      "mask": "units/g71_hunter_tank_mask.png",
+      "pivot": [
+        44.0,
+        36.0
+      ]
+    },
+    "g71_purge_bot": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            16.0,
+            4.0
+          ],
+          [
+            -1.0,
+            8.0
+          ],
+          [
+            -17.0,
+            4.0
+          ],
+          [
+            -24.0,
+            -5.0
+          ],
+          [
+            -17.0,
+            -13.0
+          ],
+          [
+            -1.0,
+            -17.0
+          ],
+          [
+            16.0,
+            -13.0
+          ],
+          [
+            23.0,
+            -5.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -19.0
+          ],
+          [
+            0.0,
+            -18.0
+          ],
+          [
+            -1.0,
+            -19.0
+          ],
+          [
+            -1.0,
+            -21.0
+          ],
+          [
+            -1.0,
+            -19.0
+          ],
+          [
+            0.0,
+            -18.0
+          ],
+          [
+            1.0,
+            -19.0
+          ],
+          [
+            1.0,
+            -21.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 46.0,
+      "file": "units/g71_purge_bot.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "work",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 54.0,
+      "g71": {
+        "base": "m_maint_swarm",
+        "mark": "purge",
+        "src_group": "g5_units"
+      },
+      "mask": "units/g71_purge_bot_mask.png",
+      "pivot": [
+        27.0,
+        31.0
+      ]
+    },
+    "g71_robot_dog": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22.0,
+            -2.0
+          ],
+          [
+            -13.0,
+            7.0
+          ],
+          [
+            -23.0,
+            -2.0
+          ],
+          [
+            -27.0,
+            -12.0
+          ],
+          [
+            -23.0,
+            -17.0
+          ],
+          [
+            -1.0,
+            -31.0
+          ],
+          [
+            22.0,
+            -17.0
+          ],
+          [
+            26.0,
+            -12.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -39.0
+          ],
+          [
+            0.0,
+            -41.0
+          ],
+          [
+            -1.0,
+            -39.0
+          ],
+          [
+            -1.0,
+            -35.0
+          ],
+          [
+            -1.0,
+            -34.0
+          ],
+          [
+            0.0,
+            -36.0
+          ],
+          [
+            1.0,
+            -34.0
+          ],
+          [
+            1.0,
+            -35.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 66.0,
+      "file": "units/g71_robot_dog.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 84.0,
+      "g7": {
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "budget": 1048576.0,
+        "bytes": 873500.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "fire": "claw_0",
+          "walk_a": "walk_0",
+          "walk_b": "walk_3"
+        },
+        "key_frames": [
+          "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "legged": true,
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 3193344.0,
+        "sample": "threat"
+      },
+      "g71": {
+        "base": "g7_m_packhunter",
+        "mark": "dog",
+        "src_group": "g7_threats"
+      },
+      "mask": "units/g71_robot_dog_mask.png",
+      "pivot": [
+        42.0,
+        47.0
+      ]
+    },
+    "g71_robot_mule": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            21.0,
+            0.0
+          ],
+          [
+            -9.0,
+            7.0
+          ],
+          [
+            -22.0,
+            0.0
+          ],
+          [
+            -22.0,
+            -12.0
+          ],
+          [
+            -21.0,
+            -21.0
+          ],
+          [
+            -8.0,
+            -27.0
+          ],
+          [
+            20.0,
+            -21.0
+          ],
+          [
+            21.0,
+            -14.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -28.0
+          ],
+          [
+            0.0,
+            -22.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -25.0
+          ],
+          [
+            0.0,
+            -22.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 54.0,
+      "file": "units/g71_robot_mule.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "unload",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 64.0,
+      "g71": {
+        "base": "a_ambulance",
+        "mark": "mule",
+        "src_group": "g5_units"
+      },
+      "mask": "units/g71_robot_mule_mask.png",
+      "pivot": [
+        32.0,
+        35.0
+      ]
+    },
+    "g71_ucav": {
+      "air": true,
+      "altitude": 16.0,
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            11.0,
+            0.0
+          ],
+          [
+            -5.0,
+            4.0
+          ],
+          [
+            -12.0,
+            0.0
+          ],
+          [
+            -11.0,
+            -4.0
+          ],
+          [
+            -12.0,
+            -3.0
+          ],
+          [
+            -6.0,
+            -8.0
+          ],
+          [
+            11.0,
+            -3.0
+          ],
+          [
+            10.0,
+            -5.0
+          ]
+        ],
+        "smoke": [
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            1.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            0.0,
+            -9.0
+          ],
+          [
+            -1.0,
+            -10.0
+          ],
+          [
+            0.0,
+            -10.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "bob": 1.0,
+      "facings": 8.0,
+      "fh": 34.0,
+      "file": "units/g71_ucav.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "bank_l",
+        "bank_r",
+        "release",
+        "dive",
+        "trail",
+        "damaged"
+      ],
+      "fw": 38.0,
+      "g7": {
+        "art": "ART7B",
+        "budget": 3145728.0,
+        "bytes": 60928.0,
+        "class": "air",
+        "detail_level": "DL7-3",
+        "kind": "strike",
+        "raw_bytes": 372096.0,
+        "scale": "4 m/tile, 9.8 px/m (fact art.scale)"
+      },
+      "g71": {
+        "base": "g7_a_strike_drone",
+        "mark": "ucav",
+        "src_group": "drone7"
+      },
+      "mask": "units/g71_ucav_mask.png",
+      "pivot": [
+        19.0,
+        21.0
+      ],
+      "shadow": {
+        "fh": 7.0,
+        "file": "units/g71_ucav_shadow.png",
+        "fw": 13.0,
+        "pivot": [
+          6.0,
+          3.0
+        ]
+      }
+    },
+    "g71_ugv_mg": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            9.0,
+            -5.0
+          ],
+          [
+            -1.0,
+            -4.0
+          ],
+          [
+            -10.0,
+            -5.0
+          ],
+          [
+            -14.0,
+            -11.0
+          ],
+          [
+            -10.0,
+            -16.0
+          ],
+          [
+            -1.0,
+            -17.0
+          ],
+          [
+            9.0,
+            -16.0
+          ],
+          [
+            13.0,
+            -11.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            -1.0,
+            -18.0
+          ],
+          [
+            0.0,
+            -20.0
+          ],
+          [
+            1.0,
+            -21.0
+          ],
+          [
+            0.0,
+            -18.0
+          ],
+          [
+            -1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -17.0
+          ],
+          [
+            1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -15.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 38.0,
+      "file": "units/g71_ugv_mg.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 48.0,
+      "g71": {
+        "base": "a_ugv",
+        "mark": "ugv",
+        "src_group": "g6_units"
+      },
+      "mask": "units/g71_ugv_mg_mask.png",
+      "pivot": [
+        24.0,
+        25.0
+      ]
+    }
+  },
+  "version": 1
+}

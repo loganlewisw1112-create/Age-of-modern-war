@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 C4 out-of-the-box machines (docs/G71_SCOPE.md C4): Reclaimer, hive Conductor (not the B6 gunship), Glass stalker. Behaviour (eat wrecks, sync aura, camo) follows; this file is the content stub. Every number PROVISIONAL.",
+  "_meta": "G7.1 C4 out-of-the-box machines (docs/G71_SCOPE.md C4): Reclaimer, hive Conductor (not the B6 gunship), Glass stalker. Behaviour (eat wrecks, sync aura, camo) follows. Art group g71_special (Phase 1B). Every number PROVISIONAL.",
   "units": {
     "g71_m_reclaimer": {
       "name": "Reclaimer",
@@ -22,7 +22,7 @@
       "energy": true,
       "leaves_wreck": true,
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "C4: eats wrecks and bodies and prints new machines. Eat/print loop still open. PROVISIONAL stand-in."
+      "_role": "C4: eats wrecks and bodies and prints new machines. Eat/print loop still open. Art: g71_special (assimilator + amber reclaim marks)."
     },
     "g71_m_hive_conductor": {
       "name": "Hive Conductor",
@@ -47,7 +47,7 @@
       "leaves_wreck": true,
       "stealth": {"radar_invisible": false, "reveal_range": 8.0},
       "components": {"mobility": 100, "weapon": 100, "sensors": 100},
-      "_role": "C4: hidden commander buried in the tide; nearby machines sync. Kill it and the local tide stumbles. Not the B6 Conductor gunship. Sync aura still open. PROVISIONAL stand-in."
+      "_role": "C4: hidden commander buried in the tide; nearby machines sync. Kill it and the local tide stumbles. Not the B6 Conductor gunship. Sync aura still open. Art: g71_special (walker + violet sync mast)."
     },
     "g71_m_glass_stalker": {
       "name": "Glass Stalker",
@@ -70,7 +70,7 @@
       "energy": true,
       "stealth": {"radar_invisible": true, "reveal_range": 4.0, "thermal_visible": true},
       "leaves_wreck": false,
-      "_role": "C4: light-bending camo; seen on thermal, drone cam, rain/smoke, or when hit. PROVISIONAL stand-in."
+      "_role": "C4: light-bending camo; seen on thermal, drone cam, rain/smoke, or when hit. Art: g71_special (skulker + translucent glass cue)."
     }
   },
   "weapons": {

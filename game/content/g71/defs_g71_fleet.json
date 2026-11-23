@@ -1,5 +1,5 @@
 {
-  "_meta": "G7.1 F robot fleet (docs/G71_SCOPE.md F1/F7/F9). Sentinels, dogs, UGVs, mules, hunter-tank. Charge/mesh/modules polish follows. Art stand-in at look checkpoint. Every number PROVISIONAL.",
+  "_meta": "G7.1 F robot fleet (docs/G71_SCOPE.md F1/F7/F9). Sentinels, dogs, UGVs, mules, hunter-tank, UCAV, EW drone, purge bot. Art: assets/art/g71_fleet/ via tools/art/g71_fleet.gd. Charge/mesh/modules polish follows. Every number PROVISIONAL.",
   "units": {
     "g71_wall_sentinel": {
       "name": "Wall Sentinel",

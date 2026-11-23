@@ -165,6 +165,77 @@ func test_facing_turn_and_offset_bound() -> void:
 		check(off <= Motion.MAX_OFF + 0.0001, "class %d drawn offset %.3f <= 0.3 tile" % [cls, off])
 
 
+## G7.1 ANIM71 E4-2.1: infantry lean into turns + feet plant on start/stop; aim facing leads a moving target.
+func test_infantry_lean_plant_and_aim_lead() -> void:
+	var m = Motion.new()
+	var dt := 1.0 / 60.0
+	var t := 0.0
+	var pos := Vector2(5, 5)
+	m.step(1, Motion.CLS_INF, pos, 0.0, 0, t)
+	# hard right turn while moving: lean should leave the facing axis (out_lean / lateral out_px)
+	var lean_peak := 0.0
+	var lean_api := 0.0
+	var px_lat := 0.0
+	for k in 90:
+		t += dt
+		pos += Vector2(0.05, 0.0)
+		m.step(1, Motion.CLS_INF, pos, PI * 0.5, Motion.P_MOVING | Motion.P_RUN, t)
+		lean_peak = maxf(lean_peak, absf(m.out_lean))
+		lean_api = maxf(lean_api, absf(m.lean(1)))
+		px_lat = maxf(px_lat, absf(m.out_px.x) + absf(m.out_px.y))
+	check(lean_peak > 0.4, "infantry lean into a hard turn (peak |out_lean|=%.3f)" % lean_peak)
+	check(lean_api > 0.2, "lean(id) reports turn lean (peak %.3f)" % lean_api)
+	check(px_lat > 0.5, "lean/bob produce a non-zero out_px while turning")
+	check(m.out_off.length() <= Motion.MAX_OFF + 0.0001, "lean stays inside MAX_OFF via out_px not out_off")
+	# feet plant on stop: after moving, halt -> suspension plant pushes out_px.y down
+	m.step(1, Motion.CLS_INF, pos, m.out_face, Motion.P_MOVING, t)
+	t += dt
+	m.step(1, Motion.CLS_INF, pos, m.out_face, 0, t)
+	check(m.out_px.y > 0.4, "feet plant on stop (out_px.y=%.3f)" % m.out_px.y)
+	# aim lead: shooter looks ahead of a crossing target vs a static one
+	var sh := 20
+	var tg := 21
+	var sp := Vector2(0, 0)
+	var tp := Vector2(4, 0)
+	t += 0.05
+	m.step(sh, Motion.CLS_INF, sp, 0.0, 0, t)
+	m.step(tg, Motion.CLS_INF, tp, 0.0, Motion.P_MOVING, t)
+	m.mark_screen(sh, Vector2(0, 0))
+	m.mark_screen(tg, Vector2(128, 64))
+	m.on_shot(sh, tg)
+	# static target facing
+	t += dt
+	m.step(sh, Motion.CLS_INF, sp, 0.0, Motion.P_FIRING, t)
+	m.step(tg, Motion.CLS_INF, tp, 0.0, 0, t)
+	var face_static: float = m.out_face
+	var row_static: int = m.aim_row(sh, Vector2(0, 0), 0)
+	# crossing target: move +y so lead pulls aim up (positive atan2)
+	for k in 40:
+		t += dt
+		tp += Vector2(0.0, 0.08)
+		m.step(tg, Motion.CLS_INF, tp, PI * 0.5, Motion.P_MOVING, t)
+		m.mark_screen(tg, Vector2((tp.x - tp.y) * 32.0, (tp.x + tp.y) * 16.0))
+		m.step(sh, Motion.CLS_INF, sp, 0.0, Motion.P_FIRING, t)
+	var face_lead: float = m.out_face
+	var row_lead: int = m.aim_row(sh, Vector2(0, 0), 0)
+	check(absf(wrapf(face_lead - face_static, -PI, PI)) > 0.05 or row_lead != row_static,
+		"aim lead moves drawn facing or aim_row vs static (face %.3f->%.3f row %d->%d)" % [face_static, face_lead, row_static, row_lead])
+	check(face_lead > face_static - 0.01, "lead toward +y crossing is non-decreasing facing (%.3f vs %.3f)" % [face_lead, face_static])
+	# determinism: same id + motion replay -> same lean peak (hash of id, no RNG)
+	var m2 = Motion.new()
+	var t2 := 0.0
+	var p2 := Vector2(5, 5)
+	var lean_peak2 := 0.0
+	m2.step(1, Motion.CLS_INF, p2, 0.0, 0, t2)
+	for k in 90:
+		t2 += dt
+		p2 += Vector2(0.05, 0.0)
+		m2.step(1, Motion.CLS_INF, p2, PI * 0.5, Motion.P_MOVING | Motion.P_RUN, t2)
+		lean_peak2 = maxf(lean_peak2, absf(m2.out_lean))
+	check(is_equal_approx(lean_peak2, lean_peak),
+		"lean is deterministic from id/motion (%.4f vs %.4f)" % [lean_peak2, lean_peak])
+
+
 func test_postures_pick_frames() -> void:
 	var fr: Array = ["idle", "walk_a", "walk_b", "fire"] + SET
 	var a := BatchArt.inf_cols(fr)

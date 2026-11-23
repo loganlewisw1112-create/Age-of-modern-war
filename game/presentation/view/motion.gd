@@ -6,12 +6,16 @@ extends RefCounted
 ## is a pure hash of the id (cosmetic, no RNG object). No class_name: preload it.
 ##
 ## Frame-selection API (fact anim.frame_api, used by entity_layer / batch_art and ANIMB61 vehicles):
-##   step(id, cls, pos_tile, sim_facing, flags, t)  -> sets out_face, out_off (tiles), out_px (px), out_flash
+##   step(id, cls, pos_tile, sim_facing, flags, t)  -> sets out_face, out_off (tiles), out_px (px), out_flash, out_lean
 ##   row(id) -> 0..7 facing row of the drawn facing      speed(id) -> tiles/s (smoothed)
 ##   turn_rate(id) -> rad/s signed (banking)              track_phase(id) -> tiles travelled (track / wheel phase)
 ##   recoil(id) -> 0..1 (1 = just fired)                  flinch(id) -> 0..1 (1 = just hit)
+##   lean(id) -> signed lateral lean px (G7.1 ANIM71 E4-2.1 infantry weight)
 ##   on_shot(shooter_id, target_id)                      kill(id, def, owner, t) / forget(id)
 ##   static inf_col(cols, posture, t, seed, fat) -> sheet column of the infantry set (see POSE_*)
+##
+## G7.1 ANIM71 E4-2.1 (presentation only): human infantry weight (feet plant, lean into turns, deeper recoil
+## plant) + procedural aim lead (drawn facing / aim_row lead moving targets via hashed id seed, no RNG).
 
 const MAX_OFF := 0.3            # drawn position never further than this (tiles) from the interpolated sim pos
 const TURN := [10.0, 3.2, 1.6, 3.6, 0.9]   # max turn rad/s per class: infantry, vehicle, heavy, air, ship
@@ -58,13 +62,16 @@ const S_SX := 16
 const S_SY := 17
 const S_MV := 18     # G6.1 (ANIMC61): moving flag last frame (suspension start / stop)
 const S_SUSP := 19   # signed suspension timer: < 0 squat on start (-1 px), > 0 dip on stop (+1 px)
-const S_AIM := 20    # last shot target id (turret aim), -1 none
+const S_AIM := 20    # last shot target id (turret aim / infantry look), -1 none
 const S_AIMT := 21   # time of that shot
 const S_ROW := 22   # PATH7-2 CR 6994: drawn facing row + 1 (0 = unset)
 const S_N := 23
 const ROW_HYS := 0.12   # rad past the 22.5 deg boundary before the drawn row changes
 const SUSP_T := 0.15 # s of suspension offset after a start / stop
-const AIM_HOLD := 3.0 # s a turret keeps aiming at its last target
+const AIM_HOLD := 3.0 # s a turret / soldier keeps aiming at its last target
+const AIM_LEAD := 0.18 # G7.1 ANIM71 E4-2.1: seconds of target velocity lead for aim / look
+const LEAN_TURN := 5.0 # rad/s that maps to full infantry lean
+const LEAN_PX := 1.5   # max lateral lean at LEAN_TURN (px); run scales 1.25x
 
 var vs: Dictionary = {}          # id -> PackedFloat32Array(S_N)
 var corpses: Array = []          # [id, art cache Array (batch_art cache_unit), screen pos, row, t0]
@@ -77,6 +84,7 @@ var out_face := 0.0
 var out_off := Vector2.ZERO
 var out_px := Vector2.ZERO
 var out_flash := 0.0
+var out_lean := 0.0             # G7.1 ANIM71 E4-2.1: signed lateral lean px (infantry); 0 for other classes
 var _now := 0.0
 
 
@@ -134,9 +142,15 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	s[S_CLS] = cls
 	var dt := clampf(t - s[S_T], 0.0, 0.1)
 	_now = t
-	# smooth facing: turn toward the sim facing at the class max angular speed (no 8-way pops)
+	# smooth facing: turn toward sim facing (infantry: blend toward lead aim when tracking a target)
+	var face_tgt := facing
+	if cls == CLS_INF:
+		var aim_a := _aim_lead_angle(s, pos, t)
+		if not is_nan(aim_a):
+			var aw := 0.72 if flags & P_FIRING else (0.48 if not (flags & P_MOVING) else 0.22)
+			face_tgt = wrapf(facing + wrapf(aim_a - facing, -PI, PI) * aw, -PI, PI)
 	var cur := s[S_FACE]
-	var d := wrapf(facing - cur, -PI, PI)
+	var d := wrapf(face_tgt - cur, -PI, PI)
 	var mx: float = float(TURN[cls]) * dt
 	var stp := clampf(d, -mx, mx)
 	s[S_FACE] = wrapf(cur + stp, -PI, PI)
@@ -173,9 +187,9 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 		else:
 			s[S_FIRE] = 0.0
 		s[S_KICK] = kick
-		# G6.1 (ANIMC61): suspension bob on start / stop (vehicles)
+		# G6.1 (ANIMC61): suspension bob on start / stop (vehicles); G7.1 ANIM71 E4-2.1: infantry feet plant too
 		var mvg := 1.0 if flags & P_MOVING else 0.0
-		if mvg != s[S_MV] and cls != CLS_INF:
+		if mvg != s[S_MV]:
 			s[S_SUSP] = -SUSP_T if mvg > 0.0 else SUSP_T
 		s[S_MV] = mvg
 		var su := s[S_SUSP]
@@ -187,18 +201,20 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	out_s = s
 	out_face = s[S_FACE]
 	out_off = Vector2(s[S_OX], s[S_OY])
+	out_lean = 0.0
 	# PATH7-2 hysteresis row candidate (= row_h(id, out_face) before its commit)
 	var rr := int(s[S_ROW]) - 1
 	if rr < 0 or absf(wrapf(out_face - float(rr) * (PI / 4.0), -PI, PI)) >= PI / 8.0 + ROW_HYS:
 		rr = posmod(int(round(out_face * (4.0 / PI))), 8)
 	out_row = rr
-	# pixel reactions: walking bob / running sway (infantry), recoil kick, hit flinch
+	# pixel reactions: walking bob / running sway (infantry), lean/plant, recoil kick, hit flinch
 	var kk := s[S_KICK] / KICK_T
 	var fk := s[S_FLINCH] / FLINCH_T
 	out_flash = fk
-	var su2 := s[S_SUSP] if cls == CLS_VEH or cls == CLS_HEAVY else 0.0
+	var su2 := s[S_SUSP] if cls == CLS_VEH or cls == CLS_HEAVY or cls == CLS_INF else 0.0
 	var mv_inf := cls == CLS_INF and flags & P_MOVING and not (flags & P_PINNED)
-	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf:
+	var lean_inf := cls == CLS_INF and mv_inf and absf(s[S_TURN]) > 0.15
+	if kk <= 0.0 and fk <= 0.0 and su2 == 0.0 and not mv_inf and not lean_inf:
 		out_px = Vector2.ZERO
 		return
 	var px := Vector2.ZERO
@@ -207,15 +223,33 @@ func step(id: int, cls: int, pos: Vector2, facing: float, flags: int, t: float) 
 	if mv_inf:
 		var run := (flags & P_RUN) != 0
 		var ph := t * (2.4 if run else 1.7) + seed
-		px.y -= absf(sin(ph * PI)) * (1.5 if run else 1.0)
+		var stride := absf(sin(ph * PI))
+		px.y -= stride * (1.5 if run else 1.0)
+		# G7.1 ANIM71 E4-2.1: feet plant at contact (settle into the ground when the stride is down)
+		px.y += maxf(0.0, 1.0 - stride * 2.0) * (0.55 if run else 0.4)
 		if run:
 			px.x += sin(ph * PI) * 0.6
+		# lean into turns (centripetal; screen lateral)
+		if lean_inf:
+			var lean_amt := clampf(s[S_TURN] / LEAN_TURN, -1.2, 1.2) * (1.25 if run else 1.0)
+			out_lean = lean_amt * LEAN_PX
+			px += Vector2(-dir.y, dir.x) * out_lean
 	if kk > 0.0:
 		px -= dir * kk * (1.2 if cls == CLS_INF else 2.2)
-		if cls == CLS_VEH or cls == CLS_HEAVY:
+		if cls == CLS_INF:
+			px.y += kk * 0.7   # G7.1 ANIM71 E4-2.1: plant under recoil
+		elif cls == CLS_VEH or cls == CLS_HEAVY:
 			px.y += 1.0  # G6.1 (ANIMC61): 1 px hull rock on a shot
 	if su2 != 0.0:
-		px.y += -1.0 if su2 < 0.0 else 1.0
+		if cls == CLS_INF:
+			# feet plant on start (lean forward + settle) / stop (hard plant)
+			if su2 < 0.0:
+				px += dir * 0.85
+				px.y += 0.45
+			else:
+				px.y += 1.15
+		else:
+			px.y += -1.0 if su2 < 0.0 else 1.0
 	if fk > 0.0:
 		var side := 1.0 if seed > 0.5 else -1.0
 		px += Vector2(-dir.y, dir.x) * side * fk * 1.5 - dir * fk * 0.8
@@ -275,13 +309,39 @@ func flinch(id: int) -> float:
 	return 0.0 if s == null else float(s[S_FLINCH]) / FLINCH_T
 
 
+func lean(id: int) -> float:
+	# G7.1 ANIM71 E4-2.1: signed lateral lean px from turn rate (0 when halted / non-infantry)
+	var s = vs.get(id)
+	if s == null or int(s[S_CLS]) != CLS_INF:
+		return 0.0
+	var tr := float(s[S_TURN])
+	if absf(tr) <= 0.15 or float(s[S_MV]) < 0.5:
+		return 0.0
+	return clampf(tr / LEAN_TURN, -1.2, 1.2) * LEAN_PX
+
+
 func firing_for(id: int) -> float:
 	var s = vs.get(id)
 	return 0.0 if s == null else float(s[S_FIRE])
 
 
+## G7.1 ANIM71 E4-2.1: lead-adjusted aim angle (tile space) toward last shot target, or NAN if none.
+func _aim_lead_angle(s: PackedFloat32Array, pos: Vector2, t: float) -> float:
+	if float(s[S_AIM]) < 0.0 or t - float(s[S_AIMT]) > AIM_HOLD:
+		return NAN
+	var ts = vs.get(int(s[S_AIM]))
+	if ts == null or t - float(ts[S_T]) > 0.5:
+		return NAN
+	var lead := Vector2(float(ts[S_PX]), float(ts[S_PY])) + Vector2(float(ts[S_VX]), float(ts[S_VY])) * AIM_LEAD
+	var d := lead - pos
+	if d.length_squared() < 0.01:
+		return NAN
+	return atan2(d.y, d.x)
+
+
 ## G6.1 (ANIMC61): turret facing row of id drawn at screen point sp: toward the screen position of its last shot
 ## target (within AIM_HOLD s, target drawn recently), else `fallback` (the hull row).
+## G7.1 ANIM71 E4-2.1: leads the target by AIM_LEAD * its smoothed tile velocity (screen-projected).
 func aim_row(id: int, sp: Vector2, fallback: int) -> int:
 	var s = vs.get(id)
 	if s == null or float(s[S_AIM]) < 0.0 or _now - float(s[S_AIMT]) > AIM_HOLD:
@@ -290,6 +350,9 @@ func aim_row(id: int, sp: Vector2, fallback: int) -> int:
 	if ts == null or _now - float(ts[S_T]) > 0.5:
 		return fallback
 	var d := Vector2(float(ts[S_SX]), float(ts[S_SY])) - sp
+	# lead: tile velocity -> iso screen offset
+	var lv := Vector2(float(ts[S_VX]), float(ts[S_VY])) * AIM_LEAD
+	d += Vector2((lv.x - lv.y) * 32.0, (lv.x + lv.y) * 16.0)
 	if d.length_squared() < 4.0:
 		return fallback
 	# screen (x, y) -> tile direction: x - y = sx / 32, x + y = sy / 16
