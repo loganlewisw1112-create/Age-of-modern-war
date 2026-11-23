@@ -2624,7 +2624,12 @@ func _vpad_px(e: Dictionary) -> bool:
 	var b: Dictionary = ArtCat.manifest().get("buildings", {}).get("a_g7_vtol_pad", {})
 	if b.is_empty():
 		return false
-	var st := "rot_%d" % posmod(int(e.get("facing_i", 0)), 4)
+	# G8 ART8: pad approach side vs camera facing.
+	var VF = load("res://presentation/view/view_facing.gd")
+	var VU = load("res://presentation/view/view_util.gd")
+	var authored := posmod(int(e.get("facing_i", 0)), 4)
+	var cam := int(VU.view_facing) if VU != null else 0
+	var st := "rot_%d" % (VF.art_side(authored, cam) if VF != null else authored)
 	if not bool(e.get("built", true)):
 		st += "_build_%d" % clampi(int(float(e.get("progress", 0.0)) * 3.0), 0, 2)
 	elif float(e.get("hp", 1.0)) < 0.5:

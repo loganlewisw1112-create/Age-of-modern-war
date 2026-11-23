@@ -94,7 +94,12 @@ static func building_state(states: Dictionary, e: Dictionary, variant: String) -
 		"lvl":
 			base = "lvl_%d" % clampi(int(e.get("level", 0)), 0, 3)
 		"rot":
-			base = "rot_%d" % posmod(int(e.get("facing_i", 0)), 4)
+			# G8 ART8: authored facing_i vs live camera facing → correct rot_* side (no mirror).
+			var VF = load("res://presentation/view/view_facing.gd")
+			var VU = load("res://presentation/view/view_util.gd")
+			var authored := posmod(int(e.get("facing_i", 0)), 4)
+			var cam := int(VU.view_facing) if VU != null else 0
+			base = "rot_%d" % (VF.art_side(authored, cam) if VF != null else authored)
 		"water":
 			base = "water_%d" % posmod(int(e.get("water_d", 0)), 4)
 	var ab := float(e.get("air_build", 0.0))
