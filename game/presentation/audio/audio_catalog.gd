@@ -123,6 +123,13 @@ static func _shot_sound(weapon_id: String) -> String:
 	var d := weapon_def(weapon_id)
 	var cls := String(d.get("class", ""))
 	var w := weapon_id.to_lower()
+	# G7.1 H10: unique class voices (rail snap, laser hum, MLRS ripple, MG belts).
+	if w.contains("rail") or cls == "rail":
+		return "shot_rail"
+	if w.contains("laser") or w.contains("beam") or cls == "laser":
+		return "shot_energy"
+	if w.contains("mlrs") or w.contains("ripple"):
+		return "shot_rocket"
 	if bool(d.get("indirect", false)) or cls == "artillery":
 		return "shot_rocket" if (w.contains("rocket") or w.contains("mlrs") or w.contains("missile")) else "shot_artillery"
 	match cls:
@@ -148,19 +155,39 @@ static func _shot_sound(weapon_id: String) -> String:
 	return "shot_rifle"
 
 
-static func impact_sound(weapon_id: String) -> String:
+static func impact_sound(weapon_id: String, target_def: String = "") -> String:
+	# G7.1 H10: armour clang vs ground/flesh thud when target_def is known.
+	if target_def != "":
+		if _is_armour_def(target_def):
+			return "impact_heavy"
+		var s0 := shot_sound(weapon_id)
+		if s0 in ["shot_rifle", "shot_mg", "shot_sniper", "shot_energy"]:
+			return "impact_bullet"
 	if not _impact_cache.has(weapon_id):
 		_impact_cache[weapon_id] = _impact_sound(weapon_id)
 	return _impact_cache[weapon_id]
 
 
+static func _is_armour_def(def_id: String) -> bool:
+	if _is_vehicle_def(def_id):
+		return true
+	var u := Content.unit(def_id)
+	if u.is_empty():
+		return false
+	if bool(u.get("machine", false)) or String(u.get("faction", "")) == "machine":
+		return true
+	if u.has("comp") or String(u.get("armor", "")) in ["heavy", "medium", "composite"]:
+		return true
+	return false
+
+
 static func _impact_sound(weapon_id: String) -> String:
 	var s := shot_sound(weapon_id)
-	if s in ["shot_cannon", "shot_rocket", "shot_autocannon"]:
+	if s in ["shot_cannon", "shot_rocket", "shot_autocannon", "shot_rail"]:
 		return "impact_heavy"
 	if s in ["shot_artillery", "explosion_small"]:
 		return "explosion_near"
-	if s in ["shot_rifle", "shot_mg", "shot_sniper"]:
+	if s in ["shot_rifle", "shot_mg", "shot_sniper", "shot_energy"]:
 		return "impact_bullet"
 	return ""
 

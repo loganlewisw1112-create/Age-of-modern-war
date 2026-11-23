@@ -134,7 +134,14 @@ func _event(ev: Dictionary) -> void:
 			var vis := _visible(from) or _visible(to)
 			play_at(sid, from, vis)
 			if bool(ev.get("hit", false)):
-				play_at(Cat.impact_sound(wid), to, _visible(to), -5.0)
+				# G7.1 H10: clang on armour / machines, thud otherwise.
+				var tdef := String(ev.get("target_def", ""))
+				if tdef == "" and mv != null:
+					var ww = mv.get("_world")
+					var te = ww.entities.get(int(ev.get("target", -1))) if ww != null else null
+					if te != null:
+						tdef = String(te.get("def", ""))
+				play_at(Cat.impact_sound(wid, tdef), to, _visible(to), -5.0)
 		"EntityDestroyed":
 			var p: Vector2 = ev.get("pos", Vector2.ZERO)
 			play_at(Cat.death_sound(ev), p, _visible(p))
