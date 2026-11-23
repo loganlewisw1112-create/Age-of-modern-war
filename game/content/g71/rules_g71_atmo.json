@@ -6,7 +6,11 @@
       "flares_max": 8,
       "haze_at": 0.55,
       "ash_at": 0.7,
-      "shake_decay": 0.04
+      "shake_decay": 0.04,
+      "tide_decay": 0.02,
+      "tide_dread": 0.7,
+      "tide_beat": 0.15,
+      "tide_wave": 0.25
     }
   }
 }

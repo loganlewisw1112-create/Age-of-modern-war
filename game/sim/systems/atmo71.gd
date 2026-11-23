@@ -24,6 +24,7 @@ static func _st(w: SimWorld) -> Dictionary:
 			"haze": false,
 			"ash": false,
 			"sound": 0.0,
+			"tide_song": 0.0,
 			"flares": [],
 		}
 		w.sys_state[KEY] = s
@@ -39,6 +40,7 @@ static func board(w: SimWorld) -> Dictionary:
 		"haze": bool(s.haze),
 		"ash": bool(s.ash),
 		"sound": float(s.sound),
+		"tide_song": float(s.get("tide_song", 0.0)),
 		"flares_n": (s.flares as Array).size(),
 	}
 
@@ -68,6 +70,9 @@ static func tick(w: SimWorld) -> void:
 	var s := _st(w)
 	var dread := float(w.sys_state.lp.get("dread", 0.0))
 	s.sound = snappedf(clampf(dread, 0.0, 1.0), 0.01)
+	# I6 tide song: dread base + pulse on hive heartbeat (decays between beats).
+	var song := float(s.get("tide_song", 0.0))
+	song = maxf(song - float(R().get("tide_decay", 0.02)), dread * float(R().get("tide_dread", 0.7)))
 	s.haze = dread >= float(R().get("haze_at", 0.55))
 	s.ash = dread >= float(R().get("ash_at", 0.7))
 	# Decay shake.
@@ -88,5 +93,10 @@ static func tick(w: SimWorld) -> void:
 			var oy := float((w.tick * 17) % 41) - 20.0
 			drop_flare(w, Vector2(center) + Vector2(ox, oy))
 			request_shake(w, 0.35 if t == "AssaultWave" else 0.7)
+			song = minf(song + float(R().get("tide_wave", 0.25)), 1.0)
+		elif t == "Hive71Heartbeat":
+			song = minf(song + float(R().get("tide_beat", 0.15)), 1.0)
+			s.sound = snappedf(maxf(float(s.sound), song), 0.01)
 		elif t == "Damage" and bool(ev.get("indirect", false)):
 			request_shake(w, 0.15)
+	s.tide_song = snappedf(clampf(song, 0.0, 1.0), 0.01)

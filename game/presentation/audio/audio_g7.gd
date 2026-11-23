@@ -310,7 +310,11 @@ func music_state() -> Dictionary:
 			if float(h.get("age", 99.0)) < 8.0:
 				_contact_t = maxf(_contact_t, d.now() - float(h.age))
 				break
-	return {"lp": lp, "combat": _combat, "convoy": d.now() < _convoy_until, "contact": d.now() - _contact_t < CONTACT_S}
+	var tide := 0.0
+	if w != null and w.sys_state.has("atmo71"):
+		tide = float(w.sys_state.atmo71.get("tide_song", 0.0))
+	return {"lp": lp, "combat": _combat, "convoy": d.now() < _convoy_until, "contact": d.now() - _contact_t < CONTACT_S,
+		"tide_song": tide}
 
 
 func tick(dt: float) -> void:
