@@ -5,7 +5,8 @@
       "blast_r": 2.2,
       "blast_dmg": 18.0,
       "gasp_r": 1.6,
-      "gasp_dmg": 12.0
+      "gasp_dmg": 12.0,
+      "chain_max": 2
     }
   }
 }

@@ -91,36 +91,45 @@ static func tick(w: SimWorld) -> void:
 static func _on_machine_death(w: SimWorld, s: Dictionary, e: Dictionary) -> void:
 	var pos: Vector2 = e.pos if typeof(e.pos) in [TYPE_VECTOR2, TYPE_VECTOR2I] else Vector2.ZERO
 	var burned := false
-	# Parts71 may still hold ignite state on the id via event flag, or Gore/Parts burning on snapshot.
 	if bool(e.get("on_fire", false)) or bool(e.get("g71_ignite", false)):
 		burned = true
-	# Chain blast through nearby machines.
+	# Cap chain depth: nested destroy->on_destroyed must not explode through a pack.
+	var depth := int(s.get("chain_depth", 0))
 	var br := float(R().get("blast_r", 2.2))
 	var bd := float(R().get("blast_dmg", 18.0))
 	var hit_n := 0
-	for oid in w.entities.keys():
-		var o = w.entities[oid]
-		if o == null or int(o.id) == int(e.id) or not _is_machine(w, o):
-			continue
-		if Vector2(o.pos).distance_squared_to(pos) > br * br:
-			continue
-		Damage.apply_hit(w, e, o, {"weapon": "g71_cell_blast", "damage": bd, "cls": "explosive", "splash": 0.0}, true)
-		hit_n += 1
+	if depth < int(R().get("chain_max", 2)):
+		# Snapshot ids first; apply_hit may destroy mid-loop.
+		var ids: Array = w.entities.keys()
+		var targets: Array = []
+		for oid in ids:
+			var o = w.entities.get(oid)
+			if o == null or int(o.get("id", -1)) == int(e.get("id", -1)) or not _is_machine(w, o):
+				continue
+			if Vector2(o.pos).distance_squared_to(pos) > br * br:
+				continue
+			targets.append(int(oid))
+		s.chain_depth = depth + 1
+		for tid in targets:
+			var o2 = w.entities.get(tid)
+			if o2 == null:
+				continue
+			Damage.apply_hit(w, e, o2, {"weapon": "g71_cell_blast", "damage": bd, "cls": "explosive", "splash": 0.0}, true)
+			hit_n += 1
+		s.chain_depth = depth
 	if hit_n > 0:
 		s.blasts = int(s.blasts) + 1
-		w.emit("Death71Blast", {"id": int(e.id), "pos": pos, "n": hit_n})
-	# Nanite bleed -> creep seed unless burned.
+		w.emit("Death71Blast", {"id": int(e.get("id", -1)), "pos": pos, "n": hit_n})
 	if not burned:
 		Creep.add_seed(w, pos, "seed", int(e.get("owner", -1)))
 		s.seeds = int(s.seeds) + 1
-		w.emit("Death71Bleed", {"id": int(e.id), "pos": pos})
-	# Last-gasp: damage nearest enemy troop in gasp_r.
+		w.emit("Death71Bleed", {"id": int(e.get("id", -1)), "pos": pos})
 	var gr := float(R().get("gasp_r", 1.6))
 	var gd := float(R().get("gasp_dmg", 12.0))
 	var best = null
 	var best_d2 := gr * gr
 	for oid2 in w.entities.keys():
-		var u = w.entities[oid2]
+		var u = w.entities.get(oid2)
 		if u == null or String(u.get("kind", "")) != "unit":
 			continue
 		if int(u.get("owner", -1)) == int(e.get("owner", -1)):
@@ -134,4 +143,4 @@ static func _on_machine_death(w: SimWorld, s: Dictionary, e: Dictionary) -> void
 	if best != null:
 		Damage.apply_hit(w, e, best, {"weapon": "g71_last_gasp", "damage": gd, "cls": "melee", "splash": 0.0}, true)
 		s.gasps = int(s.gasps) + 1
-		w.emit("Death71Gasp", {"id": int(e.id), "pos": pos, "target": int(best.id)})
+		w.emit("Death71Gasp", {"id": int(e.get("id", -1)), "pos": pos, "target": int(best.id)})
