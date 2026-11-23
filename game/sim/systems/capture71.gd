@@ -36,10 +36,23 @@ static func board(w: SimWorld) -> Dictionary:
 	}
 
 
-## Cage a disabled machine entity (must still exist) into the study bay.
-static func cage(w: SimWorld, unit_id: int) -> String:
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	if not active(w):
 		return "Only in Last Protocol."
+	if str(cmd.get("type", "")) != "capture71_cage":
+		return "Unknown capture command."
+	return _can_cage(w, int(cmd.get("unit_id", -1)))
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	if str(cmd.get("type", "")) != "capture71_cage":
+		return
+	cage(w, int(cmd.get("unit_id", -1)))
+
+
+static func _can_cage(w: SimWorld, unit_id: int) -> String:
+	if unit_id < 0:
+		return "Pick a Machine to study."
 	var s := _st(w)
 	if s.cage != null:
 		return "A machine is already under study."
@@ -49,11 +62,23 @@ static func cage(w: SimWorld, unit_id: int) -> String:
 	var o := int(e.get("owner", -1))
 	if not w.factions.has(o) or String(w.factions[o].get("faction_def", "")) != "machine":
 		return "Not a Machine."
-	# Prefer disabled / low hp subjects.
 	var hp := float(e.get("hp", 0.0))
 	var max_hp := maxf(float(e.get("max_hp", 1.0)), 1.0)
 	if hp / max_hp > float(R().get("max_hp_frac", 0.35)) and not bool(e.get("disabled", false)):
 		return "Subject must be disabled or critically damaged."
+	return ""
+
+
+## Cage a disabled machine entity (must still exist) into the study bay.
+static func cage(w: SimWorld, unit_id: int) -> String:
+	if not active(w):
+		return "Only in Last Protocol."
+	var err := _can_cage(w, unit_id)
+	if err != "":
+		return err
+	var s := _st(w)
+	var e = w.entities[unit_id]
+	var o := int(e.get("owner", -1))
 	s.cage = {
 		"id": unit_id,
 		"def": String(e.def),

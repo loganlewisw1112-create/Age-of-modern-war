@@ -314,6 +314,7 @@ const COMMANDS := {
 	"stim71_dose": Stim71,  # G7.1 J9 stimulants
 	"neural71_link": Neural71,  # G7.1 J9 neural-link
 	"night71_illuminate": Night71,  # G7.1 I5 illumination
+	"capture71_cage": Capture71,  # G7.1 H11 capture study
 	"request71_reply": Request71,  # G7.1 I1 request queue
 	"warmind71_reply": Warmind71,  # G7.1 J13 war-mind ask
 	"recomplex71_capture": Recomplex71,  # G7.1 J12 Site Blackglass
