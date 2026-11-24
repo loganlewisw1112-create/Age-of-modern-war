@@ -1,0 +1,82 @@
+{
+  "_meta": "G10 Coalition buy/steal/unseal tech + denial matrix. Numbers PROVISIONAL.",
+  "rules": {
+    "coalition_tech10": {
+      "faction": "shadow_coalition",
+      "research_reject": "Coalition technology is bought, stolen or unsealed.",
+      "forbidden_tags": [
+        "counter_nanite",
+        "understrike_builder",
+        "mb_borer",
+        "human_a_only"
+      ],
+      "forbidden_defs": [
+        "g7_cn_suit",
+        "g7_cn_builder",
+        "understrike_builder",
+        "mb_borer",
+        "g7_cn_team_leader",
+        "g7_cn_radio",
+        "g7_cn_deploy"
+      ],
+      "cn_markers": [
+        "cn_line",
+        "cn_role",
+        "sealed_suit",
+        "cn_kit"
+      ],
+      "deny_paths": [
+        "build",
+        "queue",
+        "market",
+        "capture",
+        "editor_load",
+        "difficulty"
+      ],
+      "techs": {
+        "cell_kit": {
+          "name": "Cell Starter Kit",
+          "sources": ["buy"],
+          "cost": {
+            "credits": 150
+          },
+          "favour": 0,
+          "tier": "starter"
+        },
+        "broker_favour_optics": {
+          "name": "Broker Optics",
+          "sources": ["buy"],
+          "cost": {
+            "credits": 80
+          },
+          "favour": 5,
+          "tier": "starter"
+        },
+        "raid_optics": {
+          "name": "Stolen Raid Optics",
+          "sources": ["steal"],
+          "requires_evidence": ["captured_gear"],
+          "tier": "elite"
+        },
+        "raid_blueprint": {
+          "name": "Raided Blueprint",
+          "sources": ["steal"],
+          "requires_evidence": ["raid"],
+          "tier": "elite"
+        },
+        "vault_prototype": {
+          "name": "Vault Prototype",
+          "sources": ["unseal"],
+          "requires_vault": true,
+          "vault_def": "x_vault_core",
+          "cost": {
+            "credits": 100
+          },
+          "heat_cost": 5,
+          "alarm_cost": 1,
+          "tier": "elite"
+        }
+      }
+    }
+  }
+}
