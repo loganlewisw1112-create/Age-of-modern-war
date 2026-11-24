@@ -41,16 +41,22 @@ Subagents: Auto (owner usage limit)
 - **No** `g10.lock`; ART unstaged; lock waits owner look + package/docs
 - Note: AI soak invariants OK but 7× `ai_air.gd:113` SCRIPT ERROR under Coalition `ai:true`
 
+## Complete (ART look samples — partial)
+- Cycle 8 **partial lock**: CELL/DEATH/WALKER/SAFEHOUSE/CLOSE AIR locked; TECHNICAL Humvee **excepted** (owner reject after approve)
+- FACT `art.look.approved.except_technical` seq **246** (supersedes full `art.look.approved` **241**); NEED **240** closed **242**; RELEASE **155** **243**; CLAIM **248** TECHNICAL open; NEED **249** `g10.look.technical`; STATUS partial lock **250**; bulk **blocked** **251**
+- Approve note: `.superpowers/sdd/task-8-art-samples-owner-approve-cycle8.md` · revise8: `.superpowers/sdd/task-8-art-samples-revise8-report.md`
+
 ## Live E2 (≤6)
-- ART10 Task 8 samples — CLAIM 155 held; FACT reject-cycle3; STATUS revise4 ready; NEED owner re-approve on g10.look.samples
+- ART10 CLAIM **248** TECHNICAL revise9 Humvee (paths on samples.gd + x_technical_rocket*)
 
 ## Free slots
-~5 of ≤6 usable (only ART10 holds a live path CLAIM). E3 world + E4 batch A released.
+~5 of ≤6 usable. E3 world + E4 batch A released; TECHNICAL CLAIM held.
 
 ## Queued / next dispatch
-1. Owner ART approve (look samples) → ART bulk catalog
-2. E4 Task 23 — package `g10.lock` + README/PLAY_ME/ROADMAP/SCOPE close (after ART)
-3. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
+1. ART10 revise9 TECHNICAL Humvee → owner re-approve NEED 249 → then unlock bulk
+2. ART10 bulk catalog (Task 8 Steps 3–9) — **blocked** until TECHNICAL locked
+3. E4 Task 23 — package `g10.lock` (**after** bulk + final catalog look gate)
+4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.

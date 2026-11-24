@@ -1,12 +1,24 @@
-G10 Task 8 look samples (ART10)
-Approve or revise each id before bulk art.
+G10 Task 8 look samples (ART10) — REVISE cycle 8 PARTIAL LOCK
+Owner cycle-8: five approved solid; TECHNICAL Humvee REJECTED post-approve — redesign incoming (revise9).
+FACT: art.look.approved.except_technical (NOT full art.look.approved).
+CELL/DEATH/WALKER = Human A g7_cn_fig black + patches; SAFEHOUSE/CLOSE AIR locked; TECHNICAL CLAIM 248 open.
 
-[ ] x_cell_rifle — ragged Coalition cell
-[ ] x_technical_rocket — scavenged technical
-[ ] x_safehouse — hidden civilian lie vs revealed Ghost hatch
-[ ] x_death_strike — too-clean Ghost (debt stripe only)
-[ ] x_patron_cas — patron rotor / debt pinstripe
-[ ] x_prototype_walker — late prototype walker
+Strip labels (ALL-CAPS): CELL | TECHNICAL | SAFEHOUSE | DEATH | CLOSE AIR | WALKER
+Contrast labels: CELL | DEATH
+Safehouse labels: HIDDEN | HATCH
 
-Strips: strip_g10_coalition_samples.png (+_2x), strip_g10_cell_vs_ghost.png (+_2x)
-Board NEED: g10.look.samples
+[x] CELL (x_cell_rifle) — LOCKED Human A FIG black + tan/red patches
+[ ] TECHNICAL (x_technical_rocket) — REJECTED Humvee — revise9 redesign; NOT look-final
+[x] SAFEHOUSE (x_safehouse) — LOCKED
+[x] DEATH (x_death_strike) — LOCKED Human A sealed elite black + gold debt patch
+[x] CLOSE AIR (x_patron_cas) — LOCKED
+[x] WALKER (x_prototype_walker) — LOCKED Human A sealed taller + launcher
+
+Strips:
+  strip_g10_coalition_samples.png (+_2x)
+  strip_g10_coalition_facings.png (+_2x)
+  strip_g10_cell_vs_ghost.png (+_2x)
+  strip_g10_safehouse_states.png (+_2x)
+Board: FACT art.look.approved.except_technical | NEED 249 g10.look.technical | CLAIM 248 TECHNICAL open | STATUS partial art-samples-locked
+Bulk: BLOCKED until TECHNICAL re-approve
+Cells: 80x64 four-facing; assets: game/assets/art/g10_coalition/

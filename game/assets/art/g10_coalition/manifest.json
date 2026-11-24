@@ -2,80 +2,88 @@
   "buildings": {
     "x_safehouse": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "buildings/x_safehouse.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "hidden": false,
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "hidden": {
         "facings": 4,
-        "fh": 48,
+        "fh": 64,
         "file": "buildings/x_safehouse_hidden.png",
         "frames": [
           "idle"
         ],
-        "fw": 64,
+        "fw": 80,
         "mask": "buildings/x_safehouse_hidden_mask.png",
         "pivot": [
-          32,
-          40
+          40,
+          54
         ]
       },
       "mask": "buildings/x_safehouse_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     },
     "x_safehouse_hidden": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "buildings/x_safehouse_hidden.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "hidden": true,
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "buildings/x_safehouse_hidden_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     }
   },
   "files": {
-    "buildings/x_safehouse.png": "4b8fce74c6edda79429e134f88dc3576",
-    "buildings/x_safehouse_hidden.png": "c3caf8d0e05ba7e75bc3966f0c667990",
-    "buildings/x_safehouse_hidden_mask.png": "4980809d998d1a32dce61c2476256530",
-    "buildings/x_safehouse_mask.png": "359712694790f9a85948fd0a9dac6d46",
-    "icons/x_cell_rifle.png": "2ce7a5f8aa35b55211ccdd7b0734e644",
-    "icons/x_death_strike.png": "2493d68c583ab942baae2d953c96df00",
-    "icons/x_patron_cas.png": "4184cb34d16c123a86516f7739a60d9e",
-    "icons/x_prototype_walker.png": "21f111da97727272978c24658deb794b",
-    "icons/x_safehouse.png": "9e4ab734b0be3125a83068abebc0de69",
-    "icons/x_technical_rocket.png": "7b7e821d2bb6273e0b37ac5f2007e04b",
-    "units/x_cell_rifle.png": "9dfb5f343c0bc72bf74ad62a22b8a0e3",
-    "units/x_cell_rifle_mask.png": "6ad3ad8397959733d171de10ca676de1",
-    "units/x_death_strike.png": "8a439694f5cd7262e4800b2e5d65b220",
-    "units/x_death_strike_mask.png": "20fd795ce0a83fb0347a7683950c352c",
-    "units/x_patron_cas.png": "fab8341fc6fab65dac5b5e21f653e656",
-    "units/x_patron_cas_mask.png": "e51b0fadb1e11fbff6c3771c06bcb778",
-    "units/x_prototype_walker.png": "d4729bc12c4398070c9c99c208a5f2ba",
-    "units/x_prototype_walker_mask.png": "aeb7156982fa515f6b3d3a9792ccb3ae",
-    "units/x_technical_rocket.png": "1dc0fa3eca9ca0f2709837916a801970",
-    "units/x_technical_rocket_mask.png": "d5bf9fc342b79d8cfd5a21ee4ad44b81"
+    "buildings/x_safehouse.png": "ef9fd54a20431f2e8e21f3e6fc6e05da",
+    "buildings/x_safehouse_hidden.png": "b566ff244a6f65e1caaf960d5c9ac248",
+    "buildings/x_safehouse_hidden_mask.png": "08d0785a3f17cd9f27a2d582312f53be",
+    "buildings/x_safehouse_mask.png": "9f362a6f14bfcd93b641c2cc4793bc0a",
+    "icons/x_cell_rifle.png": "bff43ec28c2af557aac82ed929132906",
+    "icons/x_death_strike.png": "44369b35944ee61fd34091928b12763a",
+    "icons/x_patron_cas.png": "cb8398d77e4de966e0e1568815147580",
+    "icons/x_prototype_walker.png": "2025a9e53a712edb91b592071ca16709",
+    "icons/x_safehouse.png": "4fdeded5213c7d7995c742f4335c61f1",
+    "icons/x_technical_rocket.png": "60533d255b9ccd231f15e284f2777862",
+    "units/x_cell_rifle.png": "be92d5b19bd984922882bac794c41d90",
+    "units/x_cell_rifle_mask.png": "6a75a80b97802e6941d762b50fb69c22",
+    "units/x_death_strike.png": "e491562842c861a2f8dbf1dfb2ea8a05",
+    "units/x_death_strike_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_patron_cas.png": "23506fab5108ad83bf98d80742512102",
+    "units/x_patron_cas_mask.png": "9471a437c504da76a9041a66693ef8b8",
+    "units/x_prototype_walker.png": "9d4594c7b2d67a4fffa90ed51de157c5",
+    "units/x_prototype_walker_mask.png": "126d0f9437b8136f8711e82afe4dac27",
+    "units/x_technical_rocket.png": "1f7bc8ff7651f1a1d455dd66a3c9112b",
+    "units/x_technical_rocket_mask.png": "242fe729908b2f3079891241677566fa"
   },
   "group": "g10_coalition",
+  "human_a_match": [
+    "tools/art/g7_cn_fig.gd",
+    "tools/art/g7_cn_gear.gd",
+    "tools/art/g7_cn_lib.gd",
+    "tools/art/g7_cn_soldiers.gd"
+  ],
   "icons": {
     "x_cell_rifle": "icons/x_cell_rifle.png",
     "x_death_strike": "icons/x_death_strike.png",
@@ -87,44 +95,48 @@
   "infantry": {
     "x_cell_rifle": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "units/x_cell_rifle.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "units/x_cell_rifle_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     },
     "x_death_strike": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "units/x_death_strike.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "units/x_death_strike_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     }
   },
   "look": "G10_GHOST_LOOK",
-  "notes": "Task 8 Steps 1–2 samples only; bulk deferred pending owner approve on g10.look.samples",
+  "notes": "Task 8 REVISE cycle 8 samples; CELL/DEATH/WALKER = Human A fig reskin; SAFEHOUSE/CLOSE AIR/TECHNICAL untouched",
+  "revise_cycle": 8,
   "sample_gate": true,
+  "style_source": "g7_cn_fig Human A infantry + black Coalition patches (no purple)",
   "tile": [
     64,
     32
@@ -132,58 +144,61 @@
   "vehicles": {
     "x_patron_cas": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "units/x_patron_cas.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "units/x_patron_cas_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     },
     "x_prototype_walker": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "units/x_prototype_walker.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "units/x_prototype_walker_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     },
     "x_technical_rocket": {
       "facings": 4,
-      "fh": 48,
+      "fh": 64,
       "file": "units/x_technical_rocket.png",
       "frames": [
         "idle"
       ],
-      "fw": 64,
+      "fw": 80,
       "g10": {
         "look": "G10_GHOST_LOOK",
+        "revise": 8,
         "sample": true
       },
       "mask": "units/x_technical_rocket_mask.png",
       "pivot": [
-        32,
-        40
+        40,
+        54
       ]
     }
   },
-  "version": 1
+  "version": 2
 }

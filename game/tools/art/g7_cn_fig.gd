@@ -95,12 +95,12 @@ const SKIN := Color8(170, 128, 100)
 
 
 ## Draw one soldier of `kit` in facing k (0..7), frame fname, foot at o. Local units are DL7-1 units; the rig
-## scales them (and every radius) by C.FIG_S, so the figure is ~30 px tall.
-static func draw(cv, kit: Dictionary, k: int, fname: String, o: Vector2) -> void:
+## scales them (and every radius) by C.FIG_S * sc_mul (default 1 → ~18–30 px tall). Sample gates may pass sc_mul > 1.
+static func draw(cv, kit: Dictionary, k: int, fname: String, o: Vector2, sc_mul: float = 1.0) -> void:
 	var p := pose(fname)
 	if p.act >= 0:
 		p.merge(kit.get("act_pose", {}), true)
-	var Z: float = C.FIG_S
+	var Z: float = C.FIG_S * maxf(sc_mul, 0.01)
 	var dk: float = p.dark
 	var suit: Array = C.ramp(_dk(kit.suit, dk))
 	var suit_d: Array = C.ramp(_dk(P.mul(kit.suit, 0.9), dk))
