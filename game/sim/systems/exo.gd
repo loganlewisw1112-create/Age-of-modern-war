@@ -21,9 +21,12 @@ extends RefCounted
 ## State (saved, hashed; created on first use): w.sys_state.exo = {ejected, lost_pilots, resuited, ver: 1}.
 ## Entity fields: e.pilot_of (suit def id; the pilot keeps it after treatment), e.loadout / e.art_def (Loadouts).
 ## Do not preload g6_hooks.gd here (cycle). Medical / Movement / SimIndex are reached through SimWorld.
+## G10 (GHOST10): Ghost regiment overlay lives in ghost_exo10.gd. Pre-G10 Human exo_suit path is unchanged.
+##   is_ghost_suit_def / ghost_tick are additive; garage eject/resuit/loadout still apply only to exo_suit defs.
 
 const Loadouts = preload("res://sim/systems/loadouts.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
+const GhostExo10 = preload("res://sim/systems/ghost_exo10.gd")
 
 
 static func cfg() -> Dictionary:
@@ -38,10 +41,22 @@ static func _st(w: SimWorld) -> Dictionary:
 
 static func tick(w: SimWorld) -> void:
 	Loadouts.prune(w)
+	ghost_tick(w)
+
+
+## G10 forward: no-op unless GhostExo10 state was created. ORCH may also wire GhostExo10.tick separately.
+static func ghost_tick(w: SimWorld) -> void:
+	if GhostExo10.active(w):
+		GhostExo10.tick(w)
 
 
 static func is_suit_def(def_id: String) -> bool:
 	return bool(Content.unit(def_id).get("exo_suit", false))
+
+
+## G10 Ghost regiment operators (Death/Shadow/Anchor). Not Pre-G10 exo_suit garage suits.
+static func is_ghost_suit_def(def_id: String) -> bool:
+	return GhostExo10.is_ghost_suit_def(def_id)
 
 
 ## Own built Exo-Suit Garages, ascending id.

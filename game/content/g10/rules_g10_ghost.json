@@ -1,0 +1,82 @@
+{
+  "_meta": "G10 Ghost Exo Programme rules (GHOST10 Tasks 14-15). Numbers PROVISIONAL.",
+  "rules": {
+    "g10_ghost": {
+      "faction": "shadow_coalition",
+      "formations": {
+        "4op": {"size": 4, "roles": ["leader", "point", "gunner", "specialist"]},
+        "6op": {"size": 6, "roles": ["leader", "point", "gunner", "specialist", "support", "trail"]},
+        "solo": {"size": 1, "roles": ["leader"]},
+        "pair": {"size": 2, "roles": ["leader", "point"]}
+      },
+      "packages": {
+        "strike": {"armor": "medium", "battery_mult": 1.0, "noise": 1.0},
+        "assault": {"armor": "heavy", "battery_mult": 0.85, "noise": 1.25},
+        "recon": {"armor": "light", "battery_mult": 1.2, "noise": 0.7}
+      },
+      "echelons": {
+        "death": {"combat_tip": true, "intel_min": "pattern"},
+        "shadow": {"combat_tip": false, "intel_min": "rumour"},
+        "anchor": {"combat_tip": false, "intel_min": "rumour"}
+      },
+      "role_cards": ["blade", "glass", "anvil", "hook", "spark", "thread", "torch", "mirror"],
+      "certs": ["sniper", "ew", "snatch", "combat_engineer", "combat_medic", "drone_controller", "anti_armour", "infiltrator", "pathfinder", "decoy_runner", "counter_ghost", "vault_breacher"],
+      "camo": {
+        "still": 0.02,
+        "walk": 0.08,
+        "sprint": 0.55,
+        "fire": 0.7,
+        "hit": 0.85,
+        "battery_max": 100.0,
+        "drain_still": 0.02,
+        "drain_walk": 0.08,
+        "drain_sprint": 0.35,
+        "drain_fire": 0.5,
+        "drain_hit": 0.2,
+        "recharge_per_tick": 0.15,
+        "empty_visibility": 0.95
+      },
+      "counters": {
+        "thermal": 0.55,
+        "sensor": 0.45,
+        "dog": 0.7,
+        "drone": 0.4,
+        "rain": 0.25,
+        "smoke": 0.2,
+        "nanite_sense": 0.65
+      },
+      "intel_grades": ["rumour", "pattern", "fix", "keyhole"],
+      "death_intel_min": "pattern",
+      "templates": {
+        "QuietDecap": {"need": "officer", "death": true, "shadow": false, "anchor": true, "package": "strike"},
+        "SensorBlind": {"need": "sensor", "death": true, "shadow": true, "anchor": false, "package": "recon"},
+        "WorkshopStrike": {"need": "workshop", "death": true, "shadow": false, "anchor": true, "package": "assault"},
+        "FeintStorm": {"need": "feint", "death": true, "shadow": true, "anchor": true, "package": "strike"}
+      },
+      "phases": ["tasking", "intel_gate", "package", "rehearsal", "insertion", "approach", "action", "complication", "exfil", "hot_wash", "echo"],
+      "ticks_per_phase": 2,
+      "max_suit_loss": 2,
+      "risk_budget": 3,
+      "break_contact_default": true,
+      "mk_bands": {
+        "1": {"stage_min": 6, "stage_max": 8},
+        "2": {"stage_min": 9, "stage_max": 10},
+        "3": {"stage_min": 11, "stage_max": 13}
+      },
+      "chassis": {
+        "hardpoints": 3,
+        "hardpoint_kinds": ["sensor", "breach", "net", "emp"],
+        "blood_debt": 5,
+        "hardened_joints": true,
+        "redundant_battery": true
+      },
+      "roles_special": {
+        "judge": {"id": 56, "fragile": true},
+        "warden": {"id": 57, "corridor": true},
+        "shade": {"id": 58, "no_heavy": true},
+        "sergeant": {"id": 59, "juniors": 3}
+      },
+      "ui_condition": ["fresh", "worn", "grounded"]
+    }
+  }
+}
