@@ -69,4 +69,4 @@ D4 integ      smoke · soak · peak · README/PLAY_ME · package → pre_g10.loc
 Full task plan (Approach C): `docs/superpowers/plans/2026-11-23-pre-g10.md`
 
 ## Lock status
-**CLOSED (`pre_g10.lock`)** — Tasks 0–17 integrated and Done-when #1–#8 evidenced; G10 remains Shadow Coalition–only.
+**OPEN** — Tasks 0–17 and verification are complete; package + push remain before `pre_g10.lock` may close.

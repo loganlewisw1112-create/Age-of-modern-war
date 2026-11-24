@@ -39,4 +39,4 @@ Tasks 16-17 complete:
     test_hot_state 17/0; expanded smoke 33 suites green when the interrupted wrapper was completed in isolated/remainder runs
     peak remasure p10 116.8; README/PLAY_ME/PRE_G10_SCOPE synchronized
 
-Lock: CLOSED (`pre_g10.lock`). Package/push recorded in the ORCH report and board.
+Lock: OPEN. Tasks 0-17 and verification are complete; host approval blocked package execution, so package + push remain.

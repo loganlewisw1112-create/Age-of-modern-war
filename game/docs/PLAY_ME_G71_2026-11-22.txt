@@ -1,4 +1,4 @@
-RTS: Age of Modern War - pre_g10.lock playable (branch g71)
+RTS: Age of Modern War - Pre-G10 release candidate (branch g71)
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
@@ -8,7 +8,7 @@ CONTROLS
   Q / E or horizontal middle-mouse drag - rotate view 90 deg (Four Sides)
   Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (PRE-G10 LOCK + G9/G8/G7.1)
+IN THIS BUILD (PRE-G10 RELEASE CANDIDATE + G9/G8/G7.1)
   Four Sides: rot buildings + loco/fire/death/k8 sheets follow camera
   Last Protocol clock: starts at dusk; night lasts 2x day
   End of run: director PiP, highlight reel, creep timelapse, kill-heat strip

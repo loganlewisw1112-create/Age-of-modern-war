@@ -2,7 +2,7 @@
 
 A single-player real-time strategy war in Godot 4.7.2. Skirmish is the sparring floor. **Last Protocol** is the night they built the game to survive.
 
-Branch **`g71`**. **G7.1**, **G8**, **G9**, and the **Pre-G10 Depth Bridge** are CLOSED (`pre_g10.lock`). G10 is now Shadow Coalition–only.
+Branch **`g71`**. **G7.1**, **G8**, and **G9** are CLOSED. The Pre-G10 Depth Bridge is verified and awaiting its final package + push before `pre_g10.lock` closes.
 
 ---
 
@@ -73,7 +73,7 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (`pre_g10.lock`)
+## In this build (Pre-G10 release candidate)
 
 **Four Sides:** Q/E + MMB rotate the view; rot buildings and loco/fire/death/k8 sheets follow the camera (no mirror cheats). **Last Protocol clock** starts at dusk; night lasts **2×** day. End-of-run: director PiP, highlight reel, creep timelapse, kill-heat strip.
 
@@ -95,7 +95,7 @@ Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Still open (UP71)
 
-- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; non-campaign AI and economy depth are closed in `pre_g10.lock`.
+- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; non-campaign AI and economy depth are verified for the pending `pre_g10.lock`.
 - Peak chase continues (amended G7.1 gate held; target 60 p10).
 - Frozen Done-when is never weakened to make a check pass.
 
@@ -103,7 +103,7 @@ Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Branch & ship
 
-- Active branch: `g71` (`pre_g10.lock`; G10 Shadow Coalition next)
+- Active branch: `g71` (Pre-G10 verified; package + push pending)
 - Board: `game/.plan/upgrade_board/` (permanent semantic CLAIM board)
 - Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Root README updated every ship.
 - Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (expanded Pre-G10 suites)

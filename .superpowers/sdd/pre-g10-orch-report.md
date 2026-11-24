@@ -53,4 +53,4 @@ Package command uses note `pre_g10.lock`; the resulting SHA-stamped folder and z
 
 ## Lock
 
-`pre_g10.lock` is CLOSED. Done-when #1-#8 are evidenced; G10 remains Shadow Coalition-only.
+OPEN. Tasks 0-17 and all test/soak/perf evidence are complete. Package execution was blocked by the host approval gate, so package + push remain before `pre_g10.lock` can close.
