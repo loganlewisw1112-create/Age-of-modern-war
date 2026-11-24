@@ -3,7 +3,8 @@
 Branch: g71
 Plan: docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md
 Scope: game/docs/G10_SCOPE.md (APPROVED 2026-11-23)
-Mode: Subagent-Driven (new session)
+Mode: Subagent-Driven (new session) + max safe parallelism (≤6 live, disjoint CLAIMs)
+See: .superpowers/sdd/G10_KICKOFF.md parallelism mandate
 Ghost: G10_GHOST_LOOK.md + Ghost Wing freeze
 Armory: G10_EXO_ARMORY.md
 Dogs: G10_HUMAN_A_DOG_LOOK.md
