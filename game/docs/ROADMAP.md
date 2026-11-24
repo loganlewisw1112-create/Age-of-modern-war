@@ -83,8 +83,10 @@ carriers, marketplace) → G6.1 "Field Command" (chain of command, suppression, 
 - Carries G7.1 hive tech (director, adaptation, siege units) from Last Protocol into skirmish where it fits.
 
 ## G10 "Shadow Coalition" — 4th faction
-- **Shadow Coalition (Syndicate):** identity, mechanics, full-parity Stage 7→10 roster, art, no counter-nanites
-  (early raider bands and the late syndicate come later with their stages, per CAMPAIGN_VISION resolution 4).
+- **Shadow Coalition (Syndicate):** identity, mechanics, full-parity Stage 7→10 roster, art, no counter-nanites;
+  **Stages 1–6** (early raider bands) and **11–13** (late syndicate, Mk III exos, 100+ squads) ship **in G10** for
+  this faction (owner 2026-11-23 — inverts CAMPAIGN_VISION resolution 4 deferral to G14). Scope doc:
+  `docs/G10_SCOPE.md`.
 - AI, diplomacy, research, territory, trade-route, gathered-resource and black-market depth moved forward and closed
   in `pre_g10.lock`; G10 scope is Coalition-only.
 - **Ghost Exo Programme (owner-approved 2026-11-23):** seamless AI-first Conductor; tip echelon = **Death** squads
@@ -145,9 +147,9 @@ attacks on logistics and research. Tests LIFE-01, LOG-01..02.
 
 ## G14 "All Thirteen" — Stages 1–6 and 11–13 for every faction (original backlog F-025; campaign needs it)
 Distinct playable mechanics for every stage and every faction, with full skirmish parity: Stages 1–6 (Scattered
-Survivors → Industrial Revival), Stages 11–13 (Synthetic → Distributed → Apex). Shadow Coalition early raider bands
-(1–6) and late syndicate (Mk III exos, 100+ squads, 11–13). UNDERSTRIKE's 13-stage unlock bands (early shelters,
-mechanized bunkers, advanced boring later).
+Survivors → Industrial Revival), Stages 11–13 (Synthetic → Distributed → Apex). **Shadow Coalition** early/late stage
+bands **moved to G10** (owner 2026-11-23); G14 covers **other factions'** 1–6 and 11–13 only. UNDERSTRIKE's 13-stage
+unlock bands (early shelters, mechanized bunkers, advanced boring later).
 
 ## G15 "Inheritance" — the 13-chapter campaign (`CAMPAIGN_VISION.md` Part 1)
 One Human A dynasty from the ash to Apex; founder (Ch 1–5) then heirs (Ch 6–13); the Healer / Dead Hand secret;

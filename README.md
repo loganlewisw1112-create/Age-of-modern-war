@@ -95,7 +95,8 @@ Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Still open (UP71)
 
-- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; non-campaign AI and economy depth shipped under `pre_g10.lock`.
+- **G10 Shadow Coalition** — full faction Stages **1–13** (1–6 raiders, 7–10 core, 11–13 late syndicate); scope
+  `game/docs/G10_SCOPE.md` · ROADMAP; AI/economy depth already under `pre_g10.lock`.
 - Peak chase continues (amended G7.1 gate held; target 60 p10).
 - Frozen Done-when is never weakened to make a check pass.
 
