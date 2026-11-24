@@ -1,53 +1,128 @@
 # G10 "Shadow Coalition" — master scope (UP71 Stage E)
 
-OPEN for UP71 from `docs/ROADMAP.md` G10. Follows `pre_g10.lock`.
+**OPEN — owner-review draft.** Follows `pre_g10.lock`. Approval of
+`docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md` freezes this Done-when and opens Task 0; until then, do not
+start G10 game code.
 
 ## Headline
-Shadow Coalition full faction — Stages **1–13** forms as applicable: **1–6** early raider bands, **7–10** core Syndicate parity, **11–13** late syndicate (Mk III exos, 100+ squads).
 
-## Owner decision (2026-11-23)
-`CAMPAIGN_VISION.md` Part 0 **resolution 4** originally deferred Coalition Stages 1–6 and 11–13 to the “every faction” stage pass (**G14**). For **Shadow Coalition only**, that split is **inverted**: early and late forms ship in **G10** with the core roster, not G14.
+Ship the Shadow Coalition as the fourth full faction: Coalition-only forms across **Stages 1–13**, a full-parity
+**Stage 7–10** core (target **about 60 gameplay definitions**), early raider bands, late syndicate/Mk III forms, the
+AI-first Ghost Exo Programme, and Human A's full Counter-Ghost Corps.
+
+## Owner decision carried forward (2026-11-23)
+
+`CAMPAIGN_VISION.md` Part 0 resolution 4 originally deferred Coalition Stages 1–6 and 11–13 to G14. For the
+**Shadow Coalition only**, that split is inverted: its early and late forms ship in **G10**. Other factions retain
+their current Stage 7–10 availability and wait for G14.
 
 ## Scope
-1. **Shadow Coalition (Syndicate) identity + mechanics:** full playable 4th faction; **no counter-nanites**; pure buy / steal / unseal tech UX.
-2. **Stage bands (this faction):**
-   - **1–6:** raider and warlord bands (early-growth / low-tech Coalition fantasy).
-   - **7–10:** full-parity core roster (~22 hulls), art, tunnels-as-faction where designed; matches campaign “Syndicate Shadow Coalition” battle identity.
-   - **11–13:** late syndicate — Mk III exos, large squad counts (100+ where specified), apex-band units and buildings as applicable.
-3. **Ghost Exo Programme (owner-approved 2026-11-23):** seamless AI-first **Conductor**; tip echelon = **Death** squads (+ Shadow Corps + Anchor); packages in `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`; slice plan `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`. G10 ships skirmish/Conductor core + Human A **Counter-Ghost full corps** (faction-depth Q5=D). Campaign Hunter / build-up waits for **G15**.
-4. **Difficulty bar:** whole Coalition = **super-difficult**, **super intelligent / strategic** foe — difficulty by intelligence and strategy, not cheats; beatable with counters, crushing if ignored. Vs Machine: Machine = snowball king; Coalition = cunning king; skirmish slider; campaign Coalition always vicious. **UX:** Conductor runs Death ops by default (Advanced override).
-5. **G10 extras:** expanded roster / buildings / features; **leftover dark + G7.1 ideas** folded where they fit the bar (owner pick in G10 Q&A; not all must ship). See `docs/superpowers/plans/2026-11-23-faction-depth-decisions.md` and ROADMAP G10 dark/G7.1 lists.
-6. **Pre-G10 already shipped (not reopened here):** non-campaign **AI** (adapt, generals, diplomacy, intel-difficulty, CoC, Warmind) and **strategy/economy** (research tiers, trade routes, territory/civ, black market, gathered resources, coalitions). G10 is **faction-focused**.
 
-## Out of scope
-- **UNDERSTRIKE** bunkers and borer fleet → **G11+** (Human A only).
-- **Inheritance** campaign, Living World, Orbit → **G15+**.
-- **Other factions’** Stages **1–6** and **11–13** (Human A/B, Machine, Vhessar, Unbound) → still **G14**.
-- **Space** combat and orbit slice → **G18+**.
-- Tactical pause+queue (parked); co-op LP → **G19**; uncapped skirmish pop → **G12**.
+1. **Identity and doctrine:** cells bleed and distract; mercenaries flex around the opponent; scarce Syndicate elites
+   strike the weak point. The Coalition is fictional and uses no real-world group names or symbols.
+2. **Faction mechanics:** civilian disguise and sleeper activation; tunnels/caches; IEDs, traps, sabotage and shock
+   raids; scavenge/capture/refit; weld-shop vehicle packages; black-market contracts, patron favour and mercenary
+   loyalty. Civilian harm uses the shipped support consequences.
+3. **Technology:** pure **buy / steal / unseal** progression. Coalition has no normal research tree and can never own,
+   build, buy, capture into use, or inherit counter-nanites.
+4. **Buildings:** disguised safehouses/workshops, tunnel entrances/caches, underground production, black markets and
+   broker/patron sites, Ghost complex/forward repair shops, and rare vault cores. These are faction structures, not
+   UNDERSTRIKE floors or Human A bunkers.
+5. **Stage bands:**
+   - **1–6 Raiders:** survivor smugglers → organized cells → warlord camps → reclaimed workshops → confederated
+     raiders → industrial criminal armies. Low-tech capture, salvage, tunnels and patron access replace normal
+     research. No Mk II/III exos.
+   - **7–10 Core Syndicate:** full combined roster and building parity, target about 60 core definitions; cells,
+     technicals, captured armour, drones, boats, companies/officers, patron air support, Death/Shadow/Anchor and Stage
+     10 prototypes.
+   - **11–13 Late Syndicate:** Mk III hybrid exos, distributed cells, apex vault/patron assets and 100+ squad-scale
+     **capacity in stress/soak scenarios**. Ordinary skirmish still respects its selected cap; G12 owns uncapped
+     skirmish.
+6. **Ghost Exo Programme:** implement the G10 rows of
+   `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`: AI-first Conductor, Death combat echelon,
+   Shadow Corps, Anchor, mission cards/ROE, camo/power/counters, operator/suit wounds, cohesion, intel gates, lifecycle,
+   adaptations, workshop bottleneck, vehicles and recovery. Hunter campaign memory/build-up remains G15.
+7. **Human A Counter-Ghost Corps:** a full but weaker reverse-exo operational corps at Stage 10: intercept/recon/breach
+   teams, thermal/sensor support, APC/recovery support, kill-switch stripping and suit-race counterplay. It is not the
+   post-G10 skirmish CN/Blackglass branch and grants no Coalition tech.
+8. **AI hooks:** extend shipped Adapt9/generals/intelligence/CoC systems with a Coalition doctrine adapter and
+   Conductor. Do not rewrite Pre-G10 AI. Difficulty is patience, scouting, feints, target choice, contracts and
+   adaptation—never free resources, HP or damage.
+9. **Modes:** all thirteen stages appear in skirmish **only when Shadow Coalition is selected**; other factions'
+   deferred stages remain unavailable. Last Protocol keeps its canonical Human A-vs-Machine entry and gains a separate
+   Stage 10 **Coalition defender profile** using the same mode/map contract with Coalition base/roster/objectives.
+   G10 does not add LP co-op.
+10. **Owner-review dark/G7.1 picks proposed for this lock:** **Blackout** (coordinated EW/power raid), **Hollow
+    Ground** (readable tunnel-collapse/ambush play), **Mirror Fortress** (decoy hatches/false complex), and **Dead
+    Radio** (mimicked radio/AAR deception with explicit tells). All other ROADMAP dark options remain unselected.
+11. **Presentation/art:** four-facing readable art and icons for the complete Coalition set, team-colour readability,
+    hidden/revealed states, stage-band silhouettes, exo shimmer/battery tells, and owner look checkpoints before bulk
+    rollout.
 
-## Done-when (draft — owner will freeze later)
-1. Shadow Coalition selectable in skirmish and LP with stage-appropriate forms for **1–6**, **7–10**, and **11–13** where setup allows; core **7–10** parity roster playable end-to-end.
-2. Early raider band identity readable in soak (composition, economy, Conductor behavior distinct from core).
-3. Late syndicate band (11–13) exercises Mk III / large-squad fantasies in harness + one packaged soak path.
-4. Ghost Exo Conductor + Death / Shadow / Anchor echelons; Human A Counter-Ghost full corps counterplay path in tests.
-5. No Coalition counter-nanites; buy/steal/unseal tech path documented in setup UX.
-6. Super-intelligent AI doctrine (no resource/HP cheats on Hard) for Coalition persona; evidence in soak log.
-7. Expanded smoke + full suite **0 FAIL / 0 SCRIPT ERROR** on touched paths; two-run hash OK where sim applies.
-8. Packaged build; root README + PLAY_ME name G10 status; `g10.lock` when owner freezes Done-when.
+## Explicitly out
 
-## Build order (provisional)
-```
-E0 freeze scope + board roster + owner G10 Q&A (dark/G7.1 picks)
-E1 COAL10 core (Stages 7–10 roster, art, faction sim, tunnels)
-E2 STAGE10 bands (Stages 1–6 raiders + 11–13 late syndicate)
-E3 GHOST10 (Conductor, Death packages, Counter-Ghost corps)
-E4 DARK10 (selected leftover dark / G7.1 depth)
-E5 integ · smoke · soak · peak · package → g10.lock
+- Inheritance campaign, Hunter chapter memory/build-up, Living World and Orbit/space roster.
+- UNDERSTRIKE buildings, floors and borer fleet; those remain Human A-only in G11+.
+- Other factions' Stage 1–6 and 11–13 forms; those remain G14.
+- Rebuilding Pre-G10 Adapt9, generals, diplomacy, Warmind, research tiers, trade routes, territory/civilians,
+  gathered resources, black market or coalition systems. G10 may call or faction-specialize their public interfaces.
+- Human A skirmish CN/Blackglass branch, co-op LP, uncapped skirmish population, tactical pause/queue.
+- ROADMAP dark options not named in Scope item 10.
+
+## Done-when (draft ready for owner approval)
+
+1. `shadow_coalition` is the fourth registered faction, has valid role/start data, and can start, build, gather,
+   produce, fight, save and load without missing definitions.
+2. Coalition-only skirmish selection supports Stages **1–13**; selecting another faction still exposes only that
+   faction's shipped stages. Every stage has a legal opener and at least one advancement/progression path.
+3. Stage 1–6 raider soak proves a low-tech opener, capture/salvage growth, tunnels and patron escalation without a
+   normal research queue or Mk II/III exos.
+4. Stage 7–10 core contains **at least 60 Coalition gameplay definitions** across infantry/exos, vehicles,
+   air/naval/drones and buildings; role/build/production closure has no orphan definitions.
+5. Stage 11–13 soak proves Mk III risk, distributed-cell/apex assets and a deterministic 100+ Death-squad stress
+   capacity path while normal skirmish caps remain enforced.
+6. Tunnels/caches, civilian disguise, IED/shock raids, contracts/patron loyalty, capture/refit and weld-shop packages
+   each have a real command/play path, deterministic test and readable counter.
+7. Buy/steal/unseal are the only Coalition tech acquisition paths. Automated denial tests cover normal research and
+   counter-nanites through build, market, capture, editor/load and difficulty overrides.
+8. Ghost Exo G10 packages run end-to-end: mission card → intel/workshop gate → package → insertion/approach/action/
+   exfil → hot wash/echo. Death, Shadow and Anchor all participate; camo counters and suit recovery work.
+9. Human A Counter-Ghost Corps can detect, intercept, disable, strip and recover a Coalition suit in a focused
+   counterplay scenario; it remains weaker than equivalent Coalition exos.
+10. Coalition AI completes one cell-feint/merc-screen/elite-strike operation and one retreat/exfil under pressure.
+    Easy/Normal/Hard change decision quality and pressure only; tests prove no Coalition resource/HP/damage multiplier.
+11. Coalition starts and completes a skirmish at Stages 3, 8 and 12, and the separate Stage 10 Coalition LP defender
+    profile reaches playable state with valid objectives. Canonical Human A-vs-Machine LP remains green.
+12. Blackout, Hollow Ground, Mirror Fortress and Dead Radio have explicit tells/counters and appear in one packaged
+    doctrine soak; no unselected dark option ships.
+13. Owner look checkpoints approve: (a) raider + technical + hidden structure, (b) Death + patron vehicle + late
+    prototype, then the complete four-facing catalog.
+14. Expanded G10 smoke and full suite report **0 FAIL / 0 SCRIPT ERROR**; two-run hashes match on touched deterministic
+    scenarios; AI-vs-AI and 100+ squad soaks have no invariant failure.
+15. Package launches from a clean folder; root `README.md` and `PLAY_ME` describe G10; upgrade_board records claims,
+    look approvals, test/soak/hash/package facts; only then close as `g10.lock`.
+
+## Build order (Approach C)
+
+```text
+E0 owner APPROVE → freeze scope + Stage E board roster/claims
+E1 foundation: registry/stage gating + identity/doctrine + authoritative roster manifest
+E2 parallel pillars:
+   ROSTER10 (1–6 / 7–10 / 11–13) · ART10 · MECH10 · TECH10 · BLD10
+   GHOST10 · COUNTERGHOST10 · AI10 · MODE10 · DARK10
+E3 seam integration: content closure · Conductor/AI · stage/mode · presentation
+E4 smoke · hashes · AI/100+ soaks · look approval · package/docs → g10.lock
 ```
 
 ## Execution plan
-Ghost Exo + integration: `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md` · faction depth: `docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`. Broader G10 task plan TBD after Q&A.
+
+`docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md`
+
+Supporting authorities:
+`docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`,
+`docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`, and
+`docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`.
 
 ## Lock status
-**OPEN** — scope recorded; Done-when not frozen; no `g10.lock`.
+
+**OPEN — OWNER REVIEW.** No `g10.lock`; no implementation starts before **APPROVE**.
