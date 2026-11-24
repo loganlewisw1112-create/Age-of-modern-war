@@ -49,7 +49,7 @@ Branch: `g71`
 
 ## Package
 
-Packaged with note `pre_g10.lock`; exact SHA-stamped folder and zip are recorded after package completion.
+Package command uses note `pre_g10.lock`; the resulting SHA-stamped folder and zip are returned in the final handoff.
 
 ## Lock
 
