@@ -57,28 +57,32 @@ const Fog = preload("res://sim/systems/fog.gd")         # G6 PERF6-4: native_gat
 ## (scope F robot companions). Content adds defs_g71_fleet.json + rules_g71_fleet.json; Fleet71 ticks only from
 ## LastProtocol (skirmish SYSTEM_ORDER unchanged). Mixed/10k_fight hashes moved; fight/march pairs that were unchanged
 ## kept. Values: measured got= from test_hot_state on this tree (native on/off + flattened).
+## GOLD + GOLD_FLAT re-baselined 2026-11-24 for owner-approved PACE71. Vehicle locomotion intentionally changed
+## (~1.7x open ground with terrain modifiers). Two independent parallel runs of .plan/gold61.gd on the Pre-G10 tree
+## produced identical 16/16 hashes with Godot 4.7.2 and rts_core 0.6.5
+## (.plan/pre_g10_gold_run1.log, .plan/pre_g10_gold_run2.log).
 const GOLD := {
-	"2k_fight/on": "9912971157e4621c97a0aee59611c02ad50465a836458629da593b4f3866fe47",
-	"2k_fight/off": "66cf829c3465b66613d5972fa822cc747a4adfac131de391276b3abfdb5d1adb",
-	"2k_mixed/on": "61f693b7b5d88d8564c78685899ef4db6c24b93e16dd3fe712bde949ef198e0b",
-	"2k_mixed/off": "ed450e93b611132ec286a7570b7238f369128913944aaf5974290ab67f62a3be",
-	"10k_fight/on": "a533784e2d688cd39d9cd2ee9db5b29d515486df94c18ff7fa6e795282e1c721",
-	"10k_fight/off": "3339e8c91e321ac4a33abe0b90613e9965dcf9e2ab9d0bc0f8d8d6d64d21dc34",
-	"10k_march/on": "d0b5b79c64e3a0d3f4612729d5ce7296e1c7e67370bab89551740dedfb3c8fab",
-	"10k_march/off": "7122b7481a3d19b4d613e734f8937a4c1715751edbc1ed894e16639bf12ca3a9",
+	"2k_fight/on": "b7f1ba00cd6b922e34f85acf08fa1418728b3ef11a975598553ad779e7c3f2f2",
+	"2k_fight/off": "51180365629c40b52d327b66ebf25372d5fb23272a7be19674bc8b5d3ccee495",
+	"2k_mixed/on": "68bad4d2e695c2ce661c8a5822a7db8cd5514f588c7485c436112bdf0c44b4e3",
+	"2k_mixed/off": "a614137379d0f3e1cc95e0ca57a0c432ec2d8e8d5ba9a267f00f95a0d5f7a5b7",
+	"10k_fight/on": "a6da3ab988764e0d404d359cee8bd9b5ef0bb7a90e06d8a40c3601c963df0f43",
+	"10k_fight/off": "16773f46dc3df7d323048e8c4fbee3c20eef3747be70bc176444eacc8e59daef",
+	"10k_march/on": "9a5ffe3214664e25a71c9b0b6deb3e39dbc2097bc86c8895871c3c65d4cf2a5a",
+	"10k_march/off": "204d78043ef8ef42585c172dc6003cf15a94c28203c119c68e6eda4811f0f8a1",
 }
 
 ## What the AB scenarios give with the height flattened. G6.1 values (see the GOLD comment); before G6.1 this was the
 ## G5 GOLD (CORE10K-2, 2026-10-24), which G6 still reproduced flattened.
 const GOLD_FLAT := {
-	"2k_fight/on": "f69e321a96e17617f4fd68261db3af99d34ff650151e6b088485a2b83feeb848",
-	"2k_fight/off": "ef8290d537b8b8fa77d4235c1836271b2eee06b7bf8701327d789cd19436cc8e",
-	"2k_mixed/on": "fbd638c29dde00f52bc53e01174c284370bcaf628305415533d552eee55e8626",
-	"2k_mixed/off": "72ff088ce02df4dbb5a1692c6cc58ac96af263966fbd5ab1f82b5394e7925df8",
-	"10k_fight/on": "684728daef5c858a19e0ad4ffb62c8fa6b27c1b665c4559c56933b38479a4b04",
-	"10k_fight/off": "b0020e0be842c28593d608272b0747ff7a1c17f780385c3a2a437e0ec280cb7f",
-	"10k_march/on": "33efcf686b0401b849b290d7c29286a3b1ba434a7ecf94bb4d65825f9d2bba81",
-	"10k_march/off": "9f57f4137afe6a5051c977d7a41904ccd646c0dfde8101007d0cd7c41e72768a",
+	"2k_fight/on": "b0c71c4fcc2b4fc43d0640a6eba4e59a1a4df2928c4d7a07569558ea7b112df4",
+	"2k_fight/off": "f3d4621b5d0c294b9b7418db0977e87179277857d915700ecef91efbb50c2903",
+	"2k_mixed/on": "0cdcd0eb0a06cf8675d534dba0fb86200c6d12a13ac449d7c024e82cf8aa2193",
+	"2k_mixed/off": "71bb26ece2749b6660244e1ab55080ad1875a95f35346fbd0cefad8a247b927e",
+	"10k_fight/on": "46c3eb49cee035a2550da850a4a171d87f8671485262ab4fe01020bc70bae25f",
+	"10k_fight/off": "674d747909cc06fcd8959d200121d7ab1fc1bae3375f30bdc97ca3e58d3bf04c",
+	"10k_march/on": "35b01e5040d3db12faf8ada4b0544c9f4cb202b77e6ac71769a60d94d77b2b81",
+	"10k_march/off": "95740a74a7d6d831cf1c4d28a903dd240a7e6c159112417894bb0ab9be0fa064",
 }
 
 

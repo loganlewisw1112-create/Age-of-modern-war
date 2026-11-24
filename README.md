@@ -2,7 +2,7 @@
 
 A single-player real-time strategy war in Godot 4.7.2. Skirmish is the sparring floor. **Last Protocol** is the night they built the game to survive.
 
-Branch **`g71`**. **G7.1 Tide Line Done-when is CLOSED.** **G8 Four Sides Done-when is CLOSED (`g8.lock`).** **G9 Hive Reborn Done-when is CLOSED (`g9.lock`).** UP71 Stage A–C complete — board stands for G10+.
+Branch **`g71`**. **G7.1**, **G8**, **G9**, and the **Pre-G10 Depth Bridge** are CLOSED (`pre_g10.lock`). G10 is now Shadow Coalition–only.
 
 ---
 
@@ -73,27 +73,29 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (Pre-G10 checkpoint)
+## In this build (`pre_g10.lock`)
 
 **Four Sides:** Q/E + MMB rotate the view; rot buildings and loco/fire/death/k8 sheets follow the camera (no mirror cheats). **Last Protocol clock** starts at dusk; night lasts **2×** day. End-of-run: director PiP, highlight reel, creep timelapse, kill-heat strip.
 
-**G9 Hive Reborn (thin verticals):** HIVE9 nanite harvest + evolve glow + blended art harness (47 defs); COUNT9 thirteen counter harness cases; COMBAT9 persistent craters/breaches + ballistics across match families; SKIRM9 fair-capped Tide siege spawns in skirmish (`cfg.skirm9.director_adapt` optional).
+**G9 depth complete:** HIVE9 has 60 blended Machine definitions, eat/replicate/modular depth, quality-aware mesh/spine links and severable shared senses. COUNT9 exposes all thirteen counters through play paths and temporary coalitions.
 
-**Pre-G10 underway:** HIVE9 now has distance/terrain/EW link quality, mesh/spine telemetry, shared last-seen contacts, and creep cable cuts; COUNT9 counters route through gameplay commands; Warmind exposes evidence-held doctrine, threat budgets, node-killer memory, and readable intent; PACE71 raises vehicle open-ground tempo to ~1.7× with road and hostile-ground modifiers.
+**Combat and skirmish:** persistent field forts, vehicle crews/bail/recrew, wear/breakdown/recovery, deeper EW and multi-class weak spots. Skirmish setup now has the adaptive Machine-director toggle, and capped siege units accept attack-move. PACE71 raises open-ground vehicle tempo to ~1.7× while preserving terrain and deployment friction.
+
+**AI9 + ECON9:** evidence-driven composition adaptation, five named rival generals, temporary anti-Machine diplomacy, intelligence-only difficulty, and recon→fix→assault→exploit operations. Matches add gathered rare metals, location-mix trade posts, territory/civilian support, tiered research and a black-market tier.
 
 Plus G7.1: hive network, wildfire, death chains, harvest / capture / evolve, night illumination, weather, fleet under jam, RE / warmind / conduct, Wave 6 art + E4 motion, Stage A polish, forced-join cuts.
 
 Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
-**Perf:** pan **p10 68.3**; 2k **p10 69.9**; quiet chase **p10 72.9** (amended peak gate ≥30 still held — remasure FACT cites prior evidence; chase continues into G10+).
+**Perf:** pan **p10 68.3**; 2k **p10 69.9**; Pre-G10 peak remasure **p10 116.8** (amended peak gate ≥30 and chase target ≥60 held).
 
-**Soaks / smoke:** Done-when smoke includes G7.1 + G8 + G9 suites (30 tests). Soak90 / 3600 / live siege 600 GREEN from G7.1 lock evidence. Gore71 + LP two-run hash green.
+**Soaks / smoke:** expanded Done-when smoke includes G7.1 + G8 + G9 + PACE71 + AI9 + ECON9. The three-faction coalition soak forms and breaks its truce deterministically.
 
 ---
 
 ## Still open (UP71)
 
-- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; G9 depth gaps are chase work, not lock blockers (`game/docs/G9_SCOPE.md`).
+- **G10 Shadow Coalition** and beyond — see `game/docs/ROADMAP.md`; non-campaign AI and economy depth are closed in `pre_g10.lock`.
 - Peak chase continues (amended G7.1 gate held; target 60 p10).
 - Frozen Done-when is never weakened to make a check pass.
 
@@ -101,10 +103,10 @@ Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Branch & ship
 
-- Active branch: `g71` (UP71 Stage A–C CLOSED; G10+ next)
+- Active branch: `g71` (`pre_g10.lock`; G10 Shadow Coalition next)
 - Board: `game/.plan/upgrade_board/` (permanent semantic CLAIM board)
 - Every tested slice: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Root README updated every ship.
-- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (G7.1 + G8 + G9 suites; last lock run 0 fails)
+- Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1` (expanded Pre-G10 suites)
 - Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90`
 - Live siege: `godot --headless --path game -s res://tools/g71_live_siege.gd -- --secs=600`
 - Durable soak: `... g71_soak_short.gd -- --secs=3600 --save_at=1800`

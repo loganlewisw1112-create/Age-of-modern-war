@@ -38,7 +38,8 @@ Close every G9 depth gap left after thin verticals, then ship non-campaign **AI*
 - Campaign / Inheritance / Living World / Orbit → **G15+**
 - UNDERSTRIKE bunkers → **G11+**
 - G12 human training/bunk/security depth, biomes, procedural maps, full AAR productization
-- Co-op LP, tactical pause+queue, uncapped skirmish pop (parked)
+- Co-op LP → **G19**; uncapped skirmish pop → **G12**; leftover dark/G7.1 ideas → **G10** (owner 2026-11-23)
+- Tactical pause+queue (still parked)
 
 ## Done-when (frozen)
 1. Full suite + expanded smoke **0 FAIL / 0 SCRIPT ERROR**; two-run hash OK on touched sim paths.
@@ -68,4 +69,4 @@ D4 integ      smoke · soak · peak · README/PLAY_ME · package → pre_g10.loc
 Full task plan (Approach C): `docs/superpowers/plans/2026-11-23-pre-g10.md`
 
 ## Lock status
-**OPEN** — Tasks 3–17 remain pending. Keep this lock open until Done-when #1–#8 are evidenced.
+**CLOSED (`pre_g10.lock`)** — Tasks 0–17 integrated and Done-when #1–#8 evidenced; G10 remains Shadow Coalition–only.

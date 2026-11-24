@@ -11,6 +11,8 @@ G6.1 / G7 / G7.1 did.
 | `docs/G71_SCOPE.md` | G7.1 "Tide Line": parts A–J, 12 frozen Done-when checks, 6 waves | LOCKED 2026-10-31 |
 | `docs/G7_REFERENCE.md` → "G8 SCOPE" + "G8 HEADLINE" | Everything moved out of G7; view rotation headline | Owner-recorded scope list |
 | `docs/CAMPAIGN_VISION.md` | Campaign "Inheritance" (13 chapters), Living World, space, 6 ship rosters, arrivals | Vision record, every decision closed; not contracted |
+| `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md` | Ghost Exo Programme overlay (AI Conductor, Death squads, packages A–J) | Owner-approved 2026-11-23; G10/G15 gated |
+| `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md` | Ghost Exo integration + slice plan | Phase 0 docs done; engine gated to G10+ |
 | `docs/understrike/` (new, from the owner's zip 2026-10-30) | UNDERSTRIKE: Human A underground bunkers, 32/32 decisions, 4 phases, 23 acceptance tests | Owner-approved design handoff; not built |
 | `docs/understrike/References/Base_Project_v1.3/` | The original Master GDD + Development Roadmap v1.3 (G0–G6 + backlog F-001..F-025) | Base mechanics authority; long-term items folded below |
 | `docs/vision/` | 6 owner mockups (continental map, stronghold sieges, company cards) | Visual direction |
@@ -80,14 +82,28 @@ carriers, marketplace) → G6.1 "Field Command" (chain of command, suppression, 
   maintenance and breakdowns.
 - Carries G7.1 hive tech (director, adaptation, siege units) from Last Protocol into skirmish where it fits.
 
-## G10 "Shadow Coalition" — 4th faction + smarter enemies + economy depth [PROPOSED split of the G8 list]
+## G10 "Shadow Coalition" — 4th faction
 - **Shadow Coalition (Syndicate):** identity, mechanics, full-parity Stage 7→10 roster, art, no counter-nanites
   (early raider bands and the late syndicate come later with their stages, per CAMPAIGN_VISION resolution 4).
-- **AI:** adapts to the player; named rival generals; diplomacy and multiple factions; difficulty by intelligence; AI
-  chain of command running its own operations.
-- **Strategy and economy:** deeper matches; richer evolutions and upgrades; research tree overhaul; civilians and
-  territory; AoE3-style trade routes with location resources; black-market tier; 2–3 new gathered resources (campaign
-  item 7).
+- AI, diplomacy, research, territory, trade-route, gathered-resource and black-market depth moved forward and closed
+  in `pre_g10.lock`; G10 scope is Coalition-only.
+- **Ghost Exo Programme (owner-approved 2026-11-23):** seamless AI-first Conductor; tip echelon = **Death** squads
+  (plus Shadow Corps + Anchor); full packages in
+  `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`; slice plan
+  `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`. G10 ships skirmish/Conductor core + Human A
+  counter-ghost mirror; campaign Hunter/build-up waits for G15.
+- **Difficulty bar (owner 2026-11-23):** whole Coalition (not only exos) = **super-difficult**, **super intelligent /
+  strategic** foe — difficulty by intelligence/strategy, not cheats; beatable with counters, crushing if ignored.
+- **Leftover dark + G7.1 ideas (moved from Parked, owner 2026-11-23):** fold into Coalition / LP-adjacent threat and
+  toolkit depth where they fit the super-intelligent difficulty bar (pick in G10 Q&A; not all must ship):
+  - Dark options: grafting, turning operators, Dead Hand strike, Overmind voice outside LP, mirror fortress, blackout,
+    hollow ground; husk reanimation, infiltrators wearing our dead, machines built around human remains, infected
+    vehicles; Screamer, flesh-hive spire, puppet-master, nanite plague bomber, hollow giant, Mourner; dead-radio /
+    mimicked voices, mercy kills, last-moment actions, shell shock; tactical nukes, hive bait, tamed nanites in blood,
+    gravity weapons, LP orbital lance, morale cost for dark acts.
+  - G7.1 not-picked: wall breach holes, Protocol cooldown abilities, Colossus boss, hive gunship / bomber swarm /
+    interceptor darts, Wreck mimic, Signal ghost, Ferro-tide, Mirror shell, Resonator, Creep seeder, Sky anchor,
+    Lodestone, Storm-maker, Parasite riders, Silent clock, Sapper Architect, living siege tower.
 
 ## G11 "UNDERSTRIKE I–II" — underground bunkers, foundation + military (NEW, owner zip 2026-10-30)
 Human A only (decision 28: no other faction can ever build bunkers or the borer fleet, even by capture). Unlockable
@@ -115,6 +131,8 @@ branch, not required in every mode. Needs G9's destructible terrain and persiste
 - **Maps and modes:** new biomes; urban warfare depth; procedural map generator; special operations missions;
   weather and day / night for every mode (seasons: frozen rivers, mud season, storms ground aircraft); after-action
   reports for every mode.
+- **No pop-cap skirmish (owner 2026-11-23, was parked 13.9c-40):** optional uncapped (or soft-cap) population for
+  skirmish; perf budgets, LOD, and AI pathing must hold; setup toggle; default capped mode remains.
 
 ## G13 "UNDERSTRIKE III" — the networked underground civilization (NEW)
 Multiple bunkers (no fixed cap), each up to 15 floors; tunnels, military roads, rail / armoured trains, transport hubs,
@@ -139,6 +157,10 @@ succession fights; named veterans; companion bloodlines; era rivals and generals
 conduct the world remembers; in-engine cinematics, voiced radio, illustrated panels, era score; ~60–80 hours.
 Uses UNDERSTRIKE bunkers for its bunker floors, safehouses and tunnels; the Syndicate goes public in Chapter 9.
 May reuse G7.1 J9 (cybernetics, stimulants) as dark story choices (note only).
+**Ghost Exo campaign layer (approved 2026-11-23):** Ch9 reveal → Ch12–13 Death-squad build-up, Hunter + Harrow Cell,
+Listeners, full intel memory, turn path — per
+`docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md` Packages E/H/I/J and
+`docs/superpowers/plans/2026-11-23-ghost-exo-programme.md` Phase 2.
 
 ## G16 "UNDERSTRIKE IV" — high-fidelity underground (NEW)
 Mature chunk-based geology and groundwater; cascading multi-floor collapses with persistent ruins, surface subsidence
@@ -159,20 +181,32 @@ played; 6 ship rosters (Human A 21 hulls, Human B 22, Machine 24, Shadow Coaliti
 arrival war with the Vhessar conquerors and the Unbound cult as two new full skirmish factions; endings, then the
 endless crisis.
 
+## G19 "Last Protocol: Combined Arms" — co-op Last Protocol (owner 2026-11-23; was parked)
+Offline-first co-op siege on the **same** LP ruleset (Human A vs Machine, 512²+ map, 3 rings, CN facility, cores,
+creep/countdown, Tide). Solo LP stays untouched as the 1v1 reference.
+
+- **Players:** 2–4. Shared win/lose. Shared creep meter, doomsday countdown, core HP, Tide trigger. No friendly fire
+  on humans by default (toggle for hardcore).
+- **Command model:** one base, many commanders. Default = **sector/role claim** (Outer / Economy / Core+CN / Field
+  Strike) with free override on unclaimed units; optional **full shared pool**. Defence AI Commander fills gaps only
+  in unclaimed sectors.
+- **Authority:** host is sim authority (deterministic lockstep or host-authoritative with input delay); late join =
+  spectate until next checkpoint / mid-run save; disconnect = claimed units revert to defence AI, not enemy.
+- **Scaling (fair, not cheats):** hive pressure, Weaver timing, Tide mass, and seed-nest count scale with player count
+  via director curves — same counters, thicker tempo. Perf gate: co-op Tide must still hit shipped FPS floors.
+- **Logistics:** one economy; CN teams/APCs/dropships are shared scarce assets with a claim/queue UI (no double-order
+  races). Strike ops need a clear owner or a dual-confirm on the walking core.
+- **Intel/UX:** shared belief fog + ping/mark layer; ring-breach and countdown alerts to all; split or PiP optional;
+  one AAR with per-player medals + squad Remembered lists.
+- **Modes:** Quick Co-op (scaled short run), Full Protocol (60–90 min), Iron Co-op (one shared save, no reload).
+- **Out:** no PvP LP; no Coalition/Machine player slots here; no campaign save merge. Mutators reuse G7.1/G10 dark
+  picks only after those ship.
+
 ---------------------------------------------------------------------------------------------------------------------
 ## Parked / undecided (not in any slice until the owner says so)
-- Co-op Last Protocol (owner: not now). Tactical pause with order queue (undecided since G8). Skirmish without a pop
-  cap (13.9c-40, owner choice recorded, parked).
-- Dark ideas kept as options: grafting, turning operators, Dead Hand strike, the Overmind's voice outside LP, mirror
-  fortress, blackout, hollow ground. (Project Lazarus moved into G7.1 J8.)
-- Dark pass ideas not picked (2026-10-31): husk reanimation, infiltrators wearing our dead, machines built around human
-  remains, infected vehicles; Screamer, flesh-hive spire, puppet-master, nanite plague bomber, hollow giant, Mourner;
-  dead-radio transmissions, mimicked voices, mercy kills, last-moment actions, shell shock; tactical nukes, hive bait,
-  tamed nanites in blood, gravity weapons, an LP orbital lance, a morale cost for dark acts.
-- G7.1 ideas not picked, kept for later: wall breach holes, Protocol cooldown abilities, Colossus boss, hive gunship /
-  bomber swarm / interceptor darts, Wreck mimic, Signal ghost, Ferro-tide, Mirror shell, Resonator, Creep seeder, Sky
-  anchor, Lodestone, Storm-maker, Parasite riders, Silent clock, Sapper Architect, living siege tower.
+- Tactical pause with order queue (undecided since G8).
 - Surface survivor controls: out for good (merge decision 1; underground survivor view is in G16).
+- Co-op LP → **G19**. No pop-cap skirmish → **G12**. Leftover dark + G7.1 ideas → **G10** (owner 2026-11-23).
 
 ## Merge decisions (OWNER, 2026-10-31; these override the source files where they differ)
 1. **Survivor view: underground only.** A survivor / follow-one-person view exists inside UNDERSTRIKE bunkers and
@@ -187,6 +221,7 @@ endless crisis.
    names are working designations, decision register note; the role and Human A exclusivity are unchanged.)
 4. **Speed and settings:** G7.1 stays as decided (no speed control, no visible quality trades). G11 adds game-speed
    controls and an accessibility menu (reduced shake / flash, UI scale, remappable keys, non-colour threat cues).
-5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 as listed. The
-   [PROPOSED] slice placements above are now the owner-approved plan; each slice still gets its own Q&A and Done-when.
+5. **Order approved:** G7.1 → G8 → G9 → G10 → G11 → G12 → G13 → G14 → G15 → G16 → G17 → G18 → **G19** as listed.
+   The [PROPOSED] slice placements above are the owner-approved plan; each slice still gets its own Q&A and Done-when.
+   (G19 co-op LP, G12 no-pop-cap, G10 leftover dark/G7.1 ideas added owner 2026-11-23.)
 6. **Dark pass (2026-10-31): everything goes into G7.1** (part J), not a separate slice.
