@@ -4,7 +4,7 @@ extends RefCounted
 ## Rules: content/g71/rules_g71_count9.json (rules.g71_count9).
 
 const KEY := "count9"
-const VER := 1
+const VER := 2
 
 const COUNTERS := [
 	"strike_early_cut_relays",
@@ -50,9 +50,18 @@ static func _st(w: SimWorld) -> Dictionary:
 			"dead_zones": [],
 			"truce_until": -1,
 			"truce_fids": [],
+			"truce_teams": {},
+			"re_unlocks": {},
 			"decap_until": -1,
 		}
 		w.sys_state[KEY] = s
+	if not s.has("truce_teams"):
+		s.truce_teams = {}
+	if not s.has("re_unlocks"):
+		s.re_unlocks = {}
+	if not s.has("dead_zones"):
+		s.dead_zones = []
+	s.ver = VER
 	return s
 
 
@@ -70,12 +79,21 @@ static func _mark(w: SimWorld, id: String, detail: Dictionary = {}) -> void:
 	s.harness = h
 
 
+static func _played(w: SimWorld, id: String, detail: Dictionary) -> void:
+	if detail.is_empty():
+		return
+	detail.play_ok = true
+	_mark(w, id, detail)
+
+
 static func board(w: SimWorld) -> Dictionary:
 	if not active(w):
 		return {}
 	var s := _st(w)
 	var out := {"counters": COUNTERS.duplicate(), "harness": (s.harness as Dictionary).duplicate(),
 		"virus": s.get("virus"), "truce_until": int(s.get("truce_until", -1)),
+		"truce_fids": (s.get("truce_fids", []) as Array).duplicate(),
+		"re_unlocks": (s.get("re_unlocks", {}) as Dictionary).duplicate(),
 		"decap_until": int(s.get("decap_until", -1))}
 	return out
 
@@ -83,7 +101,8 @@ static func board(w: SimWorld) -> Dictionary:
 static func harness_ok(w: SimWorld, id: String) -> bool:
 	if id not in COUNTERS:
 		return false
-	return int((_st(w).harness as Dictionary).get(id, {}).get("n", 0)) > 0
+	var rec: Dictionary = (_st(w).harness as Dictionary).get(id, {})
+	return int(rec.get("n", 0)) > 0 and bool(rec.get("play_ok", false))
 
 
 static func tick(w: SimWorld) -> void:
@@ -93,9 +112,7 @@ static func tick(w: SimWorld) -> void:
 	if s.virus != null and w.tick % maxi(int(R().get("virus_spread_every", 80)), 1) == 0:
 		_spread_virus(w, s)
 	if int(s.truce_until) > 0 and w.tick >= int(s.truce_until):
-		s.truce_until = -1
-		s.truce_fids = []
-		w.emit("Count9TruceEnd", {"tick": w.tick})
+		_end_coalition(w, s)
 	if int(s.decap_until) > 0 and w.tick >= int(s.decap_until):
 		s.decap_until = -1
 		Hive71._st(w).pulse = true
@@ -108,29 +125,32 @@ static func strike_early(w: SimWorld, at: Vector2, by: int = -1) -> void:
 
 
 static func cut_relay(w: SimWorld, relay_id: String) -> void:
+	var relay = (Hive71._st(w).relays as Dictionary).get(relay_id)
+	var was_alive := relay != null and bool(relay.get("alive", false))
 	Hive71.cut_relay(w, relay_id)
-	_mark(w, "strike_early_cut_relays", {"relay": relay_id})
+	if was_alive and relay != null and not bool(relay.get("alive", true)):
+		_played(w, "strike_early_cut_relays", {"relay": relay_id})
 
 
 # --- 2 EMP / EW / hacking (MachineEw7)
 static func emp_stun(w: SimWorld, center: Vector2, radius: float, secs: float, by: int = -1) -> int:
 	var n := MachineEw7.stun(w, center, radius, secs, by)
 	if n > 0:
-		_mark(w, "emp_ew_hacking", {"emp": n})
+		_played(w, "emp_ew_hacking", {"emp": n})
 	return n
 
 
 static func ew_jam(w: SimWorld, e: Dictionary, secs: float, by: int = -1) -> bool:
 	if not MachineEw7.jam(w, e, secs, by):
 		return false
-	_mark(w, "emp_ew_hacking", {"jam": int(e.id)})
+	_played(w, "emp_ew_hacking", {"jam": int(e.id)})
 	return true
 
 
 static func ew_hack_takeover(w: SimWorld, e: Dictionary, secs: float, by: int = -1) -> bool:
 	if not MachineEw7.takeover(w, e, secs, by):
 		return false
-	_mark(w, "emp_ew_hacking", {"take": int(e.id)})
+	_played(w, "emp_ew_hacking", {"take": int(e.id)})
 	return true
 
 
@@ -141,15 +161,15 @@ static func deny_wreck(w: SimWorld, wreck_id: int) -> bool:
 		return false
 	e.g71_denied = true
 	w.emit("Count9DenyWreck", {"wreck": wreck_id})
-	_mark(w, "deny_material")
+	_played(w, "deny_material", {"wreck": wreck_id})
 	return true
 
 
 # --- 4 sweep and purge (Creep.purge / CN package path)
 static func sweep_purge(w: SimWorld, center: Vector2, radius: float, by: int = -1) -> Dictionary:
 	var res := Creep.purge(w, center, radius, "standard", by)
-	if int(res.get("lost", 0)) > 0 or int(res.get("cells", 0)) > 0:
-		_mark(w, "sweep_and_purge", res)
+	if int(res.get("lost", 0)) > 0 or int(res.get("seeds", 0)) > 0:
+		_played(w, "sweep_and_purge", res)
 	return res
 
 
@@ -157,10 +177,13 @@ static func sweep_purge(w: SimWorld, center: Vector2, radius: float, by: int = -
 static func plant_virus(w: SimWorld, relay_id: String) -> bool:
 	if not Hive71.active(w):
 		return false
+	var relay = (Hive71._st(w).relays as Dictionary).get(relay_id)
+	if relay == null or not bool(relay.get("alive", false)):
+		return false
 	Hive71.cut_relay(w, relay_id)
 	_st(w).virus = {"relay": relay_id, "tick": w.tick, "hits": 1}
 	w.emit("Count9Virus", {"relay": relay_id})
-	_mark(w, "network_virus")
+	_played(w, "network_virus", {"relay": relay_id})
 	return true
 
 
@@ -191,7 +214,7 @@ static func decapitate(w: SimWorld, unit_id: int) -> bool:
 	_st(w).decap_until = w.tick + dur
 	Hive71._st(w).pulse = false
 	w.emit("Count9Decapitate", {"def": def, "until": _st(w).decap_until})
-	_mark(w, "decapitation", {"def": def})
+	_played(w, "decapitation", {"def": def})
 	return true
 
 
@@ -202,7 +225,10 @@ static func power_deficit(w: SimWorld, fid: int) -> bool:
 		return false
 	var bad := int(f.get("power_use", 0)) > int(f.get("power_prod", 0))
 	if bad:
-		_mark(w, "starve_power")
+		_played(w, "starve_power", {
+			"fid": fid,
+			"deficit": int(f.get("power_use", 0)) - int(f.get("power_prod", 0)),
+		})
 	return bad
 
 
@@ -210,14 +236,19 @@ static func power_deficit(w: SimWorld, fid: int) -> bool:
 static func reverse_engineer_cell(w: SimWorld, def_id: String) -> String:
 	var cid := Recomplex71.capture(w, def_id)
 	if cid != "":
-		_mark(w, "reverse_engineering", {"cell": cid, "def": def_id})
+		(_st(w).re_unlocks as Dictionary)[def_id] = {"cell": cid, "tick": w.tick}
+		_played(w, "reverse_engineering", {"cell": cid, "def": def_id})
 	return cid
+
+
+static func reverse_engineered(w: SimWorld, def_id: String) -> bool:
+	return (_st(w).re_unlocks as Dictionary).has(def_id)
 
 
 static func reverse_engineer_cage(w: SimWorld, unit_id: int) -> bool:
 	var err := Capture71.cage(w, unit_id)
 	if err == "":
-		_mark(w, "reverse_engineering", {"cage": true})
+		_played(w, "reverse_engineering", {"cage": unit_id})
 		return true
 	return false
 
@@ -226,23 +257,64 @@ static func reverse_engineer_cage(w: SimWorld, unit_id: int) -> bool:
 static func firebreak(w: SimWorld, pos: Vector2, owner: int = -1) -> bool:
 	Fire71.ignite_cell(w, pos, owner, float(R().get("firebreak_i", 0.7)))
 	if Fire71.blocks_at(w, pos):
-		_mark(w, "firebreaks_hostile_ground")
+		_played(w, "firebreaks_hostile_ground", {"cell": [floori(pos.x), floori(pos.y)]})
 		return true
 	return false
 
 
 # --- 10 coalitions (temporary truce vs Machine)
+static func try_coalition(w: SimWorld, fids: Array, until_tick: int) -> bool:
+	var min_fids := maxi(int(R().get("coalition_min_fids", 2)), 2)
+	if until_tick <= w.tick or fids.size() < min_fids:
+		return false
+	var unique := []
+	for raw in fids:
+		var fid := int(raw)
+		if fid == SimWorld.NEUTRAL or not w.factions.has(fid) or unique.has(fid):
+			continue
+		unique.append(fid)
+	if unique.size() < min_fids:
+		return false
+	var s := _st(w)
+	if coalition_active(w):
+		return false
+	if not (s.get("truce_teams", {}) as Dictionary).is_empty():
+		_end_coalition(w, s)
+	if not (s.get("truce_teams") is Dictionary):
+		s.truce_teams = {}
+	var old_teams := {}
+	var coalition_team := -1000000 - w.tick
+	for fid in unique:
+		old_teams[str(fid)] = int(w.factions[fid].get("team", fid))
+		w.factions[fid].team = coalition_team
+	s.truce_until = until_tick
+	s.truce_fids = unique
+	s.truce_teams = old_teams
+	w.emit("CoalitionFormed", {"fids": unique.duplicate(), "until": until_tick, "until_tick": until_tick})
+	_played(w, "coalitions", {"fids": unique.duplicate(), "until": until_tick})
+	return true
+
+
 static func coalition_truce(w: SimWorld, fids: Array, ticks: int = -1) -> void:
 	var dur := ticks if ticks > 0 else int(R().get("coalition_truce_ticks", 600))
-	_st(w).truce_until = w.tick + dur
-	_st(w).truce_fids = fids.duplicate()
-	w.emit("Count9Coalition", {"fids": fids, "until": _st(w).truce_until})
-	_mark(w, "coalitions")
+	try_coalition(w, fids, w.tick + maxi(dur, 1))
 
 
-static func coalition_active(w: SimWorld, fid: int) -> bool:
+static func coalition_active(w: SimWorld) -> bool:
 	var s := _st(w)
-	return int(s.truce_until) > w.tick and (s.truce_fids as Array).has(fid)
+	return int(s.truce_until) > w.tick and (s.truce_fids as Array).size() >= 2
+
+
+static func _end_coalition(w: SimWorld, s: Dictionary) -> void:
+	var old_teams: Dictionary = s.get("truce_teams", {})
+	for key in old_teams:
+		var fid := int(key)
+		if w.factions.has(fid):
+			w.factions[fid].team = int(old_teams[key])
+	s.truce_until = -1
+	s.truce_fids = []
+	s.truce_teams = {}
+	w.emit("Count9TruceEnd", {"tick": w.tick})
 
 
 # --- 11 dead zones (hive link weak)
@@ -251,14 +323,26 @@ static func mark_dead_zone(w: SimWorld, center: Vector2, radius: float = -1.0) -
 	var zones: Array = _st(w).dead_zones
 	zones.append({"pos": [snappedf(center.x, 0.01), snappedf(center.y, 0.01)], "r": r})
 	_st(w).dead_zones = zones
+	var cut := 0
+	for rid in (Hive71._st(w).relays as Dictionary).keys():
+		var relay: Dictionary = Hive71._st(w).relays[rid]
+		var pos := Vector2(float(relay.pos[0]), float(relay.pos[1]))
+		if bool(relay.get("alive", false)) and pos.distance_squared_to(center) <= r * r:
+			Hive71.cut_relay(w, String(rid))
+			cut += 1
+	if cut > 0:
+		_played(w, "dead_zones", {"relays": cut})
 
 
-static func hive_link_weak(w: SimWorld, pos: Vector2) -> bool:
+static func in_dead_zone(w: SimWorld, cell: Vector2i) -> bool:
+	return _dead_zone_at(w, Vector2(cell) + Vector2(0.5, 0.5))
+
+
+static func _dead_zone_at(w: SimWorld, pos: Vector2) -> bool:
 	var s := _st(w)
 	for dz in s.dead_zones as Array:
 		var c := Vector2(float(dz.pos[0]), float(dz.pos[1]))
 		if pos.distance_squared_to(c) <= float(dz.r) * float(dz.r):
-			_mark(w, "dead_zones")
 			return true
 	var lp = w.sys_state.get("lp")
 	if lp is Dictionary:
@@ -266,18 +350,25 @@ static func hive_link_weak(w: SimWorld, pos: Vector2) -> bool:
 			var c2 := Vector2(raw.get("center", raw.get("pos", Vector2.ZERO)))
 			var rr := float(raw.get("radius", raw.get("r", 0.0)))
 			if rr > 0.0 and pos.distance_squared_to(c2) <= rr * rr:
-				_mark(w, "dead_zones")
 				return true
 	return false
+
+
+static func hive_link_weak(w: SimWorld, pos: Vector2) -> bool:
+	return _dead_zone_at(w, pos)
 
 
 # --- 12 hunter-killer squads (Fleet71 hunter tanks)
 static func hunter_killers_deployed(w: SimWorld, fid: int = -1) -> int:
 	if fid < 0 and w.sys_state.lp != null:
 		fid = int(w.sys_state.lp.fid)
-	var n := int(Fleet71.board(w, fid).get("by", {}).get("hunter", 0))
+	var n := 0
+	for e in Fleet71.robots_of(w, fid):
+		if String(Content.unit(String(e.def)).get("g71_fleet", "")) == "hunter":
+			e.g71_hunter_killer = true
+			n += 1
 	if n > 0:
-		_mark(w, "hunter_killer_squads", {"n": n})
+		_played(w, "hunter_killer_squads", {"n": n})
 	return n
 
 
@@ -295,5 +386,5 @@ static func reprogram(w: SimWorld, unit_id: int, new_fid: int) -> bool:
 	e.g71_reprogrammed = true
 	e.disabled = false
 	w.emit("Count9Reprogram", {"id": unit_id, "fid": new_fid, "def": String(e.def)})
-	_mark(w, "reprogramming_captured")
+	_played(w, "reprogramming_captured", {"id": unit_id, "fid": new_fid})
 	return true

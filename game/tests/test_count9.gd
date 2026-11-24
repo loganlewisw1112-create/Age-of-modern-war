@@ -26,6 +26,10 @@ func _machine_fid(w: SimWorld) -> int:
 	return -1
 
 
+func _play_ok(w: SimWorld, id: String) -> bool:
+	return bool(Count9.board(w).get("harness", {}).get(id, {}).get("play_ok", false))
+
+
 func test_counter_strike_early_cut_relays() -> void:
 	var w := _lp()
 	if w == null:
@@ -34,6 +38,7 @@ func test_counter_strike_early_cut_relays() -> void:
 	Count9.cut_relay(w, "r0")
 	check(Hive71.is_isolated(w, "n0"), "relay cut isolates nest")
 	check(Count9.harness_ok(w, "strike_early_cut_relays"), "harness strike_early_cut_relays")
+	check(_play_ok(w, "strike_early_cut_relays"), "play_ok strike_early_cut_relays")
 
 
 func test_counter_emp_ew_hacking() -> void:
@@ -55,6 +60,7 @@ func test_counter_emp_ew_hacking() -> void:
 	else:
 		check(Count9.ew_jam(w, w.entities[hid], 3.0, hid), "jam fallback")
 	check(Count9.harness_ok(w, "emp_ew_hacking"), "harness emp_ew_hacking")
+	check(_play_ok(w, "emp_ew_hacking"), "play_ok emp_ew_hacking")
 
 
 func test_counter_deny_material() -> void:
@@ -81,6 +87,7 @@ func test_counter_deny_material() -> void:
 	Harvest71._move_harvs(w, Harvest71._st(w))
 	check(int(w.entities[wid].get("drag", -1)) < 0, "harvester skips denied wreck")
 	check(Count9.harness_ok(w, "deny_material"), "harness deny_material")
+	check(_play_ok(w, "deny_material"), "play_ok deny_material")
 
 
 func test_counter_sweep_and_purge() -> void:
@@ -88,12 +95,12 @@ func test_counter_sweep_and_purge() -> void:
 	if w == null:
 		return
 	var center := Vector2(w.sys_state.lp.base.center) + Vector2(20, 0)
-	Creep.add_seed(w, center, "seed", _machine_fid(w))
-	for i in 20:
-		w.step()
+	var seed_id := Creep.add_seed(w, center, "seed", _machine_fid(w))
 	var res := Count9.sweep_purge(w, center, 8.0, int(w.sys_state.lp.fid))
-	check(int(res.get("cells", 0)) >= 0, "purge ran")
+	check(int(res.get("seeds", 0)) >= 1, "purge clears a live seed")
+	check(Creep.seeds(w).all(func(seed): return int(seed.id) != seed_id), "purged seed removed")
 	check(Count9.harness_ok(w, "sweep_and_purge"), "harness sweep_and_purge")
+	check(_play_ok(w, "sweep_and_purge"), "play_ok sweep_and_purge")
 
 
 func test_counter_network_virus() -> void:
@@ -103,6 +110,7 @@ func test_counter_network_virus() -> void:
 	check(Count9.plant_virus(w, "r0"), "virus planted")
 	check(Hive71.is_isolated(w, "n0"), "virus cut relay")
 	check(Count9.harness_ok(w, "network_virus"), "harness network_virus")
+	check(_play_ok(w, "network_virus"), "play_ok network_virus")
 
 
 func test_counter_decapitation() -> void:
@@ -118,6 +126,7 @@ func test_counter_decapitation() -> void:
 	check(not w.entities.has(uid), "command removed")
 	check(not bool(Hive71.board(w).get("pulse", true)), "coordination pulse down")
 	check(Count9.harness_ok(w, "decapitation"), "harness decapitation")
+	check(_play_ok(w, "decapitation"), "play_ok decapitation")
 
 
 func test_counter_starve_power() -> void:
@@ -129,6 +138,7 @@ func test_counter_starve_power() -> void:
 	w.factions[fid].power_use = 100
 	check(Count9.power_deficit(w, fid), "power deficit")
 	check(Count9.harness_ok(w, "starve_power"), "harness starve_power")
+	check(_play_ok(w, "starve_power"), "play_ok starve_power")
 
 
 func test_counter_reverse_engineering() -> void:
@@ -137,6 +147,7 @@ func test_counter_reverse_engineering() -> void:
 		return
 	var cid := Count9.reverse_engineer_cell(w, "g71_m_brute")
 	check(cid != "", "recomplex cell")
+	check(Count9.reverse_engineered(w, "g71_m_brute"), "reverse-engineering unlock recorded")
 	var mfid := _machine_fid(w)
 	if Content.unit("g71_m_reclaimer").is_empty():
 		check(cid != "", "recomplex only path")
@@ -145,6 +156,7 @@ func test_counter_reverse_engineering() -> void:
 		w.entities[uid].hp = 1.0
 		check(Count9.reverse_engineer_cage(w, uid), "cage study path")
 	check(Count9.harness_ok(w, "reverse_engineering"), "harness reverse_engineering")
+	check(_play_ok(w, "reverse_engineering"), "play_ok reverse_engineering")
 
 
 func test_counter_firebreaks_hostile_ground() -> void:
@@ -155,25 +167,44 @@ func test_counter_firebreaks_hostile_ground() -> void:
 	check(Count9.firebreak(w, pos, int(w.sys_state.lp.fid)), "firebreak")
 	check(Fire71.blocks_at(w, pos), "fire blocks tide path")
 	check(Count9.harness_ok(w, "firebreaks_hostile_ground"), "harness firebreaks")
+	check(_play_ok(w, "firebreaks_hostile_ground"), "play_ok firebreaks")
 
 
 func test_counter_coalitions() -> void:
 	var w := _lp()
 	if w == null:
 		return
-	Count9.coalition_truce(w, [int(w.sys_state.lp.fid)], 200)
-	check(Count9.coalition_active(w, int(w.sys_state.lp.fid)), "truce active")
+	var pfid := int(w.sys_state.lp.fid)
+	var mfid := _machine_fid(w)
+	if not check(mfid >= 0, "machine fid"):
+		return
+	var until := w.tick + 2
+	check(w.is_enemy(pfid, mfid), "factions hostile before coalition")
+	check(Count9.try_coalition(w, [pfid, mfid], until), "coalition formed")
+	check(Count9.coalition_active(w), "truce active")
+	check(not w.is_enemy(pfid, mfid), "coalition blocks friendly fire")
+	check(w.events.any(func(ev): return String(ev.type) == "CoalitionFormed"), "CoalitionFormed emitted")
 	check(Count9.harness_ok(w, "coalitions"), "harness coalitions")
+	check(_play_ok(w, "coalitions"), "play_ok coalitions")
+	for i in 3:
+		w.step()
+	check(not Count9.coalition_active(w), "coalition expires")
+	check(w.is_enemy(pfid, mfid), "hostility restored after coalition")
 
 
 func test_counter_dead_zones() -> void:
 	var w := _lp()
 	if w == null:
 		return
-	var pos := Vector2(120, 120)
+	var relay: Dictionary = Hive71._st(w).relays.get("r0", {})
+	if not check(not relay.is_empty(), "relay r0"):
+		return
+	var pos := Vector2(float(relay.pos[0]), float(relay.pos[1]))
 	Count9.mark_dead_zone(w, pos, 10.0)
-	check(Count9.hive_link_weak(w, pos + Vector2(2, 0)), "inside dead zone")
+	check(Count9.in_dead_zone(w, Vector2i(pos)), "inside dead zone")
+	check(Hive71.is_isolated(w, "n0"), "dead zone unlinks relay")
 	check(Count9.harness_ok(w, "dead_zones"), "harness dead_zones")
+	check(_play_ok(w, "dead_zones"), "play_ok dead_zones")
 
 
 func test_counter_hunter_killer_squads() -> void:
@@ -184,8 +215,10 @@ func test_counter_hunter_killer_squads() -> void:
 	var center: Vector2 = w.sys_state.lp.base.center
 	Fleet71.seed(w, fid, center)
 	var n := Count9.hunter_killers_deployed(w, fid)
-	check(n >= 1 or Content.unit("g71_hunter_tank").is_empty(), "hunters seeded or def absent")
+	check(n >= 1, "hunters seeded")
+	check(w.units_of(fid).any(func(e): return bool(e.get("g71_hunter_killer", false))), "hunter-killer unit tagged")
 	check(Count9.harness_ok(w, "hunter_killer_squads"), "harness hunter_killer_squads")
+	check(_play_ok(w, "hunter_killer_squads"), "play_ok hunter_killer_squads")
 
 
 func test_counter_reprogramming_captured() -> void:
@@ -202,3 +235,4 @@ func test_counter_reprogramming_captured() -> void:
 	check_eq(int(w.entities[uid].owner), pfid, "owner flipped")
 	check(bool(w.entities[uid].get("g71_reprogrammed", false)), "reprogram flag")
 	check(Count9.harness_ok(w, "reprogramming_captured"), "harness reprogramming")
+	check(_play_ok(w, "reprogramming_captured"), "play_ok reprogramming_captured")
