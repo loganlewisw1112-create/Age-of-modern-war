@@ -76,7 +76,73 @@
         "shade": {"id": 58, "no_heavy": true},
         "sergeant": {"id": 59, "juniors": 3}
       },
-      "ui_condition": ["fresh", "worn", "grounded"]
+      "ui_condition": ["fresh", "worn", "grounded"],
+      "vehicles": {
+        "insert_methods": {
+          "foot": {"terrains": ["ground"], "stage_min": 7, "def": "", "exfil": true},
+          "silent_rotor": {"terrains": ["air", "ground"], "stage_min": 7, "def": "x_silent_rotor", "exfil": true},
+          "ghost_runner": {"terrains": ["ground"], "stage_min": 9, "def": "x_ghost_runner", "exfil": true},
+          "mole": {"terrains": ["tunnel"], "stage_min": 8, "def": "x_mole", "mission_asset": true, "exfil": true},
+          "stealth_apc": {"terrains": ["ground"], "stage_min": 7, "def": "x_stealth_apc", "exfil": true},
+          "drop_pod": {"terrains": ["air", "ground"], "stage_min": 9, "def": "x_drop_pod", "mission_asset": true, "exfil": false},
+          "river_ghost": {"terrains": ["wet"], "stage_min": 8, "def": "x_river_ghost", "exfil": true},
+          "stealth_transport": {"terrains": ["air"], "stage_min": 8, "def": "x_stealth_transport", "exfil": true},
+          "mini_sub": {"terrains": ["wet"], "stage_min": 9, "def": "x_mini_sub", "exfil": true},
+          "exo_mule": {"terrains": ["ground"], "stage_min": 9, "def": "x_exo_mule", "exfil": false},
+          "recovery_truck": {"terrains": ["ground"], "stage_min": 7, "def": "x_recovery_truck", "exfil": true},
+          "drone_carrier": {"terrains": ["ground"], "stage_min": 9, "def": "x_ghost_drone_carrier", "exfil": false}
+        },
+        "silent_rotor": {
+          "modes": ["quiet", "gunship"],
+          "flip_one_way": true,
+          "quiet_signature": 0.08,
+          "gunship_signature": 0.92,
+          "warning": "weapons_open_high_signature",
+          "counter": "aa_and_sensor"
+        },
+        "mole": {
+          "uses": "tunnels10",
+          "not_machine_burrower": true,
+          "primary_exit": true,
+          "alternate_exit": true,
+          "collapse_behind": true,
+          "collapse_warning": "tunnel_collapse_readable"
+        },
+        "runner": {
+          "tether_range": 12,
+          "link_loss_ticks": 8,
+          "remote_driver": true,
+          "recovery_on_loss": true
+        },
+        "guardian_mule": {
+          "postures": ["supply", "guardian", "overcharge"],
+          "overcharge_requires": ["squad_loss", "abandonment"],
+          "overcharge_delay_ticks": 6,
+          "destroys_suit_cores": true,
+          "not_area_bomb": true,
+          "warning": "denial_overcharge_armed"
+        },
+        "anchor": {
+          "supply_priority": true,
+          "recovery_priority": true,
+          "workshop_queue": true,
+          "intact_suit_race": true
+        },
+        "drones": {
+          "door_kick": {"id": 9, "actions": ["clear", "mark"]},
+          "wiretap": {"id": 10, "actions": ["relay_perch", "bounded_tap"], "bounded": true},
+          "spider": {"id": 37, "actions": ["wall", "ceiling", "hatch", "limpet", "power"]},
+          "reaper": {"id": 38, "actions": ["loiter", "designate"], "rotorless": true},
+          "magazines": {"id": 40, "kinds": ["recon", "emp", "backdoor", "thermite"], "pad_only": true},
+          "nest": {"id": 41, "actions": ["repair", "replenish"], "destroyable": true}
+        },
+        "kits": {
+          "breach_charges": {"id": 20, "kinds": ["soft", "hard", "collapse"]},
+          "emp_scalpel": {"id": 21, "strong_vs": ["machine"], "weak_vs": ["human_a", "human_b"], "narrow": true},
+          "backdoor_spike": {"id": 22, "requires_provenance": "syndicate_compromised", "not_universal": true}
+        },
+        "support_modules": ["cache_beetle", "false_convoy", "cryo_litter", "relay_mast_trailer", "wet_gate"]
+      }
     }
   }
 }
