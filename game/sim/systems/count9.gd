@@ -4,7 +4,7 @@ extends RefCounted
 ## Rules: content/g71/rules_g71_count9.json (rules.g71_count9).
 
 const KEY := "count9"
-const VER := 2
+const VER := 3
 
 const COUNTERS := [
 	"strike_early_cut_relays",
@@ -51,8 +51,10 @@ static func _st(w: SimWorld) -> Dictionary:
 			"truce_until": -1,
 			"truce_fids": [],
 			"truce_teams": {},
+			"coalition_team": null,
 			"re_unlocks": {},
 			"decap_until": -1,
+			"power_starve": {},
 		}
 		w.sys_state[KEY] = s
 	if not s.has("truce_teams"):
@@ -61,6 +63,10 @@ static func _st(w: SimWorld) -> Dictionary:
 		s.re_unlocks = {}
 	if not s.has("dead_zones"):
 		s.dead_zones = []
+	if not s.has("power_starve"):
+		s.power_starve = {}
+	if not s.has("coalition_team"):
+		s.coalition_team = null
 	s.ver = VER
 	return s
 
@@ -116,6 +122,67 @@ static func tick(w: SimWorld) -> void:
 	if int(s.decap_until) > 0 and w.tick >= int(s.decap_until):
 		s.decap_until = -1
 		Hive71._st(w).pulse = true
+	for key in (s.power_starve as Dictionary).keys():
+		if w.tick >= int(s.power_starve[key].get("until", -1)):
+			s.power_starve.erase(key)
+
+
+## Production command surface: all thirteen counters route through SimWorld.COMMAND_HANDLERS.
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	if not active(w):
+		return "Machine counters are unavailable."
+	var t := String(cmd.get("type", ""))
+	match t:
+		"count9_cut_relay", "count9_virus":
+			return "" if String(cmd.get("relay_id", "")) != "" else "Pick a relay."
+		"count9_emp", "count9_purge", "count9_firebreak", "count9_dead_zone":
+			return "" if cmd.has("at") else "Pick a target point."
+		"count9_deny", "count9_decap", "count9_reprogram", "count9_reverse_cage":
+			return "" if int(cmd.get("unit_id", cmd.get("wreck_id", -1))) >= 0 else "Pick a target."
+		"count9_starve":
+			return "" if w.factions.has(int(cmd.get("target_fid", -1))) else "Pick a faction."
+		"count9_reverse":
+			return "" if String(cmd.get("def_id", "")) != "" else "Pick a Machine design."
+		"count9_coalition":
+			return "" if (cmd.get("fids", []) as Array).size() >= 2 else "Pick coalition members."
+		"count9_hunters":
+			return ""
+	return "Unknown Machine counter command."
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	var t := String(cmd.get("type", ""))
+	var issuer := int(cmd.get("issuer", -1))
+	var at := Vector2(cmd.get("at", Vector2.ZERO))
+	match t:
+		"count9_cut_relay":
+			strike_early(w, at, issuer); cut_relay(w, String(cmd.get("relay_id", "")))
+		"count9_emp":
+			emp_stun(w, at, float(cmd.get("radius", 8.0)), float(cmd.get("secs", 4.0)), issuer)
+		"count9_deny":
+			deny_wreck(w, int(cmd.get("wreck_id", -1)))
+		"count9_purge":
+			sweep_purge(w, at, float(cmd.get("radius", 8.0)), issuer)
+		"count9_virus":
+			plant_virus(w, String(cmd.get("relay_id", "")))
+		"count9_decap":
+			decapitate(w, int(cmd.get("unit_id", -1)))
+		"count9_starve":
+			starve_power(w, int(cmd.get("target_fid", -1)), int(cmd.get("amount", 100)), int(cmd.get("ticks", 120)))
+		"count9_reverse":
+			reverse_engineer_cell(w, String(cmd.get("def_id", "")))
+		"count9_reverse_cage":
+			reverse_engineer_cage(w, int(cmd.get("unit_id", -1)))
+		"count9_firebreak":
+			firebreak(w, at, issuer)
+		"count9_coalition":
+			try_coalition(w, cmd.get("fids", []), int(cmd.get("until_tick", w.tick + 600)))
+		"count9_dead_zone":
+			mark_dead_zone(w, at, float(cmd.get("radius", -1.0)))
+		"count9_hunters":
+			hunter_killers_deployed(w, int(cmd.get("fid", issuer)))
+		"count9_reprogram":
+			reprogram(w, int(cmd.get("unit_id", -1)), int(cmd.get("new_fid", issuer)))
 
 
 # --- 1 strike early / cut relays (Hive71 + strikes hooks)
@@ -209,6 +276,12 @@ static func decapitate(w: SimWorld, unit_id: int) -> bool:
 	if e == null:
 		return false
 	var def := String(e.get("def", ""))
+	var d := Content.unit(def) if String(e.get("kind", "")) == "unit" else Content.building(def)
+	var role := String(d.get("rank_role", d.get("role", "")))
+	var command_class := role in ["commander", "general", "command", "command_vehicle"] \
+		or bool(d.get("company_hq", false)) or bool(d.get("is_hq", false))
+	if not command_class:
+		return false
 	w.destroy(unit_id, "decapitation")
 	var dur := maxi(int(R().get("decap_coordination_ticks", 120)), 1)
 	_st(w).decap_until = w.tick + dur
@@ -218,7 +291,24 @@ static func decapitate(w: SimWorld, unit_id: int) -> bool:
 	return true
 
 
-# --- 7 starve power (Economy flow)
+# --- 7 starve power (sabotage causes a timed production penalty; Economy consumes this state)
+static func starve_power(w: SimWorld, fid: int, amount: int = 100, ticks: int = 120) -> bool:
+	if not w.factions.has(fid) or amount <= 0 or ticks <= 0:
+		return false
+	var s := _st(w)
+	(s.power_starve as Dictionary)[str(fid)] = {"amount": amount, "until": w.tick + ticks}
+	var f: Dictionary = w.factions[fid]
+	f.power_prod = maxi(0, int(f.get("power_prod", 0)) - amount)
+	w.emit("Count9PowerStarved", {"fid": fid, "amount": amount, "until": w.tick + ticks})
+	_played(w, "starve_power", {"fid": fid, "amount": amount, "until": w.tick + ticks})
+	return true
+
+
+static func power_penalty(w: SimWorld, fid: int) -> int:
+	var rec: Dictionary = (_st(w).power_starve as Dictionary).get(str(fid), {})
+	return int(rec.get("amount", 0)) if w.tick < int(rec.get("until", -1)) else 0
+
+
 static func power_deficit(w: SimWorld, fid: int) -> bool:
 	var f = w.factions.get(fid)
 	if f == null:
@@ -290,6 +380,7 @@ static func try_coalition(w: SimWorld, fids: Array, until_tick: int) -> bool:
 	s.truce_until = until_tick
 	s.truce_fids = unique
 	s.truce_teams = old_teams
+	s.coalition_team = coalition_team
 	w.emit("CoalitionFormed", {"fids": unique.duplicate(), "until": until_tick, "until_tick": until_tick})
 	_played(w, "coalitions", {"fids": unique.duplicate(), "until": until_tick})
 	return true
@@ -307,13 +398,16 @@ static func coalition_active(w: SimWorld) -> bool:
 
 static func _end_coalition(w: SimWorld, s: Dictionary) -> void:
 	var old_teams: Dictionary = s.get("truce_teams", {})
+	var coalition_team = s.get("coalition_team")
 	for key in old_teams:
 		var fid := int(key)
-		if w.factions.has(fid):
+		# Soft restore: preserve any diplomacy/team update made after the truce formed.
+		if w.factions.has(fid) and coalition_team != null and int(w.factions[fid].get("team", fid)) == int(coalition_team):
 			w.factions[fid].team = int(old_teams[key])
 	s.truce_until = -1
 	s.truce_fids = []
 	s.truce_teams = {}
+	s.coalition_team = null
 	w.emit("Count9TruceEnd", {"tick": w.tick})
 
 

@@ -320,6 +320,11 @@ const COMMANDS := {
 	"neural71_link": Neural71,  # G7.1 J9 neural-link
 	"night71_illuminate": Night71,  # G7.1 I5 illumination
 	"capture71_cage": Capture71,  # G7.1 H11 capture study
+	"count9_cut_relay": Count9, "count9_emp": Count9, "count9_deny": Count9,
+	"count9_purge": Count9, "count9_virus": Count9, "count9_decap": Count9,
+	"count9_starve": Count9, "count9_reverse": Count9, "count9_reverse_cage": Count9,
+	"count9_firebreak": Count9, "count9_coalition": Count9, "count9_dead_zone": Count9,
+	"count9_hunters": Count9, "count9_reprogram": Count9,  # Pre-G10: thirteen production counter paths
 	"request71_reply": Request71,  # G7.1 I1 request queue
 	"warmind71_reply": Warmind71,  # G7.1 J13 war-mind ask
 	"recomplex71_capture": Recomplex71,  # G7.1 J12 Site Blackglass

@@ -67,7 +67,14 @@ static func tick(w: SimWorld) -> void:
 	var pay: bool = w.tick > 0 and w.tick % STIPEND_INTERVAL_TICKS == 0
 	for fid in w.factions:
 		var f: Dictionary = w.factions[fid]
-		f.power_prod = int(pp[fid])
+		# Pre-G10 COUNT9 power-starvation sabotage is saved state, consumed here by the real power flow.
+		var c9 = w.sys_state.get("count9")
+		var starve := 0
+		if c9 is Dictionary:
+			var rec: Dictionary = (c9.get("power_starve", {}) as Dictionary).get(str(fid), {})
+			if w.tick < int(rec.get("until", -1)):
+				starve = int(rec.get("amount", 0))
+		f.power_prod = maxi(0, int(pp[fid]) - starve)
 		f.power_use = int(pu[fid])
 		f.pop = int(pop[fid])
 		f.pop_cap = maxi(mini(int(pc[fid]), cap_hq if int(chq[fid]) > 0 else cap_max), int(f.get("pop_cap_floor", 0)))  # G7 LPMODE7 CR seq 940: only Last Protocol sets a floor

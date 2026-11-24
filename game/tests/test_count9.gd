@@ -30,6 +30,26 @@ func _play_ok(w: SimWorld, id: String) -> bool:
 	return bool(Count9.board(w).get("harness", {}).get(id, {}).get("play_ok", false))
 
 
+func _issue(w: SimWorld, cmd: Dictionary) -> bool:
+	cmd.issuer = int(cmd.get("issuer", w.sys_state.lp.fid))
+	var res := w.submit(cmd)
+	if not check(bool(res.get("ok", false)), "production command accepted: %s" % String(cmd.type)):
+		return false
+	w.step()
+	return true
+
+
+func test_all_counters_have_production_command_routes() -> void:
+	var w := _lp()
+	if w == null:
+		return
+	var routes := ["count9_cut_relay", "count9_emp", "count9_deny", "count9_purge", "count9_virus",
+		"count9_decap", "count9_starve", "count9_reverse", "count9_firebreak", "count9_coalition",
+		"count9_dead_zone", "count9_hunters", "count9_reprogram"]
+	for route in routes:
+		check(SimWorld.COMMANDS.has(route), "production route %s" % route)
+
+
 func test_counter_strike_early_cut_relays() -> void:
 	var w := _lp()
 	if w == null:
@@ -120,9 +140,9 @@ func test_counter_decapitation() -> void:
 	var mfid := _machine_fid(w)
 	if not check(mfid >= 0, "machine fid"):
 		return
-	var def := "g71_m_brute" if not Content.unit("g71_m_brute").is_empty() else "mbt"
+	var def := "m_commander"
 	var uid := w.spawn_unit(def, mfid, Vector2(50, 50))
-	check(Count9.decapitate(w, uid), "decap strike")
+	check(_issue(w, {"type": "count9_decap", "unit_id": uid}), "decap command")
 	check(not w.entities.has(uid), "command removed")
 	check(not bool(Hive71.board(w).get("pulse", true)), "coordination pulse down")
 	check(Count9.harness_ok(w, "decapitation"), "harness decapitation")
@@ -134,8 +154,9 @@ func test_counter_starve_power() -> void:
 	if w == null:
 		return
 	var fid := int(w.sys_state.lp.fid)
-	w.factions[fid].power_prod = 0
-	w.factions[fid].power_use = 100
+	w.factions[fid].power_use = 1
+	check(_issue(w, {"type": "count9_starve", "target_fid": fid, "amount": 100000, "ticks": 20}), "starve command")
+	check_eq(int(w.factions[fid].power_prod), 0, "starvation causes power-production loss")
 	check(Count9.power_deficit(w, fid), "power deficit")
 	check(Count9.harness_ok(w, "starve_power"), "harness starve_power")
 	check(_play_ok(w, "starve_power"), "play_ok starve_power")
@@ -186,10 +207,12 @@ func test_counter_coalitions() -> void:
 	check(w.events.any(func(ev): return String(ev.type) == "CoalitionFormed"), "CoalitionFormed emitted")
 	check(Count9.harness_ok(w, "coalitions"), "harness coalitions")
 	check(_play_ok(w, "coalitions"), "play_ok coalitions")
+	var changed_team := 777
+	w.factions[pfid].team = changed_team
 	for i in 3:
 		w.step()
 	check(not Count9.coalition_active(w), "coalition expires")
-	check(w.is_enemy(pfid, mfid), "hostility restored after coalition")
+	check_eq(int(w.factions[pfid].team), changed_team, "newer diplomacy change survives soft restore")
 
 
 func test_counter_dead_zones() -> void:

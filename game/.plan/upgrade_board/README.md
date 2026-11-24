@@ -41,6 +41,9 @@ Frozen scope: `game/docs/PRE_G10_SCOPE.md` · plan: `docs/superpowers/plans/2026
 | SKIRM9+ | Skirmish setup `director_adapt` toggle, siege attack-move |
 | AI9 | Adapt, named generals, diplomacy, intel-diff, CoC ops |
 | ECON9 | Resources, trade, territory/civ, research, black market, upgrades |
+| PACE71 | Global vehicle tempo + terrain modifiers; preserve accel/turn/deploy friction |
+
+Approved addendum: HIVE9+/COUNT9 also own link quality, mesh/spine, shared senses, and creep-cable cuts; AI9 also owns Warmind doctrine, threat budgeting, counter-memory, and readable intent.
 
 Serialize **D2 AI9 ↔ D3 ECON9** on diplomacy + Machine-coalition seam (`count9.gd` coalitions owned by COUNT9+).
 
