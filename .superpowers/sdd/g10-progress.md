@@ -22,7 +22,7 @@ Subagents: Auto (owner usage limit)
 - Task 18 AI10: Coalition AI + doctrine; test_g10_ai; HANDOFF/RELEASE; world wire E3
 - Task 20 DARK10: four dark picks; test_g10_dark 6/0; FACT ship.dark10; world wire E3
 - Task 14–16 GHOST10: Ghost vertical + vehicles; exo.gd RELEASED; ship.ghost16
-- Task 17 CG10: (this ship) — Counter-Ghost corps + Shade Dart; test_g10_counterghost 5/0; FACT ship.cg10 seq 209; addendum 171 folded; pushed
+- Task 17 CG10: 3f046cf6 — Counter-Ghost corps + Shade Dart; test_g10_counterghost 5/0; FACT ship.cg10 seq 209; addendum 171 folded; pushed
 - Task 19 MODE10: HANDOFF 184 / RELEASE 185; test_g10_modes 8/0 (+ LP suites); NEED 183 world stage gate → E3; ORCH commit pending; FACT ship.mode10
 
 ## Live E2 (≤6)
