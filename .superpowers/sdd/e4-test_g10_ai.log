@@ -1,0 +1,22 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_ai::test_adapt9_and_persona_feed_doctrine
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_ai::test_adapt9_and_persona_feed_doctrine (154 ms)
+  RUN  test_g10_ai::test_cells_probe_and_bleed
+  PASS test_g10_ai::test_cells_probe_and_bleed (71 ms)
+  RUN  test_g10_ai::test_combined_play_chain
+  PASS test_g10_ai::test_combined_play_chain (71 ms)
+  RUN  test_g10_ai::test_difficulty_pressure_decision_quality_only
+  PASS test_g10_ai::test_difficulty_pressure_decision_quality_only (214 ms)
+  RUN  test_g10_ai::test_difficulty_stock_income_hp_damage_cost_equal
+  PASS test_g10_ai::test_difficulty_stock_income_hp_damage_cost_equal (290 ms)
+  RUN  test_g10_ai::test_elites_strike_weak_hvt
+  PASS test_g10_ai::test_elites_strike_weak_hvt (74 ms)
+  RUN  test_g10_ai::test_endangered_elites_exfil_not_trade
+  PASS test_g10_ai::test_endangered_elites_exfil_not_trade (69 ms)
+  RUN  test_g10_ai::test_mercs_fill_detected_gap
+  PASS test_g10_ai::test_mercs_fill_detected_gap (71 ms)
+
+RESULT pass=8 fail=0 files=1 time_ms=7370

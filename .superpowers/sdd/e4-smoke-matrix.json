@@ -1,0 +1,100 @@
+[
+  {
+    "suite": "test_g10_stage",
+    "exit": 0,
+    "pass": 14,
+    "fail": 0,
+    "result": "RESULT pass=14 fail=0 files=1 time_ms=11280"
+  },
+  {
+    "suite": "test_g10_modes",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=18232"
+  },
+  {
+    "suite": "test_g10_tech",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=6797"
+  },
+  {
+    "suite": "test_g10_ghost",
+    "exit": 0,
+    "pass": 15,
+    "fail": 0,
+    "result": "RESULT pass=15 fail=0 files=1 time_ms=7504"
+  },
+  {
+    "suite": "test_g10_counterghost",
+    "exit": 0,
+    "pass": 5,
+    "fail": 0,
+    "result": "RESULT pass=5 fail=0 files=1 time_ms=7067"
+  },
+  {
+    "suite": "test_g10_exo_armory",
+    "exit": 0,
+    "pass": 7,
+    "fail": 0,
+    "result": "RESULT pass=7 fail=0 files=1 time_ms=7300"
+  },
+  {
+    "suite": "test_g10_dark",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=7307"
+  },
+  {
+    "suite": "test_g10_ai",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=7370"
+  },
+  {
+    "suite": "test_g10_buildings",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=7066"
+  },
+  {
+    "suite": "test_g10_content",
+    "exit": 0,
+    "pass": 11,
+    "fail": 0,
+    "result": "RESULT pass=11 fail=0 files=1 time_ms=6969"
+  },
+  {
+    "suite": "test_g10_mechanics",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=7359"
+  },
+  {
+    "suite": "test_exo",
+    "exit": 0,
+    "pass": 4,
+    "fail": 0,
+    "result": "RESULT pass=4 fail=0 files=1 time_ms=8003"
+  },
+  {
+    "suite": "test_lpmode7",
+    "exit": 0,
+    "pass": 18,
+    "fail": 0,
+    "result": "RESULT pass=18 fail=0 files=1 time_ms=116192"
+  },
+  {
+    "suite": "test_lp_save71",
+    "exit": 0,
+    "pass": 2,
+    "fail": 0,
+    "result": "RESULT pass=2 fail=0 files=1 time_ms=25172"
+  }
+]

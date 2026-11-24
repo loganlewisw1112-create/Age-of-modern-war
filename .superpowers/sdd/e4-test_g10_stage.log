@@ -1,0 +1,34 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_stage::test_all_stage_openers_valid
+  PASS test_g10_stage::test_all_stage_openers_valid (73 ms)
+  RUN  test_g10_stage::test_coalition_playable_stages_1_to_13
+  PASS test_g10_stage::test_coalition_playable_stages_1_to_13 (0 ms)
+  RUN  test_g10_stage::test_config_roundtrip_preserves_coalition_stage_3_and_12
+  PASS test_g10_stage::test_config_roundtrip_preserves_coalition_stage_3_and_12 (237 ms)
+  RUN  test_g10_stage::test_g10_100_squad_stress_config_caps
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_stage::test_g10_100_squad_stress_config_caps (76 ms)
+  RUN  test_g10_stage::test_global_playable_now_unchanged
+  PASS test_g10_stage::test_global_playable_now_unchanged (0 ms)
+  RUN  test_g10_stage::test_late_defs_do_not_leak_into_stage_10
+  PASS test_g10_stage::test_late_defs_do_not_leak_into_stage_10 (1 ms)
+  RUN  test_g10_stage::test_late_profiles_mk3_distributed_apex
+  PASS test_g10_stage::test_late_profiles_mk3_distributed_apex (0 ms)
+  RUN  test_g10_stage::test_other_factions_keep_shipped_stages_only
+  PASS test_g10_stage::test_other_factions_keep_shipped_stages_only (0 ms)
+  RUN  test_g10_stage::test_raider_not_stage7_reskin
+  PASS test_g10_stage::test_raider_not_stage7_reskin (1 ms)
+  RUN  test_g10_stage::test_raider_opener_soak_1200_ticks
+  PASS test_g10_stage::test_raider_opener_soak_1200_ticks (4296 ms)
+  RUN  test_g10_stage::test_raider_patron_and_exo_gates
+  PASS test_g10_stage::test_raider_patron_and_exo_gates (1 ms)
+  RUN  test_g10_stage::test_raider_profiles_six_identities
+  PASS test_g10_stage::test_raider_profiles_six_identities (0 ms)
+  RUN  test_g10_stage::test_raider_stage_start_build_produce_closure
+  PASS test_g10_stage::test_raider_stage_start_build_produce_closure (2 ms)
+  RUN  test_g10_stage::test_skirmish_faction_change_refreshes_stage_options
+  PASS test_g10_stage::test_skirmish_faction_change_refreshes_stage_options (118 ms)
+
+RESULT pass=14 fail=0 files=1 time_ms=11280

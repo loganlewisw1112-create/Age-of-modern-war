@@ -1,0 +1,20 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_exo_armory::test_coalition_only_and_cn_denial
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_exo_armory::test_coalition_only_and_cn_denial (225 ms)
+  RUN  test_g10_exo_armory::test_enemy_raid_intel_only_no_outfit_rights
+  PASS test_g10_exo_armory::test_enemy_raid_intel_only_no_outfit_rights (74 ms)
+  RUN  test_g10_exo_armory::test_field_kit_mule_apc_limits_and_scale
+  PASS test_g10_exo_armory::test_field_kit_mule_apc_limits_and_scale (74 ms)
+  RUN  test_g10_exo_armory::test_four_op_per_bay_and_parallel_outfit
+  PASS test_g10_exo_armory::test_four_op_per_bay_and_parallel_outfit (73 ms)
+  RUN  test_g10_exo_armory::test_harsh_destroy_and_rebuild
+  PASS test_g10_exo_armory::test_harsh_destroy_and_rebuild (76 ms)
+  RUN  test_g10_exo_armory::test_stage_bay_caps_locker_full_black
+  PASS test_g10_exo_armory::test_stage_bay_caps_locker_full_black (219 ms)
+  RUN  test_g10_exo_armory::test_unlock_economy_and_gates
+  PASS test_g10_exo_armory::test_unlock_economy_and_gates (71 ms)
+
+RESULT pass=7 fail=0 files=1 time_ms=7300

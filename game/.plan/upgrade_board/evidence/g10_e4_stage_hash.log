@@ -1,0 +1,8 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+G10_E4_HASH stage=3 ok=true a=09ae27b0970fe77604e8293a7cba06211bfb0edd51cb65b235f323fddaa8b2fd b=09ae27b0970fe77604e8293a7cba06211bfb0edd51cb65b235f323fddaa8b2fd err=
+G10_E4_HASH stage=8 ok=true a=8f2f356e37e3d60053f2462ce60e1240a462027daa8fba28b39153916d3135b9 b=8f2f356e37e3d60053f2462ce60e1240a462027daa8fba28b39153916d3135b9 err=
+G10_E4_HASH stage=12 ok=true a=65da9d7aa95a10d12b0390c237b2da0812a662ad37f4f6d5fad52bb17f45f1f7 b=65da9d7aa95a10d12b0390c237b2da0812a662ad37f4f6d5fad52bb17f45f1f7 err=
+G10_E4_HASH_FACT {"ok":true,"results":[{"err":"","hash_a":"09ae27b0970fe77604e8293a7cba06211bfb0edd51cb65b235f323fddaa8b2fd","hash_b":"09ae27b0970fe77604e8293a7cba06211bfb0edd51cb65b235f323fddaa8b2fd","ok":true,"seed":3103,"stage":3,"ticks":600},{"err":"","hash_a":"8f2f356e37e3d60053f2462ce60e1240a462027daa8fba28b39153916d3135b9","hash_b":"8f2f356e37e3d60053f2462ce60e1240a462027daa8fba28b39153916d3135b9","ok":true,"seed":3108,"stage":8,"ticks":600},{"err":"","hash_a":"65da9d7aa95a10d12b0390c237b2da0812a662ad37f4f6d5fad52bb17f45f1f7","hash_b":"65da9d7aa95a10d12b0390c237b2da0812a662ad37f4f6d5fad52bb17f45f1f7","ok":true,"seed":3112,"stage":12,"ticks":600}]}

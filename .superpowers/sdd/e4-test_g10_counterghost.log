@@ -1,0 +1,16 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_counterghost::test_org_formations_specialties_wards
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_counterghost::test_org_formations_specialties_wards (295 ms)
+  RUN  test_g10_counterghost::test_rules_ownership_weaker_no_coalition
+  PASS test_g10_counterghost::test_rules_ownership_weaker_no_coalition (0 ms)
+  RUN  test_g10_counterghost::test_spider_foam_ghost_counters_exo_hook
+  PASS test_g10_counterghost::test_spider_foam_ghost_counters_exo_hook (72 ms)
+  RUN  test_g10_counterghost::test_sweep_disable_strip_recover_scenario
+  PASS test_g10_counterghost::test_sweep_disable_strip_recover_scenario (293 ms)
+  RUN  test_g10_counterghost::test_vehicle_homes_shade_dart
+  PASS test_g10_counterghost::test_vehicle_homes_shade_dart (1 ms)
+
+RESULT pass=5 fail=0 files=1 time_ms=7067

@@ -34,15 +34,23 @@ Subagents: Auto (owner usage limit)
 - Wires: validate_config `playable_stages_for`; SYSTEM_ORDER tech/buildings/mech/dark/GhostConductor; glue Progression/Production/Construction/Market + AiController CoalitionAi10; GhostConductor no double GhostExo tick
 - ExoArmory10 API-only (no tick); CounterGhost via Exo; ART left unstaged
 
+## Complete (E4 batch A — pre-lock)
+- ORCH/VERIFY10 E4 batch A: CLAIM `orch.e4.batch_a` **224**; FACT `verify.e4.batch_a` **225**; STATUS `e4-awaiting-art-for-lock` **226**; RELEASE **227**
+- Expanded smoke **118/0** (all `test_g10_*` + `test_exo` + `test_lpmode7` + `test_lp_save71`); report `.superpowers/sdd/task-e4-batch-a-report.md`
+- Two-run hashes Stages 3/8/12 MATCH + LP profiles PASS; closest AI/100-squad probes green; peak SKIP (no G10 tool)
+- **No** `g10.lock`; ART unstaged; lock waits owner look + package/docs
+- Note: AI soak invariants OK but 7× `ai_air.gd:113` SCRIPT ERROR under Coalition `ai:true`
+
 ## Live E2 (≤6)
-- ART10 Task 8 samples — CLAIM 155 held; NEED 216 cycle3 pause_for_owner (do NOT regenerate; owner look gate)
+- ART10 Task 8 samples — CLAIM 155 held; FACT reject-cycle3; STATUS revise4 ready; NEED owner re-approve on g10.look.samples
 
 ## Free slots
-~5 of ≤6 usable (only ART10 holds a live path CLAIM). E3 world released.
+~5 of ≤6 usable (only ART10 holds a live path CLAIM). E3 world + E4 batch A released.
 
 ## Queued / next dispatch
-1. E4 ORCH — hashes / AI soak / 100-squad / peak / expanded smoke → `g10.lock` (Task 22–23)
-2. ART bulk catalog — only after owner FACT approve/revise on NEED 216
+1. Owner ART approve (look samples) → ART bulk catalog
+2. E4 Task 23 — package `g10.lock` + README/PLAY_ME/ROADMAP/SCOPE close (after ART)
+3. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.

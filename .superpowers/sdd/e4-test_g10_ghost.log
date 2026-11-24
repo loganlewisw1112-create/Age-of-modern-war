@@ -1,0 +1,36 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_ghost::test_anchor_drones_kits
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_ghost::test_anchor_drones_kits (187 ms)
+  RUN  test_g10_ghost::test_camo_battery_and_counters
+  PASS test_g10_ghost::test_camo_battery_and_counters (72 ms)
+  RUN  test_g10_ghost::test_conductor_disrupt_and_ghost_command
+  PASS test_g10_ghost::test_conductor_disrupt_and_ghost_command (75 ms)
+  RUN  test_g10_ghost::test_conductor_tick_advances
+  PASS test_g10_ghost::test_conductor_tick_advances (71 ms)
+  RUN  test_g10_ghost::test_dual_wounds_cohesion_hot_wash
+  PASS test_g10_ghost::test_dual_wounds_cohesion_hot_wash (72 ms)
+  RUN  test_g10_ghost::test_exo_pre_g10_preserved_and_ghost_hook
+  PASS test_g10_ghost::test_exo_pre_g10_preserved_and_ghost_hook (83 ms)
+  RUN  test_g10_ghost::test_formations_packages_echelons
+  PASS test_g10_ghost::test_formations_packages_echelons (106 ms)
+  RUN  test_g10_ghost::test_insert_exfil_terrain_stage_gates
+  PASS test_g10_ghost::test_insert_exfil_terrain_stage_gates (79 ms)
+  RUN  test_g10_ghost::test_lifecycle_ground_air_tunnel_wet
+  PASS test_g10_ghost::test_lifecycle_ground_air_tunnel_wet (333 ms)
+  RUN  test_g10_ghost::test_mk_gate_by_stage
+  PASS test_g10_ghost::test_mk_gate_by_stage (70 ms)
+  RUN  test_g10_ghost::test_quiet_decap_through_echo
+  PASS test_g10_ghost::test_quiet_decap_through_echo (148 ms)
+  RUN  test_g10_ghost::test_rules_g10_ghost_loaded
+  PASS test_g10_ghost::test_rules_g10_ghost_loaded (0 ms)
+  RUN  test_g10_ghost::test_rumour_refuses_death_insert
+  PASS test_g10_ghost::test_rumour_refuses_death_insert (71 ms)
+  RUN  test_g10_ghost::test_runner_tether_and_guardian_mule
+  PASS test_g10_ghost::test_runner_tether_and_guardian_mule (70 ms)
+  RUN  test_g10_ghost::test_templates_frozen_g10
+  PASS test_g10_ghost::test_templates_frozen_g10 (71 ms)
+
+RESULT pass=15 fail=0 files=1 time_ms=7504

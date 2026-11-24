@@ -1,0 +1,5 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+G10_E4_100_FACT {"need":100,"note":"stress_only closest probe; dedicated g10_100_squad_soak.gd absent","ok":true,"ordinary_skirmish_pop_cap_max":120,"pop_cap":500,"pop_cap_floor":500,"spawned_squads":100,"spawned_units":400,"tick":120,"units0":406}

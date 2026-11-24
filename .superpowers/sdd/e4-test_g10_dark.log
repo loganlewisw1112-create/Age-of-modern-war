@@ -1,0 +1,18 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_dark::test_blackout_ew_warn_temp_not_permanent
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_dark::test_blackout_ew_warn_temp_not_permanent (226 ms)
+  RUN  test_g10_dark::test_dead_radio_mimic_anomaly_aar_no_command
+  PASS test_g10_dark::test_dead_radio_mimic_anomaly_aar_no_command (69 ms)
+  RUN  test_g10_dark::test_doctrine_sequence_all_four_no_scope_creep
+  PASS test_g10_dark::test_doctrine_sequence_all_four_no_scope_creep (71 ms)
+  RUN  test_g10_dark::test_hollow_ground_tell_collapse_and_counter
+  PASS test_g10_dark::test_hollow_ground_tell_collapse_and_counter (141 ms)
+  RUN  test_g10_dark::test_mirror_fortress_decoy_not_second_base
+  PASS test_g10_dark::test_mirror_fortress_decoy_not_second_base (70 ms)
+  RUN  test_g10_dark::test_rules_g10_dark_selected_only
+  PASS test_g10_dark::test_rules_g10_dark_selected_only (0 ms)
+
+RESULT pass=6 fail=0 files=1 time_ms=7307
