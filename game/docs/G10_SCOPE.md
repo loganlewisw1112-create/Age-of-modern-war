@@ -45,6 +45,9 @@ their current Stage 7–10 availability and wait for G14.
 7. **Human A Counter-Ghost Corps:** a full but weaker reverse-exo operational corps at Stage 10: intercept/recon/breach
    teams, thermal/sensor support, APC/recovery support, kill-switch stripping and suit-race counterplay. It is not the
    post-G10 skirmish CN/Blackglass branch and grants no Coalition tech.
+   **Org lock (owner 2026-11-23):** Interceptor / Bulwark / Seeker / Ward; specialties + vehicles incl. Shade Dart;
+   **each vehicle type has its own garage/pad/helipad** — see
+   `docs/superpowers/plans/2026-11-23-faction-depth-decisions.md` (Counter-Ghost Corps). Board FACT seq 171 for ORCH.
 8. **AI hooks:** extend shipped Adapt9/generals/intelligence/CoC systems with a Coalition doctrine adapter and
    Conductor. Do not rewrite Pre-G10 AI. Difficulty is patience, scouting, feints, target choice, contracts and
    adaptation—never free resources, HP or damage.
@@ -186,6 +189,9 @@ sleeker, olive/slate Human A military hound with digitigrade paws and collar/tab
     silhouettes, oil-slick camo, vehicle flips, spider/Reaper/Nest states, bright counter bots, Exo Armory bays and
     debt-stripe-only team colour. Human A `g71_robot_dog` passes `G10_HUMAN_A_DOG_LOOK.md` (not Machine-adjacent
     beside ember-hound).
+    **Owner exception 2026-11-24:** item (a) technical + hidden structure (SAFEHOUSE) is **deferred** — not look-locked;
+    `g10.lock` may proceed with deferred placeholders. See `.superpowers/sdd/g10-lock-deferred-exception.md`.
+    Approved-core locked now: CELL / DEATH / WALKER / CLOSE AIR (`art.look.approved.core`).
 14. Exo Armory Acceptance in `G10_EXO_ARMORY.md` all green (bay caps, field-kit limits, harsh destroy rule, unlock
     gates, CN denial).
 15. Expanded G10 smoke and full suite report **0 FAIL / 0 SCRIPT ERROR**; two-run hashes match on touched deterministic

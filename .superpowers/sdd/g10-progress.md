@@ -41,21 +41,25 @@ Subagents: Auto (owner usage limit)
 - **No** `g10.lock`; ART unstaged; lock waits owner look + package/docs
 - Note: AI soak invariants OK but 7× `ai_air.gd:113` SCRIPT ERROR under Coalition `ai:true`
 
-## Complete (ART look samples — partial)
-- Cycle 8 **partial lock**: CELL/DEATH/WALKER/SAFEHOUSE/CLOSE AIR locked; TECHNICAL Humvee **excepted** (owner reject after approve)
-- FACT `art.look.approved.except_technical` seq **246** (supersedes full `art.look.approved` **241**); NEED **240** closed **242**; RELEASE **155** **243**; CLAIM **248** TECHNICAL open; NEED **249** `g10.look.technical`; STATUS partial lock **250**; bulk **blocked** **251**
-- Approve note: `.superpowers/sdd/task-8-art-samples-owner-approve-cycle8.md` · revise8: `.superpowers/sdd/task-8-art-samples-revise8-report.md`
+## Complete (ART look samples — approved-core)
+- Owner **2026-11-24**: remove TECHNICAL + SAFEHOUSE mockups; continue with approved
+- **LOCKED:** CELL / DEATH / WALKER / CLOSE AIR — FACT `art.look.approved.core` seq **268**
+- **DEFERRED:** TECHNICAL + SAFEHOUSE/HATCH — FACT **269**/**270**; CLAIM **248** RELEASED **271**
+- Look package regenerated (2×2 approved strips); safehouse states strip omitted
+- Bulk wave1 **started**: `g10_coalition.gd` → 30 approved clones + 31 deferred ids; catalog group wired
+- Lock exception: `.superpowers/sdd/g10-lock-deferred-exception.md` (Done-when #13a)
+- Reports: `task-8-art-approved-core-defer-report.md` · `dispatch-art-bulk-approved.md`
 
-## Live E2 (≤6)
-- ART10 CLAIM **248** TECHNICAL revise9 Humvee (paths on samples.gd + x_technical_rocket*)
+## Live (≤6)
+- ART10 CLAIM **273** approved-core bulk wave1 (continuing Steps 4–9 approved-only)
 
 ## Free slots
-~5 of ≤6 usable. E3 world + E4 batch A released; TECHNICAL CLAIM held.
+~5 of ≤6 usable. TECHNICAL CLAIM released; bulk unlocked for approved only.
 
 ## Queued / next dispatch
-1. ART10 revise9 TECHNICAL Humvee → owner re-approve NEED 249 → then unlock bulk
-2. ART10 bulk catalog (Task 8 Steps 3–9) — **blocked** until TECHNICAL locked
-3. E4 Task 23 — package `g10.lock` (**after** bulk + final catalog look gate)
+1. ART10 continue Task 8 Steps 4–9 for **approved** subjects (kit variants, Ghost set, tests) — see dispatch brief
+2. TECHNICAL / SAFEHOUSE redesign — **later** (design-blueprint); do not block lock
+3. E4 Task 23 — package `g10.lock` after approved bulk + final look gate (**deferred placeholders OK**)
 4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
 ## OWNER ADDENDUM 171 — FOLDED

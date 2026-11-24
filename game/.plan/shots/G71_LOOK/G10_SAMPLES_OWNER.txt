@@ -1,24 +1,27 @@
-G10 Task 8 look samples (ART10) — REVISE cycle 8 PARTIAL LOCK
-Owner cycle-8: five approved solid; TECHNICAL Humvee REJECTED post-approve — redesign incoming (revise9).
-FACT: art.look.approved.except_technical (NOT full art.look.approved).
-CELL/DEATH/WALKER = Human A g7_cn_fig black + patches; SAFEHOUSE/CLOSE AIR locked; TECHNICAL CLAIM 248 open.
+G10 Task 8 look samples (ART10) — APPROVED CORE only (revise 15)
+Owner 2026-11-24: remove TECHNICAL + SAFEHOUSE mockups from look package; redesign later.
+LOCKED: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + solid CAS).
+DEFERRED: TECHNICAL Humvee — NEED design-blueprint-later (not locked).
+DEFERRED: SAFEHOUSE + HATCH — deferred with building redesign (not locked; states strip omitted).
+Style: g7_cn_fig infantry; CLOSE AIR DL7 CAS in g10_coalition_samples.gd.
 
-Strip labels (ALL-CAPS): CELL | TECHNICAL | SAFEHOUSE | DEATH | CLOSE AIR | WALKER
+Strip labels (ALL-CAPS): CELL | DEATH | CLOSE AIR | WALKER
 Contrast labels: CELL | DEATH
-Safehouse labels: HIDDEN | HATCH
+Safehouse labels: (omitted — DEFERRED)
 
-[x] CELL (x_cell_rifle) — LOCKED Human A FIG black + tan/red patches
-[ ] TECHNICAL (x_technical_rocket) — REJECTED Humvee — revise9 redesign; NOT look-final
-[x] SAFEHOUSE (x_safehouse) — LOCKED
-[x] DEATH (x_death_strike) — LOCKED Human A sealed elite black + gold debt patch
-[x] CLOSE AIR (x_patron_cas) — LOCKED
-[x] WALKER (x_prototype_walker) — LOCKED Human A sealed taller + launcher
+[x] CELL (x_cell_rifle) — LOCKED cycle 8 Human A FIG
+[ ] TECHNICAL (x_technical_rocket) — DEFERRED (design-blueprint-later)
+[ ] SAFEHOUSE (x_safehouse) — DEFERRED (design-blueprint-later)
+[ ] HATCH — DEFERRED with SAFEHOUSE
+[x] DEATH (x_death_strike) — LOCKED cycle 8 Human A sealed
+[x] CLOSE AIR (x_patron_cas) — LOCKED solid
+[x] WALKER (x_prototype_walker) — LOCKED cycle 8 Human A sealed
 
 Strips:
-  strip_g10_coalition_samples.png (+_2x)
-  strip_g10_coalition_facings.png (+_2x)
+  strip_g10_coalition_samples.png (+_2x) — approved-core 2x2
+  strip_g10_coalition_facings.png (+_2x) — all 4 facings per approved id
   strip_g10_cell_vs_ghost.png (+_2x)
-  strip_g10_safehouse_states.png (+_2x)
-Board: FACT art.look.approved.except_technical | NEED 249 g10.look.technical | CLAIM 248 TECHNICAL open | STATUS partial art-samples-locked
-Bulk: BLOCKED until TECHNICAL re-approve
+  strip_g10_safehouse_states.png — OMITTED (deferred)
+Board: FACT art.look.approved.core | FACT art.technical.deferred | FACT art.safehouse.deferred
+g10.lock: may proceed with deferred placeholders (owner exception to Done-when #13a technical+hidden)
 Cells: 80x64 four-facing; assets: game/assets/art/g10_coalition/
