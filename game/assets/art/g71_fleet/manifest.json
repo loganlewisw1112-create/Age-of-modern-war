@@ -3,7 +3,7 @@
     "icons/g71_ew_drone.png": "dd1085f525222bfa62852401e65cf9b1",
     "icons/g71_hunter_tank.png": "43c5d2ceb2c9b2027981f472409d6d27",
     "icons/g71_purge_bot.png": "73979643311d47f5e9c7024311e7f03d",
-    "icons/g71_robot_dog.png": "e290d47f74882776d81420d2a7215760",
+    "icons/g71_robot_dog.png": "89551215250c664aba7d019bddad7cd0",
     "icons/g71_robot_mule.png": "4f7e892da30c038e004dd5847090cce4",
     "icons/g71_ucav.png": "2acfd846b2f7ba3bbd8a4c2e4f17b77f",
     "icons/g71_ugv_mg.png": "f5160bcb0cdc32813548f57c3dcc83db",
@@ -15,8 +15,8 @@
     "units/g71_hunter_tank_mask.png": "b89247f45399fb06ce60ee54a42203bb",
     "units/g71_purge_bot.png": "dd0d1f53d031b45492d0a79eb1a4895d",
     "units/g71_purge_bot_mask.png": "cca66097fc5b5d4dadf8243874bceb7c",
-    "units/g71_robot_dog.png": "f42af23f3a41daff7fbe883260659259",
-    "units/g71_robot_dog_mask.png": "c5bb90dde7e604a5cfacbb200b366f97",
+    "units/g71_robot_dog.png": "d4c23b6aa029cdb8905ccc3c38cc09a1",
+    "units/g71_robot_dog_mask.png": "8fe362d419422a67cdba1de2bfa32e87",
     "units/g71_robot_mule.png": "f24c84a838c80d1b9ac7b91c951919ce",
     "units/g71_robot_mule_mask.png": "9b0515e8d5127638e1b45b99cb60038d",
     "units/g71_ucav.png": "aec852e8897026449afdca5a7474ba23",
@@ -29,7 +29,7 @@
     "wrecks/g71_ew_drone_wreck.png": "53c014fd9803cc96e7ddf451717618e5",
     "wrecks/g71_hunter_tank_wreck.png": "9ce4637a333845dfa00bf3bdc3e427b1",
     "wrecks/g71_purge_bot_wreck.png": "afbf71531e739a7ccd395764c6b74b67",
-    "wrecks/g71_robot_dog_wreck.png": "4c469d7ce3701921886f5c6e05fe0f1a",
+    "wrecks/g71_robot_dog_wreck.png": "c41f1699aeb9967e51d9b7b80154cb03",
     "wrecks/g71_robot_mule_wreck.png": "3b1cd9845de31b6f0c2f12d0ef1810c3",
     "wrecks/g71_ucav_wreck.png": "b2a396134548c49c101195a60acf8b1a",
     "wrecks/g71_ugv_mg_wreck.png": "73f51d4a63502a43f30787270042729f",
@@ -156,8 +156,8 @@
     }
   },
   "tile": [
-    64,
-    32
+    64.0,
+    32.0
   ],
   "vehicle_wrecks": {
     "g71_ew_drone": {
@@ -204,8 +204,8 @@
       "file": "wrecks/g71_robot_dog_wreck.png",
       "fw": 84,
       "pivot": [
-        42.0,
-        47.0
+        42,
+        47
       ]
     },
     "g71_robot_mule": {
@@ -248,9 +248,9 @@
       ]
     },
     "g71_wall_sentinel": {
-      "fh": 32,
+      "fh": 32.0,
       "file": "wrecks/g71_wall_sentinel_wreck.png",
-      "fw": 32,
+      "fw": 32.0,
       "pivot": [
         16.0,
         27.0
@@ -653,8 +653,8 @@
         ],
         "v": 1.0
       },
-      "facings": 8.0,
-      "fh": 66.0,
+      "facings": 8,
+      "fh": 66,
       "file": "units/g71_robot_dog.png",
       "frames": [
         "idle",
@@ -676,7 +676,7 @@
         "recoil",
         "damaged"
       ],
-      "fw": 84.0,
+      "fw": 84,
       "g7": {
         "anim_strip": [
           "walk_0",
@@ -692,12 +692,14 @@
           "claw_1",
           "die"
         ],
-        "budget": 1048576.0,
-        "bytes": 873500.0,
+        "budget": 1048576,
+        "bytes": 279448,
         "class": "threat",
         "detail_level": "DL7-3",
         "frame_alias": {
+          "damaged": "die",
           "fire": "claw_0",
+          "recoil": "claw_0",
           "walk_a": "walk_0",
           "walk_b": "walk_3"
         },
@@ -720,20 +722,21 @@
           "die"
         ],
         "legged": true,
-        "line": "machine",
-        "mirror": -1.0,
-        "raw_bytes": 3193344.0,
-        "sample": "threat"
+        "line": "human_a",
+        "mirror": -1,
+        "raw_bytes": 3193344,
+        "sample": "human_a_hound"
       },
       "g71": {
-        "base": "g7_m_packhunter",
-        "mark": "dog",
-        "src_group": "g7_threats"
+        "base": "human_a_hound",
+        "look": "G10_HUMAN_A_DOG_LOOK",
+        "mark": "dog_human",
+        "src_group": "g71_dog_human"
       },
       "mask": "units/g71_robot_dog_mask.png",
       "pivot": [
-        42.0,
-        47.0
+        42,
+        47
       ]
     },
     "g71_robot_mule": {
