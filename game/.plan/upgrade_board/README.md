@@ -36,8 +36,8 @@ Frozen scope: `game/docs/PRE_G10_SCOPE.md` · plan: `docs/superpowers/plans/2026
 | ORCH | Dispatch, integ, smoke, soak, commit, package, README, push |
 | PEAK60 | Remeasure each integ; no feature work unless FPS regress |
 | HIVE9+ | Machine art ≥60, modular/evolve depth, glow |
-| COUNT9+ | 13 counters play-paths + coalitions bridge (AI9 calls public API only) |
-| COMBAT9+ | Forts, EW depth, crews/breakdown, ballistics breadth |
+| COUNT9+ | 13 counters play-paths + coalitions bridge (AI9 calls public API only). Counter EW/EMP hooks that touch `machine_ew7.gd`: post **NEED** to COMBAT9+ — not in COUNT9+ CLAIM/coord (see board FACT `pre_g10.claim.machine_ew7`, seq 106). |
+| COMBAT9+ | Forts, EW depth (`machine_ew7.gd` exclusive CLAIM), crews/breakdown, ballistics breadth |
 | SKIRM9+ | Skirmish setup `director_adapt` toggle, siege attack-move |
 | AI9 | Adapt, named generals, diplomacy, intel-diff, CoC ops |
 | ECON9 | Resources, trade, territory/civ, research, black market, upgrades |
