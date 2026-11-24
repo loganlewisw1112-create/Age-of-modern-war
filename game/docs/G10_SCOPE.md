@@ -26,8 +26,8 @@ their current Stage 7–10 availability and wait for G14.
 3. **Technology:** pure **buy / steal / unseal** progression. Coalition has no normal research tree and can never own,
    build, buy, capture into use, or inherit counter-nanites.
 4. **Buildings:** disguised safehouses/workshops, tunnel entrances/caches, underground production, black markets and
-   broker/patron sites, Ghost complex/forward repair shops, and rare vault cores. These are faction structures, not
-   UNDERSTRIKE floors or Human A bunkers.
+   broker/patron sites, Ghost complex/forward repair shops, **Exo Armory** (outfit/unlock hub — see
+   `G10_EXO_ARMORY.md`), and rare vault cores. These are faction structures, not UNDERSTRIKE floors or Human A bunkers.
 5. **Stage bands:**
    - **1–6 Raiders:** survivor smugglers → organized cells → warlord camps → reclaimed workshops → confederated
      raiders → industrial criminal armies. Low-tech capture, salvage, tunnels and patron access replace normal
@@ -58,6 +58,8 @@ their current Stage 7–10 availability and wait for G14.
 11. **Presentation/art:** four-facing readable art and icons for the complete Coalition set, team-colour readability,
     hidden/revealed states, stage-band silhouettes, exo shimmer/battery tells, and owner look checkpoints before bulk
     rollout.
+12. **Human A robot dog redesign:** replace `g71_robot_dog` Machine-like art with a smaller, sleeker Human A companion
+    silhouette (`G10_HUMAN_A_DOG_LOOK.md`). Sim id/fleet rules stay; art must not read as Machine hounds.
 
 ## Ghost Wing (owner freeze)
 
@@ -117,9 +119,28 @@ heat and recovery state; these are not unconditional stacked buffs.
 - Drones read as too-many-kneed spiders, rotorless Reaper manta/knives, honeycomb Nest racks and deliberately bright,
   stubby Counter-Ghost foam bots.
 - Buildings read as hatch/vent-only Ghost Wing, visibly adaptive kill-house, chapel-brutalist briefing crypt,
-  reliquary glass coffins and controlled darkness, contrasting with neon-under-tarp cell markets.
+  reliquary glass coffins, **Exo Armory bay lights / suit racks**, and controlled darkness, contrasting with
+  neon-under-tarp cell markets.
 - Team colour is debt stripe/armband only—**never full-body team paint on Ghosts**. Four-facing silhouettes, icons,
   hidden/revealed states, camo tears, transforms and counter tells must remain readable without colour alone.
+
+## Exo Armory (owner freeze)
+
+Full design authority: `game/docs/G10_EXO_ARMORY.md`. Summary locks from owner Q&A:
+
+- Heavy outfit only at Armory; mule/APC field kits are light (ammo/battery/one attachment-class), scaled by mission
+  importance.
+- Unlock economy is mixed: cheap starters; elite via contracts + steal/unseal/reliquary.
+- UX: presets → later mix-and-match → later per-squad/per-operator kits.
+- Bays: start 2–3 (each outfits a full 4-op squad); upgrade toward 6 max; Stages 1–6 locker (1 bay) → 7–10 full →
+  11–13 black Armory.
+- Destroyed Armory: in-bay suits destroyed/captured; field Ghosts keep kit. Coalition-only build; enemies raid for
+  intel/parts only.
+
+## Human A dog redesign (owner freeze)
+
+Authority: `game/docs/G10_HUMAN_A_DOG_LOOK.md`. Current blocky cyan-spine dog art is rejected. New design is smaller,
+sleeker, olive/slate Human A military hound with digitigrade paws and collar/tab team colour—explicitly not Machine.
 
 ## Explicitly out
 
@@ -162,11 +183,14 @@ heat and recovery state; these are not unconditional stacked buffs.
     doctrine soak; no unselected dark option ships.
 13. Owner look checkpoints approve: (a) raider + technical + hidden structure, (b) Death + patron vehicle + late
     prototype, then the complete four-facing catalog. The catalog also passes `G10_GHOST_LOOK.md`: role/Mk/ace
-    silhouettes, oil-slick camo, vehicle flips, spider/Reaper/Nest states, bright counter bots and debt-stripe-only
-    team colour.
-14. Expanded G10 smoke and full suite report **0 FAIL / 0 SCRIPT ERROR**; two-run hashes match on touched deterministic
+    silhouettes, oil-slick camo, vehicle flips, spider/Reaper/Nest states, bright counter bots, Exo Armory bays and
+    debt-stripe-only team colour. Human A `g71_robot_dog` passes `G10_HUMAN_A_DOG_LOOK.md` (not Machine-adjacent
+    beside ember-hound).
+14. Exo Armory Acceptance in `G10_EXO_ARMORY.md` all green (bay caps, field-kit limits, harsh destroy rule, unlock
+    gates, CN denial).
+15. Expanded G10 smoke and full suite report **0 FAIL / 0 SCRIPT ERROR**; two-run hashes match on touched deterministic
     scenarios; AI-vs-AI and 100+ squad soaks have no invariant failure.
-15. Package launches from a clean folder; root `README.md` and `PLAY_ME` describe G10; upgrade_board records claims,
+16. Package launches from a clean folder; root `README.md` and `PLAY_ME` describe G10; upgrade_board records claims,
     look approvals, test/soak/hash/package facts; only then close as `g10.lock`.
 
 ## Build order (Approach C)
@@ -176,7 +200,7 @@ E0 owner APPROVE → freeze scope + Stage E board roster/claims
 E1 foundation: registry/stage gating + identity/doctrine + authoritative roster manifest
 E2 parallel pillars:
    ROSTER10 (1–6 / 7–10 / 11–13) · ART10 · MECH10 · TECH10 · BLD10
-   GHOST10 · COUNTERGHOST10 · AI10 · MODE10 · DARK10
+   GHOST10 · ARMORY10 · COUNTERGHOST10 · DOG10 · AI10 · MODE10 · DARK10
 E3 seam integration: content closure · Conductor/AI · stage/mode · presentation
 E4 smoke · hashes · AI/100+ soaks · look approval · package/docs → g10.lock
 ```
@@ -187,8 +211,11 @@ E4 smoke · hashes · AI/100+ soaks · look approval · package/docs → g10.loc
 
 Supporting authorities:
 `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`,
-`docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`, and
-`docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`.
+`docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`,
+`docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`,
+`game/docs/G10_EXO_ARMORY.md`,
+`game/docs/G10_GHOST_LOOK.md`, and
+`game/docs/G10_HUMAN_A_DOG_LOOK.md`.
 
 ## Lock status
 

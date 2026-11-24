@@ -187,7 +187,9 @@ Stage-band additions live in separate files and do not weaken the 61-core-defini
 - **TECH10:** buy/steal/unseal and all denial gates.
 - **BLD10:** Coalition structures, hidden/revealed/damage behavior and build closure.
 - **GHOST10:** Ghost anatomy, mission lifecycle, Conductor and Ghost vehicles.
+- **ARMORY10:** Exo Armory building, unlock/outfit UX, bay caps (`G10_EXO_ARMORY.md`).
 - **CG10:** Human A Counter-Ghost definitions and counterplay only.
+- **DOG10:** Human A `g71_robot_dog` complete art redesign (`G10_HUMAN_A_DOG_LOOK.md`).
 - **AI10:** Coalition doctrine adapter over shipped Pre-G10 AI.
 - **MODE10:** skirmish stage filtering and Coalition LP profile.
 - **DARK10:** four selected extras, telemetry/radio/AAR; no other dark option.
@@ -408,10 +410,55 @@ static func production_reason(w: SimWorld, building_id: int) -> String
   reliquary that consumes recovered tagged technology for an allow-listed non-stacking exo upgrade.
 - [ ] **Step 6:** Add attack/readability tests for hatch/vent discovery, changed kill-house layout, committed doctrine
   lock, displayed/consumed reliquary parts and the neon-under-tarp black-market versus dark Ghost-site contrast.
+- [ ] **Step 7:** Wire **Exo Armory** building shell into Ghost campus (full sim in Task 7B / ARMORY10): stage band
+  locker→full→black, hatch-only surface, bay occupancy flags. Authority: `game/docs/G10_EXO_ARMORY.md`.
 
 **Acceptance:** Coalition base identity is hidden/underground without stealing Human A's bunker system. Ghost modules
 have distinct strategic jobs and counterplay; no module creates an UNDERSTRIKE floor, hidden free research or an
-unbounded permanent upgrade path.
+unbounded permanent upgrade path. Armory appears as a campus module with correct stage bay caps.
+
+### Task 7B: Exo Armory (ARMORY10)
+
+**Files:**
+- Create: `game/sim/systems/exo_armory10.gd`
+- Create: `game/content/g10/defs_g10_exo_armory.json`, `game/content/g10/rules_g10_exo_armory.json`
+- Create: `game/tests/test_g10_exo_armory.gd`
+- Authority: `game/docs/G10_EXO_ARMORY.md`, look `G10_GHOST_LOOK.md`
+
+**Interfaces:**
+```gdscript
+static func bay_count(w, building_id) -> int
+static func outfit_preset(w, bay, squad_ids, preset_id) -> String  # err or ""
+static func field_kit(w, carrier_id, exo_id, kit_id) -> String
+static func on_armory_destroyed(w, building_id) -> void  # harsh in-bay loss
+```
+
+- [ ] **Step 1:** Failing tests for Coalition-only build, stage bay caps (1 / 2–3 / ≤6), 4-op per bay, field-kit
+  limits, harsh destroy, unlock gates (preset → mix → per-op), CN denial.
+- [ ] **Step 2:** Implement bay upgrade path and parallel squad outfit queues.
+- [ ] **Step 3:** Implement unlock economy (starters cheap; elite = contracts + steal/unseal/reliquary).
+- [ ] **Step 4:** Field kits from mule/APC only; scale by mission-importance score; never full refit.
+- [ ] **Step 5:** Destroyed Armory captures/destroys in-bay suits; field kits persist; outfit commands fail.
+- [ ] **Step 6:** Enemy raid yields intel/parts events only—no outfit rights.
+- [ ] **Step 7:** `--only=test_g10_exo_armory` PASS; art bay lights/racks on look sheet.
+
+**Acceptance:** All `G10_EXO_ARMORY.md` Acceptance rows green; no Human A/Machine outfit path.
+
+### Task 7C: Human A robot dog redesign (DOG10)
+
+**Files:**
+- Create/extend: `game/tools/art/g71_dog_human.gd` (or fleet art rewrite)
+- Modify: `game/assets/art/g71_fleet/` dog sheets + manifest + catalog override
+- Authority: `game/docs/G10_HUMAN_A_DOG_LOOK.md`
+- Tests: art harness / look checkpoint; `test_fleet71` still green
+
+- [ ] **Step 1:** Owner look sample strip: new dog beside `g71_m_ember_hound` — must not read as Machine.
+- [ ] **Step 2:** Generate smaller/sleeker 4-facing loco + mask + icon + wreck (slate/olive, amber sensors, digitigrade
+  paws, collar/tab team colour; **no cyan spine**).
+- [ ] **Step 3:** Replace catalog entries for `g71_robot_dog`; keep sim def id and fleet71 recover/wipe contracts.
+- [ ] **Step 4:** Tune presentation weight if needed so gallop reads lighter; run fleet71 + anim smoke PASS.
+
+**Acceptance:** Packaged look checkpoint includes new dog; owner can tell Human A hound from Machine hound at a glance.
 
 ### Task 8: Six-subject look checkpoint, then complete art
 

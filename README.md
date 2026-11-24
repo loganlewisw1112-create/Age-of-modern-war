@@ -95,8 +95,9 @@ Look samples ship with every package (`G71_LOOK_CHECKPOINT`).
 
 ## Still open (UP71)
 
-- **G10 Shadow Coalition** — full faction Stages **1–13** (1–6 raiders, 7–10 core, 11–13 late syndicate); scope
-  `game/docs/G10_SCOPE.md` · ROADMAP; AI/economy depth already under `pre_g10.lock`.
+- **G10 Shadow Coalition** — full faction Stages **1–13** (1–6 raiders, 7–10 core, 11–13 late syndicate); Ghost Exo
+  Armory + look bible; Human A robot-dog redesign. Scope `game/docs/G10_SCOPE.md` · `G10_EXO_ARMORY.md` ·
+  `G10_HUMAN_A_DOG_LOOK.md`; AI/economy depth already under `pre_g10.lock`.
 - Peak chase continues (amended G7.1 gate held; target 60 p10).
 - Frozen Done-when is never weakened to make a check pass.
 

@@ -74,6 +74,8 @@ that read as sealed ports until used.
   legible after a failure.
 - **Briefing crypt (ID 26):** chapel-brutalist room with a patron-gold debt altar for doctrine commitment.
 - **Suit reliquary (ID 27):** glass coffins displaying recovered enemy parts; “steal → become” without Machine glow.
+- **Exo Armory:** underground outfit floor under Ghost campus; sealed bay doors, suit racks, bay occupancy lights and
+  brief battery-swap shimmer. Stage locker → full → black Armory scale reads in bay count. See `G10_EXO_ARMORY.md`.
 - **Black market contrast:** cells trade beneath neon and tarps; Ghost sites stay dark, cold and controlled.
 
 ## Art acceptance
