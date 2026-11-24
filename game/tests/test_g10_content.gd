@@ -167,3 +167,83 @@ func test_non_coalition_match_creates_no_g10_state() -> void:
 	for _j in 30:
 		w2.step()
 	check_eq(mid, w2.state_hash(), "non-Coalition two-run hash")
+
+
+const MOVE_OK := {
+	"foot": true, "vehicle": true, "amphibious": true, "naval_small": true, "naval": true,
+	"air": true, "air_low": true, "air_high": true,
+}
+
+
+func test_core_roster_unique_ids_and_faction_ownership() -> void:
+	Content.load_all()
+	var seen := {}
+	for id in G10_CORE_IDS:
+		check(not seen.has(id), "duplicate core id %s" % id)
+		seen[id] = true
+		var u: Dictionary = Content.unit(id)
+		var b: Dictionary = Content.building(id)
+		check(u.is_empty() != b.is_empty(), "%s must be unit XOR building" % id)
+		var d: Dictionary = u if not u.is_empty() else b
+		check_eq(String(d.get("faction", "")), "shadow_coalition", "%s faction" % id)
+		check(d.has("stage_min") and d.has("stage_max"), "%s stage_min/max" % id)
+		check(int(d.get("stage_min", 99)) <= int(d.get("stage_max", 0)), "%s stage band" % id)
+
+
+func test_core_producer_closure_and_costs() -> void:
+	Content.load_all()
+	for id in G10_CORE_IDS:
+		var u: Dictionary = Content.unit(id)
+		if u.is_empty():
+			var b: Dictionary = Content.building(id)
+			check(b.has("cost"), "%s building cost" % id)
+			continue
+		check(int(u.get("pop", 0)) > 0, "%s pop" % id)
+		check(u.has("cost") and int(u.cost.get("credits", -1)) >= 0, "%s unit cost" % id)
+		var mc := String(u.get("move_class", ""))
+		check(MOVE_OK.has(mc), "%s move_class %s" % [id, mc])
+		var wpn := String(u.get("weapon", ""))
+		check(not Content.weapon(wpn).is_empty(), "%s weapon %s" % [id, wpn])
+		var prod: Dictionary = Content.production(id)
+		check(not prod.is_empty(), "%s production row" % id)
+		check_eq(String(prod.get("faction", "")), "shadow_coalition", "%s prod faction" % id)
+		var fac := String(prod.get("facility", ""))
+		var fb: Dictionary = Content.building(fac)
+		check(not fb.is_empty(), "%s facility %s missing" % [id, fac])
+		check_eq(String(fb.get("faction", "")), "shadow_coalition", "%s facility faction" % id)
+		check(prod.has("cost") and int(prod.cost.get("credits", -1)) >= 0, "%s prod cost" % id)
+
+
+func test_core_roles_closed_at_stages_7_to_10() -> void:
+	Content.load_all()
+	for stage in [7, 8, 9, 10]:
+		for role in ROLE_KEYS:
+			var rid := Content.role("shadow_coalition", role, stage)
+			# Empty stage_roles overrides (e.g. air@7 in factions.json) are intentional faction policy.
+			if rid == "":
+				continue
+			var is_bld: bool = role in ["hq", "power", "depot", "barracks", "factory", "refinery", "defense"]
+			var d: Dictionary = Content.building(rid) if is_bld else Content.unit(rid)
+			check(not d.is_empty(), "role %s@%d def %s missing" % [role, stage, rid])
+			check_eq(String(d.get("faction", "")), "shadow_coalition", "role %s@%d faction" % [role, stage])
+			check(Content.available(d, stage), "role %s@%d stage gate %s" % [role, stage, rid])
+
+
+func test_core_stage_progression_bands() -> void:
+	Content.load_all()
+	# Stage 7 cells/technicals
+	for id in ["x_sleeper_cell", "x_technical_mg", "x_technical_mortar", "x_shock_truck", "x_underground_factory"]:
+		var d: Dictionary = Content.unit(id) if not Content.unit(id).is_empty() else Content.building(id)
+		check(int(d.get("stage_min", 99)) <= 7, "%s should unlock by stage 7" % id)
+	# Stage 8 contracts/naval/Mk I
+	for id in ["x_pmc_rifle", "x_river_ghost", "x_death_strike", "x_broker_exchange", "x_ghost_complex"]:
+		var d2: Dictionary = Content.unit(id) if not Content.unit(id).is_empty() else Content.building(id)
+		check_eq(int(d2.get("stage_min", -1)), 8, "%s stage_min 8" % id)
+	# Stage 9 EW/Mk II/advanced patron
+	for id in ["x_pmc_ew", "x_shadow_ew", "x_patron_cas", "x_stealth_drone"]:
+		check_eq(int(Content.unit(id).get("stage_min", -1)), 9, "%s stage_min 9" % id)
+	# Stage 10 prototypes/apex
+	check_eq(int(Content.unit("x_prototype_walker").get("stage_max", 0)), 13, "walker stage_max")
+	check_eq(int(Content.unit("x_prototype_walker").get("stage_min", -1)), 10, "walker stage_min 10")
+	check_eq(int(Content.building("x_vault_core").get("stage_min", -1)), 10, "vault stage_min 10")
+	check(bool(Content.unit("x_prototype_walker").get("apex", false)) or int(Content.unit("x_prototype_walker").get("mk", 0)) >= 2, "walker apex/mk mark")

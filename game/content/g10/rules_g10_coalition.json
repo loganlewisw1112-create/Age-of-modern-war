@@ -126,7 +126,61 @@
         }
       },
       "no_normal_research": true,
-      "no_counter_nanites": true
+      "no_counter_nanites": true,
+      "company_templates": {
+        "cell_screen": {
+          "name": "Cell Screen",
+          "members": [
+            "x_cell_rifle",
+            "x_cell_rifle",
+            "x_cell_at",
+            "x_ambush_cell"
+          ],
+          "note": "does not count toward 61"
+        },
+        "technical_troop": {
+          "name": "Technical Troop",
+          "members": [
+            "x_technical_mg",
+            "x_technical_rocket",
+            "x_technical_aa",
+            "x_recovery_truck"
+          ],
+          "note": "does not count toward 61"
+        },
+        "mercenary_company": {
+          "name": "Mercenary Company",
+          "members": [
+            "x_pmc_rifle",
+            "x_pmc_assault",
+            "x_pmc_sniper",
+            "x_pmc_ew",
+            "x_officer"
+          ],
+          "note": "does not count toward 61"
+        },
+        "ghost_regiment": {
+          "name": "Ghost Regiment",
+          "members": [
+            "x_death_strike",
+            "x_death_assault",
+            "x_death_recon",
+            "x_shadow_pathfinder",
+            "x_shadow_ew"
+          ],
+          "note": "does not count toward 61"
+        },
+        "anchor_train": {
+          "name": "Anchor Train",
+          "members": [
+            "x_anchor_tech",
+            "x_anchor_medic",
+            "x_exo_mule",
+            "x_recovery_truck"
+          ],
+          "note": "does not count toward 61"
+        }
+      }
     }
   }
 }
