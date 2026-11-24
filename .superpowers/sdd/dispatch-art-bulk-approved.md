@@ -24,13 +24,20 @@
 - Step 4 tests in `test_g10_content.gd` — approved coverage + deferred placeholders OK
 - FACT `ship.art.bulk.approved.wave` — see board
 
-## Still owed (Steps 6–9 polish) — approved only
+## Wave 3 (shipped — Ghost + camo + CLOSE AIR states)
 
-1. Ghost set (Judge/Warden/Shade/Sergeant, Mk bands, aces) — `G10_GHOST_LOOK.md`
-2. Camo / state sheets for approved Ghosts
-3. Non-TECHNICAL vehicle/drone/building states that are **not** SAFEHOUSE family (or keep deferred)
-4. Contact sheets + orphan_art audit for approved scope (deferred exception OK)
-5. Final catalog look gate before `g10.lock` (with deferred exception)
+- Ghost Wing set (17): Base/Judge/Warden/Shade/Sergeant + Mk I–III + ace 01–09 from Death kit
+- Camo/state sheets (rest/walk/sprint/fire/hit/battery/shield) per Ghost id
+- CLOSE AIR polish: Silent Rotor quiet→gunship; transport/drone active frames
+- Strips: `strip_g10_ghost_set` · `strip_g10_ghost_camo` · `strip_g10_air_states` (+`_2x`)
+- Tests: `test_g10_content` **15/0**
+- FACT `ship.art.bulk.wave3` — see board
+- Report: `.superpowers/sdd/task-8-art-bulk-wave3-report.md`
+
+## Still owed before `g10.lock`
+
+1. Final contact + orphan_art audit for approved scope (deferred exception OK)
+2. Owner look gate on complete approved catalog
 
 ## Explicitly out of this dispatch
 

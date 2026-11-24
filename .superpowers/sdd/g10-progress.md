@@ -54,18 +54,24 @@ Subagents: Auto (owner usage limit)
 - Fleet/army role marks on 26/30 approved clones; facings + kit strips
 - Step 4 tests: `test_g10_content` **13/0**; orphan_art = deferred-only (31)
 - FACT `ship.art.bulk.approved.wave` — report `.superpowers/sdd/task-8-art-bulk-wave2-report.md`
-- Leftover for g10.lock: Ghost Judge/Warden/Shade/Sergeant + Mk/ace, camo states, vehicle-state polish, final look gate
+
+## Complete (ART bulk wave3 — Ghost + camo + CLOSE AIR)
+- Ghost Wing 17 ids (Judge/Warden/Shade/Sergeant + Mk/ace) from Death kit; no purple
+- Camo states (7) per Ghost id; CLOSE AIR Silent Rotor gunship + drone/transport active frames
+- Tests: `test_g10_content` **15/0**; FACT `ship.art.bulk.wave3`
+- Report: `.superpowers/sdd/task-8-art-bulk-wave3-report.md`
+- Leftover for g10.lock: Step 9 final contact + owner look gate (deferred exception OK)
 
 ## Live (≤6)
-- ART10 CLAIM **273** approved bulk (wave2 shipped; Steps 6–9 polish remain)
+- ART10 CLAIM **273** approved bulk (wave3 shipped; Step 9 look gate remains)
 
 ## Free slots
-~5 of ≤6 usable. TECHNICAL CLAIM released; approved runtime art unblocked.
+~5 of ≤6 usable. TECHNICAL CLAIM released; Ghost Wing + CLOSE AIR states shipped.
 
 ## Queued / next dispatch
-1. ART10 Steps 6–9 polish (Ghost set / camo / states / final look) — see dispatch leftover
+1. ART10 Step 9 final contact + owner look gate — see dispatch leftover
 2. TECHNICAL / SAFEHOUSE redesign — **later** (design-blueprint); do not block lock
-3. E4 Task 23 — package `g10.lock` after approved polish + final look gate (**deferred placeholders OK**)
+3. E4 Task 23 — package `g10.lock` after final look gate (**deferred placeholders OK**)
 4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
 ## OWNER ADDENDUM 171 — FOLDED

@@ -1,4 +1,11 @@
 {
+  "air_state_ids": [
+    "x_silent_rotor",
+    "x_stealth_transport",
+    "x_stealth_drone",
+    "x_shock_drone",
+    "x_recon_drone"
+  ],
   "approved_core": [
     "CELL",
     "DEATH",
@@ -6,7 +13,16 @@
     "CLOSE AIR"
   ],
   "buildings": {},
-  "bulk_wave": 2,
+  "bulk_wave": 3,
+  "camo_states": [
+    "rest",
+    "walk",
+    "sprint",
+    "fire",
+    "hit",
+    "battery",
+    "shield"
+  ],
   "deferred": [
     "TECHNICAL",
     "SAFEHOUSE",
@@ -58,18 +74,35 @@
     "icons/x_death_assault.png": "f571cb7d4eda52f78e998d5532e8663e",
     "icons/x_death_recon.png": "15317d3d36f65da070241b7f1210c9b8",
     "icons/x_death_strike.png": "99486ea40c9fc47fc7ee45031645de9f",
-    "icons/x_ghost_infiltrator.png": "360b658ff986152fe90a14656188d471",
+    "icons/x_ghost_ace_01.png": "bc5cbe0bb77a6a45aba5b34f8d6dfc56",
+    "icons/x_ghost_ace_02.png": "a69cb208db3063bd4260a166a7c7f1d5",
+    "icons/x_ghost_ace_03.png": "bc8ebd4102c379a3cf3794802440715e",
+    "icons/x_ghost_ace_04.png": "349e53b40235671fe900095f7a3517ca",
+    "icons/x_ghost_ace_05.png": "616b1ea2b2397f6d7db0bcb9659b9c62",
+    "icons/x_ghost_ace_06.png": "f099b3cd55061214d1dc38acf04e3a5f",
+    "icons/x_ghost_ace_07.png": "32c2b242ab8c0c6d711665ae039d211e",
+    "icons/x_ghost_ace_08.png": "a5378fbb52d39805a8ce4735ebf6ed24",
+    "icons/x_ghost_ace_09.png": "f320092d0612fd254bf320e868667cd3",
+    "icons/x_ghost_base.png": "1bfa1115f425a32dba30703c5bf42475",
+    "icons/x_ghost_infiltrator.png": "8205028bedfbd92e6acb57c63c3695e5",
+    "icons/x_ghost_judge.png": "f8912116bf276afa7a22c4161c2967fd",
+    "icons/x_ghost_mk1.png": "7674f845d71c4789b7ab93664d2a3809",
+    "icons/x_ghost_mk2.png": "fe65b45e68a8745e6bfcd88b5d17ce35",
+    "icons/x_ghost_mk3.png": "c53f0a614faa0691b5340da8c2d9ed62",
+    "icons/x_ghost_sergeant.png": "abe9d87cdd98f76fd7509c57507ad40c",
+    "icons/x_ghost_shade.png": "25bfe2b46c714dbe188b593b3ddb75c8",
+    "icons/x_ghost_warden.png": "a590102840591e2a0c10f2c3b9b6ceaf",
     "icons/x_officer.png": "010e44288c61bf2029271ba9615eea64",
     "icons/x_patron_cas.png": "818702ce849cb8ea76ede389206cd150",
     "icons/x_pmc_assault.png": "5694d110b334891c4f4d74b0be496cfa",
-    "icons/x_pmc_ew.png": "e58f9d4d29801546b2b3c538171f2b95",
+    "icons/x_pmc_ew.png": "2b9c9788f9b4541bc465eaa6b875da9b",
     "icons/x_pmc_rifle.png": "4399a4e853afde6a4cc649be6a44afc8",
     "icons/x_pmc_sniper.png": "2552fd45532f8423932f0c8a757eb163",
     "icons/x_prototype_walker.png": "f4444903099fc6f88734b1cc0306e92a",
     "icons/x_recon_drone.png": "4d1b33cf25146432892fec4617d463bc",
-    "icons/x_shadow_decoy.png": "2e2598ba705fb970cb388c209146da67",
-    "icons/x_shadow_ew.png": "3d6de7dbfe2fa79981f53b7add23a6e7",
-    "icons/x_shadow_pathfinder.png": "ab3a428269a893b2df0b0b7e71b7481d",
+    "icons/x_shadow_decoy.png": "e64bd1ee11f19125fdc867a9f46a31f9",
+    "icons/x_shadow_ew.png": "5f4a6e1494bce188940e79940fb7a552",
+    "icons/x_shadow_pathfinder.png": "2f27d6e9422b6ceedb603a2dc24bf3e7",
     "icons/x_shadow_signal.png": "93d95a1c127473e38b450b2a46751e48",
     "icons/x_shock_drone.png": "2db90c6fbcc5eeb18b928b275c32e4f6",
     "icons/x_silent_rotor.png": "c4063de4e245a32e1985038d8790ee1e",
@@ -100,15 +133,287 @@
     "units/x_death_recon_mask.png": "32d2a5e266878be78ba09e177de0d08c",
     "units/x_death_strike.png": "e491562842c861a2f8dbf1dfb2ea8a05",
     "units/x_death_strike_mask.png": "32d2a5e266878be78ba09e177de0d08c",
-    "units/x_ghost_infiltrator.png": "0a7959e54fc607eb9d1e1d158e32d48c",
+    "units/x_ghost_ace_01.png": "ff866d8c9748b0cd08221741c0d27320",
+    "units/x_ghost_ace_01_camo_battery.png": "5e888c224376e135c9111bf23c91e67e",
+    "units/x_ghost_ace_01_camo_battery_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_01_camo_fire.png": "f3123297eaba142953af6e8378db782c",
+    "units/x_ghost_ace_01_camo_fire_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_01_camo_hit.png": "8dd5cba9da7e41f9a88c86d431a1a666",
+    "units/x_ghost_ace_01_camo_hit_mask.png": "170db8b0069aefdb0c5e23742e877dde",
+    "units/x_ghost_ace_01_camo_rest.png": "10b2edf999e4ef46229bde707bea9e09",
+    "units/x_ghost_ace_01_camo_rest_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_01_camo_shield.png": "523843d23c8b774924d590f0f12dfa2f",
+    "units/x_ghost_ace_01_camo_shield_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_01_camo_sprint.png": "cbcac714da2eff714bae5312a54a54d1",
+    "units/x_ghost_ace_01_camo_sprint_mask.png": "170db8b0069aefdb0c5e23742e877dde",
+    "units/x_ghost_ace_01_camo_walk.png": "4ca059e1bfb2fba20bd0487460b06094",
+    "units/x_ghost_ace_01_camo_walk_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_01_mask.png": "3208915595554ee0d67add894d079366",
+    "units/x_ghost_ace_02.png": "0c5af79ce5949c4b7a3c9076e28c1bd0",
+    "units/x_ghost_ace_02_camo_battery.png": "0a886f0c9ad8c5da4293692bf1d66c48",
+    "units/x_ghost_ace_02_camo_battery_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_02_camo_fire.png": "eaf9e03dc41736f904bbb9f114f3f47d",
+    "units/x_ghost_ace_02_camo_fire_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_02_camo_hit.png": "152c1329db53f36a9e89ebe8257a4087",
+    "units/x_ghost_ace_02_camo_hit_mask.png": "06ed854c5d7581dc2489adab9d8b13d0",
+    "units/x_ghost_ace_02_camo_rest.png": "ef1a05f1a98277fbcb32dda63e8837d2",
+    "units/x_ghost_ace_02_camo_rest_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_02_camo_shield.png": "87a0853ca6fb7f939eb73e7342a829cf",
+    "units/x_ghost_ace_02_camo_shield_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_02_camo_sprint.png": "420afc018cc21b53e3f660c87eda9990",
+    "units/x_ghost_ace_02_camo_sprint_mask.png": "06ed854c5d7581dc2489adab9d8b13d0",
+    "units/x_ghost_ace_02_camo_walk.png": "c0ae7d6a453a93efc8cfa79bdd35e127",
+    "units/x_ghost_ace_02_camo_walk_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_02_mask.png": "e689808648a4744cdc40522394f985f5",
+    "units/x_ghost_ace_03.png": "c3639459c274e3044c2d34006ab96c42",
+    "units/x_ghost_ace_03_camo_battery.png": "da05a311c16a996255b8392a41f6e1a5",
+    "units/x_ghost_ace_03_camo_battery_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_03_camo_fire.png": "d4be5b3dea9f6c2d70575fd890b427f4",
+    "units/x_ghost_ace_03_camo_fire_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_03_camo_hit.png": "df4183287637cc3079e5f0dba5bfc7e6",
+    "units/x_ghost_ace_03_camo_hit_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_03_camo_rest.png": "0f7f4b1eb8184b4f51a94626a08e030f",
+    "units/x_ghost_ace_03_camo_rest_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_03_camo_shield.png": "21d00f6f4bcbd81d9eac01416c13e4df",
+    "units/x_ghost_ace_03_camo_shield_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_03_camo_sprint.png": "c463e980d1888babf2728c93fdf2cd04",
+    "units/x_ghost_ace_03_camo_sprint_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_03_camo_walk.png": "051e7f0feb3653f54a9765a1a459a13b",
+    "units/x_ghost_ace_03_camo_walk_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_03_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_04.png": "ee1193016eb38e5d6e3b219ae7798725",
+    "units/x_ghost_ace_04_camo_battery.png": "78a72afc4a9db9ef7f0168e5e1583cc3",
+    "units/x_ghost_ace_04_camo_battery_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_04_camo_fire.png": "e11b0c89da708d285ed933d3071fb20a",
+    "units/x_ghost_ace_04_camo_fire_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_04_camo_hit.png": "c1d98d62a641c3dfb51899d7bf932926",
+    "units/x_ghost_ace_04_camo_hit_mask.png": "05f8a6e4cae9a59097b486a3f87a3cd6",
+    "units/x_ghost_ace_04_camo_rest.png": "c1f7844fbb96323c6e7911d72b6bae67",
+    "units/x_ghost_ace_04_camo_rest_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_04_camo_shield.png": "bcba6209cbb7bc0c3e3c564306bbf947",
+    "units/x_ghost_ace_04_camo_shield_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_04_camo_sprint.png": "dc8eefc2c2076b9f4cd86a3a8524d684",
+    "units/x_ghost_ace_04_camo_sprint_mask.png": "05f8a6e4cae9a59097b486a3f87a3cd6",
+    "units/x_ghost_ace_04_camo_walk.png": "6de6c74dc5730b55f405672991b43336",
+    "units/x_ghost_ace_04_camo_walk_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_04_mask.png": "7b1111d68da14858ca829bb68e74ceb9",
+    "units/x_ghost_ace_05.png": "164060c829e34a699b76e362ef594641",
+    "units/x_ghost_ace_05_camo_battery.png": "bac318fc0ba7729b21da614e303845fd",
+    "units/x_ghost_ace_05_camo_battery_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_05_camo_fire.png": "1a13ed0da25ab4ee6ee0ee1f89d39b31",
+    "units/x_ghost_ace_05_camo_fire_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_05_camo_hit.png": "1cd1a60068365352e155cb0dd36c0d97",
+    "units/x_ghost_ace_05_camo_hit_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_05_camo_rest.png": "08e8de551867d82046aa16fa99d43f6f",
+    "units/x_ghost_ace_05_camo_rest_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_05_camo_shield.png": "b6220a961c93b385aec85768bb7e1205",
+    "units/x_ghost_ace_05_camo_shield_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_05_camo_sprint.png": "e01915962484e72e98138241964c7ec1",
+    "units/x_ghost_ace_05_camo_sprint_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_05_camo_walk.png": "0c277c3fc2fdc54736413786e649ee0d",
+    "units/x_ghost_ace_05_camo_walk_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_05_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06.png": "932b7aff73432ed624a0a809babe1bc4",
+    "units/x_ghost_ace_06_camo_battery.png": "e151948c94ea564e50200e9ba5478cb7",
+    "units/x_ghost_ace_06_camo_battery_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06_camo_fire.png": "f23ebb98a2283f56ca881ce68552d682",
+    "units/x_ghost_ace_06_camo_fire_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06_camo_hit.png": "6ba95eaf6cfdd6ab3c5b2be07755f6e4",
+    "units/x_ghost_ace_06_camo_hit_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_06_camo_rest.png": "d6373f3c97e7897d28b0263bc0206dcc",
+    "units/x_ghost_ace_06_camo_rest_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06_camo_shield.png": "48ada814ed9d5f846da85e832972cc26",
+    "units/x_ghost_ace_06_camo_shield_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06_camo_sprint.png": "e628cde80b9800e654c506987a1e953e",
+    "units/x_ghost_ace_06_camo_sprint_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_06_camo_walk.png": "45d2bbb5e698ce48276be63e99aa5167",
+    "units/x_ghost_ace_06_camo_walk_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_06_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_07.png": "47097b984a73567c70954d5e32a66ab6",
+    "units/x_ghost_ace_07_camo_battery.png": "a8cc6194d7e2e5a0664a119698feac14",
+    "units/x_ghost_ace_07_camo_battery_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_07_camo_fire.png": "8da0754adb7ba047c69827572e5c9e17",
+    "units/x_ghost_ace_07_camo_fire_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_07_camo_hit.png": "b0b191adcf6558d374d35cb30e3d9e60",
+    "units/x_ghost_ace_07_camo_hit_mask.png": "05f8a6e4cae9a59097b486a3f87a3cd6",
+    "units/x_ghost_ace_07_camo_rest.png": "a3097ff9ca315cf083cd3564329ce8ce",
+    "units/x_ghost_ace_07_camo_rest_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_07_camo_shield.png": "910db788628ff742815b0fd4d482c8b6",
+    "units/x_ghost_ace_07_camo_shield_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_07_camo_sprint.png": "d862e4bffebb1b59caef47a2ba79d30b",
+    "units/x_ghost_ace_07_camo_sprint_mask.png": "05f8a6e4cae9a59097b486a3f87a3cd6",
+    "units/x_ghost_ace_07_camo_walk.png": "39f97f975a77d74109423c54759bb2d3",
+    "units/x_ghost_ace_07_camo_walk_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_07_mask.png": "b809cd529dbe61e33d64a66246308f3f",
+    "units/x_ghost_ace_08.png": "bbcd1a4676224a7bdb8fe43ce2a19fc3",
+    "units/x_ghost_ace_08_camo_battery.png": "77fc5251cc8069ea7fdbf6eb82755745",
+    "units/x_ghost_ace_08_camo_battery_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_08_camo_fire.png": "ce4e6082d9d479d096698a72eb8072a6",
+    "units/x_ghost_ace_08_camo_fire_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_08_camo_hit.png": "59dc4280ecc9c9b60fcc78ec3d24054d",
+    "units/x_ghost_ace_08_camo_hit_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_08_camo_rest.png": "1554b4eeb135606de11c0e3d43582b6f",
+    "units/x_ghost_ace_08_camo_rest_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_08_camo_shield.png": "2107f47e3ceac28d823c7efcfb9f1d67",
+    "units/x_ghost_ace_08_camo_shield_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_08_camo_sprint.png": "7a689f2841d4afc6c24df4fd9e14b1e6",
+    "units/x_ghost_ace_08_camo_sprint_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_08_camo_walk.png": "34f3833288f1f23bce93759805d05cfd",
+    "units/x_ghost_ace_08_camo_walk_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_08_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09.png": "3aa0920990336bbdc7b201e630821799",
+    "units/x_ghost_ace_09_camo_battery.png": "1e5326cac3db03b0b29e63bec1f066be",
+    "units/x_ghost_ace_09_camo_battery_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09_camo_fire.png": "50d435cb0a3a884c05508eeeac06a2bc",
+    "units/x_ghost_ace_09_camo_fire_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09_camo_hit.png": "355138d850685d7a923836c6919cab07",
+    "units/x_ghost_ace_09_camo_hit_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_09_camo_rest.png": "defb547d27d515d967a72185f2116eae",
+    "units/x_ghost_ace_09_camo_rest_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09_camo_shield.png": "5db318ea1406c3d85487f15ba26b74e1",
+    "units/x_ghost_ace_09_camo_shield_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09_camo_sprint.png": "96d20b8f8ccdd6202c357e7417bf8fb3",
+    "units/x_ghost_ace_09_camo_sprint_mask.png": "66a31c3f222362899c2d0c2fd6e2d998",
+    "units/x_ghost_ace_09_camo_walk.png": "bc136b6f44ffff47cb0fcb2ad48bb304",
+    "units/x_ghost_ace_09_camo_walk_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_ace_09_mask.png": "1e47434da2dc2cba14ad72c52169c90c",
+    "units/x_ghost_base.png": "cd2ac862b562c2cae684cfa2e09cb0b1",
+    "units/x_ghost_base_camo_battery.png": "31cfd4d4651b5ef38c078f8fda12af79",
+    "units/x_ghost_base_camo_battery_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_base_camo_fire.png": "44f64a9b54a578fd5ed077dd31938a20",
+    "units/x_ghost_base_camo_fire_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_base_camo_hit.png": "b84477560973747b1f95c217d708617b",
+    "units/x_ghost_base_camo_hit_mask.png": "b09ded46809d184fe3b5eac3e6963bae",
+    "units/x_ghost_base_camo_rest.png": "91fefaf59b95e21ec27af1e6d7ae24ce",
+    "units/x_ghost_base_camo_rest_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_base_camo_shield.png": "72712d4d1db52bb5354db87dd4b4e583",
+    "units/x_ghost_base_camo_shield_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_base_camo_sprint.png": "323808e522857201dd09bb86ab3621e7",
+    "units/x_ghost_base_camo_sprint_mask.png": "b09ded46809d184fe3b5eac3e6963bae",
+    "units/x_ghost_base_camo_walk.png": "2126d1b630055d13aa9f230cc12301e6",
+    "units/x_ghost_base_camo_walk_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_base_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_infiltrator.png": "f8dd0751646ca843b22b4b7918272c76",
     "units/x_ghost_infiltrator_mask.png": "6a75a80b97802e6941d762b50fb69c22",
+    "units/x_ghost_judge.png": "9f26c95f3ecd05e82e2952f3229758fb",
+    "units/x_ghost_judge_camo_battery.png": "ca6dfbc0e20085ffdbd9d988297b0042",
+    "units/x_ghost_judge_camo_battery_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_judge_camo_fire.png": "41206ce004d260b05cdc615507651262",
+    "units/x_ghost_judge_camo_fire_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_judge_camo_hit.png": "9352d18a5e695d44c50e752a63d435b3",
+    "units/x_ghost_judge_camo_hit_mask.png": "f912d9167b2752a9e1453796d3ae2009",
+    "units/x_ghost_judge_camo_rest.png": "14cb6774d2246c3d8634a5683b99380c",
+    "units/x_ghost_judge_camo_rest_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_judge_camo_shield.png": "dfd5aa36946215c627b32f988a53785f",
+    "units/x_ghost_judge_camo_shield_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_judge_camo_sprint.png": "188a10281a0ea165dc67c7c5be0a3e9a",
+    "units/x_ghost_judge_camo_sprint_mask.png": "f912d9167b2752a9e1453796d3ae2009",
+    "units/x_ghost_judge_camo_walk.png": "e13a37558c894a37fda4430c3ceb1db9",
+    "units/x_ghost_judge_camo_walk_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_judge_mask.png": "bbed203d889e023393107e61100520ef",
+    "units/x_ghost_mk1.png": "ff188195a3ffd3756b4f14f1679ad8cc",
+    "units/x_ghost_mk1_camo_battery.png": "6b9ca85e35bd2a0de6770cae668cce61",
+    "units/x_ghost_mk1_camo_battery_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk1_camo_fire.png": "92376361219b4cd9f85e53d4c51001d6",
+    "units/x_ghost_mk1_camo_fire_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk1_camo_hit.png": "9c92a9ec11043fdb8f4a806d0885f66f",
+    "units/x_ghost_mk1_camo_hit_mask.png": "88587bf9cc393a98e7be6532001747ee",
+    "units/x_ghost_mk1_camo_rest.png": "d81a5258aa7046eba36202dc432a313a",
+    "units/x_ghost_mk1_camo_rest_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk1_camo_shield.png": "949ff6e241defd95342ced029dbdcdd9",
+    "units/x_ghost_mk1_camo_shield_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk1_camo_sprint.png": "61f18de7b742ccdca95934208bae5efe",
+    "units/x_ghost_mk1_camo_sprint_mask.png": "88587bf9cc393a98e7be6532001747ee",
+    "units/x_ghost_mk1_camo_walk.png": "a1ca106c4e4f476b696ad00d0398dc7a",
+    "units/x_ghost_mk1_camo_walk_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk1_mask.png": "ed19c45fff17e10614d1c6259c379b84",
+    "units/x_ghost_mk2.png": "935be1dbb1fa25bbad89969d813e1a00",
+    "units/x_ghost_mk2_camo_battery.png": "eb26beb5303bf960a10bdb2ab54c3cc9",
+    "units/x_ghost_mk2_camo_battery_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk2_camo_fire.png": "cd359029eb2cf0f1f01f89b364d1318c",
+    "units/x_ghost_mk2_camo_fire_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk2_camo_hit.png": "c12e8745481b648113fd7107cce333b0",
+    "units/x_ghost_mk2_camo_hit_mask.png": "b09ded46809d184fe3b5eac3e6963bae",
+    "units/x_ghost_mk2_camo_rest.png": "67555fae763d22c85a5e4adbeb44c76b",
+    "units/x_ghost_mk2_camo_rest_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk2_camo_shield.png": "7cbc01696172bbdb6c8e72ad0b50f21d",
+    "units/x_ghost_mk2_camo_shield_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk2_camo_sprint.png": "cfaaf3abc41f103dead02dfdefc6d31d",
+    "units/x_ghost_mk2_camo_sprint_mask.png": "b09ded46809d184fe3b5eac3e6963bae",
+    "units/x_ghost_mk2_camo_walk.png": "02a57da6032a4cf497026735f429edf9",
+    "units/x_ghost_mk2_camo_walk_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk2_mask.png": "32d2a5e266878be78ba09e177de0d08c",
+    "units/x_ghost_mk3.png": "1916870f045c10e973fc7a45e3a37ed1",
+    "units/x_ghost_mk3_camo_battery.png": "ee18fd435580ec6751512b4c86428f9c",
+    "units/x_ghost_mk3_camo_battery_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_mk3_camo_fire.png": "e99d376373cfe8068b339f68f6731c3b",
+    "units/x_ghost_mk3_camo_fire_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_mk3_camo_hit.png": "53357eb2213ab35835c047ec01ea10a4",
+    "units/x_ghost_mk3_camo_hit_mask.png": "dfa20cec3bd0894f66eb4d8fddcc58ef",
+    "units/x_ghost_mk3_camo_rest.png": "48749f2e1407fcbb633b5331b57eae62",
+    "units/x_ghost_mk3_camo_rest_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_mk3_camo_shield.png": "064c71f53365ba45cef19a076da1f1b3",
+    "units/x_ghost_mk3_camo_shield_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_mk3_camo_sprint.png": "48fb89bd64aa501c68585522572ca10c",
+    "units/x_ghost_mk3_camo_sprint_mask.png": "dfa20cec3bd0894f66eb4d8fddcc58ef",
+    "units/x_ghost_mk3_camo_walk.png": "649de745791eef99d83e061d601b6d94",
+    "units/x_ghost_mk3_camo_walk_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_mk3_mask.png": "ea08b7b9456085f493c88955ce5aa198",
+    "units/x_ghost_sergeant.png": "ea4b59bf76285f28b189e3c19f82db32",
+    "units/x_ghost_sergeant_camo_battery.png": "4078e5c8c16aa4ed1b43db508a39e5d9",
+    "units/x_ghost_sergeant_camo_battery_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_sergeant_camo_fire.png": "c3c3da9f351b488e6c9e5f905f3e57b5",
+    "units/x_ghost_sergeant_camo_fire_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_sergeant_camo_hit.png": "b45b18596b11eef92b40e7352c410201",
+    "units/x_ghost_sergeant_camo_hit_mask.png": "db749c153e4f2d51bb5f623727d943f8",
+    "units/x_ghost_sergeant_camo_rest.png": "6dc2b25ba4dd58eb0aaf507ae54208f7",
+    "units/x_ghost_sergeant_camo_rest_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_sergeant_camo_shield.png": "5a6d4f5bfdf94ec4cb6172e7fa911349",
+    "units/x_ghost_sergeant_camo_shield_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_sergeant_camo_sprint.png": "c76235c6d48771b1feab5dc3f69db4b3",
+    "units/x_ghost_sergeant_camo_sprint_mask.png": "db749c153e4f2d51bb5f623727d943f8",
+    "units/x_ghost_sergeant_camo_walk.png": "27f5ab21cc105767470eaff234468e97",
+    "units/x_ghost_sergeant_camo_walk_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_sergeant_mask.png": "1f0c64b901cefbbe31800e1b983db03f",
+    "units/x_ghost_shade.png": "e0e35b7378beee54f139a4ed0057b7e3",
+    "units/x_ghost_shade_camo_battery.png": "69779a3a06ba07d66863e95198ef1029",
+    "units/x_ghost_shade_camo_battery_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_shade_camo_fire.png": "7eaf6b4a8d6cb02bd9e7cbc7e87c1c23",
+    "units/x_ghost_shade_camo_fire_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_shade_camo_hit.png": "30b21009bbeb541bfcc827125c219e77",
+    "units/x_ghost_shade_camo_hit_mask.png": "b8b3400b5e852f54ef6b35faec12650d",
+    "units/x_ghost_shade_camo_rest.png": "355be12bc9ce8a64a6c096accf5e8ac2",
+    "units/x_ghost_shade_camo_rest_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_shade_camo_shield.png": "9d87e4cb216fcd02c5327efca2d38b3a",
+    "units/x_ghost_shade_camo_shield_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_shade_camo_sprint.png": "19868caa5e5de29867b47163f571f085",
+    "units/x_ghost_shade_camo_sprint_mask.png": "b8b3400b5e852f54ef6b35faec12650d",
+    "units/x_ghost_shade_camo_walk.png": "2680590424629a58d8cf78676681755b",
+    "units/x_ghost_shade_camo_walk_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_shade_mask.png": "57beae12e52f3b4375139851f369a309",
+    "units/x_ghost_warden.png": "869a13e30687fac4a34834671702d4f7",
+    "units/x_ghost_warden_camo_battery.png": "48394e860ad522f1498d9600349468ce",
+    "units/x_ghost_warden_camo_battery_mask.png": "9ad911e22dc87f794e0256df8ab72232",
+    "units/x_ghost_warden_camo_fire.png": "9e83691a13bb2c9f3aa6e23b594878e2",
+    "units/x_ghost_warden_camo_fire_mask.png": "9ad911e22dc87f794e0256df8ab72232",
+    "units/x_ghost_warden_camo_hit.png": "d8826aafc74df49e7654f6162e59b759",
+    "units/x_ghost_warden_camo_hit_mask.png": "16481c6f480f1b53249168d94b6d47cc",
+    "units/x_ghost_warden_camo_rest.png": "a34949f6b557b3c73d171276903305e0",
+    "units/x_ghost_warden_camo_rest_mask.png": "9ad911e22dc87f794e0256df8ab72232",
+    "units/x_ghost_warden_camo_shield.png": "3aed765b62985e49d33d460f82c99e3e",
+    "units/x_ghost_warden_camo_shield_mask.png": "ec905fd969f377d15a84e915302a4cbb",
+    "units/x_ghost_warden_camo_sprint.png": "e5686ada9d02b261e2ea0af507da91e7",
+    "units/x_ghost_warden_camo_sprint_mask.png": "16481c6f480f1b53249168d94b6d47cc",
+    "units/x_ghost_warden_camo_walk.png": "61adab15fa9ec700b5691996e72fae74",
+    "units/x_ghost_warden_camo_walk_mask.png": "9ad911e22dc87f794e0256df8ab72232",
+    "units/x_ghost_warden_mask.png": "9ad911e22dc87f794e0256df8ab72232",
     "units/x_officer.png": "54b7668908b6821dd277662a9f36b1b3",
     "units/x_officer_mask.png": "6a75a80b97802e6941d762b50fb69c22",
     "units/x_patron_cas.png": "8567e5904ddae3857c492e2e66e261fa",
     "units/x_patron_cas_mask.png": "d6a6090bc8ab4b130c97f2f253005723",
     "units/x_pmc_assault.png": "a7c368c5ca3f9d70f39d075afdaf1d14",
     "units/x_pmc_assault_mask.png": "c77454f10dd9ddc2fe2f8d6c5d96c89e",
-    "units/x_pmc_ew.png": "df0341f95e48c528579e7bb851d63e51",
+    "units/x_pmc_ew.png": "747259442579ee2f5eaf070204da925e",
     "units/x_pmc_ew_mask.png": "6a75a80b97802e6941d762b50fb69c22",
     "units/x_pmc_rifle.png": "34dd7e68e8ee6a2c41532719e909f0c3",
     "units/x_pmc_rifle_mask.png": "f7ef21092a5da4292e8990517f4f6e17",
@@ -116,27 +421,46 @@
     "units/x_pmc_sniper_mask.png": "6a75a80b97802e6941d762b50fb69c22",
     "units/x_prototype_walker.png": "9d4594c7b2d67a4fffa90ed51de157c5",
     "units/x_prototype_walker_mask.png": "126d0f9437b8136f8711e82afe4dac27",
-    "units/x_recon_drone.png": "3e32636ccd6d7448760054ea5f3d2d84",
-    "units/x_recon_drone_mask.png": "d6a6090bc8ab4b130c97f2f253005723",
-    "units/x_shadow_decoy.png": "d246d7107f29924a53212150de1c94fe",
+    "units/x_recon_drone.png": "3d593aa232cb17b1b15b05df876702e0",
+    "units/x_recon_drone_mask.png": "7ba1113a17e5e45b9bcb14ab433cb443",
+    "units/x_shadow_decoy.png": "08746582aa1c4f23d60a3d8820b2ffce",
     "units/x_shadow_decoy_mask.png": "32d2a5e266878be78ba09e177de0d08c",
-    "units/x_shadow_ew.png": "e7603ae5ac81c750ea9337ad9e2084be",
+    "units/x_shadow_ew.png": "e4a4d8e4347de58758d516e2a4c9b3cf",
     "units/x_shadow_ew_mask.png": "0fb0cf0fd16f4642ed3af45d5508b833",
-    "units/x_shadow_pathfinder.png": "2f9ca41d99e758269e4af005823b513a",
+    "units/x_shadow_pathfinder.png": "ad32876b02d02e6c4a97f25bdcbfa473",
     "units/x_shadow_pathfinder_mask.png": "20892f42808adc40307ba370d11aaf0a",
     "units/x_shadow_signal.png": "f742240eabb78b5b849b258d29e8e946",
     "units/x_shadow_signal_mask.png": "7436f216a943ebf30fb4091d4f94deaa",
-    "units/x_shock_drone.png": "4060630fa5da3381f3815004e93c66a7",
-    "units/x_shock_drone_mask.png": "d6a6090bc8ab4b130c97f2f253005723",
-    "units/x_silent_rotor.png": "1feead339983f6972725a422b012ac0a",
-    "units/x_silent_rotor_mask.png": "f1614a4e29225d5ccb83603226e002e8",
+    "units/x_shock_drone.png": "bbbb5ef24412ad0283a196d0df3f0edb",
+    "units/x_shock_drone_mask.png": "7ba1113a17e5e45b9bcb14ab433cb443",
+    "units/x_silent_rotor.png": "2a52f09f0842b7e31b64f340f1510ca9",
+    "units/x_silent_rotor_mask.png": "e6551d33c9bdc6c99bb715497c5d5bc8",
     "units/x_sleeper_cell.png": "b0fea409db34df534a125f88bf93ba49",
     "units/x_sleeper_cell_mask.png": "6a75a80b97802e6941d762b50fb69c22",
-    "units/x_stealth_drone.png": "69e7b54b259e85d5c5fb95d920207b0d",
-    "units/x_stealth_drone_mask.png": "d6a6090bc8ab4b130c97f2f253005723",
-    "units/x_stealth_transport.png": "a2579cd558597870c35b700b2663806e",
-    "units/x_stealth_transport_mask.png": "d6a6090bc8ab4b130c97f2f253005723"
+    "units/x_stealth_drone.png": "93482e80a751fce2c4b3b33d7fb87c45",
+    "units/x_stealth_drone_mask.png": "7ba1113a17e5e45b9bcb14ab433cb443",
+    "units/x_stealth_transport.png": "516b0c73dba413c86a7a3df69aac83a5",
+    "units/x_stealth_transport_mask.png": "7ba1113a17e5e45b9bcb14ab433cb443"
   },
+  "ghost_set": [
+    "x_ghost_base",
+    "x_ghost_judge",
+    "x_ghost_warden",
+    "x_ghost_shade",
+    "x_ghost_sergeant",
+    "x_ghost_mk1",
+    "x_ghost_mk2",
+    "x_ghost_mk3",
+    "x_ghost_ace_01",
+    "x_ghost_ace_02",
+    "x_ghost_ace_03",
+    "x_ghost_ace_04",
+    "x_ghost_ace_05",
+    "x_ghost_ace_06",
+    "x_ghost_ace_07",
+    "x_ghost_ace_08",
+    "x_ghost_ace_09"
+  ],
   "group": "g10_coalition",
   "icons": {
     "x_ambush_cell": {
@@ -199,9 +523,94 @@
       "file": "icons/x_death_strike.png",
       "fw": 80
     },
+    "x_ghost_ace_01": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_01.png",
+      "fw": 80
+    },
+    "x_ghost_ace_02": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_02.png",
+      "fw": 80
+    },
+    "x_ghost_ace_03": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_03.png",
+      "fw": 80
+    },
+    "x_ghost_ace_04": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_04.png",
+      "fw": 80
+    },
+    "x_ghost_ace_05": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_05.png",
+      "fw": 80
+    },
+    "x_ghost_ace_06": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_06.png",
+      "fw": 80
+    },
+    "x_ghost_ace_07": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_07.png",
+      "fw": 80
+    },
+    "x_ghost_ace_08": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_08.png",
+      "fw": 80
+    },
+    "x_ghost_ace_09": {
+      "fh": 64,
+      "file": "icons/x_ghost_ace_09.png",
+      "fw": 80
+    },
+    "x_ghost_base": {
+      "fh": 64,
+      "file": "icons/x_ghost_base.png",
+      "fw": 80
+    },
     "x_ghost_infiltrator": {
       "fh": 64,
       "file": "icons/x_ghost_infiltrator.png",
+      "fw": 80
+    },
+    "x_ghost_judge": {
+      "fh": 64,
+      "file": "icons/x_ghost_judge.png",
+      "fw": 80
+    },
+    "x_ghost_mk1": {
+      "fh": 64,
+      "file": "icons/x_ghost_mk1.png",
+      "fw": 80
+    },
+    "x_ghost_mk2": {
+      "fh": 64,
+      "file": "icons/x_ghost_mk2.png",
+      "fw": 80
+    },
+    "x_ghost_mk3": {
+      "fh": 64,
+      "file": "icons/x_ghost_mk3.png",
+      "fw": 80
+    },
+    "x_ghost_sergeant": {
+      "fh": 64,
+      "file": "icons/x_ghost_sergeant.png",
+      "fw": 80
+    },
+    "x_ghost_shade": {
+      "fh": 64,
+      "file": "icons/x_ghost_shade.png",
+      "fw": 80
+    },
+    "x_ghost_warden": {
+      "fh": 64,
+      "file": "icons/x_ghost_warden.png",
       "fw": 80
     },
     "x_officer": {
@@ -302,7 +711,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "ambush",
         "revise": 8,
@@ -326,7 +735,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "anchor_medic",
         "revise": 8,
@@ -350,7 +759,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "anchor_tech",
         "revise": 8,
@@ -374,7 +783,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "hacker",
         "revise": 8,
@@ -398,7 +807,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "broker",
         "revise": 8,
@@ -422,7 +831,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "at",
         "revise": 8,
@@ -446,7 +855,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "medic",
         "revise": 8,
@@ -470,7 +879,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "locked_template",
         "revise": 8,
@@ -494,7 +903,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "sapper",
         "revise": 8,
@@ -518,7 +927,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "death_assault",
         "revise": 8,
@@ -542,7 +951,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "death_recon",
         "revise": 8,
@@ -566,7 +975,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "locked_template",
         "revise": 8,
@@ -579,6 +988,836 @@
         54
       ]
     },
+    "x_ghost_ace_01": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_01.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_1",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_01_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_01_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_01_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_02": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_02.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_2",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_02_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_02_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_02_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_03": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_03.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_3",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_03_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_03_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_03_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_04": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_04.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_4",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_04_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_04_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_04_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_05": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_05.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_5",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_05_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_05_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_05_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_06": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_06.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_6",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_06_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_06_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_06_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_07": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_07.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_7",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_07_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_07_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_07_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_08": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_08.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_8",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_08_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_08_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_08_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_ace_09": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_ace_09.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_ace_9",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_ace_09_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_ace_09_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_ace_09_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_base": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_base.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_base",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_base_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_base_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_base_camo_walk_mask.png"
+        }
+      }
+    },
     "x_ghost_infiltrator": {
       "facings": 4,
       "fh": 64,
@@ -590,7 +1829,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "ghost",
         "revise": 8,
@@ -603,6 +1842,587 @@
         54
       ]
     },
+    "x_ghost_judge": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_judge.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_judge",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_judge_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_judge_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_judge_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_mk1": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_mk1.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_mk1",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_mk1_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk1_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk1_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_mk2": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_mk2.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_mk2",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_mk2_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk2_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk2_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_mk3": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_mk3.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_mk3",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_mk3_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_mk3_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_mk3_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_sergeant": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_sergeant.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_sergeant",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_sergeant_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_sergeant_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_sergeant_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_shade": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_shade.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_shade",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_shade_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_shade_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_shade_camo_walk_mask.png"
+        }
+      }
+    },
+    "x_ghost_warden": {
+      "facings": 4,
+      "fh": 64,
+      "file": "units/x_ghost_warden.png",
+      "frames": [
+        "idle"
+      ],
+      "fw": 80,
+      "g10": {
+        "approved_core": true,
+        "bulk": true,
+        "bulk_wave": 3,
+        "camo_states": [
+          "rest",
+          "walk",
+          "sprint",
+          "fire",
+          "hit",
+          "battery",
+          "shield"
+        ],
+        "ghost_wing": true,
+        "look": "G10_GHOST_LOOK",
+        "mark": "ghost_warden",
+        "template": "x_death_strike"
+      },
+      "mask": "units/x_ghost_warden_mask.png",
+      "pivot": [
+        40,
+        54
+      ],
+      "states": {
+        "battery": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_battery.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_battery_mask.png"
+        },
+        "fire": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_fire.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_fire_mask.png"
+        },
+        "hit": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_hit.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_hit_mask.png"
+        },
+        "rest": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_rest.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_rest_mask.png"
+        },
+        "shield": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_shield.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_shield_mask.png"
+        },
+        "sprint": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_sprint.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_sprint_mask.png"
+        },
+        "walk": {
+          "facings": 4,
+          "fh": 64,
+          "file": "units/x_ghost_warden_camo_walk.png",
+          "fw": 80,
+          "mask": "units/x_ghost_warden_camo_walk_mask.png"
+        }
+      }
+    },
     "x_officer": {
       "facings": 4,
       "fh": 64,
@@ -614,7 +2434,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "officer",
         "revise": 8,
@@ -638,7 +2458,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "pmc_assault",
         "revise": 8,
@@ -662,7 +2482,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "pmc_ew",
         "revise": 8,
@@ -686,7 +2506,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "pmc",
         "revise": 8,
@@ -710,7 +2530,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "pmc_sniper",
         "revise": 8,
@@ -734,7 +2554,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "shadow_decoy",
         "revise": 8,
@@ -758,7 +2578,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "shadow_ew",
         "revise": 8,
@@ -782,7 +2602,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "shadow_path",
         "revise": 8,
@@ -806,7 +2626,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "shadow_signal",
         "revise": 8,
@@ -830,7 +2650,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "sleeper",
         "revise": 8,
@@ -845,15 +2665,12 @@
     }
   },
   "leftover_steps": [
-    "Step6 Ghost Judge/Warden/Shade/Sergeant + Mk/ace set (beyond infiltrator clone)",
-    "Step7 camo/state sheets for Ghosts",
-    "Step8 non-TECHNICAL vehicle/drone/building states (Silent Rotor flip etc.)",
-    "Step9 final contact + orphan_art=0 + owner look gate before g10.lock"
+    "Step9 final contact + orphan_art deferred-exception + owner look gate before g10.lock"
   ],
   "look": "G10_GHOST_LOOK",
-  "notes": "Bulk wave2 approved-only — kit marks on clones; TECHNICAL/SAFEHOUSE deferred (owner 2026-11-24)",
+  "notes": "Bulk wave3 — Ghost Judge/Warden/Shade/Sergeant + Mk/ace + camo states + CLOSE AIR vehicle polish; TECHNICAL/SAFEHOUSE deferred",
   "sample_gate": false,
-  "style_source": "approved-core clones + fleet/army role marks from g10_coalition_samples; technical/buildings deferred",
+  "style_source": "approved-core clones + Ghost Wing Death-kit set + camo/CLOSE AIR states; no purple; technical/buildings deferred",
   "tile": [
     64,
     32
@@ -870,7 +2687,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "locked_template",
         "revise": 8,
@@ -894,7 +2711,7 @@
       "g10": {
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "locked_template",
         "revise": 8,
@@ -912,13 +2729,18 @@
       "fh": 64,
       "file": "units/x_recon_drone.png",
       "frames": [
-        "idle"
+        "idle",
+        "active"
       ],
       "fw": 80,
       "g10": {
+        "air_states": [
+          "idle",
+          "active"
+        ],
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "air_recon",
         "revise": 8,
@@ -936,13 +2758,18 @@
       "fh": 64,
       "file": "units/x_shock_drone.png",
       "frames": [
-        "idle"
+        "idle",
+        "active"
       ],
       "fw": 80,
       "g10": {
+        "air_states": [
+          "idle",
+          "active"
+        ],
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "air_shock",
         "revise": 8,
@@ -960,13 +2787,18 @@
       "fh": 64,
       "file": "units/x_silent_rotor.png",
       "frames": [
-        "idle"
+        "idle",
+        "gunship"
       ],
       "fw": 80,
       "g10": {
+        "air_states": [
+          "idle",
+          "gunship"
+        ],
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "air_silent",
         "revise": 8,
@@ -984,13 +2816,18 @@
       "fh": 64,
       "file": "units/x_stealth_drone.png",
       "frames": [
-        "idle"
+        "idle",
+        "active"
       ],
       "fw": 80,
       "g10": {
+        "air_states": [
+          "idle",
+          "active"
+        ],
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "air_stealth",
         "revise": 8,
@@ -1008,13 +2845,18 @@
       "fh": 64,
       "file": "units/x_stealth_transport.png",
       "frames": [
-        "idle"
+        "idle",
+        "active"
       ],
       "fw": 80,
       "g10": {
+        "air_states": [
+          "idle",
+          "active"
+        ],
         "approved_core": true,
         "bulk": true,
-        "bulk_wave": 2,
+        "bulk_wave": 3,
         "look": "G10_GHOST_LOOK",
         "mark": "air_transport",
         "revise": 8,

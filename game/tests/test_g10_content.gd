@@ -311,3 +311,52 @@ func test_g10_deferred_art_allowed_as_placeholder() -> void:
 		var g10 = spec.get("g10", {})
 		if g10 is Dictionary:
 			check(not bool(g10.get("approved_core", false)), "deferred %s must not be approved_core" % id)
+
+
+## Task 8 wave3 — Ghost Wing set + camo states + CLOSE AIR vehicle polish.
+const G10_GHOST_SET_IDS := [
+	"x_ghost_base", "x_ghost_judge", "x_ghost_warden", "x_ghost_shade", "x_ghost_sergeant",
+	"x_ghost_mk1", "x_ghost_mk2", "x_ghost_mk3",
+	"x_ghost_ace_01", "x_ghost_ace_02", "x_ghost_ace_03", "x_ghost_ace_04", "x_ghost_ace_05",
+	"x_ghost_ace_06", "x_ghost_ace_07", "x_ghost_ace_08", "x_ghost_ace_09",
+]
+
+const G10_CAMO_STATES := ["rest", "walk", "sprint", "fire", "hit", "battery", "shield"]
+
+const G10_AIR_STATE_IDS := [
+	"x_silent_rotor", "x_stealth_transport", "x_stealth_drone", "x_shock_drone", "x_recon_drone",
+]
+
+
+func test_g10_ghost_wing_set_coverage() -> void:
+	ArtCatalog.load_all()
+	check_eq(G10_GHOST_SET_IDS.size(), 17, "ghost wing set id count")
+	for id in G10_GHOST_SET_IDS:
+		var spec := _g10_art_spec(id)
+		check(not spec.is_empty(), "ghost set missing %s" % id)
+		check_eq(int(spec.get("facings", 0)), 4, "%s facings" % id)
+		var g10 = spec.get("g10", {})
+		check(g10 is Dictionary and bool(g10.get("ghost_wing", false)), "%s ghost_wing flag" % id)
+		check(bool(g10.get("approved_core", false)), "%s approved_core" % id)
+		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
+		check(img != null and img.get_width() > 0, "%s sheet loads" % id)
+		var states = spec.get("states", {})
+		check(states is Dictionary and states.size() >= G10_CAMO_STATES.size(), "%s camo states" % id)
+		for st in G10_CAMO_STATES:
+			check(states.has(st), "%s missing camo state %s" % [id, st])
+			var sspec: Dictionary = states[st]
+			var simg: Image = ArtCatalog._image(String(sspec.get("file", "")))
+			check(simg != null and simg.get_width() > 0, "%s camo %s loads" % [id, st])
+
+
+func test_g10_close_air_state_polish() -> void:
+	ArtCatalog.load_all()
+	for id in G10_AIR_STATE_IDS:
+		var spec := _g10_art_spec(id)
+		check(not spec.is_empty(), "air state missing %s" % id)
+		var frames: Array = spec.get("frames", [])
+		check(frames.size() >= 2, "%s has idle+alt frames" % id)
+		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
+		check(img != null and img.get_width() >= 160, "%s dual-frame sheet width" % id)
+		var g10 = spec.get("g10", {})
+		check(g10 is Dictionary and (g10.get("air_states") is Array), "%s air_states meta" % id)
