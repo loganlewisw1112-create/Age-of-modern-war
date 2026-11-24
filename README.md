@@ -1,8 +1,17 @@
 # RTS: Age of Modern War
 
+[![Godot](https://img.shields.io/badge/Godot-4.7.2-478cbf?logo=godotengine&logoColor=white)](https://godotengine.org/)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078d4?logo=windows&logoColor=white)](https://godotengine.org/)
+[![Branch](https://img.shields.io/badge/branch-g71-111111)](https://github.com/loganlewisw1112-create/Age-of-modern-war)
+
 Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native sim core. Classic skirmish plus a dedicated siege mode (**Last Protocol**). Tech climbs through **thirteen stages** (Age-of style eras): early recovery through modern combined arms into late synthetic forms.
 
 Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, and the **Pre-G10 Depth Bridge** are closed (`pre_g10.lock`).
+
+<p align="center">
+  <img src="docs/media/hero.jpg" alt="Facility overview — fortified command complex under clear light" width="1200">
+</p>
+<p align="center"><em>Facility overview — the kind of ground Last Protocol asks you to hold.</em></p>
 
 ---
 
@@ -14,11 +23,25 @@ Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, and the **Pre-G10 Dept
 
 The game stays offline. Balance numbers in content JSON are provisional fixtures, not final.
 
+### Gallery
+
+| | |
+|:--:|:--:|
+| <img src="docs/media/menu.png" alt="Main menu and Skirmish setup" width="560"><br><em>Main menu — Skirmish setup</em> | <img src="docs/media/skirmish.jpg" alt="Skirmish match underway" width="560"><br><em>Skirmish — early match</em> |
+| <img src="docs/media/last_protocol.jpg" alt="Last Protocol defensive line" width="560"><br><em>Last Protocol — belts under fire</em> | <img src="docs/media/siege_line.jpg" alt="Outer ring defenses" width="560"><br><em>Siege line — outer ring</em> |
+
+Captures are ~1600×900, compressed for GitHub. Prefer `docs/media/` when linking screenshots from this README.
+
 ---
 
 ## Skirmish
 
 Open **Main menu → Skirmish**.
+
+<p align="center">
+  <img src="docs/media/menu.png" alt="Skirmish setup: maps, sides, victory rules" width="1000">
+</p>
+<p align="center"><em>Skirmish setup — map, sides, economy, and victory in one pass.</em></p>
 
 ### Factions (playable now)
 
@@ -47,11 +70,21 @@ There are **thirteen stages**. In the current build, sides typically start in th
 
 Economy (salvage/ore, power flow, supply), build/train, fog of war, armour classes, wrecks, walls/gates, air and naval layers, companies/armies and chain of command, EW, field forts, vehicle crews/wear, and AI that pays the same costs and only knows what it sees. Full system history lives under `game/docs/` and older slice notes in `game/README.md`.
 
+<p align="center">
+  <img src="docs/media/skirmish.jpg" alt="In-match skirmish HUD and starting base" width="1000">
+</p>
+<p align="center"><em>In match — resources, stage goals, and the first footprint on the map.</em></p>
+
 ---
 
 ## Last Protocol
 
 Somewhere under the map, a clock is still counting. Nobody who wrote the Protocol is left to explain what happens at zero. You get one night. Maybe two if you steal the dark and make it yours.
+
+<p align="center">
+  <img src="docs/media/siege_line.jpg" alt="Last Protocol outer ring under dusk pressure" width="1000">
+</p>
+<p align="center"><em>Outer ring — walls, pads, and the wire you inherit.</em></p>
 
 ### The ground you inherit
 
@@ -76,6 +109,11 @@ You are not here to farm a leaderboard. You are here because if this ring falls,
 Hold. Rotate. Fall back only when the Protocol would rather you live than die proud on a cracked rampart. Strike the cores when the night opens a seam. Spend what the siege pays you — scrap, captured steel, intel, research scratched out under fire — without a tutorial telling you which door is mercy and which is a trap.
 
 There are tools. Loyal robots that refuse the hive's handshake. Eyes that see what camo thinks is invisible. Fire that redraws the approaches. A war-mind you can lie to. Conduct that costs more than ammo. None of them come with a ribbon that says *press this to win*. The game wants you hungry. It wants you wrong once, then dangerous forever.
+
+<p align="center">
+  <img src="docs/media/last_protocol.jpg" alt="Last Protocol — defensive belts under fire at night" width="1000">
+</p>
+<p align="center"><em>Night line — formations on the belts while the Protocol still counts.</em></p>
 
 ### The part we won't spoil
 
