@@ -20,6 +20,6 @@ Addendum scaffold checkpoint:
     PACE71: implemented shared movement multiplier; skirmish+LP focused test 1/0
     Warmind: doctrine/budget/counter-memory/readable intent; test_warmind71 3/0
     Hive network: quality/topology/shared senses/creep cable/dead-zone cuts; test_hive9 6/0
-    Movement gold regression suite: historical gold/hash expectations fail because global pace intentionally changes hashes; parity subtests observed passing, full run still in progress at checkpoint
+    Movement gold regression suite: historical gold/hash expectations fail because global pace intentionally changes hashes; parity subtests observed passing; overlong run stopped at 232s during native_on_off parity
 
 Next: Tasks 3-4 D1 depth, then Tasks 6-17 AI9/ECON9/integ per plan.

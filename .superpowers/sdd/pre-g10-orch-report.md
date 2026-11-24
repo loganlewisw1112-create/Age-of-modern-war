@@ -25,12 +25,13 @@ Branch: `g71`
 - `test_pace71`: 1 pass / 0 fail
 - `test_warmind71`: 3 pass / 0 fail, no script errors on rerun
 - `test_hive9`: 6 pass / 0 fail
-- `test_hot_state`: historical gold/hash tests fail as expected after the intentional global pace/hash change; parity subtests observed passing. Gold refresh and complete integration verification remain for D4.
+- `test_hot_state`: historical gold/hash tests failed after the intentional global pace/hash change; parity subtests observed passing. The overlong suite was stopped after 232s during `test_native_on_off_hash_equal`; gold refresh and complete integration verification remain for D4.
 
 ## Commits
 
 - `cab9bf21` — Task 2 review fix + approved addendum freeze
-- Addendum scaffold commit: see subsequent commit in branch log.
+- `beb24a2e` — Hive network, Warmind, and PACE71 scaffold
+- `62bcc256` — checkpoint board FACT
 
 ## Package
 
