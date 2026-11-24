@@ -17,7 +17,7 @@ Subagents: Auto (owner usage limit)
 - Task 13 TECH10: 6cb7c0e0 — buy/steal/unseal; test_g10_tech 6/0; NEED 164 wire deferred to E3
 - Task 7 BLD10: 5432a16e — buildings/hidden/Ghost campus/Armory shell; test_g10_buildings 8/0
 - Task 7B ARMORY10: c07d6dc3 — Exo Armory outfit/bay sim; test_g10_exo_armory 7/0; FACT ship.armory10; pushed
-- Task 5 RAID10 + Task 6 LATE10: (pending SHA) — Stage 1–6 raiders + Stage 11–13 late syndicate; test_g10_stage 14/0
+- Task 5 RAID10 + Task 6 LATE10: 940b020d — Stage 1–6 raiders + Stage 11–13 late syndicate; test_g10_stage 14/0; FACT ship.late10; pushed
 
 ## Live E2 (Auto background, ≤6)
 - ART10 Task 8 samples — revise cycle2 (owner rejected cycle1)
