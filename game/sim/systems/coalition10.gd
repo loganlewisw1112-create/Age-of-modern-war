@@ -1,8 +1,10 @@
 class_name Coalition10
 extends RefCounted
-## G10 Shadow Coalition facade. Task 2 seeds stage openers; Task 3 deepens doctrine/telemetry.
+## G10 Shadow Coalition facade — doctrine state, stage openers, readable board schema.
 
 const FACTION_ID := "shadow_coalition"
+const KEY := "coalition10"
+const INTENTS := ["harry", "bleed", "flex", "strike", "exfil"]
 
 ## Authoritative Stage 7–10 core gameplay IDs (61). Roster tasks must not rename these.
 const CORE_IDS := [
@@ -24,6 +26,158 @@ const CORE_IDS := [
 
 static func _rules() -> Dictionary:
 	return Content.rules().get("coalition10", {})
+
+
+static func match_has_coalition(w: SimWorld) -> bool:
+	for fid in w.factions:
+		var f = w.factions[fid]
+		if typeof(f) == TYPE_DICTIONARY and String(f.get("faction_def", "")) == FACTION_ID:
+			return true
+	return false
+
+
+## Lazy state: created only when a Coalition side exists or an API is first called for one.
+static func _st(w: SimWorld) -> Dictionary:
+	if not w.sys_state.has(KEY):
+		if not match_has_coalition(w):
+			return {}
+		var factions := {}
+		var keys: Array = []
+		for fid in w.factions:
+			var f = w.factions[fid]
+			if typeof(f) == TYPE_DICTIONARY and String(f.get("faction_def", "")) == FACTION_ID:
+				keys.append(int(fid))
+		keys.sort()
+		for fid in keys:
+			factions[str(fid)] = _new_side()
+		w.sys_state[KEY] = {"factions": factions}
+	return w.sys_state[KEY]
+
+
+static func _new_side() -> Dictionary:
+	return {
+		"intent": String(_rules().get("default_intent", "harry")),
+		"layer": "cells",
+		"cells": 0,
+		"contracts": [],
+		"patron_favour": 0,
+		"intel_grade": "rumour",
+		"ghost_ready": false,
+		"tech_sources": [],
+		"evidence": {},
+		"resources_seen": 0,
+	}
+
+
+static func _side(w: SimWorld, fid: int) -> Dictionary:
+	var st := _st(w)
+	if st.is_empty():
+		return {}
+	var key := str(fid)
+	var factions: Dictionary = st.get("factions", {})
+	if not factions.has(key):
+		if not active(w, fid):
+			return {}
+		factions[key] = _new_side()
+	return factions[key]
+
+
+static func active(w: SimWorld, fid: int) -> bool:
+	if not w.factions.has(fid):
+		return false
+	var f = w.factions[fid]
+	return typeof(f) == TYPE_DICTIONARY and String(f.get("faction_def", "")) == FACTION_ID
+
+
+static func layer(w: SimWorld, fid: int) -> String:
+	if not active(w, fid):
+		return ""
+	var s := _side(w, fid)
+	return String(s.get("layer", "cells"))
+
+
+static func set_intent(w: SimWorld, fid: int, intent: String) -> void:
+	if not active(w, fid):
+		return
+	var want := String(intent)
+	if not INTENTS.has(want):
+		return
+	var s := _side(w, fid)
+	if s.is_empty():
+		return
+	# Doctrine transitions only from evidence/resources — not free spam.
+	if want != String(s.get("intent", "harry")):
+		var evidence: Dictionary = s.get("evidence", {})
+		var resources_seen := int(s.get("resources_seen", 0))
+		var ok := false
+		match want:
+			"harry":
+				ok = true
+			"bleed":
+				ok = int(evidence.get("probes", 0)) >= 1 or resources_seen >= 1
+			"flex":
+				ok = int(evidence.get("gap", 0)) >= 1 or int(s.get("patron_favour", 0)) >= 10
+			"strike":
+				ok = int(evidence.get("weak_point", 0)) >= 1 and String(s.get("intel_grade", "")) in ["pattern", "fix", "keyhole"]
+			"exfil":
+				ok = int(evidence.get("pressure", 0)) >= 1 or bool(s.get("ghost_ready", false))
+		if not ok:
+			return
+	s.intent = want
+	_refresh_layer(s)
+	w.emit("Coalition10Intent", {"fid": fid, "intent": want, "layer": String(s.layer)})
+
+
+static func note_evidence(w: SimWorld, fid: int, key: String, amount: int = 1) -> void:
+	if not active(w, fid):
+		return
+	var s := _side(w, fid)
+	if s.is_empty():
+		return
+	var ev: Dictionary = s.get("evidence", {})
+	ev[key] = int(ev.get(key, 0)) + maxi(amount, 1)
+	s.evidence = ev
+	_refresh_layer(s)
+
+
+static func note_resources(w: SimWorld, fid: int, amount: int = 1) -> void:
+	if not active(w, fid):
+		return
+	var s := _side(w, fid)
+	if s.is_empty():
+		return
+	s.resources_seen = int(s.get("resources_seen", 0)) + maxi(amount, 1)
+	_refresh_layer(s)
+
+
+static func _refresh_layer(s: Dictionary) -> void:
+	var favour := int(s.get("patron_favour", 0))
+	var ghost := bool(s.get("ghost_ready", false))
+	var contracts: Array = s.get("contracts", [])
+	if ghost or favour >= 40 or contracts.size() >= 3:
+		s.layer = "elite"
+	elif favour >= 10 or contracts.size() >= 1:
+		s.layer = "mercs"
+	else:
+		s.layer = "cells"
+
+
+static func board(w: SimWorld, fid: int) -> Dictionary:
+	if not active(w, fid):
+		return {}
+	var s := _side(w, fid)
+	if s.is_empty():
+		return {}
+	return {
+		"intent": String(s.get("intent", "harry")),
+		"layer": String(s.get("layer", "cells")),
+		"cells": int(s.get("cells", 0)),
+		"contracts": (s.get("contracts", []) as Array).duplicate(),
+		"patron_favour": int(s.get("patron_favour", 0)),
+		"intel_grade": String(s.get("intel_grade", "rumour")),
+		"ghost_ready": bool(s.get("ghost_ready", false)),
+		"tech_sources": (s.get("tech_sources", []) as Array).duplicate(),
+	}
 
 
 ## Legal opener for a Coalition stage: base + builder/gatherer + combat unit defs resolve.
@@ -57,3 +211,24 @@ static func validate_stage_opener(stage: int) -> Dictionary:
 		"combat": combat,
 		"opener": row,
 	}
+
+
+## No tick work when Coalition is absent (state never created).
+static func tick(w: SimWorld) -> void:
+	if not w.sys_state.has(KEY):
+		return
+	# Passivekeeping reserved for later pillars; keep deterministic no-op shell.
+	pass
+
+
+static func snap_provider(w: SimWorld, _snap: Dictionary) -> Variant:
+	if not w.sys_state.has(KEY):
+		return null
+	var out := {}
+	var factions: Dictionary = w.sys_state[KEY].get("factions", {})
+	var keys: Array = factions.keys()
+	keys.sort()
+	for k in keys:
+		var fid := int(k)
+		out[k] = board(w, fid)
+	return out

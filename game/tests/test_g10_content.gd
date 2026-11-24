@@ -1,5 +1,9 @@
 extends "res://tests/test_base.gd"
-## G10 Task 1: Shadow Coalition registry + 61-core fragment seed.
+## G10 Task 1+3: Shadow Coalition registry, 61-core seed, doctrine facade.
+
+const Coalition10 = preload("res://sim/systems/coalition10.gd")
+const CoalitionCommand = preload("res://presentation/ui10/coalition_command.gd")
+const RenderSnap = preload("res://sim/render_snap.gd")
 
 const G10_CORE_IDS := [
 	"x_cell_rifle", "x_cell_at", "x_cell_sapper", "x_cell_medic", "x_ambush_cell", "x_sleeper_cell",
@@ -95,3 +99,71 @@ func test_core_manifest_has_at_least_60_gameplay_defs() -> void:
 	check(units_n + blds_n >= 60, "core gameplay defs >= 60 (got %d)" % (units_n + blds_n))
 	check_eq(units_n, 47, "unit count")
 	check_eq(blds_n, 14, "building count")
+
+
+func _coalition_world() -> SimWorld:
+	var c := SimWorld.default_config()
+	c.sides = [
+		{"faction": "shadow_coalition", "stage": 8, "credits": 5000, "ai": false, "name": "X", "team": 0},
+		{"faction": "human_a", "stage": 8, "credits": 5000, "ai": false, "name": "A", "team": 1},
+	]
+	return SimWorld.new_match(c)
+
+
+func test_coalition_doctrine_default_and_board_schema() -> void:
+	Content.load_all()
+	var w := _coalition_world()
+	check(Coalition10.active(w, 0), "fid0 active")
+	check(not Coalition10.active(w, 1), "fid1 not Coalition")
+	check_eq(Coalition10.layer(w, 0), "cells", "default layer")
+	var b: Dictionary = Coalition10.board(w, 0)
+	check_eq(String(b.get("intent", "")), "harry", "default intent harry")
+	for k in ["cells", "contracts", "patron_favour", "intel_grade", "ghost_ready", "tech_sources"]:
+		check(b.has(k), "board missing %s" % k)
+	# Without evidence, bleed/flex/strike/exfil are rejected
+	Coalition10.set_intent(w, 0, "bleed")
+	check_eq(String(Coalition10.board(w, 0).get("intent", "")), "harry", "bleed blocked without evidence")
+	Coalition10.note_evidence(w, 0, "probes", 1)
+	Coalition10.set_intent(w, 0, "bleed")
+	check_eq(String(Coalition10.board(w, 0).get("intent", "")), "bleed", "bleed after probes")
+	Coalition10.note_evidence(w, 0, "gap", 1)
+	Coalition10.set_intent(w, 0, "flex")
+	check_eq(String(Coalition10.board(w, 0).get("intent", "")), "flex", "flex after gap")
+	check(w.sys_state.has("coalition10"), "lazy state created for Coalition match")
+
+
+func test_coalition_command_surface_and_advanced_closed() -> void:
+	Content.load_all()
+	var w := _coalition_world()
+	var host := Node.new()
+	var ui = CoalitionCommand.new()
+	host.add_child(ui)
+	ui.world_override = w
+	ui.fid_override = 0
+	ui.refresh()
+	check(ui.visible, "command visible for Coalition")
+	check(not ui.advanced_open, "Advanced closed by default")
+	check(not ui._adv_box.visible, "Advanced drawer hidden")
+	host.free()
+
+
+func test_non_coalition_match_creates_no_g10_state() -> void:
+	Content.load_all()
+	var c := SimWorld.default_config()
+	c.sides = [
+		{"faction": "human_a", "stage": 8, "credits": 2000, "ai": false, "name": "A", "team": 0},
+		{"faction": "machine", "stage": 8, "credits": 2000, "ai": false, "name": "M", "team": 1},
+	]
+	var w := SimWorld.new_match(c)
+	Coalition10.tick(w)
+	check(not w.sys_state.has("coalition10"), "no coalition10 state without Coalition side")
+	RenderSnap.build(w)
+	var snap: Dictionary = RenderSnap.latest(w)
+	check(not snap.has("coalition10"), "render snap omits coalition10 when unused")
+	for _i in 30:
+		w.step()
+	var mid := w.state_hash()
+	var w2 := SimWorld.new_match(c)
+	for _j in 30:
+		w2.step()
+	check_eq(mid, w2.state_hash(), "non-Coalition two-run hash")

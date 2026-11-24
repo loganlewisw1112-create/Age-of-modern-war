@@ -20,6 +20,7 @@ extends RefCounted
 const Sq7D = preload("res://sim/systems/sq7_display.gd")   # G7 PERF7E: unhashed SQUAD7 display table (w.cache.sq7d)
 const DroneBay7 = preload("res://sim/systems/drone_bay7.gd")   # G7 DRONEBAY7 CR 5833: bay drones drawn at the launch-deck height
 const Traverse7 = preload("res://sim/systems/traverse7.gd")   # G7 TURRET7B CR 6354 (13.9c-30): simulated turret bearings for the display
+const Coalition10 = preload("res://sim/systems/coalition10.gd")  # G10: doctrine board for Coalition matches
 const FLAG_MOVING := 1
 const FLAG_FIRING := 2
 const FLAG_AIR := 4
@@ -346,6 +347,9 @@ static func build(w) -> void:
 	snap["wnd"] = wnd  # G7 WOUND7: z zone bits, f flags, p panic (see Wounds.render_entry)
 	if w.sys_state.has("creep"):
 		snap["creep"] = SimWorld.Creep.snap(w)  # G7 CREEP7 CR: creep field for presentation/view/creep_layer.gd
+	if w.sys_state.has("coalition10"):
+		# G10: readable Coalition doctrine board (view-only; never hashed). Lazy — absent when no Coalition match.
+		snap["coalition10"] = Coalition10.snap_provider(w, snap)
 	var prov: Dictionary = _g71_prov   # ONE read: register / unregister swap a new dict in on the main thread; re-reading _g71_prov per key raced with an unregister at match end (SCRIPT ERROR key care71, SWARMNAT71-8 pan run 2026-11-22)
 	if not prov.is_empty():   # G7.1 wave 2: per-system display providers (register_g71); none registered = no work
 		var g71 := {}
