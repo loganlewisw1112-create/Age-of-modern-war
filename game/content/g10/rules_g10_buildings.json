@@ -1,0 +1,106 @@
+{
+  "_meta": "G10 Coalition buildings + hidden-state contract (BLD10 Task 7). Numbers PROVISIONAL. Armory shell only — ARMORY10 owns full sim.",
+  "rules": {
+    "g10_buildings": {
+      "faction": "shadow_coalition",
+      "building_ids": [
+        "x_safehouse",
+        "x_tunnel_entrance",
+        "x_cache",
+        "x_weld_shop",
+        "x_black_market",
+        "x_broker_exchange",
+        "x_patron_office",
+        "x_disguised_workshop",
+        "x_bunker_hatch",
+        "x_underground_barracks",
+        "x_underground_factory",
+        "x_ghost_complex",
+        "x_forward_repair",
+        "x_vault_core"
+      ],
+      "disguised_defs": [
+        "x_safehouse",
+        "x_disguised_workshop",
+        "x_black_market",
+        "x_broker_exchange",
+        "x_patron_office",
+        "x_cache",
+        "x_weld_shop",
+        "x_forward_repair"
+      ],
+      "hatch_surface_defs": [
+        "x_tunnel_entrance",
+        "x_bunker_hatch",
+        "x_underground_barracks",
+        "x_underground_factory",
+        "x_ghost_complex",
+        "x_vault_core"
+      ],
+      "hatch_hp_default": 200,
+      "hatch_destroyed_prod_penalty": "hatch_access",
+      "reveal_causes": [
+        "scout",
+        "detector",
+        "recent_action",
+        "damage",
+        "hatch_vent"
+      ],
+      "vault_unique_per_faction": true,
+      "understrike_forbidden": true,
+      "contrast": {
+        "x_black_market": "neon_under_tarp",
+        "x_ghost_complex": "dark_ghost",
+        "x_vault_core": "dark_ghost",
+        "x_bunker_hatch": "dark_ghost"
+      },
+      "ghost_campus": {
+        "host": "x_ghost_complex",
+        "modules": {
+          "wing_vault_bay": {
+            "id": 24,
+            "surface": "hatch_only",
+            "suit_bay": true
+          },
+          "kill_house": {
+            "id": 25,
+            "adaptive": true,
+            "keyed_to": "last_failed_op"
+          },
+          "briefing_crypt": {
+            "id": 26,
+            "doctrine_slots": 1
+          },
+          "reliquary": {
+            "id": 27,
+            "non_stacking": true,
+            "allow_list": [
+              "sensor_tap",
+              "breach_wedge",
+              "battery_cell",
+              "camo_weave"
+            ]
+          }
+        },
+        "armory_shell": {
+          "note": "Shell only — ARMORY10 owns exo_armory10 full sim",
+          "hatch_only": true,
+          "bands": {
+            "locker": {
+              "stages": [1, 2, 3, 4, 5, 6],
+              "bay_cap": 1
+            },
+            "full": {
+              "stages": [7, 8, 9, 10],
+              "bay_cap": 3
+            },
+            "black": {
+              "stages": [11, 12, 13],
+              "bay_cap": 6
+            }
+          }
+        }
+      }
+    }
+  }
+}
