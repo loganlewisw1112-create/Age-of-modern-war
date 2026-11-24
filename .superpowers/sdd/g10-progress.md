@@ -85,8 +85,14 @@ Subagents: Auto (owner usage limit)
 - `g10.lock` AMENDED (remains CLOSED); TECHNICAL / SAFEHOUSE / HATCH still deferred
 - Tests: `test_g10_content` **15/0**
 
+## Complete (post-lock ART polish — exo NVG + laser + transport)
+- ART10: exo NVG UP/DOWN + green laser + fire hold; `x_stealth_transport` tilt-rotor redesign
+- Board FACT `ship.art.g10.exo_nvg_transport` seq **297**; **g10.lock amend still needed**
+- Report: `.superpowers/sdd/task-art-g10-exo-nvg-transport-report.md`
+- Tests: `test_g10_content` **15/0**
+
 ## Live (≤6)
-- (none for G10 lock — CLOSED / amended)
+- (none for G10 lock — CLOSED / amended; lock amend for exo/nvg/transport pending ORCH)
 
 ## Free slots
 ≤6 free (G10 closed).

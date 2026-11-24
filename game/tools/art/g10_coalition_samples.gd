@@ -110,8 +110,9 @@ func _init() -> void:
 	_write_contact(out)
 	_write_anim_boards(out)
 	_write_air_compare(out)
+	_write_nvg_strip()
 	_write_owner_note()
-	print("G10_SAMPLES_ANIM_AIR ids=%d air=%d files=%d ms=%d out=%s" % [
+	print("G10_SAMPLES_NVG_TRANSPORT ids=%d air=%d files=%d ms=%d out=%s" % [
 		SAMPLES.size(), AIR_SAMPLES.size(), n, Time.get_ticks_msec() - t0, dir,
 	])
 	quit(0)
@@ -123,19 +124,20 @@ static func build_samples() -> Dictionary:
 		"tile": [64, 32],
 		"group": GROUP,
 		"sample_gate": true,
-		"revise_cycle": 16,
+		"revise_cycle": 17,
 		"look": "G10_GHOST_LOOK",
 		"approved_core": ["CELL", "DEATH", "WALKER", "CLOSE AIR"],
 		"deferred": ["TECHNICAL", "SAFEHOUSE", "HATCH"],
 		"anim_frames_inf": FRAMES_INF.duplicate(),
 		"anim_frames_air": FRAMES_AIR.duplicate(),
-		"style_source": "g7_cn_fig Human A poses + unique g10_coalition_air silhouettes; no purple; TECHNICAL+SAFEHOUSE deferred",
+		"nvg_runtime": "kit.nvg_down false=day UP / true=dusk-night DOWN (flip from TOD light)",
+		"style_source": "g7_cn_fig Human A poses + unique g10_coalition_air silhouettes; exo NVG+green laser; no purple; TECHNICAL+SAFEHOUSE deferred",
 		"human_a_match": ["tools/art/g7_cn_fig.gd", "tools/art/g7_cn_gear.gd", "tools/art/g7_cn_lib.gd", "tools/art/g7_cn_soldiers.gd"],
 		"infantry": {},
 		"vehicles": {},
 		"buildings": {},
 		"icons": {},
-		"notes": "Post-lock anim/air overhaul — real Human A boards + unique air fleet; TECHNICAL+SAFEHOUSE/HATCH deferred",
+		"notes": "Post-lock polish — exo NVG up/down + green laser + fire hold; stealth transport tilt-rotor redesign; TECHNICAL+SAFEHOUSE/HATCH deferred",
 	}
 	var out := {"images": {}, "manifest": man}
 	_sheet_anim(out, "x_cell_rifle", "infantry", _draw_cell_rifle, FRAMES_INF)
@@ -264,41 +266,44 @@ static func _sort_draw(parts: Array) -> void:
 ## --- drawers (cycle 8: CELL/DEATH/WALKER = Human A g7_cn_fig black reskin) -----
 
 ## Black Coalition kits — same keys as g7_cn_soldiers / FIG.draw (suit/plate/helm/boot/web/weapon…).
-static func _kit_cell() -> Dictionary:
+## Exo line (DEATH/WALKER/Ghost): readable NVGs (default UP/day) + green laser on weapons.
+static func _kit_cell(nvg_down: bool = false) -> Dictionary:
 	## Ragged cell: Human A operator grammar (nvg head + rifle), all-black + small red/tan patches.
 	return {
 		"suit": BLK, "plate": BLK_PLATE, "helm": BLK_L, "boot": BLK_D, "web": PATCH_TAN,
-		"glove": BLK_D, "visor": Color8(58, 62, 56), "head": "nvg",
+		"glove": BLK_D, "visor": Color8(58, 62, 56), "head": "nvg", "nvg": true, "nvg_down": nvg_down,
 		"weapon": "rifle", "wlen": 7.0, "pack": "small", "bulk": 2.5, "rc": PATCH_RED,
 	}
 
 
-static func _kit_death() -> Dictionary:
-	## Elite sealed Human A strike-team body (same plantigrade stance / aim grammar), black + gold debt patch.
+static func _kit_death(nvg_down: bool = false) -> Dictionary:
+	## Elite sealed Human A strike-team body + crown NVGs + green laser carbine.
 	return {
 		"suit": BLK_D, "plate": BLK, "helm": BLK_PLATE, "boot": Color8(12, 12, 14), "web": BLK_L,
 		"glove": BLK_PLATE, "visor": PATCH_BONE, "head": "sealed", "stripe": true,
+		"nvg": true, "nvg_down": nvg_down, "laser": true,
 		"weapon": "carbine", "wlen": 6.8, "pack": "small", "bulk": 2.7, "rc": PATCH_GOLD,
 	}
 
 
-static func _kit_walker() -> Dictionary:
-	## Elite sealed variant — same Human A legs/torso/arms (NOT digitigrade / NOT mecha); heavier launcher.
+static func _kit_walker(nvg_down: bool = false) -> Dictionary:
+	## Elite sealed variant + NVGs + green laser on heavy launcher (NOT digitigrade / NOT mecha).
 	return {
 		"suit": BLK, "plate": BLK_L, "helm": BLK_D, "boot": BLK_D, "web": Color8(64, 60, 52),
 		"glove": BLK_PLATE, "visor": Color8(90, 94, 98), "head": "sealed",
+		"nvg": true, "nvg_down": nvg_down, "laser": true,
 		"weapon": "launcher", "wlen": 7.6, "pack": "hunter", "bulk": 2.9, "rc": PATCH_TAN,
 	}
 
 
 ## CELL: Human A FIG drawer — real pose per anim-board frame (4-facing → even 8-dir index).
 static func _draw_cell_rifle(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_cell(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), FIG_SC)
+	FIG.draw(cv, _kit_cell(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), FIG_SC)
 
 
-## DEATH: same Human A body, sealed elite black kit, slightly taller sample scale.
+## DEATH: same Human A body, sealed elite black kit, slightly taller sample scale (NVG UP / day default).
 static func _draw_death_strike(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_death(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), DEATH_SC)
+	FIG.draw(cv, _kit_death(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), DEATH_SC)
 
 
 ## DEFERRED — not emitted to look package / strips (owner 2026-11-24). Kept for later redesign.
@@ -650,7 +655,7 @@ static func _draw_patron_cas(cv, k: int, fname: String = "idle") -> void:
 
 ## WALKER: Human A sealed elite body (taller sample scale) + heavy launcher — NOT stick / digitigrade / mecha.
 static func _draw_walker(cv, k: int, fname: String = "idle") -> void:
-	FIG.draw(cv, _kit_walker(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), WLK_SC)
+	FIG.draw(cv, _kit_walker(false), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), WLK_SC)
 
 
 ## --- contact strips ----------------------------------------------------------
@@ -775,6 +780,42 @@ static func _write_one_anim_board(out: Dictionary, name: String, ids: Array, lab
 			if fr == null:
 				continue
 			sheet.blend_rect(fr, Rect2i(Vector2i.ZERO, fr.get_size()), Vector2i(fi * cell_w + pad / 2, ri * row_h + label_h))
+	sheet.save_png(look_dir.path_join(name))
+	var big := sheet.duplicate() as Image
+	big.resize(sheet.get_width() * 2, sheet.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	big.save_png(look_dir.path_join(name.replace(".png", "_2x.png")))
+
+
+## NVG_UP (day) vs NVG_DOWN (dusk/night) proof columns for exo line + CELL.
+## Runtime intent: flip kit.nvg_down from TOD / ambient light (false by day, true at dusk/night).
+static func _write_nvg_strip() -> void:
+	var look_dir := ProjectSettings.globalize_path(LOOK)
+	DirAccess.make_dir_recursive_absolute(look_dir)
+	var pad := 8
+	var label_h := 14
+	var cell_w := FW + pad
+	var cell_h := FH + label_h + 6
+	var rows := [
+		["CELL", _kit_cell],
+		["DEATH", _kit_death],
+		["WALKER", _kit_walker],
+	]
+	var sheet := Image.create(2 * cell_w, rows.size() * cell_h, false, Image.FORMAT_RGBA8)
+	sheet.fill(STRIP_GROUND)
+	_label(sheet, "NVG UP DAY", 2, 2, 1)
+	_label(sheet, "NVG DOWN NIGHT", cell_w + 2, 2, 1)
+	for ri in rows.size():
+		var label := String(rows[ri][0])
+		var kit_fn: Callable = rows[ri][1]
+		var sc := FIG_SC if label == "CELL" else (DEATH_SC if label == "DEATH" else WLK_SC)
+		_label(sheet, label, 2, ri * cell_h + 1, 1)
+		for col in 2:
+			var down := col == 1
+			var cv = P.Canvas.new(FW, FH)
+			FIG.draw(cv, kit_fn.call(down), 2, "fire" if col == 1 else "idle", Vector2(PIVOT), sc)
+			C.selout(cv)
+			sheet.blend_rect(cv.img, Rect2i(0, 0, FW, FH), Vector2i(col * cell_w + pad / 2, ri * cell_h + label_h))
+	var name := "strip_g10_exo_nvg.png"
 	sheet.save_png(look_dir.path_join(name))
 	var big := sheet.duplicate() as Image
 	big.resize(sheet.get_width() * 2, sheet.get_height() * 2, Image.INTERPOLATE_NEAREST)
@@ -908,21 +949,26 @@ static func _write_owner_note() -> void:
 	var p := look_dir.path_join("G10_SAMPLES_OWNER.txt")
 	var f := FileAccess.open(p, FileAccess.WRITE)
 	f.store_string(
-		"G10 look samples (ART10) — APPROVED CORE + post-lock ANIM/AIR overhaul (revise 16)\n"
+		"G10 look samples (ART10) — APPROVED CORE + post-lock NVG/LASER/TRANSPORT polish (revise 17)\n"
 		+ "LOCKED kits: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + attack-CAS role).\n"
 		+ "DEFERRED: TECHNICAL / SAFEHOUSE / HATCH — still deferred.\n"
-		+ "Anim: real Human A poses idle/walk_a/walk_b/run_0/fire/hit/die_0 (not camo-token strips).\n"
-		+ "Air: unique silhouettes per id via g10_coalition_air.gd (rotors only where craft requires).\n\n"
-		+ "[x] CELL / DEATH / WALKER — Human A black-kit grammar + real anim boards\n"
+		+ "Anim: real Human A poses idle/walk_a/walk_b/run_0/fire/hit/die_0; improved fire/carry grip.\n"
+		+ "Exo NVG: flipped UP by day (default sheets); DOWN at dusk/night — see strip_g10_exo_nvg.\n"
+		+ "Runtime flip intent: kit.nvg_down from TOD / ambient light (Night71 / Senses7 light).\n"
+		+ "Exo weapons: green laser module + beam (DEATH/WALKER/Ghost templates).\n"
+		+ "Air: unique silhouettes; x_stealth_transport = faceted tilt-rotor insert craft (not flying-wing blob).\n\n"
+		+ "[x] CELL / DEATH / WALKER — Human A + readable NVGs + realistic fire hold\n"
+		+ "[x] DEATH / WALKER / Ghost — green laser on weapons\n"
 		+ "[x] CLOSE AIR (x_patron_cas) — fixed-wing attack CAS (unique vs other air)\n"
 		+ "[x] x_silent_rotor — quiet-insert helo (main rotor + fenestron)\n"
-		+ "[x] x_stealth_transport — large flying-wing cargo VTOL (tip ducts)\n"
+		+ "[x] x_stealth_transport — faceted stealth tilt-rotor cargo (twin nacelles + H-tail + ramp)\n"
 		+ "[x] x_stealth_drone — flat diamond UCAV (no rotors)\n"
 		+ "[x] x_shock_drone — X-frame multi-rotor striker\n"
 		+ "[x] x_recon_drone — tiny high-wing spyglass boom EO\n"
 		+ "[ ] TECHNICAL / SAFEHOUSE / HATCH — DEFERRED\n\n"
 		+ "Boards / strips:\n"
 		+ "  board_g10_anim_*.png — real animation boards\n"
+		+ "  strip_g10_exo_nvg.png — NVG_UP (day) vs NVG_DOWN (night) columns\n"
 		+ "  strip_g10_air_unique.png — silhouette compare (idle+fire)\n"
 		+ "  strip_g10_air_facings.png — air N/E/S/W\n"
 		+ "  strip_g10_coalition_samples.png — approved-core 2x2\n"

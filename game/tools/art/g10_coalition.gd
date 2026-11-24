@@ -190,7 +190,7 @@ static func build_bulk() -> Dictionary:
 		"tile": [64, 32],
 		"group": GROUP,
 		"sample_gate": false,
-		"bulk_wave": 4,
+		"bulk_wave": 5,
 		"look": "G10_GHOST_LOOK",
 		"approved_core": ["CELL", "DEATH", "WALKER", "CLOSE AIR"],
 		"deferred": ["TECHNICAL", "SAFEHOUSE", "HATCH"],
@@ -202,7 +202,7 @@ static func build_bulk() -> Dictionary:
 		"vehicles": {},
 		"buildings": {},
 		"icons": {},
-		"notes": "Post-lock anim/air overhaul — real poses not camo tokens; each air id unique; TECHNICAL/SAFEHOUSE deferred",
+		"notes": "Post-lock polish — exo NVG up/down + green laser + fire hold; tilt-rotor transport; TECHNICAL/SAFEHOUSE deferred",
 		"leftover_steps": [
 			"Owner look gate on new anim boards + air unique strips; g10.lock amend FACT if required",
 		],

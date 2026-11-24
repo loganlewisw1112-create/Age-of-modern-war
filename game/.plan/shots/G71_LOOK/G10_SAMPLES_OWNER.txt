@@ -1,27 +1,27 @@
-G10 Task 8 look samples (ART10) — APPROVED CORE only (revise 15)
-Owner 2026-11-24: remove TECHNICAL + SAFEHOUSE mockups from look package; redesign later.
-LOCKED: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + solid CAS).
-DEFERRED: TECHNICAL Humvee — NEED design-blueprint-later (not locked).
-DEFERRED: SAFEHOUSE + HATCH — deferred with building redesign (not locked; states strip omitted).
-Style: g7_cn_fig infantry; CLOSE AIR DL7 CAS in g10_coalition_samples.gd.
+G10 look samples (ART10) — APPROVED CORE + post-lock NVG/LASER/TRANSPORT polish (revise 17)
+LOCKED kits: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + attack-CAS role).
+DEFERRED: TECHNICAL / SAFEHOUSE / HATCH — still deferred.
+Anim: real Human A poses idle/walk_a/walk_b/run_0/fire/hit/die_0; improved fire/carry grip.
+Exo NVG: flipped UP by day (default sheets); DOWN at dusk/night — see strip_g10_exo_nvg.
+Runtime flip intent: kit.nvg_down from TOD / ambient light (Night71 / Senses7 light).
+Exo weapons: green laser module + beam (DEATH/WALKER/Ghost templates).
+Air: unique silhouettes; x_stealth_transport = faceted tilt-rotor insert craft (not flying-wing blob).
 
-Strip labels (ALL-CAPS): CELL | DEATH | CLOSE AIR | WALKER
-Contrast labels: CELL | DEATH
-Safehouse labels: (omitted — DEFERRED)
+[x] CELL / DEATH / WALKER — Human A + readable NVGs + realistic fire hold
+[x] DEATH / WALKER / Ghost — green laser on weapons
+[x] CLOSE AIR (x_patron_cas) — fixed-wing attack CAS (unique vs other air)
+[x] x_silent_rotor — quiet-insert helo (main rotor + fenestron)
+[x] x_stealth_transport — faceted stealth tilt-rotor cargo (twin nacelles + H-tail + ramp)
+[x] x_stealth_drone — flat diamond UCAV (no rotors)
+[x] x_shock_drone — X-frame multi-rotor striker
+[x] x_recon_drone — tiny high-wing spyglass boom EO
+[ ] TECHNICAL / SAFEHOUSE / HATCH — DEFERRED
 
-[x] CELL (x_cell_rifle) — LOCKED cycle 8 Human A FIG
-[ ] TECHNICAL (x_technical_rocket) — DEFERRED (design-blueprint-later)
-[ ] SAFEHOUSE (x_safehouse) — DEFERRED (design-blueprint-later)
-[ ] HATCH — DEFERRED with SAFEHOUSE
-[x] DEATH (x_death_strike) — LOCKED cycle 8 Human A sealed
-[x] CLOSE AIR (x_patron_cas) — LOCKED solid
-[x] WALKER (x_prototype_walker) — LOCKED cycle 8 Human A sealed
-
-Strips:
-  strip_g10_coalition_samples.png (+_2x) — approved-core 2x2
-  strip_g10_coalition_facings.png (+_2x) — all 4 facings per approved id
-  strip_g10_cell_vs_ghost.png (+_2x)
-  strip_g10_safehouse_states.png — OMITTED (deferred)
-Board: FACT art.look.approved.core | FACT art.technical.deferred | FACT art.safehouse.deferred
-g10.lock: may proceed with deferred placeholders (owner exception to Done-when #13a technical+hidden)
+Boards / strips:
+  board_g10_anim_*.png — real animation boards
+  strip_g10_exo_nvg.png — NVG_UP (day) vs NVG_DOWN (night) columns
+  strip_g10_air_unique.png — silhouette compare (idle+fire)
+  strip_g10_air_facings.png — air N/E/S/W
+  strip_g10_coalition_samples.png — approved-core 2x2
+Note: g10.lock may need amend FACT for this post-lock art amendment.
 Cells: 80x64 four-facing; assets: game/assets/art/g10_coalition/

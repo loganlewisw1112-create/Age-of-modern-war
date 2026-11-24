@@ -106,19 +106,22 @@ static func chest(cv, R: Dictionary, kit: Dictionary) -> void:
 
 
 ## Head extras after the helmet: sealed visor + respirator, or NVG + face; leader band on the team mask.
+## kit.nvg / head=="nvg": readable binocular NVGs. kit.nvg_down false = flipped UP (day); true = DOWN (dusk/night).
 static func head(cv, R: Dictionary, kit: Dictionary, hc: Vector2) -> void:
 	var Z := _z(R)
 	var a: float = R.a
 	var fwd := C.sdir(a)
 	var side := C.sdir(a + PI / 2.0)
 	var front := C.depth(a, 1.0, 0.0) > -0.35
+	var want_nvg := bool(kit.get("nvg", false)) or String(kit.get("head", "")) == "nvg"
 	if bool(kit.get("stripe", false)):   # leader: team band round the helmet
 		C.tube(cv, hc - side * 1.7 * Z + Vector2(0, -0.5 * Z), hc + side * 1.7 * Z + Vector2(0, -0.5 * Z), 0.55 * Z,
 			C.ramp(Color8(152, 152, 152)), true)
 	var sealed := String(kit.get("head", "sealed")) == "sealed"
 	if not front:
-		if not sealed:   # NVG battery pack on the back of the helmet
-			C.blob(cv, hc - fwd * 1.4 * Z + Vector2(0, -0.2 * Z), 0.6 * Z, C.ramp(GUNM))
+		if want_nvg or not sealed:   # NVG battery / counterweight on the back of the helmet
+			C.blob(cv, hc - fwd * 1.4 * Z + Vector2(0, -0.2 * Z), 0.65 * Z, C.ramp(GUNM))
+			C.blob(cv, hc - fwd * 1.55 * Z + Vector2(0, 0.35 * Z), 0.35 * Z, C.ramp(Color8(56, 58, 62)))
 		else:            # filter hose to the pack
 			cv.line_v(hc + Vector2(0, 1.4 * Z), hc - fwd * 1.6 * Z + Vector2(0, 3.0 * Z), C.ramp(Color8(60, 62, 64))[1])
 		return
@@ -137,6 +140,39 @@ static func head(cv, R: Dictionary, kit: Dictionary, hc: Vector2) -> void:
 		cv.px(int(fp.x - side.x * 1.1 * Z), int(fp.y - side.y * 1.1 * Z - 0.5 * Z), vr[4])
 		C.blob(cv, fp + fwd * 0.5 * Z + Vector2(0, 1.4 * Z), 0.7 * Z, C.ramp(Color8(66, 68, 70)))   # respirator
 		C.blob(cv, fp + side * 1.2 * Z + Vector2(0, 1.5 * Z), 0.55 * Z, C.ramp(Color8(96, 98, 88)))  # filter can
+	if want_nvg:
+		_nvg_goggles(cv, R, kit, hc, fwd, side)
+
+
+## Readable binocular NVGs on the helmet. UP = parked on crown (day); DOWN = over visor with green lenses (night).
+static func _nvg_goggles(cv, R: Dictionary, kit: Dictionary, hc: Vector2, fwd: Vector2, side: Vector2) -> void:
+	var Z := _z(R)
+	var down := bool(kit.get("nvg_down", false))
+	var mount := hc + Vector2(0, -1.35 * Z) + fwd * 0.15 * Z
+	C.blob(cv, mount, 0.42 * Z, C.ramp(Color8(48, 50, 54)))   # hinge / mount block
+	C.tube(cv, mount, mount + fwd * 0.55 * Z, 0.22 * Z, C.ramp(GUNM))
+	if down:
+		## Flipped DOWN over the visor — night vision on.
+		var g := hc + fwd * 1.45 * Z + Vector2(0, 0.05 * Z)
+		C.tube(cv, mount + Vector2(0, 0.35 * Z), g, 0.18 * Z, C.ramp(GUNM))   # swing arm
+		C.tube(cv, g - side * 1.05 * Z, g + side * 1.05 * Z, 0.58 * Z, C.ramp(Color8(36, 38, 40)))
+		for s in [-1.0, 1.0]:
+			var lens: Vector2 = g + side * s * 0.55 * Z
+			C.blob(cv, lens, 0.48 * Z, C.ramp(Color8(28, 40, 24)))
+			cv.px(int(lens.x), int(lens.y), Color8(64, 230, 96))
+			cv.px(int(lens.x + fwd.x * 0.4), int(lens.y + fwd.y * 0.4), Color8(120, 255, 150))
+	else:
+		## Flipped UP on the crown — day / unused; oversized binoculars so they read vs black helm.
+		var g := mount + Vector2(0, -0.95 * Z) - fwd * 0.35 * Z
+		C.tube(cv, mount, g, 0.2 * Z, C.ramp(Color8(56, 58, 62)))
+		C.tube(cv, g - side * 1.15 * Z, g + side * 1.15 * Z, 0.62 * Z, C.ramp(Color8(72, 74, 78)))
+		C.tube(cv, g - side * 1.15 * Z + Vector2(0, -0.35 * Z), g + side * 1.15 * Z + Vector2(0, -0.35 * Z),
+			0.28 * Z, C.ramp(Color8(96, 100, 108)))
+		for s in [-1.0, 1.0]:
+			var lens: Vector2 = g + side * s * 0.58 * Z
+			C.blob(cv, lens, 0.5 * Z, C.ramp(Color8(28, 32, 28)))
+			C.blob(cv, lens + fwd * 0.25 * Z, 0.28 * Z, C.ramp(Color8(44, 52, 36)))
+			cv.px(int(lens.x), int(lens.y), Color8(64, 72, 52))
 
 
 static func _at(wb: Vector2, wt: Vector2, t: float) -> Vector2:
@@ -192,11 +228,26 @@ static func weapon(cv, kit: Dictionary, wb: Vector2, wt: Vector2, flash: bool, Z
 			C.tube(cv, _at(wb, wt, 0.72), wt, 0.3 * Z, gp)
 			C.tube(cv, _at(wb, wt, 0.46), _at(wb, wt, 0.42) + n * 1.5 * Z, 0.38 * Z, gp)   # magazine
 			C.blob(cv, _at(wb, wt, 0.4) - n * 0.75 * Z, 0.45 * Z, gp)                     # optic
+	## Green laser attachment (exo / operator kits) — device under barrel + visible beam.
+	if bool(kit.get("laser", false)) or bool(kit.get("green_laser", false)):
+		_green_laser(cv, wb, wt, d, n, Z, flash)
 	cv.px(int(wb.x), int(wb.y), rp[0])
 	if flash:
 		var m := wt + d * 2.0 * Z
 		C.blob(cv, m, 1.2 * Z, [FLASH_O, FLASH_O, FLASH, FLASH, FLASH])
 		cv.line_v(m, m + d * 3.0 * Z, FLASH)
+
+
+## Under-barrel green laser module + beam along the boreline past the muzzle.
+static func _green_laser(cv, wb: Vector2, wt: Vector2, d: Vector2, n: Vector2, Z: float, flash: bool) -> void:
+	var unit := _at(wb, wt, 0.58) + n * 0.55 * Z
+	C.blob(cv, unit, 0.32 * Z, C.ramp(Color8(36, 42, 32)))
+	C.tube(cv, unit, unit + d * 0.55 * Z, 0.14 * Z, C.ramp(Color8(48, 56, 40)))
+	cv.px(int(unit.x), int(unit.y), Color8(48, 230, 80))
+	var beam0 := _at(wb, wt, 0.72) + n * 0.28 * Z
+	var beam1 := wt + d * (5.0 if flash else 3.6) * Z + n * 0.12 * Z
+	cv.line_v(beam0, beam1, Color8(40, 220, 72))
+	cv.line_v(beam0 + Vector2(0, 1), beam1 + Vector2(0, 1), Color8(72, 255, 120))
 
 
 ## Hand / weapon placement for the two act frames (overrides the rig defaults). Signal pose otherwise.

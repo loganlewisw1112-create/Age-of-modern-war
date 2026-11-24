@@ -213,11 +213,13 @@ static func s_phase(p: Dictionary) -> float:
 
 
 ## Default hand and weapon placement per arm mode (local coordinates).
+## Aim / carry tuned toward Human A realistic two-hand rifle hold (stock pocket, support on foregrip).
 static func _hands(mode: String, L: float, hz: float, wl: float, sp: float) -> Dictionary:
 	match mode:
 		"aim":
-			return {"rh": Vector3(L + 2.0, 0.9, hz + 4.0), "lh": Vector3(L + 4.4, 0.0, hz + 4.1),
-				"wb": Vector3(L, 0.8, hz + 4.6), "wt": Vector3(L + wl, 0.6, hz + 4.4)}
+			## Braced fire: stock into shoulder pocket, RH on pistol grip, LH on foregrip along the bore.
+			return {"rh": Vector3(L + 1.35, 0.85, hz + 4.45), "lh": Vector3(L + 4.55, 0.4, hz + 4.3),
+				"wb": Vector3(L - 0.7, 0.9, hz + 4.75), "wt": Vector3(L + wl, 0.45, hz + 4.4)}
 		"reload":
 			return {"rh": Vector3(L + 2.0, 0.9, hz + 3.4), "lh": Vector3(L + 1.6, -0.4, hz + 2.2),
 				"wb": Vector3(L + 0.6, 0.8, hz + 3.0), "wt": Vector3(L + 0.6 + wl * 0.8, 0.6, hz + 5.6)}
@@ -242,8 +244,9 @@ static func _hands(mode: String, L: float, hz: float, wl: float, sp: float) -> D
 		"limp":
 			return {"rh": Vector3(L + 0.5, 3.4, hz + 3.0), "lh": Vector3(L + 0.5, -3.4, hz + 3.2),
 				"wb": Vector3(3.0, 3.0, 0.6), "wt": Vector3(3.0 + wl * 0.8, 4.2, 0.6)}
-	return {"rh": Vector3(L + 1.8, 1.4, hz + 2.6), "lh": Vector3(L + 3.4, -0.6, hz + 2.4),
-		"wb": Vector3(L + 0.8, 1.6, hz + 3.4), "wt": Vector3(L + 0.8 + wl * 0.85, -1.2, hz + 1.4)}
+	## Low-ready carry (idle/walk/run): both hands on the weapon, muzzle depressed, stock near hip.
+	return {"rh": Vector3(L + 1.55, 1.2, hz + 3.05), "lh": Vector3(L + 3.95, -0.4, hz + 2.75),
+		"wb": Vector3(L + 0.35, 1.3, hz + 3.55), "wt": Vector3(L + 0.35 + wl * 0.9, -0.45, hz + 1.95)}
 
 
 ## Act-frame effects drawn over the figure (scan cone, jam rings, arming lights, thrown grenade, ...).

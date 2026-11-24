@@ -42,7 +42,7 @@ const AIR_IDS := [
 const IDENTITY := {
 	"x_patron_cas": "Fixed-wing swept-delta attack CAS — no rotors, chin EO + wing guns",
 	"x_silent_rotor": "Slender quiet-insert helo — main rotor disc + fenestron, stub gun pods",
-	"x_stealth_transport": "Large angular flying-wing cargo VTOL — twin tip ducts, rear ramp bay",
+	"x_stealth_transport": "Faceted stealth tilt-rotor insert craft — box cargo fuse, twin tip nacelles, H-tail, rear ramp",
 	"x_stealth_drone": "Flat diamond flying-wing UCAV — serrated edges, no rotors",
 	"x_shock_drone": "Compact X-frame multi-rotor striker — chin gun blister + rotor arms",
 	"x_recon_drone": "Tiny high-wing spyglass — slender boom EO pod, no rotors",
@@ -250,61 +250,99 @@ static func _draw_silent_rotor(cv, k: int, frame: String) -> void:
 
 
 ## ---------------------------------------------------------------------------
-## Stealth Transport — LARGE flying-wing cargo VTOL with tip ducts (not a helo).
+## Stealth Transport — LARGE faceted tilt-rotor INSERT craft (NOT a flying-wing blob).
+## Reads as: long cargo tube + stub high-wing + twin tip nacelles + twin-boom H-tail.
+## Distinct vs CAS (delta jet), silent helo (main rotor disc), drones (tiny).
 ## ---------------------------------------------------------------------------
 static func _draw_stealth_transport(cv, k: int, frame: String) -> void:
 	var Z := Z_TRANSPORT
-	var R := _R(k, Z, _pose_bank(frame) * 0.5, _pose_bob(frame) * 0.4)
-	C.ground_shadow(cv, Vector2(PIVOT) + Vector2(0, 2), 42.0, 14.0)
+	var R := _R(k, Z, _pose_bank(frame) * 0.4, _pose_bob(frame) * 0.3)
+	C.ground_shadow(cv, Vector2(PIVOT) + Vector2(0, 2), 38.0, 12.0)
 	var fire := frame == "fire"
 	var hit := frame == "hit"
 	var open := frame == "flight" or frame == "fire"
-	## Massive blended flying-wing body (reads as cargo, not fighter).
-	C.face(cv, PackedVector2Array([
-		C.fpt(R, 5.2, 0.0, 4.6), C.fpt(R, 1.0, 6.8, 3.8),
-		C.fpt(R, -5.8, 5.2, 3.2), C.fpt(R, -6.4, 0.0, 3.6),
-		C.fpt(R, -5.8, -5.2, 3.2), C.fpt(R, 1.0, -6.8, 3.8),
-	]), C.ramp(BLK), 3, false)
-	C.face(cv, PackedVector2Array([
-		C.fpt(R, 4.6, 0.0, 5.0), C.fpt(R, 0.6, 5.4, 4.2),
-		C.fpt(R, -4.8, 3.6, 3.9), C.fpt(R, -5.2, 0.0, 4.1),
-		C.fpt(R, -4.8, -3.6, 3.9), C.fpt(R, 0.6, -5.4, 4.2),
-	]), C.ramp(VOID), 2, false)
-	## Cabin / troop windows along spine.
-	for i in 4:
-		var ff := -2.4 + float(i) * 1.5
-		C.blob(cv, C.fpt(R, ff, 0.0, 5.15), 0.28 * Z, C.ramp(GLASS))
-	## Nose chine (stealth transport, blunt vs CAS needle).
-	C.tube(cv, C.fpt(R, 3.8, 0.0, 4.5), C.fpt(R, 6.0, 0.0, 4.2), 0.85 * Z, C.ramp(BLK_D))
-	C.blob(cv, C.fpt(R, 5.2, 0.0, 5.1), 0.7 * Z, C.ramp(GLASS))
-	## Twin tip ducted fans (VTOL — rotors inside ducts, not open helo disc).
+	var tilt := 0.08 if frame == "idle" else (1.05 if frame == "flight" else 0.6)
+	## LONG cargo tube fuselage — professional insert craft, not a blended wing mass.
+	C.tube(cv, C.fpt(R, -5.8, 0.0, 3.75), C.fpt(R, 5.0, 0.0, 4.15), 0.88 * Z, C.ramp(BLK))
+	C.tube(cv, C.fpt(R, -5.2, 0.0, 4.35), C.fpt(R, 4.2, 0.0, 4.85), 0.52 * Z, C.ramp(VOID))
+	## Flat cargo roof ridge (breaks "blob" silhouette).
+	C.tube(cv, C.fpt(R, -4.6, 0.0, 5.15), C.fpt(R, 3.4, 0.0, 5.45), 0.22 * Z, C.ramp(STEEL))
+	## Faceted lower chines only (narrow — keep fuse readable as a tube).
 	for s in [-1.0, 1.0]:
-		var tilt := 0.0 if frame == "idle" else (PI * 0.35 if frame == "flight" else PI * 0.15)
-		C.blob(cv, C.fpt(R, -1.2, s * 6.2, 4.0 + sin(tilt) * 0.4), 1.35 * Z, C.ramp(BLK_D))
-		C.blob(cv, C.fpt(R, -1.2, s * 6.2, 4.05 + sin(tilt) * 0.4), 0.85 * Z, C.ramp(VOID_L))
-		C.blob(cv, C.fpt(R, -1.2, s * 6.2, 4.1 + sin(tilt) * 0.4), 0.35 * Z, C.ramp(STEEL_L))
-		## Fan blades inside duct.
-		for i in 3:
-			var a := float(i) * TAU / 3.0 + (0.4 if frame != "idle" else 0.0)
-			C.tube(cv, C.fpt(R, -1.2, s * 6.2, 4.1), C.fpt(R, -1.2 + cos(a) * 0.7, s * 6.2 + sin(a) * 0.5, 4.1), 0.1 * Z, C.ramp(STEEL))
-	## Rear ramp (closed idle / cracked open flight).
-	var ramp_z := 2.4 if open else 3.4
+		C.face(cv, PackedVector2Array([
+			C.fpt(R, 4.2, s * 0.4, 3.95), C.fpt(R, -5.0, s * 0.5, 3.6),
+			C.fpt(R, -4.8, s * 1.35, 3.15), C.fpt(R, 3.9, s * 1.2, 3.4),
+		]), C.ramp(VOID_L if s < 0.0 else BLK_L), 2, s < 0.0)
+	## Crew cockpit step (blunt, glazed — not CAS needle).
+	C.tube(cv, C.fpt(R, 4.4, 0.0, 4.2), C.fpt(R, 6.8, 0.0, 4.0), 0.62 * Z, C.ramp(BLK_D))
+	C.blob(cv, C.fpt(R, 6.05, 0.0, 4.85), 0.58 * Z, C.ramp(BLK_L))
+	C.blob(cv, C.fpt(R, 6.25, 0.0, 5.0), 0.4 * Z, C.ramp(GLASS))
+	## Troop windows along the tube.
+	for i in 5:
+		var ff := -3.8 + float(i) * 1.5
+		C.blob(cv, C.fpt(R, ff, 0.85, 4.55), 0.18 * Z, C.ramp(GLASS))
+		C.blob(cv, C.fpt(R, ff, -0.85, 4.55), 0.18 * Z, C.ramp(GLASS))
+	## Stub HIGH wing (thin bar — clearly NOT a flying wing).
+	for s in [-1.0, 1.0]:
+		C.face(cv, PackedVector2Array([
+			C.fpt(R, 0.9, s * 0.25, 5.35), C.fpt(R, -1.6, s * 0.3, 5.2),
+			C.fpt(R, -1.1, s * 4.85, 4.55), C.fpt(R, 0.45, s * 4.6, 4.7),
+		]), C.ramp(STEEL_L if s < 0.0 else VOID_L), 2, s < 0.0)
+		C.tube(cv, C.fpt(R, -0.2, s * 0.4, 5.25), C.fpt(R, -0.35, s * 4.5, 4.7), 0.16 * Z, C.ramp(STEEL))
+	## Twin tip tilt-nacelles — ONE proprotor pod per wingtip (not a 4-fan cluster).
+	for s in [-1.0, 1.0]:
+		var nz := 4.75 + sin(tilt) * 0.65
+		var nf := -0.4 + cos(tilt) * 0.4
+		C.tube(cv, C.fpt(R, -0.35, s * 4.4, 4.7), C.fpt(R, nf, s * 4.85, nz), 0.35 * Z, C.ramp(BLK_D))
+		## Single long nacelle cylinder.
+		C.tube(cv, C.fpt(R, nf - 0.75, s * 4.9, nz), C.fpt(R, nf + 1.35, s * 4.9, nz + 0.08), 0.58 * Z, C.ramp(BLK))
+		C.blob(cv, C.fpt(R, nf + 1.4, s * 4.9, nz + 0.12), 0.42 * Z, C.ramp(VOID_D))
+		C.blob(cv, C.fpt(R, nf - 0.8, s * 4.9, nz), 0.4 * Z, C.ramp(STEEL))
+		## Thin prop — two blades only (idle) / edge streak (flight). Never a filled radar disc.
+		if frame == "idle" or frame == "hit":
+			C.tube(cv, C.fpt(R, nf + 1.35, s * 4.9 - 1.5, nz + 0.15), C.fpt(R, nf + 1.35, s * 4.9 + 1.5, nz + 0.15),
+				0.1 * Z, C.ramp(STEEL_L))
+			C.tube(cv, C.fpt(R, nf + 1.35 - 1.15, s * 4.9, nz + 0.15), C.fpt(R, nf + 1.35 + 1.15, s * 4.9, nz + 0.15),
+				0.1 * Z, C.ramp(STEEL))
+			C.blob(cv, C.fpt(R, nf + 1.35, s * 4.9, nz + 0.15), 0.22 * Z, C.ramp(BLK_D))
+		else:
+			C.tube(cv, C.fpt(R, nf + 1.25, s * 4.9, nz - 1.2), C.fpt(R, nf + 1.45, s * 4.9, nz + 1.35),
+				0.16 * Z, C.ramp(STEEL_L))
+	## Twin boom → tall H-tail sticking well aft of the cargo tube.
+	for s in [-1.0, 1.0]:
+		C.tube(cv, C.fpt(R, -5.0, s * 0.7, 4.25), C.fpt(R, -8.4, s * 1.85, 4.6), 0.2 * Z, C.ramp(VOID_L))
+		C.face(cv, PackedVector2Array([
+			C.fpt(R, -7.5, s * 1.7, 4.45), C.fpt(R, -8.7, s * 1.85, 4.4),
+			C.fpt(R, -8.55, s * 1.85, 7.55), C.fpt(R, -7.55, s * 1.7, 7.3),
+		]), C.ramp(STEEL_L), 2, true)
+		## Fin tip highlight so H-tail reads at strip scale.
+		C.blob(cv, C.fpt(R, -8.1, s * 1.8, 7.2), 0.22 * Z, C.ramp(STEEL_L))
+	C.tube(cv, C.fpt(R, -8.25, -1.85, 6.2), C.fpt(R, -8.25, 1.85, 6.2), 0.2 * Z, C.ramp(STEEL_L))
+	## Rear cargo ramp.
+	var ramp_z := 2.2 if open else 3.45
 	C.face(cv, PackedVector2Array([
-		C.fpt(R, -5.2, -1.6, 3.7), C.fpt(R, -5.2, 1.6, 3.7),
-		C.fpt(R, -7.0, 1.4, ramp_z), C.fpt(R, -7.0, -1.4, ramp_z),
+		C.fpt(R, -5.4, -1.15, 3.7), C.fpt(R, -5.4, 1.15, 3.7),
+		C.fpt(R, -6.95, 1.0, ramp_z), C.fpt(R, -6.95, -1.0, ramp_z),
 	]), C.ramp(STEEL if open else BLK_L), 2, false)
 	if open:
 		C.face(cv, PackedVector2Array([
-			C.fpt(R, -5.4, -1.2, 3.9), C.fpt(R, -5.4, 1.2, 3.9),
-			C.fpt(R, -6.4, 1.0, 4.6), C.fpt(R, -6.4, -1.0, 4.6),
+			C.fpt(R, -5.55, -0.9, 3.95), C.fpt(R, -5.55, 0.9, 3.95),
+			C.fpt(R, -6.4, 0.75, 4.65), C.fpt(R, -6.4, -0.75, 4.65),
 		]), C.ramp(Color8(118, 96, 64)), 1, false)
-	## Door guns when fire.
+	## Tricycle gear (idle) — grounds it as a real insert craft.
+	if frame == "idle" or frame == "hit":
+		C.tube(cv, C.fpt(R, 4.6, 0.0, 3.5), C.fpt(R, 4.6, 0.0, 2.2), 0.12 * Z, C.ramp(STEEL))
+		C.blob(cv, C.fpt(R, 4.6, 0.0, 2.05), 0.28 * Z, C.ramp(BLK_D))
+		for s in [-1.0, 1.0]:
+			C.tube(cv, C.fpt(R, -2.4, s * 0.9, 3.4), C.fpt(R, -2.4, s * 1.1, 2.15), 0.12 * Z, C.ramp(STEEL))
+			C.blob(cv, C.fpt(R, -2.4, s * 1.1, 2.0), 0.3 * Z, C.ramp(BLK_D))
+	## Side door guns when fire.
 	if fire:
 		for s in [-1.0, 1.0]:
-			C.tube(cv, C.fpt(R, -0.5, s * 2.8, 3.8), C.fpt(R, 1.8, s * 3.0, 3.5), 0.22 * Z, C.ramp(BLK_D))
-			_muzzle(cv, C.fpt(R, 1.95, s * 3.0, 3.5), true)
-	_team(cv, C.fpt(R, 0.0, -2.2, 4.6), 0.32 * Z)
-	_hit_scar(cv, R, Z * 0.7, hit)
+			C.tube(cv, C.fpt(R, -0.6, s * 1.55, 3.85), C.fpt(R, 1.8, s * 1.85, 3.45), 0.22 * Z, C.ramp(BLK_D))
+			_muzzle(cv, C.fpt(R, 1.95, s * 1.85, 3.45), true)
+	_team(cv, C.fpt(R, 0.6, -1.15, 4.75), 0.26 * Z)
+	_hit_scar(cv, R, Z * 0.65, hit)
 
 
 ## ---------------------------------------------------------------------------
