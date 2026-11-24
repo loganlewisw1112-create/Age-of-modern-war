@@ -29,21 +29,27 @@ Subagents: Auto (owner usage limit)
 - VERIFY10 E2 closeout: FACT `verify.e2` seq **212**; STATUS `e2-ready-for-e3` seq **213**; report `.superpowers/sdd/task-verify-e2-report.md`
 - Suite (Godot 4.7.2 headless): all present `test_g10_*` + `test_exo` + `test_lpmode7` → **116/0**; ART look open gate (not system fail)
 
+## Complete (E3)
+- ORCH E3 world.gd seams: CLAIM `orch.e3.world` **217**; NEED **164**/**183** closed; FACT `ship.e3`; smoke **91/0**; report `.superpowers/sdd/task-e3-world-report.md`
+- Wires: validate_config `playable_stages_for`; SYSTEM_ORDER tech/buildings/mech/dark/GhostConductor; glue Progression/Production/Construction/Market + AiController CoalitionAi10; GhostConductor no double GhostExo tick
+- ExoArmory10 API-only (no tick); CounterGhost via Exo; ART left unstaged
+
 ## Live E2 (≤6)
-- ART10 Task 8 samples — CLAIM 155 held; NEED 201 cycle2 pause_for_owner (do NOT regenerate; owner look gate)
+- ART10 Task 8 samples — CLAIM 155 held; NEED 216 cycle3 pause_for_owner (do NOT regenerate; owner look gate)
 
 ## Free slots
-~5 of ≤6 usable (only ART10 holds a live path CLAIM). System E2 pillars shipped; VERIFY10 done.
+~5 of ≤6 usable (only ART10 holds a live path CLAIM). E3 world released.
 
 ## Queued / next dispatch
-1. E3 ORCH — world.gd wires: NEED 164 tech, NEED 183 stage gate, armory/dark/ai/buildings/mechanics/cg ticks (**may start regardless of ART**)
-2. ART bulk catalog — only after owner FACT approve/revise on NEED 201
+1. E4 ORCH — hashes / AI soak / 100-squad / peak / expanded smoke → `g10.lock` (Task 22–23)
+2. ART bulk catalog — only after owner FACT approve/revise on NEED 216
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.
 
-## Deferred ORCH (E3 — do not touch world.gd until E3 wave)
-- NEED 164: wire CoalitionTech10 into Progression/Production/Market
-- NEED 183: SimWorld.validate_config Coalition playable_stages_for
-- NEED 175: company templates in rules_g10_coalition (IDENT/ORCH)
-- world.gd seams: ExoArmory10, CoalitionDark10, CoalitionAi10, buildings, mechanics, CounterGhost tick if needed
+## Closed E3 NEEDs
+- NEED 164: CoalitionTech10 wired into Progression/Production/Construction/Market (command path)
+- NEED 183: SimWorld.validate_config Coalition `playable_stages_for`
+
+## Still deferred (non-blocking E3)
+- NEED 175: company templates in rules_g10_coalition (IDENT/ORCH) — E4 content if needed

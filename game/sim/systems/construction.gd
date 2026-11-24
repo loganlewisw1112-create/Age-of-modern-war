@@ -13,6 +13,7 @@ const Subsets = preload("res://sim/systems/unit_subsets.gd")  # G3b scale (PERF5
 const Companies = preload("res://sim/systems/companies.gd")  # G6 (ARMY6 CR): Company HQ cap (D31)
 const MachineG6 = preload("res://sim/systems/machine_g6.gd")  # G6 (MECH6b CR relay_build_range; preloads sim_index + hot_state only)
 const WallTurret7 = preload("res://sim/systems/wallturret7.gd")  # G7 WTUR7 CR 3637: facility wall-face placement
+const CoalitionTech10 = preload("res://sim/systems/coalition_tech10.gd")  # G10 NEED 164
 
 const MAX_BUILD_RANGE := 20.0
 const BUILD_REACH := 1.0   # engineer must be within this distance of the footprint edge
@@ -257,6 +258,10 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			var err := placement_error(w, fid, def_id, origin)
 			if err != "":
 				return err
+			# G10 NEED 164: Coalition forbidden defs (CN / UNDERSTRIKE / human_a_only).
+			var tech_b := CoalitionTech10.gate_build(w, fid, def_id)
+			if tech_b != "":
+				return tech_b
 			if cmd.has("facing_i"):  # G6 (AI7-USE CR build_cmd_facing_i): optional runway facing for air fields
 				var fi := int(cmd.facing_i)
 				if fi < 0 or fi > 3:

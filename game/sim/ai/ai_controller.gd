@@ -30,6 +30,8 @@ const Doctrine = preload("res://sim/ai/doctrine/doctrine.gd")  # G6 scaffold (ow
 const Triggers = preload("res://sim/systems/triggers.gd")
 const Waves = preload("res://sim/systems/waves.gd")  # G6: survival attacker (MODES6)
 const CnRole7 = preload("res://sim/systems/cn_role7.gd")  # G7 CNROLE7 (13.9c-29): strike teams / spec ops are never in any AI roster
+const Coalition10 = preload("res://sim/systems/coalition10.gd")  # G10 AI doctrine adapter
+const CoalitionAi10 = preload("res://sim/ai/coalition_ai10.gd")
 
 
 static func new_state(w: SimWorld, fid: int) -> Dictionary:
@@ -226,6 +228,9 @@ static func think_with(w: SimWorld, fid: int, prof) -> void:
 		G5.manage_support(w, fid, st, ctx)
 		G6.manage(w, fid, st, ctx)        # G6 scaffold (owner AI7-USE)
 		Doctrine.think(w, fid, st, ctx)   # G6 scaffold (owner AI7-DOC)
+		# G10: Coalition doctrine ops (decision quality only; no-op unless Coalition side).
+		if Coalition10.active(w, fid):
+			CoalitionAi10.choose_operation(w, fid)
 		if prof != null:
 			prof.mark(fid, "g4b")
 		Army.manage_army(w, fid, st, ctx)

@@ -17,6 +17,7 @@ extends RefCounted
 const VER := 1
 const UNLIMITED := 1000000000  # limit_left when limit_per_window <= 0 (no cap)
 const MAX_TRADE := 1000000     # per-command sanity bound (repeat the trade for more)
+const CoalitionTech10 = preload("res://sim/systems/coalition_tech10.gd")  # G10 NEED 164
 
 
 static func R() -> Dictionary:
@@ -168,6 +169,11 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 		var rec: Dictionary = black_catalog().get(item, {})
 		if rec.is_empty():
 			return "Unknown black-market item."
+		# G10 NEED 164: forbidden_reason only (gate_market→validate would recurse).
+		if CoalitionTech10.active(w, fid):
+			var tech_m := CoalitionTech10.forbidden_reason(item)
+			if tech_m != "":
+				return tech_m
 		return w.can_afford(fid, rec.get("cost", {}))
 	var res := String(cmd.get("resource", ""))
 	if not resources().has(res):

@@ -15,6 +15,8 @@ extends RefCounted
 const PData = preload("res://sim/systems/progression_data.gd")
 const Gates = preload("res://sim/systems/progression_gates.gd")
 const Status = preload("res://sim/systems/status.gd")
+const CoalitionTech10 = preload("res://sim/systems/coalition_tech10.gd")  # G10 NEED 164
+const G3bData = preload("res://presentation/hud/g3b_data.gd")  # G10 Coalition stage bands
 
 
 # ================================================================ tick
@@ -92,7 +94,7 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 			if int(f.advancing.ticks_left) > 0:
 				return "Already advancing to Stage %d." % int(f.advancing.to)
 			var to := int(f.stage) + 1
-			if PData.gates_for(to).is_empty() or not _playable(to):
+			if PData.gates_for(to).is_empty() or not _playable(to, String(f.faction_def)):
 				return "Stage %d is the highest stage in this slice." % int(f.stage)
 			return Gates.first_unmet(w, fid)
 	return "Unknown progression command."
@@ -102,6 +104,10 @@ static func _validate_research(w: SimWorld, fid: int, f: Dictionary, cmd: Dictio
 	var r: Dictionary = f.research
 	if bool(cmd.get("cancel", false)):
 		return "No research in progress." if String(r.active) == "" else ""
+	# G10 NEED 164: Coalition rejects Research9-style projects (buy/steal/unseal only).
+	var tech_deny := CoalitionTech10.validate_research(w, fid, cmd)
+	if tech_deny != "":
+		return tech_deny
 	var id := String(cmd.get("project", ""))
 	var p := PData.project(id)
 	if p.is_empty():
@@ -166,11 +172,9 @@ static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 			w.emit("StageAdvanceStarted", {"fid": fid, "to": to, "ticks": PData.transition_ticks()})
 
 
-static func _playable(stage: int) -> bool:
-	for st in Content.stages():
-		if int(st.id) == stage:
-			return bool(st.get("playable_now", false))
-	return false
+static func _playable(stage: int, faction_id: String = "") -> bool:
+	# G10: Coalition advances across 1–13; other factions keep global playable_now.
+	return G3bData.playable_stages_for(faction_id).has(stage)
 
 
 # ================================================================ queries (UI / AI)

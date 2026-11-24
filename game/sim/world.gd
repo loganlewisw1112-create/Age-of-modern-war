@@ -146,10 +146,23 @@ const Vanta7 = preload("res://sim/systems/vanta7.gd")  # G7 AIRV7 CN Vanta gunsh
 const CommandNet = preload("res://sim/systems/command_net.gd") # G6.1 chain of command + comms (CHAIN61)
 const Intel = preload("res://sim/systems/intel.gd")            # G6.1 per-side belief (CHAIN61)
 const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command layer (PLAN61)
+# G10 Shadow Coalition — ORCH E3 world seams (preload/tick only; pillar files own logic)
+const Coalition10 = preload("res://sim/systems/coalition10.gd")
+const CoalitionTech10 = preload("res://sim/systems/coalition_tech10.gd")
+const CoalitionBuildings10 = preload("res://sim/systems/coalition_buildings10.gd")
+const GhostConductor10 = preload("res://sim/systems/ghost_conductor10.gd")
+const Tunnels10 = preload("res://sim/systems/tunnels10.gd")
+const CivilianCells10 = preload("res://sim/systems/civilian_cells10.gd")
+const Ieds10 = preload("res://sim/systems/ieds10.gd")
+const Patron10 = preload("res://sim/systems/patron10.gd")
+const WeldShop10 = preload("res://sim/systems/weld_shop10.gd")
+const CoalitionDark10 = preload("res://sim/systems/coalition_dark10.gd")
+const G3bData = preload("res://presentation/hud/g3b_data.gd")  # playable_stages_for (NEED 183)
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Trade9, Territory9, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Research9, Repair, Plans, Ops, CommandNet, Intel, Adapt9, AiCommand, Dipl9, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Combat9, Gas71, Weather71, Tod71, Night71, Smoke71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Skirm9, Sensors71, Strikes, Fires71, Fire71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Request71, Hive71, Death71, Harvest71, Capture71, Hive9, Count9, Evolve71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
+## G10: tech/buildings after Progression; mech/dark after wounds; Ghost conductor after Exo (GhostExo/CG via Exo).
+const SYSTEM_ORDER := [Economy, Market, Trade9, Territory9, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, CoalitionTech10, CoalitionBuildings10, Coalition10, Gather, Research9, Repair, Plans, Ops, CommandNet, Intel, Adapt9, AiCommand, Dipl9, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Combat9, Tunnels10, CivilianCells10, Ieds10, Patron10, WeldShop10, CoalitionDark10, Gas71, Weather71, Tod71, Night71, Smoke71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Skirm9, Sensors71, Strikes, Fires71, Fire71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, GhostConductor10, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Request71, Hive71, Death71, Harvest71, Capture71, Hive9, Count9, Evolve71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -430,11 +443,12 @@ static func validate_config(c: Dictionary) -> String:
 		var stage := int(s.get("stage", 8))
 		if stage < 1 or stage > 13:
 			return "Stage %d is not a valid stage ID (1-13)." % stage
-		var playable := false
-		for st in Content.stages():
-			if int(st.id) == stage and st.get("playable_now", false):
-				playable = true
-		if not playable:
+		# G10 NEED 183: Coalition uses G3bData.playable_stages_for (1–13); others stay playable_now.
+		var fac_id := String(s.get("faction", ""))
+		var allowed: Array = G3bData.playable_stages_for(fac_id)
+		if not allowed.has(stage):
+			if fac_id == "shadow_coalition":
+				return "Stage %d is not playable for Shadow Coalition." % stage
 			return "Stage %d is not playable in this slice (Stages 7-9 only)." % stage
 		if int(s.get("credits", 0)) < 0:
 			return "Starting credits cannot be negative."

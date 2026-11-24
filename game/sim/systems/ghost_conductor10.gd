@@ -130,12 +130,11 @@ static func mission(w: SimWorld, mission_id: int) -> Dictionary:
 	return GhostMission10.mission(w, mission_id)
 
 
-## Advance all active missions one step. Safe when world.gd has not wired this yet.
+## Advance all active missions one step. GhostExo10.tick is owned by Exo.ghost_tick (avoid double drain).
 static func tick(w: SimWorld) -> void:
 	if not w.sys_state.has(KEY):
 		return
 	var st := _st(w)
-	GhostExo10.tick(w)
 	var still: Array = []
 	for mid in st.get("active", []):
 		var id := int(mid)

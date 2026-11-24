@@ -12,6 +12,7 @@ const Construction = preload("res://sim/systems/construction.gd")
 const PData = preload("res://sim/systems/progression_data.gd")  # G3b stage/research gating (STG4)
 const SimIndex = preload("res://sim/systems/sim_index.gd")  # G3b scale (PERF5): per-kind lists
 const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 LPPERF7: def-filtered building lists
+const CoalitionTech10 = preload("res://sim/systems/coalition_tech10.gd")  # G10 NEED 164
 
 const QUEUE_MAX := 5
 
@@ -29,6 +30,10 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 				return "Unknown production item '%s'." % item
 			if p.has("faction") and String(p.faction) != "shared" and w.factions.has(fid) and String(p.faction) != String(w.factions[fid].faction_def):
 				return "%s belongs to another faction." % String(p.get("name", item))  # G3a defence in depth
+			# G10 NEED 164: Coalition deny tags (no building_id → avoids gate_queue→validate recurse).
+			var tech_q := CoalitionTech10.gate_queue(w, fid, item)
+			if tech_q != "":
+				return tech_q
 			var bd := Content.building(b.def)
 			if not bd.get("produces", []).has(item):
 				return "%s cannot produce %s." % [String(bd.get("name", b.def)), String(p.get("name", item))]
