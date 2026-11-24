@@ -22,20 +22,19 @@ Subagents: Auto (owner usage limit)
 - Task 18 AI10: Coalition AI + doctrine; test_g10_ai; HANDOFF/RELEASE; world wire E3
 - Task 20 DARK10: four dark picks; test_g10_dark 6/0; FACT ship.dark10; world wire E3
 - Task 14–16 GHOST10: Ghost vertical + vehicles; exo.gd RELEASED; ship.ghost16
-- Task 17 CG10: 3f046cf6 — Counter-Ghost corps + Shade Dart; test_g10_counterghost 5/0; FACT ship.cg10 seq 209; addendum 171 folded; pushed
-- Task 19 MODE10: HANDOFF 184 / RELEASE 185; test_g10_modes 8/0 (+ LP suites); NEED 183 world stage gate → E3; ORCH commit pending; FACT ship.mode10
+- Task 17 CG10: 3f046cf6 — Counter-Ghost corps + Shade Dart; test_g10_counterghost 5/0; FACT ship.cg10 seq 209/210; addendum 171 folded; pushed
+- Task 19 MODE10: fdb8282f — Coalition Protocol LP + Stages 3/8/12; test_g10_modes 8/0; NEED 183 world stage gate → E3; FACT ship.mode10 seq 205/208; pushed
 
 ## Live E2 (≤6)
 - ART10 Task 8 samples — CLAIM 155 held; NEED 201 cycle2 pause_for_owner (do NOT regenerate; owner look gate)
 
 ## Free slots
-~5 of ≤6 usable (only ART10 holds a live path CLAIM). No CG10 dispatch — Task17 shipped.
+~5 of ≤6 usable (only ART10 holds a live path CLAIM). No CG10/MODE10 dispatch — Task17 + Task19 shipped.
 
 ## Queued / next dispatch
-1. ORCH commit wave: MODE10 (+ any unpushed HANDOFF leftovers) — no world.gd
-2. VERIFY10 — independent smoke/hash once commit wave lands (or read-only evidence prep)
-3. E3 ORCH — world.gd wires (BLOCKED until E3 wave): NEED 164 tech, NEED 183 stage gate, armory/dark/ai/buildings/mechanics/cg ticks
-4. ART bulk catalog — only after owner FACT approve/revise on NEED 201
+1. VERIFY10 — independent smoke/hash (CG+MODE+RAID on github/g71)
+2. E3 ORCH — world.gd wires (BLOCKED until E3 wave): NEED 164 tech, NEED 183 stage gate, armory/dark/ai/buildings/mechanics/cg ticks
+3. ART bulk catalog — only after owner FACT approve/revise on NEED 201
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.
