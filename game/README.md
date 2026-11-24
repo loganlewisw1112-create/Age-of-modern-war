@@ -1,9 +1,10 @@
-# RTS: Age of Modern War: playable slice (G0 through G7, plus a G7.1 checkpoint)
+# RTS: Age of Modern War — historical slice notes
+
+> **Public overview (GitHub):** see the repository root [`README.md`](../README.md) for current skirmish / Last Protocol / campaign / roadmap summary (Pre-G10 closed on branch `g71`). This file keeps older G0–G7.1 playable-slice detail for contributors.
 
 The newest playable build is the **2026-11-22 G7.1 checkpoint** (`build/RTS_Age_of_Modern_War_G71_2026-11-22/`,
 also in Downloads; pck md5 `0d9b68a59f6abc40372bc40486bcb1d7`). It is G7 plus G7.1 wave 1, wave-2 work on the tree,
-the Vanta2 flight fix, and the hive director C1–C6 stubs (dread / feints / siege roster / Overmind). It is not a
-closed G7.1. What is in it and what the next slice still owes is the "SLICE STOP" block at the top of `PROGRESS.md`.
+the Vanta2 flight fix, and the hive director C1–C6 stubs (dread / feints / siege roster / Overmind). Later gates (G8–Pre-G10) shipped on top of this tree; see root README and `docs/ROADMAP.md`.
 
 A classic real-time strategy skirmish built in **Godot 4.7.2**. It is offline and single-player.
 
