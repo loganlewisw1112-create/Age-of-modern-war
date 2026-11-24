@@ -10,9 +10,15 @@ Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native 
 Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, and the **Pre-G10 Depth Bridge** are closed (`pre_g10.lock`).
 
 <p align="center">
-  <img src="docs/media/hero.jpg" alt="Facility overview — fortified command complex under clear light" width="1200">
+  <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
 </p>
-<p align="center"><em>Facility overview — the kind of ground Last Protocol asks you to hold.</em></p>
+<p align="center"><em>Last Protocol — the fortress. Two rings. One facility. Hold it.</em></p>
+<p align="center">
+  <img src="docs/media/hero_last_protocol_dusk.jpg" alt="Last Protocol fortress under dusk light" width="560">
+  &nbsp;&nbsp;
+  <img src="docs/media/hero_last_protocol_core.jpg" alt="Last Protocol core compound and inner ring" width="560">
+</p>
+<p align="center"><em>Dusk on the wire · core compound inside the inner wall</em></p>
 
 ---
 
