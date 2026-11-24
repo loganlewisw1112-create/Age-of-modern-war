@@ -110,7 +110,10 @@ static func fdefs(fac: String) -> Dictionary:
 ## heli (armed rotorcraft); "" for anything else (micro drones, ground units).
 static func kind_of(def_id: String) -> String:
 	var ud := Content.unit(def_id)
-	if not ud.has("aircraft") or String(ud.aircraft) == "micro" or String(ud.get("hangar", "")) == "":
+	# aircraft may be a kind string ("heli"/"jet"/…) or a bool flag (G10 counterghost).
+	# String(bool) has no constructor in Godot 4 — guard before comparing to "micro".
+	var ac: Variant = ud.get("aircraft", null)
+	if ac == null or typeof(ac) != TYPE_STRING or ac == "micro" or String(ud.get("hangar", "")) == "":
 		return ""
 	if ud.has("payload"):
 		return "jet"
