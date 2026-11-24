@@ -62,15 +62,23 @@ Subagents: Auto (owner usage limit)
 - Report: `.superpowers/sdd/task-8-art-bulk-wave3-report.md`
 - Leftover for g10.lock: Step 9 final contact + owner look gate (deferred exception OK)
 
+## Complete (docs — G10 close / deferred art)
+- Parallel docs track (Auto): owner-deferred TECHNICAL / SAFEHOUSE / HATCH recorded for lock
+- Note: `.superpowers/sdd/g10-deferred-art-note.md`
+- SCOPE addendum: `game/docs/G10_SCOPE.md` — deferred subjects only; **no** weaken of other Done-when
+- PLAY_ME: `game/docs/PLAY_ME_G71_2026-11-22.txt` — G10 near-lock + deferred-art ship note
+- Lock exception (prior): `.superpowers/sdd/g10-lock-deferred-exception.md` (Done-when #13a)
+
 ## Live (≤6)
 - ART10 CLAIM **273** approved bulk (wave3 shipped; Step 9 look gate remains)
+- E4 lock-prep / package may be live elsewhere — docs track does not touch generators / world.gd / README
 
 ## Free slots
-~5 of ≤6 usable. TECHNICAL CLAIM released; Ghost Wing + CLOSE AIR states shipped.
+~4–5 of ≤6 usable. TECHNICAL CLAIM released; Ghost Wing + CLOSE AIR states shipped; deferred art docs closed.
 
 ## Queued / next dispatch
-1. ART10 Step 9 final contact + owner look gate — see dispatch leftover
-2. TECHNICAL / SAFEHOUSE redesign — **later** (design-blueprint); do not block lock
+1. ART10 Step 9 final contact + owner look gate — approved scope only (deferred exception OK)
+2. TECHNICAL / SAFEHOUSE / HATCH redesign — **later** (design-blueprint); do not block lock
 3. E4 Task 23 — package `g10.lock` after final look gate (**deferred placeholders OK**)
 4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
