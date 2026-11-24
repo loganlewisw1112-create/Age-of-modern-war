@@ -68,4 +68,4 @@ D4 integ      smoke · soak · peak · README/PLAY_ME · package → pre_g10.loc
 Full task plan (Approach C): `docs/superpowers/plans/2026-11-23-pre-g10.md`
 
 ## Lock status
-**OPEN** — awaiting owner approval of execution plan, then CLAIM map + build.
+**OPEN** — Tasks 3–17 remain pending. Keep this lock open until Done-when #1–#8 are evidenced.
