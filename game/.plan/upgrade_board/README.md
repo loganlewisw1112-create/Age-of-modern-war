@@ -1,6 +1,6 @@
 # UP71 permanent semantic messaging board
 
-Standing OS for G7.1 lock → G8 → G9 → **Pre-G10** → G10+. Append-only JSONL: `board.jsonl` (one JSON object per line).
+Standing OS for G7.1 → G8 → G9 → Pre-G10 → **G10 Shadow Coalition** → G14+. Append-only JSONL: `board.jsonl` (one JSON object per line).
 
 ## Protocol
 
@@ -25,29 +25,39 @@ Every agent **must** post before starting work, on progress, and on handoff.
 4. Every ship FACT must include `readme: true` (or NEED if blocked). Push without README update = protocol fail.
 5. Never weaken frozen Done-when. No owner questions unless Stop-if.
 6. Guidebook README voice on every ship.
-7. Execution is **local** with parallel board agents. Cloud is off unless ORCH farms a non-perf draft.
+7. Execution is **local** with parallel board agents (≤6 live). Cloud is off unless ORCH farms a non-perf draft.
+8. Prefer public APIs across pillars. Foreign path needed → board **NEED**, wait for RELEASE.
+9. Packages one-at-a-time; prefer `--only=` pillar tests; full smoke at E3/E4 under ORCH.
 
-### Active roster (UP71 Stage D — Pre-G10 Depth Bridge)
+### Active roster (UP71 Stage E — G10 Shadow Coalition)
 
-Frozen scope: `game/docs/PRE_G10_SCOPE.md` · plan: `docs/superpowers/plans/2026-11-23-pre-g10.md`
+Frozen scope: `game/docs/G10_SCOPE.md` · plan: `docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md`  
+Kickoff: `.superpowers/sdd/G10_KICKOFF.md` · Ghost look: `G10_GHOST_LOOK.md` · Armory: `G10_EXO_ARMORY.md` · Dogs: `G10_HUMAN_A_DOG_LOOK.md`
 
 | ID | Role |
 |----|------|
-| ORCH | Dispatch, integ, smoke, soak, commit, package, README, push |
-| PEAK60 | Remeasure each integ; no feature work unless FPS regress |
-| HIVE9+ | Machine art ≥60, modular/evolve depth, glow |
-| COUNT9+ | 13 counters play-paths + coalitions bridge (AI9 calls public API only). Counter EW/EMP hooks that touch `machine_ew7.gd`: post **NEED** to COMBAT9+ — not in COUNT9+ CLAIM/coord (see board FACT `pre_g10.claim.machine_ew7`, seq 106). |
-| COMBAT9+ | Forts, EW depth (`machine_ew7.gd` exclusive CLAIM), crews/breakdown, ballistics breadth |
-| SKIRM9+ | Skirmish setup `director_adapt` toggle, siege attack-move |
-| AI9 | Adapt, named generals, diplomacy, intel-diff, CoC ops |
-| ECON9 | Resources, trade, territory/civ, research, black market, upgrades |
-| PACE71 | Global vehicle tempo + terrain modifiers; preserve accel/turn/deploy friction |
+| ORCH | Dispatch, `world.gd` seams, integ, smoke, soak, commit, package, README, push `github/g71` |
+| FOUND10 | Content loader, faction registry, Coalition-only stage API, audit tests |
+| IDENT10 | `coalition10.gd`, doctrine state/telemetry, intent-first UI contracts |
+| ROSTER10 | G10 definition fragments; subclaims RAID10 / CORE10 / LATE10 by file |
+| ART10 | Sample gate, four-facing catalog, icons, hidden/revealed, Ghost look sheets |
+| MECH10 | Tunnels, civilians, IEDs, patron, weld/capture; exclusive `capture71.gd` |
+| TECH10 | Buy/steal/unseal + all denial gates |
+| BLD10 | Coalition structures, hidden/revealed/damage, Ghost campus shell |
+| GHOST10 | Ghost anatomy, mission lifecycle, Conductor; first owner of `exo.gd` |
+| ARMORY10 | Exo Armory building, unlock/outfit UX, bay caps |
+| CG10 | Human A Counter-Ghost defs + counterplay; second owner of `exo.gd` after GHOST10 handoff |
+| DOG10 | Human A `g71_robot_dog` complete art redesign |
+| AI10 | Coalition doctrine adapter over shipped Pre-G10 AI |
+| MODE10 | Skirmish stage filtering + Coalition LP profile (LP files exclusive) |
+| DARK10 | Blackout, Hollow Ground, Mirror Fortress, Dead Radio only |
+| VERIFY10 | Independent smoke/hash/soak/perf; no feature edits without ORCH NEED/CLAIM |
 
-Approved addendum: HIVE9+/COUNT9 also own link quality, mesh/spine, shared senses, and creep-cable cuts; AI9 also owns Warmind doctrine, threat budgeting, counter-memory, and readable intent.
+**Serialized seams (never parallel-write):** `game/sim/world.gd` (ORCH) · `game/content/factions.json` (FOUND10) · `game/sim/systems/capture71.gd` (MECH10) · `game/sim/systems/exo.gd` (GHOST10 → CG10) · LP entry/mode files (MODE10).
 
-Serialize **D2 AI9 ↔ D3 ECON9** on diplomacy + Machine-coalition seam (`count9.gd` coalitions owned by COUNT9+).
+Max **6** live implementers; CLAIMs must be path-disjoint. Rotate queued agents as RELEASE frees slots.
 
-### Historical roster (Stages A–C — closed)
+### Historical roster (Stages A–D — closed)
 
 | ID | Role | Stage |
 |----|------|-------|
@@ -61,6 +71,7 @@ Serialize **D2 AI9 ↔ D3 ECON9** on diplomacy + Machine-coalition seam (`count9
 | COUNT9 | Thirteen counters thin (G9) | C |
 | COMBAT9 | Terrain, ballistics thin (G9) | C |
 | SKIRM9 | Tide siege / director_adapt flag (G9) | C |
+| PEAK60 / HIVE9+ / COUNT9+ / COMBAT9+ / SKIRM9+ / AI9 / ECON9 / PACE71 | Pre-G10 Depth Bridge | D |
 
 ### Ship cadence
 HANDOFF → ORCH verify → README refresh → commit → `package_g71.ps1` → push → FACT `ship.<sha>` + `readme.synced`.

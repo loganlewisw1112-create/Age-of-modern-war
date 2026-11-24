@@ -219,5 +219,6 @@ Supporting authorities:
 
 ## Lock status
 
-**APPROVED — execution pending new session.** No `g10.lock` yet. Kick off Subagent-Driven Task 0 in a fresh chat using
-the plan path below; do not weaken Done-when.
+**FROZEN — implementation open.** Owner APPROVED 2026-11-23; Task 0 board freeze recorded. No `g10.lock` yet.
+Done-when remains frozen — do not weaken. Execution: Subagent-Driven + max safe parallelism per
+`.superpowers/sdd/G10_KICKOFF.md`.
