@@ -396,6 +396,12 @@ static func coalition_active(w: SimWorld) -> bool:
 	return int(s.truce_until) > w.tick and (s.truce_fids as Array).size() >= 2
 
 
+static func break_coalition(w: SimWorld) -> void:
+	var s := _st(w)
+	if not (s.get("truce_fids", []) as Array).is_empty():
+		_end_coalition(w, s)
+
+
 static func _end_coalition(w: SimWorld, s: Dictionary) -> void:
 	var old_teams: Dictionary = s.get("truce_teams", {})
 	var coalition_team = s.get("coalition_team")

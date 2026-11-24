@@ -11,6 +11,7 @@ extends RefCounted
 
 const RULES := {"enemy_general": false, "enemy_min_companies": 1, "enemy_playstyle": "combined",
 	"enemy_stance": "balanced"}
+const Generals9 = preload("res://sim/ai/generals9.gd")
 
 static var _cs: Script = null
 static var _us: Script = null
@@ -70,6 +71,7 @@ static func tick(w: SimWorld) -> void:
 			d.slot = -(fid + 1)  # slot id encoding for AI generals (negative, never a player slot)
 			d.spec = {"companies": []}
 			d.next_think = w.tick + (fid % 20)   # staggered per side
+			Generals9.attach(w, fid, d, String(w.factions[fid].get("persona_id", "")))
 			eg[fid] = d
 		var s: Dictionary = eg[fid]
 		if w.tick < int(s.next_think):

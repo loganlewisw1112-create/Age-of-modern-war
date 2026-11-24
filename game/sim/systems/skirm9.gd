@@ -166,6 +166,22 @@ static func harness_ok(w: SimWorld) -> bool:
 	return active(w) and bool(_st(w).get("harness", false))
 
 
+## Issue a normal attack-move to live siege units; fair caps do not imply special order privileges.
+static func order_siege_attack_move(w: SimWorld, fid: int, ids: Array, target: Vector2) -> int:
+	var siege := []
+	for raw in ids:
+		var id := int(raw)
+		var e = w.entities.get(id)
+		if e == null or int(e.owner) != fid:
+			continue
+		if String(Content.unit(String(e.def)).get("g71_siege", "")) != "":
+			siege.append(id)
+	if siege.is_empty():
+		return 0
+	var r: Dictionary = w.submit({"type": "attack_move", "issuer": fid, "unit_ids": siege, "target": target})
+	return siege.size() if bool(r.get("ok", false)) else 0
+
+
 static func _scan_kills(w: SimWorld, s: Dictionary) -> void:
 	if not director_adapt(w):
 		return

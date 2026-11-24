@@ -1,0 +1,47 @@
+{
+  "_meta": "Pre-G10 ECON9 resources, routes, territory, research and black market. All prices/rates PROVISIONAL.",
+  "rules": {
+    "g71_econ9": {
+      "resources": ["rare_metals"],
+      "resource_roles": {
+        "fuel": "vehicle operations and trade-route emphasis",
+        "ammo": "sustained combat",
+        "ore": "industry and refining",
+        "rare_metals": "advanced research and illicit gear"
+      },
+      "trade": {
+        "interval_ticks": 100,
+        "default_mix": {"credits": 35, "ore": 4},
+        "posts": {
+          "coastal": {"credits": 40, "fuel": 12},
+          "industrial": {"credits": 30, "ore": 8, "rare_metals": 2}
+        }
+      },
+      "research": {
+        "techs": {
+          "field_alloys": {
+            "tier": 1,
+            "requires": [],
+            "cost": {"credits": 100, "rare_metals": 5},
+            "ticks": 20,
+            "mods": {"vehicle_hp_mult": 1.05}
+          },
+          "composite_armor": {
+            "tier": 2,
+            "requires": ["field_alloys"],
+            "cost": {"credits": 200, "rare_metals": 12},
+            "ticks": 30,
+            "mods": {"vehicle_hp_mult": 1.12, "weakspot_mult": 0.9}
+          }
+        }
+      },
+      "black_market": {
+        "items": {
+          "smuggled_jammer": {"cost": {"credits": 300, "rare_metals": 4}, "risk": 0.2},
+          "merc_armor_kit": {"cost": {"credits": 450, "rare_metals": 8}, "risk": 0.35}
+        },
+        "unpaid_loyalty_event": true
+      }
+    }
+  }
+}

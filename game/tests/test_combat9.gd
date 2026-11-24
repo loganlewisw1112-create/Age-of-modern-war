@@ -6,6 +6,9 @@ const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const Parts71 = preload("res://sim/systems/parts71.gd")
 const Movement = preload("res://sim/systems/movement.gd")
 const Blast8 = preload("res://sim/systems/blast8.gd")
+const VehicleCrew9 = preload("res://sim/systems/vehicle_crew9.gd")
+const VehicleWear9 = preload("res://sim/systems/vehicle_wear9.gd")
+const MachineEW7 = preload("res://sim/systems/machine_ew7.gd")
 
 
 func _lp() -> SimWorld:
@@ -40,6 +43,46 @@ func test_breach_persists_save_load() -> void:
 	check_eq(Combat9.breach_count(w2), 1, "breach survives save/load")
 	var br: Array = w2.sys_state.combat9.breaches
 	check_eq(String(br[0][2]), "sandbags", "breach kind intact")
+
+
+func test_field_fort_persists_save_load() -> void:
+	var w := make_world({"seed": 9031})
+	var cell := Vector2i(32, 31)
+	check(Combat9.dig_fort(w, 0, cell, "sandbag_nest"), "dig fort")
+	var w2 := SimWorld.from_dict(w.to_dict().duplicate(true))
+	var fort := Combat9.fort_at(w2, cell)
+	check_eq(String(fort.get("kind", "")), "sandbag_nest", "fort kind survives")
+	check_eq(int(fort.get("owner", -1)), 0, "fort owner survives")
+
+
+func test_vehicle_crew_bail_and_recrew() -> void:
+	var w := make_world({"seed": 9032})
+	var id := w.spawn_unit("mbt", 0, Vector2(20, 20))
+	check(id >= 0 and VehicleCrew9.adopt(w.entities[id], 2), "vehicle crew adopted")
+	check(VehicleCrew9.crew_kill(w, id, 2), "crew loss bails")
+	check(VehicleCrew9.capturable(w, id), "empty hull capturable")
+	check(VehicleCrew9.recrew(w, id, 1, 1), "enemy recrews hull")
+	check_eq(int(w.entities[id].owner), 1, "ownership transfers")
+
+
+func test_vehicle_wear_breakdown_and_recovery() -> void:
+	var w := make_world({"seed": 9033})
+	var id := w.spawn_unit("mbt", 0, Vector2(20, 20))
+	check(VehicleWear9.add_wear(w, id, 1.0), "wear causes breakdown")
+	check(bool(w.entities[id].wear9.broken), "vehicle broken")
+	check(VehicleWear9.request_recovery(w, id, -1), "tow/recovery requested")
+	w.tick = int(w.entities[id].wear9.recover_until)
+	VehicleWear9.tick(w)
+	check(not bool(w.entities[id].wear9.broken), "vehicle recovered")
+
+
+func test_ew_jam_vehicle_skirmish_and_lp() -> void:
+	for w in [make_world({"seed": 9034}), _lp()]:
+		if w == null:
+			continue
+		var id: int = w.spawn_unit("mbt", 0, Vector2(20, 20))
+		check(MachineEW7.jam(w, w.entities[id], 2.0, -1), "vehicle jam accepted")
+		check_eq(MachineEW7.held(w, id), "jam", "EW jam active in match family")
 
 
 func test_blast8_wires_crater() -> void:

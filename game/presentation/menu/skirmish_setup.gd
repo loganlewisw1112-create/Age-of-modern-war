@@ -18,6 +18,7 @@ const MapIO = preload("res://sim/map_io.gd")
 var slots: Array = []        # [{kind, faction, blurb, team, color, credits, diff, swatch}]
 var economy: OptionButton
 var start_stock: OptionButton  # owner 2026-10-26: start with up to 50k of every resource
+var director_adapt: CheckButton
 const START_STOCK := [-1, 1000, 5000, 10000, 25000, 50000]  # -1 = the standard start package (cfg.start_stock)
 var faction_ids: Array = []
 var colors: Array = []        # html strings
@@ -82,6 +83,12 @@ func build() -> void:
 	start_stock.select(0)
 	start_stock.item_selected.connect(_emit)
 	er.add_child(start_stock)
+	director_adapt = CheckButton.new()
+	director_adapt.name = "DirectorAdaptToggle"
+	director_adapt.text = "Adaptive Machine director"
+	director_adapt.tooltip_text = "Machine siege composition reacts to observed weapon use; normal resource and unit caps still apply."
+	director_adapt.toggled.connect(_emit)
+	er.add_child(director_adapt)
 	_refresh_rows()
 
 
@@ -230,6 +237,11 @@ func slot_stage(i: int, fallback: int = 8) -> int:
 	return int(stage_ids[o.selected]) if o.selected >= 0 and o.selected < stage_ids.size() else fallback
 
 
+func set_director_adapt(on: bool) -> void:
+	if director_adapt != null:
+		director_adapt.button_pressed = on
+
+
 ## Writes cfg.sides, cfg.economy and cfg.ai_difficulty (the first AI's level; per-side levels
 ## also go into sides[i].ai_difficulty). Returns a UI-only reason ("" if fine) for things the sim
 ## does not validate (duplicate colours).
@@ -268,6 +280,7 @@ func apply(cfg: Dictionary, stage: int) -> String:
 		cfg.erase("start_stock")
 	if first_ai_diff != "":
 		cfg.ai_difficulty = first_ai_diff
+	cfg.skirm9 = {"director_adapt": director_adapt != null and director_adapt.button_pressed}
 	return reason
 
 

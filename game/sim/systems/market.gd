@@ -24,7 +24,15 @@ static func R() -> Dictionary:
 
 
 static func resources() -> Array:
-	return R().get("resources", ["salvage", "ore", "fuel", "ammo"])
+	var out: Array = R().get("resources", ["salvage", "ore", "fuel", "ammo"]).duplicate()
+	for r in Content.rules().get("g71_econ9", {}).get("resources", []):
+		if not out.has(String(r)):
+			out.append(String(r))
+	return out
+
+
+static func black_catalog() -> Dictionary:
+	return Content.rules().get("g71_econ9", {}).get("black_market", {}).get("items", {})
 
 
 static func _tps() -> int:
@@ -155,6 +163,12 @@ static func tick(w: SimWorld) -> void:
 
 static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 	var fid := int(cmd.get("issuer", -1))
+	if String(cmd.get("tier", "")) == "black":
+		var item := String(cmd.get("item", ""))
+		var rec: Dictionary = black_catalog().get(item, {})
+		if rec.is_empty():
+			return "Unknown black-market item."
+		return w.can_afford(fid, rec.get("cost", {}))
 	var res := String(cmd.get("resource", ""))
 	if not resources().has(res):
 		return "Unknown market resource."
@@ -180,6 +194,16 @@ static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
 
 static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
 	var fid := int(cmd.issuer)
+	if String(cmd.get("tier", "")) == "black":
+		var item := String(cmd.get("item", ""))
+		var rec: Dictionary = black_catalog().get(item, {})
+		if rec.is_empty() or not w.spend(fid, rec.get("cost", {}), "market:black:%s" % item):
+			return
+		if not w.factions[fid].has("black_items"):
+			w.factions[fid].black_items = {}
+		w.factions[fid].black_items[item] = int(w.factions[fid].black_items.get(item, 0)) + 1
+		w.emit("BlackMarketTrade", {"faction": fid, "item": item, "risk": float(rec.get("risk", 0.0))})
+		return
 	var res := String(cmd.resource)
 	var amount := int(cmd.amount)
 	var credits := quote(w, res, amount)

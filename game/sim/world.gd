@@ -10,6 +10,9 @@ const EVENT_LOG_MAX := 300
 const NEUTRAL := -1
 
 const Economy = preload("res://sim/systems/economy.gd")
+const Trade9 = preload("res://sim/systems/trade9.gd")
+const Territory9 = preload("res://sim/systems/territory9.gd")
+const Research9 = preload("res://sim/systems/research9.gd")
 const Construction = preload("res://sim/systems/construction.gd")
 const Production = preload("res://sim/systems/production.gd")
 const Gather = preload("res://sim/systems/gather.gd")
@@ -46,6 +49,8 @@ const HotState = preload("res://sim/hot_state.gd")
 const Market = preload("res://sim/systems/market.gd")
 const Companies = preload("res://sim/systems/companies.gd")
 const AiCommand = preload("res://sim/systems/ai_command.gd")
+const Adapt9 = preload("res://sim/ai/adapt9.gd")
+const Dipl9 = preload("res://sim/ai/dipl9.gd")
 const Mines = preload("res://sim/systems/mines.gd")
 const Fieldworks = preload("res://sim/systems/fieldworks.gd")
 const Garrison = preload("res://sim/systems/garrison.gd")
@@ -144,7 +149,7 @@ const Plans = preload("res://sim/systems/plans.gd")            # G6.1 command la
 
 ## Systems run in this exact order every tick, after due commands are applied.
 ## G2: Repair/Ops/Orders issue movement before Movement runs; Morale/Supply/Bridges react to combat.
-const SYSTEM_ORDER := [Economy, Market, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Repair, Plans, Ops, CommandNet, Intel, AiCommand, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Combat9, Gas71, Weather71, Tod71, Night71, Smoke71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Skirm9, Sensors71, Strikes, Fires71, Fire71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Request71, Hive71, Death71, Harvest71, Capture71, Hive9, Count9, Evolve71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
+const SYSTEM_ORDER := [Economy, Market, Trade9, Territory9, Construction, Fortify, Airfield, Production, CnFacility, WallWalk7, Walls71, Companies, Progression, Gather, Research9, Repair, Plans, Ops, CommandNet, Intel, Adapt9, AiCommand, Dipl9, Orders, SquadAI, Convoy, Flow71, Mines, Fieldworks, Garrison, Rail, Mobility, Movement, FacDrive7, VehDrive7, DronePilot, Air, Naval, Sonar, Transport, Airdef, Counterdrone, Ciws7, Vanta7, Apc7, KillZone71, Combat, Turrets7, Turrets71, WallTurret7, Wounds, Parts71, Gore71, Care71, Blast8, Combat9, Gas71, Weather71, Tod71, Night71, Smoke71, Sentinels7, LpReserve7, Engineer7, Supply8, G4bMech, G5Mech, MachineG6, Creep, Cores, Threats7, Skirm9, Sensors71, Strikes, Fires71, Fire71, Conductor71, CounterNanite, CnMission8, CnMission71, SpecOps8, CnOps7, DroneBay7, Cards8a, Cards8b, Cards8c, Callins, Engineering, Exo, Medical, Hospital71, Infect71, Stim71, Neural71, Horror71, Atmo71, Request71, Hive71, Death71, Harvest71, Capture71, Hive9, Count9, Evolve71, Support, Auras, Morale, Supply, AmmoBearer, Bridges, Fog, Waves, Triggers, BaseState7, Research71, Recomplex71, Warmind71, Conduct71, LastProtocol, CnProgress7, Victory]
 ## G6 (ED6 CR live_mode_skips, CONTRACTS_G6 section 15 / D43): editor Live mode runs combat + AI tactics only.
 ## While cfg.live_mode is set these systems do not tick (Progression's EW jamming still does, it is combat),
 ## and these command types are rejected. The flag is absent outside Live, so no hash changes.
@@ -698,7 +703,7 @@ func emit(type: String, data: Dictionary = {}) -> void:
 
 
 # ================================================================ ledger (single source of truth for money/materials)
-const LEDGER_KEYS := ["credits", "salvage", "ore", "fuel", "ammo"]
+const LEDGER_KEYS := ["credits", "salvage", "ore", "fuel", "ammo", "rare_metals"]
 
 ## Returns "" if faction can pay cost, else a reason like "Need 120 more salvage".
 func can_afford(fid: int, cost: Dictionary) -> String:

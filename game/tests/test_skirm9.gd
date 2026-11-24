@@ -5,6 +5,7 @@ const Skirm9 = preload("res://sim/systems/skirm9.gd")
 const Director71 = preload("res://sim/systems/director71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const Creep = preload("res://sim/systems/creep.gd")
+const SkirmishSetup = preload("res://presentation/menu/skirmish_setup.gd")
 const H := 0
 const M := 1
 
@@ -45,6 +46,16 @@ func test_director_adapt_flag_default_off() -> void:
 	check(Skirm9.director_adapt(w2), "cfg.skirm9.director_adapt overrides rules")
 
 
+func test_director_adapt_setup_round_trip() -> void:
+	var ui = SkirmishSetup.new()
+	ui.build()
+	ui.set_director_adapt(true)
+	var cfg := SimWorld.default_config()
+	ui.apply(cfg, 8)
+	check(bool(cfg.get("skirm9", {}).get("director_adapt", false)), "setup writes cfg toggle")
+	ui.free()
+
+
 func test_spawn_wave_fair_caps() -> void:
 	var w := _machine_world()
 	var s := Skirm9._st(w)
@@ -62,6 +73,11 @@ func test_spawn_wave_fair_caps() -> void:
 	var cap := int(Skirm9.R().get("max_siege_alive", 6))
 	check(Skirm9._siege_alive(w, M) <= cap, "total siege alive respects cap")
 	check(more.size() <= maxi(cap - spawned.size(), 0), "second wave respects remaining cap")
+	var target := Vector2(45, 45)
+	check_eq(Skirm9.order_siege_attack_move(w, M, spawned, target), spawned.size(), "siege attack-move submitted")
+	w.step()
+	for id in spawned:
+		check_eq(String(w.entities[id].order.type), "attack_move", "siege accepts attack-move")
 
 
 func test_adapt_changes_roster_when_enabled() -> void:

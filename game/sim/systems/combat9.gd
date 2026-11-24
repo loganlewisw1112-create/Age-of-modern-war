@@ -13,6 +13,7 @@ const Ballistics8 = preload("res://sim/systems/ballistics8.gd")
 const Blast8 = preload("res://sim/systems/blast8.gd")
 const Parts71 = preload("res://sim/systems/parts71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
+const VehicleWear9 = preload("res://sim/systems/vehicle_wear9.gd")
 
 const MATCH_FAMILIES := ["skirmish", "last_protocol", "editor_live"]
 
@@ -46,13 +47,29 @@ static func match_family(w: SimWorld) -> String:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "craters": [], "breaches": [], "harness": {}}
+		s = {"ver": VER, "craters": [], "breaches": [], "forts": {}, "harness": {}}
 		w.sys_state[KEY] = s
+	elif not s.has("forts"):
+		s.forts = {}
 	return s
 
 
 static func tick(w: SimWorld) -> void:
-	pass
+	VehicleWear9.tick(w)
+
+
+## Persistent field fort record. Construction remains delegated to Fortify; this is the save/hash seam.
+static func dig_fort(w: SimWorld, fid: int, cell: Vector2i, kind: String = "foxhole") -> bool:
+	if not w.in_bounds(cell) or not w.factions.has(fid):
+		return false
+	var key := "%d,%d" % [cell.x, cell.y]
+	_st(w).forts[key] = {"cell": [cell.x, cell.y], "owner": fid, "kind": kind, "built": w.tick}
+	w.emit("Combat9FortBuilt", {"cell": [cell.x, cell.y], "owner": fid, "kind": kind})
+	return true
+
+
+static func fort_at(w: SimWorld, cell: Vector2i) -> Dictionary:
+	return (_st(w).forts as Dictionary).get("%d,%d" % [cell.x, cell.y], {})
 
 
 ## BLAST8 hook: large enough bursts scar the map (persistent geometry).

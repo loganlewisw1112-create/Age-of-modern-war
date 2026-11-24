@@ -1,0 +1,43 @@
+{
+  "_meta": "Pre-G10 AI9 evidence-driven adaptation, named generals and diplomacy. All numbers PROVISIONAL; no resource, HP or damage cheats.",
+  "rules": {
+    "g71_ai9": {
+      "adapt": {
+        "counter_for": {
+          "laser": "smoke",
+          "beam": "smoke",
+          "at": "infantry",
+          "rocket": "screen",
+          "small_arms": "armor"
+        },
+        "composition": {
+          "smoke": ["g71_m_glass_stalker", "m_skirmisher"],
+          "infantry": ["m_swarm", "m_hunter"],
+          "screen": ["m_skirmisher", "m_walker"],
+          "armor": ["m_brute", "m_walker"],
+          "combined": ["m_swarm", "m_skirmisher"]
+        }
+      },
+      "personas": {
+        "iron_wall": {"name": "Marshal Iron Wall", "playstyle": "defensive", "stance": "cautious", "priority": "fortify"},
+        "storm_spear": {"name": "General Storm Spear", "playstyle": "aggressive", "stance": "aggressive", "priority": "armor_push"},
+        "long_reach": {"name": "Commander Long Reach", "playstyle": "combined", "stance": "balanced", "priority": "artillery"},
+        "swarm_tide": {"name": "Warmind Swarm Tide", "playstyle": "aggressive", "stance": "balanced", "priority": "mass"},
+        "ghost_knife": {"name": "Colonel Ghost Knife", "playstyle": "specops", "stance": "cautious", "priority": "raid"}
+      },
+      "diplomacy": {
+        "form_at": 5.0,
+        "break_below": 2.0,
+        "truce_ticks": 600
+      },
+      "difficulty": {
+        "easy": {"scout_interval": 240, "reaction_delay": 80, "retreat_at": 0.55, "adapt_weight": 0.25},
+        "normal": {"scout_interval": 160, "reaction_delay": 40, "retreat_at": 0.45, "adapt_weight": 0.6},
+        "hard": {"scout_interval": 100, "reaction_delay": 15, "retreat_at": 0.35, "adapt_weight": 1.0}
+      },
+      "operations": {
+        "phases": ["recon", "fix", "assault", "exploit"]
+      }
+    }
+  }
+}

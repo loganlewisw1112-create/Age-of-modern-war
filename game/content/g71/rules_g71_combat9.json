@@ -4,7 +4,12 @@
     "g71_combat9": {
       "enabled": true,
       "crater_min_charge_kg": 0.45,
-      "crater_radius_tiles": 0.45
+      "crater_radius_tiles": 0.45,
+      "wear": {
+        "breakdown_at": 0.85,
+        "recovery_ticks": 80,
+        "recovered_wear": 0.35
+      }
     }
   }
 }
