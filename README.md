@@ -3,6 +3,7 @@
 [![Godot](https://img.shields.io/badge/Godot-4.7.2-478cbf?logo=godotengine&logoColor=white)](https://godotengine.org/)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078d4?logo=windows&logoColor=white)](https://godotengine.org/)
 [![Branch](https://img.shields.io/badge/branch-g71-111111)](https://github.com/loganlewisw1112-create/Age-of-modern-war)
+[![Package](https://img.shields.io/badge/package-279%20MB-2ea44f)](#play-the-packaged-build)
 
 Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native sim core. Classic skirmish plus a dedicated siege mode (**Last Protocol**). Tech climbs through **thirteen stages** (Age-of style eras): early recovery through modern combined arms into late synthetic forms.
 
@@ -193,6 +194,8 @@ Detail and acceptance live in `game/docs/ROADMAP.md`. Design contracts and older
 Latest Windows package (auto-refreshed every ship):
 
 `Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_*`
+
+**Package size (latest build):** 279 MB unpacked · 178 MB zip — `RTS_Age_of_Modern_War_G71_2026-11-23_a68af4c3` (293,020,819 bytes folder / 186,499,835 bytes zip).
 
 Keep these three together:
 
