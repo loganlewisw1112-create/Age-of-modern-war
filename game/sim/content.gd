@@ -49,7 +49,7 @@ static func _apply_g71_speed() -> void:
 ##   faction_roles: {faction: {role: id}}       new role keys only
 ##   faction_stage_roles: {faction: {"7": {role: id}}}  new keys only
 const FRAGMENT_DIR := "res://content/g4"
-const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5", "res://content/g6", "res://content/g7", "res://content/g71"]  # G5/G6/G7/G7.1: merged in this order (G7: DRONE7 CR)
+const FRAGMENT_DIRS := ["res://content/g4", "res://content/g5", "res://content/g6", "res://content/g7", "res://content/g71", "res://content/g10"]  # G5/G6/G7/G7.1/G10: merged in this order
 
 
 static func _merge_fragments() -> void:

@@ -209,5 +209,77 @@
         "m_overmind"
       ]
     }
+  },
+  "shadow_coalition": {
+    "name": "Shadow Coalition",
+    "archetype": "Coalition",
+    "kind": "human",
+    "blurb": "Cells bleed and distract; mercenaries flex; scarce Syndicate elites strike the weak point.",
+    "roles": {
+      "hq": "x_safehouse",
+      "power": "x_cache",
+      "depot": "x_black_market",
+      "barracks": "x_underground_barracks",
+      "factory": "x_underground_factory",
+      "refinery": "x_weld_shop",
+      "defense": "x_tunnel_entrance",
+      "extra": "x_bunker_hatch",
+      "builder": "x_cell_sapper",
+      "gatherer": "x_cell_sapper",
+      "infantry": "x_cell_rifle",
+      "antitank": "x_cell_at",
+      "recon": "x_ambush_cell",
+      "light": "x_technical_mg",
+      "heavy": "x_captured_tank",
+      "artillery": "x_technical_mortar",
+      "officer": "x_officer",
+      "supply": "x_recovery_truck",
+      "air": "x_silent_rotor",
+      "research": "",
+      "comms": "x_broker_exchange",
+      "ew": "x_pmc_ew",
+      "precision": "",
+      "anti_air": "x_technical_aa"
+    },
+    "start_units": [
+      "x_cell_sapper",
+      "x_cell_sapper",
+      "x_cell_sapper",
+      "x_cell_sapper",
+      "x_cell_rifle",
+      "x_ambush_cell"
+    ],
+    "stage_roles": {
+      "7": {
+        "air": "",
+        "heavy": "x_technical_recoilless"
+      },
+      "8": {
+        "air": "x_silent_rotor"
+      },
+      "9": {
+        "air": "x_silent_rotor",
+        "ew": "x_shadow_ew",
+        "heavy": "x_captured_tank"
+      },
+      "10": {
+        "air": "x_silent_rotor",
+        "ew": "x_shadow_ew",
+        "heavy": "x_prototype_walker",
+        "elite_infantry": "x_death_strike"
+      }
+    },
+    "stage_unlocks": {
+      "8": [
+        "x_death_strike",
+        "x_death_assault",
+        "x_death_recon"
+      ],
+      "10": [
+        "x_prototype_walker",
+        "x_ghost_complex",
+        "x_vault_core"
+      ]
+    }
   }
 }

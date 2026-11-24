@@ -1,0 +1,2086 @@
+{
+  "_meta": "G10 Shadow Coalition Stage 7-10 core seed (61 gameplay defs). Numbers PROVISIONAL. IDs frozen for cross-pillar contract.",
+  "units": {
+    "x_cell_rifle": {
+      "name": "Cell Rifle",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infantry",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_cell_at": {
+      "name": "Cell At",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "antitank",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "at_rocket",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_cell_sapper": {
+      "name": "Cell Sapper",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "builder",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "pistol",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "can_build": true,
+      "can_gather": true,
+      "carry_capacity": 10,
+      "gather_rate": 2.0,
+      "build_power": 1.0
+    },
+    "x_cell_medic": {
+      "name": "Cell Medic",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infantry",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_ambush_cell": {
+      "name": "Ambush Cell",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "recon",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_sleeper_cell": {
+      "name": "Sleeper Cell",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infantry",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_backdoor_hacker": {
+      "name": "Backdoor Hacker",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infantry",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_broker": {
+      "name": "Broker",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infantry",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_pmc_rifle": {
+      "name": "Pmc Rifle",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "mercenary",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_pmc_assault": {
+      "name": "Pmc Assault",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "mercenary",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_pmc_sniper": {
+      "name": "Pmc Sniper",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "mercenary",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_pmc_ew": {
+      "name": "Pmc Ew",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "mercenary",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_officer": {
+      "name": "Officer",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "officer",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_ghost_infiltrator": {
+      "name": "Ghost Infiltrator",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "infiltrator",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 100,
+      "speed": 2.2,
+      "sight": 8,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.3,
+      "ammo_max": 60,
+      "morale": 100,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_technical_mg": {
+      "name": "Technical Mg",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_technical_rocket": {
+      "name": "Technical Rocket",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_technical_aa": {
+      "name": "Technical Aa",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_technical_mortar": {
+      "name": "Technical Mortar",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "artillery",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "mortar",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_technical_recoilless": {
+      "name": "Technical Recoilless",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_captured_tank": {
+      "name": "Captured Tank",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "heavy",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 900,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "tank_cannon",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_refit_ifv": {
+      "name": "Refit Ifv",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 900,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_shock_truck": {
+      "name": "Shock Truck",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "light",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_stealth_apc": {
+      "name": "Stealth Apc",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "ghost_support",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_ghost_runner": {
+      "name": "Ghost Runner",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "ghost_support",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_exo_mule": {
+      "name": "Exo Mule",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "ghost_support",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 900,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_recovery_truck": {
+      "name": "Recovery Truck",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "supply",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "can_repair": true
+    },
+    "x_ghost_drone_carrier": {
+      "name": "Ghost Drone Carrier",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "ghost_support",
+      "armor": "light",
+      "move_class": "vehicle",
+      "hp": 400,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_prototype_walker": {
+      "name": "Prototype Walker",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "ghost_support",
+      "armor": "heavy",
+      "move_class": "vehicle",
+      "hp": 900,
+      "speed": 3.0,
+      "sight": 9,
+      "weapon": "hmg",
+      "pop": 3,
+      "radius": 0.6,
+      "ammo_max": 80,
+      "leaves_wreck": true,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_stealth_drone": {
+      "name": "Stealth Drone",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "micro_drone_gun",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "micro",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_shock_drone": {
+      "name": "Shock Drone",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "micro_drone_gun",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "micro",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_recon_drone": {
+      "name": "Recon Drone",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "micro_drone_gun",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "micro",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_silent_rotor": {
+      "name": "Silent Rotor",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "rotor",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_stealth_transport": {
+      "name": "Stealth Transport",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "rotor",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_patron_cas": {
+      "name": "Patron Cas",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "air",
+      "armor": "light",
+      "move_class": "air_low",
+      "hp": 200,
+      "speed": 5.0,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "is_air": true,
+      "aircraft": "rotor",
+      "fuel_max": 200,
+      "fuel_per_tile": 0.0,
+      "fuel_burn": 0.5
+    },
+    "x_river_ghost": {
+      "name": "River Ghost",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "naval",
+      "armor": "light",
+      "move_class": "naval_small",
+      "hp": 200,
+      "speed": 3.5,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "naval_ship": true,
+      "leaves_wreck": true
+    },
+    "x_mini_sub": {
+      "name": "Mini Sub",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "naval",
+      "armor": "light",
+      "move_class": "naval_small",
+      "hp": 200,
+      "speed": 3.5,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "naval_ship": true,
+      "leaves_wreck": true
+    },
+    "x_smuggler_boat": {
+      "name": "Smuggler Boat",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "naval",
+      "armor": "light",
+      "move_class": "naval_small",
+      "hp": 200,
+      "speed": 3.5,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "naval_ship": true,
+      "leaves_wreck": true
+    },
+    "x_patrol_boat": {
+      "name": "Patrol Boat",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "role": "naval",
+      "armor": "light",
+      "move_class": "naval_small",
+      "hp": 200,
+      "speed": 3.5,
+      "sight": 12,
+      "weapon": "hmg",
+      "pop": 2,
+      "radius": 0.4,
+      "ammo_max": 60,
+      "g10": true,
+      "_note": "PROVISIONAL G10 seed",
+      "naval_ship": true,
+      "leaves_wreck": true
+    },
+    "x_death_strike": {
+      "name": "Death Strike",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_death_assault": {
+      "name": "Death Assault",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_death_recon": {
+      "name": "Death Recon",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_shadow_pathfinder": {
+      "name": "Shadow Pathfinder",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_shadow_ew": {
+      "name": "Shadow Ew",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_shadow_signal": {
+      "name": "Shadow Signal",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_shadow_decoy": {
+      "name": "Shadow Decoy",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_anchor_tech": {
+      "name": "Anchor Tech",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    },
+    "x_anchor_medic": {
+      "name": "Anchor Medic",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "stage_max": 13,
+      "role": "ghost",
+      "armor": "infantry",
+      "move_class": "foot",
+      "hp": 180,
+      "speed": 2.4,
+      "sight": 10,
+      "weapon": "rifle",
+      "pop": 1,
+      "radius": 0.35,
+      "ammo_max": 80,
+      "morale": 120,
+      "g10": true,
+      "ghost_regiment": true,
+      "_note": "PROVISIONAL G10 seed"
+    }
+  },
+  "buildings": {
+    "x_safehouse": {
+      "name": "Safehouse",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 1,
+      "cost": {
+        "credits": 0,
+        "salvage": 0,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "is_hq": true,
+      "buildable": false,
+      "power": 30,
+      "pop_cap": 20,
+      "deposit": true,
+      "requires_power": false,
+      "size": 3,
+      "hp": 2800
+    },
+    "x_tunnel_entrance": {
+      "name": "Tunnel Entrance",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -5,
+      "size": 1,
+      "hp": 600,
+      "requires": [
+        "x_safehouse"
+      ]
+    },
+    "x_cache": {
+      "name": "Cache",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": 20,
+      "size": 2,
+      "hp": 900,
+      "requires": [
+        "x_safehouse"
+      ]
+    },
+    "x_weld_shop": {
+      "name": "Weld Shop",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -25,
+      "size": 3,
+      "hp": 1200,
+      "requires": [
+        "x_safehouse",
+        "x_cache"
+      ]
+    },
+    "x_black_market": {
+      "name": "Black Market",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -10,
+      "size": 2,
+      "hp": 1000,
+      "deposit": true,
+      "requires": [
+        "x_safehouse"
+      ]
+    },
+    "x_broker_exchange": {
+      "name": "Broker Exchange",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -10,
+      "size": 2,
+      "hp": 900,
+      "requires": [
+        "x_black_market"
+      ]
+    },
+    "x_patron_office": {
+      "name": "Patron Office",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -15,
+      "size": 2,
+      "hp": 1100,
+      "requires": [
+        "x_broker_exchange"
+      ]
+    },
+    "x_disguised_workshop": {
+      "name": "Disguised Workshop",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -20,
+      "size": 3,
+      "hp": 1300,
+      "requires": [
+        "x_weld_shop"
+      ]
+    },
+    "x_bunker_hatch": {
+      "name": "Bunker Hatch",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -5,
+      "size": 1,
+      "hp": 800,
+      "requires": [
+        "x_safehouse"
+      ]
+    },
+    "x_underground_barracks": {
+      "name": "Underground Barracks",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -20,
+      "size": 3,
+      "hp": 1400,
+      "requires": [
+        "x_safehouse",
+        "x_cache"
+      ]
+    },
+    "x_underground_factory": {
+      "name": "Underground Factory",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -30,
+      "size": 3,
+      "hp": 1600,
+      "requires": [
+        "x_underground_barracks",
+        "x_weld_shop"
+      ]
+    },
+    "x_ghost_complex": {
+      "name": "Ghost Complex",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -40,
+      "size": 4,
+      "hp": 2200,
+      "requires": [
+        "x_underground_factory",
+        "x_bunker_hatch"
+      ]
+    },
+    "x_forward_repair": {
+      "name": "Forward Repair",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -15,
+      "size": 2,
+      "hp": 1000,
+      "requires": [
+        "x_weld_shop"
+      ]
+    },
+    "x_vault_core": {
+      "name": "Vault Core",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 25,
+      "cost": {
+        "credits": 400,
+        "salvage": 150,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 seed",
+      "buildable": true,
+      "power": -25,
+      "size": 2,
+      "hp": 1800,
+      "requires": [
+        "x_ghost_complex"
+      ]
+    }
+  },
+  "production": {
+    "x_cell_rifle": {
+      "name": "Cell Rifle",
+      "spawns": [
+        "x_cell_rifle"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "C",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_cell_at": {
+      "name": "Cell At",
+      "spawns": [
+        "x_cell_at"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "C",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_cell_sapper": {
+      "name": "Cell Sapper",
+      "spawns": [
+        "x_cell_sapper"
+      ],
+      "facility": "x_safehouse",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "C",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_cell_medic": {
+      "name": "Cell Medic",
+      "spawns": [
+        "x_cell_medic"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "C",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_ambush_cell": {
+      "name": "Ambush Cell",
+      "spawns": [
+        "x_ambush_cell"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "A",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_sleeper_cell": {
+      "name": "Sleeper Cell",
+      "spawns": [
+        "x_sleeper_cell"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_backdoor_hacker": {
+      "name": "Backdoor Hacker",
+      "spawns": [
+        "x_backdoor_hacker"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "B",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_broker": {
+      "name": "Broker",
+      "spawns": [
+        "x_broker"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "B",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_pmc_rifle": {
+      "name": "Pmc Rifle",
+      "spawns": [
+        "x_pmc_rifle"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_pmc_assault": {
+      "name": "Pmc Assault",
+      "spawns": [
+        "x_pmc_assault"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_pmc_sniper": {
+      "name": "Pmc Sniper",
+      "spawns": [
+        "x_pmc_sniper"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_pmc_ew": {
+      "name": "Pmc Ew",
+      "spawns": [
+        "x_pmc_ew"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_officer": {
+      "name": "Officer",
+      "spawns": [
+        "x_officer"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 250,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "O",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_ghost_infiltrator": {
+      "name": "Ghost Infiltrator",
+      "spawns": [
+        "x_ghost_infiltrator"
+      ],
+      "facility": "x_underground_barracks",
+      "cost": {
+        "credits": 150,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 12,
+      "hotkey": "G",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_technical_mg": {
+      "name": "Technical Mg",
+      "spawns": [
+        "x_technical_mg"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "T",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_technical_rocket": {
+      "name": "Technical Rocket",
+      "spawns": [
+        "x_technical_rocket"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "T",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_technical_aa": {
+      "name": "Technical Aa",
+      "spawns": [
+        "x_technical_aa"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "T",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_technical_mortar": {
+      "name": "Technical Mortar",
+      "spawns": [
+        "x_technical_mortar"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "T",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_technical_recoilless": {
+      "name": "Technical Recoilless",
+      "spawns": [
+        "x_technical_recoilless"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "T",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_captured_tank": {
+      "name": "Captured Tank",
+      "spawns": [
+        "x_captured_tank"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "C",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_refit_ifv": {
+      "name": "Refit Ifv",
+      "spawns": [
+        "x_refit_ifv"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "R",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_shock_truck": {
+      "name": "Shock Truck",
+      "spawns": [
+        "x_shock_truck"
+      ],
+      "facility": "x_weld_shop",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_stealth_apc": {
+      "name": "Stealth Apc",
+      "spawns": [
+        "x_stealth_apc"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_ghost_runner": {
+      "name": "Ghost Runner",
+      "spawns": [
+        "x_ghost_runner"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "G",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_exo_mule": {
+      "name": "Exo Mule",
+      "spawns": [
+        "x_exo_mule"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "E",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_recovery_truck": {
+      "name": "Recovery Truck",
+      "spawns": [
+        "x_recovery_truck"
+      ],
+      "facility": "x_forward_repair",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "R",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_ghost_drone_carrier": {
+      "name": "Ghost Drone Carrier",
+      "spawns": [
+        "x_ghost_drone_carrier"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "G",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_prototype_walker": {
+      "name": "Prototype Walker",
+      "spawns": [
+        "x_prototype_walker"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 350,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 20,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_stealth_drone": {
+      "name": "Stealth Drone",
+      "spawns": [
+        "x_stealth_drone"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_shock_drone": {
+      "name": "Shock Drone",
+      "spawns": [
+        "x_shock_drone"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_recon_drone": {
+      "name": "Recon Drone",
+      "spawns": [
+        "x_recon_drone"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "R",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_silent_rotor": {
+      "name": "Silent Rotor",
+      "spawns": [
+        "x_silent_rotor"
+      ],
+      "facility": "x_patron_office",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_stealth_transport": {
+      "name": "Stealth Transport",
+      "spawns": [
+        "x_stealth_transport"
+      ],
+      "facility": "x_patron_office",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_patron_cas": {
+      "name": "Patron Cas",
+      "spawns": [
+        "x_patron_cas"
+      ],
+      "facility": "x_patron_office",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_river_ghost": {
+      "name": "River Ghost",
+      "spawns": [
+        "x_river_ghost"
+      ],
+      "facility": "x_black_market",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "R",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_mini_sub": {
+      "name": "Mini Sub",
+      "spawns": [
+        "x_mini_sub"
+      ],
+      "facility": "x_black_market",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "M",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_smuggler_boat": {
+      "name": "Smuggler Boat",
+      "spawns": [
+        "x_smuggler_boat"
+      ],
+      "facility": "x_black_market",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_patrol_boat": {
+      "name": "Patrol Boat",
+      "spawns": [
+        "x_patrol_boat"
+      ],
+      "facility": "x_black_market",
+      "cost": {
+        "credits": 400,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 25,
+      "hotkey": "P",
+      "faction": "shadow_coalition",
+      "stage_min": 7,
+      "g10": true
+    },
+    "x_death_strike": {
+      "name": "Death Strike",
+      "spawns": [
+        "x_death_strike"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "D",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_death_assault": {
+      "name": "Death Assault",
+      "spawns": [
+        "x_death_assault"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "D",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_death_recon": {
+      "name": "Death Recon",
+      "spawns": [
+        "x_death_recon"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "D",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_shadow_pathfinder": {
+      "name": "Shadow Pathfinder",
+      "spawns": [
+        "x_shadow_pathfinder"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_shadow_ew": {
+      "name": "Shadow Ew",
+      "spawns": [
+        "x_shadow_ew"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_shadow_signal": {
+      "name": "Shadow Signal",
+      "spawns": [
+        "x_shadow_signal"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_shadow_decoy": {
+      "name": "Shadow Decoy",
+      "spawns": [
+        "x_shadow_decoy"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "S",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_anchor_tech": {
+      "name": "Anchor Tech",
+      "spawns": [
+        "x_anchor_tech"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "A",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    },
+    "x_anchor_medic": {
+      "name": "Anchor Medic",
+      "spawns": [
+        "x_anchor_medic"
+      ],
+      "facility": "x_ghost_complex",
+      "cost": {
+        "credits": 500,
+        "salvage": 50,
+        "ore": 0
+      },
+      "train_time": 30,
+      "hotkey": "A",
+      "faction": "shadow_coalition",
+      "stage_min": 8,
+      "g10": true
+    }
+  }
+}
