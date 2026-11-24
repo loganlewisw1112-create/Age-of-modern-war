@@ -1,0 +1,12 @@
+G10 Task 8 look samples (ART10)
+Approve or revise each id before bulk art.
+
+[ ] x_cell_rifle — ragged Coalition cell
+[ ] x_technical_rocket — scavenged technical
+[ ] x_safehouse — hidden civilian lie vs revealed Ghost hatch
+[ ] x_death_strike — too-clean Ghost (debt stripe only)
+[ ] x_patron_cas — patron rotor / debt pinstripe
+[ ] x_prototype_walker — late prototype walker
+
+Strips: strip_g10_coalition_samples.png (+_2x), strip_g10_cell_vs_ghost.png (+_2x)
+Board NEED: g10.look.samples
