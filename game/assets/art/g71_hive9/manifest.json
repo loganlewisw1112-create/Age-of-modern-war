@@ -14,30 +14,43 @@
     "icons/m_spider_layer.png": "e49732d82875cbf65df92fc6fc7a8588",
     "icons/m_stalker_synth.png": "c77bd16e8c81a783d683c407efdc586c",
     "units/g71_m_brute.png": "282a0387a4fe9aaaca62dc3fbd88610a",
+    "units/g71_m_brute__mod_01.png": "5333c37ab61cbf60cb232d7ca5ed02af",
     "units/g71_m_brute_alpha.png": "29b3261ca20734b99c1051abc8ecf2e7",
+    "units/g71_m_brute_alpha__mod_02.png": "c47def6da244f62ca5d0432165cd0945",
     "units/g71_m_brute_alpha_mask.png": "4b4c3f01a64feff13ff2784ef4d6858c",
     "units/g71_m_brute_mask.png": "d8c0b4114ae7d32fb34f476e6caeb6e3",
     "units/g71_m_glass_stalker.png": "fbe70ce83e6b4fbbff42ba90cf9e24bb",
+    "units/g71_m_glass_stalker__mod_03.png": "70d75c1486e72093ba835bcb64c6beee",
     "units/g71_m_glass_stalker_mask.png": "1c5b0c6088acb147a278a9a0908953fb",
     "units/g71_m_hive_conductor.png": "985840a8e1831c9b5152b71ed1cda0d2",
+    "units/g71_m_hive_conductor__mod_04.png": "6e123cb2a874bdecbcb1868a64883be9",
     "units/g71_m_hive_conductor_mask.png": "51c576f0b2e8d60726223e17ff14e474",
     "units/g71_m_lazarus.png": "9749ec85654096cdbf92c0ada596ef92",
+    "units/g71_m_lazarus__mod_05.png": "31cfe91c0dc460b3b860aa931ba74999",
     "units/g71_m_lazarus_mask.png": "a70337e3a78696454c1037e43809ca4e",
     "units/g71_m_mega_walker.png": "7d6d76b2f61c9270816e047dbe9d1c5e",
+    "units/g71_m_mega_walker__mod_06.png": "f9a6248a5af07185eb8e2045f696dbb4",
     "units/g71_m_mega_walker_mask.png": "a41433ebb9e61dd412fe645581d12f7c",
     "units/g71_m_reclaimer.png": "b84fc0f536c740b6fffe4145ab11c02b",
+    "units/g71_m_reclaimer__mod_07.png": "50b24efcc35cfa0db9648c19f27897bf",
     "units/g71_m_reclaimer_mask.png": "4fc3e37c5d5335305740d1dc4900306d",
     "units/g71_m_sapper.png": "21e737b5903bb7bfcd07e4ad442ff233",
+    "units/g71_m_sapper__mod_08.png": "9f60ef6e56790ba30aad26db39ecdb78",
     "units/g71_m_sapper_mask.png": "4867f304e531631026211dd4219db356",
     "units/g71_m_siege_walker.png": "37a0a8d3d3953d1fa0af7b621a125711",
+    "units/g71_m_siege_walker__mod_09.png": "f540d1c16a7a57fc9353b6da688442bf",
     "units/g71_m_siege_walker_mask.png": "ec78caafbe11c2ca49533bf70b164a09",
     "units/g71_m_turret_eater.png": "78af7489ccdd9298c62faf5c1be78298",
+    "units/g71_m_turret_eater__mod_10.png": "78af7489ccdd9298c62faf5c1be78298",
     "units/g71_m_turret_eater_mask.png": "55a48e1315a637bd0944531b90d9b9a4",
     "units/g7_m_burrower.png": "9f29eb6eee860f1227a93cb050c29993",
+    "units/g7_m_burrower__mod_11.png": "94db63bc94909877627f3189308a7548",
     "units/g7_m_burrower_mask.png": "1901f57e5bed0d4a6ef6bfcadd135c02",
     "units/g7_m_leech.png": "f24deb78fcfc68804794579ed73281f7",
+    "units/g7_m_leech__mod_12.png": "f24deb78fcfc68804794579ed73281f7",
     "units/g7_m_leech_mask.png": "72313b1a7d2775f7c69f551d68168c14",
     "units/g7_m_mimic.png": "a300e15789685ad8fe075df34f3d4fec",
+    "units/g7_m_mimic__mod_13.png": "95fa5e4753711841e5df54ae0b04971f",
     "units/g7_m_mimic_mask.png": "426015eb955247ae94264948b6072c3f",
     "units/g7_m_packhunter.png": "eb3337cec7cda0d76e9e77fc339f4d4c",
     "units/g7_m_packhunter_mask.png": "b2e0bcb62dbd1c6ef901be555a65efd9",
@@ -293,6 +306,168 @@
         47.0
       ]
     },
+    "g71_m_brute__mod_01": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22.0,
+            -2.0
+          ],
+          [
+            -13.0,
+            7.0
+          ],
+          [
+            -23.0,
+            -2.0
+          ],
+          [
+            -27.0,
+            -12.0
+          ],
+          [
+            -23.0,
+            -17.0
+          ],
+          [
+            -1.0,
+            -31.0
+          ],
+          [
+            22.0,
+            -17.0
+          ],
+          [
+            26.0,
+            -12.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -39.0
+          ],
+          [
+            0.0,
+            -41.0
+          ],
+          [
+            -1.0,
+            -39.0
+          ],
+          [
+            -1.0,
+            -35.0
+          ],
+          [
+            -1.0,
+            -34.0
+          ],
+          [
+            0.0,
+            -36.0
+          ],
+          [
+            1.0,
+            -34.0
+          ],
+          [
+            1.0,
+            -35.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 66.0,
+      "file": "units/g71_m_brute__mod_01.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 84.0,
+      "g7": {
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "budget": 1048576.0,
+        "bytes": 873500.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "fire": "claw_0",
+          "walk_a": "walk_0",
+          "walk_b": "walk_3"
+        },
+        "key_frames": [
+          "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "legged": true,
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 3193344.0,
+        "sample": "threat"
+      },
+      "g71": {
+        "base": "g7_m_packhunter",
+        "mark": "brute",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_brute",
+        "blend": "hive9",
+        "modular_variant": 1
+      },
+      "mask": "units/g71_m_brute_mask.png",
+      "pivot": [
+        42.0,
+        47.0
+      ]
+    },
     "g71_m_brute_alpha": {
       "anim61": {
         "damaged": "damaged",
@@ -455,6 +630,168 @@
         47.0
       ]
     },
+    "g71_m_brute_alpha__mod_02": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            22.0,
+            -2.0
+          ],
+          [
+            -13.0,
+            7.0
+          ],
+          [
+            -23.0,
+            -2.0
+          ],
+          [
+            -27.0,
+            -12.0
+          ],
+          [
+            -23.0,
+            -17.0
+          ],
+          [
+            -1.0,
+            -31.0
+          ],
+          [
+            22.0,
+            -17.0
+          ],
+          [
+            26.0,
+            -12.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -39.0
+          ],
+          [
+            0.0,
+            -41.0
+          ],
+          [
+            -1.0,
+            -39.0
+          ],
+          [
+            -1.0,
+            -35.0
+          ],
+          [
+            -1.0,
+            -34.0
+          ],
+          [
+            0.0,
+            -36.0
+          ],
+          [
+            1.0,
+            -34.0
+          ],
+          [
+            1.0,
+            -35.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 66.0,
+      "file": "units/g71_m_brute_alpha__mod_02.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "pounce",
+        "claw_0",
+        "claw_1",
+        "die",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 84.0,
+      "g7": {
+        "anim_strip": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "budget": 1048576.0,
+        "bytes": 873500.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "frame_alias": {
+          "fire": "claw_0",
+          "walk_a": "walk_0",
+          "walk_b": "walk_3"
+        },
+        "key_frames": [
+          "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "run_0",
+          "run_1",
+          "pounce",
+          "claw_0",
+          "claw_1",
+          "die"
+        ],
+        "legged": true,
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 3193344.0,
+        "sample": "threat"
+      },
+      "g71": {
+        "base": "g7_m_packhunter",
+        "mark": "alpha",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_brute_alpha",
+        "blend": "hive9",
+        "modular_variant": 2
+      },
+      "mask": "units/g71_m_brute_alpha_mask.png",
+      "pivot": [
+        42.0,
+        47.0
+      ]
+    },
     "g71_m_glass_stalker": {
       "anim61": {
         "base": 4.0,
@@ -515,6 +852,66 @@
         33.0
       ]
     },
+    "g71_m_glass_stalker__mod_03": {
+      "anim61": {
+        "base": 4.0,
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 40.0,
+      "file": "units/g71_m_glass_stalker__mod_03.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 28.0,
+      "g71": {
+        "base": "m_coordinator",
+        "mark": "translucent glass edge + cyan refraction stripe"
+      },
+      "g9": {
+        "base": "g71_m_glass_stalker",
+        "blend": "hive9",
+        "modular_variant": 3
+      },
+      "legged": true,
+      "mask": "units/g71_m_glass_stalker_mask.png",
+      "pivot": [
+        14.0,
+        33.0
+      ]
+    },
     "g71_m_hive_conductor": {
       "anim61": {
         "base": 4.0,
@@ -567,6 +964,66 @@
         "base": "g71_m_hive_conductor",
         "blend": "hive9",
         "silhouette": "special"
+      },
+      "legged": true,
+      "mask": "units/g71_m_hive_conductor_mask.png",
+      "pivot": [
+        35.0,
+        52.0
+      ]
+    },
+    "g71_m_hive_conductor__mod_04": {
+      "anim61": {
+        "base": 4.0,
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 70.0,
+      "file": "units/g71_m_hive_conductor__mod_04.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 70.0,
+      "g71": {
+        "base": "m_walker",
+        "mark": "violet sync ring + command mast"
+      },
+      "g9": {
+        "base": "g71_m_hive_conductor",
+        "blend": "hive9",
+        "modular_variant": 4
       },
       "legged": true,
       "mask": "units/g71_m_hive_conductor_mask.png",
@@ -694,6 +1151,125 @@
         66.0
       ]
     },
+    "g71_m_lazarus__mod_05": {
+      "anim61": {
+        "damaged": "damaged",
+        "move": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5"
+        ],
+        "muzzle": [
+          [
+            39.0,
+            0.0
+          ],
+          [
+            22.0,
+            13.0
+          ],
+          [
+            -37.0,
+            0.0
+          ],
+          [
+            -54.0,
+            -39.0
+          ],
+          [
+            -45.0,
+            -62.0
+          ],
+          [
+            0.0,
+            -66.0
+          ],
+          [
+            44.0,
+            -62.0
+          ],
+          [
+            53.0,
+            -39.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            2.0,
+            -56.0
+          ],
+          [
+            2.0,
+            -59.0
+          ],
+          [
+            2.0,
+            -60.0
+          ],
+          [
+            -6.0,
+            -57.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            2.0,
+            -63.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            8.0,
+            -52.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 92.0,
+      "file": "units/g71_m_lazarus__mod_05.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "scale",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 108.0,
+      "g71": {
+        "base": "m_colossus",
+        "mark": "lazarus",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_lazarus",
+        "blend": "hive9",
+        "modular_variant": 5
+      },
+      "mask": "units/g71_m_lazarus_mask.png",
+      "pivot": [
+        54.0,
+        66.0
+      ]
+    },
     "g71_m_mega_walker": {
       "anim61": {
         "damaged": "damaged",
@@ -813,6 +1389,125 @@
         66.0
       ]
     },
+    "g71_m_mega_walker__mod_06": {
+      "anim61": {
+        "damaged": "damaged",
+        "move": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5"
+        ],
+        "muzzle": [
+          [
+            39.0,
+            0.0
+          ],
+          [
+            22.0,
+            13.0
+          ],
+          [
+            -37.0,
+            0.0
+          ],
+          [
+            -54.0,
+            -39.0
+          ],
+          [
+            -45.0,
+            -62.0
+          ],
+          [
+            0.0,
+            -66.0
+          ],
+          [
+            44.0,
+            -62.0
+          ],
+          [
+            53.0,
+            -39.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            2.0,
+            -56.0
+          ],
+          [
+            2.0,
+            -59.0
+          ],
+          [
+            2.0,
+            -60.0
+          ],
+          [
+            -6.0,
+            -57.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            2.0,
+            -63.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            8.0,
+            -52.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 92.0,
+      "file": "units/g71_m_mega_walker__mod_06.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "scale",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 108.0,
+      "g71": {
+        "base": "m_colossus",
+        "mark": "mega",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_mega_walker",
+        "blend": "hive9",
+        "modular_variant": 6
+      },
+      "mask": "units/g71_m_mega_walker_mask.png",
+      "pivot": [
+        54.0,
+        66.0
+      ]
+    },
     "g71_m_reclaimer": {
       "anim61": {
         "damaged": "damaged",
@@ -915,6 +1610,115 @@
         "base": "g71_m_reclaimer",
         "blend": "hive9",
         "silhouette": "special"
+      },
+      "mask": "units/g71_m_reclaimer_mask.png",
+      "pivot": [
+        42.0,
+        38.0
+      ]
+    },
+    "g71_m_reclaimer__mod_07": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            31.0,
+            6.0
+          ],
+          [
+            -8.0,
+            14.0
+          ],
+          [
+            -32.0,
+            6.0
+          ],
+          [
+            -37.0,
+            -3.0
+          ],
+          [
+            -32.0,
+            -15.0
+          ],
+          [
+            -10.0,
+            -33.0
+          ],
+          [
+            31.0,
+            -15.0
+          ],
+          [
+            36.0,
+            -8.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            2.0,
+            -33.0
+          ],
+          [
+            0.0,
+            -33.0
+          ],
+          [
+            -2.0,
+            -28.0
+          ],
+          [
+            -7.0,
+            -23.0
+          ],
+          [
+            -2.0,
+            -31.0
+          ],
+          [
+            0.0,
+            -31.0
+          ],
+          [
+            2.0,
+            -31.0
+          ],
+          [
+            7.0,
+            -29.0
+          ]
+        ],
+        "track": [
+          "move",
+          "track_1",
+          "track_2"
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 60.0,
+      "file": "units/g71_m_reclaimer__mod_07.png",
+      "frames": [
+        "idle",
+        "move",
+        "work",
+        "track_1",
+        "track_2",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 84.0,
+      "g71": {
+        "base": "m_assimilator",
+        "mark": "amber reclaim hopper + intake scoop + beam tip"
+      },
+      "g9": {
+        "base": "g71_m_reclaimer",
+        "blend": "hive9",
+        "modular_variant": 7
       },
       "mask": "units/g71_m_reclaimer_mask.png",
       "pivot": [
@@ -1064,6 +1868,148 @@
         28.0
       ]
     },
+    "g71_m_sapper__mod_08": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            16.0,
+            -1.0
+          ],
+          [
+            -14.0,
+            6.0
+          ],
+          [
+            -19.0,
+            -1.0
+          ],
+          [
+            -23.0,
+            -9.0
+          ],
+          [
+            -17.0,
+            -17.0
+          ],
+          [
+            -2.0,
+            -22.0
+          ],
+          [
+            16.0,
+            -17.0
+          ],
+          [
+            22.0,
+            -9.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -16.0
+          ],
+          [
+            -1.0,
+            -15.0
+          ],
+          [
+            -4.0,
+            -13.0
+          ],
+          [
+            -1.0,
+            -16.0
+          ],
+          [
+            0.0,
+            -19.0
+          ],
+          [
+            1.0,
+            -16.0
+          ],
+          [
+            4.0,
+            -13.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 40.0,
+      "file": "units/g71_m_sapper__mod_08.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "burrow_0",
+        "burrow_1",
+        "erupt_0",
+        "erupt_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "bite",
+        "die",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 52.0,
+      "g7": {
+        "anim_strip": [
+          "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
+          "burrow_0",
+          "burrow_1",
+          "erupt_0",
+          "erupt_1",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "bite",
+          "die"
+        ],
+        "budget": 1048576.0,
+        "bytes": 355796.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 1198080.0,
+        "set": "g7_threats2"
+      },
+      "g71": {
+        "base": "g7_m_burrower",
+        "mark": "sapper",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_sapper",
+        "blend": "hive9",
+        "modular_variant": 8
+      },
+      "mask": "units/g71_m_sapper_mask.png",
+      "pivot": [
+        26.0,
+        28.0
+      ]
+    },
     "g71_m_siege_walker": {
       "anim61": {
         "damaged": "damaged",
@@ -1183,6 +2129,125 @@
         66.0
       ]
     },
+    "g71_m_siege_walker__mod_09": {
+      "anim61": {
+        "damaged": "damaged",
+        "move": [
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5"
+        ],
+        "muzzle": [
+          [
+            39.0,
+            0.0
+          ],
+          [
+            22.0,
+            13.0
+          ],
+          [
+            -37.0,
+            0.0
+          ],
+          [
+            -54.0,
+            -39.0
+          ],
+          [
+            -45.0,
+            -62.0
+          ],
+          [
+            0.0,
+            -66.0
+          ],
+          [
+            44.0,
+            -62.0
+          ],
+          [
+            53.0,
+            -39.0
+          ]
+        ],
+        "pulse": "pulse",
+        "recoil": "recoil",
+        "smoke": [
+          [
+            2.0,
+            -56.0
+          ],
+          [
+            2.0,
+            -59.0
+          ],
+          [
+            2.0,
+            -60.0
+          ],
+          [
+            -6.0,
+            -57.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            2.0,
+            -63.0
+          ],
+          [
+            2.0,
+            -58.0
+          ],
+          [
+            8.0,
+            -52.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 92.0,
+      "file": "units/g71_m_siege_walker__mod_09.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "scale",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "recoil",
+        "damaged",
+        "pulse"
+      ],
+      "fw": 108.0,
+      "g71": {
+        "base": "m_colossus",
+        "mark": "siege",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_siege_walker",
+        "blend": "hive9",
+        "modular_variant": 9
+      },
+      "mask": "units/g71_m_siege_walker_mask.png",
+      "pivot": [
+        54.0,
+        66.0
+      ]
+    },
     "g71_m_turret_eater": {
       "air": true,
       "altitude": 16.0,
@@ -1283,6 +2348,122 @@
         "base": "g71_m_turret_eater",
         "blend": "hive9",
         "silhouette": "air"
+      },
+      "mask": "units/g71_m_turret_eater_mask.png",
+      "pivot": [
+        20.0,
+        22.0
+      ],
+      "shadow": {
+        "fh": 8.0,
+        "file": "units/g71_m_turret_eater_shadow.png",
+        "fw": 14.0,
+        "pivot": [
+          7.0,
+          4.0
+        ]
+      }
+    },
+    "g71_m_turret_eater__mod_10": {
+      "air": true,
+      "altitude": 16.0,
+      "anim61": {
+        "bank_l": "bank_l",
+        "bank_r": "bank_r",
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            5.0,
+            3.0
+          ],
+          [
+            -1.0,
+            6.0
+          ],
+          [
+            -6.0,
+            3.0
+          ],
+          [
+            -7.0,
+            0.0
+          ],
+          [
+            -6.0,
+            -2.0
+          ],
+          [
+            0.0,
+            -5.0
+          ],
+          [
+            5.0,
+            -2.0
+          ],
+          [
+            6.0,
+            0.0
+          ]
+        ],
+        "smoke": [
+          [
+            0.0,
+            -7.0
+          ],
+          [
+            0.0,
+            -8.0
+          ],
+          [
+            0.0,
+            -7.0
+          ],
+          [
+            0.0,
+            -8.0
+          ],
+          [
+            0.0,
+            -7.0
+          ],
+          [
+            0.0,
+            -8.0
+          ],
+          [
+            0.0,
+            -7.0
+          ],
+          [
+            0.0,
+            -8.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "bob": 1.0,
+      "facings": 8.0,
+      "fh": 34.0,
+      "file": "units/g71_m_turret_eater__mod_10.png",
+      "frames": [
+        "idle",
+        "move",
+        "fire",
+        "dive",
+        "bank_l",
+        "bank_r",
+        "damaged"
+      ],
+      "fw": 40.0,
+      "g71": {
+        "base": "m_mimic_drone",
+        "mark": "eater",
+        "siege": true
+      },
+      "g9": {
+        "base": "g71_m_turret_eater",
+        "blend": "hive9",
+        "modular_variant": 10
       },
       "mask": "units/g71_m_turret_eater_mask.png",
       "pivot": [
@@ -1436,6 +2617,143 @@
         28.0
       ]
     },
+    "g7_m_burrower__mod_11": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            16.0,
+            -1.0
+          ],
+          [
+            -14.0,
+            6.0
+          ],
+          [
+            -19.0,
+            -1.0
+          ],
+          [
+            -23.0,
+            -9.0
+          ],
+          [
+            -17.0,
+            -17.0
+          ],
+          [
+            -2.0,
+            -22.0
+          ],
+          [
+            16.0,
+            -17.0
+          ],
+          [
+            22.0,
+            -9.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            1.0,
+            -15.0
+          ],
+          [
+            0.0,
+            -16.0
+          ],
+          [
+            -1.0,
+            -15.0
+          ],
+          [
+            -4.0,
+            -13.0
+          ],
+          [
+            -1.0,
+            -16.0
+          ],
+          [
+            0.0,
+            -19.0
+          ],
+          [
+            1.0,
+            -16.0
+          ],
+          [
+            4.0,
+            -13.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 40.0,
+      "file": "units/g7_m_burrower__mod_11.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "burrow_0",
+        "burrow_1",
+        "erupt_0",
+        "erupt_1",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "bite",
+        "die",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 52.0,
+      "g7": {
+        "anim_strip": [
+          "idle",
+          "walk_a",
+          "walk_b",
+          "fire",
+          "burrow_0",
+          "burrow_1",
+          "erupt_0",
+          "erupt_1",
+          "walk_0",
+          "walk_1",
+          "walk_2",
+          "walk_3",
+          "walk_4",
+          "walk_5",
+          "bite",
+          "die"
+        ],
+        "budget": 1048576.0,
+        "bytes": 355796.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 1198080.0,
+        "set": "g7_threats2"
+      },
+      "g9": {
+        "base": "g7_m_burrower",
+        "blend": "hive9",
+        "modular_variant": 11
+      },
+      "mask": "units/g7_m_burrower_mask.png",
+      "pivot": [
+        26.0,
+        28.0
+      ]
+    },
     "g7_m_leech": {
       "anim61": {
         "damaged": "damaged",
@@ -1556,6 +2874,126 @@
         18.0
       ]
     },
+    "g7_m_leech__mod_12": {
+      "anim61": {
+        "damaged": "damaged",
+        "muzzle": [
+          [
+            6.0,
+            -3.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            -6.0,
+            -1.0
+          ],
+          [
+            -7.0,
+            -6.0
+          ],
+          [
+            -6.0,
+            -8.0
+          ],
+          [
+            -2.0,
+            -9.0
+          ],
+          [
+            6.0,
+            -6.0
+          ],
+          [
+            8.0,
+            -4.0
+          ]
+        ],
+        "recoil": "recoil",
+        "smoke": [
+          [
+            0.0,
+            -4.0
+          ],
+          [
+            0.0,
+            -4.0
+          ],
+          [
+            0.0,
+            -4.0
+          ],
+          [
+            -2.0,
+            -4.0
+          ],
+          [
+            0.0,
+            -4.0
+          ],
+          [
+            0.0,
+            -5.0
+          ],
+          [
+            0.0,
+            -4.0
+          ],
+          [
+            2.0,
+            -4.0
+          ]
+        ],
+        "v": 1.0
+      },
+      "facings": 8.0,
+      "fh": 24.0,
+      "file": "units/g7_m_leech__mod_12.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "crawl_0",
+        "crawl_1",
+        "latch",
+        "drill_0",
+        "drill_1",
+        "die",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "recoil",
+        "damaged"
+      ],
+      "fw": 24.0,
+      "g7": {
+        "budget": 1048576.0,
+        "bytes": 46204.0,
+        "class": "threat",
+        "detail_level": "DL7-3",
+        "line": "machine",
+        "mirror": -1.0,
+        "raw_bytes": 331776.0,
+        "rides_hull": true,
+        "set": "g7_threats2"
+      },
+      "g9": {
+        "base": "g7_m_leech",
+        "blend": "hive9",
+        "modular_variant": 12
+      },
+      "mask": "units/g7_m_leech_mask.png",
+      "pivot": [
+        12.0,
+        18.0
+      ]
+    },
     "g7_m_mimic": {
       "anim61": {
         "art": "native",
@@ -1619,6 +3057,78 @@
         "base": "g7_m_mimic",
         "blend": "hive9",
         "silhouette": "mimic"
+      },
+      "legged": true,
+      "mask": "units/g7_m_mimic_mask.png",
+      "pivot": [
+        16.0,
+        27.0
+      ],
+      "squad_size": 1.0
+    },
+    "g7_m_mimic__mod_13": {
+      "anim61": {
+        "art": "native",
+        "base": 7.0,
+        "v": 7.0
+      },
+      "facings": 8.0,
+      "fh": 32.0,
+      "file": "units/g7_m_mimic__mod_13.png",
+      "frames": [
+        "idle",
+        "walk_a",
+        "walk_b",
+        "fire",
+        "strike",
+        "reveal",
+        "die",
+        "walk_0",
+        "walk_1",
+        "walk_2",
+        "walk_3",
+        "walk_4",
+        "walk_5",
+        "run_0",
+        "run_1",
+        "run_2",
+        "run_3",
+        "run_4",
+        "run_5",
+        "crouch",
+        "prone",
+        "crawl_0",
+        "crawl_1",
+        "fire_s",
+        "fire_c",
+        "fire_p",
+        "reload_0",
+        "reload_1",
+        "throw_0",
+        "throw_1",
+        "die_0",
+        "die_1",
+        "die_2",
+        "wounded",
+        "idle_0",
+        "idle_1"
+      ],
+      "fw": 32.0,
+      "g7": {
+        "budget": 524288.0,
+        "bytes": 173880.0,
+        "class": "infantry",
+        "detail_level": "DL7-3",
+        "disguise": "rules.g7_threats.mimic.as_foot",
+        "line": "machine",
+        "mirror": 1.0,
+        "raw_bytes": 1179648.0,
+        "set": "g7_threats2"
+      },
+      "g9": {
+        "base": "g7_m_mimic",
+        "blend": "hive9",
+        "modular_variant": 13
       },
       "legged": true,
       "mask": "units/g7_m_mimic_mask.png",

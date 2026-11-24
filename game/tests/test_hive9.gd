@@ -9,6 +9,31 @@ const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const Creep = preload("res://sim/systems/creep.gd")
 
 
+func test_catalog_ge_60() -> void:
+	check(Hive9.catalog_count() >= 60, "blended Machine vehicle catalog >= 60")
+
+
+func test_modular_events_visible_on_eat_and_replicate() -> void:
+	var c := LastProtocol.make_config(304, "industrial_heartland_m")
+	var w := SimWorld.new_match(c)
+	if not check(w != null, "LP"):
+		return
+	for i in 4:
+		w.step()
+	var s := Hive9._st(w)
+	Hive71._st(w).eaten = int(s.last_eaten) + 1
+	Hive9.tick(w)
+	var events: Dictionary = Hive9.board(w).get("modular_events", {})
+	check(int(events.get("merge", 0)) >= 1, "wreck intake records modular merge")
+	s.nanite = float(Hive9.R().get("replicate_cost", 6.0)) + 1.0
+	w.sys_state.lp.dread = 1.0
+	w.tick = 7
+	Hive9.tick(w)
+	events = Hive9.board(w).get("modular_events", {})
+	check(int(Hive9.board(w).get("replicas", 0)) >= 1, "minimal replica spawned")
+	check(int(events.get("split", 0)) >= 1, "replica records modular split")
+
+
 func test_hive_eats_wreck_on_creep() -> void:
 	var c := LastProtocol.make_config(301, "industrial_heartland_m")
 	var w := SimWorld.new_match(c)

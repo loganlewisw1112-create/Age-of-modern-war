@@ -20,6 +20,7 @@ func _init() -> void:
 	var out := build_all()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 	var n := GEN.save(out, dir)
+	_save_look_samples(out)
 	print("G71_HIVE9 defs=%d files=%d ms=%d" % [(out.manifest.vehicles as Dictionary).size(), n, Time.get_ticks_msec() - t0])
 	quit()
 
@@ -68,6 +69,34 @@ static func build_all() -> Dictionary:
 						break
 				if not spec.is_empty():
 					break
+		if spec.is_empty():
+			# New Machine defs often land before bespoke art. Blend the closest existing
+			# Machine silhouette so every vehicle remains readable in the hive catalog.
+			var target: Dictionary = Content.unit(def_id)
+			var target_move := String(target.get("move_class", "vehicle"))
+			var target_role := String(target.get("role", "vehicle"))
+			for match_pass in 3:
+				for grp in SEARCH:
+					var gm: Dictionary = manifests.get(grp, {})
+					for sec in ["vehicles", "infantry"]:
+						for sid in (gm.get(sec, {}) as Dictionary).keys():
+							var source: Dictionary = Content.unit(String(sid))
+							if source.is_empty() or String(source.get("faction", "")) != "machine":
+								continue
+							var same_move := String(source.get("move_class", "vehicle")) == target_move
+							var same_role := String(source.get("role", "vehicle")) == target_role
+							if (match_pass == 0 and not (same_move and same_role)) or (match_pass == 1 and not same_move):
+								continue
+							spec = ((gm.get(sec, {}) as Dictionary)[sid] as Dictionary).duplicate(true)
+							src_dir = "res://assets/art/%s/" % grp
+							src_id = String(sid)
+							break
+						if not spec.is_empty():
+							break
+					if not spec.is_empty():
+						break
+				if not spec.is_empty():
+					break
 		if spec.is_empty() or not spec.has("file"):
 			continue
 		var fw := int(spec.get("fw", 64))
@@ -84,7 +113,67 @@ static func build_all() -> Dictionary:
 				out.images["icons/%s.png" % def_id] = ic
 				man.icons[def_id] = "icons/%s.png" % def_id
 		n += 1
+	_add_modular_variants(out, 60)
 	return out
+
+
+static func _add_modular_variants(out: Dictionary, minimum: int) -> void:
+	var man: Dictionary = out.manifest
+	var base_ids: Array = (man.vehicles as Dictionary).keys()
+	base_ids.sort()
+	var i := 0
+	while (man.vehicles as Dictionary).size() < minimum and not base_ids.is_empty():
+		var base_id := String(base_ids[i % base_ids.size()])
+		var spec: Dictionary = (man.vehicles[base_id] as Dictionary).duplicate(true)
+		var variant_id := "%s__mod_%02d" % [base_id, i + 1]
+		var source_file := String(spec.file)
+		var source: Image = out.images.get(source_file)
+		if source == null:
+			i += 1
+			continue
+		var variant := source.duplicate()
+		_modularize_variant(variant, int(spec.get("fw", 64)), int(spec.get("fh", 32)), i)
+		var variant_file := "units/%s.png" % variant_id
+		out.images[variant_file] = variant
+		spec.file = variant_file
+		spec["g9"] = {"blend": "hive9", "base": base_id, "modular_variant": i + 1}
+		man.vehicles[variant_id] = spec
+		i += 1
+
+
+static func _modularize_variant(img: Image, fw: int, fh: int, seed: int) -> void:
+	for cy in range(0, img.get_height() - fh + 1, fh):
+		for cx in range(0, img.get_width() - fw + 1, fw):
+			var y := cy + maxi(2, fh / 5)
+			for dx in range(-3, 4):
+				var x := cx + fw / 2 + dx + posmod(seed, 3) - 1
+				if x >= cx and x < cx + fw and img.get_pixel(x, y).a > 0.5:
+					img.set_pixel(x, y, MOD if posmod(dx + seed, 2) == 0 else NANITE)
+
+
+static func _save_look_samples(out: Dictionary) -> void:
+	var ids: Array = (out.manifest.vehicles as Dictionary).keys()
+	ids.sort()
+	if ids.is_empty():
+		return
+	var fw := 64
+	var fh := 32
+	var sample := Image.create(fw * 4, fh * 2, false, Image.FORMAT_RGBA8)
+	sample.fill(Color(0.035, 0.045, 0.06, 1.0))
+	for i in mini(8, ids.size()):
+		var spec: Dictionary = out.manifest.vehicles[ids[i]]
+		var img: Image = out.images.get(String(spec.file))
+		if img == null:
+			continue
+		var cell_w := mini(fw, int(spec.get("fw", fw)))
+		var cell_h := mini(fh, int(spec.get("fh", fh)))
+		sample.blit_rect(img, Rect2i(0, 0, cell_w, cell_h), Vector2i((i % 4) * fw, (i / 4) * fh))
+	var look_dir := ProjectSettings.globalize_path("res://.plan/shots/G71_LOOK")
+	DirAccess.make_dir_recursive_absolute(look_dir)
+	sample.save_png(look_dir.path_join("strip_g71_hive9_catalog.png"))
+	var large := sample.duplicate()
+	large.resize(sample.get_width() * 2, sample.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	large.save_png(look_dir.path_join("strip_g71_hive9_catalog_2x.png"))
 
 
 static func _load_img(p: String) -> Image:

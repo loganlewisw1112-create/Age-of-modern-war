@@ -4,7 +4,7 @@ extends RefCounted
 ## Numbers: rules.g71_hive9 (content/g71/rules_g71_hive9.json). PROVISIONAL.
 
 const KEY := "hive9"
-const VER := 1
+const VER := 2
 
 const Hive71 = preload("res://sim/systems/hive71.gd")
 const Harvest71 = preload("res://sim/systems/harvest71.gd")
@@ -30,8 +30,12 @@ static func _st(w: SimWorld) -> Dictionary:
 			"adapt": 0.0,
 			"last_eaten": 0,
 			"last_taken": 0,
+			"modular_events": {"merge": 0, "split": 0},
 		}
 		w.sys_state[KEY] = s
+	if not (s.get("modular_events") is Dictionary):
+		s.modular_events = {"merge": 0, "split": 0}
+	s.ver = VER
 	return s
 
 
@@ -46,8 +50,20 @@ static func board(w: SimWorld) -> Dictionary:
 		"adapt": snappedf(float(s.adapt), 0.01),
 		"evolve": Evolve71.stage(w),
 		"eaten": int(hb.get("eaten", 0)),
+		"modular_events": (s.modular_events as Dictionary).duplicate(),
 		"harvest_mass": snappedf(float(Harvest71.board(w).get("mass", 0.0)), 0.01),
 	}
+
+
+static func catalog_count() -> int:
+	var path := "res://assets/art/g71_hive9/manifest.json"
+	if not FileAccess.file_exists(path):
+		return 0
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not (parsed is Dictionary):
+		return 0
+	var vehicles = (parsed as Dictionary).get("vehicles", {})
+	return (vehicles as Dictionary).size() if vehicles is Dictionary else 0
 
 
 ## Extra dread-equivalent from player counter-play (feeds Evolve71 adaptive path).
@@ -72,7 +88,9 @@ static func _nanite_from_hive(w: SimWorld, s: Dictionary) -> void:
 	var taken := int(Harvest71.board(w).get("taken", 0))
 	var add := 0.0
 	if eaten > int(s.get("last_eaten", 0)):
-		add += float(eaten - int(s.last_eaten)) * float(R().get("nanite_per_eaten", 0.15))
+		var eaten_delta := eaten - int(s.last_eaten)
+		add += float(eaten_delta) * float(R().get("nanite_per_eaten", 0.15))
+		s.modular_events.merge = int(s.modular_events.get("merge", 0)) + eaten_delta
 		s.last_eaten = eaten
 	if taken > int(s.get("last_taken", 0)):
 		add += float(taken - int(s.last_taken)) * float(R().get("nanite_per_harvest", 0.08))
@@ -122,4 +140,6 @@ static func _try_replicate(w: SimWorld, s: Dictionary) -> void:
 		e["g71_evolve"] = Evolve71.stage(w)
 	s.nanite = snappedf(float(s.nanite) - float(R().get("replicate_cost", 6.0)), 0.01)
 	s.replicas = int(s.replicas) + 1
+	s.modular_events.split = int(s.modular_events.get("split", 0)) + 1
 	w.emit("Hive9Replica", {"unit": uid, "def": def_id, "replicas": int(s.replicas)})
+	w.emit("Hive9Modular", {"event": "split", "unit": uid, "count": int(s.modular_events.split)})
