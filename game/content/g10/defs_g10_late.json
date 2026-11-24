@@ -1,22 +1,279 @@
 {
-  "_meta": "G10 Stage 11-13 late syndicate seed. Task 6 deepens Mk III / 100+ stress.",
+  "_meta": "G10 Stage 11-13 late syndicate (Task 6). Mk III via modules on existing Death IDs; distributed remote caches at 12; apex vault/patron at 13; g10_100_squad stress-only. Numbers PROVISIONAL. Does not redefine core 61 IDs.",
+  "faction_stage_roles": {
+    "shadow_coalition": {
+      "11": {
+        "hq": "x_safehouse",
+        "power": "x_cache",
+        "depot": "x_black_market",
+        "barracks": "x_underground_barracks",
+        "factory": "x_underground_factory",
+        "refinery": "",
+        "defense": "x_bunker_hatch",
+        "extra": "x_ghost_complex",
+        "builder": "x_cell_sapper",
+        "gatherer": "x_cell_sapper",
+        "infantry": "x_death_strike",
+        "antitank": "x_death_assault",
+        "recon": "x_death_recon",
+        "light": "x_ghost_runner",
+        "heavy": "x_prototype_walker",
+        "artillery": "",
+        "officer": "x_officer",
+        "supply": "x_exo_mule",
+        "air": "x_silent_rotor",
+        "comms": "x_shadow_signal",
+        "ew": "x_shadow_ew",
+        "anti_air": "x_technical_aa"
+      },
+      "12": {
+        "hq": "x_safehouse",
+        "power": "x_cache",
+        "depot": "x_black_market",
+        "barracks": "x_underground_barracks",
+        "factory": "x_underground_factory",
+        "refinery": "",
+        "defense": "x_bunker_hatch",
+        "extra": "x_remote_cache",
+        "builder": "x_cell_sapper",
+        "gatherer": "x_cell_sapper",
+        "infantry": "x_death_strike",
+        "antitank": "x_death_assault",
+        "recon": "x_death_recon",
+        "light": "x_ghost_runner",
+        "heavy": "x_prototype_walker",
+        "artillery": "",
+        "officer": "x_officer",
+        "supply": "x_exo_mule",
+        "air": "x_silent_rotor",
+        "comms": "x_distributed_relay",
+        "ew": "x_shadow_ew",
+        "anti_air": "x_technical_aa"
+      },
+      "13": {
+        "hq": "x_safehouse",
+        "power": "x_cache",
+        "depot": "x_black_market",
+        "barracks": "x_underground_barracks",
+        "factory": "x_underground_factory",
+        "refinery": "",
+        "defense": "x_bunker_hatch",
+        "extra": "x_apex_vault_wing",
+        "builder": "x_cell_sapper",
+        "gatherer": "x_cell_sapper",
+        "infantry": "x_death_strike",
+        "antitank": "x_death_assault",
+        "recon": "x_death_recon",
+        "light": "x_ghost_runner",
+        "heavy": "x_prototype_walker",
+        "artillery": "",
+        "officer": "x_officer",
+        "supply": "x_exo_mule",
+        "air": "x_silent_rotor",
+        "comms": "x_distributed_relay",
+        "ew": "x_shadow_ew",
+        "anti_air": "x_technical_aa"
+      }
+    }
+  },
+  "buildings": {
+    "x_remote_cache": {
+      "name": "Remote Cache",
+      "faction": "shadow_coalition",
+      "stage_min": 12,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 9,
+      "build_time": 28,
+      "cost": {
+        "credits": 420,
+        "salvage": 140,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 Task6 distributed node",
+      "power": 20,
+      "size": 2,
+      "hp": 1100,
+      "requires": [
+        "x_ghost_complex"
+      ],
+      "buildable": true,
+      "power_node": true,
+      "remote_cache": true,
+      "distributed": true,
+      "pop_cap": 12
+    },
+    "x_distributed_relay": {
+      "name": "Distributed Relay",
+      "faction": "shadow_coalition",
+      "stage_min": 12,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 12,
+      "build_time": 32,
+      "cost": {
+        "credits": 480,
+        "salvage": 160,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 Task6 distributed mesh node",
+      "power": -10,
+      "size": 2,
+      "hp": 950,
+      "requires": [
+        "x_remote_cache"
+      ],
+      "buildable": true,
+      "comms": true,
+      "distributed": true
+    },
+    "x_apex_vault_wing": {
+      "name": "Apex Vault Wing",
+      "faction": "shadow_coalition",
+      "stage_min": 13,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 10,
+      "build_time": 55,
+      "cost": {
+        "credits": 900,
+        "salvage": 280,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [],
+      "_note": "PROVISIONAL G10 Task6 apex vault asset",
+      "power": -20,
+      "size": 3,
+      "hp": 2200,
+      "requires": [
+        "x_vault_core"
+      ],
+      "buildable": true,
+      "vault": true,
+      "apex": true
+    },
+    "x_apex_patron_desk": {
+      "name": "Apex Patron Desk",
+      "faction": "shadow_coalition",
+      "stage_min": 13,
+      "stage_max": 13,
+      "armor": "building",
+      "sight": 8,
+      "build_time": 40,
+      "cost": {
+        "credits": 700,
+        "salvage": 200,
+        "ore": 0
+      },
+      "g10": true,
+      "produces": [
+        "x_patron_cas"
+      ],
+      "_note": "PROVISIONAL G10 Task6 apex patron asset",
+      "power": -15,
+      "size": 2,
+      "hp": 1400,
+      "requires": [
+        "x_patron_office",
+        "x_apex_vault_wing"
+      ],
+      "buildable": true,
+      "patron": true,
+      "apex": true
+    }
+  },
   "rules": {
     "g10_late_profiles": {
       "synthetic_syndicate": {
-        "stage": 11
+        "stage": 11,
+        "identity": "mk3_synthetic",
+        "blurb": "Synthetic syndicate: Mk III Death modules (dual hardpoint + Conductor mesh) on existing Death IDs.",
+        "exo_mk_max": 3,
+        "mk3_modules": true,
+        "distributed": false,
+        "apex": false,
+        "hosts": ["x_death_strike", "x_death_assault", "x_death_recon"],
+        "modules": ["dual_hardpoint", "conductor_mesh"],
+        "build": ["x_safehouse", "x_cache", "x_ghost_complex", "x_vault_core"],
+        "produce": ["x_death_strike", "x_death_assault", "x_death_recon", "x_shadow_ew", "x_prototype_walker"],
+        "forbid_leak_stage": 10
       },
       "distributed_syndicate": {
-        "stage": 12
+        "stage": 12,
+        "identity": "distributed_remote_caches",
+        "blurb": "Distributed syndicate: remote caches and relay mesh across the theatre.",
+        "exo_mk_max": 3,
+        "mk3_modules": true,
+        "distributed": true,
+        "apex": false,
+        "hosts": ["x_death_strike", "x_death_assault", "x_death_recon"],
+        "modules": ["dual_hardpoint", "conductor_mesh", "mesh_redundant"],
+        "build": ["x_safehouse", "x_cache", "x_ghost_complex", "x_remote_cache", "x_distributed_relay"],
+        "produce": ["x_death_strike", "x_death_assault", "x_death_recon", "x_shadow_ew", "x_prototype_walker"],
+        "forbid_leak_stage": 10
       },
       "apex_syndicate": {
-        "stage": 13
+        "stage": 13,
+        "identity": "apex_vault_patron",
+        "blurb": "Apex syndicate: vault wing + patron desk crown the Stage 13 endgame.",
+        "exo_mk_max": 3,
+        "mk3_modules": true,
+        "distributed": true,
+        "apex": true,
+        "hosts": ["x_death_strike", "x_death_assault", "x_death_recon"],
+        "modules": ["dual_hardpoint", "conductor_mesh", "mesh_redundant", "apex_link"],
+        "build": ["x_safehouse", "x_cache", "x_ghost_complex", "x_remote_cache", "x_distributed_relay", "x_vault_core", "x_apex_vault_wing", "x_apex_patron_desk"],
+        "produce": ["x_death_strike", "x_death_assault", "x_death_recon", "x_shadow_ew", "x_prototype_walker", "x_patron_cas"],
+        "forbid_leak_stage": 10
+      }
+    },
+    "g10_late_mk3_modules": {
+      "stage_min": 11,
+      "stage_max": 13,
+      "hosts": ["x_death_strike", "x_death_assault", "x_death_recon"],
+      "note": "Mk III hybrid via modules on existing Death IDs — no parallel unit clones.",
+      "modules": {
+        "dual_hardpoint": {
+          "hardpoints": 2,
+          "kinds": ["sensor", "breach"],
+          "stage_min": 11
+        },
+        "conductor_mesh": {
+          "mesh": true,
+          "redundant": false,
+          "stage_min": 11
+        },
+        "mesh_redundant": {
+          "mesh": true,
+          "redundant": true,
+          "stage_min": 12
+        },
+        "apex_link": {
+          "vault_link": true,
+          "patron_link": true,
+          "stage_min": 13
+        }
       }
     },
     "g10_100_squad": {
       "enabled": true,
+      "stress_only": true,
       "min_squads": 100,
+      "squad_size": 4,
       "stage": 13,
-      "note": "stress-only; ordinary skirmish caps unchanged"
+      "faction": "shadow_coalition",
+      "formation": "4op",
+      "echelon": "death",
+      "pop_cap_floor": 500,
+      "credits": 50000,
+      "start_stock": 50000,
+      "ordinary_skirmish_pop_cap_max": 120,
+      "note": "stress-only; ordinary skirmish caps unchanged (rules.pop_cap_max)"
     }
   }
 }

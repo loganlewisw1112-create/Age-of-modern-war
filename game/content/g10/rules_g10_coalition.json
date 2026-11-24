@@ -19,6 +19,22 @@
         13
       ],
       "default_intent": "harry",
+      "raider_exo_mk_max": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 1
+      },
+      "raider_patron_tier": {
+        "1": "none",
+        "2": "none",
+        "3": "none",
+        "4": "none",
+        "5": "none",
+        "6": "limited"
+      },
       "stage_openers": {
         "1": {
           "profile": "scattered",
@@ -26,7 +42,11 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_cell_rifle",
-          "stage": 1
+          "stage": 1,
+          "growth": ["salvage", "capture"],
+          "tunnels": false,
+          "patron": false,
+          "exo_mk_max": 0
         },
         "2": {
           "profile": "camp",
@@ -34,23 +54,41 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_cell_rifle",
-          "stage": 2
+          "power": "x_cache",
+          "stage": 2,
+          "growth": ["salvage", "capture"],
+          "tunnels": false,
+          "patron": false,
+          "exo_mk_max": 0
         },
         "3": {
           "profile": "frontier_cell",
           "base": "x_safehouse",
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
-          "combat": "x_cell_rifle",
-          "stage": 3
+          "combat": "x_ambush_cell",
+          "defense": "x_tunnel_entrance",
+          "stage": 3,
+          "growth": ["salvage", "capture", "tunnels"],
+          "tunnels": true,
+          "local_hires": true,
+          "patron": false,
+          "exo_mk_max": 0
         },
         "4": {
           "profile": "reclamation_gang",
           "base": "x_safehouse",
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
-          "combat": "x_cell_rifle",
-          "stage": 4
+          "combat": "x_cell_at",
+          "depot": "x_black_market",
+          "defense": "x_tunnel_entrance",
+          "stage": 4,
+          "growth": ["salvage", "capture", "tunnels"],
+          "tunnels": true,
+          "local_hires": true,
+          "patron": false,
+          "exo_mk_max": 0
         },
         "5": {
           "profile": "warlord_confederacy",
@@ -58,7 +96,15 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_cell_rifle",
-          "stage": 5
+          "depot": "x_black_market",
+          "defense": "x_tunnel_entrance",
+          "stage": 5,
+          "growth": ["salvage", "capture", "tunnels", "weld"],
+          "tunnels": true,
+          "weld_shop": true,
+          "local_hires": true,
+          "patron": false,
+          "exo_mk_max": 0
         },
         "6": {
           "profile": "industrial_syndicate",
@@ -66,7 +112,17 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_cell_rifle",
-          "stage": 6
+          "depot": "x_black_market",
+          "defense": "x_tunnel_entrance",
+          "stage": 6,
+          "growth": ["salvage", "capture", "tunnels", "weld", "patron"],
+          "tunnels": true,
+          "weld_shop": true,
+          "local_hires": true,
+          "patron": true,
+          "patron_tier": "limited",
+          "exo_mk_max": 1,
+          "prototype_access": ["x_death_strike"]
         },
         "7": {
           "profile": "cells_technicals",

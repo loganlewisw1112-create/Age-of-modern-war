@@ -16,23 +16,16 @@ Subagents: Auto (owner usage limit)
 - Task 7C DOG10: 4fb11cc6 — Human A dog redesign; fleet71 4/0, anim61 10/0; pushed
 - Task 13 TECH10: 6cb7c0e0 — buy/steal/unseal; test_g10_tech 6/0; NEED 164 wire deferred to E3
 - Task 7 BLD10: 5432a16e — buildings/hidden/Ghost campus/Armory shell; test_g10_buildings 8/0
-- Task 14–15 GHOST10: 973129fb — Conductor + mission lifecycle; test_g10_ghost 11/0
-- Task 16 GHOST10: (this ship) — insertion vehicles/drones/recovery kits; test_g10_ghost 15/0; exo.gd RELEASED for CG10
-- CORE10 Task 4: b5999f1b — deepen core roster
-- MECH10 Tasks 9–12: caadbb1e — tunnels/cells/IED/patron/weld
-- AI10 Task 18: c12c7d71 — Coalition doctrine AI adapter
+- Task 7B ARMORY10: c07d6dc3 — Exo Armory outfit/bay sim; test_g10_exo_armory 7/0; FACT ship.armory10; pushed
+- Task 5 RAID10 + Task 6 LATE10: (pending SHA) — Stage 1–6 raiders + Stage 11–13 late syndicate; test_g10_stage 14/0
 
 ## Live E2 (Auto background, ≤6)
-- ART10 Task 8 samples — CLAIM held; NEED owner approve before bulk
-- ARMORY10 Task 7B — Exo Armory HANDOFF (ORCH commit pending)
-- DARK10 Task 20 — HANDOFF (ORCH commit pending)
-- RAID10 Task 5 — in progress
-
-## Next
-**CG10 Task 17** — claim exo.gd (RELEASED); honor owner addendum seq 171 (Counter-Ghost org/pads/Shade Dart)
+- ART10 Task 8 samples — revise cycle2 (owner rejected cycle1)
+- MODE10 Task 19 — skirmish+LP
+- CG10 Task 17 — Counter-Ghost (exo.gd claimed; honor addendum 171)
 
 ## Queued
-MODE10, RAID10/LATE10, VERIFY10, E3/E4
+VERIFY10, E3/E4 (world.gd wires), remaining polish
 
 ## OWNER ADDENDUM (2026-11-23 evening) — INFORM ORCH, DO NOT STOP LIVE
 Board FACT `g10.owner.addendum.counterghost` seq **171**. Live E2 agents keep running.
@@ -50,3 +43,4 @@ Board FACT `g10.owner.addendum.counterghost` seq **171**. Live E2 agents keep ru
 ## Deferred ORCH
 - NEED 164: wire CoalitionTech10 into Progression/Production/Market (E3)
 - OWNER ADDENDUM 171: Counter-Ghost org + per-vehicle homes (queue CG10; do not preempt live E2)
+- world.gd seams: ExoArmory10, CoalitionDark10, CoalitionAi10, buildings, mechanics (E3)
