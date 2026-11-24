@@ -104,6 +104,21 @@ static func playable_stages() -> Array:
 	return out
 
 
+## G10: faction-specific playable stages. Shadow Coalition unlocks 1–13 without flipping
+## deferred stages' global playable_now (other factions keep shipped 7–10).
+static func playable_stages_for(faction_id: String) -> Array:
+	if String(faction_id) == "shadow_coalition":
+		var coal: Array = []
+		for st in Content.stages():
+			coal.append(int(st.id))
+		coal.sort()
+		if coal.is_empty():
+			for i in range(1, 14):
+				coal.append(i)
+		return coal
+	return playable_stages()
+
+
 static func stage_name(stage: int) -> String:
 	for st in Content.stages():
 		if int(st.id) == stage:

@@ -1,0 +1,25 @@
+{
+  "_meta": "G10 Stage 1-6 raider band seed. Opener profiles; Task 5 deepens.",
+  "rules": {
+    "g10_raider_profiles": {
+      "scattered": {
+        "stage": 1
+      },
+      "camp": {
+        "stage": 2
+      },
+      "frontier_cell": {
+        "stage": 3
+      },
+      "reclamation_gang": {
+        "stage": 4
+      },
+      "warlord_confederacy": {
+        "stage": 5
+      },
+      "industrial_syndicate": {
+        "stage": 6
+      }
+    }
+  }
+}

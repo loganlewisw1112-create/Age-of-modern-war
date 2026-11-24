@@ -4,7 +4,7 @@
     "x_cell_rifle": {
       "name": "Cell Rifle",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "role": "infantry",
       "armor": "infantry",
@@ -23,7 +23,7 @@
     "x_cell_at": {
       "name": "Cell At",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "role": "antitank",
       "armor": "infantry",
@@ -42,7 +42,7 @@
     "x_cell_sapper": {
       "name": "Cell Sapper",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "role": "builder",
       "armor": "infantry",
@@ -66,7 +66,7 @@
     "x_cell_medic": {
       "name": "Cell Medic",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "role": "infantry",
       "armor": "infantry",
@@ -85,7 +85,7 @@
     "x_ambush_cell": {
       "name": "Ambush Cell",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "role": "recon",
       "armor": "infantry",
@@ -942,7 +942,7 @@
     "x_safehouse": {
       "name": "Safehouse",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "armor": "building",
       "sight": 8,
@@ -967,7 +967,7 @@
     "x_tunnel_entrance": {
       "name": "Tunnel Entrance",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "armor": "building",
       "sight": 8,
@@ -991,7 +991,7 @@
     "x_cache": {
       "name": "Cache",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "armor": "building",
       "sight": 8,
@@ -1040,7 +1040,7 @@
     "x_black_market": {
       "name": "Black Market",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "stage_max": 13,
       "armor": "building",
       "sight": 8,
@@ -1297,7 +1297,7 @@
       "train_time": 12,
       "hotkey": "C",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "g10": true
     },
     "x_cell_at": {
@@ -1314,7 +1314,7 @@
       "train_time": 12,
       "hotkey": "C",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "g10": true
     },
     "x_cell_sapper": {
@@ -1331,7 +1331,7 @@
       "train_time": 12,
       "hotkey": "C",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "g10": true
     },
     "x_cell_medic": {
@@ -1348,7 +1348,7 @@
       "train_time": 12,
       "hotkey": "C",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "g10": true
     },
     "x_ambush_cell": {
@@ -1365,7 +1365,7 @@
       "train_time": 12,
       "hotkey": "A",
       "faction": "shadow_coalition",
-      "stage_min": 7,
+      "stage_min": 1,
       "g10": true
     },
     "x_sleeper_cell": {

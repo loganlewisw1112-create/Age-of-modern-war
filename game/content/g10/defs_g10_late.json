@@ -1,0 +1,22 @@
+{
+  "_meta": "G10 Stage 11-13 late syndicate seed. Task 6 deepens Mk III / 100+ stress.",
+  "rules": {
+    "g10_late_profiles": {
+      "synthetic_syndicate": {
+        "stage": 11
+      },
+      "distributed_syndicate": {
+        "stage": 12
+      },
+      "apex_syndicate": {
+        "stage": 13
+      }
+    },
+    "g10_100_squad": {
+      "enabled": true,
+      "min_squads": 100,
+      "stage": 13,
+      "note": "stress-only; ordinary skirmish caps unchanged"
+    }
+  }
+}

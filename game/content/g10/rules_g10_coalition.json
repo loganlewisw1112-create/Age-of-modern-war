@@ -1,0 +1,132 @@
+{
+  "_meta": "G10 Coalition doctrine/rules seed. Numbers PROVISIONAL.",
+  "rules": {
+    "coalition10": {
+      "faction": "shadow_coalition",
+      "playable_stages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "default_intent": "harry",
+      "stage_openers": {
+        "1": {
+          "profile": "scattered",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 1
+        },
+        "2": {
+          "profile": "camp",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 2
+        },
+        "3": {
+          "profile": "frontier_cell",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 3
+        },
+        "4": {
+          "profile": "reclamation_gang",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 4
+        },
+        "5": {
+          "profile": "warlord_confederacy",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 5
+        },
+        "6": {
+          "profile": "industrial_syndicate",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 6
+        },
+        "7": {
+          "profile": "cells_technicals",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_cell_rifle",
+          "stage": 7
+        },
+        "8": {
+          "profile": "contracts_mk1",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_pmc_rifle",
+          "stage": 8
+        },
+        "9": {
+          "profile": "network_mk2",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_pmc_rifle",
+          "stage": 9
+        },
+        "10": {
+          "profile": "death_apex",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_death_strike",
+          "stage": 10
+        },
+        "11": {
+          "profile": "synthetic_syndicate",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_death_strike",
+          "stage": 11
+        },
+        "12": {
+          "profile": "distributed_syndicate",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_death_strike",
+          "stage": 12
+        },
+        "13": {
+          "profile": "apex_syndicate",
+          "base": "x_safehouse",
+          "builder": "x_cell_sapper",
+          "gatherer": "x_cell_sapper",
+          "combat": "x_death_strike",
+          "stage": 13
+        }
+      },
+      "no_normal_research": true,
+      "no_counter_nanites": true
+    }
+  }
+}

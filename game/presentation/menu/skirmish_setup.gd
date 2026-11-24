@@ -122,15 +122,12 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 		var fd: Dictionary = Content.faction(String(fid))
 		fac.add_item("%s (%s)" % [String(fd.get("name", fid)), String(fd.get("archetype", ""))])
 	fac.select(maxi(0, faction_ids.find("human_a")))
-	fac.item_selected.connect(_emit)
+	fac.item_selected.connect(func(_idx: int) -> void: _on_faction_changed(i))
 	row.add_child(fac)
-	# G3b: Stage 7/8/9 per side (only stages.json playable_now)
+	# G3b/G10: stage list is faction-specific (Coalition 1–13; others keep playable_now)
 	var stg := OptionButton.new()
 	stg.name = "Slot%dStage" % i
 	stg.custom_minimum_size = Vector2(150, 0)
-	for sid in stage_ids:
-		stg.add_item("Stage %d  %s" % [int(sid), G3bData.stage_name(int(sid)).get_slice(" ", 0)])
-	stg.select(maxi(0, stage_ids.find(8)))
 	stg.tooltip_text = "Starting stage for this side. Higher stages unlock newer units; lower stages advance through research and gates."
 	stg.item_selected.connect(_emit)
 	row.add_child(stg)
@@ -177,8 +174,10 @@ func _make_slot(i: int, start_cr: int, def_diff: String) -> Dictionary:
 			(c as Control).add_theme_font_size_override("font_size", 13)
 		if c is SpinBox:
 			(c as SpinBox).get_line_edit().add_theme_font_size_override("font_size", 13)
-	return {"kind": kind, "faction": fac, "stage": stg, "team": team, "color": col, "credits": cr, "diff": diff,
-		"blurb": blurb, "swatch": sw, "row": row}
+	var slot := {"kind": kind, "faction": fac, "stage": stg, "team": team, "color": col, "credits": cr, "diff": diff,
+		"blurb": blurb, "swatch": sw, "row": row, "stage_ids": []}
+	_fill_stage_options(slot, "human_a", 8)
+	return slot
 
 
 func _swatch_tex(c: Color) -> Texture2D:
@@ -190,6 +189,28 @@ func _swatch_tex(c: Color) -> Texture2D:
 func _emit(_v: Variant = null) -> void:
 	_refresh_rows()
 	changed.emit()
+
+
+## G10: rebuild this slot's stage OptionButton from the faction's playable stage list.
+func _on_faction_changed(i: int) -> void:
+	if i < 0 or i >= slots.size():
+		return
+	var s: Dictionary = slots[i]
+	var fid: String = faction_ids[maxi(0, s.faction.selected)]
+	var cur := slot_stage(i, 8)
+	_fill_stage_options(s, fid, cur)
+	_emit()
+
+
+func _fill_stage_options(s: Dictionary, faction_id: String, prefer_stage: int) -> void:
+	var stg: OptionButton = s.stage
+	var ids: Array = G3bData.playable_stages_for(faction_id)
+	s.stage_ids = ids
+	var keep := prefer_stage if ids.has(prefer_stage) else (8 if ids.has(8) else (int(ids[0]) if not ids.is_empty() else 8))
+	stg.clear()
+	for sid in ids:
+		stg.add_item("Stage %d  %s" % [int(sid), G3bData.stage_name(int(sid)).get_slice(" ", 0)])
+	stg.select(maxi(0, ids.find(keep)))
 
 
 func is_open(i: int) -> bool:
@@ -220,6 +241,7 @@ func set_slot(i: int, open: bool, faction_id: String = "", team: int = -1) -> vo
 		s.kind.select(0 if open else 1)
 	if faction_id != "" and faction_ids.has(faction_id):
 		s.faction.select(faction_ids.find(faction_id))
+		_fill_stage_options(s, faction_id, slot_stage(i, 8))
 	if team >= 0:
 		s.team.select(team)
 	_refresh_rows()
@@ -227,14 +249,16 @@ func set_slot(i: int, open: bool, faction_id: String = "", team: int = -1) -> vo
 
 ## G3b: programmatic stage pick (tests); the playtest clicks the Slot<i>Stage OptionButton.
 func set_stage(i: int, stage: int) -> void:
-	if stage_ids.has(stage):
-		(slots[i].stage as OptionButton).select(stage_ids.find(stage))
+	var ids: Array = slots[i].get("stage_ids", stage_ids)
+	if ids.has(stage):
+		(slots[i].stage as OptionButton).select(ids.find(stage))
 	_refresh_rows()
 
 
 func slot_stage(i: int, fallback: int = 8) -> int:
 	var o: OptionButton = slots[i].stage
-	return int(stage_ids[o.selected]) if o.selected >= 0 and o.selected < stage_ids.size() else fallback
+	var ids: Array = slots[i].get("stage_ids", stage_ids)
+	return int(ids[o.selected]) if o.selected >= 0 and o.selected < ids.size() else fallback
 
 
 func set_director_adapt(on: bool) -> void:
@@ -372,6 +396,7 @@ func prefill(players: Array) -> void:
 		var fid := String(p.get("faction", "human_a"))
 		if faction_ids.has(fid):
 			s.faction.select(faction_ids.find(fid))
+		_fill_stage_options(s, fid if faction_ids.has(fid) else "human_a", int(p.get("stage", 8)))
 		s.team.select(clampi(int(p.get("team", i)), 0, SLOT_COUNT - 1))
 		var col := String(p.get("color", ""))
 		if col != "" and not colors.has(col):
@@ -380,8 +405,6 @@ func prefill(players: Array) -> void:
 		if col != "":
 			s.color.select(colors.find(col))
 		s.credits.value = int(p.get("credits", s.credits.value))
-		if stage_ids.has(int(p.get("stage", 8))):
-			s.stage.select(stage_ids.find(int(p.get("stage", 8))))
 		if diffs.has(String(p.get("difficulty", ""))):
 			s.diff.select(diffs.find(String(p.difficulty)))
 	_refresh_rows()
