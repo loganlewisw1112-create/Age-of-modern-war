@@ -73,3 +73,11 @@ Evidence: `…/g10_e4_ai_soak_lock.log`, `…/g10_e4_100_squad_stress_lock.log`
 1. Ghost strips optional owner look
 2. TECHNICAL / SAFEHOUSE / HATCH redesign (design-blueprint later)
 3. Full Task 21–22 long soak tools / fresh peak remasure if owner wants beyond closest probes
+
+## Ship record
+
+- **Commit:** `5f55236c`
+- **Package:** `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c`
+- **Zip:** `...\RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c.zip`
+- **PCK_MD5:** `8d6db9cc7946dfe517035f5b34d7f1ed`
+- **Board:** FACT `ship.g10.lock` seq **291**

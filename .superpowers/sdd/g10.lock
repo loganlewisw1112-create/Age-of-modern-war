@@ -9,9 +9,9 @@
 
 ## SHA
 
-- **Lock ceremony commit:** (filled at ship — see board FACT `ship.g10.lock`)
+- **Lock ceremony commit:** `5f55236c` (`5f55236caefa4f956b9e9e6929095dd00685da55`)
 - **Art wave3 baseline:** `4945e77e`
-- **Pre-lock tip:** `031a6e60`
+- **Pre-lock tip:** `031a6e60` / docs deferred tip `f3fdc760`
 
 ## Deferred art exception (owner)
 
@@ -61,8 +61,11 @@ Report: `.superpowers/sdd/task-e4-lock-report.md`
 ## Package
 
 - Script: `game/.plan/package_g71.ps1 -Note g10.lock`
-- Paths filled in board FACT `ship.g10.lock` after export
+- Folder: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c`
+- Zip: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c.zip`
+- Build: `build\RTS_Age_of_Modern_War_G71_2026-11-24_5f55236c`
+- PCK_MD5: `8d6db9cc7946dfe517035f5b34d7f1ed`
 
 ## Board
 
-FACT topics: `g10.lock` · `ship.g10.lock` · `ship.<sha>` · `readme.synced`
+FACT topics: `g10.lock` · `ship.g10.lock` · `ship.5f55236c` · `readme.synced`
