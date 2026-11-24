@@ -1,0 +1,166 @@
+{
+  "_meta": "G10 Exo Armory catalog (ARMORY10 Task 7B). Presets / field kits / unlock rows. Numbers PROVISIONAL.",
+  "rules": {
+    "g10_exo_armory_catalog": {
+      "presets": {
+        "strike_mk1": {
+          "name": "Strike Mk I",
+          "role": "strike",
+          "tier": "starter",
+          "catalog": "mk1",
+          "unlocked": true,
+          "cost": {"credits": 0},
+          "time_ticks": 20,
+          "kit": {"primary": "smart_rifle_mk1", "armor": "light_plates", "gear": "basic_optic"}
+        },
+        "assault_mk1": {
+          "name": "Assault Mk I",
+          "role": "assault",
+          "tier": "starter",
+          "catalog": "mk1",
+          "unlocked": true,
+          "cost": {"credits": 0},
+          "time_ticks": 20,
+          "kit": {"primary": "carbine_mk1", "armor": "medium_plates", "gear": "breach_soft"}
+        },
+        "recon_mk1": {
+          "name": "Recon Mk I",
+          "role": "recon",
+          "tier": "starter",
+          "catalog": "mk1",
+          "unlocked": true,
+          "cost": {"credits": 0},
+          "time_ticks": 20,
+          "kit": {"primary": "marksman_mk1", "armor": "light_plates", "gear": "sensor_tap"}
+        },
+        "strike_mk2": {
+          "name": "Strike Mk II",
+          "role": "strike",
+          "tier": "basic",
+          "catalog": "mk2",
+          "unlocked": false,
+          "unlock_paths": ["contract", "buy"],
+          "cost": {"credits": 180, "salvage": 20},
+          "time_ticks": 40,
+          "kit": {"primary": "smart_rifle_mk2", "armor": "medium_plates", "gear": "suppressor"}
+        },
+        "assault_mk2": {
+          "name": "Assault Mk II",
+          "role": "assault",
+          "tier": "basic",
+          "catalog": "mk2",
+          "unlocked": false,
+          "unlock_paths": ["contract", "steal"],
+          "cost": {"credits": 220, "salvage": 30},
+          "time_ticks": 45,
+          "kit": {"primary": "support_mk2", "armor": "heavy_plates", "gear": "underbarrel"}
+        },
+        "judge_backdoor": {
+          "name": "Judge Backdoor",
+          "role": "judge",
+          "tier": "elite",
+          "catalog": "mk2",
+          "unlocked": false,
+          "unlock_paths": ["contract", "steal"],
+          "cost": {"credits": 400, "salvage": 60},
+          "time_ticks": 60,
+          "kit": {"primary": "backdoor_arms", "armor": "medium_plates", "gear": "emp_scalpel"}
+        },
+        "shade_cloak": {
+          "name": "Shade Cloak",
+          "role": "shade",
+          "tier": "elite",
+          "catalog": "mk3",
+          "unlocked": false,
+          "unlock_paths": ["steal", "reliquary", "unseal"],
+          "cost": {"credits": 500, "salvage": 80},
+          "time_ticks": 70,
+          "kit": {"primary": "shade_marksman", "armor": "cloak_panels", "gear": "battery_tap"},
+          "incompatible": ["warden_heavy"]
+        },
+        "warden_corridor": {
+          "name": "Warden Corridor",
+          "role": "warden",
+          "tier": "elite",
+          "catalog": "mk3",
+          "unlocked": false,
+          "unlock_paths": ["contract", "reliquary"],
+          "cost": {"credits": 520, "salvage": 90},
+          "time_ticks": 70,
+          "kit": {"primary": "warden_support", "armor": "warden_petals", "gear": "spider_deploy"},
+          "incompatible": ["judge_corridor"]
+        },
+        "ace_row": {
+          "name": "Ace Named Row",
+          "role": "ace",
+          "tier": "elite",
+          "catalog": "mk3",
+          "unlocked": false,
+          "unlock_paths": ["ace"],
+          "cost": {"credits": 600, "salvage": 100},
+          "time_ticks": 80,
+          "kit": {"primary": "ace_primary", "armor": "ace_plates", "gear": "reaper_link"}
+        },
+        "cn_denied_kit": {
+          "name": "CN Intrusion Kit",
+          "role": "denied",
+          "tier": "elite",
+          "catalog": "mk3",
+          "unlocked": false,
+          "tags": ["counter_nanite", "human_a_cn"],
+          "cost": {"credits": 9999},
+          "time_ticks": 1,
+          "kit": {"primary": "cn_suit", "armor": "cn_plates", "gear": "hive_firmware"}
+        }
+      },
+      "field_kits": {
+        "ammo_topup": {
+          "class": "ammo",
+          "name": "Ammo Top-Up",
+          "base_amount": 20,
+          "cost": {"credits": 25}
+        },
+        "battery_cell": {
+          "class": "battery",
+          "name": "Battery Cell",
+          "base_amount": 30,
+          "cost": {"credits": 35}
+        },
+        "optic_swap": {
+          "class": "attachment",
+          "name": "Optic Swap",
+          "attachment": "optic",
+          "cost": {"credits": 40}
+        },
+        "suppressor_swap": {
+          "class": "attachment",
+          "name": "Suppressor Swap",
+          "attachment": "suppressor",
+          "cost": {"credits": 45}
+        },
+        "full_refit_denied": {
+          "class": "full_refit",
+          "name": "Illegal Full Refit",
+          "cost": {"credits": 1}
+        }
+      },
+      "unlock_rows": {
+        "mix_and_match": {
+          "requires_tier": "preset",
+          "grants_tier": "mix",
+          "paths": ["contract", "steal"]
+        },
+        "per_operator": {
+          "requires_tier": "mix",
+          "grants_tier": "per_op",
+          "paths": ["contract", "reliquary", "ace"]
+        }
+      },
+      "compatibility": {
+        "shade": {"deny_armor": ["heavy_plates", "warden_petals"], "deny_primary": ["warden_support", "support_mk2"]},
+        "judge": {"deny_kit": ["warden_corridor"]},
+        "warden": {"deny_kit": ["judge_backdoor"]}
+      }
+    }
+  }
+}

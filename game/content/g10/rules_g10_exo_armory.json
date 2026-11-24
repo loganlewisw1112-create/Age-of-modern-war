@@ -1,0 +1,63 @@
+{
+  "_meta": "G10 Exo Armory rules (ARMORY10 Task 7B). Numbers PROVISIONAL. Authority: docs/G10_EXO_ARMORY.md.",
+  "rules": {
+    "g10_exo_armory": {
+      "faction": "shadow_coalition",
+      "host_building": "x_ghost_complex",
+      "squad_size": 4,
+      "max_bays": 6,
+      "bands": {
+        "locker": {
+          "stages": [1, 2, 3, 4, 5, 6],
+          "bay_cap": 1,
+          "default_bays": 1,
+          "catalog": "mk1"
+        },
+        "full": {
+          "stages": [7, 8, 9, 10],
+          "bay_cap": 3,
+          "default_bays": 3,
+          "owner_may_start": [2, 3],
+          "catalog": "mk2"
+        },
+        "black": {
+          "stages": [11, 12, 13],
+          "bay_cap": 6,
+          "default_bays": 6,
+          "catalog": "mk3"
+        }
+      },
+      "bay_upgrade": {
+        "cost": {"credits": 400, "salvage": 80},
+        "time_ticks": 60,
+        "full_to_black_requires": "contract_or_stage"
+      },
+      "unlock_tiers": ["preset", "mix", "per_op"],
+      "field_carriers": ["x_exo_mule", "x_stealth_apc"],
+      "field_kit_classes": ["ammo", "battery", "attachment"],
+      "field_kit_never_full_refit": true,
+      "mission_importance_scale": {
+        "low": 0.5,
+        "normal": 1.0,
+        "high": 1.35,
+        "critical": 1.7
+      },
+      "cn_deny_tags": ["counter_nanite", "cn_suit", "human_a_cn", "machine_hive", "hive_firmware"],
+      "cn_deny_defs": ["g7_cn_suit", "g7_cn_team_leader", "g7_cn_radio"],
+      "destroy": {
+        "in_bay": "destroyed_or_captured",
+        "field_persist": true,
+        "outfit_blocked_until_rebuild": true
+      },
+      "raid": {
+        "yields": ["intel_fragment", "parts"],
+        "outfit_rights": false
+      },
+      "outfit_cost_mult": {
+        "starter": 0.0,
+        "basic": 0.5,
+        "elite": 1.0
+      }
+    }
+  }
+}
