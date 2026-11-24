@@ -1,0 +1,60 @@
+{
+  "_meta": "G10 Task 20 — selected dark options only (Blackout, Hollow Ground, Mirror Fortress, Dead Radio). Numbers PROVISIONAL. Unselected ROADMAP dark options must not appear.",
+  "rules": {
+    "g10_dark": {
+      "selected": ["blackout", "hollow_ground", "mirror_fortress", "dead_radio"],
+      "unselected_forbidden": [
+        "grafting",
+        "turning_operators",
+        "dead_hand",
+        "overmind_voice",
+        "husk_reanimation",
+        "infiltrators_wearing_dead",
+        "machines_human_remains",
+        "infected_vehicles",
+        "screamer",
+        "flesh_hive_spire",
+        "puppet_master",
+        "nanite_plague_bomber",
+        "hollow_giant",
+        "mourner",
+        "tactical_nukes",
+        "hive_bait",
+        "tamed_nanites",
+        "gravity_weapons",
+        "orbital_lance",
+        "mercy_kills"
+      ],
+      "blackout": {
+        "warn_ticks": 30,
+        "duration_ticks": 120,
+        "min_intel_grades": ["pattern", "fix", "keyhole"],
+        "ew_defs": ["x_pmc_ew", "x_shadow_ew", "x_backdoor_hacker"],
+        "ew_evidence_key": "ew",
+        "cuts": ["power", "comms"],
+        "permanent": false
+      },
+      "hollow_ground": {
+        "tell_ticks": 40,
+        "counter_roles": ["recon", "builder", "engineer", "sapper", "scout"],
+        "counter_defs": ["x_cell_sapper", "x_ambush_cell", "x_death_recon", "x_shadow_pathfinder"],
+        "collapse_cause": "hollow_ground"
+      },
+      "mirror_fortress": {
+        "decoy_kinds": ["hatch", "signature"],
+        "reveal_on": ["recon", "damage"],
+        "second_base": false
+      },
+      "dead_radio": {
+        "lines": {
+          "advance": "Advance on the north gate — hold fire until contact.",
+          "hold": "Hold position; QRF two minutes out.",
+          "exfil": "Break contact west; recover wounded at the hatch."
+        },
+        "anomaly_tell": "carrier_drift",
+        "issues_commands": false,
+        "turns_operators": false
+      }
+    }
+  }
+}
