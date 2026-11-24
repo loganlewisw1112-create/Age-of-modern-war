@@ -1,15 +1,14 @@
 extends SceneTree
-## G10 ART10 Task 8 — approved-core look package (owner 2026-11-24).
-## LOCKED: CELL / DEATH / WALKER / CLOSE AIR — Human A black kits + solid CAS.
-## DEFERRED (no look strips / not locked): TECHNICAL Humvee + SAFEHOUSE/HATCH — redesign later.
-## Style source = tools/art/g7_cn_fig.gd (+ g7_cn_gear / g7_cn_lib DL7) for infantry; CAS via DL7 faces.
-## Writes assets/art/g10_coalition/ + contact strips under .plan/shots/G71_LOOK/.
-## Does NOT touch art_catalog.gd / entity_layer / dog art / world.gd.
+## G10 ART10 — approved-core look package + post-lock anim/air overhaul.
+## LOCKED kits: CELL / DEATH / WALKER / CLOSE AIR — Human A black kits + attack CAS role.
+## Anim boards: real Human A poses (idle/walk/run/fire/hit/die) — not camo-token strips.
+## Air fleet: unique silhouettes per id (g10_coalition_air.gd). TECHNICAL/SAFEHOUSE/HATCH deferred.
 ##   godot --headless --path . -s tools/art/g10_coalition_samples.gd
 const GEN = preload("res://tools/gen_art.gd")
 const P = preload("res://tools/art/pix.gd")
 const C = preload("res://tools/art/g7_cn_lib.gd")
 const FIG = preload("res://tools/art/g7_cn_fig.gd")
+const AIR = preload("res://tools/art/g10_coalition_air.gd")
 
 const GROUP := "g10_coalition"
 const ART := "res://assets/art/"
@@ -19,6 +18,9 @@ const FW := 80
 const FH := 64
 const FACINGS := 4  ## N/E/S/W
 const PIVOT := Vector2i(40, 54)
+## Real animation board frames (Human A FIG pose names; hit → wounded).
+const FRAMES_INF := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0"]
+const FRAMES_AIR := AIR.FRAMES_AIR
 ## Sample-gate scale: Human A g7_cn_fig at sc_mul (native ~18 px → readable strip mass).
 ## CLOSE AIR = AIR_Z (~3× infantry strip presence). VEH_Z/BLD_Z kept for deferred drawers only.
 const FIG_SC := 2.70
@@ -90,6 +92,11 @@ const SAMPLES := [
 	"x_prototype_walker",
 ]
 
+const AIR_SAMPLES := [
+	"x_patron_cas", "x_silent_rotor", "x_stealth_transport",
+	"x_stealth_drone", "x_shock_drone", "x_recon_drone",
+]
+
 
 func _init() -> void:
 	var dir := ART + GROUP + "/"
@@ -101,8 +108,12 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 	var n := GEN.save(out, dir)
 	_write_contact(out)
+	_write_anim_boards(out)
+	_write_air_compare(out)
 	_write_owner_note()
-	print("G10_SAMPLES_APPROVED_CORE ids=%d files=%d ms=%d out=%s" % [SAMPLES.size(), n, Time.get_ticks_msec() - t0, dir])
+	print("G10_SAMPLES_ANIM_AIR ids=%d air=%d files=%d ms=%d out=%s" % [
+		SAMPLES.size(), AIR_SAMPLES.size(), n, Time.get_ticks_msec() - t0, dir,
+	])
 	quit(0)
 
 
@@ -112,36 +123,51 @@ static func build_samples() -> Dictionary:
 		"tile": [64, 32],
 		"group": GROUP,
 		"sample_gate": true,
-		"revise_cycle": 15,
+		"revise_cycle": 16,
 		"look": "G10_GHOST_LOOK",
 		"approved_core": ["CELL", "DEATH", "WALKER", "CLOSE AIR"],
 		"deferred": ["TECHNICAL", "SAFEHOUSE", "HATCH"],
-		"style_source": "g7_cn_fig Human A infantry + black Coalition patches (no purple); CLOSE AIR = black/gunmetal CAS (LOCKED); TECHNICAL+SAFEHOUSE deferred",
+		"anim_frames_inf": FRAMES_INF.duplicate(),
+		"anim_frames_air": FRAMES_AIR.duplicate(),
+		"style_source": "g7_cn_fig Human A poses + unique g10_coalition_air silhouettes; no purple; TECHNICAL+SAFEHOUSE deferred",
 		"human_a_match": ["tools/art/g7_cn_fig.gd", "tools/art/g7_cn_gear.gd", "tools/art/g7_cn_lib.gd", "tools/art/g7_cn_soldiers.gd"],
 		"infantry": {},
 		"vehicles": {},
 		"buildings": {},
 		"icons": {},
-		"notes": "Task 8 approved-core only — CELL/DEATH/WALKER/CLOSE AIR locked; TECHNICAL+SAFEHOUSE/HATCH deferred (owner 2026-11-24); drawers retained for later redesign",
+		"notes": "Post-lock anim/air overhaul — real Human A boards + unique air fleet; TECHNICAL+SAFEHOUSE/HATCH deferred",
 	}
 	var out := {"images": {}, "manifest": man}
-	_sheet_unit(out, "x_cell_rifle", "infantry", _draw_cell_rifle)
-	_sheet_unit(out, "x_death_strike", "infantry", _draw_death_strike)
-	_sheet_unit(out, "x_patron_cas", "vehicles", _draw_patron_cas)
-	_sheet_unit(out, "x_prototype_walker", "vehicles", _draw_walker)
+	_sheet_anim(out, "x_cell_rifle", "infantry", _draw_cell_rifle, FRAMES_INF)
+	_sheet_anim(out, "x_death_strike", "infantry", _draw_death_strike, FRAMES_INF)
+	_sheet_anim(out, "x_prototype_walker", "vehicles", _draw_walker, FRAMES_INF)
+	for aid in AIR_SAMPLES:
+		_sheet_anim(out, aid, "vehicles", func(cv, k, fname): AIR.draw(cv, aid, k, fname), FRAMES_AIR)
 	## TECHNICAL + SAFEHOUSE/HATCH intentionally omitted from look package (deferred).
 	return out
 
 
-static func _sheet_unit(out: Dictionary, id: String, sec: String, drawer: Callable) -> void:
-	var img := Image.create(FW * 1, FH * FACINGS, false, Image.FORMAT_RGBA8)
-	var msk := Image.create(FW * 1, FH * FACINGS, false, Image.FORMAT_RGBA8)
-	for k in FACINGS:
-		var cv = P.Canvas.new(FW, FH)
-		drawer.call(cv, k)
-		C.selout(cv)
-		img.blit_rect(cv.img, Rect2i(0, 0, FW, FH), Vector2i(0, k * FH))
-		msk.blit_rect(cv.mask, Rect2i(0, 0, FW, FH), Vector2i(0, k * FH))
+static func _fig_pose(fname: String) -> String:
+	## Catalog "hit" maps to Human A wounded pose.
+	if fname == "hit":
+		return "wounded"
+	return fname
+
+
+static func _sheet_anim(out: Dictionary, id: String, sec: String, drawer: Callable, frames: Array) -> void:
+	var cols := frames.size()
+	var img := Image.create(FW * cols, FH * FACINGS, false, Image.FORMAT_RGBA8)
+	var msk := Image.create(FW * cols, FH * FACINGS, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	msk.fill(Color(0, 0, 0, 0))
+	for fi in cols:
+		var fname := String(frames[fi])
+		for k in FACINGS:
+			var cv = P.Canvas.new(FW, FH)
+			drawer.call(cv, k, fname)
+			C.selout(cv)
+			img.blit_rect(cv.img, Rect2i(0, 0, FW, FH), Vector2i(fi * FW, k * FH))
+			msk.blit_rect(cv.mask, Rect2i(0, 0, FW, FH), Vector2i(fi * FW, k * FH))
 	var stem := "units/%s" % id
 	out.images[stem + ".png"] = img
 	out.images[stem + "_mask.png"] = msk
@@ -150,12 +176,24 @@ static func _sheet_unit(out: Dictionary, id: String, sec: String, drawer: Callab
 		"mask": stem + "_mask.png",
 		"fw": FW, "fh": FH,
 		"pivot": [PIVOT.x, PIVOT.y],
-		"frames": ["idle"],
+		"frames": frames.duplicate(),
 		"facings": FACINGS,
-		"g10": {"sample": true, "look": "G10_GHOST_LOOK", "revise": 8},
+		"g10": {
+			"sample": true,
+			"look": "G10_GHOST_LOOK",
+			"revise": 16,
+			"anim_board": true,
+			"unique_air": id in AIR_SAMPLES,
+		},
 	}
 	(out.manifest[sec] as Dictionary)[id] = spec
+	## Icon from idle / E facing.
 	C.icon(out, id, img, FW, FH, 1)
+
+
+static func _sheet_unit(out: Dictionary, id: String, sec: String, drawer: Callable) -> void:
+	## Legacy 1-frame helper (deferred drawers / contact fallbacks).
+	_sheet_anim(out, id, sec, func(cv, k, _fname): drawer.call(cv, k), ["idle"])
 
 
 static func _sheet_building(out: Dictionary, id: String, hidden: bool) -> void:
@@ -253,15 +291,14 @@ static func _kit_walker() -> Dictionary:
 	}
 
 
-## CELL: call Human A FIG drawer (4-facing sample → even 8-dir index).
-## idle = Human A low-ready rifle carry (no muzzle flash clutter on look strips).
-static func _draw_cell_rifle(cv, k: int) -> void:
-	FIG.draw(cv, _kit_cell(), (k % 4) * 2, "idle", Vector2(PIVOT), FIG_SC)
+## CELL: Human A FIG drawer — real pose per anim-board frame (4-facing → even 8-dir index).
+static func _draw_cell_rifle(cv, k: int, fname: String = "idle") -> void:
+	FIG.draw(cv, _kit_cell(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), FIG_SC)
 
 
 ## DEATH: same Human A body, sealed elite black kit, slightly taller sample scale.
-static func _draw_death_strike(cv, k: int) -> void:
-	FIG.draw(cv, _kit_death(), (k % 4) * 2, "idle", Vector2(PIVOT), DEATH_SC)
+static func _draw_death_strike(cv, k: int, fname: String = "idle") -> void:
+	FIG.draw(cv, _kit_death(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), DEATH_SC)
 
 
 ## DEFERRED — not emitted to look package / strips (owner 2026-11-24). Kept for later redesign.
@@ -606,139 +643,14 @@ static func _draw_safehouse(cv, k: int, hidden: bool) -> void:
 		], Z * 0.22)
 
 
-## CLOSE AIR — enhanced attack CAS (black + dark gunmetal only; NO purple / BRUISE / gold).
-## Swept/tapered wings, EO chin ball, wing guns, pop-out missile bays. AIR_Z ~3×.
-## Landing gear: sample-gate / strip poses are IN-AIR → gear UP (hidden). No wheels/struts.
-static func _draw_patron_cas(cv, k: int) -> void:
-	_draw_patron_cas_pose(cv, k, false)
-
-
-## grounded=true would show nose+main gear; strips always call with false (gear retracted).
-static func _draw_patron_cas_pose(cv, k: int, grounded: bool) -> void:
-	var Z := AIR_Z
-	var R := _R(k, Z)
-	## In-air: soft high shadow; grounded would sit lower — strips stay in-air.
-	C.ground_shadow(cv, Vector2(PIVOT) + Vector2(0, 1), 34.0 if not grounded else 38.0, 10.0 if not grounded else 12.0)
-	var parts: Array = []
-	for s in [-1.0, 1.0]:
-		parts.append({"d": C.fdep(R, -1.2, s * 5.2), "k": "wing", "s": s})
-		parts.append({"d": C.fdep(R, 1.2, s * 2.1) + 0.03, "k": "winggun", "s": s})
-		parts.append({"d": C.fdep(R, -0.4, s * 3.6) + 0.025, "k": "bay", "s": s})
-		parts.append({"d": C.fdep(R, 0.5, s * 1.35) + 0.015, "k": "intake", "s": s})
-	parts.append({"d": C.fdep(R, 0.0, 0.0), "k": "fuse"})
-	parts.append({"d": C.fdep(R, 5.5, 0.0) + 0.03, "k": "nose"})
-	parts.append({"d": C.fdep(R, 5.5, 0.0) + 0.06, "k": "sensor"})
-	parts.append({"d": C.fdep(R, 1.4, 0.0) + 0.04, "k": "canopy"})
-	parts.append({"d": C.fdep(R, -5.2, 0.0) + 0.01, "k": "tail"})
-	if grounded:
-		parts.append({"d": C.fdep(R, 5.2, 0.0) + 0.12, "k": "gear_nose"})
-		for s in [-1.0, 1.0]:
-			parts.append({"d": C.fdep(R, -0.2, s * 2.4) + 0.12, "k": "gear_main", "s": s})
-	_sort_draw(parts)
-	for q in parts:
-		match String(q.k):
-			"wing":
-				## Delta-swept tapered attack wing — tip aft + thin chord (anti-brick).
-				var s: float = q.s
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, 3.85, s * 0.4, 4.5), C.fpt(R, -1.4, s * 0.55, 4.2),
-					C.fpt(R, -5.6, s * 7.15, 2.55), C.fpt(R, -2.9, s * 6.85, 2.75),
-				]), C.ramp(STEEL_L if s < 0.0 else VOID_L), 2, s < 0.0)
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, 3.85, s * 0.4, 4.5), C.fpt(R, -2.9, s * 6.85, 2.75),
-					C.fpt(R, -3.05, s * 6.7, 2.35), C.fpt(R, 3.65, s * 0.4, 4.1),
-				]), C.ramp(BLK_L), 1, false)
-				## Sharp tip point.
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, -2.9, s * 6.85, 2.75), C.fpt(R, -5.6, s * 7.15, 2.55),
-					C.fpt(R, -5.2, s * 6.75, 2.25),
-				]), C.ramp(BLK), 1, false)
-				C.tube(cv, C.fpt(R, 1.6, s * 0.95, 4.3), C.fpt(R, -3.4, s * 6.2, 2.85), 0.16 * Z, C.ramp(STEEL))
-			"winggun":
-				## Long forward-protruding wing guns past LE.
-				var sg: float = q.s
-				C.tube(cv, C.fpt(R, 1.1, sg * 1.75, 3.85), C.fpt(R, 4.55, sg * 1.9, 3.55), 0.3 * Z, C.ramp(VOID_D))
-				C.tube(cv, C.fpt(R, 2.8, sg * 1.85, 3.7), C.fpt(R, 5.15, sg * 1.95, 3.45), 0.16 * Z, C.ramp(STEEL))
-				C.blob(cv, C.fpt(R, 0.95, sg * 1.75, 3.85), 0.32 * Z, C.ramp(BLK_D))
-				C.blob(cv, C.fpt(R, 5.2, sg * 1.95, 3.45), 0.14 * Z, C.ramp(STEEL_L))
-			"bay":
-				## Pop-out missile bay — tucked under wing (not dangling like gear).
-				var sb: float = q.s
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, 0.9, sb * 2.65, 3.75), C.fpt(R, -2.1, sb * 2.8, 3.45),
-					C.fpt(R, -1.85, sb * 3.65, 2.85), C.fpt(R, 1.15, sb * 3.45, 3.15),
-				]), C.ramp(BLK_L), 2, false)
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, 0.9, sb * 2.65, 3.75), C.fpt(R, 1.15, sb * 3.45, 3.15),
-					C.fpt(R, 0.55, sb * 3.25, 3.05), C.fpt(R, 0.35, sb * 2.55, 3.55),
-				]), C.ramp(STEEL), 1, false)
-				## Inner missile (raised — reads as hardpoint, not wheel).
-				C.tube(cv, C.fpt(R, 0.85, sb * 3.05, 3.35), C.fpt(R, -2.55, sb * 3.2, 3.05), 0.34 * Z, C.ramp(STEEL))
-				C.blob(cv, C.fpt(R, 1.05, sb * 3.05, 3.35), 0.22 * Z, C.ramp(STEEL_L))
-				C.tube(cv, C.fpt(R, -2.15, sb * 2.85, 3.05), C.fpt(R, -2.85, sb * 3.55, 2.85), 0.11 * Z, C.ramp(VOID_L))
-				C.tube(cv, C.fpt(R, -2.15, sb * 3.45, 3.05), C.fpt(R, -2.85, sb * 2.85, 2.85), 0.11 * Z, C.ramp(VOID_L))
-				## Outer hardpoint missile.
-				C.tube(cv, C.fpt(R, 0.35, sb * 4.75, 3.25), C.fpt(R, -2.45, sb * 5.05, 2.95), 0.28 * Z, C.ramp(BLK_D))
-				C.blob(cv, C.fpt(R, 0.55, sb * 4.75, 3.25), 0.18 * Z, C.ramp(STEEL))
-				C.tube(cv, C.fpt(R, -2.05, sb * 4.65, 2.95), C.fpt(R, -2.75, sb * 5.35, 2.75), 0.1 * Z, C.ramp(VOID_L))
-				C.tube(cv, C.fpt(R, -2.05, sb * 5.15, 2.95), C.fpt(R, -2.75, sb * 4.65, 2.75), 0.1 * Z, C.ramp(VOID_L))
-			"intake":
-				var s3: float = q.s
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, 1.65, s3 * 0.85, 4.15), C.fpt(R, -0.45, s3 * 1.2, 4.05),
-					C.fpt(R, -0.65, s3 * 1.65, 4.95), C.fpt(R, 1.45, s3 * 1.4, 5.15),
-				]), C.ramp(BLK), 2, false)
-				C.blob(cv, C.fpt(R, 1.55, s3 * 1.2, 4.6), 0.34 * Z, C.ramp(VOID_D))
-			"fuse":
-				C.tube(cv, C.fpt(R, -5.5, 0.0, 4.05), C.fpt(R, 4.7, 0.0, 4.55), 0.95 * Z, C.ramp(BLK))
-				C.tube(cv, C.fpt(R, -4.7, 0.0, 4.55), C.fpt(R, 3.5, 0.0, 5.05), 0.62 * Z, C.ramp(STEEL))
-				## Clean belly — no low axle sticks (gear only when grounded).
-				C.tube(cv, C.fpt(R, -2.2, 0.0, 3.65), C.fpt(R, 2.3, 0.0, 3.85), 0.38 * Z, C.ramp(BLK_D))
-				_team_band(cv, C.fpt(R, -1.2, -0.85, 4.75), 0.28 * Z)
-			"nose":
-				C.tube(cv, C.fpt(R, 4.35, 0.0, 4.4), C.fpt(R, 6.7, 0.0, 3.95), 0.52 * Z, C.ramp(BLK_D))
-				C.blob(cv, C.fpt(R, 6.9, 0.0, 3.85), 0.24 * Z, C.ramp(STEEL))
-			"sensor":
-				## EO / targeting ball tucked under chin (high) — not a dangling nose-wheel.
-				C.tube(cv, C.fpt(R, 5.35, 0.0, 3.85), C.fpt(R, 5.55, 0.0, 3.25), 0.18 * Z, C.ramp(STEEL))
-				C.blob(cv, C.fpt(R, 5.6, 0.0, 3.05), 0.48 * Z, C.ramp(VOID_D))
-				C.blob(cv, C.fpt(R, 5.6, 0.0, 2.9), 0.28 * Z, C.ramp(GLASS))
-				C.blob(cv, C.fpt(R, 5.6, 0.0, 2.75), 0.14 * Z, C.ramp(STEEL_L))
-			"canopy":
-				C.blob(cv, C.fpt(R, 1.55, 0.0, 5.45), 0.78 * Z, C.ramp(BLK_L))
-				C.blob(cv, C.fpt(R, 1.75, 0.0, 5.75), 0.55 * Z, C.ramp(GLASS))
-				C.tube(cv, C.fpt(R, 0.85, 0.0, 5.35), C.fpt(R, 2.35, 0.0, 5.55), 0.18 * Z, C.ramp(STEEL_L))
-			"tail":
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, -4.5, -0.15, 4.35), C.fpt(R, -6.05, -0.15, 4.1),
-					C.fpt(R, -6.55, -0.15, 7.25), C.fpt(R, -5.25, -0.15, 7.45),
-				]), C.ramp(STEEL), 2, true)
-				C.face(cv, PackedVector2Array([
-					C.fpt(R, -4.5, 0.15, 4.35), C.fpt(R, -6.05, 0.15, 4.1),
-					C.fpt(R, -6.55, 0.15, 7.25), C.fpt(R, -5.25, 0.15, 7.45),
-				]), C.ramp(VOID), 1, false)
-				for s4 in [-1.0, 1.0]:
-					C.face(cv, PackedVector2Array([
-						C.fpt(R, -4.9, 0.0, 4.55), C.fpt(R, -6.15, 0.0, 4.3),
-						C.fpt(R, -5.95, s4 * 3.15, 3.95), C.fpt(R, -5.05, s4 * 2.55, 4.2),
-					]), C.ramp(VOID_L if s4 < 0.0 else BLK_L), 2, s4 < 0.0)
-				C.tube(cv, C.fpt(R, -5.6, 0.0, 4.2), C.fpt(R, -6.75, 0.0, 4.0), 0.36 * Z, C.ramp(BLK_D))
-			"gear_nose":
-				## Only when grounded — nose strut + wheel.
-				C.tube(cv, C.fpt(R, 5.15, 0.0, 3.4), C.fpt(R, 5.25, 0.0, 1.35), 0.14 * Z, C.ramp(STEEL))
-				C.blob(cv, C.fpt(R, 5.3, 0.0, 1.05), 0.42 * Z, C.ramp(RUBBER))
-				C.blob(cv, C.fpt(R, 5.3, 0.0, 1.05), 0.16 * Z, C.ramp(STEEL_L))
-			"gear_main":
-				## Only when grounded — main gear under wing root.
-				var gs: float = q.s
-				C.tube(cv, C.fpt(R, -0.15, gs * 1.55, 3.55), C.fpt(R, -0.05, gs * 2.15, 1.25), 0.16 * Z, C.ramp(STEEL))
-				C.blob(cv, C.fpt(R, 0.0, gs * 2.25, 0.95), 0.48 * Z, C.ramp(RUBBER))
-				C.blob(cv, C.fpt(R, 0.0, gs * 2.25, 0.95), 0.18 * Z, C.ramp(STEEL_L))
+## CLOSE AIR — delegated to unique air module (attack-CAS role retained).
+static func _draw_patron_cas(cv, k: int, fname: String = "idle") -> void:
+	AIR.draw(cv, "x_patron_cas", k, fname)
 
 
 ## WALKER: Human A sealed elite body (taller sample scale) + heavy launcher — NOT stick / digitigrade / mecha.
-static func _draw_walker(cv, k: int) -> void:
-	FIG.draw(cv, _kit_walker(), (k % 4) * 2, "idle", Vector2(PIVOT), WLK_SC)
+static func _draw_walker(cv, k: int, fname: String = "idle") -> void:
+	FIG.draw(cv, _kit_walker(), (k % 4) * 2, _fig_pose(fname), Vector2(PIVOT), WLK_SC)
 
 
 ## --- contact strips ----------------------------------------------------------
@@ -810,9 +722,9 @@ static func _write_contact(out: Dictionary) -> void:
 	## SAFEHOUSE/HATCH states strip deferred with building redesign — not written.
 
 
-static func _sample_frame(out: Dictionary, id: String, facing: int = 1) -> Image:
+static func _sample_frame(out: Dictionary, id: String, facing: int = 1, frame_i: int = 0) -> Image:
 	var sec := "infantry"
-	if id in ["x_patron_cas", "x_prototype_walker"]:
+	if id in AIR_SAMPLES or id == "x_prototype_walker":
 		sec = "vehicles"
 	elif id == "x_safehouse" or id == "x_safehouse_hidden" or id == "x_technical_rocket":
 		## Deferred subjects — not in approved-core manifest.
@@ -825,7 +737,91 @@ static func _sample_frame(out: Dictionary, id: String, facing: int = 1) -> Image
 	if img == null:
 		return null
 	var f := clampi(facing, 0, FACINGS - 1)
-	return img.get_region(Rect2i(0, f * FH, FW, FH))
+	var fi := clampi(frame_i, 0, maxi(0, img.get_width() / FW - 1))
+	return img.get_region(Rect2i(fi * FW, f * FH, FW, FH))
+
+
+## Real animation boards — one row of poses per subject (Human A / air idle→hit).
+static func _write_anim_boards(out: Dictionary) -> void:
+	var look_dir := ProjectSettings.globalize_path(LOOK)
+	DirAccess.make_dir_recursive_absolute(look_dir)
+	_write_one_anim_board(out, "board_g10_anim_cell.png", ["x_cell_rifle"], ["CELL"], "infantry", FRAMES_INF)
+	_write_one_anim_board(out, "board_g10_anim_death.png", ["x_death_strike"], ["DEATH"], "infantry", FRAMES_INF)
+	_write_one_anim_board(out, "board_g10_anim_walker.png", ["x_prototype_walker"], ["WALKER"], "vehicles", FRAMES_INF)
+	_write_one_anim_board(out, "board_g10_anim_air_fleet.png", AIR_SAMPLES, [
+		"CAS", "SILENT", "TRANS", "STLTH", "SHOCK", "RECON",
+	], "vehicles", FRAMES_AIR)
+	## Combined infantry board (CELL + DEATH + WALKER).
+	_write_one_anim_board(out, "board_g10_anim_infantry.png", [
+		"x_cell_rifle", "x_death_strike", "x_prototype_walker",
+	], ["CELL", "DEATH", "WALKER"], "mixed", FRAMES_INF)
+
+
+static func _write_one_anim_board(out: Dictionary, name: String, ids: Array, labels: Array, _sec: String, frames: Array) -> void:
+	var look_dir := ProjectSettings.globalize_path(LOOK)
+	var pad := 4
+	var label_h := 12
+	var cell_w := FW + pad
+	var row_h := FH + label_h + 4
+	var sheet := Image.create(frames.size() * cell_w + 4, ids.size() * row_h, false, Image.FORMAT_RGBA8)
+	sheet.fill(STRIP_GROUND)
+	for ri in ids.size():
+		var id := String(ids[ri])
+		_label(sheet, String(labels[ri]), 2, ri * row_h + 1, 1)
+		for fi in frames.size():
+			if ri == 0:
+				_label(sheet, String(frames[fi]).substr(0, 4).to_upper(), fi * cell_w + 2, 1, 1)
+			var fr := _sample_frame(out, id, 1, fi)
+			if fr == null:
+				continue
+			sheet.blend_rect(fr, Rect2i(Vector2i.ZERO, fr.get_size()), Vector2i(fi * cell_w + pad / 2, ri * row_h + label_h))
+	sheet.save_png(look_dir.path_join(name))
+	var big := sheet.duplicate() as Image
+	big.resize(sheet.get_width() * 2, sheet.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	big.save_png(look_dir.path_join(name.replace(".png", "_2x.png")))
+
+
+## Side-by-side air idle silhouettes — proves no shared hull.
+static func _write_air_compare(out: Dictionary) -> void:
+	var look_dir := ProjectSettings.globalize_path(LOOK)
+	var pad := 8
+	var label_h := 14
+	var cell_w := FW + pad
+	var cell_h := FH + label_h + 6
+	var sheet := Image.create(AIR_SAMPLES.size() * cell_w, cell_h * 2, false, Image.FORMAT_RGBA8)
+	sheet.fill(STRIP_GROUND)
+	_label(sheet, "AIR UNIQUE IDLE", 2, 2, 1)
+	_label(sheet, "AIR UNIQUE FIRE", 2, cell_h + 2, 1)
+	var short := ["CAS", "SILENT", "TRANS", "STLTH", "SHOCK", "RECON"]
+	for i in AIR_SAMPLES.size():
+		var id := String(AIR_SAMPLES[i])
+		var idle := _sample_frame(out, id, 1, 0)
+		var fire := _sample_frame(out, id, 1, 2)  ## fire column
+		if idle != null:
+			sheet.blend_rect(idle, Rect2i(Vector2i.ZERO, idle.get_size()), Vector2i(i * cell_w + pad / 2, label_h))
+		if fire != null:
+			sheet.blend_rect(fire, Rect2i(Vector2i.ZERO, fire.get_size()), Vector2i(i * cell_w + pad / 2, cell_h + label_h))
+		_label(sheet, short[i], i * cell_w + 2, 1, 1)
+	var name := "strip_g10_air_unique.png"
+	sheet.save_png(look_dir.path_join(name))
+	var big := sheet.duplicate() as Image
+	big.resize(sheet.get_width() * 2, sheet.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	big.save_png(look_dir.path_join(name.replace(".png", "_2x.png")))
+	## Facings atlas for all air (idle only).
+	var face_h := FH + label_h + 4
+	var face := Image.create(FACINGS * (FW + 4) + 8, AIR_SAMPLES.size() * face_h, false, Image.FORMAT_RGBA8)
+	face.fill(STRIP_GROUND)
+	for i in AIR_SAMPLES.size():
+		_label(face, short[i], 2, i * face_h + 2, 1)
+		for f in FACINGS:
+			var fr := _sample_frame(out, String(AIR_SAMPLES[i]), f, 0)
+			if fr == null:
+				continue
+			face.blend_rect(fr, Rect2i(Vector2i.ZERO, fr.get_size()), Vector2i(4 + f * (FW + 4), i * face_h + label_h))
+	face.save_png(look_dir.path_join("strip_g10_air_facings.png"))
+	var face2 := face.duplicate() as Image
+	face2.resize(face.get_width() * 2, face.get_height() * 2, Image.INTERPOLATE_NEAREST)
+	face2.save_png(look_dir.path_join("strip_g10_air_facings_2x.png"))
 
 
 ## Correct 3×5 uppercase bitmap. g71_lookcheck glyph table had broken L/S/etc → owner saw gibberish.
@@ -912,29 +908,25 @@ static func _write_owner_note() -> void:
 	var p := look_dir.path_join("G10_SAMPLES_OWNER.txt")
 	var f := FileAccess.open(p, FileAccess.WRITE)
 	f.store_string(
-		"G10 Task 8 look samples (ART10) — APPROVED CORE only (revise 15)\n"
-		+ "Owner 2026-11-24: remove TECHNICAL + SAFEHOUSE mockups from look package; redesign later.\n"
-		+ "LOCKED: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + solid CAS).\n"
-		+ "DEFERRED: TECHNICAL Humvee — NEED design-blueprint-later (not locked).\n"
-		+ "DEFERRED: SAFEHOUSE + HATCH — deferred with building redesign (not locked; states strip omitted).\n"
-		+ "Style: g7_cn_fig infantry; CLOSE AIR DL7 CAS in g10_coalition_samples.gd.\n\n"
-		+ "Strip labels (ALL-CAPS): CELL | DEATH | CLOSE AIR | WALKER\n"
-		+ "Contrast labels: CELL | DEATH\n"
-		+ "Safehouse labels: (omitted — DEFERRED)\n\n"
-		+ "[x] CELL (x_cell_rifle) — LOCKED cycle 8 Human A FIG\n"
-		+ "[ ] TECHNICAL (x_technical_rocket) — DEFERRED (design-blueprint-later)\n"
-		+ "[ ] SAFEHOUSE (x_safehouse) — DEFERRED (design-blueprint-later)\n"
-		+ "[ ] HATCH — DEFERRED with SAFEHOUSE\n"
-		+ "[x] DEATH (x_death_strike) — LOCKED cycle 8 Human A sealed\n"
-		+ "[x] CLOSE AIR (x_patron_cas) — LOCKED solid\n"
-		+ "[x] WALKER (x_prototype_walker) — LOCKED cycle 8 Human A sealed\n\n"
-		+ "Strips:\n"
-		+ "  strip_g10_coalition_samples.png (+_2x) — approved-core 2x2\n"
-		+ "  strip_g10_coalition_facings.png (+_2x) — all 4 facings per approved id\n"
-		+ "  strip_g10_cell_vs_ghost.png (+_2x)\n"
-		+ "  strip_g10_safehouse_states.png — OMITTED (deferred)\n"
-		+ "Board: FACT art.look.approved.core | FACT art.technical.deferred | FACT art.safehouse.deferred\n"
-		+ "g10.lock: may proceed with deferred placeholders (owner exception to Done-when #13a technical+hidden)\n"
+		"G10 look samples (ART10) — APPROVED CORE + post-lock ANIM/AIR overhaul (revise 16)\n"
+		+ "LOCKED kits: CELL / DEATH / WALKER / CLOSE AIR (Human A black kits + attack-CAS role).\n"
+		+ "DEFERRED: TECHNICAL / SAFEHOUSE / HATCH — still deferred.\n"
+		+ "Anim: real Human A poses idle/walk_a/walk_b/run_0/fire/hit/die_0 (not camo-token strips).\n"
+		+ "Air: unique silhouettes per id via g10_coalition_air.gd (rotors only where craft requires).\n\n"
+		+ "[x] CELL / DEATH / WALKER — Human A black-kit grammar + real anim boards\n"
+		+ "[x] CLOSE AIR (x_patron_cas) — fixed-wing attack CAS (unique vs other air)\n"
+		+ "[x] x_silent_rotor — quiet-insert helo (main rotor + fenestron)\n"
+		+ "[x] x_stealth_transport — large flying-wing cargo VTOL (tip ducts)\n"
+		+ "[x] x_stealth_drone — flat diamond UCAV (no rotors)\n"
+		+ "[x] x_shock_drone — X-frame multi-rotor striker\n"
+		+ "[x] x_recon_drone — tiny high-wing spyglass boom EO\n"
+		+ "[ ] TECHNICAL / SAFEHOUSE / HATCH — DEFERRED\n\n"
+		+ "Boards / strips:\n"
+		+ "  board_g10_anim_*.png — real animation boards\n"
+		+ "  strip_g10_air_unique.png — silhouette compare (idle+fire)\n"
+		+ "  strip_g10_air_facings.png — air N/E/S/W\n"
+		+ "  strip_g10_coalition_samples.png — approved-core 2x2\n"
+		+ "Note: g10.lock may need amend FACT for this post-lock art amendment.\n"
 		+ "Cells: 80x64 four-facing; assets: game/assets/art/g10_coalition/\n"
 	)
 	f.close()

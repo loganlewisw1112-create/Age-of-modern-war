@@ -289,8 +289,12 @@ func test_g10_approved_art_catalog_coverage() -> void:
 		check(not spec.is_empty(), "approved art missing for %s" % id)
 		check_eq(int(spec.get("facings", 0)), 4, "%s facings" % id)
 		check(int(spec.get("fw", 0)) > 0 and int(spec.get("fh", 0)) > 0, "%s dimensions" % id)
+		var frames: Array = spec.get("frames", [])
+		check(frames.size() >= 4, "%s has anim frames (>=4)" % id)
+		check(frames.has("idle"), "%s has idle" % id)
 		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
 		check(img != null and img.get_width() > 0 and img.get_height() > 0, "%s sheet loads" % id)
+		check(img.get_width() >= int(spec.get("fw", 80)) * frames.size(), "%s sheet width matches frames" % id)
 		var mask_path := String(spec.get("mask", ""))
 		check(mask_path != "", "%s mask path" % id)
 		var msk: Image = ArtCatalog._image(mask_path)
@@ -313,7 +317,7 @@ func test_g10_deferred_art_allowed_as_placeholder() -> void:
 			check(not bool(g10.get("approved_core", false)), "deferred %s must not be approved_core" % id)
 
 
-## Task 8 wave3 — Ghost Wing set + camo states + CLOSE AIR vehicle polish.
+## Post-lock anim/air overhaul — Ghost Wing real poses + unique air fleet.
 const G10_GHOST_SET_IDS := [
 	"x_ghost_base", "x_ghost_judge", "x_ghost_warden", "x_ghost_shade", "x_ghost_sergeant",
 	"x_ghost_mk1", "x_ghost_mk2", "x_ghost_mk3",
@@ -322,9 +326,12 @@ const G10_GHOST_SET_IDS := [
 ]
 
 const G10_CAMO_STATES := ["rest", "walk", "sprint", "fire", "hit", "battery", "shield"]
+const G10_ANIM_FRAMES_INF := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0"]
+const G10_ANIM_FRAMES_AIR := ["idle", "flight", "fire", "hit"]
 
 const G10_AIR_STATE_IDS := [
-	"x_silent_rotor", "x_stealth_transport", "x_stealth_drone", "x_shock_drone", "x_recon_drone",
+	"x_patron_cas", "x_silent_rotor", "x_stealth_transport",
+	"x_stealth_drone", "x_shock_drone", "x_recon_drone",
 ]
 
 
@@ -338,25 +345,43 @@ func test_g10_ghost_wing_set_coverage() -> void:
 		var g10 = spec.get("g10", {})
 		check(g10 is Dictionary and bool(g10.get("ghost_wing", false)), "%s ghost_wing flag" % id)
 		check(bool(g10.get("approved_core", false)), "%s approved_core" % id)
+		check(bool(g10.get("anim_board", false)), "%s anim_board flag" % id)
+		var frames: Array = spec.get("frames", [])
+		check(frames.size() >= G10_ANIM_FRAMES_INF.size(), "%s real anim frames" % id)
+		for fname in G10_ANIM_FRAMES_INF:
+			check(frames.has(fname), "%s missing anim frame %s" % [id, fname])
 		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
-		check(img != null and img.get_width() > 0, "%s sheet loads" % id)
+		check(img != null and img.get_width() >= 80 * G10_ANIM_FRAMES_INF.size(), "%s multi-frame sheet" % id)
 		var states = spec.get("states", {})
-		check(states is Dictionary and states.size() >= G10_CAMO_STATES.size(), "%s camo states" % id)
+		check(states is Dictionary and states.size() >= G10_CAMO_STATES.size(), "%s pose-state crops" % id)
 		for st in G10_CAMO_STATES:
-			check(states.has(st), "%s missing camo state %s" % [id, st])
+			check(states.has(st), "%s missing state %s" % [id, st])
 			var sspec: Dictionary = states[st]
 			var simg: Image = ArtCatalog._image(String(sspec.get("file", "")))
-			check(simg != null and simg.get_width() > 0, "%s camo %s loads" % [id, st])
+			check(simg != null and simg.get_width() > 0, "%s state %s loads" % [id, st])
+			check(String(sspec.get("pose", "")) != "", "%s state %s has pose" % [id, st])
 
 
 func test_g10_close_air_state_polish() -> void:
 	ArtCatalog.load_all()
+	var sil_hashes := {}
 	for id in G10_AIR_STATE_IDS:
 		var spec := _g10_art_spec(id)
 		check(not spec.is_empty(), "air state missing %s" % id)
 		var frames: Array = spec.get("frames", [])
-		check(frames.size() >= 2, "%s has idle+alt frames" % id)
+		check(frames.size() >= G10_ANIM_FRAMES_AIR.size(), "%s has air anim frames" % id)
+		for fname in G10_ANIM_FRAMES_AIR:
+			check(frames.has(fname), "%s missing air frame %s" % [id, fname])
 		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
-		check(img != null and img.get_width() >= 160, "%s dual-frame sheet width" % id)
+		check(img != null and img.get_width() >= 80 * G10_ANIM_FRAMES_AIR.size(), "%s multi-frame air sheet" % id)
 		var g10 = spec.get("g10", {})
 		check(g10 is Dictionary and (g10.get("air_states") is Array), "%s air_states meta" % id)
+		check(bool(g10.get("unique_air", false)), "%s unique_air flag" % id)
+		## Idle E-facing crop must differ across air ids (no shared silhouette).
+		var idle := img.get_region(Rect2i(0, 64, 80, 64))
+		var ctx := HashingContext.new()
+		ctx.start(HashingContext.HASH_MD5)
+		ctx.update(idle.get_data())
+		var h := ctx.finish().hex_encode()
+		check(not sil_hashes.has(h), "%s silhouette must be unique vs %s" % [id, sil_hashes.get(h, "")])
+		sil_hashes[h] = id

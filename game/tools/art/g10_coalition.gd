@@ -1,10 +1,11 @@
 extends SceneTree
-## G10 ART10 Task 8 wave3 — Ghost Wing set + camo/states + CLOSE AIR vehicle polish.
-## Builds on wave2 approved-core clones (CELL/DEATH/WALKER/CLOSE AIR). No purple.
+## G10 ART10 post-lock overhaul — real Human A anim boards + unique air fleet.
+## Builds on approved-core (CELL/DEATH/WALKER/CLOSE AIR). No purple.
 ## TECHNICAL + SAFEHOUSE/HATCH still deferred — no locked mockups.
 ##   godot --headless --path . -s tools/art/g10_coalition.gd
 const GEN = preload("res://tools/gen_art.gd")
 const SAMPLES = preload("res://tools/art/g10_coalition_samples.gd")
+const AIR = preload("res://tools/art/g10_coalition_air.gd")
 
 const GROUP := "g10_coalition"
 const ART := "res://assets/art/"
@@ -12,6 +13,8 @@ const LOOK := "res://.plan/shots/G71_LOOK"
 const FW := 80
 const FH := 64
 const FACINGS := 4
+const FRAMES_INF := SAMPLES.FRAMES_INF
+const FRAMES_AIR := AIR.FRAMES_AIR
 
 ## Mark colours (army/fleet grammar: band / tip / chip; never full-body team paint).
 ## No purple — charcoal / bone / teal / gold debt only (locked Human A black kit language).
@@ -82,15 +85,17 @@ const APPROVED_MAP := {
 	"x_prototype_walker": [
 		["x_prototype_walker", ""],
 	],
+	## CLOSE AIR template alone — sibling air ids are UNIQUE sheets (not CAS clones).
 	"x_patron_cas": [
 		["x_patron_cas", ""],
-		["x_silent_rotor", "air_silent"],
-		["x_stealth_transport", "air_transport"],
-		["x_stealth_drone", "air_stealth"],
-		["x_shock_drone", "air_shock"],
-		["x_recon_drone", "air_recon"],
 	],
 }
+
+## Unique air fleet — each id has its own silhouette (g10_coalition_air.gd).
+const AIR_UNIQUE_IDS := [
+	"x_patron_cas", "x_silent_rotor", "x_stealth_transport",
+	"x_stealth_drone", "x_shock_drone", "x_recon_drone",
+]
 
 ## Ghost Wing look set (Step 6) — Death black sealed kit + role/Mk/ace marks. Not Content defs.
 const GHOST_SET := [
@@ -113,11 +118,17 @@ const GHOST_SET := [
 	["x_ghost_ace_09", "ghost_ace_9"],
 ]
 
-## Camo / posture states for Ghost Wing ids (Step 7). Never chrome.
+## Ghost Wing anim = same Human A pose set as CELL/DEATH (real movement stills).
+## Legacy camo token keys remapped to pose frames for catalog compatibility.
+const ANIM_STATES := ["idle", "walk_a", "walk_b", "run_0", "fire", "hit", "die_0"]
+const CAMO_TO_ANIM := {
+	"rest": "idle", "walk": "walk_a", "sprint": "run_0", "fire": "fire",
+	"hit": "hit", "battery": "idle", "shield": "idle",
+}
 const CAMO_STATES := ["rest", "walk", "sprint", "fire", "hit", "battery", "shield"]
 
-## CLOSE AIR / approved air ids that get state polish (Step 8 subset — no deferred vehicles).
-const AIR_STATE_IDS := ["x_silent_rotor", "x_stealth_transport", "x_stealth_drone", "x_shock_drone", "x_recon_drone"]
+## All unique air ids (anim frames live on the sheet).
+const AIR_STATE_IDS := AIR_UNIQUE_IDS
 
 ## Explicitly deferred — no look-locked sheets this wave (owner redesign later).
 const DEFERRED_IDS := [
@@ -144,10 +155,13 @@ func _init() -> void:
 	_write_facings_atlas(out)
 	_write_kit_strip(out)
 	_write_ghost_strip(out)
-	_write_camo_strip(out)
+	_write_anim_strip(out)
 	_write_air_states_strip(out)
-	print("G10_BULK_APPROVED_WAVE3 ids=%d ghost=%d files=%d deferred=%d marked=%d ms=%d out=%s" % [
-		_approved_count(), GHOST_SET.size(), n, DEFERRED_IDS.size(), _marked_count(), Time.get_ticks_msec() - t0, dir,
+	SAMPLES._write_anim_boards(out)
+	SAMPLES._write_air_compare(out)
+	print("G10_BULK_ANIM_AIR ids=%d ghost=%d air=%d files=%d deferred=%d marked=%d ms=%d out=%s" % [
+		_approved_count() + AIR_UNIQUE_IDS.size() - 1, GHOST_SET.size(), AIR_UNIQUE_IDS.size(),
+		n, DEFERRED_IDS.size(), _marked_count(), Time.get_ticks_msec() - t0, dir,
 	])
 	quit(0)
 
@@ -169,30 +183,35 @@ static func _marked_count() -> int:
 
 
 static func build_bulk() -> Dictionary:
-	## Build approved sample sheets once, then fleet/army-clone with role marks + Ghost Wing set.
+	## Build approved sample sheets once (multi-frame anim + unique air), then clone infantry marks.
 	var base: Dictionary = SAMPLES.build_samples()
 	var man := {
 		"version": 2,
 		"tile": [64, 32],
 		"group": GROUP,
 		"sample_gate": false,
-		"bulk_wave": 3,
+		"bulk_wave": 4,
 		"look": "G10_GHOST_LOOK",
 		"approved_core": ["CELL", "DEATH", "WALKER", "CLOSE AIR"],
 		"deferred": ["TECHNICAL", "SAFEHOUSE", "HATCH"],
 		"deferred_ids": DEFERRED_IDS.duplicate(),
-		"style_source": "approved-core clones + Ghost Wing Death-kit set + camo/CLOSE AIR states; no purple; technical/buildings deferred",
+		"style_source": "Human A real anim boards + unique air silhouettes (g10_coalition_air); no purple; technical/buildings deferred",
+		"anim_frames_inf": FRAMES_INF.duplicate(),
+		"anim_frames_air": FRAMES_AIR.duplicate(),
 		"infantry": {},
 		"vehicles": {},
 		"buildings": {},
 		"icons": {},
-		"notes": "Bulk wave3 — Ghost Judge/Warden/Shade/Sergeant + Mk/ace + camo states + CLOSE AIR vehicle polish; TECHNICAL/SAFEHOUSE deferred",
+		"notes": "Post-lock anim/air overhaul — real poses not camo tokens; each air id unique; TECHNICAL/SAFEHOUSE deferred",
 		"leftover_steps": [
-			"Step9 final contact + orphan_art deferred-exception + owner look gate before g10.lock",
+			"Owner look gate on new anim boards + air unique strips; g10.lock amend FACT if required",
 		],
 		"ghost_set": [],
 		"camo_states": CAMO_STATES.duplicate(),
+		"anim_states": ANIM_STATES.duplicate(),
 		"air_state_ids": AIR_STATE_IDS.duplicate(),
+		"air_unique": true,
+		"air_identities": AIR.IDENTITY.duplicate(),
 	}
 	for row in GHOST_SET:
 		(man["ghost_set"] as Array).append(String(row[0]))
@@ -201,10 +220,45 @@ static func build_bulk() -> Dictionary:
 	_clone_family(out, base, "x_death_strike", "infantry")
 	_clone_family(out, base, "x_prototype_walker", "vehicles")
 	_clone_family(out, base, "x_patron_cas", "vehicles")
+	_copy_unique_air(out, base)
 	_build_ghost_set(out, base)
-	_build_camo_states(out)
-	_polish_air_states(out)
+	_build_anim_states(out)
 	return out
+
+
+static func _copy_unique_air(out: Dictionary, base: Dictionary) -> void:
+	## Pull every unique air sheet from samples (not CAS-mark clones).
+	var bman: Dictionary = base.manifest.get("vehicles", {})
+	for sid in AIR_UNIQUE_IDS:
+		if sid == "x_patron_cas":
+			continue  ## already cloned as locked template
+		if not bman.has(sid):
+			push_error("G10_BULK missing unique air %s" % sid)
+			continue
+		var tspec: Dictionary = bman[sid]
+		var src: Image = base.images.get(String(tspec.file))
+		var msk: Image = base.images.get(String(tspec.mask))
+		if src == null or msk == null:
+			push_error("G10_BULK missing pixels for air %s" % sid)
+			continue
+		var stem := "units/%s" % sid
+		out.images[stem + ".png"] = src.duplicate() as Image
+		out.images[stem + "_mask.png"] = msk.duplicate() as Image
+		var spec := tspec.duplicate(true)
+		spec["file"] = stem + ".png"
+		spec["mask"] = stem + "_mask.png"
+		spec["frames"] = FRAMES_AIR.duplicate()
+		if not (spec.get("g10") is Dictionary):
+			spec["g10"] = {}
+		(spec["g10"] as Dictionary)["bulk"] = true
+		(spec["g10"] as Dictionary)["bulk_wave"] = 4
+		(spec["g10"] as Dictionary)["unique_air"] = true
+		(spec["g10"] as Dictionary)["approved_core"] = true
+		(spec["g10"] as Dictionary)["air_states"] = FRAMES_AIR.duplicate()
+		(spec["g10"] as Dictionary)["identity"] = String(AIR.IDENTITY.get(sid, ""))
+		(out.manifest.vehicles as Dictionary)[sid] = spec
+		out.images["icons/%s.png" % sid] = src.get_region(Rect2i(0, FH, FW, FH))
+		(out.manifest.icons as Dictionary)[sid] = {"file": "icons/%s.png" % sid, "fw": FW, "fh": FH}
 
 
 static func _clone_family(out: Dictionary, base: Dictionary, template_id: String, sec: String) -> void:
@@ -232,15 +286,25 @@ static func _clone_family(out: Dictionary, base: Dictionary, template_id: String
 		var spec := tspec.duplicate(true)
 		spec["file"] = stem + ".png"
 		spec["mask"] = stem + "_mask.png"
+		## Preserve multi-frame anim board from template.
+		if template_id == "x_patron_cas":
+			spec["frames"] = FRAMES_AIR.duplicate()
+		else:
+			spec["frames"] = FRAMES_INF.duplicate()
 		if not (spec.get("g10") is Dictionary):
 			spec["g10"] = {}
 		(spec["g10"] as Dictionary)["bulk"] = true
-		(spec["g10"] as Dictionary)["bulk_wave"] = 3
+		(spec["g10"] as Dictionary)["bulk_wave"] = 4
 		(spec["g10"] as Dictionary)["template"] = template_id
 		(spec["g10"] as Dictionary)["approved_core"] = true
+		(spec["g10"] as Dictionary)["anim_board"] = true
 		(spec["g10"] as Dictionary)["mark"] = mark if mark != "" else "locked_template"
+		if template_id == "x_patron_cas":
+			(spec["g10"] as Dictionary)["unique_air"] = true
+			(spec["g10"] as Dictionary)["air_states"] = FRAMES_AIR.duplicate()
+			(spec["g10"] as Dictionary)["identity"] = String(AIR.IDENTITY.get(sid, ""))
 		(out.manifest[sec] as Dictionary)[sid] = spec
-		## Icon: facing E crop + same mark chip when marked.
+		## Icon: idle / facing E crop.
 		var icon := img.get_region(Rect2i(0, FH, FW, FH))
 		out.images["icons/%s.png" % sid] = icon
 		if not (out.manifest.icons is Dictionary):
@@ -272,12 +336,14 @@ static func _build_ghost_set(out: Dictionary, base: Dictionary) -> void:
 		var spec := tspec.duplicate(true)
 		spec["file"] = stem + ".png"
 		spec["mask"] = stem + "_mask.png"
+		spec["frames"] = FRAMES_INF.duplicate()
 		spec["g10"] = {
 			"bulk": true,
-			"bulk_wave": 3,
+			"bulk_wave": 4,
 			"template": "x_death_strike",
 			"approved_core": true,
 			"ghost_wing": true,
+			"anim_board": true,
 			"mark": mark,
 			"look": "G10_GHOST_LOOK",
 		}
@@ -287,8 +353,9 @@ static func _build_ghost_set(out: Dictionary, base: Dictionary) -> void:
 		(out.manifest.icons as Dictionary)[sid] = {"file": "icons/%s.png" % sid, "fw": FW, "fh": FH}
 
 
-static func _build_camo_states(out: Dictionary) -> void:
-	## Oil-slick camo sheets per Ghost Wing id — rest/walk/sprint/fire/hit/battery/shield.
+static func _build_anim_states(out: Dictionary) -> void:
+	## Ghost Wing: expose real pose columns as states (legacy camo keys → pose frames).
+	## No token oil-slick overlays — boards are lifelike Human A movement stills.
 	for row in GHOST_SET:
 		var sid := String(row[0])
 		var man: Dictionary = out.manifest.infantry.get(sid, {})
@@ -298,77 +365,48 @@ static func _build_camo_states(out: Dictionary) -> void:
 		var msk: Image = out.images.get(String(man.mask))
 		if src == null or msk == null:
 			continue
+		var frames: Array = man.get("frames", FRAMES_INF)
 		var states := {}
 		for st in CAMO_STATES:
-			## Skip shield on non-Warden (still emit a subtle petal-closed for kit parity).
-			var img := src.duplicate() as Image
-			var mask := msk.duplicate() as Image
-			_apply_camo_state(img, mask, st, sid == "x_ghost_warden")
+			var pose := String(CAMO_TO_ANIM.get(st, "idle"))
+			var fi := frames.find(pose)
+			if fi < 0:
+				fi = 0
+			## Emit a single-frame sheet cropped from the real anim board (facing rows intact).
+			var img := Image.create(FW, FH * FACINGS, false, Image.FORMAT_RGBA8)
+			var mask := Image.create(FW, FH * FACINGS, false, Image.FORMAT_RGBA8)
+			img.fill(Color(0, 0, 0, 0))
+			mask.fill(Color(0, 0, 0, 0))
+			for f in FACINGS:
+				var cell := Rect2i(fi * FW, f * FH, FW, FH)
+				img.blit_rect(src, cell, Vector2i(0, f * FH))
+				mask.blit_rect(msk, cell, Vector2i(0, f * FH))
+			## Warden shield: keep petal mark on idle crop only (visual tell, not fake camo strip).
+			if st == "shield" and sid == "x_ghost_warden":
+				_apply_camo_state(img, mask, "shield", true)
 			var stem := "units/%s_camo_%s" % [sid, st]
 			out.images[stem + ".png"] = img
 			out.images[stem + "_mask.png"] = mask
-			states[st] = {"file": stem + ".png", "mask": stem + "_mask.png", "fw": FW, "fh": FH, "facings": FACINGS}
+			states[st] = {
+				"file": stem + ".png", "mask": stem + "_mask.png",
+				"fw": FW, "fh": FH, "facings": FACINGS,
+				"pose": pose, "anim_frame": pose,
+			}
 		man["states"] = states
 		if not (man.get("g10") is Dictionary):
 			man["g10"] = {}
 		(man["g10"] as Dictionary)["camo_states"] = CAMO_STATES.duplicate()
+		(man["g10"] as Dictionary)["anim_states"] = ANIM_STATES.duplicate()
+		(man["g10"] as Dictionary)["camo_is_anim_crop"] = true
 		(out.manifest.infantry as Dictionary)[sid] = man
 
 
-static func _polish_air_states(out: Dictionary) -> void:
-	## CLOSE AIR approved only: Silent Rotor quiet→gunship; transport/drone readable state frames.
-	for sid in AIR_STATE_IDS:
-		var man: Dictionary = out.manifest.vehicles.get(sid, {})
-		if man.is_empty():
-			continue
-		var src: Image = out.images.get(String(man.file))
-		var msk: Image = out.images.get(String(man.mask))
-		if src == null or msk == null:
-			continue
-		## Expand sheet to 2 frames: idle (quiet/base) | alt (gunship / hard / active).
-		var img2 := Image.create(FW * 2, FH * FACINGS, false, Image.FORMAT_RGBA8)
-		var msk2 := Image.create(FW * 2, FH * FACINGS, false, Image.FORMAT_RGBA8)
-		img2.fill(Color(0, 0, 0, 0))
-		msk2.fill(Color(0, 0, 0, 0))
-		for f in FACINGS:
-			var cell := Rect2i(0, f * FH, FW, FH)
-			var frame := src.get_region(cell)
-			var fmask := msk.get_region(cell)
-			img2.blit_rect(frame, Rect2i(0, 0, FW, FH), Vector2i(0, f * FH))
-			msk2.blit_rect(fmask, Rect2i(0, 0, FW, FH), Vector2i(0, f * FH))
-			var alt := frame.duplicate() as Image
-			var amask := fmask.duplicate() as Image
-			match sid:
-				"x_silent_rotor":
-					_paint_gunship_blisters(alt, amask, Rect2i(0, 0, FW, FH))
-				"x_stealth_transport":
-					_paint_transport_open(alt, amask, Rect2i(0, 0, FW, FH))
-				"x_stealth_drone":
-					_paint_drone_active(alt, amask, Rect2i(0, 0, FW, FH), AIR_T)
-				"x_shock_drone":
-					_paint_drone_active(alt, amask, Rect2i(0, 0, FW, FH), AIR_D)
-				"x_recon_drone":
-					_paint_drone_active(alt, amask, Rect2i(0, 0, FW, FH), AIR_R)
-			img2.blit_rect(alt, Rect2i(0, 0, FW, FH), Vector2i(FW, f * FH))
-			msk2.blit_rect(amask, Rect2i(0, 0, FW, FH), Vector2i(FW, f * FH))
-		var stem := "units/%s" % sid
-		out.images[stem + ".png"] = img2
-		out.images[stem + "_mask.png"] = msk2
-		man["file"] = stem + ".png"
-		man["mask"] = stem + "_mask.png"
-		man["frames"] = ["idle", "gunship" if sid == "x_silent_rotor" else "active"]
-		if not (man.get("g10") is Dictionary):
-			man["g10"] = {}
-		(man["g10"] as Dictionary)["air_states"] = man["frames"]
-		(man["g10"] as Dictionary)["bulk_wave"] = 3
-		(out.manifest.vehicles as Dictionary)[sid] = man
-		## Refresh icon from quiet/base E facing.
-		out.images["icons/%s.png" % sid] = img2.get_region(Rect2i(0, FH, FW, FH))
-
-
 static func _apply_marks(img: Image, mask: Image, mark: String) -> void:
+	## Mark every facing row × every anim-frame column.
+	var cols := maxi(1, img.get_width() / FW)
 	for cy in range(0, img.get_height() - FH + 1, FH):
-		_mark_cell(img, mask, Rect2i(0, cy, FW, FH), mark)
+		for cx in range(cols):
+			_mark_cell(img, mask, Rect2i(cx * FW, cy, FW, FH), mark)
 
 
 static func _put(img: Image, mask: Image, cell: Rect2i, x: int, y: int, c: Color) -> void:
@@ -856,8 +894,8 @@ static func _write_ghost_strip(out: Dictionary) -> void:
 	big.save_png(look_dir.path_join(name.replace(".png", "_2x.png")))
 
 
-static func _write_camo_strip(out: Dictionary) -> void:
-	## One row per key Ghost role; columns = camo states.
+static func _write_anim_strip(out: Dictionary) -> void:
+	## Ghost roles × real pose crops (legacy camo strip path kept as anim board proof).
 	var look_dir := ProjectSettings.globalize_path(LOOK)
 	var roles := ["x_ghost_base", "x_ghost_judge", "x_ghost_warden", "x_ghost_shade", "x_ghost_sergeant"]
 	var pad := 4
@@ -880,35 +918,40 @@ static func _write_camo_strip(out: Dictionary) -> void:
 			var frame := img.get_region(Rect2i(0, FH, FW, FH))
 			sheet.blend_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), Vector2i(si * cell_w + pad / 2, ri * row_h + label_h))
 			if ri == 0:
-				SAMPLES._label(sheet, st, si * cell_w + 2, 1, 1)
+				var pose := String(sspec.get("pose", st))
+				SAMPLES._label(sheet, pose.substr(0, 4), si * cell_w + 2, 1, 1)
 	var name := "strip_g10_ghost_camo.png"
 	sheet.save_png(look_dir.path_join(name))
 	var big := sheet.duplicate() as Image
 	big.resize(sheet.get_width() * 2, sheet.get_height() * 2, Image.INTERPOLATE_NEAREST)
 	big.save_png(look_dir.path_join(name.replace(".png", "_2x.png")))
+	## Also write explicit anim board strip name.
+	sheet.save_png(look_dir.path_join("strip_g10_ghost_anim.png"))
+	big.save_png(look_dir.path_join("strip_g10_ghost_anim_2x.png"))
 
 
 static func _write_air_states_strip(out: Dictionary) -> void:
+	## Unique air × anim frames (idle/flight/fire/hit) — not CAS-clone polish.
 	var look_dir := ProjectSettings.globalize_path(LOOK)
-	var pad := 8
+	var pad := 6
 	var label_h := 10
 	var cell_w := FW + pad
-	var cell_h := FH + label_h + 4
-	var sheet := Image.create(AIR_STATE_IDS.size() * cell_w, 2 * cell_h, false, Image.FORMAT_RGBA8)
+	var row_h := FH + label_h + 4
+	var sheet := Image.create(FRAMES_AIR.size() * cell_w, AIR_STATE_IDS.size() * row_h, false, Image.FORMAT_RGBA8)
 	sheet.fill(Color8(48, 56, 44))
-	SAMPLES._label(sheet, "QUIET/BASE", 2, 2, 1)
-	SAMPLES._label(sheet, "GUNSHIP/ACTIVE", 2, cell_h + 2, 1)
-	for i in AIR_STATE_IDS.size():
-		var id := String(AIR_STATE_IDS[i])
+	for ri in AIR_STATE_IDS.size():
+		var id := String(AIR_STATE_IDS[ri])
 		var man: Dictionary = out.manifest.vehicles.get(id, {})
 		var img: Image = out.images.get(String(man.get("file", "")))
+		SAMPLES._label(sheet, id.replace("x_", "").substr(0, 8), 2, ri * row_h + 1, 1)
 		if img == null:
 			continue
-		var quiet := img.get_region(Rect2i(0, FH, FW, FH))
-		var active := img.get_region(Rect2i(FW if img.get_width() >= FW * 2 else 0, FH, FW, FH))
-		sheet.blend_rect(quiet, Rect2i(Vector2i.ZERO, quiet.get_size()), Vector2i(i * cell_w + pad / 2, label_h))
-		sheet.blend_rect(active, Rect2i(Vector2i.ZERO, active.get_size()), Vector2i(i * cell_w + pad / 2, cell_h + label_h))
-		SAMPLES._label(sheet, id.replace("x_", ""), i * cell_w + 2, 1, 1)
+		for fi in FRAMES_AIR.size():
+			if ri == 0:
+				SAMPLES._label(sheet, String(FRAMES_AIR[fi]).substr(0, 4).to_upper(), fi * cell_w + 2, 1, 1)
+			var col := fi if img.get_width() >= FW * (fi + 1) else 0
+			var frame := img.get_region(Rect2i(col * FW, FH, FW, FH))
+			sheet.blend_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), Vector2i(fi * cell_w + pad / 2, ri * row_h + label_h))
 	var name := "strip_g10_air_states.png"
 	sheet.save_png(look_dir.path_join(name))
 	var big := sheet.duplicate() as Image
