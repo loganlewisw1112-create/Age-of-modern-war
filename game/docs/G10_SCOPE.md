@@ -1,8 +1,8 @@
 # G10 "Shadow Coalition" — master scope (UP71 Stage E)
 
-**OPEN — owner-review draft.** Follows `pre_g10.lock`. Approval of
-`docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md` freezes this Done-when and opens Task 0; until then, do not
-start G10 game code.
+**APPROVED (2026-11-23).** Follows `pre_g10.lock`. Owner approved full execution of
+`docs/superpowers/plans/2026-11-23-g10-shadow-coalition.md` (Subagent-Driven) in a **new chat/session**. This Done-when
+is frozen; Task 0 / Stage E board may start in that session.
 
 ## Headline
 
@@ -219,4 +219,5 @@ Supporting authorities:
 
 ## Lock status
 
-**OPEN — OWNER REVIEW.** No `g10.lock`; no implementation starts before **APPROVE**.
+**APPROVED — execution pending new session.** No `g10.lock` yet. Kick off Subagent-Driven Task 0 in a fresh chat using
+the plan path below; do not weaken Done-when.
