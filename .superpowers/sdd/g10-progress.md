@@ -69,18 +69,25 @@ Subagents: Auto (owner usage limit)
 - PLAY_ME: `game/docs/PLAY_ME_G71_2026-11-22.txt` — G10 near-lock + deferred-art ship note
 - Lock exception (prior): `.superpowers/sdd/g10-lock-deferred-exception.md` (Done-when #13a)
 
+## Complete (E4 lock — Task 23)
+- ORCH/VERIFY10: CLAIM `orch.e4.lock` → FACT `ship.g10.lock` / `g10.lock` CLOSED
+- Fresh smoke **122/0** (all `test_g10_*` + `test_exo` + `test_lpmode7` + `test_lp_save71`)
+- Stage hashes 3/8/12 MATCH; AI soak + 100-squad stress green; peak SKIP (no G10 tool)
+- Lock file: `.superpowers/sdd/g10.lock` · report: `.superpowers/sdd/task-e4-lock-report.md`
+- Deferred exception: TECHNICAL / SAFEHOUSE / HATCH (owner) — lock proceeded
+- Package `package_g71.ps1 -Note g10.lock` + README/PLAY_ME/SCOPE/ROADMAP closed
+- Optional leftover: Ghost strip owner look only (non-blocking)
+
 ## Live (≤6)
-- ART10 CLAIM **273** approved bulk (wave3 shipped; Step 9 look gate remains)
-- E4 lock-prep / package may be live elsewhere — docs track does not touch generators / world.gd / README
+- (none for G10 lock — CLOSED)
 
 ## Free slots
-~4–5 of ≤6 usable. TECHNICAL CLAIM released; Ghost Wing + CLOSE AIR states shipped; deferred art docs closed.
+≤6 free (G10 closed).
 
 ## Queued / next dispatch
-1. ART10 Step 9 final contact + owner look gate — approved scope only (deferred exception OK)
-2. TECHNICAL / SAFEHOUSE / HATCH redesign — **later** (design-blueprint); do not block lock
-3. E4 Task 23 — package `g10.lock` after final look gate (**deferred placeholders OK**)
-4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
+1. Optional: Ghost strips owner look (non-blocking)
+2. TECHNICAL / SAFEHOUSE / HATCH redesign — **later** (design-blueprint)
+3. G11+ per ROADMAP
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.

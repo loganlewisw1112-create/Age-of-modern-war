@@ -1,0 +1,36 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_content::test_coalition_command_surface_and_advanced_closed
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_content::test_coalition_command_surface_and_advanced_closed (137 ms)
+  RUN  test_g10_content::test_coalition_doctrine_default_and_board_schema
+  PASS test_g10_content::test_coalition_doctrine_default_and_board_schema (65 ms)
+  RUN  test_g10_content::test_core_manifest_has_at_least_60_gameplay_defs
+  PASS test_g10_content::test_core_manifest_has_at_least_60_gameplay_defs (0 ms)
+  RUN  test_g10_content::test_core_producer_closure_and_costs
+  PASS test_g10_content::test_core_producer_closure_and_costs (1 ms)
+  RUN  test_g10_content::test_core_roles_closed_at_stages_7_to_10
+  PASS test_g10_content::test_core_roles_closed_at_stages_7_to_10 (1 ms)
+  RUN  test_g10_content::test_core_roster_unique_ids_and_faction_ownership
+  PASS test_g10_content::test_core_roster_unique_ids_and_faction_ownership (0 ms)
+  RUN  test_g10_content::test_core_stage_progression_bands
+  PASS test_g10_content::test_core_stage_progression_bands (0 ms)
+  RUN  test_g10_content::test_g10_approved_art_catalog_coverage
+  PASS test_g10_content::test_g10_approved_art_catalog_coverage (146 ms)
+  RUN  test_g10_content::test_g10_close_air_state_polish
+  PASS test_g10_content::test_g10_close_air_state_polish (0 ms)
+  RUN  test_g10_content::test_g10_deferred_art_allowed_as_placeholder
+  PASS test_g10_content::test_g10_deferred_art_allowed_as_placeholder (0 ms)
+  RUN  test_g10_content::test_g10_fragments_load_after_g71
+  PASS test_g10_content::test_g10_fragments_load_after_g71 (0 ms)
+  RUN  test_g10_content::test_g10_ghost_wing_set_coverage
+  PASS test_g10_content::test_g10_ghost_wing_set_coverage (69 ms)
+  RUN  test_g10_content::test_non_coalition_match_creates_no_g10_state
+  PASS test_g10_content::test_non_coalition_match_creates_no_g10_state (168 ms)
+  RUN  test_g10_content::test_shadow_coalition_registered
+  PASS test_g10_content::test_shadow_coalition_registered (0 ms)
+  RUN  test_g10_content::test_shadow_roles_and_start_units_resolve
+  PASS test_g10_content::test_shadow_roles_and_start_units_resolve (66 ms)
+
+RESULT pass=15 fail=0 files=1 time_ms=5941

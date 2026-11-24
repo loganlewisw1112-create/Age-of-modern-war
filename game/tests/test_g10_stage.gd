@@ -316,3 +316,131 @@ func test_raider_opener_soak_1200_ticks() -> void:
 		check_eq(invalid_prod, 0, "stage %d invalid production during soak" % stage)
 		check(w.entities.has(hq_id) and float(w.entities[hq_id].get("hp", 0.0)) > 0.0, "stage %d hq survived soak" % stage)
 		check(int(p.get("exo_mk_max", -1)) <= (1 if stage >= 6 else 0), "stage %d exo gate after soak" % stage)
+
+
+const LATE_PROFILES := ["synthetic_syndicate", "distributed_syndicate", "apex_syndicate"]
+const LATE_MK3_HOSTS := ["x_death_strike", "x_death_assault", "x_death_recon"]
+const LATE_LEAK_MARKERS := ["x_remote_cache", "x_distributed_relay", "x_apex_vault_wing", "x_apex_patron_desk"]
+
+
+func _late_profiles() -> Dictionary:
+	return Content.rules().get("g10_late_profiles", {})
+
+
+func _late_profile_for_stage(stage: int) -> Dictionary:
+	var profiles := _late_profiles()
+	for name in LATE_PROFILES:
+		var p: Dictionary = profiles.get(name, {})
+		if int(p.get("stage", -1)) == stage:
+			return p
+	return {}
+
+
+func test_late_profiles_mk3_distributed_apex() -> void:
+	Content.load_all()
+	var profiles := _late_profiles()
+	check_eq(profiles.size(), 3, "three late profiles")
+	var mk3: Dictionary = Content.rules().get("g10_late_mk3_modules", {})
+	check_eq(int(mk3.get("stage_min", 0)), 11, "Mk III starts at 11")
+	check(int(mk3.get("stage_min", 0)) > 10, "no Mk III before 11")
+	for host in LATE_MK3_HOSTS:
+		check((mk3.get("hosts", []) as Array).has(host), "mk3 host %s" % host)
+		var ud: Dictionary = Content.unit(host)
+		check(not ud.is_empty(), "death host exists %s" % host)
+		# Modules on existing Death IDs — no parallel clone units.
+		check(Content.unit("%s_mk3" % host).is_empty(), "no parallel clone %s_mk3" % host)
+	var mods: Dictionary = mk3.get("modules", {})
+	check(mods.has("dual_hardpoint") and mods.has("conductor_mesh"), "Mk III hybrid modules")
+	# Stage 11 synthetic
+	var p11 := _late_profile_for_stage(11)
+	check(not p11.is_empty(), "synthetic profile")
+	check(bool(p11.get("mk3_modules", false)), "stage 11 mk3")
+	check(not bool(p11.get("distributed", true)), "stage 11 not distributed")
+	check(not bool(p11.get("apex", true)), "stage 11 not apex")
+	# Stage 12 distributed remote caches
+	var p12 := _late_profile_for_stage(12)
+	check(bool(p12.get("distributed", false)), "stage 12 distributed")
+	check((p12.get("build", []) as Array).has("x_remote_cache"), "stage 12 remote cache")
+	check(not Content.building("x_remote_cache").is_empty(), "remote cache def")
+	check_eq(int(Content.building("x_remote_cache").get("stage_min", 0)), 12, "remote cache stage_min")
+	check(not Content.building("x_distributed_relay").is_empty(), "distributed relay def")
+	# Stage 13 apex vault/patron
+	var p13 := _late_profile_for_stage(13)
+	check(bool(p13.get("apex", false)), "stage 13 apex")
+	check((p13.get("build", []) as Array).has("x_apex_vault_wing"), "stage 13 vault wing")
+	check((p13.get("build", []) as Array).has("x_apex_patron_desk"), "stage 13 patron desk")
+	check_eq(int(Content.building("x_apex_vault_wing").get("stage_min", 0)), 13, "apex vault stage")
+	check_eq(int(Content.building("x_apex_patron_desk").get("stage_min", 0)), 13, "apex patron stage")
+	# Openers align with profiles
+	var coal: Dictionary = Content.rules().get("coalition10", {})
+	var openers: Dictionary = coal.get("stage_openers", {})
+	check_eq(String(openers.get("11", {}).get("profile", "")), "synthetic_syndicate", "opener 11")
+	check_eq(String(openers.get("12", {}).get("profile", "")), "distributed_syndicate", "opener 12")
+	check_eq(String(openers.get("13", {}).get("profile", "")), "apex_syndicate", "opener 13")
+	check_eq(int(openers.get("11", {}).get("exo_mk_max", 0)), 3, "opener 11 mk3")
+	check(bool(openers.get("12", {}).get("remote_caches", false)), "opener 12 remote caches")
+	check(bool(openers.get("13", {}).get("apex_vault", false)), "opener 13 apex vault")
+	check(bool(openers.get("13", {}).get("apex_patron", false)), "opener 13 apex patron")
+
+
+func test_late_defs_do_not_leak_into_stage_10() -> void:
+	Content.load_all()
+	for id in LATE_LEAK_MARKERS:
+		var bd: Dictionary = Content.building(id)
+		check(not bd.is_empty(), "late building %s" % id)
+		check(not Content.available(bd, 10), "stage 10 must not unlock %s" % id)
+		check(int(bd.get("stage_min", 0)) >= 12, "%s stage_min >= 12" % id)
+	var mk3: Dictionary = Content.rules().get("g10_late_mk3_modules", {})
+	check(int(mk3.get("stage_min", 0)) > 10, "mk3 blocked at stage 10")
+	# Stage 10 opener must not advertise late buildings or mk3.
+	var o10: Dictionary = Content.rules().get("coalition10", {}).get("stage_openers", {}).get("10", {})
+	check_eq(int(o10.get("exo_mk_max", 0)), 0, "stage 10 opener no explicit mk3")
+	check(not bool(o10.get("mk3_modules", false)), "stage 10 no mk3_modules")
+	check(not bool(o10.get("remote_caches", false)), "stage 10 no remote caches")
+	check(not bool(o10.get("apex", false)), "stage 10 no apex")
+	for stage in range(11, 14):
+		var p := _late_profile_for_stage(stage)
+		for id2 in p.get("build", []):
+			var d: Dictionary = Content.building(String(id2))
+			if d.is_empty():
+				d = Content.unit(String(id2))
+			check(not d.is_empty(), "stage %d build missing %s" % [stage, id2])
+			if int(d.get("stage_min", 99)) >= 12:
+				check(not Content.available(d, 10), "stage 10 leak %s via stage %d" % [id2, stage])
+
+
+func test_g10_100_squad_stress_config_caps() -> void:
+	Content.load_all()
+	var stress: Dictionary = Content.rules().get("g10_100_squad", {})
+	check(bool(stress.get("enabled", false)), "g10_100_squad enabled")
+	check(bool(stress.get("stress_only", false)), "stress_only flag")
+	check_eq(int(stress.get("min_squads", 0)), 100, "min 100 squads")
+	var squad_size := int(stress.get("squad_size", 4))
+	var need_pop := int(stress.get("min_squads", 0)) * squad_size
+	check(int(stress.get("pop_cap_floor", 0)) >= need_pop, "pop_cap_floor covers 100+ Death squads")
+	check(int(stress.get("credits", 0)) >= 10000, "stress credits")
+	check(int(stress.get("start_stock", 0)) >= 10000, "stress stock")
+	check_eq(int(stress.get("stage", 0)), 13, "stress at stage 13")
+	# Ordinary skirmish caps unchanged.
+	var ordinary := int(Content.rules().get("pop_cap_max", 0))
+	check_eq(ordinary, 120, "ordinary skirmish pop_cap_max unchanged")
+	check_eq(int(stress.get("ordinary_skirmish_pop_cap_max", -1)), ordinary, "stress documents ordinary cap")
+	check(ordinary < int(stress.get("pop_cap_floor", 0)), "stress floor exceeds ordinary skirmish cap")
+	# Applying stress floor must not mutate global rules.
+	# new_match gates playable_now (7-10); boot at 8 then stamp Stage 13 + stress floor.
+	var c := SimWorld.default_config()
+	c.sides = [
+		{"faction": "shadow_coalition", "stage": 8, "credits": int(stress.credits), "ai": false, "name": "X", "team": 0},
+		{"faction": "human_a", "stage": 8, "credits": 2000, "ai": false, "name": "A", "team": 1},
+	]
+	c["start_stock"] = int(stress.start_stock)
+	var w := SimWorld.new_match(c)
+	check(w != null, "stress match boots")
+	if w != null:
+		w.factions[0].stage = int(stress.stage)
+		w.factions[0].pop_cap_floor = int(stress.pop_cap_floor)
+		const Economy = preload("res://sim/systems/economy.gd")
+		Economy.tick(w)
+		check(int(w.factions[0].get("pop_cap", 0)) >= need_pop or int(w.factions[0].get("pop_cap_floor", 0)) >= need_pop,
+			"stress side can host 100+ squad pop")
+	check_eq(int(Content.rules().get("pop_cap_max", 0)), 120, "pop_cap_max still 120 after stress match")

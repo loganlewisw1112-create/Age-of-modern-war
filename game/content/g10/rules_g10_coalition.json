@@ -162,7 +162,13 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_death_strike",
-          "stage": 11
+          "extra": "x_ghost_complex",
+          "stage": 11,
+          "exo_mk_max": 3,
+          "mk3_modules": true,
+          "distributed": false,
+          "apex": false,
+          "modules": ["dual_hardpoint", "conductor_mesh"]
         },
         "12": {
           "profile": "distributed_syndicate",
@@ -170,7 +176,15 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_death_strike",
-          "stage": 12
+          "extra": "x_remote_cache",
+          "comms": "x_distributed_relay",
+          "stage": 12,
+          "exo_mk_max": 3,
+          "mk3_modules": true,
+          "distributed": true,
+          "apex": false,
+          "modules": ["dual_hardpoint", "conductor_mesh", "mesh_redundant"],
+          "remote_caches": true
         },
         "13": {
           "profile": "apex_syndicate",
@@ -178,7 +192,19 @@
           "builder": "x_cell_sapper",
           "gatherer": "x_cell_sapper",
           "combat": "x_death_strike",
-          "stage": 13
+          "extra": "x_apex_vault_wing",
+          "comms": "x_distributed_relay",
+          "patron": "x_apex_patron_desk",
+          "vault": "x_vault_core",
+          "stage": 13,
+          "exo_mk_max": 3,
+          "mk3_modules": true,
+          "distributed": true,
+          "apex": true,
+          "modules": ["dual_hardpoint", "conductor_mesh", "mesh_redundant", "apex_link"],
+          "remote_caches": true,
+          "apex_vault": true,
+          "apex_patron": true
         }
       },
       "no_normal_research": true,

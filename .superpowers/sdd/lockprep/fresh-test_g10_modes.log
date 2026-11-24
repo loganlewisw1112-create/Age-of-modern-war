@@ -1,0 +1,22 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_modes::test_coalition_lp_menu_entry
+  PASS test_g10_modes::test_coalition_lp_menu_entry (178 ms)
+  RUN  test_g10_modes::test_coalition_lp_profile_setup
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_modes::test_coalition_lp_profile_setup (385 ms)
+  RUN  test_g10_modes::test_coalition_skirmish_stage_12
+  PASS test_g10_modes::test_coalition_skirmish_stage_12 (108 ms)
+  RUN  test_g10_modes::test_coalition_skirmish_stage_3
+  PASS test_g10_modes::test_coalition_skirmish_stage_3 (104 ms)
+  RUN  test_g10_modes::test_coalition_skirmish_stage_8
+  PASS test_g10_modes::test_coalition_skirmish_stage_8 (107 ms)
+  RUN  test_g10_modes::test_human_a_lp_config_byte_equivalent
+  PASS test_g10_modes::test_human_a_lp_config_byte_equivalent (0 ms)
+  RUN  test_g10_modes::test_lp_profile_two_run_hash_short
+  PASS test_g10_modes::test_lp_profile_two_run_hash_short (9401 ms)
+  RUN  test_g10_modes::test_skirmish_setup_applies_stages_3_8_12
+  PASS test_g10_modes::test_skirmish_setup_applies_stages_3_8_12 (115 ms)
+
+RESULT pass=8 fail=0 files=1 time_ms=15973

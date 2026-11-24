@@ -82,18 +82,22 @@ carriers, marketplace) → G6.1 "Field Command" (chain of command, suppression, 
   maintenance and breakdowns.
 - Carries G7.1 hive tech (director, adaptation, siege units) from Last Protocol into skirmish where it fits.
 
-## G10 "Shadow Coalition" — 4th faction
+## G10 "Shadow Coalition" — 4th faction — **CLOSED (`g10.lock`)**
 - **Shadow Coalition (Syndicate):** identity, mechanics, full-parity Stage 7→10 roster, art, no counter-nanites;
   **Stages 1–6** (early raider bands) and **11–13** (late syndicate, Mk III exos, 100+ squads) ship **in G10** for
   this faction (owner 2026-11-23 — inverts CAMPAIGN_VISION resolution 4 deferral to G14). Scope doc:
-  `docs/G10_SCOPE.md`.
+  `docs/G10_SCOPE.md`. Lock: `.superpowers/sdd/g10.lock`.
 - AI, diplomacy, research, territory, trade-route, gathered-resource and black-market depth moved forward and closed
   in `pre_g10.lock`; G10 scope is Coalition-only.
+- **Deferred look (owner 2026-11-24, non-blocking):** TECHNICAL Humvee family, SAFEHOUSE, HATCH — redesign later;
+  approved-core CELL/DEATH/WALKER/CLOSE AIR locked. G14 retains other factions' early/late forms only.
 - **Ghost Exo Programme (owner-approved 2026-11-23):** seamless AI-first Conductor; tip echelon = **Death** squads
   (plus Shadow Corps + Anchor); full packages in
   `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`; slice plan
   `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md`. G10 ships skirmish/Conductor core + Human A
-  counter-ghost mirror; campaign Hunter/build-up waits for G15.
+  **Counter-Ghost full corps** (Interceptor/Bulwark/Seeker/Ward, specialties, vehicles + **Shade Dart** 4-op
+  lift-fan infil/exfil; **each vehicle type has its own garage/pad/helipad**) — org in
+  `docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`. Campaign Hunter build-up waits for G15.
 - **Difficulty bar (owner 2026-11-23):** whole Coalition (not only exos) = **super-difficult**, **super intelligent /
   strategic** foe — difficulty by intelligence/strategy, not cheats; beatable with counters, crushing if ignored.
 - **Leftover dark + G7.1 ideas (moved from Parked, owner 2026-11-23):** fold into Coalition / LP-adjacent threat and
@@ -182,6 +186,13 @@ The station; the Scepter (dormant rod weapon, its hidden cost and layered reveal
 played; 6 ship rosters (Human A 21 hulls, Human B 22, Machine 24, Shadow Coalition 22, Vhessar 21, Unbound 19); the
 arrival war with the Vhessar conquerors and the Unbound cult as two new full skirmish factions; endings, then the
 endless crisis.
+- **Vhessar depth (owner 2026-11-23):** max castes/beachheads/Ark/boarding; EaW+intents+Duel/Board; **no kneel
+  gameplay**; player doctrine unlocks at tech stage then locks; AI mixes/adapts live; pressure = EMP/Healer/CN
+  counters + Ark/beachhead denial. Arrival outcome **Viceroy** (ex-Kneel name). See
+  `docs/superpowers/plans/2026-11-23-faction-depth-decisions.md`.
+- **Unbound depth (owner 2026-11-23):** strip/defection/warband chaos/Free Yards + more content; Strip/Turn/Unseed
+  buttons; warbands can ignore player; doctrine unlock at tech stage (AI adapts live); pressure = steal/turn + messy
+  ally risk + unpredictability. Same plan file.
 
 ## G19 "Last Protocol: Combined Arms" — co-op Last Protocol (owner 2026-11-23; was parked)
 Offline-first co-op siege on the **same** LP ruleset (Human A vs Machine, 512²+ map, 3 rings, CN facility, cores,

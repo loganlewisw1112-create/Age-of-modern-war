@@ -7,7 +7,7 @@
 
 Offline single-player real-time strategy in **Godot 4.7.2**, with a Rust native sim core. Classic skirmish plus a dedicated siege mode (**Last Protocol**). Tech climbs through **thirteen stages** (Age-of style eras): early recovery through modern combined arms into late synthetic forms.
 
-Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, and the **Pre-G10 Depth Bridge** are closed (`pre_g10.lock`).
+Branch **`g71`**. Gates through **G7.1**, **G8**, **G9**, **Pre-G10**, and **G10 Shadow Coalition** are closed (`g10.lock`).
 
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">
@@ -179,20 +179,19 @@ Treat these as a shipping pipeline, not a storefront promise. Each gate still ge
 
 ### Shipped (orientation)
 
-G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–9, maps → G4 editor / walls / scale → G5 air/naval/hospitals/tutorial → G6 elevation, companies, marketplace → G6.1 field command → **G7 Last Protocol** → **G7.1** Tide Line siege depth → **G8** Four Sides view rotation + end-of-run presentation → **G9** Machine overhaul + combat depth → **Pre-G10** AI/economy depth bridge (closed).
+G0 engine → G1 core RTS → G2 smart warfare → G3a/G3b factions, stages 7–9, maps → G4 editor / walls / scale → G5 air/naval/hospitals/tutorial → G6 elevation, companies, marketplace → G6.1 field command → **G7 Last Protocol** → **G7.1** Tide Line siege depth → **G8** Four Sides view rotation + end-of-run presentation → **G9** Machine overhaul + combat depth → **Pre-G10** AI/economy depth bridge → **G10** Shadow Coalition (closed).
 
-### In this Pre-G10 build (summary)
+### In this G10 build (summary)
 
-- **Four Sides:** Q/E or horizontal middle-mouse drag rotates the view 90°; art sheets follow the camera
-- **Last Protocol** dusk clock; night **2×** day; end-of-run presentation suite
-- **Hive / counters / combat / skirmish** depth from G9; **AI9** evidence adaptation and named generals; **ECON9** rare metals, trade, territory support, tiered research, black market
-- Look samples ship with packages (`G71_LOOK_CHECKPOINT`)
+- **Shadow Coalition** fourth faction: Stages 1–13, buy/steal/unseal tech, Ghost Exo + Exo Armory, Counter-Ghost Corps, dark picks, Coalition LP defender profile
+- Pre-G10 stack retained: Four Sides, HIVE9/COUNT9/COMBAT9/AI9/ECON9, Warmind, PACE71
+- ART approved-core locked (CELL / DEATH / WALKER / CLOSE AIR); TECHNICAL / SAFEHOUSE / HATCH owner-deferred
+- Lock evidence: smoke **122/0**, stage hashes MATCH; see `.superpowers/sdd/g10.lock`
 
 ### Next gates (planned order)
 
 | Gate | Headline (public) |
 |---|---|
-| **G10** | Fourth faction + related counterplay (in progress on `g71`) |
 | **G11–G13** | UNDERSTRIKE foundation → military → networked underground |
 | **G12** (with soldiers/theatres) | Human depth, biomes/modes; optional uncapped skirmish population |
 | **G14** | Remaining factions’ Stages 1–6 and 11–13 |
@@ -244,7 +243,7 @@ Useful launcher flags (append): `--autostart`, `--autostart-seed=N`, `--autostar
 
 ## Branch & verify
 
-- Active branch: `g71` (`pre_g10.lock` CLOSED)
+- Active branch: `g71` (`g10.lock` CLOSED)
 - Ship path: commit → push `github` → `game/.plan/package_g71.ps1` → playable folder + zip in Downloads (keeps the newest 2). Build tag embeds the short git hash.
 - Smoke: `powershell -File game/tools/g71_donewhen_smoke.ps1`
 - Short soak: `godot --headless --path game -s res://tools/g71_soak_short.gd -- --secs=90`

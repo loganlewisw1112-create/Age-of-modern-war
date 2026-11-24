@@ -1,0 +1,7 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+NATIVE rts_core loaded (rts_core 0.6.5)
+G10_E4_AI_SOAK coalition_vs_human_a ok=true ticks=900 ops=900 doctrine=bleed err=
+G10_E4_AI_SOAK coalition_vs_machine ok=true ticks=900 ops=900 doctrine=bleed err=
+G10_E4_AI_SOAK_FACT {"ok":true,"results":[{"doctrine":"bleed","err":"","label":"coalition_vs_human_a","ok":true,"ops":900,"ticks":900,"units0":8,"units1":10},{"doctrine":"bleed","err":"","label":"coalition_vs_machine","ok":true,"ops":900,"ticks":900,"units0":8,"units1":11}]}

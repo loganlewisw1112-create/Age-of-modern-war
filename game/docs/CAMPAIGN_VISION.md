@@ -414,7 +414,8 @@ they finally arrive.
    - the same world backlash as the Scepter, scaled to how hard you strike.
 7. **The arrival war has four outcomes, each leading into its own endless crisis:**
    - **Repel:** the makers are driven off, Earth is scarred, and the seed beachheads remain as a blight to clear.
-   - **Kneel:** you or a rival rule as viceroy, and a human resistance becomes the new crisis.
+   - **Viceroy:** you or a rival rule as viceroy, and a human resistance becomes the new crisis.
+     (Renamed from "Kneel" 2026-11-23 — no Vhessar "kneel" gameplay mechanic.)
    - **Alliance with the cult:** the makers are broken and the cult settles on Earth; the crisis is an uneasy
      coexistence.
    - **Lost:** Earth falls, and humanity holds out in orbit and on the moon, rebuilding.
@@ -625,8 +626,9 @@ names are nicknames too, until their own-tongue names are set.
     single surviving seed-core. Each step also deepens their weakness to EMP and the Healer.
   - **Ritual War:** soldier-caste boarding, champion duels, ramming and grappling. Capstone: a boarding host that takes a
     human capital in one action.
-  - **Dominion:** seeding the ground from orbit, beachhead growth, envoys that make human powers kneel. Capstone: turn a
+  - **Dominion:** seeding the ground from orbit, beachhead growth, territorial seed conversion. Capstone: turn a
     whole region into seed ground from orbit.
+    (Owner 2026-11-23: **no kneel / fear-diplomacy / kneel-pulse gameplay** — cut. Herald remains a story/hunt ship.)
 - **Roster:**
 
   | Rung | Hulls |
@@ -899,7 +901,7 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
     - **The core becomes the cult's army on Earth.** When the cult reveals itself inside the makers' fleet, the
       syndicate turns out to be its prepared ground force. Whether that helps you depends on whether you accepted the
       chairman's offer or burned his bunkers.
-    - **Defecting executives break away.** Some kneel to the makers, and some sell to the highest bidder.
+    - **Defecting executives break away.** Some submit to the makers, and some sell to the highest bidder.
 48. **The soldier companion is the loyal hard man.** A pre-war sergeant, older than the founder and utterly loyal, he
     carries out the worst of the cover-ups. His line becomes your army's backbone and the keeper of the darkest secrets,
     which makes it the most dangerous if it turns.
@@ -925,20 +927,33 @@ Ideas for more depth, dynamism, AI and realism, added one answer at a time.
       live in battle, and the Coalition strikes at the same time.
     - Not chosen: a set-piece return to the founder's old trench lines in Chapter 7.
 
+### Ghost Exo Programme — owner-approved seamless expansion (2026-11-23)
+
+> **Approved in full** (packages 0/1/2/A–J): seamless AI-first Conductor; tip echelon named **Death** squads
+> (Shadow Corps + Anchor support echelons); Human A gets only the reverse-engineered counter-ghost mirror.
+> **Difficulty bar (owner 2026-11-23):** the **entire Shadow Coalition** (and the exo programme inside it) is a
+> **super-difficult**, **super intelligent / strategic** opponent — difficulty by intelligence and strategy, not
+> cheats; beatable with counters, crushing if ignored.
+> **Authority:** `docs/superpowers/specs/2026-11-23-ghost-exo-programme-design.md`  
+> **Slice plan:** `docs/superpowers/plans/2026-11-23-ghost-exo-programme.md` (G10 skirmish/Conductor; G15 campaign
+> Hunter/build-up; not Pre-G10).  
+> Locked Q&A below remains the baseline. The 2026-11-23 spec is the additive overlay for Conductor pipeline,
+> Death naming, attrs/skills/cohesion/intel, 11-stage lifecycle, Harrow Cell, and intent-thin player UX.
+
 ### The Syndicate Shadow Coalition in depth (6 questions)
 54. **Doctrine: three layers working together.**
     - **Cells bleed you:** cheap insurgent cells pin and wear you down with IEDs, ambushes, hit-and-run raids,
       sabotage and civilian cover.
     - **The elite strike:** once you're pinned, small syndicate elite units hit the weak point:
-      - exoskeleton squads;
+      - exoskeleton squads (**Death** squads in the 2026-11-23 Ghost Exo overlay — combat tip echelon);
       - stealth drones;
       - smart munitions;
       - pre-war prototypes.
       They're few and deadly, and every elite loss really hurts them.
     - **Mercenaries fill the gaps:** units hired per battle from many eras and sources, so their army is never the
       same twice. Money buys whatever the battle needs.
-    - **In play:** cells are the screen and the bait, mercenaries are the flexible middle, and the elite are the
-      knife. Kill the money or the elite, and the rest falls apart.
+    - **In play:** cells are the screen and the bait, mercenaries are the flexible middle, and the elite
+      (**Death** squads) are the tip. Kill the money or the elite, and the rest falls apart.
 55. **Tech: buy, steal, unseal.** There is no normal research tree. Tech comes from three sources:
     - **Buy:** units bought with money from war profits.
     - **Steal:** enemy tech taken through raids, captured gear and bribed engineers.

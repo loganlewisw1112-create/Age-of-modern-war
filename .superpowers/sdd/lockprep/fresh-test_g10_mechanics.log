@@ -1,0 +1,18 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_mechanics::test_civilian_disguise_break_and_capture_deny
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_mechanics::test_civilian_disguise_break_and_capture_deny (134 ms)
+  RUN  test_g10_mechanics::test_ieds_plant_trigger_disarm_and_save
+  PASS test_g10_mechanics::test_ieds_plant_trigger_disarm_and_save (66 ms)
+  RUN  test_g10_mechanics::test_patron_contracts_loyalty_heat_false_flag
+  PASS test_g10_mechanics::test_patron_contracts_loyalty_heat_false_flag (67 ms)
+  RUN  test_g10_mechanics::test_tunnels_collapse_dead_zone_and_cache
+  PASS test_g10_mechanics::test_tunnels_collapse_dead_zone_and_cache (66 ms)
+  RUN  test_g10_mechanics::test_tunnels_link_transit_capacity_and_hash
+  PASS test_g10_mechanics::test_tunnels_link_transit_capacity_and_hash (196 ms)
+  RUN  test_g10_mechanics::test_weld_claim_packages_and_forbidden
+  PASS test_g10_mechanics::test_weld_claim_packages_and_forbidden (66 ms)
+
+RESULT pass=6 fail=0 files=1 time_ms=5904

@@ -225,6 +225,18 @@ Supporting authorities:
 
 ## Lock status
 
-**FROZEN — implementation open.** Owner APPROVED 2026-11-23; Task 0 board freeze recorded. No `g10.lock` yet.
-Done-when remains frozen — do not weaken. Execution: Subagent-Driven + max safe parallelism per
-`.superpowers/sdd/G10_KICKOFF.md`.
+**CLOSED (`g10.lock`)** — 2026-11-24. Smoke **122/0**, stage hashes MATCH, AI/100-squad probes green,
+package + `github/g71` ship recorded. Lock file: `.superpowers/sdd/g10.lock`. Report:
+`.superpowers/sdd/task-e4-lock-report.md`. Owner deferred TECHNICAL / SAFEHOUSE / HATCH look only (#13a);
+approved-core + Ghost bulk wave3 shipped. Optional leftover: Ghost strip owner look (non-blocking).
+
+## Addendum — owner-deferred look (2026-11-24)
+
+**Subjects deferred (not look-locked; redesign later):** TECHNICAL (Humvee / technical family), SAFEHOUSE, and HATCH / hidden-structure states.
+
+**Lock rule:** `g10.lock` may close with deferred placeholders for those subjects only. See
+`.superpowers/sdd/g10-lock-deferred-exception.md` and `.superpowers/sdd/g10-deferred-art-note.md`.
+
+**Non-weakening clause:** This addendum does **not** soften or reopen Done-when **#1–12**, **#13(b)**, **#14–16**,
+approved-core look (CELL / DEATH / WALKER / CLOSE AIR), Ghost look, dog look, Exo Armory Acceptance, smoke/suite,
+or package/docs requirements. Only Done-when **#13(a)** technical + hidden structure is owner-deferred.

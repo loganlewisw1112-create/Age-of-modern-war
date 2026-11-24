@@ -769,6 +769,12 @@ universal disable.
 
 ### Task 17: Human A Counter-Ghost full corps
 
+**Owner org lock (2026-11-23 ADDENDUM — board seq 171; do not stop live E2):** full corps detail in
+`docs/superpowers/plans/2026-11-23-faction-depth-decisions.md` § Counter-Ghost Corps.
+Loadouts **Interceptor / Bulwark / Seeker / Ward**; squads 4/6/Ward-pairs/legends; specialties as approved;
+vehicles incl. **Shade Dart**; **each vehicle type requires its own garage/pad/helipad**. Extend def IDs to match;
+keep weaker than Death. ORCH queues this onto **CG10** when GHOST10 releases `exo.gd`.
+
 **Files:**
 - Create: `game/sim/systems/counter_ghost10.gd`
 - Create: `game/content/g10/defs_g10_counterghost.json`
@@ -777,10 +783,12 @@ universal disable.
 - Create: `game/tests/test_g10_counterghost.gd`
 
 **Interfaces:**
-- Definitions: `a_cg_intercept`, `a_cg_recon`, `a_cg_breach`, `a_cg_tracker`, `a_cg_sensor_drone`,
-  `a_cg_apc`, `a_cg_recovery`, `a_cg_command`, `a_cg_workshop`.
+- Definitions (baseline + org expand): `a_cg_intercept`→Interceptor, `a_cg_recon`→Seeker, `a_cg_breach`→Bulwark,
+  plus Ward pair defs, specialty/support defs, Shade Dart + per-vehicle home pads per faction-depth table;
+  also `a_cg_tracker`, `a_cg_sensor_drone`, `a_cg_apc`, `a_cg_recovery`, `a_cg_command`, `a_cg_workshop`.
 - Commands:
-  `cg_sweep`, `cg_intercept`, `cg_strip_killswitch`, `cg_recover_suit`, `cg_break_contact`.
+  `cg_sweep`, `cg_intercept`, `cg_strip_killswitch`, `cg_recover_suit`, `cg_break_contact`
+  (+ escort/hunt intents: `cg_escort_vip`, `cg_hunt_ghosts`, `cg_contest_suit` as EaW cards).
 
 - [ ] **Step 1:** Tests assert Stage 10 Human A ownership, weaker camo/armour/power than equivalent Coalition exos,
   and no Coalition production access.

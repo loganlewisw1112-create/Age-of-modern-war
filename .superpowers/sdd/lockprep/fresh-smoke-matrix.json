@@ -1,0 +1,114 @@
+[
+  {
+    "suite": "test_g10_stage",
+    "exit": 0,
+    "pass": 14,
+    "fail": 0,
+    "result": "RESULT pass=14 fail=0 files=1 time_ms=10189",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_modes",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=15973",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_tech",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=5900",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_ghost",
+    "exit": 0,
+    "pass": 15,
+    "fail": 0,
+    "result": "RESULT pass=15 fail=0 files=1 time_ms=6535",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_counterghost",
+    "exit": 0,
+    "pass": 5,
+    "fail": 0,
+    "result": "RESULT pass=5 fail=0 files=1 time_ms=6133",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_exo_armory",
+    "exit": 0,
+    "pass": 7,
+    "fail": 0,
+    "result": "RESULT pass=7 fail=0 files=1 time_ms=6139",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_dark",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=5795",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_ai",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=6274",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_buildings",
+    "exit": 0,
+    "pass": 8,
+    "fail": 0,
+    "result": "RESULT pass=8 fail=0 files=1 time_ms=5833",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_content",
+    "exit": 0,
+    "pass": 15,
+    "fail": 0,
+    "result": "RESULT pass=15 fail=0 files=1 time_ms=5941",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_g10_mechanics",
+    "exit": 0,
+    "pass": 6,
+    "fail": 0,
+    "result": "RESULT pass=6 fail=0 files=1 time_ms=5904",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_exo",
+    "exit": 0,
+    "pass": 4,
+    "fail": 0,
+    "result": "RESULT pass=4 fail=0 files=1 time_ms=6066",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_lpmode7",
+    "exit": 0,
+    "pass": 18,
+    "fail": 0,
+    "result": "RESULT pass=18 fail=0 files=1 time_ms=87456",
+    "script_errors": 0
+  },
+  {
+    "suite": "test_lp_save71",
+    "exit": 0,
+    "pass": 2,
+    "fail": 0,
+    "result": "RESULT pass=2 fail=0 files=1 time_ms=13702",
+    "script_errors": 0
+  }
+]

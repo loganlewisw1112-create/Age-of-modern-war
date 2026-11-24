@@ -1,0 +1,42 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_lpmode7::test_base7_2_fortress_built_and_patrols_walk
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_lpmode7::test_base7_2_fortress_built_and_patrols_walk (46811 ms)
+  RUN  test_lpmode7::test_base7_real_base_built
+  PASS test_lpmode7::test_base7_real_base_built (3473 ms)
+  RUN  test_lpmode7::test_breach_fallback_and_raid
+  PASS test_lpmode7::test_breach_fallback_and_raid (8750 ms)
+  RUN  test_lpmode7::test_countdown_math
+  PASS test_lpmode7::test_countdown_math (987 ms)
+  RUN  test_lpmode7::test_lose_countdown_zero
+  PASS test_lpmode7::test_lose_countdown_zero (233 ms)
+  RUN  test_lpmode7::test_lose_creep_critical
+  PASS test_lpmode7::test_lose_creep_critical (233 ms)
+  RUN  test_lpmode7::test_lose_facility_falls
+  PASS test_lpmode7::test_lose_facility_falls (1036 ms)
+  RUN  test_lpmode7::test_normal_match_untouched
+  PASS test_lpmode7::test_normal_match_untouched (83 ms)
+  RUN  test_lpmode7::test_outside_walls_punished
+  PASS test_lpmode7::test_outside_walls_punished (1248 ms)
+  RUN  test_lpmode7::test_phase_progression_weavers_tide
+  PASS test_lpmode7::test_phase_progression_weavers_tide (1994 ms)
+  RUN  test_lpmode7::test_posture_override_and_commands_guarded
+  PASS test_lpmode7::test_posture_override_and_commands_guarded (1233 ms)
+  RUN  test_lpmode7::test_real_map_layout_breach_and_tide
+  PASS test_lpmode7::test_real_map_layout_breach_and_tide (2644 ms)
+  RUN  test_lpmode7::test_records_saved
+  PASS test_lpmode7::test_records_saved (12 ms)
+  RUN  test_lpmode7::test_same_seed_same_hash
+  PASS test_lpmode7::test_same_seed_same_hash (3566 ms)
+  RUN  test_lpmode7::test_setpieces_and_secrets
+  PASS test_lpmode7::test_setpieces_and_secrets (8547 ms)
+  RUN  test_lpmode7::test_start_state
+  PASS test_lpmode7::test_start_state (18 ms)
+  RUN  test_lpmode7::test_tide_on_walker
+  PASS test_lpmode7::test_tide_on_walker (768 ms)
+  RUN  test_lpmode7::test_win_and_endings_selection
+  PASS test_lpmode7::test_win_and_endings_selection (523 ms)
+
+RESULT pass=18 fail=0 files=1 time_ms=87456

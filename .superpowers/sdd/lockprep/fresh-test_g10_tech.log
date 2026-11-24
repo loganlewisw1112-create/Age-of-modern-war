@@ -1,0 +1,18 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_g10_tech::test_buy_spends_credits_and_favour
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_g10_tech::test_buy_spends_credits_and_favour (134 ms)
+  RUN  test_g10_tech::test_coalition_research_rejected_human_research9_ok
+  PASS test_g10_tech::test_coalition_research_rejected_human_research9_ok (195 ms)
+  RUN  test_g10_tech::test_deny_matrix_all_paths
+  PASS test_g10_tech::test_deny_matrix_all_paths (68 ms)
+  RUN  test_g10_tech::test_source_log_auditable_on_board
+  PASS test_g10_tech::test_source_log_auditable_on_board (65 ms)
+  RUN  test_g10_tech::test_steal_requires_captured_gear_or_raid
+  PASS test_g10_tech::test_steal_requires_captured_gear_or_raid (64 ms)
+  RUN  test_g10_tech::test_unseal_requires_vault_and_raises_heat
+  PASS test_g10_tech::test_unseal_requires_vault_and_raises_heat (65 ms)
+
+RESULT pass=6 fail=0 files=1 time_ms=5900

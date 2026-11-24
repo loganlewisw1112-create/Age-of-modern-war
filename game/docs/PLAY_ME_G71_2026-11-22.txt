@@ -1,32 +1,31 @@
-RTS: Age of Modern War - Pre-G10 CLOSED (pre_g10.lock, branch g71)
+RTS: Age of Modern War - G10 CLOSED (g10.lock, branch g71)
 
 PLAY: double-click RTS_Age_of_Modern_War.exe
       Keep RTS_Age_of_Modern_War.pck AND rts_core.dll next to it.
-LAST PROTOCOL: main menu > Last Protocol.
+LAST PROTOCOL: main menu > Last Protocol (Human A-vs-Machine canonical; Coalition Stage 10 defender profile in G10).
 
 CONTROLS
   Q / E or horizontal middle-mouse drag - rotate view 90 deg (Four Sides)
   Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (PRE-G10 CLOSED + G9/G8/G7.1)
-  Four Sides: rot buildings + loco/fire/death/k8 sheets follow camera
-  Last Protocol clock: starts at dusk; night lasts 2x day
-  End of run: director PiP, highlight reel, creep timelapse, kill-heat strip
-  HIVE9: 60 blended defs, nanite eat/replicate, modular events, quality-aware mesh/spine links and severable senses
-  COUNT9: all 13 counters in play plus temporary anti-Machine coalitions
-  COMBAT9/SKIRM9: persistent forts, crews, breakdown/recovery, deeper EW, setup adapt toggle and siege attack-move
-  AI9: evidence adaptation, five named generals, diplomacy, no-cheat Hard and multi-phase operations
-  ECON9: rare metals, trade posts, territory/civilian support, tiered research and black-market gear
-  Warmind doctrine/budget/memory; PACE71 faster vehicles with terrain drag
-  Hive / fire / deaths / harvest / capture-evolve / night lights / weather / fleet / RE / warmind
-  Full art groups + E4 motion + FX/gore depth
-  Perf: pan/2k >=60 CLEAR; Pre-G10 LP peak p10 116.8 CLEAR
-  Soaks: 60m + live RE/warmind siege GREEN (G7.1 evidence)
+IN THIS BUILD (G10 LOCKED + G9/G8/G7.1)
+  Shadow Coalition fourth faction: Stages 1-13 when Coalition selected
+  Buy/steal/unseal tech; tunnels/caches; Ghost Exo + Exo Armory; Counter-Ghost Corps
+  Modes: Coalition skirmish stages + Stage 10 Coalition LP defender profile
+  Dark picks: Blackout, Hollow Ground, Mirror Fortress, Dead Radio
+  Pre-G10 stack retained: Four Sides, HIVE9/COUNT9/COMBAT9/AI9/ECON9, Warmind, PACE71
+  ART approved-core locked: CELL / DEATH / WALKER / CLOSE AIR; Ghost Wing + camo + CLOSE AIR states (bulk wave3)
+  E4 lock smoke 122/0; stage hashes MATCH; AI soak + 100-squad stress green
 
-LOOK CHECKPOINT (E3) - APPROVED 2026-11-23
+LOOK / DEFERRED ART (owner 2026-11-24)
+  LOCKED: CELL, DEATH, WALKER, CLOSE AIR
+  DEFERRED (placeholders OK; locked with exception): TECHNICAL Humvee family, SAFEHOUSE, HATCH/hidden structure
+  Redesign later via design-blueprint. See game/docs/G10_SCOPE.md and .superpowers/sdd/g10.lock
+  Optional: Ghost strip owner look (non-blocking)
 
 LEFT OPEN
-  G10 Shadow Coalition only; campaign, UNDERSTRIKE and later polish remain future slices
+  TECHNICAL / SAFEHOUSE / HATCH look redesign (owner-deferred)
+  Campaign, UNDERSTRIKE, later polish remain future slices
   Peak chase continues (amended gate still held)
 
 HARNESS

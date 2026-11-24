@@ -1,0 +1,68 @@
+# g10.lock — CLOSED
+
+**Status:** CLOSED  
+**Gate:** G10 Shadow Coalition  
+**Branch:** g71  
+**Remote:** github/g71  
+**Date:** 2026-11-24  
+**Authority:** owner APPROVE G10 full execution + 2026-11-24 deferred look exception
+
+## SHA
+
+- **Lock ceremony commit:** (filled at ship — see board FACT `ship.g10.lock`)
+- **Art wave3 baseline:** `4945e77e`
+- **Pre-lock tip:** `031a6e60`
+
+## Deferred art exception (owner)
+
+Does **not** block this lock:
+
+| Subject | IDs / family | FACT |
+|---------|--------------|------|
+| TECHNICAL Humvee | `x_technical_rocket` + technical family | `art.technical.deferred` |
+| SAFEHOUSE / HATCH | `x_safehouse`, hidden states | `art.safehouse.deferred` |
+
+Docs: `.superpowers/sdd/g10-lock-deferred-exception.md`, `.superpowers/sdd/g10-deferred-art-note.md`  
+Done-when **#13a** only; #1–12, #13b, #14–16 unchanged.
+
+**Locked look:** CELL / DEATH / WALKER / CLOSE AIR (`art.look.approved.core`)  
+**Optional remaining owner look:** Ghost strips (non-blocking)
+
+## Smoke evidence (fresh)
+
+14 suites · **122 pass / 0 fail** · 0 SCRIPT ERROR  
+
+| Suite | Pass/Fail |
+|-------|-----------|
+| test_g10_stage | 14/0 |
+| test_g10_modes | 8/0 |
+| test_g10_tech | 6/0 |
+| test_g10_ghost | 15/0 |
+| test_g10_counterghost | 5/0 |
+| test_g10_exo_armory | 7/0 |
+| test_g10_dark | 6/0 |
+| test_g10_ai | 8/0 |
+| test_g10_buildings | 8/0 |
+| test_g10_content | 15/0 |
+| test_g10_mechanics | 6/0 |
+| test_exo | 4/0 |
+| test_lpmode7 | 18/0 |
+| test_lp_save71 | 2/0 |
+
+Matrix: `.superpowers/sdd/lockprep/fresh-smoke-matrix.json`  
+Report: `.superpowers/sdd/task-e4-lock-report.md`
+
+## Hashes / soak
+
+- Stages 3/8/12 @600 two-run: **MATCH** (evidence `g10_e4_stage_hash_lock.log`)
+- AI soak 900 ticks: **ok=true** (evidence `g10_e4_ai_soak_lock.log`)
+- 100-squad stress: **ok=true** (evidence `g10_e4_100_squad_stress_lock.log`)
+
+## Package
+
+- Script: `game/.plan/package_g71.ps1 -Note g10.lock`
+- Paths filled in board FACT `ship.g10.lock` after export
+
+## Board
+
+FACT topics: `g10.lock` · `ship.g10.lock` · `ship.<sha>` · `readme.synced`

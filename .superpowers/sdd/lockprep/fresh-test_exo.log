@@ -1,0 +1,14 @@
+Initialize godot-rust (API v4.7.stable.official, runtime v4.7.2.stable.official, safeguards balanced)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  RUN  test_exo::test_destroyed_suit_ejects_wounded_pilot
+NATIVE rts_core loaded (rts_core 0.6.5)
+  PASS test_exo::test_destroyed_suit_ejects_wounded_pilot (205 ms)
+  RUN  test_exo::test_garage_produces_suits_by_stage
+  PASS test_exo::test_garage_produces_suits_by_stage (367 ms)
+  RUN  test_exo::test_pilot_evac_and_resuit_at_60pct
+  PASS test_exo::test_pilot_evac_and_resuit_at_60pct (103 ms)
+  RUN  test_exo::test_suit_counts_as_vehicle_element
+  PASS test_exo::test_suit_counts_as_vehicle_element (66 ms)
+
+RESULT pass=4 fail=0 files=1 time_ms=6066
