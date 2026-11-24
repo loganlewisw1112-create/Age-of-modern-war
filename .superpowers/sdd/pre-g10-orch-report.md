@@ -45,12 +45,15 @@ Branch: `g71`
 - `62bcc256` — checkpoint board FACT
 - `7905bdac` — reopened false Pre-G10 lock
 - `a439359` — Tasks 3-16 depth, AI9, ECON9 and integration harnesses
-- Final lock/package commit: see board `pre_g10.lock` FACT and `git log`.
+- Packaged ship commit: `a68af4c3`; final documentation-close commit follows in `git log`.
 
 ## Package
 
-Package command uses note `pre_g10.lock`; the resulting SHA-stamped folder and zip are returned in the final handoff.
+Package command completed with note `pre_g10.lock`.
+
+- Folder: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-23_a68af4c3`
+- Zip: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-23_a68af4c3.zip`
 
 ## Lock
 
-OPEN. Tasks 0-17 and all test/soak/perf evidence are complete. Package execution was blocked by the host approval gate, so package + push remain before `pre_g10.lock` can close.
+CLOSED (`pre_g10.lock`). Tasks 0-17, all test/soak/perf evidence, the SHA-stamped package, and the GitHub push are complete.

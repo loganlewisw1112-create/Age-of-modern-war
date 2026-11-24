@@ -69,4 +69,4 @@ D4 integ      smoke · soak · peak · README/PLAY_ME · package → pre_g10.loc
 Full task plan (Approach C): `docs/superpowers/plans/2026-11-23-pre-g10.md`
 
 ## Lock status
-**OPEN** — Tasks 0–17 and verification are complete; package + push remain before `pre_g10.lock` may close.
+**CLOSED (`pre_g10.lock`)** — Tasks 0–17, verification, package, and GitHub push are complete.

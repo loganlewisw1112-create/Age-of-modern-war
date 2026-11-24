@@ -39,4 +39,7 @@ Tasks 16-17 complete:
     test_hot_state 17/0; expanded smoke 33 suites green when the interrupted wrapper was completed in isolated/remainder runs
     peak remasure p10 116.8; README/PLAY_ME/PRE_G10_SCOPE synchronized
 
-Lock: OPEN. Tasks 0-17 and verification are complete; host approval blocked package execution, so package + push remain.
+Lock: CLOSED (`pre_g10.lock`).
+    GitHub ship commit: a68af4c3
+    Package: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-23_a68af4c3`
+    Zip: `C:\Users\logan\Downloads\Age of Modern War\RTS_Age_of_Modern_War_G71_2026-11-23_a68af4c3.zip`
