@@ -9,7 +9,8 @@
 
 ## SHA
 
-- **Lock ceremony commit:** `5f55236c` (`5f55236caefa4f956b9e9e6929095dd00685da55`)
+- **Lock ceremony commit (package stamp):** `5f55236c` (`5f55236caefa4f956b9e9e6929095dd00685da55`)
+- **Ship FACT follow-up HEAD:** `507405a2` (board `ship.g10.lock` + package paths)
 - **Art wave3 baseline:** `4945e77e`
 - **Pre-lock tip:** `031a6e60` / docs deferred tip `f3fdc760`
 
