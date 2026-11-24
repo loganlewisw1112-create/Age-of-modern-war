@@ -67,5 +67,6 @@ Distinct vs CAS (delta jet), silent (main-rotor helo), stealth drone (diamond), 
 
 ## Commit / remote
 
+- **Commit:** `39a00063` — *Polish G10 exo NVGs, green lasers, fire holds, and redesign stealth transport.*
 - Board FACT `ship.art.g10.exo_nvg_transport` (see `board.jsonl`)
 - Remote: `github/g71`
