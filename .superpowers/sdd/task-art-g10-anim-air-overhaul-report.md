@@ -64,4 +64,6 @@ Sizes deliberately stratified: transport > CAS ≈ silent > shock > stealth dron
 
 ## Commit / remote
 
-See ship FACT `ship.art.g10.anim_air_overhaul` + git push `github/g71`.
+- **Commit:** `5354846f` — *Overhaul G10 anim boards and unique Coalition air silhouettes.*
+- Board FACT `ship.art.g10.anim_air_overhaul` seq **294**
+- Remote: `github/g71`
