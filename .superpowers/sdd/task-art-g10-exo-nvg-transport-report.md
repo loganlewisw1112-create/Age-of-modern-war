@@ -63,7 +63,7 @@ Distinct vs CAS (delta jet), silent (main-rotor helo), stealth drone (diamond), 
 
 ## Lock note
 
-**`g10.lock` amend needed** — FACT topic `g10.lock.amend.exo_nvg_transport` (ORCH). Post-lock owner art polish; approved-core grammar kept; TECHNICAL / SAFEHOUSE / HATCH still deferred.
+**`g10.lock` amended** — FACT `g10.lock.amend.exo_nvg_transport` seq **299**. Post-lock owner art polish: exo NVG day/night, green laser-on-aim, shoot grips, transport tilt-rotor redesign, air occlusion. Approved-core grammar kept; TECHNICAL / SAFEHOUSE / HATCH still deferred.
 
 ## Commit / remote
 

@@ -14,6 +14,7 @@
 - **Art wave3 baseline:** `4945e77e`
 - **Pre-lock tip:** `031a6e60` / docs deferred tip `f3fdc760`
 - **Post-lock anim/air overhaul:** `5354846f` (board note `84a94012`)
+- **Post-lock exo NVG / laser / transport polish:** `39a00063` (board note `cdcdb313`)
 
 ## Deferred art exception (owner)
 
@@ -45,6 +46,25 @@ Supersedes wave3 camo-token strips / CAS-clone air polish recorded at lock time.
 |-------|------------|
 | Anim boards | Real Human A pose boards: `idle · walk_a · walk_b · run_0 · fire · hit · die_0` (Ghost crops from board, not oil-slick overlays) |
 | Air fleet | Unique black/gunmetal silhouettes for all 6 air ids (CAS / quiet helo / cargo VTOL / diamond UCAV / X-frame striker / tiny recon) |
+| Deferred | TECHNICAL / SAFEHOUSE / HATCH — **unchanged**, still deferred |
+
+## Amend — post-lock exo NVG + laser + transport
+
+**Status:** AMENDED (lock remains CLOSED)  
+**Authority:** owner post-lock art polish after `g10.lock` / anim-air amend  
+**Board FACT:** `g10.lock.amend.exo_nvg_transport`  
+**Ship FACT:** `ship.art.g10.exo_nvg_transport` seq **297–298**  
+**Report:** `.superpowers/sdd/task-art-g10-exo-nvg-transport-report.md`
+
+Approved-core kit grammar kept. TECHNICAL / SAFEHOUSE / HATCH still deferred.
+
+| Slice | Amend note |
+|-------|------------|
+| Exo NVG day/night | `kit.nvg_down` false = UP (day crown); true = DOWN (dusk/night green lenses); proof `strip_g10_exo_nvg` |
+| Green laser-on-aim | Under-barrel green laser + boreline beam on DEATH / WALKER / Ghost (`laser: true`) |
+| Shoot grips | Aim = stock-to-shoulder two-hand; carry = low-ready; regenerated anim boards |
+| Transport redesign | `x_stealth_transport` → faceted stealth tilt-rotor insert craft (box fuse, tip nacelles, H-tail, ramp) |
+| Air occlusion | Near-side hardpoints/gear/pods only; far-side occluded by hull (full air fleet) |
 | Deferred | TECHNICAL / SAFEHOUSE / HATCH — **unchanged**, still deferred |
 
 ## Smoke evidence (fresh)
@@ -87,4 +107,4 @@ Report: `.superpowers/sdd/task-e4-lock-report.md`
 
 ## Board
 
-FACT topics: `g10.lock` · `ship.g10.lock` · `ship.5f55236c` · `readme.synced` · `ship.art.g10.anim_air_overhaul` · `g10.lock.amend.anim_air`
+FACT topics: `g10.lock` · `ship.g10.lock` · `ship.5f55236c` · `readme.synced` · `ship.art.g10.anim_air_overhaul` · `g10.lock.amend.anim_air` · `ship.art.g10.exo_nvg_transport` · `g10.lock.amend.exo_nvg_transport`
