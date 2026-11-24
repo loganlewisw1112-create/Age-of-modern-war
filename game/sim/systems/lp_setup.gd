@@ -17,6 +17,35 @@ static func R() -> Dictionary:
 	return Content.rules().get("g7_lastprotocol", {})
 
 
+## Lazy load avoids const-preload cycle with last_protocol.gd (which preloads this file).
+static func _lp():
+	return load("res://sim/systems/last_protocol.gd")
+
+
+static func _is_coalition(w: SimWorld) -> bool:
+	return String(_lp().profile(w)) == "shadow_coalition"
+
+
+## Profile-aware start block. human_a returns the canonical g7_lastprotocol.start (shared ref).
+## Coalition merges rules.lp_profile_coalition.start over a duplicate.
+static func start_spec(w: SimWorld) -> Dictionary:
+	var st: Dictionary = R().get("start", {})
+	if not _is_coalition(w):
+		return st
+	var coal: Dictionary = Content.rules().get("lp_profile_coalition", {})
+	var out := st.duplicate(true)
+	var ostart: Dictionary = coal.get("start", {})
+	for k in ostart:
+		out[k] = ostart[k]
+	return out
+
+
+static func _plot_remap(w: SimWorld) -> Dictionary:
+	if not _is_coalition(w):
+		return {}
+	return Content.rules().get("lp_profile_coalition", {}).get("plot_remap", {}) as Dictionary
+
+
 static func _v2i(v) -> Vector2i:
 	if v is Vector2i:
 		return v
@@ -176,9 +205,20 @@ const PLOT_DEFS := {"company_hq": "a_company_hq", "artillery": "a_howitzer_pit",
 	"repair_bay": "a_repair_bay", "hospital": "a_hospital", "exo_garage": "a_exo_garage"}
 
 
-static func _plot_def(kind: String) -> String:
+static func _plot_def(kind: String, w: SimWorld = null) -> String:
+	var remap: Dictionary = _plot_remap(w) if w != null else {}
+	if remap.has(kind):
+		return String(remap[kind])
 	if PLOT_DEFS.has(kind):
-		return String(PLOT_DEFS[kind])
+		var mapped := String(PLOT_DEFS[kind])
+		if remap.has(mapped):
+			return String(remap[mapped])
+		# Coalition must not receive Human A LP plot cards; skip unknown Human A kinds.
+		if w != null and _is_coalition(w) and mapped.begins_with("a_"):
+			return ""
+		return mapped
+	if w != null and _is_coalition(w) and String(kind).begins_with("a_"):
+		return ""
 	return kind
 
 
@@ -193,8 +233,8 @@ static func square_points(c: Vector2i, h: int, n: int) -> Array:
 	return out
 
 
-static func _turret_defs() -> Array:
-	var st: Dictionary = R().get("start", {})
+static func _turret_defs(w: SimWorld = null) -> Array:
+	var st: Dictionary = start_spec(w) if w != null else R().get("start", {})
 	var out := []
 	for d in st.get("turrets_g7", []):
 		if not Content.building(String(d)).is_empty():
@@ -238,9 +278,9 @@ static func _spread(posts: Array, n: int) -> Array:
 ## BASE7: security cameras (map.lp base.cameras: 1x1 masts with real sight, rules start.camera_def or a_g7_camera)
 ## at every gate, the outer corners, the HQ, the airfield and the facility gate, each facing its sector.
 static func build_cameras(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> Array:
-	var def := String(R().get("start", {}).get("camera_def", "a_g7_camera"))
+	var def := String(start_spec(w).get("camera_def", "a_g7_camera"))
 	var ids := []
-	if Content.building(def).is_empty():
+	if def == "" or Content.building(def).is_empty():
 		return ids
 	for cm in L0.get("cameras", []):
 		var id := place(w, occ, def, fid, _v2i(cm.get("cell")))
@@ -267,7 +307,8 @@ static func build_rings(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) 
 	var lf: Dictionary = R().get("layout_fallback", {})
 	var lp = w.map.get("lp")
 	var mrings: Array = lp.base.get("rings", []) if lp is Dictionary and lp.has("base") else []
-	var tdefs := _turret_defs()
+	var tdefs := _turret_defs(w)
+	var coal := _is_coalition(w)
 	var out := []
 	var ti := 0
 	for i in (L0.rings as Array).size():
@@ -312,30 +353,36 @@ static func build_rings(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) 
 			var si := tslots.find(s)
 			if si >= 0 and si < tkinds.size() and not Content.building(String(tkinds[si])).is_empty():
 				tdef = String(tkinds[si])
+			# Coalition profile: never place Human A turret/bunker cards from map turret_defs.
+			if coal and (tdef.begins_with("a_") or tdef.begins_with("g7_")):
+				ti += 1
+				continue
 			var tid := _turret(w, occ, tdef, fid, _v2i(s))
 			ti += 1
 			if tid >= 0:
 				rec.turrets.append(tid)
-		for b in md.get("bunkers", []):
-			var bid := place(w, occ, "a_atgm_bunker", fid, _v2i(b))
-			if bid >= 0:
-				rec.bunkers.append(bid)
+		if not coal:
+			for b in md.get("bunkers", []):
+				var bid := place(w, occ, "a_atgm_bunker", fid, _v2i(b))
+				if bid >= 0:
+					rec.bunkers.append(bid)
 		out.append(rec)
 	return out
 
 
 ## Economy and military plots (map.lp plots or the rules lists on fallback squares).
 static func build_plots(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int, hq: int = -1) -> Array:
-	var st: Dictionary = R().get("start", {})
+	var st: Dictionary = start_spec(w)
 	var lp = w.map.get("lp")
 	var mrings: Array = lp.base.get("rings", []) if lp is Dictionary and lp.has("base") else []
 	var ids := []
 	var c: Vector2i = L0.center
 	var nr: int = (L0.rings as Array).size()
+	var coal := _is_coalition(w)
 	for i in nr:  # BASE7: the outer ring's map plots (SAM / radar / ammunition points + LPSHRINK7's economy) are built too
 		var md: Dictionary = mrings[i] if i < mrings.size() else {}
 		var plots: Array = (md.get("plots", []) as Array).duplicate()
-		if plots.is_empty() and i == 0 and bool(L0.get("from_map", false)):
+		if plots.is_empty() and i == 0 and bool(L0.get("from_map", false)) and not coal:
 			continue
 		if plots.is_empty():
 			# fallback layout: the economy between the walls (ring 0's band), the core plots inside the core
@@ -348,18 +395,38 @@ static func build_plots(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int, 
 		for p in plots:
 			if hq >= 0 and String(p.get("kind", "")) == "company_hq":
 				continue  # BASE7: the company HQ was placed on this plot by build()
-			var id := place_near(w, occ, _plot_def(String(p.get("kind", ""))), fid, _v2i(p.get("cell")), 4)
+			var pdef := _plot_def(String(p.get("kind", "")), w)
+			if pdef == "" or Content.building(pdef).is_empty():
+				continue
+			var id := place_near(w, occ, pdef, fid, _v2i(p.get("cell")), 4)
 			if id >= 0:
 				if p.has("facing_i"):  # BASE7-2: airfield runway axis / dropship pad approach side
 					w.entities[id].facing_i = int(p.facing_i)
 				ids.append(id)
+	# Coalition Stage 10: ensure profile economy/core lists exist even when map plots remapped sparsely.
+	if coal:
+		for key in ["economy_plots", "core_plots"]:
+			for d in st.get(key, []):
+				var def := String(d)
+				if Content.building(def).is_empty():
+					continue
+				var already := false
+				for id0 in ids:
+					if String(w.entities[int(id0)].def) == def:
+						already = true
+						break
+				if already:
+					continue
+				var nid := place_near(w, occ, def, fid, c + Vector2i(4 if key == "core_plots" else 10, 4), 12)
+				if nid >= 0:
+					ids.append(nid)
 	return ids
 
 
 ## The main army: units per ring (rules start.army), spread on a square just inside each ring; aircraft at the
 ## airfield. Every unit carries e.lp_ring (home ring) and e.lp_home (home cell) for the defence commander.
 static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
-	var army: Dictionary = R().get("start", {}).get("army", {})
+	var army: Dictionary = start_spec(w).get("army", {})
 	var c: Vector2i = L0.center
 	var ids := []
 	var ring_ix := {}
@@ -421,7 +488,7 @@ static func build_army(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 
 ## Two VTOL dropships parked at the airfield (map.lp airfield pads or near the core ring).
 static func build_vtols(w: SimWorld, L0: Dictionary, fid: int) -> Array:
-	var st: Dictionary = R().get("start", {})
+	var st: Dictionary = start_spec(w)
 	var def := String(st.get("vtol_def", "a_vtol_dropship"))
 	if Content.unit(def).is_empty():
 		return []
@@ -452,37 +519,45 @@ static func build_vtols(w: SimWorld, L0: Dictionary, fid: int) -> Array:
 ## core) and lp_home, so the defence commander's air rules (base airspace leash, fire-support calls) cover them, and
 ## they stay the player's to fly. Returns the ids.
 static func build_helipads(w: SimWorld, L0: Dictionary, fid: int) -> Array:
-	var defs: Array = R().get("start", {}).get("helipad_air", [])
+	var st: Dictionary = start_spec(w)
+	var defs: Array = st.get("helipad_air", [])
 	var air: Dictionary = L0.airfield if L0.airfield is Dictionary else {}
 	var pads: Array = air.get("helipads", [])
 	var hangars: Array = (air.get("hangars", []) as Array).duplicate()
 	var ids := []
 	# LPSHRINK7-2 (13.9c-36 follow-up): every pad holds a helicopter; the fixed-wing start.hangar_air (the Airlift) parks
 	# in the heavy hangar nearest the helipad row
-	var n_pad := mini(defs.size(), pads.size())
-	defs = defs.slice(0, n_pad) + (R().get("start", {}).get("hangar_air", []) as Array)
+	var n_pad := mini(defs.size(), pads.size()) if not pads.is_empty() else 0
+	defs = (defs.slice(0, n_pad) if not pads.is_empty() else []) + (st.get("hangar_air", []) as Array)
+	# Coalition fallback maps often lack helipad layout: still park profile air near the core.
+	if pads.is_empty() and _is_coalition(w):
+		defs = (st.get("helipad_air", []) as Array).duplicate() + (st.get("hangar_air", []) as Array)
 	for i in defs.size():
-		if pads.is_empty():
+		if pads.is_empty() and not _is_coalition(w):
 			break
 		var def := String(defs[i])
 		var ud := Content.unit(def)
 		if ud.is_empty():
 			continue
-		var p := Vector2(_v2i(pads[mini(i, pads.size() - 1)])) + Vector2(1.0, 1.0)   # centre of the 2x2 pad
-		if String(ud.get("hangar", "pad")) != "pad":
-			if hangars.is_empty():
-				continue
-			var best := 0
-			for j in hangars.size():
-				if Vector2(_v2i(hangars[j])).distance_to(p) < Vector2(_v2i(hangars[best])).distance_to(p):
-					best = j
-			p = Vector2(_v2i(hangars[best])) + Vector2(1.0, 1.0)
-			hangars.remove_at(best)
+		var p: Vector2
+		if pads.is_empty():
+			p = Vector2(L0.center) + Vector2(-6.0 + 3.0 * float(i), 6.0)
+		else:
+			p = Vector2(_v2i(pads[mini(i, pads.size() - 1)])) + Vector2(1.0, 1.0)   # centre of the 2x2 pad
+			if String(ud.get("hangar", "pad")) != "pad":
+				if hangars.is_empty():
+					continue
+				var best := 0
+				for j in hangars.size():
+					if Vector2(_v2i(hangars[j])).distance_to(p) < Vector2(_v2i(hangars[best])).distance_to(p):
+						best = j
+				p = Vector2(_v2i(hangars[best])) + Vector2(1.0, 1.0)
+				hangars.remove_at(best)
 		var id := w.spawn_unit(def, fid, p)
 		var e: Dictionary = w.entities[id]
 		e.lp_ring = maxi((L0.rings as Array).size() - 1, 0)
 		e.lp_home = p
-		if i < n_pad:   # the hangar craft (start.hangar_air) has no pad
+		if not pads.is_empty() and i < n_pad:   # the hangar craft (start.hangar_air) has no pad
 			e.lp_pad = i
 		ids.append(id)
 	return ids
@@ -616,7 +691,7 @@ static func research_all(w: SimWorld, fid: int) -> int:
 ## Generators (rules start.power_def, 10% headroom) line the inside of the core-ring wall (4 cells in, a 2-cell lane
 ## between neighbours, then the next square inward), so the centre, the facility and the gate roads stay open.
 static func power_up(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> int:
-	var gdef := String(R().get("start", {}).get("power_def", "generator"))
+	var gdef := String(start_spec(w).get("power_def", "generator"))
 	var gp := int(Content.building(gdef).get("power", 0))
 	if gp <= 0:
 		return 0
@@ -657,21 +732,25 @@ static func power_up(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int) -> 
 static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var L0 := layout(w)
 	var occ := _occ(w)
-	var st: Dictionary = R().get("start", {})
+	var st: Dictionary = start_spec(w)
+	var coal := _is_coalition(w)
 	research_all(w, fid)
 	var fcell: Vector2i = L0.facility
-	if bool(L0.get("compound", false)):  # BASE7: map.lp facility = compound origin; the core stands at core_offset in it
+	var fac_def := String(st.get("facility_def", "a_cn_facility"))
+	if bool(L0.get("compound", false)) and fac_def == "a_cn_facility":
+		# BASE7: map.lp facility = compound origin; the CN core stands at core_offset in it
 		var co: Array = _fac_conf().get("core_offset", [0, 0])
 		fcell += Vector2i(int(co[0]), int(co[1]))
-	var fac := place_near(w, occ, String(st.get("facility_def", "a_cn_facility")), fid, fcell, 8)
+	var fac := place_near(w, occ, fac_def, fid, fcell, 8)
 	var hq := -1
+	var hq_def := String(st.get("hq_def", "a_company_hq"))
 	var lp = w.map.get("lp")
 	if lp is Dictionary and lp.has("base"):
 		for p in ((lp.base.rings as Array).back().plots if not (lp.base.rings as Array).is_empty() else []):
 			if String(p.kind) == "company_hq" and hq < 0:
-				hq = place(w, occ, String(st.get("hq_def", "a_company_hq")), fid, _v2i(p.cell))
+				hq = place(w, occ, hq_def, fid, _v2i(p.cell))
 	if hq < 0:
-		hq = place_near(w, occ, String(st.get("hq_def", "a_company_hq")), fid, L0.center + Vector2i(8, 8), 8)
+		hq = place_near(w, occ, hq_def, fid, L0.center + Vector2i(8, 8), 8)
 	var rings := build_rings(w, occ, L0, fid)
 	var obst := build_obstacles(w, occ, L0, fid)
 	var cams := build_cameras(w, occ, L0, fid)
@@ -680,9 +759,11 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	var helis := build_helipads(w, L0, fid)   # LPSHRINK7: before the army, so the airlift binds a hangar before the jets
 	var army := build_army(w, L0, fid)
 	var vtols := build_vtols(w, L0, fid)
+	_place_extra_buildings(w, occ, L0, fid, st)
 	var mach := build_machine(w, occ, L0, mfid)
 	var on_n := prespread(w, mfid)
-	CounterNanite.set_tac_cap(w, fid, -1)
+	if not coal:
+		CounterNanite.set_tac_cap(w, fid, -1)
 	var rr := []
 	for i in (L0.rings as Array).size():
 		var r: Rect2i = L0.rings[i].rect
@@ -692,6 +773,23 @@ static func build(w: SimWorld, fid: int, mfid: int) -> Dictionary:
 	return {"center": L0.center, "rings": rr, "facility": fac, "hq": hq, "plots": plots, "army": army, "vtols": vtols, "helipad_air": helis,
 		"cores": mach.cores, "nests": mach.nests, "generators": gens, "creep_cells": on_n, "scale": L0.scale, "from_map": L0.from_map,
 		"cameras": cams, "obstacles": obst, "patrols": LpGarrison7.patrol_count(w)}
+
+
+## Coalition profile extras (tunnels near the Ghost complex, etc.).
+static func _place_extra_buildings(w: SimWorld, occ: Dictionary, L0: Dictionary, fid: int, st: Dictionary) -> Array:
+	var ids := []
+	for it in st.get("extra_buildings", []):
+		var def := String(it.get("def", ""))
+		var n := int(it.get("count", 1))
+		if Content.building(def).is_empty() or n <= 0:
+			continue
+		var near := String(it.get("near", "facility"))
+		var anchor: Vector2i = L0.facility if near == "facility" else L0.center
+		for i in n:
+			var bid := place_near(w, occ, def, fid, anchor + Vector2i((i % 2) * 3, (i / 2) * 3), 10)
+			if bid >= 0:
+				ids.append(bid)
+	return ids
 
 
 ## G7.1 wave 2 (ORCH): the LP-base additions, placed LATE: LastProtocol._try_fill calls this once, in the tick the
@@ -873,7 +971,10 @@ static func _g71_points(L0: Dictionary, near: String, offset, n: int, turn: int)
 
 ## Fills the raised facility: strike teams, tactical squads and the stealth dropship on its helipad (CNFAC7's own
 ## training finisher, so garages, helipad and dropship sizes all come from content). True once done.
+## Coalition profile: no CN teams/facility cards — seeds Ghost objective squads tagged lp_obj_team.
 static func fill_facility(w: SimWorld, fid: int) -> bool:
+	if _is_coalition(w):
+		return _fill_coalition_objective(w, fid)
 	var CnF = load("res://sim/systems/cn_facility.gd")
 	var facs: Array = CnF.facilities(w, fid)
 	if facs.is_empty():
@@ -889,4 +990,26 @@ static func fill_facility(w: SimWorld, fid: int) -> bool:
 		CnF.callv("_finish_train", [w, F, "tactical_squad"])
 	CnF.callv("_finish_train", [w, F, "stealth_dropship"])
 	load("res://sim/systems/lp_reserve7.gd").seed(w, F)   # LPRES7 (13.9c-34): the 100-Sentinel barracks reserve (LP only)
+	return true
+
+
+## Coalition LP objective fill: Death operators near the Ghost complex; loss tracks lp_obj_team.
+static func _fill_coalition_objective(w: SimWorld, fid: int) -> bool:
+	var st: Dictionary = start_spec(w)
+	var def := String(st.get("objective_team_def", "x_death_strike"))
+	if Content.unit(def).is_empty():
+		return false
+	var s = _lp().st(w)
+	var anchor := Vector2(w.factions[fid].spawn) if w.factions.has(fid) else Vector2.ZERO
+	if s != null and int(s.get("facility", -1)) >= 0 and w.entities.has(int(s.facility)):
+		anchor = Vector2(w.entities[int(s.facility)].pos)
+	var n := int(st.get("objective_teams", 4))
+	var tag := String(Content.rules().get("lp_profile_coalition", {}).get("loss", {}).get("objective_tag", "lp_obj_team"))
+	for i in n:
+		var p := anchor + Vector2(float((i % 2) * 2 - 1), float((i / 2) * 2 - 1)) * 1.5
+		var id := w.spawn_unit(def, fid, p)
+		var e: Dictionary = w.entities[id]
+		e[tag] = true
+		e.lp_ring = 1
+		e.lp_home = p
 	return true

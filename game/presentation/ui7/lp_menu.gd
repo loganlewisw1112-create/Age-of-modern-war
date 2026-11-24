@@ -110,6 +110,7 @@ static func fmt_time(secs: float) -> String:
 
 
 ## Adds the LAST PROTOCOL button (+ a one-line records summary) to a main-menu container.
+## G10: also adds "Coalition Protocol" which starts the separate shadow_coalition LP defender profile.
 static func add_entry(parent: Control, on_start: Callable, path: String = RECORDS_PATH, records_parent: Control = null,
 		btn: Button = null) -> Button:
 	var b := btn if btn != null else Button.new()
@@ -122,6 +123,14 @@ static func add_entry(parent: Control, on_start: Callable, path: String = RECORD
 		on_start.call(LastProtocol.make_config(seed)))
 	if b.get_parent() == null:
 		parent.add_child(b)
+	var coal_btn := Button.new()
+	coal_btn.name = "CoalitionProtocolButton"
+	coal_btn.text = String(Content.rules().get("lp_profile_coalition", {}).get("menu_label", "Coalition Protocol"))
+	coal_btn.tooltip_text = "Coalition Protocol: Shadow Coalition defends Stage 10 against the Machine (separate LP profile; no CN teams)."
+	coal_btn.pressed.connect(func():
+		var seed2 := int(Time.get_ticks_usec() % 1000000)
+		on_start.call(LastProtocol.make_config(seed2, "", "shadow_coalition")))
+	parent.add_child(coal_btn)
 	var rec := load_records(path)
 	var l := Label.new()
 	l.name = "LastProtocolRecords"

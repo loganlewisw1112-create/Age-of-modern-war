@@ -1,0 +1,126 @@
+{
+  "_meta": "G10 MODE10 Task 19: separate Stage 10 Coalition LP defender profile. Numbers PROVISIONAL. Does not alter canonical Human A LP start.",
+  "rules": {
+    "lp_profile_coalition": {
+      "id": "shadow_coalition",
+      "faction": "shadow_coalition",
+      "stage": 10,
+      "menu_label": "Coalition Protocol",
+      "loss": {
+        "facility_key": "facility",
+        "objective_tag": "lp_obj_team",
+        "ending": "defeat_facility"
+      },
+      "skip_cn": true,
+      "skip_g71_lp_base": true,
+      "skip_fleet71": true,
+      "start": {
+        "facility_def": "x_ghost_complex",
+        "hq_def": "x_safehouse",
+        "power_def": "x_cache",
+        "camera_def": "",
+        "strike_teams": 0,
+        "tactical_squads": 0,
+        "objective_teams": 4,
+        "objective_team_def": "x_death_strike",
+        "vtol_def": "x_stealth_transport",
+        "vtols": 1,
+        "pop_headroom": 60,
+        "army": {
+          "outer": {
+            "x_cell_rifle": 6,
+            "x_cell_at": 3,
+            "x_technical_mg": 2,
+            "x_technical_rocket": 2,
+            "x_technical_aa": 1
+          },
+          "economy": {
+            "x_cell_rifle": 3,
+            "x_cell_sapper": 3,
+            "x_ambush_cell": 2
+          },
+          "core": {
+            "x_death_strike": 2,
+            "x_death_assault": 2,
+            "x_death_recon": 1,
+            "x_shadow_ew": 1,
+            "x_cell_sapper": 2
+          },
+          "air": {
+            "x_silent_rotor": 1
+          }
+        },
+        "helipad_air": [
+          "x_silent_rotor",
+          "x_silent_rotor",
+          "x_patron_cas",
+          "x_stealth_transport"
+        ],
+        "hangar_air": [],
+        "turrets_g7": [],
+        "turret_placeholders": [],
+        "economy_plots": [
+          "x_cache",
+          "x_cache",
+          "x_tunnel_entrance",
+          "x_tunnel_entrance",
+          "x_black_market",
+          "x_broker_exchange",
+          "x_weld_shop",
+          "x_disguised_workshop"
+        ],
+        "core_plots": [
+          "x_underground_barracks",
+          "x_underground_factory",
+          "x_bunker_hatch",
+          "x_forward_repair",
+          "x_patron_office"
+        ],
+        "extra_buildings": [
+          {
+            "def": "x_tunnel_entrance",
+            "near": "facility",
+            "count": 2
+          }
+        ],
+        "machine": {
+          "core_def": "m_core",
+          "bases": [
+            "m_hive_node",
+            "m_nanite_forge",
+            "m_spire",
+            "m_assembler"
+          ],
+          "garrison": {
+            "m_walker": 6,
+            "m_scout_crawler": 8,
+            "m_tracked": 3
+          }
+        }
+      },
+      "plot_remap": {
+        "company_hq": "x_safehouse",
+        "hospital": "x_forward_repair",
+        "a_hospital": "x_forward_repair",
+        "exo_garage": "x_ghost_complex",
+        "a_exo_garage": "x_ghost_complex",
+        "barracks": "x_underground_barracks",
+        "motor_pool": "x_underground_factory",
+        "depot": "x_black_market",
+        "refinery": "x_cache",
+        "generator": "x_cache",
+        "research_station": "x_broker_exchange",
+        "repair_bay": "x_forward_repair",
+        "a_repair_bay": "x_forward_repair",
+        "sam": "x_bunker_hatch",
+        "a_sam_site": "x_bunker_hatch",
+        "radar": "x_patron_office",
+        "a_radar_station": "x_patron_office",
+        "artillery": "x_underground_factory",
+        "a_howitzer_pit": "x_underground_factory",
+        "ciws": "x_bunker_hatch",
+        "a_laser_ciws": "x_bunker_hatch"
+      }
+    }
+  }
+}

@@ -64,7 +64,9 @@ static func _t(secs: float) -> int:
 
 
 ## The match config the menu starts (owner: the LP map is skirmish-locked; cfg.mode lets the guard pass it).
-static func make_config(seed: int, map_id: String = "") -> Dictionary:
+## profile="human_a" (default) must stay byte-equivalent to the pre-G10 Human A LP config. Coalition uses
+## profile="shadow_coalition" and adds cfg.lp_profile (never present on the human_a path).
+static func make_config(seed: int, map_id: String = "", profile: String = "human_a") -> Dictionary:
 	Content.load_all()
 	var c: Dictionary = R().get("config", {})
 	var m := map_id
@@ -72,13 +74,35 @@ static func make_config(seed: int, map_id: String = "") -> Dictionary:
 		m = String(c.get("map", "last_protocol"))
 		if not MapGen.has_map(m):
 			m = String(c.get("fallback_map", "lp_test512"))
-	return {"seed": seed, "map": m, "mode": MODE, "victory": String(c.get("victory", "endless")),
+	var cfg := {"seed": seed, "map": m, "mode": MODE, "victory": String(c.get("victory", "endless")),
 		"ai_difficulty": String(c.get("ai_difficulty", "hard")), "economy": String(c.get("economy", "standard")),
 		"advancement": String(c.get("advancement", "standard")), "start_stock": int(c.get("start_stock", 20000)),
 		"sides": [
 			{"faction": "human_a", "stage": int(c.get("stage", 10)), "credits": int(c.get("credits", 25000)), "ai": false, "name": "You", "team": 0},
 			{"faction": "machine", "stage": int(c.get("stage", 10)), "credits": int(c.get("credits", 25000)), "ai": true, "name": "The Machine", "team": 1},
 		]}
+	if profile == "" or profile == "human_a":
+		return cfg
+	var coal: Dictionary = Content.rules().get("lp_profile_coalition", {})
+	var stage := int(coal.get("stage", c.get("stage", 10)))
+	cfg.lp_profile = "shadow_coalition"
+	cfg.sides[0] = {"faction": "shadow_coalition", "stage": stage, "credits": int(c.get("credits", 25000)),
+		"ai": false, "name": "Coalition", "team": 0}
+	cfg.sides[1].stage = stage
+	return cfg
+
+
+## Active LP defender profile: "human_a" (canonical) or "shadow_coalition".
+static func profile(w: SimWorld) -> String:
+	var p := String(w.cfg.get("lp_profile", ""))
+	if p != "":
+		return p
+	if not active(w):
+		return "human_a"
+	for f in w.factions:
+		if String(w.factions[f].faction_def) == "shadow_coalition":
+			return "shadow_coalition"
+	return "human_a"
 
 
 ## Seeded Weaver window point (pure function of the seed).
@@ -236,17 +260,26 @@ static func tick(w: SimWorld) -> void:
 static func _try_fill(w: SimWorld, s: Dictionary) -> void:
 	if LpSetup.fill_facility(w, int(s.fid)):
 		s.filled = true
-		var g71 := LpSetup.build_g71_late(w, int(s.fid))   # G7.1 wave 2 (ORCH): LP-base additions, after the G7 start entities
-		if not g71.is_empty():
-			s.g71 = g71
+		var coal := profile(w) == "shadow_coalition"
+		var skip_g71 := coal and bool(Content.rules().get("lp_profile_coalition", {}).get("skip_g71_lp_base", true))
+		if not skip_g71:
+			var g71 := LpSetup.build_g71_late(w, int(s.fid))   # G7.1 wave 2 (ORCH): LP-base additions, after the G7 start entities
+			if not g71.is_empty():
+				s.g71 = g71
 		s.fill_tick = w.tick  # the fill's own CnTeamReady events land in this tick's list: not counted twice
-		var st0: Dictionary = R().get("start", {})
-		s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))
-		# F robot fleet: seed on the NORTH outer ring (keep clear of the south sally port / APC apron).
-		# Counts from g71_fleet rules (~70 now, F9 ~150).
-		var outer: Rect2i = s.base.rings[0].rect
-		var fleet_at := Vector2(outer.get_center()) + Vector2(0.5, -float(outer.size.y) * 0.5 + 3.0)
-		var seeded: Array = Fleet71.seed(w, int(s.fid), fleet_at)
+		var st0: Dictionary = LpSetup.start_spec(w)
+		if coal:
+			s.teams_total = int(st0.get("objective_teams", 4))
+		else:
+			s.teams_total = int(st0.get("strike_teams", 2)) + int(st0.get("tactical_squads", 4))
+		var skip_fleet := coal and bool(Content.rules().get("lp_profile_coalition", {}).get("skip_fleet71", true))
+		var seeded: Array = []
+		if not skip_fleet:
+			# F robot fleet: seed on the NORTH outer ring (keep clear of the south sally port / APC apron).
+			# Counts from g71_fleet rules (~70 now, F9 ~150).
+			var outer: Rect2i = s.base.rings[0].rect
+			var fleet_at := Vector2(outer.get_center()) + Vector2(0.5, -float(outer.size.y) * 0.5 + 3.0)
+			seeded = Fleet71.seed(w, int(s.fid), fleet_at)
 		s.fleet_n = seeded.size()
 		w.emit("LpFacilityReady", {"teams": s.teams_total, "fleet": seeded.size()})
 
@@ -1310,6 +1343,11 @@ static func _regrow(w: SimWorld, s: Dictionary) -> void:
 static func facility_alive(w: SimWorld, s: Dictionary) -> bool:
 	if int(s.facility) >= 0 and w.entities.has(int(s.facility)):
 		return true
+	if profile(w) == "shadow_coalition":
+		var fac_def := String(LpSetup.start_spec(w).get("facility_def", "x_ghost_complex"))
+		for b in w.buildings_of(int(s.fid), fac_def):
+			return true
+		return false
 	var cnf = load(CNF_PATH)
 	return cnf != null and L.api(cnf, "facilities") and not (cnf.callv("facilities", [w, int(s.fid)]) as Array).is_empty() \
 		and int(s.facility) < 0
@@ -1317,8 +1355,11 @@ static func facility_alive(w: SimWorld, s: Dictionary) -> bool:
 
 static func teams_in_field(w: SimWorld, s: Dictionary) -> int:
 	var n := 0
+	var tag := "cn_team"
+	if profile(w) == "shadow_coalition":
+		tag = String(Content.rules().get("lp_profile_coalition", {}).get("loss", {}).get("objective_tag", "lp_obj_team"))
 	for e in w.units_of(int(s.fid)):
-		if e.has("cn_team"):
+		if e.has(tag):
 			n += 1
 	return n
 
