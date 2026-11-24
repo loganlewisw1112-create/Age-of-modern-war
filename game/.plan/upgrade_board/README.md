@@ -1,6 +1,6 @@
 # UP71 permanent semantic messaging board
 
-Standing OS for G7.1 lock → G8 → G9 → G10+. Append-only JSONL: `board.jsonl` (one JSON object per line).
+Standing OS for G7.1 lock → G8 → G9 → **Pre-G10** → G10+. Append-only JSONL: `board.jsonl` (one JSON object per line).
 
 ## Protocol
 
@@ -27,21 +27,37 @@ Every agent **must** post before starting work, on progress, and on handoff.
 6. Guidebook README voice on every ship.
 7. Execution is **local** with parallel board agents. Cloud is off unless ORCH farms a non-perf draft.
 
-### Active roster (UP71 Stage A→C)
+### Active roster (UP71 Stage D — Pre-G10 Depth Bridge)
+
+Frozen scope: `game/docs/PRE_G10_SCOPE.md` · plan: `docs/superpowers/plans/2026-11-23-pre-g10.md`
+
 | ID | Role |
 |----|------|
-| ORCH | Dispatch, integrate, suite/soak, commit, package, README currency, push |
-| PEAK60 | Frame budget: static records, invisible LOD, HUD cull, native-if-wins |
-| POLISH71 | Latch/jammer, body-piles, Glass thermal/rain, fleet ~150 UX |
-| VERIFY71 | Full suite + hash + soaks + Done-when evidence packs |
-| ROT8 | View rotation (G8) |
-| ART8 | 4-side art generators (G8) |
-| ANIM8 | Animation overhaul (G8) |
-| PRES8 | Director PiP, reel, creep timelapse (G8) |
-| HIVE9 | Machine overhaul (G9) |
-| COUNT9 | Thirteen counters (G9) |
-| COMBAT9 | Destructible terrain, ballistics, EW, forts, crews (G9) |
-| SKIRM9 | LP hive → skirmish (G9) |
+| ORCH | Dispatch, integ, smoke, soak, commit, package, README, push |
+| PEAK60 | Remeasure each integ; no feature work unless FPS regress |
+| HIVE9+ | Machine art ≥60, modular/evolve depth, glow |
+| COUNT9+ | 13 counters play-paths + coalitions bridge (AI9 calls public API only) |
+| COMBAT9+ | Forts, EW depth, crews/breakdown, ballistics breadth |
+| SKIRM9+ | Skirmish setup `director_adapt` toggle, siege attack-move |
+| AI9 | Adapt, named generals, diplomacy, intel-diff, CoC ops |
+| ECON9 | Resources, trade, territory/civ, research, black market, upgrades |
+
+Serialize **D2 AI9 ↔ D3 ECON9** on diplomacy + Machine-coalition seam (`count9.gd` coalitions owned by COUNT9+).
+
+### Historical roster (Stages A–C — closed)
+
+| ID | Role | Stage |
+|----|------|-------|
+| POLISH71 | Latch/jammer, body-piles, Glass, fleet UX | A |
+| VERIFY71 | Full suite + hash + soaks | A |
+| ROT8 | View rotation | B |
+| ART8 | 4-side art generators | B |
+| ANIM8 | Animation overhaul | B |
+| PRES8 | Director PiP, reel, creep timelapse | B |
+| HIVE9 | Machine thin vertical (G9) | C |
+| COUNT9 | Thirteen counters thin (G9) | C |
+| COMBAT9 | Terrain, ballistics thin (G9) | C |
+| SKIRM9 | Tide siege / director_adapt flag (G9) | C |
 
 ### Ship cadence
 HANDOFF → ORCH verify → README refresh → commit → `package_g71.ps1` → push → FACT `ship.<sha>` + `readme.synced`.
