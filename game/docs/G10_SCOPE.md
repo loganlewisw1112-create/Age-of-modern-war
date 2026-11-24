@@ -59,6 +59,68 @@ their current Stage 7–10 availability and wait for G14.
     hidden/revealed states, stage-band silhouettes, exo shimmer/battery tells, and owner look checkpoints before bulk
     rollout.
 
+## Ghost Wing (owner freeze)
+
+The following depth is **owner-approved G10 scope**, not an optional idea pool. It deepens the Ghost Exo Programme
+authority linked below while retaining its AI-first, intent-thin controls and fair-counter rule. The implementation
+lock remains OPEN. The art-facing contract is `game/docs/G10_GHOST_LOOK.md`.
+
+### Approved capability ledger
+
+- **Batch A:** **3** black-budget modular suits (sensor/breach/net/EMP hardpoints); **4** no-witness radio/camera
+  suppression with a bounded false-IFF window and readable aftermath; **5** blood-debt suit recovery (loss raises
+  replacement cost/unseal delay); **7** a **hardened Conductor** whose redundant mesh requires a staged
+  EMP → breach → execute takedown and degrades to local autonomy rather than making operators helpless; **9**
+  door-kick micro-drones; **10** relay-perching wiretap drones; **13** Silent Rotor quiet insertion → one-way ugly
+  gunship extraction flip; **14** Mole multipath insertion, alternate exit and tunnel-collapse choice; **15** remotely
+  tethered Ghost Runner; **17** Exo Mule Guardian combat posture; **20** soft/hard/collapse breach-charge choices;
+  **21** EMP scalpel with strong Machine disable and weak human effect; **22** backdoor rounds/spikes restricted to
+  compromised Syndicate-sold hardware; **24** hidden hatch-only Ghost wing/vault suit bay; **25** adaptive kill-house
+  that trains against the last failure; **26** briefing crypt that commits the match doctrine; **27** suit reliquary
+  that turns recovered technology into bounded upgrades; **28** Recon/Surgical/Atrocity patron contract tiers;
+  **29** map heat that escalates defender dogs, AA and thermal readiness without stat cheats; **30** false-flag
+  attribution with evidence, exposure risk and lasting diplomatic consequence; **32** a full Counter-Ghost corps,
+  including deeper spider/Reaper play and explicit anti-drone counters.
+- **Batch B:** **37** many-kneed spider drones that wall/ceiling crawl, enter hatches, plant limpets and cut power;
+  **38** rotorless Reaper stealth drones with silent manta/knife loiter and designation; **40** pad-only Reaper
+  magazine modes (recon camera / EMP dart / backdoor spike / thermite seed); **41** repairable honeycomb Nest racks
+  whose destruction is a priority raid; **44** Guardian Mule last-denial overcharge that telegraphs before destroying
+  suit cores when its squad is lost; **47** contract escalation requiring successful Surgical work before Atrocity
+  can unlock False Flag; **49** Human A spider-killers using bright flechette, sticky-foam and ultrasonic bots, with
+  readable removal and recovery counterplay.
+- **Batch C — exos:** **52** hardened joints resist foam/net/limb disable but do not grant immunity; **53** redundant
+  battery enables a reserve-cell swap with a brief shimmer tell; **56** Judge is a fragile backdoor/turret-seizure
+  specialist; **57** Warden is a defensive Assault that opens a temporary micro-bunker/kill corridor; **58** Shade is
+  a light Recon designator and remote Mole-door operator with no heavy-fire role; **59** Pack hierarchy gives one
+  Sergeant mesh leadership over three juniors and transfers camo discipline, with graceful degradation on leader
+  loss; **60** Execution stance converts a secured downed officer/HVT into intel at a major heat cost, with no gore;
+  **63** Mk I→III follows the stage bands—riveted scavenged prototypes in 1–6, standardized Ghosts through 7–10,
+  dual-hardpoint/Conductor-mesh Mk III in 11–13; **64** named aces gate as **3 early → +6 along the way → final
+  campaign unlock**. G10 implements skirmish-era availability and data/art hooks; G15 maps those beats to campaign
+  chapters and owns the final campaign unlock.
+
+Capabilities remain mutually constrained: hardpoints conflict, toolkit choices displace combat options, camo drains
+power, louder armour/transform states expose the force, Atrocity/Execution/False Flag create heat, and blood debt
+makes abandoning suits strategically expensive. The Conductor chooses packages from intel, route, workshop, contract,
+heat and recovery state; these are not unconditional stacked buffs.
+
+### Owner-frozen visual language
+
+- Palette is **void charcoal, bruised purple-black, cold bone and a patron-gold debt pinstripe**. Camo is an
+  oil-slick/heat-shimmer distortion, never chrome. Ghost Wing is unnervingly clean beside ragged Coalition cells.
+- Shared exos are upright, oversized-shoulder and no-face. Judge has thin arms/antenna crown/key bracer; Warden has
+  heavy greaves/back shield petals; Shade has long limbs/cloak panels/minimal weapon bulk; Sergeant has a short mast
+  and twin mesh nodes. Mk I is riveted, Mk II factory-smooth, Mk III gains dual-hardpoint “angel” wings and Conductor
+  lace. Aces use one heraldry scar/gold debt numeral, never a faction-wide palette swap.
+- Vehicles read as beetle-smooth Silent Rotor becoming an ugly blistered gunship, mud-caked drill-coffin Mole, low
+  windshieldless Runner wedge, spider-legged Guardian Mule and Stealth APC civilian-truck lie over ribbed armour.
+- Drones read as too-many-kneed spiders, rotorless Reaper manta/knives, honeycomb Nest racks and deliberately bright,
+  stubby Counter-Ghost foam bots.
+- Buildings read as hatch/vent-only Ghost Wing, visibly adaptive kill-house, chapel-brutalist briefing crypt,
+  reliquary glass coffins and controlled darkness, contrasting with neon-under-tarp cell markets.
+- Team colour is debt stripe/armband only—**never full-body team paint on Ghosts**. Four-facing silhouettes, icons,
+  hidden/revealed states, camo tears, transforms and counter tells must remain readable without colour alone.
+
 ## Explicitly out
 
 - Inheritance campaign, Hunter chapter memory/build-up, Living World and Orbit/space roster.
@@ -86,9 +148,12 @@ their current Stage 7–10 availability and wait for G14.
 7. Buy/steal/unseal are the only Coalition tech acquisition paths. Automated denial tests cover normal research and
    counter-nanites through build, market, capture, editor/load and difficulty overrides.
 8. Ghost Exo G10 packages run end-to-end: mission card → intel/workshop gate → package → insertion/approach/action/
-   exfil → hot wash/echo. Death, Shadow and Anchor all participate; camo counters and suit recovery work.
+   exfil → hot wash/echo. Death, Shadow and Anchor all participate; camo counters and suit recovery work. The
+   Conductor demonstrably selects from approved IDs **3, 4, 5, 7, 9, 10, 20, 21, 22, 28, 29, 30, 47, 52, 53,
+   56–60, 63 and 64** without stacking incompatible kit or bypassing intel/heat/workshop constraints.
 9. Human A Counter-Ghost Corps can detect, intercept, disable, strip and recover a Coalition suit in a focused
-   counterplay scenario; it remains weaker than equivalent Coalition exos.
+   counterplay scenario; it remains weaker than equivalent Coalition exos. Spider-killers visibly clear spider
+   drones with flechette/foam/ultrasonic tools; hardened joints resist but do not nullify that counter.
 10. Coalition AI completes one cell-feint/merc-screen/elite-strike operation and one retreat/exfil under pressure.
     Easy/Normal/Hard change decision quality and pressure only; tests prove no Coalition resource/HP/damage multiplier.
 11. Coalition starts and completes a skirmish at Stages 3, 8 and 12, and the separate Stage 10 Coalition LP defender
@@ -96,7 +161,9 @@ their current Stage 7–10 availability and wait for G14.
 12. Blackout, Hollow Ground, Mirror Fortress and Dead Radio have explicit tells/counters and appear in one packaged
     doctrine soak; no unselected dark option ships.
 13. Owner look checkpoints approve: (a) raider + technical + hidden structure, (b) Death + patron vehicle + late
-    prototype, then the complete four-facing catalog.
+    prototype, then the complete four-facing catalog. The catalog also passes `G10_GHOST_LOOK.md`: role/Mk/ace
+    silhouettes, oil-slick camo, vehicle flips, spider/Reaper/Nest states, bright counter bots and debt-stripe-only
+    team colour.
 14. Expanded G10 smoke and full suite report **0 FAIL / 0 SCRIPT ERROR**; two-run hashes match on touched deterministic
     scenarios; AI-vs-AI and 100+ squad soaks have no invariant failure.
 15. Package launches from a clean folder; root `README.md` and `PLAY_ME` describe G10; upgrade_board records claims,

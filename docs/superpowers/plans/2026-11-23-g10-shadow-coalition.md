@@ -66,6 +66,36 @@ case; permanent upgrade board at `game/.plan/upgrade_board/`; package script `ga
   buildings. Production rows, company templates, art aliases and rules do not inflate the count.
 - **Owner look gates:** approve a six-subject sample before bulk art, then approve the complete catalog before lock.
 
+## Owner-frozen Ghost Wing expansion
+
+This section is additive to the Ghost Exo spec and is required by `game/docs/G10_SCOPE.md`. Art agents must also read
+`game/docs/G10_GHOST_LOOK.md`. These capabilities are package choices with costs, incompatibilities and tells—not a
+flat stack of buffs.
+
+- **Batch A:** **3** modular black-budget suits; **4** bounded no-witness comms/camera suppression and false IFF;
+  **5** blood-debt recovery/economic loss; **7** hardened, redundant Conductor with EMP → breach → execute takedown;
+  **9** door-kick micro-drones; **10** wiretap drones; **13** Silent Rotor quiet-to-gunship flip; **14** Mole
+  multipath/alternate exit/collapse; **15** tethered remote Ghost Runner; **17** fighting Guardian Mule; **20**
+  soft/hard/collapse breach charges; **21** Machine-focused EMP scalpel; **22** backdoor ammunition/spikes against
+  compromised Syndicate-sold hardware; **24** hatch-only Ghost wing/vault bay; **25** adaptive kill-house; **26**
+  doctrine-locking briefing crypt; **27** stolen-tech suit reliquary; **28** Recon/Surgical/Atrocity contracts;
+  **29** escalating alert heat; **30** evidence-bearing false flag; **32** Counter-Ghost corps plus spider/Reaper
+  depth.
+- **Batch B:** **37** wall/ceiling/hatch spider drones; **38** rotorless Reaper stealth manta; **40** pad-only
+  Reaper magazines (recon / EMP / backdoor / thermite); **41** honeycomb Nest repair rack; **44** telegraphed
+  Guardian Mule denial overcharge; **47** Surgical-success contract escalation before Atrocity/False Flag; **49**
+  bright Human A flechette/foam/ultrasonic spider-killers.
+- **Batch C:** **52** hardened joints; **53** redundant battery with swap shimmer; **56** Judge; **57** Warden;
+  **58** Shade; **59** Sergeant-led Pack hierarchy; **60** HVT/officer Execution stance trading intel for heat;
+  **63** Mk I→III stage progression; **64** named aces as **3 early → +6 along the way → final campaign unlock**.
+  G10 owns skirmish-era gating and content/art hooks; G15 owns campaign chapter mapping and final campaign unlock.
+
+**Required constraints:** Conductor packages are gated by intel, workshop, suits, contract tier, heat and recovery
+state; hardpoints/toolkits conflict; blood debt punishes suit abandonment; hardened systems degrade rather than grant
+immunity; executions are non-gory and consequential; false flags carry discoverable evidence. Explicitly unpicked
+ideas **1, 2, 6, 8, 11, 12, 16, 18, 19, 23, 31, 33–36, 39, 42, 43, 45, 46, 48, 50, 51, 54, 55, 61, 62 and 65**
+are not required G10 work and may not enter implementation except through a later owner-approved scope revision.
+
 ## Authoritative Stage 7–10 roster manifest (61 core definitions)
 
 The roster task may tune names shown to players, but these IDs and roles are the cross-pillar contract.
@@ -99,6 +129,7 @@ Stage-band additions live in separate files and do not weaken the 61-core-defini
 
 **Scope, content and registration**
 - Modify: `game/docs/G10_SCOPE.md` at Task 0 (review draft → frozen) and final lock (frozen → closed).
+- Authority: `game/docs/G10_GHOST_LOOK.md` — owner-frozen Ghost Wing visual language; art agents do not rewrite it.
 - Modify: `game/sim/content.gd` — add sorted `res://content/g10` fragment directory.
 - Modify: `game/content/factions.json` — add `shadow_coalition` identity, role map, start units and stage roles.
 - Modify: `game/content/stages.json` only for metadata; never set deferred stages globally playable.
@@ -372,8 +403,15 @@ static func production_reason(w: SimWorld, building_id: int) -> String
 - [ ] **Step 3:** Implement hatch damage as access/production penalty; destroying the underground entity still requires
   direct damage/capture, not an imported UNDERSTRIKE floor simulation.
 - [ ] **Step 4:** Run building suite; expected all PASS and save/load preserves revealed observers and underground HP.
+- [ ] **Step 5:** Deepen the Ghost complex with approved **24–27** as bounded modules: hatch-only Wing/vault suit bay;
+  adaptive kill-house keyed to the last failed-op record; briefing crypt with one committed match doctrine; suit
+  reliquary that consumes recovered tagged technology for an allow-listed non-stacking exo upgrade.
+- [ ] **Step 6:** Add attack/readability tests for hatch/vent discovery, changed kill-house layout, committed doctrine
+  lock, displayed/consumed reliquary parts and the neon-under-tarp black-market versus dark Ghost-site contrast.
 
-**Acceptance:** Coalition base identity is hidden/underground without stealing Human A's bunker system.
+**Acceptance:** Coalition base identity is hidden/underground without stealing Human A's bunker system. Ghost modules
+have distinct strategic jobs and counterplay; no module creates an UNDERSTRIKE floor, hidden free research or an
+unbounded permanent upgrade path.
 
 ### Task 8: Six-subject look checkpoint, then complete art
 
@@ -396,8 +434,20 @@ static func production_reason(w: SimWorld, building_id: int) -> String
 - [ ] **Step 4:** Add tests for catalog coverage, four facings, non-empty dimensions, team-colour masks and distinct
   hidden/revealed assets.
 - [ ] **Step 5:** Run content/art audit; expected `orphan_art=0`. Record final owner look approval before Task 20.
+- [ ] **Step 6:** Generate the owner-frozen Ghost set: Base/Judge/Warden/Shade/Sergeant, Mk I/II/III bands and nine
+  progressive ace identities; preserve the shared no-face/oversized-shoulder grammar while making role, Mk and ace
+  readable without UI labels.
+- [ ] **Step 7:** Generate state sheets for oil-slick camo at rest/walk/sprint/fire/hit, redundant-battery swap,
+  hardened joints, execution stance and Warden shield deployment. Camo is never chrome.
+- [ ] **Step 8:** Generate vehicle/drone/building state sheets: Silent Rotor → ugly gunship; Mole coffin; Runner wedge;
+  Guardian Mule normal/guardian/overcharge; Stealth APC civilian lie; spider crawl/hatch/limpet; rotorless Reaper and
+  four magazine modes; Nest occupancy/damage; hatch-only wing; adaptive kill-house; briefing crypt; reliquary.
+- [ ] **Step 9:** Contact sheets place too-clean Ghosts beside ragged cells and bright Counter-Ghost foam bots. Audit
+  enforces debt-stripe/armband-only team colour and rejects full-body team paint.
 
 **Acceptance:** readable silhouettes by stage/role and no placeholder/missing Coalition art in the final package.
+The complete catalog independently identifies Judge/Warden/Shade/Sergeant, all Mk bands, ace debt numerals, each
+transform/magazine/camo state and every fair-counter tell under `G10_GHOST_LOOK.md`.
 
 ---
 
@@ -478,8 +528,15 @@ static func settle_pay(w: SimWorld, fid: int) -> void
   ordinary market pricing.
 - [ ] **Step 3:** Patron air/drone/adviser support must expire or renew on contract timer; no permanent free call-in.
 - [ ] **Step 4:** Run mechanics and `test_econ9`; expected all PASS.
+- [ ] **Step 5:** Implement approved contract chain **28/47**: Recon → Surgical → Atrocity; Atrocity and False Flag
+  remain unavailable until the configured number of successful Surgical contracts. Failures, late pay and exposure
+  can regress access.
+- [ ] **Step 6:** Implement approved heat/false-flag depth **29/30**: Ghost overuse, Execution and Atrocity increase
+  alert readiness (dogs/AA/thermal coverage, never free HP/damage); false flags create attributable evidence,
+  exposure risk and a deterministic diplomacy/grudge result.
 
-**Acceptance:** money/favour buys flexibility, and failure to pay is a strategic liability.
+**Acceptance:** money/favour buys flexibility, and failure to pay is a strategic liability. Contract escalation is
+earned, high heat changes defender preparedness without cheats, and every false flag can be uncovered and attributed.
 
 ### Task 12: Capture, refit and weld-shop packages
 
@@ -564,8 +621,23 @@ static func hot_wash(w: SimWorld, squad_id: int) -> Dictionary
   races.
 - [ ] **Step 5:** Implement cohesion behavior modifiers and readable movement/AAR text, with no mandatory meter.
 - [ ] **Step 6:** Run ghost suite twice; expected PASS and matching hashes.
+- [ ] **Step 7:** Add approved chassis state: modular black-budget hardpoints **3** with sensor/breach/net/EMP conflicts;
+  blood debt **5** that raises replacement cost/unseal delay after an unrecovered loss; hardened joints **52** that
+  reduce—but never cancel—foam/net/limb disable; redundant battery **53** whose cell swap produces a detection
+  shimmer.
+- [ ] **Step 8:** Add approved role forms: Judge **56** (backdoor rounds/spikes and turret seizure, fragile), Warden
+  **57** (temporary micro-bunker/kill corridor), Shade **58** (Reaper designation and remote Mole doors, no heavy
+  weapon), and Sergeant/Pack **59** (one leader, three juniors, inherited camo discipline and graceful leader-loss
+  degradation).
+- [ ] **Step 9:** Add Execution stance **60** as a secured-down-HVT/officer action: interruptible, non-gory, yields
+  bounded intel and raises heat. It cannot target ordinary casualties or bypass capture/ROE consequences.
+- [ ] **Step 10:** Gate Mk progression **63** by faction stage: Mk I scavenged/riveted at 6–8, Mk II integrated at
+  9–10, Mk III dual-hardpoint/Conductor mesh at 11–13. Add nine ace records **64** in three availability cohorts
+  (three early, six progressive, final campaign-hook cohort) without per-unit XP bloat; G15 supplies chapter mapping.
 
-**Acceptance:** Packages A–D/G baseline work in sim and remain intent-thin to the player.
+**Acceptance:** Packages A–D/G baseline work in sim and remain intent-thin to the player. Tests prove every approved
+chassis/role has a cost, incompatibility or counter; loss/leader/battery states survive save/load; Mk/ace gates cannot
+leak into earlier stages; hardened joints never make Counter-Ghost tools irrelevant.
 
 ### Task 15: Conductor, intel gate and 11-stage mission lifecycle
 
@@ -595,8 +667,22 @@ static func mission(w: SimWorld, mission_id: int) -> Dictionary
 - [ ] **Step 5:** Build Ghost Command flow: mission card + target + ROE + Execute; Advanced exposes stance, abort
   threshold, Legend pin and learned-habits panel.
 - [ ] **Step 6:** Run one end-to-end QuietDecap test through echo and save/load at every phase.
+- [ ] **Step 7:** Harden the Conductor **7** as a distributed mission asset: redundant mesh and armoured mast require
+  detected target → EMP disruption → breach → execute. Loss degrades package coordination and forces local squad
+  doctrine; it never turns veteran Ghosts into inert “dumb solos.”
+- [ ] **Step 8:** Extend package selection across approved choices **3, 4, 5, 20–22, 28–30, 47, 52–60, 63–64**.
+  Selection must explain intel grade, hardpoint/toolkit conflicts, contract tier, heat, workshop capacity, recovery
+  debt and route; impossible combinations return a reason instead of silently stacking.
+- [ ] **Step 9:** Implement no-witness **4** as bounded radio/camera suppression with a temporary false-IFF window,
+  explicit anomaly/after-action evidence and no player-command spoofing. False Flag **30** is a strategic attribution
+  layer over that evidence, not magical diplomacy.
+- [ ] **Step 10:** Add doctrine/building gates **24–27**: hatch-only wing/vault bay, adaptive kill-house learning from
+  the last recorded failure, briefing-crypt match doctrine commitment and reliquary conversion of recovered tech into
+  allow-listed, non-stacking suit upgrades.
 
-**Acceptance:** Packages E–G/J skirmish slice executes seamlessly under AI or Coalition intent cards.
+**Acceptance:** Packages E–G/J skirmish slice executes seamlessly under AI or Coalition intent cards. A package audit
+shows why each approved component was chosen/rejected; staged Conductor takedown is fair and consequential; suppression
+and false flags leave counter-evidence; building-derived upgrades cannot bypass buy/steal/unseal or exclusion tags.
 
 ### Task 16: Ghost insertion, support and recovery vehicles
 
@@ -615,8 +701,24 @@ static func mission(w: SimWorld, mission_id: int) -> Dictionary
   burrower naming/logic.
 - [ ] **Step 3:** Implement Anchor supply/recovery priority, grounded-suit workshop queue and intact-suit race.
 - [ ] **Step 4:** Run lifecycle tests for ground, air, tunnel and wet insert/exfil; expected all PASS.
+- [ ] **Step 5:** Implement Silent Rotor flip **13** as quiet insertion followed by a one-way, high-signature gunship
+  extraction state; its open weapons and detection cost remain through the operation.
+- [ ] **Step 6:** Implement Mole multipath **14** with primary/alternate exit and optional collapse-behind choice;
+  implement tethered Runner **15** with remote-driver ownership, range/link loss and recovery rules.
+- [ ] **Step 7:** Implement Guardian Mule **17/44** with supply, fighting posture and last-denial overcharge. Overcharge
+  only arms after squad loss/abandonment, has a readable delay and destroys carried suit cores rather than becoming a
+  generic area-damage bomb.
+- [ ] **Step 8:** Add support-drone operations **9/10/37/38/40/41**: door-kick clear/mark, bounded relay wiretap,
+  spider wall/ceiling/hatch/limpet/power actions, Reaper loiter/designation, pad-only magazines and Nest
+  repair/replenishment. Magazine swaps and Nest destruction are saved deterministic states.
+- [ ] **Step 9:** Add approved kit **20–22** to vehicle/drone packages: soft/hard/collapse breach charges, narrow EMP
+  scalpel strong against Machine and weak against humans, and backdoor spikes/rounds that validate compromised
+  Syndicate-sold provenance.
 
-**Acceptance:** the approved vehicle list has operational purpose in the Conductor rather than decorative defs.
+**Acceptance:** the approved vehicle/drone list has operational purpose in the Conductor rather than decorative defs.
+Ground, air, tunnel and drone lifecycle tests exercise every transformed state, route choice, magazine and denial
+path; all loud/armed/destructive transitions have warnings and counters; provenance prevents backdoor kit becoming a
+universal disable.
 
 ### Task 17: Human A Counter-Ghost full corps
 
@@ -641,8 +743,19 @@ static func mission(w: SimWorld, mission_id: int) -> Dictionary
 - [ ] **Step 4:** Add one focused scenario: detect → intercept → disable → strip → recover; add failure cases for late
   strip and lost recovery race.
 - [ ] **Step 5:** Run Counter-Ghost, Ghost and existing exo/CN suites; expected all PASS.
+- [ ] **Step 6:** Implement Counter-Ghost expansion **32/49**: bright spider-killer bots carry flechette wall-clear,
+  sticky foam and ultrasonic peel modes. They reveal/remove spiders and contest Nest approaches; they do not receive
+  Coalition camo, Reaper or suit technology.
+- [ ] **Step 7:** Test spider/Reaper depth as an action-counter loop: crawl/perch/limpet/wiretap/designate → detect →
+  foam/ultrasonic/flechette clear → Ghost rescue/re-route. Hardened joints **52** shorten/mitigate foam effects on
+  exos but do not protect drones or grant immunity.
+- [ ] **Step 8:** Extend the focused scenario with Judge backdoor threat, Warden corridor, Shade designation,
+  Sergeant-loss degradation, Guardian Mule denial and a recovered ace/Mk suit. Human A must win through coordinated
+  detection and recovery, not superior raw exo stats.
 
 **Acceptance:** Human A has a complete, comprehensible counterplay corps without inheriting Coalition superiority.
+Bright counter bots make spider removal readable; every Ghost drone/exo role has at least one Human A response; the
+end-to-end scenario proves disable/strip/recover remains possible against hardened joints and protected recovery.
 
 ---
 
@@ -863,8 +976,11 @@ Suggested execution commits:
 - [ ] Buy/steal/unseal and no normal research — Task 13.
 - [ ] No Coalition counter-nanites through every ingress — Tasks 12–13.
 - [ ] Buildings hidden/underground/market/vault/Ghost — Task 7.
+- [ ] Owner-frozen Ghost IDs 3/4/5/7/9/10/13/14/15/17/20/21/22/24/25/26/27/28/29/30/32 — Tasks 7–8, 11, 14–16.
+- [ ] Owner-frozen drone/counter IDs 37/38/40/41/44/47/49 — Tasks 8, 11, 16–17.
+- [ ] Owner-frozen exo IDs 52/53/56/57/58/59/60/63/64 — Tasks 8, 14–17.
 - [ ] Ghost Packages A–G/J skirmish rows; Death/Shadow/Anchor — Tasks 14–16.
-- [ ] Human A full Counter-Ghost corps — Task 17.
+- [ ] Human A full Counter-Ghost corps and spider-killer action/counter loop — Task 17.
 - [ ] Coalition super-intelligent/no-cheat doctrine — Task 18.
 - [ ] Coalition-only skirmish stages + separate LP profile — Tasks 2, 19.
 - [ ] Selected Blackout/Hollow Ground/Mirror Fortress/Dead Radio only — Tasks 9, 20.
