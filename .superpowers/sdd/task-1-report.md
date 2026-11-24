@@ -68,4 +68,5 @@ At 150 seconds: `eaten=1`, `nanite=0.4`, `evolve=1`, `modular_events.merge=1`. F
 
 ## Commits
 
-Implementation and board handoff commit hashes are recorded in the final HIVE9+ board entries and task response.
+- Implementation: `959e98e1` (`feat: deepen HIVE9 catalog and replication`)
+- Board handoff: recorded in the task response after the final board commit.
