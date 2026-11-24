@@ -1,5 +1,6 @@
 extends RefCounted
 ## G7.1 H11 captured machine study: contain a disabled machine in the lab for a tech reward, with breakout risk.
+## G10 MECH10: Coalition forbidden-capture deny matrix (counter-nanite / UNDERSTRIKE / builders).
 ## Numbers PROVISIONAL.
 
 const KEY := "capture71"
@@ -12,6 +13,44 @@ static func R() -> Dictionary:
 	return c if c is Dictionary else {}
 
 
+static func WeldR() -> Dictionary:
+	var c = Content.rules().get("g10_weld", {})
+	return c if c is Dictionary else {}
+
+
+## Shared deny for Coalition capture / weld / salvage — never grants CN or UNDERSTRIKE builders.
+static func coalition_forbidden_reason(def_id: String) -> String:
+	var id := String(def_id)
+	if id == "":
+		return ""
+	var forbidden_defs: Array = WeldR().get("forbidden_defs", [
+		"g7_cn_suit", "g7_cn_builder", "understrike_builder", "mb_borer",
+	])
+	if forbidden_defs.has(id):
+		return "def:%s" % id
+	var tags: Array = WeldR().get("forbidden_tags", [
+		"counter_nanite", "understrike_builder", "mb_borer", "human_a_only",
+	])
+	var ud: Dictionary = Content.unit(id)
+	if ud.is_empty():
+		ud = Content.building(id)
+	for t in tags:
+		var tag := String(t)
+		if bool(ud.get(tag, false)):
+			return "tag:%s" % tag
+		var utags = ud.get("tags", [])
+		if typeof(utags) == TYPE_ARRAY and utags.has(tag):
+			return "tag:%s" % tag
+		if id.contains(tag) or id.begins_with("g7_cn") or id.contains("counter_nanite"):
+			if tag == "counter_nanite" and (id.begins_with("g7_cn") or id.contains("counter_nanite")):
+				return "tag:counter_nanite"
+	if id.begins_with("g7_cn") or id.contains("counter_nanite"):
+		return "tag:counter_nanite"
+	if id.contains("understrike"):
+		return "tag:understrike_builder"
+	return ""
+
+
 static func active(w: SimWorld) -> bool:
 	return w.sys_state.has("lp")
 
@@ -19,21 +58,45 @@ static func active(w: SimWorld) -> bool:
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "cage": null, "study_left": 0, "rewarded": false, "breakouts": 0}
+		s = {"ver": VER, "cage": null, "study_left": 0, "rewarded": false, "breakouts": 0, "g10_claims": {}}
 		w.sys_state[KEY] = s
+	if not s.has("g10_claims"):
+		s.g10_claims = {}
 	return s
 
 
 static func board(w: SimWorld) -> Dictionary:
-	if not active(w):
+	if not active(w) and not w.sys_state.has(KEY):
+		return {}
+	if not w.sys_state.has(KEY):
 		return {}
 	var s := _st(w)
-	return {
+	var out := {
 		"caged": s.cage != null,
 		"study_left": int(s.get("study_left", 0)),
 		"rewarded": bool(s.get("rewarded", false)),
 		"breakouts": int(s.get("breakouts", 0)),
 	}
+	if (s.get("g10_claims", {}) as Dictionary).size() > 0:
+		out["g10_claims"] = (s.g10_claims as Dictionary).size()
+	return out
+
+
+## G10: record a Coalition claim attempt; forbidden defs become salvage markers only.
+static func coalition_claim(w: SimWorld, fid: int, entity_id: int) -> String:
+	var e = w.entities.get(entity_id)
+	if e == null:
+		return "No entity."
+	var def := String(e.get("def", e.get("from_def", "")))
+	var deny := coalition_forbidden_reason(def)
+	var s := _st(w)
+	if deny != "":
+		s.g10_claims[str(entity_id)] = {"fid": fid, "def": def, "forbidden": deny, "tick": w.tick}
+		w.emit("Capture71CoalitionDenied", {"fid": fid, "id": entity_id, "def": def, "reason": deny})
+		return "Forbidden: %s" % deny
+	s.g10_claims[str(entity_id)] = {"fid": fid, "def": def, "forbidden": "", "tick": w.tick}
+	w.emit("Capture71CoalitionClaim", {"fid": fid, "id": entity_id, "def": def})
+	return ""
 
 
 static func validate_command(w: SimWorld, cmd: Dictionary) -> String:

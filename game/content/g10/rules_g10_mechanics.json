@@ -1,0 +1,100 @@
+{
+  "_meta": "G10 Shadow Coalition mechanics rules. Numbers PROVISIONAL.",
+  "rules": {
+    "g10_tunnels": {
+      "travel_ticks_per_cell": 4,
+      "min_travel_ticks": 20,
+      "capacity": 6,
+      "collapse_damage_frac": 0.35,
+      "collapse_delay_ticks": 30,
+      "hollow_tell_ticks": 40,
+      "cache_ammo": 40,
+      "cache_fuel": 20,
+      "dead_zone_blocks": true
+    },
+    "g10_civilians": {
+      "disguise_break_on": ["sprint", "fire", "hostile", "detector"],
+      "sleeper_cannot_capture_while_disguised": true,
+      "shock_raid_intent": "shock_raid",
+      "civ_harm_on_break": 1
+    },
+    "g10_ieds": {
+      "kinds": ["roadside", "building", "drone"],
+      "triggers": ["proximity", "timer", "remote"],
+      "blast_radius": 2.5,
+      "damage": 55,
+      "civ_harm_on_friendly_blast": 2,
+      "disarm_roles": ["engineer", "recon", "sapper"]
+    },
+    "g10_patron": {
+      "favour_per_territory": 2,
+      "favour_per_loot": 1,
+      "pay_window_ticks": 300,
+      "late_loyalty_drop": 25,
+      "desert_loyalty_lte": 20,
+      "fanatic_home_immunity": true,
+      "surgical_required_for_atrocity": 2,
+      "heat_per_atrocity": 15,
+      "heat_per_execution": 10,
+      "heat_per_ghost_overuse": 5,
+      "contracts": {
+        "recon_probe": {
+          "tier": "recon",
+          "cost": {"credits": 200},
+          "favour": 5,
+          "duration_ticks": 200,
+          "support": "adviser"
+        },
+        "surgical_strike": {
+          "tier": "surgical",
+          "cost": {"credits": 500},
+          "favour": 12,
+          "duration_ticks": 240,
+          "support": "drone",
+          "requires_tier": "recon"
+        },
+        "atrocity_op": {
+          "tier": "atrocity",
+          "cost": {"credits": 900},
+          "favour": 20,
+          "duration_ticks": 280,
+          "support": "air",
+          "requires_tier": "surgical",
+          "requires_surgical_successes": 2
+        },
+        "false_flag": {
+          "tier": "false_flag",
+          "cost": {"credits": 700},
+          "favour": 8,
+          "duration_ticks": 260,
+          "support": "adviser",
+          "requires_tier": "surgical",
+          "requires_surgical_successes": 2,
+          "evidence": true
+        },
+        "merc_reinforce": {
+          "tier": "recon",
+          "cost": {"credits": 350},
+          "favour": 4,
+          "duration_ticks": 180,
+          "support": "merc",
+          "unit": "x_pmc_rifle"
+        }
+      }
+    },
+    "g10_weld": {
+      "packages": {
+        "mg": {"slot": "weapon", "cost": {"credits": 80, "salvage": 20}, "time_ticks": 40, "art_alias": "x_technical_mg"},
+        "rocket": {"slot": "weapon", "cost": {"credits": 120, "salvage": 30}, "time_ticks": 50, "art_alias": "x_technical_rocket"},
+        "aa": {"slot": "weapon", "cost": {"credits": 140, "salvage": 35}, "time_ticks": 55, "art_alias": "x_technical_aa"},
+        "recoilless": {"slot": "weapon", "cost": {"credits": 130, "salvage": 32}, "time_ticks": 52, "art_alias": "x_technical_recoilless"},
+        "mortar": {"slot": "weapon", "cost": {"credits": 110, "salvage": 28}, "time_ticks": 48, "art_alias": "x_technical_mortar"},
+        "slat": {"slot": "armor", "cost": {"credits": 60, "salvage": 40}, "time_ticks": 35, "art_alias": ""}
+      },
+      "forbidden_tags": ["counter_nanite", "understrike_builder", "mb_borer", "human_a_only"],
+      "forbidden_defs": ["g7_cn_suit", "g7_cn_builder", "understrike_builder", "mb_borer"],
+      "salvage_credits": 40,
+      "salvage_intel": 1
+    }
+  }
+}
