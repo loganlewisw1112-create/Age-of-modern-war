@@ -13,6 +13,7 @@
 - **Ship FACT follow-up HEAD:** `507405a2` (board `ship.g10.lock` + package paths)
 - **Art wave3 baseline:** `4945e77e`
 - **Pre-lock tip:** `031a6e60` / docs deferred tip `f3fdc760`
+- **Post-lock anim/air overhaul:** `5354846f` (board note `84a94012`)
 
 ## Deferred art exception (owner)
 
@@ -27,7 +28,24 @@ Docs: `.superpowers/sdd/g10-lock-deferred-exception.md`, `.superpowers/sdd/g10-d
 Done-when **#13a** only; #1–12, #13b, #14–16 unchanged.
 
 **Locked look:** CELL / DEATH / WALKER / CLOSE AIR (`art.look.approved.core`)  
+**Still deferred (unchanged by amend):** TECHNICAL / SAFEHOUSE / HATCH  
 **Optional remaining owner look:** Ghost strips (non-blocking)
+
+## Amend — post-lock anim boards + unique air fleet
+
+**Status:** AMENDED (lock remains CLOSED)  
+**Authority:** owner post-lock art demand after `g10.lock`  
+**Board FACT:** `g10.lock.amend.anim_air`  
+**Ship FACT:** `ship.art.g10.anim_air_overhaul` seq **294–295**  
+**Report:** `.superpowers/sdd/task-art-g10-anim-air-overhaul-report.md`
+
+Supersedes wave3 camo-token strips / CAS-clone air polish recorded at lock time. Approved-core kit grammar kept (CELL / DEATH / WALKER black Human A; CLOSE AIR remains attack-CAS role).
+
+| Slice | Amend note |
+|-------|------------|
+| Anim boards | Real Human A pose boards: `idle · walk_a · walk_b · run_0 · fire · hit · die_0` (Ghost crops from board, not oil-slick overlays) |
+| Air fleet | Unique black/gunmetal silhouettes for all 6 air ids (CAS / quiet helo / cargo VTOL / diamond UCAV / X-frame striker / tiny recon) |
+| Deferred | TECHNICAL / SAFEHOUSE / HATCH — **unchanged**, still deferred |
 
 ## Smoke evidence (fresh)
 
@@ -69,4 +87,4 @@ Report: `.superpowers/sdd/task-e4-lock-report.md`
 
 ## Board
 
-FACT topics: `g10.lock` · `ship.g10.lock` · `ship.5f55236c` · `readme.synced`
+FACT topics: `g10.lock` · `ship.g10.lock` · `ship.5f55236c` · `readme.synced` · `ship.art.g10.anim_air_overhaul` · `g10.lock.amend.anim_air`

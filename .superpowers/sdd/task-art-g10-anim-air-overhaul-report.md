@@ -60,7 +60,7 @@ Sizes deliberately stratified: transport > CAS ≈ silent > shock > stealth dron
 
 ## Lock note
 
-**`g10.lock` may need an amend FACT.** This ship is a post-lock owner art amendment: approved-core kit grammar kept (CELL/DEATH/WALKER black Human A; CLOSE AIR remains attack-CAS), but air silhouettes and movement boards supersede wave3 camo/CAS-clone polish recorded at lock time.
+**`g10.lock` amended** — FACT `g10.lock.amend.anim_air` seq **296**. Post-lock owner art amendment: approved-core kit grammar kept (CELL/DEATH/WALKER black Human A; CLOSE AIR remains attack-CAS), air silhouettes and movement boards supersede wave3 camo/CAS-clone polish. TECHNICAL / SAFEHOUSE / HATCH still deferred.
 
 ## Commit / remote
 

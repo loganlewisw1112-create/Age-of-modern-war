@@ -78,8 +78,15 @@ Subagents: Auto (owner usage limit)
 - Package `package_g71.ps1 -Note g10.lock` + README/PLAY_ME/SCOPE/ROADMAP closed
 - Optional leftover: Ghost strip owner look only (non-blocking)
 
+## Complete (post-lock ART amend — anim + air)
+- ART10: `5354846f` / board note `84a94012` — real Human A anim boards + unique Coalition air fleet
+- Board FACT `ship.art.g10.anim_air_overhaul` seq **294–295**; lock amend FACT `g10.lock.amend.anim_air`
+- Report: `.superpowers/sdd/task-art-g10-anim-air-overhaul-report.md`
+- `g10.lock` AMENDED (remains CLOSED); TECHNICAL / SAFEHOUSE / HATCH still deferred
+- Tests: `test_g10_content` **15/0**
+
 ## Live (≤6)
-- (none for G10 lock — CLOSED)
+- (none for G10 lock — CLOSED / amended)
 
 ## Free slots
 ≤6 free (G10 closed).
