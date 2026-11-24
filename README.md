@@ -51,13 +51,37 @@ Economy (salvage/ore, power flow, supply), build/train, fog of war, armour class
 
 ## Last Protocol
 
-Separate mode: **Main menu → Last Protocol**.
+Somewhere under the map, a clock is still counting. Nobody who wrote the Protocol is left to explain what happens at zero. You get one night. Maybe two if you steal the dark and make it yours.
 
-You inherit a living two-ring fortress around a central facility and hold it through night-heavy siege pressure. Kill remote Machine cores to break the tide; fail and the countdown finishes the job. Night lasts longer than day; the clock starts at dusk.
+### The ground you inherit
 
-End of a run: director picture-in-picture beats, highlight reel, creep timelapse, and kill-heat strip. **Ctrl+M** toggles a minimal cinematic HUD. Specific hive forms, endings, and late tools are left for play — this README will not list them.
+You don't drop into an empty sandbox. You inherit a living fortress already under pressure:
 
-Canonical entry remains Human A vs Machine. Later slices may add alternate defender profiles without changing the solo reference ruleset.
+- **Two rings of wall** — outer kill-zone and a hard **core** around the heart of the base.
+- Between them: the economy that keeps guns fed, pads hot, and wounded moving.
+- At the centre: the **facility** — command, labs, workshops, pads on the roof, doors that open into a war that never clocks out.
+- Gates with approach belts. Cameras on the corners. Helipads already loaded. An army on the wire — and a reserve held back behind the last wall, because someone before you knew the first wave is never the real one.
+- On the far horizon: **Machine cores**. Kill them and the tide can break. Fail, and the count finishes what the hive started.
+
+The clock starts at **dusk**. Night lasts longer than day here. When the lights die down to searchlights and muzzle flash, the map stops being a map and starts being a confession.
+
+### Why you fight
+
+The hive is not a faction. It is a *process*. Creep eats the land. Nests pulse. Something in the dark adapts to how you hold a wall, how you rotate a sector, how you panic. It will feint. It will learn your weak face. It will climb its own dead if that is what the wall demands.
+
+You are not here to farm a leaderboard. You are here because if this ring falls, there is no next ring.
+
+### What you actually do
+
+Hold. Rotate. Fall back only when the Protocol would rather you live than die proud on a cracked rampart. Strike the cores when the night opens a seam. Spend what the siege pays you — scrap, captured steel, intel, research scratched out under fire — without a tutorial telling you which door is mercy and which is a trap.
+
+There are tools. Loyal robots that refuse the hive's handshake. Eyes that see what camo thinks is invisible. Fire that redraws the approaches. A war-mind you can lie to. Conduct that costs more than ammo. None of them come with a ribbon that says *press this to win*. The game wants you hungry. It wants you wrong once, then dangerous forever.
+
+### The part we won't spoil
+
+There are things in the tide with names you will earn the hard way. There are endings that change what dawn means. There is a reason the Protocol is called *Last* — and the only way to learn it is to still be standing when the count runs out… or to watch the facility go quiet and know exactly what you traded.
+
+**Main menu → Last Protocol.** Bring a pulse.
 
 ---
 
