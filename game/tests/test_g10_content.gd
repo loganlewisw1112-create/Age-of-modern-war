@@ -247,3 +247,67 @@ func test_core_stage_progression_bands() -> void:
 	check_eq(int(Content.unit("x_prototype_walker").get("stage_min", -1)), 10, "walker stage_min 10")
 	check_eq(int(Content.building("x_vault_core").get("stage_min", -1)), 10, "vault stage_min 10")
 	check(bool(Content.unit("x_prototype_walker").get("apex", false)) or int(Content.unit("x_prototype_walker").get("mk", 0)) >= 2, "walker apex/mk mark")
+
+
+## Task 8 Step 4 — approved-core art coverage (deferred TECHNICAL/SAFEHOUSE allowed as placeholders).
+const G10_APPROVED_ART_IDS := [
+	"x_cell_rifle", "x_cell_at", "x_cell_sapper", "x_cell_medic", "x_ambush_cell", "x_sleeper_cell",
+	"x_backdoor_hacker", "x_broker", "x_pmc_rifle", "x_pmc_assault", "x_pmc_sniper", "x_pmc_ew", "x_officer",
+	"x_ghost_infiltrator",
+	"x_death_strike", "x_death_assault", "x_death_recon", "x_shadow_pathfinder", "x_shadow_ew",
+	"x_shadow_signal", "x_shadow_decoy", "x_anchor_tech", "x_anchor_medic",
+	"x_prototype_walker",
+	"x_patron_cas", "x_silent_rotor", "x_stealth_transport", "x_stealth_drone", "x_shock_drone", "x_recon_drone",
+]
+
+const G10_DEFERRED_ART_IDS := [
+	"x_technical_mg", "x_technical_rocket", "x_technical_aa", "x_technical_mortar", "x_technical_recoilless",
+	"x_captured_tank", "x_refit_ifv", "x_shock_truck", "x_stealth_apc", "x_ghost_runner", "x_exo_mule",
+	"x_recovery_truck", "x_ghost_drone_carrier",
+	"x_river_ghost", "x_mini_sub", "x_smuggler_boat", "x_patrol_boat",
+	"x_safehouse", "x_tunnel_entrance", "x_cache", "x_weld_shop", "x_black_market", "x_broker_exchange",
+	"x_patron_office", "x_disguised_workshop", "x_bunker_hatch", "x_underground_barracks",
+	"x_underground_factory", "x_ghost_complex", "x_forward_repair", "x_vault_core",
+]
+
+
+func _g10_art_spec(id: String) -> Dictionary:
+	var man: Dictionary = ArtCatalog.manifest()
+	for sec in ["infantry", "vehicles", "buildings", "air", "naval", "units"]:
+		var bucket = man.get(sec, {})
+		if bucket is Dictionary and bucket.has(id):
+			return bucket[id]
+	return {}
+
+
+func test_g10_approved_art_catalog_coverage() -> void:
+	ArtCatalog.load_all()
+	check((ArtCatalog.manifest().get("g5_groups", []) as Array).has("g10_coalition"), "g10_coalition group merged")
+	check_eq(G10_APPROVED_ART_IDS.size(), 30, "approved art id count")
+	for id in G10_APPROVED_ART_IDS:
+		var spec := _g10_art_spec(id)
+		check(not spec.is_empty(), "approved art missing for %s" % id)
+		check_eq(int(spec.get("facings", 0)), 4, "%s facings" % id)
+		check(int(spec.get("fw", 0)) > 0 and int(spec.get("fh", 0)) > 0, "%s dimensions" % id)
+		var img: Image = ArtCatalog._image(String(spec.get("file", "")))
+		check(img != null and img.get_width() > 0 and img.get_height() > 0, "%s sheet loads" % id)
+		var mask_path := String(spec.get("mask", ""))
+		check(mask_path != "", "%s mask path" % id)
+		var msk: Image = ArtCatalog._image(mask_path)
+		check(msk != null and msk.get_width() == img.get_width() and msk.get_height() == img.get_height(), "%s mask dims" % id)
+		var icons: Dictionary = ArtCatalog.manifest().get("icons", {})
+		check(icons.has(id), "%s icon present" % id)
+
+
+func test_g10_deferred_art_allowed_as_placeholder() -> void:
+	ArtCatalog.load_all()
+	check_eq(G10_DEFERRED_ART_IDS.size(), 31, "deferred art id count")
+	## Deferred subjects may be absent from catalog (placeholder_for at runtime) — that is OK.
+	for id in G10_DEFERRED_ART_IDS:
+		var spec := _g10_art_spec(id)
+		if spec.is_empty():
+			continue
+		## If present, must not claim approved_core lock.
+		var g10 = spec.get("g10", {})
+		if g10 is Dictionary:
+			check(not bool(g10.get("approved_core", false)), "deferred %s must not be approved_core" % id)

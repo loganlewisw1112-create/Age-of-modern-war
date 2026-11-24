@@ -8,7 +8,7 @@
 - FACT `art.technical.deferred` + `art.safehouse.deferred` — redesign later (not locked)
 - CLAIM 248 TECHNICAL **RELEASED**; bulk **unlocked** for approved unit art only
 
-## Wave 1 (started this ship)
+## Wave 1 (shipped)
 
 - Generator: `game/tools/art/g10_coalition.gd`
 - Catalog: `g10_coalition` added to `ArtCatalog.G5_GROUPS`
@@ -16,15 +16,21 @@
 - 31 deferred IDs listed in manifest (`deferred_ids`) — no locked mockups
 - Strip: `game/.plan/shots/G71_LOOK/strip_g10_bulk_approved.png`
 
-## Still owed (Task 8 Steps 4–9) — approved only
+## Wave 2 (shipped — runtime unblock)
 
-1. Coverage tests (catalog / facings / masks) for approved IDs; deferred IDs allowed as placeholders
-2. Role kit differentiation (cell AT/sapper/medic, Death assault/recon, Shadow/Anchor) beyond clone
-3. Ghost set (Judge/Warden/Shade/Sergeant, Mk bands, aces) — `G10_GHOST_LOOK.md`
-4. Camo / state sheets for approved Ghosts
-5. Non-TECHNICAL vehicle/drone/building states that are **not** SAFEHOUSE family (or keep deferred)
-6. Contact sheets + orphan_art audit for approved scope
-7. Final catalog look gate before `g10.lock` (with deferred exception)
+- Fleet/army-style role marks on 26 of 30 approved clones (templates stay locked pixels)
+- Facings atlas: `strip_g10_bulk_facings.png` (+`_2x`)
+- Kit strip: `strip_g10_bulk_kits.png` (+`_2x`)
+- Step 4 tests in `test_g10_content.gd` — approved coverage + deferred placeholders OK
+- FACT `ship.art.bulk.approved.wave` — see board
+
+## Still owed (Steps 6–9 polish) — approved only
+
+1. Ghost set (Judge/Warden/Shade/Sergeant, Mk bands, aces) — `G10_GHOST_LOOK.md`
+2. Camo / state sheets for approved Ghosts
+3. Non-TECHNICAL vehicle/drone/building states that are **not** SAFEHOUSE family (or keep deferred)
+4. Contact sheets + orphan_art audit for approved scope (deferred exception OK)
+5. Final catalog look gate before `g10.lock` (with deferred exception)
 
 ## Explicitly out of this dispatch
 

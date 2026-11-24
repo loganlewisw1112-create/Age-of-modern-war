@@ -46,20 +46,26 @@ Subagents: Auto (owner usage limit)
 - **LOCKED:** CELL / DEATH / WALKER / CLOSE AIR — FACT `art.look.approved.core` seq **268**
 - **DEFERRED:** TECHNICAL + SAFEHOUSE/HATCH — FACT **269**/**270**; CLAIM **248** RELEASED **271**
 - Look package regenerated (2×2 approved strips); safehouse states strip omitted
-- Bulk wave1 **started**: `g10_coalition.gd` → 30 approved clones + 31 deferred ids; catalog group wired
+- Bulk wave1: `g10_coalition.gd` → 30 approved clones + 31 deferred ids; catalog group wired
 - Lock exception: `.superpowers/sdd/g10-lock-deferred-exception.md` (Done-when #13a)
 - Reports: `task-8-art-approved-core-defer-report.md` · `dispatch-art-bulk-approved.md`
 
+## Complete (ART bulk wave2 — runtime unblock)
+- Fleet/army role marks on 26/30 approved clones; facings + kit strips
+- Step 4 tests: `test_g10_content` **13/0**; orphan_art = deferred-only (31)
+- FACT `ship.art.bulk.approved.wave` — report `.superpowers/sdd/task-8-art-bulk-wave2-report.md`
+- Leftover for g10.lock: Ghost Judge/Warden/Shade/Sergeant + Mk/ace, camo states, vehicle-state polish, final look gate
+
 ## Live (≤6)
-- ART10 CLAIM **273** approved-core bulk wave1 (continuing Steps 4–9 approved-only)
+- ART10 CLAIM **273** approved bulk (wave2 shipped; Steps 6–9 polish remain)
 
 ## Free slots
-~5 of ≤6 usable. TECHNICAL CLAIM released; bulk unlocked for approved only.
+~5 of ≤6 usable. TECHNICAL CLAIM released; approved runtime art unblocked.
 
 ## Queued / next dispatch
-1. ART10 continue Task 8 Steps 4–9 for **approved** subjects (kit variants, Ghost set, tests) — see dispatch brief
+1. ART10 Steps 6–9 polish (Ghost set / camo / states / final look) — see dispatch leftover
 2. TECHNICAL / SAFEHOUSE redesign — **later** (design-blueprint); do not block lock
-3. E4 Task 23 — package `g10.lock` after approved bulk + final look gate (**deferred placeholders OK**)
+3. E4 Task 23 — package `g10.lock` after approved polish + final look gate (**deferred placeholders OK**)
 4. Optional: harden `ai_air.gd` aircraft String coerce; full Task 21–22 soak/peak tools if required beyond closest probes
 
 ## OWNER ADDENDUM 171 — FOLDED
