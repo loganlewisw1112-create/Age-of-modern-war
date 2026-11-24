@@ -105,6 +105,16 @@ You don't drop into an empty sandbox. You inherit a living fortress already unde
 
 The clock starts at **dusk**. Night lasts longer than day here. When the lights die down to searchlights and muzzle flash, the map stops being a map and starts being a confession.
 
+### On the ground
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/media/creep.jpg" alt="Something spreads across the dark" width="420"><br><em>Something spreads.</em></td>
+    <td align="center" width="33%"><img src="docs/media/hive_nodes.jpg" alt="Machine hive nodes waking in the night" width="420"><br><em>Nodes wake.</em></td>
+    <td align="center" width="33%"><img src="docs/media/base.jpg" alt="The fortress ring you have to hold" width="420"><br><em>Hold the ring.</em></td>
+  </tr>
+</table>
+
 ### Why you fight
 
 The hive is not a faction. It is a *process*. Creep eats the land. Nests pulse. Something in the dark adapts to how you hold a wall, how you rotate a sector, how you panic. It will feint. It will learn your weak face. It will climb its own dead if that is what the wall demands.
