@@ -1,0 +1,185 @@
+{
+  "_meta": "G10 Human A Counter-Ghost Corps (CG10 Task 17). Numbers PROVISIONAL. Weaker than Coalition Death. No CN/Blackglass. Owner addendum seq 171.",
+  "rules": {
+    "g10_counterghost": {
+      "faction": "human_a",
+      "stage_min": 10,
+      "weaker_than": "death",
+      "no_coalition_production": true,
+      "no_cn": true,
+      "no_blackglass": true,
+      "loadouts": {
+        "interceptor": {
+          "job": "chase_cut_extract",
+          "camo": 0.35,
+          "armor": 0.55,
+          "power": 0.6,
+          "def": "a_cg_intercept"
+        },
+        "bulwark": {
+          "job": "hard_escort_hold",
+          "camo": 0.2,
+          "armor": 0.75,
+          "power": 0.55,
+          "def": "a_cg_breach"
+        },
+        "seeker": {
+          "job": "find_shimmer_mark_net",
+          "camo": 0.4,
+          "armor": 0.45,
+          "power": 0.65,
+          "def": "a_cg_recon"
+        },
+        "ward": {
+          "job": "vip_bodyguard",
+          "camo": 0.25,
+          "armor": 0.7,
+          "power": 0.5,
+          "def": "a_cg_ward_prime",
+          "peel_on_hunt": false
+        }
+      },
+      "death_baseline": {
+        "camo": 0.9,
+        "armor": 1.0,
+        "power": 1.0
+      },
+      "formations": {
+        "4op": {
+          "size": 4,
+          "roles": ["lead", "sensor", "gunner", "specialist"],
+          "loadouts": ["interceptor", "bulwark", "seeker"]
+        },
+        "6op": {
+          "size": 6,
+          "roles": ["lead", "sensor", "gunner", "specialist", "gunner", "specialist"],
+          "loadouts": ["interceptor", "bulwark", "seeker"]
+        },
+        "ward_pair": {
+          "size": 2,
+          "roles": ["prime", "shadow"],
+          "loadouts": ["ward"],
+          "peel_on_hunt": false
+        }
+      },
+      "specialties_core": [
+        "camo_discipline",
+        "sensor_net",
+        "close_protection",
+        "pursuit_fire",
+        "breach_and_clear",
+        "field_trauma",
+        "power_thrift",
+        "acoustic_seismic_read",
+        "night_net",
+        "extract_denial"
+      ],
+      "specialties_signature": [
+        "hound",
+        "netman",
+        "aegis",
+        "seismic",
+        "overwatch",
+        "ew_ward",
+        "breach_medic",
+        "suit_thief",
+        "rooftop",
+        "blackout_breaker",
+        "duelist",
+        "machine_scarred"
+      ],
+      "intents": [
+        "cg_sweep",
+        "cg_intercept",
+        "cg_strip_killswitch",
+        "cg_recover_suit",
+        "cg_break_contact",
+        "cg_escort_vip",
+        "cg_hunt_ghosts",
+        "cg_contest_suit"
+      ],
+      "sweep": {
+        "thermal": 0.5,
+        "sensor": 0.45,
+        "dog": 0.65,
+        "tracker": 0.55
+      },
+      "disable": {
+        "emp": {"ticks": 3, "vs": "suit"},
+        "net": {"ticks": 4, "vs": "suit"}
+      },
+      "strip": {
+        "ticks": 6,
+        "under_fire_mult": 1.5,
+        "late_window": 10,
+        "feeds": "counter_ghost_track"
+      },
+      "recovery": {
+        "race_ticks": 8,
+        "feeds": "counter_ghost_track",
+        "not_research9": true,
+        "not_coalition_tech": true
+      },
+      "scenario_phases": [
+        "detect",
+        "intercept",
+        "disable",
+        "strip",
+        "recover"
+      ],
+      "spider_killer": {
+        "def": "a_cg_spider_killer",
+        "modes": ["flechette", "sticky_foam", "ultrasonic_peel"],
+        "no_coalition_camo": true,
+        "no_reaper": true,
+        "no_suit_tech": true,
+        "clears": ["spider", "nest_approach"]
+      },
+      "foam": {
+        "exo_mitigated_by_hardened_joints": true,
+        "exo_duration_mult": 0.5,
+        "drone_duration_mult": 1.0,
+        "no_immunity": true
+      },
+      "counters_to_ghost": {
+        "judge_backdoor": "detect_and_jam",
+        "warden_corridor": "bulwark_hold",
+        "shade_designate": "sensor_sweep",
+        "sergeant_loss": "squad_degrade_readable",
+        "guardian_mule_denial": "contest_suit_before_overcharge",
+        "ace_mk_recover": "strip_then_recover"
+      },
+      "vehicle_homes": {
+        "a_cg_ghost_runner": "a_cg_ghost_runner_bay",
+        "a_cg_ward_coach": "a_cg_ward_coach_house",
+        "a_cg_apc": "a_cg_bulwark_apc_shed",
+        "a_cg_suit_cage_truck": "a_cg_cage_dock",
+        "a_cg_seismic_crawler": "a_cg_seismic_bay",
+        "a_cg_net_ugv": "a_cg_ugv_nest",
+        "a_cg_exo_mule": "a_cg_mule_stall",
+        "a_cg_watch_rotor": "a_cg_watch_helipad",
+        "a_cg_qrf_vtol": "a_cg_insert_vtol_pad",
+        "a_cg_cap_knife": "a_cg_cap_strip",
+        "a_cg_medevac_hook": "a_cg_medevac_helipad",
+        "a_cg_decoy_flare": "a_cg_drone_cage",
+        "a_cg_shade_dart": "a_cg_shade_dart_pad"
+      },
+      "shade_dart": {
+        "capacity_ops": 4,
+        "no_6op": true,
+        "lift_fan": true,
+        "no_traditional_rotor": true,
+        "detectable": true,
+        "quiet_vs_watch_rotor": true,
+        "not_silent_rotor": true
+      },
+      "corps_buildings": [
+        "a_cg_garage",
+        "a_cg_kennel_annex",
+        "a_cg_suit_cage",
+        "a_cg_command",
+        "a_cg_workshop"
+      ]
+    }
+  }
+}

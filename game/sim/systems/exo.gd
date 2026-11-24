@@ -23,10 +23,13 @@ extends RefCounted
 ## Do not preload g6_hooks.gd here (cycle). Medical / Movement / SimIndex are reached through SimWorld.
 ## G10 (GHOST10): Ghost regiment overlay lives in ghost_exo10.gd. Pre-G10 Human exo_suit path is unchanged.
 ##   is_ghost_suit_def / ghost_tick are additive; garage eject/resuit/loadout still apply only to exo_suit defs.
+## G10 (CG10): Counter-Ghost overlay in counter_ghost10.gd. Second owner of this file after GHOST RELEASE.
+##   is_counter_ghost_def / counter_ghost_tick are additive; do not alter Pre-G10 or Ghost paths.
 
 const Loadouts = preload("res://sim/systems/loadouts.gd")
 const PData = preload("res://sim/systems/progression_data.gd")
 const GhostExo10 = preload("res://sim/systems/ghost_exo10.gd")
+const CounterGhost10 = preload("res://sim/systems/counter_ghost10.gd")
 
 
 static func cfg() -> Dictionary:
@@ -42,12 +45,19 @@ static func _st(w: SimWorld) -> Dictionary:
 static func tick(w: SimWorld) -> void:
 	Loadouts.prune(w)
 	ghost_tick(w)
+	counter_ghost_tick(w)
 
 
 ## G10 forward: no-op unless GhostExo10 state was created. ORCH may also wire GhostExo10.tick separately.
 static func ghost_tick(w: SimWorld) -> void:
 	if GhostExo10.active(w):
 		GhostExo10.tick(w)
+
+
+## G10 CG10 forward: no-op unless CounterGhost10 state was created.
+static func counter_ghost_tick(w: SimWorld) -> void:
+	if CounterGhost10.active(w):
+		CounterGhost10.tick(w)
 
 
 static func is_suit_def(def_id: String) -> bool:
@@ -57,6 +67,16 @@ static func is_suit_def(def_id: String) -> bool:
 ## G10 Ghost regiment operators (Death/Shadow/Anchor). Not Pre-G10 exo_suit garage suits.
 static func is_ghost_suit_def(def_id: String) -> bool:
 	return GhostExo10.is_ghost_suit_def(def_id)
+
+
+## G10 Human A Counter-Ghost corps defs. Not Pre-G10 exo_suit and not Ghost regiment.
+static func is_counter_ghost_def(def_id: String) -> bool:
+	return CounterGhost10.is_cg_def(def_id)
+
+
+## Dedicated home pad/garage for a CG vehicle ("" if none).
+static func cg_home_for(vehicle_def: String) -> String:
+	return CounterGhost10.home_for(vehicle_def)
 
 
 ## Own built Exo-Suit Garages, ascending id.
