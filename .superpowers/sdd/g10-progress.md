@@ -25,16 +25,19 @@ Subagents: Auto (owner usage limit)
 - Task 17 CG10: 3f046cf6 — Counter-Ghost corps + Shade Dart; test_g10_counterghost 5/0; FACT ship.cg10 seq 209/210; addendum 171 folded; pushed
 - Task 19 MODE10: fdb8282f — Coalition Protocol LP + Stages 3/8/12; test_g10_modes 8/0; NEED 183 world stage gate → E3; FACT ship.mode10 seq 205/208; pushed
 
+## Complete (VERIFY E2)
+- VERIFY10 E2 closeout: FACT `verify.e2` seq **212**; STATUS `e2-ready-for-e3` seq **213**; report `.superpowers/sdd/task-verify-e2-report.md`
+- Suite (Godot 4.7.2 headless): all present `test_g10_*` + `test_exo` + `test_lpmode7` → **116/0**; ART look open gate (not system fail)
+
 ## Live E2 (≤6)
 - ART10 Task 8 samples — CLAIM 155 held; NEED 201 cycle2 pause_for_owner (do NOT regenerate; owner look gate)
 
 ## Free slots
-~5 of ≤6 usable (only ART10 holds a live path CLAIM). No CG10/MODE10 dispatch — Task17 + Task19 shipped.
+~5 of ≤6 usable (only ART10 holds a live path CLAIM). System E2 pillars shipped; VERIFY10 done.
 
 ## Queued / next dispatch
-1. VERIFY10 — independent smoke/hash (CG+MODE+RAID on github/g71)
-2. E3 ORCH — world.gd wires (BLOCKED until E3 wave): NEED 164 tech, NEED 183 stage gate, armory/dark/ai/buildings/mechanics/cg ticks
-3. ART bulk catalog — only after owner FACT approve/revise on NEED 201
+1. E3 ORCH — world.gd wires: NEED 164 tech, NEED 183 stage gate, armory/dark/ai/buildings/mechanics/cg ticks (**may start regardless of ART**)
+2. ART bulk catalog — only after owner FACT approve/revise on NEED 201
 
 ## OWNER ADDENDUM 171 — FOLDED
 Board FACT `g10.owner.addendum.counterghost` seq **171**. CG10 Task17 shipped (loadouts Interceptor/Bulwark/Seeker/Ward, Shade Dart, 13 vehicle homes, weaker-than-Death, no CN/Blackglass). See FACT g10.cg.task17 seq 202 + FACT ship.cg10 seq **209**.
