@@ -73,11 +73,13 @@ From source (dev): Godot **4.7.2**, open `game/`, or `game/run.bat`.
 
 ---
 
-## In this build (G9 LOCK)
+## In this build (Pre-G10 checkpoint)
 
 **Four Sides:** Q/E + MMB rotate the view; rot buildings and loco/fire/death/k8 sheets follow the camera (no mirror cheats). **Last Protocol clock** starts at dusk; night lasts **2×** day. End-of-run: director PiP, highlight reel, creep timelapse, kill-heat strip.
 
 **G9 Hive Reborn (thin verticals):** HIVE9 nanite harvest + evolve glow + blended art harness (47 defs); COUNT9 thirteen counter harness cases; COMBAT9 persistent craters/breaches + ballistics across match families; SKIRM9 fair-capped Tide siege spawns in skirmish (`cfg.skirm9.director_adapt` optional).
+
+**Pre-G10 underway:** HIVE9 now has distance/terrain/EW link quality, mesh/spine telemetry, shared last-seen contacts, and creep cable cuts; COUNT9 counters route through gameplay commands; Warmind exposes evidence-held doctrine, threat budgets, node-killer memory, and readable intent; PACE71 raises vehicle open-ground tempo to ~1.7× with road and hostile-ground modifiers.
 
 Plus G7.1: hive network, wildfire, death chains, harvest / capture / evolve, night illumination, weather, fleet under jam, RE / warmind / conduct, Wave 6 art + E4 motion, Stage A polish, forced-join cuts.
 

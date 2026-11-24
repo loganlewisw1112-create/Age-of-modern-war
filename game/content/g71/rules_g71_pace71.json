@@ -1,0 +1,10 @@
+{
+  "_meta": "Pre-G10 PACE71 vehicle tempo. Numbers PROVISIONAL; movement acceleration, turning and deployment friction are unchanged.",
+  "rules": {
+    "g71_pace71": {
+      "open_mult": 1.7,
+      "road_correction": 0.96,
+      "hostile_ground_mult": 0.7
+    }
+  }
+}

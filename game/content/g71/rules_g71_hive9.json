@@ -15,7 +15,11 @@
       "glow_alpha_base": 0.22,
       "glow_alpha_per_stage": 0.12,
       "wreck_mass_mult": 1.5,
-      "wreck_hunt_r": 28.0
+      "wreck_hunt_r": 28.0,
+      "link_max_range": 120.0,
+      "terrain_link_mult": 0.92,
+      "creep_signal_floor": 0.22,
+      "mesh_quality_mult": 0.9
     }
   }
 }

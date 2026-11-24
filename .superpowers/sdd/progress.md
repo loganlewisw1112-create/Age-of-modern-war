@@ -15,3 +15,11 @@ Task 1: complete (commits 6e75a381..e61e20fc, review clean after Content-backed 
 Task 2: review blockers fixed (production command routes for all 13, causal power sabotage, command-only decapitation, soft coalition restore)
     Focused verification: test_count9 14/0
     Addendum frozen: Hive network + Warmind + PACE71 in scope/plan/board
+
+Addendum scaffold checkpoint:
+    PACE71: implemented shared movement multiplier; skirmish+LP focused test 1/0
+    Warmind: doctrine/budget/counter-memory/readable intent; test_warmind71 3/0
+    Hive network: quality/topology/shared senses/creep cable/dead-zone cuts; test_hive9 6/0
+    Movement gold regression suite: historical gold/hash expectations fail because global pace intentionally changes hashes; parity subtests observed passing, full run still in progress at checkpoint
+
+Next: Tasks 3-4 D1 depth, then Tasks 6-17 AI9/ECON9/integ per plan.

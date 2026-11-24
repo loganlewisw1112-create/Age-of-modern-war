@@ -40,3 +40,23 @@ func test_ask_before_abandon() -> void:
 	w.submit({"type": "warmind71_reply", "issuer": int(w.sys_state.lp.fid), "answer": "yes"})
 	w.step()
 	check_eq(int(Warmind71._st(w).get("last_abandon", -1)), 1, "yes abandons the sector")
+
+
+func test_doctrine_budget_memory_and_readable_intent() -> void:
+	var w := SimWorld.new_match(LastProtocol.make_config(65, "industrial_heartland_m"))
+	if not check(w != null, "LP match"):
+		return
+	check_eq(String(Warmind71.board(w).doctrine), "hold", "starts holding")
+	Warmind71.observe_evidence(w, "decap", 2.0)
+	check_eq(String(Warmind71.board(w).doctrine), "hold", "holds doctrine below evidence threshold")
+	Warmind71.observe_evidence(w, "decap", 1.0)
+	check_eq(String(Warmind71.board(w).doctrine), "decap", "evidence pivots doctrine")
+	Warmind71.set_threat_budget(w, 10.0)
+	check(Warmind71.commit_threat(w, 7.0), "commit within threat budget")
+	check(not Warmind71.commit_threat(w, 4.0), "reject over-budget commitment")
+	Warmind71.observe_node_loss(w, "artillery")
+	Warmind71.observe_node_loss(w, "swarm")
+	Warmind71.observe_node_loss(w, "artillery")
+	var b := Warmind71.board(w)
+	check_eq(String(b.priority), "counter:artillery", "node-killer memory retunes priority")
+	check(w.events.any(func(ev): return String(ev.type) == "WarmindIntent"), "intent is radio/UI event-readable")

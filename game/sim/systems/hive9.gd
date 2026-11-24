@@ -9,6 +9,8 @@ const VER := 2
 const Hive71 = preload("res://sim/systems/hive71.gd")
 const Harvest71 = preload("res://sim/systems/harvest71.gd")
 const Evolve71 = preload("res://sim/systems/evolve71.gd")
+const Creep = preload("res://sim/systems/creep.gd")
+const Fire71 = preload("res://sim/systems/fire71.gd")
 
 
 static func R() -> Dictionary:
@@ -31,10 +33,13 @@ static func _st(w: SimWorld) -> Dictionary:
 			"last_eaten": 0,
 			"last_taken": 0,
 			"modular_events": {"merge": 0, "split": 0},
+			"contacts": {},
 		}
 		w.sys_state[KEY] = s
 	if not (s.get("modular_events") is Dictionary):
 		s.modular_events = {"merge": 0, "split": 0}
+	if not (s.get("contacts") is Dictionary):
+		s.contacts = {}
 	s.ver = VER
 	return s
 
@@ -52,7 +57,71 @@ static func board(w: SimWorld) -> Dictionary:
 		"eaten": int(hb.get("eaten", 0)),
 		"modular_events": (s.modular_events as Dictionary).duplicate(),
 		"harvest_mass": snappedf(float(Harvest71.board(w).get("mass", 0.0)), 0.01),
+		"network": network_board(w),
 	}
+
+
+## Link bandwidth: distance, blocking terrain and hostile EW reduce it; creep carries a weak floor signal.
+## Fire and COUNT9 dead zones carve the cable. Mesh relays gain redundancy; spine relays keep raw throughput.
+static func link_quality(w: SimWorld, a: Vector2, b: Vector2, topology: String = "spine", ew: float = 0.0) -> float:
+	var dist := a.distance_to(b)
+	var q := clampf(1.0 - dist / float(R().get("link_max_range", 120.0)), 0.0, 1.0)
+	var steps := maxi(ceili(dist / 4.0), 1)
+	var creep_hits := 0
+	for i in range(steps + 1):
+		var p := a.lerp(b, float(i) / float(steps))
+		var cell := w.cell_of(p)
+		var code := w.terrain_at(cell)
+		if code in [Terrain.FOREST, Terrain.HILL, Terrain.RIDGE]:
+			q *= float(R().get("terrain_link_mult", 0.92))
+		if Creep.on_creep(w, cell):
+			creep_hits += 1
+		if Fire71.blocks_at(w, p) or _dead_zone_at(w, p):
+			return 0.0
+	q *= clampf(1.0 - ew, 0.0, 1.0)
+	if creep_hits > steps / 2:
+		q = maxf(q, float(R().get("creep_signal_floor", 0.22)))
+	if topology == "mesh":
+		q = minf(q * float(R().get("mesh_quality_mult", 0.9)), 1.0)
+	return snappedf(q, 0.01)
+
+
+static func _dead_zone_at(w: SimWorld, p: Vector2) -> bool:
+	var c9 = w.sys_state.get("count9")
+	if not c9 is Dictionary:
+		return false
+	for dz in c9.get("dead_zones", []):
+		var c := Vector2(float(dz.pos[0]), float(dz.pos[1]))
+		if p.distance_squared_to(c) <= float(dz.r) * float(dz.r):
+			return true
+	return false
+
+
+static func report_contact(w: SimWorld, nest_id: String, contact_id: int, pos: Vector2) -> void:
+	(_st(w).contacts as Dictionary)[nest_id] = {"id": contact_id, "pos": pos, "tick": w.tick}
+
+
+static func shared_contacts(w: SimWorld, nest_id: String) -> Array:
+	if Hive71.is_isolated(w, nest_id):
+		return []
+	var out := []
+	for peer in (_st(w).contacts as Dictionary).keys():
+		if String(peer) == nest_id or Hive71.is_isolated(w, String(peer)):
+			continue
+		out.append((_st(w).contacts as Dictionary)[peer].duplicate())
+	return out
+
+
+static func network_board(w: SimWorld) -> Dictionary:
+	var hb := Hive71._st(w)
+	var mesh := 0
+	var spine := 0
+	for relay in (hb.relays as Dictionary).values():
+		if String(relay.get("topology", "spine")) == "mesh":
+			mesh += 1
+		else:
+			spine += 1
+	return {"mesh": mesh, "spine": spine, "shared_contacts": (_st(w).contacts as Dictionary).size()}
 
 
 static func catalog_count() -> int:

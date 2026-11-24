@@ -3,7 +3,7 @@ extends RefCounted
 ## feints worked), fooled by repeated feints, and asks before abandoning a sector. Numbers PROVISIONAL.
 
 const KEY := "warmind71"
-const VER := 1
+const VER := 2
 const Director71 = preload("res://sim/systems/director71.gd")
 
 
@@ -13,15 +13,74 @@ static func R() -> Dictionary:
 
 
 static func active(w: SimWorld) -> bool:
-	return w.sys_state.has("lp")
+	return not w.factions.is_empty()
 
 
 static func _st(w: SimWorld) -> Dictionary:
 	var s = w.sys_state.get(KEY)
 	if s == null:
-		s = {"ver": VER, "feint_hits": {}, "ask": {}, "bias_face": -1, "fooled": 0}
+		s = {"ver": VER, "feint_hits": {}, "ask": {}, "bias_face": -1, "fooled": 0,
+			"doctrine": "hold", "evidence": {}, "node_killers": {}, "priority": "protect_nodes",
+			"threat_budget": 0.0, "committed": 0.0, "pivots": 0}
 		w.sys_state[KEY] = s
+	for pair in [["doctrine", "hold"], ["evidence", {}], ["node_killers", {}],
+			["priority", "protect_nodes"], ["threat_budget", 0.0], ["committed", 0.0], ["pivots", 0]]:
+		if not s.has(pair[0]):
+			s[pair[0]] = pair[1]
+	s.ver = VER
 	return s
+
+
+static func board(w: SimWorld) -> Dictionary:
+	var s := _st(w)
+	return {"doctrine": String(s.doctrine), "priority": String(s.priority),
+		"threat_budget": float(s.threat_budget), "committed": float(s.committed),
+		"node_killers": (s.node_killers as Dictionary).duplicate(), "pivots": int(s.pivots)}
+
+
+## Evidence accumulates, but doctrine only pivots after a readable threshold.
+static func observe_evidence(w: SimWorld, candidate: String, weight: float = 1.0) -> void:
+	if candidate not in ["hold", "counter_swarm", "decap"] or weight <= 0.0:
+		return
+	var s := _st(w)
+	s.evidence[candidate] = float(s.evidence.get(candidate, 0.0)) + weight
+	var threshold := float(R().get("doctrine_pivot_evidence", 3.0))
+	if candidate != String(s.doctrine) and float(s.evidence[candidate]) >= threshold:
+		s.doctrine = candidate
+		s.priority = {"hold": "protect_nodes", "counter_swarm": "thin_swarms", "decap": "kill_command"}.get(candidate)
+		s.pivots = int(s.pivots) + 1
+		w.emit("WarmindIntent", {"doctrine": s.doctrine, "priority": s.priority, "pivots": s.pivots})
+
+
+static func set_threat_budget(w: SimWorld, available: float) -> void:
+	var s := _st(w)
+	s.threat_budget = maxf(available, 0.0)
+	s.committed = minf(float(s.committed), float(s.threat_budget))
+
+
+static func commit_threat(w: SimWorld, cost: float) -> bool:
+	var s := _st(w)
+	if cost <= 0.0 or float(s.committed) + cost > float(s.threat_budget):
+		return false
+	s.committed = float(s.committed) + cost
+	return true
+
+
+## Counter-memory: remember what killed nodes, then make that killer the readable retune priority.
+static func observe_node_loss(w: SimWorld, killer_tag: String) -> void:
+	if killer_tag == "":
+		return
+	var s := _st(w)
+	s.node_killers[killer_tag] = int(s.node_killers.get(killer_tag, 0)) + 1
+	var best := killer_tag
+	var best_n := -1
+	for tag in (s.node_killers as Dictionary).keys():
+		var n := int(s.node_killers[tag])
+		if n > best_n or (n == best_n and String(tag) < best):
+			best = String(tag)
+			best_n = n
+	s.priority = "counter:%s" % best
+	w.emit("WarmindIntent", {"doctrine": s.doctrine, "priority": s.priority, "memory": best_n})
 
 
 ## Record that a feint on `face` actually hurt us (AssaultWave with n_feint > 0 that landed damage later,

@@ -7,6 +7,7 @@ const Harvest71 = preload("res://sim/systems/harvest71.gd")
 const Evolve71 = preload("res://sim/systems/evolve71.gd")
 const LastProtocol = preload("res://sim/systems/last_protocol.gd")
 const Creep = preload("res://sim/systems/creep.gd")
+const Count9 = preload("res://sim/systems/count9.gd")
 
 
 func test_catalog_ge_60() -> void:
@@ -133,3 +134,33 @@ func test_evolve_adapt_nanite_visible() -> void:
 	Hive9._st(w).last_taken = 0
 	Hive9.tick(w)
 	check(float(Hive9.board(w).get("nanite", 0.0)) > 0.0, "nanite pool grew")
+
+
+func test_network_quality_topology_senses_and_cable_cuts() -> void:
+	var w := SimWorld.new_match(LastProtocol.make_config(305, "industrial_heartland_m"))
+	if not check(w != null, "LP"):
+		return
+	for i in 4:
+		w.step()
+	var a := Vector2(10.5, 10.5)
+	var b := Vector2(30.5, 10.5)
+	var near_q := Hive9.link_quality(w, a, b, "spine", 0.0)
+	var far_q := Hive9.link_quality(w, a, Vector2(100.5, 10.5), "spine", 0.0)
+	check(near_q > far_q, "distance degrades bandwidth")
+	check(Hive9.link_quality(w, a, b, "spine", 0.5) < near_q, "EW degrades bandwidth")
+	check(Hive9.link_quality(w, a, b, "mesh", 0.0) < near_q, "mesh trades throughput for redundancy")
+	var cs := Creep.enable(w)
+	var cv: PackedByteArray = cs.v
+	cv.fill(255)
+	cs.v = cv
+	check(Hive9.link_quality(w, a, Vector2(115.5, 10.5), "spine", 0.0) >= float(Hive9.R().get("creep_signal_floor", 0.22)),
+		"creep carries weak cable signal")
+	Hive71.add_nest(w, "sense_a", a)
+	Hive71.add_nest(w, "sense_b", b)
+	Hive71.add_relay(w, "sense_r", a.lerp(b, 0.5), ["sense_a", "sense_b"])
+	Hive9.report_contact(w, "sense_a", 99, Vector2(44, 44))
+	check(Hive9.shared_contacts(w, "sense_b").size() == 1, "linked peer shares last-seen contact")
+	Hive71.cut_relay(w, "sense_r")
+	check(Hive9.shared_contacts(w, "sense_b").is_empty(), "cut peer becomes fog-blind")
+	Count9.mark_dead_zone(w, a.lerp(b, 0.5), 4.0)
+	check_eq(Hive9.link_quality(w, a, b), 0.0, "dead zone carves network cable")

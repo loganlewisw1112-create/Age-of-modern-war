@@ -8,11 +8,12 @@ CONTROLS
   Q / E or horizontal middle-mouse drag - rotate view 90 deg (Four Sides)
   Ctrl+M  - toggle minimal LP HUD (cinematic)
 
-IN THIS BUILD (G9 LOCK + G8 + G7.1)
+IN THIS BUILD (PRE-G10 CHECKPOINT + G9/G8/G7.1)
   Four Sides: rot buildings + loco/fire/death/k8 sheets follow camera
   Last Protocol clock: starts at dusk; night lasts 2x day
   End of run: director PiP, highlight reel, creep timelapse, kill-heat strip
   G9 Hive Reborn: HIVE9 nanite/evolve + COUNT9 counters + COMBAT9 terrain/ballistics + SKIRM9 siege spawns
+  Pre-G10: Hive link quality/shared senses/creep cable; Warmind doctrine/budget/memory; PACE71 faster vehicles with terrain drag
   Hive / fire / deaths / harvest / capture-evolve / night lights / weather / fleet / RE / warmind
   Full art groups + E4 motion + FX/gore depth
   Perf: pan/2k >=60 CLEAR; LP peak amended >=30 CLEAR; quiet chase p10 72.9 held
@@ -21,7 +22,7 @@ IN THIS BUILD (G9 LOCK + G8 + G7.1)
 LOOK CHECKPOINT (E3) - APPROVED 2026-11-23
 
 LEFT OPEN
-  G10 Shadow Coalition next; G9 depth chase (60+ defs, EW/forts, skirmish UI)
+  Pre-G10 Tasks 3-17 remain; G10 Shadow Coalition stays out of scope until pre_g10.lock
   Peak chase continues (amended gate still held)
 
 HARNESS

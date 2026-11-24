@@ -6,6 +6,7 @@ const SimIndex = preload("res://sim/systems/sim_index.gd")
 const Inert7 = preload("res://sim/systems/inert7.gd")   # G7 PERF7A: on/off switch of the _fp_cmask cache
 const Fortify = preload("res://sim/systems/fortify.gd")   # G5 (CORE10K): player breach hook
 const HotState = preload("res://sim/hot_state.gd")       # G5 (CORE10K): pos mirror + dirty marks for the gather
+const Pace71 = preload("res://sim/systems/pace71.gd")     # Pre-G10 global vehicle tempo
 ## G6 PERF6 (CONTRACTS_G6 section 5.1): tick() first refreshes the per-tick G6 hook mask (SimIndex.g6_set from
 ## G6Hooks.active when ORCH's dispatcher has it); every mover's step speed is x SimIndex.g6h().speed_mult(w, e)
 ## (native: the gathered spd array is rescaled before the native advance; fallback: _advance_step).
@@ -1296,6 +1297,9 @@ static func _garrison_any(w: SimWorld) -> bool:
 
 
 static func _g6_speed(w: SimWorld, spd: PackedFloat32Array, nm: int, movers: Array, all: Array, uix: PackedInt32Array, mvi: PackedInt32Array, stride: int, pos: PackedVector2Array) -> void:
+	for m in nm:
+		var pace_e: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+		spd[m] *= Pace71.speed_mult(w, pace_e, pos[mvi[m * stride]])
 	var sp: bool = SimIndex.g6m(w) & SimIndex.G6_SPEED != 0
 	if not speed_split:
 		if sp:
@@ -1327,14 +1331,15 @@ static func _g6_speed(w: SimWorld, spd: PackedFloat32Array, nm: int, movers: Arr
 	var has_rp := not rp.is_empty()
 	for m in nm:
 		var on_ramp := false
+		var mover: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+		var p: Vector2 = pos[mvi[m * stride]]
 		if has_rp:
-			var p: Vector2 = pos[mvi[m * stride]]
 			var cx := floori(p.x)
 			var cy := floori(p.y)
 			on_ramp = cx >= 0 and cy >= 0 and cx < mw and cy < mh and rp[cy * mw + cx] != 0
 		if not sp and not on_ramp:
 			continue
-		var e: Dictionary = movers[m] if movers.size() > m and movers[m] != null else all[uix[mvi[m * stride]]]
+		var e: Dictionary = mover
 		if on_ramp and _def_air(e.def):
 			on_ramp = false
 		if sp:
@@ -2260,6 +2265,7 @@ static func _advance_step(w: SimWorld, e: Dictionary, mc: String, team := -1) ->
 	var start_pos := pos
 	var tmult := 1.0 if is_air(mc) else float(_lut(mc)[w.terrain_at(w.cell_of(pos))])
 	var spd: float = float(u.speed) * tmult * SimWorld.DT * Status.move_mult(w, e)
+	spd *= Pace71.speed_mult(w, e, pos)
 	if SimIndex.g6_spy != null or not speed_split or not SimIndex.g6_hooks_on or not w.map.has("height"):
 		if SimIndex.g6m(w) & SimIndex.G6_SPEED:
 			spd *= SimIndex.g6h().speed_mult(w, e)  # G6 (x 1.0 when neutral)

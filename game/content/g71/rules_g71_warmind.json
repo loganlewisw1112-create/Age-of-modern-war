@@ -1,8 +1,9 @@
 {
-  "_meta": "G7.1 J13 AI war-mind. PROVISIONAL.",
+  "_meta": "G7.1 J13 + Pre-G10 doctrine, threat-budget and counter-memory war-mind. PROVISIONAL.",
   "rules": {
     "g71_warmind": {
       "fool_at": 2,
+      "doctrine_pivot_evidence": 3.0,
       "_fool_at": "repeated feint hits on the same face before Warmind71Fooled"
     }
   }
