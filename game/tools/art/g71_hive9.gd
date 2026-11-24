@@ -1,5 +1,5 @@
 extends SceneTree
-## G9 HIVE9: blended nanite rim + modular chevrons on all Machine vehicle defs (60+).
+## G9 HIVE9: blended nanite rim + modular chevrons on every Machine Content.unit def (60+).
 ## Clones the best existing sheet per def and writes assets/art/g71_hive9/ (manifest wins on merge).
 ##   godot --headless --path . -s tools/art/g71_hive9.gd
 const GEN = preload("res://tools/gen_art.gd")
@@ -21,7 +21,7 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(dir))
 	var n := GEN.save(out, dir)
 	_save_look_samples(out)
-	print("G71_HIVE9 defs=%d files=%d ms=%d" % [(out.manifest.vehicles as Dictionary).size(), n, Time.get_ticks_msec() - t0])
+	print("G71_HIVE9 content_defs=%d files=%d ms=%d" % [(out.manifest.vehicles as Dictionary).size(), n, Time.get_ticks_msec() - t0])
 	quit()
 
 
@@ -38,11 +38,8 @@ static func build_all() -> Dictionary:
 		var ud: Dictionary = Content.unit(String(uid))
 		if String(ud.get("faction", "")) != "machine":
 			continue
-		if bool(ud.get("is_air", false)) and not ((manifests.get("g5_air", {}) as Dictionary).get("vehicles", {}) as Dictionary).has(uid):
-			continue
 		defs.append(String(uid))
 	defs.sort()
-	var n := 0
 	for def_id in defs:
 		var spec: Dictionary = {}
 		var src_dir := ""
@@ -59,10 +56,11 @@ static func build_all() -> Dictionary:
 				break
 		if spec.is_empty():
 			# fallback: same-named base in g6_units vehicles
+			var suffix: String = def_id.get_slice("_", def_id.get_slice_count("_") - 1)
 			for grp in SEARCH:
 				var gm: Dictionary = manifests.get(grp, {})
 				for sid in (gm.get("vehicles", {}) as Dictionary).keys():
-					if String(sid).ends_with(String(def_id).get_slice("_", -1)):
+					if String(sid).ends_with(suffix):
 						spec = (gm.vehicles[sid] as Dictionary).duplicate(true)
 						src_dir = "res://assets/art/%s/" % grp
 						src_id = String(sid)
@@ -112,48 +110,23 @@ static func build_all() -> Dictionary:
 				_rim_icon(ic)
 				out.images["icons/%s.png" % def_id] = ic
 				man.icons[def_id] = "icons/%s.png" % def_id
-		n += 1
-	_add_modular_variants(out, 60)
 	return out
 
 
-static func _add_modular_variants(out: Dictionary, minimum: int) -> void:
-	var man: Dictionary = out.manifest
-	var base_ids: Array = (man.vehicles as Dictionary).keys()
-	base_ids.sort()
-	var i := 0
-	while (man.vehicles as Dictionary).size() < minimum and not base_ids.is_empty():
-		var base_id := String(base_ids[i % base_ids.size()])
-		var spec: Dictionary = (man.vehicles[base_id] as Dictionary).duplicate(true)
-		var variant_id := "%s__mod_%02d" % [base_id, i + 1]
-		var source_file := String(spec.file)
-		var source: Image = out.images.get(source_file)
-		if source == null:
-			i += 1
-			continue
-		var variant := source.duplicate()
-		_modularize_variant(variant, int(spec.get("fw", 64)), int(spec.get("fh", 32)), i)
-		var variant_file := "units/%s.png" % variant_id
-		out.images[variant_file] = variant
-		spec.file = variant_file
-		spec["g9"] = {"blend": "hive9", "base": base_id, "modular_variant": i + 1}
-		man.vehicles[variant_id] = spec
-		i += 1
-
-
-static func _modularize_variant(img: Image, fw: int, fh: int, seed: int) -> void:
-	for cy in range(0, img.get_height() - fh + 1, fh):
-		for cx in range(0, img.get_width() - fw + 1, fw):
-			var y := cy + maxi(2, fh / 5)
-			for dx in range(-3, 4):
-				var x := cx + fw / 2 + dx + posmod(seed, 3) - 1
-				if x >= cx and x < cx + fw and img.get_pixel(x, y).a > 0.5:
-					img.set_pixel(x, y, MOD if posmod(dx + seed, 2) == 0 else NANITE)
-
-
 static func _save_look_samples(out: Dictionary) -> void:
-	var ids: Array = (out.manifest.vehicles as Dictionary).keys()
-	ids.sort()
+	var all_ids: Array = (out.manifest.vehicles as Dictionary).keys()
+	all_ids.sort()
+	var ids: Array = []
+	# Review evidence deliberately starts with every new content-backed HIVE9 roster
+	# entry, then adds established units for visual comparison.
+	for id in all_ids:
+		if bool(Content.unit(String(id)).get("hive9_roster", false)):
+			ids.append(id)
+	for id in all_ids:
+		if ids.size() >= 8:
+			break
+		if not ids.has(id):
+			ids.append(id)
 	if ids.is_empty():
 		return
 	var fw := 64
@@ -165,9 +138,15 @@ static func _save_look_samples(out: Dictionary) -> void:
 		var img: Image = out.images.get(String(spec.file))
 		if img == null:
 			continue
-		var cell_w := mini(fw, int(spec.get("fw", fw)))
-		var cell_h := mini(fh, int(spec.get("fh", fh)))
-		sample.blit_rect(img, Rect2i(0, 0, cell_w, cell_h), Vector2i((i % 4) * fw, (i / 4) * fh))
+		var source_w := int(spec.get("fw", fw))
+		var source_h := int(spec.get("fh", fh))
+		var frame := img.get_region(Rect2i(0, 0, source_w, source_h))
+		var scale := minf(1.0, minf(float(fw) / float(source_w), float(fh) / float(source_h)))
+		if scale < 1.0:
+			frame.resize(maxi(1, int(source_w * scale)), maxi(1, int(source_h * scale)), Image.INTERPOLATE_NEAREST)
+		var cell_origin := Vector2i((i % 4) * fw, (i / 4) * fh)
+		var draw_at := cell_origin + Vector2i((fw - frame.get_width()) / 2, fh - frame.get_height())
+		sample.blit_rect(frame, Rect2i(Vector2i.ZERO, frame.get_size()), draw_at)
 	var look_dir := ProjectSettings.globalize_path("res://.plan/shots/G71_LOOK")
 	DirAccess.make_dir_recursive_absolute(look_dir)
 	sample.save_png(look_dir.path_join("strip_g71_hive9_catalog.png"))

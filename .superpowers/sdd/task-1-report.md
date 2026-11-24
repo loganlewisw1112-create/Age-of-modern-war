@@ -70,3 +70,34 @@ At 150 seconds: `eaten=1`, `nanite=0.4`, `evolve=1`, `modular_events.merge=1`. F
 
 - Implementation: `959e98e1` (`feat: deepen HIVE9 catalog and replication`)
 - Board handoff: recorded in the task response after the final board commit.
+
+## Spec-review fix — 2026-11-23
+
+The review blocker is resolved without asset aliases:
+
+- Enumerated every loaded `Content.unit()` whose faction is `machine`, including G5/G6 air and naval, G7 threats, and G7.1 siege/special units.
+- Added eight spawnable, role-bearing Machine definitions in `game/content/g71/defs_g71_hive9_roster.json`; all values are explicitly PROVISIONAL.
+- Removed `__mod_*` generation and deleted the 13 stale alias PNGs.
+- `Hive9.catalog_count()` now counts only manifest keys that resolve to Machine `Content.unit()` definitions, carry the HIVE9 blend marker, and have a generated art file.
+- The look strip deliberately includes all eight new roster definitions instead of relying on the first eight sorted catalog IDs.
+
+Review RED:
+
+`godot --headless --path game -s res://tests/run_tests.gd -- --only=test_hive9`
+
+Result before regeneration: `pass=4 fail=1 files=1`; failures reported fewer than 60 content-backed blends and detected `__mod_*` fillers.
+
+Generator:
+
+`G71_HIVE9 content_defs=60 files=143`
+
+Review GREEN:
+
+`godot --headless --path game -s res://tests/run_tests.gd -- --only=test_hive9`
+
+Result: `pass=5 fail=0 files=1 time_ms=14264`.
+
+Regenerated evidence:
+
+- `game/.plan/shots/G71_LOOK/strip_g71_hive9_catalog.png`
+- `game/.plan/shots/G71_LOOK/strip_g71_hive9_catalog_2x.png`

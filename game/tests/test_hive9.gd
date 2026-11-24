@@ -10,7 +10,22 @@ const Creep = preload("res://sim/systems/creep.gd")
 
 
 func test_catalog_ge_60() -> void:
-	check(Hive9.catalog_count() >= 60, "blended Machine vehicle catalog >= 60")
+	var path := "res://assets/art/g71_hive9/manifest.json"
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not check(manifest is Dictionary, "HIVE9 manifest loads"):
+		return
+	var vehicles: Dictionary = (manifest as Dictionary).get("vehicles", {})
+	var content_backed := 0
+	for def_id in vehicles:
+		var unit_def: Dictionary = Content.unit(String(def_id))
+		var spec: Dictionary = vehicles[def_id]
+		var g9: Dictionary = spec.get("g9", {})
+		var art_path := "res://assets/art/g71_hive9/" + String(spec.get("file", ""))
+		if String(unit_def.get("faction", "")) == "machine" and String(g9.get("blend", "")) == "hive9" and FileAccess.file_exists(art_path):
+			content_backed += 1
+	check(content_backed >= 60, "content-backed blended Machine catalog >= 60")
+	check_eq(Hive9.catalog_count(), content_backed, "catalog_count validates Content.unit + blended art")
+	check(not vehicles.keys().any(func(id): return String(id).contains("__mod_")), "no asset-only modular count fillers")
 
 
 func test_modular_events_visible_on_eat_and_replicate() -> void:

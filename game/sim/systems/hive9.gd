@@ -63,7 +63,22 @@ static func catalog_count() -> int:
 	if not (parsed is Dictionary):
 		return 0
 	var vehicles = (parsed as Dictionary).get("vehicles", {})
-	return (vehicles as Dictionary).size() if vehicles is Dictionary else 0
+	if not (vehicles is Dictionary):
+		return 0
+	var count := 0
+	for def_id in (vehicles as Dictionary):
+		var unit_def: Dictionary = Content.unit(String(def_id))
+		var spec = (vehicles as Dictionary)[def_id]
+		if String(unit_def.get("faction", "")) != "machine" or not (spec is Dictionary):
+			continue
+		var g9 = (spec as Dictionary).get("g9", {})
+		if not (g9 is Dictionary) or String((g9 as Dictionary).get("blend", "")) != "hive9":
+			continue
+		var art_file := String((spec as Dictionary).get("file", ""))
+		if art_file.is_empty() or not FileAccess.file_exists("res://assets/art/g71_hive9/" + art_file):
+			continue
+		count += 1
+	return count
 
 
 ## Extra dread-equivalent from player counter-play (feeds Evolve71 adaptive path).
