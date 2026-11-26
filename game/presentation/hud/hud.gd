@@ -354,7 +354,7 @@ func _build_coalition_panel(root: Control) -> void:
 	_coalition_panel.offset_bottom = TOP_H + 8
 	var stack := VBoxContainer.new()
 	_coalition_panel.add_child(stack)
-	_coalition_command = preload("res://presentation/ui10/coalition_command.gd").attach(stack)
+	_coalition_command = preload("res://presentation/ui10/coalition_command.gd").attach(stack, mv)
 	_ghost_command = preload("res://presentation/ui10/ghost_command.gd").attach(stack)
 	for card in [_coalition_command, _ghost_command]:
 		card.match_view = mv
@@ -1476,6 +1476,17 @@ func _on_events(events: Array) -> void:
 					# G3a: an ally (same team) is being shot by a non-ally
 					if not _throttled("ally_attack:%d" % int(tgt.owner), ATTACK_ALERT_TICKS, w):
 						_push_alert("Ally under attack: %s" % String(w.factions[int(tgt.owner)].name), G3.side_color(w, int(tgt.owner)).lightened(0.3), tgt.pos)
+			"CoalitionActionDenied":
+				if pf == int(ev.get("fid", -1)):
+					_push_alert(String(ev.get("reason", "")), HT.YELLOW)
+			"Dark10BlackoutArmed":
+				if pf == int(ev.get("fid", -1)):
+					_push_alert("Blackout armed", HT.GREEN, ev.get("pos"))
+				elif pf in ev.get("target_fids", []):
+					_push_alert("Blackout warning", HT.YELLOW, ev.get("pos"))
+			"Dark10DeadRadio":
+				if pf == int(ev.get("target_fid", -1)):
+					_push_alert("%s · Signal drift" % String(ev.get("text", "")), HT.AMBER)
 			"FriendlyFire":   # G7 STRAY8B (13.9c-53): a stray round hit our own man; at most one alert per FF_ALERT_TICKS
 				if int(ev.get("owner", -1)) == pf and not _throttled("ff", FF_ALERT_TICKS, w):
 					_push_alert("Friendly fire!", HT.YELLOW, ev.get("at", null))

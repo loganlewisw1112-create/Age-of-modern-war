@@ -19,7 +19,7 @@ The G10.1 Machine and combat checks cover the hive roster and network, all 13 co
 
 Diplomacy now responds to Machine combat strength. AI adaptation gathers evidence from the side’s own combat history and losses.
 
-Open **Coalition** in the match HUD for doctrine intent and Ghost Command. Scout an enemy structure, build a Ghost Complex and field four healthy Ghost operators to launch a ground mission. The Conductor issues orders and reports the outcome after extraction.
+Open **Coalition** in the match HUD for doctrine intent and Ghost Command. Scout an enemy structure, build a Ghost Complex and field four healthy Ghost operators to launch a ground mission. The Conductor issues orders and reports the outcome after extraction. The Advanced panel provides the four dark operations, Coalition technology acquisition and patron contracts. Blackout temporarily interrupts power and production in the target area.
 
 <p align="center">
   <img src="docs/media/hero.jpg" alt="Last Protocol — the two-ring fortress you inherit and hold" width="1200">

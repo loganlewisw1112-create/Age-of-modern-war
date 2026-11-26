@@ -78,7 +78,30 @@ static func _sync_coalition(w: SimWorld, fid: int, side: Dictionary) -> void:
 	if cs.is_empty():
 		return
 	cs.patron_favour = int(side.favour)
+	cs.contracts = (side.get("accepted", []) as Array).map(func(rec): return String(rec.contract_id))
 	Coalition10._refresh_layer(cs)
+
+
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	var fid := int(cmd.issuer)
+	if not Coalition10.active(w, fid):
+		return "Patron contracts are Coalition-only."
+	var contract := String(cmd.get("contract", ""))
+	if not catalog().has(contract):
+		return "Unknown patron contract."
+	if not w.buildings_of(fid, "x_patron_office").any(func(b): return bool(b.built)):
+		return "Build a Patron Office to accept contracts."
+	var side: Dictionary = w.sys_state.get(KEY, {}).get("factions", {}).get(str(fid), {})
+	for record in side.get("accepted", []):
+		if String(record.contract_id) == contract and w.tick < int(record.until):
+			return "This contract is already active."
+	return ""
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	var reason := accept(w, int(cmd.issuer), String(cmd.contract))
+	if reason != "":
+		w.emit("CoalitionActionDenied", {"fid": int(cmd.issuer), "reason": reason})
 
 
 static func catalog() -> Dictionary:
@@ -197,6 +220,7 @@ static func accept(w: SimWorld, fid: int, contract_id: String) -> String:
 		# Keep accepted rec updated with unit id.
 		if not (side.accepted as Array).is_empty():
 			side.accepted[side.accepted.size() - 1] = rec
+	_sync_coalition(w, fid, side)
 	w.emit("Patron10Accept", {"fid": fid, "contract_id": cid, "until": until, "tier": tier})
 	return ""
 
@@ -340,4 +364,7 @@ static func tick(w: SimWorld) -> void:
 		for rec in side.get("accepted", []):
 			if w.tick < int(rec.get("until", 0)):
 				keep.append(rec)
+		var expired := keep.size() != (side.accepted as Array).size()
 		side.accepted = keep
+		if expired:
+			_sync_coalition(w, int(fk), side)

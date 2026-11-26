@@ -36,6 +36,7 @@ static func claim_vehicle(w: SimWorld, fid: int, vehicle_id: int) -> String:
 	if kind != "unit":
 		return "Not a vehicle."
 	var def := String(e.get("def", ""))
+	var old_owner := int(e.get("owner", -1))
 	var deny := forbidden_reason(def)
 	if deny != "":
 		return _salvage_forbidden(w, fid, vehicle_id, e, deny)
@@ -48,6 +49,8 @@ static func claim_vehicle(w: SimWorld, fid: int, vehicle_id: int) -> String:
 		VehicleCrew9.adopt(e, 2)
 		e.crew9.empty = false
 		e.crew9.alive = int(e.crew9.max)
+	if old_owner != fid and not e.has("captured_by"):
+		SimWorld.CoalitionTech10.note_evidence(w, fid, "captured_gear")
 	e["weld_base_def"] = def
 	e["captured_by"] = fid
 	_st(w).claims[str(vehicle_id)] = {"fid": fid, "base_def": def, "tick": w.tick}

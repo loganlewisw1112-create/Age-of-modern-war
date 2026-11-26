@@ -136,6 +136,21 @@ static func _resolve_def(def_id: String) -> Dictionary:
 
 
 ## Acquisition. Returns "" on success, else a reason. source ∈ buy|steal|unseal.
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	if not active(w, int(cmd.issuer)):
+		return "Technology acquisition is Coalition-only."
+	var id := String(cmd.get("tech", ""))
+	var source := String(cmd.get("source", ""))
+	var row: Dictionary = R().get("techs", {}).get(id, {})
+	return "" if source in row.get("sources", []) else "Choose a valid Coalition technology source."
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	var reason := acquire(w, int(cmd.issuer), String(cmd.source), String(cmd.tech))
+	if reason != "":
+		w.emit("CoalitionActionDenied", {"fid": int(cmd.issuer), "reason": reason})
+
+
 static func acquire(w: SimWorld, fid: int, source: String, tech_id: String, evidence: Dictionary = {}) -> String:
 	if not active(w, fid):
 		return "Not a Coalition side."

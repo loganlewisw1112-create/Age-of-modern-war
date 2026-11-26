@@ -155,3 +155,25 @@ func test_doctrine_sequence_all_four_no_scope_creep() -> void:
 		check(not Dark10.selected_options().has(bad), "%s not selected" % bad)
 		check(not Dark10.commands().has(bad), "%s not a command" % bad)
 	check(hq > 0 and rules_txt.find("blackout") >= 0, "blackout in rules")
+
+
+func test_live_blackout_cuts_power_and_restores_it() -> void:
+	var w := _coalition_world(2059)
+	var cell := Vector2i(18, 16)
+	var power_id := Content.role("human_a", "power")
+	var facility := w.spawn_building(power_id, 1, cell, true)
+	w.spawn_unit("x_pmc_ew", 0, Vector2(16, 16))
+	w.step()
+	var before := int(w.factions[1].power_prod)
+	check(before > 0, "enemy generator supplies power")
+	var cmd := {"type": "coalition_dark", "option": "blackout", "building": facility, "issuer": 0}
+	check_eq(w.preview_command(cmd), "", "live command recognizes the selected visible target")
+	w.submit(cmd)
+	w.step()
+	check_eq(int(w.factions[1].power_prod), before, "warning window preserves power")
+	var rules: Dictionary = Dark10.R().blackout
+	w.run_ticks(int(rules.warn_ticks) + 2)
+	check(Dark10.blackout_active(w, facility), "blackout activates in the main simulation loop")
+	check(int(w.factions[1].power_prod) < before, "blackout reaches the power ledger")
+	w.run_ticks(int(rules.duration_ticks))
+	check_eq(int(w.factions[1].power_prod), before, "power returns after the blackout")

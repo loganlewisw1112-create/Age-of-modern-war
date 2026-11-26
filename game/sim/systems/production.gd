@@ -121,6 +121,8 @@ static func _step_head(w: SimWorld, b: Dictionary, bd: Dictionary) -> String:
 	var f: Dictionary = w.factions[fid]
 	var head: Dictionary = b.queue[0]
 	var p := Content.production(head.item)
+	if SimWorld.CoalitionDark10.blackout_power_cut(w, int(b.id)):
+		return "BLACKOUT"
 	if bool(bd.get("requires_power", false)) and int(f.power_use) > int(f.power_prod):
 		return "LOW_POWER"
 	var item_pop := 0

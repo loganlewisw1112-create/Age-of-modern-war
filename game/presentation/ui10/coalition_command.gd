@@ -22,8 +22,9 @@ var _board_lbl: Label
 var _adv_box: VBoxContainer
 
 
-static func attach(parent: Control) -> Control:
+static func attach(parent: Control, view = null) -> Control:
 	var c = (load("res://presentation/ui10/coalition_command.gd") as GDScript).new()
+	c.match_view = view
 	if parent != null:
 		parent.add_child(c)
 	return c
@@ -71,7 +72,64 @@ func _ensure_ui() -> void:
 	var adv_note := Label.new()
 	adv_note.text = "Intent changes depend on battlefield evidence and patron support."
 	_adv_box.add_child(adv_note)
+	if match_view != null:
+		_build_dark_actions()
+		_build_acquisition_actions()
 	root.add_child(_adv_box)
+
+
+func _build_dark_actions() -> void:
+	var actions := GridContainer.new()
+	actions.columns = 2
+	_adv_box.add_child(actions)
+	for option in ["blackout", "hollow_ground", "mirror_fortress", "dead_radio"]:
+		var button := Button.new()
+		button.text = option.capitalize()
+		button.tooltip_text = "Choose a structure on the battlefield."
+		button.pressed.connect(_pick_dark_target.bind(option))
+		actions.add_child(button)
+
+
+func _build_acquisition_actions() -> void:
+	var techs: Dictionary = SimWorld.CoalitionTech10.R().get("techs", {})
+	var choices := {}
+	for id in techs:
+		var spec: Dictionary = techs[id]
+		for source in spec.get("sources", []):
+			choices["%s %s" % [String(source).capitalize(), String(spec.get("name", id))]] = {
+				"type": "coalition_tech", "source": source, "tech": id}
+	_add_action_picker("Technology", choices)
+	var contracts := {}
+	var catalog := SimWorld.Patron10.catalog()
+	for id in catalog:
+		var spec: Dictionary = catalog[id]
+		contracts[String(spec.get("name", String(id).capitalize()))] = {"type": "patron_contract", "contract": id}
+	_add_action_picker("Patron contracts", contracts)
+
+
+func _add_action_picker(title: String, choices: Dictionary) -> void:
+	if choices.is_empty():
+		return
+	var row := HBoxContainer.new()
+	_adv_box.add_child(row)
+	var picker := OptionButton.new()
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picker.tooltip_text = title
+	row.add_child(picker)
+	for label in choices:
+		picker.add_item(label)
+	var btn := Button.new()
+	btn.text = "Request"
+	btn.pressed.connect(func(): match_view.issue(choices[picker.get_item_text(picker.selected)].duplicate()))
+	row.add_child(btn)
+
+
+func _pick_dark_target(option: String) -> void:
+	match_view.begin_point_pick(func(at: Vector2):
+		var e = match_view.entity_at(at, false)
+		var id := int(e.id) if e != null and e.kind == "building" else -1
+		match_view.issue({"type": "coalition_dark", "option": option, "building": id})
+	)
 
 
 func _toggle_advanced() -> void:

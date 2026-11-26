@@ -360,6 +360,8 @@ static func _hot_wash(w: SimWorld, m: Dictionary) -> Dictionary:
 
 
 static func _echo(w: SimWorld, m: Dictionary) -> Dictionary:
+	if m.has("field") and bool(m.get("success", false)):
+		SimWorld.CoalitionTech10.note_evidence(w, int(m.fid), "raid")
 	m.echo = {
 		"success": bool(m.get("success", false)),
 		"template": String(m.get("template", "")),

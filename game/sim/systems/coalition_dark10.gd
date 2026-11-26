@@ -1,6 +1,6 @@
 extends RefCounted
 ## G10 Task 20 — Blackout, Hollow Ground, Mirror Fortress, Dead Radio only.
-## Hollow Ground reuses Tunnels10.collapse / hollow_tell (MECH public API). No world.gd.
+## Hollow Ground reuses Tunnels10.collapse / hollow_tell (MECH public API).
 
 const Coalition10 = preload("res://sim/systems/coalition10.gd")
 const Tunnels10 = preload("res://sim/systems/tunnels10.gd")
@@ -22,6 +22,50 @@ static func selected_options() -> Array:
 
 static func commands() -> Array:
 	return selected_options()
+
+
+static func validate_command(w: SimWorld, cmd: Dictionary) -> String:
+	var fid := int(cmd.get("issuer", -1))
+	if not Coalition10.active(w, fid) or int(w.factions.get(fid, {}).get("stage", 0)) < 8:
+		return "Dark operations require a Stage 8 Coalition side."
+	var option := String(cmd.get("option", ""))
+	if option not in selected_options():
+		return "Unknown dark operation."
+	var building = w.entities.get(int(cmd.get("building", -1)))
+	if building == null or building.kind != "building" or not bool(building.built):
+		return "Choose a completed building."
+	var owner := int(building.owner)
+	match option:
+		"blackout", "dead_radio":
+			if not w.is_enemy(fid, owner) or not SimWorld.Fog.entity_visible(w, fid, building):
+				return "Choose a visible enemy building."
+			if option == "blackout" and not _intel_ok(w, fid):
+				return "Blackout needs EW or intel."
+		"hollow_ground":
+			if owner != fid or String(building.def) != "x_tunnel_entrance":
+				return "Choose one of your tunnel entrances."
+		"mirror_fortress":
+			if owner != fid:
+				return "Choose one of your own structures."
+	return ""
+
+
+static func apply_command(w: SimWorld, cmd: Dictionary) -> void:
+	var id := int(cmd.building)
+	var b: Dictionary = w.entities[id]
+	var fid := int(cmd.issuer)
+	match String(cmd.option):
+		"blackout":
+			blackout(w, fid, Rect2i(Vector2i(b.cell) - Vector2i(2, 2), Vector2i(5, 5)))
+		"hollow_ground":
+			hollow_ground(w, fid, id)
+		"mirror_fortress":
+			mirror_signature(w, id)
+		"dead_radio":
+			var lines: Array = R().get("dead_radio", {}).get("lines", {}).keys()
+			lines.sort()
+			if not lines.is_empty():
+				dead_radio(w, fid, int(b.owner), String(lines[0]))
 
 
 static func _st(w: SimWorld) -> Dictionary:
@@ -91,16 +135,18 @@ static func blackout(w: SimWorld, fid: int, target: Rect2i) -> String:
 	var dur := int(cfg.get("duration_ticks", 120))
 	var s := _st(w)
 	var hits: Array = []
+	var notified := {}
 	for eid in w.entities:
 		var e = w.entities[eid]
 		if e == null or String(e.get("kind", "")) != "building":
 			continue
-		if int(e.get("owner", -1)) == fid:
+		if not w.is_enemy(fid, int(e.get("owner", -1))):
 			continue
 		var cell: Vector2i = e.cell if e.has("cell") else w.cell_of(e.pos)
 		if not target.has_point(cell):
 			continue
 		hits.append(int(eid))
+		notified[int(e.owner)] = true
 	hits.sort()
 	s.blackouts.append({
 		"fid": fid,
@@ -112,7 +158,7 @@ static func blackout(w: SimWorld, fid: int, target: Rect2i) -> String:
 		"targets": hits.duplicate(),
 		"cuts": (cfg.get("cuts", ["power", "comms"]) as Array).duplicate(),
 	})
-	w.emit("Dark10BlackoutArmed", {"fid": fid, "warn": warn, "n": hits.size()})
+	w.emit("Dark10BlackoutArmed", {"fid": fid, "warn": warn, "target_fids": notified.keys(), "pos": Vector2(target.get_center()), "n": hits.size()})
 	return ""
 
 
@@ -120,7 +166,7 @@ static func blackout_active(w: SimWorld, building_id: int) -> bool:
 	if not w.sys_state.has(KEY):
 		return false
 	for row in _st(w).blackouts:
-		if not bool(row.get("active", false)):
+		if not bool(row.get("active", false)) or w.tick >= int(row.get("end_tick", 0)):
 			continue
 		if (row.get("targets", []) as Array).has(building_id):
 			return true
@@ -324,7 +370,7 @@ static func dead_radio(w: SimWorld, fid: int, target_fid: int, line_id: String) 
 		"tick": w.tick,
 		"attribution": "coalition_dead_radio",
 	})
-	w.emit("Dark10DeadRadio", {"id": rid, "fid": fid, "target_fid": target_fid, "anomaly": anomaly})
+	w.emit("Dark10DeadRadio", {"id": rid, "fid": fid, "target_fid": target_fid, "text": text, "anomaly": anomaly})
 	return ""
 
 

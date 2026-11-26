@@ -40,6 +40,7 @@ static func tick(w: SimWorld) -> void:
 		pc[fid] = 0
 		pop[fid] = 0
 		hqs[fid] = 0
+	var dark_active := w.sys_state.has("coalition_dark10")
 	# G7 LPPERF7: only defs with power / pop_cap / is_hq / company_hq add anything here (walls add 0 to all)
 	for e in Inert7.blds(w, Inert7.ECO):
 		var fid: int = int(e.owner)
@@ -48,7 +49,8 @@ static func tick(w: SimWorld) -> void:
 		var d := Content.building(e.def)
 		var p := int(d.get("power", 0))
 		if p > 0:
-			pp[fid] += p
+			if not dark_active or not SimWorld.CoalitionDark10.blackout_power_cut(w, int(e.id)):
+				pp[fid] += p
 		elif p < 0:
 			pu[fid] += -p
 		pc[fid] += int(d.get("pop_cap", 0))

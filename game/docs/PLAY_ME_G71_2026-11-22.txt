@@ -41,3 +41,4 @@ G10.1 IN PROGRESS
   Technicals and concealed facilities use candidate art. Owner look approval is pending.
   Q / E rotates the battlefield while preserving the point under the camera.
   Open Coalition in the match HUD for doctrine and Ghost missions. Scout a structure, build a Ghost Complex and field four healthy operators.
+  Coalition Advanced lists dark operations, technology acquisition and patron contracts.

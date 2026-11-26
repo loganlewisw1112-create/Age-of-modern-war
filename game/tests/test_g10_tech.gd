@@ -126,3 +126,21 @@ func test_source_log_auditable_on_board() -> void:
 	check_eq(String(sources[0].get("source", "")), "buy", "board source")
 	# No hidden unlock: unlocked only via acquire
 	check(not CoalitionTech10.unlocked(w, 0, "vault_prototype"), "no silent unseal")
+
+
+func test_player_tech_command_uses_real_cost_and_evidence() -> void:
+	var w := _coalition_world(2000)
+	var before := int(w.factions[0].credits)
+	var buy := {"type": "coalition_tech", "issuer": 0, "source": "buy", "tech": "cell_kit"}
+	check(w.submit(buy).ok, "buy action goes through the standard queue")
+	w.step()
+	check(CoalitionTech10.unlocked(w, 0, "cell_kit"), "queue unlocked the paid kit")
+	check_eq(int(w.factions[0].credits), before - 150, "kit charged the stated price")
+	var steal := {"type": "coalition_tech", "issuer": 0, "source": "steal", "tech": "raid_optics", "captured_gear": 99}
+	w.submit(steal)
+	w.step()
+	check(not CoalitionTech10.unlocked(w, 0, "raid_optics"), "command cannot supply its own loot evidence")
+	CoalitionTech10.note_evidence(w, 0, "captured_gear")
+	w.submit(steal)
+	w.step()
+	check(CoalitionTech10.unlocked(w, 0, "raid_optics"), "authoritative captured gear permits the unlock")
